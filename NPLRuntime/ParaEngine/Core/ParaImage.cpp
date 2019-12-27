@@ -4,6 +4,10 @@
 #include "jpeglib.h"
 #include "png.h"
 
+#include <boost/gil.hpp>
+#include <boost/gil/extension/numeric/sampler.hpp>
+#include <boost/gil/extension/numeric/resample.hpp>
+
 #ifdef WIN32
 // just for compatibility with previous version of libpng.lib built by earlier version of visual studio 2015
 extern "C" { FILE __iob_func[3] = { *stdin,*stdout,*stderr }; }
@@ -146,7 +150,109 @@ namespace ParaEngine
 
 	ParaImage::~ParaImage()
 	{
+//		for (int i = 0; i < _numberOfMipmaps; ++i)
+//			SAFE_DELETE_ARRAY(_mipmaps[i].address);
+//		if (_data)
+//		{
+//			free(_data);
+//		}
+		
+	}
 
+	template <typename GrayView>
+	static void gray_image_hist(const GrayView& img_view, unsigned char* data)
+	{
+		for (typename GrayView::iterator it = img_view.begin(); it != img_view.end(); ++it)
+		{
+			*data = (unsigned char)*it;
+			++data;
+		}
+	}
+
+	bool ParaImage::resize(int width, int height)
+	{
+		using namespace boost::gil;
+
+		if (!_data)
+			return false;
+
+		auto old_width = (int)getWidth();
+		auto old_height = (int)getHeight();
+
+		if (width == old_width && height == old_height)
+			return true;
+
+		if (isCompressed())
+			return false;
+
+		auto format = getRenderFormat();
+
+		int bytesPerComponent;
+
+		switch (format)
+		{
+		case PixelFormat::L8:
+			{
+				bytesPerComponent = 1;
+				_dataLen = height * width * bytesPerComponent;
+
+
+				gray8c_view_t src_view = interleaved_view((std::size_t)old_width, (std::size_t)old_height, (const gray8_pixel_t*)_data, old_width * 1);
+				gray8_image_t scale_img(width, height);
+				auto scale_view = view(scale_img);
+
+				resize_view(src_view, scale_view, bilinear_sampler());
+
+				free(_data);
+				_data = static_cast<unsigned char*>(malloc(_dataLen * sizeof(unsigned char)));
+
+				gray_image_hist(color_converted_view<gray8_pixel_t>(scale_view), _data);
+			}
+			break;
+		case PixelFormat::R8G8B8:
+			{
+				bytesPerComponent = 3;
+				_dataLen = height * width * bytesPerComponent;
+
+				rgb8c_view_t src_view = interleaved_view((std::size_t)old_width, (std::size_t)old_height, (const rgb8_pixel_t*)_data, old_width * 3);
+				rgb8_image_t scale_img(width, height);
+				auto scale_view = view(scale_img);
+
+				resize_view(src_view, scale_view, bilinear_sampler());
+
+				free(_data);
+				_data = static_cast<unsigned char*>(malloc(_dataLen * sizeof(unsigned char)));
+
+				gray_image_hist(color_converted_view<gray8_pixel_t>(scale_view), _data);
+			}
+
+			break;
+		case PixelFormat::A8R8G8B8:
+			{
+				bytesPerComponent = 4;
+				_dataLen = height * width * bytesPerComponent;
+
+				rgba8c_view_t src_view = interleaved_view((std::size_t)old_width, (std::size_t)old_height, (const rgba8_pixel_t*)_data, old_width * 4);
+				rgba8_image_t scale_img(width, height);
+				auto scale_view = view(scale_img);
+
+				resize_view(src_view, scale_view, bilinear_sampler());
+
+				free(_data);
+				_data = static_cast<unsigned char*>(malloc(_dataLen * sizeof(unsigned char)));
+
+				gray_image_hist(color_converted_view<gray8_pixel_t>(scale_view), _data);
+			}
+			
+			break;
+		default:
+			return false;
+		}
+
+		_height = (float)height;
+		_width = (float)width;
+
+		return true;
 	}
 
 	bool ParaImage::initWithRawData(const unsigned char * data, size_t dataLen, int width, int height, int bitsPerComponent, bool preMulti)
@@ -985,6 +1091,7 @@ namespace ParaEngine
 
     bool ParaImage::saveImageToJPG(const std::string& filePath)
     {
+        cout << filePath << endl;
         bool ret = false;
         do
         {
@@ -1015,39 +1122,49 @@ namespace ParaEngine
             
             row_stride = _width * 3; /* JSAMPLEs per row in image_buffer */
             
+            auto format = getRenderFormat();
 
-            unsigned char *tempData = static_cast<unsigned char*>(malloc(_width * _height * 3 * sizeof(unsigned char)));
-            if (nullptr == tempData)
+            if (format == PixelFormat::R8G8B8)
             {
-                jpeg_finish_compress(&cinfo);
-                jpeg_destroy_compress(&cinfo);
-                fclose(outfile);
-                break;
-            }
-            
-            for (int i = 0; i < _height; ++i)
-            {
-                for (int j = 0; j < _width; ++j)
-                    
-                {
-                    tempData[(i * (int)_width + j) * 3] = _data[(i * (int)_width + j) * 4];
-                    tempData[(i * (int)_width + j) * 3 + 1] = _data[(i * (int)_width + j) * 4 + 1];
-                    tempData[(i * (int)_width + j) * 3 + 2] = _data[(i * (int)_width + j) * 4 + 2];
+                while (cinfo.next_scanline < cinfo.image_height) {
+                    row_pointer[0] = &_data[cinfo.next_scanline * row_stride];
+                    (void)jpeg_write_scanlines(&cinfo, row_pointer, 1);
                 }
             }
-            
-            while (cinfo.next_scanline < cinfo.image_height)
+            else if (format == PixelFormat::A8R8G8B8)
             {
-                row_pointer[0] = & tempData[cinfo.next_scanline * row_stride];
-                (void) jpeg_write_scanlines(&cinfo, row_pointer, 1);
+                unsigned char *tempData = static_cast<unsigned char*>(malloc(_width * _height * 3 * sizeof(unsigned char)));
+                if (nullptr == tempData)
+                {
+                    jpeg_finish_compress(&cinfo);
+                    jpeg_destroy_compress(&cinfo);
+                    fclose(outfile);
+                    break;
+                }
+
+                for (int i = 0; i < _height; ++i)
+                {
+                    for (int j = 0; j < _width; ++j)
+
+                    {
+                        tempData[(i * (int)_width + j) * 3] = _data[(i * (int)_width + j) * 4];
+                        tempData[(i * (int)_width + j) * 3 + 1] = _data[(i * (int)_width + j) * 4 + 1];
+                        tempData[(i * (int)_width + j) * 3 + 2] = _data[(i * (int)_width + j) * 4 + 2];
+                    }
+                }
+
+                while (cinfo.next_scanline < cinfo.image_height)
+                {
+                    row_pointer[0] = &tempData[cinfo.next_scanline * row_stride];
+                    (void)jpeg_write_scanlines(&cinfo, row_pointer, 1);
+                }
+
+                if (tempData != nullptr)
+                {
+                    free(tempData);
+                }
             }
-            
-            if (tempData != nullptr)
-            {
-                free(tempData);
-            }
-            
-            
+
             jpeg_finish_compress(&cinfo);
             fclose(outfile);
             jpeg_destroy_compress(&cinfo);

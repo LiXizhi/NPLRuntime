@@ -35,6 +35,8 @@ using namespace ScreenShot;
 #include "PluginAPI.h"
 #include "ParaImage.h"
 
+#include "ZipArchive.h"
+
 
 using namespace ParaEngine;
 
@@ -294,7 +296,31 @@ bool CMoviePlatform::ResizeImage(const string& filename, int width, int height, 
 		return false;
 	}
 #else
-	return false;
+	CParaFile file;
+	if (!file.OpenFile(filename.c_str()))
+	{
+		OUTPUT_LOG("warning:unable to open file when doing ResizeImage, %s\n", filename.c_str());
+		return false;
+	}
+
+	ParaImage img;
+	if (!img.initWithImageData((unsigned char*)file.getBuffer(), file.getSize()))
+	{
+		OUTPUT_LOG("warning:unable to load image when doing ResizeImage, %s\n", filename.c_str());
+		return false;
+	}
+	
+
+	if (!img.resize(width, height))
+	{
+		OUTPUT_LOG("warning:unable to resize image, %s\n", filename.c_str());
+		return false;
+	}
+
+
+	img.saveToFile(destFilename);
+
+	return true;
 #endif
 }
 

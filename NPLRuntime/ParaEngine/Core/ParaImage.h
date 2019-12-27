@@ -73,6 +73,8 @@ namespace ParaEngine
 		bool	isCompressed() const { return false; }
 
 
+		bool resize(int width, int height);
+
 		static PixelFormat convertDataToFormat(const unsigned char* data, size_t dataLen, PixelFormat originFormat, PixelFormat format, unsigned char** outData, size_t* outDataLen);
 
 		static PixelFormat convertI8ToFormat(const unsigned char* data, size_t dataLen, PixelFormat format, unsigned char** outData, size_t* outDataLen);
