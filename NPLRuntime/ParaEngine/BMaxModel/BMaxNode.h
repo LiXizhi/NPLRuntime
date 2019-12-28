@@ -52,6 +52,7 @@ namespace ParaEngine
 		BMaxNode* GetNeighbour(BlockDirection::Side nSize);
 		BMaxNode* GetNeighbourByOffset(Vector3 offset);
 		virtual bool isSolid();
+		virtual void setSolid(bool bValue);
 
 		/** 
 		* @param tessellatedModel: generate block model vertices
@@ -75,6 +76,7 @@ namespace ParaEngine
 		int32 template_id;
 		int32 block_data;
 		int m_nBoneIndex;
+		bool m_bIsSolid;
 	protected:
 		BMaxParser* m_pParser;
 		DWORD m_color;

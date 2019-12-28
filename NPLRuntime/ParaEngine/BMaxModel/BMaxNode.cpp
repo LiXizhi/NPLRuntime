@@ -16,7 +16,7 @@
 using namespace ParaEngine;
 
 ParaEngine::BMaxNode::BMaxNode(BMaxParser* pParser, int16 x_, int16 y_, int16 z_, int32 template_id_, int32 block_data_) :
-m_pParser(pParser), x(x_), y(y_), z(z_), template_id(template_id_), block_data(block_data_), m_color(0), m_nBoneIndex(-1), m_pBlockModel(nullptr), m_pParaXModel(nullptr)
+m_pParser(pParser), x(x_), y(y_), z(z_), template_id(template_id_), block_data(block_data_), m_color(0), m_nBoneIndex(-1), m_pBlockModel(nullptr), m_pParaXModel(nullptr), m_bIsSolid(true)
 {
 	memset(m_facesStatus, faceInvisible, sizeof(m_facesStatus));
 }
@@ -36,7 +36,7 @@ DWORD ParaEngine::BMaxNode::GetColor()
 	if (m_color == 0)
 	{
 		auto node_template = BlockWorldClient::GetInstance()->GetBlockTemplate((uint16)template_id);
-		if (node_template && isSolid())
+		if (node_template)
 			SetColor(node_template->GetBlockColor(block_data));
 		else
 			SetColor(Color::White);
@@ -109,7 +109,12 @@ BMaxNode* ParaEngine::BMaxNode::GetNeighbourByOffset(Vector3 offset)
 
 bool ParaEngine::BMaxNode::isSolid()
 {
-	return true;
+	return m_bIsSolid;
+}
+
+void ParaEngine::BMaxNode::setSolid(bool bValue)
+{
+	m_bIsSolid = bValue;
 }
 
 void ParaEngine::BMaxNode::QueryNeighborBlockData(BMaxNode** pBlockData, int nFrom /*= 0*/, int nTo /*= 26*/)
