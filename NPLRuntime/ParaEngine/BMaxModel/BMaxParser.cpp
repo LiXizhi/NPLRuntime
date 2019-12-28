@@ -1036,8 +1036,7 @@ namespace ParaEngine
 							pass = AddRenderPass();
 							pass->geoset = geoset->id;
 							pass->SetStartIndex(nStartIndex);
-							geoset->SetVertexStart(total_count);
-							nStartVertex = 0;
+							geoset->SetVertexStart((int32)m_vertices.size());
 						}
 
 						geoset->icount += nIndexCount;
