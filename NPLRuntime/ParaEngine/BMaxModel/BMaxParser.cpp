@@ -252,6 +252,7 @@ namespace ParaEngine
 				{
 					// non-solid, but obstruction blocks such as slope, stairs, and other custom models
 					BMaxNodePtr node(new BMaxNode(this, x, y, z, template_id, block_data));
+					node->setSolid(false);
 					nodes.push_back(node);
 				}
 				else if(!pBlockTemplate->IsMatchAttribute(BlockTemplate::batt_solid))
@@ -259,6 +260,7 @@ namespace ParaEngine
 					// other non-solid blocks will not be rendered. but can be used to connect bones
 					template_id = TransparentBlockId;
 					BMaxBlockModelNodePtr node(new BMaxBlockModelNode(this, x, y, z, template_id, block_data));
+					node->setSolid(false);
 					nodes.push_back(BMaxNodePtr(node.get()));
 				}
 				else
@@ -1012,58 +1014,61 @@ namespace ParaEngine
 			for (auto& item : m_nodes)
 			{
 				BMaxNode* node = item.second.get();
-				if (node->isSolid() && node->GetParaXModel() == 0)
+				if (!node->isSolid() && node->GetParaXModel() == 0)
 				{
 					// for stairs, slabs, buttons, etc
 					BlockModel* model = node->GetBlockModel();
 					if (model != 0 && model->IsUniformLighting())
 					{
+						int nFromVertex = (int)m_vertices.size();
+
 						int nVertices = model->GetVerticesCount();
 						BlockVertexCompressed* pVertices = model->GetVertices();
 						int nFace = model->GetFaceCount();
 
-			int nIndexCount = nFace * 6;
+						int nIndexCount = nFace * 6;
 
-			if ((nIndexCount + geoset->icount) >= 0xffff)
-			{
-				// break geoset, if it is too big
-				nStartIndex = (int32)m_indices.size();
-				geoset = AddGeoset();
-				pass = AddRenderPass();
-				pass->geoset = geoset->id;
-				pass->SetStartIndex(nStartIndex);
-				geoset->SetVertexStart(total_count);
-				nStartVertex = 0;
-			}
+						if ((nIndexCount + geoset->icount) >= 0xffff)
+						{
+							// break geoset, if it is too big
+							nStartIndex = (int32)m_indices.size();
+							geoset = AddGeoset();
+							pass = AddRenderPass();
+							pass->geoset = geoset->id;
+							pass->SetStartIndex(nStartIndex);
+							geoset->SetVertexStart((int32)m_vertices.size());
+						}
 
-			geoset->icount += nIndexCount;
-			pass->indexCount += nIndexCount;
+						geoset->icount += nIndexCount;
+						pass->indexCount += nIndexCount;
 
-			int nBoneIndex = node->GetBoneIndex();
-			// if no bone is found, use the default root bone
-			if (nBoneIndex == -1)
-				nBoneIndex = nRootBoneIndex;
-			uint8 vertex_weight = 0xff;
+						int nBoneIndex = node->GetBoneIndex();
+						// if no bone is found, use the default root bone
+						if (nBoneIndex == -1)
+							nBoneIndex = nRootBoneIndex;
+						uint8 vertex_weight = 0xff;
 
-			for (int k = 0; k < nVertices; k++, pVertices++)
-			{
-				ModelVertex modelVertex;
-				memset(&modelVertex, 0, sizeof(ModelVertex));
-				pVertices->GetPosition(modelVertex.pos);
-				modelVertex.pos *= m_fScale;
-				pVertices->GetNormal(modelVertex.normal);
-				modelVertex.color0 = pVertices->color2;
-				//set bone and weight, only a single bone
-				modelVertex.bones[0] = nBoneIndex;
-				modelVertex.weights[0] = vertex_weight;
+						for (int k = 0; k < nVertices; k++, pVertices++)
+						{
+							ModelVertex modelVertex;
+							memset(&modelVertex, 0, sizeof(ModelVertex));
+							pVertices->GetPosition(modelVertex.pos);
+							modelVertex.pos *= m_fScale;
+							pVertices->GetNormal(modelVertex.normal);
+							modelVertex.color0 = pVertices->color2;
+							//set bone and weight, only a single bone
+							modelVertex.bones[0] = nBoneIndex;
+							modelVertex.weights[0] = vertex_weight;
 
-				m_vertices.push_back(modelVertex);
-				aabb.Extend(modelVertex.pos);
-			}
+							m_vertices.push_back(modelVertex);
+							aabb.Extend(modelVertex.pos);
+						}
+
+						int nVertexOffset = nFromVertex - geoset->GetVertexStart();
 
 						for (int k = 0; k < nFace; k++)
 						{
-							int start_index = k * 4 + nStartVertex;
+							int start_index = k * 4 + nVertexOffset;
 							m_indices.push_back(start_index + 0);
 							m_indices.push_back(start_index + 1);
 							m_indices.push_back(start_index + 2);
@@ -1071,8 +1076,6 @@ namespace ParaEngine
 							m_indices.push_back(start_index + 2);
 							m_indices.push_back(start_index + 3);
 						}
-						total_count += nVertices;
-						nStartVertex += nVertices;
 					}
 				}
 				else if (node->GetParaXModel())
