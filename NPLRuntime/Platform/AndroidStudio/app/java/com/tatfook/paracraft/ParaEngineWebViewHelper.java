@@ -18,7 +18,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.FutureTask;
 
-import com.tatfook.paracraft.AppActivity;
+import com.tatfook.paracraft.ParaEngineActivity;
 import com.tatfook.paracraft.ParaEngineWebView;
 
 import android.util.Log;
@@ -38,7 +38,7 @@ class HelloWebViewClient extends WebViewClient {
 
 public class ParaEngineWebViewHelper {
 	private static final String TAG = "ParaEngine";
-	private static AppActivity sActivity;
+	private static ParaEngineActivity sActivity;
 	private static Handler sHandler;
 	private static FrameLayout sLayout;
 
@@ -56,7 +56,7 @@ public class ParaEngineWebViewHelper {
 		ParaEngineWebViewHelper.sLayout = layout;
         ParaEngineWebViewHelper.sHandler = new Handler(Looper.myLooper());
 
-        ParaEngineWebViewHelper.sActivity = (AppActivity)AppActivity.getContext();
+        ParaEngineWebViewHelper.sActivity = (ParaEngineActivity)ParaEngineActivity.getContext();
         ParaEngineWebViewHelper.webViews = new SparseArray<ParaEngineWebView>();
 
 		mWebView = null;
@@ -194,6 +194,7 @@ public class ParaEngineWebViewHelper {
         });
     }
 
+    @Keep
 	public static void setVisible(final int index, final boolean visible) {
         sActivity.runOnUiThread(new Runnable() {
             @Override

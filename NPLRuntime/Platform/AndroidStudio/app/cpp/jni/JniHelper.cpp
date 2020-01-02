@@ -4,6 +4,7 @@
 
 #include <string.h>
 #include <pthread.h>
+#include <android/native_window_jni.h>
 
 
 static pthread_key_t g_key;
@@ -16,6 +17,8 @@ void _detachCurrentThread(void* a) {
 
 namespace ParaEngine {
 
+    ANativeWindow* JniHelper::_nativeWindow = nullptr;
+    AAssetManager* JniHelper::_assetmanager = nullptr;
     JavaVM* JniHelper::_psJavaVM = nullptr;
     jmethodID JniHelper::loadclassMethod_methodID = nullptr;
     jobject JniHelper::classloader = nullptr;
@@ -23,6 +26,16 @@ namespace ParaEngine {
     
     jobject JniHelper::_activity = nullptr;
     std::unordered_map<JNIEnv*, std::vector<jobject>> JniHelper::localRefs;
+
+    void JniHelper::setSurface(JNIEnv* env, jobject surface)
+    {
+        if (surface != nullptr) {
+            _nativeWindow = ANativeWindow_fromSurface(env, surface);
+        }
+        else {
+            _nativeWindow = nullptr;
+        }
+    }
 
     JavaVM* JniHelper::getJavaVM() {
         pthread_t thisthread = pthread_self();

@@ -1,8 +1,8 @@
 #include "ReadFileAndroid.h"
 #include "ParaAppAndroid.h"
+#include "jni/JniHelper.h"
 #include <cstdio>
-#include <android/asset_manager.h>
-#include <android/native_activity.h>
+
 using namespace ParaEngine;
 ParaEngine::CReadFileAndroid::CReadFileAndroid(const std::string fileName)
 	:m_filename(fileName)
@@ -62,9 +62,7 @@ void ParaEngine::CReadFileAndroid::Release()
 
 void ParaEngine::CReadFileAndroid::openFile()
 {
-	auto app = (CParaEngineAppAndroid*)(CGlobals::GetApp());
-	auto state = app->GetAndroidApp();
-	auto assetManager = state->activity->assetManager;
+	auto assetManager = JniHelper::getAssetManager();
 	m_asset = AAssetManager_open(assetManager, m_filename.c_str(), AASSET_MODE_STREAMING);
 }
 

@@ -1,67 +1,72 @@
 #pragma once
-#include <android_native_app_glue.h>
+
 #include <EGL/egl.h>
 #include "RenderDeviceOpenGL.h"
 #include "EventClasses.h"
 #include "Framework/InputSystem/VirtualKey.h"
-#include "jni/AppActivity.h"
+#include "jni/ParaEngineActivity.h"
 
-#include "Core/MainLoopBase.h"
+namespace ParaEngine {
+    class CParaEngineAppAndroid;
 
-namespace ParaEngine
-{
-	class CParaEngineAppAndroid;
-	class IRenderDevice;
-	class IRenderContext;
-	class IRenderWindow;
-    class AppDelegate : public MainLoopBase
-    {
+    class IRenderDevice;
+
+    class IRenderContext;
+
+    class IRenderWindow;
+
+    class AppDelegate {
     public:
-		static AppDelegate& getInstance();
-        
-        void Run(android_app* app);
+        static AppDelegate &getInstance();
 
-		void onCmdLine(const std::string& cmd);
+        void onCmdLine(const std::string &cmd);
+
+        void init(int w, int h, const std::string &intentData);
+
+        void handle_touches_begin(int id, float x, float y);
+
+        void handle_touches_end(int id, float x, float y);
+
+        void handle_touches_move(int id[], float x[], float y[], size_t size);
+
+        void handle_touches_cancel(int id[], float x[], float y[], size_t size);
+
+        bool handle_key_input(int code, bool bPressed);
+
+        void handle_mainloop();
+
     private:
-		AppDelegate();
-		~AppDelegate();
+        AppDelegate();
 
-        struct android_app* m_State;
-        static void app_handle_command(struct android_app* app, int32_t cmd);
-        static int32_t app_handle_input(struct android_app* app, AInputEvent* event);
-		static int32_t handle_key_input(AppDelegate* app, AInputEvent* event);
-		static void handle_touch_input(AppDelegate* app, AInputEvent* event);
-		static void handle_mouse_input(AppDelegate* app, AInputEvent* event);
-
-		void handle_mainloop_timer(const boost::system::error_code& err);
-		
-    protected:
+        ~AppDelegate();
+    public:
         // App commands
         virtual void OnStart();
+
         virtual void OnStop();
+
         virtual void OnPause();
+
         virtual void OnResume();
+
         virtual void OnDestroy();
+
         virtual void OnInitWindow();
+
         virtual void OnTermWindow();
+
         virtual void OnWindowResized();
-		virtual void OnTouch(const std::vector<TouchEventPtr>& events);
-		virtual void OnKey(const EVirtualKey& key, const EKeyState& state);
 
-	protected:
-		CParaEngineAppAndroid* m_ParaEngineApp;
-		bool m_isPaused;
+    protected:
+        virtual void OnTouch(const std::vector<TouchEventPtr> &events);
 
+        virtual void OnKey(const EVirtualKey &key, const EKeyState &state);
 
-		AppActivity m_appActivity;
+    protected:
+        CParaEngineAppAndroid *m_ParaEngineApp;
+        bool m_isPaused;
 
-		float m_fRefreshTimerInterval; //  in seconds.
+        float m_fRefreshTimerInterval; //  in seconds.
     };
 
-
-	struct saved_state
-	{
-		ParaEngine::AppDelegate* app;
-	};
-
-}
+} // namespace ParaEngine

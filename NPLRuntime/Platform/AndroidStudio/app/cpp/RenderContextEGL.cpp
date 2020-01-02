@@ -8,6 +8,8 @@
 
 #define LOGI(...) ((void)__android_log_print(ANDROID_LOG_INFO, "ParaEngine", __VA_ARGS__))
 #define LOGW(...) ((void)__android_log_print(ANDROID_LOG_WARN, "ParaEngine", __VA_ARGS__))
+
+/*
 using namespace ParaEngine;
 
 ParaEngine::IRenderContext* ParaEngine::IRenderContext::Create()
@@ -188,3 +190,50 @@ void ParaEngine::RenderContextEGL::ReleaseContext()
 	m_context = EGL_NO_CONTEXT;
 	m_surface = EGL_NO_SURFACE;
 }
+*/
+
+namespace ParaEngine {
+    IRenderContext* IRenderContext::Create()
+    {
+        return new RenderContextEGL();
+    }
+
+    IRenderDevice* RenderContextEGL::CreateDevice(const RenderConfiguration & cfg)
+    {
+        if (!loadGL())
+        {
+            LOGW("Unable to load gl ext.");
+        }
+
+        auto version = glGetString(GL_VERSION);
+        LOGI("GL_VERSION:%s", version);
+
+        return new RenderDeviceEGL();
+    }
+
+    RenderContextEGL::RenderContextEGL()
+    {
+
+    }
+
+    RenderContextEGL::~RenderContextEGL()
+    {
+
+    }
+
+    bool RenderContextEGL::ResetDevice(IRenderDevice* device, const RenderConfiguration & cfg)
+    {
+        if (!loadGL())
+        {
+            LOGW("Unable to load gl ext.");
+        }
+
+        auto version = glGetString(GL_VERSION);
+        LOGI("GL_VERSION:%s", version);
+
+        RenderDeviceEGL* eglDevice = static_cast<RenderDeviceEGL*>(device);
+        eglDevice->Reset();
+
+        return true;
+    }
+} // namespace ParaEngine

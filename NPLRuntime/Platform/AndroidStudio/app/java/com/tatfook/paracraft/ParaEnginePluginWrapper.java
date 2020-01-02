@@ -136,6 +136,8 @@ public class ParaEnginePluginWrapper {
 			return false;
 		}
 
+		boolean bRet = false;
+
 		try {
 			for (int i = 0; i < pluginInfoList.size(); i++) {
 				PluginInfo info = pluginInfoList.get(i);
@@ -155,6 +157,8 @@ public class ParaEnginePluginWrapper {
 								}
 							})) {
 						count++;
+
+						bRet = true;
 					}
 					else
 					{
@@ -166,10 +170,23 @@ public class ParaEnginePluginWrapper {
 			e.printStackTrace();
 		}
 
-		return false;
+		return bRet;
 	 }
 
-	 public static void onDestroy() {
+	public static void onRequestPermissionsResult(int requestCode, String permissions[], int[] grantResults) {
+		try {
+			for (Map.Entry<String, Object> entry : sPlugins.entrySet()) {
+				ParaEnginePluginInterface plugin = (ParaEnginePluginInterface) entry.getValue();
+				if (plugin != null) {
+					plugin.onRequestPermissionsResult(requestCode, permissions, grantResults);
+				}
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+	}
+
+	public static void onDestroy() {
 		try {
 			for (Map.Entry<String, Object> entry : sPlugins.entrySet()) {
 				ParaEnginePluginInterface plugin = (ParaEnginePluginInterface) entry.getValue();

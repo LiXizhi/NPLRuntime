@@ -8,6 +8,9 @@
 #include <functional>
 #include <android/log.h>
 
+#include <android/asset_manager.h>
+#include <android/native_activity.h>
+
 #define  LOG_TAG    "ParaEngine"
 #define  LOGD(...)  __android_log_print(ANDROID_LOG_DEBUG,LOG_TAG,__VA_ARGS__)
 #define  LOGE(...)  __android_log_print(ANDROID_LOG_ERROR,LOG_TAG,__VA_ARGS__)
@@ -36,6 +39,12 @@ namespace ParaEngine {
 		static std::u16string getStringUTF16CharsJNI(JNIEnv* env, jstring srcjStr, bool* ret = nullptr);
 		static jstring newStringUTFJNI(JNIEnv* env, const std::string& utf8Str, bool* ret = nullptr);
 		static jstring newStringUTF16JNI(JNIEnv* env, const std::u16string& utf16Str);
+
+		static void setAssetmanager(AAssetManager* a) { _assetmanager = a; };
+		static AAssetManager* getAssetManager() { return _assetmanager; }
+
+		static void setSurface(JNIEnv* env, jobject surface);
+		static ANativeWindow* getNativeWindow() { return _nativeWindow; };
 
 		static bool setClassLoaderFrom(jobject activityInstance);
 		static bool getStaticMethodInfo(JniMethodInfo &methodinfo,
@@ -232,6 +241,10 @@ namespace ParaEngine {
 		static JavaVM* _psJavaVM;
 
 		static jobject _activity;
+
+		static AAssetManager* _assetmanager;
+
+		static ANativeWindow* _nativeWindow;
 
 		static jstring convert(JniMethodInfo& t, const char* x);
 

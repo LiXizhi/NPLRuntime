@@ -23,7 +23,7 @@ public class LuaFunction
 
 				if (id != -1)
 				{
-					AppActivity mainApp = (AppActivity)AppActivity.getContext();
+					ParaEngineActivity mainApp = (ParaEngineActivity)ParaEngineActivity.getContext();
 					mainApp.runOnGLThread(new Runnable() {
 						@Override
 						public void run() {

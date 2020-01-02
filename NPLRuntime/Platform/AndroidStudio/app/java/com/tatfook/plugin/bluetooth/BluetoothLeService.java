@@ -30,6 +30,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.os.Binder;
 import android.os.IBinder;
+import android.support.annotation.Keep;
 import android.util.Log;
 
 import org.json.JSONObject;
@@ -41,7 +42,7 @@ import java.io.UnsupportedEncodingException;
 import java.util.List;
 import java.util.UUID;
 
-
+@Keep
 public class BluetoothLeService extends Service {
 	public final static String  TAG = "ParaEngine";
 

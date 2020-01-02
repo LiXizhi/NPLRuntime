@@ -2,6 +2,8 @@
 #include "JniHelper.h"
 #include "ParaEngineSettings.h"
 
+#include <android/asset_manager_jni.h>
+
 
 namespace ParaEngine {
 	const std::string ParaEngineHelper::classname = "com/tatfook/paracraft/ParaEngineHelper";
@@ -89,5 +91,30 @@ namespace ParaEngine {
 		}
 
 		ParaEngineSettings::GetSingleton().SetCurrentLanguage(ret);
+	}
+
+	std::string ParaEngineHelper::getWritablePath()
+	{
+		return JniHelper::callStaticStringMethod(classname, "getWritablePath");
+	}
+
+	std::string ParaEngineHelper::getExternalStoragePath()
+	{
+		return JniHelper::callStaticStringMethod(classname, "getExternalStoragePath");
+	}
+
+	std::string ParaEngineHelper::getObbPath()
+	{
+		return JniHelper::callStaticStringMethod(classname, "getObbPath");
+	}
+}
+
+extern "C" {
+	using namespace ParaEngine;
+
+	JNIEXPORT void JNICALL Java_com_tatfook_paracraft_ParaEngineHelper_nativeSetContext(JNIEnv* env, jclass clazz, jobject context, jobject assetManager)
+	{
+		JniHelper::setClassLoaderFrom(context);
+		JniHelper::setAssetmanager(AAssetManager_fromJava(env, assetManager));
 	}
 }

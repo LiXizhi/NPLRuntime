@@ -2,20 +2,29 @@ package com.tatfook.paracraft;
 
 import java.util.Locale;
 
+import android.app.Activity;
 import android.content.ClipData;
 import android.content.ClipboardManager;
 import android.content.Context;
+import android.content.pm.ApplicationInfo;
+import android.content.res.AssetManager;
 import android.support.annotation.Keep;
 
 @Keep
 public class ParaEngineHelper {
+
+	private static native void nativeSetContext(final Context pContext, final AssetManager pAssetManager);
+
+	public static void init(final Activity activity) {
+		ParaEngineHelper.nativeSetContext((Context)activity, activity.getAssets());
+	}
 
 	public static String getCurrentLanguage() {
 		return Locale.getDefault().getLanguage();
 	}
 
 	public static boolean CopyTextToClipboard(final String text) {
-		AppActivity context = (AppActivity)AppActivity.getContext();
+		ParaEngineActivity context = (ParaEngineActivity)ParaEngineActivity.getContext();
 		try {
 			final boolean[] result = {false};
 			final Object obj = new Object();
@@ -42,7 +51,7 @@ public class ParaEngineHelper {
 	}
 
 	public static String GetTextFromClipboard() {
-		AppActivity context = (AppActivity)AppActivity.getContext();
+		ParaEngineActivity context = (ParaEngineActivity)ParaEngineActivity.getContext();
 		try {
 			final String[] result = {""};
 			final Object obj = new Object();
@@ -70,7 +79,7 @@ public class ParaEngineHelper {
 
 	private static boolean _CopyTextToClipboard(String text) {
 		try {
-			AppActivity context = (AppActivity)AppActivity.getContext();
+			ParaEngineActivity context = (ParaEngineActivity)ParaEngineActivity.getContext();
 			ClipboardManager cm = (ClipboardManager) context.getSystemService(Context.CLIPBOARD_SERVICE);
 
 			ClipData clipData = ClipData.newPlainText("Label", text);
@@ -85,7 +94,7 @@ public class ParaEngineHelper {
 
 	private static String _GetTextFromClipboard() {
 		try {
-			AppActivity context = (AppActivity)AppActivity.getContext();
+			ParaEngineActivity context = (ParaEngineActivity)ParaEngineActivity.getContext();
 			ClipboardManager cm = (ClipboardManager) context.getSystemService(Context.CLIPBOARD_SERVICE);
 
 			ClipData primaryClip = cm.getPrimaryClip();
@@ -103,5 +112,26 @@ public class ParaEngineHelper {
 			return "";
 		}
 
+	}
+
+	public static String getPackageName() {
+		ParaEngineActivity context = (ParaEngineActivity)ParaEngineActivity.getContext();
+		ApplicationInfo applicationInfo = context.getApplicationInfo();
+		return applicationInfo.packageName;
+	}
+
+	public static String getWritablePath() {
+		ParaEngineActivity context = (ParaEngineActivity)ParaEngineActivity.getContext();
+		return context.getFilesDir().getAbsolutePath();
+	}
+
+	public static String getExternalStoragePath() {
+		ParaEngineActivity context = (ParaEngineActivity)ParaEngineActivity.getContext();
+		return context.getExternalFilesDir(null).getAbsolutePath();
+	}
+
+	public static String getObbPath() {
+		ParaEngineActivity context = (ParaEngineActivity)ParaEngineActivity.getContext();
+		return context.getObbDir().getAbsolutePath();
 	}
 }

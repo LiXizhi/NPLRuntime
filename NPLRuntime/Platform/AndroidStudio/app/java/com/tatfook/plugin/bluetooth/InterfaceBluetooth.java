@@ -17,6 +17,7 @@ import org.json.JSONObject;
 import org.json.JSONArray;
 import org.json.JSONException;
 
+import android.Manifest;
 import android.annotation.SuppressLint;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
@@ -38,11 +39,13 @@ import android.content.IntentFilter;
 import android.content.ServiceConnection;
 import android.content.pm.PackageManager;
 import android.content.pm.PackageManager.NameNotFoundException;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.Message;
+import android.support.annotation.Keep;
 import android.util.Log;
 import android.view.KeyEvent;
 import android.view.View;
@@ -54,168 +57,207 @@ import android.widget.Toast;
 
 import plugin.Bluetooth.BluetoothLeService;
 import com.tatfook.paracraft.ParaEngineWebView;
-import com.tatfook.paracraft.AppActivity;
+import com.tatfook.paracraft.ParaEngineActivity;
 import com.tatfook.paracraft.ParaEngineLuaJavaBridge;
 import com.tatfook.paracraft.LuaFunction;
 import com.tatfook.paracraft.ParaEnginePluginInterface;
 import com.tatfook.paracraft.ParaEnginePluginWrapper.PluginWrapperListener;
 
+@Keep
 public class InterfaceBluetooth implements ParaEnginePluginInterface{
-		public final static String  LogTag = "ParaEngine";
+    public final static String  LogTag = "ParaEngine";
 
-		// java call lua enum
-		public final static int CHECK_DEVICE = 1101;
-		public final static int SET_BLUE_STATUS = 1102;
-		public final static int ON_READ_CHARACTERISTIC_FINSH = 1103;
-		public final static int ON_CHARACTERISTIC = 1104;
-		public final static int ON_DESCRIPTOR = 1105;
+    private final static int PERMISSION_REQUEST_COARSE_LOCATION = 1;
 
-	 	private BluetoothAdapter mBluetoothAdapter;
+    // java call lua enum
+    public final static int CHECK_DEVICE = 1101;
+    public final static int SET_BLUE_STATUS = 1102;
+    public final static int ON_READ_CHARACTERISTIC_FINSH = 1103;
+    public final static int ON_CHARACTERISTIC = 1104;
+    public final static int ON_DESCRIPTOR = 1105;
 
-	    private boolean mScanning = false;
-	    private Handler mHandler;
-	    private String mDeviceAddress;
-		
-		public static AppActivity mMainActivity;
-	    
-	    private static final int REQUEST_ENABLE_BT = 1;
+    private BluetoothAdapter mBluetoothAdapter;
 
-	    private static final long SCAN_PERIOD = 3000;
+    private boolean mScanning = false;
+    private Handler mHandler;
+    private String mDeviceAddress;
 
-	    private BluetoothLeService mBluetoothLeService;
+    public static ParaEngineActivity mMainActivity;
 
-	    private boolean mConnected = false;
+    private static final int REQUEST_ENABLE_BT = 1;
 
-		private static InterfaceBluetooth mSingle = null;
+    private static final long SCAN_PERIOD = 3000;
 
-		private static LuaFunction mLuaFunction = null;
+    private BluetoothLeService mBluetoothLeService;
 
-		public InterfaceBluetooth()
-		{
-			
-		}
-	    
-	    private final ServiceConnection mServiceConnection = new ServiceConnection() {
+    private boolean mConnected = false;
 
-	        @Override
-	        public void onServiceConnected(ComponentName componentName, IBinder service) {
-				Log.i(LogTag, "AppActivity: onServiceConnectedonServiceConnectedonServiceConnectedonServiceConnected");
-	            mBluetoothLeService = ((BluetoothLeService.LocalBinder) service).getService();
-	            if (!mBluetoothLeService.initialize()) {
-	                Log.i("appactivity", "Unable to initialize Bluetooth");
-	                mMainActivity.finish();
-	            }
-	            // Automatically connects to the device upon successful start-up initialization.
-	            mBluetoothLeService.connect(mDeviceAddress);
-	        }
+    private static InterfaceBluetooth mSingle = null;
 
-	        @Override
-	        public void onServiceDisconnected(ComponentName componentName) {
-	            mBluetoothLeService = null;
-	        }
-	    };
-	    
-	    private final BroadcastReceiver mGattUpdateReceiver = new BroadcastReceiver() {
-	        @Override
-	        public void onReceive(Context context, Intent intent) {
-	            final String action = intent.getAction();
-	            if (BluetoothLeService.ACTION_GATT_CONNECTED.equals(action)) 
-				{
-					Log.i(LogTag, "!-------AppActivity: blue :connect");
-	            	mConnected = true;
-					callBaseBridge(SET_BLUE_STATUS, "1");
+    private static LuaFunction mLuaFunction = null;
 
-					for(int i = 0; i < s_checkUuids.size(); ++i)
-					{
-						s_checkUuidsForWarp.add(s_checkUuids.get(i));
-					}
-	            } 
-				else if (BluetoothLeService.ACTION_GATT_DISCONNECTED.equals(action)) 
-				{
-					Log.i(LogTag, "!-------AppActivity: blue :disconnect");
-	            	mConnected = false;
-					callBaseBridge(SET_BLUE_STATUS, "0");
+    public InterfaceBluetooth()
+    {
 
-					s_checkUuidsForWarp.clear();
+    }
 
-					searchBlueDevice();    		
-	            } 
-				else if (BluetoothLeService.ACTION_GATT_SERVICES_DISCOVERED.equals(action)) 
-				{
-	            	enableTXNotification(mBluetoothLeService.getSupportedGattServices());
-	            	Log.i(LogTag, "!-------AppActivity: blue start:find serverice");    		
-	            } 
-				else if(BluetoothLeService.ACTION_DATA_CHARACTERISTIC.equals(action))
-	            {
-	            	String uuid = intent.getStringExtra(BluetoothLeService.ON_CHARACTERISTIC_UUID);
-					String io = intent.getStringExtra(BluetoothLeService.ON_CHARACTERISTIC_IO);
-					String status = intent.getStringExtra(BluetoothLeService.ON_CHARACTERISTIC_STATUS);
-					String data = intent.getStringExtra(BluetoothLeService.ON_CHARACTERISTIC_DATA);
-					JSONObject luajs_value = new JSONObject();
-					try
-					{
-						luajs_value.put("uuid", uuid);
-						luajs_value.put("io", io);
-						luajs_value.put("status", status);
-						luajs_value.put("data", data);
-					}
-					catch(JSONException e) 
-					{
-						e.printStackTrace();
-					}
-					Log.i(LogTag, "!-------ACTION_DATA_CHARACTERISTIC status:" + status);  
-					callBaseBridge(ON_CHARACTERISTIC, luajs_value.toString());
-	            }
-				else if (BluetoothLeService.ACTION_DATA_DESCRIPTOR.equals(action)) 
-				{
-					///////////////////////////////////
-					warpCheckUUid();
-					//////////////////////////////////
-	            	String uuid = intent.getStringExtra(BluetoothLeService.ON_DESCRIPTOR_UUID);
-					String io = intent.getStringExtra(BluetoothLeService.ON_DESCRIPTOR_IO);
-					String status = intent.getStringExtra(BluetoothLeService.ON_DESCRIPTOR_STATUS);
-					
-					JSONObject luajs_value = new JSONObject();
-					try
-					{
-						luajs_value.put("uuid", uuid);
-						luajs_value.put("io", io);
-						luajs_value.put("status", status);
-					}
-					catch(JSONException e) 
-					{
-						e.printStackTrace();
-					}
-					callBaseBridge(ON_DESCRIPTOR, luajs_value.toString()); 
-	            }
-	        }
-	    };
+    private final ServiceConnection mServiceConnection = new ServiceConnection() {
 
+        @Override
+        public void onServiceConnected(ComponentName componentName, IBinder service) {
+            Log.i(LogTag, "AppActivity: onServiceConnectedonServiceConnectedonServiceConnectedonServiceConnected");
+            mBluetoothLeService = ((BluetoothLeService.LocalBinder) service).getService();
+            if (!mBluetoothLeService.initialize()) {
+                Log.i("appactivity", "Unable to initialize Bluetooth");
+                mMainActivity.finish();
+            }
+            // Automatically connects to the device upon successful start-up initialization.
+            mBluetoothLeService.connect(mDeviceAddress);
+        }
 
+        @Override
+        public void onServiceDisconnected(ComponentName componentName) {
+            mBluetoothLeService = null;
+        }
+    };
+
+    private final BroadcastReceiver mGattUpdateReceiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            final String action = intent.getAction();
+            if (BluetoothLeService.ACTION_GATT_CONNECTED.equals(action))
+            {
+                Log.i(LogTag, "!-------AppActivity: blue :connect");
+                mConnected = true;
+                callBaseBridge(SET_BLUE_STATUS, "1");
+
+                for(int i = 0; i < s_checkUuids.size(); ++i)
+                {
+                    s_checkUuidsForWarp.add(s_checkUuids.get(i));
+                }
+            }
+            else if (BluetoothLeService.ACTION_GATT_DISCONNECTED.equals(action))
+            {
+                Log.i(LogTag, "!-------AppActivity: blue :disconnect");
+                mConnected = false;
+                callBaseBridge(SET_BLUE_STATUS, "0");
+
+                s_checkUuidsForWarp.clear();
+
+                searchBlueDevice();
+            }
+            else if (BluetoothLeService.ACTION_GATT_SERVICES_DISCOVERED.equals(action))
+            {
+                enableTXNotification(mBluetoothLeService.getSupportedGattServices());
+                Log.i(LogTag, "!-------AppActivity: blue start:find serverice");
+            }
+            else if(BluetoothLeService.ACTION_DATA_CHARACTERISTIC.equals(action))
+            {
+                String uuid = intent.getStringExtra(BluetoothLeService.ON_CHARACTERISTIC_UUID);
+                String io = intent.getStringExtra(BluetoothLeService.ON_CHARACTERISTIC_IO);
+                String status = intent.getStringExtra(BluetoothLeService.ON_CHARACTERISTIC_STATUS);
+                String data = intent.getStringExtra(BluetoothLeService.ON_CHARACTERISTIC_DATA);
+                JSONObject luajs_value = new JSONObject();
+                try
+                {
+                    luajs_value.put("uuid", uuid);
+                    luajs_value.put("io", io);
+                    luajs_value.put("status", status);
+                    luajs_value.put("data", data);
+                }
+                catch(JSONException e)
+                {
+                    e.printStackTrace();
+                }
+                Log.i(LogTag, "!-------ACTION_DATA_CHARACTERISTIC status:" + status);
+                callBaseBridge(ON_CHARACTERISTIC, luajs_value.toString());
+            }
+            else if (BluetoothLeService.ACTION_DATA_DESCRIPTOR.equals(action))
+            {
+                ///////////////////////////////////
+                warpCheckUUid();
+                //////////////////////////////////
+                String uuid = intent.getStringExtra(BluetoothLeService.ON_DESCRIPTOR_UUID);
+                String io = intent.getStringExtra(BluetoothLeService.ON_DESCRIPTOR_IO);
+                String status = intent.getStringExtra(BluetoothLeService.ON_DESCRIPTOR_STATUS);
+
+                JSONObject luajs_value = new JSONObject();
+                try
+                {
+                    luajs_value.put("uuid", uuid);
+                    luajs_value.put("io", io);
+                    luajs_value.put("status", status);
+                }
+                catch(JSONException e)
+                {
+                    e.printStackTrace();
+                }
+                callBaseBridge(ON_DESCRIPTOR, luajs_value.toString());
+            }
+        }
+    };
+
+	private PluginWrapperListener mOnInitCallback = null;
+
+	@Override
 	public boolean onCreate(Context cxt, Bundle savedInstanceState, PluginWrapperListener listener)
 	{
-		mMainActivity = (AppActivity) cxt;
+		mMainActivity = (ParaEngineActivity) cxt;
 
     	mHandler = new Handler();
     	if (!mMainActivity.getPackageManager().hasSystemFeature(PackageManager.FEATURE_BLUETOOTH_LE)) {
     		return false;
     	}
-    	getMBluetoothAdapter();
 
-		mSingle = this;
+    	if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && mMainActivity.checkSelfPermission(Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+    		mMainActivity.requestPermissions(new String[]{Manifest.permission.ACCESS_COARSE_LOCATION}, PERMISSION_REQUEST_COARSE_LOCATION);
 
-		return false;
+			mOnInitCallback = listener;
+
+    		return true;
+    	} else {
+			getMBluetoothAdapter();
+
+			mSingle = this;
+
+			return false;
+		}
 	}
 
+	@Override
+	public void onRequestPermissionsResult(int requestCode, String permissions[], int[] grantResults) {
+		if (requestCode == PERMISSION_REQUEST_COARSE_LOCATION) {
+			if (grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+				getMBluetoothAdapter();
 
+				mSingle = this;
+			}
+
+			if (mOnInitCallback != null) {
+				mOnInitCallback.onInit();
+			}
+		}
+	}
+
+	@Override
 	public void onStart(){}
-	public void onStop(){}
+
+	@Override
+	public void onStop() {}
+
+	@Override
 	public void onAppBackground(){}
+
+	@Override
 	public void onAppForeground(){}
 
+	@Override
 	public void onActivityResult(int requestCode, int resultCode, Intent data){}
 
+	@Override
 	public void setDebugMode(boolean debug){}
+
+	@Override
 	public void onSaveInstanceState(Bundle outState){}
 
 

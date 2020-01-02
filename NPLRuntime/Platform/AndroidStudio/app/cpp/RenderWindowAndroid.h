@@ -3,6 +3,7 @@
 #include <android/native_activity.h>
 namespace ParaEngine
 {
+	/*
 	class RenderWindowAndroid : public CParaEngineRenderBase
 	{
 
@@ -17,5 +18,21 @@ namespace ParaEngine
 
 	private:
 		ANativeWindow* m_NativeWindow;
+	};
+	 */
+
+	class RenderWindowAndroid : public CParaEngineRenderBase
+	{
+	public:
+		RenderWindowAndroid(int w, int h);
+		virtual ~RenderWindowAndroid();
+
+		virtual unsigned int GetWidth() const override;
+		virtual unsigned int GetHeight() const override;
+		virtual intptr_t GetNativeHandle() const override;
+
+	private:
+		int m_width;
+		int m_height;
 	};
 }

@@ -23,6 +23,7 @@
 #include "IO/ReadFileBoost.h"
 #include "ReadFileAndroid.h"
 #include "ParaAppAndroid.h"
+#include "jni/ParaEngineHelper.h"
 #include <android/asset_manager.h>
 #include <android/native_activity.h>
 #include <jni/JniHelper.h>
@@ -72,63 +73,13 @@ std::string ParaEngine::CParaFileUtilsAndroid::GetWritablePath()
 {
 	if (m_writablePath.empty())
 	{
-		auto app = (CParaEngineAppAndroid*)(CGlobals::GetApp());
-		auto state = app->GetAndroidApp();
+		m_writablePath = ParaEngineHelper::getWritablePath();
 
-		/*
-		ParaEngine::JniMethodInfo info;
-		if (ParaEngine::JniHelper::getMethodInfo(info, state->activity->clazz, "getFileDirsPath", "()Ljava/lang/String;"))
-		{
-			jstring intent_data = (jstring)info.env->CallObjectMethod(state->activity->clazz, info.methodID);
-			m_writablePath = ParaEngine::JniHelper::jstring2string(intent_data);
-			info.env->DeleteLocalRef(info.classID);
-			info.env->DeleteLocalRef(intent_data);
-
-			if (m_writablePath[m_writablePath.size() - 1] != '/')
-				m_writablePath += "/";
-		}
-		*/
-
-		m_writablePath = state->activity->internalDataPath;
 		if (m_writablePath[m_writablePath.size() - 1] != '/')
 			m_writablePath += "/";
 
 		if (m_writablePath[0] != '/')
 			m_writablePath = std::string("/") + m_writablePath;
-
-		/*
-		auto app = (CParaEngineAppAndroid*)(CGlobals::GetApp());
-		auto state = app->GetAndroidApp();
-		if (state->activity->externalDataPath)
-		{
-			m_writeAblePath = state->activity->externalDataPath;
-		}
-		else {
-			JNIEnv* jni;
-			state->activity->vm->AttachCurrentThread(&jni, NULL);
-			jclass activityClass = jni->GetObjectClass(state->activity->clazz);
-			jmethodID getFilesDir = jni->GetMethodID(activityClass, "getFilesDir", "()Ljava/io/File;");
-			jobject fileObject = jni->CallObjectMethod(state->activity->clazz, getFilesDir);
-			jclass fileClass = jni->GetObjectClass(fileObject);
-			jmethodID getAbsolutePath = jni->GetMethodID(fileClass, "getAbsolutePath", "()Ljava/lang/String;");
-			jobject pathObject = jni->CallObjectMethod(fileObject, getAbsolutePath);
-			auto path = jni->GetStringUTFChars((jstring)pathObject, NULL);
-			jni->DeleteLocalRef(pathObject);
-			jni->DeleteLocalRef(fileClass);
-			jni->DeleteLocalRef(fileObject);
-			jni->DeleteLocalRef(activityClass);
-			state->activity->vm->DetachCurrentThread();
-			m_writeAblePath = path;
-		}
-
-		std::string sRootDir;
-		CParaFile::ToCanonicalFilePath(sRootDir, m_writeAblePath, false);
-		if (sRootDir.size() > 0 && (sRootDir[sRootDir.size() - 1] != '/' && sRootDir[sRootDir.size() - 1] != '\\'))
-		{
-			sRootDir += "/";
-		}
-		m_writeAblePath = sRootDir;
-		*/
 	}
 	return m_writablePath;
 }
@@ -137,14 +88,9 @@ std::string ParaEngine::CParaFileUtilsAndroid::GetExternalStoragePath()
 {
 	if (m_externalStoragePath.empty())
 	{
-		auto app = (CParaEngineAppAndroid*)(CGlobals::GetApp());
-		auto state = app->GetAndroidApp();
-		if (state->activity->externalDataPath)
-		{
-			m_externalStoragePath = state->activity->externalDataPath;
-			if (m_externalStoragePath[0] != '/')
-				m_externalStoragePath = std::string("/") + m_externalStoragePath;
-		}
+		m_externalStoragePath = ParaEngineHelper::getExternalStoragePath();
+		if (m_externalStoragePath[0] != '/')
+			m_externalStoragePath = std::string("/") + m_externalStoragePath;
 	}
 	return m_externalStoragePath;
 }
@@ -183,9 +129,7 @@ bool ParaEngine::CParaFileUtilsAndroid::Exists(const std::string& filename)
 
 			// find in android asset directory. 
 			bool bFound = false;
-			auto app = (CParaEngineAppAndroid*)(CGlobals::GetApp());
-			auto state = app->GetAndroidApp();
-			auto assetManager = state->activity->assetManager;
+			auto assetManager = JniHelper::getAssetManager();
 			const char* s = filename.c_str();
 
 			// Found "assets/" at the beginning of the path and we don't want it
@@ -344,9 +288,7 @@ void ParaEngine::CParaFileUtilsAndroid::FindLocalFiles(CSearchResult& result, co
 	if (IsAbsolutePath(sRootPath))
 		return;
 
-	auto app = (CParaEngineAppAndroid*)(CGlobals::GetApp());
-	auto state = app->GetAndroidApp();
-	auto assetManager = state->activity->assetManager;
+	auto assetManager = JniHelper::getAssetManager();
 
 	if (!assetManager)
 		return;

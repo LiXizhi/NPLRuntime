@@ -10,6 +10,10 @@ namespace ParaEngine {
 	{
 	public:
 		static void init();
+
+		static std::string getWritablePath();
+		static std::string getExternalStoragePath();
+		static std::string getObbPath();
 	private:
 		static const std::string classname;
 	};

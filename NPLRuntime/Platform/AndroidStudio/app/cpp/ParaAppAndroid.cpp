@@ -5,17 +5,17 @@
 // Date: 2018.3
 //-----------------------------------------------------------------------
 #include "ParaAppAndroid.h"
-#include "jni/ParaEngineNativeView.h"
+#include "jni/ParaEngineGLSurfaceView.h"
 using namespace  ParaEngine;
 
 IParaEngineApp* CreateParaEngineApp()
 {
-	return new CParaEngineAppAndroid(nullptr);
+	return new CParaEngineAppAndroid();
 }
 
 
 
-ParaEngine::CParaEngineAppAndroid::CParaEngineAppAndroid(struct android_app* state):m_appState(state)
+ParaEngine::CParaEngineAppAndroid::CParaEngineAppAndroid()
 {
 	SetTouchInputting(true);
 }
@@ -102,5 +102,5 @@ void ParaEngine::CParaEngineAppAndroid::GetScreenResolution(Vector2* pOut)
 
 void ParaEngine::CParaEngineAppAndroid::setIMEKeyboardState(bool bOpen)
 {
-	ParaEngineNativeView::setIMEKeyboardState(bOpen);
+	ParaEngineGLSurfaceView::setIMEKeyboardState(bOpen);
 }

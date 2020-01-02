@@ -10,9 +10,9 @@ import android.widget.TextView;
 
 public class ParaTextInputWrapper implements TextWatcher, TextView.OnEditorActionListener {
 
-    private ParaEngineNativeView mNativeView;
+    private ParaEngineGLSurfaceView mNativeView;
 
-    public ParaTextInputWrapper(ParaEngineNativeView nativeView) {
+    public ParaTextInputWrapper(ParaEngineGLSurfaceView nativeView) {
         mNativeView = nativeView;
     }
 

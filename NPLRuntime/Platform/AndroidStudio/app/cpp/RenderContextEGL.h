@@ -7,6 +7,7 @@ typedef void *EGLSurface;
 
 namespace ParaEngine
 {
+	/*
 	class RenderContextEGL : public IRenderContext
 	{
 	public:
@@ -19,5 +20,15 @@ namespace ParaEngine
 		EGLContext m_context;
 		EGLSurface m_surface;
 		void ReleaseContext();
+	};
+	 */
+
+	class RenderContextEGL : public IRenderContext
+	{
+	public:
+		RenderContextEGL();
+		virtual ~RenderContextEGL();
+		virtual IRenderDevice* CreateDevice(const RenderConfiguration& cfg) override;
+		virtual bool ResetDevice(IRenderDevice* device, const RenderConfiguration& cfg) override;
 	};
 }

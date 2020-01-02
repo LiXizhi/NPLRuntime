@@ -1,5 +1,5 @@
 include(${PROJECT_SOURCE_DIR}/cmake/ucm.cmake)
-add_subdirectory(native_app_glue)
+
 
 project(Paracraft)
 
@@ -16,7 +16,6 @@ target_include_directories(Paracraft PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/cpp)
 target_link_libraries(Paracraft PUBLIC
     RenderSystemOpenGL
     ParaEngine
-    native_app_glue
     android
     EGL 
     log

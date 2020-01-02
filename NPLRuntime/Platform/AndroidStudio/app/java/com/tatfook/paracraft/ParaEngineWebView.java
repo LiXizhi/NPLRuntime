@@ -65,6 +65,7 @@ public class ParaEngineWebView extends WebView {
 		mHideViewWhenClickBack = b;
 	}
 
+
 	@Override    
     public boolean onKeyUp(int keyCode, KeyEvent event) {    
         if ((keyCode == KeyEvent.KEYCODE_BACK)) {   
@@ -75,9 +76,18 @@ public class ParaEngineWebView extends WebView {
             return false; 
 		}
         else {    
-            return super.onKeyDown(keyCode, event);    
+            return super.onKeyUp(keyCode, event);
         }    
 	}
+
+	@Override
+    public boolean onKeyDown(int keyCode, KeyEvent event) {
+        if ((keyCode == KeyEvent.KEYCODE_BACK)) {
+            return false;
+        } else {
+            return super.onKeyDown(keyCode, event);
+        }
+    }
 
 	@SuppressLint("SetJavaScriptEnabled")
     public ParaEngineWebView(Context context, int viewTag) {
@@ -120,7 +130,7 @@ public class ParaEngineWebView extends WebView {
 	class ParaEngineWebViewClient extends WebViewClient {
         @Override
         public boolean shouldOverrideUrlLoading(final WebView view, final String urlString) {
-            AppActivity activity = (AppActivity)getContext();
+            ParaEngineActivity activity = (ParaEngineActivity)getContext();
 		
             try {
                 Uri uri =  Uri.parse(urlString);
@@ -181,7 +191,7 @@ public class ParaEngineWebView extends WebView {
         public void onPageFinished(WebView view, final String url) {
 
             super.onPageFinished(view, url);
-            AppActivity activity = (AppActivity)getContext();
+            ParaEngineActivity activity = (ParaEngineActivity)getContext();
             activity.runOnGLThread(new Runnable() {
                 @Override
                 public void run() {
@@ -194,7 +204,7 @@ public class ParaEngineWebView extends WebView {
         public void onReceivedError(WebView view, int errorCode, String description, final String failingUrl) {
 
             super.onReceivedError(view, errorCode, description, failingUrl);
-            AppActivity activity = (AppActivity)getContext();
+            ParaEngineActivity activity = (ParaEngineActivity)getContext();
             activity.runOnGLThread(new Runnable() {
                 @Override
                 public void run() {

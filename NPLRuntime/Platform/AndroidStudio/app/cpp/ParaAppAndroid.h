@@ -49,14 +49,13 @@
 #include "ObjectManager.h"
 #include "2dengine/GUIHighlight.h"
 #include "ParaEngineAppBase.h"
-#include <android_native_app_glue.h>
+
 namespace ParaEngine
 {
 	class CParaEngineAppAndroid : public CParaEngineAppBase
 	{
 	public:
-		CParaEngineAppAndroid(struct android_app* state);
-		inline struct android_app* GetAndroidApp() { return m_appState; }
+		CParaEngineAppAndroid();
 	public:
 		virtual void GameToClient(int& inout_x, int & inout_y, bool bInBackbuffer = true) override;
 		virtual void ClientToGame(int& inout_x, int & inout_y, bool bInBackbuffer = true) override;
@@ -73,7 +72,5 @@ namespace ParaEngine
 		virtual HRESULT DoWork() override;
 		virtual void GetScreenResolution(Vector2* pOut) override;
 		virtual void setIMEKeyboardState(bool bOpen) override;
-	protected:
-		struct android_app* m_appState;
 	};
 }

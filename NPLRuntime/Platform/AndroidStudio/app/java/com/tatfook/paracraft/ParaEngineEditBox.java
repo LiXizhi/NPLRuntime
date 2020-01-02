@@ -209,9 +209,9 @@ public class ParaEngineEditBox extends EditText {
     public boolean onKeyDown(final int pKeyCode, final KeyEvent pKeyEvent) {
         switch (pKeyCode) {
             case KeyEvent.KEYCODE_BACK:
-                AppActivity activity = (AppActivity)this.getContext();
+                ParaEngineActivity activity = (ParaEngineActivity)this.getContext();
                 //To prevent program from going to background
-                activity.getNativeContentView().requestFocus();
+                activity.getGLSurfaceView().requestFocus();
                 return true;
             default:
                 return super.onKeyDown(pKeyCode, pKeyEvent);

@@ -3,6 +3,7 @@
 #include <EGL/egl.h>
 namespace ParaEngine
 {
+	/*
 	class RenderDeviceEGL : public RenderDeviceOpenGL
 	{
 	public:
@@ -15,5 +16,16 @@ namespace ParaEngine
 	private:
 		EGLDisplay m_Display;
 		EGLSurface m_Surface;
+	};
+	 */
+
+	class RenderDeviceEGL : public RenderDeviceOpenGL
+	{
+	public:
+		RenderDeviceEGL();
+		virtual ~RenderDeviceEGL();
+
+		void Reset();
+		virtual bool Present() override;
 	};
 }
