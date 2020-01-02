@@ -680,9 +680,12 @@ public class InterfaceBluetooth implements ParaEnginePluginInterface{
     
     private void getMBluetoothAdapter()
     {
-    	if(mBluetoothAdapter==null)
+    	if(mBluetoothAdapter == null)
 		{
-			final BluetoothManager bluetoothManager =
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && mMainActivity.checkSelfPermission(Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED)
+                return;
+
+            final BluetoothManager bluetoothManager =
 		    		(BluetoothManager) mMainActivity.getSystemService(Context.BLUETOOTH_SERVICE);
 		    mBluetoothAdapter = bluetoothManager.getAdapter();
 		    if(mBluetoothAdapter!=null)
