@@ -209,6 +209,8 @@ public class InterfaceBluetooth implements ParaEnginePluginInterface{
     		return false;
     	}
 
+        mSingle = this;
+
     	if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && mMainActivity.checkSelfPermission(Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
     		mMainActivity.requestPermissions(new String[]{Manifest.permission.ACCESS_COARSE_LOCATION}, PERMISSION_REQUEST_COARSE_LOCATION);
 
@@ -217,8 +219,6 @@ public class InterfaceBluetooth implements ParaEnginePluginInterface{
     		return true;
     	} else {
 			getMBluetoothAdapter();
-
-			mSingle = this;
 
 			return false;
 		}
