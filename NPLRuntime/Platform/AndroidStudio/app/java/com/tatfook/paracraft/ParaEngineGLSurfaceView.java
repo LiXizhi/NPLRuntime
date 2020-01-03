@@ -80,8 +80,6 @@ public class ParaEngineGLSurfaceView extends GLSurfaceView {
     protected void initView(ParaEngineActivity activity) {
         sActivity = activity;
 
-        this.setKeepScreenOn(true);
-
         this.setEGLContextClientVersion(2);
         this.setFocusableInTouchMode(true);
          mGLSurfaceView = this;

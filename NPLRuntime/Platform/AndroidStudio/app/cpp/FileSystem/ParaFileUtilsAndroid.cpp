@@ -134,7 +134,7 @@ bool ParaEngine::CParaFileUtilsAndroid::Exists(const std::string& filename)
 
 			// Found "assets/" at the beginning of the path and we don't want it
 			if (filename.find(_defaultResRootPath) == 0) 
-				s += strlen("assets/");
+				s += _defaultResRootPath.size();
 
 			if (assetManager) {
 				AAsset* aa = AAssetManager_open(assetManager, s, AASSET_MODE_UNKNOWN);
@@ -296,7 +296,7 @@ void ParaEngine::CParaFileUtilsAndroid::FindLocalFiles(CSearchResult& result, co
 	const char* s = sRootPath.c_str();
 	// Found "assets/" at the beginning of the path and we don't want it
 	if (sRootPath.find(_defaultResRootPath) == 0)
-		s += strlen("assets/");
+		s += _defaultResRootPath.size();
 
 	auto assetDir = AAssetManager_openDir(assetManager, s);
 	if (!assetDir)

@@ -12,15 +12,17 @@ import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
 import android.opengl.GLSurfaceView;
 import android.os.Bundle;
+import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.KeyEvent;
 import android.view.ViewGroup;
+import android.view.WindowManager;
 
 import javax.microedition.khronos.egl.EGL10;
 import javax.microedition.khronos.egl.EGLConfig;
 import javax.microedition.khronos.egl.EGLDisplay;
 
-public class ParaEngineActivity extends Activity {
+public class ParaEngineActivity extends AppCompatActivity {
 
     // ===========================================================
     // Constants
@@ -140,6 +142,7 @@ public class ParaEngineActivity extends Activity {
 
         super.onCreate(savedInstanceState);
 
+        getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
 
         final Bundle si = savedInstanceState;
         // init plugin

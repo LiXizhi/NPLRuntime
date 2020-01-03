@@ -46,6 +46,8 @@ import android.os.Handler;
 import android.os.IBinder;
 import android.os.Message;
 import android.support.annotation.Keep;
+import android.support.v4.app.ActivityCompat;
+import android.support.v4.content.ContextCompat;
 import android.util.Log;
 import android.view.KeyEvent;
 import android.view.View;
@@ -211,13 +213,14 @@ public class InterfaceBluetooth implements ParaEnginePluginInterface{
 
         mSingle = this;
 
-    	if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && mMainActivity.checkSelfPermission(Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-    		mMainActivity.requestPermissions(new String[]{Manifest.permission.ACCESS_COARSE_LOCATION}, PERMISSION_REQUEST_COARSE_LOCATION);
+
+    	if (ContextCompat.checkSelfPermission(mMainActivity, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+			ActivityCompat.requestPermissions(mMainActivity, new String[]{Manifest.permission.ACCESS_COARSE_LOCATION}, PERMISSION_REQUEST_COARSE_LOCATION);
 
 			mOnInitCallback = listener;
 
-    		return true;
-    	} else {
+			return true;
+		} else {
 			getMBluetoothAdapter();
 
 			return false;
@@ -682,7 +685,7 @@ public class InterfaceBluetooth implements ParaEnginePluginInterface{
     {
     	if(mBluetoothAdapter == null)
 		{
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && mMainActivity.checkSelfPermission(Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED)
+			if (ContextCompat.checkSelfPermission(mMainActivity, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED)
                 return;
 
             final BluetoothManager bluetoothManager =

@@ -1,8 +1,6 @@
 import org.gradle.internal.os.OperatingSystem;
 
 apply plugin: 'com.android.application'
-apply plugin: 'kotlin-android'
-apply plugin: 'kotlin-android-extensions'
 
 android {
     compileSdkVersion PROP_COMPILE_SDK_VERSION.toInteger()
@@ -110,8 +108,9 @@ dependencies {
     implementation fileTree(dir: 'libs', include: ['*.jar'])
     //implementation 'org.jetbrains:annotations-java5:15.0'
     implementation 'org.jetbrains:annotations:17.0.0'
-    implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:1.3.41"
     implementation 'com.android.support:support-annotations:28.0.0'
+    implementation 'com.android.support:support-compat:28.0.0'
+    implementation 'com.android.support:appcompat-v7:28.0.0'
 }
 repositories {
     mavenCentral()
