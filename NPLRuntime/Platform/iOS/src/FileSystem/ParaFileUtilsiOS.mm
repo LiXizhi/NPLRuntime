@@ -58,7 +58,7 @@ bool ParaEngine::CParaFileUtilsiOS::IsAbsolutePath(const std::string& filename)
     return false;
 }
 
-std::string ParaEngine::CParaFileUtilsiOS::GetWritablePath()
+const std::string& ParaEngine::CParaFileUtilsiOS::GetWritablePath()
 {
 	if (m_writablePath.empty())
 	{
@@ -68,7 +68,7 @@ std::string ParaEngine::CParaFileUtilsiOS::GetWritablePath()
 	return m_writablePath;
 }
 
-std::string ParaEngine::CParaFileUtilsiOS::GetInitialDirectory()
+const std::string& ParaEngine::CParaFileUtilsiOS::GetInitialDirectory()
 {
     return GetAssetPath();
 }

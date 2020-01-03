@@ -8,8 +8,8 @@ namespace ParaEngine
 	public:
 		virtual ParaEngine::FileData GetDataFromFile(const std::string& filename) override;
 		virtual bool IsAbsolutePath(const std::string& filename) override;
-		virtual std::string GetWritablePath() override;
-		virtual std::string GetInitialDirectory() override;
+		virtual const std::string& GetWritablePath() override;
+		virtual const std::string& GetInitialDirectory() override;
 		virtual bool Exists(const std::string& filename) override;
 		virtual IReadFile* OpenFileForRead(const std::string& filename) override;
 		virtual IWriteFile* OpenFileForWrite(const std::string& filename) override;

@@ -50,7 +50,7 @@ bool ParaEngine::CParaFileUtils::IsAbsolutePath(const std::string& filename)
 }
 
 std::string g_writablePath;
-std::string ParaEngine::CParaFileUtils::GetWritablePath()
+const std::string& ParaEngine::CParaFileUtils::GetWritablePath()
 {
 	if (g_writablePath.empty())
 	{
@@ -66,7 +66,7 @@ std::string ParaEngine::CParaFileUtils::GetWritablePath()
 	return g_writablePath;
 }
 
-std::string ParaEngine::CParaFileUtils::GetInitialDirectory()
+const std::string& ParaEngine::CParaFileUtils::GetInitialDirectory()
 {
 	fs::path workingDir = fs::initial_path();
 	return workingDir.string();
@@ -181,9 +181,9 @@ std::string ParaEngine::CParaFileUtils::GetFullPathForFilename(const std::string
 	return abs_path.string();
 }
 
-std::string ParaEngine::CParaFileUtils::GetExternalStoragePath()
+const std::string& ParaEngine::CParaFileUtils::GetExternalStoragePath()
 {
-	return "";
+	return CGlobals::GetString();
 }
 
 bool ParaEngine::CParaFileUtils::SaveBufferToFile(const std::string& filename, bool replace, const char* buffer, uint32_t bufSize)

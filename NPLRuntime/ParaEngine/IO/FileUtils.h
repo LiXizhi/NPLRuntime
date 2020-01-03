@@ -205,10 +205,10 @@ namespace ParaEngine
 		static void CloseFile(FileHandle& fileHandle);
 
 		/** get current directory */
-		static std::string GetInitialDirectory();
+		static const std::string& GetInitialDirectory();
 
 		/** external storage path, that is only available on android/ios mobile devices. */
-		static std::string GetExternalStoragePath();
+		static const std::string& GetExternalStoragePath();
 
 		/** in win32, this is the root directory, 
 		*  Gets the writable path.

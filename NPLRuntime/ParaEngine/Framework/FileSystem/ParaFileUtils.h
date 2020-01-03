@@ -15,8 +15,8 @@ namespace ParaEngine
 	public:
 		virtual	ParaEngine::FileData GetDataFromFile(const std::string& filename);
 		virtual bool IsAbsolutePath(const std::string& filename);
-		virtual std::string GetWritablePath();
-		virtual std::string GetInitialDirectory();
+		virtual const std::string& GetWritablePath();
+		virtual const std::string& GetInitialDirectory();
 		virtual bool Exists(const std::string& filename);
 		virtual IReadFile* OpenFileForRead(const std::string& filename);
 		virtual IWriteFile* OpenFileForWrite(const std::string& filename);
@@ -29,7 +29,7 @@ namespace ParaEngine
 		virtual int DeleteDirectory(const std::string& filename);
 		virtual std::string GetFullPathForFilename(const std::string &filename);
 	
-		virtual std::string GetExternalStoragePath();
+		virtual const std::string& GetExternalStoragePath();
 
 		virtual void FindLocalFiles(CSearchResult& result, const std::string& sRootPath, const std::string& sFilePattern, int nSubLevel);
 	};

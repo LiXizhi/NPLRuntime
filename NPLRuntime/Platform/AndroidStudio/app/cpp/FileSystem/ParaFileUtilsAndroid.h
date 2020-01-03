@@ -10,8 +10,8 @@ namespace ParaEngine
 	public:
 		virtual ParaEngine::FileData GetDataFromFile(const std::string& filename) override;
 		virtual bool IsAbsolutePath(const std::string& filename) override;
-		virtual std::string GetWritablePath() override;
-		virtual std::string GetInitialDirectory() override;
+		virtual const std::string& GetWritablePath() override;
+		virtual const std::string& GetInitialDirectory() override;
 		virtual bool Exists(const std::string& filename) override;
 		virtual IReadFile* OpenFileForRead(const std::string& filename) override;
 		virtual IWriteFile* OpenFileForWrite(const std::string& filename) override;
@@ -23,7 +23,7 @@ namespace ParaEngine
 		virtual int DeleteDirectory(const std::string& filename) override;
 		virtual std::string GetFullPathForFilename(const std::string &filename) override;
 
-		virtual std::string GetExternalStoragePath() override;
+		virtual const std::string& GetExternalStoragePath() override;
 
 		virtual void FindLocalFiles(CSearchResult& result, const std::string& sRootPath, const std::string& sFilePattern, int nSubLevel) override;
 	protected:

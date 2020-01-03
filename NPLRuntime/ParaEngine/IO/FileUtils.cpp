@@ -604,10 +604,11 @@ void ParaEngine::CFileUtils::CloseFile(FileHandle& fileHandle)
 	}
 }
 
-std::string ParaEngine::CFileUtils::GetInitialDirectory()
+const std::string& ParaEngine::CFileUtils::GetInitialDirectory()
 {
 	std::string sWorkingDir = CParaFileUtils::GetInstance()->GetInitialDirectory();
-	std::string sRootDir;
+	static std::string sRootDir;
+	sRootDir = "";
 	CParaFile::ToCanonicalFilePath(sRootDir, sWorkingDir, false);
 	if(sRootDir.size()>0 && (sRootDir[sRootDir.size()-1] != '/' && sRootDir[sRootDir.size()-1] != '\\'))
 	{
@@ -616,7 +617,7 @@ std::string ParaEngine::CFileUtils::GetInitialDirectory()
 	return sRootDir;
 }
 
-std::string ParaEngine::CFileUtils::GetExternalStoragePath()
+const std::string& ParaEngine::CFileUtils::GetExternalStoragePath()
 {
 	return CParaFileUtils::GetInstance()->GetExternalStoragePath();
 }

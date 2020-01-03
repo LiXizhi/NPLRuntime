@@ -114,14 +114,14 @@ namespace ParaEngine
 
 		DWORD LastModifiedTime;
 
-		string zipFileNameOriginal;
+		const char* zipFileNameOriginal;
 #ifdef SAVE_ZIP_HEADER
 		SZIPFileHeader header;
 #endif 
 
 	public:
 		SZipFileEntry()
-			: fileDataPosition(0), CompressedSize(0), UncompressedSize(0), CompressionMethod(0), hashValue(0), zipFileName(nullptr), fileNameLen(0), LastModifiedTime(0)
+			: fileDataPosition(0), CompressedSize(0), UncompressedSize(0), CompressionMethod(0), hashValue(0), zipFileName(nullptr), fileNameLen(0), LastModifiedTime(0), zipFileNameOriginal(nullptr)
 		{
 #ifdef SAVE_ZIP_HEADER
 			memset(&header, 0, sizeof(SZIPFileHeader)); 

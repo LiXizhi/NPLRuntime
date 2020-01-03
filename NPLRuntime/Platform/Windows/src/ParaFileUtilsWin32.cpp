@@ -58,7 +58,7 @@ bool ParaEngine::CParaFileUtilsWin32::IsAbsolutePath(const std::string& filename
 	return false;
 }
 
-std::string ParaEngine::CParaFileUtilsWin32::GetWritablePath()
+const std::string& ParaEngine::CParaFileUtilsWin32::GetWritablePath()
 {
 	if (m_writeAblePath.empty())
 	{
@@ -74,10 +74,11 @@ std::string ParaEngine::CParaFileUtilsWin32::GetWritablePath()
 	return m_writeAblePath;
 }
 
-std::string ParaEngine::CParaFileUtilsWin32::GetInitialDirectory()
+const std::string& ParaEngine::CParaFileUtilsWin32::GetInitialDirectory()
 {
 	fs::path workingDir = fs::initial_path();
-	return workingDir.string();
+	static std::string ret = workingDir.string()
+	return ret;
 }
 
 bool ParaEngine::CParaFileUtilsWin32::Exists(const std::string& filename)

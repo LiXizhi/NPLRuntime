@@ -69,7 +69,7 @@ bool ParaEngine::CParaFileUtilsAndroid::IsAbsolutePath(const std::string& filena
 	return false;
 }
 
-std::string ParaEngine::CParaFileUtilsAndroid::GetWritablePath()
+const std::string& ParaEngine::CParaFileUtilsAndroid::GetWritablePath()
 {
 	if (m_writablePath.empty())
 	{
@@ -84,7 +84,7 @@ std::string ParaEngine::CParaFileUtilsAndroid::GetWritablePath()
 	return m_writablePath;
 }
 
-std::string ParaEngine::CParaFileUtilsAndroid::GetExternalStoragePath()
+const std::string& ParaEngine::CParaFileUtilsAndroid::GetExternalStoragePath()
 {
 	if (m_externalStoragePath.empty())
 	{
@@ -98,12 +98,12 @@ std::string ParaEngine::CParaFileUtilsAndroid::GetExternalStoragePath()
 
 std::string ParaEngine::CParaFileUtilsAndroid::_defaultResRootPath = "assets/";
 
-std::string ParaEngine::CParaFileUtilsAndroid::GetInitialDirectory()
+const std::string& ParaEngine::CParaFileUtilsAndroid::GetInitialDirectory()
 {
 	// on Android this will return "/", which is not right. we should return "" instead, so that current working directory is used. 
 	// fs::path workingDir = fs::initial_path();
 	// return workingDir.string();
-	return "";
+	return CGlobals::GetString();
 }
 
 bool ParaEngine::CParaFileUtilsAndroid::Exists(const std::string& filename)
