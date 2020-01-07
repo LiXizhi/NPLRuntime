@@ -254,10 +254,10 @@ bool CZipArchive::Open(const string& sArchiveName, int nPriority)
 
 void CZipArchive::SetRootDirectory( const string& filename )
 {
-	char tmp[256];
+	char tmp[1024];
 	int nLastPos = 0;
 	int nSize = (int)filename.size();
-	if(nSize<256)
+	if(nSize<1024)
 	{
 		for (int i=0;i<nSize;++i)
 		{
