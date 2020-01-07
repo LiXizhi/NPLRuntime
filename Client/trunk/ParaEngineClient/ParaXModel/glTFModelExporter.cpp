@@ -106,7 +106,7 @@ namespace ParaEngine
 			binaryChunk.chunkType = ChunkType::BIN;
 			builder.append((const char*)&binaryChunk, sizeof(GLBChunk));
 			uint32_t sizeFloat = ComponentTypeSize(ComponentType::Float);
-			uint32_t sizeUShort = ComponentTypeSize(ComponentType::UnsignedShort);
+			uint32_t sizeUInt = ComponentTypeSize(ComponentType::UnsignedInt);
 			uint32_t sizeUByte = ComponentTypeSize(ComponentType::UnsignedByte);
 			for (auto it = vertices.begin(); it != vertices.end(); ++it)
 			{
@@ -151,14 +151,13 @@ namespace ParaEngine
 				}
 				for (uint32_t i = 0; i < paraXModel->passes.size(); i++)
 				{
-					const ModelRenderPass& pass = paraXModel->passes[i];
-					for (uint16_t j = pass.indexStart; j < pass.indexStart + pass.indexCount; j++)
+					ModelRenderPass& pass = paraXModel->passes[i];
+					uint32_t vertexOffset = pass.GetVertexStart(paraXModel);
+					for (uint32_t j = pass.m_nIndexStart; j < pass.m_nIndexStart + pass.indexCount; j++)
 					{
-						uint16_t index = paraXModel->m_indices[j];
-						builder.append((const char*)&index, sizeUShort);
+						uint32_t index = paraXModel->m_indices[j] + vertexOffset;
+						builder.append((const char*)&index, sizeUInt);
 					}
-					if (pass.indexCount % 2 != 0)
-						builder.append("\0\0", sizeUShort);
 				}
 				uint32_t numBones = paraXModel->m_objNum.nBones;
 				for (uint32_t i = 0; i < numBones; i++)
@@ -194,14 +193,13 @@ namespace ParaEngine
 			{
 				for (uint32_t i = 0; i < paraXModel->passes.size(); i++)
 				{
-					const ModelRenderPass& pass = paraXModel->passes[i];
-					for (uint16_t j = pass.indexStart; j < pass.indexStart + pass.indexCount; j++)
+					ModelRenderPass& pass = paraXModel->passes[i];
+					uint32_t vertexOffset = pass.GetVertexStart(paraXModel);
+					for (uint32_t j = pass.m_nIndexStart; j < pass.m_nIndexStart + pass.indexCount; j++)
 					{
-						uint16_t index = paraXModel->m_indices[j];
-						builder.append((const char*)&index, sizeUShort);
+						uint32_t index = paraXModel->m_indices[j] + vertexOffset;
+						builder.append((const char*)&index, sizeUInt);
 					}
-					if (pass.indexCount % 2 != 0)
-						builder.append("\0\0", sizeUShort);
 				}
 			}
 			uint8_t binaryPadding = 0x00;
@@ -879,7 +877,7 @@ namespace ParaEngine
 		}
 		for (uint32_t i = 0; i < paraXModel->passes.size(); i++)
 		{
-			const ModelRenderPass& pass = paraXModel->passes[i];
+			ModelRenderPass& pass = paraXModel->passes[i];
 			Mesh::Primitive primitive;
 			primitive.indices = ExportIndices(pass);
 			primitive.attributes.position = v;
@@ -1218,11 +1216,11 @@ namespace ParaEngine
 		return acc;
 	}
 
-	std::shared_ptr<Accessor> glTFModelExporter::ExportIndices(const ModelRenderPass& pass)
+	std::shared_ptr<Accessor> glTFModelExporter::ExportIndices(ModelRenderPass& pass)
 	{
 		uint32_t numIndices = pass.indexCount;
 		const uint32_t numComponents = AttribType::GetNumComponents(AttribType::SCALAR);
-		const uint32_t bytesPerComp = ComponentTypeSize(ComponentType::UnsignedShort);
+		const uint32_t bytesPerComp = ComponentTypeSize(ComponentType::UnsignedInt);
 
 		std::shared_ptr<BufferView> bv = std::make_shared<BufferView>();
 		bv->buffer = buffer;
@@ -1231,20 +1229,21 @@ namespace ParaEngine
 		bv->byteLength = numIndices * numComponents * bytesPerComp;
 		bv->byteStride = 0;
 		bv->target = BufferViewTarget::ElementArrayBuffer;
-		buffer->Grow(bv->byteLength + bv->byteLength % 4);
+		buffer->Grow(bv->byteLength);
 
 		std::shared_ptr<Accessor> acc = std::make_shared<Accessor>();
 		acc->bufferView = bv;
 		acc->index = bufferIndex;
 		acc->byteOffset = 0;
-		acc->componentType = ComponentType::UnsignedShort;
+		acc->componentType = ComponentType::UnsignedInt;
 		acc->type = AttribType::SCALAR;
 		acc->count = numIndices;
 		acc->max.push_back(0);
 		acc->min.push_back(FLT_MAX);
-		for (uint16_t i = pass.indexStart; i < pass.indexStart + pass.indexCount; i++)
+		uint32_t vertexOffset = pass.GetVertexStart(paraXModel);
+		for (uint32_t i = pass.m_nIndexStart; i < pass.m_nIndexStart + pass.indexCount; i++)
 		{
-			uint16_t val = paraXModel->m_indices[i];
+			uint32_t val = paraXModel->m_indices[i] + vertexOffset;
 			if (val < acc->min[0]) acc->min[0] = val;
 			if (val > acc->max[0]) acc->max[0] = val;
 		}
@@ -1525,7 +1524,7 @@ namespace ParaEngine
 	{
 		StringBuilder builder;
 		uint32_t sizeFloat = ComponentTypeSize(ComponentType::Float);
-		uint32_t sizeUShort = ComponentTypeSize(ComponentType::UnsignedShort);
+		uint32_t sizeUInt = ComponentTypeSize(ComponentType::UnsignedInt);
 		uint32_t sizeUByte = ComponentTypeSize(ComponentType::UnsignedByte);
 
 		for (auto it = vertices.begin(); it != vertices.end(); ++it)
@@ -1571,14 +1570,13 @@ namespace ParaEngine
 			}
 			for (uint32_t i = 0; i < paraXModel->passes.size(); i++)
 			{
-				const ModelRenderPass& pass = paraXModel->passes[i];
-				for (uint16_t j = pass.indexStart; j < pass.indexStart + pass.indexCount; j++)
+				ModelRenderPass& pass = paraXModel->passes[i];
+				uint32_t vertexOffset = pass.GetVertexStart(paraXModel);
+				for (uint32_t j = pass.m_nIndexStart; j < pass.m_nIndexStart + pass.indexCount; j++)
 				{
-					uint16_t index = paraXModel->m_indices[j];
-					builder.append((const char*)&index, sizeUShort);
+					uint32_t index = paraXModel->m_indices[j] + vertexOffset;
+					builder.append((const char*)&index, sizeUInt);
 				}
-				if (pass.indexCount % 2 != 0)
-					builder.append("\0\0", sizeUShort);
 			}
 
 			uint32_t numBones = paraXModel->m_objNum.nBones;
@@ -1615,14 +1613,13 @@ namespace ParaEngine
 		{
 			for (uint32_t i = 0; i < paraXModel->passes.size(); i++)
 			{
-				const ModelRenderPass& pass = paraXModel->passes[i];
-				for (uint16_t j = pass.indexStart; j < pass.indexStart + pass.indexCount; j++)
+				ModelRenderPass& pass = paraXModel->passes[i];
+				uint32_t vertexOffset = pass.GetVertexStart(paraXModel);
+				for (uint32_t j = pass.m_nIndexStart; j < pass.m_nIndexStart + pass.indexCount; j++)
 				{
-					uint16_t index = paraXModel->m_indices[j];
-					builder.append((const char*)&index, sizeUShort);
+					uint32_t index = paraXModel->m_indices[j] + vertexOffset;
+					builder.append((const char*)&index, sizeUInt);
 				}
-				if (pass.indexCount % 2 != 0)
-					builder.append("\0\0", sizeUShort);
 			}
 		}
 		return StringHelper::base64(builder.ToString());
@@ -1790,7 +1787,7 @@ namespace ParaEngine
 		if (bin.CreateNewFile(buffer->filename.c_str()))
 		{
 			uint32_t sizeFloat = ComponentTypeSize(ComponentType::Float);
-			uint32_t sizeUShort = ComponentTypeSize(ComponentType::UnsignedShort);
+			uint32_t sizeUInt = ComponentTypeSize(ComponentType::UnsignedInt);
 			uint32_t sizeUByte = ComponentTypeSize(ComponentType::UnsignedByte);
 
 			for (auto it = vertices.begin(); it != vertices.end(); ++it)
@@ -1836,14 +1833,13 @@ namespace ParaEngine
 				}
 				for (uint32_t i = 0; i < paraXModel->passes.size(); i++)
 				{
-					const ModelRenderPass& pass = paraXModel->passes[i];
-					for (uint16_t j = pass.indexStart; j < pass.indexStart + pass.indexCount; j++)
+					ModelRenderPass& pass = paraXModel->passes[i];
+					uint32_t vertexOffset = pass.GetVertexStart(paraXModel);
+					for (uint32_t j = pass.m_nIndexStart; j < pass.m_nIndexStart + pass.indexCount; j++)
 					{
-						uint16_t index = paraXModel->m_indices[j];
-						bin.write(&index, sizeUShort);
+						uint32_t index = paraXModel->m_indices[j] + vertexOffset;
+						bin.write(&index, sizeUInt);
 					}
-					if (pass.indexCount % 2 != 0)
-						bin.write("\0\0", sizeUShort);
 				}
 				uint32_t numBones = paraXModel->m_objNum.nBones;
 				for (uint32_t i = 0; i < numBones; i++)
@@ -1879,14 +1875,13 @@ namespace ParaEngine
 			{
 				for (uint32_t i = 0; i < paraXModel->passes.size(); i++)
 				{
-					const ModelRenderPass& pass = paraXModel->passes[i];
-					for (uint16_t j = pass.indexStart; j < pass.indexStart + pass.indexCount; j++)
+					ModelRenderPass& pass = paraXModel->passes[i];
+					uint32_t vertexOffset = pass.GetVertexStart(paraXModel);
+					for (uint32_t j = pass.m_nIndexStart; j < pass.m_nIndexStart + pass.indexCount; j++)
 					{
-						uint16_t index = paraXModel->m_indices[j];
-						bin.write(&index, sizeUShort);
+						uint32_t index = paraXModel->m_indices[j] + vertexOffset;
+						bin.write(&index, sizeUInt);
 					}
-					if (pass.indexCount % 2 != 0)
-						bin.write("\0\0", sizeUShort);
 				}
 			}
 			bin.close();
@@ -1924,7 +1919,7 @@ namespace ParaEngine
 			binaryChunk.chunkType = ChunkType::BIN;
 			file.write(&binaryChunk, sizeof(GLBChunk));
 			uint32_t sizeFloat = ComponentTypeSize(ComponentType::Float);
-			uint32_t sizeUShort = ComponentTypeSize(ComponentType::UnsignedShort);
+			uint32_t sizeUInt = ComponentTypeSize(ComponentType::UnsignedInt);
 			uint32_t sizeUByte = ComponentTypeSize(ComponentType::UnsignedByte);
 
 			for (auto it = vertices.begin(); it != vertices.end(); ++it)
@@ -1970,14 +1965,13 @@ namespace ParaEngine
 				}
 				for (uint32_t i = 0; i < paraXModel->passes.size(); i++)
 				{
-					const ModelRenderPass& pass = paraXModel->passes[i];
-					for (uint16_t j = pass.indexStart; j < pass.indexStart + pass.indexCount; j++)
+					ModelRenderPass& pass = paraXModel->passes[i];
+					uint32_t vertexOffset = pass.GetVertexStart(paraXModel);
+					for (uint32_t j = pass.m_nIndexStart; j < pass.m_nIndexStart + pass.indexCount; j++)
 					{
-						uint16_t index = paraXModel->m_indices[j];
-						file.write(&index, sizeUShort);
+						uint32_t index = paraXModel->m_indices[j] + vertexOffset;
+						file.write(&index, sizeUInt);
 					}
-					if (pass.indexCount % 2 != 0)
-						file.write("\0\0", sizeUShort);
 				}
 				uint32_t numBones = paraXModel->m_objNum.nBones;
 				for (uint32_t i = 0; i < numBones; i++)
@@ -2013,14 +2007,13 @@ namespace ParaEngine
 			{
 				for (uint32_t i = 0; i < paraXModel->passes.size(); i++)
 				{
-					const ModelRenderPass& pass = paraXModel->passes[i];
-					for (uint16_t j = pass.indexStart; j < pass.indexStart + pass.indexCount; j++)
+					ModelRenderPass& pass = paraXModel->passes[i];
+					uint32_t vertexOffset = pass.GetVertexStart(paraXModel);
+					for (uint32_t j = pass.m_nIndexStart; j < pass.m_nIndexStart + pass.indexCount; j++)
 					{
-						uint16_t index = paraXModel->m_indices[j];
-						file.write(&index, sizeUShort);
+						uint32_t index = paraXModel->m_indices[j] + vertexOffset;
+						file.write(&index, sizeUInt);
 					}
-					if (pass.indexCount % 2 != 0)
-						file.write("\0\0", sizeUShort);
 				}
 			}
 			uint8_t binaryPadding = 0x00;

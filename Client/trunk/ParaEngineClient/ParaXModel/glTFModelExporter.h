@@ -327,7 +327,7 @@ namespace ParaEngine
 		std::shared_ptr<Accessor> ExportColors();
 		std::shared_ptr<Accessor> ExportJoints();
 		std::shared_ptr<Accessor> ExportWeights();
-		std::shared_ptr<Accessor> ExportIndices(const ModelRenderPass& pass);
+		std::shared_ptr<Accessor> ExportIndices(ModelRenderPass& pass);
 		std::shared_ptr<Material> ExportMaterials(int tex, int index);
 		std::shared_ptr<Animation> ExportAnimations();
 		std::shared_ptr<BufferView> ExportBufferView(AttribType::Value type, uint32_t length, uint32_t index);
