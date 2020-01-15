@@ -5,6 +5,10 @@ apply plugin: 'com.android.application'
 android {
     compileSdkVersion PROP_COMPILE_SDK_VERSION.toInteger()
 
+    aaptOptions {
+        noCompress ".zip", ".pkg"
+    }
+
     defaultConfig {
         applicationId "com.tatfook.paracraft"
         minSdkVersion PROP_MIN_SDK_VERSION
