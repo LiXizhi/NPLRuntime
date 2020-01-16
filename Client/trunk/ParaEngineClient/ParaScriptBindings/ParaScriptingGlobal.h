@@ -350,6 +350,27 @@ namespace ParaScripting
 		*/
 		static bool CreateProcess(const char* lpApplicationName, const char* lpCommandLine, bool bWaitOnReturn);
 
+
+		/**
+		* check if the port (of the specific socket) is available.
+		* @return if available, return true; otherwise false.
+		* @params
+		* `ip`, string, socket ip address
+		* `port`, int, the port to check
+		*/
+		static bool IsPortAvailable(const std::string& ip, const int port, lua_State* L);
+
+		/**
+		* execute a external application.
+		* once the app runs and the process detaches from parent so that it doesn't block the main process.
+		* @return void
+		* @params
+		* `exe`, string, app path
+		* `param`, luabind::object, a table of string.
+		*       e.g. `{'--port', '8006', '--verbose'}` 
+		*/
+		static void Execute(const std::string& exe, const luabind::object& param, lua_State* L);
+
 		/**
 		* Performs an operation on a specified file.
 		* e.g. ParaGlobal.ShellExecute("open", "iexplore.exe", "http://www.paraengine.com", nil, 1); 
