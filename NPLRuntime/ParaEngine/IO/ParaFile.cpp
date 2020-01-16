@@ -861,7 +861,7 @@ bool CParaFile::OpenFile(const char* sfilename, bool bReadyOnly, const char* rel
 
 	if (bReadyOnly)
 	{
-		if (!(!m_filename.empty() && m_filename[0] == ':') && ((dwWhereToOpen & FILE_ON_EXECUTABLE) == 0))
+		if (!(!m_filename.empty() && m_filename[0] == ':') && ((dwWhereToOpen & FILE_ON_EXECUTABLE) == 0) && !(!m_filename.empty() && m_filename[m_filename.size() - 1] == '/') && !m_filename.empty())
 		{
 			BOOL succ = FALSE;
 			/// for ready-only file, we will read everything in to the buffer, and close the file handle
