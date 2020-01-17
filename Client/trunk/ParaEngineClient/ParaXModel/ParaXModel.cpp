@@ -24,7 +24,7 @@
 #include "BoneChain.h"
 #include "memdebug.h"
 #include "XFileCharModelExporter.h"
-#include "./IO/FileUtils.h"
+#include "IO/FileUtils.h"
 #include "ViewportManager.h"
 
 
