@@ -18,7 +18,7 @@
 #include <boost/system/system_error.hpp>
 #include <string>
 #include <deque>
-#include <boost/thread.hpp>∫
+#include <boost/thread.hpp>
 #include <CoreServices/CoreServices.h>
 
 namespace boost {
@@ -29,7 +29,6 @@ class dir_monitor_impl
 public:
     dir_monitor_impl()
         : run_(true)
-        , runloop_(nullptr)
         , work_thread_(&boost::asio::dir_monitor_impl::work_thread, this)
         , fsevents_(nullptr)
     {}
@@ -126,7 +125,7 @@ private:
 
         if (!fsevents_)
         {
-            boost::system::system_error e(boost::system::error_code(errno, boost::system::system_category()), "boost::asio::dir_monitor_impl::init_kqueue: kqueue failed");
+            boost::system::system_error e(boost::system::error_code(errno, boost::system::get_system_category()), "boost::asio::dir_monitor_impl::init_kqueue: kqueue failed");
             boost::throw_exception(e);
         }
 
