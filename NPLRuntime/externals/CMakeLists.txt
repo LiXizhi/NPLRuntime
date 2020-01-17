@@ -55,14 +55,14 @@ add_subdirectory(freetype-2.8.1)
 add_subdirectory(jpeg)
 add_subdirectory(png)
 add_subdirectory(Pinocchio)
-add_subdirectory(FreeImage3180)
 
 if(${NPLRUNTIME_RENDERER} STREQUAL "NULL")
     # exclude graphics lib if no renderer are specified, such as under linux
 else()
     add_subdirectory(dxEffectsParser)
     add_subdirectory(hlsl2glslfork)
-    
+    add_subdirectory(FreeImage3180)
+	
     add_subdirectory(glad)
 	if(NPLRUNTIME_SUPPORT_FBX) 
 		add_subdirectory(assimp-4.0.0 ${PROJECT_BINARY_DIR}/assimp-4.0.0)
