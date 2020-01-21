@@ -143,17 +143,20 @@ public class ParaEngineWebViewHelper {
 
 	public static void _onCloseView(ParaEngineWebView webView) {
 		final int index = webView.getViewTag();
-		webViews.remove(index);
-		sLayout.removeView(webView);
-		webView.destroy();
+        if (canGoBack(index)) {
+            goBack(index);
+        } else {
+            webViews.remove(index);
+            sLayout.removeView(webView);
+            webView.destroy();
 
-		sActivity.runOnGLThread(new Runnable() {
-            @Override
-            public void run() {
-				onCloseView(index);
-			}
-		});
-		
+            sActivity.runOnGLThread(new Runnable() {
+                @Override
+                public void run() {
+                    onCloseView(index);
+                }
+            });
+        }
 	}
 
 	@Keep
@@ -333,20 +336,22 @@ public class ParaEngineWebViewHelper {
 
     @Keep
 	public static boolean canGoBack(final int index) {
-        Callable<Boolean> callable = new Callable<Boolean>() {
-            @Override
-            public Boolean call() throws Exception {
-                ParaEngineWebView webView = webViews.get(index);
-                return webView != null && webView.canGoBack();
-            }
-        };
-        try {
-            return callInMainThread(callable);
-        } catch (ExecutionException e) {
-            return false;
-        } catch (InterruptedException e) {
-            return false;
-        }
+        ParaEngineWebView webView = webViews.get(index);
+        return webView != null && webView.canGoBack();
+//        Callable<Boolean> callable = new Callable<Boolean>() {
+//            @Override
+//            public Boolean call() throws Exception {
+//                ParaEngineWebView webView = webViews.get(index);
+//                return webView != null && webView.canGoBack();
+//            }
+//        };
+//        try {
+//            return callInMainThread(callable);
+//        } catch (ExecutionException e) {
+//            return false;
+//        } catch (InterruptedException e) {
+//            return false;
+//        }
     }
 
     @Keep
