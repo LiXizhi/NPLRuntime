@@ -386,7 +386,7 @@ bool Bone::calcMatrix(Bone *allbones, const AnimIndex & CurrentAnim, const AnimI
 						else
 							blendValue = currentValue;
 					}
-					if (pCurBone == NULL && CurrentAnim.Provider != 0)
+					if (pCurBone == NULL && current_anim.Provider != 0)
 					{
 						currentValue = blendValue;
 					}
@@ -756,7 +756,22 @@ const std::string& ParaEngine::Bone::GetIdentifier()
 
 void ParaEngine::Bone::SetName(const std::string& val)
 {
+	auto nFromPos = val.find_first_of('{');
+	if (nFromPos != string::npos)
+	{
+		auto nToPos = val.find_last_of('}');
+		if (nToPos != string::npos)
+		{
+			if(nFromPos >= 1 && val[nFromPos-1]==' ')
+				m_sIdentifer = val.substr(0, nFromPos-1);
+			else
+				m_sIdentifer = val.substr(0, nFromPos);
+			m_sTag = val.substr(nFromPos, nToPos - nFromPos + 1);
+			return;
+		}
+	}
 	m_sIdentifer = val;
+	m_sTag.clear();
 }
 
 void ParaEngine::Bone::AutoSetBoneInfoFromName()
@@ -903,7 +918,6 @@ void ParaEngine::Bone::AutoSetBoneInfoFromName()
 		{
 			SetBoneID(Bone_L_Foot);
 			SetIdentifier("");
-			mIsUpper = true;
 		}
 		else if (StringHelper::StrEndsWithWord(sName, "r?foot"))
 		{
@@ -1052,7 +1066,7 @@ void ParaEngine::Bone::AutoSetBoneInfoFromName()
 
 void ParaEngine::Bone::SetIdentifier(const std::string& sID)
 {
-	m_sIdentifer = sID;
+	SetName(sID);
 }
 
 void ParaEngine::Bone::SetOffsetMatrix(const Matrix4& mat)
@@ -1249,6 +1263,11 @@ void ParaEngine::Bone::MakeDirty(bool bForce)
 	calc = false;
 }
 
+const std::string& ParaEngine::Bone::GetTag()
+{
+	return m_sTag;
+}
+
 const std::string& ParaEngine::Bone::GetRotName()
 {
 
@@ -1290,6 +1309,7 @@ int ParaEngine::Bone::InstallFields(CAttributeClass* pClass, bool bOverride)
 {
 	IAttributeFields::InstallFields(pClass, bOverride);
 
+	pClass->AddField("Tag", FieldType_String, (void*)0, (void*)GetTag_s, NULL, "", bOverride);
 	pClass->AddField("RotName", FieldType_String, (void*)0, (void*)GetRotName_s, NULL, "", bOverride);
 	pClass->AddField("TransName", FieldType_String, (void*)0, (void*)GetTransName_s, NULL, "", bOverride);
 	pClass->AddField("ScaleName", FieldType_String, (void*)0, (void*)GetScaleName_s, NULL, "", bOverride);
@@ -1366,3 +1386,4 @@ void ParaEngine::Bone::RemoveUnusedAnimKeys()
 	trans.RemoveUnusedAnimKeys();
 	scale.RemoveUnusedAnimKeys();
 }
+

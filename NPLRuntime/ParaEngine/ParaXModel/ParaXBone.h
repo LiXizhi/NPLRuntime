@@ -23,6 +23,7 @@ namespace ParaEngine
 		/** this class should be implemented if one wants to add new attribute. This function is always called internally.*/
 		virtual int InstallFields(CAttributeClass* pClass, bool bOverride);
 		
+		ATTRIBUTE_METHOD1(Bone, GetTag_s, const char**) { *p1 = cls->GetTag().c_str(); return S_OK; }
 		ATTRIBUTE_METHOD1(Bone, GetRotName_s, const char**)		{ *p1 = cls->GetRotName().c_str(); return S_OK; }
 		ATTRIBUTE_METHOD1(Bone, GetTransName_s, const char**)		{ *p1 = cls->GetTransName().c_str(); return S_OK; }
 		ATTRIBUTE_METHOD1(Bone, GetScaleName_s, const char**)		{ *p1 = cls->GetScaleName().c_str(); return S_OK; }
@@ -164,7 +165,7 @@ namespace ParaEngine
 
 		/** call this before save to disk to compress the size of the file, if it is loaded from FBX files */
 		void RemoveUnusedAnimKeys();
-
+	
 	public:
 		enum BONE_FLAGS
 		{
@@ -184,10 +185,14 @@ namespace ParaEngine
 			BONE_TRANSFORMATION_NODE = (0x1 << 6),
 		};
 		std::string	m_sIdentifer;
+		std::string	m_sTag;
+
 		std::string	m_sRotName;
 		std::string	m_sTransName;
 		std::string	m_sScaleName;
 		std::string	m_sTimeName;
+		
+		const std::string& GetTag();
 		const std::string& GetRotName();
 		const std::string& GetTransName();
 		const std::string& GetScaleName();
