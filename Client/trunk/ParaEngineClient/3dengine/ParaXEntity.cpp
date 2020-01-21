@@ -74,6 +74,7 @@ HRESULT ParaXEntity::DeleteDeviceObjects()
 			lod.m_pParaXMesh.reset();
 		}
 	}
+	m_nTechniqueHandle = -1;
 	return S_OK;
 }
 
