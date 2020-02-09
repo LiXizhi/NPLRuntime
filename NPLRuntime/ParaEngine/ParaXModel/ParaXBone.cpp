@@ -1110,7 +1110,12 @@ bool ParaEngine::Bone::GetExternalRot(IAttributeFields* pAnimInstance, Quaternio
 			if (pTimeField != 0) {
 				nTime = (int)((double)(*pTimeField));
 				if (nTime < 0)
-					nTime = pAnimInstance->GetTime();
+				{
+					if (nTime <= -1000)
+						return false;
+					else
+						nTime = pAnimInstance->GetTime();
+				}
 			}
 			return pVarField->GetValueByTime(nTime, outQuat);
 		}
@@ -1130,7 +1135,12 @@ bool ParaEngine::Bone::GetExternalTranslation(IAttributeFields* pAnimInstance, V
 			if (pTimeField != 0) {
 				nTime = (int)((double)(*pTimeField));
 				if (nTime < 0)
-					nTime = pAnimInstance->GetTime();
+				{
+					if (nTime <= -1000)
+						return false;
+					else
+						nTime = pAnimInstance->GetTime();
+				}
 			}
 			return pVarField->GetValueByTime(nTime, outTrans);
 		}
@@ -1150,7 +1160,12 @@ bool ParaEngine::Bone::GetExternalScaling(IAttributeFields* pAnimInstance, Vecto
 			if (pTimeField != 0) {
 				nTime = (int)((double)(*pTimeField));
 				if (nTime < 0)
-					nTime = pAnimInstance->GetTime();
+				{
+					if (nTime <= -1000)
+						return false;
+					else
+						nTime = pAnimInstance->GetTime();
+				}
 			}
 			return pVarField->GetValueByTime(nTime, outScaling);
 		}
