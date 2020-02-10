@@ -242,14 +242,15 @@ void CharModelInstance::SetSkin(int nSkinIndex)
 
 			if (i < nTotalNum && pModel->textures[i] != 0 && pModel->specialTextures[i] >= 0)
 			{
+				int nTexId = pModel->specialTextures[i];
 				// if there is both a standard texture and a replaceable texture, we can deduce the replaceable 
 				// one from the file name of the standard one.
 				bCanDeduceFromFileName = true;
 				if (nSkinIndex == 0)
 				{
 					// use the default. 
-					if(k < NUM_TEX)
-						m_textures[k] = pModel->textures[i];
+					if(nTexId < NUM_TEX)
+						m_textures[nTexId] = pModel->textures[i];
 					m_skinIndex = nSkinIndex;
 				}
 				else
@@ -266,8 +267,8 @@ void CharModelInstance::SetSkin(int nSkinIndex)
 						sTextureFileName.replace(nSize - 4 - nNumberCount, nNumberCount, itoa(nSkinIndex, number, 10));
 						if (CParaFile::DoesFileExist(sTextureFileName.c_str(), true))
 						{
-							if(k < NUM_TEX)
-								m_textures[k] = CGlobals::GetAssetManager()->LoadTexture("", sTextureFileName.c_str(), TextureEntity::StaticTexture);
+							if(nTexId < NUM_TEX)
+								m_textures[nTexId] = CGlobals::GetAssetManager()->LoadTexture("", sTextureFileName.c_str(), TextureEntity::StaticTexture);
 							m_skinIndex = nSkinIndex;
 						}
 					}
@@ -332,9 +333,11 @@ void CharModelInstance::SetSkin(int nSkinIndex)
 		for (size_t i = 0; i < NUM_TEX; i++)
 			m_textures[i].reset();
 		for (int i = 0; i < grp.count; i++) {
-			if (pModel->useReplaceTextures[grp.base + i] && i < NUM_TEX) {
+			if (pModel->useReplaceTextures[grp.base + i]) {
 				TextureEntity* def = CGlobals::GetAssetManager()->LoadTexture("", makeSkinTexture(pModelAsset->GetFileName().c_str(), grp.tex[i].c_str()).c_str(), TextureEntity::StaticTexture);
-				m_textures[i] = def;
+				int nTexId = pModel->specialTextures[i];
+				if(nTexId >= 0 && nTexId < NUM_TEX)
+					m_textures[nTexId] = def;
 			}
 		}
 	}
@@ -466,20 +469,19 @@ void CharModelInstance::UpdateTexturesToModel(CParaXModel* pModel)
 	}
 	else
 	{
-		for (auto & replaceable_texture_pair : mReplaceableTexturesCache)
+		for(auto & replaceable_texture_pair:mReplaceableTexturesCache)
 		{
-			SetReplaceableTexture(replaceable_texture_pair.first, replaceable_texture_pair.second.get());
+			SetReplaceableTexture(replaceable_texture_pair.first,replaceable_texture_pair.second.get());
 			replaceable_texture_pair.second.reset();
 		}
 		mReplaceableTexturesCache.clear();
-
 		for (int i = 0, k = 0; i < CParaXModel::MAX_MODEL_TEXTURES; ++i)
 		{
 			int nIndex = pModel->specialTextures[i];
 			if (nIndex >= 0)
 			{
-				if (k < NUM_TEX && m_textures[k].get() != 0)
-					pModel->replaceTextures[nIndex] = m_textures[k].get();
+				if (nIndex < NUM_TEX && m_textures[nIndex].get() != 0)
+					pModel->replaceTextures[nIndex] = m_textures[nIndex].get();
 				else
 					pModel->replaceTextures[nIndex] = pModel->textures[i].get();
 				k++;
@@ -488,15 +490,7 @@ void CharModelInstance::UpdateTexturesToModel(CParaXModel* pModel)
 	}
 }
 
-bool CharModelInstance::AnimateModel(SceneState * sceneState
-	, const AnimIndex& CurrentAnim
-	, const AnimIndex& NextAnim
-	, const AnimIndex& BlendingAnim
-	, float blendingFactor
-	, const AnimIndex & upperAnim
-	, const AnimIndex & upperBlendingAnim
-	, float upperBlendingFactor
-	, IAttributeFields* pAnimInstance)
+bool CharModelInstance::AnimateModel(SceneState * sceneState, const AnimIndex& CurrentAnim, const AnimIndex& NextAnim, const AnimIndex& BlendingAnim, float blendingFactor, const AnimIndex & upperAnim, const AnimIndex & upperBlendingAnim, float upperBlendingFactor, IAttributeFields* pAnimInstance)
 {
 	ParaXEntity * pModelAsset = GetBaseModel();
 	if (pModelAsset == NULL)
@@ -525,7 +519,6 @@ bool CharModelInstance::AnimateModel(SceneState * sceneState
 	pModel->mUpperAnim = upperAnim;
 	pModel->mUpperBlendingAnim = upperBlendingAnim;
 	pModel->mUpperBlendingFactor = upperBlendingFactor;
-
 
 	if (m_bIsCustomModel)
 	{
@@ -1279,9 +1272,9 @@ TextureEntity* CharModelInstance::GetReplaceableTexture(int ReplaceableTextureID
 						int nIndex = pModel->specialTextures[i];
 						if (nIndex >= 0)
 						{
-							if (nIndex == ReplaceableTextureID && k < NUM_TEX)
+							if (nIndex == ReplaceableTextureID && nIndex < NUM_TEX)
 							{
-								return m_textures[k].get();
+								return m_textures[nIndex].get();
 							}
 							k++;
 						}
@@ -1329,9 +1322,9 @@ bool CharModelInstance::SetReplaceableTexture(int ReplaceableTextureID, TextureE
 						int nIndex = pModel->specialTextures[i];
 						if (nIndex >= 0)
 						{
-							if (nIndex == ReplaceableTextureID && k < NUM_TEX)
+							if (nIndex == ReplaceableTextureID && nIndex < NUM_TEX)
 							{
-								m_textures[k] = pTextureEntity;
+								m_textures[nIndex] = pTextureEntity;
 								//return true;
 							}
 							k++;
@@ -1606,17 +1599,6 @@ void CharModelInstance::AddAttachment(ParaXEntity* pModelEntity, int nAttachment
 	}
 }
 
-
-CParameterBlock * CharModelInstance::GetAttachmentParamBlock(int attachmentID, int slotID)
-{
-	CanvasAttachment* pAtt = m_pModelCanvas->GetChild(attachmentID, slotID);
-	if (pAtt)
-	{
-		return pAtt->GetParamBlock(true);
-	}
-	return nullptr;
-}
-
 IAttributeFields * CharModelInstance::GetAttachmentAttObj(int nAttachmentID)
 {
 	CanvasAttachment* pAtt = m_pModelCanvas->GetChild(nAttachmentID);
@@ -1627,6 +1609,15 @@ IAttributeFields * CharModelInstance::GetAttachmentAttObj(int nAttachmentID)
 	return NULL;
 }
 
+CParameterBlock * ParaEngine::CharModelInstance::GetAttachmentParamBlock(int attachmentID,int slotID)
+{
+	CanvasAttachment* pAtt=m_pModelCanvas->GetChild(attachmentID,slotID);
+	if(pAtt)
+	{
+		return pAtt->GetParamBlock(true);
+	}
+	return nullptr;
+}
 
 void CharModelInstance::AddAttachment(MeshEntity* pModelEntity, int nAttachmentID, int nSlotID, float fScaling, TextureEntity* pReplaceableTexture)
 {
