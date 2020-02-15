@@ -1317,6 +1317,7 @@ bool CharModelInstance::SetReplaceableTexture(int ReplaceableTextureID, TextureE
 				if (pModel != NULL)
 				{
 					int k = 0;
+					bool bFound = false;
 					for (int i = 0; i < CParaXModel::MAX_MODEL_TEXTURES; ++i)
 					{
 						int nIndex = pModel->specialTextures[i];
@@ -1325,10 +1326,16 @@ bool CharModelInstance::SetReplaceableTexture(int ReplaceableTextureID, TextureE
 							if (nIndex == ReplaceableTextureID && nIndex < NUM_TEX)
 							{
 								m_textures[nIndex] = pTextureEntity;
-								//return true;
+								bFound = true;
+								break;
 							}
 							k++;
 						}
+					}
+					if (!bFound && ReplaceableTextureID < NUM_TEX)
+					{
+						pTextureEntity = NULL;
+						m_textures[ReplaceableTextureID] = pTextureEntity;
 					}
 				}
 				else

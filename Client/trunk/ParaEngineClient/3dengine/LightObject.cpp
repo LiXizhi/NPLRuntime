@@ -401,6 +401,7 @@ int ParaEngine::CLightObject::GetPrimaryTechniqueHandle()
 	case D3DLIGHT_DIRECTIONAL:
 		return TECH_LIGHT_DIRECTIONAL;
 	}
+	return TECH_LIGHT_POINT;
 }
 
 int ParaEngine::CLightObject::PrepareRender(CBaseCamera* pCamera, SceneState * sceneState)
@@ -583,7 +584,7 @@ void ParaEngine::CLightObject::AutoSetAttenation()
 	 * so we use a greedy way to calculate the a0, a1, a2
 	 */
 	if (m_bAutoSetAttenuation) {
-		float edge_att = 0.1;
+		float edge_att = 0.1f;
 		float one_over_att = 1 / edge_att;
 		float range = m_pLightParams->Range;
 
