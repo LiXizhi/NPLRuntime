@@ -29,7 +29,7 @@ namespace ParaEngine {
     protected:
         ParaEngineWebView();
     private:
-        WebViewWindowController* _webViewController;
+        //WebViewWindowController* _webViewController;
         onCloseFunc _onClose;
     };
 } // end namespace
