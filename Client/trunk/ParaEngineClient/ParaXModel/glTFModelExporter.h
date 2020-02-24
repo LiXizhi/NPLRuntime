@@ -181,7 +181,7 @@ namespace ParaEngine
 		std::vector<float> max;
 		std::vector<float> min;
 	};
-	
+
 	struct Sampler
 	{
 		SamplerMagFilter magFilter;
@@ -304,7 +304,7 @@ namespace ParaEngine
 		glTFModelExporter(CParaXModel* mesh, std::vector<string>& textures, bool binary, bool embedded = true);
 		glTFModelExporter(CParaXModel* mesh, CParaXModel* anim, std::vector<string>& textures, bool binary, bool embedded = true);
 		~glTFModelExporter();
-		
+
 		void ExportToFile(const std::string& filename);
 		std::string ExportToBuffer();
 
@@ -329,12 +329,12 @@ namespace ParaEngine
 		std::shared_ptr<Accessor> ExportWeights();
 		std::shared_ptr<Accessor> ExportIndices(ModelRenderPass& pass);
 		std::shared_ptr<Material> ExportMaterials(int tex, int index);
-		std::shared_ptr<Animation> ExportAnimations();
+		std::shared_ptr<Animation> ExportAnimations(uint32_t animId);
 		std::shared_ptr<BufferView> ExportBufferView(AttribType::Value type, uint32_t length, uint32_t index);
-		std::shared_ptr<Accessor> ExportTimeAccessor(std::shared_ptr<BufferView>& bv, uint32_t offset, uint32_t numDatas);
-		std::shared_ptr<Accessor> ExportTranslationAccessor(std::shared_ptr<BufferView>& bv, uint32_t offset, uint32_t numDatas);
-		std::shared_ptr<Accessor> ExportRotationAccessor(std::shared_ptr<BufferView>& bv, uint32_t offset, uint32_t numDatas);
-		std::shared_ptr<Accessor> ExportScaleAccessor(std::shared_ptr<BufferView>& bv, uint32_t offset, uint32_t numDatas);
+		std::shared_ptr<Accessor> ExportTimeAccessor(std::shared_ptr<BufferView>& bv, uint32_t offset, uint32_t numDatas, uint32_t animId);
+		std::shared_ptr<Accessor> ExportTranslationAccessor(std::shared_ptr<BufferView>& bv, uint32_t offset, uint32_t numDatas, uint32_t animId);
+		std::shared_ptr<Accessor> ExportRotationAccessor(std::shared_ptr<BufferView>& bv, uint32_t offset, uint32_t numDatas, uint32_t animId);
+		std::shared_ptr<Accessor> ExportScaleAccessor(std::shared_ptr<BufferView>& bv, uint32_t offset, uint32_t numDatas, uint32_t animId);
 		std::string EncodeBuffer();
 		void WriteBuffer(Json::Value& obj, uint32_t index);
 		void WriteBufferView(std::shared_ptr<BufferView>& bufferView, Json::Value& obj, uint32_t index);
@@ -361,25 +361,26 @@ namespace ParaEngine
 		Vector4 minJoint;
 		Vector4 maxWeight;
 		Vector4 minWeight;
-		std::vector<int> boneIndices;
-		std::vector<uint32_t> animOffsets;
-		std::vector<float> animTimes;
-		std::vector<Vector3> translations;
-		std::vector<Vector3> scales;
-		std::vector<Quaternion> rotations;
+		std::vector<std::vector<int>> boneIndices;
+		std::vector<std::vector<uint32_t>> animOffsets;
+		std::vector<std::vector<float>> animTimes;
+		std::vector<std::vector<Vector3>> translations;
+		std::vector<std::vector<Vector3>> scales;
+		std::vector<std::vector<Quaternion>> rotations;
 
 		CParaXModel* paraXModel;
 		CParaXModel* animProvider;
 		std::string fileName;
 		Json::Value root;
 		uint32_t bufferIndex;
+		uint32_t accessorIndex;
 		bool isBinary;
 		bool isEmbedded;
 		std::shared_ptr<Buffer> buffer;
-		std::shared_ptr<BufferView> bvTime;
-		std::shared_ptr<BufferView> bvTranslation;
-		std::shared_ptr<BufferView> bvRotation;
-		std::shared_ptr<BufferView> bvScale;
+		std::vector<std::shared_ptr<BufferView>> bvTime;
+		std::vector<std::shared_ptr<BufferView>> bvTranslation;
+		std::vector<std::shared_ptr<BufferView>> bvRotation;
+		std::vector<std::shared_ptr<BufferView>> bvScale;
 		std::vector<string> texFiles;
 
 	public:

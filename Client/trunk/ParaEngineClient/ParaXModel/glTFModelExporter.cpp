@@ -18,7 +18,9 @@ namespace ParaEngine
 		maxJoint(0, 0, 0, 0), minJoint(255, 255, 255, 255),
 		maxWeight(-FLT_MAX, -FLT_MAX, -FLT_MAX, -FLT_MAX), minWeight(FLT_MAX, FLT_MAX, FLT_MAX, FLT_MAX),
 		paraXModel(mesh),
+		animProvider(nullptr),
 		bufferIndex(0),
+		accessorIndex(0),
 		isBinary(binary),
 		isEmbedded(embedded),
 		buffer(std::make_shared<Buffer>())
@@ -39,6 +41,7 @@ namespace ParaEngine
 		paraXModel(mesh),
 		animProvider(anim),
 		bufferIndex(0),
+		accessorIndex(0),
 		isBinary(binary),
 		isEmbedded(embedded),
 		buffer(std::make_shared<Buffer>())
@@ -166,27 +169,30 @@ namespace ParaEngine
 				}
 				for (uint32_t i = 0; i < animTimes.size(); i++)
 				{
-					float val = animTimes[i];
-					builder.append((const char*)&val, sizeFloat);
-				}
-				for (uint32_t i = 0; i < translations.size(); i++)
-				{
-					builder.append((const char*)&translations[i].x, sizeFloat);
-					builder.append((const char*)&translations[i].y, sizeFloat);
-					builder.append((const char*)&translations[i].z, sizeFloat);
-				}
-				for (uint32_t i = 0; i < rotations.size(); i++)
-				{
-					builder.append((const char*)&rotations[i].x, sizeFloat);
-					builder.append((const char*)&rotations[i].y, sizeFloat);
-					builder.append((const char*)&rotations[i].z, sizeFloat);
-					builder.append((const char*)&rotations[i].w, sizeFloat);
-				}
-				for (uint32_t i = 0; i < scales.size(); i++)
-				{
-					builder.append((const char*)&scales[i].x, sizeFloat);
-					builder.append((const char*)&scales[i].y, sizeFloat);
-					builder.append((const char*)&scales[i].z, sizeFloat);
+					for (uint32_t j = 0; j < animTimes[i].size(); j++)
+					{
+						float val = animTimes[i][j];
+						builder.append((const char*)&val, sizeFloat);
+					}
+					for (uint32_t j = 0; j < translations[i].size(); j++)
+					{
+						builder.append((const char*)&translations[i][j].x, sizeFloat);
+						builder.append((const char*)&translations[i][j].y, sizeFloat);
+						builder.append((const char*)&translations[i][j].z, sizeFloat);
+					}
+					for (uint32_t j = 0; j < rotations[i].size(); j++)
+					{
+						builder.append((const char*)&rotations[i][j].x, sizeFloat);
+						builder.append((const char*)&rotations[i][j].y, sizeFloat);
+						builder.append((const char*)&rotations[i][j].z, sizeFloat);
+						builder.append((const char*)&rotations[i][j].w, sizeFloat);
+					}
+					for (uint32_t j = 0; j < scales[i].size(); j++)
+					{
+						builder.append((const char*)&scales[i][j].x, sizeFloat);
+						builder.append((const char*)&scales[i][j].y, sizeFloat);
+						builder.append((const char*)&scales[i][j].z, sizeFloat);
+					}
 				}
 			}
 			else
@@ -326,74 +332,120 @@ namespace ParaEngine
 		float inverse = 1.0f / 1000.0f;
 		//uint32_t animLength = paraXModel->anims[0].timeEnd - paraXModel->anims[0].timeStart;
 		//if (animLength == 0) animLength = 1000;
-		for (uint32_t i = 0; i < paraXModel->m_objNum.nBones; i++)
+		boneIndices.clear();
+		animOffsets.clear();
+		animTimes.clear();
+		translations.clear();
+		scales.clear();
+		rotations.clear();
+		uint32_t nAnimations = paraXModel->m_objNum.nAnimations;
+		bvTime.resize(nAnimations);
+		bvTranslation.resize(nAnimations);
+		bvRotation.resize(nAnimations);
+		bvScale.resize(nAnimations);
+		for (uint32_t animId = 0; animId < nAnimations; animId++)
 		{
-			Bone& bone = paraXModel->bones[i];
-			if (bone.trans.used || bone.rot.used || bone.scale.used)
+			std::vector<int> boneIndice;
+			std::vector<uint32_t> animOffset;
+			std::vector<float> animTime;
+			std::vector<Vector3> translation;
+			std::vector<Vector3> scale;
+			std::vector<Quaternion> rotation;
+			for (uint32_t i = 0; i < paraXModel->m_objNum.nBones; i++)
 			{
-				uint32_t firstT = bone.trans.ranges[0].first;
-				uint32_t secondT = bone.trans.ranges[0].second;
-				uint32_t firstR = bone.rot.ranges[0].first;
-				uint32_t secondR = bone.rot.ranges[0].second;
-				uint32_t firstS = bone.scale.ranges[0].first;
-				uint32_t secondS = bone.scale.ranges[0].second;
-				uint32_t animStart = std::min(std::min(firstT, firstR), firstS);
-				uint32_t animEnd = std::max(std::max(secondT, secondR), secondS);
-
-				animOffsets.push_back(animEnd - animStart + 1);
-				int time = 0;
-				Vector3 t, s;
-				Quaternion q;
-				for (uint32_t j = animStart; j <= animEnd; j++)
+				Bone& bone = paraXModel->bones[i];
+				if (bone.trans.used || bone.rot.used || bone.scale.used)
 				{
-					if (secondT == animEnd)
+					uint32_t firstT = bone.trans.ranges[animId].first;
+					uint32_t secondT = bone.trans.ranges[animId].second;
+					uint32_t firstR = bone.rot.ranges[animId].first;
+					uint32_t secondR = bone.rot.ranges[animId].second;
+					uint32_t firstS = bone.scale.ranges[animId].first;
+					uint32_t secondS = bone.scale.ranges[animId].second;
+					uint32_t offset1 = secondT - firstT + 1;
+					uint32_t offset2 = secondR - firstR + 1;
+					uint32_t offset3 = secondS - firstS + 1;
+					uint32_t animStart = firstT;
+					uint32_t animEnd = secondT;
+					if (offset1 > offset3 && offset1 > offset3)
 					{
-						time = bone.trans.times[j];
-						t = bone.trans.data[j];
-						s = bone.scale.getValue(0, time);
-						q = bone.rot.getValue(0, time);
+						animStart = firstT;
+						animEnd = secondT;
 					}
-					else if (secondR == animEnd)
+					else if (offset2 > offset1 && offset2 > offset3)
 					{
-						time = bone.rot.times[j];
-						t = bone.trans.getValue(0, time);
-						s = bone.scale.getValue(0, time);
-						q = bone.rot.data[j];
-					}
-					else if (secondS == animEnd)
-					{
-						time = bone.scale.times[j];
-						t = bone.trans.getValue(0, time);
-						s = bone.scale.data[j];
-						q = bone.rot.getValue(0, time);
-					}
-
-					Matrix4 mat;
-					if (bone.bUsePivot)
-					{
-						mat.makeTrans(bone.pivot * -1.0f);
-						mat.setScale(s);
-						mat.m[3][0] *= s.x;
-						mat.m[3][1] *= s.y;
-						mat.m[3][2] *= s.z;
-						mat = mat.Multiply4x3(Matrix4(q.invertWinding()));
-						mat.offsetTrans(t);
-						mat.offsetTrans(bone.pivot);
+						animStart = firstR;
+						animEnd = secondR;
 					}
 					else
 					{
-						mat.makeScale(s);
-						mat = mat.Multiply4x3(Matrix4(q.invertWinding()));
-						mat.offsetTrans(t);
+						animStart = firstS;
+						animEnd = secondS;
 					}
 
-					animTimes.push_back(time * inverse);
-					translations.push_back(mat.getTrans());
-					rotations.push_back(q);
-					scales.push_back(s);
+					animOffset.push_back(animEnd - animStart + 1);
+					int time = 0;
+					Vector3 t, s;
+					Quaternion q;
+					for (uint32_t j = animStart; j <= animEnd; j++)
+					{
+						if (firstT == animStart && secondT == animEnd)
+						{
+							time = bone.trans.times[j];
+							t = bone.trans.data[j];
+							s = bone.scale.getValue(animId, time);
+							q = bone.rot.getValue(animId, time);
+						}
+						else if (firstR == animStart && secondR == animEnd)
+						{
+							time = bone.rot.times[j];
+							t = bone.trans.getValue(animId, time);
+							s = bone.scale.getValue(animId, time);
+							q = bone.rot.data[j];
+						}
+						else if (firstS == animStart && secondS == animEnd)
+						{
+							time = bone.scale.times[j];
+							t = bone.trans.getValue(animId, time);
+							s = bone.scale.data[j];
+							q = bone.rot.getValue(animId, time);
+						}
+
+						Matrix4 mat;
+						if (bone.bUsePivot)
+						{
+							mat.makeTrans(bone.pivot * -1.0f);
+							mat.setScale(s);
+							mat.m[3][0] *= s.x;
+							mat.m[3][1] *= s.y;
+							mat.m[3][2] *= s.z;
+							mat = mat.Multiply4x3(Matrix4(q.invertWinding()));
+							mat.offsetTrans(t);
+							mat.offsetTrans(bone.pivot);
+						}
+						else
+						{
+							mat.makeScale(s);
+							mat = mat.Multiply4x3(Matrix4(q.invertWinding()));
+							mat.offsetTrans(t);
+						}
+
+						time = time - paraXModel->anims[animId].timeStart;
+						animTime.push_back(time * inverse);
+						translation.push_back(mat.getTrans());
+						rotation.push_back(q);
+						scale.push_back(s);
+					}
+					boneIndice.push_back(bone.nIndex);
 				}
-				boneIndices.push_back(bone.nIndex);
 			}
+
+			boneIndices.push_back(boneIndice);
+			animOffsets.push_back(animOffset);
+			animTimes.push_back(animTime);
+			translations.push_back(translation);
+			scales.push_back(scale);
+			rotations.push_back(rotation);
 		}
 	}
 
@@ -403,6 +455,22 @@ namespace ParaEngine
 		float inverse = 1.0f / 1000.0f;
 		//uint32_t animLength = paraXModel->anims[0].timeEnd - paraXModel->anims[0].timeStart;
 		//if (animLength == 0) animLength = 1000;
+		boneIndices.clear();
+		animOffsets.clear();
+		animTimes.clear();
+		translations.clear();
+		scales.clear();
+		rotations.clear();
+		bvTime.resize(1);
+		bvTranslation.resize(1);
+		bvRotation.resize(1);
+		bvScale.resize(1);
+		std::vector<int> boneIndice;
+		std::vector<uint32_t> animOffset;
+		std::vector<float> animTime;
+		std::vector<Vector3> translation;
+		std::vector<Vector3> scale;
+		std::vector<Quaternion> rotation;
 		for (uint32_t i = 0; i < paraXModel->m_objNum.nBones; i++)
 		{
 			Bone& bone = paraXModel->bones[i];
@@ -432,7 +500,7 @@ namespace ParaEngine
 					uint32_t animStart = std::min(std::min(firstT, firstR), firstS);
 					uint32_t animEnd = std::max(std::max(secondT, secondR), secondS);
 
-					animOffsets.push_back(animEnd - animStart + 1);
+					animOffset.push_back(animEnd - animStart + 1);
 					int time = 0;
 					Vector3 t, s;
 					Quaternion q;
@@ -484,12 +552,12 @@ namespace ParaEngine
 							mat.offsetTrans(t);
 						}
 
-						animTimes.push_back(time * inverse);
-						translations.push_back(mat.getTrans());
-						rotations.push_back(q);
-						scales.push_back(s);
+						animTime.push_back(time * inverse);
+						translation.push_back(mat.getTrans());
+						rotation.push_back(q);
+						scale.push_back(s);
 					}
-					boneIndices.push_back(bone.nIndex);
+					boneIndice.push_back(bone.nIndex);
 				}
 			}
 			else
@@ -505,7 +573,7 @@ namespace ParaEngine
 					uint32_t animStart = std::min(std::min(firstT, firstR), firstS);
 					uint32_t animEnd = std::max(std::max(secondT, secondR), secondS);
 
-					animOffsets.push_back(animEnd - animStart + 1);
+					animOffset.push_back(animEnd - animStart + 1);
 					int time = 0;
 					Vector3 t, s;
 					Quaternion q;
@@ -552,15 +620,22 @@ namespace ParaEngine
 							mat.offsetTrans(t);
 						}
 
-						animTimes.push_back(time * inverse);
-						translations.push_back(mat.getTrans());
-						rotations.push_back(q);
-						scales.push_back(s);
+						animTime.push_back(time * inverse);
+						translation.push_back(mat.getTrans());
+						rotation.push_back(q);
+						scale.push_back(s);
 					}
-					boneIndices.push_back(bone.nIndex);
+					boneIndice.push_back(bone.nIndex);
 				}
 			}
 		}
+
+		boneIndices.push_back(boneIndice);
+		animOffsets.push_back(animOffset);
+		animTimes.push_back(animTime);
+		translations.push_back(translation);
+		scales.push_back(scale);
+		rotations.push_back(rotation);
 	}
 
 	ParaEngine::Bone* glTFModelExporter::GetBoneByIndex(int nIndex)
@@ -767,56 +842,63 @@ namespace ParaEngine
 
 		if (paraXModel->animated)
 		{
-			std::shared_ptr<Animation> animation = ExportAnimations();
-			WriteBufferView(bvTime, bufferViews, index);
-			WriteBufferView(bvTranslation, bufferViews, index + 1);
-			WriteBufferView(bvRotation, bufferViews, index + 2);
-			WriteBufferView(bvScale, bufferViews, index + 3);
-			Json::Value saj = Json::Value(Json::arrayValue);
-			for (uint32_t i = 0; i < animation->samplers.size(); i++)
+			uint32_t aidx = index;
+			uint32_t nAnimations = paraXModel->m_objNum.nAnimations;
+			if (animProvider != nullptr) nAnimations = 1;
+			for (uint32_t animId = 0; animId < nAnimations; animId++)
 			{
-				Animation::Sampler& sampler = animation->samplers[i];
-				if (sampler.used)
+				std::shared_ptr<Animation> animation = ExportAnimations(animId);
+				WriteBufferView(bvTime[animId], bufferViews, index);
+				WriteBufferView(bvTranslation[animId], bufferViews, index + 1);
+				WriteBufferView(bvRotation[animId], bufferViews, index + 2);
+				WriteBufferView(bvScale[animId], bufferViews, index + 3);
+				index += 4;
+				Json::Value saj = Json::Value(Json::arrayValue);
+				for (uint32_t i = 0; i < animation->samplers.size(); i++)
 				{
-					WriteAccessor(sampler.input, accessors, index);
-					index++;
+					Animation::Sampler& sampler = animation->samplers[i];
+					if (sampler.used)
+					{
+						WriteAccessor(sampler.input, accessors, aidx);
+						aidx++;
+					}
+					WriteAccessor(sampler.output, accessors, aidx);
+					aidx++;
+					Json::Value sj;
+					sj["input"] = sampler.input->index;
+					sj["output"] = sampler.output->index;
+					switch (sampler.interpolation)
+					{
+					case Interpolation::LINEAR: sj["interpolation"] = "LINEAR"; break;
+					case Interpolation::STEP: sj["interpolation"] = "STEP"; break;
+					case Interpolation::CUBICSPLINE: sj["interpolation"] = "CUBICSPLINE"; break;
+					default: break;
+					}
+					saj[i] = sj;
 				}
-				WriteAccessor(sampler.output, accessors, index);
-				index++;
-				Json::Value sj;
-				sj["input"] = sampler.input->index;
-				sj["output"] = sampler.output->index;
-				switch (sampler.interpolation)
+				Json::Value caj = Json::Value(Json::arrayValue);
+				for (uint32_t i = 0; i < animation->channels.size(); i++)
 				{
-				case Interpolation::LINEAR: sj["interpolation"] = "LINEAR"; break;
-				case Interpolation::STEP: sj["interpolation"] = "STEP"; break;
-				case Interpolation::CUBICSPLINE: sj["interpolation"] = "CUBICSPLINE"; break;
-				default: break;
+					Animation::Channel& channel = animation->channels[i];
+					Json::Value cj;
+					cj["sampler"] = channel.sampler;
+					Json::Value tj;
+					tj["node"] = channel.target.node;
+					switch (channel.target.path)
+					{
+					case AnimationPath::Translation: tj["path"] = "translation"; break;
+					case AnimationPath::Rotation: tj["path"] = "rotation"; break;
+					case AnimationPath::Scale: tj["path"] = "scale"; break;
+					default: break;
+					}
+					cj["target"] = tj;
+					caj[i] = cj;
 				}
-				saj[i] = sj;
+				Json::Value aj;
+				aj["samplers"] = saj;
+				aj["channels"] = caj;
+				animations[animId] = aj;
 			}
-			Json::Value caj = Json::Value(Json::arrayValue);
-			for (uint32_t i = 0; i < animation->channels.size(); i++)
-			{
-				Animation::Channel& channel = animation->channels[i];
-				Json::Value cj;
-				cj["sampler"] = channel.sampler;
-				Json::Value tj;
-				tj["node"] = channel.target.node;
-				switch (channel.target.path)
-				{
-				case AnimationPath::Translation: tj["path"] = "translation"; break;
-				case AnimationPath::Rotation: tj["path"] = "rotation"; break;
-				case AnimationPath::Scale: tj["path"] = "scale"; break;
-				default: break;
-				}
-				cj["target"] = tj;
-				caj[i] = cj;
-			}
-			Json::Value aj;
-			aj["samplers"] = saj;
-			aj["channels"] = caj;
-			animations[0u] = aj;
 			root["animations"] = animations;
 		}
 
@@ -1021,6 +1103,7 @@ namespace ParaEngine
 		}
 
 		bufferIndex++;
+		accessorIndex++;
 		return acc;
 	}
 
@@ -1053,6 +1136,7 @@ namespace ParaEngine
 		}
 
 		bufferIndex++;
+		accessorIndex++;
 		return acc;
 	}
 
@@ -1085,6 +1169,7 @@ namespace ParaEngine
 		}
 
 		bufferIndex++;
+		accessorIndex++;
 		return acc;
 	}
 
@@ -1117,6 +1202,7 @@ namespace ParaEngine
 		}
 
 		bufferIndex++;
+		accessorIndex++;
 		return acc;
 	}
 
@@ -1149,6 +1235,7 @@ namespace ParaEngine
 		}
 
 		bufferIndex++;
+		accessorIndex++;
 		return acc;
 	}
 
@@ -1181,6 +1268,7 @@ namespace ParaEngine
 		}
 
 		bufferIndex++;
+		accessorIndex++;
 		return acc;
 	}
 
@@ -1213,6 +1301,7 @@ namespace ParaEngine
 		}
 
 		bufferIndex++;
+		accessorIndex++;
 		return acc;
 	}
 
@@ -1249,6 +1338,7 @@ namespace ParaEngine
 		}
 
 		bufferIndex++;
+		accessorIndex++;
 		return acc;
 	}
 
@@ -1331,30 +1421,28 @@ namespace ParaEngine
 		return material;
 	}
 
-	std::shared_ptr<Animation> glTFModelExporter::ExportAnimations()
+	std::shared_ptr<Animation> glTFModelExporter::ExportAnimations(uint32_t animId)
 	{
 		std::shared_ptr<Animation> animation = std::make_shared<Animation>();
 
-		bvTime = ExportBufferView(AttribType::SCALAR, animTimes.size(), 0);
-		bvTranslation = ExportBufferView(AttribType::VEC3, translations.size(), 1);
-		bvRotation = ExportBufferView(AttribType::VEC4, rotations.size(), 2);
-		bvScale = ExportBufferView(AttribType::VEC3, scales.size(), 3);
+		bvTime[animId] = ExportBufferView(AttribType::SCALAR, animTimes[animId].size(), 0);
+		bvTranslation[animId] = ExportBufferView(AttribType::VEC3, translations[animId].size(), 1);
+		bvRotation[animId] = ExportBufferView(AttribType::VEC4, rotations[animId].size(), 2);
+		bvScale[animId] = ExportBufferView(AttribType::VEC3, scales[animId].size(), 3);
 		uint32_t offsetTime = 0;
-		uint32_t offsetData = 0;
-		for (uint32_t i = 0; i < animOffsets.size(); i++)
+		for (uint32_t i = 0; i < animOffsets[animId].size(); i++)
 		{
-			uint32_t numDatas = animOffsets[i];
-			std::shared_ptr<Accessor> acTime = ExportTimeAccessor(bvTime, offsetTime, numDatas);
-			offsetTime += numDatas;
+			uint32_t numDatas = animOffsets[animId][i];
+			std::shared_ptr<Accessor> acTime = ExportTimeAccessor(bvTime[animId], offsetTime, numDatas, animId);
 
 			{
 				Animation::Sampler sampler;
 				sampler.interpolation = Interpolation::LINEAR;
 				sampler.used = true;
 				sampler.input = acTime;
-				sampler.output = ExportTranslationAccessor(bvTranslation, offsetData, numDatas);
+				sampler.output = ExportTranslationAccessor(bvTranslation[animId], offsetTime, numDatas, animId);
 				Animation::Channel channel;
-				channel.target.node = boneIndices[i] + 1;
+				channel.target.node = boneIndices[animId][i] + 1;
 				channel.target.path = AnimationPath::Translation;
 				channel.sampler = animation->samplers.size();
 				animation->samplers.push_back(sampler);
@@ -1365,9 +1453,9 @@ namespace ParaEngine
 				sampler.interpolation = Interpolation::LINEAR;
 				sampler.used = false;
 				sampler.input = acTime;
-				sampler.output = ExportRotationAccessor(bvRotation, offsetData, numDatas);
+				sampler.output = ExportRotationAccessor(bvRotation[animId], offsetTime, numDatas, animId);
 				Animation::Channel channel;
-				channel.target.node = boneIndices[i] + 1;
+				channel.target.node = boneIndices[animId][i] + 1;
 				channel.target.path = AnimationPath::Rotation;
 				channel.sampler = animation->samplers.size();
 				animation->samplers.push_back(sampler);
@@ -1378,15 +1466,15 @@ namespace ParaEngine
 				sampler.interpolation = Interpolation::LINEAR;
 				sampler.used = false;
 				sampler.input = acTime;
-				sampler.output = ExportScaleAccessor(bvScale, offsetData, numDatas);
+				sampler.output = ExportScaleAccessor(bvScale[animId], offsetTime, numDatas, animId);
 				Animation::Channel channel;
-				channel.target.node = boneIndices[i] + 1;
+				channel.target.node = boneIndices[animId][i] + 1;
 				channel.target.path = AnimationPath::Scale;
 				channel.sampler = animation->samplers.size();
 				animation->samplers.push_back(sampler);
 				animation->channels.push_back(channel);
 			}
-			offsetData += numDatas;
+			offsetTime += numDatas;
 		}
 		return animation;
 	}
@@ -1397,22 +1485,23 @@ namespace ParaEngine
 		const uint32_t bytesPerComp = ComponentTypeSize(ComponentType::Float);
 		std::shared_ptr<BufferView> bv = std::make_shared<BufferView>();
 		bv->buffer = buffer;
-		bv->index = bufferIndex + index;
+		bv->index = bufferIndex;
 		bv->byteOffset = buffer->byteLength;
 		bv->byteLength = length * numComponents * bytesPerComp;
 		bv->byteStride = 0;
 		bv->target = BufferViewTarget::NotUse;
 		buffer->Grow(bv->byteLength);
+		bufferIndex++;
 		return bv;
 	}
 
-	std::shared_ptr<Accessor> glTFModelExporter::ExportTimeAccessor(std::shared_ptr<BufferView>& bv, uint32_t offset, uint32_t numDatas)
+	std::shared_ptr<Accessor> glTFModelExporter::ExportTimeAccessor(std::shared_ptr<BufferView>& bv, uint32_t offset, uint32_t numDatas, uint32_t animId)
 	{
 		const uint32_t numComponents = AttribType::GetNumComponents(AttribType::SCALAR);
 		const uint32_t bytesPerComp = ComponentTypeSize(ComponentType::Float);
 		std::shared_ptr<Accessor> acc = std::make_shared<Accessor>();
 		acc->bufferView = bv;
-		acc->index = bufferIndex;
+		acc->index = accessorIndex;
 		acc->byteOffset = offset * numComponents * bytesPerComp;
 		acc->componentType = ComponentType::Float;
 		acc->count = numDatas;
@@ -1421,22 +1510,22 @@ namespace ParaEngine
 		acc->min.push_back(FLT_MAX);
 		for (uint32_t i = offset; i < numDatas + offset; i++)
 		{
-			float val = animTimes[i];
+			float val = animTimes[animId][i];
 			if (val < acc->min[0]) acc->min[0] = val;
 			if (val > acc->max[0]) acc->max[0] = val;
 		}
 
-		bufferIndex++;
+		accessorIndex++;
 		return acc;
 	}
 
-	std::shared_ptr<Accessor> glTFModelExporter::ExportTranslationAccessor(std::shared_ptr<BufferView>& bv, uint32_t offset, uint32_t numDatas)
+	std::shared_ptr<Accessor> glTFModelExporter::ExportTranslationAccessor(std::shared_ptr<BufferView>& bv, uint32_t offset, uint32_t numDatas, uint32_t animId)
 	{
 		const uint32_t numComponents = AttribType::GetNumComponents(AttribType::VEC3);
 		const uint32_t bytesPerComp = ComponentTypeSize(ComponentType::Float);
 		std::shared_ptr<Accessor> acc = std::make_shared<Accessor>();
 		acc->bufferView = bv;
-		acc->index = bufferIndex;
+		acc->index = accessorIndex;
 		acc->byteOffset = offset * numComponents * bytesPerComp;
 		acc->componentType = ComponentType::Float;
 		acc->count = numDatas;
@@ -1450,23 +1539,23 @@ namespace ParaEngine
 		{
 			for (uint32_t j = 0; j < numComponents; j++)
 			{
-				float val = translations[i][j];
+				float val = translations[animId][i][j];
 				if (val < acc->min[j]) acc->min[j] = val;
 				if (val > acc->max[j]) acc->max[j] = val;
 			}
 		}
 
-		bufferIndex++;
+		accessorIndex++;
 		return acc;
 	}
 
-	std::shared_ptr<Accessor> glTFModelExporter::ExportRotationAccessor(std::shared_ptr<BufferView>& bv, uint32_t offset, uint32_t numDatas)
+	std::shared_ptr<Accessor> glTFModelExporter::ExportRotationAccessor(std::shared_ptr<BufferView>& bv, uint32_t offset, uint32_t numDatas, uint32_t animId)
 	{
 		const uint32_t numComponents = AttribType::GetNumComponents(AttribType::VEC4);
 		const uint32_t bytesPerComp = ComponentTypeSize(ComponentType::Float);
 		std::shared_ptr<Accessor> acc = std::make_shared<Accessor>();
 		acc->bufferView = bv;
-		acc->index = bufferIndex;
+		acc->index = accessorIndex;
 		acc->byteOffset = offset * numComponents * bytesPerComp;
 		acc->componentType = ComponentType::Float;
 		acc->count = numDatas;
@@ -1480,23 +1569,23 @@ namespace ParaEngine
 		{
 			for (uint32_t j = 0; j < numComponents; j++)
 			{
-				float val = rotations[i][j];
+				float val = rotations[animId][i][j];
 				if (val < acc->min[j]) acc->min[j] = val;
 				if (val > acc->max[j]) acc->max[j] = val;
 			}
 		}
 
-		bufferIndex++;
+		accessorIndex++;
 		return acc;
 	}
 
-	std::shared_ptr<ParaEngine::Accessor> glTFModelExporter::ExportScaleAccessor(std::shared_ptr<BufferView>& bv, uint32_t offset, uint32_t numDatas)
+	std::shared_ptr<ParaEngine::Accessor> glTFModelExporter::ExportScaleAccessor(std::shared_ptr<BufferView>& bv, uint32_t offset, uint32_t numDatas, uint32_t animId)
 	{
 		const uint32_t numComponents = AttribType::GetNumComponents(AttribType::VEC3);
 		const uint32_t bytesPerComp = ComponentTypeSize(ComponentType::Float);
 		std::shared_ptr<Accessor> acc = std::make_shared<Accessor>();
 		acc->bufferView = bv;
-		acc->index = bufferIndex;
+		acc->index = accessorIndex;
 		acc->byteOffset = offset * numComponents * bytesPerComp;
 		acc->componentType = ComponentType::Float;
 		acc->count = numDatas;
@@ -1510,13 +1599,13 @@ namespace ParaEngine
 		{
 			for (uint32_t j = 0; j < numComponents; j++)
 			{
-				float val = scales[i][j];
+				float val = scales[animId][i][j];
 				if (val < acc->min[j]) acc->min[j] = val;
 				if (val > acc->max[j]) acc->max[j] = val;
 			}
 		}
 
-		bufferIndex++;
+		accessorIndex++;
 		return acc;
 	}
 
@@ -1586,27 +1675,30 @@ namespace ParaEngine
 			}
 			for (uint32_t i = 0; i < animTimes.size(); i++)
 			{
-				float val = animTimes[i];
-				builder.append((const char*)&val, sizeFloat);
-			}
-			for (uint32_t i = 0; i < translations.size(); i++)
-			{
-				builder.append((const char*)&translations[i].x, sizeFloat);
-				builder.append((const char*)&translations[i].y, sizeFloat);
-				builder.append((const char*)&translations[i].z, sizeFloat);
-			}
-			for (uint32_t i = 0; i < rotations.size(); i++)
-			{
-				builder.append((const char*)&rotations[i].x, sizeFloat);
-				builder.append((const char*)&rotations[i].y, sizeFloat);
-				builder.append((const char*)&rotations[i].z, sizeFloat);
-				builder.append((const char*)&rotations[i].w, sizeFloat);
-			}
-			for (uint32_t i = 0; i < scales.size(); i++)
-			{
-				builder.append((const char*)&scales[i].x, sizeFloat);
-				builder.append((const char*)&scales[i].y, sizeFloat);
-				builder.append((const char*)&scales[i].z, sizeFloat);
+				for (uint32_t j = 0; j < animTimes[i].size(); j++)
+				{
+					float val = animTimes[i][j];
+					builder.append((const char*)&val, sizeFloat);
+				}
+				for (uint32_t j = 0; j < translations[i].size(); j++)
+				{
+					builder.append((const char*)&translations[i][j].x, sizeFloat);
+					builder.append((const char*)&translations[i][j].y, sizeFloat);
+					builder.append((const char*)&translations[i][j].z, sizeFloat);
+				}
+				for (uint32_t j = 0; j < rotations[i].size(); j++)
+				{
+					builder.append((const char*)&rotations[i][j].x, sizeFloat);
+					builder.append((const char*)&rotations[i][j].y, sizeFloat);
+					builder.append((const char*)&rotations[i][j].z, sizeFloat);
+					builder.append((const char*)&rotations[i][j].w, sizeFloat);
+				}
+				for (uint32_t j = 0; j < scales[i].size(); j++)
+				{
+					builder.append((const char*)&scales[i][j].x, sizeFloat);
+					builder.append((const char*)&scales[i][j].y, sizeFloat);
+					builder.append((const char*)&scales[i][j].z, sizeFloat);
+				}
 			}
 		}
 		else
@@ -1848,27 +1940,30 @@ namespace ParaEngine
 				}
 				for (uint32_t i = 0; i < animTimes.size(); i++)
 				{
-					float val = animTimes[i];
-					bin.write(&val, sizeFloat);
-				}
-				for (uint32_t i = 0; i < translations.size(); i++)
-				{
-					bin.write(&translations[i].x, sizeFloat);
-					bin.write(&translations[i].y, sizeFloat);
-					bin.write(&translations[i].z, sizeFloat);
-				}
-				for (uint32_t i = 0; i < rotations.size(); i++)
-				{
-					bin.write(&rotations[i].x, sizeFloat);
-					bin.write(&rotations[i].y, sizeFloat);
-					bin.write(&rotations[i].z, sizeFloat);
-					bin.write(&rotations[i].w, sizeFloat);
-				}
-				for (uint32_t i = 0; i < scales.size(); i++)
-				{
-					bin.write(&scales[i].x, sizeFloat);
-					bin.write(&scales[i].y, sizeFloat);
-					bin.write(&scales[i].z, sizeFloat);
+					for (uint32_t j = 0; j < animTimes.size(); j++)
+					{
+						float val = animTimes[i][j];
+						bin.write(&val, sizeFloat);
+					}
+					for (uint32_t j = 0; j < translations.size(); j++)
+					{
+						bin.write(&translations[i][j].x, sizeFloat);
+						bin.write(&translations[i][j].y, sizeFloat);
+						bin.write(&translations[i][j].z, sizeFloat);
+					}
+					for (uint32_t j = 0; j < rotations.size(); j++)
+					{
+						bin.write(&rotations[i][j].x, sizeFloat);
+						bin.write(&rotations[i][j].y, sizeFloat);
+						bin.write(&rotations[i][j].z, sizeFloat);
+						bin.write(&rotations[i][j].w, sizeFloat);
+					}
+					for (uint32_t j = 0; j < scales.size(); j++)
+					{
+						bin.write(&scales[i][j].x, sizeFloat);
+						bin.write(&scales[i][j].y, sizeFloat);
+						bin.write(&scales[i][j].z, sizeFloat);
+					}
 				}
 			}
 			else
@@ -1980,27 +2075,30 @@ namespace ParaEngine
 				}
 				for (uint32_t i = 0; i < animTimes.size(); i++)
 				{
-					float val = animTimes[i];
-					file.write(&val, sizeFloat);
-				}
-				for (uint32_t i = 0; i < translations.size(); i++)
-				{
-					file.write(&translations[i].x, sizeFloat);
-					file.write(&translations[i].y, sizeFloat);
-					file.write(&translations[i].z, sizeFloat);
-				}
-				for (uint32_t i = 0; i < rotations.size(); i++)
-				{
-					file.write(&rotations[i].x, sizeFloat);
-					file.write(&rotations[i].y, sizeFloat);
-					file.write(&rotations[i].z, sizeFloat);
-					file.write(&rotations[i].w, sizeFloat);
-				}
-				for (uint32_t i = 0; i < scales.size(); i++)
-				{
-					file.write(&scales[i].x, sizeFloat);
-					file.write(&scales[i].y, sizeFloat);
-					file.write(&scales[i].z, sizeFloat);
+					for (uint32_t j = 0; j < animTimes.size(); j++)
+					{
+						float val = animTimes[i][j];
+						file.write(&val, sizeFloat);
+					}
+					for (uint32_t j = 0; j < translations.size(); j++)
+					{
+						file.write(&translations[i][j].x, sizeFloat);
+						file.write(&translations[i][j].y, sizeFloat);
+						file.write(&translations[i][j].z, sizeFloat);
+					}
+					for (uint32_t j = 0; j < rotations.size(); j++)
+					{
+						file.write(&rotations[i][j].x, sizeFloat);
+						file.write(&rotations[i][j].y, sizeFloat);
+						file.write(&rotations[i][j].z, sizeFloat);
+						file.write(&rotations[i][j].w, sizeFloat);
+					}
+					for (uint32_t j = 0; j < scales.size(); j++)
+					{
+						file.write(&scales[i][j].x, sizeFloat);
+						file.write(&scales[i][j].y, sizeFloat);
+						file.write(&scales[i][j].z, sizeFloat);
+					}
 				}
 			}
 			else
