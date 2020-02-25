@@ -89,8 +89,13 @@ void* ParaEngine::LoadLibrary(const char *pcDllname, int iMode)
 #ifndef LOAD_LIBRARY_SEARCH_DLL_LOAD_DIR
 	return (void*)::LoadLibraryEx(sDllName.c_str(), NULL, 0);
 #else
-	return (void*)::LoadLibraryEx(sDllName.c_str(), NULL, 
-		LOAD_LIBRARY_SEARCH_DLL_LOAD_DIR | LOAD_LIBRARY_SEARCH_APPLICATION_DIR | LOAD_LIBRARY_SEARCH_DEFAULT_DIRS | LOAD_LIBRARY_SEARCH_SYSTEM32 | LOAD_LIBRARY_SEARCH_USER_DIRS);
+	void * pDll = (void*)::LoadLibrary(sDllName.c_str()); 
+	if (pDll == NULL) 
+	{
+		// Note: in case of win7 before 2011, LoadLibraryEx is not supported
+		pDll = (void*)::LoadLibraryEx(sDllName.c_str(), NULL, LOAD_LIBRARY_SEARCH_DLL_LOAD_DIR | LOAD_LIBRARY_SEARCH_APPLICATION_DIR | LOAD_LIBRARY_SEARCH_DEFAULT_DIRS | LOAD_LIBRARY_SEARCH_SYSTEM32 | LOAD_LIBRARY_SEARCH_USER_DIRS);
+	}
+	return  pDll;
 #endif
 #else
 	if (sDllName.find(".") == string::npos)
