@@ -763,9 +763,6 @@ bool ParaEngine::CFileUtils::WriteLastModifiedTimeToDisk(FileHandle& fileHandle,
 	bool op_result = false;
 	if (!fileName.empty())
 	{
-		//platform: mobile
-		time_t platform_time;
-		standardtime2osfiletime(lastModifiedTime, &platform_time);
 		std::string sFilePath;
 		if (IsAbsolutePath(fileName))
 		{
@@ -778,7 +775,7 @@ bool ParaEngine::CFileUtils::WriteLastModifiedTimeToDisk(FileHandle& fileHandle,
 		}
 		fs::path filePath(sFilePath.c_str());
 		boost::system::error_code err_code;
-		fs::last_write_time(filePath, platform_time, err_code);
+		fs::last_write_time(filePath, lastModifiedTime, err_code);
 		op_result = (err_code.value() == boost::system::errc::success);
 	}
 
