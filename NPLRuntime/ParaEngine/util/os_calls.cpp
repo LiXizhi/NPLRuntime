@@ -88,19 +88,21 @@ void* ParaEngine::LoadLibrary(const char *pcDllname, int iMode)
 		OUTPUT_LOG("Absolute path is used for dll: %s\n", sDllName.c_str());
 	}
 #endif	
-	return (void*)::LoadLibraryEx(sDllName.c_str(), NULL, 
-		LOAD_LIBRARY_SEARCH_DLL_LOAD_DIR | LOAD_LIBRARY_SEARCH_APPLICATION_DIR | LOAD_LIBRARY_SEARCH_DEFAULT_DIRS | LOAD_LIBRARY_SEARCH_SYSTEM32 | LOAD_LIBRARY_SEARCH_USER_DIRS);
+#ifndef LOAD_LIBRARY_SEARCH_DLL_LOAD_DIR
+	return (void*)::LoadLibraryEx(sDllName.c_str(), NULL, 0);
+#else
+	void * pDll = (void*)::LoadLibrary(sDllName.c_str()); 
+	if (pDll == NULL) 
+	{
+		// Note: in case of win7 before 2011, LoadLibraryEx is not supported
+		pDll = (void*)::LoadLibraryEx(sDllName.c_str(), NULL, LOAD_LIBRARY_SEARCH_DLL_LOAD_DIR | LOAD_LIBRARY_SEARCH_APPLICATION_DIR | LOAD_LIBRARY_SEARCH_DEFAULT_DIRS | LOAD_LIBRARY_SEARCH_SYSTEM32 | LOAD_LIBRARY_SEARCH_USER_DIRS);
+	}
+	return  pDll;
+#endif
 #else
 	if (sDllName.find(".") == string::npos)
 		sDllName += ".so";
-	void* ret = dlopen(sDllName.c_str(), iMode);
-	if (!ret)
-	{
-		const char* error = dlerror();
-		OUTPUT_LOG(error);
-	}
-	return ret;
-	
+	return dlopen(sDllName.c_str(), iMode);
 #endif
 
 
@@ -167,7 +169,7 @@ bool ParaEngine::FreeLibrary(void *hDLL)
 bool ParaEngine::GetLastFileWriteTime(const char* filename, time_t& ftWrite)
 {
 	struct stat filestat;
-	if (stat(filename, &filestat) != 0)
+	if (stat(filename, &filestat) == 0)
 	{
 		ftWrite = filestat.st_mtime;
 		return true;
@@ -415,7 +417,7 @@ PE_CORE_DECL size_t ParaEngine::GetCurrentMemoryUse()
 
 PE_CORE_DECL std::string ParaEngine::GetExecutablePath()
 {
-	/*
+/*
 	char exePath[512 + 1] = { 0 };
 	memset(exePath, 0, sizeof(exePath));
 #ifdef WIN32
