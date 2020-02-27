@@ -345,11 +345,16 @@ bool ParaEngine::CViewport::DrawQuad2()
 	bool bSucceed = false;
 #ifdef USE_DIRECTX_RENDERER
 	auto CurrentViewport = CGlobals::GetRenderDevice()->GetViewport();
-	auto rt = CGlobals::GetRenderDevice()->GetRenderTarget(0);
+
+	auto rt = CGlobals::GetDirectXEngine().GetRenderTarget(0);
+
+	D3DSURFACE_DESC desc;
+	rt->GetDesc(&desc);
+
 
 	ParaViewport vp;
-	vp.Width = rt->GetWidth();
-	vp.Height = rt->GetHeight();
+	vp.Width = desc.Width;
+	vp.Height = desc.Height;
 	CGlobals::GetRenderDevice()->SetViewport(vp);
 
 	mesh_vertex_plain quadVertices[4] = {

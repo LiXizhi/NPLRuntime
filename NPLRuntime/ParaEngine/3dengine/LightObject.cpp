@@ -553,9 +553,12 @@ void ParaEngine::CLightObject::RenderDeferredLightMesh(SceneState * sceneState)
 			pBufEntity->Unlock();
 
 			if (pBufEntity->IsMemoryBuffer())
-				RenderDevice::DrawPrimitiveUP(pDevice, RenderDevice::DRAW_PERF_TRIANGLES_CHARACTER, D3DPT_TRIANGLELIST, nLockedNum, pBufEntity->GetBaseVertexPointer(), pBufEntity->m_nUnitSize);
+				//RenderDevice::DrawPrimitiveUP(pDevice, RenderDevice::DRAW_PERF_TRIANGLES_CHARACTER, D3DPT_TRIANGLELIST, nLockedNum, pBufEntity->GetBaseVertexPointer(), pBufEntity->m_nUnitSize);
+				CGlobals::GetRenderDevice()->DrawPrimitiveUP(EPrimitiveType::TRIANGLELIST, nLockedNum, pBufEntity->GetBaseVertexPointer(), pBufEntity->m_nUnitSize);
+
 			else
-				RenderDevice::DrawPrimitive(pDevice, RenderDevice::DRAW_PERF_TRIANGLES_CHARACTER, D3DPT_TRIANGLELIST, pBufEntity->GetBaseVertex(), nLockedNum);
+				//RenderDevice::DrawPrimitive(pDevice, RenderDevice::DRAW_PERF_TRIANGLES_CHARACTER, D3DPT_TRIANGLELIST, pBufEntity->GetBaseVertex(), nLockedNum);
+				CGlobals::GetRenderDevice()->DrawPrimitive(EPrimitiveType::TRIANGLELIST, pBufEntity->GetBaseVertex(), nLockedNum);
 		}
 		if ((indexCount - nNumFinishedVertice) > nNumLockedVertice)
 		{

@@ -1336,9 +1336,9 @@ bool EffectManager::BeginEffectFF(int nHandle)
 	case TECH_LIGHT_POINT:
 	case TECH_LIGHT_SPOT:
 	case TECH_LIGHT_DIRECTIONAL:
-		pd3dDevice->SetRenderState(D3DRS_ZWRITEENABLE, TRUE);
-		pd3dDevice->SetRenderState(D3DRS_LIGHTING, FALSE);
-		pd3dDevice->SetRenderState(D3DRS_FOGENABLE, FALSE);
+		pRenderDevice->SetRenderState(ERenderState::ZWRITEENABLE, TRUE);
+		pRenderDevice->SetRenderState(ERenderState::LIGHTING, FALSE);
+		pRenderDevice->SetRenderState(ERenderState::FOGENABLE, FALSE);
 	case TECH_BLOCK_FANCY:
 	case TECH_BLOCK:
 		EnableLocalLighting(bEnableLight);
