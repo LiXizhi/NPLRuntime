@@ -319,13 +319,33 @@ void ParaScripting::CNPLScriptingState::ProcessResult(int nResult, lua_State* L)
 		}
 		// remove the error message from the stack.
 		lua_pop(L, 1);
-		OUTPUT_LOG("%s", strErrorMsg.c_str());
 
-		/* TODO: do this in a thread-safe way
-		if(ParaEngine::CGlobals::WillGenReport())
+		// get the "__npl_error_callback" global function in the runtime 
+		const char error_callback[] = "__npl_error_callback";
+		lua_pushlstring(L, error_callback, sizeof(error_callback) - 1);
+		lua_gettable(L, LUA_GLOBALSINDEX);
+		if (lua_isfunction(L, -1))
 		{
-		ParaEngine::CGlobals::GetReport()->SetString("Script Error", strErrorMsg.c_str());
-		}*/
+			// push error message 
+			lua_pushlstring(L, strErrorMsg.c_str(), strErrorMsg.size());
+			// call the function with 1 arguments and 0 result
+			int nResult = lua_pcall(L, 1, 0, 0);
+			if (nResult != 0)
+			{
+				const char* errorMsg = lua_tostring(L, -1);
+				if (errorMsg != NULL) {
+					OUTPUT_LOG("%s <Runtime error>\r\n", errorMsg);
+				}
+				lua_pop(L, 1);
+			}
+		}
+		else 
+		{
+			// pops the element, so that the stack is balanced.
+			lua_pop(L, 1);
+			// the file does not contain an npl process error function. So we will do nothing.
+			OUTPUT_LOG("%s", strErrorMsg.c_str());
+		}
 	}
 }
 
