@@ -284,7 +284,7 @@ def buildWin32(b32):
 		print "Building for win64\n";
 		
 	os.system("bootstrap --with-toolset=gcc");
-	params = "stage link=static runtime-link=static threading=multi address-model=%d --abbreviate-paths cflags=-D_WIN32_WINNT=0x0501 --build-dir=%s --stagedir=%s" % (address_model, build_dir, stage_dir);
+	params = "stage link=static runtime-link=static threading=multi address-model=%d --abbreviate-paths cflags=-D_WIN32_WINNT=0x0600 --build-dir=%s --stagedir=%s" % (address_model, build_dir, stage_dir);
 	params += " --with-thread --with-date_time --with-filesystem --with-system --with-chrono --with-regex --with-serialization --with-iostreams --with-log";
 	ret = os.system("b2 %s --abbreviate-paths" % (params));
 	

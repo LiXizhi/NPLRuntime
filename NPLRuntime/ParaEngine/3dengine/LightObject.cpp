@@ -13,11 +13,8 @@
 #include "LightManager.h"
 #include "LightObject.h"
 #include "LightGeoUtil.h"
-#if USE_DIRECTX_RENDERER
-#include "RenderDeviceD3D9.h"
-#endif
-using namespace ParaEngine;
 
+using namespace ParaEngine;
 
 /**@def whether to automatically adjust light parameters by range. */
 #define AUTO_LIGHT_PARAMS_BY_RANGE
@@ -25,12 +22,14 @@ using namespace ParaEngine;
 CLightObject::CLightObject(void)
 	:m_bDeleteLightParams(true), m_pLightParams(NULL), m_bAutoSetAttenuation(true), m_bRotationDirty(false)
 {
+
 	m_pLightParams = new CLightParam();
+
 	m_pLightParams->MakeRedPointLight();
 	//m_pLightParams->MakeRedSpotLight();
 	//m_pLightParams->MakeRedDirectionalLight();
 
- 	m_mxLocalTransform = Matrix4::IDENTITY;
+	m_mxLocalTransform = Matrix4::IDENTITY;
 	SetMyType(_LocalLight);
 	SetShadowCaster(false);
 }
@@ -50,7 +49,6 @@ std::string CLightObject::ToString(DWORD nMethod)
 #ifndef MAX_LINE
 #define MAX_LINE	500
 #endif
-
 	string sScript;
 	char line[MAX_LINE + 1];
 
@@ -291,13 +289,13 @@ void CLightObject::SetRoll(float roll)
 	if (m_pLightParams != 0)
 	{
 		m_pLightParams->Roll = roll;
+		m_bRotationDirty = true;
 	}
 }
 
 float CLightObject::GetRoll()
 {
 	return (m_pLightParams != 0) ? m_pLightParams->Roll : 0.f;
-	m_bRotationDirty = true;
 }
 
 void CLightObject::SetRange(float range)
@@ -403,6 +401,7 @@ int ParaEngine::CLightObject::GetPrimaryTechniqueHandle()
 	case ELightType::Directional:
 		return TECH_LIGHT_DIRECTIONAL;
 	}
+	return TECH_LIGHT_POINT;
 }
 
 int ParaEngine::CLightObject::PrepareRender(CBaseCamera* pCamera, SceneState * sceneState)
@@ -554,9 +553,12 @@ void ParaEngine::CLightObject::RenderDeferredLightMesh(SceneState * sceneState)
 			pBufEntity->Unlock();
 
 			if (pBufEntity->IsMemoryBuffer())
-				RenderDevice::DrawPrimitiveUP(pDevice, RenderDevice::DRAW_PERF_TRIANGLES_CHARACTER, D3DPT_TRIANGLELIST, nLockedNum, pBufEntity->GetBaseVertexPointer(), pBufEntity->m_nUnitSize);
+				//RenderDevice::DrawPrimitiveUP(pDevice, RenderDevice::DRAW_PERF_TRIANGLES_CHARACTER, D3DPT_TRIANGLELIST, nLockedNum, pBufEntity->GetBaseVertexPointer(), pBufEntity->m_nUnitSize);
+				CGlobals::GetRenderDevice()->DrawPrimitiveUP(EPrimitiveType::TRIANGLELIST, nLockedNum, pBufEntity->GetBaseVertexPointer(), pBufEntity->m_nUnitSize);
+
 			else
-				RenderDevice::DrawPrimitive(pDevice, RenderDevice::DRAW_PERF_TRIANGLES_CHARACTER, D3DPT_TRIANGLELIST, pBufEntity->GetBaseVertex(), nLockedNum);
+				//RenderDevice::DrawPrimitive(pDevice, RenderDevice::DRAW_PERF_TRIANGLES_CHARACTER, D3DPT_TRIANGLELIST, pBufEntity->GetBaseVertex(), nLockedNum);
+				CGlobals::GetRenderDevice()->DrawPrimitive(EPrimitiveType::TRIANGLELIST, pBufEntity->GetBaseVertex(), nLockedNum);
 		}
 		if ((indexCount - nNumFinishedVertice) > nNumLockedVertice)
 		{
@@ -572,6 +574,7 @@ void ParaEngine::CLightObject::RenderDeferredLightMesh(SceneState * sceneState)
 #endif
 }
 
+
 void ParaEngine::CLightObject::AutoSetAttenation()
 {
 	/*
@@ -584,7 +587,7 @@ void ParaEngine::CLightObject::AutoSetAttenation()
 	 * so we use a greedy way to calculate the a0, a1, a2
 	 */
 	if (m_bAutoSetAttenuation) {
-		float edge_att = 0.1;
+		float edge_att = 0.1f;
 		float one_over_att = 1 / edge_att;
 		float range = m_pLightParams->Range;
 
@@ -615,6 +618,7 @@ void ParaEngine::CLightObject::SetDeferredLightOnly(bool val)
 	m_bDeferredLightOnly = val;
 }
 
+
 bool ParaEngine::CLightObject::IsRotationDirty() const
 {
 	return m_bRotationDirty;
@@ -635,13 +639,13 @@ int CLightObject::InstallFields(CAttributeClass* pClass, bool bOverride)
 	pClass->AddField("Specular", FieldType_Vector3, (void*)SetSpecular_s, (void*)GetSpecular_s, CAttributeField::GetSimpleSchemaOfRGB(), NULL, bOverride);
 	pClass->AddField("Ambient", FieldType_Vector3, (void*)SetAmbient_s, (void*)GetAmbient_s, CAttributeField::GetSimpleSchemaOfRGB(), NULL, bOverride);
 
- 	pClass->AddField("Position", FieldType_DVector3, (void*)SetPosition_s, (void*)GetPosition_s, NULL, NULL, bOverride);
+	pClass->AddField("Position", FieldType_DVector3, (void*)SetPosition_s, (void*)GetPosition_s, NULL, NULL, bOverride);
 	pClass->AddField("Direction", FieldType_Vector3, (void*)SetDirection_s, (void*)GetDirection_s, NULL, NULL, bOverride);
 	pClass->AddField("Yaw", FieldType_Float, (void*)SetYaw_s, (void*)GetYaw_s, NULL, NULL, bOverride);
 	pClass->AddField("Pitch", FieldType_Float, (void*)SetPitch_s, (void*)GetPitch_s, NULL, NULL, bOverride);
 	pClass->AddField("Roll", FieldType_Float, (void*)SetRoll_s, (void*)GetRoll_s, NULL, NULL, bOverride);
 
- 	pClass->AddField("Range", FieldType_Float, (void*)SetRange_s, (void*)GetRange_s, NULL, NULL, bOverride);
+	pClass->AddField("Range", FieldType_Float, (void*)SetRange_s, (void*)GetRange_s, NULL, NULL, bOverride);
 	pClass->AddField("Falloff", FieldType_Float, (void*)SetFalloff_s, (void*)GetFalloff_s, NULL, NULL, bOverride);
 
 	pClass->AddField("Attenuation0", FieldType_Float, (void*)SetAttenuation0_s, (void*)GetAttenuation0_s, NULL, NULL, bOverride);

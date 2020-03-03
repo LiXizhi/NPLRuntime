@@ -46,8 +46,8 @@ CFontRendererOpenGL* ParaEngine::CFontRendererOpenGL::create(const std::string& 
 		char szPath[MAX_PATH];
 		GetWindowsDirectoryA(szPath, MAX_PATH);
 		fontFile = szPath;
-		fontFile = "fonts/DroidSansFallback.ttf"; // 3.6MB
-		//fontFile = fontFile + "/fonts/msyh.ttc";
+		//fontFile = "fonts/DroidSansFallback.ttf"; // 3.6MB
+		fontFile = fontFile + "/fonts/msyh.ttc";
 #else
 		fontFile = "fonts/DroidSansFallback.ttf"; // 3.6MB
 #endif

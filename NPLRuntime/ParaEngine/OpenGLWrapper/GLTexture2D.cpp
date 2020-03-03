@@ -6,7 +6,15 @@
 #include "GLProgram.h"
 #include "GLProgramCache.h"
 
+#ifdef WIN32
+	#define GL_COMPRESSED_RGB_S3TC_DXT1_EXT 0x83F0
+	#define GL_COMPRESSED_RGBA_S3TC_DXT1_EXT 0x83F1
+	#define GL_COMPRESSED_RGBA_S3TC_DXT3_EXT 0x83F2
+	#define GL_COMPRESSED_RGBA_S3TC_DXT5_EXT 0x83F3
+#endif
+
 using namespace ParaEngine;
+
 
 namespace {
 	typedef GLTexture2D::PixelFormatInfoMap::value_type PixelFormatInfoMapValue;

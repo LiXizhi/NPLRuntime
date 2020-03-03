@@ -8,7 +8,7 @@
 //-----------------------------------------------------------------------------
 #include "ParaEngine.h"
 #include "TerrainRegions.h"
-#ifdef WIN32
+#ifdef USE_DIRECTX_RENDERER
 
 #ifdef USE_FREEIMAGE
 #include "FreeImageMemIO.h"
@@ -46,7 +46,7 @@ CRegionLayer::~CRegionLayer()
 
 void CRegionLayer::LoadFromFile(const char* filename, int nBytesPerPixel)
 {
-#if defined(USE_FREEIMAGE) && defined(WIN32)
+#if defined(USE_FREEIMAGE) && defined(USE_DIRECTX_RENDERER)
 	if(filename == 0)
 		return;
 	string sTextureFileName = filename;
