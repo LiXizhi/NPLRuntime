@@ -18,6 +18,7 @@ endif()
 ucm_add_dirs(src/Framework TO src_framework RECURSIVE)
 ucm_add_dirs(src TO src_platform)
 ucm_add_dirs(src/WebView TO src_platform)
+ucm_add_dirs(src/ParaScriptBindings TO src_platform)
 
 # Note: if true, we will produce dll instead of exe, only under win32
 if(WIN32)

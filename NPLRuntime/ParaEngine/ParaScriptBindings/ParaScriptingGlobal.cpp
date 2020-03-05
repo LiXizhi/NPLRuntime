@@ -1797,6 +1797,7 @@ DWORD ParaScripting::ParaGlobal::ReadRegDWORD(const string& root_key, const stri
 #endif
 }
 
+/*
 bool ParaScripting::ParaGlobal::OpenFileDialog(const object& inout)
 {
 #ifdef WIN32
@@ -1898,6 +1899,7 @@ bool ParaScripting::ParaGlobal::OpenFileDialog(const object& inout)
 	return false;
 #endif
 }
+*/
 
 double ParaScripting::ParaGlobal::getAccurateTime()
 {
