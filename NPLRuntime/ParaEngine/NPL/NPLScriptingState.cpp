@@ -203,11 +203,7 @@ bool ParaScripting::CNPLScriptingState::CreateSetState(lua_State* pLuaState)
 	}
 
 	if (m_pState == NULL)
-    {
-        OUTPUT_LOG("Create lua state failed!");
-        return false;
-    }
-
+		return false;
 
 	LoadLuabind();
 	/// make this a reasonable size
@@ -324,13 +320,33 @@ void ParaScripting::CNPLScriptingState::ProcessResult(int nResult, lua_State* L)
 		}
 		// remove the error message from the stack.
 		lua_pop(L, 1);
-		OUTPUT_LOG("%s", strErrorMsg.c_str());
 
-		/* TODO: do this in a thread-safe way
-		if(ParaEngine::CGlobals::WillGenReport())
+		// get the "__npl_error_callback" global function in the runtime 
+		const char error_callback[] = "__npl_error_callback";
+		lua_pushlstring(L, error_callback, sizeof(error_callback) - 1);
+		lua_gettable(L, LUA_GLOBALSINDEX);
+		if (lua_isfunction(L, -1))
 		{
-		ParaEngine::CGlobals::GetReport()->SetString("Script Error", strErrorMsg.c_str());
-		}*/
+			// push error message 
+			lua_pushlstring(L, strErrorMsg.c_str(), strErrorMsg.size());
+			// call the function with 1 arguments and 0 result
+			int nResult = lua_pcall(L, 1, 0, 0);
+			if (nResult != 0)
+			{
+				const char* errorMsg = lua_tostring(L, -1);
+				if (errorMsg != NULL) {
+					OUTPUT_LOG("%s <Runtime error>\r\n", errorMsg);
+				}
+				lua_pop(L, 1);
+			}
+		}
+		else 
+		{
+			// pops the element, so that the stack is balanced.
+			lua_pop(L, 1);
+			// the file does not contain an npl process error function. So we will do nothing.
+			OUTPUT_LOG("%s", strErrorMsg.c_str());
+		}
 	}
 }
 
@@ -402,28 +418,17 @@ uint32 ParaScripting::CNPLScriptingState::GetScriptDiskPath(const string& filePa
 			return dwFound;
 		}
 	}
-
-	// 2008.5.7: we will first find if there is an up to date compiled version in the bin directory. if there is, 
-	// we will load the compiled version, otherwise we will use the text version. 
-	sFileName = std::string("bin/") + filePath;
-	sFileName = CParaFile::ChangeFileExtension(sFileName, "o");
-
-	if ((dwFound = ParaEngine::CParaFile::DoesFileExist2(sFileName.c_str(), FILE_ON_ZIP_ARCHIVE | FILE_ON_DISK | FILE_ON_SEARCH_PATH)))
+	
+	if ((dwFound = ParaEngine::CParaFile::DoesFileExist2(filePath.c_str(), FILE_ON_ZIP_ARCHIVE | FILE_ON_DISK | FILE_ON_SEARCH_PATH)))
 	{
-		time_t srcTime, binTime;
-		uint32 dwFoundSrc = FILE_NOT_FOUND;
-		if ((dwFoundSrc = ParaEngine::CParaFile::DoesFileExist2(filePath.c_str(), FILE_ON_ZIP_ARCHIVE | FILE_ON_DISK | FILE_ON_SEARCH_PATH))
-			&& (!ParaEngine::GetLastFileWriteTime(filePath.c_str(), srcTime) || !ParaEngine::GetLastFileWriteTime(sFileName.c_str(), binTime) || (srcTime > binTime)))
-		{
-			// use src version, if source version exist and up to date. 
-			sFileName = filePath;
-			dwFound = dwFoundSrc;
-		}
+		sFileName = filePath;
 	}
 	else
 	{
-		dwFound = ParaEngine::CParaFile::DoesFileExist2(filePath.c_str(), FILE_ON_ZIP_ARCHIVE | FILE_ON_DISK | FILE_ON_SEARCH_PATH);
-		sFileName = filePath;
+		// search bin/[path].o version if non-compiled source code version not found. 
+		sFileName = std::string("bin/") + filePath;
+		sFileName = CParaFile::ChangeFileExtension(sFileName, "o");
+		dwFound = ParaEngine::CParaFile::DoesFileExist2(sFileName.c_str(), FILE_ON_ZIP_ARCHIVE | FILE_ON_DISK | FILE_ON_SEARCH_PATH);
 	}
 #endif
 	return dwFound;
