@@ -9,7 +9,14 @@
 #include "ParaScriptingGlobal.h"
 #include <luabind/object.hpp>
 
-bool ParaScripting::ParaGlobal::OpenFileDialog(const object& inout)
+#include <commdlg.h>
+
+#ifndef MAX_LINE
+/**@def max number of characters in a single line */
+#define MAX_LINE	1024
+#endif
+
+bool ParaScripting::ParaGlobal::OpenFileDialog(const luabind::object& inout)
 {
 	if (type(inout) != LUA_TTABLE)
 	{
