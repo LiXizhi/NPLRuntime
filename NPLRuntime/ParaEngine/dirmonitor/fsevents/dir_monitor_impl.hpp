@@ -125,7 +125,7 @@ private:
 
         if (!fsevents_)
         {
-            boost::system::system_error e(boost::system::error_code(errno, boost::system::get_system_category()), "boost::asio::dir_monitor_impl::init_kqueue: kqueue failed");
+            boost::system::system_error e(boost::system::error_code(errno, boost::system::system_category()), "boost::asio::dir_monitor_impl::init_kqueue: kqueue failed");
             boost::throw_exception(e);
         }
 
