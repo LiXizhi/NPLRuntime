@@ -102,7 +102,7 @@ module(L) [ x ];
 */
 
 ParaScripting::CNPLScriptingState::CNPLScriptingState(bool bCreateState)
-	:m_nStackSize(-1), m_pState(NULL), m_bOwnLuaState(bCreateState), m_nLastReturnValue(0),
+	:m_nStackSize(-1), m_pState(NULL), m_bOwnLuaState(bCreateState), m_nLastReturnValue(0), m_nDebugTraceLevel(0),
 #ifdef WIN32
 m_nMemAllocatorType(MEM_ALLOC_TYPE_DL_MALLOC),
 #else
@@ -154,6 +154,16 @@ int ParaScripting::CNPLScriptingState::GetLastReturnValue() const
 void ParaScripting::CNPLScriptingState::SetLastReturnValue(int val)
 {
 	m_nLastReturnValue = val;
+}
+
+int ParaScripting::CNPLScriptingState::GetDebugTraceLevel() const
+{
+	return m_nDebugTraceLevel;
+}
+
+void ParaScripting::CNPLScriptingState::SetDebugTraceLevel(int val)
+{
+	m_nDebugTraceLevel = val;
 }
 
 void ParaScripting::CNPLScriptingState::DestroyState()
@@ -291,6 +301,59 @@ void ParaScripting::CNPLScriptingState::LoadParaLib()
 	LoadHAPI_AI();
 }
 
+int ParaScripting::CNPLScriptingState::Traceback(lua_State *L)
+{
+	if (!lua_isstring(L, 1)) { /* Non-string error object? Try metamethod. */
+		if (lua_isnoneornil(L, 1) ||
+			!luaL_callmeta(L, 1, "__tostring") ||
+			!lua_isstring(L, -1))
+			return 1;  /* Return non-string error object. */
+		lua_remove(L, 1);  /* Replace object by result of __tostring metamethod. */
+	}
+	
+	// get the "_npl_traceback" global function in the runtime 
+	const char _npl_traceback[] = "_npl_traceback";
+	lua_pushlstring(L, _npl_traceback, sizeof(_npl_traceback) - 1);
+	lua_gettable(L, LUA_GLOBALSINDEX);
+	if (lua_isfunction(L, -1))
+	{
+		lua_insert(L, -2); // put the function before error message string
+		// call the function with 1 arguments and 1 result
+		int nResult = lua_pcall(L, 1, 1, 0);
+		if (nResult != 0)
+		{
+			const char* errorMsg = lua_tostring(L, -1);
+			if (errorMsg != NULL) {
+				OUTPUT_LOG("%s <Runtime error>\r\n", errorMsg);
+			}
+		}
+	}
+	else 
+	{
+		lua_pop(L, 1);
+	}
+	return 1;
+}
+
+int ParaScripting::CNPLScriptingState::Lua_ProtectedCall(lua_State *L, int nargs, int nresults)
+{
+	if (GetDebugTraceLevel() > 0)
+	{
+		int status;
+		int base = lua_gettop(L) - nargs;  /* function index */
+		lua_pushcfunction(L, ParaScripting::CNPLScriptingState::Traceback);  /* push traceback function */
+		lua_insert(L, base);  /* put it under chunk and args */
+
+		status = lua_pcall(L, nargs, nresults, base);
+
+		lua_remove(L, base);  /* remove traceback function */
+		/* force a complete garbage collection in case of errors */
+		// if (status != 0) lua_gc(L, LUA_GCCOLLECT, 0);
+		return status;
+	}
+	else
+		return lua_pcall(L, nargs, nresults, 0);
+}
 
 void ParaScripting::CNPLScriptingState::ProcessResult(int nResult, lua_State* L)
 {
@@ -559,15 +622,15 @@ bool ParaScripting::CNPLScriptingState::LoadFile(const string& filePath, bool bR
 							int top = lua_gettop(L);
 							lua_pushlstring(L, codebuf, codesize);
 							lua_pushlstring(L, filePath.c_str(), filePath.size());
-							// call the function with 2 arguments and multi result, with no error handling routine
-							int nResult = lua_pcall(L, 2, LUA_MULTRET, 0);
+							// call the function with 2 arguments and multi result
+							int nResult = Lua_ProtectedCall(L, 2, LUA_MULTRET);
 							int num_results = lua_gettop(L) - top + 1;
 							if (nResult == 0 && num_results > 0)
 							{
 								int top = lua_gettop(L);
 								if (lua_isfunction(L, -1))
 								{
-									nResult = lua_pcall(L, 0, LUA_MULTRET, 0);
+									nResult = Lua_ProtectedCall(L, 0, LUA_MULTRET);
 									int num_results = lua_gettop(L) - top + 1;
 									if (nResult == 0)
 									{
@@ -605,7 +668,7 @@ bool ParaScripting::CNPLScriptingState::LoadFile(const string& filePath, bool bR
 					int nResult = luaL_loadbuffer(L, codebuf, codesize, filePath.c_str());
 					if (nResult == 0) {
 						int top = lua_gettop(L);
-						nResult = lua_pcall(L, 0, LUA_MULTRET, 0);
+						nResult = Lua_ProtectedCall(L, 0, LUA_MULTRET);
 						int num_results = lua_gettop(L) - top + 1;
 						if (nResult == 0)
 						{
@@ -909,7 +972,7 @@ int ParaScripting::CNPLScriptingState::DoString(const char* sCall, int nLength, 
 			nResult = luaL_loadbuffer(m_pState, sCall, nLength, sFileName);
 			if (nResult == 0) {
 				int top = lua_gettop(m_pState);
-				nResult = lua_pcall(m_pState, 0, LUA_MULTRET, 0);
+				nResult = Lua_ProtectedCall(m_pState, 0, LUA_MULTRET);
 				int num_results = lua_gettop(m_pState) - top + 1;
 				if (nResult == 0 && num_results > 0)
 				{
@@ -972,8 +1035,8 @@ NPL::NPLReturnCode ParaScripting::CNPLScriptingState::ActivateFile(const string&
 		if (lua_isfunction(L, -1))
 		{
 			int top = lua_gettop(L);
-			// call the function with 0 arguments and 0 result, with no error handling routine
-			int nResult = lua_pcall(L, 0, LUA_MULTRET, 0);
+			// call the function with 0 arguments and 0 result
+			int nResult = Lua_ProtectedCall(L, 0, LUA_MULTRET);
 			int num_results = lua_gettop(L) - top + 1;
 			if (nResult == 0 && num_results > 0)
 			{

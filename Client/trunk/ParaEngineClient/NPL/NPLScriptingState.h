@@ -45,6 +45,10 @@ namespace ParaScripting
 		/** get the last return value from lua_pcall. */
 		int GetLastReturnValue() const;
 		void SetLastReturnValue(int val);
+
+		/** 0 means no stack info. greater than 1 will print more stack info */
+		int GetDebugTraceLevel() const;
+		void SetDebugTraceLevel(int val);
 	public:
 		/// get the lua state. 
 		lua_State* GetLuaState();
@@ -216,6 +220,12 @@ namespace ParaScripting
 		int GetFileLoadStatus(const string& filepath);
 		void SetFileLoadStatus(const string& filepath, int nStatus);
 
+		/** error function trace back. */
+		static int Traceback(lua_State *L);
+
+		/** lua_pcall with default trace back */
+		int Lua_ProtectedCall(lua_State *L, int nargs, int nresults);
+
 	private:
 		/** construct this to ensure matching calls to push and pop file name. */
 		class CFileNameStack
@@ -247,7 +257,9 @@ namespace ParaScripting
 		lua_State* m_pState;
 		/* whether we own the luastate. true by default. false if luastate is set externally.*/
 		bool m_bOwnLuaState;
-		
+		/* how many debug trace level to print when there is a runtime error in lua_pcall*/
+		int m_nDebugTraceLevel;
+
 		/** the default stack size in KB. default to -1, which uses the NPL runtime default, 1024KB. */
 		int m_nStackSize;
 
