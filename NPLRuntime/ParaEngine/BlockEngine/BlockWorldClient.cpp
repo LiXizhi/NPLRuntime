@@ -323,6 +323,7 @@ void BlockWorldClient::RenderShadowMap()
 
 		IDirect3DIndexBuffer9 *pIndexBuffer = GetIndexBuffer();
 		GETD3D(CGlobals::GetRenderDevice())->SetIndices(pIndexBuffer);
+		auto pDevice = CGlobals::GetRenderDevice();
 
 		for (int nRenderPass = 0; nRenderPass <= BlockRenderPass_AlphaBlended; nRenderPass++)
 		{
@@ -3147,6 +3148,7 @@ void BlockWorldClient::RenderDeferredLighting()
 	CGlobals::GetEffectManager()->EndEffect();
 
 	auto pDevice = sceneState->GetRenderDevice();
+	auto pD3DDevice = GETD3D(pDevice);
 
 	ParaScripting::ParaAsset::LoadEffectFile("deferred_point_lighting", "script/apps/Aries/Creator/Game/Shaders/DeferredShadingPointLighting.fxo");
 	ParaScripting::ParaAsset::LoadEffectFile("deferred_spot_lighting", "script/apps/Aries/Creator/Game/Shaders/DeferredShadingSpotLighting.fxo");
@@ -3187,7 +3189,7 @@ void BlockWorldClient::RenderDeferredLighting()
 		{
 		case ELightType::Point:
 			effect = ParaScripting::ParaAsset::GetEffectFile("deferred_point_lighting");
-			D3DXCreateSphere(pDevice, light_range, mesh_slice_num, mesh_slice_num, &pObject, 0);
+			D3DXCreateSphere(pD3DDevice, light_range, mesh_slice_num, mesh_slice_num, &pObject, 0);
 
 			pDecl = CGlobals::GetEffectManager()->GetVertexDeclaration(EffectManager::S0_POS);
 			break;
@@ -3195,7 +3197,7 @@ void BlockWorldClient::RenderDeferredLighting()
 			effect = ParaScripting::ParaAsset::GetEffectFile("deferred_spot_lighting");
 			// FIXME: how to draw a spherical cone but a normal cone
 			//D3DXCreateCylinder(pDevice, 0.0f, 2.0f, 5.0f, 100, 100, &pObject, 0);
-			D3DXCreateSphere(pDevice, light_range, mesh_slice_num, mesh_slice_num, &pObject, 0);
+			D3DXCreateSphere(pD3DDevice, light_range, mesh_slice_num, mesh_slice_num, &pObject, 0);
 
 			pDecl = CGlobals::GetEffectManager()->GetVertexDeclaration(EffectManager::S0_POS);
 			break;
@@ -3251,7 +3253,7 @@ void BlockWorldClient::RenderDeferredLighting()
 
 		effect.CommitChanges();
 
-		pDevice->Clear(0, 0, D3DCLEAR_STENCIL, 0, 1.0f, 0);
+		GETD3D(pDevice)->Clear(0, 0, D3DCLEAR_STENCIL, 0, 1.0f, 0);
 
 		switch (light_type)
 		{

@@ -9,18 +9,24 @@
 #include "ParaScriptingGlobal.h"
 #include <luabind/object.hpp>
 
-bool ParaScripting::ParaGlobal::OpenFileDialog(const object& inout)
+#include <commdlg.h>
+
+#ifndef MAX_LINE
+/**@def max number of characters in a single line */
+#define MAX_LINE	1024
+#endif
+
+bool ParaScripting::ParaGlobal::OpenFileDialog(const luabind::object& inout)
 {
-#ifdef PARAENGINE_CLIENT
 	if (type(inout) != LUA_TTABLE)
 	{
 		return false;
 	}
 	// OpenFileDialog
-	OPENFILENAME ofn = { 0 };
+	OPENFILENAMEA ofn = { 0 };
 	memset(&ofn, 0, sizeof(ofn));
 	char szFileName[MAX_LINE] = { 0 };
-	ofn.lStructSize = sizeof(OPENFILENAME);
+	ofn.lStructSize = sizeof(OPENFILENAMEA);
 	ofn.lpstrFile = szFileName;
 	ofn.lpstrFilter = "All Files (*.*)\0*.*\0";
 	ofn.nFilterIndex = 0;
@@ -68,7 +74,7 @@ bool ParaScripting::ParaGlobal::OpenFileDialog(const object& inout)
 		}
 	}
 	char buf[MAX_LINE + 1] = { 0 };
-	int nCount = GetCurrentDirectory(MAX_LINE, buf);
+	int nCount = GetCurrentDirectoryA(MAX_LINE, buf);
 
 	// switch to windowed mode to display the win32 common dialog.
 	bool bOldWindowed = CGlobals::GetApp()->IsWindowedMode();  // Preserve original windowed flag
@@ -77,7 +83,7 @@ bool ParaScripting::ParaGlobal::OpenFileDialog(const object& inout)
 		CGlobals::GetApp()->SetWindowedMode(true);
 	}
 
-	bool bResult = bIsSavingFile ? (!!::GetSaveFileName(&ofn)) : (!!::GetOpenFileName(&ofn));
+	bool bResult = bIsSavingFile ? (!!::GetSaveFileNameA(&ofn)) : (!!::GetOpenFileNameA(&ofn));
 
 	if (bOldWindowed == false)
 	{
@@ -86,7 +92,7 @@ bool ParaScripting::ParaGlobal::OpenFileDialog(const object& inout)
 
 	// reset directory. 
 	if (nCount > 0)
-		SetCurrentDirectory(buf);
+		SetCurrentDirectoryA(buf);
 
 	inout["result"] = bResult;
 	if (bResult)
@@ -99,14 +105,11 @@ bool ParaScripting::ParaGlobal::OpenFileDialog(const object& inout)
 				{
 					if (ofn.lpstrFile[i] == 0 && ofn.lpstrFile[i + 1] != 0)
 						ofn.lpstrFile[i] = '|';
-}
+				}
 			}
 			string filename = ofn.lpstrFile;
 			inout["filename"] = filename;
 		}
 	}
 	return bResult;
-#else
-	return false;
-#endif
 }

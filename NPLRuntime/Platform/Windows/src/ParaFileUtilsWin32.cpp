@@ -77,7 +77,7 @@ const std::string& ParaEngine::CParaFileUtilsWin32::GetWritablePath()
 const std::string& ParaEngine::CParaFileUtilsWin32::GetInitialDirectory()
 {
 	fs::path workingDir = fs::initial_path();
-	static std::string ret = workingDir.string()
+	static std::string ret = workingDir.string();
 	return ret;
 }
 
