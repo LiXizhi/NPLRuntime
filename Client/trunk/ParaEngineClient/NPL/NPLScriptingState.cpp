@@ -104,18 +104,18 @@ module(L) [ x ];
 ParaScripting::CNPLScriptingState::CNPLScriptingState(bool bCreateState)
 	:m_nStackSize(-1), m_pState(NULL), m_bOwnLuaState(bCreateState), m_nLastReturnValue(0), m_nDebugTraceLevel(0),
 #ifdef WIN32
-m_nMemAllocatorType(MEM_ALLOC_TYPE_DL_MALLOC),
+	m_nMemAllocatorType(MEM_ALLOC_TYPE_DL_MALLOC),
 #else
-// Xizhi: luajit2 requires using luaL_newstate instead of lua_newstate on 64bits system. so I disabled custom allocator for all linux version. 
-m_nMemAllocatorType(MEM_ALLOC_TYPE_SYS_MALLOC),
+	// Xizhi: luajit2 requires using luaL_newstate instead of lua_newstate on 64bits system. so I disabled custom allocator for all linux version. 
+	m_nMemAllocatorType(MEM_ALLOC_TYPE_SYS_MALLOC),
 #endif
-m_pMemAlloc(NULL)
+	m_pMemAlloc(NULL)
 {
 	bool bIs64Bits = sizeof(void*) > 4;
 	if (bIs64Bits)
 	{
 		// Xizhi: luajit2 requires using luaL_newstate instead of lua_newstate on 64bits system. so I disabled custom allocator for all linux and 64bits version. 
-		m_nMemAllocatorType = MEM_ALLOC_TYPE_SYS_MALLOC; 
+		m_nMemAllocatorType = MEM_ALLOC_TYPE_SYS_MALLOC;
 	}
 	if (bCreateState)
 	{
@@ -247,9 +247,9 @@ bool ParaScripting::CNPLScriptingState::CreateSetState(lua_State* pLuaState)
 class PointerWrapper
 {
 public:
-	PointerWrapper(){};
-	PointerWrapper(void * pointer) :m_pointer(pointer){};
-	~PointerWrapper(){};
+	PointerWrapper() {};
+	PointerWrapper(void * pointer) :m_pointer(pointer) {};
+	~PointerWrapper() {};
 	void * m_pointer;
 };
 
@@ -299,6 +299,9 @@ void ParaScripting::CNPLScriptingState::LoadParaLib()
 	LoadHAPI_Audio();
 	LoadHAPI_Network();
 	LoadHAPI_AI();
+#if (PARA_TARGET_PLATFORM == PARA_PLATFORM_MAC)
+	LoadHAPI_WebView();
+#endif
 }
 
 int ParaScripting::CNPLScriptingState::Traceback(lua_State *L)
@@ -310,7 +313,7 @@ int ParaScripting::CNPLScriptingState::Traceback(lua_State *L)
 			return 1;  /* Return non-string error object. */
 		lua_remove(L, 1);  /* Replace object by result of __tostring metamethod. */
 	}
-	
+
 	// get the "_npl_traceback" global function in the runtime 
 	const char _npl_traceback[] = "_npl_traceback";
 	lua_pushlstring(L, _npl_traceback, sizeof(_npl_traceback) - 1);
@@ -328,7 +331,7 @@ int ParaScripting::CNPLScriptingState::Traceback(lua_State *L)
 			}
 		}
 	}
-	else 
+	else
 	{
 		lua_pop(L, 1);
 	}
@@ -402,7 +405,7 @@ void ParaScripting::CNPLScriptingState::ProcessResult(int nResult, lua_State* L)
 				lua_pop(L, 1);
 			}
 		}
-		else 
+		else
 		{
 			// pops the element, so that the stack is balanced.
 			lua_pop(L, 1);
@@ -480,7 +483,7 @@ uint32 ParaScripting::CNPLScriptingState::GetScriptDiskPath(const string& filePa
 			return dwFound;
 		}
 	}
-	
+
 	if ((dwFound = ParaEngine::CParaFile::DoesFileExist2(filePath.c_str(), FILE_ON_ZIP_ARCHIVE | FILE_ON_DISK | FILE_ON_SEARCH_PATH)))
 	{
 		sFileName = filePath;
@@ -543,7 +546,7 @@ const string& ParaScripting::CNPLScriptingState::GetFileName()
 
 const char* ParaScripting::CNPLScriptingState::GetCurrentFileName(lua_State* L)
 {
-	if (!m_stack_current_file.empty()) 
+	if (!m_stack_current_file.empty())
 	{
 		return m_stack_current_file.top().c_str();
 	}
@@ -553,8 +556,8 @@ const char* ParaScripting::CNPLScriptingState::GetCurrentFileName(lua_State* L)
 			L = m_pState;
 
 		lua_Debug ar;
-		if (lua_getstack(L, 1, &ar)) 
-		{  
+		if (lua_getstack(L, 1, &ar))
+		{
 			/* check function at level */
 			if (lua_getinfo(L, "S", &ar) != 0)
 				return ar.source;
@@ -584,13 +587,13 @@ bool ParaScripting::CNPLScriptingState::LoadFile(const string& filePath, bool bR
 			// if the file is not loaded before, add a new GliaFile with the name filePath to the loaded glia file list.
 			// this is done before the file is actually loaded to prevent recursive loading, which may lead to C stack overflow.
 			SetFileLoadStatus(filePath, NPL_FILE_MODULE_START_LOADING);
-				
-			
+
+
 			char* codebuf = NULL;
 			int codesize = 0;
 			GetNPLCodeFromFile(&file, &codebuf, &codesize);
 
-			if (codesize>0)
+			if (codesize > 0)
 			{
 				CFileNameStack pushStack(this, filePath);
 				int nSize = (int)sFileName.size();
@@ -636,12 +639,12 @@ bool ParaScripting::CNPLScriptingState::LoadFile(const string& filePath, bool bR
 									{
 										CacheFileModule(filePath, num_results, L);
 										num_results = lua_gettop(L) - top + 1;
-										if (bNoReturn && num_results > 0){
+										if (bNoReturn && num_results > 0) {
 											lua_pop(L, num_results);
 										}
 									}
 								}
-								else 
+								else
 								{
 									lua_pop(L, num_results);
 								}
@@ -674,7 +677,7 @@ bool ParaScripting::CNPLScriptingState::LoadFile(const string& filePath, bool bR
 						{
 							CacheFileModule(filePath, num_results, L);
 							num_results = lua_gettop(L) - top + 1;
-							if (bNoReturn && num_results > 0){
+							if (bNoReturn && num_results > 0) {
 								lua_pop(L, num_results);
 							}
 						}
@@ -701,7 +704,7 @@ bool ParaScripting::CNPLScriptingState::LoadFile(const string& filePath, bool bR
 	}
 	else
 	{
-		if (!bNoReturn){
+		if (!bNoReturn) {
 			PopFileModule(filePath, L);
 		}
 	}
@@ -732,7 +735,7 @@ int ParaScripting::CNPLScriptingState::CacheFileModule(const std::string& filena
 	SetFileLoadStatus(filename, nResult);
 	if (nResult > 0 || nResult == -1)
 	{
-		if(L==0)
+		if (L == 0)
 			L = m_pState;
 
 		int nLastResultIndex = lua_gettop(L);
@@ -753,7 +756,7 @@ int ParaScripting::CNPLScriptingState::CacheFileModule(const std::string& filena
 		if (lua_istable(L, -1))
 		{
 			int nFilenameLength = filename.size() - ((filename.size() > 4 && filename[filename.size() - 4] == '.') ? 4 : 0);
-			
+
 			if (nResult == 1)
 			{
 				// cache the object on top of the stack directly
@@ -920,7 +923,7 @@ int ParaScripting::CNPLScriptingState::NPL_export(lua_State* L)
 		{
 			CacheFileModule(filename, -1, L);
 		}
-		
+
 		// create or get the file module
 		return PopFileModule(filename, L);
 	}
@@ -967,7 +970,7 @@ int ParaScripting::CNPLScriptingState::DoString(const char* sCall, int nLength, 
 			}
 		}
 
-		if (nLength>0)
+		if (nLength > 0)
 		{
 			nResult = luaL_loadbuffer(m_pState, sCall, nLength, sFileName);
 			if (nResult == 0) {
@@ -1025,7 +1028,7 @@ NPL::NPLReturnCode ParaScripting::CNPLScriptingState::ActivateFile(const string&
 
 	/** get the "__act" global table in the runtime */
 	const char actTable[] = "__act";
-	lua_pushlstring(L, actTable, sizeof(actTable)-1);
+	lua_pushlstring(L, actTable, sizeof(actTable) - 1);
 	lua_gettable(L, LUA_GLOBALSINDEX);
 	if (lua_istable(L, -1))
 	{
@@ -1050,12 +1053,12 @@ NPL::NPLReturnCode ParaScripting::CNPLScriptingState::ActivateFile(const string&
 						SetLastReturnValue(nReturnValue);
 					}
 				}
-				
+
 				lua_pop(L, num_results);
 			}
 			ProcessResult(nResult, L);
 
-			if (nResult != 0){
+			if (nResult != 0) {
 				// error
 				nRes = NPL::NPL_FailedToLoadFile;
 			}
@@ -1132,7 +1135,7 @@ NPL::NPLRuntimeState_ptr ParaScripting::CNPLScriptingState::GetRuntimeStateFromL
 	// read from registry
 	lua_State * L = obj.interpreter();
 	const char rts_name[] = "__rts__";
-	lua_pushlstring(L, rts_name, sizeof(rts_name)-1);
+	lua_pushlstring(L, rts_name, sizeof(rts_name) - 1);
 	lua_rawget(L, LUA_REGISTRYINDEX);
 	NPL::CNPLRuntimeState* pState = (NPL::CNPLRuntimeState*)lua_touserdata(L, -1);
 	lua_pop(L, 1);
