@@ -110,7 +110,7 @@ bool LabelTextFormatter::multilineText(GLLabel *theLabel)
 
 		float posRight = (info->position.x + info->contentSize.width) * scalsX;
 		// Out of bounds.
-		if (posRight - startOfLine > lineWidth)
+		if (posRight - startOfLine > lineWidth + 2)
 		{
 			if (!breakLineWithoutSpace && !isCJK)
 			{
