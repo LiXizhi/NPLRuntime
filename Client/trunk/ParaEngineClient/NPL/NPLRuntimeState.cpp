@@ -642,7 +642,7 @@ bool NPL::CNPLRuntimeState::LoadFile_any(const StringType & filepath, bool bRelo
 	bool bHasScriptFileExtension = nSize > 5 && filepath[nSize - 4] == '.' &&
 		((filepath[nSize - 3] == 'l' && filepath[nSize - 2] == 'u' && filepath[nSize - 1] == 'a') ||
 		(filepath[nSize - 3] == 'n' && filepath[nSize - 2] == 'p' && filepath[nSize - 1] == 'l'));
-		
+
 	if (nSize > 2 && filepath[nSize - 1] == '/')
 	{
 		// if it is a folder, we will add as NPL module
@@ -655,7 +655,7 @@ bool NPL::CNPLRuntimeState::LoadFile_any(const StringType & filepath, bool bRelo
 			}
 			return true;
 		}
-		if (!bNoReturn && L!=0)
+		if (!bNoReturn && L != 0)
 		{
 			// return false to scripting environment if module is not found. 
 			lua_pushboolean(L, 0);
@@ -734,7 +734,7 @@ bool NPL::CNPLRuntimeState::LoadFile_any(const StringType & filepath, bool bRelo
 			}
 			fullPath.append(filepath.c_str() + nOffset);
 		}
-		
+
 		if (!fullPath.empty())
 		{
 			// automatically add file extension if not. 
@@ -1126,6 +1126,7 @@ int NPL::CNPLRuntimeState::InstallFields(ParaEngine::CAttributeClass* pClass, bo
 	pClass->AddField("IsPreemptive", FieldType_Bool, (void*)0, (void*)IsPreemptive_s, NULL, NULL, bOverride);
 	pClass->AddField("PauseAllPreemptiveFunction", FieldType_Bool, (void*)PauseAllPreemptiveFunction_s, (void*)IsAllPreemptiveFunctionPaused_s, NULL, NULL, bOverride);
 	pClass->AddField("filename", FieldType_String, (void*)0, (void*)GetFileName_s, NULL, NULL, bOverride);
+	pClass->AddField("DebugTraceLevel", FieldType_Int, (void*)SetDebugTraceLevel_s, (void*)GetDebugTraceLevel_s, NULL, NULL, bOverride);
 	return S_OK;
 }
 

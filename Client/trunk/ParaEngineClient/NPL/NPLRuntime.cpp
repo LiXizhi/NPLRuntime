@@ -462,7 +462,7 @@ void CNPLRuntime::StartNetServer( const char* server/*=NULL*/, const char* port/
 
 void CNPLRuntime::StopNetServer()
 {
-	StopNetServer();
+	NPL_StopNetServer();
 }
 
 void CNPLRuntime::AddPublicFile( const string& filename, int nID )

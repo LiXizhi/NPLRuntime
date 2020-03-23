@@ -47,6 +47,7 @@ Client/trunk/*
 !Client/trunk/ParaEngineClient/
 !Client/trunk/ParaEngineClientApp/
 !Client/trunk/PhysicsBT/
+!Client/trunk/cAudio_2.1.0/
 !Client/trunk/externals/
 Client/trunk/externals/*
 !Client/trunk/externals/assimp*

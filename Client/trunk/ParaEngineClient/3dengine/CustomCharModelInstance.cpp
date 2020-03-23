@@ -242,13 +242,15 @@ void CharModelInstance::SetSkin(int nSkinIndex)
 
 			if (i < nTotalNum && pModel->textures[i] != 0 && pModel->specialTextures[i] >= 0)
 			{
+				int nTexId = pModel->specialTextures[i];
 				// if there is both a standard texture and a replaceable texture, we can deduce the replaceable 
 				// one from the file name of the standard one.
 				bCanDeduceFromFileName = true;
 				if (nSkinIndex == 0)
 				{
 					// use the default. 
-					m_textures[k] = pModel->textures[i];
+					if(nTexId < NUM_TEX)
+						m_textures[nTexId] = pModel->textures[i];
 					m_skinIndex = nSkinIndex;
 				}
 				else
@@ -265,7 +267,8 @@ void CharModelInstance::SetSkin(int nSkinIndex)
 						sTextureFileName.replace(nSize - 4 - nNumberCount, nNumberCount, itoa(nSkinIndex, number, 10));
 						if (CParaFile::DoesFileExist(sTextureFileName.c_str(), true))
 						{
-							m_textures[k] = CGlobals::GetAssetManager()->LoadTexture("", sTextureFileName.c_str(), TextureEntity::StaticTexture);
+							if(nTexId < NUM_TEX)
+								m_textures[nTexId] = CGlobals::GetAssetManager()->LoadTexture("", sTextureFileName.c_str(), TextureEntity::StaticTexture);
 							m_skinIndex = nSkinIndex;
 						}
 					}
@@ -332,7 +335,9 @@ void CharModelInstance::SetSkin(int nSkinIndex)
 		for (int i = 0; i < grp.count; i++) {
 			if (pModel->useReplaceTextures[grp.base + i]) {
 				TextureEntity* def = CGlobals::GetAssetManager()->LoadTexture("", makeSkinTexture(pModelAsset->GetFileName().c_str(), grp.tex[i].c_str()).c_str(), TextureEntity::StaticTexture);
-				m_textures[i] = def;
+				int nTexId = pModel->specialTextures[i];
+				if(nTexId >= 0 && nTexId < NUM_TEX)
+					m_textures[nTexId] = def;
 			}
 		}
 	}
@@ -475,8 +480,8 @@ void CharModelInstance::UpdateTexturesToModel(CParaXModel* pModel)
 			int nIndex = pModel->specialTextures[i];
 			if (nIndex >= 0)
 			{
-				if (m_textures[k].get() != 0)
-					pModel->replaceTextures[nIndex] = m_textures[k].get();
+				if (nIndex < NUM_TEX && m_textures[nIndex].get() != 0)
+					pModel->replaceTextures[nIndex] = m_textures[nIndex].get();
 				else
 					pModel->replaceTextures[nIndex] = pModel->textures[i].get();
 				k++;
@@ -1267,9 +1272,9 @@ TextureEntity* CharModelInstance::GetReplaceableTexture(int ReplaceableTextureID
 						int nIndex = pModel->specialTextures[i];
 						if (nIndex >= 0)
 						{
-							if (nIndex == ReplaceableTextureID)
+							if (nIndex == ReplaceableTextureID && nIndex < NUM_TEX)
 							{
-								return m_textures[k].get();
+								return m_textures[nIndex].get();
 							}
 							k++;
 						}
@@ -1312,18 +1317,25 @@ bool CharModelInstance::SetReplaceableTexture(int ReplaceableTextureID, TextureE
 				if (pModel != NULL)
 				{
 					int k = 0;
+					bool bFound = false;
 					for (int i = 0; i < CParaXModel::MAX_MODEL_TEXTURES; ++i)
 					{
 						int nIndex = pModel->specialTextures[i];
 						if (nIndex >= 0)
 						{
-							if (nIndex == ReplaceableTextureID)
+							if (nIndex == ReplaceableTextureID && nIndex < NUM_TEX)
 							{
-								m_textures[k] = pTextureEntity;
-								//return true;
+								m_textures[nIndex] = pTextureEntity;
+								bFound = true;
+								break;
 							}
 							k++;
 						}
+					}
+					if (!bFound && ReplaceableTextureID < NUM_TEX)
+					{
+						pTextureEntity = NULL;
+						m_textures[ReplaceableTextureID] = pTextureEntity;
 					}
 				}
 				else

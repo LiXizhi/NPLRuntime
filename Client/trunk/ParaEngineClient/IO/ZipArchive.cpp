@@ -253,10 +253,10 @@ bool CZipArchive::Open(const string& sArchiveName, int nPriority)
 
 void CZipArchive::SetRootDirectory( const string& filename )
 {
-	char tmp[256];
+	char tmp[1024];
 	int nLastPos = 0;
 	int nSize = (int)filename.size();
-	if(nSize<256)
+	if(nSize<1024)
 	{
 		for (int i=0;i<nSize;++i)
 		{
@@ -887,6 +887,22 @@ int CZipArchive::findFile(const ArchiveFileFindItem* item)
 		filename = tmp;
 	}
 
+	ReBuild();
+
+	int nIndex = findFileImp(item, filename, bRefreshHash);
+	if (nIndex < 0 && !m_fileAliasMap.empty())
+	{
+		std::string aliasFilename;
+		if (GetAlias(filename, aliasFilename))
+		{
+			nIndex = findFileImp(item, aliasFilename.c_str(), true);
+		}
+	}
+	return nIndex;
+}
+
+int ParaEngine::CZipArchive::findFileImp(const ArchiveFileFindItem* item, const char* filename, bool bRefreshHash)
+{
 	//auto hash = (hashValue == nullptr) ? (SZipFileEntry::Hash(filename, false)): *hashValue;
 	uint32 hash;
 	if (bRefreshHash)
@@ -903,14 +919,9 @@ int CZipArchive::findFile(const ArchiveFileFindItem* item)
 		}
 	}
 
-
-
-	ReBuild();
-
 	auto it = std::lower_bound(m_FileList.begin(), m_FileList.end(), hash, [](const SZipFileEntryPtr& a, const uint32& hash)
 	{
 		return a.m_pEntry->hashValue < hash;
-
 	});
 
 	if (m_bIgnoreCase)
@@ -951,6 +962,8 @@ int CZipArchive::findFile(const ArchiveFileFindItem* item)
 
 	return -1;
 }
+
+
 
 bool CZipArchive::OpenFile(const ArchiveFileFindItem* item, FileHandle& handle)
 {
@@ -1657,6 +1670,38 @@ void ParaEngine::CZipArchive::SetBaseDirectory(const char * sBaseDir_)
 	
 }
 
+static std::string tmp_alias_from;
+void ParaEngine::CZipArchive::AddAliasFrom(const char* from)
+{
+	tmp_alias_from = from;
+}
+
+void ParaEngine::CZipArchive::AddAliasTo(const char* to)
+{
+	if (!tmp_alias_from.empty() && to)
+	{
+		AddAlias(tmp_alias_from, to);
+	}
+}
+
+void ParaEngine::CZipArchive::AddAlias(const std::string& from, const std::string& to)
+{
+	m_fileAliasMap[from] = to;
+}
+
+bool ParaEngine::CZipArchive::GetAlias(const std::string& from, std::string& out)
+{
+	if (!m_fileAliasMap.empty()) {
+		auto it = m_fileAliasMap.find(from);
+		if (it != m_fileAliasMap.end())
+		{
+			out = it->second;
+			return true;
+		}
+	}
+	return false;
+}
+
 int ParaEngine::CZipArchive::InstallFields(CAttributeClass* pClass, bool bOverride)
 {
 	CArchive::InstallFields(pClass, bOverride);
@@ -1667,5 +1712,7 @@ int ParaEngine::CZipArchive::InstallFields(CAttributeClass* pClass, bool bOverri
 	pClass->AddField("GeneratePkgFileV2", FieldType_String, (void*)GeneratePkgFileV2_s, (void*)0, NULL, NULL, bOverride);
 	pClass->AddField("FileCount", FieldType_Int, (void*)0, (void*)GetFileCount_s, NULL, NULL, bOverride);
 	pClass->AddField("IsIgnoreCase", FieldType_Bool, (void*)0, (void*)IsIgnoreCase_s, NULL, NULL, bOverride);
+	pClass->AddField("AddAliasFrom", FieldType_String, (void*)AddAliasFrom_s, NULL, NULL, NULL, bOverride);
+	pClass->AddField("AddAliasTo", FieldType_String, (void*)AddAliasTo_s, NULL, NULL, NULL, bOverride);
 	return S_OK;
 }

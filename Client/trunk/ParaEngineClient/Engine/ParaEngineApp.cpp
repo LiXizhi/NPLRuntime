@@ -2380,6 +2380,7 @@ LRESULT CParaEngineApp::MsgProcWinThreadCustom( UINT uMsg, WPARAM wParam, LPARAM
 			}
 		case PE_WM_SETFOCUS:
 			{
+				// SetActiveWindow((HWND)wParam);
 				::SetFocus((HWND)wParam);
 				break;
 			}
@@ -2443,7 +2444,8 @@ LRESULT CParaEngineApp::MsgProcWinThread( HWND hWnd, UINT uMsg, WPARAM wParam, L
 		if(uMsg == WM_LBUTTONUP)
 			bContinue = true;
 
-		if (uMsg == WM_LBUTTONDOWN)			{
+		if (uMsg == WM_LBUTTONDOWN)			
+		{
 			// 2014.5.14 andy: check input source using message info along with WM_LBUTTONDOWN instead of WM_POINTERCAPTURECHANGED
 			//
 			//GetMessageExtraInfo() returns the extra info associated with a message
@@ -2454,6 +2456,12 @@ LRESULT CParaEngineApp::MsgProcWinThread( HWND hWnd, UINT uMsg, WPARAM wParam, L
 			#define IsTouchEvent(dw) (((dw) & 0xFFFFFF80) == 0xFF515780)
 			SetTouchInputting(IsTouchEvent(GetMessageExtraInfo()));
 			// OUTPUT_LOG("WM_LBUTTONDOWN: %d \n", GetMessageExtraInfo());
+		}
+		else if (uMsg == WM_RBUTTONDOWN)
+		{
+			// trickly: we will grab key focus() whenever the user left or RIGHT click the window. 
+			// this is useful when we have native child window (like chrome browser) which may has key focus. 
+			::SetFocus(CGlobals::GetAppHWND());
 		}
 	}
 	if(bContinue)

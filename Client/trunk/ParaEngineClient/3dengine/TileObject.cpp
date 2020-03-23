@@ -209,6 +209,7 @@ float CTileObject::GetYaw()
 {
 	return m_fYaw;
 };
+
 void CTileObject::SetYaw(float fValue)
 {
 	if (m_fYaw != fValue)

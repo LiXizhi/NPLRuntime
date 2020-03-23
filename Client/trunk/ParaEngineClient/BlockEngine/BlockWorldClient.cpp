@@ -35,7 +35,10 @@
 #include "MultiFrameBlockWorldRenderer.h"
 #include "BlockWorldClient.h"
 
-/** default block light color. due to shader optimization, there can only be one color for all emissive blocks. 
+#include "ParaScriptingCommon.h"
+#include "ParaScriptingMisc.h"
+
+/** default block light color. due to shader optimization, there can only be one color for all emissive blocks.
 * ARBG: it is usually white or yellow(red) color. */
 // #define DEFAULT_BLOCK_LIGHT_COLOR 0xffffffff
 #define DEFAULT_BLOCK_LIGHT_COLOR 0xffffffff
@@ -64,22 +67,22 @@ namespace ParaEngine
 	int32_t BlockWorldClient::g_waterBlockPass = 4;
 	int32_t BlockWorldClient::g_bumpyBlockPass = 5;
 #endif
-	
+
 	int32_t BlockWorldClient::g_selectBlockPass = 1;
 
 
-	inline int64_t GetBlockSparseIndex(int64_t bx,int64_t by,int64_t bz)
+	inline int64_t GetBlockSparseIndex(int64_t bx, int64_t by, int64_t bz)
 	{
-		return by*30000*30000+bx*30000+bz;
+		return by * 30000 * 30000 + bx * 30000 + bz;
 	}
 
 	//////////////////////////////////////////////////////////////////////////
 	//BlockWorldClient
 	//////////////////////////////////////////////////////////////////////////
 	BlockWorldClient::BlockWorldClient()
-		:m_maxSelectBlockPerBatch(80), m_isUnderLiquid(false), m_vBlockLightColor(DEFAULT_BLOCK_LIGHT_COLOR), 
+		:m_maxSelectBlockPerBatch(80), m_isUnderLiquid(false), m_vBlockLightColor(DEFAULT_BLOCK_LIGHT_COLOR),
 		m_nBufferRebuildCountThisTick(0), m_bUsePointTextureFiltering(true),
-		m_nVertexBufferSizeLimit(100 * 1024 * 1024), 
+		m_nVertexBufferSizeLimit(100 * 1024 * 1024),
 		m_nMaxVisibleVertexBufferBytes(100 * 1024 * 1024),
 		m_nAlwaysInVertexBufferChunkRadius(2),
 		m_pMultiFrameRenderer(NULL),
@@ -90,7 +93,7 @@ namespace ParaEngine
 	{
 		g_pInstance = this;
 		m_damageDegree = 0;
-	
+
 #if defined(PARAENGINE_CLIENT) || defined(WIN32)
 		m_nMaxBufferRebuildPerTick = 4;
 		m_nNearCameraChunkDist = 8;
@@ -104,7 +107,7 @@ namespace ParaEngine
 		m_nVertexBufferSizeLimit = 100 * 1024 * 1024;
 		m_nMaxVisibleVertexBufferBytes = (50 * 1024 * 1024);
 #endif
-		
+
 #ifdef PARAENGINE_MOBILE
 		SetGroupByChunkBeforeTexture(true);
 #endif
@@ -124,7 +127,7 @@ namespace ParaEngine
 	{
 		DeleteDeviceObjects();
 		SAFE_DELETE(m_pMultiFrameRenderer);
-		for(int i=0;i<(int)(m_activeChunks.size());++i)
+		for (int i = 0; i < (int)(m_activeChunks.size()); ++i)
 		{
 			SAFE_DELETE(m_activeChunks[i]);
 		}
@@ -132,10 +135,10 @@ namespace ParaEngine
 		ChunkVertexBuilderManager::GetInstance().Cleanup();
 
 		RenderableChunk::StaticRelease();
-		
+
 	}
 
-	void BlockWorldClient::EnterWorld(const string& sWorldDir, float x,float y,float z)
+	void BlockWorldClient::EnterWorld(const string& sWorldDir, float x, float y, float z)
 	{
 		if (m_isInWorld)
 			return;
@@ -156,7 +159,7 @@ namespace ParaEngine
 
 	void BlockWorldClient::LeaveWorld()
 	{
-		if(!m_isInWorld)
+		if (!m_isInWorld)
 			return;
 		ChunkVertexBuilderManager::GetInstance().Cleanup();
 		Scoped_WriteLock<BlockReadWriteLock> lock_(GetReadWriteLock());
@@ -167,19 +170,19 @@ namespace ParaEngine
 	void BlockWorldClient::DeleteAllBlocks()
 	{
 		Scoped_WriteLock<BlockReadWriteLock> lock_(GetReadWriteLock());
-		for(std::map<int,BlockRegion*>::iterator iter = m_regionCache.begin();iter != m_regionCache.end();iter++)
+		for (std::map<int, BlockRegion*>::iterator iter = m_regionCache.begin(); iter != m_regionCache.end(); iter++)
 		{
 			iter->second->DeleteAllBlocks();
 		}
-		
-		for(uint32_t i=0;i<m_activeChunks.size();i++)
+
+		for (uint32_t i = 0; i < m_activeChunks.size(); i++)
 		{
 			m_activeChunks[i]->SetChunkDirty(true);
 		}
 
 		m_isVisibleChunkDirty = true;
 	}
- 
+
 	void BlockWorldClient::PreRender(bool bIsShadowPass)
 	{
 		if (!m_isInWorld)
@@ -227,7 +230,7 @@ namespace ParaEngine
 #ifdef PRINT_CHUNK_LOG
 			static int64 g_lastTime = GetTimeUS();
 			int64 curTime = GetTimeUS();
-			if (m_nBufferRebuildCountThisTick > 0){
+			if (m_nBufferRebuildCountThisTick > 0) {
 				OUTPUT_LOG("deltaTime: %d ms: chunk buffer update this tick %d\n", (int)(curTime - g_lastTime) / 1000, (int)m_nBufferRebuildCountThisTick);
 			}
 			g_lastTime = curTime;
@@ -239,14 +242,14 @@ namespace ParaEngine
 		}
 
 		//sort data
-		if(!IsGroupByChunkBeforeTexture())
+		if (!IsGroupByChunkBeforeTexture())
 		{
 			if (m_solidRenderTasks.size() > 0)
 				sort(m_solidRenderTasks.begin(), m_solidRenderTasks.end(), CompareRenderOrder);
 		}
 
-		if(m_alphaTestRenderTasks.size() > 0)
-			sort(m_alphaTestRenderTasks.begin(),m_alphaTestRenderTasks.end(),CompareRenderOrder);
+		if (m_alphaTestRenderTasks.size() > 0)
+			sort(m_alphaTestRenderTasks.begin(), m_alphaTestRenderTasks.end(), CompareRenderOrder);
 
 		if (m_alphaBlendRenderTasks.size() > 0)
 			sort(m_alphaBlendRenderTasks.begin(), m_alphaBlendRenderTasks.end(), CompareRenderOrder);
@@ -260,8 +263,8 @@ namespace ParaEngine
 	{
 #ifdef USE_DIRECTX_RENDERER
 		// only render shadow map for fancy shader mode. 
-		if( (GetBlockRenderMethod() !=  BLOCK_RENDER_FANCY_SHADER) || 
-			! GetUseSunlightShadowMap())
+		if ((GetBlockRenderMethod() != BLOCK_RENDER_FANCY_SHADER) ||
+			!GetUseSunlightShadowMap())
 			return;
 		// prepare shadow pass 
 		PreRender(true);
@@ -271,17 +274,17 @@ namespace ParaEngine
 		if (m_alphaTestRenderTasks.size() == 0 && m_solidRenderTasks.size() == 0 && m_alphaBlendRenderTasks.size() == 0)
 			return;
 
-		if(m_block_effect_fancy == 0)
+		if (m_block_effect_fancy == 0)
 			return;
 		m_block_effect_fancy->LoadAsset();
 
 		const float fBlockSize = BlockConfig::g_blockSize;
-		Vector3 renderOfs  = CGlobals::GetScene()->GetRenderOrigin();
+		Vector3 renderOfs = CGlobals::GetScene()->GetRenderOrigin();
 		float verticalOffset = GetVerticalOffset();
 
 		Uint16x3 renderBlockOfs;
-		renderBlockOfs.x = (uint16_t)(renderOfs.x/fBlockSize);
-		renderBlockOfs.z = (uint16_t)(renderOfs.z/fBlockSize);
+		renderBlockOfs.x = (uint16_t)(renderOfs.x / fBlockSize);
+		renderBlockOfs.z = (uint16_t)(renderOfs.z / fBlockSize);
 
 		Vector3 renderBlockOfs_remain;
 		renderBlockOfs_remain.x = renderOfs.x - renderBlockOfs.x * fBlockSize;
@@ -302,9 +305,9 @@ namespace ParaEngine
 
 		CEffectFile* pEffect = NULL;
 		pEffectManager->BeginEffect(TECH_BLOCK_FANCY, &pEffect);
-		if(pEffect != 0 && pEffect->begin(false))
+		if (pEffect != 0 && pEffect->begin(false))
 		{
-			VertexDeclarationPtr pVertexLayout =  GetVertexLayout();
+			VertexDeclarationPtr pVertexLayout = GetVertexLayout();
 			pDevice->SetVertexDeclaration(pVertexLayout);
 
 			// turn off alpha blending to enable early-Z on modern graphic cards. 
@@ -314,16 +317,16 @@ namespace ParaEngine
 
 			//////////////////////////////////////////////////////////////////////////
 			// set the wave time parameter
-			double time = CGlobals::GetGameTime(); 
+			double time = CGlobals::GetGameTime();
 			// in case it loses accuracy, we will subtract integer number of 2*PI from time
 			// time -= ((int)(time / (2*MATH_PI)))*(2*MATH_PI);
-			time = (int)(time*1000) % 1000000;
+			time = (int)(time * 1000) % 1000000;
 			pEffect->setParameter(CEffectFile::k_ConstVector1, Vector4((float)time, 0.f, 0.f, 0.f).ptr());
 
 			IDirect3DIndexBuffer9* pIndexBuffer = GetIndexBuffer();
 			pDevice->SetIndices(pIndexBuffer);
 
-			for (int nRenderPass = 0; nRenderPass<=BlockRenderPass_AlphaBlended; nRenderPass++)
+			for (int nRenderPass = 0; nRenderPass <= BlockRenderPass_AlphaBlended; nRenderPass++)
 			{
 				std::vector<BlockRenderTask*>* pCurRenderQueue = GetRenderQueueByPass((BlockRenderPass)nRenderPass);
 
@@ -333,34 +336,34 @@ namespace ParaEngine
 				D3DCULL culling = D3DCULL_CCW;
 				IDirect3DTexture9* pCurTex0 = NULL;
 
-				if(pCurRenderQueue->size() > 0)
+				if (pCurRenderQueue->size() > 0)
 				{
-					for(uint32_t i=0;i<pCurRenderQueue->size();i++)
+					for (uint32_t i = 0; i < pCurRenderQueue->size(); i++)
 					{
 						BlockRenderTask* pRenderTask = (*pCurRenderQueue)[i];
 						IDirect3DVertexBuffer9* pVB = pRenderTask->GetVertexBuffer();
 
-						if(pVB != pCurVB)
+						if (pVB != pCurVB)
 						{
-							pDevice->SetStreamSource(0,pVB,0,sizeof(BlockVertexCompressed));
+							pDevice->SetStreamSource(0, pVB, 0, sizeof(BlockVertexCompressed));
 							pCurVB = pVB;
 						}
 						int32_t passId = 0;
-						if(curTamplerId != pRenderTask->GetTemplateId())
+						if (curTamplerId != pRenderTask->GetTemplateId())
 						{
 							BlockTemplate* pTempate = pRenderTask->GetTemplate();
-							
-							if(pTempate->IsShadowCaster())
+
+							if (pTempate->IsShadowCaster())
 							{
 								passId = 0;
 							}
-							
-							if(curPass != passId)
+
+							if (curPass != passId)
 							{
-								if(curPass > -1)
+								if (curPass > -1)
 									pEffect->EndPass();
 
-								if(pEffect->BeginPass(passId))
+								if (pEffect->BeginPass(passId))
 								{
 									curPass = passId;
 								}
@@ -372,35 +375,35 @@ namespace ParaEngine
 							}
 
 							TextureEntity* pTexEntity = pTempate->GetTexture0(pRenderTask->GetUserData());
-							if(pTexEntity && pTexEntity->GetTexture()!=pCurTex0)
+							if (pTexEntity && pTexEntity->GetTexture() != pCurTex0)
 							{
 								pCurTex0 = pTexEntity->GetTexture();
-								pDevice->SetTexture(0,pCurTex0);
+								pDevice->SetTexture(0, pCurTex0);
 							}
-							
+
 							// culling mode
-							if(pTempate->GetBlockModel().IsDisableFaceCulling())
+							if (pTempate->GetBlockModel().IsDisableFaceCulling())
 							{
-								if(culling != D3DCULL_NONE)
+								if (culling != D3DCULL_NONE)
 								{
-									pDevice->SetRenderState(D3DRS_CULLMODE,D3DCULL_NONE);
+									pDevice->SetRenderState(D3DRS_CULLMODE, D3DCULL_NONE);
 									culling = D3DCULL_NONE;
 								}
 							}
 							else if (nRenderPass != BlockRenderPass_Opaque && m_isUnderLiquid
 								&& pRenderTask->GetTemplate()->IsMatchAttribute(BlockTemplate::batt_liquid))
 							{
-								if(culling != D3DCULL_CW)
+								if (culling != D3DCULL_CW)
 								{
-									pDevice->SetRenderState(D3DRS_CULLMODE,D3DCULL_CW);
+									pDevice->SetRenderState(D3DRS_CULLMODE, D3DCULL_CW);
 									culling = D3DCULL_CW;
 								}
 							}
 							else
 							{
-								if(culling != D3DCULL_CCW)
+								if (culling != D3DCULL_CCW)
 								{
-									pDevice->SetRenderState(D3DRS_CULLMODE,D3DCULL_CCW);
+									pDevice->SetRenderState(D3DRS_CULLMODE, D3DCULL_CCW);
 									culling = D3DCULL_CCW;
 								}
 							}
@@ -420,13 +423,13 @@ namespace ParaEngine
 						pEffect->CommitChanges();
 
 						pDevice->DrawIndexedPrimitive(D3DPT_TRIANGLELIST, 0, pRenderTask->GetVertexOfs(),
-							pRenderTask->GetVertexCount(),pRenderTask->GetIndexOfs(),pRenderTask->GetPrimitiveCount());
+							pRenderTask->GetVertexCount(), pRenderTask->GetIndexOfs(), pRenderTask->GetPrimitiveCount());
 					}
 				}
-				if(curPass > -1)
+				if (curPass > -1)
 					pEffect->EndPass();
 
-				pDevice->SetRenderState(D3DRS_CULLMODE,D3DCULL_CCW);
+				pDevice->SetRenderState(D3DRS_CULLMODE, D3DCULL_CCW);
 			}
 			// turn blending on again
 			pDevice->SetRenderState(D3DRS_ALPHABLENDENABLE, TRUE);
@@ -439,33 +442,33 @@ namespace ParaEngine
 
 	void BlockWorldClient::Render(BlockRenderPass nRenderPass, std::vector<BlockRenderTask*>* pCurRenderQueue, int nRenderMethod)
 	{
-		if(!m_isInWorld)
+		if (!m_isInWorld)
 			return;
-	
+
 		BlockRenderMethod dwRenderMethod = (nRenderMethod < 0) ? GetBlockRenderMethod() : (BlockRenderMethod)nRenderMethod;
-		
+
 		// no need to lock 
 		if (pCurRenderQueue == 0)
 			pCurRenderQueue = GetRenderQueueByPass(nRenderPass);
-		
+
 		RenderDevicePtr pDevice = CGlobals::GetRenderDevice();
 
-		if(pCurRenderQueue->size() > 0)
+		if (pCurRenderQueue->size() > 0)
 		{
 			const float fBlockSize = BlockConfig::g_blockSize;
-			Vector3 renderOfs  = CGlobals::GetScene()->GetRenderOrigin();
+			Vector3 renderOfs = CGlobals::GetScene()->GetRenderOrigin();
 			float verticalOffset = GetVerticalOffset();
-			
+
 			Uint16x3 renderBlockOfs;
-			renderBlockOfs.x = (uint16_t)(renderOfs.x/fBlockSize);
-			renderBlockOfs.z = (uint16_t)(renderOfs.z/fBlockSize);
+			renderBlockOfs.x = (uint16_t)(renderOfs.x / fBlockSize);
+			renderBlockOfs.z = (uint16_t)(renderOfs.z / fBlockSize);
 
 			Vector3 renderBlockOfs_remain;
 			renderBlockOfs_remain.x = renderOfs.x - renderBlockOfs.x * fBlockSize;
 			renderBlockOfs_remain.z = renderOfs.z - renderBlockOfs.z * fBlockSize;
 
 			EffectManager* pEffectManager = CGlobals::GetEffectManager();
-			
+
 			CEffectFile* pEffect = NULL;
 			if (dwRenderMethod == BLOCK_RENDER_FANCY_SHADER)
 			{
@@ -520,7 +523,7 @@ namespace ParaEngine
 				pDevice->SetRenderState(D3DRS_ALPHABLENDENABLE, FALSE);
 			}
 
-			if ( pEffect == 0)
+			if (pEffect == 0)
 			{
 #ifdef USE_DIRECTX_RENDERER
 				if (dwRenderMethod != BLOCK_RENDER_FIXED_FUNCTION)
@@ -533,7 +536,7 @@ namespace ParaEngine
 
 				pDevice->SetFVF(block_vertex::FVF);
 
-				IDirect3DIndexBuffer9* pIndexBuffer =  GetIndexBuffer();
+				IDirect3DIndexBuffer9* pIndexBuffer = GetIndexBuffer();
 				pDevice->SetIndices(pIndexBuffer);
 
 				IDirect3DVertexBuffer9* pCurVB = NULL;
@@ -544,45 +547,45 @@ namespace ParaEngine
 				IDirect3DTexture9* pCurTex1 = NULL;
 				IDirect3DTexture9* pCurTex2 = NULL;
 
-				pDevice->SetTextureStageState( 1, D3DTSS_COLOROP, D3DTOP_MODULATE );
-				pDevice->SetTextureStageState( 1, D3DTSS_COLORARG1, D3DTA_DIFFUSE | D3DTA_ALPHAREPLICATE );
-				
-				for(uint32_t i=0;i<pCurRenderQueue->size();i++)
+				pDevice->SetTextureStageState(1, D3DTSS_COLOROP, D3DTOP_MODULATE);
+				pDevice->SetTextureStageState(1, D3DTSS_COLORARG1, D3DTA_DIFFUSE | D3DTA_ALPHAREPLICATE);
+
+				for (uint32_t i = 0; i < pCurRenderQueue->size(); i++)
 				{
 					BlockRenderTask* pRenderTask = (*pCurRenderQueue)[i];
 					IDirect3DVertexBuffer9* pVB = pRenderTask->GetVertexBuffer();
-					if(pVB != pCurVB)
+					if (pVB != pCurVB)
 					{
-						pDevice->SetStreamSource(0,pVB,0,sizeof(BlockVertexCompressed));
+						pDevice->SetStreamSource(0, pVB, 0, sizeof(BlockVertexCompressed));
 						pCurVB = pVB;
 					}
 					int32_t passId;
-					if(curTamplerId != pRenderTask->GetTemplateId())
+					if (curTamplerId != pRenderTask->GetTemplateId())
 					{
 						BlockTemplate* pTempate = pRenderTask->GetTemplate();
-						if(pTempate->IsMatchAttribute(BlockTemplate::batt_twoTexture))
+						if (pTempate->IsMatchAttribute(BlockTemplate::batt_twoTexture))
 							passId = g_twoTexPass;
-						else if(pTempate->IsMatchAttribute(BlockTemplate::batt_transparent))
+						else if (pTempate->IsMatchAttribute(BlockTemplate::batt_transparent))
 							passId = g_transparentBlockPass;
 						else
 							passId = g_TexPass;
 
-						if(curPass != passId)
+						if (curPass != passId)
 						{
 							curPass = passId;
-							if(passId == 0)
+							if (passId == 0)
 							{
 								pDevice->SetRenderState(D3DRS_ALPHATESTENABLE, FALSE);
 							}
-							else if(passId == 1)
+							else if (passId == 1)
 							{
 								pDevice->SetRenderState(D3DRS_ALPHATESTENABLE, TRUE);
 							}
-							else if(passId == 2)
+							else if (passId == 2)
 							{
 								pDevice->SetRenderState(D3DRS_ALPHATESTENABLE, TRUE);
 							}
-							else if(passId == 3)
+							else if (passId == 3)
 							{
 								pDevice->SetRenderState(D3DRS_ALPHATESTENABLE, TRUE);
 							}
@@ -594,17 +597,17 @@ namespace ParaEngine
 						}
 
 						TextureEntity* pTexEntity = pTempate->GetTexture0(pRenderTask->GetUserData());
-						if(pTexEntity && pTexEntity->GetTexture()!=pCurTex0)
+						if (pTexEntity && pTexEntity->GetTexture() != pCurTex0)
 						{
 							pCurTex0 = pTexEntity->GetTexture();
-							pDevice->SetTexture(0,pCurTex0);
+							pDevice->SetTexture(0, pCurTex0);
 						}
 
 						pTexEntity = pTempate->GetTexture1();
-						if(pTexEntity && pTexEntity->GetTexture()!=pCurTex1)
+						if (pTexEntity && pTexEntity->GetTexture() != pCurTex1)
 						{
 							pCurTex1 = pTexEntity->GetTexture();
-							pDevice->SetTexture(1,pCurTex1);
+							pDevice->SetTexture(1, pCurTex1);
 						}
 
 						/* fixed function never use normal map
@@ -617,28 +620,28 @@ namespace ParaEngine
 
 
 						// culling mode 
-						if(pTempate->GetBlockModel().IsDisableFaceCulling())
+						if (pTempate->GetBlockModel().IsDisableFaceCulling())
 						{
-							if(culling != D3DCULL_NONE)
+							if (culling != D3DCULL_NONE)
 							{
-								pDevice->SetRenderState(D3DRS_CULLMODE,D3DCULL_NONE);
+								pDevice->SetRenderState(D3DRS_CULLMODE, D3DCULL_NONE);
 								culling = D3DCULL_NONE;
 							}
 						}
 						else if (nRenderPass != BlockRenderPass_Opaque && m_isUnderLiquid
 							&& pRenderTask->GetTemplate()->IsMatchAttribute(BlockTemplate::batt_liquid))
 						{
-							if(culling != D3DCULL_CW)
+							if (culling != D3DCULL_CW)
 							{
-								pDevice->SetRenderState(D3DRS_CULLMODE,D3DCULL_CW);
+								pDevice->SetRenderState(D3DRS_CULLMODE, D3DCULL_CW);
 								culling = D3DCULL_CW;
 							}
 						}
 						else
 						{
-							if(culling != D3DCULL_CCW)
+							if (culling != D3DCULL_CCW)
 							{
-								pDevice->SetRenderState(D3DRS_CULLMODE,D3DCULL_CCW);
+								pDevice->SetRenderState(D3DRS_CULLMODE, D3DCULL_CCW);
 								culling = D3DCULL_CCW;
 							}
 						}
@@ -646,7 +649,7 @@ namespace ParaEngine
 
 
 					Matrix4 vWorldMatrix(Matrix4::IDENTITY);
-					
+
 					Uint16x3& vMinPos = pRenderTask->GetMinBlockPos();
 					vWorldMatrix._11 = vWorldMatrix._22 = vWorldMatrix._33 = fBlockSize;
 					vWorldMatrix._41 = (vMinPos.x - renderBlockOfs.x)*fBlockSize - renderBlockOfs_remain.x;
@@ -656,15 +659,15 @@ namespace ParaEngine
 					pDevice->SetTransform(D3DTS_WORLD, vWorldMatrix.GetPointer());
 
 					RenderDevice::DrawIndexedPrimitive(pDevice, RenderDevice::DRAW_PERF_TRIANGLES_TERRAIN, D3DPT_TRIANGLELIST, 0, pRenderTask->GetVertexOfs(),
-						pRenderTask->GetVertexCount(),pRenderTask->GetIndexOfs(),pRenderTask->GetPrimitiveCount());
+						pRenderTask->GetVertexCount(), pRenderTask->GetIndexOfs(), pRenderTask->GetPrimitiveCount());
 				}
-				
-				pDevice->SetRenderState(D3DRS_CULLMODE,D3DCULL_CCW);
-				pDevice->SetTextureStageState( 1, D3DTSS_COLOROP, D3DTOP_DISABLE );
-				pDevice->SetTextureStageState( 1, D3DTSS_COLORARG1, D3DTA_TEXTURE);
+
+				pDevice->SetRenderState(D3DRS_CULLMODE, D3DCULL_CCW);
+				pDevice->SetTextureStageState(1, D3DTSS_COLOROP, D3DTOP_DISABLE);
+				pDevice->SetTextureStageState(1, D3DTSS_COLORARG1, D3DTA_TEXTURE);
 #endif
 			}
-			else if(pEffect != 0 && pEffect->begin(false))
+			else if (pEffect != 0 && pEffect->begin(false))
 			{
 #ifdef USE_OPENGL_RENDERER
 				if (nRenderPass == BlockRenderPass_AlphaTest)
@@ -680,7 +683,7 @@ namespace ParaEngine
 				else
 					CGlobals::GetEffectManager()->GetShadowMap()->UnsetShadowTexture(1);
 #endif
-				
+
 
 				VertexDeclarationPtr pVertexLayout = GetVertexLayout();
 				pDevice->SetVertexDeclaration(pVertexLayout);
@@ -689,10 +692,10 @@ namespace ParaEngine
 				{
 					//////////////////////////////////////////////////////////////////////////
 					// set the wave time parameter
-					double time = CGlobals::GetGameTime(); 
+					double time = CGlobals::GetGameTime();
 					// in case it loses accuracy, we will subtract integer number of 2*PI from time
 					// time -= ((int)(time / (2*MATH_PI)))*(2*MATH_PI);
-					time = (int)(time*1000) % 1000000;
+					time = (int)(time * 1000) % 1000000;
 					pEffect->setParameter(CEffectFile::k_ConstVector1, Vector4((float)time, 0.f, 0.f, 0.f).ptr());
 				}
 				else
@@ -701,8 +704,8 @@ namespace ParaEngine
 					Vector4 vDir_(vDir.x, vDir.y, vDir.z, 1.0f);
 					pEffect->setParameter(CEffectFile::k_sunVector, &vDir_);
 				}
-				
-				IndexBufferDevicePtr_type pIndexBuffer =  GetIndexBuffer();
+
+				IndexBufferDevicePtr_type pIndexBuffer = GetIndexBuffer();
 				pDevice->SetIndices(pIndexBuffer);
 
 				VertexBufferDevicePtr_type pCurVB = 0;
@@ -726,20 +729,20 @@ namespace ParaEngine
 				/** block light params and sun intensity*/
 				Vector4 vLightParams(m_vBlockLightColor.r, m_vBlockLightColor.g, m_vBlockLightColor.b, m_sunIntensity);
 				pEffect->setParameter(CEffectFile::k_ConstVector0, (const void*)(&vLightParams));
-				for(uint32_t i=0;i<pCurRenderQueue->size();i++)
+				for (uint32_t i = 0; i < pCurRenderQueue->size(); i++)
 				{
 					BlockRenderTask* pRenderTask = (*pCurRenderQueue)[i];
 					VertexBufferDevicePtr_type pVB = pRenderTask->GetVertexBuffer();
 					if (pVB != pCurVB)
 					{
-						pDevice->SetStreamSource(0,pVB,0,sizeof(BlockVertexCompressed));
+						pDevice->SetStreamSource(0, pVB, 0, sizeof(BlockVertexCompressed));
 						pCurVB = pVB;
 					}
 					int32_t passId;
-					if(curTamplerId != pRenderTask->GetTemplateId())
+					if (curTamplerId != pRenderTask->GetTemplateId())
 					{
 						BlockTemplate* pTempate = pRenderTask->GetTemplate();
-						if(pTempate->IsMatchAttribute(BlockTemplate::batt_twoTexture))
+						if (pTempate->IsMatchAttribute(BlockTemplate::batt_twoTexture))
 							passId = g_twoTexPass;
 						else if (nRenderPass == BlockRenderPass_AlphaTest)
 						{
@@ -759,15 +762,15 @@ namespace ParaEngine
 						}
 						else
 							passId = g_TexPass;
-							
 
-						
-						if(curPass != passId)
+
+
+						if (curPass != passId)
 						{
-							if(curPass > -1)
+							if (curPass > -1)
 								pEffect->EndPass();
 
-							if(pEffect->BeginPass(passId))
+							if (pEffect->BeginPass(passId))
 							{
 								curPass = passId;
 
@@ -785,51 +788,51 @@ namespace ParaEngine
 						}
 
 						TextureEntity* pTexEntity = pTempate->GetTexture0(pRenderTask->GetUserData());
-						if(pTexEntity && pTexEntity->GetTexture()!=pCurTex0)
+						if (pTexEntity && pTexEntity->GetTexture() != pCurTex0)
 						{
 							pCurTex0 = pTexEntity->GetTexture();
-							pDevice->SetTexture(0,pCurTex0);
+							pDevice->SetTexture(0, pCurTex0);
 						}
 
 						pTexEntity = pTempate->GetTexture1();
-						if(pTexEntity && pTexEntity->GetTexture()!=pCurTex1)
+						if (pTexEntity && pTexEntity->GetTexture() != pCurTex1)
 						{
 							pCurTex1 = pTexEntity->GetTexture();
-							pDevice->SetTexture(1,pCurTex1);
+							pDevice->SetTexture(1, pCurTex1);
 						}
 
 						pTexEntity = pTempate->GetNormalMap();
-						if(pTexEntity && pTexEntity->GetTexture()!=pCurTex2)
+						if (pTexEntity && pTexEntity->GetTexture() != pCurTex2)
 						{
 							pCurTex2 = pTexEntity->GetTexture();
-							if (dwRenderMethod  == BLOCK_RENDER_FANCY_SHADER){
-								pDevice->SetTexture(2,pCurTex2);
+							if (dwRenderMethod == BLOCK_RENDER_FANCY_SHADER) {
+								pDevice->SetTexture(2, pCurTex2);
 							}
 						}
 
 						// culling mode
-						if(pTempate->GetBlockModel().IsDisableFaceCulling())
+						if (pTempate->GetBlockModel().IsDisableFaceCulling())
 						{
-							if(culling != D3DCULL_NONE)
+							if (culling != D3DCULL_NONE)
 							{
-								pDevice->SetRenderState(D3DRS_CULLMODE,D3DCULL_NONE);
+								pDevice->SetRenderState(D3DRS_CULLMODE, D3DCULL_NONE);
 								culling = D3DCULL_NONE;
 							}
 						}
 						else if (nRenderPass != BlockRenderPass_Opaque && m_isUnderLiquid
 							&& pRenderTask->GetTemplate()->IsMatchAttribute(BlockTemplate::batt_liquid))
 						{
-							if(culling != D3DCULL_CW)
+							if (culling != D3DCULL_CW)
 							{
-								pDevice->SetRenderState(D3DRS_CULLMODE,D3DCULL_CW);
+								pDevice->SetRenderState(D3DRS_CULLMODE, D3DCULL_CW);
 								culling = D3DCULL_CW;
 							}
 						}
 						else
 						{
-							if(culling != D3DCULL_CCW)
+							if (culling != D3DCULL_CCW)
 							{
-								pDevice->SetRenderState(D3DRS_CULLMODE,D3DCULL_CCW);
+								pDevice->SetRenderState(D3DRS_CULLMODE, D3DCULL_CCW);
 								culling = D3DCULL_CCW;
 							}
 						}
@@ -842,12 +845,12 @@ namespace ParaEngine
 					vWorldMatrix._41 = (vMinPos.x - renderBlockOfs.x)*fBlockSize - renderBlockOfs_remain.x;
 					vWorldMatrix._42 = vMinPos.y * fBlockSize - renderOfs.y + verticalOffset;
 					vWorldMatrix._43 = (vMinPos.z - renderBlockOfs.z)*fBlockSize - renderBlockOfs_remain.z;
-					
+
 					Matrix4 mWorldViewProj;
 					mWorldViewProj = vWorldMatrix * matViewProj;
 
 					pEffect->setMatrix(CEffectFile::k_worldViewProjMatrix, &mWorldViewProj);
-					if(pEffect->isMatrixUsed(CEffectFile::k_worldViewMatrix))
+					if (pEffect->isMatrixUsed(CEffectFile::k_worldViewMatrix))
 					{
 						Matrix4 mWorldView;
 						ParaMatrixMultiply(&mWorldView, &vWorldMatrix, &matViewProj);
@@ -861,7 +864,7 @@ namespace ParaEngine
 					}
 					{
 						// set the new render origin
-						Vector4 vWorldPos(0,0,0,1.f);
+						Vector4 vWorldPos(0, 0, 0, 1.f);
 						/** this is for height shift, using the render origin. */
 						Vector3 vRenderOrigin = CGlobals::GetScene()->GetRenderOrigin();
 						vWorldPos.x = vRenderOrigin.x + vWorldMatrix._41;
@@ -876,10 +879,10 @@ namespace ParaEngine
 						pRenderTask->GetVertexCount(), pRenderTask->GetIndexOfs(), pRenderTask->GetPrimitiveCount());
 				}
 
-				if(curPass > -1)
+				if (curPass > -1)
 					pEffect->EndPass();
-				
-				pDevice->SetRenderState(D3DRS_CULLMODE,D3DCULL_CCW);
+
+				pDevice->SetRenderState(D3DRS_CULLMODE, D3DCULL_CCW);
 
 				if (dwRenderMethod == BLOCK_RENDER_FANCY_SHADER)
 				{
@@ -894,7 +897,7 @@ namespace ParaEngine
 					pDevice->SetStreamSource(0, 0, 0, 0);
 				}
 			}
-			
+
 			if (nRenderPass != BlockRenderPass_AlphaBlended)
 			{
 				if (nRenderPass == BlockRenderPass_AlphaTest)
@@ -918,8 +921,8 @@ namespace ParaEngine
 	{
 		auto& selectedBlocks = m_selectedBlockMap[nSelectionIndex];
 		auto& selectedBlockMap = selectedBlocks.m_blocks;
-		
-		if(selectedBlockMap.size() == 0)
+
+		if (selectedBlockMap.size() == 0)
 			return;
 
 		SceneState* sceneState = CGlobals::GetSceneState();
@@ -932,12 +935,12 @@ namespace ParaEngine
 
 
 		const float fBlockSize = BlockConfig::g_blockSize;
-		Vector3 renderOfs  = CGlobals::GetScene()->GetRenderOrigin();
+		Vector3 renderOfs = CGlobals::GetScene()->GetRenderOrigin();
 		float verticalOffset = GetVerticalOffset();
 
-		int32_t renderBlockOfs_x = (int32_t)(renderOfs.x/fBlockSize);
-		int32_t renderBlockOfs_y = (int32_t)(renderOfs.y/fBlockSize);
-		int32_t renderBlockOfs_z = (int32_t)(renderOfs.z/fBlockSize);
+		int32_t renderBlockOfs_x = (int32_t)(renderOfs.x / fBlockSize);
+		int32_t renderBlockOfs_y = (int32_t)(renderOfs.y / fBlockSize);
+		int32_t renderBlockOfs_z = (int32_t)(renderOfs.z / fBlockSize);
 
 		Vector3 renderBlockOfs_remain;
 		renderBlockOfs_remain.x = renderOfs.x - renderBlockOfs_x * fBlockSize;
@@ -949,7 +952,7 @@ namespace ParaEngine
 
 		if (pBatchedElementDraw)
 		{
-			PARAVECTOR4 color(0.2f,0.2f,0.2f, 0.7f);
+			PARAVECTOR4 color(0.2f, 0.2f, 0.2f, 0.7f);
 
 			if (pLineColor)
 			{
@@ -958,7 +961,7 @@ namespace ParaEngine
 			const float fLineWidth = -2.f;
 
 			std::map<int64_t, Uint16x3>::iterator itCur, itEnd = selectedBlockMap.end();
-			for(itCur = selectedBlockMap.begin(); itCur!=itEnd; itCur++)
+			for (itCur = selectedBlockMap.begin(); itCur != itEnd; itCur++)
 			{
 				Uint16x3& BlockPos = (*itCur).second;
 				uint16_t x, y, z;
@@ -966,18 +969,18 @@ namespace ParaEngine
 				y = BlockPos.y;
 				z = BlockPos.z;
 
-				BlockTemplate* pBlockTemplate = GetBlockTemplate(x,y,z);
-				if(pBlockTemplate == 0)
-					 pBlockTemplate = GetBlockTemplate(1);
-				if(pBlockTemplate)
+				BlockTemplate* pBlockTemplate = GetBlockTemplate(x, y, z);
+				if (pBlockTemplate == 0)
+					pBlockTemplate = GetBlockTemplate(1);
+				if (pBlockTemplate)
 				{
 					int nLenCount = 12;
 					CShapeAABB aabb;
 					pBlockTemplate->GetAABB(this, x, y, z, &aabb);
 
-					Vector3 vOffset((x  - renderBlockOfs_x) * fBlockSize, (y  - renderBlockOfs_y) * fBlockSize + verticalOffset, (z  - renderBlockOfs_z) * fBlockSize);
+					Vector3 vOffset((x - renderBlockOfs_x) * fBlockSize, (y - renderBlockOfs_y) * fBlockSize + verticalOffset, (z - renderBlockOfs_z) * fBlockSize);
 					vOffset -= renderBlockOfs_remain;
-					
+
 					aabb.GetCenter() += vOffset;
 					aabb.GetExtents() *= fScaling;
 
@@ -988,11 +991,11 @@ namespace ParaEngine
 							4,5,6,7,4, // top
 							5,1,6,2,3,7, // sides
 						};
-						
+
 						Vector3 pVertexList[16];
-						for(int i=0;i<16; i++)
+						for (int i = 0; i < 16; i++)
 						{
-							pVertexList[i] = pVecBounds[pIndexBuffer[i]] ;
+							pVertexList[i] = pVecBounds[pIndexBuffer[i]];
 						}
 
 						pBatchedElementDraw->AddThickLines((PARAVECTOR3*)pVertexList, 10, color, fLineWidth);
@@ -1005,26 +1008,26 @@ namespace ParaEngine
 		}
 	}
 
-	void BlockWorldClient::RenderSelectionBlock(int nSelectionIndex, float fScaledBlockSize,  LinearColor* pColor, BOOL bColorAnimate)
+	void BlockWorldClient::RenderSelectionBlock(int nSelectionIndex, float fScaledBlockSize, LinearColor* pColor, BOOL bColorAnimate)
 	{
 
 		auto& selectedBlocks = m_selectedBlockMap[nSelectionIndex];
 		auto& selectedBlockMap = selectedBlocks.m_blocks;
 		auto& highLightTexture = m_highLightTextures[nSelectionIndex];
-		if(selectedBlockMap.size() == 0)
+		if (selectedBlockMap.size() == 0)
 			return;
 
-		if((int)m_selectBlockInstData.size() < m_maxSelectBlockPerBatch * 4)
+		if ((int)m_selectBlockInstData.size() < m_maxSelectBlockPerBatch * 4)
 			m_selectBlockInstData.resize(m_maxSelectBlockPerBatch * 4);
 
 		RenderDevicePtr pDevice = CGlobals::GetRenderDevice();
 		float blockSize = BlockConfig::g_blockSize;
 
-		if(!highLightTexture)
+		if (!highLightTexture)
 		{
 			return;
 		}
-		else if(!highLightTexture->IsLoaded())
+		else if (!highLightTexture->IsLoaded())
 		{
 			highLightTexture->LoadAsset();
 			return;
@@ -1033,12 +1036,12 @@ namespace ParaEngine
 		BuildSelectionBlockBuffer();
 
 		const float fBlockSize = BlockConfig::g_blockSize;
-		Vector3 renderOfs  = CGlobals::GetScene()->GetRenderOrigin();
+		Vector3 renderOfs = CGlobals::GetScene()->GetRenderOrigin();
 		float verticalOffset = GetVerticalOffset();
 
-		int32_t renderBlockOfs_x = (int32_t)(renderOfs.x/fBlockSize);
-		int32_t renderBlockOfs_y = (int32_t)(renderOfs.y/fBlockSize);
-		int32_t renderBlockOfs_z = (int32_t)(renderOfs.z/fBlockSize);
+		int32_t renderBlockOfs_x = (int32_t)(renderOfs.x / fBlockSize);
+		int32_t renderBlockOfs_y = (int32_t)(renderOfs.y / fBlockSize);
+		int32_t renderBlockOfs_z = (int32_t)(renderOfs.z / fBlockSize);
 
 		Vector3 renderBlockOfs_remain;
 		renderBlockOfs_remain.x = renderOfs.x - renderBlockOfs_x * fBlockSize;
@@ -1056,53 +1059,53 @@ namespace ParaEngine
 		pEffectManager->BeginEffect(TECH_BLOCK);
 		CEffectFile* pEffect = pEffectManager->GetCurrentEffectFile();
 
-		pDevice->SetStreamSource(0, 0,0,0);
+		pDevice->SetStreamSource(0, 0, 0, 0);
 		pDevice->SetIndices(0);
-		
+
 
 		// culling mode 
-		if(selectedBlocks.m_bOnlyRenderClickableArea)
+		if (selectedBlocks.m_bOnlyRenderClickableArea)
 		{
-			pDevice->SetRenderState(D3DRS_CULLMODE,D3DCULL_NONE);
+			pDevice->SetRenderState(D3DRS_CULLMODE, D3DCULL_NONE);
 		}
 		else
 		{
-			pDevice->SetRenderState(D3DRS_CULLMODE,D3DCULL_CCW);
+			pDevice->SetRenderState(D3DRS_CULLMODE, D3DCULL_CCW);
 		}
 
-		if ( pEffect == 0)
+		if (pEffect == 0)
 		{
 #ifdef USE_DIRECTX_RENDERER
 			// fixed function pipeline
-			pDevice->SetTexture(0,highLightTexture->GetTexture());
+			pDevice->SetTexture(0, highLightTexture->GetTexture());
 
 			pDevice->SetRenderState(D3DRS_ALPHABLENDENABLE, TRUE);
 			pDevice->SetRenderState(D3DRS_ALPHATESTENABLE, FALSE);
-			pDevice->SetRenderState(D3DRS_SRCBLEND,D3DBLEND_ONE);
-			pDevice->SetRenderState(D3DRS_DESTBLEND,D3DBLEND_ONE);
+			pDevice->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_ONE);
+			pDevice->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_ONE);
 			pDevice->SetRenderState(D3DRS_ZWRITEENABLE, FALSE);
 
 			pDevice->SetFVF(mesh_vertex_plain::FVF);
 
 			uint32_t time = CGlobals::GetSceneState()->GetGlobalTime();
-			uint8 lightScaler = (bColorAnimate) ?  (uint8)(abs(sin(time*0.0015f)) * 0.4f * 255) : 0xff;
+			uint8 lightScaler = (bColorAnimate) ? (uint8)(abs(sin(time*0.0015f)) * 0.4f * 255) : 0xff;
 			DWORD lightIntensity = COLOR_ARGB(255, lightScaler, lightScaler, lightScaler);
-			pDevice->SetTextureStageState( 0, D3DTSS_COLORARG2, D3DTA_CONSTANT);
-			pDevice->SetTextureStageState( 0, D3DTSS_CONSTANT, lightIntensity);
+			pDevice->SetTextureStageState(0, D3DTSS_COLORARG2, D3DTA_CONSTANT);
+			pDevice->SetTextureStageState(0, D3DTSS_CONSTANT, lightIntensity);
 
 			Matrix4 vWorldMatrix(Matrix4::IDENTITY);
-			vWorldMatrix._41 = - renderBlockOfs_remain.x - (fScaledBlockSize - fBlockSize)*0.5f;
-			vWorldMatrix._42 = - renderBlockOfs_remain.y - (fScaledBlockSize - fBlockSize)*0.5f;
-			vWorldMatrix._43 = - renderBlockOfs_remain.z - (fScaledBlockSize - fBlockSize)*0.5f;
+			vWorldMatrix._41 = -renderBlockOfs_remain.x - (fScaledBlockSize - fBlockSize)*0.5f;
+			vWorldMatrix._42 = -renderBlockOfs_remain.y - (fScaledBlockSize - fBlockSize)*0.5f;
+			vWorldMatrix._43 = -renderBlockOfs_remain.z - (fScaledBlockSize - fBlockSize)*0.5f;
 
 			pDevice->SetTransform(D3DTS_WORLD, vWorldMatrix.GetPointer());
-			
 
-			int nMaxFaceCount = (m_maxSelectBlockPerBatch-1)*6;
+
+			int nMaxFaceCount = (m_maxSelectBlockPerBatch - 1) * 6;
 
 			std::map<int64_t, Uint16x3>::iterator itCur, itEnd = selectedBlockMap.end();
-			
-			for(itCur = selectedBlockMap.begin(); itCur!=itEnd; itCur++)
+
+			for (itCur = selectedBlockMap.begin(); itCur != itEnd; itCur++)
 			{
 				Uint16x3& BlockPos = (*itCur).second;
 				uint16_t x, y, z;
@@ -1110,43 +1113,43 @@ namespace ParaEngine
 				y = BlockPos.y;
 				z = BlockPos.z;
 
-				if(curInstCount >= nMaxFaceCount)
+				if (curInstCount >= nMaxFaceCount)
 				{
-					RenderDevice::DrawIndexedPrimitiveUP(pDevice, RenderDevice::DRAW_PERF_TRIANGLES_TERRAIN, D3DPT_TRIANGLELIST,0,curInstCount * 4,curInstCount * 2, &(m_select_block_indices[0]), D3DFMT_INDEX16, &(m_select_block_vertices[0]), sizeof(SelectBlockVertex));
+					RenderDevice::DrawIndexedPrimitiveUP(pDevice, RenderDevice::DRAW_PERF_TRIANGLES_TERRAIN, D3DPT_TRIANGLELIST, 0, curInstCount * 4, curInstCount * 2, &(m_select_block_indices[0]), D3DFMT_INDEX16, &(m_select_block_vertices[0]), sizeof(SelectBlockVertex));
 					curInstCount = 0;
 					instFloatCount = 0;
 				}
-				Vector3 vOffset((x  - renderBlockOfs_x) * fBlockSize, (y  - renderBlockOfs_y) * fBlockSize + verticalOffset, (z  - renderBlockOfs_z) * fBlockSize);
+				Vector3 vOffset((x - renderBlockOfs_x) * fBlockSize, (y - renderBlockOfs_y) * fBlockSize + verticalOffset, (z - renderBlockOfs_z) * fBlockSize);
 				int nCount = 0;
-				if(selectedBlocks.m_bOnlyRenderClickableArea)
-					nCount = FillSelectBlockInvert(selectedBlockMap, x,y,z, &(m_select_block_vertices[instFloatCount*4]), vOffset, fScaledBlockSize);
+				if (selectedBlocks.m_bOnlyRenderClickableArea)
+					nCount = FillSelectBlockInvert(selectedBlockMap, x, y, z, &(m_select_block_vertices[instFloatCount * 4]), vOffset, fScaledBlockSize);
 				else
-					nCount = FillSelectBlockVertice(&selectedBlockMap, x,y,z, &(m_select_block_vertices[instFloatCount*4]), vOffset, fScaledBlockSize);
+					nCount = FillSelectBlockVertice(&selectedBlockMap, x, y, z, &(m_select_block_vertices[instFloatCount * 4]), vOffset, fScaledBlockSize);
 
-				instFloatCount+=nCount;
-				curInstCount+=nCount;
+				instFloatCount += nCount;
+				curInstCount += nCount;
 			}
 
-			if(curInstCount > 0)
+			if (curInstCount > 0)
 			{
-				RenderDevice::DrawIndexedPrimitiveUP(pDevice, RenderDevice::DRAW_PERF_TRIANGLES_TERRAIN, D3DPT_TRIANGLELIST,0,curInstCount * 4,curInstCount * 2, &(m_select_block_indices[0]), D3DFMT_INDEX16, &(m_select_block_vertices[0]), sizeof(SelectBlockVertex));
+				RenderDevice::DrawIndexedPrimitiveUP(pDevice, RenderDevice::DRAW_PERF_TRIANGLES_TERRAIN, D3DPT_TRIANGLELIST, 0, curInstCount * 4, curInstCount * 2, &(m_select_block_indices[0]), D3DFMT_INDEX16, &(m_select_block_vertices[0]), sizeof(SelectBlockVertex));
 			}
 
 			pDevice->SetRenderState(D3DRS_ALPHATESTENABLE, TRUE);
 			pDevice->SetRenderState(D3DRS_ALPHABLENDENABLE, FALSE);
 			pDevice->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_SRCALPHA);
 			pDevice->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
-			pDevice->SetRenderState(D3DRS_ZWRITEENABLE,TRUE);
+			pDevice->SetRenderState(D3DRS_ZWRITEENABLE, TRUE);
 			pDevice->SetRenderState(D3DRS_DEPTHBIAS, 0);
 
-			pDevice->SetTextureStageState( 0, D3DTSS_COLORARG2, D3DTA_CURRENT);
+			pDevice->SetTextureStageState(0, D3DTSS_COLORARG2, D3DTA_CURRENT);
 #endif
 		}
-		else if(pEffect != 0 && pEffect->begin(false))
+		else if (pEffect != 0 && pEffect->begin(false))
 		{
 			pDevice->SetVertexDeclaration(GetSelectBlockVertexLayout());
 
-			if(pEffect->BeginPass(g_selectBlockPass))
+			if (pEffect->BeginPass(g_selectBlockPass))
 			{
 				IScene* pScene = CGlobals::GetEffectManager()->GetScene();
 				CBaseCamera* pCamera = pScene->GetCurrentCamera();
@@ -1158,26 +1161,26 @@ namespace ParaEngine
 					const Matrix4& pProj = (CGlobals::GetEffectManager()->GetProjTransform());
 					matViewProj = (pView) * (pProj);
 				}
-							
-				pDevice->SetTexture(0,highLightTexture->GetTexture());
-					
-				pDevice->SetRenderState(D3DRS_ALPHABLENDENABLE,TRUE);
-				pDevice->SetRenderState(D3DRS_SRCBLEND,D3DBLEND_ONE);
-				pDevice->SetRenderState(D3DRS_DESTBLEND,D3DBLEND_ONE);
+
+				pDevice->SetTexture(0, highLightTexture->GetTexture());
+
+				pDevice->SetRenderState(D3DRS_ALPHABLENDENABLE, TRUE);
+				pDevice->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_ONE);
+				pDevice->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_ONE);
 				pDevice->SetRenderState(D3DRS_ZWRITEENABLE, FALSE);
 
 				uint32_t time = CGlobals::GetSceneState()->GetGlobalTime();
 				float lightIntensity = 1.f;
-				if(bColorAnimate)
+				if (bColorAnimate)
 					lightIntensity = abs(sin(time*0.0015f)) * 0.4f;
-				
-				Vector4 vLightParams(lightIntensity, 0,0,0);
+
+				Vector4 vLightParams(lightIntensity, 0, 0, 0);
 				pEffect->setParameter(CEffectFile::k_ConstVector0, (const void*)(&vLightParams));
 
 				Matrix4 vWorldMatrix(Matrix4::IDENTITY);
-				vWorldMatrix._41 = - renderBlockOfs_remain.x - (fScaledBlockSize - fBlockSize)*0.5f;
-				vWorldMatrix._42 = - renderBlockOfs_remain.y - (fScaledBlockSize - fBlockSize)*0.5f;
-				vWorldMatrix._43 = - renderBlockOfs_remain.z - (fScaledBlockSize - fBlockSize)*0.5f;
+				vWorldMatrix._41 = -renderBlockOfs_remain.x - (fScaledBlockSize - fBlockSize)*0.5f;
+				vWorldMatrix._42 = -renderBlockOfs_remain.y - (fScaledBlockSize - fBlockSize)*0.5f;
+				vWorldMatrix._43 = -renderBlockOfs_remain.z - (fScaledBlockSize - fBlockSize)*0.5f;
 
 				vWorldMatrix = vWorldMatrix * matViewProj;
 
@@ -1185,10 +1188,10 @@ namespace ParaEngine
 
 				pEffect->CommitChanges();
 
-				int nMaxFaceCount = (m_maxSelectBlockPerBatch-1)*6;
+				int nMaxFaceCount = (m_maxSelectBlockPerBatch - 1) * 6;
 
 				std::map<int64_t, Uint16x3>::iterator itCur, itEnd = selectedBlockMap.end();
-				for(itCur = selectedBlockMap.begin(); itCur!=itEnd; itCur++)
+				for (itCur = selectedBlockMap.begin(); itCur != itEnd; itCur++)
 				{
 					Uint16x3& BlockPos = (*itCur).second;
 					uint16_t x, y, z;
@@ -1196,24 +1199,24 @@ namespace ParaEngine
 					y = BlockPos.y;
 					z = BlockPos.z;
 
-					if(curInstCount >= nMaxFaceCount)
+					if (curInstCount >= nMaxFaceCount)
 					{
 						RenderDevice::DrawIndexedPrimitiveUP(pDevice, D3DPT_TRIANGLELIST, D3DPT_TRIANGLELIST, 0, curInstCount * 4, curInstCount * 2, &(m_select_block_indices[0]), D3DFMT_INDEX16, &(m_select_block_vertices[0]), sizeof(SelectBlockVertex));
 						curInstCount = 0;
 						instFloatCount = 0;
 					}
 
-					Vector3 vOffset((x  - renderBlockOfs_x) * fBlockSize, (y  - renderBlockOfs_y) * fBlockSize + verticalOffset, (z  - renderBlockOfs_z) * fBlockSize);
+					Vector3 vOffset((x - renderBlockOfs_x) * fBlockSize, (y - renderBlockOfs_y) * fBlockSize + verticalOffset, (z - renderBlockOfs_z) * fBlockSize);
 					int nCount = 0;
-					if(selectedBlocks.m_bOnlyRenderClickableArea)
-						nCount = FillSelectBlockInvert(selectedBlockMap, x,y,z, &(m_select_block_vertices[instFloatCount*4]), vOffset, fScaledBlockSize);
+					if (selectedBlocks.m_bOnlyRenderClickableArea)
+						nCount = FillSelectBlockInvert(selectedBlockMap, x, y, z, &(m_select_block_vertices[instFloatCount * 4]), vOffset, fScaledBlockSize);
 					else
-						nCount = FillSelectBlockVertice(&selectedBlockMap, x,y,z, &(m_select_block_vertices[instFloatCount*4]), vOffset, fScaledBlockSize);
-					instFloatCount+=nCount;
-					curInstCount+=nCount;
+						nCount = FillSelectBlockVertice(&selectedBlockMap, x, y, z, &(m_select_block_vertices[instFloatCount * 4]), vOffset, fScaledBlockSize);
+					instFloatCount += nCount;
+					curInstCount += nCount;
 				}
 
-				if(curInstCount > 0)
+				if (curInstCount > 0)
 				{
 					RenderDevice::DrawIndexedPrimitiveUP(pDevice, D3DPT_TRIANGLELIST, D3DPT_TRIANGLELIST, 0, curInstCount * 4, curInstCount * 2, &(m_select_block_indices[0]), D3DFMT_INDEX16, &(m_select_block_vertices[0]), sizeof(SelectBlockVertex));
 				}
@@ -1227,23 +1230,23 @@ namespace ParaEngine
 			}
 			pEffect->end();
 		}
-		pDevice->SetRenderState(D3DRS_CULLMODE,D3DCULL_CCW);
+		pDevice->SetRenderState(D3DRS_CULLMODE, D3DCULL_CCW);
 
 	}
 
 	void BlockWorldClient::RenderDamagedBlock()
 	{
-		if(m_damageDegree <= 0)
+		if (m_damageDegree <= 0)
 			return;
 #ifdef USE_DIRECTX_RENDERER
 		RenderDevicePtr pDevice = CGlobals::GetRenderDevice();
 		float blockSize = BlockConfig::g_blockSize;
 
-		if(!m_damangeTexture)
+		if (!m_damangeTexture)
 		{
 			return;
 		}
-		else if(!m_damangeTexture->IsLoaded())
+		else if (!m_damangeTexture->IsLoaded())
 		{
 			m_damangeTexture->LoadAsset();
 			return;
@@ -1253,12 +1256,12 @@ namespace ParaEngine
 		BuildSelectionBlockBuffer();
 
 		const float fBlockSize = BlockConfig::g_blockSize;
-		Vector3 renderOfs  = CGlobals::GetScene()->GetRenderOrigin();
+		Vector3 renderOfs = CGlobals::GetScene()->GetRenderOrigin();
 		float verticalOffset = GetVerticalOffset();
 
-		int32_t renderBlockOfs_x = (int32_t)(renderOfs.x/fBlockSize);
-		int32_t renderBlockOfs_y = (int32_t)(renderOfs.y/fBlockSize);
-		int32_t renderBlockOfs_z = (int32_t)(renderOfs.z/fBlockSize);
+		int32_t renderBlockOfs_x = (int32_t)(renderOfs.x / fBlockSize);
+		int32_t renderBlockOfs_y = (int32_t)(renderOfs.y / fBlockSize);
+		int32_t renderBlockOfs_z = (int32_t)(renderOfs.z / fBlockSize);
 
 		Vector3 renderBlockOfs_remain;
 		renderBlockOfs_remain.x = renderOfs.x - renderBlockOfs_x * fBlockSize;
@@ -1273,10 +1276,10 @@ namespace ParaEngine
 		pEffectManager->BeginEffect(TECH_BLOCK);
 		CEffectFile* pEffect = pEffectManager->GetCurrentEffectFile();
 
-		if ( pEffect == 0)
+		if (pEffect == 0)
 		{
 			// fixed function pipeline
-			pDevice->SetTexture(0,m_damangeTexture->GetTexture());
+			pDevice->SetTexture(0, m_damangeTexture->GetTexture());
 
 			pDevice->SetRenderState(D3DRS_ALPHABLENDENABLE, TRUE);
 			pDevice->SetRenderState(D3DRS_ALPHATESTENABLE, FALSE);
@@ -1285,31 +1288,31 @@ namespace ParaEngine
 			pDevice->SetFVF(mesh_vertex_plain::FVF);
 
 			Matrix4 vWorldMatrix(Matrix4::IDENTITY);
-			vWorldMatrix._41 = - renderBlockOfs_remain.x - (fScaledBlockSize - fBlockSize)*0.5f;
-			vWorldMatrix._42 = - renderBlockOfs_remain.y - (fScaledBlockSize - fBlockSize)*0.5f;
-			vWorldMatrix._43 = - renderBlockOfs_remain.z - (fScaledBlockSize - fBlockSize)*0.5f;
+			vWorldMatrix._41 = -renderBlockOfs_remain.x - (fScaledBlockSize - fBlockSize)*0.5f;
+			vWorldMatrix._42 = -renderBlockOfs_remain.y - (fScaledBlockSize - fBlockSize)*0.5f;
+			vWorldMatrix._43 = -renderBlockOfs_remain.z - (fScaledBlockSize - fBlockSize)*0.5f;
 
 			pDevice->SetTransform(D3DTS_WORLD, vWorldMatrix.GetPointer());
 
 			int curInstCount = 0;
 			int instFloatCount = 0;
 			{
-				Vector3 vOffset((m_damagedBlockId.x  - renderBlockOfs_x) * fBlockSize, (m_damagedBlockId.y  - renderBlockOfs_y) * fBlockSize + verticalOffset, (m_damagedBlockId.z  - renderBlockOfs_z) * fBlockSize);
-				FillSelectBlockVertice(NULL, 0,0,0, &(m_select_block_vertices[instFloatCount*24]), vOffset, fScaledBlockSize, ((int)(max(m_damageDegree-0.1f,0.f)*8))/8.f, 1/8.f);
+				Vector3 vOffset((m_damagedBlockId.x - renderBlockOfs_x) * fBlockSize, (m_damagedBlockId.y - renderBlockOfs_y) * fBlockSize + verticalOffset, (m_damagedBlockId.z - renderBlockOfs_z) * fBlockSize);
+				FillSelectBlockVertice(NULL, 0, 0, 0, &(m_select_block_vertices[instFloatCount * 24]), vOffset, fScaledBlockSize, ((int)(max(m_damageDegree - 0.1f, 0.f) * 8)) / 8.f, 1 / 8.f);
 				instFloatCount++;
 				curInstCount++;
 			}
-			RenderDevice::DrawIndexedPrimitiveUP(pDevice, RenderDevice::DRAW_PERF_TRIANGLES_TERRAIN, D3DPT_TRIANGLELIST,0,curInstCount * 24,curInstCount * 12, &(m_select_block_indices[0]), D3DFMT_INDEX16, &(m_select_block_vertices[0]), sizeof(SelectBlockVertex));
+			RenderDevice::DrawIndexedPrimitiveUP(pDevice, RenderDevice::DRAW_PERF_TRIANGLES_TERRAIN, D3DPT_TRIANGLELIST, 0, curInstCount * 24, curInstCount * 12, &(m_select_block_indices[0]), D3DFMT_INDEX16, &(m_select_block_vertices[0]), sizeof(SelectBlockVertex));
 
 			pDevice->SetRenderState(D3DRS_ALPHATESTENABLE, TRUE);
 			pDevice->SetRenderState(D3DRS_ALPHABLENDENABLE, FALSE);
-			pDevice->SetRenderState(D3DRS_ZWRITEENABLE,TRUE);
+			pDevice->SetRenderState(D3DRS_ZWRITEENABLE, TRUE);
 		}
-		else if(pEffect != 0 && pEffect->begin(false))
+		else if (pEffect != 0 && pEffect->begin(false))
 		{
 			pDevice->SetVertexDeclaration(GetSelectBlockVertexLayout());
 
-			if(pEffect->BeginPass(2))
+			if (pEffect->BeginPass(2))
 			{
 				IScene* pScene = CGlobals::GetEffectManager()->GetScene();
 				CBaseCamera* pCamera = pScene->GetCurrentCamera();
@@ -1321,17 +1324,17 @@ namespace ParaEngine
 					matViewProj = (pView) * (pProj);
 				}
 
-				pDevice->SetTexture(0,m_damangeTexture->GetTexture());
+				pDevice->SetTexture(0, m_damangeTexture->GetTexture());
 
 				pDevice->SetRenderState(D3DRS_ALPHABLENDENABLE, TRUE);
 				pDevice->SetRenderState(D3DRS_ZWRITEENABLE, FALSE);
 
 				Matrix4 vWorldMatrix(Matrix4::IDENTITY);
-				vWorldMatrix._41 = - renderBlockOfs_remain.x - (fScaledBlockSize - fBlockSize)*0.5f;
-				vWorldMatrix._42 = - renderBlockOfs_remain.y - (fScaledBlockSize - fBlockSize)*0.5f;
-				vWorldMatrix._43 = - renderBlockOfs_remain.z - (fScaledBlockSize - fBlockSize)*0.5f;
+				vWorldMatrix._41 = -renderBlockOfs_remain.x - (fScaledBlockSize - fBlockSize)*0.5f;
+				vWorldMatrix._42 = -renderBlockOfs_remain.y - (fScaledBlockSize - fBlockSize)*0.5f;
+				vWorldMatrix._43 = -renderBlockOfs_remain.z - (fScaledBlockSize - fBlockSize)*0.5f;
 
-				vWorldMatrix = vWorldMatrix*matViewProj;
+				vWorldMatrix = vWorldMatrix * matViewProj;
 
 				pEffect->setMatrix(CEffectFile::k_worldViewProjMatrix, &vWorldMatrix);
 
@@ -1340,16 +1343,16 @@ namespace ParaEngine
 				int curInstCount = 0;
 				int instFloatCount = 0;
 				{
-					Vector3 vOffset((m_damagedBlockId.x  - renderBlockOfs_x) * fBlockSize, (m_damagedBlockId.y  - renderBlockOfs_y) * fBlockSize + verticalOffset, (m_damagedBlockId.z  - renderBlockOfs_z) * fBlockSize);
+					Vector3 vOffset((m_damagedBlockId.x - renderBlockOfs_x) * fBlockSize, (m_damagedBlockId.y - renderBlockOfs_y) * fBlockSize + verticalOffset, (m_damagedBlockId.z - renderBlockOfs_z) * fBlockSize);
 					// animate the UV's y offset according to m_damageDegree
-					FillSelectBlockVertice(NULL, 0,0,0, &(m_select_block_vertices[instFloatCount*24]), vOffset, fScaledBlockSize, ((int)(max(m_damageDegree-0.1f,0.f)*8))/8.f, 1/8.f);
+					FillSelectBlockVertice(NULL, 0, 0, 0, &(m_select_block_vertices[instFloatCount * 24]), vOffset, fScaledBlockSize, ((int)(max(m_damageDegree - 0.1f, 0.f) * 8)) / 8.f, 1 / 8.f);
 					instFloatCount++;
 					curInstCount++;
 				}
-				RenderDevice::DrawIndexedPrimitiveUP(pDevice, D3DPT_TRIANGLELIST, D3DPT_TRIANGLELIST,0,curInstCount * 24,curInstCount * 12, &(m_select_block_indices[0]), D3DFMT_INDEX16, &(m_select_block_vertices[0]), sizeof(SelectBlockVertex));
-				
+				RenderDevice::DrawIndexedPrimitiveUP(pDevice, D3DPT_TRIANGLELIST, D3DPT_TRIANGLELIST, 0, curInstCount * 24, curInstCount * 12, &(m_select_block_indices[0]), D3DFMT_INDEX16, &(m_select_block_vertices[0]), sizeof(SelectBlockVertex));
+
 				pEffect->EndPass();
-				pDevice->SetRenderState(D3DRS_ALPHABLENDENABLE,FALSE);
+				pDevice->SetRenderState(D3DRS_ALPHABLENDENABLE, FALSE);
 				pDevice->SetRenderState(D3DRS_ZWRITEENABLE, TRUE);
 			}
 			pEffect->end();
@@ -1358,101 +1361,101 @@ namespace ParaEngine
 	}
 
 
-	int BlockWorldClient::FillSelectBlockInvert(std::map<int64_t, Uint16x3>& selectedBlockMap,  uint16_t x,uint16_t y,uint16_t z, SelectBlockVertex* blockModel, const Vector3& vOffset, const float blockSize, float fUV_Y_Offset /*= 0.f*/, float fUV_Y_Size/*=1.f*/ )
+	int BlockWorldClient::FillSelectBlockInvert(std::map<int64_t, Uint16x3>& selectedBlockMap, uint16_t x, uint16_t y, uint16_t z, SelectBlockVertex* blockModel, const Vector3& vOffset, const float blockSize, float fUV_Y_Offset /*= 0.f*/, float fUV_Y_Size/*=1.f*/)
 	{
 		int nCount = 0;
-		
-		if(GetBlockTemplateIdByIdx(x,y+1,z)!=0)
+
+		if (GetBlockTemplateIdByIdx(x, y + 1, z) != 0)
 		{
 			//top face
 			blockModel[0].position.x = vOffset.x;
-			blockModel[0].position.y = vOffset.y+blockSize;
+			blockModel[0].position.y = vOffset.y + blockSize;
 			blockModel[0].position.z = vOffset.z;
 			blockModel[0].texcoord = Vector2(0, fUV_Y_Offset + fUV_Y_Size);
 
 			blockModel[1].position.x = vOffset.x;
-			blockModel[1].position.y = vOffset.y+blockSize;
-			blockModel[1].position.z = vOffset.z+blockSize;
-			blockModel[1].texcoord = Vector2(0,fUV_Y_Offset);
+			blockModel[1].position.y = vOffset.y + blockSize;
+			blockModel[1].position.z = vOffset.z + blockSize;
+			blockModel[1].texcoord = Vector2(0, fUV_Y_Offset);
 
-			blockModel[2].position.x = vOffset.x+blockSize;
-			blockModel[2].position.y = vOffset.y+blockSize;
-			blockModel[2].position.z = vOffset.z+blockSize;
-			blockModel[2].texcoord = Vector2(1,fUV_Y_Offset);
+			blockModel[2].position.x = vOffset.x + blockSize;
+			blockModel[2].position.y = vOffset.y + blockSize;
+			blockModel[2].position.z = vOffset.z + blockSize;
+			blockModel[2].texcoord = Vector2(1, fUV_Y_Offset);
 
-			blockModel[3].position.x = vOffset.x+blockSize;
-			blockModel[3].position.y = vOffset.y+blockSize;
+			blockModel[3].position.x = vOffset.x + blockSize;
+			blockModel[3].position.y = vOffset.y + blockSize;
 			blockModel[3].position.z = vOffset.z;
-			blockModel[3].texcoord = Vector2(1,fUV_Y_Offset + fUV_Y_Size);
+			blockModel[3].texcoord = Vector2(1, fUV_Y_Offset + fUV_Y_Size);
 
-			blockModel+=4;
+			blockModel += 4;
 			nCount++;
 		}
-		if(GetBlockTemplateIdByIdx(x,y,z-1)!=0)
+		if (GetBlockTemplateIdByIdx(x, y, z - 1) != 0)
 		{
 			//front face
 			blockModel[0].position.x = vOffset.x;
 			blockModel[0].position.y = vOffset.y;
 			blockModel[0].position.z = vOffset.z;
-			blockModel[0].texcoord = Vector2(0,fUV_Y_Offset + fUV_Y_Size);
+			blockModel[0].texcoord = Vector2(0, fUV_Y_Offset + fUV_Y_Size);
 
 			blockModel[1].position.x = vOffset.x;
-			blockModel[1].position.y = vOffset.y+blockSize;
+			blockModel[1].position.y = vOffset.y + blockSize;
 			blockModel[1].position.z = vOffset.z;
-			blockModel[1].texcoord = Vector2(0,fUV_Y_Offset);
+			blockModel[1].texcoord = Vector2(0, fUV_Y_Offset);
 
-			blockModel[2].position.x = vOffset.x+blockSize;
-			blockModel[2].position.y = vOffset.y+blockSize;
+			blockModel[2].position.x = vOffset.x + blockSize;
+			blockModel[2].position.y = vOffset.y + blockSize;
 			blockModel[2].position.z = vOffset.z;
-			blockModel[2].texcoord =Vector2(1.f,fUV_Y_Offset);
+			blockModel[2].texcoord = Vector2(1.f, fUV_Y_Offset);
 
-			blockModel[3].position.x = vOffset.x+blockSize;
+			blockModel[3].position.x = vOffset.x + blockSize;
 			blockModel[3].position.y = vOffset.y;
 			blockModel[3].position.z = vOffset.z;
 			blockModel[3].texcoord = Vector2(1.f, fUV_Y_Offset + fUV_Y_Size);
-			blockModel+=4;
+			blockModel += 4;
 			nCount++;
 		}
-		if(GetBlockTemplateIdByIdx(x,y-1,z)!=0)
+		if (GetBlockTemplateIdByIdx(x, y - 1, z) != 0)
 		{
 			//bottom face
 			blockModel[0].position.x = vOffset.x;
 			blockModel[0].position.y = vOffset.y;
-			blockModel[0].position.z = vOffset.z+blockSize;
-			blockModel[0].texcoord = Vector2(0,fUV_Y_Offset + fUV_Y_Size);
+			blockModel[0].position.z = vOffset.z + blockSize;
+			blockModel[0].texcoord = Vector2(0, fUV_Y_Offset + fUV_Y_Size);
 
 			blockModel[1].position.x = vOffset.x;
 			blockModel[1].position.y = vOffset.y;
 			blockModel[1].position.z = vOffset.z;
-			blockModel[1].texcoord = Vector2(0,fUV_Y_Offset);
+			blockModel[1].texcoord = Vector2(0, fUV_Y_Offset);
 
-			blockModel[2].position.x = vOffset.x+blockSize;
+			blockModel[2].position.x = vOffset.x + blockSize;
 			blockModel[2].position.y = vOffset.y;
 			blockModel[2].position.z = vOffset.z;
 			blockModel[2].texcoord = Vector2(1.f, fUV_Y_Offset);
 
-			blockModel[3].position.x = vOffset.x+blockSize;
+			blockModel[3].position.x = vOffset.x + blockSize;
 			blockModel[3].position.y = vOffset.y;
-			blockModel[3].position.z = vOffset.z+blockSize;
+			blockModel[3].position.z = vOffset.z + blockSize;
 			blockModel[3].texcoord = Vector2(1.f, fUV_Y_Offset + fUV_Y_Size);
-			blockModel+=4;
+			blockModel += 4;
 			nCount++;
 		}
-		if(GetBlockTemplateIdByIdx(x-1,y,z)!=0)
+		if (GetBlockTemplateIdByIdx(x - 1, y, z) != 0)
 		{
 			//left face
 			blockModel[0].position.x = vOffset.x;
 			blockModel[0].position.y = vOffset.y;
-			blockModel[0].position.z = vOffset.z+blockSize;
-			blockModel[0].texcoord = Vector2(0,fUV_Y_Offset + fUV_Y_Size);
+			blockModel[0].position.z = vOffset.z + blockSize;
+			blockModel[0].texcoord = Vector2(0, fUV_Y_Offset + fUV_Y_Size);
 
 			blockModel[1].position.x = vOffset.x;
-			blockModel[1].position.y = vOffset.y+blockSize;
-			blockModel[1].position.z = vOffset.z+blockSize;
-			blockModel[1].texcoord = Vector2(0,fUV_Y_Offset);
+			blockModel[1].position.y = vOffset.y + blockSize;
+			blockModel[1].position.z = vOffset.z + blockSize;
+			blockModel[1].texcoord = Vector2(0, fUV_Y_Offset);
 
 			blockModel[2].position.x = vOffset.x;
-			blockModel[2].position.y = vOffset.y+blockSize;
+			blockModel[2].position.y = vOffset.y + blockSize;
 			blockModel[2].position.z = vOffset.z;
 			blockModel[2].texcoord = Vector2(1.f, fUV_Y_Offset);
 
@@ -1461,162 +1464,162 @@ namespace ParaEngine
 			blockModel[3].position.z = vOffset.z;
 			blockModel[3].texcoord = Vector2(1.f, fUV_Y_Offset + fUV_Y_Size);
 
-			blockModel+=4;
+			blockModel += 4;
 			nCount++;
 		}
-		if(GetBlockTemplateIdByIdx(x+1,y,z)!=0)
+		if (GetBlockTemplateIdByIdx(x + 1, y, z) != 0)
 		{
 			//right
-			blockModel[0].position.x = vOffset.x+blockSize;
+			blockModel[0].position.x = vOffset.x + blockSize;
 			blockModel[0].position.y = vOffset.y;
 			blockModel[0].position.z = vOffset.z;
-			blockModel[0].texcoord = Vector2(0,fUV_Y_Offset + fUV_Y_Size);
+			blockModel[0].texcoord = Vector2(0, fUV_Y_Offset + fUV_Y_Size);
 
-			blockModel[1].position.x = vOffset.x+blockSize;
-			blockModel[1].position.y = vOffset.y+blockSize;
+			blockModel[1].position.x = vOffset.x + blockSize;
+			blockModel[1].position.y = vOffset.y + blockSize;
 			blockModel[1].position.z = vOffset.z;
-			blockModel[1].texcoord = Vector2(0,fUV_Y_Offset);
+			blockModel[1].texcoord = Vector2(0, fUV_Y_Offset);
 
-			blockModel[2].position.x = vOffset.x+blockSize;
-			blockModel[2].position.y = vOffset.y+blockSize;
-			blockModel[2].position.z = vOffset.z+blockSize;
+			blockModel[2].position.x = vOffset.x + blockSize;
+			blockModel[2].position.y = vOffset.y + blockSize;
+			blockModel[2].position.z = vOffset.z + blockSize;
 			blockModel[2].texcoord = Vector2(1.f, fUV_Y_Offset);
 
-			blockModel[3].position.x = vOffset.x+blockSize;
+			blockModel[3].position.x = vOffset.x + blockSize;
 			blockModel[3].position.y = vOffset.y;
-			blockModel[3].position.z = vOffset.z+blockSize;
+			blockModel[3].position.z = vOffset.z + blockSize;
 			blockModel[3].texcoord = Vector2(1.f, fUV_Y_Offset + fUV_Y_Size);
-			blockModel+=4;
+			blockModel += 4;
 			nCount++;
 		}
-		if(GetBlockTemplateIdByIdx(x,y,z+1)!=0)
+		if (GetBlockTemplateIdByIdx(x, y, z + 1) != 0)
 		{
 			//back face
-			blockModel[0].position.x = vOffset.x+blockSize;
+			blockModel[0].position.x = vOffset.x + blockSize;
 			blockModel[0].position.y = vOffset.y;
-			blockModel[0].position.z = vOffset.z+blockSize;
-			blockModel[0].texcoord = Vector2(0,fUV_Y_Offset + fUV_Y_Size);
+			blockModel[0].position.z = vOffset.z + blockSize;
+			blockModel[0].texcoord = Vector2(0, fUV_Y_Offset + fUV_Y_Size);
 
-			blockModel[1].position.x = vOffset.x+blockSize;
-			blockModel[1].position.y = vOffset.y+blockSize;
-			blockModel[1].position.z = vOffset.z+blockSize;
-			blockModel[1].texcoord = Vector2(0,fUV_Y_Offset);
+			blockModel[1].position.x = vOffset.x + blockSize;
+			blockModel[1].position.y = vOffset.y + blockSize;
+			blockModel[1].position.z = vOffset.z + blockSize;
+			blockModel[1].texcoord = Vector2(0, fUV_Y_Offset);
 
 			blockModel[2].position.x = vOffset.x;
-			blockModel[2].position.y = vOffset.y+blockSize;
-			blockModel[2].position.z = vOffset.z+blockSize;
+			blockModel[2].position.y = vOffset.y + blockSize;
+			blockModel[2].position.z = vOffset.z + blockSize;
 			blockModel[2].texcoord = Vector2(1.f, fUV_Y_Offset);
 
 			blockModel[3].position.x = vOffset.x;
 			blockModel[3].position.y = vOffset.y;
-			blockModel[3].position.z = vOffset.z+blockSize;
+			blockModel[3].position.z = vOffset.z + blockSize;
 			blockModel[3].texcoord = Vector2(1.f, fUV_Y_Offset + fUV_Y_Size);
-			blockModel+=4;
+			blockModel += 4;
 			nCount++;
 		}
-		if(nCount == 0)
+		if (nCount == 0)
 		{
-			nCount = FillSelectBlockVertice(&selectedBlockMap, x,y,z, blockModel, vOffset, blockSize, fUV_Y_Offset, fUV_Y_Size);
+			nCount = FillSelectBlockVertice(&selectedBlockMap, x, y, z, blockModel, vOffset, blockSize, fUV_Y_Offset, fUV_Y_Size);
 		}
 		return nCount;
 	}
 
-	int BlockWorldClient::FillSelectBlockVertice( std::map<int64_t, Uint16x3>* pSelectedBlockMap, uint16_t x,uint16_t y,uint16_t z, SelectBlockVertex* blockModel, const Vector3& vOffset, const float blockSize, float fUV_Y_Offset, float fUV_Y_Size)
+	int BlockWorldClient::FillSelectBlockVertice(std::map<int64_t, Uint16x3>* pSelectedBlockMap, uint16_t x, uint16_t y, uint16_t z, SelectBlockVertex* blockModel, const Vector3& vOffset, const float blockSize, float fUV_Y_Offset, float fUV_Y_Size)
 	{
 		int nCount = 0;
-		if(!pSelectedBlockMap || pSelectedBlockMap->find(GetBlockSparseIndex(x,y+1,z)) == pSelectedBlockMap->end())
+		if (!pSelectedBlockMap || pSelectedBlockMap->find(GetBlockSparseIndex(x, y + 1, z)) == pSelectedBlockMap->end())
 		{
 			//top face
 			blockModel[0].position.x = vOffset.x;
-			blockModel[0].position.y = vOffset.y+blockSize;
+			blockModel[0].position.y = vOffset.y + blockSize;
 			blockModel[0].position.z = vOffset.z;
 			blockModel[0].texcoord = Vector2(0, fUV_Y_Offset + fUV_Y_Size);
 
 			blockModel[1].position.x = vOffset.x;
-			blockModel[1].position.y = vOffset.y+blockSize;
-			blockModel[1].position.z = vOffset.z+blockSize;
-			blockModel[1].texcoord = Vector2(0,fUV_Y_Offset);
+			blockModel[1].position.y = vOffset.y + blockSize;
+			blockModel[1].position.z = vOffset.z + blockSize;
+			blockModel[1].texcoord = Vector2(0, fUV_Y_Offset);
 
-			blockModel[2].position.x = vOffset.x+blockSize;
-			blockModel[2].position.y = vOffset.y+blockSize;
-			blockModel[2].position.z = vOffset.z+blockSize;
+			blockModel[2].position.x = vOffset.x + blockSize;
+			blockModel[2].position.y = vOffset.y + blockSize;
+			blockModel[2].position.z = vOffset.z + blockSize;
 			blockModel[2].texcoord = Vector2(1.f, fUV_Y_Offset);
 
-			blockModel[3].position.x = vOffset.x+blockSize;
-			blockModel[3].position.y = vOffset.y+blockSize;
+			blockModel[3].position.x = vOffset.x + blockSize;
+			blockModel[3].position.y = vOffset.y + blockSize;
 			blockModel[3].position.z = vOffset.z;
 			blockModel[3].texcoord = Vector2(1.f, fUV_Y_Offset + fUV_Y_Size);
 
-			blockModel+=4;
+			blockModel += 4;
 			nCount++;
 		}
-		if(!pSelectedBlockMap || pSelectedBlockMap->find(GetBlockSparseIndex(x,y,z-1)) == pSelectedBlockMap->end())
+		if (!pSelectedBlockMap || pSelectedBlockMap->find(GetBlockSparseIndex(x, y, z - 1)) == pSelectedBlockMap->end())
 		{
 			//front face
 			blockModel[0].position.x = vOffset.x;
 			blockModel[0].position.y = vOffset.y;
 			blockModel[0].position.z = vOffset.z;
-			blockModel[0].texcoord = Vector2(0,fUV_Y_Offset + fUV_Y_Size);
+			blockModel[0].texcoord = Vector2(0, fUV_Y_Offset + fUV_Y_Size);
 
 			blockModel[1].position.x = vOffset.x;
-			blockModel[1].position.y = vOffset.y+blockSize;
+			blockModel[1].position.y = vOffset.y + blockSize;
 			blockModel[1].position.z = vOffset.z;
-			blockModel[1].texcoord = Vector2(0,fUV_Y_Offset);
+			blockModel[1].texcoord = Vector2(0, fUV_Y_Offset);
 
-			blockModel[2].position.x = vOffset.x+blockSize;
-			blockModel[2].position.y = vOffset.y+blockSize;
+			blockModel[2].position.x = vOffset.x + blockSize;
+			blockModel[2].position.y = vOffset.y + blockSize;
 			blockModel[2].position.z = vOffset.z;
 			blockModel[2].texcoord = Vector2(1.f, fUV_Y_Offset);
 
-			blockModel[3].position.x = vOffset.x+blockSize;
+			blockModel[3].position.x = vOffset.x + blockSize;
 			blockModel[3].position.y = vOffset.y;
 			blockModel[3].position.z = vOffset.z;
 			blockModel[3].texcoord = Vector2(1.f, fUV_Y_Offset + fUV_Y_Size);
 
-			blockModel+=4;
+			blockModel += 4;
 			nCount++;
 		}
-		if(!pSelectedBlockMap || pSelectedBlockMap->find(GetBlockSparseIndex(x,y-1,z)) == pSelectedBlockMap->end())
+		if (!pSelectedBlockMap || pSelectedBlockMap->find(GetBlockSparseIndex(x, y - 1, z)) == pSelectedBlockMap->end())
 		{
 			//bottom face
 			blockModel[0].position.x = vOffset.x;
 			blockModel[0].position.y = vOffset.y;
-			blockModel[0].position.z = vOffset.z+blockSize;
-			blockModel[0].texcoord = Vector2(0,fUV_Y_Offset + fUV_Y_Size);
+			blockModel[0].position.z = vOffset.z + blockSize;
+			blockModel[0].texcoord = Vector2(0, fUV_Y_Offset + fUV_Y_Size);
 
 			blockModel[1].position.x = vOffset.x;
 			blockModel[1].position.y = vOffset.y;
 			blockModel[1].position.z = vOffset.z;
-			blockModel[1].texcoord = Vector2(0,fUV_Y_Offset);
+			blockModel[1].texcoord = Vector2(0, fUV_Y_Offset);
 
-			blockModel[2].position.x = vOffset.x+blockSize;
+			blockModel[2].position.x = vOffset.x + blockSize;
 			blockModel[2].position.y = vOffset.y;
 			blockModel[2].position.z = vOffset.z;
 			blockModel[2].texcoord = Vector2(1.f, fUV_Y_Offset);
 
-			blockModel[3].position.x = vOffset.x+blockSize;
+			blockModel[3].position.x = vOffset.x + blockSize;
 			blockModel[3].position.y = vOffset.y;
-			blockModel[3].position.z = vOffset.z+blockSize;
+			blockModel[3].position.z = vOffset.z + blockSize;
 			blockModel[3].texcoord = Vector2(1.f, fUV_Y_Offset + fUV_Y_Size);
 
-			blockModel+=4;
+			blockModel += 4;
 			nCount++;
 		}
-		if(!pSelectedBlockMap || pSelectedBlockMap->find(GetBlockSparseIndex(x-1,y,z)) == pSelectedBlockMap->end())
+		if (!pSelectedBlockMap || pSelectedBlockMap->find(GetBlockSparseIndex(x - 1, y, z)) == pSelectedBlockMap->end())
 		{
 			//left face
 			blockModel[0].position.x = vOffset.x;
 			blockModel[0].position.y = vOffset.y;
-			blockModel[0].position.z = vOffset.z+blockSize;
-			blockModel[0].texcoord = Vector2(0,fUV_Y_Offset + fUV_Y_Size);
+			blockModel[0].position.z = vOffset.z + blockSize;
+			blockModel[0].texcoord = Vector2(0, fUV_Y_Offset + fUV_Y_Size);
 
 			blockModel[1].position.x = vOffset.x;
-			blockModel[1].position.y = vOffset.y+blockSize;
-			blockModel[1].position.z = vOffset.z+blockSize;
-			blockModel[1].texcoord = Vector2(0,fUV_Y_Offset);
+			blockModel[1].position.y = vOffset.y + blockSize;
+			blockModel[1].position.z = vOffset.z + blockSize;
+			blockModel[1].texcoord = Vector2(0, fUV_Y_Offset);
 
 			blockModel[2].position.x = vOffset.x;
-			blockModel[2].position.y = vOffset.y+blockSize;
+			blockModel[2].position.y = vOffset.y + blockSize;
 			blockModel[2].position.z = vOffset.z;
 			blockModel[2].texcoord = Vector2(1.f, fUV_Y_Offset);
 
@@ -1625,93 +1628,93 @@ namespace ParaEngine
 			blockModel[3].position.z = vOffset.z;
 			blockModel[3].texcoord = Vector2(1.f, fUV_Y_Offset + fUV_Y_Size);
 
-			blockModel+=4;
+			blockModel += 4;
 			nCount++;
 		}
-		
-		if(!pSelectedBlockMap || pSelectedBlockMap->find(GetBlockSparseIndex(x+1,y,z)) == pSelectedBlockMap->end())
+
+		if (!pSelectedBlockMap || pSelectedBlockMap->find(GetBlockSparseIndex(x + 1, y, z)) == pSelectedBlockMap->end())
 		{
 			//right
-			blockModel[0].position.x = vOffset.x+blockSize;
+			blockModel[0].position.x = vOffset.x + blockSize;
 			blockModel[0].position.y = vOffset.y;
 			blockModel[0].position.z = vOffset.z;
-			blockModel[0].texcoord = Vector2(0,fUV_Y_Offset + fUV_Y_Size);
+			blockModel[0].texcoord = Vector2(0, fUV_Y_Offset + fUV_Y_Size);
 
-			blockModel[1].position.x = vOffset.x+blockSize;
-			blockModel[1].position.y = vOffset.y+blockSize;
+			blockModel[1].position.x = vOffset.x + blockSize;
+			blockModel[1].position.y = vOffset.y + blockSize;
 			blockModel[1].position.z = vOffset.z;
-			blockModel[1].texcoord = Vector2(0,fUV_Y_Offset);
+			blockModel[1].texcoord = Vector2(0, fUV_Y_Offset);
 
-			blockModel[2].position.x = vOffset.x+blockSize;
-			blockModel[2].position.y = vOffset.y+blockSize;
-			blockModel[2].position.z = vOffset.z+blockSize;
+			blockModel[2].position.x = vOffset.x + blockSize;
+			blockModel[2].position.y = vOffset.y + blockSize;
+			blockModel[2].position.z = vOffset.z + blockSize;
 			blockModel[2].texcoord = Vector2(1.f, fUV_Y_Offset);
 
-			blockModel[3].position.x = vOffset.x+blockSize;
+			blockModel[3].position.x = vOffset.x + blockSize;
 			blockModel[3].position.y = vOffset.y;
-			blockModel[3].position.z = vOffset.z+blockSize;
+			blockModel[3].position.z = vOffset.z + blockSize;
 			blockModel[3].texcoord = Vector2(1.f, fUV_Y_Offset + fUV_Y_Size);
 
-			blockModel+=4;
+			blockModel += 4;
 			nCount++;
 		}
-		
 
-		if(!pSelectedBlockMap || pSelectedBlockMap->find(GetBlockSparseIndex(x,y,z+1)) == pSelectedBlockMap->end())
+
+		if (!pSelectedBlockMap || pSelectedBlockMap->find(GetBlockSparseIndex(x, y, z + 1)) == pSelectedBlockMap->end())
 		{
 			//back face
-			blockModel[0].position.x = vOffset.x+blockSize;
+			blockModel[0].position.x = vOffset.x + blockSize;
 			blockModel[0].position.y = vOffset.y;
-			blockModel[0].position.z = vOffset.z+blockSize;
-			blockModel[0].texcoord = Vector2(0,fUV_Y_Offset + fUV_Y_Size);
+			blockModel[0].position.z = vOffset.z + blockSize;
+			blockModel[0].texcoord = Vector2(0, fUV_Y_Offset + fUV_Y_Size);
 
-			blockModel[1].position.x = vOffset.x+blockSize;
-			blockModel[1].position.y = vOffset.y+blockSize;
-			blockModel[1].position.z = vOffset.z+blockSize;
-			blockModel[1].texcoord = Vector2(0,fUV_Y_Offset);
+			blockModel[1].position.x = vOffset.x + blockSize;
+			blockModel[1].position.y = vOffset.y + blockSize;
+			blockModel[1].position.z = vOffset.z + blockSize;
+			blockModel[1].texcoord = Vector2(0, fUV_Y_Offset);
 
 			blockModel[2].position.x = vOffset.x;
-			blockModel[2].position.y = vOffset.y+blockSize;
-			blockModel[2].position.z = vOffset.z+blockSize;
+			blockModel[2].position.y = vOffset.y + blockSize;
+			blockModel[2].position.z = vOffset.z + blockSize;
 			blockModel[2].texcoord = Vector2(1.f, fUV_Y_Offset);
 
 			blockModel[3].position.x = vOffset.x;
 			blockModel[3].position.y = vOffset.y;
-			blockModel[3].position.z = vOffset.z+blockSize;
+			blockModel[3].position.z = vOffset.z + blockSize;
 			blockModel[3].texcoord = Vector2(1.f, fUV_Y_Offset + fUV_Y_Size);
-			blockModel+=4;
+			blockModel += 4;
 			nCount++;
 		}
-		
+
 		return nCount;
 	}
 
 	void BlockWorldClient::BuildSelectionBlockBuffer()
 	{
-		if(m_select_block_vertices.empty())
+		if (m_select_block_vertices.empty())
 		{
 			float blockSize = BlockConfig::g_blockSize;
 			SelectBlockVertex blockModel[24];
 
-			Vector3 vOffset(0,0,0);
-			FillSelectBlockVertice(NULL, 0,0,0, blockModel, vOffset, BlockConfig::g_blockSize);
+			Vector3 vOffset(0, 0, 0);
+			FillSelectBlockVertice(NULL, 0, 0, 0, blockModel, vOffset, BlockConfig::g_blockSize);
 
 			m_select_block_vertices.resize(24 * m_maxSelectBlockPerBatch);
 
 			SelectBlockVertex* pVertices = &(m_select_block_vertices[0]);
-			for(int i=0;i<m_maxSelectBlockPerBatch;i++)
+			for (int i = 0; i < m_maxSelectBlockPerBatch; i++)
 			{
-				memcpy(pVertices,blockModel,sizeof(SelectBlockVertex)*24);
+				memcpy(pVertices, blockModel, sizeof(SelectBlockVertex) * 24);
 				pVertices += 24;
 			}
 		}
-		if(m_select_block_indices.empty())
+		if (m_select_block_indices.empty())
 		{
 			m_select_block_indices.resize(36 * m_maxSelectBlockPerBatch);
 
 			uint16_t* pIndices = &(m_select_block_indices[0]);
-			
-			for(int i = 0; i< m_maxSelectBlockPerBatch; i++)
+
+			for (int i = 0; i < m_maxSelectBlockPerBatch; i++)
 			{
 				uint16_t indexOfs = 24 * i;
 				//top face
@@ -1806,7 +1809,7 @@ namespace ParaEngine
 			}
 		}
 	}
- 
+
 	void BlockWorldClient::AddRenderTask(BlockRenderTask* pRenderTask)
 	{
 		GetRenderQueueByPass(pRenderTask->GetTemplate()->GetRenderPass())->push_back(pRenderTask);
@@ -1814,7 +1817,7 @@ namespace ParaEngine
 
 	IndexBufferDevicePtr_type BlockWorldClient::GetIndexBuffer()
 	{
-		if(!m_sharedIndexBuffer.IsValid())
+		if (!m_sharedIndexBuffer.IsValid())
 		{
 			// at most 6 indices per face (2 triangles)
 			const int face_count = BlockConfig::g_maxFaceCountPerBatch;
@@ -1860,7 +1863,7 @@ namespace ParaEngine
 	void BlockWorldClient::DeleteDeviceObjects()
 	{
 		m_sharedIndexBuffer.ReleaseBuffer();
-		for(uint32_t i=0;i<m_activeChunks.size();i++)
+		for (uint32_t i = 0; i < m_activeChunks.size(); i++)
 			m_activeChunks[i]->DeleteDeviceObjects();
 		m_pMultiFrameRenderer->DeleteDeviceObjects();
 		m_alphaTestRenderTasks.clear();
@@ -1883,7 +1886,7 @@ namespace ParaEngine
 			UpdateAllActiveChunks();
 	}
 
-	void BlockWorldClient::SetDamagedBlock(uint16_t x,uint16_t y,uint16_t z)
+	void BlockWorldClient::SetDamagedBlock(uint16_t x, uint16_t y, uint16_t z)
 	{
 		m_damagedBlockId.x = x;
 		m_damagedBlockId.y = y;
@@ -1895,22 +1898,22 @@ namespace ParaEngine
 		m_damageDegree = degree;
 	}
 
-	void BlockWorldClient::SetSelectionTexture( const char* textureName )
+	void BlockWorldClient::SetSelectionTexture(const char* textureName)
 	{
-		if(textureName)
+		if (textureName)
 		{
 			char c = textureName[0];
 			int nIndex = 0;
-			if(textureName[1] == ':' && c>='0' && c<='9')
+			if (textureName[1] == ':' && c >= '0' && c <= '9')
 			{
-				nIndex = c-'0';
-				textureName+=2;
+				nIndex = c - '0';
+				textureName += 2;
 			}
-			if(nIndex<BLOCK_GROUP_ID_MAX)
+			if (nIndex < BLOCK_GROUP_ID_MAX)
 			{
-				if(m_highLightTextures[nIndex])
+				if (m_highLightTextures[nIndex])
 				{
-					if(m_highLightTextures[nIndex]->GetKey() == textureName)
+					if (m_highLightTextures[nIndex]->GetKey() == textureName)
 					{
 						return;
 					}
@@ -1922,18 +1925,18 @@ namespace ParaEngine
 
 	std::string BlockWorldClient::GetSelectionTexture()
 	{
-		if(m_highLightTextures[0])
+		if (m_highLightTextures[0])
 		{
 			return (m_highLightTextures[0]->GetKey());
 		}
 		return "";
 	}
 
-	void BlockWorldClient::SetDamageTexture( const char* textureName )
+	void BlockWorldClient::SetDamageTexture(const char* textureName)
 	{
-		if(m_damangeTexture)
+		if (m_damangeTexture)
 		{
-			if(m_damangeTexture->GetKey() == textureName)
+			if (m_damangeTexture->GetKey() == textureName)
 			{
 				return;
 			}
@@ -1943,23 +1946,23 @@ namespace ParaEngine
 
 	std::string BlockWorldClient::GetDamageTexture()
 	{
-		if(m_damangeTexture)
+		if (m_damangeTexture)
 		{
 			return (m_damangeTexture->GetKey());
 		}
 		return "";
 	}
 
-	bool BlockWorldClient::IsPointUnderWater( const Vector3& vPos )
+	bool BlockWorldClient::IsPointUnderWater(const Vector3& vPos)
 	{
-		if(IsInBlockWorld())
+		if (IsInBlockWorld())
 		{
 			// first check block world and then check real world
-			uint16_t block_id = GetBlockTemplateId(vPos.x,vPos.y,vPos.z);
-			if(block_id > 0)
+			uint16_t block_id = GetBlockTemplateId(vPos.x, vPos.y, vPos.z);
+			if (block_id > 0)
 			{
 				BlockTemplate* pBlockTemplate = GetBlockTemplate(block_id);
-				if(pBlockTemplate != 0 && pBlockTemplate->IsMatchAttribute(BlockTemplate::batt_liquid))
+				if (pBlockTemplate != 0 && pBlockTemplate->IsMatchAttribute(BlockTemplate::batt_liquid))
 				{
 					return true;
 				}
@@ -1980,27 +1983,27 @@ namespace ParaEngine
 		}
 	}
 
-	float BlockWorldClient::GetWaterLevel( float x, float y, float z, int nRayLength)
+	float BlockWorldClient::GetWaterLevel(float x, float y, float z, int nRayLength)
 	{
 
 		float fWaterLevel = -1000.f;
 #ifdef USE_DIRECTX_RENDERER
-		if(m_isInWorld)
+		if (m_isInWorld)
 		{
 			Uint16x3 blockIdx;
-			BlockCommon::ConvertToBlockIndex(x,y,z,blockIdx.x,blockIdx.y,blockIdx.z);
+			BlockCommon::ConvertToBlockIndex(x, y, z, blockIdx.x, blockIdx.y, blockIdx.z);
 
-			if(blockIdx.y<BlockConfig::g_regionBlockDimY)
+			if (blockIdx.y < BlockConfig::g_regionBlockDimY)
 			{
-				for (int i=0;i<nRayLength; i++)
+				for (int i = 0; i < nRayLength; i++)
 				{
-					uint16_t block_id = GetBlockTemplateIdByIdx(blockIdx.x, blockIdx.y-i, blockIdx.z);
-					if(block_id>0)
+					uint16_t block_id = GetBlockTemplateIdByIdx(blockIdx.x, blockIdx.y - i, blockIdx.z);
+					if (block_id > 0)
 					{
 						BlockTemplate* pBlockTemplate = GetBlockTemplate(block_id);
-						if(pBlockTemplate != 0 && (pBlockTemplate->IsMatchAttribute(BlockTemplate::batt_liquid) && !pBlockTemplate->IsMatchAttribute(BlockTemplate::batt_solid)))
+						if (pBlockTemplate != 0 && (pBlockTemplate->IsMatchAttribute(BlockTemplate::batt_liquid) && !pBlockTemplate->IsMatchAttribute(BlockTemplate::batt_solid)))
 						{
-							Vector3 vPos = BlockCommon::ConvertToRealPosition(blockIdx.x, blockIdx.y-i, blockIdx.z, 4);
+							Vector3 vPos = BlockCommon::ConvertToRealPosition(blockIdx.x, blockIdx.y - i, blockIdx.z, 4);
 							fWaterLevel = vPos.y - BlockConfig::g_blockSize *0.2f;
 						}
 						break;
@@ -2008,10 +2011,10 @@ namespace ParaEngine
 				}
 			}
 
-			if(CGlobals::GetOceanManager()->OceanEnabled())
+			if (CGlobals::GetOceanManager()->OceanEnabled())
 			{
 				float fLevel = CGlobals::GetOceanManager()->GetWaterLevel();
-				if(fLevel > fWaterLevel)
+				if (fLevel > fWaterLevel)
 					fWaterLevel = fLevel;
 			}
 		}
@@ -2019,23 +2022,23 @@ namespace ParaEngine
 		return fWaterLevel;
 	}
 
-	void BlockWorldClient::SetBlockRenderMethod( BlockRenderMethod method )
+	void BlockWorldClient::SetBlockRenderMethod(BlockRenderMethod method)
 	{
 #ifdef USE_DIRECTX_RENDERER
-		if(m_dwBlockRenderMethod != method)
+		if (m_dwBlockRenderMethod != method)
 		{
-			if(method == BLOCK_RENDER_FANCY_SHADER)
+			if (method == BLOCK_RENDER_FANCY_SHADER)
 			{
-				if(CGlobals::GetSettings().GetMultiSampleType()!=0)
+				if (CGlobals::GetSettings().GetMultiSampleType() != 0)
 				{
 					OUTPUT_LOG("BLOCK_RENDER_FANCY_SHADER can not be set with AA\n");
 					return;
 				}
 				// check for device compatibilities
-				if( CanUseAdvancedShading() )
+				if (CanUseAdvancedShading())
 				{
 					// just ensure that game effect set is not too low. 
-					if(CGlobals::GetSettings().GetGameEffectSet() >= 1024)
+					if (CGlobals::GetSettings().GetGameEffectSet() >= 1024)
 					{
 						CGlobals::GetSettings().LoadGameEffectSet(0);
 					}
@@ -2049,9 +2052,9 @@ namespace ParaEngine
 				}
 
 				CShadowMap* pShadowMap = CGlobals::GetEffectManager()->GetShadowMap();
-				if (pShadowMap !=NULL)
+				if (pShadowMap != NULL)
 				{
-					if(GetUseSunlightShadowMap())
+					if (GetUseSunlightShadowMap())
 						CGlobals::GetScene()->SetShadow(true);
 					else
 						CGlobals::GetScene()->SetShadow(false);
@@ -2060,11 +2063,11 @@ namespace ParaEngine
 				CGlobals::GetScene()->EnableInstancing(false);
 
 				// replacing shader to support multiple render target. 
-				if(m_terrain_fancy)
+				if (m_terrain_fancy)
 				{
 					CGlobals::GetEffectManager()->MapHandleToEffect(TECH_TERRAIN, m_terrain_fancy.get());
 				}
-				if(m_normal_mesh_effect_fancy)
+				if (m_normal_mesh_effect_fancy)
 				{
 					CGlobals::GetEffectManager()->MapHandleToEffect(TECH_SIMPLE_MESH_NORMAL, m_normal_mesh_effect_fancy.get());
 					CGlobals::GetEffectManager()->MapHandleToEffect(TECH_CHARACTER, m_normal_mesh_effect_fancy.get());
@@ -2080,7 +2083,7 @@ namespace ParaEngine
 				CGlobals::GetSettings().LoadGameEffectSet(CGlobals::GetSettings().GetGameEffectSet());
 			}
 
-			if(m_dwBlockRenderMethod == BLOCK_RENDER_FANCY_SHADER)
+			if (m_dwBlockRenderMethod == BLOCK_RENDER_FANCY_SHADER)
 			{
 				// if switching from fancy shader to plain shader
 				// remove all surfaces
@@ -2093,9 +2096,9 @@ namespace ParaEngine
 				m_render_target_block_info.reset();
 				m_render_target_depth_tex.reset();
 				m_render_target_normal.reset();
-				CGlobals::GetRenderDevice()->SetRenderTarget(1,NULL);
-				CGlobals::GetRenderDevice()->SetRenderTarget(2,NULL);
-				CGlobals::GetRenderDevice()->SetRenderTarget(3,NULL);
+				CGlobals::GetRenderDevice()->SetRenderTarget(1, NULL);
+				CGlobals::GetRenderDevice()->SetRenderTarget(2, NULL);
+				CGlobals::GetRenderDevice()->SetRenderTarget(3, NULL);
 			}
 			m_dwBlockRenderMethod = method;
 
@@ -2128,7 +2131,7 @@ namespace ParaEngine
 		}
 	}
 
-	void BlockWorldClient::SetBlockLightColor( const LinearColor& color )
+	void BlockWorldClient::SetBlockLightColor(const LinearColor& color)
 	{
 		m_vBlockLightColor = color;
 	}
@@ -2138,7 +2141,7 @@ namespace ParaEngine
 		return m_vBlockLightColor;
 	}
 
-	bool BlockWorldClient::CompareRenderOrder( BlockRenderTask* v0,BlockRenderTask* v1 )
+	bool BlockWorldClient::CompareRenderOrder(BlockRenderTask* v0, BlockRenderTask* v1)
 	{
 		return (v0->GetRenderOrder() < v1->GetRenderOrder());
 	}
@@ -2204,7 +2207,7 @@ namespace ParaEngine
 	void BlockWorldClient::DoPostRenderingProcessing(BlockRenderPass nRenderPass)
 	{
 #ifdef USE_DIRECTX_RENDERER
-		if(IsInBlockWorld() && GetBlockRenderMethod() ==  BLOCK_RENDER_FANCY_SHADER)
+		if (IsInBlockWorld() && GetBlockRenderMethod() == BLOCK_RENDER_FANCY_SHADER)
 		{
 			if (nRenderPass == BlockRenderPass_Opaque)
 			{
@@ -2222,24 +2225,24 @@ namespace ParaEngine
 #endif
 	}
 
-	bool BlockWorldClient::PrepareAllRenderTargets( bool bSetRenderTarget /*= true*/ )
+	bool BlockWorldClient::PrepareAllRenderTargets(bool bSetRenderTarget /*= true*/)
 	{
 #ifdef USE_DIRECTX_RENDERER
-		if(GetBlockRenderMethod() ==  BLOCK_RENDER_FANCY_SHADER)
+		if (GetBlockRenderMethod() == BLOCK_RENDER_FANCY_SHADER)
 		{
 			RenderDevicePtr pDevice = CGlobals::GetRenderDevice();
 
-			if(m_block_effect_fancy == 0)
+			if (m_block_effect_fancy == 0)
 			{
 				m_block_effect_fancy = CGlobals::GetAssetManager()->LoadEffectFile("blockFancy", "script/apps/Aries/Creator/Game/Shaders/mrt_blocks.fxo");
 				m_block_effect_fancy->LoadAsset();
-				if(!m_block_effect_fancy->IsValid())
+				if (!m_block_effect_fancy->IsValid())
 				{
 					// try a lower shader other than fancy 
 					return false;
 				}
 			}
-			else if(!m_block_effect_fancy->IsValid())
+			else if (!m_block_effect_fancy->IsValid())
 			{
 				// try a lower shader other than fancy 
 				return false;
@@ -2251,7 +2254,7 @@ namespace ParaEngine
 				return false;
 			}
 
-			if(m_render_target_block_info == 0)
+			if (m_render_target_block_info == 0)
 			{
 				m_render_target_block_info = CGlobals::GetAssetManager()->LoadTexture("_BlockInfoRT", "_BlockInfoRT", TextureEntity::RenderTarget);
 				m_render_target_block_info->LoadAsset();
@@ -2259,27 +2262,27 @@ namespace ParaEngine
 				m_render_target_block_info->GetTexture()->GetSurfaceLevel(0, &m_render_target_block_info_surface);
 			}
 
-			if(m_render_target_depth_tex == 0)
+			if (m_render_target_depth_tex == 0)
 			{
 				m_render_target_depth_tex = CGlobals::GetAssetManager()->LoadTexture("_DepthTexRT_R32F", "_DepthTexRT_R32F", TextureEntity::RenderTarget);
 				m_render_target_depth_tex->LoadAsset();
 				SAFE_RELEASE(m_render_target_depth_tex_surface);
 				m_render_target_depth_tex->GetTexture()->GetSurfaceLevel(0, &m_render_target_depth_tex_surface);
 			}
-			if(m_render_target_normal == 0)
+			if (m_render_target_normal == 0)
 			{
 				m_render_target_normal = CGlobals::GetAssetManager()->LoadTexture("_NormalRT", "_NormalRT", TextureEntity::RenderTarget);
 				m_render_target_normal->LoadAsset();
 				SAFE_RELEASE(m_render_target_normal_surface);
 				m_render_target_normal->GetTexture()->GetSurfaceLevel(0, &m_render_target_normal_surface);
 			}
-			
+
 			CGlobals::GetEffectManager()->MapHandleToEffect(TECH_BLOCK_FANCY, m_block_effect_fancy.get());
-			if(m_normal_mesh_effect_fancy == 0)
+			if (m_normal_mesh_effect_fancy == 0)
 			{
 				m_normal_mesh_effect_fancy = CGlobals::GetAssetManager()->LoadEffectFile("mesh_normal_fancy", "script/apps/Aries/Creator/Game/Shaders/mrt_mesh_normal.fxo");
 				m_normal_mesh_effect_fancy->LoadAsset();
-				if(!m_normal_mesh_effect_fancy->IsValid())
+				if (!m_normal_mesh_effect_fancy->IsValid())
 				{
 					// try a lower shader other than fancy 
 					return false;
@@ -2288,14 +2291,31 @@ namespace ParaEngine
 			CGlobals::GetEffectManager()->MapHandleToEffect(TECH_SIMPLE_MESH_NORMAL, m_normal_mesh_effect_fancy.get());
 			CGlobals::GetEffectManager()->MapHandleToEffect(TECH_CHARACTER, m_normal_mesh_effect_fancy.get());
 
+			if (m_effect_light_point == 0)
+			{
+				m_effect_light_point = CGlobals::GetAssetManager()->LoadEffectFile("m_effect_light_point", "script/apps/Aries/Creator/Game/Shaders/DeferredShadingPointLighting.fxo");
+				m_effect_light_point->LoadAsset();
+			}
 			if (m_effect_light_spot == 0)
 			{
 				m_effect_light_spot = CGlobals::GetAssetManager()->LoadEffectFile("m_effect_light_spot", "script/apps/Aries/Creator/Game/Shaders/DeferredShadingSpotLighting.fxo");
 				m_effect_light_spot->LoadAsset();
 			}
+			if (m_effect_light_directional == 0)
+			{
+				m_effect_light_directional = CGlobals::GetAssetManager()->LoadEffectFile("m_effect_light_directional", "script/apps/Aries/Creator/Game/Shaders/DeferredShadingDirectionalLighting.fxo");
+				m_effect_light_directional->LoadAsset();
+			}
+			CGlobals::GetEffectManager()->MapHandleToEffect(TECH_LIGHT_POINT, m_effect_light_point.get());
 			CGlobals::GetEffectManager()->MapHandleToEffect(TECH_LIGHT_SPOT, m_effect_light_spot.get());
-			CGlobals::GetEffectManager()->MapHandleToEffect(TECH_LIGHT_DIRECTIONAL, m_effect_light_spot.get());
-			CGlobals::GetEffectManager()->MapHandleToEffect(TECH_LIGHT_POINT, m_effect_light_spot.get());
+			CGlobals::GetEffectManager()->MapHandleToEffect(TECH_LIGHT_DIRECTIONAL, m_effect_light_directional.get());
+
+			/*if (m_effect_deferred_lighting == 0)
+			{
+				m_effect_deferred_lighting = CGlobals::GetAssetManager()->LoadEffectFile("m_effect_deferred_lighting", "script/apps/Aries/Creator/Game/Shaders/DeferredLighting.fxo");
+				m_effect_deferred_lighting->LoadAsset();
+			}
+			CGlobals::GetEffectManager()->MapHandleToEffect(TECH_DEFERRED_LIGHTING, m_effect_deferred_lighting.get());*/
 
 			if (m_bmax_model_effect_fancy == 0)
 			{
@@ -2309,11 +2329,11 @@ namespace ParaEngine
 			}
 			CGlobals::GetEffectManager()->MapHandleToEffect(TECH_BMAX_MODEL, m_bmax_model_effect_fancy.get());
 
-			if(m_terrain_fancy == 0)
+			if (m_terrain_fancy == 0)
 			{
 				m_terrain_fancy = CGlobals::GetAssetManager()->LoadEffectFile("terrain_normal_fancy", "script/apps/Aries/Creator/Game/Shaders/mrt_terrain_normal.fxo");
 				m_terrain_fancy->LoadAsset();
-				if(!m_terrain_fancy->IsValid())
+				if (!m_terrain_fancy->IsValid())
 				{
 					// try a lower shader other than fancy 
 					return false;
@@ -2360,7 +2380,7 @@ namespace ParaEngine
 			return m_pMultiFrameRenderer->Draw();
 		return false;
 	}
-	
+
 	void BlockWorldClient::SetPostProcessingScript(const char* sCallbackScript)
 	{
 		m_sPostProcessorCallbackScript = sCallbackScript;
@@ -2374,9 +2394,9 @@ namespace ParaEngine
 	bool BlockWorldClient::CanUseAdvancedShading()
 	{
 #ifdef USE_DIRECTX_RENDERER
-		if( CGlobals::GetDirectXEngine().GetVertexShaderVersion()>=3 &&
-			CGlobals::GetDirectXEngine().GetPixelShaderVersion()>=3 &&
-			CGlobals::GetDirectXEngine().m_d3dCaps.NumSimultaneousRTs >=3)
+		if (CGlobals::GetDirectXEngine().GetVertexShaderVersion() >= 3 &&
+			CGlobals::GetDirectXEngine().GetPixelShaderVersion() >= 3 &&
+			CGlobals::GetDirectXEngine().m_d3dCaps.NumSimultaneousRTs >= 3)
 		{
 			return true;
 		}
@@ -2384,14 +2404,14 @@ namespace ParaEngine
 		return false;
 	}
 
-	void BlockWorldClient::SetUseSunlightShadowMap( bool bEnable )
+	void BlockWorldClient::SetUseSunlightShadowMap(bool bEnable)
 	{
 		m_bUseSunlightShadowMap = bEnable;
 #ifdef USE_DIRECTX_RENDERER
-		if(GetBlockRenderMethod() == BLOCK_RENDER_FANCY_SHADER)
+		if (GetBlockRenderMethod() == BLOCK_RENDER_FANCY_SHADER)
 		{
 			CShadowMap* pShadowMap = CGlobals::GetEffectManager()->GetShadowMap();
-			if (pShadowMap !=NULL)
+			if (pShadowMap != NULL)
 			{
 				CGlobals::GetScene()->SetShadow(m_bUseSunlightShadowMap);
 			}
@@ -2409,7 +2429,7 @@ namespace ParaEngine
 		return m_bUseSunlightShadowMap;
 	}
 
-	void BlockWorldClient::SetUseWaterReflection( bool bEnable )
+	void BlockWorldClient::SetUseWaterReflection(bool bEnable)
 	{
 		m_bUseWaterReflection = bEnable;
 	}
@@ -2419,10 +2439,10 @@ namespace ParaEngine
 		return m_bUseWaterReflection;
 	}
 
-	void BlockWorldClient::PrepareShadowCasters( CShadowMap* pShadowMap )
+	void BlockWorldClient::PrepareShadowCasters(CShadowMap* pShadowMap)
 	{
 #ifdef USE_DIRECTX_RENDERER
-		if(GetBlockRenderMethod() == BLOCK_RENDER_FANCY_SHADER && GetUseSunlightShadowMap())
+		if (GetBlockRenderMethod() == BLOCK_RENDER_FANCY_SHADER && GetUseSunlightShadowMap())
 		{
 			// TODO: add all shadow caster chunks within shadow radius. 
 			CShapeAABB aabb;
@@ -2436,25 +2456,25 @@ namespace ParaEngine
 		}
 #endif
 	}
-	
+
 	void BlockWorldClient::RenderDynamicBlocks()
 	{
 		// no need to lock 
-		
+
 		int nCount = (int)m_selectedBlockMap.size();
-		for(int i=0; i<nCount; ++i)
+		for (int i = 0; i < nCount; ++i)
 		{
 			auto& select_group = m_selectedBlockMap[i];
-			if(select_group.GetBlocks().size() > 0)
+			if (select_group.GetBlocks().size() > 0)
 			{
-				if(select_group.m_bWireFrame)
+				if (select_group.m_bWireFrame)
 					RenderWireFrameBlock(i, select_group.m_fScaling, &select_group.m_color);
 				else
 					RenderSelectionBlock(i, select_group.m_fScaling, &select_group.m_color, select_group.m_bEnableBling);
 			}
 		}
-		
-		if(m_damageDegree > 0)
+
+		if (m_damageDegree > 0)
 			RenderDamagedBlock();
 	}
 
@@ -2560,7 +2580,7 @@ namespace ParaEngine
 			camMin = frusCorner[0];
 			camMax = frusCorner[0];
 
-			for (int i = 1; i<8; i++)
+			for (int i = 1; i < 8; i++)
 			{
 				Vector3& v = frusCorner[i];
 
@@ -2585,7 +2605,7 @@ namespace ParaEngine
 		Uint16x3 camBlockPos;
 		BlockCommon::ConvertToBlockIndex(camWorldPos.x, camWorldPos.y, camWorldPos.z, camBlockPos.x, camBlockPos.y, camBlockPos.z);
 		SetEyeBlockId(camBlockPos);
-		
+
 		Uint16x3 startIdx, endIdx;
 		BlockCommon::ConvertToBlockIndex(camMin.x, camMin.y, camMin.z, startIdx.x, startIdx.y, startIdx.z);
 		startIdx.x /= 16; startIdx.y /= 16; startIdx.z /= 16;
@@ -2619,7 +2639,7 @@ namespace ParaEngine
 		int32 chunkZ = GetEyeChunkId().z;
 		int32 chunkViewRadius = (std::max)((int)(GetRenderDist() / 16), 1);
 		int32 chunkViewSize = chunkViewRadius * 2;
-		
+
 		Vector3 vChunkSize(BlockConfig::g_chunkSize, BlockConfig::g_chunkSize, BlockConfig::g_chunkSize);
 
 		// OUTPUT_LOG("---------------cx %d, cz %d\n", chunkX, chunkZ);
@@ -2650,7 +2670,7 @@ namespace ParaEngine
 			{
 				int32* dir = &(BlockCommon::g_xzDirectionsConst[(nIndex % 4)][0]);
 				nIndex++;
-            
+
 				for (int32 i = 0; i < length; ++i)
 				{
 					dx = dx + dir[0];
@@ -2686,7 +2706,7 @@ namespace ParaEngine
 		{
 			dx = dx + BlockCommon::g_xzDirectionsConst[nIndex][0];
 			dz = dz + BlockCommon::g_xzDirectionsConst[nIndex][1];
-			
+
 			for (uint16_t y = startIdx.y; y <= endIdx.y; y++)
 			{
 				uint16 x = (uint16)(chunkX + dx);
@@ -2707,7 +2727,7 @@ namespace ParaEngine
 				}
 			}
 		}
-		
+
 		if (!bIsShadowPass)
 			m_isVisibleChunkDirty = false;
 	}
@@ -2748,7 +2768,7 @@ namespace ParaEngine
 		int nMaxChunkIndex = (int)m_visibleChunks.size();
 
 		int nUsedBytes = (int)(RenderableChunk::GetVertexBufferPool()->GetTotalBufferBytes());
-		
+
 		int nBytesToRemove = nUsedBytes - GetVertexBufferSizeLimit();
 		if (nBytesToRemove > 0)
 		{
@@ -2817,9 +2837,9 @@ namespace ParaEngine
 								if (nCurrentVertexBufferSize < GetVertexBufferSizeLimit())
 								{
 									// visible chunks has not exceed memory limit, we will put unused chunks to a sorted queue according to render frame count. 
-									if ( m_removableChunks.empty() 
+									if (m_removableChunks.empty()
 										|| m_removableChunks.back()->GetRenderFrameCount() > pChunk->GetRenderFrameCount()
-										|| (nCurrentRenderFrame == pChunk->GetRenderFrameCount() && m_removableChunks.back()->GetChunkViewDistance() < pChunk->GetChunkViewDistance()) ) 
+										|| (nCurrentRenderFrame == pChunk->GetRenderFrameCount() && m_removableChunks.back()->GetChunkViewDistance() < pChunk->GetChunkViewDistance()))
 										m_removableChunks.push_back(pChunk);
 									else
 										m_removableChunks.push_front(pChunk);
@@ -2911,7 +2931,7 @@ namespace ParaEngine
 					OUTPUT_LOG("rebuild chunk: pos(%d %d %d) ViewDist:%d  DelayCount:%d\n", pRenderChunk->GetChunkPosWs().x, pRenderChunk->GetChunkPosWs().y, pRenderChunk->GetChunkPosWs().z, pRenderChunk->GetChunkViewDistance(), pRenderChunk->GetDelayedRebuildTick());
 #endif
 				m_nBufferRebuildCountThisTick++;
-				if (pRenderChunk->GetChunkViewDistance() > GetNearCameraChunkDist()){
+				if (pRenderChunk->GetChunkViewDistance() > GetNearCameraChunkDist()) {
 					// for far away blocks, we will only rebuild 1 per tick, instead of 3. just in case the view distance is set really high. 
 					nMaxBufferRebuildPerTick = GetMaxBufferRebuildPerTick_FarChunk();
 				}
@@ -2935,7 +2955,7 @@ namespace ParaEngine
 		else
 			return &m_alphaBlendRenderTasks;
 	}
-	
+
 	bool BlockWorldClient::IsMovieOutputMode() const
 	{
 		return m_bMovieOutputMode;
@@ -2990,7 +3010,7 @@ namespace ParaEngine
 	{
 		CBlockWorld::UpdateActiveChunk();
 	}
-	
+
 	int BlockWorldClient::GetVertexBufferSizeLimit() const
 	{
 		return m_nVertexBufferSizeLimit;
@@ -3122,15 +3142,16 @@ namespace ParaEngine
 	}
 
 
-	void BlockWorldClient::RenderDeferredLights()
+	void BlockWorldClient::RenderDeferredLightsMesh()
 	{
+		return;
 #ifdef USE_DIRECTX_RENDERER
 		SceneState* sceneState = CGlobals::GetSceneState();
 		if (!sceneState->IsDeferredShading() || sceneState->listDeferredLightObjects.empty())
 			return;
 
 		// sort by light type
-		std::sort(sceneState->listDeferredLightObjects.begin(), sceneState->listDeferredLightObjects.end(), [](CLightObject* a, CLightObject* b){
+		std::sort(sceneState->listDeferredLightObjects.begin(), sceneState->listDeferredLightObjects.end(), [](CLightObject* a, CLightObject* b) {
 			return (a->GetLightType() < b->GetLightType());
 		});
 
@@ -3143,19 +3164,13 @@ namespace ParaEngine
 					m_lightgeometry_effects[i] = CGlobals::GetAssetManager()->LoadEffectFile("blockFancy", "script/apps/Aries/Creator/Game/Shaders/DeferredShadingPointLighting.fxo");
 				else if (i == 2)
 					m_lightgeometry_effects[i] = CGlobals::GetAssetManager()->LoadEffectFile("blockFancy", "script/apps/Aries/Creator/Game/Shaders/DeferredShadingSpotLighting.fxo");
-				else 
+				else
 					m_lightgeometry_effects[i] = CGlobals::GetAssetManager()->LoadEffectFile("blockFancy", "script/apps/Aries/Creator/Game/Shaders/DeferredShadingDirectionalLighting.fxo");
-				
+
 				m_lightgeometry_effects[i]->LoadAsset();
 			}
-			if (!m_lightgeometry_effects[i] || ! m_lightgeometry_effects[i]->IsValid())
+			if (!m_lightgeometry_effects[i] || !m_lightgeometry_effects[i]->IsValid())
 				return;
-		}
-
-		// TODO: setup render target here
-		{
-
-
 		}
 
 		// sort by type and render light geometry
@@ -3167,11 +3182,11 @@ namespace ParaEngine
 		{
 			if (lightObject->GetLightType() != nLastType)
 			{
-				if (pEffectFile) 
+				if (pEffectFile)
 				{
 					pEffectFile->end();
 				}
-				else 
+				else
 				{
 					// first time, we will switch to declaration
 					auto pDecl = CGlobals::GetEffectManager()->GetVertexDeclaration(EffectManager::S0_POS);
@@ -3185,6 +3200,145 @@ namespace ParaEngine
 		}
 		if (pEffectFile) {
 			pEffectFile->end();
+		}
+#endif
+	}
+
+	void BlockWorldClient::RenderDeferredLighting()
+	{
+#ifdef USE_DIRECTX_RENDERER
+		SceneState* sceneState = CGlobals::GetSceneState();
+		if (!sceneState->IsDeferredShading() || sceneState->listDeferredLightObjects.empty())
+			return;
+
+		CGlobals::GetEffectManager()->EndEffect();
+
+
+		auto pDevice = sceneState->GetRenderDevice();
+
+		ParaScripting::ParaAsset::LoadEffectFile("deferred_point_lighting", "script/apps/Aries/Creator/Game/Shaders/DeferredShadingPointLighting.fxo");
+		ParaScripting::ParaAsset::LoadEffectFile("deferred_spot_lighting", "script/apps/Aries/Creator/Game/Shaders/DeferredShadingSpotLighting.fxo");
+		ParaScripting::ParaAsset::LoadEffectFile("deferred_directional_lighting", "script/apps/Aries/Creator/Game/Shaders/DeferredShadingDirectionalLighting.fxo");
+
+		ParaScripting::ParaAssetObject effect = NULL;
+
+		VertexDeclarationPtr pDecl = NULL;
+
+		ID3DXMesh * pObject = NULL;
+		for (CLightObject* lightObject : sceneState->listDeferredLightObjects) {
+			auto light_param = lightObject->GetLightParams();
+
+			auto light_type = light_param->Type;
+
+			auto light_diffuse = light_param->Diffuse;
+			auto light_specular = light_param->Specular;
+			auto light_ambient = light_param->Ambient;
+
+			auto light_position = light_param->Position;
+			auto light_direction = lightObject->GetDirection();
+
+			auto light_range = light_param->Range;
+			auto light_falloff = light_param->Falloff;
+
+			auto light_attenuation0 = light_param->Attenuation0;
+			auto light_attenuation1 = light_param->Attenuation1;
+			auto light_attenuation2 = light_param->Attenuation2;
+
+			auto light_theta = light_param->Theta;
+			auto light_phi = light_param->Phi;
+
+			// how complicated the mesh is
+			int mesh_slice_num = 50;
+
+			switch (light_type) {
+			case D3DLIGHT_POINT:
+				effect = ParaScripting::ParaAsset::GetEffectFile("deferred_point_lighting");
+				D3DXCreateSphere(pDevice, light_range, mesh_slice_num, mesh_slice_num, &pObject, 0);
+
+				pDecl = CGlobals::GetEffectManager()->GetVertexDeclaration(EffectManager::S0_POS);
+				break;
+			case D3DLIGHT_SPOT:
+				effect = ParaScripting::ParaAsset::GetEffectFile("deferred_spot_lighting");
+				// FIXME: how to draw a spherical cone but a normal cone
+				//D3DXCreateCylinder(pDevice, 0.0f, 2.0f, 5.0f, 100, 100, &pObject, 0);
+				D3DXCreateSphere(pDevice, light_range, mesh_slice_num, mesh_slice_num, &pObject, 0);
+
+				pDecl = CGlobals::GetEffectManager()->GetVertexDeclaration(EffectManager::S0_POS);
+				break;
+			case D3DLIGHT_DIRECTIONAL:
+				effect = ParaScripting::ParaAsset::GetEffectFile("deferred_directional_lighting");
+				pDecl = CGlobals::GetEffectManager()->GetVertexDeclaration(EffectManager::S0_POS_TEX0);
+				break;
+			}
+
+			if (pDecl)
+				pDevice->SetVertexDeclaration(pDecl);
+
+			effect.Begin();
+
+			auto params = effect.GetParamBlock();
+			params.SetParam("ViewAspect", "floatViewAspect");
+			params.SetParam("TanHalfFOV", "floatTanHalfFOV");
+			params.SetParam("screenParam", "vec2ScreenSize");
+
+			Matrix4 mxWorld;
+			lightObject->GetRenderMatrix(mxWorld);
+			CGlobals::GetWorldMatrixStack().push(mxWorld);
+			params.SetParam("matWorld", "mat4World");
+			CGlobals::GetWorldMatrixStack().pop();
+
+			params.SetParam("matView", "mat4View");
+			params.SetParam("matProj", "mat4Projection");
+
+			params.SetVector4("light_diffuse", light_diffuse.r, light_diffuse.g, light_diffuse.b, light_diffuse.a);
+			params.SetVector4("light_specular", light_specular.r, light_specular.g, light_specular.b, light_specular.a);
+			params.SetVector4("light_ambient", light_ambient.r, light_ambient.g, light_ambient.b, light_ambient.a);
+
+			params.SetVector3("light_position", light_position.x, light_position.y, light_position.z);
+			params.SetVector3("light_direction", light_direction.x, light_direction.y, light_direction.z);
+
+			params.SetFloat("light_range", light_range);
+			params.SetFloat("light_falloff", light_falloff);
+
+			params.SetFloat("light_attenuation0", light_attenuation0);
+			params.SetFloat("light_attenuation1", light_attenuation1);
+			params.SetFloat("light_attenuation2", light_attenuation2);
+
+			params.SetFloat("light_theta", light_theta);
+			params.SetFloat("light_phi", light_phi);
+
+
+			auto _ColorRT = ParaScripting::ParaAsset::LoadTexture("_ColorRT", "_ColorRT", 0);
+			auto originRT = ParaScripting::CParaEngine::GetRenderTarget();
+			ParaScripting::CParaEngine::StretchRect(originRT, _ColorRT);
+			ParaScripting::CParaEngine::SetRenderTarget(originRT);
+			params.SetTextureObj(0, _ColorRT);
+			params.SetTextureObj(2, ParaScripting::ParaAsset::LoadTexture("_DepthTexRT_R32F", "_DepthTexRT_R32F", 0));
+			params.SetTextureObj(3, ParaScripting::ParaAsset::LoadTexture("_NormalRT", "_NormalRT", 0));
+
+			effect.CommitChanges();
+
+			pDevice->Clear(0, 0, D3DCLEAR_STENCIL, 0, 1.0f, 0);
+
+			switch (light_type) {
+			case D3DLIGHT_POINT:
+			case D3DLIGHT_SPOT:
+				for (int pass = 0; pass < 2; pass++) {
+					if (effect.BeginPass(pass)) {
+						pObject->DrawSubset(0);
+						effect.EndPass();
+					}
+				}
+				pObject->Release();
+				break;
+			case D3DLIGHT_DIRECTIONAL:
+				if (effect.BeginPass(0)) {
+					ParaScripting::CParaEngine::DrawQuad();
+					effect.EndPass();
+				}
+				break;
+			}
+			effect.End();
 		}
 #endif
 	}

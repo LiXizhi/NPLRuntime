@@ -70,8 +70,11 @@
 #endif
 
 
-
-
+#ifdef NPLRUNTIME_STATICLIB
+	#ifndef USE_BOOST_FILE_API
+		#define USE_BOOST_FILE_API
+	#endif
+#endif
 
 #ifdef _DEBUG
 // #define USE_BOOST_FILE_API
@@ -1362,12 +1365,13 @@ bool ParaEngine::CFileUtils::AddDiskSearchPath(const std::string& sFile, bool nF
 bool ParaEngine::CFileUtils::WriteLastModifiedTimeToDisk(FileHandle& fileHandle, const std::string& fileName, const time_t& lastModifiedTime)
 {
 	bool op_result = false;
-#if defined(USE_COCOS_FILE_API) || defined(USE_BOOST_FILE_API)
+#if (defined(USE_COCOS_FILE_API) || defined(USE_BOOST_FILE_API)) && !defined(WIN32)
 	if (!fileName.empty())
 	{
 		//platform: mobile
 		time_t platform_time;
 		standardtime2osfiletime(lastModifiedTime, &platform_time);
+
 		std::string sFilePath;
 		if (IsAbsolutePath(fileName))
 		{

@@ -756,7 +756,22 @@ const std::string& ParaEngine::Bone::GetIdentifier()
 
 void ParaEngine::Bone::SetName(const std::string& val)
 {
+	auto nFromPos = val.find_first_of('{');
+	if (nFromPos != string::npos)
+	{
+		auto nToPos = val.find_last_of('}');
+		if (nToPos != string::npos)
+		{
+			if(nFromPos >= 1 && val[nFromPos-1]==' ')
+				m_sIdentifer = val.substr(0, nFromPos-1);
+			else
+				m_sIdentifer = val.substr(0, nFromPos);
+			m_sTag = val.substr(nFromPos, nToPos - nFromPos + 1);
+			return;
+		}
+	}
 	m_sIdentifer = val;
+	m_sTag.clear();
 }
 
 void ParaEngine::Bone::AutoSetBoneInfoFromName()
@@ -1051,7 +1066,7 @@ void ParaEngine::Bone::AutoSetBoneInfoFromName()
 
 void ParaEngine::Bone::SetIdentifier(const std::string& sID)
 {
-	m_sIdentifer = sID;
+	SetName(sID);
 }
 
 void ParaEngine::Bone::SetOffsetMatrix(const Matrix4& mat)
@@ -1094,8 +1109,13 @@ bool ParaEngine::Bone::GetExternalRot(IAttributeFields* pAnimInstance, Quaternio
 			CDynamicAttributeField* pTimeField = pAnimInstance->GetDynamicField(GetTimeName());
 			if (pTimeField != 0) {
 				nTime = (int)((double)(*pTimeField));
-				if(nTime < 0)
-					nTime = pAnimInstance->GetTime();
+				if (nTime < 0)
+				{
+					if (nTime <= -1000)
+						return false;
+					else
+						nTime = pAnimInstance->GetTime();
+				}
 			}
 			return pVarField->GetValueByTime(nTime, outQuat);
 		}
@@ -1115,7 +1135,12 @@ bool ParaEngine::Bone::GetExternalTranslation(IAttributeFields* pAnimInstance, V
 			if (pTimeField != 0) {
 				nTime = (int)((double)(*pTimeField));
 				if (nTime < 0)
-					nTime = pAnimInstance->GetTime();
+				{
+					if (nTime <= -1000)
+						return false;
+					else
+						nTime = pAnimInstance->GetTime();
+				}
 			}
 			return pVarField->GetValueByTime(nTime, outTrans);
 		}
@@ -1135,7 +1160,12 @@ bool ParaEngine::Bone::GetExternalScaling(IAttributeFields* pAnimInstance, Vecto
 			if (pTimeField != 0) {
 				nTime = (int)((double)(*pTimeField));
 				if (nTime < 0)
-					nTime = pAnimInstance->GetTime();
+				{
+					if (nTime <= -1000)
+						return false;
+					else
+						nTime = pAnimInstance->GetTime();
+				}
 			}
 			return pVarField->GetValueByTime(nTime, outScaling);
 		}
@@ -1248,6 +1278,11 @@ void ParaEngine::Bone::MakeDirty(bool bForce)
 	calc = false;
 }
 
+const std::string& ParaEngine::Bone::GetTag()
+{
+	return m_sTag;
+}
+
 const std::string& ParaEngine::Bone::GetRotName()
 {
 
@@ -1289,6 +1324,7 @@ int ParaEngine::Bone::InstallFields(CAttributeClass* pClass, bool bOverride)
 {
 	IAttributeFields::InstallFields(pClass, bOverride);
 
+	pClass->AddField("Tag", FieldType_String, (void*)0, (void*)GetTag_s, NULL, "", bOverride);
 	pClass->AddField("RotName", FieldType_String, (void*)0, (void*)GetRotName_s, NULL, "", bOverride);
 	pClass->AddField("TransName", FieldType_String, (void*)0, (void*)GetTransName_s, NULL, "", bOverride);
 	pClass->AddField("ScaleName", FieldType_String, (void*)0, (void*)GetScaleName_s, NULL, "", bOverride);
@@ -1354,7 +1390,15 @@ Bone& ParaEngine::Bone::operator=(const Bone& other)
 	calc = other.calc;
 	bUsePivot = other.bUsePivot;
 
-	mIsUpper=other.mIsUpper;
+	mIsUpper = other.mIsUpper;
 
 	return *this;
 }
+
+void ParaEngine::Bone::RemoveUnusedAnimKeys()
+{
+	rot.RemoveUnusedAnimKeys();
+	trans.RemoveUnusedAnimKeys();
+	scale.RemoveUnusedAnimKeys();
+}
+

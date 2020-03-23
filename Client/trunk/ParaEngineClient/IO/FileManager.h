@@ -13,7 +13,9 @@
 	#define USE_COCOS_FILE_API
 #else
 	#if !defined(WIN32) || !defined(PARAENGINE_CLIENT) //  || defined(_DEBUG)
-		#define USE_BOOST_FILE_API
+		#ifndef USE_BOOST_FILE_API
+			#define USE_BOOST_FILE_API
+		#endif
 	#endif
 #endif
 

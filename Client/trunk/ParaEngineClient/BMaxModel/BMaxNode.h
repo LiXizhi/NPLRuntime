@@ -8,6 +8,7 @@ namespace ParaEngine
 	class Bone;
 	class BMaxParser;
 	class BlockModel;
+	class CParaXModel;
 	struct BMaxFrameNode;
 
 	/** base class for a block in bmax model */
@@ -31,6 +32,9 @@ namespace ParaEngine
 		}
 		virtual DWORD GetColor();
 		BlockModel *GetBlockModel();
+		CParaXModel *GetParaXModel();
+		virtual bool HasTransform();
+		virtual Matrix4 GetTransform();
 		/** set block model weak reference. */
 		void SetBlockModel(BlockModel* pModel);
 		virtual void SetColor(DWORD val);
@@ -48,6 +52,7 @@ namespace ParaEngine
 		BMaxNode* GetNeighbour(BlockDirection::Side nSize);
 		BMaxNode* GetNeighbourByOffset(Vector3 offset);
 		virtual bool isSolid();
+		virtual void setSolid(bool bValue);
 
 		/** 
 		* @param tessellatedModel: generate block model vertices
@@ -71,11 +76,13 @@ namespace ParaEngine
 		int32 template_id;
 		int32 block_data;
 		int m_nBoneIndex;
+		bool m_bIsSolid;
 	protected:
 		BMaxParser* m_pParser;
 		DWORD m_color;
 		/* weak reference to block model*/
 		BlockModel * m_pBlockModel;
+		CParaXModel * m_pParaXModel;
 		FaceStatus m_facesStatus[6];
 	};
 	typedef ref_ptr<BMaxNode> BMaxNodePtr;

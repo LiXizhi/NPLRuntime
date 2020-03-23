@@ -24,7 +24,7 @@
 #include "BoneChain.h"
 #include "memdebug.h"
 #include "XFileCharModelExporter.h"
-#include "./IO/FileUtils.h"
+#include "IO/FileUtils.h"
 #include "ViewportManager.h"
 
 
@@ -2407,5 +2407,16 @@ int CParaXModel::InstallFields(CAttributeClass* pClass, bool bOverride)
 void CParaXModel::SaveToDisk(const char* path)
 {
 	string filepath(path);
+	RemoveUnusedAnimKeys();
 	XFileCharModelExporter::Export(filepath, this);
+}
+
+void CParaXModel::RemoveUnusedAnimKeys()
+{
+	uint32 nBones = (uint32)GetObjectNum().nBones;
+	for (uint32 i = 0; i < nBones; i++)
+	{
+		Bone& bone = bones[i];
+		bone.RemoveUnusedAnimKeys();
+	}
 }
