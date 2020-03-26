@@ -255,7 +255,7 @@ void RenderWindowOSX::PollEvents() {
         if (CGlobals::GetApp()->GetAppState() == PEAppState_Ready)
         {
             if (currentBackingScaleFactor != m_window.backingScaleFactor) {
-                if ([systemVersion isEqualToString: @"10.13.6"]) {
+                if ([systemVersion isEqualToString: @"10.13.6"] || [systemVersion isEqualToString: @"10.13.3"]) {
                     currentBackingScaleFactor = 1;
                 } else {
                     currentBackingScaleFactor = m_window.backingScaleFactor;
