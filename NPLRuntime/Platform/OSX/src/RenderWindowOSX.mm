@@ -163,6 +163,7 @@ RenderWindowOSX::RenderWindowOSX(const int width, const int height)
 :m_shouldClose(false)
 ,m_window(nullptr)
 ,currentBackingScaleFactor(1)
+,systemVersion(@"")
 ,m_scrollMouseX(0)
 ,m_scrollMouseY(0)
 {
@@ -205,6 +206,9 @@ RenderWindowOSX::RenderWindowOSX(const int width, const int height)
     
     WindowDelegate* winDelegate = [WindowDelegate sharedDelegate];
     [m_window setDelegate:winDelegate];
+
+    NSDictionary *systemVersionDictionary = [NSDictionary dictionaryWithContentsOfFile: @"/System/Library/CoreServices/SystemVersion.plist"];
+    systemVersion = [systemVersionDictionary objectForKey:@"ProductVersion"];
 }
 
 RenderWindowOSX::~RenderWindowOSX()
@@ -219,12 +223,12 @@ intptr_t RenderWindowOSX::GetNativeHandle() const
 
 unsigned int RenderWindowOSX::GetHeight() const
 {
-    return m_window.contentView.frame.size.height * m_window.backingScaleFactor;
+    return m_window.contentView.frame.size.height * currentBackingScaleFactor;
 }
 
 unsigned int RenderWindowOSX::GetWidth() const
 {
-    return m_window.contentView.frame.size.width * m_window.backingScaleFactor;
+    return m_window.contentView.frame.size.width * currentBackingScaleFactor;
 }
 
 bool RenderWindowOSX::ShouldClose() const
@@ -251,14 +255,18 @@ void RenderWindowOSX::PollEvents() {
         if (CGlobals::GetApp()->GetAppState() == PEAppState_Ready)
         {
             if (currentBackingScaleFactor != m_window.backingScaleFactor) {
-                currentBackingScaleFactor = m_window.backingScaleFactor;
+                if ([systemVersion isEqualToString: @"10.13.6"]) {
+                    currentBackingScaleFactor = 1;
+                } else {
+                    currentBackingScaleFactor = m_window.backingScaleFactor;
+                }
 
                 CGUIRoot::GetInstance()->SetUIScale(currentBackingScaleFactor, currentBackingScaleFactor, true, true, false);
             }
         }
-        
-        uint32_t mx = (uint32_t)[event locationInWindow].x * m_window.backingScaleFactor;
-        uint32_t my = GetHeight() - (uint32_t)[event locationInWindow].y * m_window.backingScaleFactor;
+
+        uint32_t mx = (uint32_t)[event locationInWindow].x * currentBackingScaleFactor;
+        uint32_t my = GetHeight() - (uint32_t)[event locationInWindow].y * currentBackingScaleFactor;
 
        /* NSEventSubtype subType = [event subtype];
         

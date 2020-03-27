@@ -13,14 +13,14 @@ namespace ParaScripting
 
 	/**
 	* a NPL scripting state (wrapper of lua State), for binding c++ classes to lua.
-	* 
-	* @note: not thread safe, but can use in multiple thread with a lock. 
+	*
+	* @note: not thread safe, but can use in multiple thread with a lock.
 	* In a multi-threaded environment, the number of states loaded are limited by system memory. Each state can cost over 1MB memory.
-	* 
+	*
 	* Then call Load*() functions to load ParaEngine classes and APIs to the
 	* specified runtime, so that scripts in the runtime can use these classes and functions
 	*/
-	class CNPLScriptingState 
+	class CNPLScriptingState
 	{
 	public:
 		/** NPL runs in its own thread. and constantly reallocate 32, 64, 128, 256, 512 sized objects. */
@@ -36,15 +36,19 @@ namespace ParaScripting
 		};
 
 		/**
-		* @param bCreateState: if false, no interface state is created. 
-		* this is usually the case when we wants to create an empty scripting state for DLL runtime state. 
+		* @param bCreateState: if false, no interface state is created.
+		* this is usually the case when we wants to create an empty scripting state for DLL runtime state.
 		*/
-		CNPLScriptingState(bool bCreateState=true);
+		CNPLScriptingState(bool bCreateState = true);
 		virtual ~CNPLScriptingState(void);
 
 		/** get the last return value from lua_pcall. */
 		int GetLastReturnValue() const;
 		void SetLastReturnValue(int val);
+
+		/** 0 means no stack info. greater than 1 will print more stack info */
+		int GetDebugTraceLevel() const;
+		void SetDebugTraceLevel(int val);
 	public:
 		/// get the lua state. 
 		lua_State* GetLuaState();
@@ -82,12 +86,13 @@ namespace ParaScripting
 		void LoadHAPI_NPL();
 		/// load jabber related functions
 		void LoadHAPI_Jabber();
-
+#if (PARA_TARGET_PLATFORM == PARA_PLATFORM_MAC)
 		void LoadHAPI_WebView();
+#endif
 	public:
-		/** get the NPL code buffer and size according to a given file. Please note that BOM is read from the beginning of the file. 
-		* if it is a utf8 encoded file with BOM byte mask, only the data section is returned 
-		* @return: return the encoding if any. 0 is returned is no BOM encoding found at the beginning of the file. CP_UTF8 is returned if utf8 is found. 
+		/** get the NPL code buffer and size according to a given file. Please note that BOM is read from the beginning of the file.
+		* if it is a utf8 encoded file with BOM byte mask, only the data section is returned
+		* @return: return the encoding if any. 0 is returned is no BOM encoding found at the beginning of the file. CP_UTF8 is returned if utf8 is found.
 		*/
 		static int GetNPLCodeFromFile(ParaEngine::CParaFile* pFile, char** pBuffer, int* pBufferSize);
 
@@ -97,16 +102,16 @@ namespace ParaScripting
 		*/
 		static void AddSearchPath(const char* sSearchPath, bool bIsAdding = true);
 
-		/** we will first find if there is an up-to-date compiled version in the script/bin directory. if there is, 
-		* we will load the compiled version, otherwise we will use the text version. 
+		/** we will first find if there is an up-to-date compiled version in the script/bin directory. if there is,
+		* we will load the compiled version, otherwise we will use the text version.
 		* @param filePath: the logic file path
 		* @param sFileName: the output file path.
-		* return uint32 of FileLocation enumeration. 0 if not found. 
+		* return uint32 of FileLocation enumeration. 0 if not found.
 		*/
 		static uint32 GetScriptDiskPath(const string& filePath, string& sFileName);
 
 		/**
-		* whether a given script file is loaded. 
+		* whether a given script file is loaded.
 		* @param filePath: the local file path in the following format:
 		*		[dir0]/[dir1]/[dir2]/[filename.lua]
 		* @return: return true if file is already loaded in the current state.
@@ -118,19 +123,19 @@ namespace ParaScripting
 		* it will not be loaded again.
 		* @param filePath: the local NPL script file path
 		* @param bReload: if true, the file will be reloaded even if it is already loaded.
-		*    otherwise, the file will only be loaded if it is not loaded yet. 
-		* @param L: just in case the NPL.load is called from a different coroutine thread, which is different lua_state(stack) than the default one. 
+		*    otherwise, the file will only be loaded if it is not loaded yet.
+		* @param L: just in case the NPL.load is called from a different coroutine thread, which is different lua_state(stack) than the default one.
 		* @param bNoReturn: generate no return on lua_state's stack.
 		* @return: return the GliaFile reference.
 		*/
 		bool LoadFile(const string& filePath, bool bReload, lua_State* L = 0, bool bNoReturn = false);
 
 		/** do string in the current state. This function is usually called from the scripting interface.
-		* @param sCode: the string to executed. 
-		* @param nLength: length in bytes.if this is 0, length will be calculated, but must be smaller than a predefined safe length. If this is positive. any string length is allowed. 
-		* @param sFileName: NULL or a file name string that is associated with the code chunk. This is mostly used for debugging. 
-		* @param bPopReturnValue: default to true, whether to pop any return values from the sCode. default to true. 
-		* @return 0 or the first int return value in the code. 
+		* @param sCode: the string to executed.
+		* @param nLength: length in bytes.if this is 0, length will be calculated, but must be smaller than a predefined safe length. If this is positive. any string length is allowed.
+		* @param sFileName: NULL or a file name string that is associated with the code chunk. This is mostly used for debugging.
+		* @param bPopReturnValue: default to true, whether to pop any return values from the sCode. default to true.
+		* @return 0 or the first int return value in the code.
 		*/
 		int DoString(const char* sCode, int nLength = 0, const char* sFileName = NULL, bool bPopReturnValue = true);
 
@@ -139,7 +144,7 @@ namespace ParaScripting
 		* @param filepath: pointer to the file path.
 		* @return: NPLReturnCode
 		*/
-		NPL::NPLReturnCode ActivateFile(const string& filepath, const char * code = NULL, int nLength=0);
+		NPL::NPLReturnCode ActivateFile(const string& filepath, const char * code = NULL, int nLength = 0);
 
 		/**
 		* bind the activation function. Usually, it is for the script function NPL.this(funcActivate).
@@ -156,7 +161,7 @@ namespace ParaScripting
 
 		/** get current file name which is being processed now.*/
 		const string& GetFileName();
-		/** get current file that is being loaded or where the current code is defined. 
+		/** get current file that is being loaded or where the current code is defined.
 		* @param L: just in case the NPL.load is called from a different coroutine thread, which is different lua_state(stack) than the default one.
 		*/
 		const char* GetCurrentFileName(lua_State* L = 0);
@@ -168,7 +173,7 @@ namespace ParaScripting
 		*/
 		bool CreateSetState(lua_State* pLuaState = NULL);
 
-		/** if true, we will delete the luastate when this class is destroyed. This function should rarely be called. 
+		/** if true, we will delete the luastate when this class is destroyed. This function should rarely be called.
 		*/
 		void SetOwnLuaState(bool bOwn);
 
@@ -200,12 +205,12 @@ namespace ParaScripting
 		*/
 		void ProcessResult(int nResult, lua_State* L = 0);
 
-		/** save nResult objects on stack to file modules 
+		/** save nResult objects on stack to file modules
 		* @return the number of new result pushed on stack. usually 1 or 0
 		*/
 		int CacheFileModule(const std::string& filename, int nResult, lua_State* L = 0);
 
-		/** pop file module to stack for a given file. Return true, if file is loaded before or false if not. 
+		/** pop file module to stack for a given file. Return true, if file is loaded before or false if not.
 		* @return the number of result pushed on stack. usually 1 or 0
 		*/
 		int PopFileModule(const std::string& filename, lua_State* L = 0);
@@ -218,61 +223,69 @@ namespace ParaScripting
 		int GetFileLoadStatus(const string& filepath);
 		void SetFileLoadStatus(const string& filepath, int nStatus);
 
+		/** error function trace back. */
+		static int Traceback(lua_State *L);
+
+		/** lua_pcall with default trace back */
+		int Lua_ProtectedCall(lua_State *L, int nargs, int nresults);
+
 	private:
 		/** construct this to ensure matching calls to push and pop file name. */
 		class CFileNameStack
 		{
 		public:
-			CFileNameStack(CNPLScriptingState* pState, const string& filename):m_pState(pState){
-				if(m_pState)
+			CFileNameStack(CNPLScriptingState* pState, const string& filename) :m_pState(pState) {
+				if (m_pState)
 					m_pState->PushFileName(filename);
 			}
-			~CFileNameStack(){
-				if(m_pState)
+			~CFileNameStack() {
+				if (m_pState)
 					m_pState->PopFileName();
 			}
 			CNPLScriptingState* m_pState;
 		};
 
-		/** push the file name of the file which is being activated. 
+		/** push the file name of the file which is being activated.
 		* @note: use CFileNameStack instead of calling this directly */
 		void PushFileName(const string& filename);
 
-		/** push the file name of the file which is being activated. 
+		/** push the file name of the file which is being activated.
 		* @note: use CFileNameStack instead of calling this directly */
 		void PopFileName();
 
-	
+
 		void LoadParaScene();
 		void LoadParaWorld();
 
 		lua_State* m_pState;
 		/* whether we own the luastate. true by default. false if luastate is set externally.*/
 		bool m_bOwnLuaState;
-		
+		/* how many debug trace level to print when there is a runtime error in lua_pcall*/
+		int m_nDebugTraceLevel;
+
 		/** the default stack size in KB. default to -1, which uses the NPL runtime default, 1024KB. */
 		int m_nStackSize;
 
 		/** get the last return value from lua_pcall. */
 		int m_nLastReturnValue;
-		
-		/** whether we will use per thread (state) memory allocator. In network applications that constantly fire NPL file activations, 
-		we need to enable this to avoid memory fragmentation and improve execution speed. 
-		Because lua is single threaded, memory allocation in lua state has zero overhead (no lock) when using a custom memory allocator. 
-		However, it will consume twice as much memory in most cases; and memory locality may not be as good as the system's default memory allocator. 
+
+		/** whether we will use per thread (state) memory allocator. In network applications that constantly fire NPL file activations,
+		we need to enable this to avoid memory fragmentation and improve execution speed.
+		Because lua is single threaded, memory allocation in lua state has zero overhead (no lock) when using a custom memory allocator.
+		However, it will consume twice as much memory in most cases; and memory locality may not be as good as the system's default memory allocator.
 		@note: default to true
 		*/
 		NPL_MemAllocatorType m_nMemAllocatorType;
 
-		/** the memory allocator if m_bUseMemAllocator is true. */ 
+		/** the memory allocator if m_bUseMemAllocator is true. */
 		union
 		{
 			NPL::CNPLStateMemAllocator* m_pMemAlloc;
 			void* m_mspace;
 		};
 
-		/** all loaded files mapping from filename to number of cached objects. 
-		* If -1, it means that file is being loaded or something went wrong. 0 means no cached object.  
+		/** all loaded files mapping from filename to number of cached objects.
+		* If -1, it means that file is being loaded or something went wrong. 0 means no cached object.
 		*/
 		std::map <std::string, int32> m_loaded_files;
 

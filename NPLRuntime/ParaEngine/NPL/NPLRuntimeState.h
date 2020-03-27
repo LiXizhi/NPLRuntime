@@ -62,6 +62,9 @@ namespace NPL
 		ATTRIBUTE_METHOD1(CNPLRuntimeState, PauseAllPreemptiveFunction_s, bool) { cls->PauseAllPreemptiveFunction(p1); return S_OK; }
 		ATTRIBUTE_METHOD1(CNPLRuntimeState, IsAllPreemptiveFunctionPaused_s, bool*) { *p1 = cls->IsAllPreemptiveFunctionPaused(); return S_OK; }
 		ATTRIBUTE_METHOD1(CNPLRuntimeState, GetFileName_s, const char**) { *p1 = cls->GetCurrentFileName(); return S_OK; }
+		ATTRIBUTE_METHOD1(CNPLRuntimeState, GetDebugTraceLevel_s, int*) { *p1 = cls->GetDebugTraceLevel(); return S_OK; }
+		ATTRIBUTE_METHOD1(CNPLRuntimeState, SetDebugTraceLevel_s, int) { cls->SetDebugTraceLevel(p1); return S_OK; }
+
 
 		/** call this function before calling anything else. It will load all NPL modules into the runtime state. */
 		void Init();
