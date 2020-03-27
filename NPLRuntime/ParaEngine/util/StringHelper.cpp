@@ -367,7 +367,7 @@ static const std::string& code_convert(const char *from_charset, const char *to_
 
 	} while (false);
 
-	OUTPUT_LOG("conversion from %s to %s not available", from_charset ? from_charset : "unknow", to_charset ? to_charset : "unknow");
+	// OUTPUT_LOG("conversion from %s to %s not available", from_charset ? from_charset : "unknow", to_charset ? to_charset : "unknow");
 	cName = std::string(inbuf, inlen);
 	return cName;
 }
