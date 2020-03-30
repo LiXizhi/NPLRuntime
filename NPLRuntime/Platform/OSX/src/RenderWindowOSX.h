@@ -3,7 +3,6 @@
 #include <cstdint>
 #include "ParaEngineRenderBase.h"
 #include "Framework/InputSystem/VirtualKey.h"
-#import <Cocoa/Cocoa.h>
 
 @class NSWindow;
 namespace ParaEngine
@@ -23,6 +22,8 @@ namespace ParaEngine
 
         void setTitle(const char* title);
         const char* getTitle();
+        
+        void GetScaleFactor(double& x, double& y) const;
     public:
         bool OnShouldClose();
         void OnMouseButton(EMouseButton button, EKeyState state,uint32_t x,uint32_t y);
@@ -34,7 +35,6 @@ namespace ParaEngine
         bool m_shouldClose;
         NSWindow* m_window;
         float currentBackingScaleFactor = 1;
-        NSString *systemVersion = @"";
         float m_scrollMouseX;
         float m_scrollMouseY;
     };
