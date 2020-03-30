@@ -163,7 +163,6 @@ RenderWindowOSX::RenderWindowOSX(const int width, const int height)
 :m_shouldClose(false)
 ,m_window(nullptr)
 ,currentBackingScaleFactor(1)
-,systemVersion(@"")
 ,m_scrollMouseX(0)
 ,m_scrollMouseY(0)
 {
@@ -206,9 +205,6 @@ RenderWindowOSX::RenderWindowOSX(const int width, const int height)
     
     WindowDelegate* winDelegate = [WindowDelegate sharedDelegate];
     [m_window setDelegate:winDelegate];
-
-    NSDictionary *systemVersionDictionary = [NSDictionary dictionaryWithContentsOfFile: @"/System/Library/CoreServices/SystemVersion.plist"];
-    systemVersion = [systemVersionDictionary objectForKey:@"ProductVersion"];
 }
 
 RenderWindowOSX::~RenderWindowOSX()
@@ -222,13 +218,29 @@ intptr_t RenderWindowOSX::GetNativeHandle() const
 }
 
 unsigned int RenderWindowOSX::GetHeight() const
-{
-    return m_window.contentView.frame.size.height * currentBackingScaleFactor;
+{   
+    auto point = NSMakePoint(0, m_window.contentView.frame.size.height);
+    auto backingPoint = [m_window.contentView convertPointToBacking:point];
+    
+    return (unsigned int )backingPoint.y;
 }
 
 unsigned int RenderWindowOSX::GetWidth() const
+{    
+    auto point = NSMakePoint(m_window.contentView.frame.size.width, 0);
+    auto backingPoint = [m_window.contentView convertPointToBacking:point];
+    
+    return (unsigned int )backingPoint.x;
+}
+
+void RenderWindowOSX::GetScaleFactor(double& x, double& y) const
 {
-    return m_window.contentView.frame.size.width * currentBackingScaleFactor;
+    auto point = NSMakePoint(m_window.contentView.frame.size.width, m_window.contentView.frame.size.height);
+    
+    auto backingPoint = [m_window.contentView convertPointToBacking:point];
+    
+    x = backingPoint.x / point.x;
+    y = backingPoint.y / point.y;
 }
 
 bool RenderWindowOSX::ShouldClose() const
@@ -254,19 +266,20 @@ void RenderWindowOSX::PollEvents() {
         // fix for retina screen
         if (CGlobals::GetApp()->GetAppState() == PEAppState_Ready)
         {
-            if (currentBackingScaleFactor != m_window.backingScaleFactor) {
-                if ([systemVersion isEqualToString: @"10.13.6"] || [systemVersion isEqualToString: @"10.13.3"]) {
-                    currentBackingScaleFactor = 1;
-                } else {
-                    currentBackingScaleFactor = m_window.backingScaleFactor;
-                }
+            double x, y;
+            GetScaleFactor(x, y);
+            if (currentBackingScaleFactor != x) {
+                currentBackingScaleFactor = x;
 
-                CGUIRoot::GetInstance()->SetUIScale(currentBackingScaleFactor, currentBackingScaleFactor, true, true, false);
+                CGUIRoot::GetInstance()->SetUIScale(x, y, true, true, false);
             }
         }
 
-        uint32_t mx = (uint32_t)[event locationInWindow].x * currentBackingScaleFactor;
-        uint32_t my = GetHeight() - (uint32_t)[event locationInWindow].y * currentBackingScaleFactor;
+        auto mousePoint = NSMakePoint([event locationInWindow].x, [event locationInWindow].y);
+        auto backingPoint = [m_window.contentView convertPointToBacking:mousePoint];
+        
+        uint32_t mx = (uint32_t)backingPoint.x;
+        uint32_t my = GetHeight() - (uint32_t)backingPoint.y;
 
        /* NSEventSubtype subType = [event subtype];
         
