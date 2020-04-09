@@ -4,7 +4,13 @@
 //
 //  Created by apple on 2018/5/22.
 //
-#import <UIKit/UIKit.h>
+
+#import <WebKit/WKWebView.h>
+#import <WebKit/WKUIDelegate.h>
+#import <WebKit/WKNavigationDelegate.h>
+#import <WebKit/WKNavigationAction.h>
+
+
 #import <Foundation/Foundation.h>
 #include "ParaEngine.h"
 #include "WebView.h"
@@ -91,8 +97,8 @@ static std::string getFixedBaseUrl(const std::string& baseUrl)
 
 @end
 
-@interface UIWebViewWrapper () <UIWebViewDelegate>
-@property(nonatomic, retain) UIWebView * uiWebView;
+@interface UIWebViewWrapper () <WKUIDelegate, WKNavigationDelegate>
+@property(nonatomic, retain) WKWebView * uiWebView;
 @property(nonatomic, retain) UIButton* uiCloseBtn;
 @property(nonatomic, copy) NSString * jsScheme;
 @end
@@ -125,7 +131,8 @@ static std::string getFixedBaseUrl(const std::string& baseUrl)
 {
     if (self.uiWebView)
     {
-        self.uiWebView.delegate = nil;
+        self.uiWebView.UIDelegate = nil;
+        self.uiWebView.navigationDelegate = nil;
         [self.uiWebView removeFromSuperview];
         self.uiWebView = nil;
         self.uiCloseBtn = nil;
@@ -142,7 +149,8 @@ static std::string getFixedBaseUrl(const std::string& baseUrl)
     }
     else
     {
-        self.uiWebView.delegate = nil;
+        self.uiWebView.UIDelegate = nil;
+        self.uiWebView.navigationDelegate = nil;
         [self.uiWebView removeFromSuperview];
         self.uiWebView = nil;
         self.uiCloseBtn = nil;
@@ -155,8 +163,9 @@ static std::string getFixedBaseUrl(const std::string& baseUrl)
 {
     if (!self.uiWebView)
     {
-        self.uiWebView = [[UIWebView alloc] init];
-        self.uiWebView.delegate = self;
+        self.uiWebView = [[WKWebView alloc] init];
+        self.uiWebView.UIDelegate = self;
+        self.uiWebView.navigationDelegate = self;
     }
     
     if (!self.uiWebView.superview)
@@ -240,7 +249,7 @@ static std::string getFixedBaseUrl(const std::string& baseUrl)
     
     [self.uiWebView loadData:[NSData dataWithBytes:data.c_str() length:data.length()]
                     MIMEType:@(MIMEType.c_str())
-                    textEncodingName:@(encodingName.c_str())
+                    characterEncodingName:@(encodingName.c_str())
                     baseURL:[NSURL URLWithString:@(getFixedBaseUrl(baseURL).c_str())]];
 }
 
@@ -327,53 +336,67 @@ static std::string getFixedBaseUrl(const std::string& baseUrl)
     if (!self.uiWebView)
         [self setupWebView];
     
-    [self.uiWebView stringByEvaluatingJavaScriptFromString:@(js.c_str())];
+    [self.uiWebView evaluateJavaScript:@(js.c_str()) completionHandler:nil];
 }
 
 - (void)setScalesPageToFit:(bool)scalesPageToFit
 {
-    if (!self.uiWebView)
-        [self setupWebView];
-    
-    self.uiWebView.scalesPageToFit = scalesPageToFit;
+    //it doesn't support setting it dynamically
 }
 
-#pragma mark - UIWebViewDelegate
-- (BOOL)webView:(UIWebView *)webView shouldStartLoadWithRequest:(NSURLRequest *)request navigationType:(UIWebViewNavigationType)navigationType
+#pragma mark - WKNavigationDelegate
+- (void)webView:(WKWebView *)webView decidePolicyForNavigationAction:(WKNavigationAction *)navigationAction decisionHandler:(void (^)(WKNavigationActionPolicy))decisionHandler
 {
-    NSString *url = [[request URL] absoluteString];
-    if ([[[request URL] scheme] isEqualToString:self.jsScheme])
+    NSString *url = [[[navigationAction request] URL] absoluteString];
+    if ([[webView.URL scheme] isEqualToString:self.jsScheme])
     {
-        if (self.onJsCallback)
-            self.onJsCallback([url UTF8String]);
-        return NO;
+        self.onJsCallback([url UTF8String]);
+        decisionHandler(WKNavigationActionPolicyAllow);
     }
     
     if (self.shouldStartLoading && url)
     {
-        return self.shouldStartLoading([url UTF8String]);
+        if (self.shouldStartLoading([url UTF8String]))
+            decisionHandler(WKNavigationActionPolicyAllow);
+        else
+            decisionHandler(WKNavigationActionPolicyCancel);
+        
+        return;
     }
     
-    return YES;
+    decisionHandler(WKNavigationActionPolicyAllow);
 }
 
-- (void)webViewDidFinishLoad:(UIWebView *)webView
+- (void)webView:(WKWebView *)webView didFinishNavigation:(null_unspecified WKNavigation *)navigation
 {
     if (self.didFinishLoading)
     {
-        NSString *url = [[webView.request URL] absoluteString];
+        NSString *url = [webView.URL absoluteString];
         self.didFinishLoading([url UTF8String]);
     }
 }
 
-- (void)webView:(UIWebView *)webView didFailLoadWithError:(NSError *)error
+- (void)webView:(WKWebView *)webView didFailProvisionalNavigation:(null_unspecified WKNavigation *)navigation withError:(nonnull NSError *)error
 {
     if (self.didFailLoading)
     {
-        NSString *url = error.userInfo[NSURLErrorFailingURLStringErrorKey];
-        if (url)
-            self.didFailLoading([url UTF8String]);
+        NSString *errorInfo = error.userInfo[NSURLErrorFailingURLErrorKey];
+        if (errorInfo)
+        {
+            self.didFailLoading([errorInfo UTF8String]);
+        }
     }
+}
+
+
+#pragma mark - WKUIDelegate
+- (void)webView:(WKWebView *)webView runJavaScriptAlertPanelWithMessage:(nonnull NSString *)message initiatedByFrame:(nonnull WKFrameInfo *)frame completionHandler:(nonnull void (^)())completionHandler
+{
+    /*
+    UIAlertController *alertController = [UIAlertController alertControllerWithTitle:message message:nil preferredStyle:UIAlertControllerStyleAlert];
+    [alertController addAction:[UIAlertAction actionWithTitle:@"ok" style:UIAlertActionStyleCancel handler:^(UIAlertAction *action){ completionHandler();}]];
+    
+    */
 }
 
 @end
