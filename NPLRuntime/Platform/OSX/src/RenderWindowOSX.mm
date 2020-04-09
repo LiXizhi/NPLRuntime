@@ -87,7 +87,7 @@ EVirtualKey toVirtualKey(int32_t keycode)
         s_keymap[kVK_ANSI_Keypad2]=EVirtualKey::KEY_NUMPAD2;
         s_keymap[kVK_ANSI_Keypad3]=EVirtualKey::KEY_NUMPAD3;
         s_keymap[kVK_ANSI_Keypad4]=EVirtualKey::KEY_NUMPAD4;
-        s_keymap[kVK_ANSI_Keypad5]=EVirtualKey::KEY_NUMPAD4;
+        s_keymap[kVK_ANSI_Keypad5]=EVirtualKey::KEY_NUMPAD5;
         s_keymap[kVK_ANSI_Keypad6]=EVirtualKey::KEY_NUMPAD6;
         s_keymap[kVK_ANSI_Keypad7]=EVirtualKey::KEY_NUMPAD7;
         s_keymap[kVK_ANSI_Keypad8]=EVirtualKey::KEY_NUMPAD8;
@@ -296,12 +296,6 @@ void RenderWindowOSX::PollEvents() {
         switch([(NSEvent *)event type])
         {
             case NSEventTypePressure:
-                //NSLog(@"Pressure");
-            {
-
-            }
-            break;
-
             case NSEventTypeLeftMouseDown:
                 if(event.window == m_window)
                     OnMouseButton(EMouseButton::LEFT, EKeyState::PRESS, mx, my);
@@ -349,7 +343,7 @@ void RenderWindowOSX::PollEvents() {
                 {
                     NSEventPhase phase = [event phase];
                     NSEventPhase momentumPhase = [event momentumPhase];
-                    
+
                     static bool s_bMouseOverScrollableUI = false;
                     if (CGlobals::GetApp()->GetAppState() == PEAppState_Ready)
                     {
@@ -416,11 +410,12 @@ void RenderWindowOSX::PollEvents() {
                     if([chrs length]>0)
                     {
                         int unicode = [chrs characterAtIndex:0];
-                        if(
-                           (!isPressCommand) &&
-                           ((unicode >= 32 && unicode <= 126) ||
-                           (vk!=EVirtualKey::KEY_UP && vk!=EVirtualKey::KEY_DOWN && vk!=EVirtualKey::KEY_LEFT && vk!=EVirtualKey::KEY_RIGHT && unicode > 255))
-                        )
+                        if ((!isPressCommand && (unicode >= 32 && unicode <= 126)) ||
+                           (vk != EVirtualKey::KEY_DELETE &&
+                            vk != EVirtualKey::KEY_UP &&
+                            vk != EVirtualKey::KEY_DOWN &&
+                            vk != EVirtualKey::KEY_LEFT &&
+                            vk != EVirtualKey::KEY_RIGHT && unicode > 255))
                         {
                             OnChar(unicode);
                         }
@@ -434,7 +429,7 @@ void RenderWindowOSX::PollEvents() {
                 break;
             case NSEventTypeKeyUp:
             {
-                
+
                 /*
                 NSString *chrs = [event characters];
 
@@ -453,7 +448,7 @@ void RenderWindowOSX::PollEvents() {
                     uint32_t keycode = (uint32_t)[event keyCode];
                     EVirtualKey vk = toVirtualKey(keycode);
                     OnKey(vk, EKeyState::RELEASE);
-                    
+
                     bIsProcessed = (event.modifierFlags & NSEventModifierFlagCommand) == 0;
                 }
             }
