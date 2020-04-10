@@ -568,17 +568,6 @@ if(NPLRUNTIME_RENDERER STREQUAL "OPENGL")
 elseif(NPLRUNTIME_RENDERER STREQUAL "DIRECTX")
 
 	##############################
-	# PNG
-	add_subdirectory (${CLIENT_SOURCE_DIR}/trunk/externals/lpng1634 ${ParaEngineClient_BINARY_DIR}/lpng1634)
-	set(PNG_FOUND 1)
-	set(PNG_LIBRARY libpng)
-	set(PNG_LIBRARIES libpng)
-	set(PNG_INCLUDE_DIR ${CLIENT_SOURCE_DIR}/trunk/externals/lpng1634 ${ParaEngineClient_BINARY_DIR}/lpng1634)
-	set(PNG_SOURCE_DIR ${CLIENT_SOURCE_DIR}/trunk/externals/lpng1634 ${ParaEngineClient_BINARY_DIR}/lpng1634)
-	include_directories("${PNG_INCLUDE_DIR}")
-	list(APPEND ParaEngineClient_LIBS png_static)
-
-	##############################
 	# Direct3D
 	include_directories(${DIRECTX_INCLUDE_DIR})
 	list(APPEND ParaEngineClient_LINK_DIRS 	${DIRECTX_LIBRARY_DIR})

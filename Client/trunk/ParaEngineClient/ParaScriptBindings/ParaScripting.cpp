@@ -502,19 +502,7 @@ void CNPLScriptingState::LoadParaScene()
 			def("GetMaxRenderCount", & ParaScene::GetMaxRenderCount),
 			def("CheckExist", &ParaScene::CheckExist),
 			def("Execute", &ParaScene::Execute),
-			def("BmaxExportToSTL", &ParaXModelExporter::BmaxExportToSTL),
-			// write to glTF file
-			def("ParaXFileExportTo_glTF_File", &glTFModelExporter::ParaXFileExportTo_glTF_File),
-			def("ParaXBufferExportTo_glTF_File", &glTFModelExporter::ParaXBufferExportTo_glTF_File),
-			// return glTF Buffer
-			def("ParaXFileExportTo_glTF_String", &glTFModelExporter::ParaXFileExportTo_glTF_String),
-			def("ParaXBufferExportTo_glTF_String", &glTFModelExporter::ParaXBufferExportTo_glTF_String),
-			// return textures of .x file
-			def("GetParaXTexturesFromFile", &glTFModelExporter::GetParaXTexturesFromFile),
-			def("GetParaXTexturesFromBuffer", &glTFModelExporter::GetParaXTexturesFromBuffer),
-			// replace animations, and return gltf Buffer
-			def("ParaXFileChangeAnimation", &glTFModelExporter::ParaXFileChangeAnimation),
-			def("ParaXBufferChangeAnimation", &glTFModelExporter::ParaXBufferChangeAnimation)
+			def("BmaxExportToSTL", &ParaXModelExporter::BmaxExportToSTL)
 
 		]
 	];
