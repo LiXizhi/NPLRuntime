@@ -502,7 +502,8 @@ void CNPLScriptingState::LoadParaScene()
 			def("GetMaxRenderCount", & ParaScene::GetMaxRenderCount),
 			def("CheckExist", &ParaScene::CheckExist),
 			def("Execute", &ParaScene::Execute),
-			def("BmaxExportToSTL", &ParaXModelExporter::BmaxExportToSTL)
+			def("BmaxExportToSTL", &ParaXModelExporter::BmaxExportToSTL),
+			def("BlocksExportTo_glTF", &glTFModelExporter::BlocksExportTo_glTF)
 
 		]
 	];

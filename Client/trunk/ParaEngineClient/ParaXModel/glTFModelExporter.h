@@ -394,5 +394,6 @@ namespace ParaEngine
 			const std::string& paraXFile, const std::string& animFile, bool binary, const luabind::object& texObject, lua_State* L);
 		static luabind::object ParaXBufferChangeAnimation(
 			const char* paraXBuffer, int paraXSize, const char* animBuffer, int animSize, bool binary, const luabind::object& texObject, lua_State* L);
+		static void BlocksExportTo_glTF(const char* blocks, const char* output);
 	};
 }

@@ -1,12 +1,12 @@
 #include "ParaEngine.h"
 #include "glTFModelExporter.h"
+#include "BMaxModel/BlocksParser.h"
 #include "ParaXModel.h"
 #include "ParaXSerializer.h"
 #include "StringHelper.h"
 #include "StringBuilder.h"
 #include "ParaWorldAsset.h"
 #include "ParaXBone.h"
-#include "DDSLoader.h"
 
 namespace ParaEngine
 {
@@ -1362,44 +1362,45 @@ namespace ParaEngine
 		{
 			std::shared_ptr<Image> img = std::make_shared<Image>();
 			std::string texPath = paraXModel->textures[tex]->m_key;
-			if (texFiles.size() > tex)
-				texPath = texFiles[tex];
-			std::string extension = CParaFile::GetFileExtension(texPath);
-			if (extension == "dds")
-			{
-				DDSLoader loader(texPath);
-				if (loader.ConvertDDSToPng())
-				{
-					img->bufferSize = loader.GetPngSize();
-					img->bufferPointer.reset(new uint8_t[img->bufferSize]);
-					memcpy(img->bufferPointer.get(), loader.GetPngBuffer().get(), img->bufferSize);
-				}
-			}
-			else if (extension == "png")
-			{
-				CParaFile file(texPath.c_str());
-				if (!file.isEof())
-				{
-					img->bufferSize = file.getSize();
-					img->bufferPointer.reset(new uint8_t[img->bufferSize]);
-					memcpy(img->bufferPointer.get(), file.getBuffer(), img->bufferSize);
-				}
-			}
-			else
-			{
-				// to do
-			}
-			//LPD3DXBUFFER texBuffer;
-			//D3DXSaveTextureToFileInMemory(&texBuffer, D3DXIMAGE_FILEFORMAT::D3DXIFF_PNG, paraXModel->textures[tex]->GetTexture(), nullptr);
-			//img->bufferPointer = texBuffer->GetBufferPointer();
-			//img->bufferSize = texBuffer->GetBufferSize();
+			//if (texFiles.size() > tex)
+			//	texPath = texFiles[tex];
+			//std::string extension = CParaFile::GetFileExtension(texPath);
+			//if (extension == "dds")
+			//{
+			//	//DDSLoader loader(texPath);
+			//	//if (loader.ConvertDDSToPng())
+			//	//{
+			//	//	img->bufferSize = loader.GetPngSize();
+			//	//	img->bufferPointer.reset(new uint8_t[img->bufferSize]);
+			//	//	memcpy(img->bufferPointer.get(), loader.GetPngBuffer().get(), img->bufferSize);
+			//	//}
+			//}
+			//else if (extension == "png")
+			//{
+			//	CParaFile file(texPath.c_str());
+			//	if (!file.isEof())
+			//	{
+			//		img->bufferSize = file.getSize();
+			//		img->bufferPointer.reset(new uint8_t[img->bufferSize]);
+			//		memcpy(img->bufferPointer.get(), file.getBuffer(), img->bufferSize);
+			//	}
+			//}
+			//else
+			//{
+			//	// to do
+			//}
+			LPD3DXBUFFER texBuffer;
+			D3DXSaveTextureToFileInMemory(&texBuffer, D3DXIMAGE_FILEFORMAT::D3DXIFF_PNG, paraXModel->textures[tex]->GetTexture(), nullptr);
+			img->bufferSize = texBuffer->GetBufferSize();
+			img->bufferPointer.reset(new uint8_t[img->bufferSize]);
+			memcpy(img->bufferPointer.get(), texBuffer->GetBufferPointer(), img->bufferSize);
 			if (!isBinary || !isEmbedded)
 			{
 				//std::string path = fileName.substr(0, fileName.rfind(".gltf"));
 				//std::string name = path.substr(path.find_last_of("/\\") + 1u);
 				//img->filename = path + ".png";
 				//img->uri = name + ".png";
-				img->filename = texPath;
+				img->filename = CParaFile::GetParentDirectoryFromPath(fileName) + texPath;
 				img->uri = texPath;
 			}
 			img->index = index;
@@ -2432,6 +2433,19 @@ namespace ParaEngine
 			}
 		}
 		return luabind::object(L, buffer.c_str());
+	}
+
+	void glTFModelExporter::BlocksExportTo_glTF(const char* blocks, const char* output)
+	{
+		BlocksParser parser;
+		parser.Load(blocks);
+		CParaXModel* mesh = parser.ParseParaXModel();
+		if (mesh != nullptr)
+		{
+			std::vector<string> textures;
+			glTFModelExporter exporter(mesh, textures, false, false);
+			exporter.ExportToFile(output);
+		}
 	}
 
 }
