@@ -291,7 +291,6 @@ namespace ParaEngine
 			}
 			texcoords.push_back(coord);
 
-			if (paraXModel->m_RenderMethod == CParaXModel::BMAX_MODEL)
 			{
 				float r = ((color >> 16) & 0xff) / 255.0f;
 				float g = ((color >> 8) & 0xff) / 255.0f;
@@ -948,8 +947,7 @@ namespace ParaEngine
 		std::shared_ptr<Accessor> n = ExportNormals();
 		std::shared_ptr<Accessor> t = ExportTextureCoords();
 		std::shared_ptr<Accessor> c = nullptr;
-		if (paraXModel->m_RenderMethod == CParaXModel::BMAX_MODEL)
-			c = ExportColors();
+		c = ExportColors();
 		std::shared_ptr<Accessor> j = nullptr;
 		std::shared_ptr<Accessor> w = nullptr;
 		if (paraXModel->animated)
@@ -973,8 +971,9 @@ namespace ParaEngine
 					primitive.attributes.joints = j;
 					primitive.attributes.weights = w;
 				}
+				//use blenmode of BM_TRANSPARENT for non-cubemode blocks
 				if (paraXModel->m_RenderMethod != CParaXModel::BMAX_MODEL)
-					primitive.material = ExportMaterials(pass.tex, i);
+					primitive.material = ExportMaterials(pass.tex, i, pass.blendmode == BM_TRANSPARENT);
 				primitive.mode = PrimitiveMode::Triangles;
 				mesh->primitives.push_back(primitive);
 			}
@@ -1345,13 +1344,13 @@ namespace ParaEngine
 		return acc;
 	}
 
-	std::shared_ptr<Material> glTFModelExporter::ExportMaterials(int tex, int index)
+	std::shared_ptr<Material> glTFModelExporter::ExportMaterials(int tex, int index, bool cubeMode)
 	{
 		std::shared_ptr<Material> material = std::make_shared<Material>();
 		material->index = index;
 		material->alphaMode = "MASK";
 		material->alphaCutoff = 0.5;
-		material->doubleSide = true;
+		material->doubleSide = false;
 		PbrMetallicRoughness& metallic = material->metallicRoughness;
 		metallic.metallicFactor = 0;
 		metallic.roughnessFactor = 1;
@@ -1409,11 +1408,30 @@ namespace ParaEngine
 			img->index = index;
 
 			std::shared_ptr<Sampler> sampler = std::make_shared<Sampler>();
-			sampler->magFilter = SamplerMagFilter::MagLinear;
-			sampler->minFilter = SamplerMinFilter::NearestMipMapLinear;
-			sampler->wrapS = SamplerWrap::Repeat;
-			sampler->wrapT = SamplerWrap::Repeat;
-			sampler->index = index;
+			if (paraXModel->m_header.type == PARAX_MODEL_STATIC)
+			{
+				sampler->magFilter = SamplerMagFilter::MagNearest;
+				sampler->minFilter = SamplerMinFilter::NearestMipMapNearest;
+				if (cubeMode)
+				{
+					sampler->wrapS = SamplerWrap::Repeat;
+					sampler->wrapT = SamplerWrap::Repeat;
+				}
+				else
+				{
+					sampler->wrapS = SamplerWrap::ClampToEdge;
+					sampler->wrapT = SamplerWrap::ClampToEdge;
+				}
+				sampler->index = index;
+			}
+			else
+			{
+				sampler->magFilter = SamplerMagFilter::MagLinear;
+				sampler->minFilter = SamplerMinFilter::NearestMipMapLinear;
+				sampler->wrapS = SamplerWrap::Repeat;
+				sampler->wrapT = SamplerWrap::Repeat;
+				sampler->index = index;
+			}
 
 			std::shared_ptr<Texture> texture = std::make_shared<Texture>();
 			texture->source = img;

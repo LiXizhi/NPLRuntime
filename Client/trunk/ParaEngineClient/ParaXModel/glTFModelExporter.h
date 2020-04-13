@@ -328,7 +328,7 @@ namespace ParaEngine
 		std::shared_ptr<Accessor> ExportJoints();
 		std::shared_ptr<Accessor> ExportWeights();
 		std::shared_ptr<Accessor> ExportIndices(ModelRenderPass& pass);
-		std::shared_ptr<Material> ExportMaterials(int tex, int index);
+		std::shared_ptr<Material> ExportMaterials(int tex, int index, bool cubeMode);
 		std::shared_ptr<Animation> ExportAnimations(uint32_t animId);
 		std::shared_ptr<BufferView> ExportBufferView(AttribType::Value type, uint32_t length, uint32_t index);
 		std::shared_ptr<Accessor> ExportTimeAccessor(std::shared_ptr<BufferView>& bv, uint32_t offset, uint32_t numDatas, uint32_t animId);
