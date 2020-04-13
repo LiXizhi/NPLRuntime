@@ -12,6 +12,7 @@
 #include "NPLTable.h"
 #include "BMaxBlockModelNode.h"
 #include "BMaxAnimGenerator.h"
+#include "BMaxGlassModelNode.h"
 #include "TextureEntity.h"
 
 namespace ParaEngine
@@ -38,7 +39,6 @@ namespace ParaEngine
 		ParaXHeaderDef m_xheader;
 		pMesh = new CParaXModel(m_xheader);
 		FillParaXModelData(pMesh);
-		//pMesh->SetBmaxModel();
 		return pMesh;
 	}
 
@@ -180,23 +180,27 @@ namespace ParaEngine
 						}
 					}
 				}
-				else if (pBlockTemplate->IsMatchAttribute(BlockTemplate::batt_obstruction) && pBlockTemplate->IsMatchAttribute(BlockTemplate::batt_cubeModel) && !pBlockTemplate->IsMatchAttribute(BlockTemplate::batt_solid))
+				else if (!pBlockTemplate->IsMatchAttribute(BlockTemplate::batt_solid) ||
+					pBlockTemplate->IsMatchAttribute(BlockTemplate::batt_transparent))
 				{
-					// non-solid, but obstruction blocks such as slope, stairs, and other custom models
-					node = new BMaxNode(this, x, y, z, template_id, block_data);
-					node->setSolid(false);
-				}
-				else if (!pBlockTemplate->IsMatchAttribute(BlockTemplate::batt_solid))
-				{
-					// non-solid non-obstruction blocks,like web, grass, will not be rendered. but can be used to connect bones
-					template_id = TransparentBlockId;
-					node = new BMaxBlockModelNode(this, x, y, z, template_id, block_data);
-					node->setSolid(false);
+					// non-solid, but obstruction blocks such as slope, stairs, grass and other custom models
+					if (pBlockTemplate->GetBlockModelByData(block_data).IsUniformLighting())
+					{
+						node = BMaxNodePtr(new BMaxNode(this, x, y, z, template_id, block_data));
+						node->setSolid(false);
+					}
+					else
+					{
+						//non-solid, non-obstruction, glass models
+						BMaxGlassModelNodePtr glassNode(new BMaxGlassModelNode(this, x, y, z, template_id, block_data));
+						node = BMaxNodePtr(glassNode.get());
+						node->setSolid(false);
+					}
 				}
 				else
 				{
 					// treat as standard cube
-					node = new BMaxNode(this, x, y, z, template_id, block_data);
+					node = BMaxNodePtr(new BMaxNode(this, x, y, z, template_id, block_data));
 				}
 
 				InsertNode(node);
@@ -217,17 +221,19 @@ namespace ParaEngine
 				}
 				else
 				{
-					int32_t uvPattern = 0;
-					auto block_template = BlockWorldClient::GetInstance()->GetBlockTemplate(node->template_id);
-					if (block_template->IsMatchAttribute(BlockTemplate::batt_threeSideTex))
-						uvPattern = 3;
-					else if (block_template->IsMatchAttribute(BlockTemplate::batt_fourSideTex))
-						uvPattern = 4;
-					else if (block_template->IsMatchAttribute(BlockTemplate::batt_sixSideTex))
-						uvPattern = 6;
-
 					BlockModel* tessellatedModel = new BlockModel();
-					tessellatedModel->LoadModelByTexture(uvPattern);
+					if (node->isSolid())
+					{
+						int32_t uvPattern = 0;
+						auto block_template = BlockWorldClient::GetInstance()->GetBlockTemplate(node->template_id);
+						if (block_template->IsMatchAttribute(BlockTemplate::batt_threeSideTex))
+							uvPattern = 3;
+						else if (block_template->IsMatchAttribute(BlockTemplate::batt_fourSideTex))
+							uvPattern = 4;
+						else if (block_template->IsMatchAttribute(BlockTemplate::batt_sixSideTex))
+							uvPattern = 6;
+						tessellatedModel->LoadModelByTexture(uvPattern);
+					}
 					if (node->TessellateBlock(tessellatedModel) > 0)
 					{
 						node->SetBlockModel(tessellatedModel);
@@ -250,6 +256,9 @@ namespace ParaEngine
 		for (auto& item : m_nodes)
 		{
 			BMaxNode *node = item.second.get();
+			auto block_template = BlockWorldClient::GetInstance()->GetBlockTemplate(node->template_id);
+			if (block_template != nullptr)
+				blockTextures[node->template_id] = block_template->GetTexture0(node->block_data);
 			if (node->GetBlockModel() && node->isSolid() && !(node->GetBlockModel()->IsUniformLighting()))
 			{
 				for (int i = 0; i < 6; i++)
@@ -259,6 +268,10 @@ namespace ParaEngine
 						FindCoplanerFace(node, i);
 					}
 				}
+			}
+			else
+			{
+				blockNodes[node->template_id].push_back(node);
 			}
 		}
 	}
@@ -300,8 +313,8 @@ namespace ParaEngine
 
 		if (m_vertices.size() == 0)
 			return;
-		//pMesh->m_RenderMethod = CParaXModel::BMAX_MODEL;
-		//pMesh->SetRenderMethod(CParaXModel::BMAX_MODEL);
+
+		pMesh->m_header.type = PARAX_MODEL_STATIC;
 		pMesh->initVertices(m_vertices.size(), &(m_vertices[0]));
 		pMesh->initIndices(m_indices.size(), &(m_indices[0]));
 		pMesh->textures = new asset_ptr<TextureEntity>[pMesh->m_objNum.nTextures];
@@ -362,23 +375,22 @@ namespace ParaEngine
 
 	void BlocksParser::FillVerticesAndIndices(int32 nMaxTriangleCount /*= -1*/)
 	{
-		ModelGeoset* geoset = AddGeoset();
 		int32 nStartIndex = 0;
 
 		CShapeAABB aabb;
 		int total_count = 0;
+		int nStartVertex = 0;
 
 		int nRootBoneIndex = 0;
-		int textureIndex = 0;
 		for (auto block_rectangles : blockRectangles)
 		{
-			auto block_template = BlockWorldClient::GetInstance()->GetBlockTemplate(block_rectangles.first);
-			m_textures.push_back(block_template->GetTexture0());
-
 			nStartIndex = (int32)m_indices.size();
+			ModelGeoset* geoset = AddGeoset();
 			ModelRenderPass* pass = AddRenderPass();
 			pass->geoset = geoset->id;
 			pass->SetStartIndex(nStartIndex);
+			geoset->SetVertexStart(total_count);
+			nStartVertex = 0;
 
 			for (uint32 i = 0; i < block_rectangles.second.size(); i++)
 			{
@@ -392,15 +404,18 @@ namespace ParaEngine
 				{
 					// break geoset, if it is too big
 					nStartIndex = (int32)m_indices.size();
+					geoset = AddGeoset();
 					pass = AddRenderPass();
 					pass->geoset = geoset->id;
 					pass->SetStartIndex(nStartIndex);
+					geoset->SetVertexStart(total_count);
+					nStartVertex = 0;
 				}
 
 				geoset->icount += nIndexCount;
-				geoset->vcount += nVertices;
 				pass->indexCount += nIndexCount;
-				pass->tex = textureIndex;
+				pass->tex = m_textures.size();
+				pass->blendmode = BM_OPAQUE;
 
 				uint8 vertex_weight = 0xff;
 
@@ -412,7 +427,7 @@ namespace ParaEngine
 					pVertices->GetNormal(modelVertex.normal);
 					pVertices->GetTexcoord(modelVertex.texcoords.x, modelVertex.texcoords.y);
 
-					modelVertex.color0 = pVertices->color2;
+					modelVertex.color0 = pVertices->color;
 					//set bone and weight, only a single bone
 					int nBoneIndex = rectangle->GetBoneIndexAt(k);
 					// if no bone is found, use the default root bone
@@ -423,7 +438,7 @@ namespace ParaEngine
 					aabb.Extend(modelVertex.pos);
 				}
 
-				int start_index = total_count;
+				int start_index = nStartVertex;
 				m_indices.push_back(start_index + 0);
 				m_indices.push_back(start_index + 1);
 				m_indices.push_back(start_index + 2);
@@ -431,168 +446,184 @@ namespace ParaEngine
 				m_indices.push_back(start_index + 2);
 				m_indices.push_back(start_index + 3);
 				total_count += nVertices;
+				nStartVertex += nVertices;
 			}
 
-			textureIndex++;
+			m_textures.push_back(blockTextures[block_rectangles.first]);
 		}
 
-		//if (nMaxTriangleCount < 0)
-		//{
-		//	for (auto& item : m_nodes)
-		//	{
-		//		BMaxNode* node = item.second.get();
-		//		if (!node->isSolid() && node->GetParaXModel() == 0)
-		//		{
-		//			// for stairs, slabs, buttons, etc
-		//			BlockModel* model = node->GetBlockModel();
-		//			if (model != 0 && model->IsUniformLighting())
-		//			{
-		//				int nFromVertex = (int)m_vertices.size();
+		for (auto& block_nodes : blockNodes)
+		{
+			nStartIndex = (int32)m_indices.size();
+			ModelGeoset* geoset = AddGeoset();
+			ModelRenderPass* pass = AddRenderPass();
+			pass->geoset = geoset->id;
+			pass->SetStartIndex(nStartIndex);
+			geoset->SetVertexStart(total_count);
+			nStartVertex = 0;
 
-		//				int nVertices = model->GetVerticesCount();
-		//				BlockVertexCompressed* pVertices = model->GetVertices();
-		//				int nFace = model->GetFaceCount();
+			for (uint32_t i = 0; i < block_nodes.second.size(); i++)
+			{
+				BMaxNode* node = block_nodes.second[i];
+				if (node->GetParaXModel() == 0)
+				{
+					// for stairs, slabs, buttons, etc
+					BlockModel* model = node->GetBlockModel();
+					if (model != 0)
+					{
+						int nFromVertex = (int)m_vertices.size();
 
-		//				int nIndexCount = nFace * 6;
+						int nVertices = model->GetVerticesCount();
+						BlockVertexCompressed* pVertices = model->GetVertices();
+						int nFace = model->GetFaceCount();
 
-		//				if ((nIndexCount + geoset->icount) >= 0xffff)
-		//				{
-		//					// break geoset, if it is too big
-		//					nStartIndex = (int32)m_indices.size();
-		//					geoset = AddGeoset();
-		//					pass = AddRenderPass();
-		//					pass->geoset = geoset->id;
-		//					pass->SetStartIndex(nStartIndex);
-		//					geoset->SetVertexStart((int32)m_vertices.size());
-		//				}
+						int nIndexCount = nFace * 6;
 
-		//				geoset->icount += nIndexCount;
-		//				pass->indexCount += nIndexCount;
+						if ((nIndexCount + geoset->icount) >= 0xffff)
+						{
+							// break geoset, if it is too big
+							nStartIndex = (int32)m_indices.size();
+							geoset = AddGeoset();
+							pass = AddRenderPass();
+							pass->geoset = geoset->id;
+							pass->SetStartIndex(nStartIndex);
+							geoset->SetVertexStart(total_count);
+							nStartVertex = 0;
+						}
 
-		//				int nBoneIndex = node->GetBoneIndex();
-		//				// if no bone is found, use the default root bone
-		//				if (nBoneIndex == -1)
-		//					nBoneIndex = nRootBoneIndex;
-		//				uint8 vertex_weight = 0xff;
+						geoset->icount += nIndexCount;
+						pass->indexCount += nIndexCount;
+						pass->tex = m_textures.size();
+						pass->blendmode = BM_TRANSPARENT;
 
-		//				for (int k = 0; k < nVertices; k++, pVertices++)
-		//				{
-		//					ModelVertex modelVertex;
-		//					memset(&modelVertex, 0, sizeof(ModelVertex));
-		//					pVertices->GetPosition(modelVertex.pos);
-		//					modelVertex.pos *= m_fScale;
-		//					pVertices->GetNormal(modelVertex.normal);
-		//					modelVertex.color0 = pVertices->color2;
-		//					//set bone and weight, only a single bone
-		//					modelVertex.bones[0] = nBoneIndex;
-		//					modelVertex.weights[0] = vertex_weight;
+						int nBoneIndex = node->GetBoneIndex();
+						// if no bone is found, use the default root bone
+						if (nBoneIndex == -1)
+							nBoneIndex = nRootBoneIndex;
+						uint8 vertex_weight = 0xff;
 
-		//					m_vertices.push_back(modelVertex);
-		//					aabb.Extend(modelVertex.pos);
-		//				}
+						for (int k = 0; k < nVertices; k++, pVertices++)
+						{
+							ModelVertex modelVertex;
+							memset(&modelVertex, 0, sizeof(ModelVertex));
+							pVertices->GetPosition(modelVertex.pos);
+							modelVertex.pos *= m_fScale;
+							pVertices->GetNormal(modelVertex.normal);
+							pVertices->GetTexcoord(modelVertex.texcoords.x, modelVertex.texcoords.y);
+							modelVertex.color0 = pVertices->color2;
+							//set bone and weight, only a single bone
+							modelVertex.bones[0] = nBoneIndex;
+							modelVertex.weights[0] = vertex_weight;
 
-		//				int nVertexOffset = nFromVertex - geoset->GetVertexStart();
-		//				for (int k = 0; k < nFace; k++)
-		//				{
-		//					int start_index = k * 4 + nVertexOffset;
-		//					m_indices.push_back(start_index + 0);
-		//					m_indices.push_back(start_index + 1);
-		//					m_indices.push_back(start_index + 2);
-		//					m_indices.push_back(start_index + 0);
-		//					m_indices.push_back(start_index + 2);
-		//					m_indices.push_back(start_index + 3);
-		//				}
-		//			}
-		//		}
-		//		else if (node->GetParaXModel())
-		//		{
-		//			// for BlockModel like bmax, x, etc
-		//			int nBoneIndex = node->GetBoneIndex();
-		//			// if no bone is found, use the default root bone
-		//			if (nBoneIndex == -1)
-		//				nBoneIndex = nRootBoneIndex;
-		//			uint8 vertex_weight = 0xff;
+							m_vertices.push_back(modelVertex);
+							aabb.Extend(modelVertex.pos);
+						}
 
-		//			int nFromIndices = (int)m_indices.size();
-		//			int total_count = (int)m_vertices.size();
-		//			int nFromVertex = total_count;
-		//			CParaXModel* pModel = node->GetParaXModel();
+						int nVertexOffset = nFromVertex - geoset->GetVertexStart();
+						for (int k = 0; k < nFace; k++)
+						{
+							int start_index = k * 4 + nVertexOffset;
+							m_indices.push_back(start_index + 0);
+							m_indices.push_back(start_index + 1);
+							m_indices.push_back(start_index + 2);
+							m_indices.push_back(start_index + 0);
+							m_indices.push_back(start_index + 2);
+							m_indices.push_back(start_index + 3);
+						}
+					}
+				}
+				else if (node->GetParaXModel())
+				{
+					// for BlockModel like bmax, x, etc
+					int nBoneIndex = node->GetBoneIndex();
+					// if no bone is found, use the default root bone
+					if (nBoneIndex == -1)
+						nBoneIndex = nRootBoneIndex;
+					uint8 vertex_weight = 0xff;
 
-		//			Matrix4 matLocalTrans;
-		//			bool m_bHasTransform = node->HasTransform();
-		//			if (m_bHasTransform)
-		//			{
-		//				matLocalTrans = node->GetTransform();
-		//			}
-		//			int nPasses = (int)pModel->passes.size();
-		//			int nTotalFaceCount = 0;
+					int nFromIndices = (int)m_indices.size();
+					int total_count = (int)m_vertices.size();
+					int nFromVertex = total_count;
+					CParaXModel* pModel = node->GetParaXModel();
 
-		//			const Vector3& vCenter = GetCenterPos();
-		//			Vector3 vOffset((float)node->x - vCenter.x + BlockConfig::g_half_blockSize, (float)node->y, (float)node->z - vCenter.z + BlockConfig::g_half_blockSize);
+					Matrix4 matLocalTrans;
+					bool m_bHasTransform = node->HasTransform();
+					if (m_bHasTransform)
+					{
+						matLocalTrans = node->GetTransform();
+					}
+					int nPasses = (int)pModel->passes.size();
+					int nTotalFaceCount = 0;
 
-		//			ModelVertex *ov = pModel->m_origVertices;
-		//			int nModelVerticesCount = pModel->GetObjectNum().nVertices;
-		//			for (int i = 0; i < nModelVerticesCount; i++)
-		//			{
-		//				auto ov = pModel->m_origVertices + i;
-		//				ModelVertex modelVertex;
-		//				memset(&modelVertex, 0, sizeof(ModelVertex));
+					const Vector3& vCenter = GetCenterPos();
+					Vector3 vOffset((float)node->x - vCenter.x + BlockConfig::g_half_blockSize, (float)node->y, (float)node->z - vCenter.z + BlockConfig::g_half_blockSize);
 
-		//				if (m_bHasTransform)
-		//				{
-		//					modelVertex.pos = (ov->pos*matLocalTrans + vOffset);
-		//					modelVertex.normal = (ov->normal*matLocalTrans);
-		//				}
-		//				else
-		//				{
-		//					modelVertex.pos = (ov->pos + vOffset);
-		//					modelVertex.normal = (ov->normal);
-		//				}
+					ModelVertex *ov = pModel->m_origVertices;
+					int nVertices = pModel->GetObjectNum().nVertices;
+					for (int i = 0; i < nVertices; i++)
+					{
+						auto ov = pModel->m_origVertices + i;
+						ModelVertex modelVertex;
+						memset(&modelVertex, 0, sizeof(ModelVertex));
 
-		//				modelVertex.pos *= m_fScale;
-		//				modelVertex.color0 = ov->color0;
-		//				//set bone and weight, only a single bone
-		//				modelVertex.bones[0] = nBoneIndex;
-		//				modelVertex.weights[0] = vertex_weight;
+						if (m_bHasTransform)
+						{
+							modelVertex.pos = (ov->pos*matLocalTrans + vOffset);
+							modelVertex.normal = (ov->normal*matLocalTrans);
+						}
+						else
+						{
+							modelVertex.pos = (ov->pos + vOffset);
+							modelVertex.normal = (ov->normal);
+						}
 
-		//				m_vertices.push_back(modelVertex);
-		//				aabb.Extend(modelVertex.pos);
-		//			}
+						modelVertex.pos *= m_fScale;
+						modelVertex.texcoords = ov->texcoords;
+						modelVertex.color0 = ov->color0;
+						//set bone and weight, only a single bone
+						modelVertex.bones[0] = nBoneIndex;
+						modelVertex.weights[0] = vertex_weight;
 
-		//			for (int nPass = 0; nPass < nPasses; nPass++)
-		//			{
-		//				ModelRenderPass &p = pModel->passes[nPass];
-		//				if (pModel->showGeosets[p.geoset])
-		//				{
-		//					int nIndexCount = p.indexCount;
-		//					int nIndexOffset = p.GetStartIndex();
+						m_vertices.push_back(modelVertex);
+						aabb.Extend(modelVertex.pos);
+					}
 
-		//					if ((nIndexCount + geoset->icount) >= 0xffff)
-		//					{
-		//						// break geoset, if it is too big
-		//						nStartIndex = (int32)m_indices.size();
-		//						geoset = AddGeoset();
-		//						pass = AddRenderPass();
-		//						pass->geoset = geoset->id;
-		//						pass->SetStartIndex(nStartIndex);
-		//						geoset->SetVertexStart(total_count);
-		//					}
+					for (int nPass = 0; nPass < nPasses; nPass++)
+					{
+						ModelRenderPass &p = pModel->passes[nPass];
+						if (pModel->showGeosets[p.geoset])
+						{
+							int nIndexCount = p.indexCount;
+							int nIndexOffset = p.GetStartIndex();
 
-		//					geoset->icount += nIndexCount;
-		//					pass->indexCount += nIndexCount;
+							if ((nIndexCount + geoset->icount) >= 0xffff)
+							{
+								// break geoset, if it is too big
+								nStartIndex = (int32)m_indices.size();
+								geoset = AddGeoset();
+								pass = AddRenderPass();
+								pass->geoset = geoset->id;
+								pass->SetStartIndex(nStartIndex);
+								geoset->SetVertexStart(total_count);
+							}
 
-		//					int nVertexOffset = p.GetVertexStart(pModel) + nFromVertex - geoset->GetVertexStart();
+							geoset->icount += nIndexCount;
+							pass->indexCount += nIndexCount;
+							pass->tex = m_textures.size();
 
-		//					for (int i = 0; i < p.indexCount; ++i)
-		//					{
-		//						int a = pModel->m_indices[nIndexOffset + i] + nVertexOffset;
-		//						m_indices.push_back((uint16)a);
-		//					}
-		//				}
-		//			}
-		//		}
-		//	}
-		//}
+							int nVertexOffset = p.GetVertexStart(pModel) + total_count;
+
+							for (int i = 0; i < p.indexCount; ++i)
+							{
+								int a = pModel->m_indices[nIndexOffset + i] + nVertexOffset;
+								m_indices.push_back((uint16)a);
+							}
+						}
+					}
+				}
+			}
+			m_textures.push_back(blockTextures[block_nodes.first]);
+		}
 
 		aabb.GetMin(m_minExtent);
 		aabb.GetMax(m_maxExtent);
