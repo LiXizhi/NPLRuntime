@@ -22,6 +22,8 @@ namespace ParaEngine
 		
 	private:
 		std::map<uint16_t, std::vector<RectanglePtr>> blockRectangles;
+		std::map<uint16_t, std::vector<BMaxNode*>> blockNodes;
+		std::map<uint16_t, TextureEntity*> blockTextures;
 		std::vector<TextureEntity*> m_textures;
 	};
 }

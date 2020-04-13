@@ -960,21 +960,24 @@ namespace ParaEngine
 		for (uint32_t i = 0; i < paraXModel->passes.size(); i++)
 		{
 			ModelRenderPass& pass = paraXModel->passes[i];
-			Mesh::Primitive primitive;
-			primitive.indices = ExportIndices(pass);
-			primitive.attributes.position = v;
-			primitive.attributes.normal = n;
-			primitive.attributes.texcoord = t;
-			primitive.attributes.color = c;
-			if (paraXModel->animated)
+			if (paraXModel->showGeosets[pass.geoset])
 			{
-				primitive.attributes.joints = j;
-				primitive.attributes.weights = w;
+				Mesh::Primitive primitive;
+				primitive.indices = ExportIndices(pass);
+				primitive.attributes.position = v;
+				primitive.attributes.normal = n;
+				primitive.attributes.texcoord = t;
+				primitive.attributes.color = c;
+				if (paraXModel->animated)
+				{
+					primitive.attributes.joints = j;
+					primitive.attributes.weights = w;
+				}
+				if (paraXModel->m_RenderMethod != CParaXModel::BMAX_MODEL)
+					primitive.material = ExportMaterials(pass.tex, i);
+				primitive.mode = PrimitiveMode::Triangles;
+				mesh->primitives.push_back(primitive);
 			}
-			if (paraXModel->m_RenderMethod != CParaXModel::BMAX_MODEL)
-				primitive.material = ExportMaterials(pass.tex, i);
-			primitive.mode = PrimitiveMode::Triangles;
-			mesh->primitives.push_back(primitive);
 		}
 		mesh->index = 0;
 		return mesh;
@@ -1862,7 +1865,8 @@ namespace ParaEngine
 		CParaFile file;
 		if (file.CreateNewFile(fileName.c_str()))
 		{
-			Json::FastWriter writer;
+			//Json::FastWriter writer;
+			Json::StyledWriter writer;
 			std::string& data = writer.write(root);
 			file.write(data.c_str(), data.length());
 			file.close();
