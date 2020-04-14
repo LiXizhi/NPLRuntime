@@ -296,6 +296,8 @@ void RenderWindowOSX::PollEvents() {
         switch([(NSEvent *)event type])
         {
             case NSEventTypePressure:
+                //NSLog(@"Pressure");
+                break;
             case NSEventTypeLeftMouseDown:
                 if(event.window == m_window)
                     OnMouseButton(EMouseButton::LEFT, EKeyState::PRESS, mx, my);
@@ -343,7 +345,7 @@ void RenderWindowOSX::PollEvents() {
                 {
                     NSEventPhase phase = [event phase];
                     NSEventPhase momentumPhase = [event momentumPhase];
-
+                    
                     static bool s_bMouseOverScrollableUI = false;
                     if (CGlobals::GetApp()->GetAppState() == PEAppState_Ready)
                     {
@@ -407,6 +409,8 @@ void RenderWindowOSX::PollEvents() {
                     uint32_t keycode = (uint32_t)[event keyCode];
                     EVirtualKey vk = toVirtualKey(keycode);
                     
+                    bool bChar = false;
+                    
                     if([chrs length]>0)
                     {
                         int unicode = [chrs characterAtIndex:0];
@@ -418,37 +422,45 @@ void RenderWindowOSX::PollEvents() {
                             vk != EVirtualKey::KEY_RIGHT && unicode > 255))
                         {
                             OnChar(unicode);
+                            
+                            bChar = true;
                         }
                     }
 
-                    OnKey(vk, EKeyState::PRESS);
-
+                    if (!bChar)
+                        OnKey(vk, EKeyState::PRESS);
+                    
                     bIsProcessed = (event.modifierFlags & NSEventModifierFlagCommand) == 0;
                 }
             }
                 break;
             case NSEventTypeKeyUp:
             {
-
-                /*
-                NSString *chrs = [event characters];
-
-                if([chrs length]>0)
-                {
-                    int unicode = [chrs characterAtIndex:0];
-                    if(unicode>=0 && unicode<256)
-                    {
-                       OnChar(unicode);
-                    }
-
-                }
-                */
                 if(event.window == m_window)
                 {
                     uint32_t keycode = (uint32_t)[event keyCode];
                     EVirtualKey vk = toVirtualKey(keycode);
-                    OnKey(vk, EKeyState::RELEASE);
+                    NSString *chrs = [event characters];
+                    
+                    bool bChar = false;
+                    
+                    if([chrs length]>0)
+                    {
+                        int unicode = [chrs characterAtIndex:0];
+                        if ((!isPressCommand && (unicode >= 32 && unicode <= 126)) ||
+                           (vk != EVirtualKey::KEY_DELETE &&
+                            vk != EVirtualKey::KEY_UP &&
+                            vk != EVirtualKey::KEY_DOWN &&
+                            vk != EVirtualKey::KEY_LEFT &&
+                            vk != EVirtualKey::KEY_RIGHT && unicode > 255))
+                        {
+                            bChar = true;
+                        }
+                    }
 
+                    if (!bChar)
+                        OnKey(vk, EKeyState::RELEASE);
+                    
                     bIsProcessed = (event.modifierFlags & NSEventModifierFlagCommand) == 0;
                 }
             }
