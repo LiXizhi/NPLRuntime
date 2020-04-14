@@ -180,10 +180,8 @@ namespace ParaEngine
 						}
 					}
 				}
-				else if (!pBlockTemplate->IsMatchAttribute(BlockTemplate::batt_solid) ||
-					pBlockTemplate->IsMatchAttribute(BlockTemplate::batt_transparent))
+				else if (!pBlockTemplate->IsMatchAttribute(BlockTemplate::batt_solid))
 				{
-					// non-solid, but obstruction blocks such as slope, stairs, grass and other custom models
 					if (pBlockTemplate->GetBlockModelByData(block_data).IsUniformLighting())
 					{
 						node = BMaxNodePtr(new BMaxNode(this, x, y, z, template_id, block_data));
@@ -199,8 +197,18 @@ namespace ParaEngine
 				}
 				else
 				{
-					// treat as standard cube
-					node = BMaxNodePtr(new BMaxNode(this, x, y, z, template_id, block_data));
+					if (!pBlockTemplate->IsMatchAttribute(BlockTemplate::batt_transparent))
+					{
+						// treat as standard cube
+						node = BMaxNodePtr(new BMaxNode(this, x, y, z, template_id, block_data));
+					}
+					else
+					{
+						//solid, non-obstruction, leaves
+						BMaxGlassModelNodePtr glassNode(new BMaxGlassModelNode(this, x, y, z, template_id, block_data));
+						node = BMaxNodePtr(glassNode.get());
+						node->setSolid(false);
+					}
 				}
 
 				InsertNode(node);
@@ -215,34 +223,27 @@ namespace ParaEngine
 			BMaxNode* node = item.second.get();
 			if (node != NULL)
 			{
-				if (node->template_id == TransparentBlockId)
+				BlockModel* tessellatedModel = new BlockModel();
+				if (node->isSolid())
 				{
-					// total skipped for cobweb
+					int32_t uvPattern = 0;
+					auto block_template = BlockWorldClient::GetInstance()->GetBlockTemplate(node->template_id);
+					if (block_template->IsMatchAttribute(BlockTemplate::batt_threeSideTex))
+						uvPattern = 3;
+					else if (block_template->IsMatchAttribute(BlockTemplate::batt_fourSideTex))
+						uvPattern = 4;
+					else if (block_template->IsMatchAttribute(BlockTemplate::batt_sixSideTex))
+						uvPattern = 6;
+					tessellatedModel->LoadModelByTexture(uvPattern);
+				}
+				if (node->TessellateBlock(tessellatedModel) > 0)
+				{
+					node->SetBlockModel(tessellatedModel);
 				}
 				else
 				{
-					BlockModel* tessellatedModel = new BlockModel();
-					if (node->isSolid())
-					{
-						int32_t uvPattern = 0;
-						auto block_template = BlockWorldClient::GetInstance()->GetBlockTemplate(node->template_id);
-						if (block_template->IsMatchAttribute(BlockTemplate::batt_threeSideTex))
-							uvPattern = 3;
-						else if (block_template->IsMatchAttribute(BlockTemplate::batt_fourSideTex))
-							uvPattern = 4;
-						else if (block_template->IsMatchAttribute(BlockTemplate::batt_sixSideTex))
-							uvPattern = 6;
-						tessellatedModel->LoadModelByTexture(uvPattern);
-					}
-					if (node->TessellateBlock(tessellatedModel) > 0)
-					{
-						node->SetBlockModel(tessellatedModel);
-					}
-					else
-					{
-						node->SetBlockModel(NULL);
-						delete tessellatedModel;
-					}
+					node->SetBlockModel(NULL);
+					delete tessellatedModel;
 				}
 			}
 		}
@@ -389,6 +390,7 @@ namespace ParaEngine
 			ModelRenderPass* pass = AddRenderPass();
 			pass->geoset = geoset->id;
 			pass->SetStartIndex(nStartIndex);
+			pass->tex = m_textures.size();
 			geoset->SetVertexStart(total_count);
 			nStartVertex = 0;
 
@@ -408,14 +410,13 @@ namespace ParaEngine
 					pass = AddRenderPass();
 					pass->geoset = geoset->id;
 					pass->SetStartIndex(nStartIndex);
+					pass->tex = m_textures.size();
 					geoset->SetVertexStart(total_count);
 					nStartVertex = 0;
 				}
 
 				geoset->icount += nIndexCount;
 				pass->indexCount += nIndexCount;
-				pass->tex = m_textures.size();
-				pass->blendmode = BM_OPAQUE;
 
 				uint8 vertex_weight = 0xff;
 
@@ -428,6 +429,7 @@ namespace ParaEngine
 					pVertices->GetTexcoord(modelVertex.texcoords.x, modelVertex.texcoords.y);
 
 					modelVertex.color0 = pVertices->color;
+					modelVertex.color1 = pVertices->color2;
 					//set bone and weight, only a single bone
 					int nBoneIndex = rectangle->GetBoneIndexAt(k);
 					// if no bone is found, use the default root bone
@@ -454,10 +456,15 @@ namespace ParaEngine
 
 		for (auto& block_nodes : blockNodes)
 		{
+			auto block_template = BlockWorldClient::GetInstance()->GetBlockTemplate(block_nodes.first);
 			nStartIndex = (int32)m_indices.size();
 			ModelGeoset* geoset = AddGeoset();
 			ModelRenderPass* pass = AddRenderPass();
 			pass->geoset = geoset->id;
+			pass->tex = m_textures.size();
+			pass->cull = block_template->IsMatchAttribute(BlockTemplate::batt_solid) ||
+				!block_template->GetBlockModel().IsUniformLighting() ||
+				!block_template->IsMatchAttribute(BlockTemplate::batt_transparent);
 			pass->SetStartIndex(nStartIndex);
 			geoset->SetVertexStart(total_count);
 			nStartVertex = 0;
@@ -467,7 +474,6 @@ namespace ParaEngine
 				BMaxNode* node = block_nodes.second[i];
 				if (node->GetParaXModel() == 0)
 				{
-					// for stairs, slabs, buttons, etc
 					BlockModel* model = node->GetBlockModel();
 					if (model != 0)
 					{
@@ -487,14 +493,16 @@ namespace ParaEngine
 							pass = AddRenderPass();
 							pass->geoset = geoset->id;
 							pass->SetStartIndex(nStartIndex);
+							pass->tex = m_textures.size();
+							pass->cull = block_template->IsMatchAttribute(BlockTemplate::batt_solid) ||
+								!block_template->GetBlockModel().IsUniformLighting() ||
+								!block_template->IsMatchAttribute(BlockTemplate::batt_transparent);
 							geoset->SetVertexStart(total_count);
 							nStartVertex = 0;
 						}
 
 						geoset->icount += nIndexCount;
 						pass->indexCount += nIndexCount;
-						pass->tex = m_textures.size();
-						pass->blendmode = BM_TRANSPARENT;
 
 						int nBoneIndex = node->GetBoneIndex();
 						// if no bone is found, use the default root bone
@@ -510,7 +518,8 @@ namespace ParaEngine
 							modelVertex.pos *= m_fScale;
 							pVertices->GetNormal(modelVertex.normal);
 							pVertices->GetTexcoord(modelVertex.texcoords.x, modelVertex.texcoords.y);
-							modelVertex.color0 = pVertices->color2;
+							modelVertex.color0 = pVertices->color;
+							modelVertex.color1 = pVertices->color2;
 							//set bone and weight, only a single bone
 							modelVertex.bones[0] = nBoneIndex;
 							modelVertex.weights[0] = vertex_weight;
@@ -580,6 +589,7 @@ namespace ParaEngine
 						modelVertex.pos *= m_fScale;
 						modelVertex.texcoords = ov->texcoords;
 						modelVertex.color0 = ov->color0;
+						modelVertex.color1 = ov->color1;
 						//set bone and weight, only a single bone
 						modelVertex.bones[0] = nBoneIndex;
 						modelVertex.weights[0] = vertex_weight;
@@ -604,6 +614,7 @@ namespace ParaEngine
 								pass = AddRenderPass();
 								pass->geoset = geoset->id;
 								pass->SetStartIndex(nStartIndex);
+								pass->tex = m_textures.size();
 								geoset->SetVertexStart(total_count);
 							}
 

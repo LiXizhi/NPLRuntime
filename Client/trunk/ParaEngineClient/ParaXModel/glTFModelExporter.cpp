@@ -10,10 +10,11 @@
 
 namespace ParaEngine
 {
-	glTFModelExporter::glTFModelExporter(CParaXModel* mesh, std::vector<string>& textures, bool binary, bool embedded /*= true*/)
+	glTFModelExporter::glTFModelExporter(CParaXModel* mesh, bool binary)
 		: maxVertex(-FLT_MAX, -FLT_MAX, -FLT_MAX), minVertex(FLT_MAX, FLT_MAX, FLT_MAX),
 		maxNormal(-FLT_MAX, -FLT_MAX, -FLT_MAX), minNormal(FLT_MAX, FLT_MAX, FLT_MAX),
-		maxColor(-FLT_MAX, -FLT_MAX, -FLT_MAX), minColor(FLT_MAX, FLT_MAX, FLT_MAX),
+		maxColor0(-FLT_MAX, -FLT_MAX, -FLT_MAX), minColor0(FLT_MAX, FLT_MAX, FLT_MAX),
+		maxColor1(-FLT_MAX, -FLT_MAX, -FLT_MAX), minColor1(FLT_MAX, FLT_MAX, FLT_MAX),
 		maxCoord(-FLT_MAX, -FLT_MAX), minCoord(FLT_MAX, FLT_MAX),
 		maxJoint(0, 0, 0, 0), minJoint(255, 255, 255, 255),
 		maxWeight(-FLT_MAX, -FLT_MAX, -FLT_MAX, -FLT_MAX), minWeight(FLT_MAX, FLT_MAX, FLT_MAX, FLT_MAX),
@@ -22,19 +23,18 @@ namespace ParaEngine
 		bufferIndex(0),
 		accessorIndex(0),
 		isBinary(binary),
-		isEmbedded(embedded),
 		buffer(std::make_shared<Buffer>())
 	{
 		buffer->index = 0;
-		texFiles.assign(textures.begin(), textures.end());
 		ParseParaXModel();
 		ParseAnimationBones();
 	}
 
-	glTFModelExporter::glTFModelExporter(CParaXModel* mesh, CParaXModel* anim, std::vector<string>& textures, bool binary, bool embedded /*= true*/)
+	glTFModelExporter::glTFModelExporter(CParaXModel* mesh, CParaXModel* anim, bool binary)
 		: maxVertex(-FLT_MAX, -FLT_MAX, -FLT_MAX), minVertex(FLT_MAX, FLT_MAX, FLT_MAX),
 		maxNormal(-FLT_MAX, -FLT_MAX, -FLT_MAX), minNormal(FLT_MAX, FLT_MAX, FLT_MAX),
-		maxColor(-FLT_MAX, -FLT_MAX, -FLT_MAX), minColor(FLT_MAX, FLT_MAX, FLT_MAX),
+		maxColor0(-FLT_MAX, -FLT_MAX, -FLT_MAX), minColor0(FLT_MAX, FLT_MAX, FLT_MAX),
+		maxColor1(-FLT_MAX, -FLT_MAX, -FLT_MAX), minColor1(FLT_MAX, FLT_MAX, FLT_MAX),
 		maxCoord(-FLT_MAX, -FLT_MAX), minCoord(FLT_MAX, FLT_MAX),
 		maxJoint(0, 0, 0, 0), minJoint(255, 255, 255, 255),
 		maxWeight(-FLT_MAX, -FLT_MAX, -FLT_MAX, -FLT_MAX), minWeight(FLT_MAX, FLT_MAX, FLT_MAX, FLT_MAX),
@@ -43,11 +43,9 @@ namespace ParaEngine
 		bufferIndex(0),
 		accessorIndex(0),
 		isBinary(binary),
-		isEmbedded(embedded),
 		buffer(std::make_shared<Buffer>())
 	{
 		buffer->index = 0;
-		texFiles.assign(textures.begin(), textures.end());
 		ParseParaXModel();
 		ChangeAnimationBones();
 	}
@@ -60,14 +58,6 @@ namespace ParaEngine
 	void glTFModelExporter::ExportToFile(const std::string& filename)
 	{
 		fileName = filename;
-		if (!isBinary)
-		{
-			std::string path = filename.substr(0, filename.rfind(".gltf"));
-			std::string name = path.substr(path.find_last_of("/\\") + 1u);
-			buffer->filename = path + ".bin";
-			buffer->uri = name + ".bin";
-		}
-
 		ExportMetadata();
 		ExportScene();
 		if (isBinary)
@@ -131,7 +121,14 @@ namespace ParaEngine
 				builder.append((const char*)&(it->y), sizeFloat);
 			}
 
-			for (auto it = colors.begin(); it != colors.end(); ++it)
+			for (auto it = colors0.begin(); it != colors0.end(); ++it)
+			{
+				builder.append((const char*)&(it->x), sizeFloat);
+				builder.append((const char*)&(it->y), sizeFloat);
+				builder.append((const char*)&(it->z), sizeFloat);
+			}
+
+			for (auto it = colors1.begin(); it != colors1.end(); ++it)
 			{
 				builder.append((const char*)&(it->x), sizeFloat);
 				builder.append((const char*)&(it->y), sizeFloat);
@@ -249,7 +246,8 @@ namespace ParaEngine
 			Vector3 v = vertex.pos;
 			Vector3 n = vertex.normal;
 			Vector2 coord = vertex.texcoords;
-			DWORD color = vertex.color0;
+			DWORD color0 = vertex.color1;
+			DWORD color1 = vertex.color0;
 			{
 				//float weight = vertex.weights[0] * inverse;
 				//Bone& bone = paraXModel->bones[vertex.bones[0]];
@@ -291,17 +289,29 @@ namespace ParaEngine
 			}
 			texcoords.push_back(coord);
 
+			if (paraXModel->m_header.type == PARAX_MODEL_STATIC || paraXModel->m_RenderMethod == CParaXModel::BMAX_MODEL)
 			{
-				float r = ((color >> 16) & 0xff) / 255.0f;
-				float g = ((color >> 8) & 0xff) / 255.0f;
-				float b = (color & 0xff) / 255.0f;
-				if (r < minColor[0]) minColor[0] = r;
-				if (g < minColor[1]) minColor[1] = g;
-				if (b < minColor[2]) minColor[2] = b;
-				if (r > maxColor[0]) maxColor[0] = r;
-				if (g > maxColor[1]) maxColor[1] = g;
-				if (b > maxColor[2]) maxColor[2] = b;
-				colors.push_back(Vector3(r, g, b));
+				float r = ((color0 >> 16) & 0xff) / 255.0f;
+				float g = ((color0 >> 8) & 0xff) / 255.0f;
+				float b = (color0 & 0xff) / 255.0f;
+				if (r < minColor0[0]) minColor0[0] = r;
+				if (g < minColor0[1]) minColor0[1] = g;
+				if (b < minColor0[2]) minColor0[2] = b;
+				if (r > maxColor0[0]) maxColor0[0] = r;
+				if (g > maxColor0[1]) maxColor0[1] = g;
+				if (b > maxColor0[2]) maxColor0[2] = b;
+				colors0.push_back(Vector3(r, g, b));
+
+				r = ((color1 >> 16) & 0xff) / 255.0f;
+				g = ((color1 >> 8) & 0xff) / 255.0f;
+				b = (color1 & 0xff) / 255.0f;
+				if (r < minColor1[0]) minColor1[0] = r;
+				if (g < minColor1[1]) minColor1[1] = g;
+				if (b < minColor1[2]) minColor1[2] = b;
+				if (r > maxColor1[0]) maxColor1[0] = r;
+				if (g > maxColor1[1]) maxColor1[1] = g;
+				if (b > maxColor1[2]) maxColor1[2] = b;
+				colors1.push_back(Vector3(r, g, b));
 			}
 
 			uint8* bone = vertex.bones;
@@ -741,13 +751,23 @@ namespace ParaEngine
 						index++;
 					}
 				}
-				if (primitive.attributes.color != nullptr)
+				if (primitive.attributes.color0 != nullptr)
 				{
-					a["COLOR_0"] = primitive.attributes.color->index;
+					a["COLOR_0"] = primitive.attributes.color0->index;
 					if (k == 0)
 					{
-						WriteAccessor(primitive.attributes.color, accessors, index);
-						WriteBufferView(primitive.attributes.color->bufferView, bufferViews, index);
+						WriteAccessor(primitive.attributes.color0, accessors, index);
+						WriteBufferView(primitive.attributes.color0->bufferView, bufferViews, index);
+						index++;
+					}
+				}
+				if (primitive.attributes.color1 != nullptr)
+				{
+					a["COLOR_1"] = primitive.attributes.color1->index;
+					if (k == 0)
+					{
+						WriteAccessor(primitive.attributes.color1, accessors, index);
+						WriteBufferView(primitive.attributes.color1->bufferView, bufferViews, index);
 						index++;
 					}
 				}
@@ -946,8 +966,13 @@ namespace ParaEngine
 		std::shared_ptr<Accessor> v = ExportVertices();
 		std::shared_ptr<Accessor> n = ExportNormals();
 		std::shared_ptr<Accessor> t = ExportTextureCoords();
-		std::shared_ptr<Accessor> c = nullptr;
-		c = ExportColors();
+		std::shared_ptr<Accessor> c0 = nullptr;
+		std::shared_ptr<Accessor> c1 = nullptr;
+		if (paraXModel->m_header.type == PARAX_MODEL_STATIC || paraXModel->m_RenderMethod == CParaXModel::BMAX_MODEL)
+		{
+			c0 = ExportColors0();
+			c1 = ExportColors1();
+		}
 		std::shared_ptr<Accessor> j = nullptr;
 		std::shared_ptr<Accessor> w = nullptr;
 		if (paraXModel->animated)
@@ -965,7 +990,8 @@ namespace ParaEngine
 				primitive.attributes.position = v;
 				primitive.attributes.normal = n;
 				primitive.attributes.texcoord = t;
-				primitive.attributes.color = c;
+				primitive.attributes.color0 = c0;
+				primitive.attributes.color1 = c1;
 				if (paraXModel->animated)
 				{
 					primitive.attributes.joints = j;
@@ -973,7 +999,7 @@ namespace ParaEngine
 				}
 				//use blenmode of BM_TRANSPARENT for non-cubemode blocks
 				if (paraXModel->m_RenderMethod != CParaXModel::BMAX_MODEL)
-					primitive.material = ExportMaterials(pass.tex, i, pass.blendmode == BM_TRANSPARENT);
+					primitive.material = ExportMaterials(pass.tex, i, pass.cull);
 				primitive.mode = PrimitiveMode::Triangles;
 				mesh->primitives.push_back(primitive);
 			}
@@ -1208,7 +1234,7 @@ namespace ParaEngine
 		return acc;
 	}
 
-	std::shared_ptr<Accessor> glTFModelExporter::ExportColors()
+	std::shared_ptr<Accessor> glTFModelExporter::ExportColors0()
 	{
 		uint32_t numVertices = paraXModel->m_objNum.nVertices;
 		const uint32_t numComponents = AttribType::GetNumComponents(AttribType::VEC3);
@@ -1232,8 +1258,41 @@ namespace ParaEngine
 		acc->type = AttribType::VEC3;
 		for (uint32_t i = 0; i < numComponents; i++)
 		{
-			acc->max.push_back(maxColor[i]);
-			acc->min.push_back(minColor[i]);
+			acc->max.push_back(maxColor0[i]);
+			acc->min.push_back(minColor0[i]);
+		}
+
+		bufferIndex++;
+		accessorIndex++;
+		return acc;
+	}
+
+	std::shared_ptr<Accessor> glTFModelExporter::ExportColors1()
+	{
+		uint32_t numVertices = paraXModel->m_objNum.nVertices;
+		const uint32_t numComponents = AttribType::GetNumComponents(AttribType::VEC3);
+		const uint32_t bytesPerComp = ComponentTypeSize(ComponentType::Float);
+
+		std::shared_ptr<BufferView> bv = std::make_shared<BufferView>();
+		bv->buffer = buffer;
+		bv->index = bufferIndex;
+		bv->byteOffset = buffer->byteLength;
+		bv->byteLength = numVertices * numComponents * bytesPerComp;
+		bv->byteStride = numComponents * bytesPerComp;
+		bv->target = BufferViewTarget::ArrayBuffer;
+		buffer->Grow(bv->byteLength);
+
+		std::shared_ptr<Accessor> acc = std::make_shared<Accessor>();
+		acc->bufferView = bv;
+		acc->index = bufferIndex;
+		acc->byteOffset = 0;
+		acc->componentType = ComponentType::Float;
+		acc->count = numVertices;
+		acc->type = AttribType::VEC3;
+		for (uint32_t i = 0; i < numComponents; i++)
+		{
+			acc->max.push_back(maxColor1[i]);
+			acc->min.push_back(minColor1[i]);
 		}
 
 		bufferIndex++;
@@ -1344,13 +1403,13 @@ namespace ParaEngine
 		return acc;
 	}
 
-	std::shared_ptr<Material> glTFModelExporter::ExportMaterials(int tex, int index, bool cubeMode)
+	std::shared_ptr<Material> glTFModelExporter::ExportMaterials(int tex, int index, bool cull)
 	{
 		std::shared_ptr<Material> material = std::make_shared<Material>();
 		material->index = index;
 		material->alphaMode = "MASK";
 		material->alphaCutoff = 0.5;
-		material->doubleSide = false;
+		material->doubleSide = !cull;
 		PbrMetallicRoughness& metallic = material->metallicRoughness;
 		metallic.metallicFactor = 0;
 		metallic.roughnessFactor = 1;
@@ -1363,47 +1422,35 @@ namespace ParaEngine
 		if (numTextures > tex)
 		{
 			std::shared_ptr<Image> img = std::make_shared<Image>();
-			std::string texPath = paraXModel->textures[tex]->m_key;
-			//if (texFiles.size() > tex)
-			//	texPath = texFiles[tex];
-			//std::string extension = CParaFile::GetFileExtension(texPath);
-			//if (extension == "dds")
-			//{
-			//	//DDSLoader loader(texPath);
-			//	//if (loader.ConvertDDSToPng())
-			//	//{
-			//	//	img->bufferSize = loader.GetPngSize();
-			//	//	img->bufferPointer.reset(new uint8_t[img->bufferSize]);
-			//	//	memcpy(img->bufferPointer.get(), loader.GetPngBuffer().get(), img->bufferSize);
-			//	//}
-			//}
-			//else if (extension == "png")
-			//{
-			//	CParaFile file(texPath.c_str());
-			//	if (!file.isEof())
-			//	{
-			//		img->bufferSize = file.getSize();
-			//		img->bufferPointer.reset(new uint8_t[img->bufferSize]);
-			//		memcpy(img->bufferPointer.get(), file.getBuffer(), img->bufferSize);
-			//	}
-			//}
-			//else
-			//{
-			//	// to do
-			//}
 			LPD3DXBUFFER texBuffer;
 			D3DXSaveTextureToFileInMemory(&texBuffer, D3DXIMAGE_FILEFORMAT::D3DXIFF_PNG, paraXModel->textures[tex]->GetTexture(), nullptr);
 			img->bufferSize = texBuffer->GetBufferSize();
 			img->bufferPointer.reset(new uint8_t[img->bufferSize]);
 			memcpy(img->bufferPointer.get(), texBuffer->GetBufferPointer(), img->bufferSize);
-			if (!isBinary || !isEmbedded)
+			if (paraXModel->m_header.type == PARAX_MODEL_STATIC)
 			{
-				//std::string path = fileName.substr(0, fileName.rfind(".gltf"));
-				//std::string name = path.substr(path.find_last_of("/\\") + 1u);
-				//img->filename = path + ".png";
-				//img->uri = name + ".png";
+				std::string texPath = paraXModel->textures[tex]->m_key;
 				img->filename = CParaFile::GetParentDirectoryFromPath(fileName) + texPath;
 				img->uri = texPath;
+			}
+			else
+			{
+				if (numTextures > 1)
+				{
+					char tmp[256] = "\0";
+					StringHelper::fast_sprintf(tmp, "%s_%d", fileName.substr(0, fileName.find_last_of(".")).c_str(), tex);
+					std::string path = tmp;
+					std::string name = path.substr(path.find_last_of("/\\") + 1u);
+					img->filename = path + ".png";
+					img->uri = name + ".png";
+				}
+				else
+				{
+					std::string path = fileName.substr(0, fileName.find_last_of("."));
+					std::string name = path.substr(path.find_last_of("/\\") + 1u);
+					img->filename = path + ".png";
+					img->uri = name + ".png";
+				}
 			}
 			img->index = index;
 
@@ -1412,16 +1459,8 @@ namespace ParaEngine
 			{
 				sampler->magFilter = SamplerMagFilter::MagNearest;
 				sampler->minFilter = SamplerMinFilter::NearestMipMapNearest;
-				if (cubeMode)
-				{
-					sampler->wrapS = SamplerWrap::Repeat;
-					sampler->wrapT = SamplerWrap::Repeat;
-				}
-				else
-				{
-					sampler->wrapS = SamplerWrap::ClampToEdge;
-					sampler->wrapT = SamplerWrap::ClampToEdge;
-				}
+				sampler->wrapS = SamplerWrap::Repeat;
+				sampler->wrapT = SamplerWrap::Repeat;
 				sampler->index = index;
 			}
 			else
@@ -1658,7 +1697,14 @@ namespace ParaEngine
 			builder.append((const char*)&(it->y), sizeFloat);
 		}
 
-		for (auto it = colors.begin(); it != colors.end(); ++it)
+		for (auto it = colors0.begin(); it != colors0.end(); ++it)
+		{
+			builder.append((const char*)&(it->x), sizeFloat);
+			builder.append((const char*)&(it->y), sizeFloat);
+			builder.append((const char*)&(it->z), sizeFloat);
+		}
+
+		for (auto it = colors1.begin(); it != colors1.end(); ++it)
 		{
 			builder.append((const char*)&(it->x), sizeFloat);
 			builder.append((const char*)&(it->y), sizeFloat);
@@ -1745,12 +1791,7 @@ namespace ParaEngine
 		b["byteLength"] = buffer->byteLength;
 		if (!isBinary)
 		{
-			if (isEmbedded)
-			{
-				b["uri"] = "data:application/octet-stream;base64," + EncodeBuffer();
-			}
-			else
-				b["uri"] = buffer->uri;
+			b["uri"] = "data:application/octet-stream;base64," + EncodeBuffer();
 		}
 		obj[index] = b;
 	}
@@ -1856,23 +1897,13 @@ namespace ParaEngine
 		sampler[index] = s;
 
 		Json::Value i;
-		if (isEmbedded)
+		i["uri"] = texture->source->uri;
 		{
-			StringBuilder builder;
-			builder.append((const char*)texture->source->bufferPointer.get(), texture->source->bufferSize);
-			i["uri"] = "data:image/png;base64," + StringHelper::base64(builder.ToString());
-		}
-		else
-		{
-			i["uri"] = texture->source->uri;
-			if (!isBinary)
+			CParaFile file;
+			if (file.CreateNewFile(texture->source->filename.c_str()))
 			{
-				CParaFile file;
-				if (file.CreateNewFile(texture->source->filename.c_str()))
-				{
-					file.write(texture->source->bufferPointer.get(), texture->source->bufferSize);
-					file.close();
-				}
+				file.write(texture->source->bufferPointer.get(), texture->source->bufferSize);
+				file.close();
 			}
 		}
 		img[index] = i;
@@ -1889,10 +1920,10 @@ namespace ParaEngine
 			file.write(data.c_str(), data.length());
 			file.close();
 
-			if (!isEmbedded && !isBinary)
-			{
-				WriteRawData();
-			}
+			//if (!isEmbedded && !isBinary)
+			//{
+			//	WriteRawData();
+			//}
 		}
 	}
 
@@ -1925,7 +1956,14 @@ namespace ParaEngine
 				bin.write(&(it->y), sizeFloat);
 			}
 
-			for (auto it = colors.begin(); it != colors.end(); ++it)
+			for (auto it = colors0.begin(); it != colors0.end(); ++it)
+			{
+				bin.write(&(it->x), sizeFloat);
+				bin.write(&(it->y), sizeFloat);
+				bin.write(&(it->z), sizeFloat);
+			}
+
+			for (auto it = colors1.begin(); it != colors1.end(); ++it)
 			{
 				bin.write(&(it->x), sizeFloat);
 				bin.write(&(it->y), sizeFloat);
@@ -2060,7 +2098,14 @@ namespace ParaEngine
 				file.write(&(it->y), sizeFloat);
 			}
 
-			for (auto it = colors.begin(); it != colors.end(); ++it)
+			for (auto it = colors0.begin(); it != colors0.end(); ++it)
+			{
+				file.write(&(it->x), sizeFloat);
+				file.write(&(it->y), sizeFloat);
+				file.write(&(it->z), sizeFloat);
+			}
+
+			for (auto it = colors1.begin(); it != colors1.end(); ++it)
 			{
 				file.write(&(it->x), sizeFloat);
 				file.write(&(it->y), sizeFloat);
@@ -2146,315 +2191,325 @@ namespace ParaEngine
 		}
 	}
 
-	luabind::object glTFModelExporter::GetParaXTexturesFromFile(const std::string& input, lua_State* L)
-	{
-		CParaFile file(input.c_str());
-		CParaXSerializer serializer;
-		CParaXModel* mesh = (CParaXModel*)serializer.LoadParaXMesh(file);
-		if (mesh != nullptr)
-		{
-			luabind::object o = luabind::newtable(L);
-			for (uint32_t i = 0; i < mesh->m_objNum.nTextures; i++)
-			{
-				mesh->textures[i]->m_key;
-				o[i + 1] = mesh->textures[i]->m_key;
-			}
-			return o;
-		}
-		else
-			return luabind::object();
-	}
+	//luabind::object glTFModelExporter::GetParaXTexturesFromFile(const std::string& input, lua_State* L)
+	//{
+	//	CParaFile file(input.c_str());
+	//	CParaXSerializer serializer;
+	//	CParaXModel* mesh = (CParaXModel*)serializer.LoadParaXMesh(file);
+	//	if (mesh != nullptr)
+	//	{
+	//		luabind::object o = luabind::newtable(L);
+	//		for (uint32_t i = 0; i < mesh->m_objNum.nTextures; i++)
+	//		{
+	//			mesh->textures[i]->m_key;
+	//			o[i + 1] = mesh->textures[i]->m_key;
+	//		}
+	//		return o;
+	//	}
+	//	else
+	//		return luabind::object();
+	//}
 
-	luabind::object glTFModelExporter::GetParaXTexturesFromBuffer(const char* buffer, int size, lua_State* L)
-	{
-		CParaFile file(const_cast<char*>(buffer), size);
-		CParaXSerializer serializer;
-		CParaXModel* mesh = (CParaXModel*)serializer.LoadParaXMesh(file);
-		if (mesh != nullptr)
-		{
-			luabind::object o = luabind::newtable(L);
-			for (uint32_t i = 0; i < mesh->m_objNum.nTextures; i++)
-			{
-				mesh->textures[i]->m_key;
-				o[i + 1] = mesh->textures[i]->m_key;
-			}
-			return o;
-		}
-		else
-			return luabind::object();
-	}
+	//luabind::object glTFModelExporter::GetParaXTexturesFromBuffer(const char* buffer, int size, lua_State* L)
+	//{
+	//	CParaFile file(const_cast<char*>(buffer), size);
+	//	CParaXSerializer serializer;
+	//	CParaXModel* mesh = (CParaXModel*)serializer.LoadParaXMesh(file);
+	//	if (mesh != nullptr)
+	//	{
+	//		luabind::object o = luabind::newtable(L);
+	//		for (uint32_t i = 0; i < mesh->m_objNum.nTextures; i++)
+	//		{
+	//			mesh->textures[i]->m_key;
+	//			o[i + 1] = mesh->textures[i]->m_key;
+	//		}
+	//		return o;
+	//	}
+	//	else
+	//		return luabind::object();
+	//}
 
-	void glTFModelExporter::ParaXFileExportTo_glTF_File(const std::string& input, const std::string& output, const luabind::object& texObject, bool binary, bool embedded /*= true*/)
-	{
-		CParaFile file(input.c_str());
-		CGlobals::GetAssetManager()->SetAsyncLoading(false);
-		CParaXSerializer serializer;
-		CParaXModel* mesh = (CParaXModel*)serializer.LoadParaXMesh(file);
-		if (mesh != nullptr)
-		{
-			std::string filename = output.empty() ? (input.substr(0, input.rfind(".x")) + ".gltf") : output;
-			std::vector<string> textures;
-			int type = luabind::type(texObject);
-			if (type == LUA_TSTRING)
-			{
-				textures.push_back(luabind::object_cast<const char*>(texObject));
-			}
-			else if (type == LUA_TTABLE)
-			{
-				for (luabind::iterator itCur(texObject), itEnd; itCur != itEnd; ++itCur)
-				{
-					const luabind::object& item = *itCur;
-					if (luabind::type(item) == LUA_TSTRING)
-					{
-						textures.push_back(luabind::object_cast<const char*>(item));
-					}
-				}
-			}
-			glTFModelExporter exporter(mesh, textures, binary, embedded);
-			exporter.ExportToFile(filename);
-			delete mesh;
-			mesh = nullptr;
-		}
-	}
+	//void glTFModelExporter::ParaXFileExportTo_glTF_File(const std::string& input, const std::string& output, const luabind::object& texObject, bool binary, bool embedded /*= true*/)
+	//{
+	//	CParaFile file(input.c_str());
+	//	CGlobals::GetAssetManager()->SetAsyncLoading(false);
+	//	CParaXSerializer serializer;
+	//	CParaXModel* mesh = (CParaXModel*)serializer.LoadParaXMesh(file);
+	//	if (mesh != nullptr)
+	//	{
+	//		std::string filename = output.empty() ? (input.substr(0, input.rfind(".x")) + ".gltf") : output;
+	//		std::vector<string> textures;
+	//		int type = luabind::type(texObject);
+	//		if (type == LUA_TSTRING)
+	//		{
+	//			textures.push_back(luabind::object_cast<const char*>(texObject));
+	//		}
+	//		else if (type == LUA_TTABLE)
+	//		{
+	//			for (luabind::iterator itCur(texObject), itEnd; itCur != itEnd; ++itCur)
+	//			{
+	//				const luabind::object& item = *itCur;
+	//				if (luabind::type(item) == LUA_TSTRING)
+	//				{
+	//					textures.push_back(luabind::object_cast<const char*>(item));
+	//				}
+	//			}
+	//		}
+	//		glTFModelExporter exporter(mesh, textures, binary, embedded);
+	//		exporter.ExportToFile(filename);
+	//		delete mesh;
+	//		mesh = nullptr;
+	//	}
+	//}
 
-	void glTFModelExporter::ParaXBufferExportTo_glTF_File(const char* buffer, int size, const std::string& output, const luabind::object& texObject, bool binary, bool embedded /*= true*/)
+	//void glTFModelExporter::ParaXBufferExportTo_glTF_File(const char* buffer, int size, const std::string& output, const luabind::object& texObject, bool binary, bool embedded /*= true*/)
+	//{
+	//	CParaFile file(const_cast<char*>(buffer), size);
+	//	CGlobals::GetAssetManager()->SetAsyncLoading(false);
+	//	CParaXSerializer serializer;
+	//	CParaXModel* mesh = (CParaXModel*)serializer.LoadParaXMesh(file);
+	//	if (mesh != nullptr && !output.empty())
+	//	{
+	//		std::vector<string> textures;
+	//		int type = luabind::type(texObject);
+	//		if (type == LUA_TSTRING)
+	//		{
+	//			textures.push_back(luabind::object_cast<const char*>(texObject));
+	//		}
+	//		else if (type == LUA_TTABLE)
+	//		{
+	//			for (luabind::iterator itCur(texObject), itEnd; itCur != itEnd; ++itCur)
+	//			{
+	//				const luabind::object& item = *itCur;
+	//				if (luabind::type(item) == LUA_TSTRING)
+	//				{
+	//					textures.push_back(luabind::object_cast<const char*>(item));
+	//				}
+	//			}
+	//		}
+	//		glTFModelExporter exporter(mesh, textures, binary, embedded);
+	//		exporter.ExportToFile(output);
+	//		delete mesh;
+	//		mesh = nullptr;
+	//	}
+	//}
+
+	//luabind::object glTFModelExporter::ParaXFileExportTo_glTF_String(const std::string& input, bool binary, const luabind::object& texObject, lua_State* L)
+	//{
+	//	std::string buffer;
+	//	CParaFile file(input.c_str());
+	//	CGlobals::GetAssetManager()->SetAsyncLoading(false);
+	//	CParaXSerializer serializer;
+	//	CParaXModel* mesh = (CParaXModel*)serializer.LoadParaXMesh(file);
+	//	if (mesh != nullptr)
+	//	{
+	//		std::vector<string> textures;
+	//		int type = luabind::type(texObject);
+	//		if (type == LUA_TSTRING)
+	//		{
+	//			textures.push_back(luabind::object_cast<const char*>(texObject));
+	//		}
+	//		else if (type == LUA_TTABLE)
+	//		{
+	//			for (luabind::iterator itCur(texObject), itEnd; itCur != itEnd; ++itCur)
+	//			{
+	//				const luabind::object& item = *itCur;
+	//				if (luabind::type(item) == LUA_TSTRING)
+	//				{
+	//					textures.push_back(luabind::object_cast<const char*>(item));
+	//				}
+	//			}
+	//		}
+	//		glTFModelExporter exporter(mesh, textures, binary);
+	//		buffer = exporter.ExportToBuffer();
+	//		delete mesh;
+	//		mesh = nullptr;
+	//	}
+	//	return luabind::object(L, buffer.c_str());
+	//}
+
+	//luabind::object glTFModelExporter::ParaXBufferExportTo_glTF_String(const char* buffer, int size, bool binary, const luabind::object& texObject, lua_State* L)
+	//{
+	//	std::string gltfBuffer;
+	//	CParaFile file(const_cast<char*>(buffer), size);
+	//	CGlobals::GetAssetManager()->SetAsyncLoading(false);
+	//	CParaXSerializer serializer;
+	//	CParaXModel* mesh = (CParaXModel*)serializer.LoadParaXMesh(file);
+	//	if (mesh != nullptr)
+	//	{
+	//		std::vector<string> textures;
+	//		int type = luabind::type(texObject);
+	//		if (type == LUA_TSTRING)
+	//		{
+	//			textures.push_back(luabind::object_cast<const char*>(texObject));
+	//		}
+	//		else if (type == LUA_TTABLE)
+	//		{
+	//			for (luabind::iterator itCur(texObject), itEnd; itCur != itEnd; ++itCur)
+	//			{
+	//				const luabind::object& item = *itCur;
+	//				if (luabind::type(item) == LUA_TSTRING)
+	//				{
+	//					textures.push_back(luabind::object_cast<const char*>(item));
+	//				}
+	//			}
+	//		}
+	//		glTFModelExporter exporter(mesh, textures, binary);
+	//		gltfBuffer = exporter.ExportToBuffer();
+	//		delete mesh;
+	//		mesh = nullptr;
+	//	}
+	//	return luabind::object(L, gltfBuffer.c_str());
+	//}
+
+	//luabind::object glTFModelExporter::ParaXFileChangeAnimation(
+	//	const std::string& paraXFile, const std::string& animFile, bool binary, const luabind::object& texObject, lua_State* L)
+	//{
+	//	std::string buffer;
+	//	CParaXSerializer serializer;
+	//	CParaFile animfile(animFile.c_str());
+	//	CParaXModel* animation = (CParaXModel*)serializer.LoadParaXMesh(animfile);
+	//	if (animation != nullptr)
+	//	{
+	//		CParaFile xfile(paraXFile.c_str());
+	//		CGlobals::GetAssetManager()->SetAsyncLoading(false);
+	//		CParaXModel* mesh = (CParaXModel*)serializer.LoadParaXMesh(xfile);
+	//		if (mesh != nullptr)
+	//		{
+	//			std::vector<string> textures;
+	//			int type = luabind::type(texObject);
+	//			if (type == LUA_TSTRING)
+	//			{
+	//				textures.push_back(luabind::object_cast<const char*>(texObject));
+	//			}
+	//			else if (type == LUA_TTABLE)
+	//			{
+	//				for (luabind::iterator itCur(texObject), itEnd; itCur != itEnd; ++itCur)
+	//				{
+	//					const luabind::object& item = *itCur;
+	//					if (luabind::type(item) == LUA_TSTRING)
+	//					{
+	//						textures.push_back(luabind::object_cast<const char*>(item));
+	//					}
+	//				}
+	//			}
+	//			glTFModelExporter exporter(mesh, animation, textures, binary);
+	//			buffer = exporter.ExportToBuffer();
+	//			delete mesh;
+	//			mesh = nullptr;
+	//		}
+	//	}
+	//	else
+	//	{
+	//		CParaFile xfile(paraXFile.c_str());
+	//		CGlobals::GetAssetManager()->SetAsyncLoading(false);
+	//		CParaXModel* mesh = (CParaXModel*)serializer.LoadParaXMesh(xfile);
+	//		if (mesh != nullptr)
+	//		{
+	//			std::vector<string> textures;
+	//			int type = luabind::type(texObject);
+	//			if (type == LUA_TSTRING)
+	//			{
+	//				textures.push_back(luabind::object_cast<const char*>(texObject));
+	//			}
+	//			else if (type == LUA_TTABLE)
+	//			{
+	//				for (luabind::iterator itCur(texObject), itEnd; itCur != itEnd; ++itCur)
+	//				{
+	//					const luabind::object& item = *itCur;
+	//					if (luabind::type(item) == LUA_TSTRING)
+	//					{
+	//						textures.push_back(luabind::object_cast<const char*>(item));
+	//					}
+	//				}
+	//			}
+	//			glTFModelExporter exporter(mesh, textures, binary);
+	//			buffer = exporter.ExportToBuffer();
+	//			delete mesh;
+	//			mesh = nullptr;
+	//		}
+	//	}
+	//	return luabind::object(L, buffer.c_str());
+	//}
+
+	//luabind::object glTFModelExporter::ParaXBufferChangeAnimation(
+	//	const char* paraXBuffer, int paraXSize, const char* animBuffer, int animSize, bool binary, const luabind::object& texObject, lua_State* L)
+	//{
+	//	std::string buffer;
+	//	CParaXSerializer serializer;
+	//	CParaFile animFile(const_cast<char*>(animBuffer), animSize);
+	//	CParaXModel* animation = (CParaXModel*)serializer.LoadParaXMesh(animFile);
+	//	if (animation != nullptr)
+	//	{
+	//		CParaFile xfile(const_cast<char*>(paraXBuffer), paraXSize);
+	//		CGlobals::GetAssetManager()->SetAsyncLoading(false);
+	//		CParaXModel* mesh = (CParaXModel*)serializer.LoadParaXMesh(xfile);
+	//		if (mesh != nullptr)
+	//		{
+	//			std::vector<string> textures;
+	//			int type = luabind::type(texObject);
+	//			if (type == LUA_TSTRING)
+	//			{
+	//				textures.push_back(luabind::object_cast<const char*>(texObject));
+	//			}
+	//			else if (type == LUA_TTABLE)
+	//			{
+	//				for (luabind::iterator itCur(texObject), itEnd; itCur != itEnd; ++itCur)
+	//				{
+	//					const luabind::object& item = *itCur;
+	//					if (luabind::type(item) == LUA_TSTRING)
+	//					{
+	//						textures.push_back(luabind::object_cast<const char*>(item));
+	//					}
+	//				}
+	//			}
+	//			glTFModelExporter exporter(mesh, animation, textures, binary);
+	//			buffer = exporter.ExportToBuffer();
+	//			delete mesh;
+	//			mesh = nullptr;
+	//		}
+	//	}
+	//	else
+	//	{
+	//		CParaFile xfile(const_cast<char*>(paraXBuffer), paraXSize);
+	//		CGlobals::GetAssetManager()->SetAsyncLoading(false);
+	//		CParaXModel* mesh = (CParaXModel*)serializer.LoadParaXMesh(xfile);
+	//		if (mesh != nullptr)
+	//		{
+	//			std::vector<string> textures;
+	//			int type = luabind::type(texObject);
+	//			if (type == LUA_TSTRING)
+	//			{
+	//				textures.push_back(luabind::object_cast<const char*>(texObject));
+	//			}
+	//			else if (type == LUA_TTABLE)
+	//			{
+	//				for (luabind::iterator itCur(texObject), itEnd; itCur != itEnd; ++itCur)
+	//				{
+	//					const luabind::object& item = *itCur;
+	//					if (luabind::type(item) == LUA_TSTRING)
+	//					{
+	//						textures.push_back(luabind::object_cast<const char*>(item));
+	//					}
+	//				}
+	//			}
+	//			glTFModelExporter exporter(mesh, textures, binary);
+	//			buffer = exporter.ExportToBuffer();
+	//			delete mesh;
+	//			mesh = nullptr;
+	//		}
+	//	}
+	//	return luabind::object(L, buffer.c_str());
+	//}
+
+	void glTFModelExporter::ParaXExportTo_glTF(CParaXModel* parax, const char* output)
 	{
-		CParaFile file(const_cast<char*>(buffer), size);
-		CGlobals::GetAssetManager()->SetAsyncLoading(false);
-		CParaXSerializer serializer;
-		CParaXModel* mesh = (CParaXModel*)serializer.LoadParaXMesh(file);
-		if (mesh != nullptr && !output.empty())
+		if (parax != nullptr && output != nullptr)
 		{
-			std::vector<string> textures;
-			int type = luabind::type(texObject);
-			if (type == LUA_TSTRING)
-			{
-				textures.push_back(luabind::object_cast<const char*>(texObject));
-			}
-			else if (type == LUA_TTABLE)
-			{
-				for (luabind::iterator itCur(texObject), itEnd; itCur != itEnd; ++itCur)
-				{
-					const luabind::object& item = *itCur;
-					if (luabind::type(item) == LUA_TSTRING)
-					{
-						textures.push_back(luabind::object_cast<const char*>(item));
-					}
-				}
-			}
-			glTFModelExporter exporter(mesh, textures, binary, embedded);
+			bool binary = CParaFile::GetFileExtension(output) == "glb";
+			glTFModelExporter exporter(parax, binary);
 			exporter.ExportToFile(output);
-			delete mesh;
-			mesh = nullptr;
 		}
-	}
-
-	luabind::object glTFModelExporter::ParaXFileExportTo_glTF_String(const std::string& input, bool binary, const luabind::object& texObject, lua_State* L)
-	{
-		std::string buffer;
-		CParaFile file(input.c_str());
-		CGlobals::GetAssetManager()->SetAsyncLoading(false);
-		CParaXSerializer serializer;
-		CParaXModel* mesh = (CParaXModel*)serializer.LoadParaXMesh(file);
-		if (mesh != nullptr)
-		{
-			std::vector<string> textures;
-			int type = luabind::type(texObject);
-			if (type == LUA_TSTRING)
-			{
-				textures.push_back(luabind::object_cast<const char*>(texObject));
-			}
-			else if (type == LUA_TTABLE)
-			{
-				for (luabind::iterator itCur(texObject), itEnd; itCur != itEnd; ++itCur)
-				{
-					const luabind::object& item = *itCur;
-					if (luabind::type(item) == LUA_TSTRING)
-					{
-						textures.push_back(luabind::object_cast<const char*>(item));
-					}
-				}
-			}
-			glTFModelExporter exporter(mesh, textures, binary);
-			buffer = exporter.ExportToBuffer();
-			delete mesh;
-			mesh = nullptr;
-		}
-		return luabind::object(L, buffer.c_str());
-	}
-
-	luabind::object glTFModelExporter::ParaXBufferExportTo_glTF_String(const char* buffer, int size, bool binary, const luabind::object& texObject, lua_State* L)
-	{
-		std::string gltfBuffer;
-		CParaFile file(const_cast<char*>(buffer), size);
-		CGlobals::GetAssetManager()->SetAsyncLoading(false);
-		CParaXSerializer serializer;
-		CParaXModel* mesh = (CParaXModel*)serializer.LoadParaXMesh(file);
-		if (mesh != nullptr)
-		{
-			std::vector<string> textures;
-			int type = luabind::type(texObject);
-			if (type == LUA_TSTRING)
-			{
-				textures.push_back(luabind::object_cast<const char*>(texObject));
-			}
-			else if (type == LUA_TTABLE)
-			{
-				for (luabind::iterator itCur(texObject), itEnd; itCur != itEnd; ++itCur)
-				{
-					const luabind::object& item = *itCur;
-					if (luabind::type(item) == LUA_TSTRING)
-					{
-						textures.push_back(luabind::object_cast<const char*>(item));
-					}
-				}
-			}
-			glTFModelExporter exporter(mesh, textures, binary);
-			gltfBuffer = exporter.ExportToBuffer();
-			delete mesh;
-			mesh = nullptr;
-		}
-		return luabind::object(L, gltfBuffer.c_str());
-	}
-
-	luabind::object glTFModelExporter::ParaXFileChangeAnimation(
-		const std::string& paraXFile, const std::string& animFile, bool binary, const luabind::object& texObject, lua_State* L)
-	{
-		std::string buffer;
-		CParaXSerializer serializer;
-		CParaFile animfile(animFile.c_str());
-		CParaXModel* animation = (CParaXModel*)serializer.LoadParaXMesh(animfile);
-		if (animation != nullptr)
-		{
-			CParaFile xfile(paraXFile.c_str());
-			CGlobals::GetAssetManager()->SetAsyncLoading(false);
-			CParaXModel* mesh = (CParaXModel*)serializer.LoadParaXMesh(xfile);
-			if (mesh != nullptr)
-			{
-				std::vector<string> textures;
-				int type = luabind::type(texObject);
-				if (type == LUA_TSTRING)
-				{
-					textures.push_back(luabind::object_cast<const char*>(texObject));
-				}
-				else if (type == LUA_TTABLE)
-				{
-					for (luabind::iterator itCur(texObject), itEnd; itCur != itEnd; ++itCur)
-					{
-						const luabind::object& item = *itCur;
-						if (luabind::type(item) == LUA_TSTRING)
-						{
-							textures.push_back(luabind::object_cast<const char*>(item));
-						}
-					}
-				}
-				glTFModelExporter exporter(mesh, animation, textures, binary);
-				buffer = exporter.ExportToBuffer();
-				delete mesh;
-				mesh = nullptr;
-			}
-		}
-		else
-		{
-			CParaFile xfile(paraXFile.c_str());
-			CGlobals::GetAssetManager()->SetAsyncLoading(false);
-			CParaXModel* mesh = (CParaXModel*)serializer.LoadParaXMesh(xfile);
-			if (mesh != nullptr)
-			{
-				std::vector<string> textures;
-				int type = luabind::type(texObject);
-				if (type == LUA_TSTRING)
-				{
-					textures.push_back(luabind::object_cast<const char*>(texObject));
-				}
-				else if (type == LUA_TTABLE)
-				{
-					for (luabind::iterator itCur(texObject), itEnd; itCur != itEnd; ++itCur)
-					{
-						const luabind::object& item = *itCur;
-						if (luabind::type(item) == LUA_TSTRING)
-						{
-							textures.push_back(luabind::object_cast<const char*>(item));
-						}
-					}
-				}
-				glTFModelExporter exporter(mesh, textures, binary);
-				buffer = exporter.ExportToBuffer();
-				delete mesh;
-				mesh = nullptr;
-			}
-		}
-		return luabind::object(L, buffer.c_str());
-	}
-
-	luabind::object glTFModelExporter::ParaXBufferChangeAnimation(
-		const char* paraXBuffer, int paraXSize, const char* animBuffer, int animSize, bool binary, const luabind::object& texObject, lua_State* L)
-	{
-		std::string buffer;
-		CParaXSerializer serializer;
-		CParaFile animFile(const_cast<char*>(animBuffer), animSize);
-		CParaXModel* animation = (CParaXModel*)serializer.LoadParaXMesh(animFile);
-		if (animation != nullptr)
-		{
-			CParaFile xfile(const_cast<char*>(paraXBuffer), paraXSize);
-			CGlobals::GetAssetManager()->SetAsyncLoading(false);
-			CParaXModel* mesh = (CParaXModel*)serializer.LoadParaXMesh(xfile);
-			if (mesh != nullptr)
-			{
-				std::vector<string> textures;
-				int type = luabind::type(texObject);
-				if (type == LUA_TSTRING)
-				{
-					textures.push_back(luabind::object_cast<const char*>(texObject));
-				}
-				else if (type == LUA_TTABLE)
-				{
-					for (luabind::iterator itCur(texObject), itEnd; itCur != itEnd; ++itCur)
-					{
-						const luabind::object& item = *itCur;
-						if (luabind::type(item) == LUA_TSTRING)
-						{
-							textures.push_back(luabind::object_cast<const char*>(item));
-						}
-					}
-				}
-				glTFModelExporter exporter(mesh, animation, textures, binary);
-				buffer = exporter.ExportToBuffer();
-				delete mesh;
-				mesh = nullptr;
-			}
-		}
-		else
-		{
-			CParaFile xfile(const_cast<char*>(paraXBuffer), paraXSize);
-			CGlobals::GetAssetManager()->SetAsyncLoading(false);
-			CParaXModel* mesh = (CParaXModel*)serializer.LoadParaXMesh(xfile);
-			if (mesh != nullptr)
-			{
-				std::vector<string> textures;
-				int type = luabind::type(texObject);
-				if (type == LUA_TSTRING)
-				{
-					textures.push_back(luabind::object_cast<const char*>(texObject));
-				}
-				else if (type == LUA_TTABLE)
-				{
-					for (luabind::iterator itCur(texObject), itEnd; itCur != itEnd; ++itCur)
-					{
-						const luabind::object& item = *itCur;
-						if (luabind::type(item) == LUA_TSTRING)
-						{
-							textures.push_back(luabind::object_cast<const char*>(item));
-						}
-					}
-				}
-				glTFModelExporter exporter(mesh, textures, binary);
-				buffer = exporter.ExportToBuffer();
-				delete mesh;
-				mesh = nullptr;
-			}
-		}
-		return luabind::object(L, buffer.c_str());
 	}
 
 	void glTFModelExporter::BlocksExportTo_glTF(const char* blocks, const char* output)
@@ -2462,10 +2517,10 @@ namespace ParaEngine
 		BlocksParser parser;
 		parser.Load(blocks);
 		CParaXModel* mesh = parser.ParseParaXModel();
-		if (mesh != nullptr)
+		if (mesh != nullptr && output != nullptr)
 		{
-			std::vector<string> textures;
-			glTFModelExporter exporter(mesh, textures, false, false);
+			bool binary = CParaFile::GetFileExtension(output) == "glb";
+			glTFModelExporter exporter(mesh, binary);
 			exporter.ExportToFile(output);
 		}
 	}

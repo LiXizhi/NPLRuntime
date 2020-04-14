@@ -242,7 +242,7 @@ namespace ParaEngine
 			PrimitiveMode mode;
 			struct Attributes
 			{
-				std::shared_ptr<Accessor> position, normal, texcoord, color, joints, weights;
+				std::shared_ptr<Accessor> position, normal, texcoord, color0, color1, joints, weights;
 			} attributes;
 			std::shared_ptr<Accessor> indices;
 			std::shared_ptr<Material> material;
@@ -301,8 +301,8 @@ namespace ParaEngine
 	class glTFModelExporter
 	{
 	public:
-		glTFModelExporter(CParaXModel* mesh, std::vector<string>& textures, bool binary, bool embedded = true);
-		glTFModelExporter(CParaXModel* mesh, CParaXModel* anim, std::vector<string>& textures, bool binary, bool embedded = true);
+		glTFModelExporter(CParaXModel* mesh, bool binary);
+		glTFModelExporter(CParaXModel* mesh, CParaXModel* anim, bool binary);
 		~glTFModelExporter();
 
 		void ExportToFile(const std::string& filename);
@@ -324,11 +324,12 @@ namespace ParaEngine
 		std::shared_ptr<Accessor> ExportVertices();
 		std::shared_ptr<Accessor> ExportNormals();
 		std::shared_ptr<Accessor> ExportTextureCoords();
-		std::shared_ptr<Accessor> ExportColors();
+		std::shared_ptr<Accessor> ExportColors0();
+		std::shared_ptr<Accessor> ExportColors1();
 		std::shared_ptr<Accessor> ExportJoints();
 		std::shared_ptr<Accessor> ExportWeights();
 		std::shared_ptr<Accessor> ExportIndices(ModelRenderPass& pass);
-		std::shared_ptr<Material> ExportMaterials(int tex, int index, bool cubeMode);
+		std::shared_ptr<Material> ExportMaterials(int tex, int index, bool cull);
 		std::shared_ptr<Animation> ExportAnimations(uint32_t animId);
 		std::shared_ptr<BufferView> ExportBufferView(AttribType::Value type, uint32_t length, uint32_t index);
 		std::shared_ptr<Accessor> ExportTimeAccessor(std::shared_ptr<BufferView>& bv, uint32_t offset, uint32_t numDatas, uint32_t animId);
@@ -346,15 +347,18 @@ namespace ParaEngine
 
 		std::vector<Vector3> vertices;
 		std::vector<Vector3> normals;
-		std::vector<Vector3> colors;
+		std::vector<Vector3> colors0;
+		std::vector<Vector3> colors1;
 		std::vector<Vector2> texcoords;
 		std::vector<Vector4> weights;
 		Vector3 maxVertex;
 		Vector3 minVertex;
 		Vector3 maxNormal;
 		Vector3 minNormal;
-		Vector3 maxColor;
-		Vector3 minColor;
+		Vector3 maxColor0;
+		Vector3 minColor0;
+		Vector3 maxColor1;
+		Vector3 minColor1;
 		Vector2 maxCoord;
 		Vector2 minCoord;
 		Vector4 maxJoint;
@@ -375,25 +379,24 @@ namespace ParaEngine
 		uint32_t bufferIndex;
 		uint32_t accessorIndex;
 		bool isBinary;
-		bool isEmbedded;
 		std::shared_ptr<Buffer> buffer;
 		std::vector<std::shared_ptr<BufferView>> bvTime;
 		std::vector<std::shared_ptr<BufferView>> bvTranslation;
 		std::vector<std::shared_ptr<BufferView>> bvRotation;
 		std::vector<std::shared_ptr<BufferView>> bvScale;
-		std::vector<string> texFiles;
 
 	public:
-		static luabind::object GetParaXTexturesFromFile(const std::string& input, lua_State* L);
-		static luabind::object GetParaXTexturesFromBuffer(const char* buffer, int size, lua_State* L);
-		static void ParaXFileExportTo_glTF_File(const std::string& input, const std::string& output, const luabind::object& texObject, bool binary, bool embedded = true);
-		static void ParaXBufferExportTo_glTF_File(const char* buffer, int size, const std::string& output, const luabind::object& texObject, bool binary, bool embedded = true);
-		static luabind::object ParaXFileExportTo_glTF_String(const std::string& input, bool binary, const luabind::object& texObject, lua_State* L);
-		static luabind::object ParaXBufferExportTo_glTF_String(const char* buffer, int size, bool binary, const luabind::object& texObject, lua_State* L);
-		static luabind::object ParaXFileChangeAnimation(
-			const std::string& paraXFile, const std::string& animFile, bool binary, const luabind::object& texObject, lua_State* L);
-		static luabind::object ParaXBufferChangeAnimation(
-			const char* paraXBuffer, int paraXSize, const char* animBuffer, int animSize, bool binary, const luabind::object& texObject, lua_State* L);
+		//static luabind::object GetParaXTexturesFromFile(const std::string& input, lua_State* L);
+		//static luabind::object GetParaXTexturesFromBuffer(const char* buffer, int size, lua_State* L);
+		//static void ParaXFileExportTo_glTF_File(const std::string& input, const std::string& output, const luabind::object& texObject, bool binary, bool embedded = true);
+		//static void ParaXBufferExportTo_glTF_File(const char* buffer, int size, const std::string& output, const luabind::object& texObject, bool binary, bool embedded = true);
+		//static luabind::object ParaXFileExportTo_glTF_String(const std::string& input, bool binary, const luabind::object& texObject, lua_State* L);
+		//static luabind::object ParaXBufferExportTo_glTF_String(const char* buffer, int size, bool binary, const luabind::object& texObject, lua_State* L);
+		//static luabind::object ParaXFileChangeAnimation(
+		//	const std::string& paraXFile, const std::string& animFile, bool binary, const luabind::object& texObject, lua_State* L);
+		//static luabind::object ParaXBufferChangeAnimation(
+		//	const char* paraXBuffer, int paraXSize, const char* animBuffer, int animSize, bool binary, const luabind::object& texObject, lua_State* L);
+		static void ParaXExportTo_glTF(CParaXModel* parax, const char* output);
 		static void BlocksExportTo_glTF(const char* blocks, const char* output);
 	};
 }
