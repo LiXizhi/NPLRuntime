@@ -248,6 +248,264 @@ bool RenderWindowOSX::ShouldClose() const
     return m_shouldClose;
 }
 
+void RenderWindowOSX::OnMouseDown(EMouseButton button, NSEvent* event)
+{
+    OnMouseEvent(button, EKeyState::PRESS, event);
+}
+
+void RenderWindowOSX::OnMouseUp(EMouseButton button, NSEvent* event)
+{
+    OnMouseEvent(button, EKeyState::RELEASE, event);
+}
+
+void RenderWindowOSX::OnMouseMove(NSEvent* event)
+{
+    auto mousePoint = NSMakePoint([event locationInWindow].x, [event locationInWindow].y);
+    auto backingPoint = [m_window.contentView convertPointToBacking:mousePoint];
+    
+    uint32_t mx = (uint32_t)backingPoint.x;
+    uint32_t my = GetHeight() - (uint32_t)backingPoint.y;
+    
+    OnMouseMove(mx, my);
+    
+    m_scrollMouseX = mx;
+    m_scrollMouseY = my;
+}
+
+void RenderWindowOSX::OnMouseEvent(EMouseButton button, EKeyState state, NSEvent* event)
+{
+    auto mousePoint = NSMakePoint([event locationInWindow].x, [event locationInWindow].y);
+    auto backingPoint = [m_window.contentView convertPointToBacking:mousePoint];
+    
+    uint32_t mx = (uint32_t)backingPoint.x;
+    uint32_t my = GetHeight() - (uint32_t)backingPoint.y;
+    
+    OnMouseButton(button, state, mx, my);
+}
+
+void RenderWindowOSX::OnKey(EKeyState state, NSEvent* event)
+{
+    uint32_t keycode = (uint32_t)[event keyCode];
+    NSString *chrs = [event characters];
+    EVirtualKey vk = toVirtualKey(keycode);
+
+    bool bChar = false;
+
+    if([chrs length]>0)
+    {
+        int unicode = [chrs characterAtIndex:0];
+        if ((!isPressCommand && (unicode >= 32 && unicode <= 126)) ||
+           (vk != EVirtualKey::KEY_DELETE &&
+            vk != EVirtualKey::KEY_UP &&
+            vk != EVirtualKey::KEY_DOWN &&
+            vk != EVirtualKey::KEY_LEFT &&
+            vk != EVirtualKey::KEY_RIGHT && unicode > 255))
+        {
+            bChar = true;
+        }
+    }
+
+    if (!bChar)
+        OnKey(vk, state);
+}
+
+void RenderWindowOSX::OnFlagsChanged(NSEvent* event)
+{
+    static uint32_t last_flags = 0;
+    uint32_t flags = (uint32_t)[event modifierFlags];
+    //////
+    if((flags & NSEventModifierFlagCapsLock) && !(last_flags & NSEventModifierFlagCapsLock))
+    {
+        OnKey(EVirtualKey::KEY_CAPITAL,EKeyState::PRESS);
+    }
+    
+    if(!(flags & NSEventModifierFlagCapsLock) && (last_flags & NSEventModifierFlagCapsLock))
+    {
+        OnKey(EVirtualKey::KEY_CAPITAL, EKeyState::RELEASE);
+    }
+    ////////
+    if((flags & NSEventModifierFlagHelp) && !(last_flags & NSEventModifierFlagHelp))
+    {
+        NSLog(@"HELP press");
+    }
+    
+    if(!(flags & NSEventModifierFlagHelp) && (last_flags & NSEventModifierFlagHelp))
+    {
+        NSLog(@"HELP release");
+    }
+    
+    ///////
+    if((flags & NSEventModifierFlagShift) && !(last_flags & NSEventModifierFlagShift))
+    {
+        OnKey(EVirtualKey::KEY_LSHIFT, EKeyState::PRESS);
+    }
+    
+    if(!(flags & NSEventModifierFlagShift) && (last_flags & NSEventModifierFlagShift))
+    {
+        OnKey(EVirtualKey::KEY_LSHIFT, EKeyState::RELEASE);
+    }
+    
+    /////////
+    if((flags & NSEventModifierFlagOption) && !(last_flags & NSEventModifierFlagOption))
+    {
+        OnKey(EVirtualKey::KEY_LMENU, EKeyState::PRESS);
+    }
+    
+    if(!(flags & NSEventModifierFlagOption) && (last_flags & NSEventModifierFlagOption))
+    {
+        OnKey(EVirtualKey::KEY_LMENU, EKeyState::RELEASE);
+    }
+
+    /////////
+    if((flags & NSEventModifierFlagControl) && !(last_flags & NSEventModifierFlagControl))
+    {
+        OnKey(EVirtualKey::KEY_LCONTROL,EKeyState::PRESS);
+    }
+
+    if(!(flags & NSEventModifierFlagControl) && (last_flags & NSEventModifierFlagControl))
+    {
+        OnKey(EVirtualKey::KEY_LCONTROL, EKeyState::RELEASE);
+    }
+
+    ////////////
+    if((flags & NSEventModifierFlagCommand) && !(last_flags & NSEventModifierFlagCommand))
+    {
+        isPressCommand = true;
+        OnKey(EVirtualKey::KEY_LCONTROL, EKeyState::PRESS);
+    }
+    
+    if(!(flags & NSEventModifierFlagCommand) && (last_flags & NSEventModifierFlagCommand))
+    {
+        isPressCommand = false;
+        OnKey(EVirtualKey::KEY_LCONTROL, EKeyState::RELEASE);
+    }
+    
+    ///////////////
+    if((flags & NSEventModifierFlagFunction) && !(last_flags & NSEventModifierFlagFunction))
+    {
+        NSLog(@"Function press");
+    }
+    
+    if(!(flags & NSEventModifierFlagFunction) && (last_flags & NSEventModifierFlagFunction))
+    {
+        NSLog(@"Function release");
+    }
+    
+    ////////////////
+    if((flags & NSEventModifierFlagNumericPad) && !(last_flags & NSEventModifierFlagNumericPad))
+    {
+        OnKey(EVirtualKey::KEY_NUMLOCK, EKeyState::PRESS);
+    }
+    
+    if(!(flags & NSEventModifierFlagNumericPad) && (last_flags & NSEventModifierFlagNumericPad))
+    {
+        OnKey(EVirtualKey::KEY_NUMLOCK, EKeyState::RELEASE);
+    }
+    last_flags = flags;
+}
+
+void RenderWindowOSX::OnScrollWheel(NSEvent* event)
+{
+    NSEventPhase phase = [event phase];
+    NSEventPhase momentumPhase = [event momentumPhase];
+    
+    static bool s_bMouseOverScrollableUI = false;
+    if (CGlobals::GetApp()->GetAppState() == PEAppState_Ready)
+    {
+        s_bMouseOverScrollableUI = CGUIRoot::GetInstance()->IsMouseOverScrollableUI();
+    }
+    
+    if(phase == NSEventPhaseNone && momentumPhase == NSEventPhaseNone)
+    {
+        OnMouseWhell([event deltaX], [event deltaY]);
+    }
+    else if(phase != NSEventPhaseNone)
+    {
+        m_scrollMouseX += [event deltaX] * 4;
+        m_scrollMouseY += [event deltaY] * 4;
+        
+        if(s_bMouseOverScrollableUI)
+        {
+            if(phase == NSEventPhaseChanged)
+            {
+                OnMouseWhell([event deltaX], [event deltaY]);
+            }
+        }
+        else
+        {
+            switch (phase) {
+                //case NSEventPhaseMayBegin:
+                case NSEventPhaseBegan:
+                    OnMouseButton(EMouseButton::RIGHT, EKeyState::PRESS, m_scrollMouseX, m_scrollMouseY);
+                    break;
+                case NSEventPhaseChanged:
+                {
+                    OnMouseMove(m_scrollMouseX, m_scrollMouseY);
+                }
+                    break;
+                case NSEventPhaseEnded:
+                //case NSEventPhaseCancelled:
+                    OnMouseButton(EMouseButton::RIGHT, EKeyState::RELEASE, m_scrollMouseX, m_scrollMouseY);
+                    break;
+                default:
+                    break;
+            }
+        }
+    }
+}
+
+ void RenderWindowOSX::OnInsertText(NSString* string)
+{
+    auto length = [string length];
+    
+    for (NSUInteger i = 0; i < length; i++)
+    {
+        auto codepoint = [string characterAtIndex:i];
+        if ((codepoint & 0xff00) == 0xf700)
+            continue;
+        
+        if (codepoint < 32 || (codepoint > 126 && codepoint < 160))
+            continue;
+        
+        OnChar(codepoint);
+    }
+}
+
+void RenderWindowOSX::PollEvents()
+{
+    if (m_window == nullptr || ShouldClose()) return;
+    NSEvent *event;
+    auto untilDate = [NSDate distantPast];
+    
+    do
+    {
+        event = [NSApp nextEventMatchingMask:NSEventMaskAny
+                        untilDate:untilDate
+                           inMode:NSDefaultRunLoopMode
+                          dequeue:YES];
+        if (!event) {
+            break;
+        }
+        // fix for retina screen
+        if (CGlobals::GetApp()->GetAppState() == PEAppState_Ready)
+        {
+            double x, y;
+            GetScaleFactor(x, y);
+            if (currentBackingScaleFactor != x) {
+                currentBackingScaleFactor = x;
+
+                CGUIRoot::GetInstance()->SetUIScale(x, y, true, true, false);
+            }
+        }
+        
+        [NSApp sendEvent:event];
+        [NSApp updateWindows];
+        [event release];
+        
+    }while(event);
+}
+
+/*
 void RenderWindowOSX::PollEvents() {
     if (m_window == nullptr || ShouldClose()) return;
     NSEvent *event;
@@ -281,16 +539,6 @@ void RenderWindowOSX::PollEvents() {
         uint32_t mx = (uint32_t)backingPoint.x;
         uint32_t my = GetHeight() - (uint32_t)backingPoint.y;
 
-       /* NSEventSubtype subType = [event subtype];
-        
-        if(subType == NSEventSubtypeMouseEvent)
-        {
-            NSLog(@"Mouse event");
-        }
-        if(subType == NSEventSubtypeTouch)
-        {
-            NSLog(@"touch event");
-        }*/
         
         
         switch([(NSEvent *)event type])
@@ -574,6 +822,7 @@ void RenderWindowOSX::PollEvents() {
         [event release];
     } while (event);
 }
+*/
 
 bool RenderWindowOSX::OnShouldClose()
 {
