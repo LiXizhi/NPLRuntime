@@ -292,8 +292,18 @@ static const NSRange kEmptyRange = { NSNotFound, 0 };
 
 - (NSRect)firstRectForCharacterRange:(NSRange)range actualRange:(NSRangePointer)actualRange
 {
-    const NSRect frame = [self frame];
-    return NSMakeRect(frame.origin.x, frame.origin.y, 0, 0);
+    auto pRenderWindow = [RenderView getRenderWindow];
+    if (pRenderWindow)
+    {
+        return pRenderWindow->GetCharacterRect();
+    }
+    else
+    {
+        return NSMakeRect(0, 0, 0, 0);
+    }
+    
+    
+    
 }
 
 - (void)insertText:(id)string replacementRange:(NSRange)replacementRange

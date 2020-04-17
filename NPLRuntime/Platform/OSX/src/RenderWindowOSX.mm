@@ -1,5 +1,6 @@
 #include "ParaEngine.h"
 #include "2dengine/GUIRoot.h"
+#include "2dengine/GUIEdit.h"
 #include "RenderWindowOSX.h"
 #include "WindowDelegate.h"
 
@@ -286,27 +287,9 @@ void RenderWindowOSX::OnMouseEvent(EMouseButton button, EKeyState state, NSEvent
 void RenderWindowOSX::OnKey(EKeyState state, NSEvent* event)
 {
     uint32_t keycode = (uint32_t)[event keyCode];
-    NSString *chrs = [event characters];
     EVirtualKey vk = toVirtualKey(keycode);
-
-    bool bChar = false;
-
-    if([chrs length]>0)
-    {
-        int unicode = [chrs characterAtIndex:0];
-        if ((!isPressCommand && (unicode >= 32 && unicode <= 126)) ||
-           (vk != EVirtualKey::KEY_DELETE &&
-            vk != EVirtualKey::KEY_UP &&
-            vk != EVirtualKey::KEY_DOWN &&
-            vk != EVirtualKey::KEY_LEFT &&
-            vk != EVirtualKey::KEY_RIGHT && unicode > 255))
-        {
-            bChar = true;
-        }
-    }
-
-    if (!bChar)
-        OnKey(vk, state);
+    
+    OnKey(vk,state);
 }
 
 void RenderWindowOSX::OnFlagsChanged(NSEvent* event)
@@ -469,6 +452,51 @@ void RenderWindowOSX::OnScrollWheel(NSEvent* event)
         
         OnChar(codepoint);
     }
+}
+
+NSRect RenderWindowOSX::GetCharacterRect()
+{
+    const NSRect frame = [m_window frame];
+    auto defRect = NSMakeRect(frame.origin.x, frame.origin.y, 0, 0);
+    
+    if (CGlobals::GetApp()->GetAppState() != PEAppState_Ready)
+    {
+        return defRect;
+    }
+    
+    auto pGUI = CGUIRoot::GetInstance()->GetUIKeyFocus();
+    auto pEdit = dynamic_cast<CGUIEditBox*>(pGUI);
+    
+    if (pEdit)
+    {
+        /*
+        auto pos = pEdit->GetCaretPosition();
+        int x, y;
+        pEdit->CPtoXY(pos, TRUE, &x, &y, true);
+        
+        CGUIPosition relative(x, y, 0, 0);
+        CGUIPosition absolute;
+        
+        pEdit->GetAbsolutePosition(&absolute, &relative);
+        
+        x = absolute.GetLeft();
+        y = GetHeight() - absolute.GetTop();
+         */
+        
+        auto& rect = pEdit->GetCaretRect();
+        int x = rect.left;
+        int y = GetHeight() - (rect.bottom + 5);
+        
+        auto point = NSMakePoint(x, y);
+        point = [m_window.contentView convertPointFromBacking:point];
+        point = [m_window.contentView convertPoint:point toView:nil];
+        point = [m_window convertPointToScreen:point];
+        
+        return NSMakeRect(point.x, point.y, 0, 0);
+    }
+    
+    
+    return defRect;
 }
 
 void RenderWindowOSX::PollEvents()

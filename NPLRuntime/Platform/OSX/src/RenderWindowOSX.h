@@ -4,9 +4,8 @@
 #include "ParaEngineRenderBase.h"
 #include "Framework/InputSystem/VirtualKey.h"
 
-@class NSWindow;
-@class NSEvent;
-@class NSString;
+#import <Cocoa/Cocoa.h>
+
 namespace ParaEngine
 {
     class RenderWindowOSX : public CParaEngineRenderBase
@@ -37,6 +36,8 @@ namespace ParaEngine
         void OnFlagsChanged(NSEvent* event);
         void OnScrollWheel(NSEvent* event);
         void OnInsertText(NSString* string);
+        
+        NSRect GetCharacterRect();
     private:
         void OnMouseEvent(EMouseButton button, EKeyState state, NSEvent* event);
         void OnMouseButton(EMouseButton button, EKeyState state,uint32_t x,uint32_t y);
