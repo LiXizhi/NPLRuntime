@@ -3,6 +3,7 @@
 #include "RenderContextAGL.h"
 #include "RenderWindowOSX.h"
 #include "RenderDeviceAGL.h"
+#include "RenderViewOSX.h"
 
 #import <Cocoa/Cocoa.h>
 using namespace ParaEngine;
@@ -46,7 +47,8 @@ ParaEngine::IRenderDevice *RenderContxtAGL::CreateDevice(const ParaEngine::Rende
            glGetString(GL_VERSION));
     
     NSWindow* window = (NSWindow*)renderWindow->GetNativeHandle();
-    NSView* view = [[NSView alloc] initWithFrame:CGRectMake(0, 0, cfg.screenWidth, cfg.screenHeight)];
+    RenderView* view = [[RenderView alloc] initWithFrame:CGRectMake(0, 0, cfg.screenWidth, cfg.screenHeight)];
+    
     [window setContentView:view];
     [openGLContext setView:view];
     [openGLContext update];

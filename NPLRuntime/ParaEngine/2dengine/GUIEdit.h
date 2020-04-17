@@ -184,7 +184,8 @@ namespace ParaEngine
 
 		/** Flag to indicate whether caret is currently visible */
 		bool IsCaretVisible();
-
+        
+        const RECT& GetCaretRect() const;
 #ifdef PARAENGINE_MOBILE
 		// ime delegate implementation. 
 	public:
@@ -239,5 +240,7 @@ namespace ParaEngine
 		/** text to show when text is empty: this is usually something like "click to enter text" */
 		std::u16string m_empty_text;
 		std::string m_empty_text_utf8;
+        
+        RECT       m_rcCaret;
 	};
 }

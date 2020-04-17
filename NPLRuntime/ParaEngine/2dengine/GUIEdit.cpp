@@ -75,6 +75,8 @@ CGUIEditBox::CGUIEditBox() :CGUIBase()
 	m_key_state = 0;//0:not pressed; 1:pressed; 2:holding a key
 	m_bIsModified = false;
 	m_PasswordChar = '\0';
+    
+    memset(&m_rcCaret, 0, sizeof(m_rcCaret));
 }
 
 
@@ -1292,6 +1294,11 @@ HRESULT CGUIEditBox::CPtoXY(int nCP, BOOL bTrail, int *pX, int *pY, bool absolut
 	return ret;
 }
 
+const RECT& CGUIEditBox::GetCaretRect() const
+{
+    return m_rcCaret;
+}
+
 /** get the text line size in pixels, supposing the current font and text will be rendered in a single line. */
 void CGUIEditBox::GetTextLineSize(int* width, int* height)
 {
@@ -1538,7 +1545,7 @@ HRESULT CGUIEditBox::Render(GUIState* pGUIState, float fElapsedTime)
 	{
 		// Start the rectangle with insert mode caret
 
-		RECT rcCaret = { rcText.left - nXFirst + nCaretX - 1, rcText.top,
+		m_rcCaret = { rcText.left - nXFirst + nCaretX - 1, rcText.top,
 			rcText.left - nXFirst + nCaretX + 1, rcText.bottom };
 
 		// If we are in overwrite mode, adjust the caret rectangle
@@ -1548,9 +1555,9 @@ HRESULT CGUIEditBox::Render(GUIState* pGUIState, float fElapsedTime)
 			// Obtain the right edge X coord of the current character
 			int nRightEdgeX, nRightEdgeY;
 			CPtoXY(m_nCaret, TRUE, &nRightEdgeX, &nRightEdgeY, true);
-			rcCaret.right = rcText.left + nXFirst + nRightEdgeX;
+			m_rcCaret.right = rcText.left + nXFirst + nRightEdgeX;
 		}
-		GetPainter(pGUIState)->DrawRect(&rcCaret, m_CaretColor, m_position.GetDepth());
+		GetPainter(pGUIState)->DrawRect(&m_rcCaret, m_CaretColor, m_position.GetDepth());
 	}
 	return S_OK;
 }

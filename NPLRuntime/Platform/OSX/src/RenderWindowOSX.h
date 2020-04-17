@@ -4,7 +4,8 @@
 #include "ParaEngineRenderBase.h"
 #include "Framework/InputSystem/VirtualKey.h"
 
-@class NSWindow;
+#import <Cocoa/Cocoa.h>
+
 namespace ParaEngine
 {
     class RenderWindowOSX : public CParaEngineRenderBase
@@ -26,10 +27,25 @@ namespace ParaEngine
         void GetScaleFactor(double& x, double& y) const;
     public:
         bool OnShouldClose();
+        
+               
+        void OnMouseDown(EMouseButton button, NSEvent* event);
+        void OnMouseUp(EMouseButton button, NSEvent* event);
+        void OnMouseMove(NSEvent* event);
+        void OnKey(EKeyState state, NSEvent* event);
+        void OnFlagsChanged(NSEvent* event);
+        void OnScrollWheel(NSEvent* event);
+        void OnInsertText(NSString* string);
+        
+        NSRect GetCharacterRect();
+    private:
+        void OnMouseEvent(EMouseButton button, EKeyState state, NSEvent* event);
         void OnMouseButton(EMouseButton button, EKeyState state,uint32_t x,uint32_t y);
+        void OnKey(EVirtualKey key, EKeyState state);
+        
         void OnMouseMove(uint32_t x, uint32_t y);
         void OnMouseWhell(float deltaX, float deltaY);
-        void OnKey(EVirtualKey key, EKeyState state);
+               
         void OnChar(unsigned int character);
     protected:
         bool m_shouldClose;
