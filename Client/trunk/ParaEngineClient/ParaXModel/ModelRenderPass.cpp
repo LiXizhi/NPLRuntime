@@ -68,6 +68,7 @@ void ParaEngine::ModelRenderPass::deinit_bmax_FX(SceneState* pSceneState, CParam
 		CGlobals::GetRenderDevice()->SetRenderState(D3DRS_ALPHABLENDENABLE, FALSE);
 		pEffect->EnableAlphaBlending(false);
 		pEffect->setFloat(CEffectFile::k_opacity, 1.f);
+		pEffect->EnableAlphaTesting(false);
 	}
 	if (blendmode == BM_ALPHA_BLEND)
 		CGlobals::GetEffectManager()->SetCullingMode(true);

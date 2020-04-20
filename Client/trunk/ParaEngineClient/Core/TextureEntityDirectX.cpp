@@ -1090,72 +1090,102 @@ bool TextureEntityDirectX::SaveToFile(const char* filename, D3DFORMAT dwFormat, 
 	DeviceTexturePtr_type pSrcTexture = GetTexture();
 	if (!pSrcTexture)
 		return false;
-	RenderDevicePtr pd3dDevice = CGlobals::GetRenderDevice();
-	DeviceTexturePtr_type pDestTexture = NULL;
-	HRESULT hr = D3DXCreateTexture(pd3dDevice, width, height, 1, D3DUSAGE_AUTOGENMIPMAP, dwFormat, D3DPOOL_MANAGED, &pDestTexture);
-	if (SUCCEEDED(hr))
+
+	string sFile = filename;
+	string sExt = CParaFile::GetFileExtension(sFile);
+	D3DXIMAGE_FILEFORMAT FileFormat = D3DXIFF_PNG;
+	if (sExt == "dds")
 	{
-		LPDIRECT3DSURFACE9 pSrcSurface = NULL;
-		LPDIRECT3DSURFACE9 pDestSurface = NULL;
-		hr = pSrcTexture->GetSurfaceLevel(0, &pSrcSurface);
-		if (SUCCEEDED(hr))
-		{
-			hr = pDestTexture->GetSurfaceLevel(0, &pDestSurface);
-			if (SUCCEEDED(hr))
-			{
-				hr = D3DXLoadSurfaceFromSurface(pDestSurface, NULL, NULL, pSrcSurface, NULL, NULL, Filter, ColorKey);
-				SAFE_RELEASE(pDestSurface);
-			}
-			SAFE_RELEASE(pSrcSurface);
-		}
-		if (SUCCEEDED(hr))
-		{
-			// write file to disk
-			hr = D3DXSaveTextureToFile(filename, D3DXIFF_DDS, pDestTexture, NULL);
+		FileFormat = D3DXIFF_DDS;
+	}
+	else if (sExt == "jpg")
+	{
+		FileFormat = D3DXIFF_JPG;
+	}
+	else if (sExt == "tga")
+	{
+		FileFormat = D3DXIFF_TGA;
+	}
+	else // if(sExt == "png")
+	{
+		sFile = CParaFile::ChangeFileExtension(sFile, "png");
+	}
 
+	if ((FileFormat != D3DXIFF_DDS) && (width <= 0 || width >= GetWidth()))
+	{
+		HRESULT hr = D3DXSaveTextureToFile(sFile.c_str(), FileFormat, pSrcTexture, nullptr);
+		return SUCCEEDED(hr);
+	}
+	else if (FileFormat == D3DXIFF_DDS)
+	{
+		RenderDevicePtr pd3dDevice = CGlobals::GetRenderDevice();
+		DeviceTexturePtr_type pDestTexture = NULL;
+		HRESULT hr = D3DXCreateTexture(pd3dDevice, width, height, 1, D3DUSAGE_AUTOGENMIPMAP, dwFormat, D3DPOOL_MANAGED, &pDestTexture);
+		if (SUCCEEDED(hr))
+		{
+			LPDIRECT3DSURFACE9 pSrcSurface = NULL;
+			LPDIRECT3DSURFACE9 pDestSurface = NULL;
+			hr = pSrcTexture->GetSurfaceLevel(0, &pSrcSurface);
 			if (SUCCEEDED(hr))
 			{
-				if (MipLevels != 1)
+				hr = pDestTexture->GetSurfaceLevel(0, &pDestSurface);
+				if (SUCCEEDED(hr))
 				{
-					// TODO: for some reason, this does not work. 
-					LPDIRECT3DTEXTURE9 pDestTextureMipMapped = NULL;
-					hr = D3DXCreateTextureFromFileEx(pd3dDevice, filename, D3DX_DEFAULT, D3DX_DEFAULT, MipLevels, D3DUSAGE_AUTOGENMIPMAP, D3DFMT_UNKNOWN, D3DPOOL_MANAGED, Filter, D3DX_DEFAULT, 0, NULL, NULL, &pDestTextureMipMapped);
-					if (SUCCEEDED(hr))
-					{
-						// generate all mip levels;
-						pDestTextureMipMapped->GenerateMipSubLevels();
+					hr = D3DXLoadSurfaceFromSurface(pDestSurface, NULL, NULL, pSrcSurface, NULL, NULL, Filter, ColorKey);
+					SAFE_RELEASE(pDestSurface);
+				}
+				SAFE_RELEASE(pSrcSurface);
+			}
+			if (SUCCEEDED(hr))
+			{
+				// write file to disk
+				hr = D3DXSaveTextureToFile(filename, D3DXIFF_DDS, pDestTexture, NULL);
 
-						/**
-						IIRC GenerateMipSubLevels is only actually valid when D3DUSAGE_AUTOGENMIPMAP is specified. I think the docs are a bit vague about this.
-						GenerateMipSubLevels exists to allow you tell the gfx driver when is a good time to generate the mip map levels. This is sometimes required as
-						the AUTOGENMIPMAP flag only specifies that the mip maps are auto-generated at some point but not at any particular time. This autogeneration
-						could occur after a Lock has taken place on the texture or at first use. If the texture is large mip-map generation may take a while so having
-						the mip-maps auto generate at first use may not be the best idea. Therefore GenerateMipSubLevels exists for you to notify the driver that "now"
-						is a good time to generate the mips if it hasn't already (e.g. "now" = while a loading screen is being displayed).
-						*/
-						hr = D3DXSaveTextureToFile(filename, D3DXIFF_DDS, pDestTextureMipMapped, NULL);
-						if (FAILED(hr))
+				if (SUCCEEDED(hr))
+				{
+					if (MipLevels != 1)
+					{
+						// TODO: for some reason, this does not work. 
+						LPDIRECT3DTEXTURE9 pDestTextureMipMapped = NULL;
+						hr = D3DXCreateTextureFromFileEx(pd3dDevice, filename, D3DX_DEFAULT, D3DX_DEFAULT, MipLevels, D3DUSAGE_AUTOGENMIPMAP, D3DFMT_UNKNOWN, D3DPOOL_MANAGED, Filter, D3DX_DEFAULT, 0, NULL, NULL, &pDestTextureMipMapped);
+						if (SUCCEEDED(hr))
 						{
-							OUTPUT_LOG("warning: failed SaveTextureToFile -->GenerateMipSubLevels %s\n", filename);
-						}
+							// generate all mip levels;
+							pDestTextureMipMapped->GenerateMipSubLevels();
 
-						OUTPUT_LOG("warning: MIP map are not supported for %s. TODO this in future s\n", filename);
+							/**
+							IIRC GenerateMipSubLevels is only actually valid when D3DUSAGE_AUTOGENMIPMAP is specified. I think the docs are a bit vague about this.
+							GenerateMipSubLevels exists to allow you tell the gfx driver when is a good time to generate the mip map levels. This is sometimes required as
+							the AUTOGENMIPMAP flag only specifies that the mip maps are auto-generated at some point but not at any particular time. This autogeneration
+							could occur after a Lock has taken place on the texture or at first use. If the texture is large mip-map generation may take a while so having
+							the mip-maps auto generate at first use may not be the best idea. Therefore GenerateMipSubLevels exists for you to notify the driver that "now"
+							is a good time to generate the mips if it hasn't already (e.g. "now" = while a loading screen is being displayed).
+							*/
+							hr = D3DXSaveTextureToFile(filename, D3DXIFF_DDS, pDestTextureMipMapped, NULL);
+							if (FAILED(hr))
+							{
+								OUTPUT_LOG("warning: failed SaveTextureToFile -->GenerateMipSubLevels %s\n", filename);
+							}
+
+							OUTPUT_LOG("warning: MIP map are not supported for %s. TODO this in future s\n", filename);
+						}
+						else
+						{
+							OUTPUT_LOG("warning: failed SaveTextureToFile -->D3DXCreateTextureFromFileEx %s\n", filename);
+						}
+						SAFE_RELEASE(pDestTextureMipMapped);
 					}
-					else
-					{
-						OUTPUT_LOG("warning: failed SaveTextureToFile -->D3DXCreateTextureFromFileEx %s\n", filename);
-					}
-					SAFE_RELEASE(pDestTextureMipMapped);
+				}
+				else
+				{
+					OUTPUT_LOG("warning: failed SaveTextureToFile %s\n", filename);
 				}
 			}
-			else
-			{
-				OUTPUT_LOG("warning: failed SaveTextureToFile %s\n", filename);
-			}
+			SAFE_RELEASE(pDestTexture);
 		}
-		SAFE_RELEASE(pDestTexture);
+		return SUCCEEDED(hr);
 	}
-	return SUCCEEDED(hr);
+	return false;
 }
 
 TextureEntity* TextureEntityDirectX::CreateTexture(const uint8 * pTexels, int width, int height, int rowLength, int bytesPerPixel, uint32 nMipLevels /*= 0*/, D3DPOOL dwCreatePool /*= D3DPOOL_MANAGED*/, DWORD nFormat /*= 0*/)

@@ -206,5 +206,6 @@ namespace ParaEngine
 		friend struct BMaxFrameNode;
 		friend struct BMaxBlockModelNode;
 		friend class BMaxAnimGenerator;
+		friend struct BMaxGlassModelNode;
 	};
 }
