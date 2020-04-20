@@ -52,7 +52,6 @@ bool ParaEngine::ModelRenderPass::init_bmax_FX(CParaXModel *m, SceneState* pScen
 	{
 		CEffectFile* pEffect = CGlobals::GetEffectManager()->GetCurrentEffectFile();
 		pEffect->setFloat(CEffectFile::k_opacity, 1.f);
-		pEffect->EnableAlphaTesting(true);
 		// BMAX_MODEL(.x) exported from CAD, then model shape is a plane, need to set the BackFaceCulling false
 		if (blendmode == BM_ALPHA_BLEND)
 			CGlobals::GetEffectManager()->SetCullingMode(false);
