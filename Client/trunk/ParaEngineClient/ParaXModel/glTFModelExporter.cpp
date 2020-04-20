@@ -1422,11 +1422,6 @@ namespace ParaEngine
 		if (numTextures > tex)
 		{
 			std::shared_ptr<Image> img = std::make_shared<Image>();
-			LPD3DXBUFFER texBuffer;
-			D3DXSaveTextureToFileInMemory(&texBuffer, D3DXIMAGE_FILEFORMAT::D3DXIFF_PNG, paraXModel->textures[tex]->GetTexture(), nullptr);
-			img->bufferSize = texBuffer->GetBufferSize();
-			img->bufferPointer.reset(new uint8_t[img->bufferSize]);
-			memcpy(img->bufferPointer.get(), texBuffer->GetBufferPointer(), img->bufferSize);
 			if (paraXModel->m_header.type == PARAX_MODEL_STATIC)
 			{
 				std::string texPath = paraXModel->textures[tex]->m_key;
@@ -1453,6 +1448,8 @@ namespace ParaEngine
 				}
 			}
 			img->index = index;
+			CParaFile::MakeDirectoryFromFilePath(img->filename.c_str());
+			paraXModel->textures[tex]->SaveToFile(img->filename.c_str(), D3DFORMAT::D3DFMT_DXT3, 0, 0);
 
 			std::shared_ptr<Sampler> sampler = std::make_shared<Sampler>();
 			if (paraXModel->m_header.type == PARAX_MODEL_STATIC)
@@ -1899,12 +1896,12 @@ namespace ParaEngine
 		Json::Value i;
 		i["uri"] = texture->source->uri;
 		{
-			CParaFile file;
-			if (file.CreateNewFile(texture->source->filename.c_str()))
-			{
-				file.write(texture->source->bufferPointer.get(), texture->source->bufferSize);
-				file.close();
-			}
+			//CParaFile file;
+			//if (file.CreateNewFile(texture->source->filename.c_str()))
+			//{
+			//	file.write(texture->source->bufferPointer.get(), texture->source->bufferSize);
+			//	file.close();
+			//}
 		}
 		img[index] = i;
 	}
