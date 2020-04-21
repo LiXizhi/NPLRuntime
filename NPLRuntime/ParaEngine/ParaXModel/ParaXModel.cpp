@@ -26,6 +26,7 @@
 #include "XFileCharModelExporter.h"
 #include "IO/FileUtils.h"
 #include "ViewportManager.h"
+#include "glTFModelExporter.h"
 
 
 /** def this, if one wants the animation to be very accurate. */
@@ -2423,6 +2424,7 @@ int CParaXModel::InstallFields(CAttributeClass* pClass, bool bOverride)
 	pClass->AddField("Animations", FieldType_void_pointer, (void*)0, (void*)GetAnimations_s, NULL, NULL, bOverride);
 	//pClass->AddField("SaveToDisk", FieldType_String, (void*)SaveToDisk_s, (void*)SaveToDisk_s, NULL, NULL, bOverride);
 	pClass->AddField("SaveToDisk", FieldType_String, (void*)SaveToDisk_s, NULL, NULL, NULL, bOverride);
+	pClass->AddField("SaveToGltf", FieldType_String, (void*)SaveToGltf_s, NULL, NULL, NULL, bOverride);
 
 	return S_OK;
 }
@@ -2442,4 +2444,9 @@ void CParaXModel::RemoveUnusedAnimKeys()
 		Bone& bone = bones[i];
 		bone.RemoveUnusedAnimKeys();
 	}
-} 
+}
+
+void CParaXModel::SaveToGltf(const char* path)
+{
+	glTFModelExporter::ParaXExportTo_glTF(this, path);
+}
