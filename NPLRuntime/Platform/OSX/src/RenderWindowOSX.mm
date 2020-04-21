@@ -287,9 +287,27 @@ void RenderWindowOSX::OnMouseEvent(EMouseButton button, EKeyState state, NSEvent
 void RenderWindowOSX::OnKey(EKeyState state, NSEvent* event)
 {
     uint32_t keycode = (uint32_t)[event keyCode];
+    NSString *chrs = [event characters];
     EVirtualKey vk = toVirtualKey(keycode);
-    
-    OnKey(vk,state);
+
+    bool bChar = false;
+
+    if([chrs length]>0)	
+    {
+        int unicode = [chrs characterAtIndex:0];	
+        if ((!isPressCommand && (unicode >= 32 && unicode <= 126)) ||	
+           (vk != EVirtualKey::KEY_DELETE &&	
+            vk != EVirtualKey::KEY_UP &&	
+            vk != EVirtualKey::KEY_DOWN &&	
+            vk != EVirtualKey::KEY_LEFT &&	
+            vk != EVirtualKey::KEY_RIGHT && unicode > 255))	
+        {	
+            bChar = true;	
+        }	
+    }	
+
+    if (!bChar)	
+        OnKey(vk, state);
 }
 
 void RenderWindowOSX::OnFlagsChanged(NSEvent* event)
