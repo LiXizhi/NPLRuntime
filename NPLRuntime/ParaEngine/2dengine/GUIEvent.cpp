@@ -460,6 +460,7 @@ bool CGUIEvent::InterpretMessage(MSG *msg,int option)
 		}
 	}else if (IsMapTo(msg->message,EM_KEY)) {
 		m_keyboard.nAlterKey=msg->message;
+#if PARA_TARGET_PLATFORM != PARA_PLATFORM_MAC
 		if (IsMapTo(msg->message,EM_KEY_NUMPAD0)) {
 			if (!NumLockPressed||ShiftPressed) {
 				m_keyboard.nAlterKey=EM_KEY_INSERT;
@@ -527,6 +528,11 @@ bool CGUIEvent::InterpretMessage(MSG *msg,int option)
 		}else if (IsMapTo(msg->message,EM_KEY_NUMPADENTER)) {
 			m_keyboard.nAlterKey=EM_KEY_RETURN;
 		}
+#else // PARA_TARGET_PLATFORM != PARA_PLATFORM_MAC
+        if (IsMapTo(msg->message,EM_KEY_NUMPADENTER)) {
+            m_keyboard.nAlterKey=EM_KEY_RETURN;
+        }
+#endif //PARA_TARGET_PLATFORM != PARA_PLATFORM_MAC
 		if (IsMapTo(m_keyboard.nAlterKey,EM_CTRL_HOLDKEY)&&msg->lParam==0x80&&msg->hwnd!=0) {
 			AddHoldKey((DWORD)msg->wParam,msg->time);
 		}

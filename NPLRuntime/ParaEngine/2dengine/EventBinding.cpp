@@ -663,7 +663,7 @@ void CEventBinding::StaticInit()
 	ScancodeToKeyTable[(int)EVirtualKey::KEY_NUMPAD8]=EM_KEY_NUMPAD8;
 	ScancodeToKeyTable[(int)EVirtualKey::KEY_NUMPAD9]=EM_KEY_NUMPAD9;
 	ScancodeToKeyTable[(int)EVirtualKey::KEY_NUMPADENTER]=EM_KEY_NUMPADENTER;
-	ScancodeToKeyTable[(int)EVirtualKey::KEY_NUMPADENTER]=EM_KEY_NUMPADEQUALS;
+	ScancodeToKeyTable[(int)EVirtualKey::KEY_NUMPADEQUALS]=EM_KEY_NUMPADEQUALS;
 	ScancodeToKeyTable[(int)EVirtualKey::KEY_SUBTRACT]=EM_KEY_SUBTRACT;
 	ScancodeToKeyTable[(int)EVirtualKey::KEY_ADD]=EM_KEY_ADD;
 	ScancodeToKeyTable[(int)EVirtualKey::KEY_DECIMAL]=EM_KEY_DECIMAL;
