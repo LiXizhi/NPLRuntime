@@ -19,7 +19,6 @@ namespace ParaEngine
         virtual intptr_t GetNativeHandle() const override;
         void PollEvents();
         bool ShouldClose() const;
-        bool isPressCommand = false;
 
         void setTitle(const char* title);
         const char* getTitle();
@@ -53,5 +52,6 @@ namespace ParaEngine
         float currentBackingScaleFactor = 1;
         float m_scrollMouseX;
         float m_scrollMouseY;
+        EVirtualKey m_curPressKey = ParaEngine::EVirtualKey::KEY_UNKNOWN;
     };
 }
