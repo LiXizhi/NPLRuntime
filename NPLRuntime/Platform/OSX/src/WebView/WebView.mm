@@ -113,11 +113,6 @@ namespace ParaEngine {
             {
                 auto renderWindow = (NSWindow*)CGlobals::GetApp()->GetRenderWindow()->GetNativeHandle();
                 
-                x = x/(int)renderWindow.backingScaleFactor;
-                y = y/(int)renderWindow.backingScaleFactor;
-                w = w/(int)renderWindow.backingScaleFactor;
-                h = h/(int)renderWindow.backingScaleFactor;
-                
                 _webViewController = [[WebViewWindowController alloc] initWithWindowNibName:@"WebViewWindowWhioutTitleBar"];
                 
                 [renderWindow addChildWindow:_webViewController.window ordered:NSWindowAbove];
@@ -173,8 +168,6 @@ namespace ParaEngine {
     
     void ParaEngineWebView::loadUrl(const std::string &urlString, bool cleanCachedData)
     {
-        cout << "from paraengine web view load url" << endl;
-        cout << urlString << endl;
         if (_webViewController)
         {
             NSString* _urlString = @(urlString.c_str());
@@ -251,11 +244,6 @@ namespace ParaEngine {
         {
             auto pParent = [_webViewController.window parentWindow];
             auto h = _webViewController.window.frame.size.height;
-            
-            auto renderWindow = (NSWindow*)CGlobals::GetApp()->GetRenderWindow()->GetNativeHandle();
-
-            x = x/(int)renderWindow.backingScaleFactor;
-            y = y/(int)renderWindow.backingScaleFactor;
             
             if (pParent)
             {
