@@ -506,8 +506,8 @@ namespace ParaEngine
 					uint32_t secondR = pCurBone->rot.ranges[0].second;
 					uint32_t firstS = pCurBone->scale.ranges[0].first;
 					uint32_t secondS = pCurBone->scale.ranges[0].second;
-					uint32_t animStart = std::min(std::min(firstT, firstR), firstS);
-					uint32_t animEnd = std::max(std::max(secondT, secondR), secondS);
+					uint32_t animStart = (std::min)((std::min)(firstT, firstR), firstS);
+					uint32_t animEnd = (std::max)((std::max)(secondT, secondR), secondS);
 
 					animOffset.push_back(animEnd - animStart + 1);
 					int time = 0;
@@ -579,8 +579,8 @@ namespace ParaEngine
 					uint32_t secondR = bone.rot.ranges[0].second;
 					uint32_t firstS = bone.scale.ranges[0].first;
 					uint32_t secondS = bone.scale.ranges[0].second;
-					uint32_t animStart = std::min(std::min(firstT, firstR), firstS);
-					uint32_t animEnd = std::max(std::max(secondT, secondR), secondS);
+					uint32_t animStart = (std::min)((std::min)(firstT, firstR), firstS);
+					uint32_t animEnd = (std::max)((std::max)(secondT, secondR), secondS);
 
 					animOffset.push_back(animEnd - animStart + 1);
 					int time = 0;
