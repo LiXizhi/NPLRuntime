@@ -241,6 +241,9 @@ bool ModelRenderPass::init_FX(CParaXModel *m, SceneState* pSceneState,CParameter
 	}
 	else
 	{
+		if (blendmode != BM_OPAQUE && blendmode != BM_TRANSPARENT)
+			return false;
+
 		if (blendmode == BM_TRANSPARENT)
 			pEffect->EnableAlphaTesting(true);
 	}
