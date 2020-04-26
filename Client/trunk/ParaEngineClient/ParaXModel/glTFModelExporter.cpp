@@ -73,7 +73,7 @@ namespace ParaEngine
 		if (isBinary)
 		{
 			Json::FastWriter writer;
-			std::string& data = writer.write(root);
+			const std::string& data = writer.write(root);
 			uint32_t jsonLength = (data.length() + 3) & (~3);
 			uint32_t binaryLength = (buffer->byteLength + 3) & (~3);
 
@@ -1911,9 +1911,8 @@ namespace ParaEngine
 		CParaFile file;
 		if (file.CreateNewFile(fileName.c_str()))
 		{
-			//Json::FastWriter writer;
-			Json::StyledWriter writer;
-			std::string& data = writer.write(root);
+			Json::FastWriter writer;
+			const std::string& data = writer.write(root);
 			file.write(data.c_str(), data.length());
 			file.close();
 
@@ -2047,7 +2046,7 @@ namespace ParaEngine
 		if (file.CreateNewFile(fileName.c_str()))
 		{
 			Json::FastWriter writer;
-			std::string& data = writer.write(root);
+			const std::string& data = writer.write(root);
 			uint32_t jsonLength = (data.length() + 3) & (~3);
 			uint32_t binaryLength = (buffer->byteLength + 3) & (~3);
 
