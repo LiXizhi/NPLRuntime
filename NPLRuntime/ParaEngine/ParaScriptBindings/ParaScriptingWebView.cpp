@@ -56,6 +56,7 @@ namespace ParaScripting
 		m_pParaWebView.reset();
 	}
 
+#ifdef CROSS_PLATFORM
 	void CNPLScriptingState::LoadHAPI_WebView()
 	{
 		using namespace luabind;
@@ -74,6 +75,7 @@ namespace ParaScripting
 			]
 		];
 	}
+#endif
 
 } // end namespace
 

@@ -1,4 +1,8 @@
 #pragma once
+
+#define CROSS_PLATFORM
+
+
 // config file for ParaEngine
 #ifdef WIN32
 #include "ParaEngineClientConfig.win32.h"

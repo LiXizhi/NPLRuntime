@@ -86,7 +86,7 @@ namespace ParaScripting
 		void LoadHAPI_NPL();
 		/// load jabber related functions
 		void LoadHAPI_Jabber();
-#if (PARA_TARGET_PLATFORM == PARA_PLATFORM_MAC) || (PARA_TARGET_PLATFORM == PARA_PLATFORM_IOS)
+#ifdef CROSS_PLATFORM
 		void LoadHAPI_WebView();
 #endif
 	public:

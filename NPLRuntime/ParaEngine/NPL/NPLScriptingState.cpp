@@ -299,7 +299,8 @@ void ParaScripting::CNPLScriptingState::LoadParaLib()
 	LoadHAPI_Audio();
 	LoadHAPI_Network();
 	LoadHAPI_AI();
-#if (PARA_TARGET_PLATFORM == PARA_PLATFORM_MAC) || (PARA_TARGET_PLATFORM == PARA_PLATFORM_IOS)
+
+#ifdef CROSS_PLATFORM
 	LoadHAPI_WebView();
 #endif
 }
