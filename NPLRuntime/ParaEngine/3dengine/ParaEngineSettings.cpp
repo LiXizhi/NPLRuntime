@@ -1112,6 +1112,24 @@ int ParaEngine::ParaEngineSettings::GetAppCount()
 #endif
 }
 
+const char* ParaEngine::ParaEngineSettings::GetProcessName()
+{
+	static std::string g_processName;
+#ifdef WIN32
+	if (g_processName.empty())
+	{
+		DWORD dwCurrentPID = GetProcessId();
+		CProcessModuleIterator   itm(dwCurrentPID);
+		TCHAR   name[_MAX_PATH];
+		HMODULE   hModule = itm.First();   //   .EXE   
+		GetModuleBaseName(itm.GetProcessHandle(),
+			hModule, name, _MAX_PATH);
+		g_processName = name;
+	}
+#endif
+	return g_processName.c_str();
+}
+
 int ParaEngine::ParaEngineSettings::GetFPS()
 {
 	return (int)CGlobals::GetApp()->GetFPS();
@@ -1409,7 +1427,7 @@ int ParaEngineSettings::InstallFields(CAttributeClass* pClass, bool bOverride)
 	pClass->AddField("ConsoleTextAttribute", FieldType_Int, (void*)SetConsoleTextAttribute_s, NULL, NULL, NULL, bOverride);
 	pClass->AddField("CoreUsage", FieldType_Int, (void*)SetCoreUsage_s, (void*)GetCoreUsage_s, NULL, NULL, bOverride);
 	pClass->AddField("AppCount", FieldType_Int, NULL, (void*)GetAppCount_s, NULL, NULL, bOverride);
-	
+	pClass->AddField("ProcessName", FieldType_String, NULL, (void*)GetProcessName_s, NULL, NULL, bOverride);
 
 	pClass->AddField("ToggleSoundWhenNotFocused", FieldType_Bool, (void*)SetToggleSoundWhenNotFocused_s, (void*)GetToggleSoundWhenNotFocused_s, NULL, NULL, bOverride);
 	pClass->AddField("AutoLowerFrameRateWhenNotFocused", FieldType_Bool, (void*)SetAutoLowerFrameRateWhenNotFocused_s, (void*)GetAutoLowerFrameRateWhenNotFocused_s, NULL, NULL, bOverride);
