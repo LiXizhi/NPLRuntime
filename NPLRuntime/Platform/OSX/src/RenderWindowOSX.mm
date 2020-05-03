@@ -288,15 +288,19 @@ void RenderWindowOSX::OnKey(EKeyState state, NSEvent* event)
 {
     uint32_t keycode = (uint32_t)[event keyCode];
     EVirtualKey vk = toVirtualKey(keycode);
-    
+
     bool pressed = state == EKeyState::PRESS ? true : false;
 
     if (pressed) {
+        if (m_curPressKey != EVirtualKey::KEY_UNKNOWN && m_curPressKey != vk) {
+            return;
+        }
+
         m_curPressKey = vk;
     } else {
         m_curPressKey = EVirtualKey::KEY_UNKNOWN;
     }
-    
+
     OnKey(vk,state);
 }
 
@@ -368,6 +372,7 @@ void RenderWindowOSX::OnFlagsChanged(NSEvent* event)
     {
         if (m_curPressKey != EVirtualKey::KEY_UNKNOWN) {
             CGUIRoot::GetInstance()->SendKeyUpEvent(m_curPressKey);
+            m_curPressKey = EVirtualKey::KEY_UNKNOWN;
         }
         OnKey(EVirtualKey::KEY_LCONTROL, EKeyState::RELEASE);
     }
