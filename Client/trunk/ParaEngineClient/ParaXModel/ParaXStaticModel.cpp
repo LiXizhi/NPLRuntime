@@ -664,6 +664,8 @@ namespace ParaEngine {
 
 						if (pMaterial->isSkipRendering())
 							continue;
+						if (pSceneState->IsShadowPass() && pMaterial->hasAlphaBlending())
+							continue;
 						// skip translucent face group.
 						if (pSceneState->m_bEnableTranslucentFaceSorting && pMaterial->hasTranslucentSort() && pMaterial->m_nTranslucentFaceGroupIndex >= 0)
 						{

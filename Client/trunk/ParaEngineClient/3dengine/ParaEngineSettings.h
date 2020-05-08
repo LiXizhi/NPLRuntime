@@ -160,6 +160,7 @@ namespace ParaEngine
 		ATTRIBUTE_METHOD1(ParaEngineSettings, SetConsoleTextAttribute_s, int)	{cls->SetConsoleTextAttribute(p1); return S_OK;}
 
 		ATTRIBUTE_METHOD1(ParaEngineSettings, GetAppCount_s, int*)	{ *p1 = cls->GetAppCount(); return S_OK; }
+		ATTRIBUTE_METHOD1(ParaEngineSettings, GetProcessName_s, const char**) { *p1 = cls->GetProcessName(); return S_OK; }
 
 		ATTRIBUTE_METHOD1(ParaEngineSettings, GetCoreUsage_s, int*)	{*p1 = cls->GetCoreUsage(); return S_OK;}
 		ATTRIBUTE_METHOD1(ParaEngineSettings, SetCoreUsage_s, int)	{cls->SetCoreUsage(p1); return S_OK;}
@@ -383,6 +384,8 @@ namespace ParaEngine
 
 		/* get the current number of ParaEngine app running. */
 		int GetAppCount();
+		/** this usually returns "ParaEngineClient.exe" under win32 */
+		const char* GetProcessName();
 
 		/** get total number of draw calls in last rendered frame */
 		int GetDrawCallCount();
