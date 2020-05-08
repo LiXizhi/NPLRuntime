@@ -57,7 +57,7 @@ namespace ParaEngine
 
 			auto pBlockTemplate = pBlockWorld->GetBlockTemplate(template_id);
 
-			if (pBlockTemplate && m_nHelperBlockId != template_id)
+			if (pBlockTemplate)
 			{
 				BMaxNodePtr node;
 				if (template_id == BlockModelBlockId)
@@ -466,8 +466,7 @@ namespace ParaEngine
 				!block_template->GetBlockModel().IsUniformLighting() ||
 				!block_template->IsMatchAttribute(BlockTemplate::batt_transparent);
 			pass->SetStartIndex(nStartIndex);
-			geoset->SetVertexStart(total_count);
-			nStartVertex = 0;
+			geoset->SetVertexStart((int32)m_vertices.size());
 
 			for (uint32_t i = 0; i < block_nodes.second.size(); i++)
 			{
@@ -497,8 +496,7 @@ namespace ParaEngine
 							pass->cull = block_template->IsMatchAttribute(BlockTemplate::batt_solid) ||
 								!block_template->GetBlockModel().IsUniformLighting() ||
 								!block_template->IsMatchAttribute(BlockTemplate::batt_transparent);
-							geoset->SetVertexStart(total_count);
-							nStartVertex = 0;
+							geoset->SetVertexStart((int32)m_vertices.size());
 						}
 
 						geoset->icount += nIndexCount;

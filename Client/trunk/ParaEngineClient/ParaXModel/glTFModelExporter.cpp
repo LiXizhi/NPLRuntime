@@ -1425,8 +1425,20 @@ namespace ParaEngine
 			if (paraXModel->m_header.type == PARAX_MODEL_STATIC)
 			{
 				std::string texPath = paraXModel->textures[tex]->m_key;
-				img->filename = CParaFile::GetParentDirectoryFromPath(fileName) + texPath;
-				img->uri = texPath;
+				if (CParaFile::IsAbsolutePath(texPath) && CParaFile::DoesFileExist(texPath.c_str()))
+				{
+					// for custom blocks, copy textures to gltf folder
+					img->uri = "Texture/blocks/" + CParaFile::GetFileName(texPath);
+					img->filename = CParaFile::GetParentDirectoryFromPath(fileName) + img->uri;
+					//CParaFile::MakeDirectoryFromFilePath(img->filename.c_str());
+					//CParaFile::CopyFile(texPath.c_str(), img->filename.c_str(), true);
+				}
+				else
+				{
+					img->uri = texPath;
+					texPath = StringHelper::UTF8ToAnsi(texPath.c_str());
+					img->filename = CParaFile::GetParentDirectoryFromPath(fileName) + texPath;
+				}
 			}
 			else
 			{
