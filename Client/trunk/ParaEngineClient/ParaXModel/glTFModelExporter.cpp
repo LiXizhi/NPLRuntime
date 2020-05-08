@@ -73,7 +73,7 @@ namespace ParaEngine
 		if (isBinary)
 		{
 			Json::FastWriter writer;
-			std::string& data = writer.write(root);
+			const std::string& data = writer.write(root);
 			uint32_t jsonLength = (data.length() + 3) & (~3);
 			uint32_t binaryLength = (buffer->byteLength + 3) & (~3);
 
@@ -1425,8 +1425,20 @@ namespace ParaEngine
 			if (paraXModel->m_header.type == PARAX_MODEL_STATIC)
 			{
 				std::string texPath = paraXModel->textures[tex]->m_key;
-				img->filename = CParaFile::GetParentDirectoryFromPath(fileName) + texPath;
-				img->uri = texPath;
+				if (CParaFile::IsAbsolutePath(texPath) && CParaFile::DoesFileExist(texPath.c_str()))
+				{
+					// for custom blocks, copy textures to gltf folder
+					img->uri = "Texture/blocks/" + CParaFile::GetFileName(texPath);
+					img->filename = CParaFile::GetParentDirectoryFromPath(fileName) + img->uri;
+					//CParaFile::MakeDirectoryFromFilePath(img->filename.c_str());
+					//CParaFile::CopyFile(texPath.c_str(), img->filename.c_str(), true);
+				}
+				else
+				{
+					img->uri = texPath;
+					texPath = StringHelper::UTF8ToAnsi(texPath.c_str());
+					img->filename = CParaFile::GetParentDirectoryFromPath(fileName) + texPath;
+				}
 			}
 			else
 			{
@@ -1911,9 +1923,8 @@ namespace ParaEngine
 		CParaFile file;
 		if (file.CreateNewFile(fileName.c_str()))
 		{
-			//Json::FastWriter writer;
-			Json::StyledWriter writer;
-			std::string& data = writer.write(root);
+			Json::FastWriter writer;
+			const std::string& data = writer.write(root);
 			file.write(data.c_str(), data.length());
 			file.close();
 
@@ -2047,7 +2058,7 @@ namespace ParaEngine
 		if (file.CreateNewFile(fileName.c_str()))
 		{
 			Json::FastWriter writer;
-			std::string& data = writer.write(root);
+			const std::string& data = writer.write(root);
 			uint32_t jsonLength = (data.length() + 3) & (~3);
 			uint32_t binaryLength = (buffer->byteLength + 3) & (~3);
 
