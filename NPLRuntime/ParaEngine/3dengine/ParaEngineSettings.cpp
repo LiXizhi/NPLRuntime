@@ -33,7 +33,10 @@
 	#include "util/EnumProcess.hpp"
 #endif
 #endif
+
 #include <boost/thread/tss.hpp>
+#include <boost/log/attributes/current_process_name.hpp>
+
 #include <time.h>
 #include "Globals.h"
 #include "IParaEngineApp.h"
@@ -1118,13 +1121,7 @@ const char* ParaEngine::ParaEngineSettings::GetProcessName()
 #ifdef WIN32
 	if (g_processName.empty())
 	{
-		DWORD dwCurrentPID = GetProcessId();
-		CProcessModuleIterator   itm(dwCurrentPID);
-		TCHAR   name[_MAX_PATH];
-		HMODULE   hModule = itm.First();   //   .EXE   
-		GetModuleBaseName(itm.GetProcessHandle(),
-			hModule, name, _MAX_PATH);
-		g_processName = name;
+		g_processName = boost::log::aux::get_process_name();
 	}
 #endif
 	return g_processName.c_str();
