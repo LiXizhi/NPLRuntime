@@ -3280,6 +3280,9 @@ namespace ParaEngine
 			params.SetParam("ViewAspect", "floatViewAspect");
 			params.SetParam("TanHalfFOV", "floatTanHalfFOV");
 			params.SetParam("screenParam", "vec2ScreenSize");
+			params.SetParam("viewportOffset", "vec2ViewportOffset");
+			params.SetParam("viewportScale", "vec2ViewportScale");
+
 
 			Matrix4 mxWorld;
 			lightObject->GetRenderMatrix(mxWorld);
