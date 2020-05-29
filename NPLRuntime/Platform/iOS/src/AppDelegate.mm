@@ -239,7 +239,7 @@ using namespace ParaEngine;
 
 - (void)setIMEKeyboardState:(BOOL)bOpen bMoveView:(BOOL)bMoveView;
 {
-    self.mUpdateViewSizeWhenKeyboardChange = bMoveView || true;
+    self.mUpdateViewSizeWhenKeyboardChange = bMoveView;
     
     if (bOpen && mTextField.userInteractionEnabled == NO)
     {
