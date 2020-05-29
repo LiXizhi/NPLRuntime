@@ -100,7 +100,7 @@ void ParaEngine::CParaEngineAppAndroid::GetScreenResolution(Vector2* pOut)
 	pOut->y = CGlobals::GetApp()->GetRenderWindow()->GetHeight();
 }
 
-void ParaEngine::CParaEngineAppAndroid::setIMEKeyboardState(bool bOpen)
+void ParaEngine::CParaEngineAppAndroid::setIMEKeyboardState(bool bOpen, bool bMoveView)
 {
-	ParaEngineGLSurfaceView::setIMEKeyboardState(bOpen);
+	ParaEngineGLSurfaceView::setIMEKeyboardState(bOpen, bMoveView);
 }

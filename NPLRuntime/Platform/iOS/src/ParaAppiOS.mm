@@ -95,7 +95,7 @@ int CParaEngineAppiOS::Run(HINSTANCE hInstance)
     return 0;
 }
 
-void CParaEngineAppiOS::setIMEKeyboardState(bool bOpen)
+void CParaEngineAppiOS::setIMEKeyboardState(bool bOpen, bool bMoveView)
 {
      auto delegate = (AppDelegate*)[[UIApplication sharedApplication] delegate];
     [delegate setIMEKeyboardState:bOpen];

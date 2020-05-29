@@ -44,6 +44,9 @@ const IType* CGUIEditBox::m_type = NULL;
 
 //--------------------------------------------------------------------------------------
 CGUIEditBox::CGUIEditBox() :CGUIBase()
+#ifdef PARAENGINE_MOBILE
+	, m_bMoveViewWhenAttachWithIME(false)
+#endif
 {
 	if (!m_type){
 		m_type = IType::GetType("guieditbox");
@@ -1766,12 +1769,18 @@ void ParaEngine::CGUIEditBox::OnSelectStart()
 }
 
 #ifdef PARAENGINE_MOBILE
+
+void ParaEngine::CGUIEditBox::setMoveViewWhenAttachWithIME(bool bMove)
+{
+	m_bMoveViewWhenAttachWithIME = bMove;
+}
+
 bool ParaEngine::CGUIEditBox::attachWithIME()
 {
 	bool ret = GUIIMEDelegate::attachWithIME();
 	if (ret)
 	{
-		CGlobals::GetApp()->setIMEKeyboardState(true);
+		CGlobals::GetApp()->setIMEKeyboardState(true, m_bMoveViewWhenAttachWithIME);
 	}
 	return ret;
 }
@@ -1781,7 +1790,7 @@ bool ParaEngine::CGUIEditBox::detachWithIME()
 	bool ret = GUIIMEDelegate::detachWithIME();
 	if (ret)
 	{
-		CGlobals::GetApp()->setIMEKeyboardState(false);
+		CGlobals::GetApp()->setIMEKeyboardState(false, m_bMoveViewWhenAttachWithIME);
 	}
 
 	return true;
@@ -1848,6 +1857,10 @@ int CGUIEditBox::InstallFields(CAttributeClass* pClass, bool bOverride)
 	pClass->AddField("CaretColor", FieldType_DWORD, (void*)SetCaretColor_s, (void*)GetCaretColor_s, NULL, NULL, bOverride);
 	pClass->AddField("SelectedBackColor", FieldType_DWORD, (void*)SetSelectedBackColor_s, (void*)GetSelectedBackColor_s, NULL, NULL, bOverride);
 	pClass->AddField("EmptyText", FieldType_String, (void*)SetEmptytext_s, (void*)GetEmptyText_s, NULL, NULL, bOverride);
+
+#ifdef PARAENGINE_MOBILE
+	pClass->AddField("MoveViewWhenAttackWithIME", FieldType_Bool, (void*)SetMoveViewWhenAttachWithIME_s, nullptr, nullptr, nullptr, bOverride);
+#endif
 
 	return S_OK;
 }

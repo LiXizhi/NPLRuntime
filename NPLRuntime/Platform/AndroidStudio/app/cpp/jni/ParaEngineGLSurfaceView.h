@@ -5,7 +5,7 @@
 namespace ParaEngine {
     struct ParaEngineGLSurfaceView
     {
-        static void setIMEKeyboardState(bool bOpen);
+        static void setIMEKeyboardState(bool bOpen, bool bMoveView);
 
     private:
         static const std::string classname;

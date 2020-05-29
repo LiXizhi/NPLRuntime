@@ -41,6 +41,9 @@ namespace ParaEngine
 		ATTRIBUTE_METHOD1(CGUIEditBox, GetEmptyText_s, const char**)	{ *p1 = cls->GetEmptyText().c_str(); return S_OK; }
 		ATTRIBUTE_METHOD1(CGUIEditBox, SetEmptytext_s, const char*)	{ cls->SetEmptytext(p1); return S_OK; }
 
+#ifdef PARAENGINE_MOBILE
+		ATTRIBUTE_METHOD1(CGUIEditBox, SetMoveViewWhenAttachWithIME_s, bool) { cls->setMoveViewWhenAttachWithIME(p1); return S_OK; }
+#endif
 	public:
 		CGUIEditBox();
 		virtual ~CGUIEditBox();
@@ -191,6 +194,8 @@ namespace ParaEngine
 	public:
 		virtual bool attachWithIME() override;
 		virtual bool detachWithIME() override;
+
+		void setMoveViewWhenAttachWithIME(bool bMove);
 	protected:
 		virtual bool canAttachWithIME() override;
 		virtual void didAttachWithIME() override;
@@ -199,6 +204,9 @@ namespace ParaEngine
 		virtual void deleteBackward() override;
 		virtual const std::string& getContentText() override;
 		virtual const std::u16string& getContentUTF16Text() override;
+
+	private:
+		bool	m_bMoveViewWhenAttachWithIME;
 #endif
 	protected:
 		static const IType* m_type;

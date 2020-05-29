@@ -2,17 +2,21 @@ package com.tatfook.paracraft;
 
 import android.app.Activity;
 import android.content.Context;
+import android.graphics.Rect;
 import android.opengl.GLSurfaceView;
+import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
 import android.support.annotation.Keep;
 import android.util.AttributeSet;
+import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.KeyEvent;
 import android.view.MotionEvent;
 import android.view.Surface;
 import android.view.View;
 import android.view.SurfaceHolder;
+import android.view.ViewTreeObserver;
 import android.view.inputmethod.InputMethodManager;
 
 public class ParaEngineGLSurfaceView extends GLSurfaceView {
@@ -42,6 +46,8 @@ public class ParaEngineGLSurfaceView extends GLSurfaceView {
 
     // TODO Static handler -> Potential leak!
     private static Handler sHandler = null;
+
+    ViewTreeObserver.OnGlobalLayoutListener mGlobalLayoutListener = null;
 
     private static native void nativeDeleteBackward();
     private static native void nativeOnUnicodeChar(String text);
@@ -86,9 +92,15 @@ public class ParaEngineGLSurfaceView extends GLSurfaceView {
 
         sParaTextInputWrapper = new ParaTextInputWrapper(this);
 
+        DisplayMetrics metrics = new DisplayMetrics();
+        activity.getWindowManager().getDefaultDisplay().getMetrics(metrics);
+        final int screenHeight = metrics.heightPixels;
+
         sHandler = new Handler() {
             @Override
             public void handleMessage(Message msg) {
+
+                boolean bMoveView = msg.getData().getBoolean("MoveView");
                 switch(msg.what) {
                     case HANDLER_OPEN_IME_KEYBOARD:
                         if (mEditText != null) {
@@ -99,8 +111,33 @@ public class ParaEngineGLSurfaceView extends GLSurfaceView {
                                 mEditText.append(ParaEngineEditBox.sPlaceholder);
                                 mEditText.addTextChangedListener(sParaTextInputWrapper);
                                 InputMethodManager imm = (InputMethodManager)sActivity.getSystemService(Context.INPUT_METHOD_SERVICE);
+
                                 imm.showSoftInput(mEditText, 0);
+
                                 Log.d(TAG, "ShowSoftInput");
+
+                                if (bMoveView) {
+                                    if (mGlobalLayoutListener != null)
+                                        ParaEngineGLSurfaceView.this.getViewTreeObserver().removeOnGlobalLayoutListener(mGlobalLayoutListener);
+
+                                    ParaEngineGLSurfaceView.this.mGlobalLayoutListener = new ViewTreeObserver.OnGlobalLayoutListener() {
+                                        @Override
+                                        public void onGlobalLayout() {
+                                            Rect r = new Rect();
+                                            ParaEngineGLSurfaceView.this.getWindowVisibleDisplayFrame(r);
+                                            int deltaHeight = screenHeight - r.bottom;
+
+                                            if (deltaHeight > 150) {
+                                                ParaEngineGLSurfaceView.this.offsetTopAndBottom(-deltaHeight);
+                                            }
+
+                                            ParaEngineGLSurfaceView.this.getViewTreeObserver().removeOnGlobalLayoutListener(mGlobalLayoutListener);
+                                            mGlobalLayoutListener = null;
+                                        }
+                                    };
+
+                                    ParaEngineGLSurfaceView.this.getViewTreeObserver().addOnGlobalLayoutListener(mGlobalLayoutListener);
+                                }
                             }
                             else {
                                 mEditText.setEnabled(false);
@@ -166,16 +203,26 @@ public class ParaEngineGLSurfaceView extends GLSurfaceView {
     }
 
     @Keep
-    public static void openIMEKeyboard() {
+    public static void openIMEKeyboard(boolean bMoveView) {
         Message msg = new Message();
         msg.what = HANDLER_OPEN_IME_KEYBOARD;
+
+        Bundle bundle = new Bundle();
+        bundle.putBoolean("MoveView", bMoveView);
+
+        msg.setData(bundle);
         sHandler.sendMessage(msg);
     }
 
     @Keep
-    public static void closeIMEKeyboard() {
+    public static void closeIMEKeyboard(boolean bMoveView) {
         Message msg = new Message();
         msg.what = HANDLER_CLOSE_IME_KEYBOARD;
+
+        Bundle bundle = new Bundle();
+        bundle.putBoolean("MoveView", bMoveView);
+
+        msg.setData(bundle);
         sHandler.sendMessage(msg);
     }
 

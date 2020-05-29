@@ -519,7 +519,7 @@ namespace ParaEngine
 
 		virtual CViewportManager* GetViewportManager() = 0;
 
-		virtual void setIMEKeyboardState(bool bOpen) = 0;
+		virtual void setIMEKeyboardState(bool bOpen, bool bMoveView = false) = 0;
 	};
 
 }

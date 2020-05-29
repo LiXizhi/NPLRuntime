@@ -797,7 +797,7 @@ bool ParaEngine::CParaEngineAppBase::InitCommandLineParams()
 	return true;
 }
 
-void ParaEngine::CParaEngineAppBase::setIMEKeyboardState(bool bOpen)
+void ParaEngine::CParaEngineAppBase::setIMEKeyboardState(bool bOpen, bool bMoveView)
 {
 
 }
