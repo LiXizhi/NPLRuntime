@@ -177,6 +177,8 @@ using namespace ParaEngine;
     [view addSubview:mTextField];
 
     [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(keyPressed:) name:UITextFieldTextDidChangeNotification object:nil];
+    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(keyBoardDidShow:) name:UIKeyboardDidShowNotification object:nil];
+    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(keyBoardDidHide:) name:UIKeyboardDidHideNotification object:nil];
     
     return YES;
 }
@@ -235,8 +237,10 @@ using namespace ParaEngine;
     // Called when the application is about to terminate. Save data if appropriate. See also applicationDidEnterBackground:.
 }
 
-- (void)setIMEKeyboardState:(BOOL)bOpen
+- (void)setIMEKeyboardState:(BOOL)bOpen bMoveView:(BOOL)bMoveView;
 {
+    self.mUpdateViewSizeWhenKeyboardChange = bMoveView || true;
+    
     if (bOpen && mTextField.userInteractionEnabled == NO)
     {
         mTextField.enablesReturnKeyAutomatically = NO;
@@ -249,6 +253,31 @@ using namespace ParaEngine;
     {
         mTextField.userInteractionEnabled = NO;
         [mTextField resignFirstResponder];
+    }
+}
+
+- (void)keyBoardDidShow:(NSNotification*)notification
+{
+    if (self.mUpdateViewSizeWhenKeyboardChange)
+    {
+        auto userInfo = [notification userInfo];
+        auto keyboardSize = [[userInfo objectForKey:UIKeyboardFrameBeginUserInfoKey] CGRectValue].size;
+        
+        auto ori = [UIApplication sharedApplication].statusBarOrientation;
+        auto keyboardHeight = UIInterfaceOrientationIsLandscape(ori) ? keyboardSize.height : keyboardSize.width;
+        
+        
+        auto currentFrame = self.viewController.view.frame;
+        self.viewController.view.frame = CGRectMake(0, -keyboardHeight, currentFrame.size.width, currentFrame.size.height);
+    }
+}
+
+- (void)keyBoardDidHide:(NSNotification*)notification
+{
+    if (self.mUpdateViewSizeWhenKeyboardChange)
+    {
+        auto currentFrame = self.viewController.view.frame;
+        self.viewController.view.frame = CGRectMake(0, 0, currentFrame.size.width, currentFrame.size.height);
     }
 }
 
