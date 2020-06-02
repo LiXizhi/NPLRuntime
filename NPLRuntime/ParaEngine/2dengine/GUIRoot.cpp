@@ -2032,6 +2032,7 @@ void ParaEngine::CGUIRoot::TranslateTouchEvent(const TouchEvent &touch)
 		}
 		else if (touch.m_nTouchType == TouchEvent::TouchEvent_POINTER_UPDATE)
 		{
+			bool bContinue = false;
 			if (pTouchSession->GetTag() == -1)
 			{
 				// OUTPUT_LOG("touch update: %d %d (drag:%d)\n", ui_mouse_x, ui_mouse_y, pTouchSession->GetMaxDragDistance());
@@ -2069,6 +2070,10 @@ void ParaEngine::CGUIRoot::TranslateTouchEvent(const TouchEvent &touch)
 						}
 					}
 				}
+				else
+				{
+					bContinue = true;
+				}
 			}
 			// how many pixels to be regarded as one mouse wheel step. must be divisible to 120. 
 			const float fMouseWheelDragStep = 20.f;
@@ -2091,7 +2096,7 @@ void ParaEngine::CGUIRoot::TranslateTouchEvent(const TouchEvent &touch)
 					}
 				}
 			}
-			if (pTouchSession->GetTag() != 3)
+			if (pTouchSession->GetTag() != 3 && !bContinue)
 			{
 				if (pTouchSession->GetTag() == -1)
 				{
