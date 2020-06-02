@@ -98,7 +98,7 @@ int CParaEngineAppiOS::Run(HINSTANCE hInstance)
 void CParaEngineAppiOS::setIMEKeyboardState(bool bOpen, bool bMoveView)
 {
      auto delegate = (AppDelegate*)[[UIApplication sharedApplication] delegate];
-    [delegate setIMEKeyboardState:bOpen bMoveView:bOpen];
+    [delegate setIMEKeyboardState:bOpen bMoveView:bMoveView];
 }
 
 } // namespace  ParaEngine
