@@ -107,6 +107,16 @@ namespace ParaEngine {
 	{
 		return JniHelper::callStaticStringMethod(classname, "getObbPath");
 	}
+
+	int ParaEngineHelper::getWifiIP()
+	{
+        return JniHelper::callStaticIntMethod(classname, "getWifiIP");
+	}
+
+    std::string ParaEngineHelper::getWifiMAC()
+    {
+        return JniHelper::callStaticStringMethod(classname, "getWifiMAC");
+    }
 }
 
 extern "C" {

@@ -1,5 +1,8 @@
 package com.tatfook.paracraft;
 
+import java.net.NetworkInterface;
+import java.util.Collections;
+import java.util.List;
 import java.util.Locale;
 
 import android.app.Activity;
@@ -8,6 +11,8 @@ import android.content.ClipboardManager;
 import android.content.Context;
 import android.content.pm.ApplicationInfo;
 import android.content.res.AssetManager;
+import android.net.wifi.WifiInfo;
+import android.net.wifi.WifiManager;
 import android.support.annotation.Keep;
 
 @Keep
@@ -133,5 +138,54 @@ public class ParaEngineHelper {
 	public static String getObbPath() {
 		ParaEngineActivity context = (ParaEngineActivity)ParaEngineActivity.getContext();
 		return context.getObbDir().getAbsolutePath();
+	}
+
+	public static int getWifiIP() {
+		WifiManager wifiManager = (WifiManager) ParaEngineActivity.getContext().getApplicationContext().getSystemService(Context.WIFI_SERVICE);
+		WifiInfo wifiInfo = wifiManager.getConnectionInfo();
+		int ipAddress = wifiInfo.getIpAddress();
+
+		return ipAddress;
+	}
+
+	private  static String _getWifiMAC() {
+		try	{
+			WifiManager wifiManager = (WifiManager) ParaEngineActivity.getContext().getApplicationContext().getSystemService(Context.WIFI_SERVICE);
+			WifiInfo wifiInfo = wifiManager.getConnectionInfo();
+
+			String macAddress = wifiInfo.getMacAddress();
+
+			return macAddress;
+		}
+		catch (Exception e) {
+			return "";
+		}
+	}
+
+	public static String getWifiMAC() {
+		try {
+			List<NetworkInterface> all = Collections.list(NetworkInterface.getNetworkInterfaces());
+
+			for (NetworkInterface nif : all) {
+				if (!nif.getName().equalsIgnoreCase("wlan0"))
+					continue;
+				byte[] macBytes = nif.getHardwareAddress();
+				if (macBytes == null)
+					return "";
+				StringBuffer res1 = new StringBuffer();
+				for (byte b : macBytes) {
+					res1.append(String.format("%02X", b));
+				}
+
+				if (res1.length() > 0)
+					res1.deleteCharAt((res1.length() - 1));
+
+				return res1.toString();
+			}
+
+			return "";
+		} catch (Exception e) {
+			return "";
+		}
 	}
 }
