@@ -349,6 +349,12 @@ void ParaEngine::CPainter::SetUse3DTransform(bool bUse3DSpaceTransform)
 	}
 }
 
+void ParaEngine::CPainter::SetDepth2D(float fDepth)
+{
+	if (state)
+		state->m_fDepth2D = fDepth;
+}
+
 bool ParaEngine::CPainter::IsUse3DTransform()
 {
 	return m_bUse3DTransform;

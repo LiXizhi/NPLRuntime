@@ -371,6 +371,9 @@ namespace ParaEngine
 		*/
 		void SetUse3DTransform(bool bUse3DSpaceTransform);
 
+		/** default 0.f*/
+		void SetDepth2D(float fDepth);
+
 		/** return false by default. */
 		bool IsUse3DTransform();
 

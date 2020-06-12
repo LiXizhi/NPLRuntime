@@ -2568,6 +2568,10 @@ int CSceneObject::RenderHeadOnDisplay(int nPass)
 				RenderHeadOnDisplayList(sceneState.listPRTransparentObject, nObjCount, &sceneState, &pObjUITextDefault, true, true);
 			if (!sceneState.listPRSmallObject.empty())
 				RenderHeadOnDisplayList(sceneState.listPRSmallObject, nObjCount, &sceneState, &pObjUITextDefault, true, true);
+			if (!sceneState.listPRBiped.empty())
+				RenderHeadOnDisplayList(sceneState.listPRBiped, nObjCount, &sceneState, &pObjUITextDefault, true, true);
+			if (!sceneState.listPRTransparentBiped.empty())
+				RenderHeadOnDisplayList(sceneState.listPRTransparentBiped, nObjCount, &sceneState, &pObjUITextDefault, true, false);
 			IHeadOn3D::DrawHeadOnUI(NULL, nObjCount, &sceneState);
 		}
 		else if (nPass == 1)
