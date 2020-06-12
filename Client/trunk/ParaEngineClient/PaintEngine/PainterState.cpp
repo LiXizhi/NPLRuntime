@@ -15,7 +15,7 @@ ParaEngine::CPainterState::CPainterState()
 	m_fViewportLeft(0), m_fViewportTop(0), m_fUIScalingX(1.f), m_fUIScalingY(1.f),
 	m_opacity(1.f), WxF(false), VxF(false), m_clipEnabled(false),
 	m_painter(0), m_nPendingAssetCount(0), matComplete(Matrix4::IDENTITY),
-	m_composition_mode(CPainter::CompositionMode_SourceBlend), changeFlags(0)
+	m_composition_mode(CPainter::CompositionMode_SourceBlend), changeFlags(0), m_fDepth2D(0.f)
 {
 	dirtyFlags = 0;
 }
@@ -28,7 +28,7 @@ ParaEngine::CPainterState::CPainterState(const CPainterState *s)
 	worldMatrix(s->worldMatrix), m_matrix(s->m_matrix), 
 	m_clipEnabled(s->m_clipEnabled), m_painter(s->m_painter),
 	m_composition_mode(s->m_composition_mode), m_nPendingAssetCount(s->m_nPendingAssetCount),
-	m_clipInfo(s->m_clipInfo), matComplete(s->matComplete),
+	m_clipInfo(s->m_clipInfo), matComplete(s->matComplete), m_fDepth2D(s->m_fDepth2D),
 	changeFlags(0)
 {
 	dirtyFlags = s->dirtyFlags;
@@ -140,6 +140,7 @@ void ParaEngine::CPainterState::CalculateDeviceMatrix(Matrix4* pOut, const Matri
 			}
 			mat._41 += m_fViewportLeft;
 			mat._42 += m_fViewportTop;
+			mat._43 = m_fDepth2D;
 		}
 		else
 		{

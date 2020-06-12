@@ -86,7 +86,7 @@ namespace ParaEngine
 		float m_fViewportTop;
 		float m_fUIScalingX;
 		float m_fUIScalingY;
-
+		float m_fDepth2D;
 		float m_opacity;
 
 		bool WxF : 1;                 // World transformation

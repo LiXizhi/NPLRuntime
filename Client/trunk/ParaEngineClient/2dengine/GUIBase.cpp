@@ -2479,6 +2479,7 @@ bool ParaEngine::CGUIBase::OnOwnerDraw(GUIState* pGUIState)
 		{
 			// convert to local control's coordinate system. 
 			painter->translate(QPoint(rect.left, rect.top));
+			painter->SetDepth2D(windowPos.GetDepth());
 			CGlobals::GetNPLRuntime()->GetMainRuntimeState()->DoString(tempScript->szCode.c_str(), (int)tempScript->szCode.size());
 			painter->setWorldTransform(oldTrans);
 		}

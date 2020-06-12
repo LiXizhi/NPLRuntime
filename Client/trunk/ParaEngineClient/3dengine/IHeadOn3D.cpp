@@ -433,7 +433,7 @@ bool ParaEngine::IHeadOn3D::DrawHeadOnUI(CBaseObject* pObj, int& nObjCount, Scen
 				mat._43 = vOffset.z;
 
 				// set model facing
-				float fFacing = pObj->GetFacing()+pObj->GetHeadOn3DFacing();
+				float fFacing = (pObj->IsBiped() ? 0.f : pObj->GetFacing()) +pObj->GetHeadOn3DFacing();
 				if(fFacing!=0.f)
 				{
 					Matrix4 mxRot;
