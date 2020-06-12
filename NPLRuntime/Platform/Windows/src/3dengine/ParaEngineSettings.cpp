@@ -1,5 +1,5 @@
 //-----------------------------------------------------------------------------
-// Class:	Android ParaEngineSettings
+// Class:	Windows ParaEngineSettings
 // Authors:	big
 // Emails:	onedou@126.com
 // Date:	2020.6.11
