@@ -140,7 +140,7 @@ void ParaEngine::CPainterState::CalculateDeviceMatrix(Matrix4* pOut, const Matri
 			}
 			mat._41 += m_fViewportLeft;
 			mat._42 += m_fViewportTop;
-			mat._43 = m_fDepth2D;
+			mat._43 += m_fDepth2D;
 		}
 		else
 		{
