@@ -5,9 +5,21 @@
 // Date:	2020.6.11
 //-----------------------------------------------------------------------------
 #include "ParaEngine.h"
-#include "ParaEngineSettings.h"
+#include "3dengine/ParaEngineSettings.h"
+#include "jni/ParaEngineHelper.h"
 
-const std::string& ParaEngine::ParaEngineSettings::GetMachineID()
+namespace ParaEngine {
+
+const std::string& ParaEngineSettings::GetMachineID()
 {
-	return "";
+    static std::string str = "";
+
+    if (str.empty())
+    {
+        str = ParaEngineHelper::getMachineID();
+    }
+
+	return str;
 }
+
+} //namespace ParaEngine

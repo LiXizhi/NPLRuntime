@@ -13,14 +13,19 @@ import android.content.pm.ApplicationInfo;
 import android.content.res.AssetManager;
 import android.net.wifi.WifiInfo;
 import android.net.wifi.WifiManager;
+import android.provider.Settings;
 import android.support.annotation.Keep;
+import android.telephony.TelephonyManager;
 
 @Keep
 public class ParaEngineHelper {
 
 	private static native void nativeSetContext(final Context pContext, final AssetManager pAssetManager);
 
-	public static void init(final Activity activity) {
+	private static boolean mCanReadPhoneState = false;
+
+	public static void init(final Activity activity, boolean bReadPhoneState) {
+		mCanReadPhoneState = bReadPhoneState;
 		ParaEngineHelper.nativeSetContext((Context)activity, activity.getAssets());
 	}
 
@@ -185,6 +190,17 @@ public class ParaEngineHelper {
 
 			return "";
 		} catch (Exception e) {
+			return "";
+		}
+	}
+
+	public static String getMachineID()
+	{
+		if (mCanReadPhoneState) {
+			TelephonyManager tm = (TelephonyManager) ParaEngineActivity.getContext().getSystemService(Context.TELEPHONY_SERVICE);
+			String sn = tm.getDeviceId();
+			return sn;
+		}else {
 			return "";
 		}
 	}
