@@ -171,6 +171,7 @@ namespace ParaEngine
 
 		ATTRIBUTE_METHOD1(ParaEngineSettings, GetMaxMacAddress_s, const char**)	{*p1 = cls->GetMaxMacAddress().c_str(); return S_OK;}
 		ATTRIBUTE_METHOD1(ParaEngineSettings, GetMaxIPAddress_s, const char**)	{ *p1 = cls->GetMaxIPAddress().c_str(); return S_OK; }
+		ATTRIBUTE_METHOD1(ParaEngineSettings, GetMachineID_s, const char**) {*p1 = cls->GetMachineID.c_str(); return S_OK; }
 
 		
 		ATTRIBUTE_METHOD1(ParaEngineSettings, GetAutoLowerFrameRateWhenNotFocused_s, bool*)	{*p1 = cls->GetAutoLowerFrameRateWhenNotFocused(); return S_OK;}
