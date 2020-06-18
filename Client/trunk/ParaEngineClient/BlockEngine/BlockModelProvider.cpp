@@ -15,7 +15,7 @@
 using namespace ParaEngine;
 
 
-BlockModel& ParaEngine::IBlockModelProvider::GetBlockModel( int nIndex /*= 0*/ )
+BlockModel& ParaEngine::IBlockModelProvider::GetBlockModel(int nIndex /*= 0*/)
 {
 	return (nIndex < (int)m_pBlockTemplate->m_block_models.size()) ? m_pBlockTemplate->m_block_models[nIndex] : m_pBlockTemplate->m_block_models[0];
 }
@@ -25,22 +25,22 @@ BlockModel& ParaEngine::IBlockModelProvider::GetBlockModelByData(uint32 nData /*
 	return GetBlockModel(0);
 }
 
-BlockModel& IBlockModelProvider::GetBlockModel( CBlockWorld* pBlockManager, uint16_t block_id, uint16_t bx, uint16_t by, uint16_t bz, uint16_t nBlockData /*= 0*/, Block** neighborBlocks/*=NULL*/ )
+BlockModel& IBlockModelProvider::GetBlockModel(CBlockWorld* pBlockManager, uint16_t block_id, uint16_t bx, uint16_t by, uint16_t bz, uint16_t nBlockData /*= 0*/, Block** neighborBlocks/*=NULL*/)
 {
 	return GetBlockModel(GetModelIndex(pBlockManager, m_pBlockTemplate->GetID(), bx, by, bz, nBlockData, neighborBlocks));
 }
 
-int CGrassModelProvider::GetModelIndex( CBlockWorld* pBlockManager, uint16_t block_id, uint16_t bx, uint16_t by, uint16_t bz, uint16_t nBlockData /*= 0*/ , Block** neighborBlocks/*=NULL*/ )
+int CGrassModelProvider::GetModelIndex(CBlockWorld* pBlockManager, uint16_t block_id, uint16_t bx, uint16_t by, uint16_t bz, uint16_t nBlockData /*= 0*/, Block** neighborBlocks/*=NULL*/)
 {
 	// just make it random
 	DWORD i = bx + by + bz + block_id;
-	return (i + (i>>8) + (i>>16))& 0xf;
+	return (i + (i >> 8) + (i >> 16)) & 0xf;
 }
 
-int CLinearModelProvider::GetModelIndex( CBlockWorld* pBlockManager, uint16_t block_id, uint16_t bx, uint16_t by, uint16_t bz, uint16_t nBlockData /*= 0*/, Block** neighborBlocks/*=NULL*/  )
+int CLinearModelProvider::GetModelIndex(CBlockWorld* pBlockManager, uint16_t block_id, uint16_t bx, uint16_t by, uint16_t bz, uint16_t nBlockData /*= 0*/, Block** neighborBlocks/*=NULL*/)
 {
 	nBlockData = nBlockData & 0xff;
-	if(nBlockData<m_nModelCount)
+	if (nBlockData < m_nModelCount)
 		return nBlockData;
 	else
 		return 0;

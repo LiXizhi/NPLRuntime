@@ -20,8 +20,8 @@ namespace ParaEngine
 {
 	const uint16_t BlockTemplate::g_maxRenderPriority = 0xf;
 
-	BlockTemplate::BlockTemplate( uint16_t id,uint32_t attFlag, uint16_t category_id) :m_id(id),m_attFlag(attFlag), m_category_id(category_id), m_fPhysicalHeight(1.f), m_nTileSize(1),
-		m_pNormalMap(nullptr), m_renderPriority(0), m_lightScatterStep(1), m_lightOpacity(1), m_pBlockModelFilter(NULL), m_bIsShadowCaster(true), m_associated_blockid(0), 
+	BlockTemplate::BlockTemplate(uint16_t id, uint32_t attFlag, uint16_t category_id) :m_id(id), m_attFlag(attFlag), m_category_id(category_id), m_fPhysicalHeight(1.f), m_nTileSize(1),
+		m_pNormalMap(nullptr), m_renderPriority(0), m_lightScatterStep(1), m_lightOpacity(1), m_pBlockModelFilter(NULL), m_bIsShadowCaster(true), m_associated_blockid(0),
 		m_bProvidePower(false), m_nLightValue(0xf), m_fSpeedReductionPercent(1.f), m_renderPass(BlockRenderPass_Opaque), m_dwMapColor(Color::White), m_UnderWaterColor(0)
 	{
 		Init(attFlag, category_id);
@@ -151,7 +151,7 @@ namespace ParaEngine
 
 	void BlockTemplate::SetTexture0(const char* texName, int nIndex)
 	{
-		if(texName)
+		if (texName)
 		{
 			if (nIndex == 0 && (IsMatchAttribute(BlockTemplate::batt_pos_tiling) || IsMatchAttribute(BlockTemplate::batt_random_tiling)))
 			{
@@ -178,7 +178,7 @@ namespace ParaEngine
 
 	void BlockTemplate::SetTexture1(const char* texName)
 	{
-		if(texName)
+		if (texName)
 		{
 			m_secondTexName = texName;
 			m_textures1[0] = CGlobals::GetAssetManager()->LoadTexture("", m_secondTexName, TextureEntity::StaticTexture);
@@ -192,10 +192,10 @@ namespace ParaEngine
 
 	void BlockTemplate::SetNormalMap(const char* texName)
 	{
-		if(texName)
+		if (texName)
 		{
 			m_normalMapName = texName;
-			m_pNormalMap = CGlobals::GetAssetManager()->LoadTexture("",m_normalMapName,TextureEntity::StaticTexture);
+			m_pNormalMap = CGlobals::GetAssetManager()->LoadTexture("", m_normalMapName, TextureEntity::StaticTexture);
 		}
 		else
 		{
@@ -203,7 +203,7 @@ namespace ParaEngine
 		}
 	}
 
-	void BlockTemplate::GetBoundingBoxVertices( Vector3 * pVertices, int* pNumber )
+	void BlockTemplate::GetBoundingBoxVertices(Vector3 * pVertices, int* pNumber)
 	{
 		GetBlockModel().GetBoundingBoxVertices(pVertices, pNumber);
 	}
@@ -231,7 +231,7 @@ namespace ParaEngine
 
 	BlockModel& BlockTemplate::GetBlockModel(int nIndex)
 	{
-		if(m_pBlockModelFilter!=0)
+		if (m_pBlockModelFilter != 0)
 			return m_pBlockModelFilter->GetBlockModel(nIndex);
 		else
 			return (nIndex < (int)m_block_models.size()) ? m_block_models[nIndex] : m_block_models[0];
@@ -239,21 +239,21 @@ namespace ParaEngine
 
 	BlockModel& BlockTemplate::GetBlockModel(CBlockWorld* pBlockManager, uint16_t bx, uint16_t by, uint16_t bz, uint16_t nBlockData /*= 0*/, Block** neighborBlocks)
 	{
-		if(m_pBlockModelFilter!=0)
+		if (m_pBlockModelFilter != 0)
 			return m_pBlockModelFilter->GetBlockModel(pBlockManager, GetID(), bx, by, bz, nBlockData, neighborBlocks);
-		else{
+		else {
 			return m_block_models[0];
 		}
 	}
 
-	void BlockTemplate::LoadModel( const std::string& sModelName )
+	void BlockTemplate::LoadModel(const std::string& sModelName)
 	{
 		GetBlockModel().LoadModel(sModelName);
-		
+
 		if (IsMatchAttribute(BlockTemplate::batt_customModel))
 			GetBlockModel().SetUniformLighting(true);
 
-		if(sModelName == "wire")
+		if (sModelName == "wire")
 		{
 			// set model filter
 			SAFE_DELETE(m_pBlockModelFilter);
@@ -265,7 +265,7 @@ namespace ParaEngine
 			SAFE_DELETE(m_pBlockModelFilter);
 			m_pBlockModelFilter = new CSlopeModelProvider(this);
 		}
-		else if(sModelName == "grass")
+		else if (sModelName == "grass")
 		{
 			// set model filter
 			SAFE_DELETE(m_pBlockModelFilter);
@@ -274,26 +274,26 @@ namespace ParaEngine
 			// modify 16 different scaling and 
 			m_block_models.resize(16, GetBlockModel());
 
-			const float random_numbers [] = {1.f,0.3f,0.8f, 0.5f,0.2f,0.9f, 0.1f, 0.15f, 0.4f, 0.55f, 0.8f, 0.95f, 0.25f, 0.05f, 0.75f, 0.65f, 0.25f, 0.85f, 1.f, 0.6f, 0.9f, };
-			for (int i=0; i<16; i++)
+			const float random_numbers[] = { 1.f,0.3f,0.8f, 0.5f,0.2f,0.9f, 0.1f, 0.15f, 0.4f, 0.55f, 0.8f, 0.95f, 0.25f, 0.05f, 0.75f, 0.65f, 0.25f, 0.85f, 1.f, 0.6f, 0.9f, };
+			for (int i = 0; i < 16; i++)
 			{
 				BlockModel& block_model = m_block_models[i];
-				float fScaling = 0.8f + random_numbers[i]*0.2f;
-				Vector3 vOffset((random_numbers[i]-0.5f)*0.5f, 0, (random_numbers[16-i]-0.5f)*0.5f);
+				float fScaling = 0.8f + random_numbers[i] * 0.2f;
+				Vector3 vOffset((random_numbers[i] - 0.5f)*0.5f, 0, (random_numbers[16 - i] - 0.5f)*0.5f);
 				block_model.Transform(vOffset, fScaling);
 			}
 		}
-		else if(sModelName == "stairs")
+		else if (sModelName == "stairs")
 		{
 			// TODO: in future: currently it is not a cubeModel yet
 			// SetLightOpacity(15);
 		}
-		else if(sModelName == "slab")
+		else if (sModelName == "slab")
 		{
 			SetLightOpacity(5);
 			// set model filter
 			SAFE_DELETE(m_pBlockModelFilter);
-			m_pBlockModelFilter = new CLinearModelProvider(this,2);
+			m_pBlockModelFilter = new CLinearModelProvider(this, 2);
 
 			// modify 16 different scaling and 
 			m_block_models.resize(2, GetBlockModel());
@@ -302,7 +302,7 @@ namespace ParaEngine
 
 			SetPhysicalHeight(0.5f);
 		}
-		else if(sModelName == "vine")
+		else if (sModelName == "vine")
 		{
 			// set model filter
 			SAFE_DELETE(m_pBlockModelFilter);
@@ -317,20 +317,20 @@ namespace ParaEngine
 				for (int i = 0; i < 6; i++)
 				{
 					sName[4] = '0' + i;
-					m_block_models[i+dir*6].LoadModel(sName);
+					m_block_models[i + dir * 6].LoadModel(sName);
 				}
 			}
 		}
-		else if(sModelName == "halfvine")
+		else if (sModelName == "halfvine")
 		{
 			// set model filter
 			SAFE_DELETE(m_pBlockModelFilter);
-			m_pBlockModelFilter = new CLinearModelProvider(this,6);
+			m_pBlockModelFilter = new CLinearModelProvider(this, 6);
 
 			// modify 
 			m_block_models.resize(6, GetBlockModel());
 			char sName[] = "halfvine0";
-			for(int i=0;i<6;i++)
+			for (int i = 0; i < 6; i++)
 			{
 				sName[8] = '0' + i;
 				m_block_models[i].LoadModel(sName);
@@ -357,28 +357,28 @@ namespace ParaEngine
 			SAFE_DELETE(m_pBlockModelFilter);
 			m_pBlockModelFilter = new CCarpetModelProvider(this);
 		}
-		else if(sModelName.find("plant") == 0)
+		else if (sModelName.find("plant") == 0)
 		{
 			// four state plant: 128*32 textures: mature,  growing, tiny, withered
 			// set model filter
 			SAFE_DELETE(m_pBlockModelFilter);
-			m_pBlockModelFilter = new CLinearModelProvider(this,4);
+			m_pBlockModelFilter = new CLinearModelProvider(this, 4);
 
 			// modify 
 			m_block_models.resize(4, GetBlockModel());
 			char sName[] = "cross0/4";
-			for(int i=0;i<4;i++)
+			for (int i = 0; i < 4; i++)
 			{
 				sName[5] = '0' + i;
 				m_block_models[i].LoadModel(sName);
 			}
 		}
-		else if(sModelName.find("seed_plant") == 0)
+		else if (sModelName.find("seed_plant") == 0)
 		{
 			// four state plant: 128*32 textures: mature,  growing, seed, withered
 			// set model filter
 			SAFE_DELETE(m_pBlockModelFilter);
-			m_pBlockModelFilter = new CLinearModelProvider(this,4);
+			m_pBlockModelFilter = new CLinearModelProvider(this, 4);
 
 			// modify 
 			m_block_models.resize(4, GetBlockModel());
@@ -398,17 +398,17 @@ namespace ParaEngine
 		}
 	}
 
-	void BlockTemplate::SetAssociatedBlock( uint16_t associated_blockid )
+	void BlockTemplate::SetAssociatedBlock(uint16_t associated_blockid)
 	{
 		m_associated_blockid = associated_blockid;
 	}
 
-	bool BlockTemplate::IsAssociatedBlockID( uint16_t block_id )
+	bool BlockTemplate::IsAssociatedBlockID(uint16_t block_id)
 	{
-		return (GetID() == block_id) || ((m_associated_blockid == block_id) && (m_associated_blockid>0));
+		return (GetID() == block_id) || ((m_associated_blockid == block_id) && (m_associated_blockid > 0));
 	}
 
-	void BlockTemplate::setProvidePower( bool bValue )
+	void BlockTemplate::setProvidePower(bool bValue)
 	{
 		m_bProvidePower = bValue;
 	}
@@ -418,37 +418,37 @@ namespace ParaEngine
 		return IsMatchAttribute(batt_solid | batt_cubeModel) && !m_bProvidePower;
 	}
 
-	void BlockTemplate::SetTorchLight( uint8_t value )
+	void BlockTemplate::SetTorchLight(uint8_t value)
 	{
-		if(value>=0 && value<=15)
+		if (value >= 0 && value <= 15)
 			m_nLightValue = value;
 	}
 
-	void BlockTemplate::GetAABB( CBlockWorld* pBlockManager, uint16_t bx, uint16_t by, uint16_t bz, CShapeAABB* pOutAABB )
+	void BlockTemplate::GetAABB(CBlockWorld* pBlockManager, uint16_t bx, uint16_t by, uint16_t bz, CShapeAABB* pOutAABB)
 	{
-		if(GetBlockModel().IsCubeAABB())
+		if (GetBlockModel().IsCubeAABB())
 		{
 			GetBlockModel().GetAABB(pOutAABB);
 		}
 		else
 		{
-			Block* pBlock = pBlockManager->GetBlock(bx,by,bz);
-			if(pBlock)
+			Block* pBlock = pBlockManager->GetBlock(bx, by, bz);
+			if (pBlock)
 			{
-				if(IsMatchAttribute(BlockTemplate::batt_cubeModel))
+				if (IsMatchAttribute(BlockTemplate::batt_cubeModel))
 				{
-					GetBlockModel(pBlockManager, bx,by,bz, pBlock->GetUserData()).GetAABB(pOutAABB);
+					GetBlockModel(pBlockManager, bx, by, bz, pBlock->GetUserData()).GetAABB(pOutAABB);
 				}
-				else if(IsMatchAttribute(BlockTemplate::batt_customModel))
+				else if (IsMatchAttribute(BlockTemplate::batt_customModel))
 				{
 					const double blockSize = BlockConfig::g_blockSize;
-					const double fHalfBlockSize = blockSize /2;
-					Vector3 vPos(Vector3((float)(blockSize*bx+fHalfBlockSize), (float)(blockSize*by + pBlockManager->GetVerticalOffset()+fHalfBlockSize), (float)(blockSize*bz+fHalfBlockSize)));
+					const double fHalfBlockSize = blockSize / 2;
+					Vector3 vPos(Vector3((float)(blockSize*bx + fHalfBlockSize), (float)(blockSize*by + pBlockManager->GetVerticalOffset() + fHalfBlockSize), (float)(blockSize*bz + fHalfBlockSize)));
 
 					char tmp[256];
-					snprintf(tmp, 255, "%d,%d,%d", bx,by,bz);
+					snprintf(tmp, 255, "%d,%d,%d", bx, by, bz);
 					CBaseObject* pObject = CGlobals::GetScene()->GetObject(tmp, vPos, false);
-					if(pObject)
+					if (pObject)
 					{
 						pObject->GetViewClippingObject()->GetAABB(pOutAABB);
 						pOutAABB->GetCenter() -= (vPos - Vector3((float)(fHalfBlockSize), (float)(fHalfBlockSize), (float)(fHalfBlockSize)));
@@ -473,15 +473,15 @@ namespace ParaEngine
 		return m_fPhysicalHeight;
 	}
 
-	float BlockTemplate::GetPhysicalHeight( CBlockWorld* pBlockManager, uint16_t bx, uint16_t by, uint16_t bz )
+	float BlockTemplate::GetPhysicalHeight(CBlockWorld* pBlockManager, uint16_t bx, uint16_t by, uint16_t bz)
 	{
-		if (m_fPhysicalHeight>0.f && IsMatchAttribute(BlockTemplate::batt_cubeModel) && (m_pBlockModelFilter || m_block_models.size()>1))
+		if (m_fPhysicalHeight > 0.f && IsMatchAttribute(BlockTemplate::batt_cubeModel) && (m_pBlockModelFilter || m_block_models.size() > 1))
 		{
-			Block* pBlock = pBlockManager->GetBlock(bx,by,bz);
-			if(pBlock)
+			Block* pBlock = pBlockManager->GetBlock(bx, by, bz);
+			if (pBlock)
 			{
 				CShapeAABB aabb;
-				GetBlockModel(pBlockManager, bx,by,bz, pBlock->GetUserData()).GetAABB(&aabb);
+				GetBlockModel(pBlockManager, bx, by, bz, pBlock->GetUserData()).GetAABB(&aabb);
 				// get max y height value.
 				return aabb.GetMax(1);
 			}
@@ -489,7 +489,7 @@ namespace ParaEngine
 		return m_fPhysicalHeight;
 	}
 
-	void BlockTemplate::SetPhysicalHeight( float fHeight )
+	void BlockTemplate::SetPhysicalHeight(float fHeight)
 	{
 		m_fPhysicalHeight = fHeight;
 	}
@@ -555,7 +555,7 @@ namespace ParaEngine
 		}
 		else if (IsColorData8Bits())
 		{
-			dwBlockColor = 0xff000000 | (~ Color::convert8_32((uint8)(blockData >> 8)));
+			dwBlockColor = 0xff000000 | (~Color::convert8_32((uint8)(blockData >> 8)));
 		}
 		else
 		{
@@ -608,7 +608,7 @@ namespace ParaEngine
 				SetAttribute(batt_pos_tiling, m_nTileSize > 1);
 				SetAttribute(batt_random_tiling, false);
 			}
-			else if(IsMatchAttribute(BlockTemplate::batt_random_tiling))
+			else if (IsMatchAttribute(BlockTemplate::batt_random_tiling))
 			{
 				SetAttribute(batt_pos_tiling, false);
 				SetAttribute(batt_random_tiling, m_nTileSize > 1);
@@ -617,7 +617,7 @@ namespace ParaEngine
 			{
 				//any case should this happen?
 				SetAttribute(batt_pos_tiling, false);
-				SetAttribute(batt_random_tiling, false);			    
+				SetAttribute(batt_random_tiling, false);
 			}
 		}
 	}
