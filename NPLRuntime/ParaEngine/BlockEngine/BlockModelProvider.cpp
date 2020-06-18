@@ -17,7 +17,7 @@ using namespace ParaEngine;
 
 BlockModel& ParaEngine::IBlockModelProvider::GetBlockModel(int nIndex /*= 0*/)
 {
-	return m_pBlockTemplate->m_block_models[nIndex];
+	return (nIndex < (int)m_pBlockTemplate->m_block_models.size()) ? m_pBlockTemplate->m_block_models[nIndex] : m_pBlockTemplate->m_block_models[0];
 }
 
 BlockModel& ParaEngine::IBlockModelProvider::GetBlockModelByData(uint32 nData /*= 0*/)

@@ -234,7 +234,7 @@ namespace ParaEngine
 		if (m_pBlockModelFilter != 0)
 			return m_pBlockModelFilter->GetBlockModel(nIndex);
 		else
-			return m_block_models[nIndex];
+			return (nIndex < (int)m_block_models.size()) ? m_block_models[nIndex] : m_block_models[0];
 	}
 
 	BlockModel& BlockTemplate::GetBlockModel(CBlockWorld* pBlockManager, uint16_t bx, uint16_t by, uint16_t bz, uint16_t nBlockData /*= 0*/, Block** neighborBlocks)
