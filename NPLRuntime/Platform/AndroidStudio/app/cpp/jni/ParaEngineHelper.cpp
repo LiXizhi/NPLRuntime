@@ -117,6 +117,11 @@ namespace ParaEngine {
     {
         return JniHelper::callStaticStringMethod(classname, "getWifiMAC");
     }
+
+    std::string ParaEngineHelper::getMachineID()
+    {
+        return JniHelper::callStaticStringMethod(classname, "getMachineID");
+    }
 }
 
 extern "C" {

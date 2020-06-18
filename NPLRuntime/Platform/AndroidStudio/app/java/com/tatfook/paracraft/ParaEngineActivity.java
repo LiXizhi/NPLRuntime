@@ -1,5 +1,6 @@
 package com.tatfook.paracraft;
 
+import android.Manifest;
 import android.app.KeyguardManager;
 import android.os.Build;
 import android.os.PowerManager;
@@ -12,6 +13,8 @@ import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
 import android.opengl.GLSurfaceView;
 import android.os.Bundle;
+import android.support.v4.app.ActivityCompat;
+import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.KeyEvent;
@@ -30,6 +33,8 @@ public class ParaEngineActivity extends AppCompatActivity {
 
     private static ParaEngineActivity sContext = null;
     private static final String TAG = "ParaEngine";
+
+    private final static int PERMISSION_REQUEST_PHONE_STATE = 100;
 
     //native method,call GLViewImpl::getGLContextAttrs() to get the OpenGL ES context attributions
     private static native int[] getGLContextAttrs();
@@ -111,10 +116,10 @@ public class ParaEngineActivity extends AppCompatActivity {
         setContentView(mFrameLayout);
     }
 
-    protected void _init(Bundle savedInstanceState) {
+    protected void _init(Bundle savedInstanceState, boolean bGranted) {
         onLoadNativeLibraries();
 
-        ParaEngineHelper.init(this);
+        ParaEngineHelper.init(this, bGranted);
 
         this.mGLContextAttrs = getGLContextAttrs();
 
@@ -135,6 +140,26 @@ public class ParaEngineActivity extends AppCompatActivity {
         return view;
     }
 
+    protected  void onCheckPerissionFinish(final Bundle savedInstanceState, boolean bGranted)
+    {
+        final Bundle si = savedInstanceState;
+        final boolean _bGranted = bGranted;
+        // init plugin
+        if(!ParaEnginePluginWrapper.init(this,
+                savedInstanceState ,
+                new ParaEnginePluginWrapper.PluginWrapperListener() {
+                    @Override
+                    public void onInit() {
+                        ParaEngineActivity.this._init(si, _bGranted);
+                    }
+                })) {
+
+            this._init(si, _bGranted);
+        }
+    }
+
+    private Bundle mSavedInstanceState;
+
     @Override
     protected void onCreate(final Bundle savedInstanceState) {
 
@@ -144,24 +169,29 @@ public class ParaEngineActivity extends AppCompatActivity {
 
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
 
-        final Bundle si = savedInstanceState;
-        // init plugin
-        if(!ParaEnginePluginWrapper.init(this,
-                savedInstanceState ,
-                new ParaEnginePluginWrapper.PluginWrapperListener() {
-                    @Override
-                    public void onInit() {
-                        ParaEngineActivity.this._init(si);
-                    }
-                })) {
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_PHONE_STATE) != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.READ_PHONE_STATE}, PERMISSION_REQUEST_PHONE_STATE);
 
-            this._init(si);
+            mSavedInstanceState = savedInstanceState;
+
+        } else {
+            onCheckPerissionFinish(savedInstanceState, true);
         }
     }
 
     @Override
     public void onRequestPermissionsResult(int requestCode, String permissions[], int[] grantResults) {
-        ParaEnginePluginWrapper.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        if (requestCode == PERMISSION_REQUEST_PHONE_STATE) {
+            if (grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                onCheckPerissionFinish(mSavedInstanceState, true);
+            } else {
+                onCheckPerissionFinish(mSavedInstanceState, false);
+            }
+        }
+        else
+        {
+            ParaEnginePluginWrapper.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        }
     }
 
     public void runOnGLThread(final Runnable pRunnable) {
