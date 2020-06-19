@@ -2288,7 +2288,8 @@ HRESULT CParaXModel::ClonePhysicsMesh(DWORD* pNumVertices, Vector3 ** ppVerts, D
 			memset(m_frame_number_vertices, 0, sizeof(int)*dwNumVx);
 		}
 	}
-
+	if(m_objNum.nBones > 0 && !bones[0].calc)
+		calcBones();
 
 	//////////////////////////////////////////////////////////////////////////
 	// read the index buffer
