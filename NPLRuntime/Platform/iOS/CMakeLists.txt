@@ -15,6 +15,7 @@ find_library(OpenGLES OpenGLES)
 find_library(QuartzCore QuartzCore)
 find_library(CoreBluetooth CoreBluetooth)
 find_library(WebKit WebKit)
+find_library(Security Security)
 
 add_executable(Paracraft
     ${app_src}
@@ -24,7 +25,7 @@ add_executable(Paracraft
     ${ASSETS_FILES})
 
 target_link_libraries(Paracraft PUBLIC
-    ${UIKit} ${OpenGLES} ${QuartzCore} ${CoreBluetooth} ${WebKit}
+    ${UIKit} ${OpenGLES} ${QuartzCore} ${CoreBluetooth} ${WebKit} ${Security}
     RenderSystemOpenGL
     ParaEngine
 )
