@@ -39,8 +39,15 @@ unsigned int show_bits(const GetBitContext *s, int n)
 {
     int i;
     unsigned int result = 0;
+
+	// fixed a crash bug, this is temp code
+#if 0
     assert(s->size_in_bits - s->index >= n);
-    for (i = s->index; i < s->index + n; i++) {
+	for (i = s->index; i < s->index + n; i++) {
+#else
+	auto end_pos = s->size_in_bits >= s->index + n ? s->index + n : s->size_in_bits;
+	for (i = s->index; i < end_pos; i++) {
+#endif
         int byte_index = i / 8;
         unsigned int right_shift = 7 - (i % 8);
         uint8_t byte = s->buffer[byte_index];
