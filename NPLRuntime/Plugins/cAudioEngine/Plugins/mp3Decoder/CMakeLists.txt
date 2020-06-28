@@ -8,6 +8,8 @@
 
 PROJECT(cAp_mp3Decoder)
 
+option(NPLRUNTIME_USE_MINI_MP3 "Use minimp3 or mpaudec to decode" ON)
+
 if(WIN32)
 	if(${CAUDIO_STATIC})
 		ADD_DEFINITIONS(-DCAUDIO_STATIC_LIB)
@@ -24,6 +26,13 @@ add_dependencies(cAp_mp3Decoder cAudio)
 if(${CAUDIO_STATIC})
 	ADD_DEFINITIONS(-DCAUDIO_STATIC_LIB)
 endif()
+
+if (NPLRUNTIME_USE_MINI_MP3)
+	target_compile_definitions(cAp_mp3Decoder PUBLIC USE_MINI_MP3)
+endif()
+
+set_property(TARGET cAp_mp3Decoder PROPERTY VERSION "2.3.0")
+set_property(TARGET cAp_mp3Decoder PROPERTY SOVERSION 2 )
 
 install_all_targets(cAp_mp3Decoder)
 

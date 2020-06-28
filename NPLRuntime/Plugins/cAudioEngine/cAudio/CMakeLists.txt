@@ -1,4 +1,6 @@
 PROJECT(cAudioEngine)
+
+option(NPLRUNTIME_USE_MINI_MP3 "Use minimp3 or mpaudec to decode" ON)
 	
 if(CAUDIO_STATIC)
 	ADD_DEFINITIONS(-DCAUDIO_STATIC_LIB)
@@ -17,6 +19,10 @@ set(CAUDIO_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/include ${CMAKE_BINARY_DIR}/i
 
 include(cAudio_src_files.cmake)		
 add_library(cAudioEngine ${CAUDIO_LIB_TYPE} ${file_root})
+
+if (NPLRUNTIME_USE_MINI_MP3)
+	target_compile_definitions(cAudioEngine PUBLIC USE_MINI_MP3)
+endif()
 
 if(CAUDIO_ENABLE_OGG)
 	include_directories (include Headers ${CMAKE_BINARY_DIR}/include ${OPENAL_INCLUDE_DIRS} ${OGG_INCLUDE_DIR} ${VORBIS_INCLUDE_DIR})
