@@ -25,7 +25,7 @@ namespace ParaEngine
 		/** get touch session by touch id. */
 		TouchEventSession* GetTouchSession(int nTouchId);
 
-		void AddToTouchSession(const TouchEvent &touch);
+		void AddToTouchSession(const TouchEvent &touch, bool bSwapped);
 
 		void ClearTouchSessions();
 
