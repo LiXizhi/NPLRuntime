@@ -2200,7 +2200,8 @@ void CAutoCamera::HandleUserInput()
 			SetMouseDragLock(false);
 		}
 	}
-
+	
+#ifndef PARAENGINE_MOBILE
 	// added a movement mode, if both left and right button are down, we will assume the move forward
 	if(m_bMouseLButtonDown && m_bMouseRButtonDown)
 	{
@@ -2211,7 +2212,7 @@ void CAutoCamera::HandleUserInput()
 			pBiped->SetFacing((float)m_fCameraRotY);
 		}
 	}
-
+#endif // PARAENGINE_MOBILE
 }
 
 void CAutoCamera::SetCameraObjectDistance(double fDistance)
