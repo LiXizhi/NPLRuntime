@@ -59,9 +59,7 @@ void AssetEntity::SetAssetServerUrl(const char* pStr)
 {
 	if (pStr)
 	{
-		//TODO: for debug
-		//g_sUrlAssetServer = pStr;
-		g_sUrlAssetServer = "http://update.61.com/haqi/assetupdate/";
+		g_sUrlAssetServer = pStr;
 	}
 }
 
