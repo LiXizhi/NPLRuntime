@@ -80,7 +80,7 @@ cMP3Decoder::cMP3Decoder(IDataSource* stream)
 
 			curPos += _currentPacket.info.frame_bytes;
 
-			_totalSize += _currentPacket.samples * sizeof(short);
+			_totalSize += _currentPacket.samples * sizeof(short) * _numChannels;
 
 			stream->seek(curPos, false);
 		}
@@ -150,7 +150,7 @@ int cMP3Decoder::readAudioData(void* output, int amount)
 				return 0;
 
 			int samples = mp3dec_decode_frame(&_context, inputBuffer, inputSize, (short*)_currentPacket.data, &_currentPacket.info);
-			_currentPacket.size = samples * sizeof(short); //_currentPacket.info.frame_bytes;
+			_currentPacket.size = samples * sizeof(short) * _numChannels; //_currentPacket.info.frame_bytes;
 
 			if (samples == 0)
 			{
