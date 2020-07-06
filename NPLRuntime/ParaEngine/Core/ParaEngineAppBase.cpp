@@ -639,12 +639,18 @@ void ParaEngine::CParaEngineAppBase::OnPause()
 	//InvalidateDeviceObjects();
 	ActivateApp(false);
     setRenderEnabled(false);
+
+	SystemEvent e(SystemEvent::SYS_PAUSE, "");
+	CGlobals::GetEventsCenter()->FireEvent(e);
 }
 
 void ParaEngine::CParaEngineAppBase::OnResume()
 {
 	ActivateApp(true);
     setRenderEnabled(true);
+
+	SystemEvent e(SystemEvent::SYS_RESUME, "");
+	CGlobals::GetEventsCenter()->FireEvent(e);
 }
 
 void ParaEngine::CParaEngineAppBase::OnRendererRecreated(IRenderWindow * renderWindow)

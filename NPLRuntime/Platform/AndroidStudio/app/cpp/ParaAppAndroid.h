@@ -72,5 +72,8 @@ namespace ParaEngine
 		virtual HRESULT DoWork() override;
 		virtual void GetScreenResolution(Vector2* pOut) override;
 		virtual void setIMEKeyboardState(bool bOpen, bool bMoveView = false) override;
+
+		virtual void OnPause() override;
+		virtual void OnResume() override;
 	};
 }

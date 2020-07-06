@@ -78,6 +78,10 @@ namespace ParaEngine
 			SYS_WM_SETTINGCHANGE = 4,
 			// 
 			SYS_RENDERER_RECREATED = 5,
+			//
+			SYS_PAUSE = 6,
+			//
+			SYS_RESUME = 7,
 		};
 	public:
 		SystemEvent(int nType, const string& sCode) :m_nType(nType), m_sCode(sCode), m_bIsAsyncMode(true){};
