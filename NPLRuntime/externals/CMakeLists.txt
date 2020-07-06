@@ -24,6 +24,8 @@ add_subdirectory(tinyxml)
 
 add_subdirectory(zlib)
 SET(ZLIB_FOUND 1)
+SET(ZLIB_INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/zlib)
+SET(ZLIB_INCLUDE_DIR ${ZLIB_INCLUDE_DIRS})
 
 add_subdirectory(tinyxpath)
 add_subdirectory(curl)
@@ -65,9 +67,15 @@ else()
 	
     add_subdirectory(glad)
 	if(NPLRUNTIME_SUPPORT_FBX) 
-		add_subdirectory(assimp-4.0.0 ${PROJECT_BINARY_DIR}/assimp-4.0.0)
-		target_include_directories(assimp INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/assimp-4.0.0/include)
-		target_include_directories(assimp INTERFACE ${PROJECT_BINARY_DIR}/assimp-4.0.0/include)
+	
+		#add_subdirectory(assimp-4.0.0 ${PROJECT_BINARY_DIR}/assimp-4.0.0)
+		#target_include_directories(assimp INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/assimp-4.0.0/include)
+		#target_include_directories(assimp INTERFACE ${PROJECT_BINARY_DIR}/assimp-4.0.0/include)
+		#target_compile_definitions(assimp INTERFACE SUPPORT_FBX_MODEL_FILE)
+		
+		add_subdirectory(assimp-5.0.1 ${PROJECT_BINARY_DIR}/assimp-5.0.1)
+		target_include_directories(assimp INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/assimp-5.0.1/include)
+		target_include_directories(assimp INTERFACE ${PROJECT_BINARY_DIR}/assimp-5.0.1/include)
 		target_compile_definitions(assimp INTERFACE SUPPORT_FBX_MODEL_FILE)
 	endif()
 

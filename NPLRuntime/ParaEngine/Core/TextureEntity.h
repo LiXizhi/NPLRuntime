@@ -226,6 +226,8 @@ namespace ParaEngine
 		void SetImage(ParaImage* pImage);
 		/* set raw texture data form which to load the texture, data will load by ParaImage */
 		bool SetRawDataForImage(const char* pData, int nSize, bool bDeleteData = true);
+		bool SetRawDataForImage(const unsigned char* pixel, size_t datalen, int width, int height, int bitsPerComponent, bool preMulti, bool bDeleteData = true);
+
 		/* get image */
 		const ParaImage* GetImage() const;
 		/* */

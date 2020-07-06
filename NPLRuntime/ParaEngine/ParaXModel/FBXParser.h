@@ -11,6 +11,7 @@
 
 // assimp declare
 struct aiScene;
+struct aiTexture;
 struct aiMesh;
 struct aiNode;
 struct aiBone;
@@ -112,7 +113,7 @@ namespace ParaEngine
 		std::map<std::string, ParticleSystem> m_particleSystem;
 		lua_State* m_pLuaState;
 		/** embedded texture filename and its binary data */
-		map<string, string> m_textureContentMapping;
+		map<string, aiTexture*> m_textureContentMapping;
 
 		vector<ModelAnimation> m_anims;
 		map<string, int> m_boneMapping;

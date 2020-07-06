@@ -57,6 +57,25 @@ void TextureEntity::SetImage(ParaImage* pImage)
 	m_pImage = pImage;
 }
 
+bool TextureEntity::SetRawDataForImage(const unsigned char* pixel, size_t datalen, int width, int height, int bitsPerComponent, bool preMulti, bool bDeleteData)
+{
+	SAFE_RELEASE(m_pImage);
+	auto pImage = new ParaImage();
+
+	auto ret = pImage->initWithRawData(pixel, datalen, width, height, bitsPerComponent, preMulti);
+	if (!ret)
+	{
+		SAFE_RELEASE(pImage);
+	}
+
+	if (bDeleteData)
+		SAFE_DELETE_ARRAY(pixel);
+
+	m_pImage = pImage;
+
+	return ret;
+}
+
 bool TextureEntity::SetRawDataForImage(const char* pData, int nSize, bool bDeleteData)
 {
 	SAFE_RELEASE(m_pImage);
