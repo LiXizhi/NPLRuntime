@@ -46,7 +46,7 @@ namespace ParaEngine
 }
 
 
-static void SetRawDataForImage(TextureEntity *texEntity, aiTexture* tex)
+static void SetRawDataForImage(TextureEntity *texEntity, const aiTexture* tex)
 {
 	if (tex->mHeight == 0) // Compressed texture.
 	{
@@ -694,27 +694,22 @@ void FBXParser::ProcessStaticFBXMaterial(const aiScene* pFbxScene, unsigned int 
 
 
 	aiGetMaterialTexture(pfbxMaterial, aiTextureType_DIFFUSE, 0,
-			&szPath, NULL, &iUV, &fBlend, &eOp, nullptr, nullptr);
+			&szPath, nullptr, &iUV, &fBlend, &eOp, nullptr, nullptr);
 
 
 	std::string diffuseTexName(szPath.C_Str());
-	if (diffuseTexName != "")
+	if (!diffuseTexName.empty())
 	{
-		bool bEmbeddedTex = diffuseTexName.substr(0, strlen(AI_EMBEDDED_TEXNAME_PREFIX)) == AI_EMBEDDED_TEXNAME_PREFIX;
+		//bool bEmbeddedTex = diffuseTexName.substr(0, strlen(AI_EMBEDDED_TEXNAME_PREFIX)) == AI_EMBEDDED_TEXNAME_PREFIX;
+		auto pTex = pFbxScene->GetEmbeddedTexture(diffuseTexName.c_str());
 
-		auto sPath = diffuseTexName;
 		diffuseTexName = GetTexturePath(diffuseTexName);
 
-		if (bEmbeddedTex)
+		if (pTex)
 		{
 
 			std::string sFileName = CParaFile::GetFileName(m_sFilename);
 			diffuseTexName = CParaFile::GetParentDirectoryFromPath(diffuseTexName) + sFileName + "/" + CParaFile::GetFileName(diffuseTexName);
-
-			int idx_texture = atoi(sPath.c_str() + strlen(AI_EMBEDDED_TEXNAME_PREFIX));
-
-			PE_ASSERT(idx_texture >= 0 && idx_texture < pFbxScene->mNumTextures);
-			auto pTex = pFbxScene->mTextures[idx_texture];
 
 			TextureEntity *texEntity = CGlobals::GetAssetManager()->GetTextureManager().GetEntity(diffuseTexName);
 			if (!texEntity)
@@ -914,35 +909,28 @@ void FBXParser::ProcessFBXMaterial(const aiScene* pFbxScene, unsigned int iIndex
 	std::string sMatName;
 	{
 		aiString sMaterialName;
-		if (AI_SUCCESS == aiGetMaterialString(pfbxMaterial, AI_MATKEY_NAME, &sMaterialName))
+		if (aiReturn_SUCCESS == aiGetMaterialString(pfbxMaterial, AI_MATKEY_NAME, &sMaterialName))
 			sMatName = sMaterialName.C_Str();
 
 	}
-		
-	unsigned int flags;
-	aiGetMaterialTexture(pfbxMaterial, aiTextureType_DIFFUSE, 0, &szPath, nullptr, &iUV, &fBlend, &eOp, nullptr, &flags);
+
+	aiGetMaterialTexture(pfbxMaterial, aiTextureType_DIFFUSE, 0, &szPath, nullptr, &iUV, &fBlend, &eOp, nullptr, nullptr);
 
 	std::string diffuseTexName(szPath.C_Str());
-	if (diffuseTexName != "")
+
+	if (!diffuseTexName.empty())
 	{
-		bool bEmbeddedTex = diffuseTexName.substr(0, strlen(AI_EMBEDDED_TEXNAME_PREFIX)) == AI_EMBEDDED_TEXNAME_PREFIX;
+		auto pTex = pFbxScene->GetEmbeddedTexture(diffuseTexName.c_str());
 
 		std::string sOriginalPath;
-
 		CParaFile::ToCanonicalFilePath(sOriginalPath, diffuseTexName, false);
 
-		std::string sPath = diffuseTexName;
 		diffuseTexName = GetTexturePath(diffuseTexName);
 
-		if (bEmbeddedTex)
+		if (pTex)
 		{
 			std::string sFileName = CParaFile::GetFileName(m_sFilename);
 			diffuseTexName = CParaFile::GetParentDirectoryFromPath(diffuseTexName) + sFileName + "/" + CParaFile::GetFileName(diffuseTexName);
-
-			int idx_texture = atoi(sPath.c_str() + strlen(AI_EMBEDDED_TEXNAME_PREFIX));
-
-			PE_ASSERT(idx_texture >= 0 && idx_texture < pFbxScene->mNumTextures);
-			auto pTex = pFbxScene->mTextures[idx_texture];
 
 			m_textureContentMapping.insert(std::make_pair(diffuseTexName, pTex));
 		}
@@ -1005,26 +993,6 @@ void FBXParser::ProcessFBXMaterial(const aiScene* pFbxScene, unsigned int iIndex
 				bFound = true;
 				diffuseTexName = sOriginalPath;
 			}
-			if (!bFound)
-			{
-				for (unsigned int i = 0; i < pFbxScene->mNumTextures; i++)
-				{
-					auto pTex = pFbxScene->mTextures[i];
-
-					if (pTex->mFilename == szPath)
-					{
-						bFound = true;
-						bEmbeddedTex = true;
-
-						std::string sFileName = CParaFile::GetFileName(m_sFilename);
-						diffuseTexName = CParaFile::GetParentDirectoryFromPath(diffuseTexName) + sFileName + "/" + CParaFile::GetFileName(diffuseTexName);
-
-						m_textureContentMapping.insert(std::make_pair(diffuseTexName, pTex));
-
-						break;
-					}
-				}
-			}
 
 			if (!bFound)
 			{
@@ -1033,7 +1001,7 @@ void FBXParser::ProcessFBXMaterial(const aiScene* pFbxScene, unsigned int iIndex
 			}
 		}
 
-		if (!bEmbeddedTex && !diffuseTexName.empty() && CParaFile::IsAbsolutePath(diffuseTexName))
+		if (!pTex && !diffuseTexName.empty() && CParaFile::IsAbsolutePath(diffuseTexName))
 		{
 			// try making it relative to project root
 			const std::string & curDir = CParaFile::GetCurDirectory(0);
@@ -1043,6 +1011,7 @@ void FBXParser::ProcessFBXMaterial(const aiScene* pFbxScene, unsigned int iIndex
 			}
 		}
 	}
+
 	m_bUsedVertexColor = diffuseTexName.empty() && m_bUsedVertexColor;
 
 	// parse material name
@@ -1053,8 +1022,8 @@ void FBXParser::ProcessFBXMaterial(const aiScene* pFbxScene, unsigned int iIndex
 	int16 blendmode = BM_OPAQUE;
 	if (!diffuseTexName.empty())
 	{
-		if (AI_SUCCESS == aiGetMaterialTexture(pfbxMaterial, (aiTextureType)aiTextureType_OPACITY, 0,
-			&szPath, NULL, &iUV, &fBlend, &eOp, NULL, NULL))
+		if (aiReturn_SUCCESS == aiGetMaterialTexture(pfbxMaterial, (aiTextureType)aiTextureType_OPACITY, 0,
+			&szPath, nullptr, &iUV, &fBlend, &eOp, nullptr, nullptr))
 		{
 			if (fbxMat.isAlphaBlended())
 				blendmode = BM_ALPHA_BLEND;
@@ -1067,7 +1036,7 @@ void FBXParser::ProcessFBXMaterial(const aiScene* pFbxScene, unsigned int iIndex
 
 	{
 		float opacityValue;
-		if (AI_SUCCESS == aiGetMaterialFloat(pfbxMaterial, AI_MATKEY_OPACITY, &opacityValue) && fabs(opacityValue - 1.0f) > FLT_EPSILON)
+		if (aiReturn_SUCCESS == aiGetMaterialFloat(pfbxMaterial, AI_MATKEY_OPACITY, &opacityValue) && fabs(opacityValue - 1.0f) > FLT_EPSILON)
 		{
 			auto size = m_transparencys.size();
 			opacity = (int16)size;
@@ -2108,7 +2077,7 @@ void FBXParser::ProcessFBXMesh(const aiScene* pFbxScene, aiMesh *pFbxMesh, aiNod
 	aiGetMaterialTexture(useMaterial, aiTextureType_DIFFUSE, 0, &szPath, nullptr, &iUV, &fBlend, &eOp, nullptr, nullptr);
 
 	std::string diffuseTexName(szPath.C_Str());
-	if (diffuseTexName == "")
+	if (diffuseTexName.empty())
 	{
 		aiColor4D diffuseColor;
 		aiGetMaterialColor(useMaterial, AI_MATKEY_COLOR_DIFFUSE, &diffuseColor);

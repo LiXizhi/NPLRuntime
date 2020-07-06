@@ -112,8 +112,9 @@ namespace ParaEngine
 		vector<TextureAnim> m_texAnims;
 		std::map<std::string, ParticleSystem> m_particleSystem;
 		lua_State* m_pLuaState;
-		/** embedded texture filename and its binary data */
-		map<string, aiTexture*> m_textureContentMapping;
+
+		/** embedded texture filename and texture object */
+		map<string, const aiTexture*> m_textureContentMapping;
 
 		vector<ModelAnimation> m_anims;
 		map<string, int> m_boneMapping;
