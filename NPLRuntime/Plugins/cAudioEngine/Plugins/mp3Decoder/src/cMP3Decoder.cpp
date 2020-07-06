@@ -245,7 +245,7 @@ bool cMP3Decoder::setPosition(int position, bool relative)
 
 			Stream->seek(oldPos + _currentPacket.info.frame_bytes, false);
 
-			_currentPosition += _currentPacket.samples * sizeof(short);
+			_currentPosition += _currentPacket.samples * sizeof(short) * _numChannels;
 
 			lastFrameSize = _currentPacket.info.frame_bytes;
 		}
