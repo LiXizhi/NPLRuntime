@@ -37,7 +37,7 @@ namespace ParaEngine
 
 		const char* ClassName()
 		{
-			return "IParaPhysics";
+			return "IParaAudioEngine";
 		}
 
 		SClass_ID SuperClassID()
