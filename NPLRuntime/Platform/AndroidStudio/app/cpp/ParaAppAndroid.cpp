@@ -94,8 +94,8 @@ namespace ParaEngine {
 
 	void CParaEngineAppAndroid::setIMEKeyboardState(bool bOpen, bool bMoveView, int ctrlBottom) {
 
-		int y = 0;
-		this->GameToClient(ctrlBottom, y);
+		int x = 0;
+		this->GameToClient(x, ctrlBottom);
 		ParaEngineGLSurfaceView::setIMEKeyboardState(bOpen, bMoveView, ctrlBottom);
 	}
 
