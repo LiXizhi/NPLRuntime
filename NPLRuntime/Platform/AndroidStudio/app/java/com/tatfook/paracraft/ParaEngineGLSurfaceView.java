@@ -100,7 +100,11 @@ public class ParaEngineGLSurfaceView extends GLSurfaceView {
             @Override
             public void handleMessage(Message msg) {
 
-                boolean bMoveView = msg.getData().getBoolean("MoveView");
+                final boolean bMoveView = msg.getData().getBoolean("MoveView");
+
+                // convert to android coordinate system
+                final int ctrlBottom = msg.getData().getInt("ctrlBottom");
+
                 switch(msg.what) {
                     case HANDLER_OPEN_IME_KEYBOARD:
                         if (mEditText != null) {
@@ -127,7 +131,7 @@ public class ParaEngineGLSurfaceView extends GLSurfaceView {
                                             ParaEngineGLSurfaceView.this.getWindowVisibleDisplayFrame(r);
                                             int deltaHeight = screenHeight - r.bottom;
 
-                                            if (deltaHeight > 150) {
+                                            if (deltaHeight > 150 && ctrlBottom > r.bottom) {
                                                 ParaEngineGLSurfaceView.this.offsetTopAndBottom(-deltaHeight);
                                             }
 
@@ -203,24 +207,26 @@ public class ParaEngineGLSurfaceView extends GLSurfaceView {
     }
 
     @Keep
-    public static void openIMEKeyboard(boolean bMoveView) {
+    public static void openIMEKeyboard(boolean bMoveView, int ctrlBottom) {
         Message msg = new Message();
         msg.what = HANDLER_OPEN_IME_KEYBOARD;
 
         Bundle bundle = new Bundle();
         bundle.putBoolean("MoveView", bMoveView);
+        bundle.putInt("ctrlBottom", ctrlBottom);
 
         msg.setData(bundle);
         sHandler.sendMessage(msg);
     }
 
     @Keep
-    public static void closeIMEKeyboard(boolean bMoveView) {
+    public static void closeIMEKeyboard(boolean bMoveView, int ctrlBottom) {
         Message msg = new Message();
         msg.what = HANDLER_CLOSE_IME_KEYBOARD;
 
         Bundle bundle = new Bundle();
         bundle.putBoolean("MoveView", bMoveView);
+        bundle.putInt("ctrlBottom", ctrlBottom);
 
         msg.setData(bundle);
         sHandler.sendMessage(msg);

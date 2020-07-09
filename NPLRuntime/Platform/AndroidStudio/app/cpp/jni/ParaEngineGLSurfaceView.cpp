@@ -13,12 +13,12 @@
 namespace ParaEngine {
     const std::string ParaEngineGLSurfaceView::classname = "com/tatfook/paracraft/ParaEngineGLSurfaceView";
 
-    void ParaEngineGLSurfaceView::setIMEKeyboardState(bool bOpen, bool bMoveView)
+    void ParaEngineGLSurfaceView::setIMEKeyboardState(bool bOpen, bool bMoveView, int ctrlBottom)
     {
         if (bOpen)
-            JniHelper::callStaticVoidMethod(classname, "openIMEKeyboard", bMoveView);
+            JniHelper::callStaticVoidMethod(classname, "openIMEKeyboard", bMoveView, ctrlBottom);
         else
-            JniHelper::callStaticVoidMethod(classname, "closeIMEKeyboard", bMoveView);
+            JniHelper::callStaticVoidMethod(classname, "closeIMEKeyboard", bMoveView, ctrlBottom);
     }
 
 } // namespace ParaEngine

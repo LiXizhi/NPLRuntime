@@ -1780,7 +1780,25 @@ bool ParaEngine::CGUIEditBox::attachWithIME()
 	bool ret = GUIIMEDelegate::attachWithIME();
 	if (ret)
 	{
-		CGlobals::GetApp()->setIMEKeyboardState(true, m_bMoveViewWhenAttachWithIME);
+		if (m_bMoveViewWhenAttachWithIME)
+		{
+
+			CGUIPosition pos;
+			this->GetAbsolutePosition(&pos, GetPosition());
+
+			float fScaleX = 1.f;
+			float fScaleY = 1.f;
+			CGlobals::GetGUI()->GetUIScale(&fScaleX, &fScaleY);
+
+			int bottom = (int)(pos.rect.bottom * fScaleY);
+
+
+			CGlobals::GetApp()->setIMEKeyboardState(true, true, bottom);
+		}
+		else
+		{
+			CGlobals::GetApp()->setIMEKeyboardState(true);
+		}
 	}
 	return ret;
 }
@@ -1790,7 +1808,24 @@ bool ParaEngine::CGUIEditBox::detachWithIME()
 	bool ret = GUIIMEDelegate::detachWithIME();
 	if (ret)
 	{
-		CGlobals::GetApp()->setIMEKeyboardState(false, m_bMoveViewWhenAttachWithIME);
+		if (m_bMoveViewWhenAttachWithIME)
+		{
+
+			CGUIPosition pos;
+			this->GetAbsolutePosition(&pos, GetPosition());
+
+			float fScaleX = 1.f;
+			float fScaleY = 1.f;
+			CGlobals::GetGUI()->GetUIScale(&fScaleX, &fScaleY);
+
+			int bottom = (int)(pos.rect.bottom * fScaleY);
+
+			CGlobals::GetApp()->setIMEKeyboardState(false, true, bottom);
+		}
+		else
+		{
+			CGlobals::GetApp()->setIMEKeyboardState(false);
+		}
 	}
 
 	return true;

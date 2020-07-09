@@ -71,7 +71,7 @@ namespace ParaEngine
 		virtual bool GetToggleSoundWhenNotFocused() override;
 		virtual HRESULT DoWork() override;
 		virtual void GetScreenResolution(Vector2* pOut) override;
-		virtual void setIMEKeyboardState(bool bOpen, bool bMoveView = false) override;
+		virtual void setIMEKeyboardState(bool bOpen, bool bMoveView = false, int ctrlBottom = -1) override;
 
 		virtual void OnPause() override;
 		virtual void OnResume() override;

@@ -59,7 +59,7 @@ namespace ParaEngine
 
 		virtual void onCmdLine(const std::string& cmd);
 
-		virtual void setIMEKeyboardState(bool bOpen, bool bMoveView = false) override;
+		virtual void setIMEKeyboardState(bool bOpen, bool bMoveView = false, int ctrlBottom = -1) override;
 		
 		/** return true if this is a render tick, otherwise false.
 		* @param pNextInterval: main_loop timer interval.

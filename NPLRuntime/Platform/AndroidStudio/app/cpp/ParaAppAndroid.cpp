@@ -92,8 +92,11 @@ namespace ParaEngine {
 		pOut->y = CGlobals::GetApp()->GetRenderWindow()->GetHeight();
 	}
 
-	void CParaEngineAppAndroid::setIMEKeyboardState(bool bOpen, bool bMoveView) {
-		ParaEngineGLSurfaceView::setIMEKeyboardState(bOpen, bMoveView);
+	void CParaEngineAppAndroid::setIMEKeyboardState(bool bOpen, bool bMoveView, int ctrlBottom) {
+
+		int y = 0;
+		this->GameToClient(ctrlBottom, y);
+		ParaEngineGLSurfaceView::setIMEKeyboardState(bOpen, bMoveView, ctrlBottom);
 	}
 
 	void CParaEngineAppAndroid::OnPause()
