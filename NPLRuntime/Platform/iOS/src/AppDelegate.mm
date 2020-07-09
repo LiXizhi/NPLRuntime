@@ -237,9 +237,10 @@ using namespace ParaEngine;
     // Called when the application is about to terminate. Save data if appropriate. See also applicationDidEnterBackground:.
 }
 
-- (void)setIMEKeyboardState:(BOOL)bOpen bMoveView:(BOOL)bMoveView;
+- (void)setIMEKeyboardState:(BOOL)bOpen bMoveView:(BOOL)bMoveView ctrlBottom:(int)ctrlBottom;
 {
     self.mUpdateViewSizeWhenKeyboardChange = bMoveView;
+    self.mCtrlBottom = ctrlBottom;
     
     if (bOpen && mTextField.userInteractionEnabled == NO)
     {
@@ -266,9 +267,13 @@ using namespace ParaEngine;
         auto ori = [UIApplication sharedApplication].statusBarOrientation;
         auto keyboardHeight = UIInterfaceOrientationIsLandscape(ori) ? keyboardSize.height : keyboardSize.width;
         
-        
         auto currentFrame = self.viewController.view.frame;
-        self.viewController.view.frame = CGRectMake(0, -keyboardHeight, currentFrame.size.width, currentFrame.size.height);
+        
+        if (currentFrame.size.height - self.mCtrlBottom < keyboardHeight)
+        {
+            auto offset = keyboardHeight - (currentFrame.size.height - self.mCtrlBottom);
+            self.viewController.view.frame = CGRectMake(0, -offset, currentFrame.size.width, currentFrame.size.height);
+        }
     }
 }
 

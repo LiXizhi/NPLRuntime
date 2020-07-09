@@ -18,12 +18,21 @@ CParaEngineAppiOS::CParaEngineAppiOS()
 
 void CParaEngineAppiOS::GameToClient(int& inout_x, int & inout_y, bool bInBackbuffer /*= true*/)
 {
-    //throw std::logic_error("The method or operation is not implemented.");
+    if (bInBackbuffer)
+    {
+        inout_x = (int)(inout_x / [UIScreen mainScreen].scale);
+        inout_y = (int)(inout_y / [UIScreen mainScreen].scale);
+    }
+
 }
 
 void CParaEngineAppiOS::ClientToGame(int& inout_x, int & inout_y, bool bInBackbuffer /*= true*/)
 {
-    //throw std::logic_error("The method or operation is not implemented.");
+    if (bInBackbuffer)
+    {
+        inout_x = (int)(inout_x * [UIScreen mainScreen].scale);
+        inout_y = (int)(inout_y * [UIScreen mainScreen].scale);
+    }
 }
 
 void CParaEngineAppiOS::SetRefreshTimer(float fTimeInterval, int nFrameRateControl /*= 0*/)
@@ -95,10 +104,14 @@ int CParaEngineAppiOS::Run(HINSTANCE hInstance)
     return 0;
 }
 
-void CParaEngineAppiOS::setIMEKeyboardState(bool bOpen, bool bMoveView)
+void CParaEngineAppiOS::setIMEKeyboardState(bool bOpen, bool bMoveView, int ctrlBottom)
 {
      auto delegate = (AppDelegate*)[[UIApplication sharedApplication] delegate];
-    [delegate setIMEKeyboardState:bOpen bMoveView:bMoveView];
+    
+    int x = 0;
+    this->GameToClient(x, ctrlBottom);
+    
+    [delegate setIMEKeyboardState:bOpen bMoveView:bMoveView ctrlBottom:ctrlBottom];
 }
 
 } // namespace  ParaEngine

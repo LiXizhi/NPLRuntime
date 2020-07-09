@@ -21,10 +21,10 @@ namespace ParaEngine {
 @property (nonatomic, retain) UITextField *mTextField;
 
 @property(nonatomic) BOOL mUpdateViewSizeWhenKeyboardChange;
+@property(nonatomic) int mCtrlBottom;
 
 
-
-- (void)setIMEKeyboardState:(BOOL)bOpen bMoveView:(BOOL)bMoveView;
+- (void)setIMEKeyboardState:(BOOL)bOpen bMoveView:(BOOL)bMoveView ctrlBottom:(int)ctrlBottom;
 
 @end
 
