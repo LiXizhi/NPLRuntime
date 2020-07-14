@@ -1,10 +1,10 @@
 [submodule "npl_packages/main"]
 	path = npl_packages/main
 	url = https://github.com/NPLPackages/main.git
-[submodule "NPLRuntime/Plugins/NplOce/NplOce"]
-	path = NPLRuntime/Plugins/NplOce/NplOce
+[submodule "NPLRuntime/Plugins/NPLOce/NplOce"]
+	path = NPLRuntime/Plugins/NPLOce/NplOce
 	url = https://github.com/zhangleio/NplOce.git
-[submodule "NPLRuntime/Plugins/NplOce/NplOce-Deps"]
-	path = NPLRuntime/Plugins/NplOce/NplOce-Deps
+[submodule "NPLRuntime/Plugins/NPLOce/NplOce-Deps"]
+	path = NPLRuntime/Plugins/NPLOce/NplOce-Deps
 	url = https://github.com/zhangleio/NplOce-Deps.git
 	branch = dev
