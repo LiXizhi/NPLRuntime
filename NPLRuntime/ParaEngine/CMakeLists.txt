@@ -231,6 +231,11 @@ if (AUDIO_STATICLIB)
 	list(APPEND NPLRUNTIME_LIBS cAudioEngine)
 endif()
 
+if (NPLRUNTIME_OCE)
+	list(APPEND NPLRUNTIME_LIBS nploce)
+	add_dependencies(ParaEngine nploce)
+endif()
+
 target_link_libraries(ParaEngine PUBLIC 
     ${RenderSystem}
     ${Boost_LIBRARIES}

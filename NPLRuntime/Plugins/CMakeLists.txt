@@ -12,5 +12,9 @@ endif()
 add_subdirectory(sqlite3)
 
 if (NPLRUNTIME_NPLMono2)
-	add_subdirectory (NPLMono/NPLMono2)
+	add_subdirectory(NPLMono/NPLMono2)
+endif()
+
+if (NPLRUNTIME_OCE)
+	add_subdirectory(NplOce)
 endif()

@@ -75,7 +75,7 @@ ClassDescriptor* AudioEngine_GetClassDesc()
 }
 
 // following is only compiled if as dynamically linked 
-#if !defined(STATIC_LIBRARY)
+#if !defined(AUDIO_STATICLIB)
 
 // forward declare of exported functions. 
 #ifdef __cplusplus

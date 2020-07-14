@@ -132,7 +132,8 @@ public class ParaEngineGLSurfaceView extends GLSurfaceView {
                                             int deltaHeight = screenHeight - r.bottom;
 
                                             if (deltaHeight > 150 && ctrlBottom > r.bottom) {
-                                                ParaEngineGLSurfaceView.this.offsetTopAndBottom(-deltaHeight);
+                                                int offset = ctrlBottom - r.bottom;
+                                                ParaEngineGLSurfaceView.this.offsetTopAndBottom(-offset);
                                             }
 
                                             ParaEngineGLSurfaceView.this.getViewTreeObserver().removeOnGlobalLayoutListener(mGlobalLayoutListener);

@@ -133,11 +133,19 @@ HRESULT ParaEngine::CAudioEngine2::InitAudioEngine(IParaAudioEngine* pInteface)
 		}
 		unsigned int deviceSelection = 0;
 		//Initialize the manager with the user settings
+#ifdef WIN32
+		if (!m_pAudioEngine->initialize("DirectSound3D"))
+		{
+			if (!m_pAudioEngine->initialize(m_pAudioEngine->getAvailableDeviceName(deviceSelection)))
+				return E_FAIL;
+		}
+#else
+
 		if (!m_pAudioEngine->initialize(m_pAudioEngine->getAvailableDeviceName(deviceSelection)))
 		{
 			return E_FAIL;
 		}
-
+#endif
 		// use linear distance model by default. 
 		m_pAudioEngine->SetDistanceModel(Audio_DistModel_LINEAR_DISTANCE_CLAMPED);
 

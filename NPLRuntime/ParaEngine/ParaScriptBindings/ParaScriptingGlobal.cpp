@@ -19,6 +19,7 @@
 	#include <commdlg.h>
 #endif
 
+#include "NPLRuntime.h"
 #include "NPLHelper.h"
 #include "IParaEngineApp.h"
 #include "AttributesManager.h"
@@ -1981,5 +1982,15 @@ extern "C" {
 			}
 		}
 		return false;
+	}
+
+	PE_CORE_DECL void* ParaGlobal_GetLuaState(const char* name)
+	{
+		auto pRuntimeState = NPL::CNPLRuntime::GetInstance()->GetRuntimeState(name);
+		if (pRuntimeState)
+		{
+			return pRuntimeState->GetLuaState();
+		}
+		return nullptr;
 	}
 };

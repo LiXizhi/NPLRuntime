@@ -1,6 +1,10 @@
 PROJECT(cAudioEngine)
 
 option(NPLRUNTIME_USE_MINI_MP3 "Use minimp3 or mpaudec to decode" ON)
+
+if (AUDIO_STATICLIB)
+	add_definitions(-DAUDIO_STATICLIB)
+endif()
 	
 if(CAUDIO_STATIC)
 	ADD_DEFINITIONS(-DCAUDIO_STATIC_LIB)
