@@ -21,7 +21,6 @@ include(mp3Decoder_src_files.cmake)
 add_library(cAp_mp3Decoder STATIC ${file_root})
 
 target_link_libraries(cAp_mp3Decoder cAudio)
-add_dependencies(cAp_mp3Decoder cAudio)
 
 if(${CAUDIO_STATIC})
 	ADD_DEFINITIONS(-DCAUDIO_STATIC_LIB)

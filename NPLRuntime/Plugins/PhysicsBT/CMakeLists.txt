@@ -63,8 +63,6 @@ IF(WIN32)
     SET(CMAKE_DEBUG_POSTFIX "_d")
 ENDIF()
 
-link_libraries(PhysicsBT  BulletDynamics BulletCollision LinearMath BulletSoftBody)
-
 if(PHYSICS_STATICLIB)
 	SET(PHYSICS_LIB_MODE "STATIC")
 	ADD_DEFINITIONS(-DPHYSICS_STATICLIB)
@@ -74,6 +72,9 @@ endif()
 
 # add the executable
 add_library(PhysicsBT ${PHYSICS_LIB_MODE} ${PhysicsBT_SRCS})
+
+
+target_link_libraries(PhysicsBT BulletDynamics BulletCollision LinearMath BulletSoftBody)
 
 if(MSVC)
 	get_target_property(DEBUG_EXE_PATH PhysicsBT DEBUG_LOCATION)

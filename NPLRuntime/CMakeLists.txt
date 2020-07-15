@@ -1,10 +1,6 @@
 include(cmake/ucm.cmake)
 
-if (ANDROID)
-	cmake_minimum_required(VERSION 3.10)
-else()
-	cmake_minimum_required(VERSION 3.5)
-endif()
+cmake_minimum_required(VERSION 3.13)
 
 set (CMAKE_CXX_STANDARD 11)
 set (CMAKE_C_STANDARD 11)

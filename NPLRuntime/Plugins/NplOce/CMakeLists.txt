@@ -26,8 +26,15 @@ include(${PROJECT_SOURCE_DIR}/cmake/ConfigBoost.cmake)
 set(NPLRUNTIME_ROOT ${PROJECT_SOURCE_DIR}/../)
 add_subdirectory(NplOce)
 
-#target_link_options(nploce PUBLIC /export:NplOce_StaticLoad)
+if (MSVC)
+	target_link_options(nploce PUBLIC /export:NplOce_StaticLoad)
+else()
+	#target_link_options(nploce PUBLIC -defsym,NplOce_StaticLoad=NplOce_StaticLoad)
+	#target_link_options(nploce PUBLIC -undefined=NplOce_StaticLoad)
+	#target_compile_options(nploce PUBLIC -Wl,-undefined=NplOce_StaticLoad)
+	
+	target_sources(nploce PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/PlaceHolder.cpp)
+endif()
 
 
-target_sources(nploce PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/NplOce.def)
  
