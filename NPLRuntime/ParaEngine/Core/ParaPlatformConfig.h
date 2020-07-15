@@ -32,16 +32,17 @@
 #define PARA_TARGET_PLATFORM         PARA_PLATFORM_LINUX
 #endif
 
-// mac
-#if defined(PLATFORM_MAC)
-#undef  PARA_TARGET_PLATFORM
-#define PARA_TARGET_PLATFORM         PARA_PLATFORM_MAC
-#endif
 
-// iphone
-#if defined(PLATFORM_IPHONE)
-#undef  PARA_TARGET_PLATFORM
-#define PARA_TARGET_PLATFORM         PARA_PLATFORM_IOS
+// Apple: Mac and iOS
+#if defined(__APPLE__) && !defined(ANDROID) // exclude android for binding generator.
+	#include <TargetConditionals.h>
+	#if TARGET_OS_IPHONE // TARGET_OS_IPHONE includes TARGET_OS_IOS TARGET_OS_TV and TARGET_OS_WATCH. see TargetConditionals.h
+		#undef  PARA_TARGET_PLATFORM
+		#define PARA_TARGET_PLATFORM         PARA_PLATFORM_IOS
+	#elif TARGET_OS_MAC
+		#undef  PARA_TARGET_PLATFORM
+		#define PARA_TARGET_PLATFORM         PARA_PLATFORM_MAC
+	#endif
 #endif
 
 // android
