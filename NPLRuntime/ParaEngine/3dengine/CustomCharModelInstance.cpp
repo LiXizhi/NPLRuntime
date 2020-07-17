@@ -469,12 +469,17 @@ void CharModelInstance::UpdateTexturesToModel(CParaXModel* pModel)
 	}
 	else
 	{
-		for(auto & replaceable_texture_pair:mReplaceableTexturesCache)
+		if (!mReplaceableTexturesCache.empty())
 		{
-			SetReplaceableTexture(replaceable_texture_pair.first,replaceable_texture_pair.second.get());
-			replaceable_texture_pair.second.reset();
+			auto mReplaceableTextures_ = mReplaceableTexturesCache;
+			for (auto & replaceable_texture_pair : mReplaceableTextures_)
+			{
+				SetReplaceableTexture(replaceable_texture_pair.first, replaceable_texture_pair.second.get());
+				replaceable_texture_pair.second.reset();
+			}
+			mReplaceableTexturesCache.clear();
 		}
-		mReplaceableTexturesCache.clear();
+		
 		for (int i = 0, k = 0; i < CParaXModel::MAX_MODEL_TEXTURES; ++i)
 		{
 			int nIndex = pModel->specialTextures[i];
