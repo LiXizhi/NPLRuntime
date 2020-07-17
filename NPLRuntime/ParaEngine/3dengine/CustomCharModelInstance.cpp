@@ -1337,6 +1337,8 @@ bool CharModelInstance::SetReplaceableTexture(int ReplaceableTextureID, TextureE
 						pTextureEntity = NULL;
 						m_textures[ReplaceableTextureID] = pTextureEntity;
 					}
+					if (mReplaceableTexturesCache.find(ReplaceableTextureID) != mReplaceableTexturesCache.end())
+						mReplaceableTexturesCache.erase(mReplaceableTexturesCache.find(ReplaceableTextureID));
 				}
 				else
 				{
