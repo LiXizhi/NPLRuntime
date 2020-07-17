@@ -28,7 +28,6 @@
 using namespace ParaEngine;
 extern HINSTANCE g_hAppInstance;
 
-extern "C" __declspec(dllexport) const char* LibDescription();
 
 INT WINAPI WinMain( HINSTANCE hInst, HINSTANCE, LPSTR lpCmdLine, INT )
 {
