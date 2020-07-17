@@ -309,7 +309,7 @@ bool CanvasAttachment::animate(SceneState * sceneState, CharacterPose* pPose, bo
 					pModel->m_CurrentAnim = pModel->GetAnimIndexByID(ANIM_STAND);
 				}
 				const AnimIndex& animIndex = pModel->m_CurrentAnim;
-				pModel->m_CurrentAnim.nCurrentFrame = (animIndex.nEndFrame > animIndex.nStartFrame) ? ((int)(sceneState->GetGlobalTime()) % (animIndex.nEndFrame - animIndex.nStartFrame) + animIndex.nStartFrame) : 0;
+				pModel->m_CurrentAnim.nCurrentFrame = (animIndex.nEndFrame > animIndex.nStartFrame) ? ((int)(sceneState && sceneState->GetGlobalTime()) % (animIndex.nEndFrame - animIndex.nStartFrame) + animIndex.nStartFrame) : 0;
 				pModel->m_NextAnim.nIndex = 0;
 				pModel->m_BlendingAnim.MakeInvalid();
 				pModel->blendingFactor = 0;
