@@ -121,6 +121,9 @@ CGUIRoot::CGUIRoot(void)
 	m_bMouseInClient(true), m_nLastTouchX(-1000), m_nLastTouchY(-1000), m_bIsNonClient(false), m_bSwapTouchButton(false),
 	m_fMinScreenWidth(400.f), m_fMinScreenHeight(300.f), m_bHasIMEFocus(false), m_bIsCursorClipped(false), m_nFingerSizePixels(60), m_nFingerStepSizePixels(10), m_pActiveWindow(NULL), m_pLastMouseDownObject(NULL), m_bMouseCaptured(false), m_bMouseOverScrollableUI(false),
 	m_fMaxScreenWidth(4096.f), m_fMaxScreenHeight(2160.f)
+#ifdef PARAENGINE_MOBILE
+	, m_nCtrlBottom(0)
+#endif
 {
 	if (!m_type){
 		m_type = IType::GetType("guiroot");
@@ -1907,6 +1910,31 @@ void ParaEngine::CGUIRoot::SetEnableIME(bool bEnableIME)
 
 }
 
+#ifdef PARAENGINE_MOBILE
+void ParaEngine::CGUIRoot::SetControlBottom(int bottom)
+{
+	float fScaleX = 1.f;
+	float fScaleY = 1.f;
+	CGlobals::GetGUI()->GetUIScale(&fScaleX, &fScaleY);
+
+	m_nCtrlBottom = (int)(bottom * fScaleY);
+}
+
+void ParaEngine::CGUIRoot::SetIMEKeyboardState(bool bOpen)
+{
+	if (bOpen)
+	{
+		CGlobals::GetApp()->setIMEKeyboardState(true, m_nCtrlBottom > 0, m_nCtrlBottom);
+	}
+	else
+	{
+		CGlobals::GetApp()->setIMEKeyboardState(false, m_nCtrlBottom > 0, m_nCtrlBottom);
+		m_nCtrlBottom = 0;
+	}
+}
+
+#endif
+
 bool ParaEngine::CGUIRoot::IsCursorClipped()
 {
 	return m_bIsCursorClipped;
@@ -2384,8 +2412,15 @@ int ParaEngine::CGUIRoot::InstallFields(CAttributeClass* pClass, bool bOverride)
 	pClass->AddField("UIScale", FieldType_Vector2, (void*)SetUIScale_s, (void*)GetUIScale_s, NULL, NULL, bOverride);
 	pClass->AddField("MousePosition", FieldType_Vector2, (void*)SetMousePosition_s, (void*)GetMousePosition_s, NULL, NULL, bOverride);
 	pClass->AddField("BackBufferSize", FieldType_Vector2, NULL, (void*)GetBackBufferSize_s, NULL, NULL, bOverride);
+
+
 	pClass->AddField("HasIMEFocus", FieldType_Bool, (void*)SetHasIMEFocus_s, (void*)GetHasIMEFocus_s, NULL, NULL, bOverride);
 	pClass->AddField("EnableIME", FieldType_Bool, (void*)SetEnableIME_s, (void*)GetEnableIME_s, NULL, NULL, bOverride);
+#ifdef PARAENGINE_MOBILE
+	pClass->AddField("ControlBottom", FieldType_Int, (void*)SetControlBottom_s, nullptr, nullptr, nullptr, bOverride);
+	pClass->AddField("IMEKeyboardState", FieldType_Bool, (void*)SetIMEKeyboardState_s, nullptr, nullptr, nullptr, bOverride);
+#endif
+
 	pClass->AddField("UseSystemCursor", FieldType_Bool, (void*)SetUseSystemCursor_s, (void*)GetUseSystemCursor_s, NULL, NULL, bOverride);
 	pClass->AddField("CaptureMouse", FieldType_Bool, (void*)SetCaptureMouse_s, (void*)IsMouseCaptured_s, NULL, NULL, bOverride);
 	pClass->AddField("MouseFocusObjectId", FieldType_Int, (void*)0, (void*)GetMouseFocusObjectId_s, NULL, NULL, bOverride);

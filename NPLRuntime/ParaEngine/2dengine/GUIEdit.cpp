@@ -1894,7 +1894,7 @@ int CGUIEditBox::InstallFields(CAttributeClass* pClass, bool bOverride)
 	pClass->AddField("EmptyText", FieldType_String, (void*)SetEmptytext_s, (void*)GetEmptyText_s, NULL, NULL, bOverride);
 
 #ifdef PARAENGINE_MOBILE
-	pClass->AddField("MoveViewWhenAttackWithIME", FieldType_Bool, (void*)SetMoveViewWhenAttachWithIME_s, nullptr, nullptr, nullptr, bOverride);
+	pClass->AddField("MoveViewWhenAttachWithIME", FieldType_Bool, (void*)SetMoveViewWhenAttachWithIME_s, nullptr, nullptr, nullptr, bOverride);
 #endif
 
 	return S_OK;
