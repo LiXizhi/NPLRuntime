@@ -137,12 +137,12 @@ CanvasAttachment::CanvasAttachment()
 
 }
 CanvasAttachment::CanvasAttachment(CanvasAttachment *parent, ParaXEntity *model, int id, int slot, float scale) :
-parent(parent), model(model), id(id), slot(slot), scale(scale), m_bIsAutoCharacter(false), m_vOffset(0, 0, 0), m_pParamBlock(nullptr)
+	parent(parent), model(model), id(id), slot(slot), scale(scale), m_bIsAutoCharacter(false), m_vOffset(0, 0, 0), m_pParamBlock(nullptr)
 {
 }
 
 CanvasAttachment::CanvasAttachment(CanvasAttachment *parent, MeshEntity *model, int id, int slot, float scale) :
-parent(parent), id(id), slot(slot), scale(scale), m_bIsAutoCharacter(false), m_vOffset(0, 0, 0), m_pParamBlock(nullptr)
+	parent(parent), id(id), slot(slot), scale(scale), m_bIsAutoCharacter(false), m_vOffset(0, 0, 0), m_pParamBlock(nullptr)
 {
 	SetModel(model);
 }
@@ -268,7 +268,7 @@ CanvasAttachment* CanvasAttachment::GetChild(int id, int slot /*= -1*/)
 			return children[i].get();
 		}
 	}
-	return nullptr;
+	return NULL;
 }
 
 void CanvasAttachment::delChildByID(int nID)
@@ -309,7 +309,7 @@ bool CanvasAttachment::animate(SceneState * sceneState, CharacterPose* pPose, bo
 					pModel->m_CurrentAnim = pModel->GetAnimIndexByID(ANIM_STAND);
 				}
 				const AnimIndex& animIndex = pModel->m_CurrentAnim;
-				pModel->m_CurrentAnim.nCurrentFrame = (animIndex.nEndFrame > animIndex.nStartFrame) ? ((int)(sceneState && sceneState->GetGlobalTime()) % (animIndex.nEndFrame - animIndex.nStartFrame) + animIndex.nStartFrame) : 0;
+				pModel->m_CurrentAnim.nCurrentFrame = (sceneState != 0 && animIndex.nEndFrame > animIndex.nStartFrame) ? ((int)(sceneState->GetGlobalTime()) % (animIndex.nEndFrame - animIndex.nStartFrame) + animIndex.nStartFrame) : 0;
 				pModel->m_NextAnim.nIndex = 0;
 				pModel->m_BlendingAnim.MakeInvalid();
 				pModel->blendingFactor = 0;
@@ -333,7 +333,6 @@ void CanvasAttachment::BuildShadowVolume(SceneState * sceneState, ShadowVolume *
 #ifdef USE_DIRECTX_RENDERER
 	if (!model)
 		return;
-	// draw model
 
 	float fCameraToObjectDist = sceneState->GetCameraToCurObjectDistance();
 	// Push matrix: set up transforms for this attached model.
@@ -401,9 +400,7 @@ void CanvasAttachment::draw(SceneState * sceneState, ParaXModelCanvas *c, CParam
 {
 	if (model == 0 && !m_pMeshObject)
 		return;
-	// draw model
-	RenderDevicePtr  pRenderDevice = CGlobals::GetRenderDevice();
-
+	
 	float fCameraToObjectDist = sceneState->GetCameraToCurObjectDistance();
 	// Push matrix: set up transforms for this attached model.
 	bool bNeedPop = SetupParantTransform(fCameraToObjectDist);
