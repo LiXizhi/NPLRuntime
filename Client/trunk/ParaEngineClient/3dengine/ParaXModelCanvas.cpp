@@ -137,12 +137,12 @@ CanvasAttachment::CanvasAttachment()
 
 }
 CanvasAttachment::CanvasAttachment(CanvasAttachment *parent, ParaXEntity *model, int id, int slot, float scale) :
-parent(parent), model(model), id(id), slot(slot), scale(scale), m_bIsAutoCharacter(false), m_vOffset(0, 0, 0), m_pParamBlock(nullptr)
+	parent(parent), model(model), id(id), slot(slot), scale(scale), m_bIsAutoCharacter(false), m_vOffset(0, 0, 0), m_pParamBlock(nullptr)
 {
 }
 
 CanvasAttachment::CanvasAttachment(CanvasAttachment *parent, MeshEntity *model, int id, int slot, float scale) :
-parent(parent), id(id), slot(slot), scale(scale), m_bIsAutoCharacter(false), m_vOffset(0, 0, 0), m_pParamBlock(nullptr)
+	parent(parent), id(id), slot(slot), scale(scale), m_bIsAutoCharacter(false), m_vOffset(0, 0, 0), m_pParamBlock(nullptr)
 {
 	SetModel(model);
 }
@@ -264,7 +264,7 @@ IAttributeFields * CanvasAttachment::GetAttributeObject()
 CanvasAttachment* CanvasAttachment::GetChild(int id, int slot /*= -1*/)
 {
 	for (size_t i = 0; i < children.size(); ++i) {
-		if ((children[i]->id == id)&&(children[i]->slot == slot)) {
+		if ((children[i]->id == id) && (children[i]->slot == slot)) {
 			return children[i].get();
 		}
 	}
@@ -333,8 +333,6 @@ void CanvasAttachment::BuildShadowVolume(SceneState * sceneState, ShadowVolume *
 #ifdef USE_DIRECTX_RENDERER
 	if (!model)
 		return;
-	// draw model
-	LPDIRECT3DDEVICE9  pd3dDevice = CGlobals::GetRenderDevice();
 
 	float fCameraToObjectDist = sceneState->GetCameraToCurObjectDistance();
 	// Push matrix: set up transforms for this attached model.
@@ -377,16 +375,16 @@ void CanvasAttachment::BuildShadowVolume(SceneState * sceneState, ShadowVolume *
 #endif
 }
 
-CParameterBlock * ParaEngine::CanvasAttachment::GetParamBlock(bool bCreateIfNotExist)
+CParameterBlock * CanvasAttachment::GetParamBlock(bool bCreateIfNotExist)
 {
-	if(m_pParamBlock)
+	if (m_pParamBlock)
 	{
 		return m_pParamBlock;
 	}
 	else
 	{
-		if(bCreateIfNotExist)
-			m_pParamBlock=new CParameterBlock();
+		if (bCreateIfNotExist)
+			m_pParamBlock = new CParameterBlock();
 		return m_pParamBlock;
 	}
 }
@@ -402,9 +400,7 @@ void CanvasAttachment::draw(SceneState * sceneState, ParaXModelCanvas *c, CParam
 {
 	if (model == 0 && !m_pMeshObject)
 		return;
-	// draw model
-	RenderDevicePtr  pd3dDevice = CGlobals::GetRenderDevice();
-
+	
 	float fCameraToObjectDist = sceneState->GetCameraToCurObjectDistance();
 	// Push matrix: set up transforms for this attached model.
 	bool bNeedPop = SetupParantTransform(fCameraToObjectDist);
@@ -442,39 +438,39 @@ void CanvasAttachment::draw(SceneState * sceneState, ParaXModelCanvas *c, CParam
 
 		if (pModel)
 		{
-			for (auto const & tex_pair:texReplaceables)
+			for (auto const & tex_pair : texReplaceables)
 			{
-				pModel->replaceTextures[tex_pair.first] =tex_pair.second.get();
-			}
-			
-			CParameterBlock * param_block=materialParams;
-			if(materialParams&&GetParamBlock())
-			{
-				param_block=new CParameterBlock(*materialParams);
-				for(auto const & param:GetParamBlock()->m_params)
-					param_block->SetParameter(param.first,param.second);
-			}
-			else if(GetParamBlock())
-			{
-				param_block=GetParamBlock();
+				pModel->replaceTextures[tex_pair.first] = tex_pair.second.get();
 			}
 
-			pModel->draw(sceneState,param_block);
+			CParameterBlock * param_block = materialParams;
+			if (materialParams && GetParamBlock())
+			{
+				param_block = new CParameterBlock(*materialParams);
+				for (auto const & param : GetParamBlock()->m_params)
+					param_block->SetParameter(param.first, param.second);
+			}
+			else if (GetParamBlock())
+			{
+				param_block = GetParamBlock();
+			}
 
-			if(materialParams&&GetParamBlock())
+			pModel->draw(sceneState, param_block);
+
+			if (materialParams && GetParamBlock())
 				delete param_block;
 
-			for(auto const & tex_pair:texReplaceables)
+			for (auto const & tex_pair : texReplaceables)
 			{
-				pModel->replaceTextures[tex_pair.first]=nullptr;
+				pModel->replaceTextures[tex_pair.first] = nullptr;
 			}
 		}
 	}
 	if (m_pMeshObject)
 	{
-		for(auto const & tex_pair:texReplaceables)
+		for (auto const & tex_pair : texReplaceables)
 		{
-			m_pMeshObject->SetReplaceableTexture(tex_pair.first,tex_pair.second.get());
+			m_pMeshObject->SetReplaceableTexture(tex_pair.first, tex_pair.second.get());
 		}
 		m_pMeshObject->DrawInner(sceneState, NULL, fCameraToObjectDist, materialParams);
 	}
