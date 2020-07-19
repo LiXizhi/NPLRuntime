@@ -141,6 +141,7 @@ bool CharModelInstance::InitBaseModel(ParaXEntity * pModel)
 	bool bSuc = true;
 	m_pModelCanvas->InitBaseModel(pModel);
 
+	bool bIsLastCustomModel = m_bIsCustomModel;
 	m_bIsCustomModel = false;
 
 	/** this is a character model.*/
@@ -190,11 +191,16 @@ bool CharModelInstance::InitBaseModel(ParaXEntity * pModel)
 	}
 	catch (...) { bSuc = false; }
 
+	if (bIsLastCustomModel != m_bIsCustomModel)
+	{
+		for (size_t i = 0; i < NUM_TEX; i++)
+			m_textures[i].reset();
+	}
+
 	if (m_bIsCustomModel == false)
 	{
 		/** this is not a fully customizable character model.*/
-		m_bIsCustomModel = false;
-
+		
 		/** a custom model is definitely not an automatic character model.*/
 		m_pModelCanvas->SetAutoCharacterModel(false);
 		// TODO: just for testing. Set the default skin.
