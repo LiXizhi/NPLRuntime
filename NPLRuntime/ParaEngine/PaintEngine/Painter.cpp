@@ -701,41 +701,75 @@ HRESULT CPainter::DrawText(const char16_t* strText, GUIFontElement* pElement, RE
 	{
 #ifdef USE_OPENGL_RENDERER
 		// CompositionModeStack blendModeStack(this, CPainter::CompositionMode_PlusSourceBlend);
-#endif
-		if (bShadow)
+
+		if (!(pElement->dwTextFormat & DT_NOCLIP))
 		{
-			DWORD shadowColor = shadowColor_;
-			if (shadowColor == 0)
-				shadowColor = ComputeTextShadowColor(pElement->FontColor);
-
-			int alpha = (shadowColor & 0xff000000) % 0xff;
-			alpha = (int)(alpha * pElement->FontColor.a);
-			shadowColor &= 0xffffff;
-			shadowColor += (alpha << 24);
-
-			int startIdx = 5;
-			int endIdx = 6;
-			if (shadowQuality == 4)
-			{
-				startIdx = 0;
-				endIdx = 4;
-			}
-			else if (shadowQuality == 8)
-			{
-				startIdx = 0;
-				endIdx = 8;
-			}
-
-			for (int i = startIdx; i<endIdx; ++i)
-			{
-				RECT rcShadow = rcScreen;
-				CGUIBase::OffsetRect(&rcShadow, g_offsets[i][0], g_offsets[i][1]);
-				V_RETURN(engine->drawText(pFontNode, strText, \
-					nCount, &rcShadow, pElement->dwTextFormat, shadowColor));
-			}
+			QRect clipRect(rcScreen);
+			engine->clip(clipRect, ClipOperation::ReplaceClip);
 		}
+#endif
+		
 
-		V_RETURN(engine->drawText(pFontNode, strText, nCount, &rcScreen, pElement->dwTextFormat, pElement->FontColor));
+		do
+		{
+			if (bShadow)
+			{
+				DWORD shadowColor = shadowColor_;
+				if (shadowColor == 0)
+					shadowColor = ComputeTextShadowColor(pElement->FontColor);
+
+				int alpha = (shadowColor & 0xff000000) % 0xff;
+				alpha = (int)(alpha * pElement->FontColor.a);
+				shadowColor &= 0xffffff;
+				shadowColor += (alpha << 24);
+
+				int startIdx = 5;
+				int endIdx = 6;
+				if (shadowQuality == 4)
+				{
+					startIdx = 0;
+					endIdx = 4;
+				}
+				else if (shadowQuality == 8)
+				{
+					startIdx = 0;
+					endIdx = 8;
+				}
+
+				for (int i = startIdx; i < endIdx; ++i)
+				{
+					RECT rcShadow = rcScreen;
+					CGUIBase::OffsetRect(&rcShadow, g_offsets[i][0], g_offsets[i][1]);
+					/*
+					V_RETURN(engine->drawText(pFontNode, strText, \
+						nCount, &rcShadow, pElement->dwTextFormat, shadowColor));
+						*/
+
+					hr = engine->drawText(pFontNode, strText, \
+						nCount, &rcShadow, pElement->dwTextFormat, shadowColor);
+					if (FAILED(hr))
+						break;
+				}
+
+				if (FAILED(hr))
+					break;
+			}
+
+			hr = engine->drawText(pFontNode, strText, nCount, &rcScreen, pElement->dwTextFormat, pElement->FontColor);
+
+
+		} while (false);
+
+#ifdef USE_OPENGL_RENDERER
+		if (!(pElement->dwTextFormat & DT_NOCLIP))
+		{
+			//CGlobals::GetRenderDevice()->SetRenderState(ERenderState::SCISSORTESTENABLE, FALSE);
+			QRect empty;
+			engine->clip(empty, ClipOperation::NoClip);
+		}
+#endif
+
+		return hr;
 	}
 	else{
 		// OUTPUT_LOG("fontnode==null\n");
@@ -763,7 +797,15 @@ HRESULT CPainter::DrawText(const char16_t* strText, GUIFontElement* pElement, RE
 	{
 #ifdef USE_OPENGL_RENDERER
 		// CompositionModeStack blendModeStack(this, CPainter::CompositionMode_PlusSourceBlend);
+
+		if (!(pElement->dwTextFormat & DT_NOCLIP))
+		{
+			QRect clipRect(rcScreen);
+			engine->clip(clipRect, ClipOperation::ReplaceClip);
+		}
 #endif
+		
+
 		LinearColor color = pElement->FontColor;
 		if (dwColorMask)
 		{
@@ -774,40 +816,62 @@ HRESULT CPainter::DrawText(const char16_t* strText, GUIFontElement* pElement, RE
 			color.b *= colorMask.b;
 		}
 
-		if (bShadow)
+		do
 		{
-			DWORD shadowColor = shadowColor_;
-			if (shadowColor == 0)
-				shadowColor = ComputeTextShadowColor(pElement->FontColor);
-
-			int alpha = (shadowColor & 0xff000000) % 0xff;
-			alpha = (int)(alpha*color.a);
-			shadowColor &= 0xffffff;
-			shadowColor += (alpha << 24);
-
-			int startIdx = 5;
-			int endIdx = 6;
-			if (shadowQuality == 4)
+			if (bShadow)
 			{
-				startIdx = 0;
-				endIdx = 4;
-			}
-			else if (shadowQuality == 8)
-			{
-				startIdx = 0;
-				endIdx = 8;
+				DWORD shadowColor = shadowColor_;
+				if (shadowColor == 0)
+					shadowColor = ComputeTextShadowColor(pElement->FontColor);
+
+				int alpha = (shadowColor & 0xff000000) % 0xff;
+				alpha = (int)(alpha*color.a);
+				shadowColor &= 0xffffff;
+				shadowColor += (alpha << 24);
+
+				int startIdx = 5;
+				int endIdx = 6;
+				if (shadowQuality == 4)
+				{
+					startIdx = 0;
+					endIdx = 4;
+				}
+				else if (shadowQuality == 8)
+				{
+					startIdx = 0;
+					endIdx = 8;
+				}
+
+				for (int i = startIdx; i < endIdx; ++i)
+				{
+					RECT rcShadow = rcScreen;
+					CGUIBase::OffsetRect(&rcShadow, g_offsets[i][0], g_offsets[i][1]);
+					hr = (engine->drawText(pFontNode, strText, \
+						nCount, &rcShadow, pElement->dwTextFormat, shadowColor));
+
+					if (FAILED(hr))
+						break;
+				}
+
+				if (FAILED(hr))
+					break;
 			}
 
-			for (int i = startIdx; i < endIdx; ++i)
-			{
-				RECT rcShadow = rcScreen;
-				CGUIBase::OffsetRect(&rcShadow, g_offsets[i][0], g_offsets[i][1]);
-				V_RETURN(engine->drawText(pFontNode, strText, \
-					nCount, &rcShadow, pElement->dwTextFormat, shadowColor));
-			}
+			hr = (engine->drawText(pFontNode, strText, nCount, &rcScreen, pElement->dwTextFormat, color));
+
+		} while (false);
+
+#ifdef USE_OPENGL_RENDERER
+		if (!(pElement->dwTextFormat & DT_NOCLIP))
+		{
+			//CGlobals::GetRenderDevice()->SetRenderState(ERenderState::SCISSORTESTENABLE, FALSE);
+			QRect empty;
+			engine->clip(empty, ClipOperation::NoClip);
 		}
+#endif
 
-		V_RETURN(engine->drawText(pFontNode, strText, nCount, &rcScreen, pElement->dwTextFormat, color));
+		return hr;
+
 	}
 	else{
 		// OUTPUT_LOG("fontnode==null\n");

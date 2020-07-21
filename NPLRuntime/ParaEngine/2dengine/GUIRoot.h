@@ -76,6 +76,10 @@ namespace ParaEngine
 
 		ATTRIBUTE_METHOD1(CGUIRoot, GetEnableIME_s, bool*)	{ *p1 = cls->GetEnableIME(); return S_OK; }
 		ATTRIBUTE_METHOD1(CGUIRoot, SetEnableIME_s, bool)	{ cls->SetEnableIME(p1); return S_OK; }
+#ifdef PARAENGINE_MOBILE
+		ATTRIBUTE_METHOD1(CGUIRoot, SetControlBottom_s, int) { cls->SetControlBottom(p1); return S_OK; }
+		ATTRIBUTE_METHOD1(CGUIRoot, SetIMEKeyboardState_s, bool) { cls->SetIMEKeyboardState(p1); return S_OK; }
+#endif
 
 		ATTRIBUTE_METHOD1(CGUIRoot, GetUseSystemCursor_s, bool*)	{ *p1 = cls->GetUseSystemCursor(); return S_OK; }
 		ATTRIBUTE_METHOD1(CGUIRoot, SetUseSystemCursor_s, bool)	{ cls->SetUseSystemCursor(p1); return S_OK; }
@@ -107,6 +111,8 @@ namespace ParaEngine
 
 		ATTRIBUTE_METHOD1(CGUIRoot, GetKeyFocusObjectId_s, int*) { *p1 = cls->GetKeyFocusObjectId(); return S_OK; }
 		ATTRIBUTE_METHOD1(CGUIRoot, GetMouseFocusObjectId_s, int*) { *p1 = cls->GetMouseFocusObjectId(); return S_OK; }
+
+		
 	public:
 		ParaEngine::GUIState& GetGUIState() { return m_stateGUI; }
 		CGUIMouseVirtual* GetMouse() { return m_pMouse; }
@@ -439,6 +445,14 @@ namespace ParaEngine
 		bool GetEnableIME();
 		void SetEnableIME(bool bHasIME);
 
+#ifdef PARAENGINE_MOBILE
+		/* App will check the bottom pos of control and move render view when attach IME. */
+		void SetControlBottom(int bottom);
+
+		/* */
+		void SetIMEKeyboardState(bool bOpen);
+#endif
+
 		/** confine the cursor in current window.
 		* @param bEnable: true to enable and false to release.
 		*/
@@ -604,6 +618,11 @@ namespace ParaEngine
 		CGUIBase*  m_pActiveWindow;
 		/** the emulated ime text sent via scripting interface */
 		std::wstring m_sIMEText;
+
+#ifdef PARAENGINE_MOBILE
+		/* App will check the bottom pos of control and move render view when attach IME. */
+		int			m_nCtrlBottom;
+#endif
 		
 		friend CGUIBase;
 	};
