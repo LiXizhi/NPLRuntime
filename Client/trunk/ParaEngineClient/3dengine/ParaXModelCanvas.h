@@ -157,7 +157,7 @@ namespace ParaEngine
 		/** set up the transform, so that this attached model can be drawn in its local space.
 		* @param fCameraToCurObjectDistance: this is only used for LOD
 		*/
-		bool SetupParantTransform(float fCameraToCurObjectDistance = 0.f);
+		bool SetupParantTransform(SceneState * sceneState, float fCameraToCurObjectDistance = 0.f);
 
 		/**
 		* add a new model to this node.

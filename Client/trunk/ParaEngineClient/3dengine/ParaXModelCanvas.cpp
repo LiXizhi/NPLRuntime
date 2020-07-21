@@ -199,13 +199,14 @@ void CanvasAttachment::SetReplaceableTexture(TextureEntity* pTex, int replaceabl
 	}
 }
 
-bool CanvasAttachment::SetupParantTransform(float fCameraToObjectDist)
+bool CanvasAttachment::SetupParantTransform(SceneState * sceneState, float fCameraToObjectDist)
 {
 	if (parent == 0)
 		return false;
 	if (parent->model != 0)
 	{
-		CParaXModel* pModel = parent->model->GetModel(parent->model->GetLodIndex(fCameraToObjectDist));
+		int nIndex = (sceneState && sceneState->IsLODEnabled()) ? parent->model->GetLodIndex(fCameraToObjectDist) : 0;
+		CParaXModel* pModel = parent->model->GetModel(nIndex);
 		if (pModel)
 		{
 			return pModel->SetupTransformByID(id);
@@ -336,7 +337,7 @@ void CanvasAttachment::BuildShadowVolume(SceneState * sceneState, ShadowVolume *
 
 	float fCameraToObjectDist = sceneState->GetCameraToCurObjectDistance();
 	// Push matrix: set up transforms for this attached model.
-	bool bNeedPop = SetupParantTransform(fCameraToObjectDist);
+	bool bNeedPop = SetupParantTransform(sceneState, fCameraToObjectDist);
 
 	// scale the model
 	Matrix4 mat, matScale;
@@ -356,7 +357,8 @@ void CanvasAttachment::BuildShadowVolume(SceneState * sceneState, ShadowVolume *
 	CGlobals::GetWorldMatrixStack().push(mat);
 
 	// draw this model
-	int nIndex = model->GetLodIndex(fCameraToObjectDist);
+	int nIndex = (sceneState && sceneState->IsLODEnabled()) ? model->GetLodIndex(fCameraToObjectDist) : 0;
+
 	CParaXModel* pModel = model->GetModel(nIndex);
 	if (pModel)
 	{
@@ -400,10 +402,10 @@ void CanvasAttachment::draw(SceneState * sceneState, ParaXModelCanvas *c, CParam
 {
 	if (model == 0 && !m_pMeshObject)
 		return;
-	
+
 	float fCameraToObjectDist = sceneState->GetCameraToCurObjectDistance();
 	// Push matrix: set up transforms for this attached model.
-	bool bNeedPop = SetupParantTransform(fCameraToObjectDist);
+	bool bNeedPop = SetupParantTransform(sceneState, fCameraToObjectDist);
 	// scale the model
 	Matrix4 mat, matTmp;
 	if (scale != 1.f)
