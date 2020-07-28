@@ -191,8 +191,10 @@ bool CharModelInstance::InitBaseModel(ParaXEntity * pModel)
 	}
 	catch (...) { bSuc = false; }
 
-	if (bIsLastCustomModel != m_bIsCustomModel)
+	// if (bIsLastCustomModel != m_bIsCustomModel)
 	{
+		// reset replaceable textures if base model is changed.
+		mReplaceableTexturesCache.clear();
 		for (size_t i = 0; i < NUM_TEX; i++)
 			m_textures[i].reset();
 	}
