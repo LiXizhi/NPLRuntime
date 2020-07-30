@@ -91,6 +91,11 @@ public:
 		if (nResult == 0)
 		{
 			pAsset->SetState(AssetEntity::ASSET_STATE_NORMAL);
+
+			// this fixed a bug, where E_PENDING will make async loaded texture invalid, we will make them valid again when downloaded. 
+			if (!pAsset->m_bIsValid)
+				pAsset->m_bIsValid = true;
+
 			//pAsset->m_bIsInitialized = false;
 			//pAsset->InitDeviceObjects();
 
@@ -190,11 +195,12 @@ RenderDevicePtr ParaEngine::CTextureProcessor::GetRenderDevice()
 
 HRESULT ParaEngine::CTextureProcessor::UnLockDeviceObject()
 {
-	if (m_asset.get() != 0 && m_pData && m_cBytes>0)
+	if (m_asset.get() != 0 && m_pData && m_cBytes > 0)
 	{
 		if (GetRenderDevice() == 0)
 			return E_FAIL;
 		m_asset->LoadFromMemory(m_pData, m_cBytes, m_nMipLevels, m_dwTextureFormat, m_ppTexture);
+
 		// Please note that for TextureEntity::TextureSequence, the texture may be locked multiple times. 
 		m_asset->UnLock();
 	}
