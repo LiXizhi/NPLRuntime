@@ -147,7 +147,7 @@ namespace ParaEngine
 		virtual IAttributeFields* GetChildAttributeObject(int nRowIndex, int nColumnIndex = 0);
 	
 	public:
-		void SetReplaceableTexture(TextureEntity* pTex, int replaceableTextureID = 2);
+		void SetReplaceableTexture(TextureEntity* pTex, int replaceableTextureID=2);
 		void SetModel(ParaXEntity* pModel);
 		void SetModel(MeshEntity* pModel);
 
@@ -157,7 +157,7 @@ namespace ParaEngine
 		/** set up the transform, so that this attached model can be drawn in its local space.
 		* @param fCameraToCurObjectDistance: this is only used for LOD
 		*/
-		bool SetupParantTransform(float fCameraToCurObjectDistance = 0.f);
+		bool SetupParantTransform(SceneState * sceneState, float fCameraToCurObjectDistance = 0.f);
 
 		/**
 		* add a new model to this node.
@@ -203,7 +203,8 @@ namespace ParaEngine
 		/** build the shadow volume */
 		void BuildShadowVolume(SceneState * sceneState, ShadowVolume * pShadowVolume, LightParams* pLight, Matrix4* mxWorld);
 
-		CParameterBlock * GetParamBlock(bool bCreateIfNotExist = false);
+		CParameterBlock * GetParamBlock(bool bCreateIfNotExist= false);
+
 	public:
 		/** child models */
 		std::vector< CanvasAttachmentPtr > children;
@@ -220,10 +221,9 @@ namespace ParaEngine
 		ref_ptr<CMeshObject> m_pMeshObject;
 
 		// a replaceable texture for use with the model on this attachment.
-		std::map<int, asset_ptr<TextureEntity> > texReplaceables;
+		std::map<int,asset_ptr<TextureEntity> > texReplaceables;
 
 		CParameterBlock * m_pParamBlock;
-		
 
 		/// this id will be used to index into the parent model's attachment lookup table to find the
 		/// actual attachment point in the parent model.
