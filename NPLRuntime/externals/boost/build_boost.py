@@ -316,7 +316,7 @@ def buildLinux():
 if __name__ == '__main__':
 	parser = argparse.ArgumentParser(description='manual to this script')
 	parser.add_argument('--platform', type=str, default = "android");
-	parser.add_argument('--boost_version', type=str, default = "1.69.0");
+	parser.add_argument('--boost_version', type=str, default = "1.73.0");
 	
 	args = parser.parse_args();
 	

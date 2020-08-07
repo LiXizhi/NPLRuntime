@@ -207,7 +207,7 @@ public:
     template <typename Handler>
     void async_monitor(implementation_type &impl, Handler handler)
     {
-        this->async_monitor_io_service_.post(monitor_operation<Handler>(impl, this->get_io_service(), handler));
+        this->async_monitor_io_service_.post(monitor_operation<Handler>(impl, this->get_io_context(), handler));
     }
 
 private:
@@ -251,7 +251,7 @@ private:
             catch (...)
             {
                 last_work_thread_exception_ptr_ = std::current_exception();
-                this->get_io_service().post(boost::bind(&boost::asio::basic_dir_monitor_service<DirMonitorImplementation>::throw_work_exception_handler, this));
+                this->get_io_context().post(boost::bind(&boost::asio::basic_dir_monitor_service<DirMonitorImplementation>::throw_work_exception_handler, this));
             }
         }
     }

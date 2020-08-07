@@ -91,6 +91,11 @@ public:
 		if (nResult == 0)
 		{
 			pAsset->SetState(AssetEntity::ASSET_STATE_NORMAL);
+			
+			// this fixed a bug, where E_PENDING will make async loaded texture invalid, we will make them valid again when downloaded. 
+			if (!pAsset->m_bIsValid)
+				pAsset->m_bIsValid = true;
+			
 			//pAsset->m_bIsInitialized = false;
 			//pAsset->InitDeviceObjects();
 

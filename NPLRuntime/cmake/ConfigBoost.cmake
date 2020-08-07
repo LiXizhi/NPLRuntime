@@ -3,13 +3,13 @@
 
 
 
-set(Boost_Version 1.69.0)
+set(Boost_Version 1.73.0)
 
 if ("$ENV{BOOST_ROOT}" STRGREATER "")
 	set(BOOST_ROOT $ENV{BOOST_ROOT})
 	string(REPLACE "\\" "/" BOOST_ROOT ${BOOST_ROOT})
 else()
-	set(Boost_Path boost_1_69_0)
+	set(Boost_Path boost_1_73_0)
 	set(BOOST_ROOT ${PROJECT_SOURCE_DIR}/externals/boost/prebuild/src/${Boost_Path})
 endif()
 
@@ -51,11 +51,11 @@ endif()
 # Add more boost components here. Boost 1.65.1 or above is recommended. 1.55 is minimum for server build
 
 if(IOS)
-find_host_package(Boost 1.69.0 REQUIRED 
+find_host_package(Boost 1.73.0 REQUIRED 
 COMPONENTS thread date_time filesystem system chrono regex serialization iostreams log
 )
 else()
-find_package(Boost 1.65.0 REQUIRED 
+find_package(Boost 1.73.0 REQUIRED 
 COMPONENTS thread date_time filesystem system chrono regex serialization iostreams log
 ) 
 endif()

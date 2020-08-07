@@ -357,7 +357,9 @@ void NPL::CNPLConnection::stop(bool bRemoveConnection, int nReason)
 			SendMessage("connect_overriden", "");
 		}
 		// Post a call to the stop function so that stop() is safe to call from any thread.
-		m_socket.get_io_service().post(boost::bind(&CNPLConnection::handle_stop, shared_from_this()));
+		//m_socket.get_io_service().post(boost::bind(&CNPLConnection::handle_stop, shared_from_this()));
+
+		boost::asio::post(m_socket.get_executor(), boost::bind(&CNPLConnection::handle_stop, shared_from_this()));
 	}
 }
 
@@ -588,7 +590,7 @@ void NPL::CNPLConnection::connect()
 	PE_ASSERT(m_address);
 
 	if (!m_resolver)
-		m_resolver.reset(new boost::asio::ip::tcp::resolver(m_socket.get_io_service()));
+		m_resolver.reset(new boost::asio::ip::tcp::resolver(m_socket.get_executor()));
 
 	boost::asio::ip::tcp::resolver::query query(m_address->GetHost(), m_address->GetPort());
 
