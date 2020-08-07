@@ -35,7 +35,7 @@ ParaEngine::upload_context::upload_context(const char* data, int nDataSize /*= 0
 // CUrlLoader
 //
 //////////////////////////////////////////////////////////////////////////
-ParaEngine::CUrlLoader::CUrlLoader( const string& url)
+ParaEngine::CUrlLoader::CUrlLoader(const string& url)
 	: m_url(url), m_nEstimatedSizeInBytes(0)
 {
 }
@@ -56,11 +56,11 @@ const char* ParaEngine::CUrlLoader::GetFileName()
 
 void ParaEngine::CUrlLoader::SetUrl(const char* url)
 {
-	if(url)
+	if (url)
 		m_url = url;
 }
 
-HRESULT ParaEngine::CUrlLoader::Decompress( void** ppData, int* pcBytes )
+HRESULT ParaEngine::CUrlLoader::Decompress(void** ppData, int* pcBytes)
 {
 	return S_OK;
 }
@@ -79,7 +79,7 @@ HRESULT ParaEngine::CUrlLoader::Load()
 	return S_OK;
 }
 
-void ParaEngine::CUrlLoader::SetEstimatedSizeInBytes( int nSize )
+void ParaEngine::CUrlLoader::SetEstimatedSizeInBytes(int nSize)
 {
 	m_nEstimatedSizeInBytes = nSize;
 }
@@ -94,9 +94,9 @@ int ParaEngine::CUrlLoader::GetEstimatedSizeInBytes()
 // CUrlProcessor
 //
 //////////////////////////////////////////////////////////////////////////
-ParaEngine::CUrlProcessor::CUrlProcessor( )
+ParaEngine::CUrlProcessor::CUrlProcessor()
 	:m_pFormPost(0), m_pHttpHeaders(0), m_nTimeOutTime(DEFAULT_TIME_OUT), m_nStartTime(0), m_responseCode(0), m_nLastProgressTime(0),
-	m_pFormLast(0), m_pUserData(0), m_returnCode(CURLE_OK), m_type(URL_REQUEST_HTTP_AUTO), 
+	m_pFormLast(0), m_pUserData(0), m_returnCode(CURLE_OK), m_type(URL_REQUEST_HTTP_AUTO),
 	m_nPriority(0), m_nStatus(URL_REQUEST_UNSTARTED), m_pfuncCallBack(0), m_nBytesReceived(0), m_pUploadContext(NULL),
 	m_nTotalBytes(0), m_nUserDataType(0), m_pFile(NULL), m_pThreadLocalData(NULL), m_bForbidReuse(false), m_bEnableProgressUpdate(true), m_bIsSyncCallbackMode(false)
 {
@@ -104,7 +104,7 @@ ParaEngine::CUrlProcessor::CUrlProcessor( )
 
 ParaEngine::CUrlProcessor::CUrlProcessor(const string& url, const string& npl_callback)
 	:m_pFormPost(0), m_pHttpHeaders(0), m_nTimeOutTime(DEFAULT_TIME_OUT), m_nStartTime(0), m_responseCode(0), m_nLastProgressTime(0),
-	m_pFormLast(0), m_pUserData(0), m_returnCode(CURLE_OK), m_type(URL_REQUEST_HTTP_AUTO), 
+	m_pFormLast(0), m_pUserData(0), m_returnCode(CURLE_OK), m_type(URL_REQUEST_HTTP_AUTO),
 	m_nPriority(0), m_nStatus(URL_REQUEST_UNSTARTED), m_pfuncCallBack(0), m_nBytesReceived(0), m_pUploadContext(NULL),
 	m_nTotalBytes(0), m_nUserDataType(0), m_pFile(NULL), m_pThreadLocalData(NULL), m_bEnableProgressUpdate(true), m_bIsSyncCallbackMode(false)
 {
@@ -121,7 +121,7 @@ ParaEngine::CUrlProcessor::~CUrlProcessor()
 void ParaEngine::CUrlProcessor::CleanUp()
 {
 	SAFE_DELETE(m_pFile);
-	if(m_pFormPost)
+	if (m_pFormPost)
 	{
 		/* then cleanup the form post chain */
 		curl_formfree(m_pFormPost);
@@ -138,16 +138,16 @@ void ParaEngine::CUrlProcessor::CleanUp()
 
 void ParaEngine::CUrlProcessor::SafeDeleteUserData()
 {
-	if(m_nUserDataType>0)
+	if (m_nUserDataType > 0)
 	{
-		if(m_nUserDataType==1)
+		if (m_nUserDataType == 1)
 		{
 			SAFE_DELETE(m_pUserData);
 		}
 	}
 }
 
-void CUrlProcessor::SetProcessorWorkerData(IProcessorWorkerData * pThreadLocalData )
+void CUrlProcessor::SetProcessorWorkerData(IProcessorWorkerData * pThreadLocalData)
 {
 	m_pThreadLocalData = pThreadLocalData;
 }
@@ -174,14 +174,14 @@ HRESULT ParaEngine::CUrlProcessor::Destroy()
 	return S_OK;
 }
 
-HRESULT ParaEngine::CUrlProcessor::Process( void* pData, int cBytes )
+HRESULT ParaEngine::CUrlProcessor::Process(void* pData, int cBytes)
 {
 	// Let us do the easy way. 
 	CURL *curl = NULL;
-	
+
 	bool bShareCurlHandle = false;
 	// we will reuse the same easy handle per thread
-	if(GetProcessorWorkerData() && GetProcessorWorkerData()->GetCurlInterface())
+	if (GetProcessorWorkerData() && GetProcessorWorkerData()->GetCurlInterface())
 	{
 		curl = (CURL*)(GetProcessorWorkerData()->GetCurlInterface());
 		bShareCurlHandle = true;
@@ -190,7 +190,7 @@ HRESULT ParaEngine::CUrlProcessor::Process( void* pData, int cBytes )
 	{
 		curl = curl_easy_init();
 	}
-	if(curl) 
+	if (curl)
 	{
 		UpdateTime();
 
@@ -198,12 +198,12 @@ HRESULT ParaEngine::CUrlProcessor::Process( void* pData, int cBytes )
 
 		m_returnCode = curl_easy_perform(curl);
 
-		curl_easy_getinfo (curl, CURLINFO_RESPONSE_CODE, &m_responseCode);
+		curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &m_responseCode);
 		m_nStatus = CUrlProcessor::URL_REQUEST_COMPLETED;
-		
+
 		// SLEEP(2000);
 
-		if(!bShareCurlHandle)
+		if (!bShareCurlHandle)
 		{
 			/* always cleanup */
 			curl_easy_cleanup(curl);
@@ -229,24 +229,24 @@ void ParaEngine::CUrlProcessor::SetResourceError()
 
 void ParaEngine::CUrlProcessor::SetScriptCallback(const char* sCallback)
 {
-	if(sCallback)
+	if (sCallback)
 	{
-		
+
 		m_sNPLStateName.clear();
-		if(sCallback[0] == '(')
+		if (sCallback[0] == '(')
 		{
 			int i = 1;
-			while( (sCallback[i]!=')') && (sCallback[i]!='\0'))
+			while ((sCallback[i] != ')') && (sCallback[i] != '\0'))
 			{
 				i++;
 			}
 			i++;
-			if(sCallback[i-1]!='\0')
+			if (sCallback[i - 1] != '\0')
 			{
-				m_sNPLCallback = sCallback+i;
+				m_sNPLCallback = sCallback + i;
 			}
-			if( i>2 && !(i==4 && (sCallback[1]=='g') && (sCallback[2]=='l')) )
-				m_sNPLStateName.assign(sCallback+1, i-2);
+			if (i > 2 && !(i == 4 && (sCallback[1] == 'g') && (sCallback[2] == 'l')))
+				m_sNPLStateName.assign(sCallback + 1, i - 2);
 		}
 		else
 		{
@@ -257,13 +257,13 @@ void ParaEngine::CUrlProcessor::SetScriptCallback(const char* sCallback)
 
 void ParaEngine::CUrlProcessor::SetSaveToFile(const char* filename)
 {
-	if(filename)
+	if (filename)
 		m_sSaveToFileName = filename;
 }
 
 void ParaEngine::CUrlProcessor::SetUrl(const char* url)
 {
-	if(url)
+	if (url)
 		m_url = url;
 }
 
@@ -296,14 +296,14 @@ void ParaEngine::CUrlProcessor::AddBytesReceived(int nByteCount)
 	//ParaEngine::Lock lock_(m_mutex);
 	m_nBytesReceived += nByteCount;
 
-	if(m_pThreadLocalData)
+	if (m_pThreadLocalData)
 	{
 		m_pThreadLocalData->AddBytesProcessed(nByteCount);
 	}
 }
 
 
-void ParaEngine::CUrlProcessor::SetCurlEasyOpt( CURL* handle )
+void ParaEngine::CUrlProcessor::SetCurlEasyOpt(CURL* handle)
 {
 	// reset data 
 	m_data.clear();
@@ -324,35 +324,35 @@ void ParaEngine::CUrlProcessor::SetCurlEasyOpt( CURL* handle )
 		for (auto iter = m_options->begin(); iter != m_options->end(); iter++)
 		{
 			const std::string& sKey = iter->first;
-			if (sKey == "CURLOPT_USERNAME"){
+			if (sKey == "CURLOPT_USERNAME") {
 				curl_easy_setopt(handle, CURLOPT_USERNAME, iter->second.c_str());
 			}
-			else if (sKey == "CURLOPT_PASSWORD"){
+			else if (sKey == "CURLOPT_PASSWORD") {
 				curl_easy_setopt(handle, CURLOPT_PASSWORD, iter->second.c_str());
 			}
 			else if (sKey == "CURLOPT_CUSTOMREQUEST") {
 				bIsCustomRequest = true;
 				curl_easy_setopt(handle, CURLOPT_CUSTOMREQUEST, iter->second.c_str());
 			}
-			else if (sKey == "CURLOPT_SSLCERT"){
+			else if (sKey == "CURLOPT_SSLCERT") {
 				curl_easy_setopt(handle, CURLOPT_SSLCERT, iter->second.c_str());
 			}
-			else if (sKey == "CURLOPT_SSLKEY"){
+			else if (sKey == "CURLOPT_SSLKEY") {
 				curl_easy_setopt(handle, CURLOPT_SSLKEY, iter->second.c_str());
 			}
-			else if (sKey == "CURLOPT_SSLCERTPASSWD"){
+			else if (sKey == "CURLOPT_SSLCERTPASSWD") {
 				curl_easy_setopt(handle, CURLOPT_SSLCERTPASSWD, iter->second.c_str());
 			}
-			else if (sKey == "CURLOPT_CAINFO"){
+			else if (sKey == "CURLOPT_CAINFO") {
 				curl_easy_setopt(handle, CURLOPT_CAINFO, iter->second.c_str());
 			}
-			else if (sKey == "CURLOPT_CAPATH"){
+			else if (sKey == "CURLOPT_CAPATH") {
 				curl_easy_setopt(handle, CURLOPT_CAPATH, iter->second.c_str());
 			}
-			else if (sKey == "CURLOPT_MAIL_FROM"){
+			else if (sKey == "CURLOPT_MAIL_FROM") {
 				curl_easy_setopt(handle, CURLOPT_MAIL_FROM, iter->second.c_str());
 			}
-			else if (sKey == "CURLOPT_VERBOSE"){
+			else if (sKey == "CURLOPT_VERBOSE") {
 				curl_easy_setopt(handle, CURLOPT_VERBOSE, iter->second.toInt());
 			}
 			else if (sKey == "CURLOPT_READDATA")
@@ -361,10 +361,10 @@ void ParaEngine::CUrlProcessor::SetCurlEasyOpt( CURL* handle )
 				curl_easy_setopt(handle, CURLOPT_READFUNCTION, &CUrl_read_email_payload);
 				curl_easy_setopt(handle, CURLOPT_READDATA, m_pUploadContext);
 			}
-			else if (sKey == "CURLOPT_UPLOAD"){
+			else if (sKey == "CURLOPT_UPLOAD") {
 				curl_easy_setopt(handle, CURLOPT_UPLOAD, iter->second.toInt());
 			}
-			else if (sKey == "CURLOPT_MAIL_RCPT"){
+			else if (sKey == "CURLOPT_MAIL_RCPT") {
 				if (iter->second->isString())
 					AppendHTTPHeader(iter->second.c_str());
 				else if (iter->second->isTable())
@@ -391,16 +391,16 @@ void ParaEngine::CUrlProcessor::SetCurlEasyOpt( CURL* handle )
 	curl_easy_setopt(handle, CURLOPT_FORBID_REUSE, m_bForbidReuse ? 1 : 0);
 
 	/* do not verify host */
-	curl_easy_setopt(handle, CURLOPT_SSL_VERIFYHOST, 0); 
-	curl_easy_setopt(handle,CURLOPT_SSL_VERIFYPEER, 0);
+	curl_easy_setopt(handle, CURLOPT_SSL_VERIFYHOST, 0);
+	curl_easy_setopt(handle, CURLOPT_SSL_VERIFYPEER, 0);
 	curl_easy_setopt(handle, CURLOPT_FOLLOWLOCATION, 1);
-	
+
 	//curl_easy_setopt(handle,CURLOPT_CAINFO, NULL);
 	//curl_easy_setopt(handle,CURLOPT_CAPATH, NULL); 
 
 	/**
-	Pass a long. It should contain the maximum time in seconds that you allow the connection to the server to take. 
-	This only limits the connection phase, once it has connected, this option is of no more use. Set to zero to disable 
+	Pass a long. It should contain the maximum time in seconds that you allow the connection to the server to take.
+	This only limits the connection phase, once it has connected, this option is of no more use. Set to zero to disable
 	connection timeout (it will then only timeout on the system's internal timeouts). See also the CURLOPT_TIMEOUT option
 	*/
 
@@ -409,14 +409,14 @@ void ParaEngine::CUrlProcessor::SetCurlEasyOpt( CURL* handle )
 	curl_easy_setopt(handle, CURLOPT_LOW_SPEED_LIMIT, 30L);
 
 	// time allowed to connect to server, usually to resolve DNS and connect via IP. This can sometimes be very long on mobile devices on first use. 
-	curl_easy_setopt(handle,CURLOPT_CONNECTTIMEOUT, 20);
+	curl_easy_setopt(handle, CURLOPT_CONNECTTIMEOUT, 20);
 	// progress callback is only used to terminate the url progress
-	curl_easy_setopt(handle,CURLOPT_NOPROGRESS, 0); 
+	curl_easy_setopt(handle, CURLOPT_NOPROGRESS, 0);
 	curl_easy_setopt(handle, CURLOPT_PROGRESSFUNCTION, CUrl_progress_callback);
 	curl_easy_setopt(handle, CURLOPT_PROGRESSDATA, this);
 	/* enable all supported built-in compressions */
 	curl_easy_setopt(handle, CURLOPT_ACCEPT_ENCODING, "");
-	
+
 	// The official doc says if multi-threaded use, this one should be set to 1. otherwise it may crash on certain conditions. 
 	curl_easy_setopt(handle, CURLOPT_NOSIGNAL, 1);
 
@@ -433,7 +433,7 @@ void ParaEngine::CUrlProcessor::SetCurlEasyOpt( CURL* handle )
 		if (!bIsCustomRequest) {
 			curl_easy_setopt(handle, CURLOPT_HTTPGET, m_pFormPost ? 0 : 1);
 		}
-			
+
 		if (m_pFormPost == 0 && !m_sRequestData.empty())
 		{
 			curl_easy_setopt(handle, CURLOPT_POSTFIELDS, m_sRequestData.c_str());
@@ -456,8 +456,8 @@ size_t ParaEngine::CUrlProcessor::CUrl_read_email_payload(void *ptr, size_t size
 	if (upload_ctx->m_pData && upload_ctx->m_nBytesSent < upload_ctx->m_nDataSize)
 	{
 		data = upload_ctx->m_pData + upload_ctx->m_nBytesSent;
-		int len = size*nmemb;
-		if (len >(upload_ctx->m_nDataSize - upload_ctx->m_nBytesSent))
+		int len = size * nmemb;
+		if (len > (upload_ctx->m_nDataSize - upload_ctx->m_nBytesSent))
 		{
 			len = upload_ctx->m_nDataSize - upload_ctx->m_nBytesSent;
 		}
@@ -468,27 +468,27 @@ size_t ParaEngine::CUrlProcessor::CUrl_read_email_payload(void *ptr, size_t size
 	return 0;
 }
 
-size_t ParaEngine::CUrlProcessor::write_data_callback( void *buffer, size_t size, size_t nmemb )
+size_t ParaEngine::CUrlProcessor::write_data_callback(void *buffer, size_t size, size_t nmemb)
 {
 	UpdateTime();
 	int nByteCount = (int)size*(int)nmemb;
-	if(nByteCount>0)
+	if (nByteCount > 0)
 	{
 		AddBytesReceived(nByteCount);
-		
-		if(m_sSaveToFileName.empty())
+
+		if (m_sSaveToFileName.empty())
 		{
 			// save to memory if no disk file name is provided
 			int nOldSize = (int)m_data.size();
-			m_data.resize(nOldSize+nByteCount);
+			m_data.resize(nOldSize + nByteCount);
 			memcpy(&(m_data[nOldSize]), buffer, nByteCount);
 		}
 		else
 		{
-			if(m_pFile == 0)
+			if (m_pFile == 0)
 			{
 				m_pFile = new CParaFile();
-				if(!m_pFile->CreateNewFile(m_sSaveToFileName.c_str(), true))
+				if (!m_pFile->CreateNewFile(m_sSaveToFileName.c_str(), true))
 				{
 					OUTPUT_LOG("warning: Failed create new file %s\n", m_sSaveToFileName.c_str());
 				}
@@ -499,15 +499,15 @@ size_t ParaEngine::CUrlProcessor::write_data_callback( void *buffer, size_t size
 		// ParaEngine::CLogger::GetSingleton().Write((const char*)buffer, (int)nByteCount);
 	}
 	// SLEEP(200);
-	if(CAsyncLoader::GetSingleton().interruption_requested())
+	if (CAsyncLoader::GetSingleton().interruption_requested())
 		return 0;
 	return nByteCount;
 }
 
-size_t ParaEngine::CUrlProcessor::CUrl_write_data_callback( void *buffer, size_t size, size_t nmemb, void *stream )
+size_t ParaEngine::CUrlProcessor::CUrl_write_data_callback(void *buffer, size_t size, size_t nmemb, void *stream)
 {
-	CUrlProcessor * pTask=(CUrlProcessor *) stream;
-	if(pTask) 
+	CUrlProcessor * pTask = (CUrlProcessor *)stream;
+	if (pTask)
 	{
 		return pTask->write_data_callback(buffer, size, nmemb);
 	}
@@ -517,9 +517,9 @@ size_t ParaEngine::CUrlProcessor::CUrl_write_data_callback( void *buffer, size_t
 }
 
 
-int ParaEngine::CUrlProcessor::CUrl_progress_callback( void *clientp,double dltotal,double dlnow,double ultotal, double ulnow )
+int ParaEngine::CUrlProcessor::CUrl_progress_callback(void *clientp, double dltotal, double dlnow, double ultotal, double ulnow)
 {
-	if(CAsyncLoader::GetSingleton().interruption_requested())
+	if (CAsyncLoader::GetSingleton().interruption_requested())
 		return -1;
 	if (clientp)
 	{
@@ -566,25 +566,25 @@ int ParaEngine::CUrlProcessor::progress_callback(double dltotal, double dlnow, d
 	return 0;
 }
 
-size_t ParaEngine::CUrlProcessor::write_header_callback( void *buffer, size_t size, size_t nmemb )
+size_t ParaEngine::CUrlProcessor::write_header_callback(void *buffer, size_t size, size_t nmemb)
 {
 	UpdateTime();
 	int nByteCount = (int)size*(int)nmemb;
-	if(nByteCount>0)
+	if (nByteCount > 0)
 	{
 		int nOldSize = (int)m_header.size();
-		m_header.resize(nOldSize+nByteCount);
+		m_header.resize(nOldSize + nByteCount);
 		memcpy(&(m_header[nOldSize]), buffer, nByteCount);
 	}
-	if(CAsyncLoader::GetSingleton().interruption_requested())
+	if (CAsyncLoader::GetSingleton().interruption_requested())
 		return -1;
 	return nByteCount;
 }
 
-size_t ParaEngine::CUrlProcessor::CUrl_write_header_callback( void *buffer, size_t size, size_t nmemb, void *stream )
+size_t ParaEngine::CUrlProcessor::CUrl_write_header_callback(void *buffer, size_t size, size_t nmemb, void *stream)
 {
-	CUrlProcessor * pTask=(CUrlProcessor *) stream;
-	if(pTask) 
+	CUrlProcessor * pTask = (CUrlProcessor *)stream;
+	if (pTask)
 	{
 		return pTask->write_header_callback(buffer, size, nmemb);
 	}
@@ -602,36 +602,36 @@ void ParaEngine::CUrlProcessor::CompleteTask()
 #endif
 	CAsyncLoader::GetSingleton().RemovePendingRequest(m_url.c_str());
 
-	if(m_pFile)
+	if (m_pFile)
 	{
 		m_pFile->close();
 		SAFE_DELETE(m_pFile);
 	}
 
-	if(!m_sNPLCallback.empty())
+	if (!m_sNPLCallback.empty())
 	{
 		NPL::CNPLWriter writer;
 		writer.WriteName("msg");
 		writer.BeginTable();
 
-		if(!m_header.empty())
+		if (!m_header.empty())
 		{
 			writer.WriteName("header");
 			writer.WriteValue((const char*)(&(m_header[0])), (int)m_header.size());
 		}
 
-		if(!m_data.empty())
+		if (!m_data.empty())
 		{
 			writer.WriteName("data");
 			writer.WriteValue((const char*)(&(m_data[0])), (int)m_data.size());
 		}
 
-		if(!m_sSaveToFileName.empty())
+		if (!m_sSaveToFileName.empty())
 		{
 			// if a disk file name is specified, we shall also insert following field info to the message struct. 
 			// {DownloadState=""|"complete"|"terminated", totalFileSize=number, currentFileSize=number, PercentDone=number}
 			writer.WriteName("DownloadState");
-			if(m_responseCode == 200)
+			if (m_responseCode == 200 && m_returnCode == CURLE_OK)
 			{
 				writer.WriteValue("complete");
 				string sTmp = string("NPL.AsyncDownload Completed:") + m_url + "\n";
@@ -650,7 +650,7 @@ void ParaEngine::CUrlProcessor::CompleteTask()
 			writer.WriteName("PercentDone");
 			writer.WriteValue(100);
 		}
-		
+
 
 		writer.WriteName("code");
 		writer.WriteValue(m_returnCode);
@@ -662,7 +662,7 @@ void ParaEngine::CUrlProcessor::CompleteTask()
 
 		InvokeCallbackScript(writer.ToString().c_str(), (int)(writer.ToString().size()));
 	}
-	if(m_pfuncCallBack)
+	if (m_pfuncCallBack)
 	{
 		m_pfuncCallBack(m_returnCode, this, this->m_pUserData);
 	}
@@ -670,11 +670,11 @@ void ParaEngine::CUrlProcessor::CompleteTask()
 
 void ParaEngine::CUrlProcessor::AppendHTTPHeader(const char* text)
 {
-	if (text!=0)
+	if (text != 0)
 		m_pHttpHeaders = curl_slist_append(m_pHttpHeaders, text);
 }
 
-CURLFORMcode ParaEngine::CUrlProcessor::AppendFormParam( const char* name, const char* value )
+CURLFORMcode ParaEngine::CUrlProcessor::AppendFormParam(const char* name, const char* value)
 {
 	return curl_formadd(&m_pFormPost, &m_pFormLast, CURLFORM_COPYNAME, name, CURLFORM_COPYCONTENTS, value, CURLFORM_END);
 }
@@ -688,35 +688,35 @@ CURLFORMcode ParaEngine::CUrlProcessor::AppendFormParam(const char* name, const 
 	}
 
 	/* file upload */
-	if ((file != NULL) && (data == NULL)) 
+	if ((file != NULL) && (data == NULL))
 	{
-		rc = (type == NULL)?
-			curl_formadd(&m_pFormPost, &m_pFormLast, CURLFORM_COPYNAME, name, 
-			CURLFORM_FILE, file, CURLFORM_END): 
-		curl_formadd(&m_pFormPost, &m_pFormLast, CURLFORM_COPYNAME, name, 
-			CURLFORM_FILE, file, 
-			CURLFORM_CONTENTTYPE, type, CURLFORM_END); 
+		rc = (type == NULL) ?
+			curl_formadd(&m_pFormPost, &m_pFormLast, CURLFORM_COPYNAME, name,
+				CURLFORM_FILE, file, CURLFORM_END) :
+			curl_formadd(&m_pFormPost, &m_pFormLast, CURLFORM_COPYNAME, name,
+				CURLFORM_FILE, file,
+				CURLFORM_CONTENTTYPE, type, CURLFORM_END);
 	}
 	/* data field */
-	else if ((file != NULL) && (data != NULL)) 
+	else if ((file != NULL) && (data != NULL))
 	{
 		/* Add a buffer to upload */
-		rc = (type != NULL)? 
+		rc = (type != NULL) ?
 			curl_formadd(&m_pFormPost, &m_pFormLast,
-			CURLFORM_COPYNAME, name,
-			CURLFORM_BUFFER, file, CURLFORM_BUFFERPTR, data, CURLFORM_BUFFERLENGTH, datalen,
-			CURLFORM_CONTENTTYPE, type, 
-			CURLFORM_END):
-		curl_formadd(&m_pFormPost, &m_pFormLast,
-			CURLFORM_COPYNAME, name,
-			CURLFORM_BUFFER, file, CURLFORM_BUFFERPTR, data, CURLFORM_BUFFERLENGTH, datalen,
-			CURLFORM_END);
+				CURLFORM_COPYNAME, name,
+				CURLFORM_BUFFER, file, CURLFORM_BUFFERPTR, data, CURLFORM_BUFFERLENGTH, datalen,
+				CURLFORM_CONTENTTYPE, type,
+				CURLFORM_END) :
+			curl_formadd(&m_pFormPost, &m_pFormLast,
+				CURLFORM_COPYNAME, name,
+				CURLFORM_BUFFER, file, CURLFORM_BUFFERPTR, data, CURLFORM_BUFFERLENGTH, datalen,
+				CURLFORM_END);
 	}
-	else 
+	else
 	{
 		OUTPUT_LOG("warning: Mandatory: \"file\" \n");
 	}
-	if (rc != CURL_FORMADD_OK) 
+	if (rc != CURL_FORMADD_OK)
 	{
 		OUTPUT_LOG("warning:  cannot add form: %d \n", rc);
 	}
@@ -727,12 +727,12 @@ void ParaEngine::CUrlProcessor::SetCallBack(URL_LOADER_CALLBACK pFuncCallback, C
 {
 	m_pfuncCallBack = pFuncCallback;
 	m_pUserData = pUserData;
-	m_nUserDataType = bDeleteUserData ?  1 : 0;
+	m_nUserDataType = bDeleteUserData ? 1 : 0;
 }
 
-bool ParaEngine::CUrlProcessor::IsTimedOut( DWORD nCurrentTime )
+bool ParaEngine::CUrlProcessor::IsTimedOut(DWORD nCurrentTime)
 {
-	return ( ( m_nStartTime+m_nTimeOutTime) < nCurrentTime);
+	return ((m_nStartTime + m_nTimeOutTime) < nCurrentTime);
 }
 
 DWORD ParaEngine::CUrlProcessor::UpdateTime()
@@ -741,7 +741,7 @@ DWORD ParaEngine::CUrlProcessor::UpdateTime()
 	return m_nStartTime;
 }
 
-void ParaEngine::CUrlProcessor::SetTimeOut( int nMilliSeconds )
+void ParaEngine::CUrlProcessor::SetTimeOut(int nMilliSeconds)
 {
 	m_nTimeOutTime = nMilliSeconds;
 }
