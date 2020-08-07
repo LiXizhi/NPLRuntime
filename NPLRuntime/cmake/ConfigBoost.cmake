@@ -15,9 +15,9 @@ endif()
 
 
 if(IOS)
-	if (IOS_PLATFORM STREQUAL "SIMULATOR")
+	if (PLATFORM STREQUAL "SIMULATOR")
 		set(BOOST_LIBRARYDIR ${BOOST_ROOT}/iphonesim-build/stage/lib)
-	elseif(IOS_PLATFORM STREQUAL "OS")
+	elseif(PLATFORM STREQUAL "OS")
 		set(BOOST_LIBRARYDIR ${BOOST_ROOT}/iphone-build/stage/lib)
 	endif() 
 	
