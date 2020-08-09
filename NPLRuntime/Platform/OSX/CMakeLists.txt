@@ -13,6 +13,8 @@ set(ASSETS_FILES ${CMAKE_CURRENT_SOURCE_DIR}/assets)
 #set(IMAGES_FILE ${CMAKE_CURRENT_SOURCE_DIR}/Images.xcassets)
 set(INFO_FILE ${CMAKE_CURRENT_SOURCE_DIR}/Info.plist)
 set(ICON_FILE ${CMAKE_CURRENT_SOURCE_DIR}/icon.icns)
+set(CMAKE_OSX_DEPLOYMENT_TARGET "10.12" CACHE STRING "Deployment target for OSX" FORCE)
+set(CMAKE_XCODE_ATTRIBUTE_STRIP_STYLE "non-global" CACHE STRING "Non-Global Symbols" FORCE)
 
 add_executable(Paracraft ${OSX_SRC}
     ${RESOURCE_FILES}
@@ -34,7 +36,6 @@ target_compile_definitions(Paracraft PUBLIC PLATFORM_MAC)
 
 set(RESOURCE_LIST ${RESOURCE_FILES} ${ASSETS_FILES} ${XIB_FILES} ${ICON_FILE})
 
-
 set_target_properties(Paracraft PROPERTIES 
     MACOSX_BUNDLE TRUE
     MACOSX_BUNDLE_INFO_PLIST ${INFO_FILE}
@@ -52,14 +53,17 @@ set_target_properties(Paracraft PROPERTIES
 )
 
 find_library(COCOA_LIBRARY Cocoa required)
-FIND_LIBRARY(OPENGL_LIBRARY OpenGL)
+find_library(OPENGL_LIBRARY OpenGL)
 find_library(WebView WebKit)
+# find_library(AUTHENTICATION_SERVICES AuthenticationServices)
+
 target_link_libraries(Paracraft PUBLIC
     RenderSystemOpenGL
     ParaEngine
     ${COCOA_LIBRARY}
     ${OPENGL_LIBRARY}
     ${WebView}
+    # ${AUTHENTICATION_SERVICES}
 )
 
 set(CMAKE_EXE_LINKER_FLAGS "-pagezero_size 10000 -image_base 100000000 ${CMAKE_EXE_LINKER_FLAGS}")
@@ -111,16 +115,16 @@ if (NPLRUNTIME_PHYSICS AND NOT PHYSICS_STATICLIB)
 endif()
 
 
-if (NOT LUA_STATICLIB)
-	get_property(LUA_LIB_LIST GLOBAL PROPERTY "LUA_LIB_LIST" )
-	foreach( luaLibName ${LUA_LIB_LIST} )
-		set(LIBLUA_DYPATH "${DYLIB_PATH}/lib${luaLibName}.dylib")
-		add_custom_command(TARGET Paracraft POST_BUILD 
-			COMMAND ${CMAKE_COMMAND} ARGS -E copy  "${LIBLUA_DYPATH}"     "${DEST_FRAMEWORK_PATH}/lib${luaLibName}.dylib"
-			DEPENDS "${LIBLUA_DYPATH}"  
-		)
-	endforeach( luaLibName ${LUA_LIB_LIST} )
-endif()
+# if (NOT LUA_STATICLIB)
+# 	get_property(LUA_LIB_LIST GLOBAL PROPERTY "LUA_LIB_LIST" )
+# 	foreach( luaLibName ${LUA_LIB_LIST} )
+# 		set(LIBLUA_DYPATH "${DYLIB_PATH}/lib${luaLibName}.dylib")
+# 		add_custom_command(TARGET Paracraft POST_BUILD 
+# 			COMMAND ${CMAKE_COMMAND} ARGS -E copy  "${LIBLUA_DYPATH}"     "${DEST_FRAMEWORK_PATH}/lib${luaLibName}.dylib"
+# 			DEPENDS "${LIBLUA_DYPATH}"  
+# 		)
+# 	endforeach( luaLibName ${LUA_LIB_LIST} )
+# endif()
 
 
 
