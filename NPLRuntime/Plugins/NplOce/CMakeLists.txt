@@ -3,79 +3,6 @@ if (NPLRUNTIME_SERVER OR ((NOT WIN32) AND (NOT ANDROID) AND (NOT (APPLE AND (NOT
 endif()
 
 
-set(USE_NPLOCE_PREBUILD false)
-
-
-if (USE_NPLOCE_PREBUILD)
-	add_library(nploce INTERFACE)
-
-	set(NPLOCE_LIBS)
-	list(APPEND NPLOCE_LIBS TKBO
-			TKBool
-			TKBRep
-			TKernel
-			TKFeat
-			TKFillet
-			TKG2d
-			TKG3d
-			TKGeomAlgo
-			TKGeomBase
-			TKHLR
-			#TKIGES
-			TKMath
-			TKMesh
-			TKOffset
-			TKPrim
-			TKShHealing
-			#TKSTEP
-			#TKSTEP209
-			#TKSTEPAttr
-			#TKSTEPBase
-			TKTopAlgo
-			TKXMesh
-			#TKXSBase
-			harfbuzz
-			nploce)
-	
-	if (WIN32)
-	
-		foreach(lib_name ${NPLOCE_LIBS})
-			if (CMAKE_CL_64)
-				target_link_libraries(nploce INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/prebuild/win32/x64/${lib_name}.lib)
-			else()
-				target_link_libraries(nploce INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/prebuild/win32/x86/${lib_name}.lib)
-			endif()
-		endforeach()
-		
-	elseif (ANDROID)
-		
-		foreach(lib_name ${NPLOCE_LIBS})
-			target_link_libraries(nploce INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/prebuild/android/${CMAKE_ANDROID_ARCH_ABI}/lib${lib_name}.a)
-		endforeach()
-		
-	elseif (APPLE AND (NOT IOS))
-		
-		foreach(lib_name ${NPLOCE_LIBS})
-			target_link_libraries(nploce INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/prebuild/mac/lib${lib_name}.a)
-		endforeach()
-	
-	else()
-		message( FATAL_ERROR "Unspported system." )
-	endif()
-	
-	
-	if (MSVC)
-		target_link_options(nploce INTERFACE /export:NplOce_StaticLoad)
-	else()
-		#target_link_options(nploce PUBLIC -defsym,NplOce_StaticLoad=NplOce_StaticLoad)
-		#target_link_options(nploce PUBLIC -undefined=NplOce_StaticLoad)
-		#target_compile_options(nploce PUBLIC -Wl,-undefined=NplOce_StaticLoad)
-		
-		target_sources(nploce INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/PlaceHolder.cpp)
-	endif()
-
-else(USE_NPLOCE_PREBUILD)
-
 	set(CROSS_PLATFORM true)
  
 	SET(FREETYPE_INCLUDE_DIRS ${PROJECT_SOURCE_DIR}/externals/freetype-2.8.1/include)
@@ -116,6 +43,5 @@ else(USE_NPLOCE_PREBUILD)
 		
 		target_sources(nploce PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/PlaceHolder.cpp)
 	endif()
-endif(USE_NPLOCE_PREBUILD)
 
  
