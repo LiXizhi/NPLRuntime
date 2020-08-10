@@ -556,6 +556,13 @@ namespace ParaScripting
 		// add headers
 		if (type(urlParams) == LUA_TTABLE)
 		{
+			auto request_timeout = urlParams["request_timeout"];
+			if (type(request_timeout) == LUA_TNUMBER)
+			{
+				double value = object_cast<double>(request_timeout);
+				pProcessor->SetTimeOut((int)value);
+			}
+			
 			auto headers = urlParams["headers"];
 			if (type(headers) == LUA_TTABLE)
 			{

@@ -15,13 +15,19 @@ endif()
 
 
 if(IOS)
-	if (IOS_PLATFORM STREQUAL "SIMULATOR")
+	if (PLATFORM STREQUAL "SIMULATOR")
 		set(BOOST_LIBRARYDIR ${BOOST_ROOT}/iphonesim-build/stage/lib)
-	elseif(IOS_PLATFORM STREQUAL "OS")
+	elseif(PLATFORM STREQUAL "OS")
 		set(BOOST_LIBRARYDIR ${BOOST_ROOT}/iphone-build/stage/lib)
 	endif() 
+	
+	set(Boost_INCLUDE_DIR ${BOOST_ROOT})
+	set(Boost_LIBRARY_DIR ${BOOST_LIBRARYDIR})
 elseif(APPLE)
 	set(BOOST_LIBRARYDIR ${BOOST_ROOT}/macos-build/stage/lib)
+	
+	set(Boost_INCLUDE_DIR ${BOOST_ROOT})
+	set(Boost_LIBRARY_DIR ${BOOST_LIBRARYDIR})
 elseif(WIN32 AND NOT ANDROID)
 	if( CMAKE_SIZEOF_VOID_P EQUAL 8 )
 		set(BOOST_LIBRARYDIR ${BOOST_ROOT}/build_win32/stage/x64/lib)	
