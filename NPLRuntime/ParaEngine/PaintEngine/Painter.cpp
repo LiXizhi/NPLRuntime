@@ -11,6 +11,7 @@
 #include "PaintDevice.h"
 #include "PainterState.h"
 #include "ParaScriptBindings/ParaScriptingPainter.h"
+#include "2dengine/GUIBase.h"
 #include "BipedObject.h"
 #include "Painter.h"
 
@@ -704,8 +705,22 @@ HRESULT CPainter::DrawText(const char16_t* strText, GUIFontElement* pElement, RE
 
 		if (!(pElement->dwTextFormat & DT_NOCLIP))
 		{
-			QRect clipRect(rcScreen);
-			engine->clip(clipRect, ClipOperation::ReplaceClip);
+			if (state->m_clipOperation != ClipOperation::NoClip && !(state->m_clipInfo.empty()))
+			{
+				RECT parentRect = state->m_clipInfo[0].rect;
+				RECT finalRect;
+				if (!ParaEngine::CGUIBase::IntersectRect(&finalRect, state->m_clipInfo[0].rect, rcScreen)) 
+				{
+					return S_OK;
+				}
+				QRect clipRect(finalRect);
+				engine->clip(clipRect, ClipOperation::IntersectClip);
+			}
+			else 
+			{
+				QRect clipRect(rcScreen);
+				engine->clip(clipRect, ClipOperation::ReplaceClip);
+			}
 		}
 #endif
 		
@@ -763,9 +778,15 @@ HRESULT CPainter::DrawText(const char16_t* strText, GUIFontElement* pElement, RE
 #ifdef USE_OPENGL_RENDERER
 		if (!(pElement->dwTextFormat & DT_NOCLIP))
 		{
-			//CGlobals::GetRenderDevice()->SetRenderState(ERenderState::SCISSORTESTENABLE, FALSE);
-			QRect empty;
-			engine->clip(empty, ClipOperation::NoClip);
+			if (state->m_clipOperation != ClipOperation::NoClip && !(state->m_clipInfo.empty()))
+			{
+				engine->clip(state->m_clipInfo[0].rect, state->m_clipInfo[0].operation);
+			}
+			else
+			{
+				QRect empty;
+				engine->clip(empty, ClipOperation::NoClip);
+			}
 		}
 #endif
 

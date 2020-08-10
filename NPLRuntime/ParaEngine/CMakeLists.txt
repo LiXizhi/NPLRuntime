@@ -129,7 +129,8 @@ endif()
 
 list(APPEND NPLRUNTIME_INCLUDES ${PROJECT_SOURCE_DIR}/externals/Pinocchio/include)
 
-
+# remove some compile time warnings
+ADD_DEFINITIONS(-DBOOST_BIND_GLOBAL_PLACEHOLDERS)
 
 ###################################################################
 ## Target
