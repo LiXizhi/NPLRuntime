@@ -9,6 +9,10 @@ addons:
     packages:
     - gcc-4.9
     - g++-4.9
+  snaps:
+    - name: cmake
+       confinement: classic
+       channel: 3.18/candidate
 
 compiler:
   - g++
