@@ -31,9 +31,9 @@ before_install:
  # For boost: we will download and compile boost instead of using prebuild ones, 
  # since statically linking with boost requires the same tool chain, otherwise there will be link errors. 
  ### - sudo add-apt-repository -y ppa:boost-latest/ppa && sudo apt-get update -q && sudo apt-get install -y libboost1.55-all-dev
- - wget http://dl.bintray.com/boostorg/release/1.68.0/source/boost_1_68_0.tar.bz2 --no-check-certificate
- - tar --bzip2 -xf boost_1_68_0.tar.bz2
- - cd boost_1_68_0
+ - wget https://dl.bintray.com/boostorg/release/1.73.0/source/boost_1_73_0.tar.bz2 --no-check-certificate
+ - tar --bzip2 -xf boost_1_73_0.tar.bz2
+ - cd boost_1_73_0
  - ./bootstrap.sh --help
  - "echo 'using gcc : 4.9 : /usr/bin/g++-4.9 ; ' >> tools/build/src/user-config.jam"
  - sudo ./bootstrap.sh --with-libraries="thread,date_time,filesystem,system,chrono,signals,serialization,iostreams,regex"

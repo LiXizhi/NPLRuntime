@@ -63,7 +63,7 @@ HRESULT SpriteFontEntityDirectX::InitDeviceObjects()
 		sLocalFont += sFontName;
 		sLocalFont += ".ttf";
 
-		std::transform(sLocalFont.begin(), sLocalFont.end(), sLocalFont.begin(), std::tolower);
+		std::transform(sLocalFont.begin(), sLocalFont.end(), sLocalFont.begin(), ::tolower);
 
 		if (CParaFile::DoesFileExist(sLocalFont.c_str(), false))
 		{

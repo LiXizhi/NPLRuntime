@@ -150,7 +150,7 @@ namespace NPL
 				// we can read to end or length instead of doing the lexical work one char at a time. 
 				size_t nOldSize = req.m_code.size();
 				size_t nByteCount = end-begin;
-				if(req.m_nLength < (nOldSize+nByteCount))
+				if(req.m_nLength < (int)(nOldSize+nByteCount))
 				{
 					nByteCount = req.m_nLength - nOldSize;
 				}

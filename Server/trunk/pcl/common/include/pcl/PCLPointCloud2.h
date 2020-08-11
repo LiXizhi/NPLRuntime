@@ -8,7 +8,7 @@
 #include <string>
 #include <vector>
 #include <ostream>
-#include <boost/detail/endian.hpp>
+#include <boost/predef/other/endian.h>
 
 // Include the correct Header path here
 #include <pcl/PCLHeader.h>
@@ -23,9 +23,9 @@ namespace pcl
                      is_bigendian (false), point_step (0), row_step (0),
                      data (), is_dense (false)
     {
-#if defined(BOOST_BIG_ENDIAN)
+#if defined(BOOST_ENDIAN_BIG_BYTE)
       is_bigendian = true;
-#elif defined(BOOST_LITTLE_ENDIAN)
+#elif defined(BOOST_ENDIAN_LITTLE_BYTE)
       is_bigendian = false;
 #else
 #error "unable to determine system endianness"

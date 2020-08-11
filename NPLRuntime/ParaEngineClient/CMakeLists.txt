@@ -691,9 +691,9 @@ endif()
 # END OF LIBRARIES
 # ==================================================================================
 
-
 # COMPILER SETTTINGS
 
+ADD_DEFINITIONS(-DBOOST_BIND_GLOBAL_PLACEHOLDERS)
 
 if(NPLRUNTIME_RENDERER STREQUAL "OPENGL")
 
