@@ -1392,6 +1392,7 @@ const std::string& ParaEngine::ParaEngineSettings::GetMachineID()
 {
 	static std::string str = "";
 
+#ifdef WIN32
 	if (str.empty())
 	{
 		DWORD bufSize = 0;
@@ -1454,6 +1455,7 @@ const std::string& ParaEngine::ParaEngineSettings::GetMachineID()
 
 		} while (false);
 	}
+#endif
 
 	return str;
 }

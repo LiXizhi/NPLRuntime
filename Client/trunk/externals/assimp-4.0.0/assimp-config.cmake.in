@@ -53,7 +53,7 @@ set( ASSIMP_LIBRARIES ${ASSIMP_LIBRARIES}@CMAKE_DEBUG_POSTFIX@)
 # search for the boost version assimp was compiled with
 #set(Boost_USE_MULTITHREAD ON)
 #set(Boost_USE_STATIC_LIBS OFF)
-#set(Boost_USE_STATIC_RUNTIME OFF)
+#set(Boost_USE_STATIC_RUNTIME ON)
 #find_package(Boost ${ASSIMP_Boost_VERSION} EXACT COMPONENTS thread date_time)
 #if(Boost_VERSION AND NOT "${Boost_VERSION}" STREQUAL "0")
 #	set( ASSIMP_INCLUDE_DIRS "${ASSIMP_INCLUDE_DIRS}" ${Boost_INCLUDE_DIRS})

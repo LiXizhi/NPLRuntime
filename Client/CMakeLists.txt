@@ -131,7 +131,12 @@ endif()
 
 set(Boost_USE_MULTITHREADED ON)
 set(Boost_USE_STATIC_LIBS   ON)
-set(Boost_USE_STATIC_RUNTIME ON)
+
+if (MSVC)
+	set(Boost_USE_STATIC_RUNTIME ON)
+else()
+	set(Boost_USE_STATIC_RUNTIME OFF)
+endif()
 
 # Add more boost components here
 find_package( Boost 1.61 REQUIRED COMPONENTS thread date_time filesystem system chrono regex serialization iostreams) 
