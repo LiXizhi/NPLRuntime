@@ -9,6 +9,11 @@ project (CLIENT)
 set(CMAKE_CXX_STANDARD 11)
 
 
+if (MSVC)
+	add_definitions(/bigobj)
+endif (MSVC)
+
+
 # Server source dir
 set(SERVER_SOURCE_DIR   ${CLIENT_SOURCE_DIR}/../Server/trunk/)
 
