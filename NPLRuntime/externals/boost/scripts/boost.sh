@@ -49,7 +49,7 @@ MIN_TVOS_VERSION=10.0
 TVOS_SDK_VERSION=`xcrun --sdk appletvos --show-sdk-version`
 
 MIN_MACOS_VERSION=10.10
-MACOS_SDK_VERSION=`xcrun --sdk macosx --show-sdk-version | cut -c1-5`
+MACOS_SDK_VERSION=`xcrun --sdk macosx --show-sdk-version | cut -d. -f1 -f2`
 
 MACOS_ARCHS="x86_64"
 MACOS_ARCH_COUNT=0
