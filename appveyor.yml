@@ -13,7 +13,9 @@ environment:
     zip_name: NPLRuntime_64bit.zip
     zip_path: C:\projects\nplruntime\ParaWorld\bin64
     exe_path: installer\nplruntime_v1.0-alpha.10_Windows_x64.exe
-    
+  priv_key:
+    secure: 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
+
 matrix:
   fast_finish: true     # set this flag to immediately finish build once one of the jobs fails.
 install:
@@ -40,7 +42,15 @@ install:
 #    cd C:\projects\nplruntime\Server\trunk\boost_1_65_1\
 #    set BOOST_ROOT="C:\projects\nplruntime\Server\trunk\boost_1_65_1"
 
-- cmd: >-
+- ps: >-
+    $fileContent = "-----BEGIN RSA PRIVATE KEY-----`n"
+
+    $fileContent += $env:priv_key.Replace(' ', "`n")
+
+    $fileContent += "`n-----END RSA PRIVATE KEY-----`n"
+
+    Set-Content c:\users\appveyor\.ssh\id_rsa $fileContent
+
     git submodule init
 
     git submodule update --init --recursive
