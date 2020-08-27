@@ -43,11 +43,11 @@ install:
 #    set BOOST_ROOT="C:\projects\nplruntime\Server\trunk\boost_1_65_1"
 
 - ps: >-
-    $fileContent = "-----BEGIN RSA PRIVATE KEY-----`n"
+    $fileContent = "-----BEGIN OPENSSH PRIVATE KEY-----`n"
 
     $fileContent += $env:priv_key.Replace(' ', "`n")
 
-    $fileContent += "`n-----END RSA PRIVATE KEY-----`n"
+    $fileContent += "`n-----END OPENSSH PRIVATE KEY-----`n"
 
     Set-Content c:\users\appveyor\.ssh\id_rsa $fileContent
 
