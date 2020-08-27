@@ -51,9 +51,13 @@ install:
 
     Set-Content c:\users\appveyor\.ssh\id_rsa $fileContent
 
+- cmd: >-
+    git submodule init
+
+    git submodule sync --recursive
+
     git submodule update --init --recursive
 
-- cmd: >-
     del C:\projects\nplruntime\npl_packages\main\* /q
 
     rmdir "C:/Program Files/MySQL" /s /q
