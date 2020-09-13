@@ -16,7 +16,6 @@
 #include "InterprocessAppClient.h"
 #include "CommandLineParser.hpp"
 #include "util/EnumProcess.hpp"
-#include "WindowsApplication.h"
 
 using namespace ParaEngine;
 
