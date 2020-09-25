@@ -4962,6 +4962,7 @@ int CSceneObject::InstallFields(CAttributeClass* pClass, bool bOverride)
 
 	pClass->AddField("ShowSky", FieldType_Bool, (void*)EnableSkyRendering_s, (void*)IsRenderSky_s, NULL, NULL, bOverride);
 	pClass->AddField("PasueScene", FieldType_Bool, (void*)PauseScene_s, (void*)IsScenePaused_s, NULL, NULL, bOverride);
+	pClass->AddField("PauseScene", FieldType_Bool, (void*)PauseScene_s, (void*)IsScenePaused_s, NULL, NULL, bOverride);
 	pClass->AddField("EnableScene", FieldType_Bool, (void*)EnableScene_s, (void*)IsSceneEnabled_s, NULL, NULL, bOverride);
 	pClass->AddField("ShowBoundingBox", FieldType_Bool, (void*)ShowBoundingBox_s, (void*)IsShowBoundingBox_s, NULL, NULL, bOverride);
 	pClass->AddField("ShowPortalSystem", FieldType_Bool, (void*)ShowPortalSystem_s, (void*)IsPortalSystemShown_s, NULL, NULL, bOverride);
