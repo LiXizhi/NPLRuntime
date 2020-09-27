@@ -59,7 +59,7 @@ ParaEngine::CPainter::~CPainter()
 
 void ParaEngine::CPainter::initFrom(const CPaintDevice *pd)
 {
-	
+
 }
 
 bool ParaEngine::CPainter::begin(CPaintDevice * pd)
@@ -105,7 +105,7 @@ bool ParaEngine::CPainter::begin(CPaintDevice * pd)
 		SetMatrixMode(0);
 		LoadCurrentMatrix();
 	}
-	
+
 	bool begun = engine->begin(pd);
 	if (!begun) {
 		OUTPUT_LOG("warning: CPainter::begin(): Returned false\n");
@@ -186,7 +186,7 @@ bool ParaEngine::CPainter::end()
 
 bool ParaEngine::CPainter::isActive() const
 {
-	return engine!=NULL;
+	return engine != NULL;
 }
 
 CPaintDevice * ParaEngine::CPainter::device() const
@@ -289,7 +289,7 @@ void ParaEngine::CPainter::DrawSceneObject(CBaseObject * pObj, int nOption)
 
 void ParaEngine::CPainter::SetSpriteTransform(const Matrix4 * pMatrix /*= NULL*/)
 {
-	if (state && engine){
+	if (state && engine) {
 		state->SetSpriteTransform(pMatrix);
 		engine->transformChanged();
 	}
@@ -363,7 +363,7 @@ bool ParaEngine::CPainter::IsUse3DTransform()
 
 void ParaEngine::CPainter::SetSpriteUseWorldMatrix(bool bEnable)
 {
-	if(state) 
+	if (state)
 		state->SetSpriteUseWorldMatrix(bEnable);
 }
 
@@ -374,7 +374,7 @@ bool ParaEngine::CPainter::IsSpriteUseWorldMatrix()
 
 HRESULT CPainter::DrawRect(RECT* pRect, Color color, float depth)
 {
-	if (pRect && pRect->left != pRect->right){
+	if (pRect && pRect->left != pRect->right) {
 		Matrix4 matTransform(Matrix4::IDENTITY);
 		matTransform.setScale(Vector3(1.f, 1.f, 0.f));
 		matTransform._43 = depth;
@@ -404,10 +404,10 @@ HRESULT CPainter::DrawSprite(GUITextureElement* pElement, RECT *prcDest, float d
 
 	if (pTexture->SurfaceType == TextureEntity::SysMemoryTexture)
 	{
-//#ifdef USE_DIRECTX_RENDERER
-//		POINT pt = { rcScreen.left, rcScreen.top };
-//		hr = CGlobals::GetRenderDevice()->UpdateSurface(((TextureEntityDirectX*)pTexture)->GetSurface(), &rcTexture, guiroot->GetGUIState().pBackSurface, &pt);
-//#endif
+		//#ifdef USE_DIRECTX_RENDERER
+		//		POINT pt = { rcScreen.left, rcScreen.top };
+		//		hr = CGlobals::GetRenderDevice()->UpdateSurface(((TextureEntityDirectX*)pTexture)->GetSurface(), &rcTexture, guiroot->GetGUIState().pBackSurface, &pt);
+		//#endif
 	}
 	else
 	{
@@ -427,7 +427,7 @@ HRESULT CPainter::DrawSprite(GUITextureElement* pElement, RECT *prcDest, float d
 
 				vPos.x /= fScaleX;
 				vPos.y /= fScaleY;
-				
+
 				hr = engine->DrawQuad(pTexture, &rcTexture, NULL, &vPos, pElement->TextureColor);
 			}
 			else
@@ -461,10 +461,10 @@ HRESULT CPainter::DrawSprite(GUITextureElement* pElement, RECT *prcDest, const V
 
 	if (pTexture->SurfaceType == TextureEntity::SysMemoryTexture)
 	{
-//#ifdef USE_DIRECTX_RENDERER
-//		POINT pt = { rcScreen.left, rcScreen.top };
-//		hr = guiroot->m_stateGUI.pRenderDevice->UpdateSurface(((TextureEntityDirectX*)pTexture)->GetSurface(), &rcTexture, guiroot->GetGUIState().pBackSurface, &pt);
-//#endif
+		//#ifdef USE_DIRECTX_RENDERER
+		//		POINT pt = { rcScreen.left, rcScreen.top };
+		//		hr = guiroot->m_stateGUI.pRenderDevice->UpdateSurface(((TextureEntityDirectX*)pTexture)->GetSurface(), &rcTexture, guiroot->GetGUIState().pBackSurface, &pt);
+		//#endif
 	}
 	else
 	{
@@ -511,7 +511,7 @@ HRESULT CPainter::DrawSprite(GUITextureElement* pElement, RECT *prcDest, const V
 					colorMask.b *= pElement->TextureColor.b;
 					dwColor = colorMask;
 				}
-				
+
 				hr = engine->DrawQuad(pTexture, &rcTexture, NULL, NULL, dwColor);
 			}
 			else
@@ -669,14 +669,14 @@ const int g_offsets[4][2] = {
 //note:element order matters,careful when making any change!
 const int g_offsets[8][2] = {
 	{ 1, 0 },
-	{ -1, 0 },
-	{ 0, 1 },
-	{ 0, -1 },
+{ -1, 0 },
+{ 0, 1 },
+{ 0, -1 },
 
-	{ 1, -1 },
-	{ 1, 1 },
-	{ -1, -1 },
-	{ -1, 1 },
+{ 1, -1 },
+{ 1, 1 },
+{ -1, -1 },
+{ -1, 1 },
 };
 
 HRESULT CPainter::DrawText(const char16_t* strText, GUIFontElement* pElement, RECT* prcDest, float depth,
@@ -709,21 +709,21 @@ HRESULT CPainter::DrawText(const char16_t* strText, GUIFontElement* pElement, RE
 			{
 				RECT parentRect = state->m_clipInfo[0].rect;
 				RECT finalRect;
-				if (!ParaEngine::CGUIBase::IntersectRect(&finalRect, state->m_clipInfo[0].rect, rcScreen)) 
+				if (!ParaEngine::CGUIBase::IntersectRect(&finalRect, state->m_clipInfo[0].rect, rcScreen))
 				{
 					return S_OK;
 				}
 				QRect clipRect(finalRect);
 				engine->clip(clipRect, ClipOperation::IntersectClip);
 			}
-			else 
+			else
 			{
 				QRect clipRect(rcScreen);
 				engine->clip(clipRect, ClipOperation::ReplaceClip);
 			}
 		}
 #endif
-		
+
 
 		do
 		{
@@ -757,8 +757,8 @@ HRESULT CPainter::DrawText(const char16_t* strText, GUIFontElement* pElement, RE
 					CGUIBase::OffsetRect(&rcShadow, g_offsets[i][0], g_offsets[i][1]);
 					/*
 					V_RETURN(engine->drawText(pFontNode, strText, \
-						nCount, &rcShadow, pElement->dwTextFormat, shadowColor));
-						*/
+					nCount, &rcShadow, pElement->dwTextFormat, shadowColor));
+					*/
 
 					hr = engine->drawText(pFontNode, strText, \
 						nCount, &rcShadow, pElement->dwTextFormat, shadowColor);
@@ -792,7 +792,7 @@ HRESULT CPainter::DrawText(const char16_t* strText, GUIFontElement* pElement, RE
 
 		return hr;
 	}
-	else{
+	else {
 		// OUTPUT_LOG("fontnode==null\n");
 	}
 
@@ -821,11 +821,25 @@ HRESULT CPainter::DrawText(const char16_t* strText, GUIFontElement* pElement, RE
 
 		if (!(pElement->dwTextFormat & DT_NOCLIP))
 		{
-			QRect clipRect(rcScreen);
-			engine->clip(clipRect, ClipOperation::ReplaceClip);
+			if (state->m_clipOperation != ClipOperation::NoClip && !(state->m_clipInfo.empty()))
+			{
+				RECT parentRect = state->m_clipInfo[0].rect;
+				RECT finalRect;
+				if (!ParaEngine::CGUIBase::IntersectRect(&finalRect, state->m_clipInfo[0].rect, rcScreen))
+				{
+					return S_OK;
+				}
+				QRect clipRect(finalRect);
+				engine->clip(clipRect, ClipOperation::IntersectClip);
+			}
+			else
+			{
+				QRect clipRect(rcScreen);
+				engine->clip(clipRect, ClipOperation::ReplaceClip);
+			}
 		}
 #endif
-		
+
 
 		LinearColor color = pElement->FontColor;
 		if (dwColorMask)
@@ -885,16 +899,22 @@ HRESULT CPainter::DrawText(const char16_t* strText, GUIFontElement* pElement, RE
 #ifdef USE_OPENGL_RENDERER
 		if (!(pElement->dwTextFormat & DT_NOCLIP))
 		{
-			//CGlobals::GetRenderDevice()->SetRenderState(ERenderState::SCISSORTESTENABLE, FALSE);
-			QRect empty;
-			engine->clip(empty, ClipOperation::NoClip);
+			if (state->m_clipOperation != ClipOperation::NoClip && !(state->m_clipInfo.empty()))
+			{
+				engine->clip(state->m_clipInfo[0].rect, state->m_clipInfo[0].operation);
+			}
+			else
+			{
+				QRect empty;
+				engine->clip(empty, ClipOperation::NoClip);
+			}
 		}
 #endif
 
 		return hr;
 
 	}
-	else{
+	else {
 		// OUTPUT_LOG("fontnode==null\n");
 	}
 
@@ -920,7 +940,7 @@ HRESULT CPainter::DrawText(const char16_t* strText, GUIFontElement* pElement, RE
 	{
 		vPos -= vRotOrigin;
 		ParaMatrixTransformation2D(&matTransform, NULL, 0.0, vScaling, NULL, fRadian, vTranslation);
-		vPos = vPos*matTransform;
+		vPos = vPos * matTransform;
 		vPos += vRotOrigin;
 	}
 	rcScreen.right -= rcScreen.left;
@@ -946,10 +966,10 @@ HRESULT CPainter::CalcTextRect(const char16_t* strText, GUIFontElement* pElement
 	// Since we are only computing the rectangle, we don't need a sprite.
 	if (pFontNode != NULL) {
 		auto pEngine = engine;
-		if (!pEngine && helper_device){
+		if (!pEngine && helper_device) {
 			pEngine = helper_device->paintEngine();
 		}
-		if (pEngine){
+		if (pEngine) {
 			V_RETURN(pEngine->drawText(pFontNode, strText, nCount, prcDest, dwTextFormat, pElement->FontColor));
 		}
 	}
@@ -1054,7 +1074,7 @@ void ParaEngine::CPainter::drawTexture(const QRectF &targetRect, TextureEntity* 
 
 		Color color = state->color();
 
-		if (srcRect.isEmpty()){
+		if (srcRect.isEmpty()) {
 			srcRect.setWidth(pTexture->GetWidth());
 			srcRect.setHeight(pTexture->GetHeight());
 		}
@@ -1216,7 +1236,7 @@ void ParaEngine::CPainter::updateMatrix()
 	state->m_matrix = state->WxF ? state->worldMatrix : QTransform();
 	/*
 	if (state->VxF)
-		state->m_matrix *= viewTransform();*/
+	state->m_matrix *= viewTransform();*/
 
 	const QMatrix& mat = state->worldMatrix.toAffine();
 	Matrix4 mat4x4(mat);
@@ -1338,7 +1358,7 @@ void ParaEngine::CPainter::setBrush(const QBrush &brush)
 {
 	if (!engine || !state)
 		return;
-	if (state->m_brush != brush){
+	if (state->m_brush != brush) {
 		state->m_brush = brush;
 		engine->brushChanged();
 	}
@@ -1577,7 +1597,7 @@ void ParaEngine::CPainter::LoadBillboardMatrix()
 {
 	Matrix4 mat;
 	Math::CreateBillboardMatrix(&mat, NULL, NULL, true);
-	
+
 	// to rotate 180 degrees for ease of composing.
 	Quaternion q;
 	q.FromAngleAxis(Radian(Math::PI), Vector3::UNIT_Y);

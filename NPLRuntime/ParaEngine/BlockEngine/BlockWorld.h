@@ -283,6 +283,8 @@ namespace ParaEngine
 		uint32_t SetBlockData(uint16_t x, uint16_t y, uint16_t z, uint32_t nBlockData);
 		uint32_t GetBlockData(uint16_t x, uint16_t y, uint16_t z);
 
+		void LoadBlockAsync(uint16_t x, uint16_t y, uint16_t z, uint16_t blockId, uint32_t userData);
+
 		//do *not* hold a permanent reference of return value,underlying memory address may change
 		//@param id: template id;
 		BlockTemplate* GetBlockTemplate(uint16_t id);

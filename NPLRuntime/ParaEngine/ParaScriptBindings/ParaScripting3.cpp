@@ -127,6 +127,7 @@ void CNPLScriptingState::LoadHAPI_SceneManager()
 
 				def("GetBlocksInRegion",&ParaTerrain::GetBlocksInRegion),
 				def("GetActiveRegion",&ParaTerrain::GetVisibleChunkRegion),
+				def("LoadBlockAsync", &ParaTerrain::LoadBlockAsync),
 
 				def("Pick",&ParaTerrain::Pick),
 				def("MousePick",&ParaTerrain::MousePick),
@@ -383,7 +384,8 @@ void CNPLScriptingState::LoadHAPI_NPL()
 				def("ChangeRequestPoolSize",&CNPL::ChangeRequestPoolSize),
 				def("RegisterEvent",&CNPL::RegisterEvent),
 				def("UnregisterEvent",&CNPL::UnregisterEvent),
-				def("GetStats",&CNPL::GetStats),
+				def("GetStats", &CNPL::GetStats),
+				def("GetLuaState", &CNPL::GetLuaState),
 
 				def("FromJson",&CNPL::FromJson),
 				def("ToJson", &CNPL::ToJson),

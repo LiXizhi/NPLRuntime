@@ -111,8 +111,7 @@ void ParaEngine::CBlockWorld::EnterWorld(const string& sWorldDir, float x, float
 	else
 		m_worldInfo.ResetWorldName(CWorldInfo::GetSingleton().GetDefaultWorldConfigName());
 
-
-	// m_maxCacheRegionCount = 16;
+	//init data
 	// only use more region cache on 64 bits system.
 	m_maxCacheRegionCount = (sizeof(void*) > 4) ? 16 : 9;
 
@@ -946,6 +945,17 @@ uint32_t ParaEngine::CBlockWorld::GetBlockData(uint16_t x, uint16_t y, uint16_t 
 	return 0;
 }
 
+void ParaEngine::CBlockWorld::LoadBlockAsync(uint16_t x, uint16_t y, uint16_t z, uint16_t blockId, uint32_t userData)
+{
+	uint16_t lx, ly, lz;
+	BlockRegion* pRegion = GetRegion(x, y, z, lx, ly, lz);
+
+	if (pRegion)
+	{
+		pRegion->LoadBlockAsync(lx, ly, lz, blockId, userData);
+	}
+}
+
 Block* CBlockWorld::GetBlock(uint16_t x_ws, uint16_t y_ws, uint16_t z_ws)
 {
 	uint16_t lx, ly, lz;
@@ -1626,7 +1636,6 @@ void CBlockWorld::SetTemplateTexture(uint16_t id, const char* textureName)
 			}
 		}
 #endif
-
 		pTemplate->SetTexture0(textureName);
 	}
 }
