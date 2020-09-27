@@ -65,13 +65,15 @@ namespace ParaEngine
 
 	void BlockChunk::ClearAllLight()
 	{
-		SetDirty(true);
-		if (m_lightBlockIndices.size() > 0)
-			m_lightBlockIndices.clear();
 		SetLightingInitialized(false);
 		std::fill(m_lightmapArray.begin(), m_lightmapArray.end(), LightData());
 	}
 
+
+	void BlockChunk::ClearLightMap()
+	{
+
+	}
 
 	void BlockChunk::LoadBlock(uint16_t nBlockIndex, BlockTemplate* pTemplate)
 	{

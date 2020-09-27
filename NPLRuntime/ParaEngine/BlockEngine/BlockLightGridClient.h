@@ -77,6 +77,9 @@ namespace ParaEngine
 
 		/** get the number of forced column still in the queue.*/
 		virtual int GetForcedChunkColumnCount();
+
+		/** thread safe: */
+		virtual bool IsChunkColumnLoaded(int nChunkX, int nChunkZ);
 	public:
 		/** whether to calculate light in a separate thread. */
 		bool IsAsyncLightCalculation() const;
@@ -84,9 +87,7 @@ namespace ParaEngine
 
 		/** thread safe: check to see if the block pos's light is already or being calculated. */
 		bool IsChunkColumnLoadedWorldPos(int nWorldX, int nWorldY, int nWorldZ);
-		/** thread safe: */
-		bool IsChunkColumnLoaded(int nChunkX, int nChunkZ);
-
+		
 		/* whether this light block is marked dirty. please note only call this functionin light thread, since there is no lock on this function. */
 		bool IsLightDirty(Uint16x3& blockId_ws);
 		

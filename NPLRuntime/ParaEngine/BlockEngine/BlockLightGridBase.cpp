@@ -28,11 +28,11 @@ namespace ParaEngine
 	{
 	}
 
-	void CBlockLightGridBase::OnWorldMove(uint16_t centerChunkX,uint16_t centerChunkZ)
+	void CBlockLightGridBase::OnWorldMove(uint16_t centerChunkX, uint16_t centerChunkZ)
 	{
 	}
 
-	bool CBlockLightGridBase::GetBrightness(Uint16x3& blockId_ws,uint8_t* brightness, int nSize, int nLightType)
+	bool CBlockLightGridBase::GetBrightness(Uint16x3& blockId_ws, uint8_t* brightness, int nSize, int nLightType)
 	{
 		return false;
 	}
@@ -44,16 +44,16 @@ namespace ParaEngine
 	void CBlockLightGridBase::NotifyBlockHeightChanged(uint16_t blockIdX_ws, uint16_t blockIdZ_ws, ChunkMaxHeight& prevBlockHeight)
 	{
 	}
-	
+
 	void CBlockLightGridBase::UpdateLighting()
 	{
 	}
-	
-	void CBlockLightGridBase::AddDirtyColumn( uint16_t chunkX_ws,uint16_t chunkZ_ws )
+
+	void CBlockLightGridBase::AddDirtyColumn(uint16_t chunkX_ws, uint16_t chunkZ_ws)
 	{
 	}
 
-	void CBlockLightGridBase::SetLightGridSize( int nSize )
+	void CBlockLightGridBase::SetLightGridSize(int nSize)
 	{
 		m_nLightGridChunkSize = nSize;
 	}
@@ -128,6 +128,11 @@ namespace ParaEngine
 	int CBlockLightGridBase::GetForcedChunkColumnCount()
 	{
 		return 0;
+	}
+
+	bool CBlockLightGridBase::IsChunkColumnLoaded(int nChunkX, int nChunkZ)
+	{
+		return true;
 	}
 
 	int CBlockLightGridBase::GetDirtyBlockCount()

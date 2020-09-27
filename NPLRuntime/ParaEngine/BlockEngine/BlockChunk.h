@@ -282,5 +282,6 @@ namespace ParaEngine
 		std::vector<Uint16x3> refreshBlockVisible(uint16_t blockTemplateId);
 
 		void ClearAllLight();
+		void ClearLightMap();
 	};
 }
