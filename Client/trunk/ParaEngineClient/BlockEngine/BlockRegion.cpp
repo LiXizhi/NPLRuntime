@@ -171,6 +171,31 @@ namespace ParaEngine
 		}
 	}
 
+	void BlockRegion::LoadBlockAsync(uint16_t x_rs, uint16_t y_rs, uint16_t z_rs, uint16_t blockId, uint32_t userData)
+	{
+		if (IsLocked())
+		{
+			auto chunkId = CalcPackedChunkID(x_rs, y_rs, z_rs);
+			BlockChunk* pChunk = GetChunk(chunkId, true);
+			if (pChunk)
+			{
+				BlockTemplate* pTemplate = GetBlockWorld()->GetBlockTemplate(blockId);
+				if (pTemplate)
+				{
+					auto nIndex = CalcPackedBlockID(x_rs, y_rs, z_rs);
+					pChunk->LoadBlock(nIndex, pTemplate);
+					pChunk->SetBlockData(nIndex, userData);
+				}
+				else
+				{
+					Uint16x3 blockId_rs(x_rs, y_rs, z_rs);
+					pChunk->SetBlockToAir(blockId_rs);
+				}
+				pChunk->SetDirty(true);
+			}
+		}
+	}
+
 	void BlockRegion::SetBlockTemplateByIndex(uint16_t blockX_rs, uint16_t blockY_rs, uint16_t blockZ_rs, BlockTemplate* pTemplate)
 	{
 		if (IsLocked())
@@ -1897,6 +1922,11 @@ namespace ParaEngine
 		return m_bIsLocked;
 	}
 
+	void BlockRegion::SetLocked(bool bLocked)
+	{
+		m_bIsLocked = bLocked;
+	}
+
 	void BlockRegion::Load()
 	{
 		if (GetBlockWorld() && !IsLocked())
@@ -2148,7 +2178,7 @@ namespace ParaEngine
 		pClass->AddField("ChunksLoaded", FieldType_Int, (void*)SetChunksLoaded_s, (void*)GetChunksLoaded_s, NULL, NULL, bOverride);
 		pClass->AddField("TotalBytes", FieldType_Int, (void*)0, (void*)GetTotalBytes_s, NULL, NULL, bOverride);
 		pClass->AddField("IsModified", FieldType_Bool, (void*)SetModified_s, (void*)IsModified_s, NULL, NULL, bOverride);
-		pClass->AddField("IsLocked", FieldType_Bool, (void*)0, (void*)IsLocked_s, NULL, NULL, bOverride);
+		pClass->AddField("IsLocked", FieldType_Bool, (void*)SetLocked_s, (void*)IsLocked_s, NULL, NULL, bOverride);
 		pClass->AddField("ClearAllLight", FieldType_void, (void*)ClearAllLight_s, NULL, NULL, "", bOverride);
 		pClass->AddField("RefreshLightChunkColumns", FieldType_Vector3, (void*)RefreshLightChunkColumns_s, (void*)0, NULL, NULL, bOverride);
 

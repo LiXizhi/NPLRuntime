@@ -37,6 +37,7 @@ namespace ParaEngine
 		ATTRIBUTE_METHOD1(BlockRegion, SetChunksLoaded_s, int)	{ cls->SetChunksLoaded((uint32)p1); return S_OK; }
 
 		ATTRIBUTE_METHOD1(BlockRegion, IsLocked_s, bool*) { *p1 = cls->IsLocked(); return S_OK; }
+		ATTRIBUTE_METHOD1(BlockRegion, SetLocked_s, bool) { cls->SetLocked(p1); return S_OK; }
 
 		ATTRIBUTE_METHOD1(BlockRegion, IsModified_s, bool*)		{ *p1 = cls->IsModified(); return S_OK; }
 		ATTRIBUTE_METHOD1(BlockRegion, SetModified_s, bool)	{ cls->SetModified(p1); return S_OK; }
@@ -53,6 +54,7 @@ namespace ParaEngine
 
 		/* if locked, all block access functions takes no effect. Since it is either being loaded or saved asynchronously. */
 		bool IsLocked();
+		void SetLocked(bool bLocked);
 
 		/** 
 		@param x,z:  range in [0,512), y range in [0,256)
@@ -164,6 +166,9 @@ namespace ParaEngine
 		
 		/** refresh chunks include one type block*/
 		void SetChunksDirtyByBlockTemplate(uint16_t templateId);
+
+		/** this function is only valid, when the block region is locked. this function is extremely fast. and it does not do light calculation. */
+		void LoadBlockAsync(uint16_t x_rs, uint16_t y_rs, uint16_t z_rs, uint16_t blockId, uint32_t userData);
 	private:
 		Block* CreateBlock(Uint16x3& blockID_r);
 

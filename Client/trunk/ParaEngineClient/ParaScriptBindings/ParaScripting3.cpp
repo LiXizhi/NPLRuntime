@@ -127,6 +127,7 @@ void CNPLScriptingState::LoadHAPI_SceneManager()
 
 				def("GetBlocksInRegion",&ParaTerrain::GetBlocksInRegion),
 				def("GetActiveRegion",&ParaTerrain::GetVisibleChunkRegion),
+				def("LoadBlockAsync", &ParaTerrain::LoadBlockAsync),
 
 				def("Pick",&ParaTerrain::Pick),
 				def("MousePick",&ParaTerrain::MousePick),
