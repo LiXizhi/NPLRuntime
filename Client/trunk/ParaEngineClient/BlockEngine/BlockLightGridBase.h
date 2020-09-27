@@ -127,6 +127,9 @@ namespace ParaEngine
 		/** get the number of forced column still in the queue.*/
 		virtual int GetForcedChunkColumnCount();
 
+		/** thread safe: */
+		virtual bool IsChunkColumnLoaded(int nChunkX, int nChunkZ);
+
 	public:
 		//ignore all SetLightDirty calls
 		void SuspendLightUpdate();

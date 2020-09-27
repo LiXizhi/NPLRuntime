@@ -36,6 +36,8 @@ namespace ParaEngine
 		ATTRIBUTE_METHOD1(BlockRegion, GetChunksLoaded_s, int*)		{ *p1 = cls->GetChunksLoaded(); return S_OK; }
 		ATTRIBUTE_METHOD1(BlockRegion, SetChunksLoaded_s, int)	{ cls->SetChunksLoaded((uint32)p1); return S_OK; }
 
+		ATTRIBUTE_METHOD1(BlockRegion, IsLocked_s, bool*) { *p1 = cls->IsLocked(); return S_OK; }
+
 		ATTRIBUTE_METHOD1(BlockRegion, IsModified_s, bool*)		{ *p1 = cls->IsModified(); return S_OK; }
 		ATTRIBUTE_METHOD1(BlockRegion, SetModified_s, bool)	{ cls->SetModified(p1); return S_OK; }
 		
@@ -43,6 +45,8 @@ namespace ParaEngine
 		
 
 		ATTRIBUTE_METHOD(BlockRegion, ClearAllLight_s) { cls->ClearAllLight(); return S_OK; }
+		ATTRIBUTE_METHOD1(BlockRegion, RefreshLightChunkColumns_s, Vector3) { cls->RefreshLightChunkColumns((uint16_t)p1.x, (uint16_t)p1.y, (uint16_t)p1.z); return S_OK; }
+
 	public:
 		virtual const std::string& GetIdentifier();
 		virtual void SetIdentifier(const std::string& sID);
@@ -109,6 +113,9 @@ namespace ParaEngine
 		void DeleteAllBlocks();
 
 		void RefreshAllLightsInColumn(uint16_t chunkX_ws,uint16_t chunkZ_ws);
+		
+		/** call this function when you make lots of changes to blocks when light is suspended. */
+		void RefreshLightChunkColumns(uint16_t chunkX_ws, uint16_t chunkZ_ws, uint16_t chunksLength = 1);
 
 		void GetBlocksInChunk(uint16_t chunkX_ws,uint16_t chunkZ_ws,uint16_t startChunkY,uint16_t endChunkY,
 			uint32_t matchtype,const luabind::adl::object& result,int32_t& blockCount);
