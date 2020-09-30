@@ -3,6 +3,7 @@
 //
 
 #include "ParaEngineActivity.h"
+#include "AppDelegate.h"
 
 #include <jni.h>
 
@@ -12,7 +13,12 @@ namespace ParaEngine {
     std::string ParaEngineActivity::getLauncherIntentData()
     {
         return JniHelper::callStaticStringMethod(classname, "getLauncherIntentData");
-     }
+    }
+
+    void ParaEngineActivity::setScreenOrientation(int type)
+    {
+        JniHelper::callStaticVoidMethod(classname, "setScreenOrientation", type);
+    }
 } // end namespace
 
 extern "C" {

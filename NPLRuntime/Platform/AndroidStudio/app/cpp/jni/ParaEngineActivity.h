@@ -19,6 +19,7 @@ namespace ParaEngine {
     {
     public:
         static std::string getLauncherIntentData();
+        static void setScreenOrientation(int type);
 
     private:
         static const std::string classname;

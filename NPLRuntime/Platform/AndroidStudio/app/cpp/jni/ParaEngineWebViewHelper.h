@@ -16,6 +16,7 @@ namespace ParaEngine {
 
 		typedef ParaEngine::weak_ptr<IObject, ParaEngineWebView> WeakPtr_type;
 		static ParaEngineWebView* createWebView(int x, int y, int w, int h);
+		static ParaEngineWebView* setOrientation(int type);
 
 		virtual int Release() override;
 

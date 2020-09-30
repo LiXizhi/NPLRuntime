@@ -8,6 +8,12 @@
 
 namespace ParaScripting
 {
+#if (PARA_TARGET_PLATFORM == PARA_PLATFORM_ANDROID)
+	void ParaWebView::setOrientation(int type)
+	{
+		IParaWebView::setOrientation(type);
+	}
+#endif
 	ParaWebView ParaWebView::createWebView(int x, int y, int w, int h)
 	{
 		auto pWebView = IParaWebView::createWebView(x, y, w, h);
@@ -70,6 +76,9 @@ namespace ParaScripting
 					.def("loadUrl", &ParaWebView::loadUrl1)
 					.def("loadUrl", &ParaWebView::loadUrl2)
 					.def("closeAndRelease", &ParaWebView::closeAndRelease),
+#if (PARA_TARGET_PLATFORM == PARA_PLATFORM_ANDROID)
+				def("setOrientation", ParaWebView::setOrientation),
+#endif
 				def("createWebView", ParaWebView::createWebView),
 				def("createSubViewView", ParaWebView::createSubViewView)
 			]
