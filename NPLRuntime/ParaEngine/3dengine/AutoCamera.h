@@ -76,6 +76,9 @@ public:
 
 	ATTRIBUTE_METHOD1(CAutoCamera, IsUseRightButtonBipedFacing_s, bool*)	{*p1 = cls->IsUseRightButtonBipedFacing(); return S_OK;}
 	ATTRIBUTE_METHOD1(CAutoCamera, SetUseRightButtonBipedFacing_s, bool)	{cls->SetUseRightButtonBipedFacing(p1); return S_OK;}
+
+	ATTRIBUTE_METHOD1(CAutoCamera, IsTurnBipedWhenWalkBackward_s, bool*) { *p1 = cls->IsTurnBipedWhenWalkBackward(); return S_OK; }
+	ATTRIBUTE_METHOD1(CAutoCamera, SetTurnBipedWhenWalkBackward_s, bool) { cls->SetTurnBipedWhenWalkBackward(p1); return S_OK; }
 	
 
 	ATTRIBUTE_METHOD(CAutoCamera, Reset_s)	{cls->Reset(); return S_OK;}
@@ -277,6 +280,12 @@ public:
 	*/
 	bool IsUseRightButtonBipedFacing() {return  m_bUseRightButtonBipedFacing;}
 	void SetUseRightButtonBipedFacing(bool bUseRightButtonBipedFacing) {m_bUseRightButtonBipedFacing = bUseRightButtonBipedFacing;}
+
+	/**
+	* when set to true, the right mouse drag will change character facing when biped is standing still.
+	*/
+	bool IsTurnBipedWhenWalkBackward() { return  m_bTurnBipedWhenWalkBackward; }
+	void SetTurnBipedWhenWalkBackward(bool bTurnBipedWhenWalkBackward) { m_bTurnBipedWhenWalkBackward = bTurnBipedWhenWalkBackward; }
 
 	/** whether camera dragging with right button if enabled. default to true */
 	bool IsEnableMouseRightDrag() {return  m_bEnableMouseRightDrag;}
@@ -570,6 +579,9 @@ private:
 
 	/** when set to true, the right mouse drag will change character facing when biped is standing still. */
 	bool m_bUseRightButtonBipedFacing;
+
+	/** if true, walking backward will actually turn the biped and walk forward*/
+	bool m_bTurnBipedWhenWalkBackward;
 
 	/** camera dragging with left button if enabled. */
 	bool m_bEnableMouseLeftDrag;
