@@ -324,6 +324,61 @@ bool CMoviePlatform::ResizeImage(const string& filename, int width, int height, 
 #endif
 }
 
+bool CMoviePlatform::TakeScreenShot(const string& filename, int width, int height, bool isCenter)
+{
+#ifdef USE_DIRECTX_RENDERER
+#define SCREENSHOT_FROM_BACKBUFFER
+#ifdef SCREENSHOT_FROM_BACKBUFFER
+
+#else
+
+#endif
+
+#elif defined(USE_OPENGL_RENDERER)
+    std::string Filename(filename);
+
+    if (Filename.empty())
+    {
+        char ValidFilename[256];
+        ZeroMemory(ValidFilename, sizeof(ValidFilename));
+
+        std::string date_str = ParaEngine::GetDateFormat("MMM dd yy");
+        snprintf(ValidFilename, 255, "Screen Shots\\ParaEngine_%s_%s.jpg", date_str.c_str(), ParaEngine::GetTimeFormat("hh'H'mm'M'ss tt").c_str());
+        Filename = ValidFilename;
+    }
+
+    //Filename = CParaFile::GetWritablePath() + Filename;
+
+    if (CParaFile::CreateDirectory(Filename.c_str()))
+    {
+        std::vector<unsigned int> pixels;
+        int _width = CGlobals::GetApp()->GetRenderWindow()->GetWidth();
+        int _height = CGlobals::GetApp()->GetRenderWindow()->GetHeight();
+
+        pixels.resize(width * height);
+
+        CGlobals::GetRenderDevice()->ReadPixels((_width - width) / 2, (_height - height) / 2, width, height, &pixels[0]);
+
+        PE_CHECK_GL_ERROR_DEBUG();
+
+        std::vector<unsigned int> img_pixels;
+        img_pixels.resize(pixels.size());
+
+        for (int row = 0; row < height; ++row)
+        {
+            memcpy(&img_pixels[width*row], &pixels[width*(height - row - 1)], width * sizeof(unsigned int));
+        }
+
+        ParaImage img;
+        img.initWithRawData(reinterpret_cast<const unsigned char*>(&img_pixels[0]), img_pixels.size() * sizeof(unsigned int), width, height, 32);
+        img.saveToFile(Filename);
+
+        return true;
+    }
+#endif
+    return false;
+}
+
 bool CMoviePlatform::TakeScreenShot(const string& filename, int width, int height)
 {
 	if(CMoviePlatform::TakeScreenShot(filename))
@@ -420,12 +475,12 @@ bool CMoviePlatform::TakeScreenShot(const string& filename)
 	if (CParaFile::CreateDirectory(Filename.c_str()))
 	{
 		std::vector<unsigned int> pixels;
-		int width = CGlobals::GetApp()->GetRenderWindow()->GetWidth();
-		int height = CGlobals::GetApp()->GetRenderWindow()->GetHeight();
+        int width = CGlobals::GetApp()->GetRenderWindow()->GetWidth();
+        int height = CGlobals::GetApp()->GetRenderWindow()->GetHeight();
 
-		pixels.resize(width*height);
+        pixels.resize(width*height);
 
-		CGlobals::GetRenderDevice()->ReadPixels(0, 0, width, height, &pixels[0]);
+        CGlobals::GetRenderDevice()->ReadPixels(0, 0, width, height, &pixels[0]);
 
 		PE_CHECK_GL_ERROR_DEBUG();
 

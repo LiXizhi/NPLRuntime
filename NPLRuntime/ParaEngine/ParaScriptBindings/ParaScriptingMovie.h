@@ -115,6 +115,7 @@ namespace ParaScripting
 		* @param height; in pixel, if 0 it will be the screen size
 		*/
 		static bool TakeScreenShot3(const char* filename, int width, int height);
+        static bool TakeScreenShot4(const char* filename, int width, int height, bool isCenter);
 
 		// Use a new thread to take a screenshot.
 		static void TakeScreenShot_Async(const char* filename, const char* sCallBackScript);
