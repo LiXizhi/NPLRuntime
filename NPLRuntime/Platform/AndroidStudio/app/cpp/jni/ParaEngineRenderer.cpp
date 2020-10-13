@@ -11,9 +11,6 @@
 
 namespace ParaEngine {
     const std::string ParaEngineRenderer::classname = "com/tatfook/paracraft/ParaEngineRenderer";
-
-
-
 } // namespace ParaEngine
 
 extern "C" {
@@ -69,7 +66,7 @@ extern "C" {
 
     JNIEXPORT void JNICALL Java_com_tatfook_paracraft_ParaEngineRenderer_nativeOnSurfaceChanged(JNIEnv* env, jclass clazz, jint w, jint h)
     {
-
+        AppDelegate::getInstance().init(w, h, ParaEngineActivity::getLauncherIntentData());
     }
 
 

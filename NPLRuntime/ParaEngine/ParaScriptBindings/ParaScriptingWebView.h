@@ -14,6 +14,9 @@ namespace ParaScripting
 	private:
 		ParaWebView(IParaWebView* wv);
 	public:
+#if (PARA_TARGET_PLATFORM == PARA_PLATFORM_ANDROID)
+		static void setOrientation(int type);
+#endif
 		static ParaWebView createWebView(int x, int y, int w, int h);
 		static ParaWebView createSubViewView(int x, int y, int w, int h);
 

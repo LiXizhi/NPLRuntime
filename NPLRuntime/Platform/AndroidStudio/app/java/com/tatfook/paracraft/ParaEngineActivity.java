@@ -219,6 +219,16 @@ public class ParaEngineActivity extends AppCompatActivity {
     }
 
     @Keep
+    public static void setScreenOrientation(int type){
+        if (type == 1) {
+            sContext.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
+        } else if (type == 0) {
+            sContext.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
+        }
+
+    }
+
+    @Keep
     public String getFileDirsPath() {
         return getFilesDir().getAbsolutePath();
     }

@@ -202,8 +202,9 @@ namespace ParaEngine
 		* @param width; in pixel, if 0 it will be the screen size
 		* @param height; in pixel, if 0 it will be the screen size
 		*/
+        bool TakeScreenShot(const string& filename, int width, int height, bool isCenter);
 		bool TakeScreenShot(const string& filename, int width, int height);
-		
+
 		/**
 		* resize the given image
 		* @param width; in pixel

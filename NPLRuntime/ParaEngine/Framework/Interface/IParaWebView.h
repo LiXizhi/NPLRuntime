@@ -43,6 +43,9 @@ namespace ParaEngine {
 		typedef std::function<bool()> onCloseFunc;
 		virtual void addCloseListener(onCloseFunc fun) = 0;
 
+#if (PARA_TARGET_PLATFORM == PARA_PLATFORM_ANDROID)
+		static IParaWebView* setOrientation(int type);
+#endif
 		static IParaWebView* createWebView(int x, int y, int w, int h);
 		static IParaWebView* createSubViewView(int x, int y, int w, int h);
 	};
