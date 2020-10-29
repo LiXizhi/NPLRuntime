@@ -44,7 +44,7 @@ namespace ParaEngine
 	protected:
 		virtual void OnMouseButton(EMouseButton button, EKeyState state,uint32_t x,uint32_t y) {};
 		virtual void OnMouseMove(uint32_t x, uint32_t y) {};
-		virtual void OnMouseWhell(float x, float y, float delta) {};
+		virtual void OnMouseWheel(float x, float y, float delta) {};
 		virtual void OnKey(EVirtualKey key, EKeyState state) {};
 		virtual void OnChar(unsigned int character) {};
 		virtual void OnSize(int w, int h) {};

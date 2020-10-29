@@ -216,7 +216,7 @@ namespace ParaEngine {
 		case WM_MOUSEWHEEL:
 		{
 			int zDelta = GET_WHEEL_DELTA_WPARAM(wParam);
-			window->OnMouseWhell((float)xPos, (float)yPos, (float)zDelta);
+			window->OnMouseWheel((float)xPos, (float)yPos, (float)zDelta);
 		}
 		break;
 		case WM_CHAR:

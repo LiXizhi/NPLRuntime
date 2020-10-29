@@ -174,8 +174,8 @@ CParaXModel::~CParaXModel(void)
 		SAFE_DELETE_ARRAY(m_origVertices);
 		SAFE_DELETE_ARRAY(m_frame_number_vertices);
 
-		if (animBones)
-			SAFE_DELETE_ARRAY(bones);
+		SAFE_DELETE_ARRAY(bones);
+		
 		if (!animGeometry) {
 		}
 
