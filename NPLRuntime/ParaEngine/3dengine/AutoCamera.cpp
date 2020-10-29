@@ -737,7 +737,7 @@ VOID CAutoCamera::FrameMove(FLOAT fElapsedTime)
 						m_resetFlyNormal = true;
 					}
 
-					if (m_bTurnBipedWhenWalkBackward)
+					if (m_bTurnBipedWhenWalkBackward && !pBiped->GetIsFlying())
 					{
 						if (IsKeyDown(m_aKeys[MOVE_BACKWARD]))
 						{
