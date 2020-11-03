@@ -298,6 +298,10 @@ namespace ParaEngine
 
 	void BMaxParser::ParseVisibleBlocks()
 	{
+		for (uint32 i = 0; i < m_blockModels.size(); i++)
+		{
+			SAFE_DELETE(m_blockModels[i]);
+		}
 		m_blockModels.clear();
 		for (auto& item : m_nodes)
 		{
