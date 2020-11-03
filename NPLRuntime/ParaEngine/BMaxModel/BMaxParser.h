@@ -177,7 +177,6 @@ namespace ParaEngine
 		bool m_bAutoScale;
 		bool m_bHasBoneBlock;
 		float m_fScale;
-		map<BlockModel*, BMaxNode*> m_blockModelsMapping;
 		vector<ModelAnimation> m_anims;
 		bool m_bHasAnimation;
 
