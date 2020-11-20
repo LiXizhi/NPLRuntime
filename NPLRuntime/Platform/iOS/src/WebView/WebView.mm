@@ -266,7 +266,22 @@ static std::string getFixedBaseUrl(const std::string& baseUrl)
     if (!self.uiWebView)
         [self setupWebView];
     
-    NSURL *url = [NSURL URLWithString:@(urlString.c_str())];
+    NSString *nsStringUrl = @(urlString.c_str());
+    NSURL *url = [NSURL URLWithString: nsStringUrl];
+    auto originWidth = self.uiWebView.frame.size.width;
+    auto originHeight = self.uiWebView.frame.size.height;
+
+    if ([nsStringUrl rangeOfString:@"screenOrientation=portrait"].location != NSNotFound) {
+        self.uiWebView.transform = CGAffineTransformMakeRotation(-M_PI/2);
+        self.uiWebView.bounds = CGRectMake(0, 0, originHeight, originWidth);
+
+        self.uiCloseBtn.frame = CGRectMake(
+            (originHeight / 2) - (self.uiCloseBtn.frame.size.width / 2),
+            originWidth - self.uiCloseBtn.frame.size.height - 10,
+            self.uiCloseBtn.frame.size.width,
+            self.uiCloseBtn.frame.size.height
+        );
+    }
     
     NSURLRequest * request = nil;
     if (needCleanCachedData)
