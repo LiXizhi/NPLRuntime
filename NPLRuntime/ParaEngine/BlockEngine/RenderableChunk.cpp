@@ -90,7 +90,8 @@ namespace ParaEngine
 			return;
 
 		BlockRegion * pOwnerBlockRegion = pWorld->GetRegion(m_regionX, m_regionZ);
-		if (!pOwnerBlockRegion || pOwnerBlockRegion->IsLocked())
+		// if (!pOwnerBlockRegion || pOwnerBlockRegion->IsLocked())
+		if (!pOwnerBlockRegion)  // we will render, even if it is locked. 
 			return;
 		else
 			m_pWorld = pOwnerBlockRegion->GetBlockWorld();
@@ -119,7 +120,7 @@ namespace ParaEngine
 
 			//pack distance as 12 bit value
 			int32_t dist2 = deltaX * deltaX + deltaY * deltaY + deltaZ * deltaZ;
-			
+
 			int32_t maxDist2 = pWorld->GetActiveChunkDim() * pWorld->GetActiveChunkDim() * 3;
 			float r = (float)dist2 / maxDist2;
 			if (r > 1)
@@ -127,17 +128,17 @@ namespace ParaEngine
 
 			dist = (uint16_t)(r * maxDistValue);
 		}
-	
-		for(size_t i=0;i< m_renderTasks.size();i++)
+
+		for (size_t i = 0; i < m_renderTasks.size(); i++)
 		{
 			BlockRenderTask *task = m_renderTasks[i];
 			uint16_t priority = BlockTemplate::g_maxRenderPriority - task->GetTemplate()->GetRenderPriority();
-			
+
 			if (task->GetTemplate()->GetRenderPass() == BlockRenderPass_AlphaBlended)
 			{
 				//invert distant for alpha blended object
 				uint32_t renderOrder = ((maxDistValue - dist) << 16);
-				renderOrder += (task->GetTemplateId() + (task->GetTemplate()->GetCategoryID()<<8));
+				renderOrder += (task->GetTemplateId() + (task->GetTemplate()->GetCategoryID() << 8));
 				renderOrder += (priority << 28);
 				task->SetRenderOrder(renderOrder);
 			}
@@ -156,7 +157,7 @@ namespace ParaEngine
 				}
 				task->SetRenderOrder(renderOrder);
 			}
-			
+
 			pWorld->AddRenderTask(task);
 		}
 	}
@@ -172,13 +173,13 @@ namespace ParaEngine
 			return;
 
 		BlockRegion * pOwnerBlockRegion = m_pWorld->GetRegion(m_regionX, m_regionZ);
-		if(!pOwnerBlockRegion)
+		if (!pOwnerBlockRegion)
 			return;
 
 		ClearRenderTasks();
 		ReleaseVertexBuffers();
 		BlockChunk* pChunk = pOwnerBlockRegion->GetChunk(m_packedChunkID, false);
-		if(!pChunk)
+		if (!pChunk)
 		{
 			return;
 		}
@@ -195,7 +196,7 @@ namespace ParaEngine
 		}
 
 		SortAndMergeInstanceGroupsByTexture();
-		
+
 		//----------------------------------------------------------
 		//2.create a big buffer to hold all blocks
 
@@ -205,7 +206,7 @@ namespace ParaEngine
 
 		m_totalFaceCount = totalFaceCount;
 		int32 nFaceCountCompleted = 0;
-		
+
 		const int32 maxFaceCountPerBatch = BlockConfig::g_maxFaceCountPerBatch;
 
 		BlockGeneralTessellator& tessellator = GetBlockTessellator();
@@ -237,7 +238,7 @@ namespace ParaEngine
 
 			if (nFreeFaceCountInVertexBuffer < (int32)pInstGroup->GetFaceCount())
 			{
-				if (nFreeFaceCountInVertexBuffer < (maxFaceCountPerBatch*0.1) )
+				if (nFreeFaceCountInVertexBuffer < (maxFaceCountPerBatch*0.1))
 				{
 					pVertexBuffer->Unlock();
 					nFreeFaceCountInVertexBuffer = Math::Min(maxFaceCountPerBatch, m_totalFaceCount - nFaceCountCompleted);
@@ -269,7 +270,7 @@ namespace ParaEngine
 
 			int32 batchInstCount = 0;
 			int32 unprocessedInstCount = groupSize;
-			for(int inst = 0;inst < (int)groupSize;inst++)
+			for (int inst = 0; inst < (int)groupSize; inst++)
 			{
 				//start a new one if instances can't fit into one batch
 				batchInstCount++;
@@ -282,7 +283,7 @@ namespace ParaEngine
 						return;
 					pVertexBuffer->Lock((void**)&pVertices);
 					vertexOffset = 0;
-						
+
 					if (nFreeFaceCountInVertexBuffer < unprocessedInstCount*nMaxFaceCountPerInstance)
 					{
 						instCount = nFreeFaceCountInVertexBuffer / nMaxFaceCountPerInstance;
@@ -295,10 +296,10 @@ namespace ParaEngine
 					pTask->Init(pTemplate, nBlockData, vertexOffset, pVertexBuffer->GetDevicePointer(), pChunk->m_minBlockId_ws);
 					m_builder_tasks.push_back(pTask);
 					pLastInstGroup = pInstGroup;
-					
+
 					batchInstCount = 1;
 				}
-				
+
 				//--------------------------------------------------------------
 				// assemble block model data
 				//--------------------------------------------------------------
@@ -349,11 +350,11 @@ namespace ParaEngine
 		m_vertexBuffers.clear();
 	}
 
-	void RenderableChunk::ReuseChunk(BlockRegion* pOwnerBlockRegion,int16_t packedChunkId_rs)
+	void RenderableChunk::ReuseChunk(BlockRegion* pOwnerBlockRegion, int16_t packedChunkId_rs)
 	{
 		ClearChunkData();
 		m_nLastVertexBufferBytes = 0;
-		if(pOwnerBlockRegion)
+		if (pOwnerBlockRegion)
 		{
 			m_regionX = pOwnerBlockRegion->GetRegionX();
 			m_regionZ = pOwnerBlockRegion->GetRegionZ();
@@ -367,24 +368,24 @@ namespace ParaEngine
 		}
 		m_packedChunkID = packedChunkId_rs;
 
-		if(pOwnerBlockRegion == nullptr || packedChunkId_rs == -1)
+		if (pOwnerBlockRegion == nullptr || packedChunkId_rs == -1)
 		{
 			return;
 		}
 
 		Uint16x3 chunkId_rs;
-		UnpackChunkIndex(m_packedChunkID,chunkId_rs.x,chunkId_rs.y,chunkId_rs.z);
+		UnpackChunkIndex(m_packedChunkID, chunkId_rs.x, chunkId_rs.y, chunkId_rs.z);
 
 		Uint16x3 minRegionBlockId = pOwnerBlockRegion->m_minBlockId_ws;
 		float blockSize = BlockConfig::g_blockSize;
-		
+
 		Vector3 vMinWorld, vMaxWorld;
 		vMinWorld.x = minRegionBlockId.x * blockSize;
 		vMinWorld.x += chunkId_rs.x * BlockConfig::g_chunkSize;
 
 		vMinWorld.y = minRegionBlockId.y * blockSize;
 		vMinWorld.y += chunkId_rs.y * BlockConfig::g_chunkSize + pOwnerBlockRegion->GetBlockWorld()->GetVerticalOffset();
-		
+
 		vMinWorld.z = minRegionBlockId.z  * blockSize;
 		vMinWorld.z += chunkId_rs.z * BlockConfig::g_chunkSize;
 
@@ -438,7 +439,7 @@ namespace ParaEngine
 		if (m_regionX >= 0 && m_pWorld)
 		{
 			BlockRegion * pOwnerBlockRegion = m_pWorld->GetRegion(m_regionX, m_regionZ);
-			if(pOwnerBlockRegion)
+			if (pOwnerBlockRegion)
 				return pOwnerBlockRegion->GetChunk(m_packedChunkID, false);
 		}
 		return NULL;
@@ -490,7 +491,7 @@ namespace ParaEngine
 
 	ParaVertexBuffer* RenderableChunk::RequestVertexBuffer(int32 nFreeFaceCountInVertexBuffer)
 	{
-		ParaVertexBuffer* pVertexBuffer = GetVertexBufferPool()->CreateBuffer(nFreeFaceCountInVertexBuffer*sizeof(BlockVertexCompressed) * 4, block_vertex::FVF, D3DUSAGE_WRITEONLY);
+		ParaVertexBuffer* pVertexBuffer = GetVertexBufferPool()->CreateBuffer(nFreeFaceCountInVertexBuffer * sizeof(BlockVertexCompressed) * 4, block_vertex::FVF, D3DUSAGE_WRITEONLY);
 		if (pVertexBuffer && pVertexBuffer->IsValid())
 		{
 			m_vertexBuffers.push_back(pVertexBuffer);
@@ -629,7 +630,7 @@ namespace ParaEngine
 				instanceGroups[cachedGroupIdx]->AddInstance(i, nFaceCount);
 				totalFaceCount += nFaceCount;
 			}
-		}	
+		}
 		return totalFaceCount;
 	}
 
@@ -673,6 +674,8 @@ namespace ParaEngine
 		if (!pOwnerBlockRegion)
 			return;
 
+		Scoped_ReadLock<BlockReadWriteLock> regionLock_(pOwnerBlockRegion->GetReadWriteLock());
+
 		// make chunk not dirty anymore, safe to call, since main thread has write lock that will 
 		// not modify the block world when this function is being executed. 
 		m_isDirty = false;
@@ -704,7 +707,7 @@ namespace ParaEngine
 		CHECK_YIELD_CPU_TO_WRITER;
 		//----------------------------------------------------------
 		//2.create a big buffer to hold all blocks
-		
+
 		uint32_t bufferSize = sizeof(BlockVertexCompressed) * (totalFaceCount * 4);
 
 		BlockRenderMethod dwShaderID = (BlockRenderMethod)GetShaderID();
@@ -719,7 +722,7 @@ namespace ParaEngine
 		int32 nFreeFaceCountInVertexBuffer = Math::Min(maxFaceCountPerBatch, m_totalFaceCount - nFaceCountCompleted);
 		int32 nMemoryBufferIndex = 0;
 		ParaVertexBuffer memoryBuffer = RequestMemoryBuffer(nFreeFaceCountInVertexBuffer, &nMemoryBufferIndex);
-		
+
 		BlockVertexCompressed* pVertices;
 		memoryBuffer.Lock((void**)&pVertices);
 		uint32_t vertexOffset = 0;
@@ -829,11 +832,11 @@ namespace ParaEngine
 		if (pnCpuYieldCount)
 			*pnCpuYieldCount = nCpuYieldCount;
 	}
-	
+
 	ParaMemoryBuffer RenderableChunk::RequestMemoryBuffer(int32 nFaceCountInVertexBuffer, int32* pBufferIndex)
 	{
 		ParaMemoryBuffer memBuffer;
-		if (memBuffer.CreateBuffer(nFaceCountInVertexBuffer*sizeof(BlockVertexCompressed) * 4))
+		if (memBuffer.CreateBuffer(nFaceCountInVertexBuffer * sizeof(BlockVertexCompressed) * 4))
 		{
 			if (pBufferIndex)
 				*pBufferIndex = m_memoryBuffers.size();
@@ -850,7 +853,7 @@ namespace ParaEngine
 	{
 		ReleaseVertexBuffers();
 		ClearRenderTasks();
-		
+
 		if (!m_memoryBuffers.empty())
 		{
 			for (ParaMemoryBuffer& memBuffer : m_memoryBuffers)
@@ -930,11 +933,11 @@ namespace ParaEngine
 	void RenderableChunk::SortAndMergeInstanceGroupsByTexture()
 	{
 		std::vector<InstanceGroup* >& instanceGroups = GetInstanceGroups();
-		auto itEnd = std::find_if(instanceGroups.begin(), instanceGroups.end(), [](InstanceGroup * pInst){
+		auto itEnd = std::find_if(instanceGroups.begin(), instanceGroups.end(), [](InstanceGroup * pInst) {
 			return pInst->GetFaceCount() == 0;
 		});
 		// sort by id and then by texture and then by face count. 
-		std::sort(instanceGroups.begin(), itEnd, [](InstanceGroup* l, InstanceGroup* r){
+		std::sort(instanceGroups.begin(), itEnd, [](InstanceGroup* l, InstanceGroup* r) {
 			if (l->m_pTemplate != r->m_pTemplate)
 			{
 				int nOrder1 = l->m_pTemplate->GetRenderPriority();
@@ -951,9 +954,9 @@ namespace ParaEngine
 				return l->m_blockData < r->m_blockData;
 			}
 		});
-		
+
 		/* not needed any more, since we are already merging it during render task rebuild.
-		// merge groups with identical textures. 
+		// merge groups with identical textures.
 		int nSize = (int)m_instanceGroups.size() - 1;
 		for (int i = 0; i < nSize && m_instanceGroups[i]->GetFaceCount()>0; i++)
 		{
@@ -964,8 +967,8 @@ namespace ParaEngine
 				if (curInstance->m_pTemplate == nextInstance->m_pTemplate &&
 					curInstance->m_pTemplate->GetBlockModelByData(curInstance->m_blockData).GetTextureIndex() == nextInstance->m_pTemplate->GetBlockModelByData(nextInstance->m_blockData).GetTextureIndex())
 				{
-					// now merge the two instance group. 
-					// use the block data with larger face count for buffer size estimation. 
+					// now merge the two instance group.
+					// use the block data with larger face count for buffer size estimation.
 					curInstance->m_blockData = nextInstance->m_blockData;
 					(*curInstance) += (*nextInstance);
 					nextInstance->reset();
@@ -1082,5 +1085,5 @@ namespace ParaEngine
 		}
 	}
 
-	
+
 }
