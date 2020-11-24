@@ -79,7 +79,7 @@ namespace ParaEngine
 		{
 			SAFE_DELETE(m_chunks[i]);
 		}
-		SAFE_DELETE_ARRAY(m_chunks)
+		SAFE_DELETE_ARRAY(m_chunks);
 	}
 
 	BlockChunk* BlockRegion::CreateNewChunk(uint16_t chunkID)
@@ -404,6 +404,17 @@ namespace ParaEngine
 			Block* pBlock = GetBlock(chunkId, blockId);
 			return (pBlock == nullptr) ? 0 : pBlock->GetTemplate()->GetID();
 		}
+		else
+		{
+
+			Uint16x3 blockId(x, y, z);
+			uint16_t chunkId = CalcPackedChunkID(x, y, z);
+			Block* pBlock = GetBlock(chunkId, blockId);
+			Block* pBlock1 = GetBlock(chunkId, blockId);
+			// This is safe in 99.99% times, we will fetch 2 times, just in case the other thread is assigning the integer
+			if (pBlock1 == pBlock)
+				return (pBlock == nullptr) ? 0 : pBlock->GetTemplate()->GetID();
+		}
 		return 0;
 	}
 
@@ -415,6 +426,16 @@ namespace ParaEngine
 			uint16_t chunkId = CalcPackedChunkID(x, y, z);
 			Block* pBlock = GetBlock(chunkId, blockId);
 			if (pBlock)
+				return pBlock->GetTemplate();
+		}
+		else
+		{
+			Uint16x3 blockId(x, y, z);
+			uint16_t chunkId = CalcPackedChunkID(x, y, z);
+			// This is safe in 99.99% times, we will fetch 2 times, just in case the other thread is assigning the integer
+			Block* pBlock = GetBlock(chunkId, blockId);
+			Block* pBlock1 = GetBlock(chunkId, blockId);
+			if (pBlock1 == pBlock && pBlock)
 				return pBlock->GetTemplate();
 		}
 		return nullptr;
@@ -1917,16 +1938,6 @@ namespace ParaEngine
 			GetBlockWorld()->ResumeLightUpdate();
 	}
 
-	bool BlockRegion::IsLocked()
-	{
-		return m_bIsLocked;
-	}
-
-	void BlockRegion::SetLocked(bool bLocked)
-	{
-		m_bIsLocked = bLocked;
-	}
-
 	void BlockRegion::Load()
 	{
 		if (GetBlockWorld() && !IsLocked())
@@ -2170,6 +2181,51 @@ namespace ParaEngine
 			;
 	}
 
+
+	bool BlockRegion::IsLocked()
+	{
+		return m_bIsLocked;
+	}
+
+	void BlockRegion::SetLocked(bool bLocked)
+	{
+		if (bLocked)
+		{
+			BeginWrite();
+			m_bIsLocked = bLocked;
+		}
+		else
+		{
+			m_bIsLocked = bLocked;
+			EndWrite();
+		}
+	}
+
+	void BlockRegion::BeginRead()
+	{
+		m_readWriteLock.BeginRead();
+	}
+
+	void BlockRegion::EndRead()
+	{
+		m_readWriteLock.EndRead();
+	}
+
+	void BlockRegion::BeginWrite()
+	{
+		m_readWriteLock.BeginWrite();
+	}
+
+	void BlockRegion::EndWrite()
+	{
+		m_readWriteLock.EndWrite();
+	}
+
+	ParaEngine::BlockReadWriteLock& BlockRegion::GetReadWriteLock()
+	{
+		return m_readWriteLock;
+	}
+
 	int BlockRegion::InstallFields(CAttributeClass* pClass, bool bOverride)
 	{
 		IAttributeFields::InstallFields(pClass, bOverride);
@@ -2184,6 +2240,4 @@ namespace ParaEngine
 
 		return S_OK;
 	}
-
-
 }

@@ -4,6 +4,7 @@
 #include <luabind/luabind.hpp>
 #include <luabind/object.hpp>
 #include <thread>
+#include "BlockReadWriteLock.h"
 #include "BlockConfig.h"
 #include "BlockCommon.h"
 #include "BlockChunk.h"
@@ -15,9 +16,9 @@ namespace ParaEngine
 	class VerticalChunkIterator;
 	class BlockRegion;
 	class BlockChunk;
-	
-	/** 
-	* 512*512 region 
+
+	/**
+	* 512*512 region
 	*/
 	class BlockRegion : public IAttributeFields
 	{
@@ -30,20 +31,20 @@ namespace ParaEngine
 		/** this class should be implemented if one wants to add new attribute. This function is always called internally.*/
 		virtual int InstallFields(CAttributeClass* pClass, bool bOverride);
 
-		ATTRIBUTE_METHOD1(BlockRegion, GetRegionX_s, int*)		{ *p1 = cls->GetRegionX(); return S_OK; }
-		ATTRIBUTE_METHOD1(BlockRegion, GetRegionZ_s, int*)		{ *p1 = cls->GetRegionZ(); return S_OK; }
+		ATTRIBUTE_METHOD1(BlockRegion, GetRegionX_s, int*) { *p1 = cls->GetRegionX(); return S_OK; }
+		ATTRIBUTE_METHOD1(BlockRegion, GetRegionZ_s, int*) { *p1 = cls->GetRegionZ(); return S_OK; }
 
-		ATTRIBUTE_METHOD1(BlockRegion, GetChunksLoaded_s, int*)		{ *p1 = cls->GetChunksLoaded(); return S_OK; }
-		ATTRIBUTE_METHOD1(BlockRegion, SetChunksLoaded_s, int)	{ cls->SetChunksLoaded((uint32)p1); return S_OK; }
+		ATTRIBUTE_METHOD1(BlockRegion, GetChunksLoaded_s, int*) { *p1 = cls->GetChunksLoaded(); return S_OK; }
+		ATTRIBUTE_METHOD1(BlockRegion, SetChunksLoaded_s, int) { cls->SetChunksLoaded((uint32)p1); return S_OK; }
 
 		ATTRIBUTE_METHOD1(BlockRegion, IsLocked_s, bool*) { *p1 = cls->IsLocked(); return S_OK; }
 		ATTRIBUTE_METHOD1(BlockRegion, SetLocked_s, bool) { cls->SetLocked(p1); return S_OK; }
 
-		ATTRIBUTE_METHOD1(BlockRegion, IsModified_s, bool*)		{ *p1 = cls->IsModified(); return S_OK; }
-		ATTRIBUTE_METHOD1(BlockRegion, SetModified_s, bool)	{ cls->SetModified(p1); return S_OK; }
-		
-		ATTRIBUTE_METHOD1(BlockRegion, GetTotalBytes_s, int*)		{ *p1 = cls->GetTotalBytes(); return S_OK; }
-		
+		ATTRIBUTE_METHOD1(BlockRegion, IsModified_s, bool*) { *p1 = cls->IsModified(); return S_OK; }
+		ATTRIBUTE_METHOD1(BlockRegion, SetModified_s, bool) { cls->SetModified(p1); return S_OK; }
+
+		ATTRIBUTE_METHOD1(BlockRegion, GetTotalBytes_s, int*) { *p1 = cls->GetTotalBytes(); return S_OK; }
+
 
 		ATTRIBUTE_METHOD(BlockRegion, ClearAllLight_s) { cls->ClearAllLight(); return S_OK; }
 		ATTRIBUTE_METHOD1(BlockRegion, RefreshLightChunkColumns_s, Vector3) { cls->RefreshLightChunkColumns((uint16_t)p1.x, (uint16_t)p1.y, (uint16_t)p1.z); return S_OK; }
@@ -56,39 +57,39 @@ namespace ParaEngine
 		bool IsLocked();
 		void SetLocked(bool bLocked);
 
-		/** 
+		/**
 		@param x,z:  range in [0,512), y range in [0,256)
 		@param bNeedUpdate: during loading from file, bNeedUpdate is false.
 		*/
-		void SetBlockTemplateByIndex(uint16_t x_rs,uint16_t y_rs,uint16_t z_rs,BlockTemplate* pTemplate);
+		void SetBlockTemplateByIndex(uint16_t x_rs, uint16_t y_rs, uint16_t z_rs, BlockTemplate* pTemplate);
 
 		void RefreshBlockTemplateByIndex(uint16_t x_rs, uint16_t y_rs, uint16_t z_rs, BlockTemplate* pTemplate);
-		
-		uint32_t GetBlockTemplateIdByIndex(int16_t x,int16_t y,int16_t z);
 
-		BlockTemplate* GetBlockTemplateByIndex(int16_t x,int16_t y,int16_t z);
+		uint32_t GetBlockTemplateIdByIndex(int16_t x, int16_t y, int16_t z);
+
+		BlockTemplate* GetBlockTemplateByIndex(int16_t x, int16_t y, int16_t z);
 
 		//user date is a uint32 value,
 		//params are in region space,  x,z range in [0,512), y range in [0,256)
-		void SetBlockUserDataByIndex(int16_t x,int16_t y,int16_t z,uint32_t data);
-		
-		uint32_t GetBlockUserDataByIndex(int16_t x,int16_t y,int16_t z);
+		void SetBlockUserDataByIndex(int16_t x, int16_t y, int16_t z, uint32_t data);
 
-		/** set chunk column time stamp. usually 0 for non-generated. 1 for generated. 
+		uint32_t GetBlockUserDataByIndex(int16_t x, int16_t y, int16_t z);
+
+		/** set chunk column time stamp. usually 0 for non-generated. 1 for generated.
 		this is usually called by world generators, so that we will not generate again next time we load the world. */
-		void SetChunkColumnTimeStamp(uint16_t x_rs,uint16_t z_rs, uint16_t nTimeStamp);
+		void SetChunkColumnTimeStamp(uint16_t x_rs, uint16_t z_rs, uint16_t nTimeStamp);
 
-		/** get the time stamp of for the given chunk column 
+		/** get the time stamp of for the given chunk column
 		0 means not available, 1 means loaded before*/
-		uint16_t GetChunkColumnTimeStamp(uint16_t x,uint16_t z);
+		uint16_t GetChunkColumnTimeStamp(uint16_t x, uint16_t z);
 
-		bool IntersectBlock(int16_t blockX,int16_t blockY,int16_t blockZ,uint32_t filter);
+		bool IntersectBlock(int16_t blockX, int16_t blockY, int16_t blockZ, uint32_t filter);
 
 		//Get region x index
-		inline int16_t GetRegionX(){return m_regionX;}
+		inline int16_t GetRegionX() { return m_regionX; }
 
 		//Get region Z index
-		inline int16_t GetRegionZ(){return m_regionZ;}
+		inline int16_t GetRegionZ() { return m_regionZ; }
 
 		//Get the height of highest soiled block
 		ChunkMaxHeight* GetHighestBlock(uint16_t blockIdX_rs, uint16_t blockIdZ_rs);
@@ -100,12 +101,12 @@ namespace ParaEngine
 		//return null if block not exist
 		//note:do *not* hold a permanent reference of the return value,underlying
 		//block address may change after SetBlockTemplate()!
-		Block* GetBlock(uint16_t x_rs,uint16_t y_rs,uint16_t z_rs);
+		Block* GetBlock(uint16_t x_rs, uint16_t y_rs, uint16_t z_rs);
 
 		void SaveToFile();
 
 		void Load();
-		
+
 		// called every frame move 
 		void OnFrameMove();
 
@@ -114,13 +115,13 @@ namespace ParaEngine
 
 		void DeleteAllBlocks();
 
-		void RefreshAllLightsInColumn(uint16_t chunkX_ws,uint16_t chunkZ_ws);
-		
+		void RefreshAllLightsInColumn(uint16_t chunkX_ws, uint16_t chunkZ_ws);
+
 		/** call this function when you make lots of changes to blocks when light is suspended. */
 		void RefreshLightChunkColumns(uint16_t chunkX_ws, uint16_t chunkZ_ws, uint16_t chunksLength = 1);
 
-		void GetBlocksInChunk(uint16_t chunkX_ws,uint16_t chunkZ_ws,uint16_t startChunkY,uint16_t endChunkY,
-			uint32_t matchtype,const luabind::adl::object& result,int32_t& blockCount);
+		void GetBlocksInChunk(uint16_t chunkX_ws, uint16_t chunkZ_ws, uint16_t startChunkY, uint16_t endChunkY,
+			uint32_t matchtype, const luabind::adl::object& result, int32_t& blockCount);
 		void GetBlocksInChunk(uint16_t chunkX_ws, uint16_t chunkZ_ws, uint32_t verticalSectionFilter,
 			uint32_t matchtype, const luabind::adl::object& result, int32_t& blockCount);
 
@@ -140,14 +141,14 @@ namespace ParaEngine
 			return m_regionX + (m_regionZ << 6);
 		}
 
-		Block* GetBlock(uint16_t chunkId,Uint16x3& blockID_r);
+		Block* GetBlock(uint16_t chunkId, Uint16x3& blockID_r);
 
-		BlockChunk* GetChunk( uint16_t packedChunkID, bool createIfNotExist);
+		BlockChunk* GetChunk(uint16_t packedChunkID, bool createIfNotExist);
 
 		/** whether modified. */
 		bool IsModified();
 		/** set modified. */
-		void SetModified(bool bModified=true);
+		void SetModified(bool bModified = true);
 
 		uint32 GetChunksLoaded() const;
 		void SetChunksLoaded(uint32 val);
@@ -161,9 +162,9 @@ namespace ParaEngine
 		const Uint16x3& GetMinBlockWs();
 		const Uint16x3& GetMaxBlockWs();
 
-		
+
 		void ClearAllLight();
-		
+
 		/** refresh chunks include one type block*/
 		void SetChunksDirtyByBlockTemplate(uint16_t templateId);
 
@@ -192,7 +193,15 @@ namespace ParaEngine
 
 		void LoadWorldThreadFunc();
 		void LoadFromFile();
-		
+
+		void BeginRead();
+		void EndRead();
+		void BeginWrite();
+		void EndWrite();
+
+		/** get read write lock of this region. */
+		BlockReadWriteLock& GetReadWriteLock();
+
 	private:
 		void ParserFile(CParaFile* pFile);
 		void ParserFile1_0(CParaFile* pFile);
@@ -216,10 +225,10 @@ namespace ParaEngine
 		//store the highest block 
 		//first is highest block,second is highest soiled block
 		std::vector<ChunkMaxHeight> m_blockHeightMap;
-		
+
 		/** total number of bytes that this region occupies */
 		int m_nTotalBytes;
-		
+
 		/** whether block is modified or not */
 		bool m_bIsModified;
 
@@ -235,6 +244,8 @@ namespace ParaEngine
 
 		/* if locked, all block access functions takes no effect. Since it is either being loaded or saved asynchronously. */
 		bool m_bIsLocked;
+		/** read-write lock. */
+		BlockReadWriteLock m_readWriteLock;
 
 		std::thread m_thread;
 		int32 m_nEventAsyncLoadWorldFinished;
@@ -243,5 +254,5 @@ namespace ParaEngine
 		std::string m_sName;
 	};
 
-	
+
 }
