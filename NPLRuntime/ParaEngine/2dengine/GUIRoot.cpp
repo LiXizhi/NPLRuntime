@@ -2070,6 +2070,11 @@ void ParaEngine::CGUIRoot::TranslateTouchEvent(const TouchEvent &touch)
 					CGUIBase* pUIObj = GetUIObject(ui_mouse_x, ui_mouse_y);
 					if (pUIObj && pUIObj->IsScrollableOrHasMouseWheelRecursive())
 					{
+						// fixed a mouse wheeling invalid error on mobile platform.
+						// update the position of mouse to find ui object correctly in CGUIRoot::HandleUserInput()
+						// added by leio 2020/11/27
+
+						m_pMouse->SetMousePosition(ui_mouse_x, ui_mouse_y);
 						// OUTPUT_LOG("touch wheel: %d %d (drag:%d)\n", ui_mouse_x, ui_mouse_y, pTouchSession->GetMaxDragDistance());
 						// simulate a mouse wheel event(disable mouse down/up/move), if the UI control below is scrollable. 
 						pTouchSession->SetTag(3);
