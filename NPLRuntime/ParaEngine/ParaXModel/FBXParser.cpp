@@ -779,7 +779,7 @@ void FBXParser::ProcessStaticFBXMaterial(const aiScene* pFbxScene, unsigned int 
 void ParaEngine::FBXParser::ParseMaterialByName(const std::string& sMatName, FBXMaterial* out)
 {
 	int nMarkIndex = sMatName.size() - 1;
-	for (; nMarkIndex > 0; nMarkIndex -= 2)
+	for (; nMarkIndex >= 0; nMarkIndex -= 2)
 	{
 		int nID = -1;
 		char symbol = '\0';
@@ -2048,6 +2048,202 @@ int ParaEngine::FBXParser::CreateGetBoneIndex(const char* pNodeName)
 	return nBoneIndex;
 }
 
+/**
+Each geoset has an id of format "ccdd", where "cc" is the geoset category CharModelInstance::CharGeosets
+and "dd" is individual geoset style starting from 1 of the given category.
+if id == 0, it means an always displayed mesh. There can be at most one geoset in the same category to show at the same time.
+For example, either 501 or 502 can be shown at the same time. Please note, multiple geosets can share the same id.
+
+read geoset id from the mesh name, the name is of format [name|number]_[number], such as
+"Hair_01" = "00_01" = "1",
+"hair_02" = "00_02" = "2",
+"Boots" = "05_01" = "5_1" = "501",
+"Boots_02" = "05_02" = "502",
+"Unknown name" = "0",
+
+name: can be a number or a string, string is interpreted to a number cc. by the following mapping (case insensitive)
+"hair" = 0,
+"facialhair" = 1,
+"eyeaddon" = 2,
+"head" = 3,
+"hand" = "gloves" = 4,
+"boots" = 5,
+"ears" = 7,
+"shirt" = "armsleeves" = "sleeves" = = 8,
+"pants" = 9,
+"wings" = 10,
+"tabard" = 12,
+"robe" = 13,
+"skirt" = 14,
+"cape" = 15,
+*/
+int GetGeosetIdFromMeshName(const char* meshname)
+{
+	int geosetID = 0;
+	if (meshname)
+	{
+		int cc = 0;
+		int dd = 0;
+		char c = meshname[0];
+		if (c >= '0' && c <= '9')
+		{
+			for (int i = 0; meshname[i] != '\0'; ++i)
+			{
+				c = meshname[i];
+				if (c == '_')
+				{
+					++i;
+					for (; meshname[i] != '\0'; ++i)
+					{
+						c = meshname[i];
+						if (c >= '0' && c <= '9')
+						{
+							dd = dd * 10 + (int)(c - '0');
+						}
+					}
+					break;
+				}
+				else if (c >= '0' && c <= '9')
+				{
+					cc = cc * 10 + (int)(c - '0');
+				}
+				else
+				{
+					// unknown name
+					cc = 0;
+					break;
+				}
+			}
+		}
+		else
+		{
+			char prename[256];
+			int j = 0;
+			memset(prename, 0, sizeof(prename));
+			for (int i = 0; meshname[i] != '\0'; ++i)
+			{
+				c = meshname[i];
+				if (meshname[i] == '_')
+				{
+					++i;
+					for (; meshname[i] != '\0'; ++i)
+					{
+						c = meshname[i];
+						if (c >= '0' && c <= '9')
+						{
+							dd = dd * 10 + (int)(c - '0');
+						}
+					}
+					break;
+				}
+				else
+				{
+					// to lower case
+					if (c >= 'A' && c <= 'Z')
+						c += ('a' - 'A');
+					prename[j++] = c;
+				}
+			}
+			prename[j] = '\0';
+
+			enum CharGeosets {
+				CSET_HAIR = 0,
+				CSET_FACIAL_HAIR1 = 1,
+				CSET_FACIAL_HAIR2 = 2,
+				CSET_FACIAL_HAIR3 = 3,
+				CSET_GLOVES = 4,
+				CSET_BOOTS = 5,
+				CSET_EARS = 7,
+				CSET_ARM_SLEEVES = 8,
+				CSET_PANTS = 9,
+				CSET_WINGS = 10, // newly added 2007.7.7
+				CSET_TABARD = 12,
+				CSET_ROBE = 13,
+				CSET_SKIRT = 14,
+				CSET_CAPE = 15,
+				// TOTAL
+				NUM_CHAR_GEOSETS = 16
+			};
+			if (strcmp(prename, "hair") == 0)
+			{
+				cc = CSET_HAIR;
+				dd = (dd == 0) ? 1 : dd;
+			}
+			else if (strcmp(prename, "facialhair") == 0)
+			{
+				cc = CSET_FACIAL_HAIR1;
+				dd = (dd == 0) ? 1 : dd;
+			}
+			else if (strcmp(prename, "eyeaddon") == 0)
+			{
+				cc = CSET_FACIAL_HAIR2;
+				dd = (dd == 0) ? 1 : dd;
+			}
+			else if (strcmp(prename, "head") == 0)
+			{
+				cc = CSET_FACIAL_HAIR3;
+				dd = (dd == 0) ? 1 : dd;
+			}
+			else if (strcmp(prename, "gloves") == 0 || strcmp(prename, "hand") == 0)
+			{
+				cc = CSET_GLOVES;
+				dd = (dd == 0) ? 1 : dd;
+			}
+			else if (strcmp(prename, "boots") == 0)
+			{
+				cc = CSET_BOOTS;
+				dd = (dd == 0) ? 1 : dd;
+			}
+			else if (strcmp(prename, "ears") == 0)
+			{
+				cc = CSET_EARS;
+				dd = (dd == 0) ? 1 : dd;
+			}
+			else if (strcmp(prename, "armsleeves") == 0 || strcmp(prename, "sleeves") == 0 || strcmp(prename, "shirt") == 0)
+			{
+				cc = CSET_ARM_SLEEVES;
+				dd = (dd == 0) ? 1 : dd;
+			}
+			else if (strcmp(prename, "pants") == 0)
+			{
+				cc = CSET_PANTS;
+				dd = (dd == 0) ? 1 : dd;
+			}
+			else if (strcmp(prename, "wings") == 0)
+			{
+				cc = CSET_WINGS;
+				dd = (dd == 0) ? 1 : dd;
+			}
+			else if (strcmp(prename, "tabard") == 0)
+			{
+				cc = CSET_TABARD;
+				dd = (dd == 0) ? 1 : dd;
+			}
+			else if (strcmp(prename, "robe") == 0)
+			{
+				cc = CSET_ROBE;
+				dd = (dd == 0) ? 1 : dd;
+			}
+			else if (strcmp(prename, "skirt") == 0)
+			{
+				cc = CSET_SKIRT;
+				dd = (dd == 0) ? 1 : dd;
+			}
+			else if (strcmp(prename, "cape") == 0)
+			{
+				cc = CSET_CAPE;
+				dd = (dd == 0) ? 1 : dd;
+			}
+			else
+			{
+				cc = 0;
+			}
+		}
+		// compose the final id
+		geosetID = cc * 100 + dd;
+	}
+	return geosetID;
+}
 
 void FBXParser::ProcessFBXMesh(const aiScene* pFbxScene, aiMesh *pFbxMesh, aiNode* pFbxNode, CParaXModel *pMesh)
 {
@@ -2139,7 +2335,8 @@ void FBXParser::ProcessFBXMesh(const aiScene* pFbxScene, aiMesh *pFbxMesh, aiNod
 		while (numFaces > 0 && (++nSplitCount) < 100)
 		{
 			ModelGeoset geoset;
-			geoset.id = (uint16)pMesh->geosets.size();
+			geoset.id = GetGeosetIdFromMeshName(pFbxNode->mName.C_Str());
+
 			vertex_start = nVertexOffset;
 			int nFaceCount = (std::min)(maxFaceCount, numFaces);
 			if (numFaces > maxFaceCount || nSplitCount > 1)
