@@ -148,8 +148,8 @@ bool CharModelInstance::InitBaseModel(ParaXEntity * pModel)
 	/** Set race and gender of the model. */
 	try {
 		const string& name = pModel->GetKey();
-
-		if (false && name.find("character/CC/") != std::string::npos)
+		
+		if (name.find("CustomGeoset") != std::string::npos)
 			m_bHasCustomGeosets = true;
 		else
 			m_bHasCustomGeosets = false;
@@ -513,12 +513,16 @@ bool CharModelInstance::AnimateModel(SceneState * sceneState, const AnimIndex& C
 
 	if (pModel == NULL)
 		return false;
-	//--------------add by devilwalk-----------fix the entity which has no animation can not change the texture
-	if (!m_bIsCustomModel)
-		UpdateTexturesToModel(pModel);
+	
 	//-------------------------------------------------
 	if (!pModel->HasAnimation())
+	{
+		// fix the entity which has no animation can not change the texture
+		if (!m_bIsCustomModel)
+			UpdateTexturesToModel(pModel);
 		return true;
+	}
+
 	if (!CurrentAnim.IsValid())
 		return false;
 	/**
