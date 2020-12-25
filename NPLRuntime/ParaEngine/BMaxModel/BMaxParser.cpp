@@ -177,7 +177,7 @@ namespace ParaEngine
 									float fOffsetX = (float)((double)attr["offsetX"]);
 									float fOffsetY = (float)((double)attr["offsetY"]);
 									float fOffsetZ = (float)((double)attr["offsetZ"]);
-									if (fOffsetX != 0.f || fOffsetY != 0.f || fOffsetZ != 0.f) 
+									if (fOffsetX != 0.f || fOffsetY != 0.f || fOffsetZ != 0.f)
 									{
 										const float fScaleCorrection = 512.f / 533.3333f;
 										fOffsetX *= fScaleCorrection;
@@ -187,9 +187,9 @@ namespace ParaEngine
 										matLocalTrans.offsetTrans(Vector3(fOffsetX, fOffsetY, fOffsetZ));
 									}
 
-									if(bHasTransform)
+									if (bHasTransform)
 										node->SetTransform(matLocalTrans);
-									
+
 									nodes.push_back(BMaxNodePtr(node.get()));
 								}
 							}
@@ -234,14 +234,14 @@ namespace ParaEngine
 								/*const std::string& sBoneName = cmd[1];
 								if (!sBoneName.empty())
 								{
-									int nCount = GetNameAppearanceCount(sBoneName, true);
-									if (nCount > 0){
-										std::ostringstream stream;
-										stream << sBoneName << nCount;
-										pFrameNode->GetBone()->SetName(stream.str());
-									}
-									else
-										pFrameNode->GetBone()->SetName(sBoneName);
+								int nCount = GetNameAppearanceCount(sBoneName, true);
+								if (nCount > 0){
+								std::ostringstream stream;
+								stream << sBoneName << nCount;
+								pFrameNode->GetBone()->SetName(stream.str());
+								}
+								else
+								pFrameNode->GetBone()->SetName(sBoneName);
 								}*/
 
 							}
@@ -255,7 +255,7 @@ namespace ParaEngine
 					node->setSolid(false);
 					nodes.push_back(node);
 				}
-				else if(!pBlockTemplate->IsMatchAttribute(BlockTemplate::batt_solid))
+				else if (!pBlockTemplate->IsMatchAttribute(BlockTemplate::batt_solid))
 				{
 					// non-solid non-obstruction blocks,like web, grass, will not be rendered. but can be used to connect bones
 					template_id = TransparentBlockId;
@@ -286,10 +286,10 @@ namespace ParaEngine
 
 		for (auto node : nodes)
 		{
-			node->x -= offset_x;
-			node->y -= offset_y;
-			node->z -= offset_z;
-			InsertNode(node);
+		node->x -= offset_x;
+		node->y -= offset_y;
+		node->z -= offset_z;
+		InsertNode(node);
 		}*/
 
 		// set scaling;
@@ -683,31 +683,31 @@ namespace ParaEngine
 
 		if (fabs(m_fScale - 1.0f) > FLT_EPSILON)
 		{
-			for (RectanglePtr& rectangle : rectangles)
-			{
-				rectangle->ScaleVertices(m_fScale);
-			}
+		for (RectanglePtr& rectangle : rectangles)
+		{
+		rectangle->ScaleVertices(m_fScale);
+		}
 		}
 
 		vector<uint32> lodTable;
 		GetLodTable(rectangles.size(), lodTable);
 		for (uint16 i = 0;i < lodTable.size();i++)
 		{
-			uint32 nextFaceCount = lodTable[i];
-			while (rectangles.size() > nextFaceCount)
-			{
-				PerformLod();
-				rectangles.clear();
-				MergeCoplanerBlockFace(rectangles);
-			}
-			if (fabs(m_fScale - 1.0f) > FLT_EPSILON)
-			{
-				for (RectanglePtr& rectangle : rectangles)
-				{
-					rectangle->ScaleVertices(m_fScale);
-				}
-			}
-			m_lodRectangles[i] = rectangles;
+		uint32 nextFaceCount = lodTable[i];
+		while (rectangles.size() > nextFaceCount)
+		{
+		PerformLod();
+		rectangles.clear();
+		MergeCoplanerBlockFace(rectangles);
+		}
+		if (fabs(m_fScale - 1.0f) > FLT_EPSILON)
+		{
+		for (RectanglePtr& rectangle : rectangles)
+		{
+		rectangle->ScaleVertices(m_fScale);
+		}
+		}
+		m_lodRectangles[i] = rectangles;
 		}
 		*/
 
@@ -1186,14 +1186,15 @@ namespace ParaEngine
 		}
 		FillVerticesAndIndices(nMaxTriangleCount);
 		pMesh->m_objNum.nVertices = m_vertices.size();
+		if (m_vertices.size() == 0)
+			return;
+
 		pMesh->m_objNum.nBones = m_bones.size();
 		pMesh->m_objNum.nAnimations = m_bones.size() > 0 ? m_anims.size() : 0;
 		pMesh->m_objNum.nIndices = m_indices.size();
 		pMesh->m_header.minExtent = m_minExtent;
 		pMesh->m_header.maxExtent = m_maxExtent;
 
-		if (m_vertices.size() == 0)
-			return;
 		//pMesh->m_RenderMethod = CParaXModel::BMAX_MODEL;
 		pMesh->SetRenderMethod(CParaXModel::BMAX_MODEL);
 		pMesh->initVertices(m_vertices.size(), &(m_vertices[0]));
