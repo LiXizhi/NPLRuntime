@@ -1186,14 +1186,15 @@ namespace ParaEngine
 		}
 		FillVerticesAndIndices(nMaxTriangleCount);
 		pMesh->m_objNum.nVertices = m_vertices.size();
+		if (m_vertices.size() == 0)
+			return;
+
 		pMesh->m_objNum.nBones = m_bones.size();
 		pMesh->m_objNum.nAnimations = m_bones.size() > 0 ? m_anims.size() : 0;
 		pMesh->m_objNum.nIndices = m_indices.size();
 		pMesh->m_header.minExtent = m_minExtent;
 		pMesh->m_header.maxExtent = m_maxExtent;
-
-		if (m_vertices.size() == 0)
-			return;
+		
 		//pMesh->m_RenderMethod = CParaXModel::BMAX_MODEL;
 		pMesh->SetRenderMethod(CParaXModel::BMAX_MODEL);
 		pMesh->initVertices(m_vertices.size(), &(m_vertices[0]));
