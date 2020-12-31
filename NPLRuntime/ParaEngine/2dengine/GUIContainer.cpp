@@ -1295,7 +1295,7 @@ bool CGUIContainer::ActivateNextEdit(CGUIEditBox* curCtrl)
 CGUIEditBox* CGUIContainer::GetNextEdit(CGUIEditBox* curCtrl)
 {
 	GUIBase_List_Type::iterator it;
-
+    
 	if (curCtrl)
 	{
 		it = std::find(m_children.begin(), m_children.end(), (CGUIBase*)curCtrl);
@@ -1304,7 +1304,7 @@ CGUIEditBox* CGUIContainer::GetNextEdit(CGUIEditBox* curCtrl)
 		for (; nextIt != m_children.end(); nextIt++)
 		{
 			auto type = (*nextIt)->GetType()->GetTypeValue();
-			if (type == Type_GUIEditBox || type == Type_GUIIMEEditBox)
+			if ((*nextIt)->GetVisible() && (type == Type_GUIEditBox || type == Type_GUIIMEEditBox))
 			{
 				break;
 			}
@@ -1316,7 +1316,7 @@ CGUIEditBox* CGUIContainer::GetNextEdit(CGUIEditBox* curCtrl)
 			for (nextIt = m_children.begin(); nextIt != it; nextIt++)
 			{
 				auto type = (*nextIt)->GetType()->GetTypeValue();
-				if (type == Type_GUIEditBox || type == Type_GUIIMEEditBox)
+				if ((*nextIt)->GetVisible() && (type == Type_GUIEditBox || type == Type_GUIIMEEditBox))
 				{
 					bFind = true;
 					break;
