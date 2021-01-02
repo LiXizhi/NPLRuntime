@@ -341,13 +341,25 @@ DWORD AssetFileEntry_Request_Signal_CallBack(int nResult, CUrlProcessor* pReques
 			else
 			{
 				string sTmp = string("AssetFile ASync Failed cannot save to disk:") + url + "\n";
-				pAsyncLoader->log(sTmp);
+				pAsyncLoader->log(CAsyncLoader::Log_Warn, sTmp);
+				OUTPUT_LOG("warn: %s", sTmp.c_str());
 			}
 		}
 		else
 		{
 			string sTmp = string("AssetFile ASync Failed http code!=200:") + url + "\n";
-			pAsyncLoader->log(sTmp);
+			pAsyncLoader->log(CAsyncLoader::Log_Warn, sTmp);
+			
+			if (!pData->m_pAssetFileEntry->HasReachedMaxRetryCount() && nResult == CURLE_OPERATION_TIMEDOUT)
+			{
+				// try downloading again
+				pData->m_pAssetFileEntry->SyncFile_AsyncRetry();
+				return 0;
+			}
+			else
+			{
+				OUTPUT_LOG("warn: %s curl return code", sTmp.c_str(), nResult);
+			}
 		}
 
 		pData->m_pAssetFileEntry->SignalComplete(bSucceed ? 0 : -1);
@@ -359,6 +371,48 @@ DWORD AssetFileEntry_Request_Signal_CallBack(int nResult, CUrlProcessor* pReques
 bool AssetFileEntry::IsDownloading()
 {
 	return (m_sync_callback != 0);
+}
+
+
+HRESULT AssetFileEntry::SyncFile_AsyncRetry()
+{
+	if (m_sync_callback != 0)
+	{
+		// start downloading the file.  
+		if (!HasReachedMaxRetryCount())
+		{
+			AddDownloadCount();
+
+			// start the download. 
+			string url = GetAbsoluteUrl();
+
+			// we need to download from the web server. 
+			CAsyncLoader* pAsyncLoader = &(CAsyncLoader::GetSingleton());
+
+			if (pAsyncLoader->interruption_requested())
+				return E_FAIL;
+
+			string sTmp = string("AssetFile ASync Started:") + url + "\n";
+			pAsyncLoader->log(sTmp);
+
+			CUrlLoader* pLoader = new CUrlLoader();
+			pLoader->SetEstimatedSizeInBytes(m_nFileSize);
+			CUrlProcessor* pProcessor = new CUrlProcessor();
+
+			pLoader->SetUrl(url.c_str());
+			pProcessor->SetUrl(url.c_str());
+			pProcessor->SetCallBack(AssetFileEntry_Request_Signal_CallBack, new CAssetFileEntryUserData(this, NULL, NULL, false), true);
+
+			OUTPUT_LOG("warn: try downloading %d times: for %s", m_nDownloadCount, url.c_str());
+
+			return pAsyncLoader->AddWorkItem(pLoader, pProcessor, NULL, NULL, GetRequestQueueID());
+		}
+		else
+		{
+			return E_FAIL;
+		}
+	}
+	return E_FAIL;
 }
 
 // this function is NOT thread-safe, because it uses boost.signal 
@@ -718,9 +772,9 @@ smatch result;
 string sFilename = filename;
 if (regex_search(sFilename, result, re) && result.size() > 3)
 {
-	string fileKey = result.str(1);
-	string md5 = result.str(2);
-	string filesize = result.str(3);
+string fileKey = result.str(1);
+string md5 = result.str(2);
+string filesize = result.str(3);
 }
 */
 bool CAssetManifest::ParseAssetEntryStr(const string &sFilename, string &fileKey, string &md5, string& filesize)
