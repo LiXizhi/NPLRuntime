@@ -100,7 +100,7 @@ namespace ParaEngine
 		* @return S_OK if download is initiated.
 		*/
 		HRESULT SyncFile_Async(URL_LOADER_CALLBACK pFuncCallback = NULL, CUrlProcessorUserData* pUserData = NULL, bool bDeleteUserData = false);
-
+		
 		/** this function is not thread safe, it must be called from the main render thread.
 		* This function is same as SyncFile_Async(), except that it allows multiple event listeners for the same entity.
 		* if the current file is already being updated, it will not be called multiple times.
@@ -123,6 +123,9 @@ namespace ParaEngine
 		* @return: S_OK if file is already downloaded and can be used right away. E_PENDING if file is being downloaded. E_FAIL if some error occurs.
 		*/
 		HRESULT SyncFile_Async(const SyncFile_Callback_t::slot_type& slot);
+
+		/** retry with current callback*/
+		HRESULT SyncFile_AsyncRetry();
 
 		/** this is similar to SyncFile, except that it will only sync file if the file is not up to date. */
 		bool CheckSyncFile();
