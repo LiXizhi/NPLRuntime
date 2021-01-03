@@ -420,19 +420,23 @@ namespace ParaEngine {
     
     IParaWebView* IParaWebView::createWebView(int x, int y, int w, int h)
     {
-        return ParaEngineWebView::createWebView(x, y, w, h);
+        return ParaEngineWebView::createWebView(x, y, w, h, false);
     }
 
     IParaWebView* IParaWebView::createSubViewView(int x, int y, int w, int h)
     {
-        return ParaEngineWebView::createWebView(x, y, w, h);
+        return ParaEngineWebView::createWebView(x, y, w, h, true);
     }
     
-    ParaEngineWebView* ParaEngineWebView::createWebView(int x, int y, int w, int h)
+    ParaEngineWebView* ParaEngineWebView::createWebView(int x, int y, int w, int h, Boolean bSub)
     {
-        auto  p = new ParaEngineWebView();
+        auto p = new ParaEngineWebView();
         [p->_uiWebViewWrapper setFrameWithX:(float)x y:(float)y width:(float)w height:(float)h];
         [p->_uiWebViewWrapper setScalesPageToFit:true];
+        
+        if (bSub) {
+            p->hideCloseButton(true);
+        }
         
         return p;
     }
