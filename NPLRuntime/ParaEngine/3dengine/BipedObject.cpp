@@ -1994,7 +1994,7 @@ bool CBipedObject::MoveTowards(double dTimeDelta, const DVector3& vPosTarget, fl
 	* longer than this step, it is further divided in to several evenly spaced steps.
 	* the step length is determined by the biped's speed multiplied by the time delta.
 	* See also NX_MIN_SEPARATION_FOR_PENALTY, and CBipedObject::MoveTowards()*/
-	float fMaxPenetration = fabs((float)(max(GetSpeed(), GetLastSpeed()) * dTimeDelta));
+	float fMaxPenetration = (float)(max(fabs(GetVerticalSpeed()), max(fabs(GetSpeed()), fabs(GetLastSpeed()))) * dTimeDelta);
 	if (fMaxPenetration > PENETRATION_DISTANCE)
 	{
 		int nNumSteps = (int)ceil(fMaxPenetration / PENETRATION_DISTANCE);
