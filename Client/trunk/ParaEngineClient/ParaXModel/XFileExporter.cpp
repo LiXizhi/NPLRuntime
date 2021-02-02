@@ -150,18 +150,14 @@ void XFileExporter::WriteBinDWord(ofstream& strm, uint32 nDWord)
 
 void XFileExporter::WriteString(ofstream& strm, const string& str)
 {
-
-	if (str.empty())
-	{
-		return;
-	}
 	WriteIntAndFloatArray(strm);
 
 	WriteToken(strm, TOKEN_STRING);
 	// 长度占4个字符
 	WriteBinDWord(strm, (uint32)str.length());
 
-	strm.write(str.c_str(), str.length());
+	if(str.length() > 0)
+		strm.write(str.c_str(), str.length());
 	WriteToken(strm, TOKEN_SEMICOLON);
 	//strm.write(";", 1);
 }

@@ -614,8 +614,12 @@ bool ParaEngine::XFileCharModelExporter::WriteXTextures(XFileDataObjectPtr pData
 				    pBuffer->type = m_pMesh->specialTextures[i];
                 else
                     pBuffer->type = 0;
-				pBuffer->sName = '\0';
-				pBuffer = (ModelTextureDef_*)((char*)pBuffer + 8 + 1 + 1);
+				//pBuffer->sName = '\0';
+				//pBuffer = (ModelTextureDef_*)((char*)pBuffer + 8 + 1);
+
+				string name = ""; // "Textures/whitedot.png";
+				memcpy(&(pBuffer->sName), name.c_str(), name.size() + 1);
+				pBuffer = (ModelTextureDef_*)((char*)pBuffer + 8 + name.size() + 1);
 			}
 			else {
                 if (m_pMesh->specialTextures[i] < CParaXModel::MAX_MODEL_TEXTURES)
