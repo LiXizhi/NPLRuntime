@@ -19,7 +19,7 @@
 using namespace ParaEngine;
 
 Bone::Bone()
-	:bUsePivot(true), nBoneID(0), nIndex(0), parent(-1), flags(0), calc(false), pivot(0.f, 0.f, 0.f), matTransform(Matrix4::IDENTITY), matOffset(Matrix4::IDENTITY), m_finalTrans(0, 0, 0), m_finalScaling(1.f, 1.f, 1.f), mIsUpper(false)
+	:bUsePivot(true), nBoneID(0), nIndex(0), parent(-1), flags(0), calc(false), m_bIsDummyNode(false), pivot(0.f, 0.f, 0.f), matTransform(Matrix4::IDENTITY), matOffset(Matrix4::IDENTITY), m_finalTrans(0, 0, 0), m_finalScaling(1.f, 1.f, 1.f), mIsUpper(false)
 {
 }
 
@@ -80,9 +80,19 @@ bool Bone::calcMatrix(Bone *allbones, const AnimIndex & CurrentAnim, const AnimI
 		if (parent >= 0) {
 			allbones[parent].calcMatrix(allbones, CurrentAnim, BlendingAnim, blendingFactor, pAnimInstance);
 			mat = matTransform * allbones[parent].mat;
+			if (allbones[parent].IsDummyNode() && !IsDummyNode())
+			{
+				m_bIsDummyNode = true;
+			}
 		}
 		else
+		{
+			if (!IsDummyNode()) 
+			{
+				m_bIsDummyNode = true;
+			}
 			mat = matTransform;
+		}
 		return true;
 	}
 
@@ -1175,16 +1185,19 @@ bool ParaEngine::Bone::GetExternalScaling(IAttributeFields* pAnimInstance, Vecto
 
 void ParaEngine::Bone::PostCalculateBoneMatrix()
 {
-	if (IsOffsetMatrixBone() && !IsAttachment())
+	if (!IsDummyNode())
 	{
-		mat = matOffset * mat;
-	}
-	// compute transformation matrix (mrot) for normal vectors 
-	{
-		// Quaternion q = mat.extractQuaternion();
-		// q.ToRotationMatrix(mrot, Vector3::ZERO);
-		mrot = mat.RemoveTranslation();
-		mrot.RemoveScaling();
+		if (IsOffsetMatrixBone() && !IsAttachment())
+		{
+			mat = matOffset * mat;
+		}
+		// compute transformation matrix (mrot) for normal vectors 
+		{
+			// Quaternion q = mat.extractQuaternion();
+			// q.ToRotationMatrix(mrot, Vector3::ZERO);
+			mrot = mat.RemoveTranslation();
+			mrot.RemoveScaling();
+		}
 	}
 }
 
@@ -1275,7 +1288,8 @@ ParaEngine::Matrix4 ParaEngine::Bone::GetPivotRotMatrix()
 
 void ParaEngine::Bone::MakeDirty(bool bForce)
 {
-	calc = false;
+	if(!IsDummyNode())
+		calc = false;
 }
 
 const std::string& ParaEngine::Bone::GetTag()
@@ -1335,6 +1349,7 @@ int ParaEngine::Bone::InstallFields(CAttributeClass* pClass, bool bOverride)
 	pClass->AddField("IsOffsetMatrixBone", FieldType_Bool, (void*)0, (void*)IsOffsetMatrixBone_s, NULL, "", bOverride);
 	pClass->AddField("IsStaticTransform", FieldType_Bool, (void*)0, (void*)IsStaticTransform_s, NULL, "", bOverride);
 	pClass->AddField("IsTransformationNode", FieldType_Bool, (void*)0, (void*)IsTransformationNode_s, NULL, "", bOverride);
+	pClass->AddField("IsDummyNode", FieldType_Bool, (void*)0, (void*)IsDummyNode_s, NULL, "", bOverride);
 
 	pClass->AddField("IsAnimated", FieldType_Bool, (void*)0, (void*)IsAnimated_s, NULL, "", bOverride);
 	pClass->AddField("OffsetMatrix", FieldType_Matrix4, (void*)SetOffsetMatrix_s, (void*)0, NULL, "", bOverride);
