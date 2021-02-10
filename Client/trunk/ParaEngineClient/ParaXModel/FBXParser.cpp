@@ -986,7 +986,7 @@ void FBXParser::ProcessFBXMaterial(const aiScene* pFbxScene, unsigned int iIndex
 			if (!bFound)
 			{
 				OUTPUT_LOG("warn: FBX texture %s not exist\n", diffuseTexName.c_str());
-				diffuseTexName = "";
+				diffuseTexName = g_sDefaultTexture;
 			}
 		}
 
