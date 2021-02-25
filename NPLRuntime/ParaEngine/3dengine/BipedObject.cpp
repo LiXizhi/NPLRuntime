@@ -2891,6 +2891,11 @@ bool CBipedObject::MoveTowards(double dTimeDelta, const DVector3& vPosTarget, fl
 			m_fSpeedVertical = 0.f;
 		BlockCommon::ConstrainPos(m_vPos, vMinPos, vMaxPos);
 	}
+	
+	if (bReachPos && fabs(m_fSpeedVertical) > 0.1f)
+	{
+		bReachPos = false;
+	}
 	return bReachPos;
 }
 
