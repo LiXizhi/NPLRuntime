@@ -1053,8 +1053,8 @@ void FBXParser::ProcessFBXMaterial(const aiScene* pFbxScene, unsigned int iIndex
 	int texture_index = -1;
 	for (int i = 0; i < (int)m_textures.size(); i++)
 	{
-		// ReplaceableTextureID range in [1, 5]
-		if (m_textures[i].nIsReplaceableIndex > 0 && m_textures[i].nIsReplaceableIndex < 6 && m_textures[i].nIsReplaceableIndex == fbxMat.nIsReplaceableIndex)
+		// ReplaceableTextureID usually [0-32)
+		if (m_textures[i].nIsReplaceableIndex >= 0 && m_textures[i].nIsReplaceableIndex < 32 && m_textures[i].nIsReplaceableIndex == fbxMat.nIsReplaceableIndex)
 		{
 			texture_index = i;
 			break;
