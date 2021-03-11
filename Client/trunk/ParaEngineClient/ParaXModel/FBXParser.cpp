@@ -1050,9 +1050,22 @@ void FBXParser::ProcessFBXMaterial(const aiScene* pFbxScene, unsigned int iIndex
 		diffuseTexName = std::string(g_sDefaultTexture);
 	}
 	fbxMat.m_filename = diffuseTexName;
-	m_textures.push_back(fbxMat);
+	int texture_index = -1;
+	for (int i = 0; i < (int)m_textures.size(); i++)
+	{
+		// ReplaceableTextureID usually [0-32)
+		if (m_textures[i].nIsReplaceableIndex >= 0 && m_textures[i].nIsReplaceableIndex < 32 && m_textures[i].nIsReplaceableIndex == fbxMat.nIsReplaceableIndex)
+		{
+			texture_index = i;
+			break;
+		}
+	}
+	if (texture_index < 0)
+	{
+		m_textures.push_back(fbxMat);
+		texture_index = m_textures.size() - 1;
+	}
 
-	int texture_index = m_textures.size() - 1;
 
 	pMesh->passes.resize(pMesh->passes.size() + 1);
 	ModelRenderPass& pass = pMesh->passes[pMesh->passes.size() - 1];
