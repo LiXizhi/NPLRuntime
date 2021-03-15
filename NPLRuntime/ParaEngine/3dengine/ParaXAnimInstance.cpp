@@ -31,13 +31,7 @@ using namespace ParaEngine;
 
 
 CParaXAnimInstance::CParaXAnimInstance(void)
-	: m_modelType(CharacterModel)
-	, m_bUseGlobalTime(false)
-	, m_curTime(0)
-	, m_fBlendingFactor(0)
-	, m_nCurrentIdleAnimationID(ANIM_STAND)
-	, m_nCustomStandingAnimCount(-1)
-	, mUpperBlendingFactor(0)
+	:m_modelType(CharacterModel), m_bUseGlobalTime(false), m_curTime(0), m_fBlendingFactor(0), m_nCurrentIdleAnimationID(ANIM_STAND), m_nCustomStandingAnimCount(-1), mUpperBlendingFactor(0)
 {
 	// Maybe init from a another function, instead of constructor
 	if (m_modelType == CharacterModel)
@@ -81,7 +75,7 @@ void CParaXAnimInstance::SetAnimFrame(int nFrame)
 	if (m_CurrentAnim.IsValid() && !m_CurrentAnim.IsUndetermined())
 	{
 		int nLength = m_CurrentAnim.nEndFrame - m_CurrentAnim.nStartFrame;
-		if (nLength > 0 && nFrame >= 0)
+		if (nLength >= 0 && nFrame >= 0)
 		{
 			if (nFrame <= nLength)
 			{
@@ -89,7 +83,7 @@ void CParaXAnimInstance::SetAnimFrame(int nFrame)
 			}
 			else
 			{
-				m_CurrentAnim.nCurrentFrame = m_CurrentAnim.nStartFrame + nFrame % nLength;
+				m_CurrentAnim.nCurrentFrame = m_CurrentAnim.nStartFrame + ((nLength > 0) ? (nFrame % nLength) : 0);
 			}
 			m_fBlendingFactor = 0.f;
 		}
@@ -153,13 +147,13 @@ int CParaXAnimInstance::GetValidAnimID(int nAnimID)
 	return -1;
 }
 
-void CParaXAnimInstance::SetUpperAnimation(int nAnimID)
+void ParaEngine::CParaXAnimInstance::SetUpperAnimation(int nAnimID)
 {
 	if (m_modelType == CharacterModel)
 	{
 		ParaXEntity* pModelEnity = GetAnimModel();
-		CParaXModel* pModel = (pModelEnity != nullptr) ? pModelEnity->GetModel() : nullptr;
-		if (pModel == nullptr)
+		CParaXModel* pModel = (pModelEnity != NULL) ? pModelEnity->GetModel() : NULL;
+		if (pModel == NULL)
 		{
 			return;
 		}
@@ -246,7 +240,7 @@ void CParaXAnimInstance::SetUpperAnimation(int nAnimID)
 	}
 }
 
-int CParaXAnimInstance::GetUpperAnimation()
+int ParaEngine::CParaXAnimInstance::GetUpperAnimation()
 {
 	return mUpperAnim.IsValid() ? mUpperAnim.nAnimID : -1;
 }
@@ -443,7 +437,7 @@ void CParaXAnimInstance::LoadAnimation(int nNextAnimID, float * fSpeed, bool bAp
 			if (fSpeed)
 			{
 				if (CAnimTable::IsWalkAnimation(nNextAnimID))
-					*fSpeed = m_fSpeedScale* m_fSizeScale * DEFAULT_WALK_SPEED;
+					*fSpeed = m_fSpeedScale * m_fSizeScale * DEFAULT_WALK_SPEED;
 				else
 					*fSpeed = 0.f;
 			}
@@ -486,7 +480,7 @@ void CParaXAnimInstance::LoadAnimation(int nNextAnimID, float * fSpeed, bool bAp
 				if (IndexAnim.IsValid())
 				{
 					pProvider->GetAnimMoveSpeed(fSpeed, pProvider->GetSubAnimID());
-					*fSpeed *= m_fSpeedScale* m_fSizeScale;
+					*fSpeed *= m_fSpeedScale * m_fSizeScale;
 				}
 			}
 		}
@@ -503,18 +497,18 @@ void CParaXAnimInstance::LoadAnimation(int nNextAnimID, float * fSpeed, bool bAp
 					moveSpeed = DEFAULT_WALK_SPEED;
 				}
 				if (fSpeed)
-					*fSpeed = m_fSpeedScale* m_fSizeScale * moveSpeed;
+					*fSpeed = m_fSpeedScale * m_fSizeScale * moveSpeed;
 			}
 			else
 			{
 				if (fSpeed)
-					*fSpeed = (bHasWalkAnim) ? m_fSpeedScale* m_fSizeScale * DEFAULT_WALK_SPEED : 0.f;
+					*fSpeed = (bHasWalkAnim) ? m_fSpeedScale * m_fSizeScale * DEFAULT_WALK_SPEED : 0.f;
 			}
 		}
 		else
 		{
 			if (fSpeed)
-				*fSpeed = (bHasWalkAnim) ? m_fSpeedScale* m_fSizeScale * DEFAULT_WALK_SPEED : 0.f;
+				*fSpeed = (bHasWalkAnim) ? m_fSpeedScale * m_fSizeScale * DEFAULT_WALK_SPEED : 0.f;
 		}
 		IndexAnim.nAnimID = nNextAnimID; // enforce the same ID
 		LoadAnimationByIndex(IndexAnim, bAppend);
@@ -603,9 +597,9 @@ void CParaXAnimInstance::AdvanceTime(double dTimeDelta)
 			return;
 		if (m_CurrentAnim.IsValid())
 		{
-			if (m_CurrentAnim.nCurrentFrame<(int)m_CurrentAnim.nStartFrame)
+			if (m_CurrentAnim.nCurrentFrame < (int)m_CurrentAnim.nStartFrame)
 				m_CurrentAnim.nCurrentFrame = m_CurrentAnim.nStartFrame;
-			if (m_CurrentAnim.nCurrentFrame>(int)m_CurrentAnim.nEndFrame)
+			if (m_CurrentAnim.nCurrentFrame > (int)m_CurrentAnim.nEndFrame)
 				m_CurrentAnim.nCurrentFrame = m_CurrentAnim.nEndFrame;
 			int nToDoFrame = m_CurrentAnim.nCurrentFrame + (int)(dTimeDelta * 1000);
 			if (m_bUseGlobalTime)
@@ -812,6 +806,7 @@ void CParaXAnimInstance::AdvanceTime(double dTimeDelta)
 void CParaXAnimInstance::BuildShadowVolume(SceneState * sceneState, ShadowVolume * pShadowVolume, LightParams* pLight, Matrix4* mxWorld)
 {
 #ifdef USE_DIRECTX_RENDERER
+	LPDIRECT3DDEVICE9  pd3dDevice = CGlobals::GetRenderDevice();
 
 	// scale the model
 	Matrix4 mat, matScale;
@@ -820,8 +815,8 @@ void CParaXAnimInstance::BuildShadowVolume(SceneState * sceneState, ShadowVolume
 	CGlobals::GetWorldMatrixStack().push(mat);
 
 	// draw model
-	m_pCharModel->AnimateModel(sceneState, m_CurrentAnim, m_NextAnim, m_BlendingAnim, m_fBlendingFactor, mUpperAnim, mUpperBlendingAnim, mUpperBlendingFactor, nullptr);
-	m_pCharModel->BuildShadowVolume(sceneState, pShadowVolume, pLight, &mat); 
+	m_pCharModel->AnimateModel(sceneState, m_CurrentAnim, m_NextAnim, m_BlendingAnim, m_fBlendingFactor, mUpperAnim, mUpperBlendingAnim, mUpperBlendingFactor, NULL);
+	m_pCharModel->BuildShadowVolume(sceneState, pShadowVolume, pLight, &mat);
 
 	// pop matrix
 	CGlobals::GetWorldMatrixStack().pop();
@@ -914,7 +909,7 @@ HRESULT CParaXAnimInstance::Draw(SceneState * sceneState, const Matrix4* mxWorld
 	if (m_modelType == CharacterModel)
 	{
 		Matrix4 mat;
-		if(UpdateWorldTransform(sceneState, mat, *mxWorld))
+		if (UpdateWorldTransform(sceneState, mat, *mxWorld))
 		{
 			CGlobals::GetWorldMatrixStack().push(mat);
 			m_pCharModel->Draw(sceneState, materialParams);
@@ -940,9 +935,9 @@ void CParaXAnimInstance::GetCurrentRadius(float* fRadius)
 			return;
 		int nIndex = (m_CurrentAnim.Provider == 0 && (int)(pModel->GetObjectNum().nAnimations) > m_CurrentAnim.nIndex) ? m_CurrentAnim.nIndex : 0;
 		auto pModelAnim = pModel->GetModelAnimByIndex(nIndex);
-		if (pModelAnim){
+		if (pModelAnim) {
 			float boundsRadius = pModelAnim->rad;
-			*fRadius = m_fSizeScale* boundsRadius;
+			*fRadius = m_fSizeScale * boundsRadius;
 		}
 	}
 	else
@@ -962,7 +957,7 @@ void CParaXAnimInstance::GetCurrentSize(float * fWidth, float * fDepth)
 			return;
 		int nIndex = (m_CurrentAnim.Provider == 0 && (int)(pModel->GetObjectNum().nAnimations) > m_CurrentAnim.nIndex) ? m_CurrentAnim.nIndex : 0;
 		auto pModelAnim = pModel->GetModelAnimByIndex(nIndex);
-		if (pModelAnim){
+		if (pModelAnim) {
 			Vector3 box = pModelAnim->boxA - pModelAnim->boxB;
 			*fWidth = fabs(m_fSizeScale* box.x);
 			*fDepth = fabs(m_fSizeScale* box.y);
@@ -990,7 +985,7 @@ void CParaXAnimInstance::GetCurrentSpeed(float* fSpeed)
 		{
 			float moveSpeed = pModelAnim->moveSpeed;
 			if (fSpeed)
-				*fSpeed = m_fSpeedScale* m_fSizeScale* moveSpeed;
+				*fSpeed = m_fSpeedScale * m_fSizeScale* moveSpeed;
 		}
 	}
 	else
@@ -1014,13 +1009,13 @@ void CParaXAnimInstance::GetSpeedOf(const char * sName, float * fSpeed)
 			if (fSpeed)
 			{
 				if (CAnimTable::IsWalkAnimation(nAnimID))
-					*fSpeed = m_fSpeedScale* m_fSizeScale * DEFAULT_WALK_SPEED;
+					*fSpeed = m_fSpeedScale * m_fSizeScale * DEFAULT_WALK_SPEED;
 				else
 					*fSpeed = 0.f;
 			}
 			return;
 		}
-			
+
 
 		int nAnimIndex = -1;
 		bool bHasWalkAnim = false;
@@ -1045,13 +1040,13 @@ void CParaXAnimInstance::GetSpeedOf(const char * sName, float * fSpeed)
 					moveSpeed = DEFAULT_WALK_SPEED;
 				}
 				if (fSpeed)
-					*fSpeed = m_fSpeedScale* m_fSizeScale* moveSpeed;
+					*fSpeed = m_fSpeedScale * m_fSizeScale* moveSpeed;
 			}
 		}
 		else
 		{
 			if (fSpeed)
-				*fSpeed = (bHasWalkAnim) ? m_fSpeedScale* m_fSizeScale * DEFAULT_WALK_SPEED : 0.f;
+				*fSpeed = (bHasWalkAnim) ? m_fSpeedScale * m_fSizeScale * DEFAULT_WALK_SPEED : 0.f;
 		}
 	}
 	else
@@ -1123,6 +1118,6 @@ int CParaXAnimInstance::InstallFields(CAttributeClass* pClass, bool bOverride)
 
 	pClass->AddField("IdleAnimationID", FieldType_Int, (void*)SetIdleAnimationID_s, (void*)GetIdleAnimationID_s, NULL, "", bOverride);
 	pClass->AddField("UpdateModel", FieldType_void, (void*)UpdateModel_s, (void*)0, NULL, "", bOverride);
-	
+
 	return S_OK;
 }
