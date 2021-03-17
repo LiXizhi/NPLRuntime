@@ -406,7 +406,7 @@ void ParaEngine::CSlopeModelProvider::_buildInnerCornerBlockModels()
 	mInnerCornerBlockModels[block_index].Vertices()[BlockModel::g_frtRB].SetPosition(cube_mode.Vertices()[BlockModel::g_frtRT].position[0], cube_mode.Vertices()[BlockModel::g_frtRT].position[1], cube_mode.Vertices()[BlockModel::g_frtRT].position[2]);
 	mInnerCornerBlockModels[block_index].Vertices()[BlockModel::g_btmRT].SetPosition(cube_mode.Vertices()[BlockModel::g_frtRT].position[0], cube_mode.Vertices()[BlockModel::g_frtRT].position[1], cube_mode.Vertices()[BlockModel::g_frtRT].position[2]);
 	mInnerCornerBlockModels[block_index].Vertices()[BlockModel::g_rightLB].SetPosition(cube_mode.Vertices()[BlockModel::g_frtRT].position[0], cube_mode.Vertices()[BlockModel::g_frtRT].position[1], cube_mode.Vertices()[BlockModel::g_frtRT].position[2]);
-	mInnerCornerBlockModels[block_index].Vertices()[BlockModel::g_btmRB].SetTexcoord(cube_mode.Vertices()[BlockModel::g_btmLT].texcoord[0], cube_mode.Vertices()[BlockModel::g_btmLT].texcoord[1]);
+	//mInnerCornerBlockModels[block_index].Vertices()[BlockModel::g_btmRB].SetTexcoord(cube_mode.Vertices()[BlockModel::g_btmLT].texcoord[0], cube_mode.Vertices()[BlockModel::g_btmLT].texcoord[1]);
 	++block_index;
 	//shift FLT to FLB
 	mInnerCornerBlockModels[block_index] = cube_mode;
@@ -438,7 +438,7 @@ void ParaEngine::CSlopeModelProvider::_buildInnerCornerBlockModels()
 	mInnerCornerBlockModels[block_index].Vertices()[BlockModel::g_bkRB].SetPosition(cube_mode.Vertices()[BlockModel::g_bkRT].position[0], cube_mode.Vertices()[BlockModel::g_bkRT].position[1], cube_mode.Vertices()[BlockModel::g_bkRT].position[2]);
 	mInnerCornerBlockModels[block_index].Vertices()[BlockModel::g_btmLB].SetPosition(cube_mode.Vertices()[BlockModel::g_bkRT].position[0], cube_mode.Vertices()[BlockModel::g_bkRT].position[1], cube_mode.Vertices()[BlockModel::g_bkRT].position[2]);
 	mInnerCornerBlockModels[block_index].Vertices()[BlockModel::g_leftLB].SetPosition(cube_mode.Vertices()[BlockModel::g_bkRT].position[0], cube_mode.Vertices()[BlockModel::g_bkRT].position[1], cube_mode.Vertices()[BlockModel::g_bkRT].position[2]);
-	mInnerCornerBlockModels[block_index].Vertices()[BlockModel::g_btmRB].SetTexcoord(cube_mode.Vertices()[BlockModel::g_btmLT].texcoord[0], cube_mode.Vertices()[BlockModel::g_btmLT].texcoord[1]);
+	//mInnerCornerBlockModels[block_index].Vertices()[BlockModel::g_btmRB].SetTexcoord(cube_mode.Vertices()[BlockModel::g_btmLT].texcoord[0], cube_mode.Vertices()[BlockModel::g_btmLT].texcoord[1]);
 	++block_index;
 	//shift BLT to BLB
 	mInnerCornerBlockModels[block_index] = cube_mode;
