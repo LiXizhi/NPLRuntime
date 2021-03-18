@@ -83,11 +83,7 @@ namespace ParaEngine
 		virtual ~RainParticle(){};
 		virtual WeatherType GetType() { return WeatherType_Rain; };
 		virtual void Init(float x, float y, float z);
-		virtual void FrameMove(float deltaTime);
 		virtual void SetDead();
-
-		float angle_x;
-		float angle_y;
 	};
 
 	class RainSplashParticle : public WeatherParticle

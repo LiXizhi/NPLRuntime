@@ -588,7 +588,7 @@ void NPL::CNPLConnection::connect()
 	PE_ASSERT(m_address);
 
 	if (!m_resolver)
-		m_resolver.reset(new boost::asio::ip::tcp::resolver(m_socket.get_executor()));
+		m_resolver.reset(new boost::asio::ip::tcp::resolver(m_socket.get_io_context()));
 
 	boost::asio::ip::tcp::resolver::query query(m_address->GetHost(), m_address->GetPort());
 
