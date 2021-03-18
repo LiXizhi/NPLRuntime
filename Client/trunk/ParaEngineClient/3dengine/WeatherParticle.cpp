@@ -203,20 +203,8 @@ void ParaEngine::SnowParticle::FrameMove(float deltaTime)
 
 void ParaEngine::RainParticle::Init(float x, float y, float z)
 {
-	float speed = GetWeatherSpawner()->GetSpeed();
-	angle_x = sin(GetWeatherSpawner()->GetAngleX()) * speed;
-	angle_y = sin(GetWeatherSpawner()->GetAngleY()) * speed;
-	gravity = 9.81f*0.03f * speed;
 	WeatherParticle::Init(x, y, z);
 	height = 0.16f;	width = 0.04f;
-}
-
-void ParaEngine::RainParticle::FrameMove(float deltaTime)
-{
-	x = x + angle_x * deltaTime;
-	z = z + angle_y * deltaTime;
-	
-	WeatherParticle::FrameMove(deltaTime);
 }
 
 void ParaEngine::RainParticle::SetDead()

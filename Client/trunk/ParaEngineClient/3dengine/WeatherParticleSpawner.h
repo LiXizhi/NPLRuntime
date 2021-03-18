@@ -37,12 +37,6 @@ namespace ParaEngine
 		ATTRIBUTE_METHOD1(WeatherParticleSpawner, SetTextureRowsCols_s, Vector2)	{ cls->SetTextureRowsCols((int)p1.x, (int)p1.y); return S_OK; }
 		ATTRIBUTE_METHOD1(WeatherParticleSpawner, GetTextureRowsCols_s, Vector2*)	{ *p1 = cls->GetTextureRowsCols(); return S_OK; }
 
-		ATTRIBUTE_METHOD1(WeatherParticleSpawner, SetAngleX_s, float)	{ cls->SetAngleX(p1); return S_OK; }
-		ATTRIBUTE_METHOD1(WeatherParticleSpawner, GetAngleX_s, float*)	{ *p1 = cls->GetAngleX(); return S_OK; }
-
-		ATTRIBUTE_METHOD1(WeatherParticleSpawner, SetAngleY_s, float)	{ cls->SetAngleY(p1); return S_OK; }
-		ATTRIBUTE_METHOD1(WeatherParticleSpawner, GetAngleY_s, float*)	{ *p1 = cls->GetAngleY(); return S_OK; }
-
 		ATTRIBUTE_METHOD1(WeatherParticleSpawner, SetSpeed_s, float)	{ cls->SetSpeed(p1); return S_OK; }
 		ATTRIBUTE_METHOD1(WeatherParticleSpawner, GetSpeed_s, float*)	{ *p1 = cls->GetSpeed(); return S_OK; }
 		
@@ -60,12 +54,6 @@ namespace ParaEngine
 		TextureEntity* GetTexture() const { return m_pTexture.get(); }
 		void SetTexture(TextureEntity* val) { m_pTexture = val; }
 		
-		float GetAngleX() const { return m_fAngleX; }
-		void SetAngleX(float val) { m_fAngleX = val; }
-		
-		float GetAngleY() const { return m_fAngleY; }
-		void SetAngleY(float val) { m_fAngleY = val; }
-
 		float GetSpeed() const { return m_fSpeed; }
 		void SetSpeed(float val) { m_fSpeed = val; }
 
@@ -91,8 +79,6 @@ namespace ParaEngine
 		bool m_isEnabled;
 		float m_fStrength;
 		float m_fSpawnRadius;
-		float m_fAngleX;
-		float m_fAngleY;
 		float m_fSpeed;
 		FastRandom m_randomSpeed;
 	public:
