@@ -14,7 +14,7 @@
 using namespace ParaEngine;
 
 ParaEngine::WeatherParticleSpawner::WeatherParticleSpawner(WeatherType nType)
-	: m_type(nType), m_isEnabled(false), m_fStrength(30.f), m_fSpawnRadius(20.f),
+	: m_type(nType), m_isEnabled(false), m_fStrength(30.f), m_fSpawnRadius(20.f), m_fAngleX(0.f), m_fAngleY(0.f), m_fSpeed(1.f),
 	m_totalCount(0), m_maxPoolSize(5000), m_maxPoolIndex(0), m_nextPoolIndex(0)
 {
 }
@@ -189,6 +189,9 @@ int ParaEngine::WeatherParticleSpawner::InstallFields(CAttributeClass* pClass, b
 	pClass->AddField("SpawnRadius", FieldType_Float, (void*)SetSpawnRadius_s, (void*)GetSpawnRadius_s, NULL, NULL, bOverride);
 	pClass->AddField("TextureRowsCols", FieldType_Vector2, (void*)SetTextureRowsCols_s, (void*)GetTextureRowsCols_s, NULL, NULL, bOverride);
 	pClass->AddField("Texture", FieldType_String, (void*)SetTexture_s, NULL, NULL, NULL, bOverride);
+	pClass->AddField("angleX", FieldType_Float, (void*)SetAngleX_s, (void*)GetAngleX_s, NULL, NULL, bOverride);
+	pClass->AddField("angleY", FieldType_Float, (void*)SetAngleY_s, (void*)GetAngleY_s, NULL, NULL, bOverride);
+	pClass->AddField("speed", FieldType_Float, (void*)SetSpeed_s, (void*)GetSpeed_s, NULL, NULL, bOverride);
 	return S_OK;
 }
 
