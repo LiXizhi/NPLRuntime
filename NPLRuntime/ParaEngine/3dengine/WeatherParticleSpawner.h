@@ -37,6 +37,9 @@ namespace ParaEngine
 		ATTRIBUTE_METHOD1(WeatherParticleSpawner, SetTextureRowsCols_s, Vector2)	{ cls->SetTextureRowsCols((int)p1.x, (int)p1.y); return S_OK; }
 		ATTRIBUTE_METHOD1(WeatherParticleSpawner, GetTextureRowsCols_s, Vector2*)	{ *p1 = cls->GetTextureRowsCols(); return S_OK; }
 		
+		ATTRIBUTE_METHOD1(WeatherParticleSpawner, SetSpeed_s, float) { cls->SetSpeed(p1); return S_OK; }
+		ATTRIBUTE_METHOD1(WeatherParticleSpawner, GetSpeed_s, float*) { *p1 = cls->GetSpeed(); return S_OK; }
+
 	public:
 
 		bool IsEnabled() const;
@@ -50,6 +53,9 @@ namespace ParaEngine
 		
 		TextureEntity* GetTexture() const { return m_pTexture.get(); }
 		void SetTexture(TextureEntity* val) { m_pTexture = val; }
+
+		float GetSpeed() const { return m_fSpeed; }
+		void SetSpeed(float val) { m_fSpeed = val; }
 
 		ParaEngine::WeatherType GetWeatherType() const { return m_type; }
 		FastRandom& GetSpeedRand() { return m_randomSpeed; }
@@ -73,6 +79,7 @@ namespace ParaEngine
 		bool m_isEnabled;
 		float m_fStrength;
 		float m_fSpawnRadius;
+		float m_fSpeed;
 		FastRandom m_randomSpeed;
 	public:
 		/** Creates a new entity, or reuses one that's no longer in use. 

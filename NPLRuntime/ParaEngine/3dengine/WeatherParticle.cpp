@@ -186,7 +186,7 @@ void ParaEngine::SnowParticle::Init(float x, float y, float z)
 {
 	isFloating = GetWeatherSpawner()->GetSpeedRand().randomDouble() > 0.1 ? true : false;
 	float_speed = (float)((GetWeatherSpawner()->GetSpeedRand().randomDouble() - GetWeatherSpawner()->GetSpeedRand().randomDouble())*0.5);
-	gravity = 9.81f*0.03f;
+	gravity = 9.81f*0.03f * GetWeatherSpawner()->GetSpeed();
 	WeatherParticle::Init(x, y, z);
 	height = width = 0.03f;
 }
