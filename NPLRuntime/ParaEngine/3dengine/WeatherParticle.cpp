@@ -40,7 +40,7 @@ WeatherParticleSpawner* ParaEngine::WeatherParticle::GetWeatherSpawner()
 void ParaEngine::WeatherParticle::Init(float x_, float y_, float z_)
 {
 	auto pSpawner = GetWeatherSpawner();
-	
+
 	m_isDead = false;
 	x = x_;
 	y = y_;
@@ -186,7 +186,7 @@ void ParaEngine::SnowParticle::Init(float x, float y, float z)
 {
 	isFloating = GetWeatherSpawner()->GetSpeedRand().randomDouble() > 0.1 ? true : false;
 	float_speed = (float)((GetWeatherSpawner()->GetSpeedRand().randomDouble() - GetWeatherSpawner()->GetSpeedRand().randomDouble())*0.5);
-	gravity = 9.81f*0.03f;
+	gravity = 9.81f*0.03f * GetWeatherSpawner()->GetSpeed();
 	WeatherParticle::Init(x, y, z);
 	height = width = 0.03f;
 }
@@ -203,8 +203,20 @@ void ParaEngine::SnowParticle::FrameMove(float deltaTime)
 
 void ParaEngine::RainParticle::Init(float x, float y, float z)
 {
+	float speed = GetWeatherSpawner()->GetSpeed();
+	angle_x = sin(GetWeatherSpawner()->GetAngleX()) * speed;
+	angle_y = sin(GetWeatherSpawner()->GetAngleY()) * speed;
+	gravity = 9.81f*0.03f * speed;
 	WeatherParticle::Init(x, y, z);
 	height = 0.16f;	width = 0.04f;
+}
+
+void ParaEngine::RainParticle::FrameMove(float deltaTime)
+{
+	x = x + angle_x * deltaTime;
+	z = z + angle_y * deltaTime;
+
+	WeatherParticle::FrameMove(deltaTime);
 }
 
 void ParaEngine::RainParticle::SetDead()
