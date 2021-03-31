@@ -220,6 +220,9 @@ namespace ParaEngine
 		ATTRIBUTE_METHOD1(ParaEngineSettings, SetWritablePath_s, const char*) { cls->SetWritablePath(p1); return S_OK; }
 
 		ATTRIBUTE_METHOD1(ParaEngineSettings, GetAppHWND_s, double*) { *p1 = (double)cls->GetAppHWND(); return S_OK; }
+
+		ATTRIBUTE_METHOD1(ParaEngineSettings, ResetAudioDevice_s, const char*) { cls->ResetAudioDevice(p1); return S_OK; }
+		ATTRIBUTE_METHOD1(ParaEngineSettings, GetAudioDeviceName_s, const char**) { *p1 = cls->GetAudioDeviceName(); return S_OK; }
 	public:
 		/** if true, IO is restricted to current working directory and writable directory.  Under win32, this is true by default. */
 		static bool IsSandboxMode();
@@ -695,6 +698,9 @@ namespace ParaEngine
 		void SetWritablePath(const char* sPath);
 
 		static intptr_t GetAppHWND();
+
+		void ResetAudioDevice(const char* deviceName);
+		const char* GetAudioDeviceName();
 	protected:
 		void LoadNameIndex();
 	private:
