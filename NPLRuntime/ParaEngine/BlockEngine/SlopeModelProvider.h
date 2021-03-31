@@ -9,6 +9,9 @@ namespace ParaEngine
 		BlockModel mEdgeBlockModels[8];
 		BlockModel mOuterCornerBlockModels[8];
 		BlockModel mInnerCornerBlockModels[8];
+		BlockModel mHEdgeBlockModels[8];
+		BlockModel mHOuterCornerBlockModels[8];
+		BlockModel mHInnerCornerBlockModels[8];
 	public:
 		CSlopeModelProvider(BlockTemplate* pBlockTemplate);
 		virtual ~CSlopeModelProvider();
@@ -18,5 +21,8 @@ namespace ParaEngine
 		void _buildEdgeBlockModels();
 		void _builOuterCornerBlockModels();
 		void _buildInnerCornerBlockModels();
+		void _buildHEdgeBlockModels();
+		void _buildHOuterCornerBlockModels();
+		void _buildHInnerCornerBlockModels();
 	};
 }
