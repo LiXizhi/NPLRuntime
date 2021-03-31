@@ -7,11 +7,15 @@
 #include "SlopeModelProvider.h"
 using namespace ParaEngine;
 ParaEngine::CSlopeModelProvider::CSlopeModelProvider(BlockTemplate* pBlockTemplate)
-	:CLinearModelProvider(pBlockTemplate, sizeof(mEdgeBlockModels) / sizeof(mEdgeBlockModels[0]) + sizeof(mOuterCornerBlockModels) / sizeof(mOuterCornerBlockModels[0]) + sizeof(mInnerCornerBlockModels) / sizeof(mInnerCornerBlockModels[0]))
+	:CLinearModelProvider(pBlockTemplate, sizeof(mEdgeBlockModels) / sizeof(mEdgeBlockModels[0]) + sizeof(mOuterCornerBlockModels) / sizeof(mOuterCornerBlockModels[0]) + sizeof(mInnerCornerBlockModels) / sizeof(mInnerCornerBlockModels[0]) +
+		sizeof(mHEdgeBlockModels) / sizeof(mHEdgeBlockModels[0]) + sizeof(mHOuterCornerBlockModels) / sizeof(mHOuterCornerBlockModels[0]) + sizeof(mHInnerCornerBlockModels) / sizeof(mHInnerCornerBlockModels[0]))
 {
 	_buildEdgeBlockModels();
 	_builOuterCornerBlockModels();
 	_buildInnerCornerBlockModels();
+	_buildHEdgeBlockModels();
+	_buildHOuterCornerBlockModels();
+	_buildHInnerCornerBlockModels();
 }
 
 ParaEngine::CSlopeModelProvider::~CSlopeModelProvider()
@@ -32,6 +36,15 @@ BlockModel& ParaEngine::CSlopeModelProvider::GetBlockModel(int nIndex /*= 0*/)
 		break;
 	case 2:
 		model = mInnerCornerBlockModels;
+		break;
+	case 3:
+		model = mHEdgeBlockModels;
+		break;
+	case 4:
+		model = mHOuterCornerBlockModels;
+		break;
+	case 5:
+		model = mHInnerCornerBlockModels;
 		break;
 	}
 	return (nIndex<m_nModelCount) ? model[block_index] : model[0];
@@ -54,6 +67,15 @@ BlockModel& ParaEngine::CSlopeModelProvider::GetBlockModel(CBlockWorld* pBlockMa
 		break;
 	case 2:
 		model = mInnerCornerBlockModels;
+		break;
+	case 3:
+		model = mHEdgeBlockModels;
+		break;
+	case 4:
+		model = mHOuterCornerBlockModels;
+		break;
+	case 5:
+		model = mHInnerCornerBlockModels;
 		break;
 	}
 	return (nBlockData<m_nModelCount) ? model[block_index] : model[0];
@@ -464,4 +486,143 @@ void ParaEngine::CSlopeModelProvider::_buildInnerCornerBlockModels()
 		model.SetUseAmbientOcclusion(false);
 		model.SetUniformLighting(true);
 	}
+}
+
+void ParaEngine::CSlopeModelProvider::_buildHEdgeBlockModels()
+{
+	BlockModel cube_mode;
+	cube_mode.LoadModelByTexture(0);
+	int block_index = 0;
+	for (auto& model : mHEdgeBlockModels){
+		model.ClearVertices();
+	}
+	/*
+	   /|
+	  / |
+	 /  |
+	/___|
+	*/
+	mHEdgeBlockModels[block_index] = cube_mode;
+	mHEdgeBlockModels[block_index].Vertices()[BlockModel::g_leftLB].SetPosition(cube_mode.Vertices()[BlockModel::g_rightRB].position[0], cube_mode.Vertices()[BlockModel::g_rightRB].position[1], cube_mode.Vertices()[BlockModel::g_rightRB].position[2]);
+	mHEdgeBlockModels[block_index].Vertices()[BlockModel::g_leftLT].SetPosition(cube_mode.Vertices()[BlockModel::g_rightRT].position[0], cube_mode.Vertices()[BlockModel::g_rightRT].position[1], cube_mode.Vertices()[BlockModel::g_rightRT].position[2]);
+	for (int i = 0; i < 4; ++i)
+		mHEdgeBlockModels[block_index].Vertices()[BlockModel::g_bkLB + i] = cube_mode.Vertices()[BlockModel::g_bkLB];
+	mHEdgeBlockModels[block_index].Vertices()[BlockModel::g_topLT] = cube_mode.Vertices()[BlockModel::g_topLB];
+	mHEdgeBlockModels[block_index].Vertices()[BlockModel::g_btmLB] = cube_mode.Vertices()[BlockModel::g_btmLT];
+	++block_index;
+	/*
+	|\
+	| \
+	|  \
+	|___\
+	*/
+	mHEdgeBlockModels[block_index] = cube_mode;
+	mHEdgeBlockModels[block_index].Vertices()[BlockModel::g_rightRT].SetPosition(cube_mode.Vertices()[BlockModel::g_leftLT].position[0], cube_mode.Vertices()[BlockModel::g_leftLT].position[1], cube_mode.Vertices()[BlockModel::g_leftLT].position[2]);
+	mHEdgeBlockModels[block_index].Vertices()[BlockModel::g_rightRB].SetPosition(cube_mode.Vertices()[BlockModel::g_leftLB].position[0], cube_mode.Vertices()[BlockModel::g_leftLB].position[1], cube_mode.Vertices()[BlockModel::g_leftLB].position[2]);
+	for (int i = 0; i < 4; ++i)
+		mHEdgeBlockModels[block_index].Vertices()[BlockModel::g_bkLB+ i] = cube_mode.Vertices()[BlockModel::g_bkLB];
+	mHEdgeBlockModels[block_index].Vertices()[BlockModel::g_topRT] = cube_mode.Vertices()[BlockModel::g_topRB];
+	mHEdgeBlockModels[block_index].Vertices()[BlockModel::g_btmRB] = cube_mode.Vertices()[BlockModel::g_btmRT];
+	++block_index;
+	/*
+	____
+	|   /
+	|  /
+	| /
+	|/
+	*/
+	mHEdgeBlockModels[block_index] = cube_mode;
+	mHEdgeBlockModels[block_index].Vertices()[BlockModel::g_rightLB].SetPosition(cube_mode.Vertices()[BlockModel::g_leftRB].position[0], cube_mode.Vertices()[BlockModel::g_leftRB].position[1], cube_mode.Vertices()[BlockModel::g_leftRB].position[2]);
+	mHEdgeBlockModels[block_index].Vertices()[BlockModel::g_rightLT].SetPosition(cube_mode.Vertices()[BlockModel::g_leftRT].position[0], cube_mode.Vertices()[BlockModel::g_leftRT].position[1], cube_mode.Vertices()[BlockModel::g_leftRT].position[2]);
+	for (int i = 0; i < 4; ++i)
+		mHEdgeBlockModels[block_index].Vertices()[BlockModel::g_frtLB + i] = cube_mode.Vertices()[BlockModel::g_frtLB];
+	mHEdgeBlockModels[block_index].Vertices()[BlockModel::g_topRB] = cube_mode.Vertices()[BlockModel::g_topRT];
+	mHEdgeBlockModels[block_index].Vertices()[BlockModel::g_btmRT] = cube_mode.Vertices()[BlockModel::g_btmRB];
+	++block_index;
+	/*
+	____
+	\	|
+	 \  |
+	  \ |
+	   \|
+	*/
+	mHEdgeBlockModels[block_index] = cube_mode;
+	mHEdgeBlockModels[block_index].Vertices()[BlockModel::g_leftRT].SetPosition(cube_mode.Vertices()[BlockModel::g_rightLT].position[0], cube_mode.Vertices()[BlockModel::g_rightLT].position[1], cube_mode.Vertices()[BlockModel::g_rightLT].position[2]);
+	mHEdgeBlockModels[block_index].Vertices()[BlockModel::g_leftRB].SetPosition(cube_mode.Vertices()[BlockModel::g_rightLB].position[0], cube_mode.Vertices()[BlockModel::g_rightLB].position[1], cube_mode.Vertices()[BlockModel::g_rightLB].position[2]);
+	for (int i = 0; i < 4; ++i)
+		mHEdgeBlockModels[block_index].Vertices()[BlockModel::g_frtLB + i] = cube_mode.Vertices()[BlockModel::g_frtLB];
+	mHEdgeBlockModels[block_index].Vertices()[BlockModel::g_topLB] = cube_mode.Vertices()[BlockModel::g_topLT];
+	mHEdgeBlockModels[block_index].Vertices()[BlockModel::g_btmLT] = cube_mode.Vertices()[BlockModel::g_btmLB];
+	++block_index;
+
+	/*
+	_______
+	| \___/ |
+	| /   \ |
+	|/_____\|
+	*/
+	mHEdgeBlockModels[block_index] = cube_mode;
+	mHEdgeBlockModels[block_index].Vertices()[BlockModel::g_bkLB].SetPosition(cube_mode.Vertices()[BlockModel::g_frtRB].position[0], cube_mode.Vertices()[BlockModel::g_frtRB].position[1], cube_mode.Vertices()[BlockModel::g_frtRB].position[2]);
+	mHEdgeBlockModels[block_index].Vertices()[BlockModel::g_bkRB].SetPosition(cube_mode.Vertices()[BlockModel::g_frtLB].position[0], cube_mode.Vertices()[BlockModel::g_frtLB].position[1], cube_mode.Vertices()[BlockModel::g_frtLB].position[2]);
+	for (int i = 0; i < 4; ++i)
+		mHEdgeBlockModels[block_index].Vertices()[BlockModel::g_btmLB + i] = cube_mode.Vertices()[BlockModel::g_btmLB];
+	mHEdgeBlockModels[block_index].Vertices()[BlockModel::g_leftLB] = cube_mode.Vertices()[BlockModel::g_leftLT];
+	mHEdgeBlockModels[block_index].Vertices()[BlockModel::g_rightRB] = cube_mode.Vertices()[BlockModel::g_rightRT];
+	++block_index;
+	/*
+	_______
+	|  ___  |
+	|       |
+	|_______|
+	*/
+	mHEdgeBlockModels[block_index] = cube_mode;
+	mHEdgeBlockModels[block_index].Vertices()[BlockModel::g_frtLB].SetPosition(cube_mode.Vertices()[BlockModel::g_bkRB].position[0], cube_mode.Vertices()[BlockModel::g_bkRB].position[1], cube_mode.Vertices()[BlockModel::g_bkRB].position[2]);
+	mHEdgeBlockModels[block_index].Vertices()[BlockModel::g_frtRB].SetPosition(cube_mode.Vertices()[BlockModel::g_bkLB].position[0], cube_mode.Vertices()[BlockModel::g_bkLB].position[1], cube_mode.Vertices()[BlockModel::g_bkLB].position[2]);
+	for (int i = 0; i < 4; ++i)
+		mHEdgeBlockModels[block_index].Vertices()[BlockModel::g_btmLB + i] = cube_mode.Vertices()[BlockModel::g_btmLB];
+	mHEdgeBlockModels[block_index].Vertices()[BlockModel::g_leftRB] = cube_mode.Vertices()[BlockModel::g_leftRT];
+	mHEdgeBlockModels[block_index].Vertices()[BlockModel::g_rightLB] = cube_mode.Vertices()[BlockModel::g_rightLT];
+	++block_index;
+	/*
+	_______
+	|       |
+	|  ___  |
+	|_______|
+	*/
+	mHEdgeBlockModels[block_index] = cube_mode;
+	mHEdgeBlockModels[block_index].Vertices()[BlockModel::g_frtLT].SetPosition(cube_mode.Vertices()[BlockModel::g_bkRT].position[0], cube_mode.Vertices()[BlockModel::g_bkRT].position[1], cube_mode.Vertices()[BlockModel::g_bkRT].position[2]);
+	mHEdgeBlockModels[block_index].Vertices()[BlockModel::g_frtRT].SetPosition(cube_mode.Vertices()[BlockModel::g_bkLT].position[0], cube_mode.Vertices()[BlockModel::g_bkLT].position[1], cube_mode.Vertices()[BlockModel::g_bkLT].position[2]);
+	for (int i = 0; i < 4; ++i)
+		mHEdgeBlockModels[block_index].Vertices()[BlockModel::g_topLB + i] = cube_mode.Vertices()[BlockModel::g_topLB];
+	mHEdgeBlockModels[block_index].Vertices()[BlockModel::g_leftRT] = cube_mode.Vertices()[BlockModel::g_leftRB];
+	mHEdgeBlockModels[block_index].Vertices()[BlockModel::g_rightLT] = cube_mode.Vertices()[BlockModel::g_rightLB];
+	++block_index;
+	/*
+	_______
+	|\     /|
+	| \___/ |
+	|/_____\|
+	*/
+	mHEdgeBlockModels[block_index] = cube_mode;
+	mHEdgeBlockModels[block_index].Vertices()[BlockModel::g_bkLT].SetPosition(cube_mode.Vertices()[BlockModel::g_frtRT].position[0], cube_mode.Vertices()[BlockModel::g_frtRT].position[1], cube_mode.Vertices()[BlockModel::g_frtRT].position[2]);
+	mHEdgeBlockModels[block_index].Vertices()[BlockModel::g_bkRT].SetPosition(cube_mode.Vertices()[BlockModel::g_frtLT].position[0], cube_mode.Vertices()[BlockModel::g_frtLT].position[1], cube_mode.Vertices()[BlockModel::g_frtLT].position[2]);
+	for (int i = 0; i < 4; ++i)
+		mHEdgeBlockModels[block_index].Vertices()[BlockModel::g_topLB + i] = cube_mode.Vertices()[BlockModel::g_topLB];
+	mHEdgeBlockModels[block_index].Vertices()[BlockModel::g_leftLT] = cube_mode.Vertices()[BlockModel::g_leftLB];
+	mHEdgeBlockModels[block_index].Vertices()[BlockModel::g_rightRT] = cube_mode.Vertices()[BlockModel::g_rightRB];
+	++block_index;
+
+	for (auto& model : mHEdgeBlockModels){
+		model.SetFaceCount(model.Vertices().size() / 4);
+		model.SetUseAmbientOcclusion(false);
+		model.SetUniformLighting(true);
+	}
+}
+
+void ParaEngine::CSlopeModelProvider::_buildHOuterCornerBlockModels()
+{
+}
+
+void ParaEngine::CSlopeModelProvider::_buildHInnerCornerBlockModels()
+{
 }
