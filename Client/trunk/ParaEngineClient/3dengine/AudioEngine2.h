@@ -167,6 +167,10 @@ namespace ParaEngine
 		/** check load the plugin dll if any */
 		HRESULT InitAudioEngine(IParaAudioEngine* pInteface = NULL);
 
+		void ResetAudioDevice(const string& deviceName);
+		unsigned int GetDeviceCount();
+		string GetDeviceName(unsigned int index);
+
 		/** shutdown and clean up audio engine. */
 		void CleanupAudioEngine();
 
