@@ -159,6 +159,58 @@ HRESULT ParaEngine::CAudioEngine2::InitAudioEngine(IParaAudioEngine* pInteface)
 	return (m_pAudioEngine != 0) ? S_OK : E_FAIL;
 }
 
+void ParaEngine::CAudioEngine2::ResetAudioDevice(const string& deviceName)
+{
+	if (m_pAudioEngine == nullptr)
+	{
+		InitAudioEngine();
+		return;
+	}
+
+	m_pAudioEngine->shutDown();
+
+	if (deviceName.empty())
+	{
+		unsigned int deviceSelection = 0;
+#ifdef WIN32
+		if (!m_pAudioEngine->initialize("DirectSound3D"))
+		{
+			if (!m_pAudioEngine->initialize(m_pAudioEngine->getAvailableDeviceName(deviceSelection)))
+				OUTPUT_LOG("error: failed initialize audio device %s\n", m_pAudioEngine->getAvailableDeviceName(deviceSelection));
+		}
+#else
+
+		if (!m_pAudioEngine->initialize(m_pAudioEngine->getAvailableDeviceName(deviceSelection)))
+		{
+			OUTPUT_LOG("error: failed initialize audio device %s\n", m_pAudioEngine->getAvailableDeviceName(deviceSelection));
+		}
+#endif
+	}
+	else
+	{
+		if (!m_pAudioEngine->initialize(deviceName.c_str()))
+		{
+			OUTPUT_LOG("error: failed initialize audio device %s\n", deviceName.c_str());
+		}
+	}
+}
+
+unsigned int ParaEngine::CAudioEngine2::GetDeviceCount()
+{
+	if (m_pAudioEngine != nullptr)
+		return m_pAudioEngine->getAvailableDeviceCount();
+	else
+		return 0;
+}
+
+string ParaEngine::CAudioEngine2::GetDeviceName(unsigned int index)
+{
+	if (m_pAudioEngine != nullptr && index >= 0 && index < m_pAudioEngine->getAvailableDeviceCount())
+		return m_pAudioEngine->getAvailableDeviceName(index);
+	else
+		return "";
+}
+
 void ParaEngine::CAudioEngine2::CleanupAudioEngine()
 {
 	CMidiMsg::GetSingleton().SafeRelease();

@@ -26,6 +26,7 @@
 #include "SelectionManager.h"
 #include "BufferPicking.h"
 #include "FrameRateController.h"
+#include "AudioEngine2.h"
 
 #ifdef PARAENGINE_CLIENT
 #include "util/CommonFileDialog.h"
@@ -1335,6 +1336,28 @@ intptr_t ParaEngine::ParaEngineSettings::GetAppHWND()
 #endif
 }
 
+void ParaEngine::ParaEngineSettings::ResetAudioDevice(const char* deviceName)
+{
+	CAudioEngine2::GetInstance()->ResetAudioDevice(deviceName);
+}
+
+const char* ParaEngine::ParaEngineSettings::GetAudioDeviceName()
+{
+	static std::string g_audioDeviceName;
+	g_audioDeviceName.clear();
+	unsigned int count = CAudioEngine2::GetInstance()->GetDeviceCount();
+	for (unsigned int i = 0; i < count; i++)
+	{
+		std::string name = CAudioEngine2::GetInstance()->GetDeviceName(i);
+		if (!name.empty())
+		{
+			g_audioDeviceName.append(name);
+			g_audioDeviceName.append(";");
+		}
+	}
+	return g_audioDeviceName.c_str();
+}
+
 void ParaEngineSettings::SetRefreshTimer(float fTimerInterval)
 {
 	CGlobals::GetApp()->SetRefreshTimer(fTimerInterval);
@@ -1461,5 +1484,7 @@ int ParaEngineSettings::InstallFields(CAttributeClass* pClass, bool bOverride)
 
 	pClass->AddField("GetModuleFileName", FieldType_String, nullptr, (void*)GetModuleFileName_s, NULL, NULL, bOverride);
 	
+	pClass->AddField("ResetAudioDevice", FieldType_String, (void*)ResetAudioDevice_s, NULL, NULL, NULL, bOverride);
+	pClass->AddField("AudioDeviceName", FieldType_String, NULL, (void*)GetAudioDeviceName_s, NULL, NULL, bOverride);
 	return S_OK;
 }
