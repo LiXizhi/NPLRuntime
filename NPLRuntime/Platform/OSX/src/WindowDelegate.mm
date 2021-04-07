@@ -39,7 +39,7 @@ static WindowDelegate* sInstance = nil;
 
 - (void) windowWillClose:(NSNotification *)notificationƒurl
 {
-    [[NSRunningApplication currentApplication] terminate];
+   [[NSRunningApplication currentApplication] terminate];
 }
 
 - (BOOL) applicationShouldTerminateAfterLastWindowClosed:(NSApplication *)sender
