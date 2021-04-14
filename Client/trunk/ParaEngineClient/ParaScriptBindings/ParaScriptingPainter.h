@@ -55,6 +55,8 @@ namespace ParaScripting
 		* or it can be pen color "#ff000000" or "255 255 255"
 		*/
 		static void SetPen(const object& pen);
+		static void SetPenStr(const char* sColor);
+		static void SetPenInt(uint32_t nColor);
 
 		/** set current brush (texture and color)
 		* @param brush: { color="#00000000", texture="filename or texture asset"} 

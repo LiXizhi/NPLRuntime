@@ -2344,6 +2344,9 @@ HRESULT CSceneObject::AdvanceScene(double dTimeDelta, int nPipelineOrder)
 
 	RenderSelection(RENDER_SELECTION);
 
+	// draw solid head on
+	RenderHeadOnDisplay(3);
+
 	//////////////////////////////////////////////////////////////////////////
 	/// Draw SkyBox : we shall render sky after terrain but before transparent meshes, to make z-buffer work better. 
 	if (!(sceneState.m_bSkipSky))
@@ -2370,7 +2373,7 @@ HRESULT CSceneObject::AdvanceScene(double dTimeDelta, int nPipelineOrder)
 
 	// draw overlays solid
 	RenderHeadOnDisplay(2);
-
+	
 	// draw transparent particles
 	m_pBatchedElementDraw->DrawBatchedParticles(true);
 	
@@ -2533,13 +2536,13 @@ HRESULT CSceneObject::AdvanceScene(double dTimeDelta, int nPipelineOrder)
 }
 
 template <class T>
-void RenderHeadOnDisplayList(T& renderlist, int& nObjCount, SceneState* pSceneState, CGUIText** ppObjUITextDefault, bool bZEnable = true, bool b3DText = false, bool bZWriteEnable = false)
+void RenderHeadOnDisplayList(T& renderlist, int& nObjCount, SceneState* pSceneState, CGUIText** ppObjUITextDefault, bool bZEnable = true, bool b3DText = false, bool bZWriteEnable = false, bool bRenderSolid = false)
 {
 	typename T::const_iterator itCurCP, itEnd = renderlist.end();
 	for(itCurCP = renderlist.begin(); itCurCP !=itEnd; ++itCurCP)
 	{
 		CBaseObject* pObj = (*itCurCP).m_pRenderObject;
-		if (pObj && pObj->HasHeadOnDisplay() && !IHeadOn3D::DrawHeadOnUI(pObj, nObjCount, pSceneState, ppObjUITextDefault, bZEnable, b3DText, bZWriteEnable))
+		if (pObj && pObj->HasHeadOnDisplay() && (pObj->IsHeadOnSolid() == bRenderSolid)  && !IHeadOn3D::DrawHeadOnUI(pObj, nObjCount, pSceneState, ppObjUITextDefault, bZEnable, b3DText, bZWriteEnable))
 			break;
 	}
 }
@@ -2621,7 +2624,20 @@ int CSceneObject::RenderHeadOnDisplay(int nPass)
 				IHeadOn3D::DrawHeadOnUI(NULL, nObjCount, &sceneState);
 			}
 		}
-		
+		else if (nPass == 3)
+		{
+			if (!sceneState.listPRSolidObject.empty())
+				RenderHeadOnDisplayList(sceneState.listPRSolidObject, nObjCount, &sceneState, &pObjUITextDefault, true, true, false, true);
+			if (!sceneState.listPRTransparentObject.empty())
+				RenderHeadOnDisplayList(sceneState.listPRTransparentObject, nObjCount, &sceneState, &pObjUITextDefault, true, true, false, true);
+			if (!sceneState.listPRSmallObject.empty())
+				RenderHeadOnDisplayList(sceneState.listPRSmallObject, nObjCount, &sceneState, &pObjUITextDefault, true, true, false, true);
+			if (!sceneState.listPRBiped.empty())
+				RenderHeadOnDisplayList(sceneState.listPRBiped, nObjCount, &sceneState, &pObjUITextDefault, true, true, false, true);
+			if (!sceneState.listPRTransparentBiped.empty())
+				RenderHeadOnDisplayList(sceneState.listPRTransparentBiped, nObjCount, &sceneState, &pObjUITextDefault, true, false, false, true);
+			IHeadOn3D::DrawHeadOnUI(NULL, nObjCount, &sceneState);
+		}
 		nTotalCount+=nObjCount;
 		if(!bUsePointTexture)
 		{

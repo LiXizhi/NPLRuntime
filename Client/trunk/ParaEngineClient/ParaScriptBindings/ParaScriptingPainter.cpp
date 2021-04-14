@@ -249,6 +249,24 @@ void ParaScripting::ParaPainter::SetPen(const object& pen)
 	}
 }
 
+void ParaScripting::ParaPainter::SetPenStr(const char* sColor)
+{
+	if (m_pPainter)
+	{
+		Color color = Color::FromString(sColor);
+		m_pPainter->setPen(color);
+	}
+}
+
+void ParaScripting::ParaPainter::SetPenInt(uint32_t nColor)
+{
+	if (m_pPainter)
+	{
+		Color color((DWORD)(nColor));
+		m_pPainter->setPen(color);
+	}
+}
+
 void ParaScripting::ParaPainter::SetBrush(const object& brush)
 {
 	if (!m_pPainter)
@@ -519,5 +537,15 @@ extern "C" {
 	{
 		if (s != 0)
 			ParaScripting::ParaPainter::DrawText2(x, y, w, h, s, textOption);
+	}
+
+	PE_CORE_DECL void ParaPainter_SetPenStr(const char* color)
+	{
+		ParaScripting::ParaPainter::SetPenStr(color);
+	}
+
+	PE_CORE_DECL void ParaPainter_SetPenInt(uint32_t color)
+	{
+		ParaScripting::ParaPainter::SetPenInt(color);
 	}
 };

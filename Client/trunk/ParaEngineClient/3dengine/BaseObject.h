@@ -479,6 +479,9 @@ public:
 	ATTRIBUTE_METHOD1(CBaseObject, IsHeadOnZEnabled_s, bool*)	{*p1 = cls->IsHeadOnZEnabled(); return S_OK;}
 	ATTRIBUTE_METHOD1(CBaseObject, SetHeadOnZEnabled_s, bool)	{cls->SetHeadOnZEnabled(p1); return S_OK;}
 
+	ATTRIBUTE_METHOD1(CBaseObject, IsHeadOnSolid_s, bool*) { *p1 = cls->IsHeadOnSolid(); return S_OK; }
+	ATTRIBUTE_METHOD1(CBaseObject, SetHeadOnSolid_s, bool) { cls->SetHeadOnSolid(p1); return S_OK; }
+
 	ATTRIBUTE_METHOD1(CBaseObject, IsHeadOn3DScalingEnabled_s, bool*)	{*p1 = cls->IsHeadOn3DScalingEnabled(); return S_OK;}
 	ATTRIBUTE_METHOD1(CBaseObject, SetHeadOn3DScalingEnabled_s, bool)	{cls->SetHeadOn3DScalingEnabled(p1); return S_OK;}
 
