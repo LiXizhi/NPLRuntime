@@ -27,7 +27,7 @@ using namespace ParaEngine;
 
 HeadOn3DData::HeadOn3DData():m_vOffset(0,DEFAULT_OFFSET_Y,0),m_dwTextColor(0xff008f00),
 	m_bShow(true), m_bZEnable(true), m_bEnable3DScaling(true), m_bUseGlobal3DScaling(true),m_f3DTextFacing(0.f),
-	m_fNearZoomDist(15.f), m_fFarZoomDist(50.f), m_fMinUIScaling(0.5f), m_fMaxUIScaling(1.f),m_fAlphaFadePercentage(0.25f), m_bRender3DText(false), m_bRender3DText(false)
+	m_fNearZoomDist(15.f), m_fFarZoomDist(50.f), m_fMinUIScaling(0.5f), m_fMaxUIScaling(1.f),m_fAlphaFadePercentage(0.25f), m_bRender3DText(false), m_bSolidObject(false)
 {
 #ifdef HEADON_UI_OBJ
 	m_nUIObjID = 0;
