@@ -73,6 +73,8 @@ namespace ParaEngine
 
 		/** we will render the 3d text using the model's world transform. */
 		bool m_bRender3DText:1;
+		/** default to false, if true, we will render before transparent object like water.  */
+		bool m_bSolidObject: 1;
 	};
 
 	/**
@@ -135,6 +137,12 @@ namespace ParaEngine
 
 		/** set if z buffer test is enabled for Head On display. default to true.*/
 		void SetHeadOnZEnabled(bool bZnabled, int nIndex = 0);
+
+		/** whether z buffer test is enabled for Head On display. default to true. */
+		bool IsHeadOnSolid(int nIndex = 0);
+
+		/** set if z buffer test is enabled for Head On display. default to true.*/
+		void SetHeadOnSolid(bool bZnabled, int nIndex = 0);
 
 		/** whether the object contains head on display at given index*/
 		virtual bool HasHeadOnDisplay(int nIndex=0);

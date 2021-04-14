@@ -790,6 +790,7 @@ float ParaEngine::CBaseObject::GetObjectToCameraDistance()
 
 void ParaEngine::CBaseObject::SetObjectToCameraDistance(float val)
 {
+
 }
 
 void ParaEngine::CBaseObject::SetRenderDistance( float fDist )
@@ -1188,6 +1189,7 @@ int CBaseObject::InstallFields(CAttributeClass* pClass, bool bOverride)
 	pClass->AddField("UseGlobalTime", FieldType_Bool, (void*)SetUseGlobalTime_s, (void*)IsUseGlobalTime_s, NULL, "", bOverride);
 
 	pClass->AddField("HeadOnZEnabled", FieldType_Bool, (void*)SetHeadOnZEnabled_s, (void*)IsHeadOnZEnabled_s, NULL, "", bOverride);
+	pClass->AddField("HeadOnSolid", FieldType_Bool, (void*)SetHeadOnSolid_s, (void*)IsHeadOnSolid_s, NULL, "", bOverride);
 	pClass->AddField("HeadOn3DScalingEnabled", FieldType_Bool, (void*)SetHeadOn3DScalingEnabled_s, (void*)IsHeadOn3DScalingEnabled_s, NULL, "", bOverride);
 	pClass->AddField("HeadOnUseGlobal3DScaling", FieldType_Bool, (void*)SetHeadOnUseGlobal3DScaling_s, (void*)IsHeadOnUseGlobal3DScaling_s, NULL, "", bOverride);
 	pClass->AddField("HeadOnNearZoomDist", FieldType_Float, (void*)SetHeadOnNearZoomDist_s, (void*)GetHeadOnNearZoomDist_s, NULL, "", bOverride);

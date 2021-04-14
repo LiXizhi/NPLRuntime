@@ -27,7 +27,7 @@ using namespace ParaEngine;
 
 HeadOn3DData::HeadOn3DData():m_vOffset(0,DEFAULT_OFFSET_Y,0),m_dwTextColor(0xff008f00),
 	m_bShow(true), m_bZEnable(true), m_bEnable3DScaling(true), m_bUseGlobal3DScaling(true),m_f3DTextFacing(0.f),
-	m_fNearZoomDist(15.f), m_fFarZoomDist(50.f), m_fMinUIScaling(0.5f), m_fMaxUIScaling(1.f),m_fAlphaFadePercentage(0.25f), m_bRender3DText(false)
+	m_fNearZoomDist(15.f), m_fFarZoomDist(50.f), m_fMinUIScaling(0.5f), m_fMaxUIScaling(1.f),m_fAlphaFadePercentage(0.25f), m_bRender3DText(false), m_bRender3DText(false)
 {
 #ifdef HEADON_UI_OBJ
 	m_nUIObjID = 0;
@@ -159,6 +159,18 @@ void ParaEngine::IHeadOn3D::SetHeadOnZEnabled( bool bZnabled, int nIndex)
 	HeadOn3DData* pData = GetHeadOn3DData(nIndex);
 	if(pData)
 		pData->m_bZEnable = bZnabled;
+}
+
+bool ParaEngine::IHeadOn3D::IsHeadOnSolid(int nIndex /*= 0*/)
+{
+	return 	HasDataAt(nIndex) ? GetHeadOn3DData(nIndex)->m_bSolidObject : true;
+}
+
+void ParaEngine::IHeadOn3D::SetHeadOnSolid(bool bSolid, int nIndex /*= 0*/)
+{
+	HeadOn3DData* pData = GetHeadOn3DData(nIndex);
+	if (pData)
+		pData->m_bSolidObject = bSolid;
 }
 
 bool ParaEngine::IHeadOn3D::IsHeadOn3DScalingEnabled( int nIndex /*= 0*/ )

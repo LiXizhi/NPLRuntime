@@ -479,6 +479,9 @@ public:
 	ATTRIBUTE_METHOD1(CBaseObject, IsHeadOnZEnabled_s, bool*)	{*p1 = cls->IsHeadOnZEnabled(); return S_OK;}
 	ATTRIBUTE_METHOD1(CBaseObject, SetHeadOnZEnabled_s, bool)	{cls->SetHeadOnZEnabled(p1); return S_OK;}
 
+	ATTRIBUTE_METHOD1(CBaseObject, IsHeadOnSolid_s, bool*) { *p1 = cls->IsHeadOnSolid(); return S_OK; }
+	ATTRIBUTE_METHOD1(CBaseObject, SetHeadOnSolid_s, bool) { cls->SetHeadOnSolid(p1); return S_OK; }
+
 	ATTRIBUTE_METHOD1(CBaseObject, IsHeadOn3DScalingEnabled_s, bool*)	{*p1 = cls->IsHeadOn3DScalingEnabled(); return S_OK;}
 	ATTRIBUTE_METHOD1(CBaseObject, SetHeadOn3DScalingEnabled_s, bool)	{cls->SetHeadOn3DScalingEnabled(p1); return S_OK;}
 
@@ -1034,7 +1037,7 @@ public:
 	* @param nAnimID: 0 is default standing animation. 4 is walking, 5 is running. more information, please see AnimationID */
 	virtual void SetAnimation(int nAnimID){};
 
-	virtual void SetUpperAnimation(int nAnimID) {};
+	virtual void SetUpperAnimation(int nAnimID){}
 
 	/** set groups Mask used to filter physics objects, default to 0xffffffff*/
 	virtual void SetPhysicsGroupMask(DWORD dwValue); 
