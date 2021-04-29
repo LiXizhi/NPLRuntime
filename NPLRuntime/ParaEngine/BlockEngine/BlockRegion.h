@@ -42,7 +42,10 @@ namespace ParaEngine
 
 		ATTRIBUTE_METHOD1(BlockRegion, IsModified_s, bool*) { *p1 = cls->IsModified(); return S_OK; }
 		ATTRIBUTE_METHOD1(BlockRegion, SetModified_s, bool) { cls->SetModified(p1); return S_OK; }
-
+		ATTRIBUTE_METHOD1(BlockRegion, LoadFromFile_s, const char*) { cls->LoadFromFile(p1); return S_OK; }
+		ATTRIBUTE_METHOD1(BlockRegion, SaveToFile_s, const char*) { cls->SaveToFile(p1); return S_OK; }
+		ATTRIBUTE_METHOD(BlockRegion, DeleteAllBlocks_s) { cls->DeleteAllBlocks(); return S_OK; }
+		
 		ATTRIBUTE_METHOD1(BlockRegion, GetTotalBytes_s, int*) { *p1 = cls->GetTotalBytes(); return S_OK; }
 
 
@@ -103,7 +106,7 @@ namespace ParaEngine
 		//block address may change after SetBlockTemplate()!
 		Block* GetBlock(uint16_t x_rs, uint16_t y_rs, uint16_t z_rs);
 
-		void SaveToFile();
+		void SaveToFile(const char* sFilename = NULL);
 
 		void Load();
 
@@ -187,12 +190,10 @@ namespace ParaEngine
 
 		void UpdateBlockHeightMap(Uint16x3& blockId_rs, bool isRemove, bool isTransparent);
 
-		void Cleanup();
-
 		CBlockWorld* GetBlockWorld();
 
 		void LoadWorldThreadFunc();
-		void LoadFromFile();
+		void LoadFromFile(const char* sFilename = NULL);
 
 		void BeginRead();
 		void EndRead();
