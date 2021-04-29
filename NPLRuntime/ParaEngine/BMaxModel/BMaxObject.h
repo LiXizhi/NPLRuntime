@@ -16,6 +16,7 @@ namespace ParaEngine
 	public:
 		BMaxObject(void);
 		virtual ~BMaxObject(void);
+		virtual CBaseObject::_SceneObjectType GetType() { return CBaseObject::CadObject; }
 
 		ATTRIBUTE_DEFINE_CLASS(BMaxObject);
 		ATTRIBUTE_SUPPORT_CREATE_FACTORY(BMaxObject);
@@ -51,12 +52,12 @@ namespace ParaEngine
 
 		/** get the scaling. */
 		virtual float GetScaling();
-
+		
 		/** rotation related */
 		virtual float GetPitch();
 		virtual void SetPitch(float fValue);
 
- 		virtual float GetRoll();
+		virtual float GetRoll();
 		virtual void SetRoll(float fValue);
 
 		/**
@@ -108,14 +109,13 @@ namespace ParaEngine
 		virtual void OnSelect(int nGroupID)override{}
 		virtual void OnDeSelect()override{}
 		*/
-
 	private:
 		/** size scale */
 		float	m_fScale;
 
 		/** rotation parameters */
 		float m_fPitch;
-        float m_fRoll;
+		float m_fRoll;
 
 		AnimIndex m_CurrentAnim;
 		ref_ptr<ParaXEntity>      m_pAnimatedMesh;
