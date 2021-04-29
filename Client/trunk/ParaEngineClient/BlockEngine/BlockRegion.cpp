@@ -1554,7 +1554,7 @@ namespace ParaEngine
 	{
 		while (IsLocked())
 		{
-			::Sleep(10);
+			SLEEP(10);
 		}
 				
 		uint32_t nCount = GetChunksCount();
