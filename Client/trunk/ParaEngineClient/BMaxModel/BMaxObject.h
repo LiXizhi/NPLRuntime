@@ -16,6 +16,7 @@ namespace ParaEngine
 	public:
 		BMaxObject(void);
 		virtual ~BMaxObject(void);
+		virtual CBaseObject::_SceneObjectType GetType() { return CBaseObject::CadObject; }
 
 		ATTRIBUTE_DEFINE_CLASS(BMaxObject);
 		ATTRIBUTE_SUPPORT_CREATE_FACTORY(BMaxObject);

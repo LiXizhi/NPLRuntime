@@ -261,6 +261,7 @@ public:
 		PortalNode  = 0x1<<19,
 		AntiPortalNode  = 0x1<<20,
 		CadObject = 0x1<<21,
+		BMaxObject = 0x1 << 22,
 	};
 	virtual CBaseObject::_SceneObjectType GetType(){return CBaseObject::BaseObject;};
 

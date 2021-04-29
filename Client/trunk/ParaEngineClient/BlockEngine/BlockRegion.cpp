@@ -918,7 +918,7 @@ namespace ParaEngine
 	}
 
 
-	void BlockRegion::SaveToFile()
+	void BlockRegion::SaveToFile(const char* sFilename)
 	{
 		if (IsLocked())
 			return;
@@ -930,6 +930,11 @@ namespace ParaEngine
 		SetModified(false);
 
 		std::string fileName = m_pBlockWorld->GetWorldInfo().GetBlockRegionFileName(m_regionX, m_regionZ, true);
+		if (sFilename != 0 && sFilename[0] != '\0')
+		{
+			fileName = sFilename;
+		}
+
 		CParaFile cfile, memFile;
 
 		if (cfile.CreateNewFile(fileName.c_str(), true) && memFile.OpenFile("<memory>", false))
@@ -1490,10 +1495,14 @@ namespace ParaEngine
 		}
 	}
 
-	void BlockRegion::LoadFromFile()
+	void BlockRegion::LoadFromFile(const char* sFilename)
 	{
 		CParaFile* pFile = nullptr;
 		std::string fileName = m_pBlockWorld->GetWorldInfo().GetBlockRegionFileName(m_regionX, m_regionZ, true);
+		if (sFilename != 0 && sFilename[0] != '\0')
+		{
+			fileName = sFilename;
+		}
 
 		CParaFile gameSaveFile;
 		CParaFile tempFile;
@@ -1543,6 +1552,11 @@ namespace ParaEngine
 
 	void BlockRegion::DeleteAllBlocks()
 	{
+		while (IsLocked())
+		{
+			::Sleep(10);
+		}
+				
 		uint32_t nCount = GetChunksCount();
 		for (uint32_t i = 0; i < nCount; i++)
 		{
@@ -1553,6 +1567,21 @@ namespace ParaEngine
 		std::fill(m_biomes.begin(), m_biomes.end(), 0);
 
 		std::fill(m_chunkTimestamp.begin(), m_chunkTimestamp.end(), 0);
+
+		// clear all light
+		for (uint16 cx = m_minChunkId_ws.x; cx < m_maxChunkId_ws.x; cx++)
+		{
+			for (uint16 cz = m_minChunkId_ws.z; cz < m_maxChunkId_ws.z; cz++)
+			{
+				if (m_pBlockWorld->GetLightGrid().IsChunkColumnLoaded(cx, cz))
+				{
+					m_pBlockWorld->GetLightGrid().SetColumnUnloaded(cx, cz);
+					m_pBlockWorld->GetLightGrid().AddDirtyColumn(cx, cz);
+				}
+			}
+		}
+		//  clear all active chunks
+		m_pBlockWorld->ClearBlockRenderCache();
 	}
 
 	void BlockRegion::SetChunkColumnTimeStamp(uint16_t x_rs, uint16_t z_rs, uint16_t nTimeStamp)
@@ -2234,6 +2263,9 @@ namespace ParaEngine
 		pClass->AddField("ChunksLoaded", FieldType_Int, (void*)SetChunksLoaded_s, (void*)GetChunksLoaded_s, NULL, NULL, bOverride);
 		pClass->AddField("TotalBytes", FieldType_Int, (void*)0, (void*)GetTotalBytes_s, NULL, NULL, bOverride);
 		pClass->AddField("IsModified", FieldType_Bool, (void*)SetModified_s, (void*)IsModified_s, NULL, NULL, bOverride);
+		pClass->AddField("SaveToFile", FieldType_String, (void*)SaveToFile_s, (void*)0, NULL, NULL, bOverride);
+		pClass->AddField("LoadFromFile", FieldType_String, (void*)LoadFromFile_s, (void*)0, NULL, NULL, bOverride);
+		pClass->AddField("DeleteAllBlocks", FieldType_void, (void*)DeleteAllBlocks_s, NULL, NULL, "", bOverride);
 		pClass->AddField("IsLocked", FieldType_Bool, (void*)SetLocked_s, (void*)IsLocked_s, NULL, NULL, bOverride);
 		pClass->AddField("ClearAllLight", FieldType_void, (void*)ClearAllLight_s, NULL, NULL, "", bOverride);
 		pClass->AddField("RefreshLightChunkColumns", FieldType_Vector3, (void*)RefreshLightChunkColumns_s, (void*)0, NULL, NULL, bOverride);
