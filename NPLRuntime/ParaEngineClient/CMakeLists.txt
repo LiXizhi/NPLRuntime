@@ -284,6 +284,11 @@ elseif(NPLRUNTIME_RENDERER STREQUAL "DIRECTX")
 	list(APPEND EmbeddedResource_FILES ${MyResource})
 
 	##############################
+	# haqi.ico
+	embed_resources_abs(MyResource "${ParaEngineClient_SOURCE_DIR}/res/haqi.ico")
+	list(APPEND EmbeddedResource_FILES ${MyResource})
+
+	##############################
 	# Shader Header Files
 	file (GLOB ParaEngineClient_SHADER_HEADER_FILES ${ParaEngineClient_SOURCE_DIR}/shaders/*.h)
 	set_source_files_properties(${ParaEngineClient_SHADER_HEADER_FILES} PROPERTIES HEADER_FILE_ONLY TRUE)	
