@@ -1401,7 +1401,8 @@ bool CZipArchive::ReadEntries()
 		entry.LastModifiedTime = (CentralDir.LastModFileDate << 16) + (CentralDir.LastModFileTime & 0xffff);
 
 		int nExtraLength = 0;
-		if (CentralDir.ExtraSize > 0) {
+		//if (CentralDir.ExtraSize > 0) 
+		{
 			pReader->seek(CentralDir.ExtraSize, true);
 
 			/**
