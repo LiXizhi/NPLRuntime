@@ -24,25 +24,22 @@ public class ParaTextInputWrapper implements TextWatcher, TextView.OnEditorActio
 
     @Override
     public void afterTextChanged(Editable s) {
-
         if (this.isFullScreenEdit())
             return;
 
         String text = s.toString();
 
-        TextView view = mNativeView.getParaEditText();
-        view.removeTextChangedListener(this);
-        view.setText("");
-        view.append(ParaEngineEditBox.sPlaceholder);
-        view.addTextChangedListener(this);
-
-        if (text.length() < ParaEngineEditBox.sPlaceholder.length()) {
+        if (text.length() < mNativeView.lastText.length()) {
             mNativeView.onDeleteBackward();
+            mNativeView.lastText = text;
+            return;
         }
-        else {
-            text = text.substring(ParaEngineEditBox.sPlaceholder.length());
-            mNativeView.onUnicodeText(text);
-        }
+
+        String repText = "";
+        repText = text.replaceAll("^" + mNativeView.lastText, "");
+
+        mNativeView.onUnicodeText(repText);
+        mNativeView.lastText = text;
     }
 
     @Override
@@ -55,7 +52,6 @@ public class ParaTextInputWrapper implements TextWatcher, TextView.OnEditorActio
 
     @Override
     public boolean onEditorAction(TextView textView, int actionID, KeyEvent keyEvent) {
-
         if (actionID == EditorInfo.IME_ACTION_DONE) {
             mNativeView.requestFocus();
             textView.setEnabled(false);
