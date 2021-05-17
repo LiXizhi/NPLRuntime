@@ -21,7 +21,7 @@ namespace ParaEngine {
     public:
         virtual ~ParaEngineWebView();
         
-        static ParaEngineWebView* createWebView(int x, int y, int w, int h);
+        static ParaEngineWebView* createWebView(int x, int y, int w, int h, Boolean bSub);
 
         virtual void loadUrl(const std::string &url, bool cleanCachedData = false) override;
         virtual void setAlpha(float a) override;

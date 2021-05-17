@@ -37,6 +37,7 @@ public class ParaEngineGLSurfaceView extends GLSurfaceView {
     private final static int HANDLER_CLOSE_IME_KEYBOARD = 3;
 
     private ParaEngineEditBox mEditText = null;
+    public String lastText = "";
     private static ParaTextInputWrapper sParaTextInputWrapper = null;
 
     private ParaEngineRenderer mRenderer;
@@ -96,10 +97,9 @@ public class ParaEngineGLSurfaceView extends GLSurfaceView {
         activity.getWindowManager().getDefaultDisplay().getMetrics(metrics);
         final int screenHeight = metrics.heightPixels;
 
-        sHandler = new Handler() {
+        sHandler = new Handler(new Handler.Callback() {
             @Override
-            public void handleMessage(Message msg) {
-
+            public boolean handleMessage(Message msg) {
                 final boolean bMoveView = msg.getData().getBoolean("MoveView");
 
                 // convert to android coordinate system
@@ -109,19 +109,26 @@ public class ParaEngineGLSurfaceView extends GLSurfaceView {
                     case HANDLER_OPEN_IME_KEYBOARD:
                         if (mEditText != null) {
                             mEditText.setEnabled(true);
+
                             if (mEditText.requestFocus()) {
                                 mEditText.removeTextChangedListener(sParaTextInputWrapper);
                                 mEditText.setText("");
-                                mEditText.append(ParaEngineEditBox.sPlaceholder);
                                 mEditText.addTextChangedListener(sParaTextInputWrapper);
+                                mEditText.setOnKeyListener(new OnKeyListener() {
+                                    @Override
+                                    public boolean onKey(View v, int keyCode, KeyEvent event) {
+                                        if (keyCode == 67 && event.getAction() == 0) {
+                                            onDeleteBackward();
+                                        }
+                                        return false;
+                                    }
+                                });
                                 InputMethodManager imm = (InputMethodManager)sActivity.getSystemService(Context.INPUT_METHOD_SERVICE);
 
                                 imm.showSoftInput(mEditText, 0);
 
-                                Log.d(TAG, "ShowSoftInput");
-
                                 if (bMoveView) {
-                                    if (mGlobalLayoutListener != null)
+                                    if (ParaEngineGLSurfaceView.this.mGlobalLayoutListener != null)
                                         ParaEngineGLSurfaceView.this.getViewTreeObserver().removeOnGlobalLayoutListener(mGlobalLayoutListener);
 
                                     ParaEngineGLSurfaceView.this.mGlobalLayoutListener = new ViewTreeObserver.OnGlobalLayoutListener() {
@@ -135,21 +142,19 @@ public class ParaEngineGLSurfaceView extends GLSurfaceView {
                                                 int offset = ctrlBottom - r.bottom;
                                                 ParaEngineGLSurfaceView.this.offsetTopAndBottom(-offset);
                                             }
-
-                                            ParaEngineGLSurfaceView.this.getViewTreeObserver().removeOnGlobalLayoutListener(mGlobalLayoutListener);
-                                            mGlobalLayoutListener = null;
                                         }
                                     };
 
                                     ParaEngineGLSurfaceView.this.getViewTreeObserver().addOnGlobalLayoutListener(mGlobalLayoutListener);
                                 }
-                            }
-                            else {
+                            } else {
+                                lastText = "";
                                 mEditText.setEnabled(false);
                             }
                         }
                         break;
                     case HANDLER_CLOSE_IME_KEYBOARD:
+                        lastText = "";
                         if (mEditText != null) {
                             mEditText.removeTextChangedListener(sParaTextInputWrapper);
                             InputMethodManager imm = (InputMethodManager)sActivity.getSystemService(Context.INPUT_METHOD_SERVICE);
@@ -160,8 +165,9 @@ public class ParaEngineGLSurfaceView extends GLSurfaceView {
                         }
                         break;
                 }
+                return false;
             }
-        };
+        });
 
         SurfaceHolder holder = getHolder();
 

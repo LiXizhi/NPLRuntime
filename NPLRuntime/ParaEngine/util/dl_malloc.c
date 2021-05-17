@@ -5,6 +5,10 @@ If you want to update to a newer version, be sure to include this header on the 
 #define INCLUDE_ONLY_DL_PREDEFINED_OPTIONS
 #include "dl_malloc_include.h"
 
+#if defined(APPLE)
+#include <time.h>
+#endif
+
 /*
   This is a version (aka dlmalloc) of malloc/free/realloc written by
   Doug Lea and released to the public domain, as explained at
@@ -3024,7 +3028,9 @@ static int init_mparams(void) {
 #ifdef WIN32
         magic = (size_t)(GetTickCount() ^ (size_t)0x55555555U);
 #else
-        magic = (size_t)(time(0) ^ (size_t)0x55555555U);
+#if defined(APPLE)
+        magic = (size_t)(time(NULL) ^ (size_t)0x55555555U);
+#endif
 #endif
       magic |= (size_t)8U;    /* ensure nonzero */
       magic &= ~(size_t)7U;   /* improve chances of fault for bad values */

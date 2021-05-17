@@ -3,13 +3,12 @@ package com.tatfook.paracraft;
 import android.Manifest;
 import android.app.KeyguardManager;
 import android.os.Build;
+import android.os.CountDownTimer;
 import android.os.PowerManager;
 import android.support.annotation.Keep;
-import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.ActivityInfo;
-import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
 import android.opengl.GLSurfaceView;
 import android.os.Bundle;
@@ -18,8 +17,15 @@ import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.KeyEvent;
+import android.view.View;
 import android.view.ViewGroup;
+import android.view.Window;
 import android.view.WindowManager;
+import android.widget.ImageView;
+
+import com.smarx.notchlib.NotchScreenManager;
+
+import java.lang.reflect.Method;
 
 import javax.microedition.khronos.egl.EGL10;
 import javax.microedition.khronos.egl.EGLConfig;
@@ -85,16 +91,21 @@ public class ParaEngineActivity extends AppCompatActivity {
     protected void initLayout() {
         // FrameLayout
         ViewGroup.LayoutParams framelayout_params =
-                new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,
-                        ViewGroup.LayoutParams.MATCH_PARENT);
+            new ViewGroup.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.MATCH_PARENT
+            );
 
         mFrameLayout = new ResizeLayout(this);
         mFrameLayout.setLayoutParams(framelayout_params);
 
         // ParaEngineEditBox layout
         ViewGroup.LayoutParams edittext_layout_params =
-                new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,
-                        ViewGroup.LayoutParams.WRAP_CONTENT);
+            new ViewGroup.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT
+            );
+
         ParaEngineEditBox edittext = new ParaEngineEditBox(this);
         edittext.setLayoutParams(edittext_layout_params);
         edittext.setMultilineEnabled(false);
@@ -112,8 +123,33 @@ public class ParaEngineActivity extends AppCompatActivity {
         this.mGLSurfaceView.setParaEngineRenderer(new ParaEngineRenderer());
         this.mGLSurfaceView.setParaEditText(edittext);
 
+        final ImageView imageView = new ImageView(this);
+        imageView.setLayoutParams(
+            new ViewGroup.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.MATCH_PARENT
+            )
+        );
+        imageView.setScaleType(ImageView.ScaleType.FIT_XY);
+        imageView.setImageResource(R.drawable.splash);
+        mFrameLayout.addView(imageView);
+
+        CountDownTimer countDownTimer = new CountDownTimer(3000, 1000) {
+            @Override
+            public void onTick(long millisUntilFinished) {
+
+            }
+
+            @Override
+            public void onFinish() {
+                mFrameLayout.removeView(imageView);
+            }
+        };
+
+        countDownTimer.start();
+
         // Set framelayout as the content view
-        setContentView(mFrameLayout);
+         setContentView(mFrameLayout);
     }
 
     protected void _init(Bundle savedInstanceState, boolean bGranted) {
@@ -140,20 +176,21 @@ public class ParaEngineActivity extends AppCompatActivity {
         return view;
     }
 
-    protected  void onCheckPerissionFinish(final Bundle savedInstanceState, boolean bGranted)
+    protected void onCheckPermissionFinish(final Bundle savedInstanceState, boolean bGranted)
     {
         final Bundle si = savedInstanceState;
         final boolean _bGranted = bGranted;
         // init plugin
-        if(!ParaEnginePluginWrapper.init(this,
+        if (!ParaEnginePluginWrapper.init(this,
                 savedInstanceState ,
                 new ParaEnginePluginWrapper.PluginWrapperListener() {
                     @Override
                     public void onInit() {
                         ParaEngineActivity.this._init(si, _bGranted);
                     }
-                })) {
-
+                }
+            )
+           ) {
             this._init(si, _bGranted);
         }
     }
@@ -162,7 +199,6 @@ public class ParaEngineActivity extends AppCompatActivity {
 
     @Override
     protected void onCreate(final Bundle savedInstanceState) {
-
         sContext = this;
 
         super.onCreate(savedInstanceState);
@@ -173,19 +209,25 @@ public class ParaEngineActivity extends AppCompatActivity {
             ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.READ_PHONE_STATE}, PERMISSION_REQUEST_PHONE_STATE);
 
             mSavedInstanceState = savedInstanceState;
-
         } else {
-            onCheckPerissionFinish(savedInstanceState, true);
+            onCheckPermissionFinish(savedInstanceState, true);
         }
+
+        NotchScreenManager.getInstance().setDisplayInNotch(this);
+
+        Window window = getWindow();
+        WindowManager.LayoutParams params = window.getAttributes();
+        params.systemUiVisibility = View.SYSTEM_UI_FLAG_HIDE_NAVIGATION;
+        window.setAttributes(params);
     }
 
     @Override
     public void onRequestPermissionsResult(int requestCode, String permissions[], int[] grantResults) {
         if (requestCode == PERMISSION_REQUEST_PHONE_STATE) {
             if (grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                onCheckPerissionFinish(mSavedInstanceState, true);
+                onCheckPermissionFinish(mSavedInstanceState, true);
             } else {
-                onCheckPerissionFinish(mSavedInstanceState, false);
+                onCheckPermissionFinish(mSavedInstanceState, false);
             }
         }
         else
