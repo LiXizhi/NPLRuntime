@@ -1,5 +1,3 @@
-import org.gradle.internal.os.OperatingSystem;
-
 apply plugin: 'com.android.application'
 
 android {
