@@ -138,6 +138,58 @@ namespace ParaEngine
 			// serialize body of compressed file
 			if (!IsDirectory()) 
 			{
+				std::string sExt = CParaFile::GetFileExtension(m_destFilename);
+				int CompressionLevel = -1;
+				if (sExt == "pkg" || sExt == "zip" || sExt == "ogg" || sExt == "png" || sExt == "jpg" || sExt == "mp3")
+				{
+					// no compression
+					if (m_pFile)
+					{
+						m_localFileHeader.CompressionMethod = 0; // 8 for zip, 0 for no compression.
+						m_localFileHeader.DataDescriptor.UncompressedSize = m_pFile->getSize();
+						m_localFileHeader.DataDescriptor.CompressedSize = m_pFile->getSize();
+
+						m_localFileHeader.LastModFileDate = m_localFileHeader.LastModFileTime = 0;
+
+						uint32_t crc = 0;
+						m_localFileHeader.DataDescriptor.CRC32 = crc32(crc, (const Bytef*)m_pFile->getBuffer(), m_pFile->getSize());
+						file.WriteString((const char*)m_pFile->getBuffer(), m_pFile->getSize());
+
+						// actualize local file header
+						auto currentPos = file.getPos();
+						file.seek(m_offsetOfSerializedLocalFileHeader);
+						file.write(&m_localFileHeader, sizeof(SZIPFileHeader));
+						file.seek(currentPos);
+					}
+					else 
+					{
+						CMemReadFile input(m_filename.c_str());
+						if (input.isOpen())
+						{
+							m_localFileHeader.CompressionMethod = 0; // 8 for zip, 0 for no compression.
+							m_localFileHeader.DataDescriptor.UncompressedSize = input.getSize();
+							m_localFileHeader.DataDescriptor.CompressedSize = input.getSize();
+
+							m_localFileHeader.LastModFileDate = m_localFileHeader.LastModFileTime = 0;
+
+							uint32_t crc = 0;
+							m_localFileHeader.DataDescriptor.CRC32 = crc32(crc, (const Bytef*)input.getBuffer(), input.getSize());
+							file.WriteString((const char*)input.getBuffer(), input.getSize());
+
+							// actualize local file header
+							auto currentPos = file.getPos();
+							file.seek(m_offsetOfSerializedLocalFileHeader);
+							file.write(&m_localFileHeader, sizeof(SZIPFileHeader));
+							file.seek(currentPos);
+						}
+						else
+						{
+							OUTPUT_LOG("warning: failed to add file: %s to zip archive\n", m_filename.c_str());
+						}
+					}
+					return;
+				}
+
 				if (m_pFile)
 				{
 					{
