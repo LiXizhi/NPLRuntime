@@ -82,16 +82,18 @@ bool Bone::calcMatrix(Bone *allbones, const AnimIndex & CurrentAnim, const AnimI
 			mat = matTransform * allbones[parent].mat;
 			if (allbones[parent].IsDummyNode() && !IsDummyNode())
 			{
+				PostCalculateBoneMatrix();
 				m_bIsDummyNode = true;
 			}
 		}
 		else
 		{
-			if (!IsDummyNode()) 
+			mat = matTransform;
+			if (!IsDummyNode())
 			{
+				PostCalculateBoneMatrix();
 				m_bIsDummyNode = true;
 			}
-			mat = matTransform;
 		}
 		return true;
 	}
