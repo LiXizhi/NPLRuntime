@@ -110,7 +110,12 @@ namespace ParaEngine
 		virtual const char* GetAttributeClassDescription(){ static const char desc[] = ""; return desc; }
 
 		static void Initialize(){};
-		static void Uninitialize(){}; 
+		static void Uninitialize(){};
+	public:
+		CGUIIMEEditBox();
+
+		virtual bool OnFocusIn();
+		virtual bool OnFocusOut();
 	};
 }
 #endif

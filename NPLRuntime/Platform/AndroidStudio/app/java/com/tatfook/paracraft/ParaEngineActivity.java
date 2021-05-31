@@ -17,15 +17,11 @@ import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.KeyEvent;
-import android.view.View;
 import android.view.ViewGroup;
-import android.view.Window;
 import android.view.WindowManager;
 import android.widget.ImageView;
 
 import com.smarx.notchlib.NotchScreenManager;
-
-import java.lang.reflect.Method;
 
 import javax.microedition.khronos.egl.EGL10;
 import javax.microedition.khronos.egl.EGLConfig;
@@ -149,7 +145,7 @@ public class ParaEngineActivity extends AppCompatActivity {
         countDownTimer.start();
 
         // Set framelayout as the content view
-         setContentView(mFrameLayout);
+        setContentView(mFrameLayout);
     }
 
     protected void _init(Bundle savedInstanceState, boolean bGranted) {
@@ -215,10 +211,10 @@ public class ParaEngineActivity extends AppCompatActivity {
 
         NotchScreenManager.getInstance().setDisplayInNotch(this);
 
-        Window window = getWindow();
-        WindowManager.LayoutParams params = window.getAttributes();
-        params.systemUiVisibility = View.SYSTEM_UI_FLAG_HIDE_NAVIGATION;
-        window.setAttributes(params);
+//        Window window = getWindow();
+//        WindowManager.LayoutParams params = window.getAttributes();
+//        params.systemUiVisibility = View.SYSTEM_UI_FLAG_HIDE_NAVIGATION;
+//        window.setAttributes(params);
     }
 
     @Override
