@@ -313,7 +313,7 @@ void CMonoScriptingState::CreateAppDomain()
 		mono_install_assembly_preload_hook(MonoAssemblyPreLoad_CallBackFunc, NULL);
 		mono_install_assembly_load_hook(MonoAssemblyLoad_CallBackFunc, NULL);
 		
-		// const char* mono_jit_version_ = "3.5";  // 4.0
+		// const char* mono_jit_version_ = "v4.0.30319";  // 4.0
 		const char* mono_jit_version_ = "v2.0.50727";
 
 		/*
