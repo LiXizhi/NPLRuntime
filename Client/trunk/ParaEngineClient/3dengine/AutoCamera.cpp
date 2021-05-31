@@ -706,6 +706,7 @@ VOID CAutoCamera::FrameMove(FLOAT fElapsedTime)
 					bool cameraMoved = false;
 					bool bAnyMovementButton = false;
 					bool bAnyMovementButtonUp = false;
+					bool bInvertLeftRightTurning = false;
 					CBipedStateManager* pState = pBiped->GetBipedStateManager();
 
 					if ((pBiped->GetSpeed() != 0) && !m_bAlwaysRun && !pBiped->GetAlwaysFlying())
@@ -746,6 +747,7 @@ VOID CAutoCamera::FrameMove(FLOAT fElapsedTime)
 							pState->AddAction(CBipedStateManager::S_WALK_FORWORD);
 							bAnyMovementButton = true;
 							m_resetFlyNormal = false;
+							bInvertLeftRightTurning = true;
 						}
 						else if (WasKeyDown(m_aKeys[MOVE_BACKWARD]))
 						{
@@ -902,7 +904,10 @@ VOID CAutoCamera::FrameMove(FLOAT fElapsedTime)
 					//////////////////////////////////////////////////////////////////////////
 					if (IsKeyDown(m_aKeys[SHIFT_RIGHT]))
 					{
-						pState->AddAction(CBipedStateManager::S_WALK_RIGHT);
+						if(bInvertLeftRightTurning)
+							pState->AddAction(CBipedStateManager::S_WALK_LEFT);
+						else
+							pState->AddAction(CBipedStateManager::S_WALK_RIGHT);
 						bAnyMovementButton = true;
 					}
 					else if (WasKeyDown(m_aKeys[SHIFT_RIGHT]))
@@ -915,7 +920,10 @@ VOID CAutoCamera::FrameMove(FLOAT fElapsedTime)
 
 					if (IsKeyDown(m_aKeys[SHIFT_LEFT]))
 					{
-						pState->AddAction(CBipedStateManager::S_WALK_LEFT);
+						if (bInvertLeftRightTurning)
+							pState->AddAction(CBipedStateManager::S_WALK_RIGHT);
+						else
+							pState->AddAction(CBipedStateManager::S_WALK_LEFT);
 						bAnyMovementButton = true;
 					}
 					else if (WasKeyDown(m_aKeys[SHIFT_LEFT]))
