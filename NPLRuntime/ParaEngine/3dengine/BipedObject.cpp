@@ -148,11 +148,7 @@ m_fDensity(DEFAULT_BODY_DENSITY),
 m_bIsShadowEnabled(true),
 m_bCanAnimOpacity(true),
 m_fAssetHeight(0.f),
-#ifdef PARAENGINE_MOBILE
-m_isFlyUsingCameraDir(false),
-#else
 m_isFlyUsingCameraDir(true),
-#endif
 m_nMovementStyle(MOVESTYLE_SLIDINGWALL),
 m_dwPhysicsGroupMask(DEFAULT_PHYSICS_GROUP_MASK),
 m_dwPhysicsMethod(PHYSICS_FORCE_NO_PHYSICS), m_nPhysicsGroup(0),
