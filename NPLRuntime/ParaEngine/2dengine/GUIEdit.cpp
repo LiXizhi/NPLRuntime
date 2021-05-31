@@ -1803,7 +1803,7 @@ bool ParaEngine::CGUIEditBox::attachWithIME()
 		}
 		else
 		{
-			CGlobals::GetApp()->setIMEKeyboardState(false);
+			CGlobals::GetApp()->setIMEKeyboardState(true);
 		}
 	}
 	return ret;
