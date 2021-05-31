@@ -997,4 +997,26 @@ bool ParaEngine::CGUIIMEEditBox::FetchIMEString()
 	}
 	return false;
 }
+#else
+
+#include "GUIIMEEditBox.h"
+
+using namespace ParaEngine;
+using namespace std;
+
+CGUIIMEEditBox::CGUIIMEEditBox()
+        : CGUIEditBox() {
+    m_bInputMethodEnabled = true;
+}
+
+bool CGUIIMEEditBox::OnFocusIn()
+{
+    return CGUIEditBox::OnFocusIn();
+}
+
+bool CGUIIMEEditBox::OnFocusOut()
+{
+    return CGUIEditBox::OnFocusOut();
+}
+
 #endif
