@@ -48,6 +48,8 @@ CGUIEditBox::CGUIEditBox() :CGUIBase()
 	, m_bMoveViewWhenAttachWithIME(false)
 #endif
 {
+	m_bInputMethodEnabled = false;
+
 	if (!m_type){
 		m_type = IType::GetType("guieditbox");
 	}
@@ -763,7 +765,9 @@ bool CGUIEditBox::OnFocusIn()
 {
 	bool bHandled = CGUIBase::OnFocusIn();
 #ifdef PARAENGINE_MOBILE
-	attachWithIME();
+	if (m_bInputMethodEnabled) {
+		attachWithIME();
+	}
 #endif
 	PlaceCaret(m_nCaret);
 	ResetCaretBlink();
@@ -776,7 +780,9 @@ bool CGUIEditBox::OnFocusOut()
 	CGUIIME::OnFocusOut();
 #endif
 #ifdef PARAENGINE_MOBILE
-	detachWithIME();
+	if (m_bInputMethodEnabled) {
+		detachWithIME();
+	}
 #endif
 
 	CGUIRoot::GetInstance()->SetIMEFocus(NULL);
@@ -1797,7 +1803,7 @@ bool ParaEngine::CGUIEditBox::attachWithIME()
 		}
 		else
 		{
-			CGlobals::GetApp()->setIMEKeyboardState(true);
+			CGlobals::GetApp()->setIMEKeyboardState(false);
 		}
 	}
 	return ret;
