@@ -613,7 +613,7 @@ bool ParaEngine::XFileCharModelExporter::WriteXTextures(XFileDataObjectPtr pData
                 if(m_pMesh->specialTextures[i] < CParaXModel::MAX_MODEL_TEXTURES)
 				    pBuffer->type = m_pMesh->specialTextures[i];
                 else
-                    pBuffer->type = CParaXModel::MAX_MODEL_TEXTURES;
+                    pBuffer->type = 0;
 				//pBuffer->sName = '\0';
 				//pBuffer = (ModelTextureDef_*)((char*)pBuffer + 8 + 1);
 
@@ -625,7 +625,7 @@ bool ParaEngine::XFileCharModelExporter::WriteXTextures(XFileDataObjectPtr pData
                 if (m_pMesh->specialTextures[i] < CParaXModel::MAX_MODEL_TEXTURES)
                     pBuffer->type = m_pMesh->specialTextures[i];
                 else
-                    pBuffer->type = CParaXModel::MAX_MODEL_TEXTURES;
+                    pBuffer->type = 0;
 				string name = m_pMesh->textures[i]->GetKey();
 				if (m_pMesh->textures[i]->GetRawData())
 				{
