@@ -315,6 +315,7 @@ namespace ParaEngine
 			CAPE_TEX,
 			WING_TEX,
 			CARTOON_FACE_TEX,
+			CUSTOM_TEX1,
 			NUM_TEX
 		};
 		asset_ptr<TextureEntity> m_textures[NUM_TEX];
