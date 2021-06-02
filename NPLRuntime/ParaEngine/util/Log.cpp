@@ -286,7 +286,7 @@ namespace ParaEngine
 #endif
 
 #if defined(WIN32) && defined(_DEBUG) 
-		printf(pStr);
+		printf("%s", pStr);
 		::OutputDebugStringA(pStr);
 #endif
 

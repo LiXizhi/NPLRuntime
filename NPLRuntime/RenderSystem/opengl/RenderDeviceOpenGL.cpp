@@ -164,14 +164,15 @@ bool ParaEngine::RenderDeviceOpenGL::SetRenderState(const ERenderState State, co
 		bool bEnabled = Value ? true : false;
 		if (bEnabled == m_EnableSeparateAlphaBlending)break;
 		m_EnableSeparateAlphaBlending = bEnabled;
-		if (bEnabled)
+		if (bEnabled && !m_EnableBlending)
+			SetRenderState(ERenderState::ALPHABLENDENABLE, true);
+		/*if (bEnabled)
 		{
 			glEnable(GL_BLEND);
 		}
 		else {
 			glDisable(GL_BLEND);
-		}
-
+		}*/
 		break;
 	}
 	case ERenderState::ALPHABLENDENABLE:
