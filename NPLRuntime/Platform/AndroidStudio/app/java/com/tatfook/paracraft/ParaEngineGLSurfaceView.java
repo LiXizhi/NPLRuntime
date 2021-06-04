@@ -454,14 +454,13 @@ public class ParaEngineGLSurfaceView extends GLSurfaceView {
             case KeyEvent.KEYCODE_ENTER:
             case KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE:
             case KeyEvent.KEYCODE_DPAD_CENTER:
+            default:
                 this.queueEvent(new Runnable() {
                     @Override
                     public void run() {
                         ParaEngineGLSurfaceView.this.mRenderer.handleKeyDown(pKeyCode);
                     }
                 });
-                return true;
-            default:
                 return super.onKeyDown(pKeyCode, pKeyEvent);
         }
     }
@@ -478,14 +477,13 @@ public class ParaEngineGLSurfaceView extends GLSurfaceView {
             case KeyEvent.KEYCODE_ENTER:
             case KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE:
             case KeyEvent.KEYCODE_DPAD_CENTER:
+            default:
                 this.queueEvent(new Runnable() {
                     @Override
                     public void run() {
                         ParaEngineGLSurfaceView.this.mRenderer.handleKeyUp(keyCode);
                     }
                 });
-                return true;
-            default:
                 return super.onKeyUp(keyCode, event);
         }
     }
