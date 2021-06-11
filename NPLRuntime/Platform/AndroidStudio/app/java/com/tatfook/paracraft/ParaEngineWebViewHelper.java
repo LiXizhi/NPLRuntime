@@ -1,5 +1,7 @@
 package com.tatfook.paracraft;
 
+import android.content.Intent;
+import android.net.Uri;
 import android.os.Handler;
 import android.os.Looper;
 import android.support.annotation.Keep;
@@ -8,7 +10,6 @@ import android.view.View;
 import android.widget.FrameLayout;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
-import android.view.Gravity;
 import android.view.ViewGroup;
 import android.view.ViewGroup.MarginLayoutParams;
 import android.webkit.WebViewClient;
@@ -18,10 +19,6 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.FutureTask;
 
-import com.tatfook.paracraft.ParaEngineActivity;
-import com.tatfook.paracraft.ParaEngineWebView;
-
-import android.util.Log;
 import android.widget.RelativeLayout;
 
 class HelloWebViewClient extends WebViewClient { 
@@ -97,7 +94,16 @@ public class ParaEngineWebViewHelper {
         });
 	}
 
-	
+	@Keep
+    public static void openExtralBrowser(final String url) {
+	    Intent intent = new Intent();
+
+	    intent.setAction("android.intent.action.VIEW");
+	    Uri content_url = Uri.parse(url);
+	    intent.setData(content_url);
+
+	    sActivity.startActivity(intent);
+    }
    
     @Keep
 	public static void openWebView(final int x, final int y, final int w, final int h, final String url) {

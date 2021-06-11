@@ -43,7 +43,6 @@ class ShouldStartLoadingWorker implements Runnable {
     }
 }
 
-
 public class ParaEngineWebView extends WebView {
 	
 	private static final String TAG = "ParaEngine";
@@ -124,8 +123,6 @@ public class ParaEngineWebView extends WebView {
         this.setWebViewClient(new ParaEngineWebViewClient());
         this.setWebChromeClient(new WebChromeClient());
 	}
-
-
 
 	class ParaEngineWebViewClient extends WebViewClient {
         @Override
@@ -217,7 +214,6 @@ public class ParaEngineWebView extends WebView {
 	public void setJavascriptInterfaceScheme(String scheme) {
         this.mJSScheme = scheme != null ? scheme : "";
     }
-
 
 	public void setWebViewRect(int left, int top, int maxWidth, int maxHeight) {
         FrameLayout.LayoutParams layoutParams = new FrameLayout.LayoutParams(FrameLayout.LayoutParams.WRAP_CONTENT,

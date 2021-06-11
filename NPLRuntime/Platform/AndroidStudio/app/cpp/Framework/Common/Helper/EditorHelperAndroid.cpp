@@ -45,6 +45,12 @@ namespace ParaEngine {
 
 	bool CEditorHelper::ShellExecute(const char* lpOperation, const char* lpFile, const char* lpParameters, const char* lpDirectory, int nShowCmd)
 	{
+	    if (strcmp(lpOperation, "openExtralBrowser") == 0)
+        {
+	        ParaEngineWebView::openExtralBrowser(lpFile);
+	        return true;
+        }
+
 		if (strcmp(lpOperation, "open") == 0)
 		{
 			bool isUrl = false;
