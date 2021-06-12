@@ -55,9 +55,9 @@ namespace ParaEngine {
 		return nullptr;
 	}
 
-	void ParaEngineWebView::openExtralBrowser(const std::string& url)
+	void ParaEngineWebView::openExternalBrowser(const std::string& url)
 	{
-		JniHelper::callStaticVoidMethod(classname, "openExtralBrowser", url);
+		JniHelper::callStaticVoidMethod(classname, "openExternalBrowser", url);
 	}
 
 	ParaEngineWebView* ParaEngineWebView::createWebView(int x, int y, int w, int h)

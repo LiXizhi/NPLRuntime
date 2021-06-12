@@ -95,7 +95,7 @@ public class ParaEngineWebViewHelper {
 	}
 
 	@Keep
-    public static void openExtralBrowser(final String url) {
+    public static void openExternalBrowser(final String url) {
 	    Intent intent = new Intent();
 
 	    intent.setAction("android.intent.action.VIEW");

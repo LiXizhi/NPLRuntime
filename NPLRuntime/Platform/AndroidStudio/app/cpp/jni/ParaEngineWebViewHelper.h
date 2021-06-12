@@ -12,7 +12,7 @@ namespace ParaEngine {
 		virtual ~ParaEngineWebView();
 
 		typedef ParaEngine::weak_ptr<IObject, ParaEngineWebView> WeakPtr_type;
-		static void openExtralBrowser(const std::string& url);
+		static void openExternalBrowser(const std::string& url);
 		static ParaEngineWebView* createWebView(int x, int y, int w, int h);
 		static ParaEngineWebView* setOrientation(int type);
 
