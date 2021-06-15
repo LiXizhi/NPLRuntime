@@ -5,21 +5,18 @@
 #include <string>
 #include <unordered_map>
 
-
 namespace ParaEngine {
-
-
 	class ParaEngineWebView : public IParaWebView
 	{
 	public:
 		virtual ~ParaEngineWebView();
 
 		typedef ParaEngine::weak_ptr<IObject, ParaEngineWebView> WeakPtr_type;
+		static void openExternalBrowser(const std::string& url);
 		static ParaEngineWebView* createWebView(int x, int y, int w, int h);
 		static ParaEngineWebView* setOrientation(int type);
 
 		virtual int Release() override;
-
 		virtual void loadUrl(const std::string &url, bool cleanCachedData = false) override;
 		virtual void setAlpha(float a) override;
 		virtual void setVisible(bool bVisible) override;

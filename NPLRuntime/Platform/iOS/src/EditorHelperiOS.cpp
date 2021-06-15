@@ -1,6 +1,7 @@
 #include "ParaEngine.h"
-#include "Framework/Common/Helper/EditorHelper.h"
 #include "IParaWebView.h"
+#include "Framework/Common/Helper/EditorHelper.h"
+#include "WebView/ExternalBrowser.h"
 
 namespace ParaEngine {
 
@@ -45,9 +46,21 @@ namespace ParaEngine {
 		return false;
 	}
 
+    static void openExternalBrowser(const char* url)
+    {
+        ExternalBrowser::openExternalBrowser(url);
+    }
+
 
 	bool CEditorHelper::ShellExecute(const char* lpOperation, const char* lpFile, const char* lpParameters, const char* lpDirectory, int nShowCmd)
 	{
+        if (strcmp(lpOperation, "openExternalBrowser") == 0)
+        {
+            openExternalBrowser(lpFile);
+            return true;
+        }
+
+
 		if (strcmp(lpOperation, "open") == 0)
 		{
 			bool isUrl = false;

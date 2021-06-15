@@ -7,7 +7,6 @@
 #include "NPLRuntime.h"
 #include "NPLScriptingState.h"
 
-
 #include <luabind/luabind.hpp>
 #include <luabind/out_value_policy.hpp>
 #include <luabind/return_reference_to_policy.hpp>
@@ -17,8 +16,6 @@
 
 #include <jni.h>
 #include <android/log.h>
-
-
 
 namespace ParaEngine {
 	const std::string ParaEngineWebView::classname = "com/tatfook/paracraft/ParaEngineWebViewHelper";
@@ -58,6 +55,11 @@ namespace ParaEngine {
 		return nullptr;
 	}
 
+	void ParaEngineWebView::openExternalBrowser(const std::string& url)
+	{
+		JniHelper::callStaticVoidMethod(classname, "openExternalBrowser", url);
+	}
+
 	ParaEngineWebView* ParaEngineWebView::createWebView(int x, int y, int w, int h)
 	{
 
@@ -83,8 +85,6 @@ namespace ParaEngine {
 		 	return nullptr;
 		}
 	}
-
-
 
 	int ParaEngineWebView::Release()
 	{
