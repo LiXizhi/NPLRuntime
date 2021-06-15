@@ -1769,8 +1769,9 @@ int ParaEngine::CGUIEditBox::GetTextA(std::string& out)
 void ParaEngine::CGUIEditBox::OnSelectStart()
 {
 #ifdef PARAENGINE_MOBILE
-	if (m_bHasFocus)
-		attachWithIME();
+	if (m_bInputMethodEnabled)
+		if (m_bHasFocus)
+			attachWithIME();
 #endif
 }
 
