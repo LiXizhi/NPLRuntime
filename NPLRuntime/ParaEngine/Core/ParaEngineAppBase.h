@@ -3,6 +3,7 @@
 #include "CommandLineParams.h"
 #include "ParaVector2.h"
 #include "FrameRateController.h"
+
 namespace ParaEngine
 {
 	class ParaTimer;
@@ -140,10 +141,7 @@ namespace ParaEngine
 		bool m_bAudioEngineInitialized;
 
 #pragma region OLD_CODE
-
-
 	public:
-
 		/** switch to ignore windows size change. default to false.
 		* if false, the user is allowed to adjust window size in windowed mode. */
 		virtual void SetIgnoreWindowSizeChange(bool bIgnoreSizeChange) override {};
@@ -166,8 +164,6 @@ namespace ParaEngine
 		*/
 		virtual float GetRefreshTimer() override;
 
-
-
 		/** Get the current ParaEngine app usage.
 		* [main thread only]
 		* @return see PE_USAGE
@@ -179,7 +175,6 @@ namespace ParaEngine
 		* @param dwUsage: bitwise of PE_USAGE
 		*/
 		virtual void SetCoreUsage(DWORD dwUsage) override  { };
-
 
 		/** Get the exit code that will be used when the standalone executable exit.
 		* this is mainly used for writing test cases. Where a return value of 0 means success, any other value means failure.
@@ -206,8 +201,6 @@ namespace ParaEngine
 		*/
 		virtual const char* GetAppCommandLineByParam(const char* pParam, const char* defaultValue) override;
 	public:
-
-
 		/** Send the exit message, so that the game engine will prepare to exit in the next frame.
 		* this is the recommended way of exiting application.
 		* this is mainly used for writing test cases. Where a return value of 0 means success, any other value means failure.
@@ -217,16 +210,13 @@ namespace ParaEngine
 		virtual ParaEngine::PEAppState GetAppState() override;
 		virtual void SetAppState(ParaEngine::PEAppState state) override;
 
-
 		/**
 		* This function should be called only once when the application end, one can destroy game objects here.
 		*/
 		virtual bool FinalCleanup() override;
 
-
 		/** only call this function if one does not want to manage game loop externally. */
 		virtual int Run(HINSTANCE hInstance) override { return 0; };
-
 
 		/** create d3d render device based on the current main window.
 		* Use this function to create a new render device automatically.
@@ -457,11 +447,7 @@ namespace ParaEngine
 
 		/** register any custom classes */
 		void RegisterObjectClasses();
-
 	};
-
-
 #pragma endregion OLD_CODE
 
 }
-

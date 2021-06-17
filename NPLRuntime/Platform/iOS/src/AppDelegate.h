@@ -1,16 +1,14 @@
-
 #import <UIKit/UIKit.h>
-
 
 namespace ParaEngine {
     class CParaEngineAppiOS;
 }
 
-
 @interface AppDelegate : UIResponder <UIApplicationDelegate, UITextFieldDelegate>
 {
 @private
-    UITextField* mTextField;
+    UITextField *mTextField;
+    NSString *mLastText;
 }
 
 @property (strong,nonatomic)   UIWindow *window;
@@ -22,7 +20,6 @@ namespace ParaEngine {
 
 @property(nonatomic) BOOL mUpdateViewSizeWhenKeyboardChange;
 @property(nonatomic) int mCtrlBottom;
-
 
 - (void)setIMEKeyboardState:(BOOL)bOpen bMoveView:(BOOL)bMoveView ctrlBottom:(int)ctrlBottom;
 

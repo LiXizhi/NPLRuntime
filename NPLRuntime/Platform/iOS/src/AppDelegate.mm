@@ -1,6 +1,5 @@
 //
 //  AppDelegate.m
-//  ios_gl
 //
 //  Created by 袁全伟 on 2017/11/11.
 //  Copyright © 2017年 XRenderAPI. All rights reserved.
@@ -9,18 +8,14 @@
 #import "AppDelegate.h"
 #import "ViewController.h"
 #import "GLView.h"
+
 #include "ParaAppiOS.h"
 #include "RenderWindowiOS.h"
 #include "ParaEngineSettings.h"
-
 #include "2dengine/GUIIMEDelegate.h"
 #include "2dengine/GUIRoot.h"
 
 using namespace ParaEngine;
-
-@interface AppDelegate ()
-
-@end
 
 @implementation AppDelegate
 
@@ -118,36 +113,33 @@ using namespace ParaEngine;
 
 - (BOOL)application:(UIApplication *)application didFinishLaunchingWithOptions:(NSDictionary *)launchOptions {
     // Override point for customization after application launch.
-    
-    
     UIScreen* mainScreen = [UIScreen mainScreen];
-
     CGRect bounds = [mainScreen bounds];
-    
+
     self.window = [[UIWindow alloc] initWithFrame: bounds];
-    
- 
-    GLView* view = [[GLView alloc] initWithFrame:bounds];
+
+    GLView* view = [[GLView alloc] initWithFrame: bounds];
     view.multipleTouchEnabled = YES;
-    self.viewController = [[ViewController alloc ] init];
+
+    self.viewController = [[ViewController alloc] init];
     self.viewController.view = view;
-    
+
     if([[UIDevice currentDevice].systemVersion floatValue] < 6.0)
     {
-        [self.window addSubview:view];
+        [self.window addSubview: view];
     }
     else
     {
-        [self.window setRootViewController:self.viewController];
+        [self.window setRootViewController: self.viewController];
     }
 
     [self.window makeKeyAndVisible];
 
-    [[UIApplication sharedApplication] setIdleTimerDisabled:YES];
-    [[UIApplication sharedApplication] setStatusBarHidden:YES];
-    
+    [[UIApplication sharedApplication] setIdleTimerDisabled: YES];
+    [[UIApplication sharedApplication] setStatusBarHidden: YES];
+
     RenderWindowiOS* renderWindow = new RenderWindowiOS(view);
-    
+
     const char* cmdline = "";
     if  (launchOptions)
     {
@@ -159,16 +151,15 @@ using namespace ParaEngine;
     }
     
     [self InitLanguage];
-    
+
     // Init app
     self.app = new CParaEngineAppiOS();
     self.app->InitApp(renderWindow, cmdline);
-    
 
     self.displayLink = [CADisplayLink displayLinkWithTarget:self selector:@selector(update)];
     self.displayLink.paused = NO;
     [self.displayLink addToRunLoop:[NSRunLoop currentRunLoop] forMode:NSRunLoopCommonModes];
-    
+
     //
     mTextField = [[UITextField alloc] initWithFrame:CGRectMake(0, 0, -10, -10)];
     mTextField.delegate = self;
@@ -176,21 +167,20 @@ using namespace ParaEngine;
     mTextField.userInteractionEnabled = NO;
     [view addSubview:mTextField];
 
-    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(keyPressed:) name:UITextFieldTextDidChangeNotification object:nil];
-    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(keyBoardDidShow:) name:UIKeyboardDidShowNotification object:nil];
-    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(keyBoardDidHide:) name:UIKeyboardDidHideNotification object:nil];
-    
+    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(keyboardOnPressed:) name:UITextFieldTextDidBeginEditingNotification object:nil];
+    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(keyboardPressed:) name:UITextFieldTextDidChangeNotification object:nil];
+    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(keyBoardWillShow:) name:UIKeyboardWillShowNotification object:nil];
+    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(keyBoardWillHide:) name:UIKeyboardWillHideNotification object:nil];
+
     return YES;
 }
-
 
 - (void) update
 {
     self.app->DoWork();
 }
- 
+
 - (BOOL)application:(UIApplication *)app openURL:(NSURL *)url options:(NSDictionary<UIApplicationOpenURLOptionsKey,id> *)options {
-    
     if (!url)
         return NO;
     
@@ -241,12 +231,11 @@ using namespace ParaEngine;
 {
     self.mUpdateViewSizeWhenKeyboardChange = bMoveView;
     self.mCtrlBottom = ctrlBottom;
-    
+
     if (bOpen && mTextField.userInteractionEnabled == NO)
     {
         mTextField.enablesReturnKeyAutomatically = NO;
-        mTextField.text = @" ";
-        mTextField.clearsOnBeginEditing = NO;
+        mTextField.clearsOnBeginEditing = YES;
         mTextField.userInteractionEnabled = YES;
         [mTextField becomeFirstResponder];
     }
@@ -257,19 +246,19 @@ using namespace ParaEngine;
     }
 }
 
-- (void)keyBoardDidShow:(NSNotification*)notification
+- (void)keyBoardWillShow:(NSNotification*)notification
 {
     if (self.mUpdateViewSizeWhenKeyboardChange)
     {
         auto userInfo = [notification userInfo];
-        auto keyboardSize = [[userInfo objectForKey:UIKeyboardFrameBeginUserInfoKey] CGRectValue].size;
-        
+        auto keyboardSize = [[userInfo objectForKey:UIKeyboardBoundsUserInfoKey] CGRectValue].size;
+
         auto ori = [UIApplication sharedApplication].statusBarOrientation;
         auto keyboardHeight = UIInterfaceOrientationIsLandscape(ori) ? keyboardSize.height : keyboardSize.width;
-        
+
         auto currentFrame = self.viewController.view.frame;
-        
-        if (currentFrame.size.height - self.mCtrlBottom < keyboardHeight)
+
+        if ((currentFrame.size.height - self.mCtrlBottom) < keyboardHeight)
         {
             auto offset = keyboardHeight - (currentFrame.size.height - self.mCtrlBottom);
             self.viewController.view.frame = CGRectMake(0, -offset, currentFrame.size.width, currentFrame.size.height);
@@ -277,7 +266,7 @@ using namespace ParaEngine;
     }
 }
 
-- (void)keyBoardDidHide:(NSNotification*)notification
+- (void)keyBoardWillHide:(NSNotification*)notification
 {
     if (self.mUpdateViewSizeWhenKeyboardChange)
     {
@@ -286,43 +275,73 @@ using namespace ParaEngine;
     }
 }
 
-- (void)keyPressed:(NSNotification*)notification
+- (void)keyboardOnPressed: (NSNotification*)notification
 {
-    UITextField* textField = notification.object;
-    
-    if (textField == mTextField && CGlobals::GetApp()->GetAppState() == PEAppState_Ready)
+    mTextField.text = @"-----------------------------------"; // length: 35
+    mLastText = @"";
+}
+
+- (void)keyboardPressed:(NSNotification*)notification
+{
+    UITextInputMode *inputMode = [mTextField textInputMode];
+    NSString *inputLang = inputMode.primaryLanguage;
+
+    if (CGlobals::GetApp()->GetAppState() == PEAppState_Ready)
     {
-        auto size = [textField.text length];
-        if (size > 1)
-        {
-            auto pGUI = CGUIRoot::GetInstance()->GetUIKeyFocus();
-            if (pGUI)
-            {
-                std::wstring s;
-                for (int i = 1; i < size; i++)
-                {
-                    s += (WCHAR)[textField.text characterAtIndex:i];
-                }
-                
-                pGUI->OnHandleWinMsgChars(s);
-            }
-            
-            textField.text = @" ";
-            
+        auto pGUI = CGUIRoot::GetInstance()->GetUIKeyFocus();
+        auto pGUIIns = CGUIRoot::GetInstance();
+
+        if ([mTextField.text length] < 35) {
+            pGUIIns->SendKeyDownEvent(EVirtualKey::KEY_BACK);
+            pGUIIns->SendKeyUpEvent(EVirtualKey::KEY_BACK);
+            mTextField.text = @"-----------------------------------";
+            return;
         }
-        else if (size == 0)
-        {
-            auto pGUI = CGUIRoot::GetInstance();
-            if (pGUI)
-            {
-                pGUI->SendKeyDownEvent(EVirtualKey::KEY_BACK);
-                pGUI->SendKeyUpEvent(EVirtualKey::KEY_BACK);
+
+        NSString *repText = [mTextField.text stringByReplacingOccurrencesOfString:@"-----------------------------------" withString:@""];
+
+        if ([inputLang isEqual:@"zh-Hans"]) {
+            NSUInteger count = [[NSRegularExpression
+               regularExpressionWithPattern:@"[A-Za-z]"
+               options:NSRegularExpressionCaseInsensitive
+               error:NULL]
+             numberOfMatchesInString:repText
+             options:NSMatchingProgress
+             range:NSMakeRange(0, [repText length])
+            ];
+
+            if (count > 0) {
+                return;
             }
-            
-            textField.text = @" ";
+        }
+
+        NSString *insertCharacter = [[NSRegularExpression
+            regularExpressionWithPattern:[NSString stringWithFormat:@"^%@", mLastText]
+            options:NSRegularExpressionUseUnicodeWordBoundaries
+            error:NULL]
+           stringByReplacingMatchesInString:repText
+           options:0
+           range:NSMakeRange(0, [repText length])
+           withTemplate:@""
+        ];
+
+        if ([repText length] > [mLastText length]) {
+            mLastText = repText;
+            unsigned long size = [insertCharacter length];
+
+            if (size >= 1) {
+                for (int i = 0; i < size; i++) {
+                    std::wstring s;
+                    s = (WCHAR)[insertCharacter characterAtIndex:i];
+                    pGUI->OnHandleWinMsgChars(s);
+                }
+            }
+        } else if ([repText length] < [mLastText length]) {
+            mLastText = repText;
+            pGUIIns->SendKeyDownEvent(EVirtualKey::KEY_BACK);
+            pGUIIns->SendKeyUpEvent(EVirtualKey::KEY_BACK);
         }
     }
-    
 }
 
 - (BOOL)textFieldShouldReturn:(UITextField *)textField
