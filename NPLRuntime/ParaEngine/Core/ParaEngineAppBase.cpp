@@ -148,33 +148,43 @@ IRenderWindow* ParaEngine::CParaEngineAppBase::GetRenderWindow()
 bool ParaEngine::CParaEngineAppBase::InitApp(IRenderWindow* pWindow, const char* sCommandLine /* = nullptr */)
 {
 	SetAppState(PEAppState_Device_Created);
+
 	std::string cmd;
 	VerifyCommandLine(sCommandLine, cmd);
 	SetAppCommandLine(cmd.c_str());
+
 	m_pRenderWindow = pWindow;
+
 	InitCommandLineParams();
+
 	CStaticInitRes::StaticInit();
+
 	srand((unsigned long)time(NULL));
+
 	FindParaEngineDirectory();
+
 	RegisterObjectClasses();
+
 	CFrameRateController::LoadFRCNormal();
-	
+
 	// loading packages
 	LoadPackages();
-	
+
 	BootStrapAndLoadConfig();
+
 	InitSystemModules();
+
 	// load config file
 	CICConfigManager *cm = CGlobals::GetICConfigManager();
 	cm->LoadFromFile();
 
 	// init audio engine
-    
 #ifdef STATIC_PLUGIN_CAUDIOENGINE
 	IParaAudioEngine* pAudioEnginePlugin = (IParaAudioEngine*)AudioEngine_GetClassDesc()->Create();
+
 	if (CAudioEngine2::GetInstance()->InitAudioEngine(pAudioEnginePlugin) != S_OK)
 	{
-		OUTPUT_LOG("Audio engine init fail!\n");
+		OUTPUT_LOG("Audio engine init fail!(audio engine plugin)\n");
 		CAudioEngine2::GetInstance()->CleanupAudioEngine();
         m_bAudioEngineInitialized = false;
     }else{
@@ -190,8 +200,6 @@ bool ParaEngine::CParaEngineAppBase::InitApp(IRenderWindow* pWindow, const char*
         m_bAudioEngineInitialized = true;
     }
 #endif
-	
-	
 
 	//----------------------------------------------------------
 	/// Create a blank root scene with certain dimensions
@@ -226,7 +234,6 @@ bool ParaEngine::CParaEngineAppBase::InitApp(IRenderWindow* pWindow, const char*
 		}
 	}
 
-
 	SpriteFontEntity* pFont = NULL;
 	pFont = m_pParaWorldAsset->LoadGDIFont("sys", "System", 12);
 
@@ -241,7 +248,6 @@ bool ParaEngine::CParaEngineAppBase::InitApp(IRenderWindow* pWindow, const char*
 	// perform CGUIRoot initialization
 	m_pGUIRoot->OneTimeGUIInit();
 
-
 	/************************************************************************/
 	/* Create ocean manager                                                 */
 	/************************************************************************/
@@ -253,7 +259,6 @@ bool ParaEngine::CParaEngineAppBase::InitApp(IRenderWindow* pWindow, const char*
 	m_Timer = new ParaTimer();
 	m_Timer->Start();
 	InitRenderEnvironment();
-
 
 	SetAppState(PEAppState_Ready);
 	return true;
