@@ -999,6 +999,7 @@ bool ParaEngine::CGUIIMEEditBox::FetchIMEString()
 }
 #else
 
+#include "ObjectManager.h"
 #include "GUIIMEEditBox.h"
 
 using namespace ParaEngine;
@@ -1017,6 +1018,20 @@ bool CGUIIMEEditBox::OnFocusIn()
 bool CGUIIMEEditBox::OnFocusOut()
 {
     return CGUIEditBox::OnFocusOut();
+}
+
+void CGUIIMEEditBox::StaticInit()
+{
+	CObjectManager *pOm = &CSingleton<CObjectManager>::Instance();
+	if (!pOm->IsExist("default_CGUIEditBox")) {
+		CGUIEditBox::StaticInit();
+	}
+	//load the default CGUIEditBox object and copy all its value to the new ImeEditbox
+	CGUIIMEEditBox *pEditbox = new CGUIIMEEditBox();
+	pOm->CloneObject("default_CGUIEditBox", pEditbox);
+
+	pOm->SetObject("default_CGUIIMEEditBox", pEditbox);
+	SAFE_RELEASE(pEditbox);
 }
 
 #endif

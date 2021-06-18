@@ -111,6 +111,7 @@ namespace ParaEngine
 
 		static void Initialize(){};
 		static void Uninitialize(){};
+		static void StaticInit();
 	public:
 		CGUIIMEEditBox();
 
