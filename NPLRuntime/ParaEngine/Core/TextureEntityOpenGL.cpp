@@ -44,16 +44,29 @@ TextureEntityOpenGL::~TextureEntityOpenGL()
 
 HRESULT ParaEngine::TextureEntityOpenGL::RendererRecreated()
 {
-	m_bIsInitialized = false;
-	
-	if (m_texture)
-	{
-		m_texture->RendererRecreated();
-	}
+    m_bIsInitialized = false;
 
-	return S_OK;
+    if (SurfaceType == TextureSequence) {
+        if (m_pTextureSequence != 0) {
+            AnimatedTextureInfo *pInfo = GetAnimatedTextureInfo();
+            int nTotalTextureSequence = -1;
+
+            if (pInfo != 0)
+                nTotalTextureSequence = pInfo->m_nFrameCount;
+
+            if (nTotalTextureSequence > 0) {
+                for (int i = 0; i < nTotalTextureSequence; ++i) {
+                    if (m_pTextureSequence[i])
+                        m_pTextureSequence[i]->RendererRecreated();
+                }
+            }
+        }
+    } else if (m_texture) {
+        m_texture->RendererRecreated();
+    }
+
+    return S_OK;
 }
-
 
 GLTexture2D* ParaEngine::TextureEntityOpenGL::CreateTextureFromFile_Serial(const std::string& sFileName)
 {
