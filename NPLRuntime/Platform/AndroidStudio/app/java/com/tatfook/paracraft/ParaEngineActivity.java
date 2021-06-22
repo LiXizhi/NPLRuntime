@@ -97,10 +97,10 @@ public class ParaEngineActivity extends AppCompatActivity {
 
         // ParaEngineEditBox layout
         ViewGroup.LayoutParams edittext_layout_params =
-            new ViewGroup.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT,
-                ViewGroup.LayoutParams.WRAP_CONTENT
-            );
+                new ViewGroup.LayoutParams(
+                        ViewGroup.LayoutParams.MATCH_PARENT,
+                        ViewGroup.LayoutParams.WRAP_CONTENT
+                );
 
         ParaEngineEditBox edittext = new ParaEngineEditBox(this);
         edittext.setLayoutParams(edittext_layout_params);
@@ -195,6 +195,19 @@ public class ParaEngineActivity extends AppCompatActivity {
 
     @Override
     protected void onCreate(final Bundle savedInstanceState) {
+        if (sContext != null) {
+            super.onCreate(savedInstanceState);
+
+            sContext = null;
+            Intent intent = getBaseContext().getPackageManager().getLaunchIntentForPackage(getBaseContext().getPackageName());
+            intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
+
+            intent.putExtra("REBOOT","reboot");
+            startActivity(intent);
+
+            return;
+        }
+
         sContext = this;
 
         super.onCreate(savedInstanceState);
