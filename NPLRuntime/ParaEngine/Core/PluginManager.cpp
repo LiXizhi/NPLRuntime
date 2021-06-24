@@ -184,6 +184,18 @@ void DLLPlugInEntity::Init(const char* sFilename)
 #endif
 	}
 
+#ifdef WIN32
+	// check for core dll files
+	if (GetKey().find("cAudioEngine") != std::string::npos || GetKey().find("PhysicsBT") != std::string::npos || GetKey().find("sqlite") != std::string::npos)
+	{
+		// we will try to find core dll files only in executable directory first, such as in "bin64/..."
+		std::string sFullPath = CGlobals::GetApp()->GetModuleDir();
+		sFullPath += sDLLPath;
+		if (CParaFile::DoesFileExist2(sFullPath.c_str(), FILE_ON_DISK))
+			sDLLPath = sFullPath;
+	}
+#endif
+
 	// load the library.
 	if ( CParaFile::DoesFileExist2(sDLLPath.c_str(), FILE_ON_DISK | FILE_ON_SEARCH_PATH, &sDLLPath) == 0)
 	{
