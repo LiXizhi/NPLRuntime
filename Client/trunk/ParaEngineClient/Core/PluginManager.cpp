@@ -158,15 +158,22 @@ void DLLPlugInEntity::Init(const char* sFilename)
 
 	m_sDllFilePath = sFilename;
 	string sDLLPath = m_sDllFilePath; // CParaFile::ToCanonicalFilePath(m_sDllFilePath);
-#if defined(WIN32) ||  PARA_TARGET_PLATFORM == PARA_PLATFORM_LINUX
+#if defined(WIN32) ||  PARA_TARGET_PLATFORM == PARA_PLATFORM_LINUX || PARA_TARGET_PLATFORM == PARA_PLATFORM_MAC
 	// replace sDLLPath's file extension with 'dll', it is 'so'. remove the heading 'lib' if there is one
-	if(sDLLPath.size()>5)
+	if (sDLLPath.size()>5)
 	{
-#ifdef WIN32
+#if defined(WIN32)
 		// remove the heading 'lib' if there is one
 		sDLLPath = regex_replace(sDLLPath, regex("lib([\\w\\.]*)$"), "$1");
 		// replace sDLLPath's file extension with 'dll', it is 'so'
 		sDLLPath = regex_replace(sDLLPath, regex("so$"), "dll");
+#elif PARA_TARGET_PLATFORM == PARA_PLATFORM_MAC
+		/*
+		sDLLPath = regex_replace(sDLLPath, regex("lib([\\w\\.]*)$"), "$1");
+		sDLLPath = regex_replace(sDLLPath, regex("([\\w\\.]+)$"), "lib$1");
+		sDLLPath = regex_replace(sDLLPath, regex("dll$"), "dylib");
+		*/
+		sDLLPath = "lib" + sDLLPath;
 #else
 		sDLLPath = regex_replace(sDLLPath, regex("lib([\\w\\.]*)$"), "$1");
 		sDLLPath = regex_replace(sDLLPath, regex("([\\w\\.]+)$"), "lib$1");
@@ -174,6 +181,17 @@ void DLLPlugInEntity::Init(const char* sFilename)
 #endif
 	}
 
+#ifdef WIN32
+	// check for core dll files
+	if (GetKey().find("cAudioEngine") != std::string::npos || GetKey().find("PhysicsBT") != std::string::npos || GetKey().find("sqlite") != std::string::npos)
+	{
+		// we will try to find core dll files only in executable directory first, such as in "bin64/..."
+		std::string sFullPath = CGlobals::GetApp()->GetModuleDir();
+		sFullPath += sDLLPath;
+		if (CParaFile::DoesFileExist2(sFullPath.c_str(), FILE_ON_DISK))
+			sDLLPath = sFullPath;
+	}
+#endif
 	// load the library.
 	if ( CParaFile::DoesFileExist2(sDLLPath.c_str(), FILE_ON_DISK | FILE_ON_SEARCH_PATH, &sDLLPath) == 0)
 	{
