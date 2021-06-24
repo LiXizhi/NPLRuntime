@@ -741,6 +741,10 @@ if(WIN32)
 		ADD_DEFINITIONS(-D_CRT_SECURE_NO_WARNINGS)
 	endif()
 
+	# By default MSVC has a 2^16 limit on the number of sections in an object file, and this needs more than that.
+	if(MSVC)
+		set_source_files_properties(${ParaEngineClient_SOURCE_DIR}/AutoRigger/Matcher.cpp PROPERTIES COMPILE_FLAGS /bigobj)
+	endif(MSVC)
 
 
 
