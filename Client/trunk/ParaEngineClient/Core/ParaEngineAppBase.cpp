@@ -403,7 +403,7 @@ bool ParaEngine::CParaEngineAppBase::LoadNPLPackage(const char* sFilePath_, std:
 	std::string sPKGDir;
 	bool bHasOutputMainFile = false;
 	CNPLPackageConfig config;
-	if (sFilePath[sFilePath.size() - 1] == '/')
+	if (sFilePath.size() > 0 && sFilePath[sFilePath.size() - 1] == '/')
 	{
 		std::string sDirName = sFilePath.substr(0, sFilePath.size() - 1);
 		

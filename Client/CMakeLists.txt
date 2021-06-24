@@ -220,7 +220,7 @@ if(NPLRUNTIME_PHYSICS)
 endif()
 
 if(NPLRUNTIME_CAUDIOENGINE)
-	add_subdirectory (${CLIENT_SOURCE_DIR}/trunk/cAudio_2.1.0 ${CLIENT_BINARY_DIR}/cAudio_2.1.0)
+	add_subdirectory (${CLIENT_SOURCE_DIR}/trunk/cAudio_2.4.0 ${CLIENT_BINARY_DIR}/cAudio_2.4.0)
 endif()	
 
 if(PARAENGINE_CLIENT_DLL)
