@@ -292,8 +292,8 @@ namespace ParaEngine
 		bool m_bIsShadowCaster;
 		bool m_bProvidePower;
 
-		std::vector<TextureEntity*> m_textures0;
-		std::vector<TextureEntity*> m_textures1;
+		std::vector< asset_ptr<TextureEntity> > m_textures0;
+		std::vector< asset_ptr<TextureEntity> > m_textures1;
 		TextureEntity*  m_pNormalMap;
 		uint8_t m_nLightValue;
 		std::string m_secondTexName;
