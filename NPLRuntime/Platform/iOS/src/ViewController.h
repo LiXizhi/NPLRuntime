@@ -7,10 +7,12 @@
 //
 
 #import <UIKit/UIKit.h>
-
+#include "KeyboardiOS.h"
+#include "2dengine/GUIRoot.h"
 
 @interface ViewController : UIViewController
 
+@property(nonatomic) int pressesStatus;
 
 @end
 

@@ -13,7 +13,6 @@
 #include "RenderWindowiOS.h"
 #include "ParaEngineSettings.h"
 #include "2dengine/GUIIMEDelegate.h"
-#include "2dengine/GUIRoot.h"
 
 using namespace ParaEngine;
 
@@ -357,50 +356,6 @@ using namespace ParaEngine;
     }
     
     return NO;
-}
-
-- (NSArray<UIKeyCommand *> *)keyCommands
-{
-    NSMutableArray *keys = [NSMutableArray new];
-    NSLog(@"key command!!!!!");
-
-    for (int i = 0; i <= 127; i++) {
-        [keys addObject:
-          [UIKeyCommand
-          keyCommandWithInput:[NSString stringWithFormat: @"%c", i]
-          modifierFlags:0
-          action:@selector(keyAction:)]
-        ];
-    }
-
-    [keys addObject:[UIKeyCommand keyCommandWithInput:UIKeyInputUpArrow modifierFlags:0 action:@selector(keyAction:)]];
-    [keys addObject:[UIKeyCommand keyCommandWithInput:UIKeyInputDownArrow modifierFlags:0 action:@selector(keyAction:)]];
-    [keys addObject:[UIKeyCommand keyCommandWithInput:UIKeyInputLeftArrow modifierFlags:0 action:@selector(keyAction:)]];
-    [keys addObject:[UIKeyCommand keyCommandWithInput:UIKeyInputRightArrow modifierFlags:0 action:@selector(keyAction:)]];
-    [keys addObject:[UIKeyCommand keyCommandWithInput:UIKeyInputEscape modifierFlags:0 action:@selector(keyAction:)]];
-    [keys addObject:[UIKeyCommand keyCommandWithInput:UIKeyInputPageUp modifierFlags:0 action:@selector(keyAction:)]];
-    [keys addObject:[UIKeyCommand keyCommandWithInput:UIKeyInputPageDown modifierFlags:0 action:@selector(keyAction:)]];
-    [keys addObject:[UIKeyCommand keyCommandWithInput:UIKeyInputHome modifierFlags:0 action:@selector(keyAction:)]];
-    [keys addObject:[UIKeyCommand keyCommandWithInput:UIKeyInputEnd modifierFlags:0 action:@selector(keyAction:)]];
-    [keys addObject:[UIKeyCommand keyCommandWithInput:UIKeyInputF1 modifierFlags:0 action:@selector(keyAction:)]];
-    [keys addObject:[UIKeyCommand keyCommandWithInput:UIKeyInputF2 modifierFlags:0 action:@selector(keyAction:)]];
-    [keys addObject:[UIKeyCommand keyCommandWithInput:UIKeyInputF3 modifierFlags:0 action:@selector(keyAction:)]];
-    [keys addObject:[UIKeyCommand keyCommandWithInput:UIKeyInputF4 modifierFlags:0 action:@selector(keyAction:)]];
-    [keys addObject:[UIKeyCommand keyCommandWithInput:UIKeyInputF5 modifierFlags:0 action:@selector(keyAction:)]];
-    [keys addObject:[UIKeyCommand keyCommandWithInput:UIKeyInputF6 modifierFlags:0 action:@selector(keyAction:)]];
-    [keys addObject:[UIKeyCommand keyCommandWithInput:UIKeyInputF7 modifierFlags:0 action:@selector(keyAction:)]];
-    [keys addObject:[UIKeyCommand keyCommandWithInput:UIKeyInputF8 modifierFlags:0 action:@selector(keyAction:)]];
-    [keys addObject:[UIKeyCommand keyCommandWithInput:UIKeyInputF9 modifierFlags:0 action:@selector(keyAction:)]];
-    [keys addObject:[UIKeyCommand keyCommandWithInput:UIKeyInputF10 modifierFlags:0 action:@selector(keyAction:)]];
-    [keys addObject:[UIKeyCommand keyCommandWithInput:UIKeyInputF11 modifierFlags:0 action:@selector(keyAction:)]];
-    [keys addObject:[UIKeyCommand keyCommandWithInput:UIKeyInputF12 modifierFlags:0 action:@selector(keyAction:)]];
-
-    return keys;
-}
-
-- (void)keyAction: (UIKeyCommand *)keyCommand
-{
-    NSLog(@"key action!!!!!!--->%@", keyCommand.input);
 }
 
 @end
