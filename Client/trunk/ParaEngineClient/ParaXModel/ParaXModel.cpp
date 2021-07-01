@@ -144,13 +144,17 @@ CParaXModel::~CParaXModel(void)
 		m_pIndexBuffer.ReleaseBuffer();
 		m_pVertexBuffer.ReleaseBuffer();
 
-
-		//gLog("Unloading model %s\n", name.c_str());
-
 		if (GetObjectNum().nTextures) {
 			for (size_t i = 0; i < GetObjectNum().nTextures; i++) {
-				if (textures[i]) {
+				auto pTexture = textures[i].get();
+				if (pTexture) {
 					textures[i].reset();
+					if (pTexture->GetRawData())
+					{
+						// for embedded textures, this will release the texture memory as well. 
+						auto& texManager = CGlobals::GetAssetManager()->GetTextureManager();
+						texManager.DeleteEntity(pTexture);
+					}
 				}
 			}
 			SAFE_DELETE_ARRAY(textures);
