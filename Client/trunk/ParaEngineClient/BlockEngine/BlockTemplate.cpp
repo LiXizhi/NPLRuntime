@@ -48,8 +48,8 @@ namespace ParaEngine
 		m_fSpeedReductionPercent = 1.f;
 		m_renderPass = BlockRenderPass_Opaque;
 
-		m_textures0.resize(1, NULL);
-		m_textures1.resize(1, NULL);
+		m_textures0.resize(1);
+		m_textures1.resize(1);
 
 		// render priority: opaque object, alpha tested object, and then alpha blended object. 
 		if (IsAlphaBlendedTexture() && !IsAlphaTestTexture())
@@ -166,13 +166,13 @@ namespace ParaEngine
 			}
 
 			if ((int)m_textures0.size() <= nIndex)
-				m_textures0.resize(nIndex + 1, NULL);
+				m_textures0.resize(nIndex + 1);
 			m_textures0[nIndex] = CGlobals::GetAssetManager()->LoadTexture("", texName, TextureEntity::StaticTexture);
 		}
 		else
 		{
 			if (nIndex < (int)m_textures0.size())
-				m_textures0[nIndex] = nullptr;
+				m_textures0[nIndex].reset();
 		}
 	}
 
@@ -186,7 +186,7 @@ namespace ParaEngine
 		else
 		{
 			m_secondTexName.clear();
-			m_textures1[0] = nullptr;
+			m_textures1[0].reset();
 		}
 	}
 
@@ -528,12 +528,12 @@ namespace ParaEngine
 	TextureEntity* BlockTemplate::GetTexture0(uint32 nUserData)
 	{
 		int nIndex = GetBlockModelByData(nUserData).GetTextureIndex();
-		return nIndex < (int32)(m_textures0.size()) ? m_textures0[nIndex] : m_textures0[0];
+		return nIndex < (int32)(m_textures0.size()) ? m_textures0[nIndex].get() : m_textures0[0].get();
 	}
 
 	TextureEntity* BlockTemplate::GetTexture1()
 	{
-		return m_textures1[0];
+		return m_textures1[0].get();
 	}
 
 	void BlockTemplate::SetMapColor(Color val)
