@@ -888,7 +888,10 @@ fi
 # Should perhaps also consider/use instead: -BOOST_SP_USE_PTHREADS
 
 # Must set these after parseArgs to fill in overriden values
-EXTRA_FLAGS="-DBOOST_AC_USE_PTHREADS -DBOOST_SP_USE_PTHREADS -g -DNDEBUG \
+
+# -DBOOST_AC_USE_PTHREADS -DBOOST_SP_USE_PTHREADS 
+# turn off BOOST_AC_USE_PTHEADS and BOOST_SP_USE_PTHREADS because boost/filesystem
+EXTRA_FLAGS="-g -DNDEBUG \
     -fvisibility=hidden -fvisibility-inlines-hidden \
     -Wno-unused-local-typedef -fembed-bitcode"
 EXTRA_IOS_FLAGS="$EXTRA_FLAGS -mios-version-min=$MIN_IOS_VERSION"
