@@ -2,7 +2,7 @@
 //  KeyboardiOS.h
 //  Paracraft
 //
-//  Created by 陈燎 on 2021/6/26.
+//  Created by big on 2021/6/26.
 //
 
 #ifndef KeyboardiOS_h
@@ -16,11 +16,15 @@ namespace ParaEngine
 {
     class KeyboardiOS
     {
-    public:
-        static string intToString(int i);
-        static EVirtualKey toVirtualKey(const string key);
-        static void OnChar(const string key);
-        static void OnKey(const string key);
+        public:
+            static string intToString(int i);
+            static EVirtualKey toVirtualKey(const string key);
+            static void OnChar(const string key);
+            static void OnKeyDown(const string key);
+            static void OnKeyUp();
+            static bool IsKeyPress(const string key);
+
+            static vector<string> allPressesKey;
     };
 }
 

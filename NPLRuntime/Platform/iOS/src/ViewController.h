@@ -10,8 +10,4 @@
 
 @interface ViewController : UIViewController
 
-@property(nonatomic) int pressesStatus;
-@property(nonatomic) int pressesFlagStatus;
-
 @end
-

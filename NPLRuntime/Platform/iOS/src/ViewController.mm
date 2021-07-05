@@ -16,6 +16,39 @@ using namespace ParaEngine;
 
 @implementation ViewController
 
+- (void)addObject: (NSMutableArray *)keys Str:(NSString *)s
+{
+    [keys addObject: [UIKeyCommand keyCommandWithInput:s
+                                   modifierFlags:0
+                                   action:@selector(keyAction:)
+     ]
+    ];
+
+    [keys addObject: [UIKeyCommand keyCommandWithInput:s
+                                   modifierFlags:UIKeyModifierControl
+                                   action:@selector(keyAction:)
+                     ]
+    ];
+    
+    [keys addObject: [UIKeyCommand keyCommandWithInput:s
+                                   modifierFlags:UIKeyModifierCommand
+                                   action:@selector(keyAction:)
+                     ]
+    ];
+    
+    [keys addObject: [UIKeyCommand keyCommandWithInput:s
+                                   modifierFlags:UIKeyModifierAlternate
+                                   action:@selector(keyAction:)
+                     ]
+    ];
+    
+    [keys addObject: [UIKeyCommand keyCommandWithInput:s
+                                   modifierFlags:UIKeyModifierShift
+                                   action:@selector(keyAction:)
+                     ]
+    ];
+}
+
 - (NSArray<UIKeyCommand *> *)keyCommands
 {
     NSMutableArray *keys = [NSMutableArray new];
@@ -27,27 +60,21 @@ using namespace ParaEngine;
 
         if (pGUI == NULL)
         {
-            NSLog(@"from key commands.....");
-
-            // add [a-z] [0-9] space
-            [keys addObject:[UIKeyCommand keyCommandWithInput:@"w" modifierFlags:0 action:@selector(keyAction:)]];
-
-
-
-            // add shift + [a-z] [0-9]
-
-            // add control/command + [a-z] [0-9]
-
-            // add alt + [a-z] [0-9]
-
-//            for (int i = 0; i <= 127; i++) {
-//                [keys addObject:
-//                  [UIKeyCommand
-//                  keyCommandWithInput:[NSString stringWithFormat: @"%c", i]
-//                  modifierFlags:0
-//                  action:@selector(keyAction:)]
-//                ];
-//            }
+            // add [a-z]
+            for (int i = 97; i <= 122; i++) {
+                [self addObject:keys Str:[NSString stringWithFormat: @"%c", i]];
+            }
+            
+            // add [0-9]
+            for (int i = 48; i <= 57; i++) {
+                [self addObject:keys Str:[NSString stringWithFormat: @"%c", i]];
+            }
+            
+            // add space
+            [self addObject:keys Str:[NSString stringWithFormat: @"%c", 32]];
+            
+            // add Enter
+            [self addObject:keys Str:[NSString stringWithFormat: @"%c", 13]];
 
             [keys addObject:[UIKeyCommand keyCommandWithInput:UIKeyInputUpArrow modifierFlags:0 action:@selector(keyAction:)]];
             [keys addObject:[UIKeyCommand keyCommandWithInput:UIKeyInputDownArrow modifierFlags:0 action:@selector(keyAction:)]];
@@ -81,72 +108,40 @@ using namespace ParaEngine;
 
 - (void)keyAction: (UIKeyCommand *)keyCommand
 {
-    NSLog(@"from key action.....");
-    NSLog(@"test var is: %d ", self.pressesStatus);
-    
-    if (self.pressesStatus != 1) {
-        KeyboardiOS::OnKey([keyCommand.input UTF8String]);
-    }
+    KeyboardiOS::OnKeyDown([keyCommand.input UTF8String]);
 }
 
 - (void)pressesBegan:(NSSet<UIPress *> *)presses withEvent:(UIPressesEvent *)event
 {
     if (@available(iOS 13.4, *)) {
+        string flagKey;
+        
         if (event.modifierFlags == 262144) { // control key
-            self.pressesFlagStatus = 1;
-            NSLog(@"ctrl");
+            flagKey = "FlagKeyInputControl";
         }
         else if (event.modifierFlags == 1048576) { // command key
-            self.pressesFlagStatus = 1;
-            NSLog(@"command");
+            flagKey = "FlagKeyInputCommand";
         }
         else if (event.modifierFlags == 524288) { // alt key
-            self.pressesFlagStatus = 1;
-            NSLog(@"alt");
+            flagKey = "FlagKeyInputAlt";
         }
         else if (event.modifierFlags == 131072) { // shift key
-            self.pressesFlagStatus = 1;
-            NSLog(@"shift");
+            flagKey = "FlagKeyInputShift";
         }
-        else {
-            self.pressesStatus = 1;
-            [super pressesBegan:presses withEvent:event];
+
+        if (flagKey != "" && !KeyboardiOS::IsKeyPress(flagKey)) {
+            KeyboardiOS::OnKeyDown(flagKey);
         }
+
+        [super pressesBegan:presses withEvent:event];
     } else {
-        self.pressesStatus = 1;
         [super pressesBegan:presses withEvent:event];
     }
 }
 
 - (void)pressesEnded:(NSSet<UIPress *> *)presses withEvent:(UIPressesEvent *)event
 {
-    NSLog(@"from presses end!!!!");
-    
-    if (@available(iOS 13.4, *)) {
-        if (event.modifierFlags == 262144) { // control key
-            self.pressesFlagStatus = 0;
-            NSLog(@"ctrl_ended");
-        }
-        else if (event.modifierFlags == 1048576) { // command key
-            self.pressesFlagStatus = 0;
-            NSLog(@"command_ended");
-        }
-        else if (event.modifierFlags == 524288) { // alt key
-            self.pressesFlagStatus = 0;
-            NSLog(@"alt_ended");
-        }
-        else if (event.modifierFlags == 131072) { // shift key
-            self.pressesFlagStatus = 0;
-            NSLog(@"shift_ended");
-        }
-        else {
-            self.pressesStatus = 0;
-            [super pressesBegan:presses withEvent:event];
-        }
-    } else {
-        self.pressesStatus = 0;
-        [super pressesBegan:presses withEvent:event];
-    }
+    KeyboardiOS::OnKeyUp();
 }
 
 @end
