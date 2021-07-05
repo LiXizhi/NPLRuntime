@@ -1,12 +1,12 @@
 //
-//  KeyboardiOS.hpp
+//  KeyboardiOS.h
 //  Paracraft
 //
 //  Created by 陈燎 on 2021/6/26.
 //
 
-#ifndef KeyboardiOS_hpp
-#define KeyboardiOS_hpp
+#ifndef KeyboardiOS_h
+#define KeyboardiOS_h
 
 #include <stdio.h>
 #include "ParaEngine.h"
@@ -24,4 +24,4 @@ namespace ParaEngine
     };
 }
 
-#endif /* KeyboardiOS_hpp */
+#endif /* KeyboardiOS_h */

@@ -7,6 +7,8 @@
 
 #include "KeyboardiOS.h"
 #include <unordered_map>
+#include "ParaEngine.h"
+#include "Framework/InputSystem/VirtualKey.h"
 #include "2dengine/GUIRoot.h"
 
 namespace ParaEngine

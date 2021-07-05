@@ -2,12 +2,15 @@
 //  ViewController.m
 //  ios_gl
 //
-//  Created by 袁全伟 on 2017/11/11.
+//  Created by 袁全伟,big on 2021/7/1.
 //  Copyright © 2017年 XRenderAPI. All rights reserved.
 //
 
 #import "ViewController.h"
 #import "GLView.h"
+#include "ParaEngine.h"
+#include "2dengine/GUIRoot.h"
+#include "KeyboardiOS.h"
 
 using namespace ParaEngine;
 
@@ -80,19 +83,70 @@ using namespace ParaEngine;
 {
     NSLog(@"from key action.....");
     NSLog(@"test var is: %d ", self.pressesStatus);
-    KeyboardiOS::OnKey([keyCommand.input UTF8String]);
+    
+    if (self.pressesStatus != 1) {
+        KeyboardiOS::OnKey([keyCommand.input UTF8String]);
+    }
 }
 
 - (void)pressesBegan:(NSSet<UIPress *> *)presses withEvent:(UIPressesEvent *)event
 {
-    // TODO: handle control, command, shift, alt key
-    NSLog(@"press began!!!!! %d \n", event.modifierFlags);
-    [super pressesBegan:presses withEvent:event];
+    if (@available(iOS 13.4, *)) {
+        if (event.modifierFlags == 262144) { // control key
+            self.pressesFlagStatus = 1;
+            NSLog(@"ctrl");
+        }
+        else if (event.modifierFlags == 1048576) { // command key
+            self.pressesFlagStatus = 1;
+            NSLog(@"command");
+        }
+        else if (event.modifierFlags == 524288) { // alt key
+            self.pressesFlagStatus = 1;
+            NSLog(@"alt");
+        }
+        else if (event.modifierFlags == 131072) { // shift key
+            self.pressesFlagStatus = 1;
+            NSLog(@"shift");
+        }
+        else {
+            self.pressesStatus = 1;
+            [super pressesBegan:presses withEvent:event];
+        }
+    } else {
+        self.pressesStatus = 1;
+        [super pressesBegan:presses withEvent:event];
+    }
 }
 
 - (void)pressesEnded:(NSSet<UIPress *> *)presses withEvent:(UIPressesEvent *)event
 {
-    NSLog(@"press ended!!!!!");
+    NSLog(@"from presses end!!!!");
+    
+    if (@available(iOS 13.4, *)) {
+        if (event.modifierFlags == 262144) { // control key
+            self.pressesFlagStatus = 0;
+            NSLog(@"ctrl_ended");
+        }
+        else if (event.modifierFlags == 1048576) { // command key
+            self.pressesFlagStatus = 0;
+            NSLog(@"command_ended");
+        }
+        else if (event.modifierFlags == 524288) { // alt key
+            self.pressesFlagStatus = 0;
+            NSLog(@"alt_ended");
+        }
+        else if (event.modifierFlags == 131072) { // shift key
+            self.pressesFlagStatus = 0;
+            NSLog(@"shift_ended");
+        }
+        else {
+            self.pressesStatus = 0;
+            [super pressesBegan:presses withEvent:event];
+        }
+    } else {
+        self.pressesStatus = 0;
+        [super pressesBegan:presses withEvent:event];
+    }
 }
 
 @end
