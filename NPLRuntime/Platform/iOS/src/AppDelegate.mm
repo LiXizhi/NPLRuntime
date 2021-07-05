@@ -13,7 +13,6 @@
 #include "RenderWindowiOS.h"
 #include "ParaEngineSettings.h"
 #include "2dengine/GUIIMEDelegate.h"
-#include "2dengine/GUIRoot.h"
 
 using namespace ParaEngine;
 
