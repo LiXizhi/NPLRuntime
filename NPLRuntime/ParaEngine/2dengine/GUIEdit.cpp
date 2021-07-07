@@ -1532,10 +1532,9 @@ HRESULT CGUIEditBox::Render(GUIState* pGUIState, float fElapsedTime)
 	if (m_nCaret != m_nSelStart)
 	{
 		int nFirstToRender = Math::Max(m_nFirstVisible, Math::Min(m_nSelStart, m_nCaret));
-		int nNumChatToRender = Math::Max(m_nSelStart, m_nCaret) - nFirstToRender;
+		int nNumCharToRender = Math::Max(m_nSelStart, m_nCaret) - nFirstToRender;
 		pFontElement = m_objResource->GetFontElement(1);
-		GetPainter(pGUIState)->DrawText(texBuffer + nFirstToRender,
-			pFontElement, &rcSelection, m_position.GetDepth(), false, nNumChatToRender);
+		DrawText(texBuffer + nFirstToRender,pFontElement, &rcSelection, &rcWindow, m_bUseTextShadow, nNumCharToRender);
 	}
 
 	//
