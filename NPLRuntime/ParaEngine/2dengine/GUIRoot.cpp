@@ -2170,6 +2170,11 @@ bool ParaEngine::CGUIRoot::AutoLocateTouchClick(int ui_mouse_x, int ui_mouse_y, 
 					// child object is always selected over parent object
 					|| (pLastUIObj && pLastUIObj->IsAncestorOf(pUIObj)))
 				{
+					CGUIPosition temp;
+					pUIObj->GetAbsolutePosition(&temp, pUIObj->GetPosition());
+					int width = (int)(temp.rect.right - temp.rect.left);
+					int height = (int)(temp.rect.bottom - temp.rect.top);
+
 					// skip UI that is already big enough
 					if (pUIObj->GetWidth() < nFingerSize || pUIObj->GetHeight() < nFingerSize)
 					{
