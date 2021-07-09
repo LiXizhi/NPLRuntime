@@ -35,6 +35,9 @@ namespace ParaEngine
 		ATTRIBUTE_METHOD1(CGUIEditBox, GetSelectedBackColor_s, DWORD*)	{*p1 = cls->GetSelectedBackColor(); return S_OK;}
 		ATTRIBUTE_METHOD1(CGUIEditBox, SetSelectedBackColor_s, DWORD)	{cls->SetSelectedBackColor(p1); return S_OK;}
 
+        ATTRIBUTE_METHOD1(CGUIEditBox, GetEmptyTextColor_s, DWORD*)    { *p1 = cls->GetEmptyTextColor(); return S_OK; }
+        ATTRIBUTE_METHOD1(CGUIEditBox, SetEmptyTextColor_s, DWORD)    { cls->SetEmptyTextColor(p1); return S_OK; }
+
 		ATTRIBUTE_METHOD1(CGUIEditBox, GetEmptyText_s, const char**)	{ *p1 = cls->GetEmptyText().c_str(); return S_OK; }
 		ATTRIBUTE_METHOD1(CGUIEditBox, SetEmptytext_s, const char*)	{ cls->SetEmptytext(p1); return S_OK; }
 
@@ -141,6 +144,8 @@ namespace ParaEngine
 		void SetSelectedTextColor( Color Color );  // Selected text color
 		void SetSelectedBackColor( Color Color );  // Selected background color
 		Color GetSelectedBackColor();
+		void SetEmptyTextColor( Color Color ); // Empty text color
+		Color GetEmptyTextColor();
 		void SetCaretColor( Color Color );  // Caret color
 		Color GetCaretColor();
 		void SetBorderWidth( int nBorder ) { m_nBorder = nBorder; UpdateRects(); }  // Border of the window
@@ -221,6 +226,7 @@ namespace ParaEngine
 		int			m_nFirstVisible;// First visible character in the edit control
 		Color	m_SelBkColor;   // Selected background color
 		Color	m_CaretColor;   // Caret color
+		Color   m_EmptyTextColor; // Emptytext color
 		bool		m_bMultipleLine;// if allow multiple line, false by default
 		bool		m_bIsModified;
 		// Mouse-specific

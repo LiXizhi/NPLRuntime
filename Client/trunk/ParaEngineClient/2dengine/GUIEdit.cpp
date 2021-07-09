@@ -1552,7 +1552,12 @@ HRESULT CGUIEditBox::Render(GUIState* pGUIState, float fElapsedTime)
 		{
 			bIsEmptyText = true;
 			oldColor = pFontElement->FontColor;
-			pFontElement->FontColor.a *= 0.25f;
+
+			if (m_EmptyTextColor) {
+				pFontElement->FontColor = m_EmptyTextColor;
+			} else {
+                pFontElement->FontColor.a *= 0.25f;
+			}
 		}
 	}
 	else
@@ -1680,9 +1685,19 @@ void CGUIEditBox::SetSelectedBackColor(Color Color)
 	m_SelBkColor = Color;
 }
 
+void CGUIEditBox::SetEmptyTextColor( Color Color )
+{
+    m_EmptyTextColor = Color;
+}
+
 void CGUIEditBox::SetCaretColor(Color Color)
 {
 	m_CaretColor = Color;
+}
+
+Color CGUIEditBox::GetEmptyTextColor()
+{
+	return m_EmptyTextColor;
 }
 
 Color CGUIEditBox::GetSelectedBackColor()
@@ -1928,7 +1943,8 @@ int CGUIEditBox::InstallFields(CAttributeClass* pClass, bool bOverride)
 	PE_ASSERT(pClass != NULL);
 	pClass->AddField("CaretColor", FieldType_DWORD, (void*)SetCaretColor_s, (void*)GetCaretColor_s, NULL, NULL, bOverride);
 	pClass->AddField("SelectedBackColor", FieldType_DWORD, (void*)SetSelectedBackColor_s, (void*)GetSelectedBackColor_s, NULL, NULL, bOverride);
-	pClass->AddField("EmptyText", FieldType_String, (void*)SetEmptytext_s, (void*)GetEmptyText_s, NULL, NULL, bOverride);
+	pClass->AddField("EmptyText", FieldType_String, (void*)SetEmptytext_s, (void*)GetEmptyTextColor_s, NULL, NULL, bOverride);
+	pClass->AddField("EmptyTextColor", FieldType_DWORD, (void*)SetEmptyTextColor_s, (void*)GetEmptyTextColor_s, NULL, NULL, bOverride);
 
 	return S_OK;
 }
