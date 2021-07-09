@@ -80,7 +80,8 @@ CGUIEditBox::CGUIEditBox() :CGUIBase()
 	m_key_state = 0;//0:not pressed; 1:pressed; 2:holding a key
 	m_bIsModified = false;
 	m_PasswordChar = '\0';
-    
+    m_EmptyTextColor = Color(0x0);
+
     memset(&m_rcCaret, 0, sizeof(m_rcCaret));
 }
 
@@ -1497,7 +1498,7 @@ HRESULT CGUIEditBox::Render(GUIState* pGUIState, float fElapsedTime)
 			bIsEmptyText = true;
 			oldColor = pFontElement->FontColor;
 
-			if (m_EmptyTextColor) {
+			if (m_EmptyTextColor.a != 0) {
 				pFontElement->FontColor = m_EmptyTextColor;
 			} else {
                 pFontElement->FontColor.a *= 0.25f;
