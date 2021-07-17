@@ -21,10 +21,10 @@ public :
 		_cp = _start;
 	}
 
-	static unsigned STDCALL _ReadProc(void *buffer, unsigned size, unsigned count, fi_handle handle);
-	static unsigned STDCALL _WriteProc(void *buffer, unsigned size, unsigned count, fi_handle handle);
-	static int STDCALL _SeekProc(fi_handle handle, long offset, int origin);
-	static long STDCALL _TellProc(fi_handle handle);
+	static unsigned DLL_CALLCONV _ReadProc(void *buffer, unsigned size, unsigned count, fi_handle handle);
+	static unsigned DLL_CALLCONV _WriteProc(void *buffer, unsigned size, unsigned count, fi_handle handle);
+	static int DLL_CALLCONV _SeekProc(fi_handle handle, long offset, int origin);
+	static long DLL_CALLCONV _TellProc(fi_handle handle);
 
 private:
 	BYTE * const _start;

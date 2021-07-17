@@ -7,16 +7,19 @@
 // as in the ParaEngineApp.cpp
 //-----------------------------------------------------------------------------
 #include "ParaEngine.h"
-#ifdef USE_FREEIMAGE
+#if defined (USE_FREEIMAGE)  
 #include <FreeImage.h>
-#include <gdiplus.h>
+
 
 #include "FreeImageMemIO.h"
 
+#if defined(WIN32) && defined(USE_DIRECTX_RENDERER)
+#include <gdiplus.h>
 using namespace Gdiplus;
+#endif
 
 
-unsigned STDCALL MemIO::_ReadProc(void *buffer, unsigned size, unsigned count, fi_handle handle) {
+unsigned DLL_CALLCONV MemIO::_ReadProc(void *buffer, unsigned size, unsigned count, fi_handle handle) {
 	MemIO *memIO = (MemIO*)handle;
 
 	BYTE *tmp = (BYTE *)buffer;
@@ -52,12 +55,12 @@ unsigned STDCALL MemIO::_ReadProc(void *buffer, unsigned size, unsigned count, f
 	return (readSize + (size - 1)) / size;
 }
 
-unsigned STDCALL MemIO::_WriteProc(void *buffer, unsigned size, unsigned count, fi_handle handle) {
+unsigned DLL_CALLCONV MemIO::_WriteProc(void *buffer, unsigned size, unsigned count, fi_handle handle) {
 	assert( false );
 	return size;
 }
 
-int STDCALL MemIO::_SeekProc(fi_handle handle, long offset, int origin) {
+int DLL_CALLCONV MemIO::_SeekProc(fi_handle handle, long offset, int origin) {
 	assert(origin != SEEK_END);
 
 	MemIO *memIO = (MemIO*)handle;
@@ -82,12 +85,13 @@ int STDCALL MemIO::_SeekProc(fi_handle handle, long offset, int origin) {
 	return 0;
 }
 
-long STDCALL MemIO::_TellProc(fi_handle handle) {
+long DLL_CALLCONV MemIO::_TellProc(fi_handle handle) {
 	MemIO *memIO = (MemIO*)handle;
 
 	return memIO->_cp - memIO->_start;
 }
 
+#if defined(WIN32) && defined(USE_DIRECTX_RENDERER)
 // NOT USED: unless you want to save PNG via GDI+ interface, currently I used FreeImage. 
 int GetEncoderClsid(const WCHAR* format, CLSID* pClsid)
 {
@@ -119,4 +123,5 @@ int GetEncoderClsid(const WCHAR* format, CLSID* pClsid)
 	free(pImageCodecInfo);
 	return -1;  // Failure
 }
+#endif
 #endif
