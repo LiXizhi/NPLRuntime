@@ -23,6 +23,12 @@ namespace ParaEngine {
 
         void init(int w, int h, const std::string &intentData);
 
+        void handle_mouse_presses_begin(int keyType, int id, float x, float y);
+
+        void handle_mouse_presses_end(int keyType, int id, float x, float y);
+
+        void handle_mouse_move(int id[], float x[], float y[], size_t size);
+
         void handle_touches_begin(int id, float x, float y);
 
         void handle_touches_end(int id, float x, float y);
@@ -65,6 +71,7 @@ namespace ParaEngine {
     protected:
         CParaEngineAppAndroid *m_ParaEngineApp;
         bool m_isPaused;
+        bool m_curMouseKey = -1;
 
         float m_fRefreshTimerInterval; //  in seconds.
     };

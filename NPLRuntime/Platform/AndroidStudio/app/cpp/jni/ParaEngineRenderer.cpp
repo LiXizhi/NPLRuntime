@@ -21,6 +21,30 @@ extern "C" {
         AppDelegate::getInstance().init(w, h, ParaEngineActivity::getLauncherIntentData());
     }
 
+    JNIEXPORT void JNICALL Java_com_tatfook_paracraft_ParaEngineRenderer_nativeMouseBegin(JNIEnv *env, jclass clazz, jint keyType, jint id, jfloat x, jfloat y)
+    {
+        AppDelegate::getInstance().handle_mouse_presses_begin(keyType, id, x, y);
+    }
+
+    JNIEXPORT void JNICALL Java_com_tatfook_paracraft_ParaEngineRenderer_nativeMouseEnd(JNIEnv *env, jclass clazz, jint keyType, jint id, jfloat x, jfloat y)
+    {
+        AppDelegate::getInstance().handle_mouse_presses_end(keyType, id, x, y);
+    }
+
+    JNIEXPORT void JNICALL Java_com_tatfook_paracraft_ParaEngineRenderer_nativeMouseMove(JNIEnv *env, jclass clazz, jintArray ids, jfloatArray xs, jfloatArray ys)
+    {
+        int size = env->GetArrayLength(ids);
+        jint id[size];
+        jfloat x[size];
+        jfloat y[size];
+
+        env->GetIntArrayRegion(ids, 0, size, id);
+        env->GetFloatArrayRegion(xs, 0, size, x);
+        env->GetFloatArrayRegion(ys, 0, size, y);
+
+        AppDelegate::getInstance().handle_mouse_move(id, x, y, size);
+    }
+
     JNIEXPORT void JNICALL Java_com_tatfook_paracraft_ParaEngineRenderer_nativeTouchesBegin(JNIEnv* env, jclass clazz, jint id, jfloat x, jfloat y)
     {
         AppDelegate::getInstance().handle_touches_begin(id, x, y);

@@ -2,6 +2,8 @@ package com.tatfook.paracraft;
 
 import android.Manifest;
 import android.app.KeyguardManager;
+import android.hardware.usb.UsbDevice;
+import android.hardware.usb.UsbManager;
 import android.os.Build;
 import android.os.CountDownTimer;
 import android.os.PowerManager;
@@ -16,12 +18,17 @@ import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
+import android.view.InputDevice;
 import android.view.KeyEvent;
+import android.view.MotionEvent;
+import android.view.View;
 import android.view.ViewGroup;
 import android.view.WindowManager;
 import android.widget.ImageView;
 
 import com.smarx.notchlib.NotchScreenManager;
+
+import java.util.HashMap;
 
 import javax.microedition.khronos.egl.EGL10;
 import javax.microedition.khronos.egl.EGLConfig;
@@ -132,9 +139,7 @@ public class ParaEngineActivity extends AppCompatActivity {
 
         CountDownTimer countDownTimer = new CountDownTimer(3000, 1000) {
             @Override
-            public void onTick(long millisUntilFinished) {
-
-            }
+            public void onTick(long millisUntilFinished) {}
 
             @Override
             public void onFinish() {
@@ -162,12 +167,21 @@ public class ParaEngineActivity extends AppCompatActivity {
     }
 
     protected ParaEngineGLSurfaceView onCreateView() {
-        ParaEngineGLSurfaceView view = new ParaEngineGLSurfaceView(this);
+        final ParaEngineGLSurfaceView view = new ParaEngineGLSurfaceView(this);
 
         view.initView(this);
 
         ParaEngineEGLConfigChooser chooser = new ParaEngineEGLConfigChooser(this.mGLContextAttrs);
         view.setEGLConfigChooser(chooser);
+
+        view.setOnGenericMotionListener(new View.OnGenericMotionListener() {
+            @Override
+            public boolean onGenericMotion(View v, MotionEvent event) {
+                view.setMousePosition(event);
+
+                return false;
+            }
+        });
 
         return view;
     }
@@ -276,7 +290,6 @@ public class ParaEngineActivity extends AppCompatActivity {
         } else if (type == 0) {
             sContext.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
         }
-
     }
 
     @Keep
@@ -286,38 +299,42 @@ public class ParaEngineActivity extends AppCompatActivity {
 
     @Override
     public boolean onKeyUp(int keyCode, KeyEvent event) {
-        if ((keyCode == KeyEvent.KEYCODE_BACK)) {
+//        if ((keyCode == KeyEvent.KEYCODE_BACK)) {
+//
+//            this.runOnGLThread(new Runnable() {
+//                @Override
+//                public void run() {
+//                    onKeyBack(false);
+//                }
+//            });
+//
+//
+//            return false;
+//        }
+//        else {
+//            return super.onKeyUp(keyCode, event);
+//        }
 
-            this.runOnGLThread(new Runnable() {
-                @Override
-                public void run() {
-                    onKeyBack(false);
-                }
-            });
-
-
-            return false;
-        }
-        else {
-            return super.onKeyUp(keyCode, event);
-        }
+        return super.onKeyUp(keyCode, event);
     }
 
     @Override
     public boolean onKeyDown(int keyCode, KeyEvent event) {
-        if ((keyCode == KeyEvent.KEYCODE_BACK)) {
-            this.runOnGLThread(new Runnable() {
-                @Override
-                public void run() {
-                    onKeyBack(true);
-                }
-            });
+//        if ((keyCode == KeyEvent.KEYCODE_BACK)) {
+//            this.runOnGLThread(new Runnable() {
+//                @Override
+//                public void run() {
+//                    onKeyBack(true);
+//                }
+//            });
+//
+//            return false;
+//        }
+//        else {
+//            return super.onKeyDown(keyCode, event);
+//        }
 
-            return false;
-        }
-        else {
-            return super.onKeyDown(keyCode, event);
-        }
+        return super.onKeyUp(keyCode, event);
     }
 
     @Override

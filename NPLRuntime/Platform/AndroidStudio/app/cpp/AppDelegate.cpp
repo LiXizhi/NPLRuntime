@@ -334,6 +334,75 @@ namespace ParaEngine {
 		}
 	}
 
+	void AppDelegate::handle_mouse_presses_begin(int keyType, int id, float x, float y)
+	{
+	    EMouseButton eMouseButton;
+
+	    if (keyType == 0) {
+	        eMouseButton = EMouseButton::LEFT;
+	    } else {
+	        eMouseButton = EMouseButton::RIGHT;
+	    }
+
+        int input_x = x;
+        int input_y = y;
+
+        CGUIRoot::GetInstance()->GetMouse()->PushMouseEvent(
+            DeviceMouseEventPtr(
+                new DeviceMouseButtonEvent(
+                    eMouseButton,
+                    EKeyState::PRESS,
+                    input_x,
+                    input_y
+                )
+            )
+        );
+
+        m_curMouseKey = keyType;
+	}
+
+	void AppDelegate::handle_mouse_presses_end(int keyType, int id, float x, float y)
+	{
+        EMouseButton eMouseButton;
+
+        if (keyType == 0) {
+            eMouseButton = EMouseButton::LEFT;
+        } else {
+            eMouseButton = EMouseButton::RIGHT;
+        }
+
+        int input_x = x;
+        int input_y = y;
+
+        CGUIRoot::GetInstance()->GetMouse()->PushMouseEvent(
+            DeviceMouseEventPtr(
+                new DeviceMouseButtonEvent(
+                    eMouseButton,
+                    EKeyState::RELEASE,
+                    input_x,
+                    input_y
+                )
+            )
+        );
+
+		m_curMouseKey = -1;
+	}
+
+	void AppDelegate::handle_mouse_move(int id[], float x[], float y[], size_t size)
+    {
+		for (size_t i = 0; i < size; i++)
+		{
+			int input_x = x[i];
+			int input_y = y[i];
+
+            CGUIRoot::GetInstance()->GetMouse()->PushMouseEvent(
+                DeviceMouseEventPtr(
+                        new DeviceMouseMoveEvent(input_x, input_y)
+                )
+            );
+		}
+    }
+
 	void AppDelegate::handle_touches_begin(int id, float x, float y)
 	{
 		int msCurTime = ::GetTickCount();

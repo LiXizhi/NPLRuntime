@@ -2,7 +2,9 @@ package com.tatfook.paracraft;
 
 import android.app.Activity;
 import android.content.Context;
+import android.content.res.Configuration;
 import android.graphics.Rect;
+import android.hardware.usb.UsbManager;
 import android.opengl.GLSurfaceView;
 import android.os.Bundle;
 import android.os.Handler;
@@ -11,6 +13,7 @@ import android.support.annotation.Keep;
 import android.util.AttributeSet;
 import android.util.DisplayMetrics;
 import android.util.Log;
+import android.view.InputDevice;
 import android.view.KeyEvent;
 import android.view.MotionEvent;
 import android.view.Surface;
@@ -44,6 +47,12 @@ public class ParaEngineGLSurfaceView extends GLSurfaceView {
 
     private boolean mSoftKeyboardShown = false;
     private boolean mMultipleTouchEnabled = true;
+    private boolean mIsPressMouseRightKey = false;
+    private boolean mIsPressMouseLeftKey = false;
+    private boolean mUsbMode = false;
+    private int curPointerId = 0;
+    private float curPointerX = 0;
+    private float curPointerY = 0;
 
     // TODO Static handler -> Potential leak!
     private static Handler sHandler = null;
@@ -192,6 +201,23 @@ public class ParaEngineGLSurfaceView extends GLSurfaceView {
 
             }
         });
+
+        Configuration configuration = getResources().getConfiguration();
+        Boolean mouseExist = false;
+
+        final int[] devices = InputDevice.getDeviceIds();
+
+        for (int i = 0; i < devices.length; i++) {
+            InputDevice device = InputDevice.getDevice(devices[i]);
+
+            if (device != null && device.getName().contains("Mouse")) {
+                mouseExist = true;
+            }
+        }
+
+        if (configuration.keyboard != Configuration.KEYBOARD_NOKEYS || mouseExist) {
+            mUsbMode = true;
+        }
     }
 
     public static ParaEngineGLSurfaceView getInstance() { return mGLSurfaceView; }
@@ -332,41 +358,61 @@ public class ParaEngineGLSurfaceView extends GLSurfaceView {
                 final float xDown = xs[0];
                 final float yDown = ys[0];
 
-                this.queueEvent(new Runnable() {
-                    @Override
-                    public void run() {
-                        ParaEngineGLSurfaceView.this.mRenderer.handleActionDown(idDown, xDown, yDown);
-                    }
-                });
-                break;
-
-            case MotionEvent.ACTION_MOVE:
-                if (!mMultipleTouchEnabled) {
-                    // handle only touch with id == 0
-                    for (int i = 0; i < pointerNumber; i++) {
-                        if (ids[i] == 0) {
-                            final int[] idsMove = new int[]{0};
-                            final float[] xsMove = new float[]{xs[i]};
-                            final float[] ysMove = new float[]{ys[i]};
-                            this.queueEvent(new Runnable() {
-                                @Override
-                                public void run() {
-                                    ParaEngineGLSurfaceView.this.mRenderer.handleActionMove(idsMove, xsMove, ysMove);
-                                }
-                            });
-                            break;
+                if (mUsbMode) {
+                    this.queueEvent(new Runnable() {
+                        @Override
+                        public void run() {
+                            ParaEngineGLSurfaceView.this.mRenderer.handleMouseDown(0, idDown, xDown, yDown);
                         }
-                    }
+                    });
+
+                    mIsPressMouseLeftKey = true;
                 } else {
                     this.queueEvent(new Runnable() {
                         @Override
                         public void run() {
-                            ParaEngineGLSurfaceView.this.mRenderer.handleActionMove(ids, xs, ys);
+                            ParaEngineGLSurfaceView.this.mRenderer.handleActionDown(idDown, xDown, yDown);
                         }
                     });
                 }
-                break;
 
+                break;
+            case MotionEvent.ACTION_MOVE:
+                if (mUsbMode) {
+                    this.queueEvent(new Runnable() {
+                        @Override
+                        public void run() {
+                            ParaEngineGLSurfaceView.this.mRenderer.handleMouseMove(ids, xs, ys);
+                        }
+                    });
+                } else {
+                    if (!mMultipleTouchEnabled) {
+                        // handle only touch with id == 0
+                        for (int i = 0; i < pointerNumber; i++) {
+                            if (ids[i] == 0) {
+                                final int[] idsMove = new int[]{0};
+                                final float[] xsMove = new float[]{xs[i]};
+                                final float[] ysMove = new float[]{ys[i]};
+                                this.queueEvent(new Runnable() {
+                                    @Override
+                                    public void run() {
+                                        ParaEngineGLSurfaceView.this.mRenderer.handleActionMove(idsMove, xsMove, ysMove);
+                                    }
+                                });
+                                break;
+                            }
+                        }
+                    } else {
+                        this.queueEvent(new Runnable() {
+                            @Override
+                            public void run() {
+                                ParaEngineGLSurfaceView.this.mRenderer.handleActionMove(ids, xs, ys);
+                            }
+                        });
+                    }
+                }
+
+                break;
             case MotionEvent.ACTION_POINTER_UP:
                 final int indexPointUp = pMotionEvent.getAction() >> MotionEvent.ACTION_POINTER_INDEX_SHIFT;
                 if (!mMultipleTouchEnabled && indexPointUp != 0) {
@@ -392,14 +438,25 @@ public class ParaEngineGLSurfaceView extends GLSurfaceView {
                 final float xUp = xs[0];
                 final float yUp = ys[0];
 
-                this.queueEvent(new Runnable() {
-                    @Override
-                    public void run() {
-                        ParaEngineGLSurfaceView.this.mRenderer.handleActionUp(idUp, xUp, yUp);
-                    }
-                });
-                break;
+                if (mUsbMode) {
+                    this.queueEvent(new Runnable() {
+                        @Override
+                        public void run() {
+                            ParaEngineGLSurfaceView.this.mRenderer.handleMouseUp(0, idUp, xUp, yUp);
+                        }
+                    });
 
+                    mIsPressMouseLeftKey = false;
+                } else {
+                    this.queueEvent(new Runnable() {
+                        @Override
+                        public void run() {
+                            ParaEngineGLSurfaceView.this.mRenderer.handleActionUp(idUp, xUp, yUp);
+                        }
+                    });
+                }
+
+                break;
             case MotionEvent.ACTION_CANCEL:
                 if (!mMultipleTouchEnabled) {
                     // handle only touch with id == 0
@@ -444,47 +501,97 @@ public class ParaEngineGLSurfaceView extends GLSurfaceView {
 
     @Override
     public boolean onKeyDown(final int pKeyCode, final KeyEvent pKeyEvent) {
-        switch (pKeyCode) {
-            case KeyEvent.KEYCODE_BACK:
-            case KeyEvent.KEYCODE_MENU:
-            case KeyEvent.KEYCODE_DPAD_LEFT:
-            case KeyEvent.KEYCODE_DPAD_RIGHT:
-            case KeyEvent.KEYCODE_DPAD_UP:
-            case KeyEvent.KEYCODE_DPAD_DOWN:
-            case KeyEvent.KEYCODE_ENTER:
-            case KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE:
-            case KeyEvent.KEYCODE_DPAD_CENTER:
-            default:
-                this.queueEvent(new Runnable() {
-                    @Override
-                    public void run() {
-                        ParaEngineGLSurfaceView.this.mRenderer.handleKeyDown(pKeyCode);
-                    }
-                });
-                return super.onKeyDown(pKeyCode, pKeyEvent);
+        if (mUsbMode && pKeyCode == KeyEvent.KEYCODE_BACK) {
+            onMouseRightKeyDown();
+            return false;
+        } else {
+            this.queueEvent(new Runnable() {
+                @Override
+                public void run() {
+                    ParaEngineGLSurfaceView.this.mRenderer.handleKeyDown(pKeyCode);
+                }
+            });
+            return super.onKeyDown(pKeyCode, pKeyEvent);
         }
     }
 
     @Override
-    public boolean onKeyUp(final int keyCode, KeyEvent event) {
-        switch (keyCode) {
-            case KeyEvent.KEYCODE_BACK:
-            case KeyEvent.KEYCODE_MENU:
-            case KeyEvent.KEYCODE_DPAD_LEFT:
-            case KeyEvent.KEYCODE_DPAD_RIGHT:
-            case KeyEvent.KEYCODE_DPAD_UP:
-            case KeyEvent.KEYCODE_DPAD_DOWN:
-            case KeyEvent.KEYCODE_ENTER:
-            case KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE:
-            case KeyEvent.KEYCODE_DPAD_CENTER:
-            default:
-                this.queueEvent(new Runnable() {
-                    @Override
-                    public void run() {
-                        ParaEngineGLSurfaceView.this.mRenderer.handleKeyUp(keyCode);
-                    }
-                });
-                return super.onKeyUp(keyCode, event);
+    public boolean onKeyUp(final int pKeyCode, KeyEvent pKeyEvent) {
+        if (mUsbMode && pKeyCode == KeyEvent.KEYCODE_BACK) {
+            onMouseRightKeyUp();
+            return false;
+        } else {
+            this.queueEvent(new Runnable() {
+                @Override
+                public void run() {
+                    ParaEngineGLSurfaceView.this.mRenderer.handleKeyUp(pKeyCode);
+                }
+            });
+            return super.onKeyUp(pKeyCode, pKeyEvent);
+        }
+    }
+
+    public void setMousePosition(MotionEvent pMotionEvent) {
+        if (!mUsbMode || mIsPressMouseLeftKey) {
+            return;
+        }
+
+        final int pointerNumber = pMotionEvent.getPointerCount();
+        final int[] ids = new int[pointerNumber];
+        final float[] xs = new float[pointerNumber];
+        final float[] ys = new float[pointerNumber];
+
+        for (int i = 0; i < pointerNumber; i++) {
+            ids[i] = pMotionEvent.getPointerId(i);
+            xs[i] = pMotionEvent.getX(i);
+            ys[i] = pMotionEvent.getY(i);
+        }
+
+        curPointerId = pMotionEvent.getPointerId(0);
+        curPointerX = xs[0];
+        curPointerY = ys[0];
+
+        this.queueEvent(new Runnable() {
+            @Override
+            public void run() {
+            ParaEngineGLSurfaceView.this.mRenderer.handleMouseMove(ids, xs, ys);
+            }
+        });
+    }
+
+    private void onMouseRightKeyDown() {
+        if (!mIsPressMouseRightKey) {
+            mIsPressMouseRightKey = true;
+
+            this.queueEvent(new Runnable() {
+                @Override
+                public void run() {
+                    ParaEngineGLSurfaceView.this.mRenderer.handleMouseDown(
+                            1,
+                            curPointerId,
+                            curPointerX,
+                            curPointerY
+                    );
+                }
+            });
+        }
+    }
+
+    private void onMouseRightKeyUp() {
+        if (mIsPressMouseRightKey) {
+            mIsPressMouseRightKey = false;
+
+            this.queueEvent(new Runnable() {
+                @Override
+                public void run() {
+                    ParaEngineGLSurfaceView.this.mRenderer.handleMouseUp(
+                            1,
+                            curPointerId,
+                            curPointerX,
+                            curPointerY
+                    );
+                }
+            });
         }
     }
 }
