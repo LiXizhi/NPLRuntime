@@ -532,7 +532,19 @@ public class ParaEngineGLSurfaceView extends GLSurfaceView {
     }
 
     public void setMousePosition(MotionEvent pMotionEvent) {
-        if (!mUsbMode || mIsPressMouseLeftKey) {
+        if (!mUsbMode) {
+            return;
+        }
+
+        if (pMotionEvent.getAction() == MotionEvent.ACTION_SCROLL) {
+            if (pMotionEvent.getAxisValue(MotionEvent.AXIS_VSCROLL) < 0.0f) {
+                ParaEngineGLSurfaceView.this.mRenderer.handleMouseScroll(-1);
+            } else {
+                ParaEngineGLSurfaceView.this.mRenderer.handleMouseScroll(1);
+            }
+        }
+
+        if (mIsPressMouseLeftKey) {
             return;
         }
 

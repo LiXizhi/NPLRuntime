@@ -45,6 +45,11 @@ extern "C" {
         AppDelegate::getInstance().handle_mouse_move(id, x, y, size);
     }
 
+    JNIEXPORT void JNICALL Java_com_tatfook_paracraft_ParaEngineRenderer_nativeMouseScroll(JNIEnv *env, jclass clazz, jint forward)
+    {
+        AppDelegate::getInstance().handle_mouse_scroll(forward);
+    }
+
     JNIEXPORT void JNICALL Java_com_tatfook_paracraft_ParaEngineRenderer_nativeTouchesBegin(JNIEnv* env, jclass clazz, jint id, jfloat x, jfloat y)
     {
         AppDelegate::getInstance().handle_touches_begin(id, x, y);

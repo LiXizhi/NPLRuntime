@@ -2,8 +2,6 @@ package com.tatfook.paracraft;
 
 import android.Manifest;
 import android.app.KeyguardManager;
-import android.hardware.usb.UsbDevice;
-import android.hardware.usb.UsbManager;
 import android.os.Build;
 import android.os.CountDownTimer;
 import android.os.PowerManager;
@@ -18,7 +16,6 @@ import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
-import android.view.InputDevice;
 import android.view.KeyEvent;
 import android.view.MotionEvent;
 import android.view.View;
@@ -27,8 +24,6 @@ import android.view.WindowManager;
 import android.widget.ImageView;
 
 import com.smarx.notchlib.NotchScreenManager;
-
-import java.util.HashMap;
 
 import javax.microedition.khronos.egl.EGL10;
 import javax.microedition.khronos.egl.EGLConfig;
@@ -209,15 +204,21 @@ public class ParaEngineActivity extends AppCompatActivity {
 
     @Override
     protected void onCreate(final Bundle savedInstanceState) {
+        Intent startIntent = getIntent();
+
         if (sContext != null) {
             super.onCreate(savedInstanceState);
 
             sContext = null;
-            Intent intent = getBaseContext().getPackageManager().getLaunchIntentForPackage(getBaseContext().getPackageName());
-            intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
+            Intent retartIntent = getBaseContext().getPackageManager().getLaunchIntentForPackage(getBaseContext().getPackageName());
+            retartIntent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
 
-            intent.putExtra("REBOOT","reboot");
-            startActivity(intent);
+            if (startIntent.getData() != null) {
+                retartIntent.setData(startIntent.getData());
+            }
+
+            retartIntent.putExtra("REBOOT","reboot");
+            startActivity(retartIntent);
 
             return;
         }
@@ -263,24 +264,18 @@ public class ParaEngineActivity extends AppCompatActivity {
         this.mGLSurfaceView.queueEvent(pRunnable);
     }
 
-    private boolean m_bFirstGet = true;
-
     @Keep
     public static String getLauncherIntentData() {
         if (sContext == null)
             return "";
 
-        if (sContext.m_bFirstGet) {
-            Intent intent = sContext.getIntent();
-            if (intent != null) {
-                String action = intent.getAction();
-                if (Intent.ACTION_VIEW == action) {
-                    sContext.m_bFirstGet = false;
-                    return intent.getDataString();
-                }
-            }
+        Intent intent = sContext.getIntent();
+
+        if (intent != null) {
+            return intent.getDataString();
+        } else {
+            return "";
         }
-        return "";
     }
 
     @Keep

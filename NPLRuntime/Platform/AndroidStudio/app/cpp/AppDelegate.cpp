@@ -324,8 +324,6 @@ namespace ParaEngine {
 			auto renderWindow = new RenderWindowAndroid(w, h);
 			m_ParaEngineApp = new CParaEngineAppAndroid();
 
-			LOGI("intent_data:%s", intentData.c_str());
-
 			m_ParaEngineApp->InitApp(renderWindow, intentData.c_str());
 		} else {
 			LOGI("app:window is recreated.");
@@ -403,6 +401,15 @@ namespace ParaEngine {
 		}
     }
 
+    void AppDelegate::handle_mouse_scroll(int forward)
+    {
+        if (forward == 1) {
+            CGUIRoot::GetInstance()->GetMouse()->PushMouseEvent(DeviceMouseEventPtr(new DeviceMouseWheelEvent(10)));
+        } else if (forward == -1) {
+            CGUIRoot::GetInstance()->GetMouse()->PushMouseEvent(DeviceMouseEventPtr(new DeviceMouseWheelEvent(-10)));
+        }
+    }
+
 	void AppDelegate::handle_touches_begin(int id, float x, float y)
 	{
 		int msCurTime = ::GetTickCount();
@@ -472,7 +479,9 @@ namespace ParaEngine {
 		LOGI("app:OnResume");
 		if (m_ParaEngineApp) {
 			m_ParaEngineApp->OnResume();
-			onCmdLine(ParaEngineActivity::getLauncherIntentData());
+
+			// This will cause secondary enter.
+			// onCmdLine(ParaEngineActivity::getLauncherIntentData());
 		}
 
 		//m_isPaused = false;

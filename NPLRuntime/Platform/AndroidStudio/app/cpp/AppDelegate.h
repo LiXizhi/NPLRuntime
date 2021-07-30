@@ -29,6 +29,8 @@ namespace ParaEngine {
 
         void handle_mouse_move(int id[], float x[], float y[], size_t size);
 
+        void handle_mouse_scroll(int forward);
+
         void handle_touches_begin(int id, float x, float y);
 
         void handle_touches_end(int id, float x, float y);

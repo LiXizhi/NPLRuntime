@@ -8,11 +8,11 @@ android {
     }
 
     defaultConfig {
-        applicationId "com.tatfook.paracraft"
+        applicationId "com.paraengine.paracraft"
         minSdkVersion PROP_MIN_SDK_VERSION
         targetSdkVersion PROP_TARGET_SDK_VERSION
-        versionCode 26
-        versionName "2.0.8"
+        versionCode 30
+        versionName "2.0.11"
 
         externalNativeBuild {
              cmake {
