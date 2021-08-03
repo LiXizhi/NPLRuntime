@@ -17,6 +17,8 @@ import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.KeyEvent;
+import android.view.MotionEvent;
+import android.view.View;
 import android.view.ViewGroup;
 import android.view.WindowManager;
 import android.widget.ImageView;
@@ -132,9 +134,7 @@ public class ParaEngineActivity extends AppCompatActivity {
 
         CountDownTimer countDownTimer = new CountDownTimer(3000, 1000) {
             @Override
-            public void onTick(long millisUntilFinished) {
-
-            }
+            public void onTick(long millisUntilFinished) {}
 
             @Override
             public void onFinish() {
@@ -162,12 +162,21 @@ public class ParaEngineActivity extends AppCompatActivity {
     }
 
     protected ParaEngineGLSurfaceView onCreateView() {
-        ParaEngineGLSurfaceView view = new ParaEngineGLSurfaceView(this);
+        final ParaEngineGLSurfaceView view = new ParaEngineGLSurfaceView(this);
 
         view.initView(this);
 
         ParaEngineEGLConfigChooser chooser = new ParaEngineEGLConfigChooser(this.mGLContextAttrs);
         view.setEGLConfigChooser(chooser);
+
+        view.setOnGenericMotionListener(new View.OnGenericMotionListener() {
+            @Override
+            public boolean onGenericMotion(View v, MotionEvent event) {
+                view.setMousePosition(event);
+
+                return false;
+            }
+        });
 
         return view;
     }
@@ -195,15 +204,21 @@ public class ParaEngineActivity extends AppCompatActivity {
 
     @Override
     protected void onCreate(final Bundle savedInstanceState) {
+        Intent startIntent = getIntent();
+
         if (sContext != null) {
             super.onCreate(savedInstanceState);
 
             sContext = null;
-            Intent intent = getBaseContext().getPackageManager().getLaunchIntentForPackage(getBaseContext().getPackageName());
-            intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
+            Intent retartIntent = getBaseContext().getPackageManager().getLaunchIntentForPackage(getBaseContext().getPackageName());
+            retartIntent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
 
-            intent.putExtra("REBOOT","reboot");
-            startActivity(intent);
+            if (startIntent.getData() != null) {
+                retartIntent.setData(startIntent.getData());
+            }
+
+            retartIntent.putExtra("REBOOT","reboot");
+            startActivity(retartIntent);
 
             return;
         }
@@ -249,24 +264,18 @@ public class ParaEngineActivity extends AppCompatActivity {
         this.mGLSurfaceView.queueEvent(pRunnable);
     }
 
-    private boolean m_bFirstGet = true;
-
     @Keep
     public static String getLauncherIntentData() {
         if (sContext == null)
             return "";
 
-        if (sContext.m_bFirstGet) {
-            Intent intent = sContext.getIntent();
-            if (intent != null) {
-                String action = intent.getAction();
-                if (Intent.ACTION_VIEW == action) {
-                    sContext.m_bFirstGet = false;
-                    return intent.getDataString();
-                }
-            }
+        Intent intent = sContext.getIntent();
+
+        if (intent != null) {
+            return intent.getDataString();
+        } else {
+            return "";
         }
-        return "";
     }
 
     @Keep
@@ -276,7 +285,6 @@ public class ParaEngineActivity extends AppCompatActivity {
         } else if (type == 0) {
             sContext.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
         }
-
     }
 
     @Keep
@@ -286,38 +294,42 @@ public class ParaEngineActivity extends AppCompatActivity {
 
     @Override
     public boolean onKeyUp(int keyCode, KeyEvent event) {
-        if ((keyCode == KeyEvent.KEYCODE_BACK)) {
+//        if ((keyCode == KeyEvent.KEYCODE_BACK)) {
+//
+//            this.runOnGLThread(new Runnable() {
+//                @Override
+//                public void run() {
+//                    onKeyBack(false);
+//                }
+//            });
+//
+//
+//            return false;
+//        }
+//        else {
+//            return super.onKeyUp(keyCode, event);
+//        }
 
-            this.runOnGLThread(new Runnable() {
-                @Override
-                public void run() {
-                    onKeyBack(false);
-                }
-            });
-
-
-            return false;
-        }
-        else {
-            return super.onKeyUp(keyCode, event);
-        }
+        return super.onKeyUp(keyCode, event);
     }
 
     @Override
     public boolean onKeyDown(int keyCode, KeyEvent event) {
-        if ((keyCode == KeyEvent.KEYCODE_BACK)) {
-            this.runOnGLThread(new Runnable() {
-                @Override
-                public void run() {
-                    onKeyBack(true);
-                }
-            });
+//        if ((keyCode == KeyEvent.KEYCODE_BACK)) {
+//            this.runOnGLThread(new Runnable() {
+//                @Override
+//                public void run() {
+//                    onKeyBack(true);
+//                }
+//            });
+//
+//            return false;
+//        }
+//        else {
+//            return super.onKeyDown(keyCode, event);
+//        }
 
-            return false;
-        }
-        else {
-            return super.onKeyDown(keyCode, event);
-        }
+        return super.onKeyUp(keyCode, event);
     }
 
     @Override

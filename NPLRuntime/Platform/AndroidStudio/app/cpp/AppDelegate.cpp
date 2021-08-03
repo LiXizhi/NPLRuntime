@@ -324,8 +324,6 @@ namespace ParaEngine {
 			auto renderWindow = new RenderWindowAndroid(w, h);
 			m_ParaEngineApp = new CParaEngineAppAndroid();
 
-			LOGI("intent_data:%s", intentData.c_str());
-
 			m_ParaEngineApp->InitApp(renderWindow, intentData.c_str());
 		} else {
 			LOGI("app:window is recreated.");
@@ -333,6 +331,84 @@ namespace ParaEngine {
 			m_ParaEngineApp->OnRendererRecreated(renderWindow);
 		}
 	}
+
+	void AppDelegate::handle_mouse_presses_begin(int keyType, int id, float x, float y)
+	{
+	    EMouseButton eMouseButton;
+
+	    if (keyType == 0) {
+	        eMouseButton = EMouseButton::LEFT;
+	    } else {
+	        eMouseButton = EMouseButton::RIGHT;
+	    }
+
+        int input_x = x;
+        int input_y = y;
+
+        CGUIRoot::GetInstance()->GetMouse()->PushMouseEvent(
+            DeviceMouseEventPtr(
+                new DeviceMouseButtonEvent(
+                    eMouseButton,
+                    EKeyState::PRESS,
+                    input_x,
+                    input_y
+                )
+            )
+        );
+
+        m_curMouseKey = keyType;
+	}
+
+	void AppDelegate::handle_mouse_presses_end(int keyType, int id, float x, float y)
+	{
+        EMouseButton eMouseButton;
+
+        if (keyType == 0) {
+            eMouseButton = EMouseButton::LEFT;
+        } else {
+            eMouseButton = EMouseButton::RIGHT;
+        }
+
+        int input_x = x;
+        int input_y = y;
+
+        CGUIRoot::GetInstance()->GetMouse()->PushMouseEvent(
+            DeviceMouseEventPtr(
+                new DeviceMouseButtonEvent(
+                    eMouseButton,
+                    EKeyState::RELEASE,
+                    input_x,
+                    input_y
+                )
+            )
+        );
+
+		m_curMouseKey = -1;
+	}
+
+	void AppDelegate::handle_mouse_move(int id[], float x[], float y[], size_t size)
+    {
+		for (size_t i = 0; i < size; i++)
+		{
+			int input_x = x[i];
+			int input_y = y[i];
+
+            CGUIRoot::GetInstance()->GetMouse()->PushMouseEvent(
+                DeviceMouseEventPtr(
+                        new DeviceMouseMoveEvent(input_x, input_y)
+                )
+            );
+		}
+    }
+
+    void AppDelegate::handle_mouse_scroll(int forward)
+    {
+        if (forward == 1) {
+            CGUIRoot::GetInstance()->GetMouse()->PushMouseEvent(DeviceMouseEventPtr(new DeviceMouseWheelEvent(10)));
+        } else if (forward == -1) {
+            CGUIRoot::GetInstance()->GetMouse()->PushMouseEvent(DeviceMouseEventPtr(new DeviceMouseWheelEvent(-10)));
+        }
+    }
 
 	void AppDelegate::handle_touches_begin(int id, float x, float y)
 	{
@@ -403,7 +479,9 @@ namespace ParaEngine {
 		LOGI("app:OnResume");
 		if (m_ParaEngineApp) {
 			m_ParaEngineApp->OnResume();
-			onCmdLine(ParaEngineActivity::getLauncherIntentData());
+
+			// This will cause secondary enter.
+			// onCmdLine(ParaEngineActivity::getLauncherIntentData());
 		}
 
 		//m_isPaused = false;

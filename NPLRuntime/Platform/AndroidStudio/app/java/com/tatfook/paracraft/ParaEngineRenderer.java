@@ -78,6 +78,10 @@ public class ParaEngineRenderer implements GLSurfaceView.Renderer {
         }
     }
 
+    private static native void nativeMouseBegin(final int keyType, final int id, final float x, final float y);
+    private static native void nativeMouseEnd(final int keyType, final int id, final float x, final float y);
+    private static native void nativeMouseMove(final int[] ids, final float[] xs, final float[] ys);
+    private static native void nativeMouseScroll(int forward);
     private static native void nativeTouchesBegin(final int id, final float x, final float y);
     private static native void nativeTouchesEnd(final int id, final float x, final float y);
     private static native void nativeTouchesMove(final int[] ids, final float[] xs, final float[] ys);
@@ -88,6 +92,24 @@ public class ParaEngineRenderer implements GLSurfaceView.Renderer {
     private static native void nativeOnSurfaceChanged(final int width, final int height);
     private static native void nativeOnPause();
     private static native void nativeOnResume();
+
+    public void handleMouseDown(final int keyType, final int id, final float x, final float y) {
+        ParaEngineRenderer.nativeMouseBegin(keyType, id, x, y);
+    }
+
+    public void handleMouseUp(final int keyType, final int id, final float x, final float y) {
+        ParaEngineRenderer.nativeMouseEnd(keyType, id, x, y);
+    }
+
+    public void handleMouseMove(final int[] ids, final float[] xs, final float[] ys)
+    {
+        ParaEngineRenderer.nativeMouseMove(ids, xs, ys);
+    }
+
+    public void handleMouseScroll(int forward)
+    {
+        ParaEngineRenderer.nativeMouseScroll(forward);
+    }
 
     public void handleActionDown(final int id, final float x, final float y) {
         ParaEngineRenderer.nativeTouchesBegin(id, x, y);
