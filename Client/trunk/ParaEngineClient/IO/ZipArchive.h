@@ -195,7 +195,7 @@ namespace ParaEngine
 	bool IsZipData(const char* src, size_t size);
 	// get first file info in zip file data
 	const SZIPFileHeader* GetFirstFileInfo(const char* src, std::string* filename = nullptr);
-	bool GetFirstFileData(const char* src, std::string& out);
+	bool GetFirstFileData(const char* src, size_t size, std::string& out);
 
 	/**
 	Both the zip and ParaEngine's pkg file encryption logics are supported. pkg file is a slightly encrypted version of zip file.

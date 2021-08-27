@@ -41,10 +41,21 @@ so there is no need to use it. */
 
 using namespace ParaEngine;
 
+// check if it is ".pkg" file
+static bool IsPkgData(const char* src)
+{
+	return ((src[0] == '.') && (src[1] == 'p') && (src[2] == 'k') && (src[3] == 'g'));
+}
+
+// return true if data is a zip file or pkg file. 
 bool ParaEngine::IsZipData(const char* src, size_t size)
 {
 	if (size < sizeof(ZIP_EndOfCentralDirectoryBlock))
 		return false;
+	
+	if (IsPkgData(src))
+		return true;
+
 	src += size - sizeof(ZIP_EndOfCentralDirectoryBlock);
 
 	ZIP_EndOfCentralDirectoryBlock* p = (ZIP_EndOfCentralDirectoryBlock*)src;
@@ -68,61 +79,193 @@ const SZIPFileHeader* ParaEngine::GetFirstFileInfo(const char* src, std::string*
 		return nullptr;
 }
 
-bool ParaEngine::GetFirstFileData(const char* src, std::string& out)
+bool ParaEngine::GetFirstFileData(const char* src, size_t size, std::string& out)
 {
-	const SZIPFileHeader* info = (const SZIPFileHeader*)src;
-	if (info->Sig != ZIP_CONST_LOCALHEADERSIG)
-		return false;
-
-	auto filedata = src + sizeof(SZIPFileHeader) + info->FilenameLength + info->ExtraFieldLength;
-	if (info->CompressionMethod == 0)  // 8 for zip, 0 for no compression.
+	if (IsPkgData(src))
 	{
-		out = std::string(filedata, info->DataDescriptor.UncompressedSize);
-		return true;
-	}
-	else if (info->CompressionMethod == 8)
-	{
-		out.resize(info->DataDescriptor.UncompressedSize);
+		CMemReadFile file((byte*)src, size, false);
+		// sig + version(only support PKG version 2)
+		file.seek(8, true);
 
-		z_stream stream;
-		int err;
+		// reserved words
+		file.seek(sizeof(DWORD) * 4, true);
 
-		stream.next_in = (Bytef*)filedata;
-		stream.avail_in = (uInt)info->DataDescriptor.CompressedSize;
-		stream.next_out = (Bytef*)(&*out.begin());
-		stream.avail_out = info->DataDescriptor.UncompressedSize;
-		stream.zalloc = (alloc_func)0;
-		stream.zfree = (free_func)0;
+		// comments
+		DWORD nLen = 0;
+		file.read(&nLen, sizeof(DWORD));
+		file.seek(nLen, true);
 
-		err = inflateInit2(&stream, -MAX_WBITS);
-		if (err == Z_OK)
-		{
-			err = inflate(&stream, Z_FINISH);
-			inflateEnd(&stream);
-			if (err == Z_STREAM_END)
-				err = Z_OK;
+		// Ignore Case
+		uint8 ignoreCase;
+		file.read(&ignoreCase, sizeof(uint8));
+		
+		// number of files
+		DWORD nEntryNum = 0;
+		file.read(&nEntryNum, sizeof(DWORD));
+		// name block size
+		DWORD nameBuffSize = 0;
+		file.read(&nameBuffSize, sizeof(DWORD));
+		// name block CompressedSize
+		DWORD nameCompressedSize = 0;
+		file.read(&nameCompressedSize, sizeof(DWORD));
 
-			err = Z_OK;
-			inflateEnd(&stream);
-		}
-
-
-		if (err == Z_OK)
-		{
-			return true;
-		}
+		// read name block
+		std::vector<char> nameBlock;
+		nameBlock.resize(nameBuffSize);
+		if (nameCompressedSize == 0)
+			file.read(&nameBlock[0], nameBuffSize);
 		else
 		{
-			std::string filename;
-			filename = (std::string(src + sizeof(SZIPFileHeader), info->FilenameLength));
-			filename += '\0';
-			OUTPUT_LOG("Error decompressing %s\n", filename.c_str());
-			return false;
+			vector<uint8> compressedData;
+			compressedData.resize(nameCompressedSize);
+			file.read(&compressedData[0], nameCompressedSize);
+
+			if (!CZipArchive::Decompress(&compressedData[0], nameCompressedSize, &nameBlock[0], nameBuffSize))
+			{
+				OUTPUT_LOG("warning: unable to Decompress name block \n");
+				return false;
+			}
 		}
+		
+		if (nEntryNum > 0)
+		{
+			SZipFileEntry entry;
+			// read filename
+			file.read(&entry.fileNameLen, sizeof(WORD));
+			DWORD nameOffset;
+			file.read(&nameOffset, sizeof(DWORD));
+			entry.zipFileName = &nameBlock[nameOffset];
+
+			// read hash
+			file.read(&entry.hashValue, sizeof(uint32));
+			file.read(&entry.CompressionMethod, sizeof(WORD));
+			file.read(&entry.CompressedSize, sizeof(DWORD));
+			file.read(&entry.UncompressedSize, sizeof(DWORD));
+			int nEncodedDataPos = 0;
+			file.read(&nEncodedDataPos, sizeof(DWORD));
+			// decode the data pos
+			int nDataPos = nEncodedDataPos;
+			if (entry.fileNameLen >= 4)
+			{
+				// take the file name into consideration. 
+				nDataPos -= entry.zipFileName[0] * PKG_KEY1 + entry.zipFileName[1] * PKG_KEY2 + entry.zipFileName[2] * PKG_KEY3 + entry.zipFileName[3] * PKG_KEY4;
+			}
+			entry.fileDataPosition = nDataPos;
+			
+			DWORD nBytesRead = 0;
+			int index = 0;
+			switch (entry.CompressionMethod)
+			{
+			case 0: // no compression
+			{
+				file.seek(entry.fileDataPosition);
+				out.resize(entry.UncompressedSize);
+				nBytesRead = file.read(&out[0], entry.UncompressedSize);
+				return true;
+			}
+			case 8:
+			{
+				out.resize(entry.UncompressedSize);
+				char* pBuf = &out[0];
+				DWORD uncompressedSize = entry.UncompressedSize;
+				DWORD compressedSize = entry.CompressedSize;
+
+				byte *pcData = new byte[compressedSize];
+				if (pcData == 0)
+				{
+					OUTPUT_LOG("Not enough memory for decompressing %s\n", entry.zipFileName);
+					return false;
+				}
+
+				file.seek(entry.fileDataPosition);
+				file.read(pcData, compressedSize);
+
+				// Setup the inflate stream.
+				z_stream stream;
+				int err;
+
+				stream.next_in = (Bytef*)pcData;
+				stream.avail_in = (uInt)compressedSize;
+				stream.next_out = (Bytef*)pBuf;
+				stream.avail_out = uncompressedSize;
+				stream.zalloc = (alloc_func)0;
+				stream.zfree = (free_func)0;
+
+				// Perform inflation. wbits < 0 indicates no zlib header inside the data.
+				err = inflateInit2(&stream, -MAX_WBITS);
+				if (err == Z_OK)
+				{
+					err = inflate(&stream, Z_FINISH);
+					inflateEnd(&stream);
+					if (err == Z_STREAM_END)
+						err = Z_OK;
+
+					err = Z_OK;
+					inflateEnd(&stream);
+				}
+				delete[] pcData;
+				return (err == Z_OK);
+			}
+			}
+		}
+		return false;
 	}
 	else
 	{
-		return false;
+		const SZIPFileHeader* info = (const SZIPFileHeader*)src;
+		if (info->Sig != ZIP_CONST_LOCALHEADERSIG)
+			return false;
+
+		auto filedata = src + sizeof(SZIPFileHeader) + info->FilenameLength + info->ExtraFieldLength;
+		if (info->CompressionMethod == 0)  // 8 for zip, 0 for no compression.
+		{
+			out = std::string(filedata, info->DataDescriptor.UncompressedSize);
+			return true;
+		}
+		else if (info->CompressionMethod == 8)
+		{
+			out.resize(info->DataDescriptor.UncompressedSize);
+
+			z_stream stream;
+			int err;
+
+			stream.next_in = (Bytef*)filedata;
+			stream.avail_in = (uInt)info->DataDescriptor.CompressedSize;
+			stream.next_out = (Bytef*)(&*out.begin());
+			stream.avail_out = info->DataDescriptor.UncompressedSize;
+			stream.zalloc = (alloc_func)0;
+			stream.zfree = (free_func)0;
+
+			err = inflateInit2(&stream, -MAX_WBITS);
+			if (err == Z_OK)
+			{
+				err = inflate(&stream, Z_FINISH);
+				inflateEnd(&stream);
+				if (err == Z_STREAM_END)
+					err = Z_OK;
+
+				err = Z_OK;
+				inflateEnd(&stream);
+			}
+
+
+			if (err == Z_OK)
+			{
+				return true;
+			}
+			else
+			{
+				std::string filename;
+				filename = (std::string(src + sizeof(SZIPFileHeader), info->FilenameLength));
+				filename += '\0';
+				OUTPUT_LOG("Error decompressing %s\n", filename.c_str());
+				return false;
+			}
+		}
+		else
+		{
+			return false;
+		}
 	}
 }
 
