@@ -13,7 +13,7 @@
 using namespace ParaEngine;
 
 ParaEngine::CTextureLoader::CTextureLoader(asset_ptr<TextureEntity>& pAsset, const char* sFileName)
-	:m_pData(NULL), m_cBytes(0), m_pAssetFileEntry(NULL), m_ppTexture(NULL), m_dwTextureFormat(PixelFormat::Unkonwn), m_nMipLevels(D3DX_DEFAULT), m_dwColorKey(0)
+	:m_pData(NULL), m_cBytes(0), m_pAssetFileEntry(NULL), m_ppTexture(NULL), m_dwTextureFormat(PixelFormat::Unknown), m_nMipLevels(D3DX_DEFAULT), m_dwColorKey(0)
 {
 	m_asset = pAsset;
 	if (sFileName)
@@ -68,7 +68,7 @@ class STextureCallBackData
 {
 public:
 	STextureCallBackData(TextureEntity * pAsset_) :pAsset(pAsset_),
-		m_ppTexture(NULL), m_dwTextureFormat(PixelFormat::Unkonwn), m_nMipLevels(D3DX_DEFAULT), m_dwColorKey(0) {}
+		m_ppTexture(NULL), m_dwTextureFormat(PixelFormat::Unknown), m_nMipLevels(D3DX_DEFAULT), m_dwColorKey(0) {}
 
 	TextureEntity * pAsset;
 
@@ -164,7 +164,7 @@ HRESULT ParaEngine::CTextureLoader::Load()
 //
 //////////////////////////////////////////////////////////////////////////
 ParaEngine::CTextureProcessor::CTextureProcessor(asset_ptr<TextureEntity>& pAsset)
-	:m_cBytes(0), m_pData(NULL), m_pDevice(NULL), m_ppTexture(NULL), m_dwTextureFormat(PixelFormat::Unkonwn), m_nMipLevels(D3DX_DEFAULT), m_dwColorKey(0)
+	:m_cBytes(0), m_pData(NULL), m_pDevice(NULL), m_ppTexture(NULL), m_dwTextureFormat(PixelFormat::Unknown), m_nMipLevels(D3DX_DEFAULT), m_dwColorKey(0)
 {
 	m_asset = pAsset;
 }

@@ -169,16 +169,16 @@ namespace ParaEngine
 		/** load from memory buffer.
 		* @param ppTexture: if NULL, we will save to current asset, if not we will save to this object.
 		*/
-		virtual HRESULT LoadFromMemory(const char* buffer, DWORD nFileSize, UINT nMipLevels, PixelFormat dwTextureFormat = PixelFormat::Unkonwn, void** ppTexture = NULL) { return E_FAIL; };
+		virtual HRESULT LoadFromMemory(const char* buffer, DWORD nFileSize, UINT nMipLevels, PixelFormat dwTextureFormat = PixelFormat::Unknown, void** ppTexture = NULL) { return E_FAIL; };
 
 		
 		/**  Initializes a texture from an ImageEntity object.
 		* NOTE: It will not convert the pvr image file.
 		* @param dwTextureFormat: if 0, we will use the image file format. 
 		*/
-		virtual bool LoadFromImage(ImageEntity * image, PixelFormat dwTextureFormat = PixelFormat::Unkonwn, UINT nMipLevels = 0, void** ppTexture = nullptr);
+		virtual bool LoadFromImage(ImageEntity * image, PixelFormat dwTextureFormat = PixelFormat::Unknown, UINT nMipLevels = 0, void** ppTexture = nullptr);
 
-		virtual bool LoadFromImage(const ParaImage* pImage, UINT nMipLevels, PixelFormat dwTextureFormat = PixelFormat::Unkonwn, void** ppTexture = nullptr);
+		virtual bool LoadFromImage(const ParaImage* pImage, UINT nMipLevels, PixelFormat dwTextureFormat = PixelFormat::Unknown, void** ppTexture = nullptr);
 
 
 		/** this function is mostly used internally.
@@ -191,7 +191,7 @@ namespace ParaEngine
 		* @param nMipLevels: Mip levels, default to D3DX_DEFAULT
 		* @param dwColorKey: color key. default to 0(disabled). Use COLOR_XRGB(0,0,0) if blank is treated transparent.
 		*/
-		virtual HRESULT CreateTextureFromFile_Async(void* pContext, RenderDevicePtr pDev = NULL, const char* sFileName = NULL, void** ppTexture = NULL, PixelFormat dwTextureFormat = PixelFormat::Unkonwn, UINT nMipLevels = -1, Color dwColorKey = 0);
+		virtual HRESULT CreateTextureFromFile_Async(void* pContext, RenderDevicePtr pDev = NULL, const char* sFileName = NULL, void** ppTexture = NULL, PixelFormat dwTextureFormat = PixelFormat::Unknown, UINT nMipLevels = -1, Color dwColorKey = 0);
 
 		/** whether to async loading the texture. this is enabled by default. */
 		bool IsAsyncLoad() const;

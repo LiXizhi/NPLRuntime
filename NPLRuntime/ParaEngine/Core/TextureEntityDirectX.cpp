@@ -335,7 +335,7 @@ HRESULT TextureEntityDirectX::CreateTextureFromFile_Serial(IRenderDevice* pDev, 
 void TextureEntityDirectX::GetFormatAndMipLevelFromFileNameEx(const string& sTextureFileName, PixelFormat* pdwTextureFormat, UINT* pnMipLevels)
 {
 	int nSize = (int)sTextureFileName.size();
-	PixelFormat dwTextureFormat = PixelFormat::Unkonwn;
+	PixelFormat dwTextureFormat = PixelFormat::Unknown;
 	UINT MipLevels = D3DX_DEFAULT;
 	if(nSize>4)
 	{
@@ -345,7 +345,7 @@ void TextureEntityDirectX::GetFormatAndMipLevelFromFileNameEx(const string& sTex
 
 		// if it is png file we will use dxt3 internally since it contains alpha. 
 		if(c1=='d' && c2=='d' && c3=='s')
-			dwTextureFormat = PixelFormat::Unkonwn;
+			dwTextureFormat = PixelFormat::Unknown;
 		else if(c1=='p' && c2=='n' && c3=='g')
 		{
 			/** whether we treat png file as DXT3 by default. if the texture filename ends with "_32bits.png", we will load with D3DFMT_A8R8G8B8 instead of DXT3. 
@@ -388,7 +388,7 @@ void TextureEntityDirectX::GetFormatAndMipLevelFromFileNameEx(const string& sTex
 void TextureEntityDirectX::GetFormatAndMipLevelFromFileName(const string& sTextureFileName, PixelFormat* pdwTextureFormat, UINT* pnMipLevels)
 {
 	int nSize = (int)sTextureFileName.size();
-	PixelFormat dwTextureFormat = PixelFormat::Unkonwn;
+	PixelFormat dwTextureFormat = PixelFormat::Unknown;
 	UINT MipLevels = D3DX_DEFAULT;
 	if(nSize>4)
 	{
@@ -398,7 +398,7 @@ void TextureEntityDirectX::GetFormatAndMipLevelFromFileName(const string& sTextu
 
 		// if it is png file we will use dxt3 internally since it contains alpha. 
 		if(c1=='d' && c2=='d' && c3=='s')
-			dwTextureFormat = PixelFormat::Unkonwn;
+			dwTextureFormat = PixelFormat::Unknown;
 		else if(c1=='p' && c2=='n' && c3=='g')
 		{
 			/** whether we treat png file as DXT3 by default. if the texture filename ends with "_32bits.png", we will load with D3DFMT_A8R8G8B8 instead of DXT3. 
@@ -498,9 +498,9 @@ HRESULT TextureEntityDirectX::InitDeviceObjects()
 		if(m_pSurface == 0)
 		{
 			if(!IsAsyncLoad())
-				return CreateTextureFromFile_Serial(NULL, NULL, (&m_pTexture), PixelFormat::Unkonwn, 0, GetColorKey() /*COLOR_XRGB(0,0,0) this makes black transparent*/);
+				return CreateTextureFromFile_Serial(NULL, NULL, (&m_pTexture), PixelFormat::Unknown, 0, GetColorKey() /*COLOR_XRGB(0,0,0) this makes black transparent*/);
 			else
-				return CreateTextureFromFile_Async(NULL, NULL, NULL, (void**)(&m_pTexture), PixelFormat::Unkonwn, 0, GetColorKey() /*COLOR_XRGB(0,0,0) this makes black transparent*/);
+				return CreateTextureFromFile_Async(NULL, NULL, NULL, (void**)(&m_pTexture), PixelFormat::Unknown, 0, GetColorKey() /*COLOR_XRGB(0,0,0) this makes black transparent*/);
 		}
 		return S_OK;
 	}
@@ -1445,14 +1445,14 @@ static void copySurfaceCompressed(void* pDest, const void* pSrc, UINT pitch, UIN
 	}
 }
 
-bool TextureEntityDirectX::LoadFromImage(const ParaImage* pImage, UINT nMipLevels, PixelFormat dwTextureFormat/* = PixelFormat::Unkonwn*/, void** ppTexture_/* = nullptr*/)
+bool TextureEntityDirectX::LoadFromImage(const ParaImage* pImage, UINT nMipLevels, PixelFormat dwTextureFormat/* = PixelFormat::Unknown*/, void** ppTexture_/* = nullptr*/)
 {
 	if (SurfaceType == TextureEntity::SysMemoryTexture || SurfaceType == TextureEntity::CubeTexture)
 	{
 		return false;
 	}
 	
-	PixelFormat		pixelFormat = ((PixelFormat::Unkonwn == dwTextureFormat) || (PixelFormat::COUNT == dwTextureFormat)) ? pImage->getRenderFormat() : dwTextureFormat;
+	PixelFormat		pixelFormat = ((PixelFormat::Unknown == dwTextureFormat) || (PixelFormat::COUNT == dwTextureFormat)) ? pImage->getRenderFormat() : dwTextureFormat;
 	PixelFormat     renderFormat = pImage->getRenderFormat();
 
 	HRESULT hr;

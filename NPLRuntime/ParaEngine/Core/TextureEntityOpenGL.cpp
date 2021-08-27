@@ -74,7 +74,7 @@ GLTexture2D* ParaEngine::TextureEntityOpenGL::CreateTextureFromFile_Serial(const
 	CParaFile file;
 	if (file.OpenFile(sFileName.c_str(), true))
 	{
-		LoadFromMemory(file.getBuffer(), file.getSize(), 0, PixelFormat::Unkonwn, (void**)(&texture));
+		LoadFromMemory(file.getBuffer(), file.getSize(), 0, PixelFormat::Unknown, (void**)(&texture));
 		if (texture){
 			texture->AddToAutoReleasePool();
 		}
@@ -549,7 +549,7 @@ bool ParaEngine::TextureEntityOpenGL::SaveToFile(const char* filename, PixelForm
 	return false;
 }
 
-bool ParaEngine::TextureEntityOpenGL::LoadFromImage(const ParaImage* pImage, UINT nMipLevels, PixelFormat dwTextureFormat/* = PixelFormat::Unkonwn*/, void** ppTexture /*= nullptr*/)
+bool ParaEngine::TextureEntityOpenGL::LoadFromImage(const ParaImage* pImage, UINT nMipLevels, PixelFormat dwTextureFormat/* = PixelFormat::Unknown*/, void** ppTexture /*= nullptr*/)
 {
 	GLTexture2D* texture = new GLTexture2D();
 	{

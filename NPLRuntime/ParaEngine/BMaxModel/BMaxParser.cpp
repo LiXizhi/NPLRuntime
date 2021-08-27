@@ -73,7 +73,7 @@ namespace ParaEngine
 
 		if (IsZipData(pBuffer, nSize))
 		{
-			if (GetFirstFileData(pBuffer, uncompressedData))
+			if (GetFirstFileData(pBuffer, nSize, uncompressedData))
 			{
 				pBuffer = uncompressedData.c_str();
 			}

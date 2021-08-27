@@ -38,7 +38,7 @@ namespace ParaEngine
 	*/
 	enum class PixelFormat
 	{
-		Unkonwn,
+		Unknown,
 		R8G8B8,
 		A8R8G8B8,
 		X8R8G8B8,
@@ -145,7 +145,7 @@ namespace ParaEngine
 
 	enum class ERenderState
 	{
-		Unkonwn = 0,
+		Unknown = 0,
 		ZENABLE,
 		FILLMODE,
 		SHADEMODE,

@@ -24,7 +24,7 @@ ParaEngine::ImageEntity::ImageEntity()
 	, _unpack(false)
 	, m_bIsOwnData(true)
 	, _fileType(0)
-	, _renderFormat(PixelFormat::Unkonwn)
+	, _renderFormat(PixelFormat::Unknown)
 	, _hasPremultipliedAlpha(false)
 	, _numberOfMipmaps(0)
 {

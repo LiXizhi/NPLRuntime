@@ -76,7 +76,7 @@ const GLTexture2D::PixelFormatInfoMap GLTexture2D::_pixelFormatInfoTables(Textur
 
 // If the image has alpha, you can create RGBA8 (32-bit) or RGBA4 (16-bit) or RGB5A1 (16-bit)
 // Default is: RGBA8888 (32-bit textures)
-PixelFormat GLTexture2D::g_defaultAlphaPixelFormat = PixelFormat::Unkonwn;
+PixelFormat GLTexture2D::g_defaultAlphaPixelFormat = PixelFormat::Unknown;
 
 const GLTexture2D::PixelFormatInfoMap& GLTexture2D::getPixelFormatInfoMap()
 {
@@ -98,7 +98,7 @@ int GLTexture2D::ccNextPOT(int x)
 
 
 GLTexture2D::GLTexture2D()
-	: _pixelFormat(PixelFormat::Unkonwn)
+	: _pixelFormat(PixelFormat::Unknown)
 	, _pixelsWide(0)
 	, _pixelsHigh(0)
 	, _name(0)
@@ -161,7 +161,7 @@ bool GLTexture2D::initWithImage(const ParaImage *image_, PixelFormat format)
 
 	unsigned char*   tempData = image->getData();
 	Size             imageSize = Size((float)imageWidth, (float)imageHeight);
-	PixelFormat      pixelFormat = ((PixelFormat::Unkonwn == format) || (PixelFormat::COUNT == format)) ? image->getRenderFormat() : format;
+	PixelFormat      pixelFormat = ((PixelFormat::Unknown == format) || (PixelFormat::COUNT == format)) ? image->getRenderFormat() : format;
 	PixelFormat      renderFormat = image->getRenderFormat();
 	size_t           tempDataLen = image->getDataLen();
 
@@ -302,7 +302,7 @@ bool GLTexture2D::initWithMipmaps(const MipmapInfo* mipmaps, int mipmapsNum, Pix
 {
 
 	//the pixelFormat must be a certain value
-	PE_ASSERT2(pixelFormat != PixelFormat::COUNT && pixelFormat != PixelFormat::Unkonwn, "the \"pixelFormat\" param must be a certain value!");
+	PE_ASSERT2(pixelFormat != PixelFormat::COUNT && pixelFormat != PixelFormat::Unknown, "the \"pixelFormat\" param must be a certain value!");
 	PE_ASSERT2(pixelsWide>0 && pixelsHigh>0, "Invalid size");
 
 	if (mipmapsNum <= 0)

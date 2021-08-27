@@ -1862,7 +1862,7 @@ namespace ParaScripting
 
 				if (ParaEngine::IsZipData(sCode.c_str(), sCode.size()))
 				{
-					if (ParaEngine::GetFirstFileData(sCode.c_str(), uncompressedData))
+					if (ParaEngine::GetFirstFileData(sCode.c_str(), sCode.size(), uncompressedData))
 					{
 						pData = &uncompressedData;
 					}
@@ -1918,7 +1918,7 @@ namespace ParaScripting
 		{
 			if (len > 0 && ParaEngine::IsZipData(sString, len))
 			{
-				if (ParaEngine::GetFirstFileData(sString, uncompressedData))
+				if (ParaEngine::GetFirstFileData(sString, len, uncompressedData))
 				{
 					sString = uncompressedData.c_str();
 				}

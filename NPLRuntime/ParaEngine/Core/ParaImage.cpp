@@ -1247,7 +1247,7 @@ namespace ParaEngine
 			break;
 		default:
 			// unsupported conversion or don't need to convert
-			if (format != PixelFormat::Unkonwn && format != PixelFormat::L8)
+			if (format != PixelFormat::Unknown && format != PixelFormat::L8)
 			{
 				OUTPUT_LOG("Can not convert image format PixelFormat::I8 to format ID:%d, we will use it's origin format PixelFormat::I8", static_cast<int>(format));
 			}
@@ -1301,7 +1301,7 @@ namespace ParaEngine
 			break;
 		default:
 			// unsupported conversion or don't need to convert
-			if (format != PixelFormat::Unkonwn && format != PixelFormat::A8L8)
+			if (format != PixelFormat::Unknown && format != PixelFormat::A8L8)
 			{
 				OUTPUT_LOG("Can not convert image format PixelFormat::AI88 to format ID:%d, we will use it's origin format PixelFormat::AI88", static_cast<int>(format));
 			}
@@ -1356,7 +1356,7 @@ namespace ParaEngine
 			break;
 		default:
 			// unsupported conversion or don't need to convert
-			if (format != PixelFormat::Unkonwn && format != PixelFormat::R8G8B8)
+			if (format != PixelFormat::Unknown && format != PixelFormat::R8G8B8)
 			{
 				OUTPUT_LOG("Can not convert image format PixelFormat::RGB888 to format ID:%d, we will use it's origin format PixelFormat::RGB888", static_cast<int>(format));
 			}
@@ -1410,7 +1410,7 @@ namespace ParaEngine
 			break;
 		default:
 			// unsupported conversion or don't need to convert
-			if (format != PixelFormat::Unkonwn && format != PixelFormat::A8R8G8B8)
+			if (format != PixelFormat::Unknown && format != PixelFormat::A8R8G8B8)
 			{
 				OUTPUT_LOG("Can not convert image format PixelFormat::RGBA8888 to format ID:%d, we will use it's origin format PixelFormat::RGBA8888", static_cast<int>(format));
 			}
@@ -1734,7 +1734,7 @@ namespace ParaEngine
 	PixelFormat ParaImage::convertDataToFormat(const unsigned char* data, size_t dataLen, PixelFormat originFormat, PixelFormat format, unsigned char** outData, size_t* outDataLen)
 	{
 		// don't need to convert
-		if (format == originFormat || format == PixelFormat::Unkonwn)
+		if (format == originFormat || format == PixelFormat::Unknown)
 		{
 			*outData = (unsigned char*)data;
 			*outDataLen = dataLen;

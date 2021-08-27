@@ -40,7 +40,7 @@ namespace ParaEngine
 		/** load from memory buffer. 
 		* @param ppTexture: if NULL, we will save to current asset, if not we will save to this object. 
 		*/
-		virtual HRESULT LoadFromMemory(const char* buffer, DWORD nFileSize, UINT nMipLevels, PixelFormat dwTextureFormat = PixelFormat::Unkonwn, void** ppTexture = NULL) override;
+		virtual HRESULT LoadFromMemory(const char* buffer, DWORD nFileSize, UINT nMipLevels, PixelFormat dwTextureFormat = PixelFormat::Unknown, void** ppTexture = NULL) override;
 
 		/**
 		* most assets are loaded asynchronously. This allows us to check if an asset is loaded.
@@ -82,7 +82,7 @@ namespace ParaEngine
 		* @param nMipLevels: Mip levels, default to D3DX_DEFAULT
 		* @param dwColorKey: color key. default to 0(disabled). Use COLOR_XRGB(0,0,0) if blank is treated transparent.
 		*/
-		HRESULT CreateTextureFromFile_Serial(IRenderDevice* pDev = NULL, const char* sFileName = NULL, IDirect3DTexture9** ppTexture = NULL, PixelFormat dwTextureFormat = PixelFormat::Unkonwn, UINT nMipLevels = D3DX_DEFAULT, Color dwColorKey = 0);
+		HRESULT CreateTextureFromFile_Serial(IRenderDevice* pDev = NULL, const char* sFileName = NULL, IDirect3DTexture9** ppTexture = NULL, PixelFormat dwTextureFormat = PixelFormat::Unknown, UINT nMipLevels = D3DX_DEFAULT, Color dwColorKey = 0);
 
 		/**
 		* save any texture to a different texture file format and save with full mipmapping to disk.
@@ -142,7 +142,7 @@ namespace ParaEngine
 		static TextureEntity* CreateTexture(const uint8 * pTexels, int width, int height, int rowLength, int bytesPerPixel, uint32 nMipLevels = 0, EPoolType dwCreatePool = EPoolType::Managed, DWORD nFormat = 0);
 		static TextureEntity* CreateTexture(const char* pFileName, uint32 nMipLevels = 0, EPoolType dwCreatePool = EPoolType::Managed);
 
-		virtual bool LoadFromImage(const ParaImage* pImage, UINT nMipLevels, PixelFormat dwTextureFormat = PixelFormat::Unkonwn, void** ppTexture = nullptr) override;
+		virtual bool LoadFromImage(const ParaImage* pImage, UINT nMipLevels, PixelFormat dwTextureFormat = PixelFormat::Unknown, void** ppTexture = nullptr) override;
 
 	};
 
