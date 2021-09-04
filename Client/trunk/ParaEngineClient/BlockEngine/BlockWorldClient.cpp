@@ -2158,7 +2158,8 @@ namespace ParaEngine
 
 	void BlockWorldClient::InitDeviceObjects()
 	{
-
+		if (IsInBlockWorld())
+			UpdateAllActiveChunks();
 	}
 
 	void BlockWorldClient::RestoreDeviceObjects()

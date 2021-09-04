@@ -288,11 +288,46 @@ HRESULT CD3DApplication::Render3DEnvironment(bool bForceRender)
 	if(!m_bDisableD3D &&  m_bDeviceLost )
 	{
 		// Test the cooperative level to see if it's okay to render
-		if( FAILED( hr = m_pd3dDevice->TestCooperativeLevel() ) )
+		if(!m_pd3dDevice || FAILED( hr = m_pd3dDevice->TestCooperativeLevel() ) )
 		{
+			static int s_deviceLostCount = 0;
 			// If the device was lost, do not render until we get it back
-			if( D3DERR_DEVICELOST == hr )
+			if (!m_pd3dDevice || D3DERR_DEVICELOST == hr)
+			{
+				OUTPUT_LOG("TestCooperativeLevel D3DERR_DEVICELOST\n");
+				// TRICKY: when connecting with win10 remote desktop, TestCooperativeLevel always returns D3DERR_DEVICELOST
+				// we will recreate the entire directX device in this case. 
+				s_deviceLostCount = s_deviceLostCount + 1;
+				if (s_deviceLostCount >= 5)
+				{
+					s_deviceLostCount = 0;
+					OUTPUT_LOG("keep getting D3DERR_DEVICELOST. Try recreate entire d3d interface instead of resetting it. This could be a bug of direct3d. \n");
+					Cleanup3DEnvironment();
+					SAFE_RELEASE(m_pD3D);
+					m_pD3D = Direct3DCreate9(D3D_SDK_VERSION);
+					m_d3dEnumeration.SetD3D(m_pD3D);
+					if (SUCCEEDED(hr = m_d3dEnumeration.Enumerate()))
+					{
+						if (SUCCEEDED(hr = ChooseInitialD3DSettings()))
+						{
+							hr = Initialize3DEnvironment();
+							if (SUCCEEDED(hr))
+								return S_OK;
+						}
+						else
+						{
+							SAFE_RELEASE(m_pD3D);
+						}
+					}
+					else
+					{
+						SAFE_RELEASE(m_pD3D);
+					}
+				}
+
+				::Sleep(1000);
 				return S_OK;
+			}
 
 			// Check if the device needs to be reset.
 			if( D3DERR_DEVICENOTRESET == hr )
@@ -310,9 +345,9 @@ HRESULT CD3DApplication::Render3DEnvironment(bool bForceRender)
 				
 				if( FAILED( hr = Reset3DEnvironment() ) )
 				{
-					// This fixed a strange issue where d3d->reset() returns D3DERR_DEVICELOST. Perhaps this is due to strange. 
-					// I will keep reset for 5 seconds, until reset() succeed, otherwise we will exit application.  
-					for (int i=0;i<5 && hr == D3DERR_DEVICELOST; ++i)
+					// This fixed a strange issue where d3d->reset() returns D3DERR_DEVICELOST. 
+					// I will keep reset for 5 seconds, until reset() succeed
+					for (int i=0; i < 5 && hr == D3DERR_DEVICELOST; ++i)
 					{
 						::Sleep(1000);
 						if( SUCCEEDED( hr = Reset3DEnvironment() ) )
@@ -327,8 +362,8 @@ HRESULT CD3DApplication::Render3DEnvironment(bool bForceRender)
 							return hr;
 						}
 					}
-					return DisplayErrorMsg( D3DAPPERR_RESETFAILED, MSGERR_APPMUSTEXIT );
 				}
+				s_deviceLostCount = 0;
 			}
 			return hr;
 		}
@@ -1136,7 +1171,7 @@ HRESULT CD3DApplication::Initialize3DEnvironment()
 			
         }
 
-        // Confine cursor to fullscreen window
+        // Confine cursor to full screen window
         if( m_bClipCursorWhenFullscreen )
         {
             if (!m_bWindowed )
@@ -1284,7 +1319,7 @@ void CD3DApplication::BuildPresentParamsFromSettings()
 //       - Sets parameters for z-buffer depth and back buffer
 //       - Creates the D3D device
 //       - Sets the window position (if windowed, that is)
-//       - Makes some determinations as to the abilites of the driver (HAL, etc)
+//       - Makes some determinations as to the abilities of the driver (HAL, etc)
 //       - Sets up some cursor stuff
 //       - Calls InitDeviceObjects()
 //       - Calls RestoreDeviceObjects()
@@ -1295,12 +1330,13 @@ HRESULT CD3DApplication::Reset3DEnvironment()
 {
     HRESULT hr;
 
-    // Release all vidmem objects
+    // Release all video memory objects
     if( m_bDeviceObjectsRestored )
     {
         m_bDeviceObjectsRestored = false;
         InvalidateDeviceObjects();
     }
+	
     // Reset the device
     if( FAILED( hr = m_pd3dDevice->Reset( &m_d3dpp ) ) )
 	{
@@ -1309,13 +1345,14 @@ HRESULT CD3DApplication::Reset3DEnvironment()
         return hr;
 	}
 
+
     // Store render target surface desc
     LPDIRECT3DSURFACE9 pBackBuffer;
     m_pd3dDevice->GetBackBuffer( 0, 0, D3DBACKBUFFER_TYPE_MONO, &pBackBuffer );
     pBackBuffer->GetDesc( &m_d3dsdBackBuffer );
     pBackBuffer->Release();
 
-    // Confine cursor to fullscreen window
+    // Confine cursor to full screen window
     if( m_bClipCursorWhenFullscreen )
     {
         if (!m_bWindowed )
@@ -1334,7 +1371,7 @@ HRESULT CD3DApplication::Reset3DEnvironment()
     hr = RestoreDeviceObjects();
     if( FAILED(hr) )
     {
-		OUTPUT_LOG("reset d3d device failed because Restor func failed: %d\n", hr);
+		OUTPUT_LOG("reset d3d device failed because Restore func failed: %d\n", hr);
         InvalidateDeviceObjects();
         return hr;
     }
@@ -1343,11 +1380,12 @@ HRESULT CD3DApplication::Reset3DEnvironment()
     // If the app is paused, trigger the rendering of the current frame
     if( false == m_bFrameMoving )
     {
+		OUTPUT_LOG("render single frame");
         m_bSingleStep = true;
         DXUtil_Timer( TIMER_START );
         DXUtil_Timer( TIMER_STOP );
     }
-
+	OUTPUT_LOG("reset d3d device succeed\n");
     return S_OK;
 }
 
@@ -1485,7 +1523,7 @@ HRESULT CD3DApplication::ForceWindowed()
 // Desc: Prepare the window for a possible change between windowed mode and
 //       fullscreen mode.  This function is virtual and thus can be overridden
 //       to provide different behavior, such as switching to an entirely
-//       different window for fullscreen mode (as in the MFC sample apps).
+//       different window for full screen mode (as in the MFC sample apps).
 //-----------------------------------------------------------------------------
 HRESULT CD3DApplication::AdjustWindowForChange()
 {
@@ -1503,7 +1541,7 @@ HRESULT CD3DApplication::AdjustWindowForChange()
     }
     else
     {
-        // Set fullscreen-mode style
+        // Set full screen mode style
         SetWindowLong( m_hWnd, GWL_STYLE, WS_POPUP|WS_SYSMENU|WS_VISIBLE );
         if( m_hMenu == NULL )
         {

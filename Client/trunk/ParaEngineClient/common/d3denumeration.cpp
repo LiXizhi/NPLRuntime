@@ -286,6 +286,14 @@ HRESULT CD3DEnumeration::Enumerate()
     if( m_pD3D == NULL )
         return E_FAIL;
 
+	if (m_pAdapterInfoList != NULL)
+	{
+		for (UINT iai = 0; iai < m_pAdapterInfoList->Count(); iai++)
+			delete (D3DAdapterInfo*)m_pAdapterInfoList->GetPtr(iai);
+		delete m_pAdapterInfoList;
+	}
+	SAFE_DELETE(m_pAllowedAdapterFormatList);
+
     m_pAdapterInfoList = new CArrayList( AL_REFERENCE );
     if( m_pAdapterInfoList == NULL )
         return E_OUTOFMEMORY;
