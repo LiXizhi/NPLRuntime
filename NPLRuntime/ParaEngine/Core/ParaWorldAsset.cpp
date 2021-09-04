@@ -734,6 +734,7 @@ HRESULT CParaWorldAsset::DeleteDeviceObjects()
 	m_CadModelManager.DeleteDeviceObjects();
 	SAFE_RELEASE( m_pShadowSquareVB );
 #endif
+	GetVertexBufferPoolManager().DeleteDeviceObjects();
 	// signal
 	OnDeleteDeviceObjects();
 	return hr;

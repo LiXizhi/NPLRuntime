@@ -84,6 +84,12 @@ void ParaEngine::ParaVertexBufferPool::Cleanup()
 	m_nTotalBufferBytes = 0;
 }
 
+HRESULT ParaEngine::ParaVertexBufferPool::DeleteDeviceObjects()
+{
+	m_bIsInitialized = false;
+	RendererRecreated();
+	return S_OK;
+}
 
 HRESULT ParaEngine::ParaVertexBufferPool::RendererRecreated()
 {

@@ -2121,6 +2121,8 @@ void BlockWorldClient::SetUsePointTextureFiltering(bool bUse)
 
 void BlockWorldClient::InitDeviceObjects()
 {
+	if (IsInBlockWorld())
+		UpdateAllActiveChunks();
 }
 
 void BlockWorldClient::RestoreDeviceObjects()

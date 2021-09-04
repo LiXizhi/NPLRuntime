@@ -57,6 +57,7 @@ namespace ParaEngine
 		/** clear all pooled objects. */
 		virtual void Cleanup();
 	
+		virtual HRESULT DeleteDeviceObjects();
 		virtual HRESULT RendererRecreated();
 		
 		

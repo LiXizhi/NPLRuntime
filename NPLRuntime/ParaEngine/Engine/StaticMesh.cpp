@@ -625,6 +625,8 @@ namespace ParaEngine
 
 		SAFE_RELEASE(m_pSysMemMesh);
 
+		DeleteDeviceObjects();
+
 		return S_OK;
 	}
 
