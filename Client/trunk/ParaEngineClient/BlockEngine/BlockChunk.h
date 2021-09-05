@@ -101,6 +101,7 @@ namespace ParaEngine
 		ChunkCustomDataType_TimeStamp_SameInteger,
 		ChunkCustomDataType_Heightmap,
 		ChunkCustomDataType_LightValues,
+		ChunkCustomDataType_Tag,
 		// chunk data: following is 16*16*16 chunk data which may further contain custom data. 
 		// this is always the last parent custom data since it does not specify size, and we will write to end of file.  
 		ChunkCustomDataType_ChunksData = 100,

@@ -982,7 +982,12 @@ namespace ParaEngine
 			{
 				// TODO: heightmap of each 512*512 chunk column. 
 			}
-
+			if(!GetTag().empty())
+			{
+				memFile.WriteEncodedUInt(ChunkCustomDataType_Tag);
+				memFile.WriteEncodedUInt((int)GetTag().size());
+				memFile.write(GetTag().c_str(), (int)GetTag().size());
+			}
 			memFile.WriteEncodedUInt(ChunkCustomDataType_ChunksData);
 
 			// saving for all 32*32*16 chunks
@@ -1265,11 +1270,25 @@ namespace ParaEngine
 						OUTPUT_LOG("error:invalid m_chunkTimestamp \n");
 						return;
 					}
+					break;
 				}
-				break;
+				case ChunkCustomDataType_Tag:
+				{
+					uint32_t nByteCount = pFile->ReadEncodedUInt();
+					if (nByteCount > 0)
+					{
+						m_sTag.resize(nByteCount);
+						pFile->read(&(m_sTag[0]), nByteCount);
+					}
+					break;
+				}
 				default:
-					OUTPUT_LOG("error:unknown block region file format in custom data \n");
-					return;
+				{
+					uint32_t nByteCount = pFile->ReadEncodedUInt();
+					pFile->seekRelative(nByteCount);
+					OUTPUT_LOG("warn: unknown block region file format in custom data \n");
+					break;
+				}
 				}
 			}
 		}
@@ -2255,6 +2274,16 @@ namespace ParaEngine
 		return m_readWriteLock;
 	}
 
+	const std::string& BlockRegion::GetTag()
+	{
+		return m_sTag;
+	}
+
+	void BlockRegion::SetTag(const std::string& sTag)
+	{
+		m_sTag = sTag;
+	}
+
 	int BlockRegion::InstallFields(CAttributeClass* pClass, bool bOverride)
 	{
 		IAttributeFields::InstallFields(pClass, bOverride);
@@ -2265,6 +2294,7 @@ namespace ParaEngine
 		pClass->AddField("IsModified", FieldType_Bool, (void*)SetModified_s, (void*)IsModified_s, NULL, NULL, bOverride);
 		pClass->AddField("SaveToFile", FieldType_String, (void*)SaveToFile_s, (void*)0, NULL, NULL, bOverride);
 		pClass->AddField("LoadFromFile", FieldType_String, (void*)LoadFromFile_s, (void*)0, NULL, NULL, bOverride);
+		pClass->AddField("Tag", FieldType_String, (void*)SetTag_s, (void*)GetTag_s, NULL, NULL, bOverride);
 		pClass->AddField("DeleteAllBlocks", FieldType_void, (void*)DeleteAllBlocks_s, NULL, NULL, "", bOverride);
 		pClass->AddField("IsLocked", FieldType_Bool, (void*)SetLocked_s, (void*)IsLocked_s, NULL, NULL, bOverride);
 		pClass->AddField("ClearAllLight", FieldType_void, (void*)ClearAllLight_s, NULL, NULL, "", bOverride);

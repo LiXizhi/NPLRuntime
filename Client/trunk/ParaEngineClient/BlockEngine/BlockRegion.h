@@ -44,6 +44,11 @@ namespace ParaEngine
 		ATTRIBUTE_METHOD1(BlockRegion, SetModified_s, bool) { cls->SetModified(p1); return S_OK; }
 		ATTRIBUTE_METHOD1(BlockRegion, LoadFromFile_s, const char*) { cls->LoadFromFile(p1); return S_OK; }
 		ATTRIBUTE_METHOD1(BlockRegion, SaveToFile_s, const char*) { cls->SaveToFile(p1); return S_OK; }
+		
+		ATTRIBUTE_METHOD1(BlockRegion, GetTag_s, const char**) { *p1 = cls->GetTag().c_str(); return S_OK; }
+		ATTRIBUTE_METHOD1(BlockRegion, SetTag_s, const char*) { cls->SetTag(p1); return S_OK; }
+
+
 		ATTRIBUTE_METHOD(BlockRegion, DeleteAllBlocks_s) { cls->DeleteAllBlocks(); return S_OK; }
 		
 		ATTRIBUTE_METHOD1(BlockRegion, GetTotalBytes_s, int*) { *p1 = cls->GetTotalBytes(); return S_OK; }
@@ -203,6 +208,10 @@ namespace ParaEngine
 		/** get read write lock of this region. */
 		BlockReadWriteLock& GetReadWriteLock();
 
+		/** user defined custom data that can be set via scripting interface. */
+		const std::string& GetTag();
+		void SetTag(const std::string& sTag);
+		
 	private:
 		void ParserFile(CParaFile* pFile);
 		void ParserFile1_0(CParaFile* pFile);
@@ -253,6 +262,9 @@ namespace ParaEngine
 		uint32 m_nChunksLoaded;
 
 		std::string m_sName;
+
+		/** user defined custom data that can be set via scripting interface. */
+		std::string m_sTag;
 	};
 
 
