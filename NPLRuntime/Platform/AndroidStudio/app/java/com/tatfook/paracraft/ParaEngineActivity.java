@@ -504,4 +504,10 @@ public class ParaEngineActivity extends AppCompatActivity {
             return null;
         }
     }
+
+    @Keep
+    public static void onExit(){
+        sContext.finish();
+        System.exit(0);
+    }
 }

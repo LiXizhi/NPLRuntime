@@ -15,6 +15,7 @@ IParaEngineApp* CreateParaEngineApp()
 }
 
 namespace ParaEngine {
+	const std::string CParaEngineAppAndroid::classname = "com/tatfook/paracraft/ParaEngineActivity";
 
 	CParaEngineAppAndroid::CParaEngineAppAndroid() {
 		SetTouchInputting(true);
@@ -113,4 +114,8 @@ namespace ParaEngine {
 		CParaEngineAppBase::OnResume();
 	}
 
+	void CParaEngineAppAndroid::Exit(int nReturnCode /*= 0*/)
+	{
+		JniHelper::callStaticVoidMethod(classname, "onExit");
+	}
 } //namespace ParaEngine
