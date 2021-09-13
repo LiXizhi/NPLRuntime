@@ -75,5 +75,8 @@ namespace ParaEngine
 
 		virtual void OnPause() override;
 		virtual void OnResume() override;
+		virtual void Exit(int nReturnCode /*= 0*/) override;
+	private:
+		static const std::string classname;
 	};
 }
