@@ -419,6 +419,12 @@ if(NPLRUNTIME_SUPPORT_FBX)
 	ADD_DEFINITIONS(-DSUPPORT_FBX_MODEL_FILE)
 endif()
 
+option(NPLRUNTIME_WINXP OFF)
+if(NPLRUNTIME_WINXP)
+	ADD_DEFINITIONS(-DWINXP)
+endif()
+
+
 
 # END OF INCLUDE DIRECTORIES
 # ==================================================================================

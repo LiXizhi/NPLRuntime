@@ -24,6 +24,7 @@
 #include "ParaEngineSettings.h"
 #include "NPLRuntime.h"
 #include "util/os_calls.h"
+#include "util/StringHelper.h"
 #include "SelectionManager.h"
 #include "BufferPicking.h"
 #include "FrameRateController.h"
@@ -1398,7 +1399,17 @@ const std::string& ParaEngine::ParaEngineSettings::GetMachineID()
 	{
 		DWORD bufSize = 0;
 		BYTE buf[65535] = { 0 };
-
+		{
+			// windows XP does not have GetSystemFirmwareTable in Kernel32.dll, so we will use GetMaxMacAddress instead 
+			auto osInfo = GetStats(1);
+			StringHelper::make_lower(osInfo);
+			if (osInfo.find("windows xp") != string::npos)
+			{
+				str = GetMaxMacAddress();
+				return str;
+			}
+		}
+#ifndef WINXP
 		RawSMBIOSData *Smbios;
 		dmi_header *h = nullptr;
 		int flag = 1;
@@ -1455,6 +1466,7 @@ const std::string& ParaEngine::ParaEngineSettings::GetMachineID()
 			}
 
 		} while (false);
+#endif
 	}
 #endif
 

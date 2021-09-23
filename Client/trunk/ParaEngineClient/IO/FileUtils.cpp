@@ -70,7 +70,7 @@
 #endif
 
 
-#ifdef NPLRUNTIME_STATICLIB
+#if defined(NPLRUNTIME_STATICLIB) || defined(WINXP)
 	#ifndef USE_BOOST_FILE_API
 		#define USE_BOOST_FILE_API
 	#endif
@@ -761,6 +761,7 @@ ParaEngine::FileData ParaEngine::CFileUtils::GetDataFromFile(const char* filenam
 	return data;
 #else
 	HANDLE hFile = INVALID_HANDLE_VALUE;
+
 	if (!CParaFile::GetDevDirectory().empty())
 	{
 		std::string sAbsFilePath = CParaFile::GetDevDirectory() + filename;
