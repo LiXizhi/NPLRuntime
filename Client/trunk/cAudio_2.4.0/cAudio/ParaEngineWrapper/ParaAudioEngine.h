@@ -12,6 +12,7 @@ namespace ParaEngine
 	using namespace std;
 	using namespace cAudio;
 	class CParaAudioEngine;
+	class CParaAudioCapture;
 	
 	/** fix coordinate system based on current coordinate system used. */
 	extern PARAVECTOR3 FixCoordinate(const PARAVECTOR3& v);
@@ -320,10 +321,18 @@ namespace ParaEngine
 		\param outputFrequency: Frequency of the output audio or -1 for the device default.
 		\param eaxEffectSlots: Number of EFX effect slots to request.  Has no effect if EFX is not supported or compiled out.
 		\return True on success, False if initialization of OpenAL failed. */
-		virtual bool initialize(const char* deviceName = 0x0, int outputFrequency = -1, int eaxEffectSlots = 4);;
+		virtual bool initialize(const char* deviceName = 0x0, int outputFrequency = -1, int eaxEffectSlots = 4);
 
 		//! Shuts the manager down, cleaning up audio sources in the process.  Does not clean up decoders, data sources, or event handlers.
-		virtual void shutDown() {m_audio_manager->shutDown();};
+		virtual void shutDown();
+
+		/** Creates an interface to an Audio Capture Object.
+		* Note: This is the only way to get access to the audio capture capabilities of cAudio.
+		* You must delete this interface using destroyAudioCapture() once you are done with it.
+		* @param initializeDefault: Whether to return an object initialized with the default settings.  If set to false, you must make a call to initialize before audio can be captured.
+		* @return A pointer to the created object, NULL if the object could not be allocated.
+		*/
+		virtual IParaAudioCapture* CreateGetAudioCapture(bool initializeDefault = true);
 
 		//! If threading is disabled, you must call this function every frame to update the playback buffers of audio sources.  Otherwise it should not be called.
 		virtual void update() {/*m_audio_manager->update();*/};
@@ -344,15 +353,15 @@ namespace ParaEngine
 		//! Returns the name of an available playback device.
 		/** \param index: Specify which name to retrieve ( Range: 0 to getAvailableDeviceCount()-1 ) 
 		\return Name of the selected device. */
-		virtual const char* getAvailableDeviceName(unsigned int index);;
+		virtual const char* getAvailableDeviceName(unsigned int index);
 		
 		//! Returns the number of playback devices available for use.
 		/** \return Number of playback devices available. */
-		virtual unsigned int getAvailableDeviceCount();;
+		virtual unsigned int getAvailableDeviceCount();
 		
 		//! Returns the name of the default system playback device.
 		/** \return Name of the default playback device. */
-		virtual const char* getDefaultDeviceName();;
+		virtual const char* getDefaultDeviceName();
 
 		//! Creates an Audio Source object using the highest priority data source that has the referenced filename
 		/**
@@ -483,5 +492,6 @@ namespace ParaEngine
 		IAudioPlugin* m_plugin_mp3;
 		IAudioDeviceList* m_deviceList;
 		AudioMap_Type m_audio_source_map;
+		CParaAudioCapture * m_pAudioCapture;
 	};
 }

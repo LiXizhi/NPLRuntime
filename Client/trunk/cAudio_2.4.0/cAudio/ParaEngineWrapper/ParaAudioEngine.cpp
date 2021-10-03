@@ -6,6 +6,7 @@
 //-----------------------------------------------------------------------------
 #include "PluginAPI.h"
 #include "ParaAudioEngine.h"
+#include "ParaAudioCapture.h"
 #include "cMP3Plugin.h"
 #include "cPluginManager.h"
 #include "ILogReceiver.h"
@@ -22,7 +23,7 @@ PARAVECTOR3 ParaEngine::FixCoordinate(const PARAVECTOR3& v)
 }
 
 CParaAudioEngine::CParaAudioEngine()
-	:m_audio_manager(NULL), m_plugin_mp3(NULL)
+	:m_audio_manager(NULL), m_plugin_mp3(NULL), m_pAudioCapture(NULL)
 {
 #ifdef CAUDIO_COMPILE_WITH_PLUGIN_SUPPORT
 	// load plugins for MP3 and effects
@@ -42,6 +43,8 @@ CParaAudioEngine::CParaAudioEngine()
 
 CParaAudioEngine::~CParaAudioEngine()
 {
+	SAFE_DELETE(m_pAudioCapture);
+	
 	if(m_audio_manager!=NULL)
 	{
 		//Delete all IAudio sounds
@@ -222,6 +225,21 @@ const char* ParaEngine::CParaAudioEngine::getDefaultDeviceName()
 bool ParaEngine::CParaAudioEngine::initialize(const char* deviceName /*= 0x0*/, int outputFrequency /*= -1*/, int eaxEffectSlots /*= 4*/)
 {
 	return m_audio_manager->initialize(deviceName, outputFrequency, eaxEffectSlots);
+}
+
+
+void ParaEngine::CParaAudioEngine::shutDown()
+{
+	m_audio_manager->shutDown();
+}
+
+ParaEngine::IParaAudioCapture* ParaEngine::CParaAudioEngine::CreateGetAudioCapture(bool initializeDefault /*= true*/)
+{
+	if (! m_pAudioCapture)
+	{
+		m_pAudioCapture = new CParaAudioCapture();
+	}
+	return m_pAudioCapture;
 }
 
 ///////////////////////////////////////////////////////////////////////
