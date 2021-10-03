@@ -115,19 +115,58 @@ void ParaScripting::ParaAudio::SetDistanceModel( int eDistModel )
 	return CAudioEngine2::GetInstance()->SetDistanceModel((ParaAudioDistanceModelEnum)eDistModel);
 }
 
-void ParaScripting::ParaAudio::StartRecording()
+bool ParaScripting::ParaAudio::StartRecording()
 {
-	CAudioEngine2::GetInstance()->getMCIController()->Start();
+	auto pAutoCapture = CAudioEngine2::GetInstance()->CreateGetAudioCapture();
+	if (pAutoCapture)
+	{
+		return pAutoCapture->beginCapture();
+	}
+	return false;
 }
 
 void ParaScripting::ParaAudio::StopRecording()
 {
-	CAudioEngine2::GetInstance()->getMCIController()->Stop();
+	auto pAutoCapture = CAudioEngine2::GetInstance()->CreateGetAudioCapture();
+	if (pAutoCapture)
+	{
+		pAutoCapture->stopCapture();
+	}
 }
 
-void ParaScripting::ParaAudio::SaveRecording(const char* szWavePath)
+bool ParaScripting::ParaAudio::SaveRecording(const char* szWavePath)
 {
-	CAudioEngine2::GetInstance()->getMCIController()->Save(szWavePath);
+	auto pAutoCapture = CAudioEngine2::GetInstance()->CreateGetAudioCapture();
+	if (pAutoCapture && szWavePath)
+	{
+		auto sFileExtension = CParaFile::GetFileExtension(szWavePath);
+		if (sFileExtension == "ogg")
+		{
+			return pAutoCapture->saveToFile(szWavePath, CAudioEngine2::GetInstance()->GetCaptureAudioQuality()) != 0;
+		}
+		else
+		{
+			auto nSize = pAutoCapture->getCurrentCapturedAudioSize();
+			if (nSize > 0)
+			{
+				std::vector<char> data;
+				data.resize(nSize);
+				if (pAutoCapture->getCapturedAudio(&(data[0]), nSize) == nSize)
+				{
+					bool bSucceed = false;
+					CParaFile file;
+					if (file.OpenFile(szWavePath, false))
+					{
+						file.WriteString(&(data[0]), nSize);
+						file.close();
+						bSucceed = true;
+					}
+					return bSucceed;
+				}
+			}
+		}
+	}
+	return false;
 }
 
 /////////////////////////////////////////////////////////////////////////

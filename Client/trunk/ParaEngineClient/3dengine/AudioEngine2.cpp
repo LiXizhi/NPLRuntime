@@ -42,7 +42,7 @@ const char* AUDIO_ENGINE_DLL_PATH = ("cAudioEngine." DLL_FILE_EXT);
 #endif
 
 ParaEngine::CAudioEngine2::CAudioEngine2()
-	:m_pAudioEngine(NULL), m_bEnableAudioEngine(true), m_fGlobalVolume(1.f), m_bAutoMoveListener(true), m_fGlobalVolumeBeforeSwitch(0.f)
+	:m_pAudioEngine(NULL), m_bEnableAudioEngine(true), m_fGlobalVolume(1.f), m_bAutoMoveListener(true), m_fGlobalVolumeBeforeSwitch(0.f), m_fCaptureAudioQuality(0.1f)
 {
 }
 
@@ -203,12 +203,12 @@ unsigned int ParaEngine::CAudioEngine2::GetDeviceCount()
 		return 0;
 }
 
-string ParaEngine::CAudioEngine2::GetDeviceName(unsigned int index)
+const char* ParaEngine::CAudioEngine2::GetDeviceName(unsigned int index)
 {
 	if (m_pAudioEngine != nullptr && index >= 0 && index < m_pAudioEngine->getAvailableDeviceCount())
 		return m_pAudioEngine->getAvailableDeviceName(index);
 	else
-		return "";
+		return CGlobals::GetString(0).c_str();
 }
 
 void ParaEngine::CAudioEngine2::CleanupAudioEngine()
@@ -880,6 +880,16 @@ void ParaEngine::CAudioEngine2::OnSwitch(bool bOn)
 	}
 }
 
+float ParaEngine::CAudioEngine2::GetCaptureAudioQuality() const
+{
+	return m_fCaptureAudioQuality;
+}
+
+void ParaEngine::CAudioEngine2::SetCaptureAudioQuality(float val)
+{
+	m_fCaptureAudioQuality = val;
+}
+
 ParaEngine::CAudioEngine2::CAudioPlaybackHistory& ParaEngine::CAudioEngine2::GetPlaybackHistory()
 {
 	return m_PlaybackHistory;
@@ -1074,5 +1084,26 @@ MCIController* ParaEngine::CAudioEngine2::getMCIController()
 {
 	static MCIController controller;
 	return &controller;
+}
+
+ParaEngine::IParaAudioCapture* ParaEngine::CAudioEngine2::CreateGetAudioCapture()
+{
+	if (m_pAudioEngine)
+	{
+		return m_pAudioEngine->CreateGetAudioCapture();
+	}
+	return NULL;
+}
+
+int ParaEngine::CAudioEngine2::InstallFields(CAttributeClass* pClass, bool bOverride)
+{
+	// install parent fields if there are any. Please replace __super with your parent class name.
+	IAttributeFields::InstallFields(pClass, bOverride);
+	PE_ASSERT(pClass != NULL);
+
+	pClass->AddField("DeviceName", FieldType_String, (void*)SetDeviceName_s, (void*)GetDeviceName_s, NULL, NULL, bOverride);
+	pClass->AddField("CaptureAudioQuality", FieldType_Float, (void*)SetCaptureAudioQuality_s, (void*)GetCaptureAudioQuality_s, NULL, "[0.1, 1]", bOverride);
+
+	return S_OK;
 }
 

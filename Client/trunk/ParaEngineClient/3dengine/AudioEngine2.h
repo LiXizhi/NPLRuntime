@@ -152,11 +152,11 @@ namespace ParaEngine
 	* And it adds async sound asset downloading support to the original interface. 
 	* It also implement some handy functions to play 2d and 3d sound. 
 	*/
-	class CAudioEngine2
+	class CAudioEngine2 : public IAttributeFields
 	{
 	public:
 		CAudioEngine2();
-		~CAudioEngine2();
+		virtual ~CAudioEngine2();
 
 		/** get the singleton interface*/
 		static CAudioEngine2* GetInstance();
@@ -164,12 +164,32 @@ namespace ParaEngine
 		/** get the audio interface */
 		IParaAudioEngine* GetInterface();
 
+		//////////////////////////////////////////////////////////////////////////
+		// implementation of IAttributeFields
+
+		/** attribute class ID should be identical, unless one knows how overriding rules work.*/
+		virtual int GetAttributeClassID() { return ATTRIBUTE_CLASSID_CAudioEngine2; }
+		/** a static string, describing the attribute class object's name */
+		virtual const char* GetAttributeClassName() { static const char name[] = "CAudioEngine2"; return name; }
+		/** a static string, describing the attribute class object */
+		virtual const char* GetAttributeClassDescription() { static const char desc[] = ""; return desc; }
+		/** this class should be implemented if one wants to add new attribute. This function is always called internally.*/
+		virtual int InstallFields(CAttributeClass* pClass, bool bOverride);
+
+		ATTRIBUTE_METHOD1(CAudioEngine2, GetDeviceName_s, const char**) { *p1 = cls->GetDeviceName(0); return S_OK; }
+		ATTRIBUTE_METHOD1(CAudioEngine2, SetDeviceName_s, const char*) { cls->ResetAudioDevice(p1); return S_OK; }
+
+		ATTRIBUTE_METHOD1(CAudioEngine2, GetCaptureAudioQuality_s, float*) { *p1 = cls->GetCaptureAudioQuality(); return S_OK; }
+		ATTRIBUTE_METHOD1(CAudioEngine2, SetCaptureAudioQuality_s, float) { cls->SetCaptureAudioQuality(p1); return S_OK; }
+
+	public:
+
 		/** check load the plugin dll if any */
 		HRESULT InitAudioEngine(IParaAudioEngine* pInteface = NULL);
 
 		void ResetAudioDevice(const string& deviceName);
 		unsigned int GetDeviceCount();
-		string GetDeviceName(unsigned int index);
+		const char* GetDeviceName(unsigned int index);
 
 		/** shutdown and clean up audio engine. */
 		void CleanupAudioEngine();
@@ -227,6 +247,12 @@ namespace ParaEngine
 
 		/** whether to automatically move the listener according to current camera position. */
 		bool GetAutoMoveListener() {return m_bAutoMoveListener; };
+
+		float GetCaptureAudioQuality() const;
+		/** 
+		* @param baseQuality: value in range [0.1, 1].   0.1 is lowest quality, 1 is best quality.  0.4 is usual
+		*/
+		void SetCaptureAudioQuality(float val);
 	public:
 		//////////////////////////////////////////////////////////////////////////
 		// handy functions for playback
@@ -428,7 +454,11 @@ namespace ParaEngine
 		void PauseAll();
 		void ResumeAll();
 
+		/** OBSOLETED, see CreateGetAudioCapture */
 		MCIController* getMCIController();
+
+		/** for audio capture */
+		IParaAudioCapture* CreateGetAudioCapture();
 	private:
 		IParaAudioEngine* m_pAudioEngine;
 		bool m_bEnableAudioEngine;
@@ -442,5 +472,6 @@ namespace ParaEngine
 		float m_fGlobalVolume;
 		float m_fGlobalVolumeBeforeSwitch;
 		bool m_bAutoMoveListener;
+		float m_fCaptureAudioQuality;
 	};
 }
