@@ -21,6 +21,7 @@ import android.view.View;
 import android.view.SurfaceHolder;
 import android.view.ViewTreeObserver;
 import android.view.inputmethod.InputMethodManager;
+import android.widget.Toast;
 
 public class ParaEngineGLSurfaceView extends GLSurfaceView {
     // ===========================================================
@@ -53,6 +54,7 @@ public class ParaEngineGLSurfaceView extends GLSurfaceView {
     private int curPointerId = 0;
     private float curPointerX = 0;
     private float curPointerY = 0;
+    private long exitTime;
 
     // TODO Static handler -> Potential leak!
     private static Handler sHandler = null;
@@ -521,12 +523,19 @@ public class ParaEngineGLSurfaceView extends GLSurfaceView {
             onMouseRightKeyUp();
             return false;
         } else {
-            this.queueEvent(new Runnable() {
-                @Override
-                public void run() {
-                    ParaEngineGLSurfaceView.this.mRenderer.handleKeyUp(pKeyCode);
-                }
-            });
+            if ((System.currentTimeMillis() - exitTime) > 2000) {
+                Toast.makeText(sActivity, "再按一次退出", Toast.LENGTH_LONG).show();
+                exitTime = System.currentTimeMillis();
+            } else {
+                ParaEngineActivity.onExit();
+            }
+
+            // this.queueEvent(new Runnable() {
+            //     @Override
+            //     public void run() {
+            //         ParaEngineGLSurfaceView.this.mRenderer.handleKeyUp(pKeyCode);
+            //     }
+            // });
             return super.onKeyUp(pKeyCode, pKeyEvent);
         }
     }
