@@ -1162,6 +1162,7 @@ void ParaEngine::ParaEngineSettings::LoadNameIndex()
 	m_name_to_index["OverlayPicking"] = 8;
 	m_name_to_index["AsyncLoader"] = 9;
 	m_name_to_index["gameFRC"] = 10;
+	m_name_to_index["AudioEngine"] = 11;
 }
 
 IAttributeFields* ParaEngine::ParaEngineSettings::GetChildAttributeObject(const std::string& sName)
@@ -1194,6 +1195,8 @@ IAttributeFields* ParaEngine::ParaEngineSettings::GetChildAttributeObject(int nR
 		return &(CAsyncLoader::GetSingleton());
 	else if (nRowIndex == 10)
 		return &g_gameTime;
+	else if (nRowIndex == 11)
+		return CAudioEngine2::GetInstance();
 	else
 		return NULL;
 }

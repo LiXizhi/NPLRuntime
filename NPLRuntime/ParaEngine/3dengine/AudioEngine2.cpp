@@ -13,9 +13,9 @@
 #include "util/StringHelper.h"
 #include "util/MidiMsg.h"
 #include "AudioEngine2.h"
-#include "MCIController.h"
 #include "ParaEngineCore.h"
 #include "IParaEngineApp.h"
+#include "MCIController.h"
 
 /**@def define to log verbose. */
 // #define DEBUG_AUDIO
@@ -42,7 +42,7 @@ const char* AUDIO_ENGINE_DLL_PATH = ("cAudioEngine." DLL_FILE_EXT);
 #endif
 
 ParaEngine::CAudioEngine2::CAudioEngine2()
-	:m_pAudioEngine(NULL), m_bEnableAudioEngine(true), m_fGlobalVolume(1.f), m_bAutoMoveListener(true), m_fGlobalVolumeBeforeSwitch(0.f)
+	:m_pAudioEngine(NULL), m_bEnableAudioEngine(true), m_fGlobalVolume(1.f), m_bAutoMoveListener(true), m_fGlobalVolumeBeforeSwitch(0.f), m_fCaptureAudioQuality(0.1f)
 {
 }
 
@@ -124,15 +124,17 @@ HRESULT ParaEngine::CAudioEngine2::InitAudioEngine(IParaAudioEngine* pInteface)
 			std::string deviceName = m_pAudioEngine->getAvailableDeviceName(i);
 			if (deviceName.compare(defaultDeviceName) == 0)
 			{
-				OUTPUT_LOG("%d : %s [DEFAULT]\n", i, StringHelper::UTF8ToAnsi(deviceName.c_str()));
+				OUTPUT_LOG("%d : %s [DEFAULT]\n", i, StringHelper::AnsiToUTF8(deviceName.c_str()));
 			}
 			else
 			{
-				OUTPUT_LOG("%d : %s\n", i, StringHelper::UTF8ToAnsi(deviceName.c_str()));
+				OUTPUT_LOG("%d : %s\n", i, StringHelper::AnsiToUTF8(deviceName.c_str()));
 			}
 		}
-		unsigned int deviceSelection = 0;
+
 		//Initialize the manager with the user settings
+		unsigned int deviceSelection = 0;
+
 #ifdef WIN32
 		if (!m_pAudioEngine->initialize("DirectSound3D"))
 		{
@@ -146,15 +148,20 @@ HRESULT ParaEngine::CAudioEngine2::InitAudioEngine(IParaAudioEngine* pInteface)
 			return E_FAIL;
 		}
 #endif
+
+
 		// use linear distance model by default. 
 		m_pAudioEngine->SetDistanceModel(Audio_DistModel_LINEAR_DISTANCE_CLAMPED);
 
 		// tell to use left handed coordinate system, which will invert the z axis. 
 		m_pAudioEngine->SetCoordinateSystem(0);
 
+		/*
 		m_pAudioEngine->registerLogReceiver([](const char* msg) {
 			OUTPUT_LOG(msg);
 		});
+		*/
+		
 	}
 	return (m_pAudioEngine != 0) ? S_OK : E_FAIL;
 }
@@ -203,12 +210,12 @@ unsigned int ParaEngine::CAudioEngine2::GetDeviceCount()
 		return 0;
 }
 
-string ParaEngine::CAudioEngine2::GetDeviceName(unsigned int index)
+const char* ParaEngine::CAudioEngine2::GetDeviceName(unsigned int index)
 {
 	if (m_pAudioEngine != nullptr && index >= 0 && index < m_pAudioEngine->getAvailableDeviceCount())
 		return m_pAudioEngine->getAvailableDeviceName(index);
 	else
-		return "";
+		return CGlobals::GetString(0).c_str();
 }
 
 void ParaEngine::CAudioEngine2::CleanupAudioEngine()
@@ -259,7 +266,7 @@ public:
 			if (pWave)
 			{
 				// this fixed a bug, while a looping sound is stopped by the user while async loading. 
-				m_bLoop = m_bLoop  && pWave->IsWaveFileLoopPlaying();
+				m_bLoop = m_bLoop && pWave->IsWaveFileLoopPlaying();
 
 				if (CAudioEngine2::GetInstance()->PrepareWaveFile(pWave, m_sFileName.c_str(), m_bStream) == S_OK)
 				{
@@ -880,6 +887,21 @@ void ParaEngine::CAudioEngine2::OnSwitch(bool bOn)
 	}
 }
 
+float ParaEngine::CAudioEngine2::GetCaptureAudioQuality() const
+{
+	return m_fCaptureAudioQuality;
+}
+
+void ParaEngine::CAudioEngine2::SetCaptureAudioQuality(float val)
+{
+	m_fCaptureAudioQuality = val;
+}
+
+ParaEngine::CAudioEngine2::CAudioPlaybackHistory& ParaEngine::CAudioEngine2::GetPlaybackHistory()
+{
+	return m_PlaybackHistory;
+}
+
 void ParaEngine::CAudioSource2::onUpdate()
 {
 #ifdef DEBUG_AUDIO
@@ -937,6 +959,10 @@ bool ParaEngine::CAudioSource2::play2d(const bool& toLoop /*= false*/, bool bIgn
 			auto pParaEngine = CParaEngineCore::GetInstance()->GetAppInterface()->GetAttributeObject();
 			auto pGameFRC = pParaEngine->GetChildAttributeObject("gameFRC");
 			pGameFRC->GetAttributeClass()->GetField("Time")->Get(pGameFRC, &m_nStartTime);
+
+			// record this event to the playback history
+			CAudioEngine2::GetInstance()->GetPlaybackHistory().AddRecord(this);
+
 			return m_pSource->play2d(toLoop);
 		}
 	}
@@ -976,6 +1002,15 @@ void ParaEngine::CAudioSource2::stop()
 	if (m_pSource)
 	{
 		m_pSource->stop();
+
+		// record this event to the playback history
+		if (CAudioEngine2::GetInstance()->GetPlaybackHistory().FindLastRecord(this->GetFilename())) {
+			CAudioEngine2::GetInstance()->GetPlaybackHistory().RemoveRecord(this->GetFilename());
+		}
+		auto pParaEngine = CParaEngineCore::GetInstance()->GetAppInterface()->GetAttributeObject();
+		auto pGameFRC = pParaEngine->GetChildAttributeObject("gameFRC");
+		pGameFRC->GetAttributeClass()->GetField("Time")->Get(pGameFRC, &m_nStopTime);
+		CAudioEngine2::GetInstance()->GetPlaybackHistory().AddRecord(this);
 	}
 	m_bIsAsyncLoadingWhileLoopPlaying = false;
 }
@@ -999,6 +1034,12 @@ bool ParaEngine::CAudioSource2::IsWaveFileLoopPlaying()
 		return m_pSource->isLooping() && m_pSource->isPlaying();
 	else
 		return IsAsyncLoadingWhileLoopPlaying();
+}
+
+/** whether the file is looping or not.*/
+bool ParaEngine::CAudioSource2::IsLooping()
+{
+	return m_pSource ? m_pSource->isLooping() : false;
 }
 
 bool ParaEngine::CAudioSource2::IsPlaying()
@@ -1046,15 +1087,30 @@ void ParaEngine::CAudioEngine2::ResumeAll()
 	m_paused_audios.clear();
 }
 
-
 MCIController* ParaEngine::CAudioEngine2::getMCIController()
 {
 	static MCIController controller;
 	return &controller;
 }
 
-const ParaEngine::CAudioEngine2::AudioFileMap_type& ParaEngine::CAudioEngine2::getAudioMap()const
+ParaEngine::IParaAudioCapture* ParaEngine::CAudioEngine2::CreateGetAudioCapture()
 {
-	return m_audio_file_map;
+	if (m_pAudioEngine)
+	{
+		return m_pAudioEngine->CreateGetAudioCapture();
+	}
+	return NULL;
+}
+
+int ParaEngine::CAudioEngine2::InstallFields(CAttributeClass* pClass, bool bOverride)
+{
+	// install parent fields if there are any. Please replace __super with your parent class name.
+	IAttributeFields::InstallFields(pClass, bOverride);
+	PE_ASSERT(pClass != NULL);
+
+	pClass->AddField("DeviceName", FieldType_String, (void*)SetDeviceName_s, (void*)GetDeviceName_s, NULL, NULL, bOverride);
+	pClass->AddField("CaptureAudioQuality", FieldType_Float, (void*)SetCaptureAudioQuality_s, (void*)GetCaptureAudioQuality_s, NULL, "[0.1, 1]", bOverride);
+
+	return S_OK;
 }
 

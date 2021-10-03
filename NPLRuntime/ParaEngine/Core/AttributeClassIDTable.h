@@ -45,6 +45,7 @@ namespace ParaEngine
 		ATTRIBUTE_CLASSID_CParaXStaticModel,
 		ATTRIBUTE_CLASSID_WeatherEffect,
 		ATTRIBUTE_CLASSID_CTerrainTileRoot,
+		ATTRIBUTE_CLASSID_CAudioEngine2,
 		ATTRIBUTE_CLASSID_Last,
 	};
 }

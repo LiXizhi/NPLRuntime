@@ -1,6 +1,5 @@
 #pragma once
 #include "PEtypes.h"
-#include <functional>
 
 namespace ParaEngine
 {
@@ -274,7 +273,147 @@ namespace ParaEngine
 		virtual void unRegisterAllEventHandlers() = 0;
 	};
 
+	// Is responsible to create/destroy a capture buffer
+	class  ParaAudioCaptureBuffer
+	{
+	public:
+		ParaAudioCaptureBuffer(size_t inlength)
+		{
+			length = inlength;
+			buffer = new char[length];
+		}
 
+		~ParaAudioCaptureBuffer()
+		{
+			delete buffer;
+			buffer = NULL;
+		}
+
+		const char* getReadBuffer() const
+		{
+			return buffer;
+		}
+
+		char* getWriteBuffer()
+		{
+			return buffer;
+		}
+
+		size_t getLength() const
+		{
+			return length;
+		}
+
+	private:
+		char* buffer;
+		size_t length;
+	};
+
+	/** Interface for audio capturing operations 
+	*/
+	class IParaAudioCapture
+	{
+	public:
+		virtual void Release() = 0;
+		//! Initializes the capture device to the selected settings.
+		/** Note that calling this will cause the capture device to be reinitialized.  Calling while in use will clear the internal audio buffer.
+		\param deviceName: Name of the audio device to capture audio from, pass NULL to specify the default one.
+		\param frequency: Frequency that the captured audio will be captured at in hertz.
+		\param format: Format of the captured audio.
+		\param internalBufferSize: Size of the internal OpenAL buffer used to store the captured audio between calls to getCapturedAudio() in bytes.
+		\return True on success, False if the capture device failed to initialize.
+		*/
+		virtual bool initialize(const char* deviceName = 0x0, unsigned int frequency = 22050, ParaAudioFormats format = EAF_16BIT_MONO, unsigned int internalBufferSize = 8192) = 0;
+
+		//! Returns true if the capture device is ready to be used.  False may indicate an error with the current settings. 
+		virtual bool isReady() = 0;
+		//! Grabs samples from the OpenAL buffer into the capture buffer if the OpenAL buffer has reached half full.  Should be run once every audio frame, unless threading is enabled.
+		/** \param force: Force capturing data from the buffer, even if the buffer is not half full. */
+		virtual void updateCaptureBuffer(bool force = false) = 0;
+		//! Shuts down the capture device, clearing the internal buffer and setting the audio capture into an uninitialized state.  You must call initialize() again in order to reuse this object.
+		virtual void shutdown() = 0;
+
+		//! Returns if the thread used to update all Audio Capture Objects is running.
+		/** Note: Will always return false if threading is disabled.
+		The library automatically shuts down the thread if no Audio Capture objects exist and will restart the thread on creation of a new object.
+		\return True if the thread is currently running, false otherwise.
+		*/
+		virtual bool isUpdateThreadRunning() = 0;
+
+		//! Returns the name of the audio device being used to capture audio.
+		virtual const char* getDeviceName() = 0;
+		//! Returns the frequency that the captured audio will be at.
+		virtual unsigned int getFrequency() = 0;
+		//! Returns the format of the captured audio.
+		virtual ParaAudioFormats getFormat() = 0;
+		//! Returns the internal OpenAL buffer size in bytes.
+		/** \return Size of the buffer in bytes. */
+		virtual unsigned int getInternalBufferSize() = 0;
+		//! Returns the size of a "sample" of audio data.  Useful for making sure you grab audio data at sample boundaries.
+		/** \return Size of a sample in bytes. */
+		virtual unsigned int getSampleSize() = 0;
+
+		//! Sets the audio device .  Will cause the capture device to be reinitialized.  Calling while in use will clear the internal audio buffer.
+		/**
+		\param deviceName: Name of the audio device to capture audio from, pass NULL to specify the default one.
+		\return True on success, False if the capture device failed to initialize. */
+		virtual bool setDevice(const char* deviceName) = 0;
+		//! Sets the frequency that the captured audio will be at.  Will cause the capture device to be reinitialized.  Calling while in use will clear the internal audio buffer.
+		/**
+		\param frequency: Frequency that the captured audio will be captured at in hertz.
+		\return True on success, False if the capture device failed to initialize. */
+		virtual bool setFrequency(unsigned int frequency) = 0;
+		//! Sets the format that the captured audio will be at.  Will cause the capture device to be reinitialized.  Calling while in use will clear the internal audio buffer.
+		/**
+		\param format: Format of the captured audio.
+		\return True on success, False if the capture device failed to initialize. */
+		virtual bool setFormat(ParaAudioFormats format) = 0;
+		//! Sets the internal buffer size that OpenAL will use to store captured audio between calls to getCapturedAudio() in bytes.  Will cause the capture device to be reinitialized.  Calling while in use will clear the internal audio buffer.
+		/**
+		\param internalBufferSize: Size of the internal OpenAL buffer in bytes.
+		\return True on success, False if the capture device failed to initialize. */
+		virtual bool setInternalBufferSize(unsigned int internalBufferSize) = 0;
+
+		//! Starts capturing audio data to an internal buffer.  Will clear any old data in the buffer.
+		/** \return True if capture was successfully started. */
+		virtual bool beginCapture() = 0;
+		//! Stops capturing audio data to an internal buffer.
+		virtual void stopCapture() = 0;
+		//! Allows access to the audio data in the internal capture buffer.
+		/** Can be called at any time to retrieve recorded audio.  It is recommended that you call it every so often with long recordings to prevent the internal buffer from growing too large.
+		Once successfully retrieved, the captured audio will be deleted from the internal buffer.
+		\param outputBuffer: Pointer to an output array to copy audio data to.
+		\param outputBufferSize: Size of the output array in bytes.
+		\return Size in bytes of the data actually copied to the output buffer.
+		*/
+		virtual unsigned int getCapturedAudio(void* outputBuffer, unsigned int outputBufferSize) = 0;
+
+		//! this method is the same as getCapturedAudio but it returns an managed CaptureBuffer
+		virtual ParaAudioCaptureBuffer* getCapturedAudioBuffer() = 0;
+
+		//! Returns the current size of the internal audio buffer in bytes.
+		virtual unsigned int getCurrentCapturedAudioSize() = 0;
+
+		//! Returns the name of an available playback device.
+		/** \param index: Specify which name to retrieve ( Range: 0 to getAvailableDeviceCount()-1 )
+		\return Name of the selected device. */
+		virtual const char* getAvailableDeviceName(unsigned int index) = 0;
+
+		//! Returns the number of playback devices available for use.
+		/** \return Number of playback devices available. */
+		virtual unsigned int getAvailableDeviceCount() = 0;
+
+		//! Returns the name of the default system playback device.
+		/** \return Name of the default playback device. */
+		virtual const char* getDefaultDeviceName() = 0;
+
+		/** save current captured audio to a file, currently only ogg file format are supported.
+		* @param filename: writable full path, like "temp/capture.ogg"
+		* @param baseQuality: value in range [0.1, 1].   0.1 is lowest quality, 1 is best quality.  0.4 is usual
+		* @return the number of bytes written
+		*/
+		virtual unsigned int saveToFile(const char* filename, float baseQuality = 0.1f) { return 0; };
+	};
 
 	/** ParaAudioEngine core interface. 
 	*/
@@ -283,8 +422,7 @@ namespace ParaEngine
 	public:
 		virtual void Release() = 0;
 
-		/// Initializes the manager.
-		/**
+		/** Initializes the manager.
 		@param deviceName: Name of the device to create this manager for.
 		@param outputFrequency: Frequency of the output audio or -1 for the device default.
 		@param eaxEffectSlots: Number of EFX effect slots to request.  Has no effect if EFX is not supported or compiled out.
@@ -297,8 +435,7 @@ namespace ParaEngine
 		/// If threading is disabled, you must call this function every frame to update the playback buffers of audio sources.  Otherwise it should not be called.
 		virtual void update() = 0;
 
-		/// Returns an Audio Source by its "name" and NULL if the name is not found
-		/**
+		/** Returns an Audio Source by its "name" and NULL if the name is not found
 		@param name: Name of the audio source to retrieve.
 		@return Pointer to the audio source object or NULL if it could not be found.*/
 		virtual IParaAudioSource* getSoundByName(const char* name) = 0;
@@ -323,8 +460,7 @@ namespace ParaEngine
 		/** @return Name of the default playback device. */
 		virtual const char* getDefaultDeviceName() = 0;
 
-		/// Creates an Audio Source object using the highest priority data source that has the referenced filename
-		/**
+		/** Creates an Audio Source object using the highest priority data source that has the referenced filename
 		@param name: Name of the audio source.
 		@param filename: Path to the file to load audio data from.
 		@param stream: Whether to stream the audio data or load it all into a memory buffer at the start.  You should consider using streaming for really large sound files.
@@ -332,8 +468,7 @@ namespace ParaEngine
 		*/
 		virtual IParaAudioSource* create(const char* name, const char* filename, bool stream = false) = 0;
 		
-		/// Creates an Audio Source from a memory buffer using a specific audio codec.
-		/**
+		/** Creates an Audio Source from a memory buffer using a specific audio codec.
 		@param name: Name of the audio source.
 		@param data: Pointer to a buffer in memory to load the data from.
 		@param length: Length of the data buffer.
@@ -352,9 +487,6 @@ namespace ParaEngine
 		@return A pointer to an Audio Source or NULL if creation failed.
 		*/
 		virtual IParaAudioSource* createFromRaw(const char* name, const char* data, size_t length, unsigned int frequency, ParaAudioFormats format) = 0;
-
-
-		virtual void registerLogReceiver(std::function<void(const char * msg)> receiver) = 0;
 
 	public:
 		/**
@@ -416,5 +548,13 @@ namespace ParaEngine
 		* and 1, if it is the right handed coordinate system which is OpenAL(and OpenGL) uses.
 		*/
 		virtual void SetCoordinateSystem(int nLeftHand) = 0;
+
+		/** Creates an interface to an Audio Capture Object.
+		* Note: This is the only way to get access to the audio capture capabilities of cAudio.
+		* You must delete this interface using destroyAudioCapture() once you are done with it.
+		* @param initializeDefault: Whether to return an object initialized with the default settings.  If set to false, you must make a call to initialize before audio can be captured.
+		* @return A pointer to the created object, NULL if the object could not be allocated.
+		*/
+		virtual IParaAudioCapture* CreateGetAudioCapture(bool initializeDefault = true) { return NULL; };
 	};
 }
