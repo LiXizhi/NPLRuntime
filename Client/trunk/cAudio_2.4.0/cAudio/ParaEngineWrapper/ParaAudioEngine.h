@@ -401,7 +401,7 @@ namespace ParaEngine
 		*/
 		virtual void SetCoordinateSystem(int nLeftHand);
 
-		void registerLogReceiver(std::function<void(const char * msg)> receiver);
+		virtual void registerLogReceiver(std::function<void(const char * msg)> receiver);
 	public:
 		/**
 		* set the audio distance model. 

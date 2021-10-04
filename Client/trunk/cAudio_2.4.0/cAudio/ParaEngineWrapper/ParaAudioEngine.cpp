@@ -5,6 +5,7 @@
 // Date:	2010.6.26
 //-----------------------------------------------------------------------------
 #include "PluginAPI.h"
+#include "cAudioSource.h"
 #include "ParaAudioEngine.h"
 #include "ParaAudioCapture.h"
 #include "cMP3Plugin.h"
@@ -39,6 +40,9 @@ CParaAudioEngine::CParaAudioEngine()
 	m_audio_manager = cAudio::createAudioManager(false);
 
 	m_deviceList = cAudio::createAudioDeviceList();
+
+	// Fixed a crash by LiXizhi: we will reset the error state here.
+	alGetError();
 }
 
 CParaAudioEngine::~CParaAudioEngine()
@@ -66,6 +70,7 @@ void CParaAudioEngine::Release()
 
 void ParaEngine::CParaAudioEngine::registerLogReceiver(std::function<void(const char * msg)> receiver)
 {
+	getLogger()->setLogLevel(LogLevel::ELL_INFO);
 	class R : public ILogReceiver
 	{
 	public:
@@ -85,8 +90,10 @@ void ParaEngine::CParaAudioEngine::registerLogReceiver(std::function<void(const 
 		std::function<void(const char * msg)>  m_r;
 	};
 	static R r(receiver);
+	// we will remove other log receivers if ParaEngine log is used.
+	getLogger()->unRegisterLogReceiver("File");
+	getLogger()->unRegisterLogReceiver("Console");
 	getLogger()->registerLogReceiver(&r, "ParaEngine");
-
 }
 
 void ParaEngine::CParaAudioEngine::SetDistanceModel( ParaAudioDistanceModelEnum eDistModel )
@@ -148,6 +155,8 @@ IParaAudioSource* ParaEngine::CParaAudioEngine::create( const char* name, const 
 	IParaAudioSource* pSource = getSoundByName(name);
 	if(pSource!=0)
 		return pSource;
+	// Fixed a crash by LiXizhi: we will reset the error state here.
+	alGetError();
 	IAudioSource* pSrc = m_audio_manager->create(name, filename, stream);
 	if(pSrc)
 	{
@@ -163,6 +172,8 @@ IParaAudioSource* ParaEngine::CParaAudioEngine::createFromMemory( const char* na
 	IParaAudioSource* pSource = getSoundByName(name);
 	if(pSource!=0)
 		return pSource;
+	// Fixed a crash by LiXizhi: we will reset the error state here.
+	alGetError();
 	IAudioSource* pSrc = m_audio_manager->createFromMemory(name, data, length, extension);
 	if(pSrc)
 	{
@@ -178,6 +189,8 @@ IParaAudioSource* ParaEngine::CParaAudioEngine::createFromRaw( const char* name,
 	IParaAudioSource* pSource = getSoundByName(name);
 	if(pSource!=0)
 		return pSource;
+	// Fixed a crash by LiXizhi: we will reset the error state here.
+	alGetError();
 	IAudioSource* pSrc = m_audio_manager->createFromRaw(name, data, length, frequency, (AudioFormats)format);
 	if(pSrc)
 	{

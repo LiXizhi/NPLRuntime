@@ -1,5 +1,6 @@
 #pragma once
 #include "PEtypes.h"
+#include <functional>
 
 namespace ParaEngine
 {
@@ -556,5 +557,7 @@ namespace ParaEngine
 		* @return A pointer to the created object, NULL if the object could not be allocated.
 		*/
 		virtual IParaAudioCapture* CreateGetAudioCapture(bool initializeDefault = true) { return NULL; };
+
+		virtual void registerLogReceiver(std::function<void(const char * msg)> receiver) = 0;
 	};
 }
