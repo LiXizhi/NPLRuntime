@@ -1,12 +1,13 @@
 #pragma once
 #include "PEtypes.h"
+#include <functional>
 
 namespace ParaEngine
 {
 	/** Enumeration of audio formats supported by the engine. */
 	enum ParaAudioFormats
 	{
-		EAF_8BIT_MONO, 
+		EAF_8BIT_MONO,
 		EAF_8BIT_STEREO,
 		EAF_16BIT_MONO,
 		EAF_16BIT_STEREO
@@ -22,12 +23,12 @@ namespace ParaEngine
 	/** Audio flags */
 	enum ParaAudioDistanceModelEnum
 	{
-		Audio_DistModel_NONE = 0, 
-		Audio_DistModel_INVERSE_DISTANCE, 
-		Audio_DistModel_INVERSE_DISTANCE_CLAMPED, 
-		Audio_DistModel_LINEAR_DISTANCE, 
-		Audio_DistModel_LINEAR_DISTANCE_CLAMPED, 
-		Audio_DistModel_EXPONENT_DISTANCE, 
+		Audio_DistModel_NONE = 0,
+		Audio_DistModel_INVERSE_DISTANCE,
+		Audio_DistModel_INVERSE_DISTANCE_CLAMPED,
+		Audio_DistModel_LINEAR_DISTANCE,
+		Audio_DistModel_LINEAR_DISTANCE_CLAMPED,
+		Audio_DistModel_EXPONENT_DISTANCE,
 		Audio_DistModel_EXPONENT_DISTANCE_CLAMPED,
 	};
 
@@ -70,8 +71,8 @@ namespace ParaEngine
 		@param soundstr: Affects how the source attenuates due to distance.  Higher values cause the source to stand out more over distance.
 		@param toLoop: Whether to loop (restart) the audio when the end is reached.
 		@return True if the source is playing, false if not. */
-		virtual bool play3d(const PARAVECTOR3& position, const float& soundstr = 1.0 , const bool& toLoop = false) = 0;
-		
+		virtual bool play3d(const PARAVECTOR3& position, const float& soundstr = 1.0, const bool& toLoop = false) = 0;
+
 		/// Pauses playback of the sound source.
 		virtual void pause() = 0;
 
@@ -205,7 +206,7 @@ namespace ParaEngine
 		/// Sets the doppler strength, which enhances or diminishes the doppler effect.  Can be used to exaggerate the doppler for a special effect.
 		/** Range: 0.0f to +inf (Default: 1.0f).
 		@param dstrength: New strength for the doppler effect. */
-		virtual void setDopplerStrength(const float& dstrength) = 0; 
+		virtual void setDopplerStrength(const float& dstrength) = 0;
 
 		/// Overrides the doppler velocity vector.  It is usually better to let the engine take care of it automatically.
 		/** Note: must be set every time you set the position, velocity, or direction.
@@ -309,7 +310,7 @@ namespace ParaEngine
 		size_t length;
 	};
 
-	/** Interface for audio capturing operations 
+	/** Interface for audio capturing operations
 	*/
 	class IParaAudioCapture
 	{
@@ -415,7 +416,7 @@ namespace ParaEngine
 		virtual unsigned int saveToFile(const char* filename, float baseQuality = 0.1f) { return 0; };
 	};
 
-	/** ParaAudioEngine core interface. 
+	/** ParaAudioEngine core interface.
 	*/
 	class IParaAudioEngine
 	{
@@ -448,14 +449,14 @@ namespace ParaEngine
 		virtual void release(IParaAudioSource* source) = 0;
 
 		/// Returns the name of an available playback device.
-		/** @param index: Specify which name to retrieve ( Range: 0 to getAvailableDeviceCount()-1 ) 
+		/** @param index: Specify which name to retrieve ( Range: 0 to getAvailableDeviceCount()-1 )
 		@return Name of the selected device. */
 		virtual const char* getAvailableDeviceName(unsigned int index) = 0;
-		
+
 		/// Returns the number of playback devices available for use.
 		/** @return Number of playback devices available. */
 		virtual unsigned int getAvailableDeviceCount() = 0;
-		
+
 		/// Returns the name of the default system playback device.
 		/** @return Name of the default playback device. */
 		virtual const char* getDefaultDeviceName() = 0;
@@ -467,7 +468,7 @@ namespace ParaEngine
 		@return A pointer to an Audio Source or NULL if creation failed.
 		*/
 		virtual IParaAudioSource* create(const char* name, const char* filename, bool stream = false) = 0;
-		
+
 		/** Creates an Audio Source from a memory buffer using a specific audio codec.
 		@param name: Name of the audio source.
 		@param data: Pointer to a buffer in memory to load the data from.
@@ -476,7 +477,7 @@ namespace ParaEngine
 		@return A pointer to an Audio Source or NULL if creation failed.
 		*/
 		virtual IParaAudioSource* createFromMemory(const char* name, const char* data, size_t length, const char* extension) = 0;
-		
+
 		/// Creates an Audio Source from raw audio data in a memory buffer.
 		/**
 		@param name: Name of the audio source.
@@ -490,7 +491,7 @@ namespace ParaEngine
 
 	public:
 		/**
-		* set the audio distance model. 
+		* set the audio distance model.
 		* see: http://connect.creativelabs.com/openal/Documentation/OpenAL%201.1%20Specification.htm
 		*/
 		virtual void SetDistanceModel(ParaAudioDistanceModelEnum eDistModel) = 0;
@@ -523,7 +524,7 @@ namespace ParaEngine
 		virtual void setMasterVolume(const float& volume) = 0;
 
 		/// Convenience function to automatically set the velocity and position for you in a single call
-		/** Velocity will be set to new position - last position 
+		/** Velocity will be set to new position - last position
 		@param pos: New position to move the listener to. */
 		virtual void move(const PARAVECTOR3& pos) = 0;
 
@@ -542,8 +543,8 @@ namespace ParaEngine
 		/// Returns the global volume modifier for all sources
 		virtual float getMasterVolume(void) const = 0;
 
-		/** 
-		* set the default coordinate system used. 
+		/**
+		* set the default coordinate system used.
 		* @param nLeftHand: 0 if it is left handed coordinate system, which is the one used by DirectX.
 		* and 1, if it is the right handed coordinate system which is OpenAL(and OpenGL) uses.
 		*/
@@ -556,5 +557,7 @@ namespace ParaEngine
 		* @return A pointer to the created object, NULL if the object could not be allocated.
 		*/
 		virtual IParaAudioCapture* CreateGetAudioCapture(bool initializeDefault = true) { return NULL; };
+
+		virtual void registerLogReceiver(std::function<void(const char * msg)> receiver) = 0;
 	};
 }
