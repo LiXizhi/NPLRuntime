@@ -173,7 +173,7 @@ int ParaScripting::ParaGlobal::GetLogPos()
 
 const char* ParaScripting::ParaGlobal::GetLog(int fromPos, int nCount)
 {
-	return ParaEngine::StringHelper::AnsiToUTF8(ParaEngine::CLogger::GetSingleton().GetLog(fromPos, nCount));
+	return ParaEngine::CLogger::GetSingleton().GetLog(fromPos, nCount);
 }
 
 void ParaGlobal::ExitApp()
