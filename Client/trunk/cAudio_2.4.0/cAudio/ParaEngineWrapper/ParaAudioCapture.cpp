@@ -294,9 +294,13 @@ unsigned int ParaEngine::CParaAudioCapture::saveToFile(const char* filename, flo
 	srand(time(NULL));
 	ogg_stream_init(&os, rand());
 
-	FILE* pFile = fopen("temp/capture.ogg", "wb");
+	FILE* pFile = fopen(filename, "wb");
 	if (!pFile)
+	{
+		getLogger()->logWarning("ParaAudioCapture", "can not open %s file for writing", filename);
 		return 0;
+	}
+		
 
 	/* Vorbis streams begin with three headers; the initial header (with
 	most of the codec setup parameters) which is mandated by the Ogg
