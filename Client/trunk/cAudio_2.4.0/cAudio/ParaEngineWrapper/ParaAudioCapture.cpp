@@ -217,6 +217,16 @@ unsigned int ParaEngine::CParaAudioCapture::saveToFile(const char* filename, flo
 	if (!m_pAudioCapture || getCurrentCapturedAudioSize() == 0)
 		return 0;
 
+	{
+		// print all recording devices
+		int nCount = getAvailableDeviceCount();
+		getLogger()->logInfo("CParaAudioCapture", "default recording device: %s", getDefaultDeviceName());
+		for (int i = 0; i < nCount; ++i)
+		{
+			getLogger()->logInfo("CParaAudioCapture", "%d: %s", i, getAvailableDeviceName(i));
+		}
+	}
+
 	std::unique_ptr<ParaAudioCaptureBuffer> pBuffer(getCapturedAudioBuffer());
 	auto format = getFormat();
 	int nFrequency = getFrequency();
@@ -293,6 +303,7 @@ unsigned int ParaEngine::CParaAudioCapture::saveToFile(const char* filename, flo
 	chained streams just by concatenation */
 	srand(time(NULL));
 	ogg_stream_init(&os, rand());
+
 
 	FILE* pFile = fopen(filename, "wb");
 	if (!pFile)
