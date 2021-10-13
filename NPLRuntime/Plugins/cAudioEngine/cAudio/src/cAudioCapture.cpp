@@ -36,6 +36,8 @@ namespace cAudio
 		cAudioMutexBasicLock lock(Mutex);
 		if(CaptureDevice)
 			shutdownOpenALDevice();
+
+		InternalBufferSize = Frequency * SampleSize;
 		if(DeviceName.empty())
 			CaptureDevice = alcCaptureOpenDevice(NULL, Frequency, convertAudioFormatEnum(Format), InternalBufferSize / SampleSize);
 		else
