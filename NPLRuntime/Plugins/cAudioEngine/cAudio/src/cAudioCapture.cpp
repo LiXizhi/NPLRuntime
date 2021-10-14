@@ -99,7 +99,6 @@ namespace cAudio
 
 			//If the samples in the OpenAL buffer are more than half of its max size, grab them
 			// if(availbuffersize > InternalBufferSize / 2 || force)
-			if (force)
 			{
 				//Fixes a bug with the capture being forced, but no data being available
 				if(availbuffersize > 0)
