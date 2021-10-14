@@ -37,11 +37,10 @@ namespace cAudio
 		if(CaptureDevice)
 			shutdownOpenALDevice();
 
-		InternalBufferSize = Frequency * SampleSize;
 		if(DeviceName.empty())
-			CaptureDevice = alcCaptureOpenDevice(NULL, Frequency, convertAudioFormatEnum(Format), InternalBufferSize / SampleSize);
+			CaptureDevice = alcCaptureOpenDevice(NULL, Frequency, convertAudioFormatEnum(Format), Frequency);
 		else
-			CaptureDevice = alcCaptureOpenDevice(toUTF8(DeviceName), Frequency, convertAudioFormatEnum(Format), InternalBufferSize / SampleSize);
+			CaptureDevice = alcCaptureOpenDevice(toUTF8(DeviceName), Frequency, convertAudioFormatEnum(Format), Frequency);
 		if(CaptureDevice)
 		{
 			DeviceName = fromUTF8(alcGetString(CaptureDevice, ALC_CAPTURE_DEVICE_SPECIFIER));
@@ -99,7 +98,8 @@ namespace cAudio
 			const unsigned int availbuffersize = AvailableSamples * SampleSize;
 
 			//If the samples in the OpenAL buffer are more than half of its max size, grab them
-			if(availbuffersize > InternalBufferSize / 2 || force)
+			// if(availbuffersize > InternalBufferSize / 2 || force)
+			if (force)
 			{
 				//Fixes a bug with the capture being forced, but no data being available
 				if(availbuffersize > 0)
@@ -244,11 +244,14 @@ namespace cAudio
 		bool isInit = initOpenALDevice();
 
 #ifdef CAUDIO_USE_INTERNAL_THREAD
-		if (!AudioThread)
-		{
-			AudioThread = new cAudioThread(this);
+		if(isInit)
+		{ 
+			if (!AudioThread)
+			{
+				AudioThread = new cAudioThread(this);
+			}
+			AudioThread->start();
 		}
-		AudioThread->start();
 #endif
 		return isInit;
 	}
