@@ -20,7 +20,23 @@ CParaAudioCapture::CParaAudioCapture() : m_pAudioCapture(NULL), m_bIsCapturing(f
 {
 	m_pAudioCapture = cAudio::createAudioCapture(false);
 	m_deviceList = cAudio::createAudioDeviceList(DT_RECORDING);
-	initialize();
+	bool bSuccess = false;
+
+	// some (android) devices does not support default frequency, and stereo types, so we will iterate over all possible combinations, starting from the default one. 
+	unsigned int frequencies[] = { 22050, 48000, 44100, 32000, 16000, 8000 };
+	ParaAudioFormats formats[] = { EAF_16BIT_MONO, EAF_16BIT_STEREO, EAF_8BIT_MONO, EAF_8BIT_STEREO};
+	for (int i = 0; i < 6; i++)
+	{
+		for (int j = 0; j < 4; j++)
+		{
+			auto frequency = frequencies[i];
+			auto format = formats[j];
+			if (initialize(NULL, frequency, format))
+			{
+				return;
+			}
+		}
+	}
 }
 
 CParaAudioCapture::~CParaAudioCapture()
