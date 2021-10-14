@@ -37,10 +37,12 @@ namespace cAudio
 		if(CaptureDevice)
 			shutdownOpenALDevice();
 
+		// Fixed by LiXizhi, 2021.10.14, on some android devices, only buffer size 32768 is possible to alcCaptureOpenDevice. 
+		InternalBufferSize = 32768;
 		if(DeviceName.empty())
-			CaptureDevice = alcCaptureOpenDevice(NULL, Frequency, convertAudioFormatEnum(Format), Frequency);
+			CaptureDevice = alcCaptureOpenDevice(NULL, Frequency, convertAudioFormatEnum(Format), InternalBufferSize);
 		else
-			CaptureDevice = alcCaptureOpenDevice(toUTF8(DeviceName), Frequency, convertAudioFormatEnum(Format), Frequency);
+			CaptureDevice = alcCaptureOpenDevice(toUTF8(DeviceName), Frequency, convertAudioFormatEnum(Format), InternalBufferSize);
 		if(CaptureDevice)
 		{
 			DeviceName = fromUTF8(alcGetString(CaptureDevice, ALC_CAPTURE_DEVICE_SPECIFIER));
@@ -123,11 +125,23 @@ namespace cAudio
 			if(CaptureDevice && Ready)
 			{
 				alcCaptureStart(CaptureDevice);
+				if (checkError())
+				{
+					// device may be disconnected. we will try initialize it again 
+					shutdownOpenALDevice();
+					initOpenALDevice();
+
+					if (CaptureDevice && Ready)
+					{
+						alcCaptureStart(CaptureDevice);
+						checkError();
+					}
+				}
 				Capturing = true;
 				getLogger()->logDebug("AudioCapture", "OpenAL Capture Started.");
 				signalEvent(ON_BEGINCAPTURE);
 			}
-			checkError();
+			
 			return Capturing;
 		}
 		checkError();
