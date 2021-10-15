@@ -232,16 +232,6 @@ unsigned int ParaEngine::CParaAudioCapture::saveToFile(const char* filename, flo
 	stopCapture();
 	if (!m_pAudioCapture || getCurrentCapturedAudioSize() == 0)
 		return 0;
-    
-    {
-        // print all recording devices
-        int nCount = getAvailableDeviceCount();
-        getLogger()->logInfo("CParaAudioCapture", "default recording device: %s", getDefaultDeviceName());
-        for (int i = 0; i < nCount; ++i)
-        {
-            getLogger()->logInfo("CParaAudioCapture", "%d: %s", i, getAvailableDeviceName(i));
-        }
-    }
 
 	{
 		// print all recording devices
