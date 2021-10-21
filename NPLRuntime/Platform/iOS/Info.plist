@@ -2,19 +2,10 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-	<key>NSAppTransportSecurity</key>
-	<dict>
-		<key>NSAllowsArbitraryLoads</key>
-		<true/>
-	</dict>
-	<key>NSBluetoothPeripheralUsageDescription</key>
-	<string>we allow external programmable devices to connect to our software, providing functions for STEM educations.</string>
-	<key>NSBluetoothAlwaysUsageDescription</key>
-	<string>we allow external programmable devices to connect to our software, providing functions for STEM educations.</string>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>en</string>
 	<key>CFBundleExecutable</key>
-	<string>${EXECUTABLE_NAME}</string>
+	<string>Paracraft</string>
 	<key>CFBundleIconFile</key>
 	<string></string>
 	<key>CFBundleIdentifier</key>
@@ -22,11 +13,11 @@
 	<key>CFBundleInfoDictionaryVersion</key>
 	<string>6.0</string>
 	<key>CFBundleName</key>
-	<string>${PRODUCT_NAME}</string>
+	<string>Paracraft</string>
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>
-	<string>1.0.4</string>
+	<string>2.0.4</string>
 	<key>CFBundleURLTypes</key>
 	<array>
 		<dict>
@@ -41,9 +32,20 @@
 		</dict>
 	</array>
 	<key>CFBundleVersion</key>
-	<string>8</string>
+	<string>27</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
+	<key>NSAppTransportSecurity</key>
+	<dict>
+		<key>NSAllowsArbitraryLoads</key>
+		<true/>
+	</dict>
+	<key>NSBluetoothAlwaysUsageDescription</key>
+	<string>we allow external programmable devices to connect to our software, providing functions for STEM educations.</string>
+	<key>NSBluetoothPeripheralUsageDescription</key>
+	<string>we allow external programmable devices to connect to our software, providing functions for STEM educations.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>We need to use the microphone to recording.</string>
 	<key>UIMainStoryboardFile</key>
 	<string></string>
 	<key>UIPrerenderedIcon</key>
@@ -55,7 +57,7 @@
 	<key>UIRequiresFullScreen</key>
 	<true/>
 	<key>UIRequiresPersistentWiFi</key>
-	<false/>
+	<true/>
 	<key>UIStatusBarHidden</key>
 	<true/>
 	<key>UIStatusBarStyle</key>
