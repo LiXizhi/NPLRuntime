@@ -1123,6 +1123,11 @@ std::string ParaEngine::CFileUtils::GetInitialDirectory()
 #endif
 }
 
+const std::string& ParaEngine::CFileUtils::GetExternalStoragePath()
+{
+	return GetWritablePath();
+}
+
 const std::string& ParaEngine::CFileUtils::GetWritablePath()
 {
 	if (s_writepath.empty())

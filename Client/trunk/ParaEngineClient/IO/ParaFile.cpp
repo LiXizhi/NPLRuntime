@@ -1556,6 +1556,17 @@ const string& CParaFile::GetCurDirectory(DWORD dwDirectoryType)
 			return g_CurDirs[dwDirectoryType];
 		}
 	}
+	else if (dwDirectoryType == APP_EXTERNAL_STORAGE_DIR)
+	{
+		// this will return "" on PC. 
+		if (!g_CurDirs[dwDirectoryType].empty())
+			return g_CurDirs[dwDirectoryType];
+		else
+		{
+			g_CurDirs[dwDirectoryType] = CFileUtils::GetExternalStoragePath();
+			return g_CurDirs[dwDirectoryType];
+		}
+	}
 #if defined (WIN32) && !defined(PARAENGINE_MOBILE) && defined(PARAENGINE_CLIENT)
 	else
 	{

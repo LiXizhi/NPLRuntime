@@ -207,6 +207,9 @@ namespace ParaEngine
 		/** get current directory */
 		static std::string GetInitialDirectory();
 
+		/** external storage path, that is only available on android/ios mobile devices. */
+		static const std::string& GetExternalStoragePath();
+
 		/** in win32, this is the root directory, 
 		*  Gets the writable path.
 		*  @return  The path that can be write/read a file in
