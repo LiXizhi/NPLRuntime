@@ -1,7 +1,9 @@
-
+# Title: iOS Cmake Lists
+# Author(s): kkvskkkk, big
+# CreateDate: 2018.11.02
+# ModifyDate: 2021.10.26
 
 include(${PROJECT_SOURCE_DIR}/cmake/ucm.cmake)
-
 
 ucm_add_dirs(src TO app_src RECURSIVE ADDITIONAL_EXT mm m)
 
@@ -10,55 +12,60 @@ set(IMAGES_FILE ${CMAKE_CURRENT_SOURCE_DIR}/Images.xcassets)
 set(RESOURCE_FILES ${CMAKE_CURRENT_SOURCE_DIR}/res)
 set(ASSETS_FILES ${CMAKE_CURRENT_SOURCE_DIR}/assets)
 
-find_library(UIKit UIKit) 
+find_library(UIKit UIKit)
 find_library(OpenGLES OpenGLES)
 find_library(QuartzCore QuartzCore)
 find_library(CoreBluetooth CoreBluetooth)
 find_library(WebKit WebKit)
 find_library(Security Security)
+find_library(CoreGraphics CoreGraphics)
 
 add_executable(Paracraft
     ${app_src}
-    ${INFO_FILE}
+    # ${INFO_FILE}
     ${IMAGES_FILE}
     ${RESOURCE_FILES}
-    ${ASSETS_FILES})
+    ${ASSETS_FILES}
+)
 
 target_link_libraries(Paracraft PUBLIC
-    ${UIKit} ${OpenGLES} ${QuartzCore} ${CoreBluetooth} ${WebKit} ${Security}
+    ${UIKit}
+    ${OpenGLES}
+    ${QuartzCore}
+    ${CoreBluetooth}
+    ${WebKit}
+    ${Security}
+    ${CoreGraphics}
     RenderSystemOpenGL
     ParaEngine
 )
 
-
-SET_SOURCE_FILES_PROPERTIES(${RESOURCE_FILES} PROPERTIES MACOSX_PACKAGE_LOCATION Resources/res)
-SET_SOURCE_FILES_PROPERTIES(${INFO_FILE} PROPERTIES MACOSX_PACKAGE_LOCATION .)
-SET_SOURCE_FILES_PROPERTIES(${IMAGES_FILE} PROPERTIES MACOSX_PACKAGE_LOCATION Resources/Images.cassets)
-SET_SOURCE_FILES_PROPERTIES(${ASSETS_FILES} PROPERTIES MACOSX_PACKAGE_LOCATION Resources/assets)
+set_source_files_properties(${RESOURCE_FILES} PROPERTIES MACOSX_PACKAGE_LOCATION Resources/res)
+set_source_files_properties(${INFO_FILE} PROPERTIES MACOSX_PACKAGE_LOCATION .)
+set_source_files_properties(${IMAGES_FILE} PROPERTIES MACOSX_PACKAGE_LOCATION Resources/Images.cassets)
+set_source_files_properties(${ASSETS_FILES} PROPERTIES MACOSX_PACKAGE_LOCATION Resources/assets)
 
 set(RESOURCE_LIST ${IMAGES_FILE} ${RESOURCE_FILES} ${ASSETS_FILES})
 
 set_target_properties(Paracraft PROPERTIES 
     MACOSX_BUNDLE TRUE
-    MACOSX_BUNDLE_INFO_PLIST ${INFO_FILE}
     RESOURCE "${RESOURCE_LIST}"
     INSTALL_RPATH "@executable_path/Frameworks/"
     BUILD_WITH_INSTALL_RPATH TRUE
+    XCODE_ATTRIBUTE_INFOPLIST_FILE ${INFO_FILE}
     XCODE_ATTRIBUTE_ASSETCATALOG_COMPILER_APPICON_NAME "AppIcon"
     XCODE_ATTRIBUTE_ASSETCATALOG_COMPILER_LAUNCHIMAGE_NAME "LaunchImage"
     XCODE_ATTRIBUTE_CODE_SIGN_IDENTITY "iPhone Developer"
     XCODE_ATTRIBUTE_CODE_SIGN_STYLE "Automatic"
     XCODE_ATTRIBUTE_INSTALL_PATH "$(LOCAL_APPS_DIR)"
     XCODE_ATTRIBUTE_SKIP_INSTALL "No"
+    XCODE_ATTRIBUTE_ENABLE_BITCODE "No"
 )
 
 target_include_directories(Paracraft PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
 
 #set(CMAKE_EXE_LINKER_FLAGS "-pagezero_size 10000 -image_base 100000000 ${CMAKE_EXE_LINKER_FLAGS}")
 
-
 set(APP_PATH "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/$<CONFIGURATION>/Paracraft.app")
 set(DYLIB_PATH "${CMAKE_ARCHIVE_OUTPUT_DIRECTORY}/$<CONFIGURATION>")
 set(DEST_FRAMEWORK_PATH "${APP_PATH}/Frameworks/")
-
-

@@ -20,6 +20,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.FutureTask;
 
 import android.widget.RelativeLayout;
+import android.widget.Toast;
 
 class HelloWebViewClient extends WebViewClient { 
 	@Override
@@ -96,15 +97,25 @@ public class ParaEngineWebViewHelper {
 
 	@Keep
     public static void openExternalBrowser(final String url) {
-	    Intent intent = new Intent();
+        try {
+            Intent intent = new Intent();
 
-	    intent.setAction("android.intent.action.VIEW");
-	    Uri content_url = Uri.parse(url);
-	    intent.setData(content_url);
+            intent.setAction("android.intent.action.VIEW");
+            Uri content_url = Uri.parse(url);
+            intent.setData(content_url);
 
-	    sActivity.startActivity(intent);
+            sActivity.startActivity(intent);
+        } catch (Exception e) {
+            sActivity.runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    Toast.makeText(sActivity, "无法打开" + url, Toast.LENGTH_SHORT).show();
+                }
+            });
+            e.printStackTrace();
+        }
     }
-   
+
     @Keep
 	public static void openWebView(final int x, final int y, final int w, final int h, final String url) {
 		sActivity.runOnUiThread(new Runnable() {

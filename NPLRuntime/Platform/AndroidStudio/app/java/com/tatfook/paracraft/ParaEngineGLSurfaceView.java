@@ -522,7 +522,7 @@ public class ParaEngineGLSurfaceView extends GLSurfaceView {
         if (mUsbMode && pKeyCode == KeyEvent.KEYCODE_BACK) {
             onMouseRightKeyUp();
             return false;
-        } else {
+        } else if (pKeyCode == KeyEvent.KEYCODE_BACK) {
             if ((System.currentTimeMillis() - exitTime) > 2000) {
                 Toast.makeText(sActivity, "再按一次退出", Toast.LENGTH_LONG).show();
                 exitTime = System.currentTimeMillis();
@@ -538,6 +538,8 @@ public class ParaEngineGLSurfaceView extends GLSurfaceView {
             // });
             return super.onKeyUp(pKeyCode, pKeyEvent);
         }
+
+        return super.onKeyUp(pKeyCode, pKeyEvent);
     }
 
     public void setMousePosition(MotionEvent pMotionEvent) {
