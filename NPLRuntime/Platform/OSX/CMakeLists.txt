@@ -25,7 +25,8 @@ add_executable(Paracraft ${OSX_SRC}
     ${IMAGES_FILE}
     ${INFO_FILE}
     ${XIB_FILES}
-    ${ICON_FILE})
+    ${ICON_FILE}
+)
 
 set_source_files_properties(${RESOURCE_FILES} PROPERTIES MACOSX_PACKAGE_LOCATION Resources/res)
 set_source_files_properties(${ASSETS_FILES} PROPERTIES MACOSX_PACKAGE_LOCATION Resources/assets)
@@ -84,7 +85,7 @@ if (NOT SQLITE_STATICLIB)
 		MAIN_DEPENDENCY Paracraft
 		DEPENDS "${LIBSQLITE_DYPATH}"
 	)
-endif()
+endif ()
 
 if (NPLRUNTIME_AUDIO AND NOT AUDIO_STATICLIB)
     add_dependencies(Paracraft cAudioEngine)
@@ -97,7 +98,7 @@ if (NPLRUNTIME_AUDIO AND NOT AUDIO_STATICLIB)
         MAIN_DEPENDENCY Paracraft
         DEPENDS "${LIBSAUDIO_DYPATH}" cAudioEngine
     )
-endif()
+endif ()
 
 if (NPLRUNTIME_PHYSICS AND NOT PHYSICS_STATICLIB)
     add_dependencies(Paracraft PhysicsBT)
@@ -110,15 +111,17 @@ if (NPLRUNTIME_PHYSICS AND NOT PHYSICS_STATICLIB)
         MAIN_DEPENDENCY Paracraft
         DEPENDS "${LIBSPHYSICS_DYPATH}" PhysicsBT
     )
-endif()
+endif ()
 
 # if (NOT LUA_STATICLIB)
 # 	get_property(LUA_LIB_LIST GLOBAL PROPERTY "LUA_LIB_LIST" )
-# 	foreach( luaLibName ${LUA_LIB_LIST} )
+
+# 	foreach(luaLibName ${LUA_LIB_LIST})
 # 		set(LIBLUA_DYPATH "${DYLIB_PATH}/lib${luaLibName}.dylib")
 # 		add_custom_command(TARGET Paracraft POST_BUILD 
 # 			COMMAND ${CMAKE_COMMAND} ARGS -E copy "${LIBLUA_DYPATH}" "${DEST_FRAMEWORK_PATH}/lib${luaLibName}.dylib"
 # 			DEPENDS "${LIBLUA_DYPATH}"  
 # 		)
-# 	endforeach( luaLibName ${LUA_LIB_LIST} )
+# 	endforeach(luaLibName ${LUA_LIB_LIST})
+
 # endif()

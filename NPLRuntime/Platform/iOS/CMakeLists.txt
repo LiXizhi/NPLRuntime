@@ -1,7 +1,7 @@
 # Title: iOS Cmake Lists
 # Author(s): kkvskkkk, big
 # CreateDate: 2018.11.02
-# ModifyDate: 2021.10.21
+# ModifyDate: 2021.10.26
 
 include(${PROJECT_SOURCE_DIR}/cmake/ucm.cmake)
 
@@ -12,7 +12,7 @@ set(IMAGES_FILE ${CMAKE_CURRENT_SOURCE_DIR}/Images.xcassets)
 set(RESOURCE_FILES ${CMAKE_CURRENT_SOURCE_DIR}/res)
 set(ASSETS_FILES ${CMAKE_CURRENT_SOURCE_DIR}/assets)
 
-find_library(UIKit UIKit) 
+find_library(UIKit UIKit)
 find_library(OpenGLES OpenGLES)
 find_library(QuartzCore QuartzCore)
 find_library(CoreBluetooth CoreBluetooth)
@@ -22,7 +22,7 @@ find_library(CoreGraphics CoreGraphics)
 
 add_executable(Paracraft
     ${app_src}
-    ${INFO_FILE}
+    # ${INFO_FILE}
     ${IMAGES_FILE}
     ${RESOURCE_FILES}
     ${ASSETS_FILES}
@@ -49,10 +49,10 @@ set(RESOURCE_LIST ${IMAGES_FILE} ${RESOURCE_FILES} ${ASSETS_FILES})
 
 set_target_properties(Paracraft PROPERTIES 
     MACOSX_BUNDLE TRUE
-    MACOSX_BUNDLE_INFO_PLIST ${INFO_FILE}
     RESOURCE "${RESOURCE_LIST}"
     INSTALL_RPATH "@executable_path/Frameworks/"
     BUILD_WITH_INSTALL_RPATH TRUE
+    XCODE_ATTRIBUTE_INFOPLIST_FILE ${INFO_FILE}
     XCODE_ATTRIBUTE_ASSETCATALOG_COMPILER_APPICON_NAME "AppIcon"
     XCODE_ATTRIBUTE_ASSETCATALOG_COMPILER_LAUNCHIMAGE_NAME "LaunchImage"
     XCODE_ATTRIBUTE_CODE_SIGN_IDENTITY "iPhone Developer"
