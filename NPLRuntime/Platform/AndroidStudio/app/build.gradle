@@ -92,6 +92,20 @@ android {
             manifestPlaceholders  = [ "libname" : "Paracraftd" ]
         }
     }
+
+//    flavorDimensions "company"
+//
+//    productFlavors {
+//        tatfook {
+//            applicationId "com.paraengine.paracraft"
+//            dimension "company"
+//        }
+//
+//        paraengine {
+//            applicationId "com.tatfook.paracraft"
+//            dimension "company"
+//        }
+//    }
 }
 
 String taskReqStr = gradle.getStartParameter().getTaskRequests().toString()

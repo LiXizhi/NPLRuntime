@@ -1,11 +1,16 @@
-include(${PROJECT_SOURCE_DIR}/cmake/ucm.cmake)
+# Title: AndroidStudio Cmake Lists
+# Author(s): kkvskkkk, big
+# CreateDate: 2019.07.16
+# ModifyDate: 2021.10.28
 
+include(CheckSymbolExists)
+include(${PROJECT_SOURCE_DIR}/cmake/ucm.cmake)
 
 project(Paracraft)
 
 ucm_add_dirs(cpp TO app_src RECURSIVE)
 
-#SET(CMAKE_DEBUG_POSTFIX "")
+# set(CMAKE_DEBUG_POSTFIX "")
 
 add_library(Paracraft SHARED
     ${app_src}
@@ -21,6 +26,7 @@ target_link_libraries(Paracraft PUBLIC
     log
     cAudioEngine
 )
+
 target_compile_definitions(Paracraft PUBLIC 
     PARAENGINE_MOBILE
     PLATFORM_ANDROID
@@ -29,17 +35,13 @@ target_compile_definitions(Paracraft PUBLIC
 	OPENAL_STATIC
 )
 
-CHECK_SYMBOL_EXISTS(__swbuf, stdio.h, HAVE_SWBUF)
-CHECK_SYMBOL_EXISTS(__srget, stdio.h, HAVE_SRGET)
+check_symbol_exists(__swbuf, stdio.h, HAVE_SWBUF)
+check_symbol_exists(__srget, stdio.h, HAVE_SRGET)
 
 if (NOT HAVE_SWBUF)
-	ADD_DEFINITIONS(-DNOT_HAVE_SWBUF)
-endif()
+	add_definitions(-DNOT_HAVE_SWBUF)
+endif ()
 
 if (NOT HAVE_SRGET)
-	ADD_DEFINITIONS(-DNOT_HAVE_SRGET)
-endif()
-
-
-
-
+    add_definitions(-DNOT_HAVE_SRGET)
+endif ()
