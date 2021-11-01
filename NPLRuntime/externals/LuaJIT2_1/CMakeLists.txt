@@ -1,24 +1,29 @@
+# Title: Lua Jit 2.1 CMake Lists
+# Author(s): kkvskkkk, big
+# CreateDate: 2018.11.02
+# ModifyDate: 2021.10.28
 
-if(ANDROID)
+if (ANDROID)
 	add_library(luajit21 INTERFACE)
 	target_include_directories(luajit21 INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/include)
     target_link_libraries(luajit21 INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/prebuilt/android/${CMAKE_ANDROID_ARCH_ABI}/libluajit.a)
-elseif(IOS)
+elseif (IOS)
 	add_library(luajit21 INTERFACE)
 	target_include_directories(luajit21 INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/include)
 	if (IOS_PLATFORM STREQUAL "SIMULATOR")
 		target_link_libraries(luajit21 INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/prebuilt/ios/iphonesim/libluajit.a)		
-	elseif(IOS_PLATFORM STREQUAL "OS")
+	elseif (IOS_PLATFORM STREQUAL "OS")
+		target_link_libraries(luajit21 INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/prebuilt/ios/iphoneos/libluajit.a)
+	elseif ("${IOS_PLATFORM}" STREQUAL "")
 		target_link_libraries(luajit21 INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/prebuilt/ios/iphoneos/libluajit.a)		
-	endif() 
-	
-else()
-	if(NPLRUNTIME_STATIC_LIB)
+	endif ()
+
+	# target_include_directories(libjpeg INTERFACE include/ios)
+	# target_link_libraries(libjpeg INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/prebuilt/ios/libjpeg.a)
+else ()
+	if (NPLRUNTIME_STATIC_LIB)
 		set(LUA_STATICLIB TRUE)
-	endif()
+	endif ()
 	add_subdirectory(code)
 	target_include_directories(luajit21 INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/include)	
-endif()
-
-
-
+endif ()

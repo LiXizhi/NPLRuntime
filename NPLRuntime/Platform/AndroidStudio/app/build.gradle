@@ -1,3 +1,6 @@
+import java.util.regex.Matcher
+import java.util.regex.Pattern
+
 apply plugin: 'com.android.application'
 
 android {
@@ -11,14 +14,14 @@ android {
         applicationId "com.paraengine.paracraft"
         minSdkVersion PROP_MIN_SDK_VERSION
         targetSdkVersion PROP_TARGET_SDK_VERSION
-        versionCode 30
-        versionName "2.0.11"
+        versionCode 31
+        versionName "2.0.13"
 
         externalNativeBuild {
-             cmake {
-                    arguments "-DCMAKE_FIND_ROOT_PATH=", "-DANDROID_STL=c++_shared", "-DANDROID_TOOLCHAIN=clang", "-DANDROID_ARM_NEON=TRUE", "-DANDROID_STUDIO=TRUE", "-DNPLRUNTIME_OCE=FALSE"
-                    cppFlags "-frtti -fexceptions -fsigned-char -std=c++11"
-                }
+            cmake {
+                arguments "-DCMAKE_FIND_ROOT_PATH=", "-DANDROID_STL=c++_shared", "-DANDROID_TOOLCHAIN=clang", "-DANDROID_ARM_NEON=TRUE", "-DANDROID_STUDIO=TRUE", "-DNPLRUNTIME_OCE=FALSE"
+                cppFlags "-frtti -fexceptions -fsigned-char -std=c++11"
+            }
         }
 
         ndk {
@@ -36,7 +39,6 @@ android {
     }
 
     externalNativeBuild {
-
         cmake {
             version "3.18.2"
             path "../../../CMakeLists.txt"
@@ -44,7 +46,6 @@ android {
     }
 
     signingConfigs {
-
        release {
             if (project.hasProperty("RELEASE_STORE_FILE")) {
                 storeFile file(RELEASE_STORE_FILE)
@@ -64,6 +65,7 @@ android {
             shrinkResources true
             zipAlignEnabled true
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+
             if (project.hasProperty("RELEASE_STORE_FILE")) {
                 signingConfig signingConfigs.release
             }
@@ -86,35 +88,56 @@ android {
                     arguments 'NDK_DEBUG=1'
                 }
             }
+
             manifestPlaceholders  = [ "libname" : "Paracraftd" ]
         }
     }
 }
 
-/*
-android.applicationVariants.all { variant ->
-    // delete previous files first
-    delete "${buildDir}/intermediates/assets"
+String taskReqStr = gradle.getStartParameter().getTaskRequests().toString()
+Pattern pattern = Pattern.compile("assembleDebug")
+Matcher matcher = pattern.matcher(taskReqStr)
+Boolean isDebug = false
 
-    variant.mergeAssets.doLast {
-        copy {
-           from "assets"
-           into "${buildDir}/intermediates/assets/${variant.dirName}"
+if (matcher.find()) {
+    isDebug = true
+}
+
+android.applicationVariants.all { variant ->
+    if (variant.buildType.isDebuggable()) {
+        if (isDebug) {
+            println "DEBUG MODE"
+            delete "${buildDir}/intermediates/merged_assets/${variant.dirName}"
+
+            variant.mergeAssets.doLast {
+                delete "${buildDir}/intermediates/merged_assets/${variant.dirName}"
+
+                copy {
+                   from "assets"
+                   into "${buildDir}/intermediates/merged_assets/${variant.dirName}/out/"
+                }
+
+                if (file(System.properties['user.home'] + "/ParacraftAndroidDev/Dev.sh").exists()) {
+                    exec {
+                        workingDir System.properties['user.home'] + "/ParacraftAndroidDev"
+                        commandLine "sh", "./Dev.sh", "${buildDir}/intermediates/merged_assets/${variant.dirName}/out/"
+                    }
+                }
+            }
+
         }
     }
 }
-*/
-
 
 dependencies {
     implementation fileTree(dir: 'libs', include: ['*.jar'])
-    //implementation 'org.jetbrains:annotations-java5:15.0'
     implementation 'org.jetbrains:annotations:17.0.0'
     implementation 'com.android.support:support-annotations:28.0.0'
     implementation 'com.android.support:support-compat:28.0.0'
     implementation 'com.android.support:appcompat-v7:28.0.0'
     implementation 'com.github.smarxpan:NotchScreenTool:0.0.1'
 }
+
 repositories {
     mavenCentral()
 }

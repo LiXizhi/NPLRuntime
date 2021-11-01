@@ -353,22 +353,23 @@ if(NOT DEFINED DEPLOYMENT_TARGET)
             CACHE STRING "Minimum SDK version to build for." )
   else()
     # Unless specified, SDK version 9.0 is used by default as minimum target version (iOS, tvOS).
-    set(DEPLOYMENT_TARGET "9.0"
+    set(DEPLOYMENT_TARGET "10.0"
             CACHE STRING "Minimum SDK version to build for." )
   endif()
   message(STATUS "Using the default min-version since DEPLOYMENT_TARGET not provided!")
 endif()
 
 # Use bitcode or not
-if(NOT DEFINED ENABLE_BITCODE AND NOT ARCHS MATCHES "((^|;|, )(i386|x86_64))+")
-  # Unless specified, enable bitcode support by default
-  message(STATUS "Enabling bitcode support by default. ENABLE_BITCODE not provided!")
-  set(ENABLE_BITCODE TRUE)
-elseif(NOT DEFINED ENABLE_BITCODE)
-  message(STATUS "Disabling bitcode support by default on simulators. ENABLE_BITCODE not provided for override!")
-  set(ENABLE_BITCODE FALSE)
-endif()
-set(ENABLE_BITCODE_INT ${ENABLE_BITCODE} CACHE BOOL "Whether or not to enable bitcode" ${FORCE_CACHE})
+# if(NOT DEFINED ENABLE_BITCODE AND NOT ARCHS MATCHES "((^|;|, )(i386|x86_64))+")
+#   # Unless specified, enable bitcode support by default
+#   message(STATUS "Enabling bitcode support by default. ENABLE_BITCODE not provided!")
+#   set(ENABLE_BITCODE TRUE)
+# elseif(NOT DEFINED ENABLE_BITCODE)
+#   message(STATUS "Disabling bitcode support by default on simulators. ENABLE_BITCODE not provided for override!")
+#   set(ENABLE_BITCODE FALSE)
+# endif()
+set(ENABLE_BITCODE_INT FALSE CACHE BOOL "Whether or not to enable bitcode" ${FORCE_CACHE})
+
 # Use ARC or not
 if(NOT DEFINED ENABLE_ARC)
   # Unless specified, enable ARC support by default
