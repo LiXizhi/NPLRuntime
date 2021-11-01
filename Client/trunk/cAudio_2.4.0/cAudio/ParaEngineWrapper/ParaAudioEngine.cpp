@@ -18,6 +18,26 @@ using namespace cAudio;
 /** 0 for left hand(directX), 1 for right hand(openGL, default).*/
 static int g_nCoordinateSystem = 1;
 
+class ParaAudioLogReceiver : public ILogReceiver
+{
+public:
+	ParaAudioLogReceiver(std::function<void(const char * msg)> receiver) : m_r(receiver) {};
+	virtual bool OnLogMessage(const char* sender, const char* message, LogLevel level, float time)
+	{
+		//std::cout << "[" << LogLevelStrings[level] << "] " << message << std::endl;
+		if (m_r)
+		{
+			m_r(message);
+		}
+
+		return true;
+	}
+
+private:
+	std::function<void(const char * msg)>  m_r;
+};
+static ParaAudioLogReceiver* s_logReceiver = NULL;
+
 PARAVECTOR3 ParaEngine::FixCoordinate(const PARAVECTOR3& v)
 {
 	return (g_nCoordinateSystem == 1) ? v : PARAVECTOR3(v.x, v.y, -v.z);
@@ -40,13 +60,15 @@ CParaAudioEngine::CParaAudioEngine()
 	m_audio_manager = cAudio::createAudioManager(false);
 
 	m_deviceList = cAudio::createAudioDeviceList();
-
+	
 	// Fixed a crash by LiXizhi: we will reset the error state here.
 	alGetError();
 }
 
 CParaAudioEngine::~CParaAudioEngine()
 {
+	getLogger()->unRegisterLogReceiver("ParaEngine");
+	SAFE_DELETE(s_logReceiver);
 	SAFE_DELETE(m_pAudioCapture);
 	
 	if(m_audio_manager!=NULL)
@@ -71,29 +93,16 @@ void CParaAudioEngine::Release()
 void ParaEngine::CParaAudioEngine::registerLogReceiver(std::function<void(const char * msg)> receiver)
 {
 	getLogger()->setLogLevel(LogLevel::ELL_INFO);
-	class R : public ILogReceiver
+	
+	if (s_logReceiver == NULL)
 	{
-	public:
-		R(std::function<void(const char * msg)> receiver) : m_r(receiver) {};
-		virtual bool OnLogMessage(const char* sender, const char* message, LogLevel level, float time)
-		{
-			//std::cout << "[" << LogLevelStrings[level] << "] " << message << std::endl;
-			if (m_r)
-			{
-				m_r(message);
-			}
-
-			return true;
-		}
-
-	private:
-		std::function<void(const char * msg)>  m_r;
-	};
-	static R r(receiver);
+		s_logReceiver = new ParaAudioLogReceiver(receiver);
+	}
+	
 	// we will remove other log receivers if ParaEngine log is used.
 	getLogger()->unRegisterLogReceiver("File");
 	getLogger()->unRegisterLogReceiver("Console");
-	getLogger()->registerLogReceiver(&r, "ParaEngine");
+	getLogger()->registerLogReceiver(s_logReceiver, "ParaEngine");
 }
 
 void ParaEngine::CParaAudioEngine::SetDistanceModel( ParaAudioDistanceModelEnum eDistModel )
