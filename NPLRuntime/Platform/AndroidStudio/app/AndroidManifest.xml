@@ -19,6 +19,7 @@
                  android:icon="@drawable/ic_launcher"
                  android:name="com.tatfook.paracraft.ParaEngineApplication"
                  android:usesCleartextTraffic="true"
+                 android:extractNativeLibs="true"
                  android:resizeableActivity="true">
         <meta-data android:name="notch.config"
                    android:value="portrait|landscape" />
