@@ -190,7 +190,7 @@ CAutoCamera::CAutoCamera()
 	m_fKeyboardRotVelocity = MATH_PI / 4;
 	m_fKeyboardMovVelocity = OBJ_UNIT * KEYBOARD_MOVE_VELOCITY; /** old value is 5. I set 20 is for debugging purposes*/
 
-	// default mode
+																// default mode
 	m_lastCameraMode = m_currentCameraMode = CameraFollowFirstPerson;
 
 	m_vEyeReferencePoint = Vector3(0, 0, 0);
@@ -336,9 +336,9 @@ void CAutoCamera::FollowBiped(CBaseObject* pBiped, CameraMode modeCamera, double
 				/*CBipedObject* pBiped = ((CBipedObject*)m_pTargetObject);
 				if(!pBiped->IsStanding())
 				{
-					CBipedStateManager* pState =  pBiped->GetBipedStateManager();
-					if(pState)
-						pState->AddAction(CBipedStateManager::S_STANDING);
+				CBipedStateManager* pState =  pBiped->GetBipedStateManager();
+				if(pState)
+				pState->AddAction(CBipedStateManager::S_STANDING);
 				}*/
 			}
 		}
@@ -362,29 +362,29 @@ void CAutoCamera::FollowBiped(CBaseObject* pBiped, CameraMode modeCamera, double
 // pBiped can be nil, in which case the same biped is followed.
 Transition
 1 (default) smooth move
- 0 intermediate move
+0 intermediate move
 
 Mode
 <integer>
- CameraFollowFirstPerson = 2,	// First person view of the Target object
+CameraFollowFirstPerson = 2,	// First person view of the Target object
 CameraFollowThirdPerson = 3,	// Third person view, allow rotation, character centered
 CameraFollowDefault = 5,		// Third person view, disable rotation, character
 CameraCameraFirstPerson = 11 	// Camera as a first person.
 
 
 Parameters means difficult things under different mode
-	//-- CameraFollowFirstPerson,	// First person view of the Target object
+//-- CameraFollowFirstPerson,	// First person view of the Target object
 param0->m_fCameraObjectDistance;	// follow first person radius
 param1->m_fCameraLiftupAngle;	// follow first person lift up angle, this is a constant usually Pi/4: 45 degrees
-	//-- CameraFollowThirdPerson,	// Third person view, allow rotation, character centered
+//-- CameraFollowThirdPerson,	// Third person view, allow rotation, character centered
 param0->m_fFTPRadius;	// follow Third person radius
 param1->m_fFTPFacing;	// follow Third person: camera facing
 param2->m_fFTPAngle;	// follow Third person lift up angle, this is a constant usually Pi/4: 45 degrees
-	//-- CameraFollowDefault: Third person view, disable rotation, character restricted to a rectangular
+//-- CameraFollowDefault: Third person view, disable rotation, character restricted to a rectangular
 CameraConstraint	m_constrantsFollow; // define the camera constraints for follow default mode
 param0->m_fDEFAngle; // follow default lift up angle, this is a constant usually Pi/4: 45 degrees
 param1->m_fDEFHeight;
-	//-- CameraCameraFirstPerson 	// Camera as a first person.
+//-- CameraCameraFirstPerson 	// Camera as a first person.
 CameraConstraint	m_constrants;
 param0->m_vEye.x + biped.x
 param1->m_vEye.y + biped.y
@@ -406,7 +406,7 @@ void CAutoCamera::FollowBiped(CBaseObject* pBiped, int nTranstionMode, int modeC
 	else
 		FollowBiped(pBiped, (CameraMode)modeCamera, 1); // smooth move.
 
-	/** set camera mode */
+														/** set camera mode */
 	SetCameraMode((CameraMode)modeCamera);
 
 	/** set params. */
@@ -505,14 +505,14 @@ VOID CAutoCamera::FrameMove(FLOAT fElapsedTime)
 	Vector3 vWorldUp(0, 1.f, 0);
 	CBipedObject * pBiped = NULL;
 	bool bShowCharacter = true; // if in first person view, it will hide the character.
-	// true if the camera needs to be updated
+								// true if the camera needs to be updated
 	bool bDoUpdateView = true;
 	// whether to ignore eye's near plane above global terrain check.
 	bool bIgnoreGlobalTerrain = !IsEnableTerrainCollision();
 
 	if (m_currentCameraMode == CameraCameraFirstPerson)
 	{// camera's first person mode
-		// update key board move velocity in this mode.
+	 // update key board move velocity in this mode.
 #define ADJUST_KEYBOARD_MOV_SPEED
 #ifdef ADJUST_KEYBOARD_MOV_SPEED
 		float fCameraSpeedUpFactor = 1.f;
@@ -1339,11 +1339,11 @@ VOID CAutoCamera::FrameMove(FLOAT fElapsedTime)
 					/*
 					if(result.Distance > BlockConfig::g_blockSize && (result.Side != 4 && result.Side != 5) )
 					{
-						// tricky: this makes the camera away from the vertical block surface.
-						if(result.Distance > BlockConfig::g_blockSize*1.25f)
-							result.Distance -= BlockConfig::g_blockSize *0.25f;
-						else
-							result.Distance = BlockConfig::g_blockSize;
+					// tricky: this makes the camera away from the vertical block surface.
+					if(result.Distance > BlockConfig::g_blockSize*1.25f)
+					result.Distance -= BlockConfig::g_blockSize *0.25f;
+					else
+					result.Distance = BlockConfig::g_blockSize;
 					}
 					*/
 					bool bIgnoreCollision = false;
@@ -1409,7 +1409,7 @@ VOID CAutoCamera::FrameMove(FLOAT fElapsedTime)
 						{
 							Vector3 vPos = pBiped->GetPosition();
 							float fTerrainHeight = CGlobals::GetGlobalTerrain()->GetElevation(vPos.x, vPos.z);
-							if (fTerrainHeight > (vPos.y + 0.5) || CGlobals::GetGlobalTerrain()->IsHole(vPos.x, vPos.z))
+							if (fTerrainHeight >(vPos.y + 0.5) || CGlobals::GetGlobalTerrain()->IsHole(vPos.x, vPos.z))
 							{
 								bIgnoreGlobalTerrain = true;
 							}
@@ -1682,12 +1682,12 @@ VOID CAutoCamera::FrameMove(FLOAT fElapsedTime)
 		/// the following is only here to repair floating point accuracy. Is there a better way in the future?
 		/*Vector3 dTempDelta = m_vEye - m_vEyeLast;
 		if(fabs(dTempDelta.x)<0.01f || fabs(dTempDelta.y)<0.01f || fabs(dTempDelta.z)<0.01f)
-			m_vEye = m_vEyeLast;
+		m_vEye = m_vEyeLast;
 		dTempDelta = m_vLookAt - m_vLookAtLast;
 		if(fabs(dTempDelta.x)<0.01f || fabs(dTempDelta.y)<0.01f || fabs(dTempDelta.z)<0.01f)
-			m_vLookAt = m_vLookAtLast;*/
+		m_vLookAt = m_vLookAtLast;*/
 
-			/** Update the view matrix */
+		/** Update the view matrix */
 		ComputeViewMatrix(&m_mView, &(m_vEye), &(m_vLookAt), &vWorldUp);
 		if (m_vLookAtOffset != Vector3::ZERO)
 		{
@@ -1799,7 +1799,7 @@ VOID CAutoCamera::FrameMove(FLOAT fElapsedTime)
 #ifdef _DEBUG
 	/*Vector3 vOffset = CGlobals::GetScene()->GetRenderOrigin();
 	OUTPUT_LOG("eye: %f %f %f   lookat: %f %f %f   render origin:%f %f %f dt:%f\n", m_vEye.x, m_vEye.y, m_vEye.z,
-		m_vLookAt.x, m_vLookAt.y, m_vLookAt.z, vOffset.x, vOffset.y, vOffset.z, fElapsedTime);*/
+	m_vLookAt.x, m_vLookAt.y, m_vLookAt.z, vOffset.x, vOffset.y, vOffset.z, fElapsedTime);*/
 #endif
 }
 
@@ -1948,21 +1948,21 @@ void CAutoCamera::HandleUserInput()
 	}
 
 	SetKeyDownState(MOVE_FORWARD, !bIsKeyProcessed && (pKeyboard->IsKeyPressed(GetKeyMap(MOVE_FORWARD)/*DIK_W*/) || pKeyboard->IsKeyPressed(EVirtualKey::KEY_NUMPAD8) || pKeyboard->IsKeyPressed(EVirtualKey::KEY_UP)));
-	SetKeyDownState(MOVE_BACKWARD, !bIsKeyProcessed && (pKeyboard->IsKeyPressed(GetKeyMap(MOVE_BACKWARD)/*DIK_S*/) || pKeyboard->IsKeyPressed(EVirtualKey::KEY_NUMPAD2) || pKeyboard->IsKeyPressed(EVirtualKey::KEY_DOWN)));
+	SetKeyDownState(MOVE_BACKWARD, !bIsKeyProcessed && (pKeyboard->IsKeyPressed(GetKeyMap(MOVE_BACKWARD)/*DIK_S*/) || pKeyboard->IsKeyPressed(EVirtualKey::KEY_NUMPAD2) || pKeyboard->IsKeyPressed(EVirtualKey::KEY_NUMPAD5) || pKeyboard->IsKeyPressed(EVirtualKey::KEY_DOWN)));
 
 	if (IsShiftMoveSwitched())
 	{
-		SetKeyDownState(SHIFT_LEFT, !bIsKeyProcessed && (pKeyboard->IsKeyPressed(GetKeyMap(SHIFT_LEFT)) || pKeyboard->IsKeyPressed(EVirtualKey::KEY_NUMPAD7) || pKeyboard->IsKeyPressed(EVirtualKey::KEY_LEFT)));
-		SetKeyDownState(SHIFT_RIGHT, !bIsKeyProcessed && (pKeyboard->IsKeyPressed(GetKeyMap(SHIFT_RIGHT)) || pKeyboard->IsKeyPressed(EVirtualKey::KEY_NUMPAD9) || pKeyboard->IsKeyPressed(EVirtualKey::KEY_RIGHT)));
-		SetKeyDownState(MOVE_LEFT, FALSE);
-		SetKeyDownState(MOVE_RIGHT, FALSE);
+		SetKeyDownState(SHIFT_LEFT, !bIsKeyProcessed && (pKeyboard->IsKeyPressed(GetKeyMap(SHIFT_LEFT)) || pKeyboard->IsKeyPressed(EVirtualKey::KEY_NUMPAD4)));
+		SetKeyDownState(SHIFT_RIGHT, !bIsKeyProcessed && (pKeyboard->IsKeyPressed(GetKeyMap(SHIFT_RIGHT)) || pKeyboard->IsKeyPressed(EVirtualKey::KEY_NUMPAD6)));
+		SetKeyDownState(MOVE_LEFT, !bIsKeyProcessed && (pKeyboard->IsKeyPressed(EVirtualKey::KEY_NUMPAD7) || pKeyboard->IsKeyPressed(EVirtualKey::KEY_LEFT)));
+		SetKeyDownState(MOVE_RIGHT, !bIsKeyProcessed && (pKeyboard->IsKeyPressed(EVirtualKey::KEY_NUMPAD9) || pKeyboard->IsKeyPressed(EVirtualKey::KEY_RIGHT)));
 	}
 	else
 	{
-		SetKeyDownState(SHIFT_LEFT, FALSE);
-		SetKeyDownState(SHIFT_RIGHT, FALSE);
-		SetKeyDownState(MOVE_LEFT, !bIsKeyProcessed && (pKeyboard->IsKeyPressed(GetKeyMap(MOVE_LEFT)/*DIK_A*/) || pKeyboard->IsKeyPressed(EVirtualKey::KEY_NUMPAD4) || pKeyboard->IsKeyPressed(EVirtualKey::KEY_LEFT)));
-		SetKeyDownState(MOVE_RIGHT, !bIsKeyProcessed && (pKeyboard->IsKeyPressed(GetKeyMap(MOVE_RIGHT)/*DIK_D*/) || pKeyboard->IsKeyPressed(EVirtualKey::KEY_NUMPAD6) || pKeyboard->IsKeyPressed(EVirtualKey::KEY_RIGHT)));
+		SetKeyDownState(SHIFT_LEFT, !bIsKeyProcessed && (pKeyboard->IsKeyPressed(EVirtualKey::KEY_NUMPAD4) || pKeyboard->IsKeyPressed(EVirtualKey::KEY_LEFT)));
+		SetKeyDownState(SHIFT_RIGHT, !bIsKeyProcessed && (pKeyboard->IsKeyPressed(EVirtualKey::KEY_NUMPAD6) || pKeyboard->IsKeyPressed(EVirtualKey::KEY_RIGHT)));
+		SetKeyDownState(MOVE_LEFT, !bIsKeyProcessed && (pKeyboard->IsKeyPressed(GetKeyMap(MOVE_LEFT)/*DIK_A*/) || pKeyboard->IsKeyPressed(EVirtualKey::KEY_NUMPAD7)));
+		SetKeyDownState(MOVE_RIGHT, !bIsKeyProcessed && (pKeyboard->IsKeyPressed(GetKeyMap(MOVE_RIGHT)/*DIK_D*/) || pKeyboard->IsKeyPressed(EVirtualKey::KEY_NUMPAD9)));
 	}
 	SetKeyDownState(ZOOM_IN, !bIsKeyProcessed && (pKeyboard->IsKeyPressed(GetKeyMap(ZOOM_IN)/*DIK_INSERT*/)));
 	SetKeyDownState(ZOOM_OUT, !bIsKeyProcessed && (pKeyboard->IsKeyPressed(GetKeyMap(ZOOM_OUT)/*DIK_DELETE*/)));
@@ -2054,21 +2054,21 @@ void CAutoCamera::HandleUserInput()
 				// state based key events: allowing holding state
 				/*
 				if (m_event->IsMapTo(pMsg->message,EM_CAM_FORWARD))
-					SetKeyDownState(MOVE_FORWARD, bIsKeyDown);
+				SetKeyDownState(MOVE_FORWARD, bIsKeyDown);
 				else if (m_event->IsMapTo(pMsg->message,EM_CAM_BACKWARD))
-					SetKeyDownState(MOVE_BACKWARD, bIsKeyDown);
+				SetKeyDownState(MOVE_BACKWARD, bIsKeyDown);
 				else if (m_event->IsMapTo(pMsg->message,EM_CAM_LEFT))
-					SetKeyDownState(MOVE_LEFT, bIsKeyDown);
+				SetKeyDownState(MOVE_LEFT, bIsKeyDown);
 				else if (m_event->IsMapTo(pMsg->message,EM_CAM_RIGHT))
-					SetKeyDownState(MOVE_RIGHT, bIsKeyDown);
+				SetKeyDownState(MOVE_RIGHT, bIsKeyDown);
 				else if (m_event->IsMapTo(pMsg->message,EM_CAM_SHIFTLEFT))
-					SetKeyDownState(SHIFT_LEFT, bIsKeyDown);
+				SetKeyDownState(SHIFT_LEFT, bIsKeyDown);
 				else if (m_event->IsMapTo(pMsg->message,EM_CAM_SHIFTRIGHT))
-					SetKeyDownState(SHIFT_RIGHT, bIsKeyDown);
+				SetKeyDownState(SHIFT_RIGHT, bIsKeyDown);
 				else if (m_event->IsMapTo(pMsg->message,EM_CAM_ZOOM_IN))
-					SetKeyDownState(ZOOM_IN, bIsKeyDown);
+				SetKeyDownState(ZOOM_IN, bIsKeyDown);
 				else if (m_event->IsMapTo(pMsg->message,EM_CAM_ZOOM_OUT))
-					SetKeyDownState(ZOOM_OUT, bIsKeyDown);
+				SetKeyDownState(ZOOM_OUT, bIsKeyDown);
 				*/
 				//////////////////////////////////////////////////////////////////////////
 				// camera control's ordinary key events
