@@ -40,7 +40,7 @@ android {
 
     externalNativeBuild {
         cmake {
-            version "3.18.2"
+            version "3.22.0-rc2"
             path "../../../CMakeLists.txt"
         }
     }
@@ -131,12 +131,22 @@ android.applicationVariants.all { variant ->
                    into "${buildDir}/intermediates/merged_assets/${variant.dirName}/out/"
                 }
 
-                if (file(System.properties['user.home'] + "/ParacraftAndroidDev/Dev.sh").exists()) {
-                    exec {
-                        workingDir System.properties['user.home'] + "/ParacraftAndroidDev"
-                        commandLine "sh", "./Dev.sh", "${buildDir}/intermediates/merged_assets/${variant.dirName}/out/"
+                if (System.properties["os.name"].toLowerCase().contains("windows")) {
+                    if (file(System.properties["user.home"] + "\\ParacraftAndroidDev\\Dev.bat").exists()) {
+                        exec {
+                            workingDir System.properties['user.home'] + "\\ParacraftAndroidDev"
+                            commandLine "cmd", "/c", "Dev.bat ${buildDir}\\intermediates\\merged_assets\\${variant.dirName}\\out\\"
+                        }
+                    }
+                } else {
+                    if (file(System.properties["user.home"] + "/ParacraftAndroidDev/Dev.sh").exists()) {
+                        exec {
+                            workingDir System.properties['user.home'] + "/ParacraftAndroidDev"
+                            commandLine "sh", "./Dev.sh", "${buildDir}/intermediates/merged_assets/${variant.dirName}/out/"
+                        }
                     }
                 }
+
             }
 
         }
