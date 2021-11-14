@@ -28,7 +28,7 @@ if NOT EXIST "bin\boost" (
 	move bin\boost_* boost
 	cd boost
 	bootstrap.bat
-	b2 address-model=32 runtime-link=static threading=multi variant=release --with-thread --with-date_time --with-filesystem --with-system --with-chrono --with-signals --with-serialization --with-iostreams --with-regex stage
+	b2 address-model=32 runtime-link=static threading=multi variant=release --with-thread --with-date_time --with-filesystem --with-system --with-chrono --with-serialization --with-iostreams --with-regex stage
 	popd
 )
 set BOOST_ROOT=%~dp0bin\boost

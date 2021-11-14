@@ -18,7 +18,7 @@
 #include <boost/interprocess/exceptions.hpp>
 #include <boost/detail/no_exceptions_support.hpp>
 #include <boost/interprocess/detail/type_traits.hpp>
-
+#include <boost/date_time/posix_time/posix_time.hpp>
 #include <algorithm> //std::lower_bound
 #include <cstddef>   //std::size_t
 #include <cstring>   //memcpy
