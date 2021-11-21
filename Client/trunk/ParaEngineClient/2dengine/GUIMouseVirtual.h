@@ -44,6 +44,8 @@ namespace ParaEngine
 		virtual void PushMouseEvent(UINT uMsg, WPARAM wParam, LPARAM lParam);
 		/** push a standard windows mouse event to the buffer for processing in the next frame move. */
 		virtual void PushMouseEvent(const MSG &msg);
+		/** push a standard windows mouse event to the buffer for processing in the next frame move. */
+		virtual void PushMouseEvent(const DeviceMouseEventPtr& msg);
 
 		virtual void SetCapture(CGUIBase* obj);
 		virtual void ReleaseCapture(CGUIBase* obj);

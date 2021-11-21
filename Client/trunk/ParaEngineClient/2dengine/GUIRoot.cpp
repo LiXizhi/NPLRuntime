@@ -919,8 +919,8 @@ HRESULT CGUIRoot::DeleteDeviceObjects()
 //no need refactoring
 void CGUIRoot::Reset()
 {
-	CDirectKeyboard *pKeyboard = CGUIRoot::GetInstance()->m_pKeyboard;
-	CDirectMouse *pMouse = CGUIRoot::GetInstance()->m_pMouse;
+	auto pKeyboard = CGUIRoot::GetInstance()->m_pKeyboard;
+	auto pMouse = CGUIRoot::GetInstance()->m_pMouse;
 
 	if (pKeyboard) {
 		pKeyboard->Reset();
@@ -973,23 +973,6 @@ void ParaEngine::CGUIRoot::SetIsNonClient(bool val)
 void ParaEngine::CGUIRoot::SetMousePosition(int nX, int nY)
 {
 	m_pMouse->SetMousePosition(nX, nY);
-//
-//#if defined(USE_DIRECTX_RENDERER) || 0
-//	if (m_pMouse->IsLocked())
-//	{
-//		// Set position of camera to center of desktop, 
-//		// so it always has room to move.  This is very useful
-//		// if the cursor is hidden.  If this isn't done and cursor is hidden, 
-//		// then invisible cursor will hit the edge of the screen 
-//		// and the user can't tell what happened
-//		POINT ptCenter;
-//		RECT rcDesktop;
-//		GetWindowRect(GetDesktopWindow(), &rcDesktop);
-//		ptCenter.x = (rcDesktop.right - rcDesktop.left) / 2;
-//		ptCenter.y = (rcDesktop.bottom - rcDesktop.top) / 2;
-//		SetCursorPos(ptCenter.x, ptCenter.y);
-//	}
-//#endif
 }
 
 int ParaEngine::CGUIRoot::GetFingerSizePixels() const
@@ -1289,12 +1272,6 @@ int CGUIRoot::HandleUserInput()
 	bool bMouseHandled = false;
 	STRUCT_DRAG_AND_DROP *pdrag = &IObjectDrag::DraggingObject;
 
-	if (false && CGlobals::GetApp()->IsTouchInputting())
-	{
-		DispatchTouchMouseEvent(bMouseHandled);
-		bKeyHandled = DispatchKeyboardMsg(bKeyHandled);
-	}
-	else
 	{
 		m_events.clear();
 		{
@@ -2193,12 +2170,12 @@ bool CGUIRoot::UpdateViewport(int nLeft, int nTop, int nWidth, int nHeight, bool
 	GetUIScale(&fScaleX, &fScaleY);
 	if (fScaleX != 1.f)
 	{
-		nWidth = (int)((float)(nWidth) / fScaleX);
+		nWidth = (int)((float)(nWidth) / fScaleX + 0.9f);
 	}
 
 	if (fScaleY != 1.f)
 	{
-		nHeight = (int)((float)(nHeight) / fScaleY);
+		nHeight = (int)((float)(nHeight) / fScaleY + 0.9f);
 	}
 	
 	bool bSizeChanged = (pGUIState->nBkbufWidth != nWidth || pGUIState->nBkbufHeight != nHeight);
@@ -2494,13 +2471,10 @@ void ParaEngine::CGUIRoot::TranslateTouchEvent(const TouchEvent &touch)
 	if (TouchSessions::GetInstance().InterpreteTouchGestures(&touch))
 		return;
 
-	// Note: we will only translate to click event when there is only a single touch event session to avoid multiple touches on GUI control. 
-	// Multi-touch is only available via handling the "ontouch" event. 
-	if (TouchSessions::GetInstance().GetSessionCount() == 1)
+	// Note: we will only translate to mouse event when is not handled by GUI control in NPL. 
+	TouchEventSession* pTouchSession = TouchSessions::GetInstance().GetTouchSession(touch.GetTouchId());
+	if (pTouchSession && !pTouchSession->IsHandledByGUI())
 	{
-		TouchEventSession* pTouchSession = TouchSessions::GetInstance()[0];
-		if (!pTouchSession)
-			return;
 		int mouse_x = (int)touch.m_x;
 		int mouse_y = (int)touch.m_y;
 		int ui_mouse_x = pTouchSession->GetCurrentEvent().GetClientPosX();
@@ -2513,11 +2487,15 @@ void ParaEngine::CGUIRoot::TranslateTouchEvent(const TouchEvent &touch)
 
 			if (pTouchSession->GetTag() == 1)
 			{
-				CGUIRoot::GetInstance()->GetMouse()->PushMouseEvent(WM_LBUTTONUP, 0, MAKELPARAM(mouse_x, mouse_y));
+				Vector2 mousePos((float)mouse_x, (float)mouse_y);
+				mousePos -= pTouchSession->GetMouseMoveOffset();
+				CGUIRoot::GetInstance()->GetMouse()->PushMouseEvent(DeviceMouseEventPtr(new DeviceMouseButtonEvent(pTouchSession->TranslateTouchButton(EMouseButton::LEFT), EKeyState::RELEASE, (int)mousePos.x, (int)mousePos.y, true)));
 			}
 			else if (pTouchSession->GetTag() == 2)
 			{
-				CGUIRoot::GetInstance()->GetMouse()->PushMouseEvent(WM_RBUTTONUP, 0, MAKELPARAM(mouse_x, mouse_y));
+				Vector2 mousePos((float)mouse_x, (float)mouse_y);
+				mousePos -= pTouchSession->GetMouseMoveOffset();
+				CGUIRoot::GetInstance()->GetMouse()->PushMouseEvent(DeviceMouseEventPtr(new DeviceMouseButtonEvent(pTouchSession->TranslateTouchButton(EMouseButton::RIGHT), EKeyState::RELEASE, (int)mousePos.x, (int)mousePos.y, true)));
 			}
 			else if (pTouchSession->GetTag() == -1)
 			{
@@ -2527,24 +2505,26 @@ void ParaEngine::CGUIRoot::TranslateTouchEvent(const TouchEvent &touch)
 				{
 					// OUTPUT_LOG("touch translate to click\n");
 					// short tap for left mouse click
-					CGUIRoot::GetInstance()->GetMouse()->PushMouseEvent(WM_LBUTTONDOWN, 0, MAKELPARAM(mouse_x, mouse_y));
-					CGUIRoot::GetInstance()->GetMouse()->PushMouseEvent(WM_LBUTTONUP, 0, MAKELPARAM(mouse_x, mouse_y));
+					CGUIRoot::GetInstance()->GetMouse()->PushMouseEvent(DeviceMouseEventPtr(new DeviceMouseButtonEvent(pTouchSession->TranslateTouchButton(EMouseButton::LEFT), EKeyState::PRESS, mouse_x, mouse_y, true)));
+					CGUIRoot::GetInstance()->GetMouse()->PushMouseEvent(DeviceMouseEventPtr(new DeviceMouseButtonEvent(pTouchSession->TranslateTouchButton(EMouseButton::LEFT), EKeyState::RELEASE, mouse_x, mouse_y, true)));
 				}
 				else
 				{
 					// long tap for right mouse click
-					CGUIRoot::GetInstance()->GetMouse()->PushMouseEvent(WM_RBUTTONDOWN, 0, MAKELPARAM(mouse_x, mouse_y));
-					CGUIRoot::GetInstance()->GetMouse()->PushMouseEvent(WM_RBUTTONUP, 0, MAKELPARAM(mouse_x, mouse_y));
+					CGUIRoot::GetInstance()->GetMouse()->PushMouseEvent(DeviceMouseEventPtr(new DeviceMouseButtonEvent(pTouchSession->TranslateTouchButton(EMouseButton::RIGHT), EKeyState::PRESS, mouse_x, mouse_y, true)));
+					CGUIRoot::GetInstance()->GetMouse()->PushMouseEvent(DeviceMouseEventPtr(new DeviceMouseButtonEvent(pTouchSession->TranslateTouchButton(EMouseButton::RIGHT), EKeyState::RELEASE, mouse_x, mouse_y, true)));
 				}
 			}
 		}
 		else if (touch.m_nTouchType == TouchEvent::TouchEvent_POINTER_DOWN)
 		{
 			s_lastMouseWheelPosY = ui_mouse_y;
+			pTouchSession->SetMouseMoveOffset(Vector2::ZERO);
 			pTouchSession->SetTag(-1);
 		}
 		else if (touch.m_nTouchType == TouchEvent::TouchEvent_POINTER_UPDATE)
 		{
+			bool bContinue = false;
 			if (pTouchSession->GetTag() == -1)
 			{
 				// OUTPUT_LOG("touch update: %d %d (drag:%d)\n", ui_mouse_x, ui_mouse_y, pTouchSession->GetMaxDragDistance());
@@ -2569,18 +2549,27 @@ void ParaEngine::CGUIRoot::TranslateTouchEvent(const TouchEvent &touch)
 						//mouse_x = (int)pTouchSession->GetStartEvent().m_x;
 						//mouse_y = (int)pTouchSession->GetStartEvent().m_y;
 
+						pTouchSession->SetMouseMoveOffset(pTouchSession->GetOffsetFromStartLocation());
+
+						Vector2 mousePos((float)mouse_x, (float)mouse_y);
+						mousePos -= pTouchSession->GetMouseMoveOffset();
+
 						// press hold and drag for right button drag, drag directly for left button drag. 
 						if (pTouchSession->GetDuration() < 500)
 						{
-							CGUIRoot::GetInstance()->GetMouse()->PushMouseEvent(WM_LBUTTONDOWN, 0, MAKELPARAM(mouse_x, mouse_y));
+							CGUIRoot::GetInstance()->GetMouse()->PushMouseEvent(DeviceMouseEventPtr(new DeviceMouseButtonEvent(pTouchSession->TranslateTouchButton(EMouseButton::LEFT), EKeyState::PRESS, (int)mousePos.x, (int)mousePos.y, true)));
 							pTouchSession->SetTag(1);
 						}
 						else
 						{
-							CGUIRoot::GetInstance()->GetMouse()->PushMouseEvent(WM_RBUTTONDOWN, 0, MAKELPARAM(mouse_x, mouse_y));
+							CGUIRoot::GetInstance()->GetMouse()->PushMouseEvent(DeviceMouseEventPtr(new DeviceMouseButtonEvent(pTouchSession->TranslateTouchButton(EMouseButton::RIGHT), EKeyState::PRESS, (int)mousePos.x, (int)mousePos.y, true)));
 							pTouchSession->SetTag(2);
 						}
 					}
+				}
+				else
+				{
+					bContinue = true;
 				}
 			}
 			// how many pixels to be regarded as one mouse wheel step. must be divisible to 120. 
@@ -2598,20 +2587,23 @@ void ParaEngine::CGUIRoot::TranslateTouchEvent(const TouchEvent &touch)
 					{
 						// vertical drag move is always mapped to mouse wheel anyway. 
 						int nScrollY = (int)(fOffsetY * WHEEL_DELTA / fMouseWheelDragStep);
-						CGUIRoot::GetInstance()->GetMouse()->PushMouseEvent(WM_MOUSEWHEEL, MAKEWPARAM(0, nScrollY), 0);
+						CGUIRoot::GetInstance()->GetMouse()->PushMouseEvent(DeviceMouseEventPtr(new DeviceMouseWheelEvent(nScrollY)));
 						s_lastMouseWheelPosY = ui_mouse_y;
 						// OUTPUT_LOG("EM_MOUSE_WHEEL %d: delta: %d time:%d \n", pTouchSession->GetTouchId(), (int)(msg.lParam), touch.GetTime());
 					}
 				}
 			}
-			if (pTouchSession->GetTag() != 3)
+			if (pTouchSession->GetTag() != 3 && !bContinue)
 			{
 				if (pTouchSession->GetTag() == -1)
 				{
 					// if mouse button down state is not determined, will reset mouse to make the mouse delta to 0 in the next frame. 
 					CGUIRoot::GetInstance()->GetMouse()->ResetLastMouseState();
 				}
-				CGUIRoot::GetInstance()->GetMouse()->PushMouseEvent(WM_MOUSEMOVE, 0, MAKELPARAM(mouse_x, mouse_y));
+				Vector2 mousePos((float)mouse_x, (float)mouse_y);
+				mousePos -= pTouchSession->GetMouseMoveOffset();
+				CGUIRoot::GetInstance()->GetMouse()->PushMouseEvent(DeviceMouseEventPtr(new DeviceMouseMoveEvent((int)mousePos.x, (int)mousePos.y)));
+
 			}
 		}
 		// OUTPUT_LOG("touch session: %d  tag: %d  touch type:%d\n", pTouchSession->GetTouchId(), pTouchSession->GetTag(), touch.m_nTouchType);
@@ -2623,8 +2615,8 @@ bool ParaEngine::CGUIRoot::AutoLocateTouchClick(int ui_mouse_x, int ui_mouse_y, 
 	int nFingerSize = GetFingerSizePixels();
 	int nStepSize = GetFingerStepSizePixels(); 
 	int nLastRadius = 99999;
-	int mouse_new_x = -999;
-	int mouse_new_y = -999;
+	int mouse_new_x = -99999;
+	int mouse_new_y = -99999;
 	CGUIBase* pLastUIObj = NULL;
 
 	const int nFrom = (int)(nFingerSize / nStepSize /2);
@@ -2635,7 +2627,7 @@ bool ParaEngine::CGUIRoot::AutoLocateTouchClick(int ui_mouse_x, int ui_mouse_y, 
 			int nX = i*nStepSize + ui_mouse_x;
 			int nY = j*nStepSize + ui_mouse_y;
 			CGUIBase* pUIObj = GetUIObject(nX, nY);
-			if (pUIObj && !pUIObj->IsScrollableOrHasMouseWheelRecursive() && pUIObj->HasClickEvent())
+			if (pUIObj && (pUIObj->IsScrollableOrHasMouseWheelRecursive() || pUIObj->HasClickEvent()))
 			{
 				int nRadius = i*i + j*j;
 				if (nRadius < nLastRadius 
@@ -2648,7 +2640,7 @@ bool ParaEngine::CGUIRoot::AutoLocateTouchClick(int ui_mouse_x, int ui_mouse_y, 
 					int height = (int)(temp.rect.bottom - temp.rect.top);
 
 					// skip UI that is already big enough
-					if (width < nFingerSize || height < nFingerSize)
+					if (pUIObj->GetWidth() < nFingerSize || pUIObj->GetHeight() < nFingerSize)
 					{
 						nLastRadius = nRadius;
 						mouse_new_x = nX;
@@ -2659,7 +2651,8 @@ bool ParaEngine::CGUIRoot::AutoLocateTouchClick(int ui_mouse_x, int ui_mouse_y, 
 			}
 		}
 	}
-	if (mouse_new_x > -999)
+	// skip scrollable container
+	if (mouse_new_x > -99999 && pLastUIObj && !pLastUIObj->IsScrollableOrHasMouseWheelRecursive())
 	{
 		// OUTPUT_LOG("touch click simulate offset %d(%d), %d(%d)\n", mouse_x, mouse_new_x - ui_mouse_x, mouse_y, mouse_new_y - ui_mouse_y);
 		mouse_x += (int)((mouse_new_x - ui_mouse_x)*m_fUIScalingX);
@@ -2679,7 +2672,7 @@ bool ParaEngine::CGUIRoot::handleTouchEvent(const TouchEvent& touch_)
 	TouchEvent touch = touch_;
 	TranslateMousePointInTouchEvent(touch);
 
-	TouchSessions::GetInstance().AddToTouchSession(touch);
+	TouchSessions::GetInstance().AddToTouchSession(touch, IsTouchButtonSwapped());
 
 	// fire global event
 	CGlobals::GetEventsCenter()->FireEvent(touch);
@@ -2705,7 +2698,15 @@ bool ParaEngine::CGUIRoot::handleTouchEvent(const TouchEvent& touch_)
 			if (pUIObj)
 			{
 				if (pUIObj->OnTouch(touch))
+				{
+					touchSession->SetHandledByGUI(touch.m_nTouchType != TouchEvent::TouchEvent_POINTER_UP);
 					bTouchEventHandled = true;
+				}
+				else
+				{
+
+				}
+
 				if (touch.m_nTouchType == TouchEvent::TouchEvent_POINTER_UP)
 				{
 					m_touch_id_to_ui_obj.erase(iter);
@@ -2774,6 +2775,18 @@ void ParaEngine::CGUIRoot::TranslateMousePos(int &inout_x, int &inout_y)
 		inout_y = (int)((float)inout_y / m_fUIScalingY);
 }
 
+ParaEngine::EMouseButton ParaEngine::CGUIRoot::TranslateTouchButton(EMouseButton btn)
+{
+	if (IsTouchButtonSwapped())
+	{
+		if (btn == EMouseButton::LEFT)
+			return EMouseButton::RIGHT;
+		else if (btn == EMouseButton::RIGHT)
+			return EMouseButton::LEFT;
+	}
+	return btn;
+}
+
 void ParaEngine::CGUIRoot::TranslateMousePointInTouchEvent(TouchEvent &touch)
 {
 	int mouse_x = (int)touch.m_x;
@@ -2836,7 +2849,8 @@ bool ParaEngine::CGUIRoot::handleGesturePinch(CTouchGesturePinch& pinch_gesture)
 		// zoom in / out one step every 20 pixels
 		pinch_gesture.ResetLastDistance();
 		int nScrollY = (int)(nDeltaPixels * WHEEL_DELTA / 20);
-		CGUIRoot::GetInstance()->GetMouse()->PushMouseEvent(WM_MOUSEWHEEL, MAKEWPARAM(0, nScrollY), 0);
+		//CGUIRoot::GetInstance()->GetMouse()->PushMouseEvent(WM_MOUSEWHEEL, MAKEWPARAM(0, nScrollY), 0);
+		CGUIRoot::GetInstance()->GetMouse()->PushMouseEvent(DeviceMouseEventPtr(new DeviceMouseWheelEvent(nScrollY)));
 		// OUTPUT_LOG("handleGesturePinch %d\n", nScrollY);
 		return true;
 	}

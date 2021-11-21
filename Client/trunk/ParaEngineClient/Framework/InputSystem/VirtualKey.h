@@ -275,13 +275,13 @@ namespace ParaEngine
 	{
 
 	public:
-		DeviceMouseWheelEvent(int whell) :m_whell(whell) {}
+		DeviceMouseWheelEvent(int wheel) :m_wheel(wheel) {}
 		virtual EMouseEventType GetEventType() const { return EMouseEventType::Wheel; }
-		virtual int GetWhell() const { return m_whell; }
+		virtual int GetWheel() const { return m_wheel; }
 
 		virtual std::string ToString();
 	private:
-		int m_whell;
+		int m_wheel;
 	};
 
 }

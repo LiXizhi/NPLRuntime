@@ -7,15 +7,18 @@
 #include "ParaEngine.h"
 #include "TouchEventSession.h"
 
+
 using namespace ParaEngine;
 
 // default to 10 pixels
 const float default_finger_size = 10.f;
 
-ParaEngine::TouchEventSession::TouchEventSession(const TouchEvent& startEvent)
-	:m_max_delta(0.f), m_tag(0)
+ParaEngine::TouchEventSession::TouchEventSession(const TouchEvent& startEvent, bool bSwapped)
+	: m_max_delta(0.f)
+	, m_tag(0)
+	, m_vMouseMoveOffset(0.f,0.f)
 {
-	SetStartEvent(startEvent);
+	SetStartEvent(startEvent, bSwapped);
 }
 
 TouchEvent& ParaEngine::TouchEventSession::GetStartEvent()
@@ -33,12 +36,13 @@ TouchEvent& ParaEngine::TouchEventSession::GetCurrentEvent()
 	return m_current_event;
 }
 
-void ParaEngine::TouchEventSession::SetStartEvent(const TouchEvent& event)
+void ParaEngine::TouchEventSession::SetStartEvent(const TouchEvent& event, bool bSwapped)
 {
 	m_start_event = event;
 	m_previous_event = event;
 	m_current_event = event;
 	m_max_delta = 0.f;
+	m_swapped = bSwapped;
 	//OUTPUT_LOG("start touch session %d\n", GetTouchId());
 }
 
@@ -93,6 +97,16 @@ bool ParaEngine::TouchEventSession::IsTouchClick()
 	return ((m_current_event.m_nTime - m_start_event.m_nTime) < 300 && (GetMaxDragDistance() < default_finger_size));
 }
 
+bool ParaEngine::TouchEventSession::IsSwapped() const
+{
+	return m_swapped;
+}
+
+ParaEngine::EMouseButton ParaEngine::TouchEventSession::TranslateTouchButton(ParaEngine::EMouseButton btn) const
+{
+	return m_swapped ? (btn == EMouseButton::LEFT ? EMouseButton::RIGHT : EMouseButton::LEFT) : btn;
+}
+
 int32 ParaEngine::TouchEventSession::GetTag() const
 {
 	return m_tag;
@@ -101,6 +115,16 @@ int32 ParaEngine::TouchEventSession::GetTag() const
 void ParaEngine::TouchEventSession::SetTag(int32 val)
 {
 	m_tag = val;
+}
+
+bool ParaEngine::TouchEventSession::IsHandledByGUI()
+{
+	return GetTag() == -1000;
+}
+
+void ParaEngine::TouchEventSession::SetHandledByGUI(bool bHandled)
+{
+	SetTag(bHandled ? -1000 : 0);
 }
 
 bool ParaEngine::TouchEventSession::IsRightClick()
@@ -131,7 +155,15 @@ int32 ParaEngine::TouchEventSession::GetTouchDistanceBetween(TouchEvent* touch1,
 	return 0;
 }
 
+const ParaEngine::Vector2& ParaEngine::TouchEventSession::GetMouseMoveOffset() const
+{
+	return m_vMouseMoveOffset;
+}
 
+void ParaEngine::TouchEventSession::SetMouseMoveOffset(const Vector2& val)
+{
+	m_vMouseMoveOffset = val;
+}
 
 
 

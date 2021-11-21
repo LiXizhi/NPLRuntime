@@ -24,6 +24,52 @@ ParaEngine::CGUIMouseVirtual::~CGUIMouseVirtual()
 
 }
 
+void CGUIMouseVirtual::PushMouseEvent(const DeviceMouseEventPtr& e)
+{
+	if (m_buffered_mouse_msgs_count < SAMPLE_BUFFER_SIZE / 2)
+	{
+		// merge all mouse wheel events
+		if (e->GetEventType() == EMouseEventType::Wheel)
+		{
+			auto pEvent = static_cast<const DeviceMouseWheelEvent*>(e.get());
+			for (int i = 0; i < m_buffered_mouse_msgs_count; i++)
+			{
+				if (m_buffered_mouse_msgs[i].message == WM_MOUSEWHEEL)
+				{
+					m_buffered_mouse_msgs[i].wParam += MAKEWPARAM(0, pEvent->GetWheel());
+					return;
+				}
+			}
+			m_buffered_mouse_msgs[m_buffered_mouse_msgs_count].lParam = 0;
+			m_buffered_mouse_msgs[m_buffered_mouse_msgs_count].wParam = MAKEWPARAM(0, pEvent->GetWheel());
+			m_buffered_mouse_msgs[m_buffered_mouse_msgs_count].message = WM_MOUSEWHEEL;
+			++m_buffered_mouse_msgs_count;
+		}
+		else if (e->GetEventType() == EMouseEventType::Button)
+		{
+			auto pEvent = static_cast<const DeviceMouseButtonEvent*>(e.get());
+			m_buffered_mouse_msgs[m_buffered_mouse_msgs_count].lParam = MAKELPARAM(pEvent->GetX(), pEvent->GetY());
+			m_buffered_mouse_msgs[m_buffered_mouse_msgs_count].wParam = 0;
+			m_buffered_mouse_msgs[m_buffered_mouse_msgs_count].message = (pEvent->GetButton() == EMouseButton::LEFT) ? (pEvent->GetKeyState() == EKeyState::PRESS ? WM_LBUTTONDOWN : WM_LBUTTONUP) : 
+				((pEvent->GetButton() == EMouseButton::RIGHT) ? (pEvent->GetKeyState() == EKeyState::PRESS ? WM_RBUTTONDOWN : WM_RBUTTONUP) : (WM_MOUSEMOVE));
+			++m_buffered_mouse_msgs_count;
+		}
+		else if (e->GetEventType() == EMouseEventType::Move)
+		{
+			auto pEvent = static_cast<const DeviceMouseMoveEvent*>(e.get());
+			m_buffered_mouse_msgs[m_buffered_mouse_msgs_count].lParam = MAKELPARAM(pEvent->GetX(), pEvent->GetY());
+			m_buffered_mouse_msgs[m_buffered_mouse_msgs_count].wParam = 0;
+			m_buffered_mouse_msgs[m_buffered_mouse_msgs_count].message = WM_MOUSEMOVE;
+			++m_buffered_mouse_msgs_count;
+		}
+	}
+	else
+	{
+		OUTPUT_LOG("PushMouseEvent: failed because buffer is full. msg: %s \n", e->ToString().c_str());
+	}
+}
+
+
 void CGUIMouseVirtual::PushMouseEvent(UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
 	if (m_buffered_mouse_msgs_count < SAMPLE_BUFFER_SIZE / 2) {

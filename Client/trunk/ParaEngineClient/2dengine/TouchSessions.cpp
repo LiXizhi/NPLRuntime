@@ -58,7 +58,7 @@ TouchEventSession* ParaEngine::TouchSessions::GetTouchSession(int nTouchId)
 	return NULL;
 }
 
-void ParaEngine::TouchSessions::AddToTouchSession(const TouchEvent &touch)
+void ParaEngine::TouchSessions::AddToTouchSession(const TouchEvent &touch, bool bSwapped)
 {
 	if (touch.m_nTouchType == TouchEvent::TouchEvent_POINTER_DOWN)
 	{
@@ -69,14 +69,14 @@ void ParaEngine::TouchSessions::AddToTouchSession(const TouchEvent &touch)
 				TickTouchSessions();
 				return;
 			}
-			TouchEventSession* touchSession = new TouchEventSession(touch);
+			TouchEventSession* touchSession = new TouchEventSession(touch, bSwapped);
 			m_touch_sessions[touch.GetTouchId()] = touchSession;
 			m_touch_arrays.push_back(touchSession);
 		}
 		else
 		{
 			// this should never happen
-			m_touch_sessions[touch.GetTouchId()]->SetStartEvent(touch);
+			m_touch_sessions[touch.GetTouchId()]->SetStartEvent(touch, bSwapped);
 		}
 	}
 	else

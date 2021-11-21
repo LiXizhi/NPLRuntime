@@ -495,6 +495,7 @@ namespace ParaEngine
 
 		void TranslateMousePos(int &inout_x, int &inout_y);
 
+		EMouseButton TranslateTouchButton(EMouseButton btn);
 		void TranslateTouchEvent(const TouchEvent &touch);
 
 		/** we will simulate finger size, by testing in a 44*44 region around the current touch point. 
