@@ -2439,25 +2439,34 @@ LRESULT CParaEngineApp::MsgProcWinThread( HWND hWnd, UINT uMsg, WPARAM wParam, L
 
 	if (uMsg<=WM_MOUSELAST && uMsg>=WM_MOUSEFIRST)
 	{
+		if (uMsg == WM_LBUTTONDOWN || uMsg == WM_RBUTTONDOWN || uMsg == WM_LBUTTONUP || uMsg == WM_RBUTTONUP)
+		{
+			// GetMessageExtraInfo() returns the extra info associated with a message
+			//	Mouse up and down messages are tagged with a special signature indicating they came from touch or pen :
+			// Mask extra info against 0xFFFFFF80, 0xFF515780 for touch, 0xFF515700 for pen
+#define IsTouchEvent(dw) (((dw) & 0xFFFFFF80) == 0xFF515780)
+			bool isTouchEvent = IsTouchEvent(GetMessageExtraInfo());
+			SetTouchInputting(isTouchEvent);
+			// OUTPUT_LOG("WM_LBUTTONDOWN: %d \n", GetMessageExtraInfo());
+			if (isTouchEvent)
+			{
+				return 0;
+			}
+		}
+		else if (uMsg == WM_MOUSEMOVE || uMsg == WM_MOUSEWHEEL)
+		{
+			if (IsTouchInputting())
+			{
+				return 0;
+			}
+		}
+
 		bContinue = false;
 		SendMessageToApp(hWnd, uMsg, wParam, lParam);
 		if(uMsg == WM_LBUTTONUP)
 			bContinue = true;
 
-		if (uMsg == WM_LBUTTONDOWN)			
-		{
-			// 2014.5.14 andy: check input source using message info along with WM_LBUTTONDOWN instead of WM_POINTERCAPTURECHANGED
-			//
-			//GetMessageExtraInfo() returns the extra info associated with a message
-			//	Mouse up and down messages are tagged with a special signature indicating they came from touch or pen :
-			//Mask extra info against 0xFFFFFF80
-			//	0xFF515780 for touch, 0xFF515700 for pen
-
-			#define IsTouchEvent(dw) (((dw) & 0xFFFFFF80) == 0xFF515780)
-			SetTouchInputting(IsTouchEvent(GetMessageExtraInfo()));
-			// OUTPUT_LOG("WM_LBUTTONDOWN: %d \n", GetMessageExtraInfo());
-		}
-		else if (uMsg == WM_RBUTTONDOWN)
+		if (uMsg == WM_RBUTTONDOWN)
 		{
 			// trickly: we will grab key focus() whenever the user left or RIGHT click the window. 
 			// this is useful when we have native child window (like chrome browser) which may has key focus. 

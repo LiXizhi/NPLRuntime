@@ -620,7 +620,7 @@ void ParaEngine::CDirectMouse::SetDeviceCursorPos(int x, int y)
 bool ParaEngine::CDirectMouse::IsButtonDown(const EMouseButton nMouseButton)
 {
 	if (m_isTouchInputting)
-		return false;
+		return CGUIMouseVirtual::IsButtonDown(nMouseButton);
 	else
 	{
 		if (!m_bSwapMouseButton)

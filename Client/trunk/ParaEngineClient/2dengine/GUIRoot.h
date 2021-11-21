@@ -75,6 +75,8 @@ namespace ParaEngine
 
 		ATTRIBUTE_METHOD1(CGUIRoot, GetEnableIME_s, bool*)	{ *p1 = cls->GetEnableIME(); return S_OK; }
 		ATTRIBUTE_METHOD1(CGUIRoot, SetEnableIME_s, bool)	{ cls->SetEnableIME(p1); return S_OK; }
+		ATTRIBUTE_METHOD1(CGUIRoot, SetControlBottom_s, int) { cls->SetControlBottom(p1); return S_OK; }
+		ATTRIBUTE_METHOD1(CGUIRoot, SetIMEKeyboardState_s, bool) { cls->SetIMEKeyboardState(p1); return S_OK; }
 
 		ATTRIBUTE_METHOD1(CGUIRoot, GetUseSystemCursor_s, bool*)	{ *p1 = cls->GetUseSystemCursor(); return S_OK; }
 		ATTRIBUTE_METHOD1(CGUIRoot, SetUseSystemCursor_s, bool)	{ cls->SetUseSystemCursor(p1); return S_OK; }
@@ -93,6 +95,9 @@ namespace ParaEngine
 
 		ATTRIBUTE_METHOD1(CGUIRoot, SendInputMethodEvent_s, const char*) { cls->SendInputMethodEvent(p1); return S_OK; }
 
+		ATTRIBUTE_METHOD1(CGUIRoot, IsTouchButtonSwapped_s, bool*) { *p1 = cls->IsTouchButtonSwapped(); return S_OK; }
+		ATTRIBUTE_METHOD1(CGUIRoot, SetTouchButtonSwapped_s, bool) { cls->SetTouchButtonSwapped(p1); return S_OK; }
+
 		ATTRIBUTE_METHOD1(CGUIRoot, SetMinimumScreenSize_s, Vector2)		{ cls->SetMinimumScreenSize((int)(p1.x), (int)(p1.y)); return S_OK; }
 
 		ATTRIBUTE_METHOD1(CGUIRoot, SetMaximumScreenSize_s, Vector2)		{ cls->SetMaximumScreenSize((int)(p1.x), (int)(p1.y)); return S_OK; }
@@ -102,6 +107,10 @@ namespace ParaEngine
 
 		ATTRIBUTE_METHOD1(CGUIRoot, IsNonClient_s, bool*)	{ *p1 = cls->IsNonClient(); return S_OK; }
 		ATTRIBUTE_METHOD1(CGUIRoot, SetIsNonClient_s, bool)	{ cls->SetIsNonClient(p1); return S_OK; }
+
+		ATTRIBUTE_METHOD1(CGUIRoot, GetKeyFocusObjectId_s, int*) { *p1 = cls->GetKeyFocusObjectId(); return S_OK; }
+		ATTRIBUTE_METHOD1(CGUIRoot, GetMouseFocusObjectId_s, int*) { *p1 = cls->GetMouseFocusObjectId(); return S_OK; }
+
 	public:
 		ParaEngine::GUIState& GetGUIState() { return m_stateGUI; }
 		CDirectMouse* GetMouse() { return m_pMouse; }
@@ -258,9 +267,15 @@ namespace ParaEngine
 		* @remark: It's different from the GetKeyFocus() in CGUIContainer.
 		*/
 		CGUIBase* GetUIKeyFocus();
+		
+		/** whether this control has key focus. */
+		virtual bool HasKeyFocus();
 
 		/** set UI key focus to a given control. It will automatically refresh the mouse focus hierachy. */
 		void SetUIKeyFocus(CGUIBase* control);
+
+		/** get key focus control's object id. return -1 if not object  */
+		virtual int GetKeyFocusObjectId();
 
 		/**
 		* Gets the mouse focus of all controls. It searches all its descendant.
@@ -271,6 +286,9 @@ namespace ParaEngine
 
 		/** set UI mouse focus to a given control. It will automatically refresh the mouse focus hierachy. */
 		void SetUIMouseFocus(CGUIBase* control);
+
+		/** get key focus control's object id. return -1 if not object  */
+		virtual int GetMouseFocusObjectId();
 
 		/** set whether to use default mouse cursor or not.*/
 		void UseDefaultMouseCursor(bool bUseDefaultMouseCursor);
@@ -299,6 +317,10 @@ namespace ParaEngine
 		bool IsMouseButtonSwapped();
 		void SetMouseButtonSwapped(bool bSwapped);
 
+		/** swap left/right mouse button and touch.*/
+		bool IsTouchButtonSwapped();
+		void SetTouchButtonSwapped(bool bSwapped);
+
 		bool DispatchKeyboardMsg(bool bKeyHandled);
 
 		void DispatchTouchMouseEvent(bool &bMouseHandled);
@@ -326,10 +348,9 @@ namespace ParaEngine
 		/**
 		* Render all the contorls
 		*/
-		void	AdvanceGUI(float fElapsedTime);
+		void AdvanceGUI(float fElapsedTime);
 
-
-		void	AddScript();
+		void	 AddScript();
 
 		HRESULT OneTimeGUIInit();
 		LRESULT MsgProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam, bool &bNoFurtherProcess);
@@ -420,6 +441,12 @@ namespace ParaEngine
 		/** whether to use directX rendered ime windows. in most cases during windowed mode, ime window can be disabled.*/
 		bool GetEnableIME();
 		void SetEnableIME(bool bHasIME);
+		
+		/* App will check the bottom pos of control and move render view when attach IME. */
+		void SetControlBottom(int bottom);
+
+		/* */
+		void SetIMEKeyboardState(bool bOpen);
 
 		/** confine the cursor in current window.
 		* @param bEnable: true to enable and false to release.
@@ -567,6 +594,8 @@ namespace ParaEngine
 		* CGUIContainer:SetNonClientArea(true) can be used to specify a non-client area. 
 		*/
 		bool m_bIsNonClient;
+		/* if false, touch and drag is left mouse button, if true, it is right button. */
+		bool m_bSwapTouchButton;
 		/** touch finger size in pixels. we will automatically click a button when it is within finger size. */
 		int m_nFingerSizePixels;
 		int m_nFingerStepSizePixels;
@@ -582,6 +611,9 @@ namespace ParaEngine
 		/** last active GUI object object who has onactivate event handler in script. */
 		CGUIBase*  m_pActiveWindow;
 		
+		/* App will check the bottom pos of control and move render view when attach IME. */
+		int			m_nCtrlBottom;
+
 		friend CGUIBase;
 	};
 }

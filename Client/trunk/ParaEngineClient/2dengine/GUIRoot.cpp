@@ -125,9 +125,9 @@ for CGUIRoot
 CGUIRoot::CGUIRoot(void)
 	: engine(NULL),
 	m_fUIScalingX(1.f), m_fUIScalingY(1.0f), m_fViewportLeft(0.f), m_fViewportTop(0.f), m_fViewportWidth(0.f), m_fViewportHeight(0.f),
-	m_bMouseInClient(true), m_nLastTouchX(-1000), m_nLastTouchY(-1000), m_bIsNonClient(false),
+	m_bMouseInClient(true), m_nLastTouchX(-1000), m_nLastTouchY(-1000), m_bIsNonClient(false), m_bSwapTouchButton(false),
 	m_fMinScreenWidth(400.f), m_fMinScreenHeight(300.f), m_fMaxScreenWidth(4096.f), m_fMaxScreenHeight(2160.f), m_bHasIMEFocus(false), m_bIsCursorClipped(false),
-	m_nFingerSizePixels(60), m_nFingerStepSizePixels(10), m_pActiveWindow(NULL), m_pLastMouseDownObject(NULL), m_bMouseCaptured(false)
+	m_nFingerSizePixels(60), m_nFingerStepSizePixels(10), m_pActiveWindow(NULL), m_pLastMouseDownObject(NULL), m_bMouseCaptured(false), m_nCtrlBottom(0)
 {
 	if (!m_type){
 		m_type = IType::GetType("guiroot");
@@ -502,6 +502,23 @@ CGUIBase* ParaEngine::CGUIRoot::GetUIObject(int nID)
 		//OUTPUT_LOG("warning: CGUIRoot::GetUIObject is called with an invalid  id\n");
 		return NULL;
 	}
+}
+
+bool ParaEngine::CGUIRoot::HasKeyFocus()
+{
+	return GetUIKeyFocus() != NULL;
+}
+
+int ParaEngine::CGUIRoot::GetKeyFocusObjectId()
+{
+	auto pObj = GetUIKeyFocus();
+	return pObj != NULL ? pObj->GetID() : -1;
+}
+
+int ParaEngine::CGUIRoot::GetMouseFocusObjectId()
+{
+	auto pObj = GetUIMouseFocus();
+	return pObj != NULL ? pObj->GetID() : -1;
 }
 
 void CGUIRoot::PushTopLevelControl(CGUIContainer* pTopLevelControl)
@@ -1125,6 +1142,16 @@ bool ParaEngine::CGUIRoot::IsMouseButtonSwapped()
 void ParaEngine::CGUIRoot::SetMouseButtonSwapped(bool bSwapped)
 {
 	GetMouse()->SetMouseButtonSwapped(bSwapped);
+}
+
+bool ParaEngine::CGUIRoot::IsTouchButtonSwapped()
+{
+	return m_bSwapTouchButton;
+}
+
+void ParaEngine::CGUIRoot::SetTouchButtonSwapped(bool bSwapped)
+{
+	m_bSwapTouchButton = bSwapped;
 }
 
 bool ParaEngine::CGUIRoot::DispatchKeyboardMsg(bool bKeyHandled)
@@ -2327,6 +2354,30 @@ void ParaEngine::CGUIRoot::SetEnableIME(bool bEnableIME)
 #endif
 }
 
+void ParaEngine::CGUIRoot::SetControlBottom(int bottom)
+{
+	float fScaleX = 1.f;
+	float fScaleY = 1.f;
+	CGlobals::GetGUI()->GetUIScale(&fScaleX, &fScaleY);
+
+	m_nCtrlBottom = (int)(bottom * fScaleY);
+}
+
+void ParaEngine::CGUIRoot::SetIMEKeyboardState(bool bOpen)
+{
+#ifdef PARAENGINE_MOBILE
+	if (bOpen)
+	{
+		CGlobals::GetApp()->setIMEKeyboardState(true, m_nCtrlBottom > 0, m_nCtrlBottom);
+	}
+	else
+	{
+		CGlobals::GetApp()->setIMEKeyboardState(false, m_nCtrlBottom > 0, m_nCtrlBottom);
+		m_nCtrlBottom = 0;
+	}
+#endif
+}
+
 bool ParaEngine::CGUIRoot::IsCursorClipped()
 {
 	return m_bIsCursorClipped;
@@ -2820,15 +2871,22 @@ int ParaEngine::CGUIRoot::InstallFields(CAttributeClass* pClass, bool bOverride)
 	pClass->AddField("UIScale", FieldType_Vector2, (void*)SetUIScale_s, (void*)GetUIScale_s, NULL, NULL, bOverride);
 	pClass->AddField("MousePosition", FieldType_Vector2, (void*)SetMousePosition_s, (void*)GetMousePosition_s, NULL, NULL, bOverride);
 	pClass->AddField("BackBufferSize", FieldType_Vector2, NULL, (void*)GetBackBufferSize_s, NULL, NULL, bOverride);
+	
 	pClass->AddField("HasIMEFocus", FieldType_Bool, (void*)SetHasIMEFocus_s, (void*)GetHasIMEFocus_s, NULL, NULL, bOverride);
 	pClass->AddField("EnableIME", FieldType_Bool, (void*)SetEnableIME_s, (void*)GetEnableIME_s, NULL, NULL, bOverride);
+	pClass->AddField("ControlBottom", FieldType_Int, (void*)SetControlBottom_s, nullptr, nullptr, nullptr, bOverride);
+	pClass->AddField("IMEKeyboardState", FieldType_Bool, (void*)SetIMEKeyboardState_s, nullptr, nullptr, nullptr, bOverride);
+
 	pClass->AddField("UseSystemCursor", FieldType_Bool, (void*)SetUseSystemCursor_s, (void*)GetUseSystemCursor_s, NULL, NULL, bOverride);
 	pClass->AddField("CaptureMouse", FieldType_Bool, (void*)SetCaptureMouse_s, (void*)IsMouseCaptured_s, NULL, NULL, bOverride);
+	pClass->AddField("MouseFocusObjectId", FieldType_Int, (void*)0, (void*)GetMouseFocusObjectId_s, NULL, NULL, bOverride);
+	pClass->AddField("KeyFocusObjectId", FieldType_Int, (void*)0, (void*)GetKeyFocusObjectId_s, NULL, NULL, bOverride);
 
 	pClass->AddField("SendKeyDownEvent", FieldType_Int, (void*)SendKeyDownEvent_s, (void*)0, NULL, NULL, bOverride);
 	pClass->AddField("SendKeyUpEvent", FieldType_Int, (void*)SendKeyUpEvent_s, (void*)0, NULL, NULL, bOverride);
 	pClass->AddField("SendInputMethodEvent", FieldType_String, (void*)SendInputMethodEvent_s, (void*)0, NULL, NULL, bOverride);
 	pClass->AddField("MouseButtonSwapped", FieldType_Bool, (void*)SetMouseButtonSwapped_s, (void*)IsMouseButtonSwapped_s, NULL, NULL, bOverride);
+	pClass->AddField("TouchButtonSwapped", FieldType_Bool, (void*)SetTouchButtonSwapped_s, (void*)IsTouchButtonSwapped_s, NULL, NULL, bOverride);
 
 	pClass->AddField("IsNonClient", FieldType_Bool, (void*)SetIsNonClient_s, (void*)IsNonClient_s, NULL, NULL, bOverride);
 	pClass->AddField("FingerSizePixels", FieldType_Int, (void*)SetFingerSizePixels_s, (void*)GetFingerSizePixels_s, NULL, NULL, bOverride);
