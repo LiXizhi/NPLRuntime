@@ -304,7 +304,15 @@ bool CanvasAttachment::animate(SceneState * sceneState, CharacterPose* pPose, bo
 			if (bUseGlobal && pModel->HasAnimation())
 			{
 				// play the specified animation if exist, otherwise use standing animation with the global timer. 
-				pModel->m_CurrentAnim = pModel->GetAnimIndexByID(nAnimID);
+				int nAnimID_ = nAnimID;
+				do {
+					int nAnimIndex = pModel->GetAnimIndexByID(nAnimID_).nIndex;
+					if (nAnimIndex >= 0 || nAnimID_ == 0)
+						break;
+					nAnimID_ = CAnimTable::GetDefaultAnimIDof(nAnimID_);
+				} while (true);
+
+				pModel->m_CurrentAnim = pModel->GetAnimIndexByID(nAnimID_);
 				if (!(pModel->m_CurrentAnim.IsValid()))
 				{
 					pModel->m_CurrentAnim = pModel->GetAnimIndexByID(ANIM_STAND);
