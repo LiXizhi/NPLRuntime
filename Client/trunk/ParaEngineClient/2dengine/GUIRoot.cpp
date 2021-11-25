@@ -1285,7 +1285,8 @@ int CGUIRoot::HandleUserInput()
 				if (nBufferedMessgeCount > 0)
 					UpdateCursorPosition();
 #else
-				UpdateCursorPosition();
+				if (!CGlobals::GetApp()->IsTouchInputting() || nBufferedMessgeCount > 0)
+					UpdateCursorPosition();
 #endif
 				m_pMouse->GetDeviceCursorPos(g_ptBeforeLockMouseX, g_ptBeforeLockMouseY);
 			}

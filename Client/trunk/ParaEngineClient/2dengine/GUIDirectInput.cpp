@@ -415,6 +415,12 @@ void CDirectMouse::SetMousePosition(int x, int y)
 
 HRESULT CDirectMouse::ReadImmediateData( )
 {
+	if (m_isTouchInputting)
+	{
+		CGUIMouseVirtual::ReadImmediateData();
+		return S_OK;
+	}
+
 	HRESULT       hr;
 
 	if (!m_bUseDirectInput)
