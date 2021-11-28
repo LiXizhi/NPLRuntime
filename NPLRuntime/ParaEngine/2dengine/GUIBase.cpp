@@ -86,7 +86,7 @@ CGUIBase::CGUIBase(void)
 	m_bIsUVWrappingEnabled(false),
 	m_nHotkey(0),m_nCursorHotSpotX(-1),m_nCursorHotSpotY(-1),
 	m_textShadowQuality(0),m_textShadowColor(0),
-	m_textOffsetX(0),m_textOffsetY(0)
+	m_textOffsetX(0),m_textOffsetY(0), m_touchTranslateAttFlag(0xff)
 {
 	// m_bIsDummy = false;
 	// m_objType = GUIBase;
@@ -201,6 +201,7 @@ void CGUIBase::Clone(IObject* pobj)const
 	pBase->m_bIsVisible = m_bIsVisible;
 	pBase->m_nZOrder = m_nZOrder;
 	pBase->m_bIsEnabled = m_bIsEnabled;
+	pBase->m_touchTranslateAttFlag = m_touchTranslateAttFlag;
 	//pBase->m_bIsDummy = m_bIsDummy;
 	pBase->m_nLifeTimeCountDown = m_nLifeTimeCountDown;	
 // 	pBase->m_objType = m_objType;
@@ -2788,6 +2789,7 @@ int ParaEngine::CGUIBase::InstallFields(CAttributeClass* pClass, bool bOverride)
 	pClass->AddField("InputMethodEnabled", FieldType_Bool, (void*)SetInputMethodEnabled_s, (void*)IsInputMethodEnabled_s, NULL, NULL, bOverride);
 	pClass->AddField("CompositionPoint", FieldType_Vector2, (void*)SetCompositionPoint_s, (void*)GetCompositionPoint_s, NULL, NULL, bOverride);
 	pClass->AddField("EnableClientTest", FieldType_Bool, (void*)EnableNonClientTest_s, (void*)IsNonClientTestEnabled_s, NULL, NULL, bOverride);
+	pClass->AddField("TouchTranslationAtt", FieldType_Int, (void*)SetTouchTranslationAttFlag_s, (void*)GetTouchTranslationAttFlag_s, NULL, NULL, bOverride);
 	return S_OK;
 }
 

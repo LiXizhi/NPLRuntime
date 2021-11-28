@@ -2068,7 +2068,7 @@ void ParaEngine::CGUIRoot::TranslateTouchEvent(const TouchEvent &touch)
 				{
 					// this is not a click 
 					CGUIBase* pUIObj = GetUIObject(ui_mouse_x, ui_mouse_y);
-					if (pUIObj && pUIObj->IsScrollableOrHasMouseWheelRecursive())
+					if (pUIObj && pUIObj->IsMatchTouchTranslationAttribute(touch_translate_scroll) && pUIObj->IsScrollableOrHasMouseWheelRecursive())
 					{
 						// fixed a mouse wheeling invalid error on mobile platform.
 						// update the position of mouse to find ui object correctly in CGUIRoot::HandleUserInput()
