@@ -355,13 +355,12 @@ public class ParaEngineGLSurfaceView extends GLSurfaceView {
                 break;
 
             case MotionEvent.ACTION_DOWN:
-                if (pMotionEvent.getButtonState() == MotionEvent.BUTTON_PRIMARY) {
-                    // there are only one finger on the screen
-                    final int idDown = pMotionEvent.getPointerId(0);
-                    final float xDown = xs[0];
-                    final float yDown = ys[0];
+                if (mUsbMode) {
+                    if (pMotionEvent.getButtonState() == MotionEvent.BUTTON_PRIMARY) {
+                        final int idDown = pMotionEvent.getPointerId(0);
+                        final float xDown = xs[0];
+                        final float yDown = ys[0];
 
-                    if (mUsbMode) {
                         this.queueEvent(new Runnable() {
                             @Override
                             public void run() {
@@ -370,18 +369,23 @@ public class ParaEngineGLSurfaceView extends GLSurfaceView {
                         });
 
                         mIsPressMouseLeftKey = true;
-                    } else {
-                        this.queueEvent(new Runnable() {
-                            @Override
-                            public void run() {
-                                ParaEngineGLSurfaceView.this.mRenderer.handleActionDown(idDown, xDown, yDown);
-                            }
-                        });
-                    }
-                } else if (pMotionEvent.getButtonState() == MotionEvent.BUTTON_SECONDARY) {
-                    onMouseRightKeyDown();
-                } else if (pMotionEvent.getButtonState() == MotionEvent.BUTTON_TERTIARY) {
+                    } else if (pMotionEvent.getButtonState() == MotionEvent.BUTTON_SECONDARY) {
+                        onMouseRightKeyDown();
+                    } else if (pMotionEvent.getButtonState() == MotionEvent.BUTTON_TERTIARY) {
 
+                    }
+                } else {
+                    // there are only one finger on the screen
+                    final int idDown = pMotionEvent.getPointerId(0);
+                    final float xDown = xs[0];
+                    final float yDown = ys[0];
+
+                    this.queueEvent(new Runnable() {
+                        @Override
+                        public void run() {
+                            ParaEngineGLSurfaceView.this.mRenderer.handleActionDown(idDown, xDown, yDown);
+                        }
+                    });
                 }
 
                 break;
