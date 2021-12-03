@@ -17,7 +17,7 @@
 using namespace boost::asio;
 
 connection::connection(boost::asio::io_service& io_service)
-  : strand_(io_service),
+  : m_pIOService(&io_service), strand_(io_service),
     socket_(io_service),
 	 resolver_(io_service),
 	 _timer(io_service)
@@ -269,7 +269,7 @@ void connection::stop()
 {
 	_timer.cancel();
 	// Post a call to the stop function so that stop() is safe to call from any thread.
-	socket_.get_io_service().post(boost::bind(&connection::handle_stop, shared_from_this()));
+	m_pIOService->post(boost::bind(&connection::handle_stop, shared_from_this()));
 }
 
 void connection::handle_stop()

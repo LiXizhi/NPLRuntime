@@ -21,7 +21,9 @@ int _kbhit()
 #include <sys/select.h>
 #include <sys/ioctl.h>
 #include <termios.h>
+#if HAVE_STROPTS_H
 #include <stropts.h>
+#endif
 
 int _kbhit()
 {

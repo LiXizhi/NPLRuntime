@@ -1,7 +1,7 @@
 #ifndef WIN32
 #include<list>
 #include <sys/time.h>
-#include <util/mutex.h>
+#include "mutex.h"
 #include "NPLRouter.h"
 #include "NPLRouterStrategy.h"
 

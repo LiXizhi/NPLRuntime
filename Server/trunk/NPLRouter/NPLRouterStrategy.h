@@ -2,7 +2,7 @@
 #include <string>
 #include <vector>
 #include <map>
-#include <util/Mutex.hpp>
+#include "Mutex.hpp"
 
 //user table count 72X12
 #define USER_TABLE_COUNT	864
@@ -19,11 +19,7 @@ namespace NPL
 		double dlResponseNid;
 		string strGameServerScript;
 		string strDBServerScript;
-#ifdef WIN32
 		void* logger;
-#else
-		ParaEngine::CServiceLogger_ptr logger;
-#endif
 		/** protecting config file. */
 		ParaEngine::Mutex m_mutex;
 	public:

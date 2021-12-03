@@ -18,8 +18,12 @@ SET(NPLRouter_SRCS
 	NPLRouter.def
 )
 
+
 include_directories("${PROJECT_SOURCE_DIR}")
 include_directories("${ParaEngineServer_SOURCE_DIR}")
+set (CLIENT_SOURCE_DIR ${PROJECT_SOURCE_DIR}/../../../Client/trunk/ParaEngineClient)
+include_directories("${CLIENT_SOURCE_DIR}/Core")
+include_directories("${CLIENT_SOURCE_DIR}/util")
 include_directories("${Boost_INCLUDE_DIRS}")
 
 IF(MSVC)
@@ -53,11 +57,8 @@ endif (WIN32)
 link_libraries( ${LINK_LIBRARIES})
 ADD_LIBRARY(NPLRouter SHARED ${NPLRouter_SRCS})
 
-if(MSVC)
-ADD_CUSTOM_COMMAND(
-   TARGET NPLRouter
-   POST_BUILD
-   COMMAND ${CMAKE_COMMAND} -E copy ${PROJECT_SOURCE_DIR}/Release/NPLRouter.dll ${PROJECT_SOURCE_DIR}/../../../ParaWorld/NPLRouter.dll
+ADD_CUSTOM_COMMAND(TARGET NPLRouter POST_BUILD
+	COMMAND ${CMAKE_COMMAND} -E make_directory ${OUTPUT_BIN_DIR}
+	COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:NPLRouter> ${OUTPUT_BIN_DIR}
 )
-endif(MSVC)
 

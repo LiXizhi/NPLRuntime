@@ -66,9 +66,6 @@ void NPLRouterStrategy::LoadConfigInfo( const string& sMsg )
 			//OUTPUT_LOG("%d,end:%d:nid:%d\n", iTableIndex, iTableEnd, MyDBRouterTable[iTableIndex].iNid);
 		}
 	}
-#ifndef WIN32
-	logger = ParaEngine::CServiceLogger::GetLogger("router");
-#endif
 	//logger->WriteServeviceFormated("|sMsg=%s",sMsg.c_str());
 }
 

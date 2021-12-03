@@ -131,7 +131,7 @@ namespace _RectPrivate {
 template <int Dim>
 class RectOp
 {
-private:
+public:
     static const int last = Dim - 1;
     typedef RectOp<Dim - 1> Next;
     template<int D> friend class RectOp;

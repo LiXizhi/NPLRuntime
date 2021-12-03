@@ -222,7 +222,7 @@ namespace _VectorPrivate {
 template <int Dim>
 class VecOp
 {
-private:
+public:
     static const int last = Dim - 1;
     typedef VecOp<Dim - 1> Next;
     template<int D> friend class VecOp;
