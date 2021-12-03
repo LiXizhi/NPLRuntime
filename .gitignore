@@ -76,6 +76,8 @@ Server/trunk/*
 !Server/trunk/luaJIT-2.1/
 !Server/trunk/zlib-1.2.11/
 !Server/trunk/curl-7.47.1/
+!Server/trunk/NPLRouter/
+!Server/trunk/TMInterface/
 
 build/
 buildvm_arch.h
