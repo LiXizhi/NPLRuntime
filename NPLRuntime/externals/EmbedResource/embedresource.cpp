@@ -3,6 +3,7 @@
 #include <iostream>
 #include <iterator>
 #include <fstream>
+#include <algorithm>
 
 using namespace std;
 using namespace boost::filesystem;
@@ -20,8 +21,8 @@ int main(int argc, char** argv)
 	path src(argv[2]);
 
 	string sym = src.filename().string();
-	replace(sym.begin(), sym.end(), '.', '_');
-	replace(sym.begin(), sym.end(), '-', '_');
+	std::replace(sym.begin(), sym.end(), '.', '_');
+	std::replace(sym.begin(), sym.end(), '-', '_');
 
 	create_directories(dst.parent_path());
 

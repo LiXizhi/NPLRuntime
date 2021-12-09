@@ -219,6 +219,8 @@ namespace ParaEngine
 		ATTRIBUTE_METHOD1(CGUIBase, IsNonClientTestEnabled_s, bool*)	{ *p1 = cls->IsNonClientTestEnabled(); return S_OK; }
 		ATTRIBUTE_METHOD1(CGUIBase, EnableNonClientTest_s, bool)	{ cls->EnableNonClientTest(p1); return S_OK; }
 
+		ATTRIBUTE_METHOD1(CGUIBase, GetTouchTranslationAttFlag_s, int*) { *p1 = cls->GetTouchTranslationAttFlag(); return S_OK; }
+		ATTRIBUTE_METHOD1(CGUIBase, SetTouchTranslationAttFlag_s, int) { cls->SetTouchTranslationAttFlag(p1); return S_OK; }
 	public:
 		virtual CPaintEngine * paintEngine() const;
 
@@ -987,6 +989,47 @@ namespace ParaEngine
 		/** get GUI painter */
 		CPainter* GetPainter(GUIState* pGUIState = NULL);
 
+		/**
+		* touch translation for a given GUI container. Default to 0xff, where all possible touch translations are enabled.
+		*/
+		enum TouchTranslationAttributeFlag
+		{
+			// long hold to translate to right button operation
+			touch_translate_rightbutton = 0x0000001,
+			// click and drag to translate to scroll operation when the container is scrollable or has mouse wheel event
+			touch_translate_scroll = 0x0000002,
+			// some gestures like pinch with two figures to translate to mouse wheel. 
+			touch_translate_gestures = 0x0000004,
+		};
+
+		uint32_t GetTouchTranslationAttFlag()  const
+		{
+			return m_touchTranslateAttFlag;
+		}
+
+		void SetTouchTranslationAttFlag(uint32_t dwAttr)
+		{
+			m_touchTranslateAttFlag = dwAttr;
+		}
+
+		/** if match any of the given attributes */
+		bool IsMatchTouchTranslationAttribute(uint32_t attFlags) const
+		{
+			return ((m_touchTranslateAttFlag & attFlags) > 0);
+		}
+
+		/** all attributes as specified in dwMask must match the value of attFlags*/
+		bool IsMatchTouchTranslationAttributes(uint32_t dwMask, uint32_t attFlags) const
+		{
+			return ((m_touchTranslateAttFlag & dwMask) == attFlags);
+		}
+
+		/** if match all of the given attributes */
+		bool IsMatchTouchTranslationAttributeAll(uint32_t attFlags) const
+		{
+			return ((m_touchTranslateAttFlag & attFlags) == attFlags);
+		}
+
 	protected:
 		/**
 		* internally it calls m_resource->DrawSprite. it will apply rotation if necessary..
@@ -1121,6 +1164,8 @@ namespace ParaEngine
 
 		//the only event object
 		CGUIEvent*			m_event;
+		// bitwise field of TouchTranslationAttributeFlag, default to 0xff.
+		uint32_t m_touchTranslateAttFlag;
 
 		/// unit name used in the scripting language
 		std::string				m_sIdentifer;
