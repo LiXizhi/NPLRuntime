@@ -2,8 +2,8 @@
 #include <string>
 #include <map>
 #include "Log.h"
-#include "util/intrusive_ptr.h"
-#include "util/mutex.h"
+#include "intrusive_ptr.h"
+#include "mutex.h"
 
 #ifdef _MSC_VER
 #pragma warning( push )
@@ -74,15 +74,15 @@ namespace ParaEngine
 	b.	service log:
 	Formatted date info. for stat, monitor and other things.
 
-	I£®open mode
-	To open a log file,we need use ¡°a+¡± mode:
-	fopen(const char * filename, ¡°a+¡±)
+	Iï¿½ï¿½open mode
+	To open a log file,we need use ï¿½ï¿½a+ï¿½ï¿½ mode:
+	fopen(const char * filename, ï¿½ï¿½a+ï¿½ï¿½)
 	Open for reading and writing.  The file is created if it does not exist.
 	So we need not to worry about log missing.
 
 	II. log name
 	File name rule
-	a.	runtime log,use program name for first part of log name,like£º
+	a.	runtime log,use program name for first part of log name,likeï¿½ï¿½
 	para_engine_server.log
 	b.	service log. Use service name + _date + .log,like:
 	UserLogin_20090709.log

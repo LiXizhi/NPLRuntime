@@ -70,6 +70,9 @@ private:
 
   boost::asio::ip::tcp::resolver resolver_;
 
+  /** dispatcher IO service object for the connection socket. */
+	boost::asio::io_service * m_pIOService;
+
   /// Buffer for incoming data.
   //boost::array<char, 8192> buffer_;
 

@@ -1,5 +1,5 @@
 #pragma once
-#include "util/mutex.h"
+#include "mutex.h"
 #include <string>
 
 #define MAX_DEBUG_STRING_LENGTH 1024

@@ -16,16 +16,16 @@ apt-get install -y libssl-dev libssh2-1-dev libcurl4-openssl-dev
 apt-get install -y libreadline6 libreadline6-dev
 apt-get install -y freeglut3 freeglut3-dev libglew1.5 libglew1.5-dev libglu1-mesa libglu1-mesa-dev libgl1-mesa-glx libgl1-mesa-dev libbz2-1.0 libbz2-dev
 
-# install boost from latest source url. boost version should be 1.55.0 or above
+# install boost from latest source url. boost version should be 1.73.0 or above
 mkdir ./bin -p
 pushd ./bin
-if [ ! -d ./boost_1_69_0 ]; then
-	if [ ! -f ./boost_1_69_0.tar.bz2 ]; then
-		wget http://dl.bintray.com/boostorg/release/1.69.0/source/boost_1_69_0.tar.bz2 --no-check-certificate
+if [ ! -d ./boost_1_77_0 ]; then
+	if [ ! -f ./boost_1_77_0.tar.bz2 ]; then
+		wget https://boostorg.jfrog.io/artifactory/main/release/1.77.0/source/boost_1_77_0.tar.bz2 --no-check-certificate
 	fi
-	tar --bzip2 -xf boost_1_69_0.tar.bz2
+	tar --bzip2 -xf boost_1_77_0.tar.bz2
 fi
-cd boost_1_69_0
+cd boost_1_77_0
 ./bootstrap.sh --with-libraries="thread,date_time,filesystem,system,chrono,serialization,iostreams,regex"
 ./b2 link=static threading=multi variant=release
 ./b2 install

@@ -47,11 +47,6 @@ SOURCE_GROUP("Core\\Headers" FILES ${ParaEngineServer_CoreHeader_FILES})
 list(APPEND ParaEngineServer_SRCS ${ParaEngineServer_CoreHeader_FILES})
 
 ##############################
-#file (GLOB ParaEngineServer_MDXModel_FILES ${CLIENT_SOURCE_DIR}/mdxfile/*.*)
-#SOURCE_GROUP("Engine\\mdxfile" FILES ${ParaEngineServer_MDXModel_FILES})
-#list(APPEND ParaEngineServer_SRCS ${ParaEngineServer_MDXModel_FILES})
-
-##############################
 file (GLOB ParaEngineServer_BMaxModel_FILES ${CLIENT_SOURCE_DIR}/BMaxModel/*.h ${CLIENT_SOURCE_DIR}/BMaxModel/*.cpp)
 SOURCE_GROUP("Engine\\BMaxModel" FILES ${ParaEngineServer_BMaxModel_FILES})
 list(APPEND ParaEngineServer_SRCS ${ParaEngineServer_BMaxModel_FILES})
@@ -60,6 +55,11 @@ list(APPEND ParaEngineServer_SRCS ${ParaEngineServer_BMaxModel_FILES})
 file (GLOB ParaEngineServer_renderer_FILES ${CLIENT_SOURCE_DIR}/renderer/*.h ${CLIENT_SOURCE_DIR}/renderer/*.cpp)
 SOURCE_GROUP("renderer" FILES ${ParaEngineServer_renderer_FILES})
 list(APPEND ParaEngineServer_SRCS ${ParaEngineServer_renderer_FILES})
+
+##############################
+file (GLOB ParaEngineServer_Framework_FILES ${CLIENT_SOURCE_DIR}/Framework/InputSystem/*.*)
+SOURCE_GROUP("Framework" FILES ${ParaEngineServer_Framework_FILES})
+list(APPEND ParaEngineServer_SRCS ${ParaEngineServer_Framework_FILES})
 
 ##############################
 file (GLOB ParaEngineServer_pb_FILES ${CLIENT_SOURCE_DIR}/protocol/*.h ${CLIENT_SOURCE_DIR}/protocol/*.cpp)
@@ -241,6 +241,7 @@ IF(WIN32)
 	include_directories("${CURL_SOURCE_DIR}/include/")
 	include_directories("${CURL_BINARY_DIR}/include/curl/")
 ELSE(WIN32)
+	include_directories("${ZLIB_SOURCE_DIR}")
 	INCLUDE_DIRECTORIES(${CURL_INCLUDE_DIR})
 ENDIF(WIN32)
 
@@ -434,7 +435,7 @@ else (WIN32)
 				rt
 				dl
 				resolv
-				z
+				zlib
 			${CURL_LIBRARIES}
 			pthread
 		)
@@ -442,7 +443,7 @@ else (WIN32)
 		set(EXTRA_LIBRARIES ${EXTRA_LIBRARIES}
 				dl
 				resolv
-				z
+				zlib
 			${CURL_LIBRARIES}
 			pthread
 		)

@@ -67,6 +67,10 @@ else()
 	# making executable relocatable 
 	SET(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE)
 	SET(CMAKE_INSTALL_RPATH "$ORIGIN/")
+	add_subdirectory (${SERVER_SOURCE_DIR}zlib-1.2.3 ${NPLRuntime_BINARY_DIR}/zlib-1.2.3)
+	set(ZLIB_FOUND 1)
+	set(ZLIB_INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/zlib)
+	set(ZLIB_INCLUDE_DIR ${ZLIB_INCLUDE_DIRS})
 endif()
 
 
@@ -95,3 +99,5 @@ add_subdirectory (ParaEngineServer ${NPLRuntime_BINARY_DIR}/ParaEngineServer)
 
 # following are plugins that should be build after main runtime
 add_subdirectory (${SERVER_SOURCE_DIR}NPLMono/NPLMono2  ${NPLRuntime_BINARY_DIR}/NPLMono/NPLMono2)
+add_subdirectory (${SERVER_SOURCE_DIR}/NPLRouter  ${NPLRuntime_BINARY_DIR}/NPLRouter)
+add_subdirectory (${SERVER_SOURCE_DIR}/TMInterface  ${NPLRuntime_BINARY_DIR}/TMInterface)

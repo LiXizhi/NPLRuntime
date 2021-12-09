@@ -98,11 +98,7 @@ void Test_NPL_DLL_Activate_Interface(int nType, void* pVoid)
 		OUTPUT_LOG(" activate input: %s\n", sMsg);
 
 		// using logger directly via C++ API interface
-#ifdef WIN32
 		void * logger = NULL;
-#else
-		CServiceLogger_ptr logger = ParaEngine::CServiceLogger::GetLogger("NPLRouter");
-#endif
 		
 		SERVICE_LOG(logger, 0, "Service Log from dll interface 1");
 		SERVICE_LOG(logger, 0, "Service Log from dll interface 2");

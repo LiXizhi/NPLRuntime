@@ -30,6 +30,9 @@ SET(TMInterface_SRCS
 include_directories("${PROJECT_SOURCE_DIR}")
 include_directories("${Boost_INCLUDE_DIRS}")
 include_directories("${ParaEngineServer_SOURCE_DIR}")
+set (CLIENT_SOURCE_DIR ${PROJECT_SOURCE_DIR}/../../../Client/trunk/ParaEngineClient)
+include_directories("${CLIENT_SOURCE_DIR}/Core")
+include_directories("${CLIENT_SOURCE_DIR}/util")
 
 IF(MSVC)
 	# statically link MSVC to reduce dependancies
@@ -57,8 +60,7 @@ link_libraries( ${LINK_LIBRARIES}
 )
 else(WIN32)
 link_libraries( ${LINK_LIBRARIES} 
-	${Boost_LIBRARIES} 
-	pthread
+	dl
 )
 endif(WIN32)
 
@@ -66,10 +68,7 @@ endif(WIN32)
 
 ADD_LIBRARY(TMInterface SHARED ${TMInterface_SRCS})
 
-if(MSVC)
-ADD_CUSTOM_COMMAND(
-   TARGET TMInterface
-   POST_BUILD
-   COMMAND ${CMAKE_COMMAND} -E copy ${PROJECT_SOURCE_DIR}/Release/TMInterface.dll ${PROJECT_SOURCE_DIR}/../../../ParaWorld/TMInterface.dll
+ADD_CUSTOM_COMMAND(TARGET TMInterface POST_BUILD
+	COMMAND ${CMAKE_COMMAND} -E make_directory ${OUTPUT_BIN_DIR}
+	COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:TMInterface> ${OUTPUT_BIN_DIR}
 )
-endif(MSVC)
