@@ -88,6 +88,7 @@ namespace ParaScripting
 		void LoadHAPI_Jabber();
 #ifdef CROSS_PLATFORM
 		void LoadHAPI_WebView();
+		void LoadHAPI_Platform();
 #endif
 	public:
 		/** get the NPL code buffer and size according to a given file. Please note that BOM is read from the beginning of the file.

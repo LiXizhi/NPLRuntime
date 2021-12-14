@@ -1,3 +1,11 @@
+//-----------------------------------------------------------------------------
+// Class: ParaAppiOS.mm
+// Authors: big
+// CreateDate: 2021.12.13
+//-----------------------------------------------------------------------------
+
+#import "KeyboardiOS.h"
+
 #include "ParaAppiOS.h"
 #include "RenderWindowiOS.h"
 
@@ -102,12 +110,10 @@ namespace  ParaEngine {
 
     void CParaEngineAppiOS::setIMEKeyboardState(bool bOpen, bool bMoveView, int ctrlBottom)
     {
-        auto delegate = (AppDelegate*)[[UIApplication sharedApplication] delegate];
-
         int x = 0;
         this->GameToClient(x, ctrlBottom);
 
-        [delegate setIMEKeyboardState:bOpen bMoveView:bMoveView ctrlBottom:ctrlBottom];
+        [KeyboardiOSController setIMEKeyboardState:bOpen bMoveView:bMoveView ctrlBottom:ctrlBottom];
     }
 } // namespace  ParaEngine
 
