@@ -20,6 +20,18 @@
 
 @implementation ScreenRecorder
 
+static ScreenRecorder *instance = nil;
+
++ (ScreenRecorder *)getInstance
+{
+    return instance;
+}
+
++ (void)setInstance:(ScreenRecorder *)curInstance
+{
+    instance = curInstance;
+}
+
 - (BOOL)available
 {
     return YES;
@@ -64,7 +76,7 @@
                dispatch_get_main_queue(),
                ^{
                    if (handler) {
-                       handler(previewViewController, nil, error);
+                       handler(previewViewController, error);
                    }
                }
             );

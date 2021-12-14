@@ -12,5 +12,6 @@ namespace ParaScripting
 	{
     public:
         static void Start();
+        static void Stop();
     };
 }

@@ -9,7 +9,7 @@
 #import <MediaPlayer/MediaPlayer.h>
 
 typedef void(^ScreenRecording)(NSTimeInterval duration);
-typedef void(^ScreenRecordStop)(UIViewController *previewViewController, NSString *videoPath, NSError *error);
+typedef void(^ScreenRecordStop)(UIViewController *previewViewController, NSError *error);
 
 @interface ScreenRecorder : NSObject
 
@@ -19,6 +19,9 @@ typedef void(^ScreenRecordStop)(UIViewController *previewViewController, NSStrin
 @property(nonatomic, readonly) NSTimeInterval duration;
 // is recoder available
 @property(nonatomic, readonly) BOOL available;
+
++ (ScreenRecorder *)getInstance;
++ (void)setInstance:(ScreenRecorder *)curInstance;
 
 // start recoding, auto select different SDK version
 - (void)startRecordingWithHandler:(void(^)(NSError *error))handler;
