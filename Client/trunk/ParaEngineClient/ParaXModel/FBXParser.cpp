@@ -53,6 +53,7 @@ FBXParser::FBXParser()
 	, m_bUsedVertexColor(true)
 	, m_bHasSkinnedMesh(false)
 	, m_unique_id(0)
+	, m_bHasAABBMesh(false)
 	, m_pLuaState(nullptr)
 {
 }
@@ -65,6 +66,7 @@ FBXParser::FBXParser(const string& filename)
 	, m_bUsedVertexColor(true)
 	, m_bHasSkinnedMesh(false)
 	, m_unique_id(0)
+	, m_bHasAABBMesh(false)
 	, m_pLuaState(nullptr)
 {
 	m_texAnims.reserve(10);
@@ -123,6 +125,7 @@ void ParaEngine::FBXParser::Reset()
 {
 	ResetAABB();
 	m_bHasSkinnedMesh = false;
+	m_bHasAABBMesh = false;
 	m_unique_id = 0;
 }
 
@@ -300,7 +303,26 @@ void FBXParser::PostProcessParaXModelData(CParaXModel *pMesh)
 		ModelVertex *ov = pMesh->m_origVertices;
 		ParaEngine::Bone* bones = pMesh->bones;
 		int nVertexCount = pMesh->m_objNum.nVertices;
-		ResetAABB();
+		if (m_bHasAABBMesh)
+		{
+			int nBoneIndex = CreateGetBoneIndex("aabb");
+			if (nBoneIndex >= 0)
+			{
+				Bone& bone = bones[nBoneIndex];
+				auto v1 = m_minExtent * bone.mat;
+				auto v2 = m_maxExtent * bone.mat;
+				m_bHasAABBMesh = false;
+				ResetAABB();
+				CalculateMinMax(v1);
+				CalculateMinMax(v2);
+				m_bHasAABBMesh = true;
+			}
+		}
+		else
+		{
+			ResetAABB();
+		}
+			
 		if (!pMesh->animated)
 		{
 			for (int i = 0; i < nVertexCount; ++i, ++ov)
@@ -2026,13 +2048,16 @@ void FBXParser::ConvertFBXBone(ParaEngine::Bone& bone, const aiBone *pfbxBone)
 
 void FBXParser::CalculateMinMax(const Vector3& v)
 {
-	if (v.x > m_maxExtent.x) m_maxExtent.x = v.x;
-	if (v.y > m_maxExtent.y) m_maxExtent.y = v.y;
-	if (v.z > m_maxExtent.z) m_maxExtent.z = v.z;
+	if (!m_bHasAABBMesh)
+	{
+		if (v.x > m_maxExtent.x) m_maxExtent.x = v.x;
+		if (v.y > m_maxExtent.y) m_maxExtent.y = v.y;
+		if (v.z > m_maxExtent.z) m_maxExtent.z = v.z;
 
-	if (v.x < m_minExtent.x) m_minExtent.x = v.x;
-	if (v.y < m_minExtent.y) m_minExtent.y = v.y;
-	if (v.z < m_minExtent.z) m_minExtent.z = v.z;
+		if (v.x < m_minExtent.x) m_minExtent.x = v.x;
+		if (v.y < m_minExtent.y) m_minExtent.y = v.y;
+		if (v.z < m_minExtent.z) m_minExtent.z = v.z;
+	}
 }
 
 
@@ -2266,14 +2291,50 @@ void FBXParser::ProcessFBXMesh(const aiScene* pFbxScene, aiMesh *pFbxMesh, aiNod
 	int numFaces = pFbxMesh->mNumFaces;
 	int numVertices = pFbxMesh->mNumVertices;
 
-	// add vertices
-	if (numVertices > 0)
-		m_vertices.reserve(m_vertices.size() + numVertices);
-
 	aiVector3D* uvs = NULL;
 	if (pFbxMesh->HasTextureCoords(0))
 		uvs = pFbxMesh->mTextureCoords[0];
-	int nBoneIndex = CreateGetBoneIndex(pFbxNode->mName.C_Str());
+	std::string nodeName(pFbxNode->mName.C_Str());
+	int nBoneIndex = CreateGetBoneIndex(nodeName.c_str());
+
+	bool bIsAABBMesh = false;
+	if (nodeName == "aabb")
+	{
+		bIsAABBMesh = true;
+		ResetAABB();
+		m_bHasAABBMesh = false;
+		for (int i = 0; i < numVertices; i++)
+		{
+			auto pos = ConvertFBXVector3D(pFbxMesh->mVertices[i]);
+			CalculateMinMax(pos);
+		}
+		m_bHasAABBMesh = true;
+
+		// add bones
+		if (pFbxMesh->HasBones())
+		{
+			int numBones = pFbxMesh->mNumBones;
+			for (int i = 0; i < numBones; i++)
+			{
+				const aiBone * fbxBone = pFbxMesh->mBones[i];
+				int nBoneIndex = CreateGetBoneIndex(fbxBone->mName.C_Str());
+				if (nBoneIndex >= 0)
+				{
+					ParaEngine::Bone& bone = m_bones[nBoneIndex];
+					const Matrix4& offsetMat = reinterpret_cast<const Matrix4&>(fbxBone->mOffsetMatrix);
+					bone.matOffset = offsetMat.transpose();
+					bone.flags |= ParaEngine::Bone::BONE_OFFSET_MATRIX;
+					bone.flags &= ~ParaEngine::Bone::BONE_TRANSFORMATION_NODE;
+					bone.pivot = Vector3(0, 0, 0) * bone.matOffset.inverse();
+				}
+			}
+		}
+		return;
+	}
+
+	// add vertices
+	if (numVertices > 0)
+		m_vertices.reserve(m_vertices.size() + numVertices);
 
 	// check diffuse color
 	DWORD dwDiffuseColor = Color::White;
