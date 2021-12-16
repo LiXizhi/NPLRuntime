@@ -124,6 +124,7 @@ namespace ParaEngine
 		int m_unique_id;
 		bool m_bUsedVertexColor;
 		bool m_bHasSkinnedMesh;
+		bool m_bHasAABBMesh;
 		std::string m_sAnimSplitterFilename;
 
 		vector<ModelColor> m_colors;
