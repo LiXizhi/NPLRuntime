@@ -1,12 +1,16 @@
-//
-//  KeyboardiOS.h
-//  Paracraft
-//
-//  Created by big on 2021/6/26.
-//
+//-----------------------------------------------------------------------------
+// Class: KeyboardiOS.h
+// Authors: big
+// CreateDate: 2021.06.26
+// ModifyDate: 2021.12.13
+//-----------------------------------------------------------------------------
 
-#ifndef KeyboardiOS_h
-#define KeyboardiOS_h
+//#ifndef KeyboardiOS_h
+//#define KeyboardiOS_h
+
+#import <Foundation/Foundation.h>
+#import <UIKit/UIKit.h>
+#import "AppDelegate.h"
 
 #include <stdio.h>
 #include "ParaEngine.h"
@@ -28,4 +32,16 @@ namespace ParaEngine
     };
 }
 
-#endif /* KeyboardiOS_h */
+@interface KeyboardiOSController : UIResponder <UITextFieldDelegate>
+
+@property(nonatomic) AppDelegate *appDelegate;
+
++ (void)InitLanguage;
+
++ (void)keyboardInit:(AppDelegate *)appDelegate;
+
++ (void)setIMEKeyboardState:(BOOL)bOpen bMoveView:(BOOL)bMoveView ctrlBottom:(int)ctrlBottom;
+
+@end
+
+//#endif /* KeyboardiOS_h */

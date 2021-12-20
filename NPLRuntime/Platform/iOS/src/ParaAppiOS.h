@@ -1,3 +1,8 @@
+//-----------------------------------------------------------------------------
+// Class: ParaAppiOS.h
+// Authors: big
+// CreateDate: 2021.12.13
+//-----------------------------------------------------------------------------
 
 #pragma once
 #include "AppDelegate.h"
@@ -74,6 +79,7 @@ namespace ParaEngine
         virtual bool GetToggleSoundWhenNotFocused() override;
         virtual int Run(HINSTANCE hInstance) override;
         virtual void setIMEKeyboardState(bool bOpen, bool bMoveView = false, int ctrlBottom = -1) override;
+        virtual void Exit(int nReturnCode /*= 0*/) override;
 
     protected:
 
