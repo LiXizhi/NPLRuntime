@@ -115,6 +115,11 @@ namespace  ParaEngine {
 
         [KeyboardiOSController setIMEKeyboardState:bOpen bMoveView:bMoveView ctrlBottom:ctrlBottom];
     }
+
+    void CParaEngineAppiOS::Exit(int nReturnCode /*= 0*/)
+	{
+        exit(0);
+    }
 } // namespace  ParaEngine
 
 

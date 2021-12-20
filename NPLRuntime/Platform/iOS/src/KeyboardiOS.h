@@ -32,7 +32,7 @@ namespace ParaEngine
     };
 }
 
-@interface KeyboardiOSController : NSObject
+@interface KeyboardiOSController : UIResponder <UITextFieldDelegate>
 
 @property(nonatomic) AppDelegate *appDelegate;
 
