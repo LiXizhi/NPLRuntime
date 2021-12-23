@@ -137,7 +137,7 @@ namespace ParaEngine
 		{
 			//top face
 			// this fixed a flickering bug when using point filter in texture sampler with UV wrapping or clamping. 
-			float fUVEpsilon = 0.01; 
+			float fUVEpsilon = 0.01f; 
 			m_Vertices[g_topLB].SetTexcoord(0 + fUVEpsilon, 0.5f - fUVEpsilon);
 			m_Vertices[g_topLT].SetTexcoord(0 + fUVEpsilon,0 + fUVEpsilon);
 			m_Vertices[g_topRT].SetTexcoord(0.5f - fUVEpsilon,0 + fUVEpsilon);
@@ -175,7 +175,7 @@ namespace ParaEngine
 		}
 		else if(texFaceNum == 4)
 		{
-			float fUVEpsilon = 0.01;
+			float fUVEpsilon = 0.01f;
 			//top face
 			m_Vertices[g_topLB].SetTexcoord(0 + fUVEpsilon, 0.5f - fUVEpsilon);
 			m_Vertices[g_topLT].SetTexcoord(0 + fUVEpsilon, 0 + fUVEpsilon);
