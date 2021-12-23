@@ -351,9 +351,9 @@ namespace ParaEngine
 						int32_t passId = 0;
 						if (curTamplerId != pRenderTask->GetTemplateId())
 						{
-							BlockTemplate* pTempate = pRenderTask->GetTemplate();
+							BlockTemplate* pTemplate = pRenderTask->GetTemplate();
 
-							if (pTempate->IsShadowCaster())
+							if (pTemplate->IsShadowCaster())
 							{
 								passId = 0;
 							}
@@ -374,7 +374,7 @@ namespace ParaEngine
 								}
 							}
 
-							TextureEntity* pTexEntity = pTempate->GetTexture0(pRenderTask->GetUserData());
+							TextureEntity* pTexEntity = pTemplate->GetTexture0(pRenderTask->GetUserData());
 							if (pTexEntity && pTexEntity->GetTexture() != pCurTex0)
 							{
 								pCurTex0 = pTexEntity->GetTexture();
@@ -382,7 +382,7 @@ namespace ParaEngine
 							}
 
 							// culling mode
-							if (pTempate->GetBlockModel().IsDisableFaceCulling())
+							if (pTemplate->GetBlockModel().IsDisableFaceCulling())
 							{
 								if (culling != D3DCULL_NONE)
 								{
@@ -546,7 +546,6 @@ namespace ParaEngine
 				IDirect3DTexture9* pCurTex0 = NULL;
 				IDirect3DTexture9* pCurTex1 = NULL;
 				IDirect3DTexture9* pCurTex2 = NULL;
-
 				pDevice->SetTextureStageState(1, D3DTSS_COLOROP, D3DTOP_MODULATE);
 				pDevice->SetTextureStageState(1, D3DTSS_COLORARG1, D3DTA_DIFFUSE | D3DTA_ALPHAREPLICATE);
 
@@ -562,10 +561,10 @@ namespace ParaEngine
 					int32_t passId;
 					if (curTamplerId != pRenderTask->GetTemplateId())
 					{
-						BlockTemplate* pTempate = pRenderTask->GetTemplate();
-						if (pTempate->IsMatchAttribute(BlockTemplate::batt_twoTexture))
+						BlockTemplate* pTemplate = pRenderTask->GetTemplate();
+						if (pTemplate->IsMatchAttribute(BlockTemplate::batt_twoTexture))
 							passId = g_twoTexPass;
-						else if (pTempate->IsMatchAttribute(BlockTemplate::batt_transparent))
+						else if (pTemplate->IsMatchAttribute(BlockTemplate::batt_transparent))
 							passId = g_transparentBlockPass;
 						else
 							passId = g_TexPass;
@@ -596,14 +595,14 @@ namespace ParaEngine
 							}
 						}
 
-						TextureEntity* pTexEntity = pTempate->GetTexture0(pRenderTask->GetUserData());
+						TextureEntity* pTexEntity = pTemplate->GetTexture0(pRenderTask->GetUserData());
 						if (pTexEntity && pTexEntity->GetTexture() != pCurTex0)
 						{
 							pCurTex0 = pTexEntity->GetTexture();
 							pDevice->SetTexture(0, pCurTex0);
 						}
 
-						pTexEntity = pTempate->GetTexture1();
+						pTexEntity = pTemplate->GetTexture1();
 						if (pTexEntity && pTexEntity->GetTexture() != pCurTex1)
 						{
 							pCurTex1 = pTexEntity->GetTexture();
@@ -611,7 +610,7 @@ namespace ParaEngine
 						}
 
 						/* fixed function never use normal map
-						pTexEntity = pTempate->GetNormalMap();
+						pTexEntity = pTemplate->GetNormalMap();
 						if(pTexEntity && pTexEntity->GetTexture()!=pCurTex2)
 						{
 							pCurTex2 = pTexEntity->GetTexture();
@@ -620,7 +619,7 @@ namespace ParaEngine
 
 
 						// culling mode 
-						if (pTempate->GetBlockModel().IsDisableFaceCulling())
+						if (pTemplate->GetBlockModel().IsDisableFaceCulling())
 						{
 							if (culling != D3DCULL_NONE)
 							{
@@ -712,6 +711,7 @@ namespace ParaEngine
 				uint16_t curTamplerId = 0;
 				int32_t curPass = -1;
 				D3DCULL culling = D3DCULL_CCW;
+				
 				DeviceTexturePtr_type pCurTex0 = 0;
 				DeviceTexturePtr_type pCurTex1 = 0;
 				DeviceTexturePtr_type pCurTex2 = 0;
@@ -741,8 +741,8 @@ namespace ParaEngine
 					int32_t passId;
 					if (curTamplerId != pRenderTask->GetTemplateId())
 					{
-						BlockTemplate* pTempate = pRenderTask->GetTemplate();
-						if (pTempate->IsMatchAttribute(BlockTemplate::batt_twoTexture))
+						BlockTemplate* pTemplate = pRenderTask->GetTemplate();
+						if (pTemplate->IsMatchAttribute(BlockTemplate::batt_twoTexture))
 							passId = g_twoTexPass;
 						else if (nRenderPass == BlockRenderPass_AlphaTest)
 						{
@@ -751,20 +751,18 @@ namespace ParaEngine
 						else if (nRenderPass == BlockRenderPass_AlphaBlended || nRenderPass == BlockRenderPass_ReflectedWater)
 						{
 							passId = g_TexPass;
-							if (pTempate->GetCategoryID() == 8 && dwRenderMethod == BLOCK_RENDER_FANCY_SHADER)
+							if (pTemplate->GetCategoryID() == 8 && dwRenderMethod == BLOCK_RENDER_FANCY_SHADER)
 							{
 								passId = g_waterBlockPass;
 							}
 						}
-						else if (pTempate->GetNormalMap() && dwRenderMethod == BLOCK_RENDER_FANCY_SHADER)
+						else if (pTemplate->GetNormalMap() && dwRenderMethod == BLOCK_RENDER_FANCY_SHADER)
 						{
 							passId = g_bumpyBlockPass;
 						}
 						else
 							passId = g_TexPass;
-
-
-
+						
 						if (curPass != passId)
 						{
 							if (curPass > -1)
@@ -787,21 +785,21 @@ namespace ParaEngine
 							}
 						}
 
-						TextureEntity* pTexEntity = pTempate->GetTexture0(pRenderTask->GetUserData());
+						TextureEntity* pTexEntity = pTemplate->GetTexture0(pRenderTask->GetUserData());
 						if (pTexEntity && pTexEntity->GetTexture() != pCurTex0)
 						{
 							pCurTex0 = pTexEntity->GetTexture();
 							pDevice->SetTexture(0, pCurTex0);
 						}
 
-						pTexEntity = pTempate->GetTexture1();
+						pTexEntity = pTemplate->GetTexture1();
 						if (pTexEntity && pTexEntity->GetTexture() != pCurTex1)
 						{
 							pCurTex1 = pTexEntity->GetTexture();
 							pDevice->SetTexture(1, pCurTex1);
 						}
 
-						pTexEntity = pTempate->GetNormalMap();
+						pTexEntity = pTemplate->GetNormalMap();
 						if (pTexEntity && pTexEntity->GetTexture() != pCurTex2)
 						{
 							pCurTex2 = pTexEntity->GetTexture();
@@ -811,7 +809,7 @@ namespace ParaEngine
 						}
 
 						// culling mode
-						if (pTempate->GetBlockModel().IsDisableFaceCulling())
+						if (pTemplate->GetBlockModel().IsDisableFaceCulling())
 						{
 							if (culling != D3DCULL_NONE)
 							{
