@@ -14,8 +14,8 @@ android {
         applicationId "com.paraengine.paracraft"
         minSdkVersion PROP_MIN_SDK_VERSION
         targetSdkVersion PROP_TARGET_SDK_VERSION
-        versionCode 31
-        versionName "2.0.13"
+        versionCode 32
+        versionName "2.0.14"
 
         externalNativeBuild {
             cmake {
@@ -40,7 +40,7 @@ android {
 
     externalNativeBuild {
         cmake {
-            version "3.18.2"
+            version "3.22.0-rc2"
             path "../../../CMakeLists.txt"
         }
     }
@@ -92,6 +92,20 @@ android {
             manifestPlaceholders  = [ "libname" : "Paracraftd" ]
         }
     }
+
+//    flavorDimensions "company"
+//
+//    productFlavors {
+//        tatfook {
+//            applicationId "com.paraengine.paracraft"
+//            dimension "company"
+//        }
+//
+//        paraengine {
+//            applicationId "com.tatfook.paracraft"
+//            dimension "company"
+//        }
+//    }
 }
 
 String taskReqStr = gradle.getStartParameter().getTaskRequests().toString()
@@ -117,12 +131,22 @@ android.applicationVariants.all { variant ->
                    into "${buildDir}/intermediates/merged_assets/${variant.dirName}/out/"
                 }
 
-                if (file(System.properties['user.home'] + "/ParacraftAndroidDev/Dev.sh").exists()) {
-                    exec {
-                        workingDir System.properties['user.home'] + "/ParacraftAndroidDev"
-                        commandLine "sh", "./Dev.sh", "${buildDir}/intermediates/merged_assets/${variant.dirName}/out/"
+                if (System.properties["os.name"].toLowerCase().contains("windows")) {
+                    if (file(System.properties["user.home"] + "\\ParacraftAndroidDev\\Dev.bat").exists()) {
+                        exec {
+                            workingDir System.properties['user.home'] + "\\ParacraftAndroidDev"
+                            commandLine "cmd", "/c", "Dev.bat ${buildDir}\\intermediates\\merged_assets\\${variant.dirName}\\out\\"
+                        }
+                    }
+                } else {
+                    if (file(System.properties["user.home"] + "/ParacraftAndroidDev/Dev.sh").exists()) {
+                        exec {
+                            workingDir System.properties['user.home'] + "/ParacraftAndroidDev"
+                            commandLine "sh", "./Dev.sh", "${buildDir}/intermediates/merged_assets/${variant.dirName}/out/"
+                        }
                     }
                 }
+
             }
 
         }

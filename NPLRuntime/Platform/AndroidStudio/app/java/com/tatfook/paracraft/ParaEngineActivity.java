@@ -2,6 +2,7 @@ package com.tatfook.paracraft;
 
 import android.Manifest;
 import android.app.KeyguardManager;
+import android.content.res.Configuration;
 import android.os.Build;
 import android.os.CountDownTimer;
 import android.os.PowerManager;
@@ -201,6 +202,11 @@ public class ParaEngineActivity extends AppCompatActivity {
     }
 
     private Bundle mSavedInstanceState;
+
+    @Override
+    public void onConfigurationChanged(Configuration newConfig) {
+        super.onConfigurationChanged(newConfig);
+    }
 
     @Override
     protected void onCreate(final Bundle savedInstanceState) {
@@ -405,9 +411,15 @@ public class ParaEngineActivity extends AppCompatActivity {
     }
 
     private static boolean isDeviceLocked() {
-        KeyguardManager keyguardManager = (KeyguardManager)getContext().getSystemService(Context.KEYGUARD_SERVICE);
-        boolean locked = keyguardManager.inKeyguardRestrictedInputMode();
-        return locked;
+        Context context = getContext();
+
+        if (context != null) {
+            KeyguardManager keyguardManager = (KeyguardManager)context.getSystemService(Context.KEYGUARD_SERVICE);
+            boolean locked = keyguardManager.inKeyguardRestrictedInputMode();
+            return locked;
+        } else {
+            return false;
+        }
     }
 
     private static boolean isDeviceAsleep() {

@@ -302,6 +302,7 @@ void ParaScripting::CNPLScriptingState::LoadParaLib()
 
 #ifdef CROSS_PLATFORM
 	LoadHAPI_WebView();
+	LoadHAPI_Platform();
 #endif
 }
 

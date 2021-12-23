@@ -355,21 +355,31 @@ public class ParaEngineGLSurfaceView extends GLSurfaceView {
                 break;
 
             case MotionEvent.ACTION_DOWN:
-                // there are only one finger on the screen
-                final int idDown = pMotionEvent.getPointerId(0);
-                final float xDown = xs[0];
-                final float yDown = ys[0];
-
                 if (mUsbMode) {
-                    this.queueEvent(new Runnable() {
-                        @Override
-                        public void run() {
-                            ParaEngineGLSurfaceView.this.mRenderer.handleMouseDown(0, idDown, xDown, yDown);
-                        }
-                    });
+                    if (pMotionEvent.getButtonState() == MotionEvent.BUTTON_PRIMARY) {
+                        final int idDown = pMotionEvent.getPointerId(0);
+                        final float xDown = xs[0];
+                        final float yDown = ys[0];
 
-                    mIsPressMouseLeftKey = true;
+                        this.queueEvent(new Runnable() {
+                            @Override
+                            public void run() {
+                                ParaEngineGLSurfaceView.this.mRenderer.handleMouseDown(0, idDown, xDown, yDown);
+                            }
+                        });
+
+                        mIsPressMouseLeftKey = true;
+                    } else if (pMotionEvent.getButtonState() == MotionEvent.BUTTON_SECONDARY) {
+                        onMouseRightKeyDown();
+                    } else if (pMotionEvent.getButtonState() == MotionEvent.BUTTON_TERTIARY) {
+
+                    }
                 } else {
+                    // there are only one finger on the screen
+                    final int idDown = pMotionEvent.getPointerId(0);
+                    final float xDown = xs[0];
+                    final float yDown = ys[0];
+
                     this.queueEvent(new Runnable() {
                         @Override
                         public void run() {
@@ -433,7 +443,6 @@ public class ParaEngineGLSurfaceView extends GLSurfaceView {
                 });
 
                 break;
-
             case MotionEvent.ACTION_UP:
                 // there are only one finger on the screen
                 final int idUp = pMotionEvent.getPointerId(0);
@@ -441,14 +450,22 @@ public class ParaEngineGLSurfaceView extends GLSurfaceView {
                 final float yUp = ys[0];
 
                 if (mUsbMode) {
-                    this.queueEvent(new Runnable() {
-                        @Override
-                        public void run() {
-                            ParaEngineGLSurfaceView.this.mRenderer.handleMouseUp(0, idUp, xUp, yUp);
-                        }
-                    });
+                    if (mIsPressMouseLeftKey) {
+                        // left mouse up
+                        this.queueEvent(new Runnable() {
+                            @Override
+                            public void run() {
+                                ParaEngineGLSurfaceView.this.mRenderer.handleMouseUp(0, idUp, xUp, yUp);
+                            }
+                        });
 
-                    mIsPressMouseLeftKey = false;
+                        mIsPressMouseLeftKey = false;
+                    }
+
+                    if (mIsPressMouseRightKey) {
+                        // right mouse up
+                        onMouseRightKeyUp();
+                    }
                 } else {
                     this.queueEvent(new Runnable() {
                         @Override
@@ -530,16 +547,17 @@ public class ParaEngineGLSurfaceView extends GLSurfaceView {
                 ParaEngineActivity.onExit();
             }
 
-            // this.queueEvent(new Runnable() {
-            //     @Override
-            //     public void run() {
-            //         ParaEngineGLSurfaceView.this.mRenderer.handleKeyUp(pKeyCode);
-            //     }
-            // });
+            return super.onKeyUp(pKeyCode, pKeyEvent);
+        } else {
+             this.queueEvent(new Runnable() {
+                 @Override
+                 public void run() {
+                     ParaEngineGLSurfaceView.this.mRenderer.handleKeyUp(pKeyCode);
+                 }
+             });
+
             return super.onKeyUp(pKeyCode, pKeyEvent);
         }
-
-        return super.onKeyUp(pKeyCode, pKeyEvent);
     }
 
     public void setMousePosition(MotionEvent pMotionEvent) {

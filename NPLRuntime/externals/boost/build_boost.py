@@ -10,15 +10,14 @@ import tarfile;
 import zipfile;
 import socket;
 
+CURRENT_DIR = os.getcwd();
 
-CURRENT_DIR			= os.getcwd();
+BOOST_SRC = os.getenv("BOOST_ROOT");
 
-BOOST_SRC			= os.getenv("BOOST_ROOT");
+TOOLCHAIN_DIR = os.path.join(CURRENT_DIR, "prebuild", "android", "toolchain");
+ANDROID_LOG_PATH = os.path.join(CURRENT_DIR, "prebuild", "android", "android-build.log");
 
-TOOLCHAIN_DIR		= os.path.join(CURRENT_DIR, "prebuild", "android", "toolchain");
-ANDROID_LOG_PATH	= os.path.join(CURRENT_DIR, "prebuild", "android", "android-build.log");
-
-ndk_path 			= "";
+ndk_path = "";
 
 def doneSection():
 	print "\nDone\n=================================================================\n\n";
@@ -155,16 +154,15 @@ def checkSrc(boost_version):
 	
 	boost_path = "boost_%s" % (boost_version.replace(".", "_"));
 	boost_save_path = os.path.join(CURRENT_DIR, "prebuild", "src");
-	
+
 	ext_name = "tar.bz2";
 	if (platform.system() == "Windows"):
 		ext_name = "zip";
 
 	if (BOOST_SRC == None):
-		BOOST_SRC 		= os.path.join(boost_save_path, boost_path);
+		BOOST_SRC = os.path.join(boost_save_path, boost_path);
 
 	if (not os.path.exists(BOOST_SRC)):
-		
 		file_name = "%s.%s" % (boost_path, ext_name);
 		file_save_path = os.path.join(boost_save_path, file_name);
 		
@@ -316,7 +314,7 @@ def buildLinux():
 if __name__ == '__main__':
 	parser = argparse.ArgumentParser(description='manual to this script')
 	parser.add_argument('--platform', type=str, default = "android");
-	parser.add_argument('--boost_version', type=str, default = "1.73.0");
+	parser.add_argument('--boost_version', type=str, default = "1.74.0");
 	
 	args = parser.parse_args();
 	

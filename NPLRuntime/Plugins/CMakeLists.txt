@@ -1,20 +1,25 @@
-if(NPLRUNTIME_PHYSICS)
+# Title: Plugins Cmake Lists
+# Author(s): kkvskkkk, big
+# CreateDate: 2018.11.02
+# ModifyDate: 2021.10.28
+
+if (NPLRUNTIME_PHYSICS)
 	add_subdirectory(PhysicsBT ${PROJECT_BINARY_DIR}/PhysicsBT)
-endif()
+endif ()
 
 if (NPLRUNTIME_SERVER)
-else()
-	if(NPLRUNTIME_AUDIO)
+else ()
+	if (NPLRUNTIME_AUDIO)
 		add_subdirectory(cAudioEngine ${PROJECT_BINARY_DIR}/cAudioEngine)
-	endif()
-endif()
+	endif ()
+endif ()
 
 add_subdirectory(sqlite3)
 
 if (NPLRUNTIME_NPLMono2)
 	add_subdirectory(NPLMono/NPLMono2)
-endif()
+endif ()
 
 if (NPLRUNTIME_OCE)
 	add_subdirectory(NplOce)
-endif()
+endif ()
