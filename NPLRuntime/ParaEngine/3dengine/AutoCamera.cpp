@@ -1332,7 +1332,8 @@ VOID CAutoCamera::FrameMove(FLOAT fElapsedTime)
 
 				PickResult result;
 				pBlockWorldClient->SetCubeModePicking(true);
-				if (pBlockWorldClient->Pick(vLookAt, vReverseLineOfSight, fDesiredLineOfSightLen, result, BlockTemplate::batt_solid | BlockTemplate::batt_blockcamera))
+				if (pBlockWorldClient->Pick(vLookAt, vReverseLineOfSight, fDesiredLineOfSightLen, result, BlockTemplate::batt_solid | BlockTemplate::batt_blockcamera)
+					&& result.Distance <= fDesiredLineOfSightLen)
 				{
 					const float camera_box_size = BlockConfig::g_blockSize*0.15f;
 
