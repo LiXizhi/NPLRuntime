@@ -2295,7 +2295,7 @@ bool CBipedObject::MoveTowards(double dTimeDelta, const DVector3& vPosTarget, fl
 			vMovePos = vFacing + m_vPos;
 		}
 	}
-	else if (bReachPos == false && fSpeed != 0.f)
+	else if (bReachPos == false && fSpeed != 0.f && fRadius>0.0001f)
 	{
 		/** -	Cast a group of n (n=3) rays (group 0) in front of the character, which covers a region of (n-2)/(n-1)*Pi radian.
 		* if several sensor rays hit some obstacles within the radius of the object, we will see if the world
