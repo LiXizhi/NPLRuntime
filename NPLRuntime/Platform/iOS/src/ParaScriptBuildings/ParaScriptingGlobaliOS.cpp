@@ -22,7 +22,9 @@ static void LuabindRegisterScreenRecorderGlobalFunctions(lua_State *L)
         [
             class_<ParaScripting::ParaScriptingScreenRecorder>("ParaScriptingScreenRecorder"),
             def("start", ParaScripting::ParaScriptingScreenRecorder::Start),
-            def("stop", ParaScripting::ParaScriptingScreenRecorder::Stop)
+            def("stop", ParaScripting::ParaScriptingScreenRecorder::Stop),
+            def("play", ParaScripting::ParaScriptingScreenRecorder::Play),
+            def("save", ParaScripting::ParaScriptingScreenRecorder::Save)
         ]
     ];
 }

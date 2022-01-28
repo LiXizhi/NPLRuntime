@@ -17,7 +17,7 @@
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>
-	<string>2.0.6</string>
+	<string>2.0.7</string>
 	<key>CFBundleURLTypes</key>
 	<array>
 		<dict>
@@ -32,7 +32,7 @@
 		</dict>
 	</array>
 	<key>CFBundleVersion</key>
-	<string>29</string>
+	<string>30</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
 	<key>NSAppTransportSecurity</key>
@@ -46,6 +46,10 @@
 	<string>we allow external programmable devices to connect to our software, providing functions for STEM educations.</string>
 	<key>NSMicrophoneUsageDescription</key>
 	<string>We need to use the microphone to recording.</string>
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>we need to save screen record video to photo library.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>we need to save screen record video to photo library.</string>
 	<key>UIMainStoryboardFile</key>
 	<string></string>
 	<key>UIPrerenderedIcon</key>
@@ -64,8 +68,8 @@
 	<string>UIStatusBarStyleDefault</string>
 	<key>UISupportedInterfaceOrientations</key>
 	<array>
-		<string>UIInterfaceOrientationLandscapeLeft</string>
 		<string>UIInterfaceOrientationLandscapeRight</string>
+		<string>UIInterfaceOrientationLandscapeLeft</string>
 	</array>
 	<key>UISupportedInterfaceOrientations~ipad</key>
 	<array>
