@@ -19,6 +19,7 @@ find_library(CoreBluetooth CoreBluetooth)
 find_library(WebKit WebKit)
 find_library(Security Security)
 find_library(CoreGraphics CoreGraphics)
+find_library(ReplayKit ReplayKit)
 
 add_executable(Paracraft
     ${app_src}
@@ -36,6 +37,7 @@ target_link_libraries(Paracraft PUBLIC
     ${WebKit}
     ${Security}
     ${CoreGraphics}
+    ${ReplayKit}
     RenderSystemOpenGL
     ParaEngine
 )

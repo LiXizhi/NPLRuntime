@@ -21,7 +21,7 @@ namespace ParaScripting
         ScreenRecorder *instance = [ScreenRecorder getInstance];
 
         [instance startRecordingWithHandler:^(NSError *error) {}];
-        [instance screenRecording:^(NSTimeInterval duration) {}];
+        //[instance screenRecording:^(NSTimeInterval duration) {}];
 	}
 
     void ParaScriptingScreenRecorder::Stop()

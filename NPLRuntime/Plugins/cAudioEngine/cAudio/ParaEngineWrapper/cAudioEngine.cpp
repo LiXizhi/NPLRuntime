@@ -24,8 +24,7 @@ namespace ParaEngine
 {
 
 #define AudioEngine_CLASS_ID Class_ID(0x2b903a29, 0x57e409cf)
-
-	/** description class */
+	/// description class
 	class CAudioEngineClassDesc : public ClassDescriptor
 	{
 	public:
@@ -64,10 +63,13 @@ namespace ParaEngine
 		{
 			return Instance;
 		}
+
 		static HINSTANCE Instance;
 	};
+
 	HINSTANCE CAudioEngineClassDesc::Instance = NULL;
 }
+
 ClassDescriptor* AudioEngine_GetClassDesc()
 {
 	static CAudioEngineClassDesc Desc;

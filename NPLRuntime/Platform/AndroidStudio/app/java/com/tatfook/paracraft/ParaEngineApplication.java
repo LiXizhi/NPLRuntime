@@ -1,3 +1,10 @@
+//-----------------------------------------------------------------------------
+// ParaEngineApplication.java
+// Authors: LanZhihong, big
+// CreateDate: 2019.7.16
+// ModifyDate: 2022.1.11
+//-----------------------------------------------------------------------------
+
 package com.tatfook.paracraft;
 
 import android.app.Application;
@@ -10,9 +17,7 @@ import org.json.JSONException;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.HashMap;
-
 import com.tatfook.paracraft.ParaEnginePluginWrapper.PluginInfo;
-
 
 public class ParaEngineApplication extends Application {
 

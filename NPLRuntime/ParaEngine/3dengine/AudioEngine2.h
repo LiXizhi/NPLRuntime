@@ -104,7 +104,6 @@ namespace ParaEngine
 
 		const std::string& GetFilename() const;
 		void SetFilename(const std::string& val);
-
 	public:
 		//////////////////////////////////////////////////////////////////////
 		//
@@ -126,10 +125,7 @@ namespace ParaEngine
 
 		/// This function is called when a source is paused.
 		virtual void onPause();
-
-		
 	public:
-
 		IParaAudioSource* m_pSource;
 		int m_nLoopCount;
 		bool m_bReleaseOnStop;
@@ -144,7 +140,8 @@ namespace ParaEngine
 		int m_nSeekPos;
 	private:
 		std::string m_filename;	
-};
+    };
+
 	typedef ParaIntrusivePtr<CAudioSource2> CAudioSource2_ptr;
 
 	/**
@@ -181,9 +178,7 @@ namespace ParaEngine
 
 		ATTRIBUTE_METHOD1(CAudioEngine2, GetCaptureAudioQuality_s, float*) { *p1 = cls->GetCaptureAudioQuality(); return S_OK; }
 		ATTRIBUTE_METHOD1(CAudioEngine2, SetCaptureAudioQuality_s, float) { cls->SetCaptureAudioQuality(p1); return S_OK; }
-
 	public:
-
 		/** check load the plugin dll if any */
 		HRESULT InitAudioEngine(IParaAudioEngine* pInteface = NULL);
 
@@ -255,7 +250,7 @@ namespace ParaEngine
 		void SetCaptureAudioQuality(float val);
 	public:
 		//////////////////////////////////////////////////////////////////////////
-		// handy functions for playback
+		/// handy functions for playback
 		//////////////////////////////////////////////////////////////////////////
 
 		/**
@@ -340,7 +335,6 @@ namespace ParaEngine
 			{
 				m_HistoryRecords.clear();
 			}
-			
 		private:
 			Records m_HistoryRecords;
 			bool m_bEnable;

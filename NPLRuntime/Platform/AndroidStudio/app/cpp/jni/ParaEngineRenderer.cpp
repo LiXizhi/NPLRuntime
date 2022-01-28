@@ -1,6 +1,9 @@
-//
-// Created by lan on 2019/12/30.
-//
+//-----------------------------------------------------------------------------
+// ParaEngineRenderer.cpp
+// Authors: LanZhiHong, big
+// CreateDate: 2019.12.30
+// ModifyDate: 2022.1.11
+//-----------------------------------------------------------------------------
 
 #include "ParaEngineRenderer.h"
 #include "ParaEngineActivity.h"
@@ -11,7 +14,7 @@
 
 namespace ParaEngine {
     const std::string ParaEngineRenderer::classname = "com/tatfook/paracraft/ParaEngineRenderer";
-} // namespace ParaEngine
+}
 
 extern "C" {
     using namespace ParaEngine;
@@ -19,6 +22,11 @@ extern "C" {
     JNIEXPORT void JNICALL Java_com_tatfook_paracraft_ParaEngineRenderer_nativeInit(JNIEnv* env, jclass clazz, jint w, jint h)
     {
         AppDelegate::getInstance().init(w, h, ParaEngineActivity::getLauncherIntentData());
+    }
+
+    JNIEXPORT void JNICALL Java_com_tatfook_paracraft_ParaEngineRenderer_nativeTermWindow(JNIEnv* env, jclass clazz)
+    {
+        AppDelegate::getInstance().OnTermWindow();
     }
 
     JNIEXPORT void JNICALL Java_com_tatfook_paracraft_ParaEngineRenderer_nativeMouseBegin(JNIEnv *env, jclass clazz, jint keyType, jint id, jfloat x, jfloat y)

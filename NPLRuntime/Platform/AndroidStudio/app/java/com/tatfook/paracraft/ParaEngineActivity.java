@@ -1,3 +1,10 @@
+//-----------------------------------------------------------------------------
+// ParaEngineActivity.java
+// Authors: LanZhihong, big
+// CreateDate: 2019.7.16
+// ModifyDate: 2022.1.11
+//-----------------------------------------------------------------------------
+
 package com.tatfook.paracraft;
 
 import android.Manifest;
@@ -17,6 +24,7 @@ import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
+import android.view.InputDevice;
 import android.view.KeyEvent;
 import android.view.MotionEvent;
 import android.view.View;
@@ -31,39 +39,177 @@ import javax.microedition.khronos.egl.EGLConfig;
 import javax.microedition.khronos.egl.EGLDisplay;
 
 public class ParaEngineActivity extends AppCompatActivity {
-
-    // ===========================================================
-    // Constants
-    // ===========================================================
-
     private static ParaEngineActivity sContext = null;
-    private static final String TAG = "ParaEngine";
-
-    private final static int PERMISSION_REQUEST_PHONE_STATE = 100;
-
-    //native method,call GLViewImpl::getGLContextAttrs() to get the OpenGL ES context attributions
+    private static ParaEngineRenderer sRenderer = null;
+    private static boolean sBGranted = false;
+    private static final int PERMISSION_REQUEST_PHONE_STATE = 100;
+    // native method,call GLViewImpl::getGLContextAttrs() to get the OpenGL ES context attributions
     private static native int[] getGLContextAttrs();
-    private native void onKeyBack(boolean bDown);
-
-    /**
-     * Optional meta-that can be in the manifest for this component, specifying
-     * the name of the native shared library to load.  If not specified,
-     * "main" is used.
-     */
+    // Optional meta-that can be in the manifest for this component,
+    // specifying the name of the native shared library to load. If not specified, "main" is used.
     public static final String META_DATA_LIB_NAME = "android.app.lib_name";
-    private static final String KEY_NATIVE_SAVED_STATE = "android:native_state";
 
-    // ===========================================================
-    // Fields
-    // ===========================================================
-
+    protected ResizeLayout mFrameLayout = null ;
     private ParaEngineGLSurfaceView mGLSurfaceView = null;
-    private int[] mGLContextAttrs = null;
     private ParaEngineWebViewHelper mWebViewHelper = null;
-    protected ResizeLayout mFrameLayout = null;
+    private int[] mGLContextAttrs = null;
+    private boolean mUsbMode = false;
+    private boolean hasFocus = false;
+    private Bundle mSavedInstanceState;
 
-    public ParaEngineGLSurfaceView getGLSurfaceView() { return mGLSurfaceView; }
-    public static Context getContext() { return sContext; }
+    public static Context getContext() {
+        return sContext;
+    }
+
+    @Keep
+    public static String getLauncherIntentData() {
+        if (sContext == null)
+            return "";
+
+        Intent intent = sContext.getIntent();
+
+        if (intent != null) {
+            return intent.getDataString();
+        } else {
+            return "";
+        }
+    }
+
+    @Keep
+    public static void setScreenOrientation(int type){
+        if (type == 1) {
+            sContext.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
+        } else if (type == 0) {
+            sContext.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
+        }
+    }
+
+    private static boolean isDeviceLocked() {
+        Context context = getContext();
+
+        if (context != null) {
+            KeyguardManager keyguardManager = (KeyguardManager)context.getSystemService(Context.KEYGUARD_SERVICE);
+            boolean locked = keyguardManager.inKeyguardRestrictedInputMode();
+            return locked;
+        } else {
+            return false;
+        }
+    }
+
+    private static boolean isDeviceAsleep() {
+        PowerManager powerManager = (PowerManager)getContext().getSystemService(Context.POWER_SERVICE);
+        if(powerManager == null) {
+            return false;
+        }
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT_WATCH) {
+            return !powerManager.isInteractive();
+        } else {
+            return !powerManager.isScreenOn();
+        }
+    }
+
+    @Keep
+    public static boolean getUsbMode() {
+        return sContext.mUsbMode;
+    }
+
+    @Keep
+    public static void onExit(){
+        sContext.finish();
+        System.exit(0);
+    }
+
+    @Override
+    protected void onCreate(final Bundle savedInstanceState) {
+        sContext = this;
+
+        super.onCreate(savedInstanceState);
+
+        getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_PHONE_STATE) != PackageManager.PERMISSION_GRANTED ||
+            ActivityCompat.checkSelfPermission(this, Manifest.permission.READ_PHONE_STATE) != PackageManager.PERMISSION_GRANTED)
+        {
+            ActivityCompat.requestPermissions(
+                this,
+                new String[]{
+                    Manifest.permission.READ_PHONE_STATE,
+                    Manifest.permission.RECORD_AUDIO
+                },
+                PERMISSION_REQUEST_PHONE_STATE
+            );
+
+            mSavedInstanceState = savedInstanceState;
+        } else {
+            onCheckPermissionFinish(savedInstanceState, true);
+        }
+
+        NotchScreenManager.getInstance().setDisplayInNotch(this);
+
+        // Determine whether the device uses USB
+        Configuration configuration = getResources().getConfiguration();
+        Boolean mouseExist = false;
+
+        final int[] devices = InputDevice.getDeviceIds();
+
+        for (int i = 0; i < devices.length; i++) {
+            InputDevice device = InputDevice.getDevice(devices[i]);
+
+            if (device != null && device.getName().contains("Mouse")) {
+                mouseExist = true;
+            }
+        }
+
+        if (configuration.keyboard != Configuration.KEYBOARD_NOKEYS || mouseExist) {
+            mUsbMode = true;
+        }
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        ParaEnginePluginWrapper.onDestroy();
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        ParaEnginePluginWrapper.onPause();
+
+        if (mGLSurfaceView != null)
+            mGLSurfaceView.onPause();
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        ParaEnginePluginWrapper.onResume();
+        resumeIfHasFocus();
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        ParaEnginePluginWrapper.onActivityResult(requestCode, resultCode, data);
+    }
+
+    @Override
+    protected void onSaveInstanceState(Bundle outState) {
+        super.onSaveInstanceState(outState);
+        ParaEnginePluginWrapper.onSaveInstanceState(outState);
+    }
+
+    @Override
+    protected void onStart() {
+        super.onStart();
+        ParaEnginePluginWrapper.onStart();
+    }
+
+    @Override
+    protected void onStop() {
+        super.onStop();
+        ParaEnginePluginWrapper.onStop();
+    }
 
     protected void onLoadNativeLibraries() {
         try {
@@ -71,11 +217,12 @@ public class ParaEngineActivity extends AppCompatActivity {
 
             try {
                 ActivityInfo ai;
-                ai = getPackageManager().getActivityInfo(
-                        getIntent().getComponent(), PackageManager.GET_META_DATA);
+                ai = getPackageManager().getActivityInfo(getIntent().getComponent(),
+                                                         PackageManager.GET_META_DATA);
                 if (ai.metaData != null) {
                     String ln = ai.metaData.getString(META_DATA_LIB_NAME);
-                    if (ln != null) libname = ln;
+                    if (ln != null)
+                        libname = ln;
                 }
             }catch (PackageManager.NameNotFoundException e) {
                 throw new RuntimeException("Error getting activity info", e);
@@ -114,13 +261,19 @@ public class ParaEngineActivity extends AppCompatActivity {
 
         mFrameLayout.addView(edittext);
 
-        // Cocos2dxGLSurfaceView
-        this.mGLSurfaceView = this.onCreateView();
-        // ...add to FrameLayout
-        mFrameLayout.addView(this.mGLSurfaceView);
+        // GLSurfaceView
+        mGLSurfaceView = this.onCreateView();
+        mFrameLayout.addView(mGLSurfaceView);
 
-        this.mGLSurfaceView.setParaEngineRenderer(new ParaEngineRenderer());
-        this.mGLSurfaceView.setParaEditText(edittext);
+        if (sRenderer == null) {
+            sRenderer = new ParaEngineRenderer();
+            mGLSurfaceView.setParaEngineRenderer(sRenderer);
+        } else {
+            sRenderer.termWindow();
+            mGLSurfaceView.setParaEngineRenderer(sRenderer);
+        }
+
+        mGLSurfaceView.setParaEditText(edittext);
 
         final ImageView imageView = new ImageView(this);
         imageView.setLayoutParams(
@@ -184,225 +337,28 @@ public class ParaEngineActivity extends AppCompatActivity {
 
     protected void onCheckPermissionFinish(final Bundle savedInstanceState, boolean bGranted)
     {
-        final Bundle si = savedInstanceState;
         final boolean _bGranted = bGranted;
+        this._init(savedInstanceState, _bGranted);
+
         // init plugin
-        if (!ParaEnginePluginWrapper.init(this,
-                savedInstanceState ,
-                new ParaEnginePluginWrapper.PluginWrapperListener() {
-                    @Override
-                    public void onInit() {
-                        ParaEngineActivity.this._init(si, _bGranted);
-                    }
-                }
-            )
-           ) {
-            this._init(si, _bGranted);
-        }
-    }
-
-    private Bundle mSavedInstanceState;
-
-    @Override
-    public void onConfigurationChanged(Configuration newConfig) {
-        super.onConfigurationChanged(newConfig);
-    }
-
-    @Override
-    protected void onCreate(final Bundle savedInstanceState) {
-        Intent startIntent = getIntent();
-
-        if (sContext != null) {
-            super.onCreate(savedInstanceState);
-
-            sContext = null;
-            Intent retartIntent = getBaseContext().getPackageManager().getLaunchIntentForPackage(getBaseContext().getPackageName());
-            retartIntent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
-
-            if (startIntent.getData() != null) {
-                retartIntent.setData(startIntent.getData());
-            }
-
-            retartIntent.putExtra("REBOOT","reboot");
-            startActivity(retartIntent);
-
-            return;
-        }
-
-        sContext = this;
-
-        super.onCreate(savedInstanceState);
-
-        getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
-
-        if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_PHONE_STATE) != PackageManager.PERMISSION_GRANTED ||
-            ActivityCompat.checkSelfPermission(this, Manifest.permission.READ_PHONE_STATE) != PackageManager.PERMISSION_GRANTED) {
-            ActivityCompat.requestPermissions(this, new String[]{
-                    Manifest.permission.READ_PHONE_STATE,
-                    Manifest.permission.RECORD_AUDIO
-            }, PERMISSION_REQUEST_PHONE_STATE);
-
-            mSavedInstanceState = savedInstanceState;
-        } else {
-            onCheckPermissionFinish(savedInstanceState, true);
-        }
-
-        NotchScreenManager.getInstance().setDisplayInNotch(this);
-
-//        Window window = getWindow();
-//        WindowManager.LayoutParams params = window.getAttributes();
-//        params.systemUiVisibility = View.SYSTEM_UI_FLAG_HIDE_NAVIGATION;
-//        window.setAttributes(params);
-    }
-
-    @Override
-    public void onRequestPermissionsResult(int requestCode, String permissions[], int[] grantResults) {
-        if (requestCode == PERMISSION_REQUEST_PHONE_STATE) {
-            if (grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                onCheckPermissionFinish(mSavedInstanceState, true);
-            } else {
-                onCheckPermissionFinish(mSavedInstanceState, false);
-            }
-        }
-        else
+        if (!ParaEnginePluginWrapper.init(
+              this,
+               savedInstanceState,
+               new ParaEnginePluginWrapper.PluginWrapperListener() {
+                   @Override
+                   public void onInit() {
+                       ParaEngineActivity.this._init(savedInstanceState, _bGranted);
+                   }
+               }
+          ))
         {
-            ParaEnginePluginWrapper.onRequestPermissionsResult(requestCode, permissions, grantResults);
+           this._init(savedInstanceState, _bGranted);
         }
     }
-
-    public void runOnGLThread(final Runnable pRunnable) {
-        this.mGLSurfaceView.queueEvent(pRunnable);
-    }
-
-    @Keep
-    public static String getLauncherIntentData() {
-        if (sContext == null)
-            return "";
-
-        Intent intent = sContext.getIntent();
-
-        if (intent != null) {
-            return intent.getDataString();
-        } else {
-            return "";
-        }
-    }
-
-    @Keep
-    public static void setScreenOrientation(int type){
-        if (type == 1) {
-            sContext.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
-        } else if (type == 0) {
-            sContext.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
-        }
-    }
-
-    @Keep
-    public String getFileDirsPath() {
-        return getFilesDir().getAbsolutePath();
-    }
-
-    @Override
-    public boolean onKeyUp(int keyCode, KeyEvent event) {
-//        if ((keyCode == KeyEvent.KEYCODE_BACK)) {
-//
-//            this.runOnGLThread(new Runnable() {
-//                @Override
-//                public void run() {
-//                    onKeyBack(false);
-//                }
-//            });
-//
-//
-//            return false;
-//        }
-//        else {
-//            return super.onKeyUp(keyCode, event);
-//        }
-
-        return super.onKeyUp(keyCode, event);
-    }
-
-    @Override
-    public boolean onKeyDown(int keyCode, KeyEvent event) {
-//        if ((keyCode == KeyEvent.KEYCODE_BACK)) {
-//            this.runOnGLThread(new Runnable() {
-//                @Override
-//                public void run() {
-//                    onKeyBack(true);
-//                }
-//            });
-//
-//            return false;
-//        }
-//        else {
-//            return super.onKeyDown(keyCode, event);
-//        }
-
-        return super.onKeyUp(keyCode, event);
-    }
-
-    @Override
-    protected void onDestroy() {
-        super.onDestroy();
-        ParaEnginePluginWrapper.onDestroy();
-    }
-
-    @Override
-    protected void onPause() {
-        super.onPause();
-        ParaEnginePluginWrapper.onPause();
-
-        if (mGLSurfaceView != null)
-            mGLSurfaceView.onPause();
-    }
-
-    @Override
-    protected void onResume() {
-        super.onResume();
-        ParaEnginePluginWrapper.onResume();
-        resumeIfHasFocus();
-    }
-
-    @Override
-    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-        super.onActivityResult(requestCode, resultCode, data);
-        ParaEnginePluginWrapper.onActivityResult(requestCode, resultCode, data);
-    }
-
-    @Override
-    protected void onSaveInstanceState(Bundle outState) {
-        super.onSaveInstanceState(outState);
-
-        ParaEnginePluginWrapper.onSaveInstanceState(outState);
-    }
-
-    @Override
-    protected void onStart() {
-        super.onStart();
-        ParaEnginePluginWrapper.onStart();
-    }
-
-    @Override
-    protected void onStop() {
-        super.onStop();
-        ParaEnginePluginWrapper.onStop();
-    }
-
-    @Override
-    public void onWindowFocusChanged(boolean hasFocus) {
-        Log.d(TAG, "onWindowFocusChanged() hasFocus=" + hasFocus);
-        super.onWindowFocusChanged(hasFocus);
-
-        this.hasFocus = hasFocus;
-        resumeIfHasFocus();
-    }
-
-    private boolean hasFocus = false;
 
     private void resumeIfHasFocus() {
-        //It is possible for the app to receive the onWindowsFocusChanged(true) event
-        //even though it is locked or asleep
+        // It is possible for the app to receive the onWindowsFocusChanged(true) event
+        // even though it is locked or asleep
         boolean readyToPlay = !isDeviceLocked() && !isDeviceAsleep();
 
         if(hasFocus && readyToPlay && mGLSurfaceView != null) {
@@ -410,35 +366,11 @@ public class ParaEngineActivity extends AppCompatActivity {
         }
     }
 
-    private static boolean isDeviceLocked() {
-        Context context = getContext();
-
-        if (context != null) {
-            KeyguardManager keyguardManager = (KeyguardManager)context.getSystemService(Context.KEYGUARD_SERVICE);
-            boolean locked = keyguardManager.inKeyguardRestrictedInputMode();
-            return locked;
-        } else {
-            return false;
-        }
-    }
-
-    private static boolean isDeviceAsleep() {
-        PowerManager powerManager = (PowerManager)getContext().getSystemService(Context.POWER_SERVICE);
-        if(powerManager == null) {
-            return false;
-        }
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT_WATCH) {
-            return !powerManager.isInteractive();
-        } else {
-            return !powerManager.isScreenOn();
-        }
-    }
-
     private class ParaEngineEGLConfigChooser implements GLSurfaceView.EGLConfigChooser
     {
         private int[] mConfigAttributes;
-        private  final int EGL_OPENGL_ES2_BIT = 0x04;
-        private  final int EGL_OPENGL_ES3_BIT = 0x40;
+        private final int EGL_OPENGL_ES2_BIT = 0x04;
+        private final int EGL_OPENGL_ES3_BIT = 0x40;
 
         public ParaEngineEGLConfigChooser(int redSize, int greenSize, int blueSize, int alphaSize, int depthSize, int stencilSize, int multisamplingCount)
         {
@@ -453,50 +385,50 @@ public class ParaEngineActivity extends AppCompatActivity {
         @Override
         public EGLConfig chooseConfig(EGL10 egl, EGLDisplay display) {
             int[][] EGLAttributes = {
-                    {
-                            // GL ES 2 with user set
-                            EGL10.EGL_RED_SIZE, mConfigAttributes[0],
-                            EGL10.EGL_GREEN_SIZE, mConfigAttributes[1],
-                            EGL10.EGL_BLUE_SIZE, mConfigAttributes[2],
-                            EGL10.EGL_ALPHA_SIZE, mConfigAttributes[3],
-                            EGL10.EGL_DEPTH_SIZE, mConfigAttributes[4],
-                            EGL10.EGL_STENCIL_SIZE, mConfigAttributes[5],
-                            EGL10.EGL_SAMPLE_BUFFERS, (mConfigAttributes[6] > 0) ? 1 : 0,
-                            EGL10.EGL_SAMPLES, mConfigAttributes[6],
-                            EGL10.EGL_RENDERABLE_TYPE, EGL_OPENGL_ES2_BIT,
-                            EGL10.EGL_NONE
-                    },
-                    {
-                            // GL ES 2 with user set 16 bit depth buffer
-                            EGL10.EGL_RED_SIZE, mConfigAttributes[0],
-                            EGL10.EGL_GREEN_SIZE, mConfigAttributes[1],
-                            EGL10.EGL_BLUE_SIZE, mConfigAttributes[2],
-                            EGL10.EGL_ALPHA_SIZE, mConfigAttributes[3],
-                            EGL10.EGL_DEPTH_SIZE, mConfigAttributes[4] >= 24 ? 16 : mConfigAttributes[4],
-                            EGL10.EGL_STENCIL_SIZE, mConfigAttributes[5],
-                            EGL10.EGL_SAMPLE_BUFFERS, (mConfigAttributes[6] > 0) ? 1 : 0,
-                            EGL10.EGL_SAMPLES, mConfigAttributes[6],
-                            EGL10.EGL_RENDERABLE_TYPE, EGL_OPENGL_ES2_BIT,
-                            EGL10.EGL_NONE
-                    },
-                    {
-                            // GL ES 2 with user set 16 bit depth buffer without multisampling
-                            EGL10.EGL_RED_SIZE, mConfigAttributes[0],
-                            EGL10.EGL_GREEN_SIZE, mConfigAttributes[1],
-                            EGL10.EGL_BLUE_SIZE, mConfigAttributes[2],
-                            EGL10.EGL_ALPHA_SIZE, mConfigAttributes[3],
-                            EGL10.EGL_DEPTH_SIZE, mConfigAttributes[4] >= 24 ? 16 : mConfigAttributes[4],
-                            EGL10.EGL_STENCIL_SIZE, mConfigAttributes[5],
-                            EGL10.EGL_SAMPLE_BUFFERS, 0,
-                            EGL10.EGL_SAMPLES, 0,
-                            EGL10.EGL_RENDERABLE_TYPE, EGL_OPENGL_ES2_BIT,
-                            EGL10.EGL_NONE
-                    },
-                    {
-                            // GL ES 2 by default
-                            EGL10.EGL_RENDERABLE_TYPE, EGL_OPENGL_ES2_BIT,
-                            EGL10.EGL_NONE
-                    }
+                {
+                    // GL ES 2 with user set
+                    EGL10.EGL_RED_SIZE, mConfigAttributes[0],
+                    EGL10.EGL_GREEN_SIZE, mConfigAttributes[1],
+                    EGL10.EGL_BLUE_SIZE, mConfigAttributes[2],
+                    EGL10.EGL_ALPHA_SIZE, mConfigAttributes[3],
+                    EGL10.EGL_DEPTH_SIZE, mConfigAttributes[4],
+                    EGL10.EGL_STENCIL_SIZE, mConfigAttributes[5],
+                    EGL10.EGL_SAMPLE_BUFFERS, (mConfigAttributes[6] > 0) ? 1 : 0,
+                    EGL10.EGL_SAMPLES, mConfigAttributes[6],
+                    EGL10.EGL_RENDERABLE_TYPE, EGL_OPENGL_ES2_BIT,
+                    EGL10.EGL_NONE
+                },
+                {
+                    // GL ES 2 with user set 16 bit depth buffer
+                    EGL10.EGL_RED_SIZE, mConfigAttributes[0],
+                    EGL10.EGL_GREEN_SIZE, mConfigAttributes[1],
+                    EGL10.EGL_BLUE_SIZE, mConfigAttributes[2],
+                    EGL10.EGL_ALPHA_SIZE, mConfigAttributes[3],
+                    EGL10.EGL_DEPTH_SIZE, mConfigAttributes[4] >= 24 ? 16 : mConfigAttributes[4],
+                    EGL10.EGL_STENCIL_SIZE, mConfigAttributes[5],
+                    EGL10.EGL_SAMPLE_BUFFERS, (mConfigAttributes[6] > 0) ? 1 : 0,
+                    EGL10.EGL_SAMPLES, mConfigAttributes[6],
+                    EGL10.EGL_RENDERABLE_TYPE, EGL_OPENGL_ES2_BIT,
+                    EGL10.EGL_NONE
+                },
+                {
+                    // GL ES 2 with user set 16 bit depth buffer without multisampling
+                    EGL10.EGL_RED_SIZE, mConfigAttributes[0],
+                    EGL10.EGL_GREEN_SIZE, mConfigAttributes[1],
+                    EGL10.EGL_BLUE_SIZE, mConfigAttributes[2],
+                    EGL10.EGL_ALPHA_SIZE, mConfigAttributes[3],
+                    EGL10.EGL_DEPTH_SIZE, mConfigAttributes[4] >= 24 ? 16 : mConfigAttributes[4],
+                    EGL10.EGL_STENCIL_SIZE, mConfigAttributes[5],
+                    EGL10.EGL_SAMPLE_BUFFERS, 0,
+                    EGL10.EGL_SAMPLES, 0,
+                    EGL10.EGL_RENDERABLE_TYPE, EGL_OPENGL_ES2_BIT,
+                    EGL10.EGL_NONE
+                },
+                {
+                    // GL ES 2 by default
+                    EGL10.EGL_RENDERABLE_TYPE, EGL_OPENGL_ES2_BIT,
+                    EGL10.EGL_NONE
+                }
             };
 
             EGLConfig result = null;
@@ -514,16 +446,70 @@ public class ParaEngineActivity extends AppCompatActivity {
             EGLConfig[] configs = new EGLConfig[1];
             int[] matchedConfigNum = new int[1];
             boolean result = egl.eglChooseConfig(display, attributes, configs, 1, matchedConfigNum);
+
             if (result && matchedConfigNum[0] > 0) {
                 return configs[0];
             }
+
             return null;
         }
     }
 
+    public ParaEngineGLSurfaceView getGLSurfaceView() {
+        return mGLSurfaceView;
+    }
+
+    @Override
+    public void onConfigurationChanged(Configuration newConfig) {
+        super.onConfigurationChanged(newConfig);
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, String permissions[], int[] grantResults) {
+        if (requestCode == PERMISSION_REQUEST_PHONE_STATE) {
+            if (sContext == null) {
+                if (grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                    sBGranted = true;
+                    onCheckPermissionFinish(mSavedInstanceState, true);
+                } else {
+                    sBGranted = false;
+                    onCheckPermissionFinish(mSavedInstanceState, false);
+                }
+            } else {
+                onCheckPermissionFinish(mSavedInstanceState, sBGranted);
+            }
+        }
+        else
+        {
+            // TODO: Fix crash.
+            // ParaEnginePluginWrapper.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        }
+    }
+
+    public void runOnGLThread(final Runnable pRunnable) {
+        mGLSurfaceView.queueEvent(pRunnable);
+    }
+
+    @Override
+    public boolean onKeyUp(int keyCode, KeyEvent event) {
+        return super.onKeyUp(keyCode, event);
+    }
+
+    @Override
+    public boolean onKeyDown(int keyCode, KeyEvent event) {
+        return super.onKeyUp(keyCode, event);
+    }
+
+    @Override
+    public void onWindowFocusChanged(boolean hasFocus) {
+        super.onWindowFocusChanged(hasFocus);
+
+        this.hasFocus = hasFocus;
+        resumeIfHasFocus();
+    }
+
     @Keep
-    public static void onExit(){
-        sContext.finish();
-        System.exit(0);
+    public String getFileDirsPath() {
+        return getFilesDir().getAbsolutePath();
     }
 }

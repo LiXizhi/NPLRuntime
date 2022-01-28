@@ -1173,15 +1173,15 @@ object ParaAttributeObject::GetField2(const char* sFieldname, lua_State* L)
 	return object();
 }
 
-object  ParaAttributeObject::GetField(const char*  sFieldname, const object& output)
+object ParaAttributeObject::GetField(const char *sFieldname, const object &output)
 {
 	if (!IsValid()){
 		return object(output);
 	}
+
 	CAttributeField* pField = m_pAttClass->GetField(sFieldname);
 	if (pField == 0 || !pField->HasGetFunction())
 		return object(output);
-
 
 	switch (pField->m_type)
 	{
@@ -1298,6 +1298,7 @@ object  ParaAttributeObject::GetField(const char*  sFieldname, const object& out
 	default:
 		break;
 	}
+
 	return object(output);
 }
 

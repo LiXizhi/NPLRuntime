@@ -1,11 +1,16 @@
+//-----------------------------------------------------------------------------
+// ParaEngineHelper.h
+// Authors: LanZhiHong, big
+// CreateDate: 2019.12.30
+// ModifyDate: 2022.1.11
+//-----------------------------------------------------------------------------
+
 #pragma once
 
 #include <jni.h>
 #include <string>
 
-
 namespace ParaEngine {
-
 	class ParaEngineHelper
 	{
 	public:

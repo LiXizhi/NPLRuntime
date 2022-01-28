@@ -170,8 +170,8 @@ static std::string getFixedBaseUrl(const std::string& baseUrl)
     
     if (!self.uiWebView.superview)
     {
-        //GLView* view = (GLView*)CGlobals::GetApp()->GetRenderWindow()->GetNativeHandle();
         void* p = (void*)ParaEngine::CGlobals::GetApp()->GetRenderWindow()->GetNativeHandle();
+
         if (p)
         {
             GLView* view = (__bridge GLView*)p;
@@ -360,7 +360,9 @@ static std::string getFixedBaseUrl(const std::string& baseUrl)
 }
 
 #pragma mark - WKNavigationDelegate
-- (void)webView:(WKWebView *)webView decidePolicyForNavigationAction:(WKNavigationAction *)navigationAction decisionHandler:(void (^)(WKNavigationActionPolicy))decisionHandler
+- (void)webView:(WKWebView *)webView
+        decidePolicyForNavigationAction:(WKNavigationAction *)navigationAction
+        decisionHandler:(void (^)(WKNavigationActionPolicy))decisionHandler
 {
     NSString *url = [[[navigationAction request] URL] absoluteString];
     if ([[webView.URL scheme] isEqualToString:self.jsScheme])
@@ -403,9 +405,11 @@ static std::string getFixedBaseUrl(const std::string& baseUrl)
     }
 }
 
-
 #pragma mark - WKUIDelegate
-- (void)webView:(WKWebView *)webView runJavaScriptAlertPanelWithMessage:(nonnull NSString *)message initiatedByFrame:(nonnull WKFrameInfo *)frame completionHandler:(nonnull void (^)())completionHandler
+- (void)webView:(WKWebView *)webView
+        runJavaScriptAlertPanelWithMessage:(nonnull NSString *)message
+        initiatedByFrame:(nonnull WKFrameInfo *)frame
+        completionHandler:(nonnull void (^)())completionHandler
 {
     /*
     UIAlertController *alertController = [UIAlertController alertControllerWithTitle:message message:nil preferredStyle:UIAlertControllerStyleAlert];

@@ -4,8 +4,10 @@
 // CreateDate: 2021.12.13
 //-----------------------------------------------------------------------------
 
-#define ScreenRecorderFrameTime 0.05
 #import "ScreenRecorder.h"
+
+#include "ParaEngine.h"
+#include "3dengine/AudioEngine2.h"
 
 @interface ScreenRecorder ()<RPScreenRecorderDelegate, RPPreviewViewControllerDelegate>
 {

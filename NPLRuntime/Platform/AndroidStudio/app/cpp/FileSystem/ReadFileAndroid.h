@@ -1,7 +1,18 @@
+//-----------------------------------------------------------------------------
+// ReadFileAndroid.h
+// Authors: LanZhiHong, big
+// CreateDate: 2019.12.30
+// ModifyDate: 2022.1.11
+//-----------------------------------------------------------------------------
+
 #pragma once
+
 #include "IFile.h"
+
 #include <string>
+
 struct AAsset;
+
 namespace ParaEngine
 {
 	class CReadFileAndroid : public IReadFile

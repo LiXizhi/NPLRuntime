@@ -1,3 +1,10 @@
+//-----------------------------------------------------------------------------
+// ParaEngineWebViewHelper.cpp
+// Authors: LanZhiHong, big
+// CreateDate: 2019.12.30
+// ModifyDate: 2022.1.11
+//-----------------------------------------------------------------------------
+
 #include "ParaEngine.h"
 #include "ParaEngineActivity.h"
 #include "ParaEngineWebViewHelper.h"
@@ -154,7 +161,6 @@ namespace ParaEngine {
 
 	void ParaEngineWebView::hideCloseButton(bool bHide)
 	{
-
 	}
 
 	void ParaEngineWebView::addCloseListener(onCloseFunc fun)
@@ -188,10 +194,7 @@ namespace ParaEngine {
 	{
 		JniHelper::callStaticVoidMethod(classname, "resize", m_handle, width, width);
 	}
-
-
-} // end namespace
-
+}
 
 using namespace ParaEngine;
 
@@ -202,20 +205,16 @@ extern "C" {
         ParaEngineActivity::setScreenOrientation(0);
 	}
 
-
 	JNIEXPORT void JNICALL Java_com_tatfook_paracraft_ParaEngineWebViewHelper_onJsCallback(JNIEnv *env, jclass, jint index, jstring jmessage)
 	{
-
 	}
 
 	JNIEXPORT void JNICALL Java_com_tatfook_paracraft_ParaEngineWebViewHelper_didFailLoading(JNIEnv *env, jclass, jint index, jstring jmessage)
 	{
-
 	}
 
 	JNIEXPORT void JNICALL Java_com_tatfook_paracraft_ParaEngineWebViewHelper_didFinishLoading(JNIEnv *env, jclass, jint index, jstring jmessage)
 	{
-
 	}
 
 	JNIEXPORT jboolean JNICALL Java_com_tatfook_paracraft_ParaEngineWebViewHelper_shouldStartLoading(JNIEnv *env, jclass, jint index, jstring jmessage)
@@ -229,6 +228,4 @@ extern "C" {
 		env->DeleteLocalRef(value);
 		AppDelegate::getInstance().onCmdLine(cmd);
 	}
-
-
-} // end extern
+}

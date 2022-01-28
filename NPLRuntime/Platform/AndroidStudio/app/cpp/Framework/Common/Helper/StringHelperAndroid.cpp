@@ -1,3 +1,10 @@
+//-----------------------------------------------------------------------------
+// StringHelperAndroid.cpp
+// Authors: LanZhiHong, big
+// CreateDate: 2019.12.30
+// ModifyDate: 2022.1.11
+//-----------------------------------------------------------------------------
+
 #include "ParaEngine.h"
 #include "util/StringHelper.h"
 #include "2dengine/GUIEdit.h"

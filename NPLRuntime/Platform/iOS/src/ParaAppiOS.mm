@@ -14,7 +14,7 @@ IParaEngineApp* CreateParaEngineApp()
     return new CParaEngineAppiOS();
 }
 
-namespace  ParaEngine {
+namespace ParaEngine {
     CParaEngineAppiOS::CParaEngineAppiOS()
     {
         SetTouchInputting(true);
@@ -120,7 +120,4 @@ namespace  ParaEngine {
 	{
         exit(0);
     }
-} // namespace  ParaEngine
-
-
-
+}

@@ -1,3 +1,10 @@
+//-----------------------------------------------------------------------------
+// ParaEngineHelper.java
+// Authors: LanZhihong, big
+// CreateDate: 2019.7.16
+// ModifyDate: 2022.1.11
+//-----------------------------------------------------------------------------
+
 package com.tatfook.paracraft;
 
 import java.net.NetworkInterface;

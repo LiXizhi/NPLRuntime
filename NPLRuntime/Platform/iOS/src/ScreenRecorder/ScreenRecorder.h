@@ -7,6 +7,7 @@
 #import <Foundation/Foundation.h>
 #import <ReplayKit/ReplayKit.h>
 #import <MediaPlayer/MediaPlayer.h>
+#import <AVFoundation/AVFoundation.h>
 
 typedef void(^ScreenRecording)(NSTimeInterval duration);
 typedef void(^ScreenRecordStop)(UIViewController *previewViewController, NSError *error);

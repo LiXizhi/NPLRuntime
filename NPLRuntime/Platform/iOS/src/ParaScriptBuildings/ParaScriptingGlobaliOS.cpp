@@ -12,32 +12,31 @@
 #include <luabind/object.hpp>
 #include <luabind/luabind.hpp>
 
-static void LuabindRegisterScreenRecorderGlobalFunctions(lua_State* L)
+static void LuabindRegisterScreenRecorderGlobalFunctions(lua_State *L)
 {
-	// OUTPUT_LOG("load screen recorder module\n");
-	using namespace luabind;
+    using namespace luabind;
 
-	module(L)
-	[
-		namespace_("ScreenRecorder")
-		[
-			class_<ParaScripting::ParaScriptingScreenRecorder>("ParaScriptingScreenRecorder"),
-			def("start", ParaScripting::ParaScriptingScreenRecorder::Start),
+    module(L)
+    [
+        namespace_("ScreenRecorder")
+        [
+            class_<ParaScripting::ParaScriptingScreenRecorder>("ParaScriptingScreenRecorder"),
+            def("start", ParaScripting::ParaScriptingScreenRecorder::Start),
             def("stop", ParaScripting::ParaScriptingScreenRecorder::Stop)
-		]
-	];
+        ]
+    ];
 }
 
 void ParaScripting::CNPLScriptingState::LoadHAPI_Platform()
 {
     using namespace luabind;
-    lua_State* L = GetLuaState();
+    lua_State *L = GetLuaState();
 
     LuabindRegisterScreenRecorderGlobalFunctions(L);
 }
 
 bool ParaScripting::ParaGlobal::OpenFileDialog(const object& inout)
 {
-	//refact to platform
-	return false;
+    //refact to platform
+    return false;
 }

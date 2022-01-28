@@ -14,8 +14,8 @@ android {
         applicationId "com.paraengine.paracraft"
         minSdkVersion PROP_MIN_SDK_VERSION
         targetSdkVersion PROP_TARGET_SDK_VERSION
-        versionCode 32
-        versionName "2.0.14"
+        versionCode 33
+        versionName "2.0.17"
 
         externalNativeBuild {
             cmake {
@@ -40,7 +40,7 @@ android {
 
     externalNativeBuild {
         cmake {
-            version "3.22.0-rc2"
+            version "3.18.2"
             path "../../../CMakeLists.txt"
         }
     }
