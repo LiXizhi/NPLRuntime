@@ -33,6 +33,7 @@ import android.view.WindowManager;
 import android.widget.ImageView;
 
 import com.smarx.notchlib.NotchScreenManager;
+import com.tatfook.paracraft.screenrecorder.ScreenRecorder;
 
 import javax.microedition.khronos.egl.EGL10;
 import javax.microedition.khronos.egl.EGLConfig;
@@ -57,7 +58,7 @@ public class ParaEngineActivity extends AppCompatActivity {
     private boolean hasFocus = false;
     private Bundle mSavedInstanceState;
 
-    public static Context getContext() {
+    public static ParaEngineActivity getContext() {
         return sContext;
     }
 
@@ -127,11 +128,9 @@ public class ParaEngineActivity extends AppCompatActivity {
 
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
 
-        if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_PHONE_STATE) != PackageManager.PERMISSION_GRANTED ||
-            ActivityCompat.checkSelfPermission(this, Manifest.permission.READ_PHONE_STATE) != PackageManager.PERMISSION_GRANTED)
+        if (checkSelfPermission(Manifest.permission.READ_PHONE_STATE) != PackageManager.PERMISSION_GRANTED)
         {
-            ActivityCompat.requestPermissions(
-                this,
+            requestPermissions(
                 new String[]{
                     Manifest.permission.READ_PHONE_STATE,
                     Manifest.permission.RECORD_AUDIO
@@ -191,6 +190,7 @@ public class ParaEngineActivity extends AppCompatActivity {
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
         ParaEnginePluginWrapper.onActivityResult(requestCode, resultCode, data);
+        ScreenRecorder.onActivityResult(requestCode, resultCode, data);
     }
 
     @Override
@@ -467,6 +467,7 @@ public class ParaEngineActivity extends AppCompatActivity {
     @Override
     public void onRequestPermissionsResult(int requestCode, String permissions[], int[] grantResults) {
         if (requestCode == PERMISSION_REQUEST_PHONE_STATE) {
+            Log.d("111111", "2222222");
             if (sContext == null) {
                 if (grantResults[0] == PackageManager.PERMISSION_GRANTED) {
                     sBGranted = true;
@@ -478,9 +479,15 @@ public class ParaEngineActivity extends AppCompatActivity {
             } else {
                 onCheckPermissionFinish(mSavedInstanceState, sBGranted);
             }
-        }
-        else
-        {
+        } else if (requestCode == ScreenRecorder.REQUEST_PERMISSIONS) {
+            int granted = PackageManager.PERMISSION_GRANTED;
+
+            for (int r : grantResults) {
+                granted |= r;
+            }
+
+            Log.d("55555", String.valueOf(granted));
+        } else {
             // TODO: Fix crash.
             // ParaEnginePluginWrapper.onRequestPermissionsResult(requestCode, permissions, grantResults);
         }

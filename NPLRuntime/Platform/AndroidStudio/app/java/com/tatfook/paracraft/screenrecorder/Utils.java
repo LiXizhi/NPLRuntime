@@ -51,10 +51,12 @@ public class Utils {
     static MediaCodecInfo[] findEncodersByType(String mimeType) {
         MediaCodecList codecList = new MediaCodecList(MediaCodecList.ALL_CODECS);
         List<MediaCodecInfo> infos = new ArrayList<>();
+
         for (MediaCodecInfo info : codecList.getCodecInfos()) {
             if (!info.isEncoder()) {
                 continue;
             }
+
             try {
                 MediaCodecInfo.CodecCapabilities cap = info.getCapabilitiesForType(mimeType);
                 if (cap == null) continue;
@@ -62,6 +64,7 @@ public class Utils {
                 // unsupported
                 continue;
             }
+
             infos.add(info);
         }
 
@@ -104,10 +107,13 @@ public class Utils {
         if (sAACProfiles.size() == 0) {
             initProfileLevels();
         }
+
         String[] profiles = new String[sAACProfiles.size()];
+
         for (int i = 0; i < sAACProfiles.size(); i++) {
             profiles[i] = sAACProfiles.valueAt(i);
         }
+
         return profiles;
     }
 
@@ -115,15 +121,18 @@ public class Utils {
         if (sAVCProfiles.size() == 0 || sAVCLevels.size() == 0 || sAACProfiles.size() == 0) {
             initProfileLevels();
         }
+
         String profile = str;
         String level = null;
         int i = str.indexOf('-');
+
         if (i > 0) { // AVC profile has level
             profile = str.substring(0, i);
             level = str.substring(i + 1);
         }
 
         MediaCodecInfo.CodecProfileLevel res = new MediaCodecInfo.CodecProfileLevel();
+
         if (profile.startsWith("AVC")) {
             res.profile = keyOfValue(sAVCProfiles, profile);
         } else if (profile.startsWith("AAC")) {
@@ -164,6 +173,7 @@ public class Utils {
 
     private static void initProfileLevels() {
         Field[] fields = MediaCodecInfo.CodecProfileLevel.class.getFields();
+
         for (Field f : fields) {
             if ((f.getModifiers() & (Modifier.STATIC | Modifier.FINAL)) == 0) {
                 continue;

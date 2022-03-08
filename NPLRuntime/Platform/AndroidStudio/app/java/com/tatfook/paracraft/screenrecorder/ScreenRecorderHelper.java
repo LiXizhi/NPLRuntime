@@ -10,7 +10,6 @@ import android.hardware.display.VirtualDisplay;
 import android.media.MediaCodec;
 import android.media.MediaFormat;
 import android.media.MediaMuxer;
-import android.media.MediaRecorder;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.Looper;
@@ -26,7 +25,7 @@ import static android.media.MediaFormat.MIMETYPE_AUDIO_AAC;
 import static android.media.MediaFormat.MIMETYPE_VIDEO_AVC;
 
 public class ScreenRecorderHelper {
-    private static final String TAG = "ScreenRecorder";
+    private static final String TAG = "ScreenRecorderHelper";
     private static final boolean VERBOSE = false;
     private static final int INVALID_INDEX = -1;
     static final String VIDEO_AVC = MIMETYPE_VIDEO_AVC; // H.264 Advanced Video Coding

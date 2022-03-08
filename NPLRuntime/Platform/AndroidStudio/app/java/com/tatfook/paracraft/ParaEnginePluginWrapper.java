@@ -43,9 +43,9 @@ public class ParaEnginePluginWrapper {
         return sContext;
     }
 
-    protected static Object initPlugin(String classFullName
-            , Map<String , Object> initParams
-            , boolean bDebug) {
+    protected static Object initPlugin(String classFullName,
+                                       Map<String , Object> initParams,
+                                       boolean bDebug) {
         Log.i(TAG, "class name : ----" + classFullName + "----");
 
         if (sPlugins.containsKey(classFullName)) {
@@ -262,11 +262,11 @@ public class ParaEnginePluginWrapper {
         }
     }
 
-    public static void onActivityResult(int requestCode, int resultCode,
-            Intent data) {
+    public static void onActivityResult(int requestCode, int resultCode, Intent data) {
         try {
             for (Map.Entry<String, Object> entry : sPlugins.entrySet()) {
                 ParaEnginePluginInterface plugin = (ParaEnginePluginInterface) entry.getValue();
+
                 if (plugin != null) {
                     plugin.onActivityResult(requestCode, resultCode, data);
                 }

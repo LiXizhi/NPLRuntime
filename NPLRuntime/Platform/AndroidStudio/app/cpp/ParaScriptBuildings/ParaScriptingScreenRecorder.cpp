@@ -11,21 +11,21 @@ namespace ParaScripting
 {
 	void ParaScriptingScreenRecorder::Start()
 	{
-        ParaEngine::ScreenRecorder::test();
+        ParaEngine::ScreenRecorder::start();
     }
 
     void ParaScriptingScreenRecorder::Stop()
     {
-        ParaEngine::ScreenRecorder::test();
+        ParaEngine::ScreenRecorder::stop();
     }
 
     void ParaScriptingScreenRecorder::Save()
     {
-        ParaEngine::ScreenRecorder::test();
+        ParaEngine::ScreenRecorder::save();
     }
 
     void ParaScriptingScreenRecorder::Play()
     {
-        ParaEngine::ScreenRecorder::test();
+        ParaEngine::ScreenRecorder::play();
     }
 }
