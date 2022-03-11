@@ -1,19 +1,22 @@
+//-----------------------------------------------------------------------------
+// Notifications.java
+// Authors: big
+// CreateDate: 2022.3.1
+//-----------------------------------------------------------------------------
+
 package com.tatfook.paracraft.screenrecorder;
 
 import android.app.Notification;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
-import android.app.PendingIntent;
 import android.content.Context;
 import android.content.ContextWrapper;
-import android.content.Intent;
 import android.os.SystemClock;
 import android.text.format.DateUtils;
-import android.util.Log;
 
 import com.tatfook.paracraft.R;
 
-import static com.tatfook.paracraft.screenrecorder.ScreenRecorder.ACTION_STOP;
+//import static com.tatfook.paracraft.screenrecorder.ScreenRecorder.ACTION_STOP;
 
 public class Notifications extends ContextWrapper {
     public static final int id = 0xffff;
@@ -94,20 +97,20 @@ public class Notifications extends ContextWrapper {
     }
 
     private Notification.Action stopAction() {
-        if (mStopAction == null) {
-            Intent intent = new Intent(ACTION_STOP).setPackage(getPackageName());
-
-            PendingIntent pendingIntent =
-                PendingIntent
-                .getBroadcast(
-                    this,
-                    1,
-                    intent,
-                    PendingIntent.FLAG_ONE_SHOT
-                );
-
-            mStopAction = new Notification.Action(android.R.drawable.ic_media_pause, "Stop", pendingIntent);
-        }
+//        if (mStopAction == null) {
+//            Intent intent = new Intent(ACTION_STOP).setPackage(getPackageName());
+//
+//            PendingIntent pendingIntent =
+//                PendingIntent
+//                .getBroadcast(
+//                    this,
+//                    1,
+//                    intent,
+//                    PendingIntent.FLAG_ONE_SHOT
+//                );
+//
+//            mStopAction = new Notification.Action(android.R.drawable.ic_media_pause, "Stop", pendingIntent);
+//        }
 
         return mStopAction;
     }

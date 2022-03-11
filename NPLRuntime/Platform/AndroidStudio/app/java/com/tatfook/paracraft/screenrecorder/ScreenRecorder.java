@@ -6,31 +6,30 @@
 
 package com.tatfook.paracraft.screenrecorder;
 
-import android.annotation.TargetApi;
-import android.app.AlertDialog;
-import android.content.BroadcastReceiver;
-import android.content.Context;
 import android.content.Intent;
-import android.content.IntentFilter;
 import android.content.pm.PackageManager;
 import android.graphics.Point;
 import android.hardware.display.DisplayManager;
 import android.hardware.display.VirtualDisplay;
 import android.media.MediaCodecInfo;
+import android.media.MediaScannerConnection;
 import android.media.projection.MediaProjection;
 import android.media.projection.MediaProjectionManager;
-import android.net.Uri;
 import android.os.Environment;
-import android.os.Looper;
-import android.util.Log;
-import android.widget.Toast;
+import android.view.View;
+import android.view.ViewGroup;
+import android.widget.RelativeLayout;
 
-import com.tatfook.paracraft.BuildConfig;
+import com.shuyu.gsyvideoplayer.video.StandardGSYVideoPlayer;
 import com.tatfook.paracraft.ParaEngineActivity;
 
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.nio.channels.FileChannel;
 import java.text.SimpleDateFormat;
-import java.util.Arrays;
 import java.util.Date;
 import java.util.Locale;
 import java.util.Stack;
@@ -38,33 +37,33 @@ import java.util.Stack;
 import static android.Manifest.permission.RECORD_AUDIO;
 import static android.Manifest.permission.WRITE_EXTERNAL_STORAGE;
 import static android.content.Context.MEDIA_PROJECTION_SERVICE;
-import static android.os.Build.VERSION_CODES.M;
 import static com.tatfook.paracraft.screenrecorder.ScreenRecorderHelper.AUDIO_AAC;
 import static com.tatfook.paracraft.screenrecorder.ScreenRecorderHelper.VIDEO_AVC;
 
 public class ScreenRecorder {
     public static final int REQUEST_PERMISSIONS = 2;
-    private static ScreenRecorder mInstance;
     private static final int REQUEST_MEDIA_PROJECTION = 1;
-    private Notifications mNotifications;
-    private MediaProjectionManager mMediaProjectionManager;
+    private static ScreenRecorder mInstance;
+    private static String mLastFilePath;
+    private static String mLastFileSavePath;
+    private final Notifications mNotifications;
+    private final MediaProjectionManager mMediaProjectionManager;
     private MediaProjection mMediaProjection;
     private ScreenRecorderHelper mRecorderHelper;
     private Intent mScreenRecorderServiceIntent;
     private String mVideoCodecName;
     private String mAudioCodecName;
     private VirtualDisplay mVirtualDisplay;
-    private BroadcastReceiver mStopActionReceiver = new BroadcastReceiver() {
-        @Override
-        public void onReceive(Context context, Intent intent) {
-            if (ACTION_STOP.equals(intent.getAction())) {
-                Log.d("receive stop!!!", "33333333333");
-    //                stopRecordingAndOpenFile(context);
-            }
-        }
-    };
 
-    static final String ACTION_STOP = BuildConfig.APPLICATION_ID + ".action.STOP";
+//    private BroadcastReceiver mStopActionReceiver = new BroadcastReceiver() {
+//        @Override
+//        public void onReceive(Context context, Intent intent) {
+//            if (ACTION_STOP.equals(intent.getAction())) {
+//            }
+//        }
+//    };
+
+//    static final String ACTION_STOP = BuildConfig.APPLICATION_ID + ".action.STOP";
 
     interface Callback {
         void onResult();
@@ -102,12 +101,64 @@ public class ScreenRecorder {
         getInstance().stopRecorder();
     }
 
-    public static void save() {
+    public static void save() throws IOException {
+        File file = new File(mLastFilePath);
+        File saveFile = new File(mLastFileSavePath);
+        boolean bSucceeded = false;
 
+        try {
+            FileChannel in = new FileInputStream(file).getChannel();
+            FileChannel out = new FileOutputStream(saveFile).getChannel();
+
+            in.transferTo(0, in.size(), out);
+
+            bSucceeded = true;
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        }
+
+        if (bSucceeded) {
+            MediaScannerConnection.scanFile(
+                ParaEngineActivity.getContext(),
+                new String[]{ mLastFileSavePath },
+                null,
+                null
+            );
+        }
     }
 
     public static void play() {
+        ParaEngineActivity.getContext().runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                RelativeLayout relativeLayout = new RelativeLayout(ParaEngineActivity.getContext());
 
+                RelativeLayout.LayoutParams relativeLayoutParams =
+                        new RelativeLayout.LayoutParams(
+                            ViewGroup.LayoutParams.MATCH_PARENT,
+                            ViewGroup.LayoutParams.WRAP_CONTENT
+                        );
+
+                relativeLayoutParams.addRule(RelativeLayout.ALIGN_PARENT_TOP);
+                relativeLayoutParams.addRule(RelativeLayout.CENTER_HORIZONTAL, RelativeLayout.TRUE);
+
+                StandardGSYVideoPlayer player = new StandardGSYVideoPlayer(ParaEngineActivity.getContext());
+                player.setUp(mLastFilePath, true, "预览");
+                player.getFullscreenButton().setVisibility(View.INVISIBLE);
+                player.getBackButton().setVisibility(View.VISIBLE);
+                player.getBackButton().setOnClickListener(v -> {
+                    if (com.shuyu.gsyvideoplayer.R.id.back == v.getId()) {
+                        ParaEngineActivity.getContext().getFrameLayout().removeView(relativeLayout);
+                    }
+                });
+
+                // add view
+                relativeLayout.addView(player);
+                ParaEngineActivity.getContext().getFrameLayout().addView(relativeLayout, relativeLayoutParams);
+
+                relativeLayout.requestFocus();
+            }
+        });
     }
 
     public static void onActivityResult(int requestCode, int resultCode, Intent data) {
@@ -134,6 +185,21 @@ public class ScreenRecorder {
         }
     }
 
+    public static void onRequestPermissionsResult(int granted) {
+        if (granted == 0) {
+            start();
+        }
+    }
+
+    private static void requestPermissions() {
+        ParaEngineActivity
+                .getContext()
+                .requestPermissions(
+                        new String[]{WRITE_EXTERNAL_STORAGE, RECORD_AUDIO},
+                        REQUEST_PERMISSIONS
+                );
+    }
+
     private static boolean hasPermissions() {
         PackageManager pm = ParaEngineActivity.getContext().getPackageManager();
         String packageName = ParaEngineActivity.getContext().getPackageName();
@@ -141,16 +207,6 @@ public class ScreenRecorder {
         int granted = pm.checkPermission(RECORD_AUDIO, packageName) | pm.checkPermission(WRITE_EXTERNAL_STORAGE, packageName);
 
         return granted == PackageManager.PERMISSION_GRANTED;
-    }
-
-//    @TargetApi(M)
-    private static void requestPermissions() {
-        ParaEngineActivity
-            .getContext()
-            .requestPermissions(
-                    new String[]{WRITE_EXTERNAL_STORAGE, RECORD_AUDIO},
-                    REQUEST_PERMISSIONS
-            );
     }
 
     public ScreenRecorder(Callback callback) {
@@ -225,20 +281,6 @@ public class ScreenRecorder {
                     .stopService(mScreenRecorderServiceIntent);
 
                 mInstance = null;
-
-//                if (error != null) {
-//                    toast("Recorder error ! See logcat for more details");
-//                    error.printStackTrace();
-//
-//                    output.delete();
-//                } else {
-//                    Intent intent =
-//                        new Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE)
-//                        .addCategory(Intent.CATEGORY_DEFAULT)
-//                        .setData(Uri.fromFile(output));
-//
-//                    ParaEngineActivity.getContext().sendBroadcast(intent);
-//                }
             }
 
             @Override
@@ -272,14 +314,21 @@ public class ScreenRecorder {
                 new File(
                     Environment
                         .getExternalStoragePublicDirectory(Environment.DIRECTORY_MOVIES),
-                    "ParacraftScreenRecorder"
+                        "ParacraftScreenRecorder/temp"
                 );
+
+            File saveDir =
+                    new File(
+                            Environment
+                                    .getExternalStoragePublicDirectory(Environment.DIRECTORY_MOVIES),
+                            "ParacraftScreenRecorder"
+                    );
 
             Stack<File> tmpFileStack = new Stack<File>();
             tmpFileStack.push(dir);
 
             try {
-                while(false == tmpFileStack.isEmpty()) {
+                while(!tmpFileStack.isEmpty()) {
                     File curFile = tmpFileStack.pop();
 
                     if (null == curFile) {
@@ -291,10 +340,10 @@ public class ScreenRecorder {
                     } else {
                         File[] tmpSubFileList = curFile.listFiles();
 
-                        if (null == tmpSubFileList || 0 == tmpSubFileList.length) {	//空文件夹直接删
+                        if (tmpSubFileList == null ||tmpSubFileList.length == 0) {	//空文件夹直接删
                             curFile.delete();
                         } else {
-                            tmpFileStack.push(curFile);
+                            // tmpFileStack.push(curFile); // may cause dead cycle
 
                             for (File item : tmpSubFileList) {
                                 tmpFileStack.push(item);
@@ -311,6 +360,10 @@ public class ScreenRecorder {
 
             SimpleDateFormat format = new SimpleDateFormat("yyyyMMdd-HHmmss", Locale.SIMPLIFIED_CHINESE);
             final File file = new File(dir, "Paracraft-Screenshots-" + format.format(new Date())  + ".mp4");
+            final File saveFile = new File(saveDir, "Paracraft-Screenshots-" + format.format(new Date())  + ".mp4");
+
+            mLastFilePath = file.toString();
+            mLastFileSavePath = saveFile.toString();
 
             mRecorderHelper = newRecorderHelper(mediaProjection, video, audio, file);
 
@@ -325,25 +378,22 @@ public class ScreenRecorder {
             return;
         }
 
-
         mRecorderHelper.start();
-        ParaEngineActivity.getContext().registerReceiver(mStopActionReceiver, new IntentFilter(ACTION_STOP));
+//        ParaEngineActivity.getContext().registerReceiver(mStopActionReceiver, new IntentFilter(ACTION_STOP));
     }
 
     private void stopRecorder() {
-//        mNotifications.clear();
-
         if (mRecorderHelper != null) {
             mRecorderHelper.quit();
         }
 
         mRecorderHelper = null;
 
-        try {
-            ParaEngineActivity.getContext().unregisterReceiver(mStopActionReceiver);
-        } catch (Exception e) {
-            //ignored
-        }
+//        try {
+//            ParaEngineActivity.getContext().unregisterReceiver(mStopActionReceiver);
+//        } catch (Exception e) {
+//            //ignored
+//        }
     }
 
     private void cancelRecorder() {
@@ -411,82 +461,4 @@ public class ScreenRecorder {
 
         return new AudioEncodeConfig(codec, AUDIO_AAC, bitrate, sampleRate, channelCount, profile);
     }
-
-    private void toast(String message, Object... args) {
-        Toast toast = Toast.makeText(ParaEngineActivity.getContext(),
-                                     message,
-                                     Toast.LENGTH_LONG);
-
-        if (Looper.myLooper() != Looper.getMainLooper()) {
-            ParaEngineActivity.getContext().runOnUiThread(toast::show);
-        } else {
-            toast.show();
-        }
-    }
-
-    /**
-     * Print information of all MediaCodec on this device.
-     */
-    private static void logCodecInfos(MediaCodecInfo[] codecInfos, String mimeType) {
-        for (MediaCodecInfo info : codecInfos) {
-            StringBuilder builder = new StringBuilder(512);
-            MediaCodecInfo.CodecCapabilities caps = info.getCapabilitiesForType(mimeType);
-
-            builder.append("Encoder '")
-                   .append(info.getName()).append('\'')
-                   .append("\n  supported : ")
-                   .append(Arrays.toString(info.getSupportedTypes()));
-
-            MediaCodecInfo.VideoCapabilities videoCaps = caps.getVideoCapabilities();
-
-            if (videoCaps != null) {
-                builder.append("\n  Video capabilities:")
-                       .append("\n  Widths: ").append(videoCaps.getSupportedWidths())
-                       .append("\n  Heights: ").append(videoCaps.getSupportedHeights())
-                       .append("\n  Frame Rates: ").append(videoCaps.getSupportedFrameRates())
-                       .append("\n  Bitrate: ").append(videoCaps.getBitrateRange());
-
-                if (VIDEO_AVC.equals(mimeType)) {
-                    MediaCodecInfo.CodecProfileLevel[] levels = caps.profileLevels;
-                    builder.append("\n  Profile-levels: ");
-
-                    for (MediaCodecInfo.CodecProfileLevel level : levels) {
-                        builder.append("\n  ").append(Utils.avcProfileLevelToString(level));
-                    }
-                }
-
-                builder.append("\n  Color-formats: ");
-
-                for (int c : caps.colorFormats) {
-                    builder.append("\n  ").append(Utils.toHumanReadable(c));
-                }
-            }
-
-            MediaCodecInfo.AudioCapabilities audioCaps = caps.getAudioCapabilities();
-
-            if (audioCaps != null) {
-                builder.append("\n Audio capabilities:")
-                       .append("\n Sample Rates: ").append(Arrays.toString(audioCaps.getSupportedSampleRates()))
-                       .append("\n Bit Rates: ").append(audioCaps.getBitrateRange())
-                       .append("\n Max channels: ").append(audioCaps.getMaxInputChannelCount());
-            }
-
-            Log.i("@@@", builder.toString());
-        }
-    }
-
-//    private void stopRecordingAndOpenFile(Context context) {
-//        File file = new File(mRecorder.getSavedPath());
-//        stopRecorder();
-//        Toast.makeText(context, getString(R.string.recorder_stopped_saved_file) + " " + file, Toast.LENGTH_LONG).show();
-//        StrictMode.VmPolicy vmPolicy = StrictMode.getVmPolicy();
-//
-//        try {
-//            // disable detecting FileUriExposure on public file
-//            StrictMode.setVmPolicy(new StrictMode.VmPolicy.Builder().build());
-//            viewResult(file);
-//        } finally {
-//            StrictMode.setVmPolicy(vmPolicy);
-//        }
-//    }
 }

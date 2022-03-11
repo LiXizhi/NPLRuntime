@@ -15,12 +15,10 @@ import org.json.JSONObject;
 import org.json.JSONArray;
 import org.json.JSONException;
 import java.util.Iterator;
-import java.util.Map;
 import java.util.HashMap;
 import com.tatfook.paracraft.ParaEnginePluginWrapper.PluginInfo;
 
 public class ParaEngineApplication extends Application {
-
 	public static final String META_DATA_PLUGIN_INFO = "PlguinWrapper";
 
 	@Override

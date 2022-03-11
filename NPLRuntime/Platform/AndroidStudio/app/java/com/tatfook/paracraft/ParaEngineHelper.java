@@ -132,23 +132,23 @@ public class ParaEngineHelper {
 	}
 
 	public static String getPackageName() {
-		ParaEngineActivity context = (ParaEngineActivity)ParaEngineActivity.getContext();
+		ParaEngineActivity context = ParaEngineActivity.getContext();
 		ApplicationInfo applicationInfo = context.getApplicationInfo();
 		return applicationInfo.packageName;
 	}
 
 	public static String getWritablePath() {
-		ParaEngineActivity context = (ParaEngineActivity)ParaEngineActivity.getContext();
+		ParaEngineActivity context = ParaEngineActivity.getContext();
 		return context.getFilesDir().getAbsolutePath();
 	}
 
 	public static String getExternalStoragePath() {
-		ParaEngineActivity context = (ParaEngineActivity)ParaEngineActivity.getContext();
+		ParaEngineActivity context = ParaEngineActivity.getContext();
 		return context.getExternalFilesDir(null).getAbsolutePath();
 	}
 
 	public static String getObbPath() {
-		ParaEngineActivity context = (ParaEngineActivity)ParaEngineActivity.getContext();
+		ParaEngineActivity context = ParaEngineActivity.getContext();
 		return context.getObbDir().getAbsolutePath();
 	}
 

@@ -5,23 +5,18 @@
 // ModifyDate: 2022.1.27
 //-----------------------------------------------------------------------------
 
-package plugin.Bluetooth;
+package com.tatfook.plugin.bluetooth;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
-import java.util.Timer;
-import java.util.TimerTask;
 import java.util.UUID;
 
 import org.json.JSONObject;
-import org.json.JSONArray;
 import org.json.JSONException;
 
 import android.Manifest;
-import android.annotation.SuppressLint;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothGattCharacteristic;
@@ -40,27 +35,12 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.ServiceConnection;
 import android.content.pm.PackageManager;
-import android.content.pm.PackageManager.NameNotFoundException;
-import android.os.Build;
 import android.os.Bundle;
-import android.os.Environment;
 import android.os.Handler;
 import android.os.IBinder;
-import android.os.Message;
 import android.support.annotation.Keep;
-import android.support.v4.app.ActivityCompat;
-import android.support.v4.content.ContextCompat;
 import android.util.Log;
-import android.view.KeyEvent;
-import android.view.View;
-import android.view.WindowManager;
-import android.widget.Button;
-import android.widget.LinearLayout;
-import android.widget.Toast;
 
-
-import plugin.Bluetooth.BluetoothLeService;
-import com.tatfook.paracraft.ParaEngineWebView;
 import com.tatfook.paracraft.ParaEngineActivity;
 import com.tatfook.paracraft.ParaEngineLuaJavaBridge;
 import com.tatfook.paracraft.LuaFunction;
@@ -217,8 +197,8 @@ public class InterfaceBluetooth implements ParaEnginePluginInterface{
         mSingle = this;
 
 
-    	if (ContextCompat.checkSelfPermission(mMainActivity, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-			ActivityCompat.requestPermissions(mMainActivity, new String[]{Manifest.permission.ACCESS_COARSE_LOCATION}, PERMISSION_REQUEST_COARSE_LOCATION);
+    	if (mMainActivity.checkSelfPermission(Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+			mMainActivity.requestPermissions(new String[]{Manifest.permission.ACCESS_COARSE_LOCATION}, PERMISSION_REQUEST_COARSE_LOCATION);
 
 			mOnInitCallback = listener;
 
@@ -685,7 +665,7 @@ public class InterfaceBluetooth implements ParaEnginePluginInterface{
     {
     	if(mBluetoothAdapter == null)
 		{
-			if (ContextCompat.checkSelfPermission(mMainActivity, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED)
+			if (mMainActivity.checkSelfPermission(Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED)
                 return;
 
             final BluetoothManager bluetoothManager =

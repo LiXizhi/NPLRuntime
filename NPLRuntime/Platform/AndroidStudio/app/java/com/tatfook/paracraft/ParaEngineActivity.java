@@ -10,7 +10,6 @@ package com.tatfook.paracraft;
 import android.Manifest;
 import android.app.KeyguardManager;
 import android.content.res.Configuration;
-import android.os.Build;
 import android.os.CountDownTimer;
 import android.os.PowerManager;
 import android.support.annotation.Keep;
@@ -20,8 +19,6 @@ import android.content.pm.ActivityInfo;
 import android.content.pm.PackageManager;
 import android.opengl.GLSurfaceView;
 import android.os.Bundle;
-import android.support.v4.app.ActivityCompat;
-import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.InputDevice;
@@ -50,7 +47,7 @@ public class ParaEngineActivity extends AppCompatActivity {
     // specifying the name of the native shared library to load. If not specified, "main" is used.
     public static final String META_DATA_LIB_NAME = "android.app.lib_name";
 
-    protected ResizeLayout mFrameLayout = null ;
+    private ResizeLayout mFrameLayout = null ;
     private ParaEngineGLSurfaceView mGLSurfaceView = null;
     private ParaEngineWebViewHelper mWebViewHelper = null;
     private int[] mGLContextAttrs = null;
@@ -90,8 +87,7 @@ public class ParaEngineActivity extends AppCompatActivity {
 
         if (context != null) {
             KeyguardManager keyguardManager = (KeyguardManager)context.getSystemService(Context.KEYGUARD_SERVICE);
-            boolean locked = keyguardManager.inKeyguardRestrictedInputMode();
-            return locked;
+            return keyguardManager.inKeyguardRestrictedInputMode();
         } else {
             return false;
         }
@@ -99,22 +95,18 @@ public class ParaEngineActivity extends AppCompatActivity {
 
     private static boolean isDeviceAsleep() {
         PowerManager powerManager = (PowerManager)getContext().getSystemService(Context.POWER_SERVICE);
+
         if(powerManager == null) {
             return false;
         }
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT_WATCH) {
-            return !powerManager.isInteractive();
-        } else {
-            return !powerManager.isScreenOn();
-        }
+
+        return !powerManager.isInteractive();
     }
 
-    @Keep
     public static boolean getUsbMode() {
         return sContext.mUsbMode;
     }
 
-    @Keep
     public static void onExit(){
         sContext.finish();
         System.exit(0);
@@ -147,12 +139,12 @@ public class ParaEngineActivity extends AppCompatActivity {
 
         // Determine whether the device uses USB
         Configuration configuration = getResources().getConfiguration();
-        Boolean mouseExist = false;
+        boolean mouseExist = false;
 
         final int[] devices = InputDevice.getDeviceIds();
 
-        for (int i = 0; i < devices.length; i++) {
-            InputDevice device = InputDevice.getDevice(devices[i]);
+        for (int j : devices) {
+            InputDevice device = InputDevice.getDevice(j);
 
             if (device != null && device.getName().contains("Mouse")) {
                 mouseExist = true;
@@ -217,14 +209,19 @@ public class ParaEngineActivity extends AppCompatActivity {
 
             try {
                 ActivityInfo ai;
-                ai = getPackageManager().getActivityInfo(getIntent().getComponent(),
-                                                         PackageManager.GET_META_DATA);
+                ai = getPackageManager()
+                        .getActivityInfo(
+                            getIntent().getComponent(),
+                            PackageManager.GET_META_DATA
+                        );
+
                 if (ai.metaData != null) {
                     String ln = ai.metaData.getString(META_DATA_LIB_NAME);
+
                     if (ln != null)
                         libname = ln;
                 }
-            }catch (PackageManager.NameNotFoundException e) {
+            } catch (PackageManager.NameNotFoundException e) {
                 throw new RuntimeException("Error getting activity info", e);
             }
 
@@ -298,7 +295,7 @@ public class ParaEngineActivity extends AppCompatActivity {
 
         countDownTimer.start();
 
-        // Set framelayout as the content view
+        // Set frame layout as the content view
         setContentView(mFrameLayout);
     }
 
@@ -466,8 +463,9 @@ public class ParaEngineActivity extends AppCompatActivity {
 
     @Override
     public void onRequestPermissionsResult(int requestCode, String permissions[], int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+
         if (requestCode == PERMISSION_REQUEST_PHONE_STATE) {
-            Log.d("111111", "2222222");
             if (sContext == null) {
                 if (grantResults[0] == PackageManager.PERMISSION_GRANTED) {
                     sBGranted = true;
@@ -486,7 +484,7 @@ public class ParaEngineActivity extends AppCompatActivity {
                 granted |= r;
             }
 
-            Log.d("55555", String.valueOf(granted));
+            ScreenRecorder.onRequestPermissionsResult(granted);
         } else {
             // TODO: Fix crash.
             // ParaEnginePluginWrapper.onRequestPermissionsResult(requestCode, permissions, grantResults);
@@ -518,5 +516,9 @@ public class ParaEngineActivity extends AppCompatActivity {
     @Keep
     public String getFileDirsPath() {
         return getFilesDir().getAbsolutePath();
+    }
+
+    public ResizeLayout getFrameLayout() {
+        return mFrameLayout;
     }
 }

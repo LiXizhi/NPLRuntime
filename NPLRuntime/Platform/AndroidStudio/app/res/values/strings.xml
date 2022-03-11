@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">Paracraft</string>
-    <string name="PluginInfo">
+    <string name="PluginInfo" translatable="false">
       [{
-      "packname": "plugin.Bluetooth.InterfaceBluetooth",
-      "key": "test",
-      "debug": true
+          "packname": "com.tatfook.plugin.bluetooth.InterfaceBluetooth",
+          "key": "test",
+          "debug": true
       }]
     </string>
   <!--

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package plugin.Bluetooth;
+package com.tatfook.plugin.bluetooth;
 
 import android.app.Service;
 import android.bluetooth.BluetoothAdapter;
@@ -34,17 +34,14 @@ import android.support.annotation.Keep;
 import android.util.Log;
 
 import org.json.JSONObject;
-import org.json.JSONArray;
 import org.json.JSONException;
 
-import java.io.InputStream;
-import java.io.UnsupportedEncodingException;
 import java.util.List;
 import java.util.UUID;
 
 @Keep
 public class BluetoothLeService extends Service {
-	public final static String  TAG = "ParaEngine";
+	public final static String TAG = "BluetoothLeService";
 
     private BluetoothManager mBluetoothManager;
     private BluetoothAdapter mBluetoothAdapter;

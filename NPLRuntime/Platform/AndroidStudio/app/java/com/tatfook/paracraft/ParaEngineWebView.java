@@ -46,8 +46,7 @@ class ShouldStartLoadingWorker implements Runnable {
 }
 
 public class ParaEngineWebView extends WebView {
-    
-    private static final String TAG = "ParaEngine";
+    private static final String TAG = "ParaEngineWebView";
 
     private int mViewTag;
     private String mJSScheme;
@@ -130,14 +129,13 @@ public class ParaEngineWebView extends WebView {
         @Override
         public boolean shouldOverrideUrlLoading(final WebView view, final String urlString) {
             ParaEngineActivity activity = (ParaEngineActivity)getContext();
-        
+
             try {
                 Uri uri =  Uri.parse(urlString);
 
                 if (uri != null)
                 {
                     if (uri.getScheme().equals(mAppScheme)) {
-
                         activity.runOnGLThread(new Runnable() {
                             @Override
                             public void run() {
