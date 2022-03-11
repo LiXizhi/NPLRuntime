@@ -102,6 +102,10 @@ public class ScreenRecorder {
     }
 
     public static void save() throws IOException {
+        if (getInstance() == null) {
+            return;
+        }
+
         File file = new File(mLastFilePath);
         File saveFile = new File(mLastFileSavePath);
         boolean bSucceeded = false;
@@ -128,6 +132,10 @@ public class ScreenRecorder {
     }
 
     public static void play() {
+        if (getInstance() == null) {
+            return;
+        }
+
         ParaEngineActivity.getContext().runOnUiThread(new Runnable() {
             @Override
             public void run() {
