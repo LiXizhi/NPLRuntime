@@ -1,5 +1,5 @@
 //-----------------------------------------------------------------------------
-// ParaScriptGlobalAndroid.cpp
+// ParaScriptingGlobalAndroid.cpp
 // Authors: big
 // Emails: onedous@gmail.com
 // CreateDate: 2019.8.12
