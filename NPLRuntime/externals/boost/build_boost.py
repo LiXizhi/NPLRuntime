@@ -20,11 +20,11 @@ ANDROID_LOG_PATH = os.path.join(CURRENT_DIR, "prebuild", "android", "android-bui
 ndk_path = "";
 
 def doneSection():
-	print "\nDone\n=================================================================\n\n";
+	print("\nDone\n=================================================================\n\n");
 	
 	
 def updateBoostForAndroid(arch):
-	print "Updating boost into %s..." %(BOOST_SRC);
+	print("Updating boost into %s..." %(BOOST_SRC));
 	
 	jam_path		= os.path.join(BOOST_SRC, "android-config_%s.jam" % (arch));
 	
@@ -131,7 +131,7 @@ def downloadCallback(dataCount, dataSize, fileSize):
 	per = 100.0 * dataCount * dataSize / fileSize;
 	if per > 100:
 		per = 100;
-		print "%.2f%%\n" % (per);
+		print("%.2f%%\n" % (per));
 		
 def autoDown(url, name , cb):
 	try:
@@ -167,16 +167,16 @@ def checkSrc(boost_version):
 		file_save_path = os.path.join(boost_save_path, file_name);
 		
 		if (not os.path.exists(file_save_path)):
-			print "Downloading boost %s\n" % (boost_version);
+			print("Downloading boost %s\n" % (boost_version));
 
 			url = "https://sourceforge.net/projects/boost/files/boost/%s/%s/download" % (boost_version, file_name);
 			autoDown(url, file_save_path, downloadCallback);
 			
 		if (not os.path.exists(file_save_path)):
-			print "download failed\n";
+			print("download failed\n");
 			exit(5);
 		
-		print "untar zip file %s" % (file_save_path);
+		print("untar zip file %s" % (file_save_path));
 		
 		if (platform.system() == "Windows"):
 			zip_file = zipfile.ZipFile(file_save_path);
@@ -188,7 +188,7 @@ def checkSrc(boost_version):
 			tar.close();
 		
 		if (not os.path.exists(BOOST_SRC)):
-			print " Not found boost src at %s\n" % (BOOST_SRC);
+			print(" Not found boost src at %s\n" % (BOOST_SRC));
 			exit(1);
 
 def makeToolchain(arch):
@@ -197,7 +197,7 @@ def makeToolchain(arch):
 	toolchain_dir 	= os.path.join(TOOLCHAIN_DIR, arch)
 
 	if (not os.path.exists(toolchain_dir)):
-		print "Making android ndk toolchain\n";
+		print("Making android ndk toolchain\n");
 		
 		ndk_path = os.getenv("ANDROID_NDK");
 		
@@ -205,13 +205,13 @@ def makeToolchain(arch):
 			ndk_path = os.getenv("NDK_ROOT");
 			
 		if (ndk_path == None):
-			print "Not found env ANDROID_NDK or NDK_ROOT\n"
+			print("Not found env ANDROID_NDK or NDK_ROOT\n")
 			exit(2);
 
 		
 		make_standalone_toolchain = os.path.join(ndk_path, "build", "tools", "make_standalone_toolchain.py");
 		if (not os.path.exists(make_standalone_toolchain)):
-			print " Not found make_standalone_toolchain at %s\n" % (make_standalone_toolchain);
+			print(" Not found make_standalone_toolchain at %s\n" % (make_standalone_toolchain));
 			exit(3);
 		
 		if (arch == "armeabi-v7a"):
@@ -234,7 +234,7 @@ def buildAndroid(arch):
 		address_model = 64;
 
 	os.chdir(BOOST_SRC);
-	print "Building Boost for Android \n";
+	print("Building Boost for Android \n");
 	
 	params = "--user-config=android-config_%s.jam --build-dir=%s --stagedir=%s toolset=clang-android target-os=android threadapi=pthread threading=multi link=static runtime-link=shared address-model=%d abi=aapcs " % (arch, build_dir, stage_dir, address_model);
 	params += "--with-thread --with-date_time --with-filesystem --with-system --with-chrono --with-regex --with-serialization --with-iostreams --with-log";
@@ -250,13 +250,13 @@ def buildAndroid(arch):
 		ret = os.system("./b2 %s >> %s 2>&1" % (params, ANDROID_LOG_PATH));
 	
 	if (ret != 0):
-		print "Error staging Android. Check log.\n";
+		print("Error staging Android. Check log.\n");
 		os.chdir(CURRENT_DIR);
 		exit(4);
 	
 	os.chdir(CURRENT_DIR);
 	
-	print "Completed successfully\n";
+	print("Completed successfully\n");
 	
 def buildWin32(b32):
 	os.chdir(BOOST_SRC);
@@ -270,16 +270,16 @@ def buildWin32(b32):
 	build_dir = "build_win32/build/%s" % (sub);
 	stage_dir = "build_win32/stage/%s" % (sub);
 	
-	print "Cleaning everything\n";
+	print("Cleaning everything\n");
 	if (os.path.exists(build_dir)):
 		shutil.rmtree(build_dir);
 	if (os.path.exists(stage_dir)):
 		shutil.rmtree(stage_dir);
 	
 	if (b32):
-		print "Building for win32\n";
+		print("Building for win32\n");
 	else:
-		print "Building for win64\n";
+		print("Building for win64\n");
 		
 	os.system("bootstrap --with-toolset=gcc");
 	params = "stage link=static runtime-link=static threading=multi address-model=%d --abbreviate-paths cflags=-D_WIN32_WINNT=0x0600 --build-dir=%s --stagedir=%s" % (address_model, build_dir, stage_dir);
@@ -288,12 +288,12 @@ def buildWin32(b32):
 	
 	os.chdir(CURRENT_DIR);
 	if (ret == 0):
-		print "Completed successfully\n";
+		print("Completed successfully\n");
 	else:
-		print "Completed failed\n";
+		print("Completed failed\n");
 	
 def buildApple():
-	print "Completed successfully\n";
+	print("Completed successfully\n");
 	
 def buildLinux():
 	os.chdir(BOOST_SRC);
@@ -307,9 +307,9 @@ def buildLinux():
 	os.chdir(CURRENT_DIR);
 	
 	if (ret == 0):
-		print "Completed successfully\n";
+		print("Completed successfully\n");
 	else:
-		print "Completed failed\n";
+		print("Completed failed\n");
 
 if __name__ == '__main__':
 	parser = argparse.ArgumentParser(description='manual to this script')
@@ -332,5 +332,5 @@ if __name__ == '__main__':
 	elif (args.platform == "linux"):
 		buildLinux();
 	else:
-		print "unknown platform %s" % (args.platform);
+		print("unknown platform %s" % (args.platform));
 	
