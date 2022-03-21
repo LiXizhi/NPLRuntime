@@ -69,8 +69,9 @@ def updateBoostForAndroid(arch):
 		fo.write("<compileflags>-fdata-sections\n");
 		fo.write("<compileflags>-D_LITTLE_ENDIAN\n");
 		# fo.write("<cxxflags>-D__arm__\n");
-		fo.write("<archiver>%s/bin/arm-linux-androideabi-ar\n" % (toolchain_dir));
-		fo.write("<ranlib>%s/bin/arm-linux-androideabi-ranlib\n" % (toolchain_dir));
+		fo.write("<archiver>%s/bin/llvm-ar\n" % (toolchain_dir));
+		# fo.write("<archiver>%s/bin/arm-linux-androideabi-ar\n" % (toolchain_dir));
+		# fo.write("<ranlib>%s/bin/arm-linux-androideabi-ranlib\n" % (toolchain_dir));
 		fo.write(";\n");
 	elif (arch == "arm64-v8a"):
 		fo.write("import os ;\n");
@@ -106,7 +107,7 @@ def updateBoostForAndroid(arch):
 		fo.write("<compileflags>-DNDEBUG\n");
 		fo.write("<compileflags>-O2\n");
 		fo.write("<compileflags>-Os\n");
-		fo.write("<compileflags>-Wno-psabi\n");
+		# fo.write("<compileflags>-Wno-psabi\n");
 		fo.write("<compileflags>-g\n");
 		# fo.write("<compileflags>-I%s/include/c++/4.9.x\n" %(toolchain_dir));
 		# fo.write("<compileflags>-I%s/include/c++/4.9.x/aarch64-linux-android\n" %(toolchain_dir));
@@ -118,8 +119,9 @@ def updateBoostForAndroid(arch):
 		#fo.write("<compileflags>-D__aarch64__\n");
 		#fo.write("<compileflags>-std=c++11\n");
 		# fo.write("<architecture>arm\n");
-		fo.write("<archiver>%s/bin/aarch64-linux-android-ar\n" % (toolchain_dir));
-		fo.write("<ranlib>%s/bin/aarch64-linux-android-ranlib\n" % (toolchain_dir));
+		fo.write("<archiver>%s/bin/llvm-ar\n" % (toolchain_dir));
+		# fo.write("<archiver>%s/bin/aarch64-linux-android-ar\n" % (toolchain_dir));
+		# fo.write("<ranlib>%s/bin/aarch64-linux-android-ranlib\n" % (toolchain_dir));
 		fo.write(";\n");
 
 	fo.close();
