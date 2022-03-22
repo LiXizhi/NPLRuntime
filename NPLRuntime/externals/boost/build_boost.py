@@ -70,6 +70,7 @@ def updateBoostForAndroid(arch):
 		fo.write("<compileflags>-D_LITTLE_ENDIAN\n");
 		# fo.write("<cxxflags>-D__arm__\n");
 		fo.write("<archiver>%s/bin/llvm-ar\n" % (toolchain_dir));
+		fo.write("<ranlib>%s/bin/llvm-ranlib\n" % (toolchain_dir));
 		# fo.write("<archiver>%s/bin/arm-linux-androideabi-ar\n" % (toolchain_dir));
 		# fo.write("<ranlib>%s/bin/arm-linux-androideabi-ranlib\n" % (toolchain_dir));
 		fo.write(";\n");
@@ -120,6 +121,7 @@ def updateBoostForAndroid(arch):
 		#fo.write("<compileflags>-std=c++11\n");
 		# fo.write("<architecture>arm\n");
 		fo.write("<archiver>%s/bin/llvm-ar\n" % (toolchain_dir));
+		fo.write("<ranlib>%s/bin/llvm-ranlib\n" % (toolchain_dir));
 		# fo.write("<archiver>%s/bin/aarch64-linux-android-ar\n" % (toolchain_dir));
 		# fo.write("<ranlib>%s/bin/aarch64-linux-android-ranlib\n" % (toolchain_dir));
 		fo.write(";\n");
