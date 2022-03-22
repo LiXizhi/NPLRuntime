@@ -1,13 +1,12 @@
 #import <UIKit/UIKit.h>
 #include "RenderDeviceAEGL.h"
 
-
 ParaEngine::RenderDeviceAEGL::RenderDeviceAEGL(EAGLContext* context,CAEAGLLayer* layer)
-:m_Context(context)
-,m_GLLayer(layer)
-,m_FrameBuffer(0)
-,m_ColorBuffer(0)
-,m_DepthBuffer(0)
+    :m_Context(context)
+    ,m_GLLayer(layer)
+    ,m_FrameBuffer(0)
+    ,m_ColorBuffer(0)
+    ,m_DepthBuffer(0)
 {
     // Initialize
     // frame buffer
@@ -44,12 +43,10 @@ ParaEngine::RenderDeviceAEGL::RenderDeviceAEGL(EAGLContext* context,CAEAGLLayer*
 
 ParaEngine::RenderDeviceAEGL::~RenderDeviceAEGL()
 {
-    
 }
 
 void ParaEngine::RenderDeviceAEGL::Reset()
 {
-
 }
 
 bool ParaEngine::RenderDeviceAEGL::Present()
@@ -57,4 +54,3 @@ bool ParaEngine::RenderDeviceAEGL::Present()
     [m_Context presentRenderbuffer:m_ColorBuffer];
     return true;
 }
-

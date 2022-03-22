@@ -1,6 +1,7 @@
 //-----------------------------------------------------------------------------
 // Class: ParaScriptingGlobaliOS.cpp
 // Authors: big
+// Emails: onedous@gmail.com
 // CreateDate: 2019.08.12
 // ModifyDate: 2021.12.14
 //-----------------------------------------------------------------------------
@@ -12,32 +13,33 @@
 #include <luabind/object.hpp>
 #include <luabind/luabind.hpp>
 
-static void LuabindRegisterScreenRecorderGlobalFunctions(lua_State* L)
+static void LuabindRegisterScreenRecorderGlobalFunctions(lua_State *L)
 {
-	// OUTPUT_LOG("load screen recorder module\n");
-	using namespace luabind;
+    using namespace luabind;
 
-	module(L)
-	[
-		namespace_("ScreenRecorder")
-		[
-			class_<ParaScripting::ParaScriptingScreenRecorder>("ParaScriptingScreenRecorder"),
-			def("start", ParaScripting::ParaScriptingScreenRecorder::Start),
-            def("stop", ParaScripting::ParaScriptingScreenRecorder::Stop)
-		]
-	];
+    module(L)
+    [
+        namespace_("ScreenRecorder")
+        [
+            class_<ParaScripting::ParaScriptingScreenRecorder>("ParaScriptingScreenRecorder"),
+            def("start", ParaScripting::ParaScriptingScreenRecorder::Start),
+            def("stop", ParaScripting::ParaScriptingScreenRecorder::Stop),
+            def("play", ParaScripting::ParaScriptingScreenRecorder::Play),
+            def("save", ParaScripting::ParaScriptingScreenRecorder::Save)
+        ]
+    ];
 }
 
 void ParaScripting::CNPLScriptingState::LoadHAPI_Platform()
 {
     using namespace luabind;
-    lua_State* L = GetLuaState();
+    lua_State *L = GetLuaState();
 
     LuabindRegisterScreenRecorderGlobalFunctions(L);
 }
 
 bool ParaScripting::ParaGlobal::OpenFileDialog(const object& inout)
 {
-	//refact to platform
-	return false;
+    //refact to platform
+    return false;
 }

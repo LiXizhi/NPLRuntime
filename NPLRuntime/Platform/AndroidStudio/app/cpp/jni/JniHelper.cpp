@@ -1,3 +1,9 @@
+//-----------------------------------------------------------------------------
+// JniHelper.cpp
+// Authors: LanZhiHong, big
+// CreateDate: 2019.7.16
+// ModifyDate: 2022.1.11
+//-----------------------------------------------------------------------------
 
 #include "JniHelper.h"
 #include "StringHelper.h"
@@ -6,24 +12,19 @@
 #include <pthread.h>
 #include <android/native_window_jni.h>
 
-
 static pthread_key_t g_key;
-
-
 
 void _detachCurrentThread(void* a) {
 	ParaEngine::JniHelper::getJavaVM()->DetachCurrentThread();
 }
 
 namespace ParaEngine {
-
     ANativeWindow* JniHelper::_nativeWindow = nullptr;
     AAssetManager* JniHelper::_assetmanager = nullptr;
     JavaVM* JniHelper::_psJavaVM = nullptr;
     jmethodID JniHelper::loadclassMethod_methodID = nullptr;
     jobject JniHelper::classloader = nullptr;
     std::function<void()> JniHelper::classloaderCallback = nullptr;
-    
     jobject JniHelper::_activity = nullptr;
     std::unordered_map<JNIEnv*, std::vector<jobject>> JniHelper::localRefs;
 
@@ -73,9 +74,9 @@ namespace ParaEngine {
 		return _clazz;
 	}
 
-
 	JNIEnv* JniHelper::cacheEnv(JavaVM* jvm) {
 		JNIEnv* _env = nullptr;
+
 		// get jni environment
 		jint ret = jvm->GetEnv((void**)&_env, JNI_VERSION_1_4);
 
@@ -84,7 +85,6 @@ namespace ParaEngine {
 			// Success!
 			pthread_setspecific(g_key, _env);
 			return _env;
-
 		case JNI_EDETACHED:
 			// Thread not attached
 			if (jvm->AttachCurrentThread(&_env, nullptr) < 0)
@@ -98,7 +98,6 @@ namespace ParaEngine {
 				pthread_setspecific(g_key, _env);
 				return _env;
 			}
-
 		case JNI_EVERSION:
 			// Cannot recover from this error
 			LOGE("JNI interface version 1.4 not supported");
@@ -114,7 +113,7 @@ namespace ParaEngine {
 			_env = JniHelper::cacheEnv(_psJavaVM);
 		return _env;
 	}
-    
+
     jobject JniHelper::getActivity() {
         return _activity;
     }
@@ -129,7 +128,7 @@ namespace ParaEngine {
         }
 
         jobject _c = JniHelper::getEnv()->CallObjectMethod(activityinstance,
-                                                                    _getclassloaderMethod.methodID);
+                                                           _getclassloaderMethod.methodID);
 
         if (nullptr == _c) {
             return false;
@@ -146,6 +145,7 @@ namespace ParaEngine {
         JniHelper::classloader = JniHelper::getEnv()->NewGlobalRef(_c);
         JniHelper::loadclassMethod_methodID = _m.methodID;
 		JniHelper::_activity = activityinstance;
+
         if (JniHelper::classloaderCallback != nullptr){
             JniHelper::classloaderCallback();
         }
@@ -419,5 +419,4 @@ namespace ParaEngine {
     void JniHelper::reportError(const std::string& className, const std::string& methodName, const std::string& signature) {
         LOGE("Failed to find static java method. Class name: %s, method name: %s, signature: %s ",  className.c_str(), methodName.c_str(), signature.c_str());
     }
-
-} //end namespace
+}

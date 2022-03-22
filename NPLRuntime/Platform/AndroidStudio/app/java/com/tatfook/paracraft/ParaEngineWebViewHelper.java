@@ -1,3 +1,10 @@
+//-----------------------------------------------------------------------------
+// ParaEngineWebViewHelper.java
+// Authors: LanZhiHong, big
+// CreateDate: 2019.7.16
+// ModifyDate: 2022.3.8
+//-----------------------------------------------------------------------------
+
 package com.tatfook.paracraft;
 
 import android.content.Intent;
@@ -27,15 +34,14 @@ class HelloWebViewClient extends WebViewClient {
     public boolean shouldOverrideUrlLoading(WebView view, String url) { 
 		view.loadUrl(url); 
         return true; 
-    } 
+    }
+
     public void onPageFinished(WebView view, String url)
     {
-
     }
 }
 
 public class ParaEngineWebViewHelper {
-	private static final String TAG = "ParaEngine";
 	private static ParaEngineActivity sActivity;
 	private static Handler sHandler;
 	private static FrameLayout sLayout;
@@ -53,8 +59,7 @@ public class ParaEngineWebViewHelper {
 	public ParaEngineWebViewHelper(FrameLayout layout) {
 		ParaEngineWebViewHelper.sLayout = layout;
         ParaEngineWebViewHelper.sHandler = new Handler(Looper.myLooper());
-
-        ParaEngineWebViewHelper.sActivity = (ParaEngineActivity)ParaEngineActivity.getContext();
+        ParaEngineWebViewHelper.sActivity = ParaEngineActivity.getContext();
         ParaEngineWebViewHelper.webViews = new SparseArray<ParaEngineWebView>();
 
 		mWebView = null;

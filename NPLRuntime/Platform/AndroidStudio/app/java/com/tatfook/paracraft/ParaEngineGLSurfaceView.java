@@ -1,10 +1,15 @@
+//-----------------------------------------------------------------------------
+// ParaEngineGLSurfaceView.java
+// Authors: LanZhihong, big
+// CreateDate: 2019.7.16
+// ModifyDate: 2022.1.11
+//-----------------------------------------------------------------------------
+
 package com.tatfook.paracraft;
 
 import android.app.Activity;
 import android.content.Context;
-import android.content.res.Configuration;
 import android.graphics.Rect;
-import android.hardware.usb.UsbManager;
 import android.opengl.GLSurfaceView;
 import android.os.Bundle;
 import android.os.Handler;
@@ -12,8 +17,6 @@ import android.os.Message;
 import android.support.annotation.Keep;
 import android.util.AttributeSet;
 import android.util.DisplayMetrics;
-import android.util.Log;
-import android.view.InputDevice;
 import android.view.KeyEvent;
 import android.view.MotionEvent;
 import android.view.Surface;
@@ -24,48 +27,28 @@ import android.view.inputmethod.InputMethodManager;
 import android.widget.Toast;
 
 public class ParaEngineGLSurfaceView extends GLSurfaceView {
-    // ===========================================================
-    // Constants
-    // ===========================================================
-
-    private static final String TAG = "ParaEngine";
-
-    // ===========================================================
-    // Fields
-    // ===========================================================
     private static ParaEngineGLSurfaceView mGLSurfaceView = null;
-
     private static ParaEngineActivity sActivity = null;
-
-    private final static int HANDLER_OPEN_IME_KEYBOARD = 2;
-    private final static int HANDLER_CLOSE_IME_KEYBOARD = 3;
-
-    private ParaEngineEditBox mEditText = null;
-    public String lastText = "";
+    private static final int HANDLER_OPEN_IME_KEYBOARD = 2;
+    private static final int HANDLER_CLOSE_IME_KEYBOARD = 3;
     private static ParaTextInputWrapper sParaTextInputWrapper = null;
 
+    public String lastText = "";
     private ParaEngineRenderer mRenderer;
-
+    private ParaEngineEditBox mEditText = null;
+    private Handler sHandler = null;
     private boolean mSoftKeyboardShown = false;
     private boolean mMultipleTouchEnabled = true;
     private boolean mIsPressMouseRightKey = false;
     private boolean mIsPressMouseLeftKey = false;
-    private boolean mUsbMode = false;
     private int curPointerId = 0;
     private float curPointerX = 0;
     private float curPointerY = 0;
     private long exitTime;
-
-    // TODO Static handler -> Potential leak!
-    private static Handler sHandler = null;
-
-    ViewTreeObserver.OnGlobalLayoutListener mGlobalLayoutListener = null;
-
+    private ViewTreeObserver.OnGlobalLayoutListener mGlobalLayoutListener = null;
     private static native void nativeDeleteBackward();
     private static native void nativeOnUnicodeChar(String text);
     private static native void nativeSetSurface(Surface surface);
-    //private native void onKeyBack(boolean bDown);
-   // private native void onKeyMenu(boolean bDown);
 
     @Keep
     public boolean isSoftKeyboardShown() {
@@ -100,7 +83,7 @@ public class ParaEngineGLSurfaceView extends GLSurfaceView {
 
         this.setEGLContextClientVersion(2);
         this.setFocusableInTouchMode(true);
-         mGLSurfaceView = this;
+        mGLSurfaceView = this;
 
         sParaTextInputWrapper = new ParaTextInputWrapper(this);
 
@@ -172,7 +155,6 @@ public class ParaEngineGLSurfaceView extends GLSurfaceView {
                             imm.hideSoftInputFromWindow(mEditText.getWindowToken(), 0);
                             ParaEngineGLSurfaceView.this.requestFocus();
                             mEditText.setEnabled(false);
-                            Log.d(TAG, "HideSoftInput");
                         }
                         break;
                 }
@@ -185,7 +167,6 @@ public class ParaEngineGLSurfaceView extends GLSurfaceView {
         holder.addCallback(new SurfaceHolder.Callback2() {
             @Override
             public void surfaceChanged(SurfaceHolder holder, int format, int width, int height) {
-
             }
 
             @Override
@@ -195,31 +176,12 @@ public class ParaEngineGLSurfaceView extends GLSurfaceView {
 
             @Override
             public void surfaceRedrawNeeded(SurfaceHolder holder) {
-
             }
 
             @Override
             public void surfaceDestroyed(SurfaceHolder holder) {
-
             }
         });
-
-        Configuration configuration = getResources().getConfiguration();
-        Boolean mouseExist = false;
-
-        final int[] devices = InputDevice.getDeviceIds();
-
-        for (int i = 0; i < devices.length; i++) {
-            InputDevice device = InputDevice.getDevice(devices[i]);
-
-            if (device != null && device.getName().contains("Mouse")) {
-                mouseExist = true;
-            }
-        }
-
-        if (configuration.keyboard != Configuration.KEYBOARD_NOKEYS || mouseExist) {
-            mUsbMode = true;
-        }
     }
 
     public static ParaEngineGLSurfaceView getInstance() { return mGLSurfaceView; }
@@ -251,7 +213,7 @@ public class ParaEngineGLSurfaceView extends GLSurfaceView {
         bundle.putInt("ctrlBottom", ctrlBottom);
 
         msg.setData(bundle);
-        sHandler.sendMessage(msg);
+        mGLSurfaceView.sHandler.sendMessage(msg);
     }
 
     @Keep
@@ -264,7 +226,7 @@ public class ParaEngineGLSurfaceView extends GLSurfaceView {
         bundle.putInt("ctrlBottom", ctrlBottom);
 
         msg.setData(bundle);
-        sHandler.sendMessage(msg);
+        mGLSurfaceView.sHandler.sendMessage(msg);
     }
 
     public void onUnicodeText(final String text) {
@@ -355,7 +317,7 @@ public class ParaEngineGLSurfaceView extends GLSurfaceView {
                 break;
 
             case MotionEvent.ACTION_DOWN:
-                if (mUsbMode) {
+                if (sActivity.getUsbMode()) {
                     if (pMotionEvent.getButtonState() == MotionEvent.BUTTON_PRIMARY) {
                         final int idDown = pMotionEvent.getPointerId(0);
                         final float xDown = xs[0];
@@ -390,7 +352,7 @@ public class ParaEngineGLSurfaceView extends GLSurfaceView {
 
                 break;
             case MotionEvent.ACTION_MOVE:
-                if (mUsbMode) {
+                if (sActivity.getUsbMode()) {
                     this.queueEvent(new Runnable() {
                         @Override
                         public void run() {
@@ -449,7 +411,7 @@ public class ParaEngineGLSurfaceView extends GLSurfaceView {
                 final float xUp = xs[0];
                 final float yUp = ys[0];
 
-                if (mUsbMode) {
+                if (sActivity.getUsbMode()) {
                     if (mIsPressMouseLeftKey) {
                         // left mouse up
                         this.queueEvent(new Runnable() {
@@ -507,10 +469,6 @@ public class ParaEngineGLSurfaceView extends GLSurfaceView {
         return true;
     }
 
-    /*
-     * This function is called before Cocos2dxRenderer.nativeInit(), so the
-     * width and height is correct.
-     */
     @Override
     protected void onSizeChanged(final int pNewSurfaceWidth, final int pNewSurfaceHeight, final int pOldSurfaceWidth, final int pOldSurfaceHeight) {
         if(!this.isInEditMode()) {
@@ -520,7 +478,7 @@ public class ParaEngineGLSurfaceView extends GLSurfaceView {
 
     @Override
     public boolean onKeyDown(final int pKeyCode, final KeyEvent pKeyEvent) {
-        if (mUsbMode && pKeyCode == KeyEvent.KEYCODE_BACK) {
+        if (sActivity.getUsbMode() && pKeyCode == KeyEvent.KEYCODE_BACK) {
             onMouseRightKeyDown();
             return false;
         } else {
@@ -536,7 +494,7 @@ public class ParaEngineGLSurfaceView extends GLSurfaceView {
 
     @Override
     public boolean onKeyUp(final int pKeyCode, KeyEvent pKeyEvent) {
-        if (mUsbMode && pKeyCode == KeyEvent.KEYCODE_BACK) {
+        if (sActivity.getUsbMode() && pKeyCode == KeyEvent.KEYCODE_BACK) {
             onMouseRightKeyUp();
             return false;
         } else if (pKeyCode == KeyEvent.KEYCODE_BACK) {
@@ -561,7 +519,7 @@ public class ParaEngineGLSurfaceView extends GLSurfaceView {
     }
 
     public void setMousePosition(MotionEvent pMotionEvent) {
-        if (!mUsbMode) {
+        if (!sActivity.getUsbMode()) {
             return;
         }
 

@@ -1,4 +1,12 @@
+//-----------------------------------------------------------------------------
+// ParaEngineWebViewHelper.h
+// Authors: LanZhiHong, big
+// CreateDate: 2019.12.30
+// ModifyDate: 2022.1.11
+//-----------------------------------------------------------------------------
+
 #pragma once
+
 #include "ParaScriptingGlobal.h"
 #include "IParaWebView.h"
 #include <jni.h>
@@ -28,7 +36,6 @@ namespace ParaEngine {
 		virtual void move(int x, int y) override;
 		virtual void resize(int width, int height) override;
 
-		// test interface
 		static bool openWebView(int x, int y, int w, int h, const std::string& url);
 		static bool closeWebView();
 
@@ -41,13 +48,9 @@ namespace ParaEngine {
 		onCloseFunc m_onClose;
 	protected:
 		ParaEngineWebView();
-		
-
 		void setHandle(int handle) { m_handle = handle;  }
 
 	private:
 		int m_handle;
 	};
-
-
-} // end namespace
+}

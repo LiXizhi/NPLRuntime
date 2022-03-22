@@ -1,50 +1,27 @@
+//-----------------------------------------------------------------------------
+// RenderDeviceEGL.cpp
+// Authors: LanZhihong, big
+// CreateDate: 2019.7.16
+// ModifyDate: 2022.1.11
+//-----------------------------------------------------------------------------
+
 #include "RenderDeviceEGL.h"
 
-/*
-ParaEngine::RenderDeviceEGL::RenderDeviceEGL(EGLDisplay display, EGLSurface surface)
-	:m_Display(display)
-	,m_Surface(surface)
-{
-
-}
-
-ParaEngine::RenderDeviceEGL::~RenderDeviceEGL()
-{
-
-}
-
-void ParaEngine::RenderDeviceEGL::Reset(EGLDisplay display, EGLSurface surface)
-{
-	m_Display = display;
-	m_Surface = surface;
-}
-
-bool ParaEngine::RenderDeviceEGL::Present()
-{
-	return eglSwapBuffers(m_Display, m_Surface) == EGL_TRUE;
-
-}
- */
-
 namespace ParaEngine {
-	RenderDeviceEGL::RenderDeviceEGL()
-	{
+    RenderDeviceEGL::RenderDeviceEGL()
+    {
+    }
 
-	}
+    RenderDeviceEGL::~RenderDeviceEGL()
+    {
+    }
 
-	RenderDeviceEGL::~RenderDeviceEGL()
-	{
+    void RenderDeviceEGL::Reset()
+    {
+    }
 
-	}
-
-	void RenderDeviceEGL::Reset()
-	{
-
-	}
-
-	bool RenderDeviceEGL::Present()
-	{
-		return true;
-	}
+    bool RenderDeviceEGL::Present()
+    {
+        return true;
+    }
 }
-

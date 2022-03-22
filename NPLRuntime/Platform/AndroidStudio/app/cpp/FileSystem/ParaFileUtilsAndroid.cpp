@@ -1,3 +1,10 @@
+//-----------------------------------------------------------------------------
+// ParaFileUtilsAndroid.cpp
+// Authors: LanZhiHong, big
+// CreateDate: 2019.12.30
+// ModifyDate: 2022.1.11
+//-----------------------------------------------------------------------------
+
 #include "ParaFileUtilsAndroid.h"
 #include "ParaEngine.h"
 #include <zlib.h>

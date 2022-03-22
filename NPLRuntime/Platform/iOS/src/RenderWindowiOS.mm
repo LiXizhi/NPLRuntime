@@ -3,7 +3,6 @@
 #include "ParaEngine.h"
 #include "RenderWindowiOS.h"
 
-
 using namespace ParaEngine;
 
 IRenderWindow* CreateParaRenderWindow(const int width, const int height)
@@ -14,12 +13,10 @@ IRenderWindow* CreateParaRenderWindow(const int width, const int height)
 ParaEngine::RenderWindowiOS::RenderWindowiOS(UIView* view)
 :m_view(view)
 {
-
 }
 
 ParaEngine::RenderWindowiOS::~RenderWindowiOS()
 {
-
 }
 
 float ParaEngine::RenderWindowiOS::GetScaleX() const
@@ -46,8 +43,8 @@ intptr_t ParaEngine::RenderWindowiOS::GetNativeHandle() const
 {
     return (intptr_t)(__bridge void*)m_view; //(intptr_t)m_view;
 }
+
 UIView* ParaEngine::RenderWindowiOS::GetView() const
 {
     return m_view;
 }
-

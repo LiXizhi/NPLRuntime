@@ -1,6 +1,9 @@
-//
-// Created by lan on 2019/12/30.
-//
+//-----------------------------------------------------------------------------
+// ParaEngineGLSurfaceView.cpp
+// Authors: LanZhiHong, big
+// CreateDate: 2019.12.30
+// ModifyDate: 2022.1.11
+//-----------------------------------------------------------------------------
 
 #include "ParaEngineGLSurfaceView.h"
 #include "JniHelper.h"
@@ -20,8 +23,7 @@ namespace ParaEngine {
         else
             JniHelper::callStaticVoidMethod(classname, "closeIMEKeyboard", bMoveView, ctrlBottom);
     }
-
-} // namespace ParaEngine
+}
 
 extern "C" {
     using namespace ParaEngine;
@@ -67,4 +69,4 @@ extern "C" {
             }
         }
     }
-} // extern "C"
+}

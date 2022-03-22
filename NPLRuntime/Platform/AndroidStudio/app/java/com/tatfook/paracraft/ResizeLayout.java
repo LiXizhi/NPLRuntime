@@ -1,3 +1,10 @@
+//-----------------------------------------------------------------------------
+// ResizeLayout.java
+// Authors: LanZhiHong, big
+// CreateDate: 2019.7.16
+// ModifyDate: 2022.1.11
+//-----------------------------------------------------------------------------
+
 package com.tatfook.paracraft;
 
 import android.content.Context;
@@ -37,9 +44,6 @@ public class ResizeLayout extends FrameLayout {
                     invalidate();
                 }
             }, 1000 / 24);
-
         }
-
     }
-
 }

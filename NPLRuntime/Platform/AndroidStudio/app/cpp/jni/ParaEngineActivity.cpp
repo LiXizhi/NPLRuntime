@@ -1,10 +1,12 @@
-//
-// Created by lan on 2019/12/30.
-//
+//-----------------------------------------------------------------------------
+// ParaEngineActivity.h
+// Authors: LanZhihong, big
+// CreateDate: 2019.12.30
+// ModifyDate: 2022.1.12
+//-----------------------------------------------------------------------------
 
 #include "ParaEngineActivity.h"
 #include "AppDelegate.h"
-
 #include <jni.h>
 
 namespace ParaEngine {
@@ -19,24 +21,25 @@ namespace ParaEngine {
     {
         JniHelper::callStaticVoidMethod(classname, "setScreenOrientation", type);
     }
-} // end namespace
+}
 
 extern "C" {
-    JNIEXPORT jintArray JNICALL Java_com_tatfook_paracraft_ParaEngineActivity_getGLContextAttrs(JNIEnv* env, jobject clazz)
+    JNIEXPORT jintArray JNICALL Java_com_tatfook_paracraft_ParaEngineActivity_getGLContextAttrs(JNIEnv* env,
+                                                                                                jclass clazz)
     {
         ParaEngine::GLContextAttrs attrs = {8, 8, 8, 8, 24, 8, 0 };
 
-        int temp[] =  {attrs.redBits, attrs.greenBits, attrs.blueBits, attrs.alphaBits, attrs.depthBits, attrs.stencilBits, attrs.multisamplingCount};
+        int temp[] =  { attrs.redBits,
+                        attrs.greenBits,
+                        attrs.blueBits,
+                        attrs.alphaBits,
+                        attrs.depthBits,
+                        attrs.stencilBits,
+                        attrs.multisamplingCount };
 
         jintArray glContextAttrsJava = env->NewIntArray(7);
         env->SetIntArrayRegion(glContextAttrsJava, 0, 7, temp);
 
         return glContextAttrsJava;
     }
-
-    JNIEXPORT void JNICALL Java_com_tatfook_paracraft_ParaEngineActivity_onKeyBack(JNIEnv* env, jobject clazz, jboolean bDown)
-    {
-        return;
-    }
-
-} // extern "C"
+}

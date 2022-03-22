@@ -1,10 +1,12 @@
 //-----------------------------------------------------------------------------
 // Class:	ParaEngineApp base
-// Authors:	LiXizhi
+// Authors:	LiXizhi, big
 // Emails:	LiXizhi@yeah.net
 // Company: ParaEngine
-// Date:	2015.1.1
+// CreateDate: 2015.1.1
+// ModifyDate: 2022.1.5
 //-----------------------------------------------------------------------------
+
 #include "ParaEngine.h"
 #include "ParaEngineSettings.h"
 #include "util/os_calls.h"
@@ -74,15 +76,13 @@ IParaEngineApp* CParaEngineAppBase::g_pCurrentApp = NULL;
 
 extern ClassDescriptor* AudioEngine_GetClassDesc();
 
-
 namespace ParaEngine
 {
-	/** this value changes from 0 to 1, and back to 0 in one second.*/
+	/// this value changes from 0 to 1, and back to 0 in one second.
 	float g_flash = 0.f;
 }
 
-
-/** default bootstrapper file */
+/// default bootstrapper file
 #define NPL_CODE_WIKI_BOOTFILE "script/apps/WebServer/WebServer.lua"
 
 ParaEngine::CParaEngineAppBase::CParaEngineAppBase()
@@ -133,19 +133,17 @@ ParaEngine::CParaEngineAppBase::~CParaEngineAppBase()
 	g_pCurrentApp = nullptr;
 }
 
-
 IParaEngineApp* ParaEngine::CParaEngineAppBase::GetInstance()
 {
 	return g_pCurrentApp;
 }
-
 
 IRenderWindow* ParaEngine::CParaEngineAppBase::GetRenderWindow()
 {
 	return m_pRenderWindow;
 }
 
-bool ParaEngine::CParaEngineAppBase::InitApp(IRenderWindow* pWindow, const char* sCommandLine /* = nullptr */)
+bool ParaEngine::CParaEngineAppBase::InitApp(IRenderWindow* pWindow, const char* sCommandLine)
 {
 	SetAppState(PEAppState_Device_Created);
 
@@ -159,7 +157,7 @@ bool ParaEngine::CParaEngineAppBase::InitApp(IRenderWindow* pWindow, const char*
 
 	CStaticInitRes::StaticInit();
 
-	srand((unsigned long)time(NULL));
+	srand((unsigned int)time(NULL));
 
 	FindParaEngineDirectory();
 
@@ -239,36 +237,37 @@ bool ParaEngine::CParaEngineAppBase::InitApp(IRenderWindow* pWindow, const char*
 
 	/// set up terrain engine parameters
 	ParaTerrain::Settings::GetInstance()->SetVerbose(false);
-	// enable editor mode to make device lost recoverable
+	/// enable editor mode to make device lost recoverable
 	ParaTerrain::Settings::GetInstance()->SetEditor(true);
 #ifdef _USE_NORMAL_
 	ParaTerrain::Settings::GetInstance()->SetUseNormals(true);
 #endif
-	// perform GUI static initialization
-	// perform CGUIRoot initialization
+	/// perform GUI static initialization
+	/// perform CGUIRoot initialization
 	m_pGUIRoot->OneTimeGUIInit();
 
-	/************************************************************************/
-	/* Create ocean manager                                                 */
-	/************************************************************************/
+    //----------------------------------------------------------
+	/// Create ocean manager
+    //----------------------------------------------------------
 	CGlobals::GetOceanManager()->create();
-	// Load default mapping at the program start
+
+    /// Load default mapping at the program start
 	CGlobals::GetSettings().LoadGameEffectSet(0);
 
-	// Init Timer
+	/// Init Timer
 	m_Timer = new ParaTimer();
 	m_Timer->Start();
-	InitRenderEnvironment();
+
+    InitRenderEnvironment();
 
 	SetAppState(PEAppState_Ready);
 	return true;
 }
 
-
 void ParaEngine::CParaEngineAppBase::InitRenderEnvironment()
 {
 
-	// Create RenderDevice
+	/// Create RenderDevice
 	m_pRenderContext = IRenderContext::Create();
 	RenderConfiguration cfg;
 	cfg.renderWindow = m_pRenderWindow;
@@ -287,10 +286,10 @@ void ParaEngine::CParaEngineAppBase::InitRenderEnvironment()
 	RestoreDeviceObjects();
 }
 
-
 void ParaEngine::CParaEngineAppBase::ResetRenderEnvironment()
 {
 	InvalidateDeviceObjects();
+
 	RenderConfiguration cfg;
 	cfg.renderWindow = m_pRenderWindow;
 	if (!m_pRenderContext->ResetDevice(m_pRenderDevice, cfg))
@@ -299,7 +298,7 @@ void ParaEngine::CParaEngineAppBase::ResetRenderEnvironment()
 		return;
 	}
 
-	// Initialize the app's device-dependent objects
+	/// Initialize the app's device-dependent objects
 	RestoreDeviceObjects();
 }
 
@@ -310,23 +309,24 @@ float ParaEngine::CParaEngineAppBase::GetFPS()
 
 void ParaEngine::CParaEngineAppBase::UpdateFrameStats(double fTime)
 {
-	// Keep track of the frame count
+	/// Keep track of the frame count
 	static double fLastTime = 0.0f;
 	static DWORD dwFrames = 0;
 	++dwFrames;
-	// Update the scene stats once per second
+
+	/// Update the scene stats once per second
 	if (fTime - fLastTime > 1.0f)
 	{
 		m_fFPS = (float)(dwFrames / (fTime - fLastTime));
 		fLastTime = fTime;
 		dwFrames = 0;
-}
+    }
 }
 
 HRESULT ParaEngine::CParaEngineAppBase::InitDeviceObjects()
 {
 #if USE_DIRECTX_RENDERER
-	// stage b.1
+	/// stage b.1
 	auto d3d9RenderDevice = static_cast<RenderDeviceD3D9*>(m_pRenderDevice);
 	CGlobals::GetDirectXEngine().InitDeviceObjects(d3d9RenderDevice->GetContext(), d3d9RenderDevice->GetDirect3DDevice9(), NULL);
 #endif
@@ -361,9 +361,9 @@ int ParaEngine::CParaEngineAppBase::CalculateRenderTime(double* pNextInterval)
 	const bool USE_ADAPTIVE_INTERVAL = true;
 	if (USE_ADAPTIVE_INTERVAL)
 	{
-		// --------adaptive interval algorithm
-		// check FPS by modifying the interval adaptively until FPS is within a good range.
-		// we will adjust every 1 second
+		/// adaptive interval algorithm
+		/// check FPS by modifying the interval adaptively until FPS is within a good range.
+		/// we will adjust every 1 second
 		static double fLastTime = fCurTime;
 		static double fLastFrameTime = fCurTime;
 		static double fSeconds = fCurTime;
@@ -376,6 +376,7 @@ int ParaEngine::CParaEngineAppBase::CalculateRenderTime(double* pNextInterval)
 		{
 			if (fLastIdealInterval > fIdealInterval)
 				fAdaptiveInterval = fIdealInterval;
+
 			fLastIdealInterval = fIdealInterval;
 		}
 
@@ -406,14 +407,15 @@ int ParaEngine::CParaEngineAppBase::CalculateRenderTime(double* pNextInterval)
 			fSeconds = fCurTime;
 			nFPS = 0;
 		}
-		/** tricky: run the main_loop as fast as possible at least 100FPS, so that FPS is more accurate. */
+
+		/// tricky: run the main_loop as fast as possible at least 100FPS, so that FPS is more accurate.
 		fAdaptiveInterval = Math::Min(fAdaptiveInterval, 1 / 100.0);
 
 		fNextInterval = fAdaptiveInterval;
 
 		if ((fCurTime - fLastTime) > 1.f)
 		{
-			// too laggy
+			/// too laggy
 			nFrameDelta = 2;
 			fLastFrameTime = fCurTime;
 			fLastTime = fCurTime;
@@ -428,8 +430,8 @@ int ParaEngine::CParaEngineAppBase::CalculateRenderTime(double* pNextInterval)
 	}
 	else
 	{
-		// --------fixed interval algorithm
-		// continue with next activation. 
+		/// fixed interval algorithm
+		/// continue with next activation.
 		static double s_next_time = 0;
 		fNextInterval = s_next_time - fCurTime;
 		if (fNextInterval <= 0)
@@ -445,29 +447,34 @@ int ParaEngine::CParaEngineAppBase::CalculateRenderTime(double* pNextInterval)
 		s_next_time = s_next_time + fIdealInterval;
 	}
 
-	/** define to output interval to log file to change timer implementation. */
-	// #define DEBUG_TIMER_INTERVAL
+/// define to output interval to log file to change timer implementation.
+//#define DEBUG_TIMER_INTERVAL
 #ifdef DEBUG_TIMER_INTERVAL
 	{
-		// debug timer
+		/// debug timer
 		static double fLastTime = fCurTime;
 		static double fSeconds = fCurTime;
 		static int nFPS = 0;
 		nFPS++;
+
 		if ((fSeconds + 1) < fCurTime)
 		{
 			fSeconds = fCurTime;
-			OUTPUT_LOG("%d Second(FPS: %d)--------------\n", (int)(fSeconds), nFPS);
+			OUTPUT_LOG("%d Second(FPS: %d)\n", (int)(fSeconds), nFPS);
 			nFPS = 0;
 		}
 
-		OUTPUT_LOG("Tick: delta:%d, global:%d, next:%d\n", (int)((fCurTime - fLastTime) * 1000),
-			(int)(fCurTime * 1000), (int)(fNextInterval * 1000));
-		fLastTime = fCurTime;
+		OUTPUT_LOG("Tick: delta:%d, global:%d, next:%d\n",
+                   (int)((fCurTime - fLastTime) * 1000),
+                   (int)(fCurTime * 1000),
+                   (int)(fNextInterval * 1000));
+
+        fLastTime = fCurTime;
 	}
 #endif	
 	if (pNextInterval)
 		*pNextInterval = fNextInterval;
+
 	return nFrameDelta;
 }
 
@@ -490,7 +497,7 @@ HRESULT ParaEngine::CParaEngineAppBase::RestoreDeviceObjects()
 	float aspectRatio = width / (float)height;
 	m_pRootScene->RestoreDeviceObjects();
 	m_pParaWorldAsset->RestoreDeviceObjects();
-	m_pGUIRoot->RestoreDeviceObjects(width, height);		// GUI: 2D engine
+	m_pGUIRoot->RestoreDeviceObjects(width, height); /// GUI: 2D engine
 	ParaTerrain::Settings::GetInstance()->SetScreenWidth(width);
 	ParaTerrain::Settings::GetInstance()->SetScreenHeight(height);
 
@@ -505,7 +512,7 @@ HRESULT ParaEngine::CParaEngineAppBase::InvalidateDeviceObjects()
 {
 	m_pRootScene->InvalidateDeviceObjects();
 	m_pParaWorldAsset->InvalidateDeviceObjects();
-	m_pGUIRoot->InvalidateDeviceObjects();		// GUI: 2D engine
+	m_pGUIRoot->InvalidateDeviceObjects(); /// GUI: 2D engine
 #if USE_DIRECTX_RENDERER
 	CGlobals::GetDirectXEngine().InvalidateDeviceObjects();
 #endif
@@ -527,12 +534,13 @@ void ParaEngine::CParaEngineAppBase::Render()
 	{
 		CGlobals::GetAssetManager()->RenderFrameMove(fElapsedTime);
 #if USE_DIRECTX_RENDERER
-		GETD3D(m_pRenderDevice)->SetRenderTarget(0, CGlobals::GetDirectXEngine().GetRenderTarget(0)); // force setting render target to back buffer. and
+        /// force setting render target to back buffer. and
+		GETD3D(m_pRenderDevice)->SetRenderTarget(0, CGlobals::GetDirectXEngine().GetRenderTarget(0));
 #endif
 		auto color = m_pRootScene->GetClearColor();
 		auto pDevice = CGlobals::GetRenderDevice();
 
-		// NOTE: on android devices will ignore all gl calls after the last draw call, so we need to restore everything to default settings
+		/// NOTE: on android devices will ignore all gl calls after the last draw call, so we need to restore everything to default settings
 		pDevice->SetRenderState(ERenderState::ZWRITEENABLE, TRUE);
 		pDevice->SetRenderState(ERenderState::ZENABLE, TRUE);
 		pDevice->SetRenderState(ERenderState::ZFUNC, D3DCMP_LESSEQUAL);
@@ -554,25 +562,26 @@ void ParaEngine::CParaEngineAppBase::Render()
 			m_pViewportManager->Render(fElapsedTime, PIPELINE_POST_UI_3D_SCENE);
 		}
 	}
+
 	m_pRenderDevice->EndScene();
 	pMoviePlatform->EndCaptureFrame();
 }
 
 void ParaEngine::CParaEngineAppBase::HandleUserInput()
 {
-	// escape input if app does not have focus
+	/// escape input if app does not have focus
 	if (!IsAppActive())
 		return;
 
-	/** handle 2D GUI input: dispatch mouse and key event for gui objects. */
+	/// handle 2D GUI input: dispatch mouse and key event for gui objects.
 	m_pGUIRoot->HandleUserInput();
 
-	/** handle the camera user input. One can also block camera input and handle everything from script. */
+	/// handle the camera user input. One can also block camera input and handle everything from script.
 	CAutoCamera* pCamera = ((CAutoCamera*)(CGlobals::GetScene()->GetCurrentCamera()));
 	if (pCamera)
 		pCamera->HandleUserInput();
 
-	/** handle 3D scene input */
+	/// handle 3D scene input
 	CGlobals::GetScene()->HandleUserInput();
 }
 
@@ -586,6 +595,7 @@ bool ParaEngine::CParaEngineAppBase::FrameMove(double fTime)
 	m_fTime = fTime;
 	if (GetAppState() == PEAppState_Stopped)
 		return true;
+
 	double fElapsedGameTime = CGlobals::GetFrameRateController(FRC_GAME)->FrameMove(fTime);
 	PERF_BEGIN("Main FrameMove");
 	double fElapsedEnvSimTime = CGlobals::GetFrameRateController(FRC_SIM)->FrameMove(fTime);
@@ -594,15 +604,17 @@ bool ParaEngine::CParaEngineAppBase::FrameMove(double fTime)
 		PERF_BEGIN("Script&Net FrameMove");
 		CAISimulator::GetSingleton()->FrameMove((float)fElapsedEnvSimTime);
 		PERF_END("Script&Net FrameMove");
-		PERF_BEGIN("EnvironmentSim");
+
+        PERF_BEGIN("EnvironmentSim");
 		CGlobals::GetEnvSim()->Animate((float)fElapsedEnvSimTime);  // generate valid LLE from HLE
 		PERF_END("EnvironmentSim");
+
 		if(m_bAudioEngineInitialized)
 			CAudioEngine2::GetInstance()->Update();
 	}
 
 	{
-		// animate g_flash value for some beeper effect, such as object selection.
+		/// animate g_flash value for some beeper effect, such as object selection.
 		static float s_flash = 0.f;
 		s_flash += (float)fElapsedEnvSimTime * 2;
 		if (s_flash > 2)
@@ -614,7 +626,7 @@ bool ParaEngine::CParaEngineAppBase::FrameMove(double fTime)
 	}
 
 	double fElapsedIOTime = CGlobals::GetFrameRateController(FRC_IO)->FrameMove(fTime);
-	// OUTPUT_LOG("curTime %f: elapsedIO: %f, simtTime: %f\n", fTime, fElapsedIOTime, fElapsedEnvSimTime);
+	//OUTPUT_LOG("curTime %f: elapsedIO: %f, simtTime: %f\n", fTime, fElapsedIOTime, fElapsedEnvSimTime);
 	if (fElapsedIOTime > 0)
 	{
 		HandleUserInput();
@@ -622,7 +634,7 @@ bool ParaEngine::CParaEngineAppBase::FrameMove(double fTime)
 	}
 
 #ifdef USE_XACT_AUDIO_ENGINE
-	/** for audio engine */
+	/// for audio engine
 	if (m_pAudioEngine && m_pAudioEngine->IsAudioEngineEnabled())
 	{
 		if (m_pAudioEngine->IsValid())
@@ -662,10 +674,12 @@ void ParaEngine::CParaEngineAppBase::OnRendererRecreated(IRenderWindow * renderW
 	ActivateApp(false);
 	m_pRenderWindow = renderWindow;
 	m_pRenderContext = IRenderContext::Create();
+
 	RenderConfiguration cfg;
 	cfg.renderWindow = m_pRenderWindow;
 	m_pRenderDevice = m_pRenderContext->CreateDevice(cfg);
 	CGlobals::SetRenderDevice(m_pRenderDevice);
+
 	ParaViewport vp;
 	vp.X = 0; vp.Y = 0;
 	vp.Width = m_pRenderWindow->GetWidth();
@@ -674,13 +688,11 @@ void ParaEngine::CParaEngineAppBase::OnRendererRecreated(IRenderWindow * renderW
 	vp.MaxZ = 1.0f;
 	m_pRenderDevice->SetViewport(vp);
 
-
 	m_pParaWorldAsset->RendererRecreated();
 	m_pRootScene->RendererRecreated();
 
-
 	SystemEvent e(SystemEvent::SYS_RENDERER_RECREATED, "");
-	// e.SetAsyncMode(false);
+	//e.SetAsyncMode(false);
 	CGlobals::GetEventsCenter()->FireEvent(e);
 
 	ActivateApp(true);
@@ -719,9 +731,10 @@ bool ParaEngine::CParaEngineAppBase::StartApp()
 
 void ParaEngine::CParaEngineAppBase::StopApp()
 {
-	// if it is already stopped, we shall return
+	/// if it is already stopped, we shall return
 	if (!m_pParaWorldAsset)
 		return;
+
 	FinalCleanup();
 	m_pParaWorldAsset.reset();
 	m_pRootScene.reset();
@@ -743,7 +756,7 @@ void ParaEngine::CParaEngineAppBase::StopApp()
 
 	//Gdiplus::GdiplusShutdown(g_gdiplusToken);
 
-	// delete all singletons
+	/// delete all singletons
 	DestroySingletons();
 }
 
@@ -757,7 +770,6 @@ void ParaEngine::CParaEngineAppBase::OnFrameEnded()
 {
 	CObjectAutoReleasePool::GetInstance()->clear();
 }
-
 
 ParaEngine::IAttributeFields* ParaEngine::CParaEngineAppBase::GetAttributeObject()
 {
@@ -804,12 +816,12 @@ bool ParaEngine::CParaEngineAppBase::InitCommandLineParams()
 		}
 		CParaFile::SetDevDirectory(sDevFolder);
 	}
+
 	return true;
 }
 
 void ParaEngine::CParaEngineAppBase::setIMEKeyboardState(bool bOpen, bool bMoveView, int ctrlBottom)
 {
-
 }
 
 bool ParaEngine::CParaEngineAppBase::ForceRender()
@@ -818,7 +830,6 @@ bool ParaEngine::CParaEngineAppBase::ForceRender()
 		return false;
 
 	auto pRenderDevice = m_pRenderDevice;
-	
 
 #ifndef ONLY_FORCERENDER_GUI 
 	Render();
@@ -826,7 +837,6 @@ bool ParaEngine::CParaEngineAppBase::ForceRender()
 
 	return true;
 #else
-
 	if (pRenderDevice->BeginScene())
 	{
 #if USE_DIRECTX_RENDERER
@@ -864,13 +874,12 @@ const char * ParaEngine::CParaEngineAppBase::GetModuleDir()
 	return m_sModuleDir.c_str(); 
 }
 
-
 ParaEngine::CViewportManager * ParaEngine::CParaEngineAppBase::GetViewportManager()
 {
 	return m_pViewportManager.get();
 }
 
-// use RegisterObjectFactory instead
+/// use RegisterObjectFactory instead
 void ParaEngine::CParaEngineAppBase::RegisterObjectClass(IAttributeFields* pObject)
 {
 	if (pObject)
@@ -897,7 +906,7 @@ void ParaEngine::CParaEngineAppBase::RegisterObjectClasses()
 	pAttManager->RegisterObjectFactory("CGeosetObject",new CDefaultObjectFactory<CGeosetObject>());
 	pAttManager->RegisterObjectFactory("CAutoRigger", new CDefaultObjectFactory<CAutoRigger>());
 	pAttManager->RegisterObjectFactory("CScriptParticle", new CDefaultObjectFactory<CScriptParticle>());
-	// TODO add more here: 
+	/// TODO add more here:
 }
 
 bool ParaEngine::CParaEngineAppBase::Is3DRenderingEnabled()
@@ -958,12 +967,10 @@ bool ParaEngine::CParaEngineAppBase::IsAppActive()
 
 void ParaEngine::CParaEngineAppBase::GameToClient(int& inout_x, int & inout_y, bool bInBackbuffer /*= true*/)
 {
-
 }
 
 void ParaEngine::CParaEngineAppBase::ClientToGame(int& inout_x, int & inout_y, bool bInBackbuffer /*= true*/)
 {
-
 }
 
 bool ParaEngine::CParaEngineAppBase::AppHasFocus()
@@ -973,7 +980,6 @@ bool ParaEngine::CParaEngineAppBase::AppHasFocus()
 
 void ParaEngine::CParaEngineAppBase::GetStats(string& output, DWORD dwFields)
 {
-
 }
 
 bool ParaEngine::CParaEngineAppBase::WriteRegStr(const string& root_key, const string& sSubKey, const string& name, const string& value)
@@ -983,7 +989,6 @@ bool ParaEngine::CParaEngineAppBase::WriteRegStr(const string& root_key, const s
 
 void ParaEngine::CParaEngineAppBase::SetAutoLowerFrameRateWhenNotFocused(bool bEnabled)
 {
-
 }
 
 const char* ParaEngine::CParaEngineAppBase::ReadRegStr(const string& root_key, const string& sSubKey, const string& name)
@@ -1008,7 +1013,6 @@ bool ParaEngine::CParaEngineAppBase::GetAutoLowerFrameRateWhenNotFocused()
 
 void ParaEngine::CParaEngineAppBase::SetToggleSoundWhenNotFocused(bool bEnabled)
 {
-
 }
 
 bool ParaEngine::CParaEngineAppBase::GetToggleSoundWhenNotFocused()
@@ -1022,7 +1026,7 @@ void ParaEngine::CParaEngineAppBase::onCmdLine(const std::string& cmd)
 
 	if (!cmd.empty())
 	{
-		// msg = command line.
+		/// msg = command line.
 		string msg = "msg=";
 		NPL::NPLHelper::EncodeStringInQuotation(msg, (int)msg.size(), cmd.c_str());
 		msg.append(";");
@@ -1096,7 +1100,6 @@ const char* ParaEngine::CParaEngineAppBase::GetAppCommandLineByParam(const char*
 	return CCommandLineParams::GetAppCommandLineByParam(pParam, defaultValue);
 }
 
-
 void ParaEngine::CParaEngineAppBase::Exit(int nReturnCode /*= 0*/)
 {
 	OUTPUT_LOG("program exited with code %d\n", nReturnCode);
@@ -1168,15 +1171,16 @@ void ParaEngine::CParaEngineAppBase::VerifyCommandLine(const char* sCommandLine,
 {
 	if (sCommandLine)
 		strCmd = sCommandLine;
+
 	if (strCmd.find("bootstrapper") == string::npos)
 	{
 		auto nPos = string::npos;
-		if ( (((nPos=strCmd.rfind(".npl")) != string::npos) || ((nPos = strCmd.rfind(".lua")) != string::npos)) )
+		if ((((nPos=strCmd.rfind(".npl")) != string::npos) || ((nPos = strCmd.rfind(".lua")) != string::npos)))
 		{
-			// just in case, user has specified XXX.lua instead of bootstrapper=XXX.lua || .npl in the command line. 
-			// following format are valid for specifying bootstrapper file. 
-			// - [parameters] bootstrapper.lua
-			// - bootstrapper.lua [parameters]
+			/// just in case, user has specified XXX.lua instead of bootstrapper=XXX.lua || .npl in the command line.
+			/// following format are valid for specifying bootstrapper file.
+			/// - [parameters] bootstrapper.lua
+			/// - bootstrapper.lua [parameters]
 			auto nFilenameFromPos = strCmd.rfind(" ", nPos);
 			if (nFilenameFromPos != string::npos)
 			{
@@ -1190,7 +1194,7 @@ void ParaEngine::CParaEngineAppBase::VerifyCommandLine(const char* sCommandLine,
 		}
 		else
 		{
-			// if no bootstrapper is specified, try to find the config.txt in current directory. 
+			/// if no bootstrapper is specified, try to find the config.txt in current directory.
 			CParaFile configFile;
 			if (configFile.OpenFile("config.txt"))
 			{
@@ -1216,7 +1220,6 @@ void ParaEngine::CParaEngineAppBase::SetHasClosingRequest(bool val)
 	m_hasClosingRequest = val;
 }
 
-
 bool ParaEngine::CParaEngineAppBase::LoadNPLPackage(const char* sFilePath_, std::string * pOutMainFile)
 {
 	std::string sFilePath = sFilePath_;
@@ -1235,7 +1238,7 @@ bool ParaEngine::CParaEngineAppBase::LoadNPLPackage(const char* sFilePath_, std:
 				sPKGDir = sFullDir;
 			}
 		}
-		
+
 		if (!sPKGDir.empty())
 		{
 			// found packages under dev folder
@@ -1258,7 +1261,7 @@ bool ParaEngine::CParaEngineAppBase::LoadNPLPackage(const char* sFilePath_, std:
 #if (PARA_TARGET_PLATFORM == PARA_PLATFORM_ANDROID)
 				else if( !CParaFile::IsAbsolutePath(sFullDir))
 				{
-					// this fixed a special condition on android, when npl_packages are deployed to asset folder, where current directory is ""
+					/// this fixed a special condition on android, when npl_packages are deployed to asset folder, where current directory is ""
 					std::string packageFile = sFullDir + "/package.npl";
 					if (CParaFile::DoesFileExist2(packageFile.c_str(), FILE_ON_DISK))
 					{
@@ -1290,9 +1293,10 @@ bool ParaEngine::CParaEngineAppBase::LoadNPLPackage(const char* sFilePath_, std:
 				}
 			}
 		}
+
 		if (sPKGDir.empty())
 		{
-			// if package folder is not found, we will search for zip and pkg file with the same name as the folder name.
+			/// if package folder is not found, we will search for zip and pkg file with the same name as the folder name.
 			std::string pkgFile = sDirName + ".zip";
 
 			CArchive* pArchive = nullptr;
@@ -1310,7 +1314,6 @@ bool ParaEngine::CParaEngineAppBase::LoadNPLPackage(const char* sFilePath_, std:
 				}
 			}
 
-
 			if (pArchive == nullptr)
 			{
 				pArchive = CFileManager::GetInstance()->GetArchive(pkgFile);
@@ -1322,12 +1325,11 @@ bool ParaEngine::CParaEngineAppBase::LoadNPLPackage(const char* sFilePath_, std:
 						pArchive = CFileManager::GetInstance()->GetArchive(pkgFile);
 					}
 				}
-
-				
 			}
+
 			if (pArchive != nullptr)
 			{
-				// locate "package.npl" in root folder of zip file
+				/// locate "package.npl" in root folder of zip file
 				CParaFile file;
 				if (file.OpenFile(pArchive, "package.npl"))
 				{
@@ -1351,6 +1353,7 @@ bool ParaEngine::CParaEngineAppBase::LoadNPLPackage(const char* sFilePath_, std:
 					}
 				}
 			}
+
 			if (config.IsOpened())
 			{
 				sPKGDir = pkgFile;
@@ -1360,46 +1363,51 @@ bool ParaEngine::CParaEngineAppBase::LoadNPLPackage(const char* sFilePath_, std:
 					pArchive->SetRootDirectory(sFilePath);
 					config.SetMainFile(CParaFile::GetAbsolutePath(config.GetMainFile(), sFilePath));
 				}
+
 				if (pOutMainFile)
 					*pOutMainFile = config.GetMainFile();
 			}
 		}
 	}
+
 	if (!sPKGDir.empty())
 	{
 		if (!config.IsOpened())
 		{
-			// disk file based package
+			/// disk file based package
 			std::string packageFile = sPKGDir + "/package.npl";
 			CParaFile file;
 			if (file.OpenFile(packageFile.c_str(), true, 0, false, FILE_ON_DISK))
 			{
 				config.open(file.getBuffer(), file.getSize());
-				// output main file
+				/// output main file
 				if (!config.IsSearchPath())
 				{
 					if (sFilePath.size() > 3 && sFilePath[0] == '.' && ((sFilePath[1] == '.' && sFilePath[2] == '/') || (sFilePath[1] == '/')))
 					{
-						// use absolute path if folder begins with ../ or ./
+						/// use absolute path if folder begins with ../ or ./
 						config.SetMainFile(CParaFile::GetAbsolutePath(config.GetMainFile(), sPKGDir));
 					}
 					else
 					{
-						// relative to root path
+						/// relative to root path
 						config.SetMainFile(CParaFile::GetAbsolutePath(config.GetMainFile(), sFilePath));
 					}
 				}
 			}
+
 			if (pOutMainFile)
 				*pOutMainFile = config.GetMainFile();
+
 			if (config.IsSearchPath())
 				return CFileManager::GetInstance()->AddSearchPath(sPKGDir.c_str());
 		}
+
 		return true;
 	}
 	else
 	{
-		//open pkg/zip
+		/// open pkg/zip
 		if (CParaFile::DoesFileExist(sFilePath_))
 		{
 			if (CFileManager::GetInstance()->OpenArchive(sFilePath_))
@@ -1409,18 +1417,19 @@ bool ParaEngine::CParaEngineAppBase::LoadNPLPackage(const char* sFilePath_, std:
 		}
 
 	}
+
 	return false;
 }
 
 void CParaEngineAppBase::AutoSetLocale()
 {
-	// set locale according to current system language. 
+	/// set locale according to current system language.
 	const char* lang = "enUS";
 	if (ParaEngineSettings::GetSingleton().GetCurrentLanguage() == LanguageType::CHINESE)
 		lang = "zhCN";
+
 	ParaEngineSettings::GetSingleton().SetLocale(lang);
 }
-
 
 void CParaEngineAppBase::WriteToLog(const char* zFormat, ...)
 {
@@ -1445,29 +1454,31 @@ int CParaEngineAppBase::GetReturnCode()
 	return m_nReturnCode;
 }
 
-
 void ParaEngine::CParaEngineAppBase::LoadPackagesInFolder(const std::string& sPkgFolder)
 {
-	/** we will load all packages that matches the following pattern in the order given by their name,
-	* such that "main_001.pkg" is always loaded before "main_002.pkg" */
+	/// we will load all packages that matches the following pattern in the order given by their name,
+	/// such that "main_001.pkg" is always loaded before "main_002.pkg"
 #define MAIN_PACKAGE_FILE_PATTERN	"main*.pkg"
-
-	CSearchResult* result = CFileManager::GetInstance()->SearchFiles(
-		sPkgFolder,
-		MAIN_PACKAGE_FILE_PATTERN, "", 0, 1000, 0);
+	CSearchResult* result = CFileManager::GetInstance()->SearchFiles(sPkgFolder,
+                                                                     MAIN_PACKAGE_FILE_PATTERN,
+                                                                     "",
+                                                                     0,
+                                                                     1000,
+                                                                     0);
 
 	bool bIs64Bits = sizeof(void*) > 4;
 	int nNum = 0;
 	if (result != 0)
 	{
-		// we will sort by file name
+		/// we will sort by file name
 		std::vector<std::string> fileList;
 		nNum = result->GetNumOfResult();
 		for (int i = 0; i < nNum; ++i)
 		{
 			fileList.push_back(result->GetItem(i));
 		}
-		// we will enqueue in reverse order, so that main_002 is pushed first, and then main_001
+
+		/// we will enqueue in reverse order, so that main_002 is pushed first, and then main_001
 		std::sort(fileList.begin(), fileList.end(), std::greater<std::string>());
 
 		if (fileList.size() == 0)
@@ -1487,7 +1498,6 @@ void ParaEngine::CParaEngineAppBase::LoadPackagesInFolder(const std::string& sPk
 				fileList.push_back("main_full_32bits.pkg");
 		}
 
-
 		for (auto& filename : fileList)
 		{
 			int nSize = (int)filename.size();
@@ -1503,8 +1513,9 @@ void ParaEngine::CParaEngineAppBase::LoadPackagesInFolder(const std::string& sPk
 					continue;
 				}
 			}
-			// always load by relative path first, and then by absolute path. 
-			// For example, when there is a package in current working directory, it will be used instead the one in packages/ folder.
+
+			/// always load by relative path first, and then by absolute path.
+			/// For example, when there is a package in current working directory, it will be used instead the one in packages/ folder.
 			if (!CFileManager::GetInstance()->OpenArchive(filename))
 			{
 				if (!CFileManager::GetInstance()->OpenArchive(sPkgFolder + filename))
@@ -1521,7 +1532,7 @@ bool ParaEngine::CParaEngineAppBase::FindBootStrapper()
 	const char* pBootFileName = GetAppCommandLineByParam("bootstrapper", "");
 	if (pBootFileName[0] == '\0' && ! CBootStrapper::GetSingleton()->IsEmpty())
 	{
-		// may be the `loadpackage` params have set the bootstrapper if not explicitly specified by the application. 
+		/// may be the `loadpackage` params have set the bootstrapper if not explicitly specified by the application.
 		pBootFileName = CBootStrapper::GetSingleton()->GetMainLoopFile().c_str();
 		OUTPUT_LOG("try bootstrapper in loadpackage command: %s\n", pBootFileName);
 	}
@@ -1529,17 +1540,21 @@ bool ParaEngine::CParaEngineAppBase::FindBootStrapper()
 	bool bHasBootstrapper = CBootStrapper::GetSingleton()->LoadFromFile(pBootFileName);
 	if (!bHasBootstrapper)
 	{
-		if (pBootFileName && pBootFileName[0] != '\0'){
+		if (pBootFileName && pBootFileName[0] != '\0')
+        {
 			OUTPUT_LOG("error: can not find bootstrapper file at %s\n", pBootFileName);
 		}
+
 		pBootFileName = NPL_CODE_WIKI_BOOTFILE;
 		bHasBootstrapper = CBootStrapper::GetSingleton()->LoadFromFile(pBootFileName);
 		OUTPUT_LOG("We are using default bootstrapper at %s\n", pBootFileName);
+
 		if (!bHasBootstrapper)
 		{
 			OUTPUT_LOG("However, we can not locate that file either. Have you installed npl_package/main? \n\n\nPlease install it at https://github.com/NPLPackages/main\n\n\n");
 		}
 	}
+
 	// OUTPUT_LOG("cmd line: %s \n", GetAppCommandLine());
 	OUTPUT_LOG("main loop: %s \n", CBootStrapper::GetSingleton()->GetMainLoopFile().c_str());
 	return true;
@@ -1549,16 +1564,16 @@ void CParaEngineAppBase::LoadPackages()
 {
 	std::string sRootDir = CParaFile::GetCurDirectory(0);
 	OUTPUT_LOG("ParaEngine Root Dir is %s\n", sRootDir.c_str());
-	// always load main package folder if exist
+
+    /// always load main package folder if exist
 	std::string sOutputFile;
 	if (LoadNPLPackage("npl_packages/main/", &sOutputFile))
 	{
-		if (!sOutputFile.empty()) {
+		if (!sOutputFile.empty())
 			CGlobals::GetNPLRuntime()->GetMainRuntimeState()->Loadfile_async(sOutputFile.c_str());
-		}
 	}
 	
-	// load packages via command line
+	/// load packages via command line
 	const char* sPackages = GetAppCommandLineByParam("loadpackage", NULL);
 	if (sPackages)
 	{
@@ -1569,9 +1584,8 @@ void CParaEngineAppBase::LoadPackages()
 			std::string sOutputFile;
 			if (LoadNPLPackage(package.c_str(), &sOutputFile))
 			{
-				if (!sOutputFile.empty()) {
-					CGlobals::GetNPLRuntime()->GetMainRuntimeState()->Loadfile_async(sOutputFile.c_str());
-				}
+				if (!sOutputFile.empty())
+                    CGlobals::GetNPLRuntime()->GetMainRuntimeState()->Loadfile_async(sOutputFile.c_str());
 			}
 		}
 	}
@@ -1579,11 +1593,11 @@ void CParaEngineAppBase::LoadPackages()
 	LoadPackagesInFolder(sRootDir);
 	if (m_sPackagesDir.empty())
 		m_sPackagesDir = sRootDir;
+
 	OUTPUT_LOG("./packages dir: %s\n", m_sPackagesDir.c_str());
 	if (m_sPackagesDir != sRootDir)
 		LoadPackagesInFolder(m_sPackagesDir);
 }
-
 
 bool CParaEngineAppBase::FindParaEngineDirectory(const char* sHint)
 {
@@ -1600,13 +1614,14 @@ bool CParaEngineAppBase::FindParaEngineDirectory(const char* sHint)
 				packagesDir = "";
 			}
 		}
+
 		if (!packagesDir.empty())
 		{
 			m_sPackagesDir = packagesDir + "\\";
 		}
 	}
 #ifdef WIN32
-	// ParaEngine.sig must be called first, to locate the root dir. 
+	/// ParaEngine.sig must be called first, to locate the root dir.
 	if (!CParaFile::DoesFileExist(PARAENGINE_SIG_FILE, false))
 	{
 		if (!sModuleDir.empty())
@@ -1616,7 +1631,7 @@ bool CParaEngineAppBase::FindParaEngineDirectory(const char* sHint)
 			bool bFoundSigFile = false;
 			if (!CParaFile::DoesFileExist(sigPath.c_str(), false))
 			{
-				// search the parent directory of the module for signature file, if file exist, use it as current working directory. 
+				/// search the parent directory of the module for signature file, if file exist, use it as current working directory.
 				sigPath = CParaFile::GetParentDirectoryFromPath(m_sModuleDir, 1) + PARAENGINE_SIG_FILE;
 				if (CParaFile::DoesFileExist(sigPath.c_str(), false))
 				{
@@ -1626,22 +1641,17 @@ bool CParaEngineAppBase::FindParaEngineDirectory(const char* sHint)
 			}
 			else
 				bFoundSigFile = true;
+
 			if (bFoundSigFile)
-			{
-				::SetCurrentDirectory(workingDir.c_str());
-			}
-			else
-			{
-				// OUTPUT_LOG("ParaEngine.sig file not found\n");
-			}
+                ::SetCurrentDirectory(workingDir.c_str());
 		}
-		// set the current directory by reading from the registry.
-		/*const char* sInstallDir = ReadRegStr("HKEY_CURRENT_USER", "SOFTWARE\\ParaEngine\\ParaWorld", "");
-		if(sInstallDir)
-		{
-			::SetCurrentDirectory(sInstallDir);
-		}*/
+
+		/// set the current directory by reading from the registry.
+		// const char* sInstallDir = ReadRegStr("HKEY_CURRENT_USER", "SOFTWARE\\ParaEngine\\ParaWorld", "");
+		// if(sInstallDir)
+        //     ::SetCurrentDirectory(sInstallDir);
 	}
+
 	{
 		char sWorkingDir[512 + 1] = { 0 };
 		memset(sWorkingDir, 0, sizeof(sWorkingDir));
@@ -1659,12 +1669,13 @@ void ParaEngine::CParaEngineAppBase::BootStrapAndLoadConfig()
 {
 	FindBootStrapper();
 	{
-		// load settings from config/config.txt or config/config.new.txt
+		/// load settings from config/config.txt or config/config.new.txt
 		string sConfigFile = CParaFile::GetCurDirectory(CParaFile::APP_CONFIG_DIR) + "config.new.txt";
 		bool bHasNewConfig = CParaFile::DoesFileExist(sConfigFile.c_str());
 		SetHasNewConfig(bHasNewConfig);
 		if (!bHasNewConfig)
 			sConfigFile = (CParaFile::GetCurDirectory(CParaFile::APP_CONFIG_DIR) + "config.txt");
+
 		string sFileName = CBootStrapper::GetSingleton()->GetConfigFile().empty() ? sConfigFile : CBootStrapper::GetSingleton()->GetConfigFile();
 		CParaFile file(sFileName.c_str());
 		if (!file.isEof())
@@ -1672,6 +1683,7 @@ void ParaEngine::CParaEngineAppBase::BootStrapAndLoadConfig()
 			string content = file.getBuffer();
 			ParaEngineSettings::GetSingleton().LoadDynamicFieldsFromString(content);
 		}
+
 		if (bHasNewConfig)
 		{
 			CParaFile::DeleteFile(sConfigFile, false);
@@ -1688,5 +1700,3 @@ void ParaEngine::CParaEngineAppBase::InitSystemModules()
 	m_pViewportManager.reset(new CViewportManager());
 	m_pViewportManager->SetLayout(VIEW_LAYOUT_DEFAULT, m_pRootScene.get(), m_pGUIRoot.get());
 }
-
-

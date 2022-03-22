@@ -130,7 +130,7 @@ set(OPENAL_LIBTYPE "STATIC")
 if (NOT IOS)
 	add_subdirectory(DependenciesSource/openal-soft-1.21.1)
 	set(OPENAL_DIR ${CMAKE_CURRENT_SOURCE_DIR}/DependenciesSource/openal-soft-1.21.1)
-	set(OPENAL_INCLUDE_DIRS ${OPENAL_DIR}/include ${OPENAL_DIR}/include/al)
+	set(OPENAL_INCLUDE_DIRS ${OPENAL_DIR}/include ${OPENAL_DIR}/include/AL)
 endif()
 
 if(CAUDIO_ENABLE_OGG)

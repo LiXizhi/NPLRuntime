@@ -1400,7 +1400,6 @@ int ParaEngineSettings::InstallFields(CAttributeClass* pClass, bool bOverride)
 	pClass->AddField("Ctor Height", FieldType_Float, (void*)SetCtorHeight_s, (void*)GetCtorHeight_s, NULL, NULL, bOverride);
 	pClass->AddField("Ctor Speed", FieldType_Float, (void*)SetCtorSpeed_s, (void*)GetCtorSpeed_s, NULL, NULL, bOverride);
 
-
 	pClass->AddField("Selection Color", FieldType_Vector3, (void*)SetSelectionColor_s, (void*)GetSelectionColor_s, CAttributeField::GetSimpleSchema(SCHEMA_RGB), NULL, bOverride);
 
 	pClass->AddField("Is Debugging", FieldType_Bool, NULL, (void*)IsDebugging_s, NULL, NULL, bOverride);
@@ -1443,7 +1442,7 @@ int ParaEngineSettings::InstallFields(CAttributeClass* pClass, bool bOverride)
 	pClass->AddField("AsyncLoaderItemsLeft", FieldType_Int, NULL, (void*)GetAsyncLoaderItemsLeft_s, NULL, NULL, bOverride);
 	pClass->AddField("AsyncLoaderBytesReceived", FieldType_Int, NULL, (void*)GetAsyncLoaderBytesReceived_s, NULL, NULL, bOverride);
 	pClass->AddField("AsyncLoaderRemainingBytes", FieldType_Int, NULL, (void*)GetAsyncLoaderRemainingBytes_s, NULL, NULL, bOverride);
-	
+
 	pClass->AddField("RefreshTimer", FieldType_Float, (void*)SetRefreshTimer_s, (void*)GetRefreshTimer_s, NULL, NULL, bOverride);
 	
 	pClass->AddField("AllocConsole", FieldType_void, (void*)AllocConsole_s, NULL, NULL, NULL, bOverride);
@@ -1489,5 +1488,10 @@ int ParaEngineSettings::InstallFields(CAttributeClass* pClass, bool bOverride)
 	
 	pClass->AddField("ResetAudioDevice", FieldType_String, (void*)ResetAudioDevice_s, NULL, NULL, NULL, bOverride);
 	pClass->AddField("AudioDeviceName", FieldType_String, NULL, (void*)GetAudioDeviceName_s, NULL, NULL, bOverride);
+
+#ifdef ANDROID
+	pClass->AddField("GetUsbMode", FieldType_Bool, NULL, (void*)GetUsbMode_s, NULL, NULL, bOverride);
+#endif
+
 	return S_OK;
 }
