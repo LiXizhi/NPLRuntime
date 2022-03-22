@@ -2,19 +2,17 @@
 // Class: ScreenRecoder.mm
 // Authors: big
 // CreateDate: 2021.12.13
+// ModifyDate: 2022.1.20
 //-----------------------------------------------------------------------------
 
-#define ScreenRecorderFrameTime 0.05
+#import "AppDelegate.h"
 #import "ScreenRecorder.h"
+#import <Photos/Photos.h>
+
+#include "ParaEngine.h"
 
 @interface ScreenRecorder ()<RPScreenRecorderDelegate, RPPreviewViewControllerDelegate>
 {
-    ScreenRecording _screenRecording;
-    ScreenRecordStop _screenRecordStop;
-    NSInteger _frameCount;
-    AVAssetWriter *_videoWriter;
-    AVAssetWriterInput *_videoWriterInput;
-    AVAssetWriterInputPixelBufferAdaptor *_adaptor;
 }
 @end
 
@@ -32,92 +30,109 @@ static ScreenRecorder *instance = nil;
     instance = curInstance;
 }
 
-- (BOOL)available
-{
-    return YES;
++ (void)demandForAuthorization:(void(^)(void))authorizedResultBlock {
+    PHAuthorizationStatus status = [PHPhotoLibrary authorizationStatus];
+
+    if (status == PHAuthorizationStatusAuthorized) {
+        if (authorizedResultBlock) {
+            authorizedResultBlock();
+        }
+    } else {
+        [PHPhotoLibrary requestAuthorization:^(PHAuthorizationStatus status) {
+            if (status == PHAuthorizationStatusAuthorized) {
+                dispatch_async(
+                    dispatch_get_main_queue(), ^{
+                        if (authorizedResultBlock) {
+                            authorizedResultBlock();
+                        }
+                    }
+                );
+            }
+        }];
+    }
 }
 
 - (void)startRecordingWithHandler:(void (^)(NSError *))handler
 {
-    if (NSClassFromString(@"RPScreenRecorder") == nil ||
-        ![[RPScreenRecorder sharedRecorder] isAvailable]) {
-        return;
+    if (@available(iOS 14.0, *)) {
+        [ScreenRecorder demandForAuthorization:^{
+            if (NSClassFromString(@"RPScreenRecorder") == nil ||
+                ![[RPScreenRecorder sharedRecorder] isAvailable]) {
+                return;
+            }
+
+            RPScreenRecorder *sharedRecorder = [RPScreenRecorder sharedRecorder];
+            sharedRecorder.microphoneEnabled = YES;
+            [sharedRecorder startRecordingWithHandler:^(NSError * _Nullable error) {}];
+        }];
     }
-
-    [[RPScreenRecorder sharedRecorder]
-        startRecordingWithMicrophoneEnabled:YES
-        handler:^(NSError *error) {
-            if (handler) {
-                handler(error);
-            }
-
-            if (error) {
-                NSLog(@"Screen record error message: %@", error);
-            } else {
-                _recording = YES;
-            }
-        }
-    ];
 }
 
-- (void)stopRecordingWithHandler:(ScreenRecordStop)handler
+- (void)stopRecordingWithHandler
 {
-    _recording = NO;
+    if (@available(iOS 14.0, *)) {
+        _recording = NO;
 
-    [[RPScreenRecorder sharedRecorder]
-        stopRecordingWithHandler:^(RPPreviewViewController *previewViewController, NSError *error) {
-            if (error) {
-                NSLog(@"Stop record fail!");
-            } else {
-                previewViewController.previewControllerDelegate = self;
-            }
-
-            dispatch_async(
-               dispatch_get_main_queue(),
-               ^{
-                   if (handler) {
-                       handler(previewViewController, error);
-                   }
-               }
-            );
-        }
-    ];
-}
-
-- (void)previewController:(RPPreviewViewController *)previewController didFinishWithActivityTypes:(NSSet<NSString *> *)activityTypes
-{
-    if ([activityTypes containsObject:@"com.apple.UIKit.activity.SaveToCameraRoll"]) {
         dispatch_async(
             dispatch_get_main_queue(),
-           ^{
-               NSLog(@"Sava success!");
-           }
-        );
-    }
+            ^{
+                NSDateFormatter *dateformat = [NSDateFormatter new];
+                [dateformat setDateFormat:@"yyyy_MM_dd_HH_mm_ss"];
 
-    if ([activityTypes containsObject:@"com.apple.UIKit.activity.CopyToPasteboard"]) {
-        dispatch_async(
-           dispatch_get_main_queue(),
-           ^{
-               NSLog(@"Copy success!");
-           }
-        );
+                NSString *fileName = [NSString stringWithFormat:@"record_screen_%@.mp4",[dateformat stringFromDate:[NSDate date]]];
+                NSString *documentDirectory = [NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES) firstObject];
+                NSString *dirPath = [documentDirectory stringByAppendingPathComponent:@"record_screen_video"];
+
+                if (![[NSFileManager defaultManager] fileExistsAtPath:dirPath]) {
+                    [[NSFileManager defaultManager] createDirectoryAtPath:dirPath withIntermediateDirectories:YES attributes:nil error:nil];
+                }
+
+                NSString *filePath = [dirPath stringByAppendingPathComponent:fileName];
+
+                self.saveVideoPath = filePath;
+
+                RPScreenRecorder *sharedRecorder = [RPScreenRecorder sharedRecorder];
+
+                [sharedRecorder stopRecordingWithOutputURL:[NSURL fileURLWithPath:filePath] completionHandler:^(NSError * _Nullable error) {}];
+            }
+       );
     }
 }
 
-- (void)previewControllerDidFinish:(RPPreviewViewController *)previewController
+- (void)playPreview
 {
-    [previewController
-        dismissViewControllerAnimated:YES
-        completion:^{
-            // TODO: ...
+    if (!self.saveVideoPath) {
+        return;
+    }
+    
+    dispatch_async(
+        dispatch_get_main_queue(),
+        ^{
+            auto appDelegate = (AppDelegate*)[[UIApplication sharedApplication] delegate];
+
+            AVPlayerItem *playerItem = [AVPlayerItem playerItemWithURL:[NSURL fileURLWithPath:self.saveVideoPath]];
+            AVPlayer *player = [AVPlayer playerWithPlayerItem:playerItem];
+            AVPlayerViewController *playerViewController = [[AVPlayerViewController alloc] init];
+            playerViewController.player = player;
+            [player play];
+            playerViewController.showsPlaybackControls = YES;
+            playerViewController.view.frame = appDelegate.viewController.view.frame;
+            [appDelegate.viewController presentViewController:playerViewController animated:YES completion:^{}];
         }
-    ];
+    );
 }
 
-- (void)screenRecording:(ScreenRecording)screenRecording
+- (void)saveVideo
 {
-    _screenRecording = [screenRecording copy];
+    if (!self.saveVideoPath) {
+        return;
+    }
+    
+    BOOL isCompatible = UIVideoAtPathIsCompatibleWithSavedPhotosAlbum(self.saveVideoPath);
+
+    if (isCompatible) {
+        UISaveVideoAtPathToSavedPhotosAlbum(self.saveVideoPath, self, nil, nil);
+    }
 }
 
 @end

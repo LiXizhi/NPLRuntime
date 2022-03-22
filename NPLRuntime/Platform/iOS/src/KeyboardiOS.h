@@ -5,9 +5,6 @@
 // ModifyDate: 2021.12.13
 //-----------------------------------------------------------------------------
 
-//#ifndef KeyboardiOS_h
-//#define KeyboardiOS_h
-
 #import <Foundation/Foundation.h>
 #import <UIKit/UIKit.h>
 #import "AppDelegate.h"
@@ -43,5 +40,3 @@ namespace ParaEngine
 + (void)setIMEKeyboardState:(BOOL)bOpen bMoveView:(BOOL)bMoveView ctrlBottom:(int)ctrlBottom;
 
 @end
-
-//#endif /* KeyboardiOS_h */

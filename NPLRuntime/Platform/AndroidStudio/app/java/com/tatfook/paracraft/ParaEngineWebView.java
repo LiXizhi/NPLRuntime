@@ -1,10 +1,12 @@
 //-----------------------------------------------------------------------------
-// Class:	WebView
-// Authors:	LanZhiHong, LiXizhi
-// Emails:	LiXizhi@yeah.net
+// WebView.java
+// Authors: LanZhiHong, LiXizhi, big
+// Emails: LiXizhi@yeah.net
 // Company: ParaEngine
-// Date:	2018.3.31
+// CreateDate: 2018.3.31
+// ModifyDate: 2022.1.11
 //-----------------------------------------------------------------------------
+
 package com.tatfook.paracraft;
 
 import android.annotation.SuppressLint;
@@ -44,42 +46,41 @@ class ShouldStartLoadingWorker implements Runnable {
 }
 
 public class ParaEngineWebView extends WebView {
-	
-	private static final String TAG = "ParaEngine";
+    private static final String TAG = "ParaEngineWebView";
 
-	private int mViewTag;
+    private int mViewTag;
     private String mJSScheme;
-	private static String mAppScheme = "paracraft";
-	private boolean mHideViewWhenClickBack = false;
+    private static String mAppScheme = "paracraft";
+    private boolean mHideViewWhenClickBack = false;
 
-	public ParaEngineWebView(Context context) {
+    public ParaEngineWebView(Context context) {
         this(context, -1);
     }
 
-	public int getViewTag() {
-		return mViewTag;
-	}
+    public int getViewTag() {
+        return mViewTag;
+    }
 
-	public void SetHideViewWhenClickBack(boolean b) {
-		mHideViewWhenClickBack = b;
-	}
+    public void SetHideViewWhenClickBack(boolean b) {
+        mHideViewWhenClickBack = b;
+    }
 
 
-	@Override    
+    @Override    
     public boolean onKeyUp(int keyCode, KeyEvent event) {    
         if ((keyCode == KeyEvent.KEYCODE_BACK)) {   
-			if (mHideViewWhenClickBack)
-				setVisibility( WebView.GONE);
-			else
-				ParaEngineWebViewHelper._onCloseView(this);
+            if (mHideViewWhenClickBack)
+                setVisibility( WebView.GONE);
+            else
+                ParaEngineWebViewHelper._onCloseView(this);
             return false; 
-		}
+        }
         else {    
             return super.onKeyUp(keyCode, event);
         }    
-	}
+    }
 
-	@Override
+    @Override
     public boolean onKeyDown(int keyCode, KeyEvent event) {
         if ((keyCode == KeyEvent.KEYCODE_BACK)) {
             return false;
@@ -88,29 +89,29 @@ public class ParaEngineWebView extends WebView {
         }
     }
 
-	@SuppressLint("SetJavaScriptEnabled")
+    @SuppressLint("SetJavaScriptEnabled")
     public ParaEngineWebView(Context context, int viewTag) {
-		super(context);
+        super(context);
 
-		mViewTag = viewTag;
+        mViewTag = viewTag;
 
-		this.setFocusable(true);
+        this.setFocusable(true);
         this.setFocusableInTouchMode(true);
 
-		/** Note LiXizhi: we will set viewport width in each html pages by adding following viewport meta tag to the header 
-		<meta name="viewport" content="width=1020" />
-		*/
+        /** Note LiXizhi: we will set viewport width in each html pages by adding following viewport meta tag to the header 
+        <meta name="viewport" content="width=1020" />
+        */
 
-		// this.getSettings().setBuiltInZoomControls(true);
-		// this.setInitialScale(1);
+        // this.getSettings().setBuiltInZoomControls(true);
+        // this.setInitialScale(1);
         this.getSettings().setSupportZoom(true);
-		this.getSettings().setLoadWithOverviewMode(true);
-		this.getSettings().setUseWideViewPort(true);
+        this.getSettings().setLoadWithOverviewMode(true);
+        this.getSettings().setUseWideViewPort(true);
         this.getSettings().setDomStorageEnabled(true);
         this.getSettings().setJavaScriptEnabled(true);
-		this.setLayerType(LAYER_TYPE_HARDWARE, null);
+        this.setLayerType(LAYER_TYPE_HARDWARE, null);
 
-		//this.setAlpha(0.95f);
+        //this.setAlpha(0.95f);
 
         // `searchBoxJavaBridge_` has big security risk. http://jvn.jp/en/jp/JVN53768697
         try {
@@ -122,45 +123,44 @@ public class ParaEngineWebView extends WebView {
 
         this.setWebViewClient(new ParaEngineWebViewClient());
         this.setWebChromeClient(new WebChromeClient());
-	}
+    }
 
-	class ParaEngineWebViewClient extends WebViewClient {
+    class ParaEngineWebViewClient extends WebViewClient {
         @Override
         public boolean shouldOverrideUrlLoading(final WebView view, final String urlString) {
             ParaEngineActivity activity = (ParaEngineActivity)getContext();
-		
+
             try {
                 Uri uri =  Uri.parse(urlString);
 
-				if (uri != null)
-				{
-					if (uri.getScheme().equals(mAppScheme)) {
+                if (uri != null)
+                {
+                    if (uri.getScheme().equals(mAppScheme)) {
+                        activity.runOnGLThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                ParaEngineWebViewHelper.transportCmdLine(urlString);
+                            }
+                        });
 
-						activity.runOnGLThread(new Runnable() {
-							@Override
-							public void run() {
-								ParaEngineWebViewHelper.transportCmdLine(urlString);
-							}
-						});
+                        if (mHideViewWhenClickBack)
+                            setVisibility( WebView.GONE);
+                        else
+                            ParaEngineWebViewHelper._onCloseView((ParaEngineWebView)view);
 
-						if (mHideViewWhenClickBack)
-							setVisibility( WebView.GONE);
-						else
-							ParaEngineWebViewHelper._onCloseView((ParaEngineWebView)view);
+                        return false;
+                    }
+                    else if (uri.getScheme().equals(mJSScheme)) {
 
-						return false;
-					}
-					else if (uri.getScheme().equals(mJSScheme)) {
-
-						activity.runOnGLThread(new Runnable() {
-							@Override
-							public void run() {
-								ParaEngineWebViewHelper._onJsCallback(mViewTag, urlString);
-							}
-						});
-						return true;
-					}
-				}
+                        activity.runOnGLThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                ParaEngineWebViewHelper._onJsCallback(mViewTag, urlString);
+                            }
+                        });
+                        return true;
+                    }
+                }
             } catch (Exception e) {
                 Log.d(TAG, "Failed to create URI from url");
             }
@@ -176,11 +176,11 @@ public class ParaEngineWebView extends WebView {
                 Log.d(TAG, "'shouldOverrideUrlLoading' failed");
             }
 
-			//if (result[0])
-			//	view.loadUrl(urlString);
+            //if (result[0])
+            //	view.loadUrl(urlString);
 
             return result[0];
-			
+            
         }
 
 
@@ -211,11 +211,11 @@ public class ParaEngineWebView extends WebView {
         }
     }
 
-	public void setJavascriptInterfaceScheme(String scheme) {
+    public void setJavascriptInterfaceScheme(String scheme) {
         this.mJSScheme = scheme != null ? scheme : "";
     }
 
-	public void setWebViewRect(int left, int top, int maxWidth, int maxHeight) {
+    public void setWebViewRect(int left, int top, int maxWidth, int maxHeight) {
         FrameLayout.LayoutParams layoutParams = new FrameLayout.LayoutParams(FrameLayout.LayoutParams.WRAP_CONTENT,
                 FrameLayout.LayoutParams.WRAP_CONTENT);
         layoutParams.leftMargin = left;
@@ -226,8 +226,7 @@ public class ParaEngineWebView extends WebView {
         this.setLayoutParams(layoutParams);
     }
 
-	public void setScalesPageToFit(boolean scalesPageToFit) {
+    public void setScalesPageToFit(boolean scalesPageToFit) {
         this.getSettings().setSupportZoom(scalesPageToFit);
     }
-
 }

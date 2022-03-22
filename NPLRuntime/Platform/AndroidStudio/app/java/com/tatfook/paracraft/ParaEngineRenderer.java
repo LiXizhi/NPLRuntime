@@ -1,33 +1,43 @@
+//-----------------------------------------------------------------------------
+// ParaEngineRenderer.java
+// Authors: LanZhihong, big
+// CreateDate: 2019.7.16
+// ModifyDate: 2022.1.27
+//-----------------------------------------------------------------------------
+
 package com.tatfook.paracraft;
 
-
 import android.opengl.GLSurfaceView;
-
 import javax.microedition.khronos.egl.EGLConfig;
 import javax.microedition.khronos.opengles.GL10;
 
 public class ParaEngineRenderer implements GLSurfaceView.Renderer {
-    // ===========================================================
-    // Constants
-    // ===========================================================
-
     private final static long NANOSECONDSPERSECOND = 1000000000L;
     private final static long NANOSECONDSPERMICROSECOND = 1000000L;
 
     // The final animation interval which is used in 'onDrawFrame'
     private static long sAnimationInterval = (long) (1.0f / 60f * ParaEngineRenderer.NANOSECONDSPERSECOND);
 
-    // ===========================================================
-    // Fields
-    // ===========================================================
     private long mLastTickInNanoSeconds;
     private int mScreenWidth;
     private int mScreenHeight;
     private boolean mNativeInitCompleted = false;
 
-    // ===========================================================
-    // Getter & Setter
-    // ===========================================================
+    private static native void nativeMouseBegin(final int keyType, final int id, final float x, final float y);
+    private static native void nativeMouseEnd(final int keyType, final int id, final float x, final float y);
+    private static native void nativeMouseMove(final int[] ids, final float[] xs, final float[] ys);
+    private static native void nativeMouseScroll(int forward);
+    private static native void nativeTouchesBegin(final int id, final float x, final float y);
+    private static native void nativeTouchesEnd(final int id, final float x, final float y);
+    private static native void nativeTouchesMove(final int[] ids, final float[] xs, final float[] ys);
+    private static native void nativeTouchesCancel(final int[] ids, final float[] xs, final float[] ys);
+    private static native boolean nativeKeyEvent(final int keyCode,boolean isPressed);
+    private static native void nativeRender();
+    private static native void nativeInit(final int width, final int height);
+    private static native void nativeTermWindow();
+    private static native void nativeOnSurfaceChanged(final int width, final int height);
+    private static native void nativeOnPause();
+    private static native void nativeOnResume();
 
     public static void setAnimationInterval(float interval) {
         sAnimationInterval = (long) (interval * ParaEngineRenderer.NANOSECONDSPERSECOND);
@@ -43,6 +53,11 @@ public class ParaEngineRenderer implements GLSurfaceView.Renderer {
         ParaEngineRenderer.nativeInit(this.mScreenWidth, this.mScreenHeight);
         this.mLastTickInNanoSeconds = System.nanoTime();
         mNativeInitCompleted = true;
+    }
+
+    public void termWindow()
+    {
+        ParaEngineRenderer.nativeTermWindow();
     }
 
     @Override
@@ -77,21 +92,6 @@ public class ParaEngineRenderer implements GLSurfaceView.Renderer {
             ParaEngineRenderer.nativeRender();
         }
     }
-
-    private static native void nativeMouseBegin(final int keyType, final int id, final float x, final float y);
-    private static native void nativeMouseEnd(final int keyType, final int id, final float x, final float y);
-    private static native void nativeMouseMove(final int[] ids, final float[] xs, final float[] ys);
-    private static native void nativeMouseScroll(int forward);
-    private static native void nativeTouchesBegin(final int id, final float x, final float y);
-    private static native void nativeTouchesEnd(final int id, final float x, final float y);
-    private static native void nativeTouchesMove(final int[] ids, final float[] xs, final float[] ys);
-    private static native void nativeTouchesCancel(final int[] ids, final float[] xs, final float[] ys);
-    private static native boolean nativeKeyEvent(final int keyCode,boolean isPressed);
-    private static native void nativeRender();
-    private static native void nativeInit(final int width, final int height);
-    private static native void nativeOnSurfaceChanged(final int width, final int height);
-    private static native void nativeOnPause();
-    private static native void nativeOnResume();
 
     public void handleMouseDown(final int keyType, final int id, final float x, final float y) {
         ParaEngineRenderer.nativeMouseBegin(keyType, id, x, y);

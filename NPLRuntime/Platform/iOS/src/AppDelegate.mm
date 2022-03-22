@@ -2,13 +2,14 @@
 // Class: AppDelegate.m
 // Authors: 袁全伟, big
 // CreateDate: 2018.11.02
-// ModifyDate: 2021.12.13
+// ModifyDate: 2022.1.5
 //-----------------------------------------------------------------------------
 
 #import "AppDelegate.h"
 #import "ViewController.h"
 #import "GLView.h"
 #import "KeyboardiOS.h"
+#import <AVFoundation/AVFoundation.h>
 
 #include "ParaAppiOS.h"
 #include "RenderWindowiOS.h"
@@ -47,7 +48,7 @@ using namespace ParaEngine;
     RenderWindowiOS* renderWindow = new RenderWindowiOS(view);
 
     const char* cmdline = "";
-    if  (launchOptions)
+    if (launchOptions)
     {
         NSURL *url = [launchOptions objectForKey:UIApplicationLaunchOptionsURLKey];
         if (url)
@@ -67,6 +68,10 @@ using namespace ParaEngine;
     [self.displayLink addToRunLoop:[NSRunLoop currentRunLoop] forMode:NSRunLoopCommonModes];
 
     [KeyboardiOSController keyboardInit:self];
+
+    [[AVAudioSession sharedInstance] setCategory: AVAudioSessionCategoryPlayAndRecord error: nil];
+    UInt32 audioRouteOverride = kAudioSessionOverrideAudioRoute_Speaker;
+    AudioSessionSetProperty (kAudioSessionProperty_OverrideAudioRoute, sizeof(audioRouteOverride), &audioRouteOverride);
 
     return YES;
 }

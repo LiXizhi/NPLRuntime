@@ -16,16 +16,12 @@
 }
 @end
 
-
 @implementation GLView
 
 +(Class) layerClass
 {
     return [CAEAGLLayer class];
 }
-
-
-
 
 - (instancetype)initWithFrame:(CGRect)frame
 {
@@ -74,6 +70,7 @@
         }
     }
 }
+
 -(void) touchesMoved:(NSSet<UITouch *> *)touches withEvent:(UIEvent *)event
 {
     auto gui = CGUIRoot::GetInstance();
@@ -93,6 +90,7 @@
         }
     }
 }
+
 -(void) touchesCancelled:(NSSet<UITouch *> *)touches withEvent:(UIEvent *)event
 {
     auto gui = CGUIRoot::GetInstance();

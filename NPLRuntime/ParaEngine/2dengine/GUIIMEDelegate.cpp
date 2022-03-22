@@ -211,7 +211,7 @@ namespace ParaEngine {
 	{
 		do
 		{
-			if (!delegate)
+			if (!delegate || !_impl)
 				break;
 
 			auto iter = _impl->findDelegate(delegate);

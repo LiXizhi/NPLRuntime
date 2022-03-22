@@ -1,16 +1,24 @@
 //-----------------------------------------------------------------------------
-// Class: For ParaGlobal namespace.
-// Authors: Big
+// ParaScriptingGlobalOSX.mm
+// Authors: big
 // Emails: onedous@gmail.com
-// Date: 2019.8.12
+// CreateDate: 2019.8.12
+// ModifyDate: 2022.3.17
 //-----------------------------------------------------------------------------
 
 #include "ParaEngine.h"
 #include "ParaScriptingGlobal.h"
+#include "NPL/NPLScriptingState.h"
 #include <luabind/object.hpp>
 #import <Cocoa/Cocoa.h>
 
 using namespace ParaScripting;
+
+void ParaScripting::CNPLScriptingState::LoadHAPI_Platform()
+{
+    using namespace luabind;
+    lua_State* L = GetLuaState();
+}
 
 bool ParaScripting::ParaGlobal::OpenFileDialog(const object& inout)
 {
@@ -31,4 +39,3 @@ bool ParaScripting::ParaGlobal::OpenFileDialog(const object& inout)
 
     return false;
 }
-

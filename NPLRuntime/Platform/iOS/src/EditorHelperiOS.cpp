@@ -4,7 +4,6 @@
 #include "WebView/ExternalBrowser.h"
 
 namespace ParaEngine {
-
 	bool CEditorHelper::OpenWithDefaultEditor(const char* sScriptFile, bool bWaitOnReturn)
 	{
 		return false;
@@ -19,7 +18,6 @@ namespace ParaEngine {
 	{
 		return false;
 	}
-
 
 	static bool openUrl(const char* url)
 	{
@@ -42,7 +40,6 @@ namespace ParaEngine {
 
 	static bool execute(const char* lpFile, const char* lpParameters, const char* lpDirectory, int nShowCmd)
 	{
-
 		return false;
 	}
 
@@ -98,4 +95,4 @@ namespace ParaEngine {
 
 		return false;
 	}
-} // end namespace
+}

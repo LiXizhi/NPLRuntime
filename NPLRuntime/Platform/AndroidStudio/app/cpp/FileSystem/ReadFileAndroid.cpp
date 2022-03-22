@@ -1,6 +1,14 @@
+//-----------------------------------------------------------------------------
+// ReadFileAndroid.cpp
+// Authors: LanZhiHong, big
+// CreateDate: 2019.12.30
+// ModifyDate: 2022.1.11
+//-----------------------------------------------------------------------------
+
 #include "ReadFileAndroid.h"
 #include "ParaAppAndroid.h"
 #include "jni/JniHelper.h"
+
 #include <cstdio>
 
 using namespace ParaEngine;
@@ -65,4 +73,3 @@ void ParaEngine::CReadFileAndroid::openFile()
 	auto assetManager = JniHelper::getAssetManager();
 	m_asset = AAssetManager_open(assetManager, m_filename.c_str(), AASSET_MODE_STREAMING);
 }
-

@@ -1,9 +1,15 @@
+//-----------------------------------------------------------------------------
+// ParaEngineHelper.h
+// Authors: LanZhiHong, big
+// CreateDate: 2019.12.30
+// ModifyDate: 2022.1.11
+//-----------------------------------------------------------------------------
+
 #include "ParaEngineHelper.h"
 #include "JniHelper.h"
 #include "ParaEngineSettings.h"
 
 #include <android/asset_manager_jni.h>
-
 
 namespace ParaEngine {
 	const std::string ParaEngineHelper::classname = "com/tatfook/paracraft/ParaEngineHelper";

@@ -1,10 +1,9 @@
-//
-//  ViewController.m
-//  ios_gl
-//
-//  Created by 袁全伟,big on 2021/7/1.
-//  Copyright © 2017年 XRenderAPI. All rights reserved.
-//
+//-----------------------------------------------------------------------------
+// Class: ViewController.m
+// Authors: 袁全伟, big
+// CreateDate: 2021.7.1
+// ModifyDate: 2022.1.5
+//-----------------------------------------------------------------------------
 
 #import "ViewController.h"
 #import "GLView.h"

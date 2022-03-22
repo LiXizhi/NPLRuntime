@@ -1,7 +1,9 @@
 #pragma once
 #include "RenderDeviceOpenGL.h"
+
 @class EAGLContext;
 @class CAEAGLLayer;
+
 namespace ParaEngine
 {
 	class RenderDeviceAEGL : public RenderDeviceOpenGL
@@ -17,6 +19,5 @@ namespace ParaEngine
         GLuint              m_FrameBuffer;
         GLuint              m_ColorBuffer;
         GLuint              m_DepthBuffer;
-        
 	};
 }

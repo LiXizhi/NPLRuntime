@@ -1,3 +1,10 @@
+//-----------------------------------------------------------------------------
+// ParaEngineEditBox.java
+// Authors: LanZhihong, big
+// CreateDate: 2019.7.16
+// ModifyDate: 2022.1.11
+//-----------------------------------------------------------------------------
+
 package com.tatfook.paracraft;
 
 import android.content.Context;
@@ -115,7 +122,8 @@ public class ParaEngineEditBox extends EditText {
     public void setChangedTextProgrammatically(Boolean changedTextProgrammatically) {
         this.changedTextProgrammatically = changedTextProgrammatically;
     }
-    //OpenGL view scaleX
+
+    // OpenGL view scaleX
     private  float mScaleX;
 
     // package private
@@ -219,7 +227,6 @@ public class ParaEngineEditBox extends EditText {
     }
 
     public void setInputFlag(int inputFlag) {
-
         switch (inputFlag) {
             case kEditBoxInputFlagPassword:
                 this.mInputFlagConstraints = InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_PASSWORD;

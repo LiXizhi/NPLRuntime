@@ -4,7 +4,6 @@
 // CreateDate: 2021.12.14
 //-----------------------------------------------------------------------------
 
-#import "AppDelegate.h"
 #import "ScreenRecorder/ScreenRecorder.h"
 
 #include "ParaScriptingScreenRecorder.h"
@@ -21,17 +20,25 @@ namespace ParaScripting
         ScreenRecorder *instance = [ScreenRecorder getInstance];
 
         [instance startRecordingWithHandler:^(NSError *error) {}];
-        [instance screenRecording:^(NSTimeInterval duration) {}];
 	}
 
     void ParaScriptingScreenRecorder::Stop()
     {
         ScreenRecorder *instance = [ScreenRecorder getInstance];
 
-        [instance stopRecordingWithHandler:^(UIViewController *previewViewController, NSError *error) {
-            auto appDelegate = (AppDelegate*)[[UIApplication sharedApplication] delegate];
+        [instance stopRecordingWithHandler];
+    }
 
-            [appDelegate.viewController presentViewController:previewViewController animated:YES completion:^{}];
-        }];
+    void ParaScriptingScreenRecorder::Save()
+    {
+        ScreenRecorder *instance = [ScreenRecorder getInstance];
+
+        [instance saveVideo];
+    }
+
+    void ParaScriptingScreenRecorder::Play()
+    {
+        ScreenRecorder *instance = [ScreenRecorder getInstance];
+        [instance playPreview];
     }
 }

@@ -1,4 +1,12 @@
+//-----------------------------------------------------------------------------
+// ParaFileUtilsAndroid.h
+// Authors: LanZhiHong, big
+// CreateDate: 2019.12.30
+// ModifyDate: 2022.1.11
+//-----------------------------------------------------------------------------
+
 #pragma once
+
 #include "Framework/FileSystem/ParaFileUtils.h"
 #include "util/mutex.h"
 
@@ -6,7 +14,6 @@ namespace ParaEngine
 {
 	class CParaFileUtilsAndroid : public CParaFileUtils
 	{
-
 	public:
 		virtual ParaEngine::FileData GetDataFromFile(const std::string& filename) override;
 		virtual bool IsAbsolutePath(const std::string& filename) override;

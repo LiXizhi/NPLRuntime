@@ -1,3 +1,10 @@
+//-----------------------------------------------------------------------------
+// EditorHelperAndroid.cpp
+// Authors: LanZhiHong, big
+// CreateDate: 2019.12.30
+// ModifyDate: 2022.1.11
+//-----------------------------------------------------------------------------
+
 #include "ParaEngine.h"
 #include "Framework/Common/Helper/EditorHelper.h"
 #include "jni/ParaEngineWebViewHelper.h"
