@@ -20,6 +20,10 @@ find_library(WebKit WebKit)
 find_library(Security Security)
 find_library(CoreGraphics CoreGraphics)
 find_library(ReplayKit ReplayKit)
+find_library(AVKit AVKit)
+find_library(Photos Photos)
+find_library(AudioToolbox AudioToolbox)
+find_library(AVFoundation AVFoundation)
 
 add_executable(Paracraft
     ${app_src}
