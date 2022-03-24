@@ -26,7 +26,7 @@ elseif(WIN32)
 		SET(SSL_DASM_FLAGS "x86")
 	endif()
 	
-	target_link_libraries(para_libssl INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/prebuilt/win32/${SSL_DASM_FLAGS}/libssl.lib)
+	target_link_libr aries(para_libssl INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/prebuilt/win32/${SSL_DASM_FLAGS}/libssl.lib)
     target_link_libraries(para_libcrypto INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/prebuilt/win32/${SSL_DASM_FLAGS}/libcrypto.lib)
 elseif(LINUX)
 	target_include_directories(para_libssl INTERFACE include/linux)
