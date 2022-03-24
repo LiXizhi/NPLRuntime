@@ -42,6 +42,10 @@ target_link_libraries(Paracraft PUBLIC
     ${Security}
     ${CoreGraphics}
     ${ReplayKit}
+    ${AVKit}
+    ${Photos}
+    ${AudioToolbox}
+    ${AVFoundation}
     RenderSystemOpenGL
     ParaEngine
 )
