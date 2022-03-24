@@ -57,7 +57,8 @@ set_source_files_properties(${ASSETS_FILES} PROPERTIES MACOSX_PACKAGE_LOCATION R
 
 set(RESOURCE_LIST ${IMAGES_FILE} ${RESOURCE_FILES} ${ASSETS_FILES})
 
-set_target_properties(Paracraft PROPERTIES 
+set_target_properties(
+    Paracraft PROPERTIES
     MACOSX_BUNDLE TRUE
     RESOURCE "${RESOURCE_LIST}"
     INSTALL_RPATH "@executable_path/Frameworks/"
@@ -70,6 +71,7 @@ set_target_properties(Paracraft PROPERTIES
     XCODE_ATTRIBUTE_INSTALL_PATH "$(LOCAL_APPS_DIR)"
     XCODE_ATTRIBUTE_SKIP_INSTALL "No"
     XCODE_ATTRIBUTE_ENABLE_BITCODE "No"
+    XCODE_ATTRIBUTE_TARGETED_DEVICE_FAMILY "1,2"
 )
 
 target_include_directories(Paracraft PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)

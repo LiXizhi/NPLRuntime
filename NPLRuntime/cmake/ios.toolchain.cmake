@@ -198,7 +198,8 @@ if(NOT DEFINED PLATFORM)
       set(PLATFORM "SIMULATOR_WATCHOS")
     endif()
   endif()
-  if (NOT PLATFORM)
+
+  if(NOT PLATFORM)
     set(PLATFORM "OS")
   endif()
 endif()
@@ -218,18 +219,21 @@ endif()
 # from the specified PLATFORM name.
 if(PLATFORM_INT STREQUAL "OS")
   set(SDK_NAME iphoneos)
+
   if(NOT ARCHS)
-    set(ARCHS armv7 arm64)
+    set(ARCHS arm64) # armv7
     set(APPLE_TARGET_TRIPLE_INT arm-apple-ios)
   endif()
 elseif(PLATFORM_INT STREQUAL "OS64")
   set(SDK_NAME iphoneos)
+
   if(NOT ARCHS)
     if (XCODE_VERSION VERSION_GREATER 10.0)
       set(ARCHS arm64) # Add arm64e when Apple have fixed the integration issues with it, libarclite_iphoneos.a is currently missung bitcode markers for example
     else()
       set(ARCHS arm64)
     endif()
+
     set(APPLE_TARGET_TRIPLE_INT aarch64-apple-ios)
   endif()
 elseif(PLATFORM_INT STREQUAL "OS64COMBINED")
@@ -326,13 +330,21 @@ execute_process(COMMAND xcodebuild -version -sdk ${SDK_NAME} Path
     OUTPUT_VARIABLE CMAKE_OSX_SYSROOT_INT
     ERROR_QUIET
     OUTPUT_STRIP_TRAILING_WHITESPACE)
-if (NOT DEFINED CMAKE_OSX_SYSROOT_INT AND NOT DEFINED CMAKE_OSX_SYSROOT)
-  message(SEND_ERROR "Please make sure that Xcode is installed and that the toolchain"
-  "is pointing to the correct path. Please run:"
-  "sudo xcode-select -s /Applications/Xcode.app/Contents/Developer"
-  "and see if that fixes the problem for you.")
-  message(FATAL_ERROR "Invalid CMAKE_OSX_SYSROOT: ${CMAKE_OSX_SYSROOT} "
-  "does not exist.")
+
+if(NOT DEFINED CMAKE_OSX_SYSROOT_INT AND NOT DEFINED CMAKE_OSX_SYSROOT)
+  message(
+    SEND_ERROR
+    "Please make sure that Xcode is installed and that the toolchain"
+    "is pointing to the correct path. Please run:"
+    "sudo xcode-select -s /Applications/Xcode.app/Contents/Developer"
+    "and see if that fixes the problem for you."
+  )
+
+  message(
+    FATAL_ERROR
+    "Invalid CMAKE_OSX_SYSROOT: ${CMAKE_OSX_SYSROOT} "
+    "does not exist."
+  )
 elseif(DEFINED CMAKE_OSX_SYSROOT_INT)
    set(CMAKE_OSX_SYSROOT "${CMAKE_OSX_SYSROOT_INT}" CACHE INTERNAL "")
 endif()
@@ -340,6 +352,7 @@ endif()
 # Set Xcode property for SDKROOT as well if Xcode generator is used
 if(USED_CMAKE_GENERATOR MATCHES "Xcode")
   set(CMAKE_OSX_SYSROOT "${SDK_NAME}" CACHE INTERNAL "")
+
   if(NOT DEFINED CMAKE_XCODE_ATTRIBUTE_DEVELOPMENT_TEAM)
     set(CMAKE_XCODE_ATTRIBUTE_DEVELOPMENT_TEAM "123456789A" CACHE INTERNAL "")
   endif()
@@ -347,15 +360,14 @@ endif()
 
 # Specify minimum version of deployment target.
 if(NOT DEFINED DEPLOYMENT_TARGET)
-  if (PLATFORM_INT STREQUAL "WATCHOS" OR PLATFORM_INT STREQUAL "SIMULATOR_WATCHOS")
+  if(PLATFORM_INT STREQUAL "WATCHOS" OR PLATFORM_INT STREQUAL "SIMULATOR_WATCHOS")
     # Unless specified, SDK version 2.0 is used by default as minimum target version (watchOS).
-    set(DEPLOYMENT_TARGET "2.0"
-            CACHE STRING "Minimum SDK version to build for." )
+    set(DEPLOYMENT_TARGET "2.0" CACHE STRING "Minimum SDK version to build for.")
   else()
     # Unless specified, SDK version 9.0 is used by default as minimum target version (iOS, tvOS).
-    set(DEPLOYMENT_TARGET "10.0"
-            CACHE STRING "Minimum SDK version to build for." )
+    set(DEPLOYMENT_TARGET "15.0" CACHE STRING "Minimum SDK version to build for.")
   endif()
+
   message(STATUS "Using the default min-version since DEPLOYMENT_TARGET not provided!")
 endif()
 
@@ -510,6 +522,7 @@ set(CMAKE_CXX_OSX_CURRENT_VERSION_FLAG "${CMAKE_C_OSX_CURRENT_VERSION_FLAG}")
 if(ARCHS MATCHES "((^|;|, )(arm64|arm64e|x86_64))+")
   set(CMAKE_C_SIZEOF_DATA_PTR 8)
   set(CMAKE_CXX_SIZEOF_DATA_PTR 8)
+
   if(ARCHS MATCHES "((^|;|, )(arm64|arm64e))+")
     set(CMAKE_SYSTEM_PROCESSOR "aarch64")
   else()
