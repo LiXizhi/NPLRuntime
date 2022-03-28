@@ -11,8 +11,9 @@ import android.app.Service;
 import android.content.Intent;
 import android.media.projection.MediaProjection;
 import android.os.IBinder;
-import android.support.annotation.Nullable;
 import android.util.Log;
+
+import androidx.annotation.Nullable;
 
 import java.util.Objects;
 

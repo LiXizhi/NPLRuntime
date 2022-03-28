@@ -12,14 +12,12 @@ import android.app.KeyguardManager;
 import android.content.res.Configuration;
 import android.os.CountDownTimer;
 import android.os.PowerManager;
-import android.support.annotation.Keep;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.ActivityInfo;
 import android.content.pm.PackageManager;
 import android.opengl.GLSurfaceView;
 import android.os.Bundle;
-import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.InputDevice;
 import android.view.KeyEvent;
@@ -28,6 +26,9 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.view.WindowManager;
 import android.widget.ImageView;
+
+import androidx.annotation.Keep;
+import androidx.appcompat.app.AppCompatActivity;
 
 import com.smarx.notchlib.NotchScreenManager;
 import com.tatfook.paracraft.screenrecorder.ScreenRecorder;

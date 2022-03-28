@@ -14,8 +14,8 @@ android {
         applicationId "com.paraengine.paracraft"
         minSdkVersion PROP_MIN_SDK_VERSION
         targetSdkVersion PROP_TARGET_SDK_VERSION
-        versionCode 33
-        versionName "2.0.17"
+        versionCode 35
+        versionName "2.0.19"
 
         externalNativeBuild {
             cmake {
@@ -40,7 +40,7 @@ android {
 
     externalNativeBuild {
         cmake {
-            version "3.18.2"
+            version "3.22.3"
             path "../../../CMakeLists.txt"
         }
     }
@@ -146,20 +146,19 @@ android.applicationVariants.all { variant ->
                         }
                     }
                 }
-
             }
-
         }
     }
 }
 
 dependencies {
     implementation fileTree(dir: 'libs', include: ['*.jar'])
-    implementation 'com.android.support:support-annotations:28.0.0'
-    implementation 'com.android.support:support-compat:28.0.0'
-    implementation 'com.android.support:appcompat-v7:28.0.0'
-
     implementation 'org.jetbrains:annotations:17.0.0'
+    implementation 'androidx.core:core-ktx:1.3.2'
+    implementation 'androidx.appcompat:appcompat:1.2.0'
+    implementation 'com.google.android.material:material:1.3.0'
+    implementation 'androidx.constraintlayout:constraintlayout:2.0.4'
+
     implementation 'com.github.smarxpan:NotchScreenTool:0.0.1'
 
     implementation ('com.shuyu:GSYVideoPlayer:6.0.3') {

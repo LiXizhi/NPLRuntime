@@ -14,7 +14,6 @@ import android.opengl.GLSurfaceView;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
-import android.support.annotation.Keep;
 import android.util.AttributeSet;
 import android.util.DisplayMetrics;
 import android.view.KeyEvent;
@@ -25,6 +24,7 @@ import android.view.SurfaceHolder;
 import android.view.ViewTreeObserver;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.Toast;
+import androidx.annotation.Keep;
 
 public class ParaEngineGLSurfaceView extends GLSurfaceView {
     private static ParaEngineGLSurfaceView mGLSurfaceView = null;

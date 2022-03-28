@@ -7,8 +7,9 @@
 
 package com.tatfook.paracraft;
 
-import android.support.annotation.Keep;
 import android.util.Log;
+
+import androidx.annotation.Keep;
 
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;

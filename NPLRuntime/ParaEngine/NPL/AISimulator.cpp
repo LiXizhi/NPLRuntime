@@ -70,7 +70,7 @@ const char *PEBaseModules[] =
 CAISimulator::CAISimulator(void)
 :m_sGameloop(PEBaseModules[FILE_GAMELOOP]),m_fGameloopInterval(0.5f),m_bIsCleanedup(false)
 {
-	m_pRuntimeEnv  = CNPLRuntime::GetInstance();
+	m_pRuntimeEnv = CNPLRuntime::GetInstance();
 }
 
 CAISimulator::~CAISimulator(void)

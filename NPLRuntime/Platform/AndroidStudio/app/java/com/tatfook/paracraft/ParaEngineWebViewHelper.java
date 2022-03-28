@@ -11,7 +11,6 @@ import android.content.Intent;
 import android.net.Uri;
 import android.os.Handler;
 import android.os.Looper;
-import android.support.annotation.Keep;
 import android.util.SparseArray;
 import android.view.View;
 import android.widget.FrameLayout;
@@ -28,6 +27,8 @@ import java.util.concurrent.FutureTask;
 
 import android.widget.RelativeLayout;
 import android.widget.Toast;
+
+import androidx.annotation.Keep;
 
 class HelloWebViewClient extends WebViewClient { 
 	@Override

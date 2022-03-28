@@ -3,13 +3,13 @@
 
 
 
-set(Boost_Version 1.73.0)
+set(Boost_Version 1.76.0)
 
 if ("$ENV{BOOST_ROOT}" STRGREATER "")
 	set(BOOST_ROOT $ENV{BOOST_ROOT})
 	string(REPLACE "\\" "/" BOOST_ROOT ${BOOST_ROOT})
 else()
-	set(Boost_Path boost_1_73_0)
+	set(Boost_Path boost_1_76_0)
 	set(BOOST_ROOT ${PROJECT_SOURCE_DIR}/externals/boost/prebuild/src/${Boost_Path})
 endif()
 

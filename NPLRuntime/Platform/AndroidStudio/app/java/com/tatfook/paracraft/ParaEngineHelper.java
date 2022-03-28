@@ -21,8 +21,9 @@ import android.content.res.AssetManager;
 import android.net.wifi.WifiInfo;
 import android.net.wifi.WifiManager;
 import android.provider.Settings;
-import android.support.annotation.Keep;
 import android.telephony.TelephonyManager;
+
+import androidx.annotation.Keep;
 
 @Keep
 public class ParaEngineHelper {

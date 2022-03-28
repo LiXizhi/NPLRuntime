@@ -37,9 +37,9 @@ import android.content.ServiceConnection;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.os.Handler;
-import android.os.IBinder;
-import android.support.annotation.Keep;
+import android.os.IBinder;;
 import android.util.Log;
+import androidx.annotation.Keep;
 
 import com.tatfook.paracraft.ParaEngineActivity;
 import com.tatfook.paracraft.ParaEngineLuaJavaBridge;
@@ -195,7 +195,6 @@ public class InterfaceBluetooth implements ParaEnginePluginInterface{
     	}
 
         mSingle = this;
-
 
     	if (mMainActivity.checkSelfPermission(Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
 			mMainActivity.requestPermissions(new String[]{Manifest.permission.ACCESS_COARSE_LOCATION}, PERMISSION_REQUEST_COARSE_LOCATION);
