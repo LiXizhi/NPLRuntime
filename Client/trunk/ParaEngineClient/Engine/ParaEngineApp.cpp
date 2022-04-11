@@ -2436,6 +2436,8 @@ LRESULT CParaEngineApp::MsgProcWinThread( HWND hWnd, UINT uMsg, WPARAM wParam, L
 {
 	LRESULT result = 0;
 	bool bContinue = true;
+	// WM_POINTER is only supported in windows 8 or above, so if it is windows 7 touch event, we will disable touch inputting and use mouse event directly. 
+	bool s_bCanHasWM_POINTER = false;
 
 	if (uMsg<=WM_MOUSELAST && uMsg>=WM_MOUSEFIRST)
 	{
@@ -2444,13 +2446,16 @@ LRESULT CParaEngineApp::MsgProcWinThread( HWND hWnd, UINT uMsg, WPARAM wParam, L
 			// GetMessageExtraInfo() returns the extra info associated with a message
 			//	Mouse up and down messages are tagged with a special signature indicating they came from touch or pen :
 			// Mask extra info against 0xFFFFFF80, 0xFF515780 for touch, 0xFF515700 for pen
-#define IsTouchEvent(dw) (((dw) & 0xFFFFFF80) == 0xFF515780)
-			bool isTouchEvent = IsTouchEvent(GetMessageExtraInfo());
-			SetTouchInputting(isTouchEvent);
-			// OUTPUT_LOG("WM_LBUTTONDOWN: %d \n", GetMessageExtraInfo());
-			if (isTouchEvent)
+			if (s_bCanHasWM_POINTER)
 			{
-				return 0;
+#define IsTouchEvent(dw) (((dw) & 0xFFFFFF80) == 0xFF515780)
+				bool isTouchEvent = IsTouchEvent(GetMessageExtraInfo());
+				SetTouchInputting(isTouchEvent);
+				// OUTPUT_LOG("WM_LBUTTONDOWN: %d \n", GetMessageExtraInfo());
+				if (isTouchEvent)
+				{
+					return 0;
+				}
 			}
 		}
 		else if (uMsg == WM_MOUSEMOVE || uMsg == WM_MOUSEWHEEL)
@@ -2512,6 +2517,7 @@ LRESULT CParaEngineApp::MsgProcWinThread( HWND hWnd, UINT uMsg, WPARAM wParam, L
 		case WM_POINTERUPDATE:
 		case WM_POINTERLEAVE:
 		{
+			s_bCanHasWM_POINTER = true;
 			m_touchPointX = GET_X_LPARAM(lParam);
 			m_touchPointY = GET_Y_LPARAM(lParam);
 			result = 0;
