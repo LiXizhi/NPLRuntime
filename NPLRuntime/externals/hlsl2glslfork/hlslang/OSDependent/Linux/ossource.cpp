@@ -7,10 +7,6 @@
 //
 #include "osinclude.h"
 
-#if !(defined(linux))
-#error Trying to build a Linux specific file in a non-Linux build.
-#endif
-
 //
 // Thread Local Storage Operations
 //

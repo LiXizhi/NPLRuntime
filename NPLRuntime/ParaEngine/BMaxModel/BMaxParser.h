@@ -95,6 +95,7 @@ namespace ParaEngine
 			auto iter = m_nodes.find(index);
 			return (iter != m_nodes.end()) ? iter->second.get() : NULL;
 		}
+
 		/** return node index*/
 		int64 InsertNode(BMaxNodePtr& nodePtr);
 
@@ -111,6 +112,8 @@ namespace ParaEngine
 		void AutoAddWalkAnimation(int nAnimID, int nStartTime, int nEndTime, float fMoveSpeed=4.f, bool bMoveForward = true);
 
 		BMaxFrameNode* GetFrameNode(int16 x, int16 y, int16 z);
+
+		vector<BMaxFrameNodePtr>& GetBones() { return m_bones; };
 
 		// bone kins
 		void CalculateBoneWeights();

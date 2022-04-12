@@ -18,6 +18,7 @@ namespace ParaEngine
 		
 		static Int32x3 GetOffsetBySide(Side side);
 		static Side GetBlockSide(int v);
+		static Side GetBlockSideAndLevelData(int v, int* pLevelData = NULL);
 		static Side GetOpSide(Side side);
 	public:
 		static const int s_oppositeDirection[none+1];

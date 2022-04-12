@@ -81,6 +81,15 @@ namespace ParaEngine
 		return BlockDirection::none;
 	}
 
+	BlockDirection::Side BlockDirection::GetBlockSideAndLevelData(int value, int* pLevelData)
+	{
+		auto side = GetBlockSide(value & 0xf);
+		if (pLevelData) {
+			*pLevelData = value >> 8;
+		}
+		return side;
+	}
+
 	BlockDirection::Side BlockDirection::GetOpSide(BlockDirection::Side side)
 	{
 		return (BlockDirection::Side)s_oppositeDirection[side];

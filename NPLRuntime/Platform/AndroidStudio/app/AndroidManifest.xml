@@ -25,6 +25,7 @@
         <meta-data android:name="notch.config"
                    android:value="portrait|landscape" />
         <activity android:name="com.tatfook.paracraft.ParaEngineActivity"
+                  android:exported="true"
                   android:launchMode="standard"
                   android:label="@string/app_name"
                   android:configChanges="orientation|keyboardHidden|screenSize"
