@@ -17,7 +17,16 @@
 #}
 
 # Proguard paracraft for release
-#-keep public class com.tatfook.** { *; }
+-keep public class com.tatfook.** { *; }
+-keep public class com.paraengine.** { *; }
+-keep class simijkplayer.** {
+    public <fields>;
+    public <methods>;
+}
+-keep class tv.danmaku.ijk.media.** {
+    <fields>;
+    <methods>;
+}
 #-dontwarn com.tatfook.**
 -keep public class plugin.** { *; }
 -dontwarn plugin.**

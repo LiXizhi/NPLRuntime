@@ -21,7 +21,7 @@ import android.content.res.AssetManager;
 import android.net.wifi.WifiInfo;
 import android.net.wifi.WifiManager;
 import android.provider.Settings;
-import android.support.annotation.Keep;
+import androidx.annotation.Keep;
 import android.telephony.TelephonyManager;
 
 @Keep

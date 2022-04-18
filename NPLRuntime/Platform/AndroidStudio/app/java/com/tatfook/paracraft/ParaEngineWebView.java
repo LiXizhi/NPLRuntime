@@ -22,7 +22,7 @@ import android.view.KeyEvent;
 import android.content.Intent;
 
 import java.lang.reflect.Method;
-import android.net.Uri; ;
+import android.net.Uri;
 import java.util.concurrent.CountDownLatch;
 
 class ShouldStartLoadingWorker implements Runnable {

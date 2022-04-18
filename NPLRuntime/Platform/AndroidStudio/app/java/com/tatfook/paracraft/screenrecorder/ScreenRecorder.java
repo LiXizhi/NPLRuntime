@@ -16,6 +16,7 @@ import android.media.MediaScannerConnection;
 import android.media.projection.MediaProjection;
 import android.media.projection.MediaProjectionManager;
 import android.os.Environment;
+import androidx.annotation.Keep;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.RelativeLayout;
@@ -73,6 +74,7 @@ public class ScreenRecorder {
         return mInstance;
     }
 
+    @Keep
     public static void start() {
         if (!hasPermissions()) {
             requestPermissions();
@@ -93,6 +95,7 @@ public class ScreenRecorder {
         }
     }
 
+    @Keep
     public static void stop() {
         if (getInstance() == null) {
             return;
@@ -101,8 +104,9 @@ public class ScreenRecorder {
         getInstance().stopRecorder();
     }
 
+    @Keep
     public static void save() throws IOException {
-        if (getInstance() == null) {
+        if (mLastFilePath == null) {
             return;
         }
 
@@ -131,8 +135,9 @@ public class ScreenRecorder {
         }
     }
 
+    @Keep
     public static void play() {
-        if (getInstance() == null) {
+        if (mLastFilePath == null) {
             return;
         }
 

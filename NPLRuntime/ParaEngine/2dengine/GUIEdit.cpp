@@ -1814,7 +1814,6 @@ bool ParaEngine::CGUIEditBox::attachWithIME()
 
 			int bottom = (int)(pos.rect.bottom * fScaleY);
 
-
 			CGlobals::GetApp()->setIMEKeyboardState(true, true, bottom);
 		}
 		else
