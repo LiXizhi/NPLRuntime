@@ -11,12 +11,13 @@ import android.app.Activity;
 import android.content.Context;
 import android.graphics.Rect;
 import android.opengl.GLSurfaceView;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
-import android.support.annotation.Keep;
 import android.util.AttributeSet;
 import android.util.DisplayMetrics;
+import android.util.Log;
 import android.view.KeyEvent;
 import android.view.MotionEvent;
 import android.view.Surface;
@@ -25,12 +26,13 @@ import android.view.SurfaceHolder;
 import android.view.ViewTreeObserver;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.Toast;
+import androidx.annotation.Keep;
+
+import java.util.concurrent.atomic.AtomicBoolean;
 
 public class ParaEngineGLSurfaceView extends GLSurfaceView {
     private static ParaEngineGLSurfaceView mGLSurfaceView = null;
     private static ParaEngineActivity sActivity = null;
-    private static final int HANDLER_OPEN_IME_KEYBOARD = 2;
-    private static final int HANDLER_CLOSE_IME_KEYBOARD = 3;
     private static ParaTextInputWrapper sParaTextInputWrapper = null;
 
     public String lastText = "";
@@ -46,6 +48,10 @@ public class ParaEngineGLSurfaceView extends GLSurfaceView {
     private float curPointerY = 0;
     private long exitTime;
     private ViewTreeObserver.OnGlobalLayoutListener mGlobalLayoutListener = null;
+    private int mScreenOffset = 0;
+    private boolean mIsOpen = false;
+    private boolean mIsMoveView = false;
+    private int mCtrlBottom = 0;
     private static native void nativeDeleteBackward();
     private static native void nativeOnUnicodeChar(String text);
     private static native void nativeSetSurface(Surface surface);
@@ -91,80 +97,99 @@ public class ParaEngineGLSurfaceView extends GLSurfaceView {
         activity.getWindowManager().getDefaultDisplay().getMetrics(metrics);
         final int screenHeight = metrics.heightPixels;
 
-        sHandler = new Handler(new Handler.Callback() {
-            @Override
-            public boolean handleMessage(Message msg) {
-                final boolean bMoveView = msg.getData().getBoolean("MoveView");
+        sHandler = new Handler(msg -> {
+            mIsOpen = msg.getData().getBoolean("bOpen");
+            mIsMoveView = msg.getData().getBoolean("bMoveView");
+            mCtrlBottom = msg.getData().getInt("ctrlBottom");
 
-                // convert to android coordinate system
-                final int ctrlBottom = msg.getData().getInt("ctrlBottom");
-
-                switch(msg.what) {
-                    case HANDLER_OPEN_IME_KEYBOARD:
-                        if (mEditText != null) {
-                            mEditText.setEnabled(true);
-
-                            if (mEditText.requestFocus()) {
-                                mEditText.removeTextChangedListener(sParaTextInputWrapper);
-                                mEditText.setText("");
-                                mEditText.addTextChangedListener(sParaTextInputWrapper);
-                                mEditText.setOnKeyListener(new OnKeyListener() {
-                                    @Override
-                                    public boolean onKey(View v, int keyCode, KeyEvent event) {
-                                        if (keyCode == 67 && event.getAction() == 0) {
-                                            onDeleteBackward();
-                                        }
-                                        return false;
-                                    }
-                                });
-                                InputMethodManager imm = (InputMethodManager)sActivity.getSystemService(Context.INPUT_METHOD_SERVICE);
-
-                                imm.showSoftInput(mEditText, 0);
-
-                                if (bMoveView) {
-                                    if (ParaEngineGLSurfaceView.this.mGlobalLayoutListener != null)
-                                        ParaEngineGLSurfaceView.this.getViewTreeObserver().removeOnGlobalLayoutListener(mGlobalLayoutListener);
-
-                                    ParaEngineGLSurfaceView.this.mGlobalLayoutListener = new ViewTreeObserver.OnGlobalLayoutListener() {
-                                        @Override
-                                        public void onGlobalLayout() {
-                                            Rect r = new Rect();
-                                            ParaEngineGLSurfaceView.this.getWindowVisibleDisplayFrame(r);
-                                            int deltaHeight = screenHeight - r.bottom;
-
-                                            if (deltaHeight > 150 && ctrlBottom > r.bottom) {
-                                                int offset = ctrlBottom - r.bottom;
-                                                ParaEngineGLSurfaceView.this.offsetTopAndBottom(-offset);
-                                            }
-                                        }
-                                    };
-
-                                    ParaEngineGLSurfaceView.this.getViewTreeObserver().addOnGlobalLayoutListener(mGlobalLayoutListener);
-                                }
-                            } else {
-                                lastText = "";
-                                mEditText.setEnabled(false);
-                            }
-                        }
-                        break;
-                    case HANDLER_CLOSE_IME_KEYBOARD:
-                        lastText = "";
-                        if (mEditText != null) {
-                            mEditText.removeTextChangedListener(sParaTextInputWrapper);
-                            InputMethodManager imm = (InputMethodManager)sActivity.getSystemService(Context.INPUT_METHOD_SERVICE);
-                            imm.hideSoftInputFromWindow(mEditText.getWindowToken(), 0);
-                            ParaEngineGLSurfaceView.this.requestFocus();
-                            mEditText.setEnabled(false);
-                        }
-                        break;
-                }
+            if (mEditText == null) {
                 return false;
+            }
+
+            if (mIsOpen) {
+                mEditText.setEnabled(true);
+
+                if (mEditText.requestFocus()) {
+                    mEditText.removeTextChangedListener(sParaTextInputWrapper);
+                    mEditText.setText("");
+                    mEditText.addTextChangedListener(sParaTextInputWrapper);
+                    mEditText.setOnKeyListener((v, keyCode, event) -> {
+                        if (keyCode == 67 && event.getAction() == 0) {
+                            onDeleteBackward();
+                        }
+                        return false;
+                    });
+
+                    InputMethodManager imm = (InputMethodManager)sActivity.getSystemService(Context.INPUT_METHOD_SERVICE);
+                    imm.showSoftInput(mEditText, 0);
+                } else {
+                    lastText = "";
+                    mEditText.setEnabled(false);
+                }
+            } else {
+                lastText = "";
+                mEditText.setEnabled(false);
+                mEditText.removeTextChangedListener(sParaTextInputWrapper);
+
+                InputMethodManager imm = (InputMethodManager)sActivity.getSystemService(Context.INPUT_METHOD_SERVICE);
+                imm.hideSoftInputFromWindow(mEditText.getWindowToken(), 0);
+
+                ParaEngineGLSurfaceView.this.requestFocus();
+            }
+
+            return true;
+        });
+
+        ParaEngineGLSurfaceView.this.getViewTreeObserver().addOnGlobalLayoutListener(() -> {
+            if (!mIsMoveView) {
+                return;
+            }
+
+            if (mIsOpen) {
+                if (mScreenOffset > 0) {
+                    if (Build.VERSION.SDK_INT <= 29) {
+                        mScreenOffset = 0;
+                    } else {
+                        ParaEngineGLSurfaceView.this.offsetTopAndBottom(mScreenOffset);
+                        mScreenOffset = 0;
+                    }
+
+                    return;
+                }
+
+                Rect r = new Rect();
+                ParaEngineGLSurfaceView.this.getWindowVisibleDisplayFrame(r);
+                int deltaHeight = screenHeight - r.bottom;
+
+                if (deltaHeight > 150 && mCtrlBottom > r.bottom) {
+                    int screenOffset = mCtrlBottom - r.bottom;
+                    int setScreenOffset = 0;
+
+                    if (mScreenOffset > 0) {
+                        if (screenOffset > mScreenOffset) {
+                            setScreenOffset = -(screenOffset - mScreenOffset);
+                        } else {
+                            setScreenOffset = mScreenOffset - screenOffset;
+                        }
+
+                        mScreenOffset = screenOffset;
+                    } else {
+                        mScreenOffset = screenOffset;
+                        setScreenOffset = -mScreenOffset;
+                    }
+
+                    ParaEngineGLSurfaceView.this.offsetTopAndBottom(setScreenOffset);
+                }
+            } else {
+                if (Build.VERSION.SDK_INT > 29) {
+                    ParaEngineGLSurfaceView.this.offsetTopAndBottom(mScreenOffset);
+                }
+
+                mScreenOffset = 0;
             }
         });
 
-        SurfaceHolder holder = getHolder();
-
-        holder.addCallback(new SurfaceHolder.Callback2() {
+        getHolder().addCallback(new SurfaceHolder.Callback2() {
             @Override
             public void surfaceChanged(SurfaceHolder holder, int format, int width, int height) {
             }
@@ -197,6 +222,7 @@ public class ParaEngineGLSurfaceView extends GLSurfaceView {
 
     public void setParaEditText(ParaEngineEditBox editText) {
         mEditText = editText;
+
         if (mEditText != null && sParaTextInputWrapper != null) {
             mEditText.setOnEditorActionListener(sParaTextInputWrapper);
             this.requestFocus();
@@ -204,28 +230,15 @@ public class ParaEngineGLSurfaceView extends GLSurfaceView {
     }
 
     @Keep
-    public static void openIMEKeyboard(boolean bMoveView, int ctrlBottom) {
+    public static void setIMEKeyboardState(boolean bOpen, boolean bMoveView, int ctrlBottom) {
         Message msg = new Message();
-        msg.what = HANDLER_OPEN_IME_KEYBOARD;
-
         Bundle bundle = new Bundle();
-        bundle.putBoolean("MoveView", bMoveView);
+        bundle.putBoolean("bOpen", bOpen);
+        bundle.putBoolean("bMoveView", bMoveView);
         bundle.putInt("ctrlBottom", ctrlBottom);
 
         msg.setData(bundle);
-        mGLSurfaceView.sHandler.sendMessage(msg);
-    }
 
-    @Keep
-    public static void closeIMEKeyboard(boolean bMoveView, int ctrlBottom) {
-        Message msg = new Message();
-        msg.what = HANDLER_CLOSE_IME_KEYBOARD;
-
-        Bundle bundle = new Bundle();
-        bundle.putBoolean("MoveView", bMoveView);
-        bundle.putInt("ctrlBottom", ctrlBottom);
-
-        msg.setData(bundle);
         mGLSurfaceView.sHandler.sendMessage(msg);
     }
 

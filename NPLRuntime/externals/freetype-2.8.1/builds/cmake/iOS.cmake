@@ -213,11 +213,11 @@ set(CMAKE_OSX_SYSROOT ${CMAKE_IOS_SDK_ROOT}
 # set the architecture for iOS --
 # note that currently both ARCHS_STANDARD_32_BIT and
 # ARCHS_UNIVERSAL_IPHONE_OS set armv7 only, so set both manually
-if (${IOS_PLATFORM} STREQUAL "OS")
+if(${IOS_PLATFORM} STREQUAL "OS")
   set(IOS_ARCH $(ARCHS_STANDARD_32_64_BIT))
-else (${IOS_PLATFORM} STREQUAL "OS")
+else(${IOS_PLATFORM} STREQUAL "OS")
   set(IOS_ARCH i386)
-endif (${IOS_PLATFORM} STREQUAL "OS")
+endif()
 
 set(CMAKE_OSX_ARCHITECTURES ${IOS_ARCH}
   CACHE string "Build architecture for iOS"

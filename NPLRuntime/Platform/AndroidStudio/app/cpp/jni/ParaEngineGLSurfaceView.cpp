@@ -18,10 +18,7 @@ namespace ParaEngine {
 
     void ParaEngineGLSurfaceView::setIMEKeyboardState(bool bOpen, bool bMoveView, int ctrlBottom)
     {
-        if (bOpen)
-            JniHelper::callStaticVoidMethod(classname, "openIMEKeyboard", bMoveView, ctrlBottom);
-        else
-            JniHelper::callStaticVoidMethod(classname, "closeIMEKeyboard", bMoveView, ctrlBottom);
+        JniHelper::callStaticVoidMethod(classname, "setIMEKeyboardState", bOpen, bMoveView, ctrlBottom);
     }
 }
 

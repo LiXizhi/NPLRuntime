@@ -57,17 +57,16 @@ endif()
 # Add more boost components here. Boost 1.65.1 or above is recommended. 1.55 is minimum for server build
 
 if(IOS)
-find_host_package(Boost 1.73.0 REQUIRED 
-COMPONENTS thread date_time filesystem system chrono regex serialization iostreams log
-)
+	find_host_package(
+		Boost 1.74.0 REQUIRED
+		COMPONENTS thread date_time filesystem system chrono regex serialization iostreams log
+	)
 else()
-find_package(Boost 1.73.0 REQUIRED 
-COMPONENTS thread date_time filesystem system chrono regex serialization iostreams log
-) 
+	find_package(
+		Boost 1.74.0 REQUIRED 
+		COMPONENTS thread date_time filesystem system chrono regex serialization iostreams log
+	) 
 endif()
 
-
-
-#message(STATUS "BOOST_INCLUDE_DIR:" ${Boost_INCLUDE_DIR})
-#message(STATUS "BOOST_LIBS:" ${Boost_LIBRARIES} )
-# End of boost
+# message(STATUS "BOOST_INCLUDE_DIR:" ${Boost_INCLUDE_DIR})
+# message(STATUS "BOOST_LIBS:" ${Boost_LIBRARIES} )

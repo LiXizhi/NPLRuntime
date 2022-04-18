@@ -51,7 +51,7 @@ public class ParaEngineRenderer implements GLSurfaceView.Renderer {
     @Override
     public void onSurfaceCreated(final GL10 GL10, final EGLConfig EGLConfig) {
         ParaEngineRenderer.nativeInit(this.mScreenWidth, this.mScreenHeight);
-        this.mLastTickInNanoSeconds = System.nanoTime();
+        mLastTickInNanoSeconds = System.nanoTime();
         mNativeInitCompleted = true;
     }
 

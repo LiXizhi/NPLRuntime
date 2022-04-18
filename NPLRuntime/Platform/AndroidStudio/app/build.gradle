@@ -14,12 +14,12 @@ android {
         applicationId "com.paraengine.paracraft"
         minSdkVersion PROP_MIN_SDK_VERSION
         targetSdkVersion PROP_TARGET_SDK_VERSION
-        versionCode 33
-        versionName "2.0.17"
+        versionCode 36
+        versionName "2.0.20"
 
         externalNativeBuild {
             cmake {
-                arguments "-DCMAKE_FIND_ROOT_PATH=", "-DANDROID_STL=c++_shared", "-DANDROID_TOOLCHAIN=clang", "-DANDROID_STUDIO=TRUE", "-DNPLRUNTIME_OCE=FALSE"
+                arguments "-DCMAKE_FIND_ROOT_PATH=", "-DANDROID_STL=c++_shared", "-DANDROID_TOOLCHAIN=clang", "-DANDROID_ARM_NEON=TRUE", "-DANDROID_STUDIO=TRUE", "-DNPLRUNTIME_OCE=FALSE"
                 cppFlags "-frtti -fexceptions -fsigned-char -std=c++11"
             }
         }
@@ -29,6 +29,8 @@ android {
             abiFilters.addAll(PROP_APP_ABI.split(':').collect{it as String})
         }
     }
+
+    ndkVersion='23.1.7779620'
 
     sourceSets.main {
         java.srcDir "java"
@@ -121,9 +123,9 @@ android.applicationVariants.all { variant ->
     if (variant.buildType.isDebuggable()) {
         if (isDebug) {
             println "DEBUG MODE"
-            delete "${buildDir}/intermediates/merged_assets/${variant.dirName}"
+            println "${variant.dirName}"
 
-            variant.mergeAssets.doLast {
+            variant.mergeAssetsProvider.get().doLast {
                 delete "${buildDir}/intermediates/merged_assets/${variant.dirName}"
 
                 copy {
@@ -146,26 +148,22 @@ android.applicationVariants.all { variant ->
                         }
                     }
                 }
-
             }
-
         }
     }
 }
 
 dependencies {
     implementation fileTree(dir: 'libs', include: ['*.jar'])
-    implementation 'com.android.support:support-annotations:28.0.0'
-    implementation 'com.android.support:support-compat:28.0.0'
-    implementation 'com.android.support:appcompat-v7:28.0.0'
-
     implementation 'org.jetbrains:annotations:17.0.0'
+    implementation 'androidx.core:core-ktx:1.7.0'
+    implementation 'androidx.appcompat:appcompat:1.4.1'
+    implementation 'com.google.android.material:material:1.5.0'
+    implementation 'androidx.constraintlayout:constraintlayout:2.1.3'
+
     implementation 'com.github.smarxpan:NotchScreenTool:0.0.1'
 
-    implementation ('com.shuyu:GSYVideoPlayer:6.0.3') {
-        exclude module: 'appcompat-v7'
-        exclude group: 'com.android.support'
-    }
+    implementation ('com.shuyu:GSYVideoPlayer:8.1.2')
 }
 
 repositories {
