@@ -1874,6 +1874,7 @@ bool ParaScripting::ParaGlobal::OpenFileDialog(const object& inout)
 	ofn.lpstrInitialDir = NULL;
 	ofn.Flags = OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST;
 	ofn.nMaxFile = MAX_LINE;
+	ofn.hwndOwner = CGlobals::GetAppHWND();//保证以模态对话框打开
 	bool bIsSavingFile = false;
 	for (luabind::iterator itCur(inout), itEnd; itCur != itEnd; ++itCur)
 	{
