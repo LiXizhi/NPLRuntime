@@ -527,16 +527,20 @@ namespace ParaScripting
 		if(CGlobals::GetApp())
 			CGlobals::GetApp()->ShowWindow(bShow);
 	}
-
-	void CNPL::AsyncDownload( const object& urlParams, const char* destFolder, const char* callbackScript, const char* DownloaderName )
+	
+	void CNPL::AsyncDownload( const object& urlParams, const char* destFolder, const char* callbackScript, const char* DownloaderName)
 	{
 		// NPL::CNPLRuntime::GetInstance()->AsyncDownload(url, destFolder, callbackScript, DownloaderName);
 
 		// we need to download from the web server.
 		const char* url = NULL;
+		bool needResume = false;
 		if (type(urlParams) == LUA_TTABLE)
 		{
 			url = object_cast<const char*>(urlParams["url"]);
+			if (urlParams["needResume"]) {
+				needResume = object_cast<bool>(urlParams["needResume"]);
+			}
 		}
 		else if(type(urlParams) == LUA_TSTRING)
 		{
@@ -554,6 +558,8 @@ namespace ParaScripting
 		pProcessor->SetUrl(url);
 		pProcessor->SetScriptCallback(callbackScript);
 		pProcessor->SetSaveToFile(destFolder);
+
+		pProcessor->SetNeedResumeDownload(needResume);
 
 		// add headers
 		if (type(urlParams) == LUA_TTABLE)
