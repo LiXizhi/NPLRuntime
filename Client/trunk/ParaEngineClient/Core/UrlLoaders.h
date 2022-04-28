@@ -233,6 +233,9 @@ namespace ParaEngine
 		/** whether we will invoke callback immediately using NPL.call instead of NPL.activate. This is only enabled in sync-mode api. */
 		bool IsSyncCallbackMode() const;
 		void SetSyncCallbackMode(bool val);
+
+		/*是否需要断点续传*/
+		void SetNeedResumeDownload(bool needResume);
 	private:
 		int InvokeCallbackScript(const char* sCode, int nLength);
 	public:
@@ -309,5 +312,8 @@ namespace ParaEngine
 
 		/** this mutex is only used for determine the state. */
 		//ParaEngine::mutex m_mutex;
+
+		bool m_needResumeDownload;//是否断点续传
+		long m_lastDownloadSize;//上次下载了多少
 	};
 }
