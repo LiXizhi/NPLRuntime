@@ -21,7 +21,8 @@
                  android:name="com.tatfook.paracraft.ParaEngineApplication"
                  android:usesCleartextTraffic="true"
                  android:extractNativeLibs="true"
-                 android:resizeableActivity="true">
+                 android:resizeableActivity="true"
+                 android:requestLegacyExternalStorage="true">
         <meta-data android:name="notch.config"
                    android:value="portrait|landscape" />
         <activity android:name="com.tatfook.paracraft.ParaEngineActivity"
