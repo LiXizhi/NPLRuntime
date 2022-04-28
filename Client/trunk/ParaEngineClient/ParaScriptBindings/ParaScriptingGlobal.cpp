@@ -33,6 +33,8 @@
 #include <boost/bind.hpp>
 #include <boost/asio.hpp>
 
+#include "ParaScriptBindings/ParaScriptingNPL.h"
+
 /**@def PARAENGINE_SUPPORT_WRITE_REG: to support writing to registry*/
 #if defined(WIN32) && !defined(PARAENGINE_MOBILE) && defined(PARAENGINE_CLIENT)
 #define PARAENGINE_SUPPORT_WRITE_REG
@@ -364,10 +366,59 @@ void ParaGlobal::Execute(const std::string& exe, const luabind::object& param, l
 bool ParaGlobal::ShellExecute(const char* lpOperation, const char* lpFile, const char* lpParameters, const char* lpDirectory, int nShowCmd)
 {
 #ifdef PARAENGINE_CLIENT
+	if (std::string(lpOperation) == "popen") {//无窗口执行批处理命令
+#ifndef USE_DIRECTX_RENDERER //不是windows
+		return false;
+#endif
+		std::string cmd = lpFile;//命令
+		bool isAsync = std::string(lpParameters) == "isAsync";
+		std::string callbackFile = lpDirectory;
+		int callbackIdx = nShowCmd;
+		if (std::string(callbackFile).empty() || callbackIdx == 0)
+		{
+			 GetCmdReturn(cmd);
+		}
+		else {
+			std::function<void()> func = [=]() {
+				auto ret = GetCmdReturn(cmd);
+				std::stringstream ss;
+				ss << "msg={_callbackIdx=" << callbackIdx << ",ret=[[" << ret << "]]}" << std::endl;
+				auto str = ss.str();
+				ParaScripting::CNPL::activate2_(callbackFile.c_str(), ss.str().c_str());
+			};
+			if (isAsync) {
+				std::thread t(func);
+				t.detach();
+			}
+			else {
+				func();
+			}
+		}
+		return true;
+	}
 	return CEditorHelper::ShellExecute(lpOperation, lpFile, lpParameters, lpDirectory, nShowCmd);
 #else
 	return false;
 #endif
+}
+
+std::string ParaGlobal::GetCmdReturn(std::string cmd) {
+#ifndef USE_DIRECTX_RENDERER //不是windows
+	return "";
+#endif
+	FILE *file;
+	char ptr[1024] = { 0 };
+	char tmp[1024] = { 0 };
+	strcat_s(ptr, cmd.c_str());
+	std::string result = "";
+	if ((file = _popen(ptr, "r")) != NULL)
+	{
+		while (fgets(tmp, 1024, file) != NULL) {
+			result = result + tmp;
+		}
+		_pclose(file);
+	}
+	return result;
 }
 
 //////////////////////////////////////////////////////////////////////////
