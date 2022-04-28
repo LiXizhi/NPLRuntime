@@ -16,8 +16,12 @@ CMidiMsg::CMidiMsg() :
 #ifdef PARAENGINE_CLIENT
 m_deviceMidiOut(NULL), 
 #endif
-m_bIsValid(false), m_bIsLoaded(false), m_dwVolume(0xffffffff)
+m_bIsValid(false), m_bIsLoaded(false), m_dwVolume(0xffffffff), m_mediaPlayer(NULL)
 {
+}
+
+void ParaEngine::CMidiMsg::SetMediaPlayer(ParaEngine::IMediaPlayer* mediaPlayer) {
+	m_mediaPlayer = mediaPlayer;
 }
 
 bool ParaEngine::CMidiMsg::CheckLoad()
@@ -71,6 +75,9 @@ void ParaEngine::CMidiMsg::SetVolumeFloat(float val)
 {
 	if (val > 1.0f)
 		val = 1.0f;
+
+	if (m_mediaPlayer) return m_mediaPlayer->SetVolume(val);
+
 	DWORD volume = (DWORD)(val * 0xffff);
 	volume = (volume << 16) + volume;
 	SetVolume(volume);
@@ -89,12 +96,19 @@ CMidiMsg& CMidiMsg::GetSingleton()
 
 int CMidiMsg::PlayMidiMsg(DWORD dwMsg)
 {
+	if (m_mediaPlayer) {
+		char note = (dwMsg & 0xff00) >> 8;
+		char velocity = (dwMsg & 0xff0000) >> 16;
+		m_mediaPlayer->PlayMidiNote(note, velocity);
+		return S_OK;
+	}
 #ifdef PARAENGINE_CLIENT
 	if(CheckLoad())
 	{
 		midiOutShortMsg(m_deviceMidiOut, dwMsg);
 		return S_OK;
 	}
+
 #endif
 	return E_FAIL;
 }
@@ -113,6 +127,8 @@ void CMidiMsg::SafeRelease()
 
 void CMidiMsg::PlayMidiFile(const std::string& filename, int nLoopCount)
 {
+	if (CMidiMsg::GetSingleton().GetMediaPlayer()) return CMidiMsg::GetSingleton().GetMediaPlayer()->PlayMidiFile(filename);
+
 #ifdef PARAENGINE_CLIENT
 	static std::string g_last_filename;
 	static std::string g_last_cmd;
