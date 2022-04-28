@@ -7,7 +7,9 @@
 
 #include "ParaAppAndroid.h"
 #include "jni/ParaEngineGLSurfaceView.h"
+#include "jni/ParaEngineMediaPlayer.h"
 #include "3dengine/AudioEngine2.h"
+#include "MidiMsg.h"
 
 using namespace  ParaEngine;
 
@@ -21,6 +23,8 @@ namespace ParaEngine {
 
     CParaEngineAppAndroid::CParaEngineAppAndroid() {
         SetTouchInputting(true);
+
+        CMidiMsg::GetSingleton().SetMediaPlayer(ParaEngineMediaPlayer::GetSingleton());
     }
 
     void CParaEngineAppAndroid::GameToClient(int &inout_x,

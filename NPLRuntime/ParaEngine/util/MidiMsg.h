@@ -1,5 +1,7 @@
 #pragma once
 
+#include "IMediaPlayer.h"
+
 namespace ParaEngine
 {
 	/** simple midi audio */
@@ -33,6 +35,9 @@ namespace ParaEngine
 
 		/** only load when first note is played. */
 		bool IsLoaded() const;
+
+		void SetMediaPlayer(ParaEngine::IMediaPlayer* mediaPlayer);
+		ParaEngine::IMediaPlayer* GetMediaPlayer() { return m_mediaPlayer; }
 	private:
 #ifdef PARAENGINE_CLIENT
 		HMIDIOUT m_deviceMidiOut;
@@ -41,5 +46,7 @@ namespace ParaEngine
 		bool m_bIsLoaded;
 		
 		DWORD m_dwVolume;
+
+		ParaEngine::IMediaPlayer* m_mediaPlayer;
 	};
 }
