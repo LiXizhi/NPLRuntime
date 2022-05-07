@@ -5,9 +5,13 @@
 // ModifyDate: 2022.1.11
 //-----------------------------------------------------------------------------
 
+#include "ParaEngine.h"
+#include "NPLRuntime.h"
+#include "NPLScriptingState.h"
 #include "ParaEngineHelper.h"
 #include "JniHelper.h"
 #include "ParaEngineSettings.h"
+#include "ParaScriptingWorld.h"
 
 #include <android/asset_manager_jni.h>
 
@@ -128,6 +132,21 @@ namespace ParaEngine {
     {
         return JniHelper::callStaticStringMethod(classname, "getMachineID");
     }
+
+    static std::string s_activate_file;
+	static int s_callback_id;
+    void ParaEngineHelper::OpenFileDialog(const char* filter, const char* activate_file, int callback_id) {
+        if (activate_file) s_activate_file = activate_file;
+        if (callback_id) s_callback_id = callback_id;
+		JniHelper::callStaticVoidMethod(classname, "OpenFileDialog", filter);
+	}
+
+	void ParaEngineHelper::OpenFileDialogCallback(std::string filepath) {
+		std::stringstream ss;
+		ss << "msg={_callbackIdx=" << s_callback_id << ",filepath=[["<< filepath<<"]]}"<< std::endl;
+		NPL::NPLRuntimeState_ptr rsptr = NPL::CNPLRuntime::GetInstance()->GetRuntimeState(s_activate_file);
+		NPL::CNPLRuntime::GetInstance()->NPL_Activate(rsptr, s_activate_file.c_str(), ss.str().c_str());
+	}
 }
 
 extern "C" {
@@ -137,5 +156,16 @@ extern "C" {
 	{
 		JniHelper::setClassLoaderFrom(context);
 		JniHelper::setAssetmanager(AAssetManager_fromJava(env, assetManager));
+	}
+
+	JNIEXPORT jstring JNICALL Java_com_tatfook_paracraft_ParaEngineHelper_GetWorldDirectory(JNIEnv *env, jclass clazz) {
+		// TODO: implement GetWorldDirectory()
+		std::string world_directory = ParaScripting::ParaWorld::GetWorldDirectory();
+		return env->NewStringUTF(world_directory.c_str());
+	}
+
+	JNIEXPORT void JNICALL Java_com_tatfook_paracraft_ParaEngineHelper_OpenFileDialogNativeCallback(JNIEnv *env, jclass clazz, jstring filepath) {
+		// TODO: implement OpenFileDialogCallback()
+		ParaEngineHelper::OpenFileDialogCallback(JniHelper::jstring2string(filepath));
 	}
 }
