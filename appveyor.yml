@@ -44,7 +44,7 @@ install:
 
     git submodule update --init --recursive
 
-    del C:\projects\nplruntime\npl_packages\main\* /q
+    #del C:\projects\nplruntime\npl_packages\main\* /q
 
     rmdir "C:/Program Files/MySQL" /s /q
 
