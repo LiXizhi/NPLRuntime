@@ -113,7 +113,7 @@ using namespace ParaEngine;
 #define JUMPUP_SPEED 5.0f
 
 
-namespace ParaEngine{
+namespace ParaEngine {
 	extern int globalTime;
 
 	static const int g_MountIDs[] = { 0, ATT_ID_MOUNT1, ATT_ID_MOUNT2, ATT_ID_MOUNT3, ATT_ID_MOUNT4, ATT_ID_MOUNT5, ATT_ID_MOUNT6, ATT_ID_MOUNT7, ATT_ID_MOUNT8, ATT_ID_MOUNT9,
@@ -132,32 +132,33 @@ namespace ParaEngine{
 // Desc: Constructor for CBipedObject
 //-----------------------------------------------------------------------------
 CBipedObject::CBipedObject() :
-m_fSpeed(0.f),
-m_fSpeedAngle(0.f),
-m_fSpeedVertical(0.f),
-m_vNorm(0, 1.f, 0),
-m_vNormTarget(0, 1.f, 0),
-m_fPitch(0.f), m_fRoll(0.f),
-m_fFacingTarget(0),
-m_bIgnoreFacingTarget(true),
-m_pAIModule(NULL),
-m_pBipedStateManager(NULL),
-m_fPhysicsRadius(BODY_RADIUS),
-m_fPhysicsHeight(0.f),
-m_fDensity(DEFAULT_BODY_DENSITY),
-m_bIsShadowEnabled(true),
-m_bCanAnimOpacity(true),
-m_fAssetHeight(0.f),
-m_isFlyUsingCameraDir(true),
-m_nMovementStyle(MOVESTYLE_SLIDINGWALL),
-m_dwPhysicsGroupMask(DEFAULT_PHYSICS_GROUP_MASK),
-m_dwPhysicsMethod(PHYSICS_FORCE_NO_PHYSICS), m_nPhysicsGroup(0),
-m_fBootHeight(0.f),
-m_fSizeScale(1.0f),
-m_fObjectToCameraDistance(0.f),
-m_fSpeedScale(1.0f), m_bIsAlwaysAboveTerrain(true), m_bPauseAnimation(false),
-m_gravity(9.18f), m_ignoreSlopeCollision(false), m_readyToLanding(false), m_canFly(false), m_isAlwaysFlying(false), m_bAutoWalkupBlock(true), m_bIsControlledExternally(false),
-m_isFlying(false), m_flyingDir(1, 0, 0), m_fLastBlockLight(0.f), m_dwLastBlockHash(0), m_fAccelerationDist(0), m_fLastSpeed(0.f)
+	m_fSpeed(0.f),
+	m_fSpeedAngle(0.f),
+	m_fSpeedVertical(0.f),
+	m_vNorm(0, 1.f, 0),
+	m_vNormTarget(0, 1.f, 0),
+	m_fPitch(0.f), m_fRoll(0.f),
+	m_fFacingTarget(0),
+	m_bIgnoreFacingTarget(true),
+	m_pAIModule(NULL),
+	m_pBipedStateManager(NULL),
+	m_fPhysicsRadius(BODY_RADIUS),
+	m_fPhysicsHeight(0.f),
+	m_fDensity(DEFAULT_BODY_DENSITY),
+	m_bIsShadowEnabled(true),
+	m_bCanAnimOpacity(true),
+	m_fAssetHeight(0.f),
+	m_isFlyUsingCameraDir(true),
+	m_nMovementStyle(MOVESTYLE_SLIDINGWALL),
+	m_dwPhysicsGroupMask(DEFAULT_PHYSICS_GROUP_MASK),
+	m_dwPhysicsMethod(PHYSICS_FORCE_NO_PHYSICS), m_nPhysicsGroup(0),
+	m_fBootHeight(0.f),
+	m_fSizeScale(1.0f),
+	m_fObjectToCameraDistance(0.f),
+	m_pLocalTransfrom(NULL),
+	m_fSpeedScale(1.0f), m_bIsAlwaysAboveTerrain(true), m_bPauseAnimation(false),
+	m_gravity(9.18f), m_ignoreSlopeCollision(false), m_readyToLanding(false), m_canFly(false), m_isAlwaysFlying(false), m_bAutoWalkupBlock(true), m_bIsControlledExternally(false),
+	m_isFlying(false), m_flyingDir(1, 0, 0), m_fLastBlockLight(0.f), m_dwLastBlockHash(0), m_fAccelerationDist(0), m_fLastSpeed(0.f)
 {
 	SetMyType(_Biped);
 	ForceStop();		// default action is loiter 
@@ -171,11 +172,12 @@ CBipedObject::~CBipedObject()
 {
 	UnloadPhysics();
 	SAFE_DELETE(m_pBipedStateManager);
+	SAFE_DELETE(m_pLocalTransfrom);
 }
 
 void CBipedObject::SetUseGlobalTime(bool bUseGlobalTime)
 {
-	CAnimInstanceBase * pAI = GetAnimInstance();
+	CAnimInstanceBase* pAI = GetAnimInstance();
 	if (pAI)
 	{
 		pAI->SetUseGlobalTime(bUseGlobalTime);
@@ -184,7 +186,7 @@ void CBipedObject::SetUseGlobalTime(bool bUseGlobalTime)
 
 bool CBipedObject::IsUseGlobalTime()
 {
-	CAnimInstanceBase * pAI = GetAnimInstance();
+	CAnimInstanceBase* pAI = GetAnimInstance();
 	if (pAI)
 	{
 		return pAI->IsUseGlobalTime();
@@ -203,7 +205,7 @@ std::string CBipedObject::ToString(DWORD nMethod)
 	snprintf(line, MAX_LINE, "-- %s\n", m_sIdentifer.c_str());
 	sScript.append(line);
 	CharModelInstance* pChar = GetCharModelInstance();
-	CAnimInstanceBase * pAI = GetAnimInstance();
+	CAnimInstanceBase* pAI = GetAnimInstance();
 	if (pChar && pAI)
 	{
 		if (pChar->GetBaseModel())
@@ -279,7 +281,7 @@ void CBipedObject::Cleanup()
 	SAFE_DELETE(m_pBipedStateManager);
 }
 
-CBipedStateManager*  CBipedObject::GetBipedStateManager(bool bCreateOnDemand)
+CBipedStateManager* CBipedObject::GetBipedStateManager(bool bCreateOnDemand)
 {
 	if (bCreateOnDemand && m_pBipedStateManager == NULL)
 	{
@@ -297,7 +299,7 @@ void CBipedObject::ReplaceAIModule(CAIBase* pNew)
 		m_pAIModule = pNew;
 	}
 }
-CAIBase*	CBipedObject::GetAIModule()
+CAIBase* CBipedObject::GetAIModule()
 {
 	return m_pAIModule;
 }
@@ -364,7 +366,7 @@ CharModelInstance* CBipedObject::GetCharModelInstance()
 	CParaXAnimInstance* pAI = GetParaXAnimInstance();
 	if (pAI)
 	{
-		CharModelInstance * pChar = pAI->GetCharModel();
+		CharModelInstance* pChar = pAI->GetCharModel();
 		if (pChar)
 		{
 			return pChar;
@@ -390,7 +392,7 @@ struct HLEToken
 {
 	int nStart;
 	int nLength;
-	enum tokenType{ str, value }
+	enum tokenType { str, value }
 	myType;
 	union
 	{
@@ -399,9 +401,9 @@ struct HLEToken
 		DWORD dw;
 	};
 public:
-	HLEToken(){};
-	HLEToken(const char* cmd_){
-		if (cmd_){
+	HLEToken() {};
+	HLEToken(const char* cmd_) {
+		if (cmd_) {
 			for (int i = 0; i < 4; ++i)
 				cmd[i] = cmd_[i];
 		}
@@ -429,7 +431,7 @@ public:
 /// get the token in string event starting from position nStart
 /// pToken[out]: saved to this place
 /// return: true if a new token is read
-bool GetHLEToken(const char * event, HLEToken* pToken, int* nStart)
+bool GetHLEToken(const char* event, HLEToken* pToken, int* nStart)
 {
 	int state = 0; // 0 start, 1: middle, 2: out
 	int nDataIndex = 0;
@@ -574,8 +576,8 @@ void CBipedObject::PathFinding(double dTimeDelta)
 				* while in free-collision condition, a destination is really a point.
 				*/
 				float fLength = (vDestPos - vSrcPos).squaredLength();
-				if (fLength <= (dTimeDelta*GetAbsoluteSpeed())*(dTimeDelta*GetAbsoluteSpeed()) ||
-					fLength <= (GetPhysicsRadius()*GetPhysicsRadius()))
+				if (fLength <= (dTimeDelta * GetAbsoluteSpeed()) * (dTimeDelta * GetAbsoluteSpeed()) ||
+					fLength <= (GetPhysicsRadius() * GetPhysicsRadius()))
 				{
 					RemoveWayPoint();
 					continue;
@@ -730,18 +732,18 @@ void CBipedObject::OneObstaclePathFinding(CBaseObject* pSolid)
 		float fRadius;
 		x1 = vDestPos.x - vSrcPos.x;
 		y1 = vDestPos.z - vSrcPos.z;
-		fRadius = sqrt(x1*x1 + y1*y1);
+		fRadius = sqrt(x1 * x1 + y1 * y1);
 		x1 /= fRadius;/* automatically guaranteed to be above 0*/
 		y1 /= fRadius;
 
 		x0 = vCenter.x - vSrcPos.x;
 		y0 = vCenter.z - vSrcPos.z;
-		fRadius = sqrt(x0*x0 + y0*y0);
+		fRadius = sqrt(x0 * x0 + y0 * y0);
 		x0 /= fRadius;/* automatically guaranteed to be above 0*/
 		y0 /= fRadius;
 
 
-		float fSinDiff = y0*x1 - x0*y1;/* sin(@-@`) = sin@cos@`-cos@sin@`*/
+		float fSinDiff = y0 * x1 - x0 * y1;/* sin(@-@`) = sin@cos@`-cos@sin@`*/
 		if (fSinDiff < 0)
 		{
 			tx = -y0;
@@ -754,8 +756,8 @@ void CBipedObject::OneObstaclePathFinding(CBaseObject* pSolid)
 		}
 		/* move aside a fixed length 0.5 unit.*/
 		//fRadius *= 0.8f;
-		tx = fRadius*tx + vSrcPos.x;
-		ty = fRadius*ty + vSrcPos.z;
+		tx = fRadius * tx + vSrcPos.x;
+		ty = fRadius * ty + vSrcPos.z;
 		//ty = -fRadius*ty + vSrcPos.z; // for left hand coordinate system
 
 		/* try animate */
@@ -1005,28 +1007,28 @@ Matrix4* ParaEngine::CBipedObject::GetAttachmentMatrix(Matrix4& pOut, int nAttac
 
 void ParaEngine::CBipedObject::SetLocalTransform(const Matrix4& mXForm)
 {
-	// TODO: decompose and set yaw, pitch, roll and scaling, etc. 
+	if (!m_pLocalTransfrom)
+	{
+		m_pLocalTransfrom = new Matrix4();
+	}
+	*m_pLocalTransfrom = mXForm;
+	SetGeometryDirty(true);
 }
 
 void ParaEngine::CBipedObject::GetLocalTransform(Matrix4* localTransform)
 {
-	// order of rotation: roll * pitch * yaw * (vNorm to UnitY), where roll is applied first. 
+	if (localTransform)
+	{
+		GetLocalWorldTransform(*localTransform);
+	}
+}
+
+void ParaEngine::CBipedObject::GetLocalWorldTransform(Matrix4& mxWorld)
+{
+	// order of rotation: localSpace{(localTransfrom * scaling)} * worldSpace{roll * pitch * yaw * (vNorm to UnitY) * bootHeight}, where roll is applied first. 
 	bool bIsIdentity = true;
 
-	Matrix4 mxWorld;
-
-	float fScaling = GetSizeScale();
-	if (fScaling != 1.f)
-	{
-		mxWorld.makeScale(fScaling, fScaling, fScaling);
-		bIsIdentity = false;
-	}
-	else
-	{
-		mxWorld = Matrix4::IDENTITY;
-	}
-
-	if(m_vNorm != Vector3::UNIT_Y)
+	if (m_vNorm != Vector3::UNIT_Y)
 	{
 		Vector3 vAxis;
 		Matrix4 matNorm;
@@ -1072,10 +1074,28 @@ void ParaEngine::CBipedObject::GetLocalTransform(Matrix4* localTransform)
 		bIsIdentity = false;
 	}
 
-	// world translation
-	mxWorld._42 += m_fBootHeight;
-	if (localTransform)
-		*localTransform = mxWorld;
+	float fScaling = GetSizeScale();
+	if (fabs(fScaling - 1.0f) > FLT_TOLERANCE)
+	{
+		Matrix4 matScale;
+		matScale.makeScale(fScaling, fScaling, fScaling);
+		mxWorld = (bIsIdentity) ? matScale : matScale.Multiply4x3(mxWorld);
+		bIsIdentity = false;
+	}
+
+	if (m_pLocalTransfrom)
+	{
+		mxWorld = (bIsIdentity) ? *m_pLocalTransfrom : m_pLocalTransfrom->Multiply4x3(mxWorld);
+		bIsIdentity = false;
+	}
+
+	if (bIsIdentity)
+		mxWorld.identity();
+
+	if (m_fBootHeight != 0.f)
+	{
+		mxWorld._42 += m_fBootHeight;
+	}
 }
 
 Matrix4* CBipedObject::GetRenderMatrix(Matrix4& mxWorld, int nRenderNumber)
@@ -1109,7 +1129,7 @@ Matrix4* CBipedObject::GetRenderMatrix(Matrix4& mxWorld, int nRenderNumber)
 				if (pTarget->GetAttachmentMatrix(mat, waypoint.m_nReserved0, nRenderNumber) != NULL)
 				{
 					/// Set world position: mount position+target position==>new world position for the mounted model.
-					mxWorld = mat*mxWorld;
+					mxWorld = mat * mxWorld;
 					bMounted = true;
 
 					// if the mounted object will be scaled when the target object is scaled, we need to scale it back, so that 
@@ -1120,7 +1140,19 @@ Matrix4* CBipedObject::GetRenderMatrix(Matrix4& mxWorld, int nRenderNumber)
 					{
 						mat = Matrix4::IDENTITY;
 						mat.setScale(Vector3(1.f / fScalingX, 1.f / fScalingY, 1.f / fScalingZ));
-						mxWorld = mat*mxWorld;
+						mxWorld = mat * mxWorld;
+					}
+
+					float fScaling = GetSizeScale();
+					if (fabs(fScaling - 1.0f) > FLT_TOLERANCE)
+					{
+						Matrix4 matScale;
+						matScale.makeScale(fScaling, fScaling, fScaling);
+						mxWorld = matScale.Multiply4x3(mxWorld);
+					}
+					if (m_pLocalTransfrom)
+					{
+						mxWorld = m_pLocalTransfrom->Multiply4x3(mxWorld);
 					}
 				}
 			}
@@ -1135,59 +1167,12 @@ Matrix4* CBipedObject::GetRenderMatrix(Matrix4& mxWorld, int nRenderNumber)
 	// for unmounted models
 	if (!bMounted)
 	{
-		// order of rotation: roll * pitch * yaw * (vNorm to UnitY), where roll is applied first. 
-		bool bIsIdentity = true;
+		GetLocalWorldTransform(mxWorld);
 
-		if (m_vNorm != Vector3::UNIT_Y)
-		{
-			Vector3 vAxis;
-			vAxis = Vector3::UNIT_Y.crossProduct(Vector3(m_vNorm.x, m_vNorm.y, m_vNorm.z));
-			ParaMatrixRotationAxis(&mxWorld, vAxis, acos(m_vNorm.y));
-			bIsIdentity = false;
-		}
-		else
-			mxWorld = Matrix4::IDENTITY;
-
-		float fYaw = GetYaw();
-
-		if (IsBillboarded())
-		{
-			// TODO: how about in the reflection pass?
-			Vector3 vDir = m_vPos - CGlobals::GetScene()->GetCurrentCamera()->GetEyePosition();
-			if (vDir.x > 0.0f)
-				fYaw += -atanf(vDir.z / vDir.x) + MATH_PI / 2;
-			else
-				fYaw += -atanf(vDir.z / vDir.x) - MATH_PI / 2;
-		}
-
-		if (fYaw != 0.f)
-		{
-			Matrix4 matYaw;
-			ParaMatrixRotationY((Matrix4*)&matYaw, fYaw);
-			mxWorld = (bIsIdentity) ? matYaw : matYaw.Multiply4x3(mxWorld);
-			bIsIdentity = false;
-		}
-
-		if (GetPitch() != 0.f)
-		{
-			Matrix4 matPitch;
-			ParaMatrixRotationX(&matPitch, GetPitch());
-			mxWorld = (bIsIdentity) ? matPitch : matPitch.Multiply4x3(mxWorld);
-			bIsIdentity = false;
-		}
-
-		if (GetRoll() != 0.f)
-		{
-			Matrix4 matRoll;
-			ParaMatrixRotationZ(&matRoll, GetRoll());
-			mxWorld = (bIsIdentity) ? matRoll : matRoll.Multiply4x3(mxWorld);
-			bIsIdentity = false;
-		}
-		
 		// world translation
 		Vector3 vPos = GetRenderOffset();
 		mxWorld._41 += vPos.x;
-		mxWorld._42 += vPos.y + m_fBootHeight;
+		mxWorld._42 += vPos.y;
 		mxWorld._43 += vPos.z;
 	}
 	return &mxWorld;
@@ -1279,7 +1264,7 @@ bool ParaEngine::CBipedObject::ViewTouch()
 class PushGlobalTime
 {
 public:
-	PushGlobalTime(SceneState * sceneState) :m_pSceneState(sceneState), m_bSetTime(false), m_bSetIgnoreTransparent(false), m_bSetGlobalAnimTime(false), m_nLastGlobalAnimTime(0)
+	PushGlobalTime(SceneState* sceneState) :m_pSceneState(sceneState), m_bSetTime(false), m_bSetIgnoreTransparent(false), m_bSetGlobalAnimTime(false), m_nLastGlobalAnimTime(0)
 	{
 	}
 	~PushGlobalTime()
@@ -1315,7 +1300,7 @@ public:
 		m_bSetIgnoreTransparent = true;
 	}
 
-	SceneState * m_pSceneState;
+	SceneState* m_pSceneState;
 	int m_nLastTime;
 	bool m_bSetTime;
 	bool m_bSetIgnoreTransparent;
@@ -1335,7 +1320,7 @@ public:
 /// (2) if vNorm is valid and object is moving, use smooth transform
 /// (3) if vNorm is valid and object is static or stopped, use the old norm. 
 //-----------------------------------------------------------------------------
-HRESULT CBipedObject::Draw(SceneState * sceneState)
+HRESULT CBipedObject::Draw(SceneState* sceneState)
 {
 	if (!ViewTouch() || GetOpacity() == 0.f)
 	{
@@ -1430,7 +1415,7 @@ HRESULT CBipedObject::Draw(SceneState * sceneState)
 						{
 							for (int y = -1; y <= 1; y += 2)
 							{
-								Vector3 vOffsets(x*border_width, y*border_width, 0.f);
+								Vector3 vOffsets(x * border_width, y * border_width, 0.f);
 								pEffectFile->GetDXEffect()->SetRawValue("g_offsets", &vOffsets, 0, sizeof(Vector3));
 								pAI->Draw(sceneState, mat);
 							}
@@ -1472,7 +1457,7 @@ HRESULT CBipedObject::Draw(SceneState * sceneState)
 		}
 
 		bool bUsePointTextureFilter = false;
-		
+
 		// apply block space lighting for object whose size is comparable to a single block size
 		if (CheckAttribute(MESH_USE_LIGHT) && !(sceneState->IsShadowPass()))
 		{
@@ -1493,10 +1478,10 @@ HRESULT CBipedObject::Draw(SceneState * sceneState)
 				float fSunLightness = Math::Max(pBlockWorldClient->GetLightBrightnessLinearFloat(brightness[1]), 0.1f);
 				sceneState->GetCurrentLightStrength().x = fSunLightness;
 
-				float fLightness = Math::Max(fBlockLightness, fSunLightness*pBlockWorldClient->GetSunIntensity());
+				float fLightness = Math::Max(fBlockLightness, fSunLightness * pBlockWorldClient->GetSunIntensity());
 				if (m_fLastBlockLight != fLightness)
 				{
-					float fMaxStep = (float)(sceneState->dTimeDelta*0.5f);
+					float fMaxStep = (float)(sceneState->dTimeDelta * 0.5f);
 					if (dwPositionHash == m_dwLastBlockHash || m_dwLastBlockHash == 0)
 						m_fLastBlockLight = fLightness;
 					else
@@ -1508,23 +1493,22 @@ HRESULT CBipedObject::Draw(SceneState * sceneState)
 				{
 					m_dwLastBlockHash = dwPositionHash;
 				}
-				
+
 				if (!sceneState->IsDeferredShading())
 				{
-					sceneState->GetLocalMaterial().Ambient = (LinearColor(fLightness*0.7f, fLightness*0.7f, fLightness*0.7f, 1.f));
-					sceneState->GetLocalMaterial().Diffuse = (LinearColor(fLightness*0.4f, fLightness*0.4f, fLightness*0.4f, 1.f));
+					sceneState->GetLocalMaterial().Ambient = (LinearColor(fLightness * 0.7f, fLightness * 0.7f, fLightness * 0.7f, 1.f));
+					sceneState->GetLocalMaterial().Diffuse = (LinearColor(fLightness * 0.4f, fLightness * 0.4f, fLightness * 0.4f, 1.f));
 				}
 				else
 				{
 					sceneState->GetLocalMaterial().Diffuse = LinearColor::White;
 				}
-				
 				sceneState->EnableLocalMaterial(true);
-				
+
 				bUsePointTextureFilter = bUsePointTextureFilter || pBlockWorldClient->GetUsePointTextureFiltering();
 			}
 		}
-		
+
 		CDynamicAttributeField* pField = GetDynamicField("colorDiffuse");
 		if (pField)
 		{
@@ -1565,13 +1549,13 @@ HRESULT CBipedObject::Draw(SceneState * sceneState)
 		sceneState->EnableLocalMaterial(false);
 	}
 
-	for(auto child:m_children)
+	for (auto child : m_children)
 		child->Draw(sceneState);
 
 	return S_OK;
 }
 
-void CBipedObject::BuildShadowVolume(SceneState * sceneState, ShadowVolume * pShadowVolume, LightParams* pLight)
+void CBipedObject::BuildShadowVolume(SceneState* sceneState, ShadowVolume* pShadowVolume, LightParams* pLight)
 {
 #ifdef USE_DIRECTX_RENDERER
 	if (!IsShadowEnabled())
@@ -1601,7 +1585,7 @@ void CBipedObject::SetUserControl()
 /// Desc: Determine a new location for this character to move to.  In this case
 ///       we simply randomly pick a spot on the floor as the new location.
 //-----------------------------------------------------------------------------
-void CBipedObject::ChooseNewLocation(Vector3 *pV)
+void CBipedObject::ChooseNewLocation(Vector3* pV)
 {
 	pV->x = 1.0f;//(float) ( rand() % 256 ) / 256.f;
 	pV->y = 0.f;
@@ -1652,7 +1636,7 @@ struct SensorGroups
 		/// if perfect wall, nSide will be [0,5], otherwise it is nSide. 
 		int nSide;
 	public:
-		SensorRay() :bIsHit(false), fDist(0), nSide(-1){};
+		SensorRay() :bIsHit(false), fDist(0), nSide(-1) {};
 	};
 	SensorGroups() :m_bSenseBlockWorld(false), m_isPerfectWall(false) {};
 	/** n (n=BIPED_SENSOR_RAY_NUM=3) rays in front of the character,which covers a region of (n-2)/(n-1)*Pi radian.*/
@@ -1674,15 +1658,15 @@ struct SensorGroups
 	PickResult m_block_pick_result;
 public:
 	/** whether the sensor group has hit anything. */
-	bool HasHitAnything(){ return m_nHitRayIndex >= 0; }
+	bool HasHitAnything() { return m_nHitRayIndex >= 0; }
 	/** whether the sensor group has hit anything. A negative value is returned if no hit ray.*/
-	int GetHitRayIndex(){ return m_nHitRayIndex; }
+	int GetHitRayIndex() { return m_nHitRayIndex; }
 	/** get the hit ray */
-	SensorRay& GetHitRaySensor(){ return m_sensors[m_nHitRayIndex]; }
+	SensorRay& GetHitRaySensor() { return m_sensors[m_nHitRayIndex]; }
 	/** get the number of wall hits. */
-	int GetHitWallCount(){ return m_nHitWallCount; }
+	int GetHitWallCount() { return m_nHitWallCount; }
 	/** get average impact norm. this is not normalized and may not be in the y=0 plane*/
-	Vector3 GetAvgImpactNorm(){ return m_vAvgImpactNorm; }
+	Vector3 GetAvgImpactNorm() { return m_vAvgImpactNorm; }
 
 	bool IsPerfectWall() const { return m_isPerfectWall; };
 	/** reset the sensor group to empty states. */
@@ -1692,7 +1676,7 @@ public:
 		m_nHitRayIndex = -1;
 		m_isPerfectWall = false;
 		m_vAvgImpactNorm = Vector3(0, 0, 0);
-		for (int i = 0; i<BIPED_SENSOR_RAY_NUM; i++)
+		for (int i = 0; i < BIPED_SENSOR_RAY_NUM; i++)
 		{
 			m_sensors[i].bIsHit = false;
 			m_sensors[i].nSide = -1;
@@ -1712,7 +1696,7 @@ public:
 	* supply your own fAngleCoef = sin(angle)*sin(angle), where angle is your desired wall angle.*/
 	void ComputeSensorGroup(const Vector3& vOrig, const Vector3& vDir, float fSensorRange, DWORD dwGroupMask = DEFAULT_PHYSICS_GROUP_MASK, int nSensorRayCount = BIPED_SENSOR_RAY_NUM, float fAngleCoef = 0.16f)
 	{
-		if (nSensorRayCount>BIPED_SENSOR_RAY_NUM || BIPED_SENSOR_RAY_NUM <= 0)
+		if (nSensorRayCount > BIPED_SENSOR_RAY_NUM || BIPED_SENSOR_RAY_NUM <= 0)
 			return;
 
 		Reset();
@@ -1734,7 +1718,7 @@ public:
 			SensorRay& sensor = m_sensors[i];
 			sensor.bIsHit = false;
 			ParaVec3TransformCoord(&sensor.vDir, &vDir, ParaMatrixRotationY(&m,
-				(MATH_PI / (nSensorRayCount + 1))*(i - ((nSensorRayCount - 1) / 2))));
+				(MATH_PI / (nSensorRayCount + 1)) * (i - ((nSensorRayCount - 1) / 2))));
 
 
 			if (m_bSenseBlockWorld && pBlockWorldClient && pBlockWorldClient->IsInBlockWorld())
@@ -1752,14 +1736,14 @@ public:
 
 					if (last_block_hit_side == -1 ||
 						(((abs(m_block_pick_result.BlockX - result.BlockX) < 2) && (abs(m_block_pick_result.BlockZ - result.BlockZ) < 2))
-						&& (BlockCommon::IsCornerSide(m_block_pick_result.Side, last_block_hit_side) && !(m_block_pick_result.BlockX == result.BlockX && m_block_pick_result.BlockZ == result.BlockZ && m_block_pick_result.BlockY == result.BlockY))))
+							&& (BlockCommon::IsCornerSide(m_block_pick_result.Side, last_block_hit_side) && !(m_block_pick_result.BlockX == result.BlockX && m_block_pick_result.BlockZ == result.BlockZ && m_block_pick_result.BlockY == result.BlockY))))
 					{
 						// only count as two objects if object side is different from the previous one. since we only allow sliding alone a single hit object  
 						nHitCount++;
 						m_nHitWallCount++;
 					}
 
-					if (m_nHitRayIndex < 0 || distLast >= sensor.fDist || i == 1){
+					if (m_nHitRayIndex < 0 || distLast >= sensor.fDist || i == 1) {
 						// get the closest hit ray index
 						distLast = sensor.fDist;
 
@@ -1793,7 +1777,7 @@ public:
 				m_vAvgImpactNorm += sensor.impactNorm;
 				sensor.nSide = -1;
 
-				if (distLast >= sensor.fDist){
+				if (distLast >= sensor.fDist) {
 					// get the closest hit ray index
 					distLast = sensor.fDist;
 					m_nHitRayIndex = i;
@@ -1879,25 +1863,25 @@ bool ParaEngine::CBipedObject::MoveTowards_OPC(double dTimeDelta, const DVector3
 
 	float fSpeed = GetSpeed();
 
-	float fDeltaDist = (float)(fSpeed*dTimeDelta);
+	float fDeltaDist = (float)(fSpeed * dTimeDelta);
 
 	if (fQuickMoveDistance < 0)
 	{
-		fQuickMoveDistance = fSpeed*(-fQuickMoveDistance);
+		fQuickMoveDistance = fSpeed * (-fQuickMoveDistance);
 	}
 
 	// check if we have already reached the position or the y position is way too far, we will move to the target immediately. 
-	if (fDistSq < fDeltaDist*fDeltaDist || fabs(vSub.y) > fQuickMoveDistance)
+	if (fDistSq < fDeltaDist * fDeltaDist || fabs(vSub.y) > fQuickMoveDistance)
 	{
 		// we're within reach
 		bReachPos = true;
 		SetPosition(vPosTarget);
 	}
-	else if (fDistSq > fQuickMoveDistance*fQuickMoveDistance)
+	else if (fDistSq > fQuickMoveDistance * fQuickMoveDistance)
 	{
 		// if we are too far away from target, move immediately to a point that is fQuickMoveDistance from it. 
 		vSub.normalise();
-		m_vPos = vPosTarget - vSub*(fQuickMoveDistance - fDeltaDist);
+		m_vPos = vPosTarget - vSub * (fQuickMoveDistance - fDeltaDist);
 	}
 	else
 	{
@@ -1905,7 +1889,7 @@ bool ParaEngine::CBipedObject::MoveTowards_OPC(double dTimeDelta, const DVector3
 		if (!bReachPos && fSpeed != 0.f)
 		{
 			vSub.normalise();
-			m_vPos += vSub*fDeltaDist;
+			m_vPos += vSub * fDeltaDist;
 		}
 	}
 
@@ -1934,10 +1918,10 @@ bool ParaEngine::CBipedObject::MoveTowards_Linear(double dTimeDelta, const DVect
 
 	float fSpeed = GetSpeed();
 
-	float fDeltaDist = (float)(fSpeed*dTimeDelta);
+	float fDeltaDist = (float)(fSpeed * dTimeDelta);
 
 	// check if we have already reached the position
-	if (fDistSq < fDeltaDist*fDeltaDist)
+	if (fDistSq < fDeltaDist * fDeltaDist)
 	{
 		// we're within reach
 		bReachPos = true;
@@ -1949,13 +1933,13 @@ bool ParaEngine::CBipedObject::MoveTowards_Linear(double dTimeDelta, const DVect
 	if (!bReachPos && fSpeed != 0.f)
 	{
 		vSub.normalise();
-		DVector3 vNewPos = m_vPos + vSub*fDeltaDist;
+		DVector3 vNewPos = m_vPos + vSub * fDeltaDist;
 		SetPosition(vNewPos);
 	}
 	return bReachPos;
 }
 
-bool CBipedObject::MoveTowards(double dTimeDelta, const DVector3& vPosTarget, float fStopDistance, bool * pIsSlidingWall)
+bool CBipedObject::MoveTowards(double dTimeDelta, const DVector3& vPosTarget, float fStopDistance, bool* pIsSlidingWall)
 {
 	UnloadPhysics();
 	if (m_nMovementStyle == MOVESTYLE_OPC)
@@ -2018,7 +2002,7 @@ bool CBipedObject::MoveTowards(double dTimeDelta, const DVector3& vPosTarget, fl
 	if (m_nMovementStyle != MOVESTYLE_HEIGHTONLY)
 	{
 		// check to see whether the target is in movable region, if not, we only allow object to move if the object is already outside the movable region.
-		const CShapeAABB * aabb = GetMovableRegion();
+		const CShapeAABB* aabb = GetMovableRegion();
 		if (aabb != 0)
 		{
 			Vector3 vMin = aabb->GetMin();
@@ -2082,7 +2066,7 @@ bool CBipedObject::MoveTowards(double dTimeDelta, const DVector3& vPosTarget, fl
 			else
 			{
 				float fTerrainHeight = CGlobals::GetGlobalTerrain()->GetElevation((float)m_vPos.x, (float)m_vPos.z);
-				if (m_vPos.y < (fTerrainHeight - 1.0f)){
+				if (m_vPos.y < (fTerrainHeight - 1.0f)) {
 					bFeetUnderWater = false;
 					bHeadUnderWater = false;
 				}
@@ -2123,7 +2107,7 @@ bool CBipedObject::MoveTowards(double dTimeDelta, const DVector3& vPosTarget, fl
 			else if (m_fDensity > 0.f)
 				fGravity = (WATER_DENSITY - e / m_fDensity) * GRAVITY_CONSTANT;
 			else
-				fGravity = WATER_DENSITY*GRAVITY_CONSTANT;
+				fGravity = WATER_DENSITY * GRAVITY_CONSTANT;
 
 			/** the larger the more resistance between [0,1]. */
 #define UP_WATER_RESISTENCE_COEF	0.1f
@@ -2133,17 +2117,17 @@ bool CBipedObject::MoveTowards(double dTimeDelta, const DVector3& vPosTarget, fl
 			*/
 #define WATER_SKIP_VELOCITY			1.f
 
-			if (!is_in_block_world  && bSwimmingOnSurface && m_fSpeedVertical == FLT_TOLERANCE)
+			if (!is_in_block_world && bSwimmingOnSurface && m_fSpeedVertical == FLT_TOLERANCE)
 			{
 				// character is swimming on the water surface~
 				bMaintainHeight = true;
-				fMaintainHeight = CGlobals::GetOceanManager()->GetWaterLevel() - m_fDensity*fHeight;
+				fMaintainHeight = CGlobals::GetOceanManager()->GetWaterLevel() - m_fDensity * fHeight;
 			}
 			else
 			{
 				if (m_fSpeedVertical > 0)
 				{
-					fGravity += m_fSpeedVertical*m_fSpeedVertical*UP_WATER_RESISTENCE_COEF;
+					fGravity += m_fSpeedVertical * m_fSpeedVertical * UP_WATER_RESISTENCE_COEF;
 				}
 				else if (m_fSpeedVertical == 0.f)
 				{
@@ -2156,7 +2140,7 @@ bool CBipedObject::MoveTowards(double dTimeDelta, const DVector3& vPosTarget, fl
 				else
 				{
 					/** the fall down speed should be small.*/
-					fGravity -= m_fSpeedVertical*m_fSpeedVertical*DOWN_WATER_RESISTENCE_COEF;
+					fGravity -= m_fSpeedVertical * m_fSpeedVertical * DOWN_WATER_RESISTENCE_COEF;
 				}
 				if (!bHeadUnderWater && m_fDensity < WATER_DENSITY && !is_in_block_world)
 				{
@@ -2166,7 +2150,7 @@ bool CBipedObject::MoveTowards(double dTimeDelta, const DVector3& vPosTarget, fl
 					if (fabs(m_fSpeedVertical) < WATER_SKIP_VELOCITY)
 					{
 						bMaintainHeight = true;
-						fMaintainHeight = CGlobals::GetOceanManager()->GetWaterLevel() - m_fDensity*fHeight;
+						fMaintainHeight = CGlobals::GetOceanManager()->GetWaterLevel() - m_fDensity * fHeight;
 
 						//if( fabs(e-m_fDensity)*fHeight <= FLT_TOLERANCE)
 						{
@@ -2242,7 +2226,7 @@ bool CBipedObject::MoveTowards(double dTimeDelta, const DVector3& vPosTarget, fl
 		if (GetAccelerationDist() > 0.f)
 		{
 			float fLastSpeed = GetLastSpeed();
-			float fSpeedDelta = max(fMaxPenetration, (float)dTimeDelta*4.f) / GetAccelerationDist();
+			float fSpeedDelta = max(fMaxPenetration, (float)dTimeDelta * 4.f) / GetAccelerationDist();
 			if (m_fLastSpeed < fSpeed)
 			{
 				if (m_fLastSpeed == 0.f)
@@ -2273,7 +2257,7 @@ bool CBipedObject::MoveTowards(double dTimeDelta, const DVector3& vPosTarget, fl
 					if (bHeadUnderWater)
 						PlayAnimation('s', false);
 					else
-						PlayAnimation(nullptr, false);
+						PlayAnimation((const char*)NULL, false);
 				}
 			}
 		}
@@ -2291,11 +2275,11 @@ bool CBipedObject::MoveTowards(double dTimeDelta, const DVector3& vPosTarget, fl
 		if (bReachPos == false && fSpeed != 0.f)
 		{
 			Vector3 vFacing;
-			vFacing = vBipedFacing*float(m_fSpeed * dTimeDelta);
+			vFacing = vBipedFacing * float(m_fSpeed * dTimeDelta);
 			vMovePos = vFacing + m_vPos;
 		}
 	}
-	else if (bReachPos == false && fSpeed != 0.f && fRadius>0.0001f)
+	else if (bReachPos == false && fSpeed != 0.f && fRadius > 0.0001f)
 	{
 		/** -	Cast a group of n (n=3) rays (group 0) in front of the character, which covers a region of (n-2)/(n-1)*Pi radian.
 		* if several sensor rays hit some obstacles within the radius of the object, we will see if the world
@@ -2306,7 +2290,7 @@ bool CBipedObject::MoveTowards(double dTimeDelta, const DVector3& vPosTarget, fl
 		{
 			// get origin
 			Vector3 orig = m_vPos;
-			float fSensorHeight = GetPhysicsHeight()*SENSOR_HEIGHT_RATIO;
+			float fSensorHeight = GetPhysicsHeight() * SENSOR_HEIGHT_RATIO;
 			orig.y += fSensorHeight;
 			// compute sensor group 0. 
 			g_sensorGroups[0].ComputeSensorGroup(orig, vBipedFacing, fRadius, GetPhysicsGroupMask());
@@ -2348,7 +2332,7 @@ bool CBipedObject::MoveTowards(double dTimeDelta, const DVector3& vPosTarget, fl
 					vTentativeFacing = vBipedFacing.crossProduct(vWallNorm);
 					vTentativeFacing = vWallNorm.crossProduct(vTentativeFacing);
 					vTentativeFacing.normalise(); // just make it valid
-					vTentativeFacing = vTentativeFacing*PENETRATION_DISTANCE;
+					vTentativeFacing = vTentativeFacing * PENETRATION_DISTANCE;
 					vTentativeFacing.y = 0;
 					Vector3 vHitRayOrig = g_sensorGroups[0].m_vOrig + vTentativeFacing;
 					Vector3 vHitRayDir = g_sensorGroups[0].GetHitRaySensor().vDir;
@@ -2391,18 +2375,18 @@ bool CBipedObject::MoveTowards(double dTimeDelta, const DVector3& vPosTarget, fl
 								speedScale = 0.5;
 							vRotateAxis = vWallNormal.crossProduct(vBipedFacing);
 							Vector3 vSlidingWallDirection;
-							if (vRotateAxis.y > 0){
+							if (vRotateAxis.y > 0) {
 								Matrix4 mat;
 								ParaMatrixRotationY(&mat, MATH_PI / 2);
 								ParaVec3TransformCoord(&vSlidingWallDirection, &vWallNormal, &mat);
 							}
-							else{
+							else {
 								Matrix4 mat;
 								ParaMatrixRotationY(&mat, -MATH_PI / 2);
 								ParaVec3TransformCoord(&vSlidingWallDirection, &vWallNormal, &mat);
 							}
 							Vector3 vFacing;
-							vFacing = vSlidingWallDirection*float(fSpeed * dTimeDelta*speedScale);
+							vFacing = vSlidingWallDirection * float(fSpeed * dTimeDelta * speedScale);
 							vMovePos = vFacing + m_vPos;
 						}
 					}
@@ -2434,7 +2418,7 @@ bool CBipedObject::MoveTowards(double dTimeDelta, const DVector3& vPosTarget, fl
 							// if the object is walking into the wall, we will slide along the wall.
 							float speedScale = vBipedFacing.dotProduct(vWallDir);
 							Vector3 vFacing;
-							vFacing = vWallDir * float(fSpeed * dTimeDelta*speedScale);
+							vFacing = vWallDir * float(fSpeed * dTimeDelta * speedScale);
 							vMovePos = vFacing + m_vPos;
 							if (speedScale < 0.5f)
 							{
@@ -2492,7 +2476,7 @@ bool CBipedObject::MoveTowards(double dTimeDelta, const DVector3& vPosTarget, fl
 								{
 									Vector3 vWallNormal = g_sensorGroups[0].GetAvgImpactNorm();
 									Vector3 vFacing;
-									vFacing = vWallNormal*fReboundDistance;
+									vFacing = vWallNormal * fReboundDistance;
 									vMovePos = vFacing + vMovePos;
 								}
 							}
@@ -2544,7 +2528,7 @@ bool CBipedObject::MoveTowards(double dTimeDelta, const DVector3& vPosTarget, fl
 	}
 	else
 	{
-		dist = MAX_DIST*OBJ_UNIT; // infinitely large
+		dist = MAX_DIST * OBJ_UNIT; // infinitely large
 	}
 
 	// set the object height to the higher of the two.
@@ -2679,7 +2663,7 @@ bool CBipedObject::MoveTowards(double dTimeDelta, const DVector3& vPosTarget, fl
 		float fLastSpeedVertical = m_fSpeedVertical;
 		if (!bMaintainHeight)
 		{
-			m_fSpeedVertical -= fGravity*(float)dTimeDelta;
+			m_fSpeedVertical -= fGravity * (float)dTimeDelta;
 		}
 
 		/** this ensures that flyable object will fly when in air. We do so, by setting the maximum vertical speed for flying object.
@@ -2687,14 +2671,14 @@ bool CBipedObject::MoveTowards(double dTimeDelta, const DVector3& vPosTarget, fl
 		*/
 		if (m_fDensity <= FLY_DENSITY && m_fSpeedVertical < 0)
 		{
-			float MaxFlyVertical = m_fDensity / FLY_DENSITY*MAX_FLY_VERTICAL_SPEED;
+			float MaxFlyVertical = m_fDensity / FLY_DENSITY * MAX_FLY_VERTICAL_SPEED;
 			if (m_fSpeedVertical < -MaxFlyVertical)
 				m_fSpeedVertical = -MaxFlyVertical;
 		}
 
 		if (!bMaintainHeight)
 		{
-			float dY = (float)dTimeDelta*(m_fSpeedVertical + fLastSpeedVertical) / 2.f;
+			float dY = (float)dTimeDelta * (m_fSpeedVertical + fLastSpeedVertical) / 2.f;
 			m_vPos.y += dY;
 		}
 		else
@@ -2728,7 +2712,7 @@ bool CBipedObject::MoveTowards(double dTimeDelta, const DVector3& vPosTarget, fl
 						pCharState->AddAction(CBipedStateManager::S_JUMP_END);
 				}
 			}
-			else if (m_vPos.y > (vMovePos.y + GetPhysicsHeight()*0.25f) && m_fSpeedVertical < 0)
+			else if (m_vPos.y > (vMovePos.y + GetPhysicsHeight() * 0.25f) && m_fSpeedVertical < 0)
 			{
 				/** fall down, if the biped is well above the ground and has a downward vertical speed.*/
 				{
@@ -2755,8 +2739,8 @@ bool CBipedObject::MoveTowards(double dTimeDelta, const DVector3& vPosTarget, fl
 			fClimbUpSpeed = m_fSpeedVertical;
 
 		float fLastSpeedVertical = m_fSpeedVertical;
-		fClimbUpSpeed -= fGravity*(float)dTimeDelta;
-		float dY = (float)dTimeDelta*(fClimbUpSpeed + fLastSpeedVertical) / 2.f;
+		fClimbUpSpeed -= fGravity * (float)dTimeDelta;
+		float dY = (float)dTimeDelta * (fClimbUpSpeed + fLastSpeedVertical) / 2.f;
 		m_vPos.y += dY;
 
 		// this is tricky: we will assume that the character is jumping if it has a jump up speed bigger then 0.2. 
@@ -2807,8 +2791,8 @@ bool CBipedObject::MoveTowards(double dTimeDelta, const DVector3& vPosTarget, fl
 		if (m_fSpeedVertical > 0.f)
 		{
 			float fLastSpeedVertical = m_fSpeedVertical;
-			m_fSpeedVertical -= fGravity*(float)dTimeDelta;
-			float dY = (float)dTimeDelta*(m_fSpeedVertical + fLastSpeedVertical) / 2.f;
+			m_fSpeedVertical -= fGravity * (float)dTimeDelta;
+			float dY = (float)dTimeDelta * (m_fSpeedVertical + fLastSpeedVertical) / 2.f;
 			if (dY > 0.f)
 			{
 				m_vPos.y += dY;
@@ -2853,11 +2837,11 @@ bool CBipedObject::MoveTowards(double dTimeDelta, const DVector3& vPosTarget, fl
 				if (fabs(fFactor) < FLT_TOLERANCE)
 					fFactor = 1;
 				else
-					fFactor = sqrt(1 - fFactor*fFactor);
+					fFactor = sqrt(1 - fFactor * fFactor);
 
 				Matrix4 mx;
-				ParaMatrixRotationAxis(&mx, vAxis, acos(vNorm.y)*fFactor);
-				vNorm = Vector3(0, 1, 0)*mx;
+				ParaMatrixRotationAxis(&mx, vAxis, acos(vNorm.y) * fFactor);
+				vNorm = Vector3(0, 1, 0) * mx;
 			}
 		}
 		else
@@ -2869,7 +2853,7 @@ bool CBipedObject::MoveTowards(double dTimeDelta, const DVector3& vPosTarget, fl
 		m_vNormTarget = vNorm;
 		if (m_vNorm != m_vNormTarget)
 		{
-			Math::SmoothMoveVec3(&m_vNorm, m_vNormTarget, m_vNorm, (float)(SPEED_NORM_TURN*dTimeDelta), 0);
+			Math::SmoothMoveVec3(&m_vNorm, m_vNormTarget, m_vNorm, (float)(SPEED_NORM_TURN * dTimeDelta), 0);
 			ParaVec3Normalize(&m_vNorm, &m_vNorm);
 		}
 		//Math::SmoothMoveVec3(&m_vNorm, vNorm, m_vNorm, (float)(0.2f*GetAbsoluteSpeed()*dTimeDelta), 0);
@@ -2888,7 +2872,7 @@ bool CBipedObject::MoveTowards(double dTimeDelta, const DVector3& vPosTarget, fl
 			m_fSpeedVertical = 0.f;
 		BlockCommon::ConstrainPos(m_vPos, vMinPos, vMaxPos);
 	}
-	
+
 	if (bReachPos && fabs(m_fSpeedVertical) > 0.1f)
 	{
 		bReachPos = false;
@@ -2919,8 +2903,8 @@ bool ParaEngine::CBipedObject::CheckBlockWorld(DVector3& vMovePos, Vector3& vMin
 	{
 		// taking block world into consideration
 		const float block_size = BlockConfig::g_blockSize;
-		const float half_block_size = block_size*0.5f;
-		const float quat_block_size = block_size*0.25f;
+		const float half_block_size = block_size * 0.5f;
+		const float quat_block_size = block_size * 0.25f;
 
 		uint16 block_x, block_y, block_z;
 		BlockCommon::ConvertToBlockIndex((float)m_vPos.x, (float)m_vPos.y + quat_block_size, (float)m_vPos.z, block_x, block_y, block_z);
@@ -2932,7 +2916,7 @@ bool ParaEngine::CBipedObject::CheckBlockWorld(DVector3& vMovePos, Vector3& vMin
 		vMinPos = vFloorPos;
 		vMaxPos = vFloorPos;
 		int block_x_tmp, block_y_tmp, block_z_tmp;
-		vMaxPos.y += block_size*1.5f;
+		vMaxPos.y += block_size * 1.5f;
 		Vector3 vInnerAABBMinPos = vFloorPos + Vector3(-quat_block_size, 0, -quat_block_size);
 		Vector3 vInnerAABBMaxPos = vFloorPos + Vector3(quat_block_size, 0, quat_block_size);
 		Vector3 vOuterAABBMinPos = vFloorPos + Vector3(-quat_block_size * 3, 0, -quat_block_size * 3);
@@ -2994,9 +2978,9 @@ bool ParaEngine::CBipedObject::CheckBlockWorld(DVector3& vMovePos, Vector3& vMin
 														if (fDeltaHeightDist > 0)
 														{
 															// walk up speed is 2 meter/sec
-															if (fDeltaHeightDist > fDeltaTime*2.f)
+															if (fDeltaHeightDist > fDeltaTime * 2.f)
 															{
-																fPhysicalHeight = (float)m_vPos.y + fDeltaTime*2.f - vFloorPos.y;
+																fPhysicalHeight = (float)m_vPos.y + fDeltaTime * 2.f - vFloorPos.y;
 															}
 														}
 
@@ -3094,65 +3078,65 @@ bool ParaEngine::CBipedObject::CheckBlockWorld(DVector3& vMovePos, Vector3& vMin
 			//
 
 			// suppose the character is 1.9 block high in block based world. 
-			float max_off_ground_height = ((2 - 1.9f)*block_size) + vFloorPos.y;
+			float max_off_ground_height = ((2 - 1.9f) * block_size) + vFloorPos.y;
 			// whether biped is far from floor, which we will need to take the third floor into consideration.
 			bool bIsOffGround = (m_vPos.y > max_off_ground_height);
 
 			if (nBipedHeight >= 2)
 			{
 				// compute the moving area in x, z plane. 
-				if (IS_OBSTRUCTED(obstruction_matrix[0][1][1]) || IS_OBSTRUCTED(obstruction_matrix[0][2][1]) || (bIsOffGround && IS_OBSTRUCTED(obstruction_matrix[0][3][1]))){
+				if (IS_OBSTRUCTED(obstruction_matrix[0][1][1]) || IS_OBSTRUCTED(obstruction_matrix[0][2][1]) || (bIsOffGround && IS_OBSTRUCTED(obstruction_matrix[0][3][1]))) {
 					vMinPos.x = vInnerAABBMinPos.x;
 				}
-				else{
+				else {
 					vMinPos.x = vOuterAABBMinPos.x;
 				}
-				if (IS_OBSTRUCTED(obstruction_matrix[2][1][1]) || IS_OBSTRUCTED(obstruction_matrix[2][2][1]) || (bIsOffGround && IS_OBSTRUCTED(obstruction_matrix[2][3][1]))){
+				if (IS_OBSTRUCTED(obstruction_matrix[2][1][1]) || IS_OBSTRUCTED(obstruction_matrix[2][2][1]) || (bIsOffGround && IS_OBSTRUCTED(obstruction_matrix[2][3][1]))) {
 					vMaxPos.x = vInnerAABBMaxPos.x;
 				}
-				else{
+				else {
 					vMaxPos.x = vOuterAABBMaxPos.x;
 				}
 
-				if (IS_OBSTRUCTED(obstruction_matrix[1][1][0]) || IS_OBSTRUCTED(obstruction_matrix[1][2][0]) || (bIsOffGround && IS_OBSTRUCTED(obstruction_matrix[1][3][0]))){
+				if (IS_OBSTRUCTED(obstruction_matrix[1][1][0]) || IS_OBSTRUCTED(obstruction_matrix[1][2][0]) || (bIsOffGround && IS_OBSTRUCTED(obstruction_matrix[1][3][0]))) {
 					vMinPos.z = vInnerAABBMinPos.z;
 				}
-				else{
+				else {
 					vMinPos.z = vOuterAABBMinPos.z;
 				}
-				if (IS_OBSTRUCTED(obstruction_matrix[1][1][2]) || IS_OBSTRUCTED(obstruction_matrix[1][2][2]) || (bIsOffGround && IS_OBSTRUCTED(obstruction_matrix[1][3][2]))){
+				if (IS_OBSTRUCTED(obstruction_matrix[1][1][2]) || IS_OBSTRUCTED(obstruction_matrix[1][2][2]) || (bIsOffGround && IS_OBSTRUCTED(obstruction_matrix[1][3][2]))) {
 					vMaxPos.z = vInnerAABBMaxPos.z;
 				}
-				else{
+				else {
 					vMaxPos.z = vOuterAABBMaxPos.z;
 				}
 			}
 			else
 			{
 				// compute the moving area in x, z plane. 
-				if (IS_OBSTRUCTED(obstruction_matrix[0][1][1]) || (bIsOffGround && IS_OBSTRUCTED(obstruction_matrix[0][2][1]))){
+				if (IS_OBSTRUCTED(obstruction_matrix[0][1][1]) || (bIsOffGround && IS_OBSTRUCTED(obstruction_matrix[0][2][1]))) {
 					vMinPos.x = vInnerAABBMinPos.x;
 				}
-				else{
+				else {
 					vMinPos.x = vOuterAABBMinPos.x;
 				}
-				if (IS_OBSTRUCTED(obstruction_matrix[2][1][1]) || (bIsOffGround && IS_OBSTRUCTED(obstruction_matrix[2][2][1]))){
+				if (IS_OBSTRUCTED(obstruction_matrix[2][1][1]) || (bIsOffGround && IS_OBSTRUCTED(obstruction_matrix[2][2][1]))) {
 					vMaxPos.x = vInnerAABBMaxPos.x;
 				}
-				else{
+				else {
 					vMaxPos.x = vOuterAABBMaxPos.x;
 				}
 
-				if (IS_OBSTRUCTED(obstruction_matrix[1][1][0]) || (bIsOffGround && IS_OBSTRUCTED(obstruction_matrix[1][2][0]))){
+				if (IS_OBSTRUCTED(obstruction_matrix[1][1][0]) || (bIsOffGround && IS_OBSTRUCTED(obstruction_matrix[1][2][0]))) {
 					vMinPos.z = vInnerAABBMinPos.z;
 				}
-				else{
+				else {
 					vMinPos.z = vOuterAABBMinPos.z;
 				}
-				if (IS_OBSTRUCTED(obstruction_matrix[1][1][2]) || (bIsOffGround && IS_OBSTRUCTED(obstruction_matrix[1][2][2]))){
+				if (IS_OBSTRUCTED(obstruction_matrix[1][1][2]) || (bIsOffGround && IS_OBSTRUCTED(obstruction_matrix[1][2][2]))) {
 					vMaxPos.z = vInnerAABBMaxPos.z;
 				}
-				else{
+				else {
 					vMaxPos.z = vOuterAABBMaxPos.z;
 				}
 			}
@@ -3202,10 +3186,10 @@ bool ParaEngine::CBipedObject::CheckBlockWorld(DVector3& vMovePos, Vector3& vMin
 			if (!IS_OBSTRUCTED(obstruction_matrix[1][0][1]))
 			{
 				// check for under-feet blocks and constrain area
-				if ((m_vPos.x<(vFloorPos.x - quat_block_size) && vMinPos.x < (vFloorPos.x - half_block_size) && IS_OBSTRUCTED(obstruction_matrix[0][0][1])) ||
-					(m_vPos.x>(vFloorPos.x + quat_block_size) && vMaxPos.x >(vFloorPos.x + half_block_size) && IS_OBSTRUCTED(obstruction_matrix[2][0][1])) ||
+				if ((m_vPos.x < (vFloorPos.x - quat_block_size) && vMinPos.x < (vFloorPos.x - half_block_size) && IS_OBSTRUCTED(obstruction_matrix[0][0][1])) ||
+					(m_vPos.x > (vFloorPos.x + quat_block_size) && vMaxPos.x > (vFloorPos.x + half_block_size) && IS_OBSTRUCTED(obstruction_matrix[2][0][1])) ||
 					(m_vPos.z < (vFloorPos.z - quat_block_size) && vMinPos.z < (vFloorPos.z - half_block_size) && IS_OBSTRUCTED(obstruction_matrix[1][0][0])) ||
-					(m_vPos.z>(vFloorPos.z + quat_block_size) && vMaxPos.z > (vFloorPos.z + half_block_size) && IS_OBSTRUCTED(obstruction_matrix[1][0][2]))
+					(m_vPos.z > (vFloorPos.z + quat_block_size) && vMaxPos.z > (vFloorPos.z + half_block_size) && IS_OBSTRUCTED(obstruction_matrix[1][0][2]))
 					)
 				{
 					// do not fall down since adjacent underground cell is solid. 
@@ -3237,10 +3221,10 @@ bool ParaEngine::CBipedObject::CheckBlockWorld(DVector3& vMovePos, Vector3& vMin
 			{
 				DVector3 vNewPos = vMovePos;
 				BlockCommon::ConstrainPos(vNewPos, vMinPos, vMaxPos);
-				if (vMovePos.y <= vNewPos.y){
+				if (vMovePos.y <= vNewPos.y) {
 					bUseGlobalTerrainNorm = false;
 				}
-				else{
+				else {
 					float terrain_overrun = (float)vMovePos.y - vMaxPos.y;
 					if (terrain_overrun > FLT_TOLERANCE && terrain_overrun < block_size)
 					{
@@ -3252,7 +3236,7 @@ bool ParaEngine::CBipedObject::CheckBlockWorld(DVector3& vMovePos, Vector3& vMin
 						m_fSpeedVertical = 0.f;
 						bFallDown = false;
 					}
-					if (vNewPos.y < vMaxPos.y){
+					if (vNewPos.y < vMaxPos.y) {
 						// do not fall down if walking on terrain or physical object. 
 						bFallDown = false;
 					}
@@ -3275,7 +3259,7 @@ bool ParaEngine::CBipedObject::CheckBlockWorld(DVector3& vMovePos, Vector3& vMin
 				{
 					if (vMovePos.z < vInnerAABBMinPos.z)
 					{
-						if (IS_OBSTRUCTED(obstruction_matrix[0][1][0]) || IS_OBSTRUCTED(obstruction_matrix[0][2][0]) || (bIsOffGround && IS_OBSTRUCTED(obstruction_matrix[0][3][0]))){
+						if (IS_OBSTRUCTED(obstruction_matrix[0][1][0]) || IS_OBSTRUCTED(obstruction_matrix[0][2][0]) || (bIsOffGround && IS_OBSTRUCTED(obstruction_matrix[0][3][0]))) {
 							if ((vInnerAABBMinPos.z - vMovePos.z) < (vInnerAABBMinPos.x - vMovePos.x))
 								vMovePos.z = vInnerAABBMinPos.z;
 							else
@@ -3284,7 +3268,7 @@ bool ParaEngine::CBipedObject::CheckBlockWorld(DVector3& vMovePos, Vector3& vMin
 					}
 					else if (vMovePos.z > vInnerAABBMaxPos.z)
 					{
-						if (IS_OBSTRUCTED(obstruction_matrix[0][1][2]) || IS_OBSTRUCTED(obstruction_matrix[0][2][2]) || (bIsOffGround && IS_OBSTRUCTED(obstruction_matrix[0][3][2]))){
+						if (IS_OBSTRUCTED(obstruction_matrix[0][1][2]) || IS_OBSTRUCTED(obstruction_matrix[0][2][2]) || (bIsOffGround && IS_OBSTRUCTED(obstruction_matrix[0][3][2]))) {
 							if ((vMovePos.z - vInnerAABBMaxPos.z) < (vInnerAABBMinPos.x - vMovePos.x))
 								vMovePos.z = vInnerAABBMaxPos.z;
 							else
@@ -3296,7 +3280,7 @@ bool ParaEngine::CBipedObject::CheckBlockWorld(DVector3& vMovePos, Vector3& vMin
 				{
 					if (vMovePos.z < vInnerAABBMinPos.z)
 					{
-						if (IS_OBSTRUCTED(obstruction_matrix[2][1][0]) || IS_OBSTRUCTED(obstruction_matrix[2][2][0]) || (bIsOffGround && IS_OBSTRUCTED(obstruction_matrix[2][3][0]))){
+						if (IS_OBSTRUCTED(obstruction_matrix[2][1][0]) || IS_OBSTRUCTED(obstruction_matrix[2][2][0]) || (bIsOffGround && IS_OBSTRUCTED(obstruction_matrix[2][3][0]))) {
 							if ((vInnerAABBMinPos.z - vMovePos.z) < (vMovePos.x - vInnerAABBMaxPos.x))
 								vMovePos.z = vInnerAABBMinPos.z;
 							else
@@ -3305,7 +3289,7 @@ bool ParaEngine::CBipedObject::CheckBlockWorld(DVector3& vMovePos, Vector3& vMin
 					}
 					else if (vMovePos.z > vInnerAABBMaxPos.z)
 					{
-						if (IS_OBSTRUCTED(obstruction_matrix[2][1][2]) || IS_OBSTRUCTED(obstruction_matrix[2][2][2]) || (bIsOffGround && IS_OBSTRUCTED(obstruction_matrix[2][3][2]))){
+						if (IS_OBSTRUCTED(obstruction_matrix[2][1][2]) || IS_OBSTRUCTED(obstruction_matrix[2][2][2]) || (bIsOffGround && IS_OBSTRUCTED(obstruction_matrix[2][3][2]))) {
 							if ((vMovePos.z - vInnerAABBMaxPos.z) < (vMovePos.x - vInnerAABBMaxPos.x))
 								vMovePos.z = vInnerAABBMaxPos.z;
 							else
@@ -3402,7 +3386,7 @@ bool ParaEngine::CBipedObject::CheckBlockWorld(DVector3& vMovePos, Vector3& vMin
 							// just give it a little vertical speed. 
 							m_fSpeedVertical = 1.f;
 						}
-						vMovePos.y = m_vPos.y + GetSpeed()*fDeltaTime;
+						vMovePos.y = m_vPos.y + GetSpeed() * fDeltaTime;
 					}
 				}
 
@@ -3437,7 +3421,7 @@ bool ParaEngine::CBipedObject::CheckBlockWorld(DVector3& vMovePos, Vector3& vMin
 	return bUseMinMaxBox;
 }
 
-bool CBipedObject::FlyTowards(double dTimeDelta, const DVector3& vPosTarget, float fStopDistance, bool * pIsSlidingWall)
+bool CBipedObject::FlyTowards(double dTimeDelta, const DVector3& vPosTarget, float fStopDistance, bool* pIsSlidingWall)
 {
 	static SensorGroups g_sensorGroups[3];
 	/** check to see if the maximum penetration distance allowed. In each simulation step, if the biped moves
@@ -3471,7 +3455,7 @@ bool CBipedObject::FlyTowards(double dTimeDelta, const DVector3& vPosTarget, flo
 
 	{
 		// check to see whether the target is in movable region, if not, we only allow object to move if the object is already outside the movable region.
-		const CShapeAABB * aabb = GetMovableRegion();
+		const CShapeAABB* aabb = GetMovableRegion();
 		if (aabb != 0)
 		{
 			Vector3 vMin = aabb->GetMin();
@@ -3527,7 +3511,7 @@ bool CBipedObject::FlyTowards(double dTimeDelta, const DVector3& vPosTarget, flo
 		if (bFeetUnderWater)
 		{
 			float fTerrainHeight = CGlobals::GetGlobalTerrain()->GetElevation((float)m_vPos.x, (float)m_vPos.z);
-			if (m_vPos.y < (fTerrainHeight - 1.0f)){
+			if (m_vPos.y < (fTerrainHeight - 1.0f)) {
 				bFeetUnderWater = false;
 				bHeadUnderWater = false;
 			}
@@ -3559,9 +3543,9 @@ bool CBipedObject::FlyTowards(double dTimeDelta, const DVector3& vPosTarget, flo
 			}
 
 			if (m_fDensity != 0)
-				fGravity = (WATER_DENSITY - e / m_fDensity)*GRAVITY_CONSTANT;
+				fGravity = (WATER_DENSITY - e / m_fDensity) * GRAVITY_CONSTANT;
 			else
-				fGravity = WATER_DENSITY*GRAVITY_CONSTANT;
+				fGravity = WATER_DENSITY * GRAVITY_CONSTANT;
 
 			/** the larger the more resistance between [0,1]. */
 #define UP_WATER_RESISTENCE_COEF	0.1f
@@ -3575,13 +3559,13 @@ bool CBipedObject::FlyTowards(double dTimeDelta, const DVector3& vPosTarget, flo
 			{
 				// character is swimming on the water surface~
 				bMaintainHeight = true;
-				fMaintainHeight = CGlobals::GetOceanManager()->GetWaterLevel() - m_fDensity*fHeight;
+				fMaintainHeight = CGlobals::GetOceanManager()->GetWaterLevel() - m_fDensity * fHeight;
 			}
 			else
 			{
 				if (m_fSpeedVertical > 0)
 				{
-					fGravity += m_fSpeedVertical*m_fSpeedVertical*UP_WATER_RESISTENCE_COEF;
+					fGravity += m_fSpeedVertical * m_fSpeedVertical * UP_WATER_RESISTENCE_COEF;
 				}
 				else if (m_fSpeedVertical == 0.f)
 				{
@@ -3594,7 +3578,7 @@ bool CBipedObject::FlyTowards(double dTimeDelta, const DVector3& vPosTarget, flo
 				else
 				{
 					/** the fall down speed should be small.*/
-					fGravity -= m_fSpeedVertical*m_fSpeedVertical*DOWN_WATER_RESISTENCE_COEF;
+					fGravity -= m_fSpeedVertical * m_fSpeedVertical * DOWN_WATER_RESISTENCE_COEF;
 				}
 				if (!bHeadUnderWater && m_fDensity < WATER_DENSITY)
 				{
@@ -3604,7 +3588,7 @@ bool CBipedObject::FlyTowards(double dTimeDelta, const DVector3& vPosTarget, flo
 					if (fabs(m_fSpeedVertical) < WATER_SKIP_VELOCITY)
 					{
 						bMaintainHeight = true;
-						fMaintainHeight = CGlobals::GetOceanManager()->GetWaterLevel() - m_fDensity*fHeight;
+						fMaintainHeight = CGlobals::GetOceanManager()->GetWaterLevel() - m_fDensity * fHeight;
 
 						//if( fabs(e-m_fDensity)*fHeight <= FLT_TOLERANCE)
 						{
@@ -3676,7 +3660,7 @@ bool CBipedObject::FlyTowards(double dTimeDelta, const DVector3& vPosTarget, flo
 		{
 			// get origin
 			Vector3 orig = m_vPos;
-			float fSensorHeight = GetPhysicsHeight()*SENSOR_HEIGHT_RATIO;
+			float fSensorHeight = GetPhysicsHeight() * SENSOR_HEIGHT_RATIO;
 			orig.y += fSensorHeight;
 			// compute sensor group 0. 
 			g_sensorGroups[0].ComputeSensorGroup(orig, vBipedFacing, fRadius, GetPhysicsGroupMask());
@@ -3718,7 +3702,7 @@ bool CBipedObject::FlyTowards(double dTimeDelta, const DVector3& vPosTarget, flo
 					vTentativeFacing = vBipedFacing.crossProduct(vWallNorm);
 					vTentativeFacing = vWallNorm.crossProduct(vTentativeFacing);
 					ParaVec3Normalize(&vTentativeFacing, &vTentativeFacing); // just make it valid
-					vTentativeFacing = vTentativeFacing*PENETRATION_DISTANCE;
+					vTentativeFacing = vTentativeFacing * PENETRATION_DISTANCE;
 					vTentativeFacing.y = 0;
 					Vector3 vHitRayOrig = g_sensorGroups[0].m_vOrig + vTentativeFacing;
 					Vector3 vHitRayDir = g_sensorGroups[0].GetHitRaySensor().vDir;
@@ -3752,7 +3736,7 @@ bool CBipedObject::FlyTowards(double dTimeDelta, const DVector3& vPosTarget, flo
 							// if the object is walking into the wall, we will slide along the wall.
 							float speedScale = vBipedFacing.dotProduct(vWallDir);
 							Vector3 vFacing;
-							vFacing = vWallDir * float(m_fSpeed * dTimeDelta*speedScale);
+							vFacing = vWallDir * float(m_fSpeed * dTimeDelta * speedScale);
 							vMovePos = vFacing + m_vPos;
 							if (speedScale < 0.5f)
 							{
@@ -3802,7 +3786,7 @@ bool CBipedObject::FlyTowards(double dTimeDelta, const DVector3& vPosTarget, flo
 							if (fReboundDistance >= 0)
 							{
 								Vector3 vFacing;
-								vFacing = g_sensorGroups[2].GetHitRaySensor().vDir *  (-fReboundDistance);
+								vFacing = g_sensorGroups[2].GetHitRaySensor().vDir * (-fReboundDistance);
 								vMovePos = vFacing + vMovePos;
 							}
 						}
@@ -3843,7 +3827,7 @@ bool CBipedObject::FlyTowards(double dTimeDelta, const DVector3& vPosTarget, flo
 	}
 	else
 	{
-		dist = MAX_DIST*OBJ_UNIT; // infinitely large
+		dist = MAX_DIST * OBJ_UNIT; // infinitely large
 	}
 
 	// set the object height to the higher of the two.
@@ -3916,12 +3900,12 @@ bool CBipedObject::FlyTowards(double dTimeDelta, const DVector3& vPosTarget, flo
 	if (m_fSpeedVertical > 0.f)
 	{
 		float fLastSpeedVertical = m_fSpeedVertical;
-		m_fSpeedVertical -= fGravity*(float)dTimeDelta;
+		m_fSpeedVertical -= fGravity * (float)dTimeDelta;
 		if (m_fSpeedVertical < 0)
 		{
 			m_fSpeedVertical = 0;
 		}
-		float dY = (float)dTimeDelta*(m_fSpeedVertical + fLastSpeedVertical) / 2.f;
+		float dY = (float)dTimeDelta * (m_fSpeedVertical + fLastSpeedVertical) / 2.f;
 		m_vPos.y += dY;
 	}
 
@@ -3970,7 +3954,7 @@ void CBipedObject::AnimateMoving(double dTimeDelta, bool bSharpTurning)
 			ForceStop();
 			if (m_vNorm != m_vNormTarget)
 			{
-				Math::SmoothMoveVec3(&m_vNorm, m_vNormTarget, m_vNorm, (float)(SPEED_NORM_TURN*dTimeDelta), 0);
+				Math::SmoothMoveVec3(&m_vNorm, m_vNormTarget, m_vNorm, (float)(SPEED_NORM_TURN * dTimeDelta), 0);
 				ParaVec3Normalize(&m_vNorm, &m_vNorm);
 			}
 		}
@@ -4002,7 +3986,7 @@ void CBipedObject::AnimateMoving(double dTimeDelta, bool bSharpTurning)
 			SetSpeedAngle(fFacingTarget);
 			// turn the render model smoothly. 
 			float fTmp = GetFacing();
-			Math::SmoothMoveAngle1(fTmp, Math::ToStandardAngle(fFacingTarget), BODY_TURNING_SPEED*(float)dTimeDelta);
+			Math::SmoothMoveAngle1(fTmp, Math::ToStandardAngle(fFacingTarget), BODY_TURNING_SPEED * (float)dTimeDelta);
 			SetFacing(fTmp);
 			// TODO: set head turning angle using waypoint.vFacing
 			// move the character to destination with the current speed angle and speed
@@ -4047,15 +4031,15 @@ void CBipedObject::AnimateMoving(double dTimeDelta, bool bSharpTurning)
 		{
 #ifdef USE_MOUNT_FACING
 			/**
-			* Set align norm and facing 
+			* Set align norm and facing
 			*/
 #ifdef SMOOTH_MOUNTING_FACING
 			float fDeltaTime = (float)dTimeDelta;
 			float fFacing = GetFacing();
-			Math::SmoothMoveAngle1(fFacing, pTarget->GetFacing()+waypoint.fFacing, MOUNT_FACING_SPEED*fDeltaTime);
-			SetFacing(fFacing); 
+			Math::SmoothMoveAngle1(fFacing, pTarget->GetFacing() + waypoint.fFacing, MOUNT_FACING_SPEED * fDeltaTime);
+			SetFacing(fFacing);
 #else
-			SetFacing(pTarget->GetFacing()+waypoint.fFacing);
+			SetFacing(pTarget->GetFacing() + waypoint.fFacing);
 #endif
 #endif
 			/**
@@ -4072,19 +4056,19 @@ void CBipedObject::AnimateMoving(double dTimeDelta, bool bSharpTurning)
 				// Smooth move to that position, use some inertia to prevent camera jerking on horse back
 				DVector3 vNewPos = GetPosition(&vNewPos);
 
-				if((vNewPos- vMountPos).squaredLength()<=2.0f)
+				if ((vNewPos - vMountPos).squaredLength() <= 2.0f)
 				{
 					float fStep = max(MOUNT_POS_SPEED, pTarget->GetSpeed()) * fDeltaTime;
 					Math::SmoothMoveFloat1(vNewPos.x, vMountPos.x, fStep);
-					if(vMountPos.y > vNewPos.y)
+					if (vMountPos.y > vNewPos.y)
 						vNewPos.y = vMountPos.y;
 					else
 						Math::SmoothMoveFloat1(vNewPos.y, vMountPos.y, fStep);
 					Math::SmoothMoveFloat1(vNewPos.z, vMountPos.z, fStep);
-					SetPosition( vNewPos);
+					SetPosition(vNewPos);
 				}
 				else
-					SetPosition( vMountPos);
+					SetPosition(vMountPos);
 #else
 				SetPosition(vMountPos);
 #endif
@@ -4145,7 +4129,7 @@ void CBipedObject::AnimateMoving(double dTimeDelta, bool bSharpTurning)
 	}
 }
 
-void CBipedObject::GetSpeedDirection(Vector3 *pV)
+void CBipedObject::GetSpeedDirection(Vector3* pV)
 {
 	Matrix4 m;
 	if (!(m_isFlying && GetFlyUsingCameraDir()))
@@ -4203,10 +4187,10 @@ void CBipedObject::GetSpeedDirection(Vector3 *pV)
 				Vector3 flatDir;
 				ParaVec3Normalize(&flatDir, &temp);
 				ParaMatrixRotationY(&m, -fTurningAngle);
-				temp = flatDir*m;
+				temp = flatDir * m;
 				vFlyingDir = temp;
 			}
-			
+
 			*pV = vFlyingDir;
 		}
 		else
@@ -4321,7 +4305,6 @@ void ParaEngine::CBipedObject::UpdateGeometry()
 				{
 					Vector3 vMin = pModel->GetHeader().minExtent;
 					Vector3 vMax = pModel->GetHeader().maxExtent;
-
 					for (auto child : m_children)
 					{
 						auto pGeosetObj = dynamic_cast<CGeosetObject*>(child);
@@ -4329,19 +4312,19 @@ void ParaEngine::CBipedObject::UpdateGeometry()
 						{
 							if (static_cast<CGeosetObject*>(child)->getEntity()->GetModel())
 							{
-								vMin.x = std::min<>(vMin.x, pGeosetObj->getEntity()->GetModel()->GetHeader().minExtent.x);
-								vMin.y = std::min<>(vMin.y, pGeosetObj->getEntity()->GetModel()->GetHeader().minExtent.y);
-								vMin.z = std::min<>(vMin.z, pGeosetObj->getEntity()->GetModel()->GetHeader().minExtent.z);
-								vMax.x = std::max<>(vMax.x, pGeosetObj->getEntity()->GetModel()->GetHeader().maxExtent.x);
-								vMax.y = std::max<>(vMax.y, pGeosetObj->getEntity()->GetModel()->GetHeader().maxExtent.y);
-								vMax.z = std::max<>(vMax.z, pGeosetObj->getEntity()->GetModel()->GetHeader().maxExtent.z);
+								auto& header = pGeosetObj->getEntity()->GetModel()->GetHeader();
+								vMin.x = std::min<>(vMin.x, header.minExtent.x);
+								vMin.y = std::min<>(vMin.y, header.minExtent.y);
+								vMin.z = std::min<>(vMin.z, header.minExtent.z);
+								vMax.x = std::max<>(vMax.x, header.maxExtent.x);
+								vMax.y = std::max<>(vMax.y, header.maxExtent.y);
+								vMax.z = std::max<>(vMax.z, header.maxExtent.z);
 							}
 						}
 					}
-
-					m_fAssetHeight = vMax.y*fScale;
+					m_fAssetHeight = vMax.y * fScale;
 					Matrix4 mat;
-					GetLocalTransform(&mat);
+					GetLocalWorldTransform(mat);
 					CShapeOBB obb(CShapeBox(vMin, vMax), mat);
 					CShapeBox minmaxBox;
 					minmaxBox.Extend(obb);
@@ -4420,7 +4403,7 @@ void CBipedObject::FacingTarget(float fTargetFacing)
 {
 	m_fFacingTarget = fTargetFacing;
 }
-void CBipedObject::FacingTarget(const Vector3 *pV)
+void CBipedObject::FacingTarget(const Vector3* pV)
 {
 	// facing target right away.
 	if (IsStanding())
@@ -4478,11 +4461,6 @@ float CBipedObject::GetMaxSpeed()
 
 float CBipedObject::GetSpeedScale()
 {
-	/*if(m_pAI)
-	{
-	return m_pAI->GetSpeedScale();
-	}
-	return 1.0f;*/
 	return m_fSpeedScale;
 }
 void CBipedObject::SetSpeedScale(float fScale)
@@ -4497,10 +4475,6 @@ void CBipedObject::SetSpeedScale(float fScale)
 
 float CBipedObject::GetSizeScale()
 {
-	/*if(m_pAI!=NULL)
-	{
-	return m_pAI->GetSizeScale();
-	}*/
 	return m_fSizeScale;
 }
 
@@ -4527,19 +4501,22 @@ void CBipedObject::Reset()
 
 void CBipedObject::SetSizeScale(float fScale)
 {
-	m_fSizeScale = fScale;
-	CAnimInstanceBase* pAI = GetAnimInstance();
-	if (pAI && m_pMultiAnimationEntity)
+	if (m_fSizeScale != fScale)
 	{
-		/// set scale of the associated mesh
-		float fOldScale = pAI->GetSizeScale();
-		pAI->SetSizeScale(fScale);
-		SetGeometryDirty(true);
-	}
-	else
-	{
-		// just a default radius for debugging purposes only
-		SetRadius(0.2f);
+		m_fSizeScale = fScale;
+		CAnimInstanceBase* pAI = GetAnimInstance();
+		if (pAI && m_pMultiAnimationEntity)
+		{
+			/// set scale of the associated mesh
+			float fOldScale = pAI->GetSizeScale();
+			pAI->SetSizeScale(fScale);
+			SetGeometryDirty(true);
+		}
+		else
+		{
+			// just a default radius for debugging purposes only
+			SetRadius(0.2f);
+		}
 	}
 }
 
@@ -4689,7 +4666,6 @@ int ParaEngine::CBipedObject::GetAnimation()
 	return GetCurrentAnimation();
 }
 
-
 int ParaEngine::CBipedObject::GetUpperAnimation()
 {
 	if (m_pAI)
@@ -4748,7 +4724,7 @@ bool ParaEngine::CBipedObject::SetReplaceableTexture(int ReplaceableTextureID, T
 	return true;
 }
 
-void ParaEngine::CBipedObject::SetNormal(const Vector3 & pNorm)
+void ParaEngine::CBipedObject::SetNormal(const Vector3& pNorm)
 {
 	m_vNorm = pNorm;
 	m_vNormTarget = m_vNorm;
@@ -4839,21 +4815,21 @@ int ParaEngine::CBipedObject::GetPhysicsGroup()
 
 void ParaEngine::CBipedObject::EnablePhysics(bool bEnable)
 {
-	if (!bEnable){
+	if (!bEnable) {
 		UnloadPhysics();
 		m_dwPhysicsMethod |= PHYSICS_FORCE_NO_PHYSICS;
 	}
 	else
 	{
 		m_dwPhysicsMethod &= (~PHYSICS_FORCE_NO_PHYSICS);
-		if ((m_dwPhysicsMethod&PHYSICS_ALWAYS_LOAD) > 0)
+		if ((m_dwPhysicsMethod & PHYSICS_ALWAYS_LOAD) > 0)
 			LoadPhysics();
 	}
 }
 
 bool ParaEngine::CBipedObject::IsPhysicsEnabled()
 {
-	return !((m_dwPhysicsMethod & PHYSICS_FORCE_NO_PHYSICS)>0);
+	return !((m_dwPhysicsMethod & PHYSICS_FORCE_NO_PHYSICS) > 0);
 }
 
 int ParaEngine::CBipedObject::GetStaticActorCount()
@@ -4950,14 +4926,18 @@ float ParaEngine::CBipedObject::GetGravity()
 	return m_gravity;
 }
 
-void ParaEngine::CBipedObject::SetFlyingDirection(const Vector3 *dir)
+void ParaEngine::CBipedObject::SetFlyingDirection(const Vector3* dir)
 {
 	m_flyingDir = *dir;
 }
 
 void ParaEngine::CBipedObject::SetBootHeight(float fBootHeight)
 {
-	m_fBootHeight = fBootHeight;
+	if (m_fBootHeight != fBootHeight)
+	{
+		m_fBootHeight = fBootHeight;
+		SetGeometryDirty(true);
+	}
 }
 
 float ParaEngine::CBipedObject::GetBootHeight()
@@ -5157,7 +5137,7 @@ int ParaEngine::CBipedObject::ProcessObjectEvent(const ObjectEvent& event)
 		else if (curTokenCmd == HLEToken("walk").GetCmd())
 		{
 			double x, y;
-			if (GetHLEToken(sEvent.c_str(), &curToken, &nPos)){
+			if (GetHLEToken(sEvent.c_str(), &curToken, &nPos)) {
 				x = curToken.dValue;
 				if (GetHLEToken(sEvent.c_str(), &curToken, &nPos))
 				{
@@ -5174,12 +5154,12 @@ int ParaEngine::CBipedObject::ProcessObjectEvent(const ObjectEvent& event)
 		else if (curTokenCmd == HLEToken("anim").GetCmd())
 		{
 			if (GetHLEToken(sEvent.c_str(), &curToken, &nPos)) {
-				if (curToken.myType == HLEToken::str){
+				if (curToken.myType == HLEToken::str) {
 					string sValue;
 					curToken.GetString(sValue, sEvent.c_str());
 					PlayAnimation(sValue.c_str());
 				}
-				else{
+				else {
 					PlayAnimation((int)curToken.dValue);
 				}
 			}
@@ -5283,7 +5263,7 @@ void CBipedObject::SetVerticalSpeed(float fSpeed)
 {
 	m_fSpeedVertical = fSpeed;
 }
-void CBipedObject::ResetBipedPosition(const Vector3 *pV, bool bIgnoreHeight)
+void CBipedObject::ResetBipedPosition(const Vector3* pV, bool bIgnoreHeight)
 {
 	m_vPosTarget.clear();
 	m_vPos.x = pV->x;
@@ -5464,7 +5444,7 @@ bool CBipedObject::DumpBVHAnimations()
 
 int CBipedObject::GetAnimFrame()
 {
-	CAnimInstanceBase * pAI = GetAnimInstance();
+	CAnimInstanceBase* pAI = GetAnimInstance();
 	if (pAI)
 	{
 		return pAI->GetAnimFrame();
@@ -5474,7 +5454,7 @@ int CBipedObject::GetAnimFrame()
 
 void CBipedObject::SetAnimFrame(int nFrame)
 {
-	CAnimInstanceBase * pAI = GetAnimInstance();
+	CAnimInstanceBase* pAI = GetAnimInstance();
 	if (pAI)
 	{
 		return pAI->SetAnimFrame(nFrame);
@@ -5484,14 +5464,14 @@ void CBipedObject::SetAnimFrame(int nFrame)
 
 void ParaEngine::CBipedObject::EnableAnim(bool bAnimated)
 {
-	CAnimInstanceBase * pAI = GetAnimInstance();
+	CAnimInstanceBase* pAI = GetAnimInstance();
 	if (pAI)
 		return pAI->EnableAnimation(bAnimated);
 }
 
 bool ParaEngine::CBipedObject::IsAnimEnabled()
 {
-	CAnimInstanceBase * pAI = GetAnimInstance();
+	CAnimInstanceBase* pAI = GetAnimInstance();
 	if (pAI)
 		return pAI->IsAnimationEnabled();
 	return true;
@@ -5500,14 +5480,14 @@ bool ParaEngine::CBipedObject::IsAnimEnabled()
 
 int ParaEngine::CBipedObject::GetTime()
 {
-	CAnimInstanceBase * pAI = GetAnimInstance();
+	CAnimInstanceBase* pAI = GetAnimInstance();
 	return (pAI) ? pAI->GetTime() : 0;
 }
 
 void ParaEngine::CBipedObject::SetTime(int nTime)
 {
-	CAnimInstanceBase * pAI = GetAnimInstance();
-	if(pAI)
+	CAnimInstanceBase* pAI = GetAnimInstance();
+	if (pAI)
 		pAI->SetTime(nTime);
 }
 

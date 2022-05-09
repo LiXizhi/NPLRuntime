@@ -118,13 +118,14 @@ namespace ParaScripting
 		};
 	};
 
-	typedef struct
+	class CStringCompare
 	{
+	public:
 		bool operator() (const std::string& first, const std::string& second) const
 		{
-			return first.compare(second)<0;
+			return first.compare(second) < 0;
 		}
-	} CStringCompare;
+	};
 
 	typedef pair <const char *, ParaObjectNode> ParaObject_Pair;
 	
