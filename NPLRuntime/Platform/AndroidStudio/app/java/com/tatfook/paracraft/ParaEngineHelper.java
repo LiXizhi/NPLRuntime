@@ -23,11 +23,14 @@ import android.net.wifi.WifiManager;
 import android.provider.Settings;
 import androidx.annotation.Keep;
 import android.telephony.TelephonyManager;
+import android.util.Log;
 
 @Keep
 public class ParaEngineHelper {
 
 	private static native void nativeSetContext(final Context pContext, final AssetManager pAssetManager);
+	private static native String GetWorldDirectory();
+	private static native void OpenFileDialogNativeCallback(String filepath);
 
 	private static boolean mCanReadPhoneState = false;
 
@@ -210,5 +213,15 @@ public class ParaEngineHelper {
 		}else {
 			return "";
 		}
+	}
+
+	public static void OpenFileDialog(String filter) {
+		ParaEngineActivity context = ParaEngineActivity.getContext();
+		context.OpenFileDialog(filter);
+	}
+
+	public static void OpenFileDialogCallback(String filepath) {
+//		Log.i("Helper", filepath);
+		OpenFileDialogNativeCallback(filepath);
 	}
 }

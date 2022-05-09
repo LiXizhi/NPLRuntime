@@ -22,6 +22,9 @@ namespace ParaEngine {
 		static int getWifiIP();
 		static std::string getWifiMAC();
 		static std::string getMachineID();
+
+		static void OpenFileDialog(const char* filter, const char* activate_file, int callback_id);
+		static void OpenFileDialogCallback(std::string filepath);
 	private:
 		static const std::string classname;
 	};
