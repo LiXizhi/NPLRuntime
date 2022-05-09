@@ -406,6 +406,13 @@ std::string ParaGlobal::GetCmdReturn(std::string cmd) {
 #ifndef USE_DIRECTX_RENDERER //不是windows
 	return "";
 #endif
+	//隐藏一个控制台窗口，使得在之后用popen来启shell窗口的时候，不显示黑窗口，或者避免黑窗口一闪而过的情况
+	HWND hwnd = GetConsoleWindow();
+	if (hwnd == NULL) {
+		AllocConsole();    //为调用进程分配一个新的控制台
+		hwnd = GetConsoleWindow();
+	}
+	ShowWindow(hwnd, SW_HIDE);    //隐藏自己创建的控制台
 	FILE *file;
 	char ptr[1024] = { 0 };
 	char tmp[1024] = { 0 };

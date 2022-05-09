@@ -232,6 +232,10 @@ namespace ParaEngine
 		virtual void SetFullScreenMode(bool bFullscreen) = 0;
 		virtual bool IsFullScreenMode() = 0;
 
+		virtual void SetWindowMaximized(bool isMaximized) = 0;
+		virtual bool IsWindowMaximized() = 0;
+		virtual void GetVisibleSize(Vector2 *pOut) = 0;
+
 		/** The BringWindowToTop current window to the top of the Z order. This function only works if IsFullScreenMode() is false.
 		*/
 		virtual void BringWindowToTop() = 0;
