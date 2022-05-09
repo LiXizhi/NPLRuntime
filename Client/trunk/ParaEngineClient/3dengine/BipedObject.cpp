@@ -1563,7 +1563,6 @@ void CBipedObject::BuildShadowVolume(SceneState * sceneState, ShadowVolume * pSh
 	CAnimInstanceBase* pAI = GetAnimInstance();
 	if (pAI)
 	{
-		LPDIRECT3DDEVICE9  pd3dDevice = CGlobals::GetRenderDevice();
 		// push matrix
 		Matrix4 mxWorld;
 
@@ -4308,16 +4307,18 @@ void ParaEngine::CBipedObject::UpdateGeometry()
 					Vector3 vMax = pModel->GetHeader().maxExtent;
 					for (auto child : m_children)
 					{
-						if (dynamic_cast<CGeosetObject*>(child))
+						auto pGeosetObj = dynamic_cast<CGeosetObject*>(child);
+						if (pGeosetObj)
 						{
 							if (static_cast<CGeosetObject*>(child)->getEntity()->GetModel())
 							{
-								vMin.x = std::min<>(vMin.x, static_cast<CGeosetObject*>(child)->getEntity()->GetModel()->GetHeader().minExtent.x);
-								vMin.y = std::min<>(vMin.y, static_cast<CGeosetObject*>(child)->getEntity()->GetModel()->GetHeader().minExtent.y);
-								vMin.z = std::min<>(vMin.z, static_cast<CGeosetObject*>(child)->getEntity()->GetModel()->GetHeader().minExtent.z);
-								vMax.x = std::max<>(vMax.x, static_cast<CGeosetObject*>(child)->getEntity()->GetModel()->GetHeader().maxExtent.x);
-								vMax.y = std::max<>(vMax.y, static_cast<CGeosetObject*>(child)->getEntity()->GetModel()->GetHeader().maxExtent.y);
-								vMax.z = std::max<>(vMax.z, static_cast<CGeosetObject*>(child)->getEntity()->GetModel()->GetHeader().maxExtent.z);
+								auto& header = pGeosetObj->getEntity()->GetModel()->GetHeader();
+								vMin.x = std::min<>(vMin.x, header.minExtent.x);
+								vMin.y = std::min<>(vMin.y, header.minExtent.y);
+								vMin.z = std::min<>(vMin.z, header.minExtent.z);
+								vMax.x = std::max<>(vMax.x, header.maxExtent.x);
+								vMax.y = std::max<>(vMax.y, header.maxExtent.y);
+								vMax.z = std::max<>(vMax.z, header.maxExtent.z);
 							}
 						}
 					}
