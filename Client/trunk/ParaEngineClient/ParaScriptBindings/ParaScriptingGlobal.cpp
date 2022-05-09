@@ -412,7 +412,7 @@ std::string ParaGlobal::GetCmdReturn(std::string cmd) {
 		AllocConsole();    //为调用进程分配一个新的控制台
 		hwnd = GetConsoleWindow();
 	}
-	ShowWindow(hwnd, SW_HIDE);
+	ShowWindow(hwnd, SW_HIDE);    //隐藏自己创建的控制台
 	FILE *file;
 	char ptr[1024] = { 0 };
 	char tmp[1024] = { 0 };

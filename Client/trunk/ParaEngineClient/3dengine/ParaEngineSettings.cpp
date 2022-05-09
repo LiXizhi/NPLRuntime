@@ -620,6 +620,29 @@ bool ParaEngineSettings::IsWindowedMode()
 		return false;
 }
 
+void ParaEngineSettings::SetWindowMaximized(bool isMaximized)
+{
+	if (CGlobals::GetApp())
+		CGlobals::GetApp()->SetWindowMaximized(isMaximized);
+}
+
+bool ParaEngineSettings::IsWindowMaximized()
+{
+	if (CGlobals::GetApp())
+		return CGlobals::GetApp()->IsWindowMaximized();
+	else
+		return false;
+}
+
+Vector2 ParaEngineSettings::GetVisibleSize()
+{
+	Vector2 res(1024, 768);
+	if (CGlobals::GetApp()) {
+		CGlobals::GetApp()->GetVisibleSize(&res);
+	}
+	return res;
+}
+
 void ParaEngineSettings::SetAllowWindowClosing(bool bWindowed)
 {
 	if(CGlobals::GetApp())
@@ -1587,6 +1610,7 @@ int ParaEngineSettings::InstallFields(CAttributeClass* pClass, bool bOverride)
 	pClass->AddField("ScreenResolution", FieldType_Vector2, (void*)SetScreenResolution_s, (void*)GetScreenResolution_s, CAttributeField::GetSimpleSchema(SCHEMA_RGB), NULL, bOverride);
 	pClass->AddField("MultiSampleType", FieldType_Int, (void*)SetMultiSampleType_s, (void*)GetMultiSampleType_s, NULL, NULL, bOverride);
 	pClass->AddField("MultiSampleQuality", FieldType_Int, (void*)SetMultiSampleQuality_s, (void*)GetMultiSampleQuality_s, NULL, NULL, bOverride);
+	pClass->AddField("IsWindowMaximized", FieldType_Bool, (void*)SetWindowMaximized_s, (void*)IsWindowMaximized_s, NULL, NULL, bOverride);
 
 	pClass->AddField("UpdateScreenMode", FieldType_void, (void*)UpdateScreenMode_s, NULL, NULL, NULL, bOverride);
 	pClass->AddField("ShowMenu", FieldType_Bool, (void*)SetShowMenu_s, NULL, NULL, NULL, bOverride);
@@ -1599,6 +1623,7 @@ int ParaEngineSettings::InstallFields(CAttributeClass* pClass, bool bOverride)
 	pClass->AddField("DisplayMode", FieldType_String, NULL, (void*)GetDisplayMode_s, NULL, NULL, bOverride);
 	pClass->AddField("MonitorResolution", FieldType_Vector2, NULL, (void*)GetMonitorResolution_s, NULL, NULL, bOverride);
 	pClass->AddField("WindowResolution", FieldType_Vector2, NULL, (void*)GetWindowResolution_s, NULL, NULL, bOverride);
+	pClass->AddField("VisibleSize", FieldType_Vector2, NULL, (void*)GetVisibleSize_s, NULL, NULL, bOverride);
 
 	pClass->AddField("AsyncLoaderItemsLeft", FieldType_Int, NULL, (void*)GetAsyncLoaderItemsLeft_s, NULL, NULL, bOverride);
 	pClass->AddField("AsyncLoaderBytesReceived", FieldType_Int, NULL, (void*)GetAsyncLoaderBytesReceived_s, NULL, NULL, bOverride);
