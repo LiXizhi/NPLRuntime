@@ -360,6 +360,8 @@ namespace ParaEngine
 		virtual void SetLocalTransform(const Matrix4& mXForm);
 		/** get local transform*/
 		virtual void GetLocalTransform(Matrix4* localTransform);
+		/** get world transform, but without applying current position. */
+		virtual void GetLocalWorldTransform(Matrix4& localTransform);
 
 		virtual void GetOBB(CShapeOBB* obb);
 
@@ -913,6 +915,9 @@ namespace ParaEngine
 		// float                m_fFacing;  // it is already defined in base object class
 		/// The direction from the current position to the final destination
 		float                m_fFacingTarget;
+
+		/** local transform that is applied to mesh object before, world transform (facing, roll, pitch) is applied. */
+		Matrix4* m_pLocalTransfrom;
 
 		/** boot height, default to 0.f meters. It only affects rendering. In case, the character is wearing a high heel boot, we may set this to 0.1-0.2 meters. */
 		float m_fBootHeight;
