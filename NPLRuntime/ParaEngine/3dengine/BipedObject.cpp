@@ -34,7 +34,6 @@
 #include "PhysicsWorld.h"
 #include "DynamicAttributeField.h"
 #include <algorithm>
-#include "GeosetObject.h"
 
 using namespace ParaEngine;
 
@@ -4305,23 +4304,7 @@ void ParaEngine::CBipedObject::UpdateGeometry()
 				{
 					Vector3 vMin = pModel->GetHeader().minExtent;
 					Vector3 vMax = pModel->GetHeader().maxExtent;
-					for (auto child : m_children)
-					{
-						auto pGeosetObj = dynamic_cast<CGeosetObject*>(child);
-						if (pGeosetObj)
-						{
-							if (static_cast<CGeosetObject*>(child)->getEntity()->GetModel())
-							{
-								auto& header = pGeosetObj->getEntity()->GetModel()->GetHeader();
-								vMin.x = std::min<>(vMin.x, header.minExtent.x);
-								vMin.y = std::min<>(vMin.y, header.minExtent.y);
-								vMin.z = std::min<>(vMin.z, header.minExtent.z);
-								vMax.x = std::max<>(vMax.x, header.maxExtent.x);
-								vMax.y = std::max<>(vMax.y, header.maxExtent.y);
-								vMax.z = std::max<>(vMax.z, header.maxExtent.z);
-							}
-						}
-					}
+					
 					m_fAssetHeight = vMax.y * fScale;
 					Matrix4 mat;
 					GetLocalWorldTransform(mat);
