@@ -46,16 +46,6 @@ map<int, int>* ParaEngine::CAnimInstanceBase::GetAnimIDMap()
 	return &m_mapAnimIDs;
 }
 
-void ParaEngine::CAnimInstanceBase::ApplyLocalTransformToVec3(Vector3 *pOut, const Vector3 *pV)
-{
-	ParaVec3TransformCoord(pOut, pV, &m_mxLocalTransform);
-}
-
-void ParaEngine::CAnimInstanceBase::ApplyLocalTransformToVec1(float *pOut, float* pV)
-{
-	*pOut = (*pV) * m_mxLocalTransform._11;
-}
-
 void ParaEngine::CAnimInstanceBase::LoadAnimation(const char * sName, float * fSpeed, bool bAppend /*= false*/)
 {
 	LoadAnimation(CAnimTable::GetAnimIDByName(sName), fSpeed, bAppend);
@@ -104,11 +94,6 @@ void ParaEngine::CAnimInstanceBase::ShowMesh(BOOL bShow, int nIndex)
 void ParaEngine::CAnimInstanceBase::ShowMesh(DWORD dwBitfields)
 {
 
-}
-
-void ParaEngine::CAnimInstanceBase::SetLocalTransform(Matrix4 mXForm)
-{
-	m_mxLocalTransform = mXForm;
 }
 
 void ParaEngine::CAnimInstanceBase::AdvanceTime(double dTimeDelta)

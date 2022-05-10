@@ -108,9 +108,6 @@ namespace ParaEngine
 		//bool				m_bLoopAnim;
 		//DWORD				m_dwLoiterIndex;
 		
-		// type specific informations
-		/// mesh local world xform: center in the origin
-		Matrix4            m_mxLocalTransform;           
 		/// scale parameters
 		float	m_fSizeScale;
 		float 	m_fSpeedScale;
@@ -154,12 +151,7 @@ namespace ParaEngine
 		* @note: remember to EnableAnimIDMap() in order for the mapping to take effect. 
 		*/
 		map<int, int>* GetAnimIDMap();
-
-		/** pOut = m_mxLocalTransform (X) pV;
-		*/
-		void ApplyLocalTransformToVec3( Vector3 *pOut,const Vector3 *pV);
-		void ApplyLocalTransformToVec1( float *pOut,float* pV);
-			
+	
 		/**
 		* Play or append the specified animation.
 		* If the current animation is the same as the specified animation, it will loop on the 
@@ -192,9 +184,6 @@ namespace ParaEngine
 		/// the bit field of a DWORD. the lowest bit is the first mesh.
 		virtual void ShowMesh(BOOL bShow, int nIndex);
 		virtual void ShowMesh(DWORD dwBitfields);
-		/// when calling draw method, the mxWorld is pre-multiplied by a location transform 
-		/// matrix
-		virtual void SetLocalTransform(Matrix4 mXForm);
 		
 		/// Draw() method will call this function automatically
 		virtual void AdvanceTime( double dTimeDelta );

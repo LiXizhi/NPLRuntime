@@ -553,12 +553,6 @@ Matrix4*  CParaXAnimInstance::GetAttachmentMatrix(Matrix4* pOut, int nAttachment
 	}
 	if (pModel->GetAttachmentMatrix(pOut, nAttachmentID, m_CurrentAnim, m_BlendingAnim, m_fBlendingFactor, mUpperAnim, mUpperBlendingAnim, mUpperBlendingFactor))
 	{
-		Matrix4 matScale;
-		if (fabs(m_fSizeScale - 1.0f) > FLT_TOLERANCE)
-		{
-			ParaMatrixScaling(&matScale, m_fSizeScale, m_fSizeScale, m_fSizeScale);
-			(*pOut) = (*pOut)*matScale;
-		}
 		// save the attachment matrix. 
 		AttachmentMat mat;
 		mat.m_mat = *pOut;
@@ -862,12 +856,6 @@ bool CParaXAnimInstance::UpdateModel(SceneState * sceneState)
 							if (itCur->second.m_nRenderNumber != nRenderNumber &&
 								pModel->GetAttachmentMatrix(&maxOut, itCur->first, m_CurrentAnim, m_BlendingAnim, m_fBlendingFactor, mUpperAnim, mUpperBlendingAnim, mUpperBlendingFactor, false))
 							{
-								Matrix4 matScale;
-								if (fabs(m_fSizeScale - 1.0f) > FLT_TOLERANCE)
-								{
-									ParaMatrixScaling(&matScale, m_fSizeScale, m_fSizeScale, m_fSizeScale);
-									maxOut = maxOut * matScale;
-								}
 								// save the attachment matrix. 
 								itCur->second.m_mat = maxOut;
 								itCur->second.m_nRenderNumber = nRenderNumber;
@@ -889,15 +877,7 @@ bool CParaXAnimInstance::UpdateWorldTransform(SceneState * sceneState, Matrix4& 
 	{
 		if (UpdateModel(sceneState))
 		{
-			// scale the model
-			if (fabs(m_fSizeScale - 1.0f) > FLT_TOLERANCE)
-			{
-				Matrix4 matScale;
-				ParaMatrixScaling(&matScale, m_fSizeScale, m_fSizeScale, m_fSizeScale);
-				out = matScale * mxWorld;
-			}
-			else
-				out = mxWorld;
+			out = mxWorld;
 			return true;
 		}
 	}
