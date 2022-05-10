@@ -67,11 +67,11 @@ install:
 
     cd bin\client
 
-    if "%addresss_mode%" == "64" ( cmake ../../Client -DCMAKE_GENERATOR_PLATFORM=x64 ) else ( cmake ../../Client )
+    if "%addresss_mode%" == "64" ( cmake ../../NPLRuntime -DCMAKE_GENERATOR_PLATFORM=x64 ) else ( cmake ../../NPLRuntime )
     
 build_script:
 - cmd: >-
-    msbuild  c:\projects\nplruntime\bin\client\CLIENT.sln /verbosity:minimal /property:Configuration=Release /logger:"C:\Program Files\AppVeyor\BuildAgent\Appveyor.MSBuildLogger.dll"
+    msbuild  c:\projects\nplruntime\bin\client\NPLRuntime.sln /verbosity:minimal /property:Configuration=Release /logger:"C:\Program Files\AppVeyor\BuildAgent\Appveyor.MSBuildLogger.dll"
 
     7z a %zip_name% %zip_path%
 
