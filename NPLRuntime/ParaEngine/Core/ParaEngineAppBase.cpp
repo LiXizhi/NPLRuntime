@@ -610,18 +610,18 @@ bool ParaEngine::CParaEngineAppBase::FrameMove(double fTime)
 
 		if(m_bAudioEngineInitialized)
 			CAudioEngine2::GetInstance()->Update();
-	}
 
-	{
-		/// animate g_flash value for some beeper effect, such as object selection.
-		static float s_flash = 0.f;
-		s_flash += (float)fElapsedEnvSimTime * 2;
-		if (s_flash > 2)
-			s_flash = 0;
-		if (s_flash > 1)
-			g_flash = 2 - s_flash;
-		else
-			g_flash = s_flash;
+		{
+			/// animate g_flash value for some beeper effect, such as object selection.
+			static float s_flash = 0.f;
+			s_flash += (float)fElapsedEnvSimTime * 2;
+			if (s_flash > 2)
+				s_flash = 0;
+			if (s_flash > 1)
+				g_flash = 2 - s_flash;
+			else
+				g_flash = s_flash;
+		}
 	}
 
 	double fElapsedIOTime = CGlobals::GetFrameRateController(FRC_IO)->FrameMove(fTime);
@@ -631,7 +631,10 @@ bool ParaEngine::CParaEngineAppBase::FrameMove(double fTime)
 		HandleUserInput();
 		m_pRootScene->Animate((float)fElapsedIOTime);
 	}
-
+	else if (fElapsedGameTime > 0.f)
+	{
+		m_pRootScene->Animate(0.f);
+	}
 #ifdef USE_XACT_AUDIO_ENGINE
 	/// for audio engine
 	if (m_pAudioEngine && m_pAudioEngine->IsAudioEngineEnabled())
