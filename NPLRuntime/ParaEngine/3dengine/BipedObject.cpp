@@ -1230,7 +1230,7 @@ bool CBipedObject::SetParamsFromAsset()
 			CTileObject::SetPrimaryTechniqueHandle((GetPrimaryTechniqueHandle() < -1) ? -GetPrimaryTechniqueHandle() : ((ParaXEntity*)m_pMultiAnimationEntity.get())->GetPrimaryTechniqueHandle());
 
 			// this will update the character's bounding box from the asset.
-			SetSizeScale(GetSizeScale());
+			SetGeometryDirty(true);
 
 			// fire asset load event
 			ActivateScript(Type_OnAssetLoaded);
@@ -1242,7 +1242,7 @@ bool CBipedObject::SetParamsFromAsset()
 		SetPrimaryTechniqueHandle(TECH_CHARACTER);
 
 		// this will update the character's bounding box from the asset.
-		SetSizeScale(GetSizeScale());
+		SetGeometryDirty(true);
 		return true;
 	}
 	return false;
@@ -4287,6 +4287,7 @@ void ParaEngine::CBipedObject::UpdateGeometry()
 	if (pAI && m_pMultiAnimationEntity)
 	{
 		float fScale = GetSizeScale();
+		pAI->SetSizeScale(fScale);
 		float fRadius = 0.2f;
 		if (m_pMultiAnimationEntity->GetType() == AssetEntity::parax)
 		{
@@ -4490,8 +4491,6 @@ void CBipedObject::SetSizeScale(float fScale)
 		CAnimInstanceBase* pAI = GetAnimInstance();
 		if (pAI && m_pMultiAnimationEntity)
 		{
-			/// set scale of the associated mesh
-			float fOldScale = pAI->GetSizeScale();
 			pAI->SetSizeScale(fScale);
 			SetGeometryDirty(true);
 		}
