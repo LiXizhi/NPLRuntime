@@ -8,8 +8,10 @@
 package com.tatfook.paracraft;
 
 import android.Manifest;
+import android.app.Activity;
 import android.app.KeyguardManager;
 import android.content.res.Configuration;
+import android.net.Uri;
 import android.os.CountDownTimer;
 import android.os.PowerManager;
 import android.content.Context;
@@ -18,7 +20,13 @@ import android.content.pm.ActivityInfo;
 import android.content.pm.PackageManager;
 import android.opengl.GLSurfaceView;
 import android.os.Bundle;
+
+import androidx.activity.result.ActivityResultCallback;
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContract;
 import androidx.annotation.Keep;
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import android.util.Log;
 import android.view.InputDevice;
@@ -31,6 +39,11 @@ import android.widget.ImageView;
 
 import com.smarx.notchlib.NotchScreenManager;
 import com.tatfook.paracraft.screenrecorder.ScreenRecorder;
+
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
 
 import javax.microedition.khronos.egl.EGL10;
 import javax.microedition.khronos.egl.EGLConfig;
@@ -54,11 +67,11 @@ public class ParaEngineActivity extends AppCompatActivity {
     private boolean mUsbMode = false;
     private boolean hasFocus = false;
     private Bundle mSavedInstanceState;
+    private ActivityResultLauncher<String> mOpenFileDialogLuancher;
 
     public static ParaEngineActivity getContext() {
         return sContext;
     }
-
     @Keep
     public static String getLauncherIntentData() {
         if (sContext == null)
@@ -112,11 +125,58 @@ public class ParaEngineActivity extends AppCompatActivity {
         System.exit(0);
     }
 
+    public void OpenFileDialog(String filter) {
+        mOpenFileDialogLuancher.launch(filter);
+    }
+
+    protected void RegisterActivityResultLauncher() {
+        mOpenFileDialogLuancher = registerForActivityResult(new ActivityResultContract<String, Uri>() {
+            @NonNull
+            @Override
+            public Intent createIntent(@NonNull Context context, String input) {
+                return new Intent(Intent.ACTION_PICK).setType(input);
+            }
+
+            @Override
+            public Uri parseResult(int resultCode, @Nullable Intent intent) {
+                if (intent == null || resultCode != Activity.RESULT_OK) return null;
+                return intent.getData();
+            }
+        }, new ActivityResultCallback<Uri>() {
+            @Override
+            public void onActivityResult(Uri result) {
+                String filepath = result == null ? "" : result.getLastPathSegment();
+                if (result != null) {
+                    try {
+                        InputStream is = getContentResolver().openInputStream(result);
+                        String filename = result.getLastPathSegment();
+                        String cachedir = getExternalCacheDir().getAbsolutePath();
+                        filename = filename.replace("/", "_");
+                        filepath = cachedir + "/" + filename;
+                        FileOutputStream fos = new FileOutputStream(new File(filepath), false);
+                        byte[] buffer = new byte[1024];
+                        int byteCount=0;
+                        while((byteCount = is.read(buffer)) != -1) {         //循环从输入流读取 buffer字节
+                            fos.write(buffer, 0, byteCount);             //将读取的输入流写入到输出流
+                        }
+                        fos.flush();//刷新缓冲区
+                        is.close();
+                        fos.close();
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                }
+                ParaEngineHelper.OpenFileDialogCallback(filepath);
+            }
+        });
+    }
     @Override
     protected void onCreate(final Bundle savedInstanceState) {
         sContext = this;
 
         super.onCreate(savedInstanceState);
+
+        RegisterActivityResultLauncher();
 
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
 

@@ -112,7 +112,7 @@ bool CParaXAnimInstance::HasMountPoint(int nMountPointID /*= 0*/)
 	return HasAttachmentMatrix(nMountPointID);
 }
 
-CharModelInstance * CParaXAnimInstance::GetCharModel()
+CharModelInstance* CParaXAnimInstance::GetCharModel()
 {
 	if (m_modelType == CharacterModel)
 	{
@@ -121,7 +121,7 @@ CharModelInstance * CParaXAnimInstance::GetCharModel()
 	return NULL;
 }
 
-void CParaXAnimInstance::Init(ParaXEntity * pModel)
+void CParaXAnimInstance::Init(ParaXEntity* pModel)
 {
 	ResetBaseModel(pModel);
 }
@@ -275,7 +275,7 @@ void CParaXAnimInstance::ResetAnimation()
 	mUpperAnim.MakeInvalid();
 }
 
-bool CParaXAnimInstance::ResetBaseModel(ParaXEntity * pModel)
+bool CParaXAnimInstance::ResetBaseModel(ParaXEntity* pModel)
 {
 	if (m_modelType == CharacterModel)
 	{
@@ -426,7 +426,7 @@ bool CParaXAnimInstance::HasAnimation(int nAnimID)
 
 ///////////////////////////////////////////////////////////////////////////
 // major implementation of loading a given animation ID.
-void CParaXAnimInstance::LoadAnimation(int nNextAnimID, float * fSpeed, bool bAppend)
+void CParaXAnimInstance::LoadAnimation(int nNextAnimID, float* fSpeed, bool bAppend)
 {
 	if (m_modelType == CharacterModel)
 	{
@@ -519,21 +519,21 @@ void CParaXAnimInstance::LoadAnimation(int nNextAnimID, float * fSpeed, bool bAp
 	}
 }
 
-void CParaXAnimInstance::LoadAnimation(const char * sName, float * fSpeed, bool bAppend)
+void CParaXAnimInstance::LoadAnimation(const char* sName, float* fSpeed, bool bAppend)
 {
 	LoadAnimation(CAnimTable::GetAnimIDByName(sName), fSpeed, bAppend);
 }
 
-void CParaXAnimInstance::LoadDefaultStandAnim(float * fSpeed)
+void CParaXAnimInstance::LoadDefaultStandAnim(float* fSpeed)
 {
 	LoadAnimation(ANIM_STAND, fSpeed);
 }
-void CParaXAnimInstance::LoadDefaultWalkAnim(float * fSpeed)
+void CParaXAnimInstance::LoadDefaultWalkAnim(float* fSpeed)
 {
 	LoadAnimation(ANIM_RUN, fSpeed);
 }
 
-Matrix4*  CParaXAnimInstance::GetAttachmentMatrix(Matrix4* pOut, int nAttachmentID, int nRenderNumber)
+Matrix4* CParaXAnimInstance::GetAttachmentMatrix(Matrix4* pOut, int nAttachmentID, int nRenderNumber)
 {
 	ParaXEntity* pModelEnity = GetAnimModel();
 	CParaXModel* pModel = (pModelEnity != NULL) ? pModelEnity->GetModel() : NULL;
@@ -553,12 +553,6 @@ Matrix4*  CParaXAnimInstance::GetAttachmentMatrix(Matrix4* pOut, int nAttachment
 	}
 	if (pModel->GetAttachmentMatrix(pOut, nAttachmentID, m_CurrentAnim, m_BlendingAnim, m_fBlendingFactor, mUpperAnim, mUpperBlendingAnim, mUpperBlendingFactor))
 	{
-		Matrix4 matScale;
-		if (fabs(m_fSizeScale - 1.0f) > FLT_TOLERANCE)
-		{
-			ParaMatrixScaling(&matScale, m_fSizeScale, m_fSizeScale, m_fSizeScale);
-			(*pOut) = (*pOut)*matScale;
-		}
 		// save the attachment matrix. 
 		AttachmentMat mat;
 		mat.m_mat = *pOut;
@@ -803,7 +797,7 @@ void CParaXAnimInstance::AdvanceTime(double dTimeDelta)
 	}
 }
 
-void CParaXAnimInstance::BuildShadowVolume(SceneState * sceneState, ShadowVolume * pShadowVolume, LightParams* pLight, Matrix4* mxWorld)
+void CParaXAnimInstance::BuildShadowVolume(SceneState* sceneState, ShadowVolume* pShadowVolume, LightParams* pLight, Matrix4* mxWorld)
 {
 #ifdef USE_DIRECTX_RENDERER
 	LPDIRECT3DDEVICE9  pd3dDevice = CGlobals::GetRenderDevice();
@@ -834,7 +828,7 @@ void CParaXAnimInstance::Animate(double dTimeDelta, int nRenderNumber/*=0 */)
 	}
 }
 
-bool CParaXAnimInstance::UpdateModel(SceneState * sceneState)
+bool CParaXAnimInstance::UpdateModel(SceneState* sceneState)
 {
 	if (m_modelType == CharacterModel)
 	{
@@ -846,7 +840,7 @@ bool CParaXAnimInstance::UpdateModel(SceneState * sceneState)
 			{
 				int nRenderNumber = sceneState->GetRenderFrameCount();
 
-				ParaXEntity * pModelAsset = m_pCharModel->GetBaseModel();
+				ParaXEntity* pModelAsset = m_pCharModel->GetBaseModel();
 				if (pModelAsset)
 				{
 					int nIndex = sceneState->IsLODEnabled() ? pModelAsset->GetLodIndex(sceneState->GetCameraToCurObjectDistance()) : 0;
@@ -862,12 +856,6 @@ bool CParaXAnimInstance::UpdateModel(SceneState * sceneState)
 							if (itCur->second.m_nRenderNumber != nRenderNumber &&
 								pModel->GetAttachmentMatrix(&maxOut, itCur->first, m_CurrentAnim, m_BlendingAnim, m_fBlendingFactor, mUpperAnim, mUpperBlendingAnim, mUpperBlendingFactor, false))
 							{
-								Matrix4 matScale;
-								if (fabs(m_fSizeScale - 1.0f) > FLT_TOLERANCE)
-								{
-									ParaMatrixScaling(&matScale, m_fSizeScale, m_fSizeScale, m_fSizeScale);
-									maxOut = maxOut * matScale;
-								}
 								// save the attachment matrix. 
 								itCur->second.m_mat = maxOut;
 								itCur->second.m_nRenderNumber = nRenderNumber;
@@ -883,28 +871,20 @@ bool CParaXAnimInstance::UpdateModel(SceneState * sceneState)
 }
 
 
-bool CParaXAnimInstance::UpdateWorldTransform(SceneState * sceneState, Matrix4& out, const Matrix4& mxWorld)
+bool CParaXAnimInstance::UpdateWorldTransform(SceneState* sceneState, Matrix4& out, const Matrix4& mxWorld)
 {
 	if (m_modelType == CharacterModel)
 	{
 		if (UpdateModel(sceneState))
 		{
-			// scale the model
-			if (fabs(m_fSizeScale - 1.0f) > FLT_TOLERANCE)
-			{
-				Matrix4 matScale;
-				ParaMatrixScaling(&matScale, m_fSizeScale, m_fSizeScale, m_fSizeScale);
-				out = matScale * mxWorld;
-			}
-			else
-				out = mxWorld;
+			out = mxWorld;
 			return true;
 		}
 	}
 	return false;
 }
 
-HRESULT CParaXAnimInstance::Draw(SceneState * sceneState, const Matrix4* mxWorld, CParameterBlock* materialParams)
+HRESULT CParaXAnimInstance::Draw(SceneState* sceneState, const Matrix4* mxWorld, CParameterBlock* materialParams)
 {
 	if (m_modelType == CharacterModel)
 	{
@@ -947,7 +927,7 @@ void CParaXAnimInstance::GetCurrentRadius(float* fRadius)
 }
 /// normally this will read the radius of the current animation
 /// and calculate the correct size after scaling
-void CParaXAnimInstance::GetCurrentSize(float * fWidth, float * fDepth)
+void CParaXAnimInstance::GetCurrentSize(float* fWidth, float* fDepth)
 {
 	if (m_modelType == CharacterModel)
 	{
@@ -959,8 +939,8 @@ void CParaXAnimInstance::GetCurrentSize(float * fWidth, float * fDepth)
 		auto pModelAnim = pModel->GetModelAnimByIndex(nIndex);
 		if (pModelAnim) {
 			Vector3 box = pModelAnim->boxA - pModelAnim->boxB;
-			*fWidth = fabs(m_fSizeScale* box.x);
-			*fDepth = fabs(m_fSizeScale* box.y);
+			*fWidth = fabs(m_fSizeScale * box.x);
+			*fDepth = fabs(m_fSizeScale * box.y);
 		}
 	}
 	else
@@ -985,7 +965,7 @@ void CParaXAnimInstance::GetCurrentSpeed(float* fSpeed)
 		{
 			float moveSpeed = pModelAnim->moveSpeed;
 			if (fSpeed)
-				*fSpeed = m_fSpeedScale * m_fSizeScale* moveSpeed;
+				*fSpeed = m_fSpeedScale * m_fSizeScale * moveSpeed;
 		}
 	}
 	else
@@ -996,7 +976,7 @@ void CParaXAnimInstance::GetCurrentSpeed(float* fSpeed)
 
 /// normally this will read the move speed of the specified animation
 /// and calculate the correct(scaled) speed
-void CParaXAnimInstance::GetSpeedOf(const char * sName, float * fSpeed)
+void CParaXAnimInstance::GetSpeedOf(const char* sName, float* fSpeed)
 {
 	// TODO: find a way to get it by name from database.
 	int nAnimID = CAnimTable::GetAnimIDByName(sName);
@@ -1040,7 +1020,7 @@ void CParaXAnimInstance::GetSpeedOf(const char * sName, float * fSpeed)
 					moveSpeed = DEFAULT_WALK_SPEED;
 				}
 				if (fSpeed)
-					*fSpeed = m_fSpeedScale * m_fSizeScale* moveSpeed;
+					*fSpeed = m_fSpeedScale * m_fSizeScale * moveSpeed;
 			}
 		}
 		else
@@ -1058,7 +1038,7 @@ void CParaXAnimInstance::GetSpeedOf(const char * sName, float * fSpeed)
 
 ParaXEntity* CParaXAnimInstance::GetAnimModel()
 {
-	CharModelInstance * pCharInst = GetCharModel();
+	CharModelInstance* pCharInst = GetCharModel();
 	return (pCharInst != NULL) ? pCharInst->GetAnimModel() : NULL;
 }
 
