@@ -56,8 +56,11 @@ install:
     rmdir "C:/Program Files/PostgreSQL" /s /q
     
     7z x C:\projects\nplruntime\Server\trunk\boost_1_78_0.7z -oC:\projects\nplruntime\Server\trunk\
+
     appveyor DownloadFile https://boostorg.jfrog.io/artifactory/main/release/1.78.0/source/boost_1_78_0.7z -FileName "C:\projects\nplruntime\Server\trunk\boost_1_78_0.7z"
+
     cd C:\projects\nplruntime\Server\trunk\boost_1_78_0\
+
     set BOOST_ROOT=C:\projects\nplruntime\Server\trunk\boost_1_78_0
     
     bootstrap.bat
