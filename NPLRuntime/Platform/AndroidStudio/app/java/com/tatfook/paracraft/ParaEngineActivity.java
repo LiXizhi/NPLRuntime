@@ -130,46 +130,50 @@ public class ParaEngineActivity extends AppCompatActivity {
     }
 
     protected void RegisterActivityResultLauncher() {
-        mOpenFileDialogLuancher = registerForActivityResult(new ActivityResultContract<String, Uri>() {
-            @NonNull
-            @Override
-            public Intent createIntent(@NonNull Context context, String input) {
-                return new Intent(Intent.ACTION_PICK).setType(input);
-            }
-
-            @Override
-            public Uri parseResult(int resultCode, @Nullable Intent intent) {
-                if (intent == null || resultCode != Activity.RESULT_OK) return null;
-                return intent.getData();
-            }
-        }, new ActivityResultCallback<Uri>() {
-            @Override
-            public void onActivityResult(Uri result) {
-                String filepath = result == null ? "" : result.getLastPathSegment();
-                if (result != null) {
-                    try {
-                        InputStream is = getContentResolver().openInputStream(result);
-                        String filename = result.getLastPathSegment();
-                        String cachedir = getExternalCacheDir().getAbsolutePath();
-                        filename = filename.replace("/", "_");
-                        filepath = cachedir + "/" + filename;
-                        FileOutputStream fos = new FileOutputStream(new File(filepath), false);
-                        byte[] buffer = new byte[1024];
-                        int byteCount=0;
-                        while((byteCount = is.read(buffer)) != -1) {         //循环从输入流读取 buffer字节
-                            fos.write(buffer, 0, byteCount);             //将读取的输入流写入到输出流
-                        }
-                        fos.flush();//刷新缓冲区
-                        is.close();
-                        fos.close();
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    }
+        mOpenFileDialogLuancher = registerForActivityResult(
+            new ActivityResultContract<String, Uri>() {
+                @NonNull
+                @Override
+                public Intent createIntent(@NonNull Context context, String input) {
+                    return new Intent(Intent.ACTION_PICK).setType(input);
                 }
-                ParaEngineHelper.OpenFileDialogCallback(filepath);
+
+                @Override
+                public Uri parseResult(int resultCode, @Nullable Intent intent) {
+                    if (intent == null || resultCode != Activity.RESULT_OK) return null;
+                    return intent.getData();
+                }
+            },
+            new ActivityResultCallback<Uri>() {
+                @Override
+                public void onActivityResult(Uri result) {
+                    String filepath = result == null ? "" : result.getLastPathSegment();
+                    if (result != null) {
+                        try {
+                            InputStream is = getContentResolver().openInputStream(result);
+                            String filename = result.getLastPathSegment();
+                            String cachedir = getExternalCacheDir().getAbsolutePath();
+                            filename = filename.replace("/", "_");
+                            filepath = cachedir + "/" + filename;
+                            FileOutputStream fos = new FileOutputStream(new File(filepath), false);
+                            byte[] buffer = new byte[1024];
+                            int byteCount=0;
+                            while((byteCount = is.read(buffer)) != -1) {         //循环从输入流读取 buffer字节
+                                fos.write(buffer, 0, byteCount);             //将读取的输入流写入到输出流
+                            }
+                            fos.flush();//刷新缓冲区
+                            is.close();
+                            fos.close();
+                        } catch (IOException e) {
+                            e.printStackTrace();
+                        }
+                    }
+                    ParaEngineHelper.OpenFileDialogCallback(filepath);
+                }
             }
-        });
+        );
     }
+
     @Override
     protected void onCreate(final Bundle savedInstanceState) {
         sContext = this;
