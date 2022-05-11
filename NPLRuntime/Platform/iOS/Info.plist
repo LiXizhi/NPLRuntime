@@ -50,6 +50,8 @@
 	<string>we need to save screen record video to photo library.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>we need to save screen record video to photo library.</string>
+	<key>UILaunchStoryboardName</key>
+	<string>LaunchImage</string>
 	<key>UIMainStoryboardFile</key>
 	<string></string>
 	<key>UIPrerenderedIcon</key>
