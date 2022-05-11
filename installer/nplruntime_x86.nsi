@@ -118,7 +118,7 @@ Section "" ;No components page, name is not important
   File "..\ParaWorld\bin32\ParaEngineClient.exe"
   File "..\ParaWorld\bin32\libcurl.dll"
   File "..\ParaWorld\bin32\lua.dll"
-  File "..\ParaWorld\bin32\luasql.dll"
+  ; File "..\ParaWorld\bin32\luasql.dll"
   File "..\ParaWorld\bin32\sqlite.dll"
   File "..\ParaWorld\bin32\PhysicsBT.dll"
   File "..\ParaWorld\bin32\FreeImage.dll"
