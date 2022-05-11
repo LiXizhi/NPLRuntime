@@ -1,6 +1,6 @@
 version: 1.0.{build}
 clone_folder: c:\projects\nplruntime
-image: Visual Studio 2017
+image: Visual Studio 2019
 environment:
   matrix:
   - addresss_mode: 32
@@ -13,9 +13,9 @@ environment:
     zip_name: NPLRuntime_64bit.zip
     zip_path: C:\projects\nplruntime\ParaWorld\bin64
     exe_path: installer\nplruntime_v1.0-alpha.10_Windows_x64.exe
-    
+
 matrix:
-  fast_finish: true     # set this flag to immediately finish build once one of the jobs fails.
+  fast_finish: true # set this flag to immediately finish build once one of the jobs fails.
 install:
 
 ############################################################################
@@ -41,61 +41,34 @@ install:
 #    set BOOST_ROOT="C:\projects\nplruntime\Server\trunk\boost_1_65_1"
 
 - cmd: >-
-    git submodule init
+    exit 0
 
-    git submodule update --init --recursive
-
-    del C:\projects\nplruntime\npl_packages\main\* /q
-
-    rmdir "C:/Program Files/MySQL" /s /q
-
-    rmdir "C:/Program Files/PostgreSQL" /s /q
-    
-    cd C:\Libraries\boost_1_78_0\
-
-    set BOOST_ROOT=C:\Libraries\boost_1_78_0
-
-    bootstrap.bat
-
-    b2 address-model=%addresss_mode% runtime-link=static threading=multi variant=release --with-thread --with-date_time --with-filesystem --with-system --with-chrono --with-serialization --with-iostreams --with-regex --with-log stage
-
-    dir %BOOST_ROOT%\stage\lib
-
-    cd C:\projects\nplruntime
-
-    mkdir bin\client
-
-    cd bin\client
-
-    if "%addresss_mode%" == "64" ( cmake ../../Client -DCMAKE_GENERATOR_PLATFORM=x64 ) else ( cmake ../../Client )
-    
 build_script:
 - cmd: >-
-    msbuild  c:\projects\nplruntime\bin\client\CLIENT.sln /verbosity:minimal /property:Configuration=Release /logger:"C:\Program Files\AppVeyor\BuildAgent\Appveyor.MSBuildLogger.dll"
+    exit 0
 
-    7z a %zip_name% %zip_path%
-
-    "C:/Program Files (x86)/NSIS/makensis" %installer_name%
 test: off
-artifacts:
-- path: installer\nplruntime_v1.0-alpha.10_Windows_x86.exe
-  name: execute_32
-- path: installer\nplruntime_v1.0-alpha.10_Windows_x64.exe
-  name: execute_64
-- path: NPLRuntime_32bit.zip
-  name: binary_32
-- path: NPLRuntime_64bit.zip
-  name: binary_64
-deploy:
-- provider: GitHub
-  on:
-    branch: master
-  tag: v1.0-alpha.10
-  release: v1.0-alpha.10(Windows)
-  auth_token:
-    secure: bBIY9/rjpoYwv0hKiworA8dihkgoZ+L7y4kM8kuYtJw1Z3XM51gdbDUIotOduIza
-  artifact: execute_32, binary_32, execute_64, binary_64
-  prerelease: true
-  
+
+# artifacts:
+# - path: installer\nplruntime_v1.0-alpha.10_Windows_x86.exe
+#   name: execute_32
+# - path: installer\nplruntime_v1.0-alpha.10_Windows_x64.exe
+#   name: execute_64
+# - path: NPLRuntime_32bit.zip
+#   name: binary_32
+# - path: NPLRuntime_64bit.zip
+#   name: binary_64
+
+# deploy:
+# - provider: GitHub
+#   on:
+#     branch: master
+#   tag: v1.0-alpha.10
+#   release: v1.0-alpha.10(Windows)
+#   auth_token:
+#     secure: bBIY9/rjpoYwv0hKiworA8dihkgoZ+L7y4kM8kuYtJw1Z3XM51gdbDUIotOduIza
+#   artifact: execute_32, binary_32, execute_64, binary_64
+#   prerelease: true
+
 on_finish:
 - cmd: 

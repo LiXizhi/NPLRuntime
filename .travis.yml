@@ -15,7 +15,7 @@ compiler:
 
 env:
   global:
-   - JOBS=1
+   - JOBS=4
 
 before_install:
 #  # - sudo add-apt-repository ppa:ubuntu-toolchain-r/test -y
