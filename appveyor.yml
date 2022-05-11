@@ -39,6 +39,10 @@ install:
 #    7z x C:\projects\nplruntime\Server\trunk\boost.tar -oC:\projects\nplruntime\Server\trunk\
 #    cd C:\projects\nplruntime\Server\trunk\boost_1_65_1\
 #    set BOOST_ROOT="C:\projects\nplruntime\Server\trunk\boost_1_65_1"
+#    
+#    prebuilt boost
+#    cd C:\Libraries\boost_1_74_0\
+#    set BOOST_ROOT=C:\Libraries\boost_1_74_0
 
 - cmd: >-
     git submodule init
@@ -51,10 +55,11 @@ install:
 
     rmdir "C:/Program Files/PostgreSQL" /s /q
     
-    cd C:\Libraries\boost_1_74_0\
-
-    set BOOST_ROOT=C:\Libraries\boost_1_74_0
-
+    7z x C:\projects\nplruntime\Server\trunk\boost_1_78_0.7z -oC:\projects\nplruntime\Server\trunk\
+    appveyor DownloadFile https://boostorg.jfrog.io/artifactory/main/release/1.78.0/source/boost_1_78_0.7z -FileName "C:\projects\nplruntime\Server\trunk\boost_1_78_0.7z"
+    cd C:\projects\nplruntime\Server\trunk\boost_1_78_0\
+    set BOOST_ROOT=C:\projects\nplruntime\Server\trunk\boost_1_78_0
+    
     bootstrap.bat
 
     b2 address-model=%addresss_mode% runtime-link=static threading=multi variant=release --with-thread --with-date_time --with-filesystem --with-system --with-chrono --with-serialization --with-iostreams --with-regex --with-log stage
