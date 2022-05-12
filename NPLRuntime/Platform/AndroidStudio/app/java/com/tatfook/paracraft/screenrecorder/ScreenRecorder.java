@@ -6,6 +6,7 @@
 
 package com.tatfook.paracraft.screenrecorder;
 
+import android.content.ContentValues;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.Point;
@@ -15,8 +16,11 @@ import android.media.MediaCodecInfo;
 import android.media.MediaScannerConnection;
 import android.media.projection.MediaProjection;
 import android.media.projection.MediaProjectionManager;
+import android.os.Build;
 import android.os.Environment;
 import androidx.annotation.Keep;
+
+import android.provider.MediaStore;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.RelativeLayout;
@@ -38,6 +42,7 @@ import java.util.Stack;
 import static android.Manifest.permission.RECORD_AUDIO;
 import static android.Manifest.permission.WRITE_EXTERNAL_STORAGE;
 import static android.content.Context.MEDIA_PROJECTION_SERVICE;
+import static android.os.Build.VERSION_CODES.S;
 import static com.tatfook.paracraft.screenrecorder.ScreenRecorderHelper.AUDIO_AAC;
 import static com.tatfook.paracraft.screenrecorder.ScreenRecorderHelper.VIDEO_AVC;
 
@@ -112,6 +117,7 @@ public class ScreenRecorder {
 
         File file = new File(mLastFilePath);
         File saveFile = new File(mLastFileSavePath);
+
         boolean bSucceeded = false;
 
         try {
@@ -125,7 +131,24 @@ public class ScreenRecorder {
             e.printStackTrace();
         }
 
-        if (bSucceeded) {
+        if (!bSucceeded) {
+            return;
+        }
+
+        if (false) {
+            ContentValues contentValues = new ContentValues();
+            long currentTime = System.currentTimeMillis();
+
+            contentValues.put(MediaStore.MediaColumns.TITLE, saveFile.getName());
+            contentValues.put(MediaStore.MediaColumns.DISPLAY_NAME, saveFile.getName());
+            contentValues.put(MediaStore.MediaColumns.DATE_MODIFIED, currentTime);
+            contentValues.put(MediaStore.MediaColumns.DATE_ADDED, currentTime);
+            contentValues.put(MediaStore.MediaColumns.SIZE, saveFile.length());
+            contentValues.put(MediaStore.Video.VideoColumns.DATE_TAKEN, currentTime);
+            contentValues.put(MediaStore.Video.VideoColumns.MIME_TYPE, "video/mp4");
+
+            ParaEngineActivity.getContext().getContentResolver().insert(MediaStore.Video.Media.EXTERNAL_CONTENT_URI, contentValues);
+        } else {
             MediaScannerConnection.scanFile(
                 ParaEngineActivity.getContext(),
                 new String[]{ mLastFileSavePath },
@@ -323,19 +346,36 @@ public class ScreenRecorder {
                 return;
             }
 
-            File dir =
-                new File(
-                    Environment
-                        .getExternalStoragePublicDirectory(Environment.DIRECTORY_MOVIES),
+            File dir;
+            File saveDir;
+
+            if (false) {
+                dir = new File(
+                        ParaEngineActivity
+                            .getContext()
+                            .getExternalFilesDir(Environment.DIRECTORY_MOVIES),
+                            "ParacraftScreenRecorder/temp"
+                );
+
+                saveDir = new File(
+                        ParaEngineActivity
+                            .getContext()
+                            .getExternalFilesDir(Environment.DIRECTORY_MOVIES),
+                            "ParacraftScreenRecorder"
+                );
+            } else {
+                dir = new File(
+                        Environment
+                            .getExternalStoragePublicDirectory(Environment.DIRECTORY_MOVIES),
                         "ParacraftScreenRecorder/temp"
                 );
 
-            File saveDir =
-                    new File(
-                            Environment
-                                    .getExternalStoragePublicDirectory(Environment.DIRECTORY_MOVIES),
-                            "ParacraftScreenRecorder"
-                    );
+                saveDir = new File(
+                        Environment
+                            .getExternalStoragePublicDirectory(Environment.DIRECTORY_MOVIES),
+                        "ParacraftScreenRecorder"
+                );
+            }
 
             Stack<File> tmpFileStack = new Stack<File>();
             tmpFileStack.push(dir);
@@ -365,6 +405,11 @@ public class ScreenRecorder {
                     }
                 }
             } catch (Exception e) {}
+
+            if (!saveDir.exists() && !saveDir.mkdirs()) {
+                cancelRecorder();
+                return;
+            }
 
             if (!dir.exists() && !dir.mkdirs()) {
                 cancelRecorder();
