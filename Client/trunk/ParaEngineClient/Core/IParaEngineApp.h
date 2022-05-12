@@ -474,7 +474,9 @@ namespace ParaEngine
 		*/
 		virtual void SetMaxUIResolution(int nWidth, int nHeight, bool bAutoUIScaling = true) = 0;
 
-
+		virtual void SetWindowMaximized(bool isMaximized) {};
+		virtual bool IsWindowMaximized() { return false; };
+		virtual void GetVisibleSize(Vector2* pOut) {};
 	};
 
 }

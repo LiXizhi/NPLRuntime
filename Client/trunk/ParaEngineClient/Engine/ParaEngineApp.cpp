@@ -154,7 +154,7 @@ CParaEngineApp::CParaEngineApp()
 : m_bHasNewConfig(false), m_pWinRawMsgQueue(NULL), m_dwWinThreadID(0), m_bIsKeyEvent(false), m_bUpdateScreenDevice(false), m_bServerMode(false),
 	m_dwCoreUsage(PE_USAGE_STANDALONE), m_pAudioEngine(NULL), m_bAutoLowerFrameRateWhenNotFocused(false),
 	m_nInitialGameEffectSet(0), m_bDrawReflection(false), m_bDisplayText(false), m_bDisplayHelp(false), m_bAllowWindowClosing(true), m_pKeyboard(NULL),
-	m_bToggleSoundWhenNotFocused(true), m_bAppHasFocus(true), m_hwndTopLevelWnd(NULL), m_fFPS(0.f)
+	m_bToggleSoundWhenNotFocused(true), m_bAppHasFocus(true), m_hwndTopLevelWnd(NULL), m_fFPS(0.f), m_bInitialIsWindowMaximized(false)
 {
 	g_pHwndHWND = &m_hWnd;
 	CFrameRateController::LoadFRCNormal();
@@ -164,7 +164,7 @@ CParaEngineApp::CParaEngineApp(const char* lpCmdLine)
 	:CParaEngineAppBase(lpCmdLine), m_bHasNewConfig(false), m_pWinRawMsgQueue(NULL), m_dwWinThreadID(0), m_bIsKeyEvent(false), m_bUpdateScreenDevice(false), m_bServerMode(false),
 	m_dwCoreUsage(PE_USAGE_STANDALONE),  m_pAudioEngine(NULL), m_bAutoLowerFrameRateWhenNotFocused(false),
 	m_nInitialGameEffectSet(0), m_bDrawReflection(false), m_bDisplayText(false), m_bDisplayHelp(false), m_bAllowWindowClosing(true), m_pKeyboard(NULL),
-	m_bToggleSoundWhenNotFocused(true), m_bAppHasFocus(true), m_hwndTopLevelWnd(NULL)
+	m_bToggleSoundWhenNotFocused(true), m_bAppHasFocus(true), m_hwndTopLevelWnd(NULL), m_bInitialIsWindowMaximized(false)
 {
 	g_pHwndHWND = &m_hWnd;
 	CFrameRateController::LoadFRCNormal();
@@ -331,6 +331,9 @@ void CParaEngineApp::LoadAndApplySettings()
 	if ((pField = settings.GetDynamicField("TextureLOD")))
 		settings.SetTextureLOD((int)(*pField));
 
+	if ((pField = settings.GetDynamicField("IsWindowMaximized")))
+		m_bInitialIsWindowMaximized = (bool)(*pField);
+
 	const char* sIsFullScreen = GetAppCommandLineByParam("fullscreen", NULL);
 	if (sIsFullScreen)
 		m_bStartFullscreen = (strcmp("true", sIsFullScreen) == 0);
@@ -466,7 +469,7 @@ HRESULT CParaEngineApp::Create( HINSTANCE hInstance )
 {
 	m_hInstance = hInstance;
 	HRESULT hr = CD3DApplication::Create();
-
+	SetWindowMaximized(m_bInitialIsWindowMaximized);
 	return hr;
 }
 
@@ -1511,6 +1514,21 @@ bool CParaEngineApp::IsFullScreenMode()
 	return !m_bWindowed;
 }
 
+void CParaEngineApp::SetWindowMaximized(bool isMaximized)
+{
+	::ShowWindow(CGlobals::GetAppHWND(), isMaximized ? SW_SHOWMAXIMIZED : SW_SHOWNORMAL);
+}
+
+bool CParaEngineApp::IsWindowMaximized()
+{
+	return ::IsMaximized(CGlobals::GetAppHWND());
+}
+
+void CParaEngineApp::GetVisibleSize(Vector2* pOut)
+{
+	if(pOut)
+		*pOut = Vector2((float)(m_nClientWidth), (float)(m_nClientHeight));
+}
 
 void CParaEngineApp::ShowMenu( bool bShow )
 {
@@ -1636,6 +1654,9 @@ void CParaEngineApp::WriteConfigFile(const char* FileName)
 	value = ! (m_nWindowedDesired!=0); //  IsWindowedMode();
 	settings.SetDynamicField("StartFullscreen", value);
 
+	value = IsWindowMaximized(); //  IsWindowedMode();
+	settings.SetDynamicField("IsWindowMaximized", value);
+
 	if(IsWindowedMode())
 	{
 		value = (int)(m_d3dSettings.Windowed_MultisampleType);
@@ -1650,7 +1671,6 @@ void CParaEngineApp::WriteConfigFile(const char* FileName)
 		value = (int)(m_d3dSettings.Fullscreen_MultisampleQuality);
 		settings.SetDynamicField("MultiSampleQuality", value);
 	}
-
 	value = settings.GetScriptEditor();
 	settings.SetDynamicField("ScriptEditor", value);
 

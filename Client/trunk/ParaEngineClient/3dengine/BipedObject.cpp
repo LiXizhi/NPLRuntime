@@ -34,7 +34,6 @@
 #include "PhysicsWorld.h"
 #include "DynamicAttributeField.h"
 #include <algorithm>
-#include "GeosetObject.h"
 
 using namespace ParaEngine;
 
@@ -154,7 +153,8 @@ m_dwPhysicsGroupMask(DEFAULT_PHYSICS_GROUP_MASK),
 m_dwPhysicsMethod(PHYSICS_FORCE_NO_PHYSICS), m_nPhysicsGroup(0),
 m_fBootHeight(0.f),
 m_fSizeScale(1.0f),
-m_fObjectToCameraDistance(0.f),
+m_fObjectToCameraDistance(0.f), 
+m_pLocalTransfrom(NULL),
 m_fSpeedScale(1.0f), m_bIsAlwaysAboveTerrain(true), m_bPauseAnimation(false),
 m_gravity(9.18f), m_ignoreSlopeCollision(false), m_readyToLanding(false), m_canFly(false), m_isAlwaysFlying(false), m_bAutoWalkupBlock(true), m_bIsControlledExternally(false),
 m_isFlying(false), m_flyingDir(1, 0, 0), m_fLastBlockLight(0.f), m_dwLastBlockHash(0), m_fAccelerationDist(0), m_fLastSpeed(0.f)
@@ -171,6 +171,7 @@ CBipedObject::~CBipedObject()
 {
 	UnloadPhysics();
 	SAFE_DELETE(m_pBipedStateManager);
+	SAFE_DELETE(m_pLocalTransfrom);
 }
 
 void CBipedObject::SetUseGlobalTime(bool bUseGlobalTime)
@@ -1005,28 +1006,28 @@ Matrix4* ParaEngine::CBipedObject::GetAttachmentMatrix(Matrix4& pOut, int nAttac
 
 void ParaEngine::CBipedObject::SetLocalTransform(const Matrix4& mXForm)
 {
-	// TODO: decompose and set yaw, pitch, roll and scaling, etc. 
+	if (!m_pLocalTransfrom)
+	{
+		m_pLocalTransfrom = new Matrix4();
+	}
+	*m_pLocalTransfrom = mXForm;
+	SetGeometryDirty(true);
 }
 
 void ParaEngine::CBipedObject::GetLocalTransform(Matrix4* localTransform)
 {
-	// order of rotation: roll * pitch * yaw * (vNorm to UnitY), where roll is applied first. 
+	if (localTransform)
+	{
+		GetLocalWorldTransform(*localTransform);
+	}
+}
+
+void ParaEngine::CBipedObject::GetLocalWorldTransform(Matrix4& mxWorld)
+{
+	// order of rotation: localSpace{(localTransfrom * scaling)} * worldSpace{roll * pitch * yaw * (vNorm to UnitY) * bootHeight}, where roll is applied first. 
 	bool bIsIdentity = true;
-
-	Matrix4 mxWorld;
-
-	float fScaling = GetSizeScale();
-	if (fScaling != 1.f)
-	{
-		mxWorld.makeScale(fScaling, fScaling, fScaling);
-		bIsIdentity = false;
-	}
-	else
-	{
-		mxWorld = Matrix4::IDENTITY;
-	}
-
-	if(m_vNorm != Vector3::UNIT_Y)
+	
+	if (m_vNorm != Vector3::UNIT_Y)
 	{
 		Vector3 vAxis;
 		Matrix4 matNorm;
@@ -1072,10 +1073,28 @@ void ParaEngine::CBipedObject::GetLocalTransform(Matrix4* localTransform)
 		bIsIdentity = false;
 	}
 
-	// world translation
-	mxWorld._42 += m_fBootHeight;
-	if (localTransform)
-		*localTransform = mxWorld;
+	float fScaling = GetSizeScale();
+	if (fabs(fScaling - 1.0f) > FLT_TOLERANCE)
+	{
+		Matrix4 matScale;
+		matScale.makeScale(fScaling, fScaling, fScaling);
+		mxWorld = (bIsIdentity) ? matScale : matScale.Multiply4x3(mxWorld);
+		bIsIdentity = false;
+	}
+
+	if (m_pLocalTransfrom)
+	{
+		mxWorld = (bIsIdentity) ? *m_pLocalTransfrom : m_pLocalTransfrom->Multiply4x3(mxWorld);
+		bIsIdentity = false;
+	}
+
+	if(bIsIdentity)
+		mxWorld.identity();
+
+	if (m_fBootHeight != 0.f)
+	{
+		mxWorld._42 += m_fBootHeight;
+	}
 }
 
 Matrix4* CBipedObject::GetRenderMatrix(Matrix4& mxWorld, int nRenderNumber)
@@ -1120,7 +1139,19 @@ Matrix4* CBipedObject::GetRenderMatrix(Matrix4& mxWorld, int nRenderNumber)
 					{
 						mat = Matrix4::IDENTITY;
 						mat.setScale(Vector3(1.f / fScalingX, 1.f / fScalingY, 1.f / fScalingZ));
-						mxWorld = mat*mxWorld;
+						mxWorld = mat * mxWorld;
+					}
+
+					float fScaling = GetSizeScale();
+					if (fabs(fScaling - 1.0f) > FLT_TOLERANCE)
+					{
+						Matrix4 matScale;
+						matScale.makeScale(fScaling, fScaling, fScaling);
+						mxWorld = matScale.Multiply4x3(mxWorld);
+					}
+					if (m_pLocalTransfrom)
+					{
+						mxWorld = m_pLocalTransfrom->Multiply4x3(mxWorld);
 					}
 				}
 			}
@@ -1135,59 +1166,12 @@ Matrix4* CBipedObject::GetRenderMatrix(Matrix4& mxWorld, int nRenderNumber)
 	// for unmounted models
 	if (!bMounted)
 	{
-		// order of rotation: roll * pitch * yaw * (vNorm to UnitY), where roll is applied first. 
-		bool bIsIdentity = true;
+		GetLocalWorldTransform(mxWorld);
 
-		if (m_vNorm != Vector3::UNIT_Y)
-		{
-			Vector3 vAxis;
-			vAxis = Vector3::UNIT_Y.crossProduct(Vector3(m_vNorm.x, m_vNorm.y, m_vNorm.z));
-			ParaMatrixRotationAxis(&mxWorld, vAxis, acos(m_vNorm.y));
-			bIsIdentity = false;
-		}
-		else
-			mxWorld = Matrix4::IDENTITY;
-
-		float fYaw = GetYaw();
-
-		if (IsBillboarded())
-		{
-			// TODO: how about in the reflection pass?
-			Vector3 vDir = m_vPos - CGlobals::GetScene()->GetCurrentCamera()->GetEyePosition();
-			if (vDir.x > 0.0f)
-				fYaw += -atanf(vDir.z / vDir.x) + MATH_PI / 2;
-			else
-				fYaw += -atanf(vDir.z / vDir.x) - MATH_PI / 2;
-		}
-
-		if (fYaw != 0.f)
-		{
-			Matrix4 matYaw;
-			ParaMatrixRotationY((Matrix4*)&matYaw, fYaw);
-			mxWorld = (bIsIdentity) ? matYaw : matYaw.Multiply4x3(mxWorld);
-			bIsIdentity = false;
-		}
-
-		if (GetPitch() != 0.f)
-		{
-			Matrix4 matPitch;
-			ParaMatrixRotationX(&matPitch, GetPitch());
-			mxWorld = (bIsIdentity) ? matPitch : matPitch.Multiply4x3(mxWorld);
-			bIsIdentity = false;
-		}
-
-		if (GetRoll() != 0.f)
-		{
-			Matrix4 matRoll;
-			ParaMatrixRotationZ(&matRoll, GetRoll());
-			mxWorld = (bIsIdentity) ? matRoll : matRoll.Multiply4x3(mxWorld);
-			bIsIdentity = false;
-		}
-		
 		// world translation
 		Vector3 vPos = GetRenderOffset();
 		mxWorld._41 += vPos.x;
-		mxWorld._42 += vPos.y + m_fBootHeight;
+		mxWorld._42 += vPos.y;
 		mxWorld._43 += vPos.z;
 	}
 	return &mxWorld;
@@ -1246,7 +1230,7 @@ bool CBipedObject::SetParamsFromAsset()
 			CTileObject::SetPrimaryTechniqueHandle((GetPrimaryTechniqueHandle() < -1) ? -GetPrimaryTechniqueHandle() : ((ParaXEntity*)m_pMultiAnimationEntity.get())->GetPrimaryTechniqueHandle());
 
 			// this will update the character's bounding box from the asset.
-			SetSizeScale(GetSizeScale());
+			SetGeometryDirty(true);
 
 			// fire asset load event
 			ActivateScript(Type_OnAssetLoaded);
@@ -1258,7 +1242,7 @@ bool CBipedObject::SetParamsFromAsset()
 		SetPrimaryTechniqueHandle(TECH_CHARACTER);
 
 		// this will update the character's bounding box from the asset.
-		SetSizeScale(GetSizeScale());
+		SetGeometryDirty(true);
 		return true;
 	}
 	return false;
@@ -1578,7 +1562,6 @@ void CBipedObject::BuildShadowVolume(SceneState * sceneState, ShadowVolume * pSh
 	CAnimInstanceBase* pAI = GetAnimInstance();
 	if (pAI)
 	{
-		LPDIRECT3DDEVICE9  pd3dDevice = CGlobals::GetRenderDevice();
 		// push matrix
 		Matrix4 mxWorld;
 
@@ -4304,6 +4287,7 @@ void ParaEngine::CBipedObject::UpdateGeometry()
 	if (pAI && m_pMultiAnimationEntity)
 	{
 		float fScale = GetSizeScale();
+		pAI->SetSizeScale(fScale);
 		float fRadius = 0.2f;
 		if (m_pMultiAnimationEntity->GetType() == AssetEntity::parax)
 		{
@@ -4321,24 +4305,10 @@ void ParaEngine::CBipedObject::UpdateGeometry()
 				{
 					Vector3 vMin = pModel->GetHeader().minExtent;
 					Vector3 vMax = pModel->GetHeader().maxExtent;
-					for (auto child : m_children)
-					{
-						if (dynamic_cast<CGeosetObject*>(child))
-						{
-							if (static_cast<CGeosetObject*>(child)->getEntity()->GetModel())
-							{
-								vMin.x = std::min<>(vMin.x, static_cast<CGeosetObject*>(child)->getEntity()->GetModel()->GetHeader().minExtent.x);
-								vMin.y = std::min<>(vMin.y, static_cast<CGeosetObject*>(child)->getEntity()->GetModel()->GetHeader().minExtent.y);
-								vMin.z = std::min<>(vMin.z, static_cast<CGeosetObject*>(child)->getEntity()->GetModel()->GetHeader().minExtent.z);
-								vMax.x = std::max<>(vMax.x, static_cast<CGeosetObject*>(child)->getEntity()->GetModel()->GetHeader().maxExtent.x);
-								vMax.y = std::max<>(vMax.y, static_cast<CGeosetObject*>(child)->getEntity()->GetModel()->GetHeader().maxExtent.y);
-								vMax.z = std::max<>(vMax.z, static_cast<CGeosetObject*>(child)->getEntity()->GetModel()->GetHeader().maxExtent.z);
-							}
-						}
-					}
+					
 					m_fAssetHeight = vMax.y*fScale;
 					Matrix4 mat;
-					GetLocalTransform(&mat);
+					GetLocalWorldTransform(mat);
 					CShapeOBB obb(CShapeBox(vMin, vMax), mat);
 					CShapeBox minmaxBox;
 					minmaxBox.Extend(obb);
@@ -4475,11 +4445,6 @@ float CBipedObject::GetMaxSpeed()
 
 float CBipedObject::GetSpeedScale()
 {
-	/*if(m_pAI)
-	{
-	return m_pAI->GetSpeedScale();
-	}
-	return 1.0f;*/
 	return m_fSpeedScale;
 }
 void CBipedObject::SetSpeedScale(float fScale)
@@ -4494,10 +4459,6 @@ void CBipedObject::SetSpeedScale(float fScale)
 
 float CBipedObject::GetSizeScale()
 {
-	/*if(m_pAI!=NULL)
-	{
-	return m_pAI->GetSizeScale();
-	}*/
 	return m_fSizeScale;
 }
 
@@ -4524,19 +4485,20 @@ void CBipedObject::Reset()
 
 void CBipedObject::SetSizeScale(float fScale)
 {
-	m_fSizeScale = fScale;
-	CAnimInstanceBase* pAI = GetAnimInstance();
-	if (pAI && m_pMultiAnimationEntity)
+	if (m_fSizeScale != fScale)
 	{
-		/// set scale of the associated mesh
-		float fOldScale = pAI->GetSizeScale();
-		pAI->SetSizeScale(fScale);
-		SetGeometryDirty(true);
-	}
-	else
-	{
-		// just a default radius for debugging purposes only
-		SetRadius(0.2f);
+		m_fSizeScale = fScale;
+		CAnimInstanceBase* pAI = GetAnimInstance();
+		if (pAI && m_pMultiAnimationEntity)
+		{
+			pAI->SetSizeScale(fScale);
+			SetGeometryDirty(true);
+		}
+		else
+		{
+			// just a default radius for debugging purposes only
+			SetRadius(0.2f);
+		}
 	}
 }
 
@@ -4953,7 +4915,11 @@ void ParaEngine::CBipedObject::SetFlyingDirection(const Vector3 *dir)
 
 void ParaEngine::CBipedObject::SetBootHeight(float fBootHeight)
 {
-	m_fBootHeight = fBootHeight;
+	if (m_fBootHeight != fBootHeight)
+	{
+		m_fBootHeight = fBootHeight;
+		SetGeometryDirty(true);
+	}
 }
 
 float ParaEngine::CBipedObject::GetBootHeight()
