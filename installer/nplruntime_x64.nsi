@@ -118,8 +118,8 @@ Section "" ;No components page, name is not important
 	File "..\ParaWorld\bin64\ParaEngineClient.exe"
 	File "..\ParaWorld\bin64\libcurl.dll"
 	File "..\ParaWorld\bin64\lua.dll"
-	File "..\ParaWorld\bin64\luasql.dll"
-	File "..\ParaWorld\bin64\sqlite.dll"
+	; File "..\ParaWorld\bin64\luasql.dll"
+	; File "..\ParaWorld\bin64\sqlite.dll"
 	File "..\ParaWorld\bin64\PhysicsBT.dll"
 	File "..\npl_packages\main\script\ide\System\nplcmd\nplc.bat"
   
