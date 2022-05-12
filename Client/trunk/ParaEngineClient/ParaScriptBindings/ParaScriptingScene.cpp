@@ -2154,7 +2154,7 @@ ParaObject ParaScene::CreateCharacter(const char* strObjectName, ParaAssetObject
 	pObj->SetFacing(fFacing);
 	pObj->InitObject(pMAE);
 	if(fScaling!=1.0f)
-		pObj->SetSizeScale(fScaling);
+ 		pObj->SetSizeScale(fScaling);
 
 	// any newly created object is set to modified. 
 	pObj->SetModified(true);

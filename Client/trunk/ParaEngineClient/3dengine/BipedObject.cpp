@@ -1239,10 +1239,13 @@ bool CBipedObject::SetParamsFromAsset()
 	}
 	else
 	{
-		SetPrimaryTechniqueHandle(TECH_CHARACTER);
+		if (GetRadius() != 0.2f)
+		{
+			SetPrimaryTechniqueHandle(TECH_CHARACTER);
 
-		// this will update the character's bounding box from the asset.
-		SetGeometryDirty(true);
+			// just a default radius for debugging purposes if asset is not ready or invalid.
+			SetRadius(0.2f);
+		}
 		return true;
 	}
 	return false;
