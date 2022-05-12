@@ -13,10 +13,10 @@ using namespace ParaEngine;
 
 
 ParaEngine::CAnimInstanceBase::CAnimInstanceBase() :
-m_modelColor((uint32)0xff0000ff),
-m_fSpeedScale(1.0f),
-m_fSizeScale(1.0f), m_nRenderCount(0),
-m_bEnableAnimIDMap(false), m_bEnableAnimation(true)
+	m_modelColor((uint32)0xff0000ff),
+	m_fSpeedScale(1.0f),
+	m_fSizeScale(1.0f), m_nRenderCount(0),
+	m_bEnableAnimIDMap(false), m_bEnableAnimation(true)
 {
 
 }
@@ -46,32 +46,22 @@ map<int, int>* ParaEngine::CAnimInstanceBase::GetAnimIDMap()
 	return &m_mapAnimIDs;
 }
 
-void ParaEngine::CAnimInstanceBase::ApplyLocalTransformToVec3(Vector3 *pOut, const Vector3 *pV)
-{
-	ParaVec3TransformCoord(pOut, pV, &m_mxLocalTransform);
-}
-
-void ParaEngine::CAnimInstanceBase::ApplyLocalTransformToVec1(float *pOut, float* pV)
-{
-	*pOut = (*pV) * m_mxLocalTransform._11;
-}
-
-void ParaEngine::CAnimInstanceBase::LoadAnimation(const char * sName, float * fSpeed, bool bAppend /*= false*/)
+void ParaEngine::CAnimInstanceBase::LoadAnimation(const char* sName, float* fSpeed, bool bAppend /*= false*/)
 {
 	LoadAnimation(CAnimTable::GetAnimIDByName(sName), fSpeed, bAppend);
 }
 
-void ParaEngine::CAnimInstanceBase::LoadAnimation(int nAnimID, float * fSpeed, bool bAppend /*= false*/)
+void ParaEngine::CAnimInstanceBase::LoadAnimation(int nAnimID, float* fSpeed, bool bAppend /*= false*/)
 {
 
 }
 
-void ParaEngine::CAnimInstanceBase::LoadDefaultStandAnim(float * fSpeed)
+void ParaEngine::CAnimInstanceBase::LoadDefaultStandAnim(float* fSpeed)
 {
 	LoadAnimation(ANIM_STAND, fSpeed);
 }
 
-void ParaEngine::CAnimInstanceBase::LoadDefaultWalkAnim(float * fSpeed)
+void ParaEngine::CAnimInstanceBase::LoadDefaultWalkAnim(float* fSpeed)
 {
 	LoadAnimation(ANIM_RUN, fSpeed);
 }
@@ -106,11 +96,6 @@ void ParaEngine::CAnimInstanceBase::ShowMesh(DWORD dwBitfields)
 
 }
 
-void ParaEngine::CAnimInstanceBase::SetLocalTransform(Matrix4 mXForm)
-{
-	m_mxLocalTransform = mXForm;
-}
-
 void ParaEngine::CAnimInstanceBase::AdvanceTime(double dTimeDelta)
 {
 
@@ -121,12 +106,12 @@ void ParaEngine::CAnimInstanceBase::Animate(double dTimeDelta, int nRenderNumber
 
 }
 
-HRESULT ParaEngine::CAnimInstanceBase::Draw(SceneState * sceneState, const Matrix4* mxWorld, CParameterBlock* paramBlock /*= NULL*/)
+HRESULT ParaEngine::CAnimInstanceBase::Draw(SceneState* sceneState, const Matrix4* mxWorld, CParameterBlock* paramBlock /*= NULL*/)
 {
 	return 0;
 }
 
-void ParaEngine::CAnimInstanceBase::GetSpeedOf(const char * sName, float * fSpeed)
+void ParaEngine::CAnimInstanceBase::GetSpeedOf(const char* sName, float* fSpeed)
 {
 
 }
@@ -146,7 +131,7 @@ void ParaEngine::CAnimInstanceBase::SetSpeedScale(float fScale)
 	m_fSpeedScale = fScale;
 }
 
-void ParaEngine::CAnimInstanceBase::GetCurrentSize(float * fWidth, float * fDepth)
+void ParaEngine::CAnimInstanceBase::GetCurrentSize(float* fWidth, float* fDepth)
 {
 
 }
@@ -161,7 +146,7 @@ float ParaEngine::CAnimInstanceBase::GetSizeScale()
 	return m_fSizeScale;
 }
 
-void ParaEngine::CAnimInstanceBase::BuildShadowVolume(SceneState * sceneState, ShadowVolume * pShadowVolume, LightParams* pLight, Matrix4* mxWorld)
+void ParaEngine::CAnimInstanceBase::BuildShadowVolume(SceneState* sceneState, ShadowVolume* pShadowVolume, LightParams* pLight, Matrix4* mxWorld)
 {
 
 }
