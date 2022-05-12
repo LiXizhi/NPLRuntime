@@ -11,7 +11,7 @@ android {
     }
 
     defaultConfig {
-        applicationId "com.paraengine.paracraft"
+        applicationId "com.tatfook.paracraft"
         minSdkVersion PROP_MIN_SDK_VERSION
         targetSdkVersion PROP_TARGET_SDK_VERSION
         versionCode 36
