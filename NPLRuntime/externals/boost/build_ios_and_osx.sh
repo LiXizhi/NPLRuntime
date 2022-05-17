@@ -1,7 +1,12 @@
-
+#!/bin/bash
 
 pushd .
+
 mkdir -p ./prebuild/apple
 cd prebuild/apple
-sh ../../scripts/boost.sh -ios -macos  --no-framework --boost-version 1.74.0 --boost-libs "thread date_time filesystem system chrono regex serialization iostreams log"
+
+sh ../../build_boost_apple.sh \
+-ios -macos --no-framework --boost-version 1.78.0 \
+--boost-libs "thread date_time filesystem system chrono regex serialization iostreams log"
+
 popd
