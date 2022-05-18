@@ -13,7 +13,7 @@
 # less painful.
 #
 # To configure the script, define:
-#    BOOST_VERSION:   Which version of Boost to build (e.g. 1.61.0)
+#    BOOST_VERSION:   Which version of Boost to build (e.g. 1.78.0)
 #    BOOST_LIBS:      Which Boost libraries to build
 #    IOS_SDK_VERSION: iOS SDK version (e.g. 10.0)
 #    MIN_IOS_VERSION: Minimum iOS Target Version (e.g. 10.0)
@@ -40,7 +40,7 @@ CLEAN=
 NO_CLEAN=
 NO_FRAMEWORK=
 
-BOOST_VERSION=1.74.0
+BOOST_VERSION=1.78.0
 
 MIN_IOS_VERSION=10.0
 IOS_SDK_VERSION=`xcrun --sdk iphoneos --show-sdk-version`
@@ -54,6 +54,7 @@ MACOS_SDK_VERSION=`xcrun --sdk macosx --show-sdk-version | cut -d. -f1 -f2`
 MACOS_ARCHS="x86_64"
 MACOS_ARCH_COUNT=0
 MACOS_ARCH_FLAGS=""
+
 for ARCH in $MACOS_ARCHS; do
     MACOS_ARCH_FLAGS="$MACOS_ARCH_FLAGS -arch $ARCH"
     ((MACOS_ARCH_COUNT++))
@@ -374,8 +375,6 @@ doneSection()
     echo
 }
 
-#===============================================================================
-
 cleanup()
 {
     echo Cleaning everything
@@ -398,19 +397,19 @@ cleanup()
     doneSection
 }
 
-#===============================================================================
-
 downloadBoost()
 {
     if [ ! -s $BOOST_TARBALL ]; then
         echo "Downloading boost ${BOOST_VERSION}"
+
+        BOOST_VERSION_UNDERSCODE=${BOOST_VERSION//./_}
+
         curl -L -o "$BOOST_TARBALL" \
-            http://sourceforge.net/projects/boost/files/boost/${BOOST_VERSION}/boost_${BOOST_VERSION2}.tar.bz2/download
+            https://cdn.keepwork.com/paracraft/ios/boost_${BOOST_VERSION_UNDERSCODE}.tar.bz2
+
         doneSection
     fi
 }
-
-#===============================================================================
 
 unpackBoost()
 {
@@ -418,14 +417,12 @@ unpackBoost()
 
     echo Unpacking boost into "$SRCDIR"...
 
-    [ -d $SRCDIR ]    || mkdir -p "$SRCDIR"
+    [ -d $SRCDIR ] || mkdir -p "$SRCDIR"
     [ -d $BOOST_SRC ] || ( cd "$SRCDIR"; tar xfj "$BOOST_TARBALL" )
-    [ -d $BOOST_SRC ] && echo "    ...unpacked as $BOOST_SRC"
+    [ -d $BOOST_SRC ] && echo " ...unpacked as $BOOST_SRC"
 
     doneSection
 }
-
-#===============================================================================
 
 inventMissingHeaders()
 {
@@ -436,8 +433,6 @@ inventMissingHeaders()
 
     cp "$XCODE_ROOT/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator${IOS_SDK_VERSION}.sdk/usr/include/"{crt_externs,bzlib}.h "$BOOST_SRC"
 }
-
-#===============================================================================
 
 updateBoost()
 {
@@ -494,8 +489,6 @@ EOF
     doneSection
 }
 
-#===============================================================================
-
 bootstrapBoost()
 {
     cd $BOOST_SRC
@@ -530,8 +523,6 @@ bootstrapBoost()
 
     doneSection
 }
-
-#===============================================================================
 
 buildBoost_iOS()
 {
@@ -610,8 +601,6 @@ buildBoost_macOS()
 
     doneSection
 }
-
-#===============================================================================
 
 unpackArchive()
 {
@@ -790,7 +779,6 @@ scrunchAllLibsTogetherInOneLibPerPlatform()
     done
 }
 
-#===============================================================================
 buildFramework()
 {
     : ${1:?}
@@ -892,8 +880,8 @@ fi
 # -DBOOST_AC_USE_PTHREADS -DBOOST_SP_USE_PTHREADS 
 # turn off BOOST_AC_USE_PTHEADS and BOOST_SP_USE_PTHREADS because boost/filesystem
 EXTRA_FLAGS="-g -DNDEBUG \
-    -fvisibility=hidden -fvisibility-inlines-hidden \
-    -Wno-unused-local-typedef -fembed-bitcode"
+-fvisibility=hidden -fvisibility-inlines-hidden \
+-Wno-unused-local-typedef -fembed-bitcode"
 EXTRA_IOS_FLAGS="$EXTRA_FLAGS -mios-version-min=$MIN_IOS_VERSION"
 EXTRA_TVOS_FLAGS="$EXTRA_FLAGS -mtvos-version-min=$MIN_TVOS_VERSION"
 EXTRA_MACOS_FLAGS="$EXTRA_FLAGS -mmacosx-version-min=$MIN_MACOS_VERSION"
@@ -954,11 +942,13 @@ if [[ -n $BUILD_IOS ]]; then
     bootstrapBoost "iOS"
     buildBoost_iOS
 fi
+
 if [[ -n $BUILD_TVOS ]]; then
     updateBoost "tvOS"
     bootstrapBoost "tvOS"
     buildBoost_tvOS
 fi
+
 if [[ -n $BUILD_MACOS ]]; then
     updateBoost "macOS"
     bootstrapBoost "macOS"
