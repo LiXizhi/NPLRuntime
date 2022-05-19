@@ -217,7 +217,20 @@ public class ParaEngineHelper {
 
 	public static void OpenFileDialog(String filter) {
 		ParaEngineActivity context = ParaEngineActivity.getContext();
-		context.OpenFileDialog(filter);
+
+		String[] filterArray = filter.split(";");
+		Boolean isMatch = true;
+
+		for (String item : filterArray) {
+			if (!item.matches("[a-z*]+/[a-z*]")) {
+				isMatch = false;
+				break;
+			}
+		}
+
+		if (isMatch) {
+			context.OpenFileDialog(filter);
+		}
 	}
 
 	public static void OpenFileDialogCallback(String filepath) {

@@ -17,8 +17,6 @@ import android.util.Log;
 import java.util.Objects;
 
 public class ScreenRecorderService extends Service {
-    private String TAG = "ScreenRecorderService";
-
     @Override
     public void onCreate() {
         super.onCreate();

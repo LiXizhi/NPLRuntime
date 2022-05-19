@@ -39,6 +39,10 @@ install:
 #    7z x C:\projects\nplruntime\Server\trunk\boost.tar -oC:\projects\nplruntime\Server\trunk\
 #    cd C:\projects\nplruntime\Server\trunk\boost_1_65_1\
 #    set BOOST_ROOT="C:\projects\nplruntime\Server\trunk\boost_1_65_1"
+#    
+#    prebuilt boost
+#    cd C:\Libraries\boost_1_74_0\
+#    set BOOST_ROOT=C:\Libraries\boost_1_74_0
 
 - cmd: >-
     git submodule init
@@ -51,10 +55,14 @@ install:
 
     rmdir "C:/Program Files/PostgreSQL" /s /q
     
-    cd C:\Libraries\boost_1_65_1\
+    appveyor DownloadFile https://boostorg.jfrog.io/artifactory/main/release/1.78.0/source/boost_1_78_0.7z -FileName "C:\projects\nplruntime\Server\trunk\boost_1_78_0.7z"
 
-    set BOOST_ROOT=C:\Libraries\boost_1_65_1
+    7z x C:\projects\nplruntime\Server\trunk\boost_1_78_0.7z -oC:\projects\nplruntime\Server\trunk\
 
+    cd C:\projects\nplruntime\Server\trunk\boost_1_78_0\
+
+    set BOOST_ROOT=C:\projects\nplruntime\Server\trunk\boost_1_78_0
+    
     bootstrap.bat
 
     b2 address-model=%addresss_mode% runtime-link=static threading=multi variant=release --with-thread --with-date_time --with-filesystem --with-system --with-chrono --with-serialization --with-iostreams --with-regex --with-log stage
@@ -67,11 +75,11 @@ install:
 
     cd bin\client
 
-    if "%addresss_mode%" == "64" ( cmake ../../Client -DCMAKE_GENERATOR_PLATFORM=x64 ) else ( cmake ../../Client )
+    if "%addresss_mode%" == "64" ( cmake ../../NPLRuntime -DCMAKE_GENERATOR_PLATFORM=x64 ) else ( cmake ../../NPLRuntime )
     
 build_script:
 - cmd: >-
-    msbuild  c:\projects\nplruntime\bin\client\CLIENT.sln /verbosity:minimal /property:Configuration=Release /logger:"C:\Program Files\AppVeyor\BuildAgent\Appveyor.MSBuildLogger.dll"
+    msbuild  c:\projects\nplruntime\bin\client\NPLRuntime.sln /verbosity:minimal /property:Configuration=Release /logger:"C:\Program Files\AppVeyor\BuildAgent\Appveyor.MSBuildLogger.dll"
 
     7z a %zip_name% %zip_path%
 
