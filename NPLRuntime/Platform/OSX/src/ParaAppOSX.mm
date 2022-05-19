@@ -1,6 +1,8 @@
 #import <Cocoa/Cocoa.h>
 #include "ParaAppOSX.h"
 #include "RenderWindowOSX.h"
+#import "MidiPlayer/ParaEngineMediaPlayer.h"
+#include "MidiMsg.h"
 
 using namespace  ParaEngine;
 
@@ -12,6 +14,7 @@ IParaEngineApp* CreateParaEngineApp()
 ParaEngine::CParaEngineAppOSX::CParaEngineAppOSX()
 {
 	// SetTouchInputting(true);
+    CMidiMsg::GetSingleton().SetMediaPlayer(ParaEngineMediaPlayer::GetSingleton());
 }
 
 void ParaEngine::CParaEngineAppOSX::GameToClient(int& inout_x, int & inout_y, bool bInBackbuffer /*= true*/)

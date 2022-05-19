@@ -28,7 +28,6 @@
 #include "Archive.h"
 #include "NPLPackageConfig.h"
 #include "IO/ResourceEmbedded.h"
-#include "GeosetObject.h"
 #include "2dengine/GUIRoot.h"
 #include "2dengine/GUIMouseVirtual.h"
 #include "FrameRateController.h"
