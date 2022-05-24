@@ -99,7 +99,9 @@ int CMidiMsg::PlayMidiMsg(DWORD dwMsg)
 	if (m_mediaPlayer) {
 		char note = (dwMsg & 0xff00) >> 8;
 		char velocity = (dwMsg & 0xff0000) >> 16;
-		m_mediaPlayer->PlayMidiNote(note, velocity);
+        int baseNode = (dwMsg & 0xff000000) >> 24;
+
+		m_mediaPlayer->PlayMidiNote(note, velocity, baseNode);
 		return S_OK;
 	}
 #ifdef PARAENGINE_CLIENT
