@@ -28,6 +28,8 @@ import androidx.annotation.Keep;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
+
+import android.provider.MediaStore;
 import android.util.Log;
 import android.view.InputDevice;
 import android.view.KeyEvent;
@@ -145,27 +147,7 @@ public class ParaEngineActivity extends AppCompatActivity {
         }, new ActivityResultCallback<Uri>() {
             @Override
             public void onActivityResult(Uri result) {
-                String filepath = result == null ? "" : result.getLastPathSegment();
-                if (result != null) {
-                    try {
-                        InputStream is = getContentResolver().openInputStream(result);
-                        String filename = result.getLastPathSegment();
-                        String cachedir = getExternalCacheDir().getAbsolutePath();
-                        filename = filename.replace("/", "_");
-                        filepath = cachedir + "/" + filename;
-                        FileOutputStream fos = new FileOutputStream(new File(filepath), false);
-                        byte[] buffer = new byte[1024];
-                        int byteCount=0;
-                        while((byteCount = is.read(buffer)) != -1) {         //循环从输入流读取 buffer字节
-                            fos.write(buffer, 0, byteCount);             //将读取的输入流写入到输出流
-                        }
-                        fos.flush();//刷新缓冲区
-                        is.close();
-                        fos.close();
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    }
-                }
+                String filepath = result == null ? "" : ParaEngineHelper.getFileAbsolutePath(getContext(), result);
                 ParaEngineHelper.OpenFileDialogCallback(filepath);
             }
         });
