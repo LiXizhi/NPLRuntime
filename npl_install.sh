@@ -60,15 +60,15 @@ make install
 cd ..
 
 # install boost from latest source url. boost version should be 1.55.0 or above
-if [ ! -d ./boost_1_65_0 ]; then
-	if [ ! -f ./boost_1_65_0.tar.bz2 ]; then
-		wget http://dl.bintray.com/boostorg/release/1.65.0/source/boost_1_65_0.tar.bz2 --no-check-certificate
+if [ ! -d ./boost_1_78_0 ]; then
+	if [ ! -f ./boost_1_78_0.tar.bz2 ]; then
+		wget http://dl.bintray.com/boostorg/release/1.78.0/source/boost_1_78_0.tar.bz2 --no-check-certificate
 	fi
-	tar --bzip2 -xf boost_1_65_0.tar.bz2
+	tar --bzip2 -xf boost_1_78_0.tar.bz2
 fi
 
 
-cd boost_1_65_0
+cd boost_1_78_0
 ./bootstrap.sh --with-libraries="thread,date_time,filesystem,system,chrono,signals,serialization,iostreams,regex,log"
 ./b2 link=static threading=multi variant=release
 ./b2 install
