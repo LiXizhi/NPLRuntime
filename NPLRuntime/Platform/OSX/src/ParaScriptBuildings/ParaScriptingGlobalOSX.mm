@@ -23,11 +23,22 @@ void ParaScripting::CNPLScriptingState::LoadHAPI_Platform()
 bool ParaScripting::ParaGlobal::OpenFileDialog(const object& inout)
 {
     NSOpenPanel *panel = [[NSOpenPanel alloc] init];
+    
+    const char *filter = object_cast<const char*>(inout["filter"]);
+    
+    if (filter == NULL) {
+        filter = "image/*";
+    }
 
     [panel setAllowsMultipleSelection:NO];
     [panel setCanChooseDirectories:YES];
     [panel setCanChooseFiles:YES];
-    [panel setAllowsOtherFileTypes:YES];
+
+    if (strcmp(filter, "image/*") == 0) {
+        [panel setAllowedFileTypes:[NSArray arrayWithObjects:@".jpg", @".png", @"jpeg", nil]];
+    } else {
+        [panel setAllowsOtherFileTypes:YES];
+    }
 
     if ([panel runModal] == NSModalResponseOK) {
         NSString *path = [panel.URLs.firstObject path];
