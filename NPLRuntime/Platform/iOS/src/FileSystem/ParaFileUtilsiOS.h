@@ -4,7 +4,6 @@ namespace ParaEngine
 {
 	class CParaFileUtilsiOS : public CParaFileUtils
 	{
-
 	public:
 		virtual ParaEngine::FileData GetDataFromFile(const std::string& filename) override;
 		virtual bool IsAbsolutePath(const std::string& filename) override;
@@ -18,14 +17,8 @@ namespace ParaEngine
 		virtual bool MakeDirectoryFromFilePath(const std::string filename) override;
 		virtual bool SaveBufferToFile(const std::string& filename, bool replace, const char* buffer, uint32_t bufSize) override;
 		virtual bool Delete(const std::string& filename) override;
-	
 		virtual int DeleteDirectory(const std::string& filename) override;
-
-
         virtual std::string GetFullPathForFilename(const std::string &filename) override;
-        
-
-        
     protected:
         const std::string& GetAssetPath();
 	private:

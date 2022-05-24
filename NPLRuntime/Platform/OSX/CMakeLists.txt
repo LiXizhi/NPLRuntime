@@ -59,6 +59,8 @@ find_library(COCOA_LIBRARY Cocoa required)
 find_library(OPENGL_LIBRARY OpenGL)
 find_library(WebView WebKit)
 # find_library(AUTHENTICATION_SERVICES AuthenticationServices)
+find_library(AVFAudio AVFAudio)
+
 
 target_link_libraries(Paracraft PUBLIC
     RenderSystemOpenGL
@@ -66,6 +68,7 @@ target_link_libraries(Paracraft PUBLIC
     ${COCOA_LIBRARY}
     ${OPENGL_LIBRARY}
     ${WebView}
+    ${AVFAudio}
     # ${AUTHENTICATION_SERVICES}
 )
 

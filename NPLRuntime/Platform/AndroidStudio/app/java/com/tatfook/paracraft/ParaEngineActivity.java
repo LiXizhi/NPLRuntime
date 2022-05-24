@@ -132,13 +132,13 @@ public class ParaEngineActivity extends AppCompatActivity {
     }
 
     protected void RegisterActivityResultLauncher() {
-        mOpenFileDialogLuancher = registerForActivityResult(new ActivityResultContract<String, Uri>() {
-            @NonNull
-            @Override
-            public Intent createIntent(@NonNull Context context, String input) {
-                return new Intent(Intent.ACTION_PICK).setType(input);
-            }
-
+        mOpenFileDialogLuancher = registerForActivityResult(
+            new ActivityResultContract<String, Uri>() {
+                @NonNull
+                @Override
+                public Intent createIntent(@NonNull Context context, String input) {
+                    return new Intent(Intent.ACTION_PICK).setType(input);
+                }
             @Override
             public Uri parseResult(int resultCode, @Nullable Intent intent) {
                 if (intent == null || resultCode != Activity.RESULT_OK) return null;
@@ -150,8 +150,9 @@ public class ParaEngineActivity extends AppCompatActivity {
                 String filepath = result == null ? "" : ParaEngineHelper.getFileAbsolutePath(getContext(), result);
                 ParaEngineHelper.OpenFileDialogCallback(filepath);
             }
-        });
+        );
     }
+
     @Override
     protected void onCreate(final Bundle savedInstanceState) {
         sContext = this;
