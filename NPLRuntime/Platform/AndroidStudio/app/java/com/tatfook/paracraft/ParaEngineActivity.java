@@ -150,7 +150,7 @@ public class ParaEngineActivity extends AppCompatActivity {
                 String filepath = result == null ? "" : ParaEngineHelper.getFileAbsolutePath(getContext(), result);
                 ParaEngineHelper.OpenFileDialogCallback(filepath);
             }
-        );
+        });
     }
 
     @Override
