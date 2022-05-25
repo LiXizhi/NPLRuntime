@@ -93,7 +93,7 @@ int GenerateDump(EXCEPTION_POINTERS* pExceptionPointers)
 		hDumpFile, MiniDumpWithDataSegs, &ExpParam, NULL, NULL);
 
 	OUTPUT_LOG("Application crash: min dump generated at %s\r\n", szFileName);
-	bool success = ParaScripting::ParaIO::CopyFile("log.txt", "temp/log.err.txt",true);
+	bool success = ParaScripting::ParaIO::CopyFile("log.txt", "temp/log.crash.txt",true);
 	return EXCEPTION_EXECUTE_HANDLER;
 }
 
