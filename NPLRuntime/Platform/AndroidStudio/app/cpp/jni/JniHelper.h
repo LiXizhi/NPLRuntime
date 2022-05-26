@@ -228,6 +228,8 @@ namespace ParaEngine {
 
         static jstring convert(JniMethodInfo& t, const std::string& x);
 
+        static jbyteArray convert(JniMethodInfo& t, const std::vector<char>& x);
+
         template <typename T>
         static T convert(JniMethodInfo&, T x) {
             return x;
@@ -275,6 +277,10 @@ namespace ParaEngine {
 
         static std::string getJNISignature(const std::string&) {
             return "Ljava/lang/String;";
+        }
+
+        static std::string getJNISignature(std::vector<char>&) {
+            return "[B";
         }
 
         template <typename T>

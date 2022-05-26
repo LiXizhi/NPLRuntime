@@ -14,7 +14,11 @@ namespace ParaEngine {
     }
 
     void ParaEngineMediaPlayer::PlayMidiNote(int note, int velocity) {
-        JniHelper::callStaticVoidMethod(classname, "PlayMidiNote", note, velocity);
+        JniHelper::callStaticVoidMethod(classname, "PlayMidiNote", note, velocity, 0);
+    }
+
+    void ParaEngineMediaPlayer::PlayMidiNote(int note, int velocity, int baseNode) {
+        JniHelper::callStaticVoidMethod(classname, "PlayMidiNote", note, velocity, baseNode);
     }
 
     void ParaEngineMediaPlayer::PlayMidiFile(std::string filename) {
@@ -23,5 +27,9 @@ namespace ParaEngine {
 
     void ParaEngineMediaPlayer::SetVolume(float volume) {
         JniHelper::callStaticVoidMethod(classname, "SetVolume", volume);
+    }
+
+    void ParaEngineMediaPlayer::PlayMidiData(std::vector<char> datas) {
+        JniHelper::callStaticVoidMethod(classname, "PlayMidiData", datas);
     }
 }
