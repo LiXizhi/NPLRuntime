@@ -6,7 +6,6 @@
 //
 
 #import <Foundation/Foundation.h>
-//#import <AVFoundation/AVFoundation.h>
 #import <AVFAudio/AVFAudio.h>
 #include "ParaEngineMediaPlayer.h"
 
@@ -15,105 +14,204 @@
     AVMIDIPlayer * _playerWithFile;
     NSData * _midiData;
 }
-+(MidiHelper*) getInstance;
--(void)PlayMidiNote:(NSNumber *) note withVelocity:(NSNumber*)velocity;
--(void)PlayMidiFile:(NSString*)filename;
--(void)SetVolume:(NSNumber*)volume;
--(void)Stop;
+
++ (MidiHelper*) getInstance;
+
+- (void)PlayMidiNote:(NSNumber *) note withVelocity:(NSNumber*)velocity baseNode:(NSNumber*)baseNode;
+- (void)PlayMidiFile:(NSString*)filename;
+- (void)SetVolume:(NSNumber*)volume;
+- (void)Stop;
+
 @end
 
 @implementation MidiHelper
 
--(id)init
+- (id)init
 {
-    self=[super init];
-    if(self){
+    self = [super init];
+
+    if (self) {
 
     }
-    
+
     _midiData = [NSData alloc];
     return self;
 }
 
-+(MidiHelper*) getInstance
++ (MidiHelper*) getInstance
 {
     static MidiHelper* _instance = nil;
-    if(_instance == nil)
+
+    if (_instance == nil)
     {
         _instance = [[MidiHelper alloc] init];
     }
+
     return _instance;
 }
--(void)PlayMidiNote:(NSNumber *) note withVelocity:(NSNumber*)velocity
+
+- (void)PlayMidiNote:(NSNumber *) note withVelocity:(NSNumber*)velocity baseNode:(NSNumber*)baseNode
 {
-    static Byte midiFileData[34] = {0x4d, 0x54, 0x68, 0x64, 0x00, 0x00, 0x00, 0x06, 0x00, 0x00, 0x00, 0x01, 0x00, 0x78, 0x4d, 0x54, 0x72, 0x6b, 0x00, 0x00, 0x00,0x0c, 0x00, 0x90, 0x48, 0x40, 0x78, 0x80, 0x48, 0x40, 0x00, 0xff, 0x2f, 0x00};
-    midiFileData[24] = [note intValue];
-    midiFileData[25] = [velocity intValue];
-    midiFileData[28] = [note intValue];
-    midiFileData[29] = [velocity intValue];
-    
-    _midiData = [_midiData initWithBytes:midiFileData length:34];
-    NSError *err = nil;
-    
-    NSURL *bankUrl = nil;
-    if(false){
-        NSString *resPath = [[NSBundle mainBundle] resourcePath];
-        resPath = [resPath stringByAppendingPathComponent:@"res/gs_instruments.dls"];
-        bankUrl = [NSURL fileURLWithPath:resPath];
+    if ([baseNode intValue] == 56) {
+        static Byte midiFileData[34] = {
+            0x4d, 0x54, 0x68, 0x64, // MThd
+            0x00, 0x00, 0x00, 0x06,
+            0x00, 0x00, 0x00, 0x01, // track count
+            0x00, 0x78, // tick
+            0x4d, 0x54, 0x72, 0x6b, // MTrk
+            0x00, 0x00, 0x00, 0x0c,
+            0x00, 0x90, 0x48, 0x40,
+            0x78, 0x80, 0x48, 0x40,
+            0x00, 0xff, 0x2f, 0x00
+        };
+
+        midiFileData[24] = [note intValue];
+        midiFileData[25] = [velocity intValue];
+        midiFileData[28] = [note intValue];
+        midiFileData[29] = [velocity intValue];
+
+        _midiData = [_midiData initWithBytes:midiFileData length:34];
+    } else if ([baseNode intValue] == 21) {
+        static Byte midiFileData[49] = {
+            0x4d, 0x54, 0x68, 0x64, // MThd
+            0x00, 0x00, 0x00, 0x06,
+            0x00, 0x00, 0x00, 0x01,
+            0x00, 0x78,
+            0x4d, 0x54, 0x72, 0x6b, // MTrk
+            0x00, 0x00, 0x00, 0x1b,
+            0x00, 0xff, 0x03, 0x08,
+            0x44, 0x72, 0x75, 0x6d,
+            0x20, 0x4b, 0x69, 0x74,
+            0x00, 0xc9, 0x00,
+            0x00, 0x99, 0x48, 0x40,
+            0x60, 0x89, 0x48, 0x00,
+            0x00, 0xff, 0x2f, 0x00
+        };
+        
+        midiFileData[39] = [note intValue];
+        midiFileData[40] = [velocity intValue];
+        midiFileData[43] = [note intValue];
+        // midiFileData[44] = [velocity intValue];
+ 
+        _midiData = [_midiData initWithBytes:midiFileData length:49];
+    } else if ([baseNode intValue] == 28) {
+        static Byte midiFileData[56] = {
+            0x4d, 0x54, 0x68, 0x64, // MThd
+            0x00, 0x00, 0x00, 0x06,
+            0x00, 0x00, 0x00, 0x01,
+            0x00, 0x78,
+            0x4d, 0x54, 0x72, 0x6b, // MTrk
+            0x00, 0x00, 0x00, 0x22,
+            0x00, 0xff, 0x03, 0x0f,
+            0x41, 0x63, 0x6f, 0x75,
+            0x73, 0x74, 0x69, 0x63,
+            0x20, 0x47, 0x75, 0x69,
+            0x74, 0x61, 0x72, 0x00,
+            0xc0, 0x18,
+            0x00, 0x90, 0x48, 0x40,
+            0x78, 0x80, 0x48, 0x40,
+            0x00, 0xff, 0x2f, 0x00
+        };
+
+        midiFileData[46] = [note intValue];
+        midiFileData[47] = [velocity intValue];
+        midiFileData[50] = [note intValue];
+        midiFileData[51] = [velocity intValue];
+        
+        _midiData = [_midiData initWithBytes:midiFileData length:56];
+    } else {
+        static Byte midiFileData[34] = {
+            0x4d, 0x54, 0x68, 0x64, // MThd
+            0x00, 0x00, 0x00, 0x06,
+            0x00, 0x00, 0x00, 0x01,
+            0x00, 0x78,
+            0x4d, 0x54, 0x72, 0x6b, // MTrk
+            0x00, 0x00, 0x00, 0x0c,
+            0x00, 0x90, 0x48, 0x40,
+            0x78, 0x80, 0x48, 0x40,
+            0x00, 0xff, 0x2f, 0x00
+        };
+
+        midiFileData[24] = [note intValue];
+        midiFileData[25] = [velocity intValue];
+        midiFileData[28] = [note intValue];
+        midiFileData[29] = [velocity intValue];
+
+        _midiData = [_midiData initWithBytes:midiFileData length:34];
     }
-    if(_player==nil){
+
+    NSError *err = nil;
+    NSURL *bankUrl = nil;
+
+//    if (false) {
+//        NSString *resPath = [[NSBundle mainBundle] resourcePath];
+//        resPath = [resPath stringByAppendingPathComponent:@"res/gs_instruments.dls"];
+//        bankUrl = [NSURL fileURLWithPath:resPath];
+//    }
+
+    if (_player == nil) {
         _player = [AVMIDIPlayer alloc];
     }
+
     _player = [_player initWithData:_midiData soundBankURL:bankUrl error:&err];
-    
-    if(err==nil and _player!=nil){
+
+    if (err == nil and _player != nil) {
         [_player prepareToPlay];
         float dur = _player.duration;
         BOOL isPlay = [_player isPlaying];
+
         [_player play:^{
-            NSLog(@"播放完成");
+            // NSLog(@"播放完成");
         }];
     }
 }
--(void)PlayMidiFile:(NSString*)filename
+
+- (void)PlayMidiFile:(NSString*)filename
 {
-    if(filename==nil or [filename isEqual:@""]){
+    if (filename==nil or [filename isEqual:@""]) {
         return;
     }
-    NSError * err=nil;
+
+    NSError * err = nil;
     NSURL *url = [NSURL URLWithString:filename];
     NSURL *bankUrl = nil;
-    if(false){
+
+    if (false) {
         NSString *resPath = [[NSBundle mainBundle] resourcePath];
         resPath = [resPath stringByAppendingPathComponent:@"res/gs_instruments.dls"];
         bankUrl = [NSURL fileURLWithPath:resPath];
     }
+
     [self Stop];
-    if(_playerWithFile==nil){
+
+    if(_playerWithFile == nil) {
         _playerWithFile = [AVMIDIPlayer alloc];
     }
+
     _playerWithFile = [_playerWithFile initWithContentsOfURL:url soundBankURL:bankUrl error:&err];
-    if(err==nil and _playerWithFile!=nil){
+
+    if (err==nil and _playerWithFile!=nil) {
         float dur = _playerWithFile.duration;
         BOOL isPlay = [_playerWithFile isPlaying];
+
         [_playerWithFile play:^{
             NSLog(@"播放完成");
         }];
     }
 }
 
--(void)Stop{
+- (void)Stop{
     if(_playerWithFile!=nil and [_playerWithFile isPlaying]){
         [_playerWithFile stop];
     }
 }
--(void)SetVolume:(NSNumber *)volume
+
+- (void)SetVolume:(NSNumber *)volume
 {
     
 }
 
 @end
-
 
 namespace ParaEngine {
 
@@ -122,8 +220,8 @@ namespace ParaEngine {
         return &s_media_player;
     }
 
-    void ParaEngineMediaPlayer::PlayMidiNote(int note, int velocity) {
-        [[MidiHelper getInstance] PlayMidiNote:[NSNumber numberWithInt:note] withVelocity:[NSNumber numberWithInt:velocity]];
+    void ParaEngineMediaPlayer::PlayMidiNote(int note, int velocity, int baseNode) {
+        [[MidiHelper getInstance] PlayMidiNote:[NSNumber numberWithInt:note] withVelocity:[NSNumber numberWithInt:velocity] baseNode:[NSNumber numberWithInt: baseNode]];
     }
 
     void ParaEngineMediaPlayer::PlayMidiFile(std::string filename) {
@@ -134,5 +232,4 @@ namespace ParaEngine {
     void ParaEngineMediaPlayer::SetVolume(float volume) {
         [[MidiHelper getInstance] SetVolume:[NSNumber numberWithFloat:volume]];
     }
-
 }
