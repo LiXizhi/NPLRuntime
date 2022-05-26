@@ -405,6 +405,13 @@ namespace ParaEngine {
         return convert(t, x.c_str());
     }
 
+    jbyteArray JniHelper::convert(JniMethodInfo& t, const std::vector<char>& x) {
+        JNIEnv *env = JniHelper::getEnv();
+        jbyteArray jba = env->NewByteArray(x.size());
+        env->SetByteArrayRegion(jba, 0, x.size(), (jbyte*)x.data());
+        return jba;
+    }
+
     void JniHelper::deleteLocalRefs(JNIEnv* env) {
         if (!env) {
             return;
