@@ -93,8 +93,9 @@ int CMidiMsg::PlayMidiMsg(DWORD dwMsg)
 	if (CheckLoad())
 	{
 		int baseNote = (dwMsg & 0xff000000) >> 24;
+		int channel = (dwMsg & 0xff) - 0x90;
 
-		midiOutShortMsg(m_deviceMidiOut, baseNote << 8 | 0xC0);
+		midiOutShortMsg(m_deviceMidiOut, baseNote << 8 | (0xC0 + channel));
 		midiOutShortMsg(m_deviceMidiOut, dwMsg);
 		return S_OK;
 	}
@@ -102,12 +103,12 @@ int CMidiMsg::PlayMidiMsg(DWORD dwMsg)
 	return E_FAIL;
 }
 
-int CMidiMsg::StopMidiMsg()
+int CMidiMsg::StopMidiMsg(int channel)
 {
 #ifdef PARAENGINE_CLIENT
 	if (CheckLoad())
 	{
-		midiOutShortMsg(m_deviceMidiOut, 0x7BB0);
+		midiOutShortMsg(m_deviceMidiOut, 0x7BB0 + channel);
 		return S_OK;
 	}
 #endif

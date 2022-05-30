@@ -41,9 +41,9 @@ int ParaScripting::ParaAudio::PlayMidiMsg(DWORD dwMsg)
 	return CMidiMsg::GetSingleton().PlayMidiMsg(dwMsg);
 }
 
-int ParaScripting::ParaAudio::StopMidiMsg()
+int ParaScripting::ParaAudio::StopMidiMsg(int channel)
 {
-	return CMidiMsg::GetSingleton().StopMidiMsg();
+	return CMidiMsg::GetSingleton().StopMidiMsg(channel);
 }
 
 bool ParaAudio::PlayWaveFile( const char* szWavePath,int nLoopCount )
