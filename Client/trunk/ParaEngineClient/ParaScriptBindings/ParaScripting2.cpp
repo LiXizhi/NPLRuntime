@@ -97,6 +97,7 @@ void CNPLScriptingState::LoadHAPI_Audio()
 				def("GetVolume", &ParaAudio::GetVolume),
 				def("SetDistanceModel", &ParaAudio::SetDistanceModel),
 				def("PlayMidiMsg", &ParaAudio::PlayMidiMsg),
+				def("StopMidiMsg", &ParaAudio::StopMidiMsg),
 				def("PlayWaveFile", &ParaAudio::PlayWaveFile),
 				def("PlayWaveFile", &ParaAudio::PlayWaveFile1),
 				def("StopWaveFile", &ParaAudio::StopWaveFile),

@@ -90,9 +90,24 @@ CMidiMsg& CMidiMsg::GetSingleton()
 int CMidiMsg::PlayMidiMsg(DWORD dwMsg)
 {
 #ifdef PARAENGINE_CLIENT
-	if(CheckLoad())
+	if (CheckLoad())
 	{
+		int baseNote = (dwMsg & 0xff000000) >> 24;
+
+		midiOutShortMsg(m_deviceMidiOut, baseNote << 8 | 0xC0);
 		midiOutShortMsg(m_deviceMidiOut, dwMsg);
+		return S_OK;
+	}
+#endif
+	return E_FAIL;
+}
+
+int CMidiMsg::StopMidiMsg()
+{
+#ifdef PARAENGINE_CLIENT
+	if (CheckLoad())
+	{
+		midiOutShortMsg(m_deviceMidiOut, 0x7BB0);
 		return S_OK;
 	}
 #endif
