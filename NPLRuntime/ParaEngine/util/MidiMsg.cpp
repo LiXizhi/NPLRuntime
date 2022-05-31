@@ -97,11 +97,17 @@ CMidiMsg& CMidiMsg::GetSingleton()
 int CMidiMsg::PlayMidiMsg(DWORD dwMsg)
 {
 	if (m_mediaPlayer) {
+        int channel = dwMsg & 0xff;
 		char note = (dwMsg & 0xff00) >> 8;
 		char velocity = (dwMsg & 0xff0000) >> 16;
-        int baseNode = (dwMsg & 0xff000000) >> 24;
+        int baseNote = (dwMsg & 0xff000000) >> 24;
 
-		m_mediaPlayer->PlayMidiNote(note, velocity, baseNode);
+        if ((channel - 144) > 0) {
+            m_mediaPlayer->PlayMidiNote(note, velocity, baseNote, channel - 144);
+        } else {
+            m_mediaPlayer->PlayMidiNote(note, velocity, baseNote);
+        }
+		
 		return S_OK;
 	}
 #ifdef PARAENGINE_CLIENT
