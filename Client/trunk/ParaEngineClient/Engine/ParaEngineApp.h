@@ -154,6 +154,11 @@ namespace ParaEngine
 		/** turn on/off menu */
 		virtual void ShowMenu(bool bShow);
 
+		virtual void SetWindowMaximized(bool isMaximized);
+		virtual bool IsWindowMaximized();
+
+		virtual void GetVisibleSize(Vector2* pOut);
+
 		/** change the full screen mode, it does not immediately change the device, call UpdateScreenMode() to update the device. */
 		virtual void GetScreenResolution(Vector2* pOut);
 		virtual void SetScreenResolution(const Vector2& vSize);
@@ -533,7 +538,7 @@ namespace ParaEngine
 		/** initial game effect setting to be loaded from the config file. default value it 0*/
 		int m_nInitialGameEffectSet;
 
-
+		bool m_bInitialIsWindowMaximized;
 		/** 1 window mode desired, 0 full screen mode desired, -1 if unknown. */
 		int					m_nWindowedDesired;
 		bool				m_bIsKeyEvent;

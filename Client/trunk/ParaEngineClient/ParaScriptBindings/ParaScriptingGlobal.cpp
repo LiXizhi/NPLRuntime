@@ -33,6 +33,8 @@
 #include <boost/bind.hpp>
 #include <boost/asio.hpp>
 
+#include "ParaScriptBindings/ParaScriptingNPL.h"
+
 /**@def PARAENGINE_SUPPORT_WRITE_REG: to support writing to registry*/
 #if defined(WIN32) && !defined(PARAENGINE_MOBILE) && defined(PARAENGINE_CLIENT)
 #define PARAENGINE_SUPPORT_WRITE_REG
@@ -364,10 +366,66 @@ void ParaGlobal::Execute(const std::string& exe, const luabind::object& param, l
 bool ParaGlobal::ShellExecute(const char* lpOperation, const char* lpFile, const char* lpParameters, const char* lpDirectory, int nShowCmd)
 {
 #ifdef PARAENGINE_CLIENT
+	if (std::string(lpOperation) == "popen") {//无窗口执行批处理命令
+#ifndef USE_DIRECTX_RENDERER //不是windows
+		return false;
+#endif
+		std::string cmd = lpFile;//命令
+		bool isAsync = std::string(lpParameters) == "isAsync";
+		std::string callbackFile = lpDirectory;
+		int callbackIdx = nShowCmd;
+		if (std::string(callbackFile).empty() || callbackIdx == 0)
+		{
+			 GetCmdReturn(cmd);
+		}
+		else {
+			std::function<void()> func = [=]() {
+				auto ret = GetCmdReturn(cmd);
+				std::stringstream ss;
+				ss << "msg={_callbackIdx=" << callbackIdx << ",ret=[[" << ret << "]]}" << std::endl;
+				auto str = ss.str();
+				ParaScripting::CNPL::activate2_(callbackFile.c_str(), ss.str().c_str());
+			};
+			if (isAsync) {
+				std::thread t(func);
+				t.detach();
+			}
+			else {
+				func();
+			}
+		}
+		return true;
+	}
 	return CEditorHelper::ShellExecute(lpOperation, lpFile, lpParameters, lpDirectory, nShowCmd);
 #else
 	return false;
 #endif
+}
+
+std::string ParaGlobal::GetCmdReturn(std::string cmd) {
+#ifndef USE_DIRECTX_RENDERER //不是windows
+	return "";
+#endif
+	//隐藏一个控制台窗口，使得在之后用popen来启shell窗口的时候，不显示黑窗口，或者避免黑窗口一闪而过的情况
+	HWND hwnd = GetConsoleWindow();
+	if (hwnd == NULL) {
+		AllocConsole();    //为调用进程分配一个新的控制台
+		hwnd = GetConsoleWindow();
+	}
+	ShowWindow(hwnd, SW_HIDE);    //隐藏自己创建的控制台
+	FILE *file;
+	char ptr[1024] = { 0 };
+	char tmp[1024] = { 0 };
+	strcat_s(ptr, cmd.c_str());
+	std::string result = "";
+	if ((file = _popen(ptr, "r")) != NULL)
+	{
+		while (fgets(tmp, 1024, file) != NULL) {
+			result = result + tmp;
+		}
+		_pclose(file);
+	}
+	return result;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -1874,6 +1932,7 @@ bool ParaScripting::ParaGlobal::OpenFileDialog(const object& inout)
 	ofn.lpstrInitialDir = NULL;
 	ofn.Flags = OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST;
 	ofn.nMaxFile = MAX_LINE;
+	ofn.hwndOwner = CGlobals::GetAppHWND();//保证以模态对话框打开
 	bool bIsSavingFile = false;
 	for (luabind::iterator itCur(inout), itEnd; itCur != itEnd; ++itCur)
 	{

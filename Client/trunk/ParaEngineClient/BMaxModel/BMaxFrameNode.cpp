@@ -33,7 +33,7 @@ void ParaEngine::BMaxFrameNode::UpdatePivot()
 
 Vector3 ParaEngine::BMaxFrameNode::GetAxis()
 {
-	BlockDirection::Side mySide = BlockDirection::GetBlockSide(block_data);
+	BlockDirection::Side mySide = BlockDirection::GetBlockSideAndLevelData(block_data);
 	Int32x3 offset = BlockDirection::GetOffsetBySide(BlockDirection::GetOpSide(mySide));
 	return Vector3((float)offset.x, (float)offset.y, (float)offset.z);
 }
@@ -207,7 +207,7 @@ DWORD ParaEngine::BMaxFrameNode::CalculateBoneColor()
 		return m_color;
 	DWORD color = Color::White;
 	auto pBlockWorld = BlockWorldClient::GetInstance();
-	BlockDirection::Side mySide = BlockDirection::GetBlockSide(block_data);
+	BlockDirection::Side mySide = BlockDirection::GetBlockSideAndLevelData(block_data);
 
 	auto index = GetIndex();
 	BMaxFrameNode* pParentNode = GetParent();
@@ -308,7 +308,8 @@ ParaEngine::Bone* BMaxFrameNode::GetParentBone(bool bRefresh)
 		int cx = x;
 		int cy = y;
 		int cz = z;
-		BlockDirection::Side side = BlockDirection::GetBlockSide(block_data);
+		int levelData = 0;
+		BlockDirection::Side side = BlockDirection::GetBlockSideAndLevelData(block_data, &levelData);
 		Int32x3 offset = BlockDirection::GetOffsetBySide(side);
 		int dx = offset.x;
 		int dy = offset.y;
@@ -325,17 +326,52 @@ ParaEngine::Bone* BMaxFrameNode::GetParentBone(bool bRefresh)
 			BMaxFrameNode* parent_node = m_pParser->GetFrameNode(x, y, z);
 			if (parent_node)
 			{
-				BlockDirection::Side parentSide = BlockDirection::GetBlockSide(parent_node->block_data);
+				int parentLevelData = 0;
+				BlockDirection::Side parentSide = BlockDirection::GetBlockSideAndLevelData(parent_node->block_data, &parentLevelData);
 				BlockDirection::Side opSide = BlockDirection::GetOpSide(parentSide);
-				if (opSide != side || (dx + dy + dz) < 0)
+				if (parentLevelData == levelData)
 				{
-					// prevent acyclic links
-					if (!IsAncestorOf(parent_node))
+					// if two bones are opposite to each other, the lower one is the parent
+					if (opSide != side || (dx + dy + dz) < 0)
 					{
-						SetParentIndex(parent_node->GetIndex());
+						// prevent acyclic links
+						if (!IsAncestorOf(parent_node))
+						{
+							SetParentIndex(parent_node->GetIndex());
+						}
 					}
 				}
 				break;
+			}
+		}
+		// search for closest higher level bones
+		if (!HasParent())
+		{
+			BMaxFrameNodePtr candidateParent;
+			int candidateLevel = 9999999;
+			int candidateDistSq = 9999999;
+			for (BMaxFrameNodePtr& pNode : m_pParser->GetBones())
+			{
+				int x = pNode->x, y = pNode->y, z = pNode->z;
+				int distSq = (x - cx) * (x - cx) + (y - cy) * (y - cy) + (z - cz) * (z - cz);
+				if (distSq > 0)
+				{
+					int parentLevelData = 0;
+					int parentSide = BlockDirection::GetBlockSideAndLevelData(pNode->block_data, &parentLevelData);
+					if (parentLevelData > levelData)
+					{
+						if ((candidateLevel > parentLevelData) || ((candidateLevel == parentLevelData) && (candidateDistSq > distSq)))
+						{
+							candidateLevel = parentLevelData;
+							candidateDistSq = distSq;
+							candidateParent = pNode;
+						}
+					}
+				}
+			}
+			if (candidateParent)
+			{
+				SetParentIndex(candidateParent->GetIndex());
 			}
 		}
 	}

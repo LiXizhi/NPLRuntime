@@ -16,7 +16,7 @@
 #include <boost/interprocess/offset_ptr.hpp>
 #include <boost/interprocess/creation_tags.hpp>
 #include <boost/interprocess/exceptions.hpp>
-#include <boost/detail/no_exceptions_support.hpp>
+#include <boost/core/no_exceptions_support.hpp>
 #include <boost/interprocess/detail/type_traits.hpp>
 #include <boost/date_time/posix_time/posix_time.hpp>
 #include <algorithm> //std::lower_bound

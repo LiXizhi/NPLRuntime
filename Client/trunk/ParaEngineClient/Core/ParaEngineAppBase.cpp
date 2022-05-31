@@ -37,7 +37,6 @@
 #include "ParaEngineAppBase.h"
 #include "NPLPackageConfig.h"
 #include "IO/ResourceEmbedded.h"
-#include "GeosetObject.h"
 #include "AutoRigger.h"
 #include "ScriptParticle.h"
 
@@ -207,7 +206,6 @@ void ParaEngine::CParaEngineAppBase::RegisterObjectClasses()
 	pAttManager->RegisterObjectFactory("CSkyMesh", new CDefaultObjectFactory<CSkyMesh>());
 	pAttManager->RegisterObjectFactory("COverlayObject", new CDefaultObjectFactory<COverlayObject>());
 	pAttManager->RegisterObjectFactory("CLightObject", new CDefaultObjectFactory<CLightObject>());
-	pAttManager->RegisterObjectFactory("CGeosetObject",new CDefaultObjectFactory<CGeosetObject>());
 	pAttManager->RegisterObjectFactory("CAutoRigger", new CDefaultObjectFactory<CAutoRigger>());
 	pAttManager->RegisterObjectFactory("CScriptParticle",new CDefaultObjectFactory<CScriptParticle>());
 	// TODO add more here: 

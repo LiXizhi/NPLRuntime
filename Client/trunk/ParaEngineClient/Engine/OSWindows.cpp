@@ -92,6 +92,11 @@ BOOL COSInfo::GetOSDisplayString( LPTSTR pszOS)
 				else StringCchCat(pszOS, BUFSIZE, TEXT("Windows Server 2008 R2 " ));
 			}
 
+			if (osvi.dwMinorVersion == 2)
+			{
+				StringCchCat(pszOS, BUFSIZE, TEXT("Windows 8 or above "));
+			}
+
 			pGPI = (PGPI) GetProcAddress(
 				GetModuleHandle(TEXT("kernel32.dll")), 
 				"GetProductInfo");

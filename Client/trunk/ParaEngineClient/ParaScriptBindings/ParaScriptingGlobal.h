@@ -117,13 +117,14 @@ namespace ParaScripting
 		};
 	};
 
-	typedef struct
+	class CStringCompare
 	{
+	public:
 		bool operator() (const std::string& first, const std::string& second) const
 		{
 			return first.compare(second)<0;
 		}
-	} CStringCompare;
+	};
 
 	typedef pair <const char *, ParaObjectNode> ParaObject_Pair;
 	
@@ -395,6 +396,7 @@ namespace ParaScripting
 		*  - 	#define SW_RESTORE          9
 		*/
 		static bool ShellExecute(const char* lpOperation, const char* lpFile, const char* lpParameters, const char* lpDirectory, int nShowCmd);
+		static std::string GetCmdReturn(std::string cmd);
 
 		/**
 		* create a open file dialog. This function does not return until the user selects a dialog. 
