@@ -19,10 +19,13 @@ public class ParaEngineMediaPlayer {
             0x00, (byte)0xff, 0x2f, 0x00,
     };
     static MediaPlayer mMediaPlayer = new MediaPlayer();
-    public static void PlayMidiNote(int note, int velocity, int baseNode) {
+    public static void PlayMidiNote(int note, int velocity, int baseNode, int channel) {
+        mMidiNoteData[23] = (byte)(0xc0 + channel);
         mMidiNoteData[24] = (byte)baseNode;
+        mMidiNoteData[26] = (byte)(0x90 + channel);
         mMidiNoteData[27] = (byte)note;
         mMidiNoteData[28] = (byte)velocity;
+        mMidiNoteData[30] = (byte)(0x80 + channel);
         mMidiNoteData[31] = (byte)note;
         mMidiNoteData[32] = (byte)velocity;
 
