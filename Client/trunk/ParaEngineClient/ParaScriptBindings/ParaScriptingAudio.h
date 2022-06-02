@@ -306,6 +306,11 @@ namespace ParaScripting
 		* @param dwMsg: MIDI message. The message is packed into a DWORD value with the first byte of the message in the low-order byte. The message is packed into this parameter as follows.
 		*/
 		static int PlayMidiMsg(DWORD dwMsg);
+		/**
+		* step a midi track.
+		* @param channel: midi track number.
+		*/
+		static int StopMidiMsg(int channel = 0);
 
 		/**
 		* stop a wave file
