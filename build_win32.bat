@@ -14,6 +14,11 @@ rem Build main executable
 mkdir build\win32
 cd build\win32
 
+if NOT "%GITHUB_WORKFLOW%" == "" call "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\VC\Auxiliary\Build\vcvarsall.bat x64" 
+
+@echo on
+echo %BOOST_ROOT%
+
 call "cmake.exe" ../../NPLRuntime
 popd
 
