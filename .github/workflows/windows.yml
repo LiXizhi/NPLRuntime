@@ -30,7 +30,7 @@ jobs:
         platform_version: 2019
         toolset: msvc
         link: static
-        arch: x64
+        arch: x86
 
 
     - name: print boost 
