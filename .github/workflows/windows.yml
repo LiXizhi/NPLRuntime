@@ -46,4 +46,5 @@ jobs:
       shell: cmd
       run: |
         echo %BOOST_ROOT%
+        call 'C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\VC\Auxiliary\Build\vcvars64.bat'
         cmake -G "Visual Studio 16 2019" -A x86 -DCMAKE_BUILD_TYPE=Release -S NPLRuntime -B build
