@@ -41,8 +41,9 @@ jobs:
         # this build step will fail
 
     - name: Configure CMake
-      run: |
-        cmake -G "Visual Studio 16 2019" -A x86 -DCMAKE_BUILD_TYPE=Release -S NPLRuntime -B build
-        shell: cmd
       env:
         BOOST_ROOT: ${{ steps.install-boost.outputs.BOOST_ROOT }}
+      shell: cmd
+      run: |
+        echo %BOOST_ROOT%
+        cmake -G "Visual Studio 16 2019" -A x86 -DCMAKE_BUILD_TYPE=Release -S NPLRuntime -B build
