@@ -31,7 +31,7 @@ jobs:
         # https://github.com/actions/boost-versions/blob/main/versions-manifest.json
         boost_version: 1.79.0
         # OPTIONAL: Specify a custon install location
-        boost_install_dir: C:\boost
+        #boost_install_dir: C:\boost
         # OPTIONAL: Specify a platform version
         platform_version: 2019
         # OPTIONAL: Specify a toolset
