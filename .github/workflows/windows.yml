@@ -42,8 +42,6 @@ jobs:
 
     - name: Configure CMake
       run: |
-        echo "%BOOST_ROOT%"
-        dir "%BOOST_ROOT%"
         cmake -G "Visual Studio 16 2019" -A x86 -DCMAKE_BUILD_TYPE=Release -S NPLRuntime -B build
         shell: cmd
       env:
