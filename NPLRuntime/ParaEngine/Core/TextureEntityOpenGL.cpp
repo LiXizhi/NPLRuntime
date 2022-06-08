@@ -594,25 +594,16 @@ bool ParaEngine::TextureEntityOpenGL::LoadFromImage(const ParaImage* pImage, UIN
 			{
 				GL::bindTexture2D(texture->getName());
 
-				if (texture->getPixelsWide() == GLTexture2D::ccNextPOT(texture->getPixelsWide()))
+				if (texture->getPixelsWide() == GLTexture2D::ccNextPOT(texture->getPixelsWide()) && texture->getPixelsHigh() == GLTexture2D::ccNextPOT(texture->getPixelsHigh()))
 				{
 					glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-				}
-				else
-				{
-					glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-				}
-
-
-				if (texture->getPixelsHigh() == GLTexture2D::ccNextPOT(texture->getPixelsHigh()))
-				{
 					glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
 				}
 				else
 				{
+					glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 					glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 				}
-
 
 				SetSamplerStateBlocky(false);
 			}
@@ -692,26 +683,17 @@ bool ParaEngine::TextureEntityOpenGL::LoadFromImage(ImageEntity * imageEntity, P
 					{
 						GL::bindTexture2D(texture->getName());
 
-						if (texture->getPixelsWide() == GLTexture2D::ccNextPOT(texture->getPixelsWide()))
+						if (texture->getPixelsWide() == GLTexture2D::ccNextPOT(texture->getPixelsWide()) && texture->getPixelsHigh() == GLTexture2D::ccNextPOT(texture->getPixelsHigh()))
 						{
 							glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-						}
-						else
-						{
-							glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-						}
-
-
-						if (texture->getPixelsHigh() == GLTexture2D::ccNextPOT(texture->getPixelsHigh()))
-						{
 							glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
 						}
 						else
 						{
+							glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 							glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 						}
 
-	
 						SetSamplerStateBlocky(false);
 					}
 				}

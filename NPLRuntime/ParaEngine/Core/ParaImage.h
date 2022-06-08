@@ -57,8 +57,8 @@ namespace ParaEngine
         bool saveImageToJPG(const std::string &filename);
         bool saveImageToPNG(const std::string& filePath, bool isToRGB);
         
-		float               getWidth() const { return _width; }
-		float               getHeight() const { return _height; }
+		float getWidth() const { return _width; }
+		float getHeight() const { return _height; }
 
 		PixelFormat getRenderFormat() const{ return _renderFormat; }
 
@@ -70,13 +70,11 @@ namespace ParaEngine
 		unsigned char* getData() const { return _data; }
 		int	getDataLen() const { return _dataLen; }
 		const MipmapInfo* getMipmaps() const { return _mipmaps; }
-		bool	isCompressed() const { return false; }
-
+		bool isCompressed() const { return false; }
 
 		bool resize(int width, int height);
 
 		static PixelFormat convertDataToFormat(const unsigned char* data, size_t dataLen, PixelFormat originFormat, PixelFormat format, unsigned char** outData, size_t* outDataLen);
-
 		static PixelFormat convertI8ToFormat(const unsigned char* data, size_t dataLen, PixelFormat format, unsigned char** outData, size_t* outDataLen);
 		static PixelFormat convertAI88ToFormat(const unsigned char* data, size_t dataLen, PixelFormat format, unsigned char** outData, size_t* outDataLen);
 		static PixelFormat convertRGB888ToFormat(const unsigned char* data, size_t dataLen, PixelFormat format, unsigned char** outData, size_t* outDataLen);
@@ -147,7 +145,6 @@ namespace ParaEngine
 		bool initWithJpgData(const unsigned char* unpackedData, size_t unpackedLen);
 		bool initWithPngData(const unsigned char* unpackedData, size_t unpackedLen);
 		bool initWithS3TCData(const unsigned char* unpackedData, size_t unpackedLen);
-
 
 		void premultipliedAlpha();
 	};

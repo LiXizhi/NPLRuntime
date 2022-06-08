@@ -116,7 +116,6 @@
 
 
 namespace ParaEngine {
-
     ParaEngineMediaPlayer* ParaEngineMediaPlayer::GetSingleton() {
         static ParaEngine::ParaEngineMediaPlayer s_media_player;
         return &s_media_player;
@@ -124,6 +123,14 @@ namespace ParaEngine {
 
     void ParaEngineMediaPlayer::PlayMidiNote(int note, int velocity) {
         [[MidiHelper getInstance] PlayMidiNote:[NSNumber numberWithInt:note] withVelocity:[NSNumber numberWithInt:velocity]];
+    }
+
+    void ParaEngineMediaPlayer::PlayMidiNote(int note, int velocity, int baseNote){
+        
+    }
+        
+    void ParaEngineMediaPlayer::PlayMidiNote(int note, int velocity, int baseNote, int channel){
+        
     }
 
     void ParaEngineMediaPlayer::PlayMidiFile(std::string filename) {
@@ -135,4 +142,7 @@ namespace ParaEngine {
         [[MidiHelper getInstance] SetVolume:[NSNumber numberWithFloat:volume]];
     }
 
+    void ParaEngineMediaPlayer::PlayMidiData(std::vector<char>) {
+        
+    }
 }
