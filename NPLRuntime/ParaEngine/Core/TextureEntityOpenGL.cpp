@@ -603,13 +603,6 @@ bool ParaEngine::TextureEntityOpenGL::LoadFromImage(const ParaImage* pImage, UIN
 				{
 					glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 					glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-
-#ifdef PARA_PLATFORM_IOS
-					// in iOS opengl es 2.0, non-power of 2 textures are supported only with GL_CLAMP_TO_EDGE and GL_NEAREST
-					glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-					glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-					// OUTPUT_LOG("filename: %s width:%d, height:%d  NPOT:%s\n", GetKey().c_str(), texture->getPixelsWide(), texture->getPixelsHigh(), bIsNPOT_texture ? "yes" : "no");
-#endif // PARA_PLATFORM_IOS	
 				}
 
 				SetSamplerStateBlocky(false);
