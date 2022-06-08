@@ -19,7 +19,7 @@ if NOT "%GITHUB_WORKFLOW%" == "" (call "C:\Program Files (x86)\Microsoft Visual 
 @echo on
 echo %BOOST_ROOT%
 
-call "cmake.exe" -A x86 ../../NPLRuntime
+call "cmake.exe" -G "Visual Studio 16 2019" -A x86 ../../NPLRuntime
 popd
 
 
