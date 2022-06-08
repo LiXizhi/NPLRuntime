@@ -15,8 +15,11 @@ namespace ParaEngine {
     public:
         static ParaEngineMediaPlayer* GetSingleton();
         virtual void PlayMidiNote(int note, int velocity);
+        virtual void PlayMidiNote(int note, int velocity, int baseNote);
+        virtual void PlayMidiNote(int note, int velocity, int baseNote, int channel);
         virtual void PlayMidiFile(std::string filename);
         virtual void SetVolume(float volume);
+        virtual void PlayMidiData(std::vector<char>);
     private:
         static const std::string classname;
     };

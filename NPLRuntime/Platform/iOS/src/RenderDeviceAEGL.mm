@@ -11,7 +11,7 @@ ParaEngine::RenderDeviceAEGL::RenderDeviceAEGL(EAGLContext* context,CAEAGLLayer*
     // Initialize
     // frame buffer
     glGenFramebuffers(1, &m_FrameBuffer);
-    glBindFramebuffer(GL_FRAMEBUFFER,m_FrameBuffer);
+    glBindFramebuffer(GL_FRAMEBUFFER, m_FrameBuffer);
     
     // color buffer
     glGenRenderbuffers(1, &m_ColorBuffer);

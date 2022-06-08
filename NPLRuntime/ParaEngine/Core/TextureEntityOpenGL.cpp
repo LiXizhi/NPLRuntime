@@ -594,25 +594,23 @@ bool ParaEngine::TextureEntityOpenGL::LoadFromImage(const ParaImage* pImage, UIN
 			{
 				GL::bindTexture2D(texture->getName());
 
-				if (texture->getPixelsWide() == GLTexture2D::ccNextPOT(texture->getPixelsWide()))
+				if (texture->getPixelsWide() == GLTexture2D::ccNextPOT(texture->getPixelsWide()) && texture->getPixelsHigh() == GLTexture2D::ccNextPOT(texture->getPixelsHigh()))
 				{
 					glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-				}
-				else
-				{
-					glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-				}
-
-
-				if (texture->getPixelsHigh() == GLTexture2D::ccNextPOT(texture->getPixelsHigh()))
-				{
 					glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
 				}
 				else
 				{
+					glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 					glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-				}
 
+#ifdef PARA_PLATFORM_IOS
+					// in iOS opengl es 2.0, non-power of 2 textures are supported only with GL_CLAMP_TO_EDGE and GL_NEAREST
+					glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+					glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+					// OUTPUT_LOG("filename: %s width:%d, height:%d  NPOT:%s\n", GetKey().c_str(), texture->getPixelsWide(), texture->getPixelsHigh(), bIsNPOT_texture ? "yes" : "no");
+#endif // PARA_PLATFORM_IOS	
+				}
 
 				SetSamplerStateBlocky(false);
 			}
@@ -692,26 +690,17 @@ bool ParaEngine::TextureEntityOpenGL::LoadFromImage(ImageEntity * imageEntity, P
 					{
 						GL::bindTexture2D(texture->getName());
 
-						if (texture->getPixelsWide() == GLTexture2D::ccNextPOT(texture->getPixelsWide()))
+						if (texture->getPixelsWide() == GLTexture2D::ccNextPOT(texture->getPixelsWide()) && texture->getPixelsHigh() == GLTexture2D::ccNextPOT(texture->getPixelsHigh()))
 						{
 							glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-						}
-						else
-						{
-							glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-						}
-
-
-						if (texture->getPixelsHigh() == GLTexture2D::ccNextPOT(texture->getPixelsHigh()))
-						{
 							glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
 						}
 						else
 						{
+							glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 							glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 						}
 
-	
 						SetSamplerStateBlocky(false);
 					}
 				}
