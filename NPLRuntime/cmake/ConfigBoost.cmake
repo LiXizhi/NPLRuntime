@@ -51,7 +51,8 @@ set(Boost_USE_STATIC_LIBS   ON)
 if (MSVC)
 	set(Boost_USE_STATIC_RUNTIME ON)
 else()
-	set(Boost_USE_STATIC_RUNTIME OFF)
+	set(Boost_USE_STATIC_RUNTIME ON)
+	#set(Boost_USE_STATIC_RUNTIME OFF)
 endif()
 
 # Add more boost components here. Boost 1.65.1 or above is recommended. 1.55 is minimum for server build
