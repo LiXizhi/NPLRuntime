@@ -30,8 +30,8 @@ jobs:
         #platform_version: 2019
         #toolset: msvc
         #arch: x86
-    - name: instal boost 
-      run: wget https://boostorg.jfrog.io/artifactory/main/release/1.78.0/source/boost_1_78_0.7z -O boost.7z
+    #- name: instal boost 
+      #run: wget https://boostorg.jfrog.io/artifactory/main/release/1.78.0/source/boost_1_78_0.7z -O boost.7z
     
     # 编译
     - name: build NPLRuntime
