@@ -8,7 +8,7 @@ if NOT "%GITHUB_WORKFLOW%" == "" (
         7z x boost_1_78_0.7z 
         cd boost_1_78_0
         bootstrap.bat
-        b2 address-model=32 runtime-link=static threading=multi variant=release --with-thread --with-date_time --with-filesystem --with-system --with-chrono --with-serialization --with-iostreams --with-regex stage
+        b2 runtime-link=static threading=multi variant=release --with-thread --with-date_time --with-filesystem --with-system --with-chrono --with-serialization --with-iostreams --with-regex stage
         set BOOST_ROOT=%cd%\boost_1_78_0
         cd ..
     )
