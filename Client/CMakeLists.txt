@@ -54,8 +54,12 @@ endif()
 #Renderer
 ################################
 if(WIN32)
+    if ("$ENV{GITHUB_WORKFLOW}" STRGREATER "")
+        set(NPLRUNTIME_RENDERER "OPENGL" CACHE STRING "Render API")
+    else ()
+        set(NPLRUNTIME_RENDERER "DIRECTX" CACHE STRING "Render API")
+    endif()
 
-	set(NPLRUNTIME_RENDERER "DIRECTX" CACHE STRING "Render API")
 	set_property(CACHE NPLRUNTIME_RENDERER PROPERTY STRINGS DIRECTX OPENGL)
 
 endif()
