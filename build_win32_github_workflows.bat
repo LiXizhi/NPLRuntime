@@ -13,7 +13,7 @@ if NOT "%GITHUB_WORKFLOW%" == "" (
         cd ..
     )
 
-    call "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\VC\Auxiliary\Build\vcvarsall.bat" x86
+    call "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\VC\Auxiliary\Build\vcvarsall.bat"  AMD64
     mkdir build\win32
     cd build\win32
     cmake ..\..\Client

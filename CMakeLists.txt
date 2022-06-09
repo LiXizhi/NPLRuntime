@@ -9,9 +9,9 @@ set(CLIENT_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/Client/)
 set(NPLRUNTIME_RENDERER "OPENGL" CACHE STRING "Render API")
 
 #BOOST
+set(ENV{BOOST_ROOT} "D:/workspace/c/boost_1_78_0")
 if("$ENV{BOOST_ROOT}" STREQUAL "")
 	set(BOOST_ROOT "D:/workspace/c/boost_1_78_0")
-	set($ENV{BOOST_ROOT} ${BOOST_ROOT})
 	message(WARNING "You can define a global environment variable of BOOST_ROOT that specify the boost root dir")
 else()
 	message("BOOST_ROOT env is at: $ENV{BOOST_ROOT}")
