@@ -22,15 +22,17 @@ jobs:
       uses: lukka/get-cmake@latest
 
     # 安装boost
-    - name: install boost
-      uses: MarkusJx/install-boost@v2.3.0
-      id: install-boost
-      with:
-        boost_version: 1.78.0
-        platform_version: 2019
-        toolset: msvc
-        arch: x86
-
+    #- name: install boost
+      #uses: MarkusJx/install-boost@v2.3.0
+      #id: install-boost
+      #with:
+        #boost_version: 1.78.0
+        #platform_version: 2019
+        #toolset: msvc
+        #arch: x86
+    - name: instal boost 
+      run: wget https://boostorg.jfrog.io/artifactory/main/release/1.78.0/source/boost_1_78_0.7z -O boost.7z
+    
     # 编译
     - name: build NPLRuntime
       env:
