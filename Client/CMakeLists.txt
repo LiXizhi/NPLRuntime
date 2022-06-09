@@ -54,7 +54,7 @@ endif()
 #Renderer
 ################################
 if(WIN32)
-    if ("$ENV{GITHUB_WORKFLOW}" STRGREATER "")
+    if (USE_OPENGL_RENDERER OR "$ENV{GITHUB_WORKFLOW}" STRGREATER "")
         set(NPLRUNTIME_RENDERER "OPENGL" CACHE STRING "Render API")
     else ()
         set(NPLRUNTIME_RENDERER "DIRECTX" CACHE STRING "Render API")
