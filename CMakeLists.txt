@@ -4,11 +4,14 @@ project (ParaCraft)
 
 set(CMAKE_CXX_STANDARD 11)
 
-set(SERVER_SOURCE_DIR   ${CMAKE_CURRENT_SOURCE_DIR}/Server/trunk/)
+set(SERVER_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/Server/trunk/)
+set(CLIENT_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/Client/)
+set(NPLRUNTIME_RENDERER "OPENGL" CACHE STRING "Render API")
 
 #BOOST
 if("$ENV{BOOST_ROOT}" STREQUAL "")
 	set(BOOST_ROOT "D:/workspace/c/boost_1_78_0")
+	set($ENV{BOOST_ROOT} ${BOOST_ROOT})
 	message(WARNING "You can define a global environment variable of BOOST_ROOT that specify the boost root dir")
 else()
 	message("BOOST_ROOT env is at: $ENV{BOOST_ROOT}")
@@ -40,7 +43,7 @@ else()
 endif()
 
 # Add more boost components here
-find_package( Boost 1.78.0 REQUIRED COMPONENTS thread date_time filesystem system chrono regex serialization iostreams) 
+find_package(Boost 1.78.0 REQUIRED COMPONENTS thread date_time filesystem system chrono regex serialization iostreams) 
 
 
 #ZLIB
@@ -64,8 +67,22 @@ add_subdirectory (${SERVER_SOURCE_DIR}luabind-0.9 luabind-0.9)
 add_subdirectory (${SERVER_SOURCE_DIR}sqlite-3.6.23.1 sqlite-3.6.23.1)
 add_subdirectory (${SERVER_SOURCE_DIR}jsoncpp-0.5.0 jsoncpp-0.5.0)
 add_subdirectory (${SERVER_SOURCE_DIR}tinyxpath_1_3_1  tinyxpath_1_3_1)
-add_subdirectory (${SERVER_SOURCE_DIR}/pcl/common common)
-add_subdirectory (${SERVER_SOURCE_DIR}/pcl/features features)
-add_subdirectory (${SERVER_SOURCE_DIR}/Pinocchio Pinocchio)
+add_subdirectory (${SERVER_SOURCE_DIR}pcl/common common)
+add_subdirectory (${SERVER_SOURCE_DIR}pcl/features features)
+add_subdirectory (${SERVER_SOURCE_DIR}Pinocchio Pinocchio)
 
-add_subdirectory (${SERVER_SOURCE_DIR}luasql ${CLIENT_BINARY_DIR}/luasql)
+add_subdirectory (${SERVER_SOURCE_DIR}luasql luasql)
+
+add_subdirectory (${CLIENT_SOURCE_DIR}trunk/externals/assimp-4.0.0 assimp-4.0.0)
+
+add_subdirectory (${CLIENT_SOURCE_DIR}../NPLRuntime/ParaEngineClient ParaEngineClient)
+
+set (ParaEngineClient_SOURCE_DIR ${CLIENT_SOURCE_DIR}trunk/ParaEngineClient)
+
+add_subdirectory (${CLIENT_SOURCE_DIR}trunk/externals/bullet3 bullet3)
+add_subdirectory (${CLIENT_SOURCE_DIR}trunk/PhysicsBT PhysicsBT)
+
+add_subdirectory (${CLIENT_SOURCE_DIR}trunk/ParaEngineClientApp ParaEngineClientApp)
+
+set(NPLRUNTIME_LINK_LIBRARIES ${NPLRUNTIME_LINK_LIBRARIES} PARENT_SCOPE)
+set(NPLRUNTIME_LINK_DIRECTORIES ${NPLRUNTIME_LINK_DIRECTORIES} PARENT_SCOPE)
