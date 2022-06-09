@@ -1,0 +1,31 @@
+
+name: Windows
+
+on:
+  push:
+    branches: [ dev ]
+
+env:
+  BUILD_TYPE: Release
+
+jobs:
+  build:
+    runs-on: windows-2019
+
+    steps:
+    # 拉取代码
+    - name: pull source code
+      uses: actions/checkout@v3
+
+    # 安装cmake
+    - name: install cmake
+      uses: lukka/get-cmake@latest
+
+    # 编译
+    - name: build 
+      env:
+        BOOST_ROOT: ${{ steps.install-boost.outputs.BOOST_ROOT }}
+      run: build_win32.bat
+      shell: cmd
+
+
