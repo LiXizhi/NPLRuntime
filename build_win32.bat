@@ -17,8 +17,8 @@ cd build\win32
 if NOT "%GITHUB_WORKFLOW%" == "" (
     call "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\VC\Auxiliary\Build\vcvarsall.bat" x86 
     REM set "PATH=%PATH%;C:\Program Files\7-Zip"
-    cmake ../../NPLRuntime -DGITHUB_WORKFLOW:BOOL=TRUE
-    cmake --build .
+    cmake ../../NPLRuntime 
+    msbuild  c:\projects\nplruntime\bin\client\NPLRuntime.sln /verbosity:minimal /property:Configuration=Release
 ) else (
     cmake ../../NPLRuntime
 )
