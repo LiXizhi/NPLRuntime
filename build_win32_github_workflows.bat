@@ -4,5 +4,7 @@ if NOT "%GITHUB_WORKFLOW%" == "" (
     mkdir build\win32
     cd build\win32
     cmake ..\..\Client
-    msbuild .\CLIENT.sln /verbosity:minimal /property:Configuration=Release
+    cat D:/a/NPLRuntime/NPLRuntime/build/win32/CMakeFiles/CMakeError.log
+    cat D:/a/NPLRuntime/NPLRuntime/build/win32/CMakeFiles/CMakeOutput.log
+    REM msbuild .\CLIENT.sln /verbosity:minimal /property:Configuration=Release
 )
