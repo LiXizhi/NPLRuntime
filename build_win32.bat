@@ -12,12 +12,12 @@ pushd .
 
 rem Install cmake
 if NOT EXIST "bin\cmake" (
-	pushd bin
-	powershell -Command "Invoke-WebRequest https://cmake.org/files/v3.10/cmake-3.10.0-win64-x64.zip -OutFile cmake.zip"
-	7z x cmake.zip -obin > nul
-	move bin\cmake-* cmake
-	cmake\bin\cmake.exe --version
-	popd
+    pushd bin
+    powershell -Command "Invoke-WebRequest https://cmake.org/files/v3.10/cmake-3.10.0-win64-x64.zip -OutFile cmake.zip"
+    7z x cmake.zip -obin > nul
+    move bin\cmake-* cmake
+    cmake\bin\cmake.exe --version
+    popd
 )
 
 rem Install Boost
@@ -36,11 +36,6 @@ set BOOST_ROOT=%~dp0bin\boost
 rem Build main executable
 mkdir bin\client_win32
 cd bin\client_win32
-
-if NOT "%GITHUB_WORKFLOW%" == "" (
-    call "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\VC\Auxiliary\Build\vcvarsall.bat" x86
-    REM set "PATH=%PATH%;C:\Program Files\7-Zip"
-)
 
 call "..\cmake\bin\cmake.exe" ../../Client/
 msbuild  %~dp0\bin\client_win32\CLIENT.sln /verbosity:minimal /property:Configuration=Release

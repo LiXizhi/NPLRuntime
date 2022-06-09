@@ -21,11 +21,21 @@ jobs:
     - name: install cmake
       uses: lukka/get-cmake@latest
 
+    # 安装boost
+    - name: install boost
+      uses: MarkusJx/install-boost@v2.3.0
+      id: install-boost
+      with:
+        boost_version: 1.78.0
+        platform_version: 2019
+        toolset: msvc
+        arch: x86
+
     # 编译
-    - name: build 
+    - name: build NPLRuntime
       env:
         BOOST_ROOT: ${{ steps.install-boost.outputs.BOOST_ROOT }}
-      run: build_win32.bat
+      run: build_win32_github_workflows.bat
       shell: cmd
 
 
