@@ -36,7 +36,7 @@ set BOOST_ROOT=%~dp0bin\boost
 rem Build main executable
 mkdir bin\client_win32
 cd bin\client_win32
-
+echo "================================================1========================="
 if NOT "%GITHUB_WORKFLOW%" == "" (
     call "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\VC\Auxiliary\Build\vcvarsall.bat" x86
     REM set "PATH=%PATH%;C:\Program Files\7-Zip"
