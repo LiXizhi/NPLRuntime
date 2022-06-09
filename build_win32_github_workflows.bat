@@ -11,6 +11,7 @@ if NOT "%GITHUB_WORKFLOW%" == "" (
         b2 address-model=32 runtime-link=static threading=multi variant=release --with-thread --with-date_time --with-filesystem --with-system --with-chrono --with-serialization --with-iostreams --with-regex stage
         set BOOST_ROOT=%cd%\boost
         echo %BOOST_ROOT%
+        cd ..
     )
 
     call "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\VC\Auxiliary\Build\vcvarsall.bat" x86
