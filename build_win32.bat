@@ -23,7 +23,7 @@ if NOT EXIST "bin\cmake" (
 rem Install Boost
 if NOT EXIST "bin\boost" (
 	pushd bin
-	powershell -Command "Invoke-WebRequest http://dl.bintray.com/boostorg/release/1.64.0/source/boost_1_64_0.7z -OutFile boost.7z"
+	powershell -Command "Invoke-WebRequest https://boostorg.jfrog.io/artifactory/main/release/1.78.0/source/boost_1_78_0.7z -OutFile boost.7z"
 	7z x boost.7z -obin > nul
 	move bin\boost_* boost
 	cd boost
