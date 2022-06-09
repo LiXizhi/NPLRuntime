@@ -18,7 +18,7 @@ if NOT "%GITHUB_WORKFLOW%" == "" (
     call "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\VC\Auxiliary\Build\vcvarsall.bat" x64
     mkdir build\win32
     cd build\win32
-    cmake ..\..\Client
+    cmake ..\..\Client -DUSE_OPENGL_RENDERER=true -DNPLRUNTIME_PHYSICS=OFF
     msbuild .\CLIENT.sln /verbosity:minimal /property:Configuration=Release
 ) else (
     if EXIST "boost_1_78_0.7z" (
@@ -31,7 +31,7 @@ if NOT "%GITHUB_WORKFLOW%" == "" (
         cd ..
     )
 
-    call "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\VC\Auxiliary\Build\vcvarsall.bat" x64
+    call "D:\Program Files\Microsoft Visual Studio\2022\Community\VC\Auxiliary\Build\vcvarsall.bat" x64
     mkdir build\win32
     cd build\win32
     cmake ..\..\Client -DUSE_OPENGL_RENDERER:BOOL=TRUE
