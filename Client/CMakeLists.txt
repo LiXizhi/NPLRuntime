@@ -123,7 +123,6 @@ else()
 	string(REPLACE "\\" "/" BOOST_ROOT ${BOOST_ROOT})
 endif()
 
-set(BOOST_ROOT "D:/a/NPLRuntime/NPLRuntime/boost_1_78_0")
 if( CMAKE_SIZEOF_VOID_P EQUAL 8 )
 	if(IS_DIRECTORY ${BOOST_ROOT}/stage/lib64)
 		set(BOOST_LIBRARYDIR ${BOOST_ROOT}/stage/lib64)	
