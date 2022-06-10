@@ -43,6 +43,7 @@ jobs:
     - name: build NPLRuntime
       env:
         BOOST_ROOT: ${{ steps.install-boost.outputs.BOOST_ROOT }}
+        DXSDK_DIR: "C:\Program Files (x86)\Microsoft DirectX SDK (June 2010)"
       run: build_win32_github_workflows.bat
       shell: cmd
 
