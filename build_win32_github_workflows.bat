@@ -12,7 +12,7 @@ if NOT "%GITHUB_WORKFLOW%" == "" (
         b2 address-model=32 runtime-link=static threading=multi variant=release --with-thread --with-date_time --with-filesystem --with-system --with-chrono --with-serialization --with-iostreams --with-regex stage
         b2 address-model=64 runtime-link=static threading=multi variant=release --with-thread --with-date_time --with-filesystem --with-system --with-chrono --with-serialization --with-iostreams --with-regex stage
         cd ..
-        set BOOST_ROOT=%cd%\boost_1_78_0
+        REM set BOOST_ROOT=%cd%\boost_1_78_0
     )
 
     mkdir build\win32

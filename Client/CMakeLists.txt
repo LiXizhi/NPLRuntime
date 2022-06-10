@@ -102,6 +102,7 @@ endif()
 ################################
 # include boost if client is not defined, it allows us to use a different boost version than the client on the server build.
 if ("${BOOST_ROOT}" STRGREATER "") 
+	string(REPLACE "\\" "/" BOOST_ROOT ${BOOST_ROOT})
     set(ENV{BOOST_ROOT} ${BOOST_ROOT})
 endif()
 
