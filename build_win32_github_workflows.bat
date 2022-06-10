@@ -17,7 +17,7 @@ if NOT "%GITHUB_WORKFLOW%" == "" (
 
     mkdir build\win32
     cd build\win32
-    cmake ..\..\Client -DNPLRUNTIME_PHYSICS=OFF -DBOOST_ROOT=%BOOST_ROOT%
+    cmake ..\..\Client -DNPLRUNTIME_PHYSICS=OFF -DBOOST_ROOT="%cd%\boost_1_78_0"
     cmake --build . -j 1
     REM msbuild .\CLIENT.sln /verbosity:minimal /property:Configuration=Release
 ) else (
