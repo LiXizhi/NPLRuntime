@@ -6,17 +6,14 @@ if NOT "%GITHUB_WORKFLOW%" == "" (
     call "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\VC\Auxiliary\Build\vcvarsall.bat" x64
 
     if EXIST "boost_1_78_0.7z" (
-        set "PATH=%PATH%;C:\Program Files\7-Zip"
-        7x x boost_1_78_0.7z 
+        .\bin\7x.exe x boost_1_78_0.7z 
         cd boost_1_78_0
         bootstrap.bat
         b2 address-model=32 runtime-link=static threading=multi variant=release --with-thread --with-date_time --with-filesystem --with-system --with-chrono --with-serialization --with-iostreams --with-regex stage
         b2 address-model=64 runtime-link=static threading=multi variant=release --with-thread --with-date_time --with-filesystem --with-system --with-chrono --with-serialization --with-iostreams --with-regex stage
-        setx BOOST_ROOT=%cd%\boost_1_78_0
         cd ..
+        set BOOST_ROOT=%cd%\boost_1_78_0
     )
-
-    set BOOST_ROOT=%cd%\boost_1_78_0
 
     mkdir build\win32
     cd build\win32
