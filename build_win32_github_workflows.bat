@@ -3,6 +3,8 @@ REM git submodule init
 REM git submodule update --init --recursive
 
 if NOT "%GITHUB_WORKFLOW%" == "" (
+    call "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\VC\Auxiliary\Build\vcvarsall.bat" x64
+
     if EXIST "boost_1_78_0.7z" (
         set "PATH=%PATH%;C:\Program Files\7-Zip"
         7x x boost_1_78_0.7z 
@@ -14,7 +16,6 @@ if NOT "%GITHUB_WORKFLOW%" == "" (
         cd ..
     )
 
-    call "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\VC\Auxiliary\Build\vcvarsall.bat" x64
     mkdir build\win32
     cd build\win32
     cmake ..\..\Client -DNPLRUNTIME_PHYSICS=OFF
