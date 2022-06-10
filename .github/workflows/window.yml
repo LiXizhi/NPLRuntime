@@ -57,9 +57,9 @@ jobs:
       uses: actions/cache@v3
       id: cache_boost_1_78_0
       with:
-        path: boost
+        path: boost_1_78_0
         # 最后一位手动更新(当编译错误时)
-        key: boost
+        key: boost_1_78_0_2
 
     # 编译boost_1_78_0
     - name: build boost_1_78_0
@@ -71,7 +71,7 @@ jobs:
     ## 编译NPLRuntime
     #- name: build NPLRuntime
       #env:
-        #BOOST_ROOT: ${{format('{0}\boost', github.workspace)}}
+        #BOOST_ROOT: ${{format('{0}\boost_1_78_0', github.workspace)}}
         #DXSDK_DIR: 'C:\Program Files (x86)\Microsoft DirectX SDK (June 2010)'
       #run: build_win32_github_workflows.bat
       #shell: cmd
