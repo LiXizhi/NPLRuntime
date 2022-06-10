@@ -101,6 +101,10 @@ endif()
 #Boost
 ################################
 # include boost if client is not defined, it allows us to use a different boost version than the client on the server build.
+if ("${BOOST_ROOT}" STRGREATER "") 
+    set(ENV{BOOST_ROOT} ${BOOST_ROOT})
+endif()
+
 if ("$ENV{BOOST_ROOT}" STREQUAL "")
 	if(IS_DIRECTORY ${SERVER_SOURCE_DIR}/boost_1_65_0)
 		set(BOOST_ROOT ${SERVER_SOURCE_DIR}/boost_1_65_0)

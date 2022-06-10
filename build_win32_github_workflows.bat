@@ -16,11 +16,11 @@ if NOT "%GITHUB_WORKFLOW%" == "" (
         cd ..
     )
 
-    setx BOOST_ROOT %cd%\boost_1_78_0
+    set BOOST_ROOT=%cd%\boost_1_78_0
 
     mkdir build\win32
     cd build\win32
-    cmake ..\..\Client -DNPLRUNTIME_PHYSICS=OFF
+    cmake ..\..\Client -DNPLRUNTIME_PHYSICS=OFF -DBOOST_ROOT=%BOOST_ROOT%
     cmake --build . -j 1
     REM msbuild .\CLIENT.sln /verbosity:minimal /property:Configuration=Release
 ) else (

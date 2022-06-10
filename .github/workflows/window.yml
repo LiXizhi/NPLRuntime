@@ -45,8 +45,8 @@ jobs:
         key: boost_1_78_0.7z
 
 
-    - if: ${{ steps.cache_boost_1_78_0_7z.outputs.cache-hit == 'false' }}
-      name: download boost 
+    - name: download boost 
+      if: ${{ steps.cache_boost_1_78_0_7z.outputs.cache-hit != 'true' }}
       run: wget https://boostorg.jfrog.io/artifactory/main/release/1.78.0/source/boost_1_78_0.7z -O boost_1_78_0.7z
       shell: powershell
     
