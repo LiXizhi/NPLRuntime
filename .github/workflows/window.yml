@@ -52,20 +52,20 @@ jobs:
       shell: powershell
     
 
-    ## 缓存boost_1_78_0
-    #- name: cache boost_1_78_0
-      #uses: actions/cache@v3
-      #id: cache_boost_1_78_0
-      #with:
-        #path: boost_1_78_0
-        ## 最后一位手动更新(当编译错误时)
-        #key: boost_1_78_0_2
+    # 缓存boost_1_78_0
+    - name: cache boost_1_78_0
+      uses: actions/cache@v3
+      id: cache_boost_1_78_0
+      with:
+        path: boost
+        # 最后一位手动更新(当编译错误时)
+        key: boost_1
 
-    ## 编译boost_1_78_0
-    #- name: build boost_1_78_0
-      #if: ${{ steps.cache_boost_1_78_0.outputs.cache-hit != 'true' }}
-      #run: build_boost.bat
-      #shell: cmd
+    # 编译boost_1_78_0
+    - name: build boost_1_78_0
+      if: ${{ steps.cache_boost_1_78_0.outputs.cache-hit != 'true' }}
+      run: build_boost.bat
+      shell: cmd
 
 
     ## 编译NPLRuntime
