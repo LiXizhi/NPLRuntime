@@ -24,7 +24,7 @@ jobs:
     # 安装DX
     - name: install dx
       continue-on-error: true
-      run: choco install directx
+      run: choco install --yes directx-sdk
 
     # 安装boost
     - name: install boost
