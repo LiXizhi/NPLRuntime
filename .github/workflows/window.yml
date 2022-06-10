@@ -21,6 +21,11 @@ jobs:
     - name: install cmake
       uses: lukka/get-cmake@latest
 
+    # 安装DX
+    - name: install dx
+      continue-on-error: true
+      run: choco install directx
+
     # 安装boost
     - name: install boost
       uses: MarkusJx/install-boost@v2.3.0

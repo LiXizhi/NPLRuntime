@@ -1,7 +1,6 @@
 
-git submodule init
-
-git submodule update --init --recursive
+REM git submodule init
+REM git submodule update --init --recursive
 
 if NOT "%GITHUB_WORKFLOW%" == "" (
     if EXIST "boost_1_78_0.7z" (
@@ -18,8 +17,9 @@ if NOT "%GITHUB_WORKFLOW%" == "" (
     call "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\VC\Auxiliary\Build\vcvarsall.bat" x64
     mkdir build\win32
     cd build\win32
-    cmake ..\..\Client -DUSE_OPENGL_RENDERER=true -DNPLRUNTIME_PHYSICS=OFF
-    msbuild .\CLIENT.sln /verbosity:minimal /property:Configuration=Release
+    cmake ..\..\Client -DNPLRUNTIME_PHYSICS=OFF
+    cmake --build . -j 1
+    REM msbuild .\CLIENT.sln /verbosity:minimal /property:Configuration=Release
 ) else (
     if EXIST "boost_1_78_0.7z" (
         .\bin\7z.exe x boost_1_78_0.7z 

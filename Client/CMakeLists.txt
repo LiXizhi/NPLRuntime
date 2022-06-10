@@ -52,14 +52,8 @@ endif()
 #Renderer
 ################################
 if(WIN32)
-    if (USE_OPENGL_RENDERER OR "$ENV{GITHUB_WORKFLOW}" STRGREATER "")
-        set(NPLRUNTIME_RENDERER "OPENGL" CACHE STRING "Render API")
-    else ()
-        set(NPLRUNTIME_RENDERER "DIRECTX" CACHE STRING "Render API")
-    endif()
-
+    set(NPLRUNTIME_RENDERER "DIRECTX" CACHE STRING "Render API")
 	set_property(CACHE NPLRUNTIME_RENDERER PROPERTY STRINGS DIRECTX OPENGL)
-
 endif()
 
 if(APPLE)
@@ -221,8 +215,9 @@ add_subdirectory (${CLIENT_SOURCE_DIR}/../NPLRuntime/ParaEngineClient ${CLIENT_B
 set (ParaEngineClient_SOURCE_DIR ${CLIENT_SOURCE_DIR}/trunk/ParaEngineClient)
 
 if(NPLRUNTIME_PHYSICS)
-	add_subdirectory (${CLIENT_SOURCE_DIR}/trunk/externals/bullet3 ${CLIENT_BINARY_DIR}/bullet3)
-	add_subdirectory (${CLIENT_SOURCE_DIR}/trunk/PhysicsBT ${CLIENT_BINARY_DIR}/PhysicsBT)
+    message('============================' ${NPLRUNTIME_PHYSICS})
+    add_subdirectory (${CLIENT_SOURCE_DIR}/trunk/externals/bullet3 ${CLIENT_BINARY_DIR}/bullet3)
+    add_subdirectory (${CLIENT_SOURCE_DIR}/trunk/PhysicsBT ${CLIENT_BINARY_DIR}/PhysicsBT)
 endif()
 
 if(NPLRUNTIME_CAUDIOENGINE)

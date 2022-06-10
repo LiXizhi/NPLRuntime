@@ -36,6 +36,18 @@ function(embed_resources_abs out_var)
     set(${out_var} "${result}" PARENT_SCOPE)
 endfunction()
 
+set(Boost_USE_MULTITHREADED ON)
+set(Boost_USE_STATIC_LIBS   ON)
+
+if (MSVC)
+    if ("$ENV{GITHUB_WORKFLOW}" STRGREATER "")
+        set(Boost_USE_STATIC_RUNTIME OFF)
+    else ()
+        set(Boost_USE_STATIC_RUNTIME ON)
+    endif()
+else()
+	set(Boost_USE_STATIC_RUNTIME OFF)
+endif()
 find_package(Boost COMPONENTS filesystem REQUIRED)
 
 include_directories("${Boost_INCLUDE_DIRS}")
