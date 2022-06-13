@@ -19,10 +19,17 @@ fi
 #apt-get install -y libreadline6 libreadline6-dev
 #apt-get install -y freeglut3 freeglut3-dev libglew1.5 libglew1.5-dev libglu1-mesa libglu1-mesa-dev libgl1-mesa-glx libgl1-mesa-dev libbz2-1.0 libbz2-dev
 
+CURRENT_DIRECTORY=`pwd`
+
 mkdir -p ./bin/linux
 cd bin/linux/
 
-CURRENT_DIRECTORY=`pwd`
 cmake -DCMAKE_BUILD_TYPE=Release ../../NPLRuntime/ -DBOOST_ROOT=${CURRENT_DIRECTORY}/boost_1_78_0
+if [ $? -ne 0 ]; then
+    exit 1
+fi
 make --jobs=1
+if [ $? -ne 0 ]; then
+    exit 1
+fi
 cd -
