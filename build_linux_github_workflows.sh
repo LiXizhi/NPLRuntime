@@ -9,8 +9,7 @@ if [ ! -d boost_1_78_0 ]; then
 
     cd boost_1_78_0
     ./bootstrap.sh --with-libraries="thread,date_time,filesystem,system,chrono,serialization,iostreams,regex"
-    ./b2 link=static threading=multi variant=release
-    ./b2 install
+    ./b2 link=static threading=multi variant=release stage
     cd - 
 fi
 
@@ -20,4 +19,10 @@ fi
 #apt-get install -y libreadline6 libreadline6-dev
 #apt-get install -y freeglut3 freeglut3-dev libglew1.5 libglew1.5-dev libglu1-mesa libglu1-mesa-dev libgl1-mesa-glx libgl1-mesa-dev libbz2-1.0 libbz2-dev
 
-cmake -DCMAKE_BUILD_TYPE=Release ../../NPLRuntime/ && make --jobs=1
+mkdir -p ./bin/linux
+cd bin/linux/
+
+CURRENT_DIRECTORY=`pwd`
+cmake -DCMAKE_BUILD_TYPE=Release ../../NPLRuntime/ -DBOOST_ROOT=${CURRENT_DIRECTORY}/boost_1_78_0
+make --jobs=1
+cd -
