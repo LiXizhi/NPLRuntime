@@ -24,7 +24,7 @@ CURRENT_DIRECTORY=`pwd`
 mkdir -p ./bin/linux
 cd bin/linux/
 
-cmake -DCMAKE_BUILD_TYPE=Release ../../NPLRuntime/ -DBOOST_ROOT=${CURRENT_DIRECTORY}/boost_1_78_0
+cmake -DCMAKE_BUILD_TYPE=Release ../../NPLRuntime/ -DBOOST_ROOT=${CURRENT_DIRECTORY}/boost_1_78_0 -DUSE_NULL_RENDERER -DLINUX
 if [ $? -ne 0 ]; then
     exit 1
 fi
