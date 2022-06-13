@@ -59,7 +59,7 @@ jobs:
       with:
         path: boost
         # 最后一位手动更新(当编译错误时)
-        key: boost_2
+        key: window_boost_2
 
     # 编译boost_1_78_0
     - name: build boost_1_78_0

@@ -33,6 +33,10 @@ set(SERVER_SOURCE_DIR   ${NPLRuntime_SOURCE_DIR}/../Server/trunk/)
 option(NPL_STATIC_LINK_ALL "link statically as much as possible" ON)
 
 # include boost if client is not defined, it allows us to use a different boost version than the client on the server build.
+if ("${BOOST_ROOT}" STRGREATER "") 
+	string(REPLACE "\\" "/" BOOST_ROOT ${BOOST_ROOT})
+    set(ENV{BOOST_ROOT} ${BOOST_ROOT})
+endif()
 if (PARAENGINE_CLIENT OR WIN32)
 	if ("$ENV{BOOST_ROOT}" STREQUAL "")
 		set(BOOST_ROOT ${SERVER_SOURCE_DIR}/boost_1_61_0)
