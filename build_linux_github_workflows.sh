@@ -13,11 +13,11 @@ if [ ! -d boost_1_78_0 ]; then
     cd - 
 fi
 
-#apt-get update
-#apt-get install -y build-essential wget 
-#apt-get install -y libssl-dev libssh2-1-dev libcurl4-openssl-dev
-#apt-get install -y libreadline6 libreadline6-dev
-#apt-get install -y freeglut3 freeglut3-dev libglew1.5 libglew1.5-dev libglu1-mesa libglu1-mesa-dev libgl1-mesa-glx libgl1-mesa-dev libbz2-1.0 libbz2-dev
+sudo apt-get update
+sudo apt-get install -y build-essential wget 
+sudo apt-get install -y libssl-dev libssh2-1-dev libcurl4-openssl-dev
+sudo apt-get install -y libreadline6 libreadline6-dev
+sudo apt-get install -y freeglut3 freeglut3-dev libglew1.5 libglew1.5-dev libglu1-mesa libglu1-mesa-dev libgl1-mesa-glx libgl1-mesa-dev libbz2-1.0 libbz2-dev
 
 CURRENT_DIRECTORY=`pwd`
 
