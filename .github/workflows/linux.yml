@@ -1,5 +1,5 @@
 
-name: Windows
+name: Linux
 
 on:
   push:
@@ -34,6 +34,6 @@ jobs:
     - name: build NPLRuntime
       env:
         BOOST_ROOT: ${{format('{0}\boost_1_78_0', github.workspace)}}
-      run: build_linux_github_workflows.sh
+      run: bash -x build_linux_github_workflows.sh
 
 

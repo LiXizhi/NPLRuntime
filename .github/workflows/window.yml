@@ -2,8 +2,9 @@
 name: Windows
 
 on:
-  push:
-    branches: [ dev ]
+  workflow_dispatch:
+  #push:
+    #branches: [ dev ]
 
 env:
   BUILD_TYPE: Release
