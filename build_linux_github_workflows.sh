@@ -20,4 +20,4 @@ fi
 #apt-get install -y libreadline6 libreadline6-dev
 #apt-get install -y freeglut3 freeglut3-dev libglew1.5 libglew1.5-dev libglu1-mesa libglu1-mesa-dev libgl1-mesa-glx libgl1-mesa-dev libbz2-1.0 libbz2-dev
 
-#cmake -DCMAKE_BUILD_TYPE=Release ../../NPLRuntime/ && make --jobs=1
+cmake -DCMAKE_BUILD_TYPE=Release ../../NPLRuntime/ && make --jobs=1
