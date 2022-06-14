@@ -32,8 +32,8 @@ jobs:
 
     # 编译NPLRuntime
     - name: build NPLRuntime
-      #env:
-        #BOOST_ROOT: ${{format('{0}/boost', github.workspace)}}
+      env:
+        BOOST_ROOT: ${{format('{0}/boost', github.workspace)}}
       run: bash -x build_linux_github_workflows.sh
 
 
