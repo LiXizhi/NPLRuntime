@@ -19,12 +19,6 @@
 #include <mutex>
 #include <condition_variable>
 
-#if BOOST_VERSION >= 107000
-#define GET_IO_SERVICE(s) ((boost::asio::io_context&)(s).get_executor().context())
-#else
-#define GET_IO_SERVICE(s) ((s).get_io_service())
-#endif
-
 namespace boost {
 namespace asio {
 
@@ -130,7 +124,7 @@ public:
     template <typename Handler>
     void async_monitor(implementation_type &impl, Handler handler)
     {
-        this->async_monitor_io_service_.post(monitor_operation<Handler>(impl, GET_IO_SERVICE(*this), handler));
+        this->async_monitor_io_service_.post(monitor_operation<Handler>(impl, this->get_io_context(), handler));
     }
 
 private:
