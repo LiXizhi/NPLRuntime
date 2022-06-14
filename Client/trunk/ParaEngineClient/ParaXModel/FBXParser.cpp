@@ -21,7 +21,7 @@
 
 #include "assimp/scene.h"
 /** define this use use assimp version 5, default to use ver 4 interface*/
-// #define ASSIMP5
+#define ASSIMP5
 
 extern "C"
 {
@@ -142,7 +142,7 @@ CParaXModel* FBXParser::ParseParaXModel(const char* buffer, int nSize)
 	Assimp::Importer importer;
 	Reset();
 	SetAnimSplitterFilename();
-	// aiProcess_MakeLeftHanded | 
+	// this is not needed: aiProcess_MakeLeftHanded | 
 	const aiScene* pFbxScene = importer.ReadFileFromMemory(buffer, nSize, aiProcess_Triangulate | aiProcess_GenSmoothNormals | aiProcess_FlipUVs, "fbx");
 
 	if (pFbxScene) {
@@ -1170,7 +1170,39 @@ lua_State* FBXParser::ParseScriptString(const char* str)
 
 void FBXParser::ParseParticleEmitter(ModelRenderPass& pass, aiMaterial* pfbxMaterial, CParaXModel *pMesh, const std::string& sMatName, int texture_index)
 {
-#ifndef ASSIMP5
+#ifdef ASSIMP5
+	aiString value;
+	if (pfbxMaterial->Get("ps_param", (unsigned int)AI_AISTRING, 0, value) == AI_SUCCESS)
+	{
+		if (value.length == 0)
+			return;
+
+		std::string paramString(value.C_Str());
+		paramString = "return {" + paramString;
+		paramString += "}";
+
+
+		auto L = ParseScriptString(paramString.c_str());
+		if (!L)
+			return;
+
+		PE_ASSERT(m_particleSystem.find(sMatName) == m_particleSystem.end());
+
+		m_particleSystem.insert(std::pair<std::string, ParticleSystem>(sMatName, ParticleSystem()));
+		ParticleSystem& ps = m_particleSystem[sMatName];
+
+		ParseParticleParam(ps, L);
+		lua_pop(L, 1); // remove return value from stack
+
+		ps.order = 0; // triangle winding order is fixed for all types.
+		ps.model = pMesh;
+
+		ps.grav2.globals = ps.areaw.globals = ps.areal.globals = ps.rate.globals = ps.lifespan.globals = ps.gravity.globals = ps.lat.globals = ps.spread.globals = ps.variation.globals = ps.speed.globals = pMesh->globalSequences;
+
+		ps.tofs = frand();
+		ps.m_texture_index = texture_index;
+	}
+#else
 	auto metaData = pfbxMaterial->mMetaData;
 	if (!metaData || metaData->mNumProperties == 0)
 		return;
@@ -1850,7 +1882,164 @@ void FBXParser::ParseParticleParam(ParticleSystem& ps, lua_State* L)
 
 void FBXParser::ParseUVAnimation(ModelRenderPass& pass, aiMaterial* pfbxMaterial, CParaXModel *pMesh)
 {
-#ifndef ASSIMP5
+#ifdef ASSIMP5
+	if (pfbxMaterial->mNumProperties == 0)
+		return;
+
+	const float error_trans = 0.00001f;
+	const float error_scale = error_trans * 10;
+	const float error_rot = 0.0001f;
+
+	const float ticksPerSample = 1000.f / 30.f; // 30fps
+
+	std::vector<std::pair<int, Vector3>> trans;
+	std::vector<std::pair<int, Vector3>> scales;
+	std::vector<std::pair<int, Vector3>> rots;
+
+	for (unsigned int i = 0; i < pfbxMaterial->mNumProperties; i++)
+	{
+		auto property = pfbxMaterial->mProperties[i];
+
+		auto& key = property->mKey;
+		auto value = property->mData;
+
+		auto keyFrame = strstr(key.C_Str(), "TexAnims_key");
+		if (!keyFrame)
+			continue;
+
+		PE_ASSERT((key.length == strlen("TexAnims_key000_r")));
+		PE_ASSERT(property->mType == AI_AIVECTOR3D);
+
+		keyFrame += strlen("TexAnims_key");
+
+		int keyIndex = (keyFrame[0] - '0') * 100 + (keyFrame[1] - '0') * 10 + (keyFrame[2] - '0');
+		char type = keyFrame[4];
+		PE_ASSERT(type == 't' || type == 'r' || type == 's');
+		PE_ASSERT(sizeof(aiVector3D) == property->mDataLength);
+
+		auto aiVec3 = reinterpret_cast<aiVector3D*>(value);
+
+		switch (type)
+		{
+		case 't':
+		{
+			// translation
+			trans.push_back(std::pair<int, Vector3>(keyIndex, Vector3(aiVec3->x, aiVec3->y, aiVec3->z)));
+			break;
+		}
+		case 'r':
+		{
+			// rotation
+			rots.push_back(std::pair<int, Vector3>(keyIndex, Vector3(aiVec3->x * 3.1415926f / 180
+				, aiVec3->y
+				, aiVec3->z)));
+			break;
+		}
+		case 's':
+		{
+			// scaling
+			scales.push_back(std::pair<int, Vector3>(keyIndex, Vector3(aiVec3->x, aiVec3->y, aiVec3->z)));
+			break;
+		}
+		default:
+			break;
+		}
+
+	}
+
+	if (trans.size() == 0 && rots.size() == 0 && scales.size() == 0)
+		return;
+
+	auto index = m_texAnims.size();
+	m_texAnims.resize(index + 1);
+	TextureAnim& anim = m_texAnims[index];
+	pass.texanim = (int16)index;
+
+	anim.rot.globals = anim.scale.globals = anim.trans.globals = pMesh->globalSequences;
+
+	auto sortFunc = [](const std::pair<int, Vector3>& a, const std::pair<int, Vector3>& b)
+	{
+		return a.first < b.first;
+	};
+
+	std::sort(trans.begin(), trans.end(), sortFunc);
+	std::sort(rots.begin(), rots.end(), sortFunc);
+	std::sort(scales.begin(), scales.end(), sortFunc);
+
+	std::vector<std::pair<int, Vector3>>* pVec[3] = { &trans, &rots, &scales };
+	Animated<Vector3>* pAnimated[3] = { &anim.trans, &anim.rot, &anim.scale };
+	float errorValues[3] = { error_trans , error_rot, error_scale };
+	for (int times = 0; times < 3; times++)
+	{
+		auto& vec = *pVec[times];
+		auto& animated = *pAnimated[times];
+		auto& errorValue = errorValues[times];
+
+		if (vec.size() > 0)
+		{
+			// In ParaX Model, UV animations are always global sequence with seq id equal to -2.
+			// There is only one animation range at index 0, hence nCurAnimIndex=0
+			animated.seq = -2;
+			animated.used = true;
+
+			int nKeyCount, nFirstKeyIndex, nLastKeyIndex, i;
+			nKeyCount = (int)vec.size();
+			nLastKeyIndex = nFirstKeyIndex = 0;
+
+			int timeStart = (int)(vec[0].first * ticksPerSample);
+			auto lastRotKey = vec[0].second;
+			auto lastlastRotKey = lastRotKey;
+
+			animated.AppendKey(timeStart, lastRotKey);
+
+			for (i = 1; i < nKeyCount; i++)
+			{
+				auto& rotationKey = vec[i].second;
+				auto predicatedKey = lastRotKey * 2 - lastlastRotKey;
+				auto delta = rotationKey - predicatedKey;
+
+				int time = (int)(vec[i].first * ticksPerSample);
+
+				/*2006.9.6 we must export every translation key. even a very small delta will cause large error in the exported animation.
+				e.g. //if(fabs(delta.x)>0.00001f || fabs(delta.y)>0.00001f || fabs(delta.z)>0.00001f || fabs(delta.w)>0.00001f) can cause large displacement of the mesh.
+				*/
+				if (fabs(delta.x) > errorValue || fabs(delta.y) > errorValue || fabs(delta.z) > errorValue)
+				{
+					// add new key
+					if (nLastKeyIndex == nFirstKeyIndex)
+					{
+						// if this is the second key, modify the first key's time to animSequence.timeStart, and insert a constant key if necessary.
+						int nKeyIndex = animated.GetKeyNum() - 1;
+						int nTime = animated.times[nKeyIndex];
+						animated.times[nKeyIndex] = timeStart;
+
+						if (i > 2)
+						{
+							animated.AppendKey(nTime, lastRotKey);
+						}
+
+					}
+
+					animated.AppendKey(time, rotationKey);
+					predicatedKey = rotationKey;
+					++nLastKeyIndex;
+				}
+				else
+				{
+					// override the last key
+					animated.UpdateLastKey(time, predicatedKey);
+				}
+
+				lastlastRotKey = lastRotKey;
+				lastRotKey = predicatedKey;
+			}
+
+			if (nFirstKeyIndex == nLastKeyIndex)
+				animated.UpdateLastKey(timeStart, lastRotKey);
+			animated.SetRangeByAnimIndex(index, AnimRange(nFirstKeyIndex, nLastKeyIndex));
+		}
+	}
+#else
 	auto metaData = pfbxMaterial->mMetaData;
 	if (!metaData || metaData->mNumProperties == 0)
 		return;

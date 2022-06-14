@@ -204,8 +204,9 @@ if(NOT NPLRUNTIME_STATIC_LIB)
 endif()
 
 if(NPLRUNTIME_SUPPORT_FBX) 
-	add_subdirectory (${CLIENT_SOURCE_DIR}/trunk/externals/assimp-4.0.0 ${CLIENT_BINARY_DIR}/assimp-4.0.0)
-	# define ASSIMP5 in FBXParser.cpp to work with v5, the Y up issue is not fixed though 
+	#add_subdirectory (${CLIENT_SOURCE_DIR}/trunk/externals/assimp-4.0.0 ${CLIENT_BINARY_DIR}/assimp-4.0.0)
+	add_subdirectory (${CLIENT_SOURCE_DIR}/trunk/externals/assimp-5.0.1 ${CLIENT_BINARY_DIR}/assimp-5.0.1)
+	# define ASSIMP in FBXParser.cpp to work with v5, the Y up issue is not fixed though in 5.2.4.  5.0.1 and 4.0.0 are fine. 
 	#add_subdirectory (${CLIENT_SOURCE_DIR}/trunk/externals/assimp-5.2.4 ${CLIENT_BINARY_DIR}/assimp-5.2.4)
 endif()
 
