@@ -6,8 +6,8 @@ if [ ! -d boost_1_78_0 ]; then
         wget https://boostorg.jfrog.io/artifactory/main/release/1.78.0/source/boost_1_78_0.tar.bz2 --no-check-certificate  -O boost_1_78_0.tar.bz2
     fi
 	tar --bzip2 -xf boost_1_78_0.tar.bz2
-
-    cd boost_1_78_0
+    mv boost_1_78_0 boost
+    cd boost
     ./bootstrap.sh --with-libraries="thread,date_time,filesystem,system,chrono,signals,serialization,iostreams,regex,log"
     ./b2 link=static threading=multi variant=release stage
     cd - 
@@ -24,7 +24,7 @@ CURRENT_DIRECTORY=`pwd`
 mkdir -p ./bin/linux
 cd bin/linux/
 
-cmake -DCMAKE_BUILD_TYPE=Release ../../NPLRuntime/ -DBOOST_ROOT=${CURRENT_DIRECTORY}/boost_1_78_0 -DUSE_NULL_RENDERER=TRUE -DLINUX=TRUE
+cmake -DCMAKE_BUILD_TYPE=Release ../../NPLRuntime/ -DBOOST_ROOT=${CURRENT_DIRECTORY}/boost -DUSE_NULL_RENDERER=TRUE -DLINUX=TRUE
 if [ $? -ne 0 ]; then
     exit 1
 fi
