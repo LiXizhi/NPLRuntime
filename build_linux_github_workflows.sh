@@ -10,9 +10,11 @@ if [ ! -d boost_1_78_0 ]; then
     cd boost
     ./bootstrap.sh --with-libraries="thread,date_time,filesystem,system,signals,serialization,iostreams,regex,log"
     ./b2 link=static threading=multi variant=release stage
+    ./b2 install
     ./b2 link=static threading=multi variant=debug stage
-    #./b2 install
+    ./b2 install
     cd - 
+    ls -l boost/stage/lib
 fi
 
 sudo apt-get update
