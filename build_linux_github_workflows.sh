@@ -10,6 +10,7 @@ if [ ! -d boost_1_78_0 ]; then
     cd boost
     ./bootstrap.sh --with-libraries="thread,date_time,filesystem,system,chrono,signals,serialization,iostreams,regex,log"
     ./b2 link=static threading=multi variant=release stage
+    ./b2 install
     cd - 
 fi
 
