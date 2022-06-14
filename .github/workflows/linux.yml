@@ -28,7 +28,7 @@ jobs:
       with:
         path: boost
         # 最后一位手动更新(当编译错误时)
-        key: linux_boost_0
+        key: linux_boost_1
 
     # 编译NPLRuntime
     - name: build NPLRuntime
