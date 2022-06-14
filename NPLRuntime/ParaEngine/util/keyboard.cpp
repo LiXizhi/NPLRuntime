@@ -14,6 +14,13 @@ int _kbhit()
 {
 	return 0;
 }
+
+#elif defined(GITHUB_WORKFLOWS)
+int _kbhit()
+{
+	return 0;
+}
+
 #elif !defined(WIN32) && !defined(PARAENGINE_MOBILE)
 
 //  Linux emulation of kbhit
