@@ -3,7 +3,7 @@ name: Linux
 
 on:
   push:
-    branches: [ dev ]
+    branches: [ cp_old ]
 
 env:
   BUILD_TYPE: Release
