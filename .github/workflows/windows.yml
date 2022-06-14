@@ -1,7 +1,7 @@
 name: Windows
 
 on:
-  aworkflow_dispatch:
+  workflow_dispatch:
 
 env:
   BUILD_TYPE: Release
