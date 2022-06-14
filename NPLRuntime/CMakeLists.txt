@@ -20,6 +20,14 @@ project (NPLRuntime)
 
 option(NPLRUNTIME_LUASQL "whether to build luasql" OFF)
 
+if (USE_NULL_RENDERER)
+    add_definitions(-DUSE_NULL_RENDERER)
+endif()
+
+if (LINUX) 
+    add_definitions(-DLINUX)
+endif()
+
 # this is the directory to keep all binary
 if( CMAKE_SIZEOF_VOID_P EQUAL 8 )
 	set(OUTPUT_BIN_DIR   ${NPLRuntime_SOURCE_DIR}/../ParaWorld/bin64/)
