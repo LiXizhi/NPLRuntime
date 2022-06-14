@@ -20,6 +20,8 @@
 #include <math.h>
 
 #include "assimp/scene.h"
+/** define this use use assimp version 5, default to use ver 4 interface*/
+// #define ASSIMP5
 
 extern "C"
 {
@@ -142,6 +144,7 @@ CParaXModel* FBXParser::ParseParaXModel(const char* buffer, int nSize)
 	SetAnimSplitterFilename();
 	// aiProcess_MakeLeftHanded | 
 	const aiScene* pFbxScene = importer.ReadFileFromMemory(buffer, nSize, aiProcess_Triangulate | aiProcess_GenSmoothNormals | aiProcess_FlipUVs, "fbx");
+
 	if (pFbxScene) {
 		ParaXHeaderDef m_xheader;
 		m_xheader.IsAnimated = pFbxScene->HasAnimations() ? 1 : 0;
@@ -194,8 +197,9 @@ CParaXModel* FBXParser::ParseParaXModel(const char* buffer, int nSize)
 		// building the parent-child relationship of the bones, and add meshes if any;
 		ProcessFBXBoneNodes(pFbxScene, pFbxScene->mRootNode, -1, pMesh);
 
+#ifdef ASSIMP5
 		// MakeAxisY_UP();
-
+#endif
 		FillParaXModelData(pMesh, pFbxScene);
 
 		PostProcessParaXModelData(pMesh);
@@ -690,14 +694,30 @@ void FBXParser::ProcessStaticFBXMaterial(const aiScene* pFbxScene, unsigned int 
 	int content_len = -1;
 	int16 opacity = -1;
 
+#ifdef ASSIMP5
+	aiGetMaterialTexture(pfbxMaterial, (aiTextureType)aiTextureType_DIFFUSE, 0,
+		&szPath, NULL, &iUV, &fBlend, &eOp, NULL, NULL);
+#else
 	aiGetMaterialTexture(pfbxMaterial, (aiTextureType)aiTextureType_DIFFUSE, 0,
 		&szPath, NULL, &iUV, &fBlend, &eOp, NULL, NULL, &content_begin, &content_len);
+#endif
 
 	std::string diffuseTexName(szPath.C_Str());
 	if (diffuseTexName != "")
 	{
 		diffuseTexName = GetTexturePath(diffuseTexName);
 
+#ifdef ASSIMP5
+		if (auto texture = pFbxScene->GetEmbeddedTexture(diffuseTexName.c_str())) 
+		{
+			// If mHeight = 0, pcData is a pointer to a memory  buffer of size mWidth containing the compressed texture data.
+			if (texture->mHeight == 0)
+			{
+				content_len = (int)(texture->mWidth);
+				content_begin = (char*)(texture->pcData);
+			}
+		}
+#endif
 		if (content_begin)
 		{
 			std::string sFileName = CParaFile::GetFileName(m_sFilename);
@@ -927,16 +947,31 @@ void FBXParser::ProcessFBXMaterial(const aiScene* pFbxScene, unsigned int iIndex
 			sMatName = sMaterialName.C_Str();
 
 	}
-
+#ifdef ASSIMP5
+	aiGetMaterialTexture(pfbxMaterial, (aiTextureType)aiTextureType_DIFFUSE, 0,
+		&szPath, NULL, &iUV, &fBlend, &eOp, NULL, NULL);
+#else
 	aiGetMaterialTexture(pfbxMaterial, (aiTextureType)aiTextureType_DIFFUSE, 0,
 		&szPath, NULL, &iUV, &fBlend, &eOp, NULL, NULL, &content_begin, &content_len);
-
+#endif
 	std::string diffuseTexName(szPath.C_Str());
 	if (diffuseTexName != "")
 	{
 		std::string sOriginalPath;
 		CParaFile::ToCanonicalFilePath(sOriginalPath, diffuseTexName, false);
 		diffuseTexName = GetTexturePath(diffuseTexName);
+
+#ifdef ASSIMP5
+		if (auto texture = pFbxScene->GetEmbeddedTexture(diffuseTexName.c_str()))
+		{
+			// If mHeight = 0, pcData is a pointer to a memory  buffer of size mWidth containing the compressed texture data.
+			if (texture->mHeight == 0)
+			{
+				content_len = (int)(texture->mWidth);
+				content_begin = (char*)(texture->pcData);
+			}
+		}
+#endif
 
 		if (content_begin)
 		{
@@ -1028,12 +1063,11 @@ void FBXParser::ProcessFBXMaterial(const aiScene* pFbxScene, unsigned int iIndex
 	FBXMaterial fbxMat;
 	ParseMaterialByName(sMatName, &fbxMat);
 
-
 	int16 blendmode = BM_OPAQUE;
 	if (!diffuseTexName.empty())
 	{
 		if (AI_SUCCESS == aiGetMaterialTexture(pfbxMaterial, (aiTextureType)aiTextureType_OPACITY, 0,
-			&szPath, NULL, &iUV, &fBlend, &eOp, NULL, NULL, &content_begin, &content_len))
+			&szPath, NULL, &iUV, &fBlend, &eOp, NULL, NULL))
 		{
 			if (fbxMat.isAlphaBlended())
 				blendmode = BM_ALPHA_BLEND;
@@ -1136,6 +1170,7 @@ lua_State* FBXParser::ParseScriptString(const char* str)
 
 void FBXParser::ParseParticleEmitter(ModelRenderPass& pass, aiMaterial* pfbxMaterial, CParaXModel *pMesh, const std::string& sMatName, int texture_index)
 {
+#ifndef ASSIMP5
 	auto metaData = pfbxMaterial->mMetaData;
 	if (!metaData || metaData->mNumProperties == 0)
 		return;
@@ -1182,14 +1217,13 @@ void FBXParser::ParseParticleEmitter(ModelRenderPass& pass, aiMaterial* pfbxMate
 
 		break;
 	}
+#endif
 }
 
 void FBXParser::ParseParticleParam(ParticleSystem& ps, lua_State* L)
 {
 	const float ticksPerSample = 1000.f / 30.f; // 30fps
 	const float fEpsilon = 0.01f;
-
-
 
 	// read mid
 	{
@@ -1816,6 +1850,7 @@ void FBXParser::ParseParticleParam(ParticleSystem& ps, lua_State* L)
 
 void FBXParser::ParseUVAnimation(ModelRenderPass& pass, aiMaterial* pfbxMaterial, CParaXModel *pMesh)
 {
+#ifndef ASSIMP5
 	auto metaData = pfbxMaterial->mMetaData;
 	if (!metaData || metaData->mNumProperties == 0)
 		return;
@@ -1970,6 +2005,7 @@ void FBXParser::ParseUVAnimation(ModelRenderPass& pass, aiMaterial* pfbxMaterial
 			animated.SetRangeByAnimIndex(index, AnimRange(nFirstKeyIndex, nLastKeyIndex));
 		}
 	}
+#endif
 }
 
 void FBXParser::ProcessStaticFBXMesh(aiMesh *pFbxMesh, XFile::Mesh *pMesh)
@@ -2341,12 +2377,17 @@ void FBXParser::ProcessFBXMesh(const aiScene* pFbxScene, aiMesh *pFbxMesh, aiNod
 	aiMaterial* useMaterial = pFbxScene->mMaterials[pFbxMesh->mMaterialIndex];
 	aiTextureOp eOp;
 	aiString szPath;
-	char* content_begin = NULL;
-	int content_len = -1;
 	unsigned int iUV;
 	float fBlend;
+#ifdef ASSIMP5
+	aiGetMaterialTexture(useMaterial, (aiTextureType)aiTextureType_DIFFUSE, 0,
+		&szPath, NULL, &iUV, &fBlend, &eOp, NULL, NULL);
+#else
+	char* content_begin = NULL;
+	int content_len = -1;
 	aiGetMaterialTexture(useMaterial, (aiTextureType)aiTextureType_DIFFUSE, 0,
 		&szPath, NULL, &iUV, &fBlend, &eOp, NULL, NULL, &content_begin, &content_len);
+#endif
 	std::string diffuseTexName(szPath.C_Str());
 	if (diffuseTexName == "")
 	{
@@ -2881,22 +2922,35 @@ bool ParaEngine::FBXParser::HasAnimations()
 // not used, the exporter is required to do it. 
 void ParaEngine::FBXParser::MakeAxisY_UP()
 {
-	if (m_bones.size() > 0)
+	int nBoneCount = (int)m_bones.size();
+	if (nBoneCount > 0)
 	{
-		// for animated model, rotate the root bone. 
-		Bone& bone = m_bones[m_nRootNodeIndex];
-		// one should not animate the root bone. 
-		assert(!bone.IsAnimated());
 		// root transform is usually identity for most cases
-		Matrix4 mat = bone.matTransform;
 		Quaternion q(Radian(-ParaEngine::Math::PI / 2.0f), Vector3::UNIT_X);
 		Matrix3 matRot;
 		q.ToRotationMatrix(matRot);
-		if (bone.IsStaticTransform())
-			mat = mat * matRot;
-		else
-			mat = matRot;
-		bone.SetStaticTransform(mat);
+
+		for (int i = 0; i < nBoneCount; ++i)
+		{
+			Bone& bone = m_bones[i];
+			if (bone.parent < 0)
+			{
+				if (bone.IsOffsetMatrixBone())
+				{
+					Matrix4 mat = bone.matOffset;
+					bone.matOffset = bone.matOffset * matRot;
+				}
+				else
+				{
+					Matrix4 mat = bone.matTransform;
+					if (bone.IsStaticTransform())
+						mat = mat * matRot;
+					else
+						mat = matRot;
+					bone.SetStaticTransform(mat);
+				}
+			}
+		}
 	}
 }
 
