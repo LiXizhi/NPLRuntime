@@ -1,10 +1,7 @@
 name: Windows
 
 on:
-  push:
-    branches: [ cp_old ]
-  pull_request:
-    branches: [ master ]
+  aworkflow_dispatch:
 
 env:
   BUILD_TYPE: Release

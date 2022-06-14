@@ -1,0 +1,39 @@
+
+name: Linux
+
+on:
+  push:
+    branches: [ dev ]
+
+env:
+  BUILD_TYPE: Release
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    # 拉取代码
+    - name: pull source code
+      uses: actions/checkout@v3
+
+    # 安装cmake
+    #- name: install cmake
+      #uses: lukka/get-cmake@latest
+
+    # 缓存boost_1_78_0
+    - name: cache boost_1_78_0
+      uses: actions/cache@v3
+      id: cache_boost_1_78_0
+      with:
+        path: boost
+        # 最后一位手动更新(当编译错误时)
+        key: linux_boost_0
+
+    # 编译NPLRuntime
+    - name: build NPLRuntime
+      env:
+        BOOST_ROOT: ${{format('{0}\boost_1_78_0', github.workspace)}}
+      run: bash -x build_linux_github_workflows.sh
+
+
