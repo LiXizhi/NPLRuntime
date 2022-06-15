@@ -24,6 +24,7 @@ if [[ "$GITHUB_WORKFLOW" != "" ]]; then
     NINJA_VERSION=1.10.2
     wget -q https://github.com/ninja-build/ninja/releases/download/v$NINJA_VERSION/ninja-linux.zip
     unzip -q ninja-linux.zip
+    sudo cp ninja /usr/bin
     export PATH="$PWD:$PATH"
 
     # Install CMake

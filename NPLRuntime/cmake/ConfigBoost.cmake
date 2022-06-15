@@ -7,7 +7,6 @@ set(Boost_Version 1.73.0)
 
 if ("$ENV{GITHUB_WORKFLOW}" STRGREATER "") 
     set(GITHUB_WORKFLOW TRUE)
-    message("======================GITHUB_WORKFLOW========================")
 endif()
 
 if ("${BOOST_ROOT}" STRGREATER "") 
