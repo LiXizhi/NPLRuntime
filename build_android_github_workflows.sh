@@ -9,7 +9,7 @@ if [ ! -d boost ]; then
     mv boost_1_78_0 boost
 fi
 
-export NDK_VERSION=24.0.8215888
+export NDK_VERSION=23.1.7779620
 
 # GITHUB WORKFLOWS
 if [[ "$GITHUB_WORKFLOW" != "" ]]; then
@@ -35,7 +35,7 @@ if [[ "$GITHUB_WORKFLOW" != "" ]]; then
     export PATH="$PWD:$PATH"
 
     # Install CMake
-    CMAKE_VERSION=3.23.0
+    CMAKE_VERSION=3.22.3
     mkdir -p cmake
     cd cmake
     sudo wget -q https://github.com/Kitware/CMake/releases/download/v$CMAKE_VERSION/cmake-$CMAKE_VERSION-Linux-x86_64.sh
