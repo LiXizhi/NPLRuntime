@@ -5,6 +5,11 @@
 
 set(Boost_Version 1.73.0)
 
+if ("$ENV{GITHUB_WORKFLOWS}" STRGREATER "") 
+    set(GITHUB_WORKFLOWS TRUE)
+    message("======================GITHUB_WORKFLOW========================")
+endif()
+
 if ("${BOOST_ROOT}" STRGREATER "") 
     set(ENV{BOOST_ROOT} ${BOOST_ROOT})
 endif()
