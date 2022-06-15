@@ -17,7 +17,7 @@ if [[ "$GITHUB_WORKFLOW" != "" ]]; then
 
     # 安装NDK
     if [[ ! -d "${ANDROID_HOME}/ndk/$NDK_VERSION" ]]; then
-        ${ANDROID_HOME}/tools/bin/sdkmanager "ndk;$NDK_VERSION" > /dev/null
+        ${ANDROID_HOME}/tools/bin/sdkmanager "ndk;$NDK_VERSION" > /dev/null 2>&1
     fi
 
     # Install ninja
@@ -139,8 +139,8 @@ if [ ! -d ${LIB_SRC_DIR} ]; then
 	if [ -f ${LIB_SRC_TAR_GZ} ]; then
 		tar -vxf ${LIB_SRC_TAR_GZ} -C ${SOURCE_DIR}
 	else
-		wget https://boostorg.jfrog.io/artifactory/main/release/${LIB_VERSION}/source/${LIB_NAME}.tar.gz -O ${LIB_SRC_TAR_GZ}
-		tar -vxf ${LIB_SRC_TAR_GZ} -C ${SOURCE_DIR}
+		wget -q https://boostorg.jfrog.io/artifactory/main/release/${LIB_VERSION}/source/${LIB_NAME}.tar.gz -O ${LIB_SRC_TAR_GZ}
+		tar -xf ${LIB_SRC_TAR_GZ} -C ${SOURCE_DIR}
 	fi
 fi
 cd -
@@ -148,7 +148,7 @@ cd -
 
 cd ${LIB_SRC_DIR}
 
-./bootstrap.sh
+./bootstrap.sh > /dev/null 2 > &1
 
 mkdir -p ${LIB_BUILD_DIR}
 #<compileflags>-D__ANDROID_API__=${API_LEVEL}
@@ -192,7 +192,7 @@ fi
 PARAMS="--user-config=${LIB_BUILD_DIR}/android-user-config.jam --prefix=${LIB_INSTALL_DIR} --build-dir=${LIB_BUILD_DIR} --stagedir=${LIB_BUILD_DIR}/stage toolset=clang-android target-os=android threadapi=pthread threading=multi link=static runtime-link=static address-model=${ADDRESS_MODEL} abi=aapcs"
 PARAMS="--with-thread --with-date_time --with-filesystem --with-system --with-chrono --with-regex --with-serialization --with-iostreams --with-log ${PARAMS} define=BOOST_FILESYSTEM_DISABLE_STATX"
 
-./b2 install ${PARAMS}
+./b2 install ${PARAMS} > /dev/null 2 > &1
 
 export BOOST_ROOT=${BOOST_ROOT_DIR}
 cd ${CURRENT_DIRECTORY}/NPLRuntime/Platform/AndroidStudio
