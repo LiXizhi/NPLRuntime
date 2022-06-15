@@ -5,6 +5,10 @@
 
 set(Boost_Version 1.73.0)
 
+if ("${BOOST_ROOT}" STRGREATER "") 
+    set(ENV{BOOST_ROOT} ${BOOST_ROOT})
+endif()
+
 if ("$ENV{BOOST_ROOT}" STRGREATER "")
 	set(BOOST_ROOT $ENV{BOOST_ROOT})
 	string(REPLACE "\\" "/" BOOST_ROOT ${BOOST_ROOT})
@@ -35,7 +39,11 @@ elseif(WIN32 AND NOT ANDROID)
 		set(BOOST_LIBRARYDIR ${BOOST_ROOT}/build_win32/stage/x86/lib)	
 	endif()
 elseif(ANDROID)
-	set(BOOST_LIBRARYDIR ${BOOST_ROOT}/android-build/stage/${CMAKE_ANDROID_ARCH_ABI}/lib)
+    if (GITHUB_WORKFLOW) 
+        set(BOOST_LIBRARYDIR ${BOOST_ROOT}/lib)
+    else()
+        set(BOOST_LIBRARYDIR ${BOOST_ROOT}/android-build/stage/${CMAKE_ANDROID_ARCH_ABI}/lib)
+    endif()
 	
 	set(Boost_INCLUDE_DIR ${BOOST_ROOT})
 	set(Boost_LIBRARY_DIR ${BOOST_LIBRARYDIR})
@@ -55,7 +63,11 @@ if (MSVC)
         set(Boost_USE_STATIC_RUNTIME ON)
     endif()
 else()
-    set(Boost_USE_STATIC_RUNTIME OFF)
+    if (GITHUB_WORKFLOW AND ANDROID) 
+        set(Boost_USE_STATIC_RUNTIME ON)
+    else()
+        set(Boost_USE_STATIC_RUNTIME OFF)
+    endif()
 endif()
 
 # Add more boost components here. Boost 1.65.1 or above is recommended. 1.55 is minimum for server build

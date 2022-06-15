@@ -1,7 +1,7 @@
 #!/bin/bash
 
 
-if [ ! -d boost_1_78_0 ]; then
+if [ ! -d boost ]; then
     if [ ! -f boost_1_78_0.tar.bz2 ]; then
         wget https://boostorg.jfrog.io/artifactory/main/release/1.78.0/source/boost_1_78_0.tar.bz2 --no-check-certificate  -O boost_1_78_0.tar.bz2
     fi
