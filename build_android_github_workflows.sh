@@ -1,14 +1,6 @@
 #!/bin/bash
 
 
-if [ ! -d boost ]; then
-    if [ ! -f boost_1_78_0.tar.bz2 ]; then
-        wget https://boostorg.jfrog.io/artifactory/main/release/1.78.0/source/boost_1_78_0.tar.bz2 --no-check-certificate  -O boost_1_78_0.tar.bz2
-    fi
-	tar --bzip2 -xf boost_1_78_0.tar.bz2
-    mv boost_1_78_0 boost
-fi
-
 export NDK_VERSION=23.1.7779620
 
 # GITHUB WORKFLOWS
@@ -201,6 +193,7 @@ PARAMS="--with-thread --with-date_time --with-filesystem --with-system --with-ch
 
 ./b2 install ${PARAMS}
 
+export BOOST_ROOT=${BOOST_ROOT_DIR}
 cd ${CURRENT_DIRECTORY}/NPLRuntime/Platform/AndroidStudio
 
 bash gradlew assembleRelease
