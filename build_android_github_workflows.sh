@@ -192,7 +192,7 @@ fi
 PARAMS="--user-config=${LIB_BUILD_DIR}/android-user-config.jam --prefix=${LIB_INSTALL_DIR} --build-dir=${LIB_BUILD_DIR} --stagedir=${LIB_BUILD_DIR}/stage toolset=clang-android target-os=android threadapi=pthread threading=multi link=static runtime-link=static address-model=${ADDRESS_MODEL} abi=aapcs"
 PARAMS="--with-thread --with-date_time --with-filesystem --with-system --with-chrono --with-regex --with-serialization --with-iostreams --with-log ${PARAMS} define=BOOST_FILESYSTEM_DISABLE_STATX"
 
-./b2 install ${PARAMS} > /dev/null 2 > &1
+./b2 install ${PARAMS} > /dev/null 2>&1
 
 export BOOST_ROOT=${BOOST_ROOT_DIR}
 cd ${CURRENT_DIRECTORY}/NPLRuntime/Platform/AndroidStudio
