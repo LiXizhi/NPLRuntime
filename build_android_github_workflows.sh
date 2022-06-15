@@ -148,7 +148,7 @@ cd -
 
 cd ${LIB_SRC_DIR}
 
-./bootstrap.sh > /dev/null 2 > &1
+./bootstrap.sh > /dev/null 2>&1
 
 mkdir -p ${LIB_BUILD_DIR}
 #<compileflags>-D__ANDROID_API__=${API_LEVEL}
