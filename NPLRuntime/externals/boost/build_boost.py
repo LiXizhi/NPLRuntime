@@ -327,10 +327,12 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='manual to this script')
     parser.add_argument('--platform', type=str, default = "android")
     parser.add_argument('--boost_version', type=str, default = "1.78.0")
+    parser.add_argument('--auto_download_boost', type=int, default = 1)
 
     args = parser.parse_args()
 
-    checkSrc(args.boost_version)
+    if(args.auto_download_boost == 1):
+        checkSrc(args.boost_version)
 
     if (args.platform == "android"):
         buildAndroid("arm64-v8a")

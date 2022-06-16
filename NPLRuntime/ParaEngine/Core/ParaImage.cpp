@@ -945,7 +945,12 @@ namespace ParaEngine
         
         if (fileExtension == ".png")
         {
-            return saveImageToPNG(filename, isToRGB);
+			bool toRGB =  isToRGB;
+			if (_renderFormat == PixelFormat::A8R8G8B8)
+			{
+				toRGB = false; //if true will ignore the value of alpha
+			}
+            return saveImageToPNG(filename, toRGB);
         }
         else if (fileExtension == ".jpg")
         {

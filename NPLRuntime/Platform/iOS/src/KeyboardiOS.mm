@@ -157,10 +157,10 @@ static NSString *mLastText = @"";
 
 - (void)keyBoardWillHide:(NSNotification*)notification
 {
+    mTextField.text = @"";
+
     if (mUpdateViewSizeWhenKeyboardChange)
     {
-        mTextField.text = @"";
-
         auto currentFrame = _appDelegate.viewController.view.frame;
         _appDelegate.viewController.view.frame = CGRectMake(0, 0, currentFrame.size.width, currentFrame.size.height);
     }

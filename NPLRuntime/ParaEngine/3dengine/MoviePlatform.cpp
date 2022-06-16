@@ -249,6 +249,30 @@ bool CMoviePlatform::GetImageInfo(const string& filename, int* width, int* heigh
 			return true;
 		}
 	}
+#else
+	CParaFile file;
+	if (!file.OpenFile(filename.c_str()))
+	{
+		OUTPUT_LOG("warning:unable to open file when doing GetImageInfo, %s\n", filename.c_str());
+		return false;
+	}
+
+	ParaImage img;
+	if (!img.initWithImageData((unsigned char*)file.getBuffer(), file.getSize()))
+	{
+		OUTPUT_LOG("warning:unable to load image when doing GetImageInfo, %s\n", filename.c_str());
+		return false;
+	}
+	if(nFileSize){
+		*nFileSize = (int)(file.getSize());
+	}
+	if(width){
+		*width = (int)img.getWidth();
+	}
+	if(height){
+		*height = (int)img.getHeight();
+	}
+	return true;
 #endif
 	return false;
 }
