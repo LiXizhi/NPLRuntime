@@ -32,7 +32,7 @@ ls -l /usr/bin/embed-resource
 if [ $? -ne 0 ]; then
     exit 1
 fi
-rm -fr boost
+#rm -fr boost
 
 export NDK_VERSION=23.1.7779620
 

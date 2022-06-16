@@ -1,4 +1,4 @@
-if(GITHUB_WORKFLOW OR WIN32 OR APPLE AND NOT IOS)
+if(WIN32 OR APPLE AND NOT IOS)
     include(${PROJECT_SOURCE_DIR}/cmake/ConfigBoost.cmake)
     find_package(Boost COMPONENTS filesystem REQUIRED)
     include_directories("${Boost_INCLUDE_DIRS}")
