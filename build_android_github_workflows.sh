@@ -231,7 +231,7 @@ cd ${CURRENT_DIRECTORY}/NPLRuntime/Platform/AndroidStudio
 
 cat > gradle.properties <<EOF
 import os ;
-PROP_APP_ABI=armeabi-v7a
+PROP_APP_ABI=arm64-v8a
 PROP_BUILD_TYPE=cmake
 PROP_COMPILE_SDK_VERSION=31
 PROP_MIN_SDK_VERSION=28
