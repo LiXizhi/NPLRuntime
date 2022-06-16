@@ -197,11 +197,13 @@ PARAMS="--with-thread --with-date_time --with-filesystem --with-system --with-ch
 export BOOST_ROOT=${BOOST_ROOT_DIR}
 cp -fr ${CURRENT_DIRECTORY}/NPLRuntime/externals/EmbedResource ${CURRENT_DIRECTORY}/EmbedResource
 cat > ${CURRENT_DIRECTORY}/EmbedResource/CMakeLists.txt <<EOF
-    include(${CURRENT_DIRECTORY}/NPLRuntime/cmake/ConfigBoost.cmake)
-    find_package(Boost COMPONENTS filesystem REQUIRED)
-    include_directories("\${Boost_INCLUDE_DIRS}")
-    add_executable(embed-resource  embedresource.cpp embedresource.h README.md)
-    target_link_libraries(embed-resource \${Boost_FILESYSTEM_LIBRARY} \${Boost_SYSTEM_LIBRARY})
+cmake_minimum_required(VERSION 3.14)
+project(embed-resource)
+include(${CURRENT_DIRECTORY}/NPLRuntime/cmake/ConfigBoost.cmake)
+find_package(Boost COMPONENTS filesystem REQUIRED)
+include_directories("\${Boost_INCLUDE_DIRS}")
+add_executable(embed-resource  embedresource.cpp embedresource.h README.md)
+target_link_libraries(embed-resource \${Boost_FILESYSTEM_LIBRARY} \${Boost_SYSTEM_LIBRARY})
 EOF
 mkdir -p ${CURRENT_DIRECTORY}/EmbedResource/build
 cmake -B ${CURRENT_DIRECTORY}/EmbedResource/build -S ${CURRENT_DIRECTORY}/EmbedResource 
