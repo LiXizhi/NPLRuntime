@@ -1,6 +1,19 @@
 #!/bin/bash
 
 CURRENT_DIRECTORY=`pwd`
+if [ ! -d boost ]; then
+    if [ ! -f boost_1_78_0.tar.bz2 ]; then
+        wget -q https://boostorg.jfrog.io/artifactory/main/release/1.78.0/source/boost_1_78_0.tar.bz2 --no-check-certificate  -O boost_1_78_0.tar.bz2
+    fi
+	tar --bzip2 -f boost_1_78_0.tar.bz2
+    mv boost_1_78_0 boost
+    cd boost
+    ./bootstrap.sh --with-libraries="thread,date_time,filesystem,system,chrono,serialization,iostreams,regex,log"
+    ./b2 link=static threading=multi variant=release stage
+    ./b2 link=static threading=multi variant=debug stage
+    cd - 
+fi
+export BOOST_ROOT=${CURRENT_DIRECTORY}/boost
 cp -fr ${CURRENT_DIRECTORY}/NPLRuntime/externals/EmbedResource ${CURRENT_DIRECTORY}/EmbedResource
 cat > ${CURRENT_DIRECTORY}/EmbedResource/CMakeLists.txt <<EOF
 cmake_minimum_required(VERSION 3.14)
@@ -19,7 +32,7 @@ ls -l /usr/bin/embed-resource
 if [ $? -ne 0 ]; then
     exit 1
 fi
-
+rm -fr boost
 
 export NDK_VERSION=23.1.7779620
 
