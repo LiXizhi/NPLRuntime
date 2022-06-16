@@ -195,17 +195,18 @@ PARAMS="--with-thread --with-date_time --with-filesystem --with-system --with-ch
 ./b2 install ${PARAMS} > /dev/null 2>&1
 
 export BOOST_ROOT=${BOOST_ROOT_DIR}
-mkdir -p ${CURRENT_DIRECTORY}/embed-resource-build
-cd ${CURRENT_DIRECTORY}/embed-resource-build
-cat > CMakeLists.txt <<EOF
+cp -fr ${CURRENT_DIRECTORY}/NPLRuntime/externals/EmbedResource ${CURRENT_DIRECTORY}/EmbedResource
+cat > ${CURRENT_DIRECTORY}/EmbedResource/CMakeLists.txt <<EOF
     include(${CURRENT_DIRECTORY}/NPLRuntime/cmake/ConfigBoost.cmake)
     find_package(Boost COMPONENTS filesystem REQUIRED)
     include_directories("\${Boost_INCLUDE_DIRS}")
     add_executable(embed-resource  embedresource.cpp embedresource.h README.md)
     target_link_libraries(embed-resource \${Boost_FILESYSTEM_LIBRARY} \${Boost_SYSTEM_LIBRARY})
 EOF
-cmake --build .
-sudo cp embed-resource /usr/bin
+mkdir -p ${CURRENT_DIRECTORY}/EmbedResource/build
+cmake -B ${CURRENT_DIRECTORY}/EmbedResource/build -S ${CURRENT_DIRECTORY}/EmbedResource 
+cmake --build ${CURRENT_DIRECTORY}/EmbedResource/build
+sudo cp ${CURRENT_DIRECTORY}/EmbedResource/build/embed-resource /usr/bin
 ll /usr/bin/embed-resource
 
 cd ${CURRENT_DIRECTORY}/NPLRuntime/Platform/AndroidStudio
