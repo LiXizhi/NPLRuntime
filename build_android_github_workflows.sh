@@ -229,6 +229,21 @@ PARAMS="--with-thread --with-date_time --with-filesystem --with-system --with-ch
 export BOOST_ROOT=${BOOST_ROOT_DIR}
 cd ${CURRENT_DIRECTORY}/NPLRuntime/Platform/AndroidStudio
 
+cat > gradle.properties <<EOF
+import os ;
+PROP_APP_ABI=armeabi-v7a
+PROP_BUILD_TYPE=cmake
+PROP_COMPILE_SDK_VERSION=31
+PROP_MIN_SDK_VERSION=28
+PROP_TARGET_SDK_VERSION=31
+RELEASE_KEY_ALIAS=temp
+RELEASE_KEY_PASSWORD=123456
+RELEASE_STORE_FILE=key/temp.keystore
+RELEASE_STORE_PASSWORD=123456
+org.gradle.jvmargs=-Xmx2048M -Dkotlin.daemon.jvm.options\="-Xmx2048M"
+android.enableResourceOptimizations=false
+android.useAndroidX=true
+EOF
 
 bash gradlew assembleRelease
 #mkdir -p ./bin/linux
