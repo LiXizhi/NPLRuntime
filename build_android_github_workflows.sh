@@ -5,7 +5,7 @@ if [ ! -d boost ]; then
     if [ ! -f boost_1_78_0.tar.bz2 ]; then
         wget -q https://boostorg.jfrog.io/artifactory/main/release/1.78.0/source/boost_1_78_0.tar.bz2 --no-check-certificate  -O boost_1_78_0.tar.bz2
     fi
-	tar --bzip2 -f boost_1_78_0.tar.bz2
+	tar --bzip2 -xf boost_1_78_0.tar.bz2
     mv boost_1_78_0 boost
     cd boost
     ./bootstrap.sh --with-libraries="thread,date_time,filesystem,system,chrono,serialization,iostreams,regex,log"
