@@ -1,5 +1,24 @@
 #!/bin/bash
 
+cp -fr ${CURRENT_DIRECTORY}/NPLRuntime/externals/EmbedResource ${CURRENT_DIRECTORY}/EmbedResource
+cat > ${CURRENT_DIRECTORY}/EmbedResource/CMakeLists.txt <<EOF
+cmake_minimum_required(VERSION 3.14)
+project(embed-resource)
+include(${CURRENT_DIRECTORY}/NPLRuntime/cmake/ConfigBoost.cmake)
+find_package(Boost COMPONENTS filesystem REQUIRED)
+include_directories("\${Boost_INCLUDE_DIRS}")
+add_executable(embed-resource  embedresource.cpp embedresource.h README.md)
+target_link_libraries(embed-resource \${Boost_FILESYSTEM_LIBRARY} \${Boost_SYSTEM_LIBRARY})
+EOF
+mkdir -p ${CURRENT_DIRECTORY}/EmbedResource/build
+cmake -B ${CURRENT_DIRECTORY}/EmbedResource/build -S ${CURRENT_DIRECTORY}/EmbedResource 
+cmake --build ${CURRENT_DIRECTORY}/EmbedResource/build
+sudo cp ${CURRENT_DIRECTORY}/EmbedResource/build/embed-resource /usr/bin
+ll /usr/bin/embed-resource
+if [ $? -ne 0 ]; then
+    exit 1
+fi
+
 
 export NDK_VERSION=23.1.7779620
 
@@ -195,22 +214,6 @@ PARAMS="--with-thread --with-date_time --with-filesystem --with-system --with-ch
 ./b2 install ${PARAMS} > /dev/null 2>&1
 
 export BOOST_ROOT=${BOOST_ROOT_DIR}
-cp -fr ${CURRENT_DIRECTORY}/NPLRuntime/externals/EmbedResource ${CURRENT_DIRECTORY}/EmbedResource
-cat > ${CURRENT_DIRECTORY}/EmbedResource/CMakeLists.txt <<EOF
-cmake_minimum_required(VERSION 3.14)
-project(embed-resource)
-include(${CURRENT_DIRECTORY}/NPLRuntime/cmake/ConfigBoost.cmake)
-find_package(Boost COMPONENTS filesystem REQUIRED)
-include_directories("\${Boost_INCLUDE_DIRS}")
-add_executable(embed-resource  embedresource.cpp embedresource.h README.md)
-target_link_libraries(embed-resource \${Boost_FILESYSTEM_LIBRARY} \${Boost_SYSTEM_LIBRARY})
-EOF
-mkdir -p ${CURRENT_DIRECTORY}/EmbedResource/build
-cmake -B ${CURRENT_DIRECTORY}/EmbedResource/build -S ${CURRENT_DIRECTORY}/EmbedResource 
-cmake --build ${CURRENT_DIRECTORY}/EmbedResource/build
-sudo cp ${CURRENT_DIRECTORY}/EmbedResource/build/embed-resource /usr/bin
-ll /usr/bin/embed-resource
-
 cd ${CURRENT_DIRECTORY}/NPLRuntime/Platform/AndroidStudio
 
 
