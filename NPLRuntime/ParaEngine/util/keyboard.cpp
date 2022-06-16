@@ -15,7 +15,7 @@ int _kbhit()
 	return 0;
 }
 
-#elif defined(GITHUB_WORKFLOWS)
+#elif defined(GITHUB_WORKFLOW)
 int _kbhit()
 {
 	return 0;
