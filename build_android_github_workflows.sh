@@ -1,5 +1,6 @@
 #!/bin/bash
 
+CURRENT_DIRECTORY=`pwd`
 cp -fr ${CURRENT_DIRECTORY}/NPLRuntime/externals/EmbedResource ${CURRENT_DIRECTORY}/EmbedResource
 cat > ${CURRENT_DIRECTORY}/EmbedResource/CMakeLists.txt <<EOF
 cmake_minimum_required(VERSION 3.14)
@@ -14,7 +15,7 @@ mkdir -p ${CURRENT_DIRECTORY}/EmbedResource/build
 cmake -B ${CURRENT_DIRECTORY}/EmbedResource/build -S ${CURRENT_DIRECTORY}/EmbedResource 
 cmake --build ${CURRENT_DIRECTORY}/EmbedResource/build
 sudo cp ${CURRENT_DIRECTORY}/EmbedResource/build/embed-resource /usr/bin
-ll /usr/bin/embed-resource
+ls -l /usr/bin/embed-resource
 if [ $? -ne 0 ]; then
     exit 1
 fi
@@ -61,7 +62,6 @@ if [[ "$GITHUB_WORKFLOW" != "" ]]; then
     export NDK_ROOT=${SDK_ROOT}/ndk/${NDK_VERSION}
 fi
 
-CURRENT_DIRECTORY=`pwd`
 export LIB_ROOT_DIR=${CURRENT_DIRECTORY}/libs
 export INSTALL_DIR=${LIB_ROOT_DIR}/android
 export SOURCE_DIR=${LIB_ROOT_DIR}/sources
