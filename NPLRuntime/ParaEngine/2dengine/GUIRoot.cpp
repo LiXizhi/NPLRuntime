@@ -1634,9 +1634,11 @@ void CGUIRoot::SetRenderImageCursor(bool bEnable)
 HRESULT CGUIRoot::OneTimeGUIInit()
 {
 	CGUIEvent::StaticInit();
-	if (m_pKeyboard == 0)
+
+    if (m_pKeyboard == 0)
 		m_pKeyboard = new CGUIKeyboardVirtual();
-	if (m_pMouse == 0)
+
+    if (m_pMouse == 0)
 		m_pMouse = new CGUIMouseVirtual();
 
 	if (CGlobals::GetAssetManager()->GetFont("sys") == NULL)
@@ -2019,8 +2021,6 @@ void ParaEngine::CGUIRoot::TranslateTouchEvent(const TouchEvent &touch)
 
 		if (touch.m_nTouchType == TouchEvent::TouchEvent_POINTER_UP)
 		{
-			// OUTPUT_LOG("touch up event: %d %d\n", touch.m_nTouchType, pTouchSession->GetTag());
-
 			if (pTouchSession->GetTag() == 1)
 			{
 				Vector2 mousePos((float)mouse_x, (float)mouse_y);
