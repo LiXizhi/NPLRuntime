@@ -153,8 +153,6 @@ find_package( Boost 1.61 REQUIRED COMPONENTS thread date_time filesystem system 
 #ZLIB
 ################################
 if(WIN32)
-    message("===============================Zlib========================================")
-
 	add_subdirectory (${SERVER_SOURCE_DIR}zlib-1.2.11 ${CLIENT_BINARY_DIR}/zlib-1.2.11)
 	set(ZLIB_FOUND 1)
 	set(ZLIB_LIBRARY zlib)

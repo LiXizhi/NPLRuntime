@@ -84,7 +84,7 @@ OPTION( ASSIMP_NO_EXPORT
 )
 OPTION( ASSIMP_BUILD_ZLIB
   "Build your own zlib"
-  OFF
+  ON
 )
 OPTION( ASSIMP_BUILD_ASSIMP_TOOLS
   "If the supplementary tools for Assimp are built in addition to the library."
@@ -435,7 +435,6 @@ ENDIF( SYSTEM_IRRXML )
 
 # Search for external dependencies, and build them from source if not found
 # Search for zlib
-message("================================" ${HUNTER_ENABLED} ${ASSIMP_BUILD_ZLIB} ${ZLIB_FOUND})
 IF(HUNTER_ENABLED)
   hunter_add_package(ZLIB)
   find_package(ZLIB CONFIG REQUIRED)
