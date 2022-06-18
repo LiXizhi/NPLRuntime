@@ -170,7 +170,6 @@ RenderWindowOSX::RenderWindowOSX(const int width, const int height)
     [NSApplication sharedApplication];
     
     // Menu
-    //*
     NSString* appName = [NSString stringWithFormat:@"%s", "Paracraft"];
     id menubar = [[NSMenu alloc] initWithTitle:appName];
     id appMenuItem = [NSMenuItem new];
@@ -185,7 +184,6 @@ RenderWindowOSX::RenderWindowOSX(const int width, const int height)
     [appMenuItem setSubmenu:appMenu];
     
     [NSApp setMainMenu:menubar];
-    //*/
     
     //NSMenu* rootMenu = [NSApp mainMenu];
     //[rootMenu removeItemAtIndex:0];
@@ -521,32 +519,32 @@ void RenderWindowOSX::PollEvents()
     NSEvent *event;
     auto untilDate = [NSDate distantPast];
     
-    do
-    {
+    do {
         event = [NSApp nextEventMatchingMask:NSEventMaskAny
-                        untilDate:untilDate
-                           inMode:NSDefaultRunLoopMode
-                          dequeue:YES];
+                       untilDate:untilDate
+                       inMode:NSDefaultRunLoopMode
+                       dequeue:YES];
         if (!event) {
             break;
         }
+
         // fix for retina screen
         if (CGlobals::GetApp()->GetAppState() == PEAppState_Ready)
         {
             double x, y;
             GetScaleFactor(x, y);
+
             if (currentBackingScaleFactor != x) {
                 currentBackingScaleFactor = x;
 
                 CGUIRoot::GetInstance()->SetUIScale(x, y, true, true, false);
             }
         }
-        
+
         [NSApp sendEvent:event];
         [NSApp updateWindows];
         [event release];
-        
-    }while(event);
+    } while(event);
 }
 
 bool RenderWindowOSX::OnShouldClose()
@@ -562,18 +560,10 @@ void RenderWindowOSX::OnMouseButton(ParaEngine::EMouseButton button, ParaEngine:
     {
         return;
     }
-    
-    if(button == EMouseButton::RIGHT)
-    {
-        if(state == EKeyState::PRESS)
-        {
-            //NSLog(@"OnRightMouse PRESS: %d,%d",x,y);
-        }else{
-            //NSLog(@"OnRightMouse RELEASE: %d,%d",x,y);
-        }
-    }
-    
-    CGUIRoot::GetInstance()->GetMouse()->PushMouseEvent(DeviceMouseEventPtr(new DeviceMouseButtonEvent(button,state,x,y)));
+
+    CGUIRoot::GetInstance()
+        ->GetMouse()
+        ->PushMouseEvent(DeviceMouseEventPtr(new DeviceMouseButtonEvent(button,state,x,y)));
 }
 
 void RenderWindowOSX::OnChar(unsigned int character)
@@ -582,7 +572,9 @@ void RenderWindowOSX::OnChar(unsigned int character)
     {
         return;
     }
+
     auto pGUI = CGUIRoot::GetInstance()->GetUIKeyFocus();
+
     if (pGUI)
     {
         std::wstring s;
