@@ -36,9 +36,8 @@ namespace ParaEngine
 		/** true to lock the mouse at its current location*/
 		virtual void SetLock(bool bLock);;
 
-
 		/** push a standard windows mouse event to the buffer for processing in the next frame move. */
-		virtual void PushMouseEvent(const DeviceMouseEventPtr& msg);
+		virtual void PushMouseEvent(const DeviceMouseEventPtr &msg);
 
 		virtual void SetCapture(CGUIBase* obj);
 		virtual void ReleaseCapture(CGUIBase* obj);
@@ -67,27 +66,26 @@ namespace ParaEngine
 		/** check if there is any unprocessed buffered window mouse message. we call this function before Update() to check if there is any mouse event*/
 		virtual int GetBufferedMessageCount();;
 	protected:
-
-		bool	m_bLock;
+		bool m_bLock;
 		/** whether to use window message for buffered mouse event. default to true, if false, directInput will be used. */
-		bool	m_bUseWindowMessage;
+		bool m_bUseWindowMessage;
 		/** swap left/right button.*/
-		bool	m_bSwapMouseButton;
+		bool m_bSwapMouseButton;
 		bool m_bLastMouseReset;
 	public:
-		DeviceMouseEventPtr	        m_didod[SAMPLE_BUFFER_SIZE];  // Receives buffered data 
-		uint32_t			m_dwElements;
+		DeviceMouseEventPtr m_didod[SAMPLE_BUFFER_SIZE];  // Receives buffered data
+		uint32_t m_dwElements;
 
-		DeviceMouseState		m_dims2;   // DirectInput Mouse state buffer 
-		DeviceMouseState		m_lastMouseState; 
-		DeviceMouseState		m_curMouseState;
-		int					m_x, m_y;	//coordinate of the current mouse position
+		DeviceMouseState m_dims2; // DirectInput Mouse state buffer
+		DeviceMouseState m_lastMouseState;
+		DeviceMouseState m_curMouseState;
+		int m_x, m_y; //coordinate of the current mouse position
 
 		DeviceMouseEventPtr	m_buffered_mouse_msgs[SAMPLE_BUFFER_SIZE / 2];
-		int					m_buffered_mouse_msgs_count;
-		
-		bool  m_isTouchInputting;
-		
-		CGUIBase *		m_objCaptured;
+		int m_buffered_mouse_msgs_count;
+
+		bool m_isTouchInputting;
+
+		CGUIBase * m_objCaptured;
 	};
 }

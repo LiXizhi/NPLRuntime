@@ -200,10 +200,12 @@ static const NSRange kEmptyRange = { NSNotFound, 0 };
 - (void)keyDown:(NSEvent *)event
 {
     auto pRenderWindow = [RenderView getRenderWindow];
+
     if (pRenderWindow)
     {
         pRenderWindow->OnKey(ParaEngine::EKeyState::PRESS, event);
     }
+
     [self interpretKeyEvents: @[event]];
 }
 

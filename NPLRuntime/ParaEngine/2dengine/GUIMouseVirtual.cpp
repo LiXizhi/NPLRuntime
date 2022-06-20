@@ -14,7 +14,16 @@
 using namespace ParaEngine;
 
 ParaEngine::CGUIMouseVirtual::CGUIMouseVirtual()
-	:m_bLock(false), m_bUseWindowMessage(true), m_isTouchInputting(false), m_bLastMouseReset(false), m_buffered_mouse_msgs_count(0), m_bSwapMouseButton(false), m_x(0), m_y(0), m_objCaptured(NULL), m_dwElements(0)
+	:m_bLock(false),
+    m_bUseWindowMessage(true),
+    m_isTouchInputting(false),
+    m_bLastMouseReset(false),
+    m_buffered_mouse_msgs_count(0),
+    m_bSwapMouseButton(false),
+    m_x(0),
+    m_y(0),
+    m_objCaptured(NULL),
+    m_dwElements(0)
 {
 	Reset();
 }
@@ -24,8 +33,7 @@ ParaEngine::CGUIMouseVirtual::~CGUIMouseVirtual()
 
 }
 
-
-void CGUIMouseVirtual::PushMouseEvent(const DeviceMouseEventPtr& e)
+void CGUIMouseVirtual::PushMouseEvent(const DeviceMouseEventPtr &e)
 {
 	if (m_buffered_mouse_msgs_count < SAMPLE_BUFFER_SIZE / 2)
     {
@@ -43,6 +51,7 @@ void CGUIMouseVirtual::PushMouseEvent(const DeviceMouseEventPtr& e)
                 }
             }
         }
+
 		m_buffered_mouse_msgs[m_buffered_mouse_msgs_count] = e;
 		++m_buffered_mouse_msgs_count;
 	}
@@ -51,8 +60,6 @@ void CGUIMouseVirtual::PushMouseEvent(const DeviceMouseEventPtr& e)
 		OUTPUT_LOG("PushMouseEvent: failed because buffer is full. msg: %s \n", e->ToString().c_str());
 	}
 }
-
-
 
 bool ParaEngine::CGUIMouseVirtual::IsLocked()
 {
@@ -70,11 +77,11 @@ bool ParaEngine::CGUIMouseVirtual::IsButtonDown(const EMouseButton button)
 	{
 		if (button == EMouseButton::LEFT) {
 			return m_curMouseState.buttons[(int)EMouseButton::RIGHT] == EKeyState::PRESS; 
-		}else if(button == EMouseButton::RIGHT)
-		{
+		} else if(button == EMouseButton::RIGHT) {
 			return m_curMouseState.buttons[(int)EMouseButton::LEFT] == EKeyState::PRESS;
 		}
 	}
+
 	return m_curMouseState.buttons[(int)button] == EKeyState::PRESS;
 }
 
@@ -95,9 +102,6 @@ int ParaEngine::CGUIMouseVirtual::GetMouseWheelDeltaSteps()
 
 void ParaEngine::CGUIMouseVirtual::Reset()
 {
-	::memset(&m_dims2, 0, sizeof(m_dims2));
-	::memset(&m_curMouseState, 0, sizeof(m_curMouseState));
-	::memset(&m_lastMouseState, 0, sizeof(m_lastMouseState));
 	m_dwElements = 0;
 }
 
@@ -111,6 +115,7 @@ void CGUIMouseVirtual::SetCapture(CGUIBase* obj)
 	CGUIRoot::GetInstance()->EnableClipCursor(true);
 	m_objCaptured = obj;
 }
+
 void CGUIMouseVirtual::ReleaseCapture(CGUIBase* obj)
 {
 	if (m_objCaptured == obj) {
@@ -118,6 +123,7 @@ void CGUIMouseVirtual::ReleaseCapture(CGUIBase* obj)
 		m_objCaptured = NULL;
 	}
 }
+
 void CGUIMouseVirtual::ReleaseCapture()
 {
 	if (m_objCaptured)
@@ -149,11 +155,13 @@ bool ParaEngine::CGUIMouseVirtual::ReadBufferedData()
 	m_dwElements = 0;
 	int nFirstMouseMoveIndex = -1;
 	int lastX = m_curMouseState.x, lastY = m_curMouseState.y;
-	//translating windows message into DirectMouse-like events, in order to maintain consistency of the interface
+
+    //translating windows message into DirectMouse-like events, in order to maintain consistency of the interface
 	for (int a = 0; a < m_buffered_mouse_msgs_count; a++)
 	{
-		auto& e = m_buffered_mouse_msgs[a];
-		switch (e->GetEventType())
+		auto &e = m_buffered_mouse_msgs[a];
+
+        switch (e->GetEventType())
 		{
 			case EMouseEventType::Button:
 			{
@@ -161,7 +169,8 @@ bool ParaEngine::CGUIMouseVirtual::ReadBufferedData()
 				m_curMouseState.buttons[(int)buttonEvent->GetButton()] = buttonEvent->GetKeyState();
 				m_curMouseState.x = buttonEvent->GetX(); m_curMouseState.y = buttonEvent->GetY();
 				ResetLastMouseState();
-				if (nFirstMouseMoveIndex > 0) {
+
+                if (nFirstMouseMoveIndex > 0) {
 					// this will disable merging mouse move event, if there is any button event in the middle.
 					nFirstMouseMoveIndex = -1;
 				}
@@ -197,12 +206,12 @@ bool ParaEngine::CGUIMouseVirtual::ReadBufferedData()
 		if (e->GetEventType() == EMouseEventType::Move && nFirstMouseMoveIndex>=0 && nFirstMouseMoveIndex != m_dwElements) {
 			// merge with previous mouse move event
 			m_didod[nFirstMouseMoveIndex] = e;
-		}
-		else {
+		} else {
 			m_didod[m_dwElements] = e;
 			m_dwElements++;
 		}
 	}
+
 	m_buffered_mouse_msgs_count = 0;
 	return S_OK;
 }
@@ -217,9 +226,9 @@ bool ParaEngine::CGUIMouseVirtual::ReadImmediateData()
 	{
 		m_dims2.buttons[i] = m_curMouseState.buttons[i];
 	}
+
 	memcpy(&m_lastMouseState, &m_curMouseState, sizeof(m_curMouseState));
 
-	// OUTPUT_LOG("dx %d,dy %d,dz %d: %d %d %d\n", m_dims2.lX, m_dims2.lY, m_dims2.lZ, m_dims2.rgbButtons[0], m_dims2.rgbButtons[1], m_dims2.rgbButtons[2]);
 	return true;
 }
 
@@ -253,7 +262,8 @@ void ParaEngine::CGUIMouseVirtual::SetMousePosition(int x, int y)
 	// m_curMouseState needs to be translated from UI space to device space
 	float fScaleX = 1.f, fScaleY = 1.f;
 	CGlobals::GetGUI()->GetUIScale(&fScaleX, &fScaleY);
-	if (x>-500)
+
+    if (x>-500)
 		m_curMouseState.x = (fScaleX == 1.f) ? x : (int32)(x*fScaleX);
 	if (y>-500)
 		m_curMouseState.y = (fScaleY == 1.f) ? y : (int32)(y*fScaleY);
