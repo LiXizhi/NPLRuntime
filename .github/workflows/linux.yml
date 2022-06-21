@@ -2,8 +2,8 @@
 name: Linux
 
 on:
-  #push:
-    #branches: [ cp_old ]
+  push:
+    branches: [ cp_old ]
   workflow_dispatch:
 
 env:

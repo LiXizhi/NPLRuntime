@@ -3,9 +3,9 @@
 name: Andorid
 
 on:
+  push:
+    branches: [ cp_old ]
   workflow_dispatch:
-  #push:
-    #branches: [ cp_old ]
 
 env:
   BUILD_TYPE: Release
