@@ -1,5 +1,5 @@
 
-name: Linux
+name: MacOS
 
 on:
   push:
@@ -28,7 +28,7 @@ jobs:
       id: cache_boost_1_78_0
       with:
         path: boost
-        key: linux_boost_1
+        key: macos_boost_1
 
     # 编译NPLRuntime
     - name: build NPLRuntime
