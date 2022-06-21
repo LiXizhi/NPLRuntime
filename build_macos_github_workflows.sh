@@ -20,11 +20,12 @@ CURRENT_DIRECTORY=`pwd`
 mkdir -p ./bin/macos
 cd bin/macos/
 
-cmake -DCMAKE_BUILD_TYPE=Release ../../NPLRuntime/ -DBOOST_ROOT=${CURRENT_DIRECTORY}/boost -DGITHUB_WORKFLOW=TRUE -DNPLRUNTIME_RENDERER=NULL -DMAC_SERVER=TRUE
+cmake -G "Xcode" -DCMAKE_BUILD_TYPE=Release ../../NPLRuntime/ -DBOOST_ROOT=${CURRENT_DIRECTORY}/boost -DGITHUB_WORKFLOW=TRUE -DNPLRUNTIME_RENDERER=NULL -DMAC_SERVER=TRUE
 if [ $? -ne 0 ]; then
     exit 1
 fi
-make --jobs=1
+#make --jobs=1
+cmake --build .
 if [ $? -ne 0 ]; then
     exit 1
 fi
