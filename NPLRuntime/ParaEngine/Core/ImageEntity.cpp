@@ -100,7 +100,7 @@ bool ParaEngine::ImageEntity::LoadFromRawData(const unsigned char * data, size_t
 bool ParaEngine::ImageEntity::SaveToFile(const std::string &filename, bool isToRGB /*= true*/)
 {
 #ifdef USE_OPENGL_RENDERER
-	std::string filepath = ((filename[0] == '/') || (filename[0] == '\\')) ? filename : (CParaFile::GetWritablePath() + filename);
+	std::string filepath = CParaFile::GetWritablePath() + filename;
 	CParaFile::CreateDirectory(filepath.c_str());
 	GLImage image;
 	image.initWithRawData(getData(), getDataLen(), getWidth(), getHeight(), getBitPerPixel());

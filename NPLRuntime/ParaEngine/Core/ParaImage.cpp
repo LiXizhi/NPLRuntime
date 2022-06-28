@@ -1003,12 +1003,12 @@ namespace ParaEngine
             bool hasAlpha = true;
             if (!isToRGB && hasAlpha)
             {
-                png_set_IHDR(png_ptr, info_ptr, this->_width, this->_height, 8, PNG_COLOR_TYPE_RGB_ALPHA,
+                png_set_IHDR(png_ptr, info_ptr, _width, _height, 8, PNG_COLOR_TYPE_RGB_ALPHA,
                              PNG_INTERLACE_NONE, PNG_COMPRESSION_TYPE_BASE, PNG_FILTER_TYPE_BASE);
             }
             else
             {
-                png_set_IHDR(png_ptr, info_ptr, this->_width, this->_height, 8, PNG_COLOR_TYPE_RGB,
+                png_set_IHDR(png_ptr, info_ptr, _width, _height, 8, PNG_COLOR_TYPE_RGB,
                              PNG_INTERLACE_NONE, PNG_COMPRESSION_TYPE_BASE, PNG_FILTER_TYPE_BASE);
             }
             
@@ -1027,8 +1027,8 @@ namespace ParaEngine
                 break;
             }
             
-            int _width = this->_width;
-            int _height = this->_height;
+            int _width = _width;
+            int _height = _height;
             
             if (!hasAlpha)
             {
