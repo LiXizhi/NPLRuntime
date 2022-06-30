@@ -19,6 +19,8 @@ elseif (MAC_SERVER)
 	add_subdirectory(Linux)	
 elseif (APPLE)
     add_subdirectory(OSX)
+elseif (LINUX)
+	add_subdirectory(SDL)
 else ()
 	#Linux
     add_subdirectory(Linux)

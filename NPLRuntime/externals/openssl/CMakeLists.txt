@@ -30,9 +30,9 @@ elseif(WIN32)
     target_link_libraries(para_libcrypto INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/prebuilt/win32/${SSL_DASM_FLAGS}/libcrypto.lib)
 elseif(LINUX)
 	target_include_directories(para_libssl INTERFACE include/linux)
-    target_link_libraries(para_libssl INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/prebuilt/linux/64-bit/libssl.lib)
+    target_link_libraries(para_libssl INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/prebuilt/linux/64-bit/libssl.a)
     target_include_directories(para_libcrypto INTERFACE include/linux)
-    target_link_libraries(para_libcrypto INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/prebuilt/linux/64-bit/libcrypto.lib)
+    target_link_libraries(para_libcrypto INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/prebuilt/linux/64-bit/libcrypto.a)
 endif()
 
 
