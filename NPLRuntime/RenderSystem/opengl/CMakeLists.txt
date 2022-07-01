@@ -1,6 +1,5 @@
 include(${PROJECT_SOURCE_DIR}/cmake/ucm.cmake)
 
-
 if(ANDROID)
     set(LIBGL GLESv2 EGL)
     set(PLATFORM_SRC gl_android_spec.c gl_android_spec.h)
@@ -23,7 +22,6 @@ add_library(RenderSystemOpenGL
     OpenGL.h
     ${PLATFORM_SRC}
 )
-
 
 
 target_include_directories(RenderSystemOpenGL PUBLIC 

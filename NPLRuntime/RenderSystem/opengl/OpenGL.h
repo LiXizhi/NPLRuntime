@@ -14,6 +14,8 @@ extern "C" {
 #elif TARGET_OS_IPHONE
 #include "gl_ios_spec.h"
 #endif
+#elif USE_OPENGL_RENDERER
+#include "glad/glad.h"
 #endif
 extern int loadGL();
 	
