@@ -3,6 +3,9 @@ package com.tatfook.paracraft.utils;
 import java.util.Locale;
 
 import android.content.Context;
+import android.content.pm.ApplicationInfo;
+import android.content.pm.PackageInfo;
+import android.content.pm.PackageManager;
 import android.provider.Settings;
 import android.telephony.TelephonyManager;
 import android.util.Log;
@@ -232,58 +235,21 @@ public class DeviceUtil {
         return obj.toString();
     }
 
-    public static String getDeviceAllInfo(Context context) {
-
-        return "\n1. IMEI: " + getIMEI(context)
-
-                + "\n2. 设备宽度: " + getDeviceWidth(context)
-
-                + "\n3. 设备高度: " + getDeviceHeight(context)
-
-                + "\n4. 是否有内置SD卡: " + SDCardUtil.isSDCardMount()
-
-                + "\n5. RAM 信息: " + SDCardUtil.getRAMInfo(context)
-
-                + "\n6. 内部存储信息 " + SDCardUtil.getStorageInfo(context, 0)
-
-                + "\n7. SD卡 信息: " + SDCardUtil.getStorageInfo(context, 1)
-
-                + "\n10. 系统默认语言: " + getDeviceDefaultLanguage()
-
-                + "\n11. 硬件序列号(设备名): " + android.os.Build.SERIAL
-
-                + "\n12. 手机型号: " + android.os.Build.MODEL
-
-                + "\n13. 生产厂商: " + android.os.Build.MANUFACTURER
-
-                + "\n14. 手机Fingerprint标识: " + android.os.Build.FINGERPRINT
-
-                + "\n15. Android 版本: " + android.os.Build.VERSION.RELEASE
-
-                + "\n16. Android SDK版本: " + android.os.Build.VERSION.SDK_INT
-
-                + "\n17. 安全patch 时间: " + android.os.Build.VERSION.SECURITY_PATCH
-
-                + "\n19. 版本类型: " + android.os.Build.TYPE
-
-                + "\n20. 用户名: " + android.os.Build.USER
-
-                + "\n21. 产品名: " + android.os.Build.PRODUCT
-
-                + "\n22. ID: " + android.os.Build.ID
-
-                + "\n23. 显示ID: " + android.os.Build.DISPLAY
-
-                + "\n24. 硬件名: " + android.os.Build.HARDWARE
-
-                + "\n25. 产品名: " + android.os.Build.DEVICE
-
-                + "\n26. Bootloader: " + android.os.Build.BOOTLOADER
-
-                + "\n27. 主板名: " + android.os.Build.BOARD
-
-                + "\n28. CodeName: " + android.os.Build.VERSION.CODENAME
-                + "\n29. 语言支持: " + getDeviceSupportLanguage();
-
+    public static String getAppInfoJsonStr(Context context) {
+        JSONObject obj = new JSONObject();
+        String pkgName = context.getPackageName();
+        PackageManager manager = context.getPackageManager();
+        try {
+            PackageInfo info = manager.getPackageInfo(pkgName, 0);
+            ApplicationInfo info2 = manager.getApplicationInfo(pkgName, 0);
+            Log.d("TAG", "自身包名为："+info);
+            obj.put("bundleId",info.packageName);
+            obj.put("versionName",info.versionName);
+            obj.put("buildNumber",info.getLongVersionCode());
+            obj.put("appName",info2.loadLabel(manager).toString());
+        } catch (PackageManager.NameNotFoundException | JSONException e) {
+            e.printStackTrace();
+        }
+        return obj.toString();
     }
 }

@@ -17,6 +17,8 @@ public class PlatformBridge {
         }
         if(key.equals("getDeviceInfo")){
             ret = DeviceUtil.getDeviceInfoJsonStr(act);
+        }else if(key.equals("getAppInfo")){
+            ret = DeviceUtil.getAppInfoJsonStr(act);
         }
         return ret;
     }
