@@ -2,18 +2,28 @@ include(${PROJECT_SOURCE_DIR}/cmake/ucm.cmake)
 
 ucm_add_dirs(src TO app_src RECURSIVE)
 
-add_executable(ParaCraft ${app_src})
+#set(VCPKG_TARGET_TRIPLET x64-windows-static)
+#set(CMAKE_TOOLCHAIN_FILE "$ENV{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake" CACHE STRING "Vcpkg toolchain file")
 
-target_include_directories(ParaCraft PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
+add_executable(ParaCraftSDL2 ${app_src})
 
-target_link_libraries(ParaCraft PUBLIC RenderSystemOpenGL ParaEngine)
+target_include_directories(ParaCraftSDL2 PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
+target_link_libraries(ParaCraftSDL2 PUBLIC RenderSystemOpenGL ParaEngine)
 
-target_compile_definitions(ParaCraft PUBLIC PLATFORM_LINUX)
-target_compile_definitions(ParaCraft PUBLIC LINUX)
+if (MSVC) 
+	find_package(SDL2 CONFIG REQUIRED PATHS $ENV{VCPKG_ROOT}/installed/x64-windows-static)
+else()
+	find_package(SDL2 CONFIG REQUIRED PATHS $ENV{VCPKG_ROOT}/installed/x64-linux)
+endif()
+target_link_libraries(ParaCraftSDL2 PRIVATE SDL2::SDL2 SDL2::SDL2main SDL2::SDL2-static)
+
+target_compile_definitions(ParaCraftSDL2 PUBLIC PLATFORM_LINUX)
+target_compile_definitions(ParaCraftSDL2 PUBLIC LINUX)
+target_compile_definitions(ParaCraftSDL2 PUBLIC PLATFORM_SDL2)
 
 ADD_CUSTOM_COMMAND(
-	TARGET ParaCraft
+	TARGET ParaCraftSDL2
 	POST_BUILD
 	COMMAND ${CMAKE_COMMAND} -E make_directory ${OUTPUT_BIN_DIR}
-	COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:ParaCraft> ${OUTPUT_BIN_DIR}
+	COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:ParaCraftSDL2> ${OUTPUT_BIN_DIR}
 )

@@ -69,7 +69,8 @@ const std::string& ParaEngine::CParaFileUtils::GetWritablePath()
 const std::string& ParaEngine::CParaFileUtils::GetInitialDirectory()
 {
 	fs::path workingDir = fs::initial_path();
-	return workingDir.string();
+	static std::string ret = workingDir.string();
+	return ret;
 }
 
 bool ParaEngine::CParaFileUtils::Exists(const std::string& filename)
@@ -174,7 +175,7 @@ int ParaEngine::CParaFileUtils::DeleteDirectory(const std::string& filename)
 	}
 }
 
-std::string ParaEngine::CParaFileUtils::GetFullPathForFilename(const std::string &filename)
+std::string ParaEngine::CParaFileUtils::GetFullPathForFilename(const std::string& filename)
 {
 	fs::path filepath(filename);
 	fs::path abs_path = fs::absolute(filepath);
