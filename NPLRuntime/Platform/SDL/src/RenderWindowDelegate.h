@@ -17,7 +17,7 @@ namespace ParaEngine
 		virtual void OnKey(EVirtualKey key, EKeyState state) override;
 
 		virtual void OnChar(unsigned int character) override;
-		virtual void RenderWindowDelegate::OnChar(std::string text) override;
+		virtual void OnChar(std::string text) override;
 
 		virtual void OnSize(int w, int h) override;
 
