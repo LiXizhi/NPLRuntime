@@ -16,11 +16,13 @@
 
 using namespace ParaEngine;
 
+#ifdef _WIN32
 CParaFileUtils* CParaFileUtils::GetInstance()
 {
 	static CParaFileUtils win32Impl;
 	return &win32Impl;
 }
+#endif
 
 int main(int argc, char* argv[])
 {

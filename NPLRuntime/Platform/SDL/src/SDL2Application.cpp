@@ -195,14 +195,14 @@ namespace ParaEngine {
 
 		{
 			// remove the read-only file attribute
-			DWORD dwAttrs = ::GetFileAttributes(sFileName.c_str());
-			if (dwAttrs != INVALID_FILE_ATTRIBUTES)
-			{
-				if ((dwAttrs & FILE_ATTRIBUTE_READONLY))
-				{
-					::SetFileAttributes(sFileName.c_str(), dwAttrs & (~FILE_ATTRIBUTE_READONLY));
-				}
-			}
+			//DWORD dwAttrs = ::GetFileAttributes(sFileName.c_str());
+			//if (dwAttrs != INVALID_FILE_ATTRIBUTES)
+			//{
+				//if ((dwAttrs & FILE_ATTRIBUTE_READONLY))
+				//{
+					//::SetFileAttributes(sFileName.c_str(), dwAttrs & (~FILE_ATTRIBUTE_READONLY));
+				//}
+			//}
 		}
 
 		CParaFile file;

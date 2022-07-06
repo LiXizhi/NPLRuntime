@@ -57,7 +57,7 @@ namespace ParaEngine
 		static std::unordered_map<SDL_Window*, RenderWindowSDL2*> g_WindowMap;
 	private:
 		void InitInput();
-		void ProcessInput(const MSG& msg);
+		void ProcessInput();
 		void CheckFocus();
 		// Key State.
 		EKeyState m_MouseState[(uint32_t)EMouseButton::COUNT];

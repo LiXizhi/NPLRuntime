@@ -13,7 +13,7 @@ target_link_libraries(ParaCraftSDL2 PUBLIC RenderSystemOpenGL ParaEngine)
 if (MSVC) 
 	find_package(SDL2 CONFIG REQUIRED PATHS $ENV{VCPKG_ROOT}/installed/x64-windows-static)
 else()
-	find_package(SDL2 CONFIG REQUIRED PATHS $ENV{VCPKG_ROOT}/installed/x64-linux)
+	find_package(SDL2 CONFIG REQUIRED PATHS /root/program/SDL-2.0.22)
 endif()
 target_link_libraries(ParaCraftSDL2 PRIVATE SDL2::SDL2 SDL2::SDL2main SDL2::SDL2-static)
 

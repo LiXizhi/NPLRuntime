@@ -14,7 +14,7 @@ namespace ParaEngine {
 		}
 	}
 
-	static EVirtualKey SDL2VirtualKeyToParaVK(unsigned long vk)
+	EVirtualKey SDL2VirtualKeyToParaVK(unsigned long vk)
 	{
 
 		InitVirtualKeyMap();
@@ -26,7 +26,7 @@ namespace ParaEngine {
 		return EVirtualKey::KEY_UNKNOWN;
 	}
 
-	static unsigned long ParaVKToSDL2VirtualKey(EVirtualKey key)
+	unsigned long ParaVKToSDL2VirtualKey(EVirtualKey key)
 	{
 		InitVirtualKeyMap();
 		for (auto kv : s_keymap)
@@ -139,7 +139,7 @@ namespace ParaEngine {
 		return m_MousePos;
 	}
 
-	void RenderWindowSDL2::ProcessInput(const MSG& msg)
+	void RenderWindowSDL2::ProcessInput()
 	{
 	}
 
