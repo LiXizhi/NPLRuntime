@@ -42,6 +42,7 @@ namespace ParaEngine
 		virtual void OnMouseWheel(float x, float y, float delta) {};
 		virtual void OnKey(EVirtualKey key, EKeyState state) {};
 		virtual void OnChar(unsigned int character) {};
+		virtual void OnChar(std::string text) {};
 		virtual void OnSize(int w, int h) {};
 		virtual void OnDropFiles(const std::string& files) {};
 
@@ -51,6 +52,8 @@ namespace ParaEngine
 		SDL_Window* m_sdl2_window;
 		int m_Width;
 		int m_Height;
+		int m_mouse_x;
+		int m_mouse_y;
 		bool m_Windowed;
 		bool m_IsQuit;
 		bool m_bLostFocus;

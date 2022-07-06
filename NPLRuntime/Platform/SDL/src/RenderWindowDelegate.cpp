@@ -3,7 +3,7 @@
 #include "2dengine/GUIRoot.h"
 #include "NPL/NPLHelper.h"
 #include "EventsCenter.h"
-
+#include "util/StringHelper.h"
 
 extern HINSTANCE g_hAppInstance;
 ParaEngine::IRenderWindow* CreateParaRenderWindow(const int width, const int height)
@@ -75,6 +75,22 @@ namespace ParaEngine {
 		}
 	}
 
+	void RenderWindowDelegate::OnChar(std::string sTextUTF8)
+	{
+		if (CGlobals::GetApp()->GetAppState() != PEAppState_Ready)
+		{
+			return;
+		}
+		auto pGUI = CGUIRoot::GetInstance()->GetUIKeyFocus();
+		if (pGUI)
+		{
+			std::u16string sTextWide;
+			if (StringHelper::UTF8ToUTF16(sTextUTF8, sTextWide))
+			{
+				pGUI->OnHandleWinMsgChars(std::wstring(sTextWide.begin(), sTextWide.end()));
+			}
+		}
+	}
 	void RenderWindowDelegate::OnDropFiles(const std::string& files)
 	{
 		if (!files.empty())

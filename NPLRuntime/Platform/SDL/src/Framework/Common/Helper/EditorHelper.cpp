@@ -2,18 +2,17 @@
 #include "Framework/Common/Helper/EditorHelper.h"
 
 namespace ParaEngine {
-	
+
 	bool CEditorHelper::OpenWithDefaultEditor(const char* sScriptFile, bool bWaitOnReturn)
 	{
 		return false;
 	}
-	
+
 	bool CEditorHelper::CreateEmptyCharacterEventFile(const char* scriptFile, const char* sName)
 	{
-		
 		return false;
 	}
-	
+
 	bool CEditorHelper::CreateProcess(const char* lpApplicationName, const char* lpCommandLine, bool bWaitOnReturn)
 	{
 		return false;
@@ -23,6 +22,6 @@ namespace ParaEngine {
 	{
 		return false;
 	}
-	
+
 } // end namespace
 

@@ -6,9 +6,9 @@ namespace ParaEngine
 	class RenderWindowDelegate : public RenderWindowSDL2
 	{
 	public:
-		RenderWindowDelegate(){};
+		RenderWindowDelegate() {};
 	protected:
-		virtual void OnMouseButton(EMouseButton button, EKeyState state,uint32_t x,uint32_t y) override;
+		virtual void OnMouseButton(EMouseButton button, EKeyState state, uint32_t x, uint32_t y) override;
 		virtual void OnMouseMove(uint32_t x, uint32_t y) override;
 
 		virtual void OnMouseWheel(float x, float y, float delta) override;
@@ -16,8 +16,8 @@ namespace ParaEngine
 
 		virtual void OnKey(EVirtualKey key, EKeyState state) override;
 
-
 		virtual void OnChar(unsigned int character) override;
+		virtual void RenderWindowDelegate::OnChar(std::string text) override;
 
 		virtual void OnSize(int w, int h) override;
 
