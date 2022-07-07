@@ -194,7 +194,7 @@ namespace ParaEngine
 		ATTRIBUTE_METHOD1(ParaEngineSettings, SetCaptureMouse_s, bool)	{ cls->SetCaptureMouse(p1); return S_OK; }
 
 		ATTRIBUTE_METHOD1(ParaEngineSettings, IsSandboxMode_s, bool*) { *p1 = cls->IsSandboxMode(); return S_OK; }
-		ATTRIBUTE_METHOD1(ParaEngineSettings, SetSandboxMode_s, bool) { if(p1) cls->SetSandboxMode(p1); return S_OK; }
+		ATTRIBUTE_METHOD1(ParaEngineSettings, SetSandboxMode_s, bool) { cls->SetSandboxMode(p1); return S_OK; }
 
 		ATTRIBUTE_METHOD1(ParaEngineSettings, GetDisplayMode_s, const char**)	{*p1 = cls->GetDispalyMode().c_str(); return S_OK;}
 		ATTRIBUTE_METHOD1(ParaEngineSettings, GetMonitorResolution_s, Vector2*)	{*p1 = cls->GetMonitorResolution(); return S_OK;}
