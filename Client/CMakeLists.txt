@@ -21,15 +21,13 @@ option(NPLRUNTIME_STATIC_LIB "static lib or not" OFF)
 
 # Win32 Default Option
 if(WIN32)
-
 	option(NPLRUNTIME_LUAJIT21 "build luajit21 support GC64" OFF)
 	option(NPLRUNTIME_LUAJIT20   "build luajit2.0.4" ON)
 	option(NPLRUNTIME_LUA51   "build lua5.1.5 with coco" ON)
 	option(NPLRUNTIME_SUPPORT_FBX "support FBX files (assimp)" ON)
-	option(NPLRUNTIME_PHYSICS "include physics" ON)
+    option(NPLRUNTIME_PHYSICS "include physics" ON)
 	option(NPLRUNTIME_CAUDIOENGINE "include audioengine plugin" OFF)
 	option(NPLRUNTIME_HAQI_LAUNCHER "haqi launcher" OFF)
-	
 endif()
 # OSX Default Option
 if(APPLE)
@@ -54,10 +52,8 @@ endif()
 #Renderer
 ################################
 if(WIN32)
-
-	set(NPLRUNTIME_RENDERER "DIRECTX" CACHE STRING "Render API")
+    set(NPLRUNTIME_RENDERER "DIRECTX" CACHE STRING "Render API")
 	set_property(CACHE NPLRUNTIME_RENDERER PROPERTY STRINGS DIRECTX OPENGL)
-
 endif()
 
 if(APPLE)
@@ -105,6 +101,11 @@ endif()
 #Boost
 ################################
 # include boost if client is not defined, it allows us to use a different boost version than the client on the server build.
+if ("${BOOST_ROOT}" STRGREATER "") 
+	string(REPLACE "\\" "/" BOOST_ROOT ${BOOST_ROOT})
+    set(ENV{BOOST_ROOT} ${BOOST_ROOT})
+endif()
+
 if ("$ENV{BOOST_ROOT}" STREQUAL "")
 	if(IS_DIRECTORY ${SERVER_SOURCE_DIR}/boost_1_65_0)
 		set(BOOST_ROOT ${SERVER_SOURCE_DIR}/boost_1_65_0)
@@ -131,9 +132,15 @@ endif()
 
 set(Boost_USE_MULTITHREADED ON)
 set(Boost_USE_STATIC_LIBS   ON)
+set(Boost_DEBUG ON)
 
 if (MSVC)
-	set(Boost_USE_STATIC_RUNTIME ON)
+    set(Boost_USE_STATIC_RUNTIME ON)
+    #if ("$ENV{GITHUB_WORKFLOW}" STRGREATER "")
+        #set(Boost_USE_STATIC_RUNTIME OFF)
+    #else ()
+        #set(Boost_USE_STATIC_RUNTIME ON)
+    #endif()
 else()
 	set(Boost_USE_STATIC_RUNTIME OFF)
 endif()
@@ -146,7 +153,6 @@ find_package( Boost 1.61 REQUIRED COMPONENTS thread date_time filesystem system 
 #ZLIB
 ################################
 if(WIN32)
-
 	add_subdirectory (${SERVER_SOURCE_DIR}zlib-1.2.11 ${CLIENT_BINARY_DIR}/zlib-1.2.11)
 	set(ZLIB_FOUND 1)
 	set(ZLIB_LIBRARY zlib)
@@ -218,8 +224,8 @@ add_subdirectory (${CLIENT_SOURCE_DIR}/../NPLRuntime/ParaEngineClient ${CLIENT_B
 set (ParaEngineClient_SOURCE_DIR ${CLIENT_SOURCE_DIR}/trunk/ParaEngineClient)
 
 if(NPLRUNTIME_PHYSICS)
-	add_subdirectory (${CLIENT_SOURCE_DIR}/trunk/externals/bullet3 ${CLIENT_BINARY_DIR}/bullet3)
-	add_subdirectory (${CLIENT_SOURCE_DIR}/trunk/PhysicsBT ${CLIENT_BINARY_DIR}/PhysicsBT)
+    add_subdirectory (${CLIENT_SOURCE_DIR}/trunk/externals/bullet3 ${CLIENT_BINARY_DIR}/bullet3)
+    add_subdirectory (${CLIENT_SOURCE_DIR}/trunk/PhysicsBT ${CLIENT_BINARY_DIR}/PhysicsBT)
 endif()
 
 if(NPLRUNTIME_CAUDIOENGINE)

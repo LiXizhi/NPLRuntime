@@ -555,11 +555,11 @@ if(NPLRUNTIME_RENDERER STREQUAL "OPENGL")
 
 	##############################
 	# DX2GL
-	add_subdirectory(${CLIENT_SOURCE_DIR}/trunk/ParaEngineClient/dxEffects2glEffects ${ParaEngineClient_BINARY_DIR}/dx2gl)
+    add_subdirectory(${CLIENT_SOURCE_DIR}/trunk/ParaEngineClient/dxEffects2glEffects ${ParaEngineClient_BINARY_DIR}/dx2gl)
 
-	##############################
-	# GLEffectParser
-	add_subdirectory(${CLIENT_SOURCE_DIR}/trunk/ParaEngineClient/glEffects ${ParaEngineClient_BINARY_DIR}/glEffects)
+	###############################
+	## GLEffectParser
+    add_subdirectory(${CLIENT_SOURCE_DIR}/trunk/ParaEngineClient/glEffects ${ParaEngineClient_BINARY_DIR}/glEffects)
 	list(APPEND ParaEngineClient_LIBS glEffectsParser)
 
 	if(WIN32)	

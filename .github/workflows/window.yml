@@ -1,0 +1,80 @@
+
+name: Windows
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ dev ]
+
+env:
+  BUILD_TYPE: Release
+
+jobs:
+  build:
+    runs-on: windows-2019
+
+    steps:
+    # 拉取代码
+    - name: pull source code
+      uses: actions/checkout@v3
+
+    # 安装cmake
+    - name: install cmake
+      uses: lukka/get-cmake@latest
+
+    # 安装DX
+    - name: install dx
+      continue-on-error: true
+      run: choco install --yes directx-sdk
+
+    # 安装boost
+    #- name: install boost
+      #uses: MarkusJx/install-boost@v2.3.0
+      #id: install-boost
+      #with:
+        #boost_version: 1.78.0
+        #platform_version: 2019
+        #toolset: msvc
+        #arch: x86
+
+    # 缓存boost_1_78_0.7z
+    - name: cache boost_1_78_0.7z
+      uses: actions/cache@v3
+      id: cache_boost_1_78_0_7z
+      with:
+        path: boost_1_78_0.7z
+        key: boost_1_78_0.7z
+
+
+    # 下载boost_1_78_0.7z
+    - name: download boost_1_78_0.7z
+      if: ${{ steps.cache_boost_1_78_0_7z.outputs.cache-hit != 'true' }}
+      run: wget https://boostorg.jfrog.io/artifactory/main/release/1.78.0/source/boost_1_78_0.7z -O boost_1_78_0.7z
+      shell: powershell
+    
+
+    # 缓存boost_1_78_0
+    - name: cache boost_1_78_0
+      uses: actions/cache@v3
+      id: cache_boost_1_78_0
+      with:
+        path: boost
+        # 最后一位手动更新(当编译错误时)
+        key: window_boost_2
+
+    # 编译boost_1_78_0
+    - name: build boost_1_78_0
+      if: ${{ steps.cache_boost_1_78_0.outputs.cache-hit != 'true' }}
+      run: build_boost.bat
+      shell: cmd
+
+
+    # 编译NPLRuntime
+    - name: build NPLRuntime
+      env:
+        BOOST_ROOT: ${{format('{0}\boost', github.workspace)}}
+        DXSDK_DIR: 'C:\Program Files (x86)\Microsoft DirectX SDK (June 2010)'
+      run: build_win32_github_workflows.bat
+      shell: cmd
+
+

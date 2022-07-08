@@ -90,3 +90,5 @@ Client/trunk/ParaEngineClient/shaders/glsl/blockEffect.fx.glsl
 Client/trunk/ParaEngineClient/shaders/glsl/BMaxModel.fx.glsl
 Client/trunk/ParaEngineClient/shaders/glsl/simple_particle.fx.glsl
 Client/trunk/ParaEngineClient/shaders/glsl/sky.fx.glsl
+
+boost_1_78_0*
