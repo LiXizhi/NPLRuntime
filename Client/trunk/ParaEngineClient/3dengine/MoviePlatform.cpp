@@ -1163,7 +1163,7 @@ bool CMoviePlatform::EndCapture()
 				
 			}
 			if (audioMapString.size() > 0)audioMapString.resize(audioMapString.size()-1); // remove the last ","
-			pMovieCodec->EndCapture(audioMapString);
+			pMovieCodec->EndCapture(audioMapString.c_str());
 			playbackHistory.Clear();
 			playbackHistory.SetEnable(false);
 		}
