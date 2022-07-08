@@ -3,6 +3,7 @@
 #include "debugging.h"
 
 #include <algorithm>
+#include <limits>
 
 using namespace Pinocchio;
 

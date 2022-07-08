@@ -6,4 +6,9 @@ namespace ParaEngine {
 	{
 		return nullptr;
 	}
+	
+	IParaWebView* IParaWebView::createSubViewView(int x, int y, int w, int h)
+	{
+		return nullptr;
+	}
 } // end namespace

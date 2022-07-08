@@ -41,7 +41,6 @@ extern "C"
 #include "ParaScriptingAudio.h"
 
 #include "ParaScriptingScene.h"
-#include "Framework/Common/PlatformBridge/PlatformBridge.h"
 
 void CNPLScriptingState::LoadHAPI_Audio()
 {
@@ -153,8 +152,7 @@ void CNPLScriptingState::LoadHAPI_UI()
 				def("sha1", &ParaMisc::sha1),
 				def("sha1", &ParaMisc::sha1_),
 				def("base64", &ParaMisc::base64),
-				def("unbase64", &ParaMisc::unbase64),
-				def("LuaCallNative", &ParaEngine::PlatformBridge::LuaCallNative)
+				def("unbase64", &ParaMisc::unbase64)
 			]
 		];
 

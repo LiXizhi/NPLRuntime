@@ -1,5 +1,5 @@
-if(WIN32 OR APPLE AND NOT IOS)
-    include(${PROJECT_SOURCE_DIR}/cmake/ConfigBoost.cmake)
+if(LINUX OR WIN32 OR APPLE AND NOT IOS)
+	include(${PROJECT_SOURCE_DIR}/cmake/ConfigBoost.cmake)
     find_package(Boost COMPONENTS filesystem REQUIRED)
     include_directories("${Boost_INCLUDE_DIRS}")
     add_executable(embed-resource  embedresource.cpp embedresource.h README.md)

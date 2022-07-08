@@ -1,6 +1,5 @@
 include(${PROJECT_SOURCE_DIR}/cmake/ucm.cmake)
 
-
 if(ANDROID)
     set(LIBGL GLESv2 EGL)
     set(PLATFORM_SRC gl_android_spec.c gl_android_spec.h)
@@ -8,7 +7,7 @@ elseif(IOS)
     find_library(OPENGL_LIBRARY OpenGLES)
     set(LIBGL ${OpenGL})
     set(PLATFORM_SRC gl_ios_spec.c gl_ios_spec.h)
-elseif(WIN32)
+elseif(WIN32 OR LINUX)
     set(LIBGL glad_core)
     set(PLATFORM_SRC gl_glad_spec.c)
 elseif(APPLE)
@@ -23,7 +22,6 @@ add_library(RenderSystemOpenGL
     OpenGL.h
     ${PLATFORM_SRC}
 )
-
 
 
 target_include_directories(RenderSystemOpenGL PUBLIC 
