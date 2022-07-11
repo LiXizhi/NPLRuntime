@@ -4,6 +4,7 @@
 
 #pragma once
 
+
 namespace ParaEngine
 {
 	class IBrowserMsgListener

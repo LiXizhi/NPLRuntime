@@ -1,6 +1,5 @@
 add_library(libjpeg INTERFACE)
 
-
 if(ANDROID)
 	target_include_directories(libjpeg INTERFACE include/android)
 	target_link_libraries(libjpeg INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/prebuilt/android/${CMAKE_ANDROID_ARCH_ABI}/libjpeg.a)
@@ -17,7 +16,7 @@ elseif(IOS)
 elseif(APPLE)
 	target_include_directories(libjpeg INTERFACE include/mac)
 	target_link_libraries(libjpeg INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/prebuilt/mac/libjpeg.a)
-elseif(NPLRUNTIME_SERVER)
+elseif(NPLRUNTIME_SERVER OR LINUX)
 	target_include_directories(libjpeg INTERFACE include/linux)
 	target_link_libraries(libjpeg INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/prebuilt/linux/libjpeg.a)
 endif()

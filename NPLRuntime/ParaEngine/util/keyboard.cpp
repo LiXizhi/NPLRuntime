@@ -22,9 +22,9 @@ int _kbhit()
 #include <sys/ioctl.h>
 #include <termios.h>
 
-#ifndef PLATFORM_MAC
-    #include <stropts.h>
-#endif
+//#ifndef PLATFORM_MAC
+//    #include <stropts.h>
+//#endif
 
 int _kbhit()
 {

@@ -5,7 +5,7 @@ extern "C" {
 
 #ifdef ANDROID
 #include "gl_android_spec.h"
-#elif _WIN32
+#elif _WIN32 || LINUX
 #include "glad/glad.h"
 #elif __APPLE__
 #import "TargetConditionals.h"
@@ -14,6 +14,8 @@ extern "C" {
 #elif TARGET_OS_IPHONE
 #include "gl_ios_spec.h"
 #endif
+#elif USE_OPENGL_RENDERER
+#include "glad/glad.h"
 #endif
 extern int loadGL();
 	
