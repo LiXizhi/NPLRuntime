@@ -41,6 +41,7 @@ extern "C"
 #include "ParaScriptingAudio.h"
 
 #include "ParaScriptingScene.h"
+#include "Framework/Common/PlatformBridge/PlatformBridge.h"
 
 void CNPLScriptingState::LoadHAPI_Audio()
 {
