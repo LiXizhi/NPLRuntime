@@ -152,7 +152,8 @@ void CNPLScriptingState::LoadHAPI_UI()
 				def("sha1", &ParaMisc::sha1),
 				def("sha1", &ParaMisc::sha1_),
 				def("base64", &ParaMisc::base64),
-				def("unbase64", &ParaMisc::unbase64)
+				def("unbase64", &ParaMisc::unbase64),
+				def("LuaCallNative", &ParaEngine::PlatformBridge::LuaCallNative)
 			]
 		];
 
