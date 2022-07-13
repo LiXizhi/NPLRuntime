@@ -1,6 +1,5 @@
-#include "PlatformBridge.h"
-
 #include "ParaEngine.h"
+#include "PlatformBridge.h"
 extern "C"
 {
 #include "lua.h"
