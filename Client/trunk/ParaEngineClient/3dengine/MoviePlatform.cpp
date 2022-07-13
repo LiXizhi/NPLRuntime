@@ -45,7 +45,7 @@ using namespace ParaEngine;
 #define MovieCodec_CLASS_ID Class_ID(0x2b305a40, 0x47a409cf)
 	
 CMoviePlatform::CMoviePlatform(void)
-	:m_bCaptureGUI(false), m_isLeftEye(true),
+	:m_bCaptureGUI(false), m_isLeftEye(true), m_nMovieCodecVersion(0),
 #ifdef USE_DIRECTX_RENDERER
 m_pCaptureTexture(NULL), m_pCaptureSurface(NULL), m_pBackBufferSurface(NULL), m_pDepthStencilSurface(NULL), m_pOldDepthStencilSurface(NULL), m_pOffScreenSurface(NULL), m_CompatibleHDC(NULL), m_BitmapHandle(NULL),
 #endif
@@ -122,7 +122,8 @@ IMovieCodec* CMoviePlatform::GetMovieCodec(bool bCreateIfNotExist)
 
 				if (pPluginEntity != 0 && pPluginEntity->IsValid())
 				{
-					if (pPluginEntity->GetLibVersion() >= 3)
+					m_nMovieCodecVersion = pPluginEntity->GetLibVersion();
+					if (m_nMovieCodecVersion >= 9)
 					{
 						for (int i = 0; i < pPluginEntity->GetNumberOfClasses(); ++i)
 						{
@@ -136,8 +137,8 @@ IMovieCodec* CMoviePlatform::GetMovieCodec(bool bCreateIfNotExist)
 					}
 					else
 					{
-						OUTPUT_LOG("movie codec require at least version 3 but you only have version %d\n", pPluginEntity->GetLibVersion());
-						CGlobals::GetApp()->SystemMessageBox("MovieCodec plugin needs at least version 3. Please update from official website!");
+						OUTPUT_LOG("movie codec require at least version 9 but you only have version %d\n", m_nMovieCodecVersion);
+						CGlobals::GetApp()->SystemMessageBox("MovieCodec plugin needs at least version 9. Please update from official website!");
 					}
 				}
 			}
@@ -1162,8 +1163,14 @@ bool CMoviePlatform::EndCapture()
 				audioMapString += record;
 				
 			}
-			if (audioMapString.size() > 0)audioMapString.resize(audioMapString.size()-1); // remove the last ","
-			pMovieCodec->EndCapture(audioMapString.c_str());
+			if (audioMapString.size() > 0)
+				audioMapString.resize(audioMapString.size()-1); // remove the last ","
+			
+			if( m_nMovieCodecVersion >= 10)
+				pMovieCodec->EndCapture2(audioMapString.c_str());
+			else
+				pMovieCodec->EndCapture(audioMapString);
+
 			playbackHistory.Clear();
 			playbackHistory.SetEnable(false);
 		}
