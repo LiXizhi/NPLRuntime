@@ -211,6 +211,8 @@ void DLLPlugInEntity::Init(const char* sFilename)
 					
 					OUTPUT_LOG("Security warning: dll file %s is deployed from zip archive to %s \n", sDLLPath.c_str(), sTargetFile.c_str());
 					sDLLPath = sTargetFile;
+				}else if (CParaFile::DoesAssetFileExist2(sTargetFile.c_str(), FILE_ON_DISK)) {
+					sDLLPath = sTargetFile;
 				}
 			}
 		}
