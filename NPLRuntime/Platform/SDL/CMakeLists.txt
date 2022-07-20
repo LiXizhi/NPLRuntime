@@ -18,7 +18,7 @@ find_package(SDL2 CONFIG REQUIRED PATHS ${SDL_ROOT})
 #	SDL_ROOT find_package(SDL2 CONFIG REQUIRED PATHS /root/program/SDL-2.0.22)
 #endif()
 
-target_link_libraries(ParaCraftSDL2 PRIVATE SDL2::SDL2 SDL2::SDL2main SDL2::SDL2-static)
+target_link_libraries(ParaCraftSDL2 PRIVATE SDL2::SDL2 SDL2::SDL2main)
 
 target_compile_definitions(ParaCraftSDL2 PUBLIC PLATFORM_LINUX)
 target_compile_definitions(ParaCraftSDL2 PUBLIC LINUX)
