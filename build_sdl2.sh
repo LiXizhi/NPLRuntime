@@ -23,4 +23,11 @@ if [ ! -d ${LIB_INSTALL_DIR} ]; then
 	cmake --build ${LIB_BUILD_DIR}
 	cmake --install ${LIB_BUILD_DIR}
 fi
+
 export SDL_ROOT=${LIB_INSTALL_DIR}
+
+#export BOOST_ROO=/root/program/boost_1_78_0
+
+cmake -S NPLRuntime/ -B out -DLINUX=true -DSDL_ROOT=${SDL_ROOT} -DALSOFT_BACKEND_SDL2=TRUE -DALSOFT_BACKEND_OSS=FALSE -DALSOFT_BACKEND_WAVE=FALSE -DALSOFT_BACKEND_ALSA=FALSE
+
+cmake --build out
