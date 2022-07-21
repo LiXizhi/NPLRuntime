@@ -53,9 +53,9 @@ if (NPLRUNTIME_PHYSICS)
 	add_subdirectory(bullet3 ${PROJECT_BINARY_DIR}/bullet3)
 endif ()
 
-add_subdirectory(freetype-2.8.1)
-add_subdirectory(jpeg)
 add_subdirectory(png)
+add_subdirectory(jpeg)
+add_subdirectory(freetype-2.8.1)
 add_subdirectory(Pinocchio)
 
 if (${NPLRUNTIME_RENDERER} STREQUAL "NULL")

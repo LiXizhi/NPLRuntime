@@ -5,6 +5,8 @@
 
 if (NPLRUNTIME_SERVER)
 	add_subdirectory(Linux)
+elseif (SDL)
+	add_subdirectory(SDL)
 elseif (ANDROID)
 	if (ANDROID_STUDIO)
 		add_subdirectory(AndroidStudio/app)
@@ -19,7 +21,11 @@ elseif (MAC_SERVER)
 	add_subdirectory(Linux)	
 elseif (APPLE)
     add_subdirectory(OSX)
+elseif (LINUX)
+	add_subdirectory(SDL)
 else ()
 	#Linux
     add_subdirectory(Linux)
 endif ()
+
+
