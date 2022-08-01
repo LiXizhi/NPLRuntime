@@ -55,7 +55,9 @@ CParaPhysicsWorld::CParaPhysicsWorld()
 	: m_dynamicsWorld(NULL), m_collisionWorld(NULL), m_broadphase(NULL), m_dispatcher(NULL), m_solver(NULL), m_collisionConfiguration(NULL), m_bInvertFaceWinding(false)
 {
 #ifdef WIN32
-	m_bInvertFaceWinding = true;
+#ifndef _DEBUG
+	//m_bInvertFaceWinding = true;
+#endif
 #endif
 }
 
