@@ -244,7 +244,9 @@ string DBEntity::PrepareDatabaseFile(const string& filename)
 	m_nSQLite_OpenFlags = (SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE );
 
 #if defined(PARAENGINE_MOBILE) || defined(PLATFORM_MAC)
-	std::string sTempDiskFilename = ParaEngine::CParaFile::GetWritablePath() + filename;
+	//std::string sTempDiskFilename = ParaEngine::CParaFile::GetWritablePath() + filename;
+	// 如果是绝对路径就不拼接 脚本多用绝对路径, 再拼接导致无法使用
+	std::string sTempDiskFilename = (ParaEngine::CFileUtils::IsAbsolutePath(filename)) ? filename : (ParaEngine::CParaFile::GetWritablePath() + filename);
 	if (ParaEngine::CParaFile::DoesFileExist(sTempDiskFilename.c_str(), false))
 	{
 		return sTempDiskFilename;
