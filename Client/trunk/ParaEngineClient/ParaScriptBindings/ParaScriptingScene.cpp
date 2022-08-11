@@ -1513,6 +1513,28 @@ ParaScripting::ParaAssetObject ParaObject::GetTexture()
 	return ParaAssetObject(IsValid() ? m_pObj->GetTexture() : NULL);
 }
 
+bool ParaObject::Export(const char* filepath, const char* typ) {
+	if (!IsValid()) return false;
+	AssetEntity* pAsset = m_pObj->GetPrimaryAsset();
+	if (pAsset && pAsset->IsValid())
+	{
+		pAsset->LoadAsset();
+		if (pAsset->GetType() == AssetEntity::parax)
+		{
+			ParaXEntity* pParaXEntity = (ParaXEntity*)pAsset;
+			CParaXModel* pModel = pParaXEntity->GetModel();
+			if (pModel)
+			{
+				pModel->SaveToGltf(filepath);
+			}
+		}
+		else if (pAsset->GetType() == AssetEntity::mesh)
+		{
+			return false;
+		}
+	}
+	return false;
+}
 
 //////////////////////////////////////////////////////////////////////////
 //

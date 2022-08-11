@@ -197,6 +197,7 @@ void CNPLScriptingState::LoadParaScene()
 				.def("SetDynamicField", &ParaObject::SetDynamicField)
 				.def("GetObject", &ParaObject::GetObject)
 				.def("GetTexture", &ParaObject::GetTexture)
+				.def("Export", &ParaObject::Export)
 				.def("AddChild", &ParaObject::AddChild),
 
 				// ParaCharacter class declarations

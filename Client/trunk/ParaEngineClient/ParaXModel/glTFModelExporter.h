@@ -304,9 +304,7 @@ namespace ParaEngine
 		glTFModelExporter(CParaXModel* mesh, bool binary);
 		glTFModelExporter(CParaXModel* mesh, CParaXModel* anim, bool binary);
 		~glTFModelExporter();
-
 		void ExportToFile(const std::string& filename);
-		std::string ExportToBuffer();
 
 	private:
 		void ParseParaXModel();
@@ -329,17 +327,17 @@ namespace ParaEngine
 		std::shared_ptr<Accessor> ExportJoints();
 		std::shared_ptr<Accessor> ExportWeights();
 		std::shared_ptr<Accessor> ExportIndices(ModelRenderPass& pass);
-		std::shared_ptr<Material> ExportMaterials(int tex, int index, bool cull);
+		std::shared_ptr<Material> ExportMaterials(ModelRenderPass& pass, int index);
 		std::shared_ptr<Animation> ExportAnimations(uint32_t animId);
-		std::shared_ptr<BufferView> ExportBufferView(AttribType::Value type, uint32_t length, uint32_t index);
+		std::shared_ptr<BufferView> ExportBufferView(AttribType::Value type, uint32_t length);
 		std::shared_ptr<Accessor> ExportTimeAccessor(std::shared_ptr<BufferView>& bv, uint32_t offset, uint32_t numDatas, uint32_t animId);
 		std::shared_ptr<Accessor> ExportTranslationAccessor(std::shared_ptr<BufferView>& bv, uint32_t offset, uint32_t numDatas, uint32_t animId);
 		std::shared_ptr<Accessor> ExportRotationAccessor(std::shared_ptr<BufferView>& bv, uint32_t offset, uint32_t numDatas, uint32_t animId);
 		std::shared_ptr<Accessor> ExportScaleAccessor(std::shared_ptr<BufferView>& bv, uint32_t offset, uint32_t numDatas, uint32_t animId);
 		std::string EncodeBuffer();
 		void WriteBuffer(Json::Value& obj, uint32_t index);
-		void WriteBufferView(std::shared_ptr<BufferView>& bufferView, Json::Value& obj, uint32_t index);
-		void WriteAccessor(std::shared_ptr<Accessor>& accessor, Json::Value& obj, uint32_t index);
+		void WriteBufferView(std::shared_ptr<BufferView>& bufferView, Json::Value& obj);
+		void WriteAccessor(std::shared_ptr<Accessor>& accessor, Json::Value& obj);
 		void WriteMaterial(std::shared_ptr<Material>& material, Json::Value& mat, Json::Value& tex, Json::Value& sampler, Json::Value& img, uint32_t index);
 		void WriteFile();
 		void WriteRawData();
@@ -386,16 +384,6 @@ namespace ParaEngine
 		std::vector<std::shared_ptr<BufferView>> bvScale;
 
 	public:
-		//static luabind::object GetParaXTexturesFromFile(const std::string& input, lua_State* L);
-		//static luabind::object GetParaXTexturesFromBuffer(const char* buffer, int size, lua_State* L);
-		//static void ParaXFileExportTo_glTF_File(const std::string& input, const std::string& output, const luabind::object& texObject, bool binary, bool embedded = true);
-		//static void ParaXBufferExportTo_glTF_File(const char* buffer, int size, const std::string& output, const luabind::object& texObject, bool binary, bool embedded = true);
-		//static luabind::object ParaXFileExportTo_glTF_String(const std::string& input, bool binary, const luabind::object& texObject, lua_State* L);
-		//static luabind::object ParaXBufferExportTo_glTF_String(const char* buffer, int size, bool binary, const luabind::object& texObject, lua_State* L);
-		//static luabind::object ParaXFileChangeAnimation(
-		//	const std::string& paraXFile, const std::string& animFile, bool binary, const luabind::object& texObject, lua_State* L);
-		//static luabind::object ParaXBufferChangeAnimation(
-		//	const char* paraXBuffer, int paraXSize, const char* animBuffer, int animSize, bool binary, const luabind::object& texObject, lua_State* L);
 		static void ParaXExportTo_glTF(CParaXModel* parax, const char* output);
 		static void BlocksExportTo_glTF(const char* blocks, const char* output);
 	};
