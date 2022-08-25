@@ -56,3 +56,47 @@ int ParaEngine::CLinearModelProvider::GetModelCount() const
 {
 	return m_nModelCount;
 }
+
+Vector3 ParaEngine::CLinearModelProvider::vec3Rotate(Vector3 pt, Vector3 angles)
+{
+	float X = pt.x,Y= pt.y,Z= pt.z;
+	float a = angles.x, b = angles.y, c = angles.z;
+
+	float x, y, z;
+	// rotate around the X axis first
+	if (abs(a)>0.01) {
+		x = X, y = Y, z = Z;
+		Y = y * cos(a) - z * sin(a);
+		Z = y * sin(a) + z * cos(a);
+	}	
+	// And now around y
+	if (abs(b) > 0.01) {
+		x = X, y = Y, z = Z;
+		X = x * cos(b) + z * sin(b);
+		Z = -x * sin(b) + z * cos(b);
+	}
+	// Finally, around z
+	if (abs(c) > 0.01) {
+		x = X, y = Y, z = Z;
+		X = x * cos(c) - y * sin(c);
+		Y = x * sin(c) + y * cos(c);
+	}
+			
+	return Vector3(X, Y, Z);
+}
+
+Vector3 ParaEngine::CLinearModelProvider::vec3RotateByPoint(Vector3 originPt, Vector3 pt, Vector3 angles)
+{
+	float ox = originPt.x, oy = originPt.y, oz = originPt.z;
+	float X = pt.x, Y = pt.y, Z = pt.z;
+
+	float x = X - ox;
+	float y = Y - oy;
+	float z = Z - oz;
+	Vector3 ret = vec3Rotate(Vector3(x,y,z), angles);
+	ret.x = ret.x + ox;
+	ret.y = ret.y + oy;
+	ret.z = ret.z + oz;
+
+	return ret;
+}
