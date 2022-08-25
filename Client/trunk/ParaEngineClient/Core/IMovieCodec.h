@@ -41,8 +41,9 @@ namespace ParaEngine
 		*/
 		virtual int FrameCapture(const BYTE* pData, int nDataSize = 0, int* pnFrameCount = 0) = 0;
 
-		/** end recording for the current file. */
-		virtual int EndCapture(const char* audioMap = NULL) = 0;
+		/** Deprecated: use EndCapture2() instead
+		* End recording for the current file. */
+		virtual int EndCapture(std::string audioMap = "") = 0;
 
 		/** if we are recording */
 		virtual bool IsRecording() = 0;
@@ -89,5 +90,7 @@ namespace ParaEngine
 		*/
 		virtual MOVIE_CAPTURE_MODE GetStereoCaptureMode() = 0;
 
+		/** End recording for the current file. */
+		virtual int EndCapture2(const char * audioMap = NULL) = 0;
 	};
 }

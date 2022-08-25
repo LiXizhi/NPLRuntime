@@ -289,6 +289,7 @@ namespace ParaEngine
 
 	private:
 		IMovieCodec* m_pMovieCodec;
+		int m_nMovieCodecVersion;
 		string m_sMovieName;
 		string m_beginningStr;
 		string m_endingStr;

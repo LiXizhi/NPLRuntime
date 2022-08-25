@@ -85,7 +85,6 @@ buildvm_arch.h
 .DS_Store
 
 settings.json
-core
 Client/trunk/ParaEngineClient/shaders/glsl/blockEffect.fx.glsl
 Client/trunk/ParaEngineClient/shaders/glsl/BMaxModel.fx.glsl
 Client/trunk/ParaEngineClient/shaders/glsl/simple_particle.fx.glsl
