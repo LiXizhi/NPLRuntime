@@ -1029,6 +1029,12 @@ ELSE(HUNTER_ENABLED)
   INCLUDE_DIRECTORIES( "../contrib" )
 ENDIF(HUNTER_ENABLED)
 
+##############################
+# ZLIB
+if(WIN32)
+	include_directories("${ZLIB_SOURCE_DIR}")
+endif()
+
 # VC2010 fixes
 if(MSVC10)
   option( VC10_STDINT_FIX "Fix for VC10 Compiler regarding pstdint.h redefinition errors" OFF )
