@@ -983,7 +983,7 @@ namespace ParaEngine
 		for (uint32_t i = 0; i < paraXModel->passes.size(); i++)
 		{
 			ModelRenderPass& pass = paraXModel->passes[i];
-			if (paraXModel->showGeosets[pass.geoset])
+			if (pass.geoset >= 0 && paraXModel->showGeosets[pass.geoset])
 			{
 				Mesh::Primitive primitive;
 				primitive.indices = ExportIndices(pass);
@@ -1725,11 +1725,13 @@ namespace ParaEngine
 			for (uint32_t i = 0; i < paraXModel->passes.size(); i++)
 			{
 				ModelRenderPass& pass = paraXModel->passes[i];
-				uint32_t vertexOffset = pass.GetVertexStart(paraXModel);
-				for (uint32_t j = pass.m_nIndexStart; j < pass.m_nIndexStart + pass.indexCount; j++)
-				{
-					uint32_t index = paraXModel->m_indices[j] + vertexOffset;
-					builder.append((const char*)&index, sizeUInt);
+				if (pass.geoset >= 0) {
+					uint32_t vertexOffset = pass.GetVertexStart(paraXModel);
+					for (uint32_t j = pass.m_nIndexStart; j < pass.m_nIndexStart + pass.indexCount; j++)
+					{
+						uint32_t index = paraXModel->m_indices[j] + vertexOffset;
+						builder.append((const char*)&index, sizeUInt);
+					}
 				}
 			}
 
@@ -2126,11 +2128,13 @@ namespace ParaEngine
 				for (uint32_t i = 0; i < paraXModel->passes.size(); i++)
 				{
 					ModelRenderPass& pass = paraXModel->passes[i];
-					uint32_t vertexOffset = pass.GetVertexStart(paraXModel);
-					for (uint32_t j = pass.m_nIndexStart; j < pass.m_nIndexStart + pass.indexCount; j++)
-					{
-						uint32_t index = paraXModel->m_indices[j] + vertexOffset;
-						file.write(&index, sizeUInt);
+					if (pass.geoset > 0) {
+						uint32_t vertexOffset = pass.GetVertexStart(paraXModel);
+						for (uint32_t j = pass.m_nIndexStart; j < pass.m_nIndexStart + pass.indexCount; j++)
+						{
+							uint32_t index = paraXModel->m_indices[j] + vertexOffset;
+							file.write(&index, sizeUInt);
+						}
 					}
 				}
 				uint32_t numBones = paraXModel->m_objNum.nBones;
@@ -2140,25 +2144,25 @@ namespace ParaEngine
 				}
 				for (uint32_t i = 0; i < animTimes.size(); i++)
 				{
-					for (uint32_t j = 0; j < animTimes.size(); j++)
+					for (uint32_t j = 0; j < animTimes[i].size(); j++)
 					{
 						float val = animTimes[i][j];
 						file.write(&val, sizeFloat);
 					}
-					for (uint32_t j = 0; j < translations.size(); j++)
+					for (uint32_t j = 0; j < translations[i].size(); j++)
 					{
 						file.write(&translations[i][j].x, sizeFloat);
 						file.write(&translations[i][j].y, sizeFloat);
 						file.write(&translations[i][j].z, sizeFloat);
 					}
-					for (uint32_t j = 0; j < rotations.size(); j++)
+					for (uint32_t j = 0; j < rotations[i].size(); j++)
 					{
 						file.write(&rotations[i][j].x, sizeFloat);
 						file.write(&rotations[i][j].y, sizeFloat);
 						file.write(&rotations[i][j].z, sizeFloat);
 						file.write(&rotations[i][j].w, sizeFloat);
 					}
-					for (uint32_t j = 0; j < scales.size(); j++)
+					for (uint32_t j = 0; j < scales[i].size(); j++)
 					{
 						file.write(&scales[i][j].x, sizeFloat);
 						file.write(&scales[i][j].y, sizeFloat);
