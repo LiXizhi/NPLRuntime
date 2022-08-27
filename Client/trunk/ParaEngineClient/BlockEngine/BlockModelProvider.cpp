@@ -57,7 +57,7 @@ int ParaEngine::CLinearModelProvider::GetModelCount() const
 	return m_nModelCount;
 }
 
-Vector3 ParaEngine::CLinearModelProvider::vec3Rotate(Vector3 pt, Vector3 angles)
+Vector3 ParaEngine::CLinearModelProvider::vec3Rotate(Vector3 &pt, Vector3 &angles)
 {
 	float X = pt.x,Y= pt.y,Z= pt.z;
 	float a = angles.x, b = angles.y, c = angles.z;
@@ -85,7 +85,7 @@ Vector3 ParaEngine::CLinearModelProvider::vec3Rotate(Vector3 pt, Vector3 angles)
 	return Vector3(X, Y, Z);
 }
 
-Vector3 ParaEngine::CLinearModelProvider::vec3RotateByPoint(Vector3 originPt, Vector3 pt, Vector3 angles)
+Vector3 ParaEngine::CLinearModelProvider::vec3RotateByPoint(Vector3 &originPt, Vector3 &pt, Vector3 &angles)
 {
 	float ox = originPt.x, oy = originPt.y, oz = originPt.z;
 	float X = pt.x, Y = pt.y, Z = pt.z;

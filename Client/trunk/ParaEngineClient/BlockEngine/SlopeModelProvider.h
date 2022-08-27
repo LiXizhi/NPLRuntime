@@ -31,5 +31,10 @@ namespace ParaEngine
 		void _buildHInnerCornerBlockModels();
 		void _buildOutCornerModels_1();
 		void _buildOutCornerModels_2();
+
+		void cloneAndRoateModels(BlockModel &tempModel, Vector3 angleArr[], BlockModel outModels[], int len);
+
+		//计算某一个面的法线
+		Vector3 calculateModelNormalOfFace(BlockModel &tempModel,int startIdxOfFace);
 	};
 }

@@ -29,7 +29,7 @@ BlockModel& ParaEngine::CSlopeModelProvider::GetBlockModel(int nIndex /*= 0*/)
 {
 	BlockModel * model = mEdgeBlockModels;
 	int block_index = 0;
-	if (nIndex >= 100) {//ĞÂ¼ÓµÄÓÃ1000ÒÔÉÏµÄ£¬±Ü¿ª¾ÉµÄÓ°Ïì
+	if (nIndex >= 100) {//æ–°åŠ çš„ç”¨1000ä»¥ä¸Šçš„ï¼Œé¿å¼€æ—§çš„å½±å“
 		nIndex -= 100;
 		if (nIndex < 24) {
 			block_index = nIndex;
@@ -78,7 +78,7 @@ BlockModel& ParaEngine::CSlopeModelProvider::GetBlockModel(CBlockWorld* pBlockMa
 
 	BlockModel * model = mEdgeBlockModels;
 	int block_index = 0;
-	if (nBlockData >= 100) {//ĞÂ¼ÓµÄÓÃ1000ÒÔÉÏµÄ£¬±Ü¿ª¾ÉµÄÓ°Ïì
+	if (nBlockData >= 100) {//æ–°åŠ çš„ç”¨1000ä»¥ä¸Šçš„ï¼Œé¿å¼€æ—§çš„å½±å“
 		nBlockData -= 100;
 		if (nBlockData < 24) {
 			block_index = nBlockData;
@@ -124,19 +124,28 @@ void ParaEngine::CSlopeModelProvider::_buildEdgeBlockModels()
 {
 	BlockModel cube_mode;
 	cube_mode.LoadModelByTexture(0);
-	int block_index = 0;
-	for (auto& model : mEdgeBlockModels) {
-		model.ClearVertices();
+	int modelNum = sizeof(mEdgeBlockModels) / sizeof(mEdgeBlockModels[0]);
+
+	for (int i = 0; i < modelNum; i++) {
+		mEdgeBlockModels[i].ClearVertices();
+		mEdgeBlockModels[i] = cube_mode;
 	}
-	
-	mEdgeBlockModels[block_index] = cube_mode;
-	std::vector<BlockVertexCompressed> _vertices = mEdgeBlockModels[block_index].Vertices();
-	mEdgeBlockModels[block_index].Vertices()[BlockModel::g_leftLT].SetPosition(cube_mode.Vertices()[BlockModel::g_rightRT].position[0], cube_mode.Vertices()[BlockModel::g_rightRT].position[1], cube_mode.Vertices()[BlockModel::g_rightRT].position[2]);
-	mEdgeBlockModels[block_index].Vertices()[BlockModel::g_leftRT].SetPosition(cube_mode.Vertices()[BlockModel::g_rightLT].position[0], cube_mode.Vertices()[BlockModel::g_rightLT].position[1], cube_mode.Vertices()[BlockModel::g_rightLT].position[2]);
-	for (int i = 0; i < 4; ++i)
-		mEdgeBlockModels[block_index].Vertices()[BlockModel::g_topLB + i] = cube_mode.Vertices()[BlockModel::g_topLB];
-	mEdgeBlockModels[block_index].Vertices()[BlockModel::g_frtLT] = cube_mode.Vertices()[BlockModel::g_frtLB];
-	mEdgeBlockModels[block_index].Vertices()[BlockModel::g_bkRT] = cube_mode.Vertices()[BlockModel::g_bkRB];
+
+	BlockModel tempModel = cube_mode;
+	tempModel.Vertices()[BlockModel::g_leftLT].SetPosition(cube_mode.Vertices()[BlockModel::g_rightRT].position[0], cube_mode.Vertices()[BlockModel::g_rightRT].position[1], cube_mode.Vertices()[BlockModel::g_rightRT].position[2]);
+	tempModel.Vertices()[BlockModel::g_leftRT].SetPosition(cube_mode.Vertices()[BlockModel::g_rightLT].position[0], cube_mode.Vertices()[BlockModel::g_rightLT].position[1], cube_mode.Vertices()[BlockModel::g_rightLT].position[2]);
+	for (int i = 0; i < 4; ++i) {
+		tempModel.Vertices()[BlockModel::g_topLB + i] = cube_mode.Vertices()[BlockModel::g_topLB];
+		tempModel.Vertices()[BlockModel::g_topLB + i].SetNormal(0, 0, 0);
+	}
+		
+	tempModel.Vertices()[BlockModel::g_frtLT] = cube_mode.Vertices()[BlockModel::g_frtLB];
+	tempModel.Vertices()[BlockModel::g_bkRT] = cube_mode.Vertices()[BlockModel::g_bkRB];
+
+	tempModel.Vertices()[BlockModel::g_frtLT].SetNormal(0, 0, 0);
+	tempModel.Vertices()[BlockModel::g_bkRT].SetNormal(0, 0, 0);
+
+	calculateModelNormalOfFace(tempModel, BlockModel::g_leftLB);//å·¦ä¾§å˜æˆäº†æ–œé¢ï¼Œæ³•çº¿é‡æ–°è®¡ç®—
 
 	Vector3 angleArr[8] = {
 		Vector3(0,0,0),
@@ -148,22 +157,7 @@ void ParaEngine::CSlopeModelProvider::_buildEdgeBlockModels()
 		Vector3(0, -1.57, 0),
 		Vector3(0, 1.57, 0)
 	};
-	auto _models = mEdgeBlockModels;
-
-	BlockModel tempModel;
-	tempModel.Clone(_models[block_index]);
-	for (int i = 1; i < 8; i++) {
-		Vector3 angles = angleArr[i];
-		int block_index = i;
-		_models[block_index] = cube_mode;
-		for (int i = 0; i < 24; i++) {
-			Vector3 pt = Vector3(tempModel.Vertices()[i].position[0], tempModel.Vertices()[i].position[1], tempModel.Vertices()[i].position[2]);
-			Vector3 newPt = vec3RotateByPoint(Vector3(0.5, 0.5, 0.5), Vector3(pt.x, pt.y, pt.z), angles);
-			_models[block_index].Vertices()[i].SetPosition(newPt.x, newPt.y, newPt.z);
-
-			//OUTPUT_LOG("idx:%d ,pt_0_1:(%f,%f,%f)==(%f,%f,%f) ? %s\n\n", i, pt.x, pt.y, pt.z, newPt.x, newPt.y, newPt.z, (abs(pt.x - newPt.x) < 0.0000001 && abs(pt.y - newPt.y) < 0.0000001 && abs(pt.z - newPt.z) < 0.0000001) ? "true" : "false");
-		}
-	}
+	cloneAndRoateModels(tempModel, angleArr, mEdgeBlockModels, modelNum);
 
 	for (auto& model : mEdgeBlockModels) {
 		model.SetFaceCount(model.Vertices().size() / 4);
@@ -176,25 +170,28 @@ void ParaEngine::CSlopeModelProvider::_builOuterCornerBlockModels()
 {
 	BlockModel cube_mode;
 	cube_mode.LoadModelByTexture(0);
-	int block_index = 0;
-	for (auto& model : mOuterCornerBlockModels) {
-		model.ClearVertices();
+	int modelNum = sizeof(mOuterCornerBlockModels) / sizeof(mOuterCornerBlockModels[0]);
+
+	for (int i = 0; i < modelNum; i++) {
+		mOuterCornerBlockModels[i].ClearVertices();
+		mOuterCornerBlockModels[i] = cube_mode;
 	}
-	
-	mOuterCornerBlockModels[block_index] = cube_mode;
+
+	BlockModel tempModel = cube_mode;
+
 	for (int i = 0; i < 4; ++i)
 	{
-		mOuterCornerBlockModels[block_index].Vertices()[BlockModel::g_topLB + i].SetPosition(cube_mode.Vertices()[BlockModel::g_rightRT].position[0], cube_mode.Vertices()[BlockModel::g_rightRT].position[1], cube_mode.Vertices()[BlockModel::g_rightRT].position[2]);
-		//mOuterCornerBlockModels[block_index].Vertices()[BlockModel::g_leftLB + i].SetNormal(cube_mode.Vertices()[BlockModel::g_topLB].normal[0], cube_mode.Vertices()[BlockModel::g_topLB].normal[1], cube_mode.Vertices()[BlockModel::g_topLB].normal[2]);
-		//mOuterCornerBlockModels[block_index].Vertices()[BlockModel::g_frtLB + i].SetNormal(cube_mode.Vertices()[BlockModel::g_topLB].normal[0], cube_mode.Vertices()[BlockModel::g_topLB].normal[1], cube_mode.Vertices()[BlockModel::g_topLB].normal[2]);
+		tempModel.Vertices()[BlockModel::g_topLB + i].SetPosition(cube_mode.Vertices()[BlockModel::g_rightRT].position[0], cube_mode.Vertices()[BlockModel::g_rightRT].position[1], cube_mode.Vertices()[BlockModel::g_rightRT].position[2]);
+		//tempModel.Vertices()[BlockModel::g_leftLB + i].SetNormal(cube_mode.Vertices()[BlockModel::g_topLB].normal[0], cube_mode.Vertices()[BlockModel::g_topLB].normal[1], cube_mode.Vertices()[BlockModel::g_topLB].normal[2]);
+		//tempModel.Vertices()[BlockModel::g_frtLB + i].SetNormal(cube_mode.Vertices()[BlockModel::g_topLB].normal[0], cube_mode.Vertices()[BlockModel::g_topLB].normal[1], cube_mode.Vertices()[BlockModel::g_topLB].normal[2]);
 	}
-	mOuterCornerBlockModels[block_index].Vertices()[BlockModel::g_frtLT].SetPosition(cube_mode.Vertices()[BlockModel::g_rightRT].position[0], cube_mode.Vertices()[BlockModel::g_rightRT].position[1], cube_mode.Vertices()[BlockModel::g_rightRT].position[2]);
-	mOuterCornerBlockModels[block_index].Vertices()[BlockModel::g_frtRT].SetPosition(cube_mode.Vertices()[BlockModel::g_rightRT].position[0], cube_mode.Vertices()[BlockModel::g_rightRT].position[1], cube_mode.Vertices()[BlockModel::g_rightRT].position[2]);
-	mOuterCornerBlockModels[block_index].Vertices()[BlockModel::g_leftLT].SetPosition(cube_mode.Vertices()[BlockModel::g_rightRT].position[0], cube_mode.Vertices()[BlockModel::g_rightRT].position[1], cube_mode.Vertices()[BlockModel::g_rightRT].position[2]);
-	mOuterCornerBlockModels[block_index].Vertices()[BlockModel::g_leftRT].SetPosition(cube_mode.Vertices()[BlockModel::g_rightRT].position[0], cube_mode.Vertices()[BlockModel::g_rightRT].position[1], cube_mode.Vertices()[BlockModel::g_rightRT].position[2]);
-	mOuterCornerBlockModels[block_index].Vertices()[BlockModel::g_rightLT].SetPosition(cube_mode.Vertices()[BlockModel::g_rightRT].position[0], cube_mode.Vertices()[BlockModel::g_rightRT].position[1], cube_mode.Vertices()[BlockModel::g_rightRT].position[2]);
-	mOuterCornerBlockModels[block_index].Vertices()[BlockModel::g_bkRT].SetPosition(cube_mode.Vertices()[BlockModel::g_rightRT].position[0], cube_mode.Vertices()[BlockModel::g_rightRT].position[1], cube_mode.Vertices()[BlockModel::g_rightRT].position[2]);
-	mOuterCornerBlockModels[block_index].Vertices()[BlockModel::g_frtLT].SetTexcoord(cube_mode.Vertices()[BlockModel::g_frtRT].texcoord[0], cube_mode.Vertices()[BlockModel::g_frtRT].texcoord[1]);
+	tempModel.Vertices()[BlockModel::g_frtLT].SetPosition(cube_mode.Vertices()[BlockModel::g_rightRT].position[0], cube_mode.Vertices()[BlockModel::g_rightRT].position[1], cube_mode.Vertices()[BlockModel::g_rightRT].position[2]);
+	tempModel.Vertices()[BlockModel::g_frtRT].SetPosition(cube_mode.Vertices()[BlockModel::g_rightRT].position[0], cube_mode.Vertices()[BlockModel::g_rightRT].position[1], cube_mode.Vertices()[BlockModel::g_rightRT].position[2]);
+	tempModel.Vertices()[BlockModel::g_leftLT].SetPosition(cube_mode.Vertices()[BlockModel::g_rightRT].position[0], cube_mode.Vertices()[BlockModel::g_rightRT].position[1], cube_mode.Vertices()[BlockModel::g_rightRT].position[2]);
+	tempModel.Vertices()[BlockModel::g_leftRT].SetPosition(cube_mode.Vertices()[BlockModel::g_rightRT].position[0], cube_mode.Vertices()[BlockModel::g_rightRT].position[1], cube_mode.Vertices()[BlockModel::g_rightRT].position[2]);
+	tempModel.Vertices()[BlockModel::g_rightLT].SetPosition(cube_mode.Vertices()[BlockModel::g_rightRT].position[0], cube_mode.Vertices()[BlockModel::g_rightRT].position[1], cube_mode.Vertices()[BlockModel::g_rightRT].position[2]);
+	tempModel.Vertices()[BlockModel::g_bkRT].SetPosition(cube_mode.Vertices()[BlockModel::g_rightRT].position[0], cube_mode.Vertices()[BlockModel::g_rightRT].position[1], cube_mode.Vertices()[BlockModel::g_rightRT].position[2]);
+	tempModel.Vertices()[BlockModel::g_frtLT].SetTexcoord(cube_mode.Vertices()[BlockModel::g_frtRT].texcoord[0], cube_mode.Vertices()[BlockModel::g_frtRT].texcoord[1]);
 	
 	Vector3 angleArr[8] = {
 		Vector3(0,0,0),
@@ -206,22 +203,8 @@ void ParaEngine::CSlopeModelProvider::_builOuterCornerBlockModels()
 		Vector3(3.14,1.57,0),
 		Vector3(3.14,-1.57,0)
 	};
-	auto _models = mOuterCornerBlockModels;
 
-	BlockModel tempModel;
-	tempModel.Clone(_models[block_index]);
-	for (int i = 1; i < 8; i++) {
-		Vector3 angles = angleArr[i];
-		int block_index = i;
-		_models[block_index] = cube_mode;
-		for (int i = 0; i < 24; i++) {
-			Vector3 pt = Vector3(tempModel.Vertices()[i].position[0], tempModel.Vertices()[i].position[1], tempModel.Vertices()[i].position[2]);
-			Vector3 newPt = vec3RotateByPoint(Vector3(0.5, 0.5, 0.5), Vector3(pt.x, pt.y, pt.z), angles);
-			_models[block_index].Vertices()[i].SetPosition(newPt.x, newPt.y, newPt.z);
-
-			//OUTPUT_LOG("idx:%d ,pt_0_1:(%f,%f,%f)==(%f,%f,%f) ? %s\n\n", i, pt.x, pt.y, pt.z, newPt.x, newPt.y, newPt.z, (abs(pt.x - newPt.x) < 0.0000001 && abs(pt.y - newPt.y) < 0.0000001 && abs(pt.z - newPt.z) < 0.0000001) ? "true" : "false");
-		}
-	}
+	cloneAndRoateModels(tempModel, angleArr, mOuterCornerBlockModels, modelNum);
 
 	for (auto& model : mOuterCornerBlockModels) {
 		model.SetFaceCount(model.Vertices().size() / 4);
@@ -234,18 +217,22 @@ void ParaEngine::CSlopeModelProvider::_buildInnerCornerBlockModels()
 {
 	BlockModel cube_mode;
 	cube_mode.LoadModelByTexture(0);
-	int block_index = 0;
-	for (auto& model : mInnerCornerBlockModels) {
-		model.ClearVertices();
-	}
-	//shift FRT to FRB
-	mInnerCornerBlockModels[block_index] = cube_mode;
-	mInnerCornerBlockModels[block_index].Vertices()[BlockModel::g_frtRT].SetPosition(cube_mode.Vertices()[BlockModel::g_frtRB].position[0], cube_mode.Vertices()[BlockModel::g_frtRB].position[1], cube_mode.Vertices()[BlockModel::g_frtRB].position[2]);
-	mInnerCornerBlockModels[block_index].Vertices()[BlockModel::g_topRB].SetPosition(cube_mode.Vertices()[BlockModel::g_frtRB].position[0], cube_mode.Vertices()[BlockModel::g_frtRB].position[1], cube_mode.Vertices()[BlockModel::g_frtRB].position[2]);
-	mInnerCornerBlockModels[block_index].Vertices()[BlockModel::g_rightLT].SetPosition(cube_mode.Vertices()[BlockModel::g_frtRB].position[0], cube_mode.Vertices()[BlockModel::g_frtRB].position[1], cube_mode.Vertices()[BlockModel::g_frtRB].position[2]);
-	mInnerCornerBlockModels[block_index].Vertices()[BlockModel::g_topLB].SetTexcoord(cube_mode.Vertices()[BlockModel::g_topRT].texcoord[0], cube_mode.Vertices()[BlockModel::g_topRT].texcoord[1]);
+	int modelNum = sizeof(mInnerCornerBlockModels) / sizeof(mInnerCornerBlockModels[0]);
 
-	//¾ÉµÄ 2-1ºÍ2-5Ã÷ÏÔ²»ÊÇÄÚÍ¹µÄ£¬ÕâÀï¸ÄÁË£¬Ó¦¸ÃÃ»¶àÉÙµØ·½ÓÃµ½
+	for (int i = 0; i < modelNum; i++) {
+		mInnerCornerBlockModels[i].ClearVertices();
+		mInnerCornerBlockModels[i] = cube_mode;
+	}
+
+	BlockModel tempModel = cube_mode;
+	//shift FRT to FRB
+	tempModel = cube_mode;
+	tempModel.Vertices()[BlockModel::g_frtRT].SetPosition(cube_mode.Vertices()[BlockModel::g_frtRB].position[0], cube_mode.Vertices()[BlockModel::g_frtRB].position[1], cube_mode.Vertices()[BlockModel::g_frtRB].position[2]);
+	tempModel.Vertices()[BlockModel::g_topRB].SetPosition(cube_mode.Vertices()[BlockModel::g_frtRB].position[0], cube_mode.Vertices()[BlockModel::g_frtRB].position[1], cube_mode.Vertices()[BlockModel::g_frtRB].position[2]);
+	tempModel.Vertices()[BlockModel::g_rightLT].SetPosition(cube_mode.Vertices()[BlockModel::g_frtRB].position[0], cube_mode.Vertices()[BlockModel::g_frtRB].position[1], cube_mode.Vertices()[BlockModel::g_frtRB].position[2]);
+	tempModel.Vertices()[BlockModel::g_topLB].SetTexcoord(cube_mode.Vertices()[BlockModel::g_topRT].texcoord[0], cube_mode.Vertices()[BlockModel::g_topRT].texcoord[1]);
+
+	//æ—§çš„ 2-1å’Œ2-5æ˜æ˜¾ä¸æ˜¯å†…å‡¸çš„ï¼Œè¿™é‡Œæ”¹äº†ï¼Œåº”è¯¥æ²¡å¤šå°‘åœ°æ–¹ç”¨åˆ°
 	Vector3 angleArr[8] = {
 		Vector3(0,0,0),
 		Vector3(3.14,1.57,0),
@@ -257,20 +244,7 @@ void ParaEngine::CSlopeModelProvider::_buildInnerCornerBlockModels()
 		Vector3(3.14,0,0)
 	};
 
-	BlockModel tempModel;
-	tempModel.Clone(mInnerCornerBlockModels[block_index]);
-	for (int i = 1; i < 8; i++) {
-		Vector3 angles = angleArr[i];
-		int block_index = i;
-		mInnerCornerBlockModels[block_index] = cube_mode;
-		for (int i = 0; i < 24; i++) {
-			Vector3 pt = Vector3(tempModel.Vertices()[i].position[0], tempModel.Vertices()[i].position[1], tempModel.Vertices()[i].position[2]);
-			Vector3 newPt = vec3RotateByPoint(Vector3(0.5, 0.5, 0.5), Vector3(pt.x, pt.y, pt.z), angles);
-			mInnerCornerBlockModels[block_index].Vertices()[i].SetPosition(newPt.x, newPt.y, newPt.z);
-
-			//OUTPUT_LOG("idx:%d ,pt_0_1:(%f,%f,%f)==(%f,%f,%f) ? %s\n\n", i, pt.x, pt.y, pt.z, newPt.x, newPt.y, newPt.z, (abs(pt.x - newPt.x) < 0.0000001 && abs(pt.y - newPt.y) < 0.0000001 && abs(pt.z - newPt.z) < 0.0000001) ? "true" : "false");
-		}
-	}
+	cloneAndRoateModels(tempModel, angleArr, mInnerCornerBlockModels, modelNum);
 
 	for (auto& model : mInnerCornerBlockModels) {
 		model.SetFaceCount(model.Vertices().size() / 4);
@@ -283,20 +257,24 @@ void ParaEngine::CSlopeModelProvider::_buildHEdgeBlockModels()
 {
 	BlockModel cube_mode;
 	cube_mode.LoadModelByTexture(0);
-	int block_index = 0;
-	for (auto& model : mHEdgeBlockModels){
-		model.ClearVertices();
-	}
-	
-	mHEdgeBlockModels[block_index] = cube_mode;
-	mHEdgeBlockModels[block_index].Vertices()[BlockModel::g_leftLB].SetPosition(cube_mode.Vertices()[BlockModel::g_rightRB].position[0], cube_mode.Vertices()[BlockModel::g_rightRB].position[1], cube_mode.Vertices()[BlockModel::g_rightRB].position[2]);
-	mHEdgeBlockModels[block_index].Vertices()[BlockModel::g_leftLT].SetPosition(cube_mode.Vertices()[BlockModel::g_rightRT].position[0], cube_mode.Vertices()[BlockModel::g_rightRT].position[1], cube_mode.Vertices()[BlockModel::g_rightRT].position[2]);
-	for (int i = 0; i < 4; ++i)
-		mHEdgeBlockModels[block_index].Vertices()[BlockModel::g_bkLB + i] = cube_mode.Vertices()[BlockModel::g_bkLB];
-	mHEdgeBlockModels[block_index].Vertices()[BlockModel::g_topLT] = cube_mode.Vertices()[BlockModel::g_topLB];
-	mHEdgeBlockModels[block_index].Vertices()[BlockModel::g_btmLB] = cube_mode.Vertices()[BlockModel::g_btmLT];
+	int modelNum = sizeof(mHEdgeBlockModels) / sizeof(mHEdgeBlockModels[0]);
 
-	//²»È«ÊÇ¶ÔµÄ£¬ÒòÎªÓĞÖØ¸´£¬µ«ÊÇÒª¼æÈİ¾É°æ
+	for (int i = 0; i < modelNum; i++) {
+		mHEdgeBlockModels[i].ClearVertices();
+		mHEdgeBlockModels[i] = cube_mode;
+	}
+
+	BlockModel tempModel = cube_mode;
+	
+	tempModel = cube_mode;
+	tempModel.Vertices()[BlockModel::g_leftLB].SetPosition(cube_mode.Vertices()[BlockModel::g_rightRB].position[0], cube_mode.Vertices()[BlockModel::g_rightRB].position[1], cube_mode.Vertices()[BlockModel::g_rightRB].position[2]);
+	tempModel.Vertices()[BlockModel::g_leftLT].SetPosition(cube_mode.Vertices()[BlockModel::g_rightRT].position[0], cube_mode.Vertices()[BlockModel::g_rightRT].position[1], cube_mode.Vertices()[BlockModel::g_rightRT].position[2]);
+	for (int i = 0; i < 4; ++i)
+		tempModel.Vertices()[BlockModel::g_bkLB + i] = cube_mode.Vertices()[BlockModel::g_bkLB];
+	tempModel.Vertices()[BlockModel::g_topLT] = cube_mode.Vertices()[BlockModel::g_topLB];
+	tempModel.Vertices()[BlockModel::g_btmLB] = cube_mode.Vertices()[BlockModel::g_btmLT];
+
+	//ä¸å…¨æ˜¯å¯¹çš„ï¼Œå› ä¸ºæœ‰é‡å¤ï¼Œä½†æ˜¯è¦å…¼å®¹æ—§ç‰ˆ
 	Vector3 angleArr[8] = {
 		Vector3(0,0,0),
 		Vector3(0,1.57,0),
@@ -307,22 +285,8 @@ void ParaEngine::CSlopeModelProvider::_buildHEdgeBlockModels()
 		Vector3(-1.57,-1.57,0),
 		Vector3(-1.57,1.57,0)
 	};
-	auto _models = mHEdgeBlockModels;
 
-	BlockModel tempModel;
-	tempModel.Clone(_models[block_index]);
-	for (int i = 1; i < 8; i++) {
-		Vector3 angles = angleArr[i];
-		int block_index = i;
-		_models[block_index] = cube_mode;
-		for (int i = 0; i < 24; i++) {
-			Vector3 pt = Vector3(tempModel.Vertices()[i].position[0], tempModel.Vertices()[i].position[1], tempModel.Vertices()[i].position[2]);
-			Vector3 newPt = vec3RotateByPoint(Vector3(0.5, 0.5, 0.5), Vector3(pt.x, pt.y, pt.z), angles);
-			_models[block_index].Vertices()[i].SetPosition(newPt.x, newPt.y, newPt.z);
-
-			//OUTPUT_LOG("idx:%d ,pt_0_1:(%f,%f,%f)==(%f,%f,%f) ? %s\n\n", i, pt.x, pt.y, pt.z, newPt.x, newPt.y, newPt.z, (abs(pt.x - newPt.x) < 0.0000001 && abs(pt.y - newPt.y) < 0.0000001 && abs(pt.z - newPt.z) < 0.0000001) ? "true" : "false");
-		}
-	}
+	cloneAndRoateModels(tempModel, angleArr, mHEdgeBlockModels, modelNum);
 
 	for (auto& model : mHEdgeBlockModels){
 		model.SetFaceCount(model.Vertices().size() / 4);
@@ -343,73 +307,66 @@ void ParaEngine::CSlopeModelProvider::_buildOutCornerModels_1()
 {
 	BlockModel cube_mode;
 	cube_mode.LoadModelByTexture(0);
-	int block_index = 0;
-	for (auto& model : mOutCornerModels_1) {
-		model.ClearVertices();
+	int modelNum = sizeof(mOutCornerModels_1) / sizeof(mOutCornerModels_1[0]);
+
+	for (int i = 0; i < modelNum; i++) {
+		mOutCornerModels_1[i].ClearVertices();
+		mOutCornerModels_1[i] = cube_mode;
 	}
 
-	mOutCornerModels_1[block_index] = cube_mode;
-	for (int i = 0; i < 24; i++) {
-		Vector3 pt = Vector3(mOuterCornerBlockModels[0].Vertices()[i].position[0], mOuterCornerBlockModels[0].Vertices()[i].position[1], mOuterCornerBlockModels[0].Vertices()[i].position[2]);
-		Vector3 newPt = vec3RotateByPoint(Vector3(0.5, 0.5, 0.5), Vector3(pt.x, pt.y, pt.z), Vector3(1.57, 1.57, 0));
-		mOutCornerModels_1[block_index].Vertices()[i].SetPosition(newPt.x, newPt.y, newPt.z);
+	BlockModel tempModel = cube_mode;
 
-		//OUTPUT_LOG("idx:%d ,pt_0_1:(%f,%f,%f)==(%f,%f,%f) ? %s\n\n", i, pt.x, pt.y, pt.z, newPt.x, newPt.y, newPt.z, (abs(pt.x - newPt.x) < 0.0000001 && abs(pt.y - newPt.y) < 0.0000001 && abs(pt.z - newPt.z) < 0.0000001) ? "true" : "false");
+	for (int i = 0; i < 24; i++) {
+		Vector3 pt;
+		
+		mOuterCornerBlockModels[0].Vertices()[i].GetPosition(pt);
+		Vector3 newPt = vec3RotateByPoint(Vector3(0.5, 0.5, 0.5), Vector3(pt.x, pt.y, pt.z), Vector3(1.57, 1.57, 0));
+
+		newPt.x = round(newPt.x);
+		newPt.y = round(newPt.y);
+		newPt.z = round(newPt.z);
+
+		tempModel.Vertices()[i].SetPosition(newPt.x, newPt.y, newPt.z);
+
 	}
 
 	Vector3 angleArr[24] = {
-		//¼â¼â³¯×ÅyÕı·½Ïò
+		//å°–å°–æœç€yæ­£æ–¹å‘
 		Vector3(0,0,1.57),
 		Vector3(1.57,0,1.57),
 		Vector3(3.14,0,1.57),
 		Vector3(-1.57,0,1.57),
-		//¼â¼â³¯×Åy¸º·½Ïò
+		//å°–å°–æœç€yè´Ÿæ–¹å‘
 		Vector3(0,0,-1.57),
 		Vector3(1.57,0,-1.57),
 		Vector3(3.14,0,-1.57),
 		Vector3(-1.57,0,-1.57),
 
 
-		//¼â¼â³¯×ÅxÕı·½Ïò
+		//å°–å°–æœç€xæ­£æ–¹å‘
 		Vector3(0,0,0),
 		Vector3(1.57,0,0),
 		Vector3(3.14,0,0),
 		Vector3(-1.57,0,0),
-		//¼â¼â³¯×Åx¸º·½Ïò
+		//å°–å°–æœç€xè´Ÿæ–¹å‘
 		Vector3(0,0,3.14),
 		Vector3(1.57,0,3.14),
 		Vector3(3.14,0,3.14),
 		Vector3(-1.57,0,3.14),
 
-		//¼â¼â³¯×ÅzÕı·½Ïò
+		//å°–å°–æœç€zæ­£æ–¹å‘
 		Vector3(0,-1.57,0),
 		Vector3(1.57,-1.57,0),
 		Vector3(3.14,-1.57,0),
 		Vector3(-1.57,-1.57,0),
-		//¼â¼â³¯×Åz¸º·½Ïò
+		//å°–å°–æœç€zè´Ÿæ–¹å‘
 		Vector3(0,1.57,3.14),
 		Vector3(1.57,1.57,3.14),
 		Vector3(3.14,1.57,3.14),
 		Vector3(-1.57,1.57,3.14),
-
-		
 	};
-	auto _models = mOutCornerModels_1;
 
-	BlockModel tempModel;
-	tempModel.Clone(_models[block_index]);
-	for (int i = 0; i < 24; i++) {
-		Vector3 angles = angleArr[i];
-		int block_index = i;
-		_models[block_index] = cube_mode;
-		for (int i = 0; i < 24; i++) {//Ğı×ª24¸ö¶¥µã
-			Vector3 pt = Vector3(tempModel.Vertices()[i].position[0], tempModel.Vertices()[i].position[1], tempModel.Vertices()[i].position[2]);
-			Vector3 newPt = vec3RotateByPoint(Vector3(0.5, 0.5, 0.5), Vector3(pt.x, pt.y, pt.z), angles);
-			_models[block_index].Vertices()[i].SetPosition(newPt.x, newPt.y, newPt.z);
-
-			//OUTPUT_LOG("idx:%d ,pt_0_1:(%f,%f,%f)==(%f,%f,%f) ? %s\n\n", i, pt.x, pt.y, pt.z, newPt.x, newPt.y, newPt.z, (abs(pt.x - newPt.x) < 0.0000001 && abs(pt.y - newPt.y) < 0.0000001 && abs(pt.z - newPt.z) < 0.0000001) ? "true" : "false");
-		}
-	}
+	cloneAndRoateModels(tempModel, angleArr, mOutCornerModels_1, modelNum);
 
 	for (auto& model : mOutCornerModels_1) {
 		model.SetFaceCount(model.Vertices().size() / 4);
@@ -422,40 +379,40 @@ void ParaEngine::CSlopeModelProvider::_buildOutCornerModels_2()
 {
 	BlockModel cube_mode;
 	cube_mode.LoadModelByTexture(0);
-	int block_index = 0;
+	int modelNum = sizeof(mOutCornerModels_2) / sizeof(mOutCornerModels_2[0]);
 
-	for (auto& model : mOutCornerModels_2) {
-		model.ClearVertices();
+	for (int i = 0; i < modelNum; i++) {
+		mOutCornerModels_2[i].ClearVertices();
+		mOutCornerModels_2[i] = cube_mode;
 	}
 
-	mOutCornerModels_2[block_index] = cube_mode;
+	BlockModel tempModel = cube_mode;
 	
-	mOutCornerModels_2[block_index].Vertices()[BlockModel::g_frtRT] = cube_mode.Vertices()[BlockModel::g_frtRB];
-	mOutCornerModels_2[block_index].Vertices()[BlockModel::g_leftLT] = cube_mode.Vertices()[BlockModel::g_leftLB];
-	mOutCornerModels_2[block_index].Vertices()[BlockModel::g_btmRB] = cube_mode.Vertices()[BlockModel::g_btmRT];
+	tempModel.Vertices()[BlockModel::g_frtRT] = cube_mode.Vertices()[BlockModel::g_frtRB];
+	tempModel.Vertices()[BlockModel::g_leftLT] = cube_mode.Vertices()[BlockModel::g_leftLB];
+	tempModel.Vertices()[BlockModel::g_btmRB] = cube_mode.Vertices()[BlockModel::g_btmRT];
 
 	for (int i = 0; i < 4; i++) {
-		mOutCornerModels_2[block_index].Vertices()[BlockModel::g_topLB+i] = cube_mode.Vertices()[BlockModel::g_topLB];
+		tempModel.Vertices()[BlockModel::g_topLB+i] = cube_mode.Vertices()[BlockModel::g_topLB];
 	}
-	mOutCornerModels_2[block_index].Vertices()[BlockModel::g_topLB] = cube_mode.Vertices()[BlockModel::g_btmLB];
-	mOutCornerModels_2[block_index].Vertices()[BlockModel::g_topRB] = cube_mode.Vertices()[BlockModel::g_btmRT];
+	tempModel.Vertices()[BlockModel::g_topLB] = cube_mode.Vertices()[BlockModel::g_btmLB];
+	tempModel.Vertices()[BlockModel::g_topRB] = cube_mode.Vertices()[BlockModel::g_btmRT];
 	
 	for (int i = 0; i < 4; i++) {
-		mOutCornerModels_2[block_index].Vertices()[BlockModel::g_rightLB + i] = cube_mode.Vertices()[BlockModel::g_rightLB];
+		tempModel.Vertices()[BlockModel::g_rightLB + i] = cube_mode.Vertices()[BlockModel::g_rightLB];
 	}
-	mOutCornerModels_2[block_index].Vertices()[BlockModel::g_rightLT] = cube_mode.Vertices()[BlockModel::g_frtLT];
-	mOutCornerModels_2[block_index].Vertices()[BlockModel::g_rightRB] = cube_mode.Vertices()[BlockModel::g_leftLB];
+	tempModel.Vertices()[BlockModel::g_rightLT] = cube_mode.Vertices()[BlockModel::g_frtLT];
+	tempModel.Vertices()[BlockModel::g_rightRB] = cube_mode.Vertices()[BlockModel::g_leftLB];
 
 	for (int i = 0; i < 4; i++) {
-		mOutCornerModels_2[block_index].Vertices()[BlockModel::g_bkLB + i] = cube_mode.Vertices()[BlockModel::g_bkRB];
+		tempModel.Vertices()[BlockModel::g_bkLB + i] = cube_mode.Vertices()[BlockModel::g_bkRB];
 	}
 
-	mOutCornerModels_2[block_index].Vertices()[BlockModel::g_bkLB] = cube_mode.Vertices()[BlockModel::g_frtRB];
-	mOutCornerModels_2[block_index].Vertices()[BlockModel::g_bkRT] = cube_mode.Vertices()[BlockModel::g_frtLB];
+	tempModel.Vertices()[BlockModel::g_bkLB] = cube_mode.Vertices()[BlockModel::g_frtRB];
+	tempModel.Vertices()[BlockModel::g_bkRT] = cube_mode.Vertices()[BlockModel::g_frtLB];
 
 
 	Vector3 angleArr[8] = {
-		
 		Vector3(0,0,0),
 		Vector3(0,1.57,0),
 		Vector3(0,3.14,0),
@@ -465,27 +422,76 @@ void ParaEngine::CSlopeModelProvider::_buildOutCornerModels_2()
 		Vector3(3.14,1.57,0),
 		Vector3(3.14,3.14,0),
 		Vector3(3.14,-1.57,0),
-
 	};
 
-	BlockModel tempModel;
-	tempModel.Clone(mOutCornerModels_2[block_index]);
-	for (int i = 0; i < 8; i++) {
-		Vector3 angles = angleArr[i];
-		int block_index = i;
-		mOutCornerModels_2[block_index] = cube_mode;
-		for (int i = 0; i < 24; i++) {//Ğı×ª24¸ö¶¥µã
-			Vector3 pt = Vector3(tempModel.Vertices()[i].position[0], tempModel.Vertices()[i].position[1], tempModel.Vertices()[i].position[2]);
-			Vector3 newPt = vec3RotateByPoint(Vector3(0.5, 0.5, 0.5), Vector3(pt.x, pt.y, pt.z), angles);
-			mOutCornerModels_2[block_index].Vertices()[i].SetPosition(newPt.x, newPt.y, newPt.z);
-
-			//OUTPUT_LOG("idx:%d ,pt_0_1:(%f,%f,%f)==(%f,%f,%f) ? %s\n\n", i, pt.x, pt.y, pt.z, newPt.x, newPt.y, newPt.z, (abs(pt.x - newPt.x) < 0.0000001 && abs(pt.y - newPt.y) < 0.0000001 && abs(pt.z - newPt.z) < 0.0000001) ? "true" : "false");
-		}
-	}
+	cloneAndRoateModels(tempModel, angleArr, mOutCornerModels_2, modelNum);
 
 	for (auto& model : mOutCornerModels_2) {
 		model.SetFaceCount(model.Vertices().size() / 4);
 		model.SetUseAmbientOcclusion(false);
 		model.SetUniformLighting(true);
 	}
+}
+
+void ParaEngine::CSlopeModelProvider::cloneAndRoateModels(BlockModel &tempModel, Vector3 angleArr[], BlockModel outModels[], int len) {
+	for (int i = 0; i < len; i++) {
+		Vector3 angles = angleArr[i];
+		int block_index = i;
+		outModels[block_index].LoadModelByTexture(0);
+		int faceNum =  outModels[block_index].GetFaceCount();
+		for (int face = 0; face < faceNum; face++) {
+			for (int j = 0;j<4; j++) {
+				int idx = face * 4 + j;
+				Vector3 pt;
+				tempModel.Vertices()[idx].GetPosition(pt);
+				Vector3 newPt = vec3RotateByPoint(Vector3(0.5, 0.5, 0.5), pt, angles);
+
+				newPt.x = round(newPt.x);
+				newPt.y = round(newPt.y);
+				newPt.z = round(newPt.z);
+				outModels[block_index].Vertices()[idx].SetPosition(newPt.x, newPt.y, newPt.z);
+				
+			}
+			calculateModelNormalOfFace(outModels[block_index], face*4);
+		}
+	}
+}
+
+Vector3 ParaEngine::CSlopeModelProvider::calculateModelNormalOfFace(BlockModel &tempModel, int startIdxOfFace)
+{
+	int idx = startIdxOfFace + 0;
+	Vector3 pt_0 = Vector3(tempModel.Vertices()[idx].position[0], tempModel.Vertices()[idx].position[1], tempModel.Vertices()[idx].position[2]);
+
+	idx = startIdxOfFace + 1;
+	Vector3 pt_1 = Vector3(tempModel.Vertices()[idx].position[0], tempModel.Vertices()[idx].position[1], tempModel.Vertices()[idx].position[2]);
+
+	idx = startIdxOfFace + 2;
+	Vector3 pt_2 = Vector3(tempModel.Vertices()[idx].position[0], tempModel.Vertices()[idx].position[1], tempModel.Vertices()[idx].position[2]);
+
+	idx = startIdxOfFace + 3;
+	Vector3 pt_3 = Vector3(tempModel.Vertices()[idx].position[0], tempModel.Vertices()[idx].position[1], tempModel.Vertices()[idx].position[2]);
+
+	Vector3 dir0_1 = pt_0 - pt_1;
+	Vector3 dir0_2 = pt_0 - pt_2;
+	Vector3 dir0_3 = pt_0 - pt_3;
+
+	Vector3 normal = Vector3(0, 0, 0);
+	if (!dir0_1.positionEquals(normal) && !dir0_2.positionEquals(normal) && !dir0_1.positionEquals(dir0_2)) {
+		normal = dir0_1.crossProduct(dir0_2);
+	}
+	else if (!dir0_1.positionEquals(normal) && !dir0_3.positionEquals(normal) && !dir0_1.positionEquals(dir0_3)) {
+		normal = dir0_1.crossProduct(dir0_3);
+	}
+	else if (!dir0_2.positionEquals(normal) && !dir0_3.positionEquals(normal) && !dir0_2.positionEquals(dir0_3)) {
+		normal = dir0_2.crossProduct(dir0_3);
+	}
+	
+	normal.x = round(normal.x);
+	normal.y = round(normal.y);
+	normal.z = round(normal.z);
+	for (int i = 0; i < 4; i++) {
+		int idx = startIdxOfFace + i;
+		tempModel.Vertices()[idx].SetNormal(normal);
+	}
+	return normal;
 }
