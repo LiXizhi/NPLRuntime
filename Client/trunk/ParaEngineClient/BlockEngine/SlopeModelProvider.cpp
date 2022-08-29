@@ -1,4 +1,4 @@
-#include "ParaEngine.h"
+﻿#include "ParaEngine.h"
 #include "BlockConfig.h"
 #include "BlockCommon.h"
 #include "BlockChunk.h"
@@ -147,15 +147,15 @@ void ParaEngine::CSlopeModelProvider::_buildEdgeBlockModels()
 
 	calculateModelNormalOfFace(tempModel, BlockModel::g_leftLB);//左侧变成了斜面，法线重新计算
 
-	Vector3 angleArr[8] = {
+	Vector3 angleArr[8] = { 
 		Vector3(0,0,0),
-		Vector3(0, 3.14, 0),
-		Vector3(3.14, 3.14, 0),
-		Vector3(3.14, 0, 0),
-		Vector3(3.14, 1.57, 0),
-		Vector3(3.14, -1.57, 0),
-		Vector3(0, -1.57, 0),
-		Vector3(0, 1.57, 0)
+		Vector3(0, 3.14f, 0),
+		Vector3(3.14f, 3.14f, 0),
+		Vector3(3.14f, 0, 0),
+		Vector3(3.14f, 1.57f, 0),
+		Vector3(3.14f, -1.57f, 0),
+		Vector3(0, -1.57f, 0),
+		Vector3(0, 1.57f, 0)
 	};
 	cloneAndRoateModels(tempModel, angleArr, mEdgeBlockModels, modelNum);
 
@@ -195,13 +195,13 @@ void ParaEngine::CSlopeModelProvider::_builOuterCornerBlockModels()
 	
 	Vector3 angleArr[8] = {
 		Vector3(0,0,0),
-		Vector3(0,3.14,0),
-		Vector3(3.14,3.14,0),
-		Vector3(3.14,0,0),
-		Vector3(0,1.57,0),
-		Vector3(0,-1.57,0),
-		Vector3(3.14,1.57,0),
-		Vector3(3.14,-1.57,0)
+		Vector3(0,3.14f,0),
+		Vector3(3.14f,3.14f,0),
+		Vector3(3.14f,0,0),
+		Vector3(0,1.57f,0),
+		Vector3(0,-1.57f,0),
+		Vector3(3.14f,1.57f,0),
+		Vector3(3.14f,-1.57f,0)
 	};
 
 	cloneAndRoateModels(tempModel, angleArr, mOuterCornerBlockModels, modelNum);
@@ -235,13 +235,13 @@ void ParaEngine::CSlopeModelProvider::_buildInnerCornerBlockModels()
 	//旧的 2-1和2-5明显不是内凸的，这里改了，应该没多少地方用到
 	Vector3 angleArr[8] = {
 		Vector3(0,0,0),
-		Vector3(3.14,1.57,0),
-		Vector3(0,1.57,0),
-		Vector3(3.14,3.14,0),
-		Vector3(0,3.14,0),
-		Vector3(3.14,-1.57,0),
-		Vector3(0,-1.57,0),
-		Vector3(3.14,0,0)
+		Vector3(3.14f,1.57f,0),
+		Vector3(0,1.57f,0),
+		Vector3(3.14f,3.14f,0),
+		Vector3(0,3.14f,0),
+		Vector3(3.14f,-1.57f,0),
+		Vector3(0,-1.57f,0),
+		Vector3(3.14f,0,0)
 	};
 
 	cloneAndRoateModels(tempModel, angleArr, mInnerCornerBlockModels, modelNum);
@@ -277,13 +277,13 @@ void ParaEngine::CSlopeModelProvider::_buildHEdgeBlockModels()
 	//不全是对的，因为有重复，但是要兼容旧版
 	Vector3 angleArr[8] = {
 		Vector3(0,0,0),
-		Vector3(0,1.57,0),
-		Vector3(0,3.14,0),
-		Vector3(0,-1.57,0),
-		Vector3(0,1.57,-1.57),
-		Vector3(0,-1.57,1.57),
-		Vector3(-1.57,-1.57,0),
-		Vector3(-1.57,1.57,0)
+		Vector3(0,1.57f,0),
+		Vector3(0,3.14f,0),
+		Vector3(0,-1.57f,0),
+		Vector3(0,1.57f,-1.57f),
+		Vector3(0,-1.57f,1.57f),
+		Vector3(-1.57f,-1.57f,0),
+		Vector3(-1.57f,1.57f,0)
 	};
 
 	cloneAndRoateModels(tempModel, angleArr, mHEdgeBlockModels, modelNum);
@@ -320,7 +320,7 @@ void ParaEngine::CSlopeModelProvider::_buildOutCornerModels_1()
 		Vector3 pt;
 		
 		mOuterCornerBlockModels[0].Vertices()[i].GetPosition(pt);
-		Vector3 newPt = vec3RotateByPoint(Vector3(0.5, 0.5, 0.5), Vector3(pt.x, pt.y, pt.z), Vector3(1.57, 1.57, 0));
+		Vector3 newPt = vec3RotateByPoint(Vector3(0.5, 0.5, 0.5), Vector3(pt.x, pt.y, pt.z), Vector3(1.57f, 1.57f, 0));
 
 		newPt.x = round(newPt.x);
 		newPt.y = round(newPt.y);
@@ -332,38 +332,38 @@ void ParaEngine::CSlopeModelProvider::_buildOutCornerModels_1()
 
 	Vector3 angleArr[24] = {
 		//尖尖朝着y正方向
-		Vector3(0,0,1.57),
-		Vector3(1.57,0,1.57),
-		Vector3(3.14,0,1.57),
-		Vector3(-1.57,0,1.57),
+		Vector3(0,0,1.57f),
+		Vector3(1.57f,0,1.57f),
+		Vector3(3.14f,0,1.57f),
+		Vector3(-1.57f,0,1.57f),
 		//尖尖朝着y负方向
-		Vector3(0,0,-1.57),
-		Vector3(1.57,0,-1.57),
-		Vector3(3.14,0,-1.57),
-		Vector3(-1.57,0,-1.57),
+		Vector3(0,0,-1.57f),
+		Vector3(1.57f,0,-1.57f),
+		Vector3(3.14f,0,-1.57f),
+		Vector3(-1.57f,0,-1.57f),
 
 
 		//尖尖朝着x正方向
 		Vector3(0,0,0),
-		Vector3(1.57,0,0),
-		Vector3(3.14,0,0),
-		Vector3(-1.57,0,0),
+		Vector3(1.57f,0,0),
+		Vector3(3.14f,0,0),
+		Vector3(-1.57f,0,0),
 		//尖尖朝着x负方向
-		Vector3(0,0,3.14),
-		Vector3(1.57,0,3.14),
-		Vector3(3.14,0,3.14),
-		Vector3(-1.57,0,3.14),
+		Vector3(0,0,3.14f),
+		Vector3(1.57f,0,3.14f),
+		Vector3(3.14f,0,3.14f),
+		Vector3(-1.57f,0,3.14f),
 
 		//尖尖朝着z正方向
-		Vector3(0,-1.57,0),
-		Vector3(1.57,-1.57,0),
-		Vector3(3.14,-1.57,0),
-		Vector3(-1.57,-1.57,0),
+		Vector3(0,-1.57f,0),
+		Vector3(1.57f,-1.57f,0),
+		Vector3(3.14f,-1.57f,0),
+		Vector3(-1.57f,-1.57f,0),
 		//尖尖朝着z负方向
-		Vector3(0,1.57,3.14),
-		Vector3(1.57,1.57,3.14),
-		Vector3(3.14,1.57,3.14),
-		Vector3(-1.57,1.57,3.14),
+		Vector3(0,1.57f,3.14f),
+		Vector3(1.57f,1.57f,3.14f),
+		Vector3(3.14f,1.57f,3.14f),
+		Vector3(-1.57f,1.57f,3.14f),
 	};
 
 	cloneAndRoateModels(tempModel, angleArr, mOutCornerModels_1, modelNum);
@@ -414,14 +414,14 @@ void ParaEngine::CSlopeModelProvider::_buildOutCornerModels_2()
 
 	Vector3 angleArr[8] = {
 		Vector3(0,0,0),
-		Vector3(0,1.57,0),
-		Vector3(0,3.14,0),
-		Vector3(0,-1.57,0),
+		Vector3(0,1.57f,0),
+		Vector3(0,3.14f,0),
+		Vector3(0,-1.57f,0),
 		
-		Vector3(3.14,0,0),
-		Vector3(3.14,1.57,0),
-		Vector3(3.14,3.14,0),
-		Vector3(3.14,-1.57,0),
+		Vector3(3.14f,0,0),
+		Vector3(3.14f,1.57f,0),
+		Vector3(3.14f,3.14f,0),
+		Vector3(3.14f,-1.57f,0),
 	};
 
 	cloneAndRoateModels(tempModel, angleArr, mOutCornerModels_2, modelNum);
