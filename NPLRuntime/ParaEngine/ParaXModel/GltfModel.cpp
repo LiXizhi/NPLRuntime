@@ -68,8 +68,7 @@ namespace ParaEngine
 
 	bool GltfModel::IsExportAnimation(CParaXModel* paraXModel)
 	{ 
-        return false;
-		// return paraXModel->animated; 
+		return m_enable_animation && paraXModel->animated; 
 	}
 
 	uint32_t GltfModel::GetAnimationCount(CParaXModel* paraXModel) 
@@ -103,6 +102,7 @@ namespace ParaEngine
         buffer->index = bufferIndex++;
         m_gltf->buffers.push_back(buffer);
 
+        m_enable_animation = true;
 	}
 
     void GltfModel::Export(CParaXModel* paraXModel, std::string filepath) 
@@ -187,6 +187,7 @@ namespace ParaEngine
 
     void GltfModel::Export(CharModelInstance* model, std::string filepath)  
     {
+        m_enable_animation = false;
         m_filename = filepath == "" ? ".temp.gltf" : filepath;
         CanvasAttachmentPtr canvas = model->m_pModelCanvas->m_root;
         Init();

@@ -337,7 +337,7 @@ namespace ParaEngine {
 		std::shared_ptr<GLTF> m_gltf;
 		Json::Value m_json_gltf;
 		std::string m_filename;
-
+		bool m_enable_animation;
 		uint32_t bufferIndex;
 		uint32_t bufferViewIndex;
 		uint32_t sceneIndex;

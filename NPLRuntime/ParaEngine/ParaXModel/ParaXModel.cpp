@@ -27,6 +27,8 @@
 #include "IO/FileUtils.h"
 #include "ViewportManager.h"
 #include "glTFModelExporter.h"
+#include "GltfModel.h"
+
 
 
 /** def this, if one wants the animation to be very accurate. */
@@ -2453,5 +2455,6 @@ void CParaXModel::RemoveUnusedAnimKeys()
 
 void CParaXModel::SaveToGltf(const char* path)
 {
-	glTFModelExporter::ParaXExportTo_glTF(this, path);
+	GltfModel::ExportParaXModel(this, path);
+	// glTFModelExporter::ParaXExportTo_glTF(this, path);
 }

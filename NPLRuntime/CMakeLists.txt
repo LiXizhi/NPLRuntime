@@ -230,9 +230,9 @@ add_subdirectory(ParaEngine)
 add_subdirectory(RenderSystem)
 add_subdirectory(Platform)
 # SDL 跨平台 window可以编译用于编写和调试代码, 非window默认通过LINUX宏开启SDL GUI
-if (MSVC)
-	add_subdirectory(Platform/SDL ParaCraftSDL)
-endif()
+# if (MSVC)
+# 	add_subdirectory(Platform/SDL ParaCraftSDL)
+# endif()
 
 #add_subdirectory(PhysicsBT)
 #add_subdirectory(ParaEngineClientApp)
