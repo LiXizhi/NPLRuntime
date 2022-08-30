@@ -217,7 +217,7 @@ DWORD ParaEngine::BMaxFrameNode::CalculateBoneColor()
 	
 	for (int i = 0; i < 6; i++)
 	{
-		BlockDirection::Side side = BlockDirection::GetBlockSide((myOppositeSide + i) % 6);
+		BlockDirection::Side side = (BlockDirection::Side)((myOppositeSide + i) % 6);
 
 		if (side != mySide || pParentNode == NULL)
 		{

@@ -72,3 +72,5 @@ NPLRuntime/externals/LuaJIT2_1/log/
 !/NPLRuntime/Platform/OSX/Paracraft.entitlements
 out/
 Client/
+win32build/
+out/

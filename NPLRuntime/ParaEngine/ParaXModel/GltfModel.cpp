@@ -192,9 +192,10 @@ namespace ParaEngine
         Init();
         std::shared_ptr<GLTFScene> scene = ExportScene();
         std::shared_ptr<GLTFNode> node = ExportCanvasAttachment(canvas, scene, this);
-        Quaternion q;
-        q.FromAngleAxis(Radian(Degree(90)), Vector3(1,0,0));
-        *(node->matrix) = (*(node->matrix)).Multiply4x3(Matrix4(q.invertWinding()));
+        // 人物会倒, 此变换可摆正, 但与装扮对不上
+        // Quaternion q;
+        // q.FromAngleAxis(Radian(Degree(90)), Vector3(1,0,0));
+        // *(node->matrix) = (*(node->matrix)).Multiply4x3(Matrix4(q.invertWinding()));
 
         ExportJson();
         if (filepath != "") 

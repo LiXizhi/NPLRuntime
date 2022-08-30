@@ -5,7 +5,7 @@ mkdir ./bin -p
 pushd ./bin
 if [ ! -d ./boost_1_78_0 ]; then
 	if [ ! -f ./boost_1_78_0.tar.bz2 ]; then
-		wget http://dl.bintray.com/boostorg/release/1.78.0/source/boost_1_78_0.tar.bz2 --no-check-certificate
+		wget https://boostorg.jfrog.io/artifactory/main/release/1.78.0/source/boost_1_78_0.tar.bz2 --no-check-certificate
 	fi
 	tar --bzip2 -xf boost_1_78_0.tar.bz2
 fi

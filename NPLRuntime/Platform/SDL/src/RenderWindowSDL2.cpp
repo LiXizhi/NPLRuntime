@@ -154,7 +154,7 @@ namespace ParaEngine {
 
 	bool RenderWindowSDL2::Create(int defaultWdith, int defaultHeight)
 	{
-		m_sdl2_window = SDL_CreateWindow("SDL", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, defaultWdith, defaultHeight, SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE);
+		m_sdl2_window = SDL_CreateWindow("Paracraft", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, defaultWdith, defaultHeight, SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE);
 		m_gl_context = SDL_GL_CreateContext(m_sdl2_window);
 		gladLoadGLLoader((GLADloadproc)SDL_GL_GetProcAddress);
 		SDL_GL_SetSwapInterval(1);
@@ -236,15 +236,15 @@ namespace ParaEngine {
 		else if (sdl_event.type == SDL_MOUSEBUTTONDOWN) {
 			m_mouse_x = sdl_event.button.x;
 			m_mouse_y = sdl_event.button.y;
-			if (sdl_event.button.button == SDL_BUTTON_LEFT) {
+			if (sdl_event.button.button & SDL_BUTTON_LEFT) {
 				m_MouseState[(uint32_t)EMouseButton::LEFT] = EKeyState::PRESS;
 				OnMouseButton(EMouseButton::LEFT, EKeyState::PRESS, sdl_event.button.x, sdl_event.button.y);
 			}
-			else if (sdl_event.button.button & SDL_BUTTON_RMASK) {
+			else if (sdl_event.button.button & SDL_BUTTON_RIGHT) {
 				m_MouseState[(uint32_t)EMouseButton::RIGHT] = EKeyState::PRESS;
 				OnMouseButton(EMouseButton::RIGHT, EKeyState::PRESS, sdl_event.button.x, sdl_event.button.y);
 			}
-			else if (sdl_event.button.button & SDL_BUTTON_MMASK) {
+			else if (sdl_event.button.button & SDL_BUTTON_MIDDLE) {
 				m_MouseState[(uint32_t)EMouseButton::MIDDLE] = EKeyState::PRESS;
 				OnMouseButton(EMouseButton::MIDDLE, EKeyState::PRESS, sdl_event.button.x, sdl_event.button.y);
 			}
@@ -253,15 +253,15 @@ namespace ParaEngine {
 		else if (sdl_event.type == SDL_MOUSEBUTTONUP) {
 			m_mouse_x = sdl_event.button.x;
 			m_mouse_y = sdl_event.button.y;
-			if (sdl_event.button.button == SDL_BUTTON_LEFT) {
+			if (sdl_event.button.button & SDL_BUTTON_LEFT) {
 				m_MouseState[(uint32_t)EMouseButton::LEFT] = EKeyState::RELEASE;
 				OnMouseButton(EMouseButton::LEFT, EKeyState::RELEASE, sdl_event.button.x, sdl_event.button.y);
 			}
-			else if (sdl_event.button.button & SDL_BUTTON_RMASK) {
+			else if (sdl_event.button.button & SDL_BUTTON_RIGHT) {
 				m_MouseState[(uint32_t)EMouseButton::RIGHT] = EKeyState::RELEASE;
 				OnMouseButton(EMouseButton::RIGHT, EKeyState::RELEASE, sdl_event.button.x, sdl_event.button.y);
 			}
-			else if (sdl_event.button.button & SDL_BUTTON_MMASK) {
+			else if (sdl_event.button.button & SDL_BUTTON_MIDDLE) {
 				m_MouseState[(uint32_t)EMouseButton::MIDDLE] = EKeyState::RELEASE;
 				OnMouseButton(EMouseButton::MIDDLE, EKeyState::RELEASE, sdl_event.button.x, sdl_event.button.y);
 			}
