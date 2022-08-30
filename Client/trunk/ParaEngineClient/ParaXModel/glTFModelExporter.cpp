@@ -10,42 +10,50 @@
 
 namespace ParaEngine
 {
-	glTFModelExporter::glTFModelExporter(CParaXModel* mesh, bool binary)
-		: maxVertex(-FLT_MAX, -FLT_MAX, -FLT_MAX), minVertex(FLT_MAX, FLT_MAX, FLT_MAX),
-		maxNormal(-FLT_MAX, -FLT_MAX, -FLT_MAX), minNormal(FLT_MAX, FLT_MAX, FLT_MAX),
-		maxColor0(-FLT_MAX, -FLT_MAX, -FLT_MAX), minColor0(FLT_MAX, FLT_MAX, FLT_MAX),
-		maxColor1(-FLT_MAX, -FLT_MAX, -FLT_MAX), minColor1(FLT_MAX, FLT_MAX, FLT_MAX),
-		maxCoord(-FLT_MAX, -FLT_MAX), minCoord(FLT_MAX, FLT_MAX),
-		maxJoint(0, 0, 0, 0), minJoint(255, 255, 255, 255),
-		maxWeight(-FLT_MAX, -FLT_MAX, -FLT_MAX, -FLT_MAX), minWeight(FLT_MAX, FLT_MAX, FLT_MAX, FLT_MAX),
-		paraXModel(mesh),
-		animProvider(nullptr),
-		bufferIndex(0),
-		accessorIndex(0),
-		isBinary(binary),
-		buffer(std::make_shared<Buffer>())
+	void glTFModelExporter::Init() 
 	{
+		maxVertex = Vector3(-FLT_MAX, -FLT_MAX, -FLT_MAX);
+		minVertex = Vector3(FLT_MAX, FLT_MAX, FLT_MAX);
+		maxNormal = Vector3(-FLT_MAX, -FLT_MAX, -FLT_MAX);
+		minNormal = Vector3(FLT_MAX, FLT_MAX, FLT_MAX);
+		maxColor0 = Vector3(-FLT_MAX, -FLT_MAX, -FLT_MAX);
+		minColor0 = Vector3(FLT_MAX, FLT_MAX, FLT_MAX);
+		maxColor1 = Vector3(-FLT_MAX, -FLT_MAX, -FLT_MAX);
+		minColor1 = Vector3(FLT_MAX, FLT_MAX, FLT_MAX);
+		maxCoord = Vector2(-FLT_MAX, -FLT_MAX);
+		minCoord = Vector2(FLT_MAX, FLT_MAX);
+		maxJoint = Vector4(0, 0, 0, 0);
+		minJoint = Vector4(255, 255, 255, 255);
+		maxWeight = Vector4(-FLT_MAX, -FLT_MAX, -FLT_MAX, -FLT_MAX);
+		minWeight = Vector4(FLT_MAX, FLT_MAX, FLT_MAX, FLT_MAX);
+		paraXModel = nullptr;
+		animProvider = nullptr;
+		bufferIndex = 0;
+		bufferViewIndex = 0;
+		accessorIndex = 0;
+		nodeIndex = 0;
+		meshIndex = 0;
+		skinIndex = 0;
+		animationIndex = 0;
+		isBinary = false;
+		buffer = std::make_shared<Buffer>();
 		buffer->index = 0;
+	}
+	glTFModelExporter::glTFModelExporter(CParaXModel* mesh, bool binary)
+	{
+		Init();
+		isBinary = binary;
+		paraXModel = mesh;
 		ParseParaXModel();
 		ParseAnimationBones();
 	}
 
 	glTFModelExporter::glTFModelExporter(CParaXModel* mesh, CParaXModel* anim, bool binary)
-		: maxVertex(-FLT_MAX, -FLT_MAX, -FLT_MAX), minVertex(FLT_MAX, FLT_MAX, FLT_MAX),
-		maxNormal(-FLT_MAX, -FLT_MAX, -FLT_MAX), minNormal(FLT_MAX, FLT_MAX, FLT_MAX),
-		maxColor0(-FLT_MAX, -FLT_MAX, -FLT_MAX), minColor0(FLT_MAX, FLT_MAX, FLT_MAX),
-		maxColor1(-FLT_MAX, -FLT_MAX, -FLT_MAX), minColor1(FLT_MAX, FLT_MAX, FLT_MAX),
-		maxCoord(-FLT_MAX, -FLT_MAX), minCoord(FLT_MAX, FLT_MAX),
-		maxJoint(0, 0, 0, 0), minJoint(255, 255, 255, 255),
-		maxWeight(-FLT_MAX, -FLT_MAX, -FLT_MAX, -FLT_MAX), minWeight(FLT_MAX, FLT_MAX, FLT_MAX, FLT_MAX),
-		paraXModel(mesh),
-		animProvider(anim),
-		bufferIndex(0),
-		accessorIndex(0),
-		isBinary(binary),
-		buffer(std::make_shared<Buffer>())
 	{
-		buffer->index = 0;
+		Init();
+		isBinary = binary;
+		animProvider = anim;
+		paraXModel = mesh;
 		ParseParaXModel();
 		ChangeAnimationBones();
 	}
@@ -55,6 +63,15 @@ namespace ParaEngine
 
 	}
 
+	bool glTFModelExporter::IsExportAnimation()
+	{ 
+		return paraXModel->animated; 
+	}
+
+	uint32_t glTFModelExporter::GetAnimationCount() 
+	{
+		return paraXModel->m_objNum.nAnimations;	
+	}
 	void glTFModelExporter::ExportToFile(const std::string& filename)
 	{
 		fileName = filename;
@@ -69,23 +86,6 @@ namespace ParaEngine
 	void glTFModelExporter::ParseParaXModel()
 	{
 		uint32_t numBones = paraXModel->m_objNum.nBones;
-		// calculate bones' absolute position
-		//paraXModel->m_CurrentAnim = paraXModel->GetAnimIndexByID(0);
-		//for (uint32_t i = 0; i < numBones; i++)
-		//{
-		//	paraXModel->bones[i].calcMatrix(paraXModel->bones, paraXModel->m_CurrentAnim, paraXModel->m_BlendingAnim, paraXModel->blendingFactor);
-		//	paraXModel->bones[i].m_finalTrans = paraXModel->bones[i].GetAnimatedPivotPoint();
-		//}
-		//for (uint32_t i = 0; i < numBones; i++)
-		//{
-		//	Bone& bone = paraXModel->bones[i];
-		//	if (bone.parent == -1)
-		//	{
-		//		bone.matTransform.makeTrans(bone.m_finalTrans);
-		//		CalculateJoint(bone.nIndex, bone.m_finalTrans);
-		//	}
-		//}
-
 		float inverse = 1.0f / 255.0f;
 		uint32_t numVertices = paraXModel->m_objNum.nVertices;
 		for (uint32_t i = 0; i < numVertices; i++)
@@ -96,27 +96,6 @@ namespace ParaEngine
 			Vector2 coord = vertex.texcoords;
 			DWORD color0 = vertex.color1;
 			DWORD color1 = vertex.color0;
-			{
-				//float weight = vertex.weights[0] * inverse;
-				//Bone& bone = paraXModel->bones[vertex.bones[0]];
-				//v = (vertex.pos * bone.mat)*weight;
-				//for (int b = 1; b < 4 && vertex.weights[b]>0; b++) {
-				//	weight = vertex.weights[b] * inverse;
-				//	Bone& bone = paraXModel->bones[vertex.bones[b]];
-				//	v += (vertex.pos * bone.mat) * weight;
-				//}
-			}
-			{
-				//float weight = vertex.weights[0] * inverse;
-				//Bone& bone = paraXModel->bones[vertex.bones[0]];
-				//v -= bone.m_finalTrans * weight;
-				//for (int b = 1; b < 4 && vertex.weights[b]>0; b++) {
-				//	weight = vertex.weights[b] * inverse;
-				//	Bone& bone = paraXModel->bones[vertex.bones[b]];
-				//	v -= bone.m_finalTrans * weight;
-				//}
-			}
-
 			for (uint32_t j = 0; j < 3; j++)
 			{
 				float val = v[j];
@@ -195,7 +174,7 @@ namespace ParaEngine
 		translations.clear();
 		scales.clear();
 		rotations.clear();
-		uint32_t nAnimations = paraXModel->m_objNum.nAnimations;
+		uint32_t nAnimations = GetAnimationCount();
 		bvTime.resize(nAnimations);
 		bvTranslation.resize(nAnimations);
 		bvRotation.resize(nAnimations);
@@ -224,7 +203,7 @@ namespace ParaEngine
 					uint32_t offset3 = secondS - firstS + 1;
 					uint32_t animStart = firstT;
 					uint32_t animEnd = secondT;
-					if (offset1 > offset3 && offset1 > offset3)
+					if (offset1 > offset3 && offset1 > offset2)
 					{
 						animStart = firstT;
 						animEnd = secondT;
@@ -545,22 +524,22 @@ namespace ParaEngine
 		Json::Value animations = Json::Value(Json::arrayValue);
 
 		std::shared_ptr<Node> node = ExportNode();
-		Json::Value ns = Json::Value(Json::arrayValue);
-		ns[0u] = node->index;
+		Json::Value jsonSceneNodes = Json::Value(Json::arrayValue);
+		jsonSceneNodes[0u] = node->index;
 		std::shared_ptr<Mesh>& mesh = node->mesh;
-		Json::Value m;
-		m["mesh"] = mesh->index;
+		Json::Value jsonNodeObj;
+		jsonNodeObj["mesh"] = mesh->index;
 		if (node->skin != nullptr)
 		{
-			m["skin"] = node->skin->index;
-			Json::Value c = Json::Value(Json::arrayValue);
+			jsonNodeObj["skin"] = node->skin->index;
+			Json::Value jsonNodeChildren = Json::Value(Json::arrayValue);
 			for (uint32_t i = 0; i < node->children.size(); i++)
 			{
-				c[i] = node->children[i];
+				jsonNodeChildren[i] = node->children[i];
 			}
-			m["children"] = c;
+			jsonNodeObj["children"] = jsonNodeChildren;
 		}
-		nodes[0u] = m;
+		nodes[node->index] = jsonNodeObj;
 
 		{
 			Json::Value ps = Json::Value(Json::arrayValue);
@@ -650,7 +629,7 @@ namespace ParaEngine
 			}
 			Json::Value obj;
 			obj["primitives"] = ps;
-			meshes[0u] = obj;
+			meshes[mesh->index] = obj;
 		}
 
 		if (node->skin != nullptr)
@@ -690,16 +669,16 @@ namespace ParaEngine
 				child["translation"] = t;
 				child["rotation"] = r;
 				child["scale"] = s;
-				nodes[i + 1] = child;
+				nodes[joint->index] = child;
 			}
 			skin["joints"] = joints;
-			skins[0u] = skin;
+			skins[node->skin->index] = skin;
 			root["skins"] = skins;
 		}
 
-		if (paraXModel->animated)
+		if (IsExportAnimation())
 		{
-			uint32_t nAnimations = paraXModel->m_objNum.nAnimations;
+			uint32_t nAnimations = GetAnimationCount();
 			if (animProvider != nullptr) nAnimations = 1;
 			for (uint32_t animId = 0; animId < nAnimations; animId++)
 			{
@@ -750,14 +729,14 @@ namespace ParaEngine
 				Json::Value aj;
 				aj["samplers"] = saj;
 				aj["channels"] = caj;
-				animations[animId] = aj;
+				animations[animation->index] = aj;
 			}
 			root["animations"] = animations;
 		}
 
-		Json::Value obj;
-		obj["nodes"] = ns;
-		scenes[0u] = obj;
+		Json::Value jsonScene;
+		jsonScene["nodes"] = jsonSceneNodes;
+		scenes[0u] = jsonScene;
 		WriteBuffer(buffers, 0);
 
 		root["scenes"] = scenes;
@@ -779,17 +758,13 @@ namespace ParaEngine
 	std::shared_ptr<Node> glTFModelExporter::ExportNode()
 	{
 		std::shared_ptr<Node> node = std::make_shared<Node>();
-		node->index = 0;
+		node->index = nodeIndex++;
+		node->boneIndex = -1;
 		node->mesh = ExportMesh();
-		for (uint32_t i = 0; i < paraXModel->m_objNum.nBones; i++)
+		node->skin = nullptr;
+		if (IsExportAnimation())
 		{
-			Bone& bone = paraXModel->bones[i];
-			if (bone.parent == -1)
-				node->children.push_back(bone.nIndex + 1);
-		}
-		if (paraXModel->animated)
-		{
-			node->skin = ExportSkin();
+			node->skin = ExportSkin(node);
 		}
 		return node;
 	}
@@ -809,7 +784,7 @@ namespace ParaEngine
 		}
 		std::shared_ptr<Accessor> j = nullptr;
 		std::shared_ptr<Accessor> w = nullptr;
-		if (paraXModel->animated)
+		if (IsExportAnimation())
 		{
 			j = ExportJoints();
 			w = ExportWeights();
@@ -828,7 +803,7 @@ namespace ParaEngine
 				primitive.attributes.texcoord = t;
 				primitive.attributes.color0 = c0;
 				primitive.attributes.color1 = c1;
-				if (paraXModel->animated)
+				if (IsExportAnimation())
 				{
 					primitive.attributes.joints = j;
 					primitive.attributes.weights = w;
@@ -845,15 +820,17 @@ namespace ParaEngine
 		return mesh;
 	}
 
-	std::shared_ptr<Skin> glTFModelExporter::ExportSkin()
+	std::shared_ptr<Skin> glTFModelExporter::ExportSkin(std::shared_ptr<Node> parentNode)
 	{
 		std::shared_ptr<Skin> skin = std::make_shared<Skin>();
 		uint32_t numBones = paraXModel->m_objNum.nBones;
+		skin->joints.resize(numBones);
 		for (uint32_t i = 0; i < numBones; i++)
 		{
 			Bone& bone = paraXModel->bones[i];
 			std::shared_ptr<Node> node = std::make_shared<Node>();
-			node->index = bone.nIndex + 1;
+			node->index = nodeIndex++;
+			node->boneIndex = bone.nIndex;
 			Quaternion q = Quaternion::IDENTITY;
 			Matrix4 m, mLocalRot;
 			Vector3 s(1.0f, 1.0f, 1.0f);
@@ -917,16 +894,23 @@ namespace ParaEngine
 			node->translation = m.getTrans();
 			node->rotation = q;
 			node->scale = s;
-			skin->joints.push_back(node);
+			skin->joints[node->boneIndex] = node;
+			// skin->joints.push_back(node);
 		}
 		for (uint32_t i = 0; i < numBones; i++)
 		{
 			Bone& bone = paraXModel->bones[i];
-			if (bone.parent != -1)
-				skin->joints[bone.parent]->children.push_back(bone.nIndex + 1);
+			if (bone.parent == -1) 
+			{
+				parentNode->children.push_back(skin->joints[bone.nIndex]->index);
+			}
+			else 
+			{
+				skin->joints[bone.parent]->children.push_back(skin->joints[bone.nIndex]->index);
+			}
 		}
 		skin->inverseBindMatrices = ExportMatrices();
-		skin->index = 0;
+		skin->index = skinIndex++;
 		return skin;
 	}
 
@@ -938,7 +922,7 @@ namespace ParaEngine
 
 		std::shared_ptr<BufferView> bv = std::make_shared<BufferView>();
 		bv->buffer = buffer;
-		bv->index = bufferIndex;
+		bv->index = bufferViewIndex;
 		bv->byteOffset = buffer->byteLength;
 		bv->byteLength = numBones * numComponents * bytesPerComp;
 		bv->byteStride = 0;
@@ -947,7 +931,7 @@ namespace ParaEngine
 
 		std::shared_ptr<Accessor> acc = std::make_shared<Accessor>();
 		acc->bufferView = bv;
-		acc->index = bufferIndex;
+		acc->index = accessorIndex;
 		acc->byteOffset = 0;
 		acc->componentType = ComponentType::Float;
 		acc->count = numBones;
@@ -967,7 +951,7 @@ namespace ParaEngine
 			}
 		}
 
-		bufferIndex++;
+		bufferViewIndex++;
 		accessorIndex++;
 		return acc;
 	}
@@ -980,7 +964,7 @@ namespace ParaEngine
 
 		std::shared_ptr<BufferView> bv = std::make_shared<BufferView>();
 		bv->buffer = buffer;
-		bv->index = bufferIndex;
+		bv->index = bufferViewIndex;
 		bv->byteOffset = buffer->byteLength;
 		bv->byteLength = numVertices * numComponents * bytesPerComp;
 		bv->byteStride = numComponents * bytesPerComp;
@@ -1000,7 +984,7 @@ namespace ParaEngine
 			acc->min.push_back(minVertex[i]);
 		}
 
-		bufferIndex++;
+		bufferViewIndex++;
 		accessorIndex++;
 		return acc;
 	}
@@ -1013,7 +997,7 @@ namespace ParaEngine
 
 		std::shared_ptr<BufferView> bv = std::make_shared<BufferView>();
 		bv->buffer = buffer;
-		bv->index = bufferIndex;
+		bv->index = bufferViewIndex;
 		bv->byteOffset = buffer->byteLength;
 		bv->byteLength = numVertices * numComponents * bytesPerComp;
 		bv->byteStride = numComponents * bytesPerComp;
@@ -1033,7 +1017,7 @@ namespace ParaEngine
 			acc->min.push_back(minNormal[i]);
 		}
 
-		bufferIndex++;
+		bufferViewIndex++;
 		accessorIndex++;
 		return acc;
 	}
@@ -1046,7 +1030,7 @@ namespace ParaEngine
 
 		std::shared_ptr<BufferView> bv = std::make_shared<BufferView>();
 		bv->buffer = buffer;
-		bv->index = bufferIndex;
+		bv->index = bufferViewIndex;
 		bv->byteOffset = buffer->byteLength;
 		bv->byteLength = numVertices * numComponents * bytesPerComp;
 		bv->byteStride = numComponents * bytesPerComp;
@@ -1066,7 +1050,7 @@ namespace ParaEngine
 			acc->min.push_back(minCoord[i]);
 		}
 
-		bufferIndex++;
+		bufferViewIndex++;
 		accessorIndex++;
 		return acc;
 	}
@@ -1079,7 +1063,7 @@ namespace ParaEngine
 
 		std::shared_ptr<BufferView> bv = std::make_shared<BufferView>();
 		bv->buffer = buffer;
-		bv->index = bufferIndex;
+		bv->index = bufferViewIndex;
 		bv->byteOffset = buffer->byteLength;
 		bv->byteLength = numVertices * numComponents * bytesPerComp;
 		bv->byteStride = numComponents * bytesPerComp;
@@ -1099,7 +1083,7 @@ namespace ParaEngine
 			acc->min.push_back(minColor0[i]);
 		}
 
-		bufferIndex++;
+		bufferViewIndex++;
 		accessorIndex++;
 		return acc;
 	}
@@ -1112,7 +1096,7 @@ namespace ParaEngine
 
 		std::shared_ptr<BufferView> bv = std::make_shared<BufferView>();
 		bv->buffer = buffer;
-		bv->index = bufferIndex;
+		bv->index = bufferViewIndex;
 		bv->byteOffset = buffer->byteLength;
 		bv->byteLength = numVertices * numComponents * bytesPerComp;
 		bv->byteStride = numComponents * bytesPerComp;
@@ -1132,7 +1116,7 @@ namespace ParaEngine
 			acc->min.push_back(minColor1[i]);
 		}
 
-		bufferIndex++;
+		bufferViewIndex++;
 		accessorIndex++;
 		return acc;
 	}
@@ -1145,7 +1129,7 @@ namespace ParaEngine
 
 		std::shared_ptr<BufferView> bv = std::make_shared<BufferView>();
 		bv->buffer = buffer;
-		bv->index = bufferIndex;
+		bv->index = bufferViewIndex;
 		bv->byteOffset = buffer->byteLength;
 		bv->byteLength = numVertices * numComponents * bytesPerComp;
 		bv->byteStride = numComponents * bytesPerComp;
@@ -1165,7 +1149,7 @@ namespace ParaEngine
 			acc->min.push_back(minJoint[i]);
 		}
 
-		bufferIndex++;
+		bufferViewIndex++;
 		accessorIndex++;
 		return acc;
 	}
@@ -1178,7 +1162,7 @@ namespace ParaEngine
 
 		std::shared_ptr<BufferView> bv = std::make_shared<BufferView>();
 		bv->buffer = buffer;
-		bv->index = bufferIndex;
+		bv->index = bufferViewIndex;
 		bv->byteOffset = buffer->byteLength;
 		bv->byteLength = numVertices * numComponents * bytesPerComp;
 		bv->byteStride = numComponents * bytesPerComp;
@@ -1198,7 +1182,7 @@ namespace ParaEngine
 			acc->min.push_back(minWeight[i]);
 		}
 
-		bufferIndex++;
+		bufferViewIndex++;
 		accessorIndex++;
 		return acc;
 	}
@@ -1211,7 +1195,7 @@ namespace ParaEngine
 
 		std::shared_ptr<BufferView> bv = std::make_shared<BufferView>();
 		bv->buffer = buffer;
-		bv->index = bufferIndex;
+		bv->index = bufferViewIndex;
 		bv->byteOffset = buffer->byteLength;
 		bv->byteLength = numIndices * numComponents * bytesPerComp;
 		bv->byteStride = 0;
@@ -1235,7 +1219,7 @@ namespace ParaEngine
 			if (val > acc->max[0]) acc->max[0] = val;
 		}
 
-		bufferIndex++;
+		bufferViewIndex++;
 		accessorIndex++;
 		return acc;
 	}
@@ -1334,7 +1318,7 @@ namespace ParaEngine
 	std::shared_ptr<Animation> glTFModelExporter::ExportAnimations(uint32_t animId)
 	{
 		std::shared_ptr<Animation> animation = std::make_shared<Animation>();
-
+		animation->index = animationIndex++;
 		bvTime[animId] = ExportBufferView(AttribType::SCALAR, animTimes[animId].size());
 		bvTranslation[animId] = ExportBufferView(AttribType::VEC3, translations[animId].size());
 		bvRotation[animId] = ExportBufferView(AttribType::VEC4, rotations[animId].size());
@@ -1395,13 +1379,13 @@ namespace ParaEngine
 		const uint32_t bytesPerComp = ComponentTypeSize(ComponentType::Float);
 		std::shared_ptr<BufferView> bv = std::make_shared<BufferView>();
 		bv->buffer = buffer;
-		bv->index = bufferIndex;
+		bv->index = bufferViewIndex;
 		bv->byteOffset = buffer->byteLength;
 		bv->byteLength = length * numComponents * bytesPerComp;
 		bv->byteStride = 0;
 		bv->target = BufferViewTarget::NotUse;
 		buffer->Grow(bv->byteLength);
-		bufferIndex++;
+		bufferViewIndex++;
 		return bv;
 	}
 
@@ -1561,7 +1545,7 @@ namespace ParaEngine
 		}
 
 
-		if (paraXModel->animated)
+		if (IsExportAnimation())
 		{
 			for (uint32_t i = 0; i < paraXModel->m_objNum.nVertices; i++)
 			{
@@ -1826,7 +1810,7 @@ namespace ParaEngine
 				bin.write(&(it->z), sizeFloat);
 			}
 
-			if (paraXModel->animated)
+			if (IsExportAnimation())
 			{
 				for (uint32_t i = 0; i < paraXModel->m_objNum.nVertices; i++)
 				{
@@ -1970,7 +1954,7 @@ namespace ParaEngine
 				file.write(&(it->z), sizeFloat);
 			}
 
-			if (paraXModel->animated)
+			if (IsExportAnimation())
 			{
 				for (uint32_t i = 0; i < paraXModel->m_objNum.nVertices; i++)
 				{

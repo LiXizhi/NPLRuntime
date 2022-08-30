@@ -120,7 +120,7 @@ namespace ParaEngine
 		HRESULT LoadToSystemBuffer(XFile::Scene* pFileData);
 		void BuildRenderBuffer();
 		void DrawRenderPass(int i);
-	protected:
+	public:
 		std::vector<ParaXStaticModelRenderPass> m_passes;
 
 		// system buffers

@@ -48,6 +48,7 @@
 #include "PortalNode.h"
 #include "SelectionManager.h"
 #include "ParaXAnimInstance.h"
+#include "ParaXModel/GltfModel.h"
 #include <time.h>
 
 extern "C"
@@ -1515,24 +1516,32 @@ ParaScripting::ParaAssetObject ParaObject::GetTexture()
 
 bool ParaObject::Export(const char* filepath, const char* typ) {
 	if (!IsValid()) return false;
-	AssetEntity* pAsset = m_pObj->GetPrimaryAsset();
-	if (pAsset && pAsset->IsValid())
-	{
-		pAsset->LoadAsset();
-		if (pAsset->GetType() == AssetEntity::parax)
+	if (m_pObj->IsBiped()) {
+		CBipedObject* pBipedObj = (CBipedObject*)m_pObj;
+		CharModelInstance* model = pBipedObj->GetCharModelInstance();
+		GltfModel::ExportCharModel(model, filepath);
+	} else {
+		AssetEntity* pAsset = m_pObj->GetPrimaryAsset();
+		if (pAsset && pAsset->IsValid())
 		{
-			ParaXEntity* pParaXEntity = (ParaXEntity*)pAsset;
-			CParaXModel* pModel = pParaXEntity->GetModel();
-			if (pModel)
+			pAsset->LoadAsset();
+			if (pAsset->GetType() == AssetEntity::parax)
 			{
-				pModel->SaveToGltf(filepath);
+				ParaXEntity* pParaXEntity = (ParaXEntity*)pAsset;
+				CParaXModel* pModel = pParaXEntity->GetModel();
+				GltfModel::ExportParaXModel(pModel, filepath);
+				if (pModel)
+				{
+					// pModel->SaveToGltf("D:\\test_old.gltf");
+				}
+			}
+			else if (pAsset->GetType() == AssetEntity::mesh)
+			{
+				return false;
 			}
 		}
-		else if (pAsset->GetType() == AssetEntity::mesh)
-		{
-			return false;
-		}
 	}
+	
 	return false;
 }
 

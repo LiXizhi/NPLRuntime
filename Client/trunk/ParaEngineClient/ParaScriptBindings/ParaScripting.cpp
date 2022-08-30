@@ -15,6 +15,7 @@
 #include "ParaScriptingCharacter.h"
 #include "ParaXModel/ParaXModelExporter.h"
 #include "ParaXModel/glTFModelExporter.h"
+#include "ParaXModel/GltfModel.h"
 using namespace ParaEngine;
 
 /** 
@@ -504,8 +505,8 @@ void CNPLScriptingState::LoadParaScene()
 			def("CheckExist", &ParaScene::CheckExist),
 			def("Execute", &ParaScene::Execute),
 			def("BmaxExportToSTL", &ParaXModelExporter::BmaxExportToSTL),
-			def("BlocksExportTo_glTF", &glTFModelExporter::BlocksExportTo_glTF)
-
+			// def("BlocksExportTo_glTF", &glTFModelExporter::BlocksExportTo_glTF)
+			def("BlocksExportTo_glTF", &GltfModel::ExportBlocks)
 		]
 	];
 }

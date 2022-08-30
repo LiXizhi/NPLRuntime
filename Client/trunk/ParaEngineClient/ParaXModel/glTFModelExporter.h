@@ -9,6 +9,8 @@
 #include <string>
 #include <memory>
 
+// #include "GltfModel.h"
+
 namespace ParaEngine
 {
 	struct GLBHeader
@@ -283,6 +285,8 @@ namespace ParaEngine
 
 		std::vector<Sampler> samplers;
 		std::vector<Channel> channels;
+
+		uint32_t index;
 	};
 
 	struct Node
@@ -294,19 +298,27 @@ namespace ParaEngine
 		Vector3 scale;
 		std::shared_ptr<Skin> skin;
 		uint32_t index;
+		int32_t boneIndex;  // 骨骼索引
 	};
 
+	
 	class CParaXModel;
 
+	
+	
 	class glTFModelExporter
 	{
 	public:
 		glTFModelExporter(CParaXModel* mesh, bool binary);
 		glTFModelExporter(CParaXModel* mesh, CParaXModel* anim, bool binary);
 		~glTFModelExporter();
+
+		void Init();
 		void ExportToFile(const std::string& filename);
 
 	private:
+		bool IsExportAnimation(); 
+		uint32_t GetAnimationCount();
 		void ParseParaXModel();
 		void ParseAnimationBones();
 		void ChangeAnimationBones();
@@ -317,7 +329,7 @@ namespace ParaEngine
 		void ExportScene();
 		std::shared_ptr<Node> ExportNode();
 		std::shared_ptr<Mesh> ExportMesh();
-		std::shared_ptr<Skin> ExportSkin();
+		std::shared_ptr<Skin> ExportSkin(std::shared_ptr<Node> parentNode);
 		std::shared_ptr<Accessor> ExportMatrices();
 		std::shared_ptr<Accessor> ExportVertices();
 		std::shared_ptr<Accessor> ExportNormals();
@@ -375,7 +387,12 @@ namespace ParaEngine
 		std::string fileName;
 		Json::Value root;
 		uint32_t bufferIndex;
+		uint32_t bufferViewIndex;
 		uint32_t accessorIndex;
+		uint32_t nodeIndex;
+		uint32_t meshIndex;
+		uint32_t skinIndex;
+		uint32_t animationIndex;
 		bool isBinary;
 		std::shared_ptr<Buffer> buffer;
 		std::vector<std::shared_ptr<BufferView>> bvTime;
