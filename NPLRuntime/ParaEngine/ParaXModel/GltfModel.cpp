@@ -68,8 +68,8 @@ namespace ParaEngine
 
 	bool GltfModel::IsExportAnimation(CParaXModel* paraXModel)
 	{ 
-        // return false;
-		return paraXModel->animated; 
+        return false;
+		// return paraXModel->animated; 
 	}
 
 	uint32_t GltfModel::GetAnimationCount(CParaXModel* paraXModel) 
@@ -250,22 +250,19 @@ namespace ParaEngine
 		{
 			ModelVertex& vertex = paraXModel->m_origVertices[i];
             Vector3 pos = vertex.pos;
-            // if (paraXModel->m_RenderMethod == CParaXModel::SOFT_ANIM) 
-            // {
-            //     ModelVertex* ov = &vertex;
-            //     float weight = ov->weights[0] * (1 / 255.0f);
-            //     Bone& bone = paraXModel->bones[ov->bones[0]];
-            //     Vector3 v = (ov->pos * bone.mat)*weight;
-            //     // Vector3 n = ov->normal.TransformNormal(bone.mrot) * weight;
-            //     for (int b = 1; b < 4 && ov->weights[b]>0; b++) {
-            //         weight = ov->weights[b] * (1 / 255.0f);
-            //         Bone& bone = paraXModel->bones[ov->bones[b]];
-            //         v += (ov->pos * bone.mat) * weight;
-            //         // n += ov->normal.TransformNormal(bone.mrot) * weight;
-            //     }
-            //     pos = v;
-            //     // out_vertex.n = n;
-            // }
+            if (paraXModel->m_RenderMethod == CParaXModel::SOFT_ANIM && !IsExportAnimation(paraXModel)) 
+            {
+                ModelVertex* ov = &vertex;
+                float weight = ov->weights[0] * (1 / 255.0f);
+                Bone& bone = paraXModel->bones[ov->bones[0]];
+                Vector3 v = (ov->pos * bone.mat)*weight;
+                for (int b = 1; b < 4 && ov->weights[b]>0; b++) {
+                    weight = ov->weights[b] * (1 / 255.0f);
+                    Bone& bone = paraXModel->bones[ov->bones[b]];
+                    v += (ov->pos * bone.mat) * weight;
+                }
+                pos = v;
+            }
 			for (uint32_t j = 0; j < compCount; j++)
 			{
 				float val = pos[j];
@@ -287,21 +284,19 @@ namespace ParaEngine
 		{
 			ModelVertex& vertex = paraXModel->m_origVertices[i];
             Vector3 normal = vertex.normal;
-            // if (paraXModel->m_RenderMethod == CParaXModel::SOFT_ANIM) 
-            // {
-            //     ModelVertex* ov = &vertex;
-            //     float weight = ov->weights[0] * (1 / 255.0f);
-            //     Bone& bone = paraXModel->bones[ov->bones[0]];
-            //     // Vector3 v = (ov->pos * bone.mat)*weight;
-            //     Vector3 n = ov->normal.TransformNormal(bone.mrot) * weight;
-            //     for (int b = 1; b < 4 && ov->weights[b]>0; b++) {
-            //         weight = ov->weights[b] * (1 / 255.0f);
-            //         Bone& bone = paraXModel->bones[ov->bones[b]];
-            //         // v += (ov->pos * bone.mat) * weight;
-            //         n += ov->normal.TransformNormal(bone.mrot) * weight;
-            //     }
-            //     normal = n;
-            // }
+            if (paraXModel->m_RenderMethod == CParaXModel::SOFT_ANIM && !IsExportAnimation(paraXModel)) 
+            {
+                ModelVertex* ov = &vertex;
+                float weight = ov->weights[0] * (1 / 255.0f);
+                Bone& bone = paraXModel->bones[ov->bones[0]];
+                Vector3 n = ov->normal.TransformNormal(bone.mrot) * weight;
+                for (int b = 1; b < 4 && ov->weights[b]>0; b++) {
+                    weight = ov->weights[b] * (1 / 255.0f);
+                    Bone& bone = paraXModel->bones[ov->bones[b]];
+                    n += ov->normal.TransformNormal(bone.mrot) * weight;
+                }
+                normal = n;
+            }
 			for (uint32_t j = 0; j < compCount; j++)
 			{
 				float val = normal[j];
