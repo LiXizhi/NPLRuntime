@@ -848,6 +848,7 @@ namespace ParaScripting
 		/** get primary texture object */
 		ParaAssetObject GetTexture();
 
+		bool Export(const char* filepath, const char* typ = "gltf");
 		//////////////////////////////////////////////////////////////////////////
 		//
 		// mesh and physics mesh function object
@@ -1600,7 +1601,7 @@ namespace ParaScripting
 		* 	Some notes about meshes:
 		* 	- Be sure that you define face normals as facing in the direction you intend.
 		* 	Collision detection will only work correctly between shapes approaching the
-		* 	mesh from the ¡°outside¡±, i.e. from the direction in which the face normals point.
+		* 	mesh from the ï¿½ï¿½outsideï¿½ï¿½, i.e. from the direction in which the face normals point.
 		* 	- Do not duplicate identical vertices! If you have two triangles sharing a vertex,
 		* 	this vertex should only occur once in the vertex list, and both triangles should
 		* 	index it in the index list. If you create two copies of the vertex, the collision

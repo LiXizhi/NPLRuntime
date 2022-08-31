@@ -236,7 +236,7 @@ namespace ParaEngine {
 		else if (sdl_event.type == SDL_MOUSEBUTTONDOWN) {
 			m_mouse_x = sdl_event.button.x;
 			m_mouse_y = sdl_event.button.y;
-			if (sdl_event.button.button == SDL_BUTTON_LEFT) {
+			if (sdl_event.button.button & SDL_BUTTON_LEFT) {
 				m_MouseState[(uint32_t)EMouseButton::LEFT] = EKeyState::PRESS;
 				OnMouseButton(EMouseButton::LEFT, EKeyState::PRESS, sdl_event.button.x, sdl_event.button.y);
 			}
@@ -253,7 +253,7 @@ namespace ParaEngine {
 		else if (sdl_event.type == SDL_MOUSEBUTTONUP) {
 			m_mouse_x = sdl_event.button.x;
 			m_mouse_y = sdl_event.button.y;
-			if (sdl_event.button.button == SDL_BUTTON_LEFT) {
+			if (sdl_event.button.button & SDL_BUTTON_LEFT) {
 				m_MouseState[(uint32_t)EMouseButton::LEFT] = EKeyState::RELEASE;
 				OnMouseButton(EMouseButton::LEFT, EKeyState::RELEASE, sdl_event.button.x, sdl_event.button.y);
 			}

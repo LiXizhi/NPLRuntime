@@ -877,6 +877,12 @@ bool ParaEngine::CMeshObject::IsNoLight()
 	return m_bForceNoLight;	
 }
 
+CParaXStaticBase* ParaEngine::CMeshObject::GetModel()
+{
+	if (m_ppMesh) return m_ppMesh->GetMesh();
+	return nullptr;
+}
+
 void ParaEngine::CMeshObject::SearchXRefObject()
 {
 	if(!m_XRefSearched)

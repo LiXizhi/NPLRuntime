@@ -11,14 +11,14 @@ target_include_directories(ParaCraftSDL2 PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src
 target_link_libraries(ParaCraftSDL2 PUBLIC RenderSystemOpenGL ParaEngine)
 
 find_package(SDL2 CONFIG REQUIRED PATHS ${SDL_ROOT})
-
-#if (MSVC) 
-#	find_package(SDL2 CONFIG REQUIRED PATHS $ENV{VCPKG_ROOT}/installed/x64-windows-static)
-#else()
-#	SDL_ROOT find_package(SDL2 CONFIG REQUIRED PATHS /root/program/SDL-2.0.22)
-#endif()
-
 target_link_libraries(ParaCraftSDL2 PRIVATE SDL2::SDL2 SDL2::SDL2main)
+#if (MSVC) 
+	#find_package(SDL2 CONFIG REQUIRED PATHS $ENV{VCPKG_ROOT}/installed/x64-windows-static)
+#else()
+	#find_package(SDL2 CONFIG REQUIRED PATHS /root/program/SDL-2.0.22)
+#endif()
+#target_link_libraries(ParaCraftSDL2 PRIVATE SDL2::SDL2 SDL2::SDL2main SDL2::SDL2-static)
+
 
 target_compile_definitions(ParaCraftSDL2 PUBLIC PLATFORM_LINUX)
 target_compile_definitions(ParaCraftSDL2 PUBLIC LINUX)
