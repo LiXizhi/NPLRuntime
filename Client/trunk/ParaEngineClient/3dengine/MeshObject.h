@@ -5,6 +5,7 @@
 namespace ParaEngine
 {
 	class CViewCullingObject;
+	class CParaXStaticBase;
 	/** static mesh scene object.
 	represent a static object in the scene such as a terrain mesh, floor, stone, houses, etc
 	currently it only support X file asset entity, and no animation is allowed,
@@ -112,7 +113,7 @@ namespace ParaEngine
 
 		// animate the object
 		virtual void Animate( double dTimeDelta, int nRenderNumber=0 );
-
+		CParaXStaticBase* GetModel();
 		// -- for rendering
 		virtual HRESULT Draw( SceneState * sceneState);
 	

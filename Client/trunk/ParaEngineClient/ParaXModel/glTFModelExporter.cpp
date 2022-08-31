@@ -10,42 +10,50 @@
 
 namespace ParaEngine
 {
-	glTFModelExporter::glTFModelExporter(CParaXModel* mesh, bool binary)
-		: maxVertex(-FLT_MAX, -FLT_MAX, -FLT_MAX), minVertex(FLT_MAX, FLT_MAX, FLT_MAX),
-		maxNormal(-FLT_MAX, -FLT_MAX, -FLT_MAX), minNormal(FLT_MAX, FLT_MAX, FLT_MAX),
-		maxColor0(-FLT_MAX, -FLT_MAX, -FLT_MAX), minColor0(FLT_MAX, FLT_MAX, FLT_MAX),
-		maxColor1(-FLT_MAX, -FLT_MAX, -FLT_MAX), minColor1(FLT_MAX, FLT_MAX, FLT_MAX),
-		maxCoord(-FLT_MAX, -FLT_MAX), minCoord(FLT_MAX, FLT_MAX),
-		maxJoint(0, 0, 0, 0), minJoint(255, 255, 255, 255),
-		maxWeight(-FLT_MAX, -FLT_MAX, -FLT_MAX, -FLT_MAX), minWeight(FLT_MAX, FLT_MAX, FLT_MAX, FLT_MAX),
-		paraXModel(mesh),
-		animProvider(nullptr),
-		bufferIndex(0),
-		accessorIndex(0),
-		isBinary(binary),
-		buffer(std::make_shared<Buffer>())
+	void glTFModelExporter::Init() 
 	{
+		maxVertex = Vector3(-FLT_MAX, -FLT_MAX, -FLT_MAX);
+		minVertex = Vector3(FLT_MAX, FLT_MAX, FLT_MAX);
+		maxNormal = Vector3(-FLT_MAX, -FLT_MAX, -FLT_MAX);
+		minNormal = Vector3(FLT_MAX, FLT_MAX, FLT_MAX);
+		maxColor0 = Vector3(-FLT_MAX, -FLT_MAX, -FLT_MAX);
+		minColor0 = Vector3(FLT_MAX, FLT_MAX, FLT_MAX);
+		maxColor1 = Vector3(-FLT_MAX, -FLT_MAX, -FLT_MAX);
+		minColor1 = Vector3(FLT_MAX, FLT_MAX, FLT_MAX);
+		maxCoord = Vector2(-FLT_MAX, -FLT_MAX);
+		minCoord = Vector2(FLT_MAX, FLT_MAX);
+		maxJoint = Vector4(0, 0, 0, 0);
+		minJoint = Vector4(255, 255, 255, 255);
+		maxWeight = Vector4(-FLT_MAX, -FLT_MAX, -FLT_MAX, -FLT_MAX);
+		minWeight = Vector4(FLT_MAX, FLT_MAX, FLT_MAX, FLT_MAX);
+		paraXModel = nullptr;
+		animProvider = nullptr;
+		bufferIndex = 0;
+		bufferViewIndex = 0;
+		accessorIndex = 0;
+		nodeIndex = 0;
+		meshIndex = 0;
+		skinIndex = 0;
+		animationIndex = 0;
+		isBinary = false;
+		buffer = std::make_shared<Buffer>();
 		buffer->index = 0;
+	}
+	glTFModelExporter::glTFModelExporter(CParaXModel* mesh, bool binary)
+	{
+		Init();
+		isBinary = binary;
+		paraXModel = mesh;
 		ParseParaXModel();
 		ParseAnimationBones();
 	}
 
 	glTFModelExporter::glTFModelExporter(CParaXModel* mesh, CParaXModel* anim, bool binary)
-		: maxVertex(-FLT_MAX, -FLT_MAX, -FLT_MAX), minVertex(FLT_MAX, FLT_MAX, FLT_MAX),
-		maxNormal(-FLT_MAX, -FLT_MAX, -FLT_MAX), minNormal(FLT_MAX, FLT_MAX, FLT_MAX),
-		maxColor0(-FLT_MAX, -FLT_MAX, -FLT_MAX), minColor0(FLT_MAX, FLT_MAX, FLT_MAX),
-		maxColor1(-FLT_MAX, -FLT_MAX, -FLT_MAX), minColor1(FLT_MAX, FLT_MAX, FLT_MAX),
-		maxCoord(-FLT_MAX, -FLT_MAX), minCoord(FLT_MAX, FLT_MAX),
-		maxJoint(0, 0, 0, 0), minJoint(255, 255, 255, 255),
-		maxWeight(-FLT_MAX, -FLT_MAX, -FLT_MAX, -FLT_MAX), minWeight(FLT_MAX, FLT_MAX, FLT_MAX, FLT_MAX),
-		paraXModel(mesh),
-		animProvider(anim),
-		bufferIndex(0),
-		accessorIndex(0),
-		isBinary(binary),
-		buffer(std::make_shared<Buffer>())
 	{
-		buffer->index = 0;
+		Init();
+		isBinary = binary;
+		animProvider = anim;
+		paraXModel = mesh;
 		ParseParaXModel();
 		ChangeAnimationBones();
 	}
@@ -55,6 +63,15 @@ namespace ParaEngine
 
 	}
 
+	bool glTFModelExporter::IsExportAnimation()
+	{ 
+		return paraXModel->animated; 
+	}
+
+	uint32_t glTFModelExporter::GetAnimationCount() 
+	{
+		return paraXModel->m_objNum.nAnimations;	
+	}
 	void glTFModelExporter::ExportToFile(const std::string& filename)
 	{
 		fileName = filename;
@@ -66,178 +83,9 @@ namespace ParaEngine
 			WriteFile();
 	}
 
-	std::string glTFModelExporter::ExportToBuffer()
-	{
-		ExportMetadata();
-		ExportScene();
-		if (isBinary)
-		{
-			Json::FastWriter writer;
-			const std::string& data = writer.write(root);
-			uint32_t jsonLength = (data.length() + 3) & (~3);
-			uint32_t binaryLength = (buffer->byteLength + 3) & (~3);
-
-			StringBuilder builder;
-			GLBHeader header;
-			header.magic = 0x46546C67;
-			header.version = 2;
-			header.length = sizeof(GLBHeader) + 2 * sizeof(GLBChunk) + jsonLength + binaryLength;
-			builder.append((const char*)&header, sizeof(GLBHeader));
-
-			GLBChunk jsonChunk;
-			jsonChunk.chunkLength = jsonLength;
-			jsonChunk.chunkType = ChunkType::JSON;
-			builder.append((const char*)&jsonChunk, sizeof(GLBChunk));
-			builder.append(data.c_str(), data.length());
-			uint8_t jsonPadding = 0x20;
-			uint32_t paddingLength = jsonLength - data.length();
-			for (uint32_t i = 0; i < paddingLength; i++)
-				builder.append((const char*)&jsonPadding, 1);
-
-			GLBChunk binaryChunk;
-			binaryChunk.chunkLength = binaryLength;
-			binaryChunk.chunkType = ChunkType::BIN;
-			builder.append((const char*)&binaryChunk, sizeof(GLBChunk));
-			uint32_t sizeFloat = ComponentTypeSize(ComponentType::Float);
-			uint32_t sizeUInt = ComponentTypeSize(ComponentType::UnsignedInt);
-			uint32_t sizeUByte = ComponentTypeSize(ComponentType::UnsignedByte);
-			for (auto it = vertices.begin(); it != vertices.end(); ++it)
-			{
-				builder.append((const char*)&(it->x), sizeFloat);
-				builder.append((const char*)&(it->y), sizeFloat);
-				builder.append((const char*)&(it->z), sizeFloat);
-			}
-
-			for (auto it = normals.begin(); it != normals.end(); ++it)
-			{
-				builder.append((const char*)&(it->x), sizeFloat);
-				builder.append((const char*)&(it->y), sizeFloat);
-				builder.append((const char*)&(it->z), sizeFloat);
-			}
-
-			for (auto it = texcoords.begin(); it != texcoords.end(); ++it)
-			{
-				builder.append((const char*)&(it->x), sizeFloat);
-				builder.append((const char*)&(it->y), sizeFloat);
-			}
-
-			for (auto it = colors0.begin(); it != colors0.end(); ++it)
-			{
-				builder.append((const char*)&(it->x), sizeFloat);
-				builder.append((const char*)&(it->y), sizeFloat);
-				builder.append((const char*)&(it->z), sizeFloat);
-			}
-
-			for (auto it = colors1.begin(); it != colors1.end(); ++it)
-			{
-				builder.append((const char*)&(it->x), sizeFloat);
-				builder.append((const char*)&(it->y), sizeFloat);
-				builder.append((const char*)&(it->z), sizeFloat);
-			}
-
-			if (paraXModel->animated)
-			{
-				for (uint32_t i = 0; i < paraXModel->m_objNum.nVertices; i++)
-				{
-					uint8* bone = paraXModel->m_origVertices[i].bones;
-					builder.append((const char*)bone, sizeUByte * 4);
-				}
-				for (auto it = weights.begin(); it != weights.end(); ++it)
-				{
-					builder.append((const char*)&(it->x), sizeFloat);
-					builder.append((const char*)&(it->y), sizeFloat);
-					builder.append((const char*)&(it->z), sizeFloat);
-					builder.append((const char*)&(it->w), sizeFloat);
-				}
-				for (uint32_t i = 0; i < paraXModel->passes.size(); i++)
-				{
-					ModelRenderPass& pass = paraXModel->passes[i];
-					uint32_t vertexOffset = pass.GetVertexStart(paraXModel);
-					for (uint32_t j = pass.m_nIndexStart; j < pass.m_nIndexStart + pass.indexCount; j++)
-					{
-						uint32_t index = paraXModel->m_indices[j] + vertexOffset;
-						builder.append((const char*)&index, sizeUInt);
-					}
-				}
-				uint32_t numBones = paraXModel->m_objNum.nBones;
-				for (uint32_t i = 0; i < numBones; i++)
-				{
-					builder.append((const char*)&paraXModel->bones[i].matOffset._m, sizeFloat * 16);
-				}
-				for (uint32_t i = 0; i < animTimes.size(); i++)
-				{
-					for (uint32_t j = 0; j < animTimes[i].size(); j++)
-					{
-						float val = animTimes[i][j];
-						builder.append((const char*)&val, sizeFloat);
-					}
-					for (uint32_t j = 0; j < translations[i].size(); j++)
-					{
-						builder.append((const char*)&translations[i][j].x, sizeFloat);
-						builder.append((const char*)&translations[i][j].y, sizeFloat);
-						builder.append((const char*)&translations[i][j].z, sizeFloat);
-					}
-					for (uint32_t j = 0; j < rotations[i].size(); j++)
-					{
-						builder.append((const char*)&rotations[i][j].x, sizeFloat);
-						builder.append((const char*)&rotations[i][j].y, sizeFloat);
-						builder.append((const char*)&rotations[i][j].z, sizeFloat);
-						builder.append((const char*)&rotations[i][j].w, sizeFloat);
-					}
-					for (uint32_t j = 0; j < scales[i].size(); j++)
-					{
-						builder.append((const char*)&scales[i][j].x, sizeFloat);
-						builder.append((const char*)&scales[i][j].y, sizeFloat);
-						builder.append((const char*)&scales[i][j].z, sizeFloat);
-					}
-				}
-			}
-			else
-			{
-				for (uint32_t i = 0; i < paraXModel->passes.size(); i++)
-				{
-					ModelRenderPass& pass = paraXModel->passes[i];
-					uint32_t vertexOffset = pass.GetVertexStart(paraXModel);
-					for (uint32_t j = pass.m_nIndexStart; j < pass.m_nIndexStart + pass.indexCount; j++)
-					{
-						uint32_t index = paraXModel->m_indices[j] + vertexOffset;
-						builder.append((const char*)&index, sizeUInt);
-					}
-				}
-			}
-			uint8_t binaryPadding = 0x00;
-			paddingLength = binaryLength - buffer->byteLength;
-			for (uint32_t i = 0; i < paddingLength; i++)
-				builder.append((const char*)&binaryPadding, 1);
-			return builder.ToString();
-		}
-		else
-		{
-			Json::FastWriter writer;
-			return writer.write(root);
-		}
-	}
-
 	void glTFModelExporter::ParseParaXModel()
 	{
 		uint32_t numBones = paraXModel->m_objNum.nBones;
-		// calculate bones' absolute position
-		//paraXModel->m_CurrentAnim = paraXModel->GetAnimIndexByID(0);
-		//for (uint32_t i = 0; i < numBones; i++)
-		//{
-		//	paraXModel->bones[i].calcMatrix(paraXModel->bones, paraXModel->m_CurrentAnim, paraXModel->m_BlendingAnim, paraXModel->blendingFactor);
-		//	paraXModel->bones[i].m_finalTrans = paraXModel->bones[i].GetAnimatedPivotPoint();
-		//}
-		//for (uint32_t i = 0; i < numBones; i++)
-		//{
-		//	Bone& bone = paraXModel->bones[i];
-		//	if (bone.parent == -1)
-		//	{
-		//		bone.matTransform.makeTrans(bone.m_finalTrans);
-		//		CalculateJoint(bone.nIndex, bone.m_finalTrans);
-		//	}
-		//}
-
 		float inverse = 1.0f / 255.0f;
 		uint32_t numVertices = paraXModel->m_objNum.nVertices;
 		for (uint32_t i = 0; i < numVertices; i++)
@@ -248,27 +96,6 @@ namespace ParaEngine
 			Vector2 coord = vertex.texcoords;
 			DWORD color0 = vertex.color1;
 			DWORD color1 = vertex.color0;
-			{
-				//float weight = vertex.weights[0] * inverse;
-				//Bone& bone = paraXModel->bones[vertex.bones[0]];
-				//v = (vertex.pos * bone.mat)*weight;
-				//for (int b = 1; b < 4 && vertex.weights[b]>0; b++) {
-				//	weight = vertex.weights[b] * inverse;
-				//	Bone& bone = paraXModel->bones[vertex.bones[b]];
-				//	v += (vertex.pos * bone.mat) * weight;
-				//}
-			}
-			{
-				//float weight = vertex.weights[0] * inverse;
-				//Bone& bone = paraXModel->bones[vertex.bones[0]];
-				//v -= bone.m_finalTrans * weight;
-				//for (int b = 1; b < 4 && vertex.weights[b]>0; b++) {
-				//	weight = vertex.weights[b] * inverse;
-				//	Bone& bone = paraXModel->bones[vertex.bones[b]];
-				//	v -= bone.m_finalTrans * weight;
-				//}
-			}
-
 			for (uint32_t j = 0; j < 3; j++)
 			{
 				float val = v[j];
@@ -347,7 +174,7 @@ namespace ParaEngine
 		translations.clear();
 		scales.clear();
 		rotations.clear();
-		uint32_t nAnimations = paraXModel->m_objNum.nAnimations;
+		uint32_t nAnimations = GetAnimationCount();
 		bvTime.resize(nAnimations);
 		bvTranslation.resize(nAnimations);
 		bvRotation.resize(nAnimations);
@@ -376,7 +203,7 @@ namespace ParaEngine
 					uint32_t offset3 = secondS - firstS + 1;
 					uint32_t animStart = firstT;
 					uint32_t animEnd = secondT;
-					if (offset1 > offset3 && offset1 > offset3)
+					if (offset1 > offset3 && offset1 > offset2)
 					{
 						animStart = firstT;
 						animEnd = secondT;
@@ -697,24 +524,23 @@ namespace ParaEngine
 		Json::Value animations = Json::Value(Json::arrayValue);
 
 		std::shared_ptr<Node> node = ExportNode();
-		Json::Value ns = Json::Value(Json::arrayValue);
-		ns[0u] = node->index;
+		Json::Value jsonSceneNodes = Json::Value(Json::arrayValue);
+		jsonSceneNodes[0u] = node->index;
 		std::shared_ptr<Mesh>& mesh = node->mesh;
-		Json::Value m;
-		m["mesh"] = mesh->index;
+		Json::Value jsonNodeObj;
+		jsonNodeObj["mesh"] = mesh->index;
 		if (node->skin != nullptr)
 		{
-			m["skin"] = node->skin->index;
-			Json::Value c = Json::Value(Json::arrayValue);
+			jsonNodeObj["skin"] = node->skin->index;
+			Json::Value jsonNodeChildren = Json::Value(Json::arrayValue);
 			for (uint32_t i = 0; i < node->children.size(); i++)
 			{
-				c[i] = node->children[i];
+				jsonNodeChildren[i] = node->children[i];
 			}
-			m["children"] = c;
+			jsonNodeObj["children"] = jsonNodeChildren;
 		}
-		nodes[0u] = m;
+		nodes[node->index] = jsonNodeObj;
 
-		uint32_t index = 0;
 		{
 			Json::Value ps = Json::Value(Json::arrayValue);
 			for (uint32_t k = 0; k < mesh->primitives.size(); k++)
@@ -726,9 +552,8 @@ namespace ParaEngine
 					a["POSITION"] = primitive.attributes.position->index;
 					if (k == 0)
 					{
-						WriteAccessor(primitive.attributes.position, accessors, index);
-						WriteBufferView(primitive.attributes.position->bufferView, bufferViews, index);
-						index++;
+						WriteAccessor(primitive.attributes.position, accessors);
+						WriteBufferView(primitive.attributes.position->bufferView, bufferViews);
 					}
 				}
 				if (primitive.attributes.normal != nullptr)
@@ -736,9 +561,8 @@ namespace ParaEngine
 					a["NORMAL"] = primitive.attributes.normal->index;
 					if (k == 0)
 					{
-						WriteAccessor(primitive.attributes.normal, accessors, index);
-						WriteBufferView(primitive.attributes.normal->bufferView, bufferViews, index);
-						index++;
+						WriteAccessor(primitive.attributes.normal, accessors);
+						WriteBufferView(primitive.attributes.normal->bufferView, bufferViews);
 					}
 				}
 				if (primitive.attributes.texcoord != nullptr)
@@ -746,9 +570,8 @@ namespace ParaEngine
 					a["TEXCOORD_0"] = primitive.attributes.texcoord->index;
 					if (k == 0)
 					{
-						WriteAccessor(primitive.attributes.texcoord, accessors, index);
-						WriteBufferView(primitive.attributes.texcoord->bufferView, bufferViews, index);
-						index++;
+						WriteAccessor(primitive.attributes.texcoord, accessors);
+						WriteBufferView(primitive.attributes.texcoord->bufferView, bufferViews);
 					}
 				}
 				if (primitive.attributes.color0 != nullptr)
@@ -756,9 +579,8 @@ namespace ParaEngine
 					a["COLOR_0"] = primitive.attributes.color0->index;
 					if (k == 0)
 					{
-						WriteAccessor(primitive.attributes.color0, accessors, index);
-						WriteBufferView(primitive.attributes.color0->bufferView, bufferViews, index);
-						index++;
+						WriteAccessor(primitive.attributes.color0, accessors);
+						WriteBufferView(primitive.attributes.color0->bufferView, bufferViews);
 					}
 				}
 				if (primitive.attributes.color1 != nullptr)
@@ -766,9 +588,8 @@ namespace ParaEngine
 					a["COLOR_1"] = primitive.attributes.color1->index;
 					if (k == 0)
 					{
-						WriteAccessor(primitive.attributes.color1, accessors, index);
-						WriteBufferView(primitive.attributes.color1->bufferView, bufferViews, index);
-						index++;
+						WriteAccessor(primitive.attributes.color1, accessors);
+						WriteBufferView(primitive.attributes.color1->bufferView, bufferViews);
 					}
 				}
 				if (primitive.attributes.joints != nullptr)
@@ -776,9 +597,8 @@ namespace ParaEngine
 					a["JOINTS_0"] = primitive.attributes.joints->index;
 					if (k == 0)
 					{
-						WriteAccessor(primitive.attributes.joints, accessors, index);
-						WriteBufferView(primitive.attributes.joints->bufferView, bufferViews, index);
-						index++;
+						WriteAccessor(primitive.attributes.joints, accessors);
+						WriteBufferView(primitive.attributes.joints->bufferView, bufferViews);
 					}
 				}
 				if (primitive.attributes.weights != nullptr)
@@ -786,9 +606,8 @@ namespace ParaEngine
 					a["WEIGHTS_0"] = primitive.attributes.weights->index;
 					if (k == 0)
 					{
-						WriteAccessor(primitive.attributes.weights, accessors, index);
-						WriteBufferView(primitive.attributes.weights->bufferView, bufferViews, index);
-						index++;
+						WriteAccessor(primitive.attributes.weights, accessors);
+						WriteBufferView(primitive.attributes.weights->bufferView, bufferViews);
 					}
 				}
 
@@ -797,9 +616,8 @@ namespace ParaEngine
 				p["mode"] = primitive.mode;
 				if (primitive.indices != nullptr)
 				{
-					WriteAccessor(primitive.indices, accessors, index);
-					WriteBufferView(primitive.indices->bufferView, bufferViews, index);
-					index++;
+					WriteAccessor(primitive.indices, accessors);
+					WriteBufferView(primitive.indices->bufferView, bufferViews);
 					p["indices"] = primitive.indices->index;
 				}
 				if (primitive.material != nullptr)
@@ -811,16 +629,15 @@ namespace ParaEngine
 			}
 			Json::Value obj;
 			obj["primitives"] = ps;
-			meshes[0u] = obj;
+			meshes[mesh->index] = obj;
 		}
 
 		if (node->skin != nullptr)
 		{
 			Json::Value skin;
 			skin["inverseBindMatrices"] = node->skin->inverseBindMatrices->index;
-			WriteAccessor(node->skin->inverseBindMatrices, accessors, index);
-			WriteBufferView(node->skin->inverseBindMatrices->bufferView, bufferViews, index);
-			index++;
+			WriteAccessor(node->skin->inverseBindMatrices, accessors);
+			WriteBufferView(node->skin->inverseBindMatrices->bufferView, bufferViews);
 			Json::Value joints = Json::Value(Json::arrayValue);
 			for (uint32_t i = 0; i < node->skin->joints.size(); i++)
 			{
@@ -852,37 +669,33 @@ namespace ParaEngine
 				child["translation"] = t;
 				child["rotation"] = r;
 				child["scale"] = s;
-				nodes[i + 1] = child;
+				nodes[joint->index] = child;
 			}
 			skin["joints"] = joints;
-			skins[0u] = skin;
+			skins[node->skin->index] = skin;
 			root["skins"] = skins;
 		}
 
-		if (paraXModel->animated)
+		if (IsExportAnimation())
 		{
-			uint32_t aidx = index;
-			uint32_t nAnimations = paraXModel->m_objNum.nAnimations;
+			uint32_t nAnimations = GetAnimationCount();
 			if (animProvider != nullptr) nAnimations = 1;
 			for (uint32_t animId = 0; animId < nAnimations; animId++)
 			{
 				std::shared_ptr<Animation> animation = ExportAnimations(animId);
-				WriteBufferView(bvTime[animId], bufferViews, index);
-				WriteBufferView(bvTranslation[animId], bufferViews, index + 1);
-				WriteBufferView(bvRotation[animId], bufferViews, index + 2);
-				WriteBufferView(bvScale[animId], bufferViews, index + 3);
-				index += 4;
+				WriteBufferView(bvTime[animId], bufferViews);
+				WriteBufferView(bvTranslation[animId], bufferViews);
+				WriteBufferView(bvRotation[animId], bufferViews);
+				WriteBufferView(bvScale[animId], bufferViews);
 				Json::Value saj = Json::Value(Json::arrayValue);
 				for (uint32_t i = 0; i < animation->samplers.size(); i++)
 				{
 					Animation::Sampler& sampler = animation->samplers[i];
 					if (sampler.used)
 					{
-						WriteAccessor(sampler.input, accessors, aidx);
-						aidx++;
+						WriteAccessor(sampler.input, accessors);
 					}
-					WriteAccessor(sampler.output, accessors, aidx);
-					aidx++;
+					WriteAccessor(sampler.output, accessors);
 					Json::Value sj;
 					sj["input"] = sampler.input->index;
 					sj["output"] = sampler.output->index;
@@ -916,14 +729,14 @@ namespace ParaEngine
 				Json::Value aj;
 				aj["samplers"] = saj;
 				aj["channels"] = caj;
-				animations[animId] = aj;
+				animations[animation->index] = aj;
 			}
 			root["animations"] = animations;
 		}
 
-		Json::Value obj;
-		obj["nodes"] = ns;
-		scenes[0u] = obj;
+		Json::Value jsonScene;
+		jsonScene["nodes"] = jsonSceneNodes;
+		scenes[0u] = jsonScene;
 		WriteBuffer(buffers, 0);
 
 		root["scenes"] = scenes;
@@ -945,17 +758,13 @@ namespace ParaEngine
 	std::shared_ptr<Node> glTFModelExporter::ExportNode()
 	{
 		std::shared_ptr<Node> node = std::make_shared<Node>();
-		node->index = 0;
+		node->index = nodeIndex++;
+		node->boneIndex = -1;
 		node->mesh = ExportMesh();
-		for (uint32_t i = 0; i < paraXModel->m_objNum.nBones; i++)
+		node->skin = nullptr;
+		if (IsExportAnimation())
 		{
-			Bone& bone = paraXModel->bones[i];
-			if (bone.parent == -1)
-				node->children.push_back(bone.nIndex + 1);
-		}
-		if (paraXModel->animated)
-		{
-			node->skin = ExportSkin();
+			node->skin = ExportSkin(node);
 		}
 		return node;
 	}
@@ -975,14 +784,16 @@ namespace ParaEngine
 		}
 		std::shared_ptr<Accessor> j = nullptr;
 		std::shared_ptr<Accessor> w = nullptr;
-		if (paraXModel->animated)
+		if (IsExportAnimation())
 		{
 			j = ExportJoints();
 			w = ExportWeights();
 		}
+		unsigned int index = 0;
 		for (uint32_t i = 0; i < paraXModel->passes.size(); i++)
 		{
 			ModelRenderPass& pass = paraXModel->passes[i];
+			if (pass.geoset < 0) continue;
 			if (paraXModel->showGeosets[pass.geoset])
 			{
 				Mesh::Primitive primitive;
@@ -992,31 +803,34 @@ namespace ParaEngine
 				primitive.attributes.texcoord = t;
 				primitive.attributes.color0 = c0;
 				primitive.attributes.color1 = c1;
-				if (paraXModel->animated)
+				if (IsExportAnimation())
 				{
 					primitive.attributes.joints = j;
 					primitive.attributes.weights = w;
 				}
 				//use blenmode of BM_TRANSPARENT for non-cubemode blocks
 				if (paraXModel->m_RenderMethod != CParaXModel::BMAX_MODEL)
-					primitive.material = ExportMaterials(pass.tex, i, pass.cull);
+					primitive.material = ExportMaterials(pass, index);
 				primitive.mode = PrimitiveMode::Triangles;
 				mesh->primitives.push_back(primitive);
+				index++;
 			}
 		}
 		mesh->index = 0;
 		return mesh;
 	}
 
-	std::shared_ptr<Skin> glTFModelExporter::ExportSkin()
+	std::shared_ptr<Skin> glTFModelExporter::ExportSkin(std::shared_ptr<Node> parentNode)
 	{
 		std::shared_ptr<Skin> skin = std::make_shared<Skin>();
 		uint32_t numBones = paraXModel->m_objNum.nBones;
+		skin->joints.resize(numBones);
 		for (uint32_t i = 0; i < numBones; i++)
 		{
 			Bone& bone = paraXModel->bones[i];
 			std::shared_ptr<Node> node = std::make_shared<Node>();
-			node->index = bone.nIndex + 1;
+			node->index = nodeIndex++;
+			node->boneIndex = bone.nIndex;
 			Quaternion q = Quaternion::IDENTITY;
 			Matrix4 m, mLocalRot;
 			Vector3 s(1.0f, 1.0f, 1.0f);
@@ -1080,16 +894,23 @@ namespace ParaEngine
 			node->translation = m.getTrans();
 			node->rotation = q;
 			node->scale = s;
-			skin->joints.push_back(node);
+			skin->joints[node->boneIndex] = node;
+			// skin->joints.push_back(node);
 		}
 		for (uint32_t i = 0; i < numBones; i++)
 		{
 			Bone& bone = paraXModel->bones[i];
-			if (bone.parent != -1)
-				skin->joints[bone.parent]->children.push_back(bone.nIndex + 1);
+			if (bone.parent == -1) 
+			{
+				parentNode->children.push_back(skin->joints[bone.nIndex]->index);
+			}
+			else 
+			{
+				skin->joints[bone.parent]->children.push_back(skin->joints[bone.nIndex]->index);
+			}
 		}
 		skin->inverseBindMatrices = ExportMatrices();
-		skin->index = 0;
+		skin->index = skinIndex++;
 		return skin;
 	}
 
@@ -1101,7 +922,7 @@ namespace ParaEngine
 
 		std::shared_ptr<BufferView> bv = std::make_shared<BufferView>();
 		bv->buffer = buffer;
-		bv->index = bufferIndex;
+		bv->index = bufferViewIndex;
 		bv->byteOffset = buffer->byteLength;
 		bv->byteLength = numBones * numComponents * bytesPerComp;
 		bv->byteStride = 0;
@@ -1110,7 +931,7 @@ namespace ParaEngine
 
 		std::shared_ptr<Accessor> acc = std::make_shared<Accessor>();
 		acc->bufferView = bv;
-		acc->index = bufferIndex;
+		acc->index = accessorIndex;
 		acc->byteOffset = 0;
 		acc->componentType = ComponentType::Float;
 		acc->count = numBones;
@@ -1130,7 +951,7 @@ namespace ParaEngine
 			}
 		}
 
-		bufferIndex++;
+		bufferViewIndex++;
 		accessorIndex++;
 		return acc;
 	}
@@ -1143,7 +964,7 @@ namespace ParaEngine
 
 		std::shared_ptr<BufferView> bv = std::make_shared<BufferView>();
 		bv->buffer = buffer;
-		bv->index = bufferIndex;
+		bv->index = bufferViewIndex;
 		bv->byteOffset = buffer->byteLength;
 		bv->byteLength = numVertices * numComponents * bytesPerComp;
 		bv->byteStride = numComponents * bytesPerComp;
@@ -1152,7 +973,7 @@ namespace ParaEngine
 
 		std::shared_ptr<Accessor> acc = std::make_shared<Accessor>();
 		acc->bufferView = bv;
-		acc->index = bufferIndex;
+		acc->index = accessorIndex;
 		acc->byteOffset = 0;
 		acc->componentType = ComponentType::Float;
 		acc->count = numVertices;
@@ -1163,7 +984,7 @@ namespace ParaEngine
 			acc->min.push_back(minVertex[i]);
 		}
 
-		bufferIndex++;
+		bufferViewIndex++;
 		accessorIndex++;
 		return acc;
 	}
@@ -1176,7 +997,7 @@ namespace ParaEngine
 
 		std::shared_ptr<BufferView> bv = std::make_shared<BufferView>();
 		bv->buffer = buffer;
-		bv->index = bufferIndex;
+		bv->index = bufferViewIndex;
 		bv->byteOffset = buffer->byteLength;
 		bv->byteLength = numVertices * numComponents * bytesPerComp;
 		bv->byteStride = numComponents * bytesPerComp;
@@ -1185,7 +1006,7 @@ namespace ParaEngine
 
 		std::shared_ptr<Accessor> acc = std::make_shared<Accessor>();
 		acc->bufferView = bv;
-		acc->index = bufferIndex;
+		acc->index = accessorIndex;
 		acc->byteOffset = 0;
 		acc->componentType = ComponentType::Float;
 		acc->count = numVertices;
@@ -1196,7 +1017,7 @@ namespace ParaEngine
 			acc->min.push_back(minNormal[i]);
 		}
 
-		bufferIndex++;
+		bufferViewIndex++;
 		accessorIndex++;
 		return acc;
 	}
@@ -1209,7 +1030,7 @@ namespace ParaEngine
 
 		std::shared_ptr<BufferView> bv = std::make_shared<BufferView>();
 		bv->buffer = buffer;
-		bv->index = bufferIndex;
+		bv->index = bufferViewIndex;
 		bv->byteOffset = buffer->byteLength;
 		bv->byteLength = numVertices * numComponents * bytesPerComp;
 		bv->byteStride = numComponents * bytesPerComp;
@@ -1218,7 +1039,7 @@ namespace ParaEngine
 
 		std::shared_ptr<Accessor> acc = std::make_shared<Accessor>();
 		acc->bufferView = bv;
-		acc->index = bufferIndex;
+		acc->index = accessorIndex;
 		acc->byteOffset = 0;
 		acc->componentType = ComponentType::Float;
 		acc->count = numVertices;
@@ -1229,7 +1050,7 @@ namespace ParaEngine
 			acc->min.push_back(minCoord[i]);
 		}
 
-		bufferIndex++;
+		bufferViewIndex++;
 		accessorIndex++;
 		return acc;
 	}
@@ -1242,7 +1063,7 @@ namespace ParaEngine
 
 		std::shared_ptr<BufferView> bv = std::make_shared<BufferView>();
 		bv->buffer = buffer;
-		bv->index = bufferIndex;
+		bv->index = bufferViewIndex;
 		bv->byteOffset = buffer->byteLength;
 		bv->byteLength = numVertices * numComponents * bytesPerComp;
 		bv->byteStride = numComponents * bytesPerComp;
@@ -1251,7 +1072,7 @@ namespace ParaEngine
 
 		std::shared_ptr<Accessor> acc = std::make_shared<Accessor>();
 		acc->bufferView = bv;
-		acc->index = bufferIndex;
+		acc->index = accessorIndex;
 		acc->byteOffset = 0;
 		acc->componentType = ComponentType::Float;
 		acc->count = numVertices;
@@ -1262,7 +1083,7 @@ namespace ParaEngine
 			acc->min.push_back(minColor0[i]);
 		}
 
-		bufferIndex++;
+		bufferViewIndex++;
 		accessorIndex++;
 		return acc;
 	}
@@ -1275,7 +1096,7 @@ namespace ParaEngine
 
 		std::shared_ptr<BufferView> bv = std::make_shared<BufferView>();
 		bv->buffer = buffer;
-		bv->index = bufferIndex;
+		bv->index = bufferViewIndex;
 		bv->byteOffset = buffer->byteLength;
 		bv->byteLength = numVertices * numComponents * bytesPerComp;
 		bv->byteStride = numComponents * bytesPerComp;
@@ -1284,7 +1105,7 @@ namespace ParaEngine
 
 		std::shared_ptr<Accessor> acc = std::make_shared<Accessor>();
 		acc->bufferView = bv;
-		acc->index = bufferIndex;
+		acc->index = accessorIndex;
 		acc->byteOffset = 0;
 		acc->componentType = ComponentType::Float;
 		acc->count = numVertices;
@@ -1295,7 +1116,7 @@ namespace ParaEngine
 			acc->min.push_back(minColor1[i]);
 		}
 
-		bufferIndex++;
+		bufferViewIndex++;
 		accessorIndex++;
 		return acc;
 	}
@@ -1308,7 +1129,7 @@ namespace ParaEngine
 
 		std::shared_ptr<BufferView> bv = std::make_shared<BufferView>();
 		bv->buffer = buffer;
-		bv->index = bufferIndex;
+		bv->index = bufferViewIndex;
 		bv->byteOffset = buffer->byteLength;
 		bv->byteLength = numVertices * numComponents * bytesPerComp;
 		bv->byteStride = numComponents * bytesPerComp;
@@ -1317,7 +1138,7 @@ namespace ParaEngine
 
 		std::shared_ptr<Accessor> acc = std::make_shared<Accessor>();
 		acc->bufferView = bv;
-		acc->index = bufferIndex;
+		acc->index = accessorIndex;
 		acc->byteOffset = 0;
 		acc->componentType = ComponentType::UnsignedByte;
 		acc->count = numVertices;
@@ -1328,7 +1149,7 @@ namespace ParaEngine
 			acc->min.push_back(minJoint[i]);
 		}
 
-		bufferIndex++;
+		bufferViewIndex++;
 		accessorIndex++;
 		return acc;
 	}
@@ -1341,7 +1162,7 @@ namespace ParaEngine
 
 		std::shared_ptr<BufferView> bv = std::make_shared<BufferView>();
 		bv->buffer = buffer;
-		bv->index = bufferIndex;
+		bv->index = bufferViewIndex;
 		bv->byteOffset = buffer->byteLength;
 		bv->byteLength = numVertices * numComponents * bytesPerComp;
 		bv->byteStride = numComponents * bytesPerComp;
@@ -1350,7 +1171,7 @@ namespace ParaEngine
 
 		std::shared_ptr<Accessor> acc = std::make_shared<Accessor>();
 		acc->bufferView = bv;
-		acc->index = bufferIndex;
+		acc->index = accessorIndex;
 		acc->byteOffset = 0;
 		acc->componentType = ComponentType::Float;
 		acc->count = numVertices;
@@ -1361,7 +1182,7 @@ namespace ParaEngine
 			acc->min.push_back(minWeight[i]);
 		}
 
-		bufferIndex++;
+		bufferViewIndex++;
 		accessorIndex++;
 		return acc;
 	}
@@ -1374,7 +1195,7 @@ namespace ParaEngine
 
 		std::shared_ptr<BufferView> bv = std::make_shared<BufferView>();
 		bv->buffer = buffer;
-		bv->index = bufferIndex;
+		bv->index = bufferViewIndex;
 		bv->byteOffset = buffer->byteLength;
 		bv->byteLength = numIndices * numComponents * bytesPerComp;
 		bv->byteStride = 0;
@@ -1383,7 +1204,7 @@ namespace ParaEngine
 
 		std::shared_ptr<Accessor> acc = std::make_shared<Accessor>();
 		acc->bufferView = bv;
-		acc->index = bufferIndex;
+		acc->index = accessorIndex;
 		acc->byteOffset = 0;
 		acc->componentType = ComponentType::UnsignedInt;
 		acc->type = AttribType::SCALAR;
@@ -1398,13 +1219,15 @@ namespace ParaEngine
 			if (val > acc->max[0]) acc->max[0] = val;
 		}
 
-		bufferIndex++;
+		bufferViewIndex++;
 		accessorIndex++;
 		return acc;
 	}
 
-	std::shared_ptr<Material> glTFModelExporter::ExportMaterials(int tex, int index, bool cull)
+	std::shared_ptr<Material> glTFModelExporter::ExportMaterials(ModelRenderPass& pass, int index)
 	{
+		int tex = pass.tex;
+		bool cull = pass.cull;
 		std::shared_ptr<Material> material = std::make_shared<Material>();
 		material->index = index;
 		material->alphaMode = "MASK";
@@ -1427,11 +1250,8 @@ namespace ParaEngine
 				std::string texPath = paraXModel->textures[tex]->m_key;
 				if (CParaFile::IsAbsolutePath(texPath) && CParaFile::DoesFileExist(texPath.c_str()))
 				{
-					// for custom blocks, copy textures to gltf folder
 					img->uri = "Texture/blocks/" + CParaFile::GetFileName(texPath);
 					img->filename = CParaFile::GetParentDirectoryFromPath(fileName) + img->uri;
-					//CParaFile::MakeDirectoryFromFilePath(img->filename.c_str());
-					//CParaFile::CopyFile(texPath.c_str(), img->filename.c_str(), true);
 				}
 				else
 				{
@@ -1461,8 +1281,12 @@ namespace ParaEngine
 			}
 			img->index = index;
 			CParaFile::MakeDirectoryFromFilePath(img->filename.c_str());
-			paraXModel->textures[tex]->SaveToFile(img->filename.c_str(), D3DFORMAT::D3DFMT_DXT3, 0, 0);
-
+			// paraXModel->textures[tex]->SaveToFile(img->filename.c_str(), D3DFORMAT::D3DFMT_DXT3, 0, 0);
+			if (tex >= CParaXModel::MAX_MODEL_TEXTURES || paraXModel->specialTextures[tex] == -1 || paraXModel->replaceTextures[paraXModel->specialTextures[tex]] == 0) {
+				paraXModel->textures[tex]->SaveToFile(img->filename.c_str(), D3DFORMAT::D3DFMT_DXT3, 0, 0);
+			} else {
+				paraXModel->replaceTextures[paraXModel->specialTextures[tex]]->SaveToFile(img->filename.c_str(), D3DFORMAT::D3DFMT_DXT3, 0, 0);
+			}
 			std::shared_ptr<Sampler> sampler = std::make_shared<Sampler>();
 			if (paraXModel->m_header.type == PARAX_MODEL_STATIC)
 			{
@@ -1494,11 +1318,11 @@ namespace ParaEngine
 	std::shared_ptr<Animation> glTFModelExporter::ExportAnimations(uint32_t animId)
 	{
 		std::shared_ptr<Animation> animation = std::make_shared<Animation>();
-
-		bvTime[animId] = ExportBufferView(AttribType::SCALAR, animTimes[animId].size(), 0);
-		bvTranslation[animId] = ExportBufferView(AttribType::VEC3, translations[animId].size(), 1);
-		bvRotation[animId] = ExportBufferView(AttribType::VEC4, rotations[animId].size(), 2);
-		bvScale[animId] = ExportBufferView(AttribType::VEC3, scales[animId].size(), 3);
+		animation->index = animationIndex++;
+		bvTime[animId] = ExportBufferView(AttribType::SCALAR, animTimes[animId].size());
+		bvTranslation[animId] = ExportBufferView(AttribType::VEC3, translations[animId].size());
+		bvRotation[animId] = ExportBufferView(AttribType::VEC4, rotations[animId].size());
+		bvScale[animId] = ExportBufferView(AttribType::VEC3, scales[animId].size());
 		uint32_t offsetTime = 0;
 		for (uint32_t i = 0; i < animOffsets[animId].size(); i++)
 		{
@@ -1549,19 +1373,19 @@ namespace ParaEngine
 		return animation;
 	}
 
-	std::shared_ptr<ParaEngine::BufferView> glTFModelExporter::ExportBufferView(AttribType::Value type, uint32_t length, uint32_t index)
+	std::shared_ptr<ParaEngine::BufferView> glTFModelExporter::ExportBufferView(AttribType::Value type, uint32_t length)
 	{
 		const uint32_t numComponents = AttribType::GetNumComponents(type);
 		const uint32_t bytesPerComp = ComponentTypeSize(ComponentType::Float);
 		std::shared_ptr<BufferView> bv = std::make_shared<BufferView>();
 		bv->buffer = buffer;
-		bv->index = bufferIndex;
+		bv->index = bufferViewIndex;
 		bv->byteOffset = buffer->byteLength;
 		bv->byteLength = length * numComponents * bytesPerComp;
 		bv->byteStride = 0;
 		bv->target = BufferViewTarget::NotUse;
 		buffer->Grow(bv->byteLength);
-		bufferIndex++;
+		bufferViewIndex++;
 		return bv;
 	}
 
@@ -1584,7 +1408,6 @@ namespace ParaEngine
 			if (val < acc->min[0]) acc->min[0] = val;
 			if (val > acc->max[0]) acc->max[0] = val;
 		}
-
 		accessorIndex++;
 		return acc;
 	}
@@ -1614,7 +1437,6 @@ namespace ParaEngine
 				if (val > acc->max[j]) acc->max[j] = val;
 			}
 		}
-
 		accessorIndex++;
 		return acc;
 	}
@@ -1706,21 +1528,24 @@ namespace ParaEngine
 			builder.append((const char*)&(it->y), sizeFloat);
 		}
 
-		for (auto it = colors0.begin(); it != colors0.end(); ++it)
-		{
-			builder.append((const char*)&(it->x), sizeFloat);
-			builder.append((const char*)&(it->y), sizeFloat);
-			builder.append((const char*)&(it->z), sizeFloat);
+		if (paraXModel->m_header.type == PARAX_MODEL_STATIC || paraXModel->m_RenderMethod == CParaXModel::BMAX_MODEL) {
+			for (auto it = colors0.begin(); it != colors0.end(); ++it)
+			{
+				builder.append((const char*)&(it->x), sizeFloat);
+				builder.append((const char*)&(it->y), sizeFloat);
+				builder.append((const char*)&(it->z), sizeFloat);
+			}
+
+			for (auto it = colors1.begin(); it != colors1.end(); ++it)
+			{
+				builder.append((const char*)&(it->x), sizeFloat);
+				builder.append((const char*)&(it->y), sizeFloat);
+				builder.append((const char*)&(it->z), sizeFloat);
+			}
 		}
 
-		for (auto it = colors1.begin(); it != colors1.end(); ++it)
-		{
-			builder.append((const char*)&(it->x), sizeFloat);
-			builder.append((const char*)&(it->y), sizeFloat);
-			builder.append((const char*)&(it->z), sizeFloat);
-		}
 
-		if (paraXModel->animated)
+		if (IsExportAnimation())
 		{
 			for (uint32_t i = 0; i < paraXModel->m_objNum.nVertices; i++)
 			{
@@ -1737,6 +1562,7 @@ namespace ParaEngine
 			for (uint32_t i = 0; i < paraXModel->passes.size(); i++)
 			{
 				ModelRenderPass& pass = paraXModel->passes[i];
+				if (pass.geoset < 0 || !paraXModel->showGeosets[pass.geoset]) continue;
 				uint32_t vertexOffset = pass.GetVertexStart(paraXModel);
 				for (uint32_t j = pass.m_nIndexStart; j < pass.m_nIndexStart + pass.indexCount; j++)
 				{
@@ -1783,6 +1609,7 @@ namespace ParaEngine
 			for (uint32_t i = 0; i < paraXModel->passes.size(); i++)
 			{
 				ModelRenderPass& pass = paraXModel->passes[i];
+				if (pass.geoset < 0) continue;
 				uint32_t vertexOffset = pass.GetVertexStart(paraXModel);
 				for (uint32_t j = pass.m_nIndexStart; j < pass.m_nIndexStart + pass.indexCount; j++)
 				{
@@ -1805,7 +1632,7 @@ namespace ParaEngine
 		obj[index] = b;
 	}
 
-	void glTFModelExporter::WriteBufferView(std::shared_ptr<BufferView>& bufferView, Json::Value& obj, uint32_t index)
+	void glTFModelExporter::WriteBufferView(std::shared_ptr<BufferView>& bufferView, Json::Value& obj)
 	{
 		Json::Value bv;
 		bv["buffer"] = bufferView->buffer->index;
@@ -1815,10 +1642,10 @@ namespace ParaEngine
 			bv["byteStride"] = bufferView->byteStride;
 		if (bufferView->target != BufferViewTarget::NotUse)
 			bv["target"] = bufferView->target;
-		obj[index] = bv;
+		obj[bufferView->index] = bv;
 	}
 
-	void glTFModelExporter::WriteAccessor(std::shared_ptr<Accessor>& accessor, Json::Value& obj, uint32_t index)
+	void glTFModelExporter::WriteAccessor(std::shared_ptr<Accessor>& accessor, Json::Value& obj)
 	{
 		Json::Value acc;
 		acc["bufferView"] = accessor->bufferView->index;
@@ -1866,14 +1693,15 @@ namespace ParaEngine
 			}
 		}
 		acc["min"] = jmin;
-		obj[index] = acc;
+		obj[accessor->index] = acc;
 	}
 
 	void glTFModelExporter::WriteMaterial(std::shared_ptr<Material>& material, Json::Value& mat, Json::Value& tex, Json::Value& sampler, Json::Value& img, uint32_t index)
 	{
 		PbrMetallicRoughness& pbr = material->metallicRoughness;
 		Json::Value baseTex;
-		baseTex["index"] = pbr.baseColorTexture.index;
+		// baseTex["index"] = pbr.baseColorTexture.index;
+		baseTex["index"] = index;
 		baseTex["texCoord"] = pbr.baseColorTexture.texCoord;
 		Json::Value baseFac = Json::Value(Json::arrayValue);
 		baseFac[0u] = pbr.baseColorFactor[0];
@@ -1894,8 +1722,12 @@ namespace ParaEngine
 
 		shared_ptr<Texture>& texture = pbr.baseColorTexture.texture;
 		Json::Value t;
-		t["sampler"] = texture->sampler->index;
-		t["source"] = texture->source->index;
+		// t["sampler"] = texture->sampler->index;
+		// t["source"] = texture->source->index;
+		t["sampler"] = index;
+		t["source"] = index;
+		texture->sampler->index = index;
+		texture->source->index = index;
 		tex[index] = t;
 
 		Json::Value s;
@@ -1978,7 +1810,7 @@ namespace ParaEngine
 				bin.write(&(it->z), sizeFloat);
 			}
 
-			if (paraXModel->animated)
+			if (IsExportAnimation())
 			{
 				for (uint32_t i = 0; i < paraXModel->m_objNum.nVertices; i++)
 				{
@@ -1995,6 +1827,7 @@ namespace ParaEngine
 				for (uint32_t i = 0; i < paraXModel->passes.size(); i++)
 				{
 					ModelRenderPass& pass = paraXModel->passes[i];
+					if (pass.geoset < 0) continue;
 					uint32_t vertexOffset = pass.GetVertexStart(paraXModel);
 					for (uint32_t j = pass.m_nIndexStart; j < pass.m_nIndexStart + pass.indexCount; j++)
 					{
@@ -2040,6 +1873,7 @@ namespace ParaEngine
 				for (uint32_t i = 0; i < paraXModel->passes.size(); i++)
 				{
 					ModelRenderPass& pass = paraXModel->passes[i];
+					if (pass.geoset < 0) continue;
 					uint32_t vertexOffset = pass.GetVertexStart(paraXModel);
 					for (uint32_t j = pass.m_nIndexStart; j < pass.m_nIndexStart + pass.indexCount; j++)
 					{
@@ -2120,7 +1954,7 @@ namespace ParaEngine
 				file.write(&(it->z), sizeFloat);
 			}
 
-			if (paraXModel->animated)
+			if (IsExportAnimation())
 			{
 				for (uint32_t i = 0; i < paraXModel->m_objNum.nVertices; i++)
 				{
@@ -2137,6 +1971,7 @@ namespace ParaEngine
 				for (uint32_t i = 0; i < paraXModel->passes.size(); i++)
 				{
 					ModelRenderPass& pass = paraXModel->passes[i];
+					if (pass.geoset < 0) continue;
 					uint32_t vertexOffset = pass.GetVertexStart(paraXModel);
 					for (uint32_t j = pass.m_nIndexStart; j < pass.m_nIndexStart + pass.indexCount; j++)
 					{
@@ -2151,25 +1986,25 @@ namespace ParaEngine
 				}
 				for (uint32_t i = 0; i < animTimes.size(); i++)
 				{
-					for (uint32_t j = 0; j < animTimes.size(); j++)
+					for (uint32_t j = 0; j < animTimes[i].size(); j++)
 					{
 						float val = animTimes[i][j];
 						file.write(&val, sizeFloat);
 					}
-					for (uint32_t j = 0; j < translations.size(); j++)
+					for (uint32_t j = 0; j < translations[i].size(); j++)
 					{
 						file.write(&translations[i][j].x, sizeFloat);
 						file.write(&translations[i][j].y, sizeFloat);
 						file.write(&translations[i][j].z, sizeFloat);
 					}
-					for (uint32_t j = 0; j < rotations.size(); j++)
+					for (uint32_t j = 0; j < rotations[i].size(); j++)
 					{
 						file.write(&rotations[i][j].x, sizeFloat);
 						file.write(&rotations[i][j].y, sizeFloat);
 						file.write(&rotations[i][j].z, sizeFloat);
 						file.write(&rotations[i][j].w, sizeFloat);
 					}
-					for (uint32_t j = 0; j < scales.size(); j++)
+					for (uint32_t j = 0; j < scales[i].size(); j++)
 					{
 						file.write(&scales[i][j].x, sizeFloat);
 						file.write(&scales[i][j].y, sizeFloat);
@@ -2182,6 +2017,7 @@ namespace ParaEngine
 				for (uint32_t i = 0; i < paraXModel->passes.size(); i++)
 				{
 					ModelRenderPass& pass = paraXModel->passes[i];
+					if (pass.geoset < 0) continue;
 					uint32_t vertexOffset = pass.GetVertexStart(paraXModel);
 					for (uint32_t j = pass.m_nIndexStart; j < pass.m_nIndexStart + pass.indexCount; j++)
 					{
@@ -2198,317 +2034,6 @@ namespace ParaEngine
 			file.close();
 		}
 	}
-
-	//luabind::object glTFModelExporter::GetParaXTexturesFromFile(const std::string& input, lua_State* L)
-	//{
-	//	CParaFile file(input.c_str());
-	//	CParaXSerializer serializer;
-	//	CParaXModel* mesh = (CParaXModel*)serializer.LoadParaXMesh(file);
-	//	if (mesh != nullptr)
-	//	{
-	//		luabind::object o = luabind::newtable(L);
-	//		for (uint32_t i = 0; i < mesh->m_objNum.nTextures; i++)
-	//		{
-	//			mesh->textures[i]->m_key;
-	//			o[i + 1] = mesh->textures[i]->m_key;
-	//		}
-	//		return o;
-	//	}
-	//	else
-	//		return luabind::object();
-	//}
-
-	//luabind::object glTFModelExporter::GetParaXTexturesFromBuffer(const char* buffer, int size, lua_State* L)
-	//{
-	//	CParaFile file(const_cast<char*>(buffer), size);
-	//	CParaXSerializer serializer;
-	//	CParaXModel* mesh = (CParaXModel*)serializer.LoadParaXMesh(file);
-	//	if (mesh != nullptr)
-	//	{
-	//		luabind::object o = luabind::newtable(L);
-	//		for (uint32_t i = 0; i < mesh->m_objNum.nTextures; i++)
-	//		{
-	//			mesh->textures[i]->m_key;
-	//			o[i + 1] = mesh->textures[i]->m_key;
-	//		}
-	//		return o;
-	//	}
-	//	else
-	//		return luabind::object();
-	//}
-
-	//void glTFModelExporter::ParaXFileExportTo_glTF_File(const std::string& input, const std::string& output, const luabind::object& texObject, bool binary, bool embedded /*= true*/)
-	//{
-	//	CParaFile file(input.c_str());
-	//	CGlobals::GetAssetManager()->SetAsyncLoading(false);
-	//	CParaXSerializer serializer;
-	//	CParaXModel* mesh = (CParaXModel*)serializer.LoadParaXMesh(file);
-	//	if (mesh != nullptr)
-	//	{
-	//		std::string filename = output.empty() ? (input.substr(0, input.rfind(".x")) + ".gltf") : output;
-	//		std::vector<string> textures;
-	//		int type = luabind::type(texObject);
-	//		if (type == LUA_TSTRING)
-	//		{
-	//			textures.push_back(luabind::object_cast<const char*>(texObject));
-	//		}
-	//		else if (type == LUA_TTABLE)
-	//		{
-	//			for (luabind::iterator itCur(texObject), itEnd; itCur != itEnd; ++itCur)
-	//			{
-	//				const luabind::object& item = *itCur;
-	//				if (luabind::type(item) == LUA_TSTRING)
-	//				{
-	//					textures.push_back(luabind::object_cast<const char*>(item));
-	//				}
-	//			}
-	//		}
-	//		glTFModelExporter exporter(mesh, textures, binary, embedded);
-	//		exporter.ExportToFile(filename);
-	//		delete mesh;
-	//		mesh = nullptr;
-	//	}
-	//}
-
-	//void glTFModelExporter::ParaXBufferExportTo_glTF_File(const char* buffer, int size, const std::string& output, const luabind::object& texObject, bool binary, bool embedded /*= true*/)
-	//{
-	//	CParaFile file(const_cast<char*>(buffer), size);
-	//	CGlobals::GetAssetManager()->SetAsyncLoading(false);
-	//	CParaXSerializer serializer;
-	//	CParaXModel* mesh = (CParaXModel*)serializer.LoadParaXMesh(file);
-	//	if (mesh != nullptr && !output.empty())
-	//	{
-	//		std::vector<string> textures;
-	//		int type = luabind::type(texObject);
-	//		if (type == LUA_TSTRING)
-	//		{
-	//			textures.push_back(luabind::object_cast<const char*>(texObject));
-	//		}
-	//		else if (type == LUA_TTABLE)
-	//		{
-	//			for (luabind::iterator itCur(texObject), itEnd; itCur != itEnd; ++itCur)
-	//			{
-	//				const luabind::object& item = *itCur;
-	//				if (luabind::type(item) == LUA_TSTRING)
-	//				{
-	//					textures.push_back(luabind::object_cast<const char*>(item));
-	//				}
-	//			}
-	//		}
-	//		glTFModelExporter exporter(mesh, textures, binary, embedded);
-	//		exporter.ExportToFile(output);
-	//		delete mesh;
-	//		mesh = nullptr;
-	//	}
-	//}
-
-	//luabind::object glTFModelExporter::ParaXFileExportTo_glTF_String(const std::string& input, bool binary, const luabind::object& texObject, lua_State* L)
-	//{
-	//	std::string buffer;
-	//	CParaFile file(input.c_str());
-	//	CGlobals::GetAssetManager()->SetAsyncLoading(false);
-	//	CParaXSerializer serializer;
-	//	CParaXModel* mesh = (CParaXModel*)serializer.LoadParaXMesh(file);
-	//	if (mesh != nullptr)
-	//	{
-	//		std::vector<string> textures;
-	//		int type = luabind::type(texObject);
-	//		if (type == LUA_TSTRING)
-	//		{
-	//			textures.push_back(luabind::object_cast<const char*>(texObject));
-	//		}
-	//		else if (type == LUA_TTABLE)
-	//		{
-	//			for (luabind::iterator itCur(texObject), itEnd; itCur != itEnd; ++itCur)
-	//			{
-	//				const luabind::object& item = *itCur;
-	//				if (luabind::type(item) == LUA_TSTRING)
-	//				{
-	//					textures.push_back(luabind::object_cast<const char*>(item));
-	//				}
-	//			}
-	//		}
-	//		glTFModelExporter exporter(mesh, textures, binary);
-	//		buffer = exporter.ExportToBuffer();
-	//		delete mesh;
-	//		mesh = nullptr;
-	//	}
-	//	return luabind::object(L, buffer.c_str());
-	//}
-
-	//luabind::object glTFModelExporter::ParaXBufferExportTo_glTF_String(const char* buffer, int size, bool binary, const luabind::object& texObject, lua_State* L)
-	//{
-	//	std::string gltfBuffer;
-	//	CParaFile file(const_cast<char*>(buffer), size);
-	//	CGlobals::GetAssetManager()->SetAsyncLoading(false);
-	//	CParaXSerializer serializer;
-	//	CParaXModel* mesh = (CParaXModel*)serializer.LoadParaXMesh(file);
-	//	if (mesh != nullptr)
-	//	{
-	//		std::vector<string> textures;
-	//		int type = luabind::type(texObject);
-	//		if (type == LUA_TSTRING)
-	//		{
-	//			textures.push_back(luabind::object_cast<const char*>(texObject));
-	//		}
-	//		else if (type == LUA_TTABLE)
-	//		{
-	//			for (luabind::iterator itCur(texObject), itEnd; itCur != itEnd; ++itCur)
-	//			{
-	//				const luabind::object& item = *itCur;
-	//				if (luabind::type(item) == LUA_TSTRING)
-	//				{
-	//					textures.push_back(luabind::object_cast<const char*>(item));
-	//				}
-	//			}
-	//		}
-	//		glTFModelExporter exporter(mesh, textures, binary);
-	//		gltfBuffer = exporter.ExportToBuffer();
-	//		delete mesh;
-	//		mesh = nullptr;
-	//	}
-	//	return luabind::object(L, gltfBuffer.c_str());
-	//}
-
-	//luabind::object glTFModelExporter::ParaXFileChangeAnimation(
-	//	const std::string& paraXFile, const std::string& animFile, bool binary, const luabind::object& texObject, lua_State* L)
-	//{
-	//	std::string buffer;
-	//	CParaXSerializer serializer;
-	//	CParaFile animfile(animFile.c_str());
-	//	CParaXModel* animation = (CParaXModel*)serializer.LoadParaXMesh(animfile);
-	//	if (animation != nullptr)
-	//	{
-	//		CParaFile xfile(paraXFile.c_str());
-	//		CGlobals::GetAssetManager()->SetAsyncLoading(false);
-	//		CParaXModel* mesh = (CParaXModel*)serializer.LoadParaXMesh(xfile);
-	//		if (mesh != nullptr)
-	//		{
-	//			std::vector<string> textures;
-	//			int type = luabind::type(texObject);
-	//			if (type == LUA_TSTRING)
-	//			{
-	//				textures.push_back(luabind::object_cast<const char*>(texObject));
-	//			}
-	//			else if (type == LUA_TTABLE)
-	//			{
-	//				for (luabind::iterator itCur(texObject), itEnd; itCur != itEnd; ++itCur)
-	//				{
-	//					const luabind::object& item = *itCur;
-	//					if (luabind::type(item) == LUA_TSTRING)
-	//					{
-	//						textures.push_back(luabind::object_cast<const char*>(item));
-	//					}
-	//				}
-	//			}
-	//			glTFModelExporter exporter(mesh, animation, textures, binary);
-	//			buffer = exporter.ExportToBuffer();
-	//			delete mesh;
-	//			mesh = nullptr;
-	//		}
-	//	}
-	//	else
-	//	{
-	//		CParaFile xfile(paraXFile.c_str());
-	//		CGlobals::GetAssetManager()->SetAsyncLoading(false);
-	//		CParaXModel* mesh = (CParaXModel*)serializer.LoadParaXMesh(xfile);
-	//		if (mesh != nullptr)
-	//		{
-	//			std::vector<string> textures;
-	//			int type = luabind::type(texObject);
-	//			if (type == LUA_TSTRING)
-	//			{
-	//				textures.push_back(luabind::object_cast<const char*>(texObject));
-	//			}
-	//			else if (type == LUA_TTABLE)
-	//			{
-	//				for (luabind::iterator itCur(texObject), itEnd; itCur != itEnd; ++itCur)
-	//				{
-	//					const luabind::object& item = *itCur;
-	//					if (luabind::type(item) == LUA_TSTRING)
-	//					{
-	//						textures.push_back(luabind::object_cast<const char*>(item));
-	//					}
-	//				}
-	//			}
-	//			glTFModelExporter exporter(mesh, textures, binary);
-	//			buffer = exporter.ExportToBuffer();
-	//			delete mesh;
-	//			mesh = nullptr;
-	//		}
-	//	}
-	//	return luabind::object(L, buffer.c_str());
-	//}
-
-	//luabind::object glTFModelExporter::ParaXBufferChangeAnimation(
-	//	const char* paraXBuffer, int paraXSize, const char* animBuffer, int animSize, bool binary, const luabind::object& texObject, lua_State* L)
-	//{
-	//	std::string buffer;
-	//	CParaXSerializer serializer;
-	//	CParaFile animFile(const_cast<char*>(animBuffer), animSize);
-	//	CParaXModel* animation = (CParaXModel*)serializer.LoadParaXMesh(animFile);
-	//	if (animation != nullptr)
-	//	{
-	//		CParaFile xfile(const_cast<char*>(paraXBuffer), paraXSize);
-	//		CGlobals::GetAssetManager()->SetAsyncLoading(false);
-	//		CParaXModel* mesh = (CParaXModel*)serializer.LoadParaXMesh(xfile);
-	//		if (mesh != nullptr)
-	//		{
-	//			std::vector<string> textures;
-	//			int type = luabind::type(texObject);
-	//			if (type == LUA_TSTRING)
-	//			{
-	//				textures.push_back(luabind::object_cast<const char*>(texObject));
-	//			}
-	//			else if (type == LUA_TTABLE)
-	//			{
-	//				for (luabind::iterator itCur(texObject), itEnd; itCur != itEnd; ++itCur)
-	//				{
-	//					const luabind::object& item = *itCur;
-	//					if (luabind::type(item) == LUA_TSTRING)
-	//					{
-	//						textures.push_back(luabind::object_cast<const char*>(item));
-	//					}
-	//				}
-	//			}
-	//			glTFModelExporter exporter(mesh, animation, textures, binary);
-	//			buffer = exporter.ExportToBuffer();
-	//			delete mesh;
-	//			mesh = nullptr;
-	//		}
-	//	}
-	//	else
-	//	{
-	//		CParaFile xfile(const_cast<char*>(paraXBuffer), paraXSize);
-	//		CGlobals::GetAssetManager()->SetAsyncLoading(false);
-	//		CParaXModel* mesh = (CParaXModel*)serializer.LoadParaXMesh(xfile);
-	//		if (mesh != nullptr)
-	//		{
-	//			std::vector<string> textures;
-	//			int type = luabind::type(texObject);
-	//			if (type == LUA_TSTRING)
-	//			{
-	//				textures.push_back(luabind::object_cast<const char*>(texObject));
-	//			}
-	//			else if (type == LUA_TTABLE)
-	//			{
-	//				for (luabind::iterator itCur(texObject), itEnd; itCur != itEnd; ++itCur)
-	//				{
-	//					const luabind::object& item = *itCur;
-	//					if (luabind::type(item) == LUA_TSTRING)
-	//					{
-	//						textures.push_back(luabind::object_cast<const char*>(item));
-	//					}
-	//				}
-	//			}
-	//			glTFModelExporter exporter(mesh, textures, binary);
-	//			buffer = exporter.ExportToBuffer();
-	//			delete mesh;
-	//			mesh = nullptr;
-	//		}
-	//	}
-	//	return luabind::object(L, buffer.c_str());
-	//}
 
 	void glTFModelExporter::ParaXExportTo_glTF(CParaXModel* parax, const char* output)
 	{
