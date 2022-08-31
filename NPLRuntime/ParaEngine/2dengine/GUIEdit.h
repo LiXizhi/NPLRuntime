@@ -129,7 +129,7 @@ namespace ParaEngine
 		/**
 		* return Caret position in characters
 		*/
-		int GetCaretPosition();
+        virtual int GetCaretPosition();
 		
 		/**
 		* Set Caret position in characters
