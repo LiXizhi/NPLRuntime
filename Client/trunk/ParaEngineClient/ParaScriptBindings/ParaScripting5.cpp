@@ -312,7 +312,8 @@ void CNPLScriptingState::LoadHAPI_Globals()
 			def("CreateProcess", & ParaGlobal::CreateProcess), 
 	 		def("IsPortAvailable", &ParaGlobal::IsPortAvailable),
 	 		def("Execute", &ParaGlobal::Execute),
-			def("ShellExecute", & ParaGlobal::ShellExecute), 
+			def("ShellExecute", &ParaGlobal::ShellExecute),
+			def("ExecWmicCmd", & ParaGlobal::ExecWmicCmd),
 			def("OpenFileDialog", & ParaGlobal::OpenFileDialog), 
 
 			def("WriteRegStr", & ParaGlobal::WriteRegStr), 

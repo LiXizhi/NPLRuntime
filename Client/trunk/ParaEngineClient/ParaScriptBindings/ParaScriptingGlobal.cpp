@@ -32,6 +32,9 @@
 #endif
 #include <boost/bind.hpp>
 #include <boost/asio.hpp>
+#include <algorithm>
+#include <cctype>
+#include <string>
 
 #include "ParaScriptBindings/ParaScriptingNPL.h"
 
@@ -2020,6 +2023,136 @@ double ParaScripting::ParaGlobal::getAccurateTime()
 	static int64 start_time = CParaUtils::GetTimeMS();
 	double elapsedTime = (double)(CParaUtils::GetTimeMS() - start_time);
 	return elapsedTime / 1000;
+}
+
+BOOL ParaScripting::ParaGlobal::ExecWmicCmd(string wmicCmd, string searchItem, const char * callbackFile, int callbackIdx)
+{
+	string ret;
+	BOOL success = ExecWmicCmd1(ret, wmicCmd, searchItem);
+
+	std::function<void()> func = [=]() {
+		std::stringstream ss;
+		ss << "msg={_callbackIdx=" << callbackIdx << ",ret=[[" << ret << "]]}" << std::endl;
+		auto str = ss.str();
+		ParaScripting::CNPL::activate2_(callbackFile, ss.str().c_str());
+	};
+
+	if (callbackFile != NULL&& callbackIdx>0) {
+		func();
+	}
+
+	return success;
+}
+
+BOOL ParaScripting::ParaGlobal::ExecWmicCmd1(string &out, string wmicCmd, string searchItem)
+{
+	//diskdrive
+	const long MAX_COMMAND_SIZE = 10000; // 命令行输出缓冲大小     
+	string strEnSearch = searchItem.c_str();
+
+
+	BOOL   bret = FALSE;
+	HANDLE hReadPipe = NULL; //读取管道  
+	HANDLE hWritePipe = NULL; //写入管道      
+	PROCESS_INFORMATION pi;   //进程信息      
+	STARTUPINFO         si;   //控制命令行窗口信息  
+	SECURITY_ATTRIBUTES sa;   //安全属性  
+
+	char            szBuffer[MAX_COMMAND_SIZE + 1] = { 0 }; // 放置命令行结果的输出缓冲区  
+	string          strBuffer;
+	unsigned long   count = 0;
+	long            ipos = 0;
+
+	memset(&pi, 0, sizeof(pi));
+	memset(&si, 0, sizeof(si));
+	memset(&sa, 0, sizeof(sa));
+
+	pi.hProcess = NULL;
+	pi.hThread = NULL;
+	si.cb = sizeof(STARTUPINFO);
+	sa.nLength = sizeof(SECURITY_ATTRIBUTES);
+	sa.lpSecurityDescriptor = NULL;
+	sa.bInheritHandle = TRUE;
+
+	do {
+
+
+		//1.0 创建管道  
+		bret = CreatePipe(&hReadPipe, &hWritePipe, &sa, 0);
+		if (!bret)
+		{
+			break;
+		}
+
+		//2.0 设置命令行窗口的信息为指定的读写管道  
+		GetStartupInfo(&si);
+		si.hStdError = hWritePipe;
+		si.hStdOutput = hWritePipe;
+		si.wShowWindow = SW_HIDE; //隐藏命令行窗口  
+		si.dwFlags = STARTF_USESHOWWINDOW | STARTF_USESTDHANDLES;
+
+		//3.0 创建获取命令行的进程  
+		bret = ::CreateProcess(NULL, const_cast<char *>(wmicCmd.c_str()), NULL, NULL, TRUE, 0, NULL, NULL, &si, &pi);
+		if (!bret)
+		{
+			break;
+		}
+
+		//4.0 读取返回的数据  
+		WaitForSingleObject(pi.hProcess, 500/*INFINITE*/);
+		bret = ReadFile(hReadPipe, szBuffer, MAX_COMMAND_SIZE, &count, 0);
+		if (!bret)
+		{
+			break;
+		}
+
+		//5.0 查找
+		bret = FALSE;
+		strBuffer = szBuffer;
+		
+		std::string tempBuf = strBuffer;
+		std::transform(tempBuf.begin(), tempBuf.end(), tempBuf.begin(), [](unsigned char c) { return std::tolower(c); });
+		std::transform(strEnSearch.begin(), strEnSearch.end(), strEnSearch.begin(), [](unsigned char c) { return std::tolower(c); });
+		ipos = tempBuf.find(strEnSearch);
+
+		if (ipos < 0) // 没有找到  
+		{
+			break;
+		}
+		else
+		{
+			strBuffer = strBuffer.substr(ipos + strEnSearch.length());
+		}
+
+		memset(szBuffer, 0x00, sizeof(szBuffer));
+		strcpy_s(szBuffer, strBuffer.c_str());
+
+		//modify here
+		//去掉中间的空格 \r \n     
+		char temp[512];
+		memset(temp, 0, sizeof(temp));
+
+		int index = 0;
+		for (size_t i = 0; i < strBuffer.size(); i++)
+		{
+			if (strBuffer[i] != ' '&&strBuffer[i] != '\n'&&strBuffer[i] != '\r')
+			{
+				temp[index] = strBuffer[i];
+				index++;
+			}
+		}
+		out = temp;
+
+		bret = TRUE;
+	} while (false);
+
+	//关闭所有的句柄  
+	CloseHandle(hWritePipe);
+	CloseHandle(hReadPipe);
+	CloseHandle(pi.hProcess);
+	CloseHandle(pi.hThread);
+
+	return(bret);
 }
 
 bool ParaScripting::ParaBootStrapper::LoadFromFile(const char* sXMLfile)
