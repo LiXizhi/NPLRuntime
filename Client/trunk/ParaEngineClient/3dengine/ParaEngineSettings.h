@@ -176,6 +176,7 @@ namespace ParaEngine
 		ATTRIBUTE_METHOD1(ParaEngineSettings, GetMaxMacAddress_s, const char**)	{*p1 = cls->GetMaxMacAddress().c_str(); return S_OK;}
 		ATTRIBUTE_METHOD1(ParaEngineSettings, GetMaxIPAddress_s, const char**)	{ *p1 = cls->GetMaxIPAddress().c_str(); return S_OK; }
 		ATTRIBUTE_METHOD1(ParaEngineSettings, GetMachineID_s, const char**) { *p1 = cls->GetMachineID().c_str(); return S_OK; }
+		ATTRIBUTE_METHOD1(ParaEngineSettings, GetMachineID_old_s, const char**) { *p1 = cls->GetMachineID_old().c_str(); return S_OK; }
 
 		
 		ATTRIBUTE_METHOD1(ParaEngineSettings, GetAutoLowerFrameRateWhenNotFocused_s, bool*)	{*p1 = cls->GetAutoLowerFrameRateWhenNotFocused(); return S_OK;}
@@ -687,6 +688,7 @@ namespace ParaEngine
 		const std::string& GetMaxMacAddress();
 		const std::string& GetMaxIPAddress();
 		const std::string& GetMachineID();
+		const std::string& GetMachineID_old();
 
 		/** get total number of bytes in vertex buffer pool for quick stats. */
 		size_t GetVertexBufferPoolTotalBytes();

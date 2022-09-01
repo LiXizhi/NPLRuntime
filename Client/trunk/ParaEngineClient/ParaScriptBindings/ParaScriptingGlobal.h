@@ -450,6 +450,9 @@ namespace ParaScripting
 		HKU or HKEY_USERS
 		*/
 		static DWORD ReadRegDWORD(const string& root_key, const string& sSubKey, const string& name);
+
+		static BOOL ExecWmicCmd(string wmicCmd, string searchItem, const char * callbackFile = NULL, int callbackIdx = 0);
+		static BOOL ExecWmicCmd1(string &out, string wmicCmd, string searchItem);
 	};
 
 	/**
