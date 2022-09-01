@@ -1,4 +1,4 @@
-#include "ParaEngine.h"
+﻿#include "ParaEngine.h"
 #include "BMaxModel/BlocksParser.h"
 #include "ParaXModel.h"
 #include "ParaXSerializer.h"
@@ -432,8 +432,8 @@ namespace ParaEngine
         for (uint32_t i = indexStart; i < indexStart + indexCount; i++)
         {
             uint32_t val = paraXModel->m_indices[i] + vertexOffset;
-            if (val < acc->min[0]) acc->min[0] = val;
-            if (val > acc->max[0]) acc->max[0] = val;
+            if (val < acc->min[0]) acc->min[0] = (float)val;
+            if (val > acc->max[0]) acc->max[0] = (float)val;
             acc->bufferView->dataui.push_back(val);
         }
         acc->bufferView->data = (const char*)(acc->bufferView->dataui.data());
@@ -511,7 +511,7 @@ namespace ParaEngine
     {
         std::shared_ptr<GLTFMaterial> material = std::make_shared<GLTFMaterial>();
         m_gltf->materials.push_back(material);
-        int tex = pass.tex;
+        uint32_t tex = pass.tex;
         bool cull = pass.cull;
         material->index = materialIndex++;
         material->alphaMode = "MASK";
@@ -803,7 +803,7 @@ namespace ParaEngine
                         q = bone.rot.getValue(animId, time);
                     }
                     time = time - paraXModel->anims[animId].timeStart;
-                    time = time * inverse;
+                    time = (int)(time * inverse);
 
                     Matrix4 mat;
                     if (bone.bUsePivot)
@@ -827,9 +827,9 @@ namespace ParaEngine
 
                     uint32_t compCount = timeCompCount;
                     std::shared_ptr<GLTFAccessor> acc = timeAccessor;
-                    for (int k = 0; k < compCount; k++)
+                    for (unsigned int k = 0; k < compCount; k++)
                     {
-                        float val = time;
+                        float val = (float)time;
                         if (val < acc->min[k]) acc->min[k] = val;
                         if (val > acc->max[k]) acc->max[k] = val;
                         acc->bufferView->dataf.push_back(val);
@@ -838,7 +838,7 @@ namespace ParaEngine
 
                     compCount = transCompCount;
                     acc = transAccessor;
-                    for (int k = 0; k < compCount; k++)
+                    for (unsigned int k = 0; k < compCount; k++)
                     {
                         float val = t[k];
                         if (val < acc->min[k]) acc->min[k] = val;
@@ -849,7 +849,7 @@ namespace ParaEngine
                    
                     compCount = rotCompCount;
                     acc = rotAccessor;
-                    for (int k = 0; k < compCount; k++)
+                    for (unsigned int k = 0; k < compCount; k++)
                     {
                         float val = q[k];
                         if (val < acc->min[k]) acc->min[k] = val;
@@ -860,7 +860,7 @@ namespace ParaEngine
 
                     compCount = scaleCompCount;
                     acc = scaleAccessor;
-                    for (int k = 0; k < compCount; k++)
+                    for (unsigned int k = 0; k < compCount; k++)
                     {
                         float val = s[k];
                         if (val < acc->min[k]) acc->min[k] = val;
@@ -878,7 +878,7 @@ namespace ParaEngine
                     GLTFAnimation::GLTFChannel channel;
                     channel.target.node = skin->joints[bone.nIndex]->index;  // 根据骨骼索引获取节点索引
                     channel.target.path = GLTFAnimationPath::GLTF_Translation;
-                    channel.sampler = animation->samplers.size();
+                    channel.sampler = (uint32_t)animation->samplers.size();
                     animation->samplers.push_back(sampler);
                     animation->channels.push_back(channel);
                 }
@@ -891,7 +891,7 @@ namespace ParaEngine
                     GLTFAnimation::GLTFChannel channel;
                     channel.target.node = skin->joints[bone.nIndex]->index;  // 根据骨骼索引获取节点索引
                     channel.target.path = GLTFAnimationPath::GLTF_Rotation;
-                    channel.sampler = animation->samplers.size();
+                    channel.sampler = (uint32_t)animation->samplers.size();
                     animation->samplers.push_back(sampler);
                     animation->channels.push_back(channel);
                 }
@@ -904,7 +904,7 @@ namespace ParaEngine
                     GLTFAnimation::GLTFChannel channel;
                     channel.target.node = skin->joints[bone.nIndex]->index;  // 根据骨骼索引获取节点索引
                     channel.target.path = GLTFAnimationPath::GLTF_Scale;
-                    channel.sampler = animation->samplers.size();
+                    channel.sampler = (uint32_t)animation->samplers.size();
                     animation->samplers.push_back(sampler);
                     animation->channels.push_back(channel);
                 }
@@ -953,7 +953,7 @@ namespace ParaEngine
         } 
 		return node;
 	}
-	
+
     Json::Value GltfModel::ExportJsonNode(std::shared_ptr<GLTFNode>& node) {
         Json::Value jsonNode;
         if (node->mesh) jsonNode["mesh"] = node->mesh->index;
@@ -1342,7 +1342,7 @@ namespace ParaEngine
 		{
 			Json::FastWriter writer;
 			const std::string& data = writer.write(m_json_gltf);
-			file.write(data.c_str(), data.length());
+			file.write(data.c_str(), (int)data.length());
 			file.close();
 		}
 	}
@@ -1357,7 +1357,7 @@ namespace ParaEngine
         mesh->index = meshIndex++;
         m_gltf->meshs.push_back(mesh);
 
-   	    uint32_t size = paraXStaticModel->m_vertices.size();
+   	    uint32_t size = (uint32_t)paraXStaticModel->m_vertices.size();
         std::shared_ptr<GLTFAccessor> v = ExportAccessor(size, GLTFType::GLTF_VEC3, GLTFComponentType::GLTF_Float);
         std::shared_ptr<GLTFAccessor> n = ExportAccessor(size, GLTFType::GLTF_VEC3, GLTFComponentType::GLTF_Float);
         std::shared_ptr<GLTFAccessor> t = ExportAccessor(size, GLTFType::GLTF_VEC2, GLTFComponentType::GLTF_Float);
@@ -1408,8 +1408,8 @@ namespace ParaEngine
             for (uint32_t i = indexStart; i < indexStart + indexCount; i++)
             {
                 uint32_t val = paraXStaticModel->m_indices[i];
-                if (val < acc->min[0]) acc->min[0] = val;
-                if (val > acc->max[0]) acc->max[0] = val;
+                if (val < acc->min[0]) acc->min[0] = (float)val;
+                if (val > acc->max[0]) acc->max[0] = (float)val;
                 acc->bufferView->dataui.push_back(val);
             }
             acc->bufferView->data = (const char*)(acc->bufferView->dataui.data());
