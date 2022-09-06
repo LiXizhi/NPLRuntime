@@ -1445,13 +1445,9 @@ const std::string& ParaEngine::ParaEngineSettings::GetMachineID()
 	}
 
 	std::string macadress = GetMaxMacAddress();
+	std::string md5Str = ParaEngine::StringHelper::md5(cpu_ProcessorId + "_" + csproduct_id);
+	str = md5Str +"_"+ str+"_"+ macadress;
 
-	str = cpu_ProcessorId +"_"+ csproduct_id +"_"+ str+"_"+ macadress;
-
-	
-	if (str == "0_0_0") {
-		str = "";
-	}
 #endif
 	if (str.empty()) {
 		str = GetMaxMacAddress();
