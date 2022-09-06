@@ -309,14 +309,16 @@ void ParaEngine::CSlopeModelProvider::_buildOutCornerModels_1()
 	cube_mode.LoadModelByTexture(0);
 	int modelNum = sizeof(mOutCornerModels_1) / sizeof(mOutCornerModels_1[0]);
 
+	int faceCount = mOuterCornerBlockModels[0].GetFaceCount();
 	for (int i = 0; i < modelNum; i++) {
 		mOutCornerModels_1[i].ClearVertices();
 		mOutCornerModels_1[i] = cube_mode;
+		mOutCornerModels_1[i].SetFaceCount(faceCount);
 	}
 
 	BlockModel tempModel = cube_mode;
-
-	for (int i = 0; i < 24; i++) {
+	int num = faceCount * 4;
+	for (int i = 0; i < num; i++) {
 		Vector3 pt;
 		
 		mOuterCornerBlockModels[0].Vertices()[i].GetPosition(pt);
@@ -327,8 +329,12 @@ void ParaEngine::CSlopeModelProvider::_buildOutCornerModels_1()
 		newPt.z = round(newPt.z);
 
 		tempModel.Vertices()[i].SetPosition(newPt.x, newPt.y, newPt.z);
-
 	}
+
+	for (int i = tempModel.GetFaceCount() * 4-1; i >=num; i--) {
+		tempModel.Vertices().pop_back();
+	}
+	tempModel.SetFaceCount(faceCount);
 
 	Vector3 angleArr[24] = {
 		//尖尖朝着y正方向
@@ -437,9 +443,10 @@ void ParaEngine::CSlopeModelProvider::cloneAndRoateModels(BlockModel &tempModel,
 	for (int i = 0; i < len; i++) {
 		Vector3 angles = angleArr[i];
 		int block_index = i;
-		outModels[block_index].LoadModelByTexture(0);
-		int faceNum =  outModels[block_index].GetFaceCount();
-		for (int face = 0; face < faceNum; face++) {
+		BlockModel & model = outModels[block_index];
+		model.LoadModelByTexture(0);
+		int faceNum =  model.GetFaceCount();
+		for (int face = faceNum-1; face>=0 ; face--) {
 			for (int j = 0;j<4; j++) {
 				int idx = face * 4 + j;
 				Vector3 pt;
@@ -449,10 +456,23 @@ void ParaEngine::CSlopeModelProvider::cloneAndRoateModels(BlockModel &tempModel,
 				newPt.x = round(newPt.x);
 				newPt.y = round(newPt.y);
 				newPt.z = round(newPt.z);
-				outModels[block_index].Vertices()[idx].SetPosition(newPt.x, newPt.y, newPt.z);
+				model.Vertices()[idx].SetPosition(newPt.x, newPt.y, newPt.z);
 				
 			}
-			calculateModelNormalOfFace(outModels[block_index], face*4);
+			Vector3 &normal = calculateModelNormalOfFace(model, face*4);
+
+			//int tempFaceCount = model.GetFaceCount();
+			//if (normal.positionEquals(Vector3(0, 0, 0))) {//表示这不是一个正常的面，直接剪裁掉
+			//	int start = face * 4;//去掉这个面的四个顶点，并前移数组
+			//	for (int v = start; v < tempFaceCount * 4 - 4; v++) {
+			//		model.Vertices()[v] = model.Vertices()[v + 4];
+			//	}
+			//	for (int v = 0; v < 4; v++) {
+			//		model.Vertices().pop_back();
+			//	}
+			//	tempFaceCount--;
+			//}
+			//model.SetFaceCount(tempFaceCount);
 		}
 	}
 }
@@ -486,9 +506,7 @@ Vector3 ParaEngine::CSlopeModelProvider::calculateModelNormalOfFace(BlockModel &
 		normal = dir0_2.crossProduct(dir0_3);
 	}
 	
-	normal.x = round(normal.x);
-	normal.y = round(normal.y);
-	normal.z = round(normal.z);
+	normal.normalise();
 	for (int i = 0; i < 4; i++) {
 		int idx = startIdxOfFace + i;
 		tempModel.Vertices()[idx].SetNormal(normal);

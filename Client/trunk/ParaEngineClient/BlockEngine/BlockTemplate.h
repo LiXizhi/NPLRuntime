@@ -264,6 +264,9 @@ namespace ParaEngine
 		const Color & getUnderWaterColor()const;
 		int getTileSize()const;
 		void setTileSize(int nTile);
+		inline std::string GetModelName() {
+			return modelName;
+		}
 	private:
 		/** unique id */
 		uint16_t m_id;
@@ -305,7 +308,7 @@ namespace ParaEngine
 		Color m_UnderWaterColor;
 
 		int m_nTileSize;
-
+		std::string modelName;
 		friend class IBlockModelProvider;
 	};
 }
