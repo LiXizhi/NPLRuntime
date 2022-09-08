@@ -36,7 +36,7 @@ BlockModel& ParaEngine::CStairModelProvider::GetBlockModel(CBlockWorld* pBlockMa
 	return (nBlockData < m_nModelCount) ? mBlockModels[block_index] : mBlockModels[0];
 }
 
-void _AddVertex(BlockModel& tmp, Vector3 pts[4], Vector3 &normal)
+void _AddVertex(BlockModel& tmp, const Vector3 *pts, Vector3 &normal)
 {
 	static Vector2 texCoord[4] = {
 		Vector2(0,1),
@@ -560,7 +560,7 @@ void ParaEngine::CStairModelProvider::_buildBlockModels()
 			Vector3(0,3.14f,0),
 		};
 		int startOutIdx = 0;
-		cloneAndRoateModels(template_1, angles, mBlockModels, sizeof(angles) / sizeof(angles[0]), startOutIdx);
+		cloneAndRotateModels(template_1, angles, mBlockModels, sizeof(angles) / sizeof(angles[0]), startOutIdx);
 	}
 	{
 		Vector3 angles[4] = {
@@ -570,7 +570,7 @@ void ParaEngine::CStairModelProvider::_buildBlockModels()
 			Vector3(3.14f,0,0),
 		};
 		int startOutIdx = 10;
-		cloneAndRoateModels(template_1, angles, mBlockModels, sizeof(angles) / sizeof(angles[0]), startOutIdx);
+		cloneAndRotateModels(template_1, angles, mBlockModels, sizeof(angles) / sizeof(angles[0]), startOutIdx);
 	}
 	{
 		Vector3 angles[4] = {
@@ -580,7 +580,7 @@ void ParaEngine::CStairModelProvider::_buildBlockModels()
 			Vector3(0,0,0),
 		};
 		int startOutIdx = 5;
-		cloneAndRoateModels(template_2, angles, mBlockModels, sizeof(angles) / sizeof(angles[0]), startOutIdx);
+		cloneAndRotateModels(template_2, angles, mBlockModels, sizeof(angles) / sizeof(angles[0]), startOutIdx);
 	}
 	{
 		Vector3 angles[4] = {
@@ -590,7 +590,7 @@ void ParaEngine::CStairModelProvider::_buildBlockModels()
 			Vector3(3.14f,1.57f,0),
 		};
 		int startOutIdx = 14;
-		cloneAndRoateModels(template_2, angles, mBlockModels, sizeof(angles) / sizeof(angles[0]), startOutIdx);
+		cloneAndRotateModels(template_2, angles, mBlockModels, sizeof(angles) / sizeof(angles[0]), startOutIdx);
 	}
 
 	{
@@ -603,14 +603,14 @@ void ParaEngine::CStairModelProvider::_buildBlockModels()
 			Vector3(3.14f,1.57f,0),
 		};
 		int startOutIdx = 18;
-		cloneAndRoateModels(template_3, angles, mBlockModels, sizeof(angles) / sizeof(angles[0]), startOutIdx);
+		cloneAndRotateModels(template_3, angles, mBlockModels, sizeof(angles) / sizeof(angles[0]), startOutIdx);
 	}
 	{
 		Vector3 angles[1] = {
 			Vector3(3.14f,3.14f,0),
 		};
 		int startOutIdx = 9;
-		cloneAndRoateModels(template_3, angles, mBlockModels, sizeof(angles) / sizeof(angles[0]), startOutIdx);
+		cloneAndRotateModels(template_3, angles, mBlockModels, sizeof(angles) / sizeof(angles[0]), startOutIdx);
 	}
 
 	for (auto& model : mBlockModels) {
@@ -620,7 +620,7 @@ void ParaEngine::CStairModelProvider::_buildBlockModels()
 	}
 }
 
-void ParaEngine::CStairModelProvider::cloneAndRoateModels(BlockModel &tempModel, Vector3 angleArr[], BlockModel outModels[], int len, int startOutIdx) {
+void ParaEngine::CStairModelProvider::cloneAndRotateModels(BlockModel &tempModel, Vector3 angleArr[], BlockModel outModels[], int len, int startOutIdx) {
 	for (int i = 0; i < len; i++) {
 		Vector3 angles = angleArr[i];
 		int block_index = i;

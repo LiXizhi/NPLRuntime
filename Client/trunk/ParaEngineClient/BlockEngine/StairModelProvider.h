@@ -17,9 +17,9 @@ namespace ParaEngine
 		void _buildBlockModels();
 		
 
-		void cloneAndRoateModels(BlockModel &tempModel, Vector3 angleArr[], BlockModel outModels[], int len, int startOutIdx = 0);
+		void cloneAndRotateModels(BlockModel &tempModel, Vector3 angleArr[], BlockModel outModels[], int len, int startOutIdx = 0);
 
-		//计算某一个面的法线
+		
 		Vector3 calculateModelNormalOfFace(BlockModel &tempModel, int startIdxOfFace);
 	};
 }

@@ -264,7 +264,7 @@ namespace ParaEngine
 		const Color & getUnderWaterColor()const;
 		int getTileSize()const;
 		void setTileSize(int nTile);
-		inline std::string GetModelName() {
+		inline const std::string& GetModelName() {
 			return modelName;
 		}
 	private:

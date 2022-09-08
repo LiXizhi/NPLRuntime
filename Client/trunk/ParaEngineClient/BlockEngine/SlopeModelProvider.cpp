@@ -230,7 +230,21 @@ void ParaEngine::CSlopeModelProvider::_buildInnerCornerBlockModels()
 	tempModel.Vertices()[BlockModel::g_frtRT].SetPosition(cube_mode.Vertices()[BlockModel::g_frtRB].position[0], cube_mode.Vertices()[BlockModel::g_frtRB].position[1], cube_mode.Vertices()[BlockModel::g_frtRB].position[2]);
 	tempModel.Vertices()[BlockModel::g_topRB].SetPosition(cube_mode.Vertices()[BlockModel::g_frtRB].position[0], cube_mode.Vertices()[BlockModel::g_frtRB].position[1], cube_mode.Vertices()[BlockModel::g_frtRB].position[2]);
 	tempModel.Vertices()[BlockModel::g_rightLT].SetPosition(cube_mode.Vertices()[BlockModel::g_frtRB].position[0], cube_mode.Vertices()[BlockModel::g_frtRB].position[1], cube_mode.Vertices()[BlockModel::g_frtRB].position[2]);
-	tempModel.Vertices()[BlockModel::g_topLB].SetTexcoord(cube_mode.Vertices()[BlockModel::g_topRT].texcoord[0], cube_mode.Vertices()[BlockModel::g_topRT].texcoord[1]);
+
+	tempModel.Vertices()[BlockModel::g_topRT].SetPosition(cube_mode.Vertices()[BlockModel::g_frtRB].position[0], cube_mode.Vertices()[BlockModel::g_frtRB].position[1], cube_mode.Vertices()[BlockModel::g_frtRB].position[2]);
+	tempModel.Vertices()[BlockModel::g_topRT].SetTexcoord(1, 1);
+	tempModel.Vertices()[BlockModel::g_topRB].SetTexcoord(1,1);
+
+	auto vert = tempModel.Vertices()[BlockModel::g_frtRB];
+	tempModel.AddVertex(vert);
+	vert = tempModel.Vertices()[BlockModel::g_topLT];
+	tempModel.AddVertex(vert);
+	vert = tempModel.Vertices()[BlockModel::g_bkLT];
+	vert.SetTexcoord(1, 0);
+	tempModel.AddVertex(vert);
+	vert = tempModel.Vertices()[BlockModel::g_frtRB];
+	tempModel.AddVertex(vert);
+	tempModel.SetFaceCount(tempModel.Vertices().size() / 4);
 
 	//旧的 2-1和2-5明显不是内凸的，这里改了，应该没多少地方用到
 	Vector3 angleArr[8] = {
@@ -443,20 +457,25 @@ void ParaEngine::CSlopeModelProvider::cloneAndRoateModels(BlockModel &tempModel,
 	for (int i = 0; i < len; i++) {
 		Vector3 angles = angleArr[i];
 		int block_index = i;
-		BlockModel & model = outModels[block_index];
-		model.LoadModelByTexture(0);
-		int faceNum =  model.GetFaceCount();
-		for (int face = faceNum-1; face>=0 ; face--) {
+		BlockModel & model = outModels[block_index + 0];
+		model.ClearVertices();
+		int faceNum = tempModel.GetFaceCount();
+		for (int face = 0; face < faceNum; face++) {
 			for (int j = 0;j<4; j++) {
 				int idx = face * 4 + j;
 				Vector3 pt;
-				tempModel.Vertices()[idx].GetPosition(pt);
-				Vector3 newPt = vec3RotateByPoint(Vector3(0.5, 0.5, 0.5), pt, angles);
+
+				BlockVertexCompressed vert = tempModel.Vertices()[idx];
+				vert.GetPosition(pt);
+				Vector3 newPt = vec3RotateByPoint(Vector3(0.5f, 0.5f, 0.5f), pt, angles);
 
 				newPt.x = round(newPt.x);
 				newPt.y = round(newPt.y);
 				newPt.z = round(newPt.z);
-				model.Vertices()[idx].SetPosition(newPt.x, newPt.y, newPt.z);
+
+				vert.SetPosition(newPt.x, newPt.y, newPt.z);
+
+				model.AddVertex(vert);
 				
 			}
 			Vector3 &normal = calculateModelNormalOfFace(model, face*4);
