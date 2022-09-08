@@ -1443,15 +1443,16 @@ const std::string& ParaEngine::ParaEngineSettings::GetMachineID()
 		}
 		str = csproduct_uuid;
 	}
-
-	std::string macadress = GetMaxMacAddress();
-
-	str = cpu_ProcessorId +"_"+ csproduct_id +"_"+ str+"_"+ macadress;
-
-	
-	if (str == "0_0_0") {
-		str = "";
+	int pos = str.length();
+	if (pos > 36) {
+		pos-=36;
+		str = str.substr(pos);
 	}
+	
+	std::string macadress = GetMaxMacAddress();
+	std::string md5Str = ParaEngine::StringHelper::md5(cpu_ProcessorId + "_" + csproduct_id);
+	str = md5Str +"_"+ str+"_"+ macadress;
+
 #endif
 	if (str.empty()) {
 		str = GetMaxMacAddress();
