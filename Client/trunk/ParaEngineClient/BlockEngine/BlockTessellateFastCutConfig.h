@@ -28,11 +28,11 @@ namespace ParaEngine
 			init();
 		};
 		static bool isInited;
-		static std::map<int32, FastCutInfo*> _fastCutMap;
+		static std::map<int32, const FastCutInfo*> _fastCutMap;
 		static void init();
 		static int32 GetModelIDFromModelName(const std::string & name);
 
 		/** return NULL if not found. */
-		static FastCutInfo* GetCutInfo(int32 encodedKey);
+		static const FastCutInfo* GetCutInfo(int32 encodedKey);
 	};
 }

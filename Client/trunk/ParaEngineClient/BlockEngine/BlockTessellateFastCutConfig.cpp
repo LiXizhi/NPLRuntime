@@ -6,7 +6,7 @@
 //using namespace ParaEngine;
 
 //这里的faceId做了加1处理，下面要减回来
-static ParaEngine::FastCutInfo _fastCutArr[] = {
+const static ParaEngine::FastCutInfo _fastCutArr[] = {
 	{11704111,{3}},
 	{42101301,{6}},
 	{32206118,{4}},
@@ -10815,7 +10815,7 @@ static ParaEngine::FastCutInfo _fastCutArr[] = {
 };
 
 bool ParaEngine::BlockTessellateFastCutCfg::isInited = false;
-std::map<int32, ParaEngine::FastCutInfo*> ParaEngine::BlockTessellateFastCutCfg::_fastCutMap;
+std::map<int32, const ParaEngine::FastCutInfo*> ParaEngine::BlockTessellateFastCutCfg::_fastCutMap;
 
 ParaEngine::BlockTessellateFastCutCfg staticInit;
 
@@ -10832,12 +10832,12 @@ void ParaEngine::BlockTessellateFastCutCfg::init()
 
 int32 ParaEngine::BlockTessellateFastCutCfg::GetModelIDFromModelName(const std::string & name)
 {
-	static std::map<std::string, int32> _map = { {"stairs", 1}, {"slab", 2}, {"slope", 3} };
+	static std::map<std::string, int32> _map = { {"stairs", 1}, {"slab", 2}, {"slope", 3}}; // {"solid_cube", 4} 
 	auto iter = _map.find(name);
 	return (iter != _map.end()) ? iter->second : 0;
 }
 
-ParaEngine::FastCutInfo* ParaEngine::BlockTessellateFastCutCfg::GetCutInfo(int32 encodedKey)
+const ParaEngine::FastCutInfo* ParaEngine::BlockTessellateFastCutCfg::GetCutInfo(int32 encodedKey)
 {
 	auto iter = _fastCutMap.find(encodedKey);
 	return (iter != _fastCutMap.end()) ? iter->second : NULL;

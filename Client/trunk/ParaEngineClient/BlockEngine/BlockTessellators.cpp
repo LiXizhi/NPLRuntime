@@ -404,7 +404,7 @@ void ParaEngine::BlockGeneralTessellator::TessellateUniformLightingCustomModel(B
 				if (tempBlock)
 				{
 					int temp_id_data = tempBlock->GetUserData();
-					temp_id_data = temp_id_data & 0xff;
+					temp_id_data = temp_id_data & 0xff; // TODO: 16 bits color blocks or solid cubes?
 					BlockModel& tempModel = tempBlock->GetTemplate()->GetBlockModel(temp_id_data);
 					auto neighbourModelId = BlockTessellateFastCutCfg::GetModelIDFromModelName(tempBlock->GetTemplate()->GetModelName());
 					if (neighbourModelId > 0)
