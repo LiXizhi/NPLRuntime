@@ -6,15 +6,24 @@
 
 namespace ParaEngine {
 	struct FastCutInfo {
-		//modelName_blockIdx_neighborDir__modelName_blockIdx
-		std::string name;
+
+		/*
+		local modelName2Id = {
+			stairs = 1,
+			slab = 2,
+			slope = 3,
+		}
+		*/
+		// modelName*10000000 + blockIdx* 100000 + neighborDir*1000 + modelName*100 + blockIdx * 1
+		int name;
 		int faces[10];
 	};
 
 	class BlockTessellateFastCutCfg {
 	public:
 		static bool isInited;
-		static std::map<std::string, std::set<int>> _fastCutMap;
+		static std::map<int, std::set<int>> _fastCutMap;
 		static void init();
+		static const int getIntFromModelName(std::string & name);
 	};
 }

@@ -407,11 +407,10 @@ void ParaEngine::BlockGeneralTessellator::TessellateUniformLightingCustomModel(B
 				BlockModel& tempModel = tempBlock->GetTemplate()->GetBlockModel(temp_id_data);
 				string tempModelName = tempBlock->GetTemplate()->GetModelName();
 
-				char str[200] = { 0 };
-				sprintf(str, "%s_%d_%d__%s_%d", curModelName.c_str(), cur_id_data, dir, tempModelName.c_str(), temp_id_data);
-				std::string &key = std::string(str);
-				if (BlockTessellateFastCutCfg::_fastCutMap.find(key) != BlockTessellateFastCutCfg::_fastCutMap.end()) {
-					std::set<int> &faces = BlockTessellateFastCutCfg::_fastCutMap[key];
+				int intKey = BlockTessellateFastCutCfg::getIntFromModelName(curModelName) * 10000000 + cur_id_data * 100000 + dir * 1000 + BlockTessellateFastCutCfg::getIntFromModelName(tempModelName) * 100 + temp_id_data * 1;
+	
+				if (BlockTessellateFastCutCfg::_fastCutMap.find(intKey) != BlockTessellateFastCutCfg::_fastCutMap.end()) {
+					std::set<int> &faces = BlockTessellateFastCutCfg::_fastCutMap[intKey];
 
 					for (set<int>::iterator set_iter = faces.begin(); set_iter != faces.end(); set_iter++) {
 						facesNeedCut.push_back(*set_iter);
