@@ -7,6 +7,8 @@
 
 package com.tatfook.paracraft;
 
+import static android.Manifest.permission.READ_PHONE_STATE;
+
 import android.Manifest;
 import android.app.Activity;
 import android.app.KeyguardManager;
@@ -165,13 +167,12 @@ public class ParaEngineActivity extends AppCompatActivity {
 
         if (checkSelfPermission(Manifest.permission.READ_PHONE_STATE) != PackageManager.PERMISSION_GRANTED)
         {
-            requestPermissions(
-                new String[]{
-                    Manifest.permission.READ_PHONE_STATE,
-                    Manifest.permission.RECORD_AUDIO
-                },
-                PERMISSION_REQUEST_PHONE_STATE
-            );
+            ParaEngineActivity
+                .getContext()
+                .requestPermissions(
+                    new String[]{READ_PHONE_STATE},
+                    PERMISSION_REQUEST_PHONE_STATE
+                );
 
             mSavedInstanceState = savedInstanceState;
         } else {
