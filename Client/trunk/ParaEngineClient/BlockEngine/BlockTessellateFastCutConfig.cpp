@@ -1,3 +1,4 @@
+#include "ParaEngine.h"
 #include "BlockTessellateFastCutConfig.h"
 #include <map>
 #include <set>
@@ -5,7 +6,7 @@
 //using namespace ParaEngine;
 
 //这里的faceId做了加1处理，下面要减回来
-static const ParaEngine::FastCutInfo _fastCutArr[] = {
+static ParaEngine::FastCutInfo _fastCutArr[] = {
 	{11704111,{3}},
 	{42101301,{6}},
 	{32206118,{4}},
@@ -10814,38 +10815,30 @@ static const ParaEngine::FastCutInfo _fastCutArr[] = {
 };
 
 bool ParaEngine::BlockTessellateFastCutCfg::isInited = false;
-std::map<int, std::set<int>> ParaEngine::BlockTessellateFastCutCfg::_fastCutMap;
+std::map<int32, ParaEngine::FastCutInfo*> ParaEngine::BlockTessellateFastCutCfg::_fastCutMap;
 
-void ParaEngine::BlockTessellateFastCutCfg::init() {
-	if (isInited) {
-		return ;
-	}
+ParaEngine::BlockTessellateFastCutCfg staticInit;
+
+void ParaEngine::BlockTessellateFastCutCfg::init() 
+{
+	if (isInited)
+		return;
+	
 	isInited = true;
 	for (int i = sizeof(_fastCutArr) / sizeof(_fastCutArr[0]) - 1; i >= 0; i--) {
-		auto cfg = _fastCutArr[i];
-		std::set<int> faces;
-		for (int j = 0; j < 10; j++) {
-			int *face = &(cfg.faces[j]);
-			if (*face > 0) {//之所以加1就是在这里判断用
-				*face -= 1;
-				faces.insert(*face);
-			}
-		}
-		_fastCutMap.insert(std::pair<int, std::set<int>>(cfg.name, faces));
+		_fastCutMap[_fastCutArr[i].name] = &_fastCutArr[i];
 	}
 }
 
-const int ParaEngine::BlockTessellateFastCutCfg::getIntFromModelName(std::string & name)
+int32 ParaEngine::BlockTessellateFastCutCfg::GetModelIDFromModelName(const std::string & name)
 {
-	static std::map<std::string, int> _map;
-	_map["stairs"] = 1;
-	_map["slab"] = 2;
-	_map["slope"] = 3;
+	static std::map<std::string, int32> _map = { {"stairs", 1}, {"slab", 2}, {"slope", 3} };
+	auto iter = _map.find(name);
+	return (iter != _map.end()) ? iter->second : 0;
+}
 
-	if (_map.find(name) == _map.end()) {
-		return 0;
-	}
-	else {
-		return _map[name];
-	}
+ParaEngine::FastCutInfo* ParaEngine::BlockTessellateFastCutCfg::GetCutInfo(int32 encodedKey)
+{
+	auto iter = _fastCutMap.find(encodedKey);
+	return (iter != _fastCutMap.end()) ? iter->second : NULL;
 }

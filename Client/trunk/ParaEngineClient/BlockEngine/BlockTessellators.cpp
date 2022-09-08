@@ -17,6 +17,7 @@
 #include "BlockTessellateFastCutConfig.h"
 #include <map>
 #include <set>
+#include <boost/container/small_vector.hpp>
 
 using namespace ParaEngine;
 
@@ -383,7 +384,7 @@ void ParaEngine::BlockGeneralTessellator::TessellateUniformLightingCustomModel(B
 		max_block_light = GetMeshBrightness(m_pCurBlockTemplate, &(blockBrightness[rbp_center + nFetchNearybyCount]));
 
 		int curModelId = m_pCurBlockTemplate->GetID();
-		string curModelName = m_pCurBlockTemplate->GetModelName();
+		auto modelId = BlockTessellateFastCutCfg::GetModelIDFromModelName(m_pCurBlockTemplate->GetModelName());
 
 		uint8 block_lightvalue = m_pWorld->GetLightBrightnessInt(max_block_light);
 		uint8 sun_lightvalue = max_sun_light << 4;
@@ -394,45 +395,50 @@ void ParaEngine::BlockGeneralTessellator::TessellateUniformLightingCustomModel(B
 		cur_id_data = cur_id_data & 0xff;
 
 #ifdef USE_CUT_CFG
-		BlockTessellateFastCutCfg::init();
-		std::vector<int> facesNeedCut;//需要被剪裁的面
-		for (int dir = rbp_pX; dir <= rbp_nZ; ++dir)//遍历6个方向的邻居
-		{
-			Block* tempBlock = neighborBlocks[dir];
-			//这个面有个实体邻居
-			if (tempBlock) 
+		if (modelId > 0) {
+			// here we use small_vector instead of std::vector to avoid heap memory allocations.
+			boost::container::small_vector<int32, 20>  facesNeedCut;
+			for (int dir = rbp_pX; dir <= rbp_nZ; ++dir)
 			{
-				int temp_id_data = tempBlock->GetUserData();
-				temp_id_data = temp_id_data & 0xff;
-				BlockModel& tempModel = tempBlock->GetTemplate()->GetBlockModel(temp_id_data);
-				string tempModelName = tempBlock->GetTemplate()->GetModelName();
+				Block* tempBlock = neighborBlocks[dir];
+				if (tempBlock)
+				{
+					int temp_id_data = tempBlock->GetUserData();
+					temp_id_data = temp_id_data & 0xff;
+					BlockModel& tempModel = tempBlock->GetTemplate()->GetBlockModel(temp_id_data);
+					auto neighbourModelId = BlockTessellateFastCutCfg::GetModelIDFromModelName(tempBlock->GetTemplate()->GetModelName());
+					if (neighbourModelId > 0)
+					{
+						int intKey = modelId * 10000000 + cur_id_data * 100000 + dir * 1000 + neighbourModelId * 100 + temp_id_data * 1;
 
-				int intKey = BlockTessellateFastCutCfg::getIntFromModelName(curModelName) * 10000000 + cur_id_data * 100000 + dir * 1000 + BlockTessellateFastCutCfg::getIntFromModelName(tempModelName) * 100 + temp_id_data * 1;
-	
-				if (BlockTessellateFastCutCfg::_fastCutMap.find(intKey) != BlockTessellateFastCutCfg::_fastCutMap.end()) {
-					std::set<int> &faces = BlockTessellateFastCutCfg::_fastCutMap[intKey];
+						auto* curInfo = BlockTessellateFastCutCfg::GetCutInfo(intKey);
+						if (curInfo != NULL) {
+							auto& faces = curInfo->faces;
 
-					for (set<int>::iterator set_iter = faces.begin(); set_iter != faces.end(); set_iter++) {
-						facesNeedCut.push_back(*set_iter);
+							for (int i = 0; i < 10 && faces[i]>0; i++) {
+								facesNeedCut.push_back(faces[i] - 1);
+							}
+						}
+						//OUTPUT_LOG("\"%s_%d_%d__%s_%d = %d\",\n", curModelName.c_str(), cur_id_data, dir, tempModelName.c_str(), temp_id_data, selfFace);
 					}
 				}
-				
-				//OUTPUT_LOG("\"%s_%d_%d__%s_%d = %d\",\n", curModelName.c_str(), cur_id_data, dir, tempModelName.c_str(), temp_id_data, selfFace);
 			}
+			std::sort(facesNeedCut.begin(), facesNeedCut.end());
+			auto& verts = tessellatedModel.Vertices();
+			for (auto iter = facesNeedCut.rbegin(); iter != facesNeedCut.rend(); iter++) {
+				int selfFace = *iter;
+				int start = selfFace * 4;//去掉这个面的四个顶点，并前移数组
+				for (int v = start; v < tempFaceCount * 4 - 4; v++) {
+					verts[v] = verts[v + 4];
+				}
+				for (int v = 0; v < 4; v++) {
+					verts.pop_back();
+				}
+				tempFaceCount--;
+			}
+			tessellatedModel.SetFaceCount(tempFaceCount);
 		}
-		std::sort(facesNeedCut.begin(), facesNeedCut.end());
-		for (auto iter = facesNeedCut.rbegin(); iter != facesNeedCut.rend(); iter++) {
-			int selfFace = *iter;
-			int start = selfFace * 4;//去掉这个面的四个顶点，并前移数组
-			for (int v = start; v < tempFaceCount * 4 - 4; v++) {
-				tessellatedModel.Vertices()[v] = tessellatedModel.Vertices()[v + 4];
-			}
-			for (int v = 0; v < 4; v++) {
-				tessellatedModel.Vertices().pop_back();
-			}
-			tempFaceCount--;
-		}
-		tessellatedModel.SetFaceCount(tempFaceCount);
+		
 #else
 		if (curModelName=="slab"||curModelName=="stairs"||curModelName=="slope") {
 			std::vector<int> facesNeedCut;
