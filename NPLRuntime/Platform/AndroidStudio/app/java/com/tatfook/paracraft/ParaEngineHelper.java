@@ -221,13 +221,15 @@ public class ParaEngineHelper {
 
 	public static String getMachineID()
 	{
-		if (mCanReadPhoneState) {
-			String sn = Settings.Secure.getString(
+		String sn =
+			Settings.Secure.getString(
 				ParaEngineActivity.getContext().getContentResolver(),
 				Settings.Secure.ANDROID_ID
 			);
+
+		if (sn != null) {
 			return sn;
-		}else {
+		} else {
 			return "";
 		}
 	}
