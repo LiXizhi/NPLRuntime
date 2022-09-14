@@ -309,7 +309,7 @@ int32 ParaEngine::BlockGeneralTessellator::TessellateBlock(BlockChunk* pChunk, u
 	return nFaceCount;
 }
 
-bool checkFaceContain(Vector2 rectSelf[4], Vector2 rectTemp[4]) {
+bool checkFaceContain(Vector2 *rectSelf,Vector2 *rectTemp) {
 	//判断self的每个顶点是否都在temp矩形内部
 	for (int i = 0; i < 4; i++) {
 		Vector2 & ptSelf = rectSelf[i];
@@ -440,8 +440,9 @@ void ParaEngine::BlockGeneralTessellator::TessellateUniformLightingCustomModel(B
 		}
 		
 #else
+		const std::string &curModelName = m_pCurBlockTemplate->GetModelName();
 		if (curModelName=="slab"||curModelName=="stairs"||curModelName=="slope") {
-			std::vector<int> facesNeedCut;
+			boost::container::small_vector<int32, 20> facesNeedCut;
 			const static Vector3 normals[7] = {
 				Vector3(),
 
@@ -455,6 +456,11 @@ void ParaEngine::BlockGeneralTessellator::TessellateUniformLightingCustomModel(B
 			int cur_id_data = m_nBlockData;
 			cur_id_data = cur_id_data & 0xff;
 
+			static boost::container::small_vector<int32, 20> selfFaces;//当前方块正对邻居的面
+			static boost::container::small_vector<int32, 20> tempFaces;//邻居正对当前方块的面
+
+			static Vector2 selfRect[4], tempRect[4];
+
 			for (int dir = rbp_pX; dir <= rbp_nZ; ++dir)//遍历6个方向的邻居
 			{
 				Block* tempBlock = neighborBlocks[dir];
@@ -464,13 +470,11 @@ void ParaEngine::BlockGeneralTessellator::TessellateUniformLightingCustomModel(B
 					int temp_id_data = tempBlock->GetUserData();
 					temp_id_data = temp_id_data & 0xff;
 					BlockModel& tempModel = tempBlock->GetTemplate()->GetBlockModel(temp_id_data);
-					string tempModelName = tempBlock->GetTemplate()->GetModelName();
-					if (!(tempModelName == "slab" || tempModelName == "stairs" || tempModelName == "slope")) {
-						continue;
-					}
+					const string &tempModelName = tempBlock->GetTemplate()->GetModelName();
+					
+					selfFaces.clear();
+					tempFaces.clear();
 
-					std::vector<int> selfFaces;//当前方块正对邻居的面
-					std::vector<int> tempFaces;//邻居正对当前方块的面
 					for (int selfFace = tempFaceCount - 1; selfFace >= 0; selfFace--) { //遍历自己所有面
 						int nFirstVertex = selfFace * 4;
 						Vector3  &selfNormal = tessellatedModel.Vertices()[nFirstVertex].GetNormal();
@@ -478,6 +482,11 @@ void ParaEngine::BlockGeneralTessellator::TessellateUniformLightingCustomModel(B
 						if (abs(angle) < 0.01f) { //找到正对着邻居的一面（可能有多个，比如stair）
 							selfFaces.push_back(selfFace);
 						}
+					}
+					bool isNeighborCube = !tempModel.IsUniformLighting() && tempBlock->GetTemplate()->IsMatchAttributes(BlockTemplate::batt_solid | BlockTemplate::batt_invisible, BlockTemplate::batt_solid);
+
+					if (!(isNeighborCube || tempModelName == "slab" || tempModelName == "stairs" || tempModelName == "slope")) {
+						continue;
 					}
 					for (int tempFace = 0; tempFace < tempModel.GetFaceCount(); tempFace++) {
 						int nTempFirstVertex = tempFace * 4;
@@ -495,7 +504,6 @@ void ParaEngine::BlockGeneralTessellator::TessellateUniformLightingCustomModel(B
 							BlockVertexCompressed &fristVert = tessellatedModel.Vertices()[selfFace * 4];//当前方块此面的第一个顶点
 							BlockVertexCompressed &tempVert = tempModel.Vertices()[tempFace * 4];//邻居方块此面的第一个顶点
 
-							Vector2 selfRect[4], tempRect[4];
 							if (dir == rbp_pY) {
 								if (abs(tempVert.position[1] + 1.0f - fristVert.position[1]) < 1e-03) {
 									isRealNeighbor = true;
@@ -595,18 +603,16 @@ void ParaEngine::BlockGeneralTessellator::TessellateUniformLightingCustomModel(B
 							//isRealNeighbor = true;
 							if (isRealNeighbor) {//判断这个面确实是跟邻居重合的
 								facesNeedCut.push_back(selfFace);
-								int start = selfFace * 4;//去掉这个面的四个顶点，并前移数组
-								for (int v = start; v < tempFaceCount * 4 - 4; v++) {
-									tessellatedModel.Vertices()[v] = tessellatedModel.Vertices()[v + 4];
+								auto neighbourModelId = BlockTessellateFastCutCfg::GetModelIDFromModelName(tempBlock->GetTemplate()->GetModelName());
+								if (isNeighborCube) {
+									temp_id_data = 0;
+									neighbourModelId = BlockTessellateFastCutCfg::GetModelIDFromModelName("solidCube");
 								}
-								for (int v = 0; v < 4; v++) {
-									tessellatedModel.Vertices().pop_back();
-								}
-								tempFaceCount--;
+								int intKey = modelId * 10000000 + cur_id_data * 100000 + dir * 1000 + neighbourModelId * 100 + temp_id_data;
+								OUTPUT_LOG("\"%d = %d\",\n", intKey,selfFace);
 
-								int _idSelf = curModelId * 10000 + cur_id_data * 1000 + dir * 100;
-								int _idTemp = tempBlock->GetTemplate()->GetID() * 10 + temp_id_data * 1;
-								OUTPUT_LOG("\"%s_%d_%d__%s_%d = %d\",\n", curModelName.c_str(), cur_id_data, dir, tempModelName.c_str(), temp_id_data,selfFace);
+								//OUTPUT_LOG("\"%s_%d_%d__%s_%d = %d\",\n", curModelName.c_str(), cur_id_data, dir, tempModelName.c_str(), temp_id_data, selfFace);
+
 								break;//当前方块的当前面已经剪裁，达到目的了，邻居后面的不用再遍历了
 							}
 
@@ -621,18 +627,18 @@ void ParaEngine::BlockGeneralTessellator::TessellateUniformLightingCustomModel(B
 				}
 			}
 
-			//std::sort(facesNeedCut.begin(), facesNeedCut.end());
-			//for (auto iter = facesNeedCut.rbegin(); iter != facesNeedCut.rend(); iter++) {
-			//	int selfFace = *iter;
-			//	int start = selfFace * 4;//去掉这个面的四个顶点，并前移数组
-			//	for (int v = start; v < tempFaceCount * 4 - 4; v++) {
-			//		tessellatedModel.Vertices()[v] = tessellatedModel.Vertices()[v + 4];
-			//	}
-			//	for (int v = 0; v < 4; v++) {
-			//		tessellatedModel.Vertices().pop_back();
-			//	}
-			//	tempFaceCount--;
-			//}
+			std::sort(facesNeedCut.begin(), facesNeedCut.end());
+			for (auto iter = facesNeedCut.rbegin(); iter != facesNeedCut.rend(); iter++) {
+				int selfFace = *iter;
+				int start = selfFace * 4;//去掉这个面的四个顶点，并前移数组
+				for (int v = start; v < tempFaceCount * 4 - 4; v++) {
+					tessellatedModel.Vertices()[v] = tessellatedModel.Vertices()[v + 4];
+				}
+				for (int v = 0; v < 4; v++) {
+					tessellatedModel.Vertices().pop_back();
+				}
+				tempFaceCount--;
+			}
 
 			tessellatedModel.SetFaceCount(tempFaceCount);
 		}

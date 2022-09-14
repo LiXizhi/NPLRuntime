@@ -338,7 +338,7 @@ void ParaEngine::CStairModelProvider::_buildBlockModels()
 		//左面下部分
 		{
 			BlockVertexCompressed vertArr[4];
-			Vector3 normal = Vector3(1, 0, 0);
+			Vector3 normal = Vector3(-1, 0, 0);
 			Vector3 pts[4] = {
 				Vector3(0,0,1),
 				Vector3(0,0.5f,1),
