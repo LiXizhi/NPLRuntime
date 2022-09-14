@@ -520,7 +520,7 @@ void ParaEngine::CSlopeModelProvider::_buildOutCornerModels_2()
 	}
 }
 
-void ParaEngine::CSlopeModelProvider::cloneAndRotateModels(BlockModel &tempModel, Vector3 angleArr[], BlockModel outModels[], int len) {
+void ParaEngine::CSlopeModelProvider::cloneAndRotateModels(BlockModel &tempModel, Vector3 *angleArr, BlockModel *outModels, int len) {
 	for (int i = 0; i < len; i++) {
 		Vector3 angles = angleArr[i];
 		int block_index = i;

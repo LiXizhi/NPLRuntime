@@ -63,10 +63,10 @@ namespace ParaEngine
 	protected:
 		/** 将一个点绕轴旋转
 		*/
-		Vector3 vec3Rotate(Vector3 &pt, Vector3 &angles);
+		Vector3 &vec3Rotate(Vector3 &pt, Vector3 &angles);
 		/**将一个点绕点旋转
 		*/
-		Vector3 vec3RotateByPoint(Vector3 &originPt, Vector3 &pt, Vector3 &angles);
+		Vector3 &vec3RotateByPoint(Vector3 &originPt, Vector3 &pt, Vector3 &angles);
 	};
 
 }

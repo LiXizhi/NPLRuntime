@@ -620,7 +620,7 @@ void ParaEngine::CStairModelProvider::_buildBlockModels()
 	}
 }
 
-void ParaEngine::CStairModelProvider::cloneAndRotateModels(BlockModel &tempModel, Vector3 angleArr[], BlockModel outModels[], int len, int startOutIdx) {
+void ParaEngine::CStairModelProvider::cloneAndRotateModels(BlockModel &tempModel, Vector3 *angleArr, BlockModel *outModels, int len, int startOutIdx) {
 	for (int i = 0; i < len; i++) {
 		Vector3 angles = angleArr[i];
 		int block_index = i;
