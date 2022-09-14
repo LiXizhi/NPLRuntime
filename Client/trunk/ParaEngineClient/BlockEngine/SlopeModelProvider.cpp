@@ -157,7 +157,7 @@ void ParaEngine::CSlopeModelProvider::_buildEdgeBlockModels()
 		Vector3(0, -1.57f, 0),
 		Vector3(0, 1.57f, 0)
 	};
-	cloneAndRoateModels(tempModel, angleArr, mEdgeBlockModels, modelNum);
+	cloneAndRotateModels(tempModel, angleArr, mEdgeBlockModels, modelNum);
 
 	for (auto& model : mEdgeBlockModels) {
 		model.SetFaceCount(model.Vertices().size() / 4);
@@ -204,7 +204,7 @@ void ParaEngine::CSlopeModelProvider::_builOuterCornerBlockModels()
 		Vector3(3.14f,-1.57f,0)
 	};
 
-	cloneAndRoateModels(tempModel, angleArr, mOuterCornerBlockModels, modelNum);
+	cloneAndRotateModels(tempModel, angleArr, mOuterCornerBlockModels, modelNum);
 
 	for (auto& model : mOuterCornerBlockModels) {
 		model.SetFaceCount(model.Vertices().size() / 4);
@@ -258,7 +258,7 @@ void ParaEngine::CSlopeModelProvider::_buildInnerCornerBlockModels()
 		Vector3(3.14f,0,0)
 	};
 
-	cloneAndRoateModels(tempModel, angleArr, mInnerCornerBlockModels, modelNum);
+	cloneAndRotateModels(tempModel, angleArr, mInnerCornerBlockModels, modelNum);
 
 	for (auto& model : mInnerCornerBlockModels) {
 		model.SetFaceCount(model.Vertices().size() / 4);
@@ -300,7 +300,7 @@ void ParaEngine::CSlopeModelProvider::_buildHEdgeBlockModels()
 		Vector3(-1.57f,1.57f,0)
 	};
 
-	cloneAndRoateModels(tempModel, angleArr, mHEdgeBlockModels, modelNum);
+	cloneAndRotateModels(tempModel, angleArr, mHEdgeBlockModels, modelNum);
 
 	for (auto& model : mHEdgeBlockModels){
 		model.SetFaceCount(model.Vertices().size() / 4);
@@ -386,7 +386,7 @@ void ParaEngine::CSlopeModelProvider::_buildOutCornerModels_1()
 		Vector3(-1.57f,1.57f,3.14f),
 	};
 
-	cloneAndRoateModels(tempModel, angleArr, mOutCornerModels_1, modelNum);
+	cloneAndRotateModels(tempModel, angleArr, mOutCornerModels_1, modelNum);
 
 	for (auto& model : mOutCornerModels_1) {
 		model.SetFaceCount(model.Vertices().size() / 4);
@@ -395,42 +395,109 @@ void ParaEngine::CSlopeModelProvider::_buildOutCornerModels_1()
 	}
 }
 
+static void _AddVertex(BlockModel& tmp, const Vector3 *pts, Vector3 &normal)
+{
+	static Vector2 texCoord[4] = {
+		Vector2(0,1),
+		Vector2(0,0),
+		Vector2(1,0),
+		Vector2(1,1),
+	};
+	for (int i = 0; i < 4; i++) {
+		BlockVertexCompressed vert;
+		auto &pt = pts[i];
+		vert.SetPosition(pt);
+		vert.SetNormal(normal);
+
+		float u = texCoord[i].x;
+		float v = texCoord[i].y;
+
+		if (abs(abs(normal.x) - 1) < 0.01f) {
+			if (abs(abs(pt.y) - 0.5f) < 0.01f) {
+				v = 0.5f;
+			}
+			if (abs(abs(pt.z) - 0.5f) < 0.01f) {
+				u = 0.5f;
+			}
+		}
+		if (abs(abs(normal.z) - 1) < 0.01f) {
+			if (abs(abs(pt.y) - 0.5f) < 0.01f) {
+				v = 0.5f;
+			}
+			if (abs(abs(pt.x) - 0.5f) < 0.01f) {
+				u = 0.5f;
+			}
+		}
+		if (abs(abs(normal.y) - 1) < 0.01f) {
+			if (abs(abs(pt.z) - 0.5f) < 0.01f) {
+				v = 0.5f;
+			}
+			if (abs(abs(pt.x) - 0.5f) < 0.01f) {
+				u = 0.5f;
+			}
+		}
+		vert.SetTexcoord(u, v);
+		tmp.AddVertex(vert);
+	}
+}
+
 void ParaEngine::CSlopeModelProvider::_buildOutCornerModels_2()
 {
-	BlockModel cube_mode;
-	cube_mode.LoadModelByTexture(0);
-	int modelNum = sizeof(mOutCornerModels_2) / sizeof(mOutCornerModels_2[0]);
+	BlockModel template_1;
+	{
+		template_1.ClearVertices();
 
-	for (int i = 0; i < modelNum; i++) {
-		mOutCornerModels_2[i].ClearVertices();
-		mOutCornerModels_2[i] = cube_mode;
+		//上面部分
+		{
+			BlockVertexCompressed vertArr[4];
+			Vector3 normal = Vector3(1, 1, 1);
+			Vector3 pts[4] = {
+				Vector3(0, 1, 0),
+				Vector3(0, 0, 1),
+				Vector3(1, 0, 0),
+				Vector3(1, 0, 0)
+			};
+			_AddVertex(template_1, pts, normal);
+		}
+		//前面部分
+		{
+			BlockVertexCompressed vertArr[4];
+			Vector3 normal = Vector3(0, 0, -1);
+			Vector3 pts[4] = {
+				Vector3(0, 0, 0),
+				Vector3(0, 1, 0),
+				Vector3(1, 0, 0),
+				Vector3(1, 0, 0)
+			};
+			_AddVertex(template_1, pts, normal);
+		}
+		//左面部分
+		{
+			BlockVertexCompressed vertArr[4];
+			Vector3 normal = Vector3(-1, 0, 0);
+			Vector3 pts[4] = {
+				Vector3(0, 0, 1),
+				Vector3(0, 0, 1),
+				Vector3(0, 1, 0),
+				Vector3(0, 0, 0)
+			};
+			_AddVertex(template_1, pts, normal);
+		}
+		//下面部分
+		{
+			BlockVertexCompressed vertArr[4];
+			Vector3 normal = Vector3(0, -1, 0);
+			Vector3 pts[4] = {
+				Vector3(0, 0, 1),
+				Vector3(0, 0, 0),
+				Vector3(1, 0, 0),
+				Vector3(0, 0, 1)
+			};
+			_AddVertex(template_1, pts, normal);
+		}
 	}
 
-	BlockModel tempModel = cube_mode;
-	
-	tempModel.Vertices()[BlockModel::g_frtRT] = cube_mode.Vertices()[BlockModel::g_frtRB];
-	tempModel.Vertices()[BlockModel::g_leftLT] = cube_mode.Vertices()[BlockModel::g_leftLB];
-	tempModel.Vertices()[BlockModel::g_btmRB] = cube_mode.Vertices()[BlockModel::g_btmRT];
-
-	for (int i = 0; i < 4; i++) {
-		tempModel.Vertices()[BlockModel::g_topLB+i] = cube_mode.Vertices()[BlockModel::g_topLB];
-	}
-	tempModel.Vertices()[BlockModel::g_topLB] = cube_mode.Vertices()[BlockModel::g_btmLB];
-	tempModel.Vertices()[BlockModel::g_topRB] = cube_mode.Vertices()[BlockModel::g_btmRT];
-	
-	for (int i = 0; i < 4; i++) {
-		tempModel.Vertices()[BlockModel::g_rightLB + i] = cube_mode.Vertices()[BlockModel::g_rightLB];
-	}
-	tempModel.Vertices()[BlockModel::g_rightLT] = cube_mode.Vertices()[BlockModel::g_frtLT];
-	tempModel.Vertices()[BlockModel::g_rightRB] = cube_mode.Vertices()[BlockModel::g_leftLB];
-
-	for (int i = 0; i < 4; i++) {
-		tempModel.Vertices()[BlockModel::g_bkLB + i] = cube_mode.Vertices()[BlockModel::g_bkRB];
-	}
-
-	tempModel.Vertices()[BlockModel::g_bkLB] = cube_mode.Vertices()[BlockModel::g_frtRB];
-	tempModel.Vertices()[BlockModel::g_bkRT] = cube_mode.Vertices()[BlockModel::g_frtLB];
-
+	template_1.SetFaceCount(template_1.Vertices().size() / 4);
 
 	Vector3 angleArr[8] = {
 		Vector3(0,0,0),
@@ -444,7 +511,7 @@ void ParaEngine::CSlopeModelProvider::_buildOutCornerModels_2()
 		Vector3(3.14f,-1.57f,0),
 	};
 
-	cloneAndRoateModels(tempModel, angleArr, mOutCornerModels_2, modelNum);
+	cloneAndRotateModels(template_1, angleArr, mOutCornerModels_2, sizeof(angleArr) / sizeof(angleArr[0]));
 
 	for (auto& model : mOutCornerModels_2) {
 		model.SetFaceCount(model.Vertices().size() / 4);
@@ -453,7 +520,7 @@ void ParaEngine::CSlopeModelProvider::_buildOutCornerModels_2()
 	}
 }
 
-void ParaEngine::CSlopeModelProvider::cloneAndRoateModels(BlockModel &tempModel, Vector3 angleArr[], BlockModel outModels[], int len) {
+void ParaEngine::CSlopeModelProvider::cloneAndRotateModels(BlockModel &tempModel, Vector3 angleArr[], BlockModel outModels[], int len) {
 	for (int i = 0; i < len; i++) {
 		Vector3 angles = angleArr[i];
 		int block_index = i;
