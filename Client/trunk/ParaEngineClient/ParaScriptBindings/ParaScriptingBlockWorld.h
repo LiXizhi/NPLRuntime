@@ -185,5 +185,7 @@ namespace ParaScripting
 		* @param damageDegree: [0,1] 0 means undamaged block,1 full damaged block
 		*/
 		static void SetDamageDegree(const object& pWorld, float damagedDegree);
+
+		static object GetBlockModelInfo(int template_id,int blockData,const object& result);
 	};
 }
