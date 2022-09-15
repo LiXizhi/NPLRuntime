@@ -525,23 +525,24 @@ object ParaScripting::ParaBlockWorld::GetBlockModelInfo(int template_id, int blo
 		vert.GetPosition(pt);
 		vert.GetNormal(normal);
 		vert.GetTexcoord(u, v);
-		result["m_Vertices"][i] = luabind::newtable(result.interpreter());
-		result["m_Vertices"][i]["position"] = luabind::newtable(result.interpreter());
-		result["m_Vertices"][i]["position"]["x"] = pt.x;
-		result["m_Vertices"][i]["position"]["y"] = pt.y;
-		result["m_Vertices"][i]["position"]["z"] = pt.z;
+		int idx = i + 1;
+		result["m_Vertices"][idx] = luabind::newtable(result.interpreter());
+		result["m_Vertices"][idx]["position"] = luabind::newtable(result.interpreter());
+		result["m_Vertices"][idx]["position"]["x"] = pt.x;
+		result["m_Vertices"][idx]["position"]["y"] = pt.y;
+		result["m_Vertices"][idx]["position"]["z"] = pt.z;
 
-		result["m_Vertices"][i]["normal"] = luabind::newtable(result.interpreter());
-		result["m_Vertices"][i]["normal"]["x"] = normal.x;
-		result["m_Vertices"][i]["normal"]["y"] = normal.y;
-		result["m_Vertices"][i]["normal"]["z"] = normal.z;
+		result["m_Vertices"][idx]["normal"] = luabind::newtable(result.interpreter());
+		result["m_Vertices"][idx]["normal"]["x"] = normal.x;
+		result["m_Vertices"][idx]["normal"]["y"] = normal.y;
+		result["m_Vertices"][idx]["normal"]["z"] = normal.z;
 
-		result["m_Vertices"][i]["texcoord"] = luabind::newtable(result.interpreter());
-		result["m_Vertices"][i]["texcoord"]["u"] =u;
-		result["m_Vertices"][i]["texcoord"]["v"] = v;
+		result["m_Vertices"][idx]["texcoord"] = luabind::newtable(result.interpreter());
+		result["m_Vertices"][idx]["texcoord"]["u"] =u;
+		result["m_Vertices"][idx]["texcoord"]["v"] = v;
 
-		result["m_Vertices"][i]["color"] = vert.color;
-		result["m_Vertices"][i]["color2"] = vert.color2;
+		result["m_Vertices"][idx]["color"] = vert.color;
+		result["m_Vertices"][idx]["color2"] = vert.color2;
 	}
 	result["m_bUseAO"] = blockModel.IsUseAmbientOcclusion();
 	result["m_bUniformLighting"] = blockModel.IsUniformLighting();
