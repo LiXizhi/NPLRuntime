@@ -187,10 +187,10 @@ namespace ParaEngine
 
     void GltfModel::Export(CharModelInstance* model, std::string filepath)  
     {
-        m_enable_animation = false;
         m_filename = filepath == "" ? ".temp.gltf" : filepath;
         CanvasAttachmentPtr canvas = model->m_pModelCanvas->m_root;
         Init();
+        m_enable_animation = false;
         std::shared_ptr<GLTFScene> scene = ExportScene();
         std::shared_ptr<GLTFNode> node = ExportCanvasAttachment(canvas, scene, this);
         // 人物会倒, 此变换可摆正, 但与装扮对不上
