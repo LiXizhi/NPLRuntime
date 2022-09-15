@@ -297,6 +297,11 @@ namespace ParaEngine
 		* @param szText
 		*/
 		virtual void SetTextA(const char* szText){};
+
+        virtual int GetCaretPosition(){};
+        
+        virtual void SetCaretPosition(int nCharacterPos){};
+        
 		/**
 		* Set the text of this object
 		* The control internally store everything in Unicode.
@@ -570,12 +575,12 @@ namespace ParaEngine
 		virtual float GetTextScale();
 
 		//set location/size/width/height/position without updating the parent's child rect
-		virtual void		SetLocationI(int x, int y);
-		virtual void		SetSizeI(int width, int height);
-		virtual void		SetWidthI(int width);
-		virtual void		SetHeightI(int height);
-		virtual void		SetPositionI(int left, int top, int right, int bottom);
-		virtual void		SetPositionI(const CGUIPosition& position);
+		virtual void SetLocationI(int x, int y);
+		virtual void SetSizeI(int width, int height);
+		virtual void SetWidthI(int width);
+		virtual void SetHeightI(int height);
+		virtual void SetPositionI(int left, int top, int right, int bottom);
+		virtual void SetPositionI(const CGUIPosition& position);
 
 		virtual CGUIPosition* GetPosition(){ return &m_position; }
 
@@ -633,8 +638,8 @@ namespace ParaEngine
 		/**
 		 * Set/Get the hotkey
 		 **/
-		void				SetHotkey(UINT nHotkey) { m_nHotkey = nHotkey; }
-		UINT				GetHotkey() const{ return m_nHotkey; }
+		void SetHotkey(UINT nHotkey) { m_nHotkey = nHotkey; }
+		UINT GetHotkey() const{ return m_nHotkey; }
 
 		/**
 		 * Set/Get name of the control
@@ -838,7 +843,6 @@ namespace ParaEngine
 		* Some controls has confirm event. such as editbox, listbox
 		**/
 		virtual bool OnChange(const char* code = NULL);
-
 
 		virtual bool		OnKeyDown();
 
@@ -1062,12 +1066,10 @@ namespace ParaEngine
 		* it will actually delete itself (with "delete this"). So never keep a pointer to this class after you
 		* have released it. A macro like SAFE_RELEASE() is advised to be used.
 		*/
-		virtual int		Release();
-		virtual void		Clone(IObject* pobj)const;
-		virtual IObject*	Clone()const;
-		virtual bool		Equals(const IObject *obj)const;
-
-
+		virtual int Release();
+		virtual void Clone(IObject* pobj)const;
+		virtual IObject* Clone()const;
+		virtual bool Equals(const IObject *obj)const;
 
 		static void InflateRect(RECT* lprc, int dx, int dy);
 		static void OffsetRect(RECT* lprc, int dx, int dy);

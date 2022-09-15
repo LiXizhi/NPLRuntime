@@ -7,6 +7,7 @@
 
 #import <Foundation/Foundation.h>
 #import <UIKit/UIKit.h>
+#import <UIKit/UITextField.h>
 #import "AppDelegate.h"
 
 #include <stdio.h>
@@ -29,9 +30,22 @@ namespace ParaEngine
     };
 }
 
-@interface KeyboardiOSController : UIResponder <UITextFieldDelegate>
+@class KeyboardiOSController;
+
+@interface KeyboardiOSControllerDelegate: NSObject
+{
+}
+
+@property(nonatomic) KeyboardiOSController *keyboardiOSController;
+
+- (void)setKeyboardInstance: (KeyboardiOSController *)keyboardiOSController;
+
+@end
+
+@interface KeyboardiOSController : UITextField
 
 @property(nonatomic) AppDelegate *appDelegate;
+@property(nonatomic) KeyboardiOSControllerDelegate *keyboardiOSControllerDelegate;
 
 + (void)InitLanguage;
 
