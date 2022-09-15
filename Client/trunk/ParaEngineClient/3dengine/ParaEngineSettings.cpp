@@ -1419,6 +1419,50 @@ const std::string& ParaEngine::ParaEngineSettings::GetMaxIPAddress()
 const std::string& ParaEngine::ParaEngineSettings::GetMachineID()
 {
 	static std::string str = "";
+	if (!str.empty()) {
+		return str;
+	}
+	str = GetMachineID_old();
+#ifdef WIN32
+	std::string cpu_ProcessorId;
+	ParaScripting::ParaGlobal::ExecWmicCmd1(cpu_ProcessorId,"wmic cpu get ProcessorId","ProcessorId");
+	std::string csproduct_id;
+	ParaScripting::ParaGlobal::ExecWmicCmd1(csproduct_id, "wmic csproduct get IdentifyingNumber", "IdentifyingNumber");
+
+	if (cpu_ProcessorId.empty()) {
+		cpu_ProcessorId = "0";
+	}
+	if (csproduct_id.empty()) {
+		csproduct_id = "0";
+	}
+	if (str.empty()) {
+		std::string csproduct_uuid;
+		ParaScripting::ParaGlobal::ExecWmicCmd1(csproduct_uuid, "wmic csproduct get UUID", "UUID");
+		if (csproduct_uuid.empty()) {
+			csproduct_uuid = "0";
+		}
+		str = csproduct_uuid;
+	}
+	int pos = str.length();
+	if (pos > 36) {
+		pos-=36;
+		str = str.substr(pos);
+	}
+	
+	std::string macadress = GetMaxMacAddress();
+	std::string md5Str = ParaEngine::StringHelper::md5(cpu_ProcessorId + "_" + csproduct_id);
+	str = md5Str +"_"+ str+"_"+ macadress;
+
+#endif
+	if (str.empty()) {
+		str = GetMaxMacAddress();
+	}
+	return str;
+}
+
+const std::string& ParaEngine::ParaEngineSettings::GetMachineID_old()
+{
+	static std::string str = "";
 
 #ifdef WIN32
 	if (str.empty())
@@ -1648,6 +1692,7 @@ int ParaEngineSettings::InstallFields(CAttributeClass* pClass, bool bOverride)
 	pClass->AddField("MaxMacAddress", FieldType_String, NULL, (void*)GetMaxMacAddress_s, NULL, NULL, bOverride);
 	pClass->AddField("MaxIPAddress", FieldType_String, NULL, (void*)GetMaxIPAddress_s, NULL, NULL, bOverride);
 	pClass->AddField("MachineID", FieldType_String, NULL, (void*)GetMachineID_s, NULL, NULL, bOverride);
+	pClass->AddField("MachineID_old", FieldType_String, NULL, (void*)GetMachineID_old_s, NULL, NULL, bOverride);
 
 	pClass->AddField("OpenFileFolder", FieldType_String, (void*)SetDefaultOpenFileFolder_s, (void*)GetOpenFolder_s, CAttributeField::GetSimpleSchema(SCHEMA_DIALOG), NULL, bOverride);
 	pClass->AddField("Platform", FieldType_Int, NULL, (void*)GetPlatform_s, NULL, NULL, bOverride);

@@ -1,4 +1,4 @@
-//-----------------------------------------------------------------------------
+﻿//-----------------------------------------------------------------------------
 // Class:	All kinds of block tessellation 
 // Authors:	LiXizhi
 // Emails:	LiXizhi@yeah.net
@@ -14,6 +14,10 @@
 #include "BlockWorld.h"
 #include "VertexFVF.h"
 #include "BlockTessellators.h"
+#include "BlockTessellateFastCutConfig.h"
+#include <map>
+#include <set>
+#include <boost/container/small_vector.hpp>
 
 using namespace ParaEngine;
 
@@ -305,6 +309,34 @@ int32 ParaEngine::BlockGeneralTessellator::TessellateBlock(BlockChunk* pChunk, u
 	return nFaceCount;
 }
 
+bool checkFaceContain(Vector2 rectSelf[4], Vector2 rectTemp[4]) {
+	//判断self的每个顶点是否都在temp矩形内部
+	for (int i = 0; i < 4; i++) {
+		Vector2 & ptSelf = rectSelf[i];
+		int num = 4;
+		int acc = 0;
+		Vector2 dir_0 = ptSelf - rectTemp[0];
+		Vector2 dir_1 = ptSelf - rectTemp[1];
+		Vector2 dir_2 = ptSelf - rectTemp[2];
+		Vector2 dir_3 = ptSelf - rectTemp[3];
+
+		float cross_0 = dir_0.crossProduct(dir_1);
+		float cross_1 = dir_1.crossProduct(dir_2);
+		float cross_2 = dir_2.crossProduct(dir_3);
+		float cross_3 = dir_3.crossProduct(dir_0);
+
+		if (abs(cross_0) < 0.01f) num--; else acc += cross_0 > 0 ? 1 : -1;
+		if (abs(cross_1) < 0.01f) num--; else acc += cross_1 > 0 ? 1 : -1;
+		if (abs(cross_2) < 0.01f) num--; else acc += cross_2 > 0 ? 1 : -1;
+		if (abs(cross_3) < 0.01f) num--; else acc += cross_3 > 0 ? 1 : -1;
+
+		if (acc != num && acc != -num) {
+			return false;
+		}
+	}
+	return true;
+}
+
 
 void ParaEngine::BlockGeneralTessellator::TessellateUniformLightingCustomModel(BlockRenderMethod dwShaderID)
 {
@@ -351,9 +383,263 @@ void ParaEngine::BlockGeneralTessellator::TessellateUniformLightingCustomModel(B
 		max_sun_light = GetMeshBrightness(m_pCurBlockTemplate, &(blockBrightness[rbp_center + nFetchNearybyCount * 2]));
 		max_block_light = GetMeshBrightness(m_pCurBlockTemplate, &(blockBrightness[rbp_center + nFetchNearybyCount]));
 
+		int curModelId = m_pCurBlockTemplate->GetID();
+		auto modelId = BlockTessellateFastCutCfg::GetModelIDFromModelName(m_pCurBlockTemplate->GetModelName());
+
 		uint8 block_lightvalue = m_pWorld->GetLightBrightnessInt(max_block_light);
 		uint8 sun_lightvalue = max_sun_light << 4;
-		for (int face = 0; face < nFaceCount; ++face)
+
+		
+		int tempFaceCount = nFaceCount;
+		int cur_id_data = m_nBlockData;
+		cur_id_data = cur_id_data & 0xff;
+
+#ifdef USE_CUT_CFG
+		if (modelId > 0) {
+			// here we use small_vector instead of std::vector to avoid heap memory allocations.
+			boost::container::small_vector<int32, 20>  facesNeedCut;
+			for (int dir = rbp_pX; dir <= rbp_nZ; ++dir)
+			{
+				Block* tempBlock = neighborBlocks[dir];
+				if (tempBlock)
+				{
+					int temp_id_data = tempBlock->GetUserData();
+					temp_id_data = temp_id_data & 0xff; // TODO: 16 bits color blocks or solid cubes?
+					BlockModel& tempModel = tempBlock->GetTemplate()->GetBlockModel(temp_id_data);
+					auto neighbourModelId = BlockTessellateFastCutCfg::GetModelIDFromModelName(tempBlock->GetTemplate()->GetModelName());
+					if (neighbourModelId > 0)
+					{
+						int intKey = modelId * 10000000 + cur_id_data * 100000 + dir * 1000 + neighbourModelId * 100 + temp_id_data * 1;
+
+						auto* curInfo = BlockTessellateFastCutCfg::GetCutInfo(intKey);
+						if (curInfo != NULL) {
+							auto& faces = curInfo->faces;
+
+							for (int i = 0; i < 10 && faces[i]>0; i++) {
+								facesNeedCut.push_back(faces[i] - 1);
+							}
+						}
+						//OUTPUT_LOG("\"%s_%d_%d__%s_%d = %d\",\n", curModelName.c_str(), cur_id_data, dir, tempModelName.c_str(), temp_id_data, selfFace);
+					}
+				}
+			}
+			std::sort(facesNeedCut.begin(), facesNeedCut.end());
+			auto& verts = tessellatedModel.Vertices();
+			for (auto iter = facesNeedCut.rbegin(); iter != facesNeedCut.rend(); iter++) {
+				int selfFace = *iter;
+				int start = selfFace * 4;//去掉这个面的四个顶点，并前移数组
+				for (int v = start; v < tempFaceCount * 4 - 4; v++) {
+					verts[v] = verts[v + 4];
+				}
+				for (int v = 0; v < 4; v++) {
+					verts.pop_back();
+				}
+				tempFaceCount--;
+			}
+			tessellatedModel.SetFaceCount(tempFaceCount);
+		}
+		
+#else
+		if (curModelName=="slab"||curModelName=="stairs"||curModelName=="slope") {
+			std::vector<int> facesNeedCut;
+			const static Vector3 normals[7] = {
+				Vector3(),
+
+				Vector3(1,0,0),
+				Vector3(-1,0,0),
+				Vector3(0,1,0),
+				Vector3(0,-1,0),
+				Vector3(0,0,1),
+				Vector3(0,0,-1),
+			};
+			int cur_id_data = m_nBlockData;
+			cur_id_data = cur_id_data & 0xff;
+
+			for (int dir = rbp_pX; dir <= rbp_nZ; ++dir)//遍历6个方向的邻居
+			{
+				Block* tempBlock = neighborBlocks[dir];
+				//这个面有个实体邻居
+				if (tempBlock)
+				{
+					int temp_id_data = tempBlock->GetUserData();
+					temp_id_data = temp_id_data & 0xff;
+					BlockModel& tempModel = tempBlock->GetTemplate()->GetBlockModel(temp_id_data);
+					string tempModelName = tempBlock->GetTemplate()->GetModelName();
+					if (!(tempModelName == "slab" || tempModelName == "stairs" || tempModelName == "slope")) {
+						continue;
+					}
+
+					std::vector<int> selfFaces;//当前方块正对邻居的面
+					std::vector<int> tempFaces;//邻居正对当前方块的面
+					for (int selfFace = tempFaceCount - 1; selfFace >= 0; selfFace--) { //遍历自己所有面
+						int nFirstVertex = selfFace * 4;
+						Vector3  &selfNormal = tessellatedModel.Vertices()[nFirstVertex].GetNormal();
+						float angle = selfNormal.angleBetween(normals[dir]);
+						if (abs(angle) < 0.01f) { //找到正对着邻居的一面（可能有多个，比如stair）
+							selfFaces.push_back(selfFace);
+						}
+					}
+					for (int tempFace = 0; tempFace < tempModel.GetFaceCount(); tempFace++) {
+						int nTempFirstVertex = tempFace * 4;
+						float angle = tempModel.Vertices()[nTempFirstVertex].GetNormal().angleBetween(normals[dir]);
+						if (abs(abs(angle) - 3.141592f) < 0.01f) {
+							tempFaces.push_back(tempFace);
+						}
+					}
+					for (size_t i = 0; i < selfFaces.size(); i++) {
+						int selfFace = selfFaces[i];
+						for (size_t j = 0; j < tempFaces.size(); j++) {
+							int tempFace = tempFaces[j];
+							//判断两个面是否是重叠
+							bool isRealNeighbor = false;
+							BlockVertexCompressed &fristVert = tessellatedModel.Vertices()[selfFace * 4];//当前方块此面的第一个顶点
+							BlockVertexCompressed &tempVert = tempModel.Vertices()[tempFace * 4];//邻居方块此面的第一个顶点
+
+							Vector2 selfRect[4], tempRect[4];
+							if (dir == rbp_pY) {
+								if (abs(tempVert.position[1] + 1.0f - fristVert.position[1]) < 1e-03) {
+									isRealNeighbor = true;
+
+									for (int i = 0; i < 4; i++) {
+										BlockVertexCompressed &_vert = tessellatedModel.Vertices()[selfFace * 4 + i];
+										selfRect[i][0] = _vert.position[0];
+										selfRect[i][1] = _vert.position[2];
+
+										BlockVertexCompressed &_vert2 = tempModel.Vertices()[tempFace * 4 + i];
+										tempRect[i][0] = _vert2.position[0];
+										tempRect[i][1] = _vert2.position[2];
+									}
+
+
+								}
+							}
+							else if (dir == rbp_nY) {
+								if (abs(tempVert.position[1] - 1.0f - fristVert.position[1]) < 1e-03) {
+									isRealNeighbor = true;
+
+									for (int i = 0; i < 4; i++) {
+										BlockVertexCompressed &_vert = tessellatedModel.Vertices()[selfFace * 4 + i];
+										selfRect[i][0] = _vert.position[0];
+										selfRect[i][1] = _vert.position[2];
+
+										BlockVertexCompressed &_vert2 = tempModel.Vertices()[tempFace * 4 + i];
+										tempRect[i][0] = _vert2.position[0];
+										tempRect[i][1] = _vert2.position[2];
+									}
+								}
+							}
+							else if (dir == rbp_pX) {
+								if (abs(tempVert.position[0] + 1.0f - fristVert.position[0]) < 1e-03) {
+									isRealNeighbor = true;
+
+									for (int i = 0; i < 4; i++) {
+										BlockVertexCompressed &_vert = tessellatedModel.Vertices()[selfFace * 4 + i];
+										selfRect[i][0] = _vert.position[1];
+										selfRect[i][1] = _vert.position[2];
+
+										BlockVertexCompressed &_vert2 = tempModel.Vertices()[tempFace * 4 + i];
+										tempRect[i][0] = _vert2.position[1];
+										tempRect[i][1] = _vert2.position[2];
+									}
+								}
+							}
+							else if (dir == rbp_nX) {
+								if (abs(tempVert.position[0] - 1.0f - fristVert.position[0]) < 1e-03) {
+									isRealNeighbor = true;
+
+									for (int i = 0; i < 4; i++) {
+										BlockVertexCompressed &_vert = tessellatedModel.Vertices()[selfFace * 4 + i];
+										selfRect[i][0] = _vert.position[1];
+										selfRect[i][1] = _vert.position[2];
+
+										BlockVertexCompressed &_vert2 = tempModel.Vertices()[tempFace * 4 + i];
+										tempRect[i][0] = _vert2.position[1];
+										tempRect[i][1] = _vert2.position[2];
+									}
+								}
+							}
+							else if (dir == rbp_pZ) {
+								if (abs(tempVert.position[2] + 1.0f - fristVert.position[2]) < 1e-03) {
+									isRealNeighbor = true;
+
+									for (int i = 0; i < 4; i++) {
+										BlockVertexCompressed &_vert = tessellatedModel.Vertices()[selfFace * 4 + i];
+										selfRect[i][0] = _vert.position[0];
+										selfRect[i][1] = _vert.position[1];
+
+										BlockVertexCompressed &_vert2 = tempModel.Vertices()[tempFace * 4 + i];
+										tempRect[i][0] = _vert2.position[0];
+										tempRect[i][1] = _vert2.position[1];
+									}
+								}
+							}
+							else if (dir == rbp_nZ) {
+								if (abs(tempVert.position[2] - 1.0f - fristVert.position[2]) < 1e-03) {
+									isRealNeighbor = true;
+
+									for (int i = 0; i < 4; i++) {
+										BlockVertexCompressed &_vert = tessellatedModel.Vertices()[selfFace * 4 + i];
+										selfRect[i][0] = _vert.position[0];
+										selfRect[i][1] = _vert.position[1];
+
+										BlockVertexCompressed &_vert2 = tempModel.Vertices()[tempFace * 4 + i];
+										tempRect[i][0] = _vert2.position[0];
+										tempRect[i][1] = _vert2.position[1];
+									}
+								}
+							}
+							if (isRealNeighbor) {
+								isRealNeighbor = checkFaceContain(selfRect, tempRect);
+							}
+
+							//isRealNeighbor = true;
+							if (isRealNeighbor) {//判断这个面确实是跟邻居重合的
+								facesNeedCut.push_back(selfFace);
+								int start = selfFace * 4;//去掉这个面的四个顶点，并前移数组
+								for (int v = start; v < tempFaceCount * 4 - 4; v++) {
+									tessellatedModel.Vertices()[v] = tessellatedModel.Vertices()[v + 4];
+								}
+								for (int v = 0; v < 4; v++) {
+									tessellatedModel.Vertices().pop_back();
+								}
+								tempFaceCount--;
+
+								int _idSelf = curModelId * 10000 + cur_id_data * 1000 + dir * 100;
+								int _idTemp = tempBlock->GetTemplate()->GetID() * 10 + temp_id_data * 1;
+								OUTPUT_LOG("\"%s_%d_%d__%s_%d = %d\",\n", curModelName.c_str(), cur_id_data, dir, tempModelName.c_str(), temp_id_data,selfFace);
+								break;//当前方块的当前面已经剪裁，达到目的了，邻居后面的不用再遍历了
+							}
+
+							if (tempModel.GetFaceCount() == 6) {//邻居只有6个面的话，那应该只有一个面是与我相邻，后面的不用找了
+								break;
+							}
+						}
+						if (nFaceCount == 6) {//如果自己只有6个面，那么只有一个面会与邻居相邻，后面的不用找了
+							break;
+						}
+					}
+				}
+			}
+
+			//std::sort(facesNeedCut.begin(), facesNeedCut.end());
+			//for (auto iter = facesNeedCut.rbegin(); iter != facesNeedCut.rend(); iter++) {
+			//	int selfFace = *iter;
+			//	int start = selfFace * 4;//去掉这个面的四个顶点，并前移数组
+			//	for (int v = start; v < tempFaceCount * 4 - 4; v++) {
+			//		tessellatedModel.Vertices()[v] = tessellatedModel.Vertices()[v + 4];
+			//	}
+			//	for (int v = 0; v < 4; v++) {
+			//		tessellatedModel.Vertices().pop_back();
+			//	}
+			//	tempFaceCount--;
+			//}
+
+			tessellatedModel.SetFaceCount(tempFaceCount);
+		}
+		
+#endif
+
+		for (int face = 0; face < tempFaceCount; ++face)
 		{
 			int nFirstVertex = face * 4;
 			for (int v = 0; v < 4; ++v)

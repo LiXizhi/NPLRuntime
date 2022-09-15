@@ -245,7 +245,7 @@ bool ParaScripting::ParaBlockWorld::RegisterBlockTemplate_(CBlockWorld* pWorld, 
 				pTemplate->setTileSize(nTile);
 			}
 
-			if (bCustomBlockModel && type(params["models"]) == LUA_TTABLE)
+			if (bCustomBlockModel && type(params["models"]) == LUA_TTABLE && sModelName!="stairs")
 			{
 				const object& models = params["models"];
 				int nMaxDataId = -1;

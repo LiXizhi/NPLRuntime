@@ -11,6 +11,7 @@
 #include "WireModelProvider.h"
 #include "CarpetModelProvider.h"
 #include "SlopeModelProvider.h"
+#include "StairModelProvider.h"
 #include "BlockWorld.h"
 #include "SceneObject.h"
 #include "util/regularexpression.h"
@@ -24,6 +25,7 @@ namespace ParaEngine
 		m_pNormalMap(nullptr), m_renderPriority(0), m_lightScatterStep(1), m_lightOpacity(1), m_pBlockModelFilter(NULL), m_bIsShadowCaster(true), m_associated_blockid(0),
 		m_bProvidePower(false), m_nLightValue(0xf), m_fSpeedReductionPercent(1.f), m_renderPass(BlockRenderPass_Opaque), m_dwMapColor(Color::White), m_UnderWaterColor(0)
 	{
+		modelName = "";
 		Init(attFlag, category_id);
 	}
 
@@ -248,6 +250,7 @@ namespace ParaEngine
 
 	void BlockTemplate::LoadModel(const std::string& sModelName)
 	{
+		this->modelName = sModelName;
 		GetBlockModel().LoadModel(sModelName);
 
 		if (IsMatchAttribute(BlockTemplate::batt_customModel))
@@ -287,6 +290,8 @@ namespace ParaEngine
 		{
 			// TODO: in future: currently it is not a cubeModel yet
 			// SetLightOpacity(15);
+			SAFE_DELETE(m_pBlockModelFilter);
+			m_pBlockModelFilter = new CStairModelProvider(this);
 		}
 		else if (sModelName == "slab")
 		{
