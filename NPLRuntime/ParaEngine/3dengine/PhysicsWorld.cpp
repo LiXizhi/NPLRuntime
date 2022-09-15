@@ -1,4 +1,4 @@
-//-----------------------------------------------------------------------------
+﻿//-----------------------------------------------------------------------------
 // Class:	CPhysicsWorld
 // Authors:	Li, Xizhi
 // Emails:	LiXizhi@yeah.net
@@ -46,6 +46,9 @@ ray collision		<-> dSpaceCollide2(...);
 #include "IParaEngineApp.h"
 #include "memdebug.h"
 
+#include "BaseObject.h"
+#include "ShapeAABB.h"
+
 using namespace ParaEngine;
 
 /** the bullet physics engine plugin dll file path */
@@ -65,7 +68,7 @@ const char* PHYSICS_DLL_FILE_PATH = ("PhysicsBT." DLL_FILE_EXT) ;
 #endif
 
 CPhysicsWorld::CPhysicsWorld()
-: m_pPhysicsWorld(NULL), m_bRunDynamicSimulation(false)
+: m_pPhysicsWorld(NULL), m_bRunDynamicSimulation(true)
 {
 }
 
@@ -114,6 +117,9 @@ void CPhysicsWorld::ResetPhysics()
 
 void CPhysicsWorld::StepSimulation(double dTime)
 {
+	Matrix4 matrix;
+	CShapeAABB aabb;
+	float pitch, yaw, roll;
 	if(IsDynamicsSimulationEnabled())
 	{
 		if(m_pPhysicsWorld)
@@ -121,9 +127,72 @@ void CPhysicsWorld::StepSimulation(double dTime)
 			PERF1("Dynamic Physics");
 			m_pPhysicsWorld->StepSimulation((float)dTime);
 		}
+		IParaPhysicsActor_Map_Type::iterator itCurCP = m_mapDynamicActors.begin(); 
+		IParaPhysicsActor_Map_Type::iterator itEndCP = m_mapDynamicActors.end();
+		// TODO 多线程是否需要加锁
+		// TODO pos 加半AABB
+		// TODO 四元数转欧拉角
+		for (; itCurCP != itEndCP; itCurCP++)
+		{
+			IParaPhysicsActor* actor = *itCurCP;
+			CBaseObject* obj = (CBaseObject*)(actor->GetUserData());
+			float* m = actor->GetWorldTransform();
+			for (int i = 0; i < 16; i++) 
+			{
+				matrix._m[i] = m[i];
+			}
+			Vector3 pos = matrix.getTrans();
+			Quaternion q = matrix.extractQuaternion();
+			obj->GetAABB(&aabb);
+			Vector3 halfAABB = aabb.GetExtents();
+			q.ToEulerAnglesSequence(pitch, yaw, roll, "zxy");
+			obj->SetPosition(DVector3(pos.x - halfAABB.x, pos.y - halfAABB.y, pos.z - halfAABB.z));
+			obj->SetYaw(yaw);
+			obj->SetRoll(roll);
+			obj->SetPitch(pitch);
+		}
 	}
 }
 
+IParaPhysicsActor* ParaEngine::CPhysicsWorld::CreateDynamicMesh(CBaseObject* obj)
+{
+	ParaPhysicsSimpleShapeDesc desc;
+	desc.m_shape = obj->GetPhysicsShape();
+
+	CShapeAABB aabb;
+	obj->GetAABB(&aabb);
+	Vector3 halfAABB = aabb.GetExtents();
+	desc.m_halfWidth = halfAABB.x;
+	desc.m_halfHeight = halfAABB.y;
+	desc.m_halfLength = halfAABB.z;
+
+	IParaPhysicsShape* pShape = m_pPhysicsWorld->CreateSimpleShape(desc);
+
+	ParaPhysicsActorDesc ActorDesc;
+	ActorDesc.m_group = 0;
+	ActorDesc.m_mask = -1;
+	ActorDesc.m_mass = obj->GetPhysicsMass();
+	ActorDesc.m_pShape = pShape;
+
+	Matrix4 globalMat;
+	obj->GetWorldTransform(globalMat);
+	
+	float fScalingX, fScalingY, fScalingZ;
+	Math::GetMatrixScaling(globalMat, &fScalingX,&fScalingY,&fScalingZ);
+	// set global world position
+	ActorDesc.m_origin = PARAVECTOR3(globalMat._41 + halfAABB.x, globalMat._42 + halfAABB.y ,globalMat._43 + halfAABB.z);
+	// remove the scaling factor from the rotation matrix
+	for (int i=0;i<3;++i)
+	{
+		ActorDesc.m_rotation.m[0][i] = globalMat.m[0][i] / fScalingX;
+		ActorDesc.m_rotation.m[1][i] = globalMat.m[1][i] / fScalingY;
+		ActorDesc.m_rotation.m[2][i] = globalMat.m[2][i] / fScalingZ;
+	}
+	IParaPhysicsActor* pActor = m_pPhysicsWorld->CreateActor(ActorDesc);
+	pActor->SetUserData(obj);
+	m_mapDynamicActors.insert(pActor);
+	return pActor;
+}
 
 /**
 * please note that multiple mesh actor may be created. 
@@ -436,6 +505,7 @@ void CPhysicsWorld::ReleaseActor(IParaPhysicsActor* pActor)
 {
 	if(m_pPhysicsWorld)
 	{
+		m_mapDynamicActors.erase(pActor);
 		m_pPhysicsWorld->ReleaseActor(pActor);
 		if(CGlobals::WillGenReport())
 		{

@@ -1,4 +1,4 @@
-//-----------------------------------------------------------------------------
+﻿//-----------------------------------------------------------------------------
 // Class:	CBaseObject
 // Authors:	LiXizhi
 // Emails:	LiXizhi@yeah.net
@@ -773,6 +773,22 @@ bool ParaEngine::CBaseObject::IsPhysicsEnabled()
 	return false;
 }
 
+void ParaEngine::CBaseObject::SetPhysicsShape(const char* shape)
+{
+
+}
+std::string ParaEngine::CBaseObject::GetPhysicsShape()
+{
+	return "box";
+}
+void ParaEngine::CBaseObject::EnableDynamicPhysics(bool bEnable)
+{
+}
+bool ParaEngine::CBaseObject::IsDynamicPhysicsEnabled()
+{
+	return false;
+}
+
 bool ParaEngine::CBaseObject::ViewTouch()
 {
 	return true;
@@ -1161,6 +1177,10 @@ int CBaseObject::InstallFields(CAttributeClass* pClass, bool bOverride)
 	pClass->AddField("PhysicsGroup", FieldType_Int, (void*)SetPhysicsGroup_s, (void*)GetPhysicsGroup_s, NULL, NULL, bOverride);
 	pClass->AddField("PhysicsGroupMask", FieldType_DWORD, (void*)SetPhysicsGroupMask_s, (void*)GetPhysicsGroupMask_s, NULL, NULL, bOverride);
 	pClass->AddField("EnablePhysics", FieldType_Bool, (void*)EnablePhysics_s, (void*)IsPhysicsEnabled_s, NULL, "", bOverride);
+	pClass->AddField("EnableDynamicPhysics", FieldType_Bool, (void*)EnableDynamicPhysics_s, (void*)IsDynamicPhysicsEnabled_s, NULL, "", bOverride);
+	pClass->AddField("PhysicsMass", FieldType_Float, (void*)SetPhysicsMass_s, (void*)GetPhysicsMass_s, NULL, "", bOverride);
+	pClass->AddField("PhysicsShape", FieldType_String, (void*)SetPhysicsShape_s, (void*)GetPhysicsShape_s, NULL, "", bOverride);
+	pClass->AddField("ApplyCentralImpulse", FieldType_Vector3, (void*)ApplyCentralImpulse_s, NULL, NULL, "", bOverride);
 	pClass->AddField("SelectGroupIndex", FieldType_Int, (void*)SetSelectGroupIndex_s, (void*)GetSelectGroupIndex_s, NULL, NULL, bOverride);
 	pClass->AddField("On_AssetLoaded", FieldType_String, (void*)SetOnAssetLoaded_s, (void*)GetOnAssetLoaded_s, NULL, NULL, bOverride);
 	pClass->AddField("RenderOrder", FieldType_Float, (void*)SetRenderOrder_s, (void*)GetRenderOrder_s, NULL, "", bOverride);

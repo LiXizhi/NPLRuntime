@@ -89,6 +89,9 @@ namespace ParaEngine
 		IParaPhysicsActor* CreateStaticMesh(MeshEntity* ppMesh, const Matrix4& globalMat, uint32 nShapeGroup = 0, vector<IParaPhysicsActor*>* pOutputPhysicsActor = NULL, void* pUserData=NULL);
 		IParaPhysicsActor* CreateStaticMesh(ParaXEntity* ppMesh, const Matrix4& globalMat, uint32 nShapeGroup = 0, vector<IParaPhysicsActor*>* pOutputPhysicsActor = NULL, void* pUserData = NULL);
 
+
+		IParaPhysicsActor* CreateDynamicMesh(CBaseObject* obj);
+
 		/** release an actor by calling this function. */
 		void ReleaseActor(IParaPhysicsActor* pActor);
 
@@ -107,6 +110,7 @@ namespace ParaEngine
 
 		/// all shapes used to composed the physical world. There may be multiple object using the same shape
 		TriangleMeshShape_Map_Type  m_listMeshShapes;
+		IParaPhysicsActor_Map_Type m_mapDynamicActors;
 
 		/// whether to do dynamic simulation. It is turned off by default, which only provide basic collision detection. 
 		bool m_bRunDynamicSimulation;

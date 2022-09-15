@@ -639,6 +639,65 @@ namespace ParaEngine {
 			return Radian(Math::ASin(-2*(x*z - w*y)));
 		}
 	}
+
+    void Quaternion::ToEulerAnglesSequence(float& pitch, float& yaw, float& roll, std::string rotSeq) const
+    {
+        if(rotSeq == "yxz") 
+        {
+            return threeaxisrot(-2*(x*y - w*z),
+                w*w - x*x + y*y - z*z,
+                2*(y*z + w*x),
+                -2*(x*z - w*y),
+                w*w - x*x - y*y + z*z,
+                yaw, pitch, roll);
+        }
+        else if(rotSeq == "xzy")
+        {
+            return threeaxisrot( -2*(x*z - w*y),
+                w*w + x*x - y*y - z*z,
+                2*(x*y + w*z),
+                -2*(y*z - w*x),
+                w*w - x*x + y*y - z*z,
+                pitch, roll, yaw);
+        } 
+        else if(rotSeq == "zxy") 
+        {
+            return threeaxisrot( 2*(x*z + w*y),
+                w*w - x*x - y*y + z*z,
+                -2*(y*z - w*x),
+                2*(x*y + w*z),
+                w*w - x*x + y*y - z*z,
+                roll, pitch, yaw);
+        }
+        else if(rotSeq == "xyz") 
+        {
+            return threeaxisrot( 2*(x*y + w*z),
+                w*w + x*x - y*y - z*z,
+                -2*(x*z - w*y),
+                2*(y*z + w*x),
+                w*w - x*x - y*y + z*z,
+                pitch, yaw, roll);
+        }
+        else if(rotSeq == "zyx") 
+        {
+            return threeaxisrot( -2*(y*z - w*x),
+                w*w - x*x - y*y + z*z,
+                2*(x*z + w*y),
+                -2*(x*y - w*z),
+                w*w + x*x - y*y - z*z,
+                roll, yaw, pitch);
+        }
+        else if(rotSeq == "yzx") 
+        {
+            return threeaxisrot( 2*(y*z + w*x),
+                w*w - x*x + y*y - z*z,
+                -2*(x*y - w*z),
+                2*(x*z + w*y),
+                w*w + x*x - y*y - z*z,
+                yaw, roll, pitch);
+        }
+    }
+
     //-----------------------------------------------------------------------
     Quaternion Quaternion::nlerp(float fT, const Quaternion& rkP,
         const Quaternion& rkQ, bool shortestPath)
