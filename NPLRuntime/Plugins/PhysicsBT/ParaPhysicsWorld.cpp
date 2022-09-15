@@ -175,7 +175,7 @@ IParaPhysicsShape* CParaPhysicsWorld::CreateSimpleShape(const ParaPhysicsSimpleS
 {
 	BulletSimpleShape* pShape = new BulletSimpleShape();
 	if (shapeDesc.m_shape == "box") 
-	{  // aabb
+	{   // aabb
 		pShape->m_pShape = new btBoxShape(btVector3(shapeDesc.m_halfWidth, shapeDesc.m_halfHeight, shapeDesc.m_halfLength));
 	}
 	else if (shapeDesc.m_shape == "sphere")
@@ -184,7 +184,7 @@ IParaPhysicsShape* CParaPhysicsWorld::CreateSimpleShape(const ParaPhysicsSimpleS
 	}
 	else if (shapeDesc.m_shape == "capsule")
 	{
-		pShape->m_pShape = new btCapsuleShape(shapeDesc.m_halfWidth, shapeDesc.m_halfHeight);
+		pShape->m_pShape = new btCapsuleShape(shapeDesc.m_halfWidth, (shapeDesc.m_halfHeight - shapeDesc.m_halfWidth) * 2);
 	}
 	else 
 	{
