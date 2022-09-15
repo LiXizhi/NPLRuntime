@@ -230,7 +230,21 @@ void ParaEngine::CSlopeModelProvider::_buildInnerCornerBlockModels()
 	tempModel.Vertices()[BlockModel::g_frtRT].SetPosition(cube_mode.Vertices()[BlockModel::g_frtRB].position[0], cube_mode.Vertices()[BlockModel::g_frtRB].position[1], cube_mode.Vertices()[BlockModel::g_frtRB].position[2]);
 	tempModel.Vertices()[BlockModel::g_topRB].SetPosition(cube_mode.Vertices()[BlockModel::g_frtRB].position[0], cube_mode.Vertices()[BlockModel::g_frtRB].position[1], cube_mode.Vertices()[BlockModel::g_frtRB].position[2]);
 	tempModel.Vertices()[BlockModel::g_rightLT].SetPosition(cube_mode.Vertices()[BlockModel::g_frtRB].position[0], cube_mode.Vertices()[BlockModel::g_frtRB].position[1], cube_mode.Vertices()[BlockModel::g_frtRB].position[2]);
-	tempModel.Vertices()[BlockModel::g_topLB].SetTexcoord(cube_mode.Vertices()[BlockModel::g_topRT].texcoord[0], cube_mode.Vertices()[BlockModel::g_topRT].texcoord[1]);
+
+	tempModel.Vertices()[BlockModel::g_topRT].SetPosition(cube_mode.Vertices()[BlockModel::g_frtRB].position[0], cube_mode.Vertices()[BlockModel::g_frtRB].position[1], cube_mode.Vertices()[BlockModel::g_frtRB].position[2]);
+	tempModel.Vertices()[BlockModel::g_topRT].SetTexcoord(1, 1);
+	tempModel.Vertices()[BlockModel::g_topRB].SetTexcoord(1,1);
+
+	auto vert = tempModel.Vertices()[BlockModel::g_frtRB];
+	tempModel.AddVertex(vert);
+	vert = tempModel.Vertices()[BlockModel::g_topLT];
+	tempModel.AddVertex(vert);
+	vert = tempModel.Vertices()[BlockModel::g_bkLT];
+	vert.SetTexcoord(1, 0);
+	tempModel.AddVertex(vert);
+	vert = tempModel.Vertices()[BlockModel::g_frtRB];
+	tempModel.AddVertex(vert);
+	tempModel.SetFaceCount(tempModel.Vertices().size() / 4);
 
 	//旧的 2-1和2-5明显不是内凸的，这里改了，应该没多少地方用到
 	Vector3 angleArr[8] = {
@@ -309,14 +323,16 @@ void ParaEngine::CSlopeModelProvider::_buildOutCornerModels_1()
 	cube_mode.LoadModelByTexture(0);
 	int modelNum = sizeof(mOutCornerModels_1) / sizeof(mOutCornerModels_1[0]);
 
+	int faceCount = mOuterCornerBlockModels[0].GetFaceCount();
 	for (int i = 0; i < modelNum; i++) {
 		mOutCornerModels_1[i].ClearVertices();
 		mOutCornerModels_1[i] = cube_mode;
+		mOutCornerModels_1[i].SetFaceCount(faceCount);
 	}
 
 	BlockModel tempModel = cube_mode;
-
-	for (int i = 0; i < 24; i++) {
+	int num = faceCount * 4;
+	for (int i = 0; i < num; i++) {
 		Vector3 pt;
 		
 		mOuterCornerBlockModels[0].Vertices()[i].GetPosition(pt);
@@ -327,8 +343,12 @@ void ParaEngine::CSlopeModelProvider::_buildOutCornerModels_1()
 		newPt.z = round(newPt.z);
 
 		tempModel.Vertices()[i].SetPosition(newPt.x, newPt.y, newPt.z);
-
 	}
+
+	for (int i = tempModel.GetFaceCount() * 4-1; i >=num; i--) {
+		tempModel.Vertices().pop_back();
+	}
+	tempModel.SetFaceCount(faceCount);
 
 	Vector3 angleArr[24] = {
 		//尖尖朝着y正方向
@@ -437,22 +457,41 @@ void ParaEngine::CSlopeModelProvider::cloneAndRoateModels(BlockModel &tempModel,
 	for (int i = 0; i < len; i++) {
 		Vector3 angles = angleArr[i];
 		int block_index = i;
-		outModels[block_index].LoadModelByTexture(0);
-		int faceNum =  outModels[block_index].GetFaceCount();
+		BlockModel & model = outModels[block_index + 0];
+		model.ClearVertices();
+		int faceNum = tempModel.GetFaceCount();
 		for (int face = 0; face < faceNum; face++) {
 			for (int j = 0;j<4; j++) {
 				int idx = face * 4 + j;
 				Vector3 pt;
-				tempModel.Vertices()[idx].GetPosition(pt);
-				Vector3 newPt = vec3RotateByPoint(Vector3(0.5, 0.5, 0.5), pt, angles);
+
+				BlockVertexCompressed vert = tempModel.Vertices()[idx];
+				vert.GetPosition(pt);
+				Vector3 newPt = vec3RotateByPoint(Vector3(0.5f, 0.5f, 0.5f), pt, angles);
 
 				newPt.x = round(newPt.x);
 				newPt.y = round(newPt.y);
 				newPt.z = round(newPt.z);
-				outModels[block_index].Vertices()[idx].SetPosition(newPt.x, newPt.y, newPt.z);
+
+				vert.SetPosition(newPt.x, newPt.y, newPt.z);
+
+				model.AddVertex(vert);
 				
 			}
-			calculateModelNormalOfFace(outModels[block_index], face*4);
+			Vector3 &normal = calculateModelNormalOfFace(model, face*4);
+
+			//int tempFaceCount = model.GetFaceCount();
+			//if (normal.positionEquals(Vector3(0, 0, 0))) {//表示这不是一个正常的面，直接剪裁掉
+			//	int start = face * 4;//去掉这个面的四个顶点，并前移数组
+			//	for (int v = start; v < tempFaceCount * 4 - 4; v++) {
+			//		model.Vertices()[v] = model.Vertices()[v + 4];
+			//	}
+			//	for (int v = 0; v < 4; v++) {
+			//		model.Vertices().pop_back();
+			//	}
+			//	tempFaceCount--;
+			//}
+			//model.SetFaceCount(tempFaceCount);
 		}
 	}
 }
@@ -486,9 +525,7 @@ Vector3 ParaEngine::CSlopeModelProvider::calculateModelNormalOfFace(BlockModel &
 		normal = dir0_2.crossProduct(dir0_3);
 	}
 	
-	normal.x = round(normal.x);
-	normal.y = round(normal.y);
-	normal.z = round(normal.z);
+	normal.normalise();
 	for (int i = 0; i < 4; i++) {
 		int idx = startIdxOfFace + i;
 		tempModel.Vertices()[idx].SetNormal(normal);
