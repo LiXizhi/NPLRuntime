@@ -298,7 +298,7 @@ namespace ParaEngine
 		*/
 		virtual void SetTextA(const char* szText){};
 
-        virtual int GetCaretPosition(){};
+        virtual int GetCaretPosition(){ return 0; };
         
         virtual void SetCaretPosition(int nCharacterPos){};
         
