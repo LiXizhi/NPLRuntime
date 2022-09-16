@@ -216,7 +216,8 @@ namespace ParaScripting
 					def("DeselectAllBlock1", &ParaBlockWorld::DeselectAllBlock1),
 					def("DeselectAllBlock", &ParaBlockWorld::DeselectAllBlock),
 					def("SetDamagedBlock", &ParaBlockWorld::SetDamagedBlock),
-					def("SetDamageDegree", &ParaBlockWorld::SetDamageDegree)
+					def("SetDamageDegree", &ParaBlockWorld::SetDamageDegree),
+					def("GetBlockModelInfo", &ParaBlockWorld::GetBlockModelInfo) 
 				]
 			];
 
