@@ -2074,5 +2074,8 @@ namespace ParaScripting
 		* @param nCount: the max number to set for the above render importance. 
 		*/
 		static int GetMaxRenderCount(int nRenderImportance);
+
+		/** 设置是否启动动态物理 */
+		static void DynamicSimulation(bool bEnable);
 	};
 };

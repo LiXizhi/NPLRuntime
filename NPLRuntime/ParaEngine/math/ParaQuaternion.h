@@ -188,6 +188,13 @@ namespace ParaEngine {
 		*/
 		Radian getYaw(bool reprojectAxis = true) const;	
 
+		void threeaxisrot(float r11, float r12, float r21, float r31, float r32, float& out1, float out2, float& out3) const 
+		{
+			out1 = atan2( r31, r32 ), out2 = asin( r21 ), out3 = atan2( r11, r12 );
+		}
+		
+	    void ToEulerAnglesSequence(float& pitch, float& yaw, float& roll, const std::string& rotSeq = "xyz") const;
+
 		void	ToRadians(float *outX, float *outY, float *outZ) const;
 
 		/// Equality with tolerance (tolerance is max angle difference)

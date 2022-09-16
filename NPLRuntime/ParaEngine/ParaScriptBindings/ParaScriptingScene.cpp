@@ -52,6 +52,7 @@
 #include "SelectionManager.h"
 #include "ParaXAnimInstance.h"
 #include "ParaXModel/GltfModel.h"
+#include "PhysicsWorld.h"
 #include <time.h>
 
 extern "C"
@@ -1552,6 +1553,11 @@ bool ParaObject::Export(const char* filepath, const char* typ) {
 //
 //
 //////////////////////////////////////////////////////////////////////////
+
+void ParaScene::DynamicSimulation(bool bEnable)
+{
+	CGlobals::GetScene()->GetPhysicsWorld()->SetDynamicsSimulationEnabled(bEnable);
+}
 
 ParaObject ParaScene::TogglePlayer()
 {

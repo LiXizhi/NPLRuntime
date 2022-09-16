@@ -38,7 +38,7 @@ void ParaEngine::CParaPhysicsImp::Release()
 	delete this;
 }
 
-IParaPhysicsShape* ParaEngine::CParaPhysicsImp::CreateTriangleMeshShap(const ParaPhysicsTriangleMeshDesc& meshDesc)
+IParaPhysicsShape* ParaEngine::CParaPhysicsImp::CreateTriangleMeshShape(const ParaPhysicsTriangleMeshDesc& meshDesc)
 {
 	return NULL;
 }

@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 #include "IAttributeFields.h"
 #include "IViewClippingObject.h"
 #include "IRefObject.h"
@@ -103,7 +103,9 @@ enum PHYSICS_METHOD{
 	PHYSICS_FORCE_NO_PHYSICS = 0x1 << 2,
 	/** if this bit is on, the object's physics data is read from the mesh entity (i.e. mesh faces with no textured material).
 	* if not on, the entire mesh entity is used as the physics data.*/
-	PHYSICS_LOAD_FROM_ASSET = 0x1 << 3
+	PHYSICS_LOAD_FROM_ASSET = 0x1 << 3,
+	// 动态物理标识 
+	PHYSICS_FORCE_DYNAMIC = 0x1 << 4
 };
 
 /**
@@ -533,6 +535,17 @@ public:
 	ATTRIBUTE_METHOD1(CBaseObject, IsPhysicsEnabled_s, bool*)	{ *p1 = cls->IsPhysicsEnabled(); return S_OK; }
 	ATTRIBUTE_METHOD1(CBaseObject, EnablePhysics_s, bool)	{ cls->EnablePhysics(p1); return S_OK; }
 
+	ATTRIBUTE_METHOD1(CBaseObject, IsDynamicPhysicsEnabled_s, bool*)	{ *p1 = cls->IsDynamicPhysicsEnabled(); return S_OK; }
+	ATTRIBUTE_METHOD1(CBaseObject, EnableDynamicPhysics_s, bool)	{ cls->EnableDynamicPhysics(p1); return S_OK; }
+
+	ATTRIBUTE_METHOD1(CBaseObject, GetPhysicsMass_s, float*)	{ *p1 = cls->GetPhysicsMass(); return S_OK; }
+	ATTRIBUTE_METHOD1(CBaseObject, SetPhysicsMass_s, float)	{ cls->SetPhysicsMass(p1); return S_OK; }
+
+	ATTRIBUTE_METHOD1(CBaseObject, GetPhysicsShape_s, const char**)	{ *p1 = cls->GetPhysicsShape(); return S_OK; }
+	ATTRIBUTE_METHOD1(CBaseObject, SetPhysicsShape_s, const char*)	{ cls->SetPhysicsShape(p1); return S_OK; }
+
+	ATTRIBUTE_METHOD1(CBaseObject, ApplyCentralImpulse_s, Vector3)	{ cls->ApplyCentralImpulse(p1); return S_OK; }
+
 	ATTRIBUTE_METHOD1(CBaseObject, IsLODEnabled_s, bool*) { *p1 = cls->IsLODEnabled(); return S_OK; }
 	ATTRIBUTE_METHOD1(CBaseObject, EnableLOD_s, bool) { cls->EnableLOD(p1); return S_OK; }
 
@@ -719,6 +732,18 @@ public:
 	virtual void SetAlwaysLoadPhysics(bool bEnable);
 
 	virtual bool IsPhysicsEnabled();
+
+	// 设置物理基本形状 默认为box(AABB)
+	virtual void SetPhysicsShape(const char* shape);
+	virtual const char* GetPhysicsShape();
+	// 是否启用动态物理
+	virtual void EnableDynamicPhysics(bool bEnable);
+	virtual bool IsDynamicPhysicsEnabled();
+	// 设置物理质量
+	virtual void SetPhysicsMass(float mass) {}
+	virtual float GetPhysicsMass() { return 0.0f; }
+	// 设置物理速度
+	virtual void ApplyCentralImpulse(Vector3 impulse) {}
 
 	/** this function is called, when the object is in view range. we may need to load the primary asset to update the bounding box, etc. 
 	* @return true if the object is ready to be rendered. 

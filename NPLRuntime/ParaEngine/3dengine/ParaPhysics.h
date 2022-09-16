@@ -17,7 +17,7 @@ namespace ParaEngine
 
 		virtual void Release();
 
-		virtual IParaPhysicsShape* CreateTriangleMeshShap(const ParaPhysicsTriangleMeshDesc& meshDesc);
+		virtual IParaPhysicsShape* CreateTriangleMeshShape(const ParaPhysicsTriangleMeshDesc& meshDesc);
 
 		virtual void ReleaseShape(IParaPhysicsShape *pShape);
 

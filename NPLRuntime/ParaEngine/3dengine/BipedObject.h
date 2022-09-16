@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 #include "IGameObject.h"
 #include "ShadowVolume.h"
 #include "BipedWayPoint.h"
@@ -778,6 +778,21 @@ namespace ParaEngine
 		*/
 		virtual DWORD GetPhysicsGroupMask();
 
+		// 设置物理基本形状 默认为box(AABB)
+		virtual void SetPhysicsShape(const char* shape);
+		virtual const char* GetPhysicsShape();
+		// 设置物理质量
+		virtual void SetPhysicsMass(float mass) { m_fPhysicsMass = mass; }
+		virtual float GetPhysicsMass() { return m_fPhysicsMass; }
+		// 是否启用动态物理
+		virtual void EnableDynamicPhysics(bool bEnable);
+		virtual bool IsDynamicPhysicsEnabled();
+		// 加载动态物理模型
+		virtual void LoadDynamicPhysics();
+		virtual void UnloadDynamicPhysics();
+		// 设置物理速度
+		virtual void ApplyCentralImpulse(Vector3 impulse);
+
 		/** force camera to object distance, when sorting the object. if 0.f (default value), we will use the actual camera to object distance instead. */
 		virtual float GetObjectToCameraDistance();
 		virtual void SetObjectToCameraDistance(float val);
@@ -875,6 +890,10 @@ namespace ParaEngine
 		If m_fPhysicsHeight is never set, it is always 4*m_fPhysicsRadius. However, if it is set, its value are maintained.
 		*/
 		float		m_fPhysicsHeight;
+
+		std::string m_sPhysicsShape;
+		float m_fPhysicsMass;
+		IParaPhysicsActor* m_dynamicPhysicsActor;
 
 		// the biped state manager
 		CBipedStateManager* m_pBipedStateManager;

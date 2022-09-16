@@ -1,5 +1,8 @@
-#pragma once
+﻿#pragma once
 #include "PEtypes.h"
+#include <set>
+#include <list>
+#include <string>
 
 namespace ParaEngine
 {
@@ -38,17 +41,26 @@ namespace ParaEngine
 		DWORD m_flags;
 	};
 
+	struct ParaPhysicsSimpleShapeDesc
+	{
+		std::string m_shape;
+		float m_halfWidth;     // box.x  sphere.r  capsule.r
+		float m_halfHeight;    // box.y	 sphere.r  capsule.h(胶囊圆柱高, 含半球高)
+		float m_halfLength;    // box.z  sphere.r  capsule.r
+	};
+
 	/** it is represent a shape that can be used to create various actors in the scene. */
 	struct IParaPhysicsShape
 	{
 		/// get user data associated with the shape
-		virtual void* GetUserData() = 0;
-		virtual void SetUserData(void* pData) = 0;
+		virtual void* GetUserData() { return m_pUserData; }
+		virtual void SetUserData(void* pData) { m_pUserData = pData; }
 		
 		/// return pointer to the low level physics engine shape object. 
 		virtual void* get() = 0;
-
 		virtual void Release() = 0;
+
+		void* m_pUserData;
 	};
 
 	/** Create descriptor for a physics actor. so that we can create it.
@@ -79,13 +91,24 @@ namespace ParaEngine
 	struct IParaPhysicsActor
 	{
 		/// get user data associated with the shape
-		virtual void* GetUserData() = 0;
-		virtual void SetUserData(void* pData) = 0;
+		virtual void* GetUserData() { return m_pUserData; }
+		virtual void SetUserData(void* pData) { m_pUserData = pData; }
+
+		// 设置获取模型
+		virtual IParaPhysicsShape* GetShape() { return m_shape; }
+		virtual void SetShape(IParaPhysicsShape* shape) { m_shape = shape; }
+
+		// 设置获取物理矩阵
+		virtual float* GetWorldTransform() { return NULL; }
+		virtual void SetWorldTransform(float* matrix) {}
 
 		/// return pointer to the low level physics engine shape object. 
 		virtual void* get() = 0;
-
 		virtual void Release() = 0;
+		virtual void ApplyCentralImpulse(PARAVECTOR3& impulse) = 0;
+
+		IParaPhysicsShape* m_shape;
+		void* m_pUserData;
 	};
 
 	struct RayCastHitResult
@@ -119,7 +142,9 @@ namespace ParaEngine
 		/** create a triangle shape.
 		* @return: the triangle shape pointer is returned. 
 		*/
-		virtual IParaPhysicsShape* CreateTriangleMeshShap(const ParaPhysicsTriangleMeshDesc& meshDesc) = 0;
+		virtual IParaPhysicsShape* CreateTriangleMeshShape(const ParaPhysicsTriangleMeshDesc& meshDesc) = 0;
+
+		virtual IParaPhysicsShape* CreateSimpleShape(const ParaPhysicsSimpleShapeDesc& shapeDesc) { return NULL; }
 
 		/** release a physics shape */
 		virtual void ReleaseShape(IParaPhysicsShape *pShape) = 0;
@@ -151,4 +176,7 @@ namespace ParaEngine
 		/** bitwise of PhysicsDebugDrawModes */
 		virtual int		GetDebugDrawMode() = 0;
 	};
+
+	typedef std::set<IParaPhysicsActor*> IParaPhysicsActor_Map_Type;
+	typedef std::set<IParaPhysicsShape*> IParaPhysicsShape_Array_Type;
 }
