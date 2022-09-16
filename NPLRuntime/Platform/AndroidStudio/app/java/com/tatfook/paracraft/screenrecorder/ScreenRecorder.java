@@ -229,11 +229,11 @@ public class ScreenRecorder {
 
     private static void requestPermissions() {
         ParaEngineActivity
-                .getContext()
-                .requestPermissions(
-                        new String[]{WRITE_EXTERNAL_STORAGE, RECORD_AUDIO},
-                        REQUEST_PERMISSIONS
-                );
+            .getContext()
+            .requestPermissions(
+                new String[]{WRITE_EXTERNAL_STORAGE, RECORD_AUDIO},
+                REQUEST_PERMISSIONS
+            );
     }
 
     private static boolean hasPermissions() {
