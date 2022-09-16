@@ -4781,7 +4781,6 @@ void ParaEngine::CBipedObject::UnloadDynamicPhysics()
 {
 	if (m_dynamicPhysicsActor != NULL)
 	{
-		m_dynamicPhysicsActor->GetShape()->Release();
 		CGlobals::GetPhysicsWorld()->ReleaseActor(m_dynamicPhysicsActor);
 		m_dynamicPhysicsActor = NULL;
 	}

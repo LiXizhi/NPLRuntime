@@ -486,6 +486,8 @@ IParaPhysicsActor* ParaEngine::CPhysicsWorld::CreateDynamicMesh(CBaseObject* obj
 	}
 	IParaPhysicsActor* pActor = m_pPhysicsWorld->CreateActor(ActorDesc);
 	pActor->SetUserData(obj);
+	pActor->SetIsolatedShape(pShape);
+	
 	m_mapDynamicActors.insert(pActor);
 	return pActor;
 }

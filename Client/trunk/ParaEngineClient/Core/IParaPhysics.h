@@ -90,6 +90,14 @@ namespace ParaEngine
 	/** it is represent a shape that can be used to create various actors in the scene. */
 	struct IParaPhysicsActor
 	{
+		IParaPhysicsActor(): m_isolated_shape(NULL), m_pUserData(NULL) {}
+		~IParaPhysicsActor() {
+			if (m_isolated_shape) 
+			{
+				m_isolated_shape->Release();
+				m_isolated_shape = NULL;
+			}
+		}
 		/// get user data associated with the shape
 		virtual void* GetUserData() { return m_pUserData; }
 		virtual void SetUserData(void* pData) { m_pUserData = pData; }
@@ -99,16 +107,16 @@ namespace ParaEngine
 
 		virtual void Release() = 0;
 
-		// 设置获取模型
-		virtual IParaPhysicsShape* GetShape() { return m_shape; }
-		virtual void SetShape(IParaPhysicsShape* shape) { m_shape = shape; }
+		// 设置获取独立模型(不与其它actor共用shape)
+		virtual IParaPhysicsShape* GetIsolatedShape() { return m_isolated_shape; }
+		virtual void SetIsolatedShape(IParaPhysicsShape* shape) { m_isolated_shape = shape; }
 
 		// 设置获取物理矩阵
 		virtual float* GetWorldTransform() { return NULL; }
 		virtual void SetWorldTransform(float* matrix) {}
 		virtual void ApplyCentralImpulse(PARAVECTOR3& impulse) = 0;
 
-		IParaPhysicsShape* m_shape;
+		IParaPhysicsShape* m_isolated_shape;
 		void* m_pUserData;
 	};
 

@@ -63,8 +63,6 @@ namespace ParaEngine
 
 		/// pointer to the low level physics engine actor(rigid body). 
 		btRigidBody* m_pActor;
-		/// keep some user data here
-		void* m_pUserData;
 	};
 
 	using namespace std;
