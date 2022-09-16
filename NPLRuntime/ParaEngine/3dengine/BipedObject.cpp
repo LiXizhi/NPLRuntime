@@ -4745,9 +4745,9 @@ void ParaEngine::CBipedObject::SetPhysicsShape(const char* shape)
 	m_sPhysicsShape = shape;
 }
 
-std::string ParaEngine::CBipedObject::GetPhysicsShape()
+const char* ParaEngine::CBipedObject::GetPhysicsShape()
 {
-	return m_sPhysicsShape;
+	return m_sPhysicsShape.c_str();
 }
 
 void ParaEngine::CBipedObject::EnableDynamicPhysics(bool bEnable)

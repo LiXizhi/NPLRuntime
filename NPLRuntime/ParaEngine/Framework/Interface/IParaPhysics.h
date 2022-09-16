@@ -44,10 +44,9 @@ namespace ParaEngine
 	struct ParaPhysicsSimpleShapeDesc
 	{
 		std::string m_shape;
-		float m_halfWidth;     // box.x    capsule.r
-		float m_halfHeight;    // box.y	   capsule.h(胶囊圆柱高, 含半球高)
-		float m_halfLength;    // box.z    capsule.r
-		float m_sphereRadius;  // sphere.r 球半径
+		float m_halfWidth;     // box.x  sphere.r  capsule.r
+		float m_halfHeight;    // box.y	 sphere.r  capsule.h(胶囊圆柱高, 含半球高)
+		float m_halfLength;    // box.z  sphere.r  capsule.r
 	};
 
 	/** it is represent a shape that can be used to create various actors in the scene. */
@@ -143,7 +142,7 @@ namespace ParaEngine
 		/** create a triangle shape.
 		* @return: the triangle shape pointer is returned. 
 		*/
-		virtual IParaPhysicsShape* CreateTriangleMeshShap(const ParaPhysicsTriangleMeshDesc& meshDesc) = 0;
+		virtual IParaPhysicsShape* CreateTriangleMeshShape(const ParaPhysicsTriangleMeshDesc& meshDesc) = 0;
 
 		virtual IParaPhysicsShape* CreateSimpleShape(const ParaPhysicsSimpleShapeDesc& shapeDesc) { return NULL; }
 

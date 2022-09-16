@@ -2076,6 +2076,6 @@ namespace ParaScripting
 		static int GetMaxRenderCount(int nRenderImportance);
 
 		/** 设置是否启动动态物理 */
-		static void EnabledDynamicsSimulation(bool bEnable);
+		static void DynamicSimulation(bool bEnable);
 	};
 };

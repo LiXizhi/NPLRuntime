@@ -180,7 +180,7 @@ IParaPhysicsShape* CParaPhysicsWorld::CreateSimpleShape(const ParaPhysicsSimpleS
 	}
 	else if (shapeDesc.m_shape == "sphere")
 	{
-		pShape->m_pShape = new btSphereShape(shapeDesc.m_sphereRadius);
+		pShape->m_pShape = new btSphereShape(shapeDesc.m_halfWidth);
 	}
 	else if (shapeDesc.m_shape == "capsule")
 	{
@@ -195,7 +195,7 @@ IParaPhysicsShape* CParaPhysicsWorld::CreateSimpleShape(const ParaPhysicsSimpleS
 	return pShape;
 }
 
-IParaPhysicsShape* CParaPhysicsWorld::CreateTriangleMeshShap(const ParaPhysicsTriangleMeshDesc& meshDesc)
+IParaPhysicsShape* CParaPhysicsWorld::CreateTriangleMeshShape(const ParaPhysicsTriangleMeshDesc& meshDesc)
 {
 	BulletPhysicsShape*  pShape = new BulletPhysicsShape();
 

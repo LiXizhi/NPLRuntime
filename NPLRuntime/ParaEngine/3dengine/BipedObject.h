@@ -780,7 +780,7 @@ namespace ParaEngine
 
 		// 设置物理基本形状 默认为box(AABB)
 		virtual void SetPhysicsShape(const char* shape);
-		virtual std::string GetPhysicsShape();
+		virtual const char* GetPhysicsShape();
 		// 设置物理质量
 		virtual void SetPhysicsMass(float mass) { m_fPhysicsMass = mass; }
 		virtual float GetPhysicsMass() { return m_fPhysicsMass; }

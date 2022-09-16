@@ -640,7 +640,7 @@ namespace ParaEngine {
 		}
 	}
 
-    void Quaternion::ToEulerAnglesSequence(float& pitch, float& yaw, float& roll, std::string rotSeq) const
+    void Quaternion::ToEulerAnglesSequence(float& pitch, float& yaw, float& roll, const char* rotSeq) const
     {
         if(rotSeq == "yxz") 
         {

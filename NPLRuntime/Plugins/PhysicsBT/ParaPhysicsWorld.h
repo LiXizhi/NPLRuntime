@@ -94,7 +94,7 @@ namespace ParaEngine
 		/** create a triangle shape.
 		* @return: the triangle shape pointer is returned. 
 		*/
-		virtual IParaPhysicsShape* CreateTriangleMeshShap(const ParaPhysicsTriangleMeshDesc& meshDesc);
+		virtual IParaPhysicsShape* CreateTriangleMeshShape(const ParaPhysicsTriangleMeshDesc& meshDesc);
 		virtual IParaPhysicsShape* CreateSimpleShape(const ParaPhysicsSimpleShapeDesc& shapeDesc);
 
 		/** release a physics shape */

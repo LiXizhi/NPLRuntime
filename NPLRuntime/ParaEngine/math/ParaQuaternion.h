@@ -193,7 +193,7 @@ namespace ParaEngine {
 			out1 = atan2( r31, r32 ), out2 = asin( r21 ), out3 = atan2( r11, r12 );
 		}
 		
-	    void ToEulerAnglesSequence(float& pitch, float& yaw, float& roll, std::string rotSeq = "xyz") const;
+	    void ToEulerAnglesSequence(float& pitch, float& yaw, float& roll, const char* rotSeq = "xyz") const;
 
 		void	ToRadians(float *outX, float *outY, float *outZ) const;
 

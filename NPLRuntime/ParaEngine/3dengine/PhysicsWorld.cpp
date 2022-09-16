@@ -291,7 +291,7 @@ IParaPhysicsActor* ParaEngine::CPhysicsWorld::CreateStaticMesh( MeshEntity* ppMe
 
 			// Cooking from memory
 
-			MeshShape->m_pShapes.push_back(SubMeshPhysicsShape(m_pPhysicsWorld->CreateTriangleMeshShap(trimeshDesc), nMeshGroup));
+			MeshShape->m_pShapes.push_back(SubMeshPhysicsShape(m_pPhysicsWorld->CreateTriangleMeshShape(trimeshDesc), nMeshGroup));
 		}
 		SAFE_DELETE_ARRAY(verts);
 		SAFE_DELETE_ARRAY(indices);
@@ -443,7 +443,7 @@ IParaPhysicsActor* ParaEngine::CPhysicsWorld::CreateStaticMesh(ParaXEntity* ppMe
 
 			// Cooking from memory
 
-			MeshShape->m_pShapes.push_back(SubMeshPhysicsShape(m_pPhysicsWorld->CreateTriangleMeshShap(trimeshDesc), nMeshGroup));
+			MeshShape->m_pShapes.push_back(SubMeshPhysicsShape(m_pPhysicsWorld->CreateTriangleMeshShape(trimeshDesc), nMeshGroup));
 		}
 		SAFE_DELETE_ARRAY(verts);
 		SAFE_DELETE_ARRAY(indices);

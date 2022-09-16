@@ -1554,7 +1554,7 @@ bool ParaObject::Export(const char* filepath, const char* typ) {
 //
 //////////////////////////////////////////////////////////////////////////
 
-void ParaScene::EnabledDynamicsSimulation(bool bEnable)
+void ParaScene::DynamicSimulation(bool bEnable)
 {
 	CGlobals::GetScene()->GetPhysicsWorld()->SetDynamicsSimulationEnabled(bEnable);
 }

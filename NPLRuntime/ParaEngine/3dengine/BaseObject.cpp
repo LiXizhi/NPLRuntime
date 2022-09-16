@@ -777,7 +777,7 @@ void ParaEngine::CBaseObject::SetPhysicsShape(const char* shape)
 {
 
 }
-std::string ParaEngine::CBaseObject::GetPhysicsShape()
+const char* ParaEngine::CBaseObject::GetPhysicsShape()
 {
 	return "box";
 }
