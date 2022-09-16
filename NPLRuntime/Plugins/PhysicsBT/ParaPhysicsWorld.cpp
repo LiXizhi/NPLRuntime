@@ -324,8 +324,6 @@ IParaPhysicsActor* CParaPhysicsWorld::CreateActor(const ParaPhysicsActorDesc& ac
 
 	BulletPhysicsActor* pActor = new BulletPhysicsActor(body);
 	
-	pActor->SetShape(actorDesc.m_pShape);
-
 	body->setUserPointer(pActor);
 
 	m_actors.insert(pActor);
