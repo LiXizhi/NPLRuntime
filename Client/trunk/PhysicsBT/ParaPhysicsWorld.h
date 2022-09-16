@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include "btBulletDynamicsCommon.h"
 #include "IParaPhysics.h"
@@ -26,9 +26,6 @@ namespace ParaEngine
 		BulletPhysicsShape();
 		~BulletPhysicsShape();
 
-		virtual void* GetUserData() {return m_pUserData;};
-		virtual void SetUserData(void* pData) {m_pUserData = pData;};
-
 		virtual void* get() {return m_pShape;};
 		virtual void Release();
 
@@ -37,9 +34,17 @@ namespace ParaEngine
 		btTriangleIndexVertexArray* m_indexVertexArrays;
 		int32* m_triangleIndices;
 		btScalar* m_vertices;
+	};
 
-		/// keep some user data here
-		void* m_pUserData;
+	struct BulletSimpleShape : public IParaPhysicsShape
+	{
+		BulletSimpleShape(): m_pShape(NULL) {}
+		~BulletSimpleShape() { SAFE_DELETE(m_pShape); }
+
+		virtual void* get() {return m_pShape;};
+		virtual void Release() { delete this; }
+
+		btCollisionShape* m_pShape;
 	};
 
 	/** it is represent a shape that can be used to create various actors in the scene. */
@@ -47,10 +52,14 @@ namespace ParaEngine
 	{
 		BulletPhysicsActor(btRigidBody* pActor);
 		~BulletPhysicsActor();
-		virtual void* GetUserData() {return m_pUserData;};
-		virtual void SetUserData(void* pData) {m_pUserData = pData;};
+
 		virtual void* get() {return m_pActor;};
 		virtual void Release();
+
+		// 设置获取物理矩阵  float[16]
+		virtual float* GetWorldTransform();
+		virtual void SetWorldTransform(float* matrix);
+		virtual void ApplyCentralImpulse(PARAVECTOR3& impulse);
 
 		/// pointer to the low level physics engine actor(rigid body). 
 		btRigidBody* m_pActor;
@@ -63,8 +72,6 @@ namespace ParaEngine
 	class CParaPhysicsWorld :public IParaPhysics
 	{
 	public:
-		typedef std::set<BulletPhysicsActor*> BulletPhysicsActor_Map_Type;
-		typedef std::set<BulletPhysicsShape*> BulletPhysicsShape_Array_Type;
 		CParaPhysicsWorld();
 		virtual ~CParaPhysicsWorld();
 
@@ -88,6 +95,7 @@ namespace ParaEngine
 		* @return: the triangle shape pointer is returned. 
 		*/
 		virtual IParaPhysicsShape* CreateTriangleMeshShap(const ParaPhysicsTriangleMeshDesc& meshDesc);
+		virtual IParaPhysicsShape* CreateSimpleShape(const ParaPhysicsSimpleShapeDesc& shapeDesc);
 
 		/** release a physics shape */
 		virtual void ReleaseShape(IParaPhysicsShape* pShape);
@@ -136,10 +144,10 @@ namespace ParaEngine
 		btCollisionWorld* m_collisionWorld;
 
 		///keep the collision shapes, for deletion/cleanup
-		BulletPhysicsShape_Array_Type	m_collisionShapes;
+		IParaPhysicsShape_Array_Type	m_collisionShapes;
 
 		// keep all actors
-		BulletPhysicsActor_Map_Type m_actors;
+		IParaPhysicsActor_Map_Type m_actors;
 
 		CPhysicsDebugDraw m_physics_debug_draw;
 		bool m_bInvertFaceWinding;
