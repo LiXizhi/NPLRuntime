@@ -36,7 +36,7 @@ BlockModel& ParaEngine::CStairModelProvider::GetBlockModel(CBlockWorld* pBlockMa
 	return (nBlockData < m_nModelCount) ? mBlockModels[block_index] : mBlockModels[0];
 }
 
-void _AddVertex(BlockModel& tmp, const Vector3 *pts, Vector3 &normal)
+static void _AddVertex(BlockModel& tmp, const Vector3 *pts, Vector3 &normal)
 {
 	static Vector2 texCoord[4] = {
 		Vector2(0,1),
@@ -338,7 +338,7 @@ void ParaEngine::CStairModelProvider::_buildBlockModels()
 		//左面下部分
 		{
 			BlockVertexCompressed vertArr[4];
-			Vector3 normal = Vector3(1, 0, 0);
+			Vector3 normal = Vector3(-1, 0, 0);
 			Vector3 pts[4] = {
 				Vector3(0,0,1),
 				Vector3(0,0.5f,1),
@@ -620,7 +620,7 @@ void ParaEngine::CStairModelProvider::_buildBlockModels()
 	}
 }
 
-void ParaEngine::CStairModelProvider::cloneAndRotateModels(BlockModel &tempModel, Vector3 angleArr[], BlockModel outModels[], int len, int startOutIdx) {
+void ParaEngine::CStairModelProvider::cloneAndRotateModels(BlockModel &tempModel, Vector3 *angleArr, BlockModel *outModels, int len, int startOutIdx) {
 	for (int i = 0; i < len; i++) {
 		Vector3 angles = angleArr[i];
 		int block_index = i;

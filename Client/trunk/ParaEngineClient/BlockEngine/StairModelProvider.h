@@ -17,7 +17,7 @@ namespace ParaEngine
 		void _buildBlockModels();
 		
 
-		void cloneAndRotateModels(BlockModel &tempModel, Vector3 angleArr[], BlockModel outModels[], int len, int startOutIdx = 0);
+		void cloneAndRotateModels(BlockModel &tempModel, Vector3 *angleArr, BlockModel *outModels, int len, int startOutIdx = 0);
 
 		
 		Vector3 calculateModelNormalOfFace(BlockModel &tempModel, int startIdxOfFace);
