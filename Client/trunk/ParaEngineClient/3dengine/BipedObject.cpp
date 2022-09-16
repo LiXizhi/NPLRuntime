@@ -1,4 +1,4 @@
-//-----------------------------------------------------------------------------
+﻿//-----------------------------------------------------------------------------
 // Class:	CBipedObject
 // Authors:	Li, Xizhi
 // Emails:	LiXizhi@yeah.net
@@ -151,6 +151,9 @@ m_isFlyUsingCameraDir(true),
 m_nMovementStyle(MOVESTYLE_SLIDINGWALL),
 m_dwPhysicsGroupMask(DEFAULT_PHYSICS_GROUP_MASK),
 m_dwPhysicsMethod(PHYSICS_FORCE_NO_PHYSICS), m_nPhysicsGroup(0),
+m_sPhysicsShape("box"),
+m_fPhysicsMass(1.0f),
+m_dynamicPhysicsActor(NULL),
 m_fBootHeight(0.f),
 m_fSizeScale(1.0f),
 m_fObjectToCameraDistance(0.f), 
@@ -170,6 +173,7 @@ m_isFlying(false), m_flyingDir(1, 0, 0), m_fLastBlockLight(0.f), m_dwLastBlockHa
 CBipedObject::~CBipedObject()
 {
 	UnloadPhysics();
+	UnloadDynamicPhysics();
 	SAFE_DELETE(m_pBipedStateManager);
 	SAFE_DELETE(m_pLocalTransfrom);
 }
@@ -4735,6 +4739,61 @@ void ParaEngine::CBipedObject::SetObjectToCameraDistance(float val)
 {
 	m_fObjectToCameraDistance = val;
 }
+
+void ParaEngine::CBipedObject::SetPhysicsShape(const char* shape)
+{
+	m_sPhysicsShape = shape;
+}
+
+const char* ParaEngine::CBipedObject::GetPhysicsShape()
+{
+	return m_sPhysicsShape.c_str();
+}
+
+void ParaEngine::CBipedObject::EnableDynamicPhysics(bool bEnable)
+{
+	if (bEnable) 
+	{
+		m_dwPhysicsMethod |= PHYSICS_FORCE_DYNAMIC;
+		LoadDynamicPhysics();
+	}
+	else 
+	{
+		m_dwPhysicsMethod &= (~PHYSICS_FORCE_DYNAMIC);
+		UnloadDynamicPhysics();
+	}
+}
+
+bool ParaEngine::CBipedObject::IsDynamicPhysicsEnabled()
+{
+	return (m_dwPhysicsMethod & PHYSICS_FORCE_DYNAMIC) > 0;
+}
+
+void ParaEngine::CBipedObject::LoadDynamicPhysics()
+{
+	if (m_dynamicPhysicsActor == NULL)
+	{
+		m_dynamicPhysicsActor = CGlobals::GetPhysicsWorld()->CreateDynamicMesh(this);
+	}
+}
+
+void ParaEngine::CBipedObject::UnloadDynamicPhysics()
+{
+	if (m_dynamicPhysicsActor != NULL)
+	{
+		CGlobals::GetPhysicsWorld()->ReleaseActor(m_dynamicPhysicsActor);
+		m_dynamicPhysicsActor = NULL;
+	}
+}
+
+void ParaEngine::CBipedObject::ApplyCentralImpulse(Vector3 impulse)
+{
+	if (m_dynamicPhysicsActor != NULL)
+	{
+		m_dynamicPhysicsActor->ApplyCentralImpulse(PARAVECTOR3(impulse.x, impulse.y, impulse.z));
+	}
+}
+
 
 bool ParaEngine::CBipedObject::CanHasPhysics()
 {

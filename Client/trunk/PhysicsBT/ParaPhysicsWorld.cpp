@@ -1,4 +1,4 @@
-//-----------------------------------------------------------------------------
+﻿//-----------------------------------------------------------------------------
 // Class:	ParaEngine physics wrapper for the bullet physics engine DLL
 // Authors:	LiXizhi
 // Company: ParaEngine
@@ -44,9 +44,28 @@ ParaEngine::BulletPhysicsActor::~BulletPhysicsActor()
 	SAFE_DELETE(m_pActor);
 }
 
+float* ParaEngine::BulletPhysicsActor::GetWorldTransform()
+{
+	static float m[16];
+	btTransform transform = m_pActor->getWorldTransform();
+	transform.getOpenGLMatrix(m);
+	return m;
+}
+
+void ParaEngine::BulletPhysicsActor::SetWorldTransform(float *matrix)
+{
+	m_pActor->getWorldTransform().setFromOpenGLMatrix(matrix);
+}
+
 void ParaEngine::BulletPhysicsActor::Release()
 {
 	delete this;
+}
+
+void ParaEngine::BulletPhysicsActor::ApplyCentralImpulse(PARAVECTOR3& impulse)
+{
+	m_pActor->setActivationState(ACTIVE_TAG);
+	m_pActor->applyCentralImpulse(btVector3(impulse.x, impulse.y, impulse.z));
 }
 //
 // Physics World
@@ -125,10 +144,10 @@ bool CParaPhysicsWorld::ExitPhysics()
 
 	//delete collision shapes
 	{
-		BulletPhysicsShape_Array_Type::iterator itCur, itEnd = m_collisionShapes.end();
+		IParaPhysicsShape_Array_Type::iterator itCur, itEnd = m_collisionShapes.end();
 		for (itCur = m_collisionShapes.begin(); itCur != itEnd; ++itCur)
 		{
-			BulletPhysicsShape* shape = (*itCur);
+			IParaPhysicsShape* shape = (*itCur);
 			shape->Release();
 		}
 		m_collisionShapes.clear();
@@ -151,8 +170,31 @@ bool CParaPhysicsWorld::ExitPhysics()
 	return true;
 }
 
+IParaPhysicsShape* CParaPhysicsWorld::CreateSimpleShape(const ParaPhysicsSimpleShapeDesc& shapeDesc)
+{
+	BulletSimpleShape* pShape = new BulletSimpleShape();
+	if (shapeDesc.m_shape == "box") 
+	{   // aabb
+		pShape->m_pShape = new btBoxShape(btVector3(shapeDesc.m_halfWidth, shapeDesc.m_halfHeight, shapeDesc.m_halfLength));
+	}
+	else if (shapeDesc.m_shape == "sphere")
+	{
+		pShape->m_pShape = new btSphereShape(shapeDesc.m_halfWidth);
+	}
+	else if (shapeDesc.m_shape == "capsule")
+	{
+		pShape->m_pShape = new btCapsuleShape(shapeDesc.m_halfWidth, (shapeDesc.m_halfHeight - shapeDesc.m_halfWidth) * 2);
+	}
+	else 
+	{
+		pShape->m_pShape = NULL;
+	}
+	if (pShape->m_pShape == NULL) return NULL;
+	pShape->m_pShape->setUserPointer(pShape);
+	return pShape;
+}
 
-IParaPhysicsShape* CParaPhysicsWorld::CreateTriangleMeshShap(const ParaPhysicsTriangleMeshDesc& meshDesc)
+IParaPhysicsShape* CParaPhysicsWorld::CreateTriangleMeshShape(const ParaPhysicsTriangleMeshDesc& meshDesc)
 {
 	BulletPhysicsShape*  pShape = new BulletPhysicsShape();
 
@@ -237,7 +279,7 @@ IParaPhysicsActor* CParaPhysicsWorld::CreateActor(const ParaPhysicsActorDesc& ac
 	//rigid body is dynamic if and only if mass is non zero, otherwise static
 	bool isDynamic = (actorDesc.m_mass != 0.f);
 
-	btCollisionShape* shape = (static_cast<BulletPhysicsShape*>(actorDesc.m_pShape))->m_pShape;
+	btCollisionShape* shape = (btCollisionShape*)actorDesc.m_pShape->get();
 	btVector3 localInertia(0, 0, 0);
 	if (isDynamic)
 		shape->calculateLocalInertia(actorDesc.m_mass, localInertia);
@@ -280,6 +322,7 @@ IParaPhysicsActor* CParaPhysicsWorld::CreateActor(const ParaPhysicsActorDesc& ac
 	m_dynamicsWorld->addRigidBody(body, nGroupMask, actorDesc.m_mask);
 
 	BulletPhysicsActor* pActor = new BulletPhysicsActor(body);
+
 	body->setUserPointer(pActor);
 
 	m_actors.insert(pActor);
