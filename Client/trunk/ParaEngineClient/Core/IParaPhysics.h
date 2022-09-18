@@ -112,9 +112,10 @@ namespace ParaEngine
 		virtual void SetIsolatedShape(IParaPhysicsShape* shape) { m_isolated_shape = shape; }
 
 		// 设置获取物理矩阵
-		virtual float* GetWorldTransform() { return NULL; }
-		virtual void SetWorldTransform(float* matrix) {}
+		virtual PARAMATRIX* GetWorldTransform(PARAMATRIX* pOut) { return pOut; }
+		virtual void SetWorldTransform(const PARAMATRIX* pMatrix) {}
 		virtual void ApplyCentralImpulse(PARAVECTOR3& impulse) = 0;
+		virtual PARAVECTOR3 GetOrigin() { return PARAVECTOR3(); }
 
 		IParaPhysicsShape* m_isolated_shape;
 		void* m_pUserData;

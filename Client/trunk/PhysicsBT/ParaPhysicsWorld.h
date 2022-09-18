@@ -57,9 +57,10 @@ namespace ParaEngine
 		virtual void Release();
 
 		// 设置获取物理矩阵  float[16]
-		virtual float* GetWorldTransform();
-		virtual void SetWorldTransform(float* matrix);
+		virtual PARAMATRIX* GetWorldTransform(PARAMATRIX* pOut);
+		virtual void SetWorldTransform(const PARAMATRIX* pMatrix);
 		virtual void ApplyCentralImpulse(PARAVECTOR3& impulse);
+		virtual PARAVECTOR3 GetOrigin();
 
 		/// pointer to the low level physics engine actor(rigid body). 
 		btRigidBody* m_pActor;

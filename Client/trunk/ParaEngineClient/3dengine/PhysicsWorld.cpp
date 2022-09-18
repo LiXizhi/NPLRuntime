@@ -107,7 +107,7 @@ void CPhysicsWorld::StepSimulation(double dTime)
 {
 	Matrix4 matrix;
 	CShapeAABB aabb;
-	float pitch, yaw, roll;
+	// float pitch, yaw, roll;
 	if(IsDynamicsSimulationEnabled())
 	{
 		if(m_pPhysicsWorld)
@@ -124,20 +124,26 @@ void CPhysicsWorld::StepSimulation(double dTime)
 		{
 			IParaPhysicsActor* actor = *itCurCP;
 			CBaseObject* obj = (CBaseObject*)(actor->GetUserData());
-			float* m = actor->GetWorldTransform();
-			for (int i = 0; i < 16; i++) 
-			{
-				matrix._m[i] = m[i];
-			}
+			actor->GetWorldTransform((PARAMATRIX*)&matrix);
 			Vector3 pos = matrix.getTrans();
-			Quaternion q = matrix.extractQuaternion();
-			obj->GetAABB(&aabb);
-			Vector3 halfAABB = aabb.GetExtents();
-			q.ToEulerAnglesSequence(pitch, yaw, roll, "zxy");
-			obj->SetPosition(DVector3(pos.x - halfAABB.x, pos.y - halfAABB.y, pos.z - halfAABB.z));
-			obj->SetYaw(yaw);
-			obj->SetRoll(roll);
-			obj->SetPitch(pitch);
+			float fCenterHeight = obj->GetAssetHeight() * 0.5f;
+			
+			// make this rotation matrix
+			matrix.setTrans(Vector3(0, 0, 0));
+			Vector3 vBottomCenter(0, -fCenterHeight, 0);
+			vBottomCenter = matrix * vBottomCenter;
+			obj->SetPosition(DVector3(pos.x, pos.y - fCenterHeight, pos.z));
+
+			Matrix4 matOffset;
+			matOffset.makeTrans(Vector3(0, -fCenterHeight, 0));
+			matOffset = matOffset * matrix;
+			matrix.makeTrans(Vector3(0, fCenterHeight, 0));
+			matOffset = matOffset * matrix;
+			
+			obj->SetLocalTransform(matOffset);
+			obj->SetYaw(0);
+			obj->SetRoll(0);
+			obj->SetPitch(0);
 		}
 	}
 }
@@ -476,7 +482,7 @@ IParaPhysicsActor* ParaEngine::CPhysicsWorld::CreateDynamicMesh(CBaseObject* obj
 	float fScalingX, fScalingY, fScalingZ;
 	Math::GetMatrixScaling(globalMat, &fScalingX,&fScalingY,&fScalingZ);
 	// set global world position
-	ActorDesc.m_origin = PARAVECTOR3(globalMat._41 + halfAABB.x, globalMat._42 + halfAABB.y ,globalMat._43 + halfAABB.z);
+	ActorDesc.m_origin = PARAVECTOR3(globalMat._41, globalMat._42 + halfAABB.y, globalMat._43);
 	// remove the scaling factor from the rotation matrix
 	for (int i=0;i<3;++i)
 	{

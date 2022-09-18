@@ -759,8 +759,8 @@ namespace ParaEngine
 		/** the biped is modeled as a cylinder or sphere during rough physics calculation.
 		* this function sets the height of the cylinder or sphere.*/
 		void		SetPhysicsHeight(float fH);
-		/** get asset height. */
-		float GetAssetHeight();
+		/** get asset height with scaling applied. */
+		virtual float GetAssetHeight();
 
 		void ResetBipedPosition(const Vector3 *pV, bool bIgnoreHeight = true);
 
