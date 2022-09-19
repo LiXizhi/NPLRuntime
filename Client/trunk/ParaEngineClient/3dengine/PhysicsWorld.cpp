@@ -459,12 +459,24 @@ IParaPhysicsActor* ParaEngine::CPhysicsWorld::CreateDynamicMesh(CBaseObject* obj
 	ParaPhysicsSimpleShapeDesc desc;
 	desc.m_shape = obj->GetPhysicsShape();
 
-	CShapeAABB aabb;
-	obj->GetAABB(&aabb);
-	Vector3 halfAABB = aabb.GetExtents();
-	desc.m_halfWidth = halfAABB.x;
-	desc.m_halfHeight = halfAABB.y;
-	desc.m_halfLength = halfAABB.z;
+	bool bHasModel = false;
+	auto pAsset = obj->GetPrimaryAsset();
+	if (pAsset && pAsset->GetType() == AssetEntity::parax)
+	{
+		CParaXModel* pModel = ((ParaXEntity*)pAsset)->GetModel();
+		if (pModel != 0)
+		{
+			float fScale = obj->GetScaling();
+			Vector3 vMin = pModel->GetHeader().minExtent;
+			Vector3 vMax = pModel->GetHeader().maxExtent;
+			desc.m_halfWidth = max(abs(vMax.x), abs(vMin.x)) * fScale;
+			desc.m_halfHeight = vMax.y * 0.5f * fScale;
+			desc.m_halfLength = max(abs(vMax.z), abs(vMin.z)) * fScale;
+			bHasModel = true;
+		}
+	}
+	if (!bHasModel)
+		return NULL; // model is not ready, such as not loaded from disk. 
 
 	IParaPhysicsShape* pShape = m_pPhysicsWorld->CreateSimpleShape(desc);
 
@@ -480,7 +492,7 @@ IParaPhysicsActor* ParaEngine::CPhysicsWorld::CreateDynamicMesh(CBaseObject* obj
 	float fScalingX, fScalingY, fScalingZ;
 	Math::GetMatrixScaling(globalMat, &fScalingX,&fScalingY,&fScalingZ);
 	// set global world position
-	ActorDesc.m_origin = PARAVECTOR3(globalMat._41, globalMat._42 + halfAABB.y, globalMat._43);
+	ActorDesc.m_origin = PARAVECTOR3(globalMat._41, globalMat._42 + desc.m_halfHeight, globalMat._43);
 	// remove the scaling factor from the rotation matrix
 	for (int i=0;i<3;++i)
 	{
