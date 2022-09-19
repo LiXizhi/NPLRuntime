@@ -127,7 +127,7 @@ void CPhysicsWorld::StepSimulation(double dTime)
 			actor->GetWorldTransform((PARAMATRIX*)&matrix);
 			Vector3 pos = matrix.getTrans();
 			float fCenterHeight = obj->GetAssetHeight() * 0.5f;
-			
+
 			// make this rotation matrix
 			matrix.setTrans(Vector3(0, 0, 0));
 			Vector3 vBottomCenter(0, -fCenterHeight, 0);
@@ -135,10 +135,10 @@ void CPhysicsWorld::StepSimulation(double dTime)
 			obj->SetPosition(DVector3(pos.x, pos.y - fCenterHeight, pos.z));
 
 			Matrix4 matOffset;
+			fCenterHeight = fCenterHeight / obj->GetScaling();
 			matOffset.makeTrans(Vector3(0, -fCenterHeight, 0));
 			matOffset = matOffset * matrix;
-			matrix.makeTrans(Vector3(0, fCenterHeight, 0));
-			matOffset = matOffset * matrix;
+			matOffset.offsetTrans(Vector3(0, fCenterHeight, 0));
 			
 			obj->SetLocalTransform(matOffset);
 			obj->SetYaw(0);
