@@ -186,20 +186,20 @@ IParaPhysicsActor* ParaEngine::CPhysicsWorld::CreateDynamicMesh(CBaseObject* obj
 	ActorDesc.m_mass = obj->GetPhysicsMass();
 	ActorDesc.m_pShape = pShape;
 
-	Matrix4 globalMat;
-	obj->GetWorldTransform(globalMat);
+	// set world position
+	Matrix4 localMat;
+	Vector3 vCenter(0, desc.m_halfHeight / obj->GetScaling(), 0);
+	obj->GetLocalTransform(&localMat);
+	vCenter = vCenter * localMat;
+	auto vPos = obj->GetPosition();
+	ActorDesc.m_origin = PARAVECTOR3((float)(vPos.x + vCenter.x), (float)(vPos.y + vCenter.y), (float)(vPos.z + vCenter.z));
+
+	// set world local rotation matrix
+	Vector3 vScale, vTrans;
+	Quaternion quat;
+	ParaMatrixDecompose(&vScale, &quat, &vTrans, &localMat);
+	quat.ToRotationMatrix((Matrix3&)ActorDesc.m_rotation);
 	
-	float fScalingX, fScalingY, fScalingZ;
-	Math::GetMatrixScaling(globalMat, &fScalingX,&fScalingY,&fScalingZ);
-	// set global world position
-	ActorDesc.m_origin = PARAVECTOR3(globalMat._41, globalMat._42 + desc.m_halfHeight, globalMat._43);
-	// remove the scaling factor from the rotation matrix
-	for (int i=0;i<3;++i)
-	{
-		ActorDesc.m_rotation.m[0][i] = globalMat.m[0][i] / fScalingX;
-		ActorDesc.m_rotation.m[1][i] = globalMat.m[1][i] / fScalingY;
-		ActorDesc.m_rotation.m[2][i] = globalMat.m[2][i] / fScalingZ;
-	}
 	IParaPhysicsActor* pActor = m_pPhysicsWorld->CreateActor(ActorDesc);
 	pActor->SetUserData(obj);
 	pActor->SetIsolatedShape(pShape);
