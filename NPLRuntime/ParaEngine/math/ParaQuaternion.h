@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 #include "ParaMath.h"
 
 namespace ParaEngine {
@@ -192,7 +192,7 @@ namespace ParaEngine {
 		
 	    void ToEulerAnglesSequence(float& pitch, float& yaw, float& roll, const std::string& rotSeq = "xyz") const;
 
-		void	ToRadians(float *outX, float *outY, float *outZ) const;
+		void ToRadians(float *outX, float *outY, float *outZ) const;
 
 		/// Equality with tolerance (tolerance is max angle difference)
 		bool equals(const Quaternion& rhs, const Radian& tolerance) const;
