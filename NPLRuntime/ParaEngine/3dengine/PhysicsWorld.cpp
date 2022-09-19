@@ -118,8 +118,6 @@ void CPhysicsWorld::ResetPhysics()
 void CPhysicsWorld::StepSimulation(double dTime)
 {
 	Matrix4 matrix;
-	CShapeAABB aabb;
-	float pitch, yaw, roll;
 	if(IsDynamicsSimulationEnabled())
 	{
 		if(m_pPhysicsWorld)
@@ -130,26 +128,28 @@ void CPhysicsWorld::StepSimulation(double dTime)
 		IParaPhysicsActor_Map_Type::iterator itCurCP = m_mapDynamicActors.begin(); 
 		IParaPhysicsActor_Map_Type::iterator itEndCP = m_mapDynamicActors.end();
 		// TODO 多线程是否需要加锁
-		// TODO pos 加半AABB
-		// TODO 四元数转欧拉角
 		for (; itCurCP != itEndCP; itCurCP++)
 		{
 			IParaPhysicsActor* actor = *itCurCP;
 			CBaseObject* obj = (CBaseObject*)(actor->GetUserData());
-			float* m = actor->GetWorldTransform();
-			for (int i = 0; i < 16; i++) 
-			{
-				matrix._m[i] = m[i];
-			}
+			actor->GetWorldTransform((PARAMATRIX*)&matrix);
 			Vector3 pos = matrix.getTrans();
-			Quaternion q = matrix.extractQuaternion();
-			obj->GetAABB(&aabb);
-			Vector3 halfAABB = aabb.GetExtents();
-			q.ToEulerAnglesSequence(pitch, yaw, roll, "zxy");
-			obj->SetPosition(DVector3(pos.x - halfAABB.x, pos.y - halfAABB.y, pos.z - halfAABB.z));
-			obj->SetYaw(yaw);
-			obj->SetRoll(roll);
-			obj->SetPitch(pitch);
+			float fCenterHeight = obj->GetAssetHeight() * 0.5f;
+
+			// make this rotation matrix
+			matrix.setTrans(Vector3(0, 0, 0));
+			obj->SetPosition(DVector3(pos.x, pos.y - fCenterHeight, pos.z));
+
+			Matrix4 matOffset;
+			fCenterHeight = fCenterHeight / obj->GetScaling();
+			matOffset.makeTrans(Vector3(0, -fCenterHeight, 0));
+			matOffset = matOffset * matrix;
+			matOffset.offsetTrans(Vector3(0, fCenterHeight, 0));
+			
+			obj->SetLocalTransform(matOffset);
+			obj->SetYaw(0);
+			obj->SetRoll(0);
+			obj->SetPitch(0);
 		}
 	}
 }
@@ -159,12 +159,24 @@ IParaPhysicsActor* ParaEngine::CPhysicsWorld::CreateDynamicMesh(CBaseObject* obj
 	ParaPhysicsSimpleShapeDesc desc;
 	desc.m_shape = obj->GetPhysicsShape();
 
-	CShapeAABB aabb;
-	obj->GetAABB(&aabb);
-	Vector3 halfAABB = aabb.GetExtents();
-	desc.m_halfWidth = halfAABB.x;
-	desc.m_halfHeight = halfAABB.y;
-	desc.m_halfLength = halfAABB.z;
+	bool bHasModel = false;
+	auto pAsset = obj->GetPrimaryAsset();
+	if (pAsset && pAsset->GetType() == AssetEntity::parax)
+	{
+		CParaXModel* pModel = ((ParaXEntity*)pAsset)->GetModel();
+		if (pModel != 0)
+		{
+			float fScale = obj->GetScaling();
+			Vector3 vMin = pModel->GetHeader().minExtent;
+			Vector3 vMax = pModel->GetHeader().maxExtent;
+			desc.m_halfWidth = max(abs(vMax.x), abs(vMin.x)) * fScale;
+			desc.m_halfHeight = vMax.y * 0.5f * fScale;
+			desc.m_halfLength = max(abs(vMax.z), abs(vMin.z)) * fScale;
+			bHasModel = true;
+		}
+	}
+	if (!bHasModel)
+		return NULL; // model is not ready, such as not loaded from disk. 
 
 	IParaPhysicsShape* pShape = m_pPhysicsWorld->CreateSimpleShape(desc);
 
@@ -174,20 +186,20 @@ IParaPhysicsActor* ParaEngine::CPhysicsWorld::CreateDynamicMesh(CBaseObject* obj
 	ActorDesc.m_mass = obj->GetPhysicsMass();
 	ActorDesc.m_pShape = pShape;
 
-	Matrix4 globalMat;
-	obj->GetWorldTransform(globalMat);
+	// set world position
+	Matrix4 localMat;
+	Vector3 vCenter(0, desc.m_halfHeight / obj->GetScaling(), 0);
+	obj->GetLocalTransform(&localMat);
+	vCenter = vCenter * localMat;
+	auto vPos = obj->GetPosition();
+	ActorDesc.m_origin = PARAVECTOR3((float)(vPos.x + vCenter.x), (float)(vPos.y + vCenter.y), (float)(vPos.z + vCenter.z));
+
+	// set world local rotation matrix
+	Vector3 vScale, vTrans;
+	Quaternion quat;
+	ParaMatrixDecompose(&vScale, &quat, &vTrans, &localMat);
+	quat.ToRotationMatrix((Matrix3&)ActorDesc.m_rotation);
 	
-	float fScalingX, fScalingY, fScalingZ;
-	Math::GetMatrixScaling(globalMat, &fScalingX,&fScalingY,&fScalingZ);
-	// set global world position
-	ActorDesc.m_origin = PARAVECTOR3(globalMat._41 + halfAABB.x, globalMat._42 + halfAABB.y ,globalMat._43 + halfAABB.z);
-	// remove the scaling factor from the rotation matrix
-	for (int i=0;i<3;++i)
-	{
-		ActorDesc.m_rotation.m[0][i] = globalMat.m[0][i] / fScalingX;
-		ActorDesc.m_rotation.m[1][i] = globalMat.m[1][i] / fScalingY;
-		ActorDesc.m_rotation.m[2][i] = globalMat.m[2][i] / fScalingZ;
-	}
 	IParaPhysicsActor* pActor = m_pPhysicsWorld->CreateActor(ActorDesc);
 	pActor->SetUserData(obj);
 	pActor->SetIsolatedShape(pShape);

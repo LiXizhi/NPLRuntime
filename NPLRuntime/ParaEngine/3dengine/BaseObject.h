@@ -1117,7 +1117,9 @@ public:
 	/** get object height y axis: only for object that has a Height property, usually is height of the bounding box */
 	virtual float GetHeight();
 	virtual void SetHeight(float fHeight);
-
+	/** get asset height with scaling applied. */
+	virtual float GetAssetHeight();
+	
 	/** get object width: x axis */
 	virtual float GetWidth();
 	virtual void SetWidth(float fWidth);
