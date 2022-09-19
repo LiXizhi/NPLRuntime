@@ -4752,6 +4752,8 @@ const char* ParaEngine::CBipedObject::GetPhysicsShape()
 
 void ParaEngine::CBipedObject::EnableDynamicPhysics(bool bEnable)
 {
+	if (IsPhysicsEnabled()) return;
+
 	if (bEnable) 
 	{
 		m_dwPhysicsMethod |= PHYSICS_FORCE_DYNAMIC;
@@ -4859,6 +4861,8 @@ int ParaEngine::CBipedObject::GetPhysicsGroup()
 
 void ParaEngine::CBipedObject::EnablePhysics(bool bEnable)
 {
+	if (IsDynamicPhysicsEnabled()) return ;
+	
 	if (!bEnable) {
 		UnloadPhysics();
 		m_dwPhysicsMethod |= PHYSICS_FORCE_NO_PHYSICS;
