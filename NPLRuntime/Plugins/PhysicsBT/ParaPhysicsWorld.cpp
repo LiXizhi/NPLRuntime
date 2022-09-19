@@ -1,4 +1,4 @@
-//-----------------------------------------------------------------------------
+﻿//-----------------------------------------------------------------------------
 // Class:	ParaEngine physics wrapper for the bullet physics engine DLL
 // Authors:	LiXizhi
 // Company: ParaEngine
