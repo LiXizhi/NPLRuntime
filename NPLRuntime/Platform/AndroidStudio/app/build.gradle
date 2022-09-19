@@ -14,8 +14,8 @@ android {
         applicationId "com.tatfook.paracraft"
         minSdkVersion PROP_MIN_SDK_VERSION
         targetSdkVersion PROP_TARGET_SDK_VERSION
-        versionCode 36
-        versionName "2.0.20"
+        versionCode 38
+        versionName "2.0.22"
 
         externalNativeBuild {
             cmake {
@@ -117,35 +117,32 @@ Boolean isDebug = false
 
 if (matcher.find()) {
     isDebug = true
+    println "DEBUG MODE"
 }
 
 android.applicationVariants.all { variant ->
-    if (variant.buildType.isDebuggable()) {
-        if (isDebug) {
-            println "DEBUG MODE"
-            println "${variant.dirName}"
+    if (isDebug) {
+        delete "${buildDir}/intermediates/assets/debug/mergeDebugAssets"
+        Task mergeAssetsTask = tasks.findByName("mergeDebugAssets")
 
-            variant.mergeAssetsProvider.get().doLast {
-                delete "${buildDir}/intermediates/merged_assets/${variant.dirName}"
+        mergeAssetsTask.dependsOn().doLast {
+            copy {
+                from "assets"
+                into "${buildDir}/intermediates/assets/debug/mergeDebugAssets"
+            }
 
-                copy {
-                   from "assets"
-                   into "${buildDir}/intermediates/merged_assets/${variant.dirName}/out/"
-                }
-
-                if (System.properties["os.name"].toLowerCase().contains("windows")) {
-                    if (file(System.properties["user.home"] + "\\ParacraftAndroidDev\\Dev.bat").exists()) {
-                        exec {
-                            workingDir System.properties['user.home'] + "\\ParacraftAndroidDev"
-                            commandLine "cmd", "/c", "Dev.bat ${buildDir}\\intermediates\\merged_assets\\${variant.dirName}\\out\\"
-                        }
+            if (System.properties["os.name"].toLowerCase().contains("windows")) {
+                if (file(System.properties["user.home"] + "\\ParacraftAndroidDev\\Dev.bat").exists()) {
+                    exec {
+                        workingDir System.properties['user.home'] + "\\ParacraftAndroidDev"
+                        commandLine "cmd", "/c", "Dev.bat ${buildDir}\\intermediates\\assets\\debug\\mergeDebugAssets"
                     }
-                } else {
-                    if (file(System.properties["user.home"] + "/ParacraftAndroidDev/Dev.sh").exists()) {
-                        exec {
-                            workingDir System.properties['user.home'] + "/ParacraftAndroidDev"
-                            commandLine "sh", "./Dev.sh", "${buildDir}/intermediates/merged_assets/${variant.dirName}/out/"
-                        }
+                }
+            } else {
+                if (file(System.properties["user.home"] + "/ParacraftAndroidDev/Dev.sh").exists()) {
+                    exec {
+                        workingDir System.properties['user.home'] + "/ParacraftAndroidDev"
+                        commandLine "sh", "./Dev.sh", "${buildDir}/intermediates/merged_assets/${variant.dirName}/out/"
                     }
                 }
             }

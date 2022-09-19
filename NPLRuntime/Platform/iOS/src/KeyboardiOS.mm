@@ -198,6 +198,10 @@ static UITextField *mTextField = nil;
 - (void)keyboardOnPressed
 {
     ParaEngine::CGUIBase *pGUI = ParaEngine::CGUIRoot::GetInstance()->GetUIKeyFocus();
+    
+    if (pGUI == NULL) {
+        return;
+    }
 
     NSInteger curCaretPosition = pGUI->GetCaretPosition();
     

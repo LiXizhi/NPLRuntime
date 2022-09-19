@@ -245,7 +245,7 @@ bool ParaScripting::ParaBlockWorld::RegisterBlockTemplate_(CBlockWorld* pWorld, 
 				pTemplate->setTileSize(nTile);
 			}
 
-			if (bCustomBlockModel && type(params["models"]) == LUA_TTABLE)
+			if (bCustomBlockModel && type(params["models"]) == LUA_TTABLE && sModelName!="stairs")
 			{
 				const object& models = params["models"];
 				int nMaxDataId = -1;
@@ -505,6 +505,55 @@ void ParaScripting::ParaBlockWorld::SaveBlockWorld(const object& pWorld_, bool s
 {
 	GETBLOCKWORLD(pWorld, pWorld_);
 	pWorld->SaveToFile(saveToTemp);
+}
+
+object ParaScripting::ParaBlockWorld::GetBlockModelInfo(int template_id, int blockData,const luabind::object& result)
+{
+	static std::map<int, luabind::object> _map;
+	int key = template_id * 10000 + blockData;
+	if (_map.find(key) != _map.end()) {
+		return _map[key];
+	}
+	BlockTemplate* block_template = BlockWorldClient::GetInstance()->GetBlockTemplate((uint16)template_id);
+	BlockModel& blockModel = block_template->GetBlockModelByData(blockData);
+	int vertNum = blockModel.GetVerticesCount();
+	Vector3 pt, normal;
+	float u, v;
+	result["m_Vertices"] = luabind::newtable(result.interpreter());
+	for (int i = 0; i < vertNum; i++) {
+		BlockVertexCompressed &vert = blockModel.Vertices()[i];
+		vert.GetPosition(pt);
+		vert.GetNormal(normal);
+		vert.GetTexcoord(u, v);
+		int idx = i + 1;
+		result["m_Vertices"][idx] = luabind::newtable(result.interpreter());
+		result["m_Vertices"][idx]["position"] = luabind::newtable(result.interpreter());
+		result["m_Vertices"][idx]["position"]["x"] = pt.x;
+		result["m_Vertices"][idx]["position"]["y"] = pt.y;
+		result["m_Vertices"][idx]["position"]["z"] = pt.z;
+
+		result["m_Vertices"][idx]["normal"] = luabind::newtable(result.interpreter());
+		result["m_Vertices"][idx]["normal"]["x"] = normal.x;
+		result["m_Vertices"][idx]["normal"]["y"] = normal.y;
+		result["m_Vertices"][idx]["normal"]["z"] = normal.z;
+
+		result["m_Vertices"][idx]["texcoord"] = luabind::newtable(result.interpreter());
+		result["m_Vertices"][idx]["texcoord"]["u"] =u;
+		result["m_Vertices"][idx]["texcoord"]["v"] = v;
+
+		result["m_Vertices"][idx]["color"] = vert.color;
+		result["m_Vertices"][idx]["color2"] = vert.color2;
+	}
+	result["m_bUseAO"] = blockModel.IsUseAmbientOcclusion();
+	result["m_bUniformLighting"] = blockModel.IsUniformLighting();
+	result["m_bDisableFaceCulling"] = blockModel.IsDisableFaceCulling();
+	result["m_bUseSelfLighting"] = blockModel.IsUsingSelfLighting();
+	result["m_bIsCubeAABB"] = blockModel.IsCubeAABB();
+	result["m_nFaceCount"] = blockModel.GetFaceCount();
+	result["m_nTextureIndex"] = blockModel.GetTextureIndex();
+
+	_map[key] = object(result);
+	return _map[key];
 }
 
 ParaScripting::ParaAttributeObject ParaScripting::ParaBlockWorld::GetBlockAttributeObject(const object& pWorld_)
