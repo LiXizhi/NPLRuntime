@@ -130,8 +130,6 @@ void CPhysicsWorld::StepSimulation(double dTime)
 
 			// make this rotation matrix
 			matrix.setTrans(Vector3(0, 0, 0));
-			Vector3 vBottomCenter(0, -fCenterHeight, 0);
-			vBottomCenter = matrix * vBottomCenter;
 			obj->SetPosition(DVector3(pos.x, pos.y - fCenterHeight, pos.z));
 
 			Matrix4 matOffset;
