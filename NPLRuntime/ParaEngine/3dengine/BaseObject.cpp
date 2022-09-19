@@ -282,6 +282,11 @@ float CBaseObject::GetHeight()
 	return GetRadius()*2.f;
 }
 
+float ParaEngine::CBaseObject::GetAssetHeight()
+{
+	return GetHeight();
+}
+
 void ParaEngine::CBaseObject::SetHeight( float fHeight )
 {
 }

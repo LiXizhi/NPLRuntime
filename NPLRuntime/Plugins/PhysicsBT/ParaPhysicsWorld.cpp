@@ -44,17 +44,25 @@ ParaEngine::BulletPhysicsActor::~BulletPhysicsActor()
 	SAFE_DELETE(m_pActor);
 }
 
-float* ParaEngine::BulletPhysicsActor::GetWorldTransform()
+PARAMATRIX* ParaEngine::BulletPhysicsActor::GetWorldTransform(PARAMATRIX* pOut)
 {
-	static float m[16];
-	btTransform transform = m_pActor->getWorldTransform();
-	transform.getOpenGLMatrix(m);
-	return m;
+	static PARAMATRIX s_OutputMatrix;
+	if (pOut == NULL)
+		pOut = &s_OutputMatrix;
+	btTransform& transform = m_pActor->getWorldTransform();
+	transform.getOpenGLMatrix((float*)pOut);
+	return pOut;
 }
 
-void ParaEngine::BulletPhysicsActor::SetWorldTransform(float *matrix)
+PARAVECTOR3 ParaEngine::BulletPhysicsActor::GetOrigin() { 
+	btTransform& transform = m_pActor->getWorldTransform();
+	PARAVECTOR3 vOrigin = (PARAVECTOR3&)transform.getOrigin();
+	return vOrigin;
+}
+
+void ParaEngine::BulletPhysicsActor::SetWorldTransform(const PARAMATRIX* pMatrix)
 {
-	m_pActor->getWorldTransform().setFromOpenGLMatrix(matrix);
+	m_pActor->getWorldTransform().setFromOpenGLMatrix((float*)pMatrix);
 }
 
 void ParaEngine::BulletPhysicsActor::Release()
