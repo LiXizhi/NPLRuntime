@@ -32,9 +32,9 @@ namespace ParaEngine
 {
 	float CBlockWorld::g_verticalOffset = 0;
 
-	inline int64_t GetBlockSparseIndex(int64_t bx, int64_t by, int64_t bz)
+	inline int64_t GetBlockSparseIndex(uint16_t bx, uint16_t by, uint16_t bz)
 	{
-		return by * 30000 * 30000 + bx * 30000 + bz;
+		return (((uint64)bx)<<32) + (((uint64)by) << 16)  + bz;
 	}
 }
 
@@ -2006,9 +2006,11 @@ void CBlockWorld::SelectBlock(uint16_t x, uint16_t y, uint16_t z, int nGroupID)
 	{
 		int64_t	nIndex = GetBlockSparseIndex(x, y, z);
 
-		if (m_selectedBlockMap[nGroupID].GetBlocks().find(nIndex) == m_selectedBlockMap[nGroupID].GetBlocks().end())
+		auto& blocks = m_selectedBlockMap[nGroupID].GetBlocks();
+		if (blocks.find(nIndex) == blocks.end())
 		{
-			m_selectedBlockMap[nGroupID].GetBlocks()[nIndex] = Uint16x3(x, y, z);
+			blocks[nIndex] = 0;
+			UpdateSelectedBlockNearbyValues(x, y, z, nGroupID);
 		}
 	}
 }
@@ -2019,10 +2021,55 @@ void CBlockWorld::DeselectBlock(uint16_t x, uint16_t y, uint16_t z, int nGroupID
 	{
 		int64_t	nIndex = GetBlockSparseIndex(x, y, z);
 
-		std::map<int64_t, Uint16x3>::iterator itCur = m_selectedBlockMap[nGroupID].GetBlocks().find(nIndex);
+		auto itCur = m_selectedBlockMap[nGroupID].GetBlocks().find(nIndex);
 		if (itCur != m_selectedBlockMap[nGroupID].GetBlocks().end())
 		{
 			m_selectedBlockMap[nGroupID].GetBlocks().erase(itCur);
+			UpdateSelectedBlockNearbyValues(x, y, z, nGroupID);
+		}
+	}
+}
+
+void CBlockWorld::UpdateSelectedBlockNearbyValues(uint16_t x, uint16_t y, uint16_t z, int nGroupID)
+{
+	UpdateSelectedBlockValue(x, y, z, nGroupID);
+	UpdateSelectedBlockValue(x, y + 1, z, nGroupID);
+	UpdateSelectedBlockValue(x, y, z - 1, nGroupID);
+	UpdateSelectedBlockValue(x, y - 1, z, nGroupID);
+	UpdateSelectedBlockValue(x - 1, y, z, nGroupID);
+	UpdateSelectedBlockValue(x + 1, y, z, nGroupID);
+	UpdateSelectedBlockValue(x, y, z+1, nGroupID);
+}
+
+void CBlockWorld::UpdateSelectedBlockValue(uint16_t x, uint16_t y, uint16_t z, int nGroupID)
+{
+	if (nGroupID >= 0 && nGroupID < BLOCK_GROUP_ID_MAX)
+	{
+		int64_t	nIndex = GetBlockSparseIndex(x, y, z);
+
+		auto& blocks = m_selectedBlockMap[nGroupID].GetBlocks();
+		if (blocks.find(nIndex) != blocks.end())
+		{
+			uint16_t v = 0;
+			if (blocks.find(GetBlockSparseIndex(x, y + 1, z)) == blocks.end()) {
+				v = v | 0x1;
+			}
+			if (blocks.find(GetBlockSparseIndex(x, y, z-1)) == blocks.end()) {
+				v = v | (0x1 << 1);
+			}
+			if (blocks.find(GetBlockSparseIndex(x, y - 1, z)) == blocks.end()) {
+				v = v | (0x1 << 2);
+			}
+			if (blocks.find(GetBlockSparseIndex(x - 1, y, z)) == blocks.end()) {
+				v = v | (0x1 << 3);
+			}
+			if (blocks.find(GetBlockSparseIndex(x + 1, y, z)) == blocks.end()) {
+				v = v | (0x1 << 4);
+			}
+			if (blocks.find(GetBlockSparseIndex(x, y, z+1)) == blocks.end()) {
+				v = v | (0x1 << 5);
+			}
+			blocks[nIndex] = v;
 		}
 	}
 }
