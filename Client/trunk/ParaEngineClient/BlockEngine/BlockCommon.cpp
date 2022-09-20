@@ -527,7 +527,7 @@ namespace ParaEngine
 		}
 	}
 
-	std::map<int64_t, Uint16x3>& CBlockSelectGroup::GetBlocks()
+	std::map<int64_t, uint16_t>& CBlockSelectGroup::GetBlocks()
 	{
 		return m_blocks;
 	}

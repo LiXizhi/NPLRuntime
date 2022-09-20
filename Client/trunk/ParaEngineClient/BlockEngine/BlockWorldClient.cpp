@@ -71,16 +71,23 @@ namespace ParaEngine
 	int32_t BlockWorldClient::g_selectBlockPass = 1;
 
 
-	inline int64_t GetBlockSparseIndex(int64_t bx, int64_t by, int64_t bz)
+	inline int64_t GetBlockSparseIndex(uint16_t bx, uint16_t by, uint16_t bz)
 	{
-		return by * 30000 * 30000 + bx * 30000 + bz;
+		return (((uint64)bx) << 32) + (((uint64)by) << 16) + bz;
+	}
+
+	void FromBlockSparseIndex(int64_t index, uint16_t& bx, uint16_t& by, uint16_t& bz)
+	{
+		bx = (uint16_t)(index >> 32);
+		by = (uint16_t)(((DWORD)index) >> 16);
+		bz = (uint16_t)(((DWORD)index) & 0xffff);
 	}
 
 	//////////////////////////////////////////////////////////////////////////
 	//BlockWorldClient
 	//////////////////////////////////////////////////////////////////////////
 	BlockWorldClient::BlockWorldClient()
-		:m_maxSelectBlockPerBatch(80), m_isUnderLiquid(false), m_vBlockLightColor(DEFAULT_BLOCK_LIGHT_COLOR),
+		:m_maxSelectBlockPerBatch(500), m_isUnderLiquid(false), m_vBlockLightColor(DEFAULT_BLOCK_LIGHT_COLOR),
 		m_nBufferRebuildCountThisTick(0), m_bUsePointTextureFiltering(true),
 		m_nVertexBufferSizeLimit(100 * 1024 * 1024),
 		m_nMaxVisibleVertexBufferBytes(100 * 1024 * 1024),
@@ -412,9 +419,9 @@ namespace ParaEngine
 						Matrix4 vWorldMatrix(Matrix4::IDENTITY);
 						Uint16x3& vMinPos = pRenderTask->GetMinBlockPos();
 						vWorldMatrix._11 = vWorldMatrix._22 = vWorldMatrix._33 = fBlockSize;
-						vWorldMatrix._41 = (vMinPos.x - renderBlockOfs.x)*fBlockSize - renderBlockOfs_remain.x;
+						vWorldMatrix._41 = (vMinPos.x - renderBlockOfs.x) * fBlockSize - renderBlockOfs_remain.x;
 						vWorldMatrix._42 = vMinPos.y * fBlockSize - renderOfs.y + verticalOffset;
-						vWorldMatrix._43 = (vMinPos.z - renderBlockOfs.z)*fBlockSize - renderBlockOfs_remain.z;
+						vWorldMatrix._43 = (vMinPos.z - renderBlockOfs.z) * fBlockSize - renderBlockOfs_remain.z;
 
 						vWorldMatrix = vWorldMatrix * matViewProj;
 
@@ -651,9 +658,9 @@ namespace ParaEngine
 
 					Uint16x3& vMinPos = pRenderTask->GetMinBlockPos();
 					vWorldMatrix._11 = vWorldMatrix._22 = vWorldMatrix._33 = fBlockSize;
-					vWorldMatrix._41 = (vMinPos.x - renderBlockOfs.x)*fBlockSize - renderBlockOfs_remain.x;
+					vWorldMatrix._41 = (vMinPos.x - renderBlockOfs.x) * fBlockSize - renderBlockOfs_remain.x;
 					vWorldMatrix._42 = vMinPos.y * fBlockSize - renderOfs.y + verticalOffset;
-					vWorldMatrix._43 = (vMinPos.z - renderBlockOfs.z)*fBlockSize - renderBlockOfs_remain.z;
+					vWorldMatrix._43 = (vMinPos.z - renderBlockOfs.z) * fBlockSize - renderBlockOfs_remain.z;
 
 					pDevice->SetTransform(D3DTS_WORLD, vWorldMatrix.GetPointer());
 
@@ -711,7 +718,7 @@ namespace ParaEngine
 				uint16_t curTamplerId = 0;
 				int32_t curPass = -1;
 				D3DCULL culling = D3DCULL_CCW;
-				
+
 				DeviceTexturePtr_type pCurTex0 = 0;
 				DeviceTexturePtr_type pCurTex1 = 0;
 				DeviceTexturePtr_type pCurTex2 = 0;
@@ -762,7 +769,7 @@ namespace ParaEngine
 						}
 						else
 							passId = g_TexPass;
-						
+
 						if (curPass != passId)
 						{
 							if (curPass > -1)
@@ -840,9 +847,9 @@ namespace ParaEngine
 					Matrix4 vWorldMatrix(Matrix4::IDENTITY);
 					Uint16x3& vMinPos = pRenderTask->GetMinBlockPos();
 					vWorldMatrix._11 = vWorldMatrix._22 = vWorldMatrix._33 = fBlockSize;
-					vWorldMatrix._41 = (vMinPos.x - renderBlockOfs.x)*fBlockSize - renderBlockOfs_remain.x;
+					vWorldMatrix._41 = (vMinPos.x - renderBlockOfs.x) * fBlockSize - renderBlockOfs_remain.x;
 					vWorldMatrix._42 = vMinPos.y * fBlockSize - renderOfs.y + verticalOffset;
-					vWorldMatrix._43 = (vMinPos.z - renderBlockOfs.z)*fBlockSize - renderBlockOfs_remain.z;
+					vWorldMatrix._43 = (vMinPos.z - renderBlockOfs.z) * fBlockSize - renderBlockOfs_remain.z;
 
 					Matrix4 mWorldViewProj;
 					mWorldViewProj = vWorldMatrix * matViewProj;
@@ -946,7 +953,7 @@ namespace ParaEngine
 		renderBlockOfs_remain.z = renderOfs.z - renderBlockOfs_z * fBlockSize;
 
 		// scale the block a little to avoid z fighting. 
-		float fScaledBlockSize = BlockConfig::g_blockSize*fScaling;
+		float fScaledBlockSize = BlockConfig::g_blockSize * fScaling;
 
 		if (pBatchedElementDraw)
 		{
@@ -958,14 +965,11 @@ namespace ParaEngine
 			}
 			const float fLineWidth = -2.f;
 
-			std::map<int64_t, Uint16x3>::iterator itCur, itEnd = selectedBlockMap.end();
-			for (itCur = selectedBlockMap.begin(); itCur != itEnd; itCur++)
+			auto itEnd = selectedBlockMap.end();
+			for (auto itCur = selectedBlockMap.begin(); itCur != itEnd; itCur++)
 			{
-				Uint16x3& BlockPos = (*itCur).second;
 				uint16_t x, y, z;
-				x = BlockPos.x;
-				y = BlockPos.y;
-				z = BlockPos.z;
+				FromBlockSparseIndex((*itCur).first, x, y, z);
 
 				BlockTemplate* pBlockTemplate = GetBlockTemplate(x, y, z);
 				if (pBlockTemplate == 0)
@@ -1047,7 +1051,7 @@ namespace ParaEngine
 		renderBlockOfs_remain.z = renderOfs.z - renderBlockOfs_z * fBlockSize;
 
 		// scale the block a little to avoid z fighting. 
-		fScaledBlockSize = BlockConfig::g_blockSize*fScaledBlockSize;
+		fScaledBlockSize = BlockConfig::g_blockSize * fScaledBlockSize;
 
 		int32_t count = (int32)selectedBlockMap.size();
 		int32_t curInstCount = 0;
@@ -1086,30 +1090,28 @@ namespace ParaEngine
 			pDevice->SetFVF(mesh_vertex_plain::FVF);
 
 			uint32_t time = CGlobals::GetSceneState()->GetGlobalTime();
-			uint8 lightScaler = (bColorAnimate) ? (uint8)(abs(sin(time*0.0015f)) * 0.4f * 255) : 0xff;
+			uint8 lightScaler = (bColorAnimate) ? (uint8)(abs(sin(time * 0.0015f)) * 0.4f * 255) : 0xff;
 			DWORD lightIntensity = COLOR_ARGB(255, lightScaler, lightScaler, lightScaler);
 			pDevice->SetTextureStageState(0, D3DTSS_COLORARG2, D3DTA_CONSTANT);
 			pDevice->SetTextureStageState(0, D3DTSS_CONSTANT, lightIntensity);
 
 			Matrix4 vWorldMatrix(Matrix4::IDENTITY);
-			vWorldMatrix._41 = -renderBlockOfs_remain.x - (fScaledBlockSize - fBlockSize)*0.5f;
-			vWorldMatrix._42 = -renderBlockOfs_remain.y - (fScaledBlockSize - fBlockSize)*0.5f;
-			vWorldMatrix._43 = -renderBlockOfs_remain.z - (fScaledBlockSize - fBlockSize)*0.5f;
+			vWorldMatrix._41 = -renderBlockOfs_remain.x - (fScaledBlockSize - fBlockSize) * 0.5f;
+			vWorldMatrix._42 = -renderBlockOfs_remain.y - (fScaledBlockSize - fBlockSize) * 0.5f;
+			vWorldMatrix._43 = -renderBlockOfs_remain.z - (fScaledBlockSize - fBlockSize) * 0.5f;
 
 			pDevice->SetTransform(D3DTS_WORLD, vWorldMatrix.GetPointer());
 
 
 			int nMaxFaceCount = (m_maxSelectBlockPerBatch - 1) * 6;
 
-			std::map<int64_t, Uint16x3>::iterator itCur, itEnd = selectedBlockMap.end();
+			auto itEnd = selectedBlockMap.end();
 
-			for (itCur = selectedBlockMap.begin(); itCur != itEnd; itCur++)
+			for (auto itCur = selectedBlockMap.begin(); itCur != itEnd; itCur++)
 			{
-				Uint16x3& BlockPos = (*itCur).second;
 				uint16_t x, y, z;
-				x = BlockPos.x;
-				y = BlockPos.y;
-				z = BlockPos.z;
+				FromBlockSparseIndex((*itCur).first, x, y, z);
+				uint16_t nNearbyValue = (*itCur).second;
 
 				if (curInstCount >= nMaxFaceCount)
 				{
@@ -1117,12 +1119,18 @@ namespace ParaEngine
 					curInstCount = 0;
 					instFloatCount = 0;
 				}
-				Vector3 vOffset((x - renderBlockOfs_x) * fBlockSize, (y - renderBlockOfs_y) * fBlockSize + verticalOffset, (z - renderBlockOfs_z) * fBlockSize);
+
 				int nCount = 0;
 				if (selectedBlocks.m_bOnlyRenderClickableArea)
-					nCount = FillSelectBlockInvert(selectedBlockMap, x, y, z, &(m_select_block_vertices[instFloatCount * 4]), vOffset, fScaledBlockSize);
-				else
-					nCount = FillSelectBlockVertice(&selectedBlockMap, x, y, z, &(m_select_block_vertices[instFloatCount * 4]), vOffset, fScaledBlockSize);
+				{
+					Vector3 vOffset((x - renderBlockOfs_x) * fBlockSize, (y - renderBlockOfs_y) * fBlockSize + verticalOffset, (z - renderBlockOfs_z) * fBlockSize);
+					nCount = FillSelectBlockInvert(nNearbyValue, x, y, z, &(m_select_block_vertices[instFloatCount * 4]), vOffset, fScaledBlockSize);
+				}
+				else if (nNearbyValue > 0)
+				{
+					Vector3 vOffset((x - renderBlockOfs_x) * fBlockSize, (y - renderBlockOfs_y) * fBlockSize + verticalOffset, (z - renderBlockOfs_z) * fBlockSize);
+					nCount = FillSelectBlockVertice(nNearbyValue, x, y, z, &(m_select_block_vertices[instFloatCount * 4]), vOffset, fScaledBlockSize);
+				}
 
 				instFloatCount += nCount;
 				curInstCount += nCount;
@@ -1170,15 +1178,15 @@ namespace ParaEngine
 				uint32_t time = CGlobals::GetSceneState()->GetGlobalTime();
 				float lightIntensity = 1.f;
 				if (bColorAnimate)
-					lightIntensity = abs(sin(time*0.0015f)) * 0.4f;
+					lightIntensity = abs(sin(time * 0.0015f)) * 0.4f;
 
 				Vector4 vLightParams(lightIntensity, 0, 0, 0);
 				pEffect->setParameter(CEffectFile::k_ConstVector0, (const void*)(&vLightParams));
 
 				Matrix4 vWorldMatrix(Matrix4::IDENTITY);
-				vWorldMatrix._41 = -renderBlockOfs_remain.x - (fScaledBlockSize - fBlockSize)*0.5f;
-				vWorldMatrix._42 = -renderBlockOfs_remain.y - (fScaledBlockSize - fBlockSize)*0.5f;
-				vWorldMatrix._43 = -renderBlockOfs_remain.z - (fScaledBlockSize - fBlockSize)*0.5f;
+				vWorldMatrix._41 = -renderBlockOfs_remain.x - (fScaledBlockSize - fBlockSize) * 0.5f;
+				vWorldMatrix._42 = -renderBlockOfs_remain.y - (fScaledBlockSize - fBlockSize) * 0.5f;
+				vWorldMatrix._43 = -renderBlockOfs_remain.z - (fScaledBlockSize - fBlockSize) * 0.5f;
 
 				vWorldMatrix = vWorldMatrix * matViewProj;
 
@@ -1188,14 +1196,22 @@ namespace ParaEngine
 
 				int nMaxFaceCount = (m_maxSelectBlockPerBatch - 1) * 6;
 
-				std::map<int64_t, Uint16x3>::iterator itCur, itEnd = selectedBlockMap.end();
-				for (itCur = selectedBlockMap.begin(); itCur != itEnd; itCur++)
+				int eyeX = GetEyeBlockId().x;
+				int eyeZ = GetEyeBlockId().z;
+				int nRenderDist = GetRenderDist();
+
+				auto itEnd = selectedBlockMap.end();
+				for (auto itCur = selectedBlockMap.begin(); itCur != itEnd; itCur++)
 				{
-					Uint16x3& BlockPos = (*itCur).second;
+					uint16_t nNearbyValue = (*itCur).second;
+					if (nNearbyValue == 0 && !selectedBlocks.m_bOnlyRenderClickableArea)
+						continue;
+
 					uint16_t x, y, z;
-					x = BlockPos.x;
-					y = BlockPos.y;
-					z = BlockPos.z;
+					FromBlockSparseIndex((*itCur).first, x, y, z);
+
+					if (abs(eyeX - x) >= nRenderDist || abs(eyeZ - z) >= nRenderDist)
+						continue;
 
 					if (curInstCount >= nMaxFaceCount)
 					{
@@ -1204,12 +1220,14 @@ namespace ParaEngine
 						instFloatCount = 0;
 					}
 
-					Vector3 vOffset((x - renderBlockOfs_x) * fBlockSize, (y - renderBlockOfs_y) * fBlockSize + verticalOffset, (z - renderBlockOfs_z) * fBlockSize);
 					int nCount = 0;
+					Vector3 vOffset((x - renderBlockOfs_x) * fBlockSize, (y - renderBlockOfs_y) * fBlockSize + verticalOffset, (z - renderBlockOfs_z) * fBlockSize);
+
 					if (selectedBlocks.m_bOnlyRenderClickableArea)
-						nCount = FillSelectBlockInvert(selectedBlockMap, x, y, z, &(m_select_block_vertices[instFloatCount * 4]), vOffset, fScaledBlockSize);
+						nCount = FillSelectBlockInvert(nNearbyValue, x, y, z, &(m_select_block_vertices[instFloatCount * 4]), vOffset, fScaledBlockSize);
 					else
-						nCount = FillSelectBlockVertice(&selectedBlockMap, x, y, z, &(m_select_block_vertices[instFloatCount * 4]), vOffset, fScaledBlockSize);
+						nCount = FillSelectBlockVertice(nNearbyValue, x, y, z, &(m_select_block_vertices[instFloatCount * 4]), vOffset, fScaledBlockSize);
+
 					instFloatCount += nCount;
 					curInstCount += nCount;
 				}
@@ -1267,7 +1285,7 @@ namespace ParaEngine
 		renderBlockOfs_remain.z = renderOfs.z - renderBlockOfs_z * fBlockSize;
 
 		// scale the block a little to avoid z fighting. 
-		float fScaledBlockSize = BlockConfig::g_blockSize*1.02f;
+		float fScaledBlockSize = BlockConfig::g_blockSize * 1.02f;
 
 		//-----------------------------------------
 		EffectManager* pEffectManager = CGlobals::GetEffectManager();
@@ -1286,9 +1304,9 @@ namespace ParaEngine
 			pDevice->SetFVF(mesh_vertex_plain::FVF);
 
 			Matrix4 vWorldMatrix(Matrix4::IDENTITY);
-			vWorldMatrix._41 = -renderBlockOfs_remain.x - (fScaledBlockSize - fBlockSize)*0.5f;
-			vWorldMatrix._42 = -renderBlockOfs_remain.y - (fScaledBlockSize - fBlockSize)*0.5f;
-			vWorldMatrix._43 = -renderBlockOfs_remain.z - (fScaledBlockSize - fBlockSize)*0.5f;
+			vWorldMatrix._41 = -renderBlockOfs_remain.x - (fScaledBlockSize - fBlockSize) * 0.5f;
+			vWorldMatrix._42 = -renderBlockOfs_remain.y - (fScaledBlockSize - fBlockSize) * 0.5f;
+			vWorldMatrix._43 = -renderBlockOfs_remain.z - (fScaledBlockSize - fBlockSize) * 0.5f;
 
 			pDevice->SetTransform(D3DTS_WORLD, vWorldMatrix.GetPointer());
 
@@ -1328,9 +1346,9 @@ namespace ParaEngine
 				pDevice->SetRenderState(D3DRS_ZWRITEENABLE, FALSE);
 
 				Matrix4 vWorldMatrix(Matrix4::IDENTITY);
-				vWorldMatrix._41 = -renderBlockOfs_remain.x - (fScaledBlockSize - fBlockSize)*0.5f;
-				vWorldMatrix._42 = -renderBlockOfs_remain.y - (fScaledBlockSize - fBlockSize)*0.5f;
-				vWorldMatrix._43 = -renderBlockOfs_remain.z - (fScaledBlockSize - fBlockSize)*0.5f;
+				vWorldMatrix._41 = -renderBlockOfs_remain.x - (fScaledBlockSize - fBlockSize) * 0.5f;
+				vWorldMatrix._42 = -renderBlockOfs_remain.y - (fScaledBlockSize - fBlockSize) * 0.5f;
+				vWorldMatrix._43 = -renderBlockOfs_remain.z - (fScaledBlockSize - fBlockSize) * 0.5f;
 
 				vWorldMatrix = vWorldMatrix * matViewProj;
 
@@ -1359,7 +1377,7 @@ namespace ParaEngine
 	}
 
 
-	int BlockWorldClient::FillSelectBlockInvert(std::map<int64_t, Uint16x3>& selectedBlockMap, uint16_t x, uint16_t y, uint16_t z, SelectBlockVertex* blockModel, const Vector3& vOffset, const float blockSize, float fUV_Y_Offset /*= 0.f*/, float fUV_Y_Size/*=1.f*/)
+	int BlockWorldClient::FillSelectBlockInvert(uint16_t nNearbyValue, uint16_t x, uint16_t y, uint16_t z, SelectBlockVertex* blockModel, const Vector3& vOffset, const float blockSize, float fUV_Y_Offset /*= 0.f*/, float fUV_Y_Size/*=1.f*/)
 	{
 		int nCount = 0;
 
@@ -1517,15 +1535,16 @@ namespace ParaEngine
 		}
 		if (nCount == 0)
 		{
-			nCount = FillSelectBlockVertice(&selectedBlockMap, x, y, z, blockModel, vOffset, blockSize, fUV_Y_Offset, fUV_Y_Size);
+			nCount = FillSelectBlockVertice(nNearbyValue, x, y, z, blockModel, vOffset, blockSize, fUV_Y_Offset, fUV_Y_Size);
 		}
 		return nCount;
 	}
 
-	int BlockWorldClient::FillSelectBlockVertice(std::map<int64_t, Uint16x3>* pSelectedBlockMap, uint16_t x, uint16_t y, uint16_t z, SelectBlockVertex* blockModel, const Vector3& vOffset, const float blockSize, float fUV_Y_Offset, float fUV_Y_Size)
+	int BlockWorldClient::FillSelectBlockVertice(uint16_t nNearbyValue, uint16_t x, uint16_t y, uint16_t z, SelectBlockVertex* blockModel, const Vector3& vOffset, const float blockSize, float fUV_Y_Offset, float fUV_Y_Size)
 	{
 		int nCount = 0;
-		if (!pSelectedBlockMap || pSelectedBlockMap->find(GetBlockSparseIndex(x, y + 1, z)) == pSelectedBlockMap->end())
+		uint16_t value = nNearbyValue;
+		if (value & 0x1)
 		{
 			//top face
 			blockModel[0].position.x = vOffset.x;
@@ -1551,7 +1570,7 @@ namespace ParaEngine
 			blockModel += 4;
 			nCount++;
 		}
-		if (!pSelectedBlockMap || pSelectedBlockMap->find(GetBlockSparseIndex(x, y, z - 1)) == pSelectedBlockMap->end())
+		if (value & (0x1 << 1))
 		{
 			//front face
 			blockModel[0].position.x = vOffset.x;
@@ -1577,7 +1596,7 @@ namespace ParaEngine
 			blockModel += 4;
 			nCount++;
 		}
-		if (!pSelectedBlockMap || pSelectedBlockMap->find(GetBlockSparseIndex(x, y - 1, z)) == pSelectedBlockMap->end())
+		if (value & (0x1 << 2))
 		{
 			//bottom face
 			blockModel[0].position.x = vOffset.x;
@@ -1603,7 +1622,7 @@ namespace ParaEngine
 			blockModel += 4;
 			nCount++;
 		}
-		if (!pSelectedBlockMap || pSelectedBlockMap->find(GetBlockSparseIndex(x - 1, y, z)) == pSelectedBlockMap->end())
+		if (value & (0x1 << 3))
 		{
 			//left face
 			blockModel[0].position.x = vOffset.x;
@@ -1630,7 +1649,7 @@ namespace ParaEngine
 			nCount++;
 		}
 
-		if (!pSelectedBlockMap || pSelectedBlockMap->find(GetBlockSparseIndex(x + 1, y, z)) == pSelectedBlockMap->end())
+		if (value & (0x1 << 4))
 		{
 			//right
 			blockModel[0].position.x = vOffset.x + blockSize;
@@ -1657,8 +1676,7 @@ namespace ParaEngine
 			nCount++;
 		}
 
-
-		if (!pSelectedBlockMap || pSelectedBlockMap->find(GetBlockSparseIndex(x, y, z + 1)) == pSelectedBlockMap->end())
+		if (value & (0x1 << 5))
 		{
 			//back face
 			blockModel[0].position.x = vOffset.x + blockSize;
@@ -2002,7 +2020,7 @@ namespace ParaEngine
 						if (pBlockTemplate != 0 && (pBlockTemplate->IsMatchAttribute(BlockTemplate::batt_liquid) && !pBlockTemplate->IsMatchAttribute(BlockTemplate::batt_solid)))
 						{
 							Vector3 vPos = BlockCommon::ConvertToRealPosition(blockIdx.x, blockIdx.y - i, blockIdx.z, 4);
-							fWaterLevel = vPos.y - BlockConfig::g_blockSize *0.2f;
+							fWaterLevel = vPos.y - BlockConfig::g_blockSize * 0.2f;
 						}
 						break;
 					}
@@ -2105,7 +2123,7 @@ namespace ParaEngine
 #elif defined(USE_OPENGL_RENDERER)
 		CGlobals::GetSettings().LoadGameEffectSet(0);
 #endif
-	}
+		}
 
 	void BlockWorldClient::ClearBlockRenderCache()
 	{
@@ -2486,7 +2504,7 @@ namespace ParaEngine
 	{
 		CBlockWorld::GetMaxBlockHeightWatchingSky(blockX_ws, blockZ_ws, pResult);
 #ifdef PARAENGINE_CLIENT
-		ParaTerrain::CGlobalTerrain *pTerrain = CGlobals::GetGlobalTerrain();
+		ParaTerrain::CGlobalTerrain* pTerrain = CGlobals::GetGlobalTerrain();
 		uint16_t mask = 0;
 		if (pTerrain->TerrainRenderingEnabled())
 		{
@@ -2550,7 +2568,7 @@ namespace ParaEngine
 		Vector3 renderOrig = CGlobals::GetScene()->GetRenderOrigin();
 		int nRenderFrameCount = CGlobals::GetSceneState()->GetRenderFrameCount();
 
-		CCameraFrustum*  frustum;
+		CCameraFrustum* frustum;
 		static CCameraFrustum caster_frustum;
 
 		Vector3 camMin;
@@ -2732,7 +2750,7 @@ namespace ParaEngine
 	}
 
 
-	void BlockWorldClient::AddToVisibleChunk(RenderableChunk &chunk, int nViewDist, int nRenderFrameCount)
+	void BlockWorldClient::AddToVisibleChunk(RenderableChunk& chunk, int nViewDist, int nRenderFrameCount)
 	{
 		chunk.SetChunkViewDistance((int16)nViewDist);
 		chunk.SetViewIndex((int16)m_visibleChunks.size());
@@ -2919,7 +2937,7 @@ namespace ParaEngine
 		});
 
 		int nMaxBufferRebuildPerTick = GetMaxBufferRebuildPerTick();
-		for (RenderableChunk * pRenderChunk : m_tempDirtyChunks)
+		for (RenderableChunk* pRenderChunk : m_tempDirtyChunks)
 		{
 			if (pRenderChunk->RebuildRenderBuffer(this, bAsyncMode))
 			{
@@ -2936,10 +2954,10 @@ namespace ParaEngine
 				}
 				if (bAsyncMode && m_nBufferRebuildCountThisTick >= nMaxBufferRebuildPerTick)
 					break;
-			}
+		}
 			else
 				break;
-		}
+	}
 		m_tempDirtyChunks.clear();
 	}
 
@@ -3223,7 +3241,7 @@ namespace ParaEngine
 
 		VertexDeclarationPtr pDecl = NULL;
 
-		ID3DXMesh * pObject = NULL;
+		ID3DXMesh* pObject = NULL;
 		for (CLightObject* lightObject : sceneState->listDeferredLightObjects) {
 			auto light_param = lightObject->GetLightParams();
 

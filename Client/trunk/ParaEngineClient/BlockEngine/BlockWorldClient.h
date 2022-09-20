@@ -291,9 +291,9 @@ namespace ParaEngine
 
 		void RenderDamagedBlock();
 
-		int FillSelectBlockVertice(std::map<int64_t, Uint16x3>* pSelectedBlockMap, uint16_t x, uint16_t y, uint16_t z, SelectBlockVertex* blockModel, const Vector3& vOffset, const float fBlockSize, float fUV_Y_Offset = 0.f, float fUV_Y_Size = 1.f);
+		int FillSelectBlockVertice(uint16_t nNearbyValue, uint16_t x, uint16_t y, uint16_t z, SelectBlockVertex* blockModel, const Vector3& vOffset, const float fBlockSize, float fUV_Y_Offset = 0.f, float fUV_Y_Size = 1.f);
 
-		int FillSelectBlockInvert(std::map<int64_t, Uint16x3>& selectedBlockMap, uint16_t x, uint16_t y, uint16_t z, SelectBlockVertex* blockModel, const Vector3& vOffset, const float fBlockSize, float fUV_Y_Offset = 0.f, float fUV_Y_Size = 1.f);
+		int FillSelectBlockInvert(uint16_t nNearbyValue, uint16_t x, uint16_t y, uint16_t z, SelectBlockVertex* blockModel, const Vector3& vOffset, const float fBlockSize, float fUV_Y_Offset = 0.f, float fUV_Y_Size = 1.f);
 		
 		bool HasSunlightShadowMap();
 

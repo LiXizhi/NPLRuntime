@@ -35,10 +35,10 @@ namespace ParaEngine
 	public:
 		CBlockSelectGroup();
 
-		std::map<int64_t, Uint16x3>& GetBlocks();
+		std::map<int64_t, uint16_t>& GetBlocks();
 
 	public:
-		std::map<int64_t, Uint16x3> m_blocks;
+		std::map<int64_t, uint16_t> m_blocks;
 		float m_fScaling;
 		bool m_bEnableBling;
 		LinearColor m_color;

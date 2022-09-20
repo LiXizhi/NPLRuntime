@@ -511,8 +511,9 @@ namespace ParaEngine
 		@param nGroupID: 0 for animated selection, 1 for wire frame selection.
 		*/
 		void SelectBlock(uint16_t x, uint16_t y, uint16_t z, int nGroupID = 0);
-
 		void DeselectBlock(uint16_t x, uint16_t y, uint16_t z, int nGroupID = 0);
+		void UpdateSelectedBlockValue(uint16_t x, uint16_t y, uint16_t z, int nGroupID = 0);
+		void UpdateSelectedBlockNearbyValues(uint16_t x, uint16_t y, uint16_t z, int nGroupID = 0);
 
 		//add render task to render queueGe
 		virtual void AddRenderTask(BlockRenderTask* pRenderTask);
