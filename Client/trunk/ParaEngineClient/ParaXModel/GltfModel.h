@@ -330,7 +330,7 @@ namespace ParaEngine {
 		Json::Value ExportJsonAnimation(std::shared_ptr<GLTFAnimation>& animation);
     	Json::Value ExportJsonMaterial(std::shared_ptr<GLTFMaterial>& material);
 	
-		void GltfModel::WriteFile(std::string filename);
+		void WriteFile(std::string filename);
 	public:
 		std::shared_ptr<GLTFBuffer> buffer;
 		StringBuilder m_string_builder;

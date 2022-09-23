@@ -150,7 +150,7 @@ bool CParaPhysicsWorld::ExitPhysics()
 }
 
 
-IParaPhysicsShape* CParaPhysicsWorld::CreateTriangleMeshShap(const ParaPhysicsTriangleMeshDesc& meshDesc)
+IParaPhysicsShape* CParaPhysicsWorld::CreateTriangleMeshShape(const ParaPhysicsTriangleMeshDesc& meshDesc)
 {
 	BulletPhysicsShape*  pShape = new BulletPhysicsShape();
 
