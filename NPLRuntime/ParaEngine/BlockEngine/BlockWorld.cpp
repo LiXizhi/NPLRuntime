@@ -44,6 +44,7 @@ m_pLightGrid(new CBlockLightGridBase(this)), m_bReadOnlyWorld(false), m_bIsRemot
 m_bUseAsyncLoadWorld(true), m_bRenderBlocks(true), m_group_by_chunk_before_texture(false), m_is_linear_torch_brightness(false), m_maxCacheRegionCount(0),
 m_minWorldPos(0, 0, 0), m_maxWorldPos(0xffff, 0xffff, 0xffff), m_minRegionX(0), m_minRegionZ(0), m_maxRegionX(63), m_maxRegionZ(63)
 {
+	m_bAutoPhysics = true;
 	// 256 blocks, so that it never wraps
 	m_activeChunkDimY = 16; 
 	SetActiveChunkRadius(12);
