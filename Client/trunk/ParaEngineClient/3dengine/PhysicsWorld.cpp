@@ -60,12 +60,12 @@ const char* PHYSICS_DLL_FILE_PATH = "PhysicsBT_d.dll";
 const char* PHYSICS_DLL_FILE_PATH = "PhysicsBT.dll";
 #endif
 
-IParaPhysicsShape* CPhysicsBlock::GetShape(uint32_t key, BlockModel& model, IParaPhysics* world)
+std::shared_ptr<CPhysicsBlockShape> CPhysicsBlock::GetShape(uint32_t key, BlockModel& model, IParaPhysics* world)
 {
 	auto shapeIndexMap = GetShapeIndexMap();
 	auto shapeList = GetShapeList();
 	auto it = shapeIndexMap->find(key);
-	if (it != shapeIndexMap->end()) return (*shapeList)[it->second]->m_shape;
+	if (it != shapeIndexMap->end()) return (*shapeList)[it->second];
 	std::shared_ptr<CPhysicsBlockShape> pShape = std::make_shared<CPhysicsBlockShape>();
 
 	int pointCount = model.GetVerticesCount();
@@ -155,7 +155,7 @@ IParaPhysicsShape* CPhysicsBlock::GetShape(uint32_t key, BlockModel& model, IPar
 	triangleCount = index / 3;
 
 	// hash 是否已被缓存
-	pShape->m_hash = isStdCubeShape ? "std_cube_shape" : StringHelper::md5(source);
+	pShape->m_hash = isStdCubeShape ? CPhysicsBlockShape::GetStdCubeHash() : StringHelper::md5(source);
 	for (int i = 0; i < shapeList->size(); i++)
 	{
 		if ((*shapeList)[i]->m_hash == pShape->m_hash) 
@@ -163,7 +163,7 @@ IParaPhysicsShape* CPhysicsBlock::GetShape(uint32_t key, BlockModel& model, IPar
 			shapeIndexMap->insert(std::make_pair(key, i));
 			delete [] pVertices;
 			delete [] pIndices;
-			return (*shapeList)[i]->m_shape;				
+			return (*shapeList)[i];				
 		}
 	}
 	// 新建shape
@@ -192,7 +192,7 @@ IParaPhysicsShape* CPhysicsBlock::GetShape(uint32_t key, BlockModel& model, IPar
 	shapeList->push_back(pShape);
 	delete [] pIndices;
 	delete [] pVertices;
-	return pShape->m_shape;  
+	return pShape;  
 }
 
 void CPhysicsBlock::Load(IParaPhysics* world)
@@ -210,14 +210,21 @@ void CPhysicsBlock::Load(IParaPhysics* world)
 	uint16_t tplId = pTemplate->GetID();
 	uint32_t key = (blockData << 16) + tplId;
 	BlockModel& model = pTemplate->GetBlockModel(pWorld, bx, by, bz, blockData);
-	IParaPhysicsShape* pShape = GetShape(key, model, world);
-	if (!pShape) return ;
+	auto pShape = GetShape(key, model, world);
+	if (!pShape->m_shape) return ;
 	ParaPhysicsActorDesc ActorDesc;
 	ActorDesc.m_group = IParaPhysicsGroup::BLOCK;  // 2 字节 地块占用最高为分组
 	ActorDesc.m_mask = -1 ^ (1 << ActorDesc.m_group);
 	ActorDesc.m_mass = 0.0f;
-	ActorDesc.m_pShape = pShape;
-	ActorDesc.m_origin = PARAVECTOR3((bx + 0.5f) * BlockConfig::g_dBlockSize, (by + 0.5f) * BlockConfig::g_dBlockSize + offset_y, (bz + 0.5f) * BlockConfig::g_dBlockSize);
+	ActorDesc.m_pShape = pShape->m_shape;
+	if (pShape->IsStdCube())
+	{
+		ActorDesc.m_origin = PARAVECTOR3((bx + 0.5f) * BlockConfig::g_dBlockSize, (by + 0.5f) * BlockConfig::g_dBlockSize + offset_y, (bz + 0.5f) * BlockConfig::g_dBlockSize);
+	}
+	else 
+	{
+		ActorDesc.m_origin = PARAVECTOR3(bx * BlockConfig::g_dBlockSize, by * BlockConfig::g_dBlockSize + offset_y, bz * BlockConfig::g_dBlockSize);
+	}
 	Quaternion quat;
 	quat.ToRotationMatrix((Matrix3&)ActorDesc.m_rotation);
 	m_actor = world->CreateActor(ActorDesc);

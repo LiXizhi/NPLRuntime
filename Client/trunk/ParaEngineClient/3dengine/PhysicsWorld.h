@@ -12,19 +12,22 @@ namespace ParaEngine
 	struct ParaXEntity;
 	class BlockModel;
 
+	class CPhysicsBlockShape
+	{
+	public:
+		CPhysicsBlockShape(): m_shape(nullptr) {}
+		~CPhysicsBlockShape() {  }
+
+		static const char* GetStdCubeHash() { return "std_cube_hash"; }
+		bool IsStdCube() { return m_hash == GetStdCubeHash(); }
+
+		IParaPhysicsShape* m_shape; 
+		std::string m_hash;
+	};
+
 	class CPhysicsBlock
 	{
 	public:
-		class CPhysicsBlockShape
-		{
-		public:
-			CPhysicsBlockShape(): m_shape(nullptr) {}
-			~CPhysicsBlockShape() {  }
-
-			IParaPhysicsShape* m_shape; 
-			std::string m_hash;
-		};
-
 		CPhysicsBlock(uint64_t id)
 		{
 			m_id = id;
@@ -55,7 +58,7 @@ namespace ParaEngine
 			by = (uint16_t)((id >> 32) & 0xffff);
 		}
 
-		IParaPhysicsShape* GetShape(uint32_t key, BlockModel& model, IParaPhysics* world);
+		std::shared_ptr<CPhysicsBlockShape> GetShape(uint32_t key, BlockModel& model, IParaPhysics* world);
 
 		static std::unordered_map<uint32_t, uint16_t>* GetShapeIndexMap() 
 		{
