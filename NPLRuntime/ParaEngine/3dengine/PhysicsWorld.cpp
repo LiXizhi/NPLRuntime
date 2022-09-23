@@ -168,7 +168,7 @@ std::shared_ptr<CPhysicsBlockShape> CPhysicsBlock::GetShape(uint32_t key, BlockM
 	triangleCount = index / 3;
 
 	// hash 是否已被缓存
-	pShape->m_hash = isStdCubeShape ? "std_cube_shape" : StringHelper::md5(source);
+	pShape->m_hash = isStdCubeShape ? CPhysicsBlockShape::GetStdCubeHash() : StringHelper::md5(source);
 	for (int i = 0; i < shapeList->size(); i++)
 	{
 		if ((*shapeList)[i]->m_hash == pShape->m_hash) 
