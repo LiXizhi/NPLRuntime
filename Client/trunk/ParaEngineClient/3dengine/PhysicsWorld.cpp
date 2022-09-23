@@ -98,13 +98,19 @@ IParaPhysicsShape* CPhysicsBlock::GetShape(uint32_t key, BlockModel& model, IPar
 	for (int i = 0; i < faceCount; i++)
 	{
 		uint16_t indexOfs = 4 * i;
-		pIndices[index++] = indexOfs + 0;
-		pIndices[index++] = indexOfs + 1;
-		pIndices[index++] = indexOfs + 3;
-		pIndices[index++] = indexOfs + 1;
-		pIndices[index++] = indexOfs + 2;
-		pIndices[index++] = indexOfs + 3;
 		Vector3 pts[4] = {pVertices[indexOfs + 0], pVertices[indexOfs + 1], pVertices[indexOfs + 2], pVertices[indexOfs + 3]};
+		if (pts[0] != pts[1] && pts[0] != pts[3] && pts[1] != pts[3])
+		{
+			pIndices[index++] = indexOfs + 0;
+			pIndices[index++] = indexOfs + 1;
+			pIndices[index++] = indexOfs + 3;
+		} 
+		if (pts[1] != pts[2] && pts[1] != pts[3] && pts[2] != pts[3])
+		{
+			pIndices[index++] = indexOfs + 1;
+			pIndices[index++] = indexOfs + 2;
+			pIndices[index++] = indexOfs + 3;
+		}
 		// TODO 识别正方体模型
 		if (isStdCubeShape) 
 		{
@@ -146,6 +152,7 @@ IParaPhysicsShape* CPhysicsBlock::GetShape(uint32_t key, BlockModel& model, IPar
 	{
 		if (!stdCubeFaces[i]) isStdCubeShape = false;
 	}
+	triangleCount = index / 3;
 
 	// hash 是否已被缓存
 	pShape->m_hash = isStdCubeShape ? "std_cube_shape" : StringHelper::md5(source);
