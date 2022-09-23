@@ -199,7 +199,11 @@ IParaPhysicsShape* CParaPhysicsWorld::CreateSimpleShape(const ParaPhysicsSimpleS
 		pShape->m_pShape = NULL;
 	}
 	if (pShape->m_pShape == NULL) return NULL;
+
 	pShape->m_pShape->setUserPointer(pShape);
+
+	m_collisionShapes.insert(pShape);
+	
 	return pShape;
 }
 
@@ -322,12 +326,7 @@ IParaPhysicsActor* CParaPhysicsWorld::CreateActor(const ParaPhysicsActorDesc& ac
 	// short collisionFilterMask = isDynamic? 	short(btBroadphaseProxy::AllFilter) : 	short(btBroadphaseProxy::AllFilter ^ btBroadphaseProxy::StaticFilter);
 
 	// please note: group_mask is 2^group_id secretly
-	short nGroupMask = 1;
-	for (int i = 0; i < actorDesc.m_group; ++i)
-	{
-		nGroupMask *= 2;
-	}
-
+	short nGroupMask = 1 << actorDesc.m_group;
 	m_dynamicsWorld->addRigidBody(body, nGroupMask, actorDesc.m_mask);
 
 	BulletPhysicsActor* pActor = new BulletPhysicsActor(body);
@@ -341,16 +340,20 @@ IParaPhysicsActor* CParaPhysicsWorld::CreateActor(const ParaPhysicsActorDesc& ac
 
 void CParaPhysicsWorld::ReleaseActor(IParaPhysicsActor* pActor)
 {
-	m_dynamicsWorld->removeCollisionObject((btCollisionObject*)(pActor->get()));
-	pActor->Release();
-	m_actors.erase((BulletPhysicsActor*)pActor);
+	// 先查找避免二次释放, 世界退出自动释放全部, 但上层引用无法感知造成二次释放出错
+	if (m_actors.find(pActor) != m_actors.end())
+	{
+		m_actors.erase(pActor);
+		m_dynamicsWorld->removeCollisionObject((btCollisionObject*)(pActor->get()));
+		pActor->Release();
+	}
 }
 
 IParaPhysicsActor* ParaEngine::CParaPhysicsWorld::RaycastClosestShape(const PARAVECTOR3& vOrigin, const PARAVECTOR3& vDirection, DWORD dwType, RayCastHitResult& hit, short dwGroupMask, float fSensorRange)
 {
 	btVector3 vFrom(vOrigin.x, vOrigin.y, vOrigin.z);
 	btVector3 vTo(vDirection.x, vDirection.y, vDirection.z);
-
+	dwGroupMask = dwGroupMask ^ (1 << IParaPhysicsGroup::BLOCK);  // 屏蔽地块组
 	if (fSensorRange < 0.f)
 		fSensorRange = 200.f;
 	vTo = vFrom + vTo * fSensorRange;

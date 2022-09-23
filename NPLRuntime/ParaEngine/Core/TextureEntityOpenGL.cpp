@@ -547,84 +547,84 @@ bool ParaEngine::TextureEntityOpenGL::LoadImageOfFormat(const std::string& sText
 
 bool ParaEngine::TextureEntityOpenGL::SaveToFile(const char* filename, PixelFormat dwFormat, int width, int height, UINT MipLevels /*= 1*/, DWORD Filter /*= D3DX_DEFAULT*/, Color ColorKey /*= 0*/)
 {
-	std::string src_file = GetKey();
-	width = GetWidth();
-	height = GetHeight();
-	GLuint textureId = GetTexture()->getName();
-	GLuint framebuffer;
-	glGenFramebuffers(1, &framebuffer);
-	glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, textureId, 0);
-	GLint readType, readFormat;
-	glGetIntegerv(GL_IMPLEMENTATION_COLOR_READ_TYPE, &readType);
-	glGetIntegerv(GL_IMPLEMENTATION_COLOR_READ_FORMAT, &readFormat);
-	unsigned int bytesPerPixel = 0;
-	switch (readType)
-	{
-	case GL_UNSIGNED_BYTE:
-	case GL_BYTE:
-		switch (readFormat)
-		{
-		case GL_RGBA:
-			bytesPerPixel = 4;
-			break;
-		case GL_RGB:
-		case GL_RGB_INTEGER:
-			bytesPerPixel = 3;
-			break;		
-		case GL_RG:
-		case GL_RG_INTEGER:
-		case GL_LUMINANCE_ALPHA:
-			bytesPerPixel = 2;
-			break;
-		case GL_RED:
-		case GL_RED_INTEGER:
-		case GL_ALPHA:
-		case GL_LUMINANCE:
-			bytesPerPixel = 1;
-			break;
-		default:
-			break;
-		}
-		break;
-	case GL_FLOAT:
-	case GL_UNSIGNED_INT:
-	case GL_INT:
-		switch (readFormat)
-		{
-		case GL_RGBA:
-			bytesPerPixel = 16;
-			break;
-		case GL_RGB:
-		case GL_RGB_INTEGER:
-			bytesPerPixel = 12;
-			break;		
-		case GL_RG:
-		case GL_RG_INTEGER:
-		case GL_LUMINANCE_ALPHA:
-			bytesPerPixel = 8;
-			break;
-		case GL_RED:
-		case GL_RED_INTEGER:
-		case GL_ALPHA:
-		case GL_LUMINANCE:
-			bytesPerPixel = 4;
-			break;
-		default:
-			break;
-		}
-		break;
-	default:
-		break;
-	}
-	GLubyte* pixels = (GLubyte*)malloc(width * height * bytesPerPixel);
-	glReadPixels(0, 0, width, height, readFormat, readType, pixels);
-	ParaImage image;
-	image.initWithRawData(pixels, width * height * bytesPerPixel, width, height, bytesPerPixel);
-	image.saveImageToPNG(filename, false);
-	free(pixels);
-	glBindFramebuffer(GL_FRAMEBUFFER, 0);
-	glDeleteFramebuffers(1, &framebuffer);
+	// std::string src_file = GetKey();
+	// width = GetWidth();
+	// height = GetHeight();
+	// GLuint textureId = GetTexture()->getName();
+	// GLuint framebuffer;
+	// glGenFramebuffers(1, &framebuffer);
+	// glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
+	// glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, textureId, 0);
+	// GLint readType, readFormat;
+	// glGetIntegerv(GL_IMPLEMENTATION_COLOR_READ_TYPE, &readType);
+	// glGetIntegerv(GL_IMPLEMENTATION_COLOR_READ_FORMAT, &readFormat);
+	// unsigned int bytesPerPixel = 0;
+	// switch (readType)
+	// {
+	// case GL_UNSIGNED_BYTE:
+	// case GL_BYTE:
+	// 	switch (readFormat)
+	// 	{
+	// 	case GL_RGBA:
+	// 		bytesPerPixel = 4;
+	// 		break;
+	// 	case GL_RGB:
+	// 	case GL_RGB_INTEGER:
+	// 		bytesPerPixel = 3;
+	// 		break;		
+	// 	case GL_RG:
+	// 	case GL_RG_INTEGER:
+	// 	case GL_LUMINANCE_ALPHA:
+	// 		bytesPerPixel = 2;
+	// 		break;
+	// 	case GL_RED:
+	// 	case GL_RED_INTEGER:
+	// 	case GL_ALPHA:
+	// 	case GL_LUMINANCE:
+	// 		bytesPerPixel = 1;
+	// 		break;
+	// 	default:
+	// 		break;
+	// 	}
+	// 	break;
+	// case GL_FLOAT:
+	// case GL_UNSIGNED_INT:
+	// case GL_INT:
+	// 	switch (readFormat)
+	// 	{
+	// 	case GL_RGBA:
+	// 		bytesPerPixel = 16;
+	// 		break;
+	// 	case GL_RGB:
+	// 	case GL_RGB_INTEGER:
+	// 		bytesPerPixel = 12;
+	// 		break;		
+	// 	case GL_RG:
+	// 	case GL_RG_INTEGER:
+	// 	case GL_LUMINANCE_ALPHA:
+	// 		bytesPerPixel = 8;
+	// 		break;
+	// 	case GL_RED:
+	// 	case GL_RED_INTEGER:
+	// 	case GL_ALPHA:
+	// 	case GL_LUMINANCE:
+	// 		bytesPerPixel = 4;
+	// 		break;
+	// 	default:
+	// 		break;
+	// 	}
+	// 	break;
+	// default:
+	// 	break;
+	// }
+	// GLubyte* pixels = (GLubyte*)malloc(width * height * bytesPerPixel);
+	// glReadPixels(0, 0, width, height, readFormat, readType, pixels);
+	// ParaImage image;
+	// image.initWithRawData(pixels, width * height * bytesPerPixel, width, height, bytesPerPixel);
+	// image.saveImageToPNG(filename, false);
+	// free(pixels);
+	// glBindFramebuffer(GL_FRAMEBUFFER, 0);
+	// glDeleteFramebuffers(1, &framebuffer);
 	return false;
 }
 
