@@ -2506,6 +2506,16 @@ void ParaEngine::CBlockWorld::SetIdentifier(const std::string& sID)
 	m_sName = sID;
 }
 
+bool ParaEngine::CBlockWorld::IsAutoPhysics()
+{
+	return m_bAutoPhysics;
+}
+
+void ParaEngine::CBlockWorld::SetAutoPhysics(bool bValue)
+{
+	m_bAutoPhysics = bValue;
+}
+
 int ParaEngine::CBlockWorld::InstallFields(CAttributeClass* pClass, bool bOverride)
 {
 	// install parent fields if there are any. Please replace __super with your parent class name.
@@ -2557,6 +2567,7 @@ int ParaEngine::CBlockWorld::InstallFields(CAttributeClass* pClass, bool bOverri
 	pClass->AddField("TotalChunksInMemory", FieldType_Int, (void*)0, (void*)GetTotalChunksInMemory_s, NULL, NULL, bOverride);
 	pClass->AddField("TotalRenderableChunksInMemory", FieldType_Int, (void*)0, (void*)GetTotalRenderableChunksInMemory_s, NULL, NULL, bOverride);
 
+	pClass->AddField("IsAutoPhysics", FieldType_Bool, (void*)SetAutoPhysics_s, (void*)IsAutoPhysics_s, NULL, NULL, bOverride);
 	
 	return S_OK;
 }

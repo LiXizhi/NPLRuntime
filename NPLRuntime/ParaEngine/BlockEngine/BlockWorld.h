@@ -119,7 +119,8 @@ namespace ParaEngine
 
 		ATTRIBUTE_METHOD1(CBlockWorld, UseLinearTorchBrightness_s, bool)	{ cls->GenerateLightBrightnessTable(p1); return S_OK; }
 
-		
+		ATTRIBUTE_METHOD1(CBlockWorld, IsAutoPhysics_s, bool*)		{ *p1 = cls->IsAutoPhysics(); return S_OK; }
+		ATTRIBUTE_METHOD1(CBlockWorld, SetAutoPhysics_s, bool)	{ cls->SetAutoPhysics(p1); return S_OK; }
 	public:
 		/** script call back type */
 		enum CallBackType{
@@ -147,6 +148,9 @@ namespace ParaEngine
 		/** called when block region has just saved. it will invoke the scripting interface if any. */
 		int OnSaveBlockRegion(int x, int y);
 	public:
+		bool IsAutoPhysics();
+		void SetAutoPhysics(bool bValue);
+
 		/** get light grid */
 		CBlockLightGridBase& GetLightGrid();
 
@@ -574,6 +578,9 @@ namespace ParaEngine
 		int32_t m_activeChunkDim;
 		int32_t m_activeChunkDimY;
 		static float g_verticalOffset;
+
+		// 自动物理地形
+		bool m_bAutoPhysics;
 
 		/** whether this world is active */
 		bool m_isInWorld;

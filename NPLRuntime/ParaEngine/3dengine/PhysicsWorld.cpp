@@ -49,6 +49,11 @@ ray collision		<-> dSpaceCollide2(...);
 #include "BaseObject.h"
 #include "ShapeAABB.h"
 
+#include "BlockEngine/BlockChunk.h"
+#include "BlockEngine/BlockRegion.h"
+#include "BlockEngine/BlockWorldClient.h"
+#include "util/StringHelper.h"
+
 using namespace ParaEngine;
 
 /** the bullet physics engine plugin dll file path */
@@ -66,6 +71,174 @@ const char* PHYSICS_DLL_FILE_PATH = ("PhysicsBT_d." DLL_FILE_EXT) ;
 #else
 const char* PHYSICS_DLL_FILE_PATH = ("PhysicsBT." DLL_FILE_EXT) ;
 #endif
+
+
+IParaPhysicsShape* CPhysicsBlock::GetShape(uint32_t key, BlockModel& model, IParaPhysics* world)
+{
+	auto shapeIndexMap = GetShapeIndexMap();
+	auto shapeList = GetShapeList();
+	auto it = shapeIndexMap->find(key);
+	if (it != shapeIndexMap->end()) return (*shapeList)[it->second]->m_shape;
+	std::shared_ptr<CPhysicsBlockShape> pShape = std::make_shared<CPhysicsBlockShape>();
+
+	int pointCount = model.GetVerticesCount();
+	int faceCount = model.GetFaceCount();
+	int triangleCount = faceCount* 2;
+	int pointStrideBytes = sizeof(Vector3);
+	BlockVertexCompressed* vertices = model.GetVertices();
+	std::string source(pointCount * pointStrideBytes, '\0');
+	
+	Vector3* pVertices = new Vector3[pointCount];
+	for (int i = 0; i < pointCount; i++)
+	{
+		pVertices[i].x = vertices[i].position[0];
+		pVertices[i].y = vertices[i].position[1];
+		pVertices[i].z = vertices[i].position[2];
+		// 顶点字符串化
+		const char* srcStr = (const char*)(&(pVertices[i]));
+		const int startStrIndex = i * pointStrideBytes;
+		for (int j = 0; j < pointStrideBytes; j++)
+		{
+			source[startStrIndex + j] = *srcStr;
+			srcStr++;
+		}
+	}
+
+	uint16_t index = 0;
+	uint16_t* pIndices = new uint16_t[triangleCount * 3];
+	bool stdCubeFaces[6] = {false, false, false, false, false, false}; // x 0, 1, y 0, 1 z 0, 1
+	bool isStdCubeShape = faceCount == 6;
+	for (int i = 0; i < faceCount; i++)
+	{
+		uint16_t indexOfs = 4 * i;
+		pIndices[index++] = indexOfs + 0;
+		pIndices[index++] = indexOfs + 1;
+		pIndices[index++] = indexOfs + 3;
+		pIndices[index++] = indexOfs + 1;
+		pIndices[index++] = indexOfs + 2;
+		pIndices[index++] = indexOfs + 3;
+		Vector3 pts[4] = {pVertices[indexOfs + 0], pVertices[indexOfs + 1], pVertices[indexOfs + 2], pVertices[indexOfs + 3]};
+		// TODO 识别正方体模型
+		if (isStdCubeShape) 
+		{
+			// 一个面四个顶点两两不等
+			isStdCubeShape = (pts[0] != pts[1]) && (pts[0] != pts[2]) && (pts[0] != pts[3]) && (pts[1] != pts[2]) && (pts[1] != pts[3]) && (pts[2] != pts[3]);
+			bool tmpStdCubeFaces[6];
+			tmpStdCubeFaces[0] = (pts[0].x == 0) && (pts[1].x == 0) && (pts[2].x == 0) && (pts[3].x == 0);
+			tmpStdCubeFaces[1] = (pts[0].x == 1) && (pts[1].x == 1) && (pts[2].x == 1) && (pts[3].x == 1);
+			tmpStdCubeFaces[2] = (pts[0].y == 0) && (pts[1].y == 0) && (pts[2].y == 0) && (pts[3].y == 0);
+			tmpStdCubeFaces[3] = (pts[0].y == 1) && (pts[1].y == 1) && (pts[2].y == 1) && (pts[3].y == 1);
+			tmpStdCubeFaces[4] = (pts[0].z == 0) && (pts[1].z == 0) && (pts[2].z == 0) && (pts[3].z == 0);
+			tmpStdCubeFaces[5] = (pts[0].z == 1) && (pts[1].z == 1) && (pts[2].z == 1) && (pts[3].z == 1);
+			int stdCubeFace = -1;
+			for (int i = 0; i < 6 && isStdCubeShape; i++)
+			{
+				if (tmpStdCubeFaces[i])
+				{
+					if (stdCubeFace < 0) 
+					{
+						stdCubeFace = i;
+					}
+					else 
+					{
+						isStdCubeShape = false;
+					}
+				}
+			}
+			if (isStdCubeShape && stdCubeFace >= 0) 
+			{
+				stdCubeFaces[stdCubeFace] = true;
+			}
+			else 
+			{
+				isStdCubeShape = false;
+			}
+		}
+	}
+	for (int i = 0; i < 6 && isStdCubeShape; i++)
+	{
+		if (!stdCubeFaces[i]) isStdCubeShape = false;
+	}
+
+	// hash 是否已被缓存
+	pShape->m_hash = isStdCubeShape ? "std_cube_shape" : StringHelper::md5(source);
+	for (int i = 0; i < shapeList->size(); i++)
+	{
+		if ((*shapeList)[i]->m_hash == pShape->m_hash) 
+		{
+			shapeIndexMap->insert(std::make_pair(key, i));
+			delete [] pVertices;
+			delete [] pIndices;
+			return (*shapeList)[i]->m_shape;				
+		}
+	}
+	// 新建shape
+	if (isStdCubeShape)
+	{
+		ParaPhysicsSimpleShapeDesc desc;
+		desc.m_shape = "box";
+		desc.m_halfWidth = BlockConfig::g_half_blockSize;
+		desc.m_halfHeight = BlockConfig::g_half_blockSize;
+		desc.m_halfLength = BlockConfig::g_half_blockSize;
+		pShape->m_shape = world->CreateSimpleShape(desc);
+	}
+	else 
+	{
+		ParaPhysicsTriangleMeshDesc trimeshDesc;
+		trimeshDesc.m_numVertices		= pointCount;
+		trimeshDesc.m_numTriangles		= triangleCount;
+		trimeshDesc.m_pointStrideBytes	= pointStrideBytes;
+		trimeshDesc.m_triangleStrideBytes = 3 * sizeof(uint16_t);
+		trimeshDesc.m_points			= pVertices;
+		trimeshDesc.m_triangles			= pIndices;
+		trimeshDesc.m_flags				= 0;
+		pShape->m_shape = world->CreateTriangleMeshShape(trimeshDesc);
+	}
+	shapeIndexMap->insert(std::make_pair(key, shapeList->size()));
+	shapeList->push_back(pShape);
+	delete [] pIndices;
+	delete [] pVertices;
+	return pShape->m_shape;  
+}
+
+void CPhysicsBlock::Load(IParaPhysics* world)
+{
+	if (m_actor) return;
+	uint16_t bx, by, bz;
+	UnPackID(GetID(), bx, by, bz);
+	CBlockWorld* pWorld = BlockWorldClient::GetInstance();
+	// 非实体方块不做物理映射
+	if (!pWorld->IsObstructionBlock(bx, by, bz)) return ;
+	BlockTemplate* pTemplate = pWorld->GetBlockTemplate(bx, by, bz);
+	Block* pBlock = pWorld->GetBlock(bx, by, bz);
+	float offset_y = pWorld->GetVerticalOffset();
+	uint16_t blockData = pBlock->GetUserData();
+	uint16_t tplId = pTemplate->GetID();
+	uint32_t key = (blockData << 16) + tplId;
+	BlockModel& model = pTemplate->GetBlockModel(pWorld, bx, by, bz, blockData);
+	IParaPhysicsShape* pShape = GetShape(key, model, world);
+	if (!pShape) return ;
+	ParaPhysicsActorDesc ActorDesc;
+	ActorDesc.m_group = IParaPhysicsGroup::BLOCK;  // 2 字节 地块占用最高为分组
+	ActorDesc.m_mask = -1 ^ (1 << ActorDesc.m_group);
+	ActorDesc.m_mass = 0.0f;
+	ActorDesc.m_pShape = pShape;
+	ActorDesc.m_origin = PARAVECTOR3((bx + 0.5f) * BlockConfig::g_dBlockSize, (by + 0.5f) * BlockConfig::g_dBlockSize + offset_y, (bz + 0.5f) * BlockConfig::g_dBlockSize);
+	Quaternion quat;
+	quat.ToRotationMatrix((Matrix3&)ActorDesc.m_rotation);
+	m_actor = world->CreateActor(ActorDesc);
+	m_world = world;
+}
+
+void CPhysicsBlock::Unload()
+{
+	if (m_actor && m_world)
+	{
+		m_world->ReleaseActor(m_actor);
+		m_world = nullptr;
+		m_actor = nullptr;
+	}
+}
 
 CPhysicsWorld::CPhysicsWorld()
 : m_pPhysicsWorld(NULL), m_bRunDynamicSimulation(true)
@@ -107,6 +280,11 @@ void CPhysicsWorld::ExitPhysics()
 		delete * itCurCP;
 	}
 	m_listMeshShapes.clear();
+	m_mapDynamicActors.clear();
+	// 清空块
+	m_mapPhysicsBlocks.clear();
+	CPhysicsBlock::GetShapeIndexMap()->clear();
+	CPhysicsBlock::GetShapeList()->clear();
 }
 
 void CPhysicsWorld::ResetPhysics()
@@ -118,17 +296,36 @@ void CPhysicsWorld::ResetPhysics()
 void CPhysicsWorld::StepSimulation(double dTime)
 {
 	Matrix4 matrix;
+	CShapeAABB aabb;
+	static int16_t s_block_frame_id = 0;
+	s_block_frame_id++;
 	if(IsDynamicsSimulationEnabled())
 	{
+		IParaPhysicsActor_Map_Type::iterator itCurCP = m_mapDynamicActors.begin(); 
+		IParaPhysicsActor_Map_Type::iterator itEndCP = m_mapDynamicActors.end();
+
+		// 加载地形
+		BlockWorldClient* pWorld = BlockWorldClient::GetInstance();
+		bool isAutoPhysicsBlock = pWorld->IsAutoPhysics();
+		if (isAutoPhysicsBlock) 
+		{
+			for (itCurCP = m_mapDynamicActors.begin(); itCurCP != itEndCP; itCurCP++)
+			{
+				IParaPhysicsActor* actor = *itCurCP;
+				CBaseObject* obj = (CBaseObject*)(actor->GetUserData());	
+				obj->GetAABB(&aabb); // 已经包含中心点
+				LoadPhysicsBlock(&aabb, s_block_frame_id);
+			}
+		}
+
 		if(m_pPhysicsWorld)
 		{
 			PERF1("Dynamic Physics");
 			m_pPhysicsWorld->StepSimulation((float)dTime);
 		}
-		IParaPhysicsActor_Map_Type::iterator itCurCP = m_mapDynamicActors.begin(); 
-		IParaPhysicsActor_Map_Type::iterator itEndCP = m_mapDynamicActors.end();
+		
 		// TODO 多线程是否需要加锁
-		for (; itCurCP != itEndCP; itCurCP++)
+		for (itCurCP = m_mapDynamicActors.begin(); itCurCP != itEndCP; itCurCP++)
 		{
 			IParaPhysicsActor* actor = *itCurCP;
 			CBaseObject* obj = (CBaseObject*)(actor->GetUserData());
@@ -150,6 +347,20 @@ void CPhysicsWorld::StepSimulation(double dTime)
 			obj->SetYaw(0);
 			obj->SetRoll(0);
 			obj->SetPitch(0);
+		}
+
+		// 移除无效方块
+		if (isAutoPhysicsBlock) 
+		{
+			auto it = m_mapPhysicsBlocks.begin();
+			while (it != m_mapPhysicsBlocks.end())
+			{
+				auto curIt = it++;
+				if (std::abs(s_block_frame_id - curIt->second->GetFrameId()) > 2)
+				{
+					m_mapPhysicsBlocks.erase(curIt);
+				}
+			}
 		}
 	}
 }
@@ -181,7 +392,7 @@ IParaPhysicsActor* ParaEngine::CPhysicsWorld::CreateDynamicMesh(CBaseObject* obj
 	IParaPhysicsShape* pShape = m_pPhysicsWorld->CreateSimpleShape(desc);
 
 	ParaPhysicsActorDesc ActorDesc;
-	ActorDesc.m_group = 0;
+	ActorDesc.m_group = IParaPhysicsGroup::DEFAULT;
 	ActorDesc.m_mask = -1;
 	ActorDesc.m_mass = obj->GetPhysicsMass();
 	ActorDesc.m_pShape = pShape;
@@ -202,9 +413,55 @@ IParaPhysicsActor* ParaEngine::CPhysicsWorld::CreateDynamicMesh(CBaseObject* obj
 	
 	IParaPhysicsActor* pActor = m_pPhysicsWorld->CreateActor(ActorDesc);
 	pActor->SetUserData(obj);
-	pActor->SetIsolatedShape(pShape);
 	m_mapDynamicActors.insert(pActor);
 	return pActor;
+}
+
+void ParaEngine::CPhysicsWorld::LoadPhysicsBlock(CShapeAABB* aabb, int16_t frameId, float extend)
+{
+	Vector3 min, max;
+	aabb->GetMin(min);
+	aabb->GetMax(max);
+	min -= extend;  // extend 为下一帧可能的距离
+	max += extend;
+	float offset_y = BlockWorldClient::GetInstance()->GetVerticalOffset();
+	// min, max 为世界坐标使用  BlockConfig::g_dBlockSize 局部坐标使用 BlockConfig::g_blockSize
+	int16_t min_x = (int16_t)std::floor(min.x / BlockConfig::g_dBlockSize);
+	int16_t min_y = (int16_t)std::floor((min.y - offset_y) / BlockConfig::g_dBlockSize);
+	int16_t min_z = (int16_t)std::floor(min.z / BlockConfig::g_dBlockSize);
+	int16_t max_x = (int16_t)std::floor(max.x / BlockConfig::g_dBlockSize);
+	int16_t max_y = (int16_t)std::floor((max.y - offset_y) / BlockConfig::g_dBlockSize);
+	int16_t max_z = (int16_t)std::floor(max.z / BlockConfig::g_dBlockSize);
+	for (int16_t bx = min_x; bx <= max_x; bx++)
+	{
+		for (int16_t by = min_y; by <= max_y; by++)
+		{
+			for (int16_t bz = min_z; bz <= max_z; bz++)
+			{
+				LoadPhysicsBlock(bx, by, bz)->SetFrameId(frameId);
+			}
+		}
+	}
+}
+
+std::shared_ptr<CPhysicsBlock> ParaEngine::CPhysicsWorld::LoadPhysicsBlock(uint16_t bx, uint16_t by, uint16_t bz)
+{
+	uint64_t id = CPhysicsBlock::PackID(bx, by, bz);
+	auto it = m_mapPhysicsBlocks.find(id);
+	if (it != m_mapPhysicsBlocks.end()) 
+	{
+		// 不存在加载失败情况, 可以屏蔽此行
+		std::shared_ptr<CPhysicsBlock> pBlock = it->second;
+		pBlock->Load(m_pPhysicsWorld);
+		return pBlock;
+	}
+	else
+	{
+		std::shared_ptr<CPhysicsBlock> pBlock = std::make_shared<CPhysicsBlock>(id);
+		pBlock->Load(m_pPhysicsWorld);
+		m_mapPhysicsBlocks.insert(std::make_pair(id, pBlock));
+		return pBlock;
+	}
 }
 
 /**

@@ -146,11 +146,9 @@ namespace ParaEngine
 		btCollisionWorld* m_collisionWorld;
 
 		///keep the collision shapes, for deletion/cleanup
-		// BulletPhysicsShape_Array_Type	m_collisionShapes;
 		IParaPhysicsShape_Array_Type	m_collisionShapes;
 
 		// keep all actors
-		// BulletPhysicsActor_Map_Type m_actors;
 		IParaPhysicsActor_Map_Type m_actors;
 
 		CPhysicsDebugDraw m_physics_debug_draw;

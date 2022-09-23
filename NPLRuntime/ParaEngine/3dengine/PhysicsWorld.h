@@ -1,6 +1,9 @@
 #pragma once
 #include "IParaPhysics.h"
+
 #include <list>
+#include <unordered_map>
+#include <string>
 
 /** different physics engine has different winding order. */
 // #define INVERT_PHYSICS_FACE_WINDING
@@ -9,6 +12,74 @@ namespace ParaEngine
 {
 	struct MeshEntity;
 	struct ParaXEntity;
+	class CShapeAABB;
+	class BlockModel;
+
+	class CPhysicsBlock
+	{
+	public:
+		class CPhysicsBlockShape
+		{
+		public:
+			CPhysicsBlockShape(): m_shape(nullptr) {}
+			~CPhysicsBlockShape() {  }
+
+			IParaPhysicsShape* m_shape; 
+			std::string m_hash;
+		};
+
+		CPhysicsBlock(uint64_t id)
+		{
+			m_id = id;
+			m_frameId = 0;
+			m_actor = nullptr;
+			m_world = nullptr;
+		}
+		
+		~CPhysicsBlock() 
+		{
+			Unload();
+		}
+
+		uint64_t GetID() { return m_id; }
+
+		void SetFrameId(int16_t frameId) { m_frameId = frameId; }
+		int16_t GetFrameId() { return m_frameId; }
+
+		static uint64_t PackID(uint16_t bx, uint16_t by, uint16_t bz)
+		{
+			return (((uint64)by)<<32) + (((uint64)bx) << 16)  + bz;
+		}
+
+		static void UnPackID(uint64_t id, uint16_t& bx, uint16_t& by, uint16_t& bz)
+		{	
+			bz = (uint16_t)(id & 0xffff);
+			bx = (uint16_t)((id >> 16) & 0xffff);
+			by = (uint16_t)((id >> 32) & 0xffff);
+		}
+
+		IParaPhysicsShape* GetShape(uint32_t key, BlockModel& model, IParaPhysics* world);
+
+		static std::unordered_map<uint32_t, uint16_t>* GetShapeIndexMap() 
+		{
+			static std::unordered_map<uint32_t, uint16_t> s_physics_block_shape_index_map;
+			return &s_physics_block_shape_index_map;
+		}
+
+		static std::vector<std::shared_ptr<CPhysicsBlockShape>>* GetShapeList() 
+		{
+			static std::vector<std::shared_ptr<CPhysicsBlockShape>> s_physics_block_shape_list;
+			return &s_physics_block_shape_list;
+		}
+
+		void Load(IParaPhysics* world);
+		void Unload();
+	private:
+		uint64_t m_id;   
+		IParaPhysicsActor* m_actor;  
+		IParaPhysics* m_world;
+		int16_t m_frameId;
+	};
 
 	/**
 	* The global physics scene (NxScene) and physics SDK is encapsulated in a member object of scene manager. 
@@ -47,6 +118,8 @@ namespace ParaEngine
 		
 			TriangleMeshShape ():m_pMeshEntity(NULL), m_vScale (1.f,1.f,1.f){}
 		};
+
+
 
 	public:
 		CPhysicsWorld(void);
@@ -89,8 +162,10 @@ namespace ParaEngine
 		IParaPhysicsActor* CreateStaticMesh(MeshEntity* ppMesh, const Matrix4& globalMat, uint32 nShapeGroup = 0, vector<IParaPhysicsActor*>* pOutputPhysicsActor = NULL, void* pUserData=NULL);
 		IParaPhysicsActor* CreateStaticMesh(ParaXEntity* ppMesh, const Matrix4& globalMat, uint32 nShapeGroup = 0, vector<IParaPhysicsActor*>* pOutputPhysicsActor = NULL, void* pUserData = NULL);
 
-
 		IParaPhysicsActor* CreateDynamicMesh(CBaseObject* obj);
+		
+		std::shared_ptr<CPhysicsBlock> LoadPhysicsBlock(uint16_t bx, uint16_t by, uint16_t bz);
+		void LoadPhysicsBlock(CShapeAABB* aabb, int16_t frameId = 0, float extend = 0.5f);
 
 		/** release an actor by calling this function. */
 		void ReleaseActor(IParaPhysicsActor* pActor);
@@ -111,6 +186,7 @@ namespace ParaEngine
 		/// all shapes used to composed the physical world. There may be multiple object using the same shape
 		TriangleMeshShape_Map_Type  m_listMeshShapes;
 		IParaPhysicsActor_Map_Type m_mapDynamicActors;
+		std::unordered_map<uint64_t, std::shared_ptr<CPhysicsBlock>> m_mapPhysicsBlocks;
 
 		/// whether to do dynamic simulation. It is turned off by default, which only provide basic collision detection. 
 		bool m_bRunDynamicSimulation;
