@@ -28,9 +28,10 @@ namespace ParaEngine
 	class CPhysicsBlock
 	{
 	public:
-		CPhysicsBlock(uint64_t id)
+		CPhysicsBlock(uint64_t id, uint32_t key)
 		{
 			m_id = id;
+			m_key = key;
 			m_frameId = 0;
 			m_actor = nullptr;
 			m_world = nullptr;
@@ -45,6 +46,8 @@ namespace ParaEngine
 
 		void SetFrameId(int16_t frameId) { m_frameId = frameId; }
 		int16_t GetFrameId() { return m_frameId; }
+		void SetKey(uint32_t key) { m_key = key; }
+		uint32_t GetKey() { return m_key; }
 
 		static uint64_t PackID(uint16_t bx, uint16_t by, uint16_t bz)
 		{
@@ -58,7 +61,7 @@ namespace ParaEngine
 			by = (uint16_t)((id >> 32) & 0xffff);
 		}
 
-		std::shared_ptr<CPhysicsBlockShape> GetShape(uint32_t key, BlockModel& model, IParaPhysics* world);
+		std::shared_ptr<CPhysicsBlockShape> GetShape(BlockModel& model, IParaPhysics* world);
 
 		static std::unordered_map<uint32_t, uint16_t>* GetShapeIndexMap() 
 		{
@@ -72,10 +75,11 @@ namespace ParaEngine
 			return &s_physics_block_shape_list;
 		}
 
-		void Load(IParaPhysics* world);
+		void Load(BlockModel& model, IParaPhysics* world);
 		void Unload();
 	private:
 		uint64_t m_id;   
+		uint32_t m_key;
 		IParaPhysicsActor* m_actor;  
 		IParaPhysics* m_world;
 		int16_t m_frameId;

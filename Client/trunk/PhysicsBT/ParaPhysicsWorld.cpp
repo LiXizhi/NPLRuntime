@@ -81,6 +81,7 @@ void ParaEngine::BulletPhysicsActor::ApplyCentralImpulse(PARAVECTOR3& impulse)
 CParaPhysicsWorld::CParaPhysicsWorld()
 	: m_dynamicsWorld(NULL), m_collisionWorld(NULL), m_broadphase(NULL), m_dispatcher(NULL), m_solver(NULL), m_collisionConfiguration(NULL), m_bInvertFaceWinding(false)
 {
+	m_exit = true;
 #ifdef WIN32
 #ifndef _DEBUG
 	//m_bInvertFaceWinding = true;
@@ -116,6 +117,7 @@ bool CParaPhysicsWorld::InitPhysics()
 	{
 		m_dynamicsWorld->setDebugDrawer(&m_physics_debug_draw);
 	}
+	m_exit = false;
 	return true;
 }
 
@@ -127,6 +129,7 @@ bool CParaPhysicsWorld::StepSimulation(float fDeltaTime)
 
 bool CParaPhysicsWorld::ExitPhysics()
 {
+	m_exit = true;
 	if (m_dynamicsWorld == 0)
 		return true;
 
@@ -340,9 +343,30 @@ void CParaPhysicsWorld::ReleaseActor(IParaPhysicsActor* pActor)
 	// 先查找避免二次释放, 世界退出自动释放全部, 但上层引用无法感知造成二次释放出错
 	if (m_actors.find(pActor) != m_actors.end())
 	{
-		m_actors.erase(pActor);
-		m_dynamicsWorld->removeCollisionObject((btCollisionObject*)(pActor->get()));
-		pActor->Release();
+		btCollisionObject* colObj = (btCollisionObject*)(pActor->get());
+		if (m_exit)
+		{
+			m_actors.erase(pActor);
+			m_dynamicsWorld->removeCollisionObject(colObj);
+			pActor->Release();
+		}
+		else 
+		{
+			CParaContactResultCallback callback;
+			m_dynamicsWorld->contactTest(colObj, callback);
+
+			m_actors.erase(pActor);
+			m_dynamicsWorld->removeCollisionObject(colObj);
+			pActor->Release();
+
+			auto it = callback.m_colObj1List.begin();
+			while (it != callback.m_colObj1List.end())
+			{
+				const btCollisionObject* colObj = *it;
+				colObj->activate();
+				it++;
+			}
+		}
 	}
 }
 
