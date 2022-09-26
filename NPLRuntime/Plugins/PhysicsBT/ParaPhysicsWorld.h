@@ -1,5 +1,6 @@
 ﻿#pragma once
 
+#include "btBulletCollisionCommon.h"
 #include "btBulletDynamicsCommon.h"
 #include "IParaPhysics.h"
 #include "PhysicsDebugDraw.h"
@@ -153,5 +154,21 @@ namespace ParaEngine
 
 		CPhysicsDebugDraw m_physics_debug_draw;
 		bool m_bInvertFaceWinding;
+	};
+
+	class CParaContactResultCallback: public btCollisionWorld::ContactResultCallback
+	{
+	public:
+		virtual	btScalar addSingleResult(btManifoldPoint& cp,	const btCollisionObjectWrapper* colObj0Wrap,int partId0,int index0,const btCollisionObjectWrapper* colObj1Wrap,int partId1,int index1)
+		{
+			const btCollisionObject* colObj0 = colObj0Wrap->getCollisionObject();
+			const btCollisionObject* colObj1 = colObj1Wrap->getCollisionObject();
+			m_colObj0List.push_back(colObj0);
+			m_colObj1List.push_back(colObj1);
+			return btScalar(0.f);
+		}
+
+		std::vector<const btCollisionObject*> m_colObj0List;
+		std::vector<const btCollisionObject*> m_colObj1List;
 	};
 }

@@ -343,9 +343,21 @@ void CParaPhysicsWorld::ReleaseActor(IParaPhysicsActor* pActor)
 	// 先查找避免二次释放, 世界退出自动释放全部, 但上层引用无法感知造成二次释放出错
 	if (m_actors.find(pActor) != m_actors.end())
 	{
+		CParaContactResultCallback callback;
+		btCollisionObject* colObj = (btCollisionObject*)(pActor->get());
+		m_dynamicsWorld->contactTest(colObj, callback);
+
 		m_actors.erase(pActor);
-		m_dynamicsWorld->removeCollisionObject((btCollisionObject*)(pActor->get()));
+		m_dynamicsWorld->removeCollisionObject(colObj);
 		pActor->Release();
+
+		auto it = callback.m_colObj1List.begin();
+		while (it != callback.m_colObj1List.end())
+		{
+			const btCollisionObject* colObj = *it;
+			colObj->activate();
+			it++;
+		}
 	}
 }
 
