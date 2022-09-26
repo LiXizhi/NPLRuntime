@@ -1258,13 +1258,13 @@ namespace ParaEngine
 		RenderDevicePtr pDevice = CGlobals::GetRenderDevice();
 		float blockSize = BlockConfig::g_blockSize;
 
-		if (!m_damangeTexture)
+		if (!m_damageTexture)
 		{
 			return;
 		}
-		else if (!m_damangeTexture->IsLoaded())
+		else if (!m_damageTexture->IsLoaded())
 		{
-			m_damangeTexture->LoadAsset();
+			m_damageTexture->LoadAsset();
 			return;
 		}
 
@@ -1295,7 +1295,7 @@ namespace ParaEngine
 		if (pEffect == 0)
 		{
 			// fixed function pipeline
-			pDevice->SetTexture(0, m_damangeTexture->GetTexture());
+			pDevice->SetTexture(0, m_damageTexture->GetTexture());
 
 			pDevice->SetRenderState(D3DRS_ALPHABLENDENABLE, TRUE);
 			pDevice->SetRenderState(D3DRS_ALPHATESTENABLE, FALSE);
@@ -1340,7 +1340,7 @@ namespace ParaEngine
 					matViewProj = (pView) * (pProj);
 				}
 
-				pDevice->SetTexture(0, m_damangeTexture->GetTexture());
+				pDevice->SetTexture(0, m_damageTexture->GetTexture());
 
 				pDevice->SetRenderState(D3DRS_ALPHABLENDENABLE, TRUE);
 				pDevice->SetRenderState(D3DRS_ZWRITEENABLE, FALSE);
@@ -1950,21 +1950,21 @@ namespace ParaEngine
 
 	void BlockWorldClient::SetDamageTexture(const char* textureName)
 	{
-		if (m_damangeTexture)
+		if (m_damageTexture)
 		{
-			if (m_damangeTexture->GetKey() == textureName)
+			if (m_damageTexture->GetKey() == textureName)
 			{
 				return;
 			}
 		}
-		m_damangeTexture = CGlobals::GetAssetManager()->LoadTexture("", textureName, TextureEntity::StaticTexture);
+		m_damageTexture = CGlobals::GetAssetManager()->LoadTexture("", textureName, TextureEntity::StaticTexture);
 	}
 
 	std::string BlockWorldClient::GetDamageTexture()
 	{
-		if (m_damangeTexture)
+		if (m_damageTexture)
 		{
-			return (m_damangeTexture->GetKey());
+			return (m_damageTexture->GetKey());
 		}
 		return "";
 	}
