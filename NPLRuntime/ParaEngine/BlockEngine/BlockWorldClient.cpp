@@ -1281,7 +1281,7 @@ namespace ParaEngine
 			int instFloatCount = 0;
 			{
 				Vector3 vOffset((m_damagedBlockId.x - renderBlockOfs_x) * fBlockSize, (m_damagedBlockId.y - renderBlockOfs_y) * fBlockSize + verticalOffset, (m_damagedBlockId.z - renderBlockOfs_z) * fBlockSize);
-				FillSelectBlockVertice(NULL, 0, 0, 0, &(m_select_block_vertices[instFloatCount * 24]), vOffset, fScaledBlockSize, ((int)(max(m_damageDegree - 0.1f, 0.f) * 8)) / 8.f, 1 / 8.f);
+				FillSelectBlockVertice(0xff, 0, 0, 0, &(m_select_block_vertices[instFloatCount * 24]), vOffset, fScaledBlockSize, ((int)(max(m_damageDegree - 0.1f, 0.f) * 8)) / 8.f, 1 / 8.f);
 				instFloatCount++;
 				curInstCount++;
 			}
@@ -1328,7 +1328,7 @@ namespace ParaEngine
 				{
 					Vector3 vOffset((m_damagedBlockId.x - renderBlockOfs_x) * fBlockSize, (m_damagedBlockId.y - renderBlockOfs_y) * fBlockSize + verticalOffset, (m_damagedBlockId.z - renderBlockOfs_z) * fBlockSize);
 					// animate the UV's y offset according to m_damageDegree
-					FillSelectBlockVertice(NULL, 0, 0, 0, &(m_select_block_vertices[instFloatCount * 24]), vOffset, fScaledBlockSize, ((int)(max(m_damageDegree - 0.1f, 0.f) * 8)) / 8.f, 1 / 8.f);
+					FillSelectBlockVertice(0xff, 0, 0, 0, &(m_select_block_vertices[instFloatCount * 24]), vOffset, fScaledBlockSize, ((int)(max(m_damageDegree - 0.1f, 0.f) * 8)) / 8.f, 1 / 8.f);
 					instFloatCount++;
 					curInstCount++;
 				}
@@ -1679,7 +1679,7 @@ namespace ParaEngine
 			SelectBlockVertex blockModel[24];
 
 			Vector3 vOffset(0, 0, 0);
-			FillSelectBlockVertice(NULL, 0, 0, 0, blockModel, vOffset, BlockConfig::g_blockSize);
+			FillSelectBlockVertice(0xff, 0, 0, 0, blockModel, vOffset, BlockConfig::g_blockSize);
 
 			m_select_block_vertices.resize(24 * m_maxSelectBlockPerBatch);
 
