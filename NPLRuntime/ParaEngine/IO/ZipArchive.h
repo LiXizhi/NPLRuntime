@@ -395,7 +395,7 @@ namespace ParaEngine
 		/* add file alias*/
 		void AddAlias(const std::string& from, const std::string& to);
 		/* return true if there is an alias, and out contains the alias */
-		bool GetAlias(const std::string& from, std::string& out);
+		const std::string * GetAlias(const std::string& from);
 	private:
 		IReadFile* m_pFile;
 		vector<SZipFileEntryPtr> m_FileList;
