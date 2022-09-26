@@ -1225,13 +1225,13 @@ namespace ParaEngine
 		RenderDevicePtr pDevice = CGlobals::GetRenderDevice();
 		float blockSize = BlockConfig::g_blockSize;
 
-		if (!m_damangeTexture)
+		if (!m_damageTexture)
 		{
 			return;
 		}
-		else if (!m_damangeTexture->IsLoaded())
+		else if (!m_damageTexture->IsLoaded())
 		{
-			m_damangeTexture->LoadAsset();
+			m_damageTexture->LoadAsset();
 			return;
 		}
 
@@ -1259,41 +1259,9 @@ namespace ParaEngine
 		pEffectManager->BeginEffect(TECH_BLOCK);
 		CEffectFile* pEffect = pEffectManager->GetCurrentEffectFile();
 
-		if (pEffect == 0)
+		if (pEffect != 0 && pEffect->begin(false))
 		{
-			// fixed function pipeline
-			GETD3D(CGlobals::GetRenderDevice())->SetTexture(0, m_damangeTexture->GetTexture());
-
-			pDevice->SetRenderState(ERenderState::ALPHABLENDENABLE, TRUE);
-			pDevice->SetRenderState(ERenderState::ALPHATESTENABLE, FALSE);
-			pDevice->SetRenderState(ERenderState::ZWRITEENABLE, FALSE);
-
-			GETD3D(CGlobals::GetRenderDevice())->SetFVF(mesh_vertex_plain::FVF);
-
-			Matrix4 vWorldMatrix(Matrix4::IDENTITY);
-			vWorldMatrix._41 = -renderBlockOfs_remain.x - (fScaledBlockSize - fBlockSize) * 0.5f;
-			vWorldMatrix._42 = -renderBlockOfs_remain.y - (fScaledBlockSize - fBlockSize) * 0.5f;
-			vWorldMatrix._43 = -renderBlockOfs_remain.z - (fScaledBlockSize - fBlockSize) * 0.5f;
-
-			GETD3D(CGlobals::GetRenderDevice())->SetTransform(D3DTS_WORLD, vWorldMatrix.GetPointer());
-
-			int curInstCount = 0;
-			int instFloatCount = 0;
-			{
-				Vector3 vOffset((m_damagedBlockId.x - renderBlockOfs_x) * fBlockSize, (m_damagedBlockId.y - renderBlockOfs_y) * fBlockSize + verticalOffset, (m_damagedBlockId.z - renderBlockOfs_z) * fBlockSize);
-				FillSelectBlockVertice(0xff, 0, 0, 0, &(m_select_block_vertices[instFloatCount * 24]), vOffset, fScaledBlockSize, ((int)(max(m_damageDegree - 0.1f, 0.f) * 8)) / 8.f, 1 / 8.f);
-				instFloatCount++;
-				curInstCount++;
-			}
-			CGlobals::GetRenderDevice()->DrawIndexedPrimitiveUP(EPrimitiveType::TRIANGLELIST, 0, curInstCount * 24, curInstCount * 12, &(m_select_block_indices[0]), PixelFormat::INDEX16, &(m_select_block_vertices[0]), sizeof(SelectBlockVertex));
-
-			pDevice->SetRenderState(ERenderState::ALPHATESTENABLE, TRUE);
-			pDevice->SetRenderState(ERenderState::ALPHABLENDENABLE, FALSE);
-			pDevice->SetRenderState(ERenderState::ZWRITEENABLE, TRUE);
-		}
-		else if (pEffect != 0 && pEffect->begin(false))
-		{
-			GETD3D(CGlobals::GetRenderDevice())->SetVertexDeclaration(GetSelectBlockVertexLayout());
+			CGlobals::GetRenderDevice()->SetVertexDeclaration(GetSelectBlockVertexLayout());
 
 			if (pEffect->BeginPass(2))
 			{
@@ -1307,7 +1275,7 @@ namespace ParaEngine
 					matViewProj = (pView) * (pProj);
 				}
 
-				GETD3D(CGlobals::GetRenderDevice())->SetTexture(0, m_damangeTexture->GetTexture());
+				CGlobals::GetRenderDevice()->SetTexture(0, m_damageTexture->GetTexture());
 
 				pDevice->SetRenderState(ERenderState::ALPHABLENDENABLE, TRUE);
 				pDevice->SetRenderState(ERenderState::ZWRITEENABLE, FALSE);
@@ -1333,14 +1301,14 @@ namespace ParaEngine
 					curInstCount++;
 				}
 				CGlobals::GetRenderDevice()->DrawIndexedPrimitiveUP(EPrimitiveType::TRIANGLELIST, 0, curInstCount * 24, curInstCount * 12, &(m_select_block_indices[0]), PixelFormat::INDEX16, &(m_select_block_vertices[0]), sizeof(SelectBlockVertex));
-
+				
 				pEffect->EndPass();
 				pDevice->SetRenderState(ERenderState::ALPHABLENDENABLE, FALSE);
 				pDevice->SetRenderState(ERenderState::ZWRITEENABLE, TRUE);
 			}
 			pEffect->end();
 		}
-#endif
+#endif 
 	}
 
 	int BlockWorldClient::FillSelectBlockInvert(uint16_t nNearbyValue, uint16_t x, uint16_t y, uint16_t z, SelectBlockVertex* blockModel, const Vector3& vOffset, const float blockSize, float fUV_Y_Offset /*= 0.f*/, float fUV_Y_Size/*=1.f*/)
@@ -1916,21 +1884,21 @@ namespace ParaEngine
 
 	void BlockWorldClient::SetDamageTexture(const char* textureName)
 	{
-		if (m_damangeTexture)
+		if (m_damageTexture)
 		{
-			if (m_damangeTexture->GetKey() == textureName)
+			if (m_damageTexture->GetKey() == textureName)
 			{
 				return;
 			}
 		}
-		m_damangeTexture = CGlobals::GetAssetManager()->LoadTexture("", textureName, TextureEntity::StaticTexture);
+		m_damageTexture = CGlobals::GetAssetManager()->LoadTexture("", textureName, TextureEntity::StaticTexture);
 	}
 
 	std::string BlockWorldClient::GetDamageTexture()
 	{
-		if (m_damangeTexture)
+		if (m_damageTexture)
 		{
-			return (m_damangeTexture->GetKey());
+			return (m_damageTexture->GetKey());
 		}
 		return "";
 	}
