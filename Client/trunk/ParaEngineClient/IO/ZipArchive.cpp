@@ -1035,10 +1035,10 @@ int CZipArchive::findFile(const ArchiveFileFindItem* item)
 	int nIndex = findFileImp(item, filename, bRefreshHash);
 	if (nIndex < 0 && !m_fileAliasMap.empty())
 	{
-		std::string aliasFilename;
-		if (GetAlias(filename, aliasFilename))
+		const std::string *aliasFilename = GetAlias(filename);
+		if (aliasFilename!=nullptr)
 		{
-			nIndex = findFileImp(item, aliasFilename.c_str(), true);
+			nIndex = findFileImp(item, aliasFilename->c_str(), true);
 		}
 	}
 	return nIndex;
@@ -1827,17 +1827,16 @@ void ParaEngine::CZipArchive::AddAlias(const std::string& from, const std::strin
 	m_fileAliasMap[from] = to;
 }
 
-bool ParaEngine::CZipArchive::GetAlias(const std::string& from, std::string& out)
+const std::string *  ParaEngine::CZipArchive::GetAlias(const std::string& from)
 {
 	if (!m_fileAliasMap.empty()) {
 		auto it = m_fileAliasMap.find(from);
 		if (it != m_fileAliasMap.end())
 		{
-			out = it->second;
-			return true;
+			return &(it->second);
 		}
 	}
-	return false;
+	return nullptr;
 }
 
 int ParaEngine::CZipArchive::InstallFields(CAttributeClass* pClass, bool bOverride)
