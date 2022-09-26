@@ -279,6 +279,8 @@ namespace ParaEngine
 
 		ATTRIBUTE_METHOD1(CZipArchive, IsIgnoreCase_s, bool*) { *p1 = cls->IsIgnoreCase(); return S_OK; }
 		
+		ATTRIBUTE_METHOD1(CZipArchive, AddAliasFrom_s, const char*) { cls->AddAliasFrom(p1); return S_OK; }
+		ATTRIBUTE_METHOD1(CZipArchive, AddAliasTo_s, const char*) { cls->AddAliasTo(p1); return S_OK; }
 
 
 		virtual int InstallFields(CAttributeClass* pClass, bool bOverride);
@@ -385,6 +387,15 @@ namespace ParaEngine
 		int GetFileCount();
 
 		virtual bool IsIgnoreCase() const { return m_bIgnoreCase;  }
+
+
+		void AddAliasFrom(const char* from);
+		void AddAliasTo(const char* to);
+
+		/* add file alias*/
+		void AddAlias(const std::string& from, const std::string& to);
+		/* return true if there is an alias, and out contains the alias */
+		const std::string * GetAlias(const std::string& from);
 	private:
 		IReadFile* m_pFile;
 		vector<SZipFileEntryPtr> m_FileList;
@@ -392,7 +403,7 @@ namespace ParaEngine
 		SZipFileEntry* m_pEntries;
 		// save name block
 		vector<char> m_nameBlock;
-
+		std::map<std::string, std::string> m_fileAliasMap;
 
 		bool m_bIgnoreCase;
 		/** if this is true, all file path in this archive will be regarded as in the m_sRootPath, where m_sRootPath is usually the archive file's parent directory.*/
@@ -405,7 +416,7 @@ namespace ParaEngine
 	private:
 		/** return file index. -1 is returned if file not found.*/
 		int findFile(const ArchiveFileFindItem* item);
-
+		int findFileImp(const ArchiveFileFindItem* item, const char* filename, bool bRefreshHash);
 
 		IReadFile* openFile(int index);
 		/* open a zip file. this function is only called inside OpenFile() virtual method */
