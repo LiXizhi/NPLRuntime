@@ -153,7 +153,6 @@ CBipedObject::CBipedObject() :
 	m_dwPhysicsGroupMask(DEFAULT_PHYSICS_GROUP_MASK),
 	m_dwPhysicsMethod(PHYSICS_FORCE_NO_PHYSICS), m_nPhysicsGroup(0),
 	m_sPhysicsShape("box"),
-	m_fPhysicsMass(1.0f),
 	m_dynamicPhysicsActor(NULL),
 	m_fBootHeight(0.f),
 	m_fSizeScale(1.0f),
@@ -4756,30 +4755,30 @@ void ParaEngine::CBipedObject::SetPhysicsProperty(const char* property)
 	NPL::NPLObjectProxy msg = NPL::NPLHelper::StringToNPLTable(property, (int)strlen(property));
 	if (msg.GetType() == NPL::NPLObjectBase::NPLObjectType_Table) 
 	{
-		if (msg["Mass"].GetType() == NPL::NPLObjectBase::NPLObjectType_Number) m_dynamicPhysicsActor->SetMass((double)msg["Mass"]);
-		if (msg["LocalInertiaX"].GetType() == NPL::NPLObjectBase::NPLObjectType_Number) m_dynamicPhysicsActor->SetLocalInertia(PARAVECTOR3((double)msg["LocalInertiaX"], (double)msg["LocalInertiaY"], (double)msg["LocalInertiaZ"]));
-		if (msg["GravityX"].GetType() == NPL::NPLObjectBase::NPLObjectType_Number) m_dynamicPhysicsActor->SetGravity(PARAVECTOR3((double)msg["GravityX"], (double)msg["GravityY"], (double)msg["GravityZ"]));
-		if (msg["LinearDamping"].GetType() == NPL::NPLObjectBase::NPLObjectType_Number) m_dynamicPhysicsActor->SetLinearDamping((double)msg["LinearDamping"]);
-		if (msg["AngularDamping"].GetType() == NPL::NPLObjectBase::NPLObjectType_Number) m_dynamicPhysicsActor->SetAngularDamping((double)msg["AngularDamping"]);
-		if (msg["LinearFactorX"].GetType() == NPL::NPLObjectBase::NPLObjectType_Number) m_dynamicPhysicsActor->SetLinearFactor(PARAVECTOR3((double)msg["LinearFactorX"], (double)msg["LinearFactorY"], (double)msg["LinearFactorZ"]));
-		if (msg["AngularFactorX"].GetType() == NPL::NPLObjectBase::NPLObjectType_Number) m_dynamicPhysicsActor->SetAngularFactor(PARAVECTOR3((double)msg["AngularFactorX"], (double)msg["AngularFactorY"], (double)msg["AngularFactorZ"]));
-		if (msg["LinearVelocityX"].GetType() == NPL::NPLObjectBase::NPLObjectType_Number) m_dynamicPhysicsActor->SetLinearVelocity(PARAVECTOR3((double)msg["LinearVelocityX"], (double)msg["LinearVelocityY"], (double)msg["LinearVelocityZ"]));
-		if (msg["AngularVelocityX"].GetType() == NPL::NPLObjectBase::NPLObjectType_Number) m_dynamicPhysicsActor->SetAngularVelocity(PARAVECTOR3((double)msg["AngularVelocityX"], (double)msg["AngularVelocityY"], (double)msg["AngularVelocityZ"]));
+		if (msg["Mass"].GetType() == NPL::NPLObjectBase::NPLObjectType_Number) m_dynamicPhysicsActor->SetMass((float)(double)msg["Mass"]);
+		if (msg["LocalInertiaX"].GetType() == NPL::NPLObjectBase::NPLObjectType_Number) m_dynamicPhysicsActor->SetLocalInertia(PARAVECTOR3((float)(double)msg["LocalInertiaX"], (float)(double)msg["LocalInertiaY"], (float)(double)msg["LocalInertiaZ"]));
+		if (msg["GravityX"].GetType() == NPL::NPLObjectBase::NPLObjectType_Number) m_dynamicPhysicsActor->SetGravity(PARAVECTOR3((float)(double)msg["GravityX"], (float)(double)msg["GravityY"], (float)(double)msg["GravityZ"]));
+		if (msg["LinearDamping"].GetType() == NPL::NPLObjectBase::NPLObjectType_Number) m_dynamicPhysicsActor->SetLinearDamping((float)(double)msg["LinearDamping"]);
+		if (msg["AngularDamping"].GetType() == NPL::NPLObjectBase::NPLObjectType_Number) m_dynamicPhysicsActor->SetAngularDamping((float)(double)msg["AngularDamping"]);
+		if (msg["LinearFactorX"].GetType() == NPL::NPLObjectBase::NPLObjectType_Number) m_dynamicPhysicsActor->SetLinearFactor(PARAVECTOR3((float)(double)msg["LinearFactorX"], (float)(double)msg["LinearFactorY"], (float)(double)msg["LinearFactorZ"]));
+		if (msg["AngularFactorX"].GetType() == NPL::NPLObjectBase::NPLObjectType_Number) m_dynamicPhysicsActor->SetAngularFactor(PARAVECTOR3((float)(double)msg["AngularFactorX"], (float)(double)msg["AngularFactorY"], (float)(double)msg["AngularFactorZ"]));
+		if (msg["LinearVelocityX"].GetType() == NPL::NPLObjectBase::NPLObjectType_Number) m_dynamicPhysicsActor->SetLinearVelocity(PARAVECTOR3((float)(double)msg["LinearVelocityX"], (float)(double)msg["LinearVelocityY"], (float)(double)msg["LinearVelocityZ"]));
+		if (msg["AngularVelocityX"].GetType() == NPL::NPLObjectBase::NPLObjectType_Number) m_dynamicPhysicsActor->SetAngularVelocity(PARAVECTOR3((float)(double)msg["AngularVelocityX"], (float)(double)msg["AngularVelocityY"], (float)(double)msg["AngularVelocityZ"]));
 		if (msg["Flags"].GetType() == NPL::NPLObjectBase::NPLObjectType_Number) m_dynamicPhysicsActor->SetFlags((int)msg["Flags"]);
 		if (msg["ActivationState"].GetType() == NPL::NPLObjectBase::NPLObjectType_Number) m_dynamicPhysicsActor->SetActivationState((int)msg["ActivationState"]);
-		if (msg["DeactivationTime"].GetType() == NPL::NPLObjectBase::NPLObjectType_Number) m_dynamicPhysicsActor->SetDeactivationTime((double)msg["DeactivationTime"]);
-		if (msg["Restitution"].GetType() == NPL::NPLObjectBase::NPLObjectType_Number) m_dynamicPhysicsActor->SetRestitution((double)msg["Restitution"]);
-		if (msg["Friction"].GetType() == NPL::NPLObjectBase::NPLObjectType_Number) m_dynamicPhysicsActor->SetFriction((double)msg["Friction"]);
-		if (msg["RollingFriction"].GetType() == NPL::NPLObjectBase::NPLObjectType_Number) m_dynamicPhysicsActor->SetRollingFriction((double)msg["RollingFriction"]);
-		if (msg["SpinningFriction"].GetType() == NPL::NPLObjectBase::NPLObjectType_Number) m_dynamicPhysicsActor->SetSpinningFriction((double)msg["SpinningFriction"]);
-		if (msg["ContactStiffness"].GetType() == NPL::NPLObjectBase::NPLObjectType_Number) m_dynamicPhysicsActor->SetContactStiffness((double)msg["ContactStiffness"]);
-		if (msg["ContactDamping"].GetType() == NPL::NPLObjectBase::NPLObjectType_Number) m_dynamicPhysicsActor->SetContactDamping((double)msg["ContactDamping"]);
+		if (msg["DeactivationTime"].GetType() == NPL::NPLObjectBase::NPLObjectType_Number) m_dynamicPhysicsActor->SetDeactivationTime((float)(double)msg["DeactivationTime"]);
+		if (msg["Restitution"].GetType() == NPL::NPLObjectBase::NPLObjectType_Number) m_dynamicPhysicsActor->SetRestitution((float)(double)msg["Restitution"]);
+		if (msg["Friction"].GetType() == NPL::NPLObjectBase::NPLObjectType_Number) m_dynamicPhysicsActor->SetFriction((float)(double)msg["Friction"]);
+		if (msg["RollingFriction"].GetType() == NPL::NPLObjectBase::NPLObjectType_Number) m_dynamicPhysicsActor->SetRollingFriction((float)(double)msg["RollingFriction"]);
+		if (msg["SpinningFriction"].GetType() == NPL::NPLObjectBase::NPLObjectType_Number) m_dynamicPhysicsActor->SetSpinningFriction((float)(double)msg["SpinningFriction"]);
+		if (msg["ContactStiffness"].GetType() == NPL::NPLObjectBase::NPLObjectType_Number) m_dynamicPhysicsActor->SetContactStiffness((float)(double)msg["ContactStiffness"]);
+		if (msg["ContactDamping"].GetType() == NPL::NPLObjectBase::NPLObjectType_Number) m_dynamicPhysicsActor->SetContactDamping((float)(double)msg["ContactDamping"]);
 		if (msg["IslandTag"].GetType() == NPL::NPLObjectBase::NPLObjectType_Number) m_dynamicPhysicsActor->SetIslandTag((int)msg["IslandTag"]);
 		if (msg["CompanionId"].GetType() == NPL::NPLObjectBase::NPLObjectType_Number) m_dynamicPhysicsActor->SetCompanionId((int)msg["CompanionId"]);
-		if (msg["HitFraction"].GetType() == NPL::NPLObjectBase::NPLObjectType_Number) m_dynamicPhysicsActor->SetHitFraction((double)msg["HitFraction"]);
+		if (msg["HitFraction"].GetType() == NPL::NPLObjectBase::NPLObjectType_Number) m_dynamicPhysicsActor->SetHitFraction((float)(double)msg["HitFraction"]);
 		if (msg["CollisionFlags"].GetType() == NPL::NPLObjectBase::NPLObjectType_Number) m_dynamicPhysicsActor->SetCollisionFlags((int)msg["CollisionFlags"]);
-		if (msg["CcdSweptSphereRadius"].GetType() == NPL::NPLObjectBase::NPLObjectType_Number) m_dynamicPhysicsActor->SetCcdSweptSphereRadius((double)msg["CcdSweptSphereRadius"]);
-		if (msg["CcdMotionThreshold"].GetType() == NPL::NPLObjectBase::NPLObjectType_Number) m_dynamicPhysicsActor->SetCcdMotionThreshold((double)msg["CcdMotionThreshold"]);
+		if (msg["CcdSweptSphereRadius"].GetType() == NPL::NPLObjectBase::NPLObjectType_Number) m_dynamicPhysicsActor->SetCcdSweptSphereRadius((float)(double)msg["CcdSweptSphereRadius"]);
+		if (msg["CcdMotionThreshold"].GetType() == NPL::NPLObjectBase::NPLObjectType_Number) m_dynamicPhysicsActor->SetCcdMotionThreshold((float)(double)msg["CcdMotionThreshold"]);
 	}
 }
 

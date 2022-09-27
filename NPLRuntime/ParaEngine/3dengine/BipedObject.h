@@ -784,9 +784,6 @@ namespace ParaEngine
 		// 设置获取物理属性
 		virtual void SetPhysicsProperty(const char* property);
 		virtual const char* GetPhysicsProperty();
-		// 设置物理质量
-		virtual void SetPhysicsMass(float mass) { m_fPhysicsMass = mass; }
-		virtual float GetPhysicsMass() { return m_fPhysicsMass; }
 		// 是否启用动态物理
 		virtual void EnableDynamicPhysics(bool bEnable);
 		virtual bool IsDynamicPhysicsEnabled();
@@ -895,7 +892,6 @@ namespace ParaEngine
 		float		m_fPhysicsHeight;
 
 		std::string m_sPhysicsShape;
-		float m_fPhysicsMass;
 		IParaPhysicsActor* m_dynamicPhysicsActor;
 
 		// the biped state manager

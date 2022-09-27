@@ -538,9 +538,6 @@ public:
 	ATTRIBUTE_METHOD1(CBaseObject, IsDynamicPhysicsEnabled_s, bool*)	{ *p1 = cls->IsDynamicPhysicsEnabled(); return S_OK; }
 	ATTRIBUTE_METHOD1(CBaseObject, EnableDynamicPhysics_s, bool)	{ cls->EnableDynamicPhysics(p1); return S_OK; }
 
-	ATTRIBUTE_METHOD1(CBaseObject, GetPhysicsMass_s, float*)	{ *p1 = cls->GetPhysicsMass(); return S_OK; }
-	ATTRIBUTE_METHOD1(CBaseObject, SetPhysicsMass_s, float)	{ cls->SetPhysicsMass(p1); return S_OK; }
-
 	ATTRIBUTE_METHOD1(CBaseObject, GetPhysicsShape_s, const char**)	{ *p1 = cls->GetPhysicsShape(); return S_OK; }
 	ATTRIBUTE_METHOD1(CBaseObject, SetPhysicsShape_s, const char*)	{ cls->SetPhysicsShape(p1); return S_OK; }
 
@@ -744,9 +741,6 @@ public:
 	// 是否启用动态物理
 	virtual void EnableDynamicPhysics(bool bEnable);
 	virtual bool IsDynamicPhysicsEnabled();
-	// 设置物理质量
-	virtual void SetPhysicsMass(float mass) {}
-	virtual float GetPhysicsMass() { return 0.0f; }
 	// 设置物理速度
 	virtual void ApplyCentralImpulse(Vector3 impulse) {}
 
