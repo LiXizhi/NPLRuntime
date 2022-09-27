@@ -389,7 +389,7 @@ IParaPhysicsActor* ParaEngine::CPhysicsWorld::CreateDynamicMesh(CBaseObject* obj
 	ParaPhysicsActorDesc ActorDesc;
 	ActorDesc.m_group = IParaPhysicsGroup::DEFAULT;
 	ActorDesc.m_mask = -1;
-	ActorDesc.m_mass = obj->GetPhysicsMass();
+	ActorDesc.m_mass = 1.0f;
 	ActorDesc.m_pShape = pShape;
 
 	// set world position
