@@ -124,7 +124,7 @@ namespace ParaEngine
 		/// return pointer to the low level physics engine shape object. 
 		virtual void* get() = 0;
 		virtual void Release() = 0;
-		virtual void ApplyCentralImpulse(PARAVECTOR3& impulse) {}
+		virtual void ApplyCentralImpulse(const PARAVECTOR3& impulse) {}
 		virtual PARAVECTOR3 GetOrigin() { return PARAVECTOR3(); }
 		
 		void* m_pUserData;

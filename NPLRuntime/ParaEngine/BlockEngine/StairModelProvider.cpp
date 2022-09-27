@@ -651,7 +651,7 @@ void ParaEngine::CStairModelProvider::cloneAndRotateModels(BlockModel &tempModel
 				vert.SetPosition(newPt.x, newPt.y, newPt.z);
 
 				vert.GetNormal(pt);
-				newPt = vec3RotateByPoint(Vector3(0,0,0), pt, angles);
+				newPt = vec3RotateByPoint(Vector3(0.0f, 0.0f, 0.0f), pt, angles);
 				newPt.normalise();
 				vert.SetNormal(newPt.x, newPt.y, newPt.z);
 
