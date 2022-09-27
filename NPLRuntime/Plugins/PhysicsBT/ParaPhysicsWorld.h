@@ -63,7 +63,57 @@ namespace ParaEngine
 		virtual void ApplyCentralImpulse(PARAVECTOR3& impulse);
 		virtual PARAVECTOR3 GetOrigin();
 
-		/// pointer to the low level physics engine actor(rigid body). 
+		virtual void Activate();
+		virtual bool IsActive();
+		virtual float GetMass();
+		virtual void SetMass(float mass);
+		virtual PARAVECTOR3 GetLocalInertia();
+		virtual void SetLocalInertia(PARAVECTOR3& inertia);
+		virtual PARAVECTOR3 GetGravity();
+		virtual void SetGravity(PARAVECTOR3& gravity);
+		virtual float GetLinearDamping();
+		virtual void SetLinearDamping(float damping);
+		virtual float GetAngularDamping();
+		virtual void SetAngularDamping(float damping);
+		virtual PARAVECTOR3 GetLinearFactor();
+		virtual void SetAngularFactor(PARAVECTOR3& factor);
+		virtual PARAVECTOR3 GetAngularFactor();
+		virtual void SetLinearFactor(PARAVECTOR3& factor);
+		virtual PARAVECTOR3 GetLinearVelocity();
+		virtual void SetLinearVelocity(PARAVECTOR3& velocity);
+		virtual PARAVECTOR3 GetAngularVelocity();
+		virtual void SetAngularVelocity(PARAVECTOR3& velocity);
+		virtual int GetFlags();
+		virtual void SetFlags(int flags);
+		virtual int GetActivationState();
+		virtual void SetActivationState(int state);
+		virtual float GetDeactivationTime();
+		virtual void SetDeactivationTime(float time);
+		virtual float GetRestitution();
+		virtual void SetRestitution(float restitution);
+		virtual float GetFriction();
+		virtual void SetFriction(float friction); 
+		virtual float GetRollingFriction();
+		virtual void SetRollingFriction(float friction); 
+		virtual float GetSpinningFriction();
+		virtual void SetSpinningFriction(float friction);
+		virtual float GetContactStiffness();
+		virtual void SetContactStiffness(float stiffness);
+		virtual float GetContactDamping();
+		virtual void SetContactDamping(float damping);
+		virtual int GetIslandTag();
+		virtual void SetIslandTag(int flags);
+		virtual int GetCompanionId();
+		virtual void SetCompanionId(int id);
+		virtual float GetHitFraction();
+		virtual void SetHitFraction(float fraction);
+		virtual int GetCollisionFlags();
+		virtual void SetCollisionFlags(int flags);
+		virtual float GetCcdSweptSphereRadius();
+		virtual void SetCcdSweptSphereRadius(float radius);
+		virtual float GetCcdMotionThreshold();
+		virtual void SetCcdMotionThreshold(float threshold);
+		
 		btRigidBody* m_pActor;
 	};
 
@@ -154,6 +204,7 @@ namespace ParaEngine
 
 		CPhysicsDebugDraw m_physics_debug_draw;
 		bool m_bInvertFaceWinding;
+		bool m_exit;
 	};
 
 	class CParaContactResultCallback: public btCollisionWorld::ContactResultCallback

@@ -544,6 +544,9 @@ public:
 	ATTRIBUTE_METHOD1(CBaseObject, GetPhysicsShape_s, const char**)	{ *p1 = cls->GetPhysicsShape(); return S_OK; }
 	ATTRIBUTE_METHOD1(CBaseObject, SetPhysicsShape_s, const char*)	{ cls->SetPhysicsShape(p1); return S_OK; }
 
+	ATTRIBUTE_METHOD1(CBaseObject, GetPhysicsProperty_s, const char**)	{ *p1 = cls->GetPhysicsProperty(); return S_OK; }
+	ATTRIBUTE_METHOD1(CBaseObject, SetPhysicsProperty_s, const char*)	{ cls->SetPhysicsProperty(p1); return S_OK; }
+
 	ATTRIBUTE_METHOD1(CBaseObject, ApplyCentralImpulse_s, Vector3)	{ cls->ApplyCentralImpulse(p1); return S_OK; }
 
 	ATTRIBUTE_METHOD1(CBaseObject, IsLODEnabled_s, bool*) { *p1 = cls->IsLODEnabled(); return S_OK; }
@@ -736,6 +739,8 @@ public:
 	// 设置物理基本形状 默认为box(AABB)
 	virtual void SetPhysicsShape(const char* shape);
 	virtual const char* GetPhysicsShape();
+	virtual void SetPhysicsProperty(const char* property);
+	virtual const char* GetPhysicsProperty();
 	// 是否启用动态物理
 	virtual void EnableDynamicPhysics(bool bEnable);
 	virtual bool IsDynamicPhysicsEnabled();
