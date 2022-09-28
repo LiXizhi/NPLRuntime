@@ -76,7 +76,7 @@ void ParaEngine::BulletPhysicsActor::Release()
 	delete this;
 }
 
-void ParaEngine::BulletPhysicsActor::ApplyCentralImpulse(PARAVECTOR3& impulse)
+void ParaEngine::BulletPhysicsActor::ApplyCentralImpulse(const PARAVECTOR3& impulse)
 {
 	m_pActor->setActivationState(ACTIVE_TAG);
 	m_pActor->applyCentralImpulse(btVector3(impulse.x, impulse.y, impulse.z));
