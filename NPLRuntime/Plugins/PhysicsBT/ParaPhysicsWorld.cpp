@@ -115,7 +115,7 @@ PARAVECTOR3 BulletPhysicsActor::GetLocalInertia()
 	const btVector3& inertia = m_pActor->getLocalInertia();
 	return PARAVECTOR3((float)inertia.getX(), (float)inertia.getY(), (float)inertia.getZ());
 }
-void BulletPhysicsActor::SetLocalInertia(PARAVECTOR3& inertia)
+void BulletPhysicsActor::SetLocalInertia(const PARAVECTOR3& inertia)
 {
 	m_pActor->setMassProps(GetMass(), btVector3(inertia.x, inertia.y, inertia.z));
 }
@@ -124,7 +124,7 @@ PARAVECTOR3 BulletPhysicsActor::GetGravity()
 	const btVector3& gravity = m_pActor->getGravity();
 	return PARAVECTOR3((float)gravity.getX(), (float)gravity.getY(), (float)gravity.getZ());
 }
-void BulletPhysicsActor::SetGravity(PARAVECTOR3& gravity)
+void BulletPhysicsActor::SetGravity(const PARAVECTOR3& gravity)
 {
 	m_pActor->setGravity(btVector3(gravity.x, gravity.y, gravity.z));
 	// m_pActor->applyGravity();
@@ -153,7 +153,7 @@ PARAVECTOR3 BulletPhysicsActor::GetLinearFactor()
 	const btVector3& factor = m_pActor->getLinearFactor();
 	return PARAVECTOR3((float)factor.getX(), (float)factor.getY(), (float)factor.getZ());
 }
-void BulletPhysicsActor::SetLinearFactor(PARAVECTOR3& factor)
+void BulletPhysicsActor::SetLinearFactor(const PARAVECTOR3& factor)
 {
 	m_pActor->setLinearFactor(btVector3(factor.x, factor.y, factor.z));
 }
@@ -162,7 +162,7 @@ PARAVECTOR3 BulletPhysicsActor::GetAngularFactor()
 	const btVector3& factor = m_pActor->getAngularFactor();
 	return PARAVECTOR3((float)factor.getX(), (float)factor.getY(), (float)factor.getZ());
 }
-void BulletPhysicsActor::SetAngularFactor(PARAVECTOR3& factor)
+void BulletPhysicsActor::SetAngularFactor(const PARAVECTOR3& factor)
 {
 	m_pActor->setAngularFactor(btVector3(factor.x, factor.y, factor.z));
 }
@@ -171,7 +171,7 @@ PARAVECTOR3 BulletPhysicsActor::GetLinearVelocity()
 	const btVector3& velocity = m_pActor->getLinearVelocity();
 	return PARAVECTOR3((float)velocity.getX(), (float)velocity.getY(), (float)velocity.getZ());
 }
-void BulletPhysicsActor::SetLinearVelocity(PARAVECTOR3& velocity)
+void BulletPhysicsActor::SetLinearVelocity(const PARAVECTOR3& velocity)
 {
 	m_pActor->setLinearVelocity(btVector3(velocity.x, velocity.y, velocity.z));
 }
@@ -180,7 +180,7 @@ PARAVECTOR3 BulletPhysicsActor::GetAngularVelocity()
 	const btVector3& velocity = m_pActor->getAngularVelocity();
 	return PARAVECTOR3((float)velocity.getX(), (float)velocity.getY(), (float)velocity.getZ());
 }
-void BulletPhysicsActor::SetAngularVelocity(PARAVECTOR3& velocity)
+void BulletPhysicsActor::SetAngularVelocity(const PARAVECTOR3& velocity)
 {
 	m_pActor->setAngularVelocity(btVector3(velocity.x, velocity.y, velocity.z));
 }
