@@ -374,7 +374,7 @@ namespace ParaEngine
 		CMultiFrameBlockWorldRenderer* m_pMultiFrameRenderer;
 
 		Uint16x3 m_damagedBlockId;
-		asset_ptr<TextureEntity> m_damangeTexture;
+		asset_ptr<TextureEntity> m_damageTexture;
 		float m_damageDegree;
 
 		/** the script to be executed per frame when doing the post processing. One can control the post processing
