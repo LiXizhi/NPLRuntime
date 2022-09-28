@@ -538,12 +538,12 @@ public:
 	ATTRIBUTE_METHOD1(CBaseObject, IsDynamicPhysicsEnabled_s, bool*)	{ *p1 = cls->IsDynamicPhysicsEnabled(); return S_OK; }
 	ATTRIBUTE_METHOD1(CBaseObject, EnableDynamicPhysics_s, bool)	{ cls->EnableDynamicPhysics(p1); return S_OK; }
 
-	ATTRIBUTE_METHOD1(CBaseObject, GetPhysicsMass_s, float*)	{ *p1 = cls->GetPhysicsMass(); return S_OK; }
-	ATTRIBUTE_METHOD1(CBaseObject, SetPhysicsMass_s, float)	{ cls->SetPhysicsMass(p1); return S_OK; }
-
 	ATTRIBUTE_METHOD1(CBaseObject, GetPhysicsShape_s, const char**)	{ *p1 = cls->GetPhysicsShape(); return S_OK; }
 	ATTRIBUTE_METHOD1(CBaseObject, SetPhysicsShape_s, const char*)	{ cls->SetPhysicsShape(p1); return S_OK; }
 
+	ATTRIBUTE_METHOD1(CBaseObject, GetPhysicsProperty_s, const char**)	{ *p1 = cls->GetPhysicsProperty(); return S_OK; }
+	ATTRIBUTE_METHOD1(CBaseObject, SetPhysicsProperty_s, const char*)	{ cls->SetPhysicsProperty(p1); return S_OK; }
+	
 	ATTRIBUTE_METHOD1(CBaseObject, ApplyCentralImpulse_s, Vector3)	{ cls->ApplyCentralImpulse(p1); return S_OK; }
 
 	ATTRIBUTE_METHOD1(CBaseObject, IsLODEnabled_s, bool*) { *p1 = cls->IsLODEnabled(); return S_OK; }
@@ -736,12 +736,11 @@ public:
 	// 设置物理基本形状 默认为box(AABB)
 	virtual void SetPhysicsShape(const char* shape) {}
 	virtual const char* GetPhysicsShape() { return "box"; }
+	virtual void SetPhysicsProperty(const char* property) {}
+	virtual const char* GetPhysicsProperty() { return "{}"; }
 	// 是否启用动态物理
 	virtual void EnableDynamicPhysics(bool bEnable) {}
 	virtual bool IsDynamicPhysicsEnabled() { return false; }
-	// 设置物理质量
-	virtual void SetPhysicsMass(float mass) {}
-	virtual float GetPhysicsMass() { return 0.0f; }
 	// 设置物理速度
 	virtual void ApplyCentralImpulse(Vector3 impulse) {}
 

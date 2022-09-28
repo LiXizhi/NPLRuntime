@@ -128,6 +128,56 @@ namespace ParaEngine
 		virtual void ApplyCentralImpulse(PARAVECTOR3& impulse) {}
 		virtual PARAVECTOR3 GetOrigin() { return PARAVECTOR3(); }
 
+		virtual void Activate() = 0;
+		virtual bool IsActive() = 0;
+		virtual float GetMass() = 0;
+		virtual void SetMass(float mass) = 0;
+		virtual PARAVECTOR3 GetLocalInertia() = 0;
+		virtual void SetLocalInertia(PARAVECTOR3& inertia) = 0;
+		virtual PARAVECTOR3 GetGravity() = 0;
+		virtual void SetGravity(PARAVECTOR3& gravity) = 0;
+		virtual float GetLinearDamping() = 0;
+		virtual void SetLinearDamping(float damping) = 0;
+		virtual float GetAngularDamping() = 0;
+		virtual void SetAngularDamping(float damping) = 0;
+		virtual PARAVECTOR3 GetLinearFactor() = 0;
+		virtual void SetAngularFactor(PARAVECTOR3& factor) = 0;
+		virtual PARAVECTOR3 GetAngularFactor() = 0;
+		virtual void SetLinearFactor(PARAVECTOR3& factor) = 0;
+		virtual PARAVECTOR3 GetLinearVelocity() = 0;
+		virtual void SetLinearVelocity(PARAVECTOR3& velocity) = 0;
+		virtual PARAVECTOR3 GetAngularVelocity() = 0;
+		virtual void SetAngularVelocity(PARAVECTOR3& velocity) = 0;
+		virtual int GetFlags() = 0;
+		virtual void SetFlags(int flags) = 0;
+		virtual int GetActivationState() = 0;
+		virtual void SetActivationState(int state) = 0;
+		virtual float GetDeactivationTime() = 0;
+		virtual void SetDeactivationTime(float time) = 0;
+		virtual float GetRestitution() = 0;
+		virtual void SetRestitution(float restitution) = 0;
+		virtual float GetFriction() = 0;
+		virtual void SetFriction(float friction) = 0; 
+		virtual float GetRollingFriction() = 0;
+		virtual void SetRollingFriction(float friction) = 0; 
+		virtual float GetSpinningFriction() = 0;
+		virtual void SetSpinningFriction(float friction) = 0;
+		virtual float GetContactStiffness() = 0;
+		virtual void SetContactStiffness(float stiffness) = 0;
+		virtual float GetContactDamping() = 0;
+		virtual void SetContactDamping(float damping) = 0;
+		virtual int GetIslandTag() = 0;
+		virtual void SetIslandTag(int flags) = 0;
+		virtual int GetCompanionId() = 0;
+		virtual void SetCompanionId(int id) = 0;
+		virtual float GetHitFraction() = 0;
+		virtual void SetHitFraction(float fraction) = 0;
+		virtual int GetCollisionFlags() = 0;
+		virtual void SetCollisionFlags(int flags) = 0;
+		virtual float GetCcdSweptSphereRadius() = 0;
+		virtual void SetCcdSweptSphereRadius(float radius) = 0;
+		virtual float GetCcdMotionThreshold() = 0;
+		virtual void SetCcdMotionThreshold(float threshold) = 0;
 		void* m_pUserData;
 	};
 
