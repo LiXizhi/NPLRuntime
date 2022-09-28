@@ -786,6 +786,15 @@ const char* ParaEngine::CBaseObject::GetPhysicsShape()
 {
 	return "box";
 }
+void ParaEngine::CBaseObject::SetPhysicsProperty(const char* property)
+{
+
+}
+const char* ParaEngine::CBaseObject::GetPhysicsProperty()
+{
+	return "{}";
+}
+
 void ParaEngine::CBaseObject::EnableDynamicPhysics(bool bEnable)
 {
 }
@@ -1183,8 +1192,8 @@ int CBaseObject::InstallFields(CAttributeClass* pClass, bool bOverride)
 	pClass->AddField("PhysicsGroupMask", FieldType_DWORD, (void*)SetPhysicsGroupMask_s, (void*)GetPhysicsGroupMask_s, NULL, NULL, bOverride);
 	pClass->AddField("EnablePhysics", FieldType_Bool, (void*)EnablePhysics_s, (void*)IsPhysicsEnabled_s, NULL, "", bOverride);
 	pClass->AddField("EnableDynamicPhysics", FieldType_Bool, (void*)EnableDynamicPhysics_s, (void*)IsDynamicPhysicsEnabled_s, NULL, "", bOverride);
-	pClass->AddField("PhysicsMass", FieldType_Float, (void*)SetPhysicsMass_s, (void*)GetPhysicsMass_s, NULL, "", bOverride);
 	pClass->AddField("PhysicsShape", FieldType_String, (void*)SetPhysicsShape_s, (void*)GetPhysicsShape_s, NULL, "", bOverride);
+	pClass->AddField("PhysicalProperty", FieldType_String, (void*)SetPhysicsProperty_s, (void*)GetPhysicsProperty_s, NULL, "", bOverride);
 	pClass->AddField("ApplyCentralImpulse", FieldType_Vector3, (void*)ApplyCentralImpulse_s, NULL, NULL, "", bOverride);
 	pClass->AddField("SelectGroupIndex", FieldType_Int, (void*)SetSelectGroupIndex_s, (void*)GetSelectGroupIndex_s, NULL, NULL, bOverride);
 	pClass->AddField("On_AssetLoaded", FieldType_String, (void*)SetOnAssetLoaded_s, (void*)GetOnAssetLoaded_s, NULL, NULL, bOverride);

@@ -73,8 +73,9 @@ const char* PHYSICS_DLL_FILE_PATH = ("PhysicsBT." DLL_FILE_EXT) ;
 #endif
 
 
-std::shared_ptr<CPhysicsBlockShape> CPhysicsBlock::GetShape(uint32_t key, BlockModel& model, IParaPhysics* world)
+std::shared_ptr<CPhysicsBlockShape> CPhysicsBlock::GetShape(BlockModel& model, IParaPhysics* world)
 {
+	uint32_t key = GetKey();
 	auto shapeIndexMap = GetShapeIndexMap();
 	auto shapeList = GetShapeList();
 	auto it = shapeIndexMap->find(key);
@@ -208,28 +209,21 @@ std::shared_ptr<CPhysicsBlockShape> CPhysicsBlock::GetShape(uint32_t key, BlockM
 	return pShape;  
 }
 
-void CPhysicsBlock::Load(IParaPhysics* world)
+void CPhysicsBlock::Load(BlockModel& model, IParaPhysics* world)
 {
 	if (m_actor) return;
-	uint16_t bx, by, bz;
-	UnPackID(GetID(), bx, by, bz);
-	CBlockWorld* pWorld = BlockWorldClient::GetInstance();
-	// 非实体方块不做物理映射
-	if (!pWorld->IsObstructionBlock(bx, by, bz)) return ;
-	BlockTemplate* pTemplate = pWorld->GetBlockTemplate(bx, by, bz);
-	Block* pBlock = pWorld->GetBlock(bx, by, bz);
-	float offset_y = pWorld->GetVerticalOffset();
-	uint16_t blockData = pBlock->GetUserData();
-	uint16_t tplId = pTemplate->GetID();
-	uint32_t key = (blockData << 16) + tplId;
-	BlockModel& model = pTemplate->GetBlockModel(pWorld, bx, by, bz, blockData);
-	auto pShape = GetShape(key, model, world);
+	auto pShape = GetShape(model, world);
 	if (!pShape->m_shape) return ;
+
 	ParaPhysicsActorDesc ActorDesc;
-	ActorDesc.m_group = IParaPhysicsGroup::BLOCK;  // 2 字节 地块占用最高为分组
+	ActorDesc.m_group = IParaPhysicsGroup::BLOCK;              // 2 字节 地块占用最高为分组
 	ActorDesc.m_mask = -1 ^ (1 << ActorDesc.m_group);
 	ActorDesc.m_mass = 0.0f;
 	ActorDesc.m_pShape = pShape->m_shape;
+	
+	uint16_t bx, by, bz;
+	float offset_y = BlockWorldClient::GetInstance()->GetVerticalOffset();
+	UnPackID(GetID(), bx, by, bz);
 	if (pShape->IsStdCube())
 	{
 		ActorDesc.m_origin = PARAVECTOR3((bx + 0.5f) * BlockConfig::g_dBlockSize, (by + 0.5f) * BlockConfig::g_dBlockSize + offset_y, (bz + 0.5f) * BlockConfig::g_dBlockSize);
@@ -343,24 +337,43 @@ void CPhysicsWorld::StepSimulation(double dTime)
 		{
 			IParaPhysicsActor* actor = *itCurCP;
 			CBaseObject* obj = (CBaseObject*)(actor->GetUserData());
-			actor->GetWorldTransform((PARAMATRIX*)&matrix);
-			Vector3 pos = matrix.getTrans();
-			float fCenterHeight = obj->GetAssetHeight() * 0.5f;
+			if (actor->IsStaticOrKinematicObject()) 
+			{
+				// 属性设置为 CollisionFlags=2, ActivationState=4 可右玩家控制位置同步至物理世界 
+				auto pAsset = obj->GetPrimaryAsset();
+				CParaXModel* pModel = ((ParaXEntity*)pAsset)->GetModel();
+				float halfHeight = pModel->GetHeader().maxExtent.y * 0.5f;
+				Vector3 vCenter(0, halfHeight, 0);
+				obj->GetLocalTransform(&matrix);
+				vCenter = vCenter * matrix;
+				Vector3 vPos = ((Vector3)(obj->GetPosition())) + vCenter;
+				Vector3 vScale, vTrans;
+				Quaternion quat;
+				ParaMatrixDecompose(&vScale, &quat, &vTrans, &matrix);
+				quat.ToRotationMatrix(matrix, vPos);
+				actor->SetWorldTransform((PARAMATRIX*)&matrix);
+			}
+			else
+			{
+				actor->GetWorldTransform((PARAMATRIX*)&matrix);
+				Vector3 pos = matrix.getTrans();
+				float fCenterHeight = obj->GetAssetHeight() * 0.5f;
 
-			// make this rotation matrix
-			matrix.setTrans(Vector3(0, 0, 0));
-			obj->SetPosition(DVector3(pos.x, pos.y - fCenterHeight, pos.z));
+				// make this rotation matrix
+				matrix.setTrans(Vector3(0, 0, 0));
+				obj->SetPosition(DVector3(pos.x, pos.y - fCenterHeight, pos.z));
 
-			Matrix4 matOffset;
-			fCenterHeight = fCenterHeight / obj->GetScaling();
-			matOffset.makeTrans(Vector3(0, -fCenterHeight, 0));
-			matOffset = matOffset * matrix;
-			matOffset.offsetTrans(Vector3(0, fCenterHeight, 0));
-			
-			obj->SetLocalTransform(matOffset);
-			obj->SetYaw(0);
-			obj->SetRoll(0);
-			obj->SetPitch(0);
+				Matrix4 matOffset;
+				fCenterHeight = fCenterHeight / obj->GetScaling();
+				matOffset.makeTrans(Vector3(0, -fCenterHeight, 0));
+				matOffset = matOffset * matrix;
+				matOffset.offsetTrans(Vector3(0, fCenterHeight, 0));
+				
+				obj->SetLocalTransform(matOffset);
+				obj->SetYaw(0);
+				obj->SetRoll(0);
+				obj->SetPitch(0);
+			}
 		}
 
 		// 移除无效方块
@@ -408,7 +421,7 @@ IParaPhysicsActor* ParaEngine::CPhysicsWorld::CreateDynamicMesh(CBaseObject* obj
 	ParaPhysicsActorDesc ActorDesc;
 	ActorDesc.m_group = IParaPhysicsGroup::DEFAULT;
 	ActorDesc.m_mask = -1;
-	ActorDesc.m_mass = obj->GetPhysicsMass();
+	ActorDesc.m_mass = 1.0f;
 	ActorDesc.m_pShape = pShape;
 
 	// set world position
@@ -452,7 +465,11 @@ void ParaEngine::CPhysicsWorld::LoadPhysicsBlock(CShapeAABB* aabb, int16_t frame
 		{
 			for (int16_t bz = min_z; bz <= max_z; bz++)
 			{
-				LoadPhysicsBlock(bx, by, bz)->SetFrameId(frameId);
+				std::shared_ptr<CPhysicsBlock> pBlock = LoadPhysicsBlock(bx, by, bz);
+				if (pBlock != nullptr)
+				{
+					pBlock->SetFrameId(frameId);
+				}
 			}
 		}
 	}
@@ -460,22 +477,47 @@ void ParaEngine::CPhysicsWorld::LoadPhysicsBlock(CShapeAABB* aabb, int16_t frame
 
 std::shared_ptr<CPhysicsBlock> ParaEngine::CPhysicsWorld::LoadPhysicsBlock(uint16_t bx, uint16_t by, uint16_t bz)
 {
+	CBlockWorld* pWorld = BlockWorldClient::GetInstance();
+	BlockTemplate* pTemplate = pWorld->GetBlockTemplate(bx, by, bz);
+	Block* pBlock = pWorld->GetBlock(bx, by, bz);
 	uint64_t id = CPhysicsBlock::PackID(bx, by, bz);
+	if (!pTemplate || !pBlock)
+	{
+		m_mapPhysicsBlocks.erase(id);
+		return nullptr;
+	} 
+	
+	uint16_t blockData = pBlock->GetUserData();
+	uint16_t tplId = pTemplate->GetID();
+	uint32_t key = (blockData << 16) + tplId;
+	BlockModel& model = pTemplate->GetBlockModel(pWorld, bx, by, bz, blockData);
+
 	auto it = m_mapPhysicsBlocks.find(id);
 	if (it != m_mapPhysicsBlocks.end()) 
 	{
-		// 不存在加载失败情况, 可以屏蔽此行
 		std::shared_ptr<CPhysicsBlock> pBlock = it->second;
-		pBlock->Load(m_pPhysicsWorld);
-		return pBlock;
+		if (pBlock->GetKey() == key) 
+		{
+			// 不存在加载失败情况, 可以屏蔽此行
+			pBlock->Load(model, m_pPhysicsWorld);
+			return pBlock;
+		}
+		// 发生改变删除
+		m_mapPhysicsBlocks.erase(it);
 	}
-	else
+
+	// 非实体方块不做物理映射
+	if (!pWorld->IsObstructionBlock(bx, by, bz)) 
 	{
-		std::shared_ptr<CPhysicsBlock> pBlock = std::make_shared<CPhysicsBlock>(id);
-		pBlock->Load(m_pPhysicsWorld);
-		m_mapPhysicsBlocks.insert(std::make_pair(id, pBlock));
-		return pBlock;
+		return nullptr;
 	}
+	
+	// 加载physics block
+	std::shared_ptr<CPhysicsBlock> newBlock = std::make_shared<CPhysicsBlock>(id, key);
+	newBlock->Load(model, m_pPhysicsWorld);
+	m_mapPhysicsBlocks.insert(std::make_pair(id, newBlock));
+	
+	return newBlock;
 }
 
 /**
