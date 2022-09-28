@@ -125,7 +125,7 @@ namespace ParaEngine
 		// 设置获取物理矩阵
 		virtual PARAMATRIX* GetWorldTransform(PARAMATRIX* pOut) { return pOut; }
 		virtual void SetWorldTransform(const PARAMATRIX* pMatrix) {}
-		virtual void ApplyCentralImpulse(PARAVECTOR3& impulse) {}
+		virtual void ApplyCentralImpulse(const PARAVECTOR3& impulse) {}
 		virtual PARAVECTOR3 GetOrigin() { return PARAVECTOR3(); }
 
 		virtual void Activate() = 0;

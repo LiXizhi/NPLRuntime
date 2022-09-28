@@ -59,7 +59,7 @@ namespace ParaEngine
 		// 设置获取物理矩阵  float[16]
 		virtual PARAMATRIX* GetWorldTransform(PARAMATRIX* pOut);
 		virtual void SetWorldTransform(const PARAMATRIX* pMatrix);
-		virtual void ApplyCentralImpulse(PARAVECTOR3& impulse);
+		virtual void ApplyCentralImpulse(const PARAVECTOR3& impulse);
 		virtual PARAVECTOR3 GetOrigin();
 
 		virtual void Activate();

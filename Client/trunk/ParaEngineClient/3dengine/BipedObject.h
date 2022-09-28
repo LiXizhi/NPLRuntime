@@ -791,7 +791,7 @@ namespace ParaEngine
 		virtual void LoadDynamicPhysics();
 		virtual void UnloadDynamicPhysics();
 		// 设置物理速度
-		virtual void ApplyCentralImpulse(Vector3 impulse);
+		virtual void ApplyCentralImpulse(const Vector3& impulse);
 
 		/** force camera to object distance, when sorting the object. if 0.f (default value), we will use the actual camera to object distance instead. */
 		virtual float GetObjectToCameraDistance();
