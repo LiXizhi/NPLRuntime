@@ -4764,8 +4764,8 @@ void ParaEngine::CBipedObject::SetPhysicsProperty(const char* property)
 		if (msg["AngularFactorX"].GetType() == NPL::NPLObjectBase::NPLObjectType_Number) m_dynamicPhysicsActor->SetAngularFactor(PARAVECTOR3((float)(double)msg["AngularFactorX"], (float)(double)msg["AngularFactorY"], (float)(double)msg["AngularFactorZ"]));
 		if (msg["LinearVelocityX"].GetType() == NPL::NPLObjectBase::NPLObjectType_Number) m_dynamicPhysicsActor->SetLinearVelocity(PARAVECTOR3((float)(double)msg["LinearVelocityX"], (float)(double)msg["LinearVelocityY"], (float)(double)msg["LinearVelocityZ"]));
 		if (msg["AngularVelocityX"].GetType() == NPL::NPLObjectBase::NPLObjectType_Number) m_dynamicPhysicsActor->SetAngularVelocity(PARAVECTOR3((float)(double)msg["AngularVelocityX"], (float)(double)msg["AngularVelocityY"], (float)(double)msg["AngularVelocityZ"]));
-		if (msg["Flags"].GetType() == NPL::NPLObjectBase::NPLObjectType_Number) m_dynamicPhysicsActor->SetFlags((int)msg["Flags"]);
-		if (msg["ActivationState"].GetType() == NPL::NPLObjectBase::NPLObjectType_Number) m_dynamicPhysicsActor->SetActivationState((int)msg["ActivationState"]);
+		if (msg["Flags"].GetType() == NPL::NPLObjectBase::NPLObjectType_Number) m_dynamicPhysicsActor->SetFlags((int)(double)msg["Flags"]);
+		if (msg["ActivationState"].GetType() == NPL::NPLObjectBase::NPLObjectType_Number) m_dynamicPhysicsActor->SetActivationState((int)(double)msg["ActivationState"]);
 		if (msg["DeactivationTime"].GetType() == NPL::NPLObjectBase::NPLObjectType_Number) m_dynamicPhysicsActor->SetDeactivationTime((float)(double)msg["DeactivationTime"]);
 		if (msg["Restitution"].GetType() == NPL::NPLObjectBase::NPLObjectType_Number) m_dynamicPhysicsActor->SetRestitution((float)(double)msg["Restitution"]);
 		if (msg["Friction"].GetType() == NPL::NPLObjectBase::NPLObjectType_Number) m_dynamicPhysicsActor->SetFriction((float)(double)msg["Friction"]);
@@ -4773,10 +4773,10 @@ void ParaEngine::CBipedObject::SetPhysicsProperty(const char* property)
 		if (msg["SpinningFriction"].GetType() == NPL::NPLObjectBase::NPLObjectType_Number) m_dynamicPhysicsActor->SetSpinningFriction((float)(double)msg["SpinningFriction"]);
 		if (msg["ContactStiffness"].GetType() == NPL::NPLObjectBase::NPLObjectType_Number) m_dynamicPhysicsActor->SetContactStiffness((float)(double)msg["ContactStiffness"]);
 		if (msg["ContactDamping"].GetType() == NPL::NPLObjectBase::NPLObjectType_Number) m_dynamicPhysicsActor->SetContactDamping((float)(double)msg["ContactDamping"]);
-		if (msg["IslandTag"].GetType() == NPL::NPLObjectBase::NPLObjectType_Number) m_dynamicPhysicsActor->SetIslandTag((int)msg["IslandTag"]);
-		if (msg["CompanionId"].GetType() == NPL::NPLObjectBase::NPLObjectType_Number) m_dynamicPhysicsActor->SetCompanionId((int)msg["CompanionId"]);
+		if (msg["IslandTag"].GetType() == NPL::NPLObjectBase::NPLObjectType_Number) m_dynamicPhysicsActor->SetIslandTag((int)(double)msg["IslandTag"]);
+		if (msg["CompanionId"].GetType() == NPL::NPLObjectBase::NPLObjectType_Number) m_dynamicPhysicsActor->SetCompanionId((int)(double)msg["CompanionId"]);
 		if (msg["HitFraction"].GetType() == NPL::NPLObjectBase::NPLObjectType_Number) m_dynamicPhysicsActor->SetHitFraction((float)(double)msg["HitFraction"]);
-		if (msg["CollisionFlags"].GetType() == NPL::NPLObjectBase::NPLObjectType_Number) m_dynamicPhysicsActor->SetCollisionFlags((int)msg["CollisionFlags"]);
+		if (msg["CollisionFlags"].GetType() == NPL::NPLObjectBase::NPLObjectType_Number) m_dynamicPhysicsActor->SetCollisionFlags((int)(double)msg["CollisionFlags"]);
 		if (msg["CcdSweptSphereRadius"].GetType() == NPL::NPLObjectBase::NPLObjectType_Number) m_dynamicPhysicsActor->SetCcdSweptSphereRadius((float)(double)msg["CcdSweptSphereRadius"]);
 		if (msg["CcdMotionThreshold"].GetType() == NPL::NPLObjectBase::NPLObjectType_Number) m_dynamicPhysicsActor->SetCcdMotionThreshold((float)(double)msg["CcdMotionThreshold"]);
 	}

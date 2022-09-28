@@ -62,7 +62,13 @@ PARAVECTOR3 ParaEngine::BulletPhysicsActor::GetOrigin() {
 
 void ParaEngine::BulletPhysicsActor::SetWorldTransform(const PARAMATRIX* pMatrix)
 {
+#ifdef USE_MOTIONSTATE
+	static btTransform transform;
+	transform.setFromOpenGLMatrix((float*)pMatrix);
+	m_pActor->getMotionState()->setWorldTransform(transform);
+#else
 	m_pActor->getWorldTransform().setFromOpenGLMatrix((float*)pMatrix);
+#endif
 }
 
 void ParaEngine::BulletPhysicsActor::Release()
@@ -82,6 +88,18 @@ void BulletPhysicsActor::Activate()
 bool BulletPhysicsActor::IsActive()
 {
 	return m_pActor->isActive();
+}
+bool BulletPhysicsActor::IsKinematicObject()
+{
+	return m_pActor->isKinematicObject();
+}
+bool BulletPhysicsActor::IsStaticObject()
+{
+	return m_pActor->isStaticObject();
+}
+bool BulletPhysicsActor::IsStaticOrKinematicObject()
+{
+	return m_pActor->isStaticOrKinematicObject();
 }
 float BulletPhysicsActor::GetMass()
 {

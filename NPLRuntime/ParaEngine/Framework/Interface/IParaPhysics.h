@@ -129,6 +129,10 @@ namespace ParaEngine
 
 		virtual void Activate() = 0;
 		virtual bool IsActive() = 0;
+		virtual bool IsStaticObject() = 0;
+		virtual bool IsKinematicObject() = 0;
+		virtual bool IsStaticOrKinematicObject() = 0;
+		
 		virtual float GetMass() = 0;
 		virtual void SetMass(float mass) = 0;
 		virtual PARAVECTOR3 GetLocalInertia() = 0;
