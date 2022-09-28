@@ -742,7 +742,7 @@ public:
 	virtual void EnableDynamicPhysics(bool bEnable);
 	virtual bool IsDynamicPhysicsEnabled();
 	// 设置物理速度
-	virtual void ApplyCentralImpulse(Vector3 impulse) {}
+	virtual void ApplyCentralImpulse(const Vector3& impulse) {}
 
 	/** this function is called, when the object is in view range. we may need to load the primary asset to update the bounding box, etc. 
 	* @return true if the object is ready to be rendered. 

@@ -4874,7 +4874,7 @@ void ParaEngine::CBipedObject::UnloadDynamicPhysics()
 	}
 }
 
-void ParaEngine::CBipedObject::ApplyCentralImpulse(Vector3 impulse)
+void ParaEngine::CBipedObject::ApplyCentralImpulse(const Vector3& impulse)
 {
 	if (m_dynamicPhysicsActor != NULL)
 	{
