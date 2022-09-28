@@ -324,24 +324,43 @@ void CPhysicsWorld::StepSimulation(double dTime)
 		{
 			IParaPhysicsActor* actor = *itCurCP;
 			CBaseObject* obj = (CBaseObject*)(actor->GetUserData());
-			actor->GetWorldTransform((PARAMATRIX*)&matrix);
-			Vector3 pos = matrix.getTrans();
-			float fCenterHeight = obj->GetAssetHeight() * 0.5f;
+			if (actor->IsStaticOrKinematicObject()) 
+			{
+				// 属性设置为 CollisionFlags=2, ActivationState=4 可右玩家控制位置同步至物理世界 
+				auto pAsset = obj->GetPrimaryAsset();
+				CParaXModel* pModel = ((ParaXEntity*)pAsset)->GetModel();
+				float halfHeight = pModel->GetHeader().maxExtent.y * 0.5f;
+				Vector3 vCenter(0, halfHeight, 0);
+				obj->GetLocalTransform(&matrix);
+				vCenter = vCenter * matrix;
+				Vector3 vPos = ((Vector3)(obj->GetPosition())) + vCenter;
+				Vector3 vScale, vTrans;
+				Quaternion quat;
+				ParaMatrixDecompose(&vScale, &quat, &vTrans, &matrix);
+				quat.ToRotationMatrix(matrix, vPos);
+				actor->SetWorldTransform((PARAMATRIX*)&matrix);
+			}
+			else
+			{
+				actor->GetWorldTransform((PARAMATRIX*)&matrix);
+				Vector3 pos = matrix.getTrans();
+				float fCenterHeight = obj->GetAssetHeight() * 0.5f;
 
-			// make this rotation matrix
-			matrix.setTrans(Vector3(0, 0, 0));
-			obj->SetPosition(DVector3(pos.x, pos.y - fCenterHeight, pos.z));
+				// make this rotation matrix
+				matrix.setTrans(Vector3(0, 0, 0));
+				obj->SetPosition(DVector3(pos.x, pos.y - fCenterHeight, pos.z));
 
-			Matrix4 matOffset;
-			fCenterHeight = fCenterHeight / obj->GetScaling();
-			matOffset.makeTrans(Vector3(0, -fCenterHeight, 0));
-			matOffset = matOffset * matrix;
-			matOffset.offsetTrans(Vector3(0, fCenterHeight, 0));
-			
-			obj->SetLocalTransform(matOffset);
-			obj->SetYaw(0);
-			obj->SetRoll(0);
-			obj->SetPitch(0);
+				Matrix4 matOffset;
+				fCenterHeight = fCenterHeight / obj->GetScaling();
+				matOffset.makeTrans(Vector3(0, -fCenterHeight, 0));
+				matOffset = matOffset * matrix;
+				matOffset.offsetTrans(Vector3(0, fCenterHeight, 0));
+
+				obj->SetLocalTransform(matOffset);
+				obj->SetYaw(0);
+				obj->SetRoll(0);
+				obj->SetPitch(0);
+			}
 		}
 
 		// 移除无效方块
