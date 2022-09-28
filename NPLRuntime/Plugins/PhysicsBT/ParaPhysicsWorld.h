@@ -59,7 +59,7 @@ namespace ParaEngine
 
 		virtual void* get() {return m_pActor;};
 		virtual void Release();
-		virtual void ApplyCentralImpulse(PARAVECTOR3& impulse);
+		virtual void ApplyCentralImpulse(const PARAVECTOR3& impulse);
 		virtual PARAVECTOR3 GetOrigin();
 
 		/// pointer to the low level physics engine actor(rigid body). 
