@@ -406,7 +406,7 @@ IParaPhysicsActor* ParaEngine::CPhysicsWorld::CreateDynamicMesh(CBaseObject* obj
 	IParaPhysicsShape* pShape = m_pPhysicsWorld->CreateSimpleShape(desc);
 
 	ParaPhysicsActorDesc ActorDesc;
-	ActorDesc.m_group = IParaPhysicsGroup::DEFAULT;
+	ActorDesc.m_group = obj->GetPhysicsGroup();
 	ActorDesc.m_mask = -1;
 	ActorDesc.m_mass = 1.0f;
 	ActorDesc.m_pShape = pShape;
