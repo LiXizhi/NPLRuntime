@@ -4752,6 +4752,11 @@ const char* ParaEngine::CBipedObject::GetPhysicsShape()
 
 void ParaEngine::CBipedObject::SetPhysicsProperty(const char* property)
 {
+	if (!m_dynamicPhysicsActor) {
+		OUTPUT_LOG("warning: SetPhysicsProperty when actor does not exist.\n");
+		return;
+	}
+		
 	NPL::NPLObjectProxy msg = NPL::NPLHelper::StringToNPLTable(property, (int)strlen(property));
 	if (msg.GetType() == NPL::NPLObjectBase::NPLObjectType_Table) 
 	{
