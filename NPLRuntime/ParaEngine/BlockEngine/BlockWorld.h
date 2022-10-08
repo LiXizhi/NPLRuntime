@@ -304,7 +304,8 @@ namespace ParaEngine
 		bool MatchTemplateAttribute(uint16_t templateId, BlockTemplate::BlockAttrubiteFlag flag);
 
 		void SetTemplateTexture(uint16_t id, const char* textureName);
-
+		void SetTemplatePhysicsProperty(uint16_t id, const char* property);
+		const char* GetTemplatePhysicsProperty(uint16_t id);
 		//get highest block, null if block not exist;
 		//@return:first is highest soiled block, second is highest transparent block,second>= first
 		ChunkMaxHeight* GetHighestBlock(uint16_t blockX_ws, uint16_t blockZ_ws);
