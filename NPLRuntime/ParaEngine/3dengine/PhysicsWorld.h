@@ -78,6 +78,9 @@ namespace ParaEngine
 			return &s_physics_block_shape_list;
 		}
 
+		bool IsLoaded() { return m_actor != nullptr; }
+		IParaPhysicsActor* GetActor() { return m_actor; }
+
 		void Load(BlockModel& model, IParaPhysics* world);
 		void Unload();
 	private:
@@ -126,7 +129,9 @@ namespace ParaEngine
 			TriangleMeshShape ():m_pMeshEntity(NULL), m_vScale (1.f,1.f,1.f){}
 		};
 
-
+	public:
+		void SetActorPhysicsProperty(IParaPhysicsActor* actor, const char* property);
+		const char* GetActorPhysicsProperty(IParaPhysicsActor* actor);
 
 	public:
 		CPhysicsWorld(void);

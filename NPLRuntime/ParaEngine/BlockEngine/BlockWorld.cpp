@@ -1594,6 +1594,25 @@ bool CBlockWorld::IsObstructionBlock(uint16_t x, uint16_t y, uint16_t z)
 	return false;
 }
 
+void CBlockWorld::SetTemplatePhysicsProperty(uint16_t id, const char* property)
+{
+	BlockTemplate* pTemplate = GetBlockTemplate(id);
+	if (pTemplate)
+	{
+		pTemplate->SetPhysicsProperty(property);
+	}
+}
+
+const char* CBlockWorld::GetTemplatePhysicsProperty(uint16_t id)
+{
+	BlockTemplate* pTemplate = GetBlockTemplate(id);
+	if (pTemplate)
+	{
+		pTemplate->GetPhysicsProperty();
+	}
+	return "";
+}
+
 
 void CBlockWorld::SetTemplateTexture(uint16_t id, const char* textureName)
 {

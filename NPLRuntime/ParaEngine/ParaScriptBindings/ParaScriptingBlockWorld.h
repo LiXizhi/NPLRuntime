@@ -130,7 +130,9 @@ namespace ParaScripting
 		*/
 		static void SetTemplateTexture(const object& pWorld, uint16_t templateId, const char* fileName);
 
-
+		static void SetTemplatePhysicsProperty(const object& pWorld, uint16_t templateId, const char* property);
+		static const char* GetTemplatePhysicsProperty(const object& pWorld, uint16_t templateId);
+		
 		/** get visible chunk region
 		* only used on client side
 		* @return : world space chunk id {minX,minY,minZ,maxX,maxY,maxZ}

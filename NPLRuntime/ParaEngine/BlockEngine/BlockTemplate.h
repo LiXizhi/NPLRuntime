@@ -267,6 +267,10 @@ namespace ParaEngine
 		inline const std::string& GetModelName() {
 			return modelName;
 		}
+
+		void SetPhysicsProperty(const char* property) { m_physics_property = property; }
+		std::string& GetPhysicsProperty() { return m_physics_property; }
+		
 	private:
 		/** unique id */
 		uint16_t m_id;
@@ -310,5 +314,7 @@ namespace ParaEngine
 		int m_nTileSize;
 		std::string modelName;
 		friend class IBlockModelProvider;
+
+		std::string m_physics_property;
 	};
 }

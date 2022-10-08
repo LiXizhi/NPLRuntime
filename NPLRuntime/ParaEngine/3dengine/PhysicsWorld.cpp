@@ -53,6 +53,7 @@ ray collision		<-> dSpaceCollide2(...);
 #include "BlockEngine/BlockRegion.h"
 #include "BlockEngine/BlockWorldClient.h"
 #include "util/StringHelper.h"
+#include "NPL/NPLHelper.h"
 
 using namespace ParaEngine;
 
@@ -258,6 +259,93 @@ CPhysicsWorld::~CPhysicsWorld(void)
 	ExitPhysics();
 
 	SAFE_RELEASE(m_pPhysicsWorld);
+}
+
+void CPhysicsWorld::SetActorPhysicsProperty(IParaPhysicsActor* actor, const char* property)
+{
+	if (actor == nullptr) return ;
+
+	NPL::NPLObjectProxy msg = NPL::NPLHelper::StringToNPLTable(property, (int)strlen(property));
+	if (msg.GetType() == NPL::NPLObjectBase::NPLObjectType_Table) 
+	{
+		if (msg["Mass"].GetType() == NPL::NPLObjectBase::NPLObjectType_Number) actor->SetMass((float)(double)msg["Mass"]);
+		if (msg["LocalInertiaX"].GetType() == NPL::NPLObjectBase::NPLObjectType_Number) actor->SetLocalInertia(PARAVECTOR3((float)(double)msg["LocalInertiaX"], (float)(double)msg["LocalInertiaY"], (float)(double)msg["LocalInertiaZ"]));
+		if (msg["GravityX"].GetType() == NPL::NPLObjectBase::NPLObjectType_Number) actor->SetGravity(PARAVECTOR3((float)(double)msg["GravityX"], (float)(double)msg["GravityY"], (float)(double)msg["GravityZ"]));
+		if (msg["LinearDamping"].GetType() == NPL::NPLObjectBase::NPLObjectType_Number) actor->SetLinearDamping((float)(double)msg["LinearDamping"]);
+		if (msg["AngularDamping"].GetType() == NPL::NPLObjectBase::NPLObjectType_Number) actor->SetAngularDamping((float)(double)msg["AngularDamping"]);
+		if (msg["LinearFactorX"].GetType() == NPL::NPLObjectBase::NPLObjectType_Number) actor->SetLinearFactor(PARAVECTOR3((float)(double)msg["LinearFactorX"], (float)(double)msg["LinearFactorY"], (float)(double)msg["LinearFactorZ"]));
+		if (msg["AngularFactorX"].GetType() == NPL::NPLObjectBase::NPLObjectType_Number) actor->SetAngularFactor(PARAVECTOR3((float)(double)msg["AngularFactorX"], (float)(double)msg["AngularFactorY"], (float)(double)msg["AngularFactorZ"]));
+		if (msg["LinearVelocityX"].GetType() == NPL::NPLObjectBase::NPLObjectType_Number) actor->SetLinearVelocity(PARAVECTOR3((float)(double)msg["LinearVelocityX"], (float)(double)msg["LinearVelocityY"], (float)(double)msg["LinearVelocityZ"]));
+		if (msg["AngularVelocityX"].GetType() == NPL::NPLObjectBase::NPLObjectType_Number) actor->SetAngularVelocity(PARAVECTOR3((float)(double)msg["AngularVelocityX"], (float)(double)msg["AngularVelocityY"], (float)(double)msg["AngularVelocityZ"]));
+		if (msg["Flags"].GetType() == NPL::NPLObjectBase::NPLObjectType_Number) actor->SetFlags((int)(double)msg["Flags"]);
+		if (msg["ActivationState"].GetType() == NPL::NPLObjectBase::NPLObjectType_Number) actor->SetActivationState((int)(double)msg["ActivationState"]);
+		if (msg["DeactivationTime"].GetType() == NPL::NPLObjectBase::NPLObjectType_Number) actor->SetDeactivationTime((float)(double)msg["DeactivationTime"]);
+		if (msg["Restitution"].GetType() == NPL::NPLObjectBase::NPLObjectType_Number) actor->SetRestitution((float)(double)msg["Restitution"]);
+		if (msg["Friction"].GetType() == NPL::NPLObjectBase::NPLObjectType_Number) actor->SetFriction((float)(double)msg["Friction"]);
+		if (msg["RollingFriction"].GetType() == NPL::NPLObjectBase::NPLObjectType_Number) actor->SetRollingFriction((float)(double)msg["RollingFriction"]);
+		if (msg["SpinningFriction"].GetType() == NPL::NPLObjectBase::NPLObjectType_Number) actor->SetSpinningFriction((float)(double)msg["SpinningFriction"]);
+		if (msg["ContactStiffness"].GetType() == NPL::NPLObjectBase::NPLObjectType_Number) actor->SetContactStiffness((float)(double)msg["ContactStiffness"]);
+		if (msg["ContactDamping"].GetType() == NPL::NPLObjectBase::NPLObjectType_Number) actor->SetContactDamping((float)(double)msg["ContactDamping"]);
+		if (msg["IslandTag"].GetType() == NPL::NPLObjectBase::NPLObjectType_Number) actor->SetIslandTag((int)(double)msg["IslandTag"]);
+		if (msg["CompanionId"].GetType() == NPL::NPLObjectBase::NPLObjectType_Number) actor->SetCompanionId((int)(double)msg["CompanionId"]);
+		if (msg["HitFraction"].GetType() == NPL::NPLObjectBase::NPLObjectType_Number) actor->SetHitFraction((float)(double)msg["HitFraction"]);
+		if (msg["CollisionFlags"].GetType() == NPL::NPLObjectBase::NPLObjectType_Number) actor->SetCollisionFlags((int)(double)msg["CollisionFlags"]);
+		if (msg["CcdSweptSphereRadius"].GetType() == NPL::NPLObjectBase::NPLObjectType_Number) actor->SetCcdSweptSphereRadius((float)(double)msg["CcdSweptSphereRadius"]);
+		if (msg["CcdMotionThreshold"].GetType() == NPL::NPLObjectBase::NPLObjectType_Number) actor->SetCcdMotionThreshold((float)(double)msg["CcdMotionThreshold"]);
+	}
+}
+
+const char* CPhysicsWorld::GetActorPhysicsProperty(IParaPhysicsActor* actor)
+{
+	if (actor == nullptr) return "";
+
+	static std::string sCode;
+	NPL::NPLObjectProxy msg;
+	PARAVECTOR3 vec3;
+	msg["Mass"] = actor->GetMass();
+	vec3 = actor->GetLocalInertia();
+	msg["LocalInertiaX"] = vec3.x;
+	msg["LocalInertiaY"] = vec3.y;
+	msg["LocalInertiaZ"] = vec3.z;
+	vec3 = actor->GetGravity();
+	msg["GravityX"] = vec3.x;
+	msg["GravityY"] = vec3.y;
+	msg["GravityZ"] = vec3.z;
+	msg["LinearDamping"] = actor->GetLinearDamping();
+	msg["AngularDamping"] = actor->GetAngularDamping();
+	vec3 = actor->GetLinearFactor();
+	msg["LinearFactorX"] = vec3.x;
+	msg["LinearFactorY"] = vec3.y;
+	msg["LinearFactorZ"] = vec3.z;
+	vec3 = actor->GetAngularFactor();
+	msg["AngularFactorX"] = vec3.x;
+	msg["AngularFactorY"] = vec3.y;
+	msg["AngularFactorZ"] = vec3.z;
+	vec3 = actor->GetLinearVelocity();
+	msg["LinearVelocityX"] = vec3.x;
+	msg["LinearVelocityY"] = vec3.y;
+	msg["LinearVelocityZ"] = vec3.z;
+	vec3 = actor->GetAngularVelocity();
+	msg["AngularVelocityX"] = vec3.x;
+	msg["AngularVelocityY"] = vec3.y;
+	msg["AngularVelocityZ"] = vec3.z;
+	msg["Flags"] = (double)actor->GetFlags();
+	msg["ActivationState"] = (double)actor->GetActivationState();
+	msg["DeactivationTime"] = actor->GetDeactivationTime();
+	msg["Restitution"] = actor->GetRestitution();
+	msg["Friction"] = actor->GetFriction();
+	msg["RollingFriction"] = actor->GetRollingFriction();
+	msg["SpinningFriction"] = actor->GetSpinningFriction();
+	msg["ContactStiffness"] = actor->GetContactStiffness();
+	msg["ContactDamping"] = actor->GetContactDamping();
+	msg["IslandTag"] = (double)actor->GetIslandTag();
+	msg["CompanionId"] = (double)actor->GetCompanionId();
+	msg["HitFraction"] = actor->GetHitFraction();
+	msg["CollisionFlags"] = (double)actor->GetCollisionFlags();
+	msg["CcdSweptSphereRadius"] = actor->GetCcdSweptSphereRadius();
+	msg["CcdMotionThreshold"] = actor->GetCcdMotionThreshold();
+	NPL::NPLHelper::NPLTableToString(NULL, msg, sCode);
+	return sCode.c_str();
 }
 
 void CPhysicsWorld::InitPhysics()
@@ -499,7 +587,11 @@ std::shared_ptr<CPhysicsBlock> ParaEngine::CPhysicsWorld::LoadPhysicsBlock(uint1
 		if (pBlock->GetKey() == key)
 		{
 			// 不存在加载失败情况, 可以屏蔽此行
-			pBlock->Load(model, m_pPhysicsWorld);
+			if (!pBlock->IsLoaded()) 
+			{
+				pBlock->Load(model, m_pPhysicsWorld);
+				SetActorPhysicsProperty(pBlock->GetActor(), pTemplate->GetPhysicsProperty().c_str());
+			}
 			return pBlock;
 		}
 		// 发生改变删除
@@ -515,6 +607,7 @@ std::shared_ptr<CPhysicsBlock> ParaEngine::CPhysicsWorld::LoadPhysicsBlock(uint1
 	// 加载physics block
 	std::shared_ptr<CPhysicsBlock> newBlock = std::make_shared<CPhysicsBlock>(id, key);
 	newBlock->Load(model, m_pPhysicsWorld);
+	SetActorPhysicsProperty(newBlock->GetActor(), pTemplate->GetPhysicsProperty().c_str());
 	m_mapPhysicsBlocks.insert(std::make_pair(id, newBlock));
 
 	return newBlock;

@@ -376,6 +376,18 @@ void ParaScripting::ParaBlockWorld::SetTemplateTexture(const object& pWorld_, ui
 	pWorld->SetTemplateTexture(templateId, fileName);
 }
 
+const char* ParaScripting::ParaBlockWorld::GetTemplatePhysicsProperty(const object& pWorld_, uint16_t templateId)
+{
+	GETBLOCKWORLD(pWorld, pWorld_);
+	return pWorld->GetTemplatePhysicsProperty(templateId);
+}
+
+void ParaScripting::ParaBlockWorld::SetTemplatePhysicsProperty(const object& pWorld_, uint16_t templateId, const char* property)
+{
+	GETBLOCKWORLD(pWorld, pWorld_);
+	pWorld->SetTemplatePhysicsProperty(templateId, property);
+}
+
 luabind::object ParaScripting::ParaBlockWorld::GetVisibleChunkRegion(const object& pWorld_, const object& result)
 {
 	GETBLOCKWORLD(pWorld, pWorld_);
