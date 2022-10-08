@@ -207,6 +207,8 @@ namespace ParaScripting
 					def("FindFirstBlock", &ParaBlockWorld::FindFirstBlock),
 					def("GetFirstBlock", &ParaBlockWorld::GetFirstBlock),
 					def("SetTemplateTexture", &ParaBlockWorld::SetTemplateTexture),
+					def("SetTemplatePhysicsProperty", &ParaBlockWorld::SetTemplatePhysicsProperty),
+					def("GetTemplatePhysicsProperty", &ParaBlockWorld::GetTemplatePhysicsProperty),
 					// client only functions
 					def("GetVisibleChunkRegion", &ParaBlockWorld::GetVisibleChunkRegion),
 					def("Pick", &ParaBlockWorld::Pick),
