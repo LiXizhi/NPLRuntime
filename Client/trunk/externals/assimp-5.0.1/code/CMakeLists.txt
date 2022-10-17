@@ -255,7 +255,7 @@ ENDMACRO()
 # ASSIMP_BUILD_XXX_EXPORTER to FALSE for each exporter
 # if this variable is set to FALSE, the user can manually enable exporters by setting
 # ASSIMP_BUILD_XXX_EXPORTER to TRUE for each exporter
-OPTION(ASSIMP_BUILD_ALL_EXPORTERS_BY_DEFAULT "default value of all ASSIMP_BUILD_XXX_EXPORTER values" TRUE)
+OPTION(ASSIMP_BUILD_ALL_EXPORTERS_BY_DEFAULT "default value of all ASSIMP_BUILD_XXX_EXPORTER values" FALSE)
 
 # macro to add the CMake Option ADD_ASSIMP_IMPORTER_<name> which enables compile of loader
 # this way selective loaders can be compiled (reduces filesize + compile time)

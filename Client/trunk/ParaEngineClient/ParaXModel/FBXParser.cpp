@@ -136,15 +136,14 @@ void ParaEngine::FBXParser::SetAnimSplitterFilename()
 	m_sAnimSplitterFilename = std::string(m_sFilename.c_str(), m_sFilename.size() - 3) + "xml";
 }
 
-CParaXModel* FBXParser::ParseParaXModel(const char* buffer, int nSize)
+CParaXModel* FBXParser::ParseParaXModel(const char* buffer, int nSize, const char* pHint)
 {
 	CParaXModel* pMesh = NULL;
 	Assimp::Importer importer;
 	Reset();
 	SetAnimSplitterFilename();
 	// this is not needed: aiProcess_MakeLeftHanded | 
-	const aiScene* pFbxScene = importer.ReadFileFromMemory(buffer, nSize, aiProcess_Triangulate | aiProcess_GenSmoothNormals | aiProcess_FlipUVs, "fbx");
-
+	const aiScene* pFbxScene = importer.ReadFileFromMemory(buffer, nSize, aiProcess_Triangulate | aiProcess_GenSmoothNormals | aiProcess_FlipUVs, pHint);
 	if (pFbxScene) {
 		ParaXHeaderDef m_xheader;
 		m_xheader.IsAnimated = pFbxScene->HasAnimations() ? 1 : 0;
@@ -593,7 +592,7 @@ LinearColor FBXParser::GetRGBA(int colorTag)
 		color.b = 0.9f;
 		color.a = 0.f;
 		break;
-		//3£ºemissive
+		//3ï¿½ï¿½emissive
 	case 3:
 		color.r = 1.f;
 		color.g = 0.f;

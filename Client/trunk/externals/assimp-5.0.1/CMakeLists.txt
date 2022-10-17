@@ -56,6 +56,9 @@ PROJECT( Assimp VERSION 5.0.0 )
 # All supported options ###############################################
 
 OPTION(ASSIMP_BUILD_FBX_IMPORTER "FBX" TRUE)
+OPTION(ASSIMP_BUILD_GLTF_IMPORTER "GLTF" TRUE)
+OPTION(ASSIMP_BUILD_FBX_EXPORTER "FBX" TRUE)
+OPTION(ASSIMP_BUILD_GLTF_EXPORTER "GLTF" TRUE)
 
 OPTION( BUILD_SHARED_LIBS
   "Build package with shared libraries."
@@ -84,7 +87,7 @@ OPTION( ASSIMP_NO_EXPORT
 )
 OPTION( ASSIMP_BUILD_ZLIB
   "Build your own zlib"
-  OFF
+  ON
 )
 OPTION( ASSIMP_BUILD_ASSIMP_TOOLS
   "If the supplementary tools for Assimp are built in addition to the library."
