@@ -272,6 +272,18 @@ namespace ParaEngine
     			acc->bufferView->dataf.push_back(val);
 			}
         }
+        for (uint32_t i = 0; i < size; i++)
+        {
+            for (uint32_t j = 0; j < compCount; j++)
+			{
+    			acc->bufferView->dataf[i * compCount + j] -= acc->min[j];
+			}
+        }
+        for (uint32_t j = 0; j < compCount; j++)
+        {
+            acc->max[j] -= acc->min[j];
+            acc->min[j] -= acc->min[j];
+        }
         acc->bufferView->data = (const char*)acc->bufferView->dataf.data();
         return acc;
 	}

@@ -2303,7 +2303,7 @@ HRESULT CParaXModel::ClonePhysicsMesh(DWORD* pNumVertices, Vector3 ** ppVerts, D
 
 		for (ModelRenderPass& pass : passes)
 		{
-			if (pass.hasPhysics() && (pnMeshPhysicsGroup == 0 || ((*pnMeshPhysicsGroup) == pass.GetPhysicsGroup())))
+			if (pass.geoset >= 0 && pass.hasPhysics() && (pnMeshPhysicsGroup == 0 || ((*pnMeshPhysicsGroup) == pass.GetPhysicsGroup())))
 			{
 				int nVertexOffset = pass.GetVertexStart(this);
 				if (m_RenderMethod == SOFT_ANIM)
