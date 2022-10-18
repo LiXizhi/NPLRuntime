@@ -297,8 +297,18 @@ void FBXParser::AddTransparency(CParaXModel *pMesh)
 void FBXParser::PostProcessParaXModelData(CParaXModel *pMesh)
 {
 	// we need to collapse all bone transform. 
+	
 	if (pMesh->m_objNum.nBones > 0)
 	{
+		auto extend = m_maxExtent - m_minExtent;
+		if (extend.x > 50 || extend.y > 50 || extend.z > 50)
+		{
+			Bone& rootBone = pMesh->bones[0];
+			Matrix4 scaleMat; 
+			scaleMat.makeScale(0.01f, 0.01, 0.01f);
+			rootBone.matTransform = rootBone.matTransform * scaleMat;
+		}
+
 		AnimIndex blendingAnim;
 		AnimIndex curAnim = pMesh->GetAnimIndexByID(0);
 		pMesh->calcBones(NULL, curAnim, blendingAnim, 0.f, curAnim, blendingAnim, 0.f);
@@ -961,7 +971,7 @@ void FBXParser::ProcessFBXMaterial(const aiScene* pFbxScene, unsigned int iIndex
 		diffuseTexName = GetTexturePath(diffuseTexName);
 
 #ifdef ASSIMP5
-		if (auto texture = pFbxScene->GetEmbeddedTexture(diffuseTexName.c_str()))
+		if (auto texture = pFbxScene->GetEmbeddedTexture(szPath.C_Str()))
 		{
 			// If mHeight = 0, pcData is a pointer to a memory  buffer of size mWidth containing the compressed texture data.
 			if (texture->mHeight == 0)
