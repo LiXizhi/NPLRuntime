@@ -10,6 +10,8 @@ namespace ParaEngine
 		VIEW_LAYOUT_STEREO_LEFT_RIGHT,
 		VIEW_LAYOUT_STEREO_UP_DOWN,
 		VIEW_LAYOUT_STEREO_RED_BLUE,
+		VIEW_LAYOUT_STEREO_OMNI = 4,//ODS,360¡ãVR
+		VIEW_LAYOUT_STEREO_OMNI_SINGLE_EYE=5,//ODS,360¡ãVR
 		VIEW_LAYOUT_INVALID,
 	};
 
@@ -24,6 +26,14 @@ namespace ParaEngine
 		ATTRIBUTE_DEFINE_CLASS(CViewportManager);
 		/** this class should be implemented if one wants to add new attribute. This function is always called internally.*/
 		virtual int InstallFields(CAttributeClass* pClass, bool bOverride);
+		ATTRIBUTE_METHOD1(CViewportManager, GetViewportCount_s, int*) { *p1 = cls->GetViewportCount(); return S_OK; }
+		ATTRIBUTE_METHOD1(CViewportManager, GetLayout_s, int*) { *p1 = cls->GetLayout(); return S_OK; }
+
+		ATTRIBUTE_METHOD1(CViewportManager, GetODSFov_s, float*) { *p1 = cls->ods_fov; return S_OK; }
+		ATTRIBUTE_METHOD1(CViewportManager, SetODSFov_s, float) { cls->ods_fov = (p1); return S_OK; }
+
+		ATTRIBUTE_METHOD1(CViewportManager, GetWidthPerDegree_s, int*) { *p1 = cls->widthPerDegree; return S_OK; }
+		ATTRIBUTE_METHOD1(CViewportManager, SetWidthPerDegree_s, int) { cls->widthPerDegree = (p1); return S_OK; }
 
 		/** get attribute by child object. used to iterate across the attribute field hierarchy. */
 		virtual IAttributeFields* GetChildAttributeObject(const std::string& sName);
@@ -95,6 +105,8 @@ namespace ParaEngine
 		int m_nActiveViewPortIndex;
 		VIEWPORT_LAYOUT m_nLayout;
 		int m_nCurrentFrameNumber;
+		float ods_fov;
+		int widthPerDegree;
 	};
 
 }

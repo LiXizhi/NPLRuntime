@@ -171,6 +171,14 @@ void CMoviePlatform::SetStereoCaptureMode( MOVIE_CAPTURE_MODE nMode )
 	{
 		CGlobals::GetViewportManager()->SetLayout(VIEW_LAYOUT_STEREO_RED_BLUE);
 	}
+	else if (nMode == MOVIE_CAPTURE_MODE_STEREO_OMNI)
+	{
+		CGlobals::GetViewportManager()->SetLayout(VIEW_LAYOUT_STEREO_OMNI);
+	}
+	else if (nMode == MOVIE_CAPTURE_MODE_STEREO_OMNI_SINGLE_EYE)
+	{
+		CGlobals::GetViewportManager()->SetLayout(VIEW_LAYOUT_STEREO_OMNI_SINGLE_EYE);
+	}
 	else
 	{
 		CGlobals::GetViewportManager()->SetLayout(VIEW_LAYOUT_DEFAULT);

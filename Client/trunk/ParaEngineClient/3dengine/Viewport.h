@@ -41,6 +41,9 @@ namespace ParaEngine
 		ATTRIBUTE_METHOD1(CViewport, SetTop_s, int)	{ cls->SetTop(p1); return S_OK; }
 		ATTRIBUTE_METHOD1(CViewport, GetTop_s, int*) { *p1 = cls->GetTop(); return S_OK; }
 
+		ATTRIBUTE_METHOD1(CViewport, SetODSFov_s, float) { cls->m_stereoODSparam.fov = (p1); return S_OK; }
+		ATTRIBUTE_METHOD1(CViewport, GetODSFov_s, float*) { *p1 = cls->m_stereoODSparam.fov; return S_OK; }
+
 		ATTRIBUTE_METHOD1(CViewport, SetWidth_s, int)	{ cls->SetWidth(p1); return S_OK; }
 		ATTRIBUTE_METHOD1(CViewport, GetWidth_s, int*) { *p1 = cls->GetWidth(); return S_OK; }
 
@@ -66,6 +69,46 @@ namespace ParaEngine
 			{
 				return (_Left ? _Left->GetZOrder() : 1000) < (_Right ? _Right->GetZOrder() : 1000);
 			};
+		};
+
+		struct StereoODSparam {
+			float morePitch;
+
+			bool isODS;
+			float moreRotY;//yaw
+			float moreRotZ;//pitch
+			float fov;
+			float fov_h;
+			float aspectRatio;
+			float eyeShiftDistance;
+			bool needRecoverCamera;
+			DVector3 oldEyePos;
+			DVector3 oldLookAtPos;
+			float oldFov;
+			StereoODSparam(){
+				isODS = false;
+				moreRotY = 0.0f;
+				moreRotZ = 0.0f;
+				fov = MATH_PI / 4;
+				aspectRatio = 1.0f;
+				eyeShiftDistance = 0.0f;
+				needRecoverCamera = false;
+			}
+			inline StereoODSparam& operator = (const StereoODSparam& target)
+			{
+				isODS = target.isODS;
+				moreRotY = target.moreRotY;
+				moreRotZ = target.moreRotZ;
+				fov = target.fov;
+				fov_h = target.fov_h;
+				aspectRatio = target.aspectRatio;
+				eyeShiftDistance = target.eyeShiftDistance;
+				needRecoverCamera = target.needRecoverCamera;
+				oldEyePos = target.oldEyePos;
+				oldLookAtPos = target.oldLookAtPos;
+				oldFov = target.oldFov;
+				return *this;
+			}
 		};
 
 		/** build the render list, and render the entire scene.
@@ -134,6 +177,10 @@ namespace ParaEngine
 		ParaEngine::STEREO_EYE GetEyeMode() const;
 		void SetEyeMode(ParaEngine::STEREO_EYE val);
 
+		/** Camera yaw angle increment when recording Stereo video.*/
+		void SetStereoODSparam(StereoODSparam &param) { m_stereoODSparam = param; }
+		StereoODSparam& GetStereoODSparam() { return m_stereoODSparam; }
+
 		/** return last viewport */
 		ParaViewport ApplyViewport();
 
@@ -187,6 +234,8 @@ namespace ParaEngine
 
 		/** -1 or RENDER_PIPELINE_ORDER. if -1, it will be rendered for all pipeline stage */
 		int m_nPipelineOrder;
+
+		StereoODSparam m_stereoODSparam;
 	};
 
 }
