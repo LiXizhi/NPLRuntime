@@ -1,4 +1,4 @@
-//-----------------------------------------------------------------------------
+﻿//-----------------------------------------------------------------------------
 // Class:	FBX importer
 // Authors:	LiPeng, LiXizhi
 // Emails:	
@@ -203,7 +203,7 @@ CParaXModel* FBXParser::ParseParaXModel(const char* buffer, int nSize, const cha
 
 		PostProcessParaXModelData(pMesh);
 
-
+		CalculateScale(pMesh);
 #ifdef _DEBUG
 		//PrintDebug(pFbxScene);
 #endif
@@ -212,6 +212,45 @@ CParaXModel* FBXParser::ParseParaXModel(const char* buffer, int nSize, const cha
 		OUTPUT_LOG("Error parsing '%s': '%s'\n", m_sFilename.c_str(), importer.GetErrorString());
 	}
 	return pMesh;
+}
+
+void FBXParser::CalculateScale(CParaXModel* pMesh)
+{
+	float scale = 1.0f;
+	auto extend = m_maxExtent - m_minExtent;
+    // float maxSize = 10.f;  // 模型最大大小, 超过此值进行缩小
+    // while (extend.x * scale > maxSize || extend.y * scale > maxSize || extend.z * scale > maxSize) scale /= 10;
+	if (extend.x > 50 || extend.y > 50 || extend.z > 50) scale = 0.01f;
+	pMesh->m_header.minExtent = scale;
+	pMesh->m_header.maxExtent = scale;
+	int bones_size = pMesh->m_objNum.nBones;
+	if (bones_size == 0) return;
+
+	int root_bone_index = -1;
+	for (int i = 0; i< bones_size; i++)
+	{
+		ParaEngine::Bone& bone = pMesh->bones[i];
+		if (bone.parent < 0) 
+		{
+			root_bone_index = i;
+			break;
+		}
+	}
+
+	ParaEngine::Bone& rootBone = pMesh->bones[root_bone_index];
+
+	// 动画缩放
+	int size = rootBone.scale.data.size();
+	for (int i = 0; i < size; i++)
+	{
+		rootBone.scale.data[i] *= scale;
+	}
+
+	// 非动画缩放
+	Matrix4 scaleMat;
+	scaleMat.makeScale(scale, scale, scale);
+	rootBone.matTransform = rootBone.matTransform * scaleMat;
+	rootBone.mat = rootBone.mat * scaleMat;
 }
 
 void FBXParser::AddColors(CParaXModel *pMesh)
@@ -297,18 +336,8 @@ void FBXParser::AddTransparency(CParaXModel *pMesh)
 void FBXParser::PostProcessParaXModelData(CParaXModel *pMesh)
 {
 	// we need to collapse all bone transform. 
-	
 	if (pMesh->m_objNum.nBones > 0)
 	{
-		auto extend = m_maxExtent - m_minExtent;
-		if (extend.x > 50 || extend.y > 50 || extend.z > 50)
-		{
-			Bone& rootBone = pMesh->bones[0];
-			Matrix4 scaleMat; 
-			scaleMat.makeScale(0.01f, 0.01, 0.01f);
-			rootBone.matTransform = rootBone.matTransform * scaleMat;
-		}
-
 		AnimIndex blendingAnim;
 		AnimIndex curAnim = pMesh->GetAnimIndexByID(0);
 		pMesh->calcBones(NULL, curAnim, blendingAnim, 0.f, curAnim, blendingAnim, 0.f);
@@ -3042,7 +3071,7 @@ void FBXParser::ProcessFBXBoneNodes(const aiScene* pFbxScene, aiNode* pFbxNode, 
 				continue;
 
 			ParticleSystem& ps = it->second;
-			ps.parent = (Bone*)bone_index;
+			ps.parent = (Bone*)&(m_bones[bone_index]);
 		}
 	}
 

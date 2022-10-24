@@ -98,6 +98,8 @@ namespace ParaEngine
 
 		/** parse material by name*/
 		void ParseMaterialByName(const std::string& sMatName, FBXMaterial* out);
+
+		void CalculateScale(CParaXModel* pMesh);
 	private:
 		std::string m_sFilename;
 
