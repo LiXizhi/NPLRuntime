@@ -44,7 +44,7 @@ namespace ParaEngine
 		/* Note the caller is responsible for deletion of the returned object.
 		* parse as animated model
 		*/
-		CParaXModel* ParseParaXModel(const char* buffer, int nSize);
+		CParaXModel* ParseParaXModel(const char* buffer, int nSize, const char* pHint = "fbx");
 		/** use current filename if any. */
 		CParaXModel* ParseParaXModel();
 
@@ -99,6 +99,8 @@ namespace ParaEngine
 
 		/** parse material by name*/
 		void ParseMaterialByName(const std::string& sMatName, FBXMaterial* out);
+
+		void CalculateScale(CParaXModel* pMesh);
 	private:
 		std::string m_sFilename;
 
