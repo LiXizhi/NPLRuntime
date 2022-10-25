@@ -1,4 +1,4 @@
-//-----------------------------------------------------------------------------
+﻿//-----------------------------------------------------------------------------
 // Class:	FBX importer
 // Authors:	LiPeng, LiXizhi
 // Emails:	
@@ -159,14 +159,14 @@ void ParaEngine::FBXParser::SetAnimSplitterFilename()
 	m_sAnimSplitterFilename = std::string(m_sFilename.c_str(), m_sFilename.size() - 3) + "xml";
 }
 
-CParaXModel* FBXParser::ParseParaXModel(const char* buffer, int nSize)
+CParaXModel* FBXParser::ParseParaXModel(const char* buffer, int nSize, const char* pHint)
 {
 	CParaXModel* pMesh = NULL;
 	Assimp::Importer importer;
 	Reset();
 	SetAnimSplitterFilename();
 	// aiProcess_MakeLeftHanded | 
-	const aiScene* pFbxScene = importer.ReadFileFromMemory(buffer, nSize, aiProcess_Triangulate | aiProcess_GenSmoothNormals | aiProcess_FlipUVs, "fbx");
+	const aiScene* pFbxScene = importer.ReadFileFromMemory(buffer, nSize, aiProcess_Triangulate | aiProcess_GenSmoothNormals | aiProcess_FlipUVs, pHint);
 	if (pFbxScene) {
 		ParaXHeaderDef m_xheader;
 		m_xheader.IsAnimated = pFbxScene->HasAnimations() ? 1 : 0;
@@ -225,6 +225,8 @@ CParaXModel* FBXParser::ParseParaXModel(const char* buffer, int nSize)
 
 		FillParaXModelData(pMesh, pFbxScene);
 
+		CalculateScale(pMesh);
+
 		PostProcessParaXModelData(pMesh);
 
 
@@ -236,6 +238,45 @@ CParaXModel* FBXParser::ParseParaXModel(const char* buffer, int nSize)
 		OUTPUT_LOG("Error parsing '%s': '%s'\n", m_sFilename.c_str(), importer.GetErrorString());
 	}
 	return pMesh;
+}
+
+void FBXParser::CalculateScale(CParaXModel* pMesh)
+{
+	float scale = 1.0f;
+	auto extend = m_maxExtent - m_minExtent;
+    // float maxSize = 10.f;  // 模型最大大小, 超过此值进行缩小
+    // while (extend.x * scale > maxSize || extend.y * scale > maxSize || extend.z * scale > maxSize) scale /= 10;
+	if (extend.x > 50 || extend.y > 50 || extend.z > 50) scale = 0.01f;
+	pMesh->m_header.minExtent = scale;
+	pMesh->m_header.maxExtent = scale;
+	int bones_size = pMesh->m_objNum.nBones;
+	if (bones_size == 0) return;
+
+	int root_bone_index = -1;
+	for (int i = 0; i< bones_size; i++)
+	{
+		ParaEngine::Bone& bone = pMesh->bones[i];
+		if (bone.parent < 0) 
+		{
+			root_bone_index = i;
+			break;
+		}
+	}
+
+	ParaEngine::Bone& rootBone = pMesh->bones[root_bone_index];
+
+	// 动画缩放
+	int size = rootBone.scale.data.size();
+	for (int i = 0; i < size; i++)
+	{
+		rootBone.scale.data[i] *= scale;
+	}
+
+	// 非动画缩放
+	Matrix4 scaleMat;
+	scaleMat.makeScale(scale, scale, scale);
+	rootBone.matTransform = rootBone.matTransform * scaleMat;
+	rootBone.mat = rootBone.mat * scaleMat;
 }
 
 void FBXParser::AddColors(CParaXModel *pMesh)
@@ -615,7 +656,7 @@ LinearColor FBXParser::GetRGBA(int colorTag)
 		color.b = 0.9f;
 		color.a = 0.f;
 		break;
-		//3��emissive
+		//3��emissive
 	case 3:
 		color.r = 1.f;
 		color.g = 0.f;
