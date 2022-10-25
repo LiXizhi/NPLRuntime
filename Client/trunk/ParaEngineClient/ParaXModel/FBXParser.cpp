@@ -201,9 +201,9 @@ CParaXModel* FBXParser::ParseParaXModel(const char* buffer, int nSize, const cha
 #endif
 		FillParaXModelData(pMesh, pFbxScene);
 
-		PostProcessParaXModelData(pMesh);
-
 		CalculateScale(pMesh);
+
+		PostProcessParaXModelData(pMesh);
 #ifdef _DEBUG
 		//PrintDebug(pFbxScene);
 #endif
