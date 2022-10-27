@@ -49,6 +49,11 @@
                 <data android:scheme="paracraft" />
             </intent-filter>
         </activity>
+        <activity
+            android:name="com.tatfook.paracraft.ParaEngineEditBoxActivity"
+            android:configChanges="orientation|keyboardHidden|screenSize|screenLayout"
+            android:screenOrientation="behind"
+            android:theme="@android:style/Theme.Translucent.NoTitleBar.Fullscreen" />
         <service android:name=".screenrecorder.ScreenRecorderService"
                  android:enabled="true"
                  android:foregroundServiceType="mediaProjection">

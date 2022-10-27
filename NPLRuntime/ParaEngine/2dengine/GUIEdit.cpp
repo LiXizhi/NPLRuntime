@@ -902,10 +902,14 @@ bool CGUIEditBox::MsgProc(MSG *event)
 				bHandled = true;
 			}
 			else if (m_event->IsMapTo(nEvent, EM_EB_SELECTALL)) {
+#if !defined(ANDROID)&&!defined(__APPLE__)
 				m_nSelStart = 0;
 				PlaceCaret(m_Buffer.GetTextSize());
 				ResetCaretBlink();
 				OnSelect();
+#else 
+				OnSelectStart();
+#endif
 				bHandled = true;
 			}
 
@@ -1555,6 +1559,7 @@ HRESULT CGUIEditBox::Render(GUIState* pGUIState, float fElapsedTime)
 	//
 	// Render the caret if this control has the focus
 	//
+#if !defined(ANDROID)&&!defined(__APPLE__)
 	if (m_bHasFocus && m_bCaretOn && !IsHideCaret() && !m_bReadOnly)
 	{
 		// Start the rectangle with insert mode caret
@@ -1573,6 +1578,7 @@ HRESULT CGUIEditBox::Render(GUIState* pGUIState, float fElapsedTime)
 		}
 		GetPainter(pGUIState)->DrawRect(&m_rcCaret, m_CaretColor, m_position.GetDepth());
 	}
+#endif
 	return S_OK;
 }
 
@@ -1767,6 +1773,30 @@ int ParaEngine::CGUIEditBox::OnHandleWinMsgChars(const std::wstring& sChars)
 	MSG newMsg;
 	newMsg.message = EM_CTRL_MODIFY;
 	MsgProc(&newMsg);
+	return 0;
+}
+
+int ParaEngine::CGUIEditBox::OnSetEditBoxText(const std::wstring& sChars)
+{
+	//SetCaretVisible(false);
+	m_Buffer.Clear();
+	for (size_t i = 0; i < sChars.size(); ++i)
+	{
+		WCHAR temp = sChars[i];
+		if (temp == L'\t' && m_bMultipleLine)
+		{
+			temp = L' ';
+		}
+		if (temp > 31)
+		{
+			m_Buffer.InsertChar(i, temp);
+		}
+	}
+	m_bIsModified = true;
+	MSG newMsg;
+	newMsg.message = EM_CTRL_MODIFY;
+	MsgProc(&newMsg);
+    //SendInputMethodEvent(sChars);
 	return 0;
 }
 

@@ -17,7 +17,6 @@ import android.os.Handler;
 import android.os.Message;
 import android.util.AttributeSet;
 import android.util.DisplayMetrics;
-import android.util.Log;
 import android.view.KeyEvent;
 import android.view.MotionEvent;
 import android.view.Surface;
@@ -27,8 +26,6 @@ import android.view.ViewTreeObserver;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.Toast;
 import androidx.annotation.Keep;
-
-import java.util.concurrent.atomic.AtomicBoolean;
 
 public class ParaEngineGLSurfaceView extends GLSurfaceView {
     private static ParaEngineGLSurfaceView mGLSurfaceView = null;
@@ -54,6 +51,7 @@ public class ParaEngineGLSurfaceView extends GLSurfaceView {
     private int mCtrlBottom = 0;
     private static native void nativeDeleteBackward();
     private static native void nativeOnUnicodeChar(String text);
+    public static native void nativeOnSetEditBoxText(String text);
     private static native void nativeSetSurface(Surface surface);
 
     @Keep
@@ -98,9 +96,25 @@ public class ParaEngineGLSurfaceView extends GLSurfaceView {
         final int screenHeight = metrics.heightPixels;
 
         sHandler = new Handler(msg -> {
+            String defaultValue = msg.getData().getString("defaultValue");
+            if(defaultValue!=null){
+                boolean bOpen = msg.getData().getBoolean("bOpen");
+                int maxLength = msg.getData().getInt("maxLength");
+                boolean isMultiline = msg.getData().getBoolean("isMultiline");
+                boolean confirmHold = msg.getData().getBoolean("confirmHold");
+                String confirmType = msg.getData().getString("confirmType");
+                String inputType = msg.getData().getString("inputType");
+                if(bOpen){
+                    ParaEngineEditBoxActivity.showNative(defaultValue,maxLength,isMultiline,confirmHold,confirmType,inputType);
+                }else{
+                    ParaEngineEditBoxActivity.hideNative();
+                }
+                return true;
+            }
             mIsOpen = msg.getData().getBoolean("bOpen");
             mIsMoveView = msg.getData().getBoolean("bMoveView");
             mCtrlBottom = msg.getData().getInt("ctrlBottom");
+
 
             if (mEditText == null) {
                 return false;
@@ -236,6 +250,23 @@ public class ParaEngineGLSurfaceView extends GLSurfaceView {
         bundle.putBoolean("bOpen", bOpen);
         bundle.putBoolean("bMoveView", bMoveView);
         bundle.putInt("ctrlBottom", ctrlBottom);
+
+        msg.setData(bundle);
+
+        mGLSurfaceView.sHandler.sendMessage(msg);
+    }
+
+    public static void setIMEKeyboardState(boolean bOpen, String defaultValue, int maxLength, boolean isMultiline, boolean confirmHold, String confirmType, String inputType){
+        Message msg = new Message();
+        Bundle bundle = new Bundle();
+        bundle.putBoolean("bOpen", bOpen);
+
+        bundle.putString("defaultValue", defaultValue);
+        bundle.putInt("maxLength", maxLength);
+        bundle.putBoolean("isMultiline", isMultiline);
+        bundle.putBoolean("confirmHold", confirmHold);
+        bundle.putString("confirmType", confirmType);
+        bundle.putString("inputType", inputType);
 
         msg.setData(bundle);
 
