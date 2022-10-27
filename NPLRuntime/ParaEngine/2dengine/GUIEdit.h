@@ -175,6 +175,7 @@ namespace ParaEngine
 
 		/** this function is called to handle window's latest WM_CHAR message, when the control got key focus. */
 		virtual int OnHandleWinMsgChars(const std::wstring& sChars);
+		virtual int OnSetEditBoxText(const std::wstring& sChars);
 
 		/**
 		* The PasswordChar property specifies the character displayed in the text box. For example, if you want asterisks displayed in the password box, 
@@ -195,6 +196,8 @@ namespace ParaEngine
 		bool IsCaretVisible();
         
         const RECT& GetCaretRect() const;
+
+		bool IsMultipleLine() { return m_bMultipleLine; }
 #ifdef PARAENGINE_MOBILE
 		// ime delegate implementation. 
 	public:

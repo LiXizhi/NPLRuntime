@@ -10,6 +10,7 @@
 
 #include "2dengine/GUIIMEDelegate.h"
 #include "2dengine/GUIRoot.h"
+#include "2dengine/GUIEdit.h"
 
 #include <jni.h>
 
@@ -18,7 +19,24 @@ namespace ParaEngine {
 
     void ParaEngineGLSurfaceView::setIMEKeyboardState(bool bOpen, bool bMoveView, int ctrlBottom)
     {
-        JniHelper::callStaticVoidMethod(classname, "setIMEKeyboardState", bOpen, bMoveView, ctrlBottom);
+        std::string defaultValue="";
+        int maxLength = 0;
+        bool isMultiline = false;
+        bool confirmHold = false;
+        const char * confirmType = "done";
+        const char * inputType = "text";
+
+        CGUIEditBox * pGUI = dynamic_cast<CGUIEditBox*>((CGUIRoot::GetInstance()->GetUIKeyFocus()));
+        if(pGUI && bOpen)
+        {
+            pGUI->GetTextA(defaultValue);
+            isMultiline = pGUI->IsMultipleLine();
+        }
+        if(pGUI&&!isMultiline){
+            JniHelper::callStaticVoidMethod(classname, "setIMEKeyboardState", bOpen, defaultValue, maxLength,isMultiline,confirmHold,confirmType,inputType);
+        }else{
+            JniHelper::callStaticVoidMethod(classname, "setIMEKeyboardState", bOpen, bMoveView, ctrlBottom);
+        }
     }
 }
 
@@ -63,6 +81,27 @@ extern "C" {
                     s += (WCHAR)strText[i];
                 }
                 pGUI->OnHandleWinMsgChars(s);
+            }
+        }
+    }
+
+    JNIEXPORT void JNICALL Java_com_tatfook_paracraft_ParaEngineGLSurfaceView_nativeOnSetEditBoxText(JNIEnv* env, jclass clazz, jstring text)
+    {
+        if (CGlobals::GetApp()->GetAppState() != PEAppState_Ready)
+        {
+            return;
+        }
+        CGUIEditBox * pGUI = dynamic_cast<CGUIEditBox*>((CGUIRoot::GetInstance()->GetUIKeyFocus()));
+        if(pGUI)
+        {
+            auto strText = JniHelper::getStringUTF16CharsJNI(env, text);
+            {
+                std::wstring s;
+                for (size_t i = 0; i < strText.size(); i++)
+                {
+                    s += (WCHAR)strText[i];
+                }
+                pGUI->OnSetEditBoxText(s);
             }
         }
     }
