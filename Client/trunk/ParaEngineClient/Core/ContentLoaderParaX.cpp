@@ -368,11 +368,11 @@ HRESULT ParaEngine::CParaXProcessor::CopyToResource()
 				}
 
 #ifdef SUPPORT_FBX_MODEL_FILE
-				else if (sExt == "fbx")
+				else if (sExt == "fbx" || sExt == "gltf" || sExt == "glb")
 				{
 					// static or animated fbx model
 					FBXParser parser(iCur->m_sMeshFileName);
-					iCur->m_pParaXMesh = parser.ParseParaXModel(myFile.getBuffer(), myFile.getSize());
+					iCur->m_pParaXMesh = parser.ParseParaXModel(myFile.getBuffer(), myFile.getSize(), sExt.c_str());
 				}
 #endif
 				else

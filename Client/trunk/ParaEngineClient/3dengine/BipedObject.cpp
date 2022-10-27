@@ -33,6 +33,7 @@
 #include "ShapeAABB.h"
 #include "PhysicsWorld.h"
 #include "DynamicAttributeField.h"
+#include "NPL/NPLHelper.h"
 #include <algorithm>
 
 using namespace ParaEngine;
@@ -152,7 +153,6 @@ m_nMovementStyle(MOVESTYLE_SLIDINGWALL),
 m_dwPhysicsGroupMask(DEFAULT_PHYSICS_GROUP_MASK),
 m_dwPhysicsMethod(PHYSICS_FORCE_NO_PHYSICS), m_nPhysicsGroup(0),
 m_sPhysicsShape("box"),
-m_fPhysicsMass(1.0f),
 m_dynamicPhysicsActor(NULL),
 m_fBootHeight(0.f),
 m_fSizeScale(1.0f),
@@ -4750,6 +4750,25 @@ const char* ParaEngine::CBipedObject::GetPhysicsShape()
 	return m_sPhysicsShape.c_str();
 }
 
+void ParaEngine::CBipedObject::SetPhysicsProperty(const char* property)
+{
+	if (!m_dynamicPhysicsActor) {
+		OUTPUT_LOG("warning: SetPhysicsProperty when actor does not exist.\n");
+		return;
+	}
+		
+	CGlobals::GetPhysicsWorld()->SetActorPhysicsProperty(m_dynamicPhysicsActor, property);
+}
+
+const char* ParaEngine::CBipedObject::GetPhysicsProperty()
+{
+	if (m_dynamicPhysicsActor)
+	{
+		CGlobals::GetPhysicsWorld()->GetActorPhysicsProperty(m_dynamicPhysicsActor);
+	}
+	return "";
+}
+
 void ParaEngine::CBipedObject::EnableDynamicPhysics(bool bEnable)
 {
 	if (IsPhysicsEnabled()) return ;
@@ -4788,7 +4807,7 @@ void ParaEngine::CBipedObject::UnloadDynamicPhysics()
 	}
 }
 
-void ParaEngine::CBipedObject::ApplyCentralImpulse(Vector3 impulse)
+void ParaEngine::CBipedObject::ApplyCentralImpulse(const Vector3& impulse)
 {
 	if (m_dynamicPhysicsActor != NULL)
 	{
