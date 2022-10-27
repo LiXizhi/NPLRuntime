@@ -62,7 +62,13 @@ PARAVECTOR3 ParaEngine::BulletPhysicsActor::GetOrigin() {
 
 void ParaEngine::BulletPhysicsActor::SetWorldTransform(const PARAMATRIX* pMatrix)
 {
+#ifdef USE_MOTIONSTATE
+	static btTransform transform;
+	transform.setFromOpenGLMatrix((float*)pMatrix);
+	m_pActor->getMotionState()->setWorldTransform(transform);
+#else
 	m_pActor->getWorldTransform().setFromOpenGLMatrix((float*)pMatrix);
+#endif
 }
 
 void ParaEngine::BulletPhysicsActor::Release()
@@ -70,11 +76,237 @@ void ParaEngine::BulletPhysicsActor::Release()
 	delete this;
 }
 
-void ParaEngine::BulletPhysicsActor::ApplyCentralImpulse(PARAVECTOR3& impulse)
+void ParaEngine::BulletPhysicsActor::ApplyCentralImpulse(const PARAVECTOR3& impulse)
 {
 	m_pActor->setActivationState(ACTIVE_TAG);
 	m_pActor->applyCentralImpulse(btVector3(impulse.x, impulse.y, impulse.z));
 }
+
+void BulletPhysicsActor::Activate()
+{
+	m_pActor->activate();
+}
+bool BulletPhysicsActor::IsActive()
+{
+	return m_pActor->isActive();
+}
+bool BulletPhysicsActor::IsKinematicObject()
+{
+	return m_pActor->isKinematicObject();
+}
+bool BulletPhysicsActor::IsStaticObject()
+{
+	return m_pActor->isStaticObject();
+}
+bool BulletPhysicsActor::IsStaticOrKinematicObject()
+{
+	return m_pActor->isStaticOrKinematicObject();
+}
+float BulletPhysicsActor::GetMass()
+{
+	float mass = m_pActor->getInvMass();
+	return mass == 0.0f ? 0.0f : (1 / mass);
+}
+void BulletPhysicsActor::SetMass(float mass)
+{
+	m_pActor->setMassProps(mass, m_pActor->getLocalInertia());
+}
+PARAVECTOR3 BulletPhysicsActor::GetLocalInertia()
+{
+	const btVector3& inertia = m_pActor->getLocalInertia();
+	return PARAVECTOR3((float)inertia.getX(), (float)inertia.getY(), (float)inertia.getZ());
+}
+void BulletPhysicsActor::SetLocalInertia(const PARAVECTOR3& inertia)
+{
+	m_pActor->setMassProps(GetMass(), btVector3(inertia.x, inertia.y, inertia.z));
+}
+PARAVECTOR3 BulletPhysicsActor::GetGravity()
+{
+	const btVector3& gravity = m_pActor->getGravity();
+	return PARAVECTOR3((float)gravity.getX(), (float)gravity.getY(), (float)gravity.getZ());
+}
+void BulletPhysicsActor::SetGravity(const PARAVECTOR3& gravity)
+{
+	m_pActor->setGravity(btVector3(gravity.x, gravity.y, gravity.z));
+	// m_pActor->applyGravity();
+}
+// [0, 1]
+void BulletPhysicsActor::SetLinearDamping(float damping)
+{
+	m_pActor->setDamping(damping, m_pActor->getAngularDamping());
+	// m_pActor->applyDamping(1.0f);
+}
+float BulletPhysicsActor::GetLinearDamping()
+{
+	return m_pActor->getLinearDamping();
+}
+void BulletPhysicsActor::SetAngularDamping(float damping)
+{
+	m_pActor->setDamping(m_pActor->getLinearDamping(), damping);
+	// m_pActor->applyDamping(1.0f);
+}
+float BulletPhysicsActor::GetAngularDamping()
+{
+	return m_pActor->getAngularDamping();
+}
+PARAVECTOR3 BulletPhysicsActor::GetLinearFactor()
+{
+	const btVector3& factor = m_pActor->getLinearFactor();
+	return PARAVECTOR3((float)factor.getX(), (float)factor.getY(), (float)factor.getZ());
+}
+void BulletPhysicsActor::SetLinearFactor(const PARAVECTOR3& factor)
+{
+	m_pActor->setLinearFactor(btVector3(factor.x, factor.y, factor.z));
+}
+PARAVECTOR3 BulletPhysicsActor::GetAngularFactor()
+{
+	const btVector3& factor = m_pActor->getAngularFactor();
+	return PARAVECTOR3((float)factor.getX(), (float)factor.getY(), (float)factor.getZ());
+}
+void BulletPhysicsActor::SetAngularFactor(const PARAVECTOR3& factor)
+{
+	m_pActor->setAngularFactor(btVector3(factor.x, factor.y, factor.z));
+}
+PARAVECTOR3 BulletPhysicsActor::GetLinearVelocity()
+{
+	const btVector3& velocity = m_pActor->getLinearVelocity();
+	return PARAVECTOR3((float)velocity.getX(), (float)velocity.getY(), (float)velocity.getZ());
+}
+void BulletPhysicsActor::SetLinearVelocity(const PARAVECTOR3& velocity)
+{
+	m_pActor->setLinearVelocity(btVector3(velocity.x, velocity.y, velocity.z));
+}
+PARAVECTOR3 BulletPhysicsActor::GetAngularVelocity()
+{
+	const btVector3& velocity = m_pActor->getAngularVelocity();
+	return PARAVECTOR3((float)velocity.getX(), (float)velocity.getY(), (float)velocity.getZ());
+}
+void BulletPhysicsActor::SetAngularVelocity(const PARAVECTOR3& velocity)
+{
+	m_pActor->setAngularVelocity(btVector3(velocity.x, velocity.y, velocity.z));
+}
+int BulletPhysicsActor::GetFlags()
+{
+	return m_pActor->getFlags();
+}
+void BulletPhysicsActor::SetFlags(int flags)
+{
+	m_pActor->setFlags(flags);
+}
+int BulletPhysicsActor::GetActivationState()
+{
+	return m_pActor->getActivationState();
+}
+void BulletPhysicsActor::SetActivationState(int state)
+{
+	m_pActor->setActivationState(state);
+}
+float BulletPhysicsActor::GetDeactivationTime()
+{
+	return m_pActor->getDeactivationTime();
+}
+void BulletPhysicsActor::SetDeactivationTime(float time)
+{
+	m_pActor->setDeactivationTime(time);
+}
+float BulletPhysicsActor::GetRestitution()
+{
+	return m_pActor->getRestitution();
+}
+void BulletPhysicsActor::SetRestitution(float restitution)
+{
+	m_pActor->setRestitution(restitution);
+}
+float BulletPhysicsActor::GetFriction()
+{
+	return m_pActor->getFriction();
+}
+void BulletPhysicsActor::SetFriction(float friction)
+{
+	m_pActor->setFriction(friction);
+}
+float BulletPhysicsActor::GetRollingFriction()
+{
+	return m_pActor->getRollingFriction();
+}
+void BulletPhysicsActor::SetRollingFriction(float friction)
+{
+	m_pActor->setRollingFriction(friction);
+}
+float BulletPhysicsActor::GetSpinningFriction()
+{
+	return m_pActor->getSpinningFriction();
+}
+void BulletPhysicsActor::SetSpinningFriction(float friction)
+{
+	m_pActor->setSpinningFriction(friction);
+}
+float BulletPhysicsActor::GetContactStiffness()
+{
+	return m_pActor->getContactStiffness();
+}
+void BulletPhysicsActor::SetContactStiffness(float stiffness)
+{
+	m_pActor->setContactStiffnessAndDamping(stiffness, m_pActor->getContactDamping());
+}
+float BulletPhysicsActor::GetContactDamping()
+{
+	return m_pActor->getContactDamping();
+}
+void BulletPhysicsActor::SetContactDamping(float damping)
+{
+	m_pActor->setContactStiffnessAndDamping(m_pActor->getContactStiffness(), damping);
+}
+int BulletPhysicsActor::GetIslandTag()
+{
+	return m_pActor->getIslandTag();
+}
+void BulletPhysicsActor::SetIslandTag(int flags)
+{
+	m_pActor->setIslandTag(flags);
+}
+int BulletPhysicsActor::GetCompanionId()
+{
+	return m_pActor->getCompanionId();
+}
+void BulletPhysicsActor::SetCompanionId(int id)
+{
+	m_pActor->setCompanionId(id);
+}
+float BulletPhysicsActor::GetHitFraction()
+{
+	return m_pActor->getHitFraction();
+}
+void BulletPhysicsActor::SetHitFraction(float fraction)
+{
+	m_pActor->setHitFraction(fraction);
+}
+int BulletPhysicsActor::GetCollisionFlags()
+{
+	return m_pActor->getCollisionFlags();
+}
+void BulletPhysicsActor::SetCollisionFlags(int flags)
+{
+	m_pActor->setCollisionFlags(flags);
+}
+float BulletPhysicsActor::GetCcdSweptSphereRadius()
+{
+	return m_pActor->getCcdSweptSphereRadius();
+}
+void BulletPhysicsActor::SetCcdSweptSphereRadius(float radius)
+{
+	m_pActor->setCcdSweptSphereRadius(radius);
+}
+float BulletPhysicsActor::GetCcdMotionThreshold()
+{
+	return m_pActor->getCcdMotionThreshold();
+}
+void BulletPhysicsActor::SetCcdMotionThreshold(float threshold)
+{
+	m_pActor->setCcdMotionThreshold(threshold);
+}
+
+
 //
 // Physics World
 //
