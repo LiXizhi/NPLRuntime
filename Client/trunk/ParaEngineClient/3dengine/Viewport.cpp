@@ -50,6 +50,54 @@ void ParaEngine::CViewport::ApplyCamera(CAutoCamera* pCamera)
 		pCamera->EnableStereoVision(true);
 		pCamera->SetStereoEyeShiftDistance(GetEyeMode() == STEREO_EYE_LEFT ? -GetStereoEyeSeparation() : GetStereoEyeSeparation());
 		pCamera->UpdateViewMatrix();
+		if (m_stereoODSparam.isODS) {
+			pCamera->SetStereoEyeShiftDistance(m_stereoODSparam.eyeShiftDistance);
+
+			double fCameraObjectDist = pCamera->GetCameraObjectDistance();
+			DVector3 dEyePos = m_stereoODSparam.oldEyePos;
+			DVector3 oldLookAtPos = m_stereoODSparam.oldLookAtPos;
+			m_stereoODSparam.needRecoverCamera = true;
+
+			Vector3 &up = pCamera->GetWorldUp();
+			up.normalise();
+			Vector3& right = pCamera->GetWorldRight();
+			right.normalise();
+
+			{
+				Matrix3 mRotPitch;
+				Quaternion q_pitch(Radian(m_stereoODSparam.moreRotZ), right);
+				q_pitch.ToRotationMatrix(mRotPitch);
+
+				Vector3 sightDir = oldLookAtPos - dEyePos;
+				sightDir.normalise();
+
+				Vector3 newSightDir = Vector3(mRotPitch * sightDir);
+				DVector3 newLookAt = DVector3(newSightDir * fCameraObjectDist) + dEyePos;
+				
+				pCamera->SetViewParams(dEyePos, newLookAt, &up);
+				oldLookAtPos = newLookAt;
+			}
+
+			/*auto m_mCameraWorld = pCamera->GetViewMatrix()->inverse();
+			up = Vector3(m_mCameraWorld._21, m_mCameraWorld._22, m_mCameraWorld._23);*/
+			
+			{
+				Matrix3 mRotYaw;
+				Quaternion q_yaw(Radian(m_stereoODSparam.moreRotY), up);
+				q_yaw.ToRotationMatrix(mRotYaw);
+
+				Vector3 sightDir = oldLookAtPos - dEyePos;
+				sightDir.normalise(); 
+				Vector3 newSightDir = Vector3(mRotYaw * sightDir);
+				DVector3 newLookAt = DVector3(newSightDir * fCameraObjectDist) + dEyePos;
+
+				pCamera->SetViewParams(dEyePos, newLookAt, &up);
+				oldLookAtPos = newLookAt;
+			}
+
+			pCamera->SetFieldOfView(m_stereoODSparam.fov, m_stereoODSparam.fov_h);
+			
+		}
 	}
 	else
 	{
@@ -183,6 +231,7 @@ int ParaEngine::CViewport::InstallFields(CAttributeClass* pClass, bool bOverride
 
 	pClass->AddField("alignment", FieldType_String, (void*)SetAlignment_s, NULL, NULL, NULL, bOverride);
 	pClass->AddField("left", FieldType_Int, (void*)SetLeft_s, (void*)GetLeft_s, NULL, NULL, bOverride);
+	pClass->AddField("ods_fov", FieldType_Float, (void*)SetODSFov_s, (void*)GetODSFov_s, NULL, NULL, bOverride);
 	pClass->AddField("top", FieldType_Int, (void*)SetTop_s, (void*)GetTop_s, NULL, NULL, bOverride);
 	pClass->AddField("width", FieldType_Int, (void*)SetWidth_s, (void*)GetWidth_s, NULL, NULL, bOverride);
 	pClass->AddField("height", FieldType_Int, (void*)SetHeight_s, (void*)GetHeight_s, NULL, NULL, bOverride);

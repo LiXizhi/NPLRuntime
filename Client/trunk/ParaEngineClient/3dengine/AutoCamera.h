@@ -206,7 +206,7 @@ public:
 	CBipedObject * GetTargetAsBiped();
 
 	virtual LRESULT HandleMessages(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
-	virtual void SetViewParams(const DVector3& vEyePt, const DVector3& vLookatPt);
+	virtual void SetViewParams(const DVector3& vEyePt, const DVector3& vLookatPt, const Vector3* up = NULL);
 	
 	void FollowBiped( CBaseObject* pBiped, CameraMode modeCamera, double dTransitionTime);
 	void FollowBiped( CBaseObject* pBiped, int nTranstionMode, int modeCamera, double Param0, double Param1, double Param2);

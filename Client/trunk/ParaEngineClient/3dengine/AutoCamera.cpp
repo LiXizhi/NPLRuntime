@@ -1845,7 +1845,7 @@ void CAutoCamera::UpdateViewMatrix()
 	ComputeViewMatrix(&m_mView, &m_vEye, &m_vLookAt, &vUp);
 }
 
-void CAutoCamera::SetViewParams(const DVector3& vEyePt, const DVector3& vLookatPt)
+void CAutoCamera::SetViewParams(const DVector3& vEyePt, const DVector3& vLookatPt, const Vector3* up)
 {
 	/** set View */
 	m_vDefaultEye = m_vEye = vEyePt;
@@ -1853,6 +1853,9 @@ void CAutoCamera::SetViewParams(const DVector3& vEyePt, const DVector3& vLookatP
 
 	// Calc the view matrix
 	Vector3 vUp(0, 1, 0);
+	if (up != NULL) {
+		vUp = *up;
+	}
 	/// Update the view matrix
 	ComputeViewMatrix(&m_mView, &m_vEye, &m_vLookAt, &vUp);
 

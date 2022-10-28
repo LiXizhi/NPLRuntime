@@ -214,6 +214,17 @@ void CBaseCamera::SetFieldOfView(float fFov)
 	}
 }
 
+void CBaseCamera::SetFieldOfView(float fov_v, float fov_h)
+{
+	float p_fAspect = tan(fov_h / 2) / tan(fov_v / 2);
+	if (m_fFOV != fov_v || m_fAspect!= p_fAspect)
+	{
+		m_fFOV = fov_v;
+		m_fAspect = p_fAspect;
+		UpdateProjParams();
+	}
+}
+
 void CBaseCamera::SetNearPlane(float fNearPlane)
 {
 	m_fNearPlane = fNearPlane;
