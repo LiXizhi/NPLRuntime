@@ -1,4 +1,4 @@
-﻿#include "ParaEngine.h"
+#include "ParaEngine.h"
 #include "BMaxModel/BlocksParser.h"
 #include "ParaXModel.h"
 #include "ParaXSerializer.h"
@@ -8,7 +8,7 @@
 #include "ParaXBone.h"
 #include "CustomCharModelInstance.h"
 #include "ParaXModelCanvas.h"
-#include "GlTFModel.h"
+#include "GltfModel.h"
 #include "MeshObject.h"
 
 namespace ParaEngine
