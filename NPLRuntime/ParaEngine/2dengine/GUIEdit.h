@@ -46,6 +46,14 @@ namespace ParaEngine
 
 #ifdef PARAENGINE_MOBILE
 		ATTRIBUTE_METHOD1(CGUIEditBox, SetMoveViewWhenAttachWithIME_s, bool) { cls->setMoveViewWhenAttachWithIME(p1); return S_OK; }
+		ATTRIBUTE_METHOD1(CGUIEditBox, GetIsUseFloatEditBox_s, bool*)	{ *p1 = cls->IsUseFloatEditBox(); return S_OK; }
+		ATTRIBUTE_METHOD1(CGUIEditBox, SetIsUseFloatEditBox_s, bool)	{ cls->SetIsUseFloatEditBox(p1); return S_OK; }
+		ATTRIBUTE_METHOD1(CGUIEditBox, GetMaxWordLength_s, int*)	{ *p1 = cls->GetMaxWordLength(); return S_OK; }
+		ATTRIBUTE_METHOD1(CGUIEditBox, SetMaxWordLength_s, int)	{ cls->SetMaxWordLength(p1); return S_OK; }
+		ATTRIBUTE_METHOD1(CGUIEditBox, GetConfirmType_s, const char**)	{ *p1 = cls->GetConfirmType(); return S_OK; }
+		ATTRIBUTE_METHOD1(CGUIEditBox, SetConfirmType_s, const char*)	{ cls->SetConfirmType(p1); return S_OK; }
+		ATTRIBUTE_METHOD1(CGUIEditBox, GetInputType_s, const char**)	{ *p1 = cls->GetInputType(); return S_OK; }
+		ATTRIBUTE_METHOD1(CGUIEditBox, SetInputType_s, const char*)	{ cls->SetInputType(p1); return S_OK; }
 #endif
 
 	public:
@@ -198,6 +206,23 @@ namespace ParaEngine
         const RECT& GetCaretRect() const;
 
 		bool IsMultipleLine() { return m_bMultipleLine; }
+
+		//Whether to use an independent input box that follows the keyboard suspension
+		bool IsUseFloatEditBox(){return m_bIsUseFloatEditBox;}
+		void SetIsUseFloatEditBox(bool val){m_bIsUseFloatEditBox=val;}
+
+        //maximum limit of input
+		int GetMaxWordLength(){return m_nMaxWordLength;}
+		void SetMaxWordLength(int val){m_nMaxWordLength=val;};
+
+		//Type of input method's OK button,such as : "done","next","search","go","send"
+		const char * GetConfirmType(){return m_sComfirmType.c_str();}
+		void SetConfirmType(const char *val){m_sComfirmType=val;}
+
+		//Type of filter for input characters,such as :"text","email","number","phone","password"
+		const char * GetInputType(){return m_sInputType.c_str();}
+		void SetInputType(const char *val){m_sInputType=val;}
+
 #ifdef PARAENGINE_MOBILE
 		// ime delegate implementation. 
 	public:
@@ -260,5 +285,10 @@ namespace ParaEngine
 		std::string m_empty_text_utf8;
         
         RECT       m_rcCaret;
+
+        bool 		m_bIsUseFloatEditBox;
+        int 		m_nMaxWordLength;
+        std::string m_sComfirmType;
+        std::string m_sInputType;
 	};
 }

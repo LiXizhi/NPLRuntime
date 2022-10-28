@@ -82,6 +82,10 @@ CGUIEditBox::CGUIEditBox() :CGUIBase()
 	m_PasswordChar = '\0';
     m_EmptyTextColor = Color(0x0);
 
+	m_bIsUseFloatEditBox = false;
+	m_nMaxWordLength = 0;
+	m_sComfirmType = "done";
+	m_sInputType = "text";
     memset(&m_rcCaret, 0, sizeof(m_rcCaret));
 }
 
@@ -127,6 +131,11 @@ void CGUIEditBox::Clone(IObject* pobj)const
 	pEditbox->m_last_key = 0;
 	pEditbox->m_last_keytime = (GetTickCount() / 1000.f);
 	pEditbox->m_key_state = 0;
+	pEditbox->m_bIsUseFloatEditBox = m_bIsUseFloatEditBox;
+	pEditbox->m_nMaxWordLength = m_nMaxWordLength;
+	pEditbox->m_sInputType = m_sInputType;
+	pEditbox->m_sComfirmType = m_sComfirmType;
+
 	PERF_END("Base clone");
 }
 
@@ -902,14 +911,14 @@ bool CGUIEditBox::MsgProc(MSG *event)
 				bHandled = true;
 			}
 			else if (m_event->IsMapTo(nEvent, EM_EB_SELECTALL)) {
-#if !defined(ANDROID)&&!defined(__APPLE__)
-				m_nSelStart = 0;
-				PlaceCaret(m_Buffer.GetTextSize());
-				ResetCaretBlink();
-				OnSelect();
-#else 
-				OnSelectStart();
-#endif
+				if(!IsUseFloatEditBox()) {
+					m_nSelStart = 0;
+					PlaceCaret(m_Buffer.GetTextSize());
+					ResetCaretBlink();
+					OnSelect();
+				}else {
+					OnSelectStart();
+				}
 				bHandled = true;
 			}
 
@@ -1559,8 +1568,7 @@ HRESULT CGUIEditBox::Render(GUIState* pGUIState, float fElapsedTime)
 	//
 	// Render the caret if this control has the focus
 	//
-#if !defined(ANDROID)&&!defined(__APPLE__)
-	if (m_bHasFocus && m_bCaretOn && !IsHideCaret() && !m_bReadOnly)
+	if (!IsUseFloatEditBox() && m_bHasFocus && m_bCaretOn && !IsHideCaret() && !m_bReadOnly)
 	{
 		// Start the rectangle with insert mode caret
 
@@ -1578,7 +1586,6 @@ HRESULT CGUIEditBox::Render(GUIState* pGUIState, float fElapsedTime)
 		}
 		GetPainter(pGUIState)->DrawRect(&m_rcCaret, m_CaretColor, m_position.GetDepth());
 	}
-#endif
 	return S_OK;
 }
 
@@ -1947,6 +1954,11 @@ int CGUIEditBox::InstallFields(CAttributeClass* pClass, bool bOverride)
 
 #ifdef PARAENGINE_MOBILE
 	pClass->AddField("MoveViewWhenAttachWithIME", FieldType_Bool, (void*)SetMoveViewWhenAttachWithIME_s, nullptr, nullptr, nullptr, bOverride);
+
+	pClass->AddField("IsUseFloatEditBox", FieldType_Bool, (void*)GetIsUseFloatEditBox_s, (void*)SetIsUseFloatEditBox_s, NULL, NULL, bOverride);
+	pClass->AddField("MaxWordLength", FieldType_Int, (void*)SetMaxWordLength_s, (void*)GetMaxWordLength_s, NULL, NULL, bOverride);
+	pClass->AddField("ConfirmType", FieldType_String, (void*)SetConfirmType_s, (void*)GetConfirmType_s, NULL, NULL, bOverride);
+	pClass->AddField("InputType", FieldType_String, (void*)SetInputType_s, (void*)GetInputType_s, NULL, NULL, bOverride);
 #endif
 
 	return S_OK;

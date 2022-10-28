@@ -25,14 +25,19 @@ namespace ParaEngine {
         bool confirmHold = false;
         const char * confirmType = "done";
         const char * inputType = "text";
+        bool useFloatEditBox = false;
 
         CGUIEditBox * pGUI = dynamic_cast<CGUIEditBox*>((CGUIRoot::GetInstance()->GetUIKeyFocus()));
         if(pGUI && bOpen)
         {
             pGUI->GetTextA(defaultValue);
             isMultiline = pGUI->IsMultipleLine();
+            maxLength = pGUI->GetMaxWordLength();
+            confirmType = pGUI->GetConfirmType();
+            inputType = pGUI->GetInputType();
+            useFloatEditBox = pGUI->IsUseFloatEditBox();
         }
-        if(pGUI&&!isMultiline){
+        if(useFloatEditBox){
             JniHelper::callStaticVoidMethod(classname, "setIMEKeyboardState", bOpen, defaultValue, maxLength,isMultiline,confirmHold,confirmType,inputType);
         }else{
             JniHelper::callStaticVoidMethod(classname, "setIMEKeyboardState", bOpen, bMoveView, ctrlBottom);
