@@ -85,6 +85,11 @@ namespace ParaEngine
 			DVector3 oldEyePos;
 			DVector3 oldLookAtPos;
 			float oldFov;
+
+			bool m_bOmniAlwaysUseUpFrontCamera;
+			int m_nOmniForceLookatDistance;
+			float oldCameraRotX;
+			float oldCameraDistance;
 			StereoODSparam(){
 				isODS = false;
 				moreRotY = 0.0f;
@@ -93,6 +98,8 @@ namespace ParaEngine
 				aspectRatio = 1.0f;
 				eyeShiftDistance = 0.0f;
 				needRecoverCamera = false;
+				m_bOmniAlwaysUseUpFrontCamera = true;
+				m_nOmniForceLookatDistance = 20;
 			}
 			inline StereoODSparam& operator = (const StereoODSparam& target)
 			{
@@ -107,6 +114,9 @@ namespace ParaEngine
 				oldEyePos = target.oldEyePos;
 				oldLookAtPos = target.oldLookAtPos;
 				oldFov = target.oldFov;
+				m_bOmniAlwaysUseUpFrontCamera = target.m_bOmniAlwaysUseUpFrontCamera;
+				m_nOmniForceLookatDistance = target.m_nOmniForceLookatDistance;
+
 				return *this;
 			}
 		};

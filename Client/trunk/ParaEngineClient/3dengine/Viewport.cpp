@@ -53,12 +53,19 @@ void ParaEngine::CViewport::ApplyCamera(CAutoCamera* pCamera)
 		if (m_stereoODSparam.isODS) {
 			pCamera->SetStereoEyeShiftDistance(m_stereoODSparam.eyeShiftDistance);
 
+			if (m_stereoODSparam.m_nOmniForceLookatDistance>0) {
+				pCamera->SetForceOmniCameraObjectDistance(m_stereoODSparam.m_nOmniForceLookatDistance);
+			}
+			if (m_stereoODSparam.m_bOmniAlwaysUseUpFrontCamera) {
+				pCamera->SetForceOmniCameraPitch(0);
+			}
 			double fCameraObjectDist = pCamera->GetCameraObjectDistance();
 			DVector3 dEyePos = m_stereoODSparam.oldEyePos;
 			DVector3 oldLookAtPos = m_stereoODSparam.oldLookAtPos;
 			m_stereoODSparam.needRecoverCamera = true;
 
 			Vector3 &up = pCamera->GetWorldUp();
+			up = Vector3(0,1,0);
 			up.normalise();
 			Vector3& right = pCamera->GetWorldRight();
 			right.normalise();
