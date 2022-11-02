@@ -159,7 +159,7 @@ public class ParaEngineActivity extends AppCompatActivity {
     @Override
     protected void onCreate(final Bundle savedInstanceState) {
         sContext = this;
-
+        GlobalObject.setActivity(this);
         super.onCreate(savedInstanceState);
 
         RegisterActivityResultLauncher();
@@ -212,15 +212,15 @@ public class ParaEngineActivity extends AppCompatActivity {
         super.onPause();
         ParaEnginePluginWrapper.onPause();
 
-        if (mGLSurfaceView != null)
-            mGLSurfaceView.onPause();
+//        if (mGLSurfaceView != null)
+//            mGLSurfaceView.onPause();
     }
 
     @Override
     protected void onResume() {
         super.onResume();
         ParaEnginePluginWrapper.onResume();
-        resumeIfHasFocus();
+//        resumeIfHasFocus();
     }
 
     @Override
@@ -240,12 +240,16 @@ public class ParaEngineActivity extends AppCompatActivity {
     protected void onStart() {
         super.onStart();
         ParaEnginePluginWrapper.onStart();
+        if (mGLSurfaceView != null)
+            mGLSurfaceView.setVisibility(View.VISIBLE);
     }
 
     @Override
     protected void onStop() {
         super.onStop();
         ParaEnginePluginWrapper.onStop();
+        if (mGLSurfaceView != null)
+            mGLSurfaceView.setVisibility(View.INVISIBLE);
     }
 
     protected void onLoadNativeLibraries() {
