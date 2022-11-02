@@ -2,7 +2,7 @@
 // ParaEngineGLSurfaceView.java
 // Authors: LanZhihong, big
 // CreateDate: 2019.7.16
-// ModifyDate: 2022.1.11
+// ModifyDate: 2022.11.2
 //-----------------------------------------------------------------------------
 
 package com.tatfook.paracraft;
@@ -87,8 +87,8 @@ public class ParaEngineGLSurfaceView extends GLSurfaceView {
 
         this.setEGLContextClientVersion(2);
         this.setFocusableInTouchMode(true);
-        mGLSurfaceView = this;
 
+        mGLSurfaceView = this;
         sParaTextInputWrapper = new ParaTextInputWrapper(this);
 
         DisplayMetrics metrics = new DisplayMetrics();
@@ -120,30 +120,24 @@ public class ParaEngineGLSurfaceView extends GLSurfaceView {
                 return false;
             }
 
+            sParaTextInputWrapper.onFocus();
+
             if (mIsOpen) {
                 mEditText.setEnabled(true);
 
                 if (mEditText.requestFocus()) {
                     mEditText.removeTextChangedListener(sParaTextInputWrapper);
-                    mEditText.setText("");
                     mEditText.addTextChangedListener(sParaTextInputWrapper);
-                    mEditText.setOnKeyListener((v, keyCode, event) -> {
-                        if (keyCode == 67 && event.getAction() == 0) {
-                            onDeleteBackward();
-                        }
-                        return false;
-                    });
 
                     InputMethodManager imm = (InputMethodManager)sActivity.getSystemService(Context.INPUT_METHOD_SERVICE);
                     imm.showSoftInput(mEditText, 0);
                 } else {
-                    lastText = "";
                     mEditText.setEnabled(false);
                 }
             } else {
-                lastText = "";
                 mEditText.setEnabled(false);
                 mEditText.removeTextChangedListener(sParaTextInputWrapper);
+                mEditText.setText("");
 
                 InputMethodManager imm = (InputMethodManager)sActivity.getSystemService(Context.INPUT_METHOD_SERVICE);
                 imm.hideSoftInputFromWindow(mEditText.getWindowToken(), 0);
@@ -610,10 +604,10 @@ public class ParaEngineGLSurfaceView extends GLSurfaceView {
                 @Override
                 public void run() {
                     ParaEngineGLSurfaceView.this.mRenderer.handleMouseDown(
-                            1,
-                            curPointerId,
-                            curPointerX,
-                            curPointerY
+                        1,
+                        curPointerId,
+                        curPointerX,
+                        curPointerY
                     );
                 }
             });
