@@ -2,7 +2,7 @@
 // ParaTextInputWrapper.java
 // Authors: LanZhiHong, big
 // CreateDate: 2019.7.16
-// ModifyDate: 2022.1.11
+// ModifyDate: 2022.11.2
 //-----------------------------------------------------------------------------
 
 package com.tatfook.paracraft;
@@ -16,8 +16,11 @@ import android.view.inputmethod.InputMethodManager;
 import android.widget.TextView;
 
 public class ParaTextInputWrapper implements TextWatcher, TextView.OnEditorActionListener {
-
     private ParaEngineGLSurfaceView mNativeView;
+    private static native void nativeSetText(String text);
+    private static native void nativeSetCaretPosition(int caretPosition);
+    private static native int nativeGetCaretPosition();
+    private static native String nativeGetText();
 
     public ParaTextInputWrapper(ParaEngineGLSurfaceView nativeView) {
         mNativeView = nativeView;
@@ -29,24 +32,28 @@ public class ParaTextInputWrapper implements TextWatcher, TextView.OnEditorActio
         return imm.isFullscreenMode();
     }
 
+    public void onFocus() {
+        ParaEngineEditBox editText = mNativeView.getParaEditText();
+
+        editText.setText(nativeGetText());
+        editText.setSelection(nativeGetCaretPosition());
+    }
+
     @Override
     public void afterTextChanged(Editable s) {
         if (this.isFullScreenEdit())
             return;
 
+        ParaEngineEditBox editText = mNativeView.getParaEditText();
         String text = s.toString();
 
-        if (text.length() < mNativeView.lastText.length()) {
-            mNativeView.onDeleteBackward();
-            mNativeView.lastText = text;
-            return;
-        }
-
-        String repText = "";
-        repText = text.replaceAll("^" + mNativeView.lastText, "");
-
-        mNativeView.onUnicodeText(repText);
-        mNativeView.lastText = text;
+        ParaEngineActivity.getContext().runOnGLThread(new Runnable() {
+            @Override
+            public void run() {
+                nativeSetText(text);
+                nativeSetCaretPosition(editText.getSelectionEnd());
+            }
+        });
     }
 
     @Override
@@ -63,6 +70,7 @@ public class ParaTextInputWrapper implements TextWatcher, TextView.OnEditorActio
             mNativeView.requestFocus();
             textView.setEnabled(false);
         }
+
         return false;
     }
 }
