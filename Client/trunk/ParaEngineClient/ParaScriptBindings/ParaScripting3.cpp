@@ -125,6 +125,9 @@ void CNPLScriptingState::LoadHAPI_SceneManager()
 				def("GetBlockUserData",&ParaTerrain::GetBlockUserData),
 				def("GetBlockUserDataByIdx",&ParaTerrain::GetBlockUserDataByIdx),
 
+				def("SetBlockMaterial", &ParaTerrain::SetBlockMaterial),
+				def("GetBlockMaterial", &ParaTerrain::GetBlockMaterial),
+
 				def("GetBlocksInRegion",&ParaTerrain::GetBlocksInRegion),
 				def("GetActiveRegion",&ParaTerrain::GetVisibleChunkRegion),
 				def("LoadBlockAsync", &ParaTerrain::LoadBlockAsync),

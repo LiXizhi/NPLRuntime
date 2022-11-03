@@ -442,6 +442,22 @@ namespace ParaScripting
 		return 0;
 	}
 
+	bool ParaTerrain::SetBlockMaterial(uint16_t x, uint16_t y, uint16_t z, int16_t nFaceId, int32_t nMaterial)
+	{
+		BlockWorldClient* mgr = BlockWorldClient::GetInstance();
+		if (mgr)
+			return mgr->SetBlockMaterial(x, y, z, nFaceId, nMaterial);
+		return false;
+	}
+
+	int32_t ParaTerrain::GetBlockMaterial(uint16_t x, uint16_t y, uint16_t z, int16_t nFaceId)
+	{
+		BlockWorldClient* mgr = BlockWorldClient::GetInstance();
+		if (mgr)
+			return mgr->GetBlockMaterial(x, y, z, nFaceId);
+		return -1;
+	}
+
 	bool ParaTerrain::RegisterBlockTemplate(uint16_t templateId, const object& params)
 	{
 		return ParaBlockWorld::RegisterBlockTemplate_(BlockWorldClient::GetInstance(), templateId, params);
@@ -850,5 +866,15 @@ extern "C" {
 	PE_CORE_DECL void ParaTerrain_LoadBlockAsync(uint16_t x, uint16_t y, uint16_t z, uint16_t blockId, uint32_t userData)
 	{
 		ParaScripting::ParaTerrain::LoadBlockAsync(x, y, z, blockId, userData);
+	}
+
+	PE_CORE_DECL bool ParaTerrain_SetBlockMaterial(uint16_t x, uint16_t y, uint16_t z, int16_t nFaceId, int32_t nMaterial)
+	{
+		return ParaScripting::ParaTerrain::SetBlockMaterial(x, y, z, nFaceId, nMaterial);
+	}
+
+	PE_CORE_DECL int32_t ParaTerrain_GetBlockMaterial(uint16_t x, uint16_t y, uint16_t z, int16_t nFaceId)
+	{
+		return ParaScripting::ParaTerrain::GetBlockMaterial(x, y, z, nFaceId);
 	}
 };

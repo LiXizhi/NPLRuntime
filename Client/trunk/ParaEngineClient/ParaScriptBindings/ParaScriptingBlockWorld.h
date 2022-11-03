@@ -97,7 +97,6 @@ namespace ParaScripting
 		*/
 		static uint32_t GetBlockData(const object& pWorld, uint16_t x, uint16_t y, uint16_t z);
 
-		
 		/** get block in [startChunk,endChunk]
 		* @param result: in/out containing the result. 
 		* @param startChunkY, endChunkY: if negative, and startChunkY == endChunkY, -startChunkY will be used as verticalSectionFilter (a bitwise filter).

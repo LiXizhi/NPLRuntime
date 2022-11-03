@@ -947,6 +947,38 @@ uint32_t ParaEngine::CBlockWorld::GetBlockData(uint16_t x, uint16_t y, uint16_t 
 	return 0;
 }
 
+bool ParaEngine::CBlockWorld::SetBlockMaterial(uint16_t x, uint16_t y, uint16_t z, int16_t nFaceId, int32_t nMaterial)
+{
+	if (y >= 256)
+		return false;
+
+	uint16_t lx, ly, lz;
+	BlockRegion* pRegion = GetRegion(x, y, z, lx, ly, lz);
+
+	if (pRegion)
+	{
+		pRegion->SetBlockMaterial(lx, ly, lz, nFaceId, nMaterial);
+		m_isVisibleChunkDirty = true;
+		return true;
+	}
+	return false;
+}
+
+int32_t ParaEngine::CBlockWorld::GetBlockMaterial(uint16_t x, uint16_t y, uint16_t z, int16_t nFaceId)
+{
+	if (y >= 256)
+		return -1;
+
+	uint16_t lx, ly, lz;
+	BlockRegion* pRegion = GetRegion(x, y, z, lx, ly, lz);
+
+	if (pRegion)
+	{
+		return pRegion->GetBlockMaterial(lx, ly, lz, nFaceId);
+	}
+	return -1;
+}
+
 void ParaEngine::CBlockWorld::LoadBlockAsync(uint16_t x, uint16_t y, uint16_t z, uint16_t blockId, uint32_t userData)
 {
 	uint16_t lx, ly, lz;

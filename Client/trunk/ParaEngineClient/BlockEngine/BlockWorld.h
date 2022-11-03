@@ -286,6 +286,18 @@ namespace ParaEngine
 		uint32_t SetBlockData(uint16_t x, uint16_t y, uint16_t z, uint32_t nBlockData);
 		uint32_t GetBlockData(uint16_t x, uint16_t y, uint16_t z);
 
+		/** Remove a given block material from a block face.
+		* @param nFaceIndex: if -1, we will remove all materials from the block
+		* @param nMaterialID: global unique material id in CBlockMaterialManager
+		*/
+		bool SetBlockMaterial(uint16_t x, uint16_t y, uint16_t z, int16_t nFaceId, int32_t nMaterial);
+
+		/** Remove a given block material from a block face.
+		* @param nFaceIndex: if -1, we will remove all materials from the block
+		* @return -1 if not found
+		*/
+		int32_t GetBlockMaterial(uint16_t x, uint16_t y, uint16_t z, int16_t nFaceId);
+
 		void LoadBlockAsync(uint16_t x, uint16_t y, uint16_t z, uint16_t blockId, uint32_t userData);
 
 		//do *not* hold a permanent reference of return value,underlying memory address may change

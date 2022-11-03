@@ -473,6 +473,40 @@ namespace ParaEngine
 		return 0;
 	}
 
+	bool BlockRegion::SetBlockMaterial(uint16_t x, uint16_t y, uint16_t z, int16_t nFaceId, int32_t nMaterial)
+	{
+		if (!IsLocked())
+		{
+			Uint16x3 blockId(x, y, z);
+			uint16_t chunkId = CalcPackedChunkID(x, y, z);
+			BlockChunk* pChunk = GetChunk(chunkId, false);
+			if (pChunk)
+			{
+				uint16 nBlockIndex = CalcPackedBlockID(x, y, z);
+				pChunk->ApplyBlockMaterial(nBlockIndex, nFaceId, nMaterial);
+				SetModified();
+				SetChunkDirty(chunkId, true);
+			}
+		}
+		return false;
+	}
+
+
+	int32_t BlockRegion::GetBlockMaterial(uint16_t x, uint16_t y, uint16_t z, int16_t nFaceId)
+	{
+		if (!IsLocked())
+		{
+			Uint16x3 blockId(x, y, z);
+			uint16_t chunkId = CalcPackedChunkID(x, y, z);
+			BlockChunk* pChunk = GetChunk(chunkId, false);
+			if (pChunk)
+			{
+				uint16 nBlockIndex = CalcPackedBlockID(x, y, z);
+				return pChunk->GetBlockFaceMaterial(nBlockIndex, nFaceId);
+			}
+		}
+		return -1;
+	}
 
 	ChunkMaxHeight* BlockRegion::GetHighestBlock(uint16_t blockIdX_rs, uint16_t blockIdZ_rs)
 	{
@@ -1280,6 +1314,11 @@ namespace ParaEngine
 						m_sTag.resize(nByteCount);
 						pFile->read(&(m_sTag[0]), nByteCount);
 					}
+					break;
+				}
+				case ChunkCustomDataType_Materials:
+				{
+					// TODO: WXA, also need to save in writer
 					break;
 				}
 				default:

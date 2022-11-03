@@ -428,6 +428,19 @@ namespace ParaScripting
 
 		static uint32_t GetBlockUserDataByIdx(uint16_t x, uint16_t y, uint16_t z);
 
+		/** set block material from a block's face.
+		* @param nFaceIndex: if -1, we will remove all materials from the block
+		* @param nMaterialID: global unique material id in CBlockMaterialManager
+		*/
+		static bool SetBlockMaterial(uint16_t x, uint16_t y, uint16_t z, int16_t nFaceId, int32_t nMaterial);
+
+		/** get block's material of a given face
+		* @param nFaceIndex: if -1, we will remove all materials from the block
+		* @return -1 if not found
+		*/
+		static int32_t GetBlockMaterial(uint16_t x, uint16_t y, uint16_t z, int16_t nFaceId);
+
+
 		//ray orignial should be positive value
 		//ray direction should be normalized value
 		//@return:

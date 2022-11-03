@@ -9,6 +9,7 @@
 #include "DynamicVertexBufferManager.h"
 #include "effect_file.h"
 #include "EffectManager.h"
+#include "BlockEngine/BlockMaterialManager.h"
 
 #ifdef USE_DIRECTX_RENDERER
 #include "HTMLBrowserManager.h"
@@ -108,6 +109,8 @@ namespace ParaEngine
 
 		EffectManager& GetEffectManager(){ return m_EffectsManager; };
 		CEffectFile* LoadEffectFile(const string&  sIdentifier, const string&  sEffectFile);
+
+		CBlockMaterialManager& GetBlockMaterialManager() { return m_BlockMaterialManager; };
 
 		DynamicVertexBufferEntity* GetDynamicBuffer(DynamicVBAssetType nBufferType);
 
@@ -257,6 +260,7 @@ namespace ParaEngine
 
 		CSequenceManager						m_SequenceManager;
 		EffectManager							m_EffectsManager;
+		CBlockMaterialManager					m_BlockMaterialManager;
 		DynamicVertexBufferManager				m_DynamicVBManager;
 		bool m_bAsyncLoading;
 

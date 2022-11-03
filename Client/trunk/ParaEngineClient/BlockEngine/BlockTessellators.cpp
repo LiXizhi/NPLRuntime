@@ -919,13 +919,18 @@ void ParaEngine::BlockGeneralTessellator::TessellateStdCube(BlockRenderMethod dw
 	int tileSize = m_pCurBlockTemplate->getTileSize();
 	float uvScale = (tileSize == 1) ? 1.0f : (1.0f / tileSize);
 
+	auto packedBlockId = CalcPackedBlockID(m_blockId_cs);
+	bool bHasBlockMaterial = m_pChunk->HasBlockMaterial(packedBlockId);
+
 	for (int face = 0; face < nFaceCount; ++face)
 	{
 		int nFirstVertex = face * 4;
 
 		Block* pCurBlock = neighborBlocks[BlockCommon::RBP_SixNeighbors[face]];
 
-		if (!pCurBlock || (pCurBlock->GetTemplate()->GetLightOpacity() < 15))
+		if ((!pCurBlock || (pCurBlock->GetTemplate()->GetLightOpacity() < 15)) && 
+			/** we will skip standard material if there is a block material */
+			(!bHasBlockMaterial || m_pChunk->GetBlockFaceMaterial(packedBlockId, (int16)face) < 0))
 		{
 			for (int v = 0; v < 4; ++v)
 			{

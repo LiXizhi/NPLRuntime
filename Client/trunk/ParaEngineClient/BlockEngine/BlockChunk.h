@@ -102,6 +102,7 @@ namespace ParaEngine
 		ChunkCustomDataType_Heightmap,
 		ChunkCustomDataType_LightValues,
 		ChunkCustomDataType_Tag,
+		ChunkCustomDataType_Materials,
 		// chunk data: following is 16*16*16 chunk data which may further contain custom data. 
 		// this is always the last parent custom data since it does not specify size, and we will write to end of file.  
 		ChunkCustomDataType_ChunksData = 100,
@@ -147,6 +148,12 @@ namespace ParaEngine
 
 		/** 16*16*16 of light data (fixed sized at initialization)*/
 		std::vector<LightData> m_lightmapArray;
+
+		/* indices, materialCount map of all blocks that has at least one external block material associated to its faces. */
+		std::map<uint16_t, uint8_t> m_materialBlockIndices;
+
+		/** key is face_index*4096+block_index; value is material id*/
+		std::map<uint16_t, int32>  m_materialsKeyIdMap;
 
 		// in world space 
 		Uint16x3 m_minBlockId_ws;
@@ -284,5 +291,27 @@ namespace ParaEngine
 
 		void ClearAllLight();
 		void ClearLightMap();
+
+		/** check if a given block contains at least one block material */
+		bool HasBlockMaterial(Uint16x3& blockId_r);
+		bool HasBlockMaterial(uint16 nPackedBlockID);
+
+		/** get material id for given block's given face
+		* @param nFaceIndex: [0,5) 6 faces of a block 
+		* @return -1 if not found
+		*/
+		int32 GetBlockFaceMaterial(uint16 nPackedBlockID, int16 nFaceIndex);
+
+		/** Apply a given block material to a block face. 
+		* @param nFaceIndex: [0,5) 6 faces of a block 
+		* @param nMaterialID: global unique material id in CBlockMaterialManager
+		*/
+		void ApplyBlockMaterial(uint16 nPackedBlockID, int16 nFaceIndex, int32 nMaterialID);
+
+		/** Remove a given block material from a block face.
+		* @param nFaceIndex: if -1, we will remove all materials from the block
+		* @param nMaterialID: global unique material id in CBlockMaterialManager
+		*/
+		void RemoveBlockMaterial(uint16 nPackedBlockID, int16 nFaceIndex);
 	};
 }
