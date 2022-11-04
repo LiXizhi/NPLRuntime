@@ -424,6 +424,9 @@ namespace ParaScripting
 		*/
 		static ParaAssetObject GetEffectFile(const char* strAssetName);
 
+		static ParaAssetObject GetBlockMaterial(int32_t materialId);
+		static ParaAssetObject CreateBlockMaterial();
+		static void DeleteBlockMaterial(ParaAssetObject asset);
 		/**
 		* Load ParaX model asset, ParaX model file contains mesh, skeletal animation, etc.
 		* Currently ParaX and mdx file format is supported, please refer to ParaX file document for

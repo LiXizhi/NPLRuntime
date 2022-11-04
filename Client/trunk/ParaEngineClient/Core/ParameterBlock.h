@@ -43,6 +43,9 @@ namespace ParaEngine
 		vector<char> m_data;
 		PARAMETER_TYPE m_type;
 
+		void SetType(PARAMETER_TYPE p_type) { m_type = p_type; }
+		PARAMETER_TYPE GetType() { return m_type; }
+		
 		/** get the current type as a string, "unknown", "int", "boolean", "float", "vector2", "vector3","vector4","matrix43", "texture", "rawbytes" */
 		const string& GetTypeAsString();
 		/** set parameter type by string. if string is not recognized, the type will be unknown. 
@@ -149,6 +152,20 @@ namespace ParaEngine
 			}
 		}
 
+		CParameter* CreateGetParameter(const string& sName)
+		{
+			map <string, CParameter>::iterator it = m_params.find(sName);
+			if(it!=m_params.end())
+			{
+				return &(it->second);
+			}
+			else
+			{
+				CParameter p(sName);
+				m_params[sName] = p;
+				return &(m_params[sName]);
+			}
+		}
 		/**
 		* @param sParamName: the name of the object to set
 		* @param sValue_: internal name or value string

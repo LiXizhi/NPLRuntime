@@ -969,218 +969,225 @@ void ParaEngine::FBXParser::ParseMaterialByName(const std::string& sMatName, FBX
 void FBXParser::ProcessFBXMaterial(const aiScene* pFbxScene, unsigned int iIndex, CParaXModel *pMesh)
 {
 	aiMaterial* pfbxMaterial = pFbxScene->mMaterials[iIndex];
+	aiTextureType textureTypeList[2] = {aiTextureType_DIFFUSE, aiTextureType_NORMALS};
+	pMesh->passes.resize(pMesh->passes.size() + 1);
 
-	unsigned int iUV;
-	float fBlend;
-	aiTextureOp eOp;
-	aiString szPath;
-	char* content_begin = NULL;
-	int content_len = -1;
-	int16 opacity = -1;
-
-	std::string sMatName;
+	for (int i = 0; i < 2; i++)
 	{
-		aiString sMaterialName;
-		if (AI_SUCCESS == aiGetMaterialString(pfbxMaterial, AI_MATKEY_NAME, &sMaterialName))
-			sMatName = sMaterialName.C_Str();
+		aiTextureType textureType = textureTypeList[i];
+		unsigned int iUV;
+		float fBlend;
+		aiTextureOp eOp;
+		aiString szPath;
+		char* content_begin = NULL;
+		int content_len = -1;
+		int16 opacity = -1;
 
-	}
-#ifdef ASSIMP5
-	aiGetMaterialTexture(pfbxMaterial, (aiTextureType)aiTextureType_DIFFUSE, 0,
-		&szPath, NULL, &iUV, &fBlend, &eOp, NULL, NULL);
-#else
-	aiGetMaterialTexture(pfbxMaterial, (aiTextureType)aiTextureType_DIFFUSE, 0,
-		&szPath, NULL, &iUV, &fBlend, &eOp, NULL, NULL, &content_begin, &content_len);
-#endif
-	std::string diffuseTexName(szPath.C_Str());
-	if (diffuseTexName != "")
-	{
-		std::string sOriginalPath;
-		CParaFile::ToCanonicalFilePath(sOriginalPath, diffuseTexName, false);
-		diffuseTexName = GetTexturePath(diffuseTexName);
+		if (textureType != aiTextureType_DIFFUSE && pfbxMaterial->GetTextureCount(textureType) == 0) continue;
 
-#ifdef ASSIMP5
-		if (auto texture = pFbxScene->GetEmbeddedTexture(szPath.C_Str()))
+		std::string sMatName;
 		{
-			// If mHeight = 0, pcData is a pointer to a memory  buffer of size mWidth containing the compressed texture data.
-			if (texture->mHeight == 0)
-			{
-				content_len = (int)(texture->mWidth);
-				content_begin = (char*)(texture->pcData);
-			}
+			aiString sMaterialName;
+			if (AI_SUCCESS == aiGetMaterialString(pfbxMaterial, AI_MATKEY_NAME, &sMaterialName)) sMatName = sMaterialName.C_Str();
 		}
-#endif
 
-		if (content_begin)
-		{
-			std::string sFileName = CParaFile::GetFileName(m_sFilename);
-			diffuseTexName = CParaFile::GetParentDirectoryFromPath(diffuseTexName) + sFileName + "/" + CParaFile::GetFileName(diffuseTexName);
+	#ifdef ASSIMP5
+		aiGetMaterialTexture(pfbxMaterial, textureType, 0, &szPath, NULL, &iUV, &fBlend, &eOp, NULL, NULL);
+	#else
+		aiGetMaterialTexture(pfbxMaterial, textureType, 0, &szPath, NULL, &iUV, &fBlend, &eOp, NULL, NULL, &content_begin, &content_len);
+	#endif
 
-			m_textureContentMapping.insert(std::make_pair(diffuseTexName, std::string(content_begin, content_len)));
-			// OUTPUT_LOG("embedded FBX texture %s used. size %d bytes\n", texname.c_str(), (int)m_textureContentMapping[texname].size());
-		}
-		else if (!CParaFile::DoesFileExist(diffuseTexName.c_str(), true))
+		std::string diffuseTexName(szPath.C_Str());
+		if (diffuseTexName != "")
 		{
-			bool bFound = false;
-			if (CParaFile::IsAbsolutePath(sOriginalPath) || sOriginalPath[0] == '.')
+			std::string sOriginalPath;
+			CParaFile::ToCanonicalFilePath(sOriginalPath, diffuseTexName, false);
+			diffuseTexName = GetTexturePath(diffuseTexName);
+
+	#ifdef ASSIMP5
+			if (auto texture = pFbxScene->GetEmbeddedTexture(szPath.C_Str()))
 			{
-				// in case it is ../../Texture/abc.png, we will use relative path 
-				if (sOriginalPath[1] == '.' && sOriginalPath[2] == '/')
+				// If mHeight = 0, pcData is a pointer to a memory  buffer of size mWidth containing the compressed texture data.
+				if (texture->mHeight == 0)
 				{
-					// such as ../../
-					std::string fullPath = CParaFile::GetParentDirectoryFromPath(diffuseTexName, 1);
-					int nOffset = 3;
-					while (sOriginalPath[nOffset] == '.' && sOriginalPath[nOffset + 1] == '.' && sOriginalPath[nOffset + 2] == '/')
-					{
-						fullPath = CParaFile::GetParentDirectoryFromPath(fullPath, 1);
-						nOffset += 3;
-					}
-					fullPath.append(sOriginalPath.c_str() + nOffset);
-					if (CParaFile::DoesFileExist(fullPath.c_str(), true))
-					{
-						diffuseTexName = fullPath;
-						bFound = true;
-					}
+					content_len = (int)(texture->mWidth);
+					content_begin = (char*)(texture->pcData);
 				}
-				if (!bFound)
+			}
+	#endif
+
+			if (content_begin)
+			{
+				std::string sFileName = CParaFile::GetFileName(m_sFilename);
+				diffuseTexName = CParaFile::GetParentDirectoryFromPath(diffuseTexName) + sFileName + "/" + CParaFile::GetFileName(diffuseTexName);
+
+				m_textureContentMapping.insert(std::make_pair(diffuseTexName, std::string(content_begin, content_len)));
+				// OUTPUT_LOG("embedded FBX texture %s used. size %d bytes\n", texname.c_str(), (int)m_textureContentMapping[texname].size());
+			}
+			else if (!CParaFile::DoesFileExist(diffuseTexName.c_str(), true))
+			{
+				bool bFound = false;
+				if (CParaFile::IsAbsolutePath(sOriginalPath) || sOriginalPath[0] == '.')
 				{
-					// search all parent directories for a possible global texture path. 
-					auto nPos = sOriginalPath.find_first_of('/');
-					int nCount = 0;
-					while (nPos != std::string::npos)
+					// in case it is ../../Texture/abc.png, we will use relative path 
+					if (sOriginalPath[1] == '.' && sOriginalPath[2] == '/')
 					{
-						if (nPos == 2 && sOriginalPath[0] == '.')
+						// such as ../../
+						std::string fullPath = CParaFile::GetParentDirectoryFromPath(diffuseTexName, 1);
+						int nOffset = 3;
+						while (sOriginalPath[nOffset] == '.' && sOriginalPath[nOffset + 1] == '.' && sOriginalPath[nOffset + 2] == '/')
 						{
-							while (nPos == 2 && sOriginalPath[0] == '.') {
+							fullPath = CParaFile::GetParentDirectoryFromPath(fullPath, 1);
+							nOffset += 3;
+						}
+						fullPath.append(sOriginalPath.c_str() + nOffset);
+						if (CParaFile::DoesFileExist(fullPath.c_str(), true))
+						{
+							diffuseTexName = fullPath;
+							bFound = true;
+						}
+					}
+					if (!bFound)
+					{
+						// search all parent directories for a possible global texture path. 
+						auto nPos = sOriginalPath.find_first_of('/');
+						int nCount = 0;
+						while (nPos != std::string::npos)
+						{
+							if (nPos == 2 && sOriginalPath[0] == '.')
+							{
+								while (nPos == 2 && sOriginalPath[0] == '.') {
+									sOriginalPath = sOriginalPath.substr(nPos + 1);
+									nPos = sOriginalPath.find_first_of('/');
+									++nCount;
+								}
+							}
+							else
+							{
 								sOriginalPath = sOriginalPath.substr(nPos + 1);
 								nPos = sOriginalPath.find_first_of('/');
 								++nCount;
 							}
-						}
-						else
-						{
-							sOriginalPath = sOriginalPath.substr(nPos + 1);
-							nPos = sOriginalPath.find_first_of('/');
-							++nCount;
-						}
 
-						if (nCount > 1 && CParaFile::DoesFileExist(sOriginalPath.c_str(), true))
-						{
-							diffuseTexName = sOriginalPath;
-							bFound = true;
-							break;
+							if (nCount > 1 && CParaFile::DoesFileExist(sOriginalPath.c_str(), true))
+							{
+								diffuseTexName = sOriginalPath;
+								bFound = true;
+								break;
+							}
 						}
 					}
 				}
+				else if (CParaFile::DoesFileExist(sOriginalPath.c_str(), true))
+				{
+					bFound = true;
+					diffuseTexName = sOriginalPath;
+				}
+				if (!bFound)
+				{
+					OUTPUT_LOG("warn: FBX texture %s not exist\n", diffuseTexName.c_str());
+					diffuseTexName = g_sDefaultTexture;
+				}
 			}
-			else if (CParaFile::DoesFileExist(sOriginalPath.c_str(), true))
+
+			if (!content_begin && !diffuseTexName.empty() && CParaFile::IsAbsolutePath(diffuseTexName))
 			{
-				bFound = true;
-				diffuseTexName = sOriginalPath;
+				// try making it relative to project root
+				const std::string & curDir = CParaFile::GetCurDirectory(0);
+				if (curDir.size() < diffuseTexName.size() && diffuseTexName.compare(0, curDir.size(), curDir) == 0)
+				{
+					diffuseTexName = diffuseTexName.substr(curDir.size());
+				}
 			}
-			if (!bFound)
+		}
+		if (aiTextureType_DIFFUSE == textureType)
+		{
+			m_bUsedVertexColor = diffuseTexName.empty() && m_bUsedVertexColor;
+			// parse material name
+			FBXMaterial fbxMat;
+			ParseMaterialByName(sMatName, &fbxMat);
+			int16 blendmode = BM_OPAQUE;
+			if (!diffuseTexName.empty())
 			{
-				OUTPUT_LOG("warn: FBX texture %s not exist\n", diffuseTexName.c_str());
-				diffuseTexName = g_sDefaultTexture;
+				if (AI_SUCCESS == aiGetMaterialTexture(pfbxMaterial, (aiTextureType)aiTextureType_OPACITY, 0, &szPath, NULL, &iUV, &fBlend, &eOp, NULL, NULL))
+				{
+					if (fbxMat.isAlphaBlended())
+						blendmode = BM_ALPHA_BLEND;
+					else
+						blendmode = BM_TRANSPARENT;
+				}
 			}
-		}
-
-		if (!content_begin && !diffuseTexName.empty() && CParaFile::IsAbsolutePath(diffuseTexName))
-		{
-			// try making it relative to project root
-			const std::string & curDir = CParaFile::GetCurDirectory(0);
-			if (curDir.size() < diffuseTexName.size() && diffuseTexName.compare(0, curDir.size(), curDir) == 0)
+			if (fbxMat.bAddictive) blendmode = BM_ADDITIVE;
 			{
-				diffuseTexName = diffuseTexName.substr(curDir.size());
+				float opacityValue;
+				if (AI_SUCCESS == aiGetMaterialFloat(pfbxMaterial, AI_MATKEY_OPACITY, &opacityValue) && fabs(opacityValue - 1.0f) > FLT_EPSILON)
+				{
+					auto size = m_transparencys.size();
+					opacity = (int16)size;
+					m_transparencys.resize(size + 1);
+					auto& tran = m_transparencys[size];
+					tran.trans.used = false;
+					tran.trans.type = 0;
+					tran.trans.seq = -1;
+					tran.trans.globals = NULL;
+					tran.trans.ranges.push_back(AnimRange(0, 0));
+					tran.trans.times.push_back(0);
+					tran.trans.data.push_back(opacityValue);
+					tran.trans.in.push_back(0.0f);
+					tran.trans.out.push_back(0.0f);
+				}
 			}
+			if (m_bUsedVertexColor)
+			{
+				diffuseTexName = std::string(g_sDefaultTexture);
+			}
+			fbxMat.m_filename = diffuseTexName;
+			int texture_index = -1;
+			for (int i = 0; i < (int)m_textures.size(); i++)
+			{
+				// ReplaceableTextureID usually [0-32)
+				if (m_textures[i].nIsReplaceableIndex >= 0 && m_textures[i].nIsReplaceableIndex < 32 && m_textures[i].nIsReplaceableIndex == fbxMat.nIsReplaceableIndex)
+				{
+					texture_index = i;
+					break;
+				}
+			}
+			if (texture_index < 0)
+			{
+				m_textures.push_back(fbxMat);
+				texture_index = m_textures.size() - 1;
+			}
+
+			ModelRenderPass& pass = pMesh->passes[pMesh->passes.size() - 1];
+			pass.tex = texture_index;
+			pass.SetCategoryId(fbxMat.GetCategoryID());
+			pass.texanim = -1;
+			pass.color = -1;
+			pass.opacity = opacity;
+			pass.unlit = fbxMat.bUnlit;
+			pass.nozwrite = fbxMat.bDisableZWrite;
+			pass.disable_physics = fbxMat.bDisablePhysics;
+			pass.force_physics = fbxMat.bForcePhysics;
+
+			pass.blendmode = blendmode;
+			pass.cull = blendmode == BM_OPAQUE ? true : false;
+			pass.order = fbxMat.m_nOrder;
+			pass.geoset = -1; // make its geoset uninitialized
+							//*(((DWORD*)&(pass.geoset)) + 1) = parser.ReadInt();
+
+			ParseUVAnimation(pass, pfbxMaterial, pMesh);
+			ParseParticleEmitter(pass, pfbxMaterial, pMesh, sMatName, texture_index);
 		}
-	}
-	m_bUsedVertexColor = diffuseTexName.empty() && m_bUsedVertexColor;
-
-	// parse material name
-	FBXMaterial fbxMat;
-	ParseMaterialByName(sMatName, &fbxMat);
-
-	int16 blendmode = BM_OPAQUE;
-	if (!diffuseTexName.empty())
-	{
-		if (AI_SUCCESS == aiGetMaterialTexture(pfbxMaterial, (aiTextureType)aiTextureType_OPACITY, 0,
-			&szPath, NULL, &iUV, &fBlend, &eOp, NULL, NULL))
+		if (aiTextureType_NORMALS == textureType)
 		{
-			if (fbxMat.isAlphaBlended())
-				blendmode = BM_ALPHA_BLEND;
-			else
-				blendmode = BM_TRANSPARENT;
+			ModelRenderPass& pass = pMesh->passes[pMesh->passes.size() - 1];
+			FBXMaterial fbxMat;
+			ParseMaterialByName(sMatName, &fbxMat);
+			fbxMat.m_filename = diffuseTexName;
+			m_textures.push_back(fbxMat);
+			pass.SetTexture2(m_textures.size() - 1);
 		}
 	}
-	if (fbxMat.bAddictive)
-		blendmode = BM_ADDITIVE;
-
-	{
-		float opacityValue;
-		if (AI_SUCCESS == aiGetMaterialFloat(pfbxMaterial, AI_MATKEY_OPACITY, &opacityValue) && fabs(opacityValue - 1.0f) > FLT_EPSILON)
-		{
-			auto size = m_transparencys.size();
-			opacity = (int16)size;
-			m_transparencys.resize(size + 1);
-			auto& tran = m_transparencys[size];
-
-
-			tran.trans.used = false;
-			tran.trans.type = 0;
-			tran.trans.seq = -1;
-			tran.trans.globals = NULL;
-			tran.trans.ranges.push_back(AnimRange(0, 0));
-			tran.trans.times.push_back(0);
-			tran.trans.data.push_back(opacityValue);
-			tran.trans.in.push_back(0.0f);
-			tran.trans.out.push_back(0.0f);
-		}
-	}
-
-
-	if (m_bUsedVertexColor)
-	{
-		diffuseTexName = std::string(g_sDefaultTexture);
-	}
-	fbxMat.m_filename = diffuseTexName;
-	int texture_index = -1;
-	for (int i = 0; i < (int)m_textures.size(); i++)
-	{
-		// ReplaceableTextureID usually [0-32)
-		if (m_textures[i].nIsReplaceableIndex >= 0 && m_textures[i].nIsReplaceableIndex < 32 && m_textures[i].nIsReplaceableIndex == fbxMat.nIsReplaceableIndex)
-		{
-			texture_index = i;
-			break;
-		}
-	}
-	if (texture_index < 0)
-	{
-		m_textures.push_back(fbxMat);
-		texture_index = m_textures.size() - 1;
-	}
-
-
-	pMesh->passes.resize(pMesh->passes.size() + 1);
-	ModelRenderPass& pass = pMesh->passes[pMesh->passes.size() - 1];
-	pass.tex = texture_index;
-	pass.SetCategoryId(fbxMat.GetCategoryID());
-	pass.texanim = -1;
-	pass.color = -1;
-	pass.opacity = opacity;
-	pass.unlit = fbxMat.bUnlit;
-	pass.nozwrite = fbxMat.bDisableZWrite;
-	pass.disable_physics = fbxMat.bDisablePhysics;
-	pass.force_physics = fbxMat.bForcePhysics;
-
-	pass.blendmode = blendmode;
-	pass.cull = blendmode == BM_OPAQUE ? true : false;
-	pass.order = fbxMat.m_nOrder;
-	pass.geoset = -1; // make its geoset uninitialized
-					  //*(((DWORD*)&(pass.geoset)) + 1) = parser.ReadInt();
-
-	ParseUVAnimation(pass, pfbxMaterial, pMesh);
-	ParseParticleEmitter(pass, pfbxMaterial, pMesh, sMatName, texture_index);
 }
 
 lua_State* FBXParser::ParseScriptString(const char* str)

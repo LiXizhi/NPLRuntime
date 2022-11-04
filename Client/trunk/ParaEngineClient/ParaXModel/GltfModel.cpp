@@ -1,4 +1,4 @@
-#include "ParaEngine.h"
+﻿#include "ParaEngine.h"
 #include "BMaxModel/BlocksParser.h"
 #include "ParaXModel.h"
 #include "ParaXSerializer.h"
@@ -54,7 +54,6 @@ namespace ParaEngine
         if (type == GLTFType::GLTF_MAT4) return "MAT4";
         return "";
     }
-    
 
     GltfModel::GltfModel() 
 	{
@@ -177,7 +176,7 @@ namespace ParaEngine
             node->matrix = std::make_shared<Matrix4>();
             *(node->matrix) = nodemat;
         } 
-        for (int i = 0; i < canvas->children.size(); i++) 
+        for (unsigned int i = 0; i < canvas->children.size(); i++) 
         {
             std::shared_ptr<GLTFNode> subnode = ExportCanvasAttachment(canvas->children[i], scene, gltf);
         }
@@ -1213,12 +1212,12 @@ namespace ParaEngine
         m_json_gltf["scene"] = 0;
         // scenes
         Json::Value scenes = Json::Value(Json::arrayValue);
-        for (int i = 0; i < m_gltf->scenes.size(); i++) 
+        for (unsigned int i = 0; i < m_gltf->scenes.size(); i++) 
         {
             Json::Value jsonScene;
 		    Json::Value jsonSceneNodes = Json::Value(Json::arrayValue);
             std::shared_ptr<GLTFScene> scene = m_gltf->scenes[i];
-            for (int j = 0; j < scene->nodes.size(); j++)
+            for (unsigned int j = 0; j < scene->nodes.size(); j++)
             {
                 std::shared_ptr<GLTFNode> node = scene->nodes[j];
                 jsonSceneNodes[j] = node->index;
@@ -1230,7 +1229,7 @@ namespace ParaEngine
 
         // nodes
 		Json::Value nodes = Json::Value(Json::arrayValue);
-        for (int i = 0; i < m_gltf->nodes.size(); i++)
+        for (unsigned int i = 0; i < m_gltf->nodes.size(); i++)
         {
             std::shared_ptr<GLTFNode> node = m_gltf->nodes[i];
             nodes[node->index] = ExportJsonNode(node);
@@ -1239,7 +1238,7 @@ namespace ParaEngine
 
         // meshs
 		Json::Value meshes = Json::Value(Json::arrayValue);
-        for (int i = 0; i < m_gltf->meshs.size(); i++)
+        for (unsigned int i = 0; i < m_gltf->meshs.size(); i++)
         {
             std::shared_ptr<GLTFMesh> mesh = m_gltf->meshs[i];
             meshes[mesh->index] = ExportJsonMesh(mesh);
@@ -1248,7 +1247,7 @@ namespace ParaEngine
 
         // materials
 		Json::Value materials = Json::Value(Json::arrayValue);
-        for (int i = 0; i < m_gltf->materials.size(); i++)
+        for (unsigned int i = 0; i < m_gltf->materials.size(); i++)
         {
             std::shared_ptr<GLTFMaterial> material = m_gltf->materials[i];
             materials[material->index] = ExportJsonMaterial(material);
@@ -1257,7 +1256,7 @@ namespace ParaEngine
 
         // textures
 		Json::Value textures = Json::Value(Json::arrayValue);
-        for (int i = 0; i < m_gltf->textures.size(); i++)
+        for (unsigned int i = 0; i < m_gltf->textures.size(); i++)
         {
             std::shared_ptr<GLTFTexture> texture = m_gltf->textures[i];
             Json::Value jsonTexture;
@@ -1269,7 +1268,7 @@ namespace ParaEngine
 
         // images
 		Json::Value images = Json::Value(Json::arrayValue);
-        for (int i = 0; i < m_gltf->images.size(); i++)
+        for (unsigned int i = 0; i < m_gltf->images.size(); i++)
         {
             std::shared_ptr<GLTFImage> image = m_gltf->images[i];
             Json::Value jsonImage;
@@ -1280,7 +1279,7 @@ namespace ParaEngine
 
         // samplers
 		Json::Value samplers = Json::Value(Json::arrayValue);
-        for (int i = 0; i < m_gltf->samplers.size(); i++)
+        for (unsigned int i = 0; i < m_gltf->samplers.size(); i++)
         {
             std::shared_ptr<GLTFSampler> sampler = m_gltf->samplers[i];
             Json::Value jsonSampler;
@@ -1294,7 +1293,7 @@ namespace ParaEngine
 
         // accessors
         Json::Value accessors = Json::Value(Json::arrayValue);
-        for (int i = 0; i < m_gltf->accessors.size(); i++)
+        for (unsigned int i = 0; i < m_gltf->accessors.size(); i++)
         {
             std::shared_ptr<GLTFAccessor> accessor = m_gltf->accessors[i];
             accessors[accessor->index] = ExportJsonAccessor(accessor);
@@ -1303,7 +1302,7 @@ namespace ParaEngine
 
         // bufferViews
         Json::Value bufferViews = Json::Value(Json::arrayValue);
-        for (int i = 0; i < m_gltf->bufferViews.size(); i++)
+        for (unsigned int i = 0; i < m_gltf->bufferViews.size(); i++)
         {
             std::shared_ptr<GLTFBufferView> bufferView = m_gltf->bufferViews[i];
             bufferViews[bufferView->index] = ExportJsonBufferView(bufferView);
@@ -1320,7 +1319,7 @@ namespace ParaEngine
 
         // skins
         Json::Value skins = Json::Value(Json::arrayValue);
-        for (int i = 0; i < m_gltf->skins.size(); i++)
+        for (unsigned int i = 0; i < m_gltf->skins.size(); i++)
         {
             std::shared_ptr<GLTFSkin> skin = m_gltf->skins[i];
             Json::Value jsonSkin;
@@ -1337,7 +1336,7 @@ namespace ParaEngine
 
         // animations
 		Json::Value animations = Json::Value(Json::arrayValue);
-        for (int i = 0; i < m_gltf->animations.size(); i++)
+        for (unsigned int i = 0; i < m_gltf->animations.size(); i++)
         {
             std::shared_ptr<GLTFAnimation> animation = m_gltf->animations[i];
             animations[animation->index] = ExportJsonAnimation(animation);

@@ -266,6 +266,8 @@ namespace ParaEngine
 
 		void LoadBlockTemplateData();
 
+		void SaveBlockMaterialData();
+		void LoadBlockMaterialData();
 		void SaveToFile(bool saveToTemp);
 
 		/** return world info*/
