@@ -131,21 +131,21 @@ bool ModelRenderPass::init_FX(CParaXModel *m, SceneState* pSceneState,CParameter
 			bindtex1 = m->textures[tex1].get();
 	}
 
-	TextureEntity* bindtex2 = NULL;
-	int32_t tex2 = GetTexture2();
-	if (usetex2)
-	{
-		if (tex2 >= CParaXModel::MAX_MODEL_TEXTURES || m->specialTextures[tex2] == -1)
-			bindtex2 = m->textures[tex2].get();
-		else 
-		{
-			bindtex2 = m->replaceTextures[m->specialTextures[tex2]];
-			// use default texture if replaceable texture is not specified. 
-			if(bindtex2 == 0)
-				bindtex2 = m->textures[tex2].get();
-		}
-		if (!bindtex2 || bindtex2->GetTexture() == 0) return false;
-	}
+	// TextureEntity* bindtex2 = NULL;
+	// int32_t tex2 = GetTexture2();
+	// if (usetex2)
+	// {
+	// 	if (tex2 >= CParaXModel::MAX_MODEL_TEXTURES || m->specialTextures[tex2] == -1)
+	// 		bindtex2 = m->textures[tex2].get();
+	// 	else 
+	// 	{
+	// 		bindtex2 = m->replaceTextures[m->specialTextures[tex2]];
+	// 		// use default texture if replaceable texture is not specified. 
+	// 		if(bindtex2 == 0)
+	// 			bindtex2 = m->textures[tex2].get();
+	// 	}
+	// 	if (!bindtex2 || bindtex2->GetTexture() == 0) return false;
+	// }
 
 	// do not render for NULL textures, possibly because the texture is not fully loaded. 
 	if (!bindtex1 || bindtex1->GetTexture() == 0)
@@ -262,9 +262,8 @@ bool ModelRenderPass::init_FX(CParaXModel *m, SceneState* pSceneState,CParameter
 	
 	/// Set the texture
 	pEffect->setTexture(0, bindtex1);
-	pEffect->setBool(CEffectFile::k_bBoolean6, bindtex2 != NULL);
-	pEffect->setFloat(CEffectFile::k_transitionFactor, 1.0f);
-	if (bindtex2) pEffect->setTexture(2, bindtex2);
+	// pEffect->setBool(CEffectFile::k_bBoolean6, bindtex2 != NULL);
+	// if (bindtex2) pEffect->setTexture(2, bindtex2);
 
 	if(is_rigid_body)
 	{
@@ -412,21 +411,21 @@ bool ModelRenderPass::init(CParaXModel *m, SceneState* pSceneState)
 	}
 	if (!bindtex1 || bindtex1->GetTexture() == 0) return false;
 
-	TextureEntity* bindtex2 = NULL;
-	if (usetex2)
-	{
-		int32_t tex2 = GetTexture2();
-		if (m->specialTextures[tex2]==-1) 
-			bindtex2 = m->textures[tex2].get();
-		else 
-		{
-			bindtex2 = m->replaceTextures[m->specialTextures[tex2]];
-			// use default texture if replaceable texture is not specified. 
-			if(bindtex2 == 0)
-				bindtex2 = m->textures[tex2].get();
-		}
-		if (!bindtex2 || bindtex2->GetTexture() == 0) return false;
-	}
+	// TextureEntity* bindtex2 = NULL;
+	// if (usetex2)
+	// {
+	// 	int32_t tex2 = GetTexture2();
+	// 	if (m->specialTextures[tex2]==-1) 
+	// 		bindtex2 = m->textures[tex2].get();
+	// 	else 
+	// 	{
+	// 		bindtex2 = m->replaceTextures[m->specialTextures[tex2]];
+	// 		// use default texture if replaceable texture is not specified. 
+	// 		if(bindtex2 == 0)
+	// 			bindtex2 = m->textures[tex2].get();
+	// 	}
+	// 	if (!bindtex2 || bindtex2->GetTexture() == 0) return false;
+	// }
 
 #ifdef USE_DIRECTX_RENDERER
 	if(pSceneState->IsIgnoreTransparent() && (blendmode == BM_ADDITIVE || blendmode == BM_ALPHA_BLEND || blendmode == BM_ADDITIVE_ALPHA))
@@ -469,7 +468,7 @@ bool ModelRenderPass::init(CParaXModel *m, SceneState* pSceneState)
 	}
 
 	pd3dDevice->SetTexture(0, bindtex1->GetTexture());
-	if (bindtex2) pd3dDevice->SetTexture(1, bindtex2->GetTexture());
+	// if (bindtex2) pd3dDevice->SetTexture(1, bindtex2->GetTexture());
 	
 	if (unlit) {
 		pd3dDevice->SetRenderState( D3DRS_LIGHTING, FALSE );

@@ -31,7 +31,7 @@ float3 g_EyePositionW	:worldcamerapos;
 float2 g_TexOffset		:ConstVector0; // TODO: for testing texture animation: x,y for translation
 float3 g_TexRot			:ConstVector1;
 float2 g_TexScale		:ConstVector2 = { 1.0f, 1.0f };
-bool g_bNormalMap		:boolean6;
+//bool g_bNormalMap		:boolean6;
 float g_opacity			:opacity = 1.f; 
 
 // texture 0
@@ -41,24 +41,13 @@ sampler tex0Sampler : register(s0) = sampler_state
     texture = <tex0>;
 };
 
-// normal map
-texture tex2 : TEXTURE; 
-sampler normalSampler = sampler_state 
-{
-    texture = <tex2>;
-    AddressU  = wrap;        
-    AddressV  = wrap;
-    MagFilter = Linear;	
-	MinFilter = Linear;
-	MipFilter = Linear;
-};
 
 struct Interpolants
 {
   float4 positionSS			: POSITION;         // Screen space position
   float4 tex				: TEXCOORD0;        // texture coordinates
   float3 tex1				: TEXCOORD1;        // texture coordinates
-  float4 colorDiffuse		: COLOR0;		    // diffuse color
+  float4 colorDiffuse		: TEXCOORD2;		// diffuse color
 };
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -87,8 +76,23 @@ Interpolants vertexShader(	float4	Pos			: POSITION,
 	float4 cameraPos = mul( Pos, mWorldView ); 
 	// world space normal
 	float3 worldNormal = normalize( mul( Norm, (float3x3)mWorld ) ); 
+	
+	// calculate light of the sun
+	if(g_bEnableSunLight)
+	{
+		//o.colorDiffuse = max(0,dot( sun_vec, worldNormal ))*colorDiffuse;
+		//o.colorDiffuse += colorAmbient;
+		float lightFactor = dot(sun_vec,worldNormal);
+		o.colorDiffuse.xyz = colorDiffuse * saturate(lightFactor);
 
-	o.colorDiffuse.xyz = worldNormal;
+		//float3 groundColor = max( (colorAmbient - float3(0.15,0.10,0.05)),float3(0.05,0.05,0.05));
+		//float3 amb = lerp(groundColor,colorAmbient,lightFactor);
+		o.colorDiffuse.xyz += colorAmbient;
+	}
+	else
+	{
+		o.colorDiffuse.xyz = min(1, colorDiffuse+colorAmbient).xyz;
+	}
 
 	// uv offset
 	float2 uv = Tex + g_TexOffset.xy;
@@ -123,30 +127,15 @@ Interpolants vertexShader(	float4	Pos			: POSITION,
 half4 pixelShader(Interpolants i) : COLOR
 {
 	half4 o;
-	if(g_bEnableSunLight)
-	{
-		float3 worldNormal = i.colorDiffuse.xyz;
-		if(g_bNormalMap)
-		{
-			float3 localNormal = tex2D(normalSampler, i.tex.xy).xyz * 2.0 - 1.0; // TODO: 可能需要从切线空间转到本地空间
-			worldNormal = normalize(mul(localNormal, (float3x3)mWorld)); 
-		}
-		i.colorDiffuse.xyz = saturate(dot(sun_vec, worldNormal)) * colorDiffuse;
-		i.colorDiffuse.xyz += colorAmbient;
-	}
-	else
-	{
-		i.colorDiffuse.xyz = colorDiffuse + colorAmbient;
-	}
-
 	half4 normalColor = tex2D(tex0Sampler, i.tex.xy);
+
 	if(g_bRGBOnlyTexturAnim)
 		normalColor.w = tex2D(tex0Sampler, i.tex.zw).w;
 
 	//gamma
 	//normalColor.xyz =pow(normalColor.xyz,2.2);
 
-	normalColor.xyz = normalColor.xyz * i.colorDiffuse.xyz;
+	normalColor.xyz = normalColor.xyz*i.colorDiffuse;
 	
 	if(g_bAlphaTesting)
 	{
@@ -168,7 +157,7 @@ half4 pixelShader(Interpolants i) : COLOR
 	}
 	o.rgb += colorEmissive;
 	o.w *= g_opacity;
-
+	
 	return o;
 }
 
