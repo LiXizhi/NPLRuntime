@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 #include <string>
 #include <vector>
 #include <list>
@@ -51,5 +51,13 @@ namespace ParaEngine
 		* It will overridden predefined parameter names, however most user will set custom shader parameters and textures that are shared by all objects here.
 		*/
 		CParameterBlock m_SharedParamBlock;
+
+		// BaseColor  vector4
+		// Metallic   float
+		// Specular   float
+		// Roughness  float
+		// EmissiveColor vector4
+		// Opacity float
+		// Normal texture
 	};
 }

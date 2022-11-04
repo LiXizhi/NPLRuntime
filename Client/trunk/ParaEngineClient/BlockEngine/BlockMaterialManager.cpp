@@ -12,10 +12,21 @@ using namespace ParaEngine;
 
 CBlockMaterialManager::CBlockMaterialManager()
 {
-	// TODO: WXA: we need to manage unique int16 material id per world.  
-	// ID == 0 is reserved for air (empty) material, just skip rendering the face. 
+	m_nextMaterialId = 0;
 }
 
 CBlockMaterialManager::~CBlockMaterialManager()
 {
+}
+
+CBlockMaterial* CBlockMaterialManager::CreateBlockMaterial()
+{
+	return CreateEntity("", std::to_string(GetNextMaterialID())).first;
+}
+
+CBlockMaterial* CBlockMaterialManager::GetBlockMaterialByID(int32_t id)
+{
+	if (id < 0) return nullptr;
+	m_nextMaterialId = m_nextMaterialId <= id ? (id + 1) : m_nextMaterialId;
+	return CreateEntity("", std::to_string(id)).first;
 }

@@ -73,5 +73,8 @@ namespace ParaTerrain
 
 		/**get block template file name*/
 		string GetBlockTemplateFileName(bool usingTempFile);
+
+		string GetBlockMaterialFileName(bool usingTempFile);
+
 	};
 }

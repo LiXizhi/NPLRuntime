@@ -80,5 +80,23 @@ namespace ParaEngine
 		/** used in some shader parameter */
 		int32 GetCategoryId();
 		void SetCategoryId(int32 nCategoryID);
+
+		void SetTexture1(int32_t texture)
+		{
+			tex = (texture & 0xffff) + (tex & 0xffff0000);
+		}
+		int32_t GetTexture1()
+		{
+			return tex & 0xffff;
+		}
+		void SetTexture2(int32_t texture)
+		{
+			tex = ((texture & 0xffff) << 16) + (tex & 0xffff);
+			usetex2 = texture != 0;
+		}
+		int32_t GetTexture2()
+		{
+			return tex >> 16;
+		}
 	};
 }

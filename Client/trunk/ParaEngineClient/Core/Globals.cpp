@@ -28,6 +28,7 @@
 #include "AttributesManager.h"
 #include "DataProviderManager.h"
 #include "MoviePlatform.h"
+#include "BlockEngine/BlockMaterialManager.h"
 #include "Globals.h"
 
 #if PLATFORM_WINDOWS
@@ -265,6 +266,11 @@ RenderDevicePtr CGlobals::GetRenderDevice()
 EffectManager* CGlobals::GetEffectManager()
 {
 	return &(CParaWorldAsset::GetSingleton()->GetEffectManager());
+}
+
+CBlockMaterialManager* CGlobals::GetBlockMaterialManager()
+{
+	return &(CParaWorldAsset::GetSingleton()->GetBlockMaterialManager());
 }
 
 CAttributesManager* CGlobals::GetAttributesManager()

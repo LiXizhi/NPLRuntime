@@ -6,6 +6,7 @@ namespace ParaEngine
 {
 	class IParaEngineApp;
 	class TransformStack;
+	class CBlockMaterialManager;
 	/** a table of global strings. */
 	enum GLOBAL_STRING_ID
 	{
@@ -92,7 +93,7 @@ namespace ParaEngine
 
 		static RenderDevicePtr GetRenderDevice();
 		static EffectManager* GetEffectManager();
-
+		static CBlockMaterialManager* GetBlockMaterialManager();
 		static CAttributesManager* GetAttributesManager();
 		static CDataProviderManager* GetDataProviderManager();
 
