@@ -5076,7 +5076,7 @@ bool ParaEngine::CBipedObject::CanAnimOpacity() const
 	return m_bCanAnimOpacity;
 }
 
-IAttributeFields* ParaEngine::CBipedObject::GetChildAttributeObject(const std::string& sName)
+IAttributeFields* ParaEngine::CBipedObject::GetChildAttributeObject(const char * sName)
 {
 	return CBaseObject::GetChildAttributeObject(sName);
 }

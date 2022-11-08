@@ -860,7 +860,7 @@ void ParaEngine::CMeshPhysicsObject::SetPersistent(bool bPersistent)
 	m_bIsPersistent = bPersistent;
 }
 
-ParaEngine::IAttributeFields* ParaEngine::CMeshPhysicsObject::GetChildAttributeObject(const std::string& sName)
+ParaEngine::IAttributeFields* ParaEngine::CMeshPhysicsObject::GetChildAttributeObject(const char * sName)
 {
 	if (sName == "meshobject") {
 		return m_pMeshObject;

@@ -84,7 +84,7 @@ namespace ParaEngine
 		virtual int GetChildAttributeObjectCount(int nColumnIndex = 0);
 		virtual IAttributeFields* GetChildAttributeObject(int nRowIndex, int nColumnIndex = 0);
 		/** get attribute by child object. used to iterate across the attribute field hierarchy. */
-		virtual IAttributeFields* GetChildAttributeObject(const std::string& sName);
+		virtual IAttributeFields* GetChildAttributeObject(const char * sName);
 
 		ATTRIBUTE_METHOD1(IAttributeFields, GetName_s, const char**) { *p1 = cls->GetIdentifier().c_str(); return S_OK; }
 		ATTRIBUTE_METHOD1(IAttributeFields, SetName_s, const char*) { cls->SetIdentifier(p1); return S_OK; }
