@@ -638,7 +638,7 @@ int ParaEngine::CViewportManager::GetChildAttributeObjectCount(int nColumnIndex 
 	return (int)m_viewportList.size();
 }
 
-IAttributeFields* ParaEngine::CViewportManager::GetChildAttributeObject(const std::string& sName)
+IAttributeFields* ParaEngine::CViewportManager::GetChildAttributeObject(const char * sName)
 {
 	for (CViewport* viewport : m_viewportList)
 	{

@@ -95,7 +95,7 @@ IAttributeFields* ParaEngine::COverlayObject::GetChildAttributeObject(int nRowIn
 		return CTileObject::GetChildAttributeObject(nRowIndex, nColumnIndex);
 }
 
-IAttributeFields* ParaEngine::COverlayObject::GetChildAttributeObject(const std::string& sName)
+IAttributeFields* ParaEngine::COverlayObject::GetChildAttributeObject(const char * sName)
 {
 	if (sName == "gui")
 		return GetHeadOnUIObject(0);

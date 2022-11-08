@@ -282,7 +282,7 @@ int ParaEngine::CFileManager::InstallFields(CAttributeClass* pClass, bool bOverr
 	return S_OK;
 }
 
-IAttributeFields* ParaEngine::CFileManager::GetChildAttributeObject(const std::string& sName)
+IAttributeFields* ParaEngine::CFileManager::GetChildAttributeObject(const char * sName)
 {
 	Scoped_ReadLock<BlockReadWriteLock> lock_(*m_pArchiveLock);
 	for (CArchive* pArchive : m_archivers)

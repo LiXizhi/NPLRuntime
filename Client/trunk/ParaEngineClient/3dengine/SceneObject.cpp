@@ -4913,7 +4913,7 @@ void CSceneObject::RemoveDeadObjects()
 }
 
 
-IAttributeFields* CSceneObject::GetChildAttributeObject(const std::string& sName)
+IAttributeFields* CSceneObject::GetChildAttributeObject(const char * sName)
 {
 	if (sName == "SceneState")
 	{
