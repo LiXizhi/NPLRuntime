@@ -3038,7 +3038,7 @@ namespace ParaEngine
 		m_nVertexBufferSizeLimit = val;
 	}
 
-	IAttributeFields* BlockWorldClient::GetChildAttributeObject(const std::string& sName)
+	IAttributeFields* BlockWorldClient::GetChildAttributeObject(const char * sName)
 	{
 		if (sName == "ChunkVertexBuilderManager")
 		{
