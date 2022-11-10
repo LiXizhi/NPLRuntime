@@ -539,7 +539,9 @@ void FBXParser::FillParaXModelData(CParaXModel *pMesh, const aiScene *pFbxScene)
 				int nSize = m_textureContentMapping[m_textures[i]].size();
 				if (nSize > 0)
 				{
-					TextureEntity *texEntity = CGlobals::GetAssetManager()->GetTextureManager().NewEntity(m_textures[i]);
+					std::string filepath = m_textures[i].GetFileName() + std::to_string(i); // 避免同名
+					TextureEntity *texEntity = CGlobals::GetAssetManager()->GetTextureManager().NewEntity(filepath);
+					// TextureEntity *texEntity = CGlobals::GetAssetManager()->GetTextureManager().NewEntity(m_textures[i]);
 					char* bufferCpy = new char[nSize];
 
 					auto src = m_textureContentMapping[m_textures[i]].c_str();
