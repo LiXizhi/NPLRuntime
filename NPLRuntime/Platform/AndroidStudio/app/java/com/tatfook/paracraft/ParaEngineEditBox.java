@@ -2,27 +2,21 @@
 // ParaEngineEditBox.java
 // Authors: LanZhihong, big
 // CreateDate: 2019.7.16
-// ModifyDate: 2022.1.11
+// ModifyDate: 2022.11.2
 //-----------------------------------------------------------------------------
 
 package com.tatfook.paracraft;
 
 import android.content.Context;
-import android.graphics.Color;
 import android.graphics.Typeface;
 import android.text.InputFilter;
 import android.text.InputType;
 import android.text.method.PasswordTransformationMethod;
-import android.util.Log;
-import android.view.Gravity;
 import android.view.KeyEvent;
-import android.view.View;
 import android.view.inputmethod.EditorInfo;
 import android.widget.EditText;
-import android.widget.FrameLayout;
 
 public class ParaEngineEditBox extends EditText {
-
     public static String sPlaceholder = "P";
 
     /**
@@ -124,12 +118,12 @@ public class ParaEngineEditBox extends EditText {
     }
 
     // OpenGL view scaleX
-    private  float mScaleX;
+    private float mScaleX;
 
     // package private
     int endAction = kEndActionUnknown;
 
-    public  ParaEngineEditBox(Context context){
+    public ParaEngineEditBox(Context context){
         super(context);
     }
 
@@ -141,17 +135,16 @@ public class ParaEngineEditBox extends EditText {
         this.mScaleX = mScaleX;
     }
 
-    public  void setMaxLength(int maxLength){
+    public void setMaxLength(int maxLength) {
         this.mMaxLength = maxLength;
 
-        this.setFilters(new InputFilter[]{new InputFilter.LengthFilter(this.mMaxLength) });
+        this.setFilters(new InputFilter[]{ new InputFilter.LengthFilter(this.mMaxLength) });
     }
 
-    public void setMultilineEnabled(boolean flag){
+    public void setMultilineEnabled(boolean flag) {
         if (flag) {
             this.mInputModeConstraints |= InputType.TYPE_TEXT_FLAG_MULTI_LINE;
-        }
-        else {
+        } else {
             this.mInputModeConstraints &= (~InputType.TYPE_TEXT_FLAG_MULTI_LINE);
         }
     }
@@ -182,7 +175,7 @@ public class ParaEngineEditBox extends EditText {
         }
     }
 
-    public  void setInputMode(int inputMode){
+    public void setInputMode(int inputMode) {
          switch (inputMode) {
             case kEditBoxInputModeAny:
                 this.mInputModeConstraints = InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_MULTI_LINE;
@@ -206,7 +199,6 @@ public class ParaEngineEditBox extends EditText {
                 this.mInputModeConstraints = InputType.TYPE_CLASS_TEXT;
                 break;
             default:
-
                 break;
         }
 
@@ -218,7 +210,7 @@ public class ParaEngineEditBox extends EditText {
         switch (pKeyCode) {
             case KeyEvent.KEYCODE_BACK:
                 ParaEngineActivity activity = (ParaEngineActivity)this.getContext();
-                //To prevent program from going to background
+                // To prevent program from going to background
                 activity.getGLSurfaceView().requestFocus();
                 return true;
             default:

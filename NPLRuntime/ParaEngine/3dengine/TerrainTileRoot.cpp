@@ -571,7 +571,7 @@ CBaseObject* ParaEngine::CTerrainTileRoot::GetLocalObject(const Vector3& vPos, c
 	return NULL;
 }
 
-IAttributeFields* ParaEngine::CTerrainTileRoot::GetChildAttributeObject(const std::string& sName)
+IAttributeFields* ParaEngine::CTerrainTileRoot::GetChildAttributeObject(const char * sName)
 {
 	return CTerrainTile::GetChildAttributeObject(sName);
 }

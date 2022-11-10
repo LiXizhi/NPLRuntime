@@ -2,7 +2,7 @@
 // ParaEngineActivity.h
 // Authors: LanZhihong, big
 // CreateDate: 2019.12.30
-// ModifyDate: 2022.1.12
+// ModifyDate: 2022.11.2
 //-----------------------------------------------------------------------------
 
 #include "ParaEngineActivity.h"
@@ -24,18 +24,26 @@ namespace ParaEngine {
 }
 
 extern "C" {
-    JNIEXPORT jintArray JNICALL Java_com_tatfook_paracraft_ParaEngineActivity_getGLContextAttrs(JNIEnv* env,
-                                                                                                jclass clazz)
+    JNIEXPORT jintArray JNICALL
+        Java_com_tatfook_paracraft_ParaEngineActivity_getGLContextAttrs
+        (JNIEnv* env, jclass clazz)
     {
-        ParaEngine::GLContextAttrs attrs = {8, 8, 8, 8, 24, 8, 0 };
+        ParaEngine::GLContextAttrs attrs
+            = { 8,
+                8,
+                8,
+                8,
+                24,
+                8,
+                0 };
 
-        int temp[] =  { attrs.redBits,
-                        attrs.greenBits,
-                        attrs.blueBits,
-                        attrs.alphaBits,
-                        attrs.depthBits,
-                        attrs.stencilBits,
-                        attrs.multisamplingCount };
+        int temp[] = { attrs.redBits,
+                       attrs.greenBits,
+                       attrs.blueBits,
+                       attrs.alphaBits,
+                       attrs.depthBits,
+                       attrs.stencilBits,
+                       attrs.multisamplingCount };
 
         jintArray glContextAttrsJava = env->NewIntArray(7);
         env->SetIntArrayRegion(glContextAttrsJava, 0, 7, temp);
