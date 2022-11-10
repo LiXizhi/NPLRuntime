@@ -1,4 +1,4 @@
-//-----------------------------------------------------------------------------
+﻿//-----------------------------------------------------------------------------
 // Class:	Renderable chunks
 // Authors:	LiXizhi, Clayman
 // Emails:	LiXizhi@yeah.net
@@ -234,6 +234,8 @@ namespace ParaEngine
 			std::vector<uint16_t>& instanceGroup = pInstGroup->instances;
 			uint32 groupSize = instanceGroup.size();
 			uint32 instCount = groupSize;
+			int32_t materialId = pInstGroup->m_materialId;
+
 			int nMaxFaceCountPerInstance = pTemplate->GetBlockModelByData(nBlockData).GetFaceCount();
 
 			if (nFreeFaceCountInVertexBuffer < (int32)pInstGroup->GetFaceCount())
@@ -264,6 +266,7 @@ namespace ParaEngine
 			{
 				pTask = BlockRenderTask::CreateTask();
 				pTask->Init(pTemplate, nBlockData, vertexOffset, pVertexBuffer->GetDevicePointer(), pChunk->m_minBlockId_ws);
+				pTask->SetMaterialId(pInstGroup->m_materialId);
 				m_builder_tasks.push_back(pTask);
 				pLastInstGroup = pInstGroup;
 			}
@@ -294,6 +297,7 @@ namespace ParaEngine
 					}
 					pTask = BlockRenderTask::CreateTask();
 					pTask->Init(pTemplate, nBlockData, vertexOffset, pVertexBuffer->GetDevicePointer(), pChunk->m_minBlockId_ws);
+					pTask->SetMaterialId(pInstGroup->m_materialId);
 					m_builder_tasks.push_back(pTask);
 					pLastInstGroup = pInstGroup;
 
@@ -305,24 +309,59 @@ namespace ParaEngine
 				//--------------------------------------------------------------
 				BlockVertexCompressed* pBlockModelVertices = NULL;
 				unprocessedInstCount--;
-				int32 nFaceCount = tessellator.TessellateBlock(pChunk, instanceGroup[inst], dwShaderID, &pBlockModelVertices);
-				if (nFaceCount > 0)
+				if (materialId < 0)
 				{
-					int32 nVertexCount = nFaceCount * 4;
-					if (nFreeFaceCountInVertexBuffer >= nFaceCount)
+					// TODO 移除所有材质面, 目前仅标准方块移除
+					int32_t nFaceCount = tessellator.TessellateBlock(pChunk, instanceGroup[inst], dwShaderID, &pBlockModelVertices);
+					if (nFaceCount > 0)
 					{
-						memcpy(pVertices, pBlockModelVertices, sizeof(BlockVertexCompressed)*nVertexCount);
-						pVertices += nVertexCount;
-						vertexOffset += nVertexCount;
+						int32 nVertexCount = nFaceCount * 4;
+						if (nFreeFaceCountInVertexBuffer >= nFaceCount)
+						{
+							memcpy(pVertices, pBlockModelVertices, sizeof(BlockVertexCompressed)*nVertexCount);
+							pVertices += nVertexCount;
+							vertexOffset += nVertexCount;
 
-						nFaceCountCompleted += nFaceCount;
-						pTask->AddRectFace(nFaceCount);
-						nFreeFaceCountInVertexBuffer -= nFaceCount;
+							nFaceCountCompleted += nFaceCount;
+							pTask->AddRectFace(nFaceCount);
+							nFreeFaceCountInVertexBuffer -= nFaceCount;
+						}
+						else
+						{
+							// this could happen when block changes when we are still processing it
+							OUTPUT_LOG("fatal error: not enough face count in vertex buffer. \n");
+						}
 					}
-					else
+				}
+				else
+				{
+					pBlockModelVertices = pTemplate->GetBlockModelByData(nBlockData).GetVertices();
+					uint16_t packedBlockId = instanceGroup[inst];
+					int32_t nFaceCount = 1;
+					int32_t nVertexCount = nFaceCount * 4;
+					tessellator.UpdateCurrentBlock(pChunk, packedBlockId);
+					for (int face = 0; face < nMaxFaceCountPerInstance; face++)
 					{
-						// this could happen when block changes when we are still processing it
-						OUTPUT_LOG("fatal error: not enough face count in vertex buffer. \n");
+						if (materialId == pChunk->GetBlockFaceMaterial(packedBlockId, face))
+						{
+							memcpy(pVertices, pBlockModelVertices + face * 4, sizeof(BlockVertexCompressed)*nVertexCount);
+							pVertices[0].OffsetPosition(tessellator.m_blockId_cs.x, tessellator.m_blockId_cs.y, tessellator.m_blockId_cs.z);
+							pVertices[1].OffsetPosition(tessellator.m_blockId_cs.x, tessellator.m_blockId_cs.y, tessellator.m_blockId_cs.z);
+							pVertices[2].OffsetPosition(tessellator.m_blockId_cs.x, tessellator.m_blockId_cs.y, tessellator.m_blockId_cs.z);
+							pVertices[3].OffsetPosition(tessellator.m_blockId_cs.x, tessellator.m_blockId_cs.y, tessellator.m_blockId_cs.z);
+							pVertices += nVertexCount;
+							vertexOffset += nVertexCount;
+							nFaceCountCompleted += nFaceCount;
+							pTask->AddRectFace(nFaceCount);
+							nFreeFaceCountInVertexBuffer -= nFaceCount;
+						}
+					}
+					// 跳过同一方块的不同面
+					int32_t nextInst = inst + 1;
+					while(nextInst< groupSize && instanceGroup[nextInst] == packedBlockId)
+					{
+						inst = nextInst;
+						nextInst = inst + 1;
 					}
 				}
 			}
@@ -542,11 +581,11 @@ namespace ParaEngine
 		return *tls_instanceGroups;
 	}
 
-	std::map<int32_t, int>& RenderableChunk::GetInstanceMap()
+	std::map<int64_t, int>& RenderableChunk::GetInstanceMap()
 	{
-		static boost::thread_specific_ptr <std::map<int32_t, int>> tls_instance_map;
+		static boost::thread_specific_ptr <std::map<int64_t, int>> tls_instance_map;
 		if (!tls_instance_map.get())
-			tls_instance_map.reset(new std::map<int32_t, int>());
+			tls_instance_map.reset(new std::map<int64_t, int>());
 		return *tls_instance_map;
 	}
 
@@ -573,7 +612,7 @@ namespace ParaEngine
 		int32 totalFaceCount = 0;
 		int32 cachedGroupIdx = 0;
 		uint16_t nSize = (uint16_t)pChunk->m_blockIndices.size();
-		std::map < int32_t, int > & instance_map = GetInstanceMap();
+		std::map <int64_t, int > & instance_map = GetInstanceMap();
 		std::vector<InstanceGroup* >& instanceGroups = GetInstanceGroups();
 
 		for (uint16_t i = 0; i < nSize; i++)
@@ -629,6 +668,31 @@ namespace ParaEngine
 				uint32 nFaceCount = blockmodel.GetFaceCount();
 				instanceGroups[cachedGroupIdx]->AddInstance(i, nFaceCount);
 				totalFaceCount += nFaceCount;
+				// 按照材质分类
+				for (uint32_t j = 0; j < nFaceCount; j++)
+				{
+					int32_t materialId = pChunk->GetBlockFaceMaterial(i, j);
+					if (materialId > 0)
+					{
+						int64_t materialInstanceKey = materialId << 32;
+						auto curIndex = instance_map.find(materialInstanceKey);
+						if (curIndex != instance_map.end())
+						{
+							cachedGroupIdx = curIndex->second;
+						}
+						else 
+						{
+							cachedGroupIdx = instanceGroups.size();
+							instanceGroups.push_back(new InstanceGroup());
+							instanceGroups[cachedGroupIdx]->m_pTemplate = pBlock->GetTemplate();
+							instanceGroups[cachedGroupIdx]->m_blockData = nBlockData;
+							instanceGroups[cachedGroupIdx]->m_materialId = materialId;
+							instance_map[materialInstanceKey] = cachedGroupIdx;
+						}
+						instanceGroups[cachedGroupIdx]->AddInstance(i, 1);
+						totalFaceCount += 1;
+					}
+				}
 			}
 		}
 		return totalFaceCount;
@@ -738,6 +802,8 @@ namespace ParaEngine
 			std::vector<uint16_t>& instanceGroup = pInstGroup->instances;
 			uint32 groupSize = instanceGroup.size();
 			uint32 instCount = groupSize;
+			int32_t materialId = pInstGroup->m_materialId;
+
 			int nMaxFaceCountPerInstance = pTemplate->GetBlockModelByData(nBlockData).GetFaceCount();
 
 			if (nFreeFaceCountInVertexBuffer < (int32)pInstGroup->GetFaceCount())
@@ -766,6 +832,7 @@ namespace ParaEngine
 			{
 				pTask = BlockRenderTask::CreateTask();
 				pTask->Init(pTemplate, nBlockData, vertexOffset, pChunk->m_minBlockId_ws, nMemoryBufferIndex);
+				pTask->SetMaterialId(pInstGroup->m_materialId);
 				m_builder_tasks.push_back(pTask);
 				pLastInstGroup = pInstGroup;
 			}
@@ -805,24 +872,58 @@ namespace ParaEngine
 				//--------------------------------------------------------------
 				BlockVertexCompressed* pBlockModelVertices = NULL;
 				unprocessedInstCount--;
-				int32 nFaceCount = tessellator.TessellateBlock(pChunk, instanceGroup[inst], dwShaderID, &pBlockModelVertices);
-				if (nFaceCount > 0)
+				if (materialId < 0)
 				{
-					int32 nVertexCount = nFaceCount * 4;
-					if (nFreeFaceCountInVertexBuffer >= nFaceCount)
+					int32 nFaceCount = tessellator.TessellateBlock(pChunk, instanceGroup[inst], dwShaderID, &pBlockModelVertices);
+					if (nFaceCount > 0)
 					{
-						memcpy(pVertices, pBlockModelVertices, sizeof(BlockVertexCompressed)*nVertexCount);
-						pVertices += nVertexCount;
-						vertexOffset += nVertexCount;
+						int32 nVertexCount = nFaceCount * 4;
+						if (nFreeFaceCountInVertexBuffer >= nFaceCount)
+						{
+							memcpy(pVertices, pBlockModelVertices, sizeof(BlockVertexCompressed)*nVertexCount);
+							pVertices += nVertexCount;
+							vertexOffset += nVertexCount;
 
-						nFaceCountCompleted += nFaceCount;
-						pTask->AddRectFace(nFaceCount);
-						nFreeFaceCountInVertexBuffer -= nFaceCount;
+							nFaceCountCompleted += nFaceCount;
+							pTask->AddRectFace(nFaceCount);
+							nFreeFaceCountInVertexBuffer -= nFaceCount;
+						}
+						else
+						{
+							// this could happen when block changes when we are still processing it. 
+							OUTPUT_LOG("fatal error: not enough face count in vertex buffer. \n");
+						}
 					}
-					else
+				}
+				else
+				{
+					pBlockModelVertices = pTemplate->GetBlockModelByData(nBlockData).GetVertices();
+					uint16_t packedBlockId = instanceGroup[inst];
+					int32_t nFaceCount = 1;
+					int32_t nVertexCount = nFaceCount * 4;
+					tessellator.UpdateCurrentBlock(pChunk, packedBlockId);
+					for (int face = 0; face < nMaxFaceCountPerInstance; face++)
 					{
-						// this could happen when block changes when we are still processing it. 
-						OUTPUT_LOG("fatal error: not enough face count in vertex buffer. \n");
+						if (materialId == pChunk->GetBlockFaceMaterial(packedBlockId, face))
+						{
+							memcpy(pVertices, pBlockModelVertices + face * 4, sizeof(BlockVertexCompressed)*nVertexCount);
+							pVertices[0].OffsetPosition(tessellator.m_blockId_cs.x, tessellator.m_blockId_cs.y, tessellator.m_blockId_cs.z);
+							pVertices[1].OffsetPosition(tessellator.m_blockId_cs.x, tessellator.m_blockId_cs.y, tessellator.m_blockId_cs.z);
+							pVertices[2].OffsetPosition(tessellator.m_blockId_cs.x, tessellator.m_blockId_cs.y, tessellator.m_blockId_cs.z);
+							pVertices[3].OffsetPosition(tessellator.m_blockId_cs.x, tessellator.m_blockId_cs.y, tessellator.m_blockId_cs.z);
+							pVertices += nVertexCount;
+							vertexOffset += nVertexCount;
+							nFaceCountCompleted += nFaceCount;
+							pTask->AddRectFace(nFaceCount);
+							nFreeFaceCountInVertexBuffer -= nFaceCount;
+						}
+					}
+					// 跳过同一方块的不同面
+					int32_t nextInst = inst + 1;
+					while(nextInst< groupSize && instanceGroup[nextInst] == packedBlockId)
+					{
+						inst = nextInst;
+						nextInst = inst + 1;
 					}
 				}
 				CHECK_YIELD_CPU_TO_WRITER;
@@ -1076,6 +1177,10 @@ namespace ParaEngine
 		{
 			if (m_pTemplate->GetRenderPass() != pOther->m_pTemplate->GetRenderPass())
 				return false;
+			else if (m_materialId != pOther->m_materialId)
+			{
+				return false;
+			}
 			else
 			{
 				// TODO: further test textures and categories, etc. 

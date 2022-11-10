@@ -177,6 +177,7 @@ namespace ParaEngine
 			BlockTemplate* m_pTemplate;
 			uint32_t m_blockData;
 			uint32_t m_nFaceCount;
+			int32_t m_materialId;
 
 			//packedBlockId
 			std::vector<uint16_t> instances;
@@ -184,6 +185,7 @@ namespace ParaEngine
 			inline void reset(){
 				m_pTemplate = 0;
 				m_nFaceCount = 0;
+				m_materialId = -1;
 				instances.clear();
 			}
 			inline bool isEmpty() const {
@@ -211,7 +213,7 @@ namespace ParaEngine
 		std::vector<InstanceGroup* >& GetInstanceGroups();
 
 		/** mapping from a hashed value of block_template id and template data if any. */
-		std::map<int32_t, int>& GetInstanceMap();
+		std::map<int64_t, int>& GetInstanceMap();
 		
 		static void StaticReleaseInstGroup(std::vector<RenderableChunk::InstanceGroup* >* pInstances);
 
