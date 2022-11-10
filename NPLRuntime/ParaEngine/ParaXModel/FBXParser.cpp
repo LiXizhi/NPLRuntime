@@ -567,7 +567,9 @@ void FBXParser::FillParaXModelData(CParaXModel *pMesh, const aiScene *pFbxScene)
 			{
 				auto pTex = it->second;
 
-				TextureEntity *texEntity = CGlobals::GetAssetManager()->GetTextureManager().NewEntity(m_textures[i]);
+				std::string filepath = m_textures[i].GetFileName() + std::to_string(i); // 避免同名
+				TextureEntity *texEntity = CGlobals::GetAssetManager()->GetTextureManager().NewEntity(filepath);
+				// TextureEntity *texEntity = CGlobals::GetAssetManager()->GetTextureManager().NewEntity(m_textures[i]);
 
 				SetRawDataForImage(texEntity, pTex);
 
