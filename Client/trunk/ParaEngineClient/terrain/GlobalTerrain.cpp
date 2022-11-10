@@ -1336,7 +1336,7 @@ const Vector3& CGlobalTerrain::GetTerrainRenderOffset() const
 	return m_vTerrainRenderOffset;
 }
 
-IAttributeFields* CGlobalTerrain::GetChildAttributeObject(const std::string& sName)
+IAttributeFields* CGlobalTerrain::GetChildAttributeObject(const char * sName)
 {
 	if (m_nTerrainType == LATTICED_TERRAIN)
 		return m_pTerrainLattice;

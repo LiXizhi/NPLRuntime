@@ -136,7 +136,7 @@ int ParaEngine::CGUIBase::GetChildAttributeColumnCount()
 	return 1;
 }
 
-IAttributeFields* ParaEngine::CGUIBase::GetChildAttributeObject(const std::string& sName)
+IAttributeFields* ParaEngine::CGUIBase::GetChildAttributeObject(const char * sName)
 {
 	return GetChildByName(sName);
 }

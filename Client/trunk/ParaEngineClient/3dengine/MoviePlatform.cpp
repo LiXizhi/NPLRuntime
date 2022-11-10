@@ -984,9 +984,7 @@ bool CMoviePlatform::BeginCapture(const string& sFileName)
 			return false;
 		}
 
-		ParaEngine::CAudioEngine2::CAudioPlaybackHistory& playbackHistory = ParaEngine::CAudioEngine2::GetInstance()->GetPlaybackHistory();
-		playbackHistory.Clear();
-		playbackHistory.SetEnable(true);
+		ParaEngine::CAudioEngine2::GetInstance()->SetHistoryWithCaptureBegin();
 		
 #endif
 	}
@@ -1154,19 +1152,20 @@ bool CMoviePlatform::EndCapture()
 		{
 			// use ffmpeg external dll
 			std::string audioMapString;
-			ParaEngine::CAudioEngine2::CAudioPlaybackHistory& playbackHistory = ParaEngine::CAudioEngine2::GetInstance()->GetPlaybackHistory();
+			ParaEngine::CAudioEngine2::CAudioPlaybackHistory& playbackHistory = ParaEngine::CAudioEngine2::GetInstance()->SetHistoryWithCaptureEnd();
 			const ParaEngine::CAudioEngine2::CAudioPlaybackHistory::Records& records = playbackHistory.GetRecords();
 			ParaEngine::CAudioEngine2::CAudioPlaybackHistory::Records::const_iterator iter = records.begin();
 			for (; iter != records.end(); ++iter)
 			{
 				// simply encode audio record to a string
 				char record[512]; 
-				std::sprintf(record, "%s,%d,%d,%d,%d,",
+				std::sprintf(record, "%s,%d,%d,%d,%d,%d,",
 					iter->m_WaveFileName.c_str(),
 					iter->m_nStartTime,
 					iter->m_nEndTime,
 					iter->m_nSeekPos,
-					(int)iter->m_bIsLoop
+					(int)iter->m_bIsLoop,
+					iter->m_mTotalTime
 					);
 				audioMapString += record;
 				

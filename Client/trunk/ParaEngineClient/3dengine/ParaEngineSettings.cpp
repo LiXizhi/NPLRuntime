@@ -1281,7 +1281,7 @@ void ParaEngine::ParaEngineSettings::LoadNameIndex()
 	m_name_to_index["AudioEngine"] = 11;
 }
 
-IAttributeFields* ParaEngine::ParaEngineSettings::GetChildAttributeObject(const std::string& sName)
+IAttributeFields* ParaEngine::ParaEngineSettings::GetChildAttributeObject(const char * sName)
 {
 	auto it = m_name_to_index.find(sName);
 	return (it != m_name_to_index.end()) ? GetChildAttributeObject(it->second, 0) : NULL;

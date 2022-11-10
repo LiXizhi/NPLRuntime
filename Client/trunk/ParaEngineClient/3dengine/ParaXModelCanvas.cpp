@@ -503,7 +503,7 @@ int ParaEngine::ParaXModelCanvas::InstallFields(CAttributeClass* pClass, bool bO
 	return S_OK;
 }
 
-IAttributeFields* ParaEngine::ParaXModelCanvas::GetChildAttributeObject(const std::string& sName)
+IAttributeFields* ParaEngine::ParaXModelCanvas::GetChildAttributeObject(const char * sName)
 {
 	return m_root.get();
 }
@@ -535,7 +535,7 @@ int ParaEngine::CanvasAttachment::InstallFields(CAttributeClass* pClass, bool bO
 	return S_OK;
 }
 
-IAttributeFields* ParaEngine::CanvasAttachment::GetChildAttributeObject(const std::string& sName)
+IAttributeFields* ParaEngine::CanvasAttachment::GetChildAttributeObject(const char * sName)
 {
 	return NULL;
 }

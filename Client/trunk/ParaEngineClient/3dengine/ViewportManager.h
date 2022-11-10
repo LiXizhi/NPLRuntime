@@ -35,8 +35,13 @@ namespace ParaEngine
 		ATTRIBUTE_METHOD1(CViewportManager, GetWidthPerDegree_s, int*) { *p1 = cls->widthPerDegree; return S_OK; }
 		ATTRIBUTE_METHOD1(CViewportManager, SetWidthPerDegree_s, int) { cls->widthPerDegree = (p1); return S_OK; }
 
+		ATTRIBUTE_METHOD1(CViewportManager, GetOmniAlwaysUseUpFrontCamera_s, bool*) { *p1 = cls->m_bOmniAlwaysUseUpFrontCamera; return S_OK; }
+		ATTRIBUTE_METHOD1(CViewportManager, SetOmniAlwaysUseUpFrontCamera_s, bool) { cls->m_bOmniAlwaysUseUpFrontCamera = (p1); return S_OK; }
+		ATTRIBUTE_METHOD1(CViewportManager, GetOmniForceLookatDistance_s, int*) { *p1 = cls->m_nOmniForceLookatDistance; return S_OK; }
+		ATTRIBUTE_METHOD1(CViewportManager, SetOmniForceLookatDistance_s, int) { cls->m_nOmniForceLookatDistance = (p1); return S_OK; }
+
 		/** get attribute by child object. used to iterate across the attribute field hierarchy. */
-		virtual IAttributeFields* GetChildAttributeObject(const std::string& sName);
+		virtual IAttributeFields* GetChildAttributeObject(const char * sName);
 
 		/** get the number of child objects (row count) in the given column. please note different columns can have different row count. */
 		virtual int GetChildAttributeObjectCount(int nColumnIndex = 0);
@@ -69,6 +74,11 @@ namespace ParaEngine
 
 		/** get current viewport*/
 		void GetCurrentViewport(ParaViewport& out);
+
+		void SetOmniAlwaysUseUpFrontCamera(bool val) { m_bOmniAlwaysUseUpFrontCamera = val; }
+		bool IsOmniAlwaysUseUpFrontCamera() { return m_bOmniAlwaysUseUpFrontCamera; }
+		void SetOmniForceLookatDistance(int val) { m_nOmniForceLookatDistance = val; }
+		int GetOmniForceLookatDistance() { return m_nOmniForceLookatDistance; }
 	public:
 		/** add view port 
 		* @param nIndex: usually 0 is the GUI root's viewport, 1 is the main 3d scene's viewport.
@@ -107,6 +117,8 @@ namespace ParaEngine
 		int m_nCurrentFrameNumber;
 		float ods_fov;
 		int widthPerDegree;
+		bool m_bOmniAlwaysUseUpFrontCamera;//Whether the camera is forced to face straight ahead
+		int m_nOmniForceLookatDistance;
 	};
 
 }

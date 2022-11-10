@@ -900,9 +900,10 @@ float ParaEngine::CBaseObject::GetOpacity()
 	return 1.f;
 }
 
-IAttributeFields* ParaEngine::CBaseObject::GetChildAttributeObject(const std::string& sName)
+IAttributeFields* ParaEngine::CBaseObject::GetChildAttributeObject(const char * sName)
 {
-	CBaseObject* pObj = GetChildByName(sName, false);
+	std::string strName = sName;
+	CBaseObject* pObj = GetChildByName(strName, false);
 	return (pObj) ? pObj->GetAttributeObject() : NULL;
 }
 

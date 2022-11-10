@@ -31,7 +31,7 @@ namespace ParaEngine
 		ATTRIBUTE_DEFINE_CLASS(AssetManager);
 
 		/** get attribute by child object. used to iterate across the attribute field hierarchy. */
-		virtual IAttributeFields* GetChildAttributeObject(const std::string& sName){
+		virtual IAttributeFields* GetChildAttributeObject(const char * sName){
 			return GetByName(sName);
 		};
 		/** get the number of child objects (row count) in the given column. please note different columns can have different row count. */

@@ -1043,7 +1043,7 @@ ParaXEntity* CParaXAnimInstance::GetAnimModel()
 }
 
 
-IAttributeFields* CParaXAnimInstance::GetChildAttributeObject(const std::string& sName)
+IAttributeFields* CParaXAnimInstance::GetChildAttributeObject(const char * sName)
 {
 	return GetCharModel();
 }

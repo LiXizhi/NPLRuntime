@@ -354,7 +354,7 @@ int ParaEngine::BMaxNode::TessellateBlock(BlockModel* tessellatedModel)
 
 		tessellatedModel->ClearVertices();
 		BlockModel& blockModel = block_template->GetBlockModelByData(this->block_data);
-		if (blockModel.IsUniformLighting())
+		//if (blockModel.IsUniformLighting())
 		{
 			DWORD dwBlockColor = GetColor();
 			tessellatedModel->SetUniformLighting(true);

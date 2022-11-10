@@ -2671,7 +2671,7 @@ void ParaEngine::CBlockWorld::ClearOutOfRangeActiveChunkData()
 	}
 }
 
-IAttributeFields* ParaEngine::CBlockWorld::GetChildAttributeObject(const std::string& sName)
+IAttributeFields* ParaEngine::CBlockWorld::GetChildAttributeObject(const char * sName)
 {
 	for (auto& iter : m_regionCache)
 	{
