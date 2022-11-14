@@ -203,7 +203,7 @@ BufferPickingManager& ParaEngine::BufferPickingManager::GetInstance()
 
 IAttributeFields * ParaEngine::CBufferPicking::GetChildAttributeObject(const char* sName)
 {
-	if (sName == "rendertarget")
+	if (std::string(sName) == "rendertarget")
 	{
 		return GetChildAttributeObject(0, 0);
 	}
