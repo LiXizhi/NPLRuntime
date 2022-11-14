@@ -4915,7 +4915,7 @@ void CSceneObject::RemoveDeadObjects()
 
 IAttributeFields* CSceneObject::GetChildAttributeObject(const char * sName)
 {
-	if (sName == "SceneState")
+	if (std::string(sName) == "SceneState")
 	{
 		return m_sceneState.get();
 	}

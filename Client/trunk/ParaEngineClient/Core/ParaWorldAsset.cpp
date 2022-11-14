@@ -993,7 +993,7 @@ IAttributeFields* ParaEngine::CParaWorldAsset::GetChildAttributeObject(const cha
 {
 	for (IAttributeFields* pChild : m_attribute_models)
 	{
-		if (pChild->GetIdentifier() == sName || sName == pChild->GetAttributeClassName())
+		if (pChild->GetIdentifier() == sName || std::string(sName) == pChild->GetAttributeClassName())
 			return pChild;
 	}
 	return NULL;
