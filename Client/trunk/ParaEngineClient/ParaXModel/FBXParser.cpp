@@ -539,14 +539,15 @@ void FBXParser::FillParaXModelData(CParaXModel *pMesh, const aiScene *pFbxScene)
 				int nSize = m_textureContentMapping[m_textures[i]].size();
 				if (nSize > 0)
 				{
-					std::string filepath = m_textures[i].GetFileName() + std::to_string(i); // 避免同名
-					TextureEntity *texEntity = CGlobals::GetAssetManager()->GetTextureManager().NewEntity(filepath);
-					// TextureEntity *texEntity = CGlobals::GetAssetManager()->GetTextureManager().NewEntity(m_textures[i]);
-					char* bufferCpy = new char[nSize];
-
-					auto src = m_textureContentMapping[m_textures[i]].c_str();
-					memcpy(bufferCpy, src, nSize);
-					texEntity->SetRawData(bufferCpy, nSize);
+					TextureEntity* texEntity = CGlobals::GetAssetManager()->GetTextureManager().GetEntity(m_textures[i]);
+					if ( !texEntity )
+					{
+						texEntity = CGlobals::GetAssetManager()->GetTextureManager().NewEntity(m_textures[i]);
+						char* bufferCpy = new char[nSize];
+						auto src = m_textureContentMapping[m_textures[i]].c_str();
+						memcpy(bufferCpy, src, nSize);
+						texEntity->SetRawData(bufferCpy, nSize);
+					}
 					pMesh->textures[i] = texEntity;
 				}
 			}
@@ -1153,11 +1154,23 @@ void FBXParser::ProcessFBXMaterial(const aiScene* pFbxScene, unsigned int iIndex
 					texture_index = i;
 					break;
 				}
+
 			}
 			if (texture_index < 0)
 			{
-				m_textures.push_back(fbxMat);
-				texture_index = m_textures.size() - 1;
+				for (int i = 0; i < (int)m_textures.size(); i++)
+				{
+					if (m_textures[i].m_filename == diffuseTexName)
+					{
+						texture_index = i;
+						break;
+					}
+				}
+				if (texture_index < 0)
+				{
+					m_textures.push_back(fbxMat);
+					texture_index = m_textures.size() - 1;
+				}
 			}
 
 			ModelRenderPass& pass = pMesh->passes[pMesh->passes.size() - 1];
@@ -1186,8 +1199,21 @@ void FBXParser::ProcessFBXMaterial(const aiScene* pFbxScene, unsigned int iIndex
 			FBXMaterial fbxMat;
 			ParseMaterialByName(sMatName, &fbxMat);
 			fbxMat.m_filename = diffuseTexName;
-			m_textures.push_back(fbxMat);
-			pass.SetTexture2(m_textures.size() - 1);
+			int texture_index = -1;
+			for (int i = 0; i < (int)m_textures.size(); i++)
+			{
+				if (m_textures[i].m_filename == diffuseTexName)
+				{
+					texture_index = i;
+					break;
+				}
+			}
+			if (texture_index < 0)
+			{
+				m_textures.push_back(fbxMat);
+				texture_index = m_textures.size() - 1;
+			}
+			pass.SetTexture2(texture_index);
 		}
 	}
 }

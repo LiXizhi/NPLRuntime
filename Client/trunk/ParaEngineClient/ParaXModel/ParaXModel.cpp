@@ -151,9 +151,15 @@ CParaXModel::~CParaXModel(void)
 					textures[i].reset();
 					if (pTexture->GetRawData())
 					{
-						// for embedded textures, this will release the texture memory as well. 
-						auto& texManager = CGlobals::GetAssetManager()->GetTextureManager();
-						texManager.DeleteEntity(pTexture);
+						pTexture->UnloadAsset();
+						pTexture->SetRawData(NULL, 0);
+						pTexture->MakeInvalid();
+						if (pTexture->GetRefCount() == 1)
+						{
+							// for embedded textures, this will release the texture memory as well. 
+							auto& texManager = CGlobals::GetAssetManager()->GetTextureManager();
+							texManager.DeleteEntity(pTexture);
+						}
 					}
 				}
 			}
