@@ -782,6 +782,7 @@ void FBXParser::ProcessStaticFBXMaterial(const aiScene* pFbxScene, unsigned int 
 				texEntity = CGlobals::GetAssetManager()->GetTextureManager().NewEntity(diffuseTexName);
 
 				SetRawDataForImage(texEntity, pTex);
+				texEntity->SetEmbeddedTexture(true);
 
 				CGlobals::GetAssetManager()->GetTextureManager().AddEntity(diffuseTexName, texEntity);
 			}
