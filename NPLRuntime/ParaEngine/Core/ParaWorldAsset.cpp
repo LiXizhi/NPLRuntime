@@ -994,11 +994,11 @@ DynamicVertexBufferEntity* ParaEngine::CParaWorldAsset::GetDynamicBuffer(Dynamic
 	return m_DynamicVBManager.GetDynamicBuffer(nBufferType);
 }
 
-IAttributeFields* ParaEngine::CParaWorldAsset::GetChildAttributeObject(const std::string& sName)
+IAttributeFields* ParaEngine::CParaWorldAsset::GetChildAttributeObject(const char * sName)
 {
 	for (IAttributeFields* pChild : m_attribute_models)
 	{
-		if (pChild->GetIdentifier() == sName || sName == pChild->GetAttributeClassName())
+		if (pChild->GetIdentifier() == sName || std::string(sName) == pChild->GetAttributeClassName())
 			return pChild;
 	}
 	return NULL;

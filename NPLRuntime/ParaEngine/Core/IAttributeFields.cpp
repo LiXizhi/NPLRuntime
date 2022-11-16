@@ -241,7 +241,7 @@ int ParaEngine::IAttributeFields::GetChildAttributeObjectCount(int nColumnIndex 
 	return 0;
 }
 
-IAttributeFields* ParaEngine::IAttributeFields::GetChildAttributeObject(const std::string& sName)
+IAttributeFields* ParaEngine::IAttributeFields::GetChildAttributeObject(const char * sName)
 {
 	return NULL;
 }

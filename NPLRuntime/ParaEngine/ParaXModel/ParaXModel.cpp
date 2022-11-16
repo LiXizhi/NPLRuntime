@@ -2214,7 +2214,7 @@ IAttributeFields* CParaXModel::GetChildAttributeObject(int nRowIndex, int nColum
 	return 0;
 }
 
-IAttributeFields* CParaXModel::GetChildAttributeObject(const std::string& sName)
+IAttributeFields* CParaXModel::GetChildAttributeObject(const char * sName)
 {
 	return 0;
 }

@@ -2,7 +2,7 @@
 // ParaEngineActivity.java
 // Authors: LanZhihong, big
 // CreateDate: 2019.7.16
-// ModifyDate: 2022.1.11
+// ModifyDate: 2022.11.2
 //-----------------------------------------------------------------------------
 
 package com.tatfook.paracraft;
@@ -76,6 +76,7 @@ public class ParaEngineActivity extends AppCompatActivity {
     public static ParaEngineActivity getContext() {
         return sContext;
     }
+
     @Keep
     public static String getLauncherIntentData() {
         if (sContext == null)
@@ -158,7 +159,7 @@ public class ParaEngineActivity extends AppCompatActivity {
     @Override
     protected void onCreate(final Bundle savedInstanceState) {
         sContext = this;
-
+        GlobalObject.setActivity(this);
         super.onCreate(savedInstanceState);
 
         RegisterActivityResultLauncher();
@@ -211,15 +212,15 @@ public class ParaEngineActivity extends AppCompatActivity {
         super.onPause();
         ParaEnginePluginWrapper.onPause();
 
-        if (mGLSurfaceView != null)
-            mGLSurfaceView.onPause();
+//        if (mGLSurfaceView != null)
+//            mGLSurfaceView.onPause();
     }
 
     @Override
     protected void onResume() {
         super.onResume();
         ParaEnginePluginWrapper.onResume();
-        resumeIfHasFocus();
+//        resumeIfHasFocus();
     }
 
     @Override
@@ -239,12 +240,16 @@ public class ParaEngineActivity extends AppCompatActivity {
     protected void onStart() {
         super.onStart();
         ParaEnginePluginWrapper.onStart();
+        if (mGLSurfaceView != null)
+            mGLSurfaceView.setVisibility(View.VISIBLE);
     }
 
     @Override
     protected void onStop() {
         super.onStop();
         ParaEnginePluginWrapper.onStop();
+        if (mGLSurfaceView != null)
+            mGLSurfaceView.setVisibility(View.INVISIBLE);
     }
 
     protected void onLoadNativeLibraries() {
@@ -288,10 +293,10 @@ public class ParaEngineActivity extends AppCompatActivity {
 
         // ParaEngineEditBox layout
         ViewGroup.LayoutParams edittext_layout_params =
-                new ViewGroup.LayoutParams(
-                        ViewGroup.LayoutParams.MATCH_PARENT,
-                        ViewGroup.LayoutParams.WRAP_CONTENT
-                );
+            new ViewGroup.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT
+            );
 
         ParaEngineEditBox edittext = new ParaEngineEditBox(this);
         edittext.setLayoutParams(edittext_layout_params);

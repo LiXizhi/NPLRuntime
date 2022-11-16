@@ -1932,7 +1932,7 @@ int CharModelInstance::GetBodyParams(int type)
 	}
 }
 
-IAttributeFields* CharModelInstance::GetChildAttributeObject(const std::string& sName)
+IAttributeFields* CharModelInstance::GetChildAttributeObject(const char * sName)
 {
 	return m_pModelCanvas.get();
 }

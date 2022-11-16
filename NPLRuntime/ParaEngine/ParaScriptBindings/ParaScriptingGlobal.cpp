@@ -932,7 +932,7 @@ int ParaScripting::ParaAttributeObject::AddDynamicField(const std::string& sName
 
 ParaScripting::ParaAttributeObject ParaScripting::ParaAttributeObject::GetChild(const std::string& sName)
 {
-	return ParaAttributeObject(IsValid() ? m_pAttribute->GetChildAttributeObject(sName) : NULL);
+	return ParaAttributeObject(IsValid() ? m_pAttribute->GetChildAttributeObject(sName.c_str()) : NULL);
 }
 
 int ParaScripting::ParaAttributeObject::GetChildCount()
