@@ -547,6 +547,7 @@ void FBXParser::FillParaXModelData(CParaXModel *pMesh, const aiScene *pFbxScene)
 						auto src = m_textureContentMapping[m_textures[i]].c_str();
 						memcpy(bufferCpy, src, nSize);
 						texEntity->SetRawData(bufferCpy, nSize);
+						texEntity->SetEmbeddedTexture(true);
 					}
 					pMesh->textures[i] = texEntity;
 				}

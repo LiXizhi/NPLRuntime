@@ -149,7 +149,7 @@ CParaXModel::~CParaXModel(void)
 				auto pTexture = textures[i].get();
 				if (pTexture) {
 					textures[i].reset();
-					if (pTexture->GetRawData())
+					if (pTexture->IsEmbeddedTexture() && pTexture->GetRawData())
 					{
 						pTexture->UnloadAsset();
 						pTexture->SetRawData(NULL, 0);

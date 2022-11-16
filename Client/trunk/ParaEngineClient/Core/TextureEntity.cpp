@@ -109,14 +109,14 @@ namespace ParaEngine
 
 TextureEntity::TextureEntity(const AssetKey& key)
 	:AssetEntity(key), SurfaceType(StaticTexture), 	
-	m_bAsyncLoad(true),
+	m_bAsyncLoad(true), m_bEmbeddedTexture(false),
 	m_pRawData(NULL), m_nRawDataSize(0),
 	m_pTextureInfo(NULL), m_nHitCount(0), m_dwColorKey(0)
 {
 }
 
 TextureEntity::TextureEntity()
-	: SurfaceType(StaticTexture), m_pTextureInfo(NULL), m_nHitCount(0), m_dwColorKey(0), 
+	: SurfaceType(StaticTexture), m_pTextureInfo(NULL), m_nHitCount(0), m_dwColorKey(0), m_bEmbeddedTexture(false),
 	m_pRawData(NULL), m_nRawDataSize(0),
 	m_bAsyncLoad(true)
 {
