@@ -90,6 +90,9 @@ namespace ParaEngine
 			int m_nOmniForceLookatDistance;
 			float oldCameraRotX;
 			float oldCameraDistance;
+
+			int ods_group_idx;
+			int ods_group_size;
 			StereoODSparam(){
 				isODS = false;
 				moreRotY = 0.0f;
@@ -100,6 +103,8 @@ namespace ParaEngine
 				needRecoverCamera = false;
 				m_bOmniAlwaysUseUpFrontCamera = true;
 				m_nOmniForceLookatDistance = 20;
+				ods_group_idx = -1;
+				ods_group_size = 0;
 			}
 			inline StereoODSparam& operator = (const StereoODSparam& target)
 			{
@@ -116,7 +121,8 @@ namespace ParaEngine
 				oldFov = target.oldFov;
 				m_bOmniAlwaysUseUpFrontCamera = target.m_bOmniAlwaysUseUpFrontCamera;
 				m_nOmniForceLookatDistance = target.m_nOmniForceLookatDistance;
-
+				ods_group_idx = target.ods_group_idx;
+				ods_group_size = target.ods_group_size;
 				return *this;
 			}
 		};
@@ -156,6 +162,9 @@ namespace ParaEngine
 		/** render target to use. if "", default to current back buffer*/
 		const std::string&  GetRenderTargetName() const;
 		void SetRenderTargetName(const std::string& val);
+
+		shared_ptr<CRenderTarget> GetRenderTarget();
+		void SetRenderTarget(shared_ptr<CRenderTarget> target);
 
 		/** -1 or RENDER_PIPELINE_ORDER. if -1, it will be rendered for all pipeline stage */
 		int GetPipelineOrder() const;
@@ -235,7 +244,7 @@ namespace ParaEngine
 		int m_nZOrder;
 		std::string m_sName;
 		std::string m_sRenderTargetName;
-		CRenderTarget* m_pRenderTarget;
+		std::shared_ptr<CRenderTarget> m_pRenderTarget;
 
 		STEREO_EYE m_nEyeMode;
 

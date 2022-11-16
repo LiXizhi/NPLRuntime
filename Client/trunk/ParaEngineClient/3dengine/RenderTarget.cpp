@@ -489,6 +489,18 @@ bool ParaEngine::CRenderTarget::InitWithWidthAndHeight(int width, int height, D3
 	return true;
 }
 
+bool ParaEngine::CRenderTarget::Begin(int x, int y, int w, int h)
+{
+	bool ret = this->Begin();
+
+	m_oldViewport.X = x;
+	m_oldViewport.Y = y;
+	m_oldViewport.Width = w;
+	m_oldViewport.Height = h;
+
+	return true;
+}
+
 bool ParaEngine::CRenderTarget::Begin()
 {
 	RenderDevicePtr pd3dDevice = CGlobals::GetRenderDevice();
@@ -581,6 +593,15 @@ void ParaEngine::CRenderTarget::End()
 #endif
 	// restore viewport
 	pd3dDevice->SetViewport(&m_oldViewport);
+
+	static int acc = 0;
+	if (GetCanvasTextureName() == "ods_render_target") {
+		acc++;
+		if (acc == 1000) {
+			string name = "D:\\work\\test_xxx.png";
+			SaveToFile(name.c_str(), m_nTextureWidth, m_nTextureHeight);
+		}
+	}
 }
 
 

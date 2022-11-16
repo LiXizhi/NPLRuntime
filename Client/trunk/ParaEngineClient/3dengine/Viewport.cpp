@@ -27,7 +27,8 @@ CViewport::CViewport(CViewportManager* pViewportManager)
 
 CViewport::~CViewport(void)
 {
-	SAFE_DELETE(m_pRenderTarget);
+	//SAFE_DELETE(m_pRenderTarget);
+	m_pRenderTarget.reset();
 }
 
 CAutoCamera* ParaEngine::CViewport::GetCamera()
@@ -65,7 +66,9 @@ void ParaEngine::CViewport::ApplyCamera(CAutoCamera* pCamera)
 			m_stereoODSparam.needRecoverCamera = true;
 
 			Vector3 &up = pCamera->GetWorldUp();
-			up = Vector3(0,1,0);
+			if (m_stereoODSparam.m_bOmniAlwaysUseUpFrontCamera) {
+				up = Vector3(0, 1, 0);
+			}
 			up.normalise();
 			Vector3& right = pCamera->GetWorldRight();
 			right.normalise();
@@ -138,14 +141,25 @@ const std::string& ParaEngine::CViewport::GetRenderTargetName() const
 	return m_sRenderTargetName;
 }
 
+std::shared_ptr<CRenderTarget> ParaEngine::CViewport::GetRenderTarget()
+{
+	return m_pRenderTarget;
+}
+
+void ParaEngine::CViewport::SetRenderTarget(std::shared_ptr<CRenderTarget> target)
+{
+	m_pRenderTarget = target;
+}
+
 void ParaEngine::CViewport::SetRenderTargetName(const std::string& val)
 {
 	if (m_sRenderTargetName != val)
 	{
 		m_sRenderTargetName = val;
-		SAFE_DELETE(m_pRenderTarget);
+		//SAFE_DELETE(m_pRenderTarget);
+		m_pRenderTarget.reset();
 		if (!m_sRenderTargetName.empty()){
-			m_pRenderTarget = new CRenderTarget();
+			m_pRenderTarget = std::make_shared<CRenderTarget>();
 			m_pRenderTarget->SetCanvasTextureName(val);
 		}
 	}
@@ -167,21 +181,27 @@ HRESULT ParaEngine::CViewport::Render(double dTimeDelta, int nPipelineOrder)
 		CAutoCamera* pCamera = GetCamera();
 		if (pRootScene && pCamera)
 		{
-			if (m_pRenderTarget)
+			if (m_pRenderTarget&&!m_pRenderTarget->GetHasSetRenderTargetSize())
 			{
 				m_pRenderTarget->SetRenderTargetSize(Vector2((float)GetWidth(), (float)GetHeight()));
 				m_pRenderTarget->GetPrimaryAsset(); // touch asset
 			}
-			ScopedPaintOnRenderTarget painter_(m_pRenderTarget);
+			UpdateRect();
+
+			//ScopedPaintOnRenderTarget painter_(m_pRenderTarget.get());
+			ScopedPaintOnRenderTarget painter_(m_pRenderTarget.get(), m_rect.left, m_rect.top, m_rect.right - m_rect.left, m_rect.bottom - m_rect.top);
+			
 			if (m_pRenderTarget && nPipelineOrder == PIPELINE_3D_SCENE)
 			{
-				m_pRenderTarget->Clear(pRootScene->GetFogColor());
+				if (m_stereoODSparam.ods_group_size <= 0 || (m_stereoODSparam.ods_group_size > 0 && m_stereoODSparam.ods_group_idx == 0)) {
+					m_pRenderTarget->Clear(pRootScene->GetFogColor());
+				}
 			}
-
+			
 			SetActive();
 			ApplyCamera(pCamera);
 			ApplyViewport();
-
+			
 			if (pRootScene->IsSceneEnabled())
 			{
 				//-- set up effects parameters
