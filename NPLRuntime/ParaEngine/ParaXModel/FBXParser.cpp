@@ -566,13 +566,12 @@ void FBXParser::FillParaXModelData(CParaXModel *pMesh, const aiScene *pFbxScene)
 			if (it != m_textureContentMapping.end())
 			{
 				auto pTex = it->second;
-
-				std::string filepath = m_textures[i].GetFileName() + std::to_string(i); // 避免同名
-				TextureEntity *texEntity = CGlobals::GetAssetManager()->GetTextureManager().NewEntity(filepath);
-				// TextureEntity *texEntity = CGlobals::GetAssetManager()->GetTextureManager().NewEntity(m_textures[i]);
-
-				SetRawDataForImage(texEntity, pTex);
-
+				TextureEntity *texEntity = CGlobals::GetAssetManager()->GetTextureManager().GetEntity(m_textures[i]);
+				if (!texEntity)
+				{
+					TextureEntity *texEntity = CGlobals::GetAssetManager()->GetTextureManager().NewEntity(m_textures[i]);
+					SetRawDataForImage(texEntity, pTex);
+				}
 				pMesh->textures[i] = texEntity;
 			}
 			else if (CParaFile::DoesFileExist(m_textures[i].GetFileName().c_str(), true))
@@ -1139,8 +1138,19 @@ void FBXParser::ProcessFBXMaterial(const aiScene* pFbxScene, unsigned int iIndex
 	}
 	if (texture_index < 0)
 	{
-		m_textures.push_back(fbxMat);
-		texture_index = m_textures.size() - 1;
+		for (int i = 0; i < (int)m_textures.size(); i++)
+		{
+			if (m_textures[i].m_filename == diffuseTexName)
+			{
+				texture_index = i;
+				break;
+			}
+		}
+		if (texture_index < 0)
+		{
+			m_textures.push_back(fbxMat);
+			texture_index = m_textures.size() - 1;
+		}
 	}
 
 	pMesh->passes.resize(pMesh->passes.size() + 1);

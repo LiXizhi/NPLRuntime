@@ -153,11 +153,19 @@ CParaXModel::~CParaXModel(void)
 				auto pTexture = textures[i].get();
 				if (pTexture) {
 					textures[i].reset();
-					if (pTexture->GetRawData())
+
+					if (pTexture->GetRawData() || pTexture->GetImage())
 					{
+						pTexture->UnloadAsset();
+						pTexture->SetRawDataForImage(NULL, 0);
+						pTexture->SetRawData(NULL, 0);
+						pTexture->MakeInvalid();
 						// for embedded textures, this will release the texture memory as well. 
-						auto& texManager = CGlobals::GetAssetManager()->GetTextureManager();
-						texManager.DeleteEntity(pTexture);
+						if (pTexture->GetRefCount() == 1)
+						{
+							auto& texManager = CGlobals::GetAssetManager()->GetTextureManager();
+							texManager.DeleteEntity(pTexture);
+						}
 					}
 				}
 			}
