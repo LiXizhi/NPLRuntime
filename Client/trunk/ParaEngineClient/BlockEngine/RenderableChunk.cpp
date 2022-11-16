@@ -668,6 +668,9 @@ namespace ParaEngine
 				uint32 nFaceCount = blockmodel.GetFaceCount();
 				instanceGroups[cachedGroupIdx]->AddInstance(i, nFaceCount);
 				totalFaceCount += nFaceCount;
+				
+				if (!pChunk->HasBlockMaterial(i)) continue;
+
 				// 按照材质分类
 				for (uint32_t j = 0; j < nFaceCount; j++)
 				{

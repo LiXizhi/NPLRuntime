@@ -375,7 +375,10 @@ namespace ParaEngine
 		int32_t blockIndex = m_blockIndices[nIndex];
 		if(blockIndex >= 0)
 		{
-			RemoveBlockMaterial(CalcPackedBlockID(blockId_r), -1);
+			if (HasBlockMaterial(nIndex))
+			{
+				RemoveBlockMaterial(nIndex, -1);
+			}
 
 			Block& block = m_blocks[blockIndex];
 
