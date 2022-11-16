@@ -566,11 +566,13 @@ void FBXParser::FillParaXModelData(CParaXModel *pMesh, const aiScene *pFbxScene)
 			if (it != m_textureContentMapping.end())
 			{
 				auto pTex = it->second;
-
-				TextureEntity *texEntity = CGlobals::GetAssetManager()->GetTextureManager().NewEntity(m_textures[i]);
-
-				SetRawDataForImage(texEntity, pTex);
-
+				TextureEntity *texEntity = CGlobals::GetAssetManager()->GetTextureManager().GetEntity(m_textures[i]);
+				if (!texEntity)
+				{
+					TextureEntity *texEntity = CGlobals::GetAssetManager()->GetTextureManager().NewEntity(m_textures[i]);
+					SetRawDataForImage(texEntity, pTex);
+					texEntity->SetEmbeddedTexture(true);
+				}
 				pMesh->textures[i] = texEntity;
 			}
 			else if (CParaFile::DoesFileExist(m_textures[i].GetFileName().c_str(), true))
@@ -780,6 +782,7 @@ void FBXParser::ProcessStaticFBXMaterial(const aiScene* pFbxScene, unsigned int 
 				texEntity = CGlobals::GetAssetManager()->GetTextureManager().NewEntity(diffuseTexName);
 
 				SetRawDataForImage(texEntity, pTex);
+				texEntity->SetEmbeddedTexture(true);
 
 				CGlobals::GetAssetManager()->GetTextureManager().AddEntity(diffuseTexName, texEntity);
 			}
@@ -1137,8 +1140,19 @@ void FBXParser::ProcessFBXMaterial(const aiScene* pFbxScene, unsigned int iIndex
 	}
 	if (texture_index < 0)
 	{
-		m_textures.push_back(fbxMat);
-		texture_index = m_textures.size() - 1;
+		for (int i = 0; i < (int)m_textures.size(); i++)
+		{
+			if (m_textures[i].m_filename == diffuseTexName)
+			{
+				texture_index = i;
+				break;
+			}
+		}
+		if (texture_index < 0)
+		{
+			m_textures.push_back(fbxMat);
+			texture_index = m_textures.size() - 1;
+		}
 	}
 
 	pMesh->passes.resize(pMesh->passes.size() + 1);
