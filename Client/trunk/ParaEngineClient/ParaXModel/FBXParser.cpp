@@ -773,6 +773,7 @@ void FBXParser::ProcessStaticFBXMaterial(const aiScene* pFbxScene, unsigned int 
 				char* bufferCpy = new char[content_len];
 				memcpy(bufferCpy, content_begin, content_len);
 				texEntity->SetRawData(bufferCpy, content_len);
+				texEntity->SetEmbeddedTexture(true);
 				CGlobals::GetAssetManager()->GetTextureManager().AddEntity(diffuseTexName, texEntity);
 			}
 
