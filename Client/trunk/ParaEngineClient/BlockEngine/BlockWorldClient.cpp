@@ -3075,17 +3075,18 @@ namespace ParaEngine
 		m_nVertexBufferSizeLimit = val;
 	}
 
-	IAttributeFields* BlockWorldClient::GetChildAttributeObject(const std::string& sName)
+	IAttributeFields* BlockWorldClient::GetChildAttributeObject(const char * sName)
 	{
-		if (sName == "ChunkVertexBuilderManager")
+		std::string strName = sName;
+		if (strName == "ChunkVertexBuilderManager")
 		{
 			return &(ChunkVertexBuilderManager::GetInstance());
 		}
-		else if (sName == "LightGrid")
+		else if (strName == "LightGrid")
 		{
 			return &(GetLightGrid());
 		}
-		else if (sName == "CMultiFrameBlockWorldRenderer")
+		else if (strName == "CMultiFrameBlockWorldRenderer")
 		{
 			return m_pMultiFrameRenderer;
 		}

@@ -41,7 +41,7 @@ namespace ParaEngine
 		virtual int InstallFields(CAttributeClass* pClass, bool bOverride);
 
 		/** get attribute by child object. used to iterate across the attribute field hierarchy. */
-		virtual IAttributeFields* GetChildAttributeObject(const std::string& sName);
+		virtual IAttributeFields* GetChildAttributeObject(const char * sName);
 		/** get the number of child objects (row count) in the given column. please note different columns can have different row count. */
 		virtual int GetChildAttributeObjectCount(int nColumnIndex = 0);
 		virtual IAttributeFields* GetChildAttributeObject(int nRowIndex, int nColumnIndex = 0);

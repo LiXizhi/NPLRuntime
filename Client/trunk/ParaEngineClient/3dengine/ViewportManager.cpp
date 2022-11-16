@@ -27,6 +27,8 @@ CViewportManager::CViewportManager()
 	m_viewport.MaxZ = 200;
 	ods_fov = 1.57;
 	widthPerDegree = 4;
+	m_bOmniAlwaysUseUpFrontCamera = true;
+	m_nOmniForceLookatDistance = 20;
 }
 
 CViewportManager::~CViewportManager(void)
@@ -116,12 +118,17 @@ HRESULT ParaEngine::CViewportManager::Render(double dTimeDelta, int nPipelineOrd
 	CAutoCamera* pCamera = NULL;
 	DVector3 oldEyePos, oldLookAtPos;
 	float oldFov = 0;
+	float oldCameraRotX, oldCameraDistance;
 	auto pMainScene = CGlobals::GetScene();
 	if (pMainScene) {
 		pCamera = (CAutoCamera*)pMainScene->GetCurrentCamera();
 		oldEyePos = pCamera->GetEyePosition();
 		oldLookAtPos = pCamera->GetLookAtPosition();
 		oldFov = pCamera->GetFieldOfView();
+		oldCameraRotX = pCamera->GetCameraRotX();
+		oldCameraDistance = pCamera->GetCameraObjectDistance();
+		pCamera->SetForceOmniCameraObjectDistance(-10000);
+		pCamera->SetForceOmniCameraPitch(-10000);
 	}
 	for (auto iter = m_viewportSorted.begin(); iter != m_viewportSorted.end(); iter++)
 	{
@@ -142,6 +149,8 @@ HRESULT ParaEngine::CViewportManager::Render(double dTimeDelta, int nPipelineOrd
 	if (pCamera && needRecoverCamera) {
 		pCamera->SetFieldOfView(oldFov);
 		pCamera->SetLookAtPosition(oldLookAtPos);
+		pCamera->SetCameraRotX(oldCameraRotX);
+		pCamera->SetCameraObjectDistance(oldCameraDistance);
 		pCamera->SetViewParams(oldEyePos, oldLookAtPos);
 	}
 	CreateGetViewPort(1)->SetActive();
@@ -348,6 +357,8 @@ void ParaEngine::CViewportManager::SetLayout(VIEWPORT_LAYOUT nLayout, CSceneObje
 			param.moreRotY = diffRotY * (i + 0);
 			param.moreRotZ = morePitch;
 			param.fov_h = diffRotY;
+			param.m_bOmniAlwaysUseUpFrontCamera = m_bOmniAlwaysUseUpFrontCamera;
+			param.m_nOmniForceLookatDistance = m_nOmniForceLookatDistance;
 			viewport->SetStereoODSparam(param);
 		}
 		portNum += num;
@@ -375,6 +386,8 @@ void ParaEngine::CViewportManager::SetLayout(VIEWPORT_LAYOUT nLayout, CSceneObje
 			param.moreRotY = diffRotY * (i + 0);
 			param.moreRotZ = morePitch;
 			param.fov_h = diffRotY;
+			param.m_bOmniAlwaysUseUpFrontCamera = m_bOmniAlwaysUseUpFrontCamera;
+			param.m_nOmniForceLookatDistance = m_nOmniForceLookatDistance;
 			viewport->SetStereoODSparam(param);
 			//viewport->SetRenderTargetName(randerTargetname);
 		}
@@ -440,6 +453,8 @@ void ParaEngine::CViewportManager::SetLayout(VIEWPORT_LAYOUT nLayout, CSceneObje
 			param.moreRotY = diffRotY * (i + 0);
 			param.moreRotZ = morePitch;
 			param.fov_h = diffRotY;
+			param.m_bOmniAlwaysUseUpFrontCamera = m_bOmniAlwaysUseUpFrontCamera;
+			param.m_nOmniForceLookatDistance = m_nOmniForceLookatDistance;
 			viewport->SetStereoODSparam(param);
 			//viewport->SetRenderTargetName(randerTargetname);
 		}
@@ -468,6 +483,8 @@ void ParaEngine::CViewportManager::SetLayout(VIEWPORT_LAYOUT nLayout, CSceneObje
 			param.moreRotY = diffRotY * (i + 0);
 			param.moreRotZ = morePitch;
 			param.fov_h = diffRotY;
+			param.m_bOmniAlwaysUseUpFrontCamera = m_bOmniAlwaysUseUpFrontCamera;
+			param.m_nOmniForceLookatDistance = m_nOmniForceLookatDistance;
 			viewport->SetStereoODSparam(param);
 			//viewport->SetRenderTargetName(randerTargetname);
 		}
@@ -496,6 +513,8 @@ void ParaEngine::CViewportManager::SetLayout(VIEWPORT_LAYOUT nLayout, CSceneObje
 			param.moreRotY = diffRotY * (i + 0);
 			param.moreRotZ = morePitch;
 			param.fov_h = diffRotY;
+			param.m_bOmniAlwaysUseUpFrontCamera = m_bOmniAlwaysUseUpFrontCamera;
+			param.m_nOmniForceLookatDistance = m_nOmniForceLookatDistance;
 			viewport->SetStereoODSparam(param);
 			//viewport->SetRenderTargetName(randerTargetname);
 		}
@@ -524,6 +543,8 @@ void ParaEngine::CViewportManager::SetLayout(VIEWPORT_LAYOUT nLayout, CSceneObje
 			param.moreRotY = diffRotY * (i + 0);
 			param.moreRotZ = morePitch;
 			param.fov_h = diffRotY;
+			param.m_bOmniAlwaysUseUpFrontCamera = m_bOmniAlwaysUseUpFrontCamera;
+			param.m_nOmniForceLookatDistance = m_nOmniForceLookatDistance;
 			viewport->SetStereoODSparam(param);
 			//viewport->SetRenderTargetName(randerTargetname);
 		}
@@ -617,7 +638,7 @@ int ParaEngine::CViewportManager::GetChildAttributeObjectCount(int nColumnIndex 
 	return (int)m_viewportList.size();
 }
 
-IAttributeFields* ParaEngine::CViewportManager::GetChildAttributeObject(const std::string& sName)
+IAttributeFields* ParaEngine::CViewportManager::GetChildAttributeObject(const char * sName)
 {
 	for (CViewport* viewport : m_viewportList)
 	{
@@ -639,6 +660,7 @@ int ParaEngine::CViewportManager::InstallFields(CAttributeClass* pClass, bool bO
 	pClass->AddField("ods_fov", FieldType_Float, (void*)SetODSFov_s, (void*)GetODSFov_s, NULL, NULL, bOverride);
 	pClass->AddField("layout", FieldType_Int, NULL, (void*)GetLayout_s, NULL, NULL, bOverride);
 	pClass->AddField("widthPerDegree", FieldType_Int, (void*)SetWidthPerDegree_s, (void*)GetWidthPerDegree_s, NULL, NULL, bOverride);
-
+	pClass->AddField("OmniAlwaysUseUpFrontCamera", FieldType_Bool, (void*)SetOmniAlwaysUseUpFrontCamera_s, (void*)GetOmniAlwaysUseUpFrontCamera_s, NULL, NULL, bOverride);
+	pClass->AddField("OmniForceLookatDistance", FieldType_Int, (void*)SetOmniForceLookatDistance_s, (void*)GetOmniForceLookatDistance_s, NULL, NULL, bOverride);
 	return S_OK;
 }

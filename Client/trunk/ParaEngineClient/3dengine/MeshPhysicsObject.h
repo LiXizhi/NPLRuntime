@@ -54,7 +54,7 @@ namespace ParaEngine
 		ATTRIBUTE_METHOD1(CMeshPhysicsObject, SetFaceCullingDisabled_s, bool)		{ cls->SetFaceCullingDisabled(p1); return S_OK; }
 
 		/** get attribute by child object. used to iterate across the attribute field hierarchy. */
-		virtual IAttributeFields* GetChildAttributeObject(const std::string& sName);
+		virtual IAttributeFields* GetChildAttributeObject(const char * sName);
 		/** get the number of child objects (row count) in the given column. please note different columns can have different row count. */
 		virtual int GetChildAttributeObjectCount(int nColumnIndex = 0);
 		/** we support multi-dimensional child object. by default objects have only one column. */

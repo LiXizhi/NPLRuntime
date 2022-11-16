@@ -589,6 +589,51 @@ bool ParaEngine::CAudioEngine2::IsWaveFileLoopPlaying(const std::string& filenam
 	return false;
 }
 
+ParaEngine::CAudioEngine2::CAudioPlaybackHistory& ParaEngine::CAudioEngine2::SetHistoryWithCaptureBegin() {
+	int nowTime;
+	auto pParaEngine = CParaEngineCore::GetInstance()->GetAppInterface()->GetAttributeObject();
+	auto pGameFRC = pParaEngine->GetChildAttributeObject("gameFRC");
+	pGameFRC->GetAttributeClass()->GetField("Time")->Get(pGameFRC, &nowTime);
+
+	m_PlaybackHistory.Clear();
+	m_PlaybackHistory.SetEnable(true);
+
+	AudioFileMap_type::iterator iter = m_audio_file_map.begin();
+	while (iter != m_audio_file_map.end()) 
+	{
+		auto & source = iter->second;
+		if (source->IsPlaying()) {
+			source->m_nStartTime = nowTime;
+			source->m_nSeekPos = source->m_pSource->getCurrentAudioTime();
+			m_PlaybackHistory.AddRecord(&(*source));
+		}
+		iter++;
+	}
+	return m_PlaybackHistory;
+}
+
+ParaEngine::CAudioEngine2::CAudioPlaybackHistory& ParaEngine::CAudioEngine2::SetHistoryWithCaptureEnd() {
+	int nowTime;
+	auto pParaEngine = CParaEngineCore::GetInstance()->GetAppInterface()->GetAttributeObject();
+	auto pGameFRC = pParaEngine->GetChildAttributeObject("gameFRC");
+	pGameFRC->GetAttributeClass()->GetField("Time")->Get(pGameFRC, &nowTime);
+
+	AudioFileMap_type::iterator iter = m_audio_file_map.begin();
+	while (iter != m_audio_file_map.end())
+	{
+		auto& source = iter->second;
+		if (source->IsPlaying()) {
+			auto record = m_PlaybackHistory.FindLastRecord(iter->first);
+			if (record!=NULL) {
+				record->m_nEndTime = nowTime;
+			}
+		}
+		iter++;
+	}
+
+	return m_PlaybackHistory;
+}
+
 /** async wave file call back. */
 class CWaveFileDownloadCallBackData2
 {
@@ -1001,15 +1046,14 @@ void ParaEngine::CAudioSource2::stop()
 	if (m_pSource)
 	{
 		m_pSource->stop();
-
-		// record this event to the playback history
-		if (CAudioEngine2::GetInstance()->GetPlaybackHistory().FindLastRecord(this->GetFilename())) {
-			CAudioEngine2::GetInstance()->GetPlaybackHistory().RemoveRecord(this->GetFilename());
-		}
 		auto pParaEngine = CParaEngineCore::GetInstance()->GetAppInterface()->GetAttributeObject();
 		auto pGameFRC = pParaEngine->GetChildAttributeObject("gameFRC");
 		pGameFRC->GetAttributeClass()->GetField("Time")->Get(pGameFRC, &m_nStopTime);
-		CAudioEngine2::GetInstance()->GetPlaybackHistory().AddRecord(this);
+		// record this event to the playback history
+		auto record = CAudioEngine2::GetInstance()->GetPlaybackHistory().FindLastRecord(this->GetFilename());
+		if (record!=NULL) { 
+			record->m_nEndTime = m_nStopTime;
+		}
 	}
 	m_bIsAsyncLoadingWhileLoopPlaying = false;
 }

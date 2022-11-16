@@ -1068,7 +1068,7 @@ void ParaTerrain::TerrainLattice::SetGlobalConfigModified( bool bEnable /*= true
 	m_bIsGlobalConfigModified = bEnable;
 }
 
-IAttributeFields* ParaTerrain::TerrainLattice::GetChildAttributeObject(const std::string& sName)
+IAttributeFields* ParaTerrain::TerrainLattice::GetChildAttributeObject(const char * sName)
 {
 	return NULL;
 }

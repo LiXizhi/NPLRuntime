@@ -201,9 +201,9 @@ BufferPickingManager& ParaEngine::BufferPickingManager::GetInstance()
 	return s_instance;
 }
 
-IAttributeFields * ParaEngine::CBufferPicking::GetChildAttributeObject(const std::string & sName)
+IAttributeFields * ParaEngine::CBufferPicking::GetChildAttributeObject(const char* sName)
 {
-	if (sName == "rendertarget")
+	if (std::string(sName) == "rendertarget")
 	{
 		return GetChildAttributeObject(0, 0);
 	}
