@@ -181,7 +181,7 @@ namespace ParaEngine
 
 			//packedBlockId
 			std::vector<uint16_t> instances;
-			InstanceGroup() :m_pTemplate(NULL), m_blockData(0), m_nFaceCount(0){}
+			InstanceGroup() :m_pTemplate(NULL), m_blockData(0), m_nFaceCount(0), m_materialId(-1) {}
 			inline void reset(){
 				m_pTemplate = 0;
 				m_nFaceCount = 0;

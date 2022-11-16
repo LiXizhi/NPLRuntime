@@ -674,7 +674,7 @@ namespace ParaEngine
 					int32_t materialId = pChunk->GetBlockFaceMaterial(i, j);
 					if (materialId > 0)
 					{
-						int64_t materialInstanceKey = materialId << 32;
+						int64_t materialInstanceKey = ((int64_t)materialId) << 32;
 						auto curIndex = instance_map.find(materialInstanceKey);
 						if (curIndex != instance_map.end())
 						{
@@ -682,11 +682,26 @@ namespace ParaEngine
 						}
 						else 
 						{
-							cachedGroupIdx = instanceGroups.size();
-							instanceGroups.push_back(new InstanceGroup());
-							instanceGroups[cachedGroupIdx]->m_pTemplate = pBlock->GetTemplate();
-							instanceGroups[cachedGroupIdx]->m_blockData = nBlockData;
-							instanceGroups[cachedGroupIdx]->m_materialId = materialId;
+							for (uint32_t j = 0; j < instanceGroups.size(); j++)
+							{
+								if (instanceGroups[j]->m_materialId == materialId || instanceGroups[j]->m_pTemplate == 0)
+								{
+									cachedGroupIdx = j;
+									break;
+								}
+							}
+
+							if (instanceGroups[cachedGroupIdx]->m_materialId != materialId)
+							{
+								if (instanceGroups[cachedGroupIdx]->m_pTemplate != 0)
+								{
+									cachedGroupIdx = instanceGroups.size();
+									instanceGroups.push_back(new InstanceGroup());
+								}
+								instanceGroups[cachedGroupIdx]->m_pTemplate = pBlock->GetTemplate();
+								instanceGroups[cachedGroupIdx]->m_blockData = nBlockData;
+								instanceGroups[cachedGroupIdx]->m_materialId = materialId;
+							}
 							instance_map[materialInstanceKey] = cachedGroupIdx;
 						}
 						instanceGroups[cachedGroupIdx]->AddInstance(i, 1);

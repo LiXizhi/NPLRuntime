@@ -1385,7 +1385,7 @@ namespace ParaEngine
 							pFile->read(&materialId, sizeof(uint32_t));
 							pFile->read(&keyCount, sizeof(uint32_t));
 							std::vector<uint16_t> keys;
-							keys.reserve(keyCount);
+							keys.resize(keyCount);
 							pFile->read(keys.data(), keyCount * sizeof(uint16_t));
 							nByteCount = nByteCount - sizeof(uint32_t) - sizeof(uint32_t) - keyCount * sizeof(uint16_t);
 							for (uint32_t j = 0; j < keyCount; j++)

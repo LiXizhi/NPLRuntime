@@ -727,6 +727,27 @@ void CEffectFileDirectX::parseParameters()
 				}
 			}
         }
+		if(ParamDesc.Semantic != NULL && (nIndex = BeginWith(ParamDesc.Semantic, "material"))>0)
+		{
+			if(strcmpi( ParamDesc.Semantic, "materialExist" ) == 0)
+				m_paramHandle[k_material_exist] = hParam;
+			else if(strcmpi( ParamDesc.Semantic, "materialBaseColor" ) == 0)
+				m_paramHandle[k_material_base_color] = hParam;
+			else if(strcmpi( ParamDesc.Semantic, "materialHasBaseColor" ) == 0)
+				m_paramHandle[k_material_has_base_color] = hParam;
+			else if(strcmpi( ParamDesc.Semantic, "materialMetallic" ) == 0)
+				m_paramHandle[k_material_metallic] = hParam;	
+			else if(strcmpi( ParamDesc.Semantic, "materialSpecular" ) == 0)
+				m_paramHandle[k_material_specular] = hParam;	
+			else if(strcmpi( ParamDesc.Semantic, "materialRoughness" ) == 0)
+				m_paramHandle[k_material_roughness] = hParam;	
+			else if(strcmpi( ParamDesc.Semantic, "materialEmissiveColor" ) == 0)
+				m_paramHandle[k_material_emissive_color] = hParam;	
+			else if(strcmpi( ParamDesc.Semantic, "materialOpacity" ) == 0)
+				m_paramHandle[k_material_opacity] = hParam;	
+			else if(strcmpi( ParamDesc.Semantic, "materialNormal" ) == 0)
+				m_paramHandle[k_material_normal] = hParam;	
+		}
 
         if( ParamDesc.Semantic != NULL && 
             ( ParamDesc.Class == D3DXPC_VECTOR ))
@@ -742,6 +763,7 @@ void CEffectFileDirectX::parseParameters()
 				else if( strcmpi( ParamDesc.Semantic, "materialemissive" ) == 0 )
 					m_paramHandle[k_emissiveMaterialColor] = hParam;
 			}
+		
             else if( strcmpi( ParamDesc.Semantic, "posScaleOffset" ) == 0 )
                 m_paramHandle[k_posScaleOffset] = hParam;
             else if( strcmpi( ParamDesc.Semantic, "uvScaleOffset" ) == 0 )
