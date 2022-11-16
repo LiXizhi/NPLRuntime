@@ -375,6 +375,11 @@ namespace ParaEngine
 		int32_t blockIndex = m_blockIndices[nIndex];
 		if(blockIndex >= 0)
 		{
+			if (HasBlockMaterial(nIndex))
+			{
+				RemoveBlockMaterial(nIndex, -1);
+			}
+
 			Block& block = m_blocks[blockIndex];
 
 			if(block.GetTemplate()->IsMatchAttribute(BlockTemplate::batt_light))

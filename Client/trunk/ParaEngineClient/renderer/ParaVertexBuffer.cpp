@@ -46,7 +46,8 @@ void ParaEngine::ParaVertexBuffer::RendererRecreated()
 	SAFE_DELETE_ARRAY(m_buffer);
 }
 
-bool ParaEngine::ParaVertexBuffer::CreateBuffer(uint32 nBufferSize, DWORD dwFormat /*= 0*/, DWORD dwUsage /*= 0*/, D3DPOOL dwPool)
+bool ParaEngine::ParaVertexBuffer::
+CreateBuffer(uint32 nBufferSize, DWORD dwFormat /*= 0*/, DWORD dwUsage /*= 0*/, D3DPOOL dwPool)
 {
 	ReleaseBuffer();
 	m_bufferType = BufferType_VertexBuffer;

@@ -6,6 +6,7 @@ namespace ParaEngine
 	class CBlockWorld;
 	class BlockChunk;
 	class BlockVertexCompressed;
+	// class RenderableChunk;
 
 	/** generate tessellated vertices for a given block in the world. */
 	class BlockTessellatorBase
@@ -71,6 +72,7 @@ namespace ParaEngine
 	/** custom model tessellation like button, stairs, etc.  */
 	class BlockGeneralTessellator : public BlockTessellatorBase
 	{
+		friend class RenderableChunk;
 	public:
 		BlockGeneralTessellator(CBlockWorld* pWorld);;
 		/** generate triangles for a given block in a block world, taking all nearby blocks into consideration. */

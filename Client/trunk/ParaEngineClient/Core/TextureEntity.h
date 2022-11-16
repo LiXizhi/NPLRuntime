@@ -148,6 +148,7 @@ namespace ParaEngine
 		/** whether to async loading the texture. this is enabled by default. */
 		bool m_bAsyncLoad;
 
+		bool m_bEmbeddedTexture;
 	public:
 		TextureEntity(const AssetKey& key);
 		TextureEntity();
@@ -213,7 +214,8 @@ namespace ParaEngine
 
 		/** whether the asset is being loaded. */
 		bool IsPending();
-
+		void SetEmbeddedTexture(bool bEmbeddedTexture) { m_bEmbeddedTexture = bEmbeddedTexture; }
+		bool IsEmbeddedTexture() { return m_bEmbeddedTexture; }
 		/** set raw texture data from which to load the texture. data ownership is transfered to this entity. the caller should never delete the data. instead
 		this entity will delete the data. */
 		void SetRawData(char* pData, int nSize);

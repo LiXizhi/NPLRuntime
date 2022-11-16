@@ -47,6 +47,7 @@ namespace ParaEngine
 	BlockRenderTask::BlockRenderTask()
 	{
 		memset(this, 0, sizeof(BlockRenderTask));
+		m_materialId = -1;
 	}
 
 	void BlockRenderTask::Init(BlockTemplate *pTemplate, uint16_t nBlockData, uint32_t vertexOffset, VertexBufferDevicePtr_type pBuffer,Uint16x3& minBlockId_ws)
@@ -58,6 +59,7 @@ namespace ParaEngine
 		m_renderOrder = 0;
 		m_pTemplate = pTemplate;
 		m_minBlockId_ws = minBlockId_ws;
+		m_materialId = -1;
 	}
 
 	void BlockRenderTask::Init(BlockTemplate* pTemplate, uint16_t nBlockData, uint32_t vertexOffset, Uint16x3& minBlockId_ws, int32 nBufferIndex)
@@ -69,6 +71,7 @@ namespace ParaEngine
 		m_renderOrder = 0;
 		m_pTemplate = pTemplate;
 		m_minBlockId_ws = minBlockId_ws;
+		m_materialId = -1;
 	}
 
 	void BlockRenderTask::Reset()
@@ -78,6 +81,7 @@ namespace ParaEngine
 		m_pTemplate = nullptr;
 		m_nBlockData = 0;
 		m_pVertexBuffer = 0;
+		m_materialId = -1;
 	}
 
 	void BlockRenderTask::ReleaseTaskPool()

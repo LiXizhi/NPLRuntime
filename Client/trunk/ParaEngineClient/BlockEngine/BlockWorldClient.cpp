@@ -1,4 +1,4 @@
-//-----------------------------------------------------------------------------
+﻿//-----------------------------------------------------------------------------
 // Class:	Block Manager
 // Authors:	LiXizhi, Clayman
 // Emails:	LiXizhi@yeah.net
@@ -33,6 +33,7 @@
 #include "util/os_calls.h"
 #include "ChunkVertexBuilderManager.h"
 #include "MultiFrameBlockWorldRenderer.h"
+#include "BlockMaterialManager.h"
 #include "BlockWorldClient.h"
 
 #include "ParaScriptingCommon.h"
@@ -877,6 +878,8 @@ namespace ParaEngine
 						vWorldPos.z = vRenderOrigin.z + vWorldMatrix._43;
 						pEffect->setParameter(CEffectFile::k_worldPos, &vWorldPos);
 					}
+					
+					ApplyMaterialParameters(pEffect, pRenderTask->GetMaterialId());
 
 					pEffect->CommitChanges();
 
@@ -921,7 +924,41 @@ namespace ParaEngine
 			}
 		}
 	}
+	void BlockWorldClient::ApplyMaterialParameters(CEffectFile* pEffect, int32_t materialId)
+	{	
+		CBlockMaterial* material = CGlobals::GetBlockMaterialManager()->GetBlockMaterialByID(materialId);
+		CParameterBlock* paramBlock = material ? material->GetParamBlock() : nullptr;
+		if (paramBlock == nullptr) 
+		{
+			pEffect->setBool(CEffectFile::k_material_exist, false);
+			return ;
+		}
+		pEffect->setBool(CEffectFile::k_material_exist, true);
 
+		CParameter* baseColor = paramBlock->GetParameter("BaseColor");
+		if (baseColor) 
+		{
+			pEffect->setBool(CEffectFile::k_material_has_base_color, true);
+			pEffect->setParameter(CEffectFile::k_material_base_color, baseColor->GetRawData(), baseColor->GetRawDataLength());
+		}
+		else
+		{
+			pEffect->setBool(CEffectFile::k_material_has_base_color, false);
+		}
+		CParameter* metallic = paramBlock->GetParameter("Metallic");
+		if (metallic) pEffect->setParameter(CEffectFile::k_material_metallic, metallic->GetRawData(), metallic->GetRawDataLength());
+		CParameter* specular = paramBlock->GetParameter("Specular");
+		if (specular) pEffect->setParameter(CEffectFile::k_material_specular, specular->GetRawData(), specular->GetRawDataLength());
+		CParameter* roughness = paramBlock->GetParameter("Roughness");
+		if (roughness) pEffect->setParameter(CEffectFile::k_material_roughness, roughness->GetRawData(), roughness->GetRawDataLength());
+		CParameter* emissiveColor = paramBlock->GetParameter("EmissiveColor");
+		if (emissiveColor) pEffect->setParameter(CEffectFile::k_material_emissive_color, emissiveColor->GetRawData(), emissiveColor->GetRawDataLength());
+		CParameter* opacity = paramBlock->GetParameter("Opacity");
+		if (opacity) pEffect->setParameter(CEffectFile::k_material_opacity, opacity->GetRawData(), opacity->GetRawDataLength());
+		CParameter* normal = paramBlock->GetParameter("Normal");
+		if (normal) pEffect->setParameter(CEffectFile::k_material_normal, normal->GetRawData(), normal->GetRawDataLength());
+	}
+	
 	void BlockWorldClient::RenderWireFrameBlock(int nSelectionIndex, float fScaling, LinearColor* pLineColor)
 	{
 		auto& selectedBlocks = m_selectedBlockMap[nSelectionIndex];

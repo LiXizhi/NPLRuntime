@@ -25,6 +25,10 @@ float4   g_fogParam : fogparameters; // (fogstart, fogrange, fogDensity, reserve
 float4   g_fogColor : fogColor;
 float4x4 mWorld: world;
 
+bool materialExist: materialExist;
+bool materialHasBaseColor: materialHasBaseColor;
+float4 materialBaseColor: materialBaseColor;
+
 // texture 0
 texture tex0 : TEXTURE; 
 sampler tex0Sampler: register(s0) = sampler_state 
@@ -136,6 +140,10 @@ SimpleVSOut TransparentSimpleMainVS(	float4 pos		: POSITION,
 float4 SimpleMainPS(SimpleVSOut input) :COLOR0
 {
 	float4 albedoColor = tex2D(tex0Sampler,input.texcoord);
+	if (materialExist && materialHasBaseColor) 
+	{
+		albedoColor = materialBaseColor;
+	}
 
 	float4 oColor = float4(lerp(float3(albedoColor.xyz * input.color.xyz), g_fogColor.xyz, input.color.w), albedoColor.a);
 	return oColor;
