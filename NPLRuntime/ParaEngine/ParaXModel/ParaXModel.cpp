@@ -154,7 +154,7 @@ CParaXModel::~CParaXModel(void)
 				if (pTexture) {
 					textures[i].reset();
 
-					if (pTexture->GetRawData() || pTexture->GetImage())
+					if (pTexture->IsEmbeddedTexture() && (pTexture->GetRawData() || pTexture->GetImage()))
 					{
 						pTexture->UnloadAsset();
 						pTexture->SetRawDataForImage(NULL, 0);

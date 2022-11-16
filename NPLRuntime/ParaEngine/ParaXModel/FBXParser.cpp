@@ -571,6 +571,7 @@ void FBXParser::FillParaXModelData(CParaXModel *pMesh, const aiScene *pFbxScene)
 				{
 					TextureEntity *texEntity = CGlobals::GetAssetManager()->GetTextureManager().NewEntity(m_textures[i]);
 					SetRawDataForImage(texEntity, pTex);
+					texEntity->SetEmbeddedTexture(true);
 				}
 				pMesh->textures[i] = texEntity;
 			}
