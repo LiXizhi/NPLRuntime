@@ -75,6 +75,7 @@ namespace ParaEngine
 			float morePitch;
 
 			bool isODS;
+			float moreRotZ;//roll
 			float moreRotY;//yaw
 			float moreRotX;//pitch
 			float fov;
@@ -95,6 +96,7 @@ namespace ParaEngine
 			int ods_group_size;
 			StereoODSparam(){
 				isODS = false;
+				moreRotZ = 0.0f;
 				moreRotY = 0.0f;
 				moreRotX = 0.0f;
 				fov = MATH_PI / 4;
@@ -109,6 +111,7 @@ namespace ParaEngine
 			inline StereoODSparam& operator = (const StereoODSparam& target)
 			{
 				isODS = target.isODS;
+				moreRotZ = target.moreRotZ;
 				moreRotY = target.moreRotY;
 				moreRotX = target.moreRotX;
 				fov = target.fov;

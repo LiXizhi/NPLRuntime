@@ -357,7 +357,6 @@ void ParaEngine::CViewportManager::SetLayout(VIEWPORT_LAYOUT nLayout, CSceneObje
 			param.fov = fov_v;
 			param.eyeShiftDistance = 0;
 			param.moreRotY = -diffRotY * (i + 0);
-			param.moreRotX = 0;
 			param.fov_h = fov_h;
 			param.m_bOmniAlwaysUseUpFrontCamera = m_bOmniAlwaysUseUpFrontCamera;
 			param.m_nOmniForceLookatDistance = m_nOmniForceLookatDistance;
@@ -401,7 +400,7 @@ void ParaEngine::CViewportManager::SetLayout(VIEWPORT_LAYOUT nLayout, CSceneObje
 				param.aspectRatio = _aspect;
 				param.fov = _fov_v;
 				param.eyeShiftDistance = 0;
-				param.moreRotY = -_diffRotY * i;
+				param.moreRotZ = -_diffRotY * i + MATH_2PI;//·­¹ö½Ç
 				param.moreRotX = _moreRotX;
 				param.fov_h = _fov_h;
 				param.m_bOmniAlwaysUseUpFrontCamera = m_bOmniAlwaysUseUpFrontCamera;
@@ -438,7 +437,7 @@ void ParaEngine::CViewportManager::SetLayout(VIEWPORT_LAYOUT nLayout, CSceneObje
 				param.aspectRatio = _aspect;
 				param.fov = _fov_v;
 				param.eyeShiftDistance = 0;
-				param.moreRotY = -_diffRotY * i;
+				param.moreRotZ = -_diffRotY * i + MATH_2PI;//·­¹ö½Ç
 				param.moreRotX = _moreRotX;
 				param.fov_h = _fov_h;
 				param.m_bOmniAlwaysUseUpFrontCamera = m_bOmniAlwaysUseUpFrontCamera;
