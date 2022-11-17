@@ -36,6 +36,7 @@ namespace ParaEngine
 		"vector4",
 		"matrix43",
 		"rawbytes",
+		"string",
 		"texture",
 	};
 }
@@ -220,6 +221,11 @@ bool ParaEngine::CParameter::SetValueByString( const char* sValue, int nType /*=
 			*this = *((Matrix4*)(&mat));
 			break;
 		}
+	case PARAM_STRING:
+		{
+			*this = sValue;
+			break;		
+		}
 	case PARAM_TEXTURE_ENTITY:
 		{
 			TextureEntity* pEntity = CGlobals::GetAssetManager()->LoadTexture("", sValue, TextureEntity::StaticTexture);
@@ -290,6 +296,11 @@ std::string ParaEngine::CParameter::GetValueByString()
 			Matrix4 mat = (Matrix4)(*this);
 			snprintf(tmp, TMP_BUFFER_SIZE, "%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f", mat._11, mat._12, mat._13, mat._21, mat._22, mat._23,mat._31, mat._32, mat._33,mat._41, mat._42, mat._43);
 			sValue = tmp;
+			break;
+		}
+	case PARAM_STRING:
+		{
+			sValue = (char*)(*this);
 			break;
 		}
 	case PARAM_TEXTURE_ENTITY:
