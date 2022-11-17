@@ -246,6 +246,8 @@ namespace ParaScripting
 		* @param nFPS frames per seconds. default value is 15 FPS
 		*/
 		void SetTextureFPS(float FPS);
+
+		void SaveTextureToPNG(const char* sFileName, int width, int height);
 		/**
 		* For animated textures. whether to enable texture animation. this provides a short cut to animated textures
 		* @param bEnable default value is true. Set this to false, if one wants to manually animate the texture, such as controlling from the scripting interface.

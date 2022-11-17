@@ -75,8 +75,9 @@ namespace ParaEngine
 			float morePitch;
 
 			bool isODS;
+			float moreRotZ;//roll
 			float moreRotY;//yaw
-			float moreRotZ;//pitch
+			float moreRotX;//pitch
 			float fov;
 			float fov_h;
 			float aspectRatio;
@@ -90,22 +91,29 @@ namespace ParaEngine
 			int m_nOmniForceLookatDistance;
 			float oldCameraRotX;
 			float oldCameraDistance;
+
+			int ods_group_idx;
+			int ods_group_size;
 			StereoODSparam(){
 				isODS = false;
-				moreRotY = 0.0f;
 				moreRotZ = 0.0f;
+				moreRotY = 0.0f;
+				moreRotX = 0.0f;
 				fov = MATH_PI / 4;
 				aspectRatio = 1.0f;
 				eyeShiftDistance = 0.0f;
 				needRecoverCamera = false;
 				m_bOmniAlwaysUseUpFrontCamera = true;
 				m_nOmniForceLookatDistance = 20;
+				ods_group_idx = -1;
+				ods_group_size = 0;
 			}
 			inline StereoODSparam& operator = (const StereoODSparam& target)
 			{
 				isODS = target.isODS;
-				moreRotY = target.moreRotY;
 				moreRotZ = target.moreRotZ;
+				moreRotY = target.moreRotY;
+				moreRotX = target.moreRotX;
 				fov = target.fov;
 				fov_h = target.fov_h;
 				aspectRatio = target.aspectRatio;
@@ -116,7 +124,8 @@ namespace ParaEngine
 				oldFov = target.oldFov;
 				m_bOmniAlwaysUseUpFrontCamera = target.m_bOmniAlwaysUseUpFrontCamera;
 				m_nOmniForceLookatDistance = target.m_nOmniForceLookatDistance;
-
+				ods_group_idx = target.ods_group_idx;
+				ods_group_size = target.ods_group_size;
 				return *this;
 			}
 		};
@@ -156,6 +165,9 @@ namespace ParaEngine
 		/** render target to use. if "", default to current back buffer*/
 		const std::string&  GetRenderTargetName() const;
 		void SetRenderTargetName(const std::string& val);
+
+		shared_ptr<CRenderTarget> GetRenderTarget();
+		void SetRenderTarget(shared_ptr<CRenderTarget> target);
 
 		/** -1 or RENDER_PIPELINE_ORDER. if -1, it will be rendered for all pipeline stage */
 		int GetPipelineOrder() const;
@@ -235,7 +247,7 @@ namespace ParaEngine
 		int m_nZOrder;
 		std::string m_sName;
 		std::string m_sRenderTargetName;
-		CRenderTarget* m_pRenderTarget;
+		std::shared_ptr<CRenderTarget> m_pRenderTarget;
 
 		STEREO_EYE m_nEyeMode;
 

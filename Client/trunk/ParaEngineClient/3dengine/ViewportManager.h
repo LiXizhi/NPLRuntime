@@ -12,6 +12,8 @@ namespace ParaEngine
 		VIEW_LAYOUT_STEREO_RED_BLUE,
 		VIEW_LAYOUT_STEREO_OMNI = 4,//ODS,360°„VR
 		VIEW_LAYOUT_STEREO_OMNI_SINGLE_EYE=5,//ODS,360°„VR
+		VIEW_LAYOUT_STEREO_OMNI_SINGLE_EYE_1 = 6,
+
 		VIEW_LAYOUT_INVALID,
 	};
 
@@ -79,6 +81,8 @@ namespace ParaEngine
 		bool IsOmniAlwaysUseUpFrontCamera() { return m_bOmniAlwaysUseUpFrontCamera; }
 		void SetOmniForceLookatDistance(int val) { m_nOmniForceLookatDistance = val; }
 		int GetOmniForceLookatDistance() { return m_nOmniForceLookatDistance; }
+
+		int CheckInViewPortGroup(CViewport* pViewport);
 	public:
 		/** add view port 
 		* @param nIndex: usually 0 is the GUI root's viewport, 1 is the main 3d scene's viewport.
