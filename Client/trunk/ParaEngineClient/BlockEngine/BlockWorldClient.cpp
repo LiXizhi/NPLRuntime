@@ -59,6 +59,7 @@ namespace ParaEngine
 	int32_t BlockWorldClient::g_twoTexPass = 1;
 	int32_t BlockWorldClient::g_TexNormalMapPass = 2;
 	int32_t BlockWorldClient::g_twoTexNormalMapPass = 3; // not used. 
+	int32_t BlockWorldClient::g_materialPass = 4; 
 #ifdef PARAENGINE_MOBILE
 	int32_t BlockWorldClient::g_transparentBlockPass = 2;
 	int32_t BlockWorldClient::g_waterBlockPass = 2;
@@ -750,7 +751,9 @@ namespace ParaEngine
 					if (curTamplerId != pRenderTask->GetTemplateId())
 					{
 						BlockTemplate* pTemplate = pRenderTask->GetTemplate();
-						if (pTemplate->IsMatchAttribute(BlockTemplate::batt_twoTexture))
+						if (pRenderTask->GetMaterialId() > 0)
+							passId = g_materialPass;
+						else if (pTemplate->IsMatchAttribute(BlockTemplate::batt_twoTexture))
 							passId = g_twoTexPass;
 						else if (nRenderPass == BlockRenderPass_AlphaTest)
 						{
