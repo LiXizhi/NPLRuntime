@@ -381,7 +381,7 @@ void ParaEngine::CViewportManager::SetLayout(VIEWPORT_LAYOUT nLayout, CSceneObje
 
 		{
 			int topNum = num / 2;
-			float _moreRotZ = MATH_PI / 2;
+			float _moreRotZ = MATH_PI / 2; //Õ˘…œ90°„
 			float _fov_v = atan(aspect) * 2;
 			float _aspect = tan(MATH_PI / num);
 			float _fov_h = atan(_aspect * tan(_fov_v / 2)) * 2;
@@ -418,7 +418,7 @@ void ParaEngine::CViewportManager::SetLayout(VIEWPORT_LAYOUT nLayout, CSceneObje
 
 		{
 			int bottomNum = num / 2;
-			float _moreRotZ = MATH_PI / 2;
+			float _moreRotZ = MATH_PI / 2*3; //Õ˘…œ270°„
 			float _fov_v = atan(aspect) * 2;
 			float _aspect = tan(MATH_PI / num);
 			float _fov_h = atan(_aspect * tan(_fov_v / 2)) * 2;
@@ -439,7 +439,7 @@ void ParaEngine::CViewportManager::SetLayout(VIEWPORT_LAYOUT nLayout, CSceneObje
 				param.fov = _fov_v;
 				param.eyeShiftDistance = 0;
 				param.moreRotY = -_diffRotY * i;
-				param.moreRotZ = -_moreRotZ;
+				param.moreRotZ = _moreRotZ;
 				param.fov_h = _fov_h;
 				param.m_bOmniAlwaysUseUpFrontCamera = m_bOmniAlwaysUseUpFrontCamera;
 				param.m_nOmniForceLookatDistance = m_nOmniForceLookatDistance;
