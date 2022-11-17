@@ -73,9 +73,10 @@ void ParaEngine::CViewport::ApplyCamera(CAutoCamera* pCamera)
 			Vector3& right = pCamera->GetWorldRight();
 			right.normalise();
 
+			if (abs(m_stereoODSparam.moreRotX) > 0.00001f)//pitch 
 			{
 				Matrix3 mRotPitch;
-				Quaternion q_pitch(Radian(m_stereoODSparam.moreRotZ), right);
+				Quaternion q_pitch(Radian(m_stereoODSparam.moreRotX), right);
 				q_pitch.ToRotationMatrix(mRotPitch);
 
 				Vector3 sightDir = oldLookAtPos - dEyePos;
@@ -84,13 +85,14 @@ void ParaEngine::CViewport::ApplyCamera(CAutoCamera* pCamera)
 				Vector3 newSightDir = Vector3(mRotPitch * sightDir);
 				DVector3 newLookAt = DVector3(newSightDir * fCameraObjectDist) + dEyePos;
 				
-				pCamera->SetViewParams(dEyePos, newLookAt, &up);
+				//pCamera->SetViewParams(dEyePos, newLookAt, &up);
 				oldLookAtPos = newLookAt;
 			}
 
 			/*auto m_mCameraWorld = pCamera->GetViewMatrix()->inverse();
 			up = Vector3(m_mCameraWorld._21, m_mCameraWorld._22, m_mCameraWorld._23);*/
 			
+			if(abs(m_stereoODSparam.moreRotY)>0.00001f) //yaw
 			{
 				Matrix3 mRotYaw;
 				Quaternion q_yaw(Radian(m_stereoODSparam.moreRotY), up);
@@ -101,10 +103,11 @@ void ParaEngine::CViewport::ApplyCamera(CAutoCamera* pCamera)
 				Vector3 newSightDir = Vector3(mRotYaw * sightDir);
 				DVector3 newLookAt = DVector3(newSightDir * fCameraObjectDist) + dEyePos;
 
-				pCamera->SetViewParams(dEyePos, newLookAt, &up);
+				//pCamera->SetViewParams(dEyePos, newLookAt, &up);
 				oldLookAtPos = newLookAt;
 			}
 
+			pCamera->SetViewParams(dEyePos, oldLookAtPos, &up);
 			pCamera->SetFieldOfView(m_stereoODSparam.fov, m_stereoODSparam.fov_h);
 			
 		}

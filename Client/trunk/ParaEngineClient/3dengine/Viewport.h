@@ -76,7 +76,7 @@ namespace ParaEngine
 
 			bool isODS;
 			float moreRotY;//yaw
-			float moreRotZ;//pitch
+			float moreRotX;//pitch
 			float fov;
 			float fov_h;
 			float aspectRatio;
@@ -96,7 +96,7 @@ namespace ParaEngine
 			StereoODSparam(){
 				isODS = false;
 				moreRotY = 0.0f;
-				moreRotZ = 0.0f;
+				moreRotX = 0.0f;
 				fov = MATH_PI / 4;
 				aspectRatio = 1.0f;
 				eyeShiftDistance = 0.0f;
@@ -110,7 +110,7 @@ namespace ParaEngine
 			{
 				isODS = target.isODS;
 				moreRotY = target.moreRotY;
-				moreRotZ = target.moreRotZ;
+				moreRotX = target.moreRotX;
 				fov = target.fov;
 				fov_h = target.fov_h;
 				aspectRatio = target.aspectRatio;
