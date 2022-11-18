@@ -216,6 +216,8 @@ void CBlockWorld::LoadBlockMaterialData()
 							if (opacity) pParamBlock->CreateGetParameter("Opacity")->SetValueByString(opacity, CParameter::PARAMETER_TYPE::PARAM_FLOAT);
 							const char* normal = pElement->Attribute("Normal");
 							if (normal) pParamBlock->CreateGetParameter("Normal")->SetValueByString(normal, CParameter::PARAMETER_TYPE::PARAM_TEXTURE_ENTITY);
+							const char* diffuse = pElement->Attribute("Diffuse");
+							if (diffuse) pParamBlock->CreateGetParameter("Diffuse")->SetValueByString(diffuse, CParameter::PARAMETER_TYPE::PARAM_TEXTURE_ENTITY);
 						}
 					}
 				}
@@ -274,6 +276,8 @@ void CBlockWorld::SaveBlockMaterialData()
 		if (opacity) pNewItem->SetAttribute("Opacity", opacity->GetValueByString());
 		auto normal = pParamBlock->GetParameter("Normal");   // texture
 		if (normal) pNewItem->SetAttribute("Normal", normal->GetValueByString());
+		auto diffuse = pParamBlock->GetParameter("Diffuse");   // texture
+		if (diffuse) pNewItem->SetAttribute("Diffuse", diffuse->GetValueByString());
 		root->LinkEndChild(pNewItem);
 	}
 	std::string fileName = m_worldInfo.GetBlockMaterialFileName(true);

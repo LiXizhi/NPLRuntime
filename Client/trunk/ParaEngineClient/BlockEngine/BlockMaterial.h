@@ -28,6 +28,7 @@ namespace ParaEngine
 			MaterialChannel_Opacity,
 			// MaterialChannel_OpacityMask,
 			MaterialChannel_Normal,
+			MaterialChannel_Diffuse,
 		};
 
 	public:
@@ -53,6 +54,8 @@ namespace ParaEngine
 		ATTRIBUTE_METHOD1(CBlockMaterial, GetOpacity_s, float*)		{ *p1 = (float)(*(cls->GetParamBlock()->CreateGetParameter("Opacity"))); return S_OK; }
 		ATTRIBUTE_METHOD1(CBlockMaterial, SetNormal_s, const char*)		{ cls->GetParamBlock()->CreateGetParameter("Normal")->SetValueByString(p1, CParameter::PARAMETER_TYPE::PARAM_TEXTURE_ENTITY); return S_OK; }
 		ATTRIBUTE_METHOD1(CBlockMaterial, GetNormal_s, const char**)		{ *p1 = cls->GetParamBlock()->CreateGetParameter("Normal")->GetValueByString().c_str(); return S_OK; }
+		ATTRIBUTE_METHOD1(CBlockMaterial, SetDiffuse_s, const char*)		{ cls->GetParamBlock()->CreateGetParameter("Diffuse")->SetValueByString(p1, CParameter::PARAMETER_TYPE::PARAM_TEXTURE_ENTITY); return S_OK; }
+		ATTRIBUTE_METHOD1(CBlockMaterial, GetDiffuse_s, const char**)		{ *p1 = cls->GetParamBlock()->CreateGetParameter("Diffuse")->GetValueByString().c_str(); return S_OK; }
 
 		virtual AssetType GetType() { return blockmaterial; };
 		virtual HRESULT InitDeviceObjects() { return S_OK; };

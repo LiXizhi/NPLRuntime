@@ -729,12 +729,8 @@ void CEffectFileDirectX::parseParameters()
         }
 		if(ParamDesc.Semantic != NULL && (nIndex = BeginWith(ParamDesc.Semantic, "material"))>0)
 		{
-			if(strcmpi( ParamDesc.Semantic, "materialExist" ) == 0)
-				m_paramHandle[k_material_exist] = hParam;
-			else if(strcmpi( ParamDesc.Semantic, "materialBaseColor" ) == 0)
+			if(strcmpi( ParamDesc.Semantic, "materialBaseColor" ) == 0)
 				m_paramHandle[k_material_base_color] = hParam;
-			else if(strcmpi( ParamDesc.Semantic, "materialHasBaseColor" ) == 0)
-				m_paramHandle[k_material_has_base_color] = hParam;
 			else if(strcmpi( ParamDesc.Semantic, "materialMetallic" ) == 0)
 				m_paramHandle[k_material_metallic] = hParam;	
 			else if(strcmpi( ParamDesc.Semantic, "materialSpecular" ) == 0)
@@ -745,8 +741,10 @@ void CEffectFileDirectX::parseParameters()
 				m_paramHandle[k_material_emissive_color] = hParam;	
 			else if(strcmpi( ParamDesc.Semantic, "materialOpacity" ) == 0)
 				m_paramHandle[k_material_opacity] = hParam;	
-			else if(strcmpi( ParamDesc.Semantic, "materialNormal" ) == 0)
-				m_paramHandle[k_material_normal] = hParam;	
+			else if(strcmpi( ParamDesc.Semantic, "materialNormalTexture" ) == 0)
+				m_paramHandle[k_material_normal_texture] = hParam;	
+			else if(strcmpi( ParamDesc.Semantic, "materialDiffuseTexture" ) == 0)
+				m_paramHandle[k_material_diffuse_texture] = hParam;	
 		}
 
         if( ParamDesc.Semantic != NULL && 
