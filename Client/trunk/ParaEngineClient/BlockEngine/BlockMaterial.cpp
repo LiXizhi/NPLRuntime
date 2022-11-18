@@ -1,4 +1,4 @@
-//-----------------------------------------------------------------------------
+﻿//-----------------------------------------------------------------------------
 // Class:	Block Material
 // Authors:	LiXizhi
 // Emails:	LiXizhi@yeah.net
@@ -14,7 +14,7 @@ using namespace ParaEngine;
 CBlockMaterial::CBlockMaterial() 
 {
 	// 设置材质名默认值
-	// 世界保存, 渲染着色器参数传递, 脚本获取设置
+	// 世界保存(blockworld), 渲染着色器参数传递(blockworldclient render shader), 脚本获取设置(installField)
 	m_SharedParamBlock.CreateGetParameter("Name")->SetValueByString("", CParameter::PARAMETER_TYPE::PARAM_STRING);
 	m_SharedParamBlock.CreateGetParameter("BaseColor")->SetValueByString("1.0, 1.0, 1.0, 1.0", CParameter::PARAMETER_TYPE::PARAM_VECTOR4);
 	m_SharedParamBlock.CreateGetParameter("Metallic")->SetValueByString("1.0", CParameter::PARAMETER_TYPE::PARAM_FLOAT);
@@ -22,7 +22,8 @@ CBlockMaterial::CBlockMaterial()
 	m_SharedParamBlock.CreateGetParameter("Roughness")->SetValueByString("0.0", CParameter::PARAMETER_TYPE::PARAM_FLOAT);
 	m_SharedParamBlock.CreateGetParameter("EmissiveColor")->SetValueByString("1.0, 1.0, 1.0, 1.0", CParameter::PARAMETER_TYPE::PARAM_VECTOR4);
 	m_SharedParamBlock.CreateGetParameter("Opacity")->SetValueByString("1.0", CParameter::PARAMETER_TYPE::PARAM_FLOAT);
-	m_SharedParamBlock.CreateGetParameter("Normal")->SetValueByString("", CParameter::PARAMETER_TYPE::PARAM_TEXTURE_ENTITY);
+	m_SharedParamBlock.CreateGetParameter("Normal")->SetValueByString("", CParameter::PARAMETER_TYPE::PARAM_TEXTURE_ENTITY);    // 法线贴图
+	m_SharedParamBlock.CreateGetParameter("Diffuse")->SetValueByString("", CParameter::PARAMETER_TYPE::PARAM_TEXTURE_ENTITY);   // 漫反射贴图
 }
 
 CBlockMaterial::CBlockMaterial(const AssetKey& key) :AssetEntity(key) 
@@ -49,5 +50,6 @@ int CBlockMaterial::InstallFields(CAttributeClass* pClass, bool bOverride)
 	pClass->AddField("EmissiveColor", FieldType_Vector4, (void*)SetEmissiveColor_s, (void*)GetEmissiveColor_s, NULL, NULL, bOverride);
 	pClass->AddField("Opacity", FieldType_Float, (void*)SetOpacity_s, (void*)GetOpacity_s, NULL, NULL, bOverride);
 	pClass->AddField("Normal", FieldType_String, (void*)SetNormal_s, (void*)GetNormal_s, NULL, NULL, bOverride);
+	pClass->AddField("Diffuse", FieldType_String, (void*)SetDiffuse_s, (void*)GetDiffuse_s, NULL, NULL, bOverride);
 	return S_OK;
 }
