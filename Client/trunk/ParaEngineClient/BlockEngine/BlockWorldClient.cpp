@@ -947,9 +947,9 @@ namespace ParaEngine
 		CParameter* opacity = paramBlock->GetParameter("Opacity");
 		if (opacity) pEffect->setParameter(CEffectFile::k_material_opacity, opacity->GetRawData(), opacity->GetRawDataLength());
 		CParameter* normal = paramBlock->GetParameter("Normal");
-		if (normal) pEffect->setTexture(CEffectFile::k_material_normal_texture, (TextureEntity*)normal);
-		CParameter* diffuse = paramBlock->GetParameter("Diffuse");
-		if (diffuse) pEffect->setTexture(CEffectFile::k_material_diffuse_texture, (TextureEntity*)diffuse);
+		// if (normal) pEffect->setTexture(CEffectFile::k_material_normal_texture, (TextureEntity*)normal);
+		// CParameter* diffuse = paramBlock->GetParameter("Diffuse");
+		// if (diffuse) pEffect->setTexture(CEffectFile::k_material_diffuse_texture, (TextureEntity*)diffuse);
 	}
 	
 	void BlockWorldClient::RenderWireFrameBlock(int nSelectionIndex, float fScaling, LinearColor* pLineColor)

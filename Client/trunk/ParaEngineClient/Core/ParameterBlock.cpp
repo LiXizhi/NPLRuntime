@@ -310,7 +310,6 @@ std::string ParaEngine::CParameter::GetValueByString()
 			{
 				sValue = pEntity->GetKey();
 			}
-			sValue = tmp;
 			break;
 		}
 

@@ -93,7 +93,7 @@ namespace ParaEngine
 		CParameter& operator =(const int& r) { m_type=PARAM_INT; m_data.resize(sizeof(int)); memcpy(GetRawData(), &r, (int)m_data.size()); return *this;};
 		CParameter& operator =(const bool& r) { m_type=PARAM_BOOLEAN;m_data.resize(sizeof(BOOL)); BOOL p = r; memcpy(GetRawData(), &p, (int)m_data.size()); return *this;};
 		CParameter& operator =(const float& r) { m_type=PARAM_FLOAT;m_data.resize(sizeof(float)); memcpy(GetRawData(), &r, (int)m_data.size()); return *this;};
-		CParameter& operator =(const char* r) { m_type=PARAM_STRING; unsigned int size = strlen(r) + 1; m_data.resize(size); memcpy(GetRawData(), r, size); return *this;};
+		CParameter& operator =(const char* r) { m_type=PARAM_STRING; unsigned int size = strlen(r); m_data.resize(size + 1); memcpy(GetRawData(), r, size); m_data[size] = 0; return *this;};
 		CParameter& operator =(const Vector2& r) { m_type=PARAM_VECTOR2;m_data.resize(sizeof(Vector2)); memcpy(GetRawData(), &r, (int)m_data.size()); return *this;};
 		CParameter& operator =(const Vector3& r) { m_type=PARAM_VECTOR3;m_data.resize(sizeof(Vector3)); memcpy(GetRawData(), &r, (int)m_data.size()); return *this;};
 		CParameter& operator =(const Vector4& r) { m_type=PARAM_VECTOR4;m_data.resize(sizeof(Vector4)); memcpy(GetRawData(), &r, (int)m_data.size()); return *this;};
