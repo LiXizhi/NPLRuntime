@@ -173,6 +173,14 @@ void ParaAssetObject::SetTextureFPS(float FPS)
 	}
 }
 
+void ParaAssetObject::SaveTextureToPNG(const char * sFileName,int width,int height)
+{
+	if (IsValid() && m_pAsset->GetType() == AssetEntity::texture)
+	{
+		((TextureEntity*)m_pAsset)->SaveToFile(sFileName, D3DFMT_A8R8G8B8,width,height);
+	}
+}
+
 void ParaAssetObject::EnableTextureAutoAnimation(bool bEnable)
 {
 	if(IsValid() && m_pAsset->GetType()==AssetEntity::texture)
