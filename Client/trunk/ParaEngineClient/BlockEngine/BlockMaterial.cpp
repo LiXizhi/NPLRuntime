@@ -13,9 +13,22 @@ using namespace ParaEngine;
 
 CBlockMaterial::CBlockMaterial() 
 {
+	InitParamBlock();
+}
+
+CBlockMaterial::CBlockMaterial(const AssetKey& key) :AssetEntity(key) 
+{
+	InitParamBlock();
+}
+
+CBlockMaterial::~CBlockMaterial() {
+}
+
+void CBlockMaterial::InitParamBlock()
+{
 	// 设置材质名默认值
 	// 世界保存(blockworld), 渲染着色器参数传递(blockworldclient render shader), 脚本获取设置(installField)
-	m_SharedParamBlock.CreateGetParameter("Name")->SetValueByString("", CParameter::PARAMETER_TYPE::PARAM_STRING);
+	m_SharedParamBlock.CreateGetParameter("MaterialName")->SetValueByString("", CParameter::PARAMETER_TYPE::PARAM_STRING);
 	m_SharedParamBlock.CreateGetParameter("BaseColor")->SetValueByString("1.0, 1.0, 1.0, 1.0", CParameter::PARAMETER_TYPE::PARAM_VECTOR4);
 	m_SharedParamBlock.CreateGetParameter("Metallic")->SetValueByString("1.0", CParameter::PARAMETER_TYPE::PARAM_FLOAT);
 	m_SharedParamBlock.CreateGetParameter("Specular")->SetValueByString("0.0", CParameter::PARAMETER_TYPE::PARAM_FLOAT);
@@ -24,13 +37,6 @@ CBlockMaterial::CBlockMaterial()
 	m_SharedParamBlock.CreateGetParameter("Opacity")->SetValueByString("1.0", CParameter::PARAMETER_TYPE::PARAM_FLOAT);
 	m_SharedParamBlock.CreateGetParameter("Normal")->SetValueByString("", CParameter::PARAMETER_TYPE::PARAM_TEXTURE_ENTITY);    // 法线贴图
 	m_SharedParamBlock.CreateGetParameter("Diffuse")->SetValueByString("", CParameter::PARAMETER_TYPE::PARAM_TEXTURE_ENTITY);   // 漫反射贴图
-}
-
-CBlockMaterial::CBlockMaterial(const AssetKey& key) :AssetEntity(key) 
-{
-}
-
-CBlockMaterial::~CBlockMaterial() {
 }
 
 CParameterBlock* CBlockMaterial::GetParamBlock(bool bCreateIfNotExist /*= false*/)

@@ -202,6 +202,8 @@ void CBlockWorld::LoadBlockMaterialData()
 							CBlockMaterial* pMaterial = mgr->GetBlockMaterialByID(materialID);
 							if (!pMaterial) continue;
 							CParameterBlock* pParamBlock = pMaterial->GetParamBlock();
+							const char* materialName = pElement->Attribute("MaterialName");
+							if (materialName) pParamBlock->CreateGetParameter("MaterialName")->SetValueByString(materialName, CParameter::PARAMETER_TYPE::PARAM_STRING);
 							const char* baseColor = pElement->Attribute("BaseColor");
 							if (baseColor) pParamBlock->CreateGetParameter("BaseColor")->SetValueByString(baseColor, CParameter::PARAMETER_TYPE::PARAM_VECTOR4);
 							const char* metallic = pElement->Attribute("Metallic");
@@ -262,6 +264,8 @@ void CBlockWorld::SaveBlockMaterialData()
 		CParameterBlock* pParamBlock = pMaterial->GetParamBlock();
 		XMLElementType* pNewItem = NewXMLElementType("Material");
 		pNewItem->SetAttribute("Id", pMaterial->GetKey());
+		auto materialName = pParamBlock->GetParameter("MaterialName"); // vector4
+		if (materialName) pNewItem->SetAttribute("MaterialName", materialName->GetValueByString());
 		auto baseColor = pParamBlock->GetParameter("BaseColor"); // vector4
 		if (baseColor) pNewItem->SetAttribute("BaseColor", baseColor->GetValueByString());
 		auto metallic = pParamBlock->GetParameter("Metallic");   // float
