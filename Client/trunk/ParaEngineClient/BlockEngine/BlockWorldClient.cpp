@@ -60,6 +60,7 @@ namespace ParaEngine
 	int32_t BlockWorldClient::g_TexNormalMapPass = 2;
 	int32_t BlockWorldClient::g_twoTexNormalMapPass = 3; // not used. 
 	int32_t BlockWorldClient::g_materialPass = 4; 
+	int32_t BlockWorldClient::g_materialFancyPass = 6;
 #ifdef PARAENGINE_MOBILE
 	int32_t BlockWorldClient::g_transparentBlockPass = 2;
 	int32_t BlockWorldClient::g_waterBlockPass = 2;
@@ -755,8 +756,16 @@ namespace ParaEngine
 						curTemplateId = pRenderTask->GetTemplateId();
 						curMaterialId = pRenderTask->GetMaterialId();
 						BlockTemplate* pTemplate = pRenderTask->GetTemplate();
-						if (curMaterialId > 0)
-							passId = g_materialPass;
+						if (curMaterialId > 0) {
+							if (dwRenderMethod == BLOCK_RENDER_FANCY_SHADER)
+							{
+								passId = g_materialFancyPass;
+							}
+							else
+							{
+								passId = g_materialPass;
+							}
+						}
 						else if (pTemplate->IsMatchAttribute(BlockTemplate::batt_twoTexture))
 							passId = g_twoTexPass;
 						else if (nRenderPass == BlockRenderPass_AlphaTest)
