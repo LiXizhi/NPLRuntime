@@ -217,9 +217,9 @@ void CBlockWorld::LoadBlockMaterialData()
 							const char* opacity = pElement->Attribute("Opacity");
 							if (opacity) pParamBlock->CreateGetParameter("Opacity")->SetValueByString(opacity, CParameter::PARAMETER_TYPE::PARAM_FLOAT);
 							const char* normal = pElement->Attribute("Normal");
-							if (normal) pParamBlock->CreateGetParameter("Normal")->SetValueByString(normal, CParameter::PARAMETER_TYPE::PARAM_TEXTURE_ENTITY);
+							if (normal) pParamBlock->CreateGetParameter("Normal")->SetValueByString(normal, CParameter::PARAMETER_TYPE::PARAM_STRING);
 							const char* diffuse = pElement->Attribute("Diffuse");
-							if (diffuse) pParamBlock->CreateGetParameter("Diffuse")->SetValueByString(diffuse, CParameter::PARAMETER_TYPE::PARAM_TEXTURE_ENTITY);
+							if (diffuse) pParamBlock->CreateGetParameter("Diffuse")->SetValueByString(diffuse, CParameter::PARAMETER_TYPE::PARAM_STRING);
 						}
 					}
 				}

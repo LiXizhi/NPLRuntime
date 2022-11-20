@@ -300,7 +300,7 @@ std::string ParaEngine::CParameter::GetValueByString()
 		}
 	case PARAM_STRING:
 		{
-			sValue = (char*)(*this);
+			sValue = m_sStringValue;
 			break;
 		}
 	case PARAM_TEXTURE_ENTITY:
@@ -319,6 +319,13 @@ std::string ParaEngine::CParameter::GetValueByString()
 	return sValue;
 }
 
+const string & ParaEngine::CParameter::GetValueAsConstString()
+{
+	if (m_type == PARAM_STRING)
+		return m_sStringValue;
+	m_sStringValue = GetValueByString();
+	return m_sStringValue;
+}
 
 void CParameterBlock::SetParamByStringValue(const char* sParamName, const char* sValue_)
 {

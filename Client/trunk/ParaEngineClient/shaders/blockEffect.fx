@@ -188,7 +188,7 @@ SimpleVSOut MaterialMainVS(	float4 pos		: POSITION,
 float4 MaterialMainPS(SimpleVSOut input) :COLOR0
 {
 	float4 albedoColor = tex2D(tex0Sampler,input.texcoord);
-	albedoColor = materialBaseColor;
+	albedoColor = albedoColor * materialBaseColor;
 
 	float4 oColor = float4(lerp(float3(albedoColor.xyz * input.color.xyz), g_fogColor.xyz, input.color.w), albedoColor.a);
 	return oColor;

@@ -340,7 +340,7 @@ namespace ParaEngine
 				std::vector<BlockRenderTask*>* pCurRenderQueue = GetRenderQueueByPass((BlockRenderPass)nRenderPass);
 
 				IDirect3DVertexBuffer9* pCurVB = NULL;
-				uint16_t curTamplerId = 0;
+				uint16_t curTemplateId = 0;
 				int32_t curPass = -1;
 				D3DCULL culling = D3DCULL_CCW;
 				IDirect3DTexture9* pCurTex0 = NULL;
@@ -358,8 +358,9 @@ namespace ParaEngine
 							pCurVB = pVB;
 						}
 						int32_t passId = 0;
-						if (curTamplerId != pRenderTask->GetTemplateId())
+						if (curTemplateId != pRenderTask->GetTemplateId())
 						{
+							curTemplateId = pRenderTask->GetTemplateId();
 							BlockTemplate* pTemplate = pRenderTask->GetTemplate();
 
 							if (pTemplate->IsShadowCaster())
@@ -549,7 +550,7 @@ namespace ParaEngine
 				pDevice->SetIndices(pIndexBuffer);
 
 				IDirect3DVertexBuffer9* pCurVB = NULL;
-				uint16_t curTamplerId = 0;
+				uint16_t curTemplateId = 0;
 				int32_t curPass = -1;
 				D3DCULL culling = D3DCULL_CCW;
 				IDirect3DTexture9* pCurTex0 = NULL;
@@ -568,7 +569,7 @@ namespace ParaEngine
 						pCurVB = pVB;
 					}
 					int32_t passId;
-					if (curTamplerId != pRenderTask->GetTemplateId())
+					if (curTemplateId != pRenderTask->GetTemplateId())
 					{
 						BlockTemplate* pTemplate = pRenderTask->GetTemplate();
 						if (pTemplate->IsMatchAttribute(BlockTemplate::batt_twoTexture))
@@ -717,7 +718,8 @@ namespace ParaEngine
 				pDevice->SetIndices(pIndexBuffer);
 
 				VertexBufferDevicePtr_type pCurVB = 0;
-				uint16_t curTamplerId = 0;
+				uint16_t curTemplateId = 0;
+				int32 curMaterialId = -1;
 				int32_t curPass = -1;
 				D3DCULL culling = D3DCULL_CCW;
 
@@ -748,10 +750,12 @@ namespace ParaEngine
 						pCurVB = pVB;
 					}
 					int32_t passId;
-					if (curTamplerId != pRenderTask->GetTemplateId())
+					if (curTemplateId != pRenderTask->GetTemplateId() || curMaterialId != pRenderTask->GetMaterialId())
 					{
+						curTemplateId = pRenderTask->GetTemplateId();
+						curMaterialId = pRenderTask->GetMaterialId();
 						BlockTemplate* pTemplate = pRenderTask->GetTemplate();
-						if (pRenderTask->GetMaterialId() > 0)
+						if (curMaterialId > 0)
 							passId = g_materialPass;
 						else if (pTemplate->IsMatchAttribute(BlockTemplate::batt_twoTexture))
 							passId = g_twoTexPass;
@@ -795,27 +799,83 @@ namespace ParaEngine
 								continue;
 							}
 						}
-
-						TextureEntity* pTexEntity = pTemplate->GetTexture0(pRenderTask->GetUserData());
-						if (pTexEntity && pTexEntity->GetTexture() != pCurTex0)
+						if (curMaterialId > 0)
 						{
-							pCurTex0 = pTexEntity->GetTexture();
-							pDevice->SetTexture(0, pCurTex0);
+							CBlockMaterial* material = CGlobals::GetBlockMaterialManager()->GetBlockMaterialByID(curMaterialId);
+							CParameterBlock* paramBlock = material ? material->GetParamBlock() : nullptr;
+							if (paramBlock)
+							{
+								CParameter* baseColor = paramBlock->GetParameter("BaseColor");
+								if (baseColor) pEffect->setParameter(CEffectFile::k_material_base_color, baseColor->GetRawData(), baseColor->GetRawDataLength());
+								CParameter* metallic = paramBlock->GetParameter("Metallic");
+								if (metallic) pEffect->setParameter(CEffectFile::k_material_metallic, metallic->GetRawData(), metallic->GetRawDataLength());
+								CParameter* specular = paramBlock->GetParameter("Specular");
+								if (specular) pEffect->setParameter(CEffectFile::k_material_specular, specular->GetRawData(), specular->GetRawDataLength());
+								CParameter* roughness = paramBlock->GetParameter("Roughness");
+								if (roughness) pEffect->setParameter(CEffectFile::k_material_roughness, roughness->GetRawData(), roughness->GetRawDataLength());
+								CParameter* emissiveColor = paramBlock->GetParameter("EmissiveColor");
+								if (emissiveColor) pEffect->setParameter(CEffectFile::k_material_emissive_color, emissiveColor->GetRawData(), emissiveColor->GetRawDataLength());
+								CParameter* opacity = paramBlock->GetParameter("Opacity");
+								if (opacity) pEffect->setParameter(CEffectFile::k_material_opacity, opacity->GetRawData(), opacity->GetRawDataLength());
+
+								bool bHasDiffuseTex = false;
+								CParameter* diffuse = paramBlock->GetParameter("Diffuse");
+								if (diffuse) 
+								{
+									const std::string& sFilename = diffuse->GetValueAsConstString();
+									if (!sFilename.empty())
+									{
+										auto tex = CGlobals::GetAssetManager()->GetTexture(sFilename);
+										if(tex == NULL)
+											tex = CGlobals::GetAssetManager()->LoadTexture(sFilename, sFilename);
+										if (tex)
+										{
+											bHasDiffuseTex = true;
+											auto curTex = tex->GetTexture();
+											if (pCurTex0 != curTex)
+											{
+												pCurTex0 = curTex;
+												pDevice->SetTexture(0, pCurTex0);
+											}
+										}
+									}
+								}
+								if(!bHasDiffuseTex)
+								{
+									// always use a white texture instead of setting a conditional boolean in shader, since 99% cases, there is a diffuse texture. 
+									auto curTex = CGlobals::GetAssetManager()->GetDefaultTexture(0)->GetTexture();
+									if (pCurTex0 != curTex)
+									{
+										pCurTex0 = curTex;
+										pDevice->SetTexture(0, pCurTex0);
+									}
+								}
+							}
 						}
-
-						pTexEntity = pTemplate->GetTexture1();
-						if (pTexEntity && pTexEntity->GetTexture() != pCurTex1)
+						else
 						{
-							pCurTex1 = pTexEntity->GetTexture();
-							pDevice->SetTexture(1, pCurTex1);
-						}
+							// use block's internal material
+							TextureEntity* pTexEntity = pTemplate->GetTexture0(pRenderTask->GetUserData());
+							if (pTexEntity && pTexEntity->GetTexture() != pCurTex0)
+							{
+								pCurTex0 = pTexEntity->GetTexture();
+								pDevice->SetTexture(0, pCurTex0);
+							}
 
-						pTexEntity = pTemplate->GetNormalMap();
-						if (pTexEntity && pTexEntity->GetTexture() != pCurTex2)
-						{
-							pCurTex2 = pTexEntity->GetTexture();
-							if (dwRenderMethod == BLOCK_RENDER_FANCY_SHADER) {
-								pDevice->SetTexture(2, pCurTex2);
+							pTexEntity = pTemplate->GetTexture1();
+							if (pTexEntity && pTexEntity->GetTexture() != pCurTex1)
+							{
+								pCurTex1 = pTexEntity->GetTexture();
+								pDevice->SetTexture(1, pCurTex1);
+							}
+
+							pTexEntity = pTemplate->GetNormalMap();
+							if (pTexEntity && pTexEntity->GetTexture() != pCurTex2)
+							{
+								pCurTex2 = pTexEntity->GetTexture();
+								if (dwRenderMethod == BLOCK_RENDER_FANCY_SHADER) {
+									pDevice->SetTexture(2, pCurTex2);
+								}
 							}
 						}
 
@@ -882,8 +942,6 @@ namespace ParaEngine
 						pEffect->setParameter(CEffectFile::k_worldPos, &vWorldPos);
 					}
 					
-					ApplyMaterialParameters(pEffect, pRenderTask->GetMaterialId());
-
 					pEffect->CommitChanges();
 
 					RenderDevice::DrawIndexedPrimitive(pDevice, D3DPT_TRIANGLELIST, D3DPT_TRIANGLELIST, 0, pRenderTask->GetVertexOfs(),
@@ -927,6 +985,8 @@ namespace ParaEngine
 			}
 		}
 	}
+
+	// OBSOLETED: delete this function
 	void BlockWorldClient::ApplyMaterialParameters(CEffectFile* pEffect, int32_t materialId)
 	{	
 		if (materialId <= 0) return ;
