@@ -309,61 +309,28 @@ namespace ParaEngine
 				//--------------------------------------------------------------
 				BlockVertexCompressed* pBlockModelVertices = NULL;
 				unprocessedInstCount--;
-				if (materialId < 0)
+				// TODO 移除所有材质面, 目前仅标准方块移除
+				int32_t nFaceCount = tessellator.TessellateBlock(pChunk, instanceGroup[inst], dwShaderID, &pBlockModelVertices, materialId);
+				if (nFaceCount > 0)
 				{
-					// TODO 移除所有材质面, 目前仅标准方块移除
-					int32_t nFaceCount = tessellator.TessellateBlock(pChunk, instanceGroup[inst], dwShaderID, &pBlockModelVertices);
-					if (nFaceCount > 0)
+					int32 nVertexCount = nFaceCount * 4;
+					if (nFreeFaceCountInVertexBuffer >= nFaceCount)
 					{
-						int32 nVertexCount = nFaceCount * 4;
-						if (nFreeFaceCountInVertexBuffer >= nFaceCount)
-						{
-							memcpy(pVertices, pBlockModelVertices, sizeof(BlockVertexCompressed)*nVertexCount);
-							pVertices += nVertexCount;
-							vertexOffset += nVertexCount;
+						memcpy(pVertices, pBlockModelVertices, sizeof(BlockVertexCompressed)*nVertexCount);
+						pVertices += nVertexCount;
+						vertexOffset += nVertexCount;
 
-							nFaceCountCompleted += nFaceCount;
-							pTask->AddRectFace(nFaceCount);
-							nFreeFaceCountInVertexBuffer -= nFaceCount;
-						}
-						else
-						{
-							// this could happen when block changes when we are still processing it
-							OUTPUT_LOG("fatal error: not enough face count in vertex buffer. \n");
-						}
+						nFaceCountCompleted += nFaceCount;
+						pTask->AddRectFace(nFaceCount);
+						nFreeFaceCountInVertexBuffer -= nFaceCount;
+					}
+					else
+					{
+						// this could happen when block changes when we are still processing it
+						OUTPUT_LOG("fatal error: not enough face count in vertex buffer. \n");
 					}
 				}
-				else
-				{
-					pBlockModelVertices = pTemplate->GetBlockModelByData(nBlockData).GetVertices();
-					uint16_t packedBlockId = instanceGroup[inst];
-					int32_t nFaceCount = 1;
-					int32_t nVertexCount = nFaceCount * 4;
-					tessellator.UpdateCurrentBlock(pChunk, packedBlockId);
-					for (int face = 0; face < nMaxFaceCountPerInstance; face++)
-					{
-						if (materialId == pChunk->GetBlockFaceMaterial(packedBlockId, face))
-						{
-							memcpy(pVertices, pBlockModelVertices + face * 4, sizeof(BlockVertexCompressed)*nVertexCount);
-							pVertices[0].OffsetPosition(tessellator.m_blockId_cs.x, tessellator.m_blockId_cs.y, tessellator.m_blockId_cs.z);
-							pVertices[1].OffsetPosition(tessellator.m_blockId_cs.x, tessellator.m_blockId_cs.y, tessellator.m_blockId_cs.z);
-							pVertices[2].OffsetPosition(tessellator.m_blockId_cs.x, tessellator.m_blockId_cs.y, tessellator.m_blockId_cs.z);
-							pVertices[3].OffsetPosition(tessellator.m_blockId_cs.x, tessellator.m_blockId_cs.y, tessellator.m_blockId_cs.z);
-							pVertices += nVertexCount;
-							vertexOffset += nVertexCount;
-							nFaceCountCompleted += nFaceCount;
-							pTask->AddRectFace(nFaceCount);
-							nFreeFaceCountInVertexBuffer -= nFaceCount;
-						}
-					}
-					// 跳过同一方块的不同面
-					int32_t nextInst = inst + 1;
-					while(nextInst< groupSize && instanceGroup[nextInst] == packedBlockId)
-					{
-						inst = nextInst;
-						nextInst = inst + 1;
-					}
-				}
+
 			}
 		}
 		pVertexBuffer->Unlock();
@@ -707,8 +674,12 @@ namespace ParaEngine
 							}
 							instance_map[materialInstanceKey] = cachedGroupIdx;
 						}
-						instanceGroups[cachedGroupIdx]->AddInstance(i, 1);
-						totalFaceCount += 1;
+						// 同一个方块不重复加
+						if (instanceGroups[cachedGroupIdx]->instances.size() == 0 || instanceGroups[cachedGroupIdx]->instances.back() != i)
+						{
+							instanceGroups[cachedGroupIdx]->AddInstance(i, 1);
+							totalFaceCount += 1;
+						}
 					}
 				}
 			}
@@ -890,60 +861,28 @@ namespace ParaEngine
 				//--------------------------------------------------------------
 				BlockVertexCompressed* pBlockModelVertices = NULL;
 				unprocessedInstCount--;
-				if (materialId < 0)
+	
+				int32 nFaceCount = tessellator.TessellateBlock(pChunk, instanceGroup[inst], dwShaderID, &pBlockModelVertices, materialId);
+				if (nFaceCount > 0)
 				{
-					int32 nFaceCount = tessellator.TessellateBlock(pChunk, instanceGroup[inst], dwShaderID, &pBlockModelVertices);
-					if (nFaceCount > 0)
+					int32 nVertexCount = nFaceCount * 4;
+					if (nFreeFaceCountInVertexBuffer >= nFaceCount)
 					{
-						int32 nVertexCount = nFaceCount * 4;
-						if (nFreeFaceCountInVertexBuffer >= nFaceCount)
-						{
-							memcpy(pVertices, pBlockModelVertices, sizeof(BlockVertexCompressed)*nVertexCount);
-							pVertices += nVertexCount;
-							vertexOffset += nVertexCount;
+						memcpy(pVertices, pBlockModelVertices, sizeof(BlockVertexCompressed)*nVertexCount);
+						pVertices += nVertexCount;
+						vertexOffset += nVertexCount;
 
-							nFaceCountCompleted += nFaceCount;
-							pTask->AddRectFace(nFaceCount);
-							nFreeFaceCountInVertexBuffer -= nFaceCount;
-						}
-						else
-						{
-							// this could happen when block changes when we are still processing it. 
-							OUTPUT_LOG("fatal error: not enough face count in vertex buffer. \n");
-						}
+						nFaceCountCompleted += nFaceCount;
+						pTask->AddRectFace(nFaceCount);
+						nFreeFaceCountInVertexBuffer -= nFaceCount;
+					}
+					else
+					{
+						// this could happen when block changes when we are still processing it. 
+						OUTPUT_LOG("fatal error: not enough face count in vertex buffer. \n");
 					}
 				}
-				else
-				{
-					pBlockModelVertices = pTemplate->GetBlockModelByData(nBlockData).GetVertices();
-					uint16_t packedBlockId = instanceGroup[inst];
-					int32_t nFaceCount = 1;
-					int32_t nVertexCount = nFaceCount * 4;
-					tessellator.UpdateCurrentBlock(pChunk, packedBlockId);
-					for (int face = 0; face < nMaxFaceCountPerInstance; face++)
-					{
-						if (materialId == pChunk->GetBlockFaceMaterial(packedBlockId, face))
-						{
-							memcpy(pVertices, pBlockModelVertices + face * 4, sizeof(BlockVertexCompressed)*nVertexCount);
-							pVertices[0].OffsetPosition(tessellator.m_blockId_cs.x, tessellator.m_blockId_cs.y, tessellator.m_blockId_cs.z);
-							pVertices[1].OffsetPosition(tessellator.m_blockId_cs.x, tessellator.m_blockId_cs.y, tessellator.m_blockId_cs.z);
-							pVertices[2].OffsetPosition(tessellator.m_blockId_cs.x, tessellator.m_blockId_cs.y, tessellator.m_blockId_cs.z);
-							pVertices[3].OffsetPosition(tessellator.m_blockId_cs.x, tessellator.m_blockId_cs.y, tessellator.m_blockId_cs.z);
-							pVertices += nVertexCount;
-							vertexOffset += nVertexCount;
-							nFaceCountCompleted += nFaceCount;
-							pTask->AddRectFace(nFaceCount);
-							nFreeFaceCountInVertexBuffer -= nFaceCount;
-						}
-					}
-					// 跳过同一方块的不同面
-					int32_t nextInst = inst + 1;
-					while(nextInst< groupSize && instanceGroup[nextInst] == packedBlockId)
-					{
-						inst = nextInst;
-						nextInst = inst + 1;
-					}
-				}
+	
 				CHECK_YIELD_CPU_TO_WRITER;
 			}
 		}
