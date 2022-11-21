@@ -859,6 +859,29 @@ namespace ParaEngine
 										pDevice->SetTexture(0, pCurTex0);
 									}
 								}
+
+								bool bHasNormalTex = false;
+								CParameter* normal = paramBlock->GetParameter("Normal");
+								if (normal)
+								{
+									const std::string& sFilename = normal->GetValueAsConstString();
+									if (!sFilename.empty())
+									{
+										auto tex = CGlobals::GetAssetManager()->GetTexture(sFilename);
+										if (tex == NULL)
+											tex = CGlobals::GetAssetManager()->LoadTexture(sFilename, sFilename);
+										if (tex)
+										{
+											bHasNormalTex = true;
+											auto curTex = tex->GetTexture();
+											if (pCurTex2 != curTex)
+											{
+												pCurTex2 = curTex;
+												pDevice->SetTexture(2, pCurTex2);
+											}
+										}
+									}
+								}
 							}
 						}
 						else

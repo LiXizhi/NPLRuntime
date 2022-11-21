@@ -26,6 +26,7 @@ float4   g_fogColor : fogColor;
 float4x4 mWorld: world;
 
 float4 materialBaseColor: materialBaseColor;
+float materialMetallic: materialMetallic;
 
 // texture 0
 texture tex0 : TEXTURE; 

@@ -930,7 +930,9 @@ void ParaEngine::BlockGeneralTessellator::TessellateStdCube(BlockRenderMethod dw
 
 		if ((!pCurBlock || (pCurBlock->GetTemplate()->GetLightOpacity() < 15)) && 
 			/** we will skip standard material if there is a block material */
-			((!bHasBlockMaterial && materialId < 0) || m_pChunk->GetBlockFaceMaterial(packedBlockId, (int16)face) == materialId))
+			((materialId < 0 && (!bHasBlockMaterial || m_pChunk->GetBlockFaceMaterial(packedBlockId, (int16)face) < 0)) ||
+			/** we will only output the give block material */
+			(materialId > 0 && bHasBlockMaterial && m_pChunk->GetBlockFaceMaterial(packedBlockId, (int16)face) == materialId)))
 		{
 			for (int v = 0; v < 4; ++v)
 			{

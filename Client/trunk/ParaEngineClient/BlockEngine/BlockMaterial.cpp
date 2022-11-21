@@ -30,10 +30,10 @@ void CBlockMaterial::InitParamBlock()
 	// 世界保存(blockworld), 渲染着色器参数传递(blockworldclient render shader), 脚本获取设置(installField)
 	m_SharedParamBlock.CreateGetParameter("MaterialName")->SetValueByString("", CParameter::PARAMETER_TYPE::PARAM_STRING);
 	m_SharedParamBlock.CreateGetParameter("BaseColor")->SetValueByString("1.0, 1.0, 1.0, 1.0", CParameter::PARAMETER_TYPE::PARAM_VECTOR4);
-	m_SharedParamBlock.CreateGetParameter("Metallic")->SetValueByString("1.0", CParameter::PARAMETER_TYPE::PARAM_FLOAT);
+	m_SharedParamBlock.CreateGetParameter("Metallic")->SetValueByString("0.0", CParameter::PARAMETER_TYPE::PARAM_FLOAT);
 	m_SharedParamBlock.CreateGetParameter("Specular")->SetValueByString("0.0", CParameter::PARAMETER_TYPE::PARAM_FLOAT);
 	m_SharedParamBlock.CreateGetParameter("Roughness")->SetValueByString("0.0", CParameter::PARAMETER_TYPE::PARAM_FLOAT);
-	m_SharedParamBlock.CreateGetParameter("EmissiveColor")->SetValueByString("1.0, 1.0, 1.0, 1.0", CParameter::PARAMETER_TYPE::PARAM_VECTOR4);
+	m_SharedParamBlock.CreateGetParameter("EmissiveColor")->SetValueByString("0.0, 0.0, 0.0, 0.0", CParameter::PARAMETER_TYPE::PARAM_VECTOR4);
 	m_SharedParamBlock.CreateGetParameter("Opacity")->SetValueByString("1.0", CParameter::PARAMETER_TYPE::PARAM_FLOAT);
 	m_SharedParamBlock.CreateGetParameter("Normal")->SetValueByString("", CParameter::PARAMETER_TYPE::PARAM_STRING);    // 法线贴图
 	m_SharedParamBlock.CreateGetParameter("Diffuse")->SetValueByString("", CParameter::PARAMETER_TYPE::PARAM_STRING);   // 漫反射贴图
