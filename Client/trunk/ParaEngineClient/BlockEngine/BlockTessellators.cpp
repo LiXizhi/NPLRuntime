@@ -35,7 +35,7 @@ void ParaEngine::BlockTessellatorBase::SetWorld(CBlockWorld* pWorld)
 	}
 }
 
-int32 ParaEngine::BlockTessellatorBase::TessellateBlock(BlockChunk* pChunk, uint16 packedBlockId, BlockRenderMethod dwShaderID, BlockVertexCompressed** pOutputData)
+int32 ParaEngine::BlockTessellatorBase::TessellateBlock(BlockChunk* pChunk, uint16 packedBlockId, BlockRenderMethod dwShaderID, BlockVertexCompressed** pOutputData, int materialId)
 {
 	return 0;
 }
@@ -271,7 +271,7 @@ ParaEngine::BlockGeneralTessellator::BlockGeneralTessellator(CBlockWorld* pWorld
 {
 }
 
-int32 ParaEngine::BlockGeneralTessellator::TessellateBlock(BlockChunk* pChunk, uint16 packedBlockId, BlockRenderMethod dwShaderID, BlockVertexCompressed** pOutputData)
+int32 ParaEngine::BlockGeneralTessellator::TessellateBlock(BlockChunk* pChunk, uint16 packedBlockId, BlockRenderMethod dwShaderID, BlockVertexCompressed** pOutputData, int materialId)
 {
 	if (!UpdateCurrentBlock(pChunk, packedBlockId))
 		return 0;
@@ -297,7 +297,7 @@ int32 ParaEngine::BlockGeneralTessellator::TessellateBlock(BlockChunk* pChunk, u
 		else
 		{
 			// standard cube including tree leaves. 
-			TessellateStdCube(dwShaderID);
+			TessellateStdCube(dwShaderID, materialId);
 		}
 	}
 	int nFaceCount = tessellatedModel.GetFaceCount();
@@ -900,7 +900,7 @@ void ParaEngine::BlockGeneralTessellator::TessellateLiquidOrIce(BlockRenderMetho
 	}
 }
 
-void ParaEngine::BlockGeneralTessellator::TessellateStdCube(BlockRenderMethod dwShaderID)
+void ParaEngine::BlockGeneralTessellator::TessellateStdCube(BlockRenderMethod dwShaderID, int materialId)
 {
 	FetchNearbyBlockInfo(m_pChunk, m_blockId_cs, 27);
 
@@ -930,7 +930,7 @@ void ParaEngine::BlockGeneralTessellator::TessellateStdCube(BlockRenderMethod dw
 
 		if ((!pCurBlock || (pCurBlock->GetTemplate()->GetLightOpacity() < 15)) && 
 			/** we will skip standard material if there is a block material */
-			(!bHasBlockMaterial || m_pChunk->GetBlockFaceMaterial(packedBlockId, (int16)face) < 0))
+			((!bHasBlockMaterial && materialId < 0) || m_pChunk->GetBlockFaceMaterial(packedBlockId, (int16)face) == materialId))
 		{
 			for (int v = 0; v < 4; ++v)
 			{
