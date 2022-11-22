@@ -18,6 +18,7 @@
 #include "WorldInfo.h"
 
 #include <zlib.h>
+#include <unordered_map>
 
 namespace ParaEngine
 {
@@ -473,6 +474,40 @@ namespace ParaEngine
 		return 0;
 	}
 
+	bool BlockRegion::SetBlockMaterial(uint16_t x, uint16_t y, uint16_t z, int16_t nFaceId, int32_t nMaterial)
+	{
+		if (!IsLocked())
+		{
+			Uint16x3 blockId(x, y, z);
+			uint16_t chunkId = CalcPackedChunkID(x, y, z);
+			BlockChunk* pChunk = GetChunk(chunkId, false);
+			if (pChunk)
+			{
+				uint16 nBlockIndex = CalcPackedBlockID(x, y, z);
+				pChunk->ApplyBlockMaterial(nBlockIndex, nFaceId, nMaterial);
+				SetModified();
+				SetChunkDirty(chunkId, true);
+			}
+		}
+		return false;
+	}
+
+
+	int32_t BlockRegion::GetBlockMaterial(uint16_t x, uint16_t y, uint16_t z, int16_t nFaceId)
+	{
+		if (!IsLocked())
+		{
+			Uint16x3 blockId(x, y, z);
+			uint16_t chunkId = CalcPackedChunkID(x, y, z);
+			BlockChunk* pChunk = GetChunk(chunkId, false);
+			if (pChunk)
+			{
+				uint16 nBlockIndex = CalcPackedBlockID(x, y, z);
+				return pChunk->GetBlockFaceMaterial(nBlockIndex, nFaceId);
+			}
+		}
+		return -1;
+	}
 
 	ChunkMaxHeight* BlockRegion::GetHighestBlock(uint16_t blockIdX_rs, uint16_t blockIdZ_rs)
 	{
@@ -988,6 +1023,57 @@ namespace ParaEngine
 				memFile.WriteEncodedUInt((int)GetTag().size());
 				memFile.write(GetTag().c_str(), (int)GetTag().size());
 			}
+			{
+				memFile.WriteEncodedUInt(ChunkCustomDataType_Materials);
+				int chunksCount = GetChunksCount();
+				uint32_t totalSize = 0;
+				std::unordered_map<uint16_t, std::shared_ptr<std::unordered_map<uint32_t, std::shared_ptr<std::vector<uint16_t>>>>> chunkMaterialKeyMap;
+				for (int i = 0 ; i < chunksCount; i++)
+				{
+					BlockChunk* pChunk = m_chunks[i];
+					if (!pChunk) continue;
+					std::shared_ptr<std::unordered_map<uint32_t, std::shared_ptr<std::vector<uint16_t>>>> materialKeyMap = std::make_shared<std::unordered_map<uint32_t, std::shared_ptr<std::vector<uint16_t>>>>();
+					chunkMaterialKeyMap.insert(std::make_pair(i, materialKeyMap));
+					totalSize += sizeof(uint16_t) + sizeof(uint32_t);  // chunk index size + chunk list length size
+					for (const auto& it : pChunk->m_materialsKeyIdMap)
+					{
+						uint16_t materialKey = (uint16_t)(it.first);
+						uint32_t materialId = (uint32_t)(it.second);
+						const auto keyListIt = materialKeyMap->find(materialId);
+						std::shared_ptr<std::vector<uint16_t>> keyList = nullptr;
+						if (keyListIt == materialKeyMap->end())
+						{
+							keyList = std::make_shared<std::vector<uint16_t>>();
+							materialKeyMap->insert(std::make_pair(materialId, keyList));
+							totalSize += sizeof(uint32_t) + sizeof(uint32_t); // material id size + key list length size
+						}	
+						else
+						{
+							keyList = keyListIt->second;
+						}
+						keyList->push_back(materialKey);
+						totalSize += sizeof(uint16_t);  // material key size;
+					}
+				}
+				memFile.WriteEncodedUInt(totalSize);
+				for (const auto& chunkMaterialKeyIt : chunkMaterialKeyMap)
+				{
+					uint16_t chunkIndex = chunkMaterialKeyIt.first;
+					const auto& materialKeyMap = chunkMaterialKeyIt.second;
+					uint32_t chunkSize = materialKeyMap->size();
+					memFile.write(&chunkIndex, sizeof(uint16_t));
+					memFile.write(&chunkSize, sizeof(uint32_t));
+					for (const auto& materialKeyIt : (*materialKeyMap))
+					{
+						uint32_t materialId = materialKeyIt.first;
+						const auto keyList = materialKeyIt.second;
+						uint32_t keyListSize = keyList->size();
+						memFile.write(&materialId, sizeof(uint32_t));
+						memFile.write(&keyListSize, sizeof(uint32_t));
+						memFile.write(keyList->data(), keyListSize * sizeof(uint16_t));
+					}
+				}
+			}
 			memFile.WriteEncodedUInt(ChunkCustomDataType_ChunksData);
 
 			// saving for all 32*32*16 chunks
@@ -1279,6 +1365,38 @@ namespace ParaEngine
 					{
 						m_sTag.resize(nByteCount);
 						pFile->read(&(m_sTag[0]), nByteCount);
+					}
+					break;
+				}
+				case ChunkCustomDataType_Materials:
+				{
+					uint32_t nByteCount = pFile->ReadEncodedUInt();
+					while (nByteCount > 0)
+					{
+						uint16_t chunkIndex = 0;
+						uint32_t materialKeyCount = 0;
+						pFile->read(&chunkIndex, sizeof(uint16_t));
+						pFile->read(&materialKeyCount, sizeof(uint32_t));
+						nByteCount = nByteCount - sizeof(uint16_t) - sizeof(uint32_t);
+						auto pChunk = GetChunk(chunkIndex, true);
+						for (uint32_t i = 0; i < materialKeyCount; i++)
+						{
+							uint32_t materialId = 0;
+							uint32_t keyCount = 0;
+							pFile->read(&materialId, sizeof(uint32_t));
+							pFile->read(&keyCount, sizeof(uint32_t));
+							std::vector<uint16_t> keys;
+							keys.resize(keyCount);
+							pFile->read(keys.data(), keyCount * sizeof(uint16_t));
+							nByteCount = nByteCount - sizeof(uint32_t) - sizeof(uint32_t) - keyCount * sizeof(uint16_t);
+							for (uint32_t j = 0; j < keyCount; j++)
+							{	
+								uint16_t key = keys[j];
+								uint16_t blockIndex = key % 4096;
+								uint16_t faceIndex = key / 4096;
+								pChunk->ApplyBlockMaterial(blockIndex, (int16_t)faceIndex, materialId);
+							}
+						}
 					}
 					break;
 				}

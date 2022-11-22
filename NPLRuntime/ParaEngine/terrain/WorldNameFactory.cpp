@@ -197,6 +197,16 @@ string CWorldNameFactory::GetBlockTemplateFileName(bool usingTempFile)
 	return string(tmp);
 }
 
+string CWorldNameFactory::GetBlockMaterialFileName(bool usingTempFile)
+{
+	char tmp[MAX_PATH_LENGTH + 1];
+	if (usingTempFile)
+		snprintf(tmp, MAX_PATH_LENGTH, "%s/blockWorld.lastsave/blockMaterial.xml", m_strWorldPath.c_str());
+	else
+		snprintf(tmp, MAX_PATH_LENGTH, "%s/blockWorld/blockMaterial.xml", m_strWorldPath.c_str());
+	return string(tmp);
+}
+
 void ParaTerrain::CWorldNameFactory::SetWorldName(const string& sWorldName)
 {
 	m_strWorldName = sWorldName;

@@ -12,7 +12,7 @@
 #include "BlockChunk.h"
 
 #define INVALID_BLOCK_INDEX		0xffff
-
+#define GET_METERIAL_FACE_KEY(face, index) ((face)*4096+index)
 namespace ParaEngine
 {
 	int BlockChunk::s_total_chunks = 0;
@@ -73,6 +73,76 @@ namespace ParaEngine
 	void BlockChunk::ClearLightMap()
 	{
 
+	}
+
+	bool BlockChunk::HasBlockMaterial(Uint16x3& blockId_r)
+	{
+		uint16_t nBlockIndex = CalcPackedBlockID(blockId_r);
+		return (m_materialBlockIndices.find(nBlockIndex) != m_materialBlockIndices.end());
+	}
+
+	bool BlockChunk::HasBlockMaterial(uint16 nPackedBlockID)
+	{
+		return (m_materialBlockIndices.find(nPackedBlockID) != m_materialBlockIndices.end());
+	}
+
+	int32 BlockChunk::GetBlockFaceMaterial(uint16 nPackedBlockID, int16 nFaceIndex)
+	{
+		auto iter = m_materialsKeyIdMap.find(GET_METERIAL_FACE_KEY(nFaceIndex, nPackedBlockID));
+		return (iter != m_materialsKeyIdMap.end()) ? iter->second : -1;
+	}
+
+
+	void BlockChunk::ApplyBlockMaterial(uint16 nPackedBlockID, int16 nFaceIndex, int32 nMaterialID)
+	{
+		auto nMaterialKey = GET_METERIAL_FACE_KEY(nFaceIndex, nPackedBlockID);
+		auto iter = m_materialsKeyIdMap.find(nMaterialKey);
+		if (iter != m_materialsKeyIdMap.end())
+		{
+			iter->second = nMaterialID;
+		}
+		else
+		{
+			m_materialsKeyIdMap[nMaterialKey] = nMaterialID;
+			auto iter = m_materialBlockIndices.find(nPackedBlockID);
+			if (iter != m_materialBlockIndices.end())
+			{
+				iter->second ++;
+			}
+			else
+			{
+				m_materialBlockIndices[nPackedBlockID] = 1;
+			}
+		}
+	}
+
+	void BlockChunk::RemoveBlockMaterial(uint16 nPackedBlockID, int16 nFaceIndex)
+	{
+		if (nFaceIndex >= 0)
+		{
+			m_materialsKeyIdMap.erase(GET_METERIAL_FACE_KEY(nFaceIndex, nPackedBlockID));
+			auto iter = m_materialBlockIndices.find(nPackedBlockID);
+			if (iter != m_materialBlockIndices.end())
+			{
+				if (iter->second > 1)
+					iter->second = iter->second - 1;
+				else
+					m_materialBlockIndices.erase(iter);
+			}
+		}
+		else
+		{
+			for (int16 i = 0; i < 6; ++i)
+			{
+				m_materialsKeyIdMap.erase(GET_METERIAL_FACE_KEY(i, nPackedBlockID));
+			}
+
+			auto iter = m_materialBlockIndices.find(nPackedBlockID);
+			if (iter != m_materialBlockIndices.end())
+			{
+				m_materialBlockIndices.erase(iter);
+			}
+		}
 	}
 
 	void BlockChunk::LoadBlock(uint16_t nBlockIndex, BlockTemplate* pTemplate)
@@ -302,6 +372,11 @@ namespace ParaEngine
 		int32_t blockIndex = m_blockIndices[nIndex];
 		if(blockIndex >= 0)
 		{
+			if (HasBlockMaterial(nIndex))
+			{
+				RemoveBlockMaterial(nIndex, -1);
+			}
+
 			Block& block = m_blocks[blockIndex];
 
 			if(block.GetTemplate()->IsMatchAttribute(BlockTemplate::batt_light))

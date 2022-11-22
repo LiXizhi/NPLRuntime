@@ -40,6 +40,7 @@ namespace ParaEngine
 		ATTRIBUTE_CLASSID_CNPLRuntime,
 		ATTRIBUTE_CLASSID_BlockWorldClient,
 		ATTRIBUTE_CLASSID_BlockWorld,
+		ATTRIBUTE_CLASSID_BlockMaterial,
 		ATTRIBUTE_CLASSID_MoviePlatform,
 		ATTRIBUTE_CLASSID_ViewPort,
 		ATTRIBUTE_CLASSID_CParaXStaticModel,

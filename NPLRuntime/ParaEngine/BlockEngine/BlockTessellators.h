@@ -37,7 +37,7 @@ namespace ParaEngine
 		* @param pOutputData: generated vertex data. use it immediately and do not keep a reference to it. it will be invalid after the next call to this function.
 		* @return rect face count is returned. this value*4 is the number of generated vertices in pOutputData.
 		*/
-		virtual int32 TessellateBlock(BlockChunk* pChunk, uint16 packedBlockId, BlockRenderMethod dwShaderID, BlockVertexCompressed** pOutputData);
+		virtual int32 TessellateBlock(BlockChunk* pChunk, uint16 packedBlockId, BlockRenderMethod dwShaderID, BlockVertexCompressed** pOutputData, int materialId = -1);
 
 	public:
 		Block* neighborBlocks[27];
@@ -74,12 +74,12 @@ namespace ParaEngine
 	public:
 		BlockGeneralTessellator(CBlockWorld* pWorld);;
 		/** generate triangles for a given block in a block world, taking all nearby blocks into consideration. */
-		virtual int32 TessellateBlock(BlockChunk* pChunk, uint16 packedBlockId, BlockRenderMethod dwShaderID, BlockVertexCompressed** pOutputData);
+		virtual int32 TessellateBlock(BlockChunk* pChunk, uint16 packedBlockId, BlockRenderMethod dwShaderID, BlockVertexCompressed** pOutputData, int materialId = -1);
 
 
 	protected:
 		void TessellateLiquidOrIce(BlockRenderMethod dwShaderID);
-		void TessellateStdCube(BlockRenderMethod dwShaderID);
+		void TessellateStdCube(BlockRenderMethod dwShaderID, int materialId);
 		void TessellateUniformLightingCustomModel(BlockRenderMethod dwShaderID);
 		void TessellateSelfLightingCustomModel(BlockRenderMethod dwShaderID);
 
