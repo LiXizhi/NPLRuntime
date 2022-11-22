@@ -309,6 +309,8 @@ namespace ParaEngine
 		static int32_t g_twoTexPass;
 		static int32_t g_TexNormalMapPass;
 		static int32_t g_twoTexNormalMapPass;
+		static int32_t g_materialPass; 
+		static int32_t g_materialFancyPass;
 		static int32_t g_transparentBlockPass;
 		static int32_t g_waterBlockPass;
 		static int32_t g_selectBlockPass;

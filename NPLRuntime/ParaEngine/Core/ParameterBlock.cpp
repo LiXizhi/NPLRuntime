@@ -36,6 +36,7 @@ namespace ParaEngine
 		"vector4",
 		"matrix43",
 		"rawbytes",
+		"string",
 		"texture",
 	};
 }
@@ -223,6 +224,11 @@ bool ParaEngine::CParameter::SetValueByString( const char* sValue, int nType /*=
 			*this = *((Matrix4*)(&mat));
 			break;
 		}
+	case PARAM_STRING:
+		{
+			*this = sValue;
+			break;		
+		}
 	case PARAM_TEXTURE_ENTITY:
 		{
 			TextureEntity* pEntity = CGlobals::GetAssetManager()->LoadTexture("", sValue, TextureEntity::StaticTexture);
@@ -295,6 +301,11 @@ std::string ParaEngine::CParameter::GetValueByString()
 			sValue = tmp;
 			break;
 		}
+	case PARAM_STRING:
+		{
+			sValue = m_sStringValue;
+			break;
+		}
 	case PARAM_TEXTURE_ENTITY:
 		{
 			TextureEntity* pEntity = (TextureEntity*)(*this);
@@ -302,7 +313,6 @@ std::string ParaEngine::CParameter::GetValueByString()
 			{
 				sValue = pEntity->GetKey();
 			}
-			sValue = tmp;
 			break;
 		}
 
@@ -312,6 +322,13 @@ std::string ParaEngine::CParameter::GetValueByString()
 	return sValue;
 }
 
+const string & ParaEngine::CParameter::GetValueAsConstString()
+{
+	if (m_type == PARAM_STRING)
+		return m_sStringValue;
+	m_sStringValue = GetValueByString();
+	return m_sStringValue;
+}
 
 void CParameterBlock::SetParamByStringValue(const char* sParamName, const char* sValue_)
 {

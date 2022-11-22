@@ -22,6 +22,7 @@
 #include "BlockWorld.h"
 #include "SceneObject.h"
 #include "BipedObject.h"
+#include "BlockMaterialManager.h"
 
 using namespace ParaEngine;
 
@@ -123,6 +124,7 @@ void ParaEngine::CBlockWorld::EnterWorld(const string& sWorldDir, float x, float
 	m_minActiveChunkId_ws.SetValue(0);
 
 	// LoadBlockTemplateData();
+	LoadBlockMaterialData();
 
 	OUTPUT_LOG("Enter Block World %s : max region cache %d\n", m_worldInfo.GetWorldName().c_str(), m_maxCacheRegionCount);
 	GetLightGrid().OnEnterWorld();
@@ -132,9 +134,168 @@ void ParaEngine::CBlockWorld::EnterWorld(const string& sWorldDir, float x, float
 	m_isInWorld = true;
 }
 
+void CBlockWorld::LoadBlockMaterialData()
+{
+	CParaFile* pFile = NULL;
+
+	std::string tempXml = m_worldInfo.GetBlockMaterialFileName(true);
+	CParaFile file(tempXml.c_str());
+
+	std::string gameSaveXml = m_worldInfo.GetBlockMaterialFileName(false);
+	CParaFile gameSaveFile(gameSaveXml.c_str());
+
+	if (file.isEof())
+	{
+		if (!gameSaveFile.isEof())
+			pFile = &gameSaveFile;
+	}
+	else
+	{
+		pFile = &file;
+	}
+
+	if (pFile == NULL)
+		return;
+
+	try
+	{
+#ifdef USE_TINYXML2
+	using namespace tinyxml2;
+	typedef tinyxml2::XMLDocument XMLDocumentType;
+	typedef XMLDeclaration XMLDeclarationType;
+	typedef XMLElement XMLElementType;
+	typedef XMLNode XMLNodeType;
+#define XML_SUCCESS_ENUM_TYPE XMLError::XML_SUCCESS
+#else
+	typedef TiXmlDocument XMLDocumentType;
+	typedef TiXmlDeclaration XMLDeclarationType;
+	typedef TiXmlElement XMLElementType;
+	typedef TiXmlNode XMLNodeType;
+#define XML_SUCCESS_ENUM_TYPE TIXML_SUCCESS
+#endif
+
+#ifdef USE_TINYXML2
+		XMLDocumentType doc(true, COLLAPSE_WHITESPACE);
+		doc.Parse(pFile->getBuffer(), (int)(pFile->getSize()));
+#else
+		XMLDocumentType doc;
+		doc.Parse(pFile->getBuffer(), 0, TIXML_DEFAULT_ENCODING);
+#endif
+		XMLElementType* pRoot = doc.RootElement();
+		auto mgr = CGlobals::GetBlockMaterialManager();
+		if (pRoot)
+		{
+			for (XMLNodeType* pChild = pRoot->FirstChild(); pChild != 0; pChild = pChild->NextSibling())
+			{
+#ifdef USE_TINYXML2
+				if (pChild->ToElement())
+#else
+				if (pChild->Type() == TiXmlNode::ELEMENT)
+#endif
+				{
+					XMLElementType* pElement = pChild->ToElement();
+					if (pElement)
+					{
+						int32_t materialID = -1;
+						if (pElement->QueryIntAttribute("Id", &materialID) == XML_SUCCESS_ENUM_TYPE)
+						{
+							CBlockMaterial* pMaterial = mgr->GetBlockMaterialByID(materialID);
+							if (!pMaterial) continue;
+							CParameterBlock* pParamBlock = pMaterial->GetParamBlock();
+							const char* materialName = pElement->Attribute("MaterialName");
+							if (materialName) pParamBlock->CreateGetParameter("MaterialName")->SetValueByString(materialName, CParameter::PARAMETER_TYPE::PARAM_STRING);
+							const char* baseColor = pElement->Attribute("BaseColor");
+							if (baseColor) pParamBlock->CreateGetParameter("BaseColor")->SetValueByString(baseColor, CParameter::PARAMETER_TYPE::PARAM_VECTOR4);
+							const char* metallic = pElement->Attribute("Metallic");
+							if (metallic) pParamBlock->CreateGetParameter("Metallic")->SetValueByString(metallic, CParameter::PARAMETER_TYPE::PARAM_FLOAT);
+							const char* specular = pElement->Attribute("Specular");
+							if (specular) pParamBlock->CreateGetParameter("Specular")->SetValueByString(specular, CParameter::PARAMETER_TYPE::PARAM_FLOAT);
+							const char* roughness = pElement->Attribute("Roughness");
+							if (roughness) pParamBlock->CreateGetParameter("Roughness")->SetValueByString(roughness, CParameter::PARAMETER_TYPE::PARAM_FLOAT);
+							const char* emissiveColor = pElement->Attribute("EmissiveColor");
+							if (emissiveColor) pParamBlock->CreateGetParameter("EmissiveColor")->SetValueByString(emissiveColor, CParameter::PARAMETER_TYPE::PARAM_VECTOR4);
+							const char* opacity = pElement->Attribute("Opacity");
+							if (opacity) pParamBlock->CreateGetParameter("Opacity")->SetValueByString(opacity, CParameter::PARAMETER_TYPE::PARAM_FLOAT);
+							const char* normal = pElement->Attribute("Normal");
+							if (normal) pParamBlock->CreateGetParameter("Normal")->SetValueByString(normal, CParameter::PARAMETER_TYPE::PARAM_STRING);
+							const char* diffuse = pElement->Attribute("Diffuse");
+							if (diffuse) pParamBlock->CreateGetParameter("Diffuse")->SetValueByString(diffuse, CParameter::PARAMETER_TYPE::PARAM_STRING);
+							const char* materialUV = pElement->Attribute("MaterialUV");
+							if (materialUV) pParamBlock->CreateGetParameter("MaterialUV")->SetValueByString(materialUV, CParameter::PARAMETER_TYPE::PARAM_VECTOR4);
+						}
+					}
+				}
+			}
+		}
+	}
+	catch (...)
+	{
+		OUTPUT_LOG("error parsing block material file \n");
+	}
+}
+
+void CBlockWorld::SaveBlockMaterialData()
+{
+	auto mgr = CGlobals::GetBlockMaterialManager();
+#ifdef USE_TINYXML2
+	using namespace tinyxml2;
+	typedef tinyxml2::XMLDocument XMLDocumentType;
+	typedef XMLDeclaration XMLDeclarationType;
+	typedef XMLElement XMLElementType;
+#define NewXMLElementType doc.NewElement
+#else
+	typedef TiXmlDocument XMLDocumentType;
+	typedef TiXmlDeclaration XMLDeclarationType;
+	typedef TiXmlElement XMLElementType;
+#define NewXMLElementType new XMLElementType
+#endif
+
+	XMLDocumentType doc;
+#ifdef USE_TINYXML2
+	XMLDeclarationType* decl = doc.NewDeclaration(nullptr);
+#else
+	XMLDeclarationType* decl = new TiXmlDeclaration("1.0", "", "");
+#endif
+	doc.LinkEndChild(decl);
+
+	XMLElementType* root = NewXMLElementType("BlockMaterials");
+	doc.LinkEndChild(root);
+	for (auto it = mgr->begin(); it != mgr->end(); it++)
+	{
+		CBlockMaterial* pMaterial = mgr->GetEntity(it->second->GetKey());
+		CParameterBlock* pParamBlock = pMaterial->GetParamBlock();
+		XMLElementType* pNewItem = NewXMLElementType("Material");
+		pNewItem->SetAttribute("Id", pMaterial->GetKey());
+		auto materialName = pParamBlock->GetParameter("MaterialName"); // vector4
+		if (materialName) pNewItem->SetAttribute("MaterialName", materialName->GetValueByString());
+		auto baseColor = pParamBlock->GetParameter("BaseColor"); // vector4
+		if (baseColor) pNewItem->SetAttribute("BaseColor", baseColor->GetValueByString());
+		auto metallic = pParamBlock->GetParameter("Metallic");   // float
+		if (metallic) pNewItem->SetAttribute("Metallic", metallic->GetValueByString());
+		auto specular = pParamBlock->GetParameter("Specular");   // float
+		if (specular) pNewItem->SetAttribute("Specular", specular->GetValueByString());
+		auto roughness = pParamBlock->GetParameter("Roughness");   // float
+		if (roughness) pNewItem->SetAttribute("Roughness", roughness->GetValueByString());
+		auto emissiveColor = pParamBlock->GetParameter("EmissiveColor"); // vector4
+		if (emissiveColor) pNewItem->SetAttribute("EmissiveColor", emissiveColor->GetValueByString());
+		auto opacity = pParamBlock->GetParameter("Opacity");   // float
+		if (opacity) pNewItem->SetAttribute("Opacity", opacity->GetValueByString());
+		auto normal = pParamBlock->GetParameter("Normal");   // texture
+		if (normal) pNewItem->SetAttribute("Normal", normal->GetValueByString());
+		auto diffuse = pParamBlock->GetParameter("Diffuse");   // texture
+		if (diffuse) pNewItem->SetAttribute("Diffuse", diffuse->GetValueByString());
+		auto materialUV = pParamBlock->GetParameter("MaterialUV"); // vector4
+		if (materialUV) pNewItem->SetAttribute("MaterialUV", materialUV->GetValueByString());
+		root->LinkEndChild(pNewItem);
+	}
+	std::string fileName = m_worldInfo.GetBlockMaterialFileName(true);
+	doc.SaveFile(fileName);
+}
+
 void CBlockWorld::SaveToFile(bool saveToTemp)
 {
 	// SaveBlockTemplateData();
+	SaveBlockMaterialData();
 
 	for (std::map<int, BlockRegion*>::iterator iter = m_regionCache.begin(); iter != m_regionCache.end(); iter++)
 	{
@@ -944,6 +1105,38 @@ uint32_t ParaEngine::CBlockWorld::GetBlockData(uint16_t x, uint16_t y, uint16_t 
 		return pRegion->GetBlockUserDataByIndex(lx, ly, lz);
 	}
 	return 0;
+}
+
+bool ParaEngine::CBlockWorld::SetBlockMaterial(uint16_t x, uint16_t y, uint16_t z, int16_t nFaceId, int32_t nMaterial)
+{
+	if (y >= 256)
+		return false;
+
+	uint16_t lx, ly, lz;
+	BlockRegion* pRegion = GetRegion(x, y, z, lx, ly, lz);
+
+	if (pRegion)
+	{
+		pRegion->SetBlockMaterial(lx, ly, lz, nFaceId, nMaterial);
+		m_isVisibleChunkDirty = true;
+		return true;
+	}
+	return false;
+}
+
+int32_t ParaEngine::CBlockWorld::GetBlockMaterial(uint16_t x, uint16_t y, uint16_t z, int16_t nFaceId)
+{
+	if (y >= 256)
+		return -1;
+
+	uint16_t lx, ly, lz;
+	BlockRegion* pRegion = GetRegion(x, y, z, lx, ly, lz);
+
+	if (pRegion)
+	{
+		return pRegion->GetBlockMaterial(lx, ly, lz, nFaceId);
+	}
+	return -1;
 }
 
 void ParaEngine::CBlockWorld::LoadBlockAsync(uint16_t x, uint16_t y, uint16_t z, uint16_t blockId, uint32_t userData)

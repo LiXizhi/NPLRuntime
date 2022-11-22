@@ -542,11 +542,11 @@ namespace ParaEngine
 		return *tls_instanceGroups;
 	}
 
-	std::map<int32_t, int>& RenderableChunk::GetInstanceMap()
+	std::map<int64_t, int>& RenderableChunk::GetInstanceMap()
 	{
-		static boost::thread_specific_ptr <std::map<int32_t, int>> tls_instance_map;
+		static boost::thread_specific_ptr <std::map<int64_t, int>> tls_instance_map;
 		if (!tls_instance_map.get())
-			tls_instance_map.reset(new std::map<int32_t, int>());
+			tls_instance_map.reset(new std::map<int64_t, int>());
 		return *tls_instance_map;
 	}
 
@@ -573,7 +573,7 @@ namespace ParaEngine
 		int32 totalFaceCount = 0;
 		int32 cachedGroupIdx = 0;
 		uint16_t nSize = (uint16_t)pChunk->m_blockIndices.size();
-		std::map < int32_t, int > & instance_map = GetInstanceMap();
+		std::map < int64_t, int > & instance_map = GetInstanceMap();
 		std::vector<InstanceGroup* >& instanceGroups = GetInstanceGroups();
 
 		for (uint16_t i = 0; i < nSize; i++)
@@ -629,6 +629,53 @@ namespace ParaEngine
 				uint32 nFaceCount = blockmodel.GetFaceCount();
 				instanceGroups[cachedGroupIdx]->AddInstance(i, nFaceCount);
 				totalFaceCount += nFaceCount;
+
+				if (!pChunk->HasBlockMaterial(i)) continue;
+
+				// 按照材质分类
+				for (uint32_t j = 0; j < nFaceCount; j++)
+				{
+					int32_t materialId = pChunk->GetBlockFaceMaterial(i, j);
+					if (materialId > 0)
+					{
+						int64_t materialInstanceKey = ((int64_t)materialId) << 32;
+						auto curIndex = instance_map.find(materialInstanceKey);
+						if (curIndex != instance_map.end())
+						{
+							cachedGroupIdx = curIndex->second;
+						}
+						else 
+						{
+							for (uint32_t j = 0; j < instanceGroups.size(); j++)
+							{
+								if (instanceGroups[j]->m_materialId == materialId || instanceGroups[j]->m_pTemplate == 0)
+								{
+									cachedGroupIdx = j;
+									break;
+								}
+							}
+
+							if (instanceGroups[cachedGroupIdx]->m_materialId != materialId)
+							{
+								if (instanceGroups[cachedGroupIdx]->m_pTemplate != 0)
+								{
+									cachedGroupIdx = instanceGroups.size();
+									instanceGroups.push_back(new InstanceGroup());
+								}
+								instanceGroups[cachedGroupIdx]->m_pTemplate = pBlock->GetTemplate();
+								instanceGroups[cachedGroupIdx]->m_blockData = nBlockData;
+								instanceGroups[cachedGroupIdx]->m_materialId = materialId;
+							}
+							instance_map[materialInstanceKey] = cachedGroupIdx;
+						}
+						// 同一个方块不重复加
+						if (instanceGroups[cachedGroupIdx]->instances.size() == 0 || instanceGroups[cachedGroupIdx]->instances.back() != i)
+						{
+							instanceGroups[cachedGroupIdx]->AddInstance(i, 1);
+							totalFaceCount += 1;
+						}
+					}
+				}
 			}
 		}
 		return totalFaceCount;
@@ -738,6 +785,7 @@ namespace ParaEngine
 			std::vector<uint16_t>& instanceGroup = pInstGroup->instances;
 			uint32 groupSize = instanceGroup.size();
 			uint32 instCount = groupSize;
+			int32_t materialId = pInstGroup->m_materialId;
 			int nMaxFaceCountPerInstance = pTemplate->GetBlockModelByData(nBlockData).GetFaceCount();
 
 			if (nFreeFaceCountInVertexBuffer < (int32)pInstGroup->GetFaceCount())
@@ -766,6 +814,7 @@ namespace ParaEngine
 			{
 				pTask = BlockRenderTask::CreateTask();
 				pTask->Init(pTemplate, nBlockData, vertexOffset, pChunk->m_minBlockId_ws, nMemoryBufferIndex);
+				pTask->SetMaterialId(pInstGroup->m_materialId);
 				m_builder_tasks.push_back(pTask);
 				pLastInstGroup = pInstGroup;
 			}
@@ -805,7 +854,7 @@ namespace ParaEngine
 				//--------------------------------------------------------------
 				BlockVertexCompressed* pBlockModelVertices = NULL;
 				unprocessedInstCount--;
-				int32 nFaceCount = tessellator.TessellateBlock(pChunk, instanceGroup[inst], dwShaderID, &pBlockModelVertices);
+				int32 nFaceCount = tessellator.TessellateBlock(pChunk, instanceGroup[inst], dwShaderID, &pBlockModelVertices, materialId);
 				if (nFaceCount > 0)
 				{
 					int32 nVertexCount = nFaceCount * 4;
@@ -1076,6 +1125,10 @@ namespace ParaEngine
 		{
 			if (m_pTemplate->GetRenderPass() != pOther->m_pTemplate->GetRenderPass())
 				return false;
+			else if (m_materialId != pOther->m_materialId)
+			{
+				return false;
+			}		
 			else
 			{
 				// TODO: further test textures and categories, etc. 

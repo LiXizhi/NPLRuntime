@@ -889,6 +889,23 @@ ParaScripting::ParaAssetObject ParaAsset::GetEffectFile( const char* strAssetNam
 #endif
 }
 
+ParaScripting::ParaAssetObject ParaAsset::GetBlockMaterial(int32_t materialId)
+{
+	return ParaAssetObject(CGlobals::GetBlockMaterialManager()->GetEntity(std::to_string(materialId)));
+}
+
+ParaScripting::ParaAssetObject ParaAsset::CreateBlockMaterial()
+{
+	return ParaAssetObject(CGlobals::GetBlockMaterialManager()->CreateBlockMaterial());
+}
+
+void ParaAsset::DeleteBlockMaterial(ParaScripting::ParaAssetObject asset)
+{
+	auto mgr = CGlobals::GetBlockMaterialManager();
+	auto material = mgr->GetEntity(asset.GetKeyName());
+	if (material) mgr->DeleteEntity(material);
+}
+
 int ParaAsset::PrintToFile( const char* strFileName, DWORD dwSelection )
 {
 #ifdef PARAENGINE_CLIENT

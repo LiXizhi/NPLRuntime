@@ -96,6 +96,7 @@ namespace ParaEngine
 			datagrid,
 			cadMesh,
 			image,
+			blockmaterial,
 		};
 		virtual AssetType GetType(){return base;};
 

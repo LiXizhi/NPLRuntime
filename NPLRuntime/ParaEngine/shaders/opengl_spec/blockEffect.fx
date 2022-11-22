@@ -33,6 +33,9 @@ float4   g_fogParam : fogparameters; // (fogstart, fogrange, fogDensity, reserve
 float4   g_fogColor : fogColor;
 float4x4 mWorld: world;
 
+float4 materialBaseColor: materialBaseColor;
+float materialMetallic: materialMetallic;
+
 // texture 0
 texture tex0 : TEXTURE; 
 sampler tex0Sampler: register(s0) = sampler_state 
@@ -209,6 +212,49 @@ float4 TransparentMainPS(SimpleVSOut input) :COLOR0
 }
 
 
+////////////////////////////////////Material//////////////////////////////////////////////////////
+SimpleVSOut MaterialMainVS(	float4 pos		: POSITION,
+							float3	Norm	: NORMAL,
+							half4 color		: COLOR0,
+							half4 color2 : COLOR1,
+							float2 texcoord	: TEXCOORD0)
+{
+	SimpleVSOut output;
+	output.pos = mul(pos, mWorldViewProj);
+	output.texcoord = texcoord;
+	
+	// emissive block light received by this block. 
+	float torch_light_strength = color.y;
+	float3 torch_light = light_params.xyz * torch_light_strength;
+
+	// sun light + sky(fog) light
+	float sun_light_strength = clamp(color.x*light_params.w, 0, 1); // normalize to 0,1 range
+
+	float lightFactor = 0.7 + 0.3*saturate(dot(sun_vec, Norm));
+	float3 sun_light = (float3(1, 1, 1) + g_fogColor.xyz * 0.05) * (sun_light_strength * lightFactor);
+	torch_light_strength *= lightFactor;
+
+	// compose and interpolate so that the strength of light is almost linear 
+	float3 final_light = lerp(torch_light.xyz+sun_light.xyz, sun_light.xyz, sun_light_strength / (torch_light_strength + sun_light_strength+0.001));
+	
+	// apply shadow either before or after color clamp
+	//output.color.xyz = min(float3(1,1,1), final_light)*color.w;
+	output.color.xyz = final_light*color.w;
+	output.color.xyz *= color2.rgb;
+	
+	//calculate the fog factor
+	output.color.w = CalcFogFactor(length(output.pos.xyz));
+	return output;
+}
+
+float4 MaterialMainPS(SimpleVSOut input) :COLOR0
+{
+	float4 albedoColor = tex2D(tex0Sampler,input.texcoord);
+	albedoColor = albedoColor * materialBaseColor;
+
+	float4 oColor = float4(lerp(float3(albedoColor.xyz * input.color.xyz), g_fogColor.xyz, input.color.w), albedoColor.a);
+	return oColor;
+}
 
 /////////////////////////////////////////////////////////////////
 //
@@ -264,6 +310,12 @@ technique SimpleMesh_vs20_ps20
 	{
 		VertexShader = compile vs_2_0 TransparentSimpleMainVS();
 		PixelShader  = compile ps_2_0 TransparentMainPS();
+		FogEnable = false;
+	}
+	pass P4
+	{
+		VertexShader = compile vs_2_0 MaterialMainVS();
+		PixelShader  = compile ps_2_0 MaterialMainPS();
 		FogEnable = false;
 	}
 }

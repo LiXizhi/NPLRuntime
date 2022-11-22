@@ -59,6 +59,8 @@ namespace ParaEngine
 	int32_t BlockWorldClient::g_twoTexPass = 1;
 	int32_t BlockWorldClient::g_TexNormalMapPass = 2;
 	int32_t BlockWorldClient::g_twoTexNormalMapPass = 3; // not used.
+	int32_t BlockWorldClient::g_materialPass = 4; 
+	int32_t BlockWorldClient::g_materialFancyPass = 6;
 #ifdef PARAENGINE_MOBILE
 	int32_t BlockWorldClient::g_transparentBlockPass = 3;
 	int32_t BlockWorldClient::g_waterBlockPass = 2;
@@ -337,7 +339,7 @@ namespace ParaEngine
 				std::vector<BlockRenderTask*>* pCurRenderQueue = GetRenderQueueByPass((BlockRenderPass)nRenderPass);
 
 				IDirect3DVertexBuffer9* pCurVB = NULL;
-				uint16_t curTamplerId = 0;
+				uint16_t curTemplateId = 0;
 				int32_t curPass = -1;
 				ERSVCULL culling = RSV_CULL_CCW;
 				IDirect3DTexture9* pCurTex0 = NULL;
@@ -355,7 +357,7 @@ namespace ParaEngine
 							pCurVB = pVB;
 						}
 						int32_t passId = 0;
-						if (curTamplerId != pRenderTask->GetTemplateId())
+						if (curTemplateId != pRenderTask->GetTemplateId())
 						{
 							BlockTemplate* pTempate = pRenderTask->GetTemplate();
 
@@ -545,7 +547,7 @@ namespace ParaEngine
 				GETD3D(CGlobals::GetRenderDevice())->SetIndices(pIndexBuffer);
 
 				IDirect3DVertexBuffer9* pCurVB = NULL;
-				uint16_t curTamplerId = 0;
+				uint16_t curTemplateId = 0;
 				int32_t curPass = -1;
 				ERSVCULL culling = RSV_CULL_CCW;
 				IDirect3DTexture9* pCurTex0 = NULL;
@@ -562,7 +564,7 @@ namespace ParaEngine
 						pCurVB = pVB;
 					}
 					int32_t passId;
-					if (curTamplerId != pRenderTask->GetTemplateId())
+					if (curTemplateId != pRenderTask->GetTemplateId())
 					{
 						BlockTemplate* pTempate = pRenderTask->GetTemplate();
 						if (pTempate->IsMatchAttribute(BlockTemplate::batt_twoTexture))
@@ -691,7 +693,8 @@ namespace ParaEngine
 				CGlobals::GetRenderDevice()->SetIndices(pIndexBuffer);
 
 				VertexBufferDevicePtr_type pCurVB = 0;
-				uint16_t curTamplerId = 0;
+				uint16_t curTemplateId = 0;
+				int32 curMaterialId = -1;
 				int32_t curPass = -1;
 				ERSVCULL culling = RSV_CULL_CCW;
 				DeviceTexturePtr_type pCurTex0 = 0;
@@ -721,10 +724,22 @@ namespace ParaEngine
 						pCurVB = pVB;
 					}
 					int32_t passId;
-					if (curTamplerId != pRenderTask->GetTemplateId())
+					if (curTemplateId != pRenderTask->GetTemplateId() || curMaterialId != pRenderTask->GetMaterialId())
 					{
+						curTemplateId = pRenderTask->GetTemplateId();
+						curMaterialId = pRenderTask->GetMaterialId();
 						BlockTemplate* pTemplate = pRenderTask->GetTemplate();
-						if (pTemplate->IsMatchAttribute(BlockTemplate::batt_twoTexture))
+						if (curMaterialId > 0) {
+							if (dwRenderMethod == BLOCK_RENDER_FANCY_SHADER)
+							{
+								passId = g_materialFancyPass;
+							}
+							else
+							{
+								passId = g_materialPass;
+							}
+						}
+						else if (pTemplate->IsMatchAttribute(BlockTemplate::batt_twoTexture))
 							passId = g_twoTexPass;
 						else if (nRenderPass == BlockRenderPass_AlphaTest)
 						{
@@ -766,28 +781,107 @@ namespace ParaEngine
 								continue;
 							}
 						}
-
-						TextureEntity* pTexEntity = pTemplate->GetTexture0(pRenderTask->GetUserData());
-						if (pTexEntity && pTexEntity->GetTexture() != pCurTex0)
+						
+						if (curMaterialId > 0)
 						{
-							pCurTex0 = pTexEntity->GetTexture();
-							CGlobals::GetRenderDevice()->SetTexture(0, pCurTex0);
-						}
-
-						pTexEntity = pTemplate->GetTexture1();
-						if (pTexEntity && pTexEntity->GetTexture() != pCurTex1)
-						{
-							pCurTex1 = pTexEntity->GetTexture();
-							CGlobals::GetRenderDevice()->SetTexture(1, pCurTex1);
-						}
-
-						pTexEntity = pTemplate->GetNormalMap();
-						if (pTexEntity && pTexEntity->GetTexture() != pCurTex2)
-						{
-							pCurTex2 = pTexEntity->GetTexture();
-							if (dwRenderMethod == BLOCK_RENDER_FANCY_SHADER)
+							CBlockMaterial* material = CGlobals::GetBlockMaterialManager()->GetBlockMaterialByID(curMaterialId);
+							CParameterBlock* paramBlock = material ? material->GetParamBlock() : nullptr;
+							if (paramBlock)
 							{
-								CGlobals::GetRenderDevice()->SetTexture(2, pCurTex2);
+								CParameter* baseColor = paramBlock->GetParameter("BaseColor");
+								if (baseColor) pEffect->setParameter(CEffectFile::k_material_base_color, baseColor->GetRawData(), baseColor->GetRawDataLength());
+								CParameter* metallic = paramBlock->GetParameter("Metallic");
+								if (metallic) pEffect->setParameter(CEffectFile::k_material_metallic, metallic->GetRawData(), metallic->GetRawDataLength());
+								CParameter* specular = paramBlock->GetParameter("Specular");
+								if (specular) pEffect->setParameter(CEffectFile::k_material_specular, specular->GetRawData(), specular->GetRawDataLength());
+								CParameter* roughness = paramBlock->GetParameter("Roughness");
+								if (roughness) pEffect->setParameter(CEffectFile::k_material_roughness, roughness->GetRawData(), roughness->GetRawDataLength());
+								CParameter* emissiveColor = paramBlock->GetParameter("EmissiveColor");
+								if (emissiveColor) pEffect->setParameter(CEffectFile::k_material_emissive_color, emissiveColor->GetRawData(), emissiveColor->GetRawDataLength());
+								CParameter* opacity = paramBlock->GetParameter("Opacity");
+								if (opacity) pEffect->setParameter(CEffectFile::k_material_opacity, opacity->GetRawData(), opacity->GetRawDataLength());
+
+								bool bHasDiffuseTex = false;
+								CParameter* diffuse = paramBlock->GetParameter("Diffuse");
+								if (diffuse) 
+								{
+									const std::string& sFilename = diffuse->GetValueAsConstString();
+									if (!sFilename.empty())
+									{
+										auto tex = CGlobals::GetAssetManager()->GetTexture(sFilename);
+										if(tex == NULL)
+											tex = CGlobals::GetAssetManager()->LoadTexture(sFilename, sFilename);
+										if (tex)
+										{
+											bHasDiffuseTex = true;
+											auto curTex = tex->GetTexture();
+											if (pCurTex0 != curTex)
+											{
+												pCurTex0 = curTex;
+												pDevice->SetTexture(0, pCurTex0);
+											}
+										}
+									}
+								}
+								if(!bHasDiffuseTex)
+								{
+									// always use a white texture instead of setting a conditional boolean in shader, since 99% cases, there is a diffuse texture. 
+									auto curTex = CGlobals::GetAssetManager()->GetDefaultTexture(0)->GetTexture();
+									if (pCurTex0 != curTex)
+									{
+										pCurTex0 = curTex;
+										pDevice->SetTexture(0, pCurTex0);
+									}
+								}
+
+								bool bHasNormalTex = false;
+								CParameter* normal = paramBlock->GetParameter("Normal");
+								if (normal)
+								{
+									const std::string& sFilename = normal->GetValueAsConstString();
+									if (!sFilename.empty())
+									{
+										auto tex = CGlobals::GetAssetManager()->GetTexture(sFilename);
+										if (tex == NULL)
+											tex = CGlobals::GetAssetManager()->LoadTexture(sFilename, sFilename);
+										if (tex)
+										{
+											bHasNormalTex = true;
+											auto curTex = tex->GetTexture();
+											if (pCurTex2 != curTex)
+											{
+												pCurTex2 = curTex;
+												pDevice->SetTexture(2, pCurTex2);
+											}
+										}
+									}
+								}
+							}
+						}
+						else
+						{
+							TextureEntity* pTexEntity = pTemplate->GetTexture0(pRenderTask->GetUserData());
+							if (pTexEntity && pTexEntity->GetTexture() != pCurTex0)
+							{
+								pCurTex0 = pTexEntity->GetTexture();
+								CGlobals::GetRenderDevice()->SetTexture(0, pCurTex0);
+							}
+
+							pTexEntity = pTemplate->GetTexture1();
+							if (pTexEntity && pTexEntity->GetTexture() != pCurTex1)
+							{
+								pCurTex1 = pTexEntity->GetTexture();
+								CGlobals::GetRenderDevice()->SetTexture(1, pCurTex1);
+							}
+
+							pTexEntity = pTemplate->GetNormalMap();
+							if (pTexEntity && pTexEntity->GetTexture() != pCurTex2)
+							{
+								pCurTex2 = pTexEntity->GetTexture();
+								if (dwRenderMethod == BLOCK_RENDER_FANCY_SHADER)
+								{
+									CGlobals::GetRenderDevice()->SetTexture(2, pCurTex2);
+								}
 							}
 						}
 

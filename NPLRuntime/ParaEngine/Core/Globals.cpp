@@ -26,6 +26,7 @@
 #include "AttributesManager.h"
 #include "DataProviderManager.h"
 #include "MoviePlatform.h"
+#include "BlockEngine/BlockMaterialManager.h"
 #include "Globals.h"
 
 #if PLATFORM_WINDOWS
@@ -281,6 +282,11 @@ CAttributesManager* CGlobals::GetAttributesManager()
 CDataProviderManager* CGlobals::GetDataProviderManager()
 {
 	return &CDataProviderManager::GetSingleton();
+}
+
+CBlockMaterialManager* CGlobals::GetBlockMaterialManager()
+{
+	return &(CParaWorldAsset::GetSingleton()->GetBlockMaterialManager());
 }
 
 CMoviePlatform* CGlobals::GetMoviePlatform()
