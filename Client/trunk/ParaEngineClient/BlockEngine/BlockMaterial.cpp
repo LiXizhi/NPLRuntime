@@ -58,6 +58,6 @@ int CBlockMaterial::InstallFields(CAttributeClass* pClass, bool bOverride)
 	pClass->AddField("Opacity", FieldType_Float, (void*)SetOpacity_s, (void*)GetOpacity_s, NULL, NULL, bOverride);
 	pClass->AddField("Normal", FieldType_String, (void*)SetNormal_s, (void*)GetNormal_s, NULL, NULL, bOverride);
 	pClass->AddField("Diffuse", FieldType_String, (void*)SetDiffuse_s, (void*)GetDiffuse_s, NULL, NULL, bOverride);
-	pClass->AddField("MaterialUV", FieldType_String, (void*)SetMaterialUV_s, (void*)GetMaterialUV_s, NULL, NULL, bOverride);
+	pClass->AddField("MaterialUV", FieldType_Vector4, (void*)SetMaterialUV_s, (void*)GetMaterialUV_s, NULL, NULL, bOverride);
 	return S_OK;
 }
