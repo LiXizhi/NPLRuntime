@@ -63,7 +63,8 @@ namespace ParaEngine
 		ATTRIBUTE_METHOD1(CBlockMaterial, GetNormal_s, const char**)		{ static std::string v; v = cls->GetParamBlock()->CreateGetParameter("Normal")->GetValueByString(); *p1 = v.c_str(); return S_OK; }
 		ATTRIBUTE_METHOD1(CBlockMaterial, SetDiffuse_s, const char*)		{ cls->GetParamBlock()->CreateGetParameter("Diffuse")->SetValueByString(p1, CParameter::PARAMETER_TYPE::PARAM_STRING); return S_OK; }
 		ATTRIBUTE_METHOD1(CBlockMaterial, GetDiffuse_s, const char**)		{ static std::string v; v = cls->GetParamBlock()->CreateGetParameter("Diffuse")->GetValueByString(); *p1 = v.c_str(); return S_OK; }
-
+		ATTRIBUTE_METHOD1(CBlockMaterial, SetMaterialUV_s, Vector4)		{ *(cls->GetParamBlock()->CreateGetParameter("MaterialUV")) = p1; return S_OK; }
+		ATTRIBUTE_METHOD1(CBlockMaterial, GetMaterialUV_s, Vector4*)		{ *p1 = (Vector4)(*(cls->GetParamBlock()->CreateGetParameter("MaterialUV"))); return S_OK; }
 		virtual AssetType GetType() { return blockmaterial; };
 		virtual HRESULT InitDeviceObjects() { return S_OK; };
 		virtual HRESULT RestoreDeviceObjects() { return S_OK; };

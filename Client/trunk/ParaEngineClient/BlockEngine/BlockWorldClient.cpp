@@ -1018,32 +1018,6 @@ namespace ParaEngine
 		}
 	}
 
-	// OBSOLETED: delete this function
-	void BlockWorldClient::ApplyMaterialParameters(CEffectFile* pEffect, int32_t materialId)
-	{	
-		if (materialId <= 0) return ;
-		CBlockMaterial* material = CGlobals::GetBlockMaterialManager()->GetBlockMaterialByID(materialId);
-		CParameterBlock* paramBlock = material ? material->GetParamBlock() : nullptr;
-		if (paramBlock == nullptr) return ;
-
-		CParameter* baseColor = paramBlock->GetParameter("BaseColor");
-		if (baseColor) pEffect->setParameter(CEffectFile::k_material_base_color, baseColor->GetRawData(), baseColor->GetRawDataLength());
-		CParameter* metallic = paramBlock->GetParameter("Metallic");
-		if (metallic) pEffect->setParameter(CEffectFile::k_material_metallic, metallic->GetRawData(), metallic->GetRawDataLength());
-		CParameter* specular = paramBlock->GetParameter("Specular");
-		if (specular) pEffect->setParameter(CEffectFile::k_material_specular, specular->GetRawData(), specular->GetRawDataLength());
-		CParameter* roughness = paramBlock->GetParameter("Roughness");
-		if (roughness) pEffect->setParameter(CEffectFile::k_material_roughness, roughness->GetRawData(), roughness->GetRawDataLength());
-		CParameter* emissiveColor = paramBlock->GetParameter("EmissiveColor");
-		if (emissiveColor) pEffect->setParameter(CEffectFile::k_material_emissive_color, emissiveColor->GetRawData(), emissiveColor->GetRawDataLength());
-		CParameter* opacity = paramBlock->GetParameter("Opacity");
-		if (opacity) pEffect->setParameter(CEffectFile::k_material_opacity, opacity->GetRawData(), opacity->GetRawDataLength());
-		CParameter* normal = paramBlock->GetParameter("Normal");
-		// if (normal) pEffect->setTexture(CEffectFile::k_material_normal_texture, (TextureEntity*)normal);
-		// CParameter* diffuse = paramBlock->GetParameter("Diffuse");
-		// if (diffuse) pEffect->setTexture(CEffectFile::k_material_diffuse_texture, (TextureEntity*)diffuse);
-	}
-	
 	void BlockWorldClient::RenderWireFrameBlock(int nSelectionIndex, float fScaling, LinearColor* pLineColor)
 	{
 		auto& selectedBlocks = m_selectedBlockMap[nSelectionIndex];

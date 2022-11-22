@@ -126,7 +126,6 @@ namespace ParaEngine
 		* pass any value in enumeration BlockRenderMethod
 		*/
 		void Render(BlockRenderPass nRenderPass = BlockRenderPass_Opaque, std::vector<BlockRenderTask*>* pCurRenderQueue = NULL, int nRenderMethod = -1);
-		void ApplyMaterialParameters(CEffectFile* pEffect, int32_t materialId);
 
 		/** render light geometry. */
 		void RenderDeferredLightsMesh();

@@ -220,6 +220,8 @@ void CBlockWorld::LoadBlockMaterialData()
 							if (normal) pParamBlock->CreateGetParameter("Normal")->SetValueByString(normal, CParameter::PARAMETER_TYPE::PARAM_STRING);
 							const char* diffuse = pElement->Attribute("Diffuse");
 							if (diffuse) pParamBlock->CreateGetParameter("Diffuse")->SetValueByString(diffuse, CParameter::PARAMETER_TYPE::PARAM_STRING);
+							const char* materialUV = pElement->Attribute("MaterialUV");
+							if (materialUV) pParamBlock->CreateGetParameter("MaterialUV")->SetValueByString(materialUV, CParameter::PARAMETER_TYPE::PARAM_VECTOR4);
 						}
 					}
 				}
@@ -282,6 +284,8 @@ void CBlockWorld::SaveBlockMaterialData()
 		if (normal) pNewItem->SetAttribute("Normal", normal->GetValueByString());
 		auto diffuse = pParamBlock->GetParameter("Diffuse");   // texture
 		if (diffuse) pNewItem->SetAttribute("Diffuse", diffuse->GetValueByString());
+		auto materialUV = pParamBlock->GetParameter("MaterialUV"); // vector4
+		if (materialUV) pNewItem->SetAttribute("MaterialUV", materialUV->GetValueByString());
 		root->LinkEndChild(pNewItem);
 	}
 	std::string fileName = m_worldInfo.GetBlockMaterialFileName(true);

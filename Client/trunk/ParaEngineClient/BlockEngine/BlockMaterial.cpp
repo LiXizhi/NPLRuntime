@@ -37,6 +37,7 @@ void CBlockMaterial::InitParamBlock()
 	m_SharedParamBlock.CreateGetParameter("Opacity")->SetValueByString("1.0", CParameter::PARAMETER_TYPE::PARAM_FLOAT);
 	m_SharedParamBlock.CreateGetParameter("Normal")->SetValueByString("", CParameter::PARAMETER_TYPE::PARAM_STRING);    // 法线贴图
 	m_SharedParamBlock.CreateGetParameter("Diffuse")->SetValueByString("", CParameter::PARAMETER_TYPE::PARAM_STRING);   // 漫反射贴图
+	m_SharedParamBlock.CreateGetParameter("MaterialUV")->SetValueByString("1.0, 1.0, 0.0, 0.0", CParameter::PARAMETER_TYPE::PARAM_VECTOR4);   // 漫反射贴图
 }
 
 CParameterBlock* CBlockMaterial::GetParamBlock(bool bCreateIfNotExist /*= false*/)
@@ -57,5 +58,6 @@ int CBlockMaterial::InstallFields(CAttributeClass* pClass, bool bOverride)
 	pClass->AddField("Opacity", FieldType_Float, (void*)SetOpacity_s, (void*)GetOpacity_s, NULL, NULL, bOverride);
 	pClass->AddField("Normal", FieldType_String, (void*)SetNormal_s, (void*)GetNormal_s, NULL, NULL, bOverride);
 	pClass->AddField("Diffuse", FieldType_String, (void*)SetDiffuse_s, (void*)GetDiffuse_s, NULL, NULL, bOverride);
+	pClass->AddField("MaterialUV", FieldType_String, (void*)SetMaterialUV_s, (void*)GetMaterialUV_s, NULL, NULL, bOverride);
 	return S_OK;
 }

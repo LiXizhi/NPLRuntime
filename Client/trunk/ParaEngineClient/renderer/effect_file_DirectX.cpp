@@ -745,6 +745,8 @@ void CEffectFileDirectX::parseParameters()
 				m_paramHandle[k_material_normal_texture] = hParam;	
 			else if(strcmpi( ParamDesc.Semantic, "materialDiffuseTexture" ) == 0)
 				m_paramHandle[k_material_diffuse_texture] = hParam;	
+			else if(strcmpi( ParamDesc.Semantic, "materialUV" ) == 0)
+				m_paramHandle[k_material_uv] = hParam;	
 		}
 
         if( ParamDesc.Semantic != NULL && 
