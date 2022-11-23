@@ -814,18 +814,27 @@ namespace ParaEngine
 							CParameterBlock* paramBlock = material ? material->GetParamBlock() : nullptr;
 							if (paramBlock)
 							{
+								CParameter* materialUV = paramBlock->GetParameter("MaterialUV");
+								if (materialUV) 
+									pEffect->setParameter(CEffectFile::k_material_uv, materialUV->GetRawData(), materialUV->GetRawDataLength());
 								CParameter* baseColor = paramBlock->GetParameter("BaseColor");
-								if (baseColor) pEffect->setParameter(CEffectFile::k_material_base_color, baseColor->GetRawData(), baseColor->GetRawDataLength());
+								if (baseColor) 
+									pEffect->setParameter(CEffectFile::k_material_base_color, baseColor->GetRawData(), baseColor->GetRawDataLength());
 								CParameter* metallic = paramBlock->GetParameter("Metallic");
-								if (metallic) pEffect->setParameter(CEffectFile::k_material_metallic, metallic->GetRawData(), metallic->GetRawDataLength());
+								if (metallic) 
+									pEffect->setParameter(CEffectFile::k_material_metallic, metallic->GetRawData(), metallic->GetRawDataLength());
 								CParameter* specular = paramBlock->GetParameter("Specular");
-								if (specular) pEffect->setParameter(CEffectFile::k_material_specular, specular->GetRawData(), specular->GetRawDataLength());
+								if (specular) 
+									pEffect->setParameter(CEffectFile::k_material_specular, specular->GetRawData(), specular->GetRawDataLength());
 								CParameter* roughness = paramBlock->GetParameter("Roughness");
-								if (roughness) pEffect->setParameter(CEffectFile::k_material_roughness, roughness->GetRawData(), roughness->GetRawDataLength());
+								if (roughness) 
+									pEffect->setParameter(CEffectFile::k_material_roughness, roughness->GetRawData(), roughness->GetRawDataLength());
 								CParameter* emissiveColor = paramBlock->GetParameter("EmissiveColor");
-								if (emissiveColor) pEffect->setParameter(CEffectFile::k_material_emissive_color, emissiveColor->GetRawData(), emissiveColor->GetRawDataLength());
+								if (emissiveColor)
+									pEffect->setParameter(CEffectFile::k_material_emissive_color, emissiveColor->GetRawData(), emissiveColor->GetRawDataLength());
 								CParameter* opacity = paramBlock->GetParameter("Opacity");
-								if (opacity) pEffect->setParameter(CEffectFile::k_material_opacity, opacity->GetRawData(), opacity->GetRawDataLength());
+								if (opacity)
+									pEffect->setParameter(CEffectFile::k_material_opacity, opacity->GetRawData(), opacity->GetRawDataLength());
 
 								bool bHasDiffuseTex = false;
 								CParameter* diffuse = paramBlock->GetParameter("Diffuse");
