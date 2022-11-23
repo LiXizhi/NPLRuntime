@@ -35,7 +35,7 @@ void ParaEngine::BlockTessellatorBase::SetWorld(CBlockWorld* pWorld)
 	}
 }
 
-int32 ParaEngine::BlockTessellatorBase::TessellateBlock(BlockChunk* pChunk, uint16 packedBlockId, BlockRenderMethod dwShaderID, BlockVertexCompressed** pOutputData)
+int32 ParaEngine::BlockTessellatorBase::TessellateBlock(BlockChunk* pChunk, uint16 packedBlockId, BlockRenderMethod dwShaderID, BlockVertexCompressed** pOutputData, int materialId)
 {
 	return 0;
 }
@@ -271,7 +271,7 @@ ParaEngine::BlockGeneralTessellator::BlockGeneralTessellator(CBlockWorld* pWorld
 {
 }
 
-int32 ParaEngine::BlockGeneralTessellator::TessellateBlock(BlockChunk* pChunk, uint16 packedBlockId, BlockRenderMethod dwShaderID, BlockVertexCompressed** pOutputData)
+int32 ParaEngine::BlockGeneralTessellator::TessellateBlock(BlockChunk* pChunk, uint16 packedBlockId, BlockRenderMethod dwShaderID, BlockVertexCompressed** pOutputData, int materialId)
 {
 	if (!UpdateCurrentBlock(pChunk, packedBlockId))
 		return 0;
@@ -297,7 +297,7 @@ int32 ParaEngine::BlockGeneralTessellator::TessellateBlock(BlockChunk* pChunk, u
 		else
 		{
 			// standard cube including tree leaves. 
-			TessellateStdCube(dwShaderID);
+			TessellateStdCube(dwShaderID, materialId);
 		}
 	}
 	int nFaceCount = tessellatedModel.GetFaceCount();
@@ -900,7 +900,7 @@ void ParaEngine::BlockGeneralTessellator::TessellateLiquidOrIce(BlockRenderMetho
 	}
 }
 
-void ParaEngine::BlockGeneralTessellator::TessellateStdCube(BlockRenderMethod dwShaderID)
+void ParaEngine::BlockGeneralTessellator::TessellateStdCube(BlockRenderMethod dwShaderID, int materialId)
 {
 	FetchNearbyBlockInfo(m_pChunk, m_blockId_cs, 27);
 
@@ -919,13 +919,20 @@ void ParaEngine::BlockGeneralTessellator::TessellateStdCube(BlockRenderMethod dw
 	int tileSize = m_pCurBlockTemplate->getTileSize();
 	float uvScale = (tileSize == 1) ? 1.0f : (1.0f / tileSize);
 
+	auto packedBlockId = CalcPackedBlockID(m_blockId_cs);
+	bool bHasBlockMaterial = m_pChunk->HasBlockMaterial(packedBlockId);
+
 	for (int face = 0; face < nFaceCount; ++face)
 	{
 		int nFirstVertex = face * 4;
 
 		Block* pCurBlock = neighborBlocks[BlockCommon::RBP_SixNeighbors[face]];
 
-		if (!pCurBlock || (pCurBlock->GetTemplate()->GetLightOpacity() < 15))
+		if ((!pCurBlock || (pCurBlock->GetTemplate()->GetLightOpacity() < 15)) && 
+			/** we will skip standard material if there is a block material */
+			((materialId < 0 && (!bHasBlockMaterial || m_pChunk->GetBlockFaceMaterial(packedBlockId, (int16)face) < 0)) ||
+			/** we will only output the give block material */
+			(materialId > 0 && bHasBlockMaterial && m_pChunk->GetBlockFaceMaterial(packedBlockId, (int16)face) == materialId)))
 		{
 			for (int v = 0; v < 4; ++v)
 			{

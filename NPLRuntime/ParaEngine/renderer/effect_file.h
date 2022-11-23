@@ -166,6 +166,18 @@ namespace ParaEngine
 			k_tex_mat15,
 			k_tex_mat_max,
 
+			k_material_exist,
+			k_material_base_color,
+			k_material_has_base_color,
+			k_material_metallic,
+			k_material_specular,
+			k_material_roughness,
+			k_material_emissive_color,
+			k_material_opacity,
+			k_material_normal_texture,
+			k_material_diffuse_texture,
+			k_material_uv,
+
 			// last one
 			k_max_param_handles
 		};

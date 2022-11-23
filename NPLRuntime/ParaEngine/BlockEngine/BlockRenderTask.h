@@ -84,7 +84,9 @@ namespace ParaEngine
 
 		int32 GetBufferIndex() const { return m_pBufferIndex; }
 		void SetBufferIndex(int32 val) { m_pBufferIndex = val; }
-
+	
+		int32_t GetMaterialId() const { return m_materialId; }
+		void SetMaterialId(int32_t materialId) { m_materialId = materialId; }
 	private:
 		static std::vector<BlockRenderTask*> g_renderTaskPool;		
 		static std::map<int,bool> g_emptySlotIndices;
@@ -99,6 +101,7 @@ namespace ParaEngine
 		BlockTemplate* m_pTemplate;
 		uint16_t m_nBlockData;
 
+		int32_t m_materialId;
 		// all are weak references: do not release it
 		union {
 			VertexBufferDevicePtr_type m_pVertexBuffer;

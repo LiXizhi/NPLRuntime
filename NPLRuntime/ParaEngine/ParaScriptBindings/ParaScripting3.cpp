@@ -125,6 +125,9 @@ void CNPLScriptingState::LoadHAPI_SceneManager()
 				def("GetBlockUserData",&ParaTerrain::GetBlockUserData),
 				def("GetBlockUserDataByIdx",&ParaTerrain::GetBlockUserDataByIdx),
 
+				def("SetBlockMaterial", &ParaTerrain::SetBlockMaterial),
+				def("GetBlockMaterial", &ParaTerrain::GetBlockMaterial),
+
 				def("GetBlocksInRegion",&ParaTerrain::GetBlocksInRegion),
 				def("GetActiveRegion",&ParaTerrain::GetVisibleChunkRegion),
 				def("LoadBlockAsync", &ParaTerrain::LoadBlockAsync),
@@ -253,6 +256,9 @@ void CNPLScriptingState::LoadHAPI_ResourceManager()
 				def("GarbageCollect", &ParaAsset::GarbageCollect),
 				def("LoadEffectFile", &ParaAsset::LoadEffectFile),
 				def("GetEffectFile", &ParaAsset::GetEffectFile),
+				def("GetBlockMaterial", &ParaAsset::GetBlockMaterial),
+				def("CreateBlockMaterial", &ParaAsset::CreateBlockMaterial),
+				def("DeleteBlockMaterial", &ParaAsset::DeleteBlockMaterial),
 				def("LoadParaX", &ParaAsset::LoadParaX),
 				def("LoadDatabase", &ParaAsset::LoadDatabase),
 				def("LoadStaticMesh", &ParaAsset::LoadStaticMesh),

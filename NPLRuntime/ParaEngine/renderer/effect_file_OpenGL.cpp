@@ -1162,6 +1162,16 @@ bool ParaEngine::CEffectFileOpenGL::MappingEffectUniforms(const std::vector<Unif
 		table["specularPower"] = k_specularPower;
 		table["transitionFactor"] = k_transitionFactor;
 		table["LightParams"] = k_LightParams;
+
+		table["materialBaseColor"] = k_material_base_color;
+		table["materialMetallic"] = k_material_metallic;
+		table["materialSpecular"] = k_material_specular;
+		table["materialRoughness"] = k_material_roughness;
+		table["materialEmissiveColor"] = k_material_emissive_color;
+		table["materialOpacity"] = k_material_opacity;
+		table["materialNormalTexture"] = k_material_normal_texture;
+		table["materialDiffuseTexture"] = k_material_diffuse_texture;
+		table["materialUV"] = k_material_uv;
 	}
 
 	m_ID2Names.clear();
