@@ -199,7 +199,7 @@ void CBlockWorld::LoadBlockMaterialData()
 						int32_t materialID = -1;
 						if (pElement->QueryIntAttribute("Id", &materialID) == XML_SUCCESS_ENUM_TYPE)
 						{
-							CBlockMaterial* pMaterial = mgr->GetBlockMaterialByID(materialID);
+							CBlockMaterial* pMaterial = mgr->CreateGetBlockMaterialByID(materialID);
 							if (!pMaterial) continue;
 							CParameterBlock* pParamBlock = pMaterial->GetParamBlock();
 							const char* materialName = pElement->Attribute("MaterialName");

@@ -259,6 +259,7 @@ void CNPLScriptingState::LoadHAPI_ResourceManager()
 				def("GetEffectFile", &ParaAsset::GetEffectFile),
 				def("GetBlockMaterial", &ParaAsset::GetBlockMaterial),
 				def("CreateBlockMaterial", &ParaAsset::CreateBlockMaterial),
+				def("CreateGetBlockMaterial", &ParaAsset::CreateGetBlockMaterial),
 				def("DeleteBlockMaterial", &ParaAsset::DeleteBlockMaterial),
 				def("LoadParaX", &ParaAsset::LoadParaX),
 				def("LoadDatabase", &ParaAsset::LoadDatabase),
