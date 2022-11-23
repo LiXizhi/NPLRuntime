@@ -753,8 +753,10 @@ namespace ParaEngine
 					int32_t passId;
 					if (curTemplateId != pRenderTask->GetTemplateId() || curMaterialId != pRenderTask->GetMaterialId())
 					{
+						auto lastMaterialId = curMaterialId;
 						curTemplateId = pRenderTask->GetTemplateId();
 						curMaterialId = pRenderTask->GetMaterialId();
+
 						BlockTemplate* pTemplate = pRenderTask->GetTemplate();
 						if (curMaterialId > 0) {
 							if (dwRenderMethod == BLOCK_RENDER_FANCY_SHADER)
@@ -808,6 +810,22 @@ namespace ParaEngine
 								continue;
 							}
 						}
+
+						// use linear filtering for block material diffuse texture
+						if (lastMaterialId != curMaterialId)
+						{
+							if (lastMaterialId <= 0 && curMaterialId > 0)
+							{
+								pDevice->SetSamplerState(0, D3DSAMP_MINFILTER, D3DTEXF_LINEAR);
+								pDevice->SetSamplerState(0, D3DSAMP_MAGFILTER, D3DTEXF_LINEAR);
+							}
+							else if (lastMaterialId > 0 && curMaterialId <= 0)
+							{
+								pDevice->SetSamplerState(0, D3DSAMP_MINFILTER, D3DTEXF_POINT);
+								pDevice->SetSamplerState(0, D3DSAMP_MAGFILTER, D3DTEXF_POINT);
+							}
+						}
+
 						if (curMaterialId > 0)
 						{
 							CBlockMaterial* material = CGlobals::GetBlockMaterialManager()->GetBlockMaterialByID(curMaterialId);
