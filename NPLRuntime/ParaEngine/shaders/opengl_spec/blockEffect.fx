@@ -35,6 +35,7 @@ float4x4 mWorld: world;
 
 float4 materialBaseColor: materialBaseColor;
 float materialMetallic: materialMetallic;
+float4 materialUV	: materialUV;
 
 // texture 0
 texture tex0 : TEXTURE; 
@@ -213,14 +214,24 @@ float4 TransparentMainPS(SimpleVSOut input) :COLOR0
 
 
 ////////////////////////////////////Material//////////////////////////////////////////////////////
-SimpleVSOut MaterialMainVS(	float4 pos		: POSITION,
+
+struct MaterialBlockVSOut
+{
+	float4 pos	:POSITION;
+	float2 texcoord :	TEXCOORD0;
+	half4 color : COLOR0;
+};
+
+MaterialBlockVSOut MaterialMainVS(	float4 pos		: POSITION,
 							float3	Norm	: NORMAL,
 							half4 color		: COLOR0,
 							half4 color2 : COLOR1,
 							float2 texcoord	: TEXCOORD0)
 {
-	SimpleVSOut output;
+	MaterialBlockVSOut output;
+
 	output.pos = mul(pos, mWorldViewProj);
+	float3 normal = Norm;
 	output.texcoord = texcoord;
 	
 	// emissive block light received by this block. 
@@ -244,12 +255,37 @@ SimpleVSOut MaterialMainVS(	float4 pos		: POSITION,
 	
 	//calculate the fog factor
 	output.color.w = CalcFogFactor(length(output.pos.xyz));
+
+	// calculate world position
+	float3 worldblockPos = (vWorldPos.xyz / BLOCK_SIZE) + pos.xyz;
+	if (normal.x > 0.5) {
+		output.texcoord = worldblockPos.zy;
+	}
+	else if (normal.x < -0.5) {
+		output.texcoord = float2(32000.0 - worldblockPos.z, worldblockPos.y);
+	}
+	else if (normal.y > 0.5) {
+		output.texcoord = worldblockPos.xz;
+	}
+	else if (normal.y < -0.5) {
+		output.texcoord = float2(32000.0 - worldblockPos.x, worldblockPos.z);
+	}
+	else if (normal.z > 0.5) {
+		output.texcoord = float2(32000.0 - worldblockPos.x, worldblockPos.y);
+	}
+	else if (normal.z < -0.5) {
+		output.texcoord = worldblockPos.xy;
+	}
+	output.texcoord += materialUV.zw;
 	return output;
 }
 
-float4 MaterialMainPS(SimpleVSOut input) :COLOR0
+float4 MaterialMainPS(MaterialBlockVSOut input) :COLOR0
 {
-	float4 albedoColor = tex2D(tex0Sampler,input.texcoord);
+	float2 uv = (input.texcoord - floor(input.texcoord / materialUV.xy) * materialUV.xy) / materialUV.xy;
+	uv.y = 1.0 - uv.y;
+
+	float4 albedoColor = tex2D(tex0Sampler, uv);
 	albedoColor = albedoColor * materialBaseColor;
 
 	float4 oColor = float4(lerp(float3(albedoColor.xyz * input.color.xyz), g_fogColor.xyz, input.color.w), albedoColor.a);

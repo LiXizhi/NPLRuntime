@@ -1,4 +1,4 @@
-//-----------------------------------------------------------------------------
+﻿//-----------------------------------------------------------------------------
 // Class:	Block Manager
 // Authors:	LiXizhi, Clayman
 // Emails:	LiXizhi@yeah.net
@@ -788,6 +788,8 @@ namespace ParaEngine
 							CParameterBlock* paramBlock = material ? material->GetParamBlock() : nullptr;
 							if (paramBlock)
 							{
+								CParameter* materialUV = paramBlock->GetParameter("MaterialUV");
+								if (materialUV) pEffect->setParameter(CEffectFile::k_material_uv, materialUV->GetRawData(), materialUV->GetRawDataLength());
 								CParameter* baseColor = paramBlock->GetParameter("BaseColor");
 								if (baseColor) pEffect->setParameter(CEffectFile::k_material_base_color, baseColor->GetRawData(), baseColor->GetRawDataLength());
 								CParameter* metallic = paramBlock->GetParameter("Metallic");
