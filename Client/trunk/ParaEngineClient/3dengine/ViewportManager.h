@@ -12,6 +12,7 @@ namespace ParaEngine
 		VIEW_LAYOUT_STEREO_RED_BLUE,
 		VIEW_LAYOUT_STEREO_OMNI = 4,//ODS,360°VR
 		VIEW_LAYOUT_STEREO_OMNI_SINGLE_EYE=5,//ODS,360°VR
+		//前后左右上下6个viewport组成一个立方体，然后通过shader转成球面，以实现180x360全景渲染
 		VIEW_LAYOUT_STEREO_OMNI_SINGLE_EYE_1 = 6,
 
 		VIEW_LAYOUT_INVALID,
@@ -112,6 +113,8 @@ namespace ParaEngine
 		/** all view ports */
 		std::vector<CViewport*> m_viewportList;
 		std::vector<CViewport*> m_viewportSorted;
+
+		CViewport* m_normalScenePortInOdsSingleEye;
 
 		ParaViewport m_viewport;
 		int m_nWidth;

@@ -77,7 +77,7 @@ void ParaEngine::CViewport::ApplyCamera(CAutoCamera* pCamera)
 			Matrix3 mRotYaw;
 			Matrix3 mRotRoll;
 
-			if (abs(m_stereoODSparam.moreRotX) > 0.00001f)//pitch 
+			//if (abs(m_stereoODSparam.moreRotX) > 0.00001f)//pitch 
 			{
 				
 				Quaternion q_pitch(Radian(m_stereoODSparam.moreRotX), right);
@@ -96,7 +96,7 @@ void ParaEngine::CViewport::ApplyCamera(CAutoCamera* pCamera)
 			/*auto m_mCameraWorld = pCamera->GetViewMatrix()->inverse();
 			up = Vector3(m_mCameraWorld._21, m_mCameraWorld._22, m_mCameraWorld._23);*/
 			
-			if(abs(m_stereoODSparam.moreRotY)>0.00001f) //yaw
+			//if(abs(m_stereoODSparam.moreRotY)>0.00001f) //yaw
 			{
 				Quaternion q_yaw(Radian(m_stereoODSparam.moreRotY), up);
 				q_yaw.ToRotationMatrix(mRotYaw);
@@ -110,18 +110,15 @@ void ParaEngine::CViewport::ApplyCamera(CAutoCamera* pCamera)
 				oldLookAtPos = newLookAt;
 			}
 			
-			if (abs(m_stereoODSparam.moreRotZ) > 0.00001f) //roll
+			//if (abs(m_stereoODSparam.moreRotZ) > 0.00001f) //roll
 			{
 				if (abs(m_stereoODSparam.moreRotZ - (-1.57))<0.0001) {
 					int i = 0;
 				}
 				Quaternion q_roll(Radian(m_stereoODSparam.moreRotZ), up);
-				//up先绕x轴旋转pitch，
-				//pCamera->GetViewMatrix()->inverse();
 				float oldYaw = pCamera->GetCameraRotY();
 				up = Vector3(mRotPitch * up);
 				up.normalise();
-				//再绕y轴旋转moreRoatZ
 				
 				q_roll.ToRotationMatrix(mRotRoll);
 				up = Vector3(mRotRoll * up);
