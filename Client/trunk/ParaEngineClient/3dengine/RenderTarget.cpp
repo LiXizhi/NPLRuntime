@@ -593,15 +593,6 @@ void ParaEngine::CRenderTarget::End()
 #endif
 	// restore viewport
 	pd3dDevice->SetViewport(&m_oldViewport);
-
-	/*static int acc = 0;
-	if (GetCanvasTextureName() == "ods_render_target") {
-		acc++;
-		if (acc == 1000) {
-			string name = "D:\\work\\test_xxx.png";
-			SaveToFile(name.c_str(), m_nTextureWidth, m_nTextureHeight);
-		}
-	}*/
 }
 
 
