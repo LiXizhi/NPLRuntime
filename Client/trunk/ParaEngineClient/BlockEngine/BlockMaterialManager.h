@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include "AssetManager.h"
 #include "BlockMaterial.h"
@@ -16,7 +16,7 @@ namespace ParaEngine
 
 		CBlockMaterial* CreateBlockMaterial();
 		CBlockMaterial* GetBlockMaterialByID(int32_t id);
-
+		CBlockMaterial* CreateGetBlockMaterialByID(int32_t id);
 		
 		AssetItemsSet_t::iterator begin() { return m_items.begin(); }
 		AssetItemsSet_t::iterator end() { return m_items.end(); }

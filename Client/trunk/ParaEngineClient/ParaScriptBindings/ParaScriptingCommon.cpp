@@ -905,6 +905,11 @@ ParaScripting::ParaAssetObject ParaAsset::CreateBlockMaterial()
 	return ParaAssetObject(CGlobals::GetBlockMaterialManager()->CreateBlockMaterial());
 }
 
+ParaScripting::ParaAssetObject ParaAsset::CreateGetBlockMaterial(int32_t materialId)
+{
+	return ParaAssetObject(CGlobals::GetBlockMaterialManager()->CreateGetBlockMaterialByID(materialId));
+}
+
 void ParaAsset::DeleteBlockMaterial(ParaScripting::ParaAssetObject asset)
 {
 	auto mgr = CGlobals::GetBlockMaterialManager();

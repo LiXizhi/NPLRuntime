@@ -428,6 +428,7 @@ namespace ParaScripting
 
 		static ParaAssetObject GetBlockMaterial(int32_t materialId);
 		static ParaAssetObject CreateBlockMaterial();
+		static ParaAssetObject CreateGetBlockMaterial(int32_t materialId);
 		static void DeleteBlockMaterial(ParaAssetObject asset);
 		/**
 		* Load ParaX model asset, ParaX model file contains mesh, skeletal animation, etc.
