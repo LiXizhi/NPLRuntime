@@ -172,6 +172,7 @@ namespace ParaEngine
 			k_material_specular,
 			k_material_roughness,
 			k_material_emissive_color,
+			k_material_emissive,
 			k_material_opacity,
 			k_material_normal_texture,
 			k_material_diffuse_texture,

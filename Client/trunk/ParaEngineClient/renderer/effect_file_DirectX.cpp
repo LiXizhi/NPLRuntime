@@ -739,6 +739,8 @@ void CEffectFileDirectX::parseParameters()
 				m_paramHandle[k_material_roughness] = hParam;	
 			else if(strcmpi( ParamDesc.Semantic, "materialEmissiveColor" ) == 0)
 				m_paramHandle[k_material_emissive_color] = hParam;	
+			else if(strcmpi( ParamDesc.Semantic, "materialEmissive" ) == 0)
+				m_paramHandle[k_material_emissive] = hParam;	
 			else if(strcmpi( ParamDesc.Semantic, "materialOpacity" ) == 0)
 				m_paramHandle[k_material_opacity] = hParam;	
 			else if(strcmpi( ParamDesc.Semantic, "materialNormalTexture" ) == 0)
