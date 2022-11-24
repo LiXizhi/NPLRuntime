@@ -909,6 +909,27 @@ namespace ParaEngine
 										}
 									}
 								}
+
+								CParameter* emissive = paramBlock->GetParameter("EmissiveFullPath");
+								if (emissive)
+								{
+									const std::string& sFilename = emissive->GetValueAsConstString();
+									if (!sFilename.empty())
+									{
+										auto tex = CGlobals::GetAssetManager()->GetTexture(sFilename);
+										if (tex == NULL)
+											tex = CGlobals::GetAssetManager()->LoadTexture(sFilename, sFilename);
+										if (tex)
+										{
+											auto curTex = tex->GetTexture();
+											if (pCurTex1 != curTex)
+											{
+												pCurTex1 = curTex;
+												pDevice->SetTexture(1, pCurTex1);
+											}
+										}
+									}
+								}
 							}
 						}
 						else
