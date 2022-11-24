@@ -61,8 +61,12 @@ namespace ParaEngine
 		ATTRIBUTE_METHOD1(CBlockMaterial, GetOpacity_s, float*)		{ *p1 = (float)(*(cls->GetParamBlock()->CreateGetParameter("Opacity"))); return S_OK; }
 		ATTRIBUTE_METHOD1(CBlockMaterial, SetNormal_s, const char*)		{ cls->GetParamBlock()->CreateGetParameter("Normal")->SetValueByString(p1, CParameter::PARAMETER_TYPE::PARAM_STRING); return S_OK; }
 		ATTRIBUTE_METHOD1(CBlockMaterial, GetNormal_s, const char**)		{ static std::string v; v = cls->GetParamBlock()->CreateGetParameter("Normal")->GetValueByString(); *p1 = v.c_str(); return S_OK; }
+		ATTRIBUTE_METHOD1(CBlockMaterial, SetNormalFullPath_s, const char*)		{ cls->GetParamBlock()->CreateGetParameter("NormalFullPath")->SetValueByString(p1, CParameter::PARAMETER_TYPE::PARAM_STRING); return S_OK; }
+		ATTRIBUTE_METHOD1(CBlockMaterial, GetNormalFullPath_s, const char**)		{ static std::string v; v = cls->GetParamBlock()->CreateGetParameter("NormalFullPath")->GetValueByString(); *p1 = v.c_str(); return S_OK; }
 		ATTRIBUTE_METHOD1(CBlockMaterial, SetDiffuse_s, const char*)		{ cls->GetParamBlock()->CreateGetParameter("Diffuse")->SetValueByString(p1, CParameter::PARAMETER_TYPE::PARAM_STRING); return S_OK; }
 		ATTRIBUTE_METHOD1(CBlockMaterial, GetDiffuse_s, const char**)		{ static std::string v; v = cls->GetParamBlock()->CreateGetParameter("Diffuse")->GetValueByString(); *p1 = v.c_str(); return S_OK; }
+		ATTRIBUTE_METHOD1(CBlockMaterial, SetDiffuseFullPath_s, const char*)		{ cls->GetParamBlock()->CreateGetParameter("DiffuseFullPath")->SetValueByString(p1, CParameter::PARAMETER_TYPE::PARAM_STRING); return S_OK; }
+		ATTRIBUTE_METHOD1(CBlockMaterial, GetDiffuseFullPath_s, const char**)		{ static std::string v; v = cls->GetParamBlock()->CreateGetParameter("DiffuseFullPath")->GetValueByString(); *p1 = v.c_str(); return S_OK; }
 		ATTRIBUTE_METHOD1(CBlockMaterial, SetMaterialUV_s, Vector4)		{ *(cls->GetParamBlock()->CreateGetParameter("MaterialUV")) = p1; return S_OK; }
 		ATTRIBUTE_METHOD1(CBlockMaterial, GetMaterialUV_s, Vector4*)		{ *p1 = *((Vector4*)(cls->GetParamBlock()->CreateGetParameter("MaterialUV")->GetRawData())); return S_OK; }
 		virtual AssetType GetType() { return blockmaterial; };
