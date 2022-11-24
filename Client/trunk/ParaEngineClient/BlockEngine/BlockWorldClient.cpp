@@ -855,7 +855,7 @@ namespace ParaEngine
 									pEffect->setParameter(CEffectFile::k_material_opacity, opacity->GetRawData(), opacity->GetRawDataLength());
 
 								bool bHasDiffuseTex = false;
-								CParameter* diffuse = paramBlock->GetParameter("Diffuse");
+								CParameter* diffuse = paramBlock->GetParameter("DiffuseFullPath");
 								if (diffuse) 
 								{
 									const std::string& sFilename = diffuse->GetValueAsConstString();
@@ -888,7 +888,7 @@ namespace ParaEngine
 								}
 
 								bool bHasNormalTex = false;
-								CParameter* normal = paramBlock->GetParameter("Normal");
+								CParameter* normal = paramBlock->GetParameter("NormalFullPath");
 								if (normal)
 								{
 									const std::string& sFilename = normal->GetValueAsConstString();
