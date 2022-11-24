@@ -34,6 +34,8 @@ void CBlockMaterial::InitParamBlock()
 	m_SharedParamBlock.CreateGetParameter("Specular")->SetValueByString("0.0", CParameter::PARAMETER_TYPE::PARAM_FLOAT);
 	m_SharedParamBlock.CreateGetParameter("Roughness")->SetValueByString("0.0", CParameter::PARAMETER_TYPE::PARAM_FLOAT);
 	m_SharedParamBlock.CreateGetParameter("EmissiveColor")->SetValueByString("0.0, 0.0, 0.0, 0.0", CParameter::PARAMETER_TYPE::PARAM_VECTOR4);
+	m_SharedParamBlock.CreateGetParameter("Emissive")->SetValueByString("", CParameter::PARAMETER_TYPE::PARAM_STRING);            // 贴图
+	m_SharedParamBlock.CreateGetParameter("EmissiveFullPath")->SetValueByString("", CParameter::PARAMETER_TYPE::PARAM_STRING);    // 贴图
 	m_SharedParamBlock.CreateGetParameter("Opacity")->SetValueByString("1.0", CParameter::PARAMETER_TYPE::PARAM_FLOAT);
 	m_SharedParamBlock.CreateGetParameter("Normal")->SetValueByString("", CParameter::PARAMETER_TYPE::PARAM_STRING);    // 法线贴图
 	m_SharedParamBlock.CreateGetParameter("NormalFullPath")->SetValueByString("", CParameter::PARAMETER_TYPE::PARAM_STRING);    // 法线贴图
@@ -57,6 +59,8 @@ int CBlockMaterial::InstallFields(CAttributeClass* pClass, bool bOverride)
 	pClass->AddField("Specular", FieldType_Float, (void*)SetSpecular_s, (void*)GetSpecular_s, NULL, NULL, bOverride);
 	pClass->AddField("Roughness", FieldType_Float, (void*)SetRoughness_s, (void*)GetRoughness_s, NULL, NULL, bOverride);
 	pClass->AddField("EmissiveColor", FieldType_Vector4, (void*)SetEmissiveColor_s, (void*)GetEmissiveColor_s, NULL, NULL, bOverride);
+	pClass->AddField("Emissive", FieldType_String, (void*)SetEmissive_s, (void*)GetEmissive_s, NULL, NULL, bOverride);
+	pClass->AddField("EmissiveFullPath", FieldType_String, (void*)SetEmissiveFullPath_s, (void*)GetEmissiveFullPath_s, NULL, NULL, bOverride);
 	pClass->AddField("Opacity", FieldType_Float, (void*)SetOpacity_s, (void*)GetOpacity_s, NULL, NULL, bOverride);
 	pClass->AddField("Normal", FieldType_String, (void*)SetNormal_s, (void*)GetNormal_s, NULL, NULL, bOverride);
 	pClass->AddField("NormalFullPath", FieldType_String, (void*)SetNormalFullPath_s, (void*)GetNormalFullPath_s, NULL, NULL, bOverride);

@@ -57,6 +57,10 @@ namespace ParaEngine
 		ATTRIBUTE_METHOD1(CBlockMaterial, GetRoughness_s, float*)		{ *p1 = (float)(*(cls->GetParamBlock()->CreateGetParameter("Roughness"))); return S_OK; }
 		ATTRIBUTE_METHOD1(CBlockMaterial, SetEmissiveColor_s, Vector4)		{ *(cls->GetParamBlock()->CreateGetParameter("EmissiveColor")) = p1; return S_OK; }
 		ATTRIBUTE_METHOD1(CBlockMaterial, GetEmissiveColor_s, Vector4*)		{ *p1 = *((Vector4*)(cls->GetParamBlock()->CreateGetParameter("EmissiveColor")->GetRawData())); return S_OK; }
+		ATTRIBUTE_METHOD1(CBlockMaterial, SetEmissive_s, const char*)		{ cls->GetParamBlock()->CreateGetParameter("Emissive")->SetValueByString(p1, CParameter::PARAMETER_TYPE::PARAM_STRING); return S_OK; }
+		ATTRIBUTE_METHOD1(CBlockMaterial, GetEmissive_s, const char**)		{ static std::string v; v = cls->GetParamBlock()->CreateGetParameter("Emissive")->GetValueByString(); *p1 = v.c_str(); return S_OK; }
+		ATTRIBUTE_METHOD1(CBlockMaterial, SetEmissiveFullPath_s, const char*)		{ cls->GetParamBlock()->CreateGetParameter("NormalFullPath")->SetValueByString(p1, CParameter::PARAMETER_TYPE::PARAM_STRING); return S_OK; }
+		ATTRIBUTE_METHOD1(CBlockMaterial, GetEmissiveFullPath_s, const char**)		{ static std::string v; v = cls->GetParamBlock()->CreateGetParameter("NormalFullPath")->GetValueByString(); *p1 = v.c_str(); return S_OK; }
 		ATTRIBUTE_METHOD1(CBlockMaterial, SetOpacity_s, float)		{ *(cls->GetParamBlock()->CreateGetParameter("Opacity")) = p1; return S_OK; }
 		ATTRIBUTE_METHOD1(CBlockMaterial, GetOpacity_s, float*)		{ *p1 = (float)(*(cls->GetParamBlock()->CreateGetParameter("Opacity"))); return S_OK; }
 		ATTRIBUTE_METHOD1(CBlockMaterial, SetNormal_s, const char*)		{ cls->GetParamBlock()->CreateGetParameter("Normal")->SetValueByString(p1, CParameter::PARAMETER_TYPE::PARAM_STRING); return S_OK; }
