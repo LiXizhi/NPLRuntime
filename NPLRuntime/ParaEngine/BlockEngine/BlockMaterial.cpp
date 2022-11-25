@@ -31,7 +31,7 @@ void CBlockMaterial::InitParamBlock()
 	m_SharedParamBlock.CreateGetParameter("MaterialName")->SetValueByString("", CParameter::PARAMETER_TYPE::PARAM_STRING);
 	m_SharedParamBlock.CreateGetParameter("BaseColor")->SetValueByString("1.0, 1.0, 1.0, 1.0", CParameter::PARAMETER_TYPE::PARAM_VECTOR4);
 	m_SharedParamBlock.CreateGetParameter("Metallic")->SetValueByString("0.0", CParameter::PARAMETER_TYPE::PARAM_FLOAT);
-	m_SharedParamBlock.CreateGetParameter("Specular")->SetValueByString("0.0", CParameter::PARAMETER_TYPE::PARAM_FLOAT);
+	m_SharedParamBlock.CreateGetParameter("Specular")->SetValueByString("0.2", CParameter::PARAMETER_TYPE::PARAM_FLOAT);
 	m_SharedParamBlock.CreateGetParameter("Roughness")->SetValueByString("0.0", CParameter::PARAMETER_TYPE::PARAM_FLOAT);
 	m_SharedParamBlock.CreateGetParameter("EmissiveColor")->SetValueByString("0.0, 0.0, 0.0, 0.0", CParameter::PARAMETER_TYPE::PARAM_VECTOR4);
 	m_SharedParamBlock.CreateGetParameter("Emissive")->SetValueByString("", CParameter::PARAMETER_TYPE::PARAM_STRING);            // 贴图
