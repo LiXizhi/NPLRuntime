@@ -1922,16 +1922,40 @@ void ParaEngine::CGUIRoot::SetControlBottom(int bottom)
 	m_nCtrlBottom = (int)(bottom * fScaleY);
 }
 
+void ParaEngine::CGUIRoot::SetCurEditText(const char* curEditText)
+{
+	m_curEditText = curEditText;
+}
+
+std::string ParaEngine::CGUIRoot::GetCurEditText()
+{
+	return m_curEditText.c_str();
+}
+
+void ParaEngine::CGUIRoot::SetSelStart(int start)
+{
+	m_nSelStart = start;
+}
+void ParaEngine::CGUIRoot::SetSelEnd(int end)
+{
+	m_nSelEnd = end;
+}
+
 void ParaEngine::CGUIRoot::SetIMEKeyboardState(bool bOpen)
 {
+	char mJson[1000];
+	std::string formatStr = "{\"curEditText\":\"%s\",\"selStart\":%d,\"selEnd\":%d}";
+	sprintf(mJson,formatStr.c_str(),m_curEditText.c_str(),m_nSelStart,m_nSelEnd);
+	formatStr = mJson;
 	if (bOpen)
 	{
-		CGlobals::GetApp()->setIMEKeyboardState(true, m_nCtrlBottom > 0, m_nCtrlBottom);
+		CGlobals::GetApp()->setIMEKeyboardState(true, m_nCtrlBottom > 0, m_nCtrlBottom,formatStr);
 	}
 	else
 	{
-		CGlobals::GetApp()->setIMEKeyboardState(false, m_nCtrlBottom > 0, m_nCtrlBottom);
+		CGlobals::GetApp()->setIMEKeyboardState(false, m_nCtrlBottom > 0, m_nCtrlBottom,formatStr);
 		m_nCtrlBottom = 0;
+		m_curEditText = "";
 	}
 }
 
@@ -2429,6 +2453,9 @@ int ParaEngine::CGUIRoot::InstallFields(CAttributeClass* pClass, bool bOverride)
 #ifdef PARAENGINE_MOBILE
 	pClass->AddField("ControlBottom", FieldType_Int, (void*)SetControlBottom_s, nullptr, nullptr, nullptr, bOverride);
 	pClass->AddField("IMEKeyboardState", FieldType_Bool, (void*)SetIMEKeyboardState_s, nullptr, nullptr, nullptr, bOverride);
+	pClass->AddField("CurEditString", FieldType_String, (void*)SetCurEditString_s, (void*)GetCurEditString_s, NULL, NULL, bOverride);
+	pClass->AddField("SelStart", FieldType_Int, (void*)SetSelStart_s, nullptr, nullptr, nullptr, bOverride);
+	pClass->AddField("SelEnd", FieldType_Int, (void*)SetSelEnd_s, nullptr, nullptr, nullptr, bOverride);
 #endif
 
 	pClass->AddField("UseSystemCursor", FieldType_Bool, (void*)SetUseSystemCursor_s, (void*)GetUseSystemCursor_s, NULL, NULL, bOverride);

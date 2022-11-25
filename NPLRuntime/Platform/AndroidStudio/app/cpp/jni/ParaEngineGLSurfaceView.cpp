@@ -17,7 +17,7 @@
 namespace ParaEngine {
     const std::string ParaEngineGLSurfaceView::classname = "com/tatfook/paracraft/ParaEngineGLSurfaceView";
 
-    void ParaEngineGLSurfaceView::setIMEKeyboardState(bool bOpen, bool bMoveView, int ctrlBottom)
+    void ParaEngineGLSurfaceView::setIMEKeyboardState(bool bOpen, bool bMoveView, int ctrlBottom, const string& editParams)
     {
         std::string defaultValue="";
         int maxLength = 0;
@@ -40,7 +40,8 @@ namespace ParaEngine {
         if(useFloatEditBox){
             JniHelper::callStaticVoidMethod(classname, "setIMEKeyboardState", bOpen, defaultValue, maxLength,isMultiline,confirmHold,confirmType,inputType);
         }else{
-            JniHelper::callStaticVoidMethod(classname, "setIMEKeyboardState", bOpen, bMoveView, ctrlBottom);
+            bool isGuiEdit = pGUI!=NULL;
+            JniHelper::callStaticVoidMethod(classname, "setIMEKeyboardState", bOpen, bMoveView, ctrlBottom,editParams.c_str(),isGuiEdit);
         }
     }
 }
@@ -64,6 +65,21 @@ extern "C" {
         {
             pGUI->SendKeyDownEvent(EVirtualKey::KEY_BACK);
             pGUI->SendKeyUpEvent(EVirtualKey::KEY_BACK);
+        }
+
+    }
+
+    JNIEXPORT void JNICALL Java_com_tatfook_paracraft_ParaEngineGLSurfaceView_nativePressEnterKey(JNIEnv* env, jclass clazz)
+    {
+        if (CGlobals::GetApp()->GetAppState() != PEAppState_Ready)
+        {
+            return;
+        }
+        auto pGUI = CGUIRoot::GetInstance();
+        if (pGUI)
+        {
+            pGUI->SendKeyDownEvent(EVirtualKey::KEY_RETURN);
+            pGUI->SendKeyUpEvent(EVirtualKey::KEY_RETURN);
         }
 
     }

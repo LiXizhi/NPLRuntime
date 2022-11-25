@@ -23,9 +23,13 @@ import android.view.Surface;
 import android.view.View;
 import android.view.SurfaceHolder;
 import android.view.ViewTreeObserver;
+import android.view.inputmethod.EditorInfo;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.Toast;
 import androidx.annotation.Keep;
+
+import org.json.JSONException;
+import org.json.JSONObject;
 
 public class ParaEngineGLSurfaceView extends GLSurfaceView {
     private static ParaEngineGLSurfaceView mGLSurfaceView = null;
@@ -50,6 +54,7 @@ public class ParaEngineGLSurfaceView extends GLSurfaceView {
     private boolean mIsMoveView = false;
     private int mCtrlBottom = 0;
     private static native void nativeDeleteBackward();
+    private static native void nativePressEnterKey();
     private static native void nativeOnUnicodeChar(String text);
     public static native void nativeOnSetEditBoxText(String text);
     private static native void nativeSetSurface(Surface surface);
@@ -114,20 +119,36 @@ public class ParaEngineGLSurfaceView extends GLSurfaceView {
             mIsOpen = msg.getData().getBoolean("bOpen");
             mIsMoveView = msg.getData().getBoolean("bMoveView");
             mCtrlBottom = msg.getData().getInt("ctrlBottom");
-
+            String curEditText = msg.getData().getString("curEditText").replaceAll("\r\n","\n");
+            boolean isGuiEdit = msg.getData().getBoolean("isGuiEdit");
+            sParaTextInputWrapper.SetIsGuiEdit(isGuiEdit);
 
             if (mEditText == null) {
                 return false;
             }
 
-            sParaTextInputWrapper.onFocus();
 
             if (mIsOpen) {
+                int selStart = msg.getData().getInt("selStart");
+                int selEnd = msg.getData().getInt("selEnd");
+                if(selEnd<=0&&curEditText.length()>0){
+                    selStart = selEnd = Math.max(curEditText.length(),0);
+                }
+                mEditText.setText(curEditText);
+
+                mEditText.setSelection(selStart,selEnd);
+                lastText = curEditText;
+                sParaTextInputWrapper.onFocus();
+
+
                 mEditText.setEnabled(true);
 
                 if (mEditText.requestFocus()) {
                     mEditText.removeTextChangedListener(sParaTextInputWrapper);
                     mEditText.addTextChangedListener(sParaTextInputWrapper);
+                    if(!isGuiEdit){
+                        mEditText.setOnKeyListener(sParaTextInputWrapper);
+                    }
 
                     InputMethodManager imm = (InputMethodManager)sActivity.getSystemService(Context.INPUT_METHOD_SERVICE);
                     imm.showSoftInput(mEditText, 0);
@@ -238,13 +259,28 @@ public class ParaEngineGLSurfaceView extends GLSurfaceView {
     }
 
     @Keep
-    public static void setIMEKeyboardState(boolean bOpen, boolean bMoveView, int ctrlBottom) {
+    public static void setIMEKeyboardState(boolean bOpen, boolean bMoveView, int ctrlBottom,String jsonEditParams, boolean isGuiEdit) {
         Message msg = new Message();
         Bundle bundle = new Bundle();
         bundle.putBoolean("bOpen", bOpen);
         bundle.putBoolean("bMoveView", bMoveView);
         bundle.putInt("ctrlBottom", ctrlBottom);
+        bundle.putBoolean("isGuiEdit", isGuiEdit);
 
+        String curEditText = "";
+        int selStart = 0;
+        int selEnd = 0;
+        try{
+            JSONObject obj = new JSONObject(jsonEditParams);
+            curEditText = obj.optString("curEditText");
+            selStart = obj.optInt("selStart");
+            selEnd = obj.optInt("selEnd");
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
+        bundle.putString("curEditText", curEditText);
+        bundle.putInt("selStart", selStart);
+        bundle.putInt("selEnd", selEnd);
         msg.setData(bundle);
 
         mGLSurfaceView.sHandler.sendMessage(msg);
@@ -281,6 +317,15 @@ public class ParaEngineGLSurfaceView extends GLSurfaceView {
             @Override
             public void run() {
                 nativeDeleteBackward();
+            }
+        });
+    }
+
+    public void onPressEnterKey() {
+        sActivity.runOnGLThread(new Runnable() {
+            @Override
+            public void run() {
+                nativePressEnterKey();
             }
         });
     }
@@ -536,12 +581,12 @@ public class ParaEngineGLSurfaceView extends GLSurfaceView {
             onMouseRightKeyUp();
             return false;
         } else if (pKeyCode == KeyEvent.KEYCODE_BACK) {
-            if ((System.currentTimeMillis() - exitTime) > 2000) {
-                Toast.makeText(sActivity, "再按一次退出", Toast.LENGTH_LONG).show();
-                exitTime = System.currentTimeMillis();
-            } else {
-                ParaEngineActivity.onExit();
-            }
+            // if ((System.currentTimeMillis() - exitTime) > 2000) {
+            //     Toast.makeText(sActivity, "再按一次退出", Toast.LENGTH_LONG).show();
+            //     exitTime = System.currentTimeMillis();
+            // } else {
+            //     ParaEngineActivity.onExit();
+            // }
 
             return super.onKeyUp(pKeyCode, pKeyEvent);
         } else {
