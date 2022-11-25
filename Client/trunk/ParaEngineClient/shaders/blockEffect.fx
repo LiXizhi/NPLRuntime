@@ -30,9 +30,11 @@ float4x4 mWorld: world;
 float4 vWorldPos		: worldpos;
 
 // block material params
-float4 materialBaseColor: materialBaseColor;
-float materialMetallic: materialMetallic;
 float4 materialUV	: materialUV;
+float4 materialBaseColor: materialBaseColor;
+float4 materialEmissiveColor : materialEmissiveColor;
+float materialMetallic: materialMetallic;
+
 
 // texture 0
 texture tex0 : TEXTURE; 
@@ -42,6 +44,18 @@ sampler tex0Sampler: register(s0) = sampler_state
 
 	MinFilter = POINT;
 	MagFilter = POINT;
+};
+
+// texture 1
+texture tex1 : TEXTURE;
+sampler tex1Sampler: register(s1) = sampler_state
+{
+	Texture = <tex1>;
+	AddressU = wrap;
+	AddressV = wrap;
+	MagFilter = Linear;
+	MinFilter = Linear;
+	MipFilter = Linear;
 };
 
 struct SimpleVSOut
@@ -231,8 +245,17 @@ float4 MaterialMainPS(MaterialBlockVSOut input) :COLOR0
 
 	float4 albedoColor = tex2D(tex0Sampler, uv);
 	albedoColor = albedoColor * materialBaseColor;
+	albedoColor.xyz *= input.color.xyz;
 
-	float4 oColor = float4(lerp(float3(albedoColor.xyz * input.color.xyz), g_fogColor.xyz, input.color.w), albedoColor.a);
+	if (materialEmissiveColor.a > 0)
+	{
+		float4 emissiveColor = tex2D(tex1Sampler, uv);
+		emissiveColor.rgb *= materialEmissiveColor.rgb;
+		emissiveColor.a *= materialEmissiveColor.a;
+		albedoColor.xyz = lerp(albedoColor.xyz, emissiveColor.rgb, emissiveColor.a);
+	}
+
+	float4 oColor = float4(lerp(albedoColor.xyz, g_fogColor.xyz, input.color.w), albedoColor.a);
 	return oColor;
 }
 
