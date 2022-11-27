@@ -570,9 +570,10 @@ namespace ParaEngine
 						pCurVB = pVB;
 					}
 					int32_t passId;
+					BlockTemplate* pTemplate = pRenderTask->GetTemplate();
+
 					if (curTemplateId != pRenderTask->GetTemplateId())
 					{
-						BlockTemplate* pTemplate = pRenderTask->GetTemplate();
 						if (pTemplate->IsMatchAttribute(BlockTemplate::batt_twoTexture))
 							passId = g_twoTexPass;
 						else if (pTemplate->IsMatchAttribute(BlockTemplate::batt_transparent))
@@ -606,29 +607,6 @@ namespace ParaEngine
 							}
 						}
 
-						TextureEntity* pTexEntity = pTemplate->GetTexture0(pRenderTask->GetUserData());
-						if (pTexEntity && pTexEntity->GetTexture() != pCurTex0)
-						{
-							pCurTex0 = pTexEntity->GetTexture();
-							pDevice->SetTexture(0, pCurTex0);
-						}
-
-						pTexEntity = pTemplate->GetTexture1();
-						if (pTexEntity && pTexEntity->GetTexture() != pCurTex1)
-						{
-							pCurTex1 = pTexEntity->GetTexture();
-							pDevice->SetTexture(1, pCurTex1);
-						}
-
-						/* fixed function never use normal map
-						pTexEntity = pTemplate->GetNormalMap();
-						if(pTexEntity && pTexEntity->GetTexture()!=pCurTex2)
-						{
-							pCurTex2 = pTexEntity->GetTexture();
-							pDevice->SetTexture(2,pCurTex2);
-						}*/
-
-
 						// culling mode 
 						if (pTemplate->GetBlockModel().IsDisableFaceCulling())
 						{
@@ -657,6 +635,27 @@ namespace ParaEngine
 						}
 					}
 
+					TextureEntity* pTexEntity = pTemplate->GetTexture0(pRenderTask->GetUserData());
+					if (pTexEntity && pTexEntity->GetTexture() != pCurTex0)
+					{
+						pCurTex0 = pTexEntity->GetTexture();
+						pDevice->SetTexture(0, pCurTex0);
+					}
+
+					pTexEntity = pTemplate->GetTexture1();
+					if (pTexEntity && pTexEntity->GetTexture() != pCurTex1)
+					{
+						pCurTex1 = pTexEntity->GetTexture();
+						pDevice->SetTexture(1, pCurTex1);
+					}
+
+					/* fixed function never use normal map
+					pTexEntity = pTemplate->GetNormalMap();
+					if(pTexEntity && pTexEntity->GetTexture()!=pCurTex2)
+					{
+						pCurTex2 = pTexEntity->GetTexture();
+						pDevice->SetTexture(2,pCurTex2);
+					}*/
 
 					Matrix4 vWorldMatrix(Matrix4::IDENTITY);
 
@@ -751,13 +750,13 @@ namespace ParaEngine
 						pCurVB = pVB;
 					}
 					int32_t passId;
+					BlockTemplate* pTemplate = pRenderTask->GetTemplate();
 					if (curTemplateId != pRenderTask->GetTemplateId() || curMaterialId != pRenderTask->GetMaterialId())
 					{
 						auto lastMaterialId = curMaterialId;
 						curTemplateId = pRenderTask->GetTemplateId();
 						curMaterialId = pRenderTask->GetMaterialId();
-
-						BlockTemplate* pTemplate = pRenderTask->GetTemplate();
+						
 						if (curMaterialId > 0) {
 							if (dwRenderMethod == BLOCK_RENDER_FANCY_SHADER)
 							{
@@ -932,33 +931,7 @@ namespace ParaEngine
 								}
 							}
 						}
-						else
-						{
-							// use block's internal material
-							TextureEntity* pTexEntity = pTemplate->GetTexture0(pRenderTask->GetUserData());
-							if (pTexEntity && pTexEntity->GetTexture() != pCurTex0)
-							{
-								pCurTex0 = pTexEntity->GetTexture();
-								pDevice->SetTexture(0, pCurTex0);
-							}
-
-							pTexEntity = pTemplate->GetTexture1();
-							if (pTexEntity && pTexEntity->GetTexture() != pCurTex1)
-							{
-								pCurTex1 = pTexEntity->GetTexture();
-								pDevice->SetTexture(1, pCurTex1);
-							}
-
-							pTexEntity = pTemplate->GetNormalMap();
-							if (pTexEntity && pTexEntity->GetTexture() != pCurTex2)
-							{
-								pCurTex2 = pTexEntity->GetTexture();
-								if (dwRenderMethod == BLOCK_RENDER_FANCY_SHADER) {
-									pDevice->SetTexture(2, pCurTex2);
-								}
-							}
-						}
-
+						
 						// culling mode
 						if (pTemplate->GetBlockModel().IsDisableFaceCulling())
 						{
@@ -987,6 +960,32 @@ namespace ParaEngine
 						}
 					}
 
+					if (curMaterialId < 0)
+					{
+						// use block's internal material
+						TextureEntity* pTexEntity = pTemplate->GetTexture0(pRenderTask->GetUserData());
+						if (pTexEntity && pTexEntity->GetTexture() != pCurTex0)
+						{
+							pCurTex0 = pTexEntity->GetTexture();
+							pDevice->SetTexture(0, pCurTex0);
+						}
+
+						pTexEntity = pTemplate->GetTexture1();
+						if (pTexEntity && pTexEntity->GetTexture() != pCurTex1)
+						{
+							pCurTex1 = pTexEntity->GetTexture();
+							pDevice->SetTexture(1, pCurTex1);
+						}
+
+						pTexEntity = pTemplate->GetNormalMap();
+						if (pTexEntity && pTexEntity->GetTexture() != pCurTex2)
+						{
+							pCurTex2 = pTexEntity->GetTexture();
+							if (dwRenderMethod == BLOCK_RENDER_FANCY_SHADER) {
+								pDevice->SetTexture(2, pCurTex2);
+							}
+						}
+					}
 					// 
 					Matrix4 vWorldMatrix(Matrix4::IDENTITY);
 					Uint16x3& vMinPos = pRenderTask->GetMinBlockPos();
