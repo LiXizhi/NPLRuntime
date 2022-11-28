@@ -120,7 +120,7 @@ HRESULT ParaEngine::CViewportManager::Render(double dTimeDelta, int nPipelineOrd
 	DVector3 oldEyePos, oldLookAtPos;
 	float oldFov = 0;
 	float oldAspect = 1;
-	float oldCameraRotX, oldCameraDistance;
+	float oldCameraRotX, oldCameraDistance,oldLiftUp;
 	auto pMainScene = CGlobals::GetScene();
 	if (pMainScene) {
 		pCamera = (CAutoCamera*)pMainScene->GetCurrentCamera();
@@ -130,6 +130,7 @@ HRESULT ParaEngine::CViewportManager::Render(double dTimeDelta, int nPipelineOrd
 		oldAspect = pCamera->GetAspectRatio();
 		oldCameraRotX = pCamera->GetCameraRotX();
 		oldCameraDistance = pCamera->GetCameraObjectDistance();
+		oldLiftUp = pCamera->GetCameraLiftupAngle();
 		pCamera->SetForceOmniCameraObjectDistance(-10000);
 		pCamera->SetForceOmniCameraPitch(-10000);
 	}
@@ -161,7 +162,7 @@ HRESULT ParaEngine::CViewportManager::Render(double dTimeDelta, int nPipelineOrd
 		pCamera->SetCameraRotX(oldCameraRotX);
 		pCamera->SetCameraObjectDistance(oldCameraDistance);
 		pCamera->SetViewParams(oldEyePos, oldLookAtPos);
-		
+		pCamera->SetCameraLiftupAngle(oldLiftUp);
 	}
 	CreateGetViewPort(1)->SetActive();
 	return S_OK;
@@ -324,32 +325,59 @@ void ParaEngine::CViewportManager::SetLayout(VIEWPORT_LAYOUT nLayout, CSceneObje
 		const int num = 4;//横向4个方向
 		const int cubeWidth = (1.0f * GetWidth() / num);
 
-		if (GetHeight() - cubeWidth * 2<200) {//没有足够的位置留给UI了
+		if (GetHeight() - cubeWidth * 2<200) {//没有足够的位置留给UI了,直接显示一个全屏UI
 			CViewport* pUIViewport = CreateGetViewPort(portNum);
 			pUIViewport->SetIdentifier("GUI");
 			pUIViewport->SetGUIRoot(pGUIRoot);
 			pUIViewport->SetPosition("_fi", 0, 0, 0, 0);
 			pUIViewport->SetZOrder(98);
 			pUIViewport->SetEyeMode(STEREO_EYE_NORMAL);
+			pUIViewport->SetPipelineOrder(PIPELINE_UI);
 			portNum += 1;
 		}
 		else {
+			float fov_v = 60 * MATH_PI / 180;
+			float fov_h = MATH_PI / 2;
+			const float aspect = tan(fov_h / 2) / tan(fov_v / 2);
+
+			int _width = GetWidth();
+			int _height = GetHeight() - cubeWidth * 2;
+			
+			if (_width > _height * aspect) {
+				_width = _height * aspect;
+			}
+			else {
+				_height = _width / aspect;
+			}
 			//default show
 			CViewport* pUIViewport = CreateGetViewPort(portNum);
 			pUIViewport->SetIdentifier("GUI");
 			pUIViewport->SetGUIRoot(pGUIRoot);
-			pUIViewport->SetPosition("_lt", 0, cubeWidth * 2, GetWidth(), GetHeight() - cubeWidth * 2);
+			pUIViewport->SetPosition("_lt", 0, cubeWidth * 2, _width, _height);
 			pUIViewport->SetZOrder(98);
 			pUIViewport->SetEyeMode(STEREO_EYE_NORMAL);
+			pUIViewport->SetPipelineOrder(PIPELINE_UI);
 			portNum += 1;
 
 			CViewport* pMainSceneViewport = CreateGetViewPort(portNum);
 			pMainSceneViewport->SetIdentifier("scene");
 			pMainSceneViewport->SetScene(pMainScene);
-			pMainSceneViewport->SetPosition("_lt", 0, cubeWidth * 2, GetWidth(), GetHeight() - cubeWidth * 2);
-			pMainSceneViewport->SetEyeMode(STEREO_EYE_NORMAL);
-			pUIViewport->SetZOrder(97);
+			pMainSceneViewport->SetPosition("_lt", 0, cubeWidth * 2, _width, _height);
+			pMainSceneViewport->SetEyeMode(STEREO_EYE_LEFT);
+			pMainSceneViewport->SetZOrder(0);
+			pMainSceneViewport->SetPipelineOrder(PIPELINE_3D_SCENE);
 			m_normalScenePortInOdsSingleEye = pMainSceneViewport;
+			{
+				auto &viewport = pMainSceneViewport;
+				CViewport::StereoODSparam& param = viewport->GetStereoODSparam();
+				param.isODS = true;
+				param.aspectRatio = aspect;
+				param.fov = fov_v;
+				param.eyeShiftDistance = 0;
+				param.fov_h = fov_h;
+				
+				viewport->SetStereoODSparam(param);
+			}
 			portNum += 1;
 		}
 
@@ -380,6 +408,8 @@ void ParaEngine::CViewportManager::SetLayout(VIEWPORT_LAYOUT nLayout, CSceneObje
 			viewport->SetScene(pMainScene);
 			viewport->SetPosition("_lt", cubeWidth * portCoords[i][0], cubeWidth * portCoords[i][1], cubeWidth, cubeWidth);
 			viewport->SetEyeMode(STEREO_EYE_LEFT);
+			//viewport->SetPipelineOrder(PIPELINE_3D_SCENE);
+			viewport->SetZOrder(50 + i);
 
 			CViewport::StereoODSparam& param = viewport->GetStereoODSparam();
 			param.isODS = true;
@@ -416,8 +446,8 @@ void ParaEngine::CViewportManager::SetLayout(VIEWPORT_LAYOUT nLayout, CSceneObje
 		pFinalViewPort->SetPosition("_lt", 0, 0, cubeWidth * 4, cubeWidth * 2);
 		//pFinalViewPort->SetPosition("_lt", 0, 0, GetWidth(), GetHeight());
 		pFinalViewPort->SetEyeMode(STEREO_EYE_NORMAL);
-		pFinalViewPort->SetZOrder(99); // before GUI
-		pFinalViewPort->SetPipelineOrder(PIPELINE_3D_SCENE);
+		pFinalViewPort->SetZOrder(102);
+		pFinalViewPort->SetPipelineOrder(PIPELINE_POST_UI_3D_SCENE);
 		portNum += 1;
 
 
