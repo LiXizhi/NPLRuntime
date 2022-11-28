@@ -79,6 +79,10 @@ namespace ParaEngine
 #ifdef PARAENGINE_MOBILE
 		ATTRIBUTE_METHOD1(CGUIRoot, SetControlBottom_s, int) { cls->SetControlBottom(p1); return S_OK; }
 		ATTRIBUTE_METHOD1(CGUIRoot, SetIMEKeyboardState_s, bool) { cls->SetIMEKeyboardState(p1); return S_OK; }
+		ATTRIBUTE_METHOD1(CGUIRoot, SetCurEditString_s, const char*) { cls->SetCurEditText(p1); return S_OK; }
+		ATTRIBUTE_METHOD1(CGUIRoot, GetCurEditString_s, const char**) { *p1 = cls->GetCurEditText().c_str(); return S_OK; }
+		ATTRIBUTE_METHOD1(CGUIRoot, SetSelStart_s, int) { cls->SetSelStart(p1); return S_OK; }
+		ATTRIBUTE_METHOD1(CGUIRoot, SetSelEnd_s, int) { cls->SetSelEnd(p1); return S_OK; }
 #endif
 
 		ATTRIBUTE_METHOD1(CGUIRoot, GetUseSystemCursor_s, bool*)	{ *p1 = cls->GetUseSystemCursor(); return S_OK; }
@@ -451,6 +455,11 @@ namespace ParaEngine
 
 		/* */
 		void SetIMEKeyboardState(bool bOpen);
+		void SetCurEditText(const char* curEditText);
+
+		std::string GetCurEditText();
+		void SetSelStart(int start);
+		void SetSelEnd(int end);
 #endif
 
 		/** confine the cursor in current window.
@@ -622,6 +631,9 @@ namespace ParaEngine
 #ifdef PARAENGINE_MOBILE
 		/* App will check the bottom pos of control and move render view when attach IME. */
 		int			m_nCtrlBottom;
+		std::string m_curEditText;
+		int			m_nSelStart;
+		int			m_nSelEnd;
 #endif
 		
 		friend CGUIBase;

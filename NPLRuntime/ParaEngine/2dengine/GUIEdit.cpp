@@ -882,7 +882,6 @@ bool CGUIEditBox::MsgProc(MSG *event)
 			//select start and end are often mapped to up and down event, so give the default handler a chance to handle it
 			if (m_event->IsMapTo(nEvent, EM_EB_SELECTSTART)) {
 
-				OnSelectStart();
 
 				newMsg.message = EM_CTRL_CAPTUREMOUSE;
 				CGUIBase::MsgProc(&newMsg);
@@ -900,6 +899,8 @@ bool CGUIEditBox::MsgProc(MSG *event)
 						PlaceCaret(nCP);
 					m_nSelStart = m_nCaret;
 					ResetCaretBlink();
+
+					OnSelectStart();
 				}
 				dLastTime = dCurrTime;
 				bHandled = true;
@@ -911,14 +912,16 @@ bool CGUIEditBox::MsgProc(MSG *event)
 				bHandled = true;
 			}
 			else if (m_event->IsMapTo(nEvent, EM_EB_SELECTALL)) {
-				if(!IsUseFloatEditBox()) {
-					m_nSelStart = 0;
-					PlaceCaret(m_Buffer.GetTextSize());
-					ResetCaretBlink();
-					OnSelect();
-				}else {
-					OnSelectStart();
-				}
+#ifdef PARAENGINE_MOBILE //移动端不允许全选
+				newMsg.message = EM_EB_SELECTSTART;
+				bHandled = true;
+				return MsgProc(&newMsg);
+#else
+				m_nSelStart = 0;
+				PlaceCaret(m_Buffer.GetTextSize());
+				ResetCaretBlink();
+				OnSelect();
+#endif
 				bHandled = true;
 			}
 
@@ -1839,6 +1842,12 @@ bool ParaEngine::CGUIEditBox::attachWithIME()
 	bool ret = GUIIMEDelegate::attachWithIME();
 	if (ret)
 	{
+		std::string curText;
+		GetTextA(curText);
+		char mJson[1000];
+		std::string formatStr = "{\"curEditText\":\"%s\",\"selStart\":%d,\"selEnd\":%d}";
+		sprintf(mJson,formatStr.c_str(),curText.c_str(),m_nSelStart,m_nCaret);
+		formatStr = mJson;
 		if (m_bMoveViewWhenAttachWithIME)
 		{
 
@@ -1851,11 +1860,11 @@ bool ParaEngine::CGUIEditBox::attachWithIME()
 
 			int bottom = (int)(pos.rect.bottom * fScaleY);
 
-			CGlobals::GetApp()->setIMEKeyboardState(true, true, bottom);
+			CGlobals::GetApp()->setIMEKeyboardState(true, true, bottom,formatStr);
 		}
 		else
 		{
-			CGlobals::GetApp()->setIMEKeyboardState(true);
+			CGlobals::GetApp()->setIMEKeyboardState(true,false,-1,formatStr);
 		}
 	}
 	return ret;
