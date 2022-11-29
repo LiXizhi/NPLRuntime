@@ -270,7 +270,11 @@ bool ParaEngine::CMultiFrameBlockWorldRenderer::DrawToSkybox()
 			// only for debugging the render target
 			painter->drawTexture(0, 0, 320, 240, pRenderTarget->GetTexture(), 0.f);
 		}
-		painter->drawTexture(QRectF(0.f, 0.f, painter->FromUnitSpaceX(1.f), painter->FromUnitSpaceY(1.f)), pRenderTarget->GetTexture(), QRectF(), 1.f);
+		ParaViewport viewport;
+		auto viewportManager = CGlobals::GetViewportManager();
+		viewportManager->GetCurrentViewport(viewport);
+		painter->drawTexture(QRectF((float)viewport.X / viewportManager->GetWidth(), (float)viewport.Y / viewportManager->GetHeight(), 
+			painter->FromUnitSpaceX((float)viewport.Width / viewportManager->GetWidth()), painter->FromUnitSpaceY((float)viewport.Height / viewportManager->GetHeight())), pRenderTarget->GetTexture(), QRectF(), 1.f);
 		
 		painter->Flush();
 		pd3dDevice->SetRenderState(D3DRS_ZWRITEENABLE, TRUE);
