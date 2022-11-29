@@ -127,6 +127,10 @@ namespace ParaEngine
         ATTRIBUTE_METHOD1(ParaEngineSettings, IsFullScreenMode_s, bool*)	{*p1 = cls->IsFullScreenMode(); return S_OK;}
         ATTRIBUTE_METHOD1(ParaEngineSettings, SetFullScreenMode_s, bool)	{cls->SetFullScreenMode(p1); return S_OK;}
 
+		ATTRIBUTE_METHOD1(ParaEngineSettings, IsWindowMaximized_s, bool*) { *p1 = cls->IsWindowMaximized(); return S_OK; }
+		ATTRIBUTE_METHOD1(ParaEngineSettings, SetWindowMaximized_s, bool) { cls->SetWindowMaximized(p1); return S_OK; }
+		ATTRIBUTE_METHOD1(ParaEngineSettings, GetVisibleSize_s, Vector2*) { *p1 = cls->GetVisibleSize(); return S_OK; }
+
         ATTRIBUTE_METHOD(ParaEngineSettings, BringWindowToTop_s)	{cls->BringWindowToTop(); return S_OK;}
 
         ATTRIBUTE_METHOD1(ParaEngineSettings, HasNewConfig_s, bool*)	{*p1 = cls->HasNewConfig(); return S_OK;}
@@ -549,6 +553,10 @@ namespace ParaEngine
 
         /** return true if it is currently under windowed mode. */
         static bool IsWindowedMode();
+
+		void SetWindowMaximized(bool bWindowed);
+		bool IsWindowMaximized();
+		Vector2 GetVisibleSize();
 
         /** disable 3D rendering, do not present the scene. 
         * This is usually called before and after we show a standard win32 window during full screen mode */

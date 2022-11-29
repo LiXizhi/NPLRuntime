@@ -520,6 +520,10 @@ namespace ParaEngine
 		virtual CViewportManager* GetViewportManager() = 0;
 
 		virtual void setIMEKeyboardState(bool bOpen, bool bMoveView = false, int ctrlBottom = -1, const string& editParams="") = 0;
+
+		virtual void SetWindowMaximized(bool isMaximized) {};
+		virtual bool IsWindowMaximized() { return false; };
+		virtual void GetVisibleSize(Vector2* pOut) {};
 	};
 
 }

@@ -364,6 +364,22 @@ namespace ParaEngine {
 		return m_cfg.isWindowed;
 	}
 
+	void CWindowsApplication::SetWindowMaximized(bool isMaximized)
+	{
+		::ShowWindow(CGlobals::GetAppHWND(), isMaximized ? SW_SHOWMAXIMIZED : SW_SHOWNORMAL);
+	}
+
+	bool CWindowsApplication::IsWindowMaximized()
+	{
+		return ::IsMaximized(CGlobals::GetAppHWND());
+	}
+
+	void CWindowsApplication::GetVisibleSize(Vector2* pOut)
+	{
+		if (pOut)
+			*pOut = Vector2((float)(m_cfg.screenWidth), (float)(m_cfg.screenHeight));
+	}
+
 	void CWindowsApplication::SetWindowText(const char* pChar)
 	{
 		std::wstring s = StringHelper::MultiByteToWideChar(pChar, CP_UTF8);
