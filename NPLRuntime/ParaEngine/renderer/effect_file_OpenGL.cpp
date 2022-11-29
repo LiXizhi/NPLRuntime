@@ -1168,6 +1168,7 @@ bool ParaEngine::CEffectFileOpenGL::MappingEffectUniforms(const std::vector<Unif
 		table["materialSpecular"] = k_material_specular;
 		table["materialRoughness"] = k_material_roughness;
 		table["materialEmissiveColor"] = k_material_emissive_color;
+		table["materialEmissive"] = k_material_emissive;
 		table["materialOpacity"] = k_material_opacity;
 		table["materialNormalTexture"] = k_material_normal_texture;
 		table["materialDiffuseTexture"] = k_material_diffuse_texture;

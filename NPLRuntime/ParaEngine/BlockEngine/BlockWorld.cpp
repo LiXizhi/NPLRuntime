@@ -1,4 +1,4 @@
-//-----------------------------------------------------------------------------
+﻿//-----------------------------------------------------------------------------
 // Class:	Block World Provider
 // Authors:	LiXizhi
 // Emails:	LiXizhi@yeah.net
@@ -199,7 +199,7 @@ void CBlockWorld::LoadBlockMaterialData()
 						int32_t materialID = -1;
 						if (pElement->QueryIntAttribute("Id", &materialID) == XML_SUCCESS_ENUM_TYPE)
 						{
-							CBlockMaterial* pMaterial = mgr->GetBlockMaterialByID(materialID);
+							CBlockMaterial* pMaterial = mgr->CreateGetBlockMaterialByID(materialID);
 							if (!pMaterial) continue;
 							CParameterBlock* pParamBlock = pMaterial->GetParamBlock();
 							const char* materialName = pElement->Attribute("MaterialName");
@@ -214,6 +214,8 @@ void CBlockWorld::LoadBlockMaterialData()
 							if (roughness) pParamBlock->CreateGetParameter("Roughness")->SetValueByString(roughness, CParameter::PARAMETER_TYPE::PARAM_FLOAT);
 							const char* emissiveColor = pElement->Attribute("EmissiveColor");
 							if (emissiveColor) pParamBlock->CreateGetParameter("EmissiveColor")->SetValueByString(emissiveColor, CParameter::PARAMETER_TYPE::PARAM_VECTOR4);
+							const char* emissive = pElement->Attribute("Emissive");
+							if (emissive) pParamBlock->CreateGetParameter("Emissive")->SetValueByString(emissive, CParameter::PARAMETER_TYPE::PARAM_STRING);
 							const char* opacity = pElement->Attribute("Opacity");
 							if (opacity) pParamBlock->CreateGetParameter("Opacity")->SetValueByString(opacity, CParameter::PARAMETER_TYPE::PARAM_FLOAT);
 							const char* normal = pElement->Attribute("Normal");
@@ -278,6 +280,8 @@ void CBlockWorld::SaveBlockMaterialData()
 		if (roughness) pNewItem->SetAttribute("Roughness", roughness->GetValueByString());
 		auto emissiveColor = pParamBlock->GetParameter("EmissiveColor"); // vector4
 		if (emissiveColor) pNewItem->SetAttribute("EmissiveColor", emissiveColor->GetValueByString());
+		auto emissive = pParamBlock->GetParameter("Emissive");   // texture
+		if (emissive) pNewItem->SetAttribute("Emissive", emissive->GetValueByString());
 		auto opacity = pParamBlock->GetParameter("Opacity");   // float
 		if (opacity) pNewItem->SetAttribute("Opacity", opacity->GetValueByString());
 		auto normal = pParamBlock->GetParameter("Normal");   // texture

@@ -1,4 +1,4 @@
-//-----------------------------------------------------------------------------
+﻿//-----------------------------------------------------------------------------
 // Class:	Block Manager
 // Authors:	LiXizhi, Clayman
 // Emails:	LiXizhi@yeah.net
@@ -564,9 +564,9 @@ namespace ParaEngine
 						pCurVB = pVB;
 					}
 					int32_t passId;
+					BlockTemplate* pTempate = pRenderTask->GetTemplate();
 					if (curTemplateId != pRenderTask->GetTemplateId())
 					{
-						BlockTemplate* pTempate = pRenderTask->GetTemplate();
 						if (pTempate->IsMatchAttribute(BlockTemplate::batt_twoTexture))
 							passId = g_twoTexPass;
 						else if (pTempate->IsMatchAttribute(BlockTemplate::batt_transparent))
@@ -599,30 +599,7 @@ namespace ParaEngine
 								continue;
 							}
 						}
-
-						TextureEntity* pTexEntity = pTempate->GetTexture0(pRenderTask->GetUserData());
-						if (pTexEntity && pTexEntity->GetTexture() != pCurTex0)
-						{
-							pCurTex0 = pTexEntity->GetTexture();
-							GETD3D(CGlobals::GetRenderDevice())->SetTexture(0, pCurTex0);
-						}
-
-						pTexEntity = pTempate->GetTexture1();
-						if (pTexEntity && pTexEntity->GetTexture() != pCurTex1)
-						{
-							pCurTex1 = pTexEntity->GetTexture();
-							GETD3D(CGlobals::GetRenderDevice())->SetTexture(1, pCurTex1);
-						}
-
-						/* fixed function never use normal map
-							pTexEntity = pTempate->GetNormalMap();
-							if(pTexEntity && pTexEntity->GetTexture()!=pCurTex2)
-							{
-								pCurTex2 = pTexEntity->GetTexture();
-								pDevice->SetTexture(2,pCurTex2);
-							}*/
-
-							// culling mode
+						// culling mode
 						if (pTempate->GetBlockModel().IsDisableFaceCulling())
 						{
 							if (culling != RSV_CULL_NONE)
@@ -649,6 +626,28 @@ namespace ParaEngine
 						}
 					}
 
+					TextureEntity* pTexEntity = pTemplate->GetTexture0(pRenderTask->GetUserData());
+					if (pTexEntity && pTexEntity->GetTexture() != pCurTex0)
+					{
+						pCurTex0 = pTexEntity->GetTexture();
+						pDevice->SetTexture(0, pCurTex0);
+					}
+
+					pTexEntity = pTemplate->GetTexture1();
+					if (pTexEntity && pTexEntity->GetTexture() != pCurTex1)
+					{
+						pCurTex1 = pTexEntity->GetTexture();
+						pDevice->SetTexture(1, pCurTex1);
+					}
+
+					/* fixed function never use normal map
+					pTexEntity = pTemplate->GetNormalMap();
+					if(pTexEntity && pTexEntity->GetTexture()!=pCurTex2)
+					{
+						pCurTex2 = pTexEntity->GetTexture();
+						pDevice->SetTexture(2,pCurTex2);
+					}*/
+					
 					Matrix4 vWorldMatrix(Matrix4::IDENTITY);
 
 					Uint16x3& vMinPos = pRenderTask->GetMinBlockPos();
@@ -724,11 +723,11 @@ namespace ParaEngine
 						pCurVB = pVB;
 					}
 					int32_t passId;
+					BlockTemplate* pTemplate = pRenderTask->GetTemplate();
 					if (curTemplateId != pRenderTask->GetTemplateId() || curMaterialId != pRenderTask->GetMaterialId())
 					{
 						curTemplateId = pRenderTask->GetTemplateId();
 						curMaterialId = pRenderTask->GetMaterialId();
-						BlockTemplate* pTemplate = pRenderTask->GetTemplate();
 						if (curMaterialId > 0) {
 							if (dwRenderMethod == BLOCK_RENDER_FANCY_SHADER)
 							{
@@ -788,6 +787,8 @@ namespace ParaEngine
 							CParameterBlock* paramBlock = material ? material->GetParamBlock() : nullptr;
 							if (paramBlock)
 							{
+								CParameter* materialUV = paramBlock->GetParameter("MaterialUV");
+								if (materialUV) pEffect->setParameter(CEffectFile::k_material_uv, materialUV->GetRawData(), materialUV->GetRawDataLength());
 								CParameter* baseColor = paramBlock->GetParameter("BaseColor");
 								if (baseColor) pEffect->setParameter(CEffectFile::k_material_base_color, baseColor->GetRawData(), baseColor->GetRawDataLength());
 								CParameter* metallic = paramBlock->GetParameter("Metallic");
@@ -802,7 +803,7 @@ namespace ParaEngine
 								if (opacity) pEffect->setParameter(CEffectFile::k_material_opacity, opacity->GetRawData(), opacity->GetRawDataLength());
 
 								bool bHasDiffuseTex = false;
-								CParameter* diffuse = paramBlock->GetParameter("Diffuse");
+								CParameter* diffuse = paramBlock->GetParameter("DiffuseFullPath");
 								if (diffuse) 
 								{
 									const std::string& sFilename = diffuse->GetValueAsConstString();
@@ -835,7 +836,7 @@ namespace ParaEngine
 								}
 
 								bool bHasNormalTex = false;
-								CParameter* normal = paramBlock->GetParameter("Normal");
+								CParameter* normal = paramBlock->GetParameter("NormalFullPath");
 								if (normal)
 								{
 									const std::string& sFilename = normal->GetValueAsConstString();
@@ -856,35 +857,30 @@ namespace ParaEngine
 										}
 									}
 								}
-							}
-						}
-						else
-						{
-							TextureEntity* pTexEntity = pTemplate->GetTexture0(pRenderTask->GetUserData());
-							if (pTexEntity && pTexEntity->GetTexture() != pCurTex0)
-							{
-								pCurTex0 = pTexEntity->GetTexture();
-								CGlobals::GetRenderDevice()->SetTexture(0, pCurTex0);
-							}
 
-							pTexEntity = pTemplate->GetTexture1();
-							if (pTexEntity && pTexEntity->GetTexture() != pCurTex1)
-							{
-								pCurTex1 = pTexEntity->GetTexture();
-								CGlobals::GetRenderDevice()->SetTexture(1, pCurTex1);
-							}
-
-							pTexEntity = pTemplate->GetNormalMap();
-							if (pTexEntity && pTexEntity->GetTexture() != pCurTex2)
-							{
-								pCurTex2 = pTexEntity->GetTexture();
-								if (dwRenderMethod == BLOCK_RENDER_FANCY_SHADER)
+								CParameter* emissive = paramBlock->GetParameter("EmissiveFullPath");
+								if (emissive)
 								{
-									CGlobals::GetRenderDevice()->SetTexture(2, pCurTex2);
+									const std::string& sFilename = emissive->GetValueAsConstString();
+									if (!sFilename.empty())
+									{
+										auto tex = CGlobals::GetAssetManager()->GetTexture(sFilename);
+										if (tex == NULL)
+											tex = CGlobals::GetAssetManager()->LoadTexture(sFilename, sFilename);
+										if (tex)
+										{
+											auto curTex = tex->GetTexture();
+											if (pCurTex1 != curTex)
+											{
+												pCurTex1 = curTex;
+												pDevice->SetTexture(1, pCurTex1);
+											}
+										}
+									}
 								}
 							}
 						}
-
+	
 						// culling mode
 						if (pTemplate->GetBlockModel().IsDisableFaceCulling())
 						{
@@ -908,6 +904,33 @@ namespace ParaEngine
 							{
 								pDevice->SetRenderState(ERenderState::CULLMODE, RSV_CULL_CCW);
 								culling = RSV_CULL_CCW;
+							}
+						}
+					}
+
+					if (curMaterialId < 0)
+					{
+						// use block's internal material
+						TextureEntity* pTexEntity = pTemplate->GetTexture0(pRenderTask->GetUserData());
+						if (pTexEntity && pTexEntity->GetTexture() != pCurTex0)
+						{
+							pCurTex0 = pTexEntity->GetTexture();
+							pDevice->SetTexture(0, pCurTex0);
+						}
+
+						pTexEntity = pTemplate->GetTexture1();
+						if (pTexEntity && pTexEntity->GetTexture() != pCurTex1)
+						{
+							pCurTex1 = pTexEntity->GetTexture();
+							pDevice->SetTexture(1, pCurTex1);
+						}
+
+						pTexEntity = pTemplate->GetNormalMap();
+						if (pTexEntity && pTexEntity->GetTexture() != pCurTex2)
+						{
+							pCurTex2 = pTexEntity->GetTexture();
+							if (dwRenderMethod == BLOCK_RENDER_FANCY_SHADER) {
+								pDevice->SetTexture(2, pCurTex2);
 							}
 						}
 					}
