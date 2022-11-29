@@ -26,7 +26,7 @@ CViewportManager::CViewportManager()
 	m_viewport.Height = 560;
 	m_viewport.MinZ = 0.5;
 	m_viewport.MaxZ = 200;
-	ods_fov = 1.57;
+	ods_fov = 1.57f;
 	widthPerDegree = 4;
 	m_bOmniAlwaysUseUpFrontCamera = true;
 	m_nOmniForceLookatDistance = 20;
@@ -128,9 +128,9 @@ HRESULT ParaEngine::CViewportManager::Render(double dTimeDelta, int nPipelineOrd
 		oldLookAtPos = pCamera->GetLookAtPosition();
 		oldFov = pCamera->GetFieldOfView();
 		oldAspect = pCamera->GetAspectRatio();
-		oldCameraRotX = pCamera->GetCameraRotX();
-		oldCameraDistance = pCamera->GetCameraObjectDistance();
-		oldLiftUp = pCamera->GetCameraLiftupAngle();
+		oldCameraRotX = (float)pCamera->GetCameraRotX();
+		oldCameraDistance = (float)pCamera->GetCameraObjectDistance();
+		oldLiftUp = (float)pCamera->GetCameraLiftupAngle();
 		pCamera->SetForceOmniCameraObjectDistance(-10000);
 		pCamera->SetForceOmniCameraPitch(-10000);
 	}
@@ -323,14 +323,15 @@ void ParaEngine::CViewportManager::SetLayout(VIEWPORT_LAYOUT nLayout, CSceneObje
 
 		//offscreen rendering
 		const int num = 4;//横向4个方向
-		const int cubeWidth = (1.0f * GetWidth() / num);
+		const int cubeWidth = ( GetWidth() / num);
 
-		if (GetHeight() - cubeWidth * 2<200) {//没有足够的位置留给UI了,直接显示一个全屏UI
+		const bool needCompositeUI = GetHeight() - cubeWidth * 2 > 200;
+		if (!needCompositeUI) {//没有足够的位置留给UI了,直接显示一个全屏UI
 			CViewport* pUIViewport = CreateGetViewPort(portNum);
 			pUIViewport->SetIdentifier("GUI");
 			pUIViewport->SetGUIRoot(pGUIRoot);
 			pUIViewport->SetPosition("_fi", 0, 0, 0, 0);
-			pUIViewport->SetZOrder(98);
+			pUIViewport->SetZOrder(103);
 			pUIViewport->SetEyeMode(STEREO_EYE_NORMAL);
 			pUIViewport->SetPipelineOrder(PIPELINE_UI);
 			portNum += 1;
@@ -344,10 +345,10 @@ void ParaEngine::CViewportManager::SetLayout(VIEWPORT_LAYOUT nLayout, CSceneObje
 			int _height = GetHeight() - cubeWidth * 2;
 			
 			if (_width > _height * aspect) {
-				_width = _height * aspect;
+				_width = (int)(_height * aspect);
 			}
 			else {
-				_height = _width / aspect;
+				_height = (int)(_width / aspect);
 			}
 			//default show
 			CViewport* pUIViewport = CreateGetViewPort(portNum);
@@ -429,7 +430,7 @@ void ParaEngine::CViewportManager::SetLayout(VIEWPORT_LAYOUT nLayout, CSceneObje
 			if (pSharedRenderTarget == NULL) {
 				viewport->SetRenderTargetName(randerTargetname);
 				pSharedRenderTarget = viewport->GetRenderTarget();
-				pSharedRenderTarget.get()->SetRenderTargetSize(Vector2(cubeWidth*4, cubeWidth*2));
+				pSharedRenderTarget.get()->SetRenderTargetSize(Vector2(cubeWidth*4.0f, cubeWidth*2.0f));
 				pSharedRenderTarget.get()->GetPrimaryAsset();
 				pSharedRenderTarget.get()->SetHasSetRenderTargetSize(true);
 			}
@@ -447,7 +448,13 @@ void ParaEngine::CViewportManager::SetLayout(VIEWPORT_LAYOUT nLayout, CSceneObje
 		//pFinalViewPort->SetPosition("_lt", 0, 0, GetWidth(), GetHeight());
 		pFinalViewPort->SetEyeMode(STEREO_EYE_NORMAL);
 		pFinalViewPort->SetZOrder(102);
-		pFinalViewPort->SetPipelineOrder(PIPELINE_POST_UI_3D_SCENE);
+		if (needCompositeUI) {
+			pFinalViewPort->SetPipelineOrder(PIPELINE_POST_UI_3D_SCENE);
+		}
+		else {
+			pFinalViewPort->SetPipelineOrder(PIPELINE_3D_SCENE);
+		}
+		
 		portNum += 1;
 
 
