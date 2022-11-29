@@ -94,7 +94,7 @@ namespace ParaEngine
 
         m_json_gltf = Json::Value();
         m_string_builder = StringBuilder();
-        m_string_builder.reserve(1024 * 1024 * 500); // 500M
+        m_string_builder.reserve(1024 * 1024 * 5); // 5M
         m_gltf = std::make_shared<GLTF>();
 
 		buffer = std::make_shared<GLTFBuffer>();
