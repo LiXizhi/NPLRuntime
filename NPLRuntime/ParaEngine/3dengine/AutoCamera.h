@@ -206,7 +206,7 @@ public:
 	CBipedObject * GetTargetAsBiped();
 
 	virtual LRESULT HandleMessages(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
-	virtual void SetViewParams(const DVector3& vEyePt, const DVector3& vLookatPt);
+	virtual void SetViewParams(const DVector3& vEyePt, const DVector3& vLookatPt, const Vector3* up = NULL);
 	
 	void FollowBiped( CBaseObject* pBiped, CameraMode modeCamera, double dTransitionTime);
 	void FollowBiped( CBaseObject* pBiped, int nTranstionMode, int modeCamera, double Param0, double Param1, double Param2);
@@ -346,12 +346,15 @@ public:
 	void SetCameraObjectDistance(double fDist);
 	double GetCameraObjectDistance() { return m_fCameraObjectDistance; }
 
+	void SetForceOmniCameraObjectDistance(double fDist);
+	void SetForceOmniCameraPitch(double fPitch);
+
 	/** lift up angle of the camera. Camera Pitch */
-	void SetCameraLiftupAngle(double fValue) { m_fCameraLiftupAngle = fValue; }
-	double GetCameraLiftupAngle() {return m_fCameraLiftupAngle;} 
+	void SetCameraLiftupAngle(double fValue);
+	double GetCameraLiftupAngle() { return m_fCameraLiftupAngle; }
 
 	/** rotation of the camera around the X axis, in the world coordinate.  Camera Pitch */
-	void SetCameraRotX(double fValue) { m_fCameraRotX = fValue; }
+	void SetCameraRotX(double fValue);
 	double GetCameraRotX() { return m_fCameraRotX; }
 
 	/** rotation of the camera around the Y axis, in the world coordinate.  Camera Yaw */
@@ -636,6 +639,9 @@ private:
 	float m_fMaxYShiftSpeed;
 	double m_fLastCharY;
 	double m_fLastUsedCharY;
+
+	double				m_fForceOmniCameraObjectDistance;
+	double				m_fForceOmniCameraPitch;
 public:
 	friend CSceneObject;
 	friend ShadowVolume;

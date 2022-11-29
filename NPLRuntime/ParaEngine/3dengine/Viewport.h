@@ -41,6 +41,9 @@ namespace ParaEngine
 		ATTRIBUTE_METHOD1(CViewport, SetTop_s, int) { cls->SetTop(p1); return S_OK; }
 		ATTRIBUTE_METHOD1(CViewport, GetTop_s, int*) { *p1 = cls->GetTop(); return S_OK; }
 
+		ATTRIBUTE_METHOD1(CViewport, SetODSFov_s, float) { cls->m_stereoODSparam.fov = (p1); return S_OK; }
+		ATTRIBUTE_METHOD1(CViewport, GetODSFov_s, float*) { *p1 = cls->m_stereoODSparam.fov; return S_OK; }
+
 		ATTRIBUTE_METHOD1(CViewport, SetWidth_s, int) { cls->SetWidth(p1); return S_OK; }
 		ATTRIBUTE_METHOD1(CViewport, GetWidth_s, int*) { *p1 = cls->GetWidth(); return S_OK; }
 
@@ -66,6 +69,65 @@ namespace ParaEngine
 			{
 				return (_Left ? _Left->GetZOrder() : 1000) < (_Right ? _Right->GetZOrder() : 1000);
 			};
+		};
+
+		struct StereoODSparam {
+			float morePitch;
+
+			bool isODS;
+			float moreRotZ;//roll
+			float moreRotY;//yaw
+			float moreRotX;//pitch
+			float fov;
+			float fov_h;
+			float aspectRatio;
+			float eyeShiftDistance;
+			bool needRecoverCamera;
+			DVector3 oldEyePos;
+			DVector3 oldLookAtPos;
+			float oldFov;
+
+			bool m_bOmniAlwaysUseUpFrontCamera;
+			int m_nOmniForceLookatDistance;
+			float oldCameraRotX;
+			float oldCameraDistance;
+
+			int ods_group_idx;
+			int ods_group_size;
+			StereoODSparam() {
+				isODS = false;
+				moreRotZ = 0.0f;
+				moreRotY = 0.0f;
+				moreRotX = 0.0f;
+				fov = MATH_PI / 4;
+				aspectRatio = 1.0f;
+				eyeShiftDistance = 0.0f;
+				needRecoverCamera = false;
+				m_bOmniAlwaysUseUpFrontCamera = true;
+				m_nOmniForceLookatDistance = 20;
+				ods_group_idx = -1;
+				ods_group_size = 0;
+			}
+			inline StereoODSparam& operator = (const StereoODSparam& target)
+			{
+				isODS = target.isODS;
+				moreRotZ = target.moreRotZ;
+				moreRotY = target.moreRotY;
+				moreRotX = target.moreRotX;
+				fov = target.fov;
+				fov_h = target.fov_h;
+				aspectRatio = target.aspectRatio;
+				eyeShiftDistance = target.eyeShiftDistance;
+				needRecoverCamera = target.needRecoverCamera;
+				oldEyePos = target.oldEyePos;
+				oldLookAtPos = target.oldLookAtPos;
+				oldFov = target.oldFov;
+				m_bOmniAlwaysUseUpFrontCamera = target.m_bOmniAlwaysUseUpFrontCamera;
+				m_nOmniForceLookatDistance = target.m_nOmniForceLookatDistance;
+				ods_group_idx = target.ods_group_idx;
+				ods_group_size = target.ods_group_size;
+				return *this;
+			}
 		};
 
 		/** build the render list, and render the entire scene.
@@ -104,6 +166,9 @@ namespace ParaEngine
 		const std::string&  GetRenderTargetName() const;
 		void SetRenderTargetName(const std::string& val);
 
+		shared_ptr<CRenderTarget> GetRenderTarget();
+		void SetRenderTarget(shared_ptr<CRenderTarget> target);
+
 		/** -1 or RENDER_PIPELINE_ORDER. if -1, it will be rendered for all pipeline stage */
 		int GetPipelineOrder() const;
 		void SetPipelineOrder(int val);
@@ -136,6 +201,10 @@ namespace ParaEngine
 
 		/** return last viewport */
 		ParaViewport ApplyViewport();
+
+		/** Camera yaw angle increment when recording Stereo video.*/
+		void SetStereoODSparam(StereoODSparam &param) { m_stereoODSparam = param; }
+		StereoODSparam& GetStereoODSparam() { return m_stereoODSparam; }
 
 		ParaViewport SetViewport(DWORD x, DWORD y, DWORD width, DWORD height);
 
@@ -178,7 +247,7 @@ namespace ParaEngine
 		int m_nZOrder;
 		std::string m_sName;
 		std::string m_sRenderTargetName;
-		CRenderTarget* m_pRenderTarget;
+		std::shared_ptr<CRenderTarget> m_pRenderTarget;
 
 		STEREO_EYE m_nEyeMode;
 
@@ -187,6 +256,8 @@ namespace ParaEngine
 
 		/** -1 or RENDER_PIPELINE_ORDER. if -1, it will be rendered for all pipeline stage */
 		int m_nPipelineOrder;
+
+		StereoODSparam m_stereoODSparam;
 	};
 
 }

@@ -506,6 +506,19 @@ bool ParaEngine::CRenderTarget::InitWithWidthAndHeight(int width, int height, D3
 	return true;
 }
 
+bool ParaEngine::CRenderTarget::Begin(int x, int y, int w, int h)
+{
+	bool ret = this->Begin();
+
+	m_oldViewport.X = x;
+	m_oldViewport.Y = y;
+	m_oldViewport.Width = w;
+	m_oldViewport.Height = h;
+
+	return true;
+}
+
+
 bool ParaEngine::CRenderTarget::Begin()
 {
 	auto pRenderDevice = CGlobals::GetRenderDevice();

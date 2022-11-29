@@ -219,6 +219,7 @@ namespace ParaEngine
 		// Get camera parameters
 		inline DVector3 GetEyePosition(){return m_vEye;};
 		inline DVector3 GetLookAtPosition(){return m_vLookAt;};
+		inline void SetLookAtPosition(DVector3 pos) { m_vLookAt = pos; };
 		inline float GetFieldOfView(){return m_fFOV;};
 		inline float GetAspectRatio(){return m_fAspect;};
 		inline float GetNearPlane(){return m_fNearPlane;};
@@ -230,7 +231,7 @@ namespace ParaEngine
 		inline bool IsPerspectiveView() { return m_bIsPerspectiveView; } 
 		/** set whether we use perspective view or orthogonal view */
 		void  SetIsPerspectiveView(bool bIsPerspectiveView);
-
+		void SetFieldOfView(float fov_v, float fov_h);
 		/** change the field of view . it will internally call UpdateProjParams()*/
 		void SetFieldOfView(float fFieldofview);
 		/** change the near plane. it will internally call UpdateProjParams()*/
