@@ -3302,69 +3302,6 @@ namespace ParaEngine
 		return m_pMultiFrameRenderer->DrawToSkybox();
 	}
 
-
-	void BlockWorldClient::RenderDeferredLightsMesh()
-	{
-		return;
-#ifdef USE_DIRECTX_RENDERER
-		SceneState* sceneState = CGlobals::GetSceneState();
-		if (!sceneState->IsDeferredShading() || sceneState->listDeferredLightObjects.empty())
-			return;
-
-		// sort by light type
-		std::sort(sceneState->listDeferredLightObjects.begin(), sceneState->listDeferredLightObjects.end(), [](CLightObject* a, CLightObject* b) {
-			return (a->GetLightType() < b->GetLightType());
-		});
-
-		// setup shader here
-		for (int i = 0; i < 3; i++)
-		{
-			if (m_lightgeometry_effects[i] == 0)
-			{
-				if (i == 0)
-					m_lightgeometry_effects[i] = CGlobals::GetAssetManager()->LoadEffectFile("blockFancy", "script/apps/Aries/Creator/Game/Shaders/DeferredShadingPointLighting.fxo");
-				else if (i == 2)
-					m_lightgeometry_effects[i] = CGlobals::GetAssetManager()->LoadEffectFile("blockFancy", "script/apps/Aries/Creator/Game/Shaders/DeferredShadingSpotLighting.fxo");
-				else
-					m_lightgeometry_effects[i] = CGlobals::GetAssetManager()->LoadEffectFile("blockFancy", "script/apps/Aries/Creator/Game/Shaders/DeferredShadingDirectionalLighting.fxo");
-
-				m_lightgeometry_effects[i]->LoadAsset();
-			}
-			if (!m_lightgeometry_effects[i] || !m_lightgeometry_effects[i]->IsValid())
-				return;
-		}
-
-		// sort by type and render light geometry
-		int nLastType = -1;
-
-		CGlobals::GetEffectManager()->EndEffect();
-		CEffectFile* pEffectFile = NULL;
-		for (CLightObject* lightObject : sceneState->listDeferredLightObjects)
-		{
-			if (lightObject->GetLightType() != nLastType)
-			{
-				if (pEffectFile)
-				{
-					pEffectFile->end();
-				}
-				else
-				{
-					// first time, we will switch to declaration
-					auto pDecl = CGlobals::GetEffectManager()->GetVertexDeclaration(EffectManager::S0_POS);
-					if (pDecl)
-						CGlobals::GetRenderDevice()->SetVertexDeclaration(pDecl);
-				}
-				pEffectFile = m_lightgeometry_effects[lightObject->GetLightType() - 1].get();
-				pEffectFile->begin();
-			}
-			lightObject->RenderDeferredLightMesh(sceneState);
-		}
-		if (pEffectFile) {
-			pEffectFile->end();
-		}
-#endif
-	}
-
 	void BlockWorldClient::RenderDeferredLighting()
 	{
 #ifdef USE_DIRECTX_RENDERER
@@ -3372,21 +3309,39 @@ namespace ParaEngine
 		if (!sceneState->IsDeferredShading() || sceneState->listDeferredLightObjects.empty())
 			return;
 
+		if (!m_render_target_block_info_surface)
+			return;
+
 		CGlobals::GetEffectManager()->EndEffect();
 
+		// sort by light type
+		std::sort(sceneState->listDeferredLightObjects.begin(), sceneState->listDeferredLightObjects.end(), [](CLightObject* a, CLightObject* b) {
+			return (a->GetLightType() < b->GetLightType());
+		});
 
 		auto pDevice = sceneState->GetRenderDevice();
 
-		ParaScripting::ParaAsset::LoadEffectFile("deferred_point_lighting", "script/apps/Aries/Creator/Game/Shaders/DeferredShadingPointLighting.fxo");
-		ParaScripting::ParaAsset::LoadEffectFile("deferred_spot_lighting", "script/apps/Aries/Creator/Game/Shaders/DeferredShadingSpotLighting.fxo");
-		ParaScripting::ParaAsset::LoadEffectFile("deferred_directional_lighting", "script/apps/Aries/Creator/Game/Shaders/DeferredShadingDirectionalLighting.fxo");
+		// fixed: end any previous effect. 
+		CGlobals::GetEffectManager()->EndEffect();
 
-		ParaScripting::ParaAssetObject effect = NULL;
+		
+		pDevice->SetRenderTarget(2, NULL);
+		pDevice->SetRenderTarget(3, NULL);
+		pDevice->SetRenderTarget(1, m_render_target_block_info_surface);
+		
 
+		pDevice->SetRenderState(D3DRS_ALPHABLENDENABLE, TRUE);
+		pDevice->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_ONE);
+		pDevice->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_ONE);
+
+		ID3DXMesh* pSphereObject = NULL;
+		CEffectFile* pEffectFile = NULL;
 		VertexDeclarationPtr pDecl = NULL;
 
-		ID3DXMesh* pObject = NULL;
-		for (CLightObject* lightObject : sceneState->listDeferredLightObjects) {
+		// sort by type and render light geometry
+		int nLastType = -1;
+		for (CLightObject* lightObject : sceneState->listDeferredLightObjects) 
+		{
 			auto light_param = lightObject->GetLightParams();
 
 			auto light_type = light_param->Type;
@@ -3408,102 +3363,138 @@ namespace ParaEngine
 			auto light_theta = light_param->Theta;
 			auto light_phi = light_param->Phi;
 
-			// how complicated the mesh is
-			int mesh_slice_num = 50;
+			if (light_type != nLastType)
+			{
+				nLastType = light_type;
+				if (pEffectFile)
+				{
+					pEffectFile->end();
+				}
 
-			switch (light_type) {
-			case D3DLIGHT_POINT:
-				effect = ParaScripting::ParaAsset::GetEffectFile("deferred_point_lighting");
-				D3DXCreateSphere(pDevice, light_range, mesh_slice_num, mesh_slice_num, &pObject, 0);
+				switch (light_type) {
+				case D3DLIGHT_POINT:
+					pEffectFile = m_effect_light_point.get();
+					if (!pSphereObject) {
+						// TODO: create and cache the sphere buffer across frames. 
+						int mesh_slice_num = 50;
+						D3DXCreateSphere(pDevice, 1.0f, mesh_slice_num, mesh_slice_num, &pSphereObject, 0);
+					}
+					pDecl = CGlobals::GetEffectManager()->GetVertexDeclaration(EffectManager::S0_POS);
+					break;
+				case D3DLIGHT_SPOT:
+					pEffectFile = m_effect_light_spot.get();
+					if (!pSphereObject) {
+						// TODO: create and cache the sphere buffer across frames. 
+						int mesh_slice_num = 50;
+						D3DXCreateSphere(pDevice, 1.0f, mesh_slice_num, mesh_slice_num, &pSphereObject, 0);
+					}
+					pDecl = CGlobals::GetEffectManager()->GetVertexDeclaration(EffectManager::S0_POS);
+					break;
+				case D3DLIGHT_DIRECTIONAL:
+					pEffectFile = m_effect_light_directional.get();
+					pDecl = CGlobals::GetEffectManager()->GetVertexDeclaration(EffectManager::S0_POS_TEX0);
+					break;
+				}
+				
+				if (!pEffectFile)
+					break;
 
-				pDecl = CGlobals::GetEffectManager()->GetVertexDeclaration(EffectManager::S0_POS);
-				break;
-			case D3DLIGHT_SPOT:
-				effect = ParaScripting::ParaAsset::GetEffectFile("deferred_spot_lighting");
-				// FIXME: how to draw a spherical cone but a normal cone
-				//D3DXCreateCylinder(pDevice, 0.0f, 2.0f, 5.0f, 100, 100, &pObject, 0);
-				D3DXCreateSphere(pDevice, light_range, mesh_slice_num, mesh_slice_num, &pObject, 0);
+				if (pDecl)
+					pDevice->SetVertexDeclaration(pDecl);
+				pEffectFile->LoadAsset();
 
-				pDecl = CGlobals::GetEffectManager()->GetVertexDeclaration(EffectManager::S0_POS);
-				break;
-			case D3DLIGHT_DIRECTIONAL:
-				effect = ParaScripting::ParaAsset::GetEffectFile("deferred_directional_lighting");
-				pDecl = CGlobals::GetEffectManager()->GetVertexDeclaration(EffectManager::S0_POS_TEX0);
-				break;
+				if (!pEffectFile->begin(false, 0, true))
+					break;
+
+				auto params = pEffectFile->GetParamBlock();
+				params->SetParamByStringValue("ViewAspect", "floatViewAspect");
+				params->SetParamByStringValue("TanHalfFOV", "floatTanHalfFOV");
+				params->SetParamByStringValue("screenParam", "vec2ScreenSize");
+				params->SetParamByStringValue("viewportOffset", "vec2ViewportOffset");
+				params->SetParamByStringValue("viewportScale", "vec2ViewportScale");
+				
+				// TODO: we need to  use safe reference to TextureEntity, instead of raw TextureEntity pointer here. 
+				ParaScripting::ParaParamBlock params_(params);
+				params_.SetTextureObj(0, NULL);
+				params_.SetTextureObj(1, ParaScripting::ParaAsset::LoadTexture("_DepthTexRT_R32F", "_DepthTexRT_R32F", 0));
+				params_.SetTextureObj(2, ParaScripting::ParaAsset::LoadTexture("_NormalRT", "_NormalRT", 0));
+
+				// pDevice->SetTexture(0, _ColorRT.GetTextureEntity()->GetTexture());
+				// pDevice->SetTexture(1, m_render_target_depth_tex->GetTexture());
+				// pDevice->SetTexture(2, m_render_target_normal->GetTexture());
 			}
 
-			if (pDecl)
-				pDevice->SetVertexDeclaration(pDecl);
-
-			effect.Begin();
-
-			auto params = effect.GetParamBlock();
-			params.SetParam("ViewAspect", "floatViewAspect");
-			params.SetParam("TanHalfFOV", "floatTanHalfFOV");
-			params.SetParam("screenParam", "vec2ScreenSize");
-			params.SetParam("viewportOffset", "vec2ViewportOffset");
-			params.SetParam("viewportScale", "vec2ViewportScale");
-
+			auto params = pEffectFile->GetParamBlock();
 
 			Matrix4 mxWorld;
 			lightObject->GetRenderMatrix(mxWorld);
+			if (light_type == D3DLIGHT_POINT || light_type == D3DLIGHT_SPOT)
+			{
+				Matrix4 mxScaling;
+				mxScaling.makeScale(Vector3(light_range, light_range, light_range));
+				mxWorld = mxScaling * mxWorld;
+			}
+			
+			// light_range
 			CGlobals::GetWorldMatrixStack().push(mxWorld);
-			params.SetParam("matWorld", "mat4World");
+			params->SetParamByStringValue("matWorld", "mat4World");
 			CGlobals::GetWorldMatrixStack().pop();
 
-			params.SetParam("matView", "mat4View");
-			params.SetParam("matProj", "mat4Projection");
+			params->SetParamByStringValue("matView", "mat4View");
+			params->SetParamByStringValue("matProj", "mat4Projection");
 
-			params.SetVector4("light_diffuse", light_diffuse.r, light_diffuse.g, light_diffuse.b, light_diffuse.a);
-			params.SetVector4("light_specular", light_specular.r, light_specular.g, light_specular.b, light_specular.a);
-			params.SetVector4("light_ambient", light_ambient.r, light_ambient.g, light_ambient.b, light_ambient.a);
+			params->SetParameter("light_diffuse", Vector4(light_diffuse.r, light_diffuse.g, light_diffuse.b, light_diffuse.a));
+			params->SetParameter("light_specular", Vector4(light_specular.r, light_specular.g, light_specular.b, light_specular.a));
+			params->SetParameter("light_ambient", Vector4(light_ambient.r, light_ambient.g, light_ambient.b, light_ambient.a));
 
-			params.SetVector3("light_position", light_position.x, light_position.y, light_position.z);
-			params.SetVector3("light_direction", light_direction.x, light_direction.y, light_direction.z);
+			params->SetParameter("light_position", Vector3(light_position.x, light_position.y, light_position.z));
+			params->SetParameter("light_direction", Vector3(light_direction.x, light_direction.y, light_direction.z));
 
-			params.SetFloat("light_range", light_range);
-			params.SetFloat("light_falloff", light_falloff);
+			params->SetParameter("light_range", light_range);
+			params->SetParameter("light_falloff", light_falloff);
 
-			params.SetFloat("light_attenuation0", light_attenuation0);
-			params.SetFloat("light_attenuation1", light_attenuation1);
-			params.SetFloat("light_attenuation2", light_attenuation2);
+			params->SetParameter("light_attenuation0", light_attenuation0);
+			params->SetParameter("light_attenuation1", light_attenuation1);
+			params->SetParameter("light_attenuation2", light_attenuation2);
 
-			params.SetFloat("light_theta", light_theta);
-			params.SetFloat("light_phi", light_phi);
+			params->SetParameter("light_theta", light_theta);
+			params->SetParameter("light_phi", light_phi);
 
-
-			auto _ColorRT = ParaScripting::ParaAsset::LoadTexture("_ColorRT", "_ColorRT", 0);
-			auto originRT = ParaScripting::CParaEngine::GetRenderTarget();
-			ParaScripting::CParaEngine::StretchRect(originRT, _ColorRT);
-			ParaScripting::CParaEngine::SetRenderTarget(originRT);
-			params.SetTextureObj(0, _ColorRT);
-			params.SetTextureObj(2, ParaScripting::ParaAsset::LoadTexture("_DepthTexRT_R32F", "_DepthTexRT_R32F", 0));
-			params.SetTextureObj(3, ParaScripting::ParaAsset::LoadTexture("_NormalRT", "_NormalRT", 0));
-
-			effect.CommitChanges();
+			pEffectFile->applyCameraMatrices();
+			params->ApplyToEffect(pEffectFile);
+			pEffectFile->CommitChanges();
 
 			pDevice->Clear(0, 0, D3DCLEAR_STENCIL, 0, 1.0f, 0);
 
-			switch (light_type) {
+			switch (light_type) 
+			{
 			case D3DLIGHT_POINT:
 			case D3DLIGHT_SPOT:
 				for (int pass = 0; pass < 2; pass++) {
-					if (effect.BeginPass(pass)) {
-						pObject->DrawSubset(0);
-						effect.EndPass();
+					if (pEffectFile->BeginPass(pass)) {
+						pSphereObject->DrawSubset(0);
+						pEffectFile->EndPass();
 					}
 				}
-				pObject->Release();
 				break;
 			case D3DLIGHT_DIRECTIONAL:
-				if (effect.BeginPass(0)) {
+				if (pEffectFile->BeginPass(0)) {
 					ParaScripting::CParaEngine::DrawQuad();
-					effect.EndPass();
+					pEffectFile->EndPass();
 				}
 				break;
 			}
-			effect.End();
 		}
+		if (pEffectFile) {
+			pEffectFile->end();
+		}
+
+		SAFE_RELEASE(pSphereObject);
+		pDevice->SetRenderTarget(1, NULL);
+
+		pDevice->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_SRCALPHA);
+		pDevice->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
+		pDevice->SetRenderState(D3DRS_ALPHABLENDENABLE, FALSE);
 #endif
 	}
 

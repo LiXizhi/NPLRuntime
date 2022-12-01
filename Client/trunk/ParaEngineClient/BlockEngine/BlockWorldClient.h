@@ -127,9 +127,6 @@ namespace ParaEngine
 		*/
 		void Render(BlockRenderPass nRenderPass = BlockRenderPass_Opaque, std::vector<BlockRenderTask*>* pCurRenderQueue = NULL, int nRenderMethod = -1);
 
-		/** render light geometry. */
-		void RenderDeferredLightsMesh();
-
 		/** do deferred lighting */
 		void RenderDeferredLighting();
 
