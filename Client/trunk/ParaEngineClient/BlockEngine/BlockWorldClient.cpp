@@ -51,6 +51,7 @@
 #include "ParaTime.h"
 #endif
 
+ID3DXMesh* g_pSphereObject = NULL;
 
 namespace ParaEngine
 {
@@ -2339,6 +2340,8 @@ namespace ParaEngine
 		m_render_target_block_info.reset();
 		m_render_target_depth_tex.reset();
 		m_render_target_normal.reset();
+
+		SAFE_RELEASE(g_pSphereObject);
 #endif
 	}
 
@@ -3334,7 +3337,6 @@ namespace ParaEngine
 		pDevice->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_ONE);
 		pDevice->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_ONE);
 
-		ID3DXMesh* pSphereObject = NULL;
 		CEffectFile* pEffectFile = NULL;
 		VertexDeclarationPtr pDecl = NULL;
 
@@ -3371,29 +3373,20 @@ namespace ParaEngine
 					pEffectFile->end();
 				}
 
-				switch (light_type) {
-				case D3DLIGHT_POINT:
-					pEffectFile = m_effect_light_point.get();
-					if (!pSphereObject) {
+				if (light_type == D3DLIGHT_POINT || light_type == D3DLIGHT_SPOT)
+				{
+					pEffectFile = (light_type == D3DLIGHT_POINT) ? m_effect_light_point.get() : m_effect_light_spot.get();
+					if (!g_pSphereObject) {
 						// TODO: create and cache the sphere buffer across frames. 
 						int mesh_slice_num = 50;
-						D3DXCreateSphere(pDevice, 1.0f, mesh_slice_num, mesh_slice_num, &pSphereObject, 0);
+						D3DXCreateSphere(pDevice, 1.0f, mesh_slice_num, mesh_slice_num, &g_pSphereObject, 0);
 					}
 					pDecl = CGlobals::GetEffectManager()->GetVertexDeclaration(EffectManager::S0_POS);
-					break;
-				case D3DLIGHT_SPOT:
-					pEffectFile = m_effect_light_spot.get();
-					if (!pSphereObject) {
-						// TODO: create and cache the sphere buffer across frames. 
-						int mesh_slice_num = 50;
-						D3DXCreateSphere(pDevice, 1.0f, mesh_slice_num, mesh_slice_num, &pSphereObject, 0);
-					}
-					pDecl = CGlobals::GetEffectManager()->GetVertexDeclaration(EffectManager::S0_POS);
-					break;
-				case D3DLIGHT_DIRECTIONAL:
+				}
+				else
+				{
 					pEffectFile = m_effect_light_directional.get();
 					pDecl = CGlobals::GetEffectManager()->GetVertexDeclaration(EffectManager::S0_POS_TEX0);
-					break;
 				}
 				
 				if (!pEffectFile)
@@ -3472,7 +3465,7 @@ namespace ParaEngine
 			case D3DLIGHT_SPOT:
 				for (int pass = 0; pass < 2; pass++) {
 					if (pEffectFile->BeginPass(pass)) {
-						pSphereObject->DrawSubset(0);
+						g_pSphereObject->DrawSubset(0);
 						pEffectFile->EndPass();
 					}
 				}
@@ -3489,7 +3482,6 @@ namespace ParaEngine
 			pEffectFile->end();
 		}
 
-		SAFE_RELEASE(pSphereObject);
 		pDevice->SetRenderTarget(1, NULL);
 
 		pDevice->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_SRCALPHA);
