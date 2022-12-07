@@ -89,6 +89,9 @@ bool ParaEngine::BlockTessellatorBase::UpdateCurrentBlock(BlockChunk* pChunk, ui
 			m_nBlockData = pCurBlock->GetUserData();
 			m_pCurBlockModel = &(m_pCurBlockTemplate->GetBlockModel(m_pWorld, m_blockId_ws.x, m_blockId_ws.y, m_blockId_ws.z, (uint16)m_nBlockData, neighborBlocks));
 			tessellatedModel.ClearVertices();
+
+			m_packedBlockId = packedBlockId;
+			m_is_render_faces.clear();
 			return true;
 		}
 	}
@@ -280,19 +283,19 @@ int32 ParaEngine::BlockGeneralTessellator::TessellateBlock(BlockChunk* pChunk, u
 	{
 		// water, ice or other transparent cube blocks
 		// adjacent faces of the same liquid type will be removed. 
-		TessellateLiquidOrIce(dwShaderID);
+		TessellateLiquidOrIce(dwShaderID, materialId);
 	}
 	else
 	{
 		if (m_pCurBlockModel->IsUsingSelfLighting())
 		{
 			// like wires, etc. 
-			TessellateSelfLightingCustomModel(dwShaderID);
+			TessellateSelfLightingCustomModel(dwShaderID, materialId);
 		}
 		else if (m_pCurBlockModel->IsUniformLighting())
 		{
 			// custom models like stairs, slabs, button, torch light, grass, etc. 
-			TessellateUniformLightingCustomModel(dwShaderID);
+			TessellateUniformLightingCustomModel(dwShaderID, materialId);
 		}
 		else
 		{
@@ -338,7 +341,7 @@ bool checkFaceContain(Vector2 *rectSelf,Vector2 *rectTemp) {
 }
 
 
-void ParaEngine::BlockGeneralTessellator::TessellateUniformLightingCustomModel(BlockRenderMethod dwShaderID)
+void ParaEngine::BlockGeneralTessellator::TessellateUniformLightingCustomModel(BlockRenderMethod dwShaderID, int materialId)
 {
 	int nFetchNearybyCount = 7; //  m_pCurBlockTemplate->IsTransparent() ? 7 : 1;
 	FetchNearbyBlockInfo(m_pChunk, m_blockId_cs, nFetchNearybyCount);
@@ -346,6 +349,13 @@ void ParaEngine::BlockGeneralTessellator::TessellateUniformLightingCustomModel(B
 	tessellatedModel.CloneVertices(m_pCurBlockTemplate->GetBlockModel(m_pWorld, m_blockId_ws.x, m_blockId_ws.y, m_blockId_ws.z, (uint16)m_nBlockData, neighborBlocks));
 
 	const uint16_t nFaceCount = m_pCurBlockModel->GetFaceCount();
+	m_is_render_faces.resize(nFaceCount, true);
+	for (int i = 0; i < nFaceCount; i++) 
+	{
+		int faceMaterialId = m_pChunk->GetBlockFaceMaterial(m_packedBlockId, i);
+		// 材质ID相同则渲染
+		m_is_render_faces[i] = materialId == faceMaterialId;
+	}
 
 	// custom model does not use AO and does not remove any invisible faces. 
 	int32_t max_light = 0;
@@ -362,8 +372,26 @@ void ParaEngine::BlockGeneralTessellator::TessellateUniformLightingCustomModel(B
 		// not render completely dark
 		max_light = Math::Max(max_light, 2);
 		float fLightValue = m_pWorld->GetLightBrightnessLinearFloat(max_light);
+		int tempFaceCount = nFaceCount;
 
-		for (int face = 0; face < nFaceCount; ++face)
+		auto& verts = tessellatedModel.Vertices();
+		for (int i = nFaceCount - 1; i >= 0; i-- )
+		{
+			if (m_is_render_faces[i]) continue;
+			
+			int selfFace = i;
+			int start = selfFace * 4;   //去掉这个面的四个顶点，并前移数组
+			for (int v = start; v < tempFaceCount * 4 - 4; v++) {
+				verts[v] = verts[v + 4];
+			}
+			for (int v = 0; v < 4; v++) {
+				verts.pop_back();
+			}
+			tempFaceCount--;
+		}
+		tessellatedModel.SetFaceCount(tempFaceCount);
+
+		for (int face = 0; face < tempFaceCount; ++face)
 		{
 			int nFirstVertex = face * 4;
 			for (int v = 0; v < 4; ++v)
@@ -397,7 +425,7 @@ void ParaEngine::BlockGeneralTessellator::TessellateUniformLightingCustomModel(B
 #ifdef USE_CUT_CFG
 		if (modelId > 0) {
 			// here we use small_vector instead of std::vector to avoid heap memory allocations.
-			boost::container::small_vector<int32, 20>  facesNeedCut;
+			// boost::container::small_vector<int32, 20>  facesNeedCut;
 			for (int dir = rbp_pX; dir <= rbp_nZ; ++dir)
 			{
 				Block* tempBlock = neighborBlocks[dir];
@@ -416,18 +444,21 @@ void ParaEngine::BlockGeneralTessellator::TessellateUniformLightingCustomModel(B
 							auto& faces = curInfo->faces;
 
 							for (int i = 0; i < 10 && faces[i]>0; i++) {
-								facesNeedCut.push_back(faces[i] - 1);
+								m_is_render_faces[faces[i] - 1] = false;
+								// facesNeedCut.push_back(faces[i] - 1);
 							}
 						}
 						//OUTPUT_LOG("\"%s_%d_%d__%s_%d = %d\",\n", curModelName.c_str(), cur_id_data, dir, tempModelName.c_str(), temp_id_data, selfFace);
 					}
 				}
 			}
-			std::sort(facesNeedCut.begin(), facesNeedCut.end());
+			// std::sort(facesNeedCut.begin(), facesNeedCut.end());
 			auto& verts = tessellatedModel.Vertices();
-			for (auto iter = facesNeedCut.rbegin(); iter != facesNeedCut.rend(); iter++) {
-				int selfFace = *iter;
-				int start = selfFace * 4;//去掉这个面的四个顶点，并前移数组
+			for (int i = nFaceCount - 1; i >= 0; i-- )
+			{
+				if (m_is_render_faces[i]) continue;
+				int selfFace = i;
+				int start = selfFace * 4;   //去掉这个面的四个顶点，并前移数组
 				for (int v = start; v < tempFaceCount * 4 - 4; v++) {
 					verts[v] = verts[v + 4];
 				}
@@ -442,7 +473,7 @@ void ParaEngine::BlockGeneralTessellator::TessellateUniformLightingCustomModel(B
 #else
 		const std::string &curModelName = m_pCurBlockTemplate->GetModelName();
 		if (curModelName=="slab"||curModelName=="stairs"||curModelName=="slope") {
-			boost::container::small_vector<int32, 20> facesNeedCut;
+			// boost::container::small_vector<int32, 20> facesNeedCut;
 			const static Vector3 normals[7] = {
 				Vector3(),
 
@@ -602,7 +633,8 @@ void ParaEngine::BlockGeneralTessellator::TessellateUniformLightingCustomModel(B
 
 							//isRealNeighbor = true;
 							if (isRealNeighbor) {//判断这个面确实是跟邻居重合的
-								facesNeedCut.push_back(selfFace);
+								// facesNeedCut.push_back(selfFace);
+								m_is_render_faces[selfFace] = false;
 								auto neighbourModelId = BlockTessellateFastCutCfg::GetModelIDFromModelName(tempBlock->GetTemplate()->GetModelName());
 								if (isNeighborCube) {
 									temp_id_data = 0;
@@ -627,9 +659,10 @@ void ParaEngine::BlockGeneralTessellator::TessellateUniformLightingCustomModel(B
 				}
 			}
 
-			std::sort(facesNeedCut.begin(), facesNeedCut.end());
-			for (auto iter = facesNeedCut.rbegin(); iter != facesNeedCut.rend(); iter++) {
-				int selfFace = *iter;
+			// std::sort(facesNeedCut.begin(), facesNeedCut.end());
+			for (int i = nFaceCount - 1; i >= 0; i-- )
+			{
+				int selfFace = i;
 				int start = selfFace * 4;//去掉这个面的四个顶点，并前移数组
 				for (int v = start; v < tempFaceCount * 4 - 4; v++) {
 					tessellatedModel.Vertices()[v] = tessellatedModel.Vertices()[v + 4];
@@ -661,7 +694,7 @@ void ParaEngine::BlockGeneralTessellator::TessellateUniformLightingCustomModel(B
 	}
 }
 
-void ParaEngine::BlockGeneralTessellator::TessellateSelfLightingCustomModel(BlockRenderMethod dwShaderID)
+void ParaEngine::BlockGeneralTessellator::TessellateSelfLightingCustomModel(BlockRenderMethod dwShaderID, int materialId)
 {
 	FetchNearbyBlockInfo(m_pChunk, m_blockId_cs, 19, 0);
 	tessellatedModel.CloneVertices(m_pCurBlockTemplate->GetBlockModel(m_pWorld, m_blockId_ws.x, m_blockId_ws.y, m_blockId_ws.z, (uint16)m_nBlockData, neighborBlocks));
@@ -673,7 +706,31 @@ void ParaEngine::BlockGeneralTessellator::TessellateSelfLightingCustomModel(Bloc
 	{
 		uint32 aoFlags = CalculateCubeAO();
 		const uint16_t nFaceCount = tessellatedModel.GetFaceCount();
-		for (int face = 0; face < nFaceCount; ++face)
+		m_is_render_faces.resize(nFaceCount, true);
+		for (int i = 0; i < nFaceCount; i++) 
+		{
+			int faceMaterialId = m_pChunk->GetBlockFaceMaterial(m_packedBlockId, i);
+			m_is_render_faces[i] = materialId == faceMaterialId;
+		}
+		int tempFaceCount = nFaceCount;
+		auto& verts = tessellatedModel.Vertices();
+		for (int i = nFaceCount - 1; i >= 0; i-- )
+		{
+			if (m_is_render_faces[i]) continue;
+			
+			int selfFace = i;
+			int start = selfFace * 4;   //去掉这个面的四个顶点，并前移数组
+			for (int v = start; v < tempFaceCount * 4 - 4; v++) {
+				verts[v] = verts[v + 4];
+			}
+			for (int v = 0; v < 4; v++) {
+				verts.pop_back();
+			}
+			tempFaceCount--;
+		}
+		tessellatedModel.SetFaceCount(tempFaceCount);
+
+		for (int face = 0; face < tempFaceCount; ++face)
 		{
 			int nIndex = face * 4;
 			tessellatedModel.SetVertexShadowFromAOFlags(nIndex, nIndex, aoFlags);
@@ -712,7 +769,7 @@ int32 VertexVerticalScaleMaskMap[] = {
 	-1, // g_bkRB 
 };
 
-void ParaEngine::BlockGeneralTessellator::TessellateLiquidOrIce(BlockRenderMethod dwShaderID)
+void ParaEngine::BlockGeneralTessellator::TessellateLiquidOrIce(BlockRenderMethod dwShaderID, int materialId)
 {
 	FetchNearbyBlockInfo(m_pChunk, m_blockId_cs, 27);
 
@@ -734,6 +791,8 @@ void ParaEngine::BlockGeneralTessellator::TessellateLiquidOrIce(BlockRenderMetho
 	//----------calc vertex lighting----------------
 	for (int face = 0; face < nFaceCount; ++face)
 	{
+		if (m_pChunk->GetBlockFaceMaterial(m_packedBlockId, face) != materialId) continue;
+
 		int nFirstVertex = face * 4;
 
 		Block* pCurBlock = neighborBlocks[BlockCommon::RBP_SixNeighbors[face]];
