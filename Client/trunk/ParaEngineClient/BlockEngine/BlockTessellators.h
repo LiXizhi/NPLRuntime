@@ -67,6 +67,8 @@ namespace ParaEngine
 		BlockChunk* m_pChunk;
 		// chunk space coordinate. 
 		Uint16x3 m_blockId_cs;
+
+		uint16_t m_packedBlockId;
 	};
 
 	/** custom model tessellation like button, stairs, etc.  */
@@ -80,10 +82,10 @@ namespace ParaEngine
 
 
 	protected:
-		void TessellateLiquidOrIce(BlockRenderMethod dwShaderID);
+		void TessellateLiquidOrIce(BlockRenderMethod dwShaderID, int materialId);
 		void TessellateStdCube(BlockRenderMethod dwShaderID, int materialId);
-		void TessellateUniformLightingCustomModel(BlockRenderMethod dwShaderID);
-		void TessellateSelfLightingCustomModel(BlockRenderMethod dwShaderID);
+		void TessellateUniformLightingCustomModel(BlockRenderMethod dwShaderID, int materialId);
+		void TessellateSelfLightingCustomModel(BlockRenderMethod dwShaderID, int materialId);
 
 		
 	};
