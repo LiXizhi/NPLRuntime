@@ -444,7 +444,7 @@ void ParaEngine::BlockGeneralTessellator::TessellateUniformLightingCustomModel(B
 #else
 		const std::string &curModelName = m_pCurBlockTemplate->GetModelName();
 		if (curModelName=="slab"||curModelName=="stairs"||curModelName=="slope") {
-			// boost::container::small_vector<int32, 20> facesNeedCut;
+			boost::container::small_vector<int32, 20> facesNeedCut;
 			const static Vector3 normals[7] = {
 				Vector3(),
 
