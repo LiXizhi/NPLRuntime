@@ -69,7 +69,6 @@ namespace ParaEngine
 		Uint16x3 m_blockId_cs;
 
 		uint16_t m_packedBlockId;
-		std::vector<bool> m_is_render_faces;
 	};
 
 	/** custom model tessellation like button, stairs, etc.  */

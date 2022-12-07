@@ -95,7 +95,6 @@ namespace ParaEngine
 		return (iter != m_materialsKeyIdMap.end()) ? iter->second : -1;
 	}
 
-
 	void BlockChunk::ApplyBlockMaterial(uint16 nPackedBlockID, int16 nFaceIndex, int32 nMaterialID)
 	{
 		Block* pBlock = GetBlock(nPackedBlockID);
@@ -152,6 +151,38 @@ namespace ParaEngine
 
 	void BlockChunk::RemoveBlockMaterial(uint16 nPackedBlockID, int16 nFaceIndex)
 	{
+	
+		Block* pBlock = GetBlock(nPackedBlockID);
+		if (pBlock) 
+		{
+			BlockTemplate* pTemplate = pBlock->GetTemplate();
+			if (pTemplate)
+			{
+				if (pTemplate->IsMatchAttribute(BlockTemplate::batt_liquid)) return ;
+				uint16_t x, y, z;
+				UnpackBlockIndex(nPackedBlockID, x, y, z);
+				x = m_minBlockId_ws.x + x;
+				y = m_minBlockId_ws.y + y;
+				z = m_minBlockId_ws.z + z;
+				BlockModel* pModel = &(pTemplate->GetBlockModel(GetBlockWorld(), x, y, z, (uint16)pBlock->GetUserData(), nullptr));
+				if (pModel)
+				{
+					if (pModel->IsUsingSelfLighting()) return ;
+					if (pModel->IsUniformLighting())
+					{
+						int nFaceCount = pModel->GetFaceCount();
+						for (int i = 0; i < nFaceCount; i++)
+						{
+							auto nMaterialKey = GET_METERIAL_FACE_KEY(i, nPackedBlockID);
+							m_materialsKeyIdMap.erase(nMaterialKey);
+						}
+						m_materialBlockIndices.erase(nPackedBlockID);
+						return;
+					}
+				}
+			}
+		}
+
 		if (nFaceIndex >= 0)
 		{
 			m_materialsKeyIdMap.erase(GET_METERIAL_FACE_KEY(nFaceIndex, nPackedBlockID));
