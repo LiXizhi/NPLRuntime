@@ -706,31 +706,31 @@ void ParaEngine::BlockGeneralTessellator::TessellateSelfLightingCustomModel(Bloc
 	{
 		uint32 aoFlags = CalculateCubeAO();
 		const uint16_t nFaceCount = tessellatedModel.GetFaceCount();
-		m_is_render_faces.resize(nFaceCount, true);
-		for (int i = 0; i < nFaceCount; i++) 
-		{
-			int faceMaterialId = m_pChunk->GetBlockFaceMaterial(m_packedBlockId, i);
-			m_is_render_faces[i] = materialId == faceMaterialId;
-		}
-		int tempFaceCount = nFaceCount;
-		auto& verts = tessellatedModel.Vertices();
-		for (int i = nFaceCount - 1; i >= 0; i-- )
-		{
-			if (m_is_render_faces[i]) continue;
+		// m_is_render_faces.resize(nFaceCount, true);
+		// for (int i = 0; i < nFaceCount; i++) 
+		// {
+		// 	int faceMaterialId = m_pChunk->GetBlockFaceMaterial(m_packedBlockId, i);
+		// 	m_is_render_faces[i] = materialId == faceMaterialId;
+		// }
+		// int tempFaceCount = nFaceCount;
+		// auto& verts = tessellatedModel.Vertices();
+		// for (int i = nFaceCount - 1; i >= 0; i-- )
+		// {
+		// 	if (m_is_render_faces[i]) continue;
 			
-			int selfFace = i;
-			int start = selfFace * 4;   //去掉这个面的四个顶点，并前移数组
-			for (int v = start; v < tempFaceCount * 4 - 4; v++) {
-				verts[v] = verts[v + 4];
-			}
-			for (int v = 0; v < 4; v++) {
-				verts.pop_back();
-			}
-			tempFaceCount--;
-		}
-		tessellatedModel.SetFaceCount(tempFaceCount);
+		// 	int selfFace = i;
+		// 	int start = selfFace * 4;   //去掉这个面的四个顶点，并前移数组
+		// 	for (int v = start; v < tempFaceCount * 4 - 4; v++) {
+		// 		verts[v] = verts[v + 4];
+		// 	}
+		// 	for (int v = 0; v < 4; v++) {
+		// 		verts.pop_back();
+		// 	}
+		// 	tempFaceCount--;
+		// }
+		// tessellatedModel.SetFaceCount(tempFaceCount);
 
-		for (int face = 0; face < tempFaceCount; ++face)
+		for (int face = 0; face < nFaceCount; ++face)
 		{
 			int nIndex = face * 4;
 			tessellatedModel.SetVertexShadowFromAOFlags(nIndex, nIndex, aoFlags);
@@ -791,7 +791,7 @@ void ParaEngine::BlockGeneralTessellator::TessellateLiquidOrIce(BlockRenderMetho
 	//----------calc vertex lighting----------------
 	for (int face = 0; face < nFaceCount; ++face)
 	{
-		if (m_pChunk->GetBlockFaceMaterial(m_packedBlockId, face) != materialId) continue;
+		// if (m_pChunk->GetBlockFaceMaterial(m_packedBlockId, face) != materialId) continue;
 
 		int nFirstVertex = face * 4;
 

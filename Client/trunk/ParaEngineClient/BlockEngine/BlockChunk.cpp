@@ -98,6 +98,37 @@ namespace ParaEngine
 
 	void BlockChunk::ApplyBlockMaterial(uint16 nPackedBlockID, int16 nFaceIndex, int32 nMaterialID)
 	{
+		Block* pBlock = GetBlock(nPackedBlockID);
+		if (pBlock) 
+		{
+			BlockTemplate* pTemplate = pBlock->GetTemplate();
+			if (pTemplate)
+			{
+				if (pTemplate->IsMatchAttribute(BlockTemplate::batt_liquid)) return ;
+				uint16_t x, y, z;
+				UnpackBlockIndex(nPackedBlockID, x, y, z);
+				x = m_minBlockId_ws.x + x;
+				y = m_minBlockId_ws.y + y;
+				z = m_minBlockId_ws.z + z;
+				BlockModel* pModel = &(pTemplate->GetBlockModel(GetBlockWorld(), x, y, z, (uint16)pBlock->GetUserData(), nullptr));
+				if (pModel)
+				{
+					if (pModel->IsUsingSelfLighting()) return ;
+					if (pModel->IsUniformLighting())
+					{
+						int nFaceCount = pModel->GetFaceCount();
+						for (int i = 0; i < nFaceCount; i++)
+						{
+							auto nMaterialKey = GET_METERIAL_FACE_KEY(i, nPackedBlockID);
+							m_materialsKeyIdMap[nMaterialKey] = nMaterialID;
+						}
+						m_materialBlockIndices[nPackedBlockID] = nFaceCount;
+						return;
+					}
+				}
+			}
+		}
+
 		auto nMaterialKey = GET_METERIAL_FACE_KEY(nFaceIndex, nPackedBlockID);
 		auto iter = m_materialsKeyIdMap.find(nMaterialKey);
 		if (iter != m_materialsKeyIdMap.end())
