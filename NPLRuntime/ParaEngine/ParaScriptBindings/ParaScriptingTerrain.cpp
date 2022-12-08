@@ -867,4 +867,14 @@ extern "C" {
 	{
 		ParaScripting::ParaTerrain::LoadBlockAsync(x, y, z, blockId, userData);
 	}
+	
+	PE_CORE_DECL bool ParaTerrain_SetBlockMaterial(uint16_t x, uint16_t y, uint16_t z, int16_t nFaceId, int32_t nMaterial)
+	{
+		return ParaScripting::ParaTerrain::SetBlockMaterial(x, y, z, nFaceId, nMaterial);
+	}
+
+	PE_CORE_DECL int32_t ParaTerrain_GetBlockMaterial(uint16_t x, uint16_t y, uint16_t z, int16_t nFaceId)
+	{
+		return ParaScripting::ParaTerrain::GetBlockMaterial(x, y, z, nFaceId);
+	}
 };
