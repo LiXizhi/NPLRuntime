@@ -207,6 +207,7 @@ namespace ParaEngine
 		/** whether the model has a specified attachment point */
 		bool canAttach(int id);
 
+		int GetRenderPass(CParameterBlock* pMaterialParams = NULL);
 		void RenderNoAnim(SceneState* pSceneState);
 		void RenderSoftAnim(SceneState* pSceneState, CParameterBlock* pMaterialParams = NULL);
 		void RenderSoftNoAnim(SceneState* pSceneState, CParameterBlock* pMaterialParams = NULL);

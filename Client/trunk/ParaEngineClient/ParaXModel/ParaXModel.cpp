@@ -971,7 +971,7 @@ void CParaXModel::RenderNoAnim(SceneState* pSceneState)
 		// programmable pipeline
 		if (pEffect->begin())
 		{
-			if (pEffect->BeginPass(0))
+			if (pEffect->BeginPass(GetRenderPass()))
 			{
 				for (int i = 0; i < nPasses; i++)
 				{
@@ -1071,13 +1071,7 @@ void CParaXModel::RenderSoftNoAnim(SceneState* pSceneState, CParameterBlock* pMa
 		// programmable pipeline
 		if (pEffect->begin())
 		{
-			int effect_pass = 0;
-			if (pMaterialParams)
-			{
-				auto materialID = pMaterialParams->GetParameter("MaterialID");
-				if (materialID && ((int)(*materialID)) > 0) effect_pass = 1;
-			}
-			if (pEffect->BeginPass(effect_pass))
+			if (pEffect->BeginPass(GetRenderPass(pMaterialParams)))
 			{
 				/* if this is defined, we will combine render pass with similar textures and attributes.
 				It is very strange that combining render pass is slower. */
@@ -1186,6 +1180,13 @@ void CParaXModel::RenderSoftNoAnim(SceneState* pSceneState, CParameterBlock* pMa
 
 }
 
+int CParaXModel::GetRenderPass(CParameterBlock* pMaterialParams)
+{
+	if (pMaterialParams == NULL) return 0;
+	auto materialID = pMaterialParams->GetParameter("MaterialID");
+	if (materialID && ((int)(*materialID)) > 0) return 1;
+	return 0;
+}
 
 void CParaXModel::RenderBMaxModel(SceneState* pSceneState, CParameterBlock* pMaterialParams)
 {
@@ -1235,14 +1236,7 @@ void CParaXModel::RenderBMaxModel(SceneState* pSceneState, CParameterBlock* pMat
 		// programmable pipeline
 		if (pEffect->begin())
 		{
-			int effect_pass = 0;
-			if (pMaterialParams)
-			{
-				auto materialID = pMaterialParams->GetParameter("MaterialID");
-				if (materialID && ((int)(*materialID)) > 0) effect_pass = 1;
-			}
-			
-			if (pEffect->BeginPass(effect_pass))
+			if (pEffect->BeginPass(GetRenderPass(pMaterialParams)))
 			{
 				for (int nPass = 0; nPass < nPasses; nPass++)
 				{
@@ -1348,13 +1342,7 @@ void CParaXModel::RenderSoftAnim(SceneState* pSceneState, CParameterBlock* pMate
 		// programmable pipeline
 		if (pEffect->begin())
 		{
-			int effect_pass = 0;
-			if (pMaterialParams)
-			{
-				auto materialID = pMaterialParams->GetParameter("MaterialID");
-				if (materialID && ((int)(*materialID)) > 0) effect_pass = 1;
-			}
-			if (pEffect->BeginPass(effect_pass))
+			if (pEffect->BeginPass(GetRenderPass(pMaterialParams)))
 			{
 				/* if this is defined, we will combine render pass with similar textures and attributes.
 				It is very strange that combining render pass is slower. */
