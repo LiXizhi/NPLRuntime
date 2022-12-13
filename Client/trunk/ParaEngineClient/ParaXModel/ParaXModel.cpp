@@ -1071,7 +1071,13 @@ void CParaXModel::RenderSoftNoAnim(SceneState* pSceneState, CParameterBlock* pMa
 		// programmable pipeline
 		if (pEffect->begin())
 		{
-			if (pEffect->BeginPass(0))
+			int effect_pass = 0;
+			if (pMaterialParams)
+			{
+				auto materialID = pMaterialParams->GetParameter("MaterialID");
+				if (materialID && ((int)(*materialID)) > 0) effect_pass = 1;
+			}
+			if (pEffect->BeginPass(effect_pass))
 			{
 				/* if this is defined, we will combine render pass with similar textures and attributes.
 				It is very strange that combining render pass is slower. */
@@ -1229,7 +1235,14 @@ void CParaXModel::RenderBMaxModel(SceneState* pSceneState, CParameterBlock* pMat
 		// programmable pipeline
 		if (pEffect->begin())
 		{
-			if (pEffect->BeginPass(0))
+			int effect_pass = 0;
+			if (pMaterialParams)
+			{
+				auto materialID = pMaterialParams->GetParameter("MaterialID");
+				if (materialID && ((int)(*materialID)) > 0) effect_pass = 1;
+			}
+			
+			if (pEffect->BeginPass(effect_pass))
 			{
 				for (int nPass = 0; nPass < nPasses; nPass++)
 				{
@@ -1247,7 +1260,7 @@ void CParaXModel::RenderBMaxModel(SceneState* pSceneState, CParameterBlock* pMat
 						startVB += p.indexCount;
 					}
 				}
-				pEffect->EndPass(0);
+				pEffect->EndPass();
 			}
 			pEffect->end();
 		}
@@ -1335,7 +1348,13 @@ void CParaXModel::RenderSoftAnim(SceneState* pSceneState, CParameterBlock* pMate
 		// programmable pipeline
 		if (pEffect->begin())
 		{
-			if (pEffect->BeginPass(0))
+			int effect_pass = 0;
+			if (pMaterialParams)
+			{
+				auto materialID = pMaterialParams->GetParameter("MaterialID");
+				if (materialID && ((int)(*materialID)) > 0) effect_pass = 1;
+			}
+			if (pEffect->BeginPass(effect_pass))
 			{
 				/* if this is defined, we will combine render pass with similar textures and attributes.
 				It is very strange that combining render pass is slower. */
