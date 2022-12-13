@@ -173,10 +173,12 @@ namespace ParaEngine
 			const Type& _Right
 			) const
 		{
+			int nLeftMaterialId = _Left.m_pRenderObject->GetMaterialId();
+			int nRightMaterialId = _Right.m_pRenderObject->GetMaterialId();
 			int nLeftRenderImportance = _Left.m_pRenderObject->GetRenderImportance();
 			int nRightRenderImportance = _Right.m_pRenderObject->GetRenderImportance();
-			return (nLeftRenderImportance > nRightRenderImportance) ||
-				((nLeftRenderImportance == nRightRenderImportance) && ((_Left.m_fObjectToCameraDistance) < (_Right.m_fObjectToCameraDistance)));
+			return nLeftMaterialId < nRightMaterialId || ((nLeftMaterialId == nRightMaterialId) && ((nLeftRenderImportance > nRightRenderImportance) ||
+				((nLeftRenderImportance == nRightRenderImportance) && ((_Left.m_fObjectToCameraDistance) < (_Right.m_fObjectToCameraDistance)))));
 		};
 	};
 

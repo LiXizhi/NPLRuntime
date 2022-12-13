@@ -36,7 +36,7 @@ int ParaEngine::CBaseObject::g_nObjectSelectionEffect = ParaEngine::RenderSelect
 //-------------------------------------------------------------------
 CBaseObject::CBaseObject()
 	:m_tileContainer(NULL), m_nTechniqueHandle(-1), m_objType(_undefined), m_bGeometryDirty(false), m_bEnableLOD(true),
-	m_dwAttribute(0), m_pEffectParamBlock(NULL), m_nFrameNumber(0), m_nID(0), m_nSelectGroupIndex(-1), m_nRenderImportance(0), m_fRenderDistance(0.f), m_fRenderOrder(0.f)
+	m_dwAttribute(0), m_pEffectParamBlock(NULL), m_nFrameNumber(0), m_nID(0), m_nSelectGroupIndex(-1), m_nRenderImportance(0), m_fRenderDistance(0.f), m_fRenderOrder(0.f), m_nMaterialId(-1)
 {
 }
 //-----------------------------------------------------------------------------
@@ -1141,6 +1141,106 @@ CBaseObject* CBaseObject::Clone()
 	return obj;
 }
 
+
+void CBaseObject::ApplyMaterial()
+{
+	if (m_nMaterialId <= 0) return;
+	CBlockMaterial* material = CGlobals::GetBlockMaterialManager()->GetBlockMaterialByID(m_nMaterialId);
+	CParameterBlock* paramBlock = material ? material->GetParamBlock() : nullptr;
+	if (!paramBlock) return;
+	EffectManager* pEffectManager = CGlobals::GetEffectManager();
+	CEffectFile* pEffect = pEffectManager->GetCurrentEffectFile();
+	if (!pEffect) return;
+	CParameter* materialUV = paramBlock->GetParameter("MaterialUV");
+	if (materialUV) 
+		pEffect->setParameter(CEffectFile::k_material_uv, materialUV->GetRawData(), materialUV->GetRawDataLength());
+	CParameter* baseColor = paramBlock->GetParameter("BaseColor");
+	if (baseColor) 
+		pEffect->setParameter(CEffectFile::k_material_base_color, baseColor->GetRawData(), baseColor->GetRawDataLength());
+	CParameter* metallic = paramBlock->GetParameter("Metallic");
+	if (metallic) 
+		pEffect->setParameter(CEffectFile::k_material_metallic, metallic->GetRawData(), metallic->GetRawDataLength());
+	CParameter* specular = paramBlock->GetParameter("Specular");
+	if (specular) 
+		pEffect->setParameter(CEffectFile::k_material_specular, specular->GetRawData(), specular->GetRawDataLength());
+	CParameter* roughness = paramBlock->GetParameter("Roughness");
+	if (roughness) 
+		pEffect->setParameter(CEffectFile::k_material_roughness, roughness->GetRawData(), roughness->GetRawDataLength());
+	CParameter* emissiveColor = paramBlock->GetParameter("EmissiveColor");
+	if (emissiveColor)
+		pEffect->setParameter(CEffectFile::k_material_emissive_color, emissiveColor->GetRawData(), emissiveColor->GetRawDataLength());
+	CParameter* opacity = paramBlock->GetParameter("Opacity");
+	if (opacity)
+		pEffect->setParameter(CEffectFile::k_material_opacity, opacity->GetRawData(), opacity->GetRawDataLength());
+
+	RenderDevicePtr pDevice = CGlobals::GetRenderDevice();
+	bool bHasDiffuseTex = false;
+	CParameter* diffuse = paramBlock->GetParameter("DiffuseFullPath");
+	if (diffuse) 
+	{
+		const std::string& sFilename = diffuse->GetValueAsConstString();
+		if (!sFilename.empty())
+		{
+			auto tex = CGlobals::GetAssetManager()->GetTexture(sFilename);
+			if(tex == NULL)
+				tex = CGlobals::GetAssetManager()->LoadTexture(sFilename, sFilename);
+			if (tex)
+			{
+				bHasDiffuseTex = true;
+				pDevice->SetTexture(0, tex->GetTexture());
+			}
+		}
+	}
+	if(!bHasDiffuseTex)
+	{
+		auto curTex = CGlobals::GetAssetManager()->GetDefaultTexture(0)->GetTexture();
+		pDevice->SetTexture(0, curTex);
+	}
+
+	CParameter* normal = paramBlock->GetParameter("NormalFullPath");
+	if (normal)
+	{
+		const std::string& sFilename = normal->GetValueAsConstString();
+		if (!sFilename.empty())
+		{
+			auto tex = CGlobals::GetAssetManager()->GetTexture(sFilename);
+			if (tex == NULL)
+				tex = CGlobals::GetAssetManager()->LoadTexture(sFilename, sFilename);
+			if (tex)
+			{
+				auto curTex = tex->GetTexture();
+				pDevice->SetTexture(2, curTex);
+			}
+		}
+	}
+
+	CParameter* emissive = paramBlock->GetParameter("EmissiveFullPath");
+	if (emissive)
+	{
+		const std::string& sFilename = emissive->GetValueAsConstString();
+		if (!sFilename.empty())
+		{
+			auto tex = CGlobals::GetAssetManager()->GetTexture(sFilename);
+			if (tex == NULL)
+				tex = CGlobals::GetAssetManager()->LoadTexture(sFilename, sFilename);
+			if (tex)
+			{
+				auto curTex = tex->GetTexture();
+				pDevice->SetTexture(1, curTex);
+			}
+		}
+	}
+}
+void CBaseObject::SetMaterialId(int materialId) 
+{ 
+	m_nMaterialId = materialId; 
+	auto params = GetEffectParamBlock(true);
+	*(params->CreateGetParameter("MaterialID")) = m_nMaterialId;
+}
+int CBaseObject::GetMaterialId() 
+{ 
+	return m_nMaterialId; 
+}
 int CBaseObject::InstallFields(CAttributeClass* pClass, bool bOverride)
 {
 	// install parent fields if there are any. Please replace __super with your parent class name.
@@ -1217,6 +1317,7 @@ int CBaseObject::InstallFields(CAttributeClass* pClass, bool bOverride)
 	pClass->AddField("RenderWorldMatrix", FieldType_Matrix4, (void*)0, (void*)GetRenderMatrix_s, NULL, "", bOverride);
 	pClass->AddField("LocalTransform", FieldType_Matrix4, (void*)SetLocalTransform_s, (void*)GetLocalTransform_s, NULL, "", bOverride);
 	pClass->AddField("IsLodEnabled", FieldType_Bool, (void*)EnableLOD_s, (void*)IsLODEnabled_s, NULL, "", bOverride);
+	pClass->AddField("MaterialID", FieldType_Int, (void*)SetMaterialId_s, (void*)GetMaterialId_s, NULL, "", bOverride);
 	return S_OK;
 }
 
