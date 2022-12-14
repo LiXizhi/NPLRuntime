@@ -1549,9 +1549,9 @@ HRESULT CBipedObject::Draw(SceneState * sceneState)
 			pEffectManager->SetSamplerState(0, D3DSAMP_MAGFILTER, pEffectManager->GetDefaultSamplerState(0, D3DSAMP_MAGFILTER));
 		}
 
+		ApplyMaterial();
 		CApplyObjectLevelParamBlock p(GetEffectParamBlock());
 		pAI->Draw(sceneState, mat, p.GetParamsBlock());
-
 		sceneState->EnableLocalMaterial(false);
 	}
 
@@ -5690,7 +5690,6 @@ int CBipedObject::InstallFields(CAttributeClass* pClass, bool bOverride)
 	pClass->AddField("AutoWalkupBlock", FieldType_Bool, (void*)SetAutoWalkupBlock_s, (void*)IsAutoWalkupBlock_s, NULL, "", bOverride);
 	pClass->AddField("IsControlledExternally", FieldType_Bool, (void*)SetIsControlledExternally_s, (void*)IsControlledExternally_s, NULL, "", bOverride);
 	pClass->AddField("BlendingFactor", FieldType_Float, (void*)SetBlendingFactor_s, NULL, NULL, "", bOverride);
-
 	return S_OK;
 }
 

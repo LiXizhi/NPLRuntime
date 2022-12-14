@@ -549,6 +549,9 @@ public:
 	ATTRIBUTE_METHOD1(CBaseObject, IsLODEnabled_s, bool*) { *p1 = cls->IsLODEnabled(); return S_OK; }
 	ATTRIBUTE_METHOD1(CBaseObject, EnableLOD_s, bool) { cls->EnableLOD(p1); return S_OK; }
 
+	ATTRIBUTE_METHOD1(CBaseObject, GetMaterialId_s, int*)		{ *p1 = cls->GetMaterialId(); return S_OK; }
+	ATTRIBUTE_METHOD1(CBaseObject, SetMaterialId_s, int)		{ cls->SetMaterialId(p1); return S_OK; }
+
 	/** get attribute by child object. used to iterate across the attribute field hierarchy. */
 	virtual IAttributeFields* GetChildAttributeObject(const char * sName);
 	/** get the number of child objects (row count) in the given column. please note different columns can have different row count. */
@@ -1284,9 +1287,14 @@ public:
 	/** return triangle list */
 	virtual int GetMeshTriangleList(std::vector<Vector3>& output, int nOption = 0);
 
+	virtual void SetMaterialId(int materialId);
+	virtual int GetMaterialId();
+	virtual void ApplyMaterial();
 protected:
 	/** the ID of the object. default to 0. it is regenerated automatically when GetID() is called and that the id is 0. */
 	int m_nID;
+	
+	int m_nMaterialId;
 
 	/** volume type and attribute of this object. @see OBJECT_ATTRIBUTE */ 
 	DWORD					m_dwAttribute;

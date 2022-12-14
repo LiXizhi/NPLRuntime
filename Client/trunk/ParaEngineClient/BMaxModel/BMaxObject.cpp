@@ -395,6 +395,7 @@ namespace ParaEngine
 		
 		CApplyObjectLevelParamBlock p(GetEffectParamBlock());
 
+
 		if (pEffectFile == 0)
 		{
 			// TODO: Fixed Function. 
@@ -465,6 +466,7 @@ namespace ParaEngine
 			}
 
 			// just a single standing animation is supported now and looped. 
+			ApplyMaterial();
 			UpdateModel(sceneState);
 			pModel->draw(sceneState, p.GetParamsBlock()); 
 		}
