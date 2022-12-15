@@ -466,7 +466,6 @@ namespace ParaEngine
 			}
 
 			// just a single standing animation is supported now and looped. 
-			ApplyMaterial();
 			UpdateModel(sceneState);
 			pModel->draw(sceneState, p.GetParamsBlock()); 
 		}

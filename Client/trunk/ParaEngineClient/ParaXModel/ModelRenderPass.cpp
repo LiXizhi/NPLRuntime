@@ -56,6 +56,10 @@ bool ParaEngine::ModelRenderPass::init_bmax_FX(CParaXModel *m, SceneState* pScen
 		if (blendmode == BM_ALPHA_BLEND)
 			CGlobals::GetEffectManager()->SetCullingMode(false);
 	}
+	
+	CBaseObject* pBaseObj = pSceneState->GetCurrentSceneObject();
+	if (pBaseObj != NULL) pBaseObj->ApplyMaterial();
+	
 	return true;
 }
 
@@ -281,6 +285,9 @@ bool ModelRenderPass::init_FX(CParaXModel *m, SceneState* pSceneState,CParameter
 		pEffect->applyWorldMatrices();
 	}
 
+	CBaseObject* pBaseObj = pSceneState->GetCurrentSceneObject();
+	if (pBaseObj != NULL) pBaseObj->ApplyMaterial();
+	
 	return true;
 }
 void ModelRenderPass::deinit_FX(SceneState* pSceneState, CParameterBlock* pMaterialParams /*= NULL*/)
