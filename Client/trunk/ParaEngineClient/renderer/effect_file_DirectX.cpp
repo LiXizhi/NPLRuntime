@@ -80,14 +80,14 @@ LPCSTR s_halfPrecisionMacroTable[]=
 
 
 CEffectFileDirectX::CEffectFileDirectX(const char* filename)
-:m_pEffect(0),m_bIsBegin(false),m_bSharedMode(false),m_nTechniqueIndex(0)
+:m_pEffect(0),m_bIsBegin(false),m_bSharedMode(false),m_nTechniqueIndex(0), m_nLastSharedRenderPass(-1)
 {
 	m_filename = filename;
 	memset(m_paramHandle, 0, sizeof(m_paramHandle));
 }
 
 CEffectFileDirectX::CEffectFileDirectX(const AssetKey& key)
-:CEffectFileBase(key), m_pEffect(0), m_bIsBegin(false), m_bSharedMode(false), m_nTechniqueIndex(0)
+:CEffectFileBase(key), m_pEffect(0), m_bIsBegin(false), m_bSharedMode(false), m_nTechniqueIndex(0), m_nLastSharedRenderPass(-1)
 {
 	memset(m_paramHandle, 0, sizeof(m_paramHandle));
 }
@@ -586,8 +586,14 @@ bool CEffectFileDirectX::begin(bool bApplyParam, DWORD dwFlag, bool bForceBegin 
 
 bool CEffectFileDirectX::BeginPass(int pass,bool bForceBegin )
 {
-	if(bForceBegin || !m_bSharedMode)
+	if(bForceBegin || !m_bSharedMode || m_nLastSharedRenderPass != pass)
 	{
+		if (m_nLastSharedRenderPass >= 0 && m_nLastSharedRenderPass != pass)
+		{
+			m_nLastSharedRenderPass = pass;
+			m_pEffect->EndPass();
+		}
+		
 		HRESULT result = m_pEffect->BeginPass(pass);
 		if( !SUCCEEDED( result ) )
 		{
