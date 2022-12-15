@@ -232,6 +232,7 @@ namespace ParaEngine
 		bool m_bIsBegin;
 		/** Whether effect file is in shared mode. if this is true, the begin() BeginPass() will takes no effects on shader, but only setting parameters.	*/
 		bool m_bSharedMode;
+		int m_nLastSharedRenderPass;
 		static bool g_bTextureEnabled;
 
 		/** parameters that are shared by all objects using this effect.  When you call begin(), these parameters are set. 

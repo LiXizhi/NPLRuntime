@@ -170,15 +170,6 @@ pcl_round (float number)
 #define pcl_lrintf(x) (static_cast<long int>(pcl_round(x)))
 #endif
 
-
-#ifdef _WIN32
-__inline float
-log2f (float x)
-{
-  return (static_cast<float> (logf (x) * M_LOG2E));
-}
-#endif
-
 #ifdef WIN32
 #define pcl_sleep(x) Sleep(1000*(x))
 #else

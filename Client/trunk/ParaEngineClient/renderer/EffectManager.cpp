@@ -1982,6 +1982,10 @@ bool EffectManager::BeginEffectShader(int nHandle, CEffectFile** pOutEffect)
 		pd3dDevice->SetRenderState(D3DRS_ZWRITEENABLE, TRUE);
 		pd3dDevice->SetRenderState(D3DRS_ALPHABLENDENABLE, FALSE);
 		SetCullingMode(true);
+
+#ifdef ENABLE_SHARE_MODE_SHADER
+		pEffect->BeginSharePassMode();
+#endif
 		break;
 	}
 	case TECH_LIGHT_DIRECTIONAL:
