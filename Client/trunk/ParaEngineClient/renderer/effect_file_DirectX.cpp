@@ -586,13 +586,13 @@ bool CEffectFileDirectX::begin(bool bApplyParam, DWORD dwFlag, bool bForceBegin 
 
 bool CEffectFileDirectX::BeginPass(int pass,bool bForceBegin )
 {
-	if(bForceBegin || !m_bSharedMode || m_nLastSharedRenderPass != pass)
+	if(bForceBegin || !m_bSharedMode || (m_nLastSharedRenderPass >= 0 && m_nLastSharedRenderPass != pass))
 	{
-		if (m_nLastSharedRenderPass >= 0 && m_nLastSharedRenderPass != pass)
+		if (!bForceBegin && m_bSharedMode && m_nLastSharedRenderPass >= 0 && m_nLastSharedRenderPass != pass)
 		{
-			m_nLastSharedRenderPass = pass;
 			m_pEffect->EndPass();
 		}
+		m_nLastSharedRenderPass = pass;
 		
 		HRESULT result = m_pEffect->BeginPass(pass);
 		if( !SUCCEEDED( result ) )
