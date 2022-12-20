@@ -138,7 +138,7 @@ void NPLLex::inclinenumber( LexState *LS )
 	luaX_checklimit(LS, LS->linenumber, MAX_INT, "lines in a chunk");
 }
 
-void NPLLex::read_long_string (LexState *LS, SemInfo *seminfo) {
+void NPLLex::read_long_string(LexState *LS, SemInfo *seminfo) {
 	int cont = 0;
 	int l = 0;
 	checkbuffer(LS, l);
@@ -181,7 +181,6 @@ void NPLLex::read_long_string (LexState *LS, SemInfo *seminfo) {
 		  break;
 		}
 	}
-	save_and_next(LS, l);  /* skip the second `]' */
 	save(LS, '\0', l);
 	if (seminfo)
 	{
