@@ -49,6 +49,8 @@ public class ParaEngineWebViewHelper {
 	private static SparseArray<ParaEngineWebView> webViews;
 	private static int viewTag = 0;
 
+	private static RelativeLayout m_maskView = null;
+
 	private static native void onJsCallback(int index, String message);
 	private static native void didFailLoading(int index, String message);
 	private static native void didFinishLoading(int index, String message);
@@ -171,6 +173,10 @@ public class ParaEngineWebViewHelper {
             webViews.remove(index);
             sLayout.removeView(webView);
             webView.destroy();
+            if(m_maskView!=null){
+                sLayout.removeView(m_maskView);
+                m_maskView = null;
+            }
 
             sActivity.runOnGLThread(new Runnable() {
                 @Override
@@ -195,8 +201,20 @@ public class ParaEngineWebViewHelper {
                 RelativeLayout.LayoutParams layoutParams = new RelativeLayout.LayoutParams(w, h);
                 layoutParams.leftMargin = x;
                 layoutParams.topMargin = y;
+
+                m_maskView = new RelativeLayout(sActivity);
+                RelativeLayout.LayoutParams mask_layout = new RelativeLayout.LayoutParams(
+                        ViewGroup.LayoutParams.FILL_PARENT, ViewGroup.LayoutParams.FILL_PARENT);
+
+                sLayout.addView(m_maskView,mask_layout);
                 sLayout.addView(webView, layoutParams);
-                
+
+                m_maskView.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View view) {
+                        ParaEngineWebViewHelper._onCloseView((ParaEngineWebView)webView);
+                    }
+                });
 				webView.requestFocus();
                 webViews.put(index, webView);
             }
