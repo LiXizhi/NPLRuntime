@@ -30,7 +30,8 @@ CViewport::CViewport(CViewportManager* pViewportManager)
 
 CViewport::~CViewport(void)
 {
-	SAFE_DELETE(m_pRenderTarget);
+	//SAFE_DELETE(m_pRenderTarget);
+	m_pRenderTarget.reset();
 }
 
 CAutoCamera* ParaEngine::CViewport::GetCamera()
@@ -53,6 +54,83 @@ void ParaEngine::CViewport::ApplyCamera(CAutoCamera* pCamera)
 		pCamera->EnableStereoVision(true);
 		pCamera->SetStereoEyeShiftDistance(GetEyeMode() == STEREO_EYE_LEFT ? -GetStereoEyeSeparation() : GetStereoEyeSeparation());
 		pCamera->UpdateViewMatrix();
+		if (m_stereoODSparam.isODS) {
+			pCamera->SetStereoEyeShiftDistance(m_stereoODSparam.eyeShiftDistance);
+
+			if (m_stereoODSparam.m_nOmniForceLookatDistance > 0) {
+				pCamera->SetForceOmniCameraObjectDistance(m_stereoODSparam.m_nOmniForceLookatDistance);
+			}
+			if (m_stereoODSparam.m_bOmniAlwaysUseUpFrontCamera) {
+				pCamera->SetForceOmniCameraPitch(0);
+			}
+			double fCameraObjectDist = pCamera->GetCameraObjectDistance();
+			DVector3 dEyePos = m_stereoODSparam.oldEyePos;
+			DVector3 oldLookAtPos = m_stereoODSparam.oldLookAtPos;
+			m_stereoODSparam.needRecoverCamera = true;
+
+			Vector3 up = pCamera->GetWorldUp();
+			if (m_stereoODSparam.m_bOmniAlwaysUseUpFrontCamera) {
+				up = Vector3(0, 1, 0);
+			}
+			up.normalise();
+			Vector3 right = pCamera->GetWorldRight();
+			right.normalise();
+
+			Matrix3 mRotPitch;
+			Matrix3 mRotYaw;
+			Matrix3 mRotRoll;
+
+			//if (abs(m_stereoODSparam.moreRotX) > 0.00001f)//pitch 
+			{
+
+				Quaternion q_pitch(Radian(m_stereoODSparam.moreRotX), right);
+				q_pitch.ToRotationMatrix(mRotPitch);
+
+				Vector3 sightDir = oldLookAtPos - dEyePos;
+				sightDir.normalise();
+
+				Vector3 newSightDir = Vector3(mRotPitch * sightDir);
+				DVector3 newLookAt = DVector3(newSightDir * fCameraObjectDist) + dEyePos;
+
+				//pCamera->SetViewParams(dEyePos, newLookAt, &up);
+				oldLookAtPos = newLookAt;
+			}
+
+			/*auto m_mCameraWorld = pCamera->GetViewMatrix()->inverse();
+			up = Vector3(m_mCameraWorld._21, m_mCameraWorld._22, m_mCameraWorld._23);*/
+
+			//if(abs(m_stereoODSparam.moreRotY)>0.00001f) //yaw
+			{
+				Quaternion q_yaw(Radian(m_stereoODSparam.moreRotY), up);
+				q_yaw.ToRotationMatrix(mRotYaw);
+
+				Vector3 sightDir = oldLookAtPos - dEyePos;
+				sightDir.normalise();
+				Vector3 newSightDir = Vector3(mRotYaw * sightDir);
+				DVector3 newLookAt = DVector3(newSightDir * fCameraObjectDist) + dEyePos;
+
+				//pCamera->SetViewParams(dEyePos, newLookAt, &up);
+				oldLookAtPos = newLookAt;
+			}
+
+			//if (abs(m_stereoODSparam.moreRotZ) > 0.00001f) //roll
+			{
+				if (abs(m_stereoODSparam.moreRotZ - (-1.57)) < 0.0001) {
+					int i = 0;
+				}
+				Quaternion q_roll(Radian(m_stereoODSparam.moreRotZ), up);
+				float oldYaw = pCamera->GetCameraRotY();
+				up = Vector3(mRotPitch * up);
+				up.normalise();
+
+				q_roll.ToRotationMatrix(mRotRoll);
+				up = Vector3(mRotRoll * up);
+				up.normalise();
+			}
+			pCamera->SetViewParams(dEyePos, oldLookAtPos, &up);
+			pCamera->SetFieldOfView(m_stereoODSparam.fov, m_stereoODSparam.fov_h);
+
+		}
 	}
 	else
 	{
@@ -86,14 +164,25 @@ const std::string& ParaEngine::CViewport::GetRenderTargetName() const
 	return m_sRenderTargetName;
 }
 
+std::shared_ptr<CRenderTarget> ParaEngine::CViewport::GetRenderTarget()
+{
+	return m_pRenderTarget;
+}
+
+void ParaEngine::CViewport::SetRenderTarget(std::shared_ptr<CRenderTarget> target)
+{
+	m_pRenderTarget = target;
+}
+
 void ParaEngine::CViewport::SetRenderTargetName(const std::string& val)
 {
 	if (m_sRenderTargetName != val)
 	{
 		m_sRenderTargetName = val;
-		SAFE_DELETE(m_pRenderTarget);
-		if (!m_sRenderTargetName.empty()){
-			m_pRenderTarget = new CRenderTarget();
+		//SAFE_DELETE(m_pRenderTarget);
+		m_pRenderTarget.reset();
+		if (!m_sRenderTargetName.empty()) {
+			m_pRenderTarget = std::make_shared<CRenderTarget>();
 			m_pRenderTarget->SetCanvasTextureName(val);
 		}
 	}
@@ -115,15 +204,21 @@ HRESULT ParaEngine::CViewport::Render(double dTimeDelta, int nPipelineOrder)
 		CAutoCamera* pCamera = GetCamera();
 		if (pRootScene && pCamera)
 		{
-			if (m_pRenderTarget)
+			if (m_pRenderTarget && !m_pRenderTarget->GetHasSetRenderTargetSize())
 			{
 				m_pRenderTarget->SetRenderTargetSize(Vector2((float)GetWidth(), (float)GetHeight()));
 				m_pRenderTarget->GetPrimaryAsset(); // touch asset
 			}
-			ScopedPaintOnRenderTarget painter_(m_pRenderTarget);
+			UpdateRect();
+
+			//ScopedPaintOnRenderTarget painter_(m_pRenderTarget.get());
+			ScopedPaintOnRenderTarget painter_(m_pRenderTarget.get(), m_rect.left, m_rect.top, m_rect.right - m_rect.left, m_rect.bottom - m_rect.top);
+
 			if (m_pRenderTarget && nPipelineOrder == PIPELINE_3D_SCENE)
 			{
-				m_pRenderTarget->Clear(pRootScene->GetFogColor());
+				if (m_stereoODSparam.ods_group_size <= 0 || (m_stereoODSparam.ods_group_size > 0 && m_stereoODSparam.ods_group_idx == 0)) {
+					m_pRenderTarget->Clear(pRootScene->GetFogColor());
+				}
 			}
 
 			SetActive();
@@ -135,7 +230,7 @@ HRESULT ParaEngine::CViewport::Render(double dTimeDelta, int nPipelineOrder)
 				//-- set up effects parameters
 				// Light direction is same as camera front (reversed)
 				pCamera->UpdateViewProjMatrix();
-				
+
 				// Draw next scene
 				if (pRootScene->IsScenePaused())
 					pRootScene->AdvanceScene(0);
@@ -186,6 +281,7 @@ int ParaEngine::CViewport::InstallFields(CAttributeClass* pClass, bool bOverride
 
 	pClass->AddField("alignment", FieldType_String, (void*)SetAlignment_s, NULL, NULL, NULL, bOverride);
 	pClass->AddField("left", FieldType_Int, (void*)SetLeft_s, (void*)GetLeft_s, NULL, NULL, bOverride);
+	pClass->AddField("ods_fov", FieldType_Float, (void*)SetODSFov_s, (void*)GetODSFov_s, NULL, NULL, bOverride);
 	pClass->AddField("top", FieldType_Int, (void*)SetTop_s, (void*)GetTop_s, NULL, NULL, bOverride);
 	pClass->AddField("width", FieldType_Int, (void*)SetWidth_s, (void*)GetWidth_s, NULL, NULL, bOverride);
 	pClass->AddField("height", FieldType_Int, (void*)SetHeight_s, (void*)GetHeight_s, NULL, NULL, bOverride);

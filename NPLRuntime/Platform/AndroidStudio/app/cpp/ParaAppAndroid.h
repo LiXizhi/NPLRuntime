@@ -83,6 +83,7 @@ namespace ParaEngine
         virtual void OnPause() override;
         virtual void OnResume() override;
         virtual void Exit(int nReturnCode /*= 0*/) override;
+        virtual void GetVisibleSize(Vector2* pOut);
     private:
         static const std::string classname;
     };

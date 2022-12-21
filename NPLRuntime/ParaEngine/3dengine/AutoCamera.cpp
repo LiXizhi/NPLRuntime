@@ -149,6 +149,7 @@ CAutoCamera::CAutoCamera()
 	:m_fLookAtShiftY(0), m_event(NULL), m_dwPhysicsGroupMask(DEFAULT_PHYSICS_GROUP_MASK),
 	m_bEnableMouseLeftDrag(true), m_bEnableMouseRightDrag(true), m_bUseCharacterLookup(false), m_bUseCharacterLookupWhenMounted(true), m_nCharacterLookupBoneIndex(-1),
 	m_bBlockInput(false), m_bAlwaysRotateCameraWhenFPS(false), m_bFirstPerson(false), m_vLookAtOffset(0, 0, 0), m_vAdditionalCameraRotate(0, 0, 0), m_fAllowedCharYShift(0), m_fLastCharY(0), m_fLastUsedCharY(0), m_bipedFlyNormal(0, 1, 0), m_fMaxYShiftSpeed(1.f), m_bEnableBlockCollision(true), m_bEnableTerrainCollision(true), m_bIgnoreEyeBlockCollisionInSunlight(true), m_bLockMouseWhenDragging(false)
+	, m_fForceOmniCameraObjectDistance(-10000), m_fForceOmniCameraPitch(-10000)
 {
 	m_bUseRightButtonBipedFacing = true;
 	m_bTurnBipedWhenWalkBackward = false;
@@ -1845,7 +1846,7 @@ void CAutoCamera::UpdateViewMatrix()
 	ComputeViewMatrix(&m_mView, &m_vEye, &m_vLookAt, &vUp);
 }
 
-void CAutoCamera::SetViewParams(const DVector3& vEyePt, const DVector3& vLookatPt)
+void CAutoCamera::SetViewParams(const DVector3& vEyePt, const DVector3& vLookatPt, const Vector3* up)
 {
 	/** set View */
 	m_vDefaultEye = m_vEye = vEyePt;
@@ -1853,6 +1854,9 @@ void CAutoCamera::SetViewParams(const DVector3& vEyePt, const DVector3& vLookatP
 
 	// Calc the view matrix
 	Vector3 vUp(0, 1, 0);
+	if (up != NULL) {
+		vUp = *up;
+	}
 	/// Update the view matrix
 	ComputeViewMatrix(&m_mView, &m_vEye, &m_vLookAt, &vUp);
 
@@ -2253,10 +2257,44 @@ void CAutoCamera::HandleUserInput()
 #endif // PARAENGINE_MOBILE
 }
 
+
 void CAutoCamera::SetCameraObjectDistance(double fDistance)
 {
+	if (m_fForceOmniCameraObjectDistance > -9999) {
+		return;
+	}
 	m_fCameraObjectDistance = m_fLastCameraObjectDistance = fDistance;
 }
+
+void CAutoCamera::SetCameraLiftupAngle(double fValue) {
+	if (m_fForceOmniCameraPitch > -9999) {
+		return;
+	}
+	m_fCameraLiftupAngle = fValue;
+}
+
+void CAutoCamera::SetCameraRotX(double fValue) {
+	if (m_fForceOmniCameraPitch > -9999) {
+		return;
+	}
+	m_fCameraRotX = fValue;
+}
+
+void CAutoCamera::SetForceOmniCameraObjectDistance(double fDist)
+{
+	m_fForceOmniCameraObjectDistance = fDist;
+	if (m_fForceOmniCameraObjectDistance > -9999) {
+		m_fCameraObjectDistance = m_fCameraObjectDistance = fDist;
+	}
+}
+void CAutoCamera::SetForceOmniCameraPitch(double fPitch)
+{
+	m_fForceOmniCameraPitch = fPitch;
+	if (m_fForceOmniCameraPitch > -9999) {
+		m_fCameraLiftupAngle = m_fCameraRotX = fPitch;
+	}
+}
+
 
 void CAutoCamera::Reset()
 {

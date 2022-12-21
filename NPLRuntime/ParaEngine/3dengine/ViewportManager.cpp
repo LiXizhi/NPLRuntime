@@ -12,11 +12,17 @@
 #if USE_DIRECTX_RENDERER
 #include "RenderDeviceD3D9.h"
 #endif
+
+#include "AutoCamera.h"
+#include "SceneObject.h"
+#include "MoviePlatform.h"
+#include "3dengine/RenderTarget.h"
+
 using namespace ParaEngine;
 
 CViewportManager::CViewportManager()
 	:m_nWidth(1), m_nHeight(1), m_nActiveViewPortIndex(1), m_nLayout(VIEW_LAYOUT_INVALID)
-	,m_nCurrentFrameNumber(0)
+	,m_nCurrentFrameNumber(0), m_normalScenePortInOdsSingleEye(NULL)
 {
 	m_viewport.X = 0;
 	m_viewport.Y = 0;
@@ -24,6 +30,10 @@ CViewportManager::CViewportManager()
 	m_viewport.Height = 560;
 	m_viewport.MinZ = 0.5;
 	m_viewport.MaxZ = 200;
+	ods_fov = 1.57f;
+	widthPerDegree = 4;
+	m_bOmniAlwaysUseUpFrontCamera = true;
+	m_nOmniForceLookatDistance = 20;
 }
 
 CViewportManager::~CViewportManager(void)
@@ -55,12 +65,16 @@ void ParaEngine::CViewportManager::UpdateViewport(int nBackbufferWidth, int nBac
 
 CViewport* ParaEngine::CViewportManager::CreateGetViewPort(int nIndex/*=0*/)
 {
+	int maxNum = 10;
+	if (GetLayout() >= VIEW_LAYOUT_STEREO_OMNI && GetLayout() <= VIEW_LAYOUT_STEREO_OMNI_SINGLE_EYE_1) {
+		maxNum = 10000;
+	}
 	CViewport* pViewPort = NULL;
 	if (nIndex >= 0 && nIndex < (int)m_viewportList.size())
 	{
 		pViewPort = m_viewportList[nIndex];
 	}
-	else if (nIndex < 8)
+	else if (nIndex < maxNum)
 	{
 		m_viewportList.resize(nIndex + 1, NULL);
 	}
@@ -105,16 +119,62 @@ void ParaEngine::CViewportManager::SortViewport()
 HRESULT ParaEngine::CViewportManager::Render(double dTimeDelta, int nPipelineOrder)
 {
 	SortViewport();
+	bool needRecoverCamera = false;
+	CAutoCamera* pCamera = NULL;
+	DVector3 oldEyePos, oldLookAtPos;
+	float oldFov = 0;
+	float oldAspect = 1;
+	float oldCameraRotX, oldCameraDistance, oldLiftUp;
+	auto pMainScene = CGlobals::GetScene();
+	if (pMainScene) {
+		pCamera = (CAutoCamera*)pMainScene->GetCurrentCamera();
+		oldEyePos = pCamera->GetEyePosition();
+		oldLookAtPos = pCamera->GetLookAtPosition();
+		oldFov = pCamera->GetFieldOfView();
+		oldAspect = pCamera->GetAspectRatio();
+		oldCameraRotX = (float)pCamera->GetCameraRotX();
+		oldCameraDistance = (float)pCamera->GetCameraObjectDistance();
+		oldLiftUp = (float)pCamera->GetCameraLiftupAngle();
+		pCamera->SetForceOmniCameraObjectDistance(-10000);
+		pCamera->SetForceOmniCameraPitch(-10000);
+	}
 	for (auto iter = m_viewportSorted.begin(); iter != m_viewportSorted.end(); iter++)
 	{
 		CViewport* pViewPort = *iter;
 		if (pViewPort)
 		{
+			auto &_param = pViewPort->GetStereoODSparam();
+			_param.oldEyePos = oldEyePos;
+			_param.oldLookAtPos = oldLookAtPos;
+			_param.oldFov = oldFov;
 			pViewPort->Render(dTimeDelta, nPipelineOrder);
+
+			if (_param.needRecoverCamera) {
+				needRecoverCamera = true;
+			}
 		}
+	}
+	if (pCamera&& needRecoverCamera) {
+		if (m_normalScenePortInOdsSingleEye) {
+			pCamera->SetAspectRatio(m_normalScenePortInOdsSingleEye->GetAspectRatio());
+		}
+		else {
+			pCamera->SetAspectRatio(oldAspect);
+		}
+		pCamera->SetFieldOfView(oldFov);
+		pCamera->SetLookAtPosition(oldLookAtPos);
+		pCamera->SetCameraRotX(oldCameraRotX);
+		pCamera->SetCameraObjectDistance(oldCameraDistance);
+		pCamera->SetViewParams(oldEyePos, oldLookAtPos);
+		pCamera->SetCameraLiftupAngle(oldLiftUp);
 	}
 	CreateGetViewPort(1)->SetActive();
 	return S_OK;
+}
+
+int ParaEngine::CViewportManager::CheckInViewPortGroup(CViewport* pViewport)
+{
+	return 0;
 }
 
 void ParaEngine::CViewportManager::SetActiveViewPortIndex(int val)
@@ -129,6 +189,13 @@ CViewport* ParaEngine::CViewportManager::GetActiveViewPort()
 
 void ParaEngine::CViewportManager::GetPointOnViewport(int& x, int& y, int* pWidth, int* pHeight)
 {
+	if (m_normalScenePortInOdsSingleEye) {
+		if (x > 0 && x < m_normalScenePortInOdsSingleEye->GetWidth() && y>0 && y < m_normalScenePortInOdsSingleEye->GetHeight()) {
+			*pWidth = m_normalScenePortInOdsSingleEye->GetWidth();
+			*pHeight = m_normalScenePortInOdsSingleEye->GetHeight();
+			return;
+		}
+	}
 	CViewport* pViewPort = GetActiveViewPort();
 	if (pViewPort)
 	{
@@ -197,6 +264,14 @@ void ParaEngine::CViewportManager::UpdateLayout()
 		CViewport* pMainSceneViewportRight = CreateGetViewPort(3);
 		pMainSceneViewportRight->SetPosition("_mr", 0, 0, nHalfWidth, 0);
 	}
+	else if (GetLayout() == VIEW_LAYOUT_STEREO_OMNI_SINGLE_EYE)
+	{
+
+	}
+	else if (GetLayout() == VIEW_LAYOUT_STEREO_OMNI)
+	{
+
+	}
 }
 
 ParaEngine::VIEWPORT_LAYOUT ParaEngine::CViewportManager::GetLayout()
@@ -214,8 +289,7 @@ void ParaEngine::CViewportManager::SetLayout(VIEWPORT_LAYOUT nLayout, CSceneObje
 		return;
 	// clear layout
 	SetViewportCount(0);
-
-	
+	m_normalScenePortInOdsSingleEye = NULL;
 	m_nLayout = nLayout;
 	if (nLayout == VIEW_LAYOUT_STEREO_LEFT_RIGHT)
 	{
@@ -246,6 +320,408 @@ void ParaEngine::CViewportManager::SetLayout(VIEWPORT_LAYOUT nLayout, CSceneObje
 		pMainSceneViewportRight->SetEyeMode(STEREO_EYE_RIGHT);
 
 		SetViewportCount(4);
+	}
+	else if (nLayout == VIEW_LAYOUT_STEREO_OMNI_SINGLE_EYE_1)
+	{
+		int portNum = 0;
+
+		//offscreen rendering
+		const int num = 4;//横向4个方向
+		const int cubeWidth = (GetWidth() / num);
+
+		const bool needCompositeUI = GetHeight() - cubeWidth * 2 > 200;
+		if (!needCompositeUI) {//没有足够的位置留给UI了,直接显示一个全屏UI
+			CViewport* pUIViewport = CreateGetViewPort(portNum);
+			pUIViewport->SetIdentifier("GUI");
+			pUIViewport->SetGUIRoot(pGUIRoot);
+			pUIViewport->SetPosition("_fi", 0, 0, 0, 0);
+			pUIViewport->SetZOrder(103);
+			pUIViewport->SetEyeMode(STEREO_EYE_NORMAL);
+			pUIViewport->SetPipelineOrder(PIPELINE_UI);
+			portNum += 1;
+		}
+		else {
+			float fov_v = 60 * MATH_PI / 180;
+			float fov_h = MATH_PI / 2;
+			const float aspect = tan(fov_h / 2) / tan(fov_v / 2);
+
+			int _width = GetWidth();
+			int _height = GetHeight() - cubeWidth * 2;
+
+			if (_width > _height * aspect) {
+				_width = (int)(_height * aspect);
+			}
+			else {
+				_height = (int)(_width / aspect);
+			}
+			//default show
+			CViewport* pUIViewport = CreateGetViewPort(portNum);
+			pUIViewport->SetIdentifier("GUI");
+			pUIViewport->SetGUIRoot(pGUIRoot);
+			pUIViewport->SetPosition("_lt", 0, cubeWidth * 2, _width, _height);
+			pUIViewport->SetZOrder(98);
+			pUIViewport->SetEyeMode(STEREO_EYE_NORMAL);
+			pUIViewport->SetPipelineOrder(PIPELINE_UI);
+			portNum += 1;
+
+			CViewport* pMainSceneViewport = CreateGetViewPort(portNum);
+			pMainSceneViewport->SetIdentifier("scene");
+			pMainSceneViewport->SetScene(pMainScene);
+			pMainSceneViewport->SetPosition("_lt", 0, cubeWidth * 2, _width, _height);
+			pMainSceneViewport->SetEyeMode(STEREO_EYE_LEFT);
+			pMainSceneViewport->SetZOrder(0);
+			pMainSceneViewport->SetPipelineOrder(PIPELINE_3D_SCENE);
+			m_normalScenePortInOdsSingleEye = pMainSceneViewport;
+			{
+				auto &viewport = pMainSceneViewport;
+				CViewport::StereoODSparam& param = viewport->GetStereoODSparam();
+				param.isODS = true;
+				param.aspectRatio = aspect;
+				param.fov = fov_v;
+				param.eyeShiftDistance = 0;
+				param.fov_h = fov_h;
+
+				viewport->SetStereoODSparam(param);
+			}
+			portNum += 1;
+		}
+
+		const float diffRotY = MATH_2PI / (num);
+		const float aspect = 1.0;
+
+		const float fov_h = diffRotY;
+		const float fov_v = atan(tan(MATH_PI / num) / aspect) * 2;
+
+		std::shared_ptr<CRenderTarget> pSharedRenderTarget = NULL;
+
+		const int ods_group_size = 6;//有几个viewPort共用一个renderTarget
+		const std::string randerTargetname = "ods_render_target";
+
+		const int portCoords[6][2] = {
+			{0,0},{1,0},{2,0},{3,0},
+			{0,1},{1,1}
+		};
+		const int rotYXs[6][3] = {
+			{0,0,0},{-90,0,0},{-180,0,0},{-270,0,0},
+			{0,90,360},{0,270,360}
+		};
+
+		for (int i = 0; i < ods_group_size; i++) {
+			CViewport* viewport = CreateGetViewPort(portNum + i);
+			std::string key = "scene_ods_cube_" + to_string(i);
+			viewport->SetIdentifier(key);
+			viewport->SetScene(pMainScene);
+			viewport->SetPosition("_lt", cubeWidth * portCoords[i][0], cubeWidth * portCoords[i][1], cubeWidth, cubeWidth);
+			viewport->SetEyeMode(STEREO_EYE_LEFT);
+			//viewport->SetPipelineOrder(PIPELINE_3D_SCENE);
+			viewport->SetZOrder(50 + i);
+
+			CViewport::StereoODSparam& param = viewport->GetStereoODSparam();
+			param.isODS = true;
+			param.aspectRatio = aspect;
+			param.fov = fov_v;
+			param.eyeShiftDistance = 0;
+			param.moreRotY = rotYXs[i][0] * MATH_PI / 180;
+			//param.moreRotZ = rotYXs[i][2] * MATH_PI / 180;
+			param.moreRotX = rotYXs[i][1] * MATH_PI / 180;;
+			param.fov_h = fov_h;
+			param.m_bOmniAlwaysUseUpFrontCamera = m_bOmniAlwaysUseUpFrontCamera;
+			param.m_nOmniForceLookatDistance = m_nOmniForceLookatDistance;
+			param.ods_group_idx = i;
+			param.ods_group_size = ods_group_size;
+			viewport->SetStereoODSparam(param);
+
+			if (pSharedRenderTarget == NULL) {
+				viewport->SetRenderTargetName(randerTargetname);
+				pSharedRenderTarget = viewport->GetRenderTarget();
+				pSharedRenderTarget.get()->SetRenderTargetSize(Vector2(cubeWidth*4.0f, cubeWidth*2.0f));
+				pSharedRenderTarget.get()->GetPrimaryAsset();
+				pSharedRenderTarget.get()->SetHasSetRenderTargetSize(true);
+			}
+			else {
+				viewport->SetRenderTarget(pSharedRenderTarget);
+			}
+		}
+
+		portNum += ods_group_size;
+
+		// final full screen quad
+		CViewport* pFinalViewPort = CreateGetViewPort(portNum);
+		pFinalViewPort->SetIdentifier("ods_final_composite");
+		pFinalViewPort->SetPosition("_lt", 0, 0, cubeWidth * 4, cubeWidth * 2);
+		//pFinalViewPort->SetPosition("_lt", 0, 0, GetWidth(), GetHeight());
+		pFinalViewPort->SetEyeMode(STEREO_EYE_NORMAL);
+		pFinalViewPort->SetZOrder(102);
+		if (needCompositeUI) {
+			pFinalViewPort->SetPipelineOrder(PIPELINE_POST_UI_3D_SCENE);
+		}
+		else {
+			pFinalViewPort->SetPipelineOrder(PIPELINE_3D_SCENE);
+		}
+
+		portNum += 1;
+
+
+		SetViewportCount(portNum);
+	}
+
+	else if (nLayout == VIEW_LAYOUT_STEREO_OMNI_SINGLE_EYE)
+	{
+		int portNum = 0;
+		//default show
+		CViewport* pUIViewport = CreateGetViewPort(0);
+		pUIViewport->SetIdentifier("GUI");
+		pUIViewport->SetGUIRoot(pGUIRoot);
+		pUIViewport->SetPosition("_fi", 0, 0, 0, 0);
+		pUIViewport->SetZOrder(100);
+		pUIViewport->SetEyeMode(STEREO_EYE_NORMAL);
+		pUIViewport->SetRenderTargetName("ODS_UI");
+		portNum += 1;
+
+		/*CViewport* pMainSceneViewport = CreateGetViewPort(1);
+		pMainSceneViewport->SetIdentifier("scene");
+		pMainSceneViewport->SetScene(pMainScene);
+		pMainSceneViewport->SetPosition("_fi", 0, 0, 0, 0);
+		pMainSceneViewport->SetEyeMode(STEREO_EYE_NORMAL);
+		pUIViewport->SetZOrder(99);
+		portNum += 1;*/
+
+		//offscreen rendering
+		int perWidth = widthPerDegree;//每一个viewPort的宽度
+		//perWidth = 1;//理想情况是宽度为1
+		int num = GetWidth() / perWidth;//横向上分成多少个viewPort
+		int halfHeight = (GetHeight() / 2);
+
+		const float diffRotY = MATH_2PI / (num);
+		const float aspect = (float)perWidth / (float)halfHeight;
+
+		float fov = atan(tan(MATH_PI / num) / aspect) * 2;
+		fov = 90 * MATH_PI / 180;//竖直方向的视角，上看90度、下看90度，一共180度
+		ods_fov = fov;
+		float morePitch = fov / 2;//抬头45°角看天,垂直fov范围90°
+		const std::string randerTargetname = "ods_render_target";
+		for (int i = 0; i < num; i++) {
+			CViewport* viewport = CreateGetViewPort(portNum + i);
+			std::string key = "singleEye_scene_ods_up_" + to_string(i);
+			viewport->SetIdentifier(key);
+			viewport->SetScene(pMainScene);
+			int offset = i;
+			offset = num - 1 - offset;
+			offset -= (num / 2);
+			int x;
+			if (offset < 0) {
+				offset += num;
+				x = perWidth * offset;
+			}
+			else {
+				x = perWidth * offset;
+			}
+			viewport->SetPosition("_lt", x, 0, perWidth, halfHeight);
+			viewport->SetEyeMode(STEREO_EYE_LEFT);
+
+			CViewport::StereoODSparam& param = viewport->GetStereoODSparam();
+			param.isODS = true;
+			param.aspectRatio = aspect;
+			param.fov = fov;
+			param.eyeShiftDistance = 0;
+			param.moreRotY = diffRotY * (i + 0);
+			param.moreRotX = morePitch;
+			param.fov_h = diffRotY;
+			param.m_bOmniAlwaysUseUpFrontCamera = m_bOmniAlwaysUseUpFrontCamera;
+			param.m_nOmniForceLookatDistance = m_nOmniForceLookatDistance;
+			viewport->SetStereoODSparam(param);
+		}
+		portNum += num;
+		morePitch = -fov / 2;
+		for (int i = 0; i < num; i++) {
+			//left eye,down 90
+			CViewport* viewport = CreateGetViewPort(portNum + i);
+			std::string key = "singleEye_scene_ods_down_" + to_string(i);
+			viewport->SetIdentifier(key);
+			viewport->SetScene(pMainScene);
+			int offset = i;
+			offset = num - 1 - offset;
+			offset -= (num / 2);
+			if (offset < 0) {
+				offset += num;
+			}
+			viewport->SetPosition("_lt", perWidth * offset, halfHeight, perWidth, halfHeight);
+			viewport->SetEyeMode(STEREO_EYE_LEFT);
+
+			CViewport::StereoODSparam& param = viewport->GetStereoODSparam();
+			param.isODS = true;
+			param.aspectRatio = aspect;
+			param.fov = fov;
+			param.eyeShiftDistance = 0;
+			param.moreRotY = diffRotY * (i + 0);
+			param.moreRotX = morePitch;
+			param.fov_h = diffRotY;
+			param.m_bOmniAlwaysUseUpFrontCamera = m_bOmniAlwaysUseUpFrontCamera;
+			param.m_nOmniForceLookatDistance = m_nOmniForceLookatDistance;
+			viewport->SetStereoODSparam(param);
+			//viewport->SetRenderTargetName(randerTargetname);
+		}
+		portNum += num;
+
+		SetViewportCount(portNum);
+	}
+	else if (nLayout == VIEW_LAYOUT_STEREO_OMNI)
+	{
+		int portNum = 0;
+		//default show
+		CViewport* pUIViewport = CreateGetViewPort(0);
+		pUIViewport->SetIdentifier("GUI");
+		pUIViewport->SetGUIRoot(pGUIRoot);
+		pUIViewport->SetPosition("_fi", 0, 0, 0, 0);
+		pUIViewport->SetZOrder(100);
+		pUIViewport->SetEyeMode(STEREO_EYE_NORMAL);
+		pUIViewport->SetRenderTargetName("ODS_UI");
+		portNum += 1;
+
+		/*CViewport* pMainSceneViewport = CreateGetViewPort(1);
+		pMainSceneViewport->SetIdentifier("scene");
+		pMainSceneViewport->SetScene(pMainScene);
+		pMainSceneViewport->SetPosition("_fi", 0, 0, 0, 0);
+		pMainSceneViewport->SetEyeMode(STEREO_EYE_NORMAL);
+		pUIViewport->SetZOrder(99);
+		portNum += 1;*/
+
+
+		int perWidth = widthPerDegree;//每一个viewPort的宽度
+		int num = GetWidth() / perWidth;//横向上分成多少个viewPort
+		int halfHeight = GetHeight() / 4;
+
+		int extraWidth = GetWidth() - perWidth * num;
+
+		const float diffRotY = MATH_2PI / (num);
+		const float aspect = (float)perWidth / (float)halfHeight;
+
+		float fov = atan(tan(MATH_PI / num) / aspect) * 2;
+		fov = 90 * MATH_PI / 180;//竖直方向的视角，上看90度、下看90度，一共180度
+		ods_fov = fov;
+		float morePitch = fov / 2;//抬头45°角看天,垂直fov范围90°
+		const std::string randerTargetname = "ods_render_target";
+		for (int i = 0; i < num; i++) {
+			//left eye,up 90
+			CViewport* viewport = CreateGetViewPort(portNum + i);
+			std::string key = "left_scene_ods_up_" + to_string(i);
+			viewport->SetIdentifier(key);
+			viewport->SetScene(pMainScene);
+			int offset = num - 1 - i;
+			offset -= (num / 2);
+			if (offset < 0) {
+				offset += num;
+			}
+			viewport->SetPosition("_lt", perWidth * offset, 0, perWidth, halfHeight);
+			viewport->SetEyeMode(STEREO_EYE_LEFT);
+
+			CViewport::StereoODSparam& param = viewport->GetStereoODSparam();
+			param.isODS = true;
+			param.aspectRatio = aspect;
+			param.fov = fov;
+			param.eyeShiftDistance = -CGlobals::GetMoviePlatform()->GetStereoEyeSeparation();
+			param.moreRotY = diffRotY * (i + 0);
+			param.moreRotX = morePitch;
+			param.fov_h = diffRotY;
+			param.m_bOmniAlwaysUseUpFrontCamera = m_bOmniAlwaysUseUpFrontCamera;
+			param.m_nOmniForceLookatDistance = m_nOmniForceLookatDistance;
+			viewport->SetStereoODSparam(param);
+			//viewport->SetRenderTargetName(randerTargetname);
+		}
+		portNum += num;
+
+		morePitch = -fov / 2;
+		for (int i = 0; i < num; i++) {
+			//left eye,down 90
+			CViewport* viewport = CreateGetViewPort(portNum + i);
+			std::string key = "left_scene_ods_down_" + to_string(i);
+			viewport->SetIdentifier(key);
+			viewport->SetScene(pMainScene);
+			int offset = num - 1 - i;
+			offset -= (num / 2);
+			if (offset < 0) {
+				offset += num;
+			}
+			viewport->SetPosition("_lt", perWidth * offset, halfHeight, perWidth, halfHeight);
+			viewport->SetEyeMode(STEREO_EYE_LEFT);
+
+			CViewport::StereoODSparam& param = viewport->GetStereoODSparam();
+			param.isODS = true;
+			param.aspectRatio = aspect;
+			param.fov = fov;
+			param.eyeShiftDistance = -CGlobals::GetMoviePlatform()->GetStereoEyeSeparation();
+			param.moreRotY = diffRotY * (i + 0);
+			param.moreRotX = morePitch;
+			param.fov_h = diffRotY;
+			param.m_bOmniAlwaysUseUpFrontCamera = m_bOmniAlwaysUseUpFrontCamera;
+			param.m_nOmniForceLookatDistance = m_nOmniForceLookatDistance;
+			viewport->SetStereoODSparam(param);
+			//viewport->SetRenderTargetName(randerTargetname);
+		}
+		portNum += num;
+
+		morePitch = fov / 2;
+		for (int i = 0; i < num; i++) {
+			//right eye,up 90
+			CViewport* viewport = CreateGetViewPort(portNum + i);
+			std::string key = "right_scene_ods_up_" + to_string(i);
+			viewport->SetIdentifier(key);
+			viewport->SetScene(pMainScene);
+			int offset = num - 1 - i;
+			offset -= (num / 2);
+			if (offset < 0) {
+				offset += num;
+			}
+			viewport->SetPosition("_lt", perWidth * offset, halfHeight * 2, perWidth, halfHeight);
+			viewport->SetEyeMode(STEREO_EYE_LEFT);
+
+			CViewport::StereoODSparam& param = viewport->GetStereoODSparam();
+			param.isODS = true;
+			param.aspectRatio = aspect;
+			param.fov = fov;
+			param.eyeShiftDistance = CGlobals::GetMoviePlatform()->GetStereoEyeSeparation();
+			param.moreRotY = diffRotY * (i + 0);
+			param.moreRotX = morePitch;
+			param.fov_h = diffRotY;
+			param.m_bOmniAlwaysUseUpFrontCamera = m_bOmniAlwaysUseUpFrontCamera;
+			param.m_nOmniForceLookatDistance = m_nOmniForceLookatDistance;
+			viewport->SetStereoODSparam(param);
+			//viewport->SetRenderTargetName(randerTargetname);
+		}
+		portNum += num;
+
+		morePitch = -fov / 2;
+		for (int i = 0; i < num; i++) {
+			//right eye,down 90
+			CViewport* viewport = CreateGetViewPort(portNum + i);
+			std::string key = "right_scene_ods_down_" + to_string(i);
+			viewport->SetIdentifier(key);
+			viewport->SetScene(pMainScene);
+			int offset = num - 1 - i;
+			offset -= (num / 2);
+			if (offset < 0) {
+				offset += num;
+			}
+			viewport->SetPosition("_lt", perWidth * offset, halfHeight * 3, perWidth, halfHeight);
+			viewport->SetEyeMode(STEREO_EYE_LEFT);
+
+			CViewport::StereoODSparam& param = viewport->GetStereoODSparam();
+			param.isODS = true;
+			param.aspectRatio = aspect;
+			param.fov = fov;
+			param.eyeShiftDistance = CGlobals::GetMoviePlatform()->GetStereoEyeSeparation();
+			param.moreRotY = diffRotY * (i + 0);
+			param.moreRotX = morePitch;
+			param.fov_h = diffRotY;
+			param.m_bOmniAlwaysUseUpFrontCamera = m_bOmniAlwaysUseUpFrontCamera;
+			param.m_nOmniForceLookatDistance = m_nOmniForceLookatDistance;
+			viewport->SetStereoODSparam(param);
+			//viewport->SetRenderTargetName(randerTargetname);
+		}
+		portNum += num;
+
+
+		SetViewportCount(portNum);
 	}
 	else if (nLayout == VIEW_LAYOUT_STEREO_RED_BLUE)
 	{

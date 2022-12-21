@@ -57,6 +57,7 @@ namespace ParaEngine
 
 		/** starts rendering to texture. /sa ScopedPaintOnRenderTarget */
 		virtual bool Begin();
+		virtual bool Begin(int x, int y, int w, int h);
 
 		void CheckInit();
 
@@ -139,6 +140,9 @@ namespace ParaEngine
 		int GetTextureWidth() const { return m_nTextureWidth; }
 		int GetTextureHeight() const { return m_nTextureHeight; }
 
+		bool GetHasSetRenderTargetSize() { return bHasSetRenderTargetSize; }
+		void SetHasSetRenderTargetSize(bool val) { bHasSetRenderTargetSize = val; }
+
 		/** whether render target is dirty and should be redraw on the next frame. */
 		bool IsDirty() const;
 		void SetDirty(bool val);
@@ -154,6 +158,7 @@ namespace ParaEngine
 
 		virtual HRESULT RendererRecreated() override;
 	protected:
+		bool bHasSetRenderTargetSize;
 		// whether device is created.
 		bool		m_bInitialized;
 		
@@ -201,13 +206,19 @@ namespace ParaEngine
 	class ScopedPaintOnRenderTarget
 	{
 	public:
-		ScopedPaintOnRenderTarget(CRenderTarget* pRendertarget) :m_pRenderTarget(pRendertarget){
+		ScopedPaintOnRenderTarget(CRenderTarget* pRendertarget) :m_pRenderTarget(pRendertarget) {
 			if (m_pRenderTarget)
 				m_pRenderTarget->Begin();
 		}
-		~ScopedPaintOnRenderTarget(){
-			if (m_pRenderTarget)
+		ScopedPaintOnRenderTarget(CRenderTarget* pRendertarget, int x, int y, int w, int h) :m_pRenderTarget(pRendertarget) {
+			if (m_pRenderTarget) {
+				m_pRenderTarget->Begin(x, y, w, h);
+			}
+		}
+		~ScopedPaintOnRenderTarget() {
+			if (m_pRenderTarget) {
 				m_pRenderTarget->End();
+			}
 		};
 	public:
 		CRenderTarget* m_pRenderTarget;

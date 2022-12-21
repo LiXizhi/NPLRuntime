@@ -86,6 +86,10 @@ namespace ParaEngine
 		 */
 		virtual void ShowWindow(bool bShow) override;
 
+		virtual void SetWindowMaximized(bool isMaximized);
+		virtual bool IsWindowMaximized();
+
+		virtual void GetVisibleSize(Vector2* pOut);
 	private:
 		void LoadAndApplySettings();
 		bool UpdateScreenDevice();

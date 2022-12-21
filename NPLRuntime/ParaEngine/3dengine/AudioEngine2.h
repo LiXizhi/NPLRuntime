@@ -269,9 +269,9 @@ namespace ParaEngine
 			{
 				if (m_bEnable) {
 					Record arecord(pWave->GetFilename(), pWave->m_nStartTime,
-						pWave->m_nStopTime, pWave->m_nSeekPos, pWave->IsLooping());
+						pWave->m_nStopTime, pWave->m_nSeekPos, pWave->IsLooping(), pWave->m_pSource ? pWave->m_pSource->getTotalAudioTime() : -1);
 					m_HistoryRecords.emplace_back(arecord);
-				}	
+				}
 			}
 
 			struct Record
@@ -282,16 +282,18 @@ namespace ParaEngine
 					, m_nEndTime(-1)
 					, m_nSeekPos(0)
 					, m_bIsLoop(false)
+					, m_mTotalTime(-1)
 				{
 
 				}
 
-				Record(const std::string& waveFile, int start, int end, int seek, bool isLoop = false)
+				Record(const std::string& waveFile, int start, int end, int seek, bool isLoop = false, int totalTime = -1)
 					: m_WaveFileName(waveFile)
 					, m_nStartTime(start)
 					, m_nEndTime(end)
 					, m_nSeekPos(seek)
 					, m_bIsLoop(isLoop)
+					, m_mTotalTime(totalTime)
 				{
 
 				}
@@ -301,6 +303,7 @@ namespace ParaEngine
 				int m_nEndTime; // the game time when stops playing the audio file with name m_WaveFileName
 				int m_nSeekPos; // the seek positon where it starts when the audio engines play the audio file with name m_WaveFileName
 				bool m_bIsLoop;
+				int m_mTotalTime;
 			};
 
 			typedef std::list<Record> Records;
@@ -309,13 +312,18 @@ namespace ParaEngine
 				return m_HistoryRecords;
 			}
 			/** find the last element that matches */
-			bool FindLastRecord( const std::string& waveFile)
+			Record* FindLastRecord(const std::string& waveFile)
 			{
 				Records::iterator result = m_HistoryRecords.end();
 				for (Records::iterator iter = m_HistoryRecords.begin(); iter != m_HistoryRecords.end(); ++iter) {
 					if (iter->m_WaveFileName == waveFile) result = iter;
 				}
-				return result != m_HistoryRecords.end();
+				if (result != m_HistoryRecords.end()) {
+					return &(*result);
+				}
+				else {
+					return NULL;
+				}
 			}
 
 			void RemoveRecord(const std::string& waveFile)
@@ -453,6 +461,9 @@ namespace ParaEngine
 
 		/** for audio capture */
 		IParaAudioCapture* CreateGetAudioCapture();
+
+		CAudioPlaybackHistory& SetHistoryWithCaptureBegin();
+		CAudioPlaybackHistory& SetHistoryWithCaptureEnd();
 	private:
 		IParaAudioEngine* m_pAudioEngine;
 		bool m_bEnableAudioEngine;

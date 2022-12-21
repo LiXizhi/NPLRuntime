@@ -10,6 +10,10 @@ namespace ParaEngine
 		VIEW_LAYOUT_STEREO_LEFT_RIGHT,
 		VIEW_LAYOUT_STEREO_UP_DOWN,
 		VIEW_LAYOUT_STEREO_RED_BLUE,
+		VIEW_LAYOUT_STEREO_OMNI = 4,//ODS,360°VR
+		VIEW_LAYOUT_STEREO_OMNI_SINGLE_EYE = 5,//ODS,360°VR
+		//前后左右上下6个viewport组成一个立方体，然后通过shader转成球面，以实现180x360全景渲染
+		VIEW_LAYOUT_STEREO_OMNI_SINGLE_EYE_1 = 6,
 		VIEW_LAYOUT_INVALID,
 	};
 
@@ -24,6 +28,19 @@ namespace ParaEngine
 		ATTRIBUTE_DEFINE_CLASS(CViewportManager);
 		/** this class should be implemented if one wants to add new attribute. This function is always called internally.*/
 		virtual int InstallFields(CAttributeClass* pClass, bool bOverride);
+		ATTRIBUTE_METHOD1(CViewportManager, GetViewportCount_s, int*) { *p1 = cls->GetViewportCount(); return S_OK; }
+		ATTRIBUTE_METHOD1(CViewportManager, GetLayout_s, int*) { *p1 = cls->GetLayout(); return S_OK; }
+
+		ATTRIBUTE_METHOD1(CViewportManager, GetODSFov_s, float*) { *p1 = cls->ods_fov; return S_OK; }
+		ATTRIBUTE_METHOD1(CViewportManager, SetODSFov_s, float) { cls->ods_fov = (p1); return S_OK; }
+
+		ATTRIBUTE_METHOD1(CViewportManager, GetWidthPerDegree_s, int*) { *p1 = cls->widthPerDegree; return S_OK; }
+		ATTRIBUTE_METHOD1(CViewportManager, SetWidthPerDegree_s, int) { cls->widthPerDegree = (p1); return S_OK; }
+
+		ATTRIBUTE_METHOD1(CViewportManager, GetOmniAlwaysUseUpFrontCamera_s, bool*) { *p1 = cls->m_bOmniAlwaysUseUpFrontCamera; return S_OK; }
+		ATTRIBUTE_METHOD1(CViewportManager, SetOmniAlwaysUseUpFrontCamera_s, bool) { cls->m_bOmniAlwaysUseUpFrontCamera = (p1); return S_OK; }
+		ATTRIBUTE_METHOD1(CViewportManager, GetOmniForceLookatDistance_s, int*) { *p1 = cls->m_nOmniForceLookatDistance; return S_OK; }
+		ATTRIBUTE_METHOD1(CViewportManager, SetOmniForceLookatDistance_s, int) { cls->m_nOmniForceLookatDistance = (p1); return S_OK; }
 
 		/** get attribute by child object. used to iterate across the attribute field hierarchy. */
 		virtual IAttributeFields* GetChildAttributeObject(const char * sName);
@@ -59,6 +76,13 @@ namespace ParaEngine
 
 		/** get current viewport*/
 		void GetCurrentViewport(ParaViewport& out);
+
+		void SetOmniAlwaysUseUpFrontCamera(bool val) { m_bOmniAlwaysUseUpFrontCamera = val; }
+		bool IsOmniAlwaysUseUpFrontCamera() { return m_bOmniAlwaysUseUpFrontCamera; }
+		void SetOmniForceLookatDistance(int val) { m_nOmniForceLookatDistance = val; }
+		int GetOmniForceLookatDistance() { return m_nOmniForceLookatDistance; }
+
+		int CheckInViewPortGroup(CViewport* pViewport);
 	public:
 		/** add view port 
 		* @param nIndex: usually 0 is the GUI root's viewport, 1 is the main 3d scene's viewport.
@@ -95,6 +119,12 @@ namespace ParaEngine
 		int m_nActiveViewPortIndex;
 		VIEWPORT_LAYOUT m_nLayout;
 		int m_nCurrentFrameNumber;
+
+		CViewport* m_normalScenePortInOdsSingleEye;
+		float ods_fov;
+		int widthPerDegree;
+		bool m_bOmniAlwaysUseUpFrontCamera;//Whether the camera is forced to face straight ahead
+		int m_nOmniForceLookatDistance;
 	};
 
 }

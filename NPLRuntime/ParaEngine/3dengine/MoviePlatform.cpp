@@ -176,6 +176,18 @@ void CMoviePlatform::SetStereoCaptureMode( MOVIE_CAPTURE_MODE nMode )
 	{
 		CGlobals::GetViewportManager()->SetLayout(VIEW_LAYOUT_STEREO_RED_BLUE);
 	}
+	else if (nMode == MOVIE_CAPTURE_MODE_STEREO_OMNI)
+	{
+		CGlobals::GetViewportManager()->SetLayout(VIEW_LAYOUT_STEREO_OMNI);
+	}
+	else if (nMode == MOVIE_CAPTURE_MODE_STEREO_OMNI_SINGLE_EYE)
+	{
+		CGlobals::GetViewportManager()->SetLayout(VIEW_LAYOUT_STEREO_OMNI_SINGLE_EYE);
+	}
+	else if (nMode == MOVIE_CAPTURE_MODE_STEREO_OMNI_SINGLE_EYE_1)
+	{
+		CGlobals::GetViewportManager()->SetLayout(VIEW_LAYOUT_STEREO_OMNI_SINGLE_EYE_1);
+	}
 	else
 	{
 		CGlobals::GetViewportManager()->SetLayout(VIEW_LAYOUT_DEFAULT);
@@ -341,8 +353,12 @@ bool CMoviePlatform::ResizeImage(const string& filename, int width, int height, 
 		return false;
 	}
 
-
-	img.saveToFile(destFilename);
+	std::string dest = destFilename.c_str();
+	if (!CParaFile::IsAbsolutePath(dest))
+	{
+		dest = (CParaFile::GetWritablePath() + dest).c_str();
+	}
+	img.saveToFile(dest.c_str());
 
 	return true;
 #endif

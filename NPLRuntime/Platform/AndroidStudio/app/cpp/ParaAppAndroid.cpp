@@ -128,4 +128,9 @@ namespace ParaEngine {
     {
         JniHelper::callStaticVoidMethod(classname, "onExit");
     }
+
+    void CParaEngineAppAndroid::GetVisibleSize(Vector2* pOut) {
+        pOut->x = 0;
+        pOut->y = 0;
+    };
 }
