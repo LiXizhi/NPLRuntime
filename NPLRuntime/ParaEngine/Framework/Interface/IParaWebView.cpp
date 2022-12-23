@@ -20,6 +20,7 @@ namespace ParaEngine {
 		pClass->AddField("Alpha", FieldType_Float, (void*)setAlpha_s, (void*)nullptr, nullptr, nullptr, bOverride);
 		pClass->AddField("Visible", FieldType_Bool, (void*)setVisible_s, (void*)nullptr, nullptr, nullptr, bOverride);
 		pClass->AddField("HideViewWhenClickBack", FieldType_Bool, (void*)SetHideViewWhenClickBack_s, (void*)nullptr, nullptr, nullptr, bOverride);
+		pClass->AddField("IgnoreCloseWhenClickBack", FieldType_Bool, (void*)SetIgnoreCloseWhenClickBack_s, (void*)nullptr, nullptr, nullptr, bOverride);
 		pClass->AddField("Refresh", FieldType_void, (void*)Refresh_s, nullptr, nullptr, "", bOverride);
         pClass->AddField("HideCloseButton", FieldType_Bool, (void*)hideCloseButton_s, (void*)nullptr, nullptr, nullptr, bOverride);
 		pClass->AddField("bringToTop", FieldType_void, (void*)bringToTop_s, nullptr, nullptr, "", bOverride);

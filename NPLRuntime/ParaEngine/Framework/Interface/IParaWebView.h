@@ -21,6 +21,7 @@ namespace ParaEngine {
 		ATTRIBUTE_METHOD1(IParaWebView, setAlpha_s, float) { cls->setAlpha(p1); return S_OK; }
 		ATTRIBUTE_METHOD1(IParaWebView, setVisible_s, bool) { cls->setVisible(p1); return S_OK; }
 		ATTRIBUTE_METHOD1(IParaWebView, SetHideViewWhenClickBack_s, bool) { cls->SetHideViewWhenClickBack(p1); return S_OK; }
+		ATTRIBUTE_METHOD1(IParaWebView, SetIgnoreCloseWhenClickBack_s, bool) { cls->SetIgnoreCloseWhenClickBack(p1); return S_OK; }
 		ATTRIBUTE_METHOD(IParaWebView, Refresh_s) { cls->Refresh(); return S_OK; }
         ATTRIBUTE_METHOD1(IParaWebView, hideCloseButton_s, bool) { cls->hideCloseButton(p1); return S_OK; }
 		ATTRIBUTE_METHOD(IParaWebView, bringToTop_s) { cls->bringToTop(); return S_OK; }
@@ -33,6 +34,7 @@ namespace ParaEngine {
 		virtual void setAlpha(float a) = 0;
 		virtual void setVisible(bool bVisible) = 0;
 		virtual void SetHideViewWhenClickBack(bool b) = 0;
+		virtual void SetIgnoreCloseWhenClickBack(bool b) = 0;
 		virtual void Refresh() = 0;
         virtual void hideCloseButton(bool bHide) = 0;
 		virtual void bringToTop() = 0;
