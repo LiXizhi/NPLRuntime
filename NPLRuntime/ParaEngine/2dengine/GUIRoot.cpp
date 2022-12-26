@@ -75,6 +75,8 @@ The GUIRoot object contains the top level mouse focus object.
 #include "StringHelper.h"
 #include "GUIRoot.h"
 #include "memdebug.h"
+#include <boost/regex.hpp>
+#include <boost/format.hpp>
 
 using namespace ParaEngine;
 
@@ -1943,17 +1945,26 @@ void ParaEngine::CGUIRoot::SetSelEnd(int end)
 
 void ParaEngine::CGUIRoot::SetIMEKeyboardState(bool bOpen)
 {
-	char mJson[1000];
-	std::string formatStr = "{\"curEditText\":\"%s\",\"selStart\":%d,\"selEnd\":%d}";
-	sprintf(mJson,formatStr.c_str(),m_curEditText.c_str(),m_nSelStart,m_nSelEnd);
-	formatStr = mJson;
+	std::string tempStr = m_curEditText;
+
+	boost::regex e1("\"");
+	boost::regex e2("\'");
+	tempStr = boost::regex_replace(tempStr,e1,"\\\"", boost::match_default | boost::format_all);
+	tempStr = boost::regex_replace(tempStr,e2,"\\\'", boost::match_default | boost::format_all);
+
+	boost::format fmt("{\"curEditText\":\"%1%\",\"selStart\":%2%,\"selEnd\":%3%}");
+	fmt % tempStr.c_str();
+	fmt % m_nSelStart;
+	fmt % m_nSelEnd;
+
+	tempStr = fmt.str();
 	if (bOpen)
 	{
-		CGlobals::GetApp()->setIMEKeyboardState(true, m_nCtrlBottom > 0, m_nCtrlBottom,formatStr);
+		CGlobals::GetApp()->setIMEKeyboardState(true, m_nCtrlBottom > 0, m_nCtrlBottom,tempStr);
 	}
 	else
 	{
-		CGlobals::GetApp()->setIMEKeyboardState(false, m_nCtrlBottom > 0, m_nCtrlBottom,formatStr);
+		CGlobals::GetApp()->setIMEKeyboardState(false, m_nCtrlBottom > 0, m_nCtrlBottom,tempStr);
 		m_nCtrlBottom = 0;
 		m_curEditText = "";
 	}
