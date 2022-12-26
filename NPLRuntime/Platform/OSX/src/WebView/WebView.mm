@@ -109,7 +109,7 @@ namespace ParaEngine {
             {
                 auto renderWindow = (NSWindow*)CGlobals::GetApp()->GetRenderWindow()->GetNativeHandle();
                 
-                _webViewController = [[WebViewWindowController alloc] initWithWindowNibName:@"WebViewWindowWhioutTitleBar"];
+                _webViewController = [[WebViewWindowController alloc] initWithWindowNibName:@"WebViewWindowWithoutTitleBar"];
                 
                 [renderWindow addChildWindow:_webViewController.window ordered:NSWindowAbove];
                 
