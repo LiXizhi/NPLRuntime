@@ -199,6 +199,11 @@ namespace ParaEngine {
         if (_webViewController)
         {
             [_webViewController.window setIsVisible:bVisible];
+            
+            if (bVisible) {
+                auto renderWindow = (NSWindow*)CGlobals::GetApp()->GetRenderWindow()->GetNativeHandle();
+                [renderWindow addChildWindow:_webViewController.window ordered:NSWindowAbove];
+            }
         }
     }
     
