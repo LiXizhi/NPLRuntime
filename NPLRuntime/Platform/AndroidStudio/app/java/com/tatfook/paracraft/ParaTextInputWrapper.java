@@ -27,6 +27,9 @@ public class ParaTextInputWrapper implements TextWatcher, TextView.OnEditorActio
     private boolean hasDeletedInChangeFunc = false;
     private boolean hasDeletedInKeyEvent = false;
 
+    private boolean hasEnteredInChangeFunc = false;
+    private boolean hasEnteredInKeyEvent = false;
+
     public ParaTextInputWrapper(ParaEngineGLSurfaceView nativeView) {
         mNativeView = nativeView;
     }
@@ -45,6 +48,9 @@ public class ParaTextInputWrapper implements TextWatcher, TextView.OnEditorActio
         }
         hasDeletedInKeyEvent = false;
         hasDeletedInChangeFunc = false;
+
+        hasEnteredInChangeFunc = false;
+        hasEnteredInKeyEvent = false;
     }
 
     public void SetIsGuiEdit(boolean isGuiEdit){
@@ -80,30 +86,45 @@ public class ParaTextInputWrapper implements TextWatcher, TextView.OnEditorActio
                 return;
             }
 
-            String repText = getAddedString(text,mNativeView.lastText);
-            if(repText.isEmpty()||repText.equals("\n")){
+            int sel_start = mNativeView.getParaEditText().getSelectionStart();
+            int sel_end = mNativeView.getParaEditText().getSelectionEnd();
+            String repText = getAddedString(text,mNativeView.lastText,sel_start,sel_end);
+            if(repText.isEmpty()){
                 return;
             }
+            hasEnteredInChangeFunc = false;
+            if(repText.equals("\n")){
+                if(hasEnteredInKeyEvent){
+                    hasEnteredInKeyEvent = false;
+                    return;
+                }
+                mNativeView.onPressEnterKey();
+                mNativeView.lastText = text;
+                hasEnteredInChangeFunc = true;
+                return;
+            }
+
             mNativeView.onUnicodeText(repText);
             mNativeView.lastText = text;
         }
     }
 
-    private String getAddedString(String text,String lastText){
+    private String getAddedString(String text,String lastText,int sel_start,int sel_end){
         String repText = "";
         int startIdx = 0;
         int endIdx = text.length();
         for(int i=1;i<=lastText.length();i++){
-            if(lastText.substring(0,i).equals(text.substring(0,i))){
+            String temp = lastText.substring(0,i);
+            if(temp.equals(text.substring(0,i))){
                 startIdx = i;
             }else{
                 break;
             }
         }
 
-        for(int i=0;i<text.length();i++){
-            int j = text.length()-1 - i;
-            int k = lastText.length()-1 - i;
+        for(int i=1;i<=text.length();i++){
+            int j = text.length() - i;
+            int k = lastText.length() - i;
             if(k<0){
                 break;
             }
@@ -114,6 +135,9 @@ public class ParaTextInputWrapper implements TextWatcher, TextView.OnEditorActio
             }
         }
         if(startIdx<0||endIdx<0||startIdx>endIdx){
+            if(text.length()==lastText.length()+1){
+                return text.substring(text.length()-1);
+            }
             return "";
         }
         repText = text.substring(startIdx,endIdx);
@@ -169,6 +193,15 @@ public class ParaTextInputWrapper implements TextWatcher, TextView.OnEditorActio
                     return true;
                 }
                 hasDeletedInKeyEvent = true;
+            }
+
+            hasEnteredInKeyEvent = false;
+            if(keyCode == KeyEvent.KEYCODE_ENTER){
+                if(hasEnteredInChangeFunc){
+                    hasEnteredInChangeFunc = false;
+                    return true;
+                }
+                hasEnteredInKeyEvent = true;
             }
 
             if(keyCode == KeyEvent.KEYCODE_DEL){

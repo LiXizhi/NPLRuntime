@@ -49,6 +49,8 @@ public class ParaEngineWebViewHelper {
 	private static SparseArray<ParaEngineWebView> webViews;
 	private static int viewTag = 0;
 
+	private static RelativeLayout m_maskView = null;
+
 	private static native void onJsCallback(int index, String message);
 	private static native void didFailLoading(int index, String message);
 	private static native void didFinishLoading(int index, String message);
@@ -168,18 +170,30 @@ public class ParaEngineWebViewHelper {
         if (canGoBack(index)) {
             goBack(index);
         } else {
-            webViews.remove(index);
-            sLayout.removeView(webView);
-            webView.destroy();
-
-            sActivity.runOnGLThread(new Runnable() {
-                @Override
-                public void run() {
-                    onCloseView(index);
-                }
-            });
+            closeWebViewByIndex(index);
         }
 	}
+
+	public static void closeWebViewByIndex(int index){
+        ParaEngineWebView webView = webViews.get(index);
+        if(webView==null){
+            return;
+        }
+        webViews.remove(index);
+        sLayout.removeView(webView);
+        webView.destroy();
+        if(m_maskView!=null){
+            sLayout.removeView(m_maskView);
+            m_maskView = null;
+        }
+
+        sActivity.runOnGLThread(new Runnable() {
+            @Override
+            public void run() {
+                //onCloseView(index);
+            }
+        });
+    }
 
 	@Keep
 	public static int createWebView(final int x, final int y, final int w, final int h) {
@@ -195,14 +209,42 @@ public class ParaEngineWebViewHelper {
                 RelativeLayout.LayoutParams layoutParams = new RelativeLayout.LayoutParams(w, h);
                 layoutParams.leftMargin = x;
                 layoutParams.topMargin = y;
+
+                if(m_maskView == null){
+                    m_maskView = new RelativeLayout(sActivity);
+
+                    RelativeLayout.LayoutParams mask_layout = new RelativeLayout.LayoutParams(
+                            ViewGroup.LayoutParams.FILL_PARENT, ViewGroup.LayoutParams.FILL_PARENT);
+
+                    sLayout.addView(m_maskView, mask_layout);
+                    m_maskView.setOnClickListener(new View.OnClickListener() {
+                        @Override
+                        public void onClick(View view) {
+                            ParaEngineWebViewHelper.closeWebViewByIndex(index);
+                        }
+                    });
+
+                    m_maskView.setVisibility(View.GONE);
+                }
                 sLayout.addView(webView, layoutParams);
-                
+
 				webView.requestFocus();
                 webViews.put(index, webView);
             }
         });
         return viewTag++;
 	}
+
+	public static void setMaskVisible(final boolean visible){
+        sActivity.runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                if(m_maskView!=null){
+                    m_maskView.setVisibility(visible?View.VISIBLE:View.GONE);
+                }
+            }
+        });
+    }
 
 	@Keep
 	public static void removeWebView(final int index) {
@@ -241,6 +283,20 @@ public class ParaEngineWebViewHelper {
                 if (webView != null) {
                     webView.SetHideViewWhenClickBack(b);
                 }
+            }
+        });
+    }
+
+    @Keep
+    public static void SetIgnoreCloseWhenClickBack(final int index,final boolean bool) {
+        sActivity.runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                ParaEngineWebView webView = webViews.get(index);
+                if(webView==null){
+                    return;
+                }
+                webView.SetIgnoreCloseWhenClickBack(bool);
             }
         });
     }
@@ -299,6 +355,7 @@ public class ParaEngineWebViewHelper {
 
     @Keep
 	public static void loadUrl(final int index, final String url, final boolean cleanCachedData) {
+
         sActivity.runOnUiThread(new Runnable() {
             @Override
             public void run() {
@@ -306,6 +363,7 @@ public class ParaEngineWebViewHelper {
                 if (webView != null) {
                     webView.getSettings().setCacheMode(cleanCachedData ? WebSettings.LOAD_NO_CACHE
                                                                        : WebSettings.LOAD_DEFAULT);
+
                     webView.loadUrl(url);
                 }
             }
@@ -468,7 +526,7 @@ public class ParaEngineWebViewHelper {
             public void run() {
                 ParaEngineWebView webView = webViews.get(index);
                 if (webView != null) {
-                    RelativeLayout.LayoutParams p = (RelativeLayout.LayoutParams)webView.getLayoutParams();
+                    FrameLayout.LayoutParams p = (FrameLayout.LayoutParams)webView.getLayoutParams();
                     p.leftMargin = x;
                     p.topMargin = y;
                     webView.setLayoutParams(p);
@@ -484,7 +542,7 @@ public class ParaEngineWebViewHelper {
             public void run() {
                 ParaEngineWebView webView = webViews.get(index);
                 if (webView != null) {
-                    RelativeLayout.LayoutParams p = (RelativeLayout.LayoutParams) webView.getLayoutParams();
+                    FrameLayout.LayoutParams p = (FrameLayout.LayoutParams) webView.getLayoutParams();
                     p.width = w;
                     p.height = h;
                     webView.setLayoutParams(p);

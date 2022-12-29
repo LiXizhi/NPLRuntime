@@ -328,7 +328,6 @@ namespace NPLInterface
 					break;
 				}
 			}
-			save_and_next(LS, l);  /* skip the second `]' */
 			save(LS, '\0', l);
 			if (seminfo)
 			{

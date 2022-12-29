@@ -353,8 +353,12 @@ bool CMoviePlatform::ResizeImage(const string& filename, int width, int height, 
 		return false;
 	}
 
-
-	img.saveToFile(destFilename);
+	std::string dest = destFilename.c_str();
+	if (!CParaFile::IsAbsolutePath(dest))
+	{
+		dest = (CParaFile::GetWritablePath() + dest).c_str();
+	}
+	img.saveToFile(dest.c_str());
 
 	return true;
 #endif
