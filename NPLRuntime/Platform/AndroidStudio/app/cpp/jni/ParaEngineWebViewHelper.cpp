@@ -158,6 +158,11 @@ namespace ParaEngine {
 		JniHelper::callStaticVoidMethod(classname, "SetIgnoreCloseWhenClickBack", m_handle, b);
 	}
 
+    void ParaEngineWebView::SetCloseWhenClickBackground(bool b)
+    {
+        JniHelper::callStaticVoidMethod(classname, "SetCloseWhenClickBackground", m_handle, b);
+    }
+
 	void ParaEngineWebView::loadUrl(const std::string &url, bool cleanCachedData)
 	{
 		JniHelper::callStaticVoidMethod(classname, "loadUrl", m_handle, url, cleanCachedData); 

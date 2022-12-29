@@ -30,6 +30,7 @@ namespace ParaEngine {
 		virtual void setVisible(bool bVisible) override;
 		virtual void SetHideViewWhenClickBack(bool b) override;
 		virtual void SetIgnoreCloseWhenClickBack(bool b) override;
+        virtual void SetCloseWhenClickBackground(bool b) override;
 		virtual void addCloseListener(onCloseFunc fun) override;
 		virtual void Refresh() override;
 		virtual void hideCloseButton(bool bHide) override;

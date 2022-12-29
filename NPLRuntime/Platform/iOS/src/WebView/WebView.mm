@@ -57,6 +57,8 @@ static std::string getFixedBaseUrl(const std::string& baseUrl)
 //HideCloseButton
 @property(nonatomic, readwrite, getter = HideCloseButton,  setter = setHideCloseButton:) BOOL HideCloseButton;
 @property(nonatomic) BOOL hideViewWhenClickClose;
+@property(nonatomic) BOOL ignoreCloseWhenClickClose;
+@property(nonatomic) BOOL bCloseWhenClickBackground;
 
 + (instancetype)webViewWrapper;
 
@@ -143,6 +145,9 @@ static std::string getFixedBaseUrl(const std::string& baseUrl)
 
 - (void)onCloseBtn:(UIButton*)btn
 {
+    if(self.ignoreCloseWhenClickClose){
+        return;
+    }
     if (self.hideViewWhenClickClose)
     {
         [self setVisible:NO];
@@ -489,6 +494,16 @@ namespace ParaEngine {
     void ParaEngineWebView::SetHideViewWhenClickBack(bool b)
     {
         this->_uiWebViewWrapper.hideViewWhenClickClose = b;
+    }
+
+    void ParaEngineWebView::SetIgnoreCloseWhenClickBack(bool b)
+    {
+        this->_uiWebViewWrapper.ignoreCloseWhenClickClose = b;
+    }
+
+    void ParaEngineWebView::SetCloseWhenClickBackground(bool b)
+    {
+        this->_uiWebViewWrapper.bCloseWhenClickBackground = b;
     }
     
     void ParaEngineWebView::Refresh()

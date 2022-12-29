@@ -21,7 +21,15 @@ namespace ParaEngine {
             ret = [[DeviceInfo getDeviceInfoJsonStr] UTF8String];
 		}else if (key == "getAppInfo") {
             ret = [[DeviceInfo getAppInfoJsonStr] UTF8String];
-		}
+		}else if (key == "getChannelId") {
+            NSDictionary *dict = [[NSBundle mainBundle] infoDictionary];
+            NSString *channelId = [dict objectForKey:@"channelId"];
+            if(channelId==nil){
+                ret = "";
+            }else{
+                ret = [channelId UTF8String];
+            }
+        }
 		
 		return ret;
 	}
