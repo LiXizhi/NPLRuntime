@@ -111,7 +111,7 @@ namespace ParaEngine {
         return 0;
     }
 
-    void CParaEngineAppiOS::setIMEKeyboardState(bool bOpen, bool bMoveView, int ctrlBottom)
+    void CParaEngineAppiOS::setIMEKeyboardState(bool bOpen, bool bMoveView, int ctrlBottom, const string& editParams)
     {
         int x = 0;
         this->GameToClient(x, ctrlBottom);
@@ -122,5 +122,23 @@ namespace ParaEngine {
     void CParaEngineAppiOS::Exit(int nReturnCode /*= 0*/)
 	{
         exit(0);
+    }
+
+    void CParaEngineAppiOS::GetVisibleSize(Vector2* pOut) {
+        //1、得到当前屏幕的尺寸：
+        CGRect rect_screen = [[UIScreen mainScreen] bounds];
+        CGSize size_screen = rect_screen.size;
+
+        //2、获得scale：iPhone5和iPhone6是2，iPhone6Plus是3
+        CGFloat scale_screen = [UIScreen mainScreen].scale;
+        NSLog(@"scale_screen:%.f", scale_screen);
+
+        //3.获取当前屏幕的分辨率
+        CGFloat widthResolution = size_screen.width * scale_screen;
+        CGFloat heightResolution = size_screen.height * scale_screen;
+        
+        pOut->x = widthResolution;
+        pOut->y = heightResolution;
+        
     }
 }

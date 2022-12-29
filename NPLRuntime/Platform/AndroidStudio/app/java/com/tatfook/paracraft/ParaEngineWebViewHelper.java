@@ -300,7 +300,19 @@ public class ParaEngineWebViewHelper {
             }
         });
     }
-
+    
+    @Keep
+    public static void SetCloseWhenClickBackground(final int index,final boolean bool) {
+        sActivity.runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                if(m_maskView!=null){
+                    m_maskView.setVisibility(bool?View.VISIBLE:View.GONE);
+                }
+            }
+        });
+    }
+    
     @Keep
 	public static void setWebViewRect(final int index, final int left, final int top, final int maxWidth, final int maxHeight) {
         sActivity.runOnUiThread(new Runnable() {
