@@ -133,6 +133,8 @@ namespace ParaEngine {
             }
 
             _webViewController.hideViewWhenClickClose = FALSE;
+            _webViewController.ignoreCloseWhenClickClose = FALSE;
+            _webViewController.bCloseWhenClickBackground = FALSE;
             _webViewController.webView.navigationDelegate = _webViewController;
             _webViewController.webView.UIDelegate = _webViewController;
         
