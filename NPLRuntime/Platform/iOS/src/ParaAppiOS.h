@@ -77,9 +77,9 @@ namespace ParaEngine
         virtual void SetToggleSoundWhenNotFocused(bool bEnabled) override;
         virtual bool GetToggleSoundWhenNotFocused() override;
         virtual int Run(HINSTANCE hInstance) override;
-        virtual void setIMEKeyboardState(bool bOpen, bool bMoveView = false, int ctrlBottom = -1) override;
+        virtual void setIMEKeyboardState(bool bOpen, bool bMoveView = false, int ctrlBottom = -1, const string& editParams="") override;
         virtual void Exit(int nReturnCode /*= 0*/) override;
-
+        virtual void GetVisibleSize(Vector2* pOut);
     protected:
 
     };

@@ -23,6 +23,8 @@
 #include "util/StringHelper.h"
 #include "InfoCenter/ICConfigManager.h"
 #include "memdebug.h"
+#include <boost/regex.hpp>
+#include <boost/format.hpp>
 using namespace ParaEngine;
 using namespace std;
 
@@ -1842,12 +1844,21 @@ bool ParaEngine::CGUIEditBox::attachWithIME()
 	bool ret = GUIIMEDelegate::attachWithIME();
 	if (ret)
 	{
-		std::string curText;
-		GetTextA(curText);
-		char mJson[1000];
-		std::string formatStr = "{\"curEditText\":\"%s\",\"selStart\":%d,\"selEnd\":%d}";
-		sprintf(mJson,formatStr.c_str(),curText.c_str(),m_nSelStart,m_nCaret);
-		formatStr = mJson;
+        std::string tempStr;
+        GetTextA(tempStr);
+
+        boost::regex e1("\"");
+        boost::regex e2("\'");
+        tempStr = boost::regex_replace(tempStr,e1,"\\\"", boost::match_default | boost::format_all);
+        tempStr = boost::regex_replace(tempStr,e2,"\\\'", boost::match_default | boost::format_all);
+
+        boost::format fmt("{\"curEditText\":\"%1%\",\"selStart\":%2%,\"selEnd\":%3%}");
+        fmt % tempStr.c_str();
+        fmt % m_nSelStart;
+        fmt % m_nCaret;
+
+        tempStr = fmt.str();
+
 		if (m_bMoveViewWhenAttachWithIME)
 		{
 
@@ -1860,11 +1871,11 @@ bool ParaEngine::CGUIEditBox::attachWithIME()
 
 			int bottom = (int)(pos.rect.bottom * fScaleY);
 
-			CGlobals::GetApp()->setIMEKeyboardState(true, true, bottom,formatStr);
+			CGlobals::GetApp()->setIMEKeyboardState(true, true, bottom,tempStr);
 		}
 		else
 		{
-			CGlobals::GetApp()->setIMEKeyboardState(true,false,-1,formatStr);
+			CGlobals::GetApp()->setIMEKeyboardState(true,false,-1,tempStr);
 		}
 	}
 	return ret;

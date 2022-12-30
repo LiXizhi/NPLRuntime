@@ -26,6 +26,8 @@
 @property (assign) IBOutlet WKWebView *webView;
 //@property (nonatomic) std::function<void()> onCloseCallback;
 @property (nonatomic) BOOL hideViewWhenClickClose;
+@property (nonatomic) BOOL ignoreCloseWhenClickClose; //忽略返回键
+@property (nonatomic) BOOL bCloseWhenClickBackground; //非全屏时，是否点击背景时关闭WebView
 
 - (void) setCloseCB: (const std::function<void()>&) cb;
 @end
@@ -34,6 +36,8 @@
 @implementation WebViewWindowController
 @synthesize webView;
 @synthesize hideViewWhenClickClose;
+@synthesize ignoreCloseWhenClickClose;
+@synthesize bCloseWhenClickBackground;
 
 - (void) setCloseCB: (const std::function<void()>&) cb {
     _onCloseCallback = cb;
@@ -59,6 +63,11 @@
 }
 
 - (BOOL)windowShouldClose:(id)sender {
+    if (ignoreCloseWhenClickClose)
+    {
+        return NO;
+    }
+
     if (hideViewWhenClickClose)
     {
         [self.window setIsVisible:false];
@@ -212,6 +221,22 @@ namespace ParaEngine {
          if (_webViewController)
          {
              _webViewController.hideViewWhenClickClose = b;
+         }
+    }
+
+    void ParaEngineWebView::SetIgnoreCloseWhenClickBack(bool b)
+    {
+         if (_webViewController)
+         {
+             _webViewController.ignoreCloseWhenClickClose = b;
+         }
+    }
+
+    void ParaEngineWebView::SetCloseWhenClickBackground(bool b)
+    {
+         if (_webViewController)
+         {
+             _webViewController.bCloseWhenClickBackground = b;
          }
     }
     

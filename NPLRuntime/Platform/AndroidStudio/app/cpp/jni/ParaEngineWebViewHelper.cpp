@@ -82,7 +82,7 @@ namespace ParaEngine {
 		 	if (m_views.size() >= 1)
 		 	{
 		 		OUTPUT_LOG("ParaEngineWebView: ActivateApp(false)");
-		 		CGlobals::GetApp()->ActivateApp(false);
+		 		//CGlobals::GetApp()->ActivateApp(false);
 		 	}
 
 		 	return pView;
@@ -106,7 +106,7 @@ namespace ParaEngine {
 			if (m_views.size() == 0 )
 			{
 				OUTPUT_LOG("ParaEngineWebView: ActivateApp(true)");
-				CGlobals::GetApp()->ActivateApp(true);
+				//CGlobals::GetApp()->ActivateApp(true);
 			}
 		}
 
@@ -153,6 +153,15 @@ namespace ParaEngine {
 		JniHelper::callStaticVoidMethod(classname, "SetHideViewWhenClickBack", m_handle, b);
 	}
 
+	void ParaEngineWebView::SetIgnoreCloseWhenClickBack(bool b)
+	{
+		JniHelper::callStaticVoidMethod(classname, "SetIgnoreCloseWhenClickBack", m_handle, b);
+	}
+
+    void ParaEngineWebView::SetCloseWhenClickBackground(bool b)
+    {
+        JniHelper::callStaticVoidMethod(classname, "SetCloseWhenClickBackground", m_handle, b);
+    }
 
 	void ParaEngineWebView::loadUrl(const std::string &url, bool cleanCachedData)
 	{
@@ -192,7 +201,7 @@ namespace ParaEngine {
 
 	void ParaEngineWebView::resize(int width, int height)
 	{
-		JniHelper::callStaticVoidMethod(classname, "resize", m_handle, width, width);
+		JniHelper::callStaticVoidMethod(classname, "resize", m_handle, width, height);
 	}
 }
 
