@@ -33,7 +33,6 @@
 @end
 
 
-
 @implementation WebViewWindowController
 @synthesize webView;
 @synthesize hideViewWhenClickClose;
@@ -44,12 +43,11 @@
     _onCloseCallback = cb;
 }
 
-- (void)autoResize  {
+- (void)autoResize {
     [[NSNotificationCenter defaultCenter] addObserver:self.window selector:@selector(windowDidResize:) name:NSWindowDidResizeNotification object:self];
 }
 
 - (void)windowDidResize:(NSNotification*)aNotification {
-    
     auto windowRect = [self.window frame];
     auto contentRect = [self.window contentRectForFrameRect:windowRect];
     [self.window.contentView setFrameSize:contentRect.size];
@@ -57,20 +55,20 @@
 }
 
 - (void)webView:(WKWebView *)webView didStartProvisionalNavigation:(WKNavigation *)navigation {
-    NSLog(@"%s", __FUNCTION__);
+//    NSLog(@"%s", __FUNCTION__);
 }
-
 
 - (void)webView:(WKWebView *)webView decidePolicyForNavigationResponse:(WKNavigationResponse *)navigationResponse decisionHandler:(void (^)(WKNavigationResponsePolicy))decisionHandler {
     decisionHandler(WKNavigationResponsePolicyAllow);
 }
 
 - (BOOL)windowShouldClose:(id)sender {
-    if(ignoreCloseWhenClickClose)
+    if (ignoreCloseWhenClickClose)
     {
         return NO;
     }
-    if(hideViewWhenClickClose)
+
+    if (hideViewWhenClickClose)
     {
         [self.window setIsVisible:false];
         return NO;
@@ -84,7 +82,6 @@
 @end
 
 namespace ParaEngine {
-    
     IParaWebView* IParaWebView::createWebView(int x, int y, int w, int h)
     {
         return ParaEngineWebView::createWebView(x, y, w, h);
@@ -97,7 +94,7 @@ namespace ParaEngine {
 
     ParaEngineWebView* ParaEngineWebView::createWebView(int x, int y, int w, int h)
     {
-        auto  p = new ParaEngineWebView();
+        auto p = new ParaEngineWebView();
         
         p->openWindow(x, y, w, h, false);
         
@@ -106,7 +103,7 @@ namespace ParaEngine {
     
     ParaEngineWebView* ParaEngineWebView::createSubWebView(int x, int y, int w, int h)
     {
-        auto  p = new ParaEngineWebView();
+        auto p = new ParaEngineWebView();
         
         p->openWindow(x, y, w, h, true);
         
@@ -121,7 +118,7 @@ namespace ParaEngine {
             {
                 auto renderWindow = (NSWindow*)CGlobals::GetApp()->GetRenderWindow()->GetNativeHandle();
                 
-                _webViewController = [[WebViewWindowController alloc] initWithWindowNibName:@"WebViewWindowWhioutTitleBar"];
+                _webViewController = [[WebViewWindowController alloc] initWithWindowNibName:@"WebViewWindowWithoutTitleBar"];
                 
                 [renderWindow addChildWindow:_webViewController.window ordered:NSWindowAbove];
                 
@@ -138,17 +135,13 @@ namespace ParaEngine {
             _webViewController.hideViewWhenClickClose = FALSE;
             _webViewController.ignoreCloseWhenClickClose = FALSE;
             _webViewController.bCloseWhenClickBackground = FALSE;
-
             _webViewController.webView.navigationDelegate = _webViewController;
-
             _webViewController.webView.UIDelegate = _webViewController;
         
             auto cb = [this]() {
-                
-                if (this->_onClose == nullptr)
+                if (this->_onClose == nullptr) {
                     this->Release();
-                else
-                {
+                } else {
                     if (!this->_onClose())
                         this->Release();
                 }
@@ -158,7 +151,7 @@ namespace ParaEngine {
         }
 
         [_webViewController.window orderFront:nil];
-       
+
         [_webViewController.webView setFrameSize:NSMakeSize(w, h)];
         [_webViewController.window setContentSize:_webViewController.webView.frame.size];
         [_webViewController.window setFrameOrigin:NSMakePoint(x, y)];
@@ -175,7 +168,6 @@ namespace ParaEngine {
         _webViewController = nil;
     }
     
-    
     void ParaEngineWebView::loadUrl(const std::string &urlString, bool cleanCachedData)
     {
         if (_webViewController)
@@ -183,13 +175,14 @@ namespace ParaEngine {
             NSString* _urlString = @(urlString.c_str());
             [_webViewController.window setTitle:_urlString];
             NSURL *url = [NSURL URLWithString:_urlString];
-            
+
             NSURLRequest * request = nil;
+
             if (cleanCachedData)
                 request = [NSURLRequest requestWithURL:url cachePolicy:NSURLRequestReloadIgnoringCacheData timeoutInterval:60];
             else
                 request = [NSURLRequest requestWithURL:url];
-            
+
            [_webViewController.webView loadRequest:request];
         }
     }
@@ -201,7 +194,6 @@ namespace ParaEngine {
             [_webViewController.window setOpaque:NO];
             [_webViewController.window setBackgroundColor:[NSColor clearColor]];
             _webViewController.window.contentView.alphaValue = a;
-           
         }
     }
     
@@ -218,6 +210,11 @@ namespace ParaEngine {
         if (_webViewController)
         {
             [_webViewController.window setIsVisible:bVisible];
+            
+            if (bVisible) {
+                auto renderWindow = (NSWindow*)CGlobals::GetApp()->GetRenderWindow()->GetNativeHandle();
+                [renderWindow addChildWindow:_webViewController.window ordered:NSWindowAbove];
+            }
         }
     }
     
@@ -258,7 +255,7 @@ namespace ParaEngine {
         _onClose = fun;
     }
     
-     void ParaEngineWebView::bringToTop()
+    void ParaEngineWebView::bringToTop()
     {
         if (_webViewController)
             [_webViewController.window orderFront:nil];
@@ -268,19 +265,12 @@ namespace ParaEngine {
     {
         if (_webViewController)
         {
-            auto pParent = [_webViewController.window parentWindow];
+            auto renderWindow = (NSWindow*)CGlobals::GetApp()->GetRenderWindow()->GetNativeHandle();
             auto h = _webViewController.window.frame.size.height;
-            
-            if (pParent)
-            {
-                x += pParent.frame.origin.x;
-                y = pParent.frame.origin.y + (pParent.contentView.frame.size.height - h) - y;
-            }
-            else
-            {
-                 y = [[NSScreen mainScreen] visibleFrame].size.height - h - y;
-            }
-            
+
+            x += renderWindow.frame.origin.x;
+            y = renderWindow.frame.origin.y + (renderWindow.contentView.frame.size.height - h) - y;
+
             [_webViewController.window setFrameOrigin:NSMakePoint(x, y)];
         }
      }
