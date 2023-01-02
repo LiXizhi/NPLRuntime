@@ -5,7 +5,7 @@
 // Company: ParaEngine
 // Date:	2004.3.8
 // Revised: 2006.7.12, 2009.8.18: Implementation are moved to TextureEntity.cpp, ParaXEntity.cpp, MeshEntity.cpp
-//-----------------------------------------------------------------------------
+//----------------------------------------------------------------------------- 
 #include "ParaEngine.h"
 #include "util/StringHelper.h"
 #include "AsyncLoader.h"
