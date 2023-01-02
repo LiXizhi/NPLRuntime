@@ -627,8 +627,8 @@ endif()
 
 
 ##############################
-# FreeImage
-if (WIN32)
+# FreeImage is only supported under win32, since win64 Freeimage dll is currently broken on windows 11 with vs 2022 or above. 
+if (WIN32 AND (CMAKE_SIZEOF_VOID_P EQUAL 4))
 	option(NPLRUNTIME_FREEIMAGE "include FreeImage" ON)
 
 	if (NPLRUNTIME_FREEIMAGE)
