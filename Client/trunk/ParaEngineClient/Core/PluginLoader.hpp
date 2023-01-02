@@ -324,7 +324,13 @@ namespace ParaEngine
 #ifdef WIN32 // Microsoft compiler
 			if(sDllName.find(".") == string::npos)
 				sDllName += ".dll";
-			return (void*)::LoadLibraryA(pcDllname);
+			void* pModule = (void*)::LoadLibraryA(pcDllname);
+			if (pModule == 0)
+			{
+				DWORD nLastError = GetLastError();
+				OUTPUT_LOG("Failed to load lib %s with error code %d\n", pcDllname, nLastError);
+			}
+			return pModule;
 #else
 			if(sDllName.find(".") == string::npos)
 				sDllName += ".so";
