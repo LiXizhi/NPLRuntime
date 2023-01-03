@@ -13,6 +13,7 @@
 
 #include "ParaAppiOS.h"
 #include "RenderWindowiOS.h"
+#include "2dengine/GUIRoot.h"
 
 using namespace ParaEngine;
 
@@ -72,6 +73,8 @@ using namespace ParaEngine;
     [[AVAudioSession sharedInstance] setCategory: AVAudioSessionCategoryPlayAndRecord error: nil];
     UInt32 audioRouteOverride = kAudioSessionOverrideAudioRoute_Speaker;
     AudioSessionSetProperty (kAudioSessionProperty_OverrideAudioRoute, sizeof(audioRouteOverride), &audioRouteOverride);
+    
+    CGUIRoot::GetInstance()->SetUIScale(renderWindow->GetScaleX(), renderWindow->GetScaleY(), true, true, false);
 
     return YES;
 }

@@ -107,7 +107,6 @@ namespace ParaEngine {
 
     int CParaEngineAppiOS::Run(HINSTANCE hInstance)
     {
-     
         return 0;
     }
 
@@ -139,6 +138,5 @@ namespace ParaEngine {
         
         pOut->x = widthResolution;
         pOut->y = heightResolution;
-        
     }
 }
