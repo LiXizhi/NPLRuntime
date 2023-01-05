@@ -272,6 +272,7 @@ static std::string getFixedBaseUrl(const std::string& baseUrl)
         [self setupWebView];
     
     NSString *nsStringUrl = @(urlString.c_str());
+    nsStringUrl = [nsStringUrl stringByAddingPercentEscapesUsingEncoding:NSUTF8StringEncoding];
     NSURL *url = [NSURL URLWithString: nsStringUrl];
     auto originWidth = self.uiWebView.frame.size.width;
     auto originHeight = self.uiWebView.frame.size.height;
