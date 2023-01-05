@@ -10,6 +10,7 @@
 #import "KeyboardiOS.h"
 #import <AVFoundation/AVFoundation.h>
 #import <CoreTelephony/CTCellularData.h>
+#import <CoreTelephony/CTTelephonyNetworkInfo.h>
 
 #include "ParaAppiOS.h"
 #include "RenderWindowiOS.h"
@@ -46,6 +47,22 @@ using namespace ParaEngine;
 
     [[UIApplication sharedApplication] setIdleTimerDisabled: YES];
     [[UIApplication sharedApplication] setStatusBarHidden: YES];
+
+    if ([[UIDevice currentDevice].systemVersion floatValue] < 16.0) {
+        self.isNoNetToNet = NO;
+        [self fetchProtocolVersionReq];
+        
+        return YES;
+    }
+
+    CTTelephonyNetworkInfo *networkInfo = [[CTTelephonyNetworkInfo alloc] init];
+
+    if ([networkInfo subscriberCellularProvider] == nil) {
+        self.isNoNetToNet = NO;
+        [self fetchProtocolVersionReq];
+
+        return YES;
+    }
 
     self.isNoNetToNet = NO;
     __block BOOL isStarted = NO;
