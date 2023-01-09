@@ -245,7 +245,7 @@ public class DeviceUtil {
             Log.d("TAG", "自身包名为："+info);
             obj.put("bundleId",info.packageName);
             obj.put("versionName",info.versionName);
-            obj.put("buildNumber",info.getLongVersionCode());
+            obj.put("buildNumber",info.versionCode);
             obj.put("appName",info2.loadLabel(manager).toString());
         } catch (PackageManager.NameNotFoundException | JSONException e) {
             e.printStackTrace();
