@@ -1,6 +1,11 @@
 package com.tatfook.paracraft.luabridge;
 
 import android.app.Activity;
+import android.content.Context;
+import android.content.pm.ApplicationInfo;
+import android.content.pm.PackageManager;
+import android.util.DisplayMetrics;
+import android.util.Log;
 
 import com.tatfook.paracraft.ParaEngineActivity;
 import com.tatfook.paracraft.ParaEngineWebViewHelper;
@@ -61,6 +66,8 @@ public class PlatformBridge {
             ret = webViewId+"";
         }else if(key.equals("close_weview")){
 
+        }else if(key.equals("getChannelId")){
+            ret = getChannelId(act);
         }
         return ret;
     }
@@ -77,5 +84,26 @@ public class PlatformBridge {
 
     public static void showWebView(){
 
+    }
+
+    public static String getChannelId(Activity act) {
+        Context ctx = act;
+
+        String channelId = "";
+
+        try {
+            ApplicationInfo appInfo = ctx.getPackageManager().getApplicationInfo(ctx.getPackageName(), PackageManager.GET_META_DATA);
+            Object temp = appInfo.metaData.get("CHANNEL_ID");
+            if(temp!=null){
+                Log.d("GetChannelIdFunction",">>>>>>>>>>>>>>> GetChannelIdFunction "+ temp.toString());
+                channelId = temp.toString();
+            }
+
+            channelId = channelId.trim();
+        } catch(Exception e) {
+            Log.e("GetChannelIdFunction", e.getMessage(), e);
+        }
+
+        return channelId;
     }
 }
