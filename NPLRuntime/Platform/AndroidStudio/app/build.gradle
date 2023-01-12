@@ -14,8 +14,8 @@ android {
         applicationId "com.tatfook.paracraft"
         minSdkVersion PROP_MIN_SDK_VERSION
         targetSdkVersion PROP_TARGET_SDK_VERSION
-        versionCode 40
-        versionName "2.1.1"
+        versionCode Integer.parseInt(VERSION_CODE)
+        versionName VERSION_NAME
 
         externalNativeBuild {
             cmake {
@@ -35,7 +35,7 @@ android {
     sourceSets.main {
         java.srcDir "java"
         res.srcDir "res"
-        jniLibs.srcDir "libs"
+//        jniLibs.srcDir "libs"
         manifest.srcFile "AndroidManifest.xml"
         assets.srcDirs = ["assets"]
     }
@@ -186,11 +186,17 @@ android {
             ]
         }
     }
+
+    configurations {
+        ftpAntTask
+    }
 }
 
 String taskReqStr = gradle.getStartParameter().getTaskRequests().toString()
 Pattern pattern = Pattern.compile("assembleDebug")
 Matcher matcher = pattern.matcher(taskReqStr)
+File outApkFile = null
+String outApkFlavor=""
 Boolean isDebug = false
 
 if (matcher.find()) {
@@ -226,6 +232,27 @@ android.applicationVariants.all { variant ->
             }
         }
     }
+
+    variant.outputs.all {output ->
+        if (outputFileName.contains("release")) {
+            String buildDate = new Date().format('(yyyy-MM-dd HH.mm.ss)')
+            String flavor = variant.name.replaceFirst("Release","")
+            outputFileName = "Paracraft_${variant.versionName}_${flavor}_${buildDate}.apk"
+
+            Task assembleTask = tasks.findByName("assemble"+variant.name.capitalize());
+
+            assembleTask.dependsOn().doLast {
+                outApkFile = output.outputFile
+                outApkFlavor = flavor
+
+//                println "生成apk"
+//                println outApkFlavor
+//                println outApkFile
+                ftpUpload(outApkFlavor, outApkFile)
+
+            }
+        }
+    }
 }
 
 dependencies {
@@ -239,6 +266,12 @@ dependencies {
     implementation 'com.github.smarxpan:NotchScreenTool:0.0.1'
 
     implementation ('com.shuyu:GSYVideoPlayer:8.1.2')
+
+    ftpAntTask("org.apache.ant:ant-commons-net:1.8.4") {
+        module("commons-net:commons-net:1.4.1")    {
+            dependencies "oro:oro:2.0.8:jar"
+        }
+    }
 }
 
 repositories {
