@@ -48,12 +48,12 @@ using namespace ParaEngine;
     [[UIApplication sharedApplication] setIdleTimerDisabled: YES];
     [[UIApplication sharedApplication] setStatusBarHidden: YES];
 
-    if ([[UIDevice currentDevice].systemVersion floatValue] < 16.0) {
-        self.isNoNetToNet = NO;
-        [self fetchProtocolVersionReq];
-        
-        return YES;
-    }
+//    if ([[UIDevice currentDevice].systemVersion floatValue] < 16.0) {
+//        self.isNoNetToNet = NO;
+//        [self fetchProtocolVersionReq];
+//        
+//        return YES;
+//    }
 
     CTTelephonyNetworkInfo *networkInfo = [[CTTelephonyNetworkInfo alloc] init];
 
