@@ -9,6 +9,7 @@
 #import <WebKit/WKUIDelegate.h>
 #import <WebKit/WKNavigationDelegate.h>
 #import <WebKit/WKNavigationAction.h>
+#import <WebKit/WKWebViewConfiguration.h>
 
 #import <Foundation/Foundation.h>
 #include "ParaEngine.h"
@@ -165,7 +166,10 @@ static std::string getFixedBaseUrl(const std::string& baseUrl)
 {
     if (!self.uiWebView)
     {
-        self.uiWebView = [[WKWebView alloc] init];
+        WKWebViewConfiguration *webViewConfig = [[WKWebViewConfiguration alloc] init];
+        webViewConfig.allowsInlineMediaPlayback = YES;
+
+        self.uiWebView = [[WKWebView alloc] initWithFrame:CGRectMake(0, 0, 0, 0) configuration:webViewConfig];
         self.uiWebView.UIDelegate = self;
         self.uiWebView.navigationDelegate = self;
     }
