@@ -147,10 +147,10 @@ android {
         }
 
         //荣耀
-        honnr {
+        honor {
             dimension "company"
             manifestPlaceholders = [
-                    CHANNEL_VALUE:"honnr",
+                    CHANNEL_VALUE:"honor",
             ]
         }
 
