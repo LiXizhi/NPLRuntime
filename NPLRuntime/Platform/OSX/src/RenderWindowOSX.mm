@@ -177,7 +177,7 @@ RenderWindowOSX::RenderWindowOSX(const int width, const int height)
     
     id appMenu = [NSMenu new];
     id quitMenuItem = [[NSMenuItem alloc] initWithTitle:@"Quit"
-                                                 action:@selector(terminate:)
+                                          action:@selector(terminate:)
                                           keyEquivalent:@"q"];
 
     [appMenu addItem:quitMenuItem];

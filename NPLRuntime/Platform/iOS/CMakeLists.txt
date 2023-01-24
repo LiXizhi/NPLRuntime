@@ -25,6 +25,7 @@ find_library(AVKit AVKit)
 find_library(Photos Photos)
 find_library(AudioToolbox AudioToolbox)
 find_library(AVFoundation AVFoundation)
+find_library(CoreTelephony CoreTelephony)
 
 add_executable(Paracraft
     ${app_src}

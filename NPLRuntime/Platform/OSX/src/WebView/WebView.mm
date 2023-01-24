@@ -172,18 +172,20 @@ namespace ParaEngine {
     {
         if (_webViewController)
         {
-            NSString* _urlString = @(urlString.c_str());
+            NSString *_urlString = @(urlString.c_str());
+            _urlString = [_urlString stringByAddingPercentEscapesUsingEncoding:NSUTF8StringEncoding];
+
             [_webViewController.window setTitle:_urlString];
             NSURL *url = [NSURL URLWithString:_urlString];
 
-            NSURLRequest * request = nil;
+            NSURLRequest *request = nil;
 
             if (cleanCachedData)
                 request = [NSURLRequest requestWithURL:url cachePolicy:NSURLRequestReloadIgnoringCacheData timeoutInterval:60];
             else
                 request = [NSURLRequest requestWithURL:url];
 
-           [_webViewController.webView loadRequest:request];
+            [_webViewController.webView loadRequest:request];
         }
     }
 

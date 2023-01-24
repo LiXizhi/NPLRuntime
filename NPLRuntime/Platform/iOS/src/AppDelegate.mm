@@ -7,61 +7,147 @@
 
 #import "AppDelegate.h"
 #import "ViewController.h"
-#import "GLView.h"
 #import "KeyboardiOS.h"
 #import <AVFoundation/AVFoundation.h>
+#import <CoreTelephony/CTCellularData.h>
+#import <CoreTelephony/CTTelephonyNetworkInfo.h>
 
 #include "ParaAppiOS.h"
 #include "RenderWindowiOS.h"
+#include "2dengine/GUIRoot.h"
 
 using namespace ParaEngine;
 
 @implementation AppDelegate
 
 - (BOOL)application:(UIApplication *)application didFinishLaunchingWithOptions:(NSDictionary *)launchOptions {
+    const char* cmdline = "";
+
+    if (launchOptions)
+    {
+        NSURL *url = [launchOptions objectForKey:UIApplicationLaunchOptionsURLKey];
+
+        if (url)
+        {
+            cmdline = [[url relativeString] UTF8String];
+        }
+    }
+    
     // Override point for customization after application launch.
     UIScreen* mainScreen = [UIScreen mainScreen];
     CGRect bounds = [mainScreen bounds];
 
     self.window = [[UIWindow alloc] initWithFrame: bounds];
 
-    GLView* view = [[GLView alloc] initWithFrame: bounds];
-    view.multipleTouchEnabled = YES;
+    self.view = [[GLView alloc] initWithFrame: bounds];
+    self.view.multipleTouchEnabled = YES;
 
     self.viewController = [[ViewController alloc] init];
-    self.viewController.view = view;
-
-    if([[UIDevice currentDevice].systemVersion floatValue] < 6.0)
-    {
-        [self.window addSubview: view];
-    }
-    else
-    {
-        [self.window setRootViewController: self.viewController];
-    }
-
-    [self.window makeKeyAndVisible];
+    self.viewController.view = self.view;
 
     [[UIApplication sharedApplication] setIdleTimerDisabled: YES];
     [[UIApplication sharedApplication] setStatusBarHidden: YES];
 
-    RenderWindowiOS* renderWindow = new RenderWindowiOS(view);
+//    if ([[UIDevice currentDevice].systemVersion floatValue] < 16.0) {
+//        self.isNoNetToNet = NO;
+//        [self fetchProtocolVersionReq];
+//        
+//        return YES;
+//    }
 
-    const char* cmdline = "";
-    if (launchOptions)
-    {
-        NSURL *url = [launchOptions objectForKey:UIApplicationLaunchOptionsURLKey];
-        if (url)
-        {
-            cmdline = [[url relativeString] UTF8String];
-        }
+    CTTelephonyNetworkInfo *networkInfo = [[CTTelephonyNetworkInfo alloc] init];
+
+    if ([networkInfo subscriberCellularProvider] == nil) {
+        self.isNoNetToNet = NO;
+        [self fetchProtocolVersionReq];
+
+        return YES;
     }
+
+    self.isNoNetToNet = NO;
+    __block BOOL isStarted = NO;
+    CTCellularData *cellularData = [[CTCellularData alloc] init];
+
+    cellularData.cellularDataRestrictionDidUpdateNotifier = ^(CTCellularDataRestrictedState state) {
+        switch (state) {
+            case kCTCellularDataRestricted:
+            {
+                self.isNoNetToNet = YES;
+                [self performSelectorOnMainThread:@selector(fetchProtocolVersionReq) withObject:nil waitUntilDone:YES];
+            }
+                break;
+            case kCTCellularDataNotRestricted:
+            {
+                if (isStarted) {
+                    return;
+                }
+
+                isStarted = YES;
+
+                dispatch_async(dispatch_get_main_queue(), ^{
+                    self.isNoNetToNet = NO;
+                    [self performSelector:@selector(fetchProtocolVersionReq) withObject:nil afterDelay:self.isNoNetToNet ? 1.0f : 0.0];
+                });
+            }
+                break;
+            case kCTCellularDataRestrictedStateUnknown:
+            {
+                NSLog(@"kCTCellularDataRestrictedStateUnknown");
+            }
+                break;
+            default:
+                break;
+        }
+    };
+    
+    return YES;
+}
+
+- (void)fetchProtocolVersionReq
+{
+    if (self.isNoNetToNet) {
+        UIAlertController *alert =
+            [UIAlertController
+                alertControllerWithTitle:@"权限需求"
+                message:@"Paracraft需要联网权限，否则Paracraft无法正常运作，请点击“无线局域网与蜂窝数据”。如果点击错误请在设置中更改。"
+                preferredStyle:UIAlertControllerStyleAlert];
+
+        [alert addAction:
+            [UIAlertAction
+                actionWithTitle:@"请求权限"
+                style:UIAlertActionStyleDefault
+                handler:^(UIAlertAction * action){
+                    NSString *urlStr = @"http://tmlog.paraengine.com/version.php";
+                    NSURL *url = [[NSURL alloc] initWithString:urlStr];
+        
+                    NSURLRequest *request = [[NSURLRequest alloc] initWithURL:url];
+                    [NSURLConnection sendSynchronousRequest:request returningResponse:nil error:nil];
+                }
+            ]];
+
+        UIViewController *viewController = [[UIViewController alloc] init];
+        UIScreen* mainScreen = [UIScreen mainScreen];
+        CGRect bounds = [mainScreen bounds];
+
+        viewController.view = [[UIView alloc] initWithFrame: bounds];
+        [self.window setRootViewController: viewController];
+        [self.window makeKeyAndVisible];
+
+        [viewController presentViewController:alert animated:true completion:^{}];
+
+        return;
+    }
+    
+    [self.window setRootViewController: self.viewController];
+    [self.window makeKeyAndVisible];
+
+    RenderWindowiOS* renderWindow = new RenderWindowiOS(self.view);
 
     [KeyboardiOSController InitLanguage];
 
     // Init app
     self.app = new CParaEngineAppiOS();
-    self.app->InitApp(renderWindow, cmdline);
+    self.app->InitApp(renderWindow, "");
 
     self.displayLink = [CADisplayLink displayLinkWithTarget:self selector:@selector(update)];
     self.displayLink.paused = NO;
@@ -72,11 +158,11 @@ using namespace ParaEngine;
     [[AVAudioSession sharedInstance] setCategory: AVAudioSessionCategoryPlayAndRecord error: nil];
     UInt32 audioRouteOverride = kAudioSessionOverrideAudioRoute_Speaker;
     AudioSessionSetProperty (kAudioSessionProperty_OverrideAudioRoute, sizeof(audioRouteOverride), &audioRouteOverride);
-
-    return YES;
+    
+    CGUIRoot::GetInstance()->SetUIScale(renderWindow->GetScaleX(), renderWindow->GetScaleY(), true, true, false);
 }
 
-- (void) update
+- (void)update
 {
     self.app->DoWork();
 }

@@ -6,6 +6,7 @@
 //-----------------------------------------------------------------------------
 
 #import <UIKit/UIKit.h>
+#import "GLView.h"
 
 namespace ParaEngine {
     class CParaEngineAppiOS;
@@ -16,9 +17,11 @@ namespace ParaEngine {
 }
 
 @property(strong, nonatomic) UIWindow *window;
-@property(strong, nonatomic) UIViewController* viewController;
-@property(nonatomic) ParaEngine::CParaEngineAppiOS* app;
-@property(strong, nonatomic) CADisplayLink* displayLink;
+@property(strong, nonatomic) UIViewController *viewController;
+@property(nonatomic) ParaEngine::CParaEngineAppiOS *app;
+@property(strong, nonatomic) CADisplayLink *displayLink;
+@property(nonatomic) __block BOOL isNoNetToNet;
+@property(strong, nonatomic) GLView *view;
 
 @end
 
