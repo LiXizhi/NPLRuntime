@@ -63,7 +63,10 @@ if (${NPLRUNTIME_RENDERER} STREQUAL "NULL")
 else ()
     add_subdirectory(dxEffectsParser)
     add_subdirectory(hlsl2glslfork)
-    add_subdirectory(FreeImage3180)
+	if (LINUX)
+	else()
+    	add_subdirectory(FreeImage3180)
+	endif()
 
     add_subdirectory(glad)
 
