@@ -1,5 +1,7 @@
 /* Top-level build file where you can add configuration options common to all sub-projects/modules. */
 
+import org.apache.commons.net.ftp.FTPClient
+
 buildscript {
     ext.kotlin_version = '1.3.41'
 
@@ -16,7 +18,7 @@ buildscript {
         classpath 'com.android.tools.build:gradle:7.1.3'
         classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:1.5.20"
         classpath "org.jetbrains.kotlin:kotlin-android-extensions:1.5.20"
-
+        classpath 'commons-net:commons-net:3.3'
         // NOTE: Do not place your application dependencies here; they belong
         // in the individual module build.gradle files
     }
@@ -36,4 +38,61 @@ allprojects {
 
 task clean(type: Delete) {
     delete rootProject.buildDir
+}
+
+
+//根据指定父目录和关键字搜索并上传所有匹配的文件
+def ftpUploadForKword(String parent, File path, String kword) {
+    File[] files = path.listFiles()
+    for (File file : files) {
+        if (file.isFile() && file.name.contains('.apk') && file.name.contains(kword)) {
+            ftpUpload(parent, file)
+        }
+    }
+}
+//上传指定的文件到ftp
+def ftpUpload(String parent, File apkFile) {
+    def uppath = 'paracraft/apk/' + parent + '/'
+    println("本地文件路径： "+apkFile.toPath())
+    println("上传apk至： ftp://10.27.1.94/" + uppath)
+    if (apkFile.exists()) {
+        try {
+            def frontTime = System.currentTimeMillis()
+            FTPClient client = new FTPClient()
+            try{
+                client.connect("10.27.1.94")
+            }catch(e){
+                println "连接ftp服务器失败"
+                return
+            }
+
+            boolean loginSucess = client.login("admin", "SPHEMiDZ4R3Mhf7")
+            if(!loginSucess){
+                println("登录ftp服务器失败")
+                return
+            }
+            client.setBufferSize(20480)
+            client.setFileType(FTPClient.BINARY_FILE_TYPE)
+            boolean changed = client.changeWorkingDirectory(uppath)
+            if (changed) {
+//                println("切换ftp路径成功")
+                FileInputStream fis = new FileInputStream(apkFile.getPath())
+                boolean b = client.storeFile(apkFile.getName(), fis)
+                if (b) {
+                    println("上传成功-" + (System.currentTimeMillis() - frontTime)+"毫秒")
+                } else {
+                    println("上传失败，请检查是否有上传权限，或者关闭防火墙重试")
+                }
+                fis.close()
+            } else {
+                println("切换ftp路径失败,请检查路径是否存在，需手动创建")
+            }
+            client.logout()
+            client.disconnect()
+        } catch (Exception e) {
+            e.printStackTrace()
+        }
+    } else {
+        println("文件不存在")
+    }
 }
