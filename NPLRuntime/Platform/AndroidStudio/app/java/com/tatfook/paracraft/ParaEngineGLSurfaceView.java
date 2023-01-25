@@ -102,20 +102,24 @@ public class ParaEngineGLSurfaceView extends GLSurfaceView {
 
         sHandler = new Handler(msg -> {
             String defaultValue = msg.getData().getString("defaultValue");
-            if(defaultValue!=null){
+
+            if (defaultValue != null) {
                 boolean bOpen = msg.getData().getBoolean("bOpen");
                 int maxLength = msg.getData().getInt("maxLength");
                 boolean isMultiline = msg.getData().getBoolean("isMultiline");
                 boolean confirmHold = msg.getData().getBoolean("confirmHold");
                 String confirmType = msg.getData().getString("confirmType");
                 String inputType = msg.getData().getString("inputType");
-                if(bOpen){
+
+                if (bOpen) {
                     ParaEngineEditBoxActivity.showNative(defaultValue,maxLength,isMultiline,confirmHold,confirmType,inputType);
-                }else{
+                } else {
                     ParaEngineEditBoxActivity.hideNative();
                 }
+
                 return true;
             }
+
             mIsOpen = msg.getData().getBoolean("bOpen");
             mIsMoveView = msg.getData().getBoolean("bMoveView");
             mCtrlBottom = msg.getData().getInt("ctrlBottom");
@@ -127,26 +131,27 @@ public class ParaEngineGLSurfaceView extends GLSurfaceView {
                 return false;
             }
 
-
             if (mIsOpen) {
                 int selStart = msg.getData().getInt("selStart");
                 int selEnd = msg.getData().getInt("selEnd");
-                if(selEnd<=0&&curEditText.length()>0){
+
+                if (selEnd<=0&&curEditText.length() > 0) {
                     selStart = selEnd = Math.max(curEditText.length(),0);
                 }
+
                 mEditText.setText(curEditText);
 
                 mEditText.setSelection(selStart,selEnd);
                 lastText = curEditText;
                 sParaTextInputWrapper.onFocus();
 
-
                 mEditText.setEnabled(true);
 
                 if (mEditText.requestFocus()) {
                     mEditText.removeTextChangedListener(sParaTextInputWrapper);
                     mEditText.addTextChangedListener(sParaTextInputWrapper);
-                    if(!isGuiEdit){
+
+                    if (!isGuiEdit) {
                         mEditText.setOnKeyListener(sParaTextInputWrapper);
                     }
 

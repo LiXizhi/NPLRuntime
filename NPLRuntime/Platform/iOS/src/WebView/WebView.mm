@@ -1,15 +1,15 @@
-//
-//  WebView.m
-//  jsoncpp
-//
-//  Created by apple on 2018/5/22.
-//
-
+//-----------------------------------------------------------------------------
+// Class: WebView.mm
+// Authors: kkvskkkk, big
+// Emails: onedou@126.com
+// CreateDate: 2018.5.22
+// ModifyDate: 2022.12.30
+//-----------------------------------------------------------------------------
 #import <WebKit/WKWebView.h>
 #import <WebKit/WKUIDelegate.h>
 #import <WebKit/WKNavigationDelegate.h>
 #import <WebKit/WKNavigationAction.h>
-
+#import <WebKit/WKWebViewConfiguration.h>
 
 #import <Foundation/Foundation.h>
 #include "ParaEngine.h"
@@ -49,10 +49,8 @@ static std::string getFixedBaseUrl(const std::string& baseUrl)
 @property (nonatomic) std::function<void(const std::string& url)> onJsCallback;
 @property (nonatomic) std::function<void()> onCloseCallback;
 
-
 @property(nonatomic, readonly, getter=canGoBack) BOOL canGoBack;
 @property(nonatomic, readonly, getter=canGoForward) BOOL canGoForward;
-
 
 //HideCloseButton
 @property(nonatomic, readwrite, getter = HideCloseButton,  setter = setHideCloseButton:) BOOL HideCloseButton;
@@ -93,9 +91,8 @@ static std::string getFixedBaseUrl(const std::string& baseUrl)
 - (void)setAlpha:(float)a;
 
 - (void)move:(int)x y:(int)y;
+
 - (void)resize:(int)width height:(int)height;
-
-
 
 @end
 
@@ -107,13 +104,13 @@ static std::string getFixedBaseUrl(const std::string& baseUrl)
 
 @implementation UIWebViewWrapper
 {
-    
 }
 
 + (instancetype)webViewWrapper
 {
     return [[self alloc] init] ;
 }
+
 - (instancetype) init
 {
     self = [super init];
@@ -159,6 +156,7 @@ static std::string getFixedBaseUrl(const std::string& baseUrl)
         [self.uiWebView removeFromSuperview];
         self.uiWebView = nil;
         self.uiCloseBtn = nil;
+
         if (self.onCloseCallback)
             self.onCloseCallback();
      }
@@ -168,14 +166,17 @@ static std::string getFixedBaseUrl(const std::string& baseUrl)
 {
     if (!self.uiWebView)
     {
-        self.uiWebView = [[WKWebView alloc] init];
+        WKWebViewConfiguration *webViewConfig = [[WKWebViewConfiguration alloc] init];
+        webViewConfig.allowsInlineMediaPlayback = YES;
+
+        self.uiWebView = [[WKWebView alloc] initWithFrame:CGRectMake(0, 0, 0, 0) configuration:webViewConfig];
         self.uiWebView.UIDelegate = self;
         self.uiWebView.navigationDelegate = self;
     }
     
     if (!self.uiWebView.superview)
     {
-        void* p = (void*)ParaEngine::CGlobals::GetApp()->GetRenderWindow()->GetNativeHandle();
+        void *p = (void*)ParaEngine::CGlobals::GetApp()->GetRenderWindow()->GetNativeHandle();
 
         if (p)
         {
@@ -183,7 +184,7 @@ static std::string getFixedBaseUrl(const std::string& baseUrl)
             [view addSubview:self.uiWebView];
         }
     }
-    
+
     if (!self.uiCloseBtn)
     {
         self.uiCloseBtn = [UIButton buttonWithType:UIButtonTypeCustom];
@@ -203,17 +204,19 @@ static std::string getFixedBaseUrl(const std::string& baseUrl)
 - (void)move:(int)x y:(int)y {
     auto height = self.uiWebView.frame.size.height;
     auto btnHeigh = self.uiCloseBtn.frame.size.height;
-    
+
     float btnY = (height - btnHeigh) / 2;
     self.uiCloseBtn.frame = CGRectMake(5, btnY, self.uiCloseBtn.frame.size.width, btnHeigh);
-    self.uiWebView.frame.origin = CGPointMake(x, y);
+
+    self.uiWebView.frame = CGRectMake(x, y, self.uiWebView.frame.size.width, self.uiWebView.frame.size.height);
 }
 
 - (void)resize:(int)width height:(int)height {
     auto btnHeigh = self.uiCloseBtn.frame.size.height;
     float btnY = (height - btnHeigh) / 2;
     self.uiCloseBtn.frame = CGRectMake(5, btnY, self.uiCloseBtn.frame.size.width, btnHeigh);
-    self.uiWebView.frame.size = CGSizeMake(width, height);
+
+    self.uiWebView.frame = CGRectMake(self.uiWebView.frame.origin.x, self.uiWebView.frame.origin.y, width, height);
 }
 
 - (void)setAlpha:(float)a
@@ -235,11 +238,12 @@ static std::string getFixedBaseUrl(const std::string& baseUrl)
 {
     if (!self.uiWebView)
         [self setupWebView];
-    
+
     float btnHeigh = self.uiCloseBtn.frame.size.height;
     float btnY = (height - btnHeigh) / 2;
     self.uiCloseBtn.frame = CGRectMake(5, btnY, self.uiCloseBtn.frame.size.width, btnHeigh);
-    self.uiWebView.frame = CGRectMake(x, y, width , height);
+
+    self.uiWebView.frame = CGRectMake(x, y, width, height);
 }
 
 - (void)setJavascriptInterfaceScheme:(const std::string&)scheme
@@ -272,6 +276,7 @@ static std::string getFixedBaseUrl(const std::string& baseUrl)
         [self setupWebView];
     
     NSString *nsStringUrl = @(urlString.c_str());
+    nsStringUrl = [nsStringUrl stringByAddingPercentEscapesUsingEncoding:NSUTF8StringEncoding];
     NSURL *url = [NSURL URLWithString: nsStringUrl];
     auto originWidth = self.uiWebView.frame.size.width;
     auto originHeight = self.uiWebView.frame.size.height;
@@ -289,6 +294,7 @@ static std::string getFixedBaseUrl(const std::string& baseUrl)
     }
     
     NSURLRequest * request = nil;
+
     if (needCleanCachedData)
         request = [NSURLRequest requestWithURL:url cachePolicy:NSURLRequestReloadIgnoringCacheData timeoutInterval:60];
     else
@@ -370,6 +376,7 @@ static std::string getFixedBaseUrl(const std::string& baseUrl)
         decisionHandler:(void (^)(WKNavigationActionPolicy))decisionHandler
 {
     NSString *url = [[[navigationAction request] URL] absoluteString];
+
     if ([[webView.URL scheme] isEqualToString:self.jsScheme])
     {
         self.onJsCallback([url UTF8String]);
@@ -385,7 +392,7 @@ static std::string getFixedBaseUrl(const std::string& baseUrl)
         
         return;
     }
-    
+
     decisionHandler(WKNavigationActionPolicyAllow);
 }
 
@@ -426,7 +433,6 @@ static std::string getFixedBaseUrl(const std::string& baseUrl)
 @end
 
 namespace ParaEngine {
-    
     IParaWebView* IParaWebView::createWebView(int x, int y, int w, int h)
     {
         return ParaEngineWebView::createWebView(x, y, w, h, false);

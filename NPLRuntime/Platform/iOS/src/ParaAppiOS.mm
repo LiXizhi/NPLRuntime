@@ -107,7 +107,6 @@ namespace ParaEngine {
 
     int CParaEngineAppiOS::Run(HINSTANCE hInstance)
     {
-     
         return 0;
     }
 
@@ -115,8 +114,10 @@ namespace ParaEngine {
     {
         int x = 0;
         this->GameToClient(x, ctrlBottom);
+        
+        NSString *_editParams = [NSString stringWithUTF8String: editParams.c_str()];
 
-        [KeyboardiOSController setIMEKeyboardState:bOpen bMoveView:bMoveView ctrlBottom:ctrlBottom];
+        [KeyboardiOSController setIMEKeyboardState:bOpen bMoveView:bMoveView ctrlBottom:ctrlBottom editParams:_editParams];
     }
 
     void CParaEngineAppiOS::Exit(int nReturnCode /*= 0*/)
@@ -139,6 +140,5 @@ namespace ParaEngine {
         
         pOut->x = widthResolution;
         pOut->y = heightResolution;
-        
     }
 }

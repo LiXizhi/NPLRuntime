@@ -9,45 +9,20 @@
 #include <unordered_map>
 #include "Framework/InputSystem/VirtualKey.h"
 #include "2dengine/GUIRoot.h"
+#include "2dengine/GUIEdit.h"
 #include "ParaEngineSettings.h"
 #include "util/StringHelper.h"
-
-@implementation KeyboardiOSControllerDelegate
-
-- (void)setKeyboardInstance:(KeyboardiOSController *)keyboardiOSController
-{
-    self.keyboardiOSController = keyboardiOSController;
-}
-
-- (BOOL)textFieldShouldReturn:(UITextField *)textField
-{
-    if (ParaEngine::CGlobals::GetApp()->GetAppState() == ParaEngine::PEAppState_Ready)
-    {
-        ParaEngine::CGUIRoot *pGUIRoot = ParaEngine::CGUIRoot::GetInstance();
-
-        if (pGUIRoot)
-        {
-            pGUIRoot->SendKeyDownEvent(ParaEngine::EVirtualKey::KEY_RETURN);
-            pGUIRoot->SendKeyUpEvent(ParaEngine::EVirtualKey::KEY_RETURN);
-        }
-    }
-
-    return NO;
-}
-
-- (BOOL)keyboardInputShouldDelete:(UITextField *)textField
-{
-    return true;
-}
-
-@end
 
 @implementation KeyboardiOSController
 
 static KeyboardiOSController *instance = nil;
 static int mCtrlBottom = 0;
 static BOOL mUpdateViewSizeWhenKeyboardChange = NO;
-static UITextField *mTextField = nil;
+static ParaTextField *mTextField = nil;
+static BOOL isGuiEdit;
+static NSString *curEditText;
+static int selStart;
+static int selEnd;
 
 + (void)InitLanguage
 {
@@ -109,18 +84,15 @@ static UITextField *mTextField = nil;
     }
 
     instance = [KeyboardiOSController alloc];
-
-    instance.keyboardiOSControllerDelegate = [[KeyboardiOSControllerDelegate alloc] init];
-
-    mTextField = [[UITextField alloc] initWithFrame:CGRectMake(0, 0, -10, -10)];
-    mTextField.delegate = appDelegate;
-    mTextField.keyboardType = UIKeyboardTypeDefault;
-    mTextField.userInteractionEnabled = NO;
-    
-    [instance.keyboardiOSControllerDelegate setKeyboardInstance:instance];
-    [appDelegate.viewController.view addSubview:mTextField];
-
     instance.appDelegate = appDelegate;
+
+    mTextField = [[ParaTextField alloc] initWithFrame:CGRectMake(0, 0, -10, -10)];
+    mTextField.delegate = instance;
+    mTextField.keyboardType = UIKeyboardTypeDefault;
+    mTextField.returnKeyType = UIReturnKeyDefault;
+    mTextField.userInteractionEnabled = NO;
+
+    [appDelegate.viewController.view addSubview:mTextField];
 
     [[NSNotificationCenter defaultCenter]
         addObserver:instance
@@ -141,11 +113,35 @@ static UITextField *mTextField = nil;
         object:nil];
 }
 
-+ (void)setIMEKeyboardState:(BOOL)bOpen bMoveView:(BOOL)bMoveView ctrlBottom:(int)ctrlBottom;
++ (BOOL)getIsGuiEdit
+{
+    return isGuiEdit;
+}
+
++ (void)setIMEKeyboardState:(BOOL)bOpen bMoveView:(BOOL)bMoveView ctrlBottom:(int)ctrlBottom editParams:(NSString *)editParams;
 {
     if (mTextField == nil) {
         return;
     }
+
+    isGuiEdit = NO;
+    ParaEngine::CGUIEditBox *pGUI = dynamic_cast<ParaEngine::CGUIEditBox*>((ParaEngine::CGUIRoot::GetInstance()->GetUIKeyFocus()));
+
+    if (pGUI != NULL) {
+        isGuiEdit = YES;
+    }
+    
+    NSData *editParamsData = [editParams dataUsingEncoding:NSUTF8StringEncoding];
+    id editParamsJson = [NSJSONSerialization JSONObjectWithData:editParamsData options:NSJSONReadingAllowFragments error:nil];
+    NSDictionary *editParamsDictionary;
+
+    if ([editParamsJson isKindOfClass:[NSDictionary class]]) {
+        editParamsDictionary = (NSDictionary *)editParamsJson;
+    }
+    
+    curEditText = [editParamsDictionary valueForKey: @"curEditText"];
+    selStart = (int)[editParamsDictionary[@"selStart"] integerValue];
+    selEnd = (int)[editParamsDictionary[@"selEnd"] integerValue];
 
     mUpdateViewSizeWhenKeyboardChange = bMoveView;
     mCtrlBottom = ctrlBottom;
@@ -203,6 +199,14 @@ static UITextField *mTextField = nil;
         return;
     }
 
+    if (!isGuiEdit) {
+        if (selEnd <= 0 && [curEditText length] > 0) {
+            selStart = selEnd = (int)MAX([curEditText length], 0);
+        }
+        
+        return;
+    }
+
     NSInteger curCaretPosition = pGUI->GetCaretPosition();
     
     std::string _curText;
@@ -217,22 +221,58 @@ static UITextField *mTextField = nil;
     mTextField.selectedTextRange = newRange;
 }
 
+- (BOOL)textField:(UITextField *)textField shouldChangeCharactersInRange:(NSRange)range replacementString:(NSString *)string;
+{
+    return YES;
+}
+
+- (BOOL)keyboardInputShouldDelete:(UITextField *)textField
+{
+    return YES;
+}
+
 - (void)keyboardPressed:(NSNotification*)notification
 {
     if (ParaEngine::CGlobals::GetApp()->GetAppState() == ParaEngine::PEAppState_Ready)
     {
         ParaEngine::CGUIBase *pGUI = ParaEngine::CGUIRoot::GetInstance()->GetUIKeyFocus();
+
+        if (isGuiEdit) {
+            const char *curTextUTF8 = [mTextField.text UTF8String];
+            pGUI->SetTextA(curTextUTF8);
+
+            NSInteger setCaretPosition = [mTextField offsetFromPosition:mTextField.beginningOfDocument toPosition:[mTextField.selectedTextRange start]];
+
+            pGUI->SetCaretPosition((int)setCaretPosition);
+        } else {
+            std::wstring s;
+            s = (WCHAR)[mTextField.text characterAtIndex:0];
+
+            pGUI->OnHandleWinMsgChars(s);
+            
+            mTextField.text = @"";
+        }
+    }
+}
+
+- (BOOL)textFieldShouldReturn:(UITextField *)textField
+{
+    if (isGuiEdit) {
+        return NO;
+    }
+
+    if (ParaEngine::CGlobals::GetApp()->GetAppState() == ParaEngine::PEAppState_Ready)
+    {
         ParaEngine::CGUIRoot *pGUIRoot = ParaEngine::CGUIRoot::GetInstance();
 
-
-        const char *curTextUTF8 = [mTextField.text UTF8String];
-        pGUI->SetTextA(curTextUTF8);
-        
-        
-        NSInteger setCaretPosition = [mTextField offsetFromPosition:mTextField.beginningOfDocument toPosition:[mTextField.selectedTextRange start]];
-
-        pGUI->SetCaretPosition((int)setCaretPosition);
+        if (pGUIRoot)
+        {
+            pGUIRoot->SendKeyDownEvent(ParaEngine::EVirtualKey::KEY_RETURN);
+            pGUIRoot->SendKeyUpEvent(ParaEngine::EVirtualKey::KEY_RETURN);
+        }
     }
+
+    return NO;
 }
 
 @end

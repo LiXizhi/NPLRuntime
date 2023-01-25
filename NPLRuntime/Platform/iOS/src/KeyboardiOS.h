@@ -9,6 +9,7 @@
 #import <UIKit/UIKit.h>
 #import <UIKit/UITextField.h>
 #import "AppDelegate.h"
+#import "ParaTextField.h"
 
 #include <stdio.h>
 #include "ParaEngine.h"
@@ -32,25 +33,16 @@ namespace ParaEngine
 
 @class KeyboardiOSController;
 
-@interface KeyboardiOSControllerDelegate: NSObject
-{
-}
-
-@property(nonatomic) KeyboardiOSController *keyboardiOSController;
-
-- (void)setKeyboardInstance: (KeyboardiOSController *)keyboardiOSController;
-
-@end
-
-@interface KeyboardiOSController : UITextField
+@interface KeyboardiOSController : UITextField <UITextFieldDelegate>
 
 @property(nonatomic) AppDelegate *appDelegate;
-@property(nonatomic) KeyboardiOSControllerDelegate *keyboardiOSControllerDelegate;
 
 + (void)InitLanguage;
 
 + (void)keyboardInit:(AppDelegate *)appDelegate;
 
-+ (void)setIMEKeyboardState:(BOOL)bOpen bMoveView:(BOOL)bMoveView ctrlBottom:(int)ctrlBottom;
++ (BOOL)getIsGuiEdit;
+
++ (void)setIMEKeyboardState:(BOOL)bOpen bMoveView:(BOOL)bMoveView ctrlBottom:(int)ctrlBottom editParams:(NSString *)editParams;
 
 @end
