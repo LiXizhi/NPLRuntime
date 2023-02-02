@@ -27,4 +27,26 @@ namespace ParaEngine {
         ss << (int)ipv4.b << "." << (int)ipv4.g << "." << (int)ipv4.r << "." << (int)ipv4.a;
         m_sIpAddress = ss.str();
     }
+
+    const std::string& NetworkAdapter::GetMaxMacAddress()
+    {
+        if(m_sMacAddress==""){
+            m_sMacAddress = ParaEngineHelper::getWifiMAC();
+        }
+        return m_sMacAddress;
+    }
+
+    const std::string& NetworkAdapter::GetMaxIPAddress()
+    {
+        if(m_sIpAddress==""){
+            auto ip = ParaEngineHelper::getWifiIP();
+
+            Color ipv4(ip);
+
+            std::stringstream ss;
+            ss << (int)ipv4.b << "." << (int)ipv4.g << "." << (int)ipv4.r << "." << (int)ipv4.a;
+            m_sIpAddress = ss.str();
+        }
+        return m_sIpAddress;
+    }
 }
