@@ -42,6 +42,7 @@ import android.view.WindowManager;
 import android.widget.ImageView;
 
 import com.smarx.notchlib.NotchScreenManager;
+import com.tatfook.paracraft.luabridge.PlatformBridge;
 import com.tatfook.paracraft.screenrecorder.ScreenRecorder;
 
 import java.io.File;
@@ -201,7 +202,9 @@ public class ParaEngineActivity extends AppCompatActivity {
     public void onAgreeUserPrivacy(){
         this.checkUsbMode();
         ParaEngineHelper.onAgreeUserPrivacy();
-        if (checkSelfPermission(Manifest.permission.READ_PHONE_STATE) != PackageManager.PERMISSION_GRANTED)
+        if(true){//PlatformBridge.getChannelId(this).equals("xiaomi")
+            ParaEngineHelper.setCanReadPhoneState(false);
+        }else if(checkSelfPermission(Manifest.permission.READ_PHONE_STATE) != PackageManager.PERMISSION_GRANTED)
         {
             ParaEngineActivity
                     .getContext()
