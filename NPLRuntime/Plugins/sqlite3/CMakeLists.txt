@@ -4,7 +4,9 @@
 # Note: download sqlite src, and then use cmake to compile
 # we will build as dll in win32 and static linked lib under linux. 
 # Note: add #include "paraengine_sqlite3.h" at the very beginning of sqlite3.h and sqlite3.c to automatically define SQLITE_API according to ParaEngine usage macro. 
-include(${PROJECT_SOURCE_DIR}/cmake/ConfigBoost.cmake)
+if (NOT EMSCRIPTEN)
+	include(${PROJECT_SOURCE_DIR}/cmake/ConfigBoost.cmake)
+endif()
 PROJECT(ParaSqlite)
 
 
@@ -28,7 +30,9 @@ SET(sqlite_SRCS
 	paraengine_sqlite3.h
 )
 
-include_directories("${Boost_INCLUDE_DIRS}")
+if (NOT EMSCRIPTEN)
+	include_directories("${Boost_INCLUDE_DIRS}")
+endif()
 
 IF(MSVC)
 	foreach(flag_var CMAKE_CXX_FLAGS CMAKE_CXX_FLAGS_DEBUG CMAKE_CXX_FLAGS_RELEASE CMAKE_CXX_FLAGS_MINSIZEREL CMAKE_CXX_FLAGS_RELWITHDEBINFO CMAKE_C_FLAGS CMAKE_C_FLAGS_DEBUG CMAKE_C_FLAGS_RELEASE CMAKE_C_FLAGS_MINSIZEREL CMAKE_C_FLAGS_RELWITHDEBINFO)
@@ -63,7 +67,9 @@ endif()
 
 add_library(ParaSqlite ${SQLITE_LIB_MODE} ${sqlite_SRCS})
 target_include_directories(ParaSqlite PUBLIC ${PROJECT_SOURCE_DIR})
-target_link_libraries(ParaSqlite ${Boost_LIBRARIES}) 
+if (NOT EMSCRIPTEN)
+	target_link_libraries(ParaSqlite ${Boost_LIBRARIES}) 
+endif()
 
 
 # set(TEST_DIR "D:/code/npl/TableDB/")

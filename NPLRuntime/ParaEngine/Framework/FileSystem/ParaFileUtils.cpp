@@ -12,7 +12,7 @@ namespace fs = boost::filesystem;
 #define BOOST_FILESYSTEM_NO_DEPRECATED
 using namespace ParaEngine;
 
-#if (PARA_TARGET_PLATFORM == PARA_PLATFORM_LINUX) || defined(MAC_SERVER)
+#if (PARA_TARGET_PLATFORM == PARA_PLATFORM_LINUX) || defined(MAC_SERVER) || defined(EMSCRIPTEN)
 CParaFileUtils* CParaFileUtils::GetInstance()
 {
 	static CParaFileUtils defaultImpl;

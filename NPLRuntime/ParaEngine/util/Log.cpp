@@ -435,7 +435,7 @@ namespace ParaEngine
 #elif defined (PLATFORM_MAC)
             return static_cast<int>(pos);
 #else
-			return static_cast<int>(pos.__pos);
+			// return static_cast<int>(pos);
 #endif
 
 		}
