@@ -69,6 +69,10 @@
 #define PARA_TARGET_PLATFORM			PARA_PLATFORM_WP8
 #endif
 
+#if defined(EMSCRIPTEN)
+#undef  PARA_TARGET_PLATFORM
+#define PARA_TARGET_PLATFORM			PARA_PLATFORM_EMSCRIPTEN
+#endif
 
 // check user set platform
 #if ! PARA_TARGET_PLATFORM

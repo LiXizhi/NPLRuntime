@@ -3,7 +3,9 @@
 # Date: 2010.5.27
 # Note: download luabind and boost src, and then use cmake to compile
 # Note1: During release build, edit luabind/config.hpp and add #define LUABIND_NO_ERROR_CHECKING
-include(${PROJECT_SOURCE_DIR}/cmake/ConfigBoost.cmake)
+if (NOT EMSCRIPTEN)
+	include(${PROJECT_SOURCE_DIR}/cmake/ConfigBoost.cmake)
+endif()
 PROJECT(luabind)
 
 # source files for luabind
@@ -36,12 +38,21 @@ ADD_LIBRARY(luabind STATIC ${luabind_SRCS})
 
 get_property(LUA_LIB_LIST GLOBAL PROPERTY "LUA_LIB_LIST" ) 
 target_link_libraries(luabind ${LUA_LIB_LIST})
-target_include_directories(luabind
-PUBLIC 	${PROJECT_SOURCE_DIR}
-PUBLIC 	${PROJECT_SOURCE_DIR}/luabind
-PRIVATE ${PROJECT_SOURCE_DIR}/src
-PUBLIC 	${Boost_INCLUDE_DIR}
-)
+if (EMSCRIPTEN)
+	target_include_directories(luabind
+	PUBLIC 	${PROJECT_SOURCE_DIR}
+	PUBLIC 	${PROJECT_SOURCE_DIR}/luabind
+	PRIVATE ${PROJECT_SOURCE_DIR}/src
+	)
+else()
+	target_include_directories(luabind
+	PUBLIC 	${PROJECT_SOURCE_DIR}
+	PUBLIC 	${PROJECT_SOURCE_DIR}/luabind
+	PRIVATE ${PROJECT_SOURCE_DIR}/src
+	PUBLIC 	${Boost_INCLUDE_DIR}
+	)
+endif()
+
 
 IF(WIN32)
 	if(NOT NPLRUNTIME_STATIC_LIB)

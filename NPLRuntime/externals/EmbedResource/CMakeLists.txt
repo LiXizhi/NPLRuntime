@@ -10,7 +10,7 @@ endif()
 ## embed with absolute path
 function(embed_resources_abs out_var)
     set(result)
-    if(ANDROID)
+    if(ANDROID OR EMSCRIPTEN)
         if( ${CMAKE_HOST_SYSTEM_NAME} STREQUAL "Windows")
             set(TOOL ${PROJECT_SOURCE_DIR}/externals/EmbedResource/prebuild/win32/embed-resource.exe)
 		elseif (${CMAKE_HOST_SYSTEM_NAME} STREQUAL "Darwin")
