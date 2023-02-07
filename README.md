@@ -48,3 +48,15 @@ For example:
 ```	
 npls hello.npl
 ```    
+
+
+### Emscripten
+1. 编译boost 下载boost.1.81.0源码, 解压并进入源码目录, 执行如下指令编译
+	.\bootstrap.bat   
+	\b2 toolset=emscripten runtime-link=static --with-thread --with-date_time --with-filesystem --with-system --with-chrono --with-serialization --locale
+	进入生成的 stage/lib 目录, 对每个xxx.bc文件执行命令 emar -q xxx.a xxx.bc  将.bc转成.a文件
+2. 进入NPLRuntime根目录:
+	emcmake cmake -S NPLRuntime -B build\emscripten -DEMSCRIPTEN=ON -DCURL_ENABLE_SSL=OFF -DBOOST_ROOT="boost根目录"   
+	cd build\emscripten
+	emmake make
+	**boost 报[-Wc++11-narrowing]错误 为类型转换精度缩小不支持, 编辑相关报错文件, 进行强制类型转换修复**

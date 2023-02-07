@@ -70,7 +70,7 @@ IF(WIN32)
 	SET(CMAKE_SHARED_LINKER_FLAGS_RELEASE "${CMAKE_SHARED_LINKER_FLAGS_RELEASE} /opt:ref")
 	# add a stripped version of symbol files during release build
 	SET(CMAKE_SHARED_LINKER_FLAGS_RELEASE "${CMAKE_SHARED_LINKER_FLAGS_RELEASE} /PDBSTRIPPED:Release/lua.stripped.pdb")
-	
+
 	ADD_LIBRARY(lua ${LUA_LIB_MODE} ${lua_SRCS})
 
 	if(NOT NPLRUNTIME_STATIC_LIB)
@@ -78,6 +78,9 @@ IF(WIN32)
 	endif()
 ELSE(WIN32)
 	add_definitions(-DLUA_USE_LINUX)
+	if (EMSCRIPTEN)
+		add_definitions(-DCOCO_DISABLE)
+	endif()
 	ADD_LIBRARY(lua ${LUA_LIB_MODE} ${lua_SRCS})
 
 	SET(output_luafilename "liblua51.so")

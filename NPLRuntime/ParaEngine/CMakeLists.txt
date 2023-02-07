@@ -243,6 +243,16 @@ if (EMSCRIPTEN)
     ParaSqlite 
     Pinocchio
     ${ICONV_LIB_NAME}
+    # "/mnt/d/workspace/emscripten/boost_1_81_0/stage/lib/libboost_atomic.a"
+    "${BOOST_ROOT}/stage/lib/libboost_atomic.a"
+    "${BOOST_ROOT}/stage/lib/libboost_chrono.a"
+    "${BOOST_ROOT}/stage/lib/libboost_date_time.a"
+    "${BOOST_ROOT}/stage/lib/libboost_date_time.a"
+    "${BOOST_ROOT}/stage/lib/libboost_filesystem.a"
+    "${BOOST_ROOT}/stage/lib/libboost_serialization.a"
+    "${BOOST_ROOT}/stage/lib/libboost_system.a"
+    "${BOOST_ROOT}/stage/lib/libboost_thread.a"
+    "${BOOST_ROOT}/stage/lib/libboost_wserialization.a"
     )
 else()
     target_link_libraries(ParaEngine PUBLIC 

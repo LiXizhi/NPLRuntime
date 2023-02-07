@@ -49,3 +49,9 @@ IF(MSVC)
 	endforeach(flag_var)
 ENDIF()
 
+# 独立编译
+#cmake_minimum_required(VERSION 3.14)
+#project(EmbedResource)
+#include_directories("/mnt/d/workspace/emscripten/boost_1_70_0")
+#add_executable(embed-resource  embedresource.cpp embedresource.h README.md)
+#target_link_libraries(embed-resource /mnt/d/workspace/emscripten/boost_1_70_0/stage/lib/libboost_filesystem.a /mnt/d/workspace/emscripten/boost_1_70_0/stage/lib/libboost_system.a)
