@@ -786,7 +786,12 @@ bool CParaEngineAppBase::FindParaEngineDirectory(const char* sHint)
 				bFoundSigFile = true;
 			if (bFoundSigFile)
 			{
+#ifdef DEFAULT_FILE_ENCODING
+				LPCWSTR workingDir16 = StringHelper::MultiByteToWideChar(workingDir.c_str(), DEFAULT_FILE_ENCODING);
+				::SetCurrentDirectoryW(workingDir16);
+#else
 				::SetCurrentDirectory(workingDir.c_str());
+#endif
 			}
 			else
 			{
@@ -803,7 +808,15 @@ bool CParaEngineAppBase::FindParaEngineDirectory(const char* sHint)
 	{
 		char sWorkingDir[512 + 1] = { 0 };
 		memset(sWorkingDir, 0, sizeof(sWorkingDir));
+#ifdef DEFAULT_FILE_ENCODING
+		wchar_t sWorkingDir16[512 + 1] = { 0 };
+		memset(sWorkingDir16, 0, sizeof(sWorkingDir16));
+		::GetCurrentDirectoryW(MAX_PATH, sWorkingDir16);
+		auto _sWorkingDir = StringHelper::WideCharToMultiByte(sWorkingDir16, DEFAULT_FILE_ENCODING);
+		strcpy(sWorkingDir, _sWorkingDir);
+#else
 		::GetCurrentDirectory(MAX_PATH, sWorkingDir);
+#endif
 		m_sInitialWorkingDir = sWorkingDir;
 #ifdef PARAENGINE_MOBILE
 		CGlobals::GetFileManager()->AddDiskSearchPath(sWorkingDir);

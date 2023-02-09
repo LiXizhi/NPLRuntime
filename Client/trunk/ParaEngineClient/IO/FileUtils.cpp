@@ -1,4 +1,4 @@
-
+﻿
 //-----------------------------------------------------------------------------
 // Class: FileUtil
 // Authors:	Li,Xizhi
@@ -77,7 +77,7 @@
 #endif
 
 #ifdef _DEBUG
-// #define USE_BOOST_FILE_API
+ //#define USE_BOOST_FILE_API
 #endif
 
 #if defined(PARAENGINE_SERVER) && !defined(WIN32)
@@ -275,7 +275,14 @@ bool ParaEngine::CFileUtils::CopyFile(const char* src, const char* dest, bool bO
 #elif defined(USE_BOOST_FILE_API)
 		try
 		{
-			fs::path destFile(dest);
+#ifdef WIN32
+			std::wstring src16 = StringHelper::MultiByteToWideChar(src, DEFAULT_FILE_ENCODING);
+			std::wstring dest16 = StringHelper::MultiByteToWideChar(dest, DEFAULT_FILE_ENCODING);
+#else
+			auto src16 = src;
+			auto dest16 = dest;
+#endif
+			fs::path destFile(dest16);
 			if (fs::exists(destFile))
 			{
 				if (bOverride)
@@ -290,7 +297,7 @@ bool ParaEngine::CFileUtils::CopyFile(const char* src, const char* dest, bool bO
 					return false;
 				}
 			}
-			fs::copy_file(fs::path(src), destFile);
+			fs::copy_file(fs::path(src16), destFile);
 		}
 		catch (...)
 		{
@@ -299,7 +306,14 @@ bool ParaEngine::CFileUtils::CopyFile(const char* src, const char* dest, bool bO
 		return true;
 #else
 		// try the system version, in case the src file is currently in use, such as the database. 
+#ifdef DEFAULT_FILE_ENCODING
+		std::wstring src16 = StringHelper::MultiByteToWideChar(src, DEFAULT_FILE_ENCODING);
+		std::wstring dest16 = StringHelper::MultiByteToWideChar(dest, DEFAULT_FILE_ENCODING);
+		return ::CopyFileW(src16.c_str(), dest16.c_str(), !bOverride) == TRUE;
+#else
 		return ::CopyFile(src, dest, !bOverride) == TRUE;
+#endif
+		
 #endif
 	}
 	return false;
@@ -325,9 +339,16 @@ bool ParaEngine::CFileUtils::MoveFile(const char* src, const char* dest)
 #elif defined(USE_BOOST_FILE_API)
 	try
 	{
-		fs::path sSrc(src);
+#ifdef WIN32
+		std::wstring src16 = StringHelper::MultiByteToWideChar(src, DEFAULT_FILE_ENCODING);
+		std::wstring dest16 = StringHelper::MultiByteToWideChar(dest, DEFAULT_FILE_ENCODING);
+#else
+		auto src16 = src;
+		auto dest16 = dest;
+#endif
+		fs::path sSrc(src16);
 		boost::system::error_code err_code;
-		fs::rename(sSrc, fs::path(dest), err_code);
+		fs::rename(sSrc, fs::path(dest16), err_code);
 		OUTPUT_LOG("info (boost-fs): moved file/directory from %s to %s result message: %s\n", src, dest, err_code.message().c_str());
 		return err_code.value() == 0;
 	}
@@ -338,7 +359,14 @@ bool ParaEngine::CFileUtils::MoveFile(const char* src, const char* dest)
 #else
 	if (dest != NULL && src != NULL)
 	{
+		
+#ifdef DEFAULT_FILE_ENCODING
+		std::wstring src16 = StringHelper::MultiByteToWideChar(src, DEFAULT_FILE_ENCODING);
+		std::wstring dest16 = StringHelper::MultiByteToWideChar(dest, DEFAULT_FILE_ENCODING);
+		return ::MoveFileExW(src16.c_str(), dest16.c_str(), MOVEFILE_REPLACE_EXISTING | MOVEFILE_WRITE_THROUGH) == TRUE;
+#else
 		return ::MoveFileEx(src, dest, MOVEFILE_REPLACE_EXISTING | MOVEFILE_WRITE_THROUGH) == TRUE;
+#endif
 	}
 #endif
 	return false;
@@ -369,7 +397,12 @@ bool ParaEngine::CFileUtils::MakeDirectoryFromFilePath(const char * filename)
 #elif defined(USE_BOOST_FILE_API)
 	try
 	{
-		fs::path filePath(filename);
+#ifdef WIN32
+		LPCWSTR filename16 = StringHelper::MultiByteToWideChar(filename, DEFAULT_FILE_ENCODING);
+#else
+		auto filename16 = filename;
+#endif
+		fs::path filePath(filename16);
 		fs::path fileDir = filePath.parent_path();
 		if( !fs::exists(fileDir))
 			return fs::create_directories(fileDir);
@@ -394,12 +427,30 @@ bool ParaEngine::CFileUtils::MakeDirectoryFromFilePath(const char * filename)
 			if (i - start > 2 || (i - start == 1 && buf[start] != '.' && (buf[start] != '/' && buf[start] != '\\'))
 				|| (i - start == 2 && buf[start] != '.' && buf[start + 1] != '.')){
 				buf[i] = '\0';
-				if (_mkdir(buf) != 0){
+#ifdef DEFAULT_FILE_ENCODING
+#ifdef WIN32
+				LPCWSTR buf16 = StringHelper::MultiByteToWideChar(buf, DEFAULT_FILE_ENCODING);
+				if (!fs::exists(buf16)) {
+#else
+				if (!fs::exists(buf)) {
+#endif
+					BOOL ret = ::CreateDirectoryW(buf16, 0);
+					if (!ret) {
+						int err = errno;
+						if (err != EEXIST) {
+							return false;
+						}
+					}
+				}
+#else
+				int ret = _mkdir(buf);
+				if (ret != 0) {
 					int err = errno;
 					if (err != EEXIST) {
 						return false;
 					}
 				}
+#endif
 			}
 			start = i + 1;
 		}
@@ -454,7 +505,12 @@ bool ParaEngine::CFileUtils::SaveBufferToFile(const string& filename, bool bRepl
 	{
 		if(MakeDirectoryFromFilePath(filename.c_str())==false)
 			return false;
-		fs::path filePath(filename);
+#ifdef WIN32
+		LPCWSTR filename16 = StringHelper::MultiByteToWideChar(filename.c_str(), DEFAULT_FILE_ENCODING);
+#else
+		auto filename16 = filename;
+#endif
+		fs::path filePath(filename16);
 		if(fs::exists(filePath) && (bReplace == false))
 			return false;
 
@@ -471,7 +527,14 @@ bool ParaEngine::CFileUtils::SaveBufferToFile(const string& filename, bool bRepl
 		return false;
 	if (FileExist(filename.c_str()) && (bReplace == false))
 		return false;
-	HANDLE hFile = ::CreateFile(filename.c_str(), GENERIC_WRITE, 0, NULL, CREATE_ALWAYS, 0, NULL);
+	HANDLE hFile;
+#ifdef DEFAULT_FILE_ENCODING
+	LPCWSTR filename16 = StringHelper::MultiByteToWideChar(filename.c_str(), DEFAULT_FILE_ENCODING);
+	hFile = ::CreateFileW(filename16, GENERIC_WRITE, 0, NULL, CREATE_ALWAYS, 0, NULL);
+#else
+	hFile = ::CreateFile(filename.c_str(), GENERIC_WRITE, 0, NULL, CREATE_ALWAYS, 0, NULL);
+#endif
+ 
 	if (hFile != INVALID_HANDLE_VALUE)
 	{
 		DWORD w;
@@ -499,14 +562,24 @@ bool ParaEngine::CFileUtils::DeleteFile(const char* filename)
 #elif defined(USE_BOOST_FILE_API)
 	try
 	{
-		return fs::remove(filename);
+#ifdef WIN32
+		LPCWSTR filename16 = StringHelper::MultiByteToWideChar(filename, DEFAULT_FILE_ENCODING);
+#else
+		auto filename16 = filename;
+#endif
+		return fs::remove(filename16);
 	}
 	catch (...)
 	{
 		return false;
 	}
 #else
+#ifdef DEFAULT_FILE_ENCODING
+	LPCWSTR filename16 = StringHelper::MultiByteToWideChar(filename, DEFAULT_FILE_ENCODING);
+	return (::DeleteFileW(filename16) != 0);
+#else
 	return (::DeleteFile(filename) != 0);
+#endif
 #endif
 }
 
@@ -525,14 +598,25 @@ int ParaEngine::CFileUtils::DeleteDirectory(const char* filename)
 #elif defined(USE_BOOST_FILE_API)
 	try
 	{
-		return (int)fs::remove_all(filename);
+#ifdef WIN32
+		LPCWSTR filename16 = StringHelper::MultiByteToWideChar(filename, DEFAULT_FILE_ENCODING);
+#else
+		auto filename16 = filename;
+#endif
+		return (int)fs::remove_all(filename16);
 	}
 	catch (...)
 	{
 		return 0;
 	}
 #else
+	
+#ifdef DEFAULT_FILE_ENCODING
+	LPCWSTR filename16 = StringHelper::MultiByteToWideChar(filename, DEFAULT_FILE_ENCODING);
+	return ::DeleteFileW(filename16);
+#else
 	return ::DeleteFile(filename);
+#endif
 #endif
 }
 
@@ -545,8 +629,13 @@ int ParaEngine::CFileUtils::DeleteFiles(const std::string& sFilePattern, bool bS
 	std::string sRootPath = GetParentDirectoryFromPath(sFilePattern);
 	std::string sPattern = GetFileName(sFilePattern);
 	sRootPath = GetWritableFullPathForFilename(sRootPath);
+#ifdef WIN32
 	std::string sFullPattern = GetWritableFullPathForFilename(sFilePattern);
-	if (fs::is_directory(sFullPattern))
+	LPCWSTR sFullPattern16 = StringHelper::MultiByteToWideChar(sFullPattern.c_str(), DEFAULT_FILE_ENCODING);
+#else
+	std::string sFullPattern16 = GetWritableFullPathForFilename(sFilePattern);
+#endif
+	if (fs::is_directory(sFullPattern16))
 	{
 		nCount = CFileUtils::DeleteDirectory(sRootPath.c_str());
 	}
@@ -575,6 +664,89 @@ int ParaEngine::CFileUtils::DeleteFiles(const std::string& sFilePattern, bool bS
 	}
 	return nCount;
 #else
+
+#ifdef DEFAULT_FILE_ENCODING
+	WIN32_FIND_DATAW FindFileData;
+	HANDLE hFind = INVALID_HANDLE_VALUE;
+
+	wstring tmpDir_ = StringHelper::MultiByteToWideChar(GetParentDirectoryFromPath(sFilePattern, 0).c_str(), DEFAULT_FILE_ENCODING);
+	if (bSecureFolderOnly)
+	{
+		//TODO: search if the directory is outside the application directory. If so, we should now allow user to delete file there.
+		if (!CParaFile::IsWritablePath(sFilePattern, false))
+		{
+			// only relative path is allowed.
+			OUTPUT_LOG("security alert: some one is telling the engine to delete a file %s which is not allowed\r\n", sFilePattern.c_str());
+			return 0;
+		}
+	}
+
+	string DirSpec = sFilePattern;
+	DWORD dwError;
+	hFind = FindFirstFileW(StringHelper::MultiByteToWideChar(DirSpec.c_str(), DEFAULT_FILE_ENCODING), &FindFileData);
+
+	if (sFilePattern.size() > 0 && sFilePattern[sFilePattern.size() - 1] == '/')
+	{
+		std::string filename;
+		CParaFile::ToCanonicalFilePath(filename, sFilePattern, true);
+		std::wstring filename16 = StringHelper::MultiByteToWideChar(filename.c_str(), DEFAULT_FILE_ENCODING);
+		filename16.push_back(L'\0');
+		filename16.push_back(L'\0');
+		SHFILEOPSTRUCTW file_op = {
+			NULL,
+			FO_DELETE,
+			filename16.c_str(),
+			NULL,
+			FOF_NOCONFIRMATION |
+			FOF_NOERRORUI |
+			FOF_SILENT,
+			false,
+			0,
+			L"" };
+		auto ret = SHFileOperationW(&file_op);
+
+		return (ret == S_OK) ? 1 : 0;
+	}
+
+	int nFileCount = 0;
+	if (hFind == INVALID_HANDLE_VALUE)
+	{
+		return nFileCount;
+	}
+	else
+	{
+		// we will first read file to a cache location, and then delete in a batch. This may prevent file error on old FAT32 system. 
+		// NTFS works file to delete file during the FindNextFile() loop.
+		std::vector<std::wstring> files;
+		do
+		{
+			files.push_back(FindFileData.cFileName);
+			++nFileCount;
+		} while (FindNextFileW(hFind, &FindFileData) != 0);
+
+		dwError = GetLastError();
+		FindClose(hFind);
+
+		std::vector<std::wstring>::iterator itCur, itEnd = files.end();
+		for (itCur = files.begin(); itCur != itEnd; ++itCur)
+		{
+			std::wstring filename(tmpDir_ + (*itCur));
+			if (DeleteFileW(filename.c_str()))
+			{
+			}
+			else
+			{
+				OUTPUT_LOG("warning, unable to delete file %s\n", filename.c_str());
+			}
+		}
+
+		if (dwError == ERROR_NO_MORE_FILES)
+		{
+			return nFileCount;
+		}
+	}
+	return nFileCount;
+#else
 	WIN32_FIND_DATA FindFileData;
 	HANDLE hFind = INVALID_HANDLE_VALUE;
 
@@ -582,7 +754,7 @@ int ParaEngine::CFileUtils::DeleteFiles(const std::string& sFilePattern, bool bS
 	if (bSecureFolderOnly)
 	{
 		//TODO: search if the directory is outside the application directory. If so, we should now allow user to delete file there.
-		if(!CParaFile::IsWritablePath(sFilePattern, false))
+		if (!CParaFile::IsWritablePath(sFilePattern, false))
 		{
 			// only relative path is allowed.
 			OUTPUT_LOG("security alert: some one is telling the engine to delete a file %s which is not allowed\r\n", sFilePattern.c_str());
@@ -652,6 +824,8 @@ int ParaEngine::CFileUtils::DeleteFiles(const std::string& sFilePattern, bool bS
 		}
 	}
 	return nFileCount;
+#endif
+	
 #endif
 }
 
@@ -731,6 +905,20 @@ ParaEngine::FileData ParaEngine::CFileUtils::GetDataFromFile(const char* filenam
 	try
 	{
 		fs::ifstream file;
+#ifdef WIN32
+		if (!CParaFile::GetDevDirectory().empty() && !IsAbsolutePath(filename))
+		{
+			file.open(StringHelper::MultiByteToWideChar((CParaFile::GetDevDirectory() + filename).c_str(), DEFAULT_FILE_ENCODING), ios::in | ios::binary | ios::ate);
+			if (!file.is_open())
+			{
+				file.open(StringHelper::MultiByteToWideChar(filename, DEFAULT_FILE_ENCODING), ios::in | ios::binary | ios::ate);
+			}
+	}
+		else
+		{
+			file.open(StringHelper::MultiByteToWideChar(filename, DEFAULT_FILE_ENCODING), ios::in | ios::binary | ios::ate);
+		}
+#else
 		if (!CParaFile::GetDevDirectory().empty() && !IsAbsolutePath(filename))
 		{
 			file.open(CParaFile::GetDevDirectory() + filename, ios::in | ios::binary | ios::ate);
@@ -743,6 +931,8 @@ ParaEngine::FileData ParaEngine::CFileUtils::GetDataFromFile(const char* filenam
 		{
 			file.open(filename, ios::in | ios::binary | ios::ate);
 		}
+#endif
+		
 
 		if (file.is_open())
 		{
@@ -765,10 +955,22 @@ ParaEngine::FileData ParaEngine::CFileUtils::GetDataFromFile(const char* filenam
 	if (!CParaFile::GetDevDirectory().empty())
 	{
 		std::string sAbsFilePath = CParaFile::GetDevDirectory() + filename;
+#ifdef DEFAULT_FILE_ENCODING
+		LPCWSTR sAbsFilePath16 = StringHelper::MultiByteToWideChar(sAbsFilePath.c_str(), DEFAULT_FILE_ENCODING);
+		hFile = ::CreateFileW(sAbsFilePath16, GENERIC_READ, FILE_SHARE_DELETE | FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+#else
 		hFile = ::CreateFile(sAbsFilePath.c_str(), GENERIC_READ, FILE_SHARE_DELETE | FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+#endif
 	}
 	if (hFile == INVALID_HANDLE_VALUE)
+	{
+#ifdef DEFAULT_FILE_ENCODING
+		LPCWSTR filename16 = StringHelper::MultiByteToWideChar(filename, DEFAULT_FILE_ENCODING);
+		hFile = ::CreateFileW(filename16, GENERIC_READ, FILE_SHARE_DELETE | FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+#else
 		hFile = ::CreateFile(filename, GENERIC_READ, FILE_SHARE_DELETE | FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+#endif
+	}
 
 	FileData data;
 	if (hFile != INVALID_HANDLE_VALUE)
@@ -815,7 +1017,13 @@ ParaEngine::FileData ParaEngine::CFileUtils::GetResDataFromFile(const std::strin
 	if (!filename.empty() && filename[0] == ':')
 	{
 		HINSTANCE hInstance = CParaEngineApp::GetInstance()->GetModuleHandle();
-		HRSRC hSrc = ::FindResource(hInstance, filename.c_str() + 1, "textfile");
+		HRSRC hSrc;
+#ifdef DEFAULT_FILE_ENCODING
+		LPCWSTR filename16 = StringHelper::MultiByteToWideChar(filename.c_str(), DEFAULT_FILE_ENCODING);
+		hSrc = ::FindResourceW(hInstance, filename16 + 1, L"textfile");
+#else
+		hSrc = ::FindResource(hInstance, filename.c_str() + 1, "textfile");
+#endif
 		if (hSrc != NULL)
 		{
 			HGLOBAL hHandle = ::LoadResource(hInstance, hSrc);
@@ -864,7 +1072,12 @@ std::string ParaEngine::CFileUtils::GetFullPathForFilename(const std::string &fi
 	FileLock_type lock_(s_cocos_file_io_mutex);
 	return cocos2d::FileUtils::getInstance()->fullPathForFilename(filename);
 #elif defined(USE_BOOST_FILE_API)
-	fs::path filepath(filename);
+#ifdef WIN32
+	LPCWSTR filename16 = StringHelper::MultiByteToWideChar(filename.c_str(), DEFAULT_FILE_ENCODING);
+#else
+	auto filename16 = filename;
+#endif
+	fs::path filepath(filename16);
 	fs::path abs_path = fs::absolute(filepath);
 	return abs_path.string();
 #else
@@ -880,17 +1093,35 @@ bool ParaEngine::CFileUtils::FileExistRaw(const char* filename)
 	// TODO: Cocos API FileUtils::getInstance()->isDirectoryExist(sFile) could not detect directory correctly
 	return !sFile.empty() && (cocos2d::FileUtils::getInstance()->isFileExist(sFile) || cocos2d::FileUtils::getInstance()->isDirectoryExist(sFile));
 #elif defined USE_BOOST_FILE_API
-	return fs::exists(filename);
+#ifdef WIN32
+	LPCWSTR filename16 = StringHelper::MultiByteToWideChar(filename, DEFAULT_FILE_ENCODING);
+#else
+	auto filename16 = filename;
+#endif
+	return fs::exists(filename16);
 	/*bool bFound = fs::exists(filename);
 	OUTPUT_LOG("%s check raw %s\n", filename, bFound ? "true" : "false");
 	return bFound;*/
 #else
-	struct stat stFileInfo;
+	
 	bool blnReturn;
 	int intStat;
 
 	// Attempt to get the file attributes
+	
+#ifdef WIN32
+#ifdef DEFAULT_FILE_ENCODING
+	LPCWSTR filename16 = StringHelper::MultiByteToWideChar(filename, DEFAULT_FILE_ENCODING);
+	struct _stat64i32 wstFileInfo;
+	intStat = _wstat(filename16, &wstFileInfo);
+#else
+	struct stat stFileInfo;
 	intStat = stat(filename, &stFileInfo);
+#endif
+#else
+	struct stat stFileInfo;
+	intStat = stat(filename, &stFileInfo);
+#endif
 	if (intStat == 0) {
 		// We were able to get the file attributes
 		// so the file obviously exists.
@@ -917,13 +1148,25 @@ int ParaEngine::CFileUtils::GetFileSize(const char* sFilePath)
 #elif defined USE_BOOST_FILE_API
 	int nSize = 0;
 	try {
-		nSize = (int)fs::file_size(sFilePath);
+#ifdef WIN32
+		LPCWSTR sFilePath16 = StringHelper::MultiByteToWideChar(sFilePath, DEFAULT_FILE_ENCODING);
+#else
+		auto sFilePath16 = sFilePath;
+#endif
+		nSize = (int)fs::file_size(sFilePath16);
 	}
 	catch (...)	{}
 	return nSize;
 #else
 	DWORD dwFileSize = 0;
-	HANDLE hFile = ::CreateFile(sFilePath, FILE_READ_DATA/*GENERIC_READ*/, FILE_SHARE_DELETE | FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING, 0, NULL);
+	HANDLE hFile;
+#ifdef DEFAULT_FILE_ENCODING
+	LPCWSTR sFilePath16 = StringHelper::MultiByteToWideChar(sFilePath, DEFAULT_FILE_ENCODING);
+	hFile = ::CreateFileW(sFilePath16, FILE_READ_DATA/*GENERIC_READ*/, FILE_SHARE_DELETE | FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING, 0, NULL);
+#else
+	hFile = ::CreateFile(sFilePath, FILE_READ_DATA/*GENERIC_READ*/, FILE_SHARE_DELETE | FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING, 0, NULL);
+#endif
+	
 	if (hFile != INVALID_HANDLE_VALUE)
 	{
 		dwFileSize = ::GetFileSize(hFile, NULL);
@@ -951,15 +1194,23 @@ ParaEngine::FileHandle ParaEngine::CFileUtils::OpenFile(const char* filename, bo
 	FileHandle fileHandle;
 	fileHandle.m_pFile = pFile;
 	return fileHandle;
-#elif defined USE_BOOST_FILE_API
+#elif (defined USE_BOOST_FILE_API && !defined(WIN32))
 	std::string sFilePath = GetFullPathForFilename(filename);
 	FILE* pFile = fopen(sFilePath.c_str(), bRead ? (bWrite ? "w+b" : "rb") : "wb");
 	FileHandle fileHandle;
 	fileHandle.m_pFile = pFile;
 	return fileHandle;
 #else
-	HANDLE hFile = ::CreateFile(filename, (bRead ? GENERIC_READ : 0) | (bWrite ? GENERIC_WRITE : 0), (bRead ? FILE_SHARE_READ : 0) | (bWrite ? FILE_SHARE_WRITE : 0),
+	HANDLE hFile;
+#ifdef DEFAULT_FILE_ENCODING
+	LPCWSTR filename16 = StringHelper::MultiByteToWideChar(filename, DEFAULT_FILE_ENCODING);
+	hFile = ::CreateFileW(filename16, (bRead ? GENERIC_READ : 0) | (bWrite ? GENERIC_WRITE : 0), (bRead ? FILE_SHARE_READ : 0) | (bWrite ? FILE_SHARE_WRITE : 0),
 		NULL, bWrite ? OPEN_ALWAYS : 0, NULL, NULL);
+#else
+	hFile = ::CreateFile(filename, (bRead ? GENERIC_READ : 0) | (bWrite ? GENERIC_WRITE : 0), (bRead ? FILE_SHARE_READ : 0) | (bWrite ? FILE_SHARE_WRITE : 0),
+		NULL, bWrite ? OPEN_ALWAYS : 0, NULL, NULL);
+#endif
+	
 	if (hFile != INVALID_HANDLE_VALUE)
 	{
 		return FileHandle(hFile);
@@ -985,7 +1236,7 @@ bool ParaEngine::CFileUtils::SetFilePointer(FileHandle& fileHandle, int lDistanc
 		}
 #ifdef USE_COCOS_FILE_API
 		fseek(fileHandle.m_pFile, lDistanceToMove, dwMoveMethod);
-#elif defined USE_BOOST_FILE_API
+#elif (defined USE_BOOST_FILE_API && !defined(WIN32))
 		fseek(fileHandle.m_pFile, lDistanceToMove, dwMoveMethod);
 #else
 		::SetFilePointer(fileHandle.m_handle, lDistanceToMove, 0, dwMoveMethod);
@@ -1001,7 +1252,7 @@ int ParaEngine::CFileUtils::GetFilePosition(FileHandle& fileHandle)
 	{
 #ifdef USE_COCOS_FILE_API
 		return ftell(fileHandle.m_pFile);
-#elif defined USE_BOOST_FILE_API
+#elif (defined USE_BOOST_FILE_API && !defined(WIN32))
 		return ftell(fileHandle.m_pFile);
 #else
 		int nPos = ::SetFilePointer(fileHandle.m_handle, 0, NULL, FILE_CURRENT);
@@ -1018,7 +1269,7 @@ bool ParaEngine::CFileUtils::SetEndOfFile(FileHandle& fileHandle)
 #ifdef USE_COCOS_FILE_API
 		fseek(fileHandle.m_pFile, 0, SEEK_END);
 		return true;
-#elif defined USE_BOOST_FILE_API
+#elif (defined USE_BOOST_FILE_API && !defined(WIN32))
 		fseek(fileHandle.m_pFile, 0, SEEK_END);
 		return true;
 #else
@@ -1034,7 +1285,7 @@ int ParaEngine::CFileUtils::WriteBytes(FileHandle& fileHandle, const void* src, 
 	{
 #ifdef USE_COCOS_FILE_API
 		return (int)fwrite(src, 1, bytes, fileHandle.m_pFile);
-#elif defined USE_BOOST_FILE_API
+#elif (defined USE_BOOST_FILE_API && !defined(WIN32))
 		return (int)fwrite(src, 1, bytes, fileHandle.m_pFile);
 #else
 		DWORD bytesWritten;
@@ -1051,7 +1302,7 @@ int ParaEngine::CFileUtils::ReadBytes(FileHandle& fileHandle, void* dest, int by
 	{
 #ifdef USE_COCOS_FILE_API
 		return (int)fread(dest, 1, bytes, fileHandle.m_pFile);
-#elif defined USE_BOOST_FILE_API
+#elif (defined USE_BOOST_FILE_API && !defined(WIN32))
 		return (int)fread(dest, 1, bytes, fileHandle.m_pFile);
 #else
 		DWORD bytesRead = 0;
@@ -1069,7 +1320,7 @@ void ParaEngine::CFileUtils::CloseFile(FileHandle& fileHandle)
 #ifdef USE_COCOS_FILE_API
 		fclose(fileHandle.m_pFile);
 		fileHandle.m_pFile = nullptr;
-#elif defined USE_BOOST_FILE_API
+#elif (defined USE_BOOST_FILE_API && !defined(WIN32))
 		fclose(fileHandle.m_pFile);
 		fileHandle.m_pFile = nullptr;
 #else
@@ -1109,16 +1360,24 @@ std::string ParaEngine::CFileUtils::GetInitialDirectory()
 #else
 	char buf[1024 + 1];
 	int nCount;
-	if ((nCount = ::GetCurrentDirectory(1024, buf)) > 0)
-	{
-		if (buf[nCount - 1] != '/' && buf[nCount - 1] != '\\'){
-			buf[nCount] = '/';
-			buf[++nCount] = '\0';
+#ifdef DEFAULT_FILE_ENCODING
+	wchar_t buf16[1024 + 1];
+	nCount = ::GetCurrentDirectoryW(1024, buf16);
+	auto _buf = StringHelper::WideCharToMultiByte(buf16, DEFAULT_FILE_ENCODING);
+	strcpy(buf,_buf);
+#else
+	nCount = ::GetCurrentDirectory(1024, buf);
+#endif
+	if (nCount > 0) {
+		string bufstr = buf;
+		const char backC = bufstr.back();
+		if (backC != '/' && backC != '\\') {
+			bufstr.push_back('/');
 		}
 		string sAppRootPath;
-		CParaFile::ToCanonicalFilePath(sAppRootPath, buf, false);
+		CParaFile::ToCanonicalFilePath(sAppRootPath, bufstr, false);
 		return sAppRootPath;
-	}
+}
 	return "";
 #endif
 }
@@ -1258,7 +1517,18 @@ void FindFiles_Recursive(ParaEngine::CSearchResult& result, fs::path rootPath, c
 
 void ParaEngine::CFileUtils::FindDiskFiles(CSearchResult& result, const std::string& sRootPath, const std::string& sFilePattern, int nSubLevel)
 {
+#ifdef  WIN32
+#ifdef DEFAULT_FILE_ENCODING
+	std::wstring path;
+	std::string path8 = GetWritableFullPathForFilename(sRootPath);
+	path = StringHelper::MultiByteToWideChar(path8.c_str(), DEFAULT_FILE_ENCODING);
+#else
 	std::string path = GetWritableFullPathForFilename(sRootPath);
+#endif
+#else
+	std::string path = GetWritableFullPathForFilename(sRootPath);
+#endif //  DEFAULT_FILE_ENCODING
+	
 	fs::path rootPath(path);
 	if (!fs::exists(rootPath) || !fs::is_directory(rootPath)) {
 		OUTPUT_LOG("directory does not exist %s \n", rootPath.string().c_str());
