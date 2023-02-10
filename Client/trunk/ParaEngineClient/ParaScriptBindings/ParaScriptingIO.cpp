@@ -872,7 +872,7 @@ namespace ParaScripting
 			}
 			
 
-			string sSrcPath = dest;
+			string sSrcPath = src;
 			//TODO: search if the directory is outside the application directory. If so, we should now allow user to delete file there.
 			if (!CParaFile::IsWritablePath(sSrcPath))
 			{

@@ -9,6 +9,7 @@
 #include <shlobj.h>
 
 #include "CommonFileDialog.h"
+#include "StringHelper.h"
 
 using namespace ParaEngine;
 
@@ -31,8 +32,17 @@ INT CALLBACK BrowseCallbackProc(HWND hwnd, UINT uMsg,
 	case BFFM_INITIALIZED:
 		if (pData) 
 			strcpy(szDir, (TCHAR *)pData);
-		else 
-			GetCurrentDirectory(sizeof(szDir) / sizeof(TCHAR), szDir);
+		else {
+#ifdef DEFAULT_FILE_ENCODING
+			wchar_t sWorkingDir16[MAX_PATH] = { 0 };
+			memset(sWorkingDir16, 0, sizeof(sWorkingDir16));
+			::GetCurrentDirectoryW(MAX_PATH, sWorkingDir16);
+			auto _sWorkingDir = StringHelper::WideCharToMultiByte(sWorkingDir16, DEFAULT_FILE_ENCODING);
+			strcpy(szDir, _sWorkingDir);
+#else
+			::GetCurrentDirectory(sizeof(szDir) / sizeof(TCHAR), szDir);
+#endif
+		}
 
 		//selects the specified folder 
 		//in the Browse For Folder dialog box

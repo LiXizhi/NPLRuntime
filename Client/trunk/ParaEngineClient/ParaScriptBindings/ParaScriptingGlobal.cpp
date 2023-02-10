@@ -1976,6 +1976,15 @@ bool ParaScripting::ParaGlobal::OpenFileDialog(const object& inout)
 	}
 	char buf[MAX_LINE + 1] = { 0 };
 	int nCount = GetCurrentDirectory(MAX_LINE, buf);
+#ifdef DEFAULT_FILE_ENCODING
+	wchar_t sWorkingDir16[MAX_LINE + 1] = { 0 };
+	memset(sWorkingDir16, 0, sizeof(sWorkingDir16));
+	::GetCurrentDirectoryW(MAX_PATH, sWorkingDir16);
+	auto _sWorkingDir = StringHelper::WideCharToMultiByte(sWorkingDir16, DEFAULT_FILE_ENCODING);
+	strcpy(buf, _sWorkingDir);
+#else
+	::GetCurrentDirectory(MAX_PATH, sWorkingDir);
+#endif
 
 	// switch to windowed mode to display the win32 common dialog.
 	bool bOldWindowed = CParaEngineApp::GetInstance()->IsWindowedMode();  // Preserve original windowed flag
@@ -1992,8 +2001,15 @@ bool ParaScripting::ParaGlobal::OpenFileDialog(const object& inout)
 	}
 
 	// reset directory. 
-	if (nCount > 0)
+	if (nCount > 0) {
+#ifdef DEFAULT_FILE_ENCODING
+		LPCWSTR buf16 = StringHelper::MultiByteToWideChar(buf, DEFAULT_FILE_ENCODING);
+		SetCurrentDirectoryW(buf16);
+#else
 		SetCurrentDirectory(buf);
+#endif
+	}
+		
 
 	inout["result"] = bResult;
 	if (bResult)
