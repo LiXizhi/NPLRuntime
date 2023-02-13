@@ -13,6 +13,7 @@
 #include "ParaEngineSettings.h"
 #include "util/StringHelper.h"
 
+
 @implementation KeyboardiOSController
 
 static KeyboardiOSController *instance = nil;
@@ -21,6 +22,7 @@ static BOOL mUpdateViewSizeWhenKeyboardChange = NO;
 static ParaTextField *mTextField = nil;
 static BOOL isGuiEdit;
 static NSString *curEditText;
+static NSString *lastText = @"";
 static int selStart;
 static int selEnd;
 
@@ -118,6 +120,11 @@ static int selEnd;
     return isGuiEdit;
 }
 
++ (ParaTextField *)GetTextField
+{
+    return mTextField;
+}
+
 + (void)setIMEKeyboardState:(BOOL)bOpen bMoveView:(BOOL)bMoveView ctrlBottom:(int)ctrlBottom editParams:(NSString *)editParams;
 {
     if (mTextField == nil) {
@@ -130,7 +137,7 @@ static int selEnd;
     if (pGUI != NULL) {
         isGuiEdit = YES;
     }
-    
+
     NSData *editParamsData = [editParams dataUsingEncoding:NSUTF8StringEncoding];
     id editParamsJson = [NSJSONSerialization JSONObjectWithData:editParamsData options:NSJSONReadingAllowFragments error:nil];
     NSDictionary *editParamsDictionary;
@@ -245,12 +252,94 @@ static int selEnd;
 
             pGUI->SetCaretPosition((int)setCaretPosition);
         } else {
-            std::wstring s;
-            s = (WCHAR)[mTextField.text characterAtIndex:0];
+            auto pGUIIns = ParaEngine::CGUIRoot::GetInstance();
 
-            pGUI->OnHandleWinMsgChars(s);
-            
-            mTextField.text = @"";
+            if ([lastText isEqualToString:mTextField.text]) {
+                return;
+            }
+
+            // diff
+            if ([lastText length] > [mTextField.text length]) {
+                NSString *sameStr = @"";
+                NSString *lastDiffStr = @"";
+                NSString *textFieldDiffStr = @"";
+                BOOL forceDiff = NO;
+
+                for (int i = 0;i < [lastText length];i++) {
+                    unichar lastTextCharItem = [lastText characterAtIndex:i];
+
+                    if (i < [mTextField.text length]) {
+                        unichar textFieldCharItem = [mTextField.text characterAtIndex:i];
+
+                        if (lastTextCharItem == textFieldCharItem && !forceDiff) {
+                            sameStr = [sameStr stringByAppendingString:[NSString stringWithCharacters:&textFieldCharItem length:1]];
+                        } else {
+                            forceDiff = YES;
+                            lastDiffStr = [lastDiffStr stringByAppendingString:[NSString stringWithCharacters:&lastTextCharItem length:1]];
+                            textFieldDiffStr = [textFieldDiffStr stringByAppendingString:[NSString stringWithCharacters:&textFieldCharItem length:1]];
+                        }
+                    } else {
+                        lastDiffStr = [lastDiffStr stringByAppendingString:[NSString stringWithCharacters:&lastTextCharItem length:1]];
+                    }
+                }
+
+                for (int i = 0;i < [lastDiffStr length];i++) {
+                    std::string str = "[#backspace]";
+                    std::wstring w_str = ParaEngine::StringHelper::MultiByteToWideChar(str.c_str(), CP_UTF8);
+
+                    pGUI->OnHandleWinMsgChars(w_str);
+                }
+
+                for (int i = 0;i < [textFieldDiffStr length];i++) {
+                    std::wstring s;
+                    s = (WCHAR)[textFieldDiffStr characterAtIndex:i];
+                    unichar charItem = [textFieldDiffStr characterAtIndex:i];
+
+                    pGUI->OnHandleWinMsgChars(s);
+                }
+            } else {
+                NSString *sameStr = @"";
+                NSString *lastDiffStr = @"";
+                NSString *textFieldDiffStr = @"";
+                BOOL forceDiff = NO;
+
+                for (int i = 0;i < [mTextField.text length];i++) {
+                    unichar textFieldCharItem = [mTextField.text characterAtIndex:i];
+ 
+                    if (i < [lastText length]) {
+                        unichar lastTextCharItem = [lastText characterAtIndex:i];
+                        
+                        if (lastTextCharItem == textFieldCharItem && !forceDiff) {
+                            sameStr = [sameStr stringByAppendingString:[NSString stringWithCharacters:&lastTextCharItem length:1]];
+                        } else {
+                            forceDiff = YES;
+                            lastDiffStr = [lastDiffStr stringByAppendingString:[NSString stringWithCharacters:&lastTextCharItem length:1]];
+                            textFieldDiffStr = [textFieldDiffStr stringByAppendingString:[NSString stringWithCharacters:&textFieldCharItem length:1]];
+                        }
+                    } else {
+                        textFieldDiffStr = [textFieldDiffStr stringByAppendingString:[NSString stringWithCharacters:&textFieldCharItem length:1]];
+                    }
+                }
+
+                ParaEngine::CGUIBase *pGUI = ParaEngine::CGUIRoot::GetInstance()->GetUIKeyFocus();
+
+                for (int i = 0;i < [lastDiffStr length];i++) {
+                    std::string str = "[#backspace]";
+                    std::wstring w_str = ParaEngine::StringHelper::MultiByteToWideChar(str.c_str(), CP_UTF8);
+
+                    pGUI->OnHandleWinMsgChars(w_str);
+                }
+
+                for (int i = 0;i < [textFieldDiffStr length];i++) {
+                    std::wstring s;
+                    s = (WCHAR)[textFieldDiffStr characterAtIndex:i];
+                    unichar charItem = [textFieldDiffStr characterAtIndex:i];
+
+                    pGUI->OnHandleWinMsgChars(s);
+                }
+            }
+
+            lastText = mTextField.text;
         }
     }
 }

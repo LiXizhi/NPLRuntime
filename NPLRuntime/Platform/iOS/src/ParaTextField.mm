@@ -12,11 +12,16 @@
 - (void)deleteBackward
 {
     if (![KeyboardiOSController getIsGuiEdit]) {
+        if ([[KeyboardiOSController GetTextField].text length] > 0) {
+            [super deleteBackward];
+            return;
+        }
+
         auto pGUIIns = ParaEngine::CGUIRoot::GetInstance();
         pGUIIns->SendKeyDownEvent(ParaEngine::EVirtualKey::KEY_BACK);
         pGUIIns->SendKeyUpEvent(ParaEngine::EVirtualKey::KEY_BACK);
     }
-    
+
     [super deleteBackward];
 }
 
