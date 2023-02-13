@@ -249,6 +249,9 @@ namespace ParaEngine
 			public:
 				_CodePageName()
 				{
+#ifdef DEFAULT_GUI_ENCODING
+					name = "utf-8";
+#else
 #ifdef WIN32
 					auto cp = GetACP();
 					char tmp[30];
@@ -258,6 +261,7 @@ namespace ParaEngine
 					name += tmp;
 #else
 					name = "utf-8";
+#endif
 #endif
 				}
 
