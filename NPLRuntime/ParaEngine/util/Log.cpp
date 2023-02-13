@@ -269,8 +269,10 @@ namespace ParaEngine
 		if (pStr==NULL) {
 			return;
 		}
-#if ANDROID
-	LOGI(pStr);
+
+		// On some mobile phones, typing in Chinese logs will crash, just cancel it
+#if (ANDROID && defined(_DEBUG))
+		LOGI(pStr);
 #endif
 
 #if __APPLE__
