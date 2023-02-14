@@ -50,19 +50,31 @@ void ParaEngine::CViewport::ApplyCamera(CAutoCamera* pCamera)
 	{
 		pCamera->EnableStereoVision(true);
 		pCamera->SetStereoEyeShiftDistance(GetEyeMode() == STEREO_EYE_LEFT ? -GetStereoEyeSeparation() : GetStereoEyeSeparation());
-		pCamera->UpdateViewMatrix();
 		if (m_stereoODSparam.isODS) {
 			pCamera->SetStereoEyeShiftDistance(m_stereoODSparam.eyeShiftDistance);
+			DVector3 dEyePos = m_stereoODSparam.oldEyePos;
+			DVector3 oldLookAtPos = m_stereoODSparam.oldLookAtPos;
 
 			if (m_stereoODSparam.m_nOmniForceLookatDistance>0) {
 				pCamera->SetForceOmniCameraObjectDistance(m_stereoODSparam.m_nOmniForceLookatDistance);
 			}
+			double fCameraObjectDist = pCamera->GetCameraObjectDistance();
 			if (m_stereoODSparam.m_bOmniAlwaysUseUpFrontCamera) {
 				pCamera->SetForceOmniCameraPitch(0);
+				//始终水平，将oldLookAtPos旋转到水平方向上
+				{
+					Vector3 sightDir = oldLookAtPos - dEyePos;
+					sightDir.normalise();
+
+					Vector3 newSightDir = sightDir;
+					newSightDir.y = 0;
+					newSightDir.normalise();
+					DVector3 newLookAt = DVector3(newSightDir * fCameraObjectDist) + dEyePos;
+
+					oldLookAtPos = newLookAt;
+				}				
 			}
-			double fCameraObjectDist = pCamera->GetCameraObjectDistance();
-			DVector3 dEyePos = m_stereoODSparam.oldEyePos;
-			DVector3 oldLookAtPos = m_stereoODSparam.oldLookAtPos;
+			pCamera->UpdateViewMatrix();			
 			m_stereoODSparam.needRecoverCamera = true;
 
 			Vector3 &up = pCamera->GetWorldUp();
@@ -127,6 +139,9 @@ void ParaEngine::CViewport::ApplyCamera(CAutoCamera* pCamera)
 			pCamera->SetViewParams(dEyePos, oldLookAtPos, &up);
 			pCamera->SetFieldOfView(m_stereoODSparam.fov, m_stereoODSparam.fov_h);
 			
+		}
+		else {
+			pCamera->UpdateViewMatrix();
 		}
 	}
 	else

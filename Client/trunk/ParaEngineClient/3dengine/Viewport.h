@@ -85,11 +85,12 @@ namespace ParaEngine
 			bool needRecoverCamera;
 			DVector3 oldEyePos;
 			DVector3 oldLookAtPos;
+			Vector3 oldRightDir;
 			float oldFov;
 
 			bool m_bOmniAlwaysUseUpFrontCamera;
 			int m_nOmniForceLookatDistance;
-			float oldCameraRotX;
+			float oldPitch;
 			float oldCameraDistance;
 
 			int ods_group_idx;
@@ -107,6 +108,9 @@ namespace ParaEngine
 				m_nOmniForceLookatDistance = 20;
 				ods_group_idx = -1;
 				ods_group_size = 0;
+				oldPitch = 0;
+				oldCameraDistance = 8;
+				oldRightDir = Vector3(0,0,1);
 			}
 			inline StereoODSparam& operator = (const StereoODSparam& target)
 			{
@@ -126,6 +130,9 @@ namespace ParaEngine
 				m_nOmniForceLookatDistance = target.m_nOmniForceLookatDistance;
 				ods_group_idx = target.ods_group_idx;
 				ods_group_size = target.ods_group_size;
+				oldPitch = target.oldPitch;
+				oldCameraDistance = target.oldCameraDistance;
+				oldRightDir = target.oldRightDir;
 				return *this;
 			}
 		};
