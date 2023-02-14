@@ -18,7 +18,7 @@ public class PlatformBridge {
     public static native void onNativeCallback(long luaCbPtr,final String result);
 
     public static String call_native(final String key,final String jsonParam) {
-        Activity act = ParaEngineActivity.getContext();
+        ParaEngineActivity act = ParaEngineActivity.getContext();
         String ret = "";
         if(key.equals("test")){
             ret = "aaa_111";
@@ -68,6 +68,8 @@ public class PlatformBridge {
 
         }else if(key.equals("getChannelId")){
             ret = getChannelId(act);
+        }else if(key.equals("onAgreeUserPrivacy")){
+            act.onAgreeUserPrivacy();
         }
         return ret;
     }

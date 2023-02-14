@@ -48,10 +48,18 @@ public class ParaEngineHelper {
 	private static native void OpenFileDialogNativeCallback(String filepath);
 
 	private static boolean mCanReadPhoneState = false;
+	public static void setCanReadPhoneState(boolean bool){
+		mCanReadPhoneState = bool;
+	}
 
 	public static void init(final Activity activity, boolean bReadPhoneState) {
 		mCanReadPhoneState = bReadPhoneState;
 		ParaEngineHelper.nativeSetContext((Context)activity, activity.getAssets());
+	}
+
+	private static boolean bHasAgreeUserPrivacy = false;
+	public static void onAgreeUserPrivacy(){
+		bHasAgreeUserPrivacy = true;
 	}
 
 	public static String getCurrentLanguage() {
@@ -171,6 +179,9 @@ public class ParaEngineHelper {
 	}
 
 	public static int getWifiIP() {
+		if(!bHasAgreeUserPrivacy){
+			return 0;
+		}
 		WifiManager wifiManager = (WifiManager) ParaEngineActivity.getContext().getApplicationContext().getSystemService(Context.WIFI_SERVICE);
 		WifiInfo wifiInfo = wifiManager.getConnectionInfo();
 		int ipAddress = wifiInfo.getIpAddress();
@@ -179,6 +190,9 @@ public class ParaEngineHelper {
 	}
 
 	private  static String _getWifiMAC() {
+		if(!bHasAgreeUserPrivacy){
+			return "";
+		}
 		try	{
 			WifiManager wifiManager = (WifiManager) ParaEngineActivity.getContext().getApplicationContext().getSystemService(Context.WIFI_SERVICE);
 			WifiInfo wifiInfo = wifiManager.getConnectionInfo();
@@ -193,6 +207,9 @@ public class ParaEngineHelper {
 	}
 
 	public static String getWifiMAC() {
+		if(!bHasAgreeUserPrivacy){
+			return "";
+		}
 		try {
 			List<NetworkInterface> all = Collections.list(NetworkInterface.getNetworkInterfaces());
 
@@ -221,6 +238,9 @@ public class ParaEngineHelper {
 
 	public static String getMachineID()
 	{
+		if(!bHasAgreeUserPrivacy){
+			return "";
+		}
 		String sn =
 			Settings.Secure.getString(
 				ParaEngineActivity.getContext().getContentResolver(),

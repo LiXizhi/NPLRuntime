@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">Paracraft</string>
+    <string name="app_name">帕拉卡</string>
     <!--EditBox Confirm Button Name-->
     <string name="done" translatable="false">完成</string>
     <string name="next" translatable="false">下一个</string>
