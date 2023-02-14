@@ -388,8 +388,6 @@ void ParaEngine::CViewportManager::SetLayout(VIEWPORT_LAYOUT nLayout, CSceneObje
 		const float fov_h = diffRotY;
 		const float fov_v = atan(tan(MATH_PI / num) / aspect) * 2;
 
-		std::shared_ptr<CRenderTarget> pSharedRenderTarget = NULL;
-
 		const int ods_group_size = 6;//有几个viewPort共用一个renderTarget
 		const std::string randerTargetname = "ods_render_target";
 
@@ -426,17 +424,6 @@ void ParaEngine::CViewportManager::SetLayout(VIEWPORT_LAYOUT nLayout, CSceneObje
 			param.ods_group_idx = i;
 			param.ods_group_size = ods_group_size;
 			viewport->SetStereoODSparam(param);
-
-			if (pSharedRenderTarget == NULL) {
-				viewport->SetRenderTargetName(randerTargetname);
-				pSharedRenderTarget = viewport->GetRenderTarget();
-				pSharedRenderTarget.get()->SetRenderTargetSize(Vector2(cubeWidth*4.0f, cubeWidth*2.0f));
-				pSharedRenderTarget.get()->GetPrimaryAsset();
-				pSharedRenderTarget.get()->SetHasSetRenderTargetSize(true);
-			}
-			else {
-				viewport->SetRenderTarget(pSharedRenderTarget);
-			}
 		}
 
 		portNum += ods_group_size;
