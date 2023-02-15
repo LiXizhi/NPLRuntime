@@ -145,7 +145,7 @@ static int selEnd;
     if ([editParamsJson isKindOfClass:[NSDictionary class]]) {
         editParamsDictionary = (NSDictionary *)editParamsJson;
     }
-    
+
     curEditText = [editParamsDictionary valueForKey: @"curEditText"];
     selStart = (int)[editParamsDictionary[@"selStart"] integerValue];
     selEnd = (int)[editParamsDictionary[@"selEnd"] integerValue];
@@ -154,6 +154,7 @@ static int selEnd;
     mCtrlBottom = ctrlBottom;
 
     if (bOpen) {
+        [mTextField becomeFirstResponder];
         [NSTimer scheduledTimerWithTimeInterval:0.01 target:instance selector:@selector(keyboardOnPressed) userInfo:nil repeats:NO];
     }
 
@@ -210,22 +211,23 @@ static int selEnd;
         if (selEnd <= 0 && [curEditText length] > 0) {
             selStart = selEnd = (int)MAX([curEditText length], 0);
         }
+
+        mTextField.text = @"";
+        lastText = @"";
+    } else {
+        NSInteger curCaretPosition = pGUI->GetCaretPosition();
         
-        return;
+        std::string _curText;
+        pGUI->GetTextA(_curText);
+
+        NSString *curText = [NSString stringWithUTF8String:_curText.c_str()];
+        
+        mTextField.text = curText;
+        
+        UITextPosition *newPos = [mTextField positionFromPosition:mTextField.beginningOfDocument offset:curCaretPosition];
+        UITextRange *newRange = [mTextField textRangeFromPosition:newPos toPosition:newPos];
+        mTextField.selectedTextRange = newRange;
     }
-
-    NSInteger curCaretPosition = pGUI->GetCaretPosition();
-    
-    std::string _curText;
-    pGUI->GetTextA(_curText);
-
-    NSString *curText = [NSString stringWithUTF8String:_curText.c_str()];
-    
-    mTextField.text = curText;
-    
-    UITextPosition *newPos = [mTextField positionFromPosition:mTextField.beginningOfDocument offset:curCaretPosition];
-    UITextRange *newRange = [mTextField textRangeFromPosition:newPos toPosition:newPos];
-    mTextField.selectedTextRange = newRange;
 }
 
 - (BOOL)textField:(UITextField *)textField shouldChangeCharactersInRange:(NSRange)range replacementString:(NSString *)string;
@@ -348,6 +350,8 @@ static int selEnd;
 {
     if (isGuiEdit) {
         return NO;
+    } else {
+        mTextField.text = @"";
     }
 
     if (ParaEngine::CGlobals::GetApp()->GetAppState() == ParaEngine::PEAppState_Ready)
