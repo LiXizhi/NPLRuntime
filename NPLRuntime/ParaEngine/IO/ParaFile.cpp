@@ -765,9 +765,6 @@ bool ParaEngine::CParaFile::OpenFile(CArchive *pArchive, const char* filename, b
 
 bool CParaFile::OpenFile(const char* sfilename, bool bReadyOnly, const char* relativePath, bool bUseCompressed, uint32 dwWhereToOpen)
 {
-	if (std::string(sfilename).find("tempWriteFile.txt") != std::string::npos) {
-		int i = 0;
-	}
 	int32 dwFoundPlace = FILE_NOT_FOUND;
 	if (dwWhereToOpen != FILE_ON_ZIP_ARCHIVE && ((dwWhereToOpen & FILE_ON_ZIP_ARCHIVE) > 0))
 	{
