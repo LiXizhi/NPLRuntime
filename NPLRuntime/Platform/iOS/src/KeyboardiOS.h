@@ -43,6 +43,8 @@ namespace ParaEngine
 
 + (BOOL)getIsGuiEdit;
 
++ (ParaTextField *)GetTextField;
+
 + (void)setIMEKeyboardState:(BOOL)bOpen bMoveView:(BOOL)bMoveView ctrlBottom:(int)ctrlBottom editParams:(NSString *)editParams;
 
 @end

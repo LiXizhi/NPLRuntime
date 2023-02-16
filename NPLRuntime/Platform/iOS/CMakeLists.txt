@@ -48,6 +48,7 @@ target_link_libraries(Paracraft PUBLIC
     ${Photos}
     ${AudioToolbox}
     ${AVFoundation}
+    ${CoreTelephony}
     RenderSystemOpenGL
     ParaEngine
 )
