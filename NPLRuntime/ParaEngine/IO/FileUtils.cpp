@@ -327,7 +327,7 @@ int ParaEngine::CFileUtils::DeleteFiles(const std::string& sFilePattern, bool bS
 #if defined(WIN32) && defined(DEFAULT_FILE_ENCODING)
 	LPCWSTR sFullPattern16 = StringHelper::MultiByteToWideChar(sFullPattern.c_str(), DEFAULT_FILE_ENCODING);
 #else 
-	auto sFullPattern16 = sFullPattern;
+	const auto& sFullPattern16 = sFullPattern;
 #endif
 	if (fs::is_directory(sFullPattern16,err_code))
 	{
@@ -517,7 +517,7 @@ int ParaEngine::CFileUtils::GetFileSize(const char* sFilePath)
 #if defined(WIN32) && defined(DEFAULT_FILE_ENCODING)
 		LPCWSTR sFilePath16 = StringHelper::MultiByteToWideChar(sFilePath, DEFAULT_FILE_ENCODING);
 #else 
-		auto sFilePath16 = sFilePath;
+		const auto& sFilePath16 = sFilePath;
 #endif
 		nResult = (int)fs::file_size(sFilePath16);
 	}
@@ -746,7 +746,12 @@ void FindFiles_Recursive(ParaEngine::CSearchResult& result, fs::path rootPath, c
 					FILETIME fileLastWriteTime;
 					ParaEngine::TimetToFileTime(lastWriteTime, &fileLastWriteTime);
 
+#if defined(WIN32) && defined(DEFAULT_FILE_ENCODING)
+					std::wstring sFullPath16 = iter->path().wstring();
+					std::string sFullPath = ParaEngine::StringHelper::WideCharToMultiByte(sFullPath16.c_str(), DEFAULT_FILE_ENCODING);
+#else
 					std::string sFullPath = iter->path().string();
+#endif
 #ifdef WIN32
 					ParaEngine::CParaFile::ToCanonicalFilePath(sFullPath, sFullPath, false);
 #endif
@@ -760,7 +765,12 @@ void FindFiles_Recursive(ParaEngine::CSearchResult& result, fs::path rootPath, c
 					auto lastWriteTime = fs::last_write_time(iter->path());
 					FILETIME fileLastWriteTime;
 					ParaEngine::TimetToFileTime(lastWriteTime, &fileLastWriteTime);
+#if defined(WIN32) && defined(DEFAULT_FILE_ENCODING)
+					std::wstring sFullPath16 = iter->path().wstring();
+					std::string sFullPath = ParaEngine::StringHelper::WideCharToMultiByte(sFullPath16.c_str(), DEFAULT_FILE_ENCODING);
+#else
 					std::string sFullPath = iter->path().string();
+#endif
 #ifdef WIN32
 					ParaEngine::CParaFile::ToCanonicalFilePath(sFullPath, sFullPath, false);
 #endif
@@ -779,7 +789,12 @@ void FindFiles_Recursive(ParaEngine::CSearchResult& result, fs::path rootPath, c
 					auto lastWriteTime = fs::last_write_time(iter->path());
 					FILETIME fileLastWriteTime;
 					ParaEngine::TimetToFileTime(lastWriteTime, &fileLastWriteTime);
+#if defined(WIN32) && defined(DEFAULT_FILE_ENCODING)
+					std::wstring sFullPath16 = iter->path().wstring();
+					std::string sFullPath = ParaEngine::StringHelper::WideCharToMultiByte(sFullPath16.c_str(), DEFAULT_FILE_ENCODING);
+#else
 					std::string sFullPath = iter->path().string();
+#endif
 #ifdef WIN32
 					ParaEngine::CParaFile::ToCanonicalFilePath(sFullPath, sFullPath, false);
 #endif
@@ -805,7 +820,12 @@ void ParaEngine::CFileUtils::FindDiskFiles(CSearchResult& result, const std::str
 		OUTPUT_LOG("directory does not exist %s \n", rootPath.string().c_str());
 		return;
 	}
+#if defined(WIN32) && defined(DEFAULT_FILE_ENCODING)
+	std::string root = StringHelper::WideCharToMultiByte(rootPath.wstring().c_str(), DEFAULT_FILE_ENCODING);
+	result.SetRootPath(root);
+#else
 	result.SetRootPath(rootPath.string());
+#endif
 	FindFiles_Recursive(result, rootPath, sFilePattern, nSubLevel);
 }
 
@@ -841,7 +861,7 @@ bool ParaEngine::CFileUtils::WriteLastModifiedTimeToDisk(FileHandle& fileHandle,
 #else
 		auto sFilePath16 = sFilePath;
 #endif
-		fs::path filePath(sFilePath16.c_str());
+		fs::path filePath(sFilePath16);
 		boost::system::error_code err_code;
 		fs::last_write_time(filePath, lastModifiedTime, err_code);
 		op_result = (err_code.value() == boost::system::errc::success);

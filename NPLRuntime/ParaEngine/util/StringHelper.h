@@ -249,7 +249,7 @@ namespace ParaEngine
 			public:
 				_CodePageName()
 				{
-#ifdef DEFAULT_GUI_ENCODING
+#ifdef DEFAULT_FILE_ENCODING
 					name = "utf-8";
 #else
 #ifdef WIN32
