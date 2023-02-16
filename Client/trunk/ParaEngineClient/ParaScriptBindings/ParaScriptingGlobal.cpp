@@ -1983,6 +1983,7 @@ bool ParaScripting::ParaGlobal::OpenFileDialog(const object& inout)
 	auto _sWorkingDir = StringHelper::WideCharToMultiByte(sWorkingDir16, DEFAULT_FILE_ENCODING);
 	strcpy(buf, _sWorkingDir);
 #else
+	char sWorkingDir[MAX_LINE + 1] = { 0 };
 	::GetCurrentDirectory(MAX_PATH, sWorkingDir);
 #endif
 

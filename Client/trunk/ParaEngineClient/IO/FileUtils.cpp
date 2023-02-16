@@ -1469,7 +1469,13 @@ void FindFiles_Recursive(ParaEngine::CSearchResult& result, fs::path rootPath, c
 					FILETIME fileLastWriteTime;
 					TimetToFileTime(lastWriteTime, &fileLastWriteTime);
 
+					
+#ifdef DEFAULT_FILE_ENCODING
+					std::wstring sFullPath16 = iter->path().wstring();
+					std::string sFullPath = ParaEngine::StringHelper::WideCharToMultiByte(sFullPath16.c_str(), DEFAULT_FILE_ENCODING);
+#else
 					std::string sFullPath = iter->path().string();
+#endif
 #ifdef WIN32
 					ParaEngine::CParaFile::ToCanonicalFilePath(sFullPath, sFullPath, false);
 #endif
@@ -1483,7 +1489,12 @@ void FindFiles_Recursive(ParaEngine::CSearchResult& result, fs::path rootPath, c
 					auto lastWriteTime = fs::last_write_time(iter->path());
 					FILETIME fileLastWriteTime;
 					TimetToFileTime(lastWriteTime, &fileLastWriteTime);
+#ifdef DEFAULT_FILE_ENCODING
+					std::wstring sFullPath16 = iter->path().wstring();
+					std::string sFullPath = ParaEngine::StringHelper::WideCharToMultiByte(sFullPath16.c_str(), DEFAULT_FILE_ENCODING);
+#else
 					std::string sFullPath = iter->path().string();
+#endif
 #ifdef WIN32
 					ParaEngine::CParaFile::ToCanonicalFilePath(sFullPath, sFullPath, false);
 #endif
@@ -1502,7 +1513,12 @@ void FindFiles_Recursive(ParaEngine::CSearchResult& result, fs::path rootPath, c
 					auto lastWriteTime = fs::last_write_time(iter->path());
 					FILETIME fileLastWriteTime;
 					TimetToFileTime(lastWriteTime, &fileLastWriteTime);
+#ifdef DEFAULT_FILE_ENCODING
+					std::wstring sFullPath16 = iter->path().wstring();
+					std::string sFullPath = ParaEngine::StringHelper::WideCharToMultiByte(sFullPath16.c_str(), DEFAULT_FILE_ENCODING);
+#else
 					std::string sFullPath = iter->path().string();
+#endif
 #ifdef WIN32
 					ParaEngine::CParaFile::ToCanonicalFilePath(sFullPath, sFullPath, false);
 #endif
@@ -1534,7 +1550,12 @@ void ParaEngine::CFileUtils::FindDiskFiles(CSearchResult& result, const std::str
 		OUTPUT_LOG("directory does not exist %s \n", rootPath.string().c_str());
 		return;
 	}
+#ifdef DEFAULT_FILE_ENCODING
+	std::string root = StringHelper::WideCharToMultiByte(rootPath.wstring().c_str(), DEFAULT_FILE_ENCODING);
+	result.SetRootPath(root);
+#else
 	result.SetRootPath(rootPath.string());
+#endif
 	FindFiles_Recursive(result, rootPath, sFilePattern, nSubLevel);
 
 #ifdef OLD_FILE_SEARCH
