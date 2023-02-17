@@ -11,6 +11,8 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 
+#include "StringHelper.h"
+
 #ifdef WIN32
 #include <io.h>
 #include <stdio.h>
@@ -89,7 +91,13 @@ void* ParaEngine::LoadLibrary(const char *pcDllname, int iMode)
 #ifndef LOAD_LIBRARY_SEARCH_DLL_LOAD_DIR
 	return (void*)::LoadLibraryEx(sDllName.c_str(), NULL, 0);
 #else
-	void * pDll = (void*)::LoadLibrary(sDllName.c_str()); 
+#ifdef DEFAULT_FILE_ENCODING
+	LPCWSTR sDllName16 = StringHelper::MultiByteToWideChar(sDllName.c_str(), DEFAULT_FILE_ENCODING);
+	void* pDll = (void*)::LoadLibraryW(sDllName16);
+#else
+	void* pDll = (void*)::LoadLibrary(sDllName.c_str());
+#endif
+	
 	if (pDll == NULL) 
 	{
 		// Note: in case of win7 before 2011, LoadLibraryEx is not supported

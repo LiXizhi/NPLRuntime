@@ -204,7 +204,13 @@ bool ParaGlobal::WriteToFile(const char* filename, const char* strMessage)
 	FILE *file;
 	std::string fname = filename;
 	CParaFile::MakeDirectoryFromFilePath(fname.c_str());
-	if ((file = ::fopen(filename, "w+")) == NULL) {
+#ifdef DEFAULT_FILE_ENCODING
+	LPCWSTR filename16 = StringHelper::MultiByteToWideChar(filename, DEFAULT_FILE_ENCODING);
+	file = ::_wfopen(filename16, L"w+");
+#else
+	file = ::fopen(filename, "w+");
+#endif
+	if (file == NULL) {
 		return false;
 	}
 	size_t length = ::strlen(strMessage);
