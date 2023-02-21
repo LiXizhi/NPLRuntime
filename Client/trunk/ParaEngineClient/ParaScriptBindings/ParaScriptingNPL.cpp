@@ -1571,10 +1571,11 @@ namespace ParaScripting
 		{
 			lua_State* L = pRuntimeState->GetLuaState();
 			LUA_INTEGER v = (LUA_INTEGER)L;
-			output["value"] = v;
+			output["value_str"] = std::to_string(v);
+			/*output["value"] = v;
 
 			output["high"] = (LUA_INTEGER)(((uint64_t)L & 0xFFFFFFFF00000000LL) >> 32);
-			output["low"] = (LUA_INTEGER)((uint64_t)L & 0xFFFFFFFFLL);
+			output["low"] = (LUA_INTEGER)((uint64_t)L & 0xFFFFFFFFLL);*/
 
 		}
 		return output;
