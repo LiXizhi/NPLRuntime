@@ -50,6 +50,9 @@
 #include "DynamicAttributeField.h"
 #include "ParaEngineInfo.h"
 
+
+#include "SDL2/SDL.h"
+
 ParaEngine::IParaEngineApp* CreateParaEngineApp()
 {
 	return new ParaEngine::CSDL2Application();
@@ -137,21 +140,31 @@ namespace ParaEngine {
 		: m_bUpdateScreenDevice(false)
 		, m_bSizeChanged(false)
 	{
+		//SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
+		//SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 3);
+		//SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24);
+		//SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
+		SDL_Init(SDL_INIT_EVERYTHING);
+		m_exit = false;
+	}
+
+	CSDL2Application::~CSDL2Application()
+	{
+		SDL_Quit();
 	}
 
 	bool CSDL2Application::InitApp(IRenderWindow* pWindow, const char* sCommandLine)
 	{
-
 		BootStrapAndLoadConfig();
 		LoadAndApplySettings();
 
-		auto pWinDelegate = (RenderWindowDelegate*)pWindow;
+		auto pWinDelegate = (RenderWindowDelegate*)&m_renderWindow;
 		assert(pWinDelegate);
 
 		m_cfg.renderWindow = pWinDelegate;
 		pWinDelegate->Create(m_cfg.screenWidth, m_cfg.screenHeight);
 
-		return CParaEngineAppBase::InitApp(pWindow, sCommandLine);
+		return CParaEngineAppBase::InitApp(pWinDelegate, sCommandLine);
 	}
 
 

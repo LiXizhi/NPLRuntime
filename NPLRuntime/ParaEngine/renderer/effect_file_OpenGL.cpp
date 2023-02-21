@@ -1458,6 +1458,8 @@ bool ParaEngine::CEffectFileOpenGL::GeneratePasses()
 			ETargetVersion targetVersion = ETargetGLSL_110;
 #if PARAENGINE_MOBILE
 			targetVersion = ETargetGLSL_ES_100;
+#elif EMSCRIPTEN
+			targetVersion = ETargetGLSL_ES_100;
 #endif
 			bool ret = hlsl2glsl(codeblock, vs_codeblock_name, EShLanguage::EShLangVertex, targetVersion, vscode, uniforms);
 			if (!ret || vscode == "")

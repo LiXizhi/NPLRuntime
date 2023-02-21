@@ -47,6 +47,7 @@ namespace ParaEngine
 		virtual void Flush() override;
 	protected:
 		void ApplyBlendingModeChange();
+		void BindVAO();
 	private:
 		bool m_AlphaBlendingChanged;
 		bool m_BlendingChanged;
@@ -68,6 +69,7 @@ namespace ParaEngine
 		uint32_t m_LastRenderTargetHeight;
 		bool m_isBeginRenderTarget ;
 		ParaViewport m_CurrentViewPort;
+		GLuint m_vao;
 	};
 
 	inline RenderDeviceOpenGL* GETGL(IRenderDevice* device)

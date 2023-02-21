@@ -122,7 +122,11 @@ namespace ParaEngine
 #endif
 
 		SAFE_DELETE(m_pLightGrid);
+#ifdef EMSCRIPTEN
+		m_pLightGrid = new CBlockLightGridBase(this);
+#else
 		m_pLightGrid = new CBlockLightGridClient(m_activeChunkDim + 2, this);
+#endif
 		// ensure that all vertices can be indexed by uint16 index buffer.
 		PE_ASSERT((BlockConfig::g_maxFaceCountPerBatch * 4) <= 0xffff);
 		RenderableChunk::GetVertexBufferPool()->SetFullSizedBufferSize(BlockConfig::g_maxFaceCountPerBatch * sizeof(BlockVertexCompressed) * 4);
@@ -454,10 +458,12 @@ namespace ParaEngine
 
 		BlockRenderMethod dwRenderMethod = (nRenderMethod < 0) ? GetBlockRenderMethod() : (BlockRenderMethod)nRenderMethod;
 
+		// std::cout << "========================11   " << (pCurRenderQueue == 0) << std::endl;
 		// no need to lock
 		if (pCurRenderQueue == 0)
 			pCurRenderQueue = GetRenderQueueByPass(nRenderPass);
 
+		// std::cout << "========================22   "<< pCurRenderQueue->size()<< std::endl;
 		auto pDevice = CGlobals::GetRenderDevice();
 
 		if (pCurRenderQueue->size() > 0)
@@ -476,6 +482,7 @@ namespace ParaEngine
 
 			EffectManager* pEffectManager = CGlobals::GetEffectManager();
 
+			// std::cout << "========================33   "<< pCurRenderQueue->size()<< std::endl;
 			CEffectFile* pEffect = NULL;
 			if (dwRenderMethod == BLOCK_RENDER_FANCY_SHADER)
 			{
@@ -485,6 +492,7 @@ namespace ParaEngine
 					{
 						// try a lower shader other than fancy
 						SetBlockRenderMethod(BLOCK_RENDER_FAST_SHADER);
+						// std::cout << "========================33   1"<< pCurRenderQueue->size()<< std::endl;
 						return;
 					}
 
@@ -493,6 +501,7 @@ namespace ParaEngine
 					{
 						// try a lower shader other than fancy ;
 						SetBlockRenderMethod(BLOCK_RENDER_FAST_SHADER);
+						// std::cout << "========================33   2"<< pCurRenderQueue->size()<< std::endl;
 						return;
 					}
 				}
@@ -510,6 +519,7 @@ namespace ParaEngine
 			{
 				pEffectManager->BeginEffect(TECH_BLOCK, &pEffect);
 			}
+			// std::cout << "========================44   "<< pCurRenderQueue->size()<< std::endl;
 
 			// CEffectFile* pEffect = pEffectManager->GetCurrentEffectFile();
 
@@ -529,10 +539,12 @@ namespace ParaEngine
 				pDevice->SetRenderState(ERenderState::DESTBLEND, D3DBLEND_ZERO);
 				pDevice->SetRenderState(ERenderState::ALPHABLENDENABLE, FALSE);
 			}
+			// std::cout << "========================55   "<< (pEffect == 0) << std::endl;
 
 			if (pEffect == 0)
 			{
 #ifdef USE_DIRECTX_RENDERER
+				// std::cout <<"=========================================0=======================" << std::endl;
 				if (dwRenderMethod != BLOCK_RENDER_FIXED_FUNCTION)
 				{
 					SetBlockRenderMethod(BLOCK_RENDER_FIXED_FUNCTION);
@@ -667,8 +679,10 @@ namespace ParaEngine
 			}
 			else if (pEffect != 0 && pEffect->begin(false))
 			{
+				// std::cout <<"=========================================1=======================" << std::endl;
 				VertexDeclarationPtr pVertexLayout = GetVertexLayout();
 				CGlobals::GetRenderDevice()->SetVertexDeclaration(pVertexLayout);
+				// std::cout <<"=========================================2=======================" << std::endl;
 
 				// set the wave time parameter
 				double time = CGlobals::GetGameTime();
@@ -677,6 +691,7 @@ namespace ParaEngine
 				time = (int)(time * 1000) % 1000000;
 				Vector4 v4((float)time, 0.f, 0.f, 0.f);
 				pEffect->setParameter(CEffectFile::k_ConstVector1, v4.ptr());
+				// std::cout <<"========================================211111=======================" << std::endl;
 
 				if (dwRenderMethod == BLOCK_RENDER_FANCY_SHADER)
 				{
@@ -687,9 +702,11 @@ namespace ParaEngine
 					Vector4 vDir_(vDir.x, vDir.y, vDir.z, 1.0f);
 					pEffect->setParameter(CEffectFile::k_sunVector, &vDir_);
 				}
+				// std::cout <<"=========================================23333=======================" << std::endl;
 
 				IndexBufferDevicePtr_type pIndexBuffer = GetIndexBuffer();
 				CGlobals::GetRenderDevice()->SetIndices(pIndexBuffer);
+				// std::cout <<"=========================================3=======================" << std::endl;
 
 				VertexBufferDevicePtr_type pCurVB = 0;
 				uint16_t curTemplateId = 0;
@@ -713,8 +730,10 @@ namespace ParaEngine
 				/** block light params and sun intensity*/
 				Vector4 vLightParams(m_vBlockLightColor.r, m_vBlockLightColor.g, m_vBlockLightColor.b, m_sunIntensity);
 				pEffect->setParameter(CEffectFile::k_ConstVector0, (const void*)(&vLightParams));
+				// std::cout <<"=========================================for=======================" << std::endl;
 				for (uint32_t i = 0; i < pCurRenderQueue->size(); i++)
 				{
+					// std::cout<<"BlockWorldClient::Render======"<<i<<" ==========="<< pCurRenderQueue->size()<< std::endl;
 					BlockRenderTask* pRenderTask = (*pCurRenderQueue)[i];
 					VertexBufferDevicePtr_type pVB = pRenderTask->GetVertexBuffer();
 					if (pVB != pCurVB)

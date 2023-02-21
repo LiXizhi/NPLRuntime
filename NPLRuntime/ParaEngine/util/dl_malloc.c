@@ -1117,8 +1117,9 @@ void  dlmalloc_stats(void);
   p = malloc(n);
   assert(malloc_usable_size(p) >= 256);
 */
+#ifndef PLATFORM_SDL2
 size_t dlmalloc_usable_size(void*);
-
+#endif
 
 #if MSPACES
 
@@ -4943,6 +4944,7 @@ int dlmallopt(int param_number, int value) {
 
 #endif /* !ONLY_MSPACES */
 
+#ifndef PLATFORM_SDL2
 size_t dlmalloc_usable_size(void* mem) {
   if (mem != 0) {
     mchunkptr p = mem2chunk(mem);
@@ -4951,7 +4953,7 @@ size_t dlmalloc_usable_size(void* mem) {
   }
   return 0;
 }
-
+#endif
 /* ----------------------------- user mspaces ---------------------------- */
 
 #if MSPACES

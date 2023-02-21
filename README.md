@@ -48,7 +48,9 @@ For example:
 ```	
 npls hello.npl
 ```    
-
+    add_external_include("${${LIB_NAME_UPPER}_SOURCE_DIR}/src")
+    add_external_include("${LUABRIDGE_INCLUDE_DIR}")
+    add_external_lib("${LIB_NAME}")
 
 ### Emscripten
 1. 编译boost 下载boost.1.81.0源码, 解压并进入源码目录, 执行如下指令编译

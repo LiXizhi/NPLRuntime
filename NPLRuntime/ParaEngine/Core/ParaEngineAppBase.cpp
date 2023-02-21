@@ -144,6 +144,7 @@ IRenderWindow* ParaEngine::CParaEngineAppBase::GetRenderWindow()
 
 bool ParaEngine::CParaEngineAppBase::InitApp(IRenderWindow* pWindow, const char* sCommandLine)
 {
+	std::cout << "================CParaEngineAppBase::InitApp==============" << std::endl;
 	SetAppState(PEAppState_Device_Created);
 
 	std::string cmd;
@@ -271,6 +272,7 @@ void ParaEngine::CParaEngineAppBase::InitRenderEnvironment()
 	RenderConfiguration cfg;
 	cfg.renderWindow = m_pRenderWindow;
 	m_pRenderDevice = m_pRenderContext->CreateDevice(cfg);
+	std::cout << "================CParaEngineAppBase::InitRenderEnvironment==============" << std::endl;
 	CGlobals::SetRenderDevice(m_pRenderDevice);
 
 	ParaViewport vp;
@@ -680,6 +682,7 @@ void ParaEngine::CParaEngineAppBase::OnRendererRecreated(IRenderWindow * renderW
 	RenderConfiguration cfg;
 	cfg.renderWindow = m_pRenderWindow;
 	m_pRenderDevice = m_pRenderContext->CreateDevice(cfg);
+	std::cout << "================CParaEngineAppBase::OnRendererRecreated==============" << std::endl;
 	CGlobals::SetRenderDevice(m_pRenderDevice);
 
 	ParaViewport vp;

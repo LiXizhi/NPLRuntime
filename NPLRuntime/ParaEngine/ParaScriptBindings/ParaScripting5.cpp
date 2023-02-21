@@ -226,6 +226,12 @@ static int luaopen_profiler_table(lua_State *L)
 }
 #endif
 
+#ifdef USE_LUASOCKET
+extern "C" int luaopen_mime_core(lua_State * L);
+extern "C" int luaopen_socket_core(lua_State * L);
+#endif
+
+// #endif
 void CNPLScriptingState::LoadHAPI_Globals()
 {
 	using namespace luabind;
@@ -244,6 +250,11 @@ void CNPLScriptingState::LoadHAPI_Globals()
 	lua_register(L, "luaopen_bit", luaopen_bit_local);
 	// load string.pack
 	lua_register(L, "luaopen_lua_pack", luaopen_lua_pack);
+
+#ifdef USE_LUASOCKET
+	lua_register(L, "mime.core", luaopen_mime_core);
+	lua_register(L, "socket.core", luaopen_socket_core);
+#endif
 
 #if defined(USE_NPL_CURL)
 	// load cURL

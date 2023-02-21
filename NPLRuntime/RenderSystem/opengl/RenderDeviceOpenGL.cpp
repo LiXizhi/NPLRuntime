@@ -58,7 +58,9 @@ bool ParaEngine::IRenderDevice::CheckRenderError(const char* filename, const cha
 	GLenum __error = glGetError();
 	if (__error)
 	{
+		OUTPUT_LOG("OpenGL error 0x%04X in %s %s %d\n", __error, filename, func, nLine);
 		ParaEngine::CLogger::GetSingleton().WriteFormated("OpenGL error 0x%04X in %s %s %d\n", __error, filename, func, nLine);
+		CGlobals::GetApp()->StopApp();
 		return false;
 	}
 	return true;
@@ -88,13 +90,15 @@ ParaEngine::RenderDeviceOpenGL::RenderDeviceOpenGL()
 			m_SamplerStates[i][j] = 0;
 		}
 	}
-
-	
+	glGenVertexArrays(1, &m_vao);
+	std::cout << "=================ParaEngine::RenderDeviceOpenGL::RenderDeviceOpenGL()================" << std::endl;
 }
 
 ParaEngine::RenderDeviceOpenGL::~RenderDeviceOpenGL()
 {
 	GL::ClearCache();
+	glDeleteVertexArrays(1, &m_vao);
+	m_vao = 0;
 }
 
 uint32_t ParaEngine::RenderDeviceOpenGL::GetRenderState(const ERenderState& State)
@@ -313,11 +317,7 @@ bool ParaEngine::RenderDeviceOpenGL::SetTexture(uint32_t stage, DeviceTexturePtr
 bool ParaEngine::RenderDeviceOpenGL::DrawIndexedPrimitiveUP(EPrimitiveType PrimitiveType, uint32_t MinVertexIndex, uint32_t NumVertices, uint32_t PrimitiveCount, const void * pIndexData, PixelFormat IndexDataFormat, const void* pVertexStreamZeroData, uint32_t VertexStreamZeroStride)
 {
 	ApplyBlendingModeChange();
-	if (m_CurrentVertexDeclaration)
-	{
-		m_CurrentVertexDeclaration->ApplyAttribute(pVertexStreamZeroData);
-	}
-
+	BindVAO();
 	if (PrimitiveType == EPrimitiveType::TRIANGLELIST)
 		glDrawElements(GL_TRIANGLES, PrimitiveCount * 3, GL_UNSIGNED_SHORT, (GLvoid*)(pIndexData));
 	else if (PrimitiveType == EPrimitiveType::TRIANGLESTRIP)
@@ -335,6 +335,7 @@ bool ParaEngine::RenderDeviceOpenGL::DrawIndexedPrimitiveUP(EPrimitiveType Primi
 bool ParaEngine::RenderDeviceOpenGL::DrawPrimitive(EPrimitiveType PrimitiveType, uint32_t StartVertex, uint32_t PrimitiveCount)
 {
 	ApplyBlendingModeChange();
+	BindVAO();
 	if (PrimitiveType == EPrimitiveType::TRIANGLELIST)
 		glDrawArrays(GL_TRIANGLES, StartVertex, PrimitiveCount * 3);
 	else if (PrimitiveType == EPrimitiveType::TRIANGLESTRIP)
@@ -350,18 +351,19 @@ bool ParaEngine::RenderDeviceOpenGL::DrawPrimitive(EPrimitiveType PrimitiveType,
 bool ParaEngine::RenderDeviceOpenGL::DrawPrimitiveUP(EPrimitiveType PrimitiveType, uint32_t PrimitiveCount, const void* pVertexStreamZeroData, uint32_t VertexStreamZeroStride)
 {
 	ApplyBlendingModeChange();
-	if (m_CurrentIndexBuffer)
-	{
-		SetIndices(0);
-	}
-	if (m_CurrentVertexBuffer)
-	{
-		SetStreamSource(0, 0, 0, 0);
-	}
-	if (m_CurrentVertexDeclaration)
-	{
-		m_CurrentVertexDeclaration->ApplyAttribute(pVertexStreamZeroData);
-	}
+	BindVAO();
+	// if (m_CurrentIndexBuffer)
+	// {
+	// 	SetIndices(0);
+	// }
+	// if (m_CurrentVertexBuffer)
+	// {
+	// 	SetStreamSource(0, 0, 0, 0);
+	// }
+	// if (m_CurrentVertexDeclaration)
+	// {
+	// 	m_CurrentVertexDeclaration->ApplyAttribute(pVertexStreamZeroData);
+	// }
 
 	if (PrimitiveType == EPrimitiveType::TRIANGLELIST)
 		glDrawArrays(GL_TRIANGLES, 0, PrimitiveCount * 3);
@@ -397,11 +399,10 @@ bool ParaEngine::RenderDeviceOpenGL::SetVertexDeclaration(CVertexDeclaration* pV
 	if (pVertexDeclaration)
 	{
 		glBindVertexArray(0);
-		pVertexDeclaration->EnableAttribute();
-		pVertexDeclaration->ApplyAttribute();
+		// pVertexDeclaration->EnableAttribute();
+		// pVertexDeclaration->ApplyAttribute();
 		m_CurrentVertexDeclaration = pVertexDeclaration;
 		//OUTPUT_LOG("RenderDeviceOpenGL: EnableAttribute & ApplyAttribute at SetVertexDeclaration");
-
 		PE_CHECK_GL_ERROR_DEBUG();
 	}
 
@@ -420,9 +421,6 @@ bool ParaEngine::RenderDeviceOpenGL::SetIndices(IndexBufferDevicePtr_type pIndex
 	if (pIndexData != m_CurrentIndexBuffer)
 	{
 		m_CurrentIndexBuffer = pIndexData;
-		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, pIndexData);
-
-		PE_CHECK_GL_ERROR_DEBUG();
 	}
 
 	return true;
@@ -433,17 +431,6 @@ bool ParaEngine::RenderDeviceOpenGL::SetStreamSource(uint32_t StreamNumber, Vert
 	if (pStreamData != m_CurrentVertexBuffer)
 	{
 		m_CurrentVertexBuffer = pStreamData;
-		glBindBuffer(GL_ARRAY_BUFFER, pStreamData);
-		//OUTPUT_LOG("RenderDeviceOpenGL:glBindBuffer %d",pStreamData);
-		if (m_CurrentVertexDeclaration)
-		{		
-			m_CurrentVertexDeclaration->EnableAttribute();
-			m_CurrentVertexDeclaration->ApplyAttribute();
-			//OUTPUT_LOG("RenderDeviceOpenGL: EnableAttribute & ApplyAttribute at SetStreamSource");
-		}
-
-		PE_CHECK_GL_ERROR_DEBUG();
-
 	}
 
 	return true;
@@ -505,7 +492,7 @@ int ParaEngine::RenderDeviceOpenGL::GetStencilBits()
 bool ParaEngine::RenderDeviceOpenGL::DrawIndexedPrimitive(EPrimitiveType Type, int BaseVertexIndex, uint32_t MinIndex, uint32_t NumVertices, uint32_t indexStart, uint32_t PrimitiveCount)
 {
 	ApplyBlendingModeChange();
-
+	BindVAO();
 	if (Type == EPrimitiveType::TRIANGLELIST)
 		glDrawElements(GL_TRIANGLES, PrimitiveCount * 3, GL_UNSIGNED_SHORT, (GLvoid*)(sizeof(uint16)*indexStart));
 	else if (Type == EPrimitiveType::TRIANGLESTRIP)
@@ -514,8 +501,8 @@ bool ParaEngine::RenderDeviceOpenGL::DrawIndexedPrimitive(EPrimitiveType Type, i
 		glDrawElements(GL_TRIANGLE_FAN, PrimitiveCount + 2, GL_UNSIGNED_SHORT, (GLvoid*)(sizeof(uint16)*indexStart));
 
 	PE_CHECK_GL_ERROR_DEBUG();
-
 	/*
+	GL_NO_ERROR
 	GLenum __error = glGetError();
 	if (__error)
 	{
@@ -648,3 +635,27 @@ void ParaEngine::RenderDeviceOpenGL::ApplyBlendingModeChange()
 
 }
 
+void ParaEngine::RenderDeviceOpenGL::BindVAO()
+{
+	if (m_vao == 0) return ;
+	glBindVertexArray(m_vao);
+	PE_CHECK_GL_ERROR_DEBUG();
+	if (m_CurrentVertexBuffer != 0)
+	{
+		glBindBuffer(GL_ARRAY_BUFFER, m_CurrentVertexBuffer);
+		PE_CHECK_GL_ERROR_DEBUG();
+		// std::cout << "vao: " << m_vao << "   veo: " << m_CurrentVertexBuffer << std::endl;
+	}
+	if (m_CurrentIndexBuffer != 0)
+	{
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_CurrentIndexBuffer);
+		PE_CHECK_GL_ERROR_DEBUG();
+		// std::cout << "vao: " << m_vao << "   vbo: " << m_CurrentIndexBuffer << std::endl;
+	}
+	if (m_CurrentVertexDeclaration != nullptr)
+	{		
+		m_CurrentVertexDeclaration->ApplyAttribute();
+		m_CurrentVertexDeclaration->EnableAttribute();
+		// std::cout << "==============CurrentVertexDeclaration != nullptr================" << std::endl;
+	}
+}

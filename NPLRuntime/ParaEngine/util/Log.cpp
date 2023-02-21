@@ -315,6 +315,9 @@ namespace ParaEngine
 		if (buf==NULL || nLength<=0) {
 			return -1;
 		}
+#ifdef EMSCRIPTEN
+		printf("%s", buf);
+#endif
 		FILE * pFile = GetLogFileHandle();
 		if(pFile)
 		{
