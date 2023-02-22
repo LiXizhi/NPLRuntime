@@ -21,6 +21,7 @@ HOW TO USE THE CFILELOGGER
 #include "ParaEngineInfo.h"
 #include "FileManager.h"
 #include "Filelogger.h"
+#include "StringHelper.h"
 
 using namespace ParaEngine;
 
@@ -169,8 +170,15 @@ void CFileLogger::MirrorFiles( const char* dirName,bool bOverwrite )
 		if(bOverwrite)
 		{
 			// do not override if the destination file has an older date. 
+#ifdef DEFAULT_FILE_ENCODING
+			WIN32_FIND_DATAW destData, srcData;
+			std::wstring despPath16 = StringHelper::MultiByteToWideChar(destPath.c_str(), DEFAULT_FILE_ENCODING);
+			LPCWSTR src16 = StringHelper::MultiByteToWideChar(itCur->c_str(), DEFAULT_FILE_ENCODING);
+			if (FindFirstFileW(despPath16.c_str(), &destData) != INVALID_HANDLE_VALUE && FindFirstFileW(src16, &srcData) != INVALID_HANDLE_VALUE)
+#else
 			WIN32_FIND_DATA destData, srcData;
-			if(FindFirstFile(destPath.c_str(), &destData)!=INVALID_HANDLE_VALUE && FindFirstFile(itCur->c_str(), &srcData)!=INVALID_HANDLE_VALUE)
+			if (FindFirstFile(destPath.c_str(), &destData) != INVALID_HANDLE_VALUE && FindFirstFile(itCur->c_str(), &srcData) != INVALID_HANDLE_VALUE)
+#endif	
 			{
 				ULARGE_INTEGER destFileTime;
 				destFileTime.LowPart = destData.ftLastWriteTime.dwLowDateTime;

@@ -2,6 +2,7 @@
 #include "Globals.h"
 #include "ParaEngineSettings.h"
 #include "Framework/Common/Helper/EditorHelper.h"
+#include "StringHelper.h"
 
 #include <Shellapi.h>
 #undef ShellExecute
@@ -240,17 +241,36 @@ namespace ParaEngine {
 		// OUTPUT_LOG("warning: security alert. ShellExecute function should only allow explore folder and text only files in formal release\n");
 		if (lpOperation && strcmp(lpOperation, "wait") == 0)
 		{
+#ifdef DEFAULT_FILE_ENCODING
+			std::wstring str_file = StringHelper::MultiByteToWideChar(lpFile, DEFAULT_FILE_ENCODING);
+			std::wstring str_param = StringHelper::MultiByteToWideChar(lpParameters, DEFAULT_FILE_ENCODING);
+			std::wstring str_dir = StringHelper::MultiByteToWideChar(lpDirectory, DEFAULT_FILE_ENCODING);
+
+			SHELLEXECUTEINFOW ShExecInfo = { 0 };
+			ShExecInfo.cbSize = sizeof(SHELLEXECUTEINFOW);
+			ShExecInfo.lpParameters = str_param.c_str();
+			ShExecInfo.lpDirectory = str_dir.c_str();
+			ShExecInfo.lpFile = str_file.c_str();
+#else 
 			SHELLEXECUTEINFO ShExecInfo = { 0 };
 			ShExecInfo.cbSize = sizeof(SHELLEXECUTEINFO);
+			ShExecInfo.lpParameters = lpParameters;
+			ShExecInfo.lpDirectory = lpDirectory;
+			ShExecInfo.lpFile = lpFile;
+#endif
 			ShExecInfo.fMask = SEE_MASK_NOCLOSEPROCESS;
 			ShExecInfo.hwnd = NULL;
 			ShExecInfo.lpVerb = NULL;
-			ShExecInfo.lpFile = lpFile;
-			ShExecInfo.lpParameters = lpParameters;
-			ShExecInfo.lpDirectory = lpDirectory;
+
+
 			ShExecInfo.nShow = nShowCmd;
 			ShExecInfo.hInstApp = NULL;
+#ifdef DEFAULT_FILE_ENCODING
+			if (ShellExecuteExW(&ShExecInfo))
+#else
 			if (ShellExecuteEx(&ShExecInfo))
+#endif
+
 			{
 				WaitForSingleObject(ShExecInfo.hProcess, INFINITE);
 				CloseHandle(ShExecInfo.hProcess);
@@ -261,7 +281,16 @@ namespace ParaEngine {
 		}
 		else
 		{
-			if (::ShellExecuteA((HWND)NULL, lpOperation, lpFile, lpParameters, lpDirectory, nShowCmd) > ((HINSTANCE)32))
+#ifdef DEFAULT_FILE_ENCODING
+			std::wstring str_op = StringHelper::MultiByteToWideChar(lpOperation, DEFAULT_FILE_ENCODING);
+			std::wstring str_file = StringHelper::MultiByteToWideChar(lpFile, DEFAULT_FILE_ENCODING);
+			std::wstring str_param = StringHelper::MultiByteToWideChar(lpParameters, DEFAULT_FILE_ENCODING);
+			std::wstring str_dir = StringHelper::MultiByteToWideChar(lpDirectory, DEFAULT_FILE_ENCODING);
+			if (::ShellExecuteW((HWND)NULL, str_op.c_str(), str_file.c_str(), str_param.c_str(), str_dir.c_str(), nShowCmd) > ((HINSTANCE)32))
+#else
+			if (::ShellExecute((HWND)NULL, lpOperation, lpFile, lpParameters, lpDirectory, nShowCmd) > ((HINSTANCE)32))
+#endif
+
 				return true;
 			else
 				return false;

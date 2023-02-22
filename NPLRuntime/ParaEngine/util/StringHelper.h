@@ -242,7 +242,7 @@ namespace ParaEngine
 		*/
 		static bool StrEndsWithWord(const string& str, const string& sequence);
 
-
+		static std::string GetDefaultCPName() { return defaultCPName.get(); }
 		private:
 			class _CodePageName
 			{

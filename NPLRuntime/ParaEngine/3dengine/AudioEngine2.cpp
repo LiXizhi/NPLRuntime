@@ -17,6 +17,15 @@
 #include "IParaEngineApp.h"
 #include "MCIController.h"
 
+#if defined(WIN32)
+#include <boost/filesystem.hpp>
+#include <boost/filesystem/operations.hpp>
+#include <boost/filesystem/path.hpp>
+#include <boost/filesystem/fstream.hpp>
+#include <iostream>
+namespace fs = boost::filesystem;
+#endif
+
 /**@def define to log verbose. */
 // #define DEBUG_AUDIO
 
@@ -312,16 +321,22 @@ HRESULT ParaEngine::CAudioEngine2::PrepareWaveFile(CAudioSource2_ptr& pWave, con
 				// Since local cache filename does not have file extension, however audio engine needs to have an extension in order to load from file. 
 				// so we will create a file with the proper extension in the same directory. 
 				std::string filename = pEntry->GetLocalFileName() + "." + CParaFile::GetFileExtension(sWavePath);
+#if WIN32 && defined(DEFAULT_FILE_ENCODING)
+				fs::path fs_path(StringHelper::MultiByteToWideChar(filename.c_str(), DEFAULT_FILE_ENCODING));
+				std::string filename16 = fs_path.string();
+#else
+				std::string filename16 = filename;
+#endif
 				if (!CParaFile::DoesFileExist(filename.c_str(), false))
 				{
 					if (CParaFile::CopyFile(pEntry->GetLocalFileName().c_str(), filename.c_str(), false))
 					{
-						pSource = m_pAudioEngine->create(sWavePath, filename.c_str(), bStream);
+						pSource = m_pAudioEngine->create(sWavePath, filename16.c_str(), bStream);
 					}
 				}
 				else
 				{
-					pSource = m_pAudioEngine->create(sWavePath, filename.c_str(), bStream);
+					pSource = m_pAudioEngine->create(sWavePath, filename16.c_str(), bStream);
 				}
 				pWave->SetFilename(filename);
 			}
@@ -348,7 +363,15 @@ HRESULT ParaEngine::CAudioEngine2::PrepareWaveFile(CAudioSource2_ptr& pWave, con
 #if !(defined(STATIC_PLUGIN_CAUDIOENGINE)) && !(defined(PARAENGINE_MOBILE) && defined(WIN32))
 		if (ParaEngine::CParaFile::DoesFileExist(sWavePath, false))
 		{
-			IParaAudioSource* pSource = m_pAudioEngine->create(sWavePath, sWavePath, bStream);
+#ifdef DEFAULT_FILE_ENCODING
+			LPCWSTR wavePath16 = StringHelper::MultiByteToWideChar(sWavePath, DEFAULT_FILE_ENCODING);
+			fs::path fs_path(wavePath16);
+			std::string pathStr = fs_path.string();
+			const char* _wavePath = pathStr.c_str();
+#else
+			const char* _wavePath = sWavePath;
+#endif
+			IParaAudioSource* pSource = m_pAudioEngine->create(sWavePath, _wavePath, bStream);
 			if (pSource)
 			{
 				pWave->SetFilename(sWavePath);
@@ -428,16 +451,22 @@ HRESULT ParaEngine::CAudioEngine2::PlayWaveFile(const char* sWavePath, bool bLoo
 					// Since local cache filename does not have file extension, however audio engine needs to have an extension in order to load from file. 
 					// so we will create a file with the proper extension in the same directory. 
 					std::string filename = pEntry->GetFullFilePath() + "." + CParaFile::GetFileExtension(sWavePath);
+#if WIN32 && defined(DEFAULT_FILE_ENCODING)
+					fs::path fs_path(StringHelper::MultiByteToWideChar(filename.c_str(), DEFAULT_FILE_ENCODING));
+					std::string filename16 = fs_path.string();
+#else
+					std::string filename16 = filename;
+#endif
 					if (!CParaFile::DoesFileExist(filename.c_str(), false))
 					{
 						if (CParaFile::CopyFile(pEntry->GetLocalFileName().c_str(), filename.c_str(), false))
 						{
-							pSource = m_pAudioEngine->create(sWavePath, filename.c_str(), bStream);
+							pSource = m_pAudioEngine->create(sWavePath, filename16.c_str(), bStream);
 						}
 					}
 					else
 					{
-						pSource = m_pAudioEngine->create(sWavePath, filename.c_str(), bStream);
+						pSource = m_pAudioEngine->create(sWavePath, filename16.c_str(), bStream);
 					}
 					pWave->SetFilename(filename);
 				}
@@ -473,7 +502,15 @@ HRESULT ParaEngine::CAudioEngine2::PlayWaveFile(const char* sWavePath, bool bLoo
 #if !(defined(STATIC_PLUGIN_CAUDIOENGINE)) && !(defined(PARAENGINE_MOBILE) && defined(WIN32))
 			if (ParaEngine::CParaFile::DoesFileExist(sWavePath, false))
 			{
-				IParaAudioSource* pSource = m_pAudioEngine->create(sWavePath, sWavePath, bStream);
+#ifdef DEFAULT_FILE_ENCODING
+				LPCWSTR wavePath16 = StringHelper::MultiByteToWideChar(sWavePath, DEFAULT_FILE_ENCODING);
+				fs::path fs_path(wavePath16);
+				std::string pathStr = fs_path.string();
+				const char* _wavePath = pathStr.c_str();
+#else
+				const char* _wavePath = sWavePath;
+#endif
+				IParaAudioSource* pSource = m_pAudioEngine->create(sWavePath, _wavePath, bStream);
 				if (pSource)
 				{
 					pWave = new CAudioSource2(sWavePath, pSource);
@@ -716,11 +753,17 @@ CAudioSource2_ptr ParaEngine::CAudioEngine2::Create(const char* sName, const cha
 				// so we will create a file with the proper extension in the same directory. 
 				std::string filename = pEntry->GetFullFilePath() + "." + CParaFile::GetFileExtension(sWavePath);
 				// OUTPUT_LOG("info:streaming audio file from %s\n", filename.c_str());
+#if WIN32 && defined(DEFAULT_FILE_ENCODING)
+				fs::path fs_path(StringHelper::MultiByteToWideChar(filename.c_str(), DEFAULT_FILE_ENCODING));
+				std::string filename16 = fs_path.string();
+#else
+				std::string filename16 = filename;
+#endif
 				if (!CParaFile::DoesFileExist(filename.c_str(), false))
 				{
 					if (CParaFile::CopyFile(pEntry->GetLocalFileName().c_str(), filename.c_str(), true))
 					{
-						pSource = m_pAudioEngine->create(sName, filename.c_str(), bStream);
+						pSource = m_pAudioEngine->create(sName, filename16.c_str(), bStream);
 					}
 					else
 					{
@@ -729,7 +772,7 @@ CAudioSource2_ptr ParaEngine::CAudioEngine2::Create(const char* sName, const cha
 				}
 				else
 				{
-					pSource = m_pAudioEngine->create(sName, filename.c_str(), bStream);
+					pSource = m_pAudioEngine->create(sName, filename16.c_str(), bStream);
 				}
 				pWave->SetFilename(filename);
 			}
@@ -773,7 +816,15 @@ CAudioSource2_ptr ParaEngine::CAudioEngine2::Create(const char* sName, const cha
 #if !(defined(STATIC_PLUGIN_CAUDIOENGINE)) && !(defined(PARAENGINE_MOBILE) && defined(WIN32))
 		if (ParaEngine::CParaFile::DoesFileExist(sWavePath, false))
 		{
-			IParaAudioSource* pSource = m_pAudioEngine->create(sName, sWavePath, bStream);
+#ifdef DEFAULT_FILE_ENCODING
+			LPCWSTR wavePath16 = StringHelper::MultiByteToWideChar(sWavePath, DEFAULT_FILE_ENCODING);
+			fs::path fs_path(wavePath16);
+			std::string pathStr = fs_path.string();
+			const char* _wavePath = pathStr.c_str();
+#else
+			const char* _wavePath = sWavePath;
+#endif
+			IParaAudioSource* pSource = m_pAudioEngine->create(sName, _wavePath, bStream);
 			if (pSource)
 			{
 				pWave->SetFilename(sWavePath);
