@@ -98,92 +98,47 @@ android {
     flavorDimensions "company"
 
     productFlavors {
-        tatfook {
-            //applicationId "com.paraengine.paracraft"
-            dimension "company"
-            manifestPlaceholders = [
-                    CHANNEL_VALUE:"tatfook"
-            ]
-        }
+        tatfook {}
 
         //应用宝
         yingyongbao {
-            dimension "company"
-            manifestPlaceholders = [
-                    CHANNEL_VALUE:"yingyongbao",
-            ]
+            applicationId "com.tatfook.paracraftyyb"
         }
 
         //小米
-        xiaomi {
-            dimension "company"
-            manifestPlaceholders = [
-                    CHANNEL_VALUE:"xiaomi",
-            ]
-        }
+        xiaomi {}
 
         //华为
-        huawei {
-            dimension "company"
-            manifestPlaceholders = [
-                    CHANNEL_VALUE:"huawei",
-            ]
-        }
+        huawei {}
 
         //OPPO
-        oppo {
-            dimension "company"
-            manifestPlaceholders = [
-                    CHANNEL_VALUE:"oppo",
-            ]
-        }
+        oppo {}
 
         //vivo
-        vivo {
-            dimension "company"
-            manifestPlaceholders = [
-                    CHANNEL_VALUE:"vivo",
-            ]
-        }
+        vivo {}
 
         //荣耀
-        honor {
-            dimension "company"
-            manifestPlaceholders = [
-                    CHANNEL_VALUE:"honor",
-            ]
-        }
+        honor {}
 
         //中兴
-        zhongxing {
-            dimension "company"
-            manifestPlaceholders = [
-                    CHANNEL_VALUE:"zhongxing",
-            ]
-        }
+        zhongxing {}
 
         //360
         qihu360 {
-            dimension "company"
-            manifestPlaceholders = [
-                    CHANNEL_VALUE:"qihu360",
-            ]
+            applicationId "com.tatfook.paracraft360"
         }
 
         //百度
         baidu {
-            dimension "company"
-            manifestPlaceholders = [
-                    CHANNEL_VALUE:"baidu",
-            ]
+            applicationId "com.tatfook.paracraftbaidu"
         }
 
         //阿里应用分发开放平台
-        ali9you {
-            dimension "company"
-            manifestPlaceholders = [
-                    CHANNEL_VALUE:"ali9you",
-            ]
+        ali9you {}
+
+        productFlavors.all { flavor ->
+            flavor.dimension "company"
+            flavor.manifestPlaceholders = [CHANNEL_VALUE: name]
         }
     }
 
@@ -235,7 +190,7 @@ android.applicationVariants.all { variant ->
 
     variant.outputs.all {output ->
         if (outputFileName.contains("release")) {
-            String buildDate = new Date().format('(yyyy-MM-dd HH.mm.ss)')
+            String buildDate = new Date().format('(yyyy-MM-dd-HH.mm.ss)')
             String flavor = variant.name.replaceFirst("Release","")
             outputFileName = "Paracraft_${variant.versionName}_${flavor}_${buildDate}.apk"
 
@@ -248,12 +203,35 @@ android.applicationVariants.all { variant ->
 //                println "生成apk"
 //                println outApkFlavor
 //                println outApkFile
+
+                String keyStorePath=""+project.projectDir+"/"+RELEASE_STORE_FILE
+                String apkSignerJar=""+project.projectDir+"/key/apksigner.jar"
+                String storePass = RELEASE_STORE_PASSWORD
+                String alias = RELEASE_KEY_ALIAS
+                String keyPass = RELEASE_KEY_PASSWORD
+                String signCmd = String.format("java -jar %s  sign --ks %s --ks-pass pass:%s --ks-key-alias %s --key-pass pass:%s %s",apkSignerJar,keyStorePath,storePass,alias,keyPass,outApkFile)
+                if (System.getProperty('os.name').toLowerCase(Locale.ROOT).contains('windows')) {
+                    execute('cmd', '/c', signCmd)
+                } else {
+                    execute('sh', '-c', signCmd)
+                }
+                println("rootProject.buildDir:"+rootProject.rootDir)
+                println("project.buildDir:"+project.projectDir)
                 ftpUpload(outApkFlavor, outApkFile)
 
             }
         }
     }
 }
+
+void execute(String... args) {
+    println "Executing $args...";
+    def proc = args.execute();
+    proc.in.eachLine {line -> println line}
+    proc.err.eachLine {line -> println 'ERROR: ' + line}
+    proc.waitFor()
+}
+
 
 dependencies {
     implementation fileTree(dir: 'libs', include: ['*.jar'])
