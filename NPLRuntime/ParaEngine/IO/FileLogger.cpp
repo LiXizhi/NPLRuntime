@@ -170,7 +170,7 @@ void CFileLogger::MirrorFiles( const char* dirName,bool bOverwrite )
 		if(bOverwrite)
 		{
 			// do not override if the destination file has an older date. 
-#ifdef DEFAULT_FILE_ENCODING
+#if WIN32 && defined(DEFAULT_FILE_ENCODING)
 			WIN32_FIND_DATAW destData, srcData;
 			std::wstring despPath16 = StringHelper::MultiByteToWideChar(destPath.c_str(), DEFAULT_FILE_ENCODING);
 			LPCWSTR src16 = StringHelper::MultiByteToWideChar(itCur->c_str(), DEFAULT_FILE_ENCODING);

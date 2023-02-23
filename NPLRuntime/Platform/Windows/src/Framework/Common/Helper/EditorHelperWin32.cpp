@@ -241,7 +241,7 @@ namespace ParaEngine {
 		// OUTPUT_LOG("warning: security alert. ShellExecute function should only allow explore folder and text only files in formal release\n");
 		if (lpOperation && strcmp(lpOperation, "wait") == 0)
 		{
-#ifdef DEFAULT_FILE_ENCODING
+#if WIN32 && defined(DEFAULT_FILE_ENCODING)
 			std::wstring str_file = StringHelper::MultiByteToWideChar(lpFile, DEFAULT_FILE_ENCODING);
 			std::wstring str_param = StringHelper::MultiByteToWideChar(lpParameters, DEFAULT_FILE_ENCODING);
 			std::wstring str_dir = StringHelper::MultiByteToWideChar(lpDirectory, DEFAULT_FILE_ENCODING);
@@ -265,7 +265,7 @@ namespace ParaEngine {
 
 			ShExecInfo.nShow = nShowCmd;
 			ShExecInfo.hInstApp = NULL;
-#ifdef DEFAULT_FILE_ENCODING
+#if WIN32 && defined(DEFAULT_FILE_ENCODING)
 			if (ShellExecuteExW(&ShExecInfo))
 #else
 			if (ShellExecuteEx(&ShExecInfo))
@@ -281,7 +281,7 @@ namespace ParaEngine {
 		}
 		else
 		{
-#ifdef DEFAULT_FILE_ENCODING
+#if WIN32 && defined(DEFAULT_FILE_ENCODING)
 			std::wstring str_op = StringHelper::MultiByteToWideChar(lpOperation, DEFAULT_FILE_ENCODING);
 			std::wstring str_file = StringHelper::MultiByteToWideChar(lpFile, DEFAULT_FILE_ENCODING);
 			std::wstring str_param = StringHelper::MultiByteToWideChar(lpParameters, DEFAULT_FILE_ENCODING);

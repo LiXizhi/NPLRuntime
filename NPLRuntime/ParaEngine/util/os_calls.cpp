@@ -93,7 +93,7 @@ void* ParaEngine::LoadLibrary(const char *pcDllname, int iMode)
 #ifndef LOAD_LIBRARY_SEARCH_DLL_LOAD_DIR
 	return (void*)::LoadLibraryEx(sDllName.c_str(), NULL, 0);
 #else
-#ifdef DEFAULT_FILE_ENCODING
+#if WIN32 && defined(DEFAULT_FILE_ENCODING)
 	LPCWSTR sDllName16 = StringHelper::MultiByteToWideChar(sDllName.c_str(), DEFAULT_FILE_ENCODING);
 	return (void*)::LoadLibraryExW(sDllName16, NULL,
 		LOAD_LIBRARY_SEARCH_DLL_LOAD_DIR | LOAD_LIBRARY_SEARCH_APPLICATION_DIR | LOAD_LIBRARY_SEARCH_DEFAULT_DIRS | LOAD_LIBRARY_SEARCH_SYSTEM32 | LOAD_LIBRARY_SEARCH_USER_DIRS);

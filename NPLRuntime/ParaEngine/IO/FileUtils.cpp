@@ -530,17 +530,6 @@ int ParaEngine::CFileUtils::GetFileSize(const char* sFilePath)
 
 ParaEngine::FileHandle ParaEngine::CFileUtils::OpenFile(const char* filename, bool bRead /*= false*/, bool bWrite/*=true*/)
 {
-#if defined(WIN32) && defined(DEFAULT_FILE_ENCODING)
-	HANDLE hFile;
-	LPCWSTR filename16 = StringHelper::MultiByteToWideChar(filename, DEFAULT_FILE_ENCODING);
-	hFile = ::CreateFileW(filename16, (bRead ? GENERIC_READ : 0) | (bWrite ? GENERIC_WRITE : 0), (bRead ? FILE_SHARE_READ : 0) | (bWrite ? FILE_SHARE_WRITE : 0),
-		NULL, bWrite ? OPEN_ALWAYS : 0, NULL, NULL);
-	if (hFile != INVALID_HANDLE_VALUE)
-	{
-		return FileHandle(hFile);
-	}
-	return FileHandle();
-#else
 	std::string sFilePath;
 	if (bWrite && !IsAbsolutePath(filename))
 	{
@@ -549,15 +538,19 @@ ParaEngine::FileHandle ParaEngine::CFileUtils::OpenFile(const char* filename, bo
 	else {
 		sFilePath = filename;
 	}
+#if WIN32 && defined(DEFAULT_FILE_ENCODING)
+	std::wstring sFilePath16 = StringHelper::MultiByteToWideChar(sFilePath.c_str(), DEFAULT_FILE_ENCODING);
+	FILE* pFile = _wfopen(sFilePath16.c_str(), bRead ? (bWrite ? L"w+b" : L"rb") : L"wb");
+#else
 	FILE* pFile = fopen(sFilePath.c_str(), bRead ? (bWrite ? "w+b" : "rb") : "wb");
+#endif
+	
 	if (pFile == 0) {
 		OUTPUT_LOG("failed to open file: %s with mode %s\n", sFilePath.c_str(), bRead ? (bWrite ? "w+b" : "rb") : "wb");
 	}
 	FileHandle fileHandle;
 	fileHandle.m_pFile = pFile;
 	return fileHandle;
-#endif
-	
 }
 
 bool ParaEngine::CFileUtils::SetFilePointer(FileHandle& fileHandle, int lDistanceToMove, int dwMoveMethod)
@@ -575,11 +568,7 @@ bool ParaEngine::CFileUtils::SetFilePointer(FileHandle& fileHandle, int lDistanc
 			OUTPUT_LOG("error: unknown SetFilePointer() move method\r\n");
 			return false;
 		}
-#if defined(WIN32) && defined(DEFAULT_FILE_ENCODING)
-		::SetFilePointer(fileHandle.m_handle, lDistanceToMove, 0, dwMoveMethod);
-#else
 		fseek(fileHandle.m_pFile, lDistanceToMove, dwMoveMethod);		
-#endif
 		return true;
 	}
 	return false;
@@ -589,13 +578,7 @@ int ParaEngine::CFileUtils::GetFilePosition(FileHandle& fileHandle)
 {
 	if (fileHandle.IsValid())
 	{
-#if defined(WIN32) && defined(DEFAULT_FILE_ENCODING)
-		int nPos = ::SetFilePointer(fileHandle.m_handle, 0, NULL, FILE_CURRENT);
-		return nPos != INVALID_SET_FILE_POINTER ? nPos : 0;
-#else
-		return ftell(fileHandle.m_pFile);
-#endif
-		
+		return ftell(fileHandle.m_pFile);		
 	}
 	return 0;
 }
@@ -604,12 +587,7 @@ bool ParaEngine::CFileUtils::SetEndOfFile(FileHandle& fileHandle)
 {
 	if (fileHandle.IsValid())
 	{
-#if defined(WIN32) && defined(DEFAULT_FILE_ENCODING)
-		return ::SetEndOfFile(fileHandle.m_handle) == TRUE;
-#else
-		fseek(fileHandle.m_pFile, 0, SEEK_END);
-#endif
-		
+		fseek(fileHandle.m_pFile, 0, SEEK_END);		
 		return true;
 	}
 	return false;
@@ -619,14 +597,7 @@ int ParaEngine::CFileUtils::WriteBytes(FileHandle& fileHandle, const void* src, 
 {
 	if (fileHandle.IsValid())
 	{
-#if defined(WIN32) && defined(DEFAULT_FILE_ENCODING)
-		DWORD bytesWritten;
-		::WriteFile(fileHandle.m_handle, src, bytes, &bytesWritten, NULL);
-		return bytesWritten;
-#else
 		return (int)fwrite(src, 1, bytes, fileHandle.m_pFile);
-#endif
-		
 	}
 	return 0;
 }
@@ -635,14 +606,7 @@ int ParaEngine::CFileUtils::ReadBytes(FileHandle& fileHandle, void* dest, int by
 {
 	if (fileHandle.IsValid())
 	{
-#if defined(WIN32) && defined(DEFAULT_FILE_ENCODING)
-		DWORD bytesRead = 0;
-		::ReadFile(fileHandle.m_handle, dest, bytes, &bytesRead, NULL);
-		return bytesRead;
-#else
-		return (int)fread(dest, 1, bytes, fileHandle.m_pFile);
-#endif
-		
+		return (int)fread(dest, 1, bytes, fileHandle.m_pFile);		
 	}
 	return 0;
 }
@@ -651,13 +615,7 @@ void ParaEngine::CFileUtils::CloseFile(FileHandle& fileHandle)
 {
 	if (fileHandle.IsValid())
 	{
-#if defined(WIN32) && defined(DEFAULT_FILE_ENCODING)
-		::CloseHandle(fileHandle.m_handle);
-		fileHandle.m_handle = INVALID_HANDLE_VALUE;
-#else
-		fclose(fileHandle.m_pFile);
-#endif
-		
+		fclose(fileHandle.m_pFile);		
 		fileHandle.m_pFile = nullptr;
 	}
 }

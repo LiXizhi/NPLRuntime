@@ -9,6 +9,7 @@
 #include "ParaEngine.h"
 #include "ReadFileBoost.h"
 #include <stdio.h>
+#include "StringHelper.h"
 
 using namespace ParaEngine;
 
@@ -88,7 +89,13 @@ void CReadFileBoost::openFile()
 
 	std::string filename = m_Filename;
 	CParaFile::DoesFileExist2(m_Filename.c_str(), FILE_ON_DISK | FILE_ON_SEARCH_PATH, &filename);
+#if WIN32 && defined(DEFAULT_FILE_ENCODING)
+	std::wstring filename16 = StringHelper::MultiByteToWideChar(filename.c_str(), DEFAULT_FILE_ENCODING);
+	m_pFile = _wfopen(filename16.c_str(), L"rb");
+#else
 	m_pFile = fopen(filename.c_str(), "rb");
+#endif
+	
 
 	if (m_pFile)
 	{
