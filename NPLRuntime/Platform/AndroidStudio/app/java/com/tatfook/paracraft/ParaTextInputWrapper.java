@@ -2,7 +2,7 @@
 // ParaTextInputWrapper.java
 // Authors: LanZhiHong, big
 // CreateDate: 2019.7.16
-// ModifyDate: 2022.11.2
+// ModifyDate: 2023.2.21
 //-----------------------------------------------------------------------------
 
 package com.tatfook.paracraft;
@@ -20,15 +20,9 @@ public class ParaTextInputWrapper implements TextWatcher, TextView.OnEditorActio
     private ParaEngineGLSurfaceView mNativeView;
     private static native void nativeSetText(String text);
     private static native void nativeSetCaretPosition(int caretPosition);
-    private static native int nativeGetCaretPosition();
-    private static native String nativeGetText();
 
     private boolean isGuiEdit = false;
-    private boolean hasDeletedInChangeFunc = false;
-    private boolean hasDeletedInKeyEvent = false;
-
-    private boolean hasEnteredInChangeFunc = false;
-    private boolean hasEnteredInKeyEvent = false;
+    private String lastText = "";
 
     public ParaTextInputWrapper(ParaEngineGLSurfaceView nativeView) {
         mNativeView = nativeView;
@@ -40,20 +34,19 @@ public class ParaTextInputWrapper implements TextWatcher, TextView.OnEditorActio
         return imm.isFullscreenMode();
     }
 
-    public void onFocus() {
+    public void onFocus(String lastText, int selStart, int selEnd) {
         ParaEngineEditBox editText = mNativeView.getParaEditText();
-        if(this.isGuiEdit){
-            editText.setText(nativeGetText());
-            editText.setSelection(nativeGetCaretPosition());
-        }
-        hasDeletedInKeyEvent = false;
-        hasDeletedInChangeFunc = false;
 
-        hasEnteredInChangeFunc = false;
-        hasEnteredInKeyEvent = false;
+        if (this.isGuiEdit) {
+            editText.setText(lastText);
+            editText.setSelection(selStart, selEnd);
+        } else {
+            this.lastText = "";
+            editText.setText("");
+        }
     }
 
-    public void SetIsGuiEdit(boolean isGuiEdit){
+    public void setIsGuiEdit(boolean isGuiEdit){
         this.isGuiEdit = isGuiEdit;
     }
 
@@ -61,7 +54,8 @@ public class ParaTextInputWrapper implements TextWatcher, TextView.OnEditorActio
     public void afterTextChanged(Editable s) {
         if (this.isFullScreenEdit())
             return;
-        if(this.isGuiEdit){
+
+        if (this.isGuiEdit) {
             ParaEngineEditBox editText = mNativeView.getParaEditText();
             String text = s.toString();
 
@@ -72,77 +66,126 @@ public class ParaTextInputWrapper implements TextWatcher, TextView.OnEditorActio
                     nativeSetCaretPosition(editText.getSelectionEnd());
                 }
             });
-        }else {
+        } else {
             String text = s.toString();
-            hasDeletedInChangeFunc = false;
-            if (text.length() < mNativeView.lastText.length()) {
-                if(hasDeletedInKeyEvent){
-                    hasDeletedInKeyEvent = false;
-                    return;
-                }
-                mNativeView.onDeleteBackward();
-                mNativeView.lastText = text;
-                hasDeletedInChangeFunc = true;
+
+            if (text.equals("") && this.lastText.equals("")) {
                 return;
             }
 
-            int sel_start = mNativeView.getParaEditText().getSelectionStart();
-            int sel_end = mNativeView.getParaEditText().getSelectionEnd();
-            String repText = getAddedString(text,mNativeView.lastText,sel_start,sel_end);
-            if(repText.isEmpty()){
-                return;
-            }
-            hasEnteredInChangeFunc = false;
-            if(repText.equals("\n")){
-                if(hasEnteredInKeyEvent){
-                    hasEnteredInKeyEvent = false;
-                    return;
-                }
+            if (text.equals("\n")) {
+                this.lastText = "";
+                mNativeView.getParaEditText().setText("");
                 mNativeView.onPressEnterKey();
-                mNativeView.lastText = text;
-                hasEnteredInChangeFunc = true;
                 return;
             }
 
-            mNativeView.onUnicodeText(repText);
-            mNativeView.lastText = text;
+            if (this.lastText.equals(text)) {
+                return;
+            }
+
+            if (this.lastText.length() > text.length()) {
+                String sameStr = "";
+                String lastDiffStr = "";
+                String textFieldDiffStr = "";
+                boolean forceDiff = false;
+
+                for (int i = 0;i < this.lastText.length();i++) {
+                    char lastTextCharItem = this.lastText.charAt(i);
+
+                    if (i < text.length()) {
+                        char textFieldCharItem = text.charAt(i);
+
+                        if (lastTextCharItem == textFieldCharItem && !forceDiff) {
+                            sameStr = new StringBuffer(sameStr).append(textFieldCharItem).toString();
+                        } else {
+                            forceDiff = true;
+                            lastDiffStr = new StringBuffer(lastDiffStr).append(lastTextCharItem).toString();
+                            textFieldDiffStr = new StringBuffer(textFieldDiffStr).append(textFieldCharItem).toString();
+                        }
+                    } else {
+                        lastDiffStr = new StringBuffer(lastDiffStr).append(lastTextCharItem).toString();
+                    }
+                }
+
+                for (int i = 0;i < lastDiffStr.length();i++) {
+                    mNativeView.onUnicodeText("[#backspace]");
+                }
+
+                for (int i = 0;i < textFieldDiffStr.length();i++) {
+                    mNativeView.onUnicodeText(String.valueOf(textFieldDiffStr.charAt(i)));
+                }
+            } else {
+                String sameStr = "";
+                String lastDiffStr = "";
+                String textFieldDiffStr = "";
+                boolean forceDiff = false;
+
+                for (int i = 0;i < text.length();i++) {
+                    char textFieldCharItem = text.charAt(i);
+
+                    if (i < this.lastText.length()) {
+                        char lastTextCharItem = this.lastText.charAt(i);
+
+                        if (lastTextCharItem == textFieldCharItem && !forceDiff) {
+                            sameStr = new StringBuffer(sameStr).append(lastTextCharItem).toString();
+                        } else {
+                            forceDiff = true;
+                            lastDiffStr = new StringBuffer(lastDiffStr).append(lastTextCharItem).toString();
+                            textFieldDiffStr = new StringBuffer(textFieldDiffStr).append(textFieldCharItem).toString();
+                        }
+                    } else {
+                        textFieldDiffStr = new StringBuffer(textFieldDiffStr).append(textFieldCharItem).toString();
+                    }
+                }
+
+                for (int i = 0;i < lastDiffStr.length();i++) {
+                    mNativeView.onUnicodeText("[#backspace]");
+                }
+
+                for (int i = 0;i< textFieldDiffStr.length();i++) {
+                    mNativeView.onUnicodeText(String.valueOf(textFieldDiffStr.charAt(i)));
+                }
+            }
+
+            this.lastText = text;
         }
     }
 
-    private String getAddedString(String text,String lastText,int sel_start,int sel_end){
-        String repText = "";
-        int startIdx = 0;
-        int endIdx = text.length();
-        for(int i=1;i<=lastText.length();i++){
-            String temp = lastText.substring(0,i);
-            if(temp.equals(text.substring(0,i))){
-                startIdx = i;
-            }else{
-                break;
-            }
-        }
-
-        for(int i=1;i<=text.length();i++){
-            int j = text.length() - i;
-            int k = lastText.length() - i;
-            if(k<0){
-                break;
-            }
-            if(text.substring(j).equals(lastText.substring(k))){
-                endIdx = j;
-            }else{
-                break;
-            }
-        }
-        if(startIdx<0||endIdx<0||startIdx>endIdx){
-            if(text.length()==lastText.length()+1){
-                return text.substring(text.length()-1);
-            }
-            return "";
-        }
-        repText = text.substring(startIdx,endIdx);
-        return repText;
-    }
+//    private String getAddedString(String text,String lastText,int sel_start,int sel_end){
+//        String repText = "";
+//        int startIdx = 0;
+//        int endIdx = text.length();
+//        for(int i=1;i<=lastText.length();i++){
+//            String temp = lastText.substring(0,i);
+//            if(temp.equals(text.substring(0,i))){
+//                startIdx = i;
+//            }else{
+//                break;
+//            }
+//        }
+//
+//        for(int i=1;i<=text.length();i++){
+//            int j = text.length() - i;
+//            int k = lastText.length() - i;
+//            if(k<0){
+//                break;
+//            }
+//            if(text.substring(j).equals(lastText.substring(k))){
+//                endIdx = j;
+//            }else{
+//                break;
+//            }
+//        }
+//        if(startIdx<0||endIdx<0||startIdx>endIdx){
+//            if(text.length()==lastText.length()+1){
+//                return text.substring(text.length()-1);
+//            }
+//            return "";
+//        }
+//        repText = text.substring(startIdx,endIdx);
+//        return repText;
+//    }
 
     @Override
     public void beforeTextChanged(CharSequence pCharSequence, int start, int count, int after) {
@@ -168,60 +211,29 @@ public class ParaTextInputWrapper implements TextWatcher, TextView.OnEditorActio
 
     @Override
     public boolean onKey(View v, int keyCode, KeyEvent event) {
-
-        if(keyCode == KeyEvent.KEYCODE_DEL || keyCode == KeyEvent.KEYCODE_ENTER) {
-            if(event.getAction()== KeyEvent.ACTION_UP){
-                return true;
-            }
-            if(keyCode == KeyEvent.KEYCODE_ENTER) {
-                if(isGuiEdit){
-                    mNativeView.requestFocus();
-                    mNativeView.getParaEditText().setEnabled(false);
-                    return true;
-                }
-            }
-            Editable text = mNativeView.getParaEditText().getText();
-            int selStart = mNativeView.getParaEditText().getSelectionStart();
-            int selEnd = mNativeView.getParaEditText().getSelectionEnd();
-
-
-
-            hasDeletedInKeyEvent = false;
-            if(keyCode == KeyEvent.KEYCODE_DEL){
-                if(hasDeletedInChangeFunc){
-                    hasDeletedInChangeFunc = false;
-                    return true;
-                }
-                hasDeletedInKeyEvent = true;
-            }
-
-            hasEnteredInKeyEvent = false;
-            if(keyCode == KeyEvent.KEYCODE_ENTER){
-                if(hasEnteredInChangeFunc){
-                    hasEnteredInChangeFunc = false;
-                    return true;
-                }
-                hasEnteredInKeyEvent = true;
-            }
-
-            if(keyCode == KeyEvent.KEYCODE_DEL){
-                selStart = Math.max(selStart-1,0);
-                text.replace(selStart,selEnd,"");
-                mNativeView.lastText = text.toString();
-                mNativeView.onDeleteBackward();
-            }else{
-                text.replace(selStart,selEnd,"");
-                text.insert(selStart,"\n");
-                selStart = selStart + 1;
-                mNativeView.lastText = text.toString();
-                mNativeView.onPressEnterKey();
-            }
-
-            mNativeView.getParaEditText().setText(text);
-            mNativeView.getParaEditText().setSelection(selStart,selStart);
-
-            return true;
+        if (event.getAction() == KeyEvent.ACTION_UP){
+           return true;
         }
+
+        switch (keyCode) {
+            case KeyEvent.KEYCODE_DEL:
+                if (mNativeView.getParaEditText().getText().length() == 0) {
+                    mNativeView.onDeleteBackward();
+                }
+
+                return true;
+            case KeyEvent.KEYCODE_ENTER:
+                if (this.isGuiEdit) {
+                    return true;
+                } else {
+                    this.lastText = "";
+                    mNativeView.getParaEditText().setText("");
+                }
+
+                mNativeView.onPressEnterKey();
+                return true;
+        }
+
         return false;
     }
 }

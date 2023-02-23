@@ -240,7 +240,7 @@ def buildAndroid(arch):
     print("Building Boost for Android \n")
 
     params = "--user-config=android-config_%s.jam define=BOOST_FILESYSTEM_DISABLE_STATX --build-dir=%s --stagedir=%s toolset=clang-android target-os=android threadapi=pthread threading=multi link=static runtime-link=shared address-model=%d abi=aapcs " % (arch, build_dir, stage_dir, address_model)
-    params += "--with-thread --with-date_time --with-filesystem --with-system --with-chrono --with-regex --with-serialization --with-iostreams --with-log";
+    params += "--with-locale --with-thread --with-date_time --with-filesystem --with-system --with-chrono --with-regex --with-serialization --with-iostreams --with-log";
 
     ret = 0
     if (platform.system() == "Windows"):

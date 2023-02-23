@@ -36,7 +36,6 @@ public class ParaEngineGLSurfaceView extends GLSurfaceView {
     private static ParaEngineActivity sActivity = null;
     private static ParaTextInputWrapper sParaTextInputWrapper = null;
 
-    public String lastText = "";
     private ParaEngineRenderer mRenderer;
     private ParaEngineEditBox mEditText = null;
     private Handler sHandler = null;
@@ -101,6 +100,10 @@ public class ParaEngineGLSurfaceView extends GLSurfaceView {
         final int screenHeight = metrics.heightPixels;
 
         sHandler = new Handler(msg -> {
+            if (mEditText == null) {
+                return false;
+            }
+
             String defaultValue = msg.getData().getString("defaultValue");
 
             if (defaultValue != null) {
@@ -112,7 +115,14 @@ public class ParaEngineGLSurfaceView extends GLSurfaceView {
                 String inputType = msg.getData().getString("inputType");
 
                 if (bOpen) {
-                    ParaEngineEditBoxActivity.showNative(defaultValue,maxLength,isMultiline,confirmHold,confirmType,inputType);
+                    ParaEngineEditBoxActivity.showNative(
+                        defaultValue,
+                        maxLength,
+                        isMultiline,
+                        confirmHold,
+                        confirmType,
+                        inputType
+                    );
                 } else {
                     ParaEngineEditBoxActivity.hideNative();
                 }
@@ -125,25 +135,17 @@ public class ParaEngineGLSurfaceView extends GLSurfaceView {
             mCtrlBottom = msg.getData().getInt("ctrlBottom");
             String curEditText = msg.getData().getString("curEditText").replaceAll("\r\n","\n");
             boolean isGuiEdit = msg.getData().getBoolean("isGuiEdit");
-            sParaTextInputWrapper.SetIsGuiEdit(isGuiEdit);
-
-            if (mEditText == null) {
-                return false;
-            }
+            sParaTextInputWrapper.setIsGuiEdit(isGuiEdit);
 
             if (mIsOpen) {
                 int selStart = msg.getData().getInt("selStart");
                 int selEnd = msg.getData().getInt("selEnd");
 
-                if (selEnd<=0&&curEditText.length() > 0) {
-                    selStart = selEnd = Math.max(curEditText.length(),0);
+                if (selEnd <= 0 && curEditText.length() > 0) {
+                    selStart = selEnd = Math.max(curEditText.length(), 0);
                 }
 
-                mEditText.setText(curEditText);
-
-                mEditText.setSelection(selStart,selEnd);
-                lastText = curEditText;
-                sParaTextInputWrapper.onFocus();
+                sParaTextInputWrapper.onFocus(curEditText, selStart, selEnd);
 
                 mEditText.setEnabled(true);
 
@@ -275,6 +277,7 @@ public class ParaEngineGLSurfaceView extends GLSurfaceView {
         String curEditText = "";
         int selStart = 0;
         int selEnd = 0;
+
         try{
             JSONObject obj = new JSONObject(jsonEditParams);
             curEditText = obj.optString("curEditText");
@@ -283,6 +286,7 @@ public class ParaEngineGLSurfaceView extends GLSurfaceView {
         } catch (JSONException e) {
             e.printStackTrace();
         }
+
         bundle.putString("curEditText", curEditText);
         bundle.putInt("selStart", selStart);
         bundle.putInt("selEnd", selEnd);
