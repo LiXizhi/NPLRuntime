@@ -318,10 +318,6 @@ bool ParaEngine::RenderDeviceOpenGL::SetTexture(uint32_t stage, DeviceTexturePtr
 
 bool ParaEngine::RenderDeviceOpenGL::DrawIndexedPrimitiveUP(EPrimitiveType PrimitiveType, uint32_t MinVertexIndex, uint32_t NumVertices, uint32_t PrimitiveCount, const void * pIndexData, PixelFormat IndexDataFormat, const void* pVertexStreamZeroData, uint32_t VertexStreamZeroStride)
 {
-	if (m_CurrentIndexBuffer == 0 || m_CurrentVertexBuffer == 0 || m_CurrentVertexDeclaration == nullptr)
-	{
-		std::cout << "invalid buffer!!!" << std::endl;
-	}
 	ApplyBlendingModeChange();
 #ifdef EMSCRIPTEN
 	BindVAO();
@@ -347,11 +343,6 @@ bool ParaEngine::RenderDeviceOpenGL::DrawIndexedPrimitiveUP(EPrimitiveType Primi
 bool ParaEngine::RenderDeviceOpenGL::DrawIndexedPrimitiveUP_GL(EPrimitiveType PrimitiveType, uint32_t PrimitiveCount, const void * pIndexData, const int nIndexSize, const void* pVertexStreamZeroData, const int nVertexSize)
 {
 	BindVAO(pVertexStreamZeroData, nVertexSize, pIndexData, nIndexSize);
-	// if (m_CurrentVertexDeclaration)
-	// {
-	// 	m_CurrentVertexDeclaration->ApplyAttribute(pVertexStreamZeroData);
-	// 	m_CurrentVertexDeclaration->EnableAttribute();
-	// }
 	if (PrimitiveType == EPrimitiveType::TRIANGLELIST)
 	{
 		glDrawElements(GL_TRIANGLES, PrimitiveCount * 3, GL_UNSIGNED_SHORT, nullptr);
@@ -403,7 +394,7 @@ bool ParaEngine::RenderDeviceOpenGL::DrawPrimitiveUP(EPrimitiveType PrimitiveTyp
 {
 	ApplyBlendingModeChange();
 #ifdef EMSCRIPTEN
-	BindVAO();
+	return DrawPrimitiveUP_GL(PrimitiveType, PrimitiveCount, pVertexStreamZeroData, VertexStreamZeroStride);
 #else
 	if (m_CurrentIndexBuffer)
 	{
@@ -430,29 +421,23 @@ bool ParaEngine::RenderDeviceOpenGL::DrawPrimitiveUP(EPrimitiveType PrimitiveTyp
 	return true;
 
 }
-bool ParaEngine::RenderDeviceOpenGL::DrawPrimitiveUP_GL(EPrimitiveType PrimitiveType, uint32_t PrimitiveCount, const void* pVertexStreamZeroData, uint32_t nVertexSize)
+bool ParaEngine::RenderDeviceOpenGL::DrawPrimitiveUP_GL(EPrimitiveType PrimitiveType, uint32_t PrimitiveCount, const void* pVertexStreamZeroData, uint32_t VertexStreamZeroStride)
 {
-	if (m_CurrentIndexBuffer)
-	{
-		SetIndices(0);
-	}
-	if (m_CurrentVertexBuffer)
-	{
-		SetStreamSource(0, 0, 0, 0);
-	}
-	BindVAO(pVertexStreamZeroData, nVertexSize, nullptr, 0);
-	// if (m_CurrentVertexDeclaration)
-	// {
-	// 	m_CurrentVertexDeclaration->ApplyAttribute(pVertexStreamZeroData);
-	// 	m_CurrentVertexDeclaration->EnableAttribute();
-	// }
 	if (PrimitiveType == EPrimitiveType::TRIANGLELIST)
+	{
+		BindVAO(pVertexStreamZeroData, (PrimitiveCount * 3) * VertexStreamZeroStride, nullptr, 0);
 		glDrawArrays(GL_TRIANGLES, 0, PrimitiveCount * 3);
+	}
 	else if (PrimitiveType == EPrimitiveType::TRIANGLESTRIP)
+	{
+		BindVAO(pVertexStreamZeroData, (PrimitiveCount + 2) * VertexStreamZeroStride, nullptr, 0);
 		glDrawArrays(GL_TRIANGLE_STRIP, 0, PrimitiveCount + 2);
+	}
 	else if (PrimitiveType == EPrimitiveType::TRIANGLEFAN)
+	{
+		BindVAO(pVertexStreamZeroData, (PrimitiveCount + 2) * VertexStreamZeroStride, nullptr, 0);
 		glDrawArrays(GL_TRIANGLE_FAN, 0, PrimitiveCount + 2);
-
+	}
 	PE_CHECK_GL_ERROR_DEBUG();
 
 	return true;
@@ -503,8 +488,8 @@ bool ParaEngine::RenderDeviceOpenGL::SetIndices(IndexBufferDevicePtr_type pIndex
 	if (pIndexData != m_CurrentIndexBuffer)
 	{
 		m_CurrentIndexBuffer = pIndexData;
-#ifndef EMSCRIPTEN
 		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, pIndexData);
+#ifndef EMSCRIPTEN
 		PE_CHECK_GL_ERROR_DEBUG();
 #endif
 	}
@@ -517,23 +502,16 @@ bool ParaEngine::RenderDeviceOpenGL::SetStreamSource(uint32_t StreamNumber, Vert
 	if (pStreamData != m_CurrentVertexBuffer)
 	{
 		m_CurrentVertexBuffer = pStreamData;
+		glBindBuffer(GL_ARRAY_BUFFER, pStreamData);
 #ifndef EMSCRIPTEN
-		if (pStreamData == 0)
-		{
-			BindVAO(nullptr, 0, nullptr, 0);
+		//OUTPUT_LOG("RenderDeviceOpenGL:glBindBuffer %d",pStreamData);
+		if (m_CurrentVertexDeclaration)
+		{		
+			m_CurrentVertexDeclaration->EnableAttribute();
+			m_CurrentVertexDeclaration->ApplyAttribute();
+			//OUTPUT_LOG("RenderDeviceOpenGL: EnableAttribute & ApplyAttribute at SetStreamSource");
 		}
-		else 
-		{
-			glBindBuffer(GL_ARRAY_BUFFER, pStreamData);
-			//OUTPUT_LOG("RenderDeviceOpenGL:glBindBuffer %d",pStreamData);
-			if (m_CurrentVertexDeclaration)
-			{		
-				m_CurrentVertexDeclaration->EnableAttribute();
-				m_CurrentVertexDeclaration->ApplyAttribute();
-				//OUTPUT_LOG("RenderDeviceOpenGL: EnableAttribute & ApplyAttribute at SetStreamSource");
-			}
-			PE_CHECK_GL_ERROR_DEBUG();
-		}
+		PE_CHECK_GL_ERROR_DEBUG();
 #endif
 	}
 
@@ -749,30 +727,29 @@ void ParaEngine::RenderDeviceOpenGL::BindVAO(const void* vertex_data, const int 
 	static const int s_max_vertex_size = 50 * 1024 * 1024;  // 50M 顶点数据最大
 	static const int s_max_index_size = 1 * 1024 * 1024;    // 1M 顶点索引数据最大
 
+	glBindVertexArray(m_vao);
+
 	if (s_vbo == 0) 
 	{
 		glGenBuffers(1, &s_vbo);
 		glBindBuffer(GL_ARRAY_BUFFER, s_vbo);
-		// glBufferData(GL_ARRAY_BUFFER, s_max_vertex_size, nullptr, GL_DYNAMIC_DRAW);  
-		glBufferData(GL_ARRAY_BUFFER, s_max_vertex_size, nullptr, GL_STREAM_DRAW);  
+		glBufferData(GL_ARRAY_BUFFER, s_max_vertex_size, nullptr, GL_DYNAMIC_DRAW);  
 		glBindBuffer(GL_ARRAY_BUFFER, 0);
 	}
 	if (s_veo == 0)
 	{
 		glGenBuffers(1, &s_veo);
 		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, s_veo);
-		// glBufferData(GL_ELEMENT_ARRAY_BUFFER, s_max_index_size, nullptr, GL_DYNAMIC_DRAW);  
-		glBufferData(GL_ELEMENT_ARRAY_BUFFER, s_max_index_size, nullptr, GL_STREAM_DRAW);  
+		glBufferData(GL_ELEMENT_ARRAY_BUFFER, s_max_index_size, nullptr, GL_DYNAMIC_DRAW);  
 		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 	} 
 
 	glBindVertexArray(m_vao);
-	PE_CHECK_GL_ERROR_DEBUG();
-	if (m_CurrentVertexBuffer != 0)
+
+	if (m_CurrentVertexBuffer != 0 && vertex_data == nullptr)
 	{
 		glBindBuffer(GL_ARRAY_BUFFER, m_CurrentVertexBuffer);
 		PE_CHECK_GL_ERROR_DEBUG();
-		// std::cout << "vao: " << m_vao << "   veo: " << m_CurrentVertexBuffer << std::endl;
 	}
 	else
 	{
@@ -781,12 +758,16 @@ void ParaEngine::RenderDeviceOpenGL::BindVAO(const void* vertex_data, const int 
 			glBindBuffer(GL_ARRAY_BUFFER, s_vbo);
 			glBufferSubData(GL_ARRAY_BUFFER, 0, vertex_size > s_max_vertex_size ? s_max_index_size : vertex_size, vertex_data);
 		}
+		else
+		{
+			glBindBuffer(GL_ARRAY_BUFFER, 0);
+		}
 	}
-	if (m_CurrentIndexBuffer != 0)
+
+	if (m_CurrentIndexBuffer != 0 && index_data == nullptr)
 	{
 		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_CurrentIndexBuffer);
 		PE_CHECK_GL_ERROR_DEBUG();
-		// std::cout << "vao: " << m_vao << "   vbo: " << m_CurrentIndexBuffer << std::endl;
 	}
 	else
 	{
@@ -795,16 +776,16 @@ void ParaEngine::RenderDeviceOpenGL::BindVAO(const void* vertex_data, const int 
 			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, s_veo);
 			glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, 0, index_size > s_max_index_size ? s_max_index_size : index_size, index_data);
 		}
+		else
+		{
+			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+		}
 	}
+
 	if (m_CurrentVertexDeclaration != nullptr)
 	{		
 		m_CurrentVertexDeclaration->ApplyAttribute();
 		m_CurrentVertexDeclaration->EnableAttribute();
-		// std::cout << "==============CurrentVertexDeclaration != nullptr================" << std::endl;
 	}
 	PE_CHECK_GL_ERROR_DEBUG();
-	// if (m_CurrentIndexBuffer == 0 || m_CurrentVertexBuffer == 0 || m_CurrentVertexDeclaration == nullptr)
-	// {
-	// 	std::cout << "m_CurrentVertexBuffer =" << m_CurrentVertexBuffer << "  m_CurrentIndexBuffer = " << m_CurrentIndexBuffer << " m_CurrentVertexDeclaration = " << (m_CurrentVertexDeclaration == nullptr) << std::endl; 
-	// }
 }

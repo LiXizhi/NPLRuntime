@@ -18,6 +18,7 @@
 #include "BaseObject.h"
 #include "ViewportManager.h"
 #include "SpriteRendererOpenGL.h"
+#include "VertexDeclarationOpenGL.h"
 
 using namespace ParaEngine;
 
@@ -311,24 +312,37 @@ void ParaEngine::CSpriteRendererOpenGL::DrawTriangles(const sprite_vertex* pVert
 	glVertexAttribPointer(GLProgram::VERTEX_ATTRIB_TEX_COORD, 2, GL_FLOAT, GL_FALSE, kQuadSize, (GLvoid*)&(pVertices->tex));
 	CGlobals::GetRenderDevice()->DrawPrimitive(EPrimitiveType::TRIANGLELIST, 0, nTriangleCount);
 #else
-	unsigned int VBO, VAO;
-    glGenVertexArrays(1, &VAO);
-    glGenBuffers(1, &VBO);
-	glBindVertexArray(VAO);
-    glBindBuffer(GL_ARRAY_BUFFER, VBO);
-	glBufferData(GL_ARRAY_BUFFER, kQuadSize * nTriangleCount * 3, pVertices, GL_STATIC_DRAW);
-	glVertexAttribPointer(GLProgram::VERTEX_ATTRIB_POSITION, 3, GL_FLOAT, GL_FALSE, kQuadSize, (const void*)offsetof(sprite_vertex, pos));
-	glVertexAttribPointer(GLProgram::VERTEX_ATTRIB_COLOR, 4, GL_UNSIGNED_BYTE, GL_TRUE, kQuadSize, (const void*)offsetof(sprite_vertex, col));
-	glVertexAttribPointer(GLProgram::VERTEX_ATTRIB_TEX_COORD, 2, GL_FLOAT, GL_FALSE, kQuadSize, (const void*)offsetof(sprite_vertex, tex));
-	// std::cout << "==================================fdds" << std::endl;
-	glEnableVertexAttribArray(GLProgram::VERTEX_ATTRIB_POSITION);
-	glEnableVertexAttribArray(GLProgram::VERTEX_ATTRIB_COLOR);
-	glEnableVertexAttribArray(GLProgram::VERTEX_ATTRIB_TEX_COORD);
-	CGlobals::GetRenderDevice()->DrawPrimitive( EPrimitiveType::TRIANGLELIST, 0, nTriangleCount);
-	glBindBuffer(GL_ARRAY_BUFFER, 0);
-	glBindVertexArray(0);
-	glDeleteVertexArrays(1, &VAO);
-    glDeleteBuffers(1, &VBO);
+	static VertexElement decl_vertex_element[] =
+	{
+		{ 0, offsetof(sprite_vertex, pos), D3DDECLTYPE_FLOAT3, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_POSITION, 0 },
+		{ 0, offsetof(sprite_vertex, col), D3DDECLTYPE_D3DCOLOR, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_COLOR, 0 },
+		{ 0, offsetof(sprite_vertex, tex), D3DDECLTYPE_FLOAT2, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_TEXCOORD, 0 },
+		D3DDECL_END()
+	};
+	static CVertexDeclaration vertex_declaration(decl_vertex_element);
+	CGlobals::GetRenderDevice()->SetVertexDeclaration(&vertex_declaration);
+	CGlobals::GetRenderDevice()->ApplyBlendingModeChange();
+	CGlobals::GetRenderDevice()->DrawPrimitiveUP_GL(EPrimitiveType::TRIANGLELIST, nTriangleCount, pVertices, kQuadSize);
+
+	// unsigned int VBO, VAO;
+    // glGenVertexArrays(1, &VAO);
+    // glGenBuffers(1, &VBO);
+	// glBindVertexArray(VAO);
+    // glBindBuffer(GL_ARRAY_BUFFER, VBO);
+	// glBufferData(GL_ARRAY_BUFFER, kQuadSize * nTriangleCount * 3, pVertices, GL_DYNAMIC_DRAW);
+	// glVertexAttribPointer(GLProgram::VERTEX_ATTRIB_POSITION, 3, GL_FLOAT, GL_FALSE, kQuadSize, (const void*)offsetof(sprite_vertex, pos));
+	// glVertexAttribPointer(GLProgram::VERTEX_ATTRIB_COLOR, 4, GL_UNSIGNED_BYTE, GL_TRUE, kQuadSize, (const void*)offsetof(sprite_vertex, col));
+	// glVertexAttribPointer(GLProgram::VERTEX_ATTRIB_TEX_COORD, 2, GL_FLOAT, GL_FALSE, kQuadSize, (const void*)offsetof(sprite_vertex, tex));
+	// glEnableVertexAttribArray(GLProgram::VERTEX_ATTRIB_POSITION);
+	// glEnableVertexAttribArray(GLProgram::VERTEX_ATTRIB_COLOR);
+	// glEnableVertexAttribArray(GLProgram::VERTEX_ATTRIB_TEX_COORD);
+	// CGlobals::GetRenderDevice()->ApplyBlendingModeChange();
+	// glDrawArrays(GL_TRIANGLES, 0, nTriangleCount * 3);
+	// // CGlobals::GetRenderDevice()->DrawPrimitive( EPrimitiveType::TRIANGLELIST, 0, nTriangleCount);
+	// glBindBuffer(GL_ARRAY_BUFFER, 0);
+	// glBindVertexArray(0);
+	// glDeleteVertexArrays(1, &VAO);
+    // glDeleteBuffers(1, &VBO);
 #endif
 }
 

@@ -18,7 +18,7 @@ namespace ParaEngine
 		virtual int GetMaxSimultaneousTextures() override;
 		virtual bool SetTexture(uint32_t stage, DeviceTexturePtr_type texture) override;
 		virtual bool DrawPrimitive(EPrimitiveType PrimitiveType, uint32_t StartVertex, uint32_t PrimitiveCount) override;
-		virtual bool DrawPrimitiveUP_GL(EPrimitiveType PrimitiveType, uint32_t PrimitiveCount, const void* pVertexStreamZeroData, uint32_t nVertexSize);
+		virtual bool DrawPrimitiveUP_GL(EPrimitiveType PrimitiveType, uint32_t PrimitiveCount, const void* pVertexStreamZeroData, uint32_t VertexStreamZeroStride);
 		virtual bool DrawPrimitiveUP(EPrimitiveType PrimitiveType, uint32_t PrimitiveCount, const void* pVertexStreamZeroData, uint32_t VertexStreamZeroStride) override;
 		virtual bool SetSamplerState(uint32_t stage, ESamplerStateType type, uint32_t value) override;
 		virtual bool SetVertexDeclaration(CVertexDeclaration* pVertexDeclaration) override;
@@ -47,8 +47,8 @@ namespace ParaEngine
 		virtual bool SetClearDepth(const float depth) override;
 		virtual bool SetClearStencil(const int stencil) override;
 		virtual void Flush() override;
+		virtual void ApplyBlendingModeChange();
 	protected:
-		void ApplyBlendingModeChange();
 		void BindVAO(const void* vertex_data = nullptr, const int vertex_size = 0, const void* index_data = nullptr, const int index_size = 0);
 	private:
 		bool m_AlphaBlendingChanged;

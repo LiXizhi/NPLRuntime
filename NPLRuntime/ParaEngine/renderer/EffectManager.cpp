@@ -2140,11 +2140,9 @@ bool EffectManager::BeginEffectShader(int nHandle, CEffectFile** pOutEffect)
 			if (pDecl == 0)
 				return false;
 			// std::cout << "========================TECH_GUI_TEXT============================" << std::endl;
-#ifndef EMSCRIPTEN
 			CGlobals::GetRenderDevice()->SetIndices(0);
 			CGlobals::GetRenderDevice()->SetStreamSource(0, 0, 0, 0);
 			CGlobals::GetRenderDevice()->SetVertexDeclaration(pDecl);
-#endif
 			pd3dDevice->SetRenderState(ERenderState::SRCBLEND, D3DBLEND_SRCALPHA);
 			pd3dDevice->SetRenderState(ERenderState::DESTBLEND, D3DBLEND_INVSRCALPHA);
 			SetSamplerState(0, ESamplerStateType::MINFILTER, D3DTEXF_POINT, true);
@@ -2162,11 +2160,9 @@ bool EffectManager::BeginEffectShader(int nHandle, CEffectFile** pOutEffect)
 			if (pDecl == 0)
 				return false;
 			// std::cout << "========================TECH_GUI============================" << std::endl;
-#ifndef EMSCRIPTEN
 			CGlobals::GetRenderDevice()->SetIndices(0);
 			CGlobals::GetRenderDevice()->SetStreamSource(0, 0, 0, 0);
 			CGlobals::GetRenderDevice()->SetVertexDeclaration(pDecl);
-#endif
 			pd3dDevice->SetRenderState(ERenderState::CULLMODE, RSV_CULL_NONE);
 			pd3dDevice->SetRenderState(ERenderState::ZENABLE, FALSE);m_bZEnable = false;
 			// Note by Xizhi: always enable zwrite otherwise z-clear will not working when cocos clear the zbuffer in the outer loop. 
@@ -2185,11 +2181,9 @@ bool EffectManager::BeginEffectShader(int nHandle, CEffectFile** pOutEffect)
 		if (pDecl == 0)
 			return false;
 		// std::cout << "========================TECH_SINGLE_COLOR============================" << std::endl;
-#ifndef EMSCRIPTEN
 		CGlobals::GetRenderDevice()->SetIndices(0);
 		CGlobals::GetRenderDevice()->SetStreamSource(0,0,0,0);
 		CGlobals::GetRenderDevice()->SetVertexDeclaration(pDecl);
-#endif
 		pd3dDevice->SetRenderState(ERenderState::CULLMODE, RSV_CULL_CCW);
 		pd3dDevice->SetRenderState(ERenderState::ZENABLE, TRUE);m_bZEnable = true;
 		pd3dDevice->SetRenderState(ERenderState::ZWRITEENABLE, TRUE);
@@ -2206,11 +2200,9 @@ bool EffectManager::BeginEffectShader(int nHandle, CEffectFile** pOutEffect)
 			return false;
 
 		// std::cout << "========================TECH_BMAX_MODEL============================" << std::endl;
-#ifndef EMSCRIPTEN
 		CGlobals::GetRenderDevice()->SetIndices(0);
 		CGlobals::GetRenderDevice()->SetStreamSource(0, 0, 0, 0);
 		CGlobals::GetRenderDevice()->SetVertexDeclaration(pDecl);
-#endif
 		pEffect->EnableAlphaBlending(false);
 		pEffect->EnableAlphaTesting(false);
 		applyFogParameters();
@@ -2241,12 +2233,9 @@ bool EffectManager::BeginEffectShader(int nHandle, CEffectFile** pOutEffect)
 		VertexDeclarationPtr pDecl = GetVertexDeclaration(S0_POS_TEX0_COLOR);
 		if (pDecl == 0)
 			return false;
-		// std::cout << "========================TECH_PARTICLES============================" << std::endl;
-#ifndef EMSCRIPTEN
 		CGlobals::GetRenderDevice()->SetIndices(0);
 		CGlobals::GetRenderDevice()->SetStreamSource(0, 0, 0, 0);
 		CGlobals::GetRenderDevice()->SetVertexDeclaration(pDecl);
-#endif
 		pd3dDevice->SetRenderState(ERenderState::ALPHATESTENABLE, FALSE);
 		pd3dDevice->SetRenderState(ERenderState::ALPHABLENDENABLE, TRUE); // force blending
 		pd3dDevice->SetRenderState(ERenderState::ZWRITEENABLE, FALSE);
@@ -2263,12 +2252,9 @@ bool EffectManager::BeginEffectShader(int nHandle, CEffectFile** pOutEffect)
 		VertexDeclarationPtr pDecl = GetVertexDeclaration(S0_POS_TEX0);
 		if (pDecl == 0)
 			return false;
-#ifndef EMSCRIPTEN
-		// std::cout << "========================TECH_SKY_DOME============================" << std::endl;
 		CGlobals::GetRenderDevice()->SetIndices(0);
 		CGlobals::GetRenderDevice()->SetStreamSource(0, 0, 0, 0);
 		CGlobals::GetRenderDevice()->SetVertexDeclaration(pDecl);
-#endif
 		pd3dDevice->SetSamplerState(0, ESamplerStateType::ADDRESSU, D3DTADDRESS_WRAP);
 		pd3dDevice->SetSamplerState(0, ESamplerStateType::ADDRESSV, D3DTADDRESS_WRAP);
 		pd3dDevice->SetSamplerState(1, ESamplerStateType::ADDRESSU, D3DTADDRESS_WRAP);
@@ -2291,12 +2277,9 @@ bool EffectManager::BeginEffectShader(int nHandle, CEffectFile** pOutEffect)
 		VertexDeclarationPtr pDecl = GetVertexDeclaration(S0_POS_NORM_TEX0);
 		if (pDecl == 0)
 			return false;
-		// std::cout << "========================TECH_SKY_MESH============================" << std::endl;
-#ifndef EMSCRIPTEN
 		CGlobals::GetRenderDevice()->SetIndices(0);
 		CGlobals::GetRenderDevice()->SetStreamSource(0, 0, 0, 0);
 		CGlobals::GetRenderDevice()->SetVertexDeclaration(pDecl);
-#endif
 		pEffect->EnableAlphaBlending(false);
 		pEffect->EnableAlphaTesting(false);
 		pd3dDevice->SetSamplerState(0, ESamplerStateType::ADDRESSU, D3DTADDRESS_CLAMP);
@@ -2322,12 +2305,9 @@ bool EffectManager::BeginEffectShader(int nHandle, CEffectFile** pOutEffect)
 			VertexDeclarationPtr pDecl = GetVertexDeclaration(S0_POS_NORM_TEX0);
 			if (pDecl == 0)
 				return false;
-			// std::cout << "========================TECH_SIMPLE_MESH_NORMAL============================" << std::endl;
-#ifndef EMSCRIPTEN
 			CGlobals::GetRenderDevice()->SetIndices(0);
 			CGlobals::GetRenderDevice()->SetStreamSource(0, 0, 0, 0);
 			CGlobals::GetRenderDevice()->SetVertexDeclaration(pDecl);
-#endif
 			pEffect->EnableAlphaBlending(false);
 			pEffect->EnableAlphaTesting(false);
 			pd3dDevice->SetSamplerState(0, ESamplerStateType::ADDRESSU, D3DTADDRESS_WRAP);
@@ -2351,10 +2331,8 @@ bool EffectManager::BeginEffectShader(int nHandle, CEffectFile** pOutEffect)
 		if (pDecl == 0)
 			return false;
 		// std::cout << "========================TECH_TERRAIN============================" << std::endl;
-#ifndef EMSCRIPTEN
 		CGlobals::GetRenderDevice()->SetIndices(0);
 		CGlobals::GetRenderDevice()->SetStreamSource(0, 0, 0, 0);
-#endif
 		EnableGlobalLighting(bEnableSunLight && bEnableLight);
 		EnableLocalLighting(bEnableLight);
 

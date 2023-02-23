@@ -1760,10 +1760,14 @@ void CParaXModel::DrawPass(ModelRenderPass &p)
 #endif
 			pBufEntity->Unlock();
 
+#ifdef EMSCRIPTEN
+			pd3dDevice->DrawPrimitiveUP_GL(EPrimitiveType::TRIANGLELIST, nLockedNum, pBufEntity->GetBaseVertexPointer(), pBufEntity->m_nUnitSize);
+#else 
 			if (pBufEntity->IsMemoryBuffer())
 				pd3dDevice->DrawPrimitiveUP(EPrimitiveType::TRIANGLELIST, nLockedNum, pBufEntity->GetBaseVertexPointer(), pBufEntity->m_nUnitSize);
 			else
 				pd3dDevice->DrawPrimitive(EPrimitiveType::TRIANGLELIST, pBufEntity->GetBaseVertex(), nLockedNum);
+#endif
 			if ((p.indexCount - nNumFinishedVertice) > nNumLockedVertice)
 			{
 				nNumFinishedVertice += nNumLockedVertice;
