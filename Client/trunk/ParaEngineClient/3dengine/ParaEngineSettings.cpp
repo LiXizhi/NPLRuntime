@@ -1609,6 +1609,13 @@ void ParaEngineSettings::SetRefreshTimer(float fTimerInterval)
 	CGlobals::GetApp()->SetRefreshTimer(fTimerInterval);
 }
 
+const std::string& ParaEngineSettings::GetDefaultFileAPIEncoding()
+{
+	static std::string ret = "";
+	ret = StringHelper::GetDefaultCPName();
+	return ret;
+}
+
 float ParaEngineSettings::GetRefreshTimer()
 {
 	return CGlobals::GetApp()->GetRefreshTimer();
@@ -1718,5 +1725,7 @@ int ParaEngineSettings::InstallFields(CAttributeClass* pClass, bool bOverride)
 
 	pClass->AddField("ResetAudioDevice", FieldType_String, (void*)ResetAudioDevice_s, NULL, NULL, NULL, bOverride);
 	pClass->AddField("AudioDeviceName", FieldType_String, NULL, (void*)GetAudioDeviceName_s, NULL, NULL, bOverride);
+
+	pClass->AddField("DefaultFileAPIEncoding", FieldType_String, NULL, (void*)GetDefaultFileAPIEncoding_s, NULL, NULL, bOverride);
 	return S_OK;
 }

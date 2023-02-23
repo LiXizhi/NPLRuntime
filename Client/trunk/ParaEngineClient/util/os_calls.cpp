@@ -426,7 +426,20 @@ PE_CORE_DECL std::string ParaEngine::GetExecutablePath()
 	char exePath[512 + 1] = { 0 };
 	memset(exePath, 0, sizeof(exePath));
 #ifdef WIN32
+#if DEFAULT_FILE_ENCODING
+	wchar_t exePath16[512 + 1] = { 0 };
+	memset(exePath16, 0, sizeof(exePath16));
+	if (GetModuleFileNameW(NULL, exePath16, 512) > 0)
+	{
+		std::string path = StringHelper::WideCharToMultiByte(exePath16, DEFAULT_FILE_ENCODING);
+		return path;
+	}else{
+		return "";
+	}
+#else
 	return (GetModuleFileName(NULL, exePath, 512) > 0) ? std::string(exePath) : std::string();
+#endif
+	
 #elif (PARA_TARGET_PLATFORM == PARA_PLATFORM_LINUX)
 	ssize_t len = ::readlink("/proc/self/exe", exePath, sizeof(exePath));
 	if (len == -1 || len == sizeof(exePath))
