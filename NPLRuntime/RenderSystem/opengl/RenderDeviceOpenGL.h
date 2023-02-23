@@ -18,6 +18,7 @@ namespace ParaEngine
 		virtual int GetMaxSimultaneousTextures() override;
 		virtual bool SetTexture(uint32_t stage, DeviceTexturePtr_type texture) override;
 		virtual bool DrawPrimitive(EPrimitiveType PrimitiveType, uint32_t StartVertex, uint32_t PrimitiveCount) override;
+		virtual bool DrawPrimitiveUP_GL(EPrimitiveType PrimitiveType, uint32_t PrimitiveCount, const void* pVertexStreamZeroData, uint32_t nVertexSize);
 		virtual bool DrawPrimitiveUP(EPrimitiveType PrimitiveType, uint32_t PrimitiveCount, const void* pVertexStreamZeroData, uint32_t VertexStreamZeroStride) override;
 		virtual bool SetSamplerState(uint32_t stage, ESamplerStateType type, uint32_t value) override;
 		virtual bool SetVertexDeclaration(CVertexDeclaration* pVertexDeclaration) override;
@@ -31,6 +32,7 @@ namespace ParaEngine
 		int GetStencilBits();
 		virtual bool DrawIndexedPrimitive(EPrimitiveType Type, int BaseVertexIndex, uint32_t MinIndex, uint32_t NumVertices, uint32_t indexStart, uint32_t PrimitiveCount) override;
 		virtual bool DrawIndexedPrimitiveUP(EPrimitiveType PrimitiveType, uint32_t MinVertexIndex, uint32_t NumVertices, uint32_t PrimitiveCount, const void * pIndexData, PixelFormat IndexDataFormat, const void* pVertexStreamZeroData, uint32_t VertexStreamZeroStride) override;
+		virtual bool DrawIndexedPrimitiveUP_GL(EPrimitiveType PrimitiveType, uint32_t PrimitiveCount, const void * pIndexData, const int nIndexSize, const void* pVertexStreamZeroData, const int nVertexSize);
 		virtual bool SetTransform(ETransformsStateType State, DeviceMatrix_ptr pMatrix) override;
 		virtual bool SetFVF(uint32_t FVF) override;
 		virtual void SetCursorPosition(int X, int Y, uint32_t Flags) override;
@@ -47,7 +49,7 @@ namespace ParaEngine
 		virtual void Flush() override;
 	protected:
 		void ApplyBlendingModeChange();
-		void BindVAO();
+		void BindVAO(const void* vertex_data = nullptr, const int vertex_size = 0, const void* index_data = nullptr, const int index_size = 0);
 	private:
 		bool m_AlphaBlendingChanged;
 		bool m_BlendingChanged;

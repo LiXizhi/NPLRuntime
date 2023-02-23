@@ -1,4 +1,4 @@
-#include <stdexcept>
+﻿#include <stdexcept>
 #include "ParaEngine.h"
 #include "renderer/VertexDeclarationOpenGL.h"
 #include "math/ParaViewport.h"
@@ -60,7 +60,9 @@ bool ParaEngine::IRenderDevice::CheckRenderError(const char* filename, const cha
 	{
 		OUTPUT_LOG("OpenGL error 0x%04X in %s %s %d\n", __error, filename, func, nLine);
 		ParaEngine::CLogger::GetSingleton().WriteFormated("OpenGL error 0x%04X in %s %s %d\n", __error, filename, func, nLine);
+#ifdef EMSCRIPTEN
 		CGlobals::GetApp()->StopApp();
+#endif
 		return false;
 	}
 	return true;
@@ -316,8 +318,19 @@ bool ParaEngine::RenderDeviceOpenGL::SetTexture(uint32_t stage, DeviceTexturePtr
 
 bool ParaEngine::RenderDeviceOpenGL::DrawIndexedPrimitiveUP(EPrimitiveType PrimitiveType, uint32_t MinVertexIndex, uint32_t NumVertices, uint32_t PrimitiveCount, const void * pIndexData, PixelFormat IndexDataFormat, const void* pVertexStreamZeroData, uint32_t VertexStreamZeroStride)
 {
+	if (m_CurrentIndexBuffer == 0 || m_CurrentVertexBuffer == 0 || m_CurrentVertexDeclaration == nullptr)
+	{
+		std::cout << "invalid buffer!!!" << std::endl;
+	}
 	ApplyBlendingModeChange();
+#ifdef EMSCRIPTEN
 	BindVAO();
+#else
+	if (m_CurrentVertexDeclaration)
+	{
+		m_CurrentVertexDeclaration->ApplyAttribute(pVertexStreamZeroData);
+	}
+#endif
 	if (PrimitiveType == EPrimitiveType::TRIANGLELIST)
 		glDrawElements(GL_TRIANGLES, PrimitiveCount * 3, GL_UNSIGNED_SHORT, (GLvoid*)(pIndexData));
 	else if (PrimitiveType == EPrimitiveType::TRIANGLESTRIP)
@@ -331,11 +344,49 @@ bool ParaEngine::RenderDeviceOpenGL::DrawIndexedPrimitiveUP(EPrimitiveType Primi
 	return true;
 }
 
+bool ParaEngine::RenderDeviceOpenGL::DrawIndexedPrimitiveUP_GL(EPrimitiveType PrimitiveType, uint32_t PrimitiveCount, const void * pIndexData, const int nIndexSize, const void* pVertexStreamZeroData, const int nVertexSize)
+{
+	BindVAO(pVertexStreamZeroData, nVertexSize, pIndexData, nIndexSize);
+	// if (m_CurrentVertexDeclaration)
+	// {
+	// 	m_CurrentVertexDeclaration->ApplyAttribute(pVertexStreamZeroData);
+	// 	m_CurrentVertexDeclaration->EnableAttribute();
+	// }
+	if (PrimitiveType == EPrimitiveType::TRIANGLELIST)
+	{
+		glDrawElements(GL_TRIANGLES, PrimitiveCount * 3, GL_UNSIGNED_SHORT, nullptr);
+		if (glGetError() != 0)
+		{
+			std::cout << "m_CurrentVertexBuffer =" << m_CurrentVertexBuffer << "  m_CurrentIndexBuffer = " << m_CurrentIndexBuffer << " m_CurrentVertexDeclaration = " << (m_CurrentVertexDeclaration == nullptr) << std::endl; 
+		}
+		PE_CHECK_GL_ERROR_DEBUG();
+	}
+	else if (PrimitiveType == EPrimitiveType::TRIANGLESTRIP)
+	{
+		glDrawElements(GL_TRIANGLE_STRIP, PrimitiveCount + 2, GL_UNSIGNED_SHORT, nullptr);
+		PE_CHECK_GL_ERROR_DEBUG();
+	}
+	else if (PrimitiveType == EPrimitiveType::TRIANGLEFAN)
+	{
+		glDrawElements(GL_TRIANGLE_FAN, PrimitiveCount + 2, GL_UNSIGNED_SHORT, nullptr);
+		PE_CHECK_GL_ERROR_DEBUG();
+	}
+	else if (PrimitiveType == EPrimitiveType::LINELIST)
+	{
+		glDrawElements(GL_LINES, PrimitiveCount * 2, GL_UNSIGNED_SHORT, nullptr);
+		PE_CHECK_GL_ERROR_DEBUG();
+	}
+
+	return true;
+}
+
 
 bool ParaEngine::RenderDeviceOpenGL::DrawPrimitive(EPrimitiveType PrimitiveType, uint32_t StartVertex, uint32_t PrimitiveCount)
 {
 	ApplyBlendingModeChange();
+#ifdef EMSCRIPTEN
 	BindVAO();
+#endif
 	if (PrimitiveType == EPrimitiveType::TRIANGLELIST)
 		glDrawArrays(GL_TRIANGLES, StartVertex, PrimitiveCount * 3);
 	else if (PrimitiveType == EPrimitiveType::TRIANGLESTRIP)
@@ -351,20 +402,22 @@ bool ParaEngine::RenderDeviceOpenGL::DrawPrimitive(EPrimitiveType PrimitiveType,
 bool ParaEngine::RenderDeviceOpenGL::DrawPrimitiveUP(EPrimitiveType PrimitiveType, uint32_t PrimitiveCount, const void* pVertexStreamZeroData, uint32_t VertexStreamZeroStride)
 {
 	ApplyBlendingModeChange();
+#ifdef EMSCRIPTEN
 	BindVAO();
-	// if (m_CurrentIndexBuffer)
-	// {
-	// 	SetIndices(0);
-	// }
-	// if (m_CurrentVertexBuffer)
-	// {
-	// 	SetStreamSource(0, 0, 0, 0);
-	// }
-	// if (m_CurrentVertexDeclaration)
-	// {
-	// 	m_CurrentVertexDeclaration->ApplyAttribute(pVertexStreamZeroData);
-	// }
-
+#else
+	if (m_CurrentIndexBuffer)
+	{
+		SetIndices(0);
+	}
+	if (m_CurrentVertexBuffer)
+	{
+		SetStreamSource(0, 0, 0, 0);
+	}
+	if (m_CurrentVertexDeclaration)
+	{
+		m_CurrentVertexDeclaration->ApplyAttribute(pVertexStreamZeroData);
+	}
+#endif
 	if (PrimitiveType == EPrimitiveType::TRIANGLELIST)
 		glDrawArrays(GL_TRIANGLES, 0, PrimitiveCount * 3);
 	else if (PrimitiveType == EPrimitiveType::TRIANGLESTRIP)
@@ -376,6 +429,33 @@ bool ParaEngine::RenderDeviceOpenGL::DrawPrimitiveUP(EPrimitiveType PrimitiveTyp
 
 	return true;
 
+}
+bool ParaEngine::RenderDeviceOpenGL::DrawPrimitiveUP_GL(EPrimitiveType PrimitiveType, uint32_t PrimitiveCount, const void* pVertexStreamZeroData, uint32_t nVertexSize)
+{
+	if (m_CurrentIndexBuffer)
+	{
+		SetIndices(0);
+	}
+	if (m_CurrentVertexBuffer)
+	{
+		SetStreamSource(0, 0, 0, 0);
+	}
+	BindVAO(pVertexStreamZeroData, nVertexSize, nullptr, 0);
+	// if (m_CurrentVertexDeclaration)
+	// {
+	// 	m_CurrentVertexDeclaration->ApplyAttribute(pVertexStreamZeroData);
+	// 	m_CurrentVertexDeclaration->EnableAttribute();
+	// }
+	if (PrimitiveType == EPrimitiveType::TRIANGLELIST)
+		glDrawArrays(GL_TRIANGLES, 0, PrimitiveCount * 3);
+	else if (PrimitiveType == EPrimitiveType::TRIANGLESTRIP)
+		glDrawArrays(GL_TRIANGLE_STRIP, 0, PrimitiveCount + 2);
+	else if (PrimitiveType == EPrimitiveType::TRIANGLEFAN)
+		glDrawArrays(GL_TRIANGLE_FAN, 0, PrimitiveCount + 2);
+
+	PE_CHECK_GL_ERROR_DEBUG();
+
+	return true;
 }
 
 bool ParaEngine::RenderDeviceOpenGL::SetSamplerState(uint32_t stage, ESamplerStateType type, uint32_t value)
@@ -398,10 +478,12 @@ bool ParaEngine::RenderDeviceOpenGL::SetVertexDeclaration(CVertexDeclaration* pV
 {
 	if (pVertexDeclaration)
 	{
-		glBindVertexArray(0);
-		// pVertexDeclaration->EnableAttribute();
-		// pVertexDeclaration->ApplyAttribute();
 		m_CurrentVertexDeclaration = pVertexDeclaration;
+#ifndef EMSCRIPTEN
+		glBindVertexArray(0);
+		pVertexDeclaration->EnableAttribute();
+		pVertexDeclaration->ApplyAttribute();
+#endif
 		//OUTPUT_LOG("RenderDeviceOpenGL: EnableAttribute & ApplyAttribute at SetVertexDeclaration");
 		PE_CHECK_GL_ERROR_DEBUG();
 	}
@@ -421,6 +503,10 @@ bool ParaEngine::RenderDeviceOpenGL::SetIndices(IndexBufferDevicePtr_type pIndex
 	if (pIndexData != m_CurrentIndexBuffer)
 	{
 		m_CurrentIndexBuffer = pIndexData;
+#ifndef EMSCRIPTEN
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, pIndexData);
+		PE_CHECK_GL_ERROR_DEBUG();
+#endif
 	}
 
 	return true;
@@ -431,6 +517,24 @@ bool ParaEngine::RenderDeviceOpenGL::SetStreamSource(uint32_t StreamNumber, Vert
 	if (pStreamData != m_CurrentVertexBuffer)
 	{
 		m_CurrentVertexBuffer = pStreamData;
+#ifndef EMSCRIPTEN
+		if (pStreamData == 0)
+		{
+			BindVAO(nullptr, 0, nullptr, 0);
+		}
+		else 
+		{
+			glBindBuffer(GL_ARRAY_BUFFER, pStreamData);
+			//OUTPUT_LOG("RenderDeviceOpenGL:glBindBuffer %d",pStreamData);
+			if (m_CurrentVertexDeclaration)
+			{		
+				m_CurrentVertexDeclaration->EnableAttribute();
+				m_CurrentVertexDeclaration->ApplyAttribute();
+				//OUTPUT_LOG("RenderDeviceOpenGL: EnableAttribute & ApplyAttribute at SetStreamSource");
+			}
+			PE_CHECK_GL_ERROR_DEBUG();
+		}
+#endif
 	}
 
 	return true;
@@ -492,7 +596,9 @@ int ParaEngine::RenderDeviceOpenGL::GetStencilBits()
 bool ParaEngine::RenderDeviceOpenGL::DrawIndexedPrimitive(EPrimitiveType Type, int BaseVertexIndex, uint32_t MinIndex, uint32_t NumVertices, uint32_t indexStart, uint32_t PrimitiveCount)
 {
 	ApplyBlendingModeChange();
+#ifdef EMSCRIPTEN
 	BindVAO();
+#endif
 	if (Type == EPrimitiveType::TRIANGLELIST)
 		glDrawElements(GL_TRIANGLES, PrimitiveCount * 3, GL_UNSIGNED_SHORT, (GLvoid*)(sizeof(uint16)*indexStart));
 	else if (Type == EPrimitiveType::TRIANGLESTRIP)
@@ -635,9 +741,31 @@ void ParaEngine::RenderDeviceOpenGL::ApplyBlendingModeChange()
 
 }
 
-void ParaEngine::RenderDeviceOpenGL::BindVAO()
+void ParaEngine::RenderDeviceOpenGL::BindVAO(const void* vertex_data, const int vertex_size, const void* index_data, const int index_size)
 {
 	if (m_vao == 0) return ;
+	static GLuint s_vbo = 0;
+	static GLuint s_veo = 0;
+	static const int s_max_vertex_size = 50 * 1024 * 1024;  // 50M 顶点数据最大
+	static const int s_max_index_size = 1 * 1024 * 1024;    // 1M 顶点索引数据最大
+
+	if (s_vbo == 0) 
+	{
+		glGenBuffers(1, &s_vbo);
+		glBindBuffer(GL_ARRAY_BUFFER, s_vbo);
+		// glBufferData(GL_ARRAY_BUFFER, s_max_vertex_size, nullptr, GL_DYNAMIC_DRAW);  
+		glBufferData(GL_ARRAY_BUFFER, s_max_vertex_size, nullptr, GL_STREAM_DRAW);  
+		glBindBuffer(GL_ARRAY_BUFFER, 0);
+	}
+	if (s_veo == 0)
+	{
+		glGenBuffers(1, &s_veo);
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, s_veo);
+		// glBufferData(GL_ELEMENT_ARRAY_BUFFER, s_max_index_size, nullptr, GL_DYNAMIC_DRAW);  
+		glBufferData(GL_ELEMENT_ARRAY_BUFFER, s_max_index_size, nullptr, GL_STREAM_DRAW);  
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+	} 
+
 	glBindVertexArray(m_vao);
 	PE_CHECK_GL_ERROR_DEBUG();
 	if (m_CurrentVertexBuffer != 0)
@@ -646,11 +774,27 @@ void ParaEngine::RenderDeviceOpenGL::BindVAO()
 		PE_CHECK_GL_ERROR_DEBUG();
 		// std::cout << "vao: " << m_vao << "   veo: " << m_CurrentVertexBuffer << std::endl;
 	}
+	else
+	{
+		if (vertex_data != nullptr && vertex_size != 0)
+		{
+			glBindBuffer(GL_ARRAY_BUFFER, s_vbo);
+			glBufferSubData(GL_ARRAY_BUFFER, 0, vertex_size > s_max_vertex_size ? s_max_index_size : vertex_size, vertex_data);
+		}
+	}
 	if (m_CurrentIndexBuffer != 0)
 	{
 		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_CurrentIndexBuffer);
 		PE_CHECK_GL_ERROR_DEBUG();
 		// std::cout << "vao: " << m_vao << "   vbo: " << m_CurrentIndexBuffer << std::endl;
+	}
+	else
+	{
+		if (index_data != nullptr && index_size != 0)
+		{
+			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, s_veo);
+			glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, 0, index_size > s_max_index_size ? s_max_index_size : index_size, index_data);
+		}
 	}
 	if (m_CurrentVertexDeclaration != nullptr)
 	{		
@@ -658,4 +802,9 @@ void ParaEngine::RenderDeviceOpenGL::BindVAO()
 		m_CurrentVertexDeclaration->EnableAttribute();
 		// std::cout << "==============CurrentVertexDeclaration != nullptr================" << std::endl;
 	}
+	PE_CHECK_GL_ERROR_DEBUG();
+	// if (m_CurrentIndexBuffer == 0 || m_CurrentVertexBuffer == 0 || m_CurrentVertexDeclaration == nullptr)
+	// {
+	// 	std::cout << "m_CurrentVertexBuffer =" << m_CurrentVertexBuffer << "  m_CurrentIndexBuffer = " << m_CurrentIndexBuffer << " m_CurrentVertexDeclaration = " << (m_CurrentVertexDeclaration == nullptr) << std::endl; 
+	// }
 }

@@ -301,6 +301,16 @@ void ParaEngine::CSpriteRendererOpenGL::FlushQuads()
 void ParaEngine::CSpriteRendererOpenGL::DrawTriangles(const sprite_vertex* pVertices, int nTriangleCount)
 {
 #define kQuadSize sizeof(sprite_vertex)
+
+#ifndef EMSCRIPTEN
+	// vertices
+	glVertexAttribPointer(GLProgram::VERTEX_ATTRIB_POSITION, 3, GL_FLOAT, GL_FALSE, kQuadSize, (GLvoid*)&(pVertices->pos));
+	// colors
+	glVertexAttribPointer(GLProgram::VERTEX_ATTRIB_COLOR, 4, GL_UNSIGNED_BYTE, GL_TRUE, kQuadSize, (GLvoid*)&(pVertices->col));
+	// tex coords
+	glVertexAttribPointer(GLProgram::VERTEX_ATTRIB_TEX_COORD, 2, GL_FLOAT, GL_FALSE, kQuadSize, (GLvoid*)&(pVertices->tex));
+	CGlobals::GetRenderDevice()->DrawPrimitive(EPrimitiveType::TRIANGLELIST, 0, nTriangleCount);
+#else
 	unsigned int VBO, VAO;
     glGenVertexArrays(1, &VAO);
     glGenBuffers(1, &VBO);
@@ -310,12 +320,6 @@ void ParaEngine::CSpriteRendererOpenGL::DrawTriangles(const sprite_vertex* pVert
 	glVertexAttribPointer(GLProgram::VERTEX_ATTRIB_POSITION, 3, GL_FLOAT, GL_FALSE, kQuadSize, (const void*)offsetof(sprite_vertex, pos));
 	glVertexAttribPointer(GLProgram::VERTEX_ATTRIB_COLOR, 4, GL_UNSIGNED_BYTE, GL_TRUE, kQuadSize, (const void*)offsetof(sprite_vertex, col));
 	glVertexAttribPointer(GLProgram::VERTEX_ATTRIB_TEX_COORD, 2, GL_FLOAT, GL_FALSE, kQuadSize, (const void*)offsetof(sprite_vertex, tex));
-	// // vertices
-	// glVertexAttribPointer(GLProgram::VERTEX_ATTRIB_POSITION, 3, GL_FLOAT, GL_FALSE, kQuadSize, (GLvoid*)&(pVertices->pos));
-	// // colors
-	// glVertexAttribPointer(GLProgram::VERTEX_ATTRIB_COLOR, 4, GL_UNSIGNED_BYTE, GL_TRUE, kQuadSize, (GLvoid*)&(pVertices->col));
-	// // tex coords
-	// glVertexAttribPointer(GLProgram::VERTEX_ATTRIB_TEX_COORD, 2, GL_FLOAT, GL_FALSE, kQuadSize, (GLvoid*)&(pVertices->tex));
 	// std::cout << "==================================fdds" << std::endl;
 	glEnableVertexAttribArray(GLProgram::VERTEX_ATTRIB_POSITION);
 	glEnableVertexAttribArray(GLProgram::VERTEX_ATTRIB_COLOR);
@@ -325,6 +329,7 @@ void ParaEngine::CSpriteRendererOpenGL::DrawTriangles(const sprite_vertex* pVert
 	glBindVertexArray(0);
 	glDeleteVertexArrays(1, &VAO);
     glDeleteBuffers(1, &VBO);
+#endif
 }
 
 void ParaEngine::CSpriteRendererOpenGL::SetTextMode(bool bIsTextMode /*= true*/)

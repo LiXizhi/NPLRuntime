@@ -122,11 +122,12 @@ namespace ParaEngine
 #endif
 
 		SAFE_DELETE(m_pLightGrid);
-#ifdef EMSCRIPTEN
-		m_pLightGrid = new CBlockLightGridBase(this);
-#else
 		m_pLightGrid = new CBlockLightGridClient(m_activeChunkDim + 2, this);
-#endif
+// #ifdef EMSCRIPTEN
+// 		m_pLightGrid = new CBlockLightGridBase(this);
+// #else
+// 		m_pLightGrid = new CBlockLightGridClient(m_activeChunkDim + 2, this);
+// #endif
 		// ensure that all vertices can be indexed by uint16 index buffer.
 		PE_ASSERT((BlockConfig::g_maxFaceCountPerBatch * 4) <= 0xffff);
 		RenderableChunk::GetVertexBufferPool()->SetFullSizedBufferSize(BlockConfig::g_maxFaceCountPerBatch * sizeof(BlockVertexCompressed) * 4);
@@ -1319,7 +1320,11 @@ namespace ParaEngine
 
 					if (curInstCount >= nMaxFaceCount)
 					{
+#ifdef EMSCRIPTEN
+						CGlobals::GetRenderDevice()->DrawIndexedPrimitiveUP_GL(EPrimitiveType::TRIANGLELIST, curInstCount * 2, &(m_select_block_vertices[0]), m_select_block_vertices.size() * sizeof(SelectBlockVertex), &(m_select_block_indices[0]), m_select_block_indices.size() * sizeof(int16));
+#else
 						CGlobals::GetRenderDevice()->DrawIndexedPrimitiveUP(EPrimitiveType::TRIANGLELIST, 0, curInstCount * 4, curInstCount * 2, &(m_select_block_indices[0]), PixelFormat::INDEX16, &(m_select_block_vertices[0]), sizeof(SelectBlockVertex));
+#endif	
 						curInstCount = 0;
 						instFloatCount = 0;
 					}
@@ -1338,7 +1343,11 @@ namespace ParaEngine
 
 				if (curInstCount > 0)
 				{
+#ifdef EMSCRIPTEN
+					CGlobals::GetRenderDevice()->DrawIndexedPrimitiveUP_GL(EPrimitiveType::TRIANGLELIST, curInstCount * 2, &(m_select_block_vertices[0]), m_select_block_vertices.size() * sizeof(SelectBlockVertex), &(m_select_block_indices[0]), m_select_block_indices.size() * sizeof(int16));
+#else
 					CGlobals::GetRenderDevice()->DrawIndexedPrimitiveUP(EPrimitiveType::TRIANGLELIST, 0, curInstCount * 4, curInstCount * 2, &(m_select_block_indices[0]), PixelFormat::INDEX16, &(m_select_block_vertices[0]), sizeof(SelectBlockVertex));
+#endif	
 				}
 
 				pEffect->EndPass();
