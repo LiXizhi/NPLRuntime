@@ -46,14 +46,14 @@ namespace cAudio
 			{
 				while(*deviceList)
 				{
-					cAudioString device(deviceList);
+					cAudioString device(fromUTF8(deviceList));
 					AvailableDevices.push_back(device);
 					deviceList += strlen(deviceList) + 1;
 				}
 			}
 
 			// Get the name of the 'default' capture device
-			DefaultDevice = alcGetString(NULL, defaultDevice);
+			DefaultDevice = fromUTF8(alcGetString(NULL, defaultDevice));
 		}
 	}
 

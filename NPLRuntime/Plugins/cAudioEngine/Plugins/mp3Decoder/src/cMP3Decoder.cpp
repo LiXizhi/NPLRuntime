@@ -302,7 +302,7 @@ int cMP3Decoder::getCurrentCompressedPosition()
 
 cAudioString cMP3Decoder::getType() const
 {
-	return cAudioString("cMP3Decoder");
+	return cAudioString(fromUTF8("cMP3Decoder"));
 }
 
 

@@ -8,6 +8,7 @@
 #include "cAudioDefines.h"
 #include "ILogger.h"
 #include "cAudio.h"
+#include "cAudioString.h"
 
 #ifdef CAUDIO_COMPILE_WITH_PLUGIN_SUPPORT
 
@@ -42,7 +43,7 @@ namespace cAudio
 		{
 			cAudioString theName = fromUTF8(name);
 			if(theName.empty())
-				theName = plugin->getPluginName();
+				theName = fromUTF8(plugin->getPluginName());
 
 			if(plugin->installPlugin(getLogger()))
 			{
@@ -81,14 +82,15 @@ namespace cAudio
 
 	bool cPluginManager::checkForPlugin(const char* name)
 	{
-		return (RegisteredPlugins.find(name) != RegisteredPlugins.end());
+		return (RegisteredPlugins.find(fromUTF8(name)) != RegisteredPlugins.end());
 	}
 
 	IAudioPlugin* cPluginManager::getPlugin(const char* name)
 	{
-		if(RegisteredPlugins.find(name) != RegisteredPlugins.end())
+		auto name16 = fromUTF8(name);
+		if(RegisteredPlugins.find(name16) != RegisteredPlugins.end())
 		{
-			return RegisteredPlugins[name];
+			return RegisteredPlugins[name16];
 		}
 		return NULL;
 	}
@@ -141,16 +143,17 @@ namespace cAudio
 
 	void cPluginManager::uninstallPlugin(const char* name)
 	{
-		if(RegisteredPlugins.find(name) != RegisteredPlugins.end())
+		auto name16 = fromUTF8(name);
+		if(RegisteredPlugins.find(name16) != RegisteredPlugins.end())
 		{
-			uninstallPlugin(RegisteredPlugins[name]);
+			uninstallPlugin(RegisteredPlugins[name16]);
 		}
 	}
 
 	void cPluginManager::autoLoadPlugins()
 	{
 #if !defined(CAUDIO_PLATFORM_IPHONE)
-		cAudioVector<cAudioString>::Type fileList = getFilesInDirectory(".");
+		cAudioVector<cAudioString>::Type fileList = getFilesInDirectory(fromUTF8("."));
 		for(size_t i=0; i<fileList.size(); ++i)
 		{
 			if(fileList[i].substr(0, 4) == _CTEXT("cAp_") ||fileList[i].substr(0, 7) == _CTEXT("libcAp_") )
@@ -164,7 +167,7 @@ namespace cAudio
 #endif
 				{
 					//Found a plugin, load it
-					installPlugin(toUTF8(cAudioString(_CTEXT("./") + fileList[i])), fileList[i].c_str());
+					installPlugin(toUTF8(cAudioString(_CTEXT("./") + fileList[i])), toUTF8(fileList[i].c_str()));
 				}
 			}
 		}

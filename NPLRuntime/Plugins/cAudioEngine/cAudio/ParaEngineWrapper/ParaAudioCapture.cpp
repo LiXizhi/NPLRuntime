@@ -211,7 +211,7 @@ void ParaEngine::CParaAudioCapture::Release()
 const char* ParaEngine::CParaAudioCapture::getAvailableDeviceName(unsigned int index)
 {
 	auto ret = m_deviceList->getDeviceName(index).c_str();
-	return ret;
+	return toUTF8(ret);
 }
 
 unsigned int ParaEngine::CParaAudioCapture::getAvailableDeviceCount()
@@ -221,7 +221,7 @@ unsigned int ParaEngine::CParaAudioCapture::getAvailableDeviceCount()
 
 const char* ParaEngine::CParaAudioCapture::getDefaultDeviceName()
 {
-	return m_deviceList->getDefaultDeviceName().c_str();
+	return toUTF8(m_deviceList->getDefaultDeviceName().c_str());
 }
 
 /** for WAV encoding, see alrecord.c in OpenAL Recording Example 
@@ -321,7 +321,7 @@ unsigned int ParaEngine::CParaAudioCapture::saveToFile(const char* filename, flo
 	ogg_stream_init(&os, rand());
 
 
-	FILE* pFile = fopen(filename, "wb");
+	FILE* pFile = cfopen(fromUTF8(filename).c_str(), fwriteMode);
 	if (!pFile)
 	{
 		getLogger()->logWarning("ParaAudioCapture", "can not open %s file for writing", filename);
