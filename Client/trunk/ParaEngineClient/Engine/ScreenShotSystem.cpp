@@ -63,6 +63,7 @@
 #include "SceneState.h"
 #include <Math.h>
 #include <Time.h>
+#include "StringHelper.h"
 #pragma comment(lib, "VFW32.lib")
 
 #include "memdebug.h"
@@ -662,7 +663,13 @@ void SCREENSHOTSYSTEM::LoadWatermark(WATERMARK* Watermark, const char* Filename,
 	}
 
 	//--Open the bitmap
+	
+#if defined(WIN32) && defined(DEFAULT_FILE_ENCODING)
+	LPCWSTR Filename16 = StringHelper::MultiByteToWideChar(Filename, DEFAULT_FILE_ENCODING);
+	FILE* File = _wfopen(Filename16, L"rb");
+#else
 	FILE* File = fopen(Filename, "rb");
+#endif
 
 	//--If the bitmap couldn't be opened
 	if(File == NULL)
@@ -1914,7 +1921,13 @@ bool SCREENSHOTSYSTEM::SaveCodecOptions(const char* szFilename, const AVICOMPRES
 
 void SCREENSHOTSYSTEM::LoadCodecOptions(const char* szFilename,void* data, DWORD *size)
 {
-	FILE *file=fopen(szFilename,"rb");
+#if defined(WIN32) && defined(DEFAULT_FILE_ENCODING)
+	LPCWSTR szFilename16 = StringHelper::MultiByteToWideChar(szFilename, DEFAULT_FILE_ENCODING);
+	FILE* file = _wfopen(szFilename16, L"rb");
+#else
+	FILE* file = fopen(szFilename, "rb");
+#endif
+	
 	if (file==NULL) {
 		OUTPUT_LOG("Can't open %s for reading", szFilename);
 		return;

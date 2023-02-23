@@ -228,6 +228,7 @@ namespace ParaEngine
 
 		ATTRIBUTE_METHOD1(ParaEngineSettings, ResetAudioDevice_s, const char*) { cls->ResetAudioDevice(p1); return S_OK; }
 		ATTRIBUTE_METHOD1(ParaEngineSettings, GetAudioDeviceName_s, const char**) { *p1 = cls->GetAudioDeviceName(); return S_OK; }
+		ATTRIBUTE_METHOD1(ParaEngineSettings, GetDefaultFileAPIEncoding_s, const char**) { *p1 = cls->GetDefaultFileAPIEncoding().c_str(); return S_OK; }
 	public:
 		/** if true, IO is restricted to current working directory and writable directory.  Under win32, this is true by default. */
 		static bool IsSandboxMode();
@@ -711,6 +712,8 @@ namespace ParaEngine
 
 		void ResetAudioDevice(const char* deviceName);
 		const char* GetAudioDeviceName();
+
+		const std::string& GetDefaultFileAPIEncoding();
 	protected:
 		void LoadNameIndex();
 	private:

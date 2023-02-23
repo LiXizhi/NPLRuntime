@@ -805,6 +805,20 @@ bool CParaEngineAppBase::FindParaEngineDirectory(const char* sHint)
 			::SetCurrentDirectory(sInstallDir);
 		}*/
 	}
+	else 
+	{
+#if WIN32 && defined(DEFAULT_FILE_ENCODING)
+		std::wstring sModuleDir16 = StringHelper::MultiByteToWideChar(sModuleDir.c_str(), DEFAULT_FILE_ENCODING);
+		int len = (int)(sModuleDir16.size());
+		std::string::size_type last_dir_index = sModuleDir16.find_last_of(L"/\\");
+		if (last_dir_index != std::string::npos)
+		{
+			// this ensures that the application is in the directory where module is installed. 
+			std::wstring sParentDir = sModuleDir16.substr(0, last_dir_index + 1);
+			::SetCurrentDirectoryW(sParentDir.c_str());
+		}
+#endif
+	}
 	{
 		char sWorkingDir[512 + 1] = { 0 };
 		memset(sWorkingDir, 0, sizeof(sWorkingDir));
