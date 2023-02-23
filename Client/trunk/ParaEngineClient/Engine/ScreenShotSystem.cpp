@@ -664,7 +664,7 @@ void SCREENSHOTSYSTEM::LoadWatermark(WATERMARK* Watermark, const char* Filename,
 
 	//--Open the bitmap
 	
-#ifdef DEFAULT_FILE_ENCODING
+#if defined(WIN32) && defined(DEFAULT_FILE_ENCODING)
 	LPCWSTR Filename16 = StringHelper::MultiByteToWideChar(Filename, DEFAULT_FILE_ENCODING);
 	FILE* File = _wfopen(Filename16, L"rb");
 #else
@@ -1921,7 +1921,7 @@ bool SCREENSHOTSYSTEM::SaveCodecOptions(const char* szFilename, const AVICOMPRES
 
 void SCREENSHOTSYSTEM::LoadCodecOptions(const char* szFilename,void* data, DWORD *size)
 {
-#ifdef DEFAULT_FILE_ENCODING
+#if defined(WIN32) && defined(DEFAULT_FILE_ENCODING)
 	LPCWSTR szFilename16 = StringHelper::MultiByteToWideChar(szFilename, DEFAULT_FILE_ENCODING);
 	FILE* file = _wfopen(szFilename16, L"rb");
 #else

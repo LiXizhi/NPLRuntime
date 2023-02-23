@@ -27,7 +27,7 @@
 namespace cAudio
 {
 
-#if defined(UNICODE) || defined(_UNICODE) || defined(DEFAULT_FILE_ENCODING)
+#if defined(UNICODE) || defined(_UNICODE) || (defined(DEFAULT_FILE_ENCODING)&&defined(WIN32))
 #	define _CTEXT(x)	L ## x
 #	define cstrcmp		wcscmp
 #	define cAudioChar	wchar_t

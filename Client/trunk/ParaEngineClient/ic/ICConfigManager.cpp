@@ -469,7 +469,7 @@ HRESULT CICConfigManager::SaveToFile(const char* szFilename/* =NULL */,bool bOve
 			filename=szFilename;
 		}
 		FILE *file=fopen(filename.c_str(),"r");
-#ifdef DEFAULT_FILE_ENCODING
+#if defined(WIN32) && defined(DEFAULT_FILE_ENCODING)
 		LPCWSTR filename16 = StringHelper::MultiByteToWideChar(filename.c_str(), DEFAULT_FILE_ENCODING);
 		file = _wfopen(filename16, L"r");
 #else
@@ -481,7 +481,7 @@ HRESULT CICConfigManager::SaveToFile(const char* szFilename/* =NULL */,bool bOve
 			if (file!=NULL) {
 				fclose(file);
 			}
-#ifdef DEFAULT_FILE_ENCODING
+#if defined(WIN32) && defined(DEFAULT_FILE_ENCODING)
 			file = _wfopen(filename16, L"w+");
 #else
 			file = fopen(filename.c_str(), "w+");

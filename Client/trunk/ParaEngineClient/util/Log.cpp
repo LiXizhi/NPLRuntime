@@ -218,7 +218,7 @@ namespace ParaEngine
 	{
 		if (m_file_handle==NULL) 
 		{
-#ifdef DEFAULT_FILE_ENCODING
+#if defined(WIN32) && defined(DEFAULT_FILE_ENCODING)
 			LPCWSTR path16 = StringHelper::MultiByteToWideChar(m_log_file_name.c_str(), DEFAULT_FILE_ENCODING);
 			m_file_handle = ::_wfopen(path16, m_is_first_time_open ? L"w+" : L"a+");
 #else
