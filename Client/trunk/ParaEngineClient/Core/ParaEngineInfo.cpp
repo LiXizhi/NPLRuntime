@@ -14,7 +14,8 @@ using namespace std;
 //升级版本号 2022/9/15 ver==1
 //升级版本号 2022/11/8 ver==2
 //升级版本号 2023/2/17 ver==3
-#define PARAENGINE_MINOR_VERSION	3
+//升级版本号 2023/2/22 ver==4
+#define PARAENGINE_MINOR_VERSION	4
 
 #define PRODUCT_VERSION_MAJOR	1
 #define PRODUCT_VERSION_MINOR	0
