@@ -730,6 +730,12 @@ namespace ParaScripting
 		* @please note that if someone else still keeps a pointer to the directory watcher, it will not be deleted.
 		*/
 		static void DeleteFileSystemWatcher(const char* name);
+
+		/**
+		* if DEFAULT_FILE_ENCODING is defined£¬ParaIO.GetCurDirectory() return a utf8 string£¬mostly£¬it works well with NplRuntime£¬
+		* but sometimes we need to Need to pass parameters to the external environment,such as write the path to a ".bat" file£¬it must be ansci.
+		*/
+		static std::string ConvertPathFromUTF8ToAnsci(const char* path);
 	};
 
 	/**

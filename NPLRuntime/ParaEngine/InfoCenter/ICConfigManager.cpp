@@ -12,6 +12,7 @@
 #include "ParaEngine.h"
 #include "ICConfigManager.h"
 #include "NPLRuntime.h"
+#include "StringHelper.h"
 
 using namespace NPL;
 using namespace ParaInfoCenter;
@@ -467,14 +468,25 @@ HRESULT CICConfigManager::SaveToFile(const char* szFilename/* =NULL */,bool bOve
 		}else{
 			filename=szFilename;
 		}
-		FILE *file=fopen(filename.c_str(),"r");
+#if WIN32 && defined(DEFAULT_FILE_ENCODING)
+		std::wstring filename16 = StringHelper::MultiByteToWideChar(filename.c_str(), DEFAULT_FILE_ENCODING);
+		FILE *file = _wfopen(filename16.c_str(), L"r");
+#else
+		FILE *file = fopen(filename.c_str(), "r");
+#endif
+		
 		if (file!=NULL&&bOverwrite==false) {
 			hr=E_FAIL;
 		}else{
 			if (file!=NULL) {
 				fclose(file);
 			}
-			if ((file=fopen(filename.c_str(),"w+"))==NULL) {
+#if WIN32 && defined(DEFAULT_FILE_ENCODING)
+			FILE *file = _wfopen(filename16.c_str(), L"w+");
+#else
+			file = fopen(filename.c_str(), "w+")
+#endif
+			if (file ==NULL) {
 				hr=E_FAIL;
 			}else{
 				map<string,CICConfigItems*>::const_iterator iter=m_items.begin();
