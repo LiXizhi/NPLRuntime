@@ -484,7 +484,7 @@ HRESULT CICConfigManager::SaveToFile(const char* szFilename/* =NULL */,bool bOve
 #if WIN32 && defined(DEFAULT_FILE_ENCODING)
 			FILE *file = _wfopen(filename16.c_str(), L"w+");
 #else
-			file = fopen(filename.c_str(), "w+")
+			file = fopen(filename.c_str(), "w+");
 #endif
 			if (file ==NULL) {
 				hr=E_FAIL;

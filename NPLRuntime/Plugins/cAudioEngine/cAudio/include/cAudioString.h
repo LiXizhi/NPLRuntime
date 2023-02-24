@@ -45,7 +45,7 @@ namespace cAudio
 #	define cAudioChar	char
 #	define cfopen		fopen
 #   define freadMode    "rb"
-#   define fwriteMode    L"wb"
+#   define fwriteMode    "wb"
 #   define cFindFirstFile FindFirstFile
 #   define cFindNextFile FindNextFile
 #   define cWIN32_FIND_DATA WIN32_FIND_DATA
@@ -68,8 +68,8 @@ namespace cAudio
 		return str;
     }
 
-	const WCHAR* cMultiByteToWideChar(const char* name, unsigned int nCodePage, size_t* outLen = nullptr);
-	const char* cWideCharToMultiByte(const WCHAR* name, unsigned int nCodePage, size_t* outLen = nullptr);
+	const wchar_t* cMultiByteToWideChar(const char* name, unsigned int nCodePage, size_t* outLen = nullptr);
+	const char* cWideCharToMultiByte(const wchar_t* name, unsigned int nCodePage, size_t* outLen = nullptr);
 
 	static const char* toUTF8(const cAudioString& str)
 	{

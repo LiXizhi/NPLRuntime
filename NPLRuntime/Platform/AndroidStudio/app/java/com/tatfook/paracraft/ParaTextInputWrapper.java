@@ -73,7 +73,7 @@ public class ParaTextInputWrapper implements TextWatcher, TextView.OnEditorActio
                 return;
             }
 
-            if (text.equals("\n")) {
+            if (text.contains("\n")) {
                 this.lastText = "";
                 mNativeView.getParaEditText().setText("");
                 mNativeView.onPressEnterKey();
@@ -217,9 +217,7 @@ public class ParaTextInputWrapper implements TextWatcher, TextView.OnEditorActio
 
         switch (keyCode) {
             case KeyEvent.KEYCODE_DEL:
-                if (mNativeView.getParaEditText().getText().length() == 0) {
-                    mNativeView.onDeleteBackward();
-                }
+                mNativeView.onDeleteBackward();
 
                 return true;
             case KeyEvent.KEYCODE_ENTER:

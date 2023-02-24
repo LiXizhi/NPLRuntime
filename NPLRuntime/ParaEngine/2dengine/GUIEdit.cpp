@@ -1871,11 +1871,11 @@ bool ParaEngine::CGUIEditBox::attachWithIME()
 
 			int bottom = (int)(pos.rect.bottom * fScaleY);
 
-			CGlobals::GetApp()->setIMEKeyboardState(true, true, bottom,tempStr);
+			CGlobals::GetApp()->setIMEKeyboardState(true, true, bottom, tempStr);
 		}
 		else
 		{
-			CGlobals::GetApp()->setIMEKeyboardState(true,false,-1,tempStr);
+			CGlobals::GetApp()->setIMEKeyboardState(true, false, -1, tempStr);
 		}
 	}
 	return ret;
@@ -1902,7 +1902,7 @@ bool ParaEngine::CGUIEditBox::detachWithIME()
 		}
 		else
 		{
-			CGlobals::GetApp()->setIMEKeyboardState(false);
+			CGlobals::GetApp()->setIMEKeyboardState(false, true, -1);
 		}
 	}
 

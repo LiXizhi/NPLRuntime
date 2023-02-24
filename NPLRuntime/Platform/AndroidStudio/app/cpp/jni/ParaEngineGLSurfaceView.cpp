@@ -24,11 +24,12 @@ namespace ParaEngine {
         int maxLength = 0;
         bool isMultiline = false;
         bool confirmHold = false;
-        const char * confirmType = "done";
-        const char * inputType = "text";
+        const char *confirmType = "done";
+        const char *inputType = "text";
         bool useFloatEditBox = false;
 
-        CGUIEditBox * pGUI = dynamic_cast<CGUIEditBox*>((CGUIRoot::GetInstance()->GetUIKeyFocus()));
+        CGUIEditBox *pGUI = dynamic_cast<CGUIEditBox*>((CGUIRoot::GetInstance()->GetUIKeyFocus()));
+
         if(pGUI && bOpen)
         {
             pGUI->GetTextA(defaultValue);
@@ -38,11 +39,13 @@ namespace ParaEngine {
             inputType = pGUI->GetInputType();
             useFloatEditBox = pGUI->IsUseFloatEditBox();
         }
-        if(useFloatEditBox){
-            JniHelper::callStaticVoidMethod(classname, "setIMEKeyboardState", bOpen, defaultValue, maxLength,isMultiline,confirmHold,confirmType,inputType);
+
+        if (useFloatEditBox) {
+            JniHelper::callStaticVoidMethod(classname, "setIMEKeyboardState", bOpen, defaultValue, maxLength, isMultiline, confirmHold, confirmType, inputType);
         }else{
-            bool isGuiEdit = pGUI!=NULL;
-            JniHelper::callStaticVoidMethod(classname, "setIMEKeyboardState", bOpen, bMoveView, ctrlBottom,editParams.c_str(),isGuiEdit);
+            bool isGuiEdit = pGUI != NULL;
+
+            JniHelper::callStaticVoidMethod(classname, "setIMEKeyboardState", bOpen, bMoveView, ctrlBottom, editParams.c_str(), isGuiEdit);
         }
     }
 }
