@@ -22,7 +22,6 @@ import android.view.MotionEvent;
 import android.view.Surface;
 import android.view.View;
 import android.view.SurfaceHolder;
-import android.view.ViewTreeObserver;
 import android.view.inputmethod.InputMethodManager;
 import androidx.annotation.Keep;
 
@@ -33,10 +32,11 @@ public class ParaEngineGLSurfaceView extends GLSurfaceView {
     private static ParaEngineGLSurfaceView mGLSurfaceView = null;
     private static ParaEngineActivity sActivity = null;
     private static ParaTextInputWrapper sParaTextInputWrapper = null;
+    private static int mMsgCount = 0;
 
     private ParaEngineRenderer mRenderer;
     private ParaEngineEditBox mEditText = null;
-    private Handler sHandler = null;
+    public Handler sHandler = null;
     private boolean mSoftKeyboardShown = false;
     private boolean mMultipleTouchEnabled = true;
     private boolean mIsPressMouseRightKey = false;
@@ -44,7 +44,6 @@ public class ParaEngineGLSurfaceView extends GLSurfaceView {
     private int curPointerId = 0;
     private float curPointerX = 0;
     private float curPointerY = 0;
-    private long exitTime;
     private int mKeyboardHeight = 0;
     private boolean mIsKeyboardOpened = false;
     private int mScreenOffset = 0;
@@ -99,6 +98,8 @@ public class ParaEngineGLSurfaceView extends GLSurfaceView {
         final int screenHeight = metrics.heightPixels;
 
         sHandler = new Handler(msg -> {
+            mMsgCount = mMsgCount - 1;
+
             if (mEditText == null) {
                 return false;
             }
@@ -187,6 +188,11 @@ public class ParaEngineGLSurfaceView extends GLSurfaceView {
 
                 if (Build.VERSION.SDK_INT <= 29) {
                     mScreenOffset = 0;
+                } else {
+                    ParaEngineGLSurfaceView.this.offsetTopAndBottom(mScreenOffset);
+                    mIsKeyboardOpened = false;
+                    mIsOpen = false;
+                    mScreenOffset = 0;
                 }
 
                 ParaEngineGLSurfaceView.this.requestFocus();
@@ -209,6 +215,15 @@ public class ParaEngineGLSurfaceView extends GLSurfaceView {
                 if ((screenHeight - mCtrlBottom) < mKeyboardHeight) {
                     mScreenOffset = mKeyboardHeight - (screenHeight - mCtrlBottom);
                     ParaEngineGLSurfaceView.this.offsetTopAndBottom(-mScreenOffset);
+                }
+
+                if (Build.VERSION.SDK_INT > 29) {
+                    if (mKeyboardHeight == 0) {
+                        ParaEngineGLSurfaceView.this.offsetTopAndBottom(mScreenOffset);
+                        mIsKeyboardOpened = false;
+                        mIsOpen = false;
+                        mScreenOffset = 0;
+                    }
                 }
             } else {
                 if (Build.VERSION.SDK_INT > 29) {
@@ -289,7 +304,8 @@ public class ParaEngineGLSurfaceView extends GLSurfaceView {
         bundle.putInt("selEnd", selEnd);
         msg.setData(bundle);
 
-        mGLSurfaceView.sHandler.sendMessage(msg);
+        mMsgCount = mMsgCount + 1;
+        mGLSurfaceView.sHandler.sendMessageDelayed(msg, mMsgCount * 100);
     }
 
     public static void setIMEKeyboardState(boolean bOpen, String defaultValue, int maxLength, boolean isMultiline, boolean confirmHold, String confirmType, String inputType){
