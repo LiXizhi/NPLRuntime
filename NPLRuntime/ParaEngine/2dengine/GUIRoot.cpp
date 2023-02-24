@@ -1965,7 +1965,7 @@ void ParaEngine::CGUIRoot::SetIMEKeyboardState(bool bOpen)
 	}
 	else
 	{
-		CGlobals::GetApp()->setIMEKeyboardState(false, true, m_nCtrlBottom,tempStr);
+		CGlobals::GetApp()->setIMEKeyboardState(false, true, m_nCtrlBottom, tempStr);
 		m_nCtrlBottom = 0;
 		m_curEditText = "";
 	}
