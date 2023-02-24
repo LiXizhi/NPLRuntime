@@ -68,12 +68,12 @@ target_link_libraries(ParaSqlite ${Boost_LIBRARIES})
 
 # set(TEST_DIR "D:/code/npl/TableDB/")
 
-# if(SQLITE_STATICLIB)
-# else()
-# 	ADD_CUSTOM_COMMAND(
-# 		TARGET ParaSqlite
-# 		POST_BUILD
-# 		COMMAND ${CMAKE_COMMAND} -E make_directory ${OUTPUT_BIN_DIR}
-# 		COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:ParaSqlite> ${OUTPUT_BIN_DIR}
-# 	)
-# endif()
+if(SQLITE_STATICLIB)
+else()
+	ADD_CUSTOM_COMMAND(
+		TARGET ParaSqlite
+		POST_BUILD
+		COMMAND ${CMAKE_COMMAND} -E make_directory ${OUTPUT_BIN_DIR}
+		COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:ParaSqlite> ${OUTPUT_BIN_DIR}
+	)
+endif()
