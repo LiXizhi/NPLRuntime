@@ -184,7 +184,10 @@ public class ParaEngineGLSurfaceView extends GLSurfaceView {
                 InputMethodManager imm = (InputMethodManager)sActivity.getSystemService(Context.INPUT_METHOD_SERVICE);
                 imm.hideSoftInputFromWindow(mEditText.getWindowToken(), 0);
                 mIsKeyboardOpened = false;
-                mScreenOffset = 0;
+
+                if (Build.VERSION.SDK_INT <= 29) {
+                    mScreenOffset = 0;
+                }
 
                 ParaEngineGLSurfaceView.this.requestFocus();
             }
@@ -208,7 +211,12 @@ public class ParaEngineGLSurfaceView extends GLSurfaceView {
                     ParaEngineGLSurfaceView.this.offsetTopAndBottom(-mScreenOffset);
                 }
             } else {
-                ParaEngineGLSurfaceView.this.offsetTopAndBottom(0);
+                if (Build.VERSION.SDK_INT > 29) {
+                    ParaEngineGLSurfaceView.this.offsetTopAndBottom(mScreenOffset);
+                } else {
+                    ParaEngineGLSurfaceView.this.offsetTopAndBottom(0);
+                }
+
                 mIsKeyboardOpened = false;
                 mScreenOffset = 0;
             }
