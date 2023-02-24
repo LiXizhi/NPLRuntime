@@ -2794,7 +2794,13 @@ string ParaUI::ToScript()
 bool ParaUI::SaveLayout(const char *filename)
 {
 	FILE *file;
-	if ((file=fopen(filename,"w+"))==NULL) {
+#if WIN32 && defined(DEFAULT_FILE_ENCODING)
+	LPCWSTR filename16 = StringHelper::MultiByteToWideChar(filename, DEFAULT_FILE_ENCODING);
+	file = ::_wfopen(filename16, L"w+");
+#else
+	file = ::fopen(filename, "w+");
+#endif
+	if ((file)==NULL) {
 		ParaGlobal::WriteToLogFile("Can't open output file for saving layout.");
 		return false;
 	}

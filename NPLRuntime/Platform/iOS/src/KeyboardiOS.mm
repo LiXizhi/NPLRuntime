@@ -173,17 +173,20 @@ static int selEnd;
 {
     if (mUpdateViewSizeWhenKeyboardChange)
     {
-        auto userInfo = [notification userInfo];
-        auto keyboardSize = [[userInfo objectForKey:UIKeyboardBoundsUserInfoKey] CGRectValue].size;
+        NSDictionary *userInfo = [notification userInfo];
+        CGSize keyboardSize = [[userInfo objectForKey:UIKeyboardBoundsUserInfoKey] CGRectValue].size;
 
-        auto ori = [UIApplication sharedApplication].statusBarOrientation;
-        auto keyboardHeight = UIInterfaceOrientationIsLandscape(ori) ? keyboardSize.height : keyboardSize.width;
+        UIInterfaceOrientation ori = [UIApplication sharedApplication].statusBarOrientation;
+        CGFloat keyboardHeight = UIInterfaceOrientationIsLandscape(ori) ? keyboardSize.height : keyboardSize.width;
 
-        auto currentFrame = _appDelegate.viewController.view.frame;
+        CGRect currentFrame = _appDelegate.viewController.view.frame;
+
+        _isKeyboardOpened = true;
+        _keyboardHeight = keyboardHeight;
 
         if ((currentFrame.size.height - mCtrlBottom) < keyboardHeight) {
-            auto offset = keyboardHeight - (currentFrame.size.height - mCtrlBottom);
-            _appDelegate.viewController.view.frame = CGRectMake(0, -offset, currentFrame.size.width, currentFrame.size.height);
+            CGFloat glViewOffset = keyboardHeight - (currentFrame.size.height - mCtrlBottom);
+            _appDelegate.viewController.view.frame = CGRectMake(0, -glViewOffset, currentFrame.size.width, currentFrame.size.height);
         }
     }
 }
@@ -194,7 +197,7 @@ static int selEnd;
 
     if (mUpdateViewSizeWhenKeyboardChange)
     {
-        auto currentFrame = _appDelegate.viewController.view.frame;
+        CGRect currentFrame = _appDelegate.viewController.view.frame;
         _appDelegate.viewController.view.frame = CGRectMake(0, 0, currentFrame.size.width, currentFrame.size.height);
     }
 }
@@ -214,6 +217,15 @@ static int selEnd;
 
         mTextField.text = @"";
         lastText = @"";
+
+        if (self.isKeyboardOpened) {
+            CGRect currentFrame = _appDelegate.viewController.view.frame;
+
+            if ((currentFrame.size.height - mCtrlBottom) < self.keyboardHeight) {
+                CGFloat glViewOffset = self.keyboardHeight - (currentFrame.size.height - mCtrlBottom);
+                _appDelegate.viewController.view.frame = CGRectMake(0, -glViewOffset, currentFrame.size.width, currentFrame.size.height);
+            }
+        }
     } else {
         NSInteger curCaretPosition = pGUI->GetCaretPosition();
         

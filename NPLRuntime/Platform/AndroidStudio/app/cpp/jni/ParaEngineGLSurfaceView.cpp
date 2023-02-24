@@ -11,6 +11,7 @@
 #include "2dengine/GUIIMEDelegate.h"
 #include "2dengine/GUIRoot.h"
 #include "2dengine/GUIEdit.h"
+#include "util/StringHelper.h"
 
 #include <jni.h>
 
@@ -95,18 +96,26 @@ extern "C" {
 
         if (pGUI)
         {
-            auto strText = JniHelper::getStringUTF16CharsJNI(env, text);
+            std::u16string strText = JniHelper::getStringUTF16CharsJNI(env, text);
 
             if (!strText.empty())
             {
-                std::wstring s;
+                std::string nativeText = JniHelper::getStringUTFCharsJNI(env, text);
+                std::string backspace = "[#backspace]";
 
-                for (size_t i = 0; i < strText.size(); i++)
-                {
-                    s += (WCHAR)strText[i];
+                if (nativeText == backspace) {
+                    std::wstring w_backspace = ParaEngine::StringHelper::MultiByteToWideChar(backspace.c_str(), CP_UTF8);
+                    pGUI->OnHandleWinMsgChars(w_backspace);
+                } else {
+                    std::wstring s;
+
+                    for (size_t i = 0; i < strText.size(); i++)
+                    {
+                        s += (WCHAR)strText[i];
+                    }
+
+                    pGUI->OnHandleWinMsgChars(s);
                 }
-
-                pGUI->OnHandleWinMsgChars(s);
             }
         }
     }
@@ -147,27 +156,27 @@ extern "C" {
         }
     }
 
-    JNIEXPORT jstring JNICALL
-        Java_com_tatfook_paracraft_ParaTextInputWrapper_nativeGetText
-        (JNIEnv *env, jclass clazz)
-    {
-        if (CGlobals::GetApp()->GetAppState() != PEAppState_Ready)
-        {
-            return env->NewStringUTF("");
-        }
+    // JNIEXPORT jstring JNICALL
+    //     Java_com_tatfook_paracraft_ParaTextInputWrapper_nativeGetText
+    //     (JNIEnv *env, jclass clazz)
+    // {
+    //     if (CGlobals::GetApp()->GetAppState() != PEAppState_Ready)
+    //     {
+    //         return env->NewStringUTF("");
+    //     }
 
-        ParaEngine::CGUIBase *pGUI = ParaEngine::CGUIRoot::GetInstance()->GetUIKeyFocus();
+    //     ParaEngine::CGUIBase *pGUI = ParaEngine::CGUIRoot::GetInstance()->GetUIKeyFocus();
 
-        if (pGUI)
-        {
-            std::string curText;
-            pGUI->GetTextA(curText);
+    //     if (pGUI)
+    //     {
+    //         std::string curText;
+    //         pGUI->GetTextA(curText);
 
-            return env->NewStringUTF(curText.c_str());
-        }
+    //         return env->NewStringUTF(curText.c_str());
+    //     }
 
-        return env->NewStringUTF("");
-    }
+    //     return env->NewStringUTF("");
+    // }
 
     JNIEXPORT void JNICALL
         Java_com_tatfook_paracraft_ParaTextInputWrapper_nativeSetCaretPosition
@@ -186,22 +195,22 @@ extern "C" {
         }
     }
 
-    JNIEXPORT int JNICALL
-        Java_com_tatfook_paracraft_ParaTextInputWrapper_nativeGetCaretPosition
-        (JNIEnv *env, jclass clazz, jint caretPosition)
-    {
-        if (CGlobals::GetApp()->GetAppState() != PEAppState_Ready)
-        {
-            return 0;
-        }
+    // JNIEXPORT int JNICALL
+    //     Java_com_tatfook_paracraft_ParaTextInputWrapper_nativeGetCaretPosition
+    //     (JNIEnv *env, jclass clazz, jint caretPosition)
+    // {
+    //     if (CGlobals::GetApp()->GetAppState() != PEAppState_Ready)
+    //     {
+    //         return 0;
+    //     }
 
-        auto pGUI = CGUIRoot::GetInstance()->GetUIKeyFocus();
+    //     auto pGUI = CGUIRoot::GetInstance()->GetUIKeyFocus();
 
-        if (pGUI)
-        {
-            return pGUI->GetCaretPosition();
-        }
+    //     if (pGUI)
+    //     {
+    //         return pGUI->GetCaretPosition();
+    //     }
 
-        return 0;
-    }  
+    //     return 0;
+    // }  
 }
