@@ -2,15 +2,15 @@
 #include <memory>
 
 namespace cAudio {
-	const WCHAR* cMultiByteToWideChar(const char* name, unsigned int nCodePage, size_t* outLen)
+	const wchar_t* cMultiByteToWideChar(const char* name, unsigned int nCodePage, size_t* outLen)
 	{
-		static std::shared_ptr< std::vector<WCHAR> > wsName_;
+		static std::shared_ptr< std::vector<wchar_t> > wsName_;
 		if (!wsName_.get()) {
 			// first time called by this thread
 			// construct test element to be used in all subsequent calls from this thread
-			wsName_.reset(new std::vector<WCHAR>());
+			wsName_.reset(new std::vector<wchar_t>());
 		}
-		std::vector<WCHAR>& wsName = *wsName_;
+		std::vector<wchar_t>& wsName = *wsName_;
 
 #ifdef WIN32
 		int nLength = ::MultiByteToWideChar(nCodePage, (nCodePage == CP_UTF8) ? 0 : MB_PRECOMPOSED, name, -1, NULL, 0);
@@ -60,7 +60,7 @@ namespace cAudio {
 
 	}
 
-	const char* cWideCharToMultiByte(const WCHAR* name, unsigned int nCodePage, size_t* outLen)
+	const char* cWideCharToMultiByte(const wchar_t* name, unsigned int nCodePage, size_t* outLen)
 	{
 		static std::shared_ptr< std::vector<char> > cName_;
 		if (!cName_.get()) {
