@@ -11,7 +11,7 @@ android {
     }
 
     defaultConfig {
-        applicationId "com.tatfook.paracraft"
+        applicationId "com.palaka.paracraft"
         minSdkVersion PROP_MIN_SDK_VERSION
         targetSdkVersion PROP_TARGET_SDK_VERSION
         versionCode Integer.parseInt(VERSION_CODE)
@@ -101,9 +101,7 @@ android {
         tatfook {}
 
         //应用宝
-        yingyongbao {
-            applicationId "com.tatfook.paracraftyyb"
-        }
+        yingyongbao {}
 
         //小米
         xiaomi {}
@@ -115,7 +113,9 @@ android {
         oppo {}
 
         //vivo
-        vivo {}
+        vivo { //vivo的已经用这个包名上架了（截止2023/02/27）
+            applicationId "com.tatfook.paracraft"
+        }
 
         //荣耀
         honor {}
@@ -124,14 +124,10 @@ android {
         zhongxing {}
 
         //360
-        qihu360 {
-            applicationId "com.tatfook.paracraft360"
-        }
+        qihu360 {}
 
         //百度
-        baidu {
-            applicationId "com.tatfook.paracraftbaidu"
-        }
+        baidu {}
 
         //阿里应用分发开放平台
         ali9you {}
@@ -203,18 +199,20 @@ android.applicationVariants.all { variant ->
 //                println "生成apk"
 //                println outApkFlavor
 //                println outApkFile
-
                 String keyStorePath=""+project.projectDir+"/"+RELEASE_STORE_FILE
                 String apkSignerJar=""+project.projectDir+"/key/apksigner.jar"
                 String storePass = RELEASE_STORE_PASSWORD
                 String alias = RELEASE_KEY_ALIAS
                 String keyPass = RELEASE_KEY_PASSWORD
                 String signCmd = String.format("java -jar %s  sign --ks %s --ks-pass pass:%s --ks-key-alias %s --key-pass pass:%s %s",apkSignerJar,keyStorePath,storePass,alias,keyPass,outApkFile)
-                if (System.getProperty('os.name').toLowerCase(Locale.ROOT).contains('windows')) {
-                    execute('cmd', '/c', signCmd)
-                } else {
-                    execute('sh', '-c', signCmd)
+                if(!flavor.equals("vivo")){//因为vivo的已经用这个无签名的上架过了
+                    if (System.getProperty('os.name').toLowerCase(Locale.ROOT).contains('windows')) {
+                        execute('cmd', '/c', signCmd)
+                    } else {
+                        execute('sh', '-c', signCmd)
+                    }
                 }
+                println("variant.applicationId:"+variant.applicationId)
                 println("rootProject.buildDir:"+rootProject.rootDir)
                 println("project.buildDir:"+project.projectDir)
                 ftpUpload(outApkFlavor, outApkFile)
