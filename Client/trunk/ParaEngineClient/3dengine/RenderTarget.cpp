@@ -16,6 +16,7 @@
 #include "PaintEngine/PaintEngineGPU.h"
 #include "ImageEntity.h"
 #include "RenderTarget.h"
+#include "StringHelper.h"
 
 /** @def default canvas map width in pixels */
 #define DEFAULT_CANVAS_MAP_WIDTH	512
@@ -235,7 +236,12 @@ HRESULT ParaEngine::CRenderTarget::SaveToFile(const char* sFileName, int nImageW
 
 	if ((FileFormat != D3DXIFF_DDS) && (nImageWidth <= 0 || nImageWidth >= m_nTextureWidth) && srcWidth == 0)
 	{
+#if WIN32&&defined(DEFAULT_FILE_ENCODING)
+		std::wstring sFile16 = StringHelper::MultiByteToWideChar(sFile.c_str(), DEFAULT_FILE_ENCODING);
+		if (SUCCEEDED(D3DXSaveTextureToFileW(sFile16.c_str(), FileFormat, m_pCanvasTexture->GetTexture(), NULL)))
+#else 
 		if (SUCCEEDED(D3DXSaveTextureToFile(sFile.c_str(), FileFormat, m_pCanvasTexture->GetTexture(), NULL)))
+#endif
 		{
 			OUTPUT_LOG("miniscenegraph portrait %d taken for %s", m_nTextureWidth, sFile.c_str());
 		}
@@ -316,7 +322,13 @@ HRESULT ParaEngine::CRenderTarget::SaveToFile(const char* sFileName, int nImageW
 				// Copy scene to render target texture
 				if (SUCCEEDED(pd3dDevice->StretchRect(pSur, (srcWidth == 0) ? NULL : (&srcRect), pSurDest, NULL, D3DTEXF_LINEAR)))
 				{
+#if WIN32&&defined(DEFAULT_FILE_ENCODING)
+					LPCWSTR sFile16 = StringHelper::MultiByteToWideChar(sFile.c_str(), DEFAULT_FILE_ENCODING);
+					if (SUCCEEDED(D3DXSaveSurfaceToFileW(sFile16, FileFormat, pSurDest, NULL, NULL)))
+#else 
 					if (SUCCEEDED(D3DXSaveSurfaceToFile(sFile.c_str(), FileFormat, pSurDest, NULL, NULL)))
+#endif
+					
 					{
 						OUTPUT_LOG("miniscenegraph portrait (%d X %d) taken for %s", nImageWidth, nImageHeight, sFile.c_str());
 					}

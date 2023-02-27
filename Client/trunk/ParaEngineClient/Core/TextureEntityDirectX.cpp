@@ -31,6 +31,7 @@ If your image has sharp transitions between multiple alpha levels (one pixel is 
 #include "AsyncLoader.h"
 #include "ViewportManager.h"
 #include "TextureEntityDirectX.h"
+#include "StringHelper.h"
 
 #ifdef PARAENGINE_CLIENT
 	#include "memdebug.h"
@@ -1065,7 +1066,12 @@ void TextureEntityDirectX::SetTexture(LPDIRECT3DTEXTURE9 pSrcTexture)
 TextureEntity* TextureEntityDirectX::CreateTexture(const char* pFileName, uint32 nMipLevels /*= 0*/, D3DPOOL dwCreatePool /*= D3DPOOL_MANAGED*/)
 {
 	LPDIRECT3DTEXTURE9 pTexture = NULL;
+#if WIN32&&defined(DEFAULT_FILE_ENCODING)
+	LPCWSTR pFileName16 = StringHelper::MultiByteToWideChar(pFileName, DEFAULT_FILE_ENCODING);
+	HRESULT hr = D3DXCreateTextureFromFileExW(CGlobals::GetRenderDevice(), pFileName16, D3DX_DEFAULT, D3DX_DEFAULT, D3DX_FROM_FILE, 0, D3DFMT_UNKNOWN, dwCreatePool, D3DX_DEFAULT, D3DX_DEFAULT, 0, NULL, NULL, &pTexture);
+#else 
 	HRESULT hr = D3DXCreateTextureFromFileEx(CGlobals::GetRenderDevice(), pFileName, D3DX_DEFAULT, D3DX_DEFAULT, D3DX_FROM_FILE, 0, D3DFMT_UNKNOWN, dwCreatePool, D3DX_DEFAULT, D3DX_DEFAULT, 0, NULL, NULL, &pTexture);
+#endif
 	if (SUCCEEDED(hr) && pTexture != NULL)
 	{
 		TextureEntityDirectX* pTextureEntity = new TextureEntityDirectX(AssetKey(pFileName));
@@ -1113,7 +1119,12 @@ bool TextureEntityDirectX::SaveToFile(const char* filename, D3DFORMAT dwFormat, 
 
 	if ((FileFormat != D3DXIFF_DDS) && (width <= 0 || width >= GetWidth()))
 	{
+#if WIN32&&defined(DEFAULT_FILE_ENCODING)
+		std::wstring sFile16 = StringHelper::MultiByteToWideChar(sFile.c_str(), DEFAULT_FILE_ENCODING);
+		HRESULT hr = D3DXSaveTextureToFileW(sFile16.c_str(), FileFormat, pSrcTexture, nullptr);
+#else 
 		HRESULT hr = D3DXSaveTextureToFile(sFile.c_str(), FileFormat, pSrcTexture, nullptr);
+#endif
 		return SUCCEEDED(hr);
 	}
 	else if (FileFormat == D3DXIFF_DDS)
@@ -1139,7 +1150,12 @@ bool TextureEntityDirectX::SaveToFile(const char* filename, D3DFORMAT dwFormat, 
 			if (SUCCEEDED(hr))
 			{
 				// write file to disk
+#if WIN32&&defined(DEFAULT_FILE_ENCODING)
+				LPCWSTR filename16 = StringHelper::MultiByteToWideChar(filename, DEFAULT_FILE_ENCODING);
+				hr = D3DXSaveTextureToFileW(filename16, D3DXIFF_DDS, pDestTexture, NULL);
+#else 
 				hr = D3DXSaveTextureToFile(filename, D3DXIFF_DDS, pDestTexture, NULL);
+#endif
 
 				if (SUCCEEDED(hr))
 				{
@@ -1147,7 +1163,12 @@ bool TextureEntityDirectX::SaveToFile(const char* filename, D3DFORMAT dwFormat, 
 					{
 						// TODO: for some reason, this does not work. 
 						LPDIRECT3DTEXTURE9 pDestTextureMipMapped = NULL;
+#if WIN32&&defined(DEFAULT_FILE_ENCODING)
+						LPCWSTR filename16 = StringHelper::MultiByteToWideChar(filename, DEFAULT_FILE_ENCODING);
+						hr = D3DXCreateTextureFromFileExW(pd3dDevice, filename16, D3DX_DEFAULT, D3DX_DEFAULT, MipLevels, D3DUSAGE_AUTOGENMIPMAP, D3DFMT_UNKNOWN, D3DPOOL_MANAGED, Filter, D3DX_DEFAULT, 0, NULL, NULL, &pDestTextureMipMapped);
+#else 
 						hr = D3DXCreateTextureFromFileEx(pd3dDevice, filename, D3DX_DEFAULT, D3DX_DEFAULT, MipLevels, D3DUSAGE_AUTOGENMIPMAP, D3DFMT_UNKNOWN, D3DPOOL_MANAGED, Filter, D3DX_DEFAULT, 0, NULL, NULL, &pDestTextureMipMapped);
+#endif
 						if (SUCCEEDED(hr))
 						{
 							// generate all mip levels;
@@ -1161,7 +1182,12 @@ bool TextureEntityDirectX::SaveToFile(const char* filename, D3DFORMAT dwFormat, 
 							the mip-maps auto generate at first use may not be the best idea. Therefore GenerateMipSubLevels exists for you to notify the driver that "now"
 							is a good time to generate the mips if it hasn't already (e.g. "now" = while a loading screen is being displayed).
 							*/
+#if WIN32&&defined(DEFAULT_FILE_ENCODING)
+							LPCWSTR filename16 = StringHelper::MultiByteToWideChar(filename, DEFAULT_FILE_ENCODING);
+							hr = D3DXSaveTextureToFileW(filename16, D3DXIFF_DDS, pDestTextureMipMapped, NULL);
+#else 
 							hr = D3DXSaveTextureToFile(filename, D3DXIFF_DDS, pDestTextureMipMapped, NULL);
+#endif
 							if (FAILED(hr))
 							{
 								OUTPUT_LOG("warning: failed SaveTextureToFile -->GenerateMipSubLevels %s\n", filename);

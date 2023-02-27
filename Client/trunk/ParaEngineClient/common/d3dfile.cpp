@@ -16,7 +16,7 @@
 //#include <rmxfguid.h>
 //#include <rmxftmpl.h>
 #include "D3DFile.h"
-
+#include "StringHelper.h"
 
 
 //-----------------------------------------------------------------------------
@@ -76,9 +76,17 @@ HRESULT CD3DMesh::Create( LPDIRECT3DDEVICE9 pd3dDevice, LPCTSTR strFilename )
     DXUtil_FindMediaFileCb( strPath, sizeof(strPath), strFilename );
 
     // Load the mesh
-    if( FAILED( hr = D3DXLoadMeshFromX( strPath, D3DXMESH_SYSTEMMEM, pd3dDevice, 
-                                        &pAdjacencyBuffer, &pMtrlBuffer, NULL,
-                                        &m_dwNumMaterials, &m_pSysMemMesh ) ) )
+#if WIN32&&defined(DEFAULT_FILE_ENCODING)
+    LPCWSTR strPath16 = ParaEngine::StringHelper::MultiByteToWideChar(strPath, DEFAULT_FILE_ENCODING);
+    if (FAILED(hr = D3DXLoadMeshFromXW(strPath16, D3DXMESH_SYSTEMMEM, pd3dDevice,
+        &pAdjacencyBuffer, &pMtrlBuffer, NULL,
+        &m_dwNumMaterials, &m_pSysMemMesh)))
+#else
+    if (FAILED(hr = D3DXLoadMeshFromX(strPath, D3DXMESH_SYSTEMMEM, pd3dDevice,
+        &pAdjacencyBuffer, &pMtrlBuffer, NULL,
+        &m_dwNumMaterials, &m_pSysMemMesh)))
+#endif
+    
     {
         return hr;
     }
@@ -126,9 +134,15 @@ HRESULT CD3DMesh::Create( LPDIRECT3DDEVICE9 pd3dDevice, LPCTSTR strFilename )
                 TCHAR strTextureTemp[MAX_PATH];
                 DXUtil_ConvertAnsiStringToGenericCb( strTextureTemp, d3dxMtrls[i].pTextureFilename, sizeof(strTextureTemp) );
                 DXUtil_FindMediaFileCb( strTexture, sizeof(strTexture), strTextureTemp );
-
-                if( FAILED( D3DXCreateTextureFromFile( pd3dDevice, strTexture, 
-                                                       &m_pTextures[i] ) ) )
+#if WIN32&&defined(DEFAULT_FILE_ENCODING)
+                LPCWSTR strTexture16 = ParaEngine::StringHelper::MultiByteToWideChar(strTexture, DEFAULT_FILE_ENCODING);
+                if (FAILED(D3DXCreateTextureFromFileW(pd3dDevice, strTexture16,
+                    &m_pTextures[i])))
+#else
+                if (FAILED(D3DXCreateTextureFromFile(pd3dDevice, strTexture,
+                    &m_pTextures[i] ) ) )
+#endif
+                
                     m_pTextures[i] = NULL;
             }
         }
@@ -208,8 +222,14 @@ HRESULT CD3DMesh::Create( LPDIRECT3DDEVICE9 pd3dDevice,
                 DXUtil_ConvertAnsiStringToGenericCb( strTextureTemp, d3dxMtrls[i].pTextureFilename, sizeof(strTextureTemp) );
                 DXUtil_FindMediaFileCb( strTexture, sizeof(strTexture), strTextureTemp );
 
-                if( FAILED( D3DXCreateTextureFromFile( pd3dDevice, strTexture, 
-                                                       &m_pTextures[i] ) ) )
+#if WIN32&&defined(DEFAULT_FILE_ENCODING)
+                LPCWSTR strTexture16 = ParaEngine::StringHelper::MultiByteToWideChar(strTexture, DEFAULT_FILE_ENCODING);
+                if (FAILED(D3DXCreateTextureFromFileW(pd3dDevice, strTexture16,
+                    &m_pTextures[i])))
+#else
+                if (FAILED(D3DXCreateTextureFromFile(pd3dDevice, strTexture,
+                    &m_pTextures[i])))
+#endif
                     m_pTextures[i] = NULL;
             }
         }

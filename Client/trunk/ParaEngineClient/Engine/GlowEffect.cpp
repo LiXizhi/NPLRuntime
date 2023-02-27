@@ -13,6 +13,7 @@
 #include "effect_file.h"
 #include "SceneObject.h"
 #include "GlowEffect.h"
+#include "StringHelper.h"
 
 using namespace ParaEngine;
 
@@ -340,7 +341,15 @@ float CGlowEffect::ComputeGaussian(float n,float blurAmount)
 
 void CGlowEffect::SaveGlowTexturesToFile(const string& filename)
 {
-	D3DXSaveTextureToFile(filename.c_str(),D3DXIFF_JPG, m_pRTGlowSourceTexture, NULL );
-	D3DXSaveTextureToFile((filename+"halfsize.jpg").c_str(),D3DXIFF_JPG, m_pRTHalfSizeTexture, NULL );
-	D3DXSaveTextureToFile((filename+"horiz.jpg").c_str(),D3DXIFF_JPG, m_pRTBlurHorizTexture, NULL );
+#if WIN32&&defined(DEFAULT_FILE_ENCODING)
+	std::wstring filename16 = StringHelper::MultiByteToWideChar(filename.c_str(), DEFAULT_FILE_ENCODING);
+	D3DXSaveTextureToFileW(filename16.c_str(), D3DXIFF_JPG, m_pRTGlowSourceTexture, NULL);
+	D3DXSaveTextureToFileW((filename16 + L"halfsize.jpg").c_str(), D3DXIFF_JPG, m_pRTHalfSizeTexture, NULL);
+	D3DXSaveTextureToFileW((filename16 + L"horiz.jpg").c_str(), D3DXIFF_JPG, m_pRTBlurHorizTexture, NULL);
+#else 
+	D3DXSaveTextureToFile(filename.c_str(), D3DXIFF_JPG, m_pRTGlowSourceTexture, NULL);
+	D3DXSaveTextureToFile((filename + "halfsize.jpg").c_str(), D3DXIFF_JPG, m_pRTHalfSizeTexture, NULL);
+	D3DXSaveTextureToFile((filename + "horiz.jpg").c_str(), D3DXIFF_JPG, m_pRTBlurHorizTexture, NULL);
+#endif
+	
 }

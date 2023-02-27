@@ -201,7 +201,13 @@ namespace ParaScripting
 			//////////////////////////////////////////////////////////////////////////
 			// Restore to old settings
 			D3DXIMAGE_FILEFORMAT FileFormat = D3DXIFF_JPG;
+			
+#if WIN32&&defined(DEFAULT_FILE_ENCODING)
+			LPCWSTR Filename16 = StringHelper::MultiByteToWideChar(Filename, DEFAULT_FILE_ENCODING);
+			D3DXSaveTextureToFileW(Filename16, FileFormat, m_pRenderTarget, NULL);
+#else 
 			D3DXSaveTextureToFile(filename, FileFormat, m_pRenderTarget, NULL);
+#endif
 
 			// restore old view port
 			pd3dDevice->SetViewport(&oldViewport);

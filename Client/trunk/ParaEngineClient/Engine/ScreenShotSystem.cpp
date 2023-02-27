@@ -280,8 +280,6 @@ bool SCREENSHOTSYSTEM::InProgress()
 //------------------------------------------------------------------------------------------------
 bool SCREENSHOTSYSTEM::ScreenShotExists(const char* Filename)
 {
-	WIN32_FIND_DATA FindData;
-
 	//--Make sure a valid filename is passed in
 	if(Filename == NULL)
 	{
@@ -290,7 +288,15 @@ bool SCREENSHOTSYSTEM::ScreenShotExists(const char* Filename)
 	}
 
 	//--Try to find the file
-	HANDLE FileHandle = FindFirstFile(Filename, &FindData);
+	HANDLE FileHandle;
+#if WIN32&&defined(DEFAULT_FILE_ENCODING)
+	WIN32_FIND_DATAW FindData;
+	LPCWSTR Filename16 = StringHelper::MultiByteToWideChar(Filename, DEFAULT_FILE_ENCODING);
+	FileHandle = FindFirstFileW(Filename16, &FindData);
+#else
+	WIN32_FIND_DATA FindData;
+	FileHandle = FindFirstFile(Filename, &FindData);
+#endif
 
 	//--If the file handle turned out to be INVALID_HANDLE_VALUE,
 	//--then the screen shot does not exist
@@ -560,7 +566,13 @@ inline void SaveScreenShot(char* Filename, int Width, int Height, int Channels, 
 		if(CParaFile::CreateDirectory(Filename))
 		{
 			// save texture
+			
+#if WIN32&&defined(DEFAULT_FILE_ENCODING)
+			LPCWSTR Filename16 = StringHelper::MultiByteToWideChar(Filename, DEFAULT_FILE_ENCODING);
+			D3DXSaveTextureToFileW(Filename16, FileFormat, pTexture, NULL);
+#else 
 			D3DXSaveTextureToFile(Filename, FileFormat, pTexture, NULL);
+#endif
 		}
 		
 		
@@ -1810,7 +1822,13 @@ bool SCREENSHOTSYSTEM::BeginMovieCapture(const char* Filename, unsigned int Fram
 	AVIFileInit();
 
 	//--Open/Create the AVI file
-	if(AVIFileOpen(&m_Video.VideoFile, ValidFilename, OF_WRITE | OF_CREATE, NULL) != AVIERR_OK)
+#if WIN32 && defined(DEFAULT_FILE_ENCODING)
+	LPCWSTR ValidFilename16 = StringHelper::MultiByteToWideChar(ValidFilename, DEFAULT_FILE_ENCODING);
+	if (AVIFileOpenW(&m_Video.VideoFile, ValidFilename16, OF_WRITE | OF_CREATE, NULL) != AVIERR_OK)
+#else
+	if (AVIFileOpen(&m_Video.VideoFile, ValidFilename, OF_WRITE | OF_CREATE, NULL) != AVIERR_OK)
+#endif
+	
 	{
 		//--The avi couldn't be opened/created
 		//--Set the OK flag to false so the system knows not to try and write to the AVI file
