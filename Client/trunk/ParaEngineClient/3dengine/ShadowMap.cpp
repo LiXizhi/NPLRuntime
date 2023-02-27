@@ -30,7 +30,7 @@
 #include "BlockEngine/BlockWorldClient.h"
 #include "ViewportManager.h"
 #include "ShadowMap.h"
-
+#include "StringHelper.h"
 
 using namespace ParaEngine;
 
@@ -1548,7 +1548,12 @@ HRESULT CShadowMap::EndShadowPass()
 bool CShadowMap::SaveShadowMapToFile(string file)
 {
 #ifdef USE_DIRECTX_RENDERER
+#if WIN32&&defined(DEFAULT_FILE_ENCODING)
+	std::wstring filename16 = StringHelper::MultiByteToWideChar(file.c_str(), DEFAULT_FILE_ENCODING);
+	D3DXSaveTextureToFileW(filename16.c_str(), D3DXIFF_JPG, m_pSMColorTexture->GetTexture(), NULL);
+#else 
 	D3DXSaveTextureToFile(file.c_str(), D3DXIFF_JPG, m_pSMColorTexture->GetTexture(), NULL);
+#endif
 	return true;
 #else
 	return false;

@@ -69,6 +69,7 @@
 #include "SunLight.h"
 #include "BufferPicking.h"
 #include "memdebug.h"
+#include "StringHelper.h"
 
 /** @def shadow radius around the eye, larger than which shadows will not be considered.  */
 #define SHADOW_RADIUS	100.f
@@ -4282,7 +4283,12 @@ bool CSceneObject::ScreenShotReflection()
 	static unsigned short i=0;
 	string filename = "Screen Shots\\reflectionmap0.jpg";
 	filename[filename.size()-5] = '0'+(char)(++i);
-	D3DXSaveTextureToFile(filename.c_str(),D3DXIFF_JPG, CGlobals::GetOceanManager()->m_waveReflectionTexture, NULL );
+#if WIN32&&defined(DEFAULT_FILE_ENCODING)
+	std::wstring filename16 = StringHelper::MultiByteToWideChar(filename.c_str(), DEFAULT_FILE_ENCODING);
+	D3DXSaveTextureToFileW(filename16.c_str(), D3DXIFF_JPG, CGlobals::GetOceanManager()->m_waveReflectionTexture, NULL);
+#else 
+	D3DXSaveTextureToFile(filename.c_str(), D3DXIFF_JPG, CGlobals::GetOceanManager()->m_waveReflectionTexture, NULL);
+#endif
 #endif
 	return true;
 }

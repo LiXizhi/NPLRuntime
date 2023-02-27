@@ -30,7 +30,7 @@ using namespace ScreenShot;
 #include "ViewportManager.h"
 #include "PluginAPI.h"
 #include "AudioEngine2.h"
-
+#include "StringHelper.h"
 
 using namespace ParaEngine;
 
@@ -264,7 +264,13 @@ bool CMoviePlatform::ResizeImage(const string& filename, int width, int height, 
 {
 #ifdef USE_DIRECTX_RENDERER
 	LPDIRECT3DTEXTURE9 pTexture = NULL;
+#if WIN32 && defined(DEFAULT_FILE_ENCODING)
+	std::wstring filename16 = StringHelper::MultiByteToWideChar(filename.c_str(), DEFAULT_FILE_ENCODING);
+	HRESULT hr = D3DXCreateTextureFromFileExW(CGlobals::GetRenderDevice(), filename16.c_str(), width, height, D3DX_FROM_FILE, 0, D3DFMT_UNKNOWN, D3DPOOL_MANAGED, D3DX_DEFAULT, D3DX_DEFAULT, 0, NULL, NULL, (LPDIRECT3DTEXTURE9*)(&pTexture));
+#else
 	HRESULT hr = D3DXCreateTextureFromFileEx(CGlobals::GetRenderDevice(), filename.c_str(), width, height, D3DX_FROM_FILE, 0, D3DFMT_UNKNOWN, D3DPOOL_MANAGED, D3DX_DEFAULT, D3DX_DEFAULT, 0, NULL, NULL, (LPDIRECT3DTEXTURE9*)(&pTexture));
+#endif
+	
 	if(SUCCEEDED(hr))
 	{
 		string sExt = CParaFile::GetFileExtension(destFilename);
@@ -291,8 +297,12 @@ bool CMoviePlatform::ResizeImage(const string& filename, int width, int height, 
 		{
 			FileFormat = D3DXIFF_PNG;
 		}
-
+#if WIN32&&defined(DEFAULT_FILE_ENCODING)
+		std::wstring destFilename16 = StringHelper::MultiByteToWideChar(destFilename.c_str(), DEFAULT_FILE_ENCODING);
+		D3DXSaveTextureToFileW(destFilename16.c_str(), FileFormat, pTexture, NULL);
+#else 
 		D3DXSaveTextureToFile(destFilename.c_str(), FileFormat, pTexture, NULL);
+#endif
 		SAFE_RELEASE(pTexture);
 		return true;
 	}
@@ -371,7 +381,12 @@ bool CMoviePlatform::TakeScreenShot(const string& filename)
 		if(CParaFile::CreateDirectory(Filename.c_str()))
 		{
 			// save texture
-			if(SUCCEEDED( D3DXSaveSurfaceToFile(Filename.c_str(), FileFormat, pBackBuffer, NULL,NULL)))
+#if WIN32&&defined(DEFAULT_FILE_ENCODING)
+			LPCWSTR Filename16 = StringHelper::MultiByteToWideChar(Filename.c_str(), DEFAULT_FILE_ENCODING);
+			if (SUCCEEDED(D3DXSaveSurfaceToFileW(Filename16, FileFormat, pBackBuffer, NULL, NULL)))
+#else 
+			if (SUCCEEDED(D3DXSaveSurfaceToFile(Filename.c_str(), FileFormat, pBackBuffer, NULL, NULL)))
+#endif
 			{
 				return true;
 			}
