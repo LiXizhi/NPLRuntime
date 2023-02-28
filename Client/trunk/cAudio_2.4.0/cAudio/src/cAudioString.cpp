@@ -1,4 +1,5 @@
 #include "cAudioString.h"
+#include <memory>
 
 namespace cAudio {
 	const WCHAR* cMultiByteToWideChar(const char* name, unsigned int nCodePage, size_t* outLen)
