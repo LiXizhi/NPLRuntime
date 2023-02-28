@@ -55,6 +55,9 @@ else()
 	SET(LUA_LIB_MODE "SHARED")
 endif()
 
+# disable lua coco by default, yielding from c call is expensive. only enable this if you really want to yield from pcall() or other c-function. 
+add_definitions(-DCOCO_DISABLE)
+
 # the following will build lua as dll, the reason for this, is that we need its pdb files for debugging using decoda (a lua debugger). 
 # plus it also makes core game engine update more granular. 
 IF(WIN32)
