@@ -10,6 +10,7 @@ SDL_ROOT 值为SDL库安装目录, 下载SDL源码直接cmake编译安装即可,
 #### emsdk 环境搭建
 ./emsdk install latest
 ./emsdk activate latest && source ./emsdk_env.sh
+<!-- https://emscripten.org/docs/getting_started/downloads.html -->
 
 #### NPLRuntime 编译
 ```
