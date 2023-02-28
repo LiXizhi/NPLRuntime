@@ -1320,11 +1320,11 @@ namespace ParaEngine
 
 					if (curInstCount >= nMaxFaceCount)
 					{
-#ifdef EMSCRIPTEN
-						CGlobals::GetRenderDevice()->DrawIndexedPrimitiveUP_GL(EPrimitiveType::TRIANGLELIST, curInstCount * 2, &(m_select_block_vertices[0]), m_select_block_vertices.size() * sizeof(SelectBlockVertex), &(m_select_block_indices[0]), m_select_block_indices.size() * sizeof(int16));
-#else
+// #ifdef EMSCRIPTEN
+// 						CGlobals::GetRenderDevice()->DrawIndexedPrimitiveUP_GL(EPrimitiveType::TRIANGLELIST, curInstCount * 2, &(m_select_block_vertices[0]), m_select_block_vertices.size() * sizeof(SelectBlockVertex), &(m_select_block_indices[0]), m_select_block_indices.size() * sizeof(int16));
+// #else
 						CGlobals::GetRenderDevice()->DrawIndexedPrimitiveUP(EPrimitiveType::TRIANGLELIST, 0, curInstCount * 4, curInstCount * 2, &(m_select_block_indices[0]), PixelFormat::INDEX16, &(m_select_block_vertices[0]), sizeof(SelectBlockVertex));
-#endif	
+// #endif	
 						curInstCount = 0;
 						instFloatCount = 0;
 					}
@@ -1343,11 +1343,11 @@ namespace ParaEngine
 
 				if (curInstCount > 0)
 				{
-#ifdef EMSCRIPTEN
-					CGlobals::GetRenderDevice()->DrawIndexedPrimitiveUP_GL(EPrimitiveType::TRIANGLELIST, curInstCount * 2, &(m_select_block_vertices[0]), m_select_block_vertices.size() * sizeof(SelectBlockVertex), &(m_select_block_indices[0]), m_select_block_indices.size() * sizeof(int16));
-#else
+// #ifdef EMSCRIPTEN
+// 					CGlobals::GetRenderDevice()->DrawIndexedPrimitiveUP_GL(EPrimitiveType::TRIANGLELIST, curInstCount * 2, &(m_select_block_vertices[0]), m_select_block_vertices.size() * sizeof(SelectBlockVertex), &(m_select_block_indices[0]), m_select_block_indices.size() * sizeof(int16));
+// #else
 					CGlobals::GetRenderDevice()->DrawIndexedPrimitiveUP(EPrimitiveType::TRIANGLELIST, 0, curInstCount * 4, curInstCount * 2, &(m_select_block_indices[0]), PixelFormat::INDEX16, &(m_select_block_vertices[0]), sizeof(SelectBlockVertex));
-#endif	
+// #endif	
 				}
 
 				pEffect->EndPass();

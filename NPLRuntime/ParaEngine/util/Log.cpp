@@ -188,7 +188,7 @@ namespace ParaEngine
 		m_bForceFlush = false; 
 #endif
 #else
-#if defined(PARAENGINE_CLIENT) || defined(PLATFORM_MAC)
+#if defined(PARAENGINE_CLIENT) || defined(PLATFORM_MAC) || defined(WIN32)
 		m_bForceFlush = true;
 		m_is_first_time_open = true;
 #else

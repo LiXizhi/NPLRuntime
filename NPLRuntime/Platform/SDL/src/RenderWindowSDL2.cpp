@@ -210,85 +210,102 @@ namespace ParaEngine {
 	void RenderWindowSDL2::PollEvents()
 	{
 		SDL_Event sdl_event;
-		if (0 == SDL_PollEvent(&sdl_event)) return;
-		if (sdl_event.type == SDL_QUIT) {
-			m_IsQuit = true;
-			return;
-		}
-		else if (sdl_event.type == SDL_WINDOWEVENT) {
-			switch (sdl_event.window.event)
+		while (SDL_PollEvent(&sdl_event))
+		{
+			if (sdl_event.type == SDL_QUIT) 
 			{
-			case SDL_WINDOWEVENT_SIZE_CHANGED:
-				OnSize(sdl_event.window.data1, sdl_event.window.data2);
-				break;
-			case SDL_WINDOWEVENT_FOCUS_LOST:
-				m_bLostFocus = true;
-				break;
-			case SDL_WINDOWEVENT_FOCUS_GAINED:
-				m_bLostFocus = false;
-				break;
-			default:
-				break;
+				m_IsQuit = true;
+				return;
 			}
-		}
-		else if (sdl_event.type == SDL_MOUSEMOTION) {
-			m_mouse_x = sdl_event.motion.x;
-			m_mouse_y = sdl_event.motion.y;
-			OnMouseMove(sdl_event.motion.x, sdl_event.motion.y);
-		}
-		else if (sdl_event.type == SDL_MOUSEBUTTONDOWN) {
-			m_mouse_x = sdl_event.button.x;
-			m_mouse_y = sdl_event.button.y;
-			if (sdl_event.button.button == SDL_BUTTON_LEFT) {
-				m_MouseState[(uint32_t)EMouseButton::LEFT] = EKeyState::PRESS;
-				OnMouseButton(EMouseButton::LEFT, EKeyState::PRESS, sdl_event.button.x, sdl_event.button.y);
+			else if (sdl_event.type == SDL_WINDOWEVENT) 
+			{
+				switch (sdl_event.window.event)
+				{
+				case SDL_WINDOWEVENT_SIZE_CHANGED:
+					OnSize(sdl_event.window.data1, sdl_event.window.data2);
+					break;
+				case SDL_WINDOWEVENT_FOCUS_LOST:
+					m_bLostFocus = true;
+					break;
+				case SDL_WINDOWEVENT_FOCUS_GAINED:
+					m_bLostFocus = false;
+					break;
+				default:
+					break;
+				}
 			}
-			else if (sdl_event.button.button == SDL_BUTTON_RIGHT) {
-				m_MouseState[(uint32_t)EMouseButton::RIGHT] = EKeyState::PRESS;
-				OnMouseButton(EMouseButton::RIGHT, EKeyState::PRESS, sdl_event.button.x, sdl_event.button.y);
+			else if (sdl_event.type == SDL_MOUSEMOTION) 
+			{
+				m_mouse_x = sdl_event.motion.x;
+				m_mouse_y = sdl_event.motion.y;
+				OnMouseMove(sdl_event.motion.x, sdl_event.motion.y);
 			}
-			else if (sdl_event.button.button == SDL_BUTTON_MIDDLE) {
-				m_MouseState[(uint32_t)EMouseButton::MIDDLE] = EKeyState::PRESS;
-				OnMouseButton(EMouseButton::MIDDLE, EKeyState::PRESS, sdl_event.button.x, sdl_event.button.y);
+			else if (sdl_event.type == SDL_MOUSEBUTTONDOWN) 
+			{
+				m_mouse_x = sdl_event.button.x;
+				m_mouse_y = sdl_event.button.y;
+				if (sdl_event.button.button == SDL_BUTTON_LEFT) 
+				{
+					m_MouseState[(uint32_t)EMouseButton::LEFT] = EKeyState::PRESS;
+					OnMouseButton(EMouseButton::LEFT, EKeyState::PRESS, sdl_event.button.x, sdl_event.button.y);
+				}
+				else if (sdl_event.button.button == SDL_BUTTON_RIGHT) 
+				{
+					m_MouseState[(uint32_t)EMouseButton::RIGHT] = EKeyState::PRESS;
+					OnMouseButton(EMouseButton::RIGHT, EKeyState::PRESS, sdl_event.button.x, sdl_event.button.y);
+				}
+				else if (sdl_event.button.button == SDL_BUTTON_MIDDLE) 
+				{
+					m_MouseState[(uint32_t)EMouseButton::MIDDLE] = EKeyState::PRESS;
+					OnMouseButton(EMouseButton::MIDDLE, EKeyState::PRESS, sdl_event.button.x, sdl_event.button.y);
+				}
+				CheckFocus();
 			}
-			CheckFocus();
-		}
-		else if (sdl_event.type == SDL_MOUSEBUTTONUP) {
-			m_mouse_x = sdl_event.button.x;
-			m_mouse_y = sdl_event.button.y;
-			if (sdl_event.button.button == SDL_BUTTON_LEFT) {
-				m_MouseState[(uint32_t)EMouseButton::LEFT] = EKeyState::RELEASE;
-				OnMouseButton(EMouseButton::LEFT, EKeyState::RELEASE, sdl_event.button.x, sdl_event.button.y);
+			else if (sdl_event.type == SDL_MOUSEBUTTONUP) 
+			{
+				m_mouse_x = sdl_event.button.x;
+				m_mouse_y = sdl_event.button.y;
+				if (sdl_event.button.button == SDL_BUTTON_LEFT) 
+				{
+					m_MouseState[(uint32_t)EMouseButton::LEFT] = EKeyState::RELEASE;
+					OnMouseButton(EMouseButton::LEFT, EKeyState::RELEASE, sdl_event.button.x, sdl_event.button.y);
+				}
+				else if (sdl_event.button.button == SDL_BUTTON_RIGHT) 
+				{
+					m_MouseState[(uint32_t)EMouseButton::RIGHT] = EKeyState::RELEASE;
+					OnMouseButton(EMouseButton::RIGHT, EKeyState::RELEASE, sdl_event.button.x, sdl_event.button.y);
+				}
+				else if (sdl_event.button.button == SDL_BUTTON_MIDDLE) 
+				{
+					m_MouseState[(uint32_t)EMouseButton::MIDDLE] = EKeyState::RELEASE;
+					OnMouseButton(EMouseButton::MIDDLE, EKeyState::RELEASE, sdl_event.button.x, sdl_event.button.y);
+				}
+				CheckFocus();
 			}
-			else if (sdl_event.button.button == SDL_BUTTON_RIGHT) {
-				m_MouseState[(uint32_t)EMouseButton::RIGHT] = EKeyState::RELEASE;
-				OnMouseButton(EMouseButton::RIGHT, EKeyState::RELEASE, sdl_event.button.x, sdl_event.button.y);
+			else if (sdl_event.type == SDL_MOUSEWHEEL) 
+			{
+				OnMouseWheel(m_mouse_x, m_mouse_y, sdl_event.wheel.preciseY);
 			}
-			else if (sdl_event.button.button == SDL_BUTTON_MIDDLE) {
-				m_MouseState[(uint32_t)EMouseButton::MIDDLE] = EKeyState::RELEASE;
-				OnMouseButton(EMouseButton::MIDDLE, EKeyState::RELEASE, sdl_event.button.x, sdl_event.button.y);
+			else if (sdl_event.type == SDL_KEYDOWN) 
+			{
+				EKeyState state = EKeyState::PRESS;
+				DWORD msgKey = (DWORD)sdl_event.key.keysym.sym;
+				auto key = SDL2VirtualKeyToParaVK(msgKey);
+				if (key != EVirtualKey::KEY_UNKNOWN) m_KeyState[(uint32_t)key] = state;
+				OnKey(key, state);
 			}
-			CheckFocus();
-		}
-		else if (sdl_event.type == SDL_MOUSEWHEEL) {
-			OnMouseWheel(m_mouse_x, m_mouse_y, sdl_event.wheel.preciseY);
-		}
-		else if (sdl_event.type == SDL_KEYDOWN) {
-			EKeyState state = EKeyState::PRESS;
-			DWORD msgKey = (DWORD)sdl_event.key.keysym.sym;
-			auto key = SDL2VirtualKeyToParaVK(msgKey);
-			if (key != EVirtualKey::KEY_UNKNOWN) m_KeyState[(uint32_t)key] = state;
-			OnKey(key, state);
-		}
-		else if (sdl_event.type == SDL_KEYUP) {
-			EKeyState state = EKeyState::RELEASE;
-			DWORD msgKey = (DWORD)sdl_event.key.keysym.sym;
-			auto key = SDL2VirtualKeyToParaVK(msgKey);
-			if (key != EVirtualKey::KEY_UNKNOWN) m_KeyState[(uint32_t)key] = state;
-			OnKey(key, state);
-		}
-		else if (sdl_event.type == SDL_TEXTINPUT) {
-			OnChar(sdl_event.text.text);
+			else if (sdl_event.type == SDL_KEYUP) 
+			{
+				EKeyState state = EKeyState::RELEASE;
+				DWORD msgKey = (DWORD)sdl_event.key.keysym.sym;
+				auto key = SDL2VirtualKeyToParaVK(msgKey);
+				if (key != EVirtualKey::KEY_UNKNOWN) m_KeyState[(uint32_t)key] = state;
+				OnKey(key, state);
+			}
+			else if (sdl_event.type == SDL_TEXTINPUT) 
+			{
+				OnChar(sdl_event.text.text);
+			}
 		}
 	}
 
@@ -311,7 +328,6 @@ namespace ParaEngine {
 	{
 		return m_Windowed;
 	}
-
 
 	EKeyState RenderWindowSDL2::GetMouseButtonState(EMouseButton button)
 	{

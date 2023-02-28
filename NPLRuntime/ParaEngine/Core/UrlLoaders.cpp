@@ -13,6 +13,10 @@
 #include "UrlLoaders.h"
 #include "AsyncLoader.h"
 
+#ifdef EMSCRIPTEN
+#include <emscripten.h>
+#include <emscripten/fetch.h>
+#endif
 #ifdef PARAENGINE_CLIENT
 #include "memdebug.h"
 #endif
@@ -176,6 +180,11 @@ HRESULT ParaEngine::CUrlProcessor::Destroy()
 
 HRESULT ParaEngine::CUrlProcessor::Process(void* pData, int cBytes)
 {
+#ifdef EMSCRIPTEN
+    emscripten_fetch_attr_t attr;
+    emscripten_fetch_attr_init(&attr);
+	
+#else
 	// Let us do the easy way. 
 	CURL *curl = NULL;
 
@@ -215,6 +224,7 @@ HRESULT ParaEngine::CUrlProcessor::Process(void* pData, int cBytes)
 		return S_OK;
 	}
 	return E_FAIL;
+#endif
 }
 
 HRESULT ParaEngine::CUrlProcessor::CopyToResource()
@@ -673,9 +683,18 @@ void ParaEngine::CUrlProcessor::AppendHTTPHeader(const char* text)
 	if (text != 0)
 		m_pHttpHeaders = curl_slist_append(m_pHttpHeaders, text);
 }
-
+void ParaEngine::CUrlProcessor::AppendHTTPHeader(const std::string& name, const std::string& value)
+{
+#ifdef EMSCRIPTEN
+	m_request_headers.append(name);
+	m_request_headers.append(value);
+#else
+	AppendHTTPHeader((name + ":" + value).c_str());
+#endif
+}
 CURLFORMcode ParaEngine::CUrlProcessor::AppendFormParam(const char* name, const char* value)
 {
+
 	return curl_formadd(&m_pFormPost, &m_pFormLast, CURLFORM_COPYNAME, name, CURLFORM_COPYCONTENTS, value, CURLFORM_END);
 }
 

@@ -12,7 +12,11 @@ endif()
 #set(CMAKE_TOOLCHAIN_FILE "$ENV{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake" CACHE STRING "Vcpkg toolchain file")
 
 if (EMSCRIPTEN)
-	set (TARGET_NAME ParaCraftEmscripten)
+	if ("${CMAKE_BUILD_TYPE}" STREQUAL "RELEASE")
+		set (TARGET_NAME ParaCraft)
+	else()
+		set (TARGET_NAME ParaCraftEmscripten)
+	endif()
 else()
 	set (TARGET_NAME ParaCraftSDL2)
 endif()
@@ -27,13 +31,20 @@ if (SDL AND NOT EMSCRIPTEN)
 	target_link_libraries(${TARGET_NAME} PUBLIC ${SDL_ROOT}/lib/SDL2-staticd.lib ${SDL_ROOT}/lib/SDL2maind.lib ws2_32.lib user32.lib gdi32.lib winmm.lib imm32.lib ole32.lib oleaut32.lib version.lib uuid.lib advapi32.lib setupapi.lib shell32.lib dinput8.lib OpenGL32.lib)
 elseif (EMSCRIPTEN)
 	# -sTOTAL_STACK=32MB 
-	if (${CMAKE_HOST_SYSTEM_NAME} STREQUAL "Linux")
-		set(APP_ROOT /mnt/d/workspace/npl/paracraft_root@/)
-	else()
-		set(APP_ROOT D:/workspace/npl/paracraft_root@/)
+	if (NOT APP_ROOT)
+		if (${CMAKE_HOST_SYSTEM_NAME} STREQUAL "Linux")
+			set(APP_ROOT /mnt/d/workspace/npl/paracraft_root@/)
+		else()
+			set(APP_ROOT D:/workspace/npl/paracraft_root@/)
+		endif()
 	endif()
-	set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Og -g --profiling-funcs -sFULL_ES2=1 -sMAX_WEBGL_VERSION=2 -sINITIAL_MEMORY=128MB -sTOTAL_MEMORY=512MB -sALLOW_MEMORY_GROWTH -sPTHREAD_POOL_SIZE=32 -sSTACK_SIZE=32000000  -pthread --embed-file ${APP_ROOT}")
-	set (CMAKE_C_FLAGS "${CMAKE_CXX_FLAGS} -Og -g --profiling-funcs -sFULL_ES2=1 -sMAX_WEBGL_VERSION=2 -sINITIAL_MEMORY=128MB -sTOTAL_MEMORY=512MB -sALLOW_MEMORY_GROWTH -sPTHREAD_POOL_SIZE=32 -sSTACK_SIZE=32000000  -pthread --embed-file ${APP_ROOT}")
+	if ("${CMAKE_BUILD_TYPE}" STREQUAL "RELEASE")
+		set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3 --use-preload-cache -sFULL_ES2=1 -sMAX_WEBGL_VERSION=2 -sINITIAL_MEMORY=128MB -sTOTAL_MEMORY=512MB -sALLOW_MEMORY_GROWTH -sPTHREAD_POOL_SIZE=32 -sSTACK_SIZE=32000000 -sFETCH -pthread --preload-file ${APP_ROOT}")
+		set (CMAKE_C_FLAGS "${CMAKE_CXX_FLAGS} -O3 --use-preload-cache -sFULL_ES2=1 -sMAX_WEBGL_VERSION=2 -sINITIAL_MEMORY=128MB -sTOTAL_MEMORY=512MB -sALLOW_MEMORY_GROWTH -sPTHREAD_POOL_SIZE=32 -sSTACK_SIZE=32000000 -sFETCH -pthread --preload-file ${APP_ROOT}")
+	else()
+		set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Og -g --use-preload-cache -sFULL_ES2=1 -sMAX_WEBGL_VERSION=2 -sINITIAL_MEMORY=128MB -sTOTAL_MEMORY=512MB -sALLOW_MEMORY_GROWTH -sPTHREAD_POOL_SIZE=32 -sSTACK_SIZE=32000000  -pthread --embed-file ${APP_ROOT}")
+		set (CMAKE_C_FLAGS "${CMAKE_CXX_FLAGS} -Og -g --use-preload-cache -sFULL_ES2=1 -sMAX_WEBGL_VERSION=2 -sINITIAL_MEMORY=128MB -sTOTAL_MEMORY=512MB -sALLOW_MEMORY_GROWTH -sPTHREAD_POOL_SIZE=32 -sSTACK_SIZE=32000000  -pthread --embed-file ${APP_ROOT}")
+	endif()
 	# -sSTACK_SIZE=32000000 
 	set(CMAKE_EXECUTABLE_SUFFIX ".html")
 	target_compile_definitions(${TARGET_NAME} PUBLIC EMSCRIPTEN)
@@ -49,3 +60,6 @@ ADD_CUSTOM_COMMAND(
 	COMMAND ${CMAKE_COMMAND} -E make_directory ${OUTPUT_BIN_DIR}
 	COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:${TARGET_NAME}> ${OUTPUT_BIN_DIR}
 )
+
+
+# emcmake cmake -S NPLRuntime -B build_emscripten_release -DEMSCRIPTEN=ON -DCMAKE_BUILD_TYPE=RELEASE -DLOCAL_DEBUG=TRUE

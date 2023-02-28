@@ -65,7 +65,6 @@ namespace ParaEngine
 		virtual bool DrawPrimitive(EPrimitiveType PrimitiveType, uint32_t StartVertex, uint32_t PrimitiveCount) = 0;
 		virtual bool DrawIndexedPrimitive(EPrimitiveType Type, int BaseVertexIndex, uint32_t MinIndex, uint32_t NumVertices, uint32_t indexStart, uint32_t PrimitiveCount) = 0;
 		virtual bool DrawPrimitiveUP(EPrimitiveType PrimitiveType, uint32_t PrimitiveCount, const void* pVertexStreamZeroData, uint32_t VertexStreamZeroStride) = 0;
-		virtual bool DrawPrimitiveUP_GL(EPrimitiveType PrimitiveType, uint32_t PrimitiveCount, const void* pVertexStreamZeroData, uint32_t VertexStreamZeroStride) { return false; }
 		virtual bool DrawIndexedPrimitiveUP(
 			EPrimitiveType PrimitiveType,
 			uint32_t MinVertexIndex,
@@ -75,14 +74,6 @@ namespace ParaEngine
 			PixelFormat IndexDataFormat,
 			const void* pVertexStreamZeroData,
 			uint32_t VertexStreamZeroStride) = 0;
-		virtual bool DrawIndexedPrimitiveUP_GL(
-			EPrimitiveType PrimitiveType,
-			uint32_t PrimitiveCount,
-			const void * pIndexData,
-			const int nIndexSize,
-			const void* pVertexStreamZeroData,
-			const int nVertexSize) { return false; }
-		virtual void ApplyBlendingModeChange() {}
 
 		virtual bool SetTransform(ETransformsStateType State, DeviceMatrix_ptr pMatrix) = 0;
 		virtual bool SetFVF(uint32_t FVF) = 0;
