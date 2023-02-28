@@ -807,6 +807,7 @@ bool CParaEngineAppBase::FindParaEngineDirectory(const char* sHint)
 	}
 	else 
 	{
+/* why is this?
 #if WIN32 && defined(DEFAULT_FILE_ENCODING)
 		std::wstring sModuleDir16 = StringHelper::MultiByteToWideChar(sModuleDir.c_str(), DEFAULT_FILE_ENCODING);
 		int len = (int)(sModuleDir16.size());
@@ -818,6 +819,7 @@ bool CParaEngineAppBase::FindParaEngineDirectory(const char* sHint)
 			::SetCurrentDirectoryW(sParentDir.c_str());
 		}
 #endif
+*/
 	}
 	{
 		char sWorkingDir[512 + 1] = { 0 };
