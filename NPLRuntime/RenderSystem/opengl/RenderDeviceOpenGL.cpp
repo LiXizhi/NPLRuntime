@@ -9,7 +9,7 @@
 
 using namespace ParaEngine;
 
-/** define this, then DrawPrimitiveUP and DrawIndexedPrimitiveUP will use vertext buffer object. 
+/** define this, then DrawPrimitiveUP and DrawIndexedPrimitiveUP will use vertex buffer object. 
 * custom user pointer buffer is no longer supported in opengl 3.0 and Emscripten OpenGL ES2.
 * we need to define this to use VBO in all cases.
 */
@@ -424,12 +424,12 @@ bool ParaEngine::RenderDeviceOpenGL::DrawIndexedPrimitiveUP(EPrimitiveType Primi
 	m_userPointerVertexBuffer.UploadUserPointer(NumVertices * VertexStreamZeroStride, pVertexStreamZeroData, MinVertexIndex * VertexStreamZeroStride);
 	pIndexData = nullptr; // pass null to use binded buffer object
 #else
-	ApplyBlendingModeChange();
 	if (m_CurrentVertexDeclaration)
 	{
 		m_CurrentVertexDeclaration->ApplyAttribute(pVertexStreamZeroData);
 	}
 #endif
+	ApplyBlendingModeChange();
 
 	if (PrimitiveType == EPrimitiveType::TRIANGLELIST)
 		glDrawElements(GL_TRIANGLES, PrimitiveCount * 3, GL_UNSIGNED_SHORT, (GLvoid*)(pIndexData));
