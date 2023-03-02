@@ -183,7 +183,6 @@ void ParaEngine::CUrlProcessor::EmscriptenFetch()
 #ifdef EMSCRIPTEN
 	std::vector<const char*> request_headers;
 	int request_headers_size = m_request_headers.size();
-	request_headers.reserve(request_headers_size + 1);
 	for (int i = 0; i < request_headers_size; i++) request_headers.push_back(m_request_headers[i].c_str());
 	request_headers.push_back(0);
 
@@ -719,18 +718,19 @@ void ParaEngine::CUrlProcessor::CompleteTask()
 
 void ParaEngine::CUrlProcessor::AppendHTTPHeader(const char* text)
 {
-	if (text != 0)
-		m_pHttpHeaders = curl_slist_append(m_pHttpHeaders, text);
-}
-void ParaEngine::CUrlProcessor::AppendHTTPHeader(const std::string& name, const std::string& value)
-{
 #ifdef EMSCRIPTEN
-	m_request_headers.push_back(name);
-	m_request_headers.push_back(value);
+	std::string header = text;
+	auto pos = header.find(':');
+	if (pos != string::npos)
+	{
+		m_request_headers.push_back(header.substr(0, pos));
+		m_request_headers.push_back(header.substr(pos + 1));
+	}
 #else
-	AppendHTTPHeader((name + ":" + value).c_str());
+	if (text != 0) m_pHttpHeaders = curl_slist_append(m_pHttpHeaders, text);
 #endif
 }
+
 CURLFORMcode ParaEngine::CUrlProcessor::AppendFormParam(const char* name, const char* value)
 {
 

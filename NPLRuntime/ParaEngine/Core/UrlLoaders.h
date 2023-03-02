@@ -148,7 +148,7 @@ namespace ParaEngine
 		
 		/** append http headers*/
 		void AppendHTTPHeader(const char* text);
-		void AppendHTTPHeader(const std::string& name, const std::string& value);
+		
 		/** append form parameters */
 		CURLFORMcode AppendFormParam(const char* name, const char* value);
 
