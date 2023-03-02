@@ -79,12 +79,12 @@ void ParaEngine::CViewport::ApplyCamera(CAutoCamera* pCamera)
 			pCamera->UpdateViewMatrix();			
 			m_stereoODSparam.needRecoverCamera = true;
 
-			Vector3 &up = pCamera->GetWorldUp();
+			Vector3 up = pCamera->GetWorldUp();
 			if (m_stereoODSparam.m_bOmniAlwaysUseUpFrontCamera) {
 				up = Vector3(0, 1, 0);
 			}
 			up.normalise();
-			Vector3& right = pCamera->GetWorldRight();
+			Vector3 right = pCamera->GetWorldRight();
 			right.normalise();
 
 			Matrix3 mRotPitch;
