@@ -195,6 +195,7 @@ bool ParaEngine::CParaFileUtils::MakeDirectoryFromFilePath(const std::string fil
 			return true;
 	}
 	catch (...) {}
+	std::cout << "============MakeDirectoryFromFilePath Failed=======================" << std::endl;
 	return false;
 }
 

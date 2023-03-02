@@ -97,7 +97,8 @@ void mainloop(void* arg)
 	{
 		GetApp()->m_inited = true;
 		// GetApp()->InitApp(nullptr, GetApp()->m_cmdline);
-		GetApp()->InitApp(nullptr, R"(cmdline=noupdate="true" debug="main" mc="true" bootstrapper="script/apps/Aries/main_loop.lua" noclientupdate="true" world="worlds/DesignHouse/_user/xiaoyao/testabc")");
+		// GetApp()->InitApp(nullptr, R"(cmdline=noupdate="true" debug="main" mc="true" bootstrapper="script/apps/Aries/main_loop.lua" noclientupdate="true" world="worlds/DesignHouse/_user/xiaoyao/testabc")");
+		GetApp()->InitApp(nullptr, R"(cmdline=noupdate="true" debug="main" mc="true" bootstrapper="script/apps/Aries/main_loop.lua" noclientupdate="true")");
 	}
 	GetApp()->RunLoopOnce();
 	// std::cout << "===============mainloop end=======================" << std::endl;
@@ -164,7 +165,6 @@ int main(int argc, char* argv[])
 
 	std::cout << "========================start paracraft=======================" << std::endl;
 	// GetApp()->InitApp(nullptr, R"(cmdline=noupdate="true" debug="main" mc="true" bootstrapper="script/apps/Aries/main_loop.lua" noclientupdate="true" world="worlds/DesignHouse/_user/xiaoyao/testabc")");
-	// GetApp()->InitApp(nullptr, R"(cmdline=noupdate="true" debug="main" mc="true" bootstrapper="script/apps/Aries/main_loop.lua" noclientupdate="true")");
 	#ifdef EMSCRIPTEN
 		emscripten_set_main_loop_arg(mainloop, nullptr, -1, 1);
 	#endif

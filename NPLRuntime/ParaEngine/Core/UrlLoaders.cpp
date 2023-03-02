@@ -199,17 +199,21 @@ void ParaEngine::CUrlProcessor::EmscriptenFetch()
 	attr.requestHeaders = request_headers.data();
 	emscripten_fetch_t *fetch = emscripten_fetch(&attr, m_url.c_str()); // Blocks here until the operation is complete.
 	m_responseCode = fetch->status;
+	std::vector<char> response_header;
 	size_t headersLengthBytes = emscripten_fetch_get_response_headers_length(fetch) + 1;
-	m_header.resize(headersLengthBytes);
-  	emscripten_fetch_get_response_headers(fetch, m_header.data(), headersLengthBytes);
-	m_data.resize(fetch->totalBytes);
-	memcpy(m_data.data(), fetch->data, fetch->totalBytes);
+	response_header.resize(headersLengthBytes);
+  	emscripten_fetch_get_response_headers(fetch, response_header.data(), headersLengthBytes);
+	if (m_responseCode >= 200 && m_responseCode < 300)
+	{
+		write_header_callback(response_header.data(), response_header.size(), 1);
+		write_data_callback((void*)(fetch->data), fetch->totalBytes, 1);
+	}
   	emscripten_fetch_close(fetch); // Also free data on failure.
 	m_nStatus = CUrlProcessor::URL_REQUEST_COMPLETED;
-	std::cout << "method: " << method << std::endl;
-	std::cout << "url: " << m_url << std::endl;
-	std::cout << "request data:" << m_sRequestData << std::endl;
-	std::cout << "status code: " << m_responseCode << std::endl;
+	// std::cout << "method: " << method << std::endl;
+	// std::cout << "url: " << m_url << std::endl;
+	// std::cout << "request data:" << m_sRequestData << std::endl;
+	// std::cout << "status code: " << m_responseCode << std::endl;
   	// if (fetch->status == 200) return S_OK;
 #endif
 	// return E_FAIL;

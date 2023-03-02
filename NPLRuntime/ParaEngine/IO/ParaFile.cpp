@@ -374,7 +374,12 @@ bool CParaFile::CreateNewFile(const char* filename, bool bAutoMakeFilePath)
 	string sFile;
 	CParaFile::ToCanonicalFilePath(sFile, filename);
 	if (bAutoMakeFilePath)
-		CFileUtils::MakeDirectoryFromFilePath(sFile.c_str());
+	{
+		if (!CFileUtils::MakeDirectoryFromFilePath(sFile.c_str()))
+		{
+			std::cout << "create directory failed:" << sFile << std::endl;
+		}
+	}
 
 	bool bSuc = OpenFile(sFile.c_str(), false);
 	if (bSuc)

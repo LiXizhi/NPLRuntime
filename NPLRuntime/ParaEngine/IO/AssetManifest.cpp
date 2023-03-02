@@ -255,7 +255,7 @@ DWORD AssetFileEntry_Request_CallBack(int nResult, CUrlProcessor* pRequest, CUrl
 			}
 			else
 			{
-				string sTmp = string("AssetFile ASync Failed cannot save to disk:") + url + "\n";
+				string sTmp = string("AssetFile ASync Failed cannot save to disk:") + url + "\n filename: " + pData->m_pAssetFileEntry->GetLocalFileName() + "\n";
 				pAsyncLoader->log(sTmp);
 			}
 		}
@@ -340,7 +340,7 @@ DWORD AssetFileEntry_Request_Signal_CallBack(int nResult, CUrlProcessor* pReques
 			}
 			else
 			{
-				string sTmp = string("AssetFile ASync Failed cannot save to disk:") + url + "\n";
+				string sTmp = string("AssetFile ASync Failed cannot save to disk:") + url + "\n filename: " + pData->m_pAssetFileEntry->GetLocalFileName() + "\n";
 				pAsyncLoader->log(CAsyncLoader::Log_Warn, sTmp);
 				OUTPUT_LOG("warn: %s", sTmp.c_str());
 			}
@@ -492,12 +492,16 @@ bool AssetFileEntry::CheckMD5AndSize(const char* buffer, int nSize)
 
 	int nFileNameCount = (int)m_localFileName.size();
 	if (nFileNameCount <= nCount)
+	{
 		return false;
+	}
 
 	for (int i = 0; i < nCount; ++i)
 	{
 		if (file_size[i] != m_localFileName[nFileNameCount - nCount + i])
+		{
 			return false;
+		}
 	}
 
 	// compare the md5 part

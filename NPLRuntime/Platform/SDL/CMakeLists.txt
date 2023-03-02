@@ -28,7 +28,7 @@ target_link_libraries(${TARGET_NAME} PUBLIC RenderSystemOpenGL ParaEngine)
 if (SDL AND NOT EMSCRIPTEN) 
 	message("SDL_ROOT:" ${SDL_ROOT})
 	target_include_directories(${TARGET_NAME} PUBLIC "${SDL_ROOT}/include")
-	target_link_libraries(${TARGET_NAME} PUBLIC ${SDL_ROOT}/lib/SDL2-staticd.lib ${SDL_ROOT}/lib/SDL2maind.lib ws2_32.lib user32.lib gdi32.lib winmm.lib imm32.lib ole32.lib oleaut32.lib version.lib uuid.lib advapi32.lib setupapi.lib shell32.lib dinput8.lib OpenGL32.lib)
+	target_link_libraries(${TARGET_NAME} PUBLIC ${SDL_ROOT}/lib/SDL2-static.lib ${SDL_ROOT}/lib/SDL2main.lib ws2_32.lib user32.lib gdi32.lib winmm.lib imm32.lib ole32.lib oleaut32.lib version.lib uuid.lib advapi32.lib setupapi.lib shell32.lib dinput8.lib OpenGL32.lib)
 elseif (EMSCRIPTEN)
 	# -sTOTAL_STACK=32MB 
 	if (NOT APP_ROOT)
