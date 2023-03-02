@@ -147,8 +147,7 @@ namespace ParaScripting
 		void WriteString2(const char* buffer, int nSize);
 
 		/** write a buffer to the current file. */
-		void write(const char* buffer, int nSize);
-
+		void write(const char* buffer, int nSize);		
 		/**
 		* write bytes to file; e.g. local nBytes = file:WriteBytes(3, {[1]=255, [2]=0, [3]=128});
 		* @param nSize: number of bytes to write
@@ -521,6 +520,7 @@ namespace ParaScripting
 		*/
 		static void write(const char* buffer, int nSize);
 
+		static void flush();
 		/** if no file is opened, it means readline from stdin.
 		* a deprecated usage is reading from current open file. 
 		* read line as a string. The string is guaranteed to be ended with '\0'.

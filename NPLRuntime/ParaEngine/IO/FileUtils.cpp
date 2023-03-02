@@ -1,4 +1,4 @@
-
+﻿
 //-----------------------------------------------------------------------------
 // Class: FileUtil
 // Authors:	Li,Xizhi
@@ -81,6 +81,7 @@
 #include <boost/filesystem/path.hpp>
 #include <boost/filesystem/fstream.hpp>
 #include <iostream>
+
 namespace fs = boost::filesystem;
 #define BOOST_FILESYSTEM_NO_DEPRECATED
 
@@ -520,17 +521,32 @@ int ParaEngine::CFileUtils::GetFileSize(const char* sFilePath)
 
 ParaEngine::FileHandle ParaEngine::CFileUtils::OpenFile(const char* filename, bool bRead /*= false*/, bool bWrite/*=true*/)
 {
-	std::string sFilePath;
+	std::string sFilePath = filename;
 	if (bWrite && !IsAbsolutePath(filename))
 	{
+#ifdef EMSCRIPTEN
+		// 排除 temp 目录
+		if (sFilePath.substr(0, 5) != "temp/") sFilePath = GetWritablePath() + filename;
+#else
 		sFilePath = GetWritablePath() + filename;
+#endif
 	}
 	else {
 		sFilePath = filename;
 	}
+
+#ifdef EMSCRIPTEN
+	// std::string temp_dir = "/idbfs/temp/";
+	// if (sFilePath.substr(0, temp_dir.size()) == temp_dir) sFilePath = sFilePath.substr(temp_dir.size());
+#endif
+
 	FILE* pFile = fopen(sFilePath.c_str(), bRead ? (bWrite ? "w+b" : "rb") : "wb");
 	if (pFile == 0) {
 		OUTPUT_LOG("failed to open file: %s with mode %s\n", sFilePath.c_str(), bRead ? (bWrite ? "w+b" : "rb") : "wb");
+	}
+	else
+	{
+		// std::cout << "success open file: " << sFilePath << std::endl;
 	}
 	FileHandle fileHandle;
 	fileHandle.m_pFile = pFile;

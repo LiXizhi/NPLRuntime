@@ -251,11 +251,6 @@ void CNPLScriptingState::LoadHAPI_Globals()
 	// load string.pack
 	lua_register(L, "luaopen_lua_pack", luaopen_lua_pack);
 
-#ifdef USE_LUASOCKET
-	lua_register(L, "mime.core", luaopen_mime_core);
-	lua_register(L, "socket.core", luaopen_socket_core);
-#endif
-
 #if defined(USE_NPL_CURL)
 	// load cURL
 	lua_register(L, "luaopen_cURL", luaopen_cURL);

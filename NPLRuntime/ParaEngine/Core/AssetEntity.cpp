@@ -138,6 +138,7 @@ namespace ParaEngine
 				else
 				{
 					string sTmp = string("AssetFile ASync Failed cannot save to disk:") + url + "\n";
+					std::cout << "=erorr: " << tmpName << std::endl;
 					pAsyncLoader->log(sTmp);
 				}
 			}

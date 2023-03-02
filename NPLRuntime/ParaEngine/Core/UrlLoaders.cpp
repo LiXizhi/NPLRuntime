@@ -178,9 +178,15 @@ HRESULT ParaEngine::CUrlProcessor::Destroy()
 	return S_OK;
 }
 
-HRESULT ParaEngine::CUrlProcessor::Process(void* pData, int cBytes)
+void ParaEngine::CUrlProcessor::EmscriptenFetch()
 {
 #ifdef EMSCRIPTEN
+	std::vector<const char*> request_headers;
+	int request_headers_size = m_request_headers.size();
+	request_headers.reserve(request_headers_size + 1);
+	for (int i = 0; i < request_headers_size; i++) request_headers.push_back(m_request_headers[i].c_str());
+	request_headers.push_back(0);
+
     emscripten_fetch_attr_t attr;
     emscripten_fetch_attr_init(&attr);
 	std::string method = "GET";
@@ -191,6 +197,7 @@ HRESULT ParaEngine::CUrlProcessor::Process(void* pData, int cBytes)
     attr.attributes = EMSCRIPTEN_FETCH_LOAD_TO_MEMORY | EMSCRIPTEN_FETCH_SYNCHRONOUS;
 	attr.requestData = m_sRequestData.c_str();
 	attr.requestDataSize = m_sRequestData.size();
+	attr.requestHeaders = request_headers.data();
 	emscripten_fetch_t *fetch = emscripten_fetch(&attr, m_url.c_str()); // Blocks here until the operation is complete.
 	m_responseCode = fetch->status;
 	size_t headersLengthBytes = emscripten_fetch_get_response_headers_length(fetch) + 1;
@@ -204,8 +211,18 @@ HRESULT ParaEngine::CUrlProcessor::Process(void* pData, int cBytes)
 	std::cout << "url: " << m_url << std::endl;
 	std::cout << "request data:" << m_sRequestData << std::endl;
 	std::cout << "status code: " << m_responseCode << std::endl;
-  	if (fetch->status == 200) return S_OK;
-	return E_FAIL;
+  	// if (fetch->status == 200) return S_OK;
+#endif
+	// return E_FAIL;
+}
+
+HRESULT ParaEngine::CUrlProcessor::Process(void* pData, int cBytes)
+{
+
+
+#ifdef EMSCRIPTEN
+    std::thread(&ParaEngine::CUrlProcessor::EmscriptenFetch, this).join();
+	return (200 <= m_responseCode && m_responseCode < 300) ? S_OK : E_FAIL;
 #else
 	// Let us do the easy way. 
 	CURL *curl = NULL;

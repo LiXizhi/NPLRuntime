@@ -265,6 +265,9 @@ void ParaEngine::CAsyncLoader::log(const string& message)
 
 void ParaEngine::CAsyncLoader::log(int nLogLevel, const string& message)
 {
+#ifdef EMSCRIPTEN
+	std::cout << "CAsyncLoader::log => " << message << std::endl;
+#endif
 	if (GetLogLevel() <= nLogLevel)
 	{
 		g_asset_logger->WriteServiceFormated("%s", message.c_str());

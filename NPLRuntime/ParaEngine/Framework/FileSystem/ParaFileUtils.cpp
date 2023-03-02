@@ -7,7 +7,9 @@
 #include <boost/filesystem/fstream.hpp>
 #include <iostream>
 #include "ParaFileUtils.h"
-
+#ifdef EMSCRIPTEN
+#include <emscripten.h>
+#endif
 namespace fs = boost::filesystem;
 #define BOOST_FILESYSTEM_NO_DEPRECATED
 using namespace ParaEngine;
@@ -123,11 +125,31 @@ bool ParaEngine::CParaFileUtils::Move(const std::string& src, const std::string&
 {
 	try
 	{
+#ifdef EMSCRIPTEN
+		if (src == dest) return true;
+		int ret = EM_ASM_INT({
+			try
+			{
+				var src = UTF8ToString($0);
+				var dst = UTF8ToString($1);
+				FS.rename(src, dst);
+			}
+			catch(err)
+			{
+				console.log(err);
+				return 1;
+			}
+			return 0;
+		}, src.c_str(), dest.c_str());
+
+		return ret == 0;
+#else
 		fs::path sSrc(src);
 		boost::system::error_code err_code;
 		fs::rename(sSrc, fs::path(dest), err_code);
 		OUTPUT_LOG("info (boost-fs): moved file/directory from %s to %s result message: %s\n", src.c_str(), dest.c_str(), err_code.message().c_str());
 		return err_code.value() == 0;
+#endif
 	}
 	catch (...)
 	{

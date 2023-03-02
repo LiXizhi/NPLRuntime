@@ -105,6 +105,9 @@ namespace ParaEngine
 		virtual IProcessorWorkerData * GetProcessorWorkerData();
 
 		virtual bool IsDeviceObject() { return false; };
+	
+	public:
+		void EmscriptenFetch();
 	public:
 		/** type of the url request task */
 		enum URLREQUEST_TYPE
