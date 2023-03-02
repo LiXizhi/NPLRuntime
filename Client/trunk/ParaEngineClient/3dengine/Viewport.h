@@ -14,6 +14,7 @@ namespace ParaEngine
 		STEREO_EYE_NORMAL = 0,
 		STEREO_EYE_LEFT,
 		STEREO_EYE_RIGHT,
+		STEREO_EYE_ODS,
 	};
 
 	/** a region of view port to render into. 
@@ -207,8 +208,8 @@ namespace ParaEngine
 		void SetEyeMode(ParaEngine::STEREO_EYE val);
 
 		/** Camera yaw angle increment when recording Stereo video.*/
-		void SetStereoODSparam(StereoODSparam &param) { m_stereoODSparam = param; }
-		StereoODSparam& GetStereoODSparam() { return m_stereoODSparam; }
+		void SetStereoODSparam(StereoODSparam& param);
+		StereoODSparam& GetStereoODSparam();
 
 		/** return last viewport */
 		ParaViewport ApplyViewport();
@@ -234,6 +235,15 @@ namespace ParaEngine
 
 		/** get viewport transform in terms of scale and offset */
 		void GetViewportTransform(Vector2*  pvScale, Vector2* pvOffset = NULL);
+
+		/** we will ignore animation frame move when this viewport is rendered. Default to false. This is used when rendering the same scene multiple times from different angles. 
+		* Only the first viewport needs to frame move the internal animation. 
+		*/
+		bool IsDeltaTimeDisabled();
+
+		/** we will ignore animation frame move when this viewport is rendered. */
+		void DisableDeltaTime(bool bDisabled = true);
+
 	protected:
 		float GetStereoEyeSeparation();
 	private:
@@ -250,6 +260,7 @@ namespace ParaEngine
 		float m_fAspectRatio;
 		bool m_bIsModifed;
 		bool m_bIsEnabled;
+		bool m_bDisableDeltaTime;
 		
 		int m_nZOrder;
 		std::string m_sName;

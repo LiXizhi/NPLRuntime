@@ -151,11 +151,11 @@ HRESULT ParaEngine::CViewportManager::Render(double dTimeDelta, int nPipelineOrd
 			_param.oldCameraDistance = oldCameraDistance;
 			_param.oldRightDir = oldRightDir;
 
-			if (pViewPort->GetIdentifier() == "GUI_1") {
+			if (pViewPort->GetIdentifier() == "GUI_ods_user") {
 				uiScaleX = pViewPort->GetGUIRoot()->GetUIScalingX();
 				uiScaleY = pViewPort->GetGUIRoot()->GetUIScalingY();
-				uiHeight = pViewPort->GetHeight();
-			}else if (pViewPort->GetIdentifier() == "GUI_2") {
+				uiHeight = (float)pViewPort->GetHeight();
+			}else if (pViewPort->GetIdentifier() == "GUI_ods") {
 				uiScaleX = pViewPort->GetGUIRoot()->GetUIScalingX();
 				uiScaleY = pViewPort->GetGUIRoot()->GetUIScalingY();
 				float scale = pViewPort->GetHeight() / uiHeight;
@@ -168,7 +168,7 @@ HRESULT ParaEngine::CViewportManager::Render(double dTimeDelta, int nPipelineOrd
 			if (_param.needRecoverCamera) {
 				needRecoverCamera = true;
 			}
-			if (pViewPort->GetIdentifier() == "GUI_2") {
+			if (pViewPort->GetIdentifier() == "GUI_ods") {
 				pViewPort->GetGUIRoot()->SetUIScale(uiScaleX, uiScaleY, false, false, false);
 			}
 		}
@@ -333,12 +333,14 @@ void ParaEngine::CViewportManager::SetLayout(VIEWPORT_LAYOUT nLayout, CSceneObje
 		pUIViewportRight->SetPosition("_mr", 0, 0, nHalfWidth, 0);
 		pUIViewportRight->SetZOrder(101);
 		pUIViewportRight->SetEyeMode(STEREO_EYE_RIGHT);
+		pUIViewportRight->DisableDeltaTime();
 		CViewport* pMainSceneViewportRight = CreateGetViewPort(3);
 		pMainSceneViewportRight->SetIdentifier("right_scene");
 		pMainSceneViewportRight->SetScene(pMainScene);
 		pMainSceneViewportRight->SetPosition("_mr", 0, 0, nHalfWidth, 0);
 		pMainSceneViewportRight->SetZOrder(1);
 		pMainSceneViewportRight->SetEyeMode(STEREO_EYE_RIGHT);
+		pMainSceneViewportRight->DisableDeltaTime();
 
 		SetViewportCount(4);
 	}
@@ -377,7 +379,7 @@ void ParaEngine::CViewportManager::SetLayout(VIEWPORT_LAYOUT nLayout, CSceneObje
 			}
 			//²Ù×÷ÇøÓò³¡¾°+UI
 			CViewport* pUIViewport = CreateGetViewPort(portNum);
-			pUIViewport->SetIdentifier("GUI_1");
+			pUIViewport->SetIdentifier("GUI_ods_user");
 			pUIViewport->SetGUIRoot(pGUIRoot);
 			pUIViewport->SetPosition("_lt", 0, cubeWidth * 2, _width, _height);
 			pUIViewport->SetZOrder(98);
@@ -407,22 +409,23 @@ void ParaEngine::CViewportManager::SetLayout(VIEWPORT_LAYOUT nLayout, CSceneObje
 				_height = cubeWidth;
 				_width = (int)(_height * aspect);
 				CViewport* pUIViewport = CreateGetViewPort(portNum);
-				pUIViewport->SetIdentifier("GUI_2");
+				pUIViewport->SetIdentifier("GUI_ods");
 				pUIViewport->SetGUIRoot(pGUIRoot);
 				pUIViewport->SetPosition("_lt", cubeWidth * 2, cubeWidth * 1, _width, _height);
 				pUIViewport->SetZOrder(98);
-				pUIViewport->SetEyeMode(STEREO_EYE_NORMAL);
+				pUIViewport->SetEyeMode(STEREO_EYE_ODS);
 				pUIViewport->SetPipelineOrder(PIPELINE_UI);
+				pUIViewport->DisableDeltaTime();
 				portNum += 1;
 
 				CViewport* pMainSceneViewport = CreateGetViewPort(portNum);
-				pMainSceneViewport->SetIdentifier("scene");
+				pMainSceneViewport->SetIdentifier("scene_ods_ui");
 				pMainSceneViewport->SetScene(pMainScene);
 				pMainSceneViewport->SetPosition("_lt", cubeWidth*2, cubeWidth * 1, _width, _height);
-				pMainSceneViewport->SetEyeMode(STEREO_EYE_LEFT);
+				pMainSceneViewport->SetEyeMode(STEREO_EYE_ODS);
 				pMainSceneViewport->SetZOrder(0);
 				pMainSceneViewport->SetPipelineOrder(PIPELINE_3D_SCENE);
-				m_normalScenePortInOdsSingleEye = pMainSceneViewport;
+				pMainSceneViewport->DisableDeltaTime();
 				{
 					auto& viewport = pMainSceneViewport;
 					CViewport::StereoODSparam& param = viewport->GetStereoODSparam();
@@ -463,8 +466,8 @@ void ParaEngine::CViewportManager::SetLayout(VIEWPORT_LAYOUT nLayout, CSceneObje
 			viewport->SetIdentifier(key);
 			viewport->SetScene(pMainScene);
 			viewport->SetPosition("_lt", cubeWidth * portCoords[i][0], cubeWidth * portCoords[i][1], cubeWidth, cubeWidth);
-			viewport->SetEyeMode(STEREO_EYE_LEFT);
-			//viewport->SetPipelineOrder(PIPELINE_3D_SCENE);
+			viewport->SetEyeMode(STEREO_EYE_ODS);
+			viewport->DisableDeltaTime();
 			viewport->SetZOrder(50 + i);
 
 			CViewport::StereoODSparam& param = viewport->GetStereoODSparam();
@@ -491,6 +494,7 @@ void ParaEngine::CViewportManager::SetLayout(VIEWPORT_LAYOUT nLayout, CSceneObje
 		pFinalViewPort->SetPosition("_lt", 0, 0, cubeWidth * 4, cubeWidth * 2);
 		//pFinalViewPort->SetPosition("_lt", 0, 0, GetWidth(), GetHeight());
 		pFinalViewPort->SetEyeMode(STEREO_EYE_NORMAL);
+		pFinalViewPort->DisableDeltaTime();
 		pFinalViewPort->SetZOrder(102);
 		if (needCompositeUI) {
 			pFinalViewPort->SetPipelineOrder(PIPELINE_POST_UI_3D_SCENE);
@@ -666,6 +670,7 @@ void ParaEngine::CViewportManager::SetLayout(VIEWPORT_LAYOUT nLayout, CSceneObje
 			param.m_bOmniAlwaysUseUpFrontCamera = m_bOmniAlwaysUseUpFrontCamera;
 			param.m_nOmniForceLookatDistance = m_nOmniForceLookatDistance;
 			viewport->SetStereoODSparam(param);
+			viewport->DisableDeltaTime(i>0);
 			//viewport->SetRenderTargetName(randerTargetname);
 		}
 		portNum += num;
@@ -696,6 +701,7 @@ void ParaEngine::CViewportManager::SetLayout(VIEWPORT_LAYOUT nLayout, CSceneObje
 			param.m_bOmniAlwaysUseUpFrontCamera = m_bOmniAlwaysUseUpFrontCamera;
 			param.m_nOmniForceLookatDistance = m_nOmniForceLookatDistance;
 			viewport->SetStereoODSparam(param);
+			viewport->DisableDeltaTime();
 			//viewport->SetRenderTargetName(randerTargetname);
 		}
 		portNum += num;
@@ -726,6 +732,7 @@ void ParaEngine::CViewportManager::SetLayout(VIEWPORT_LAYOUT nLayout, CSceneObje
 			param.m_bOmniAlwaysUseUpFrontCamera = m_bOmniAlwaysUseUpFrontCamera;
 			param.m_nOmniForceLookatDistance = m_nOmniForceLookatDistance;
 			viewport->SetStereoODSparam(param);
+			viewport->DisableDeltaTime();
 			//viewport->SetRenderTargetName(randerTargetname);
 		}
 		portNum += num;
@@ -756,6 +763,7 @@ void ParaEngine::CViewportManager::SetLayout(VIEWPORT_LAYOUT nLayout, CSceneObje
 			param.m_bOmniAlwaysUseUpFrontCamera = m_bOmniAlwaysUseUpFrontCamera;
 			param.m_nOmniForceLookatDistance = m_nOmniForceLookatDistance;
 			viewport->SetStereoODSparam(param);
+			viewport->DisableDeltaTime();
 			//viewport->SetRenderTargetName(randerTargetname);
 		}
 		portNum += num;
@@ -784,6 +792,7 @@ void ParaEngine::CViewportManager::SetLayout(VIEWPORT_LAYOUT nLayout, CSceneObje
 		pMainSceneViewportRight->SetPosition("_fi", 0, 0, 0, 0);
 		pMainSceneViewportRight->SetZOrder(1);
 		pMainSceneViewportRight->SetEyeMode(STEREO_EYE_RIGHT);
+		pMainSceneViewportRight->DisableDeltaTime();
 
 		// final full screen quad
 		CViewport* pFinalViewPort = CreateGetViewPort(3);
@@ -792,6 +801,7 @@ void ParaEngine::CViewportManager::SetLayout(VIEWPORT_LAYOUT nLayout, CSceneObje
 		pFinalViewPort->SetEyeMode(STEREO_EYE_NORMAL);
 		pFinalViewPort->SetZOrder(99); // before GUI
 		pFinalViewPort->SetPipelineOrder(PIPELINE_3D_SCENE);
+		pFinalViewPort->DisableDeltaTime();
 		SetViewportCount(4);
 	}
 	else // if (nLayout == VIEW_LAYOUT_DEFAULT)

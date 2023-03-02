@@ -140,9 +140,6 @@ namespace ParaEngine
 		int GetTextureWidth() const { return m_nTextureWidth; }
 		int GetTextureHeight() const { return m_nTextureHeight; }
 
-		bool GetHasSetRenderTargetSize() { return bHasSetRenderTargetSize; }
-		void SetHasSetRenderTargetSize(bool val) { bHasSetRenderTargetSize = val; }
-
 		/** whether render target is dirty and should be redraw on the next frame. */
 		bool IsDirty() const;
 		void SetDirty(bool val);
@@ -156,7 +153,6 @@ namespace ParaEngine
 		const std::string& GetCanvasTextureName();
 		void SetCanvasTextureName(const std::string& sValue);
 	protected:
-		bool bHasSetRenderTargetSize;
 		// whether device is created.
 		bool		m_bInitialized;
 		

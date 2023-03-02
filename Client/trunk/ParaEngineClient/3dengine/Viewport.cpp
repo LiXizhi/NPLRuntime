@@ -20,7 +20,7 @@
 using namespace ParaEngine;
 
 CViewport::CViewport(CViewportManager* pViewportManager)
-	:m_position(), m_pScene(NULL), m_pCamera(NULL), m_pGUIRoot(NULL), m_pViewportManager(pViewportManager), m_fScalingX(1.f), m_fScalingY(1.f), m_fAspectRatio(1.f), m_bIsModifed(true), m_nZOrder(0), m_bIsEnabled(true), m_nEyeMode(STEREO_EYE_NORMAL), m_nPipelineOrder(-1), m_pRenderTarget(NULL)
+	:m_position(), m_pScene(NULL), m_pCamera(NULL), m_pGUIRoot(NULL), m_pViewportManager(pViewportManager), m_fScalingX(1.f), m_fScalingY(1.f), m_fAspectRatio(1.f), m_bIsModifed(true), m_nZOrder(0), m_bIsEnabled(true), m_nEyeMode(STEREO_EYE_NORMAL), m_nPipelineOrder(-1), m_pRenderTarget(NULL), m_bDisableDeltaTime(false)
 {
 	memset(&m_rect, 0, sizeof(m_rect));
 }
@@ -46,10 +46,12 @@ CAutoCamera* ParaEngine::CViewport::GetCamera()
 void ParaEngine::CViewport::ApplyCamera(CAutoCamera* pCamera)
 {
 	pCamera->SetAspectRatio(GetAspectRatio());
-	if (GetEyeMode() == STEREO_EYE_LEFT || GetEyeMode() == STEREO_EYE_RIGHT)
+	if (GetEyeMode() == STEREO_EYE_LEFT || GetEyeMode() == STEREO_EYE_RIGHT || GetEyeMode() == STEREO_EYE_ODS)
 	{
 		pCamera->EnableStereoVision(true);
-		pCamera->SetStereoEyeShiftDistance(GetEyeMode() == STEREO_EYE_LEFT ? -GetStereoEyeSeparation() : GetStereoEyeSeparation());
+		if (GetEyeMode() != STEREO_EYE_ODS) {
+			pCamera->SetStereoEyeShiftDistance(GetEyeMode() == STEREO_EYE_LEFT ? -GetStereoEyeSeparation() : GetStereoEyeSeparation());
+		}
 		if (m_stereoODSparam.isODS) {
 			pCamera->SetStereoEyeShiftDistance(m_stereoODSparam.eyeShiftDistance);
 			DVector3 dEyePos = m_stereoODSparam.oldEyePos;
@@ -205,7 +207,7 @@ HRESULT ParaEngine::CViewport::Render(double dTimeDelta, int nPipelineOrder)
 	if (!IsEnabled() || (GetPipelineOrder() >= 0 && GetPipelineOrder() != nPipelineOrder))
 		return S_OK;
 
-	if (GetEyeMode() == STEREO_EYE_RIGHT)
+	if (IsDeltaTimeDisabled())
 	{
 		dTimeDelta = 0.f;
 	}
@@ -216,7 +218,7 @@ HRESULT ParaEngine::CViewport::Render(double dTimeDelta, int nPipelineOrder)
 		CAutoCamera* pCamera = GetCamera();
 		if (pRootScene && pCamera)
 		{
-			if (m_pRenderTarget&&!m_pRenderTarget->GetHasSetRenderTargetSize())
+			if (m_pRenderTarget)
 			{
 				m_pRenderTarget->SetRenderTargetSize(Vector2((float)GetWidth(), (float)GetHeight()));
 				m_pRenderTarget->GetPrimaryAsset(); // touch asset
@@ -409,6 +411,16 @@ void ParaEngine::CViewport::GetViewportTransform(Vector2* pvScale, Vector2* pvOf
 	}
 }
 
+bool ParaEngine::CViewport::IsDeltaTimeDisabled()
+{
+	return m_bDisableDeltaTime;
+}
+
+void ParaEngine::CViewport::DisableDeltaTime(bool bDisabled)
+{
+	m_bDisableDeltaTime = bDisabled;
+}
+
 bool ParaEngine::CViewport::DrawQuad()
 {
 	float fWidth = (float)m_pViewportManager->GetWidth();
@@ -550,6 +562,17 @@ ParaEngine::STEREO_EYE ParaEngine::CViewport::GetEyeMode() const
 void ParaEngine::CViewport::SetEyeMode(ParaEngine::STEREO_EYE val)
 {
 	m_nEyeMode = val;
+}
+
+/** Camera yaw angle increment when recording Stereo video.*/
+void ParaEngine::CViewport::SetStereoODSparam(ParaEngine::CViewport::StereoODSparam& param)
+{ 
+	m_stereoODSparam = param; 
+}
+
+ParaEngine::CViewport::StereoODSparam& ParaEngine::CViewport::GetStereoODSparam()
+{
+	return m_stereoODSparam; 
 }
 
 float ParaEngine::CViewport::GetStereoEyeSeparation()
