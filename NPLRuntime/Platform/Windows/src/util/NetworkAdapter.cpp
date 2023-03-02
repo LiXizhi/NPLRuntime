@@ -93,6 +93,16 @@ namespace ParaEngine {
 			HeapFree(GetProcessHeap(), 0, pAddresses);
 		}
 	}
+
+	const std::string& NetworkAdapter::GetMaxMacAddress()
+	{
+		return m_sMacAddress;
+	}
+
+	const std::string& NetworkAdapter::GetMaxIPAddress()
+	{
+		return m_sIpAddress;
+	}
 } // namespace ParaEngine
 
 

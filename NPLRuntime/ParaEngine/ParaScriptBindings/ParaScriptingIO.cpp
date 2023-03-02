@@ -47,6 +47,15 @@ extern "C" {
 #include <emscripten.h>
 #endif
 
+#ifdef WIN32
+#include <boost/filesystem.hpp>
+#include <boost/filesystem/operations.hpp>
+#include <boost/filesystem/path.hpp>
+#include <boost/filesystem/fstream.hpp>
+#include <iostream>
+namespace fs = boost::filesystem;
+#endif
+
 using namespace luabind;
 
 //@def the maximum number of bytes in a text file line.
@@ -1036,6 +1045,19 @@ namespace ParaScripting
 	{
 		return CParaFile::GetWritablePath();
 	}
+
+	std::string ParaIO::ConvertPathFromUTF8ToAnsci(const char* path)
+	{
+#if WIN32 && defined(DEFAULT_FILE_ENCODING)
+		LPCWSTR path16 = StringHelper::MultiByteToWideChar(path, DEFAULT_FILE_ENCODING);
+		fs::path pathStr(path16);
+		std::string ret = pathStr.string();
+		return ret.c_str();
+#else
+		return path;
+#endif
+	}
+
 
 	//////////////////////////////////////////////////////////////////////////
 	//

@@ -36,12 +36,16 @@ namespace ParaEngine
 @interface KeyboardiOSController : UITextField <UITextFieldDelegate>
 
 @property(nonatomic) AppDelegate *appDelegate;
+@property(nonatomic) CGFloat keyboardHeight;
+@property(nonatomic) BOOL isKeyboardOpened;
 
 + (void)InitLanguage;
 
 + (void)keyboardInit:(AppDelegate *)appDelegate;
 
 + (BOOL)getIsGuiEdit;
+
++ (ParaTextField *)GetTextField;
 
 + (void)setIMEKeyboardState:(BOOL)bOpen bMoveView:(BOOL)bMoveView ctrlBottom:(int)ctrlBottom editParams:(NSString *)editParams;
 

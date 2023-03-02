@@ -572,6 +572,7 @@ void CNPLScriptingState::LoadHAPI_Globals()
 			def("CheckAssetFile", & ParaIO::CheckAssetFile),
 			def("LoadReplaceFile", & ParaIO::LoadReplaceFile),
 			def("SyncAssetFile_Async", & ParaIO::SyncAssetFile_Async),
+			def("ConvertPathFromUTF8ToAnsci", &ParaIO::ConvertPathFromUTF8ToAnsci),
 			
 			def("open", & ParaIO::open),
 			def("openimage", & ParaIO::openimage),

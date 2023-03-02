@@ -27,6 +27,7 @@
 #include "BufferPicking.h"
 #include "FrameRateController.h"
 #include "AudioEngine2.h"
+#include "StringHelper.h"
 
 #ifdef PARAENGINE_CLIENT
 #include "util/CommonFileDialog.h"
@@ -1423,6 +1424,15 @@ const char* ParaEngineSettings::GetModuleFileName()
 	return sModuleDir.c_str() + pos + 1;
 }
 
+const std::string& ParaEngineSettings::GetDefaultFileAPIEncoding()
+{
+	static std::string ret = "";
+	ret = StringHelper::GetDefaultCPName();
+	return ret;
+}
+
+
+
 int ParaEngineSettings::InstallFields(CAttributeClass* pClass, bool bOverride)
 {
 	IAttributeFields::InstallFields(pClass, bOverride);
@@ -1525,6 +1535,7 @@ int ParaEngineSettings::InstallFields(CAttributeClass* pClass, bool bOverride)
 	pClass->AddField("AudioDeviceName", FieldType_String, NULL, (void*)GetAudioDeviceName_s, NULL, NULL, bOverride);
 
 	pClass->AddField("FlushDiskIO", FieldType_void, (void*)FlushDiskIO_s, NULL, NULL, NULL, bOverride);
+	pClass->AddField("DefaultFileAPIEncoding", FieldType_String, NULL, (void*)GetDefaultFileAPIEncoding_s, NULL, NULL, bOverride);
 
 #ifdef ANDROID
 	pClass->AddField("GetUsbMode", FieldType_Bool, NULL, (void*)GetUsbMode_s, NULL, NULL, bOverride);

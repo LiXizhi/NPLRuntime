@@ -229,6 +229,8 @@ namespace ParaEngine
         ATTRIBUTE_METHOD1(ParaEngineSettings, GetAudioDeviceName_s, const char**) { *p1 = cls->GetAudioDeviceName(); return S_OK; }
 
         ATTRIBUTE_METHOD(ParaEngineSettings, FlushDiskIO_s)	{cls->FlushDiskIO(); return S_OK;}
+		ATTRIBUTE_METHOD1(ParaEngineSettings, GetDefaultFileAPIEncoding_s, const char**) { *p1 = cls->GetDefaultFileAPIEncoding().c_str(); return S_OK; }
+
 #ifdef ANDROID
         ATTRIBUTE_METHOD1(ParaEngineSettings, GetUsbMode_s, bool*) { *p1 = cls->GetUsbMode(); return S_OK; }
 #endif
@@ -709,6 +711,8 @@ namespace ParaEngine
 
         void ResetAudioDevice(const char* deviceName);
         const char* GetAudioDeviceName();
+
+		const std::string& GetDefaultFileAPIEncoding();
 #ifdef ANDROID
         bool GetUsbMode();
 #endif

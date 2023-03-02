@@ -242,13 +242,16 @@ namespace ParaEngine
 		*/
 		static bool StrEndsWithWord(const string& str, const string& sequence);
 
-
+		static std::string GetDefaultCPName() { return defaultCPName.get(); }
 		private:
 			class _CodePageName
 			{
 			public:
 				_CodePageName()
 				{
+#ifdef DEFAULT_FILE_ENCODING
+					name = "utf-8";
+#else
 #ifdef WIN32
 					auto cp = GetACP();
 					char tmp[30];
@@ -258,6 +261,7 @@ namespace ParaEngine
 					name += tmp;
 #else
 					name = "utf-8";
+#endif
 #endif
 				}
 

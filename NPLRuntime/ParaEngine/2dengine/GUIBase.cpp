@@ -1464,15 +1464,16 @@ const SimpleScript* CGUIBase::GetEventScript(int nEvent)const
 
 bool CGUIBase::ActivateScript(const string &code, int etype)
 {
-	CGUIRoot *root=CGUIRoot::GetInstance();
-	const SimpleScript *tempScript=GetEventScript(etype);
+	CGUIRoot *root = CGUIRoot::GetInstance();
+	const SimpleScript *tempScript = GetEventScript(etype);
+
 	if (tempScript) {
-		root->m_scripts.AddScript(tempScript->szFile,etype,code+tempScript->szCode,this);
+		root->m_scripts.AddScript(tempScript->szFile, etype, code + tempScript->szCode, this);
 		return true;
 	}
+
 	return false;
 }
-
 
 bool CGUIBase::ActivateScript(const string &precode,const string &postcode, int etype)
 {
@@ -2661,7 +2662,6 @@ bool ParaEngine::CGUIBase::IsMouseCaptured()
 {
 	return CGUIRoot::GetInstance()->GetMouse()->GetCapture() == this;
 }
-
 
 int ParaEngine::CGUIBase::OnHandleWinMsgChars(const std::wstring& sChars)
 {

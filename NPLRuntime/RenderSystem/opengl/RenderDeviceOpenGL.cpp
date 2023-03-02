@@ -9,7 +9,7 @@
 
 using namespace ParaEngine;
 
-/** define this, then DrawPrimitiveUP and DrawIndexedPrimitiveUP will use vertext buffer object. 
+/** define this, then DrawPrimitiveUP and DrawIndexedPrimitiveUP will use vertex buffer object. 
 * custom user pointer buffer is no longer supported in opengl 3.0 and Emscripten OpenGL ES2.
 * we need to define this to use VBO in all cases.
 */

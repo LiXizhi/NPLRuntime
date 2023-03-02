@@ -37,8 +37,8 @@ static cAudioVector<cAudioString>::Type getFilesInDirectory(cAudioString path)
 	cAudioVector<cAudioString>::Type FileList;
 #ifdef CAUDIO_PLATFORM_WIN
 	cAudioString search = path + _CTEXT("\\") + cAudioString(_CTEXT("*.*"));
-	WIN32_FIND_DATA info;
-	HANDLE h = FindFirstFile(search.c_str(), &info);
+	cWIN32_FIND_DATA info;
+	HANDLE h = cFindFirstFile(search.c_str(), &info);
 	if (h != INVALID_HANDLE_VALUE)
 	{
 		do
@@ -47,7 +47,7 @@ static cAudioVector<cAudioString>::Type getFilesInDirectory(cAudioString path)
 			{
 				FileList.push_back(info.cFileName);
 			}
-		} while (FindNextFile(h, &info));
+		} while (cFindNextFile(h, &info));
 		FindClose(h);
 	}
 #endif

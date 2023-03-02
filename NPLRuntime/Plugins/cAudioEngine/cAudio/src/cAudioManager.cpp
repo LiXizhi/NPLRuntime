@@ -304,8 +304,8 @@ namespace cAudio
 
 		cAudioMutexBasicLock lock(Mutex);
 		cAudioString audioName = fromUTF8(name);
-		cAudioString ext = (extension);
-		IAudioDecoderFactory* factory = getAudioDecoderFactory(ext.c_str());
+		cAudioString ext = fromUTF8(extension);
+		IAudioDecoderFactory* factory = getAudioDecoderFactory(toUTF8(ext.c_str()));
 
 		if(!factory) {
 			getLogger()->logError("AudioManager", "Failed to create Audio Source (%s): Codec (.%s) is not supported.", toUTF8(audioName), ext.c_str());
@@ -361,7 +361,7 @@ namespace cAudio
     bool cAudioManager::registerAudioDecoder(IAudioDecoderFactory* factory, const char* extension)
     {
 		cAudioMutexBasicLock lock(Mutex);
-		cAudioString ext = (extension);
+		cAudioString ext = fromUTF8(extension);
         decodermap[ext] = factory;
 		getLogger()->logInfo("AudioManager", "Audio Decoder for extension .%s registered.", ext.c_str());
 		return true;
@@ -370,7 +370,7 @@ namespace cAudio
 	void cAudioManager::unRegisterAudioDecoder(const char* extension)
 	{
 		cAudioMutexBasicLock lock(Mutex);
-		cAudioString ext = (extension);
+		cAudioString ext = fromUTF8(extension);
 		decodermapIterator it = decodermap.find(ext);
 		if(it != decodermap.end())
 		{
@@ -382,7 +382,7 @@ namespace cAudio
 	bool cAudioManager::isAudioDecoderRegistered(const char* extension)
 	{
 		cAudioMutexBasicLock lock(Mutex);
-		cAudioString ext = (extension);
+		cAudioString ext = fromUTF8(extension);
 		decodermapIterator it = decodermap.find(ext);
 		return (it != decodermap.end());
 	}
@@ -390,7 +390,7 @@ namespace cAudio
 	IAudioDecoderFactory* cAudioManager::getAudioDecoderFactory(const char* extension)
 	{
 		cAudioMutexBasicLock lock(Mutex);
-		cAudioString ext = (extension);
+		cAudioString ext = fromUTF8(extension);
 		decodermapIterator it = decodermap.find(ext);
 		if(it != decodermap.end())
 		{

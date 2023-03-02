@@ -19,13 +19,13 @@ namespace ParaEngine
 		return &s_singleton;
 	}
 
-	const std::string& NetworkAdapter::GetMaxMacAddress()
-	{
-		return m_sMacAddress;
-	}
+//	const std::string& NetworkAdapter::GetMaxMacAddress()
+//	{
+//		return m_sMacAddress;
+//	}
 
-	const std::string& NetworkAdapter::GetMaxIPAddress()
-	{
-		return m_sIpAddress;
-	}
+//	const std::string& NetworkAdapter::GetMaxIPAddress()
+//	{
+//		return m_sIpAddress;
+//	}
 }

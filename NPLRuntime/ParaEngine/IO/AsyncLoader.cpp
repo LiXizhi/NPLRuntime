@@ -616,6 +616,7 @@ int CAsyncLoader::FileIOThreadProc_HandleRequest(ResourceRequest_ptr& ResourceRe
 
 			if (FAILED(hr))
 			{
+				hr = ResourceRequest->m_pDataLoader->Load();
 				const char * keyname = ResourceRequest->m_pDataLoader->GetKeyName();
 				if (keyname == 0)
 					keyname = "key not set";
