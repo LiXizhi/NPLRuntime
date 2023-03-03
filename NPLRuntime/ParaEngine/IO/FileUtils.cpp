@@ -562,7 +562,10 @@ ParaEngine::FileHandle ParaEngine::CFileUtils::OpenFile(const char* filename, bo
 	}
 	else
 	{
-		// std::cout << "success open file: " << sFilePath << std::endl;
+		if (sFilePath != filename)
+		{
+			std::cout<< "openfile: " << filename << " => " << sFilePath << std::endl;
+		}
 	}
 	FileHandle fileHandle;
 	fileHandle.m_pFile = pFile;

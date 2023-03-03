@@ -266,7 +266,7 @@ void ParaEngine::CAsyncLoader::log(const string& message)
 void ParaEngine::CAsyncLoader::log(int nLogLevel, const string& message)
 {
 #ifdef EMSCRIPTEN
-	std::cout << "CAsyncLoader::log => " << message << std::endl;
+	// std::cout << "CAsyncLoader::log => " << message << std::endl;
 #endif
 	if (GetLogLevel() <= nLogLevel)
 	{

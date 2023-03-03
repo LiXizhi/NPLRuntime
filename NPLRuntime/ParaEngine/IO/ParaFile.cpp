@@ -451,7 +451,7 @@ int CParaFile::OpenAssetFile(const char* filename, bool bDownloadIfNotUpToDate, 
 	{
 		string sTmp = string("ParaFile.OpenAssetFile using local file:") + filename + "\n";
 		CAsyncLoader::GetSingleton().log(sTmp);
-#ifdef PARAENGINE_MOBILE
+#if defined(PARAENGINE_MOBILE) || defined(EMSCRIPTEN)
 		if (relativePath == NULL)
 		{
 			uint32 dwFound = FILE_NOT_FOUND;

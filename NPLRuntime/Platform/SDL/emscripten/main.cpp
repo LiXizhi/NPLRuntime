@@ -97,8 +97,8 @@ void mainloop(void* arg)
 	{
 		GetApp()->m_inited = true;
 		// GetApp()->InitApp(nullptr, GetApp()->m_cmdline);
-		// GetApp()->InitApp(nullptr, R"(cmdline=noupdate="true" debug="main" mc="true" bootstrapper="script/apps/Aries/main_loop.lua" noclientupdate="true" world="worlds/DesignHouse/_user/xiaoyao/testabc")");
-		GetApp()->InitApp(nullptr, R"(cmdline=noupdate="true" debug="main" mc="true" bootstrapper="script/apps/Aries/main_loop.lua" noclientupdate="true")");
+		GetApp()->InitApp(nullptr, R"(cmdline=noupdate="true" debug="main" mc="true" bootstrapper="script/apps/Aries/main_loop.lua" noclientupdate="true" world="worlds/DesignHouse/_user/xiaoyao/testabc")");
+		// GetApp()->InitApp(nullptr, R"(cmdline=noupdate="true" debug="main" mc="true" bootstrapper="script/apps/Aries/main_loop.lua" noclientupdate="true")");
 	}
 	GetApp()->RunLoopOnce();
 	// std::cout << "===============mainloop end=======================" << std::endl;
@@ -108,6 +108,7 @@ void mainloop(void* arg)
 EM_PORT_API(void) emscripten_filesystem_inited()
 {
 	CParaFile::SetWritablePath("/idbfs");
+	CFileManager::GetInstance()->AddSearchPath("/idbfs");
 	GetApp()->m_fs_inited = true;
 }
 
