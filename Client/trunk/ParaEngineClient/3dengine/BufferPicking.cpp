@@ -302,7 +302,8 @@ bool ParaEngine::CBufferPicking::BeginBuffer()
 					if (pViewport) {
 						pViewport->SetActive();
 						pViewport->ApplyCamera((CAutoCamera*)pCamera);
-						pViewport->ApplyViewport();
+						// ignore left and top, always set to 0,0 
+						pViewport->SetViewport(0, 0, pViewport->GetWidth(), pViewport->GetHeight());
 					}
 					CGlobals::GetWorldMatrixStack().push(Matrix4::IDENTITY);
 					CGlobals::GetProjectionMatrixStack().push(*pCamera->GetProjMatrix());
