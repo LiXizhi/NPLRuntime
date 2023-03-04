@@ -303,6 +303,7 @@ bool ParaEngine::CBufferPicking::BeginBuffer()
 						pViewport->SetActive();
 						pViewport->ApplyCamera((CAutoCamera*)pCamera);
 						// ignore left and top, always set to 0,0 
+						pViewport->UpdateRect();
 						pViewport->SetViewport(0, 0, pViewport->GetWidth(), pViewport->GetHeight());
 					}
 					CGlobals::GetWorldMatrixStack().push(Matrix4::IDENTITY);

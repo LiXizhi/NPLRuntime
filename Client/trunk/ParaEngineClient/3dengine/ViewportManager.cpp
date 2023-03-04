@@ -368,6 +368,11 @@ void ParaEngine::CViewportManager::SetLayout(VIEWPORT_LAYOUT nLayout, CSceneObje
 			float fov_h = MATH_PI / 2;
 			const float aspect = tan(fov_h / 2) / tan(fov_v / 2);
 
+			// must be same as cube UI to avoid Root GUI onsize event be fired at each frame if manip GUI and cube GUI size differs.
+			int _height = cubeWidth;
+			int _width = (int)(_height * aspect);
+
+			/*
 			int _width = GetWidth();
 			int _height = GetHeight() - cubeWidth * 2;
 
@@ -377,6 +382,8 @@ void ParaEngine::CViewportManager::SetLayout(VIEWPORT_LAYOUT nLayout, CSceneObje
 			else {
 				_height = (int)(_width / aspect);
 			}
+			*/
+
 			//²Ù×÷ÇøÓò³¡¾°+UI
 			CViewport* pUIViewport = CreateGetViewPort(portNum);
 			pUIViewport->SetIdentifier("GUI_ods_user");
