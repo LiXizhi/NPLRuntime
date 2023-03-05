@@ -356,6 +356,12 @@ void ParaEngine::CBufferPicking::DrawObjects()
 		// but with PIPELINE_COLOR_PICKING enabled.
 		pScene->GetSceneState()->SetCurrentRenderPipeline(PIPELINE_COLOR_PICKING);
 		// Note: This will lead to potential crash if drawing non-overlay without week references.
+		auto layout = CGlobals::GetViewportManager()->GetLayout();
+		if (layout == VIEW_LAYOUT_STEREO_OMNI_SINGLE_EYE || layout == VIEW_LAYOUT_STEREO_OMNI_SINGLE_EYE_1 || layout == VIEW_LAYOUT_STEREO_OMNI)
+		{
+			// this fixed a bug, if current scene states is not the main scene, such as in ods layout, the last rendered scene is the bottom view. 
+			CGlobals::GetScene()->PrepareRender(pScene->GetCurrentCamera(), pScene->GetSceneState());
+		}
 		CGlobals::GetScene()->RenderHeadOnDisplay(1);
 	}
 	else if (GetIdentifier() == "backbuffer")
