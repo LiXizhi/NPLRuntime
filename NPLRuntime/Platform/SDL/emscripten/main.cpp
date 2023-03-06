@@ -91,24 +91,20 @@ static EmscriptenApplication* GetApp()
 
 void mainloop(void* arg)
 {
-	// std::cout << "\n===============mainloop begin=======================" << std::endl;
 	if (!GetApp()->m_fs_inited) return;
 	if (!GetApp()->m_inited)
 	{
 		GetApp()->m_inited = true;
-		// GetApp()->InitApp(nullptr, GetApp()->m_cmdline);
-		GetApp()->InitApp(nullptr, R"(cmdline=noupdate="true" debug="main" mc="true" bootstrapper="script/apps/Aries/main_loop.lua" noclientupdate="true" world="worlds/DesignHouse/_user/xiaoyao/testabc")");
+		GetApp()->InitApp(nullptr, GetApp()->m_cmdline.c_str());
+		// GetApp()->InitApp(nullptr, R"(cmdline=noupdate="true" debug="main" mc="true" bootstrapper="script/apps/Aries/main_loop.lua" noclientupdate="true" world="worlds/DesignHouse/_user/xiaoyao/testabc")");
 		// GetApp()->InitApp(nullptr, R"(cmdline=noupdate="true" debug="main" mc="true" bootstrapper="script/apps/Aries/main_loop.lua" noclientupdate="true")");
 	}
 	GetApp()->RunLoopOnce();
-	// std::cout << "===============mainloop end=======================" << std::endl;
 }
 
 // 设置可写路径
 EM_PORT_API(void) emscripten_filesystem_inited()
 {
-	CParaFile::SetWritablePath("/idbfs");
-	CFileManager::GetInstance()->AddSearchPath("/idbfs");
 	GetApp()->m_fs_inited = true;
 }
 
@@ -152,16 +148,16 @@ int main(int argc, char* argv[])
 	GetApp()->m_cmdline = sCmdLine;
 
 	EM_ASM({
-	    FS.mkdir('/idbfs');
-        FS.mount(IDBFS, { root: '/idbfs' }, '/idbfs');
+	    FS.mkdir('/worlds');
+        FS.mount(IDBFS, { root: '/worlds' }, '/worlds');
+	    FS.mkdir('/Database');
+        FS.mount(IDBFS, { root: '/Database' }, '/Database');
         FS.syncfs(true, function(err) {
             console.log("加载IDBFS!!!");
             Module._emscripten_filesystem_inited();
         });
-		window.onbeforeunload = function (e) { FS.syncfs(false, function() { console.log("onbeforeunload"); }); };
-        window.onunload = function (e) { FS.syncfs(false, function() { console.log("onbeforeunload"); }); };
-		setTimeout(function(){ FS.syncfs(false, function(err) { if (err) { console.log("FS.syncfs",err); } });}, 120000);  // 3分钟后同步到idbfs
-		setTimeout(function(){ FS.syncfs(false, function(err) { if (err) { console.log("FS.syncfs",err); } });}, 600000);  // 10分钟后同步到idbfs
+		setTimeout(function(){ FS.syncfs(false, function(err) { if (err) { console.log("FS.syncfs",err); } });}, 180000);  // 3分钟后同步到idbfs
+		setInterval(function(){ FS.syncfs(false, function(err) { if (err) { console.log("FS.syncfs",err); } });}, 600000);  // 10分钟后同步到idbfs
     });
 
 	std::cout << "========================start paracraft=======================" << std::endl;
@@ -172,5 +168,3 @@ int main(int argc, char* argv[])
 	std::cout << "========================stop paracraft=======================" << std::endl;
 	return 0;
 }
-
-

@@ -518,7 +518,7 @@ bool AssetFileEntry::CheckMD5AndSize(const char* buffer, int nSize)
 
 std::string AssetFileEntry::GetFullFilePath()
 {
-#ifdef PARAENGINE_MOBILE
+#if defined(PARAENGINE_MOBILE) || defined(EMSCRIPTEN)
 	return CFileUtils::GetWritableFullPathForFilename(GetLocalFileName());
 #else
 	return GetLocalFileName();
@@ -755,7 +755,7 @@ void CAssetManifest::LoadManifest()
 	}
 	else
 	{
-#if defined(PARAENGINE_MOBILE) || defined(PLATFORM_MAC)
+#if defined(PARAENGINE_MOBILE) || defined(PLATFORM_MAC) || defined(EMSCRIPTEN)
 		const char* sDefaultFile = "assets_manifest.txt";
 		if (CParaFile::DoesFileExist(sDefaultFile))
 		{

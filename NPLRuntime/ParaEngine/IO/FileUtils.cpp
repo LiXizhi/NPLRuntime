@@ -545,11 +545,6 @@ ParaEngine::FileHandle ParaEngine::CFileUtils::OpenFile(const char* filename, bo
 		sFilePath = filename;
 	}
 
-#ifdef EMSCRIPTEN
-	// std::string temp_dir = "/idbfs/temp/";
-	// if (sFilePath.substr(0, temp_dir.size()) == temp_dir) sFilePath = sFilePath.substr(temp_dir.size());
-#endif
-
 #if WIN32 && defined(DEFAULT_FILE_ENCODING)
 	std::wstring sFilePath16 = StringHelper::MultiByteToWideChar(sFilePath.c_str(), DEFAULT_FILE_ENCODING);
 	FILE* pFile = _wfopen(sFilePath16.c_str(), bRead ? (bWrite ? L"w+b" : L"rb") : L"wb");

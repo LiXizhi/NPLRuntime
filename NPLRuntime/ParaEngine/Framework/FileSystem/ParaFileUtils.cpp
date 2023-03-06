@@ -72,6 +72,10 @@ const std::string& ParaEngine::CParaFileUtils::GetWritablePath()
 
 const std::string& ParaEngine::CParaFileUtils::GetInitialDirectory()
 {
+// #ifdef EMSCRIPTEN
+// 	static std::string s_root_dir = "/idbfs";
+// 	return s_root_dir;
+// #endif
 	fs::path workingDir = fs::initial_path();
 	static std::string ret = workingDir.string();
 	return ret;
@@ -141,22 +145,26 @@ bool ParaEngine::CParaFileUtils::Move(const std::string& src, const std::string&
 	{
 #ifdef EMSCRIPTEN
 		if (src == dest) return true;
-		int ret = EM_ASM_INT({
-			try
-			{
-				var src = UTF8ToString($0);
-				var dst = UTF8ToString($1);
-				FS.rename(src, dst);
-			}
-			catch(err)
-			{
-				console.log(err);
-				return 1;
-			}
-			return 0;
-		}, src.c_str(), dest.c_str());
+		bool ret =  Copy(src, dest, true);
+		Delete(src);
+		return ret;
+		// int ret = EM_ASM_INT({
+		// 	try
+		// 	{
+		// 		var src = UTF8ToString($0);
+		// 		var dst = UTF8ToString($1);
+		// 		FS.rename(src, dst);
+		// 	}
+		// 	catch(err)
+		// 	{
+		// 		console.log("ParaEngine::CParaFileUtils::Move", src, dst);
+		// 		console.log(err);
+		// 		return 1;
+		// 	}
+		// 	return 0;
+		// }, src.c_str(), dest.c_str());
 
-		return ret == 0;
+		// return ret == 0;
 #else
 #if defined(WIN32) && defined(DEFAULT_FILE_ENCODING)
 		std::wstring src16 = StringHelper::MultiByteToWideChar(src.c_str(), DEFAULT_FILE_ENCODING);
@@ -195,7 +203,6 @@ bool ParaEngine::CParaFileUtils::MakeDirectoryFromFilePath(const std::string fil
 			return true;
 	}
 	catch (...) {}
-	std::cout << "============MakeDirectoryFromFilePath Failed=======================" << std::endl;
 	return false;
 }
 
