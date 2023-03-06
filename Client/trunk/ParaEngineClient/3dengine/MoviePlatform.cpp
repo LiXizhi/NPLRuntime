@@ -36,9 +36,11 @@ using namespace ParaEngine;
 
 /** the movie codec plugin dll file name. We will try these location in order */
 #ifdef _DEBUG
-	const char* MOVIE_CODEC_DLL_FILE_PATHS[] = { "Mod/MovieCodecPlugin/MovieCodecPlugin_d.dll",  "Mod/MovieCodecPlugin/MovieCodecPlugin.dll", "MovieCodecPlugin_d.dll" };
+const char* MOVIE_CODEC_DLL_FILE_PATHS[] = { "Mod/MovieCodecPlugin/MovieCodecPlugin_d.dll",  "Mod/MovieCodecPlugin/MovieCodecPlugin.dll", "MovieCodecPlugin_d.dll" };
+const char* MOVIE_CODEC_DLL_FILE_PATHS_64[] = { "bin64/Mod/MovieCodecPlugin/MovieCodecPlugin_d.dll",  "bin64/Mod/MovieCodecPlugin/MovieCodecPlugin.dll", "bin64/MovieCodecPlugin_d.dll" };
 #else
-	const char* MOVIE_CODEC_DLL_FILE_PATHS[] = { "Mod/MovieCodecPlugin/MovieCodecPlugin.dll", "MovieCodecPlugin.dll" };
+const char* MOVIE_CODEC_DLL_FILE_PATHS[] = { "Mod/MovieCodecPlugin/MovieCodecPlugin.dll", "MovieCodecPlugin.dll" };
+const char* MOVIE_CODEC_DLL_FILE_PATHS_64[] = { "bin64/Mod/MovieCodecPlugin/MovieCodecPlugin.dll", "bin64/MovieCodecPlugin.dll" };
 #endif
 
 /** the MOVIE_CODEC class interface id. */
@@ -111,6 +113,9 @@ IMovieCodec* CMoviePlatform::GetMovieCodec(bool bCreateIfNotExist)
 			for (int i = 0; m_pMovieCodec == 0 && i < sizeof(MOVIE_CODEC_DLL_FILE_PATHS) / sizeof(const char*); ++i)
 			{
 				const char* sFilename = MOVIE_CODEC_DLL_FILE_PATHS[i];
+				if (ParaEngineSettings::GetSingleton().Is64BitsProcess()) {
+					sFilename = MOVIE_CODEC_DLL_FILE_PATHS_64[i];
+				}
 
 				pPluginEntity = CGlobals::GetPluginManager()->GetPluginEntity(sFilename);
 

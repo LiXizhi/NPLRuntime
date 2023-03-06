@@ -101,7 +101,11 @@ void* ParaEngine::LoadLibrary(const char *pcDllname, int iMode)
 	if (pDll == NULL) 
 	{
 		// Note: in case of win7 before 2011, LoadLibraryEx is not supported
+#ifdef DEFAULT_FILE_ENCODING
+		pDll = (void*)::LoadLibraryExW(sDllName16, NULL, LOAD_LIBRARY_SEARCH_DLL_LOAD_DIR | LOAD_LIBRARY_SEARCH_APPLICATION_DIR | LOAD_LIBRARY_SEARCH_DEFAULT_DIRS | LOAD_LIBRARY_SEARCH_SYSTEM32 | LOAD_LIBRARY_SEARCH_USER_DIRS);
+#else
 		pDll = (void*)::LoadLibraryEx(sDllName.c_str(), NULL, LOAD_LIBRARY_SEARCH_DLL_LOAD_DIR | LOAD_LIBRARY_SEARCH_APPLICATION_DIR | LOAD_LIBRARY_SEARCH_DEFAULT_DIRS | LOAD_LIBRARY_SEARCH_SYSTEM32 | LOAD_LIBRARY_SEARCH_USER_DIRS);
+#endif
 	}
 	return  pDll;
 #endif

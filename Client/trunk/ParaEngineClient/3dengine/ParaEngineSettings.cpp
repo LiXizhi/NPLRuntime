@@ -1264,6 +1264,29 @@ bool ParaEngine::ParaEngineSettings::Is64BitsSystem()
 	return sizeof(void*) > 4;
 }
 
+bool ParaEngine::ParaEngineSettings::Is64BitsProcess()
+{
+	/*std::string sFullPath = CGlobals::GetApp()->GetModuleDir();
+	if (sFullPath.find("\\bin64") != std::string::npos || sFullPath.find("/bin64") != std::string::npos) {
+		return true;
+	}*/
+	DWORD dwPid = GetCurrentProcessId();
+	HANDLE hProcess = OpenProcess(PROCESS_QUERY_INFORMATION, FALSE, dwPid);
+	if (hProcess)
+	{
+		typedef BOOL(WINAPI* LPEN_ISWOW64PROCESS)(HANDLE, PBOOL);
+		LPEN_ISWOW64PROCESS fnlsWow64Process = (LPEN_ISWOW64PROCESS)GetProcAddress(GetModuleHandleW(L"kernel32"), "IsWow64Process");
+		if (NULL != fnlsWow64Process)
+		{
+			BOOL bIsWow64 = FALSE;
+			fnlsWow64Process(hProcess, &bIsWow64);
+			CloseHandle(hProcess);
+			return !bIsWow64;
+		}
+	}
+	return false;
+}
+
 void ParaEngine::ParaEngineSettings::LoadNameIndex()
 {
 	m_name_to_index.clear();
@@ -1706,6 +1729,7 @@ int ParaEngineSettings::InstallFields(CAttributeClass* pClass, bool bOverride)
 	pClass->AddField("ProcessId", FieldType_Int, NULL, (void*)GetProcessId_s, NULL, NULL, bOverride);
 	pClass->AddField("IsMobilePlatform", FieldType_Bool, NULL, (void*)IsMobilePlatform_s, NULL, NULL, bOverride);
 	pClass->AddField("Is64BitsSystem", FieldType_Bool, NULL, (void*)Is64BitsSystem_s, NULL, NULL, bOverride);
+	pClass->AddField("Is64BitsProcess", FieldType_Bool, NULL, (void*)Is64BitsProcess_s, NULL, NULL, bOverride);
 	pClass->AddField("RecreateRenderer", FieldType_void, (void*)RecreateRenderer_s, NULL, NULL, NULL, bOverride);
 	pClass->AddField("Icon", FieldType_String, (void*)SetIcon_s, (void*)0, NULL, NULL, bOverride);
 	pClass->AddField("LockWindowSize", FieldType_Bool, (void*)SetLockWindowSize_s, NULL, NULL, NULL, bOverride);
