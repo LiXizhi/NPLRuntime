@@ -1054,6 +1054,11 @@ namespace ParaEngine
 		* the object add itself to dead object pool for the root scene to safely remove it at the end of the frame. */
 		void AddToDeadObjectPool(CBaseObject* pObject);
 		void RemoveDeadObjects();
+
+		/** this function is called at the beginning of each frame to build the scene state from the specified camera
+		* Objects which are potentially visible are put to predefined queues of the scene states. */
+		virtual int PrepareRender(CBaseCamera* pCamera, SceneState* pSceneState);
+
 	private:
 
 		/** whether to block all user input (both key and mouse). Input is usually blocked as a game logics, such as we do not want the user to control the player anymore. */
@@ -1210,10 +1215,6 @@ namespace ParaEngine
 		*/
 		virtual bool PrepareRenderObject(CBaseObject* pObj, CBaseCamera* pCamera, SceneState& sceneState);
 		
-		/** this function is called at the beginning of each frame to build the scene state from the specified camera
-		* Objects which are potentially visible are put to predefined queues of the scene states. */
-		virtual int PrepareRender(CBaseCamera* pCamera, SceneState * pSceneState);
-
 		void PrepareRenderAllChildren(CBaseCamera* pCamera, SceneState& sceneState);
 
 		void PrepareCameraState(CBaseCamera* pCamera, SceneState &sceneState);

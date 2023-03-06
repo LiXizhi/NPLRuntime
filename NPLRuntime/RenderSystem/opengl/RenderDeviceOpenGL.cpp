@@ -13,7 +13,9 @@ using namespace ParaEngine;
 * custom user pointer buffer is no longer supported in opengl 3.0 and Emscripten OpenGL ES2.
 * we need to define this to use VBO in all cases.
 */
+#ifdef EMSCRIPTEN
 #define USE_USER_POINTER_VBO
+#endif
 
 namespace ParaEngine
 {

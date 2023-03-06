@@ -180,9 +180,9 @@ namespace ParaEngine {
 				UpdateScreenDevice();
 				this->DoWork();
 
-				double fNextInterval = 0.033f; // as fast as possible
-				fNextInterval = this->GetRefreshTimer() - (ParaTimer::GetAbsoluteTime() - this->GetAppTime());
-				fNextInterval = (std::min)(0.1, (std::max)(0.0, fNextInterval));
+				double fNextInterval = 0.01f; // as fast as possible
+				//fNextInterval = this->GetRefreshTimer() - (ParaTimer::GetAbsoluteTime() - this->GetAppTime());
+				//fNextInterval = (std::min)(0.1, (std::max)(0.0, fNextInterval));
 
 				NextLoop((int)(fNextInterval * 1000), &CWindowsApplication::handle_mainloop_timer, this);
 			}
