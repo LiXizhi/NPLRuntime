@@ -17,7 +17,7 @@
 #include "util/StringHelper.h"
 #include "ParaWorldAsset.h"
 #include "util/regularexpression.h"
-
+#include <fstream>
 /** we will load these files as assets manifest file. such as "assets_manifest*.txt" */
 #define ASSETS_MANIFEST_FILE_PATTERN		"assets_manifest*.txt"
 
@@ -255,7 +255,7 @@ DWORD AssetFileEntry_Request_CallBack(int nResult, CUrlProcessor* pRequest, CUrl
 			}
 			else
 			{
-				string sTmp = string("AssetFile ASync Failed cannot save to disk:") + url + "\n";
+				string sTmp = string("AssetFile ASync Failed cannot save to disk:") + url + "\n filename: " + pData->m_pAssetFileEntry->GetLocalFileName() + "\n";
 				pAsyncLoader->log(sTmp);
 			}
 		}
@@ -340,7 +340,7 @@ DWORD AssetFileEntry_Request_Signal_CallBack(int nResult, CUrlProcessor* pReques
 			}
 			else
 			{
-				string sTmp = string("AssetFile ASync Failed cannot save to disk:") + url + "\n";
+				string sTmp = string("AssetFile ASync Failed cannot save to disk:") + url + "\n filename: " + pData->m_pAssetFileEntry->GetLocalFileName() + "\n";
 				pAsyncLoader->log(CAsyncLoader::Log_Warn, sTmp);
 				OUTPUT_LOG("warn: %s", sTmp.c_str());
 			}
@@ -492,12 +492,16 @@ bool AssetFileEntry::CheckMD5AndSize(const char* buffer, int nSize)
 
 	int nFileNameCount = (int)m_localFileName.size();
 	if (nFileNameCount <= nCount)
+	{
 		return false;
+	}
 
 	for (int i = 0; i < nCount; ++i)
 	{
 		if (file_size[i] != m_localFileName[nFileNameCount - nCount + i])
+		{
 			return false;
+		}
 	}
 
 	// compare the md5 part
@@ -514,7 +518,7 @@ bool AssetFileEntry::CheckMD5AndSize(const char* buffer, int nSize)
 
 std::string AssetFileEntry::GetFullFilePath()
 {
-#ifdef PARAENGINE_MOBILE
+#if defined(PARAENGINE_MOBILE) || defined(EMSCRIPTEN)
 	return CFileUtils::GetWritableFullPathForFilename(GetLocalFileName());
 #else
 	return GetLocalFileName();
@@ -536,7 +540,11 @@ bool AssetFileEntry::SaveToDisk(const char* buffer, int nSize, bool bCheckMD5)
 	static ParaEngine::mutex s_save_file_mutex;
 	ParaEngine::Lock lock_(s_save_file_mutex);
 
+#ifdef EMSCRIPTEN
+	string tmpName = GetLocalFileName();
+#else
 	string tmpName = GetLocalFileName() + ".tmp";
+#endif
 	if (m_bIsZipFile)
 	{
 		// for zipped file
@@ -564,9 +572,10 @@ bool AssetFileEntry::SaveToDisk(const char* buffer, int nSize, bool bCheckMD5)
 		CParaFile file;
 		// save file to temp/cache directory.
 		if (file.CreateNewFile(tmpName.c_str(), false))
-		{
+		{	
 			file.write(buffer, nSize);
 			file.close();
+			
 			if (CParaFile::MoveFile(tmpName.c_str(), GetLocalFileName().c_str()))
 			{
 				m_nStatus = AssetFileStatus_Downloaded;
@@ -695,6 +704,12 @@ void CAssetManifest::PrepareCacheFolders()
 		else
 			sSubFolder[sSubFolder.size() - 2] = (char)('0' + i - 26);
 
+// #ifdef EMSCRIPTEN
+// 		auto diskfileName = ParaEngine::CFileUtils::GetWritableFullPathForFilename(sSubFolder);
+// 		if (!CParaFile::CreateDirectory(diskfileName.c_str()))
+// #else
+// 		if (!CParaFile::CreateDirectory(sSubFolder.c_str()))
+// #endif
 		if (!CParaFile::CreateDirectory(sSubFolder.c_str()))
 		{
 			OUTPUT_LOG("warning: failed creating directory %s \n", sSubFolder.c_str());
@@ -740,7 +755,7 @@ void CAssetManifest::LoadManifest()
 	}
 	else
 	{
-#if defined(PARAENGINE_MOBILE) || defined(PLATFORM_MAC)
+#if defined(PARAENGINE_MOBILE) || defined(PLATFORM_MAC) || defined(EMSCRIPTEN)
 		const char* sDefaultFile = "assets_manifest.txt";
 		if (CParaFile::DoesFileExist(sDefaultFile))
 		{
@@ -878,12 +893,14 @@ void CAssetManifest::AddEntry(const char* filename)
 
 		AssetFileEntry* pEntry = new AssetFileEntry();
 		pEntry->m_url = filename;
-		pEntry->m_localFileName.reserve(pEntry->m_localFileName.size() + 63);
+		pEntry->m_localFileName.reserve(pEntry->m_localFileName.size() + 128);  // 63
 		pEntry->m_localFileName += "temp/cache/a/";
 		pEntry->m_localFileName[11] = md5[0];
 		pEntry->m_localFileName += md5;
 		pEntry->m_localFileName += filesize;
-
+// #ifdef EMSCRIPTEN
+// 		pEntry->m_localFileName = ParaEngine::CFileUtils::GetWritableFullPathForFilename(pEntry->m_localFileName);
+// #endif
 		pEntry->m_bIsZipFile = bIsZipfile;
 		pEntry->m_nFileSize = nFileSize;
 		pEntry->SetFileType(file_extension); // note: this function must be called after file size is set. 

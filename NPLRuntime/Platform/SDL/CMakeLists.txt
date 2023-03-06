@@ -2,35 +2,66 @@ include(${PROJECT_SOURCE_DIR}/cmake/ucm.cmake)
 
 ucm_add_dirs(src TO app_src RECURSIVE)
 
+if (EMSCRIPTEN)
+	ucm_add_dirs(emscripten TO app_main_src RECURSIVE)
+else()
+	ucm_add_dirs(sdl TO app_main_src RECURSIVE)
+endif()
+
 #set(VCPKG_TARGET_TRIPLET x64-windows-static)
 #set(CMAKE_TOOLCHAIN_FILE "$ENV{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake" CACHE STRING "Vcpkg toolchain file")
 
-add_executable(ParaCraftSDL2 ${app_src})
-
-target_include_directories(ParaCraftSDL2 PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
-target_link_libraries(ParaCraftSDL2 PUBLIC RenderSystemOpenGL ParaEngine)
-
-if (SDL) 
-	find_package(SDL2 CONFIG REQUIRED PATHS ${SDL_ROOT})
-	target_link_libraries(ParaCraftSDL2 PRIVATE SDL2::SDL2 SDL2::SDL2main)
-elseif (EMSCRIPTEN)
-	
+if (EMSCRIPTEN)
+	if ("${CMAKE_BUILD_TYPE}" STREQUAL "RELEASE")
+		set (TARGET_NAME ParaCraft)
+	else()
+		set (TARGET_NAME ParaCraftEmscripten)
+	endif()
+else()
+	set (TARGET_NAME ParaCraftSDL2)
 endif()
-#if (MSVC) 
-	#find_package(SDL2 CONFIG REQUIRED PATHS $ENV{VCPKG_ROOT}/installed/x64-windows-static)
-#else()
-	#find_package(SDL2 CONFIG REQUIRED PATHS /root/program/SDL-2.0.22)
-#endif()
-#target_link_libraries(ParaCraftSDL2 PRIVATE SDL2::SDL2 SDL2::SDL2main SDL2::SDL2-static)
+add_executable(${TARGET_NAME} ${app_src} ${app_main_src})
 
+target_include_directories(${TARGET_NAME} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
+target_link_libraries(${TARGET_NAME} PUBLIC RenderSystemOpenGL ParaEngine)
 
-target_compile_definitions(ParaCraftSDL2 PUBLIC PLATFORM_LINUX)
-target_compile_definitions(ParaCraftSDL2 PUBLIC LINUX)
-target_compile_definitions(ParaCraftSDL2 PUBLIC PLATFORM_SDL2)
+if (SDL AND NOT EMSCRIPTEN) 
+	message("SDL_ROOT:" ${SDL_ROOT})
+	target_include_directories(${TARGET_NAME} PUBLIC "${SDL_ROOT}/include")
+	target_link_libraries(${TARGET_NAME} PUBLIC ${SDL_ROOT}/lib/SDL2-static.lib ${SDL_ROOT}/lib/SDL2main.lib ws2_32.lib user32.lib gdi32.lib winmm.lib imm32.lib ole32.lib oleaut32.lib version.lib uuid.lib advapi32.lib setupapi.lib shell32.lib dinput8.lib OpenGL32.lib)
+elseif (EMSCRIPTEN)
+	# -sTOTAL_STACK=32MB 
+	if (NOT APP_ROOT)
+		if (${CMAKE_HOST_SYSTEM_NAME} STREQUAL "Linux")
+			set(APP_ROOT /mnt/d/workspace/npl/paracraft_root@/)
+		else()
+			set(APP_ROOT D:/workspace/npl/paracraft_root@/)
+		endif()
+	else()
+		set(APP_ROOT "${APP_ROOT}@/")
+	endif()
+	if ("${CMAKE_BUILD_TYPE}" STREQUAL "RELEASE")
+		set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3 --use-preload-cache -sFULL_ES2=1 -sMAX_WEBGL_VERSION=2 -sINITIAL_MEMORY=128MB -sTOTAL_MEMORY=512MB -sALLOW_MEMORY_GROWTH -sPTHREAD_POOL_SIZE=32 -sSTACK_SIZE=32000000 -sFETCH -lidbfs.js -pthread --preload-file ${APP_ROOT}")
+		set (CMAKE_C_FLAGS "${CMAKE_CXX_FLAGS} -O3 --use-preload-cache -sFULL_ES2=1 -sMAX_WEBGL_VERSION=2 -sINITIAL_MEMORY=128MB -sTOTAL_MEMORY=512MB -sALLOW_MEMORY_GROWTH -sPTHREAD_POOL_SIZE=32 -sSTACK_SIZE=32000000 -sFETCH -lidbfs.js -pthread --preload-file ${APP_ROOT}")
+	else()
+		set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Og -g --use-preload-cache -sFULL_ES2=1 -sMAX_WEBGL_VERSION=2 -sINITIAL_MEMORY=128MB -sTOTAL_MEMORY=512MB -sALLOW_MEMORY_GROWTH -sPTHREAD_POOL_SIZE=32 -sSTACK_SIZE=32000000 -sFETCH -lidbfs.js -pthread --embed-file ${APP_ROOT}")
+		set (CMAKE_C_FLAGS "${CMAKE_CXX_FLAGS} -Og -g --use-preload-cache -sFULL_ES2=1 -sMAX_WEBGL_VERSION=2 -sINITIAL_MEMORY=128MB -sTOTAL_MEMORY=512MB -sALLOW_MEMORY_GROWTH -sPTHREAD_POOL_SIZE=32 -sSTACK_SIZE=32000000 -sFETCH -lidbfs.js -pthread --embed-file ${APP_ROOT}")
+	endif()
+	# -sSTACK_SIZE=32000000 
+	set(CMAKE_EXECUTABLE_SUFFIX ".html")
+	target_compile_definitions(${TARGET_NAME} PUBLIC EMSCRIPTEN)
+endif()
+
+target_compile_definitions(${TARGET_NAME} PUBLIC PLATFORM_LINUX)
+target_compile_definitions(${TARGET_NAME} PUBLIC LINUX)
+target_compile_definitions(${TARGET_NAME} PUBLIC PLATFORM_SDL2)
 
 ADD_CUSTOM_COMMAND(
-	TARGET ParaCraftSDL2
+	TARGET ${TARGET_NAME}
 	POST_BUILD
 	COMMAND ${CMAKE_COMMAND} -E make_directory ${OUTPUT_BIN_DIR}
-	COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:ParaCraftSDL2> ${OUTPUT_BIN_DIR}
+	COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:${TARGET_NAME}> ${OUTPUT_BIN_DIR}
 )
+
+
+# emcmake cmake -S NPLRuntime -B build_emscripten_release -DEMSCRIPTEN=ON -DCMAKE_BUILD_TYPE=RELEASE -DLOCAL_DEBUG=TRUE

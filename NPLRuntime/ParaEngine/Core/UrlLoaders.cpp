@@ -13,6 +13,10 @@
 #include "UrlLoaders.h"
 #include "AsyncLoader.h"
 
+#ifdef EMSCRIPTEN
+#include <emscripten.h>
+#include <emscripten/fetch.h>
+#endif
 #ifdef PARAENGINE_CLIENT
 #include "memdebug.h"
 #endif
@@ -174,8 +178,55 @@ HRESULT ParaEngine::CUrlProcessor::Destroy()
 	return S_OK;
 }
 
+void ParaEngine::CUrlProcessor::EmscriptenFetch()
+{
+#ifdef EMSCRIPTEN
+	std::vector<const char*> request_headers;
+	int request_headers_size = m_request_headers.size();
+	for (int i = 0; i < request_headers_size; i++) request_headers.push_back(m_request_headers[i].c_str());
+	request_headers.push_back(0);
+
+    emscripten_fetch_attr_t attr;
+    emscripten_fetch_attr_init(&attr);
+	std::string method = "GET";
+	if (m_options && m_options->GetField("CURLOPT_CUSTOMREQUEST")->isString()) method = m_options->GetField("CURLOPT_CUSTOMREQUEST").c_str();
+	else if (m_pFormPost != nullptr || !m_sRequestData.empty()) method = "POST";
+	else method = "GET";
+    strcpy(attr.requestMethod, method.c_str());
+    attr.attributes = EMSCRIPTEN_FETCH_LOAD_TO_MEMORY | EMSCRIPTEN_FETCH_SYNCHRONOUS;
+	attr.requestData = m_sRequestData.c_str();
+	attr.requestDataSize = m_sRequestData.size();
+	attr.requestHeaders = request_headers.data();
+	emscripten_fetch_t *fetch = emscripten_fetch(&attr, m_url.c_str()); // Blocks here until the operation is complete.
+	m_responseCode = fetch->status;
+	std::vector<char> response_header;
+	size_t headersLengthBytes = emscripten_fetch_get_response_headers_length(fetch) + 1;
+	response_header.resize(headersLengthBytes);
+  	emscripten_fetch_get_response_headers(fetch, response_header.data(), headersLengthBytes);
+	if (m_responseCode >= 200 && m_responseCode < 300)
+	{
+		write_header_callback(response_header.data(), response_header.size(), 1);
+		write_data_callback((void*)(fetch->data), fetch->totalBytes, 1);
+	}
+  	emscripten_fetch_close(fetch); // Also free data on failure.
+	m_nStatus = CUrlProcessor::URL_REQUEST_COMPLETED;
+	// std::cout << "method: " << method << std::endl;
+	// std::cout << "url: " << m_url << std::endl;
+	// std::cout << "request data:" << m_sRequestData << std::endl;
+	// std::cout << "status code: " << m_responseCode << std::endl;
+  	// if (fetch->status == 200) return S_OK;
+#endif
+	// return E_FAIL;
+}
+
 HRESULT ParaEngine::CUrlProcessor::Process(void* pData, int cBytes)
 {
+
+
+#ifdef EMSCRIPTEN
+    std::thread(&ParaEngine::CUrlProcessor::EmscriptenFetch, this).join();
+	return (200 <= m_responseCode && m_responseCode < 300) ? S_OK : E_FAIL;
+#else
 	// Let us do the easy way. 
 	CURL *curl = NULL;
 
@@ -215,6 +266,7 @@ HRESULT ParaEngine::CUrlProcessor::Process(void* pData, int cBytes)
 		return S_OK;
 	}
 	return E_FAIL;
+#endif
 }
 
 HRESULT ParaEngine::CUrlProcessor::CopyToResource()
@@ -670,12 +722,22 @@ void ParaEngine::CUrlProcessor::CompleteTask()
 
 void ParaEngine::CUrlProcessor::AppendHTTPHeader(const char* text)
 {
-	if (text != 0)
-		m_pHttpHeaders = curl_slist_append(m_pHttpHeaders, text);
+#ifdef EMSCRIPTEN
+	std::string header = text;
+	auto pos = header.find(':');
+	if (pos != string::npos)
+	{
+		m_request_headers.push_back(header.substr(0, pos));
+		m_request_headers.push_back(header.substr(pos + 1));
+	}
+#else
+	if (text != 0) m_pHttpHeaders = curl_slist_append(m_pHttpHeaders, text);
+#endif
 }
 
 CURLFORMcode ParaEngine::CUrlProcessor::AppendFormParam(const char* name, const char* value)
 {
+
 	return curl_formadd(&m_pFormPost, &m_pFormLast, CURLFORM_COPYNAME, name, CURLFORM_COPYCONTENTS, value, CURLFORM_END);
 }
 

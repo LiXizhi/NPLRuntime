@@ -140,6 +140,11 @@ endif ()
 
 list(APPEND NPLRUNTIME_INCLUDES ${PROJECT_SOURCE_DIR}/externals/Pinocchio/include)
 
+if (SDL AND NOT EMSCRIPTEN)
+    list(APPEND NPLRUNTIME_INCLUDES "${SDL_ROOT}/include")
+	list(APPEND NPLRUNTIME_LIBS ${SDL_ROOT}/lib/SDL2-staticd.lib ${SDL_ROOT}/lib/SDL2maind.lib ws2_32.lib user32.lib gdi32.lib winmm.lib imm32.lib ole32.lib oleaut32.lib version.lib uuid.lib advapi32.lib setupapi.lib shell32.lib dinput8.lib OpenGL32.lib)
+endif()
+
 # remove some compile time warnings
 add_definitions(-DBOOST_BIND_GLOBAL_PLACEHOLDERS)
 
@@ -230,6 +235,11 @@ if (NPLRUNTIME_OCE)
 	add_dependencies(ParaEngine nploce)
 endif ()
 
+if (USE_LUASOCKET)
+    list(APPEND NPLRUNTIME_LIBS luasocket)
+endif()
+
+message("LUA_LIB_LIST: " ${LUA_LIB_LIST})
 if (EMSCRIPTEN)
     target_link_libraries(ParaEngine PUBLIC 
     ${RenderSystem}
@@ -243,6 +253,16 @@ if (EMSCRIPTEN)
     ParaSqlite 
     Pinocchio
     ${ICONV_LIB_NAME}
+    # "/mnt/d/workspace/emscripten/boost_1_81_0/stage/lib/libboost_atomic.a"
+    "${BOOST_ROOT}/stage/lib/libboost_atomic.a"
+    "${BOOST_ROOT}/stage/lib/libboost_chrono.a"
+    "${BOOST_ROOT}/stage/lib/libboost_date_time.a"
+    "${BOOST_ROOT}/stage/lib/libboost_date_time.a"
+    "${BOOST_ROOT}/stage/lib/libboost_filesystem.a"
+    "${BOOST_ROOT}/stage/lib/libboost_serialization.a"
+    "${BOOST_ROOT}/stage/lib/libboost_system.a"
+    "${BOOST_ROOT}/stage/lib/libboost_thread.a"
+    "${BOOST_ROOT}/stage/lib/libboost_wserialization.a"
     )
 else()
     target_link_libraries(ParaEngine PUBLIC 
@@ -267,6 +287,13 @@ endif()
 
 set(PARAENGINE_DEF_LIST)
 list(APPEND PARAENGINE_DEF_LIST USE_FREEIMAGE USE_ICONV TIXML_USE_STL BOOST_SIGNALS_NO_DEPRECATION_WARNING _CRT_SECURE_NO_WARNINGS NPLRUNTIME ${PLATROM_SPEC_DEFINITIONS})
+if (SDL)
+    list(APPEND PARAENGINE_DEF_LIST PLATFORM_SDL2)
+endif()
+
+if (USE_LUASOCKET)
+    list(APPEND PARAENGINE_DEF_LIST USE_LUASOCKET)
+endif()
 
 if (WIN32 AND PARAENGINE_CLIENT_DLL)
 	list(APPEND PARAENGINE_DEF_LIST NPLRUNTIME_DLL)

@@ -52,5 +52,15 @@ namespace ParaEngine {
         }while(false);
         
 	}
+
+    const std::string& NetworkAdapter::GetMaxMacAddress()
+    {
+        return m_sMacAddress;
+    }
+
+    const std::string& NetworkAdapter::GetMaxIPAddress()
+    {
+        return m_sIpAddress;
+    }
 } // namespace ParaEngine
 

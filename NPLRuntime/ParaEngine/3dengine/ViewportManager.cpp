@@ -9,20 +9,17 @@
 #include "ParaEngine.h"
 #include "SceneState.h"
 #include "ViewportManager.h"
-#if USE_DIRECTX_RENDERER
-#include "RenderDeviceD3D9.h"
-#endif
-
 #include "AutoCamera.h"
 #include "SceneObject.h"
 #include "MoviePlatform.h"
 #include "3dengine/RenderTarget.h"
+#include "2dengine/GUIRoot.h"
 
 using namespace ParaEngine;
 
 CViewportManager::CViewportManager()
 	:m_nWidth(1), m_nHeight(1), m_nActiveViewPortIndex(1), m_nLayout(VIEW_LAYOUT_INVALID)
-	,m_nCurrentFrameNumber(0), m_normalScenePortInOdsSingleEye(NULL)
+	, m_nCurrentFrameNumber(0), m_normalScenePortInOdsSingleEye(NULL)
 {
 	m_viewport.X = 0;
 	m_viewport.Y = 0;
@@ -51,7 +48,7 @@ void ParaEngine::CViewportManager::UpdateViewport(int nBackbufferWidth, int nBac
 		m_viewport.Width = m_nWidth;
 		m_viewport.Height = m_nHeight;
 		UpdateLayout();
-		
+
 		for (auto iter = m_viewportList.begin(); iter != m_viewportList.end(); iter++)
 		{
 			CViewport* pViewPort = *iter;
@@ -125,6 +122,7 @@ HRESULT ParaEngine::CViewportManager::Render(double dTimeDelta, int nPipelineOrd
 	float oldFov = 0;
 	float oldAspect = 1;
 	float oldCameraRotX, oldCameraDistance, oldLiftUp;
+	Vector3 oldRightDir;
 	auto pMainScene = CGlobals::GetScene();
 	if (pMainScene) {
 		pCamera = (CAutoCamera*)pMainScene->GetCurrentCamera();
@@ -135,26 +133,48 @@ HRESULT ParaEngine::CViewportManager::Render(double dTimeDelta, int nPipelineOrd
 		oldCameraRotX = (float)pCamera->GetCameraRotX();
 		oldCameraDistance = (float)pCamera->GetCameraObjectDistance();
 		oldLiftUp = (float)pCamera->GetCameraLiftupAngle();
-		pCamera->SetForceOmniCameraObjectDistance(-10000);
-		pCamera->SetForceOmniCameraPitch(-10000);
+		oldRightDir = pCamera->GetWorldRight();
 	}
+
+	float uiScaleX, uiScaleY;
+	float uiHeight = 0;
 	for (auto iter = m_viewportSorted.begin(); iter != m_viewportSorted.end(); iter++)
 	{
 		CViewport* pViewPort = *iter;
 		if (pViewPort)
 		{
-			auto &_param = pViewPort->GetStereoODSparam();
+			auto& _param = pViewPort->GetStereoODSparam();
 			_param.oldEyePos = oldEyePos;
 			_param.oldLookAtPos = oldLookAtPos;
 			_param.oldFov = oldFov;
+			_param.oldPitch = oldLiftUp;
+			_param.oldCameraDistance = oldCameraDistance;
+			_param.oldRightDir = oldRightDir;
+
+			if (pViewPort->GetIdentifier() == "GUI_ods_user") {
+				uiScaleX = pViewPort->GetGUIRoot()->GetUIScalingX();
+				uiScaleY = pViewPort->GetGUIRoot()->GetUIScalingY();
+				uiHeight = (float)pViewPort->GetHeight();
+			}
+			else if (pViewPort->GetIdentifier() == "GUI_ods") {
+				uiScaleX = pViewPort->GetGUIRoot()->GetUIScalingX();
+				uiScaleY = pViewPort->GetGUIRoot()->GetUIScalingY();
+				float scale = pViewPort->GetHeight() / uiHeight;
+				float _uiScaleX = uiScaleX * scale;
+				float _uiScaleY = uiScaleY * scale;
+				pViewPort->GetGUIRoot()->SetUIScale(_uiScaleX, _uiScaleY, false, false, false);
+			}
 			pViewPort->Render(dTimeDelta, nPipelineOrder);
 
 			if (_param.needRecoverCamera) {
 				needRecoverCamera = true;
 			}
+			if (pViewPort->GetIdentifier() == "GUI_ods") {
+				pViewPort->GetGUIRoot()->SetUIScale(uiScaleX, uiScaleY, false, false, false);
+			}
 		}
 	}
-	if (pCamera&& needRecoverCamera) {
+	if (pCamera && needRecoverCamera) {
 		if (m_normalScenePortInOdsSingleEye) {
 			pCamera->SetAspectRatio(m_normalScenePortInOdsSingleEye->GetAspectRatio());
 		}
@@ -164,6 +184,8 @@ HRESULT ParaEngine::CViewportManager::Render(double dTimeDelta, int nPipelineOrd
 		pCamera->SetFieldOfView(oldFov);
 		pCamera->SetLookAtPosition(oldLookAtPos);
 		pCamera->SetCameraRotX(oldCameraRotX);
+		pCamera->SetForceOmniCameraPitch(-10000);
+		pCamera->SetForceOmniCameraObjectDistance(-10000);
 		pCamera->SetCameraObjectDistance(oldCameraDistance);
 		pCamera->SetViewParams(oldEyePos, oldLookAtPos);
 		pCamera->SetCameraLiftupAngle(oldLiftUp);
@@ -312,12 +334,14 @@ void ParaEngine::CViewportManager::SetLayout(VIEWPORT_LAYOUT nLayout, CSceneObje
 		pUIViewportRight->SetPosition("_mr", 0, 0, nHalfWidth, 0);
 		pUIViewportRight->SetZOrder(101);
 		pUIViewportRight->SetEyeMode(STEREO_EYE_RIGHT);
+		pUIViewportRight->DisableDeltaTime();
 		CViewport* pMainSceneViewportRight = CreateGetViewPort(3);
 		pMainSceneViewportRight->SetIdentifier("right_scene");
 		pMainSceneViewportRight->SetScene(pMainScene);
 		pMainSceneViewportRight->SetPosition("_mr", 0, 0, nHalfWidth, 0);
 		pMainSceneViewportRight->SetZOrder(1);
 		pMainSceneViewportRight->SetEyeMode(STEREO_EYE_RIGHT);
+		pMainSceneViewportRight->DisableDeltaTime();
 
 		SetViewportCount(4);
 	}
@@ -345,6 +369,11 @@ void ParaEngine::CViewportManager::SetLayout(VIEWPORT_LAYOUT nLayout, CSceneObje
 			float fov_h = MATH_PI / 2;
 			const float aspect = tan(fov_h / 2) / tan(fov_v / 2);
 
+			// must be same as cube UI to avoid Root GUI onsize event be fired at each frame if manip GUI and cube GUI size differs.
+			int _height = cubeWidth;
+			int _width = (int)(_height * aspect);
+
+			/*
 			int _width = GetWidth();
 			int _height = GetHeight() - cubeWidth * 2;
 
@@ -354,9 +383,11 @@ void ParaEngine::CViewportManager::SetLayout(VIEWPORT_LAYOUT nLayout, CSceneObje
 			else {
 				_height = (int)(_width / aspect);
 			}
-			//default show
+			*/
+
+			//操作区域场景+UI
 			CViewport* pUIViewport = CreateGetViewPort(portNum);
-			pUIViewport->SetIdentifier("GUI");
+			pUIViewport->SetIdentifier("GUI_ods_user");
 			pUIViewport->SetGUIRoot(pGUIRoot);
 			pUIViewport->SetPosition("_lt", 0, cubeWidth * 2, _width, _height);
 			pUIViewport->SetZOrder(98);
@@ -368,22 +399,55 @@ void ParaEngine::CViewportManager::SetLayout(VIEWPORT_LAYOUT nLayout, CSceneObje
 			pMainSceneViewport->SetIdentifier("scene");
 			pMainSceneViewport->SetScene(pMainScene);
 			pMainSceneViewport->SetPosition("_lt", 0, cubeWidth * 2, _width, _height);
-			pMainSceneViewport->SetEyeMode(STEREO_EYE_LEFT);
+			pMainSceneViewport->SetEyeMode(STEREO_EYE_NORMAL);
 			pMainSceneViewport->SetZOrder(0);
 			pMainSceneViewport->SetPipelineOrder(PIPELINE_3D_SCENE);
 			m_normalScenePortInOdsSingleEye = pMainSceneViewport;
 			{
-				auto &viewport = pMainSceneViewport;
+				auto& viewport = pMainSceneViewport;
 				CViewport::StereoODSparam& param = viewport->GetStereoODSparam();
-				param.isODS = true;
-				param.aspectRatio = aspect;
-				param.fov = fov_v;
-				param.eyeShiftDistance = 0;
-				param.fov_h = fov_h;
+				param.isODS = false;
 
 				viewport->SetStereoODSparam(param);
 			}
 			portNum += 1;
+
+			//全景区域场景+UI
+			{
+				_height = cubeWidth;
+				_width = (int)(_height * aspect);
+				CViewport* pUIViewport = CreateGetViewPort(portNum);
+				pUIViewport->SetIdentifier("GUI_ods");
+				pUIViewport->SetGUIRoot(pGUIRoot);
+				pUIViewport->SetPosition("_lt", cubeWidth * 2, cubeWidth * 1, _width, _height);
+				pUIViewport->SetZOrder(98);
+				pUIViewport->SetEyeMode(STEREO_EYE_ODS);
+				pUIViewport->SetPipelineOrder(PIPELINE_UI);
+				pUIViewport->DisableDeltaTime();
+				portNum += 1;
+
+				CViewport* pMainSceneViewport = CreateGetViewPort(portNum);
+				pMainSceneViewport->SetIdentifier("scene_ods_ui");
+				pMainSceneViewport->SetScene(pMainScene);
+				pMainSceneViewport->SetPosition("_lt", cubeWidth * 2, cubeWidth * 1, _width, _height);
+				pMainSceneViewport->SetEyeMode(STEREO_EYE_ODS);
+				pMainSceneViewport->SetZOrder(0);
+				pMainSceneViewport->SetPipelineOrder(PIPELINE_3D_SCENE);
+				pMainSceneViewport->DisableDeltaTime();
+				{
+					auto& viewport = pMainSceneViewport;
+					CViewport::StereoODSparam& param = viewport->GetStereoODSparam();
+					param.isODS = true;
+					param.aspectRatio = aspect;
+					param.fov = fov_v;
+					param.eyeShiftDistance = 0;
+					param.fov_h = fov_h;
+					param.m_bOmniAlwaysUseUpFrontCamera = m_bOmniAlwaysUseUpFrontCamera;
+					param.m_nOmniForceLookatDistance = m_nOmniForceLookatDistance;
+					viewport->SetStereoODSparam(param);
+				}
+				portNum += 1;
+			}
 		}
 
 		const float diffRotY = MATH_2PI / (num);
@@ -391,8 +455,6 @@ void ParaEngine::CViewportManager::SetLayout(VIEWPORT_LAYOUT nLayout, CSceneObje
 
 		const float fov_h = diffRotY;
 		const float fov_v = atan(tan(MATH_PI / num) / aspect) * 2;
-
-		std::shared_ptr<CRenderTarget> pSharedRenderTarget = NULL;
 
 		const int ods_group_size = 6;//有几个viewPort共用一个renderTarget
 		const std::string randerTargetname = "ods_render_target";
@@ -412,8 +474,8 @@ void ParaEngine::CViewportManager::SetLayout(VIEWPORT_LAYOUT nLayout, CSceneObje
 			viewport->SetIdentifier(key);
 			viewport->SetScene(pMainScene);
 			viewport->SetPosition("_lt", cubeWidth * portCoords[i][0], cubeWidth * portCoords[i][1], cubeWidth, cubeWidth);
-			viewport->SetEyeMode(STEREO_EYE_LEFT);
-			//viewport->SetPipelineOrder(PIPELINE_3D_SCENE);
+			viewport->SetEyeMode(STEREO_EYE_ODS);
+			viewport->DisableDeltaTime();
 			viewport->SetZOrder(50 + i);
 
 			CViewport::StereoODSparam& param = viewport->GetStereoODSparam();
@@ -430,17 +492,6 @@ void ParaEngine::CViewportManager::SetLayout(VIEWPORT_LAYOUT nLayout, CSceneObje
 			param.ods_group_idx = i;
 			param.ods_group_size = ods_group_size;
 			viewport->SetStereoODSparam(param);
-
-			if (pSharedRenderTarget == NULL) {
-				viewport->SetRenderTargetName(randerTargetname);
-				pSharedRenderTarget = viewport->GetRenderTarget();
-				pSharedRenderTarget.get()->SetRenderTargetSize(Vector2(cubeWidth*4.0f, cubeWidth*2.0f));
-				pSharedRenderTarget.get()->GetPrimaryAsset();
-				pSharedRenderTarget.get()->SetHasSetRenderTargetSize(true);
-			}
-			else {
-				viewport->SetRenderTarget(pSharedRenderTarget);
-			}
 		}
 
 		portNum += ods_group_size;
@@ -451,6 +502,7 @@ void ParaEngine::CViewportManager::SetLayout(VIEWPORT_LAYOUT nLayout, CSceneObje
 		pFinalViewPort->SetPosition("_lt", 0, 0, cubeWidth * 4, cubeWidth * 2);
 		//pFinalViewPort->SetPosition("_lt", 0, 0, GetWidth(), GetHeight());
 		pFinalViewPort->SetEyeMode(STEREO_EYE_NORMAL);
+		pFinalViewPort->DisableDeltaTime();
 		pFinalViewPort->SetZOrder(102);
 		if (needCompositeUI) {
 			pFinalViewPort->SetPipelineOrder(PIPELINE_POST_UI_3D_SCENE);
@@ -626,6 +678,7 @@ void ParaEngine::CViewportManager::SetLayout(VIEWPORT_LAYOUT nLayout, CSceneObje
 			param.m_bOmniAlwaysUseUpFrontCamera = m_bOmniAlwaysUseUpFrontCamera;
 			param.m_nOmniForceLookatDistance = m_nOmniForceLookatDistance;
 			viewport->SetStereoODSparam(param);
+			viewport->DisableDeltaTime(i > 0);
 			//viewport->SetRenderTargetName(randerTargetname);
 		}
 		portNum += num;
@@ -656,6 +709,7 @@ void ParaEngine::CViewportManager::SetLayout(VIEWPORT_LAYOUT nLayout, CSceneObje
 			param.m_bOmniAlwaysUseUpFrontCamera = m_bOmniAlwaysUseUpFrontCamera;
 			param.m_nOmniForceLookatDistance = m_nOmniForceLookatDistance;
 			viewport->SetStereoODSparam(param);
+			viewport->DisableDeltaTime();
 			//viewport->SetRenderTargetName(randerTargetname);
 		}
 		portNum += num;
@@ -686,6 +740,7 @@ void ParaEngine::CViewportManager::SetLayout(VIEWPORT_LAYOUT nLayout, CSceneObje
 			param.m_bOmniAlwaysUseUpFrontCamera = m_bOmniAlwaysUseUpFrontCamera;
 			param.m_nOmniForceLookatDistance = m_nOmniForceLookatDistance;
 			viewport->SetStereoODSparam(param);
+			viewport->DisableDeltaTime();
 			//viewport->SetRenderTargetName(randerTargetname);
 		}
 		portNum += num;
@@ -716,6 +771,7 @@ void ParaEngine::CViewportManager::SetLayout(VIEWPORT_LAYOUT nLayout, CSceneObje
 			param.m_bOmniAlwaysUseUpFrontCamera = m_bOmniAlwaysUseUpFrontCamera;
 			param.m_nOmniForceLookatDistance = m_nOmniForceLookatDistance;
 			viewport->SetStereoODSparam(param);
+			viewport->DisableDeltaTime();
 			//viewport->SetRenderTargetName(randerTargetname);
 		}
 		portNum += num;
@@ -744,6 +800,7 @@ void ParaEngine::CViewportManager::SetLayout(VIEWPORT_LAYOUT nLayout, CSceneObje
 		pMainSceneViewportRight->SetPosition("_fi", 0, 0, 0, 0);
 		pMainSceneViewportRight->SetZOrder(1);
 		pMainSceneViewportRight->SetEyeMode(STEREO_EYE_RIGHT);
+		pMainSceneViewportRight->DisableDeltaTime();
 
 		// final full screen quad
 		CViewport* pFinalViewPort = CreateGetViewPort(3);
@@ -752,6 +809,7 @@ void ParaEngine::CViewportManager::SetLayout(VIEWPORT_LAYOUT nLayout, CSceneObje
 		pFinalViewPort->SetEyeMode(STEREO_EYE_NORMAL);
 		pFinalViewPort->SetZOrder(99); // before GUI
 		pFinalViewPort->SetPipelineOrder(PIPELINE_3D_SCENE);
+		pFinalViewPort->DisableDeltaTime();
 		SetViewportCount(4);
 	}
 	else // if (nLayout == VIEW_LAYOUT_DEFAULT)
@@ -776,7 +834,7 @@ void ParaEngine::CViewportManager::SetLayout(VIEWPORT_LAYOUT nLayout, CSceneObje
 
 void ParaEngine::CViewportManager::SetActiveViewPort(CViewport* pViewport)
 {
-	for (int i=0; i<(int)m_viewportList.size(); i++)
+	for (int i = 0; i < (int)m_viewportList.size(); i++)
 	{
 		if (m_viewportList[i] == pViewport)
 		{
@@ -788,7 +846,6 @@ void ParaEngine::CViewportManager::SetActiveViewPort(CViewport* pViewport)
 
 void ParaEngine::CViewportManager::ApplyViewport()
 {
-
 	auto CurrentViewport = CGlobals::GetRenderDevice()->GetViewport();
 
 	CurrentViewport.X = 0;
@@ -809,7 +866,7 @@ int ParaEngine::CViewportManager::GetChildAttributeObjectCount(int nColumnIndex 
 	return (int)m_viewportList.size();
 }
 
-IAttributeFields* ParaEngine::CViewportManager::GetChildAttributeObject(const char * sName)
+IAttributeFields* ParaEngine::CViewportManager::GetChildAttributeObject(const char* sName)
 {
 	for (CViewport* viewport : m_viewportList)
 	{
@@ -827,5 +884,11 @@ IAttributeFields* ParaEngine::CViewportManager::GetChildAttributeObject(int nRow
 int ParaEngine::CViewportManager::InstallFields(CAttributeClass* pClass, bool bOverride)
 {
 	IAttributeFields::InstallFields(pClass, bOverride);
+	pClass->AddField("viewPortCount", FieldType_Int, NULL, (void*)GetViewportCount_s, NULL, NULL, bOverride);
+	pClass->AddField("ods_fov", FieldType_Float, (void*)SetODSFov_s, (void*)GetODSFov_s, NULL, NULL, bOverride);
+	pClass->AddField("layout", FieldType_Int, NULL, (void*)GetLayout_s, NULL, NULL, bOverride);
+	pClass->AddField("widthPerDegree", FieldType_Int, (void*)SetWidthPerDegree_s, (void*)GetWidthPerDegree_s, NULL, NULL, bOverride);
+	pClass->AddField("OmniAlwaysUseUpFrontCamera", FieldType_Bool, (void*)SetOmniAlwaysUseUpFrontCamera_s, (void*)GetOmniAlwaysUseUpFrontCamera_s, NULL, NULL, bOverride);
+	pClass->AddField("OmniForceLookatDistance", FieldType_Int, (void*)SetOmniForceLookatDistance_s, (void*)GetOmniForceLookatDistance_s, NULL, NULL, bOverride);
 	return S_OK;
 }

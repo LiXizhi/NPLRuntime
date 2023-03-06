@@ -57,6 +57,9 @@ Server/trunk/*
 !Server/trunk/curl-7.47.1/
 
 build/
+build_emscripten/
+build_emscripten_release/
+build_emscripten_win64/
 buildvm_arch.h
 .DS_Store
 settings.json
@@ -76,3 +79,4 @@ win32build/
 out/
 SDL*/
 SDL2-2.0.22.tar.gz
+local.properties

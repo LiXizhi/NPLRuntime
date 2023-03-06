@@ -105,6 +105,9 @@ namespace ParaEngine
 		virtual IProcessorWorkerData * GetProcessorWorkerData();
 
 		virtual bool IsDeviceObject() { return false; };
+	
+	public:
+		void EmscriptenFetch();
 	public:
 		/** type of the url request task */
 		enum URLREQUEST_TYPE
@@ -145,7 +148,7 @@ namespace ParaEngine
 		
 		/** append http headers*/
 		void AppendHTTPHeader(const char* text);
-
+		
 		/** append form parameters */
 		CURLFORMcode AppendFormParam(const char* name, const char* value);
 
@@ -309,5 +312,9 @@ namespace ParaEngine
 
 		/** this mutex is only used for determine the state. */
 		//ParaEngine::mutex m_mutex;
+
+#ifdef EMSCRIPTEN
+		std::vector<std::string> m_request_headers;
+#endif 
 	};
 }

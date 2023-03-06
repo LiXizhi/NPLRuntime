@@ -188,7 +188,7 @@ namespace ParaEngine
 		m_bForceFlush = false; 
 #endif
 #else
-#if defined(PARAENGINE_CLIENT) || defined(PLATFORM_MAC)
+#if defined(PARAENGINE_CLIENT) || defined(PLATFORM_MAC) || defined(WIN32)
 		m_bForceFlush = true;
 		m_is_first_time_open = true;
 #else
@@ -224,7 +224,12 @@ namespace ParaEngine
 	{
 		if (m_file_handle==NULL) 
 		{
-			m_file_handle = fopen(m_log_file_name.c_str(),m_is_first_time_open ? "w+" : "a+");
+#if WIN32 && defined(DEFAULT_FILE_ENCODING)
+			LPCWSTR path16 = StringHelper::MultiByteToWideChar(m_log_file_name.c_str(), DEFAULT_FILE_ENCODING);
+			m_file_handle = ::_wfopen(path16, m_is_first_time_open ? L"w+" : L"a+");
+#else
+			m_file_handle = fopen(m_log_file_name.c_str(), m_is_first_time_open ? "w+" : "a+");
+#endif
 		}
 		if(m_file_handle)
 		{
@@ -269,8 +274,10 @@ namespace ParaEngine
 		if (pStr==NULL) {
 			return;
 		}
-#if ANDROID
-	LOGI(pStr);
+
+		// On some mobile phones, typing in Chinese logs will crash, just cancel it
+#if (ANDROID && defined(_DEBUG))
+		LOGI(pStr);
 #endif
 
 #if __APPLE__
@@ -315,6 +322,9 @@ namespace ParaEngine
 		if (buf==NULL || nLength<=0) {
 			return -1;
 		}
+#ifdef EMSCRIPTEN
+		printf("%s", buf);
+#endif
 		FILE * pFile = GetLogFileHandle();
 		if(pFile)
 		{

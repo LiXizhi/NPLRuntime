@@ -226,6 +226,12 @@ static int luaopen_profiler_table(lua_State *L)
 }
 #endif
 
+#ifdef USE_LUASOCKET
+extern "C" int luaopen_mime_core(lua_State * L);
+extern "C" int luaopen_socket_core(lua_State * L);
+#endif
+
+// #endif
 void CNPLScriptingState::LoadHAPI_Globals()
 {
 	using namespace luabind;
@@ -566,6 +572,7 @@ void CNPLScriptingState::LoadHAPI_Globals()
 			def("CheckAssetFile", & ParaIO::CheckAssetFile),
 			def("LoadReplaceFile", & ParaIO::LoadReplaceFile),
 			def("SyncAssetFile_Async", & ParaIO::SyncAssetFile_Async),
+			def("ConvertPathFromUTF8ToAnsci", &ParaIO::ConvertPathFromUTF8ToAnsci),
 			
 			def("open", & ParaIO::open),
 			def("openimage", & ParaIO::openimage),

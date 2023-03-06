@@ -13,6 +13,7 @@
 #include "ParaEngineSettings.h"
 #include "util/StringHelper.h"
 
+
 @implementation KeyboardiOSController
 
 static KeyboardiOSController *instance = nil;
@@ -21,6 +22,7 @@ static BOOL mUpdateViewSizeWhenKeyboardChange = NO;
 static ParaTextField *mTextField = nil;
 static BOOL isGuiEdit;
 static NSString *curEditText;
+static NSString *lastText = @"";
 static int selStart;
 static int selEnd;
 
@@ -118,6 +120,11 @@ static int selEnd;
     return isGuiEdit;
 }
 
++ (ParaTextField *)GetTextField
+{
+    return mTextField;
+}
+
 + (void)setIMEKeyboardState:(BOOL)bOpen bMoveView:(BOOL)bMoveView ctrlBottom:(int)ctrlBottom editParams:(NSString *)editParams;
 {
     if (mTextField == nil) {
@@ -130,7 +137,7 @@ static int selEnd;
     if (pGUI != NULL) {
         isGuiEdit = YES;
     }
-    
+
     NSData *editParamsData = [editParams dataUsingEncoding:NSUTF8StringEncoding];
     id editParamsJson = [NSJSONSerialization JSONObjectWithData:editParamsData options:NSJSONReadingAllowFragments error:nil];
     NSDictionary *editParamsDictionary;
@@ -138,7 +145,7 @@ static int selEnd;
     if ([editParamsJson isKindOfClass:[NSDictionary class]]) {
         editParamsDictionary = (NSDictionary *)editParamsJson;
     }
-    
+
     curEditText = [editParamsDictionary valueForKey: @"curEditText"];
     selStart = (int)[editParamsDictionary[@"selStart"] integerValue];
     selEnd = (int)[editParamsDictionary[@"selEnd"] integerValue];
@@ -147,6 +154,7 @@ static int selEnd;
     mCtrlBottom = ctrlBottom;
 
     if (bOpen) {
+        [mTextField becomeFirstResponder];
         [NSTimer scheduledTimerWithTimeInterval:0.01 target:instance selector:@selector(keyboardOnPressed) userInfo:nil repeats:NO];
     }
 
@@ -165,17 +173,20 @@ static int selEnd;
 {
     if (mUpdateViewSizeWhenKeyboardChange)
     {
-        auto userInfo = [notification userInfo];
-        auto keyboardSize = [[userInfo objectForKey:UIKeyboardBoundsUserInfoKey] CGRectValue].size;
+        NSDictionary *userInfo = [notification userInfo];
+        CGSize keyboardSize = [[userInfo objectForKey:UIKeyboardBoundsUserInfoKey] CGRectValue].size;
 
-        auto ori = [UIApplication sharedApplication].statusBarOrientation;
-        auto keyboardHeight = UIInterfaceOrientationIsLandscape(ori) ? keyboardSize.height : keyboardSize.width;
+        UIInterfaceOrientation ori = [UIApplication sharedApplication].statusBarOrientation;
+        CGFloat keyboardHeight = UIInterfaceOrientationIsLandscape(ori) ? keyboardSize.height : keyboardSize.width;
 
-        auto currentFrame = _appDelegate.viewController.view.frame;
+        CGRect currentFrame = _appDelegate.viewController.view.frame;
+
+        _isKeyboardOpened = true;
+        _keyboardHeight = keyboardHeight;
 
         if ((currentFrame.size.height - mCtrlBottom) < keyboardHeight) {
-            auto offset = keyboardHeight - (currentFrame.size.height - mCtrlBottom);
-            _appDelegate.viewController.view.frame = CGRectMake(0, -offset, currentFrame.size.width, currentFrame.size.height);
+            CGFloat glViewOffset = keyboardHeight - (currentFrame.size.height - mCtrlBottom);
+            _appDelegate.viewController.view.frame = CGRectMake(0, -glViewOffset, currentFrame.size.width, currentFrame.size.height);
         }
     }
 }
@@ -186,7 +197,7 @@ static int selEnd;
 
     if (mUpdateViewSizeWhenKeyboardChange)
     {
-        auto currentFrame = _appDelegate.viewController.view.frame;
+        CGRect currentFrame = _appDelegate.viewController.view.frame;
         _appDelegate.viewController.view.frame = CGRectMake(0, 0, currentFrame.size.width, currentFrame.size.height);
     }
 }
@@ -203,22 +214,32 @@ static int selEnd;
         if (selEnd <= 0 && [curEditText length] > 0) {
             selStart = selEnd = (int)MAX([curEditText length], 0);
         }
+
+        mTextField.text = @"";
+        lastText = @"";
+
+        if (self.isKeyboardOpened) {
+            CGRect currentFrame = _appDelegate.viewController.view.frame;
+
+            if ((currentFrame.size.height - mCtrlBottom) < self.keyboardHeight) {
+                CGFloat glViewOffset = self.keyboardHeight - (currentFrame.size.height - mCtrlBottom);
+                _appDelegate.viewController.view.frame = CGRectMake(0, -glViewOffset, currentFrame.size.width, currentFrame.size.height);
+            }
+        }
+    } else {
+        NSInteger curCaretPosition = pGUI->GetCaretPosition();
         
-        return;
+        std::string _curText;
+        pGUI->GetTextA(_curText);
+
+        NSString *curText = [NSString stringWithUTF8String:_curText.c_str()];
+        
+        mTextField.text = curText;
+        
+        UITextPosition *newPos = [mTextField positionFromPosition:mTextField.beginningOfDocument offset:curCaretPosition];
+        UITextRange *newRange = [mTextField textRangeFromPosition:newPos toPosition:newPos];
+        mTextField.selectedTextRange = newRange;
     }
-
-    NSInteger curCaretPosition = pGUI->GetCaretPosition();
-    
-    std::string _curText;
-    pGUI->GetTextA(_curText);
-
-    NSString *curText = [NSString stringWithUTF8String:_curText.c_str()];
-    
-    mTextField.text = curText;
-    
-    UITextPosition *newPos = [mTextField positionFromPosition:mTextField.beginningOfDocument offset:curCaretPosition];
-    UITextRange *newRange = [mTextField textRangeFromPosition:newPos toPosition:newPos];
-    mTextField.selectedTextRange = newRange;
 }
 
 - (BOOL)textField:(UITextField *)textField shouldChangeCharactersInRange:(NSRange)range replacementString:(NSString *)string;
@@ -245,12 +266,94 @@ static int selEnd;
 
             pGUI->SetCaretPosition((int)setCaretPosition);
         } else {
-            std::wstring s;
-            s = (WCHAR)[mTextField.text characterAtIndex:0];
+            auto pGUIIns = ParaEngine::CGUIRoot::GetInstance();
 
-            pGUI->OnHandleWinMsgChars(s);
-            
-            mTextField.text = @"";
+            if ([lastText isEqualToString:mTextField.text]) {
+                return;
+            }
+
+            // diff
+            if ([lastText length] > [mTextField.text length]) {
+                NSString *sameStr = @"";
+                NSString *lastDiffStr = @"";
+                NSString *textFieldDiffStr = @"";
+                BOOL forceDiff = NO;
+
+                for (int i = 0;i < [lastText length];i++) {
+                    unichar lastTextCharItem = [lastText characterAtIndex:i];
+
+                    if (i < [mTextField.text length]) {
+                        unichar textFieldCharItem = [mTextField.text characterAtIndex:i];
+
+                        if (lastTextCharItem == textFieldCharItem && !forceDiff) {
+                            sameStr = [sameStr stringByAppendingString:[NSString stringWithCharacters:&textFieldCharItem length:1]];
+                        } else {
+                            forceDiff = YES;
+                            lastDiffStr = [lastDiffStr stringByAppendingString:[NSString stringWithCharacters:&lastTextCharItem length:1]];
+                            textFieldDiffStr = [textFieldDiffStr stringByAppendingString:[NSString stringWithCharacters:&textFieldCharItem length:1]];
+                        }
+                    } else {
+                        lastDiffStr = [lastDiffStr stringByAppendingString:[NSString stringWithCharacters:&lastTextCharItem length:1]];
+                    }
+                }
+
+                for (int i = 0;i < [lastDiffStr length];i++) {
+                    std::string str = "[#backspace]";
+                    std::wstring w_str = ParaEngine::StringHelper::MultiByteToWideChar(str.c_str(), CP_UTF8);
+
+                    pGUI->OnHandleWinMsgChars(w_str);
+                }
+
+                for (int i = 0;i < [textFieldDiffStr length];i++) {
+                    std::wstring s;
+                    s = (WCHAR)[textFieldDiffStr characterAtIndex:i];
+                    unichar charItem = [textFieldDiffStr characterAtIndex:i];
+
+                    pGUI->OnHandleWinMsgChars(s);
+                }
+            } else {
+                NSString *sameStr = @"";
+                NSString *lastDiffStr = @"";
+                NSString *textFieldDiffStr = @"";
+                BOOL forceDiff = NO;
+
+                for (int i = 0;i < [mTextField.text length];i++) {
+                    unichar textFieldCharItem = [mTextField.text characterAtIndex:i];
+ 
+                    if (i < [lastText length]) {
+                        unichar lastTextCharItem = [lastText characterAtIndex:i];
+                        
+                        if (lastTextCharItem == textFieldCharItem && !forceDiff) {
+                            sameStr = [sameStr stringByAppendingString:[NSString stringWithCharacters:&lastTextCharItem length:1]];
+                        } else {
+                            forceDiff = YES;
+                            lastDiffStr = [lastDiffStr stringByAppendingString:[NSString stringWithCharacters:&lastTextCharItem length:1]];
+                            textFieldDiffStr = [textFieldDiffStr stringByAppendingString:[NSString stringWithCharacters:&textFieldCharItem length:1]];
+                        }
+                    } else {
+                        textFieldDiffStr = [textFieldDiffStr stringByAppendingString:[NSString stringWithCharacters:&textFieldCharItem length:1]];
+                    }
+                }
+
+                ParaEngine::CGUIBase *pGUI = ParaEngine::CGUIRoot::GetInstance()->GetUIKeyFocus();
+
+                for (int i = 0;i < [lastDiffStr length];i++) {
+                    std::string str = "[#backspace]";
+                    std::wstring w_str = ParaEngine::StringHelper::MultiByteToWideChar(str.c_str(), CP_UTF8);
+
+                    pGUI->OnHandleWinMsgChars(w_str);
+                }
+
+                for (int i = 0;i < [textFieldDiffStr length];i++) {
+                    std::wstring s;
+                    s = (WCHAR)[textFieldDiffStr characterAtIndex:i];
+                    unichar charItem = [textFieldDiffStr characterAtIndex:i];
+
+                    pGUI->OnHandleWinMsgChars(s);
+                }
+            }
+
+            lastText = mTextField.text;
         }
     }
 }
@@ -259,6 +362,8 @@ static int selEnd;
 {
     if (isGuiEdit) {
         return NO;
+    } else {
+        mTextField.text = @"";
     }
 
     if (ParaEngine::CGlobals::GetApp()->GetAppState() == ParaEngine::PEAppState_Ready)

@@ -3,6 +3,7 @@
 #include "s3tc.h"
 #include "jpeglib.h"
 #include "png.h"
+#include "StringHelper.h"
 
 #include <boost/gil.hpp>
 #include <boost/gil/extension/numeric/sampler.hpp>
@@ -970,8 +971,12 @@ namespace ParaEngine
             png_infop info_ptr;
             png_colorp palette;
             png_bytep *row_pointers;
-            
-            fp = fopen(filePath.c_str(), "wb");
+#if WIN32 && defined(DEFAULT_FILE_ENCODING)
+			std::wstring filePath16 = StringHelper::MultiByteToWideChar(filePath.c_str(), DEFAULT_FILE_ENCODING);
+            fp = _wfopen(filePath16.c_str(), L"wb");
+#else
+			fp = fopen(filePath.c_str(), "wb");
+#endif
             if(nullptr == fp)
                 break;
             
@@ -1125,8 +1130,13 @@ namespace ParaEngine
             cinfo.err = jpeg_std_error(&jerr);
             /* Now we can initialize the JPEG compression object. */
             jpeg_create_compress(&cinfo);
-            
-            if((outfile = fopen(filePath.c_str(), "wb")) == nullptr)
+#if WIN32 && defined(DEFAULT_FILE_ENCODING)
+			std::wstring filePath16 = StringHelper::MultiByteToWideChar(filePath.c_str(), DEFAULT_FILE_ENCODING);
+			outfile = _wfopen(filePath16.c_str(), L"wb");
+#else
+			outfile = fopen(filePath.c_str(), "wb");
+#endif
+            if((outfile) == nullptr)
                 break;
             
             jpeg_stdio_dest(&cinfo, outfile);

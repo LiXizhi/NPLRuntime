@@ -42,6 +42,7 @@ import android.view.WindowManager;
 import android.widget.ImageView;
 
 import com.smarx.notchlib.NotchScreenManager;
+import com.tatfook.paracraft.luabridge.PlatformBridge;
 import com.tatfook.paracraft.screenrecorder.ScreenRecorder;
 
 import java.io.File;
@@ -168,20 +169,16 @@ public class ParaEngineActivity extends AppCompatActivity {
 
         if (checkSelfPermission(Manifest.permission.READ_PHONE_STATE) != PackageManager.PERMISSION_GRANTED)
         {
-            ParaEngineActivity
-                .getContext()
-                .requestPermissions(
-                    new String[]{READ_PHONE_STATE},
-                    PERMISSION_REQUEST_PHONE_STATE
-                );
-
+            this._init(savedInstanceState, false);
             mSavedInstanceState = savedInstanceState;
         } else {
-            onCheckPermissionFinish(savedInstanceState, true);
+            this._init(savedInstanceState, true);
         }
 
         NotchScreenManager.getInstance().setDisplayInNotch(this);
+    }
 
+    private void checkUsbMode(){
         // Determine whether the device uses USB
         Configuration configuration = getResources().getConfiguration();
         boolean mouseExist = false;
@@ -198,6 +195,24 @@ public class ParaEngineActivity extends AppCompatActivity {
 
         if (configuration.keyboard != Configuration.KEYBOARD_NOKEYS || mouseExist) {
             mUsbMode = true;
+        }
+    }
+
+    //lua端调用，用户同意隐私政策和用户协议以后，再去进行相关敏感操作
+    public void onAgreeUserPrivacy(){
+        this.checkUsbMode();
+        ParaEngineHelper.onAgreeUserPrivacy();
+        if(true){//PlatformBridge.getChannelId(this).equals("xiaomi")
+            ParaEngineHelper.setCanReadPhoneState(false);
+        }else if(checkSelfPermission(Manifest.permission.READ_PHONE_STATE) != PackageManager.PERMISSION_GRANTED)
+        {
+            ParaEngineActivity
+                    .getContext()
+                    .requestPermissions(
+                            new String[]{READ_PHONE_STATE},
+                            PERMISSION_REQUEST_PHONE_STATE
+                    );
+
         }
     }
 
@@ -383,23 +398,24 @@ public class ParaEngineActivity extends AppCompatActivity {
 
     protected void onCheckPermissionFinish(final Bundle savedInstanceState, boolean bGranted)
     {
-        final boolean _bGranted = bGranted;
-        this._init(savedInstanceState, _bGranted);
-
-        // init plugin
-        if (!ParaEnginePluginWrapper.init(
-              this,
-               savedInstanceState,
-               new ParaEnginePluginWrapper.PluginWrapperListener() {
-                   @Override
-                   public void onInit() {
-                       ParaEngineActivity.this._init(savedInstanceState, _bGranted);
-                   }
-               }
-          ))
-        {
-           this._init(savedInstanceState, _bGranted);
-        }
+        ParaEngineHelper.setCanReadPhoneState(bGranted);
+//        final boolean _bGranted = bGranted;
+//        this._init(savedInstanceState, _bGranted);
+//
+//        // init plugin
+//        if (!ParaEnginePluginWrapper.init(
+//              this,
+//               savedInstanceState,
+//               new ParaEnginePluginWrapper.PluginWrapperListener() {
+//                   @Override
+//                   public void onInit() {
+//                       ParaEngineActivity.this._init(savedInstanceState, _bGranted);
+//                   }
+//               }
+//          ))
+//        {
+//           this._init(savedInstanceState, _bGranted);
+//        }
     }
 
     private void resumeIfHasFocus() {

@@ -79,3 +79,6 @@ smaller than this value(measured in pixels), then shadows will NOT be casted for
 /** default encoding for char * in GUI system.  UTF8 is a good choice, although ansi code page is also fine. */
 //#define DEFAULT_GUI_ENCODING		CP_ACP
 #define DEFAULT_GUI_ENCODING		CP_UTF8
+#if WIN32
+#define DEFAULT_FILE_ENCODING		CP_UTF8
+#endif

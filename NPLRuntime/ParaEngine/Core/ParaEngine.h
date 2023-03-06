@@ -26,8 +26,12 @@
 
 #include <boost/shared_ptr.hpp>
 #include <boost/signals2.hpp>
-#include <boost/bind.hpp>
+#include <boost/bind/bind.hpp>
+#include <boost/bind/placeholders.hpp>
 #include "util/intrusive_ptr.h"
+
+using namespace boost::placeholders;
+
 namespace NPL
 {
 	typedef boost::shared_ptr<CNPLUDPRoute> NPLUDPRoute_ptr;

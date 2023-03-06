@@ -221,9 +221,13 @@ void ParaEngine::CBatchedElementDraw::DrawBatchedLines(bool bClear)
 		CGlobals::GetRenderDevice()->SetTransform(ETransformsStateType::WORLD, CGlobals::GetIdentityMatrix()->GetConstPointer());
 		CGlobals::GetRenderDevice()->SetFVF(LINEVERTEX::FVF);
 
-		CGlobals::GetRenderDevice()->DrawIndexedPrimitiveUP(EPrimitiveType::LINELIST, 0,
-			(int)m_lines_vertex_array.size(), m_nLineCount, &(m_lines_index_array[0]), PixelFormat::INDEX16,
-			&(m_lines_vertex_array[0]), sizeof(LINEVERTEX));
+// #ifdef EMSCRIPTEN
+	// CGlobals::GetRenderDevice()->DrawIndexedPrimitiveUP_GL(EPrimitiveType::LINELIST, m_nLineCount, &(m_lines_vertex_array[0]), m_lines_vertex_array.size() * sizeof(LINEVERTEX), &(m_lines_index_array[0]), m_lines_index_array.size() * sizeof(int16));
+// #else
+	CGlobals::GetRenderDevice()->DrawIndexedPrimitiveUP(EPrimitiveType::LINELIST, 0,
+		(int)m_lines_vertex_array.size(), m_nLineCount, &(m_lines_index_array[0]), PixelFormat::INDEX16,
+		&(m_lines_vertex_array[0]), sizeof(LINEVERTEX));
+// #endif
 	}
 #ifdef USE_OPENGL_RENDERER
 	pRenderDevice->SetRenderState(ERenderState::CULLMODE, RSV_CULL_CCW);

@@ -55,6 +55,9 @@ else()
 	SET(LUA_LIB_MODE "SHARED")
 endif()
 
+# disable lua coco by default, yielding from c call is expensive. only enable this if you really want to yield from pcall() or other c-function. 
+add_definitions(-DCOCO_DISABLE)
+
 # the following will build lua as dll, the reason for this, is that we need its pdb files for debugging using decoda (a lua debugger). 
 # plus it also makes core game engine update more granular. 
 IF(WIN32)
@@ -70,7 +73,7 @@ IF(WIN32)
 	SET(CMAKE_SHARED_LINKER_FLAGS_RELEASE "${CMAKE_SHARED_LINKER_FLAGS_RELEASE} /opt:ref")
 	# add a stripped version of symbol files during release build
 	SET(CMAKE_SHARED_LINKER_FLAGS_RELEASE "${CMAKE_SHARED_LINKER_FLAGS_RELEASE} /PDBSTRIPPED:Release/lua.stripped.pdb")
-	
+
 	ADD_LIBRARY(lua ${LUA_LIB_MODE} ${lua_SRCS})
 
 	if(NOT NPLRUNTIME_STATIC_LIB)
@@ -78,6 +81,9 @@ IF(WIN32)
 	endif()
 ELSE(WIN32)
 	add_definitions(-DLUA_USE_LINUX)
+	if (EMSCRIPTEN)
+		add_definitions(-DCOCO_DISABLE)
+	endif()
 	ADD_LIBRARY(lua ${LUA_LIB_MODE} ${lua_SRCS})
 
 	SET(output_luafilename "liblua51.so")

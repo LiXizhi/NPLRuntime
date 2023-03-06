@@ -144,6 +144,7 @@ IRenderWindow* ParaEngine::CParaEngineAppBase::GetRenderWindow()
 
 bool ParaEngine::CParaEngineAppBase::InitApp(IRenderWindow* pWindow, const char* sCommandLine)
 {
+	std::cout << "================CParaEngineAppBase::InitApp==============" << std::endl;
 	SetAppState(PEAppState_Device_Created);
 
 	std::string cmd;
@@ -271,6 +272,7 @@ void ParaEngine::CParaEngineAppBase::InitRenderEnvironment()
 	RenderConfiguration cfg;
 	cfg.renderWindow = m_pRenderWindow;
 	m_pRenderDevice = m_pRenderContext->CreateDevice(cfg);
+	std::cout << "================CParaEngineAppBase::InitRenderEnvironment==============" << std::endl;
 	CGlobals::SetRenderDevice(m_pRenderDevice);
 
 	ParaViewport vp;
@@ -680,6 +682,7 @@ void ParaEngine::CParaEngineAppBase::OnRendererRecreated(IRenderWindow * renderW
 	RenderConfiguration cfg;
 	cfg.renderWindow = m_pRenderWindow;
 	m_pRenderDevice = m_pRenderContext->CreateDevice(cfg);
+	std::cout << "================CParaEngineAppBase::OnRendererRecreated==============" << std::endl;
 	CGlobals::SetRenderDevice(m_pRenderDevice);
 
 	ParaViewport vp;
@@ -1651,6 +1654,20 @@ bool CParaEngineAppBase::FindParaEngineDirectory(const char* sHint)
 		// const char* sInstallDir = ReadRegStr("HKEY_CURRENT_USER", "SOFTWARE\\ParaEngine\\ParaWorld", "");
 		// if(sInstallDir)
         //     ::SetCurrentDirectory(sInstallDir);
+	}
+	else
+	{
+#if WIN32 && defined(DEFAULT_FILE_ENCODING)
+		std::wstring sModuleDir16 = StringHelper::MultiByteToWideChar(sModuleDir.c_str(), DEFAULT_FILE_ENCODING);
+		int len = (int)(sModuleDir16.size());
+		std::string::size_type last_dir_index = sModuleDir16.find_last_of(L"/\\");
+		if (last_dir_index != std::string::npos)
+		{
+			// this ensures that the application is in the directory where module is installed. 
+			std::wstring sParentDir = sModuleDir16.substr(0, last_dir_index + 1);
+			::SetCurrentDirectoryW(sParentDir.c_str());
+		}
+#endif
 	}
 
 	{

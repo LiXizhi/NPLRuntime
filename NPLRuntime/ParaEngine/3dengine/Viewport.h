@@ -14,6 +14,7 @@ namespace ParaEngine
 		STEREO_EYE_NORMAL = 0,
 		STEREO_EYE_LEFT,
 		STEREO_EYE_RIGHT,
+		STEREO_EYE_ODS,
 	};
 
 	/** a region of view port to render into. 
@@ -35,19 +36,19 @@ namespace ParaEngine
 
 		ATTRIBUTE_METHOD1(CViewport, SetAlignment_s, const char*)	{ cls->SetAlignment(p1); return S_OK; }
 		
-		ATTRIBUTE_METHOD1(CViewport, SetLeft_s, int) { cls->SetLeft(p1); return S_OK; }
+		ATTRIBUTE_METHOD1(CViewport, SetLeft_s, int)	{ cls->SetLeft(p1); return S_OK; }
 		ATTRIBUTE_METHOD1(CViewport, GetLeft_s, int*) { *p1 = cls->GetLeft(); return S_OK; }
 
-		ATTRIBUTE_METHOD1(CViewport, SetTop_s, int) { cls->SetTop(p1); return S_OK; }
+		ATTRIBUTE_METHOD1(CViewport, SetTop_s, int)	{ cls->SetTop(p1); return S_OK; }
 		ATTRIBUTE_METHOD1(CViewport, GetTop_s, int*) { *p1 = cls->GetTop(); return S_OK; }
 
 		ATTRIBUTE_METHOD1(CViewport, SetODSFov_s, float) { cls->m_stereoODSparam.fov = (p1); return S_OK; }
 		ATTRIBUTE_METHOD1(CViewport, GetODSFov_s, float*) { *p1 = cls->m_stereoODSparam.fov; return S_OK; }
 
-		ATTRIBUTE_METHOD1(CViewport, SetWidth_s, int) { cls->SetWidth(p1); return S_OK; }
+		ATTRIBUTE_METHOD1(CViewport, SetWidth_s, int)	{ cls->SetWidth(p1); return S_OK; }
 		ATTRIBUTE_METHOD1(CViewport, GetWidth_s, int*) { *p1 = cls->GetWidth(); return S_OK; }
 
-		ATTRIBUTE_METHOD1(CViewport, SetHeight_s, int) { cls->SetHeight(p1); return S_OK; }
+		ATTRIBUTE_METHOD1(CViewport, SetHeight_s, int)	{ cls->SetHeight(p1); return S_OK; }
 		ATTRIBUTE_METHOD1(CViewport, GetHeight_s, int*) { *p1 = cls->GetHeight(); return S_OK; }
 
 		ATTRIBUTE_METHOD(CViewport, ApplyViewport_s)	{ cls->ApplyViewport(); return S_OK; }
@@ -85,16 +86,17 @@ namespace ParaEngine
 			bool needRecoverCamera;
 			DVector3 oldEyePos;
 			DVector3 oldLookAtPos;
+			Vector3 oldRightDir;
 			float oldFov;
 
 			bool m_bOmniAlwaysUseUpFrontCamera;
 			int m_nOmniForceLookatDistance;
-			float oldCameraRotX;
+			float oldPitch;
 			float oldCameraDistance;
 
 			int ods_group_idx;
 			int ods_group_size;
-			StereoODSparam() {
+			StereoODSparam(){
 				isODS = false;
 				moreRotZ = 0.0f;
 				moreRotY = 0.0f;
@@ -107,6 +109,9 @@ namespace ParaEngine
 				m_nOmniForceLookatDistance = 20;
 				ods_group_idx = -1;
 				ods_group_size = 0;
+				oldPitch = 0;
+				oldCameraDistance = 8;
+				oldRightDir = Vector3(0,0,1);
 			}
 			inline StereoODSparam& operator = (const StereoODSparam& target)
 			{
@@ -126,6 +131,9 @@ namespace ParaEngine
 				m_nOmniForceLookatDistance = target.m_nOmniForceLookatDistance;
 				ods_group_idx = target.ods_group_idx;
 				ods_group_size = target.ods_group_size;
+				oldPitch = target.oldPitch;
+				oldCameraDistance = target.oldCameraDistance;
+				oldRightDir = target.oldRightDir;
 				return *this;
 			}
 		};
@@ -199,12 +207,12 @@ namespace ParaEngine
 		ParaEngine::STEREO_EYE GetEyeMode() const;
 		void SetEyeMode(ParaEngine::STEREO_EYE val);
 
+		/** Camera yaw angle increment when recording Stereo video.*/
+		void SetStereoODSparam(StereoODSparam& param);
+		StereoODSparam& GetStereoODSparam();
+
 		/** return last viewport */
 		ParaViewport ApplyViewport();
-
-		/** Camera yaw angle increment when recording Stereo video.*/
-		void SetStereoODSparam(StereoODSparam &param) { m_stereoODSparam = param; }
-		StereoODSparam& GetStereoODSparam() { return m_stereoODSparam; }
 
 		ParaViewport SetViewport(DWORD x, DWORD y, DWORD width, DWORD height);
 
@@ -227,6 +235,15 @@ namespace ParaEngine
 
 		/** get viewport transform in terms of scale and offset */
 		void GetViewportTransform(Vector2*  pvScale, Vector2* pvOffset = NULL);
+
+		/** we will ignore animation frame move when this viewport is rendered. Default to false. This is used when rendering the same scene multiple times from different angles. 
+		* Only the first viewport needs to frame move the internal animation. 
+		*/
+		bool IsDeltaTimeDisabled();
+
+		/** we will ignore animation frame move when this viewport is rendered. */
+		void DisableDeltaTime(bool bDisabled = true);
+
 	protected:
 		float GetStereoEyeSeparation();
 	private:
@@ -243,6 +260,7 @@ namespace ParaEngine
 		float m_fAspectRatio;
 		bool m_bIsModifed;
 		bool m_bIsEnabled;
+		bool m_bDisableDeltaTime;
 		
 		int m_nZOrder;
 		std::string m_sName;

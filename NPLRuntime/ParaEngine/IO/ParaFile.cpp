@@ -374,7 +374,12 @@ bool CParaFile::CreateNewFile(const char* filename, bool bAutoMakeFilePath)
 	string sFile;
 	CParaFile::ToCanonicalFilePath(sFile, filename);
 	if (bAutoMakeFilePath)
-		CFileUtils::MakeDirectoryFromFilePath(sFile.c_str());
+	{
+		if (!CFileUtils::MakeDirectoryFromFilePath(sFile.c_str()))
+		{
+			std::cout << "create directory failed:" << sFile << std::endl;
+		}
+	}
 
 	bool bSuc = OpenFile(sFile.c_str(), false);
 	if (bSuc)
@@ -446,7 +451,8 @@ int CParaFile::OpenAssetFile(const char* filename, bool bDownloadIfNotUpToDate, 
 	{
 		string sTmp = string("ParaFile.OpenAssetFile using local file:") + filename + "\n";
 		CAsyncLoader::GetSingleton().log(sTmp);
-#ifdef PARAENGINE_MOBILE
+#if defined(PARAENGINE_MOBILE) || defined(EMSCRIPTEN)
+// #if defined(PARAENGINE_MOBILE)
 		if (relativePath == NULL)
 		{
 			uint32 dwFound = FILE_NOT_FOUND;

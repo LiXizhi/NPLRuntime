@@ -44,11 +44,11 @@ float4 frag(v2f i) : COLOR
     if(k_bBoolean0)
     {
         return i.color * normalColor;
-    }else
+    }
+	else
     {
         return float4(i.color.rgb,i.color.a * normalColor.a);
     }
-	return normalColor;
 }
 
 technique SimpleMesh_vs20_ps20

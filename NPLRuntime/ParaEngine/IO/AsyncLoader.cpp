@@ -265,6 +265,9 @@ void ParaEngine::CAsyncLoader::log(const string& message)
 
 void ParaEngine::CAsyncLoader::log(int nLogLevel, const string& message)
 {
+#ifdef EMSCRIPTEN
+	// std::cout << "CAsyncLoader::log => " << message << std::endl;
+#endif
 	if (GetLogLevel() <= nLogLevel)
 	{
 		g_asset_logger->WriteServiceFormated("%s", message.c_str());
@@ -538,11 +541,16 @@ int CAsyncLoader::Start(int nWorkerCount)
 	CGlobals::GetAssetManager()->CreateXFileParser(&m_pXFileParser);
 #endif
 	m_bInterruptSignal = false;
+	OUTPUT_LOG("CAsyncLoader::Start, %d\n", std::thread::hardware_concurrency());
 
 	// start the io thread
 	//m_io_thread.reset(new boost::thread(boost::bind(&CAsyncLoader::FileIOThreadProc, this)));
 	{
+#ifdef EMSCRIPTEN
+		auto count = 1;
+#else
 		auto count = (std::max)(std::thread::hardware_concurrency() -1, (unsigned int)1);
+#endif
 		m_io_threads.resize(count);
 		m_UsedIOThread = DEFAULT_IO_THREADS;
 		//m_io_semaphore.reset(1);
@@ -608,6 +616,7 @@ int CAsyncLoader::FileIOThreadProc_HandleRequest(ResourceRequest_ptr& ResourceRe
 
 			if (FAILED(hr))
 			{
+				hr = ResourceRequest->m_pDataLoader->Load();
 				const char * keyname = ResourceRequest->m_pDataLoader->GetKeyName();
 				if (keyname == 0)
 					keyname = "key not set";
@@ -686,6 +695,8 @@ int CAsyncLoader::FileIOThreadProc(unsigned int id)
 
 	ASSETS_LOG(Log_All, "CAsyncLoader IO Thread started");
 
+	OUTPUT_LOG("CAsyncLoader IO Thread started"); // deleted
+
 	int nRes = 0;
 	while(nRes != -1)
 	{
@@ -699,7 +710,6 @@ int CAsyncLoader::FileIOThreadProc(unsigned int id)
 			break;
 		}
 		hr = FileIOThreadProc_HandleRequest(ResourceRequest);
-
 		//m_io_semaphore.post();
 	}
 	return 0;

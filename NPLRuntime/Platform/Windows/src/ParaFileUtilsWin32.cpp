@@ -19,6 +19,8 @@
 #include <boost/filesystem/fstream.hpp>
 #include <iostream>
 #include "ReadFileWin32.h"
+#include "StringHelper.h"
+
 namespace fs = boost::filesystem;
 #define BOOST_FILESYSTEM_NO_DEPRECATED
 using namespace ParaEngine;
@@ -33,7 +35,12 @@ ParaEngine::FileData CParaFileUtilsWin32::GetDataFromFile(const std::string& fil
 {
 	FileData data;
 	fs::ifstream file;
-	file.open(filename, ios::in | ios::binary | ios::ate);
+#if WIN32 && defined(DEFAULT_FILE_ENCODING)
+	LPCWSTR filename16 = StringHelper::MultiByteToWideChar(filename.c_str(), DEFAULT_FILE_ENCODING);
+#else
+	const auto& filename16 = filename;
+#endif
+	file.open(filename16, ios::in | ios::binary | ios::ate);
 	if (file.is_open())
 	{
 		size_t nSize = (size_t)file.tellg();
@@ -77,14 +84,24 @@ const std::string& ParaEngine::CParaFileUtilsWin32::GetWritablePath()
 const std::string& ParaEngine::CParaFileUtilsWin32::GetInitialDirectory()
 {
 	fs::path workingDir = fs::initial_path();
+#if WIN32 && defined(DEFAULT_FILE_ENCODING)
+	static std::string ret = StringHelper::WideCharToMultiByte(workingDir.wstring().c_str(), DEFAULT_FILE_ENCODING);
+#else
 	static std::string ret = workingDir.string();
+#endif
+	
 	return ret;
 }
 
 bool ParaEngine::CParaFileUtilsWin32::Exists(const std::string& filename)
 {
 	boost::system::error_code err_code;
-	bool exists = fs::exists(filename, err_code);
+#if WIN32 && defined(DEFAULT_FILE_ENCODING)
+	LPCWSTR filename16 = StringHelper::MultiByteToWideChar(filename.c_str(), DEFAULT_FILE_ENCODING);
+#else
+	const auto& filename16 = filename;
+#endif
+	bool exists = fs::exists(filename16, err_code);
 	return exists;
 }
 
@@ -103,7 +120,14 @@ bool ParaEngine::CParaFileUtilsWin32::Copy(const std::string& src, const std::st
 {
 	try
 	{
-		fs::path destFile(dest);
+#if WIN32 && defined(DEFAULT_FILE_ENCODING)
+		std::wstring src16 = StringHelper::MultiByteToWideChar(src.c_str(), DEFAULT_FILE_ENCODING);
+		LPCWSTR dest16 = StringHelper::MultiByteToWideChar(dest.c_str(), DEFAULT_FILE_ENCODING);
+#else
+		const auto& src16 = src;
+		const auto& dest16 = dest;
+#endif
+		fs::path destFile(dest16);
 		if (fs::exists(destFile))
 		{
 			if (override)
@@ -118,7 +142,7 @@ bool ParaEngine::CParaFileUtilsWin32::Copy(const std::string& src, const std::st
 				return false;
 			}
 		}
-		fs::copy_file(fs::path(src), destFile);
+		fs::copy_file(fs::path(src16.c_str()), destFile);
 	}
 	catch (...)
 	{
@@ -145,7 +169,12 @@ bool ParaEngine::CParaFileUtilsWin32::MakeDirectoryFromFilePath(const std::strin
 {
 	try
 	{
-		fs::path filePath(filename);
+#if WIN32 && defined(DEFAULT_FILE_ENCODING)
+		LPCWSTR filename16 = StringHelper::MultiByteToWideChar(filename.c_str(), DEFAULT_FILE_ENCODING);
+#else
+		const auto& filename16 = filename;
+#endif
+		fs::path filePath(filename16);
 		fs::path fileDir = filePath.parent_path();
 		if (!fs::exists(fileDir))
 			return fs::create_directories(fileDir);
@@ -161,7 +190,12 @@ bool ParaEngine::CParaFileUtilsWin32::Delete(const std::string& filename)
 {
 	try
 	{
-		return fs::remove(filename);
+#if WIN32 && defined(DEFAULT_FILE_ENCODING)
+		LPCWSTR filename16 = StringHelper::MultiByteToWideChar(filename.c_str(), DEFAULT_FILE_ENCODING);
+#else
+		const auto& filename16 = filename;
+#endif
+		return fs::remove(filename16);
 	}
 	catch (...)
 	{
@@ -173,7 +207,12 @@ int ParaEngine::CParaFileUtilsWin32::DeleteDirectory(const std::string& filename
 {
 	try
 	{
-		return (int)fs::remove_all(filename);
+#if WIN32 && defined(DEFAULT_FILE_ENCODING)
+		LPCWSTR filename16 = StringHelper::MultiByteToWideChar(filename.c_str(), DEFAULT_FILE_ENCODING);
+#else
+		const auto& filename16 = filename;
+#endif
+		return (int)fs::remove_all(filename16);
 	}
 	catch (...)
 	{
@@ -183,7 +222,12 @@ int ParaEngine::CParaFileUtilsWin32::DeleteDirectory(const std::string& filename
 
 std::string ParaEngine::CParaFileUtilsWin32::GetFullPathForFilename(const std::string &filename)
 {
-	fs::path filepath(filename);
+#if WIN32 && defined(DEFAULT_FILE_ENCODING)
+	LPCWSTR filename16 = StringHelper::MultiByteToWideChar(filename.c_str(), DEFAULT_FILE_ENCODING);
+#else
+	const auto& filename16 = filename;
+#endif
+	fs::path filepath(filename16);
 	fs::path abs_path = fs::absolute(filepath);
 	return abs_path.string();
 }
@@ -194,7 +238,12 @@ bool ParaEngine::CParaFileUtilsWin32::SaveBufferToFile(const std::string& filena
 	{
 		if (MakeDirectoryFromFilePath(filename.c_str()) == false)
 			return false;
-		fs::path filePath(filename);
+#if WIN32 && defined(DEFAULT_FILE_ENCODING)
+		LPCWSTR filename16 = StringHelper::MultiByteToWideChar(filename.c_str(), DEFAULT_FILE_ENCODING);
+#else
+		const auto& filename16 = filename;
+#endif
+		fs::path filePath(filename16);
 		if (fs::exists(filePath) && (replace == false))
 			return false;
 

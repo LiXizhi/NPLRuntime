@@ -1,4 +1,4 @@
-#include <stdexcept>
+﻿#include <stdexcept>
 #include "ParaEngine.h"
 #include "renderer/VertexDeclarationOpenGL.h"
 #include "math/ParaViewport.h"
@@ -6,11 +6,96 @@
 #include "ViewportManager.h"
 #include "OpenGLWrapper/GLType.h"
 #include "OpenGLWrapper/GLTexture2D.h"
-//#include "math/ParaColor.h"
-
-
 
 using namespace ParaEngine;
+
+/** define this, then DrawPrimitiveUP and DrawIndexedPrimitiveUP will use vertex buffer object. 
+* custom user pointer buffer is no longer supported in opengl 3.0 and Emscripten OpenGL ES2.
+* we need to define this to use VBO in all cases.
+*/
+#ifdef EMSCRIPTEN
+#define USE_USER_POINTER_VBO
+#endif
+
+namespace ParaEngine
+{
+	/** for managing opengl vertex and index buffer object. */
+	class CDynamicBufferObject
+	{
+	public:
+		CDynamicBufferObject(int nBufferType = GL_ARRAY_BUFFER)
+			: m_nBufferType(nBufferType), m_nCurrentSize(0), m_devicePointer(0), m_nNextFreeIndex(0)
+		{
+		};
+		void GenerateBuffer()
+		{
+			glGenBuffers(1, &m_devicePointer);
+			m_nCurrentSize = 0;
+			m_nNextFreeIndex = 0;
+		}
+		
+		void UploadUserPointer(int nCountBytes, const void* pData, int nFrom = 0)
+		{
+			int nSize = nCountBytes + nFrom;
+			if (m_nCurrentSize < nSize)
+			{
+				if (nFrom == 0) {
+					glBufferData(m_nBufferType, nSize, pData, GL_DYNAMIC_DRAW);
+				}
+				else
+				{
+					glBufferData(m_nBufferType, nSize, nullptr, GL_DYNAMIC_DRAW);
+					glBufferSubData(m_nBufferType, nFrom, nCountBytes, pData);
+				}
+				m_nCurrentSize = nSize;
+			}
+			else
+			{
+				glBufferSubData(m_nBufferType, nFrom, nCountBytes, pData);
+			}
+			PE_CHECK_GL_ERROR_DEBUG();
+			m_nNextFreeIndex = nSize;
+		}
+
+		/** @return return the beginning buffer offset */
+		int UploadUserPointerRingBuffer(int nCount, const void* pData, int VertexStreamZeroStride)
+		{
+			int nOffsetIndex = ((int)(m_nNextFreeIndex / VertexStreamZeroStride) + 1);
+			int nFromBytes = nOffsetIndex * VertexStreamZeroStride;
+			int nTotalBytes = nCount * VertexStreamZeroStride;
+			int nSize = nFromBytes + nTotalBytes;
+			if (nSize < m_nCurrentSize)
+			{
+				// append to buffer
+				UploadUserPointer(nCount * VertexStreamZeroStride, pData, nFromBytes);
+			}
+			else
+			{
+				// restart from beginning
+				nOffsetIndex = 0;
+				UploadUserPointer(nCount * VertexStreamZeroStride, pData, 0);
+			}
+			return nOffsetIndex;
+		}
+
+		VertexBufferDevicePtr_type GetDevicePointer() 
+		{
+			if (m_devicePointer == 0)
+			{
+				GenerateBuffer();
+			}
+			return m_devicePointer;
+		}
+	private:
+		int m_nBufferType;
+		int m_nCurrentSize;
+		int m_nNextFreeIndex;
+		VertexBufferDevicePtr_type m_devicePointer;
+	};
+}
+// global buffer used by DrawPrimitiveUp as verter buffer object. 
+CDynamicBufferObject m_userPointerVertexBuffer;
+CDynamicBufferObject m_userPointerIndexBuffer(GL_ELEMENT_ARRAY_BUFFER);
 
 
 namespace ParaEngine
@@ -89,7 +174,7 @@ ParaEngine::RenderDeviceOpenGL::RenderDeviceOpenGL()
 		}
 	}
 
-	
+
 }
 
 ParaEngine::RenderDeviceOpenGL::~RenderDeviceOpenGL()
@@ -310,14 +395,43 @@ bool ParaEngine::RenderDeviceOpenGL::SetTexture(uint32_t stage, DeviceTexturePtr
 
 
 
-bool ParaEngine::RenderDeviceOpenGL::DrawIndexedPrimitiveUP(EPrimitiveType PrimitiveType, uint32_t MinVertexIndex, uint32_t NumVertices, uint32_t PrimitiveCount, const void * pIndexData, PixelFormat IndexDataFormat, const void* pVertexStreamZeroData, uint32_t VertexStreamZeroStride)
+bool ParaEngine::RenderDeviceOpenGL::DrawIndexedPrimitiveUP(EPrimitiveType PrimitiveType, uint32_t MinVertexIndex, uint32_t NumVertices, uint32_t PrimitiveCount, const void* pIndexData, PixelFormat IndexDataFormat, const void* pVertexStreamZeroData, uint32_t VertexStreamZeroStride)
 {
-	ApplyBlendingModeChange();
+#ifdef USE_USER_POINTER_VBO
+	unsigned int nVertexCount = 0;
+	if (PrimitiveType == EPrimitiveType::TRIANGLELIST)
+		nVertexCount = PrimitiveCount * 3;
+	else if (PrimitiveType == EPrimitiveType::TRIANGLESTRIP)
+		nVertexCount = PrimitiveCount + 2;
+	else if (PrimitiveType == EPrimitiveType::TRIANGLEFAN)
+		nVertexCount = PrimitiveCount + 2;
+	else if (PrimitiveType == EPrimitiveType::LINELIST)
+		nVertexCount = PrimitiveCount * 2;
+
+#if defined(DEBUG)
+	{
+		// just to safe-check that NumVertices is passed properly
+		auto pIndices = (unsigned short*)pIndexData;
+		uint32_t maxVertexIndex = pIndices[nVertexCount - 1];
+		for (int i = 0; i < nVertexCount; ++i)
+		{
+			if (pIndices[i] > maxVertexIndex)
+				maxVertexIndex = pIndices[i];
+		}
+		PE_ASSERT((maxVertexIndex - MinVertexIndex + 1) == NumVertices);
+		NumVertices = maxVertexIndex - MinVertexIndex + 1;
+	}
+#endif
+	m_userPointerIndexBuffer.UploadUserPointer(nVertexCount * sizeof(uint16), pIndexData);
+	m_userPointerVertexBuffer.UploadUserPointer(NumVertices * VertexStreamZeroStride, pVertexStreamZeroData, MinVertexIndex * VertexStreamZeroStride);
+	pIndexData = nullptr; // pass null to use binded buffer object
+#else
 	if (m_CurrentVertexDeclaration)
 	{
 		m_CurrentVertexDeclaration->ApplyAttribute(pVertexStreamZeroData);
 	}
-
+#endif
+	ApplyBlendingModeChange();
 	if (PrimitiveType == EPrimitiveType::TRIANGLELIST)
 		glDrawElements(GL_TRIANGLES, PrimitiveCount * 3, GL_UNSIGNED_SHORT, (GLvoid*)(pIndexData));
 	else if (PrimitiveType == EPrimitiveType::TRIANGLESTRIP)
@@ -328,6 +442,7 @@ bool ParaEngine::RenderDeviceOpenGL::DrawIndexedPrimitiveUP(EPrimitiveType Primi
 		glDrawElements(GL_LINES, PrimitiveCount * 2, GL_UNSIGNED_SHORT, (GLvoid*)(pIndexData));
 
 	PE_CHECK_GL_ERROR_DEBUG();
+
 	return true;
 }
 
@@ -350,6 +465,18 @@ bool ParaEngine::RenderDeviceOpenGL::DrawPrimitive(EPrimitiveType PrimitiveType,
 bool ParaEngine::RenderDeviceOpenGL::DrawPrimitiveUP(EPrimitiveType PrimitiveType, uint32_t PrimitiveCount, const void* pVertexStreamZeroData, uint32_t VertexStreamZeroStride)
 {
 	ApplyBlendingModeChange();
+	int nOffset = 0;
+#ifdef USE_USER_POINTER_VBO
+	unsigned int nVertexCount = 0;
+	if (PrimitiveType == EPrimitiveType::TRIANGLELIST)
+		nVertexCount = PrimitiveCount * 3;
+	else if (PrimitiveType == EPrimitiveType::TRIANGLESTRIP)
+		nVertexCount = PrimitiveCount + 2;
+	else if (PrimitiveType == EPrimitiveType::TRIANGLEFAN)
+		nVertexCount = PrimitiveCount + 2;
+
+	nOffset = m_userPointerVertexBuffer.UploadUserPointerRingBuffer(nVertexCount, pVertexStreamZeroData, VertexStreamZeroStride);
+#else
 	if (m_CurrentIndexBuffer)
 	{
 		SetIndices(0);
@@ -362,13 +489,13 @@ bool ParaEngine::RenderDeviceOpenGL::DrawPrimitiveUP(EPrimitiveType PrimitiveTyp
 	{
 		m_CurrentVertexDeclaration->ApplyAttribute(pVertexStreamZeroData);
 	}
-
+#endif
 	if (PrimitiveType == EPrimitiveType::TRIANGLELIST)
-		glDrawArrays(GL_TRIANGLES, 0, PrimitiveCount * 3);
+		glDrawArrays(GL_TRIANGLES, nOffset, PrimitiveCount * 3);
 	else if (PrimitiveType == EPrimitiveType::TRIANGLESTRIP)
-		glDrawArrays(GL_TRIANGLE_STRIP, 0, PrimitiveCount + 2);
+		glDrawArrays(GL_TRIANGLE_STRIP, nOffset, PrimitiveCount + 2);
 	else if (PrimitiveType == EPrimitiveType::TRIANGLEFAN)
-		glDrawArrays(GL_TRIANGLE_FAN, 0, PrimitiveCount + 2);
+		glDrawArrays(GL_TRIANGLE_FAN, nOffset, PrimitiveCount + 2);
 
 	PE_CHECK_GL_ERROR_DEBUG();
 
@@ -398,7 +525,13 @@ bool ParaEngine::RenderDeviceOpenGL::SetVertexDeclaration(CVertexDeclaration* pV
 	{
 		glBindVertexArray(0);
 		pVertexDeclaration->EnableAttribute();
+#ifdef USE_USER_POINTER_VBO
+		auto currentVBO = m_CurrentVertexBuffer ? m_CurrentVertexBuffer : m_userPointerVertexBuffer.GetDevicePointer();
+		glBindBuffer(GL_ARRAY_BUFFER, currentVBO);
 		pVertexDeclaration->ApplyAttribute();
+#else
+		pVertexDeclaration->ApplyAttribute();
+#endif
 		m_CurrentVertexDeclaration = pVertexDeclaration;
 		//OUTPUT_LOG("RenderDeviceOpenGL: EnableAttribute & ApplyAttribute at SetVertexDeclaration");
 
@@ -420,6 +553,13 @@ bool ParaEngine::RenderDeviceOpenGL::SetIndices(IndexBufferDevicePtr_type pIndex
 	if (pIndexData != m_CurrentIndexBuffer)
 	{
 		m_CurrentIndexBuffer = pIndexData;
+
+#ifdef USE_USER_POINTER_VBO
+		if (pIndexData == 0)
+		{
+			pIndexData = m_userPointerIndexBuffer.GetDevicePointer();
+		}
+#endif
 		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, pIndexData);
 
 		PE_CHECK_GL_ERROR_DEBUG();
@@ -433,7 +573,14 @@ bool ParaEngine::RenderDeviceOpenGL::SetStreamSource(uint32_t StreamNumber, Vert
 	if (pStreamData != m_CurrentVertexBuffer)
 	{
 		m_CurrentVertexBuffer = pStreamData;
+#ifdef USE_USER_POINTER_VBO
+		if (pStreamData == 0)
+		{
+			pStreamData = m_userPointerVertexBuffer.GetDevicePointer();
+		}
+#endif
 		glBindBuffer(GL_ARRAY_BUFFER, pStreamData);
+		
 		//OUTPUT_LOG("RenderDeviceOpenGL:glBindBuffer %d",pStreamData);
 		if (m_CurrentVertexDeclaration)
 		{		
@@ -443,11 +590,9 @@ bool ParaEngine::RenderDeviceOpenGL::SetStreamSource(uint32_t StreamNumber, Vert
 		}
 
 		PE_CHECK_GL_ERROR_DEBUG();
-
 	}
 
 	return true;
-	
 }
 
 void ParaEngine::RenderDeviceOpenGL::BeginRenderTarget(uint32_t width, uint32_t height)
@@ -647,4 +792,3 @@ void ParaEngine::RenderDeviceOpenGL::ApplyBlendingModeChange()
 	}
 
 }
-

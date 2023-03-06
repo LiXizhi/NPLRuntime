@@ -2107,13 +2107,19 @@ bool EffectManager::BeginEffectShader(int nHandle, CEffectFile** pOutEffect)
 	{
 	case TECH_UNKNOWN:
 	{
+		// std::cout << "========================TECH_UNKNOWN============================" << std::endl;
+#ifndef EMSCRIPTEN
 		CGlobals::GetRenderDevice()->SetVertexDeclaration(0);
+#endif
 		break;
 	}
 	case TECH_NONE:
 	{
+		// std::cout << "========================TECH_NONE============================" << std::endl;
+#ifndef EMSCRIPTEN
 		CGlobals::GetRenderDevice()->SetIndices(0);
 		CGlobals::GetRenderDevice()->SetStreamSource(0, 0, 0, 0);
+#endif
 		pd3dDevice->SetRenderState(ERenderState::CULLMODE, RSV_CULL_NONE);
 		pd3dDevice->SetRenderState(ERenderState::ZENABLE, FALSE);m_bZEnable = false;
 		// Note by Xizhi: always enable zwrite otherwise z-clear will not working when cocos clear the zbuffer in the outer loop. 
@@ -2133,6 +2139,7 @@ bool EffectManager::BeginEffectShader(int nHandle, CEffectFile** pOutEffect)
 			VertexDeclarationPtr pDecl = GetVertexDeclaration(S0_POS_TEX0_COLOR);
 			if (pDecl == 0)
 				return false;
+			// std::cout << "========================TECH_GUI_TEXT============================" << std::endl;
 			CGlobals::GetRenderDevice()->SetIndices(0);
 			CGlobals::GetRenderDevice()->SetStreamSource(0, 0, 0, 0);
 			CGlobals::GetRenderDevice()->SetVertexDeclaration(pDecl);
@@ -2152,6 +2159,7 @@ bool EffectManager::BeginEffectShader(int nHandle, CEffectFile** pOutEffect)
 			VertexDeclarationPtr pDecl = GetVertexDeclaration(S0_POS_TEX0_COLOR);
 			if (pDecl == 0)
 				return false;
+			// std::cout << "========================TECH_GUI============================" << std::endl;
 			CGlobals::GetRenderDevice()->SetIndices(0);
 			CGlobals::GetRenderDevice()->SetStreamSource(0, 0, 0, 0);
 			CGlobals::GetRenderDevice()->SetVertexDeclaration(pDecl);
@@ -2172,6 +2180,7 @@ bool EffectManager::BeginEffectShader(int nHandle, CEffectFile** pOutEffect)
 		VertexDeclarationPtr pDecl = GetVertexDeclaration(S0_POS_COLOR);
 		if (pDecl == 0)
 			return false;
+		// std::cout << "========================TECH_SINGLE_COLOR============================" << std::endl;
 		CGlobals::GetRenderDevice()->SetIndices(0);
 		CGlobals::GetRenderDevice()->SetStreamSource(0,0,0,0);
 		CGlobals::GetRenderDevice()->SetVertexDeclaration(pDecl);
@@ -2190,6 +2199,7 @@ bool EffectManager::BeginEffectShader(int nHandle, CEffectFile** pOutEffect)
 		if (pDecl == 0)
 			return false;
 
+		// std::cout << "========================TECH_BMAX_MODEL============================" << std::endl;
 		CGlobals::GetRenderDevice()->SetIndices(0);
 		CGlobals::GetRenderDevice()->SetStreamSource(0, 0, 0, 0);
 		CGlobals::GetRenderDevice()->SetVertexDeclaration(pDecl);
@@ -2320,6 +2330,7 @@ bool EffectManager::BeginEffectShader(int nHandle, CEffectFile** pOutEffect)
 		auto pDecl = GetVertexDeclaration(S0_POS_NORM_TEX0_TEX1);
 		if (pDecl == 0)
 			return false;
+		// std::cout << "========================TECH_TERRAIN============================" << std::endl;
 		CGlobals::GetRenderDevice()->SetIndices(0);
 		CGlobals::GetRenderDevice()->SetStreamSource(0, 0, 0, 0);
 		EnableGlobalLighting(bEnableSunLight && bEnableLight);

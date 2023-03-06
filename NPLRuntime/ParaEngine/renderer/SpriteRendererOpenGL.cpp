@@ -300,6 +300,9 @@ void ParaEngine::CSpriteRendererOpenGL::FlushQuads()
 
 void ParaEngine::CSpriteRendererOpenGL::DrawTriangles(const sprite_vertex* pVertices, int nTriangleCount)
 {
+#ifdef EMSCRIPTEN
+	CGlobals::GetRenderDevice()->DrawPrimitiveUP(EPrimitiveType::TRIANGLELIST, nTriangleCount, pVertices, sizeof(sprite_vertex));
+#else
 #define kQuadSize sizeof(sprite_vertex)
 	// vertices
 	glVertexAttribPointer(GLProgram::VERTEX_ATTRIB_POSITION, 3, GL_FLOAT, GL_FALSE, kQuadSize, (GLvoid*)&(pVertices->pos));
@@ -308,7 +311,8 @@ void ParaEngine::CSpriteRendererOpenGL::DrawTriangles(const sprite_vertex* pVert
 	// tex coords
 	glVertexAttribPointer(GLProgram::VERTEX_ATTRIB_TEX_COORD, 2, GL_FLOAT, GL_FALSE, kQuadSize, (GLvoid*)&(pVertices->tex));
 
-	CGlobals::GetRenderDevice()->DrawPrimitive( EPrimitiveType::TRIANGLELIST, 0, nTriangleCount);
+	CGlobals::GetRenderDevice()->DrawPrimitive(EPrimitiveType::TRIANGLELIST, 0, nTriangleCount);
+#endif
 }
 
 void ParaEngine::CSpriteRendererOpenGL::SetTextMode(bool bIsTextMode /*= true*/)

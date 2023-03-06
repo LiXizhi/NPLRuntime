@@ -631,6 +631,7 @@ bool ParaAsset::GeneratePkgFile_(const char* srcZip, const char* destPkg, int nV
 {
 	bool bRes = false;
 	CZipArchive* pArchive = new CZipArchive(); // TODO
+	std::cout << "====================0==============" << srcZip << std::endl;
 	if (pArchive != NULL)
 	{
 		if (pArchive->Open(srcZip, 0))
@@ -662,6 +663,7 @@ bool ParaAsset::GeneratePkgFile_(const char* srcZip, const char* destPkg, int nV
 	{
 		OUTPUT_LOG("warning: zip file %s is not found\n", srcZip);
 	}
+	std::cout << "====================1==============" << srcZip << std::endl;
 	return bRes;
 }
 

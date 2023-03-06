@@ -22,10 +22,7 @@ import android.view.MotionEvent;
 import android.view.Surface;
 import android.view.View;
 import android.view.SurfaceHolder;
-import android.view.ViewTreeObserver;
-import android.view.inputmethod.EditorInfo;
 import android.view.inputmethod.InputMethodManager;
-import android.widget.Toast;
 import androidx.annotation.Keep;
 
 import org.json.JSONException;
@@ -35,11 +32,11 @@ public class ParaEngineGLSurfaceView extends GLSurfaceView {
     private static ParaEngineGLSurfaceView mGLSurfaceView = null;
     private static ParaEngineActivity sActivity = null;
     private static ParaTextInputWrapper sParaTextInputWrapper = null;
+    private static int mMsgCount = 0;
 
-    public String lastText = "";
     private ParaEngineRenderer mRenderer;
     private ParaEngineEditBox mEditText = null;
-    private Handler sHandler = null;
+    public Handler sHandler = null;
     private boolean mSoftKeyboardShown = false;
     private boolean mMultipleTouchEnabled = true;
     private boolean mIsPressMouseRightKey = false;
@@ -47,8 +44,8 @@ public class ParaEngineGLSurfaceView extends GLSurfaceView {
     private int curPointerId = 0;
     private float curPointerX = 0;
     private float curPointerY = 0;
-    private long exitTime;
-    private ViewTreeObserver.OnGlobalLayoutListener mGlobalLayoutListener = null;
+    private int mKeyboardHeight = 0;
+    private boolean mIsKeyboardOpened = false;
     private int mScreenOffset = 0;
     private boolean mIsOpen = false;
     private boolean mIsMoveView = false;
@@ -101,64 +98,84 @@ public class ParaEngineGLSurfaceView extends GLSurfaceView {
         final int screenHeight = metrics.heightPixels;
 
         sHandler = new Handler(msg -> {
-            String defaultValue = msg.getData().getString("defaultValue");
+            mMsgCount = mMsgCount - 1;
 
-            if (defaultValue != null) {
-                boolean bOpen = msg.getData().getBoolean("bOpen");
-                int maxLength = msg.getData().getInt("maxLength");
-                boolean isMultiline = msg.getData().getBoolean("isMultiline");
-                boolean confirmHold = msg.getData().getBoolean("confirmHold");
-                String confirmType = msg.getData().getString("confirmType");
-                String inputType = msg.getData().getString("inputType");
-
-                if (bOpen) {
-                    ParaEngineEditBoxActivity.showNative(defaultValue,maxLength,isMultiline,confirmHold,confirmType,inputType);
-                } else {
-                    ParaEngineEditBoxActivity.hideNative();
-                }
-
-                return true;
+            if (mEditText == null) {
+                return false;
             }
+
+            // String defaultValue = msg.getData().getString("defaultValue");
+
+            // if (defaultValue != null) {
+            //     boolean bOpen = msg.getData().getBoolean("bOpen");
+            //     int maxLength = msg.getData().getInt("maxLength");
+            //     boolean isMultiline = msg.getData().getBoolean("isMultiline");
+            //     boolean confirmHold = msg.getData().getBoolean("confirmHold");
+            //     String confirmType = msg.getData().getString("confirmType");
+            //     String inputType = msg.getData().getString("inputType");
+
+            //     if (bOpen) {
+            //         ParaEngineEditBoxActivity.showNative(
+            //             defaultValue,
+            //             maxLength,
+            //             isMultiline,
+            //             confirmHold,
+            //             confirmType,
+            //             inputType
+            //         );
+            //     } else {
+            //         ParaEngineEditBoxActivity.hideNative();
+            //     }
+
+            //     return true;
+            // }
 
             mIsOpen = msg.getData().getBoolean("bOpen");
             mIsMoveView = msg.getData().getBoolean("bMoveView");
             mCtrlBottom = msg.getData().getInt("ctrlBottom");
             String curEditText = msg.getData().getString("curEditText").replaceAll("\r\n","\n");
             boolean isGuiEdit = msg.getData().getBoolean("isGuiEdit");
-            sParaTextInputWrapper.SetIsGuiEdit(isGuiEdit);
-
-            if (mEditText == null) {
-                return false;
-            }
+            sParaTextInputWrapper.setIsGuiEdit(isGuiEdit);
 
             if (mIsOpen) {
                 int selStart = msg.getData().getInt("selStart");
                 int selEnd = msg.getData().getInt("selEnd");
 
-                if (selEnd<=0&&curEditText.length() > 0) {
-                    selStart = selEnd = Math.max(curEditText.length(),0);
+                if (selEnd <= 0 && curEditText.length() > 0) {
+                    selStart = selEnd = Math.max(curEditText.length(), 0);
                 }
 
-                mEditText.setText(curEditText);
-
-                mEditText.setSelection(selStart,selEnd);
-                lastText = curEditText;
-                sParaTextInputWrapper.onFocus();
-
+                sParaTextInputWrapper.onFocus(curEditText, selStart, selEnd);
                 mEditText.setEnabled(true);
 
-                if (mEditText.requestFocus()) {
-                    mEditText.removeTextChangedListener(sParaTextInputWrapper);
-                    mEditText.addTextChangedListener(sParaTextInputWrapper);
-
+                if (mIsKeyboardOpened) {
                     if (!isGuiEdit) {
-                        mEditText.setOnKeyListener(sParaTextInputWrapper);
-                    }
+                        if ((screenHeight - mCtrlBottom) < mKeyboardHeight) {
+                            int screenOffset = mKeyboardHeight - (screenHeight - mCtrlBottom);
 
-                    InputMethodManager imm = (InputMethodManager)sActivity.getSystemService(Context.INPUT_METHOD_SERVICE);
-                    imm.showSoftInput(mEditText, 0);
+                            if (screenOffset > mScreenOffset) {
+                                ParaEngineGLSurfaceView.this.offsetTopAndBottom(-(screenOffset - mScreenOffset));
+                            } else {
+                                ParaEngineGLSurfaceView.this.offsetTopAndBottom(mScreenOffset - screenOffset);
+                            }
+
+                            mScreenOffset = screenOffset;
+                        }
+                    }
                 } else {
-                    mEditText.setEnabled(false);
+                    if (mEditText.requestFocus()) {
+                        mEditText.removeTextChangedListener(sParaTextInputWrapper);
+                        mEditText.addTextChangedListener(sParaTextInputWrapper);
+
+                        if (!isGuiEdit) {
+                            mEditText.setOnKeyListener(sParaTextInputWrapper);
+                        }
+
+                        InputMethodManager imm = (InputMethodManager)sActivity.getSystemService(Context.INPUT_METHOD_SERVICE);
+                        imm.showSoftInput(mEditText, 0);
+                    } else {
+                        mEditText.setEnabled(false);
+                    }
                 }
             } else {
                 mEditText.setEnabled(false);
@@ -167,6 +184,16 @@ public class ParaEngineGLSurfaceView extends GLSurfaceView {
 
                 InputMethodManager imm = (InputMethodManager)sActivity.getSystemService(Context.INPUT_METHOD_SERVICE);
                 imm.hideSoftInputFromWindow(mEditText.getWindowToken(), 0);
+                mIsKeyboardOpened = false;
+
+                if (Build.VERSION.SDK_INT <= 29) {
+                    mScreenOffset = 0;
+                } else {
+                    ParaEngineGLSurfaceView.this.offsetTopAndBottom(mScreenOffset);
+                    mIsKeyboardOpened = false;
+                    mIsOpen = false;
+                    mScreenOffset = 0;
+                }
 
                 ParaEngineGLSurfaceView.this.requestFocus();
             }
@@ -180,45 +207,32 @@ public class ParaEngineGLSurfaceView extends GLSurfaceView {
             }
 
             if (mIsOpen) {
-                if (mScreenOffset > 0) {
-                    if (Build.VERSION.SDK_INT <= 29) {
-                        mScreenOffset = 0;
-                    } else {
-                        ParaEngineGLSurfaceView.this.offsetTopAndBottom(mScreenOffset);
-                        mScreenOffset = 0;
-                    }
-
-                    return;
-                }
-
                 Rect r = new Rect();
                 ParaEngineGLSurfaceView.this.getWindowVisibleDisplayFrame(r);
-                int deltaHeight = screenHeight - r.bottom;
+                mKeyboardHeight = screenHeight - r.bottom; // bottom属性的值将等于屏幕高度减去虚拟键盘的高度
+                mIsKeyboardOpened = true;
 
-                if (deltaHeight > 150 && mCtrlBottom > r.bottom) {
-                    int screenOffset = mCtrlBottom - r.bottom;
-                    int setScreenOffset = 0;
+                if ((screenHeight - mCtrlBottom) < mKeyboardHeight) {
+                    mScreenOffset = mKeyboardHeight - (screenHeight - mCtrlBottom);
+                    ParaEngineGLSurfaceView.this.offsetTopAndBottom(-mScreenOffset);
+                }
 
-                    if (mScreenOffset > 0) {
-                        if (screenOffset > mScreenOffset) {
-                            setScreenOffset = -(screenOffset - mScreenOffset);
-                        } else {
-                            setScreenOffset = mScreenOffset - screenOffset;
-                        }
-
-                        mScreenOffset = screenOffset;
-                    } else {
-                        mScreenOffset = screenOffset;
-                        setScreenOffset = -mScreenOffset;
+                if (Build.VERSION.SDK_INT > 29) {
+                    if (mKeyboardHeight == 0) {
+                        ParaEngineGLSurfaceView.this.offsetTopAndBottom(mScreenOffset);
+                        mIsKeyboardOpened = false;
+                        mIsOpen = false;
+                        mScreenOffset = 0;
                     }
-
-                    ParaEngineGLSurfaceView.this.offsetTopAndBottom(setScreenOffset);
                 }
             } else {
                 if (Build.VERSION.SDK_INT > 29) {
                     ParaEngineGLSurfaceView.this.offsetTopAndBottom(mScreenOffset);
+                } else {
+                    ParaEngineGLSurfaceView.this.offsetTopAndBottom(0);
                 }
 
+                mIsKeyboardOpened = false;
                 mScreenOffset = 0;
             }
         });
@@ -275,6 +289,7 @@ public class ParaEngineGLSurfaceView extends GLSurfaceView {
         String curEditText = "";
         int selStart = 0;
         int selEnd = 0;
+
         try{
             JSONObject obj = new JSONObject(jsonEditParams);
             curEditText = obj.optString("curEditText");
@@ -283,12 +298,14 @@ public class ParaEngineGLSurfaceView extends GLSurfaceView {
         } catch (JSONException e) {
             e.printStackTrace();
         }
+
         bundle.putString("curEditText", curEditText);
         bundle.putInt("selStart", selStart);
         bundle.putInt("selEnd", selEnd);
         msg.setData(bundle);
 
-        mGLSurfaceView.sHandler.sendMessage(msg);
+        mMsgCount = mMsgCount + 1;
+        mGLSurfaceView.sHandler.sendMessageDelayed(msg, mMsgCount * 100);
     }
 
     public static void setIMEKeyboardState(boolean bOpen, String defaultValue, int maxLength, boolean isMultiline, boolean confirmHold, String confirmType, String inputType){
@@ -370,7 +387,7 @@ public class ParaEngineGLSurfaceView extends GLSurfaceView {
         final float[] xs = new float[pointerNumber];
         final float[] ys = new float[pointerNumber];
 
-        if (mSoftKeyboardShown){
+        if (mSoftKeyboardShown) {
             InputMethodManager imm = (InputMethodManager)this.getContext().getSystemService(Context.INPUT_METHOD_SERVICE);
             View view = ((Activity)this.getContext()).getCurrentFocus();
             imm.hideSoftInputFromWindow(view.getWindowToken(),0);

@@ -419,7 +419,7 @@ namespace ParaEngine {
 	void RenderWindowWin32::PollEvents()
 	{
 		MSG  msg;
-		if (PeekMessageW(&msg, NULL, 0, 0, PM_REMOVE)) {
+		while (PeekMessageW(&msg, NULL, 0, 0, PM_REMOVE)) {
 			ProcessInput(msg);
 			if (TranslateAcceleratorW(m_hWnd, m_hAccel, &msg) != 0) return;
 			// translate keystroke messages into the right format

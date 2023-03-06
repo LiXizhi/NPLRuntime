@@ -189,7 +189,12 @@ void CProfiler::ReportAll_S()
 	if (_performance_data.empty())
 		return;
 	FILE *file;
-	if (NULL==(file=fopen("perf.txt","w+"))) {
+#if WIN32 && defined(DEFAULT_FILE_ENCODING)
+	file = _wfopen(L"perf.txt", L"w+");
+#else
+	file = fopen("perf.txt", "w+");
+#endif
+	if (NULL==file) {
 		return;
 	}
 	map<string,_performance_struct>::iterator iter=_performance_data.begin();

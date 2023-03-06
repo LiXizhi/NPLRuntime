@@ -2,6 +2,7 @@
 #include "ParaEngineAppBase.h"
 #include "Core/MainLoopBase.h"
 #include "Render/IRenderContext.h"
+#include "RenderWindowDelegate.h"
 
 namespace ParaEngine
 {
@@ -9,7 +10,7 @@ namespace ParaEngine
 	{
 	public:
 		CSDL2Application();
-
+		~CSDL2Application();
 		virtual void GameToClient(int& inout_x, int& inout_y, bool bInBackbuffer = true) override;
 
 
@@ -51,6 +52,8 @@ namespace ParaEngine
 		virtual int Run();
 
 		virtual bool InitApp(IRenderWindow* pWindow, const char* sCommandLine /* = nullptr */) override;
+	
+		virtual void StopApp() override { CParaEngineAppBase::StopApp(); m_exit = true; }
 
 		/** write the current setting to config file. Such as graphics mode and whether full screen, etc.
 		* config file at ./config.txt will be automatically loaded when the game engine starts.
@@ -86,7 +89,7 @@ namespace ParaEngine
 		 */
 		virtual void ShowWindow(bool bShow) override;
 
-	private:
+	protected:
 		void LoadAndApplySettings();
 		bool UpdateScreenDevice();
 		bool UpdateViewPort();
@@ -96,5 +99,7 @@ namespace ParaEngine
 
 		bool m_bUpdateScreenDevice;
 		bool m_bSizeChanged;
+		RenderWindowDelegate m_renderWindow;
+		bool m_exit;
 	};
 }

@@ -243,7 +243,7 @@ string DBEntity::PrepareDatabaseFile(const string& filename)
 {
 	m_nSQLite_OpenFlags = (SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE );
 
-#if defined(PARAENGINE_MOBILE) || defined(PLATFORM_MAC)
+#if defined(PARAENGINE_MOBILE) || defined(PLATFORM_MAC) || defined(EMSCRIPTEN)
 	//std::string sTempDiskFilename = ParaEngine::CParaFile::GetWritablePath() + filename;
 	// 如果是绝对路径就不拼接 脚本多用绝对路径, 再拼接导致无法使用
 	std::string sTempDiskFilename = (ParaEngine::CFileUtils::IsAbsolutePath(filename)) ? filename : (ParaEngine::CParaFile::GetWritablePath() + filename);
@@ -403,6 +403,8 @@ void DBEntity::OpenDB(const char* dbname)
 		// the database file can not be found anywhere, we will try create the database anyway. 
 #ifdef PARAENGINE_MOBILE
 		diskfileName = dbname;
+#elif EMSCRIPTEN
+		diskfileName = ParaEngine::CFileUtils::GetWritableFullPathForFilename(dbname);
 #else
 		diskfileName = dbname;
 #endif

@@ -43,6 +43,19 @@ extern "C" {
 #include "os_calls.h"
 #include "ParaScriptingIO.h"
 
+#ifdef EMSCRIPTEN
+#include <emscripten.h>
+#endif
+
+#ifdef WIN32
+#include <boost/filesystem.hpp>
+#include <boost/filesystem/operations.hpp>
+#include <boost/filesystem/path.hpp>
+#include <boost/filesystem/fstream.hpp>
+#include <iostream>
+namespace fs = boost::filesystem;
+#endif
+
 using namespace luabind;
 
 //@def the maximum number of bytes in a text file line.
@@ -419,6 +432,13 @@ namespace ParaScripting
 		{
 			WriteString(buffer);
 		}
+	}
+
+	void ParaIO::flush()
+	{
+#ifdef EMSCRIPTEN
+	EM_ASM(FS.syncfs(false, function(err) { if (err) { console.log("FS.syncfs", err); } }););
+#endif
 	}
 
 	const char* ParaIO::readline()
@@ -1025,6 +1045,19 @@ namespace ParaScripting
 	{
 		return CParaFile::GetWritablePath();
 	}
+
+	std::string ParaIO::ConvertPathFromUTF8ToAnsci(const char* path)
+	{
+#if WIN32 && defined(DEFAULT_FILE_ENCODING)
+		LPCWSTR path16 = StringHelper::MultiByteToWideChar(path, DEFAULT_FILE_ENCODING);
+		fs::path pathStr(path16);
+		std::string ret = pathStr.string();
+		return ret.c_str();
+#else
+		return path;
+#endif
+	}
+
 
 	//////////////////////////////////////////////////////////////////////////
 	//
