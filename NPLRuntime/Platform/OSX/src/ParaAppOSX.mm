@@ -98,11 +98,11 @@ void ParaEngine::CParaEngineAppOSX::handle_mainloop_timer(const boost::system::e
         if (!pWindow->ShouldClose())
         {
             pWindow->PollEvents();
-            
-            double fNextInterval = 0.033;
             this->DoWork();
-            fNextInterval = this->GetRefreshTimer() - (ParaTimer::GetAbsoluteTime() - this->GetAppTime());
-            fNextInterval = (std::min)(0.1, (std::max)(0.0, fNextInterval));
+
+			double fNextInterval = 0.01;
+            //fNextInterval = this->GetRefreshTimer() - (ParaTimer::GetAbsoluteTime() - this->GetAppTime());
+            //fNextInterval = (std::min)(0.1, (std::max)(0.0, fNextInterval));
             
             NextLoop((int)(fNextInterval * 1000), &CParaEngineAppOSX::handle_mainloop_timer, this);
         }
