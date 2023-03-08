@@ -72,6 +72,7 @@ void GL::bindTexture2D(GLuint textureId)
 	GL::bindTexture2DN(0, textureId);
 }
 
+static int s_lastActiveTexture = -1;
 void GL::bindTexture2DN(GLuint textureUnit, GLuint textureId)
 {
 #if NPLRUNTIME_ENABLE_GL_STATE_CACHE
@@ -83,7 +84,19 @@ void GL::bindTexture2DN(GLuint textureUnit, GLuint textureId)
 		glBindTexture(GL_TEXTURE_2D, textureId);
 	}
 #else
+
+/** define to avoid repeated calls to glActiveTexture*/
+#define GL_CACHE_ACTIVE_TEXTURE
+#ifdef GL_CACHE_ACTIVE_TEXTURE
+	int newTextureIndex = GL_TEXTURE0 + textureUnit;
+	if (s_lastActiveTexture != newTextureIndex) {
+		s_lastActiveTexture = newTextureIndex;
+		glActiveTexture(newTextureIndex);
+	}
+#else	
 	glActiveTexture(GL_TEXTURE0 + textureUnit);
+#endif
+
 	glBindTexture(GL_TEXTURE_2D, textureId);
 #endif
 }
@@ -132,6 +145,7 @@ void GL::enableVertexAttribs(uint32_t flags)
 void GL::ClearCache()
 {
 	s_attributeFlags = 0;
+	s_lastActiveTexture = -1;
 }
 
 
@@ -197,8 +211,6 @@ bool CCRect::equals(const CCRect& rect) const
 	return (origin.equals(rect.origin) &&
 		size.equals(rect.size));
 }
-
-
 
 float CCRect::getMaxX() const
 {

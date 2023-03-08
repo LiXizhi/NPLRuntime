@@ -9,9 +9,13 @@
 
 using namespace ParaEngine;
 
+//#define EMSCRIPTEN
 /** define this, then DrawPrimitiveUP and DrawIndexedPrimitiveUP will use vertex buffer object. 
-* custom user pointer buffer is no longer supported in opengl 3.0 and Emscripten OpenGL ES2.
-* we need to define this to use VBO in all cases.
+* client-side array (user pointer) is no longer supported in opengl 3.0 and Emscripten OpenGL ES2.
+* we have to simulate it with vbo, but opengl VBO performance is very poor compared with client-side array. 
+* Lots of discussions on the web, but no one is providing a sound solution to simulate client-side array with VBO. 
+* We still recommend the good old client-side array where possible, since there is no equivalent VBO version. 
+* only use VBO for emscripten. 
 */
 #ifdef EMSCRIPTEN
 #define USE_USER_POINTER_VBO
@@ -24,7 +28,9 @@ namespace ParaEngine
 	{
 	public:
 		CDynamicBufferObject(int nBufferType = GL_ARRAY_BUFFER)
-			: m_nBufferType(nBufferType), m_nCurrentSize(0), m_devicePointer(0), m_nNextFreeIndex(0)
+			: m_nBufferType(nBufferType), m_nCurrentSize(0), m_devicePointer(0), m_nNextFreeIndex(0), 
+			m_nMinBufferSize(1024*100), // 100KB at least
+			m_bUseRingBuffer(true)
 		{
 		};
 		void GenerateBuffer()
@@ -39,28 +45,43 @@ namespace ParaEngine
 			int nSize = nCountBytes + nFrom;
 			if (m_nCurrentSize < nSize)
 			{
-				if (nFrom == 0) {
-					glBufferData(m_nBufferType, nSize, pData, GL_DYNAMIC_DRAW);
+				int nTotalSize = (m_bUseRingBuffer && (m_nMinBufferSize > nSize)) ? m_nMinBufferSize : nSize;
+				if (nFrom == 0 && nTotalSize == nSize) {
+					glBufferData(m_nBufferType, nSize, pData, m_bUseRingBuffer ? GL_STREAM_DRAW : GL_DYNAMIC_DRAW);
 				}
 				else
 				{
-					glBufferData(m_nBufferType, nSize, nullptr, GL_DYNAMIC_DRAW);
+					glBufferData(m_nBufferType, nTotalSize, nullptr, m_bUseRingBuffer ? GL_STREAM_DRAW : GL_DYNAMIC_DRAW);
 					glBufferSubData(m_nBufferType, nFrom, nCountBytes, pData);
 				}
 				m_nCurrentSize = nSize;
 			}
 			else
 			{
-				glBufferSubData(m_nBufferType, nFrom, nCountBytes, pData);
+				if (m_bUseRingBuffer) {
+					glBufferSubData(m_nBufferType, nFrom, nCountBytes, pData);
+				}
+				else
+				{
+#ifdef ORPHAN_VBO
+					PE_ASSERT(nSize == nCountBytes);
+					glBufferData(m_nBufferType, nSize, nullptr, GL_DYNAMIC_DRAW);
+					glBufferData(m_nBufferType, nSize, pData, GL_DYNAMIC_DRAW);
+#else
+					glBufferSubData(m_nBufferType, nFrom, nCountBytes, pData);
+#endif
+				}
+
 			}
 			PE_CHECK_GL_ERROR_DEBUG();
-			m_nNextFreeIndex = nSize;
+			
+			m_nNextFreeIndex = m_bUseRingBuffer ? nSize : 0;
 		}
 
 		/** @return return the beginning buffer offset */
 		int UploadUserPointerRingBuffer(int nCount, const void* pData, int VertexStreamZeroStride)
 		{
-			int nOffsetIndex = ((int)(m_nNextFreeIndex / VertexStreamZeroStride) + 1);
+			int nOffsetIndex = (m_nNextFreeIndex == 0) ? 0 : ((int)(m_nNextFreeIndex / VertexStreamZeroStride) + 1);
 			int nFromBytes = nOffsetIndex * VertexStreamZeroStride;
 			int nTotalBytes = nCount * VertexStreamZeroStride;
 			int nSize = nFromBytes + nTotalBytes;
@@ -86,11 +107,18 @@ namespace ParaEngine
 			}
 			return m_devicePointer;
 		}
+
+		void EnableRingBuffer(bool bEnable) 
+		{
+			m_bUseRingBuffer = bEnable;
+		}
 	private:
 		int m_nBufferType;
 		int m_nCurrentSize;
 		int m_nNextFreeIndex;
 		VertexBufferDevicePtr_type m_devicePointer;
+		bool m_bUseRingBuffer;
+		int m_nMinBufferSize;
 	};
 }
 // global buffer used by DrawPrimitiveUp as verter buffer object. 
@@ -173,8 +201,6 @@ ParaEngine::RenderDeviceOpenGL::RenderDeviceOpenGL()
 			m_SamplerStates[i][j] = 0;
 		}
 	}
-
-
 }
 
 ParaEngine::RenderDeviceOpenGL::~RenderDeviceOpenGL()
@@ -383,13 +409,9 @@ int ParaEngine::RenderDeviceOpenGL::GetMaxSimultaneousTextures()
 
 bool ParaEngine::RenderDeviceOpenGL::SetTexture(uint32_t stage, DeviceTexturePtr_type texture)
 {
-	//glActiveTexture(GL_TEXTURE0 + stage);
-	//glBindTexture(GL_TEXTURE_2D, texture);
-
 	texture->bindN(texture, stage);
 
 	PE_CHECK_GL_ERROR_DEBUG();
-	//auto error = glGetError();
 	return true;
 }
 
