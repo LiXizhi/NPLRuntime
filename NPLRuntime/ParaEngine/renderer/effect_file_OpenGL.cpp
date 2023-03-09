@@ -560,7 +560,6 @@ void ParaEngine::CEffectFileOpenGL::updateUniforms(int nTech, int nPass)
 		{
 			OUTPUT_LOG("unknown opengl error: 0x%04X before updateUniforms: %s pass: %d\n", errorCode, m_filename.c_str(), nPass);
 		}
-		// 
 	}
 }
 

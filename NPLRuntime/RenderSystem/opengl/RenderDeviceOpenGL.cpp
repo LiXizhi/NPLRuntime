@@ -683,18 +683,8 @@ bool ParaEngine::RenderDeviceOpenGL::DrawIndexedPrimitive(EPrimitiveType Type, i
 
 	PE_CHECK_GL_ERROR_DEBUG();
 
-	/*
-	GLenum __error = glGetError();
-	if (__error)
-	{
-		*((char*)0) = 0;
-	}
-	*/
-
 	return true;
 }
-
-
 
 bool ParaEngine::RenderDeviceOpenGL::SetTransform(ETransformsStateType State, DeviceMatrix_ptr pMatrix)
 {
