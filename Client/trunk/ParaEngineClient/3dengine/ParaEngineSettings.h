@@ -210,7 +210,6 @@ namespace ParaEngine
 		ATTRIBUTE_METHOD1(ParaEngineSettings, IsMobilePlatform_s, bool*)	{ *p1 = cls->IsMobilePlatform(); return S_OK; }
 		
 		ATTRIBUTE_METHOD1(ParaEngineSettings, Is64BitsSystem_s, bool*)	{ *p1 = cls->Is64BitsSystem(); return S_OK; }
-		ATTRIBUTE_METHOD1(ParaEngineSettings, Is64BitsProcess_s, bool*) { *p1 = cls->Is64BitsProcess(); return S_OK; }
 
 		ATTRIBUTE_METHOD(ParaEngineSettings, RecreateRenderer_s)	{ cls->RecreateRenderer(); return S_OK; }
 
@@ -360,8 +359,6 @@ namespace ParaEngine
 
 		/** whether the current system is compiled with 64bits version. */
 		static bool Is64BitsSystem();
-
-		static bool Is64BitsProcess();
 		//////////////////////////////////////////////////////////////////////////
 		//
 		// global effect and light settings

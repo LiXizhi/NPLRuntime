@@ -834,20 +834,6 @@ bool CParaEngineAppBase::FindParaEngineDirectory(const char* sHint)
 		::GetCurrentDirectory(MAX_PATH, sWorkingDir);
 #endif
 		m_sInitialWorkingDir = sWorkingDir;
-		if (m_sInitialWorkingDir.find("\\bin64") != std::string::npos || m_sInitialWorkingDir.find("/bin64") != std::string::npos) {
-			std::string::size_type last_dir_index = m_sInitialWorkingDir.find_last_of("/\\");
-			if (last_dir_index != std::string::npos)
-			{
-				// this ensures that the application is in the directory where module is installed. 
-				m_sInitialWorkingDir = m_sInitialWorkingDir.substr(0, last_dir_index + 1);
-			}
-#if WIN32 && defined(DEFAULT_FILE_ENCODING)
-			std::wstring m_sInitialWorkingDir16 = StringHelper::MultiByteToWideChar(m_sInitialWorkingDir.c_str(), DEFAULT_FILE_ENCODING);
-			::SetCurrentDirectoryW(m_sInitialWorkingDir16.c_str());
-#else
-			::SetCurrentDirectory(m_sInitialWorkingDir.c_str());
-#endif
-	}
 #ifdef PARAENGINE_MOBILE
 		CGlobals::GetFileManager()->AddDiskSearchPath(sWorkingDir);
 #endif

@@ -113,7 +113,7 @@ IMovieCodec* CMoviePlatform::GetMovieCodec(bool bCreateIfNotExist)
 			for (int i = 0; m_pMovieCodec == 0 && i < sizeof(MOVIE_CODEC_DLL_FILE_PATHS) / sizeof(const char*); ++i)
 			{
 				const char* sFilename = MOVIE_CODEC_DLL_FILE_PATHS[i];
-				if (ParaEngineSettings::GetSingleton().Is64BitsProcess()) {
+				if (ParaEngineSettings::GetSingleton().Is64BitsSystem()) {
 					sFilename = MOVIE_CODEC_DLL_FILE_PATHS_64[i];
 				}
 
