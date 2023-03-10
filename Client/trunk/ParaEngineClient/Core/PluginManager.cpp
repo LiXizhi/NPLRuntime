@@ -18,6 +18,7 @@
 
 #include <boost/filesystem.hpp>
 #include <boost/filesystem/path.hpp>
+#include "ParaEngineSettings.h"
 namespace fs = boost::filesystem;
 
 using namespace ParaEngine;
@@ -196,6 +197,12 @@ void DLLPlugInEntity::Init(const char* sFilename)
 	if ( CParaFile::DoesFileExist2(sDLLPath.c_str(), FILE_ON_DISK | FILE_ON_SEARCH_PATH, &sDLLPath) == 0)
 	{
 		// If dll file is Not found, search in zip archive, if there it is, unpack to a temp position.  
+		if (ParaEngine::ParaEngineSettings::GetSingleton().Is64BitsSystem()){
+			std::string bin64Path = "bin64/" + sDLLPath;
+			if (CParaFile::DoesFileExist2(bin64Path.c_str(), FILE_ON_ZIP_ARCHIVE)) {
+				sDLLPath = bin64Path;
+			}
+		}
 		if(CParaFile::DoesFileExist2(sDLLPath.c_str(), FILE_ON_ZIP_ARCHIVE))
 		{
 			CParaFile file;

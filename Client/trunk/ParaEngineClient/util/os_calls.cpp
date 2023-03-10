@@ -25,6 +25,8 @@
 #include <readline/history.h>
 #endif
 
+#include "ParaEngineSettings.h"
+
 ///////////////////////////////////////////////////////
 //
 // misc functions
@@ -69,7 +71,15 @@ void* ParaEngine::LoadLibrary(const char *pcDllname, int iMode)
 	// convert relative path to absolute path, just in case some dev folder or writable folder is used
 	if (!(CFileUtils::IsAbsolutePath(sDllName)) && sDllName.find_first_of("/\\"))
 	{
-		string sDllFullpath = CParaFile::GetAbsolutePath(sDllName, CParaFile::GetCurDirectory(CParaFile::APP_ROOT_DIR));
+		string sDllFullpath;
+		if (ParaEngine::ParaEngineSettings::GetSingleton().Is64BitsSystem()) {
+			sDllFullpath = CParaFile::GetAbsolutePath("bin64/" + sDllName, CParaFile::GetCurDirectory(CParaFile::APP_ROOT_DIR));
+			if (!CParaFile::DoesFileExist(sDllFullpath.c_str())){
+				sDllFullpath = CParaFile::GetAbsolutePath(sDllName, CParaFile::GetCurDirectory(CParaFile::APP_ROOT_DIR));
+			}
+		}else{
+			sDllFullpath = CParaFile::GetAbsolutePath(sDllName, CParaFile::GetCurDirectory(CParaFile::APP_ROOT_DIR));
+		}
 		if (!CParaFile::DoesFileExist(sDllFullpath.c_str()))
 		{
 			sDllFullpath = CParaFile::GetAbsolutePath(sDllName, CParaFile::GetCurDirectory(CParaFile::APP_DEV_DIR));
