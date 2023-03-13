@@ -25,6 +25,8 @@
 #include <readline/history.h>
 #endif
 
+#include "ParaEngineSettings.h"
+
 ///////////////////////////////////////////////////////
 //
 // misc functions
@@ -69,7 +71,15 @@ void* ParaEngine::LoadLibrary(const char *pcDllname, int iMode)
 	// convert relative path to absolute path, just in case some dev folder or writable folder is used
 	if (!(CFileUtils::IsAbsolutePath(sDllName)) && sDllName.find_first_of("/\\"))
 	{
-		string sDllFullpath = CParaFile::GetAbsolutePath(sDllName, CParaFile::GetCurDirectory(CParaFile::APP_ROOT_DIR));
+		string sDllFullpath;
+		if (ParaEngine::ParaEngineSettings::GetSingleton().Is64BitsSystem()) {
+			sDllFullpath = CParaFile::GetAbsolutePath("bin64/" + sDllName, CParaFile::GetCurDirectory(CParaFile::APP_ROOT_DIR));
+			if (!CParaFile::DoesFileExist(sDllFullpath.c_str())){
+				sDllFullpath = CParaFile::GetAbsolutePath(sDllName, CParaFile::GetCurDirectory(CParaFile::APP_ROOT_DIR));
+			}
+		}else{
+			sDllFullpath = CParaFile::GetAbsolutePath(sDllName, CParaFile::GetCurDirectory(CParaFile::APP_ROOT_DIR));
+		}
 		if (!CParaFile::DoesFileExist(sDllFullpath.c_str()))
 		{
 			sDllFullpath = CParaFile::GetAbsolutePath(sDllName, CParaFile::GetCurDirectory(CParaFile::APP_DEV_DIR));
@@ -101,7 +111,11 @@ void* ParaEngine::LoadLibrary(const char *pcDllname, int iMode)
 	if (pDll == NULL) 
 	{
 		// Note: in case of win7 before 2011, LoadLibraryEx is not supported
+#ifdef DEFAULT_FILE_ENCODING
+		pDll = (void*)::LoadLibraryExW(sDllName16, NULL, LOAD_LIBRARY_SEARCH_DLL_LOAD_DIR | LOAD_LIBRARY_SEARCH_APPLICATION_DIR | LOAD_LIBRARY_SEARCH_DEFAULT_DIRS | LOAD_LIBRARY_SEARCH_SYSTEM32 | LOAD_LIBRARY_SEARCH_USER_DIRS);
+#else
 		pDll = (void*)::LoadLibraryEx(sDllName.c_str(), NULL, LOAD_LIBRARY_SEARCH_DLL_LOAD_DIR | LOAD_LIBRARY_SEARCH_APPLICATION_DIR | LOAD_LIBRARY_SEARCH_DEFAULT_DIRS | LOAD_LIBRARY_SEARCH_SYSTEM32 | LOAD_LIBRARY_SEARCH_USER_DIRS);
+#endif
 	}
 	return  pDll;
 #endif
