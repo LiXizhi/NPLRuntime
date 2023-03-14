@@ -140,11 +140,6 @@ endif ()
 
 list(APPEND NPLRUNTIME_INCLUDES ${PROJECT_SOURCE_DIR}/externals/Pinocchio/include)
 
-if (SDL AND NOT EMSCRIPTEN)
-    list(APPEND NPLRUNTIME_INCLUDES "${SDL_ROOT}/include")
-	list(APPEND NPLRUNTIME_LIBS ${SDL_ROOT}/lib/SDL2-staticd.lib ${SDL_ROOT}/lib/SDL2maind.lib ws2_32.lib user32.lib gdi32.lib winmm.lib imm32.lib ole32.lib oleaut32.lib version.lib uuid.lib advapi32.lib setupapi.lib shell32.lib dinput8.lib OpenGL32.lib)
-endif()
-
 # remove some compile time warnings
 add_definitions(-DBOOST_BIND_GLOBAL_PLACEHOLDERS)
 

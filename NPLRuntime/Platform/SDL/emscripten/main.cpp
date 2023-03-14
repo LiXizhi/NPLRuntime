@@ -98,6 +98,10 @@ void mainloop(void* arg)
 		GetApp()->InitApp(nullptr, GetApp()->m_cmdline.c_str());
 		// GetApp()->InitApp(nullptr, R"(cmdline=noupdate="true" debug="main" mc="true" bootstrapper="script/apps/Aries/main_loop.lua" noclientupdate="true" world="worlds/DesignHouse/_user/xiaoyao/testabc")");
 		// GetApp()->InitApp(nullptr, R"(cmdline=noupdate="true" debug="main" mc="true" bootstrapper="script/apps/Aries/main_loop.lua" noclientupdate="true")");
+
+		EM_ASM({
+			if (Module.HideLoading != undefined) Module.HideLoading();
+		});
 	}
 	GetApp()->RunLoopOnce();
 }
@@ -130,7 +134,7 @@ int main(int argc, char* argv[])
 	ParaEngineSettings& settings = ParaEngineSettings::GetSingleton();
 	settings.SetCurrentLanguage(js_language == 1 ? LanguageType::CHINESE : LanguageType::ENGLISH);
 
-	std::string sCmdLine;
+	std::string sCmdLine = R"(noupdate="true" debug="main" mc="true" bootstrapper="script/apps/Aries/main_loop.lua" noclientupdate="true")";
 	for (int i = 1; i < argc; ++i)
 	{
 		if (argv[i])
@@ -144,6 +148,19 @@ int main(int argc, char* argv[])
 			}
 		}
 	}
+	int pid = EM_ASM_INT({
+		var url = location.search;                //获取url中"?"符后的字串
+   		if (url.indexOf("?") != -1) {             //判断是否有参数
+      		var str = url.substr(1);              //从第一个字符开始 因为第0个是?号 获取所有除问号的所有符串
+      		strs = str.split("=");                //用等号进行分隔 （因为知道只有一个参数 所以直接用等号进分隔 如果有多个参数 要用&号分隔 再用等号进行分隔）
+      		var pid = parseInt(strs[1]);          //直接弹出第一个参数 （如果有多个参数 还要进行循环的）
+			if (isNaN(pid)) return 0;
+			else return pid;
+		}
+	});
+
+	if (pid != 0) sCmdLine += " paracraft://cmd/loadworld/" + std::to_string(pid);
+	std::cout << "cmdline: " << sCmdLine << std::endl;
 
 	GetApp()->m_cmdline = sCmdLine;
 

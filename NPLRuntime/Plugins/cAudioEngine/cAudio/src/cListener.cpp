@@ -7,6 +7,8 @@
 
 #ifdef PLATFORM_IPHONE
     #include <OpenAL/al.h>
+#elif __EMSCRIPTEN__
+    #include <AL/al.h>
 #else
     #include <al.h>
 #endif

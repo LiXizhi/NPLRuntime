@@ -45,7 +45,7 @@ unsigned int show_bits(const GetBitContext *s, int n)
     assert(s->size_in_bits - s->index >= n);
 	for (i = s->index; i < s->index + n; i++) {
 #else
-	auto end_pos = s->size_in_bits >= s->index + n ? s->index + n : s->size_in_bits;
+	int end_pos = s->size_in_bits >= s->index + n ? s->index + n : s->size_in_bits;
 	for (i = s->index; i < end_pos; i++) {
 #endif
         int byte_index = i / 8;

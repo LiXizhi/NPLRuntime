@@ -8,9 +8,7 @@
 #include "Core/PEtypes.h"
 #include "math/ParaViewport.h"
 
-
-
-#if defined(DEBUG) || defined(EMSCRIPTEN)
+#if defined(DEBUG) 
 	#define PE_CHECK_GL_ERROR_DEBUG() IRenderDevice::CheckRenderError(__FILE__, __FUNCTION__, __LINE__);
 #else
 	#define PE_CHECK_GL_ERROR_DEBUG() ((void)0)

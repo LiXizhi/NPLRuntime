@@ -59,9 +59,7 @@ int main(int argc, char* argv[])
 	}
 
 	CSDL2Application app;
-	// app.InitApp(nullptr, sCmdLine.c_str());
-	app.InitApp(nullptr, R"(cmdline=noupdate="true" debug="main" mc="true" bootstrapper="script/apps/Aries/main_loop.lua" noclientupdate="true" world="worlds/DesignHouse/_user/xiaoyao/testabc")");
-	
+	app.InitApp(nullptr, sCmdLine.c_str());
 	app.Run();
 
 	return 0;

@@ -52,3 +52,54 @@ location / {
 3. NPLRuntime emscripten 分支更新
 上述代码发生跟改自动触发编译部署(开发环境)
 **资源更新可能也需要触发**
+
+## EMSCRIPTEN
+
+1. 作品展示: webpacraft.keepwork.com
+2. 工具介绍与安装  官网(https://emscripten.org/index.html)
+    emscripten 是一套WebAssembly编译器工具链(emcc, em++, emcongfiure...)
+    https://www.codercto.com/a/59841.html
+3. 编译
+    -- linux 常规编译
+    emconfigure ./configure; emmake make;
+    -- cmake 交叉编译
+    emcamke cmake; emmake make;
+    
+    编译选项:
+        -sFETCH -lidbfs.js -pthread 内置标准库
+        -sUSE_SDL=2 -sUSE_ZLIB=1 -sUSE_LIBJPEG=1 -sUSE_LIBPNG 内置外部部(开源第三方预编译, 会动态下载) 
+        -Og 编译优化 
+        -sPTHREAD_POOL_SIZE=32 线程数指定(当程序启动线程大于指定值, 程序会出现死锁)
+        --preload-file --embed-file 内置资源文件指定
+4. 移值
+    窗口系统 (SDL)
+    canvas <=> SDL_Window
+
+    渲染方式(opengles 2.0, 3.0)
+    需要安装opengles规范使用相关API, 先绑定缓冲区再设置顶点属性 
+
+    多线程
+    重在编译选项 PTHREAD_POOL_SIZE 要设置, 程序不要启动多于此设置的线程
+
+    网络HTTP请求(fetch)
+    内置 https://github.dev/emscripten-core/emscripten/blob/main/system/include/emscripten/fetch.h
+    C++ curl
+
+    文件系统
+    内存文件系统, idbfs文件系统(持久化)
+    idbfs 类似liunx磁盘挂载使用  文件改名不可跨不同文件系统(linux可以)  冲刷到磁盘需要自行调用FS.sync(false) 内存同步到磁盘 FS.sync(true) 从磁盘同步到内存
+    预加载文件 --preload-file --embed-file 
+
+    网络TCP(websocket)
+    内置websocket: https://github.dev/emscripten-core/emscripten/blob/main/system/include/emscripten/websocket.h
+    websockify  9110 127.0.0.1:8818  -- tcp代理
+5. 可执行文件
+    .html 浏览器执行
+    .js   nodejs执行, 也自行定制html(加载js)用于浏览器执行
+    浏览器执行需要 canvas 标签, js 文件模式使用 Module 对象, 需要将 canvas 标签放置 Moudel.canvas 上
+6. 部署
+    生成的所有静态文件放置web服务器的静态文件目录即可. 多线程程序添加如下响应头:
+    add_header 'Cross-Origin-Embedder-Policy' 'require-corp';
+    add_header 'Cross-Origin-Opener-Policy' 'same-origin';
+
+    静态文件缓存策略: 常规前端项目文件缓存策略.

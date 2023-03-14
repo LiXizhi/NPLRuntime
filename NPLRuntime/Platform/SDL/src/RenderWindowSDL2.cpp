@@ -3,6 +3,9 @@
 #include "2dengine/GUIRoot.h"
 #include <unordered_map>
 
+#ifdef EMSCRIPTEN
+#include "emscripten.h"
+#endif
 
 namespace ParaEngine {
 	std::unordered_map<unsigned long, EVirtualKey> s_keymap;
@@ -222,7 +225,11 @@ namespace ParaEngine {
 				switch (sdl_event.window.event)
 				{
 				case SDL_WINDOWEVENT_SIZE_CHANGED:
+#ifdef EMSCRIPTEN
+					OnSize(EM_ASM_INT({return document.documentElement.clientWidth;}), EM_ASM_INT({return document.documentElement.clientHeight;}));
+#else
 					OnSize(sdl_event.window.data1, sdl_event.window.data2);
+#endif
 					break;
 				case SDL_WINDOWEVENT_FOCUS_LOST:
 					m_bLostFocus = true;

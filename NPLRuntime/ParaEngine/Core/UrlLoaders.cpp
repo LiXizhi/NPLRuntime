@@ -210,10 +210,14 @@ void ParaEngine::CUrlProcessor::EmscriptenFetch()
 	}
   	emscripten_fetch_close(fetch); // Also free data on failure.
 	m_nStatus = CUrlProcessor::URL_REQUEST_COMPLETED;
-	// std::cout << "method: " << method << std::endl;
-	// std::cout << "url: " << m_url << std::endl;
-	// std::cout << "request data:" << m_sRequestData << std::endl;
-	// std::cout << "status code: " << m_responseCode << std::endl;
+	// if (m_responseCode != 200)
+	// {
+	// 	std::cout << "=================request error=================" << std::endl;
+	// 	std::cout << "method: " << method << std::endl;
+	// 	std::cout << "url: " << m_url << std::endl;
+	// 	std::cout << "request data:" << m_sRequestData << std::endl;
+	// 	std::cout << "status code: " << m_responseCode << std::endl;
+	// }
   	// if (fetch->status == 200) return S_OK;
 #endif
 	// return E_FAIL;
@@ -224,7 +228,8 @@ HRESULT ParaEngine::CUrlProcessor::Process(void* pData, int cBytes)
 
 
 #ifdef EMSCRIPTEN
-    std::thread(&ParaEngine::CUrlProcessor::EmscriptenFetch, this).join();
+	EmscriptenFetch();
+    // std::thread(&ParaEngine::CUrlProcessor::EmscriptenFetch, this).join();
 	return (200 <= m_responseCode && m_responseCode < 300) ? S_OK : E_FAIL;
 #else
 	// Let us do the easy way. 
