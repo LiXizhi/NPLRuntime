@@ -9,7 +9,9 @@
 #include <stdint.h>
 
 #include "SDL2/SDL.h"
-// #include "glad/glad.h"
+#ifndef EMSCRIPTEN
+#include <glad/glad.h>
+#endif
 
 namespace ParaEngine
 {

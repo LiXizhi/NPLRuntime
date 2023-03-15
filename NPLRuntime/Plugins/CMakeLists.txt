@@ -14,9 +14,7 @@ else ()
 	endif ()
 endif ()
 
-# if (NOT EMSCRIPTEN)
-	add_subdirectory(sqlite3)
-# endif()
+add_subdirectory(sqlite3)
 
 if (NPLRUNTIME_NPLMono2)
 	add_subdirectory(NPLMono/NPLMono2)

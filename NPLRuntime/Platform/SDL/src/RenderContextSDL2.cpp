@@ -1,5 +1,7 @@
 #include "ParaEngine.h"
-// #include <glad/glad.h>
+#ifndef EMSCRIPTEN
+#include <glad/glad.h>
+#endif
 #include "RenderContextSDL2.h"
 #include "RenderWindowSDL2.h"
 
@@ -11,7 +13,6 @@ namespace ParaEngine {
 
 	IRenderDevice* RenderContextSDL2::CreateDevice(const RenderConfiguration& cfg)
 	{
-		std::cout << "================RenderContextSDL2::CreateDevice==============" << std::endl;
 		return new RenderDeviceSDL2((SDL_Window*)((RenderWindowSDL2*)(cfg.renderWindow)->GetNativeHandle()));
 	}
 
