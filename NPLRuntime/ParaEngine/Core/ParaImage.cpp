@@ -28,7 +28,8 @@ namespace ParaEngine
 {
 	// config
 #ifdef WIN32
-	bool ParaImage::supportsS3TC = true;
+	// it does not support decoding dds texture by hardware
+	bool ParaImage::supportsS3TC = false;
 #else
 	bool ParaImage::supportsS3TC = false;
 #endif

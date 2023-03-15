@@ -36,7 +36,7 @@ int ParaEngine::CBaseObject::g_nObjectSelectionEffect = ParaEngine::RenderSelect
 //-------------------------------------------------------------------
 CBaseObject::CBaseObject()
 	:m_tileContainer(NULL), m_nTechniqueHandle(-1), m_objType(_undefined), m_bGeometryDirty(false), m_bEnableLOD(true),
-	m_dwAttribute(0), m_pEffectParamBlock(NULL), m_nFrameNumber(0), m_nID(0), m_nSelectGroupIndex(-1), m_nRenderImportance(0), m_fRenderDistance(0.f), m_fRenderOrder(0.f)
+	m_dwAttribute(0), m_pEffectParamBlock(NULL), m_nFrameNumber(0), m_nID(0), m_nSelectGroupIndex(-1), m_nRenderImportance(0), m_fRenderDistance(0.f), m_fRenderOrder(0.f), m_nMaterialId(-1)
 {
 }
 //-----------------------------------------------------------------------------

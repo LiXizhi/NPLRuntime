@@ -400,8 +400,11 @@ bool GLTexture2D::initWithMipmaps(const MipmapInfo* mipmaps, int mipmapsNum, Pix
 
 		if (info.compressed)
 		{
-			//TODO:wangpeng ???
-			///glCompressedTexImage2D(GL_TEXTURE_2D, i, info.internalFormat, (GLsizei)width, (GLsizei)height, 0, datalen, data);
+			// TODO: support decoding dds image from hardware?
+			if (i == 0) {
+				OUTPUT_LOG("Texture2D. WARNING. Compressed Texture found and will render as black");
+			}
+			// glCompressedTexImage2D(GL_TEXTURE_2D, i, info.internalFormat, (GLsizei)width, (GLsizei)height, 0, datalen, data);
 		}
 		else
 		{

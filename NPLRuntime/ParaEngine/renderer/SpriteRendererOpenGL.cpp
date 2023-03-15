@@ -300,7 +300,8 @@ void ParaEngine::CSpriteRendererOpenGL::FlushQuads()
 
 void ParaEngine::CSpriteRendererOpenGL::DrawTriangles(const sprite_vertex* pVertices, int nTriangleCount)
 {
-#ifdef EMSCRIPTEN
+#define USE_USER_POINTER_VBO
+#ifdef USE_USER_POINTER_VBO
 	CGlobals::GetRenderDevice()->DrawPrimitiveUP(EPrimitiveType::TRIANGLELIST, nTriangleCount, pVertices, sizeof(sprite_vertex));
 #else
 #define kQuadSize sizeof(sprite_vertex)
