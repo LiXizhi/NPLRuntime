@@ -21,10 +21,9 @@ option(NPLRUNTIME_OCE "include NplOce" OFF)
 project(${NPLRUNTIME_PROJECT_NAME})
 
 # SDL 跨平台 window可以编译用于编写和调试代码, 非window默认通过LINUX宏开启SDL GUI
-if (MSVC)
+if (MSVC AND LOCAL_DEBUG)
 	set(SDL TRUE)
 	set(SDL_ROOT D:/workspace/program/sdl2)
-	# set(SDL_ROOT D:/workspace/cmake-test/external/out/Debug/SDL-2.24.1)
 endif()
 
 if (NPLRUNTIME_SERVER)

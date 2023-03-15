@@ -13,7 +13,6 @@ else()
 	set(BOOST_ROOT ${PROJECT_SOURCE_DIR}/externals/boost/prebuild/src/${Boost_Path})
 endif()
 
-# set(BOOST_ROOT "D:/workspace/emscripten/boost_1_81_0")
 if(IOS)
 	if (PLATFORM STREQUAL "SIMULATOR")
 		set(BOOST_LIBRARYDIR ${BOOST_ROOT}/iphonesim-build/stage/lib)

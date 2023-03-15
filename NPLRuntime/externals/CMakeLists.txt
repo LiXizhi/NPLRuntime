@@ -39,9 +39,6 @@ set(ZLIB_INCLUDE_DIR ${ZLIB_INCLUDE_DIRS})
 add_subdirectory(tinyxpath)
 add_subdirectory(curl)
 add_subdirectory(luabind)
-if (USE_LUASOCKET)
-	add_subdirectory(luasocket-3.1.0)
-endif()
 
 set(ICONV_LIB_NAME)
 

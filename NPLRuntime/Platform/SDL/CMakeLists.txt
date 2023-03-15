@@ -56,12 +56,14 @@ ADD_CUSTOM_COMMAND(
 	COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:${TARGET_NAME}> ${OUTPUT_BIN_DIR}
 )
 
-# ADD_CUSTOM_COMMAND(
-# 	TARGET ${TARGET_NAME}
-# 	POST_BUILD
-# 	COMMAND ${CMAKE_COMMAND} -E make_directory ${OUTPUT_BIN_DIR}
-# 	COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_BINARY_DIR}/bin /mnt/d/workspace/npl/webparacraft/
-# )
+if (LOCAL_DEBUG)
+	ADD_CUSTOM_COMMAND(
+		TARGET ${TARGET_NAME}
+		POST_BUILD
+		COMMAND ${CMAKE_COMMAND} -E make_directory ${OUTPUT_BIN_DIR}
+		COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_BINARY_DIR}/bin /mnt/d/workspace/npl/webparacraft/
+	)
+endif()
 
 # emcmake cmake -S NPLRuntime -B build_emscripten_release -DEMSCRIPTEN=ON -DCMAKE_BUILD_TYPE=RELEASE -DLOCAL_DEBUG=TRUE
 # emcmake cmake -S NPLRuntime -B build_emscripten -DEMSCRIPTEN=ON -DLOCAL_DEBUG=TRUE

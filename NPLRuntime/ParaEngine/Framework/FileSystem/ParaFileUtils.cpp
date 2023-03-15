@@ -72,10 +72,6 @@ const std::string& ParaEngine::CParaFileUtils::GetWritablePath()
 
 const std::string& ParaEngine::CParaFileUtils::GetInitialDirectory()
 {
-// #ifdef EMSCRIPTEN
-// 	static std::string s_root_dir = "/idbfs";
-// 	return s_root_dir;
-// #endif
 	fs::path workingDir = fs::initial_path();
 	static std::string ret = workingDir.string();
 	return ret;

@@ -444,10 +444,11 @@ namespace ParaEngine
 			return static_cast<int>(pos);
 #elif defined (PLATFORM_MAC)
             return static_cast<int>(pos);
-#else
+#elif defined(EMSCRIPTEN)
 			// return static_cast<int>(pos);
+#else
+			return static_cast<int>(pos.__pos);
 #endif
-
 		}
 		return 0;
 	}

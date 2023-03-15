@@ -704,12 +704,6 @@ void CAssetManifest::PrepareCacheFolders()
 		else
 			sSubFolder[sSubFolder.size() - 2] = (char)('0' + i - 26);
 
-// #ifdef EMSCRIPTEN
-// 		auto diskfileName = ParaEngine::CFileUtils::GetWritableFullPathForFilename(sSubFolder);
-// 		if (!CParaFile::CreateDirectory(diskfileName.c_str()))
-// #else
-// 		if (!CParaFile::CreateDirectory(sSubFolder.c_str()))
-// #endif
 		if (!CParaFile::CreateDirectory(sSubFolder.c_str()))
 		{
 			OUTPUT_LOG("warning: failed creating directory %s \n", sSubFolder.c_str());
@@ -893,14 +887,11 @@ void CAssetManifest::AddEntry(const char* filename)
 
 		AssetFileEntry* pEntry = new AssetFileEntry();
 		pEntry->m_url = filename;
-		pEntry->m_localFileName.reserve(pEntry->m_localFileName.size() + 128);  // 63
+		pEntry->m_localFileName.reserve(pEntry->m_localFileName.size() + 63);
 		pEntry->m_localFileName += "temp/cache/a/";
 		pEntry->m_localFileName[11] = md5[0];
 		pEntry->m_localFileName += md5;
 		pEntry->m_localFileName += filesize;
-// #ifdef EMSCRIPTEN
-// 		pEntry->m_localFileName = ParaEngine::CFileUtils::GetWritableFullPathForFilename(pEntry->m_localFileName);
-// #endif
 		pEntry->m_bIsZipFile = bIsZipfile;
 		pEntry->m_nFileSize = nFileSize;
 		pEntry->SetFileType(file_extension); // note: this function must be called after file size is set. 

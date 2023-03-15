@@ -26,8 +26,12 @@
 
 #include <boost/shared_ptr.hpp>
 #include <boost/signals2.hpp>
+#ifdef EMSCRIPTEN
 #include <boost/bind/bind.hpp>
 #include <boost/bind/placeholders.hpp>
+#else
+#include <boost/bind.hpp>
+#endif
 #include "util/intrusive_ptr.h"
 
 using namespace boost::placeholders;
