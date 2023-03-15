@@ -2107,13 +2107,17 @@ bool EffectManager::BeginEffectShader(int nHandle, CEffectFile** pOutEffect)
 	{
 	case TECH_UNKNOWN:
 	{
+#ifndef EMSCRIPTEN
 		CGlobals::GetRenderDevice()->SetVertexDeclaration(0);
+#endif
 		break;
 	}
 	case TECH_NONE:
 	{
+#ifndef EMSCRIPTEN
 		CGlobals::GetRenderDevice()->SetIndices(0);
 		CGlobals::GetRenderDevice()->SetStreamSource(0, 0, 0, 0);
+#endif
 		pd3dDevice->SetRenderState(ERenderState::CULLMODE, RSV_CULL_NONE);
 		pd3dDevice->SetRenderState(ERenderState::ZENABLE, FALSE);m_bZEnable = false;
 		// Note by Xizhi: always enable zwrite otherwise z-clear will not working when cocos clear the zbuffer in the outer loop. 

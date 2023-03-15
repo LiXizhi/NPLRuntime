@@ -5,6 +5,10 @@ extern "C" {
 
 #ifdef ANDROID
 #include "gl_android_spec.h"
+#elif EMSCRIPTEN
+#define GL_GLEXT_PROTOTYPES
+#include "SDL2/SDL_opengl.h"
+#include "SDL2/SDL_opengl_glext.h"
 #elif _WIN32 || LINUX
 #include "glad/glad.h"
 #elif __APPLE__

@@ -1764,6 +1764,7 @@ void CParaXModel::DrawPass(ModelRenderPass &p)
 				pd3dDevice->DrawPrimitiveUP(EPrimitiveType::TRIANGLELIST, nLockedNum, pBufEntity->GetBaseVertexPointer(), pBufEntity->m_nUnitSize);
 			else
 				pd3dDevice->DrawPrimitive(EPrimitiveType::TRIANGLELIST, pBufEntity->GetBaseVertex(), nLockedNum);
+			
 			if ((p.indexCount - nNumFinishedVertice) > nNumLockedVertice)
 			{
 				nNumFinishedVertice += nNumLockedVertice;

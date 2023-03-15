@@ -228,7 +228,6 @@ namespace ParaEngine
 	public:
 		// this is usually /mnt/sdcard/XXX/ in android. 
 		static std::string s_writepath;
-
 	private:
 		/** embedded resource */
 		struct EmbeddedResource 

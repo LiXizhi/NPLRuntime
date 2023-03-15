@@ -1,0 +1,31 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "lua",
+            "request": "launch",
+            "tag": "normal",
+            "name": "LuaPanda",
+            "description": "通用模式,通常调试项目请选择此模式 | launchVer:3.2.0",
+            "cwd": "${workspaceFolder}",
+            "luaFileExtension": "",
+            "connectionPort": 8818,
+            "stopOnEntry": true,
+            "useCHook": true,
+            "autoPathMode": true
+        },
+        {
+            "type": "lua",
+            "request": "launch",
+            "tag": "independent_file",
+            "name": "LuaPanda-IndependentFile",
+            "description": "独立文件调试模式,使用前请参考文档",
+            "luaPath": "",
+            "packagePath": [],
+            "luaFileExtension": "",
+            "connectionPort": 8820,
+            "stopOnEntry": true,
+            "useCHook": true
+        }
+    ]
+}

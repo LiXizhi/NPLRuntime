@@ -322,6 +322,9 @@ namespace ParaEngine
 		if (buf==NULL || nLength<=0) {
 			return -1;
 		}
+#ifdef EMSCRIPTEN
+		printf("%s", buf);
+#endif
 		FILE * pFile = GetLogFileHandle();
 		if(pFile)
 		{
@@ -441,10 +444,11 @@ namespace ParaEngine
 			return static_cast<int>(pos);
 #elif defined (PLATFORM_MAC)
             return static_cast<int>(pos);
+#elif defined(EMSCRIPTEN)
+			// return static_cast<int>(pos);
 #else
 			return static_cast<int>(pos.__pos);
 #endif
-
 		}
 		return 0;
 	}

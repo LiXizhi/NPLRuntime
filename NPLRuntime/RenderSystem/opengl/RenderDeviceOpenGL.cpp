@@ -1,4 +1,4 @@
-#include <stdexcept>
+﻿#include <stdexcept>
 #include "ParaEngine.h"
 #include "renderer/VertexDeclarationOpenGL.h"
 #include "math/ParaViewport.h"
@@ -454,7 +454,6 @@ bool ParaEngine::RenderDeviceOpenGL::DrawIndexedPrimitiveUP(EPrimitiveType Primi
 	}
 #endif
 	ApplyBlendingModeChange();
-
 	if (PrimitiveType == EPrimitiveType::TRIANGLELIST)
 		glDrawElements(GL_TRIANGLES, PrimitiveCount * 3, GL_UNSIGNED_SHORT, (GLvoid*)(pIndexData));
 	else if (PrimitiveType == EPrimitiveType::TRIANGLESTRIP)
@@ -805,4 +804,3 @@ void ParaEngine::RenderDeviceOpenGL::ApplyBlendingModeChange()
 	}
 
 }
-

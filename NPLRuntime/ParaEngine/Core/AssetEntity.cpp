@@ -137,7 +137,7 @@ namespace ParaEngine
 				}
 				else
 				{
-					string sTmp = string("AssetFile ASync Failed cannot save to disk:") + url + "\n";
+					string sTmp = string("AssetFile ASync Failed cannot save to disk:") + url + "\n filename: " + tmpName + "\n";
 					pAsyncLoader->log(sTmp);
 				}
 			}

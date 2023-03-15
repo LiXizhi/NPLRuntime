@@ -150,7 +150,11 @@ HRESULT ParaEngine::CRenderTarget::RestoreDeviceObjects()
 
 	if (m_depthStencilFormat != 0)
 	{
+#ifdef EMSCRIPTEN
+		GLuint depthStencilFormat = GL_DEPTH_COMPONENT16;
+#else
 		GLuint depthStencilFormat = GL_DEPTH24_STENCIL8;
+#endif
 		//create and attach depth buffer
 		glGenRenderbuffers(1, &_depthRenderBufffer);
 		glBindRenderbuffer(GL_RENDERBUFFER, _depthRenderBufffer);

@@ -4,7 +4,9 @@
 # ModifyDate: 2021.10.28
 
 include(${PROJECT_SOURCE_DIR}/cmake/ucm.cmake)
-include(${PROJECT_SOURCE_DIR}/cmake/ConfigBoost.cmake)
+if (NOT EMSCRIPTEN)
+    include(${PROJECT_SOURCE_DIR}/cmake/ConfigBoost.cmake)
+endif()
 
 # includes
 set(NPLRUNTIME_INCLUDES)
@@ -228,26 +230,55 @@ if (NPLRUNTIME_OCE)
 	add_dependencies(ParaEngine nploce)
 endif ()
 
-target_link_libraries(ParaEngine PUBLIC 
+if (EMSCRIPTEN)
+    target_link_libraries(ParaEngine PUBLIC 
     ${RenderSystem}
-    ${Boost_LIBRARIES}
     ${NPLRUNTIME_LIBS}
     ${PLATFORM_SPE_LIBS}
-	${LUA_LIB_LIST}
-    zlib
-	libcurl
+    ${LUA_LIB_LIST}
+    libcurl
     jsoncpp
     tinyxpath
     luabind
     ParaSqlite 
-	libjpeg
-    libpng
-	Pinocchio
-	${ICONV_LIB_NAME}
-)
+    Pinocchio
+    ${ICONV_LIB_NAME}
+    "${BOOST_ROOT}/stage/lib/libboost_atomic.a"
+    "${BOOST_ROOT}/stage/lib/libboost_chrono.a"
+    "${BOOST_ROOT}/stage/lib/libboost_date_time.a"
+    "${BOOST_ROOT}/stage/lib/libboost_date_time.a"
+    "${BOOST_ROOT}/stage/lib/libboost_filesystem.a"
+    "${BOOST_ROOT}/stage/lib/libboost_serialization.a"
+    "${BOOST_ROOT}/stage/lib/libboost_system.a"
+    "${BOOST_ROOT}/stage/lib/libboost_thread.a"
+    "${BOOST_ROOT}/stage/lib/libboost_wserialization.a"
+    )
+else()
+    target_link_libraries(ParaEngine PUBLIC 
+        ${RenderSystem}
+        ${Boost_LIBRARIES}
+        ${NPLRUNTIME_LIBS}
+        ${PLATFORM_SPE_LIBS}
+        ${LUA_LIB_LIST}
+        zlib
+        libcurl
+        jsoncpp
+        tinyxpath
+        luabind
+        ParaSqlite 
+        libjpeg
+        libpng
+        Pinocchio
+        ${ICONV_LIB_NAME}
+    )
+endif()
+
 
 set(PARAENGINE_DEF_LIST)
 list(APPEND PARAENGINE_DEF_LIST USE_FREEIMAGE USE_ICONV TIXML_USE_STL BOOST_SIGNALS_NO_DEPRECATION_WARNING _CRT_SECURE_NO_WARNINGS NPLRUNTIME ${PLATROM_SPEC_DEFINITIONS})
+if (SDL)
+    list(APPEND PARAENGINE_DEF_LIST PLATFORM_SDL2)
+endif()
 
 if (WIN32 AND PARAENGINE_CLIENT_DLL)
 	list(APPEND PARAENGINE_DEF_LIST NPLRUNTIME_DLL)

@@ -313,8 +313,11 @@ bool GLProgram::compileShader(GLuint * shader, GLenum type, const GLchar* source
     
 
 	const GLchar *sources[] = {
-#ifdef PARAENGINE_MOBILE
+#if defined(PARAENGINE_MOBILE)
 		"precision highp float;\n"
+#elif defined(EMSCRIPTEN) 
+		"precision highp float;\n"
+		// "# version 300 es\nprecision highp float;\n"
 #endif
 		"//\n",
 		source,

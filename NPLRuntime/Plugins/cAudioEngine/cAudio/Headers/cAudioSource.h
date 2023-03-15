@@ -10,6 +10,9 @@
 #ifdef PLATFORM_IPHONE
     #include <OpenAL/al.h>
     #include <OpenAL/alc.h>
+#elif __EMSCRIPTEN__
+    #include <AL/al.h>
+    #include <AL/alc.h>
 #else
     #include <al.h>
     #include <alc.h>
