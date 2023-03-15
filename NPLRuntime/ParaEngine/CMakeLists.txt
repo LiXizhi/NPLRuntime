@@ -230,7 +230,6 @@ if (NPLRUNTIME_OCE)
 	add_dependencies(ParaEngine nploce)
 endif ()
 
-message("LUA_LIB_LIST: " ${LUA_LIB_LIST})
 if (EMSCRIPTEN)
     target_link_libraries(ParaEngine PUBLIC 
     ${RenderSystem}
@@ -244,7 +243,6 @@ if (EMSCRIPTEN)
     ParaSqlite 
     Pinocchio
     ${ICONV_LIB_NAME}
-    # "/mnt/d/workspace/emscripten/boost_1_81_0/stage/lib/libboost_atomic.a"
     "${BOOST_ROOT}/stage/lib/libboost_atomic.a"
     "${BOOST_ROOT}/stage/lib/libboost_chrono.a"
     "${BOOST_ROOT}/stage/lib/libboost_date_time.a"

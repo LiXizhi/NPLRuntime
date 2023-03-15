@@ -531,12 +531,13 @@ int ParaEngine::CFileUtils::GetFileSize(const char* sFilePath)
 
 ParaEngine::FileHandle ParaEngine::CFileUtils::OpenFile(const char* filename, bool bRead /*= false*/, bool bWrite/*=true*/)
 {
-	std::string sFilePath = filename;
+	std::string sFilePath;
 	if (bWrite && !IsAbsolutePath(filename))
 	{
 #ifdef EMSCRIPTEN
-		// 排除 temp 目录
+		// 设置可写路径情况 排除 temp 目录
 		if (sFilePath.substr(0, 5) != "temp/") sFilePath = GetWritablePath() + filename;
+		else sFilePath = filename;
 #else
 		sFilePath = GetWritablePath() + filename;
 #endif
@@ -552,14 +553,15 @@ ParaEngine::FileHandle ParaEngine::CFileUtils::OpenFile(const char* filename, bo
 	FILE* pFile = fopen(sFilePath.c_str(), bRead ? (bWrite ? "w+b" : "rb") : "wb");
 #endif
 	
-	if (pFile == 0) {
+	if (pFile == 0) 
+	{
 		OUTPUT_LOG("failed to open file: %s with mode %s\n", sFilePath.c_str(), bRead ? (bWrite ? "w+b" : "rb") : "wb");
 	}
 	else
 	{
 		if (sFilePath != filename)
 		{
-			std::cout<< "openfile: " << filename << " => " << sFilePath << std::endl;
+			OUTPUT_LOG("open file rename %s => %s\n", filename, sFilePath.c_str());
 		}
 	}
 	FileHandle fileHandle;
