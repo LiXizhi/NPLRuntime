@@ -463,7 +463,10 @@ void CMoviePlatform::TakeScreenShot_Async(const string& filename, bool bEncode, 
 		int wait_count = 0;       // 最大等待次数
 		while (wait_count < max_wait_count)
 		{
-			if (s_deque->size() == 0)
+			s_mutex->lock();
+			int size = s_deque->size(); 
+			s_mutex->unlock();
+			if (size == 0)
 			{
 				wait_count++;
 				std::this_thread::sleep_for(std::chrono::milliseconds(500));  // 等待0.5秒  50秒内无新请求直接退出线程
