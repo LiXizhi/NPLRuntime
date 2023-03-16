@@ -459,7 +459,7 @@ void CMoviePlatform::TakeScreenShot_Async(const string& filename, bool bEncode, 
 	s_deque->push_back(task);
 	s_mutex->unlock();
 	std::thread thread([=]() {
-		int max_wait_count = 100; // 最大等待次数
+		int max_wait_count = 10;  // 最大等待次数
 		int wait_count = 0;       // 最大等待次数
 		while (wait_count < max_wait_count)
 		{
