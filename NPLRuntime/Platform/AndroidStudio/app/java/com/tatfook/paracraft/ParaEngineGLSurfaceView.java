@@ -213,6 +213,10 @@ public class ParaEngineGLSurfaceView extends GLSurfaceView {
                 mIsKeyboardOpened = true;
 
                 if ((screenHeight - mCtrlBottom) < mKeyboardHeight) {
+                    if (mScreenOffset != 0) {
+                        ParaEngineGLSurfaceView.this.offsetTopAndBottom(mScreenOffset);
+                    }
+
                     mScreenOffset = mKeyboardHeight - (screenHeight - mCtrlBottom);
                     ParaEngineGLSurfaceView.this.offsetTopAndBottom(-mScreenOffset);
                 }
