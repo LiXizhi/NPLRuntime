@@ -272,13 +272,8 @@ namespace cAudio
 			{
 				ALuint buffer;
 				alSourceUnqueueBuffers(Source, 1, &buffer);
-
 				if (checkError()) 
-				{
-					processed++;
-					cAudioSleep(1);
-					continue;
-				}
+					break;
 
 				// LiXizhi 2014.12.2 fixing a bug where stopped music still get played 1-2 seconds on rewind. 
 				// if audio is already stopped, we should not read from the buffer (changing the buffer position)
@@ -289,17 +284,11 @@ namespace cAudio
 					if (active)
 					{
 						alSourceQueueBuffers(Source, 1, &buffer);
+						if (checkError())
+							break;
 					}
 				}
-
-				if (checkError()) 
-				{
-					processed++;
-					cAudioSleep(1);
-					continue;
-				}
 			}
-
 			signalEvent(ON_UPDATE);
 		}
 
@@ -740,7 +729,7 @@ namespace cAudio
 			}
 
 	        //Second check, in case looping is not enabled, we will return false for end of stream
-	        if(totalread == 0)
+	        if(totalread == 0 && !isLooping())
 	       	{
 	       		return false;
 	        }
