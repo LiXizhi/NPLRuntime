@@ -128,7 +128,7 @@ get_charset_aliases (void)
   cp = charset_aliases;
   if (cp == NULL)
     {
-#if !(defined DARWIN7 || defined VMS || defined WINDOWS_NATIVE || defined __CYGWIN__ || defined OS2)
+#if !(defined DARWIN7 || defined VMS || defined WINDOWS_NATIVE || defined __CYGWIN__ || defined OS2 || defined EMSCRIPTEN)
       const char *dir;
       const char *base = "charset.alias";
       char *file_name;
@@ -313,7 +313,7 @@ get_charset_aliases (void)
            "DECKOREAN" "\0" "EUC-KR" "\0";
 # endif
 
-# if defined WINDOWS_NATIVE || defined __CYGWIN__
+# if defined WINDOWS_NATIVE || defined __CYGWIN__ || defined EMSCRIPTEN
       /* To avoid the troubles of installing a separate file in the same
          directory as the DLL and of retrieving the DLL's directory at
          runtime, simply inline the aliases here.  */

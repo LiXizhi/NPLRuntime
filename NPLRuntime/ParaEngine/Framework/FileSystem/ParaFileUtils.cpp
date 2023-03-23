@@ -7,13 +7,16 @@
 #include <boost/filesystem/fstream.hpp>
 #include <iostream>
 #include "ParaFileUtils.h"
+#ifdef EMSCRIPTEN
+#include <emscripten.h>
+#endif
 #include "StringHelper.h"
 
 namespace fs = boost::filesystem;
 #define BOOST_FILESYSTEM_NO_DEPRECATED
 using namespace ParaEngine;
 
-#if (PARA_TARGET_PLATFORM == PARA_PLATFORM_LINUX) || defined(MAC_SERVER)
+#if (PARA_TARGET_PLATFORM == PARA_PLATFORM_LINUX) || defined(MAC_SERVER) || defined(EMSCRIPTEN)
 CParaFileUtils* CParaFileUtils::GetInstance()
 {
 	static CParaFileUtils defaultImpl;
@@ -136,6 +139,12 @@ bool ParaEngine::CParaFileUtils::Move(const std::string& src, const std::string&
 {
 	try
 	{
+#ifdef EMSCRIPTEN
+		if (src == dest) return true;
+		bool ret =  Copy(src, dest, true);
+		Delete(src);
+		return ret;
+#else
 #if defined(WIN32) && defined(DEFAULT_FILE_ENCODING)
 		std::wstring src16 = StringHelper::MultiByteToWideChar(src.c_str(), DEFAULT_FILE_ENCODING);
 		LPCWSTR dest16 = StringHelper::MultiByteToWideChar(dest.c_str(), DEFAULT_FILE_ENCODING);
@@ -143,12 +152,12 @@ bool ParaEngine::CParaFileUtils::Move(const std::string& src, const std::string&
 		const auto& src16 = src;
 		const auto& dest16 = dest;
 #endif
-
 		fs::path sSrc(src16);
 		boost::system::error_code err_code;
 		fs::rename(sSrc, fs::path(dest16), err_code);
 		OUTPUT_LOG("info (boost-fs): moved file/directory from %s to %s result message: %s\n", src.c_str(), dest.c_str(), err_code.message().c_str());
 		return err_code.value() == 0;
+#endif
 	}
 	catch (...)
 	{

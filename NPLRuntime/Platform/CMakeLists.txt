@@ -5,7 +5,7 @@
 
 if (NPLRUNTIME_SERVER)
 	add_subdirectory(Linux)
-elseif (SDL)
+elseif (SDL OR EMSCRIPTEN)
 	add_subdirectory(SDL)
 elseif (ANDROID)
 	if (ANDROID_STUDIO)

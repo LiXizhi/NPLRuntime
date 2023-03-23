@@ -123,6 +123,7 @@ namespace ParaEngine
 
 		SAFE_DELETE(m_pLightGrid);
 		m_pLightGrid = new CBlockLightGridClient(m_activeChunkDim + 2, this);
+
 		// ensure that all vertices can be indexed by uint16 index buffer.
 		PE_ASSERT((BlockConfig::g_maxFaceCountPerBatch * 4) <= 0xffff);
 		RenderableChunk::GetVertexBufferPool()->SetFullSizedBufferSize(BlockConfig::g_maxFaceCountPerBatch * sizeof(BlockVertexCompressed) * 4);
@@ -510,8 +511,6 @@ namespace ParaEngine
 			{
 				pEffectManager->BeginEffect(TECH_BLOCK, &pEffect);
 			}
-
-			// CEffectFile* pEffect = pEffectManager->GetCurrentEffectFile();
 
 			if (nRenderPass == BlockRenderPass_AlphaBlended || nRenderPass == BlockRenderPass_ReflectedWater)
 			{
@@ -1300,6 +1299,7 @@ namespace ParaEngine
 
 					if (curInstCount >= nMaxFaceCount)
 					{
+
 						CGlobals::GetRenderDevice()->DrawIndexedPrimitiveUP(EPrimitiveType::TRIANGLELIST, 0, curInstCount * 4, curInstCount * 2, &(m_select_block_indices[0]), PixelFormat::INDEX16, &(m_select_block_vertices[0]), sizeof(SelectBlockVertex));
 						curInstCount = 0;
 						instFloatCount = 0;

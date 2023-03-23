@@ -43,6 +43,10 @@ extern "C" {
 #include "os_calls.h"
 #include "ParaScriptingIO.h"
 
+#ifdef EMSCRIPTEN
+#include <emscripten.h>
+#endif
+
 #ifdef WIN32
 #include <boost/filesystem.hpp>
 #include <boost/filesystem/operations.hpp>
@@ -428,6 +432,13 @@ namespace ParaScripting
 		{
 			WriteString(buffer);
 		}
+	}
+
+	void ParaIO::flush()
+	{
+#ifdef EMSCRIPTEN
+	EM_ASM(FS.syncfs(false, function(err) { if (err) { console.log("FS.syncfs", err); } }););
+#endif
 	}
 
 	const char* ParaIO::readline()

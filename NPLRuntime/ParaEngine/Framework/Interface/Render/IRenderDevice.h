@@ -8,9 +8,7 @@
 #include "Core/PEtypes.h"
 #include "math/ParaViewport.h"
 
-
-
-#if defined(DEBUG)
+#if defined(DEBUG) 
 	#define PE_CHECK_GL_ERROR_DEBUG() IRenderDevice::CheckRenderError(__FILE__, __FUNCTION__, __LINE__);
 #else
 	#define PE_CHECK_GL_ERROR_DEBUG() ((void)0)
@@ -64,7 +62,7 @@ namespace ParaEngine
 		virtual bool SetTexture(uint32_t stage, DeviceTexturePtr_type texture) = 0;
 		virtual bool DrawPrimitive(EPrimitiveType PrimitiveType, uint32_t StartVertex, uint32_t PrimitiveCount) = 0;
 		virtual bool DrawIndexedPrimitive(EPrimitiveType Type, int BaseVertexIndex, uint32_t MinIndex, uint32_t NumVertices, uint32_t indexStart, uint32_t PrimitiveCount) = 0;
-		virtual bool DrawPrimitiveUP(EPrimitiveType PrimitiveType, uint32_t PrimitiveCount,const void* pVertexStreamZeroData, uint32_t VertexStreamZeroStride) = 0;
+		virtual bool DrawPrimitiveUP(EPrimitiveType PrimitiveType, uint32_t PrimitiveCount, const void* pVertexStreamZeroData, uint32_t VertexStreamZeroStride) = 0;
 		virtual bool DrawIndexedPrimitiveUP(
 			EPrimitiveType PrimitiveType,
 			uint32_t MinVertexIndex,

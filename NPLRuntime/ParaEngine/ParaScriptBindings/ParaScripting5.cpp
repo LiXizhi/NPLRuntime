@@ -226,6 +226,7 @@ static int luaopen_profiler_table(lua_State *L)
 }
 #endif
 
+// #endif
 void CNPLScriptingState::LoadHAPI_Globals()
 {
 	using namespace luabind;

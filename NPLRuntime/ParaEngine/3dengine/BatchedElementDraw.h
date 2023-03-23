@@ -123,7 +123,6 @@ namespace ParaEngine
 		unordered_ref_array<CParticleElement*> m_listParticles;
 		std::vector<ParticleRenderPass> m_ParticleRenderPasses;
 
-
 		/** tessellation vertex buffer data */
 		static std::vector<char> s_VertexData;
 	};

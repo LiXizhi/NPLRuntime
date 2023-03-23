@@ -405,8 +405,9 @@ void  dlmalloc_stats();
   p = malloc(n);
   assert(malloc_usable_size(p) >= 256);
 */
+#ifndef PLATFORM_SDL2
 size_t dlmalloc_usable_size(void*);
-
+#endif
 
 #if MSPACES
 

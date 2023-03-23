@@ -15,6 +15,23 @@
 #include "SDL2Application.h"
 
 using namespace ParaEngine;
+#if defined(WIN32) || defined(_WIN32) || defined(__WIN32__)
+#include<WinSock.h>
+#pragma comment(lib, "ws2_32.lib")
+#pragma comment(lib, "user32.lib")
+#pragma comment(lib, "gdi32.lib")
+#pragma comment(lib, "winmm.lib")
+#pragma comment(lib, "imm32.lib")
+#pragma comment(lib, "ole32.lib")
+#pragma comment(lib, "oleaut32.lib")
+#pragma comment(lib, "version.lib")
+#pragma comment(lib, "uuid.lib")
+#pragma comment(lib, "advapi32.lib")
+#pragma comment(lib, "setupapi.lib")
+#pragma comment(lib, "shell32.lib")
+#pragma comment(lib, "dinput8.lib")
+#pragma comment(lib, "OpenGL32.lib")
+#endif 
 
 #ifdef _WIN32
 CParaFileUtils* CParaFileUtils::GetInstance()
@@ -26,13 +43,6 @@ CParaFileUtils* CParaFileUtils::GetInstance()
 
 int main(int argc, char* argv[])
 {
-	//SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
-	//SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 3);
-	//SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24);
-	//SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
-	SDL_Init(SDL_INIT_EVERYTHING);
-	gladLoadGLLoader((GLADloadproc)SDL_GL_GetProcAddress);
-
 	std::string sCmdLine;
 	for (int i = 1; i < argc; ++i)
 	{
@@ -48,11 +58,9 @@ int main(int argc, char* argv[])
 		}
 	}
 
-	RenderWindowDelegate renderWindow;
 	CSDL2Application app;
-	app.InitApp(&renderWindow, sCmdLine.c_str());
+	app.InitApp(nullptr, sCmdLine.c_str());
 	app.Run();
 
-	SDL_Quit();
 	return 0;
 }

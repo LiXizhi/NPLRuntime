@@ -44,6 +44,10 @@
 #include "IParaEngineApp.h"
 //#include "OSWindows.h"
 
+#ifdef EMSCRIPTEN
+#include <emscripten.h>
+#endif
+
 using namespace ParaEngine;
 using namespace luabind;
 
@@ -903,6 +907,12 @@ void ParaEngine::ParaEngineSettings::AllocConsole()
 	ParaEngine::RedirectIOToConsole();
 #endif
 }
+void ParaEngine::ParaEngineSettings::FlushDiskIO()
+{
+#ifdef EMSCRIPTEN
+	EM_ASM(FS.syncfs(false, function(err) { if (err) { console.log("FS.syncfs", err); } }););
+#endif
+}
 
 void ParaEngine::ParaEngineSettings::SetConsoleTextAttribute( int wAttributes )
 {
@@ -1524,6 +1534,7 @@ int ParaEngineSettings::InstallFields(CAttributeClass* pClass, bool bOverride)
 	pClass->AddField("ResetAudioDevice", FieldType_String, (void*)ResetAudioDevice_s, NULL, NULL, NULL, bOverride);
 	pClass->AddField("AudioDeviceName", FieldType_String, NULL, (void*)GetAudioDeviceName_s, NULL, NULL, bOverride);
 
+	pClass->AddField("FlushDiskIO", FieldType_void, (void*)FlushDiskIO_s, NULL, NULL, NULL, bOverride);
 	pClass->AddField("DefaultFileAPIEncoding", FieldType_String, NULL, (void*)GetDefaultFileAPIEncoding_s, NULL, NULL, bOverride);
 
 #ifdef ANDROID

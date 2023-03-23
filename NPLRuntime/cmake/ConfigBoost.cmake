@@ -13,7 +13,6 @@ else()
 	set(BOOST_ROOT ${PROJECT_SOURCE_DIR}/externals/boost/prebuild/src/${Boost_Path})
 endif()
 
-
 if(IOS)
 	if (PLATFORM STREQUAL "SIMULATOR")
 		set(BOOST_LIBRARYDIR ${BOOST_ROOT}/iphonesim-build/stage/lib)
@@ -46,7 +45,7 @@ endif()
 
 set(Boost_USE_MULTITHREADED ON)
 set(Boost_USE_STATIC_LIBS   ON)
-#set(Boost_DEBUG ON)
+# set(Boost_DEBUG ON)
 
 if (MSVC)
 	set(Boost_USE_STATIC_RUNTIME ON)

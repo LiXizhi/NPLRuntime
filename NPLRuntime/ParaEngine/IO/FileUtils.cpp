@@ -1,4 +1,4 @@
-
+﻿
 //-----------------------------------------------------------------------------
 // Class: FileUtil
 // Authors:	Li,Xizhi
@@ -81,6 +81,7 @@
 #include <boost/filesystem/path.hpp>
 #include <boost/filesystem/fstream.hpp>
 #include <iostream>
+
 namespace fs = boost::filesystem;
 #define BOOST_FILESYSTEM_NO_DEPRECATED
 
@@ -533,11 +534,18 @@ ParaEngine::FileHandle ParaEngine::CFileUtils::OpenFile(const char* filename, bo
 	std::string sFilePath;
 	if (bWrite && !IsAbsolutePath(filename))
 	{
+#ifdef EMSCRIPTEN
+		// 设置可写路径情况 排除 temp 目录
+		if (sFilePath.substr(0, 5) != "temp/") sFilePath = GetWritablePath() + filename;
+		else sFilePath = filename;
+#else
 		sFilePath = GetWritablePath() + filename;
+#endif
 	}
 	else {
 		sFilePath = filename;
 	}
+
 #if WIN32 && defined(DEFAULT_FILE_ENCODING)
 	std::wstring sFilePath16 = StringHelper::MultiByteToWideChar(sFilePath.c_str(), DEFAULT_FILE_ENCODING);
 	FILE* pFile = _wfopen(sFilePath16.c_str(), bRead ? (bWrite ? L"w+b" : L"rb") : L"wb");
@@ -545,8 +553,16 @@ ParaEngine::FileHandle ParaEngine::CFileUtils::OpenFile(const char* filename, bo
 	FILE* pFile = fopen(sFilePath.c_str(), bRead ? (bWrite ? "w+b" : "rb") : "wb");
 #endif
 	
-	if (pFile == 0) {
+	if (pFile == 0) 
+	{
 		OUTPUT_LOG("failed to open file: %s with mode %s\n", sFilePath.c_str(), bRead ? (bWrite ? "w+b" : "rb") : "wb");
+	}
+	else
+	{
+		if (sFilePath != filename)
+		{
+			OUTPUT_LOG("open file rename %s => %s\n", filename, sFilePath.c_str());
+		}
 	}
 	FileHandle fileHandle;
 	fileHandle.m_pFile = pFile;

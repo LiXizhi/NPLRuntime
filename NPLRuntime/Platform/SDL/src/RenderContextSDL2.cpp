@@ -1,5 +1,7 @@
 #include "ParaEngine.h"
+#ifndef EMSCRIPTEN
 #include <glad/glad.h>
+#endif
 #include "RenderContextSDL2.h"
 #include "RenderWindowSDL2.h"
 
