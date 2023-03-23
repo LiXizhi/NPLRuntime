@@ -310,6 +310,8 @@ void CNPLScriptingState::LoadHAPI_Globals()
 			def("SaveObject", & ParaGlobal::SaveObject),
 			def("LoadObject", & ParaGlobal::LoadObject), //, pure_out_value(_2)),
 			def("CreateProcess", & ParaGlobal::CreateProcess), 
+			def("IsPortAvailable", &ParaGlobal::IsPortAvailable),
+			def("Execute", &ParaGlobal::Execute),
 			def("ShellExecute", & ParaGlobal::ShellExecute), 
 			def("OpenFileDialog", & ParaGlobal::OpenFileDialog), 
 
