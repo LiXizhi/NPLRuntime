@@ -32,9 +32,6 @@
 #endif
 #include <boost/bind.hpp>
 #include <boost/asio.hpp>
-#include <algorithm>
-#include <cctype>
-#include <string>
 
 #include "ParaScriptBindings/ParaScriptingNPL.h"
 
@@ -364,7 +361,13 @@ void ParaGlobal::Execute(const std::string& exe, const luabind::object& param, l
 
 #if defined(WIN32)
 	bp::environment env = boost::this_process::environment();
+#ifdef DEFAULT_FILE_ENCODING
+	std::wstring exe_path_unicode = StringHelper::MultiByteToWideChar(exe.c_str(), DEFAULT_FILE_ENCODING);
+	bp::child c(exe_path_unicode, bp::args(args), env, bp::windows::hide);
+#else
 	bp::child c(exe, bp::args(args), env, bp::windows::hide);
+#endif
+	
 #else
 	bp::child c(exe, bp::args(args));
 #endif
