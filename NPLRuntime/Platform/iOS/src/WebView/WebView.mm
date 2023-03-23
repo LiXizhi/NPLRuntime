@@ -201,7 +201,7 @@ static std::string getFixedBaseUrl(const std::string& baseUrl)
 
         if (p)
         {
-            GLView* view = (__bridge GLView*)p;
+            GLView *view = (__bridge GLView *)p;
             [view addSubview:self.uiWebView];
         }
     }
@@ -224,7 +224,13 @@ static std::string getFixedBaseUrl(const std::string& baseUrl)
 
 - (void)activate:(const std::string&)msg
 {
-    [self.uiWebView evaluateJavaScript:@"window.NPL.receive(\"test\")" completionHandler:nil];
+    NSString *msgStr = [NSString stringWithCString:msg.c_str() encoding:[NSString defaultCStringEncoding]];
+    NSString *jsStr = [NSString stringWithFormat:@"window.NPL.receive(\"%@\")", msgStr];
+    
+    if (self.uiWebView)
+    {
+        [self.uiWebView evaluateJavaScript:jsStr completionHandler:nil];
+    }
 }
 
 - (void)move:(int)x y:(int)y
