@@ -171,7 +171,14 @@ static std::string getFixedBaseUrl(const std::string& baseUrl)
         return;
     }
 
-    ParaEngine::LuaObjcBridge::nplActivate("""NPL.activate(\"tests/testClearMessage\", {name=\"1\"});""", "");
+    NSString *activate = [message.body valueForKey:@"filename"];
+    NSString *msg = [message.body valueForKey:@"msg"];
+
+    std::string activateStr = [activate UTF8String];
+    std::string msgStr = [msg UTF8String];
+    std::string code = "NPL.activate(\"" + activateStr + "\", " + msgStr + ");";
+
+    ParaEngine::LuaObjcBridge::nplActivate(code, "");
 }
 
 - (void)setupWebView
