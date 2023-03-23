@@ -5,16 +5,15 @@
 // CreateDate: 2018.5.22
 // ModifyDate: 2022.12.30
 //-----------------------------------------------------------------------------
-#import <WebKit/WKWebView.h>
-#import <WebKit/WKUIDelegate.h>
-#import <WebKit/WKNavigationDelegate.h>
-#import <WebKit/WKNavigationAction.h>
-#import <WebKit/WKWebViewConfiguration.h>
+
+#import <WebKit/WebKit.h>
+#import <AVFoundation/AVFoundation.h>
 
 #import <Foundation/Foundation.h>
 #include "ParaEngine.h"
 #include "WebView.h"
 #import "GLView.h"
+#import "LuaObjcBridge/CCLuaObjcBridge.h"
 
 static std::string getFixedBaseUrl(const std::string& baseUrl)
 {
@@ -94,12 +93,16 @@ static std::string getFixedBaseUrl(const std::string& baseUrl)
 
 - (void)resize:(int)width height:(int)height;
 
+- (void)userContentController:(WKUserContentController *)userContentController didReceiveScriptMessage:(WKScriptMessage *)message;
+
+- (void)activate:(const std::string&)msg;
+
 @end
 
-@interface UIWebViewWrapper () <WKUIDelegate, WKNavigationDelegate>
-@property(nonatomic, retain) WKWebView * uiWebView;
-@property(nonatomic, retain) UIButton* uiCloseBtn;
-@property(nonatomic, copy) NSString * jsScheme;
+@interface UIWebViewWrapper () <WKUIDelegate, WKNavigationDelegate, WKScriptMessageHandler>
+@property(nonatomic, retain) WKWebView *uiWebView;
+@property(nonatomic, retain) UIButton *uiCloseBtn;
+@property(nonatomic, copy) NSString *jsScheme;
 @end
 
 @implementation UIWebViewWrapper
@@ -162,12 +165,23 @@ static std::string getFixedBaseUrl(const std::string& baseUrl)
      }
 }
 
+- (void)userContentController:(WKUserContentController *)userContentController didReceiveScriptMessage:(WKScriptMessage *)message
+{
+    if (![message.name isEqualToString:@"activate"]) {
+        return;
+    }
+
+    ParaEngine::LuaObjcBridge::nplActivate("""NPL.activate(\"tests/testClearMessage\", {name=\"1\"});""", "");
+}
+
 - (void)setupWebView
 {
     if (!self.uiWebView)
     {
         WKWebViewConfiguration *webViewConfig = [[WKWebViewConfiguration alloc] init];
         webViewConfig.allowsInlineMediaPlayback = YES;
+
+        [webViewConfig.userContentController addScriptMessageHandler:self name:@"activate"];
 
         self.uiWebView = [[WKWebView alloc] initWithFrame:CGRectMake(0, 0, 0, 0) configuration:webViewConfig];
         self.uiWebView.UIDelegate = self;
@@ -201,7 +215,14 @@ static std::string getFixedBaseUrl(const std::string& baseUrl)
     }
 }
 
-- (void)move:(int)x y:(int)y {
+- (void)activate:(const std::string&)msg
+{
+    NSLog(@"receive");
+    [self.uiWebView evaluateJavaScript:@"window.NPL.receive(\"test\")" completionHandler:nil];
+}
+
+- (void)move:(int)x y:(int)y
+{
     auto height = self.uiWebView.frame.size.height;
     auto btnHeigh = self.uiCloseBtn.frame.size.height;
 
@@ -475,8 +496,7 @@ namespace ParaEngine {
     {
         _uiWebViewWrapper = nil;
     }
-    
-    
+
     void ParaEngineWebView::loadUrl(const std::string &url, bool cleanCachedData)
     {
         [this->_uiWebViewWrapper loadUrl:url cleanCachedData:cleanCachedData];
@@ -530,5 +550,10 @@ namespace ParaEngine {
     void ParaEngineWebView::resize(int width, int height)
     {
         [this->_uiWebViewWrapper resize:width height:height];
+    }
+
+    void ParaEngineWebView::activate(const std::string &msg)
+    {
+        [this->_uiWebViewWrapper activate:msg];
     }
 } // end namespcae

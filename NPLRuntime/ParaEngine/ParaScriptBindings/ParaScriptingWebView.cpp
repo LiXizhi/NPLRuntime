@@ -57,6 +57,14 @@ namespace ParaScripting
 		}
 	}
 
+	void ParaWebView::activate(const std::string &msg)
+	{
+		if (m_pParaWebView)
+		{
+			m_pParaWebView->activate(msg);
+		}
+	}
+
 	void ParaWebView::closeAndRelease()
 	{
 		m_pParaWebView.reset();
@@ -67,6 +75,7 @@ namespace ParaScripting
 	{
 		using namespace luabind;
 		lua_State* L = GetLuaState();
+
 		module(L)
 		[
 			namespace_("WebView")
@@ -75,6 +84,7 @@ namespace ParaScripting
 					.def("GetAttributeObject", &ParaWebView::GetAttributeObject)
 					.def("loadUrl", &ParaWebView::loadUrl1)
 					.def("loadUrl", &ParaWebView::loadUrl2)
+					.def("activate", &ParaWebView::activate)
 					.def("closeAndRelease", &ParaWebView::closeAndRelease),
 #if (PARA_TARGET_PLATFORM == PARA_PLATFORM_ANDROID)
 				def("setOrientation", ParaWebView::setOrientation),

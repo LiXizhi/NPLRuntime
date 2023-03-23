@@ -23,8 +23,8 @@ namespace ParaScripting
 		ParaAttributeObject GetAttributeObject();
 		void loadUrl1(const std::string &url);
 		void loadUrl2(const std::string &url, bool cleanCachedData);
+		void activate(const std::string &msg);
 		void closeAndRelease();
-
 
 		typedef boost::shared_ptr<IParaWebView> IParaWebView_ptr;
 
