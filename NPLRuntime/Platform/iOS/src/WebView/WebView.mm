@@ -194,10 +194,10 @@ static std::string getFixedBaseUrl(const std::string& baseUrl)
         self.uiWebView.UIDelegate = self;
         self.uiWebView.navigationDelegate = self;
     }
-    
+
     if (!self.uiWebView.superview)
     {
-        void *p = (void*)ParaEngine::CGlobals::GetApp()->GetRenderWindow()->GetNativeHandle();
+        void *p = (void *)ParaEngine::CGlobals::GetApp()->GetRenderWindow()->GetNativeHandle();
 
         if (p)
         {
@@ -224,7 +224,6 @@ static std::string getFixedBaseUrl(const std::string& baseUrl)
 
 - (void)activate:(const std::string&)msg
 {
-    NSLog(@"receive");
     [self.uiWebView evaluateJavaScript:@"window.NPL.receive(\"test\")" completionHandler:nil];
 }
 

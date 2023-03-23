@@ -1,9 +1,10 @@
-//
-//  WebView.h
-//  NPLRuntime
-//
-//  Created by apple on 2018/5/22.
-//
+//-----------------------------------------------------------------------------
+// Class: WebView.h
+// Authors: kkvskkkk, big
+// Emails: onedou@126.com
+// CreateDate: 2018.5.22
+// ModifyDate: 2023.3.23
+//-----------------------------------------------------------------------------
 
 #ifndef WebView_h
 #define WebView_h

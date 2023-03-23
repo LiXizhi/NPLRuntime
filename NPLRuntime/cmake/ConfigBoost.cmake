@@ -60,6 +60,11 @@ if(IOS)
 		Boost 1.74.0 REQUIRED
 		COMPONENTS thread date_time filesystem system chrono regex serialization iostreams log 
 	)
+elseif(APPLE)
+	find_package(
+		Boost 1.74.0 REQUIRED 
+		COMPONENTS thread date_time filesystem system chrono regex serialization iostreams log
+	)
 else()
 	find_package(
 		Boost 1.74.0 REQUIRED 

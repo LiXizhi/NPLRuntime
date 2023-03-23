@@ -1,16 +1,18 @@
-//
-//  WebView.mm
-//  buildvm21
-//
-//  Created by apple on 2018/5/25.
-//
+//-----------------------------------------------------------------------------
+// Class: WebView.mm
+// Authors: kkvskkkk, big
+// Emails: onedou@126.com
+// CreateDate: 2018.5.25
+// ModifyDate: 2023.3.23
+//-----------------------------------------------------------------------------
 
 #import <Foundation/Foundation.h>
 #import <Cocoa/Cocoa.h>
 #import <WebKit/WebKit.h>
 #include "ParaEngine.h"
-#include "WebView.h"
+#import "LuaObjcBridge/CCLuaObjcBridge.h"
 
+#include "WebView.h"
 
 @interface WebViewWindowController : NSWindowController
 {
@@ -19,19 +21,19 @@
 
 @end
 
-@interface WebViewWindowController () <WKNavigationDelegate, WKUIDelegate>
+@interface WebViewWindowController () <WKNavigationDelegate, WKUIDelegate, WKScriptMessageHandler>
 {
     WKWebView *webView;
 }
-@property (assign) IBOutlet WKWebView *webView;
+@property(nonatomic, retain) WKWebView *webView;
 //@property (nonatomic) std::function<void()> onCloseCallback;
 @property (nonatomic) BOOL hideViewWhenClickClose;
 @property (nonatomic) BOOL ignoreCloseWhenClickClose; //忽略返回键
 @property (nonatomic) BOOL bCloseWhenClickBackground; //非全屏时，是否点击背景时关闭WebView
 
-- (void) setCloseCB: (const std::function<void()>&) cb;
-@end
+- (void)setCloseCB:(const std::function<void()>&)cb;
 
+@end
 
 @implementation WebViewWindowController
 @synthesize webView;
@@ -39,7 +41,7 @@
 @synthesize ignoreCloseWhenClickClose;
 @synthesize bCloseWhenClickBackground;
 
-- (void) setCloseCB: (const std::function<void()>&) cb {
+- (void)setCloseCB:(const std::function<void()>&)cb {
     _onCloseCallback = cb;
 }
 
@@ -55,10 +57,11 @@
 }
 
 - (void)webView:(WKWebView *)webView didStartProvisionalNavigation:(WKNavigation *)navigation {
-//    NSLog(@"%s", __FUNCTION__);
 }
 
-- (void)webView:(WKWebView *)webView decidePolicyForNavigationResponse:(WKNavigationResponse *)navigationResponse decisionHandler:(void (^)(WKNavigationResponsePolicy))decisionHandler {
+- (void)webView:(WKWebView *)webView
+    decidePolicyForNavigationResponse:(WKNavigationResponse *)navigationResponse
+    decisionHandler:(void (^)(WKNavigationResponsePolicy))decisionHandler {
     decisionHandler(WKNavigationResponsePolicyAllow);
 }
 
@@ -73,10 +76,27 @@
         [self.window setIsVisible:false];
         return NO;
     }
-    
+
     if (_onCloseCallback)
         _onCloseCallback();
+
     return YES;
+}
+
+- (void)userContentController:(WKUserContentController *)userContentController didReceiveScriptMessage:(WKScriptMessage *)message
+{
+    if (![message.name isEqualToString:@"activate"]) {
+        return;
+    }
+
+    NSString *activate = [message.body valueForKey:@"filename"];
+    NSString *msg = [message.body valueForKey:@"msg"];
+
+    std::string activateStr = [activate UTF8String];
+    std::string msgStr = [msg UTF8String];
+    std::string code = "NPL.activate(\"" + activateStr + "\", " + msgStr + ");";
+
+    ParaEngine::LuaObjcBridge::nplActivate(code, "");
 }
 
 @end
@@ -100,7 +120,7 @@ namespace ParaEngine {
         
         return p;
     }
-    
+
     ParaEngineWebView* ParaEngineWebView::createSubWebView(int x, int y, int w, int h)
     {
         auto p = new ParaEngineWebView();
@@ -114,23 +134,39 @@ namespace ParaEngine {
     {
         if (!_webViewController)
         {
+            NSWindow *renderWindow = (NSWindow *)CGlobals::GetApp()->GetRenderWindow()->GetNativeHandle();
+
+            _webViewController = [[WebViewWindowController alloc] init];
+            
             if (bSub)
             {
-                auto renderWindow = (NSWindow*)CGlobals::GetApp()->GetRenderWindow()->GetNativeHandle();
+                y = renderWindow.frame.size.height - (y + h + 28);
+
+                WKWebViewConfiguration *webViewConfig = [[WKWebViewConfiguration alloc] init];
+                [webViewConfig.userContentController addScriptMessageHandler:_webViewController name:@"activate"];
+
+                _webViewController.webView = [[WKWebView alloc] initWithFrame:CGRectMake(x, y, w, h) configuration:webViewConfig];
                 
-                _webViewController = [[WebViewWindowController alloc] initWithWindowNibName:@"WebViewWindowWithoutTitleBar"];
-                
-                [renderWindow addChildWindow:_webViewController.window ordered:NSWindowAbove];
-                
-                x += renderWindow.frame.origin.x;
-                y = renderWindow.frame.origin.y + (renderWindow.contentView.frame.size.height - h) - y;
             }
             else
             {
-                _webViewController = [[WebViewWindowController alloc] initWithWindowNibName:@"WebViewWindow"];
-                [_webViewController autoResize];
-                y = [[NSScreen mainScreen] visibleFrame].size.height - h - y;
+                WKWebViewConfiguration *webViewConfig = [[WKWebViewConfiguration alloc] init];
+                [webViewConfig.userContentController addScriptMessageHandler:_webViewController name:@"activate"];
+                
+                _webViewController.webView =
+                    [
+                        [WKWebView alloc]
+                            initWithFrame:CGRectMake(
+                                0,
+                                0,
+                                renderWindow.frame.size.width,
+                                renderWindow.frame.size.height - 28
+                            )
+                            configuration:webViewConfig
+                    ];
             }
+
+            [renderWindow.contentView addSubview:_webViewController.webView];
 
             _webViewController.hideViewWhenClickClose = FALSE;
             _webViewController.ignoreCloseWhenClickClose = FALSE;
@@ -149,16 +185,9 @@ namespace ParaEngine {
 
             [_webViewController setCloseCB:cb];
         }
-
-        [_webViewController.window orderFront:nil];
-
-        [_webViewController.webView setFrameSize:NSMakeSize(w, h)];
-        [_webViewController.window setContentSize:_webViewController.webView.frame.size];
-        [_webViewController.window setFrameOrigin:NSMakePoint(x, y)];
     }
 
-    ParaEngineWebView::ParaEngineWebView()
-        : _webViewController(nil)
+    ParaEngineWebView::ParaEngineWebView() : _webViewController(nil)
     {
         
     }
@@ -167,7 +196,7 @@ namespace ParaEngine {
     {
         _webViewController = nil;
     }
-    
+
     void ParaEngineWebView::loadUrl(const std::string &urlString, bool cleanCachedData)
     {
         if (_webViewController)
@@ -273,6 +302,7 @@ namespace ParaEngine {
             x += renderWindow.frame.origin.x;
             y = renderWindow.frame.origin.y + (renderWindow.contentView.frame.size.height - h) - y;
 
+            [_webViewController.webView setFrameOrigin:NSMakePoint(x, y)];
             [_webViewController.window setFrameOrigin:NSMakePoint(x, y)];
         }
      }
@@ -282,7 +312,19 @@ namespace ParaEngine {
         if (_webViewController)
         {
             [_webViewController.webView setFrameSize:NSMakeSize(width, height)];
-            [_webViewController.window setContentSize:_webViewController.webView.frame.size];
+            // [_webViewController.window setContentSize:_webViewController.webView.frame.size];
+        }
+    }
+
+    void ParaEngineWebView::activate(const std::string &msg)
+    {
+        
+        NSString *msgStr = [NSString stringWithCString:msg.c_str() encoding:[NSString defaultCStringEncoding]];
+        NSString *jsStr = [NSString stringWithFormat:@"window.NPL.receive(\"%@\")", msgStr];
+        
+        if (_webViewController)
+        {
+            [_webViewController.webView evaluateJavaScript:jsStr completionHandler:nil];
         }
     }
 } // end namespcae

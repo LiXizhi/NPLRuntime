@@ -1,9 +1,11 @@
-//
-//  CCLuabindObjcBridge.mm
-//  ParaEngine
-//
-//  Created by apple on 2018/9/21.
-//
+//-----------------------------------------------------------------------------
+// Class: CCLuabindObjcBridge.mm
+// Authors: kkvskkkk, big
+// Emails: onedou@126.com
+// CreateDate: 2018.9.21
+// ModifyDate: 2023.3.23
+//-----------------------------------------------------------------------------
+
 #include "CCLuaObjcBridge.h"
 
 #include <map>
@@ -98,80 +100,79 @@ namespace ParaEngine {
             return LuaObjcBridge::ReturnObject(LuaObjcBridge::TypeInvalid, rv);
         }
     }
-    
+
     LuaObjcBridge::ReturnObject::Handle::Handle():m_obj(nullptr)
     {
-        
     }
-    
+
     LuaObjcBridge::ReturnObject::Handle::~Handle()
     {
         if(m_obj != NULL)
         {
             //int ptraddr = *(int *)m_obj;
-            //NSLog(@("----------------------!!!! delete %d"), ptraddr);
+
             CFRelease(m_obj);
             m_obj = NULL;
         }
     }
-    
+
     void LuaObjcBridge::ReturnObject::Handle::setData(const ValueType& valueType, const ReturnValue& returnValue)
     {
         _valueType = valueType;
         _returnValue = returnValue;
     }
-    
+
     void LuaObjcBridge::ReturnObject::Handle::setData(const ValueType& valueType, void* oc_id)
     {
         _valueType = valueType;
         m_obj = oc_id;
         CFRetain(m_obj);
         //int ptraddr = *(int *)_handle->m_obj;
-        //NSLog(@("----------------------!!!! new %d"), ptraddr);
     }
-    
+
     LuaObjcBridge::ReturnObject::ReturnObject(const ValueType& valueType, const ReturnValue& returnValue)
     {
         _handle.reset(new Handle());
         _handle->setData(valueType, returnValue);
     }
-    
+
     LuaObjcBridge::ReturnObject::ReturnObject(const ValueType& valueType, void* oc_id)
     {
         _handle.reset(new Handle());
         _handle->setData(valueType, oc_id);
     }
-    
+
     LuaObjcBridge::ReturnObject::ReturnObject(LuaObjcBridge::ReturnObject const&  other)
     {
         _handle = other._handle;
     }
-    
+
     LuaObjcBridge::ReturnObject& LuaObjcBridge::ReturnObject::operator=(LuaObjcBridge::ReturnObject const& other)
     {
         _handle = other._handle;
     }
-    
+
     const LuaObjcBridge::ValueType& LuaObjcBridge::ReturnObject::getReturnType() const
     {
         return _handle->_valueType;
     }
+
     const LuaObjcBridge::ReturnValue& LuaObjcBridge::ReturnObject::getReturnVaule() const
     {
         return _handle->_returnValue;
     }
-    
+
     const char* LuaObjcBridge::ReturnObject::getStrVaule() const
     {
         //NSMutableString* nsstr = (__bridge id)_handle->m_obj;
         return "";//[nsstr UTF8String];
     }
-    
+
     void* LuaObjcBridge::ReturnObject::getOcObj()
     {
         return _handle->m_obj;
     }
-    
+
     void LuaObjcBridge::ReturnObject::getDictionaryMap(std::map<std::string, LuaObjcBridge::ReturnObject> &mapTarget) const
     {
         id oval = (__bridge id) _handle->m_obj;
@@ -188,33 +189,32 @@ namespace ParaEngine {
         }
     }
 
-    
     LuaObjcBridge::OcFunction::OcFunction()
     {
         id obj = [NSMutableDictionary dictionary];
         argvDatas = (__bridge_retained void *)(obj);
     }
-    
+
     LuaObjcBridge::OcFunction::~OcFunction()
     {
         id obj = (__bridge_transfer id)argvDatas;
         obj = nil;
     }
-    
+
     void LuaObjcBridge::OcFunction::pushOcValue(const std::string& key, const std::string& value)
     {
         NSMutableDictionary* dict = (__bridge NSMutableDictionary*)argvDatas;
         NSString *key_ = [NSString stringWithCString:key.c_str() encoding:NSUTF8StringEncoding];
         [dict setObject:[NSString stringWithCString:value.c_str() encoding:NSUTF8StringEncoding] forKey:key_];
     }
-    
+
     void LuaObjcBridge::OcFunction::pushOcValue(const std::string& key, const float& value)
     {
         NSMutableDictionary* dict = (__bridge NSMutableDictionary*)argvDatas;
         NSString *key_ = [NSString stringWithCString:key.c_str() encoding:NSUTF8StringEncoding];
         [dict setObject:[NSNumber numberWithFloat:value] forKey:key_];
     }
-    
+
     void LuaObjcBridge::OcFunction::pushOcValue(const std::string& key, bool value)
     {
         NSMutableDictionary* dict = (__bridge NSMutableDictionary*)argvDatas;
@@ -222,7 +222,6 @@ namespace ParaEngine {
         [dict setObject:[NSNumber numberWithBool:value] forKey:key_];
     }
 
-    
     LuaObjcBridge::ReturnObject LuaObjcBridge::OcFunction::callFunction(const std::string& className_, const std::string& methodName_)
     {
         const char* className = className_.c_str();
