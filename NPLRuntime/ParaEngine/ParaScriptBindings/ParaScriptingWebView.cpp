@@ -57,11 +57,11 @@ namespace ParaScripting
 		}
 	}
 
-	void ParaWebView::activate(const std::string &msg)
+	void ParaWebView::activate(const std::string &filepath, const std::string &msg)
 	{
 		if (m_pParaWebView)
 		{
-			m_pParaWebView->activate(msg);
+			m_pParaWebView->activate(filepath, msg);
 		}
 	}
 

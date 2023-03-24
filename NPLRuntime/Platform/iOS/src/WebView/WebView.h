@@ -36,7 +36,7 @@ namespace ParaEngine {
         virtual void bringToTop() override {};
         virtual void move(int x, int y) override;
         virtual void resize(int width, int height) override;
-        virtual void activate(const std::string &msg) override;
+        virtual void activate(const std::string &filepath, const std::string &msg) override;
         
     protected:
         ParaEngineWebView();

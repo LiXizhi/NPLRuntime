@@ -26,7 +26,7 @@ namespace ParaEngine {
 		ATTRIBUTE_METHOD(IParaWebView, bringToTop_s) { cls->bringToTop(); return S_OK; }
 		ATTRIBUTE_METHOD2(IParaWebView, move_s, float) { cls->move((int)p1, (int)p2); return  S_OK;  }
 		ATTRIBUTE_METHOD2(IParaWebView, resize_s, float) { cls->resize((int)p1, (int)p2); return  S_OK; }
-        ATTRIBUTE_METHOD1(IParaWebView, activate_s, const char*) { cls->activate(p1); return S_OK; }
+        ATTRIBUTE_METHOD2(IParaWebView, activate_s, const char*) { cls->activate(p1, p2); return S_OK; }
 
 		IAttributeFields* GetAttributeObject();
 
@@ -41,7 +41,7 @@ namespace ParaEngine {
 		virtual void bringToTop() = 0;
         virtual void move(int x, int y) = 0;
         virtual void resize(int width, int height) = 0;
-        virtual void activate(const std::string &msg) = 0;
+        virtual void activate(const std::string &filepath, const std::string &msg) = 0;
 
 		// return false IParaWebView must auto release, return ture IParaWebView release by user
 		typedef std::function<bool()> onCloseFunc;

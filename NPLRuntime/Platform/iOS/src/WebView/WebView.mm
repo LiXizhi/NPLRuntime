@@ -222,10 +222,12 @@ static std::string getFixedBaseUrl(const std::string& baseUrl)
     }
 }
 
-- (void)activate:(const std::string&)msg
+- (void)activate:(const std::string &)filepath msg:(const std::string &)msg
 {
     NSString *msgStr = [NSString stringWithCString:msg.c_str() encoding:[NSString defaultCStringEncoding]];
-    NSString *jsStr = [NSString stringWithFormat:@"window.NPL.receive(\"%@\")", msgStr];
+    NSString *filepathStr = [NSString stringWithCString:filepath.c_str() encoding:[NSString defaultCStringEncoding]];
+
+    NSString *jsStr = [NSString stringWithFormat:@"window.NPL.receive(\"%@\",\"%@\")", filepathStr, msgStr];
     
     if (self.uiWebView)
     {
@@ -564,8 +566,8 @@ namespace ParaEngine {
         [this->_uiWebViewWrapper resize:width height:height];
     }
 
-    void ParaEngineWebView::activate(const std::string &msg)
+    void ParaEngineWebView::activate(const std::string &filepath, const std::string &msg)
     {
-        [this->_uiWebViewWrapper activate:msg];
+        [this->_uiWebViewWrapper activate: filepath msg:msg];
     }
 } // end namespcae

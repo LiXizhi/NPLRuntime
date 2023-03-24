@@ -329,12 +329,13 @@ namespace ParaEngine {
         }
     }
 
-    void ParaEngineWebView::activate(const std::string &msg)
+    void ParaEngineWebView::activate(const std::string &filepath, const std::string &msg)
     {
-        
         NSString *msgStr = [NSString stringWithCString:msg.c_str() encoding:[NSString defaultCStringEncoding]];
-        NSString *jsStr = [NSString stringWithFormat:@"window.NPL.receive(\"%@\")", msgStr];
-        
+        NSString *filepathStr = [NSString stringWithCString:filepath.c_str() encoding:[NSString defaultCStringEncoding]];
+
+        NSString *jsStr = [NSString stringWithFormat:@"window.NPL.receive(\"%@\",\"%@\")", filepathStr, msgStr];
+
         if (_webViewController)
         {
             [_webViewController.webView evaluateJavaScript:jsStr completionHandler:nil];
