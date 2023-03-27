@@ -33,7 +33,7 @@ namespace cAudio
 #	define cAudioChar	wchar_t
 #	define cfopen		_wfopen
 #   define freadMode    L"rb"
-#   define fwriteMode    L"rb"
+#   define fwriteMode    L"wb"
 #   define cFindFirstFile FindFirstFileW
 #   define cFindNextFile FindNextFileW
 #   define cWIN32_FIND_DATA WIN32_FIND_DATAW
@@ -43,7 +43,7 @@ namespace cAudio
 #	define cAudioChar	char
 #	define cfopen		fopen
 #   define freadMode    "rb"
-#   define fwriteMode    L"wb"
+#   define fwriteMode    "wb"
 #   define cFindFirstFile FindFirstFile
 #   define cFindNextFile FindNextFile
 #   define cWIN32_FIND_DATA WIN32_FIND_DATA
