@@ -387,6 +387,12 @@ void ParaEngine::CUrlProcessor::SetCurlEasyOpt(CURL* handle)
 			else if (sKey == "CURLOPT_PASSWORD") {
 				curl_easy_setopt(handle, CURLOPT_PASSWORD, iter->second.c_str());
 			}
+			else if (sKey == "CURLOPT_PROXY") {
+				curl_easy_setopt(handle, CURLOPT_PROXY, iter->second.c_str());
+			}
+			else if (sKey == "CURLOPT_PROXYUSERPWD") {
+				curl_easy_setopt(handle, CURLOPT_PROXYUSERPWD, iter->second.c_str());
+			}
 			else if (sKey == "CURLOPT_CUSTOMREQUEST") {
 				bIsCustomRequest = true;
 				curl_easy_setopt(handle, CURLOPT_CUSTOMREQUEST, iter->second.c_str());
