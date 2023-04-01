@@ -78,7 +78,7 @@
 
     std::string activateStr = [activate UTF8String];
     std::string msgStr = [msg UTF8String];
-    std::string code = "NPL.activate(\"" + activateStr + "\", " + msgStr + ");";
+    std::string code = "NPL.activate('" + activateStr + "', { msg = '" + msgStr + "' });";
 
     ParaEngine::LuaObjcBridge::nplActivate(code, "");
 }
@@ -334,7 +334,7 @@ namespace ParaEngine {
         NSString *msgStr = [NSString stringWithCString:msg.c_str() encoding:[NSString defaultCStringEncoding]];
         NSString *filepathStr = [NSString stringWithCString:filepath.c_str() encoding:[NSString defaultCStringEncoding]];
 
-        NSString *jsStr = [NSString stringWithFormat:@"window.NPL.receive(\"%@\",\"%@\")", filepathStr, msgStr];
+        NSString *jsStr = [NSString stringWithFormat:@"window.NPL.receive('%@', '%@')", filepathStr, msgStr];
 
         if (_webViewController)
         {
