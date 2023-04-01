@@ -272,7 +272,8 @@ bool ModelRenderPass::init_FX(CParaXModel *m, SceneState* pSceneState,CParameter
 	}
 
 	CBaseObject* pBaseObj = pSceneState->GetCurrentSceneObject();
-	if (pBaseObj != NULL) pBaseObj->ApplyMaterial();
+	if (pBaseObj != NULL) 
+		pBaseObj->ApplyMaterial();
 
 	return true;
 }
