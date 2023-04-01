@@ -226,6 +226,11 @@ if(NPLRUNTIME_CAUDIOENGINE)
 	add_subdirectory (${PROJECT_SOURCE_DIR}/trunk/cAudio_2.4.0 ${PROJECT_BINARY_DIR}/cAudio_2.4.0)
 endif()	
 
+set(NPLRUNTIME_WEBVIEW TRUE)
+if (NPLRUNTIME_WEBVIEW)
+	add_subdirectory (${PROJECT_SOURCE_DIR}/trunk/externals/webview ${PROJECT_BINARY_DIR}/webview)
+endif()
+
 if(PARAENGINE_CLIENT_DLL)
 	if(NOT NPLRUNTIME_STATIC_LIB) 
 		# this app is for testing the client dll

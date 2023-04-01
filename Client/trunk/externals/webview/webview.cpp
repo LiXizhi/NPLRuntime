@@ -1,0 +1,253 @@
+﻿
+
+#include "WebView.h"
+
+WebView::WebView()
+{
+    m_hWnd = NULL;
+    m_bShow = true;
+    m_x = 0;
+    m_y = 0;
+    m_width = 0;
+    m_height = 0;
+
+    m_on_created_callback = nullptr;
+    m_on_message_callback = nullptr;
+    m_on_proto_send_msg_callback = nullptr;
+}
+
+WebView::~WebView()
+{
+    Destroy();
+}
+
+bool WebView::SetWnd(HWND hWnd)
+{
+    if (m_hWnd == hWnd) return true;
+    if (m_webview_controller != nullptr)
+    {
+        m_webview_controller->Close();
+        m_webview_controller = nullptr;
+        m_webview = nullptr;
+    }
+    m_hWnd = hWnd;
+    return CreateWebView(m_hWnd);
+}
+
+bool WebView::Create(HINSTANCE hInstance, HWND hParentWnd)
+{
+    if (!IsSupported()) return false;
+
+    if (m_hWnd) 
+    {
+        if (m_on_created_callback != nullptr) m_on_created_callback();
+        return true;
+    }
+
+    static const char* s_szWindowClass = "ParaCraftWebView";
+    static const char* s_szTitle = "ParaCraftWebView";
+    std::thread([this, hInstance, hParentWnd]() -> bool {
+        WNDCLASSEX wcex;
+        wcex.cbSize = sizeof(WNDCLASSEX);
+        wcex.style = CS_HREDRAW | CS_VREDRAW;
+        wcex.lpfnWndProc = DefWindowProc;
+        wcex.cbClsExtra = 0;
+        wcex.cbWndExtra = 0;
+        wcex.hInstance = hInstance;
+        wcex.hIcon = LoadIcon(hInstance, IDI_APPLICATION);
+        wcex.hCursor = LoadCursor(NULL, IDC_ARROW);
+        wcex.hbrBackground = (HBRUSH)(COLOR_WINDOW + 1);
+        wcex.lpszMenuName = NULL;
+        wcex.lpszClassName = s_szWindowClass;
+        wcex.hIconSm = LoadIcon(wcex.hInstance, IDI_APPLICATION);
+
+        if (!RegisterClassEx(&wcex))
+        {
+            std::cout << "RegisterClassEx Failed!!!" << std::endl;
+            return false;
+        }
+
+        this->m_hWnd = CreateWindowEx(
+            0,
+            s_szWindowClass,
+            s_szTitle,
+            WS_POPUP,
+            this->m_x, this->m_y, this->m_width, this->m_height,
+            hParentWnd,
+            NULL,
+            hInstance,
+            NULL
+        );
+
+
+        if (!m_hWnd)
+        {
+            std::cout << "CreateWindow Failed" << std::endl;
+            return false;
+        }
+
+        if (this->m_bShow) this->Show();
+
+        this->CreateWebView(this->m_hWnd);
+
+	    MSG msg;
+        while (GetMessage(&msg, NULL, 0, 0))
+        {
+            TranslateMessage(&msg);
+            DispatchMessage(&msg);
+        }
+
+        return true;
+    }).detach();
+
+    return true;
+}
+
+void WebView::Show()
+{
+    m_bShow = true;
+    if (m_hWnd == NULL) return;
+
+	ShowWindow(m_hWnd, m_bShow ? SW_SHOW : SW_HIDE);
+	UpdateWindow(m_hWnd);
+}
+
+void WebView::Hide()
+{
+    m_bShow = false;
+    if (m_hWnd == NULL) return;
+
+	ShowWindow(m_hWnd, m_bShow ? SW_SHOW : SW_HIDE);
+	UpdateWindow(m_hWnd);
+}
+
+void WebView::SetPosition(int x, int y, int w, int h)
+{
+    m_x = x; m_y = y; m_width = w; m_height = h;
+    if (m_hWnd == NULL) return;
+
+    // 设置窗口
+    SetWindowPos(m_hWnd, m_hParentWnd, x, y, w, h, (m_bShow ? SWP_SHOWWINDOW : SWP_HIDEWINDOW) | SWP_NOACTIVATE);
+    // 更新到webview
+    RECT bounds;
+    GetClientRect(m_hWnd, &bounds);
+    bounds.left = x;
+    bounds.top = y;
+    bounds.right = bounds.left + w;
+    bounds.bottom = bounds.top + h;
+    if (m_webview_controller != nullptr)
+    {
+        m_webview_controller->put_Bounds(bounds);
+    }
+	
+    UpdateWindow(m_hWnd);
+}
+
+void WebView::Destroy()
+{
+    if (m_hWnd == NULL) return;
+
+    DestroyWindow(m_hWnd);
+    m_hWnd = NULL;
+    m_webview_controller->Close();
+    m_webview_controller = nullptr;
+    m_webview = nullptr;
+    m_bShow = false;
+}
+
+void WebView::Open(const std::wstring& url)
+{
+    m_url = url;
+    if (m_webview == nullptr) return;
+    m_webview->Navigate(url.c_str());
+}
+
+bool WebView::CreateWebView(HWND hWnd)
+{
+    PCWSTR userDataFolder = m_user_data_folder.empty() ? nullptr : m_user_data_folder.c_str();
+    HRESULT ok = CreateCoreWebView2EnvironmentWithOptions(nullptr, userDataFolder, nullptr, Callback<ICoreWebView2CreateCoreWebView2EnvironmentCompletedHandler>([hWnd, this](HRESULT result, ICoreWebView2Environment* env) -> HRESULT {
+        if (FAILED(result)) return result;
+        
+        // Create a CoreWebView2Controller and get the associated CoreWebView2 whose parent is the main window hWnd
+        HRESULT ok = env->CreateCoreWebView2Controller(hWnd, Callback<ICoreWebView2CreateCoreWebView2ControllerCompletedHandler>([hWnd, this](HRESULT result, ICoreWebView2Controller* controller) -> HRESULT {
+            if (controller == nullptr) return E_FAIL;
+
+            this->m_webview_controller = controller;
+            this->m_webview_controller->get_CoreWebView2(&(this->m_webview));
+
+            // Add a few settings for the webview
+            // The demo step is redundant since the values are the default settings
+            wil::com_ptr<ICoreWebView2Settings> settings;
+            this->m_webview->get_Settings(&settings);
+            settings->put_IsScriptEnabled(TRUE);
+            settings->put_AreDefaultScriptDialogsEnabled(TRUE);
+            settings->put_IsWebMessageEnabled(TRUE);
+
+            // Resize WebView to fit the bounds of the parent window
+            RECT bounds;
+            GetClientRect(hWnd, &bounds);
+            this->m_webview_controller->put_Bounds(bounds);
+            
+            // Schedule an async task to navigate to Bing
+            // this->m_webview->Navigate(L"file:///D:/workspace/html/iframe.html");
+            if (!this->m_url.empty()) this->m_webview->Navigate(this->m_url.c_str());
+
+            // <NavigationEvents>
+            // Step 4 - Navigation events
+            // register an ICoreWebView2NavigationStartingEventHandler to cancel any non-https navigation
+            EventRegistrationToken token;
+            this->m_webview->add_NavigationStarting(Callback<ICoreWebView2NavigationStartingEventHandler>(
+                [this](ICoreWebView2* webview, ICoreWebView2NavigationStartingEventArgs* args) -> HRESULT {
+                    wil::unique_cotaskmem_string uri_mem;
+                    args->get_Uri(&uri_mem);
+                    std::wstring uri(uri_mem.get());
+                    std::wcout << L"URL:" << uri << std::endl;
+                    auto pos = uri.find_first_of(L"proto://");
+                    if (pos == 0) 
+                    {
+                    	args->put_Cancel(true);
+                        this->ParseProtoUrl(uri);
+                    }
+                    return S_OK;
+                }).Get(), &token);
+            // </NavigationEvents>
+
+            // <CommunicationHostWeb>
+            // Step 6 - Communication between host and web content
+            // Set an event handler for the host to return received message back to the web content
+            this->m_webview->add_WebMessageReceived(Callback<ICoreWebView2WebMessageReceivedEventHandler>(
+                [this](ICoreWebView2* webview, ICoreWebView2WebMessageReceivedEventArgs* args) -> HRESULT {
+                    wil::unique_cotaskmem_string message;
+                    args->TryGetWebMessageAsString(&message);
+                    if (this->m_on_message_callback != nullptr) this->m_on_message_callback(message.get());
+                    webview->PostWebMessageAsString(message.get());
+                    return S_OK;
+                }).Get(), &token);
+
+            // 创建成功回调
+            if (this->m_on_created_callback != nullptr) this->m_on_created_callback();
+
+            return S_OK;
+        }).Get());
+        return ok == S_OK;
+    }).Get());
+
+    return ok == S_OK;
+}
+
+void WebView::ExecuteScript(const std::wstring& script_text)
+{
+    if (m_webview == nullptr) return;
+    this->m_webview->ExecuteScript(script_text.c_str(), Callback<ICoreWebView2ExecuteScriptCompletedHandler>([](HRESULT errorCode, LPCWSTR resultObjectAsJson) -> HRESULT {
+        return S_OK;
+    }).Get());
+}
+
+void WebView::ParseProtoUrl(const std::wstring url)
+{
+    static std::wstring s_sendmsg_proto = L"proto://sendmsg";
+    if (url.find(s_sendmsg_proto) == 0 && m_on_proto_send_msg_callback != nullptr)
+    {
+        m_on_proto_send_msg_callback(url.substr(s_sendmsg_proto.length() + 1)); // 取?最后数据
+    }
+}
