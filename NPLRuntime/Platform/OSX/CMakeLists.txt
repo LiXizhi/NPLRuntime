@@ -55,6 +55,8 @@ set_target_properties(Paracraft PROPERTIES
     BUILD_WITH_INSTALL_RPATH TRUE
 )
 
+target_include_directories(Paracraft PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
+
 find_library(COCOA_LIBRARY Cocoa required)
 find_library(OPENGL_LIBRARY OpenGL)
 find_library(WebView WebKit)

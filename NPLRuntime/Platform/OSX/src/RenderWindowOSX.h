@@ -24,6 +24,7 @@ namespace ParaEngine
         const char* getTitle();
         
         void GetScaleFactor(double& x, double& y) const;
+        float currentBackingScaleFactor = 1;
     public:
         bool OnShouldClose();
         
@@ -49,7 +50,6 @@ namespace ParaEngine
     protected:
         bool m_shouldClose;
         NSWindow* m_window;
-        float currentBackingScaleFactor = 1;
         float m_scrollMouseX;
         float m_scrollMouseY;
         EVirtualKey m_curPressKey = ParaEngine::EVirtualKey::KEY_UNKNOWN;

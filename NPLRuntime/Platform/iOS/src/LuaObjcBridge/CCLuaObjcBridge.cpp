@@ -1,9 +1,16 @@
+//-----------------------------------------------------------------------------
+// Class: CCLuaObjcBridge.cpp
+// Authors: kkvskkkk, big
+// Emails: onedou@126.com
+// CreateDate: 2018.11.6
+// ModifyDate: 2023.3.23
+//-----------------------------------------------------------------------------
+
 #include "ParaEngine.h"
 #include "NPLRuntime.h"
 #include "NPLScriptingState.h"
 
 #include "CCLuaObjcBridge.h"
-
 
 #include <luabind/luabind.hpp>
 #include <luabind/out_value_policy.hpp>
@@ -14,85 +21,79 @@
 #include <luabind/raw_policy.hpp>
 #include <luabind/object.hpp>
 
-namespace ParaEngine {
-
-    
-void LuaObjcBridge::luaopen_luaoc(lua_State *L)
+namespace ParaEngine
 {
-    using namespace luabind;
-    
-    module(L)
-    [
-     namespace_("LuaObjcBridge")
-     [
-      def("callStaticMethod", &LuaObjcBridge::callObjcStaticMethod, raw(_4))
-      ]
-    ];
-}
-
-    
-luabind::object LuaObjcBridge::ReturnObject2LuabindObject(lua_State *L, const ReturnObject& ocObject)
-{
-    luabind::object ret;
-    
-    if(ocObject.getReturnType() == TypeString)
+    void LuaObjcBridge::luaopen_luaoc(lua_State *L)
     {
-        std::string s(ocObject.getStrVaule());
-        ret = luabind::object(L, s);
+        using namespace luabind;
+
+        module(L)
+            [namespace_("LuaObjcBridge")
+                 [def("callStaticMethod", &LuaObjcBridge::callObjcStaticMethod, raw(_4))]];
     }
-    else if(ocObject.getReturnType() == TypeFloat)
-        ret = luabind::object(L, ocObject.getReturnVaule().floatValue);
-    else if(ocObject.getReturnType() == TypeInteger)
-        ret = luabind::object(L, ocObject.getReturnVaule().intValue);
-    else if(ocObject.getReturnType() == TypeBoolean)
-        ret = luabind::object(L, ocObject.getReturnVaule().boolValue);
-    else if(ocObject.getReturnType() == TypeObject)
-        ret = luabind::object(L, ocObject);
-    else if(ocObject.getReturnType() == TypeNSDictionary)
+
+    luabind::object LuaObjcBridge::ReturnObject2LuabindObject(lua_State *L, const ReturnObject &ocObject)
     {
-        typedef std::map<std::string, LuaObjcBridge::ReturnObject> ReturnObjMap;
-        ReturnObjMap map_;
-        ocObject.getDictionaryMap(map_);
-        ret = luabind::newtable(L);
-        for(auto &itr : map_)
+        luabind::object ret;
+
+        if (ocObject.getReturnType() == TypeString)
         {
-            const char* key = itr.first.c_str();
-            ret[key] = ReturnObject2LuabindObject(L, itr.second);
+            std::string s(ocObject.getStrVaule());
+            ret = luabind::object(L, s);
         }
-    }
-    return ret;
-}
-    
-/**
- className
- methodName
- args
- */
-luabind::object LuaObjcBridge::callObjcStaticMethod(const std::string& className_, const std::string& methodName_, const luabind::object& argvs, lua_State *L)
-{
-    
-    luabind::object ret;
-    
-    const char* className = className_.c_str();
-    const char* methodName = methodName_.c_str();
-    
-    if (!className || !methodName)
-    {
+        else if (ocObject.getReturnType() == TypeFloat)
+            ret = luabind::object(L, ocObject.getReturnVaule().floatValue);
+        else if (ocObject.getReturnType() == TypeInteger)
+            ret = luabind::object(L, ocObject.getReturnVaule().intValue);
+        else if (ocObject.getReturnType() == TypeBoolean)
+            ret = luabind::object(L, ocObject.getReturnVaule().boolValue);
+        else if (ocObject.getReturnType() == TypeObject)
+            ret = luabind::object(L, ocObject);
+        else if (ocObject.getReturnType() == TypeNSDictionary)
+        {
+            typedef std::map<std::string, LuaObjcBridge::ReturnObject> ReturnObjMap;
+            ReturnObjMap map_;
+            ocObject.getDictionaryMap(map_);
+            ret = luabind::newtable(L);
+            for (auto &itr : map_)
+            {
+                const char *key = itr.first.c_str();
+                ret[key] = ReturnObject2LuabindObject(L, itr.second);
+            }
+        }
+
         return ret;
     }
-    
-    OcFunction ocfun;
-    
-    luabind::iterator itr(argvs), end;
 
-    while(itr != end)
+    /**
+     className
+     methodName
+     args
+     */
+    luabind::object LuaObjcBridge::callObjcStaticMethod(const std::string &className_, const std::string &methodName_, const luabind::object &argvs, lua_State *L)
     {
-        const luabind::object& o = *itr;
-        auto objectType = luabind::type(o);
-        string key_str = object_cast<string>(itr.key());
+        luabind::object ret;
 
-        switch (objectType)
+        const char *className = className_.c_str();
+        const char *methodName = methodName_.c_str();
+
+        if (!className || !methodName)
         {
+            return ret;
+        }
+
+        OcFunction ocfun;
+
+        luabind::iterator itr(argvs), end;
+
+        while (itr != end)
+        {
+            const luabind::object &o = *itr;
+            auto objectType = luabind::type(o);
+            string key_str = object_cast<string>(itr.key());
+
+            switch (objectType)
+            {
             case LUA_TNUMBER:
             {
                 float iNumer = luabind::object_cast<float>(o);
@@ -115,20 +116,20 @@ luabind::object LuaObjcBridge::callObjcStaticMethod(const std::string& className
             {
                 break;
             }
-        }
-        
-        ++itr;
-    }
-    
-    return ReturnObject2LuabindObject(L, ocfun.callFunction(className_, methodName_));
-}
+            }
 
-void LuaObjcBridge::nplActivate(const std::string& msg, const std::string& strNPLFileName)
-{
-    NPL::NPLRuntimeState_ptr rsptr = NPL::CNPLRuntime::GetInstance()->GetRuntimeState(strNPLFileName);
-    NPL::CNPLRuntime::GetInstance()->NPL_Activate(rsptr, strNPLFileName.c_str(), msg.c_str());
-}
-    
+            ++itr;
+        }
+
+        return ReturnObject2LuabindObject(L, ocfun.callFunction(className_, methodName_));
+    }
+
+    void LuaObjcBridge::nplActivate(const std::string &msg, const std::string &strNPLFileName)
+    {
+        NPL::NPLRuntimeState_ptr rsptr = NPL::CNPLRuntime::GetInstance()->GetRuntimeState(strNPLFileName);
+        NPL::CNPLRuntime::GetInstance()->NPL_Activate(rsptr, strNPLFileName.c_str(), msg.c_str());
+    }
+
 } // end namespace
 
 extern "C"
@@ -137,7 +138,7 @@ extern "C"
      NPL.call("LuaJavaBridge.cpp", {});
      NPL.activate("LuaJavaBridge.cpp");
      */
-    PE_CORE_DECL NPL::NPLReturnCode NPL_activate_LuaObjcBridge_cpp(NPL::INPLRuntimeState* pState)
+    PE_CORE_DECL NPL::NPLReturnCode NPL_activate_LuaObjcBridge_cpp(NPL::INPLRuntimeState *pState)
     {
         auto pRuntimeState = ParaEngine::CGlobals::GetNPLRuntime()->GetRuntimeState(pState->GetName());
         ParaEngine::LuaObjcBridge::luaopen_luaoc(pRuntimeState->GetLuaState());

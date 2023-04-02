@@ -27,6 +27,7 @@ namespace ParaEngine {
 		pClass->AddField("bringToTop", FieldType_void, (void*)bringToTop_s, nullptr, nullptr, "", bOverride);
 		pClass->AddField("move", FieldType_Float_Float, (void*)move_s, nullptr, nullptr, "", bOverride);
 		pClass->AddField("resize", FieldType_Float_Float, (void*)resize_s, nullptr, nullptr, "", bOverride);
+        pClass->AddField("Activate", FieldType_String, (void*)activate_s, (void*)nullptr, nullptr, nullptr, bOverride);
 
 		return S_OK;
 	}
