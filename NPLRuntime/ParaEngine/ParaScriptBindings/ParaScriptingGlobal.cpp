@@ -31,15 +31,21 @@
 #include "util/StringHelper.h"
 #include "util/ParaTime.h"
 
+#ifdef WIN32
+#define SUPPORT_SHELL_EXECUTE
+#endif
+
+#ifdef SUPPORT_SHELL_EXECUTE
 #include <boost/process.hpp>
 #if defined(WIN32)
 #include <boost/process/windows.hpp>
 #endif
+#endif
+
 #include <boost/bind.hpp>
 #include <boost/asio.hpp>
 
 #include "ParaScriptBindings/ParaScriptingNPL.h"
-
 
 /**@def PARAENGINE_SUPPORT_WRITE_REG: to support writing to registry*/
 #if defined(WIN32) && !defined(PARAENGINE_MOBILE) && defined(PARAENGINE_CLIENT)
@@ -348,6 +354,7 @@ bool ParaGlobal::IsPortAvailable(const std::string& ip, const int port, lua_Stat
 
 void ParaGlobal::Execute(const std::string& exe, const luabind::object& param, lua_State* L)
 {
+#ifdef SUPPORT_SHELL_EXECUTE
 	namespace bp = boost::process;
 
 	std::vector<std::string> args;
@@ -379,6 +386,7 @@ void ParaGlobal::Execute(const std::string& exe, const luabind::object& param, l
 #endif
 
 	c.detach();
+#endif
 }
 
 bool ParaGlobal::ShellExecute(const char* lpOperation, const char* lpFile, const char* lpParameters, const char* lpDirectory, int nShowCmd)
