@@ -232,7 +232,7 @@ unsigned int RenderWindowOSX::GetWidth() const
     return (unsigned int )backingPoint.x;
 }
 
-void RenderWindowOSX::GetScaleFactor(double& x, double& y) const
+void RenderWindowOSX::GetScaleFactor(double &x, double &y) const
 {
     auto point = NSMakePoint(m_window.contentView.frame.size.width, m_window.contentView.frame.size.height);
     
