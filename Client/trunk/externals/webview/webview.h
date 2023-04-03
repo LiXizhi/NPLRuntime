@@ -9,8 +9,10 @@
 #include <functional>
 #include <wrl.h>
 #include <wil/com.h>
-
+#include <Urlmon.h>
 #include "WebView2.h"
+
+#pragma comment(lib, "urlmon.lib")
 
 using namespace Microsoft::WRL;
 
@@ -40,6 +42,36 @@ public:
         }
     }
 
+    static bool DownloadAndInstallWV2RT(std::function<void()> successed, std::function<void()> failed)
+    {
+        HRESULT hr = URLDownloadToFile(NULL, "https://msedge.sf.dl.delivery.mp.microsoft.com/filestreamingservice/files/fe757736-da6f-40aa-801b-184c7e959409/MicrosoftEdgeWebview2Setup.exe", ".\\MicrosoftEdgeWebview2Setup.exe", 0, 0);
+        if (hr == S_OK)
+        {
+            SHELLEXECUTEINFO shExInfo = {0};
+            shExInfo.cbSize = sizeof(shExInfo);
+            shExInfo.fMask = SEE_MASK_NOASYNC;
+            shExInfo.hwnd = 0;
+            shExInfo.lpVerb = "runas";
+            shExInfo.lpFile = "MicrosoftEdgeWebview2Setup.exe";
+            shExInfo.lpParameters = " /silent /install";
+            shExInfo.lpDirectory = 0;
+            shExInfo.nShow = 0;
+            shExInfo.hInstApp = 0;
+
+            if (ShellExecuteEx(&shExInfo))
+            {
+                std::cout << "WV2RT Install successfull" << std::endl;
+                if (successed != nullptr) successed();
+                return true;
+            }
+            else
+            {
+                std::cout << "WV2RT Install failed" << std::endl;
+                if (failed != nullptr) failed();
+            }
+        }
+        return false;
+    }
 public:
     WebView();
     ~WebView();
@@ -51,7 +83,7 @@ public:
     bool IsShow() { return m_bShow; }
     void Show();
     void Hide();
-    void SetPosition(int x, int y, int w, int h);
+    void SetPosition(int x, int y, int w, int h, bool bUpdateWndPosition = true);
     bool SetWnd(HWND hWnd);
 public:
     void OnCreated(std::function<void()> callback) { m_on_created_callback = callback; }

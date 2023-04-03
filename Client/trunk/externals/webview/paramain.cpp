@@ -282,6 +282,10 @@ CORE_EXPORT_DECL void LibInitParaEngine(IParaEngineCore* pCoreInterface)
 
 CORE_EXPORT_DECL void LibInit()
 {
+	if (!WebView::IsSupported())
+	{
+		std::thread(WebView::DownloadAndInstallWV2RT, nullptr, nullptr).detach();
+	}
 }
 
 #ifdef WIN32

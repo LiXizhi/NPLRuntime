@@ -121,13 +121,14 @@ void WebView::Hide()
 	UpdateWindow(m_hWnd);
 }
 
-void WebView::SetPosition(int x, int y, int w, int h)
+void WebView::SetPosition(int x, int y, int w, int h, bool bUpdateWndPosition)
 {
     m_x = x; m_y = y; m_width = w; m_height = h;
     if (m_hWnd == NULL) return;
 
     // 设置窗口
-    SetWindowPos(m_hWnd, m_hParentWnd, x, y, w, h, (m_bShow ? SWP_SHOWWINDOW : SWP_HIDEWINDOW) | SWP_NOACTIVATE);
+    if (bUpdateWndPosition) SetWindowPos(m_hWnd, m_hParentWnd, x, y, w, h, (m_bShow ? SWP_SHOWWINDOW : SWP_HIDEWINDOW) | SWP_NOACTIVATE);
+    
     // 更新到webview
     RECT bounds;
     GetClientRect(m_hWnd, &bounds);

@@ -20,8 +20,6 @@ HINSTANCE hInst;
 // Forward declarations of functions included in this code module:
 LRESULT CALLBACK WndProc(HWND, UINT, WPARAM, LPARAM);
 
-
-
 int CALLBACK WinMain(
 	_In_ HINSTANCE hInstance,
 	_In_ HINSTANCE hPrevInstance,
@@ -92,19 +90,31 @@ int CALLBACK WinMain(
 	ShowWindow(hWnd, nCmdShow);
 	UpdateWindow(hWnd);
 
-	// 创建WebView
-	WebView::GetInstance()->SetWnd(hWnd);
+	// 不支持下载安装WV2RT
+	auto init_webview = std::function<void()>([hInstance, hWnd](){
+		// 创建WebView  公用主窗口
+		WebView::GetInstance()->SetWnd(hWnd);
+		// 创建WebView  独立窗口
+		// WebView::GetInstance()->Create(hInstance, hWnd);
+	
+		// begin debug
+		// WebView::GetInstance()->Open(L"file:///D:/workspace/c/webview/webview.html");
+		WebView::GetInstance()->Open(L"https://webparacraft.keepwork.com");
+		// msg callback
+		// WebView::GetInstance()->OnWebMessage(std::function<void(const std::wstring&)>([](const std::wstring& msg){
+		// 	std::wcout << L"OnMessage: " << msg << std::endl;
+		// }));
+		// end debug
+	});
 
-	// begin debug
-	WebView::GetInstance()->Open(L"file:///D:/workspace/c/webview/webview.html");
-	WebView::GetInstance()->SetOnSendMsgCallBack(std::function<void(const std::wstring&)>([](const std::wstring& msg){
-		std::wcout << L"msg: " << msg << std::endl;
-		WebView::GetInstance()->ExecuteScript(LR"(window.chrome.webview.postMessage("ExecuteScript 1111");)");
-	}));
-	WebView::GetInstance()->OnWebMessage(std::function<void(const std::wstring&)>([](const std::wstring& msg){
-		std::wcout << L"OnMessage: " << msg << std::endl;
-	}));
-	// end debug
+	if (!WebView::IsSupported())
+	{
+		std::thread(WebView::DownloadAndInstallWV2RT, init_webview, nullptr).detach();
+	}
+	else
+	{
+		init_webview();
+	}
 
 	// Main message loop:
 	MSG msg;
@@ -130,7 +140,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 	case WM_SIZE:
 		RECT bounds;
 		GetClientRect(hWnd, &bounds);
-		WebView::GetInstance()->SetPosition(bounds.left, bounds.top, bounds.right - bounds.left, bounds.bottom - bounds.top);
+		WebView::GetInstance()->SetPosition(bounds.left, bounds.top, bounds.right - bounds.left, bounds.bottom - bounds.top, false);
 		break;
 	case WM_DESTROY:
 		PostQuitMessage(0);
