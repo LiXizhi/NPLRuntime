@@ -26,52 +26,9 @@ public:
         return &s_webview;
     } 
 
-    static bool IsSupported()
-    {
-        wchar_t* webview_version = nullptr;
-        assert(S_OK == GetAvailableCoreWebView2BrowserVersionString(nullptr, &webview_version));
-        if (webview_version == nullptr)
-        {
-            std::cout << "当前系统暂不支持 webview2 请安装 Microsoft Edge!!!" << std::endl;
-            return false;
-        }
-        else
-        {
-            std::wcout << L"webview2 version: " << webview_version << std::endl; 
-            return true;
-        }
-    }
+    static bool IsSupported();
 
-    static bool DownloadAndInstallWV2RT(std::function<void()> successed, std::function<void()> failed)
-    {
-        HRESULT hr = URLDownloadToFile(NULL, "https://msedge.sf.dl.delivery.mp.microsoft.com/filestreamingservice/files/fe757736-da6f-40aa-801b-184c7e959409/MicrosoftEdgeWebview2Setup.exe", ".\\MicrosoftEdgeWebview2Setup.exe", 0, 0);
-        if (hr == S_OK)
-        {
-            SHELLEXECUTEINFO shExInfo = {0};
-            shExInfo.cbSize = sizeof(shExInfo);
-            shExInfo.fMask = SEE_MASK_NOASYNC;
-            shExInfo.hwnd = 0;
-            shExInfo.lpVerb = "runas";
-            shExInfo.lpFile = "MicrosoftEdgeWebview2Setup.exe";
-            shExInfo.lpParameters = " /silent /install";
-            shExInfo.lpDirectory = 0;
-            shExInfo.nShow = 0;
-            shExInfo.hInstApp = 0;
-
-            if (ShellExecuteEx(&shExInfo))
-            {
-                std::cout << "WV2RT Install successfull" << std::endl;
-                if (successed != nullptr) successed();
-                return true;
-            }
-            else
-            {
-                std::cout << "WV2RT Install failed" << std::endl;
-                if (failed != nullptr) failed();
-            }
-        }
-        return false;
-    }
+    static bool DownloadAndInstallWV2RT(std::function<void()> successed, std::function<void()> failed);
 public:
     WebView();
     ~WebView();

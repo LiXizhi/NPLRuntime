@@ -6,6 +6,8 @@
 #include <string>
 #include <tchar.h>
 #include <thread>
+#include <codecvt>
+#include <locale>
 #include "webview.h"
 // Global variables
 
@@ -153,4 +155,28 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 	return 0;
 }
 
+
+std::string WStringToString(std::wstring wstr)
+{
+	std::wstring_convert<std::codecvt_utf8<wchar_t>> converter;
+	std::string str = converter.to_bytes(wstr);
+	return str;
+}
+
+std::wstring StringToWString(std::string str)
+{
+	std::wstring_convert<std::codecvt_utf8<wchar_t>> converter;
+	std::wstring wstr = converter.from_bytes(str);
+	return wstr;
+}
+
+
+void WriteLog(const char* sFormat, ...) {
+	char buf_[1024 + 1];
+	va_list args;
+	va_start(args, sFormat);
+	vsnprintf(buf_, 1024, sFormat, args);
+	std::cout << buf_;
+	va_end(args);
+}
 

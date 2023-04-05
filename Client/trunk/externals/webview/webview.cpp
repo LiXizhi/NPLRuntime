@@ -1,6 +1,7 @@
-﻿
+﻿#include "WebView.h"
 
-#include "WebView.h"
+extern void WriteLog(const char* sFormat, ...);
+extern std::string WStringToString(std::wstring wstr);
 
 WebView::WebView()
 {
@@ -63,7 +64,7 @@ bool WebView::Create(HINSTANCE hInstance, HWND hParentWnd)
 
         if (!RegisterClassEx(&wcex))
         {
-            std::cout << "RegisterClassEx Failed!!!" << std::endl;
+            WriteLog("Error: WebView RegisterClassEx Failed!\n");
             return false;
         }
 
@@ -82,7 +83,7 @@ bool WebView::Create(HINSTANCE hInstance, HWND hParentWnd)
 
         if (!m_hWnd)
         {
-            std::cout << "CreateWindow Failed" << std::endl;
+            WriteLog("Error: WebView CreateWindow Failed\n");
             return false;
         }
 
@@ -251,4 +252,52 @@ void WebView::ParseProtoUrl(const std::wstring url)
     {
         m_on_proto_send_msg_callback(url.substr(s_sendmsg_proto.length() + 1)); // 取?最后数据
     }
+}
+
+bool WebView::IsSupported()
+{
+    wchar_t* webview_version = nullptr;
+    assert(S_OK == GetAvailableCoreWebView2BrowserVersionString(nullptr, &webview_version));
+    if (webview_version == nullptr)
+    {
+        WriteLog("Error: WebView webview2 not installed. please install Miscrosoft Edge. \n");
+        return false;
+    }
+    else
+    {
+        std::string version = WStringToString(webview_version);
+        WriteLog("Webview2 version: %s", version.c_str());
+        return true;
+    }
+}
+
+bool WebView::DownloadAndInstallWV2RT(std::function<void()> successed, std::function<void()> failed)
+{
+    HRESULT hr = URLDownloadToFile(NULL, "https://msedge.sf.dl.delivery.mp.microsoft.com/filestreamingservice/files/fe757736-da6f-40aa-801b-184c7e959409/MicrosoftEdgeWebview2Setup.exe", ".\\MicrosoftEdgeWebview2Setup.exe", 0, 0);
+    if (hr == S_OK)
+    {
+        SHELLEXECUTEINFO shExInfo = { 0 };
+        shExInfo.cbSize = sizeof(shExInfo);
+        shExInfo.fMask = SEE_MASK_NOASYNC;
+        shExInfo.hwnd = 0;
+        shExInfo.lpVerb = "runas";
+        shExInfo.lpFile = "MicrosoftEdgeWebview2Setup.exe";
+        shExInfo.lpParameters = " /silent /install";
+        shExInfo.lpDirectory = 0;
+        shExInfo.nShow = 0;
+        shExInfo.hInstApp = 0;
+
+        if (ShellExecuteEx(&shExInfo))
+        {
+            WriteLog("Webview: WV2RT Install successfull\n");
+            if (successed != nullptr) successed();
+            return true;
+        }
+        else
+        {
+            WriteLog("Error Webview: WV2RT Install failed\n");
+            if (failed != nullptr) failed();
+        }
+    }
+    return false;
 }

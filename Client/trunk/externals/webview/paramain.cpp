@@ -26,14 +26,14 @@
 #include "webview.h"
 using namespace ParaEngine;
 
-static std::string WStringToString(std::wstring wstr)
+std::string WStringToString(std::wstring wstr)
 {
 	std::wstring_convert<std::codecvt_utf8<wchar_t>> converter;
 	std::string str = converter.to_bytes(wstr);
 	return str;
 }
 
-static std::wstring StringToWString(std::string str)
+std::wstring StringToWString(std::string str)
 {
 	std::wstring_convert<std::codecvt_utf8<wchar_t>> converter;
 	std::wstring wstr = converter.from_bytes(str);
@@ -302,24 +302,23 @@ void __attribute__((constructor)) DllMain()
 }
 #pragma endregion PE_DLL 
 
-extern "C" 
-{
-    void WriteLog(const char* sFormat, ...) {
-        if (GetCoreInterface() && GetCoreInterface()->GetAppInterface()) {
-            char buf_[1024 + 1];
-            va_list args;
-            va_start(args, sFormat);
-            vsnprintf(buf_, 1024, sFormat, args);
-            GetCoreInterface()->GetAppInterface()->WriteToLog(buf_);
-            va_end(args);
-        }
+
+void WriteLog(const char* sFormat, ...) {
+    if (GetCoreInterface() && GetCoreInterface()->GetAppInterface()) {
+        char buf_[1024 + 1];
+        va_list args;
+        va_start(args, sFormat);
+        vsnprintf(buf_, 1024, sFormat, args);
+        GetCoreInterface()->GetAppInterface()->WriteToLog(buf_);
+        va_end(args);
     }
 }
+
 
 // ParaWebViewd.dll
 CORE_EXPORT_DECL void LibActivate(int nType, void* pVoid)
 {
-	WriteLog("=====================ParaWebView==========================");
+	WriteLog("=====================ParaWebView==========================\n");
 	static std::string s_id = "";
 	if (nType == ParaEngine::PluginActType_STATE)
 	{
