@@ -30,6 +30,7 @@ if(WIN32)
 	option(NPLRUNTIME_CAUDIOENGINE "include audioengine plugin" OFF)
 	option(NPLRUNTIME_HAQI_LAUNCHER "haqi launcher" OFF)
 	
+	set(NPLRUNTIME_WEBVIEW TRUE)
 endif()
 # OSX Default Option
 if(APPLE)
@@ -225,6 +226,10 @@ endif()
 if(NPLRUNTIME_CAUDIOENGINE)
 	add_subdirectory (${PROJECT_SOURCE_DIR}/trunk/cAudio_2.4.0 ${PROJECT_BINARY_DIR}/cAudio_2.4.0)
 endif()	
+
+if (NPLRUNTIME_WEBVIEW)
+	add_subdirectory (${PROJECT_SOURCE_DIR}/trunk/externals/webview ${PROJECT_BINARY_DIR}/webview)
+endif()
 
 if(PARAENGINE_CLIENT_DLL)
 	if(NOT NPLRUNTIME_STATIC_LIB) 
