@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.20.0)
+cmake_minimum_required(VERSION 3.16.0)
 
 # set(CMAKE_CXX_STANDARD 17)
 # set(CMAKE_CXX_STANDARD_REQUIRED TRUE)
@@ -43,19 +43,31 @@ add_executable(${PROJECT_NAME} ${Exe_Src_list})
 target_include_directories(${PROJECT_NAME} PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/${webview_arch}/include")
 target_link_libraries(${PROJECT_NAME} PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/${webview_arch}/lib/WebView2LoaderStatic.lib")
 
-if (NPLRUNTIME_WEBVIEW)
-	set(BoostRoot_DIR "$ENV{BOOST_ROOT}")
-	set(ParaEngineClient_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../../ParaEngineClient)
-	set(LibName "ParaWebView")
-	list(APPEND Lib_Src_list ${CMAKE_CURRENT_SOURCE_DIR}/webview.cpp)
-	list(APPEND Lib_Src_list ${CMAKE_CURRENT_SOURCE_DIR}/paramain.cpp)
-	add_library(${LibName} SHARED ${Lib_Src_list})
-	target_include_directories(${LibName} PUBLIC ${BoostRoot_DIR} ${ParaEngineClient_SOURCE_DIR}/Core ${ParaEngineClient_SOURCE_DIR}/math ${ParaEngineClient_SOURCE_DIR}/util)
-	target_include_directories(${LibName} PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/${webview_arch}/include")
-	target_link_libraries(${LibName} PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/${webview_arch}/lib/WebView2LoaderStatic.lib")
-	ADD_CUSTOM_COMMAND(
-		TARGET ${LibName}
-		POST_BUILD
-		COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:${LibName}> D:/workspace/npl/NPLRuntime_win32/build/ParaEngineClient/Debug
-	 )
-endif()
+set(BoostRoot_DIR "$ENV{BOOST_ROOT}")
+	
+####################################################
+# ParaEngine related 
+# ParaEngineClient_SOURCE_DIR can be used to specify a single base
+# folder where the required dependencies may be found.
+
+set(ParaEngineClient_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../../ParaEngineClient)
+include_directories("${ParaEngineClient_SOURCE_DIR}")
+include_directories("${ParaEngineClient_SOURCE_DIR}/Core")
+include_directories("${ParaEngineClient_SOURCE_DIR}/NPL")
+include_directories("${ParaEngineClient_SOURCE_DIR}/math")
+include_directories("${ParaEngineClient_SOURCE_DIR}/util")
+
+set(LibName "ParaWebView")
+set(CMAKE_DEBUG_POSTFIX "_d")
+list(APPEND Lib_Src_list ${CMAKE_CURRENT_SOURCE_DIR}/webview.cpp)
+list(APPEND Lib_Src_list ${CMAKE_CURRENT_SOURCE_DIR}/paramain.cpp)
+add_library(${LibName} SHARED ${Lib_Src_list})
+target_include_directories(${LibName} PUBLIC ${BoostRoot_DIR})
+target_include_directories(${LibName} PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/${webview_arch}/include")
+target_link_libraries(${LibName} PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/${webview_arch}/lib/WebView2LoaderStatic.lib")
+ADD_CUSTOM_COMMAND(
+	TARGET ${LibName}
+	POST_BUILD
+	COMMAND ${CMAKE_COMMAND} -E make_directory ${OUTPUT_BIN_DIR}
+	COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:${LibName}> ${OUTPUT_BIN_DIR}
+	)

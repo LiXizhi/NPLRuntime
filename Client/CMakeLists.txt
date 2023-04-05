@@ -29,8 +29,8 @@ if(WIN32)
 	option(NPLRUNTIME_PHYSICS "include physics" ON)
 	option(NPLRUNTIME_CAUDIOENGINE "include audioengine plugin" OFF)
 	option(NPLRUNTIME_HAQI_LAUNCHER "haqi launcher" OFF)
+	option(NPLRUNTIME_WEBVIEW "microsoft edge webview2 support" OFF)
 	
-	set(NPLRUNTIME_WEBVIEW TRUE)
 endif()
 # OSX Default Option
 if(APPLE)
