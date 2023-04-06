@@ -78,7 +78,7 @@
 
     std::string activateStr = [activate UTF8String];
     std::string msgStr = [msg UTF8String];
-    std::string code = "NPL.activate('" + activateStr + "', { msg = '" + msgStr + "' });";
+    std::string code = "NPL.activate('" + activateStr + "', { msg = [[" + msgStr + "]]});";
 
     ParaEngine::LuaObjcBridge::nplActivate(code, "");
 }
@@ -87,6 +87,7 @@
 {
     [self.webView setHidden:true];
     [self.uiCloseBtn setHidden:true];
+    [self.webView loadRequest:[NSURLRequest requestWithURL:[NSURL URLWithString:@""]]];
 }
 
 - (WKWebView *)webView:(WKWebView *)webView
@@ -222,7 +223,10 @@ namespace ParaEngine {
         if (_webViewController)
         {
             NSString *_urlString = @(urlString.c_str());
-            _urlString = [_urlString stringByAddingPercentEscapesUsingEncoding:NSUTF8StringEncoding];
+            _urlString =
+                [_urlString
+                 stringByAddingPercentEncodingWithAllowedCharacters:
+                     [NSCharacterSet characterSetWithCharactersInString:@"`%^{}\"[]|\\<> "].invertedSet];
 
             [_webViewController.window setTitle:_urlString];
             NSURL *url = [NSURL URLWithString:_urlString];
@@ -257,6 +261,10 @@ namespace ParaEngine {
     {
         if (_webViewController)
         {
+            if (!bVisible) {
+                [_webViewController.webView loadRequest:[NSURLRequest requestWithURL:[NSURL URLWithString:@""]]];
+            }
+            
             [_webViewController.webView setHidden:!bVisible];
             
             if (_webViewController.uiCloseBtn) {
