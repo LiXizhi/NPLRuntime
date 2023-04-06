@@ -40,7 +40,7 @@ std::wstring StringToWString(std::string str)
 	return wstr;
 }
 
-static void NPL_Activate(NPL::INPLRuntimeState* pState, std::string activateFile, NPLInterface::NPLObjectProxy& data) 
+static void NPL_Activate(NPL::INPLRuntimeState* pState, std::string activateFile, NPLInterface::NPLObjectProxy data) 
 {
     if (!pState || activateFile.empty()) return;
     std::string data_string;
@@ -78,7 +78,10 @@ static std::function<void(const std::wstring&)> g_webview_on_msg_callback = [](c
 	}
 	std::string filename = msg_json["filename"];
 	if (g_pStaticState == nullptr) return;
-	g_pStaticState->activate(filename.c_str(), msg.c_str(), (int)msg.length());
+	NPLInterface::NPLObjectProxy data;
+	data["msg"] = msg;
+	NPL_Activate(g_pStaticState, filename, data); 
+	// g_pStaticState->activate(filename.c_str(), data);
 };
 
 struct WebViewParams
@@ -282,10 +285,10 @@ CORE_EXPORT_DECL void LibInitParaEngine(IParaEngineCore* pCoreInterface)
 
 CORE_EXPORT_DECL void LibInit()
 {
-	if (!WebView::IsSupported())
-	{
-		std::thread(WebView::DownloadAndInstallWV2RT, nullptr, nullptr).detach();
-	}
+	// if (!WebView::IsSupported())
+	// {
+	// 	std::thread(WebView::DownloadAndInstallWV2RT, nullptr, nullptr).detach();
+	// }
 }
 
 #ifdef WIN32
@@ -358,6 +361,16 @@ CORE_EXPORT_DECL void LibActivate(int nType, void* pVoid)
 		{
 			tabMsg["ok"] = WebView::IsSupported();
 			NPL_Activate(pState, callback_file, tabMsg);
+
+			auto ok = tabMsg["ok"];
+			auto auto_install = tabMsg["auto_install"];
+			if (!ok && auto_install) 
+			{
+				std::thread(WebView::DownloadAndInstallWV2RT, [pState, callback_file, tabMsg](){
+					// 如果安装成功就可以使用, 可以再次发送支持webview 保险做法当前使用cef3 下次启动使用webview
+					// NPL_Activate(pState, callback_file, tabMsg);
+				}, nullptr).detach();
+			}
 			return;
 		}
 

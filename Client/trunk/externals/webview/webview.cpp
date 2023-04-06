@@ -3,6 +3,23 @@
 extern void WriteLog(const char* sFormat, ...);
 extern std::string WStringToString(std::wstring wstr);
 
+static std::string ReadRegStr(HKEY root_key, std::string sub_key, std::string name)
+{
+	HKEY hKey;
+ 	DWORD dwSize = 0;
+	std::string value;
+    if (RegOpenKeyEx(root_key, sub_key.c_str(), 0, KEY_READ | KEY_WOW64_64KEY, &hKey) == ERROR_SUCCESS) 
+	{
+		if (ERROR_SUCCESS == RegQueryValueEx(hKey, name.c_str(), NULL, NULL, NULL, &dwSize)) 
+		{
+			value.resize(dwSize - 1);
+	        if (RegGetValue(hKey, NULL, name.c_str(), RRF_RT_REG_SZ, NULL, (void*)value.data(), &dwSize) != ERROR_SUCCESS) value = "";
+		}
+        RegCloseKey(hKey);
+    }
+	return value;
+}
+
 WebView::WebView()
 {
     m_hWnd = NULL;
@@ -256,7 +273,14 @@ void WebView::ParseProtoUrl(const std::wstring url)
 
 bool WebView::IsSupported()
 {
-    wchar_t* webview_version = nullptr;
+    auto pv = ReadRegStr(HKEY_LOCAL_MACHINE, "SOFTWARE\\WOW6432Node\\Microsoft\\EdgeUpdate\\Clients\\{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}", "pv");
+    if (pv != "" && pv != "0.0.0.0") return true;
+    pv = ReadRegStr(HKEY_CURRENT_USER, "Software\\Microsoft\\EdgeUpdate\\Clients\\{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}", "pv");
+    if (pv != "" && pv != "0.0.0.0") return true;
+    pv = ReadRegStr(HKEY_LOCAL_MACHINE, "Software\\Microsoft\\EdgeUpdate\\Clients\\{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}", "pv");
+    if (pv != "" && pv != "0.0.0.0") return true;
+
+    wil::unique_cotaskmem_string webview_version = nullptr;
     // MS BUG: release version of webview2 runtime will return false. Debug version will return correctly. 
     assert(S_OK == GetAvailableCoreWebView2BrowserVersionString(nullptr, &webview_version));
     if (webview_version == nullptr)
@@ -266,7 +290,7 @@ bool WebView::IsSupported()
     }
     else
     {
-        std::string version = WStringToString(webview_version);
+        std::string version = WStringToString(webview_version.get());
         WriteLog("Webview2 version: %s", version.c_str());
         return true;
     }
