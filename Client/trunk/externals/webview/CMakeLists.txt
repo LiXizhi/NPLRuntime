@@ -1,8 +1,5 @@
 cmake_minimum_required(VERSION 3.16.0)
 
-# set(CMAKE_CXX_STANDARD 17)
-# set(CMAKE_CXX_STANDARD_REQUIRED TRUE)
-
 ################################
 # standalone executable
 ################################
@@ -38,12 +35,11 @@ else()
 	set(webview_arch x86)
 endif()
 
-SET(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /SUBSYSTEM:WINDOWS")
-
 list(APPEND Exe_Src_list ${CMAKE_CURRENT_SOURCE_DIR}/webview.cpp)
 list(APPEND Exe_Src_list ${CMAKE_CURRENT_SOURCE_DIR}/main.cpp)
 
 add_executable(${PROJECT_NAME} ${Exe_Src_list})
+set_target_properties(${PROJECT_NAME} PROPERTIES WIN32_EXECUTABLE true)
 set_target_properties(${PROJECT_NAME} PROPERTIES DEBUG_OUTPUT_NAME "${PROJECT_NAME}_d")
 
 target_include_directories(${PROJECT_NAME} PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/${webview_arch}/include")
@@ -62,6 +58,7 @@ ADD_CUSTOM_COMMAND(
 ################################
 project(ParaWebView)
 
+set(BoostRoot_DIR "$ENV{BOOST_ROOT}")
 	
 ####################################################
 # ParaEngine related 
@@ -76,6 +73,35 @@ include_directories("${ParaEngineClient_SOURCE_DIR}/util")
 
 set(LibName "ParaWebView")
 set(CMAKE_DEBUG_POSTFIX "_d")
+
+IF(MSVC)
+	# statically link MSVC to reduce dependancies
+	foreach(flag_var CMAKE_CXX_FLAGS CMAKE_CXX_FLAGS_DEBUG CMAKE_CXX_FLAGS_RELEASE CMAKE_CXX_FLAGS_MINSIZEREL CMAKE_CXX_FLAGS_RELWITHDEBINFO CMAKE_C_FLAGS CMAKE_C_FLAGS_DEBUG CMAKE_C_FLAGS_RELEASE CMAKE_C_FLAGS_MINSIZEREL CMAKE_C_FLAGS_RELWITHDEBINFO)
+	 	if(${flag_var} MATCHES "/MD")
+			string(REGEX REPLACE "/MD" "/MT" ${flag_var} "${${flag_var}}")
+	 	endif(${flag_var} MATCHES "/MD")
+	 	if(${flag_var} MATCHES "/MDd")
+	 		string(REGEX REPLACE "/MDd" "/MTd" ${flag_var} "${${flag_var}}")
+		endif(${flag_var} MATCHES "/MDd")
+	endforeach(flag_var)
+
+	# enable multiprocessor build option /MP, this will greatly increase compile speed
+	SET(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /MP")
+	SET(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} /MP")
+	SET(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} /MP")
+	SET(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} /MP")
+
+	# /GR- Remove RTTI to miminize the executable size
+	SET(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /GR-")
+	SET(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} /Zi")
+ENDIF()
+
+if(CMAKE_SIZEOF_VOID_P EQUAL 8)
+	set(webview_arch x64)
+else()
+	set(webview_arch x86)
+endif()
+
 
 ##############################
 # add src files

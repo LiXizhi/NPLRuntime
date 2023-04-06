@@ -257,11 +257,12 @@ void WebView::ParseProtoUrl(const std::wstring url)
 bool WebView::IsSupported()
 {
     wchar_t* webview_version = nullptr;
+    // MS BUG: release version of webview2 runtime will return false. Debug version will return correctly. 
     assert(S_OK == GetAvailableCoreWebView2BrowserVersionString(nullptr, &webview_version));
     if (webview_version == nullptr)
     {
         WriteLog("Error: WebView webview2 not installed. please install Miscrosoft Edge. \n");
-        return false;
+        return true;
     }
     else
     {

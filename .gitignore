@@ -15,6 +15,7 @@ assets.log
 *.ffs_gui
 */obj/
 .vs/
+.vscode/
 .DS_Store
 redist/
 published/
@@ -89,3 +90,4 @@ Client/trunk/ParaEngineClient/shaders/glsl/blockEffect.fx.glsl
 Client/trunk/ParaEngineClient/shaders/glsl/BMaxModel.fx.glsl
 Client/trunk/ParaEngineClient/shaders/glsl/simple_particle.fx.glsl
 Client/trunk/ParaEngineClient/shaders/glsl/sky.fx.glsl
+/Client/trunk/externals/assimp-5.2.4
