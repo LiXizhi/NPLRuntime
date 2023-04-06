@@ -78,7 +78,7 @@
 
     std::string activateStr = [activate UTF8String];
     std::string msgStr = [msg UTF8String];
-    std::string code = "NPL.activate('" + activateStr + "', { msg = '" + msgStr + "' });";
+    std::string code = "NPL.activate('" + activateStr + "', { msg = [[" + msgStr + "]]});";
 
     ParaEngine::LuaObjcBridge::nplActivate(code, "");
 }
