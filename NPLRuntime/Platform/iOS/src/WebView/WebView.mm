@@ -5,16 +5,15 @@
 // CreateDate: 2018.5.22
 // ModifyDate: 2022.12.30
 //-----------------------------------------------------------------------------
-#import <WebKit/WKWebView.h>
-#import <WebKit/WKUIDelegate.h>
-#import <WebKit/WKNavigationDelegate.h>
-#import <WebKit/WKNavigationAction.h>
-#import <WebKit/WKWebViewConfiguration.h>
+
+#import <WebKit/WebKit.h>
+#import <AVFoundation/AVFoundation.h>
 
 #import <Foundation/Foundation.h>
 #include "ParaEngine.h"
 #include "WebView.h"
 #import "GLView.h"
+#import "LuaObjcBridge/CCLuaObjcBridge.h"
 
 static std::string getFixedBaseUrl(const std::string& baseUrl)
 {
@@ -94,12 +93,16 @@ static std::string getFixedBaseUrl(const std::string& baseUrl)
 
 - (void)resize:(int)width height:(int)height;
 
+- (void)userContentController:(WKUserContentController *)userContentController didReceiveScriptMessage:(WKScriptMessage *)message;
+
+- (void)activate:(const std::string&)msg;
+
 @end
 
-@interface UIWebViewWrapper () <WKUIDelegate, WKNavigationDelegate>
-@property(nonatomic, retain) WKWebView * uiWebView;
-@property(nonatomic, retain) UIButton* uiCloseBtn;
-@property(nonatomic, copy) NSString * jsScheme;
+@interface UIWebViewWrapper () <WKUIDelegate, WKNavigationDelegate, WKScriptMessageHandler>
+@property(nonatomic, retain) WKWebView *uiWebView;
+@property(nonatomic, retain) UIButton *uiCloseBtn;
+@property(nonatomic, copy) NSString *jsScheme;
 @end
 
 @implementation UIWebViewWrapper
@@ -162,6 +165,22 @@ static std::string getFixedBaseUrl(const std::string& baseUrl)
      }
 }
 
+- (void)userContentController:(WKUserContentController *)userContentController didReceiveScriptMessage:(WKScriptMessage *)message
+{
+    if (![message.name isEqualToString:@"activate"]) {
+        return;
+    }
+
+    NSString *activate = [message.body valueForKey:@"filename"];
+    NSString *msg = [message.body valueForKey:@"msg"];
+
+    std::string activateStr = [activate UTF8String];
+    std::string msgStr = [msg UTF8String];
+    std::string code = "NPL.activate(\"" + activateStr + "\", " + msgStr + ");";
+
+    ParaEngine::LuaObjcBridge::nplActivate(code, "");
+}
+
 - (void)setupWebView
 {
     if (!self.uiWebView)
@@ -169,18 +188,20 @@ static std::string getFixedBaseUrl(const std::string& baseUrl)
         WKWebViewConfiguration *webViewConfig = [[WKWebViewConfiguration alloc] init];
         webViewConfig.allowsInlineMediaPlayback = YES;
 
+        [webViewConfig.userContentController addScriptMessageHandler:self name:@"activate"];
+
         self.uiWebView = [[WKWebView alloc] initWithFrame:CGRectMake(0, 0, 0, 0) configuration:webViewConfig];
         self.uiWebView.UIDelegate = self;
         self.uiWebView.navigationDelegate = self;
     }
-    
+
     if (!self.uiWebView.superview)
     {
-        void *p = (void*)ParaEngine::CGlobals::GetApp()->GetRenderWindow()->GetNativeHandle();
+        void *p = (void *)ParaEngine::CGlobals::GetApp()->GetRenderWindow()->GetNativeHandle();
 
         if (p)
         {
-            GLView* view = (__bridge GLView*)p;
+            GLView *view = (__bridge GLView *)p;
             [view addSubview:self.uiWebView];
         }
     }
@@ -201,7 +222,21 @@ static std::string getFixedBaseUrl(const std::string& baseUrl)
     }
 }
 
-- (void)move:(int)x y:(int)y {
+- (void)activate:(const std::string &)filepath msg:(const std::string &)msg
+{
+    NSString *msgStr = [NSString stringWithCString:msg.c_str() encoding:[NSString defaultCStringEncoding]];
+    NSString *filepathStr = [NSString stringWithCString:filepath.c_str() encoding:[NSString defaultCStringEncoding]];
+
+    NSString *jsStr = [NSString stringWithFormat:@"window.NPL.receive(\"%@\",\"%@\")", filepathStr, msgStr];
+    
+    if (self.uiWebView)
+    {
+        [self.uiWebView evaluateJavaScript:jsStr completionHandler:nil];
+    }
+}
+
+- (void)move:(int)x y:(int)y
+{
     auto height = self.uiWebView.frame.size.height;
     auto btnHeigh = self.uiCloseBtn.frame.size.height;
 
@@ -276,7 +311,11 @@ static std::string getFixedBaseUrl(const std::string& baseUrl)
         [self setupWebView];
     
     NSString *nsStringUrl = @(urlString.c_str());
-    nsStringUrl = [nsStringUrl stringByAddingPercentEscapesUsingEncoding:NSUTF8StringEncoding];
+    nsStringUrl =
+        [nsStringUrl
+         stringByAddingPercentEncodingWithAllowedCharacters:
+             [NSCharacterSet characterSetWithCharactersInString:@"`%^{}\"[]|\\<> "].invertedSet];
+
     NSURL *url = [NSURL URLWithString: nsStringUrl];
     auto originWidth = self.uiWebView.frame.size.width;
     auto originHeight = self.uiWebView.frame.size.height;
@@ -475,8 +514,7 @@ namespace ParaEngine {
     {
         _uiWebViewWrapper = nil;
     }
-    
-    
+
     void ParaEngineWebView::loadUrl(const std::string &url, bool cleanCachedData)
     {
         [this->_uiWebViewWrapper loadUrl:url cleanCachedData:cleanCachedData];
@@ -530,5 +568,10 @@ namespace ParaEngine {
     void ParaEngineWebView::resize(int width, int height)
     {
         [this->_uiWebViewWrapper resize:width height:height];
+    }
+
+    void ParaEngineWebView::activate(const std::string &filepath, const std::string &msg)
+    {
+        [this->_uiWebViewWrapper activate: filepath msg:msg];
     }
 } // end namespcae

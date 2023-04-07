@@ -157,8 +157,8 @@ using namespace ParaEngine;
 
     [[AVAudioSession sharedInstance] setCategory: AVAudioSessionCategoryPlayAndRecord error: nil];
     UInt32 audioRouteOverride = kAudioSessionOverrideAudioRoute_Speaker;
-    AudioSessionSetProperty (kAudioSessionProperty_OverrideAudioRoute, sizeof(audioRouteOverride), &audioRouteOverride);
-    
+    AudioSessionSetProperty(kAudioSessionProperty_OverrideAudioRoute, sizeof(audioRouteOverride), &audioRouteOverride);
+
     CGUIRoot::GetInstance()->SetUIScale(renderWindow->GetScaleX(), renderWindow->GetScaleY(), true, true, false);
 }
 
