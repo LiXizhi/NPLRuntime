@@ -5,19 +5,19 @@ extern std::string WStringToString(std::wstring wstr);
 
 static std::string ReadRegStr(HKEY root_key, std::string sub_key, std::string name)
 {
-	HKEY hKey;
- 	DWORD dwSize = 0;
-	std::string value;
-    if (RegOpenKeyEx(root_key, sub_key.c_str(), 0, KEY_READ | KEY_WOW64_64KEY, &hKey) == ERROR_SUCCESS) 
-	{
-		if (ERROR_SUCCESS == RegQueryValueEx(hKey, name.c_str(), NULL, NULL, NULL, &dwSize)) 
-		{
-			value.resize(dwSize - 1);
-	        if (RegGetValue(hKey, NULL, name.c_str(), RRF_RT_REG_SZ, NULL, (void*)value.data(), &dwSize) != ERROR_SUCCESS) value = "";
-		}
+    HKEY hKey;
+    DWORD dwSize = 0;
+    std::string value;
+    if (RegOpenKeyEx(root_key, sub_key.c_str(), 0, KEY_READ | KEY_WOW64_64KEY, &hKey) == ERROR_SUCCESS)
+    {
+        if (ERROR_SUCCESS == RegQueryValueEx(hKey, name.c_str(), NULL, NULL, NULL, &dwSize))
+        {
+            value.resize(dwSize - 1);
+            if (RegGetValue(hKey, NULL, name.c_str(), RRF_RT_REG_SZ, NULL, (void*)value.data(), &dwSize) != ERROR_SUCCESS) value = "";
+        }
         RegCloseKey(hKey);
     }
-	return value;
+    return value;
 }
 
 WebView::WebView()
@@ -52,23 +52,53 @@ bool WebView::SetWnd(HWND hWnd)
     return CreateWebView(m_hWnd);
 }
 
+ LRESULT CALLBACK WebViewWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
+ {
+ 	switch (message)
+ 	{
+     case WM_CREATE:
+        // WebView::GetInstance()->Show();
+        // WebView::GetInstance()->CreateWebView(WebView::GetInstance()->GetWnd());
+ 		return DefWindowProc(hWnd, message, wParam, lParam);
+
+ 	// case WM_SIZE:    
+ 	// 	RECT bounds;
+ 	// 	GetClientRect(hWnd, &bounds);
+ 	// 	WebView::GetInstance()->SetPosition(bounds.left, bounds.top, bounds.right - bounds.left, bounds.bottom - bounds.top, false);
+ 	// 	break;
+ 	// case WM_DESTROY:
+ 	// 	PostQuitMessage(0);
+ 	// 	break;
+ 	default:
+ 		return DefWindowProc(hWnd, message, wParam, lParam);
+ 		break;
+ 	}
+
+ 	return 0;
+ }
+
 bool WebView::Create(HINSTANCE hInstance, HWND hParentWnd)
 {
     if (!IsSupported()) return false;
 
-    if (m_hWnd) 
+    if (m_hWnd)
     {
         if (m_on_created_callback != nullptr) m_on_created_callback();
         return true;
     }
 
+
     static const char* s_szWindowClass = "ParaCraftWebView";
     static const char* s_szTitle = "ParaCraftWebView";
     std::thread([this, hInstance, hParentWnd]() -> bool {
+
+        // Initializes the COM library on the current thread and identifies the concurrency model as single-thread apartment (STA).
+        CoInitialize(NULL);
+
         WNDCLASSEX wcex;
         wcex.cbSize = sizeof(WNDCLASSEX);
         wcex.style = CS_HREDRAW | CS_VREDRAW;
-        wcex.lpfnWndProc = DefWindowProc;
+        wcex.lpfnWndProc = WebViewWndProc;
         wcex.cbClsExtra = 0;
         wcex.cbWndExtra = 0;
         wcex.hInstance = hInstance;
@@ -85,12 +115,23 @@ bool WebView::Create(HINSTANCE hInstance, HWND hParentWnd)
             return false;
         }
 
-        this->m_hWnd = CreateWindowEx(
+        DWORD dwStyle;
+        if (hParentWnd)
+        {
+            dwStyle = WS_CHILD | WS_VISIBLE | WS_CLIPCHILDREN;
+            // dwStyle = WS_POPUP;
+            SetWindowLong(hParentWnd, GWL_STYLE, GetWindowLong(hParentWnd, GWL_STYLE) | WS_CLIPCHILDREN);
+        }
+        else {
+            dwStyle = WS_OVERLAPPEDWINDOW | WS_CLIPCHILDREN;
+        }
+
+        m_hWnd = CreateWindowEx(
             0,
             s_szWindowClass,
             s_szTitle,
-            WS_POPUP,
-            this->m_x, this->m_y, this->m_width, this->m_height,
+            dwStyle,
+            m_x, m_y, m_width, m_height,
             hParentWnd,
             NULL,
             hInstance,
@@ -104,11 +145,12 @@ bool WebView::Create(HINSTANCE hInstance, HWND hParentWnd)
             return false;
         }
 
-        if (this->m_bShow) this->Show();
+        if (m_bShow) 
+            Show();
 
-        this->CreateWebView(this->m_hWnd);
+        CreateWebView(m_hWnd);
 
-	    MSG msg;
+        MSG msg;
         while (GetMessage(&msg, NULL, 0, 0))
         {
             TranslateMessage(&msg);
@@ -116,18 +158,19 @@ bool WebView::Create(HINSTANCE hInstance, HWND hParentWnd)
         }
 
         return true;
-    }).detach();
+        }).detach();
 
-    return true;
+        return true;
 }
+
 
 void WebView::Show()
 {
     m_bShow = true;
     if (m_hWnd == NULL) return;
 
-	ShowWindow(m_hWnd, m_bShow ? SW_SHOW : SW_HIDE);
-	UpdateWindow(m_hWnd);
+    ShowWindow(m_hWnd, m_bShow ? SW_SHOW : SW_HIDE);
+    UpdateWindow(m_hWnd);
 }
 
 void WebView::Hide()
@@ -135,8 +178,8 @@ void WebView::Hide()
     m_bShow = false;
     if (m_hWnd == NULL) return;
 
-	ShowWindow(m_hWnd, m_bShow ? SW_SHOW : SW_HIDE);
-	UpdateWindow(m_hWnd);
+    ShowWindow(m_hWnd, m_bShow ? SW_SHOW : SW_HIDE);
+    UpdateWindow(m_hWnd);
 }
 
 void WebView::SetPosition(int x, int y, int w, int h, bool bUpdateWndPosition)
@@ -146,7 +189,7 @@ void WebView::SetPosition(int x, int y, int w, int h, bool bUpdateWndPosition)
 
     // 设置窗口
     if (bUpdateWndPosition) SetWindowPos(m_hWnd, m_hParentWnd, x, y, w, h, (m_bShow ? SWP_SHOWWINDOW : SWP_HIDEWINDOW) | SWP_NOACTIVATE);
-    
+
     // 更新到webview
     RECT bounds;
     GetClientRect(m_hWnd, &bounds);
@@ -158,7 +201,7 @@ void WebView::SetPosition(int x, int y, int w, int h, bool bUpdateWndPosition)
     {
         m_webview_controller->put_Bounds(bounds);
     }
-	
+
     UpdateWindow(m_hWnd);
 }
 
@@ -186,7 +229,7 @@ bool WebView::CreateWebView(HWND hWnd)
     PCWSTR userDataFolder = m_user_data_folder.empty() ? nullptr : m_user_data_folder.c_str();
     HRESULT ok = CreateCoreWebView2EnvironmentWithOptions(nullptr, userDataFolder, nullptr, Callback<ICoreWebView2CreateCoreWebView2EnvironmentCompletedHandler>([hWnd, this](HRESULT result, ICoreWebView2Environment* env) -> HRESULT {
         if (FAILED(result)) return result;
-        
+
         // Create a CoreWebView2Controller and get the associated CoreWebView2 whose parent is the main window hWnd
         HRESULT ok = env->CreateCoreWebView2Controller(hWnd, Callback<ICoreWebView2CreateCoreWebView2ControllerCompletedHandler>([hWnd, this](HRESULT result, ICoreWebView2Controller* controller) -> HRESULT {
             if (controller == nullptr) return E_FAIL;
@@ -206,7 +249,7 @@ bool WebView::CreateWebView(HWND hWnd)
             RECT bounds;
             GetClientRect(hWnd, &bounds);
             this->m_webview_controller->put_Bounds(bounds);
-            
+
             // Schedule an async task to navigate to Bing
             // this->m_webview->Navigate(L"file:///D:/workspace/html/iframe.html");
             if (!this->m_url.empty()) this->m_webview->Navigate(this->m_url.c_str());
@@ -222,9 +265,9 @@ bool WebView::CreateWebView(HWND hWnd)
                     std::wstring uri(uri_mem.get());
                     std::wcout << L"URL:" << uri << std::endl;
                     auto pos = uri.find_first_of(L"proto://");
-                    if (pos == 0) 
+                    if (pos == 0)
                     {
-                    	args->put_Cancel(true);
+                        args->put_Cancel(true);
                         this->ParseProtoUrl(uri);
                     }
                     return S_OK;
@@ -247,9 +290,9 @@ bool WebView::CreateWebView(HWND hWnd)
             if (this->m_on_created_callback != nullptr) this->m_on_created_callback();
 
             return S_OK;
-        }).Get());
+            }).Get());
         return ok == S_OK;
-    }).Get());
+        }).Get());
 
     return ok == S_OK;
 }
@@ -259,7 +302,7 @@ void WebView::ExecuteScript(const std::wstring& script_text)
     if (m_webview == nullptr) return;
     this->m_webview->ExecuteScript(script_text.c_str(), Callback<ICoreWebView2ExecuteScriptCompletedHandler>([](HRESULT errorCode, LPCWSTR resultObjectAsJson) -> HRESULT {
         return S_OK;
-    }).Get());
+        }).Get());
 }
 
 void WebView::ParseProtoUrl(const std::wstring url)

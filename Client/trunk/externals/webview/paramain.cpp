@@ -378,15 +378,6 @@ CORE_EXPORT_DECL void LibActivate(int nType, void* pVoid)
 
 		int parent_window_x = 0;
 		int parent_window_y = 0;
-		if (parent_handle)
-		{
-			RECT rect;
-			GetClientRect(parent_handle, &rect);
-			ClientToScreen(parent_handle, (LPPOINT)&rect.left);
-			ClientToScreen(parent_handle, (LPPOINT)&rect.right);
-			parent_window_x = rect.left;
-			parent_window_y = rect.top;
-		}
 		
 		double scale = params.zoom < 0.0001 ? 1.0 : params.zoom;
 		int x = parent_window_x + params.x * scale;

@@ -24,7 +24,7 @@ public:
     {
         static WebView s_webview;
         return &s_webview;
-    } 
+    }
 
     static bool IsSupported();
 
@@ -42,6 +42,7 @@ public:
     void Hide();
     void SetPosition(int x, int y, int w, int h, bool bUpdateWndPosition = true);
     bool SetWnd(HWND hWnd);
+    HWND GetWnd() { return m_hWnd; }
 public:
     void OnCreated(std::function<void()> callback) { m_on_created_callback = callback; }
 
@@ -50,10 +51,10 @@ public:
     // C++ => JS
     void SendWebMessage(const std::wstring& msg) { if (m_webview != nullptr) m_webview->PostWebMessageAsString(msg.c_str()); }
     // 兼容CEF
-    void OnProtoSendMsgCallBack(std::function<void(const std::wstring&)> callback)  { m_on_proto_send_msg_callback = callback; }
+    void OnProtoSendMsgCallBack(std::function<void(const std::wstring&)> callback) { m_on_proto_send_msg_callback = callback; }
     // 执行JavaScript
     void ExecuteScript(const std::wstring& script_text);
-protected:
+public:
     bool CreateWebView(HWND hWnd);
     void ParseProtoUrl(const std::wstring url);
 protected:
