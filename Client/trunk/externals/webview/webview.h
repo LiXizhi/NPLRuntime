@@ -16,6 +16,18 @@
 
 using namespace Microsoft::WRL;
 
+// 定义消息ID
+#define WM_WEBVIEW_MESSAGE (WM_USER + 1)
+
+
+class WebView;
+class WebViewMessage
+{
+public:
+    std::string m_cmd;
+    std::wstring m_url;
+    WebView* m_webview;
+};
 
 class WebView
 {
@@ -37,6 +49,7 @@ public:
     void Destroy();
 
     void Open(const std::wstring& url);
+    void SendOpenMessage(const std::wstring& url);
     bool IsShow() { return m_bShow; }
     void Show();
     void Hide();

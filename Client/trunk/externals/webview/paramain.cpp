@@ -414,7 +414,7 @@ CORE_EXPORT_DECL void LibActivate(int nType, void* pVoid)
 				if (params.visible)
 				{
 					g_webview->Show();
-					g_webview->SetPosition(x, y, width, height);
+					// g_webview->SetPosition(x, y, width, height);
 				}
 				else
 				{
@@ -429,7 +429,7 @@ CORE_EXPORT_DECL void LibActivate(int nType, void* pVoid)
 
 			if (cmd == "Open")
 			{
-				g_webview->Open(StringToWString(params.url));
+				g_webview->SendOpenMessage(StringToWString(params.url));
             	g_webview->SetPosition(x, y, width, height);
 			}
 		}

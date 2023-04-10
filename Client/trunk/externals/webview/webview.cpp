@@ -54,27 +54,19 @@ bool WebView::SetWnd(HWND hWnd)
 
  LRESULT CALLBACK WebViewWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
  {
- 	switch (message)
- 	{
-     case WM_CREATE:
-        // WebView::GetInstance()->Show();
-        // WebView::GetInstance()->CreateWebView(WebView::GetInstance()->GetWnd());
- 		return DefWindowProc(hWnd, message, wParam, lParam);
+    WebViewMessage* msg = nullptr;
+    switch (message)
+    {
+    case WM_WEBVIEW_MESSAGE:
+        msg = (WebViewMessage*)lParam;
+        if (msg->m_cmd == "Open") msg->m_webview->Open(msg->m_url);
+        break;
+    default:
+        return DefWindowProc(hWnd, message, wParam, lParam);
+        break;
+    }
 
- 	// case WM_SIZE:    
- 	// 	RECT bounds;
- 	// 	GetClientRect(hWnd, &bounds);
- 	// 	WebView::GetInstance()->SetPosition(bounds.left, bounds.top, bounds.right - bounds.left, bounds.bottom - bounds.top, false);
- 	// 	break;
- 	// case WM_DESTROY:
- 	// 	PostQuitMessage(0);
- 	// 	break;
- 	default:
- 		return DefWindowProc(hWnd, message, wParam, lParam);
- 		break;
- 	}
-
- 	return 0;
+    return 0;
  }
 
 bool WebView::Create(HINSTANCE hInstance, HWND hParentWnd)
@@ -87,11 +79,9 @@ bool WebView::Create(HINSTANCE hInstance, HWND hParentWnd)
         return true;
     }
 
-
     static const char* s_szWindowClass = "ParaCraftWebView";
     static const char* s_szTitle = "ParaCraftWebView";
     std::thread([this, hInstance, hParentWnd]() -> bool {
-
         // Initializes the COM library on the current thread and identifies the concurrency model as single-thread apartment (STA).
         CoInitialize(NULL);
 
@@ -222,6 +212,19 @@ void WebView::Open(const std::wstring& url)
     m_url = url;
     if (m_webview == nullptr) return;
     m_webview->Navigate(url.c_str());
+    auto ok = m_webview->Navigate(url.c_str());
+    assert(ok == S_OK);
+}
+
+void WebView::SendOpenMessage(const std::wstring& url)
+{
+    m_url = url;
+    if (m_webview == nullptr) return;
+    WebViewMessage msg;
+    msg.m_cmd = "Open";
+    msg.m_webview = this;
+    msg.m_url = url;
+    SendMessage(m_hWnd, WM_WEBVIEW_MESSAGE, 0, (LPARAM)&msg);
 }
 
 bool WebView::CreateWebView(HWND hWnd)
@@ -264,7 +267,7 @@ bool WebView::CreateWebView(HWND hWnd)
                     args->get_Uri(&uri_mem);
                     std::wstring uri(uri_mem.get());
                     std::wcout << L"URL:" << uri << std::endl;
-                    auto pos = uri.find_first_of(L"proto://");
+                    auto pos = uri.find_first_of(L"paracraft://");
                     if (pos == 0)
                     {
                         args->put_Cancel(true);
@@ -307,7 +310,7 @@ void WebView::ExecuteScript(const std::wstring& script_text)
 
 void WebView::ParseProtoUrl(const std::wstring url)
 {
-    static std::wstring s_sendmsg_proto = L"proto://sendmsg";
+    static std::wstring s_sendmsg_proto = L"paracraft://sendmsg";
     if (url.find(s_sendmsg_proto) == 0 && m_on_proto_send_msg_callback != nullptr)
     {
         m_on_proto_send_msg_callback(url.substr(s_sendmsg_proto.length() + 1)); // 取?最后数据
