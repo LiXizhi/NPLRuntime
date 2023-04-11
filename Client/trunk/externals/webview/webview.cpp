@@ -60,7 +60,13 @@ bool WebView::SetWnd(HWND hWnd)
     case WM_WEBVIEW_MESSAGE:
         msg = (WebViewMessage*)lParam;
         if (msg->m_cmd == "Open") msg->m_webview->Open(msg->m_url);
+        else if (msg->m_cmd == "SetPosition") msg->m_webview->SetPosition(msg->m_x, msg->m_y, msg->m_width, msg->m_height);
         break;
+    case WM_SIZE:
+		RECT bounds;
+		GetClientRect(hWnd, &bounds);
+    	// WebView::GetInstance()->SetPosition(bounds.left, bounds.top, bounds.right - bounds.left, bounds.bottom - bounds.top, false);
+		break;
     default:
         return DefWindowProc(hWnd, message, wParam, lParam);
         break;
@@ -172,6 +178,19 @@ void WebView::Hide()
     UpdateWindow(m_hWnd);
 }
 
+void WebView::SendSetPositionMessage(int x, int y, int w, int h)
+{
+    if (m_webview_controller == nullptr) return;
+    WebViewMessage msg;
+    msg.m_cmd = "SetPosition";
+    msg.m_webview = this;
+    msg.m_x = x;
+    msg.m_y = y;
+    msg.m_width = w;
+    msg.m_height = h;
+    SendMessage(m_hWnd, WM_WEBVIEW_MESSAGE, 0, (LPARAM)&msg);
+}
+
 void WebView::SetPosition(int x, int y, int w, int h, bool bUpdateWndPosition)
 {
     m_x = x; m_y = y; m_width = w; m_height = h;
@@ -179,20 +198,20 @@ void WebView::SetPosition(int x, int y, int w, int h, bool bUpdateWndPosition)
 
     // 设置窗口
     if (bUpdateWndPosition) SetWindowPos(m_hWnd, m_hParentWnd, x, y, w, h, (m_bShow ? SWP_SHOWWINDOW : SWP_HIDEWINDOW) | SWP_NOACTIVATE);
+    UpdateWindow(m_hWnd);
 
     // 更新到webview
     RECT bounds;
     GetClientRect(m_hWnd, &bounds);
-    bounds.left = x;
-    bounds.top = y;
-    bounds.right = bounds.left + w;
-    bounds.bottom = bounds.top + h;
+    // 独立窗口模式才需要加上 子窗口模式不需要
+    // bounds.left = x;
+    // bounds.top = y;
+    // bounds.right = bounds.left + w;
+    // bounds.bottom = bounds.top + h;
     if (m_webview_controller != nullptr)
     {
         m_webview_controller->put_Bounds(bounds);
     }
-
-    UpdateWindow(m_hWnd);
 }
 
 void WebView::Destroy()
@@ -218,7 +237,6 @@ void WebView::Open(const std::wstring& url)
 
 void WebView::SendOpenMessage(const std::wstring& url)
 {
-    m_url = url;
     if (m_webview == nullptr) return;
     WebViewMessage msg;
     msg.m_cmd = "Open";
@@ -292,6 +310,7 @@ bool WebView::CreateWebView(HWND hWnd)
             // 创建成功回调
             if (this->m_on_created_callback != nullptr) this->m_on_created_callback();
 
+            this->m_webview->OpenDevToolsWindow();
             return S_OK;
             }).Get());
         return ok == S_OK;

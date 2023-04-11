@@ -321,7 +321,6 @@ void WriteLog(const char* sFormat, ...) {
 // ParaWebViewd.dll
 CORE_EXPORT_DECL void LibActivate(int nType, void* pVoid)
 {
-	WriteLog("=====================ParaWebView==========================\n");
 	static std::string s_id = "";
 	if (nType == ParaEngine::PluginActType_STATE)
 	{
@@ -387,17 +386,20 @@ CORE_EXPORT_DECL void LibActivate(int nType, void* pVoid)
 		if (cmd == "Start") 
 		{
 			s_id = id;
-			g_webview->OnCreated(g_webview_on_created_callback);
+			g_webview->OnCreated([x, y, width, height, params]() {
+				g_webview_on_created_callback();
+				g_webview->SendSetPositionMessage(x, y, width, height);
+				g_webview->SendOpenMessage(StringToWString(params.url));
+				g_webview->Show();
+			});
 			g_webview->OnWebMessage(g_webview_on_msg_callback);            // window webview 模式
 			g_webview->OnProtoSendMsgCallBack(g_webview_on_msg_callback);  // cef 模式 
 			g_webview->Create(g_hInstance, parent_handle);	
-			g_webview->SetPosition(x, y, width, height);
-			g_webview->Open(StringToWString(params.url));
-			g_webview->Show();
+
 		} 
 		else 
 		{
-			if (s_id != id) return;
+			// if (s_id != id) return;
 
             if (cmd == "Quit")
             {
@@ -414,7 +416,6 @@ CORE_EXPORT_DECL void LibActivate(int nType, void* pVoid)
 				if (params.visible)
 				{
 					g_webview->Show();
-					// g_webview->SetPosition(x, y, width, height);
 				}
 				else
 				{
@@ -424,13 +425,13 @@ CORE_EXPORT_DECL void LibActivate(int nType, void* pVoid)
 
 			if (cmd == "ChangePosSize") 
 			{
-				g_webview->SetPosition(x, y, width, height);
+				g_webview->SendSetPositionMessage(x, y, width, height);
 			}
 
 			if (cmd == "Open")
 			{
 				g_webview->SendOpenMessage(StringToWString(params.url));
-            	g_webview->SetPosition(x, y, width, height);
+            	g_webview->SendSetPositionMessage(x, y, width, height);
 			}
 		}
 	}
