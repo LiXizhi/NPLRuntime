@@ -310,7 +310,7 @@ bool WebView::CreateWebView(HWND hWnd)
             // 创建成功回调
             if (this->m_on_created_callback != nullptr) this->m_on_created_callback();
 
-            this->m_webview->OpenDevToolsWindow();
+            // this->m_webview->OpenDevToolsWindow();
             return S_OK;
             }).Get());
         return ok == S_OK;
