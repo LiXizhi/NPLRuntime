@@ -27,6 +27,10 @@ public:
     std::string m_cmd;
     std::wstring m_url;
     WebView* m_webview;
+    int m_x;
+    int m_y;
+    int m_width;
+    int m_height;    
 };
 
 class WebView
@@ -53,6 +57,7 @@ public:
     bool IsShow() { return m_bShow; }
     void Show();
     void Hide();
+    void SendSetPositionMessage(int x, int y, int w, int h);
     void SetPosition(int x, int y, int w, int h, bool bUpdateWndPosition = true);
     bool SetWnd(HWND hWnd);
     HWND GetWnd() { return m_hWnd; }
