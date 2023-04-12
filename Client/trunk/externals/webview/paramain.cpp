@@ -349,10 +349,19 @@ CORE_EXPORT_DECL void LibActivate(int nType, void* pVoid)
 			auto auto_install = tabMsg["auto_install"];
 			if (!ok && auto_install) 
 			{
-				std::thread(WebView::DownloadAndInstallWV2RT, [pState, callback_file, tabMsg](){
+				std::thread(WebView::DownloadAndInstallWV2RT, [pState, callback_file](){
 					// 如果安装成功就可以使用, 可以再次发送支持webview 保险做法当前使用cef3 下次启动使用webview
-					// NPL_Activate(pState, callback_file, tabMsg);
-				}, nullptr).detach();
+					// NPLInterface::NPLObjectProxy msg;
+					// msg["cmd"] = "Install";
+					// msg["ok"] = WebView::IsSupported();
+					// NPL_Activate(pState, callback_file, msg);
+				}, [pState, callback_file](){
+					// 如果安装成功就可以使用, 可以再次发送支持webview 保险做法当前使用cef3 下次启动使用webview
+					// NPLInterface::NPLObjectProxy msg;
+					// msg["cmd"] = "Install";
+					// msg["ok"] = false;
+					// NPL_Activate(pState, callback_file, msg);
+				}).detach();
 			}
 			return;
 		}
