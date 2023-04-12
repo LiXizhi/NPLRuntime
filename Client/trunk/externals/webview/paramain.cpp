@@ -406,11 +406,11 @@ CORE_EXPORT_DECL void LibActivate(int nType, void* pVoid)
 			{
 				if (params.visible)
 				{
-					g_webview->AsyncShow();
+					g_webview->Show();
 				}
 				else
 				{
-					g_webview->AsyncHide();
+					g_webview->Hide();
 				}
 			}
 
