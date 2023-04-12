@@ -61,6 +61,7 @@ bool WebView::SetWnd(HWND hWnd)
         msg = (WebViewMessage*)lParam;
         if (msg->m_cmd == "Open") msg->m_webview->Open(msg->m_url);
         else if (msg->m_cmd == "SetPosition") msg->m_webview->SetPosition(msg->m_x, msg->m_y, msg->m_width, msg->m_height);
+        else if (msg->m_cmd == "SendWebMessage") msg->m_webview->SendWebMessage(msg->m_msg);
         break;
     case WM_SIZE:
 		RECT bounds;
@@ -191,6 +192,15 @@ void WebView::SendSetPositionMessage(int x, int y, int w, int h)
     SendMessage(m_hWnd, WM_WEBVIEW_MESSAGE, 0, (LPARAM)&msg);
 }
 
+void WebView::AsyncSendWebMessage(const std::wstring& msg)
+{
+    WebViewMessage webmsg;
+    webmsg.m_cmd = "SendWebMessage";
+    webmsg.m_webview = this;
+    webmsg.m_msg = msg;
+    SendMessage(m_hWnd, WM_WEBVIEW_MESSAGE, 0, (LPARAM)&webmsg);
+}
+
 void WebView::SetPosition(int x, int y, int w, int h, bool bUpdateWndPosition)
 {
     m_x = x; m_y = y; m_width = w; m_height = h;
@@ -233,6 +243,7 @@ void WebView::Open(const std::wstring& url)
     m_webview->Navigate(url.c_str());
     auto ok = m_webview->Navigate(url.c_str());
     assert(ok == S_OK);
+    InitUrlEnv();
 }
 
 void WebView::SendOpenMessage(const std::wstring& url)
@@ -322,9 +333,10 @@ bool WebView::CreateWebView(HWND hWnd)
 void WebView::ExecuteScript(const std::wstring& script_text)
 {
     if (m_webview == nullptr) return;
-    this->m_webview->ExecuteScript(script_text.c_str(), Callback<ICoreWebView2ExecuteScriptCompletedHandler>([](HRESULT errorCode, LPCWSTR resultObjectAsJson) -> HRESULT {
+    auto ok = this->m_webview->ExecuteScript(script_text.c_str(), Callback<ICoreWebView2ExecuteScriptCompletedHandler>([](HRESULT errorCode, LPCWSTR resultObjectAsJson) -> HRESULT {
         return S_OK;
         }).Get());
+    assert(ok == S_OK);
 }
 
 void WebView::ParseProtoUrl(const std::wstring url)
@@ -390,4 +402,33 @@ bool WebView::DownloadAndInstallWV2RT(std::function<void()> successed, std::func
         }
     }
     return false;
+}
+
+void WebView::InitUrlEnv()
+{
+    if (m_webview == nullptr) return ;
+
+    m_webview->AddScriptToExecuteOnDocumentCreated(LR"(
+window.chrome.webview.addEventListener("message", function(event){
+	var msg = undefined;
+	try
+    {
+        msg = JSON.parse(event.data);
+    }
+    catch(e)
+    {
+        console.log(e);
+        console.log(event.data);
+    }
+	if (typeof msg != "object") 
+	{
+		console.log("无效数据:", event.data);
+		return;
+	}
+	if (typeof window.NPL == "object" && typeof window.NPL.receive == "function")
+	{
+		window.NPL.receive(msg.file, msg.params);
+	}
+}); 
+    )",nullptr);
 }

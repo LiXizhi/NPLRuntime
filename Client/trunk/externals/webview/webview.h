@@ -24,9 +24,12 @@ class WebView;
 class WebViewMessage
 {
 public:
-    std::string m_cmd;
-    std::wstring m_url;
-    WebView* m_webview;
+    WebView* m_webview;    // 浏览器对象
+    std::string m_cmd;     // 命令
+    std::wstring m_msg;    // 发送消息
+    std::wstring m_url;    // 打开URL
+    
+    // 位置信息
     int m_x;
     int m_y;
     int m_width;
@@ -68,6 +71,8 @@ public:
     void OnWebMessage(std::function<void(const std::wstring&)> callback) { m_on_message_callback = callback; }
     // C++ => JS
     void SendWebMessage(const std::wstring& msg) { if (m_webview != nullptr) m_webview->PostWebMessageAsString(msg.c_str()); }
+    // 异步发送消息  C++ => JS
+    void AsyncSendWebMessage(const std::wstring& msg);
     // 兼容CEF
     void OnProtoSendMsgCallBack(std::function<void(const std::wstring&)> callback) { m_on_proto_send_msg_callback = callback; }
     // 执行JavaScript
@@ -75,6 +80,7 @@ public:
 public:
     bool CreateWebView(HWND hWnd);
     void ParseProtoUrl(const std::wstring url);
+    void InitUrlEnv();
 protected:
     HWND m_hWnd;
     HWND m_hParentWnd;

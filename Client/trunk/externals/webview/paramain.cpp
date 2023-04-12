@@ -50,22 +50,6 @@ static void NPL_Activate(NPL::INPLRuntimeState* pState, std::string activateFile
 
 static NPL::INPLRuntimeState* g_pStaticState = nullptr;
 static WebView* g_webview = WebView::GetInstance();
-static std::function<void()> g_webview_on_created_callback = []() {
-	g_webview->ExecuteScript(LR"(
-window.chrome.webview.addEventListener("message", function(event){
-	var data = JSON.parse(event.data);
-	if (typeof data != "object") 
-	{
-		console.log("无效数据:", event.data);
-		return;
-	}
-	if (typeof window.NPL == "object" && typeof window.NPL.receive == "function")
-	{
-		window.NPL.receive(data.file, data.params);
-	}
-});
-	)");
-};
 
 static std::function<void(const std::wstring&)> g_webview_on_msg_callback = [](const std::wstring& msg_json_str)
 {
@@ -387,7 +371,6 @@ CORE_EXPORT_DECL void LibActivate(int nType, void* pVoid)
 		{
 			s_id = id;
 			g_webview->OnCreated([x, y, width, height, params]() {
-				g_webview_on_created_callback();
 				g_webview->SendSetPositionMessage(x, y, width, height);
 				g_webview->SendOpenMessage(StringToWString(params.url));
 				g_webview->Show();
@@ -395,7 +378,6 @@ CORE_EXPORT_DECL void LibActivate(int nType, void* pVoid)
 			g_webview->OnWebMessage(g_webview_on_msg_callback);            // window webview 模式
 			g_webview->OnProtoSendMsgCallBack(g_webview_on_msg_callback);  // cef 模式 
 			g_webview->Create(g_hInstance, parent_handle);	
-
 		} 
 		else 
 		{
@@ -408,7 +390,7 @@ CORE_EXPORT_DECL void LibActivate(int nType, void* pVoid)
 			
 			if (cmd == "CallJsFunc")
 			{
-				g_webview->SendWebMessage(StringToWString(tabMsg["message_content"]));
+				g_webview->AsyncSendWebMessage(StringToWString(tabMsg["message_content"]));
 			}
 
 			if (cmd == "Show")
