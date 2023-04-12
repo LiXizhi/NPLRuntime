@@ -60,6 +60,7 @@ bool WebView::SetWnd(HWND hWnd)
     case WM_WEBVIEW_MESSAGE:
         msg = (WebViewMessage*)lParam;
         if (msg->m_cmd == "Open") msg->m_webview->Open(msg->m_url);
+        else if (msg->m_cmd == "Show") { if (msg->m_visible) msg->m_webview->Show(); else msg->m_webview->Hide(); }
         else if (msg->m_cmd == "SetPosition") msg->m_webview->SetPosition(msg->m_x, msg->m_y, msg->m_width, msg->m_height);
         else if (msg->m_cmd == "SendWebMessage") msg->m_webview->SendWebMessage(msg->m_msg);
         break;

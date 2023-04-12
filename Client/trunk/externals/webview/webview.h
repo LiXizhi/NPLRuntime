@@ -28,7 +28,7 @@ public:
     std::string m_cmd;     // 命令
     std::wstring m_msg;    // 发送消息
     std::wstring m_url;    // 打开URL
-    
+    bool m_visible;        // 是否显示
     // 位置信息
     int m_x;
     int m_y;
@@ -81,6 +81,9 @@ public:
     bool CreateWebView(HWND hWnd);
     void ParseProtoUrl(const std::wstring url);
     void InitUrlEnv();
+    void PostWebViewMessage(WebViewMessage msg) { if(m_hWnd == NULL) return; msg.m_webview = this; SendMessage(m_hWnd, WM_WEBVIEW_MESSAGE, 0, (LPARAM)&msg); }
+    void AsyncShow() { WebViewMessage msg; msg.m_visible = true; msg.m_cmd = "Show"; PostWebViewMessage(msg); }
+    void AsyncHide() { WebViewMessage msg; msg.m_visible = false; msg.m_cmd = "Show"; PostWebViewMessage(msg); }
 protected:
     HWND m_hWnd;
     HWND m_hParentWnd;
