@@ -29,6 +29,8 @@ WebView::WebView()
     m_width = 0;
     m_height = 0;
 
+    m_webview = nullptr;
+    m_webview_controller = nullptr;
     m_on_created_callback = nullptr;
     m_on_message_callback = nullptr;
     m_on_proto_send_msg_callback = nullptr;
@@ -259,8 +261,8 @@ void WebView::SendOpenMessage(const std::wstring& url)
 
 bool WebView::CreateWebView(HWND hWnd)
 {
-    PCWSTR userDataFolder = m_user_data_folder.empty() ? nullptr : m_user_data_folder.c_str();
-    HRESULT ok = CreateCoreWebView2EnvironmentWithOptions(nullptr, userDataFolder, nullptr, Callback<ICoreWebView2CreateCoreWebView2EnvironmentCompletedHandler>([hWnd, this](HRESULT result, ICoreWebView2Environment* env) -> HRESULT {
+    std::wstring user_data_folder = m_user_data_folder.empty() ? GetCacheDirectory() : m_user_data_folder;
+    HRESULT ok = CreateCoreWebView2EnvironmentWithOptions(nullptr, user_data_folder.c_str(), nullptr, Callback<ICoreWebView2CreateCoreWebView2EnvironmentCompletedHandler>([hWnd, this](HRESULT result, ICoreWebView2Environment* env) -> HRESULT {
         if (FAILED(result)) return result;
 
         // Create a CoreWebView2Controller and get the associated CoreWebView2 whose parent is the main window hWnd
@@ -358,20 +360,21 @@ bool WebView::IsSupported()
     pv = ReadRegStr(HKEY_LOCAL_MACHINE, "Software\\Microsoft\\EdgeUpdate\\Clients\\{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}", "pv");
     if (pv != "" && pv != "0.0.0.0") return true;
 
-    wil::unique_cotaskmem_string webview_version = nullptr;
-    // MS BUG: release version of webview2 runtime will return false. Debug version will return correctly. 
-    assert(S_OK == GetAvailableCoreWebView2BrowserVersionString(nullptr, &webview_version));
-    if (webview_version == nullptr)
-    {
-        WriteLog("Error: WebView webview2 not installed. please install Miscrosoft Edge. \n");
-        return true;
-    }
-    else
-    {
-        std::string version = WStringToString(webview_version.get());
-        WriteLog("Webview2 version: %s", version.c_str());
-        return true;
-    }
+    return false;
+    // wil::unique_cotaskmem_string webview_version = nullptr;
+    // // MS BUG: release version of webview2 runtime will return false. Debug version will return correctly. 
+    // assert(S_OK == GetAvailableCoreWebView2BrowserVersionString(nullptr, &webview_version));
+    // if (webview_version == nullptr)
+    // {
+    //     WriteLog("Error: WebView webview2 not installed. please install Miscrosoft Edge. \n");
+    //     return true;
+    // }
+    // else
+    // {
+    //     std::string version = WStringToString(webview_version.get());
+    //     WriteLog("Webview2 version: %s", version.c_str());
+    //     return true;
+    // }
 }
 
 bool WebView::DownloadAndInstallWV2RT(std::function<void()> successed, std::function<void()> failed)
@@ -432,4 +435,13 @@ window.chrome.webview.addEventListener("message", function(event){
 	}
 }); 
     )",nullptr);
+}
+
+
+std::wstring WebView::GetCacheDirectory()
+{
+    wchar_t szExePath[1024];
+    GetModuleFileNameW(nullptr, szExePath, sizeof(szExePath));
+    std::wstring path = szExePath;
+    return path.substr(0, path.find_last_of(L"\\") + 1) + L"WindowWebView2Cache";
 }

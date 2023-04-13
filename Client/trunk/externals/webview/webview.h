@@ -4,6 +4,8 @@
 #include <assert.h>
 #include <windows.h>
 #include <stdlib.h>
+#include <codecvt>
+#include <locale>
 #include <string>
 #include <thread>
 #include <functional>
@@ -78,12 +80,15 @@ public:
     // 执行JavaScript
     void ExecuteScript(const std::wstring& script_text);
 public:
+    bool IsSupportWebView() { return m_webview != nullptr; }
     bool CreateWebView(HWND hWnd);
     void ParseProtoUrl(const std::wstring url);
     void InitUrlEnv();
     void PostWebViewMessage(WebViewMessage msg) { if(m_hWnd == NULL) return; msg.m_webview = this; SendMessage(m_hWnd, WM_WEBVIEW_MESSAGE, 0, (LPARAM)&msg); }
     void AsyncShow() { WebViewMessage msg; msg.m_visible = true; msg.m_cmd = "Show"; PostWebViewMessage(msg); }
     void AsyncHide() { WebViewMessage msg; msg.m_visible = false; msg.m_cmd = "Show"; PostWebViewMessage(msg); }
+
+    std::wstring GetCacheDirectory();
 protected:
     HWND m_hWnd;
     HWND m_hParentWnd;

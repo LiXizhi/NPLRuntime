@@ -50,6 +50,7 @@ static void NPL_Activate(NPL::INPLRuntimeState* pState, std::string activateFile
 
 static NPL::INPLRuntimeState* g_pStaticState = nullptr;
 static WebView* g_webview = WebView::GetInstance();
+static int g_support_webview = 0; // 0 -- 未检测  1 -- 支持   2 -- 不支持
 
 static std::function<void(const std::wstring&)> g_webview_on_msg_callback = [](const std::wstring& msg_json_str)
 {
@@ -306,6 +307,7 @@ void WriteLog(const char* sFormat, ...) {
 CORE_EXPORT_DECL void LibActivate(int nType, void* pVoid)
 {
 	static std::string s_id = "";
+	if (g_support_webview == 2) return;
 	if (nType == ParaEngine::PluginActType_STATE)
 	{
 		NPL::INPLRuntimeState* pState = (NPL::INPLRuntimeState*)pVoid;
@@ -339,50 +341,92 @@ CORE_EXPORT_DECL void LibActivate(int nType, void* pVoid)
 		std::string cmd = params.cmd;
 		std::string callback_file = params.callback_file;
         std::string parent_handle_s = params.parent_handle;
+        HWND parent_handle = parent_handle_s.empty() ? NULL : (HWND)std::stoull(parent_handle_s.c_str());
 
 		if (cmd == "Support")
 		{
-			tabMsg["ok"] = WebView::IsSupported();
-			NPL_Activate(pState, callback_file, tabMsg);
+			NPLInterface::NPLObjectProxy msg;
+			bool auto_install = tabMsg["auto_install"];
+			bool ok = WebView::IsSupported();
+			msg["cmd"] = "Support";
+			msg["ok"] = ok;
+			NPL_Activate(pState, callback_file, msg);
 
-			auto ok = tabMsg["ok"];
-			auto auto_install = tabMsg["auto_install"];
 			if (!ok && auto_install) 
 			{
 				std::thread(WebView::DownloadAndInstallWV2RT, [pState, callback_file](){
 					// 如果安装成功就可以使用, 可以再次发送支持webview 保险做法当前使用cef3 下次启动使用webview
 					// NPLInterface::NPLObjectProxy msg;
 					// msg["cmd"] = "Install";
-					// msg["ok"] = WebView::IsSupported();
+					// msg["ok"] = g_webview->IsSupportWebView();
 					// NPL_Activate(pState, callback_file, msg);
 				}, [pState, callback_file](){
-					// 如果安装成功就可以使用, 可以再次发送支持webview 保险做法当前使用cef3 下次启动使用webview
+					// 如果安装失败通知
 					// NPLInterface::NPLObjectProxy msg;
 					// msg["cmd"] = "Install";
 					// msg["ok"] = false;
 					// NPL_Activate(pState, callback_file, msg);
 				}).detach();
 			}
+
+			// bool auto_install = tabMsg["auto_install"];
+			// g_webview->OnCreated([pState, callback_file, auto_install]() {
+			// 	NPLInterface::NPLObjectProxy msg;
+			// 	bool ok = g_webview->IsSupportWebView();
+			// 	msg["cmd"] = "Support";
+			// 	msg["ok"] = ok;
+			// 	NPL_Activate(pState, callback_file, msg);
+
+			// 	if (!ok && auto_install) 
+			// 	{
+			// 		std::thread(WebView::DownloadAndInstallWV2RT, [pState, callback_file](){
+			// 			// 如果安装成功就可以使用, 可以再次发送支持webview 保险做法当前使用cef3 下次启动使用webview
+			// 			// NPLInterface::NPLObjectProxy msg;
+			// 			// msg["cmd"] = "Install";
+			// 			// msg["ok"] = g_webview->IsSupportWebView();
+			// 			// NPL_Activate(pState, callback_file, msg);
+			// 		}, [pState, callback_file](){
+			// 			// 如果安装失败通知
+			// 			// NPLInterface::NPLObjectProxy msg;
+			// 			// msg["cmd"] = "Install";
+			// 			// msg["ok"] = false;
+			// 			// NPL_Activate(pState, callback_file, msg);
+			// 		}).detach();
+			// 	}
+			// });
+			// g_webview->Create(g_hInstance, parent_handle);	
 			return;
 		}
 
-        HWND parent_handle = parent_handle_s.empty() ? NULL : (HWND)std::stoull(parent_handle_s.c_str());
-
-		int parent_window_x = 0;
-		int parent_window_y = 0;
-		
 		double scale = params.zoom < 0.0001 ? 1.0 : params.zoom;
-		int x = parent_window_x + params.x * scale;
-		int y = parent_window_y + params.y * scale;
+		int x = params.x * scale;
+		int y = params.y * scale;
 		int width = params.width * scale;
 		int height = params.height * scale;
 		if (cmd == "Start") 
 		{
 			s_id = id;
-			g_webview->OnCreated([x, y, width, height, params]() {
-				g_webview->SendSetPositionMessage(x, y, width, height);
-				g_webview->SendOpenMessage(StringToWString(params.url));
-				g_webview->Show();
+			g_webview->OnCreated([x, y, width, height, params, pState, callback_file]() {
+				if (g_webview->IsSupportWebView())
+				{
+					g_webview->SendSetPositionMessage(x, y, width, height);
+					g_webview->SendOpenMessage(StringToWString(params.url));
+					g_webview->Show();
+				}
+				else
+				{
+					g_webview->Destroy();
+				}
+
+				if (g_support_webview == 0)
+				{
+					g_support_webview = g_webview->IsSupportWebView() ? 1 : 2;
+					
+					NPLInterface::NPLObjectProxy msg;
+					msg["cmd"] = "SupportWebView";
+					msg["ok"] = g_webview->IsSupportWebView();
+					NPL_Activate(pState, callback_file, msg);
+				}
 			});
 			g_webview->OnWebMessage(g_webview_on_msg_callback);            // window webview 模式
 			g_webview->OnProtoSendMsgCallBack(g_webview_on_msg_callback);  // cef 模式 
