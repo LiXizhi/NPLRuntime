@@ -261,8 +261,8 @@ void WebView::SendOpenMessage(const std::wstring& url)
 
 bool WebView::CreateWebView(HWND hWnd)
 {
-    PCWSTR userDataFolder = m_user_data_folder.empty() ? nullptr : m_user_data_folder.c_str();
-    HRESULT ok = CreateCoreWebView2EnvironmentWithOptions(nullptr, userDataFolder, nullptr, Callback<ICoreWebView2CreateCoreWebView2EnvironmentCompletedHandler>([hWnd, this](HRESULT result, ICoreWebView2Environment* env) -> HRESULT {
+    std::wstring user_data_folder = m_user_data_folder.empty() ? GetCacheDirectory() : m_user_data_folder;
+    HRESULT ok = CreateCoreWebView2EnvironmentWithOptions(nullptr, user_data_folder.c_str(), nullptr, Callback<ICoreWebView2CreateCoreWebView2EnvironmentCompletedHandler>([hWnd, this](HRESULT result, ICoreWebView2Environment* env) -> HRESULT {
         if (FAILED(result)) return result;
 
         // Create a CoreWebView2Controller and get the associated CoreWebView2 whose parent is the main window hWnd
@@ -435,4 +435,13 @@ window.chrome.webview.addEventListener("message", function(event){
 	}
 }); 
     )",nullptr);
+}
+
+
+std::wstring WebView::GetCacheDirectory()
+{
+    wchar_t szExePath[1024];
+    GetModuleFileNameW(nullptr, szExePath, sizeof(szExePath));
+    std::wstring path = szExePath;
+    return path.substr(0, path.find_last_of(L"\\") + 1) + L"WindowWebView2Cache";
 }
