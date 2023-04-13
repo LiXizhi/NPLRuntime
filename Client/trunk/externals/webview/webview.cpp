@@ -29,6 +29,8 @@ WebView::WebView()
     m_width = 0;
     m_height = 0;
 
+    m_webview = nullptr;
+    m_webview_controller = nullptr;
     m_on_created_callback = nullptr;
     m_on_message_callback = nullptr;
     m_on_proto_send_msg_callback = nullptr;
@@ -358,20 +360,21 @@ bool WebView::IsSupported()
     pv = ReadRegStr(HKEY_LOCAL_MACHINE, "Software\\Microsoft\\EdgeUpdate\\Clients\\{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}", "pv");
     if (pv != "" && pv != "0.0.0.0") return true;
 
-    wil::unique_cotaskmem_string webview_version = nullptr;
-    // MS BUG: release version of webview2 runtime will return false. Debug version will return correctly. 
-    assert(S_OK == GetAvailableCoreWebView2BrowserVersionString(nullptr, &webview_version));
-    if (webview_version == nullptr)
-    {
-        WriteLog("Error: WebView webview2 not installed. please install Miscrosoft Edge. \n");
-        return true;
-    }
-    else
-    {
-        std::string version = WStringToString(webview_version.get());
-        WriteLog("Webview2 version: %s", version.c_str());
-        return true;
-    }
+    return false;
+    // wil::unique_cotaskmem_string webview_version = nullptr;
+    // // MS BUG: release version of webview2 runtime will return false. Debug version will return correctly. 
+    // assert(S_OK == GetAvailableCoreWebView2BrowserVersionString(nullptr, &webview_version));
+    // if (webview_version == nullptr)
+    // {
+    //     WriteLog("Error: WebView webview2 not installed. please install Miscrosoft Edge. \n");
+    //     return true;
+    // }
+    // else
+    // {
+    //     std::string version = WStringToString(webview_version.get());
+    //     WriteLog("Webview2 version: %s", version.c_str());
+    //     return true;
+    // }
 }
 
 bool WebView::DownloadAndInstallWV2RT(std::function<void()> successed, std::function<void()> failed)

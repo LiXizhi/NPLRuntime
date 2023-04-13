@@ -78,6 +78,7 @@ public:
     // 执行JavaScript
     void ExecuteScript(const std::wstring& script_text);
 public:
+    bool IsSupportWebView() { return m_webview != nullptr; }
     bool CreateWebView(HWND hWnd);
     void ParseProtoUrl(const std::wstring url);
     void InitUrlEnv();
