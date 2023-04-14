@@ -272,11 +272,13 @@ int NPL::CNPLRuntimeState::Stop()
 {
 	if (m_thread.get() != 0)
 	{
+		OUTPUT_LOG("begin stop NPL runtime state (with thread): %s\n", GetName().c_str());
 		// send the quit message. 
 		Stop_Async();
 
 		m_thread->join();
 		m_thread.reset();
+		OUTPUT_LOG("end stop NPL runtime state: %s\n", GetName().c_str());
 	}
 	return 0;
 }
