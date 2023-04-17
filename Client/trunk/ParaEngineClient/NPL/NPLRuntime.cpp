@@ -103,15 +103,20 @@ void CNPLRuntime::Init()
 
 void CNPLRuntime::Cleanup()
 {
- 	if(m_net_server)
+	if (m_net_server) {
+		OUTPUT_LOG("shutdown network server.\n");
 		m_net_server->stop();
-
-	if (m_net_udp_server)
+	}
+	
+	if (m_net_udp_server) {
+		OUTPUT_LOG("shutdown udp server.\n");
 		m_net_udp_server->stop();
+	}
 
 	// web service clients shall be cleaned up prior to the NPL runtime states.
 	if(m_pWebServiceClient)
 	{
+		OUTPUT_LOG("shutdown web service client.\n");
 		m_pWebServiceClient->DeleteThis();
 		m_pWebServiceClient = NULL;
 	}

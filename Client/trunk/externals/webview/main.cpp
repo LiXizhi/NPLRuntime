@@ -72,7 +72,7 @@ int CALLBACK WinMain(
 		szTitle,
 		WS_OVERLAPPEDWINDOW,
 		CW_USEDEFAULT, CW_USEDEFAULT,
-		1200, 900,
+		1380, 800,
 		NULL,
 		NULL,
 		hInstance,
@@ -102,6 +102,7 @@ int CALLBACK WinMain(
 		// begin debug
 		// WebView::GetInstance()->Open(L"file:///D:/workspace/c/webview/webview.html");
 		WebView::GetInstance()->Open(L"https://webparacraft.keepwork.com");
+		//WebView::GetInstance()->Open(L"https://edu.palaka.cn");
 		// msg callback
 		// WebView::GetInstance()->OnWebMessage(std::function<void(const std::wstring&)>([](const std::wstring& msg){
 		// 	std::wcout << L"OnMessage: " << msg << std::endl;
