@@ -279,6 +279,7 @@ bool WebView::CreateWebView(HWND hWnd)
             settings->put_IsScriptEnabled(TRUE);
             settings->put_AreDefaultScriptDialogsEnabled(TRUE);
             settings->put_IsWebMessageEnabled(TRUE);
+            settings->put_AreDevToolsEnabled(FALSE);  // 调试工具禁用
 
             // Resize WebView to fit the bounds of the parent window
             RECT bounds;
@@ -434,6 +435,7 @@ window.chrome.webview.addEventListener("message", function(event){
 		window.NPL.receive(msg.file, msg.params);
 	}
 }); 
+document.addEventListener('contextmenu', event => event.preventDefault());
     )",nullptr);
 }
 
