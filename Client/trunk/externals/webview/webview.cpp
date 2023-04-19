@@ -242,7 +242,7 @@ void WebView::Destroy()
 void WebView::Open(const std::wstring& url)
 {
     m_url = url;
-    if (m_webview == nullptr) return;
+    if (m_webview == nullptr || url == L"") return;
     m_webview->Navigate(url.c_str());
     auto ok = m_webview->Navigate(url.c_str());
     assert(ok == S_OK);
@@ -251,6 +251,7 @@ void WebView::Open(const std::wstring& url)
 
 void WebView::SendOpenMessage(const std::wstring& url)
 {
+    m_url = url;
     if (m_webview == nullptr) return;
     WebViewMessage msg;
     msg.m_cmd = "Open";
