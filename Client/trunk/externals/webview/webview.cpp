@@ -242,8 +242,8 @@ void WebView::Destroy()
 void WebView::Open(const std::wstring& url)
 {
     m_url = url;
-    if (m_webview == nullptr || url == L"") return;
-    m_webview->Navigate(url.c_str());
+    if (m_webview == nullptr || url == L"") 
+        return;
     auto ok = m_webview->Navigate(url.c_str());
     assert(ok == S_OK);
     InitUrlEnv();
@@ -252,7 +252,8 @@ void WebView::Open(const std::wstring& url)
 void WebView::SendOpenMessage(const std::wstring& url)
 {
     m_url = url;
-    if (m_webview == nullptr) return;
+    if (m_webview == nullptr) 
+        return;
     WebViewMessage msg;
     msg.m_cmd = "Open";
     msg.m_webview = this;
@@ -287,9 +288,9 @@ bool WebView::CreateWebView(HWND hWnd)
             GetClientRect(hWnd, &bounds);
             this->m_webview_controller->put_Bounds(bounds);
 
-            // Schedule an async task to navigate to Bing
-            // this->m_webview->Navigate(L"file:///D:/workspace/html/iframe.html");
-            if (!this->m_url.empty()) this->m_webview->Navigate(this->m_url.c_str());
+            // open last opened url
+            if (!m_url.empty())
+                Open(m_url);
 
             // <NavigationEvents>
             // Step 4 - Navigation events
