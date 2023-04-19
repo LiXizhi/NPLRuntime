@@ -1,4 +1,10 @@
-﻿#include "WebView.h"
+﻿//-----------------------------------------------------------------------------
+// Class:	para webview main
+// Authors:	wxa, LiXizhi
+// Date: 2023.4
+// Desc: 
+//-----------------------------------------------------------------------------
+#include "WebView.h"
 
 extern void WriteLog(const char* sFormat, ...);
 extern std::string WStringToString(std::wstring wstr);
@@ -34,6 +40,7 @@ WebView::WebView()
     m_on_created_callback = nullptr;
     m_on_message_callback = nullptr;
     m_on_proto_send_msg_callback = nullptr;
+    m_nWndState = WEBVIEW_STATE_UNINITIALIZED;
 }
 
 WebView::~WebView()
@@ -61,10 +68,25 @@ bool WebView::SetWnd(HWND hWnd)
     {
     case WM_WEBVIEW_MESSAGE:
         msg = (WebViewMessage*)lParam;
-        if (msg->m_cmd == "Open") msg->m_webview->Open(msg->m_url);
-        else if (msg->m_cmd == "Show") { if (msg->m_visible) msg->m_webview->Show(); else msg->m_webview->Hide(); }
-        else if (msg->m_cmd == "SetPosition") msg->m_webview->SetPosition(msg->m_x, msg->m_y, msg->m_width, msg->m_height);
-        else if (msg->m_cmd == "SendWebMessage") msg->m_webview->SendWebMessage(msg->m_msg);
+        if (msg->m_cmd == "Open") 
+        {
+            msg->m_webview->Open(msg->m_url);
+        }
+        else if (msg->m_cmd == "Show")
+        { 
+            if (msg->m_visible) 
+                msg->m_webview->Show(); 
+            else 
+                msg->m_webview->Hide(); 
+        }
+        else if (msg->m_cmd == "SetPosition") 
+        {
+            msg->m_webview->SetPosition(msg->m_x, msg->m_y, msg->m_width, msg->m_height);
+        }
+        else if (msg->m_cmd == "SendWebMessage")
+        {
+            msg->m_webview->PostWebMessage(msg->m_msg);
+        }
         break;
     case WM_SIZE:
 		RECT bounds;
@@ -83,11 +105,12 @@ bool WebView::Create(HINSTANCE hInstance, HWND hParentWnd)
 {
     if (!IsSupported()) return false;
 
-    if (m_hWnd)
+    if (m_hWnd || m_nWndState != WEBVIEW_STATE_UNINITIALIZED)
     {
         if (m_on_created_callback != nullptr) m_on_created_callback();
         return true;
     }
+    m_nWndState = WEBVIEW_STATE_INITIALIZING;
 
     static const char* s_szWindowClass = "ParaCraftWebView";
     static const char* s_szTitle = "ParaCraftWebView";
@@ -157,17 +180,48 @@ bool WebView::Create(HINSTANCE hInstance, HWND hParentWnd)
             DispatchMessage(&msg);
         }
 
+        m_nWndState = WEBVIEW_STATE_DESTROYED;
         return true;
-        }).detach();
+    }).detach();
 
-        return true;
+    return true;
 }
 
+
+void WebView::SendShow()
+{
+    m_bShow = true;
+    if (!IsInitialized())
+        return;
+
+    WebViewMessage msg;
+    msg.m_visible = true;
+    msg.m_cmd = "Show";
+    SendWebViewMessage(msg);
+}
+
+void WebView::SendHide()
+{
+    m_bShow = false;
+    if (!IsInitialized())
+        return;
+    WebViewMessage msg;
+    msg.m_visible = false;
+    msg.m_cmd = "Show";
+    SendWebViewMessage(msg);
+}
+
+/** thread-safe: return true if window is created.  */
+
+bool WebView::IsInitialized() 
+{ 
+    return m_nWndState == WEBVIEW_STATE_INITIALIZED; 
+}
 
 void WebView::Show()
 {
     m_bShow = true;
-    if (m_hWnd == NULL) return;
+    if (m_hWnd == NULL || !IsInitialized()) return;
 
     ShowWindow(m_hWnd, m_bShow ? SW_SHOW : SW_HIDE);
     UpdateWindow(m_hWnd);
@@ -176,7 +230,7 @@ void WebView::Show()
 void WebView::Hide()
 {
     m_bShow = false;
-    if (m_hWnd == NULL) return;
+    if (m_hWnd == NULL || !IsInitialized()) return;
 
     ShowWindow(m_hWnd, m_bShow ? SW_SHOW : SW_HIDE);
     UpdateWindow(m_hWnd);
@@ -227,6 +281,11 @@ void WebView::SetPosition(int x, int y, int w, int h, bool bUpdateWndPosition)
     }
 }
 
+void WebView::SetOnCreateCallback(std::function<void()> callback) 
+{ 
+    m_on_created_callback = callback; 
+}
+
 void WebView::Destroy()
 {
     if (m_hWnd == NULL) return;
@@ -237,12 +296,13 @@ void WebView::Destroy()
     m_webview_controller = nullptr;
     m_webview = nullptr;
     m_bShow = false;
+    m_nWndState = WEBVIEW_STATE_DESTROYED;
 }
 
 void WebView::Open(const std::wstring& url)
 {
     m_url = url;
-    if (m_webview == nullptr || url == L"") 
+    if (m_webview == nullptr || url == L"" || !IsInitialized())
         return;
     auto ok = m_webview->Navigate(url.c_str());
     assert(ok == S_OK);
@@ -252,13 +312,20 @@ void WebView::Open(const std::wstring& url)
 void WebView::SendOpenMessage(const std::wstring& url)
 {
     m_url = url;
-    if (m_webview == nullptr) 
+    if (m_webview == nullptr || !IsInitialized())
         return;
     WebViewMessage msg;
     msg.m_cmd = "Open";
     msg.m_webview = this;
     msg.m_url = url;
     SendMessage(m_hWnd, WM_WEBVIEW_MESSAGE, 0, (LPARAM)&msg);
+}
+
+/** thread-safe */
+
+bool WebView::IsShow() 
+{ 
+    return m_bShow; 
 }
 
 bool WebView::CreateWebView(HWND hWnd)
@@ -271,13 +338,13 @@ bool WebView::CreateWebView(HWND hWnd)
         HRESULT ok = env->CreateCoreWebView2Controller(hWnd, Callback<ICoreWebView2CreateCoreWebView2ControllerCompletedHandler>([hWnd, this](HRESULT result, ICoreWebView2Controller* controller) -> HRESULT {
             if (controller == nullptr) return E_FAIL;
 
-            this->m_webview_controller = controller;
-            this->m_webview_controller->get_CoreWebView2(&(this->m_webview));
+            m_webview_controller = controller;
+            m_webview_controller->get_CoreWebView2(&(m_webview));
 
             // Add a few settings for the webview
             // The demo step is redundant since the values are the default settings
             wil::com_ptr<ICoreWebView2Settings> settings;
-            this->m_webview->get_Settings(&settings);
+            m_webview->get_Settings(&settings);
             settings->put_IsScriptEnabled(TRUE);
             settings->put_AreDefaultScriptDialogsEnabled(TRUE);
             settings->put_IsWebMessageEnabled(TRUE);
@@ -286,7 +353,7 @@ bool WebView::CreateWebView(HWND hWnd)
             // Resize WebView to fit the bounds of the parent window
             RECT bounds;
             GetClientRect(hWnd, &bounds);
-            this->m_webview_controller->put_Bounds(bounds);
+            m_webview_controller->put_Bounds(bounds);
 
             // open last opened url
             if (!m_url.empty())
@@ -296,7 +363,7 @@ bool WebView::CreateWebView(HWND hWnd)
             // Step 4 - Navigation events
             // register an ICoreWebView2NavigationStartingEventHandler to cancel any non-https navigation
             EventRegistrationToken token;
-            this->m_webview->add_NavigationStarting(Callback<ICoreWebView2NavigationStartingEventHandler>(
+            m_webview->add_NavigationStarting(Callback<ICoreWebView2NavigationStartingEventHandler>(
                 [this](ICoreWebView2* webview, ICoreWebView2NavigationStartingEventArgs* args) -> HRESULT {
                     wil::unique_cotaskmem_string uri_mem;
                     args->get_Uri(&uri_mem);
@@ -306,7 +373,7 @@ bool WebView::CreateWebView(HWND hWnd)
                     if (pos == 0)
                     {
                         args->put_Cancel(true);
-                        this->ParseProtoUrl(uri);
+                        ParseProtoUrl(uri);
                     }
                     return S_OK;
                 }).Get(), &token);
@@ -315,19 +382,26 @@ bool WebView::CreateWebView(HWND hWnd)
             // <CommunicationHostWeb>
             // Step 6 - Communication between host and web content
             // Set an event handler for the host to return received message back to the web content
-            this->m_webview->add_WebMessageReceived(Callback<ICoreWebView2WebMessageReceivedEventHandler>(
+            m_webview->add_WebMessageReceived(Callback<ICoreWebView2WebMessageReceivedEventHandler>(
                 [this](ICoreWebView2* webview, ICoreWebView2WebMessageReceivedEventArgs* args) -> HRESULT {
                     wil::unique_cotaskmem_string message;
                     args->TryGetWebMessageAsString(&message);
-                    if (this->m_on_message_callback != nullptr) this->m_on_message_callback(message.get());
+                    if (m_on_message_callback != nullptr) m_on_message_callback(message.get());
                     webview->PostWebMessageAsString(message.get());
                     return S_OK;
                 }).Get(), &token);
 
-            // 创建成功回调
-            if (this->m_on_created_callback != nullptr) this->m_on_created_callback();
+            if (m_on_created_callback != nullptr) 
+                m_on_created_callback();
 
-            // this->m_webview->OpenDevToolsWindow();
+            // m_webview->OpenDevToolsWindow();
+            if (IsShow())
+                Show();
+            else
+                Hide();
+             // better use a mutex
+            m_nWndState = WEBVIEW_STATE_INITIALIZED;
+
             return S_OK;
             }).Get());
         return ok == S_OK;
@@ -336,10 +410,21 @@ bool WebView::CreateWebView(HWND hWnd)
     return ok == S_OK;
 }
 
+void WebView::OnWebMessage(std::function<void(const std::wstring&)> callback) 
+{ 
+    m_on_message_callback = callback; 
+}
+
+void WebView::PostWebMessage(const std::wstring& msg)
+{ 
+    if (m_webview != nullptr) 
+        m_webview->PostWebMessageAsString(msg.c_str()); 
+}
+
 void WebView::ExecuteScript(const std::wstring& script_text)
 {
     if (m_webview == nullptr) return;
-    auto ok = this->m_webview->ExecuteScript(script_text.c_str(), Callback<ICoreWebView2ExecuteScriptCompletedHandler>([](HRESULT errorCode, LPCWSTR resultObjectAsJson) -> HRESULT {
+    auto ok = m_webview->ExecuteScript(script_text.c_str(), Callback<ICoreWebView2ExecuteScriptCompletedHandler>([](HRESULT errorCode, LPCWSTR resultObjectAsJson) -> HRESULT {
         return S_OK;
         }).Get());
     assert(ok == S_OK);
@@ -441,6 +526,12 @@ document.addEventListener('contextmenu', event => event.preventDefault());
     )",nullptr);
 }
 
+void WebView::SendWebViewMessage(WebViewMessage& msg) 
+{ 
+    if (m_hWnd == NULL) return; 
+    msg.m_webview = this; 
+    SendMessage(m_hWnd, WM_WEBVIEW_MESSAGE, 0, (LPARAM)&msg); 
+}
 
 std::wstring WebView::GetCacheDirectory()
 {

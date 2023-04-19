@@ -1,4 +1,10 @@
-﻿#include "PluginAPI.h"
+﻿//-----------------------------------------------------------------------------
+// Class:	para webview main
+// Authors:	wxa, LiXizhi
+// Date: 2023.4
+// Desc: 
+//-----------------------------------------------------------------------------
+#include "PluginAPI.h"
 
 #include <memory>
 #include <algorithm>
@@ -270,10 +276,6 @@ CORE_EXPORT_DECL void LibInitParaEngine(IParaEngineCore* pCoreInterface)
 
 CORE_EXPORT_DECL void LibInit()
 {
-	// if (!WebView::IsSupported())
-	// {
-	// 	std::thread(WebView::DownloadAndInstallWV2RT, nullptr, nullptr).detach();
-	// }
 }
 
 #ifdef WIN32
@@ -307,7 +309,8 @@ void WriteLog(const char* sFormat, ...) {
 CORE_EXPORT_DECL void LibActivate(int nType, void* pVoid)
 {
 	static std::string s_id = "";
-	if (g_support_webview == 2) return;
+	if (g_support_webview == 2) 
+		return;
 	if (nType == ParaEngine::PluginActType_STATE)
 	{
 		NPL::INPLRuntimeState* pState = (NPL::INPLRuntimeState*)pVoid;
@@ -406,12 +409,12 @@ CORE_EXPORT_DECL void LibActivate(int nType, void* pVoid)
 		if (cmd == "Start") 
 		{
 			s_id = id;
-			g_webview->OnCreated([x, y, width, height, params, pState, callback_file]() {
+			g_webview->Open(StringToWString(params.url));
+
+			g_webview->SetOnCreateCallback([x, y, width, height, params, pState, callback_file]() {
 				if (g_webview->IsSupportWebView())
 				{
 					g_webview->SendSetPositionMessage(x, y, width, height);
-					g_webview->SendOpenMessage(StringToWString(params.url));
-					g_webview->Show();
 				}
 				else
 				{
@@ -438,7 +441,7 @@ CORE_EXPORT_DECL void LibActivate(int nType, void* pVoid)
 
             if (cmd == "Quit")
             {
-				g_webview->Hide();
+				g_webview->SendHide();
             }
 			
 			if (cmd == "CallJsFunc")
@@ -450,11 +453,11 @@ CORE_EXPORT_DECL void LibActivate(int nType, void* pVoid)
 			{
 				if (params.visible)
 				{
-					g_webview->Show();
+					g_webview->SendShow();
 				}
 				else
 				{
-					g_webview->Hide();
+					g_webview->SendHide();
 				}
 			}
 
