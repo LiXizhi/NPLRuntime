@@ -1,4 +1,10 @@
-﻿#include "PluginAPI.h"
+﻿//-----------------------------------------------------------------------------
+// Class:	para webview main
+// Authors:	wxa, LiXizhi
+// Date: 2023.4
+// Desc: 
+//-----------------------------------------------------------------------------
+#include "PluginAPI.h"
 
 #include <memory>
 #include <algorithm>
@@ -40,12 +46,12 @@ std::wstring StringToWString(std::string str)
 	return wstr;
 }
 
-static void NPL_Activate(NPL::INPLRuntimeState* pState, std::string activateFile, NPLInterface::NPLObjectProxy data) 
+static void NPL_Activate(NPL::INPLRuntimeState* pState, std::string activateFile, NPLInterface::NPLObjectProxy data)
 {
-    if (!pState || activateFile.empty()) return;
-    std::string data_string;
-    NPLInterface::NPLHelper::NPLTableToString("msg", data, data_string);
-    pState->activate(activateFile.c_str(), data_string.c_str(), (int)data_string.length());
+	if (!pState || activateFile.empty()) return;
+	std::string data_string;
+	NPLInterface::NPLHelper::NPLTableToString("msg", data, data_string);
+	pState->activate(activateFile.c_str(), data_string.c_str(), (int)data_string.length());
 }
 
 static NPL::INPLRuntimeState* g_pStaticState = nullptr;
@@ -65,7 +71,7 @@ static std::function<void(const std::wstring&)> g_webview_on_msg_callback = [](c
 	if (g_pStaticState == nullptr) return;
 	NPLInterface::NPLObjectProxy data;
 	data["msg"] = msg;
-	NPL_Activate(g_pStaticState, filename, data); 
+	NPL_Activate(g_pStaticState, filename, data);
 	// g_pStaticState->activate(filename.c_str(), data);
 };
 
@@ -96,12 +102,12 @@ nlohmann::json ToJson(WebViewParams p)
 {
 	nlohmann::json out;
 	out["cmd"] = p.cmd;
-    out["callback_file"] = p.callback_file;
-    out["cmdline"] = p.cmdline;
+	out["callback_file"] = p.callback_file;
+	out["cmdline"] = p.cmdline;
 	out["client_name"] = p.client_name;
-    out["parent_handle"] = p.parent_handle;
-    out["cefclient_config_filename"] = p.cefclient_config_filename;
-    out["pid"] = p.pid;
+	out["parent_handle"] = p.parent_handle;
+	out["cefclient_config_filename"] = p.cefclient_config_filename;
+	out["pid"] = p.pid;
 	out["id"] = p.id;
 	out["url"] = p.url;
 	out["x"] = p.x;
@@ -120,12 +126,12 @@ nlohmann::json Read(NPLInterface::NPLObjectProxy tabMsg)
 {
 	WebViewParams params;
 	params.cmd = tabMsg["cmd"];
-    params.callback_file = tabMsg["callback_file"];
-    params.cmdline = tabMsg["cmdline"];
+	params.callback_file = tabMsg["callback_file"];
+	params.cmdline = tabMsg["cmdline"];
 	params.client_name = tabMsg["client_name"];
-    params.parent_handle = tabMsg["parent_handle"];
-    params.cefclient_config_filename = tabMsg["cefclient_config_filename"];
-    params.pid = tabMsg["pid"];
+	params.parent_handle = tabMsg["parent_handle"];
+	params.cefclient_config_filename = tabMsg["cefclient_config_filename"];
+	params.pid = tabMsg["pid"];
 	params.id = tabMsg["id"];
 	params.url = tabMsg["url"];
 	params.resize = tabMsg["resize"];
@@ -166,7 +172,7 @@ extern "C" {
 	CORE_EXPORT_DECL ParaEngine::ClassDescriptor* LibClassDesc(int i);
 	CORE_EXPORT_DECL void LibInit();
 	CORE_EXPORT_DECL void LibActivate(int nType, void* pVoid);
-    CORE_EXPORT_DECL void LibInitParaEngine(ParaEngine::IParaEngineCore* pCoreInterface);
+	CORE_EXPORT_DECL void LibInitParaEngine(ParaEngine::IParaEngineCore* pCoreInterface);
 #ifdef __cplusplus
 }   /* extern "C" */
 #endif
@@ -260,20 +266,16 @@ CORE_EXPORT_DECL ClassDescriptor* LibClassDesc(int i)
 ParaEngine::IParaEngineCore* g_pCoreInterface = NULL;
 ParaEngine::IParaEngineCore* GetCoreInterface()
 {
-    return g_pCoreInterface;
+	return g_pCoreInterface;
 }
 
 CORE_EXPORT_DECL void LibInitParaEngine(IParaEngineCore* pCoreInterface)
 {
-    g_pCoreInterface = pCoreInterface;
+	g_pCoreInterface = pCoreInterface;
 }
 
 CORE_EXPORT_DECL void LibInit()
 {
-	// if (!WebView::IsSupported())
-	// {
-	// 	std::thread(WebView::DownloadAndInstallWV2RT, nullptr, nullptr).detach();
-	// }
 }
 
 #ifdef WIN32
@@ -292,14 +294,14 @@ void __attribute__((constructor)) DllMain()
 
 
 void WriteLog(const char* sFormat, ...) {
-    if (GetCoreInterface() && GetCoreInterface()->GetAppInterface()) {
-        char buf_[1024 + 1];
-        va_list args;
-        va_start(args, sFormat);
-        vsnprintf(buf_, 1024, sFormat, args);
-        GetCoreInterface()->GetAppInterface()->WriteToLog(buf_);
-        va_end(args);
-    }
+	if (GetCoreInterface() && GetCoreInterface()->GetAppInterface()) {
+		char buf_[1024 + 1];
+		va_list args;
+		va_start(args, sFormat);
+		vsnprintf(buf_, 1024, sFormat, args);
+		GetCoreInterface()->GetAppInterface()->WriteToLog(buf_);
+		va_end(args);
+	}
 }
 
 
@@ -307,7 +309,8 @@ void WriteLog(const char* sFormat, ...) {
 CORE_EXPORT_DECL void LibActivate(int nType, void* pVoid)
 {
 	static std::string s_id = "";
-	if (g_support_webview == 2) return;
+	if (g_support_webview == 2)
+		return;
 	if (nType == ParaEngine::PluginActType_STATE)
 	{
 		NPL::INPLRuntimeState* pState = (NPL::INPLRuntimeState*)pVoid;
@@ -340,8 +343,8 @@ CORE_EXPORT_DECL void LibActivate(int nType, void* pVoid)
 		std::string id = params.id;
 		std::string cmd = params.cmd;
 		std::string callback_file = params.callback_file;
-        std::string parent_handle_s = params.parent_handle;
-        HWND parent_handle = parent_handle_s.empty() ? NULL : (HWND)std::stoull(parent_handle_s.c_str());
+		std::string parent_handle_s = params.parent_handle;
+		HWND parent_handle = parent_handle_s.empty() ? NULL : (HWND)std::stoull(parent_handle_s.c_str());
 
 		if (cmd == "Support")
 		{
@@ -352,15 +355,15 @@ CORE_EXPORT_DECL void LibActivate(int nType, void* pVoid)
 			msg["ok"] = ok;
 			NPL_Activate(pState, callback_file, msg);
 
-			if (!ok && auto_install) 
+			if (!ok && auto_install)
 			{
-				std::thread(WebView::DownloadAndInstallWV2RT, [pState, callback_file](){
+				std::thread(WebView::DownloadAndInstallWV2RT, [pState, callback_file]() {
 					// 如果安装成功就可以使用, 可以再次发送支持webview 保险做法当前使用cef3 下次启动使用webview
 					// NPLInterface::NPLObjectProxy msg;
 					// msg["cmd"] = "Install";
 					// msg["ok"] = g_webview->IsSupportWebView();
 					// NPL_Activate(pState, callback_file, msg);
-				}, [pState, callback_file](){
+				}, [pState, callback_file]() {
 					// 如果安装失败通知
 					// NPLInterface::NPLObjectProxy msg;
 					// msg["cmd"] = "Install";
@@ -403,15 +406,16 @@ CORE_EXPORT_DECL void LibActivate(int nType, void* pVoid)
 		int y = params.y * scale;
 		int width = params.width * scale;
 		int height = params.height * scale;
-		if (cmd == "Start") 
+		if (cmd == "Start")
 		{
 			s_id = id;
-			g_webview->OnCreated([x, y, width, height, params, pState, callback_file]() {
+			if (!params.url.empty())
+				g_webview->Open(StringToWString(params.url));
+
+			g_webview->SetOnCreateCallback([x, y, width, height, params, pState, callback_file]() {
 				if (g_webview->IsSupportWebView())
 				{
 					g_webview->SendSetPositionMessage(x, y, width, height);
-					g_webview->SendOpenMessage(StringToWString(params.url));
-					g_webview->Show();
 				}
 				else
 				{
@@ -421,7 +425,7 @@ CORE_EXPORT_DECL void LibActivate(int nType, void* pVoid)
 				if (g_support_webview == 0)
 				{
 					g_support_webview = g_webview->IsSupportWebView() ? 1 : 2;
-					
+
 					NPLInterface::NPLObjectProxy msg;
 					msg["cmd"] = "SupportWebView";
 					msg["ok"] = g_webview->IsSupportWebView();
@@ -430,17 +434,17 @@ CORE_EXPORT_DECL void LibActivate(int nType, void* pVoid)
 			});
 			g_webview->OnWebMessage(g_webview_on_msg_callback);            // window webview 模式
 			g_webview->OnProtoSendMsgCallBack(g_webview_on_msg_callback);  // cef 模式 
-			g_webview->Create(g_hInstance, parent_handle);	
-		} 
-		else 
+			g_webview->Create(g_hInstance, parent_handle);
+		}
+		else
 		{
 			// if (s_id != id) return;
 
-            if (cmd == "Quit")
-            {
-				g_webview->Hide();
-            }
-			
+			if (cmd == "Quit")
+			{
+				g_webview->SendHide();
+			}
+
 			if (cmd == "CallJsFunc")
 			{
 				g_webview->AsyncSendWebMessage(StringToWString(tabMsg["message_content"]));
@@ -450,15 +454,15 @@ CORE_EXPORT_DECL void LibActivate(int nType, void* pVoid)
 			{
 				if (params.visible)
 				{
-					g_webview->Show();
+					g_webview->SendShow();
 				}
 				else
 				{
-					g_webview->Hide();
+					g_webview->SendHide();
 				}
 			}
 
-			if (cmd == "ChangePosSize") 
+			if (cmd == "ChangePosSize")
 			{
 				g_webview->SendSetPositionMessage(x, y, width, height);
 			}
@@ -466,7 +470,7 @@ CORE_EXPORT_DECL void LibActivate(int nType, void* pVoid)
 			if (cmd == "Open")
 			{
 				g_webview->SendOpenMessage(StringToWString(params.url));
-            	g_webview->SendSetPositionMessage(x, y, width, height);
+				g_webview->SendSetPositionMessage(x, y, width, height);
 			}
 		}
 	}
