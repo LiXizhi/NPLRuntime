@@ -412,7 +412,7 @@ CORE_EXPORT_DECL void LibActivate(int nType, void* pVoid)
 			if (!params.url.empty())
 				g_webview->Open(StringToWString(params.url));
 
-			g_webview->SetOnCreateCallback([x, y, width, height, params, pState, callback_file]() {
+			g_webview->SetOnCreateCallback([x, y, width, height, pState, callback_file]() {
 				if (g_webview->IsSupportWebView())
 				{
 					g_webview->SendSetPositionMessage(x, y, width, height);
