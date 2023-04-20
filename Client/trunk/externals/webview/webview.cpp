@@ -93,11 +93,6 @@ LRESULT CALLBACK WebViewWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM l
             msg->m_webview->Debug(msg->m_debug);
         }
 		break;
-	case WM_SIZE:
-		RECT bounds;
-		GetClientRect(hWnd, &bounds);
-		// WebView::GetInstance()->SetPosition(bounds.left, bounds.top, bounds.right - bounds.left, bounds.bottom - bounds.top, false);
-		break;
 	default:
 		return DefWindowProc(hWnd, message, wParam, lParam);
 		break;
