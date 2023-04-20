@@ -88,6 +88,10 @@ LRESULT CALLBACK WebViewWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM l
 		{
 			msg->m_webview->PostWebMessage(msg->m_msg);
 		}
+        else if (msg->m_cmd == "Debug")
+        {
+            msg->m_webview->Debug(msg->m_debug);
+        }
 		break;
 	case WM_SIZE:
 		RECT bounds;
