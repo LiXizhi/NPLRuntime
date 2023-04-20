@@ -30,6 +30,7 @@ WebView::WebView()
 {
 	m_hWnd = NULL;
 	m_bShow = true;
+    m_bDebug = false;
 	m_x = 0;
 	m_y = 0;
 	m_width = 0;
@@ -211,6 +212,18 @@ void WebView::SendHide()
 	SendWebViewMessage(msg);
 }
 
+
+void WebView::SendDebug(bool debug)
+{
+    m_bDebug = debug;
+	if (!IsInitialized())
+		return;
+	WebViewMessage msg;
+	msg.m_debug = debug;
+	msg.m_cmd = "Debug";
+	SendWebViewMessage(msg);
+}
+
 /** thread-safe: return true if window is created.  */
 
 bool WebView::IsInitialized()
@@ -234,6 +247,20 @@ void WebView::Hide()
 
 	ShowWindow(m_hWnd, m_bShow ? SW_SHOW : SW_HIDE);
 	UpdateWindow(m_hWnd);
+}
+
+void WebView::Debug(bool enable)
+{
+    wil::com_ptr<ICoreWebView2Settings> settings;
+    m_webview->get_Settings(&settings);
+    if (enable)
+    {
+        settings->put_AreDevToolsEnabled(TRUE); 
+    }
+    else
+    {
+        settings->put_AreDevToolsEnabled(FALSE); 
+    }
 }
 
 void WebView::SendSetPositionMessage(int x, int y, int w, int h)
@@ -348,7 +375,7 @@ bool WebView::CreateWebView(HWND hWnd)
 			settings->put_IsScriptEnabled(TRUE);
 			settings->put_AreDefaultScriptDialogsEnabled(TRUE);
 			settings->put_IsWebMessageEnabled(TRUE);
-			settings->put_AreDevToolsEnabled(FALSE);  // 调试工具禁用
+			settings->put_AreDevToolsEnabled(this->IsDebug() ? TRUE : FALSE);  // 调试工具禁用
 
 			// Resize WebView to fit the bounds of the parent window
 			RECT bounds;

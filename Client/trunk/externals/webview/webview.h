@@ -31,6 +31,7 @@ public:
     std::wstring m_msg;    // 发送消息
     std::wstring m_url;    // 打开URL
     bool m_visible;        // 是否显示
+    bool m_debug;          // 是否支持调试
     // 位置信息
     int m_x;
     int m_y;
@@ -77,6 +78,8 @@ public:
     void SendShow();
     /** thread-safe */
     void SendHide();
+    /** thread-safe */
+    void SendDebug(bool debug);
     /** thread-safe: return true if window is created.  */
     bool IsInitialized();
     /** thread-safe */
@@ -89,7 +92,7 @@ public:
     void Hide();
     void Open(const std::wstring& url);
     void SetPosition(int x, int y, int w, int h, bool bUpdateWndPosition = true);
-
+    void Debug(bool enable);
 public:
     void SetOnCreateCallback(std::function<void()> callback);
 
@@ -104,6 +107,7 @@ public:
     void ExecuteScript(const std::wstring& script_text);
 public:
     bool IsSupportWebView() { return m_webview != nullptr; }
+    bool IsDebug() { return m_bDebug; }
     bool CreateWebView(HWND hWnd);
     void ParseProtoUrl(const std::wstring url);
     void InitUrlEnv();
@@ -117,6 +121,7 @@ protected:
     int m_width;
     int m_height;
     bool m_bShow;
+    bool m_bDebug;
     WEBVIEW_STATE m_nWndState;
     std::wstring m_url;
     std::wstring m_user_data_folder;
