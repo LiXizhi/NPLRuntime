@@ -410,7 +410,7 @@ CORE_EXPORT_DECL void LibActivate(int nType, void* pVoid)
 		{
 			s_id = id;
 			if (!params.url.empty())
-				g_webview->Open(StringToWString(params.url));
+				g_webview->SendOpenMessage(StringToWString(params.url));
 
 			g_webview->SendShow();
 			g_webview->SendDebug(tabMsg["debug"]);
