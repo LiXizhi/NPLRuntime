@@ -48,6 +48,7 @@ public:
         WEBVIEW_STATE_INITIALIZED = 1,
         WEBVIEW_STATE_INITIALIZING = -2,
     };
+    
     static WebView* GetInstance()
     {
         static WebView s_webview;
@@ -58,7 +59,7 @@ public:
 
     static bool DownloadAndInstallWV2RT(std::function<void()> successed, std::function<void()> failed);
 public:
-    WebView();
+    WebView(const std::string& id = "");
     ~WebView();
 
     bool Create(HINSTANCE hInstance, HWND hParentWnd = NULL);
@@ -66,7 +67,7 @@ public:
 
     bool SetWnd(HWND hWnd);
     HWND GetWnd() { return m_hWnd; }
-
+    const std::string& GetID() { return m_id; }
 public:
     /** thread-safe */
     void SendOpenMessage(const std::wstring& url);
@@ -115,7 +116,7 @@ public:
     std::wstring GetCacheDirectory();
 protected:
     HWND m_hWnd;
-    HWND m_hParentWnd;
+    std::string m_id;
     int m_x;
     int m_y;
     int m_width;
