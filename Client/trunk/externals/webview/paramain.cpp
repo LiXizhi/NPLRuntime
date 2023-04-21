@@ -302,7 +302,6 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, ULONG fdwReason, LPVOID lpvReserved)
 void __attribute__((constructor)) DllMain()
 #endif
 {
-	// TODO: dll start up code here
 #ifdef WIN32
 	g_hInstance = hinstDLL;				// Hang on to this DLL's instance handle.
 	return (TRUE);
@@ -323,12 +322,8 @@ void WriteLog(const char* sFormat, ...) {
 }
 
 
-// ParaWebViewd.dll
 CORE_EXPORT_DECL void LibActivate(int nType, void* pVoid)
 {
-	// if (g_support_webview == 2)
-	// 	return;
-
 	if (nType == ParaEngine::PluginActType_STATE)
 	{
 		NPL::INPLRuntimeState* pState = (NPL::INPLRuntimeState*)pVoid;
@@ -429,32 +424,24 @@ CORE_EXPORT_DECL void LibActivate(int nType, void* pVoid)
 			auto webview = GetWebViewByID(id, true);
 			if (!params.url.empty())
 				webview->SendOpenMessage(StringToWString(params.url));
-
+			
+			webview->SendSetPositionMessage(x, y, width, height);
 			webview->SendShow();
 			webview->SendDebug(tabMsg["debug"]);
 			webview->SetOnCreateCallback([x, y, width, height, pState, callback_file, webview]() {
-				if (webview->IsSupportWebView())
-				{
-					webview->SendSetPositionMessage(x, y, width, height);
-				}
-				else
+				if (!webview->IsSupportWebView())
 				{
 					webview->Destroy();
 				}
-
-				// if (g_support_webview == 0)
-				// {
-				// 	g_support_webview = webview->IsSupportWebView() ? 1 : 2;
-					// 每次 start 命令都发送结果
-					NPLInterface::NPLObjectProxy msg;
-					msg["cmd"] = "SupportWebView";
-					msg["ok"] = webview->IsSupportWebView();
-					msg["id"] = webview->GetID();
-					NPL_Activate(pState, callback_file, msg);
-				// }
+				// send callback to NPL runtime
+				NPLInterface::NPLObjectProxy msg;
+				msg["cmd"] = "WebViewStarted";
+				msg["ok"] = webview->IsSupportWebView();
+				msg["id"] = webview->GetID();
+				NPL_Activate(pState, callback_file, msg);
 			});
-			webview->OnWebMessage(g_webview_on_msg_callback);            // window webview 模式
-			webview->OnProtoSendMsgCallBack(g_webview_on_msg_callback);  // cef 模式 
+			webview->OnWebMessage(g_webview_on_msg_callback); // for window webview2
+			webview->OnProtoSendMsgCallBack(g_webview_on_msg_callback);  // for cef3
 			webview->Create(g_hInstance, parent_handle);
 		}
 		else
@@ -467,13 +454,11 @@ CORE_EXPORT_DECL void LibActivate(int nType, void* pVoid)
 				webview->SendHide();
 				DeleteWebViewByID(id);
 			}
-
-			if (cmd == "CallJsFunc")
+			else if (cmd == "CallJsFunc")
 			{
 				webview->AsyncSendWebMessage(StringToWString(tabMsg["message_content"]));
 			}
-
-			if (cmd == "Show")
+			else if (cmd == "Show")
 			{
 				if (params.visible)
 				{
@@ -484,13 +469,11 @@ CORE_EXPORT_DECL void LibActivate(int nType, void* pVoid)
 					webview->SendHide();
 				}
 			}
-
-			if (cmd == "ChangePosSize")
+			else if (cmd == "ChangePosSize")
 			{
 				webview->SendSetPositionMessage(x, y, width, height);
 			}
-
-			if (cmd == "Open")
+			else if (cmd == "Open")
 			{
 				webview->SendOpenMessage(StringToWString(params.url));
 				webview->SendSetPositionMessage(x, y, width, height);

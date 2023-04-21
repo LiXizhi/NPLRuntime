@@ -95,7 +95,6 @@ LRESULT CALLBACK WebViewWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM l
         }
 		else if (msg->m_cmd == "Quit")
 		{
-
 		}
 		break;
 	default:
@@ -294,8 +293,10 @@ void WebView::SetPosition(int x, int y, int w, int h, bool bUpdateWndPosition)
 	m_x = x; m_y = y; m_width = w; m_height = h;
 	if (m_hWnd == NULL) return;
 
-	// 设置窗口
-	if (bUpdateWndPosition) assert(SetWindowPos(m_hWnd, NULL, x, y, w, h, (m_bShow ? SWP_SHOWWINDOW : SWP_HIDEWINDOW) | SWP_NOACTIVATE));
+	if (bUpdateWndPosition) {
+		assert(SetWindowPos(m_hWnd, NULL, x, y, w, h, (m_bShow ? SWP_SHOWWINDOW : SWP_HIDEWINDOW) | SWP_NOACTIVATE));
+	}
+
 	assert(UpdateWindow(m_hWnd));
 
 	// 更新到webview
