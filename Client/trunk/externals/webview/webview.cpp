@@ -26,8 +26,9 @@ static std::string ReadRegStr(HKEY root_key, std::string sub_key, std::string na
 	return value;
 }
 
-WebView::WebView()
+WebView::WebView(const std::string& id)
 {
+	m_id = id;
 	m_hWnd = NULL;
 	m_bShow = true;
     m_bDebug = false;
@@ -92,6 +93,10 @@ LRESULT CALLBACK WebViewWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM l
         {
             msg->m_webview->Debug(msg->m_debug);
         }
+		else if (msg->m_cmd == "Quit")
+		{
+
+		}
 		break;
 	default:
 		return DefWindowProc(hWnd, message, wParam, lParam);
@@ -111,7 +116,7 @@ bool WebView::Create(HINSTANCE hInstance, HWND hParentWnd)
 		return true;
 	}
 	m_nWndState = WEBVIEW_STATE_INITIALIZING;
-
+	
 	static const char* s_szWindowClass = "ParaCraftWebView";
 	static const char* s_szTitle = "ParaCraftWebView";
 	std::thread([this, hInstance, hParentWnd]() -> bool {
@@ -129,12 +134,12 @@ bool WebView::Create(HINSTANCE hInstance, HWND hParentWnd)
 		wcex.hCursor = LoadCursor(NULL, IDC_ARROW);
 		wcex.hbrBackground = (HBRUSH)(COLOR_WINDOW + 1);
 		wcex.lpszMenuName = NULL;
-		wcex.lpszClassName = s_szWindowClass;
+		wcex.lpszClassName = (s_szWindowClass + this->GetID()).c_str();
 		wcex.hIconSm = LoadIcon(wcex.hInstance, IDI_APPLICATION);
 
 		if (!RegisterClassEx(&wcex))
 		{
-			WriteLog("Error: WebView RegisterClassEx Failed!\n");
+			WriteLog("Error: WebView RegisterClassEx(%s) Failed!\n", wcex.lpszClassName);
 			return false;
 		}
 
@@ -151,7 +156,7 @@ bool WebView::Create(HINSTANCE hInstance, HWND hParentWnd)
 
 		m_hWnd = CreateWindowEx(
 			0,
-			s_szWindowClass,
+			wcex.lpszClassName,
 			s_szTitle,
 			dwStyle,
 			m_x, m_y, m_width, m_height,
@@ -211,7 +216,6 @@ void WebView::SendHide()
 	SendWebViewMessage(msg);
 }
 
-
 void WebView::SendDebug(bool debug)
 {
     m_bDebug = debug;
@@ -264,6 +268,7 @@ void WebView::Debug(bool enable)
 
 void WebView::SendSetPositionMessage(int x, int y, int w, int h)
 {
+    m_x = x; m_y = y; m_width = w; m_height = h;
 	if (m_webview_controller == nullptr) return;
 	WebViewMessage msg;
 	msg.m_cmd = "SetPosition";
@@ -290,8 +295,8 @@ void WebView::SetPosition(int x, int y, int w, int h, bool bUpdateWndPosition)
 	if (m_hWnd == NULL) return;
 
 	// 设置窗口
-	if (bUpdateWndPosition) SetWindowPos(m_hWnd, m_hParentWnd, x, y, w, h, (m_bShow ? SWP_SHOWWINDOW : SWP_HIDEWINDOW) | SWP_NOACTIVATE);
-	UpdateWindow(m_hWnd);
+	if (bUpdateWndPosition) assert(SetWindowPos(m_hWnd, NULL, x, y, w, h, (m_bShow ? SWP_SHOWWINDOW : SWP_HIDEWINDOW) | SWP_NOACTIVATE));
+	assert(UpdateWindow(m_hWnd));
 
 	// 更新到webview
 	RECT bounds;
