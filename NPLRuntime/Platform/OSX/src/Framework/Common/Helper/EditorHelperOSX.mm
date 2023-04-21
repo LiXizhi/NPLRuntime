@@ -1,6 +1,7 @@
 #include "ParaEngine.h"
 #include "Framework/Common/Helper/EditorHelper.h"
 #include "IParaWebView.h"
+#include "RenderWindowOSX.h"
 #import <Cocoa/Cocoa.h>
 
 namespace ParaEngine {
@@ -22,29 +23,24 @@ namespace ParaEngine {
 
 	static bool openUrl(const char* url)
 	{
-        std::string url_(url);
-        const bool USE_BUILDIN_BROWSER_FOR_LOCALHOST = true;
-        if(USE_BUILDIN_BROWSER_FOR_LOCALHOST && (url_.find("http://localhost") == 0 || url_.find("http://127.0.0.1") == 0))
-        {
-            auto pWnd = CGlobals::GetApp()->GetRenderWindow();
-            int w = pWnd->GetWidth();
-            int h = pWnd->GetHeight();
-            auto scaleX = pWnd->GetScaleX();
-            auto scaleY = pWnd->GetScaleY();
-            
-            auto pView = IParaWebView::createWebView(0, 0, w / scaleX, h / scaleY);
-            if (!pView)
-                return false;
-            
-            pView->loadUrl(url);
-            pView->setAlpha(0.95f);
-        }
-        else
-        {
-            NSString* sUrl = [NSString stringWithCString:url encoding:[NSString defaultCStringEncoding]];
-            [[NSWorkspace sharedWorkspace] openURL: [NSURL URLWithString:sUrl]];
-            [sUrl release];
-        }
+        RenderWindowOSX *pWnd = (RenderWindowOSX *)CGlobals::GetApp()->GetRenderWindow();
+        int w = pWnd->GetWidth();
+        int h = pWnd->GetHeight();
+        int scale = pWnd->currentBackingScaleFactor;
+
+        auto pView = IParaWebView::createWebView(0, 0, w / scale, h / scale);
+
+        if (!pView)
+            return false;
+
+        pView->loadUrl(url);
+        pView->setVisible(true);
+        w = w / scale;
+        h = h / scale;
+        pView->resize(w, h);
+        pView->move(0, 0);
+        pView->setAlpha(0.95f);
+
 		return true;
 	}
 
@@ -94,6 +90,12 @@ namespace ParaEngine {
 			}
 
 		}
+        else if(strcmp(lpOperation, "openExternalBrowser") == 0)
+        {
+            NSString* sUrl = [NSString stringWithCString:lpFile encoding:[NSString defaultCStringEncoding]];
+            [[NSWorkspace sharedWorkspace] openURL: [NSURL URLWithString:sUrl]];
+            [sUrl release];
+        }
 		else
 		{
 

@@ -31,6 +31,22 @@
 #include "util/StringHelper.h"
 #include "util/ParaTime.h"
 
+#ifdef WIN32
+#define SUPPORT_SHELL_EXECUTE
+#endif
+
+#ifdef SUPPORT_SHELL_EXECUTE
+#include <boost/process.hpp>
+#if defined(WIN32)
+#include <boost/process/windows.hpp>
+#endif
+#endif
+
+#include <boost/bind.hpp>
+#include <boost/asio.hpp>
+
+#include "ParaScriptBindings/ParaScriptingNPL.h"
+
 /**@def PARAENGINE_SUPPORT_WRITE_REG: to support writing to registry*/
 #if defined(WIN32) && !defined(PARAENGINE_MOBILE) && defined(PARAENGINE_CLIENT)
 #define PARAENGINE_SUPPORT_WRITE_REG
@@ -313,6 +329,64 @@ void ParaGlobal::SetGameLoopInterval(float fInterval)
 bool ParaGlobal::CreateProcess(const char* lpApplicationName, const char* lpCommandLine, bool bWaitOnReturn)
 {
 	return CEditorHelper::CreateProcess(lpApplicationName, lpCommandLine, bWaitOnReturn);
+}
+
+
+bool ParaGlobal::IsPortAvailable(const std::string& ip, const int port, lua_State* L)
+{
+	using namespace boost::asio;
+	using ip::tcp;
+
+	io_service svc;
+	tcp::acceptor a(svc);
+	boost::system::error_code ec;
+
+	a.open(tcp::v4());
+
+	socket_base::reuse_address option(false);
+	a.set_option(option);
+
+	a.bind(tcp::endpoint(ip::address::from_string(ip), port), ec);
+	a.close();
+
+	return !(ec == boost::asio::error::address_in_use);
+}
+
+void ParaGlobal::Execute(const std::string& exe, const luabind::object& param, lua_State* L)
+{
+#ifdef SUPPORT_SHELL_EXECUTE
+	namespace bp = boost::process;
+
+	std::vector<std::string> args;
+
+	if (type(param) == LUA_TTABLE)
+	{
+		for (luabind::iterator itCur(param), itEnd; itCur != itEnd; ++itCur)
+		{
+			const std::string value = object_cast<std::string>(*itCur);
+			args.push_back(value);
+		}
+	}
+	else if (type(param) == LUA_TSTRING)
+	{
+		args.push_back(object_cast<std::string>(param));
+	}
+
+#if defined(WIN32)
+	bp::environment env = boost::this_process::environment();
+#ifdef DEFAULT_FILE_ENCODING
+	std::wstring exe_path_unicode = StringHelper::MultiByteToWideChar(exe.c_str(), DEFAULT_FILE_ENCODING);
+	bp::child c(exe_path_unicode, bp::args(args), env, bp::windows::hide);
+#else
+	bp::child c(exe, bp::args(args), env, bp::windows::hide);
+#endif
+
+#else
+	bp::child c(exe, bp::args(args));
+#endif
+
+	c.detach();
+#endif
 }
 
 bool ParaGlobal::ShellExecute(const char* lpOperation, const char* lpFile, const char* lpParameters, const char* lpDirectory, int nShowCmd)

@@ -540,8 +540,89 @@ void ParaEngine::TextureEntityOpenGL::LoadImage(char *sBufMemFile, int sizeBuf, 
 	*/
 }
 
+static void copySurfaceRGB(void* pDest, const void* pSrc, UINT pitch, UINT width, UINT height)
+{
+	BYTE* pDst = (BYTE*)pDest;
+	const BYTE* data = (const BYTE*)pSrc;
+
+	int index = 0, x = 0, y = 0;
+
+	for (y = 0; y < height; y++)
+	{
+		for (x = 0; x < width; x++)
+		{
+			int n = (y * 3 * width) + 3 * x;
+			pDst[index++] = data[n];
+			pDst[index++] = data[n + 1];
+			pDst[index++] = data[n + 2];
+			pDst[index++] = 0xff;
+		}
+		index += pitch - (width * 4);
+	}
+}
+
+static void copySurface(void* pDest, const void* pSrc, UINT pitch, UINT width, UINT height, UINT bpp)
+{
+	BYTE* pDst = (BYTE*)pDest;
+	const BYTE* data = (const BYTE*)pSrc;
+
+	for (UINT h = 0; h < height; h++)
+	{
+		memcpy(pDst, data, bpp * width / 8);
+
+		data += bpp * width / 8;
+		pDst += pitch;
+	}
+}
+
 bool ParaEngine::TextureEntityOpenGL::LoadImageOfFormat(const std::string& sTextureFileName, char *sBufMemFile, int sizeBuf, int &width, int &height, byte ** ppBuffer, int* pBytesPerPixel /*= NULL*/, int nFormat /*= -1*/)
 {
+	// only support 32 bit texture
+	if (nFormat >= 0)
+		return false;
+
+	CParaFile file;
+	if (!file.OpenFile(sTextureFileName.c_str()))
+	{
+		OUTPUT_LOG("warning:unable to open file when doing GetImageInfo, %s\n", sTextureFileName.c_str());
+		return false;
+	}
+
+	ParaImage img;
+	if (!img.initWithImageData((unsigned char*)file.getBuffer(), file.getSize()))
+	{
+		OUTPUT_LOG("warning:unable to load image when doing GetImageInfo, %s\n", sTextureFileName.c_str());
+		return false;
+	}
+	width = (int)img.getWidth();
+	height = (int)img.getHeight();
+	
+	unsigned char* pPixels = img.getData();
+
+	// force using 32 bit texture
+	int nBytesPerPixel = 4;
+	if (pBytesPerPixel)
+		*pBytesPerPixel = nBytesPerPixel;
+	PixelFormat		pixelFormat = PixelFormat::A8R8G8B8;
+	PixelFormat     renderFormat = img.getRenderFormat();
+	
+	unsigned char* outTempData = nullptr;
+	size_t outTempDataLen = 0;
+
+	auto format = ParaImage::convertDataToFormat(img.getData(), img.getDataLen(), renderFormat, pixelFormat, &outTempData, &outTempDataLen);
+	if(format == pixelFormat)
+	{
+		if (outTempData == img.getData())
+		{
+			outTempData = new byte[img.getDataLen()];
+			memcpy(outTempData, img.getData(), img.getDataLen());
+		}
+
+		*ppBuffer = outTempData;
+
+		// caller needs to release the buffer
+		return true;
+	}
 	return false;
 }
 

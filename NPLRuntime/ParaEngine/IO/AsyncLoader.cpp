@@ -546,10 +546,12 @@ int CAsyncLoader::Start(int nWorkerCount)
 #ifdef EMSCRIPTEN
 		auto count = 1;
 #else
-		auto count = (std::max)(std::thread::hardware_concurrency() -1, (unsigned int)1);
+		// auto count = (std::max)(std::thread::hardware_concurrency() -1, (unsigned int)1);
+		auto count = DEFAULT_IO_THREADS;
 #endif
-		m_io_threads.resize(count);
-		m_UsedIOThread = DEFAULT_IO_THREADS;
+		m_UsedIOThread = count;
+		m_io_threads.resize(m_UsedIOThread);
+
 		//m_io_semaphore.reset(1);
 
 		for (unsigned int i = 0; i < count; i++)

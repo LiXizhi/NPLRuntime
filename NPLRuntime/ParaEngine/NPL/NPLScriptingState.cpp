@@ -853,7 +853,10 @@ std::string ParaScripting::CNPLScriptingState::GetModuleFilePath(const std::stri
 			if (subModPath.empty())
 				subModPath = parentModName;
 
-			std::string currentFilename(GetCurrentFileName(L));
+			const char* pCurFilename = GetCurrentFileName(L);
+			std::string currentFilename;
+			if (pCurFilename)
+				currentFilename = pCurFilename;
 			std::string output;
 			// Test1: if the current file is from npl_packages/[foldername], we will first try
 			// npl_packages/[foldername]/npl_mod/[modulename]
