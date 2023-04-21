@@ -203,6 +203,11 @@ namespace ParaEngine {
 	{
 		JniHelper::callStaticVoidMethod(classname, "resize", m_handle, width, height);
 	}
+
+	void ParaEngineWebView::activate(const std::string &filepath, const std::string &msg)
+	{
+		// TODO
+	}
 }
 
 using namespace ParaEngine;
