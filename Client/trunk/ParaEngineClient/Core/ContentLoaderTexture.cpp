@@ -153,7 +153,9 @@ HRESULT ParaEngine::CTextureLoader::Load()
 			// if no entry in the manifest, we will load locally in the normal way. 
 			return S_OK;
 		}
-		m_asset->SetState(AssetEntity::ASSET_STATE_FAILED_TO_LOAD);
+		// for texture sequence, we will not set it to failed to load unless it is the last texture.
+		if (m_asset->SurfaceType != TextureEntity::TextureSequence || sTextureFileName == m_asset->GetLocalFileName())
+			m_asset->SetState(AssetEntity::ASSET_STATE_FAILED_TO_LOAD);
 	}
 	return E_FAIL;
 }
