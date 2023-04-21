@@ -50,10 +50,14 @@ def ftpUploadForKword(String parent, File path, String kword) {
         }
     }
 }
+
 //上传指定的文件到ftp
 def ftpUpload(String parent, File apkFile) {
     def uppath = 'paracraft/apk/' + parent + '/'
     println("本地文件路径： "+apkFile.toPath())
+    def currentDir = System.getProperty("user.dir")
+    def file = new File(currentDir + "/info_file.txt")
+    file.write(apkFile.name)
     println("上传apk至： ftp://10.27.1.94/" + uppath)
     if (apkFile.exists()) {
         try {
