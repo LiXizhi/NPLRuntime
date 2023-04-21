@@ -293,20 +293,20 @@ void WebView::SetPosition(int x, int y, int w, int h, bool bUpdateWndPosition)
 	m_x = x; m_y = y; m_width = w; m_height = h;
 	if (m_hWnd == NULL) return;
 
-	if (bUpdateWndPosition) {
-		assert(SetWindowPos(m_hWnd, NULL, x, y, w, h, (m_bShow ? SWP_SHOWWINDOW : SWP_HIDEWINDOW) | SWP_NOACTIVATE));
+	if (bUpdateWndPosition) 
+	{
+		if (!SetWindowPos(m_hWnd, NULL, x, y, w, h, (m_bShow ? SWP_SHOWWINDOW : SWP_HIDEWINDOW) | SWP_NOACTIVATE))
+		{
+			WriteLog("Error: WebView failed to set position!\n");
+		}
+	}
+	if (!UpdateWindow(m_hWnd)) 
+	{
+		WriteLog("Error: WebView failed to set UpdateWindow!\n");
 	}
 
-	assert(UpdateWindow(m_hWnd));
-
-	// 更新到webview
 	RECT bounds;
 	GetClientRect(m_hWnd, &bounds);
-	// 独立窗口模式才需要加上 子窗口模式不需要
-	// bounds.left = x;
-	// bounds.top = y;
-	// bounds.right = bounds.left + w;
-	// bounds.bottom = bounds.top + h;
 	if (m_webview_controller != nullptr)
 	{
 		m_webview_controller->put_Bounds(bounds);
@@ -474,28 +474,29 @@ void WebView::ParseProtoUrl(const std::wstring url)
 
 bool WebView::IsSupported()
 {
+// #define USE_REGISTRY_TOCHECK_WEBVIEW
+#ifdef USE_REGISTRY_TOCHECK_WEBVIEW
 	auto pv = ReadRegStr(HKEY_LOCAL_MACHINE, "SOFTWARE\\WOW6432Node\\Microsoft\\EdgeUpdate\\Clients\\{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}", "pv");
 	if (pv != "" && pv != "0.0.0.0") return true;
 	pv = ReadRegStr(HKEY_CURRENT_USER, "Software\\Microsoft\\EdgeUpdate\\Clients\\{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}", "pv");
 	if (pv != "" && pv != "0.0.0.0") return true;
 	pv = ReadRegStr(HKEY_LOCAL_MACHINE, "Software\\Microsoft\\EdgeUpdate\\Clients\\{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}", "pv");
 	if (pv != "" && pv != "0.0.0.0") return true;
-
 	return false;
-	// wil::unique_cotaskmem_string webview_version = nullptr;
-	// // MS BUG: release version of webview2 runtime will return false. Debug version will return correctly. 
-	// assert(S_OK == GetAvailableCoreWebView2BrowserVersionString(nullptr, &webview_version));
-	// if (webview_version == nullptr)
-	// {
-	//     WriteLog("Error: WebView webview2 not installed. please install Miscrosoft Edge. \n");
-	//     return true;
-	// }
-	// else
-	// {
-	//     std::string version = WStringToString(webview_version.get());
-	//     WriteLog("Webview2 version: %s", version.c_str());
-	//     return true;
-	// }
+#else
+	wil::unique_cotaskmem_string webview_version = nullptr;
+	if (S_OK == GetAvailableCoreWebView2BrowserVersionString(nullptr, &webview_version) || webview_version == nullptr) 
+	{
+		std::string version = WStringToString(webview_version.get());
+		WriteLog("Webview2 version: %s\n", version.c_str());
+		return true;
+	}
+	else if (webview_version == nullptr)
+	{
+	    WriteLog("Error: WebView webview2 not installed. please install Miscrosoft Edge. \n");
+	    return true;
+	}
+#endif
 }
 
 bool WebView::DownloadAndInstallWV2RT(std::function<void()> successed, std::function<void()> failed)
@@ -571,5 +572,9 @@ std::wstring WebView::GetCacheDirectory()
 	wchar_t szExePath[1024];
 	GetModuleFileNameW(nullptr, szExePath, sizeof(szExePath));
 	std::wstring path = szExePath;
+#ifdef _DEBUG
+	return path.substr(0, path.find_last_of(L"\\") + 1) + L"WindowWebView2CacheDebug";
+#else
 	return path.substr(0, path.find_last_of(L"\\") + 1) + L"WindowWebView2Cache";
+#endif
 }

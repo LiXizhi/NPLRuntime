@@ -447,7 +447,8 @@ CORE_EXPORT_DECL void LibActivate(int nType, void* pVoid)
 		else
 		{
 			auto webview = GetWebViewByID(id, false);
-			if (webview == nullptr) return;
+			if (webview == nullptr)
+				return;
 
 			if (cmd == "Quit")
 			{
@@ -463,6 +464,8 @@ CORE_EXPORT_DECL void LibActivate(int nType, void* pVoid)
 				if (params.visible)
 				{
 					webview->SendShow();
+					if(width > 0)
+						webview->SendSetPositionMessage(x, y, width, height);
 				}
 				else
 				{
