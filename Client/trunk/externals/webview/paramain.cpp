@@ -20,7 +20,7 @@
 #include <codecvt>
 #include <locale>
 #include <string>
-
+#include <mutex>
 
 #include "INPLRuntimeState.h"
 #include "IParaEngineCore.h"
@@ -57,11 +57,13 @@ static void NPL_Activate(NPL::INPLRuntimeState* pState, std::string activateFile
 static NPL::INPLRuntimeState* g_pStaticState = nullptr;
 static WebView* g_webview = WebView::GetInstance();
 // static int g_support_webview = 0; // 0 -- 未检测  1 -- 支持   2 -- 不支持
+static std::mutex g_mutex;
 static std::unordered_map<std::string, std::shared_ptr<WebView>> g_webviews;
 
 static WebView* GetWebViewByID(const std::string& id, bool bCreateIfNotExist)
 {
 	// return g_webview;
+    std::lock_guard<std::mutex> _lock(g_mutex); 
 	auto it = g_webviews.find(id);
 	if (it != g_webviews.end()) return it->second.get();
 	if (!bCreateIfNotExist) return nullptr;
@@ -72,6 +74,7 @@ static WebView* GetWebViewByID(const std::string& id, bool bCreateIfNotExist)
 
 static void DeleteWebViewByID(const std::string& id)
 {
+    std::lock_guard<std::mutex> _lock(g_mutex); 
 	g_webviews.erase(id);
 }
 
