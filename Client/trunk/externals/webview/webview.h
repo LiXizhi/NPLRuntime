@@ -13,7 +13,7 @@
 #include <wil/com.h>
 #include <Urlmon.h>
 #include "WebView2.h"
-
+#include "WebView2EnvironmentOptions.h"
 #pragma comment(lib, "urlmon.lib")
 
 using namespace Microsoft::WRL;

@@ -379,7 +379,9 @@ bool WebView::IsShow()
 bool WebView::CreateWebView(HWND hWnd)
 {
 	std::wstring user_data_folder = m_user_data_folder.empty() ? GetCacheDirectory() : m_user_data_folder;
-	HRESULT ok = CreateCoreWebView2EnvironmentWithOptions(nullptr, user_data_folder.c_str(), nullptr, Callback<ICoreWebView2CreateCoreWebView2EnvironmentCompletedHandler>([hWnd, this](HRESULT result, ICoreWebView2Environment* env) -> HRESULT {
+	auto options = Microsoft::WRL::Make<CoreWebView2EnvironmentOptions>();
+	options->put_AdditionalBrowserArguments(L"--enable-features=AllowAutoplay --autoplay-policy=no-user-gesture-required");  // 视屏自动播放开启
+	HRESULT ok = CreateCoreWebView2EnvironmentWithOptions(nullptr, user_data_folder.c_str(), options.Get(), Callback<ICoreWebView2CreateCoreWebView2EnvironmentCompletedHandler>([hWnd, this](HRESULT result, ICoreWebView2Environment* env) -> HRESULT {
 		if (FAILED(result)) return result;
 
 		// Create a CoreWebView2Controller and get the associated CoreWebView2 whose parent is the main window hWnd
