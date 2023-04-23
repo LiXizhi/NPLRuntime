@@ -380,7 +380,10 @@ bool WebView::CreateWebView(HWND hWnd)
 			settings->put_IsScriptEnabled(TRUE);
 			settings->put_AreDefaultScriptDialogsEnabled(TRUE);
 			settings->put_IsWebMessageEnabled(TRUE);
-			settings->put_AreDevToolsEnabled(this->IsDebug() ? TRUE : FALSE);  // 调试工具禁用
+			wil::com_ptr<ICoreWebView2Settings3> settings3 = settings.try_query<ICoreWebView2Settings3>();
+			if(settings3)
+				settings3->put_AreBrowserAcceleratorKeysEnabled(IsDebug() ? TRUE : FALSE);
+			settings->put_AreDevToolsEnabled(IsDebug() ? TRUE : FALSE);  // 调试工具禁用
 
 			// Resize WebView to fit the bounds of the parent window
 			RECT bounds;
