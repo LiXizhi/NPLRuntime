@@ -258,6 +258,7 @@ void WebView::Debug(bool enable)
     if (enable)
     {
         settings->put_AreDevToolsEnabled(TRUE); 
+		m_webview->OpenDevToolsWindow();
     }
     else
     {
@@ -381,7 +382,10 @@ bool WebView::CreateWebView(HWND hWnd)
 			settings->put_AreDefaultScriptDialogsEnabled(TRUE);
 			settings->put_IsWebMessageEnabled(TRUE);
 			settings->put_AreDevToolsEnabled(this->IsDebug() ? TRUE : FALSE);  // 调试工具禁用
-
+			settings->put_AreDefaultContextMenusEnabled(FALSE);
+    		auto settings3 = settings.try_query<ICoreWebView2Settings3>();
+			settings3->put_AreBrowserAcceleratorKeysEnabled(FALSE);
+			// settings->put_
 			// Resize WebView to fit the bounds of the parent window
 			RECT bounds;
 			GetClientRect(hWnd, &bounds);
