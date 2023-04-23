@@ -133,7 +133,8 @@ bool WebView::Create(HINSTANCE hInstance, HWND hParentWnd)
 		wcex.hCursor = LoadCursor(NULL, IDC_ARROW);
 		wcex.hbrBackground = (HBRUSH)(COLOR_WINDOW + 1);
 		wcex.lpszMenuName = NULL;
-		wcex.lpszClassName = (s_szWindowClass + this->GetID()).c_str();
+		std::string sClassName = std::string(s_szWindowClass) + GetID();
+		wcex.lpszClassName = sClassName.c_str();
 		wcex.hIconSm = LoadIcon(wcex.hInstance, IDI_APPLICATION);
 
 		if (!RegisterClassEx(&wcex))
