@@ -4,6 +4,8 @@
 // Date: 2023.4
 // Desc: 
 //-----------------------------------------------------------------------------
+#include <Windows.h>
+#include <VersionHelpers.h>
 #include "WebView.h"
 
 extern void WriteLog(const char* sFormat, ...);
@@ -493,29 +495,39 @@ void WebView::ParseProtoUrl(const std::wstring url)
 
 bool WebView::IsSupported()
 {
-// #define USE_REGISTRY_TOCHECK_WEBVIEW
-#ifdef USE_REGISTRY_TOCHECK_WEBVIEW
-	auto pv = ReadRegStr(HKEY_LOCAL_MACHINE, "SOFTWARE\\WOW6432Node\\Microsoft\\EdgeUpdate\\Clients\\{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}", "pv");
-	if (pv != "" && pv != "0.0.0.0") return true;
-	pv = ReadRegStr(HKEY_CURRENT_USER, "Software\\Microsoft\\EdgeUpdate\\Clients\\{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}", "pv");
-	if (pv != "" && pv != "0.0.0.0") return true;
-	pv = ReadRegStr(HKEY_LOCAL_MACHINE, "Software\\Microsoft\\EdgeUpdate\\Clients\\{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}", "pv");
-	if (pv != "" && pv != "0.0.0.0") return true;
-	return false;
-#else
-	wil::unique_cotaskmem_string webview_version = nullptr;
-	if (S_OK == GetAvailableCoreWebView2BrowserVersionString(nullptr, &webview_version) || webview_version == nullptr) 
+	if (!IsWindows10OrGreater())
 	{
-		std::string version = WStringToString(webview_version.get());
-		WriteLog("Webview2 version: %s\n", version.c_str());
-		return true;
+		auto pv = ReadRegStr(HKEY_LOCAL_MACHINE, "SOFTWARE\\WOW6432Node\\Microsoft\\EdgeUpdate\\Clients\\{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}", "pv");
+		if (pv != "" && pv != "0.0.0.0") return true;
+		pv = ReadRegStr(HKEY_CURRENT_USER, "Software\\Microsoft\\EdgeUpdate\\Clients\\{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}", "pv");
+		if (pv != "" && pv != "0.0.0.0") return true;
+		pv = ReadRegStr(HKEY_LOCAL_MACHINE, "Software\\Microsoft\\EdgeUpdate\\Clients\\{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}", "pv");
+		if (pv != "" && pv != "0.0.0.0") return true;
+		return false;
 	}
-	else if (webview_version == nullptr)
+	else
 	{
-	    WriteLog("Error: WebView webview2 not installed. please install Miscrosoft Edge. \n");
-	    return true;
+		wil::unique_cotaskmem_string webview_version = nullptr;
+		try
+		{
+			// for win7, this method throw exceptions
+			if (S_OK == GetAvailableCoreWebView2BrowserVersionString(nullptr, &webview_version) || webview_version == nullptr)
+			{
+				std::string version = WStringToString(webview_version.get());
+				WriteLog("Webview2 version: %s\n", version.c_str());
+				return true;
+			}
+			else if (webview_version == nullptr)
+			{
+				WriteLog("Error: WebView webview2 not installed. please install Miscrosoft Edge. \n");
+				return true;
+			}
+		}
+		catch (const std::exception&)
+		{
+			return false;
+		}
 	}
-#endif
 	return false;
 }
 
