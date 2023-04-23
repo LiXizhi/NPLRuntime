@@ -169,6 +169,20 @@ bool WebView::Create(HINSTANCE hInstance, HWND hParentWnd)
 		if (!m_hWnd)
 		{
 			WriteLog("Error: WebView CreateWindow Failed\n");
+			DWORD dwError = GetLastError();
+			LPVOID lpMsgBuf;
+			FormatMessage(
+				FORMAT_MESSAGE_ALLOCATE_BUFFER |
+				FORMAT_MESSAGE_FROM_SYSTEM |
+				FORMAT_MESSAGE_IGNORE_INSERTS,
+				NULL,
+				dwError,
+				MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
+				(LPTSTR)&lpMsgBuf,
+				0, NULL);
+			WriteLog("Error Msg: %s\n", (LPCTSTR)lpMsgBuf);
+			// MessageBox(NULL, (LPCTSTR)lpMsgBuf, "CreateWindowEx failed", MB_OK | MB_ICONERROR);
+			LocalFree(lpMsgBuf);
 			return false;
 		}
 
@@ -501,6 +515,7 @@ bool WebView::IsSupported()
 	    return true;
 	}
 #endif
+	return false;
 }
 
 bool WebView::DownloadAndInstallWV2RT(std::function<void()> successed, std::function<void()> failed)
