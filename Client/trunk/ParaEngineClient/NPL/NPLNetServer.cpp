@@ -236,11 +236,19 @@ void NPL::CNPLNetServer::stop()
 		// cancel timer
 		m_idle_timer.cancel();
 
-		// cancel resolver
-		m_resolver.cancel();
+		try
+		{
+			// cancel resolver
+			m_resolver.cancel();
 
-		// stop incomming connections
-		m_acceptor.cancel();
+			// stop incomming connections
+			if(m_acceptor.is_open())
+				m_acceptor.cancel();
+		}
+		catch (const std::exception& e)
+		{
+			OUTPUT_LOG("CNPLNetServer error: %s\n", e.what());
+		}
 
 		// Post a call to the stop function so that server::stop() is safe to call from any thread.
 		m_io_service_dispatcher.post(boost::bind(&CNPLNetServer::handle_stop, this));

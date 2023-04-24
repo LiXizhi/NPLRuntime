@@ -53,6 +53,13 @@ static void NPL_Activate(NPL::INPLRuntimeState* pState, std::string activateFile
 	NPLInterface::NPLHelper::NPLTableToString("msg", data, data_string);
 	pState->activate(activateFile.c_str(), data_string.c_str(), (int)data_string.length());
 }
+static void NPL_Call(NPL::INPLRuntimeState* pState, std::string activateFile, NPLInterface::NPLObjectProxy data)
+{
+	if (!pState || activateFile.empty()) return;
+	std::string data_string;
+	NPLInterface::NPLHelper::NPLTableToString("msg", data, data_string);
+	pState->call(activateFile.c_str(), data_string.c_str(), (int)data_string.length());
+}
 
 static NPL::INPLRuntimeState* g_pStaticState = nullptr;
 static WebView* g_webview = WebView::GetInstance();
@@ -366,7 +373,7 @@ CORE_EXPORT_DECL void LibActivate(int nType, void* pVoid)
 			bool ok = WebView::IsSupported();
 			msg["cmd"] = "Support";
 			msg["ok"] = ok;
-			NPL_Activate(pState, callback_file, msg);
+			NPL_Call(pState, callback_file, msg);
 
 			if (!ok && auto_install)
 			{
