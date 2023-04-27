@@ -41,7 +41,7 @@ bool ParaEngine::XFileCharModelExporter::Export(const string& filepath, CParaXMo
 	auto path16 = ParaEngine::StringHelper::MultiByteToWideChar(filepath.c_str(), DEFAULT_FILE_ENCODING);
 	ofstream file(path16, ios_base::binary);
 #else
-	ofstream file(filename, ios_base::binary);
+	ofstream file(filepath, ios_base::binary);
 #endif
 
 	if (file.is_open())
