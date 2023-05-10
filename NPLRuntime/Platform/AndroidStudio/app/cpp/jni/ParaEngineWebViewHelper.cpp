@@ -207,6 +207,8 @@ namespace ParaEngine {
 	void ParaEngineWebView::activate(const std::string &filepath, const std::string &msg)
 	{
 		// TODO
+		LOGD("from ParaEngineWebView::activate");
+		LOGD(filepath.c_str());
 	}
 }
 
