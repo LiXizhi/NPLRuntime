@@ -29,6 +29,8 @@
 #include "BufferPicking.h"
 #include "FrameRateController.h"
 #include "AudioEngine2.h"
+#include "WorldInfo.h"
+#include "terrain/WorldNameFactory.h"
 
 #ifdef USE_DIRECTX_RENDERER
 #include "DirectXEngine.h"
@@ -1264,6 +1266,18 @@ bool ParaEngine::ParaEngineSettings::Is64BitsSystem()
 	return sizeof(void*) > 4;
 }
 
+const char* ParaEngine::ParaEngineSettings::GetWorldDirectory()
+{
+	thread_local static std::string sWorldDir;
+	sWorldDir = CGlobals::GetWorldInfo()->GetWorldDirectory();
+	return sWorldDir.c_str();
+}
+
+void ParaEngine::ParaEngineSettings::SetWorldDirectory(const char* sWorldDirectory)
+{
+	CGlobals::GetWorldInfo()->ResetWorldName(sWorldDirectory);
+}
+
 void ParaEngine::ParaEngineSettings::LoadNameIndex()
 {
 	m_name_to_index.clear();
@@ -1727,5 +1741,6 @@ int ParaEngineSettings::InstallFields(CAttributeClass* pClass, bool bOverride)
 	pClass->AddField("AudioDeviceName", FieldType_String, NULL, (void*)GetAudioDeviceName_s, NULL, NULL, bOverride);
 
 	pClass->AddField("DefaultFileAPIEncoding", FieldType_String, NULL, (void*)GetDefaultFileAPIEncoding_s, NULL, NULL, bOverride);
+	pClass->AddField("WorldDirectory", FieldType_String, (void*)SetWorldDirectory_s, (void*)GetWorldDirectory_s, NULL, NULL, bOverride);
 	return S_OK;
 }
