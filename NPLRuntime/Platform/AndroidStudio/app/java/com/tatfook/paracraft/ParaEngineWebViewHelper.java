@@ -94,49 +94,21 @@ public class ParaEngineWebViewHelper {
 
 	// private static WebView mWebView = null;
 
-	@Keep
-	public static void closeWebView() {
-		sActivity.runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
-//				if(mWebView != null)
-//				{
-//					ViewGroup vg = (ViewGroup)mWebView.getParent();
-//					vg.removeView(mWebView);
-//					mWebView.destroy();
-//					mWebView = null;
-//				}
-            }
-        });
-	}
-
-	@Keep
-    public static void openExternalBrowser(final String url) {
-        try {
-            Intent intent = new Intent();
-
-            intent.setAction("android.intent.action.VIEW");
-            Uri content_url = Uri.parse(url);
-            intent.setData(content_url);
-
-            sActivity.startActivity(intent);
-        } catch (Exception e) {
-            sActivity.runOnUiThread(new Runnable() {
-                @Override
-                public void run() {
-                    Toast.makeText(sActivity, "无法打开" + url, Toast.LENGTH_SHORT).show();
-                }
-            });
-            e.printStackTrace();
-        }
-    }
-
-    @Keep
-	public static void openWebView(final int x, final int y, final int w, final int h, final String url) {
-        int index = createWebView(x, y, w, h);
-        ParaEngineWebView webView = webViews.get(index);
-        webView.loadUrl(url);
-	}
+	// @Keep
+	// public static void closeWebView() {
+	// 	sActivity.runOnUiThread(new Runnable() {
+    //         @Override
+    //         public void run() {
+	// 			if(mWebView != null)
+	// 			{
+	// 				ViewGroup vg = (ViewGroup)mWebView.getParent();
+	// 				vg.removeView(mWebView);
+	// 				mWebView.destroy();
+	// 				mWebView = null;
+	// 			}
+    //         }
+    //     });
+	// }
 
 	public static void _onCloseView(ParaEngineWebView webView) {
 		final int index = webView.getViewTag();
@@ -172,6 +144,40 @@ public class ParaEngineWebViewHelper {
         });
     }
 
+    @Keep
+    public static void openExternalBrowser(final String url) {
+        try {
+            Intent intent = new Intent();
+
+            intent.setAction("android.intent.action.VIEW");
+            Uri content_url = Uri.parse(url);
+            intent.setData(content_url);
+
+            sActivity.startActivity(intent);
+        } catch (Exception e) {
+            sActivity.runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    Toast.makeText(sActivity, "无法打开" + url, Toast.LENGTH_SHORT).show();
+                }
+            });
+            e.printStackTrace();
+        }
+    }
+
+    @Keep
+    public static void openWebView(final int x, final int y, final int w, final int h, final String url) {
+        sActivity.runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                int index = createWebView(x, y, w, h);
+                ParaEngineWebView webView = webViews.get(index);
+                webView.setAlpha(0.95f);
+                webView.loadUrl(url);
+            }
+        });
+    }
+
 	@Keep
 	public static int createWebView(final int x, final int y, final int w, final int h) {
 		final int index = viewTag;
@@ -187,25 +193,25 @@ public class ParaEngineWebViewHelper {
                 layoutParams.leftMargin = x;
                 layoutParams.topMargin = y;
 
-                if(m_maskView == null){
-                    m_maskView = new RelativeLayout(sActivity);
-
-                    RelativeLayout.LayoutParams mask_layout =
-                        new RelativeLayout.LayoutParams(
-                            ViewGroup.LayoutParams.FILL_PARENT,
-                            ViewGroup.LayoutParams.FILL_PARENT
-                        );
-
-                    sLayout.addView(m_maskView, mask_layout);
-                    m_maskView.setOnClickListener(new View.OnClickListener() {
-                        @Override
-                        public void onClick(View view) {
-                            ParaEngineWebViewHelper.closeWebViewByIndex(index);
-                        }
-                    });
-
-                    m_maskView.setVisibility(View.GONE);
-                }
+//                if(m_maskView == null){
+//                    m_maskView = new RelativeLayout(sActivity);
+//
+//                    RelativeLayout.LayoutParams mask_layout =
+//                        new RelativeLayout.LayoutParams(
+//                            ViewGroup.LayoutParams.FILL_PARENT,
+//                            ViewGroup.LayoutParams.FILL_PARENT
+//                        );
+//
+//                    sLayout.addView(m_maskView, mask_layout);
+//                    m_maskView.setOnClickListener(new View.OnClickListener() {
+//                        @Override
+//                        public void onClick(View view) {
+//                            ParaEngineWebViewHelper.closeWebViewByIndex(index);
+//                        }
+//                    });
+//
+//                    m_maskView.setVisibility(View.GONE);
+//                }
 
                 sLayout.addView(webView, layoutParams);
                 webView.setScrollBarStyle(WebView.SCROLLBARS_OUTSIDE_OVERLAY);
@@ -252,9 +258,12 @@ public class ParaEngineWebViewHelper {
             @Override
             public void run() {
                 ParaEngineWebView webView = webViews.get(index);
+
                 if (webView != null) {
                     webView.setVisibility(visible ? View.VISIBLE : View.GONE);
                 }
+
+                removeWebView(index);
             }
         });
     }

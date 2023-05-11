@@ -2,7 +2,7 @@
 // ParaEngineWebViewHelper.cpp
 // Authors: LanZhiHong, big
 // CreateDate: 2019.12.30
-// ModifyDate: 2022.1.11
+// ModifyDate: 2023.5.11
 //-----------------------------------------------------------------------------
 
 #include "ParaEngine.h"
@@ -28,17 +28,17 @@ namespace ParaEngine {
 	const std::string ParaEngineWebView::classname = "com/tatfook/paracraft/ParaEngineWebViewHelper";
 	std::unordered_map<int, ParaEngineWebView*> ParaEngineWebView::m_views;
 
-	IParaWebView* IParaWebView::setOrientation(int type)
+	IParaWebView *IParaWebView::setOrientation(int type)
 	{
 		return ParaEngineWebView::setOrientation(type);
 	}
 
-	IParaWebView* IParaWebView::createWebView(int x, int y, int w, int h)
+	IParaWebView *IParaWebView::createWebView(int x, int y, int w, int h)
 	{
 		return ParaEngineWebView::createWebView(x, y, w, h);
 	}
 
-	IParaWebView* IParaWebView::createSubViewView(int x, int y, int w, int h)
+	IParaWebView *IParaWebView::createSubViewView(int x, int y, int w, int h)
 	{
 		return ParaEngineWebView::createWebView(x, y, w, h);
 	}
@@ -67,28 +67,26 @@ namespace ParaEngine {
 		JniHelper::callStaticVoidMethod(classname, "openExternalBrowser", url);
 	}
 
-	ParaEngineWebView* ParaEngineWebView::createWebView(int x, int y, int w, int h)
+	ParaEngineWebView *ParaEngineWebView::createWebView(int x, int y, int w, int h)
 	{
-
 		JniMethodInfo t;
-		if (JniHelper::getStaticMethodInfo(t, classname.c_str(), "createWebView", "(IIII)I"))
-		{
+
+		if (JniHelper::getStaticMethodInfo(t, classname.c_str(), "createWebView", "(IIII)I")) {
 		 	jint handle = t.env->CallStaticIntMethod(t.classID, t.methodID, x, y, w, h);
 		 	t.env->DeleteLocalRef(t.classID);
-		 	ParaEngineWebView* pView = new ParaEngineWebView();
+
+		 	ParaEngineWebView *pView = new ParaEngineWebView();
 		 	pView->setHandle(handle);
 		 	m_views[handle] = pView;
 
-		 	if (m_views.size() >= 1)
-		 	{
-		 		OUTPUT_LOG("ParaEngineWebView: ActivateApp(false)");
-		 		//CGlobals::GetApp()->ActivateApp(false);
-		 	}
+//		 	if (m_views.size() >= 1)
+//		 	{
+//		 		OUTPUT_LOG("ParaEngineWebView: ActivateApp(false)");
+//		 		//CGlobals::GetApp()->ActivateApp(false);
+//		 	}
 
 		 	return pView;
-		}
-		else
-		{
+		} else {
 		 	return nullptr;
 		}
 	}
@@ -182,17 +180,17 @@ namespace ParaEngine {
 		JniHelper::callStaticVoidMethod(classname, "reload", m_handle);
 	}
 
-	bool ParaEngineWebView::openWebView(int x, int y, int w, int h, const std::string& url)
+	bool ParaEngineWebView::openWebView(int x, int y, int w, int h, const std::string &url)
 	{
 		JniHelper::callStaticVoidMethod(classname, "openWebView", x, y, w, h, url);
 		return true;
 	}
 
-	bool ParaEngineWebView::closeWebView()
-	{
-		JniHelper::callStaticVoidMethod(classname, "closeWebView");
-		return true;
-	}
+	// bool ParaEngineWebView::closeWebView()
+	// {
+	// 	JniHelper::callStaticVoidMethod(classname, "closeWebView");
+	// 	return true;
+	// }
 
 	void ParaEngineWebView::move(int x, int y)
 	{

@@ -29,41 +29,41 @@ public class PlatformBridge {
         }else if(key.equals("getAppInfo")){
             ret = DeviceUtil.getAppInfoJsonStr(act);
         }else if(key.equals("show_weview")){
-            int x=0,y=0;
-            int width = DeviceUtil.getDeviceWidth(act),height = DeviceUtil.getDeviceHeight(act);
-
-            float alpha = 1.0f;
-            String url = "";
-            boolean cleanCacheData = false;
-            boolean withTouchMask = false;//是否背景区域点击关闭
-            boolean ignoreCloseWhenClickBack = false;//忽略返回键
-            try {
-                JSONObject obj = new JSONObject(jsonParam);
-                x = obj.optInt("x",x);
-                y = obj.optInt("y",y);
-                width = obj.optInt("width",width);
-                height = obj.optInt("height",height);
-                url = obj.optString("url","");
-                alpha = (float)obj.optDouble("alpha",alpha);
-                withTouchMask = obj.optBoolean("withTouchMask",withTouchMask);
-                ignoreCloseWhenClickBack = obj.optBoolean("ignoreCloseWhenClickBack",ignoreCloseWhenClickBack);
-
-            }catch (JSONException e) {
-                e.printStackTrace();
-            }
-
-            if(url.isEmpty()){
-                return "";
-            }
-
-            int webViewId = ParaEngineWebViewHelper.createWebView(x,y,width,height);
-            ParaEngineWebViewHelper.setViewAlpha(webViewId,alpha);
-            ParaEngineWebViewHelper.loadUrl(webViewId,url,cleanCacheData);
-
-            ParaEngineWebViewHelper.setMaskVisible(withTouchMask);
-            ParaEngineWebViewHelper.SetIgnoreCloseWhenClickBack(webViewId,ignoreCloseWhenClickBack);
-
-            ret = webViewId+"";
+//            int x=0,y=0;
+//            int width = DeviceUtil.getDeviceWidth(act),height = DeviceUtil.getDeviceHeight(act);
+//
+//            float alpha = 1.0f;
+//            String url = "";
+//            boolean cleanCacheData = false;
+//            boolean withTouchMask = false;//是否背景区域点击关闭
+//            boolean ignoreCloseWhenClickBack = false;//忽略返回键
+//            try {
+//                JSONObject obj = new JSONObject(jsonParam);
+//                x = obj.optInt("x",x);
+//                y = obj.optInt("y",y);
+//                width = obj.optInt("width",width);
+//                height = obj.optInt("height",height);
+//                url = obj.optString("url","");
+//                alpha = (float)obj.optDouble("alpha",alpha);
+//                withTouchMask = obj.optBoolean("withTouchMask",withTouchMask);
+//                ignoreCloseWhenClickBack = obj.optBoolean("ignoreCloseWhenClickBack",ignoreCloseWhenClickBack);
+//
+//            }catch (JSONException e) {
+//                e.printStackTrace();
+//            }
+//
+//            if(url.isEmpty()){
+//                return "";
+//            }
+//
+//            int webViewId = ParaEngineWebViewHelper.createWebView(x,y,width,height);
+//            ParaEngineWebViewHelper.setViewAlpha(webViewId,alpha);
+//            ParaEngineWebViewHelper.loadUrl(webViewId,url,cleanCacheData);
+//
+//            ParaEngineWebViewHelper.setMaskVisible(withTouchMask);
+//            ParaEngineWebViewHelper.SetIgnoreCloseWhenClickBack(webViewId,ignoreCloseWhenClickBack);
+//
+//            ret = webViewId+"";
         }else if(key.equals("close_weview")){
 
         }else if(key.equals("getChannelId")){

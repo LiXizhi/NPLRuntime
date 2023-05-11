@@ -12,7 +12,6 @@
 #include "NPLHelper.h"
 
 namespace ParaEngine {
-
 	bool CEditorHelper::OpenWithDefaultEditor(const char* sScriptFile, bool bWaitOnReturn)
 	{
 		return false;
@@ -28,18 +27,10 @@ namespace ParaEngine {
 		return false;
 	}
 
-
-	static bool openUrl(const char* url,int x,int y,int width,int height)
+	static bool openUrl(const char *url,int x,int y,int width,int height)
 	{
+		ParaEngineWebView::openWebView(x, y, width, height, url);
 
-
-		auto pView = ParaEngineWebView::createWebView(x,y,width,height);
-		if (!pView)
-			return false;
-
-		pView->setAlpha(0.95f);
-		pView->loadUrl(url);
-		
 		return true;
 	}
 
