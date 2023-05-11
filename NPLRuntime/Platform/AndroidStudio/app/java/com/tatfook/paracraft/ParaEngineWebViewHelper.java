@@ -8,12 +8,15 @@
 package com.tatfook.paracraft;
 
 import android.content.Intent;
+import android.graphics.Color;
 import android.net.Uri;
 import android.os.Handler;
 import android.os.Looper;
 import android.util.SparseArray;
+import android.view.Gravity;
 import android.view.View;
 import android.webkit.JavascriptInterface;
+import android.widget.Button;
 import android.widget.FrameLayout;
 import android.webkit.WebView;
 import android.util.Log;
@@ -22,6 +25,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.FutureTask;
 
+import android.widget.LinearLayout;
 import android.widget.RelativeLayout;
 import android.widget.Toast;
 import androidx.annotation.Keep;
@@ -128,7 +132,8 @@ public class ParaEngineWebViewHelper {
         }
 
         webViews.remove(index);
-        sLayout.removeView(webView);
+        RelativeLayout parentView = (RelativeLayout) webView.getParent();
+        sLayout.removeView(parentView);
         webView.destroy();
 
 //        if (m_maskView != null) {
@@ -190,6 +195,23 @@ public class ParaEngineWebViewHelper {
                 webView.setAlpha(0.95f);
                 webView.loadUrl(url);
 
+                Button closeBtn = new Button(sActivity);
+                LinearLayout.LayoutParams layoutParams = new LinearLayout.LayoutParams(50, 50);
+                layoutParams.leftMargin = 50;
+                layoutParams.topMargin = h / 2 - 50;
+                closeBtn.setLayoutParams(layoutParams);
+
+                closeBtn.setBackgroundResource(R.drawable.webview_close_btn);
+                closeBtn.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View view) {
+                        closeWebViewByIndex(index);
+                    }
+                });
+
+                RelativeLayout webViewWrapper = (RelativeLayout) webView.getParent();
+                webViewWrapper.addView(closeBtn);
+
                 isOpenUrlLoaded = true;
                 openUrlViewTag = index;
             }
@@ -207,9 +229,27 @@ public class ParaEngineWebViewHelper {
 
 				Log.i("ParaEngine", String.format("open web view with %d, %d, %d, %d", x,y, w, h));
 
-                RelativeLayout.LayoutParams layoutParams = new RelativeLayout.LayoutParams(w, h);
-                layoutParams.leftMargin = x;
-                layoutParams.topMargin = y;
+                RelativeLayout webViewWrapper = new RelativeLayout(sActivity);
+                RelativeLayout.LayoutParams wrapperLayoutParams = new RelativeLayout.LayoutParams(w, h);
+                wrapperLayoutParams.leftMargin = x;
+                wrapperLayoutParams.topMargin = y;
+                webViewWrapper.setLayoutParams(wrapperLayoutParams);
+
+                RelativeLayout.LayoutParams layoutParams =
+                    new RelativeLayout.LayoutParams(
+                        RelativeLayout.LayoutParams.MATCH_PARENT,
+                        RelativeLayout.LayoutParams.MATCH_PARENT
+                    );
+
+                webView.setLayoutParams(layoutParams);
+                webView.setScrollBarStyle(WebView.SCROLLBARS_OUTSIDE_OVERLAY);
+
+                webViewWrapper.addView(webView);
+
+                webView.requestFocus();
+                sLayout.addView(webViewWrapper);
+
+                webViews.put(index, webView);
 
 //                if(m_maskView == null){
 //                    m_maskView = new RelativeLayout(sActivity);
@@ -230,12 +270,6 @@ public class ParaEngineWebViewHelper {
 //
 //                    m_maskView.setVisibility(View.GONE);
 //                }
-
-                sLayout.addView(webView, layoutParams);
-                webView.setScrollBarStyle(WebView.SCROLLBARS_OUTSIDE_OVERLAY);
-				webView.requestFocus();
-
-                webViews.put(index, webView);
             }
         });
 
@@ -257,17 +291,7 @@ public class ParaEngineWebViewHelper {
 
 	@Keep
 	public static void removeWebView(final int index) {
-        sActivity.runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
-                ParaEngineWebView webView = webViews.get(index);
-                if (webView != null) {
-                    webViews.remove(index);
-                    sLayout.removeView(webView);
-					webView.destroy();
-                }
-            }
-        });
+        closeWebViewByIndex(index);
     }
 
     @Keep
@@ -279,9 +303,11 @@ public class ParaEngineWebViewHelper {
 
                 if (webView != null) {
                     webView.setVisibility(visible ? View.VISIBLE : View.GONE);
-                }
 
-                removeWebView(index);
+                    if (!visible) {
+                        removeWebView(index);
+                    }
+                }
             }
         });
     }
@@ -328,18 +354,18 @@ public class ParaEngineWebViewHelper {
 //        });
 //    }
     
-    @Keep
-	public static void setWebViewRect(final int index, final int left, final int top, final int maxWidth, final int maxHeight) {
-        sActivity.runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
-                ParaEngineWebView webView = webViews.get(index);
-                if (webView != null) {
-                    webView.setWebViewRect(left, top, maxWidth, maxHeight);
-                }
-            }
-        });
-    }
+//    @Keep
+//	public static void setWebViewRect(final int index, final int left, final int top, final int maxWidth, final int maxHeight) {
+//        sActivity.runOnUiThread(new Runnable() {
+//            @Override
+//            public void run() {
+//                ParaEngineWebView webView = webViews.get(index);
+//                if (webView != null) {
+//                    webView.setWebViewRect(left, top, maxWidth, maxHeight);
+//                }
+//            }
+//        });
+//    }
 
     @Keep
 	public static void setJavascriptInterfaceScheme(final int index, final String scheme) {
@@ -542,7 +568,6 @@ public class ParaEngineWebViewHelper {
                 }
             }
         });
-		
     }
 
     @Keep
@@ -553,10 +578,11 @@ public class ParaEngineWebViewHelper {
                 ParaEngineWebView webView = webViews.get(index);
 
                 if (webView != null) {
-                    FrameLayout.LayoutParams p = (FrameLayout.LayoutParams)webView.getLayoutParams();
-                    p.leftMargin = x;
-                    p.topMargin = y;
-                    webView.setLayoutParams(p);
+                    RelativeLayout webViewWrapper = (RelativeLayout) webView.getParent();
+                    FrameLayout.LayoutParams wp = (FrameLayout.LayoutParams) webViewWrapper.getLayoutParams();
+                    wp.leftMargin = x;
+                    wp.topMargin = y;
+                    webViewWrapper.setLayoutParams(wp);
                 }
             }
         });
@@ -570,10 +596,11 @@ public class ParaEngineWebViewHelper {
                 ParaEngineWebView webView = webViews.get(index);
 
                 if (webView != null) {
-                    FrameLayout.LayoutParams p = (FrameLayout.LayoutParams) webView.getLayoutParams();
-                    p.width = w;
-                    p.height = h;
-                    webView.setLayoutParams(p);
+                    RelativeLayout webViewWrapper = (RelativeLayout) webView.getParent();
+                    FrameLayout.LayoutParams wp = (FrameLayout.LayoutParams) webViewWrapper.getLayoutParams();
+                    wp.width = w;
+                    wp.height = h;
+                    webViewWrapper.setLayoutParams(wp);
                 }
             }
         });

@@ -223,16 +223,16 @@ public class ParaEngineWebView extends WebView {
 //        this.mJSScheme = scheme != null ? scheme : "";
 //    }
 
-    public void setWebViewRect(int left, int top, int maxWidth, int maxHeight) {
-        FrameLayout.LayoutParams layoutParams = new FrameLayout.LayoutParams(FrameLayout.LayoutParams.WRAP_CONTENT,
-                FrameLayout.LayoutParams.WRAP_CONTENT);
-        layoutParams.leftMargin = left;
-        layoutParams.topMargin = top;
-        layoutParams.width = maxWidth;
-        layoutParams.height = maxHeight;
-        layoutParams.gravity = Gravity.TOP | Gravity.LEFT;
-        this.setLayoutParams(layoutParams);
-    }
+//    public void setWebViewRect(int left, int top, int maxWidth, int maxHeight) {
+//        FrameLayout.LayoutParams layoutParams = new FrameLayout.LayoutParams(FrameLayout.LayoutParams.WRAP_CONTENT,
+//                FrameLayout.LayoutParams.WRAP_CONTENT);
+//        layoutParams.leftMargin = left;
+//        layoutParams.topMargin = top;
+//        layoutParams.width = maxWidth;
+//        layoutParams.height = maxHeight;
+//        layoutParams.gravity = Gravity.TOP | Gravity.LEFT;
+//        this.setLayoutParams(layoutParams);
+//    }
 
     public void setScalesPageToFit(boolean scalesPageToFit) {
         this.getSettings().setSupportZoom(scalesPageToFit);
