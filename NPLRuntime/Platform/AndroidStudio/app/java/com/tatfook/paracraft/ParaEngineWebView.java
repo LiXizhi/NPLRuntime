@@ -4,7 +4,7 @@
 // Emails: LiXizhi@yeah.net
 // Company: ParaEngine
 // CreateDate: 2018.3.31
-// ModifyDate: 2023.5.10
+// ModifyDate: 2023.5.11
 //-----------------------------------------------------------------------------
 
 package com.tatfook.paracraft;
@@ -71,7 +71,7 @@ public class ParaEngineWebView extends WebView {
         m_bIgnoreCloseWhenClickBack = b;
     }
 
-    @Override    
+    @Override
     public boolean onKeyUp(int keyCode, KeyEvent event) {    
         if ((keyCode == KeyEvent.KEYCODE_BACK)) {
 //            if(m_bIgnoreCloseWhenClickBack){
@@ -84,9 +84,8 @@ public class ParaEngineWebView extends WebView {
 //                ParaEngineWebViewHelper._onCloseView(this);
 //            }
             ParaEngineWebViewHelper._onCloseView(this);
-            return false; 
-        }
-        else {    
+            return false;
+        } else {
             return super.onKeyUp(keyCode, event);
         }    
     }

@@ -56,7 +56,7 @@ namespace ParaEngine {
 		}
 	}
 
-	ParaEngineWebView* ParaEngineWebView::setOrientation(int type)
+	ParaEngineWebView *ParaEngineWebView::setOrientation(int type)
 	{
 		ParaEngineActivity::setScreenOrientation(type);
 		return nullptr;
@@ -65,6 +65,12 @@ namespace ParaEngine {
 	void ParaEngineWebView::openExternalBrowser(const std::string& url)
 	{
 		JniHelper::callStaticVoidMethod(classname, "openExternalBrowser", url);
+	}
+
+	bool ParaEngineWebView::openWebView(int x, int y, int w, int h, const std::string &url)
+	{
+		JniHelper::callStaticVoidMethod(classname, "openWebView", x, y, w, h, url);
+		return true;
 	}
 
 	ParaEngineWebView *ParaEngineWebView::createWebView(int x, int y, int w, int h)
@@ -148,22 +154,22 @@ namespace ParaEngine {
 
 	void ParaEngineWebView::SetHideViewWhenClickBack(bool b)
 	{
-		JniHelper::callStaticVoidMethod(classname, "SetHideViewWhenClickBack", m_handle, b);
+//		JniHelper::callStaticVoidMethod(classname, "SetHideViewWhenClickBack", m_handle, b);
 	}
 
 	void ParaEngineWebView::SetIgnoreCloseWhenClickBack(bool b)
 	{
-		JniHelper::callStaticVoidMethod(classname, "SetIgnoreCloseWhenClickBack", m_handle, b);
+//		JniHelper::callStaticVoidMethod(classname, "SetIgnoreCloseWhenClickBack", m_handle, b);
 	}
 
     void ParaEngineWebView::SetCloseWhenClickBackground(bool b)
     {
-        JniHelper::callStaticVoidMethod(classname, "SetCloseWhenClickBackground", m_handle, b);
+//        JniHelper::callStaticVoidMethod(classname, "SetCloseWhenClickBackground", m_handle, b);
     }
 
 	void ParaEngineWebView::loadUrl(const std::string &url, bool cleanCachedData)
 	{
-		JniHelper::callStaticVoidMethod(classname, "loadUrl", m_handle, url, cleanCachedData); 
+		JniHelper::callStaticVoidMethod(classname, "loadUrl", m_handle, url);
 	}  
 
 	void ParaEngineWebView::hideCloseButton(bool bHide)
@@ -174,16 +180,10 @@ namespace ParaEngine {
 	{
 		m_onClose = fun;
 	}
-	 
+
 	void ParaEngineWebView::Refresh()
 	{
 		JniHelper::callStaticVoidMethod(classname, "reload", m_handle);
-	}
-
-	bool ParaEngineWebView::openWebView(int x, int y, int w, int h, const std::string &url)
-	{
-		JniHelper::callStaticVoidMethod(classname, "openWebView", x, y, w, h, url);
-		return true;
 	}
 
 	// bool ParaEngineWebView::closeWebView()
