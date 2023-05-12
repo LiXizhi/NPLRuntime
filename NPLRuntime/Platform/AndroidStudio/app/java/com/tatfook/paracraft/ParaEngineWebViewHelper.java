@@ -196,9 +196,9 @@ public class ParaEngineWebViewHelper {
                 webView.loadUrl(url);
 
                 Button closeBtn = new Button(sActivity);
-                LinearLayout.LayoutParams layoutParams = new LinearLayout.LayoutParams(50, 50);
-                layoutParams.leftMargin = 50;
-                layoutParams.topMargin = h / 2 - 50;
+                LinearLayout.LayoutParams layoutParams = new LinearLayout.LayoutParams(80, 80);
+                layoutParams.leftMargin = 40;
+                layoutParams.topMargin = h / 2 - 40;
                 closeBtn.setLayoutParams(layoutParams);
 
                 closeBtn.setBackgroundResource(R.drawable.webview_close_btn);
@@ -303,10 +303,6 @@ public class ParaEngineWebViewHelper {
 
                 if (webView != null) {
                     webView.setVisibility(visible ? View.VISIBLE : View.GONE);
-
-                    if (!visible) {
-                        removeWebView(index);
-                    }
                 }
             }
         });
