@@ -526,3 +526,40 @@ int TextureEntity::GetFormatByFileName(const std::string& filename)
 	}
 	return dwTextureFormat;
 }
+
+void TextureEntity::SetTextureFramePointer(int framePointer)
+{
+	uint8_t * frames = (uint8_t*)framePointer;
+
+	int* colors = (int*)framePointer;
+	int width = GetWidth();
+	int height = GetHeight();
+	if (m_bRABG) { //×Ý×ø±êµ¹Ðò
+		static int i, j;
+		static int color1;
+		static int index1, index2;
+		for (j = 0; j < height/2; j++) {
+			for (i = 0; i < width; i++) {
+				index1 = (j * width) + i;
+				index2 = ((height - j - 1) * width) + i;
+				color1 = colors[index1];
+				colors[index1] = colors[index2];
+				colors[index2] = color1;
+
+			}
+		}
+	}
+	this->LoadUint8Buffer(frames, width, height, height, 4);
+}
+
+int TextureEntity::InstallFields(CAttributeClass* pClass, bool bOverride)
+{
+	AssetEntity::InstallFields(pClass, bOverride);
+
+	pClass->AddField("IsRGBA", FieldType_Bool, (void*)SetIsRGBA_s, (void*)0, NULL, NULL, bOverride);
+	pClass->AddField("TextureFramePointer", FieldType_Int, (void*)SetTextureFramePointer_s, (void*)0, NULL, NULL, bOverride);
+#ifdef USE_DIRECTX_RENDERER
+#else
+#endif
+	return S_OK;
+}
