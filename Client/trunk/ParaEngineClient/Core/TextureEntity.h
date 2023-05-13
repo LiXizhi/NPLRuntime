@@ -323,7 +323,7 @@ namespace ParaEngine
 		/** create a texture entity from file path. */
 		static TextureEntity* CreateTexture(const char* pFileName, uint32 nMipLevels = 0, D3DPOOL dwCreatePool = D3DPOOL_MANAGED);
 	public:
-		virtual TextureEntity* LoadUint8Buffer(const uint8 * pTexels, int width, int height, int rowLength, int bytesPerPixel, uint32 nMipLevels = 0, D3DPOOL dwCreatePool = D3DPOOL_MANAGED, DWORD nFormat = 0) { return NULL; }
+		virtual TextureEntity* LoadUint8Buffer(const uint8 * pTexels, int width, int height, int rowLength, int bytesPerPixel, uint32 nMipLevels = 0, D3DPOOL dwCreatePool = D3DPOOL_DEFAULT, DWORD nFormat = 0) { return NULL; }
 		virtual int InstallFields(CAttributeClass* pClass, bool bOverride);
 		ATTRIBUTE_METHOD1(TextureEntity, SetIsRGBA_s, bool) { cls->SetIsRGBA(p1); return S_OK; }
 		ATTRIBUTE_METHOD1(TextureEntity, SetTextureFramePointer_s, int) { cls->SetTextureFramePointer(p1); return S_OK; }

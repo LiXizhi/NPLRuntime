@@ -549,16 +549,17 @@ void TextureEntity::SetTextureFramePointer(int framePointer)
 			for (j = 0; j < height; j++) {
 				index = (j * 4 * width) + 4 * i;
 				g = frames[index + 0]; //绿色 g
-				r = frames[index + 1]; //红色 r
+				//r = frames[index + 1]; //红色 r
 				a = frames[index + 2]; //透明度 a 
-				b = frames[index + 3]; //蓝色 b
+				//b = frames[index + 3]; //蓝色 b
 
 				frames[index + 0] = a;
-				frames[index + 1] = r;
+				//frames[index + 1] = r;
 				frames[index + 2] = g;
-				frames[index + 3] = b;
+				//frames[index + 3] = b;
 			}
 		}
+
 	}
 	this->LoadUint8Buffer(frames, width, height, height, 4);
 }

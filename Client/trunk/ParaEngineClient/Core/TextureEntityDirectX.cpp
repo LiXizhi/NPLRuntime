@@ -49,12 +49,12 @@ namespace ParaEngine
 
 
 TextureEntityDirectX::TextureEntityDirectX(const AssetKey& key)
-:m_pTexture(NULL), TextureEntity(key)
+:m_pTexture(NULL), TextureEntity(key), m_dynamicTexture(NULL)
 {
 }
 
 TextureEntityDirectX::TextureEntityDirectX()
-: m_pTexture(NULL), TextureEntity()
+: m_pTexture(NULL), TextureEntity(), m_dynamicTexture(NULL)
 {
 }
 
@@ -1351,41 +1351,45 @@ TextureEntity* TextureEntityDirectX::CreateTexture(const uint8 * pTexels, int wi
 	return NULL;
 }
 
-TextureEntity* TextureEntityDirectX::LoadUint8Buffer(const uint8 * pTexels, int width, int height, int rowLength, int bytesPerPixel, uint32 nMipLevels /*= 0*/, D3DPOOL dwCreatePool /*= D3DPOOL_MANAGED*/, DWORD nFormat /*= 0*/)
+TextureEntity* TextureEntityDirectX::LoadUint8Buffer(const uint8 * pTexels, int width, int height, int rowLength, int bytesPerPixel, uint32 nMipLevels /*= 0*/, D3DPOOL dwCreatePool /*= D3DPOOL_DEFAULT*/, DWORD nFormat /*= 0*/)
 {
 	IDirect3DDevice9* pD3d = CGlobals::GetRenderDevice();
-	LPDIRECT3DTEXTURE9 pTexture = NULL;
 
 	if (!pTexels)
 		return 0;
 
 	if (bytesPerPixel == 4)
 	{
-		HRESULT hr = D3DXCreateTexture(pD3d, width, height, 0, D3DUSAGE_AUTOGENMIPMAP, D3DFMT_A8R8G8B8, dwCreatePool, &pTexture);
-		if (FAILED(hr))
-		{
-			OUTPUT_LOG("failed creating terrain texture\n");
+		if (m_dynamicTexture == NULL) {
+			HRESULT hr = D3DXCreateTexture(pD3d, width, height, 0, D3DUSAGE_DYNAMIC, D3DFMT_A8R8G8B8, dwCreatePool, &m_dynamicTexture);
+			if (FAILED(hr))
+			{
+				OUTPUT_LOG("failed creating terrain texture\n");
+			}
 		}
-		else
+		if (m_dynamicTexture != NULL)
 		{
 			D3DLOCKED_RECT lr;
-			pTexture->LockRect(0, &lr, NULL, 0);
+			m_dynamicTexture->LockRect(0, &lr, NULL, 0);
 			memcpy(lr.pBits, pTexels, width*height * 4);
-			pTexture->UnlockRect(0);
+			m_dynamicTexture->UnlockRect(0);
 		}
 	}
 	else if (bytesPerPixel == 3)
 	{
-		// please note, we will create D3DFMT_A8R8G8B8 instead of , D3DFMT_R8G8B8, since our device will use D3DFMT_A8R8G8B8 only
-		HRESULT hr = D3DXCreateTexture(pD3d, width, height, 0, D3DUSAGE_AUTOGENMIPMAP, D3DFMT_A8R8G8B8, dwCreatePool, &pTexture);
-		if (FAILED(hr))
-		{
-			OUTPUT_LOG("failed creating terrain texture\n");
+		if (m_dynamicTexture == NULL) {
+			// please note, we will create D3DFMT_A8R8G8B8 instead of , D3DFMT_R8G8B8, since our device will use D3DFMT_A8R8G8B8 only
+			HRESULT hr = D3DXCreateTexture(pD3d, width, height, 0, D3DUSAGE_AUTOGENMIPMAP, D3DFMT_A8R8G8B8, dwCreatePool, &m_dynamicTexture);
+			if (FAILED(hr))
+			{
+				OUTPUT_LOG("failed creating terrain texture\n");
+			}
 		}
-		else
+		
+		if (m_dynamicTexture != NULL)
 		{
 			D3DLOCKED_RECT lockedRect;
-			pTexture->LockRect(0, &lockedRect, NULL, 0);
+			m_dynamicTexture->LockRect(0, &lockedRect, NULL, 0);
 
 			//memcpy(lockedRect.pBits, pTexels, width*height*3);
 			uint8 *pp = (uint8*)lockedRect.pBits;
@@ -1403,7 +1407,7 @@ TextureEntity* TextureEntityDirectX::LoadUint8Buffer(const uint8 * pTexels, int 
 				}
 				index += lockedRect.Pitch - (width * 4);
 			}
-			pTexture->UnlockRect(0);
+			m_dynamicTexture->UnlockRect(0);
 		}
 	}
 	else if (bytesPerPixel == 1)
@@ -1434,39 +1438,45 @@ TextureEntity* TextureEntityDirectX::LoadUint8Buffer(const uint8 * pTexels, int 
 
 		if (nSupportAlphaTexture == 1)
 		{
-			// D3DFMT_A8 is supported
-			HRESULT hr = D3DXCreateTexture(pD3d, width, height, 0, D3DUSAGE_AUTOGENMIPMAP, D3DFMT_A8, dwCreatePool, &pTexture);
-			if (FAILED(hr))
-			{
-				OUTPUT_LOG("failed creating alpha terrain texture\n");
+			if (m_dynamicTexture == NULL) {
+				// D3DFMT_A8 is supported
+				HRESULT hr = D3DXCreateTexture(pD3d, width, height, 0, D3DUSAGE_AUTOGENMIPMAP, D3DFMT_A8, dwCreatePool, &m_dynamicTexture);
+				if (FAILED(hr))
+				{
+					OUTPUT_LOG("failed creating alpha terrain texture\n");
+				}
 			}
-			else
+			
+			if (m_dynamicTexture != NULL)
 			{
 				D3DLOCKED_RECT lr;
-				pTexture->LockRect(0, &lr, NULL, 0);
+				m_dynamicTexture->LockRect(0, &lr, NULL, 0);
 				memcpy(lr.pBits, pTexels, width*height * 1);
-				pTexture->UnlockRect(0);
+				m_dynamicTexture->UnlockRect(0);
 			}
 		}
 		else if (nSupportAlphaTexture == 0)
 		{
-			// D3DFMT_A8 is not supported, try D3DFMT_A8R8G8B8
-			HRESULT hr = D3DXCreateTexture(pD3d, width, height, 0, D3DUSAGE_AUTOGENMIPMAP, D3DFMT_A8R8G8B8, dwCreatePool, &pTexture);
-			if (FAILED(hr))
+			if (m_dynamicTexture == NULL)
 			{
-				OUTPUT_LOG("failed creating alpha terrain texture\n");
+				// D3DFMT_A8 is not supported, try D3DFMT_A8R8G8B8
+				HRESULT hr = D3DXCreateTexture(pD3d, width, height, 0, D3DUSAGE_AUTOGENMIPMAP, D3DFMT_A8R8G8B8, dwCreatePool, &m_dynamicTexture);
+				if (FAILED(hr))
+				{
+					OUTPUT_LOG("failed creating alpha terrain texture\n");
+				}
 			}
-			else
+			if (m_dynamicTexture != NULL)
 			{
 				D3DLOCKED_RECT lr;
-				pTexture->LockRect(0, &lr, NULL, 0);
+				m_dynamicTexture->LockRect(0, &lr, NULL, 0);
 				int nSize = width * height;
 				DWORD* pData = (DWORD*)(lr.pBits);
 				for (int x = 0; x < nSize; ++x)
 				{
 					pData[x] = (pTexels[x]) << 24;
 				}
-				pTexture->UnlockRect(0);
+				m_dynamicTexture->UnlockRect(0);
 			}
 		}
 	}
@@ -1474,18 +1484,10 @@ TextureEntity* TextureEntityDirectX::LoadUint8Buffer(const uint8 * pTexels, int 
 	{
 		OUTPUT_LOG("error: Unsupported texture format (bits per pixel must be 8,24, or 32)\n");
 	}
-	if (pTexture != NULL)
-	{
-		TextureEntityDirectX* pTextureEntity = this;
-		if (pTextureEntity)
-		{
-			pTextureEntity->SetTexture(pTexture);
-			SAFE_RELEASE(pTexture);
-			pTextureEntity->AddToAutoReleasePool();
-			return pTextureEntity;
-		}
+	if (m_pTexture != m_dynamicTexture) {
+		m_pTexture = m_dynamicTexture;
 	}
-	return NULL;
+	return this;
 }
 
 HRESULT TextureEntityDirectX::LoadFromMemory(const char* buffer, DWORD nFileSize, UINT nMipLevels, D3DFORMAT dwTextureFormat, void** ppTexture_)
