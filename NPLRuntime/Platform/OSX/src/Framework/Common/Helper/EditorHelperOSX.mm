@@ -1,7 +1,6 @@
 #include "ParaEngine.h"
 #include "Framework/Common/Helper/EditorHelper.h"
-#include "IParaWebView.h"
-#include "RenderWindowOSX.h"
+#include "WebView/WebView.h"
 #import <Cocoa/Cocoa.h>
 
 namespace ParaEngine {
@@ -23,23 +22,7 @@ namespace ParaEngine {
 
 	static bool openUrl(const char* url)
 	{
-        RenderWindowOSX *pWnd = (RenderWindowOSX *)CGlobals::GetApp()->GetRenderWindow();
-        int w = pWnd->GetWidth();
-        int h = pWnd->GetHeight();
-        int scale = pWnd->currentBackingScaleFactor;
-
-        auto pView = IParaWebView::createWebView(0, 0, w / scale, h / scale);
-
-        if (!pView)
-            return false;
-
-        pView->loadUrl(url);
-        pView->setVisible(true);
-        w = w / scale;
-        h = h / scale;
-        pView->resize(w, h);
-        pView->move(0, 0);
-        pView->setAlpha(0.95f);
+        ParaEngineWebView::openWebView(url);
 
 		return true;
 	}

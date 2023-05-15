@@ -27,7 +27,7 @@ namespace ParaEngine {
 		return false;
 	}
 
-	static bool openUrl(const char *url,int x,int y,int width,int height)
+	static bool openUrl(const char *url, int x, int y, int width, int height)
 	{
 		ParaEngineWebView::openWebView(x, y, width, height, url);
 
@@ -69,13 +69,13 @@ namespace ParaEngine {
 				}
 			}
 
-			if (isUrl)
-			{
+			if (isUrl) {
 				auto pWnd = CGlobals::GetApp()->GetRenderWindow();
 				int width = pWnd->GetWidth();
 				int height = pWnd->GetHeight();
 				int x = 0;
 				int y = 0;
+
 				//OUTPUT_LOG("hyz  lpParameters=%s",lpParameters);
 				auto obj = NPL::NPLHelper::StringToNPLTable(lpParameters);
 				//OUTPUT_LOG("hyz zzz:%d,x:%d",obj.GetType(),obj["x"].GetType());
@@ -91,13 +91,10 @@ namespace ParaEngine {
 					}
 				}
 
-				return openUrl(lpFile,x,y,width,height);
-			}
-			else
-			{
+				return openUrl(lpFile, x, y, width, height);
+			} else {
 				return execute(lpFile, lpParameters, lpDirectory, nShowCmd);
 			}
-
 		}
 		else
 		{
