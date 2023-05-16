@@ -3,17 +3,17 @@
 // Authors: kkvskkkk, big
 // Emails: onedou@126.com
 // CreateDate: 2018.5.22
-// ModifyDate: 2022.12.30
+// ModifyDate: 2023.5.15
 //-----------------------------------------------------------------------------
 
 #import <WebKit/WebKit.h>
 #import <AVFoundation/AVFoundation.h>
-
 #import <Foundation/Foundation.h>
-#include "ParaEngine.h"
-#include "WebView.h"
 #import "GLView.h"
 #import "LuaObjcBridge/CCLuaObjcBridge.h"
+
+#include "ParaEngine.h"
+#include "WebView.h"
 
 static std::string getFixedBaseUrl(const std::string& baseUrl)
 {
@@ -42,20 +42,23 @@ static std::string getFixedBaseUrl(const std::string& baseUrl)
 }
 
 @interface UIWebViewWrapper : NSObject
-@property (nonatomic) std::function<bool(const std::string& url)> shouldStartLoading;
-@property (nonatomic) std::function<void(const std::string& url)> didFinishLoading;
-@property (nonatomic) std::function<void(const std::string& url)> didFailLoading;
-@property (nonatomic) std::function<void(const std::string& url)> onJsCallback;
+@property (nonatomic) std::function<bool(const std::string &url)> shouldStartLoading;
+@property (nonatomic) std::function<void(const std::string &url)> didFinishLoading;
+@property (nonatomic) std::function<void(const std::string &url)> didFailLoading;
+@property (nonatomic) std::function<void(const std::string &url)> onJsCallback;
 @property (nonatomic) std::function<void()> onCloseCallback;
 
 @property(nonatomic, readonly, getter=canGoBack) BOOL canGoBack;
 @property(nonatomic, readonly, getter=canGoForward) BOOL canGoForward;
 
 //HideCloseButton
-@property(nonatomic, readwrite, getter = HideCloseButton,  setter = setHideCloseButton:) BOOL HideCloseButton;
+@property(nonatomic, readwrite, getter = HideCloseButton, setter = setHideCloseButton:) BOOL HideCloseButton;
 @property(nonatomic) BOOL hideViewWhenClickClose;
 @property(nonatomic) BOOL ignoreCloseWhenClickClose;
 @property(nonatomic) BOOL bCloseWhenClickBackground;
+@property(nonatomic, retain) UIButton *uiCloseBtn;
+@property(nonatomic, copy) NSString *jsScheme;
+@property(nonatomic, retain) WKWebView *uiWebView;
 
 + (instancetype)webViewWrapper;
 
@@ -95,14 +98,11 @@ static std::string getFixedBaseUrl(const std::string& baseUrl)
 
 - (void)userContentController:(WKUserContentController *)userContentController didReceiveScriptMessage:(WKScriptMessage *)message;
 
-- (void)activate:(const std::string&)msg;
+- (void)activate:(const std::string &)filepath msg:(const std::string &)msg;
 
 @end
 
 @interface UIWebViewWrapper () <WKUIDelegate, WKNavigationDelegate, WKScriptMessageHandler>
-@property(nonatomic, retain) WKWebView *uiWebView;
-@property(nonatomic, retain) UIButton *uiCloseBtn;
-@property(nonatomic, copy) NSString *jsScheme;
 @end
 
 @implementation UIWebViewWrapper
@@ -187,6 +187,7 @@ static std::string getFixedBaseUrl(const std::string& baseUrl)
     {
         WKWebViewConfiguration *webViewConfig = [[WKWebViewConfiguration alloc] init];
         webViewConfig.allowsInlineMediaPlayback = YES;
+        webViewConfig.mediaPlaybackRequiresUserAction = false;
 
         [webViewConfig.userContentController addScriptMessageHandler:self name:@"activate"];
 
@@ -204,21 +205,6 @@ static std::string getFixedBaseUrl(const std::string& baseUrl)
             GLView *view = (__bridge GLView *)p;
             [view addSubview:self.uiWebView];
         }
-    }
-
-    if (!self.uiCloseBtn)
-    {
-        self.uiCloseBtn = [UIButton buttonWithType:UIButtonTypeCustom];
-        [self.uiCloseBtn addTarget:self action:@selector(onCloseBtn:) forControlEvents:UIControlEventTouchUpInside];
-        NSBundle *bundle = [NSBundle mainBundle];
-        NSString *resPath = [bundle resourcePath];
-        resPath = [resPath stringByAppendingPathComponent:@"res/WebViewCloseBtn.png"];
-        UIImage* img = [UIImage imageWithContentsOfFile:resPath];
-        float w = img.size.width * img.scale;
-        float h = img.size.height * img.scale;
-        self.uiCloseBtn.frame = CGRectMake(0, 0, w, h);
-        [self.uiCloseBtn setImage:img forState:UIControlStateNormal];
-        [self.uiWebView addSubview:self.uiCloseBtn];
     }
 }
 
@@ -309,7 +295,7 @@ static std::string getFixedBaseUrl(const std::string& baseUrl)
 {
     if (!self.uiWebView)
         [self setupWebView];
-    
+
     NSString *nsStringUrl = @(urlString.c_str());
     nsStringUrl =
         [nsStringUrl
@@ -372,19 +358,19 @@ static std::string getFixedBaseUrl(const std::string& baseUrl)
     return self.uiWebView.canGoBack;
 }
 
-- (BOOL)HideCloseButton
-{
-   if (self.uiCloseBtn)
-       return self.uiCloseBtn.hidden;
-    else
-       return YES;
-}
-
-- (void)setHideCloseButton:(BOOL)bHide
-{
-    if (self.uiCloseBtn)
-        self.uiCloseBtn.hidden = bHide;
-}
+//- (BOOL)HideCloseButton
+//{
+//   if (self.uiCloseBtn)
+//       return self.uiCloseBtn.hidden;
+//    else
+//       return YES;
+//}
+//
+//- (void)setHideCloseButton:(BOOL)bHide
+//{
+//    if (self.uiCloseBtn)
+//        self.uiCloseBtn.hidden = bHide;
+//}
 
 - (void)goBack
 {
@@ -472,27 +458,68 @@ static std::string getFixedBaseUrl(const std::string& baseUrl)
 @end
 
 namespace ParaEngine {
-    IParaWebView* IParaWebView::createWebView(int x, int y, int w, int h)
+    IParaWebView *IParaWebView::createWebView(int x, int y, int w, int h)
     {
-        return ParaEngineWebView::createWebView(x, y, w, h, false);
+        return ParaEngineWebView::createWebView(x, y, w, h);
     }
 
-    IParaWebView* IParaWebView::createSubViewView(int x, int y, int w, int h)
+    IParaWebView *IParaWebView::createSubViewView(int x, int y, int w, int h)
     {
-        return ParaEngineWebView::createWebView(x, y, w, h, true);
+        return ParaEngineWebView::createWebView(x, y, w, h);
     }
-    
-    ParaEngineWebView* ParaEngineWebView::createWebView(int x, int y, int w, int h, Boolean bSub)
+
+    void ParaEngineWebView::openWebView(const std::string &url)
     {
-        auto p = new ParaEngineWebView();
-        [p->_uiWebViewWrapper setFrameWithX:(float)x y:(float)y width:(float)w height:(float)h];
-        [p->_uiWebViewWrapper setScalesPageToFit:true];
+        auto pWnd = CGlobals::GetApp()->GetRenderWindow();
+        int w = pWnd->GetWidth();
+        int h = pWnd->GetHeight();
+        float scaleX = pWnd->GetScaleX();
+        float scaleY = pWnd->GetScaleY();
+
+        w = w / scaleX;
+        h = h / scaleY;
+
+        ParaEngineWebView *pView = createWebView(0, 0, w, h);
+
+        if (!pView)
+            return;
+
+        pView->loadUrl(url);
+        pView->setAlpha(0.95f);
         
-        if (bSub) {
-            p->hideCloseButton(true);
-        }
+        pView->_uiWebViewWrapper.uiCloseBtn = [UIButton buttonWithType:UIButtonTypeCustom];
+        [pView->_uiWebViewWrapper.uiCloseBtn
+            addTarget:pView->_uiWebViewWrapper
+            action:@selector(onCloseBtn:)
+            forControlEvents:UIControlEventTouchUpInside];
+
+        NSBundle *bundle = [NSBundle mainBundle];
+        NSString *resPath = [bundle resourcePath];
+        resPath = [resPath stringByAppendingPathComponent:@"res/WebViewCloseBtn.png"];
+        UIImage* img = [UIImage imageWithContentsOfFile:resPath];
+
+        float iconW = img.size.width * img.scale;
+        float iconH = img.size.height * img.scale;
+        float iconY = (h - iconH) / 2;
         
-        return p;
+        pView->_uiWebViewWrapper.uiCloseBtn.frame = CGRectMake(5, iconY, iconW, iconH);
+        [pView->_uiWebViewWrapper.uiCloseBtn setImage:img forState:UIControlStateNormal];
+        [pView->_uiWebViewWrapper.uiWebView addSubview:pView->_uiWebViewWrapper.uiCloseBtn];
+    }
+
+    void ParaEngineWebView::openExternalBrowser(const char *url)
+    {
+        NSString *nsUrl = [[NSString alloc] initWithUTF8String:url];
+        [[UIApplication sharedApplication] openURL: [NSURL URLWithString: nsUrl]];
+    }
+
+    ParaEngineWebView *ParaEngineWebView::createWebView(int x, int y, int w, int h)
+    {
+        auto pView = new ParaEngineWebView();
+        [pView->_uiWebViewWrapper setFrameWithX:(float)x y:(float)y width:(float)w height:(float)h];
+        [pView->_uiWebViewWrapper setScalesPageToFit:true];
+
+        return pView;
     }
     
     ParaEngineWebView::ParaEngineWebView()

@@ -1,7 +1,6 @@
 #include "ParaEngine.h"
-#include "IParaWebView.h"
 #include "Framework/Common/Helper/EditorHelper.h"
-#include "WebView/ExternalBrowser.h"
+#import "WebView/WebView.h"
 
 namespace ParaEngine {
 	bool CEditorHelper::OpenWithDefaultEditor(const char* sScriptFile, bool bWaitOnReturn)
@@ -19,22 +18,9 @@ namespace ParaEngine {
 		return false;
 	}
 
-	static bool openUrl(const char* url)
+	static bool openUrl(const char *url)
 	{
-        auto pWnd = CGlobals::GetApp()->GetRenderWindow();
-        int w = pWnd->GetWidth();
-        int h = pWnd->GetHeight();
-        auto scaleX = pWnd->GetScaleX();
-        auto scaleY = pWnd->GetScaleY();
-        
-        auto pView = IParaWebView::createWebView(0, 0, w / scaleX, h / scaleY);
-        if (!pView)
-            return false;
-        
-        pView->loadUrl(url);
-        pView->setAlpha(0.95f);
-        
-        
+       ParaEngineWebView::openWebView(url);
 		return true;
 	}
 
@@ -45,7 +31,7 @@ namespace ParaEngine {
 
     static void openExternalBrowser(const char* url)
     {
-        ExternalBrowser::openExternalBrowser(url);
+       ParaEngineWebView::openExternalBrowser(url);
     }
 
 
