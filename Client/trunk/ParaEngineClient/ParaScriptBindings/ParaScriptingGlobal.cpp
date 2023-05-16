@@ -32,9 +32,6 @@
 #endif
 #include <boost/bind.hpp>
 #include <boost/asio.hpp>
-#include <algorithm>
-#include <cctype>
-#include <string>
 
 #include "ParaScriptBindings/ParaScriptingNPL.h"
 
@@ -364,7 +361,13 @@ void ParaGlobal::Execute(const std::string& exe, const luabind::object& param, l
 
 #if defined(WIN32)
 	bp::environment env = boost::this_process::environment();
+#ifdef DEFAULT_FILE_ENCODING
+	std::wstring exe_path_unicode = StringHelper::MultiByteToWideChar(exe.c_str(), DEFAULT_FILE_ENCODING);
+	bp::child c(exe_path_unicode, bp::args(args), env, bp::windows::hide);
+#else
 	bp::child c(exe, bp::args(args), env, bp::windows::hide);
+#endif
+	
 #else
 	bp::child c(exe, bp::args(args));
 #endif
@@ -1929,12 +1932,12 @@ bool ParaScripting::ParaGlobal::OpenFileDialog(const object& inout)
 		return false;
 	}
 	// OpenFileDialog
-	OPENFILENAME ofn = { 0 };
+	OPENFILENAMEW ofn = { 0 };
 	memset(&ofn, 0, sizeof(ofn));
-	char szFileName[MAX_LINE] = { 0 };
-	ofn.lStructSize = sizeof(OPENFILENAME);
+	WCHAR szFileName[MAX_LINE] = { 0 };
+	ofn.lStructSize = sizeof(OPENFILENAMEW);
 	ofn.lpstrFile = szFileName;
-	ofn.lpstrFilter = "All Files (*.*)\0*.*\0";
+	ofn.lpstrFilter = L"All Files (*.*)\0*.*\0";
 	ofn.nFilterIndex = 0;
 	ofn.lpstrFileTitle = NULL;
 	ofn.nMaxFileTitle = 0;
@@ -1942,6 +1945,9 @@ bool ParaScripting::ParaGlobal::OpenFileDialog(const object& inout)
 	ofn.Flags = OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST;
 	ofn.nMaxFile = MAX_LINE;
 	ofn.hwndOwner = CGlobals::GetAppHWND();//保证以模态对话框打开
+	std::wstring initialdir, strFilter, strTitle;
+	
+
 	bool bIsSavingFile = false;
 	for (luabind::iterator itCur(inout), itEnd; itCur != itEnd; ++itCur)
 	{
@@ -1953,15 +1959,33 @@ bool ParaScripting::ParaGlobal::OpenFileDialog(const object& inout)
 			const object& Value = *itCur;
 			if (sKey == "initialdir")
 			{
-				ofn.lpstrInitialDir = object_cast<const char*>(Value);
+				initialdir = StringHelper::MultiByteToWideChar(object_cast<const char*>(Value), DEFAULT_FILE_ENCODING);
+				ofn.lpstrInitialDir = initialdir.c_str();
 			}
 			else if (sKey == "filter")
 			{
-				ofn.lpstrFilter = object_cast<const char*>(Value);
+				const char* pFilter = object_cast<const char*>(Value);
+				int nLength = 0;
+
+				while (true) {
+					if (pFilter[nLength] == '\0') {
+						strFilter.append(StringHelper::MultiByteToWideChar(pFilter, DEFAULT_FILE_ENCODING));
+						strFilter.push_back('\0');
+						pFilter = pFilter + nLength + 1;
+						nLength = 0;
+						if (pFilter[nLength] == '\0') {
+							strFilter.push_back('\0');
+							break;
+						}
+					}
+					nLength++;
+				}
+				ofn.lpstrFilter = strFilter.c_str();
 			}
 			else if (sKey == "title")
 			{
-				ofn.lpstrTitle = object_cast<const char*>(Value);
+				strTitle = StringHelper::MultiByteToWideChar(object_cast<const char*>(Value), DEFAULT_FILE_ENCODING);
+				ofn.lpstrTitle = strTitle.c_str();
 			}
 			else if (sKey == "save")
 			{
@@ -1980,18 +2004,9 @@ bool ParaScripting::ParaGlobal::OpenFileDialog(const object& inout)
 			}
 		}
 	}
-	char buf[MAX_LINE + 1] = { 0 };
-	int nCount = GetCurrentDirectory(MAX_LINE, buf);
-#ifdef DEFAULT_FILE_ENCODING
 	wchar_t sWorkingDir16[MAX_LINE + 1] = { 0 };
 	memset(sWorkingDir16, 0, sizeof(sWorkingDir16));
 	::GetCurrentDirectoryW(MAX_PATH, sWorkingDir16);
-	auto _sWorkingDir = StringHelper::WideCharToMultiByte(sWorkingDir16, DEFAULT_FILE_ENCODING);
-	strcpy(buf, _sWorkingDir);
-#else
-	char sWorkingDir[MAX_LINE + 1] = { 0 };
-	::GetCurrentDirectory(MAX_PATH, sWorkingDir);
-#endif
 
 	// switch to windowed mode to display the win32 common dialog.
 	bool bOldWindowed = CParaEngineApp::GetInstance()->IsWindowedMode();  // Preserve original windowed flag
@@ -2000,7 +2015,7 @@ bool ParaScripting::ParaGlobal::OpenFileDialog(const object& inout)
 		CParaEngineApp::GetInstance()->SetWindowedMode(true);
 	}
 
-	bool bResult = bIsSavingFile ? (!!::GetSaveFileName(&ofn)) : (!!::GetOpenFileName(&ofn));
+	bool bResult = bIsSavingFile ? (!!::GetSaveFileNameW(&ofn)) : (!!::GetOpenFileNameW(&ofn));
 
 	if (bOldWindowed == false)
 	{
@@ -2008,16 +2023,8 @@ bool ParaScripting::ParaGlobal::OpenFileDialog(const object& inout)
 	}
 
 	// reset directory. 
-	if (nCount > 0) {
-#ifdef DEFAULT_FILE_ENCODING
-		LPCWSTR buf16 = StringHelper::MultiByteToWideChar(buf, DEFAULT_FILE_ENCODING);
-		SetCurrentDirectoryW(buf16);
-#else
-		SetCurrentDirectory(buf);
-#endif
-	}
-		
-
+	SetCurrentDirectoryW(sWorkingDir16);
+	
 	inout["result"] = bResult;
 	if (bResult)
 	{
@@ -2031,7 +2038,7 @@ bool ParaScripting::ParaGlobal::OpenFileDialog(const object& inout)
 						ofn.lpstrFile[i] = '|';
 				}
 			}
-			string filename = ofn.lpstrFile;
+			string filename = StringHelper::WideCharToMultiByte(ofn.lpstrFile, DEFAULT_FILE_ENCODING);
 			inout["filename"] = filename;
 		}
 	}

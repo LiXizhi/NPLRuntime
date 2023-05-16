@@ -433,15 +433,58 @@ bool CMoviePlatform::TakeScreenShot(const string& filename)
 #endif
 	return false;
 }
+
+class TakeScreenShotTask
+{
+public: 
+	std::string m_filename;
+	bool m_encode;
+	int m_width;
+	int m_height;
+	std::function<void(bool, std::vector<BYTE>& base64)> m_callback;
+};
+
 void CMoviePlatform::TakeScreenShot_Async(const string& filename, bool bEncode, int width, int height, screenshot_callback callback)
 {
 #ifdef USE_DIRECTX_RENDERER
+	static std::shared_ptr<std::mutex> s_mutex = std::make_shared<std::mutex>();
+	static std::shared_ptr<std::deque<std::shared_ptr<TakeScreenShotTask>>> s_deque = std::make_shared<std::deque<std::shared_ptr<TakeScreenShotTask>>>();
+	auto task = std::make_shared<TakeScreenShotTask>();
+	task->m_filename = filename;
+	task->m_encode = bEncode;
+	task->m_width = width;
+	task->m_height = height;
+	task->m_callback = callback;
+	s_mutex->lock();
+	s_deque->push_back(task);
+	if (s_deque->size() > 10) s_deque->pop_front();
+	s_mutex->unlock();
 	std::thread thread([=]() {
-		std::vector<BYTE> buffers;
-		bool result = TakeScreenShot_FromGDI(filename, buffers, bEncode, width, height);
-		if (callback != nullptr)
+		int max_wait_count = 100; // 最大等待次数
+		int wait_count = 0;       // 最大等待次数
+		while (wait_count < max_wait_count)
 		{
-			callback(result,buffers);
+			s_mutex->lock();
+			int size = s_deque->size(); 
+			s_mutex->unlock();
+			if (size == 0)
+			{
+				wait_count++;
+				std::this_thread::sleep_for(std::chrono::milliseconds(500));  // 等待0.5秒  50秒内无新请求直接退出线程
+				continue;
+			}
+			wait_count = 0;   // 有新的任务重置等待次数
+			s_mutex->lock();
+			auto task = s_deque->front();
+			s_deque->pop_front();
+			s_mutex->unlock();
+
+			std::vector<BYTE> buffers;
+			bool result = TakeScreenShot_FromGDI(task->m_filename, buffers, task->m_encode, task->m_width, task->m_height);
+			if (task->m_callback != nullptr)
+			{
+				(task->m_callback)(result,buffers);
+			}
 		}
 	});
 	thread.detach();

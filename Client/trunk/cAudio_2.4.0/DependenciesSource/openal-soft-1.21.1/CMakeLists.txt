@@ -76,18 +76,18 @@ option(ALSOFT_DLOPEN  "Check for the dlopen API for loading optional libs"  ON)
 
 option(ALSOFT_WERROR  "Treat compile warnings as errors"      OFF)
 
-option(ALSOFT_UTILS "Build utility programs"  ON)
+option(ALSOFT_UTILS "Build utility programs"  OFF)
 option(ALSOFT_NO_CONFIG_UTIL "Disable building the alsoft-config utility" OFF)
 
-option(ALSOFT_EXAMPLES  "Build example programs"  ON)
+option(ALSOFT_EXAMPLES  "Build example programs"  OFF)
 
-option(ALSOFT_INSTALL "Install main library" ON)
-option(ALSOFT_INSTALL_CONFIG "Install alsoft.conf sample configuration file" ON)
-option(ALSOFT_INSTALL_HRTF_DATA "Install HRTF data files" ON)
-option(ALSOFT_INSTALL_AMBDEC_PRESETS "Install AmbDec preset files" ON)
-option(ALSOFT_INSTALL_EXAMPLES "Install example programs (alplay, alstream, ...)" ON)
-option(ALSOFT_INSTALL_UTILS "Install utility programs (openal-info, alsoft-config, ...)" ON)
-option(ALSOFT_UPDATE_BUILD_VERSION "Update git build version info" ON)
+option(ALSOFT_INSTALL "Install main library" OFF)
+option(ALSOFT_INSTALL_CONFIG "Install alsoft.conf sample configuration file" OFF)
+option(ALSOFT_INSTALL_HRTF_DATA "Install HRTF data files" OFF)
+option(ALSOFT_INSTALL_AMBDEC_PRESETS "Install AmbDec preset files" OFF)
+option(ALSOFT_INSTALL_EXAMPLES "Install example programs (alplay, alstream, ...)" OFF)
+option(ALSOFT_INSTALL_UTILS "Install utility programs (openal-info, alsoft-config, ...)" OFF)
+option(ALSOFT_UPDATE_BUILD_VERSION "Update git build version info" OFF)
 
 if(DEFINED SHARE_INSTALL_DIR)
     message(WARNING "SHARE_INSTALL_DIR is deprecated.  Use the variables provided by the GNUInstallDirs module instead")

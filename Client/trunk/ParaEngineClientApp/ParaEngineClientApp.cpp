@@ -271,9 +271,9 @@ int CreateHostApp(HINSTANCE hInst, const std::string& sAppCmdLine)
 		app.SetCommandLine(sAppCmdLine.c_str());
 
 		// if command line contains single="true", we will display a popup dialog to confirm with the user that multiple instances are not allowed. It will either kill previous one or exit.  
-		bool bForceSingle = (sAppCmdLine.find("single=\"true\"") != std::string::npos);
+		bool bForceSingle = (sAppCmdLine.find("single=\"true\"") != std::string::npos || sAppCmdLine.find("single=true") != std::string::npos);
 		// if command line contains asksingle="true", we will display a popup dialog to confirm with the user that multiple instances are not recommended. It will either kill previous one or continue
-		bool bAskSingle = (sAppCmdLine.find("asksingle=\"true\"") != std::string::npos);
+		bool bAskSingle = (sAppCmdLine.find("asksingle=\"true\"") != std::string::npos || sAppCmdLine.find("asksingle=true") != std::string::npos);
 
 		std::string sProcessName = "ParaEngineClient.exe";
 		CFindKillProcess   findKillProcess;
@@ -317,7 +317,8 @@ int CreateHostApp(HINSTANCE hInst, const std::string& sAppCmdLine)
 /** create a standalone app */
 int CreateStandAloneApp(HINSTANCE hInst, const std::string& sAppCmdLine)
 {
-	if(sAppCmdLine.find("single=\"true\"") != std::string::npos)
+	if(sAppCmdLine.find("single=\"true\"") != std::string::npos || sAppCmdLine.find("single=true") != std::string::npos 
+		|| sAppCmdLine.find("single=%22true%22") != std::string::npos)
 	{
 		// only prevent multiple instance if single is true.
 		HWND hWnd = ::FindWindow(_T("ParaWorld"),NULL);

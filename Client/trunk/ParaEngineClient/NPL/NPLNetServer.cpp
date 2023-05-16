@@ -236,16 +236,34 @@ void NPL::CNPLNetServer::stop()
 		// cancel timer
 		m_idle_timer.cancel();
 
-		// Post a call to the stop function so that server::stop() is safe to call
-		// from any thread.
+		try
+		{
+			// cancel resolver
+			m_resolver.cancel();
+
+			// stop incomming connections
+			if(m_acceptor.is_open())
+				m_acceptor.cancel();
+		}
+		catch (const std::exception& e)
+		{
+			OUTPUT_LOG("CNPLNetServer error: %s\n", e.what());
+		}
+
+		// Post a call to the stop function so that server::stop() is safe to call from any thread.
 		m_io_service_dispatcher.post(boost::bind(&CNPLNetServer::handle_stop, this));
 
 		// stop the work on dispatcher. 
 		m_work_lifetime.reset();
 
+		while (m_acceptor.is_open())
+		{
+			SLEEP(10);
+		}
+		m_io_service_dispatcher.stop();
 		m_dispatcherThread->join();
 		m_dispatcherThread.reset();
-
+		
 		Cleanup();
 		m_io_service_dispatcher.reset();
 		m_new_connection.reset();
@@ -303,11 +321,10 @@ void NPL::CNPLNetServer::handle_resolve_local(const boost::system::error_code& e
 			OUTPUT_LOG1("warning: unable to accept NPL connection, because unknown error\n");
 			return;
 		}
-		if (!m_new_connection)
-			m_new_connection.reset(new CNPLConnection(m_io_service_dispatcher, m_connection_manager, m_msg_dispatcher)),
-			m_acceptor.async_accept(m_new_connection->socket(),
-				boost::bind(&CNPLNetServer::handle_accept, this,
-					boost::asio::placeholders::error));
+		if (!m_new_connection) {
+			m_new_connection.reset(new CNPLConnection(m_io_service_dispatcher, m_connection_manager, m_msg_dispatcher));
+			m_acceptor.async_accept(m_new_connection->socket(), boost::bind(&CNPLNetServer::handle_accept, this, boost::asio::placeholders::error));
+		}
 	}
 	else
 	{
@@ -373,12 +390,13 @@ void NPL::CNPLNetServer::handle_stop()
 		// An error occurred.
 		OUTPUT_LOG1("warning: m_acceptor.close() failed, because %s\n", ec.message().c_str());
 	}
-	/* In some rare computer, async_accept can not be closed in any way, the following code does not help.
+	/*
+	// In some rare computer (win 7), async_accept can not be closed in any way, the following code does not help.
 	if (m_new_connection){
 		m_new_connection->stop(false);
 		m_new_connection.reset();
-	}*/
-
+	}
+	*/
 	m_connection_manager.stop_all();
 }
 

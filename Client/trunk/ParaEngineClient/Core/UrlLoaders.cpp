@@ -337,6 +337,8 @@ void ParaEngine::CUrlProcessor::SetCurlEasyOpt(CURL* handle)
 		bIsSMTP = true;
 	}
 
+	bool bAllowSlowRequest = false;
+	
 	if (m_options)
 	{
 		for (auto iter = m_options->begin(); iter != m_options->end(); iter++)
@@ -347,6 +349,12 @@ void ParaEngine::CUrlProcessor::SetCurlEasyOpt(CURL* handle)
 			}
 			else if (sKey == "CURLOPT_PASSWORD") {
 				curl_easy_setopt(handle, CURLOPT_PASSWORD, iter->second.c_str());
+			}
+			else if (sKey == "CURLOPT_PROXY") {
+				curl_easy_setopt(handle, CURLOPT_PROXY, iter->second.c_str());
+			}
+			else if (sKey == "CURLOPT_PROXYUSERPWD") {
+				curl_easy_setopt(handle, CURLOPT_PROXYUSERPWD, iter->second.c_str());
 			}
 			else if (sKey == "CURLOPT_CUSTOMREQUEST") {
 				bIsCustomRequest = true;
@@ -394,6 +402,25 @@ void ParaEngine::CUrlProcessor::SetCurlEasyOpt(CURL* handle)
 				}
 				curl_easy_setopt(handle, CURLOPT_MAIL_RCPT, m_pHttpHeaders);
 			}
+			else if (sKey == "CURLOPT_CONNECTTIMEOUT")
+			{
+				curl_easy_setopt(handle, CURLOPT_CONNECTTIMEOUT, iter->second.toInt());
+				bAllowSlowRequest = true;
+			}
+			else if (sKey == "CURLOPT_LOW_SPEED_TIME")
+			{
+				curl_easy_setopt(handle, CURLOPT_LOW_SPEED_TIME, iter->second.toInt());
+				bAllowSlowRequest = true;
+			}
+			else if (sKey == "CURLOPT_LOW_SPEED_LIMIT")
+			{
+				curl_easy_setopt(handle, CURLOPT_LOW_SPEED_LIMIT, iter->second.toInt());
+				bAllowSlowRequest = true;
+			}
+			else if (sKey == "CURLOPT_ALLOW_SLOW_REQUEST") 
+			{
+				bAllowSlowRequest = true;
+			}
 		}
 	}
 
@@ -422,12 +449,16 @@ void ParaEngine::CUrlProcessor::SetCurlEasyOpt(CURL* handle)
 	connection timeout (it will then only timeout on the system's internal timeouts). See also the CURLOPT_TIMEOUT option
 	*/
 
-	/* abort if slower than 30 bytes/sec during 10 seconds */
-	curl_easy_setopt(handle, CURLOPT_LOW_SPEED_TIME, 10L);
-	curl_easy_setopt(handle, CURLOPT_LOW_SPEED_LIMIT, 30L);
+	if (!bAllowSlowRequest)
+	{
+		/* abort if slower than 30 bytes/sec during 10 seconds */
+		curl_easy_setopt(handle, CURLOPT_LOW_SPEED_TIME, 10L);
+		curl_easy_setopt(handle, CURLOPT_LOW_SPEED_LIMIT, 30L);
 
-	// time allowed to connect to server, usually to resolve DNS and connect via IP. This can sometimes be very long on mobile devices on first use. 
-	curl_easy_setopt(handle, CURLOPT_CONNECTTIMEOUT, 20);
+		// time allowed to connect to server, usually to resolve DNS and connect via IP. This can sometimes be very long on mobile devices on first use. 
+		curl_easy_setopt(handle, CURLOPT_CONNECTTIMEOUT, 20);
+	}
+
 	// progress callback is only used to terminate the url progress
 	curl_easy_setopt(handle, CURLOPT_NOPROGRESS, 0);
 	curl_easy_setopt(handle, CURLOPT_PROGRESSFUNCTION, CUrl_progress_callback);

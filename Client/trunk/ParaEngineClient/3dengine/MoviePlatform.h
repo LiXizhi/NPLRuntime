@@ -348,9 +348,7 @@ namespace ParaEngine
 		* some common values are in range [0.03, 0.1]. This is also related to the rendering unit that we used in games. 
 		* since ParaEngine games usually use meter as its rendering unit, the value is such near the real eye separation distance.*/
 		float m_nStereoEyeSeparation;
-		
-
+	
 		bool m_isLeftEye;
 	};
-
 }

@@ -2,6 +2,7 @@
 #include "XFileCharModelExporter.h"
 #include "./ParaXSerializer.h"
 #include "Core/TextureEntity.h"
+#include "util/StringHelper.h"
 #include "ParaXBone.h"
 #include "particle.h"
 #include <fstream>
@@ -36,7 +37,13 @@ void XFileCharModelExporter::ExportParaXModel(ofstream& strm)
 
 bool ParaEngine::XFileCharModelExporter::Export(const string& filepath, CParaXModel* pMesh)
 {
+#if WIN32 && defined(DEFAULT_FILE_ENCODING)
+	auto path16 = ParaEngine::StringHelper::MultiByteToWideChar(filepath.c_str(), DEFAULT_FILE_ENCODING);
+	ofstream file(path16, ios_base::binary);
+#else
 	ofstream file(filepath, ios_base::binary);
+#endif
+	
 	if (file.is_open())
 	{
 		XFileCharModelExporter exporter(file, pMesh);
