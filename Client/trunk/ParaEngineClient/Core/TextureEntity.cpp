@@ -537,3 +537,41 @@ int TextureEntity::GetFormatByFileName(const std::string& filename)
 	}
 	return dwTextureFormat;
 }
+
+void TextureEntity::SetTextureFramePointer(int framePointer)
+{
+	uint8_t * frames = (uint8_t*)framePointer;
+	int width = GetWidth();
+	int height = GetHeight();
+	if (m_bRABG) { //RGBA转成ARGB
+		static int i, j, r, g, b, a,index;
+		for (i = 0; i < width; i++) {
+			for (j = 0; j < height; j++) {
+				index = (j * 4 * width) + 4 * i;
+				g = frames[index + 0]; //绿色 g
+				//r = frames[index + 1]; //红色 r
+				a = frames[index + 2]; //透明度 a 
+				//b = frames[index + 3]; //蓝色 b
+
+				frames[index + 0] = a;
+				//frames[index + 1] = r;
+				frames[index + 2] = g;
+				//frames[index + 3] = b;
+			}
+		}
+
+	}
+	this->LoadUint8Buffer(frames, width, height, height, 4);
+}
+
+int TextureEntity::InstallFields(CAttributeClass* pClass, bool bOverride)
+{
+	AssetEntity::InstallFields(pClass, bOverride);
+
+	pClass->AddField("IsRGBA", FieldType_Bool, (void*)SetIsRGBA_s, (void*)0, NULL, NULL, bOverride);
+	pClass->AddField("TextureFramePointer", FieldType_Int, (void*)SetTextureFramePointer_s, (void*)0, NULL, NULL, bOverride);
+#ifdef USE_DIRECTX_RENDERER
+#else
+#endif
+	return S_OK;
+}
