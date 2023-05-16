@@ -513,6 +513,72 @@ TextureEntity* ParaEngine::TextureEntityOpenGL::CreateTexture(const uint8 * pTex
 	return NULL;
 }
 
+TextureEntity* TextureEntityOpenGL::LoadUint8Buffer(const uint8 * pTexels, int width, int height, int rowLength, int bytesPerPixel, uint32 nMipLevels /*= 0*/, D3DPOOL dwCreatePool /*= D3DPOOL_MANAGED*/, DWORD nFormat /*= 0*/)
+{
+	if (!pTexels)
+		return NULL;
+	GLTexture2D * texture = m_texture;
+	if (texture)
+	{
+		int dataLen = width * height * bytesPerPixel;
+		if (bytesPerPixel == 4)
+		{
+			if (!texture->initWithData(pTexels, dataLen, PixelFormat::A8R8G8B8, width, height, Size((float)width, (float)height)))
+			{
+				SAFE_DELETE(texture);
+			}
+		}
+		else if (bytesPerPixel == 3)
+		{
+			dataLen = width * height * 4;
+			uint8 *pp = new uint8[dataLen];
+			int index = 0, x = 0, y = 0;
+			for (y = 0; y < height; y++)
+			{
+				for (x = 0; x < width; x++)
+				{
+					int n = (y * 3 * width) + 3 * x;
+					pp[index++] = pTexels[n];
+					pp[index++] = pTexels[n + 1];
+					pp[index++] = pTexels[n + 2];
+					pp[index++] = 0xff;
+				}
+			}
+			if (!texture->initWithData(pTexels, dataLen, PixelFormat::A8R8G8B8, width, height, Size((float)width, (float)height)))
+			{
+				SAFE_DELETE(texture);
+			}
+			delete[] pp;
+		}
+		else if (bytesPerPixel == 1)
+		{
+			/** -1 not determined, 0 do not support A8, 1 support A8. we will only try it once. */
+			static int nSupportA8PixelFormat = -1;
+
+			if (nSupportA8PixelFormat == 0 || !texture->initWithData(pTexels, dataLen, PixelFormat::A8, width, height, Size((float)width, (float)height)))
+			{
+				if (nSupportA8PixelFormat == -1)
+					nSupportA8PixelFormat = 0;
+				int nSize = width * height;
+				DWORD* pData = new DWORD[nSize];
+				for (int x = 0; x < nSize; ++x)
+				{
+					pData[x] = (pTexels[x]) << 24;
+				}
+				if (!texture->initWithData(pData, width*height * 4, PixelFormat::A8R8G8B8, width, height, Size((float)width, (float)height)))
+				{
+					SAFE_DELETE(texture);
+				}
+				delete[] pData;
+			}
+			else if (nSupportA8PixelFormat == -1)
+				nSupportA8PixelFormat = 1;
+		}
+	}
+
+	return this;
+}
+
 void ParaEngine::TextureEntityOpenGL::LoadImage(char *sBufMemFile, int sizeBuf, int &width, int &height, byte ** ppBuffer, bool bAlpha)
 {
 	/*
