@@ -82,6 +82,7 @@ namespace ParaEngine
 		static TextureEntity* CreateTexture(const uint8 * pTexels, int width, int height, int rowLength, int bytesPerPixel, uint32 nMipLevels = 0, EPoolType dwCreatePool = EPoolType::Managed, DWORD nFormat = 0);
 		/** create a texture entity from file path. */
 		static TextureEntity* CreateTexture(const char* pFileName, uint32 nMipLevels = 0, EPoolType dwCreatePool = EPoolType::Managed);
+		virtual TextureEntity* LoadUint8Buffer(const uint8 * pTexels, int width, int height, int rowLength, int bytesPerPixel, uint32 nMipLevels = 0, D3DPOOL dwCreatePool = D3DPOOL_MANAGED, DWORD nFormat = 0);
 	protected:
 		friend class CRenderTarget;
 		union{
