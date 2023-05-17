@@ -2,7 +2,7 @@
 // LuaJavaBridge.h
 // Authors: LanZhiHong, big
 // CreateDate: 2019.12.30
-// ModifyDate: 2022.1.11
+// ModifyDate: 2023.5.17
 //-----------------------------------------------------------------------------
 
 #pragma once
@@ -95,6 +95,7 @@ namespace ParaEngine {
         */
         static int callLuaFunctionById(int functionId, const char *arg);
 
+        static void nplActivate(const std::string &msg, const std::string &strNPLFileName);
     private:
         typedef enum
         {
@@ -243,7 +244,6 @@ namespace ParaEngine {
         static luabind::object callJavaMethod(JObject& o, const std::string& functionName, const std::string& sig, const luabind::object& argvs, lua_State *L);
         static void releaseJavaObjcet(jobject o);
 
-
         static int validateMethodSig(const std::string& sig, FunctionInfo& info);
         static ValueType checkType(const std::string& sig, size_t *pos);
         static bool convertType(JNIEnv* env, JValues& values, size_t index, ValueType type, const luabind::object& o);
@@ -264,7 +264,6 @@ namespace ParaEngine {
         static bool callStringMethod(JniMethodInfo& t, FunctionInfo& info, JObject& jobj, const luabind::object& argvs, std::string& ret);
         static bool callObjectMethod(JniMethodInfo& t, FunctionInfo& info, JObject& jobj, const luabind::object& argvs, JObject& ret);
 
-
         struct FuncInfo
         {
             luabind::object funcObj;
@@ -273,7 +272,6 @@ namespace ParaEngine {
         typedef std::unordered_map<int, FuncInfo> FuncMap;
 
         static boost::thread_specific_ptr<FuncMap> _funcMap;
-
 
         static int retainLuaFunction(const luabind::object& funcObj);
     };

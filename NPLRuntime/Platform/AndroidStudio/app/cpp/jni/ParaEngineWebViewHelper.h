@@ -2,7 +2,7 @@
 // ParaEngineWebViewHelper.h
 // Authors: LanZhiHong, big
 // CreateDate: 2019.12.30
-// ModifyDate: 2022.1.11
+// ModifyDate: 2023.5.17
 //-----------------------------------------------------------------------------
 
 #pragma once
@@ -40,10 +40,7 @@ namespace ParaEngine {
 		virtual void activate(const std::string &filepath, const std::string &msg) override;
 
 		static bool openWebView(int x, int y, int w, int h, const std::string& url);
-		// static bool closeWebView();
-
 		static void onCloseView(int handle);
-
 	private:
 		static const std::string classname;
 		static std::unordered_map<int, ParaEngineWebView*> m_views;

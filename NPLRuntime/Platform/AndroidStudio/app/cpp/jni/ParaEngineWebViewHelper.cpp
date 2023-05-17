@@ -2,7 +2,7 @@
 // ParaEngineWebViewHelper.cpp
 // Authors: LanZhiHong, big
 // CreateDate: 2019.12.30
-// ModifyDate: 2023.5.11
+// ModifyDate: 2023.5.17
 //-----------------------------------------------------------------------------
 
 #include "ParaEngine.h"
@@ -20,9 +20,11 @@
 #include <luabind/copy_policy.hpp>
 #include <luabind/adopt_policy.hpp>
 #include <luabind/function.hpp>
+#include <boost/format.hpp>
 
 #include <jni.h>
 #include <android/log.h>
+#include "Framework/Common/Bridge/LuaJavaBridge.h"
 
 namespace ParaEngine {
 	const std::string ParaEngineWebView::classname = "com/tatfook/paracraft/ParaEngineWebViewHelper";
@@ -204,9 +206,15 @@ namespace ParaEngine {
 
 	void ParaEngineWebView::activate(const std::string &filepath, const std::string &msg)
 	{
-		// TODO
-		LOGD("from ParaEngineWebView::activate");
-		LOGD(filepath.c_str());
+        boost::format fmt("window.NPL.receive(\"%s\", \"%s\")");
+		fmt % filepath % msg;
+
+		JniHelper::callStaticVoidMethod(
+			classname,
+			"evaluateJS",
+			m_handle,
+			fmt.str()
+		);
 	}
 }
 
@@ -219,27 +227,39 @@ extern "C" {
         ParaEngineActivity::setScreenOrientation(0);
 	}
 
-	JNIEXPORT void JNICALL Java_com_tatfook_paracraft_ParaEngineWebViewHelper_onJsCallback(JNIEnv *env, jclass, jint index, jstring jmessage)
+	JNIEXPORT void JNICALL Java_com_tatfook_paracraft_ParaEngineWebViewHelper_onJsCallback(JNIEnv *env, jclass clazz, jint index, jstring jmessage)
 	{
 	}
 
-	JNIEXPORT void JNICALL Java_com_tatfook_paracraft_ParaEngineWebViewHelper_didFailLoading(JNIEnv *env, jclass, jint index, jstring jmessage)
+	JNIEXPORT void JNICALL Java_com_tatfook_paracraft_ParaEngineWebViewHelper_didFailLoading(JNIEnv *env, jclass clazz, jint index, jstring jmessage)
 	{
 	}
 
-	JNIEXPORT void JNICALL Java_com_tatfook_paracraft_ParaEngineWebViewHelper_didFinishLoading(JNIEnv *env, jclass, jint index, jstring jmessage)
+	JNIEXPORT void JNICALL Java_com_tatfook_paracraft_ParaEngineWebViewHelper_didFinishLoading(JNIEnv *env, jclass clazz, jint index, jstring jmessage)
 	{
 	}
 
-	JNIEXPORT jboolean JNICALL Java_com_tatfook_paracraft_ParaEngineWebViewHelper_shouldStartLoading(JNIEnv *env, jclass, jint index, jstring jmessage)
+	JNIEXPORT jboolean JNICALL Java_com_tatfook_paracraft_ParaEngineWebViewHelper_shouldStartLoading(JNIEnv *env, jclass clazz, jint index, jstring jmessage)
 	{
 		return JNI_TRUE;
 	}
 
-	JNIEXPORT void JNICALL Java_com_tatfook_paracraft_ParaEngineWebViewHelper_transportCmdLine(JNIEnv *env, jclass, jstring value)
+	JNIEXPORT void JNICALL Java_com_tatfook_paracraft_ParaEngineWebViewHelper_transportCmdLine(JNIEnv *env, jclass clazz, jstring value)
 	{
 		std::string cmd = JniHelper::jstring2string(value);
 		env->DeleteLocalRef(value);
 		AppDelegate::getInstance().onCmdLine(cmd);
+	}
+
+	JNIEXPORT void JNICALL Java_com_tatfook_paracraft_JsToAndroid_receive(JNIEnv *env, jobject clazz, jstring filename, jstring msg)
+	{
+		std::string cpp_filename = JniHelper::jstring2string(filename);
+		std::string cpp_msg = JniHelper::jstring2string(msg);
+
+		boost::format fmt("NPL.activate('%s', { msg = [[%s]]})");
+		fmt % cpp_filename % cpp_msg;
+
+		std::string code = fmt.str();
+		ParaEngine::LuaJavaBridge::nplActivate(code, "");
 	}
 }

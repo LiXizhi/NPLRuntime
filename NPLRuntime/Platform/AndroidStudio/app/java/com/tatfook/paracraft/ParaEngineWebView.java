@@ -4,26 +4,21 @@
 // Emails: LiXizhi@yeah.net
 // Company: ParaEngine
 // CreateDate: 2018.3.31
-// ModifyDate: 2023.5.11
+// ModifyDate: 2023.5.17
 //-----------------------------------------------------------------------------
 
 package com.tatfook.paracraft;
 
 import android.annotation.SuppressLint;
 import android.content.Context;
-import android.graphics.Canvas;
 import android.util.Log;
-import android.view.Gravity;
 import android.webkit.WebChromeClient;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
-import android.widget.FrameLayout;
 import android.graphics.Bitmap;
-import android.view.KeyEvent; 
-import android.content.Intent;
+import android.view.KeyEvent;
 
-import java.lang.reflect.Method;
 import android.net.Uri;
 import java.util.concurrent.CountDownLatch;
 
@@ -117,7 +112,7 @@ public class ParaEngineWebView extends WebView {
         this.getSettings().setJavaScriptEnabled(true);
         this.setLayerType(LAYER_TYPE_HARDWARE, null);
         this.getSettings().setCacheMode(WebSettings.LOAD_NO_CACHE);
-        //this.setAlpha(0.95f);
+        this.getSettings().setMediaPlaybackRequiresUserGesture(false);
 
         // This risk does not exist above API level 19. We are using API level 24 and above。
         // // `searchBoxJavaBridge_` has big security risk. http://jvn.jp/en/jp/JVN53768697
@@ -131,8 +126,8 @@ public class ParaEngineWebView extends WebView {
         this.setWebViewClient(new ParaEngineWebViewClient());
         this.setWebChromeClient(new WebChromeClient() {
             @Override public Bitmap getDefaultVideoPoster() {
-                // hide android ugly default poster.
-                return Bitmap.createBitmap(10, 10, Bitmap.Config.ARGB_8888);
+            // hide android ugly default poster.
+            return Bitmap.createBitmap(10, 10, Bitmap.Config.ARGB_8888);
             }
         });
     }

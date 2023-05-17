@@ -2,7 +2,7 @@
 // LuaJavaBridge.cpp
 // Authors: LanZhiHong, big
 // CreateDate: 2019.12.30
-// ModifyDate: 2022.1.11
+// ModifyDate: 2023.5.17
 //-----------------------------------------------------------------------------
 
 #include "ParaEngine.h"
@@ -11,11 +11,13 @@
 #include "NPLScriptingState.h"
 
 namespace ParaEngine {
-    bool LuaJavaBridge::convertType(JNIEnv *env,
-                                    JValues &values,
-                                    size_t index,
-                                    ValueType type,
-                                    const luabind::object &o)
+    void LuaJavaBridge::nplActivate(const std::string &msg, const std::string &strNPLFileName)
+    {
+        NPL::NPLRuntimeState_ptr rsptr = NPL::CNPLRuntime::GetInstance()->GetRuntimeState(strNPLFileName);
+        NPL::CNPLRuntime::GetInstance()->NPL_Activate(rsptr, strNPLFileName.c_str(), msg.c_str());
+    }
+
+    bool LuaJavaBridge::convertType(JNIEnv *env, JValues &values, size_t index, ValueType type, const luabind::object &o)
     {
         auto objectType = luabind::type(o);
 
