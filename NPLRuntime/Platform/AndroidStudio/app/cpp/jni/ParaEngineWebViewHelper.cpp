@@ -2,7 +2,7 @@
 // ParaEngineWebViewHelper.cpp
 // Authors: LanZhiHong, big
 // CreateDate: 2019.12.30
-// ModifyDate: 2022.1.11
+// ModifyDate: 2023.5.17
 //-----------------------------------------------------------------------------
 
 #include "ParaEngine.h"
@@ -20,25 +20,27 @@
 #include <luabind/copy_policy.hpp>
 #include <luabind/adopt_policy.hpp>
 #include <luabind/function.hpp>
+#include <boost/format.hpp>
 
 #include <jni.h>
 #include <android/log.h>
+#include "Framework/Common/Bridge/LuaJavaBridge.h"
 
 namespace ParaEngine {
 	const std::string ParaEngineWebView::classname = "com/tatfook/paracraft/ParaEngineWebViewHelper";
 	std::unordered_map<int, ParaEngineWebView*> ParaEngineWebView::m_views;
 
-	IParaWebView* IParaWebView::setOrientation(int type)
+	IParaWebView *IParaWebView::setOrientation(int type)
 	{
 		return ParaEngineWebView::setOrientation(type);
 	}
 
-	IParaWebView* IParaWebView::createWebView(int x, int y, int w, int h)
+	IParaWebView *IParaWebView::createWebView(int x, int y, int w, int h)
 	{
 		return ParaEngineWebView::createWebView(x, y, w, h);
 	}
 
-	IParaWebView* IParaWebView::createSubViewView(int x, int y, int w, int h)
+	IParaWebView *IParaWebView::createSubViewView(int x, int y, int w, int h)
 	{
 		return ParaEngineWebView::createWebView(x, y, w, h);
 	}
@@ -56,7 +58,7 @@ namespace ParaEngine {
 		}
 	}
 
-	ParaEngineWebView* ParaEngineWebView::setOrientation(int type)
+	ParaEngineWebView *ParaEngineWebView::setOrientation(int type)
 	{
 		ParaEngineActivity::setScreenOrientation(type);
 		return nullptr;
@@ -67,28 +69,32 @@ namespace ParaEngine {
 		JniHelper::callStaticVoidMethod(classname, "openExternalBrowser", url);
 	}
 
-	ParaEngineWebView* ParaEngineWebView::createWebView(int x, int y, int w, int h)
+	bool ParaEngineWebView::openWebView(int x, int y, int w, int h, const std::string &url)
 	{
+		JniHelper::callStaticVoidMethod(classname, "openWebView", x, y, w, h, url);
+		return true;
+	}
 
+	ParaEngineWebView *ParaEngineWebView::createWebView(int x, int y, int w, int h)
+	{
 		JniMethodInfo t;
-		if (JniHelper::getStaticMethodInfo(t, classname.c_str(), "createWebView", "(IIII)I"))
-		{
+
+		if (JniHelper::getStaticMethodInfo(t, classname.c_str(), "createWebView", "(IIII)I")) {
 		 	jint handle = t.env->CallStaticIntMethod(t.classID, t.methodID, x, y, w, h);
 		 	t.env->DeleteLocalRef(t.classID);
-		 	ParaEngineWebView* pView = new ParaEngineWebView();
+
+		 	ParaEngineWebView *pView = new ParaEngineWebView();
 		 	pView->setHandle(handle);
 		 	m_views[handle] = pView;
 
-		 	if (m_views.size() >= 1)
-		 	{
-		 		OUTPUT_LOG("ParaEngineWebView: ActivateApp(false)");
-		 		//CGlobals::GetApp()->ActivateApp(false);
-		 	}
+//		 	if (m_views.size() >= 1)
+//		 	{
+//		 		OUTPUT_LOG("ParaEngineWebView: ActivateApp(false)");
+//		 		//CGlobals::GetApp()->ActivateApp(false);
+//		 	}
 
 		 	return pView;
-		}
-		else
-		{
+		} else {
 		 	return nullptr;
 		}
 	}
@@ -150,22 +156,22 @@ namespace ParaEngine {
 
 	void ParaEngineWebView::SetHideViewWhenClickBack(bool b)
 	{
-		JniHelper::callStaticVoidMethod(classname, "SetHideViewWhenClickBack", m_handle, b);
+//		JniHelper::callStaticVoidMethod(classname, "SetHideViewWhenClickBack", m_handle, b);
 	}
 
 	void ParaEngineWebView::SetIgnoreCloseWhenClickBack(bool b)
 	{
-		JniHelper::callStaticVoidMethod(classname, "SetIgnoreCloseWhenClickBack", m_handle, b);
+//		JniHelper::callStaticVoidMethod(classname, "SetIgnoreCloseWhenClickBack", m_handle, b);
 	}
 
     void ParaEngineWebView::SetCloseWhenClickBackground(bool b)
     {
-        JniHelper::callStaticVoidMethod(classname, "SetCloseWhenClickBackground", m_handle, b);
+//        JniHelper::callStaticVoidMethod(classname, "SetCloseWhenClickBackground", m_handle, b);
     }
 
 	void ParaEngineWebView::loadUrl(const std::string &url, bool cleanCachedData)
 	{
-		JniHelper::callStaticVoidMethod(classname, "loadUrl", m_handle, url, cleanCachedData); 
+		JniHelper::callStaticVoidMethod(classname, "loadUrl", m_handle, url);
 	}  
 
 	void ParaEngineWebView::hideCloseButton(bool bHide)
@@ -176,23 +182,17 @@ namespace ParaEngine {
 	{
 		m_onClose = fun;
 	}
-	 
+
 	void ParaEngineWebView::Refresh()
 	{
 		JniHelper::callStaticVoidMethod(classname, "reload", m_handle);
 	}
 
-	bool ParaEngineWebView::openWebView(int x, int y, int w, int h, const std::string& url)
-	{
-		JniHelper::callStaticVoidMethod(classname, "openWebView", x, y, w, h, url);
-		return true;
-	}
-
-	bool ParaEngineWebView::closeWebView()
-	{
-		JniHelper::callStaticVoidMethod(classname, "closeWebView");
-		return true;
-	}
+	// bool ParaEngineWebView::closeWebView()
+	// {
+	// 	JniHelper::callStaticVoidMethod(classname, "closeWebView");
+	// 	return true;
+	// }
 
 	void ParaEngineWebView::move(int x, int y)
 	{
@@ -206,7 +206,15 @@ namespace ParaEngine {
 
 	void ParaEngineWebView::activate(const std::string &filepath, const std::string &msg)
 	{
-		// TODO
+        boost::format fmt("window.NPL.receive(\"%s\", \"%s\")");
+		fmt % filepath % msg;
+
+		JniHelper::callStaticVoidMethod(
+			classname,
+			"evaluateJS",
+			m_handle,
+			fmt.str()
+		);
 	}
 }
 
@@ -219,27 +227,39 @@ extern "C" {
         ParaEngineActivity::setScreenOrientation(0);
 	}
 
-	JNIEXPORT void JNICALL Java_com_tatfook_paracraft_ParaEngineWebViewHelper_onJsCallback(JNIEnv *env, jclass, jint index, jstring jmessage)
+	JNIEXPORT void JNICALL Java_com_tatfook_paracraft_ParaEngineWebViewHelper_onJsCallback(JNIEnv *env, jclass clazz, jint index, jstring jmessage)
 	{
 	}
 
-	JNIEXPORT void JNICALL Java_com_tatfook_paracraft_ParaEngineWebViewHelper_didFailLoading(JNIEnv *env, jclass, jint index, jstring jmessage)
+	JNIEXPORT void JNICALL Java_com_tatfook_paracraft_ParaEngineWebViewHelper_didFailLoading(JNIEnv *env, jclass clazz, jint index, jstring jmessage)
 	{
 	}
 
-	JNIEXPORT void JNICALL Java_com_tatfook_paracraft_ParaEngineWebViewHelper_didFinishLoading(JNIEnv *env, jclass, jint index, jstring jmessage)
+	JNIEXPORT void JNICALL Java_com_tatfook_paracraft_ParaEngineWebViewHelper_didFinishLoading(JNIEnv *env, jclass clazz, jint index, jstring jmessage)
 	{
 	}
 
-	JNIEXPORT jboolean JNICALL Java_com_tatfook_paracraft_ParaEngineWebViewHelper_shouldStartLoading(JNIEnv *env, jclass, jint index, jstring jmessage)
+	JNIEXPORT jboolean JNICALL Java_com_tatfook_paracraft_ParaEngineWebViewHelper_shouldStartLoading(JNIEnv *env, jclass clazz, jint index, jstring jmessage)
 	{
 		return JNI_TRUE;
 	}
 
-	JNIEXPORT void JNICALL Java_com_tatfook_paracraft_ParaEngineWebViewHelper_transportCmdLine(JNIEnv *env, jclass, jstring value)
+	JNIEXPORT void JNICALL Java_com_tatfook_paracraft_ParaEngineWebViewHelper_transportCmdLine(JNIEnv *env, jclass clazz, jstring value)
 	{
 		std::string cmd = JniHelper::jstring2string(value);
 		env->DeleteLocalRef(value);
 		AppDelegate::getInstance().onCmdLine(cmd);
+	}
+
+	JNIEXPORT void JNICALL Java_com_tatfook_paracraft_JsToAndroid_receive(JNIEnv *env, jobject clazz, jstring filename, jstring msg)
+	{
+		std::string cpp_filename = JniHelper::jstring2string(filename);
+		std::string cpp_msg = JniHelper::jstring2string(msg);
+
+		boost::format fmt("NPL.activate('%s', { msg = [[%s]]})");
+		fmt % cpp_filename % cpp_msg;
+
+		std::string code = fmt.str();
+		ParaEngine::LuaJavaBridge::nplActivate(code, "");
 	}
 }

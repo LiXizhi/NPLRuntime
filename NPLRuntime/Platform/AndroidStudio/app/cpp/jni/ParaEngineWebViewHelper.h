@@ -2,7 +2,7 @@
 // ParaEngineWebViewHelper.h
 // Authors: LanZhiHong, big
 // CreateDate: 2019.12.30
-// ModifyDate: 2022.1.11
+// ModifyDate: 2023.5.17
 //-----------------------------------------------------------------------------
 
 #pragma once
@@ -21,8 +21,8 @@ namespace ParaEngine {
 
 		typedef ParaEngine::weak_ptr<IObject, ParaEngineWebView> WeakPtr_type;
 		static void openExternalBrowser(const std::string& url);
-		static ParaEngineWebView* createWebView(int x, int y, int w, int h);
-		static ParaEngineWebView* setOrientation(int type);
+		static ParaEngineWebView *createWebView(int x, int y, int w, int h);
+		static ParaEngineWebView *setOrientation(int type);
 
 		virtual int Release() override;
 		virtual void loadUrl(const std::string &url, bool cleanCachedData = false) override;
@@ -40,10 +40,7 @@ namespace ParaEngine {
 		virtual void activate(const std::string &filepath, const std::string &msg) override;
 
 		static bool openWebView(int x, int y, int w, int h, const std::string& url);
-		static bool closeWebView();
-
 		static void onCloseView(int handle);
-
 	private:
 		static const std::string classname;
 		static std::unordered_map<int, ParaEngineWebView*> m_views;
@@ -51,7 +48,7 @@ namespace ParaEngine {
 		onCloseFunc m_onClose;
 	protected:
 		ParaEngineWebView();
-		void setHandle(int handle) { m_handle = handle;  }
+		void setHandle(int handle) { m_handle = handle; }
 
 	private:
 		int m_handle;

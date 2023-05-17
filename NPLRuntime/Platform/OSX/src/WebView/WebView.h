@@ -20,10 +20,12 @@ namespace ParaEngine {
     {
     public:
         virtual ~ParaEngineWebView();
-        
+
         static ParaEngineWebView *createWebView(int x, int y, int w, int h);
         static ParaEngineWebView *createSubWebView(int x, int y, int w, int h);
-        
+        static void openWebView(const std::string &url);
+        static ParaEngineWebView *getWebViewByIndex(int viewTag);
+
         virtual void loadUrl(const std::string &url, bool cleanCachedData = false) override;
         virtual void setAlpha(float a) override;
         virtual void setVisible(bool bVisible) override;
@@ -38,12 +40,14 @@ namespace ParaEngine {
         virtual void resize(int width, int height) override;
         virtual void activate(const std::string &filepath, const std::string &msg) override;
     protected:
-        void openWindow(int x, int y, int w, int h, bool bSub);
+//        void openWindow(int x, int y, int w, int h, bool bSub);
+        void _createWebView(int x, int y, int w, int h);
     protected:
         ParaEngineWebView();
     private:
         WebViewWindowController *_webViewController;
         onCloseFunc _onClose;
+        int viewTag = 0;
     };
 } // end namespace
 

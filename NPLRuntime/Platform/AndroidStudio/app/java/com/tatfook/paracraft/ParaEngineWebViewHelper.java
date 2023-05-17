@@ -2,7 +2,7 @@
 // ParaEngineWebViewHelper.java
 // Authors: LanZhiHong, big
 // CreateDate: 2019.7.16
-// ModifyDate: 2022.3.8
+// ModifyDate: 2023.5.17
 //-----------------------------------------------------------------------------
 
 package com.tatfook.paracraft;
@@ -13,31 +13,27 @@ import android.os.Handler;
 import android.os.Looper;
 import android.util.SparseArray;
 import android.view.View;
+import android.webkit.JavascriptInterface;
+import android.widget.Button;
 import android.widget.FrameLayout;
-import android.webkit.WebSettings;
 import android.webkit.WebView;
-import android.view.ViewGroup;
-import android.view.ViewGroup.MarginLayoutParams;
-import android.webkit.WebViewClient;
 import android.util.Log;
 
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.FutureTask;
 
+import android.widget.LinearLayout;
 import android.widget.RelativeLayout;
 import android.widget.Toast;
 import androidx.annotation.Keep;
 
-class HelloWebViewClient extends WebViewClient { 
-	@Override
-    public boolean shouldOverrideUrlLoading(WebView view, String url) { 
-		view.loadUrl(url); 
-        return true; 
-    }
+class JsToAndroid extends Object {
+    private native void receive(String filename, String msg);
 
-    public void onPageFinished(WebView view, String url)
-    {
+    @JavascriptInterface
+    public void nplActivate(String filename, String msg) {
+        this.receive(filename, msg);
     }
 }
 
@@ -48,14 +44,14 @@ public class ParaEngineWebViewHelper {
 
 	private static SparseArray<ParaEngineWebView> webViews;
 	private static int viewTag = 0;
-
-	private static RelativeLayout m_maskView = null;
+    private static boolean isOpenUrlLoaded = false;
+    private static int openUrlViewTag = 0;
 
 	private static native void onJsCallback(int index, String message);
 	private static native void didFailLoading(int index, String message);
 	private static native void didFinishLoading(int index, String message);
 	private static native boolean shouldStartLoading(int index, String message);
-	private static native void onCloseView(int index);
+//	private static native void onCloseView(int index);
 	public  static native void transportCmdLine(String cmdStr);
 
 	public ParaEngineWebViewHelper(FrameLayout layout) {
@@ -63,8 +59,6 @@ public class ParaEngineWebViewHelper {
         ParaEngineWebViewHelper.sHandler = new Handler(Looper.myLooper());
         ParaEngineWebViewHelper.sActivity = ParaEngineActivity.getContext();
         ParaEngineWebViewHelper.webViews = new SparseArray<ParaEngineWebView>();
-
-		mWebView = null;
 	}
 
 	public static void _onJsCallback(int index, String message) {
@@ -79,30 +73,53 @@ public class ParaEngineWebViewHelper {
         didFinishLoading(index, message);
     }
 
-
 	public static boolean _shouldStartLoading(int index, String message) {
         return !shouldStartLoading(index, message);
     }
 
-	private static WebView mWebView = null;
+	public static void _onCloseView(ParaEngineWebView webView) {
+		final int index = webView.getViewTag();
 
-	@Keep
-	public static void closeWebView() {
-		sActivity.runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
-				if(mWebView != null)
-				{
-					ViewGroup vg = (ViewGroup)mWebView.getParent();
-					vg.removeView(mWebView);
-					mWebView.destroy();
-					mWebView = null;
-				}
+        if (canGoBack(index)) {
+            goBack(index);
+        } else {
+            if (isOpenUrlLoaded && index == openUrlViewTag) {
+                closeWebViewByIndex(index);
             }
-        });
+        }
 	}
 
-	@Keep
+	public static void closeWebViewByIndex(int index) {
+        ParaEngineWebView webView = webViews.get(index);
+
+        if (webView == null) {
+            return;
+        }
+
+        if (webView.getViewTag() == openUrlViewTag) {
+            openUrlViewTag = -1;
+            isOpenUrlLoaded = false;
+        }
+
+        webViews.remove(index);
+        RelativeLayout parentView = (RelativeLayout) webView.getParent();
+        sLayout.removeView(parentView);
+        webView.destroy();
+
+//        if (m_maskView != null) {
+//            sLayout.removeView(m_maskView);
+//            m_maskView = null;
+//        }
+
+//        sActivity.runOnGLThread(new Runnable() {
+//            @Override
+//            public void run() {
+//                onCloseView(index);
+//            }
+//        });
+    }
+
+    @Keep
     public static void openExternalBrowser(final String url) {
         try {
             Intent intent = new Intent();
@@ -124,73 +141,49 @@ public class ParaEngineWebViewHelper {
     }
 
     @Keep
-	public static void openWebView(final int x, final int y, final int w, final int h, final String url) {
-		sActivity.runOnUiThread(new Runnable() {
+    public static void openWebView(final int x, final int y, final int w, final int h, final String url) {
+        sActivity.runOnUiThread(new Runnable() {
             @Override
             public void run() {
-				if(mWebView != null)
-				{
-					ViewGroup vg = (ViewGroup)mWebView.getParent();
-					vg.removeView(mWebView);
-					//sLayout.removeView(mWebView);
-					mWebView.destroy();
-					mWebView = null;
-				}
+                if (isOpenUrlLoaded) {
+                    ParaEngineWebView webView = webViews.get(openUrlViewTag);
+                    webView.loadUrl(url);
 
-				WebView webView = new WebView(sActivity);
-				mWebView = webView;
-				webView.getSettings().setJavaScriptEnabled(true);
-				webView.requestFocus();
-				webView.setScrollBarStyle(WebView.SCROLLBARS_OUTSIDE_OVERLAY);
-				webView.loadUrl(url);
-				webView.setWebViewClient(new HelloWebViewClient());
+                    // /open command can only open one web page at the same time.
+                    webView.postDelayed(new Runnable() {
+                        @Override
+                        public void run() {
+                            webView.clearHistory();
+                        }
+                    }, 1000);
 
-				if (x >= 0 && y >= 0)
-				{
-					MarginLayoutParams pa = new MarginLayoutParams(w , h);
-					pa.setMargins(x ,  y ,  0 ,  0);
-					FrameLayout.LayoutParams params = new FrameLayout.LayoutParams(pa);
-					sLayout.addView(webView, params);
+                    return;
+                }
 
-					//sActivity.getWindowManager().addView(webView, params);
-				}
-				else
-				{
-					// FrameLayout.LayoutParams.WRAP_CONTENT not supported
-					FrameLayout.LayoutParams params = new FrameLayout.LayoutParams(w, h);   
-				    // params.gravity = Gravity.CENTER | Gravity.CENTER_HORIZONTAL;
-			        sLayout.addView(webView, params);
-				}
-            }
-        });
-	}
+                int index = createWebView(x, y, w, h);
+                ParaEngineWebView webView = webViews.get(index);
+                webView.setAlpha(0.95f);
+                webView.loadUrl(url);
 
-	public static void _onCloseView(ParaEngineWebView webView) {
-		final int index = webView.getViewTag();
-        if (canGoBack(index)) {
-            goBack(index);
-        } else {
-            closeWebViewByIndex(index);
-        }
-	}
+                Button closeBtn = new Button(sActivity);
+                LinearLayout.LayoutParams layoutParams = new LinearLayout.LayoutParams(80, 80);
+                layoutParams.leftMargin = 40;
+                layoutParams.topMargin = h / 2 - 40;
+                closeBtn.setLayoutParams(layoutParams);
 
-	public static void closeWebViewByIndex(int index){
-        ParaEngineWebView webView = webViews.get(index);
-        if(webView==null){
-            return;
-        }
-        webViews.remove(index);
-        sLayout.removeView(webView);
-        webView.destroy();
-        if(m_maskView!=null){
-            sLayout.removeView(m_maskView);
-            m_maskView = null;
-        }
+                closeBtn.setBackgroundResource(R.drawable.webview_close_btn);
+                closeBtn.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View view) {
+                        closeWebViewByIndex(index);
+                    }
+                });
 
-        sActivity.runOnGLThread(new Runnable() {
-            @Override
-            public void run() {
-                //onCloseView(index);
+                RelativeLayout webViewWrapper = (RelativeLayout) webView.getParent();
+                webViewWrapper.addView(closeBtn);
+
+                isOpenUrlLoaded = true;
+                openUrlViewTag = index;
             }
         });
     }
@@ -198,67 +191,47 @@ public class ParaEngineWebViewHelper {
 	@Keep
 	public static int createWebView(final int x, final int y, final int w, final int h) {
 		final int index = viewTag;
-		
+
 		sActivity.runOnUiThread(new Runnable() {
             @Override
             public void run() {
                 ParaEngineWebView webView = new ParaEngineWebView(sActivity, index);
 
-				Log.i("ParaEngine", String.format("open web view with %d, %d, %d, %d", x,y, w, h));
+				Log.i("ParaEngine", String.format("create web view with %d, %d, %d, %d", x, y, w, h));
 
-                RelativeLayout.LayoutParams layoutParams = new RelativeLayout.LayoutParams(w, h);
-                layoutParams.leftMargin = x;
-                layoutParams.topMargin = y;
+                RelativeLayout webViewWrapper = new RelativeLayout(sActivity);
+                RelativeLayout.LayoutParams wrapperLayoutParams = new RelativeLayout.LayoutParams(w, h);
+                wrapperLayoutParams.leftMargin = x;
+                wrapperLayoutParams.topMargin = y;
+                webViewWrapper.setLayoutParams(wrapperLayoutParams);
 
-                if(m_maskView == null){
-                    m_maskView = new RelativeLayout(sActivity);
+                RelativeLayout.LayoutParams layoutParams =
+                    new RelativeLayout.LayoutParams(
+                        RelativeLayout.LayoutParams.MATCH_PARENT,
+                        RelativeLayout.LayoutParams.MATCH_PARENT
+                    );
 
-                    RelativeLayout.LayoutParams mask_layout = new RelativeLayout.LayoutParams(
-                            ViewGroup.LayoutParams.FILL_PARENT, ViewGroup.LayoutParams.FILL_PARENT);
+                webView.setLayoutParams(layoutParams);
+                webView.setScrollBarStyle(WebView.SCROLLBARS_OUTSIDE_OVERLAY);
+                webView.addJavascriptInterface(new JsToAndroid(), "android");
 
-                    sLayout.addView(m_maskView, mask_layout);
-                    m_maskView.setOnClickListener(new View.OnClickListener() {
-                        @Override
-                        public void onClick(View view) {
-                            ParaEngineWebViewHelper.closeWebViewByIndex(index);
-                        }
-                    });
+                webViewWrapper.addView(webView);
 
-                    m_maskView.setVisibility(View.GONE);
-                }
-                sLayout.addView(webView, layoutParams);
+                webView.requestFocus();
+                sLayout.addView(webViewWrapper);
 
-				webView.requestFocus();
                 webViews.put(index, webView);
             }
         });
-        return viewTag++;
-	}
 
-	public static void setMaskVisible(final boolean visible){
-        sActivity.runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
-                if(m_maskView!=null){
-                    m_maskView.setVisibility(visible?View.VISIBLE:View.GONE);
-                }
-            }
-        });
-    }
+        viewTag++;
+
+        return index;
+	}
 
 	@Keep
 	public static void removeWebView(final int index) {
-        sActivity.runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
-                ParaEngineWebView webView = webViews.get(index);
-                if (webView != null) {
-                    webViews.remove(index);
-                    sLayout.removeView(webView);
-					webView.destroy();
-                }
-            }
-        });
+        closeWebViewByIndex(index);
     }
 
     @Keep
@@ -267,6 +240,7 @@ public class ParaEngineWebViewHelper {
             @Override
             public void run() {
                 ParaEngineWebView webView = webViews.get(index);
+
                 if (webView != null) {
                     webView.setVisibility(visible ? View.VISIBLE : View.GONE);
                 }
@@ -275,68 +249,16 @@ public class ParaEngineWebViewHelper {
     }
 
     @Keep
-	public static void SetHideViewWhenClickBack(final int index, final boolean b) {
-        sActivity.runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
-                ParaEngineWebView webView = webViews.get(index);
-                if (webView != null) {
-                    webView.SetHideViewWhenClickBack(b);
-                }
-            }
-        });
-    }
-
-    @Keep
-    public static void SetIgnoreCloseWhenClickBack(final int index,final boolean bool) {
-        sActivity.runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
-                ParaEngineWebView webView = webViews.get(index);
-                if(webView==null){
-                    return;
-                }
-                webView.SetIgnoreCloseWhenClickBack(bool);
-            }
-        });
-    }
-    
-    @Keep
-    public static void SetCloseWhenClickBackground(final int index,final boolean bool) {
-        sActivity.runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
-                if(m_maskView!=null){
-                    m_maskView.setVisibility(bool?View.VISIBLE:View.GONE);
-                }
-            }
-        });
-    }
-    
-    @Keep
-	public static void setWebViewRect(final int index, final int left, final int top, final int maxWidth, final int maxHeight) {
-        sActivity.runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
-                ParaEngineWebView webView = webViews.get(index);
-                if (webView != null) {
-                    webView.setWebViewRect(left, top, maxWidth, maxHeight);
-                }
-            }
-        });
-    }
-
-    @Keep
 	public static void setJavascriptInterfaceScheme(final int index, final String scheme) {
-        sActivity.runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
-                ParaEngineWebView webView = webViews.get(index);
-                if (webView != null) {
-                    webView.setJavascriptInterfaceScheme(scheme);
-                }
-            }
-        });
+        // sActivity.runOnUiThread(new Runnable() {
+        //     @Override
+        //     public void run() {
+        //         ParaEngineWebView webView = webViews.get(index);
+        //         if (webView != null) {
+        //             webView.setJavascriptInterfaceScheme(scheme);
+        //         }
+        //     }
+        // });
     }
 
     @Keep
@@ -366,16 +288,13 @@ public class ParaEngineWebViewHelper {
     }
 
     @Keep
-	public static void loadUrl(final int index, final String url, final boolean cleanCachedData) {
-
+	public static void loadUrl(final int index, final String url) {
         sActivity.runOnUiThread(new Runnable() {
             @Override
             public void run() {
                 ParaEngineWebView webView = webViews.get(index);
-                if (webView != null) {
-                    webView.getSettings().setCacheMode(cleanCachedData ? WebSettings.LOAD_NO_CACHE
-                                                                       : WebSettings.LOAD_DEFAULT);
 
+                if (webView != null) {
                     webView.loadUrl(url);
                 }
             }
@@ -388,6 +307,7 @@ public class ParaEngineWebViewHelper {
             @Override
             public void run() {
                 ParaEngineWebView webView = webViews.get(index);
+
                 if (webView != null) {
                     webView.loadUrl(filePath);
                 }
@@ -413,6 +333,7 @@ public class ParaEngineWebViewHelper {
             @Override
             public void run() {
                 ParaEngineWebView webView = webViews.get(index);
+
                 if (webView != null) {
                     webView.reload();
                 }
@@ -515,20 +436,19 @@ public class ParaEngineWebViewHelper {
             }
         });
     }
+
     @Keep
 	public static void setViewAlpha(final int index, final float alpha) {
-
         sActivity.runOnUiThread(new Runnable() {
             @Override
             public void run() {
                 ParaEngineWebView webView = webViews.get(index);
+
                 if (webView != null) {
-                    //webView.setAlpha((int)(255 * alpha));
 					webView.setAlpha(alpha);
                 }
             }
         });
-		
     }
 
     @Keep
@@ -537,15 +457,17 @@ public class ParaEngineWebViewHelper {
             @Override
             public void run() {
                 ParaEngineWebView webView = webViews.get(index);
+
                 if (webView != null) {
-                    FrameLayout.LayoutParams p = (FrameLayout.LayoutParams)webView.getLayoutParams();
-                    p.leftMargin = x;
-                    p.topMargin = y;
-                    webView.setLayoutParams(p);
+                    RelativeLayout webViewWrapper = (RelativeLayout) webView.getParent();
+                    FrameLayout.LayoutParams wp = (FrameLayout.LayoutParams) webViewWrapper.getLayoutParams();
+                    wp.leftMargin = x;
+                    wp.topMargin = y;
+                    webViewWrapper.setLayoutParams(wp);
                 }
             }
         });
-     }
+    }
 
     @Keep
     public static void resize(final int index, final int w, final int h) {
@@ -553,11 +475,13 @@ public class ParaEngineWebViewHelper {
             @Override
             public void run() {
                 ParaEngineWebView webView = webViews.get(index);
+
                 if (webView != null) {
-                    FrameLayout.LayoutParams p = (FrameLayout.LayoutParams) webView.getLayoutParams();
-                    p.width = w;
-                    p.height = h;
-                    webView.setLayoutParams(p);
+                    RelativeLayout webViewWrapper = (RelativeLayout) webView.getParent();
+                    FrameLayout.LayoutParams wp = (FrameLayout.LayoutParams) webViewWrapper.getLayoutParams();
+                    wp.width = w;
+                    wp.height = h;
+                    webViewWrapper.setLayoutParams(wp);
                 }
             }
         });

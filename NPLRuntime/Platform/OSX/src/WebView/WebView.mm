@@ -3,15 +3,17 @@
 // Authors: kkvskkkk, big
 // Emails: onedou@126.com
 // CreateDate: 2018.5.25
-// ModifyDate: 2023.3.23
+// ModifyDate: 2023.5.15
 //-----------------------------------------------------------------------------
 
 #import <Foundation/Foundation.h>
 #import <Cocoa/Cocoa.h>
 #import <WebKit/WebKit.h>
-#include "ParaEngine.h"
 #import "LuaObjcBridge/CCLuaObjcBridge.h"
 
+#include "ParaEngine.h"
+#include <unordered_map>
+#include "RenderWindowOSX.h"
 #include "WebView.h"
 
 @interface WebViewWindowController : NSWindowController
@@ -105,6 +107,11 @@
 @end
 
 namespace ParaEngine {
+    static std::unordered_map<std::string, std::shared_ptr<ParaEngineWebView>> webviews;
+    static int viewTags = 0;
+    static bool isOpenUrlLoaded = false;
+    static int openUrlViewTag = 0;
+
     IParaWebView *IParaWebView::createWebView(int x, int y, int w, int h)
     {
         return ParaEngineWebView::createWebView(x, y, w, h);
@@ -112,89 +119,114 @@ namespace ParaEngine {
 
     IParaWebView *IParaWebView::createSubViewView(int x, int y, int w, int h)
     {
-        return ParaEngineWebView::createSubWebView(x, y, w, h);
+        return ParaEngineWebView::createWebView(x, y, w, h);
     }
-
-    static ParaEngineWebView *webview;
-    static ParaEngineWebView *subWebview;
 
     ParaEngineWebView *ParaEngineWebView::createWebView(int x, int y, int w, int h)
     {
-        if (!webview) {
-            webview = new ParaEngineWebView();
-            webview->openWindow(x, y, w, h, false);
-        }
+        ParaEngineWebView *webview = new ParaEngineWebView();
+        webview->_createWebView(x, y, w, h);
+        webview->viewTag = viewTags;
 
+        webviews.insert(std::make_pair(std::to_string(viewTags), webview));
+
+        viewTags++;
+        
         return webview;
     }
 
-    ParaEngineWebView *ParaEngineWebView::createSubWebView(int x, int y, int w, int h)
+    void ParaEngineWebView::openWebView(const std::string &url)
     {
-        if (!subWebview) {
-            subWebview = new ParaEngineWebView();
-            subWebview->openWindow(x, y, w, h, true);
-        }
+        if (isOpenUrlLoaded) {
+            ParaEngineWebView *pView = getWebViewByIndex(openUrlViewTag);
 
-        return subWebview;
+            if (pView) {
+                pView->loadUrl(url);
+                pView->setVisible(true);
+            }
+            
+            return;
+        }
+        
+        RenderWindowOSX *pWnd = (RenderWindowOSX *)CGlobals::GetApp()->GetRenderWindow();
+        int w = pWnd->GetWidth();
+        int h = pWnd->GetHeight();
+        int scale = pWnd->currentBackingScaleFactor;
+        w = w / scale;
+        h = h / scale;
+
+        ParaEngineWebView *pView = createWebView(0, 0, w, h);
+
+        if (!pView)
+            return;
+
+        pView->loadUrl(url);
+        pView->setVisible(true);
+        pView->resize(w, h);
+        pView->move(0, 0);
+        pView->setAlpha(0.95f);
+        
+        // add close btn.
+        NSBundle *bundle = [NSBundle mainBundle];
+        NSString *resPath = [bundle resourcePath];
+        resPath = [resPath stringByAppendingPathComponent:@"res/WebViewCloseBtn.png"];
+
+        NSImage *closeBtn = [[NSImage alloc] initWithContentsOfFile:resPath];
+
+        float closeBtnW = closeBtn.size.width;
+        float closeBtnH = closeBtn.size.height;
+
+        NSWindow *renderWindow = (NSWindow *)pWnd->GetNativeHandle();
+        float iconY = (renderWindow.contentView.frame.size.height - closeBtnH) / 2;
+
+        pView->_webViewController.uiCloseBtn = [[NSButton alloc] initWithFrame:CGRectMake(30, iconY, closeBtnW, closeBtnH)];
+        [pView->_webViewController.uiCloseBtn setImage:closeBtn];
+        [pView->_webViewController.uiCloseBtn setTarget:pView->_webViewController];
+        [pView->_webViewController.uiCloseBtn setAction:@selector(onCloseBtn)];
+
+        [renderWindow.contentView addSubview:pView->_webViewController.uiCloseBtn];
+
+        openUrlViewTag = pView->viewTag;
+        isOpenUrlLoaded = true;
     }
 
-    void ParaEngineWebView::openWindow(int x, int y, int w, int h, bool bSub)
+    ParaEngineWebView *ParaEngineWebView::getWebViewByIndex(int viewTag)
+    {
+        ParaEngineWebView *pView;
+        auto it = webviews.find(std::to_string(viewTag));
+
+        if (it != webviews.end()) {
+            pView = it->second.get();
+        }
+
+        if (!pView)
+            return;
+
+        return pView;
+    }
+
+    void ParaEngineWebView::_createWebView(int x, int y, int w, int h)
     {
         if (!_webViewController)
         {
             NSWindow *renderWindow = (NSWindow *)CGlobals::GetApp()->GetRenderWindow()->GetNativeHandle();
-            
             _webViewController = [[WebViewWindowController alloc] init];
-            
-            if (bSub)
-            {
-                y = [renderWindow contentRectForFrameRect:renderWindow.frame].size.height - (y + h);
-                
-                WKWebViewConfiguration *webViewConfig = [[WKWebViewConfiguration alloc] init];
-                [webViewConfig.userContentController addScriptMessageHandler:_webViewController name:@"activate"];
-                
-                _webViewController.webView = [[WKWebView alloc] initWithFrame:CGRectMake(x, y, w, h) configuration:webViewConfig];
-                
-            }
-            else
-            {
-                WKWebViewConfiguration *webViewConfig = [[WKWebViewConfiguration alloc] init];
-                
-                _webViewController.webView =
+
+            WKWebViewConfiguration *webViewConfig = [[WKWebViewConfiguration alloc] init];
+            [webViewConfig.userContentController addScriptMessageHandler:_webViewController name:@"activate"];
+
+            _webViewController.webView =
                 [
                     [WKWebView alloc]
                         initWithFrame:CGRectMake(0, 0, renderWindow.frame.size.width, [renderWindow contentRectForFrameRect:renderWindow.frame].size.height)
                         configuration:webViewConfig
                 ];
-                
-                if (!_webViewController.uiCloseBtn)
-                {
-                    NSBundle *bundle = [NSBundle mainBundle];
-                    NSString *resPath = [bundle resourcePath];
-                    resPath = [resPath stringByAppendingPathComponent:@"res/WebViewCloseBtn.png"];
-                    
-                    NSImage *icon = [[NSImage alloc] initWithContentsOfFile:resPath];
-                    float w = icon.size.width;
-                    float h = icon.size.height;
-                    
-                    float iconY = (renderWindow.contentView.frame.size.height - h) / 2;
-                    
-                    _webViewController.uiCloseBtn = [[NSButton alloc] initWithFrame:CGRectMake(30, iconY, w, h)];
-                    [_webViewController.uiCloseBtn setImage:icon];
-                    [_webViewController.uiCloseBtn setTarget:_webViewController];
-                    [_webViewController.uiCloseBtn setAction:@selector(onCloseBtn)];
-                }
-            }
-            
+
             [renderWindow.contentView addSubview:_webViewController.webView];
-            
-            if (_webViewController.uiCloseBtn) {
-                [renderWindow.contentView addSubview:_webViewController.uiCloseBtn];
-            }
             
             _webViewController.webView.navigationDelegate = _webViewController;
             _webViewController.webView.UIDelegate = _webViewController;
-            
+
             auto cb = [this]() {
                 if (this->_onClose == nullptr) {
                     this->Release();
@@ -210,9 +242,8 @@ namespace ParaEngine {
 
     ParaEngineWebView::ParaEngineWebView() : _webViewController(nil)
     {
-        
     }
-    
+
     ParaEngineWebView::~ParaEngineWebView()
     {
         _webViewController = nil;
@@ -261,10 +292,10 @@ namespace ParaEngine {
     {
         if (_webViewController)
         {
-            if (!bVisible) {
-                [_webViewController.webView loadRequest:[NSURLRequest requestWithURL:[NSURL URLWithString:@""]]];
-            }
-            
+//            if (!bVisible) {
+//                [_webViewController.webView loadRequest:[NSURLRequest requestWithURL:[NSURL URLWithString:@""]]];
+//            }
+
             [_webViewController.webView setHidden:!bVisible];
             
             if (_webViewController.uiCloseBtn) {
