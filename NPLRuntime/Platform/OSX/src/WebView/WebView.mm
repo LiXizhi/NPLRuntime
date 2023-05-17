@@ -213,6 +213,8 @@ namespace ParaEngine {
             _webViewController = [[WebViewWindowController alloc] init];
 
             WKWebViewConfiguration *webViewConfig = [[WKWebViewConfiguration alloc] init];
+            [webViewConfig.userContentController addScriptMessageHandler:_webViewController name:@"activate"];
+
             _webViewController.webView =
                 [
                     [WKWebView alloc]
@@ -290,9 +292,9 @@ namespace ParaEngine {
     {
         if (_webViewController)
         {
-            if (!bVisible) {
-                [_webViewController.webView loadRequest:[NSURLRequest requestWithURL:[NSURL URLWithString:@""]]];
-            }
+//            if (!bVisible) {
+//                [_webViewController.webView loadRequest:[NSURLRequest requestWithURL:[NSURL URLWithString:@""]]];
+//            }
 
             [_webViewController.webView setHidden:!bVisible];
             
