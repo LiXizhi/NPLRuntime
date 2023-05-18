@@ -71,12 +71,13 @@ namespace cAudio
 	const wchar_t* cMultiByteToWideChar(const char* name, unsigned int nCodePage, size_t* outLen = nullptr);
 	const char* cWideCharToMultiByte(const wchar_t* name, unsigned int nCodePage, size_t* outLen = nullptr);
 
-	static const char* toUTF8(const cAudioString& str)
+	static const char *toUTF8(const cAudioString& str)
 	{
 #if defined(UNICODE) || defined(_UNICODE) || defined(DEFAULT_FILE_ENCODING)
 		return cWideCharToMultiByte(str.c_str(), DEFAULT_FILE_ENCODING);
 #else
-        static std::string g_str = str;
+        thread_local static std::string g_str;
+        g_str = str;
 		return g_str.c_str();
 #endif
 	}
