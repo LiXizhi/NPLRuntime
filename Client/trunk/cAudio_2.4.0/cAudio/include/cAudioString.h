@@ -74,7 +74,8 @@ namespace cAudio
 #if defined(UNICODE) || defined(_UNICODE) || defined(DEFAULT_FILE_ENCODING)
 		return cWideCharToMultiByte(str.c_str(), DEFAULT_FILE_ENCODING);
 #else
-		static std::string g_str = str;
+		thread_local static std::string g_str;
+        g_str = str;
 		return g_str.c_str();
 #endif
 	}
