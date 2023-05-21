@@ -139,6 +139,10 @@ NPL::CNPLRuntimeState::~CNPLRuntimeState()
 	SAFE_RELEASE(m_pMonoScriptingState);
 	ClearNeuronFiles();
 	OUTPUT_LOG("NPL State %s exited\n", GetName().c_str());
+	for (auto iter = m_dll_plugins_map.begin(); iter != m_dll_plugins_map.end(); iter++) {
+		iter->second->FreeLibrary();
+	}
+	//m_dll_plugins_map.clear();
 }
 
 void NPL::CNPLRuntimeState::ClearNeuronFiles()
