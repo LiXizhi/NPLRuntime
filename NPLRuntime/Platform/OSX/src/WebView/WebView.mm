@@ -43,14 +43,26 @@
 }
 
 - (void)autoResize {
-    [[NSNotificationCenter defaultCenter] addObserver:self.window selector:@selector(windowDidResize:) name:NSWindowDidResizeNotification object:self];
+    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(windowDidResize:) name:NSWindowDidResizeNotification object:self.window];
 }
 
 - (void)windowDidResize:(NSNotification*)aNotification {
-    auto windowRect = [self.window frame];
-    auto contentRect = [self.window contentRectForFrameRect:windowRect];
-    [self.window.contentView setFrameSize:contentRect.size];
-    [webView setFrameSize:contentRect.size];
+    NSWindow *renderWindow = (NSWindow *)ParaEngine::CGlobals::GetApp()->GetRenderWindow()->GetNativeHandle();
+
+    CGRect renderRect = [renderWindow frame];
+    CGRect webviewRect = [renderWindow contentRectForFrameRect: renderRect];
+    [webView setFrameSize:webviewRect.size];
+
+    float iconY = (renderRect.size.height - self.uiCloseBtn.frame.size.height) / 2;
+
+    CGRect uiCloseBtnRect = CGRectMake(
+        self.uiCloseBtn.frame.origin.x,
+        iconY,
+        self.uiCloseBtn.frame.size.width,
+        self.uiCloseBtn.frame.size.height
+    );
+
+    self.uiCloseBtn.frame = uiCloseBtnRect;
 }
 
 - (void)webView:(WKWebView *)webView didStartProvisionalNavigation:(WKNavigation *)navigation {
@@ -183,6 +195,7 @@ namespace ParaEngine {
         [pView->_webViewController.uiCloseBtn setImage:closeBtn];
         [pView->_webViewController.uiCloseBtn setTarget:pView->_webViewController];
         [pView->_webViewController.uiCloseBtn setAction:@selector(onCloseBtn)];
+        [pView->_webViewController autoResize];
 
         [renderWindow.contentView addSubview:pView->_webViewController.uiCloseBtn];
 
@@ -218,12 +231,12 @@ namespace ParaEngine {
             _webViewController.webView =
                 [
                     [WKWebView alloc]
-                        initWithFrame:CGRectMake(0, 0, renderWindow.frame.size.width, [renderWindow contentRectForFrameRect:renderWindow.frame].size.height)
+                        initWithFrame:CGRectMake(x, y, w, h)
                         configuration:webViewConfig
                 ];
 
             [renderWindow.contentView addSubview:_webViewController.webView];
-            
+
             _webViewController.webView.navigationDelegate = _webViewController;
             _webViewController.webView.UIDelegate = _webViewController;
 
