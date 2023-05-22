@@ -8,5 +8,16 @@ namespace ParaEngine {
 			return;
 		m_bInitialized = true;
 	}
+	const std::string& NetworkAdapter::GetMaxMacAddress()
+	{
+		static std::string s_str = "";
+		return s_str;
+	}
+
+	const std::string& NetworkAdapter::GetMaxIPAddress()
+	{
+		static std::string s_str = "";
+		return s_str;
+	}
 } // namespace ParaEngine
 
