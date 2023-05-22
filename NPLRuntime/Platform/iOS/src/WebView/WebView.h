@@ -24,6 +24,7 @@ namespace ParaEngine {
         static ParaEngineWebView *createWebView(int x, int y, int w, int h);
         static void openWebView(const std::string &url);
         static void openExternalBrowser(const char *url);
+        static ParaEngineWebView *getWebViewByIndex(int viewTag);
 
         virtual void loadUrl(const std::string &url, bool cleanCachedData = false) override;
         virtual void setAlpha(float a) override;
@@ -43,6 +44,7 @@ namespace ParaEngine {
     private:
         UIWebViewWrapper *_uiWebViewWrapper;
         onCloseFunc _onClose;
+        int viewTag = 0;
     };
     
 } // end namespace

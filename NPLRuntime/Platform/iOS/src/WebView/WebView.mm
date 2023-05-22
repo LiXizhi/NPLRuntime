@@ -12,8 +12,12 @@
 #import "GLView.h"
 #import "LuaObjcBridge/CCLuaObjcBridge.h"
 
+#include <unordered_map>
 #include "ParaEngine.h"
-#include "WebView.h"
+#include "3dengine/AudioEngine2.h"
+
+#import "WebView.h"
+#import "RenderWindowiOS.h"
 
 static std::string getFixedBaseUrl(const std::string& baseUrl)
 {
@@ -53,9 +57,9 @@ static std::string getFixedBaseUrl(const std::string& baseUrl)
 
 //HideCloseButton
 @property(nonatomic, readwrite, getter = HideCloseButton, setter = setHideCloseButton:) BOOL HideCloseButton;
-@property(nonatomic) BOOL hideViewWhenClickClose;
-@property(nonatomic) BOOL ignoreCloseWhenClickClose;
-@property(nonatomic) BOOL bCloseWhenClickBackground;
+//@property(nonatomic) BOOL hideViewWhenClickClose;
+//@property(nonatomic) BOOL ignoreCloseWhenClickClose;
+//@property(nonatomic) BOOL bCloseWhenClickBackground;
 @property(nonatomic, retain) UIButton *uiCloseBtn;
 @property(nonatomic, copy) NSString *jsScheme;
 @property(nonatomic, retain) WKWebView *uiWebView;
@@ -145,24 +149,9 @@ static std::string getFixedBaseUrl(const std::string& baseUrl)
 
 - (void)onCloseBtn:(UIButton*)btn
 {
-    if(self.ignoreCloseWhenClickClose){
-        return;
-    }
-    if (self.hideViewWhenClickClose)
-    {
-        [self setVisible:NO];
-    }
-    else
-    {
-        self.uiWebView.UIDelegate = nil;
-        self.uiWebView.navigationDelegate = nil;
-        [self.uiWebView removeFromSuperview];
-        self.uiWebView = nil;
-        self.uiCloseBtn = nil;
-
-        if (self.onCloseCallback)
-            self.onCloseCallback();
-     }
+    [self setVisible:NO];
+    [self loadUrl:"" cleanCachedData:YES];
+    ParaEngine::CAudioEngine2::GetInstance()->ResetAudioDevice("");
 }
 
 - (void)userContentController:(WKUserContentController *)userContentController didReceiveScriptMessage:(WKScriptMessage *)message
@@ -458,6 +447,11 @@ static std::string getFixedBaseUrl(const std::string& baseUrl)
 @end
 
 namespace ParaEngine {
+    static std::unordered_map<std::string, std::shared_ptr<ParaEngineWebView>> webviews;
+    static int viewTags = 0;
+    static bool isOpenUrlLoaded = false;
+    static int openUrlViewTag = 0;
+
     IParaWebView *IParaWebView::createWebView(int x, int y, int w, int h)
     {
         return ParaEngineWebView::createWebView(x, y, w, h);
@@ -468,9 +462,34 @@ namespace ParaEngine {
         return ParaEngineWebView::createWebView(x, y, w, h);
     }
 
+    ParaEngineWebView *ParaEngineWebView::createWebView(int x, int y, int w, int h)
+    {
+        ParaEngineWebView *webview = new ParaEngineWebView();
+        [webview->_uiWebViewWrapper setFrameWithX:(float)x y:(float)y width:(float)w height:(float)h];
+
+        webview->viewTag = viewTags;
+        
+        webviews.insert(std::make_pair(std::to_string(viewTags), webview));
+
+        viewTags++;
+
+        return webview;
+    }
+
     void ParaEngineWebView::openWebView(const std::string &url)
     {
-        auto pWnd = CGlobals::GetApp()->GetRenderWindow();
+        if (isOpenUrlLoaded) {
+            ParaEngineWebView *pView = getWebViewByIndex(openUrlViewTag);
+
+            if (pView) {
+                pView->loadUrl(url);
+                pView->setVisible(true);
+            }
+
+            return;
+        }
+
+        RenderWindowiOS *pWnd = (RenderWindowiOS *)CGlobals::GetApp()->GetRenderWindow();
         int w = pWnd->GetWidth();
         int h = pWnd->GetHeight();
         float scaleX = pWnd->GetScaleX();
@@ -501,25 +520,19 @@ namespace ParaEngine {
         float iconW = img.size.width * img.scale;
         float iconH = img.size.height * img.scale;
         float iconY = (h - iconH) / 2;
-        
+
         pView->_uiWebViewWrapper.uiCloseBtn.frame = CGRectMake(5, iconY, iconW, iconH);
         [pView->_uiWebViewWrapper.uiCloseBtn setImage:img forState:UIControlStateNormal];
         [pView->_uiWebViewWrapper.uiWebView addSubview:pView->_uiWebViewWrapper.uiCloseBtn];
+
+        openUrlViewTag = pView->viewTag;
+        isOpenUrlLoaded = true;
     }
 
     void ParaEngineWebView::openExternalBrowser(const char *url)
     {
         NSString *nsUrl = [[NSString alloc] initWithUTF8String:url];
         [[UIApplication sharedApplication] openURL: [NSURL URLWithString: nsUrl]];
-    }
-
-    ParaEngineWebView *ParaEngineWebView::createWebView(int x, int y, int w, int h)
-    {
-        auto pView = new ParaEngineWebView();
-        [pView->_uiWebViewWrapper setFrameWithX:(float)x y:(float)y width:(float)w height:(float)h];
-        [pView->_uiWebViewWrapper setScalesPageToFit:true];
-
-        return pView;
     }
     
     ParaEngineWebView::ParaEngineWebView()
@@ -540,6 +553,21 @@ namespace ParaEngine {
     ParaEngineWebView::~ParaEngineWebView()
     {
         _uiWebViewWrapper = nil;
+    }
+
+    ParaEngineWebView *ParaEngineWebView::getWebViewByIndex(int viewTag)
+    {
+        ParaEngineWebView *pView;
+        auto it = webviews.find(std::to_string(viewTag));
+
+        if (it != webviews.end()) {
+            pView = it->second.get();
+        }
+
+        if (!pView)
+            return;
+
+        return pView;
     }
 
     void ParaEngineWebView::loadUrl(const std::string &url, bool cleanCachedData)
@@ -564,17 +592,17 @@ namespace ParaEngine {
     
     void ParaEngineWebView::SetHideViewWhenClickBack(bool b)
     {
-        this->_uiWebViewWrapper.hideViewWhenClickClose = b;
+//        this->_uiWebViewWrapper.hideViewWhenClickClose = b;
     }
 
     void ParaEngineWebView::SetIgnoreCloseWhenClickBack(bool b)
     {
-        this->_uiWebViewWrapper.ignoreCloseWhenClickClose = b;
+//        this->_uiWebViewWrapper.ignoreCloseWhenClickClose = b;
     }
 
     void ParaEngineWebView::SetCloseWhenClickBackground(bool b)
     {
-        this->_uiWebViewWrapper.bCloseWhenClickBackground = b;
+//        this->_uiWebViewWrapper.bCloseWhenClickBackground = b;
     }
     
     void ParaEngineWebView::Refresh()
