@@ -102,13 +102,11 @@ public class SDCardUtil {
      *
      * **/
     public static String getStoragePath(Context context, int type) {
+        StorageManager sm = (StorageManager) context.getSystemService(Context.STORAGE_SERVICE);
 
-        StorageManager sm = (StorageManager) context
-                .getSystemService(Context.STORAGE_SERVICE);
         try {
-            Method getPathsMethod = sm.getClass().getMethod("getVolumePaths",
-                    null);
-            String[] path = (String[]) getPathsMethod.invoke(sm, null);
+            Method getPathsMethod = sm.getClass().getMethod("getVolumePaths");
+            String[] path = (String[]) getPathsMethod.invoke(sm);
 
             switch (type) {
                 case INTERNAL_STORAGE:
