@@ -227,7 +227,9 @@ endif ()
 # Using static lib for other modules if main NPLRuntime is built as static lib. 
 if (NPLRUNTIME_STATIC_LIB OR ANDROID OR IOS)
 	set(SQLITE_STATICLIB TRUE)
-	set(PHYSICS_STATICLIB TRUE)
+	if (NPLRUNTIME_PHYSICS)
+		set(PHYSICS_STATICLIB TRUE)
+	endif()
 	set(AUDIO_STATICLIB TRUE)
 endif ()
 

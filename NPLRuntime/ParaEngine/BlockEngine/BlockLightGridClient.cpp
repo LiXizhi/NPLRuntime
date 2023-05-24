@@ -552,10 +552,18 @@ namespace ParaEngine
 
 				if (m_dirtyCells.size() == 0 && processedCount == 0){
 					m_nDirtyBlocksCount = 0;
+#ifdef __EMSCRIPTEN__
+					SLEEP(50);
+#else
 					SLEEP(10);
+#endif
 				}
 				while (IsLightUpdateSuspended() && m_pBlockWorld->IsInBlockWorld()){
+#ifdef __EMSCRIPTEN__
+					SLEEP(30);
+#else
 					SLEEP(1);
+#endif
 				}
 				// since we are using our own read/write lock, this function will block until writers are freed. 
 				// in most cases when no writer request, it will lock immediately again, thus utilizing more CPU to process remaining light cells.  
@@ -571,7 +579,11 @@ namespace ParaEngine
 				if (m_dirtyCells.size() == 0 && processedCount == 0){
 					m_nDirtyBlocksCount = 0;
 					lock_.unlock();
+#ifdef __EMSCRIPTEN__
+					SLEEP(50);
+#else
 					SLEEP(10);
+#endif
 					lock_.lock();
 				}
 			}

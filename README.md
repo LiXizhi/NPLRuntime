@@ -62,3 +62,7 @@ npls hello.npl
 	cd build\emscripten
 	emmake make
 	**boost 报[-Wc++11-narrowing]错误 为类型转换精度缩小不支持, 编辑相关报错文件, 进行强制类型转换修复**
+
+### ParaEngineServer
+1. cmake -S NPLRuntime/ -B build -DNPLRUNTIME_SERVER=ON -DNPLRUNTIME_STATIC_LIB=ON
+2. cmake --build build
