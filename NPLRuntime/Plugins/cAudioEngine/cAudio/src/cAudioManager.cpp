@@ -129,7 +129,11 @@ namespace cAudio
 		if(!audioSources.empty()) 
 			update();
 		
+#ifdef __EMSCRIPTEN__
+		cAudioSleep(100);
+#else
 		cAudioSleep(1);
+#endif
 	}
 
 	bool cAudioManager::isUpdateThreadRunning() 
