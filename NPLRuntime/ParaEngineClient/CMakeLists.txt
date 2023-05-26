@@ -25,18 +25,13 @@ set(ParaEngineClient_SRCS)
 set(ParaEngineClient_LIBS)
 
 
-
 set (External_Dir ${ParaEngineClient_SOURCE_DIR}/../externals)
 
 # All Source
 set(ParaEngineClient_SRCS) 
 
 
-
 # SOURCE
-# ==================================================================================
-##############################
-
 
 ##############################
 file (GLOB_RECURSE ParaEngineClient_DirMonitor_FILES ${ParaEngineClient_SOURCE_DIR}/dir_monitor/*.*)
