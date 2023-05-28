@@ -1,6 +1,7 @@
 #pragma once
 #include <vector>
 #include <memory>
+#include <string>
 #include <functional>
 #include <boost/asio.hpp>
 #include <boost/utility.hpp>
@@ -19,13 +20,17 @@ namespace ParaEngine
     public:
         Serial();
         ~Serial();
+    public:
+        std::vector<std::string> GetPortNames();
+
+    public:
 
         void AddSerialPort(const std::string& name, SerialPort* port);
         void RemoveSerialPort(const std::string& name);
         SerialPort* GetSerialPort(const std::string& name);
 
         static Serial* GetSingleton();
-    public:
+    private:
         std::map<std::string, SerialPort*> m_allSerialPorts;
     };
 
@@ -133,6 +138,7 @@ namespace ParaEngine
          * \param callback the receive callback
          */
         void setCallback(const std::function<void(const char*, size_t)>& callback);
+        void setCallback(const std::string& callback);
 
         /**
          * Removes the callback. Any data received after this function call will
@@ -143,7 +149,7 @@ namespace ParaEngine
         /**
          * Read buffer maximum size
          */
-        static const int readBufferSize = 512;
+        static const int readBufferSize = 1024;
     private:
 
         /**

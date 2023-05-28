@@ -56,6 +56,8 @@ namespace ParaEngine
 
         /// Read complete callback
         std::function<void(const char*, size_t)> callback;
+        std::string callbackScript;
+        std::string sPortName;
     };
 
     SerialPort::SerialPort() : pimpl(new SerialPortImpl)
@@ -81,6 +83,7 @@ namespace ParaEngine
         if (isOpen()) close();
 
         setErrorStatus(true);//If an exception is thrown, error_ remains true
+        pimpl->sPortName = devname;
         pimpl->port.open(devname);
         pimpl->port.set_option(asio::serial_port_base::baud_rate(baud_rate));
         pimpl->port.set_option(opt_parity);
@@ -136,8 +139,7 @@ namespace ParaEngine
     {
         {
             std::lock_guard<std::mutex> l(pimpl->writeQueueMutex);
-            pimpl->writeQueue.insert(pimpl->writeQueue.end(), data.begin(),
-                data.end());
+            pimpl->writeQueue.insert(pimpl->writeQueue.end(), data.begin(), data.end());
         }
         pimpl->io.post(boost::bind(&SerialPort::doWrite, this));
     }
@@ -188,9 +190,20 @@ namespace ParaEngine
                 setErrorStatus(true);
             }
         }
-        else {
-            if (pimpl->callback) pimpl->callback(pimpl->readBuffer,
-                bytes_transferred);
+        else 
+        {
+            if (pimpl->callback) 
+                pimpl->callback(pimpl->readBuffer, bytes_transferred);
+            if (!pimpl->callbackScript.empty())
+            {
+                NPL::NPLObjectProxy msg;
+                msg["filename"] = pimpl->sPortName;
+                msg["data"] = std::string(pimpl->readBuffer, bytes_transferred);
+
+                std::string sMsg;
+                NPL::NPLHelper::NPLTableToString("msg", msg, sMsg);
+                ParaEngine::CGlobals::GetNPLRuntime()->GetMainRuntimeState()->Activate_async(pimpl->callbackScript, sMsg.c_str(), (int)sMsg.size());
+            }
             doRead();
         }
     }
@@ -270,6 +283,11 @@ namespace ParaEngine
         setReadCallback(callback);
     }
 
+    void SerialPort::setCallback(const std::string& callback)
+    {
+        pimpl->callbackScript = callback;
+    }
+
     void SerialPort::clearCallback()
     {
         clearReadCallback();
@@ -288,6 +306,33 @@ namespace ParaEngine
         {
 			delete serialport.second;
 		}
+    }
+
+    std::vector<std::string> Serial::GetPortNames()
+    {
+        std::vector<std::string> ports;
+        // get all serial ports using win32
+#ifdef WIN32
+        char lpTargetPath[5000]; // buffer to store the path of the COMPORTS
+        
+        for (int i = 0; i < 99; i++) // checking ports from COM0 to COM99 or COM255
+        {
+            std::string str = "COM" + std::to_string(i); // converting to COM0, COM1, COM2
+            DWORD test = QueryDosDevice(str.c_str(), lpTargetPath, 5000);
+            if (test != 0) //QueryDosDevice returns zero if it didn't find an object
+            {
+                ports.push_back(std::string(str + ":" + lpTargetPath));
+            }
+
+            if (::GetLastError() == ERROR_INSUFFICIENT_BUFFER)
+            {
+            }
+        }
+#else
+        // TODO: for linux/MAC, we need to use `ls /dev/tty*` to get all serial ports
+        
+#endif
+        return ports;
     }
 
     void Serial::AddSerialPort(const std::string& name, SerialPort* port)
@@ -324,14 +369,11 @@ namespace ParaEngine
 
 extern "C"
 {
-    /*  NPL.activate("script/serialport.cpp", {cmd="open", filename="COM1", baud_rate=115200})
+    /*  NPL.activate("script/serialport.cpp", {cmd="open|close|GetPortNames", filename="COM1", baud_rate=115200})
     */
     PE_CORE_DECL NPL::NPLReturnCode NPL_activate_script_serialport_cpp(NPL::INPLRuntimeState* pState)
     {
         auto msg = NPL::NPLHelper::MsgStringToNPLTable(pState->GetCurrentMsg(), pState->GetCurrentMsgLength());
-        std::string debug_str;
-        NPL::NPLHelper::NPLTableToString("msg", msg, debug_str);
-        OUTPUT_LOG("NPL_activate_nplcall_cpp: %s \n", debug_str.c_str());
 
         try
         {
@@ -351,14 +393,66 @@ extern "C"
                     if (baud_rate == 0) {
                         baud_rate = 115200;
                     }
+                    std::string sCallback = msg["callback"];
+                    if (!sCallback.empty())
+                    {
+                        pSerialPort->setCallback(sCallback);
+                    }
                     pSerialPort->open(filename, baud_rate);
                 }
-                OUTPUT_LOG("serialport.cpp: open file %s \n", filename.c_str());
+            }
+            else if (cmd == "send")
+            {
+                std::string filename = msg["filename"];
+                if (!filename.empty())
+                {
+                    std::string data = msg["data"];
+                    if (!data.empty())
+                    {
+                        auto* pPort = ParaEngine::Serial::GetSingleton()->GetSerialPort(filename);
+                        if (pPort && pPort->isOpen())
+                        {
+                            pPort->writeString(data);
+                        }
+                    }
+				}
+            }
+            else if (cmd == "close")
+            {
+                std::string filename = msg["filename"];
+                if (!filename.empty())
+                {
+                    ParaEngine::Serial::GetSingleton()->RemoveSerialPort(filename);
+                }
+            }
+            else if (cmd == "GetPortNames")
+            {
+                std::string sCallback = msg["callback"];
+                if (!sCallback.empty())
+                {
+                    auto names = ParaEngine::Serial::GetSingleton()->GetPortNames();
+                    std::string sNames = "msg={";
+                    for (auto name : names)
+                    {
+                        std::string sOutput;
+                        NPL::NPLHelper::EncodeStringInQuotation(sOutput, 0, name);
+						sNames += sOutput + ",";
+					}
+                    sNames += "}";
+                    ParaEngine::CGlobals::GetNPLRuntime()->GetMainRuntimeState()->Activate_async(sCallback, sNames.c_str(), (int)sNames.size());
+                }
             }
         }
         catch (...)
         {
-            OUTPUT_LOG("error: serialport.cpp\n");
+            std::string sCallback = msg["callback"];
+            if (!sCallback.empty())
+            {
+                msg["error"] = true;
+                std::string callbackMsg;
+                NPL::NPLHelper::NPLTableToString("msg", msg, callbackMsg);
+                ParaEngine::CGlobals::GetNPLRuntime()->GetMainRuntimeState()->ActivateFile(sCallback, callbackMsg.c_str(), (int)callbackMsg.size());
+            }
         }
         return NPL::NPL_OK;
     };
