@@ -29,6 +29,11 @@
 #include <boost/bind.hpp>
 #include <boost/shared_array.hpp>
 
+#include <boost/filesystem.hpp>
+#include <boost/filesystem/path.hpp>
+#include <boost/filesystem/fstream.hpp>
+#include <iostream>
+
 using namespace std;
 using namespace boost;
 
@@ -190,9 +195,9 @@ namespace ParaEngine
                 setErrorStatus(true);
             }
         }
-        else 
+        else
         {
-            if (pimpl->callback) 
+            if (pimpl->callback)
                 pimpl->callback(pimpl->readBuffer, bytes_transferred);
             if (!pimpl->callbackScript.empty())
             {
@@ -277,7 +282,7 @@ namespace ParaEngine
         std::function<void(const char*, size_t)> empty;
         pimpl->callback.swap(empty);
     }
-    
+
     void SerialPort::setCallback(const std::function<void(const char*, size_t)>& callback)
     {
         setReadCallback(callback);
@@ -292,7 +297,7 @@ namespace ParaEngine
     {
         clearReadCallback();
     }
-        
+
     /// <summary>
     /// global singleton for serial class
     /// </summary>
@@ -304,8 +309,8 @@ namespace ParaEngine
     {
         for (auto serialport : m_allSerialPorts)
         {
-			delete serialport.second;
-		}
+            delete serialport.second;
+        }
     }
 
     std::vector<std::string> Serial::GetPortNames()
@@ -314,7 +319,7 @@ namespace ParaEngine
         // get all serial ports using win32
 #ifdef WIN32
         char lpTargetPath[5000]; // buffer to store the path of the COMPORTS
-        
+
         for (int i = 0; i < 99; i++) // checking ports from COM0 to COM99 or COM255
         {
             std::string str = "COM" + std::to_string(i); // converting to COM0, COM1, COM2
@@ -329,8 +334,51 @@ namespace ParaEngine
             }
         }
 #else
-        // TODO: for linux/MAC, we need to use `ls /dev/tty*` to get all serial ports
-        
+        // for linux / MAC, we need to use `ls /dev/tty*` to get all serial ports
+        boost::filesystem::path kdr_path{"/proc/tty/drivers"};
+        if (boost::filesystem::exists(kdr_path))
+        {
+            std::ifstream ifile(kdr_path.generic_string());
+            std::string line;
+            std::vector<std::string> prefixes;
+            while (std::getline(ifile, line))
+            {
+                std::vector<std::string> items;
+                auto it = line.find_first_not_of(' ');
+                while (it != std::string::npos)
+                {
+
+                    auto it2 = line.substr(it).find_first_of(' ');
+                    if (it2 == std::string::npos)
+                    {
+                        items.push_back(line.substr(it));
+                        break;
+                    }
+                    it2 += it;
+                    items.push_back(line.substr(it, it2 - it));
+                    it = it2 + line.substr(it2).find_first_not_of(' ');
+                }
+                if (items.size() >= 5)
+                {
+                    if (items[4] == "serial" && items[0].find("serial") != std::string::npos)
+                    {
+                        prefixes.emplace_back(items[1]);
+                    }
+                }
+            }
+            ifile.close();
+            for (auto& p : boost::filesystem::directory_iterator("/dev"))
+            {
+                for (const auto& pf : prefixes)
+                {
+                    auto dev_path = p.path().generic_string();
+                    if (dev_path.size() >= pf.size() && std::equal(dev_path.begin(), dev_path.begin() + pf.size(), pf.begin()))
+                    {
+                        ports.emplace_back(dev_path);
+                    }
+                }
+            }
+        }
 #endif
         return ports;
     }
@@ -354,9 +402,9 @@ namespace ParaEngine
     {
         if (m_allSerialPorts.find(name) != m_allSerialPorts.end())
         {
-			return m_allSerialPorts[name];
-		}
-		return nullptr;
+            return m_allSerialPorts[name];
+        }
+        return nullptr;
     }
 
     Serial* Serial::GetSingleton()
@@ -415,7 +463,7 @@ extern "C"
                             pPort->writeString(data);
                         }
                     }
-				}
+                }
             }
             else if (cmd == "close")
             {
@@ -436,10 +484,10 @@ extern "C"
                     {
                         std::string sOutput;
                         NPL::NPLHelper::EncodeStringInQuotation(sOutput, 0, name);
-						sNames += sOutput + ",";
-					}
+                        sNames += sOutput + ",";
+                    }
                     sNames += "}";
-                    ParaEngine::CGlobals::GetNPLRuntime()->GetMainRuntimeState()->Activate_async(sCallback, sNames.c_str(), (int)sNames.size());
+                    ParaEngine::CGlobals::GetNPLRuntime()->GetMainRuntimeState()->ActivateFile(sCallback, sNames.c_str(), (int)sNames.size());
                 }
             }
         }
