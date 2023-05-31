@@ -181,6 +181,7 @@ HRESULT ParaEngine::CUrlProcessor::Destroy()
 void ParaEngine::CUrlProcessor::EmscriptenFetch()
 {
 #ifdef EMSCRIPTEN
+
 	std::vector<const char*> request_headers;
 	int request_headers_size = m_request_headers.size();
 	for (int i = 0; i < request_headers_size; i++) request_headers.push_back(m_request_headers[i].c_str());
@@ -203,11 +204,8 @@ void ParaEngine::CUrlProcessor::EmscriptenFetch()
 	size_t headersLengthBytes = emscripten_fetch_get_response_headers_length(fetch) + 1;
 	response_header.resize(headersLengthBytes);
   	emscripten_fetch_get_response_headers(fetch, response_header.data(), headersLengthBytes);
-	if (m_responseCode >= 200 && m_responseCode < 300)
-	{
-		write_header_callback(response_header.data(), response_header.size(), 1);
-		write_data_callback((void*)(fetch->data), fetch->totalBytes, 1);
-	}
+	write_header_callback(response_header.data(), response_header.size(), 1);
+	write_data_callback((void*)(fetch->data), fetch->totalBytes, 1);
   	emscripten_fetch_close(fetch); // Also free data on failure.
 	m_nStatus = CUrlProcessor::URL_REQUEST_COMPLETED;
 	// if (m_responseCode != 200)
@@ -217,10 +215,13 @@ void ParaEngine::CUrlProcessor::EmscriptenFetch()
 	// 	std::cout << "url: " << m_url << std::endl;
 	// 	std::cout << "request data:" << m_sRequestData << std::endl;
 	// 	std::cout << "status code: " << m_responseCode << std::endl;
+	// 	std::cout << "response header size: " << headersLengthBytes << std::endl;
+	// 	std::cout << "response data size: " << fetch->totalBytes << std::endl;
+	// 	std::cout << "thread id: " << std::this_thread::get_id() << std::endl;
+	// 	// std::cout << "response header:" << response_header << std::endl;
 	// }
-  	// if (fetch->status == 200) return S_OK;
 #endif
-	// return E_FAIL;
+	// return S_OK;
 }
 
 HRESULT ParaEngine::CUrlProcessor::Process(void* pData, int cBytes)
@@ -229,8 +230,9 @@ HRESULT ParaEngine::CUrlProcessor::Process(void* pData, int cBytes)
 
 #ifdef EMSCRIPTEN
 	EmscriptenFetch();
+	m_returnCode = CURLE_OK;
     // std::thread(&ParaEngine::CUrlProcessor::EmscriptenFetch, this).join();
-	return (200 <= m_responseCode && m_responseCode < 300) ? S_OK : E_FAIL;
+	return S_OK;
 #else
 	// Let us do the easy way. 
 	CURL *curl = NULL;
@@ -688,7 +690,6 @@ void ParaEngine::CUrlProcessor::CompleteTask()
 	OUTPUT_LOG("-->: URL request task %s completed \n", m_url.c_str());
 #endif
 	CAsyncLoader::GetSingleton().RemovePendingRequest(m_url.c_str());
-
 	if (m_pFile)
 	{
 		m_pFile->close();

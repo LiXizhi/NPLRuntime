@@ -45,6 +45,19 @@ location / {
     try_files $uri $uri/ =404;
 }   
 ```
+4. iframe 嵌套使用, 当使用多线程(SharedArrayBuffer)时, 网站需被设置为跨源隔离. 即
+``` 
+    add_header 'Cross-Origin-Embedder-Policy' 'require-corp';
+    add_header 'Cross-Origin-Opener-Policy' 'same-origin';
+    # 被嵌网站是否支持内嵌同站跨域
+    add_header 'Cross-Origin-Resource-Policy' 'same-site';
+```
+``` 
+    # iframe 表签使用方式
+    <iframe width="1280" height="320" src="https://webparacraft.keepwork.com" allow="cross-origin-isolated"></iframe>
+```
+<!-- https://web.dev/coop-coep/?utm_source=devtools -->
+<!-- https://developer.mozilla.org/zh-CN/docs/Web/HTTP/Headers/Content-Security-Policy -->
 
 #### CI 自动部署触发条件
 1. script 脚本更新  main150727.pkg => ${APP_ROOT}/main150727.pkg

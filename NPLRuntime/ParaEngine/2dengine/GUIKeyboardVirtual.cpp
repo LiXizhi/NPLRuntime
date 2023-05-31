@@ -8,6 +8,9 @@
 #include "ParaEngine.h"
 #include "EventBinding.h"
 #include "GUIKeyboardVirtual.h"
+#ifdef PLATFORM_SDL2
+#include "SDL2/SDL.h"
+#endif
 
 using namespace ParaEngine;
 
@@ -104,6 +107,12 @@ HRESULT ParaEngine::CGUIKeyboardVirtual::ReadBufferedData()
 HRESULT ParaEngine::CGUIKeyboardVirtual::ReadImmediateData()
 {
 	memcpy(m_lastkeystate, m_keystate, sizeof(m_lastkeystate));
+#ifdef PLATFORM_SDL2
+	SDL_Keymod keymod = SDL_GetModState();
+	m_lastkeystate[(int)EVirtualKey::KEY_NUMLOCK] = (keymod & KMOD_NUM) == 0 ? EKeyState::RELEASE : EKeyState::PRESS;
+	m_lastkeystate[(int)EVirtualKey::KEY_SCROLL] = (keymod & KMOD_SCROLL) == 0 ? EKeyState::RELEASE : EKeyState::PRESS;
+	m_lastkeystate[(int)EVirtualKey::KEY_CAPITAL] = (keymod & KMOD_CAPS) == 0 ? EKeyState::RELEASE : EKeyState::PRESS;
+#endif
 	return S_OK;
 }
 

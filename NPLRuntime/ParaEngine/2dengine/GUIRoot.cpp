@@ -1025,7 +1025,18 @@ bool ParaEngine::CGUIRoot::DispatchKeyboardMsg(bool bKeyHandled)
 		//synchronize the stored key state with the actual state
 		for (int a = 0; a < (int)EVirtualKey::COUNT; a++) {
 			if (CEventBinding::ScancodeToKeyTable[a] != 0) {
+#ifdef PLATFORM_SDL2
+				if (a == (int)EVirtualKey::KEY_NUMLOCK || a == (int)EVirtualKey::KEY_CAPITAL) 
+				{
+					CGUIEvent::KeyStates[CEventBinding::ScancodeToKeyTable[a]] = m_pKeyboard->GetLastKeyState(a) == EKeyState::PRESS ? 0x01 : 0;
+				}
+				else
+				{
+					CGUIEvent::KeyStates[CEventBinding::ScancodeToKeyTable[a]] = m_pKeyboard->GetLastKeyState(a) == EKeyState::PRESS ? 0x80 : 0;
+				}
+#else 
 				CGUIEvent::KeyStates[CEventBinding::ScancodeToKeyTable[a]] = m_pKeyboard->GetLastKeyState(a) == EKeyState::PRESS ? 0x80 : 0;
+#endif
 			}
 		}
 		
