@@ -47,6 +47,18 @@ const char *const luaX_tokens [] = {
 
 #define save_and_next(ls) (save(ls, ls->current), next(ls))
 
+static int getUTF8Len(unsigned char pre){
+  if((pre>>3)==0x1e){
+    return 4;
+  }else
+  if((pre>>4)==0x0e){
+    return 3;
+  }else
+  if((pre>>5)==0x06){
+    return 2;
+  }else
+    return 1;
+}
 
 static void save (LexState *ls, int c) {
   Mbuffer *b = ls->buff;
@@ -419,12 +431,19 @@ static int llex (LexState *ls, SemInfo *seminfo) {
           read_numeral(ls, seminfo);
           return TK_NUMBER;
         }
-        else if (isalpha(ls->current) || ls->current == '_') {
+        else if (isalpha(ls->current) || ls->current == '_' || ls->current > 0x80) {
           /* identifier or reserved word */
           TString *ts;
           do {
-            save_and_next(ls);
-          } while (isalnum(ls->current) || ls->current == '_');
+            if(ls->current > 0x80){
+              int l = getUTF8Len(ls->current);
+              for(int il = 0;il<l;++il){
+                save_and_next(ls);
+              }
+            }else{
+              save_and_next(ls);
+            }
+          } while (isalnum(ls->current) || ls->current == '_' || ls->current > 0x80);
           ts = luaX_newstring(ls, luaZ_buffer(ls->buff),
                                   luaZ_bufflen(ls->buff));
           if (ts->tsv.reserved > 0)  /* reserved word? */

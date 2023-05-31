@@ -7,7 +7,7 @@ namespace ParaEngine
 	{
 	public:
 		RenderWindowDelegate() {};
-	protected:
+
 		virtual void OnMouseButton(EMouseButton button, EKeyState state, uint32_t x, uint32_t y) override;
 		virtual void OnMouseMove(uint32_t x, uint32_t y) override;
 
