@@ -206,7 +206,7 @@ namespace ParaEngine {
 
 	void ParaEngineWebView::activate(const std::string &filepath, const std::string &msg)
 	{
-        boost::format fmt("window.NPL.receive(\"%s\", \"%s\")");
+        boost::format fmt("""window.NPL.receive(\"%s\", `%s`)""");
 		fmt % filepath % msg;
 
 		JniHelper::callStaticVoidMethod(
