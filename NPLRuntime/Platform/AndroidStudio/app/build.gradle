@@ -54,6 +54,7 @@ android {
                 storePassword RELEASE_STORE_PASSWORD
                 keyAlias RELEASE_KEY_ALIAS
                 keyPassword RELEASE_KEY_PASSWORD
+                enableV1Signing true
             }
         }
     }
@@ -119,7 +120,7 @@ android {
         //华为
         huawei {
             manifestPlaceholders = [CHANNEL_VALUE: "huawei"]
-            resValue "string", "app_name", "帕拉卡"
+            resValue "string", "app_name", "帕拉卡3D虚拟社区学习软件"
         }
 
         //OPPO
@@ -225,30 +226,32 @@ android.applicationVariants.all { variant ->
             Task assembleTask = tasks.findByName("assemble"+variant.name.capitalize());
 
             assembleTask.dependsOn().doLast {
+                println("variant.applicationId:" + variant.applicationId)
+                println("rootProject.buildDir:" + rootProject.rootDir)
+                println("project.buildDir:" + project.projectDir)
+
                 outApkFile = output.outputFile
                 outApkFlavor = flavor
+
+                ftpUpload(outApkFlavor, outApkFile)
 
 //                println "生成apk"
 //                println outApkFlavor
 //                println outApkFile
-                String keyStorePath=""+project.projectDir+"/"+RELEASE_STORE_FILE
-                String apkSignerJar=""+project.projectDir+"/key/apksigner.jar"
-                String storePass = RELEASE_STORE_PASSWORD
-                String alias = RELEASE_KEY_ALIAS
-                String keyPass = RELEASE_KEY_PASSWORD
-                String signCmd = String.format("java -jar %s  sign --ks %s --ks-pass pass:%s --ks-key-alias %s --key-pass pass:%s %s",apkSignerJar,keyStorePath,storePass,alias,keyPass,outApkFile)
-                if(!flavor.equals("vivo")){//因为vivo的已经用这个无签名的上架过了
-                    if (System.getProperty('os.name').toLowerCase(Locale.ROOT).contains('windows')) {
-                        execute('cmd', '/c', signCmd)
-                    } else {
-                        execute('sh', '-c', signCmd)
-                    }
-                }
-                println("variant.applicationId:"+variant.applicationId)
-                println("rootProject.buildDir:"+rootProject.rootDir)
-                println("project.buildDir:"+project.projectDir)
-                ftpUpload(outApkFlavor, outApkFile)
+//                String keyStorePath=""+project.projectDir+"/"+RELEASE_STORE_FILE
+//                String apkSignerJar=""+project.projectDir+"/key/apksigner.jar"
+//                String storePass = RELEASE_STORE_PASSWORD
+//                String alias = RELEASE_KEY_ALIAS
+//                String keyPass = RELEASE_KEY_PASSWORD
+//                String signCmd = String.format("java -jar %s  sign --ks %s --ks-pass pass:%s --ks-key-alias %s --key-pass pass:%s %s",apkSignerJar,keyStorePath,storePass,alias,keyPass,outApkFile)
 
+//                if(!flavor.equals("vivo")){//因为vivo的已经用这个无签名的上架过了
+//                    if (System.getProperty('os.name').toLowerCase(Locale.ROOT).contains('windows')) {
+//                        execute('cmd', '/c', signCmd)
+//                    } else {
+//                        execute('sh', '-c', signCmd)
+//                    }
+//                }
             }
         }
     }
