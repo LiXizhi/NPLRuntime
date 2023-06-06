@@ -64,7 +64,9 @@ namespace ParaEngine {
 	const char* StringHelper::GetTextFromClipboard()
 	{
 #ifdef EMSCRIPTEN
-		return JS::GetClipboardText().c_str();
+		static std::string s_clip_text;
+		s_clip_text =  JS::GetClipboardText();
+		return s_clip_text.c_str();
 #endif
 		static std::string text;
 		if (SDL_HasClipboardText() == SDL_FALSE) return "";
