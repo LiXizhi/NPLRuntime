@@ -319,7 +319,7 @@ namespace ParaTerrain
 	class TextureFactory;
 	class TextureSet;
 	class TextureCell;
-	class TriangleStrip;
+	// class TriangleStrip;
 	class TriangleFan;
 	class TextureGenerator;
 	class DetailTexture;
@@ -335,7 +335,6 @@ namespace ParaTerrain
 #include "TextureSet.h"
 #include "TextureGenerator.h"
 #include "TerrainBlock.h"
-#include "TriangleStrip.h"
 #include "TriangleFan.h"
 #include "TerrainLattice.h"
 #include "TerrainVertex.h"
@@ -343,6 +342,7 @@ namespace ParaTerrain
 #include "IAttributeFields.h"
 #include <vector>
 #include <set>
+#include "TriangleStrip.h"
 
 namespace ParaEngine
 {
@@ -353,6 +353,60 @@ namespace ParaEngine
 }
 namespace ParaTerrain
 {
+	class TriangleStrip
+	{
+	public:
+		TriangleStrip();
+		TriangleStrip(const TriangleStrip& ts);
+		~TriangleStrip();
+		void Render(Terrain * pTerrain);
+		inline int GetTriangleNum()
+		{
+			return (m_bEnabled) ? (m_NumberOfVertices-2) : 0;
+		}
+
+		int BuildTriangles(Terrain * pTerrain, terrain_vertex * pIndices, int nStart);
+		int BuildTriangles(Terrain * pTerrain, terrain_vertex_normal * pIndices, int nStart);
+		inline bool IsEnabled(){return m_bEnabled;}
+	private:
+		uint32 m_pVertices[6];	// Indices into the terrain vertices
+		unsigned char m_NumberOfVertices;
+		float fOffsetTexU, fOffsetTexV;
+		// in range [0, 8*8)
+		int texture_group_id;
+		bool m_bEnabled;
+
+		friend class TerrainBlock;
+		friend class Terrain;
+		friend class TerrainBuffer;
+	};
+
+	class TriangleFan
+	{
+	public:
+		TriangleFan();
+		TriangleFan(const TriangleFan& tf);
+		~TriangleFan();
+		void Render(Terrain * pTerrain);
+		int BuildTriangles(Terrain * pTerrain, terrain_vertex * pIndices, int nStart);
+		int BuildTriangles(Terrain * pTerrain, terrain_vertex_normal * pIndices, int nStart);
+		int GetTriangleNum();
+	private:
+		int m_pVertices[MAX_VERTICES_PER_FAN];	// Indices into the terrain vertices
+		// TBD: It is a pretty awful waste of memory to preallocate MAX_VERTICES_PER_FAN vertices for every triangle fan,
+		// when in most cases only a few vertices are needed. However, dynamically allocating these vertices
+		// during every tessellation is not an option either because it causes huge performance problems and
+		// badly fragments memory. Any good ideas for this?
+		unsigned char m_NumberOfVertices;
+		float fOffsetTexU, fOffsetTexV;
+		// in range [0, 8*8)
+		int texture_group_id;
+
+		friend class TerrainBlock;
+		friend class Terrain;
+		friend class TerrainBuffer;
+	};
+	
 	using namespace ParaEngine;
 	class Terrain;
 	class CDetailTextureFactory;
@@ -397,7 +451,7 @@ namespace ParaTerrain
 		/// The size of this array must be equal to elevWidth * elevHeight
 		/// \param elevWidth The number of vertices along the x-axis (width) of the grid of vertices in pElevations.
 		/// \param elevHeight The number of vertices along the y-axis (height) of the grid of vertices in pElevations.
-		/// \param pTextureImage An array of byte values representing the texture image that will be draped across the entire
+		/// \param pTextureImage An array of unsigned char values representing the texture image that will be draped across the entire
 		/// surface of the Terrain (this is the "overall" texture.) The array must contain 3 bytes per pixel - the red, green, and blue color values of the pixel respectively.
 		/// It is assumed that the array does not contain any extra padding per image row. Therefore, if your image is 1024x1024 pixels, then
 		/// this array should be 9,437,184 bytes in size. You can pass NULL for this parameter to build a Terrain with no texture.
@@ -734,9 +788,9 @@ namespace ParaTerrain
 
 		/// This is done by breaking the specified image up into smaller textures of 256x256 called 
 		/// TextureCells and mapping these contiguously onto the terrain's surface.
-		/// Textures are automatically applied by TextureLoaders and by the byte
+		/// Textures are automatically applied by TextureLoaders and by the unsigned char
 		/// array constructors, so use of this method is entirely optional.
-		/// \param pTextureImage An array of byte values representing the texture image that will be draped across the entire
+		/// \param pTextureImage An array of unsigned char values representing the texture image that will be draped across the entire
 		/// surface of the Terrain (this is the "overall" texture.) The array must contain 3 bytes per pixel - the red, green, and blue color values of the pixel respectively.
 		/// It is assumed that the array does not contain any extra padding per image row. Therefore, if your image is 1024x1024 pixels, then
 		/// this array should be 9,437,184 bytes in size. You can pass NULL for this parameter to build a Terrain with no texture.
@@ -757,7 +811,7 @@ namespace ParaTerrain
 		/// terrain's overall texture (if blending is supported by the user's hardware.) 
 		/// This is used to provide a texture to give the ground some definition when the camera is 
 		/// close to the ground, but is an inferior to alternative to the use of specific DetailTexture instances.
-		/// \param pImage An array of byte values representing the texture image that will be draped across the entire
+		/// \param pImage An array of unsigned char values representing the texture image that will be draped across the entire
 		/// surface of the Terrain (this is the "overall" texture.) The array must contain 3 bytes per pixel - the red, green, and blue color values of the pixel respectively.
 		/// It is assumed that the array does not contain any extra padding per image row. Therefore, if your image is 1024x1024 pixels, then
 		/// this array should be 9,437,184 bytes in size. You can pass NULL for this parameter to build a Terrain with no texture.
@@ -1140,7 +1194,7 @@ namespace ParaTerrain
 		float m_VertexSpacing;
 		/// this is the main structure for ROAM algorithm
 		TerrainBlock *m_pRootBlock;
-		byte* m_pVertexStatus;
+		unsigned char* m_pVertexStatus;
 		/** the terrain regions. maybe NULL if no region is defined. */
 		CTerrainRegions* m_pRegions;
 		/// number of hole vertex
@@ -1223,8 +1277,8 @@ namespace ParaTerrain
 		void Init(const uint8 * pTextureImage, int textureWidth, int textureHeight, const uint8 * pDetailTextureImage, int detailWidth, int detailHeight, float offsetX = 0.0f, float offsetY = 0.0f);
 		void UpdateNeighbor(Terrain * pTerrain, DIRECTION direction);
 
-		inline void SetVertexStatus(int index, byte status){if(m_pVertexStatus != NULL)	m_pVertexStatus[index] = status;};
-		inline byte GetVertexStatus(int index){return m_pVertexStatus[index];};
+		inline void SetVertexStatus(int index, unsigned char status){if(m_pVertexStatus != NULL)	m_pVertexStatus[index] = status;};
+		inline unsigned char GetVertexStatus(int index){return m_pVertexStatus[index];};
 
 		void BuildBlocks();
 		void ChopTexture(const uint8 * pImage, int width, int height, int tileSize);
@@ -1253,13 +1307,13 @@ namespace ParaTerrain
 			v.z = vec.y;
 		}
 
-		inline TriangleStrip* GetTriStrip(int nIndex){return &(m_pTriangleStrips[nIndex]);}
+		inline TriangleStrip* GetTriStrip(int nIndex){return (TriangleStrip*)&(m_pTriangleStrips[nIndex]);}
 		inline TriangleStrip* GetSafeTriStrip(int nIndex){
 			if(nIndex< (int)m_pTriangleStrips.size())
-				return &(m_pTriangleStrips[nIndex]);
+				return (TriangleStrip*)&(m_pTriangleStrips[nIndex]);
 			else{
 				m_pTriangleStrips.resize(nIndex+100);
-				return &(m_pTriangleStrips[nIndex]);
+				return (TriangleStrip*)&(m_pTriangleStrips[nIndex]);
 			}
 		}
 		inline TriangleFan* GetTriFan(int nIndex){return &(m_pTriangleFans[nIndex]);}

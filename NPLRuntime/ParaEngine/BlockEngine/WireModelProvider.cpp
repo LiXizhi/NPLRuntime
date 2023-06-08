@@ -157,7 +157,7 @@ BlockModel& ParaEngine::CWireModelProvider::GetBlockModel(CBlockWorld* pBlockMan
 		int offset_x = (nBlockData == 0) ? 0 : 1;
 		int offset_y = (bCrossTexture) ? 0 : 1;
 		float u_offset = offset_x / 2.f;
-		byte nPowerStrength = (nBlockData == 0) ? 0xff : (nBlockData * 16 + 15);
+		unsigned char nPowerStrength = (nBlockData == 0) ? 0xff : (nBlockData * 16 + 15);
 
 		// four vertical faces
 		if (wall0)

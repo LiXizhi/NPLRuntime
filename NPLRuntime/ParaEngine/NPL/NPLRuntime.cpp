@@ -21,7 +21,9 @@
 #include "NPLNetUDPServer.h"
 
 #include "NPLCodec.h"
+#ifndef EMSCRIPTEN_SINGLE_THREAD
 #include "FileSystemWatcher.h"
+#endif
 #include <time.h>
 
 #include "AsyncLoader.h"
@@ -121,7 +123,9 @@ void CNPLRuntime::Cleanup()
 		m_pWebServiceClient = NULL;
 	}
 
+#ifndef EMSCRIPTEN_SINGLE_THREAD
 	ParaEngine::CNPLNetClient::ReleaseInstance();
+#endif
 
 	while(true)
 	{
@@ -536,7 +540,9 @@ bool CNPLRuntime::LoadWebServicePlugin()
 			}
 		}
 #else
+#ifndef EMSCRIPTEN_SINGLE_THREAD
 		m_pWebServiceClient = ParaEngine::CNPLNetClient::GetInstance();
+#endif
 #endif
 	}
 	if(m_pWebServiceClient==0)
@@ -900,7 +906,7 @@ void CNPLRuntime::SetHostMainStatesInFrameMove(bool bHostMainStatesInFrameMove)
 void CNPLRuntime::Run(bool bToEnd)
 {
 	/** dispatch events in NPL. */
-	#if !defined(PARAENGINE_MOBILE)
+	#if !defined(PARAENGINE_MOBILE) && !defined(EMSCRIPTEN_SINGLE_THREAD)
 	ParaEngine::CFileSystemWatcherService::GetInstance()->DispatchEvents();
     #endif
 
@@ -1124,7 +1130,7 @@ void CNPLRuntime::SetUseCompression(bool bCompressIncoming, bool bCompressOutgoi
 	NPL::CNPLRuntime::GetInstance()->GetNetServer()->GetDispatcher().SetUseCompressionOutgoingConnection(bCompressOutgoing);
 }
 
-void CNPLRuntime::SetCompressionKey(const byte* sKey, int nSize, int nUsePlainTextEncoding)
+void CNPLRuntime::SetCompressionKey(const unsigned char* sKey, int nSize, int nUsePlainTextEncoding)
 {
 	if(sKey != 0)
 	{

@@ -93,8 +93,9 @@ namespace ParaEngine
 		void LoadAndApplySettings();
 		bool UpdateScreenDevice();
 		bool UpdateViewPort();
+#ifndef EMSCRIPTEN_SINGLE_THREAD
 		void handle_mainloop_timer(const boost::system::error_code& err);
-
+#endif
 		RenderConfiguration m_cfg;
 
 		bool m_bUpdateScreenDevice;

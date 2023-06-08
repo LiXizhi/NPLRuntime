@@ -1797,9 +1797,9 @@ unsigned int  CParaFile::readUBits(int numBits)
 	int  bitsLeft = numBits;
 	unsigned int  result = 0;
 
-	if (m_bitPos == 0) //no value in the buffer - read a byte
+	if (m_bitPos == 0) //no value in the buffer - read a unsigned char
 	{
-		byte tmp = 0; read(&tmp, 1);
+		unsigned char tmp = 0; read(&tmp, 1);
 		m_bitBuf = tmp;
 		m_bitPos = 8;
 	}
@@ -1813,8 +1813,8 @@ unsigned int  CParaFile::readUBits(int numBits)
 			result |= m_bitBuf << shift;
 			bitsLeft -= m_bitPos;
 
-			// Get the next byte from the input stream
-			byte tmp = 0; read(&tmp, 1);
+			// Get the next unsigned char from the input stream
+			unsigned char tmp = 0; read(&tmp, 1);
 			m_bitBuf = tmp;
 			m_bitPos = 8;
 		}
@@ -1846,14 +1846,14 @@ int CParaFile::readSBits(int numBits)
 
 DWORD CParaFile::ReadDWORD_LE()
 {
-	byte data[4];
+	unsigned char data[4];
 	read(data, 4);
 	return ((DWORD)data[0]) + (((DWORD)data[1]) << 8) + (((DWORD)data[2]) << 16) + (((DWORD)data[3]) << 24);
 }
 
 WORD CParaFile::ReadWORD_LE()
 {
-	byte data[2];
+	unsigned char data[2];
 	read(data, 2);
 	return ((WORD)data[0]) + (((WORD)data[1]) << 8);
 }
@@ -1882,7 +1882,7 @@ uint32_t CParaFile::ReadEncodedUInt()
 
 	if ((b & 0x80) == 0)
 	{
-		// single-byte
+		// single-unsigned char
 		value = (uint32_t)b;
 		return value;
 	}
@@ -1916,7 +1916,7 @@ int CParaFile::WriteEncodedUInt(uint32_t value)
 	int count = 0, index = 0;
 	do
 	{
-		buffer[index++] = (byte)((value & 0x7F) | 0x80);
+		buffer[index++] = (unsigned char)((value & 0x7F) | 0x80);
 		value >>= 7;
 		count++;
 	} while (value != 0);

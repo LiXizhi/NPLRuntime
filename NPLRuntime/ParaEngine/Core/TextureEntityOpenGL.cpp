@@ -579,7 +579,7 @@ TextureEntity* TextureEntityOpenGL::LoadUint8Buffer(const uint8 * pTexels, int w
 	return this;
 }
 
-void ParaEngine::TextureEntityOpenGL::LoadImage(char *sBufMemFile, int sizeBuf, int &width, int &height, byte ** ppBuffer, bool bAlpha)
+void ParaEngine::TextureEntityOpenGL::LoadImage(char *sBufMemFile, int sizeBuf, int &width, int &height, unsigned char ** ppBuffer, bool bAlpha)
 {
 	/*
 	GLImage* image = new Image();
@@ -641,7 +641,7 @@ static void copySurface(void* pDest, const void* pSrc, UINT pitch, UINT width, U
 	}
 }
 
-bool ParaEngine::TextureEntityOpenGL::LoadImageOfFormat(const std::string& sTextureFileName, char *sBufMemFile, int sizeBuf, int &width, int &height, byte ** ppBuffer, int* pBytesPerPixel /*= NULL*/, int nFormat /*= -1*/)
+bool ParaEngine::TextureEntityOpenGL::LoadImageOfFormat(const std::string& sTextureFileName, char *sBufMemFile, int sizeBuf, int &width, int &height, unsigned char ** ppBuffer, int* pBytesPerPixel /*= NULL*/, int nFormat /*= -1*/)
 {
 	// only support 32 bit texture
 	if (nFormat >= 0)
@@ -680,7 +680,7 @@ bool ParaEngine::TextureEntityOpenGL::LoadImageOfFormat(const std::string& sText
 	{
 		if (outTempData == img.getData())
 		{
-			outTempData = new byte[img.getDataLen()];
+			outTempData = new unsigned char[img.getDataLen()];
 			memcpy(outTempData, img.getData(), img.getDataLen());
 		}
 

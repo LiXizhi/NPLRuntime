@@ -6,7 +6,6 @@
 #pragma once
 #include <map>
 #include <vector>
-#include <boost/thread/mutex.hpp>
 #include "util/mutex.h"
 using namespace std;
 using namespace ParaEngine;

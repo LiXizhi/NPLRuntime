@@ -1383,7 +1383,7 @@ bool CGUIBase::MsgProc(MSG *event)
 			newMsg.lParam = (LPARAM)m_event->m_keyboard.KeyEvents[i].dwData;
 			newMsg.hwnd=(HWND)1;
 			//update the key state according to the events
-			CGUIEvent::KeyStates[newMsg.message]=(byte)(newMsg.lParam);
+			CGUIEvent::KeyStates[newMsg.message]=(unsigned char)(newMsg.lParam);
 			//if the key is not processed, we will buffer it in a queue and sent it to the 3d scene
 			if (!MsgProc(&newMsg)) {
 				CGUIRoot::GetInstance()->m_events.push_back(newMsg);

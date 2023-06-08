@@ -19,7 +19,9 @@
 #include "util/ScopedLock.h"
 #include <boost/bind.hpp>
 #include "NPLRuntimeState.h"
-
+#ifdef EMSCRIPTEN_SINGLE_THREAD
+#define auto_ptr unique_ptr
+#endif
 /**
 for luabind, The main drawback of this approach is that the compilation time will increase for the file
 that does the registration, it is therefore recommended that you register everything in the same cpp-file.
@@ -285,7 +287,13 @@ int NPL::CNPLRuntimeState::Run_Async()
 {
 	if (m_thread.get() == 0)
 	{
-		m_thread.reset(new boost::thread(boost::bind(&NPL::CNPLRuntimeState::Run, shared_from_this())));
+#ifndef EMSCRIPTEN_SINGLE_THREAD
+		m_thread.reset(new npl_thread(boost::bind(&NPL::CNPLRuntimeState::Run, shared_from_this())));
+#else
+		m_thread.reset(CoroutineThread::StartCoroutineThread([this](CoroutineThread*)->CO_ASYNC{
+			this->Run();
+		}, nullptr));
+#endif
 	}
 	return 0;
 }

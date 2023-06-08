@@ -10,7 +10,9 @@
 #include "ParaScriptingIPC.h"
 #include "IPCManager.h"
 #include "NPLHelper.h"
-
+#ifdef EMSCRIPTEN_SINGLE_THREAD
+#define auto_ptr unique_ptr
+#endif
 extern "C" {
 #include "lua.h"
 #include "lauxlib.h"

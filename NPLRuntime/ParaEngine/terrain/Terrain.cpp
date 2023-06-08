@@ -1059,7 +1059,7 @@ void Terrain::BuildBlocks()
 		hashDelta = (float)numBlocks / 30.0f;
 		cout << "#" << flush;
 	}
-	m_pVertexStatus = new byte[m_WidthVertices * m_HeightVertices];
+	m_pVertexStatus = new unsigned char[m_WidthVertices * m_HeightVertices];
 	
 	// We assume that the terrain's width is always a power of 2 + 1!
 
@@ -1403,7 +1403,7 @@ bool Terrain::SetTexture(const uint8 * pBuffer, int width, int height)
 
 void Terrain::ChopTexture(const uint8 * pImage, int width, int height, int tileSize)
 {
-	// It is assumed that the image is in a 3-byte per pixel, RGB format, with no padding on the pixel rows
+	// It is assumed that the image is in a 3-unsigned char per pixel, RGB format, with no padding on the pixel rows
 	if (Settings::GetInstance()->UseBorders())
 	{
 		m_NumberOfTextureTilesWidth = (width - 1) / (tileSize + 1);

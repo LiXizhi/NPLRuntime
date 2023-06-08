@@ -84,7 +84,7 @@ bool ParaEngine::GetFirstFileData(const char* src, size_t size, std::string& out
 {
 	if (IsPkgData(src))
 	{
-		CMemReadFile file((byte*)src, size, false);
+		CMemReadFile file((unsigned char*)src, size, false);
 		// sig + version(only support PKG version 2)
 		file.seek(8, true);
 
@@ -171,7 +171,7 @@ bool ParaEngine::GetFirstFileData(const char* src, size_t size, std::string& out
 				DWORD uncompressedSize = entry.UncompressedSize;
 				DWORD compressedSize = entry.CompressedSize;
 
-				byte *pcData = new byte[compressedSize];
+				unsigned char *pcData = new unsigned char[compressedSize];
 				if (pcData == 0)
 				{
 					OUTPUT_LOG("Not enough memory for decompressing %s\n", entry.zipFileName);
@@ -326,7 +326,7 @@ end
 pkg File Format
 ========================
 char[4] <file type id> ".pkg"
-byte[4] <pkg file version> 0.0.0.1
+unsigned char[4] <pkg file version> 0.0.0.1
 [int] <length of string>
 [string] "ParaEngine Tech Studio Package File Format. Please note that content in 
 this file is meant to be protected and copyrighted by their author(s). Decoding this pkg file is illegal."
@@ -514,7 +514,7 @@ bool CZipArchive::OpenPkgFile(const string& filename)
 
 bool CZipArchive::OpenMemFile(const char* buffer, DWORD nSize, bool bDeleteBuffer)
 {
-	m_pFile = new CMemReadFile((byte*)buffer, nSize, bDeleteBuffer);
+	m_pFile = new CMemReadFile((unsigned char*)buffer, nSize, bDeleteBuffer);
 	m_bOpened = m_pFile->isOpen();
 	if(m_bOpened)
 	{
@@ -641,7 +641,7 @@ bool CZipArchive::GeneratePkgFile2(const char* filename)
 
 	// write data
 	{
-		vector<byte> cData;
+		vector<unsigned char> cData;
 
 		for (i = 0; i<nEntryNum; ++i)
 		{
@@ -724,7 +724,7 @@ bool CZipArchive::GeneratePkgFile( const char* filename )
 	}
 	// write data
 	{
-		vector<byte> cData;
+		vector<unsigned char> cData;
 
 		for (i=0;i<nEntryNum;++i)
 		{
@@ -1177,7 +1177,7 @@ bool CZipArchive::ReadFileRaw(FileHandle& handle,LPVOID* lppBuffer,LPDWORD pnCom
 			{
 				return true;
 			}
-			(*lppBuffer) = new byte[ compressedSize ];
+			(*lppBuffer) = new unsigned char[ compressedSize ];
 			if (!(*lppBuffer))
 			{
 				OUTPUT_LOG("Not enough memory for reading archive file %s\n", m_FileList[index].m_pEntry->zipFileName);
@@ -1273,7 +1273,7 @@ bool CZipArchive::ReadFile(FileHandle& handle,LPVOID lpBuffer,DWORD nNumberOfByt
 			bool bCopyBuffer = false;
 			if(nNumberOfBytesToRead < uncompressedSize)
 			{
-				pBuf = new byte[ uncompressedSize ];
+				pBuf = new unsigned char[ uncompressedSize ];
 				if (!pBuf)
 				{
 					OUTPUT_LOG("Not enough memory for decompressing %s\n", m_FileList[index].m_pEntry->zipFileName);
@@ -1282,7 +1282,7 @@ bool CZipArchive::ReadFile(FileHandle& handle,LPVOID lpBuffer,DWORD nNumberOfByt
 				bCopyBuffer = true;
 			}
 
-			byte *pcData = new byte[ compressedSize ];
+			unsigned char *pcData = new unsigned char[ compressedSize ];
 			if (pcData==0)
 			{
 				OUTPUT_LOG("Not enough memory for decompressing %s\n", m_FileList[index].m_pEntry->zipFileName);
@@ -1327,7 +1327,7 @@ bool CZipArchive::ReadFile(FileHandle& handle,LPVOID lpBuffer,DWORD nNumberOfByt
 				if(bCopyBuffer)
 				{
 					memcpy(lpBuffer, pBuf, nNumberOfBytesToRead);
-					delete [] (byte*)pBuf;
+					delete [] (unsigned char*)pBuf;
 				}
 				return true;
 			}
@@ -1335,7 +1335,7 @@ bool CZipArchive::ReadFile(FileHandle& handle,LPVOID lpBuffer,DWORD nNumberOfByt
 			{
 				OUTPUT_LOG("Error decompressing %s\n", m_FileList[index].m_pEntry->zipFileName);
 				if(bCopyBuffer)
-					delete [] (byte*)pBuf;
+					delete [] (unsigned char*)pBuf;
 				return false;
 			}
 
@@ -1422,7 +1422,7 @@ int CZipArchive::LocateBlockWithSignature(DWORD signature, long endLocation, int
 	if(nTempBufSize<4)
 		return -1;
 	pos = -1;
-	byte * pBuf = new byte[nTempBufSize];
+	unsigned char * pBuf = new unsigned char[nTempBufSize];
 	if( m_pFile->read(pBuf, nTempBufSize) == nTempBufSize)
 	{
 		for(int i=nTempBufSize-4; i>=0; --i)

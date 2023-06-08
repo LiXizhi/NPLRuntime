@@ -329,13 +329,13 @@ namespace ParaEngine
 		* @param ppBuffer: buffer containing the read data. it may be 4 bytes per pixel or 3 bytes per pixel.
 		*		this function will allocate buffer using new [] operator, the caller is responsible to delete it using delete [] operator.
 		* @param bAlpha: if (bAlpha) D3DFMT_A8R8G8B8 4 bytes per pixel else D3DFMT_R8G8B8 3 bytes per pixel. */
-		static void LoadImage(char *sBufMemFile, int sizeBuf, int &width, int &height, byte ** ppBuffer, bool bAlpha);
+		static void LoadImage(char *sBufMemFile, int sizeBuf, int &width, int &height, unsigned char ** ppBuffer, bool bAlpha);
 		/** this function uses FreeImage lib and support more formats. and width, height can be any number instead of square of 2.
 		* @param sTextureFileName: only used for file format deduction.
 		* @param nFormat: default to 32bits ARGB. PixelFormat24bppRGB, PixelFormat16bppGrayScale, PixelFormat8bppIndexed, PixelFormat32bppARGB, etc
 		*/
-		static bool LoadImageOfFormat(const std::string& sTextureFileName, char *sBufMemFile, int sizeBuf, int &width, int &height, byte ** ppBuffer, int* pBytesPerPixel = NULL, int nFormat = -1);
-		static bool LoadImageOfFormatEx(const std::string& sTextureFileName, char *sBufMemFile, int sizeBuf, int &width, int &height, byte ** ppBuffer, int* pBytesPerPixel = NULL, int nFormat = -1, ImageExtendInfo *info = nullptr);
+		static bool LoadImageOfFormat(const std::string& sTextureFileName, char *sBufMemFile, int sizeBuf, int &width, int &height, unsigned char ** ppBuffer, int* pBytesPerPixel = NULL, int nFormat = -1);
+		static bool LoadImageOfFormatEx(const std::string& sTextureFileName, char *sBufMemFile, int sizeBuf, int &width, int &height, unsigned char ** ppBuffer, int* pBytesPerPixel = NULL, int nFormat = -1, ImageExtendInfo *info = nullptr);
 
 		/** create a texture entity from memory buffer. */
 		static TextureEntity* CreateTexture(const uint8 * pTexels, int width, int height, int rowLength, int bytesPerPixel, uint32 nMipLevels = 0, EPoolType dwCreatePool= EPoolType::Managed, DWORD nFormat = 0);

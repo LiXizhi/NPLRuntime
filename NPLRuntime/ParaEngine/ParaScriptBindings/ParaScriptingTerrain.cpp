@@ -336,7 +336,7 @@ namespace ParaScripting
 		CGlobals::GetGlobalTerrain()->PaintTerrainData(x, y, radius, data, dataMask, bitOffset);
 	}
 
-	uint32 ParaTerrain::GetTerrainData(float x, float y, uint32 dataMask, byte bitOffset)
+	uint32 ParaTerrain::GetTerrainData(float x, float y, uint32 dataMask, unsigned char bitOffset)
 	{
 		return CGlobals::GetGlobalTerrain()->GetTerrainData(x, y, dataMask, bitOffset);
 	}

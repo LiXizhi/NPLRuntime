@@ -3,8 +3,10 @@
 #include <string>
 #include <map>
 #include <set>
+#ifndef EMSCRIPTEN_SINGLE_THREAD
 #include <boost/asio.hpp>
 #include <boost/thread.hpp>
+#endif
 #include <boost/scoped_ptr.hpp>
 
 /* curl specific */
@@ -245,6 +247,7 @@ namespace ParaEngine
 		int m_nRunningTaskCount;
 	};
 
+#ifndef EMSCRIPTEN_SINGLE_THREAD
 
 	/// <summary>
 	/// Option names.  These must be well-formed XML element names.
@@ -410,4 +413,5 @@ namespace ParaEngine
 		io_service some work to do then the io_service::run() function will exit immediately.*/
 		boost::scoped_ptr<boost::asio::io_service::work> m_work_lifetime;
 	};
+#endif
 }

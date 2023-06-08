@@ -50,7 +50,7 @@ namespace NPL
 
 		bool IsNPLFileActivation()
 		{
-			return (method.size() > 0 && (((byte)(method[0])) > 127 || method == "A" || method == "B"));
+			return (method.size() > 0 && (((unsigned char)(method[0])) > 127 || method == "A" || method == "B"));
 		}
 	};
 

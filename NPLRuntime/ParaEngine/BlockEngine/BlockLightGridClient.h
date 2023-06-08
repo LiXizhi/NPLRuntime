@@ -8,8 +8,11 @@
 #include <map>
 #include <utility>
 #include <bitset>
-#include <boost/circular_buffer.hpp>
+#ifndef EMSCRIPTEN_SINGLE_THREAD
 #include <boost/thread.hpp>
+#else
+#include "util/CoroutineThread.h"
+#endif
 #include <boost/shared_ptr.hpp>
 #include <boost/enable_shared_from_this.hpp>
 #include "util/ParaMemPool.h"

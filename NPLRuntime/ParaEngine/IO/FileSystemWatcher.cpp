@@ -7,6 +7,7 @@
 // Desc: modified on https://github.com/berkus/dir_monitor
 //-----------------------------------------------------------------------------
 #include "ParaEngine.h"
+#ifndef EMSCRIPTEN_SINGLE_THREAD
 
 #if !defined(PARAENGINE_MOBILE)
 
@@ -297,5 +298,7 @@ void ParaEngine::CFileSystemWatcher::Destroy()
 	SAFE_DELETE(pObj);
 	m_monitor_imp = NULL;
 }
+
+#endif
 
 #endif

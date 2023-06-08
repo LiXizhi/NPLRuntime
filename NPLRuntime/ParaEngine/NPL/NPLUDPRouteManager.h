@@ -35,12 +35,16 @@ namespace NPL
 		int ForEachRoute(std::function<bool(const NPLUDPRoute_ptr& route)>);
 
 		///
+#ifndef EMSCRIPTEN_SINGLE_THREAD
 		bool HasRoute(const boost::asio::ip::udp::endpoint& ep);
+#endif
 		bool HasRoute(const char* ip, unsigned short port);
 		bool HasRoute(unsigned long long hash);
 
 		///
+#ifndef EMSCRIPTEN_SINGLE_THREAD
 		NPLUDPRoute_ptr GetRoute(const boost::asio::ip::udp::endpoint& ep);
+#endif
 		NPLUDPRoute_ptr GetRoute(const char* ip, unsigned short port);
 		NPLUDPRoute_ptr GetRoute(unsigned long long hash);
 

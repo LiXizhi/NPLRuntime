@@ -170,12 +170,14 @@ namespace ParaEngine {
 
 	int CSDL2Application::Run()
 	{
+#ifndef EMSCRIPTEN_SINGLE_THREAD
 		NextLoop(50, &CSDL2Application::handle_mainloop_timer, this);
 		MainLoopRun();
-
+#endif
 		return 0;
 	}
 
+#ifndef EMSCRIPTEN_SINGLE_THREAD
 	void CSDL2Application::handle_mainloop_timer(const boost::system::error_code& err)
 	{
 		if (!err)
@@ -197,7 +199,7 @@ namespace ParaEngine {
 			}
 		}
 	}
-
+#endif
 	void CSDL2Application::WriteConfigFile(const char* FileName)
 	{
 		std::string sFileName;

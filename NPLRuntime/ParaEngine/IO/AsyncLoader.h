@@ -4,8 +4,12 @@
 #include "util/LogService.h"
 #include <vector>
 #include <set>
+#ifndef EMSCRIPTEN_SINGLE_THREAD
 #include <boost/thread.hpp>
 #include <boost/asio.hpp>
+#else
+#include "util/CoroutineThread.h"
+#endif
 #include <boost/shared_ptr.hpp>
 #include <boost/enable_shared_from_this.hpp>
 #include <thread>
@@ -23,6 +27,12 @@ And each processor thread can be associated with just one processor queue. Pleas
 @note: Threads are only created when the first message is inserted to the queue. 
 */
 #define MAX_PROCESS_QUEUE 16
+
+#ifdef EMSCRIPTEN_SINGLE_THREAD
+typedef CoroutineThread npl_thread;
+#else
+typedef boost::thread npl_thread;
+#endif
 
 namespace ParaEngine
 {
@@ -74,7 +84,7 @@ namespace ParaEngine
 			Log_Error,
 		};
 
-		typedef boost::shared_ptr<boost::thread> Boost_Thread_ptr_type;
+		typedef boost::shared_ptr<npl_thread> Boost_Thread_ptr_type;
 
 		CAsyncLoader();
 		virtual ~CAsyncLoader();
@@ -302,7 +312,7 @@ namespace ParaEngine
 
 		/** Thread used for running the m_io_service_dispatcher 's run loop for dispatching messages for all NPL Jabber Clients */
 		Boost_Thread_ptr_type m_io_thread;
-		std::vector<boost::shared_ptr<std::thread>> m_io_threads;
+		std::vector<boost::shared_ptr<npl_thread>> m_io_threads;
 		//int m_UsedIOThread;
 		//Semaphore m_io_semaphore;
 		std::atomic_int m_UsedIOThread;
@@ -316,7 +326,7 @@ namespace ParaEngine
 
 			~ProcessorWorkerThread();
 		public:
-			void reset(boost::thread * pThread) {m_thread.reset(pThread);}
+			void reset(npl_thread * pThread) {m_thread.reset(pThread);}
 			void reset() {m_thread.reset();}
 			void join() { if(m_thread.get()) m_thread->join();}
 

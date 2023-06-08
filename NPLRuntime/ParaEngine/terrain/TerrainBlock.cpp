@@ -3,7 +3,6 @@
 // File marked with the above information inherits the GNU License from Demeter Terrain Engine.
 // Other portion of ParaEngine is subjected to its own License.
 
-
 #include "ParaEngine.h"
 #include "TerrainBlock.h"
 #include "Settings.h"

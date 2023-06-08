@@ -8,7 +8,9 @@
 //-----------------------------------------------------------------------------
 #include "ParaEngine.h"
 #include "IParaEngineApp.h"
-
+#ifdef EMSCRIPTEN_SINGLE_THREAD
+#define auto_ptr unique_ptr
+#endif
 extern "C"
 {
 #include "lua.h"

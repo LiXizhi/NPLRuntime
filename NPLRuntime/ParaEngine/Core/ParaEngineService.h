@@ -1,15 +1,20 @@
 #pragma once
+#ifndef EMSCRIPTEN_SINGLE_THREAD
 
+#ifndef EMSCRIPTEN_SINGLE_THREAD
 #include <boost/asio.hpp>
+#include <boost/asio/steady_timer.hpp>
+#endif
 #include <boost/bind.hpp>
 #include <boost/date_time/posix_time/posix_time_types.hpp>
 #include <iostream>
 #include <boost/scoped_ptr.hpp>
-#include <boost/asio/steady_timer.hpp>
 
 namespace ParaEngine
 {
+#ifndef EMSCRIPTEN_SINGLE_THREAD
 	using namespace boost::asio;
+#endif
 
 	/**
 	* this allows ParaEngine to operate as a system service without GUI, such as in server mode.  
@@ -70,3 +75,4 @@ namespace ParaEngine
 	};
 
 }
+#endif

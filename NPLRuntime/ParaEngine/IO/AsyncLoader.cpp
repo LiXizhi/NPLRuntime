@@ -160,7 +160,9 @@ bool CAsyncLoader::ProcessorWorkerThread::timed_join(int nSeconds)
 {
 	if(m_thread.get()) 
 	{
+#ifndef EMSCRIPTEN_SINGLE_THREAD
 		return m_thread->timed_join(boost::posix_time::millisec(nSeconds*1000));
+#endif
 	}
 	return true;
 }
@@ -287,7 +289,13 @@ bool ParaEngine::CAsyncLoader::CreateWorkerThreads(int nProcessorQueueID, int nM
 	for(i=nCount; i<nMaxCount; ++i, ++nNewlyCreated)
 	{
 		ProcessorWorkerThread* worker_thread= new ProcessorWorkerThread(nProcessorQueueID);
+#ifndef EMSCRIPTEN_SINGLE_THREAD
 		worker_thread->reset(new boost::thread(boost::bind(&CAsyncLoader::ProcessingThreadProc, this, worker_thread)));
+#else
+		worker_thread->reset(CoroutineThread::StartCoroutineThread([this](CoroutineThread* t) -> CO_ASYNC {
+			this->ProcessingThreadProc((ProcessorWorkerThread*)t->GetThreadData());
+		}, worker_thread));
+#endif 
 		m_workers.push_back(worker_thread);
 	}
 	if (nNewlyCreated > 0) {
@@ -557,7 +565,15 @@ int CAsyncLoader::Start(int nWorkerCount)
 		for (unsigned int i = 0; i < count; i++)
 		{
 			auto& t = m_io_threads[i];
+#ifndef EMSCRIPTEN_SINGLE_THREAD
 			t.reset(new std::thread(&CAsyncLoader::FileIOThreadProc, this, i + 1));
+#else
+			t.reset(CoroutineThread::StartCoroutineThread([this](CoroutineThread* co_thread) -> CO_ASYNC {
+				this->FileIOThreadProc((unsigned int)co_thread->GetThreadData());
+				CO_RETURN;
+			}, (void*)(i+1)));
+
+#endif
 		}
 	}
 

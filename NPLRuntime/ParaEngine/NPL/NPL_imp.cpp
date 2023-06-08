@@ -85,7 +85,7 @@ int CNPL_imp::activate(const char * sNPLFilename, const char* sCode, int nCodeLe
 
 int CNPL_imp::StartService(const char* pCommandLine)
 {
-#ifndef PARAENGINE_MOBILE
+#if !defined(PARAENGINE_MOBILE) && !defined(EMSCRIPTEN_SINGLE_THREAD)
 	ParaEngine::CParaEngineService service;
 
 	service.AcceptKeyStroke(true);

@@ -1,3 +1,4 @@
+#ifndef EMSCRIPTEN_SINGLE_THREAD
 #include "ParaEngine.h"
 #include <boost/bind.hpp>
 #include "NPLNetUDPServer.h"
@@ -340,3 +341,5 @@ namespace NPL {
 	}
 
 } // namespace NPL
+
+#endif

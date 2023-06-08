@@ -55,7 +55,7 @@ struct construct_aux<0, T, Pointer, Signature>
         void* storage = self->allocate(sizeof(holder_type));
 
         self->set_instance(new (storage) holder_type(
-            ptr, registered_class<T>::id, naked_ptr, cls));
+            std::move(ptr), registered_class<T>::id, naked_ptr, cls));
     }
 };
 

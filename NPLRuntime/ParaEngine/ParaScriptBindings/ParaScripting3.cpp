@@ -13,7 +13,9 @@
 #include "ParaScriptingTerrain.h"
 #include "ParaScriptingScene.h"
 
-
+#ifdef EMSCRIPTEN_SINGLE_THREAD
+#define auto_ptr unique_ptr
+#endif
 using namespace ParaEngine;
 
 /** 

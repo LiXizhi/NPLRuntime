@@ -382,7 +382,7 @@ namespace ParaEngine
 		// file writing
 		//
 		//////////////////////////////////////////////////////////////////////////
-		/** Write byte stream to file
+		/** Write unsigned char stream to file
 		* the file must be opened with write access.
 		*/
 		PE_CORE_DECL int write(const void* src, int bytes);
@@ -425,11 +425,11 @@ namespace ParaEngine
 
 		///////////////////////////////////////////////////////////////////////////
 		//
-		// file reading: byte based
+		// file reading: unsigned char based
 		//
 		//////////////////////////////////////////////////////////////////////////
 
-		/** read byte stream from file at its current location. The buffer pointer will be advanced.*/
+		/** read unsigned char stream from file at its current location. The buffer pointer will be advanced.*/
 		PE_CORE_DECL size_t read(void* dest, size_t bytes);
 
 		/** read DWORD */
@@ -441,9 +441,9 @@ namespace ParaEngine
 		inline BYTE ReadByte(){ BYTE data; read(&data, 1); return data; }
 		inline int WriteByte(BYTE data){ return write(&data, 1); }
 
-		/** read DWORD: little endian byte order */
+		/** read DWORD: little endian unsigned char order */
 		DWORD ReadDWORD_LE();
-		/** read WORD: little endian byte order */
+		/** read WORD: little endian unsigned char order */
 		WORD ReadWORD_LE();
 
 		/** read compressed unsigned int (16, 32, 64, etc)
@@ -632,7 +632,7 @@ namespace ParaEngine
 		//////////////////////////////////////////////////////////////////////////
 		/**
 		* Reset the bit buffer. Since ParaFile is not designed for bit wise reading in general, one need to
-		* manually call synchBits() between the calls to a bit and a byte reading functions.
+		* manually call synchBits() between the calls to a bit and a unsigned char reading functions.
 		*/
 		PE_CORE_DECL void synchBits();
 

@@ -25,7 +25,7 @@ namespace ParaTerrain
 	public:
 		/// \brief Constructs a new DetailTexture that allows splatting of the specified Texture as a detail texture.
 		DetailTexture(Texture * pTexture, Texture * pMask);
-		DetailTexture(Texture * pTexture = NULL, byte DefaultMaskValue = 0);
+		DetailTexture(Texture * pTexture = NULL, unsigned char DefaultMaskValue = 0);
 		DetailTexture(CParaFile& file,Terrain * pTerrain);
 		~DetailTexture();
 		/// \brief Sets the alpha mask to be used for this painting layer. This should be an alpha-only Texture.
@@ -47,7 +47,7 @@ namespace ParaTerrain
 		* @param DefaultMaskValue: the pixel color of the mask. 
 		* @return: the mask file is returned. 
 		*/
-		Texture* RegenerateMask(byte DefaultMaskValue = 0xff);
+		Texture* RegenerateMask(unsigned char DefaultMaskValue = 0xff);
 
 		/// \brief Gets the detail texture.
 		Texture *GetTexture();

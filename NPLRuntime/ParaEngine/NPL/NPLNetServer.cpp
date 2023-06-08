@@ -6,6 +6,7 @@
 // Date:	2009.5.22
 // Desc:  
 //-----------------------------------------------------------------------------
+#ifndef EMSCRIPTEN_SINGLE_THREAD
 #include "ParaEngine.h"
 #include <boost/bind.hpp>
 #include "NPLNetServer.h"
@@ -554,3 +555,4 @@ int NPL::CNPLNetServer::GetMaxPendingConnections() const
 {
 	return m_nMaxPendingConnections;
 }
+#endif

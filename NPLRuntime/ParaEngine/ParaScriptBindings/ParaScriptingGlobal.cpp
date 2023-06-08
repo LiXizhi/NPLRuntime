@@ -43,8 +43,9 @@
 #endif
 
 #include <boost/bind.hpp>
+#ifndef EMSCRIPTEN_SINGLE_THREAD
 #include <boost/asio.hpp>
-
+#endif
 #include "ParaScriptBindings/ParaScriptingNPL.h"
 
 /**@def PARAENGINE_SUPPORT_WRITE_REG: to support writing to registry*/
@@ -334,6 +335,7 @@ bool ParaGlobal::CreateProcess(const char* lpApplicationName, const char* lpComm
 
 bool ParaGlobal::IsPortAvailable(const std::string& ip, const int port, lua_State* L)
 {
+#ifndef EMSCRIPTEN_SINGLE_THREAD
 	using namespace boost::asio;
 	using ip::tcp;
 
@@ -350,6 +352,9 @@ bool ParaGlobal::IsPortAvailable(const std::string& ip, const int port, lua_Stat
 	a.close();
 
 	return !(ec == boost::asio::error::address_in_use);
+#else
+	return false;
+#endif
 }
 
 void ParaGlobal::Execute(const std::string& exe, const luabind::object& param, lua_State* L)

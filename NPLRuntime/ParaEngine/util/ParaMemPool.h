@@ -114,8 +114,11 @@ namespace ParaEngine
 		}
 
 		//    memory allocation
-		inline pointer allocate(size_type cnt, 
-			typename std::allocator<void>::const_pointer = 0) 
+#ifdef EMSCRIPTEN_SINGLE_THREAD
+		inline pointer allocate(size_type cnt, const void* _ = 0) 
+#else
+		inline pointer allocate(size_type cnt, typename std::allocator<void>::const_pointer = 0) 
+#endif
 		{ 
 			return reinterpret_cast<pointer>(user_allocator::malloc(cnt * sizeof (T))); 
 		}
@@ -231,7 +234,11 @@ namespace ParaEngine
 		}
 
 		//    memory allocation
+#ifdef EMSCRIPTEN_SINGLE_THREAD
+		inline pointer allocate(size_type cnt, const void* _ = 0) 
+#else
 		inline pointer allocate(size_type cnt, typename std::allocator<void>::const_pointer = 0) 
+#endif
 		{
 			int n = (int)(cnt * sizeof (T));
 			int nIndex = Math::log2_ceil(n) - char_pool_init_size;

@@ -8,6 +8,15 @@ if (NOT EMSCRIPTEN)
     include(${PROJECT_SOURCE_DIR}/cmake/ConfigBoost.cmake)
 endif()
 
+if (EMSCRIPTEN)
+	set(CMAKE_CXX_STANDARD 20)
+	set(CMAKE_C_STANDARD 11)
+	set(CMAKE_CXX_STANDARD_REQUIRED TRUE)
+else()
+	set(CMAKE_CXX_STANDARD 11)
+	set(CMAKE_C_STANDARD 11)
+endif()
+
 # includes
 set(NPLRUNTIME_INCLUDES)
 

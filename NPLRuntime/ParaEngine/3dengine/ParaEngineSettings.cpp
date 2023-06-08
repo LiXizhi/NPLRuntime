@@ -36,7 +36,9 @@
 #endif
 #endif
 
+#ifndef EMSCRIPTEN_SINGLE_THREAD
 #include <boost/thread/tss.hpp>
+#endif
 #include <boost/log/attributes/current_process_name.hpp>
 
 #include <time.h>

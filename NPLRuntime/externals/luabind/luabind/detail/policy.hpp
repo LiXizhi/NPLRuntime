@@ -180,7 +180,7 @@ namespace luabind { namespace detail
     void make_pointee_instance(lua_State* L, T& x, mpl::false_, mpl::true_)
     {
         std::auto_ptr<T> ptr(new T(x));
-        make_instance(L, ptr);
+        make_instance(L, std::move(ptr));
     }
 
     template <class T>

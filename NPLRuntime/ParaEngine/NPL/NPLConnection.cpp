@@ -6,6 +6,7 @@
 // Date:	2009.6.1
 // Desc:  
 //-----------------------------------------------------------------------------
+#ifndef EMSCRIPTEN_SINGLE_THREAD
 #include "ParaEngine.h"
 #include <boost/bind.hpp>
 #include "NPLDispatcher.h"
@@ -36,6 +37,7 @@ Default value is 200KB */
 /** whether to enable tcp level keep alive. Keep alive is a system socket feature*/
 // #define NPL_INCOMING_KEEPALIVE
 
+#ifndef EMSCRIPTEN_SINGLE_THREAD
 NPL::CNPLConnection::CNPLConnection(boost::asio::io_service& io_service, CNPLConnectionManager& manager, CNPLDispatcher& msg_dispatcher)
 	: m_socket(io_service), m_connection_manager(manager), m_msg_dispatcher(msg_dispatcher), m_totalBytesIn(0), m_totalBytesOut(0),
 	m_queueOutput(DEFAULT_NPL_OUTPUT_QUEUE_SIZE), m_state(ConnectionDisconnected),
@@ -50,6 +52,7 @@ NPL::CNPLConnection::CNPLConnection(boost::asio::io_service& io_service, CNPLCon
 	m_input_msg.npl_version_minor = NPL_VERSION_MINOR;
 	m_input_msg.m_pConnection = this;
 }
+#endif
 
 NPL::CNPLConnection::~CNPLConnection()
 {
@@ -977,3 +980,4 @@ void NPL::CNPLConnection::SetProtocol(ProtocolType protocolType)
 	m_protocolType = protocolType;
 }
 
+#endif

@@ -22,8 +22,9 @@
 #include "util/StringHelper.h"
 #include "NPLWriter.h"
 #include "NPLHelper.h"
+#ifndef EMSCRIPTEN_SINGLE_THREAD
 #include <boost/thread/tss.hpp>
-
+#endif
 #include <vector>
 #include <time.h>
 
@@ -31,7 +32,9 @@
 #include "util/CyoEncode.h"
 
 #include "FileLogger.h"
-
+#ifdef EMSCRIPTEN_SINGLE_THREAD
+#define auto_ptr unique_ptr
+#endif
 extern "C" {
 #include "lua.h"
 #include "lauxlib.h"
@@ -149,13 +152,13 @@ namespace ParaScripting
 		if (!cFile.isEof())
 		{
 			int texWidth, texHeight, nBytesPerPixel;
-			byte *pTextureImage = NULL;
+			unsigned char *pTextureImage = NULL;
 			ImageExtendInfo exInfo;
 			if (TextureEntity::LoadImageOfFormatEx(filename, cFile.getBuffer(), (int)cFile.getSize(), texWidth, texHeight, &pTextureImage, &nBytesPerPixel, -1, &exInfo))
 			{
 				int nSize = texWidth*texHeight*nBytesPerPixel;
 				int nHeaderSize = sizeof(DWORD) * 4;
-				byte* pFileBuffer = new byte[nSize + nHeaderSize];
+				unsigned char* pFileBuffer = new unsigned char[nSize + nHeaderSize];
 				DWORD * pData = (DWORD*)pFileBuffer;
 				*pData = 0; pData++;
 				*pData = texWidth; pData++;
@@ -375,12 +378,12 @@ namespace ParaScripting
 			if (!cFile.isEof())
 			{
 				int texWidth, texHeight, nBytesPerPixel;
-				byte *pTextureImage = NULL;
+				unsigned char *pTextureImage = NULL;
 				if (TextureEntity::LoadImageOfFormat(filename, cFile.getBuffer(), (int)cFile.getSize(), texWidth, texHeight, &pTextureImage, &nBytesPerPixel))
 				{
 					int nSize = texWidth*texHeight*nBytesPerPixel;
 					int nHeaderSize = sizeof(DWORD) * 4;
-					byte* pFileBuffer = new byte[nSize + nHeaderSize];
+					unsigned char* pFileBuffer = new unsigned char[nSize + nHeaderSize];
 					DWORD * pData = (DWORD*)pFileBuffer;
 					*pData = 0; pData++;
 					*pData = texWidth; pData++;
@@ -614,6 +617,7 @@ namespace ParaScripting
 
 	const char* ParaIO::GetParentDirectoryFromPath_(const char* sfilename, int nParentCounts)
 	{
+#ifndef EMSCRIPTEN_SINGLE_THREAD
 		static boost::thread_specific_ptr< std::string > g_str_;
 		if( ! g_str_.get() ) {
 			// first time called by this thread
@@ -621,6 +625,9 @@ namespace ParaScripting
 			g_str_.reset( new std::string());
 		}
 		std::string& g_str = *g_str_;
+#else
+		static std::string g_str;
+#endif
 
 		if(sfilename != NULL)
 			g_str = CParaFile::GetParentDirectoryFromPath(sfilename, nParentCounts);
@@ -638,6 +645,7 @@ namespace ParaScripting
 
 	const char* ParaIO::AutoFindParaEngineRootPath_(const char* sFile)
 	{
+#ifndef EMSCRIPTEN_SINGLE_THREAD
 		static boost::thread_specific_ptr< std::string > g_str_;
 		if( ! g_str_.get() ) {
 			// first time called by this thread
@@ -645,6 +653,9 @@ namespace ParaScripting
 			g_str_.reset( new std::string());
 		}
 		std::string& g_str = *g_str_;
+#else
+		static std::string g_str;
+#endif
 
 		if(sFile != NULL)
 			g_str = CParaFile::AutoFindParaEngineRootPath(sFile);
@@ -669,6 +680,7 @@ namespace ParaScripting
 	}
 	const char* ParaIO::ChangeFileExtension_(const char* sfilename, const string & sExt)
 	{
+#ifndef EMSCRIPTEN_SINGLE_THREAD
 		static boost::thread_specific_ptr< std::string > g_str_;
 		if( ! g_str_.get() ) {
 			// first time called by this thread
@@ -676,6 +688,9 @@ namespace ParaScripting
 			g_str_.reset( new std::string());
 		}
 		std::string& g_str = *g_str_;
+#else
+		static std::string g_str;
+#endif
 
 		if(sfilename != NULL)
 			g_str = CParaFile::ChangeFileExtension(sfilename, sExt);
@@ -694,6 +709,7 @@ namespace ParaScripting
 
 	const char* ParaIO::GetFileExtension_(const char* sfilename)
 	{
+#ifndef EMSCRIPTEN_SINGLE_THREAD
 		static boost::thread_specific_ptr< std::string > g_str_;
 		if( ! g_str_.get() ) {
 			// first time called by this thread
@@ -701,6 +717,9 @@ namespace ParaScripting
 			g_str_.reset( new std::string());
 		}
 		std::string& g_str = *g_str_;
+#else
+		static std::string g_str;
+#endif
 
 		if(sfilename != NULL)
 			g_str = CParaFile::GetFileExtension(sfilename);
@@ -719,6 +738,7 @@ namespace ParaScripting
 
 	const char* ParaIO::GetAbsolutePath_(const char* sRelativePath, const char* sRootPath)
 	{
+#ifndef EMSCRIPTEN_SINGLE_THREAD
 		static boost::thread_specific_ptr< std::string > g_str_;
 		if( ! g_str_.get() ) {
 			// first time called by this thread
@@ -726,6 +746,9 @@ namespace ParaScripting
 			g_str_.reset( new std::string());
 		}
 		std::string& g_str = *g_str_;
+#else
+		static std::string g_str;
+#endif
 
 		if(sRelativePath != NULL && sRootPath!=NULL)
 			g_str = CParaFile::GetAbsolutePath(sRelativePath, sRootPath);
@@ -744,6 +767,7 @@ namespace ParaScripting
 
 	const char* ParaIO::GetRelativePath_(const char* sAbsolutePath, const char* sRootPath)
 	{
+#ifndef EMSCRIPTEN_SINGLE_THREAD
 		static boost::thread_specific_ptr< std::string > g_str_;
 		if( ! g_str_.get() ) {
 			// first time called by this thread
@@ -751,6 +775,9 @@ namespace ParaScripting
 			g_str_.reset( new std::string());
 		}
 		std::string& g_str = *g_str_;
+#else
+		static std::string g_str;
+#endif
 
 		if(sAbsolutePath != NULL && sRootPath!=NULL)
 			g_str = CParaFile::GetRelativePath(sAbsolutePath, sRootPath);
@@ -768,6 +795,7 @@ namespace ParaScripting
 	}
 	const char* ParaIO::GetFileName_(const char* sfilename)
 	{
+#ifndef EMSCRIPTEN_SINGLE_THREAD
 		static boost::thread_specific_ptr< std::string > g_str_;
 		if( ! g_str_.get() ) {
 			// first time called by this thread
@@ -775,6 +803,9 @@ namespace ParaScripting
 			g_str_.reset( new std::string());
 		}
 		std::string& g_str = *g_str_;
+#else
+		static std::string g_str;
+#endif
 
 		if(sfilename != NULL)
 			g_str = CParaFile::GetFileName(sfilename);
@@ -802,6 +833,7 @@ namespace ParaScripting
 
 	const char* ParaIO::ToCanonicalFilePath__(const char* sfilename, bool bBackSlash)
 	{
+#ifndef EMSCRIPTEN_SINGLE_THREAD
 		static boost::thread_specific_ptr< std::string > g_str_;
 		if( ! g_str_.get() ) {
 			// first time called by this thread
@@ -809,6 +841,9 @@ namespace ParaScripting
 			g_str_.reset( new std::string());
 		}
 		std::string& g_str = *g_str_;
+#else
+		static std::string g_str;
+#endif
 
 		if(sfilename != NULL)
 		{
@@ -826,6 +861,7 @@ namespace ParaScripting
 
 	const char* ParaIO::GetCurDirectory_(DWORD dwDirectoryType)
 	{
+#ifndef EMSCRIPTEN_SINGLE_THREAD
 		static boost::thread_specific_ptr< std::string > g_str_;
 		if( ! g_str_.get() ) {
 			// first time called by this thread
@@ -833,6 +869,10 @@ namespace ParaScripting
 			g_str_.reset( new std::string());
 		}
 		std::string& g_str = *g_str_;
+#else
+		static std::string g_str;
+#endif
+
 
 		g_str = CParaFile::GetCurDirectory(dwDirectoryType);
 
@@ -955,6 +995,7 @@ namespace ParaScripting
 
 	const char* ParaIO::DecodePath( const char* input )
 	{
+#ifndef EMSCRIPTEN_SINGLE_THREAD
 		static boost::thread_specific_ptr< std::string > g_str_;
 		if( ! g_str_.get() ) {
 			// first time called by this thread
@@ -962,7 +1003,9 @@ namespace ParaScripting
 			g_str_.reset( new std::string());
 		}
 		std::string& g_str = *g_str_;
-
+#else
+		static std::string g_str;
+#endif
 		if(input)
 		{
 			CPathReplaceables::GetSingleton().DecodePath(g_str, input);
@@ -974,6 +1017,7 @@ namespace ParaScripting
 
 	const char* ParaIO::EncodePath( const char* input )
 	{
+#ifndef EMSCRIPTEN_SINGLE_THREAD
 		static boost::thread_specific_ptr< std::string > g_str_;
 		if( ! g_str_.get() ) {
 			// first time called by this thread
@@ -981,7 +1025,9 @@ namespace ParaScripting
 			g_str_.reset( new std::string());
 		}
 		std::string& g_str = *g_str_;
-
+#else
+		static std::string g_str;
+#endif
 		if(input)
 		{
 			CPathReplaceables::GetSingleton().EncodePath(g_str, input);
@@ -997,13 +1043,17 @@ namespace ParaScripting
 			return EncodePath(input);
 		else if(input)
 		{
-			static boost::thread_specific_ptr< std::string > g_str_;
-			if( ! g_str_.get() ) {
-				// first time called by this thread
-				// construct test element to be used in all subsequent calls from this thread
-				g_str_.reset( new std::string());
-			}
-			std::string& g_str = *g_str_;
+#ifndef EMSCRIPTEN_SINGLE_THREAD
+		static boost::thread_specific_ptr< std::string > g_str_;
+		if( ! g_str_.get() ) {
+			// first time called by this thread
+			// construct test element to be used in all subsequent calls from this thread
+			g_str_.reset( new std::string());
+		}
+		std::string& g_str = *g_str_;
+#else
+		static std::string g_str;
+#endif
 
 			CPathReplaceables::GetSingleton().EncodePath(g_str, input, varNames);
 			return g_str.c_str();
@@ -1027,7 +1077,7 @@ namespace ParaScripting
 
 	ParaScripting::ParaFileSystemWatcher ParaIO::GetFileSystemWatcher( const char* filename )
 	{
-#if defined(PARAENGINE_MOBILE)
+#if defined(PARAENGINE_MOBILE) || defined(EMSCRIPTEN_SINGLE_THREAD)
 		return ParaFileSystemWatcher();
 #else
 		return ParaFileSystemWatcher(CFileSystemWatcherService::GetInstance()->GetDirWatcher(filename).get());
@@ -1036,7 +1086,7 @@ namespace ParaScripting
 
 	void ParaIO::DeleteFileSystemWatcher( const char* name )
     {
-#if !defined(PARAENGINE_MOBILE)
+#if !defined(PARAENGINE_MOBILE) && !defined(EMSCRIPTEN_SINGLE_THREAD)
         CFileSystemWatcherService::GetInstance()->DeleteDirWatcher(name);
 #endif
 	}
@@ -1135,12 +1185,12 @@ namespace ParaScripting
 			{
 				// https://en.wikipedia.org/wiki/Byte_order_mark
 				// encoding is escaped.
-				if ((((byte)text[0]) == 0xEF) && (((byte)text[1]) == 0xBB) && (((byte)text[2]) == 0xBF))
+				if ((((unsigned char)text[0]) == 0xEF) && (((unsigned char)text[1]) == 0xBB) && (((unsigned char)text[2]) == 0xBF))
 				{
 					// UTF-8[t 1]	EF BB BF
 					text += 3;
 				}
-				else if ( ((((byte)text[0]) == 0xFF) && (((byte)text[1]) == 0xFE)) || ((((byte)text[0]) == 0xFE) && (((byte)text[1]) == 0xFF)))
+				else if ( ((((unsigned char)text[0]) == 0xFF) && (((unsigned char)text[1]) == 0xFE)) || ((((unsigned char)text[0]) == 0xFE) && (((unsigned char)text[1]) == 0xFF)))
 				{
 					// UTF - 16 (BigEndian)    FE FF
 					// UTF - 16 (LittleEndian) FF FE
@@ -1271,13 +1321,13 @@ namespace ParaScripting
 	{
 		if(IsValid())
 		{
-			std::vector<byte> data;
+			std::vector<unsigned char> data;
 			data.resize(nSize);
-			// convert script array object to vector byte array.
+			// convert script array object to vector unsigned char array.
 			for (int i=0; i<nSize; ++i)
 			{
 				int value = object_cast<int>(input[i+1]);
-				data[i] = (byte)value;
+				data[i] = (unsigned char)value;
 			}
 
 			if(nSize>0)
@@ -1303,10 +1353,10 @@ namespace ParaScripting
 
 			if(type(output) == LUA_TTABLE)
 			{
-				// convert vector byte array to script array object.
+				// convert vector unsigned char array to script array object.
 				for (int i=0; i<nSize; ++i)
 				{
-					output[i+1] = (int)((byte)(data[i]));
+					output[i+1] = (int)((unsigned char)(data[i]));
 				}
 			}
 			else
@@ -2019,7 +2069,7 @@ namespace ParaScripting
 
 	void ParaFileSystemWatcher::AddDirectory( const char* filename )
 	{
-#if !defined(PARAENGINE_MOBILE)
+#if !defined(PARAENGINE_MOBILE) && !defined(EMSCRIPTEN_SINGLE_THREAD)
 		if (m_watcher)
 			m_watcher->add_directory(filename);
 #endif
@@ -2027,12 +2077,12 @@ namespace ParaScripting
 
 	void ParaFileSystemWatcher::RemoveDirectory( const char* filename )
 	{
-#if !defined(PARAENGINE_MOBILE)
+#if !defined(PARAENGINE_MOBILE) && !defined(EMSCRIPTEN_SINGLE_THREAD)
 		if (m_watcher)
 			m_watcher->remove_directory(filename);
 #endif
 	}
-#if !defined(PARAENGINE_MOBILE)
+#if !defined(PARAENGINE_MOBILE) && !defined(EMSCRIPTEN_SINGLE_THREAD)
 	/** callback to npl runtime */
 	struct FileSystemWatcher_NPLCallback
 	{
@@ -2063,7 +2113,7 @@ namespace ParaScripting
 #endif
 	void ParaFileSystemWatcher::AddCallback( const char* sCallbackScript )
 	{
-#if !defined(PARAENGINE_MOBILE)
+#if !defined(PARAENGINE_MOBILE) && !defined(EMSCRIPTEN_SINGLE_THREAD)
 		if (m_watcher)
 			m_watcher->AddEventCallback(FileSystemWatcher_NPLCallback(sCallbackScript));
 #endif
@@ -2075,7 +2125,7 @@ namespace ParaScripting
 
 	}
 
-#if defined(PARAENGINE_MOBILE)
+#if defined(PARAENGINE_MOBILE) || defined(EMSCRIPTEN_SINGLE_THREAD)
 	ParaFileSystemWatcher::ParaFileSystemWatcher(ParaFileSystemWatcher* watcher) : m_watcher(watcher)
 	{
 

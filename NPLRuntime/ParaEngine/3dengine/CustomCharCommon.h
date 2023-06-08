@@ -255,12 +255,12 @@ namespace ParaEngine
 		void SetColor(DWORD color);
 
 		/** copy the texture to memory in RAW RGBA(32bits) format.
-		* @param pBuffer: byte[width*height*4]
+		* @param pBuffer: unsigned char[width*height*4]
 		* @param nWidth: [out] width of the texture in pixels
 		* @param nHeight: [out] height of the texture in pixels
 		* @return : return true if succeed, false otherwise
 		*/
-		bool GetPixels(byte* pBuffer, int* nWidth, int* nHeight);
+		bool GetPixels(unsigned char* pBuffer, int* nWidth, int* nHeight);
 
 		/** whether the texture component is loaded*/
 		bool CheckLoad();

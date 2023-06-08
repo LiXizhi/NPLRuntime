@@ -195,11 +195,11 @@ int ParaEngine::CBufferPicking::Pick(const QRect& region_, int nViewportId /*= -
 #ifdef USE_OPENGL_RENDERER
 		for (auto & result : m_pickingResult)
 		{
-			byte * byte_ptr = reinterpret_cast<byte*>(&result);
-			byte red = *byte_ptr++;
-			byte green = *byte_ptr++;
-			byte blue = *byte_ptr++;
-			byte alpha = *byte_ptr;
+			unsigned char * byte_ptr = reinterpret_cast<unsigned char*>(&result);
+			unsigned char red = *byte_ptr++;
+			unsigned char green = *byte_ptr++;
+			unsigned char blue = *byte_ptr++;
+			unsigned char alpha = *byte_ptr;
 			result = (alpha << 24) | (red << 16) | (green << 8) | (blue);
 		}
 #endif
