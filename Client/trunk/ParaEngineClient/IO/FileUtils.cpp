@@ -834,10 +834,18 @@ namespace ParaEngine
 	bool _GetFileInfo_(const char* filename, CParaFileInfo& fileInfo)
 	{
 		STAT_STRUCT info;
+#ifdef DEFAULT_FILE_ENCODING
+		LPCWSTR filename16 = StringHelper::MultiByteToWideChar(filename, DEFAULT_FILE_ENCODING);
+		if (_wstati64(filename16, &info)) {
+			// file not found
+			return false;
+		}
+#else
 		if (STAT_FUNC(filename, &info)){
 			// file not found
 			return false;
 		}
+#endif
 		auto mode = info.st_mode;
 		if (S_ISREG(mode))
 			fileInfo.m_mode = CParaFileInfo::ModeFile;
