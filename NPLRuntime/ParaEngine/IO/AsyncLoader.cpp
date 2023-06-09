@@ -220,6 +220,7 @@ m_bDone(false), m_bProcessThreadDone(false), m_bIOThreadDone(false), m_bInterrup
 #ifdef _DEBUG
 	// SetLogLevel(Log_All);
 #endif
+	SetLogLevel(Log_All);
 	g_asset_logger.reset(new CServiceLogger("assets.log", false));
 	g_asset_logger->SetForceFlush(false);
 	m_RenderThreadQueue.SetUseEvent(false);
@@ -293,7 +294,7 @@ bool ParaEngine::CAsyncLoader::CreateWorkerThreads(int nProcessorQueueID, int nM
 		worker_thread->reset(new boost::thread(boost::bind(&CAsyncLoader::ProcessingThreadProc, this, worker_thread)));
 #else
 		worker_thread->reset(CoroutineThread::StartCoroutineThread([this](CoroutineThread* t) -> CO_ASYNC {
-			this->ProcessingThreadProc((ProcessorWorkerThread*)t->GetThreadData());
+			CO_AWAIT(this->ProcessingCorountineThreadProc(t));
 		}, worker_thread));
 #endif 
 		m_workers.push_back(worker_thread);
@@ -548,8 +549,6 @@ int CAsyncLoader::Start(int nWorkerCount)
 	m_bInterruptSignal = false;
 	OUTPUT_LOG("CAsyncLoader::Start, %d\n", std::thread::hardware_concurrency());
 
-	// start the io thread
-	//m_io_thread.reset(new boost::thread(boost::bind(&CAsyncLoader::FileIOThreadProc, this)));
 	{
 #ifdef EMSCRIPTEN
 		auto count = 1;
@@ -569,10 +568,34 @@ int CAsyncLoader::Start(int nWorkerCount)
 			t.reset(new std::thread(&CAsyncLoader::FileIOThreadProc, this, i + 1));
 #else
 			t.reset(CoroutineThread::StartCoroutineThread([this](CoroutineThread* co_thread) -> CO_ASYNC {
-				this->FileIOThreadProc((unsigned int)co_thread->GetThreadData());
-				CO_RETURN;
-			}, (void*)(i+1)));
+				unsigned int id = (unsigned int)(co_thread->GetThreadData());
 
+				ResourceRequest_ptr ResourceRequest;
+				HRESULT hr = S_OK;
+
+				ASSETS_LOG(Log_All, "CAsyncLoader IO Thread started");
+
+				OUTPUT_LOG("CAsyncLoader IO Thread started"); // deleted
+
+				int nRes = 0;
+				while(nRes != -1)
+				{
+					while (id > m_UsedIOThread) 
+					{
+						CO_AWAIT(co_thread->Sleep(10));
+					}
+
+					while (!m_IOQueue.try_pop(ResourceRequest))
+					{
+						CO_AWAIT(co_thread->Sleep(100));
+					}
+					if(ResourceRequest->m_nType == ResourceRequestType_Quit)
+					{
+						break;
+					}
+					hr = FileIOThreadProc_HandleRequest(ResourceRequest);
+				}
+			}, (void*)(i+1)));
 #endif
 		}
 	}
@@ -730,6 +753,98 @@ int CAsyncLoader::FileIOThreadProc(unsigned int id)
 	return 0;
 }
 
+CO_ASYNC CAsyncLoader::ProcessingCorountineThreadProc(CoroutineThread* co_thread)
+{
+	ResourceRequest_ptr ResourceRequest;
+	HRESULT hr = S_OK;
+	ProcessorWorkerThread* pThreadData = (ProcessorWorkerThread*)(co_thread->GetThreadData());
+	if(pThreadData == 0) CO_RETURN;
+
+	int nQueueID = pThreadData->GetProcessorQueueID();
+
+	{
+		// print thread info to log
+		const char* ThreadType = "";
+		switch(nQueueID)
+		{
+		case ResourceRequestType_Web:
+			ThreadType = "Web";
+			break;
+		case ResourceRequestType_Asset:
+			ThreadType = "Asset";
+			break;
+		case ResourceRequestID_Local:
+			ThreadType = "Local";
+			break;
+		case ResourceRequestID_Asset_BigFile:
+			ThreadType = "BigFile";
+			break;
+		case ResourceRequestID_AudioFile:
+			ThreadType = "AudioFile";
+			break;
+		}
+		ASSETS_LOG(Log_All, "Async Processing Thread %s(%d) Started\n", ThreadType, nQueueID);
+	}
+
+	int nRes = 0;
+
+	while(nRes != -1)
+	{
+		while (!m_ProcessQueues[nQueueID].try_pop(ResourceRequest)) 
+		{
+			CO_AWAIT(co_thread->Sleep(300));
+		}
+
+		if(ResourceRequest->m_nType == ResourceRequestType_Quit)
+		{
+			break;
+		}
+		// let us sleep some time to emulate slow connection for debugging purposes.
+		// Sleep(300);
+
+		// ASSETS_LOG(Log_All, "DEBUG: process msg %s\n", ResourceRequest->m_pDataLoader->GetFileName());
+		
+		// Decompress the data
+		if( !ResourceRequest->m_bError )
+		{
+			void* pData = NULL;
+			int cDataSize = 0;
+			hr = ResourceRequest->m_pDataLoader->Decompress( &pData, &cDataSize );
+			if( SUCCEEDED( hr ) )
+			{
+				// Process the data
+				ResourceRequest->m_pDataProcessor->SetProcessorWorkerData(pThreadData);
+				hr = ResourceRequest->m_pDataProcessor->Process( pData, cDataSize );
+			}
+		}
+
+		if( FAILED( hr ) )
+		{
+			OUTPUT_LOG( "Processing Thread Error: hr = %x\n", hr );
+			
+			ResourceRequest->m_bError = true;
+			ResourceRequest->m_last_error_code = hr;
+			if( ResourceRequest->m_pHR )
+				*ResourceRequest->m_pHR = hr;
+		}
+
+		
+		ResourceRequest->m_bLock = true;
+		if (ResourceRequest->m_pDataProcessor->IsDeviceObject())
+		{
+			// Add it to the RenderThreadQueue
+			if (m_RenderThreadQueue.try_push(ResourceRequest) == m_RenderThreadQueue.BufferOverFlow)
+			{
+				OUTPUT_LOG("ERROR: AsyncLoader process msg failed push to m_RenderThreadQueue because queue is full \n");
+			}
+		}
+		else
+		{
+			ProcessDeviceWorkItemImp(ResourceRequest);
+		}
+	}
+}
+
 int CAsyncLoader::ProcessingThreadProc(ProcessorWorkerThread* pThreadData)
 {
 	ResourceRequest_ptr ResourceRequest;
@@ -767,6 +882,7 @@ int CAsyncLoader::ProcessingThreadProc(ProcessorWorkerThread* pThreadData)
 	int nRes = 0;
 	while(nRes != -1)
 	{
+		// auto queue = m_ProcessQueues[nQueueID];
 		m_ProcessQueues[nQueueID].wait_and_pop(ResourceRequest);
 		if(ResourceRequest->m_nType == ResourceRequestType_Quit)
 		{
