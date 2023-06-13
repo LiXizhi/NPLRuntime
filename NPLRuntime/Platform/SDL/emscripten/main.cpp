@@ -109,7 +109,7 @@ int main(int argc, char* argv[])
 	JS::SetTextInputCallback([](const std::string text) { GetApp()->OnChar(text);});
 	JS::SetRecvMsgFromJSCallback(std::function<void(const std::string, const std::string)>([](const std::string filename, const std::string msg_data_json){
 		NPL::NPLRuntimeState_ptr pState = CGlobals::GetNPLRuntime()->GetMainRuntimeState();
-		std::cout << "JS::SetRecvMsgFromJSCallback => " << filename << " : " << msg_data_json << std::endl;
+		// std::cout << "JS::SetRecvMsgFromJSCallback => " << filename << " : " << msg_data_json << std::endl;
 		// NPL::CNPLWriter writer;
 		// writer.WriteName("msg");
 		// writer.BeginTable();

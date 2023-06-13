@@ -110,7 +110,9 @@ CAsyncLoader::ProcessorWorkerThread::~ProcessorWorkerThread()
 {
 	if(m_curl)
 	{
+#ifndef EMSCRIPTEN
 		curl_easy_cleanup(m_curl);
+#endif
 		m_curl = NULL;
 	}
 }
@@ -134,7 +136,9 @@ void* CAsyncLoader::ProcessorWorkerThread::GetCurlInterface(int nID)
 	}
 	else
 	{
+#ifndef EMSCRIPTEN
 		m_curl = curl_easy_init();
+#endif
 
 		return (void*)m_curl;
 	}
@@ -148,10 +152,12 @@ void* CAsyncLoader::DefaultWorkerThreadData::GetCurlInterface(int nID)
 	}
 	else
 	{
+#ifndef EMSCRIPTEN
 		m_curl = curl_easy_init();
 
 		// The official doc says if multi-threaded use, this one should be set to 1. 
 		curl_easy_setopt(m_curl, CURLOPT_NOSIGNAL, 1);
+#endif
 		return (void*)m_curl;
 	}
 }
@@ -220,7 +226,6 @@ m_bDone(false), m_bProcessThreadDone(false), m_bIOThreadDone(false), m_bInterrup
 #ifdef _DEBUG
 	// SetLogLevel(Log_All);
 #endif
-	SetLogLevel(Log_All);
 	g_asset_logger.reset(new CServiceLogger("assets.log", false));
 	g_asset_logger->SetForceFlush(false);
 	m_RenderThreadQueue.SetUseEvent(false);

@@ -9,7 +9,6 @@
 
 #define CO_ASYNC CoroutineThread::Coroutine
 #define CO_AWAIT(expr) { auto _v_corountine = (expr); while (!_v_corountine.IsDone()) { co_await _v_corountine; _v_corountine.Resume();} }
-#define CO_AWAIT_ONCE co_await
 #define CO_RETURN co_return
 
 class CoroutineThread
@@ -63,7 +62,8 @@ public:
             auto coroutine_thread = it->second;
             if (coroutine_thread->IsFinished())
             {
-                it = coroutine_threads->erase(it);
+                // it = coroutine_threads->erase(it);
+                it++;
             }
             else
             {
@@ -93,7 +93,7 @@ public:
     CO_ASYNC Sleep(unsigned long long timestmap)
     {
         m_sleep_timestmap = GetTimeStamp() + timestmap; 
-        CO_AWAIT_ONCE std::suspend_never{};
+        co_await std::suspend_never{};
     }
 
     CoroutineThread* Start() 

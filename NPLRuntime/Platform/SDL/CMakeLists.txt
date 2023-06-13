@@ -17,7 +17,11 @@ else()
 endif()
 
 if (EMSCRIPTEN)
-	set (TARGET_NAME ParaCraft)
+	if (EMSCRIPTEN_SINGLE_THREAD)
+		set (TARGET_NAME ParaCraftSingleThread)
+	else()
+		set (TARGET_NAME ParaCraft)
+	endif()
 else()
 	set (TARGET_NAME ParaCraftSDL2)
 endif()
@@ -104,4 +108,4 @@ if (EMSCRIPTEN)
 endif()
 
 # emcmake cmake -S NPLRuntime -B build_emscripten_release -DEMSCRIPTEN=ON -DCMAKE_BUILD_TYPE=RELEASE -DLOCAL_DEBUG=TRUE
-# emcmake cmake -S NPLRuntime -B build_emscripten -DEMSCRIPTEN=ON -DLOCAL_DEBUG=TRUE
+# emcmake cmake -S NPLRuntime -B build_emscripten -DEMSCRIPTEN=ON -DEMSCRIPTEN_SINGLE_THREAD=ON -DCMAKE_BUILD_TYPE=RELEASE -DLOCAL_DEBUG=TRUE

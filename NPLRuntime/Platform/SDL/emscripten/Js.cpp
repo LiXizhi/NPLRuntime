@@ -95,7 +95,7 @@ EM_JS(void, SendMsgToJS_JS, (const char* c_msg_data_json), {
 // 定义JS方法执行C++代码
 EM_PORT_API(void) SendMsgToEmscripten(const char* js_filename, const char* js_msg_data_json)
 {
-    std::cout << "RecvMsgFromJS:" << js_filename << " msg data:"<<  js_msg_data_json << std::endl;
+    // std::cout << "RecvMsgFromJS:" << js_filename << " msg data:"<<  js_msg_data_json << std::endl;
     RecvMsgFromJS(JsStringToString(js_filename),  JsStringToString(js_msg_data_json));
 }
 

@@ -372,10 +372,11 @@ ParaEngine::CRequestTaskPool::~CRequestTaskPool()
 		}
 		m_task_pool.clear();
 	}
+#ifndef EMSCRIPTEN_SINGLE_THREAD
 	// free multi
 	if(m_multi_handle)
 		curl_multi_cleanup(m_multi_handle);
-
+#endif
 	// free the CURL handles
 	{
 		std::list <CUrlWorkerState>::iterator itCur, itEnd = m_easy_handles.end();
@@ -390,6 +391,7 @@ ParaEngine::CRequestTaskPool::~CRequestTaskPool()
 
 int ParaEngine::CRequestTaskPool::DoProcess()
 {
+#ifndef EMSCRIPTEN_SINGLE_THREAD
 	if(m_task_pool.size() == 0)
 		return 0;
 	int nCount = 0;
@@ -470,10 +472,14 @@ int ParaEngine::CRequestTaskPool::DoProcess()
 		}
 	} while (bStillNeedPerform); // the above three steps are repeated until there is no queued task to be added to any available slots. 
 	return nCount;
+#else
+	return 0;
+#endif
 }
 
 ParaEngine::CRequestTaskPool::CUrlWorkerState* ParaEngine::CRequestTaskPool::GetFreeWorkerSlot()
 {
+#ifndef EMSCRIPTEN_SINGLE_THREAD
 	if(m_nRunningTaskCount >= m_nMaxWorkerThreads)
 		return NULL;
 	if(m_multi_handle == NULL)
@@ -515,11 +521,13 @@ ParaEngine::CRequestTaskPool::CUrlWorkerState* ParaEngine::CRequestTaskPool::Get
 		}
 		return pWorker;
 	}
+#endif
 	return NULL;
 }
 
 int ParaEngine::CRequestTaskPool::CURL_MultiPerform()
 {
+#ifndef EMSCRIPTEN_SINGLE_THREAD
 	if(m_multi_handle == NULL)
 		return 0;
 
@@ -612,12 +620,16 @@ int ParaEngine::CRequestTaskPool::CURL_MultiPerform()
 	}
 
 	return nCount;
+#else
+	return 0;
+#endif
 }
 
 void ParaEngine::CRequestTaskPool::SetMaxTaskSlotsCount(int nCount)
 {
 	m_nMaxWorkerThreads = nCount;
 }
+#ifndef EMSCRIPTEN_SINGLE_THREAD
 void ParaEngine::CURLRequestTask::SetCurlEasyOpt( CURL* handle )
 {
 	// reset data 
@@ -643,7 +655,7 @@ void ParaEngine::CURLRequestTask::SetCurlEasyOpt( CURL* handle )
 		curl_easy_setopt(handle, CURLOPT_HTTPGET, 1);
 	}
 }
-
+#endif
 size_t ParaEngine::CURLRequestTask::CUrl_write_data_callback( void *buffer, size_t size, size_t nmemb, void *stream )
 {
 	CURLRequestTask * pTask=(CURLRequestTask *) stream;

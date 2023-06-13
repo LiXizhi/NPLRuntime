@@ -3132,7 +3132,11 @@ namespace ParaEngine
 
 	bool BlockWorldClient::IsAsyncChunkMode() const
 	{
+#ifdef EMSCRIPTEN_SINGLE_THREAD
+		return false;
+#else
 		return m_bAsyncChunkMode;
+#endif
 	}
 
 	void BlockWorldClient::SetAsyncChunkMode(bool val)

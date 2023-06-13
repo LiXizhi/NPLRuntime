@@ -33,7 +33,7 @@ ucm_add_dirs(
     protocol
     ParaXModel
     IO
-    curllua
+    # curllua
     debugtools
     InfoCenter
     BlockEngine
@@ -248,7 +248,6 @@ if (EMSCRIPTEN)
     ${NPLRUNTIME_LIBS}
     ${PLATFORM_SPE_LIBS}
     ${LUA_LIB_LIST}
-    libcurl
     jsoncpp
     tinyxpath
     luabind

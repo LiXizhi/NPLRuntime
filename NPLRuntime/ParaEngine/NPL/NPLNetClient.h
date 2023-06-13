@@ -6,11 +6,14 @@
 #ifndef EMSCRIPTEN_SINGLE_THREAD
 #include <boost/asio.hpp>
 #include <boost/thread.hpp>
+/* curl specific */
+#include <curl/curl.h>
+#else 
+#include "UrlLoaders.h"
 #endif
 #include <boost/scoped_ptr.hpp>
 
-/* curl specific */
-#include <curl/curl.h>
+
 
 
 namespace ParaEngine
@@ -67,7 +70,11 @@ namespace ParaEngine
 		// default time out in milliseconds
 		static const DWORD DEFAULT_TIME_OUT = 15000;
 
+#ifndef EMSCRIPTEN_SINGLE_THREAD
 		CURLRequestTask():m_pFormPost(0), m_nTimeOutTime(DEFAULT_TIME_OUT), m_nStartTime(0),m_responseCode(0), m_pFormLast(0), m_pUserData(0), m_returnCode(CURLE_OK), m_type(URL_REQUEST_HTTP_AUTO), m_nPriority(0), m_nStatus(URL_REQUEST_UNSTARTED), m_pfuncCallBack(0), m_nBytesReceived(0), m_nTotalBytes(0), m_nUserDataType(0) {};
+#else
+		CURLRequestTask():m_nTimeOutTime(DEFAULT_TIME_OUT), m_nStartTime(0),m_responseCode(0), m_pUserData(0), m_returnCode(CURLE_OK), m_type(URL_REQUEST_HTTP_AUTO), m_nPriority(0), m_nStatus(URL_REQUEST_UNSTARTED), m_pfuncCallBack(0), m_nBytesReceived(0), m_nTotalBytes(0), m_nUserDataType(0) {};
+#endif
 		~CURLRequestTask();
 
 	public:
@@ -81,9 +88,10 @@ namespace ParaEngine
 		*/
 		CURLFORMcode AppendFormParam(const char* name, const char* type, const char* file, const char* data, int datalen);
 
+#ifndef EMSCRIPTEN_SINGLE_THREAD
 		/** init the easy handle according to the settings. It will also prepare the task for the curl interface by clearing data, etc. */
 		void SetCurlEasyOpt(CURL* handle);
-
+#endif
 		/** call the call back if any, this function must be called in the main game thread. */
 		void CompleteTask();
 
@@ -124,9 +132,10 @@ namespace ParaEngine
 		/** CURLOPT_URL*/
 		string m_url;
 		/** CURLOPT_HTTPPOST */
+#ifndef EMSCRIPTEN_SINGLE_THREAD
 		struct curl_httppost* m_pFormPost;
 		struct curl_httppost* m_pFormLast;
-
+#endif
 		/** task priority */
 		int m_nPriority;
 		/** the NPL function to call when task is finished. */
@@ -194,16 +203,22 @@ namespace ParaEngine
 		class CUrlWorkerState
 		{
 		public:
+#ifndef EMSCRIPTEN_SINGLE_THREAD
 			CUrlWorkerState(): m_easy_handle(NULL), m_pCurrentTask(NULL), m_returnCode(CURLE_OK), m_bIsCompleted(true) {};
 			CURL* m_easy_handle;
 			/* return code for last transfer */
 			CURLcode m_returnCode;   
+#endif
 			/** what this message means */
 			bool m_bIsCompleted;   
 			CURLRequestTask* m_pCurrentTask;
 		};
 
+#ifndef EMSCRIPTEN_SINGLE_THREAD
 		CRequestTaskPool():m_nRunningTaskCount(0), m_nMaxWorkerThreads(1), m_nMaxQueuedTask(65535), m_multi_handle(NULL){}
+#else
+		CRequestTaskPool():m_nRunningTaskCount(0), m_nMaxWorkerThreads(1), m_nMaxQueuedTask(65535) {}
+#endif
 		~CRequestTaskPool();
 	public:
 		/** Append URL request to a pool. 
@@ -242,7 +257,9 @@ namespace ParaEngine
 		/** the max number of queued tasks. Default to 65535 */
 		int m_nMaxQueuedTask;
 		/** the multi handle. */
+#ifndef EMSCRIPTEN_SINGLE_THREAD
 		CURLM * m_multi_handle;
+#endif
 		/** the number of still running tasks. */
 		int m_nRunningTaskCount;
 	};

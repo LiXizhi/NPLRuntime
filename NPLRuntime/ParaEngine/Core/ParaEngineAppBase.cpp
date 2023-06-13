@@ -69,6 +69,8 @@
 #include "DirectXEngine.h"
 #endif
 
+#include "CoroutineThread.h"
+
 using namespace ParaEngine;
 using namespace ParaInfoCenter;
 IParaEngineApp* CParaEngineAppBase::g_pCurrentApp = NULL;
@@ -932,6 +934,7 @@ bool ParaEngine::CParaEngineAppBase::IsSlateMode()
 
 HRESULT ParaEngine::CParaEngineAppBase::DoWork()
 {
+	CoroutineThread::Tick();
 	m_fTime = m_Timer->GetAppTime();
 	if (m_pRenderWindow == nullptr)
 		return S_FALSE;

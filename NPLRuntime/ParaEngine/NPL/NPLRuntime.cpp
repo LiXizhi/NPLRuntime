@@ -82,14 +82,18 @@ CNPLRuntime::CNPLRuntime(void)
 	, m_bHostMainStatesInFrameMove(true)
 	, m_nLogLevel(1)
 {
+#ifndef EMSCRIPTEN
 	curl_global_init(CURL_GLOBAL_ALL);
+#endif
 	Init();
 }
 
 CNPLRuntime::~CNPLRuntime(void)
 {
 	Cleanup();
+#ifndef EMSCRIPTEN
 	curl_global_cleanup();
+#endif
 }
 
 void CNPLRuntime::Init()
