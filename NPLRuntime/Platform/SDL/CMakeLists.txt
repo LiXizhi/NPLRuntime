@@ -83,29 +83,31 @@ if (EMSCRIPTEN)
 	add_custom_target(
 		paracraft_asset ALL
 		COMMAND $ENV{EMSDK}/upstream/emscripten/tools/file_packager paracraft_asset.data --preload "${APP_ROOT}@/" --js-output=paracraft_asset.js
+		# COMMAND $ENV{EMSDK}/upstream/emscripten/tools/file_packager paracraft_asset.data --embed "${APP_ROOT}@/" --js-output=paracraft_asset.js
 		COMMENT "打包资源文件"
 		OUTPUT_DIRECTORY ${HTML_ROOT}
 		WORKING_DIRECTORY ${HTML_ROOT}
 	)
-
-	# script
-	add_custom_target(
-		paracraft_script
-		COMMAND $ENV{EMSDK}/upstream/emscripten/tools/file_packager paracraft_script.data --preload "/mnt/d/workspace/npl/paracraft_script/Mod@/Mod" --js-output=paracraft_script.js
-		COMMENT "打包资源文件"
-		OUTPUT_DIRECTORY ${HTML_ROOT}
-		WORKING_DIRECTORY ${HTML_ROOT}
-	)
+	# # script
+	# add_custom_target(
+	# 	paracraft_script
+	# 	COMMAND $ENV{EMSDK}/upstream/emscripten/tools/file_packager paracraft_script.data --preload "/mnt/d/workspace/npl/paracraft_script/Mod@/Mod" --js-output=paracraft_script.js
+	# 	COMMENT "打包资源文件"
+	# 	OUTPUT_DIRECTORY ${HTML_ROOT}
+	# 	WORKING_DIRECTORY ${HTML_ROOT}
+	# )
 
 	# 拷贝缓存文件系统到根目录
 	add_custom_target(
 		paracraft_asset_temp
 		COMMAND $ENV{EMSDK}/upstream/emscripten/tools/file_packager paracraft_asset_temp.data --preload "${APP_ROOT}_temp@/" --js-output=paracraft_asset_temp.js
+		# paracraft_asset_temp ALL
+		# COMMAND $ENV{EMSDK}/upstream/emscripten/tools/file_packager paracraft_asset_temp.data --embed "${APP_ROOT}_temp@/" --js-output=paracraft_asset_temp.js
 		COMMENT "打包缓存资源文件"
 		OUTPUT_DIRECTORY ${HTML_ROOT}
 		WORKING_DIRECTORY ${HTML_ROOT}
 	)
 endif()
 
-# emcmake cmake -S NPLRuntime -B build_emscripten_release -DEMSCRIPTEN=ON -DCMAKE_BUILD_TYPE=RELEASE -DLOCAL_DEBUG=TRUE
-# emcmake cmake -S NPLRuntime -B build_emscripten -DEMSCRIPTEN=ON -DEMSCRIPTEN_SINGLE_THREAD=ON -DCMAKE_BUILD_TYPE=RELEASE -DLOCAL_DEBUG=TRUE
+# emcmake cmake -S NPLRuntime_Emscripten/NPLRuntime -B build/emscripten -DEMSCRIPTEN=ON -DCMAKE_BUILD_TYPE=RELEASE -DLOCAL_DEBUG=TRUE
+# emcmake cmake -S NPLRuntime_EmscriptenSingleThread/NPLRuntime -B build/emscripten_single_thread -DEMSCRIPTEN=ON -DEMSCRIPTEN_SINGLE_THREAD=ON -DCMAKE_BUILD_TYPE=RELEASE -DLOCAL_DEBUG=TRUE

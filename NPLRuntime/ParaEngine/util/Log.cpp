@@ -458,17 +458,7 @@ namespace ParaEngine
 	const char* CLogger::GetLog(int fromPos, int nCount)
 	{
 		ParaEngine::Lock lock_(m_mutex);
-#ifndef EMSCRIPTEN_SINGLE_THREAD
-		static boost::thread_specific_ptr< std::vector<char> > g_text_;
-		if( ! g_text_.get() ) {
-			// first time called by this thread
-			// construct test element to be used in all subsequent calls from this thread
-			g_text_.reset( new std::vector<char>());
-		}
-		std::vector<char>& g_text = *g_text_;
-#else
-		static std::vector<char> g_text;
-#endif		
+		thread_local static std::vector<char> g_text;
 		FILE * pFile = GetLogFileHandle();
 		if(pFile)
 		{

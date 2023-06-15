@@ -27,16 +27,8 @@ ParaEngine::CPaintEngineRaster::~CPaintEngineRaster()
 
 CPaintEngineRaster* ParaEngine::CPaintEngineRaster::GetInstance()
 {
-#ifndef EMSCRIPTEN_SINGLE_THREAD
-	static boost::thread_specific_ptr< CPaintEngineRaster > s_singleton;
-	if (!s_singleton.get()) {
-		s_singleton.reset(new CPaintEngineRaster());
-	}
-	return s_singleton.get();
-#else
-	static CPaintEngineRaster  s_singleton;
+	thread_local static CPaintEngineRaster  s_singleton;
 	return &s_singleton;
-#endif
 }
 
 bool ParaEngine::CPaintEngineRaster::begin(CPaintDevice *pdev)

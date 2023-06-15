@@ -617,17 +617,7 @@ namespace ParaScripting
 
 	const char* ParaIO::GetParentDirectoryFromPath_(const char* sfilename, int nParentCounts)
 	{
-#ifndef EMSCRIPTEN_SINGLE_THREAD
-		static boost::thread_specific_ptr< std::string > g_str_;
-		if( ! g_str_.get() ) {
-			// first time called by this thread
-			// construct test element to be used in all subsequent calls from this thread
-			g_str_.reset( new std::string());
-		}
-		std::string& g_str = *g_str_;
-#else
-		static std::string g_str;
-#endif
+		thread_local static std::string g_str;
 
 		if(sfilename != NULL)
 			g_str = CParaFile::GetParentDirectoryFromPath(sfilename, nParentCounts);
@@ -645,17 +635,7 @@ namespace ParaScripting
 
 	const char* ParaIO::AutoFindParaEngineRootPath_(const char* sFile)
 	{
-#ifndef EMSCRIPTEN_SINGLE_THREAD
-		static boost::thread_specific_ptr< std::string > g_str_;
-		if( ! g_str_.get() ) {
-			// first time called by this thread
-			// construct test element to be used in all subsequent calls from this thread
-			g_str_.reset( new std::string());
-		}
-		std::string& g_str = *g_str_;
-#else
-		static std::string g_str;
-#endif
+		thread_local static std::string g_str;
 
 		if(sFile != NULL)
 			g_str = CParaFile::AutoFindParaEngineRootPath(sFile);
@@ -680,17 +660,7 @@ namespace ParaScripting
 	}
 	const char* ParaIO::ChangeFileExtension_(const char* sfilename, const string & sExt)
 	{
-#ifndef EMSCRIPTEN_SINGLE_THREAD
-		static boost::thread_specific_ptr< std::string > g_str_;
-		if( ! g_str_.get() ) {
-			// first time called by this thread
-			// construct test element to be used in all subsequent calls from this thread
-			g_str_.reset( new std::string());
-		}
-		std::string& g_str = *g_str_;
-#else
-		static std::string g_str;
-#endif
+		thread_local static std::string g_str;
 
 		if(sfilename != NULL)
 			g_str = CParaFile::ChangeFileExtension(sfilename, sExt);
@@ -709,17 +679,7 @@ namespace ParaScripting
 
 	const char* ParaIO::GetFileExtension_(const char* sfilename)
 	{
-#ifndef EMSCRIPTEN_SINGLE_THREAD
-		static boost::thread_specific_ptr< std::string > g_str_;
-		if( ! g_str_.get() ) {
-			// first time called by this thread
-			// construct test element to be used in all subsequent calls from this thread
-			g_str_.reset( new std::string());
-		}
-		std::string& g_str = *g_str_;
-#else
-		static std::string g_str;
-#endif
+		thread_local static std::string g_str;
 
 		if(sfilename != NULL)
 			g_str = CParaFile::GetFileExtension(sfilename);
@@ -738,17 +698,7 @@ namespace ParaScripting
 
 	const char* ParaIO::GetAbsolutePath_(const char* sRelativePath, const char* sRootPath)
 	{
-#ifndef EMSCRIPTEN_SINGLE_THREAD
-		static boost::thread_specific_ptr< std::string > g_str_;
-		if( ! g_str_.get() ) {
-			// first time called by this thread
-			// construct test element to be used in all subsequent calls from this thread
-			g_str_.reset( new std::string());
-		}
-		std::string& g_str = *g_str_;
-#else
-		static std::string g_str;
-#endif
+		thread_local static std::string g_str;
 
 		if(sRelativePath != NULL && sRootPath!=NULL)
 			g_str = CParaFile::GetAbsolutePath(sRelativePath, sRootPath);
@@ -767,17 +717,7 @@ namespace ParaScripting
 
 	const char* ParaIO::GetRelativePath_(const char* sAbsolutePath, const char* sRootPath)
 	{
-#ifndef EMSCRIPTEN_SINGLE_THREAD
-		static boost::thread_specific_ptr< std::string > g_str_;
-		if( ! g_str_.get() ) {
-			// first time called by this thread
-			// construct test element to be used in all subsequent calls from this thread
-			g_str_.reset( new std::string());
-		}
-		std::string& g_str = *g_str_;
-#else
-		static std::string g_str;
-#endif
+		thread_local static std::string g_str;
 
 		if(sAbsolutePath != NULL && sRootPath!=NULL)
 			g_str = CParaFile::GetRelativePath(sAbsolutePath, sRootPath);
@@ -795,17 +735,7 @@ namespace ParaScripting
 	}
 	const char* ParaIO::GetFileName_(const char* sfilename)
 	{
-#ifndef EMSCRIPTEN_SINGLE_THREAD
-		static boost::thread_specific_ptr< std::string > g_str_;
-		if( ! g_str_.get() ) {
-			// first time called by this thread
-			// construct test element to be used in all subsequent calls from this thread
-			g_str_.reset( new std::string());
-		}
-		std::string& g_str = *g_str_;
-#else
-		static std::string g_str;
-#endif
+		thread_local static std::string g_str;
 
 		if(sfilename != NULL)
 			g_str = CParaFile::GetFileName(sfilename);
@@ -833,17 +763,7 @@ namespace ParaScripting
 
 	const char* ParaIO::ToCanonicalFilePath__(const char* sfilename, bool bBackSlash)
 	{
-#ifndef EMSCRIPTEN_SINGLE_THREAD
-		static boost::thread_specific_ptr< std::string > g_str_;
-		if( ! g_str_.get() ) {
-			// first time called by this thread
-			// construct test element to be used in all subsequent calls from this thread
-			g_str_.reset( new std::string());
-		}
-		std::string& g_str = *g_str_;
-#else
-		static std::string g_str;
-#endif
+		thread_local static std::string g_str;
 
 		if(sfilename != NULL)
 		{
@@ -861,17 +781,7 @@ namespace ParaScripting
 
 	const char* ParaIO::GetCurDirectory_(DWORD dwDirectoryType)
 	{
-#ifndef EMSCRIPTEN_SINGLE_THREAD
-		static boost::thread_specific_ptr< std::string > g_str_;
-		if( ! g_str_.get() ) {
-			// first time called by this thread
-			// construct test element to be used in all subsequent calls from this thread
-			g_str_.reset( new std::string());
-		}
-		std::string& g_str = *g_str_;
-#else
-		static std::string g_str;
-#endif
+		thread_local static std::string g_str;
 
 
 		g_str = CParaFile::GetCurDirectory(dwDirectoryType);
@@ -995,17 +905,7 @@ namespace ParaScripting
 
 	const char* ParaIO::DecodePath( const char* input )
 	{
-#ifndef EMSCRIPTEN_SINGLE_THREAD
-		static boost::thread_specific_ptr< std::string > g_str_;
-		if( ! g_str_.get() ) {
-			// first time called by this thread
-			// construct test element to be used in all subsequent calls from this thread
-			g_str_.reset( new std::string());
-		}
-		std::string& g_str = *g_str_;
-#else
-		static std::string g_str;
-#endif
+		thread_local static std::string g_str;
 		if(input)
 		{
 			CPathReplaceables::GetSingleton().DecodePath(g_str, input);
@@ -1017,17 +917,7 @@ namespace ParaScripting
 
 	const char* ParaIO::EncodePath( const char* input )
 	{
-#ifndef EMSCRIPTEN_SINGLE_THREAD
-		static boost::thread_specific_ptr< std::string > g_str_;
-		if( ! g_str_.get() ) {
-			// first time called by this thread
-			// construct test element to be used in all subsequent calls from this thread
-			g_str_.reset( new std::string());
-		}
-		std::string& g_str = *g_str_;
-#else
-		static std::string g_str;
-#endif
+		thread_local static std::string g_str;
 		if(input)
 		{
 			CPathReplaceables::GetSingleton().EncodePath(g_str, input);
@@ -1043,17 +933,7 @@ namespace ParaScripting
 			return EncodePath(input);
 		else if(input)
 		{
-#ifndef EMSCRIPTEN_SINGLE_THREAD
-		static boost::thread_specific_ptr< std::string > g_str_;
-		if( ! g_str_.get() ) {
-			// first time called by this thread
-			// construct test element to be used in all subsequent calls from this thread
-			g_str_.reset( new std::string());
-		}
-		std::string& g_str = *g_str_;
-#else
-		static std::string g_str;
-#endif
+		thread_local static std::string g_str;
 
 			CPathReplaceables::GetSingleton().EncodePath(g_str, input, varNames);
 			return g_str.c_str();

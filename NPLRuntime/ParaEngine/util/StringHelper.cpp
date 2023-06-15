@@ -43,17 +43,8 @@ const WCHAR* ParaEngine::StringHelper::MultiByteToWideChar(const char* name, uns
 {
 	if (name == NULL)
 		return NULL;
-#ifndef EMSCRIPTEN_SINGLE_THREAD
-	static boost::thread_specific_ptr<vector<WCHAR> > wsName_;
-	if (!wsName_.get()) {
-		// first time called by this thread
-		// construct test element to be used in all subsequent calls from this thread
-		wsName_.reset(new vector<WCHAR>());
-	}
-	vector<WCHAR>& wsName = *wsName_;
-#else
-	static vector<WCHAR> wsName;
-#endif
+
+	thread_local static vector<WCHAR> wsName;
 
 #ifdef WIN32
 	int nLength = ::MultiByteToWideChar(nCodePage, (nCodePage == CP_UTF8) ? 0 : MB_PRECOMPOSED, name, -1, NULL, 0);
@@ -107,17 +98,7 @@ const char* ParaEngine::StringHelper::WideCharToMultiByte(const WCHAR* name, uns
 {
 	if (name == NULL)
 		return NULL;
-#ifndef EMSCRIPTEN_SINGLE_THREAD
-	static boost::thread_specific_ptr< vector<char> > cName_;
-	if (!cName_.get()) {
-		// first time called by this thread
-		// construct test element to be used in all subsequent calls from this thread
-		cName_.reset(new vector<char>());
-	}
-	vector<char>& cName = *cName_;
-#else
-	static vector<char> cName;
-#endif
+	thread_local static vector<char> cName;
 #ifdef WIN32
 	int nLength = ::WideCharToMultiByte(nCodePage, 0, name, -1, NULL, NULL, NULL, NULL);
 	if (nLength > 0)
@@ -245,30 +226,10 @@ static const std::string& code_convert(const char *from_charset, const char *to_
 
 	static std::unordered_map<std::string, ZeroInfo> ZeroCache;
 	static ParaEngine::mutex m;
-#ifndef EMSCRIPTEN_SINGLE_THREAD
-	static boost::thread_specific_ptr<std::unordered_map<std::string, iconvObject>> IconvCache_;
-	if (!IconvCache_.get())
-		IconvCache_.reset(new std::unordered_map<std::string, iconvObject>());
 
-	static boost::thread_specific_ptr< std::string > cName_;
-	if (!cName_.get()) {
-		// first time called by this thread
-		// construct test element to be used in all subsequent calls from this thread
-		cName_.reset(new std::string());
-	}
-
-	static boost::thread_specific_ptr<std::string> sKey_;
-	if (!sKey_.get())
-		sKey_.reset(new std::string());
-	auto& cName = *cName_;
-	auto& IconvCache = *IconvCache_;
-	auto& sKey = *sKey_;
-#else
-	static std::unordered_map<std::string, iconvObject> IconvCache;
-	static std::string cName;
-	static std::string sKey;
-#endif
-
+	thread_local static std::unordered_map<std::string, iconvObject> IconvCache;
+	thread_local static std::string cName;
+	thread_local static std::string sKey;
 
 #if _LIBICONV_VERSION == 0x109 || _LIBICONV_VERSION == 0x010F
 	typedef const char* iconv_input_type;
@@ -463,24 +424,11 @@ std::string StringHelper::UniSubString(const char* szText, int nFrom, int nTo)
 
 std::string StringHelper::SimpleEncode(const std::string& source)
 {
-#ifndef EMSCRIPTEN_SINGLE_THREAD
-	static boost::thread_specific_ptr< std::string > g_code_;
-	if (!g_code_.get()) {
-		// first time called by this thread
-		// construct test element to be used in all subsequent calls from this thread
-		g_code_.reset(new std::string());
-	}
-	else
-	{
-		g_code_->clear();
-		g_code_->shrink_to_fit();
-	}
-	std::string& g_code = *g_code_;
-#else
-	static std::string g_code;
+
+	thread_local static std::string g_code;
 	g_code.clear();
 	g_code.shrink_to_fit();
-#endif
+
 	size_t nSize = source.size();
 	int nBufferSize = CyoEncode::Base64EncodeGetLength((unsigned long)nSize);
 	const int MAX_BINARY_DATA_SIZE = 102400000;
@@ -521,24 +469,9 @@ std::string StringHelper::SimpleEncode(const std::string& source)
 
 std::string StringHelper::SimpleDecode(const std::string& source)
 {
-#ifndef EMSCRIPTEN_SINGLE_THREAD
-	static boost::thread_specific_ptr< std::string > g_code_;
-	if (!g_code_.get()) {
-		// first time called by this thread
-		// construct test element to be used in all subsequent calls from this thread
-		g_code_.reset(new std::string());
-	}
-	else
-	{
-		g_code_->clear();
-		g_code_->shrink_to_fit();
-	}
-	std::string& g_code = *g_code_;
-#else
-	static std::string g_code;
+	thread_local static std::string g_code;
 	g_code.clear();
 	g_code.shrink_to_fit();
-#endif
 
 	size_t nSize = source.size();
 	int nBufferSize = 0;
@@ -599,20 +532,7 @@ const std::string& StringHelper::EncodingConvert(const std::string& srcEncoding,
 	if (bytes.empty())
 		return CGlobals::GetString();
 
-
-#ifndef EMSCRIPTEN_SINGLE_THREAD
-	static boost::thread_specific_ptr< std::string > g_result_;
-
-	if (!g_result_.get()) {
-		// first time called by this thread
-		// construct test element to be used in all subsequent calls from this thread
-		g_result_.reset(new std::string());
-	}
-
-	auto& g_result = *g_result_;
-#else
-	static std::string g_result;
-#endif
+	thread_local static std::string g_result;
 	int nResultSize = 0;
 
 	if (srcEncoding == "HTML" && dstEncoding.empty())
