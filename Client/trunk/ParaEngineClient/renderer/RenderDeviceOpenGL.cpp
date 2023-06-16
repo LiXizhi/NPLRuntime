@@ -440,8 +440,9 @@ HRESULT ParaEngine::RenderDevice::SetScissorRect(RECT* pRect)
 	{
 		int nScreenWidth, nScreenHeight;
 		GetScreenSize(nScreenWidth, nScreenHeight);
-		int nViewportOffsetY = nScreenHeight - (s_currentViewport.Y + s_currentViewport.Height);
-		glScissor((GLint)(pRect->left + s_currentViewport.X), (GLint)(nViewportOffsetY+nScreenHeight - pRect->bottom), (GLsizei)(pRect->right - pRect->left), (GLsizei)(pRect->bottom - pRect->top));
+		//int nViewportOffsetY = nScreenHeight - (s_currentViewport.Y + s_currentViewport.Height);
+		//glScissor((GLint)(pRect->left + s_currentViewport.X), (GLint)(nViewportOffsetY+nScreenHeight - pRect->bottom), (GLsizei)(pRect->right - pRect->left), (GLsizei)(pRect->bottom - pRect->top));
+		glScissor((GLint)(pRect->left), (GLint)(nScreenHeight - pRect->bottom), (GLsizei)(pRect->right - pRect->left), (GLsizei)(pRect->bottom - pRect->top));
 	}
 	return S_OK;
 }

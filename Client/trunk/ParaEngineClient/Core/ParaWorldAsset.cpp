@@ -33,6 +33,7 @@
 #include "ic/ICDBManager.h"
 #include "OceanManager.h"
 #include "ParaVertexBufferPool.h"
+#include "ParaXModel/BoneAnimProvider.h"
 #include "AssetManifest.h"
 #include "NPLRuntime.h"
 #include "NPLNetClient.h"
@@ -757,6 +758,7 @@ HRESULT ParaEngine::CParaWorldAsset::RendererRecreated()
 //-----------------------------------------------------------------------------
 void CParaWorldAsset::Cleanup()
 {
+	CBoneAnimProvider::CleanupAllProviders();
 	CAsyncLoader::GetSingleton().Stop();
 	GetParaXManager().Cleanup();
 	GetMeshManager().Cleanup();
