@@ -319,7 +319,7 @@ namespace ParaTerrain
 	class TextureFactory;
 	class TextureSet;
 	class TextureCell;
-	// class TriangleStrip;
+	class TriangleStrip;
 	class TriangleFan;
 	class TextureGenerator;
 	class DetailTexture;
@@ -353,6 +353,7 @@ namespace ParaEngine
 }
 namespace ParaTerrain
 {
+#ifdef EMSCRIPTEN_SINGLE_THREAD
 	class TriangleStrip
 	{
 	public:
@@ -406,7 +407,7 @@ namespace ParaTerrain
 		friend class Terrain;
 		friend class TerrainBuffer;
 	};
-	
+#endif	
 	using namespace ParaEngine;
 	class Terrain;
 	class CDetailTextureFactory;

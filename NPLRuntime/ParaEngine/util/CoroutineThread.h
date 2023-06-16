@@ -1,5 +1,8 @@
 ﻿#ifndef __COROUTINE_THREAD_H__
 #define __COROUTINE_THREAD_H__
+
+#ifdef EMSCRIPTEN_SINGLE_THREAD
+
 #include <coroutine>
 #include <functional>
 #include <unordered_map>
@@ -167,5 +170,7 @@ protected:
     unsigned int m_state;
     unsigned long long m_sleep_timestmap;
 };
+
+#endif
 
 #endif

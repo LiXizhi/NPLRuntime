@@ -387,8 +387,11 @@ namespace NPL
 		ParaEngine::mutex m_mutex;
 
 		/** a counting semaphore used to inform this NPL runtime state's thread that more work are to be done. */
+#ifdef EMSCRIPTEN_SINGLE_THREAD
 		dummy_condition_variable m_semaphore;
-
+#else
+		boost::condition_variable m_semaphore;
+#endif 
 		/** whether we will use semaphore for message inform.*/
 		bool m_bUseMessageEvent;
 

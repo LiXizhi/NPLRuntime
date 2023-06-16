@@ -758,6 +758,7 @@ int CAsyncLoader::FileIOThreadProc(unsigned int id)
 	return 0;
 }
 
+#ifdef EMSCRIPTEN_SINGLE_THREAD
 CO_ASYNC CAsyncLoader::ProcessingCorountineThreadProc(CoroutineThread* co_thread)
 {
 	ResourceRequest_ptr ResourceRequest;
@@ -849,6 +850,7 @@ CO_ASYNC CAsyncLoader::ProcessingCorountineThreadProc(CoroutineThread* co_thread
 		}
 	}
 }
+#endif
 
 int CAsyncLoader::ProcessingThreadProc(ProcessorWorkerThread* pThreadData)
 {

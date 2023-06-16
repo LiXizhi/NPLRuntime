@@ -934,7 +934,10 @@ bool ParaEngine::CParaEngineAppBase::IsSlateMode()
 
 HRESULT ParaEngine::CParaEngineAppBase::DoWork()
 {
+#ifdef EMSCRIPTEN_SINGLE_THREAD
 	CoroutineThread::Tick();
+#endif
+
 	m_fTime = m_Timer->GetAppTime();
 	if (m_pRenderWindow == nullptr)
 		return S_FALSE;

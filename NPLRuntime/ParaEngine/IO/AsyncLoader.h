@@ -281,7 +281,9 @@ namespace ParaEngine
 		* @param pThreadData: some thread local data, such as which process message queue this thread should read from. 
 		*/
 		int ProcessingThreadProc(ProcessorWorkerThread* pThreadData);
+#ifdef EMSCRIPTEN_SINGLE_THREAD
 		CO_ASYNC ProcessingCorountineThreadProc(CoroutineThread* co_thread);
+#endif
 	private:
 		
 		bool m_bDone;

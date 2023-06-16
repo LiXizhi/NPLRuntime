@@ -9,6 +9,7 @@
 #include <utility>
 #include <bitset>
 #ifndef EMSCRIPTEN_SINGLE_THREAD
+#include <boost/circular_buffer.hpp>
 #include <boost/thread.hpp>
 #else
 #include "util/CoroutineThread.h"
