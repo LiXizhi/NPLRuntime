@@ -503,18 +503,20 @@ void CGUIBase::GetAbsolutePosition(CGUIPosition* pOut, const CGUIPosition* pIn)
 		vIn = *(Vector3*)(&(pIn->Relative.To3D.m_v3DPosition));
 
 		CViewport* pViewport = CGlobals::GetViewportManager()->GetActiveViewPort();
+		CViewport* pViewportScene = pViewport;
 
 		// find the closet scene viewport whose index is bigger than the current viewport
 		if (pViewport->GetScene() == 0)
 		{
-			int nCount = CGlobals::GetViewportManager()->GetViewportCount();
+			auto pViewportManager = CGlobals::GetViewportManager();
+			int nCount = pViewportManager->GetViewportCount();
 			int nCurIndex = -1;
 			for (int i = 0; i < nCount; ++i)
 			{
-				CViewport* pViewport2 = CGlobals::GetViewportManager()->CreateGetViewPort(i);
+				CViewport* pViewport2 = pViewportManager->CreateGetViewPort(i);
 				if (pViewport2->GetScene())
 				{
-					pViewport = pViewport2;
+					pViewportScene = pViewport2;
 					if (nCurIndex >= 0)
 						break;
 				}
@@ -524,10 +526,10 @@ void CGUIBase::GetAbsolutePosition(CGUIPosition* pOut, const CGUIPosition* pIn)
 				}
 			}
 		}
-		viewport.X = pViewport->GetLeft();
-		viewport.Y = pViewport->GetTop();
-		viewport.Width = pViewport->GetWidth();
-		viewport.Height = pViewport->GetHeight();
+		viewport.X = pViewportScene->GetLeft() - pViewport->GetLeft();
+		viewport.Y = pViewportScene->GetTop() - pViewport->GetTop();
+		viewport.Width = pViewportScene->GetWidth();
+		viewport.Height = pViewportScene->GetHeight();
 
 		ParaVec3Project(&vOut, &vIn, &viewport, CGUIRoot::GetInstance()->Get3DViewProjMatrix(), NULL, NULL);
 		
