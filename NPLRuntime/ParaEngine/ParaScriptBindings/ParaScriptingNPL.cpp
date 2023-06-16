@@ -9,7 +9,8 @@
 #include "ParaEngine.h"
 #include "IParaEngineApp.h"
 #ifdef EMSCRIPTEN_SINGLE_THREAD
-#define auto_ptr unique_ptr
+// #define auto_ptr unique_ptr
+#include "AutoPtr.h"
 #endif
 extern "C"
 {

@@ -1,6 +1,7 @@
 #include "PlatformBridge.h"
 #ifdef EMSCRIPTEN_SINGLE_THREAD
-#define auto_ptr unique_ptr
+// #define auto_ptr unique_ptr
+#include "AutoPtr.h"
 #endif
 #include "ParaEngine.h"
 extern "C"

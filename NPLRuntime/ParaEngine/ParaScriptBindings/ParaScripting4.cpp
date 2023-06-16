@@ -14,7 +14,8 @@
 #include "ParaScriptingWorld.h"
 #include "ParaScriptingBlockWorld.h"
 #ifdef EMSCRIPTEN_SINGLE_THREAD
-#define auto_ptr unique_ptr
+// #define auto_ptr unique_ptr
+#include "AutoPtr.h"
 #endif
 using namespace ParaEngine;
 
