@@ -197,83 +197,90 @@ android {
 
         /* papa adventure */
         papaPalaka {
-            applicationId "cn.palaka.papa-adventure"
+            applicationId "cn.palaka.papaadventure"
             manifestPlaceholders = [CHANNEL_VALUE: "palaka"]
             resValue "string", "app_name", "帕帕奇遇记"
-            resValue "drawable", "app_icon", "@drawable/ic_papa"
+            resValue "drawable", "app_icon", "@drawable/icon_papa"
             dimension "company"
         }
 
         papaTatfook {
-            applicationId "com.tatfook.paracraft"
+            applicationId "cn.palaka.papaadventure"
             manifestPlaceholders = [CHANNEL_VALUE: "tatfook"]
             resValue "string", "app_name", "帕帕奇遇记"
-            resValue "drawable", "app_icon", "@drawable/ic_papa"
+            resValue "drawable", "app_icon", "@drawable/icon_papa"
             dimension "company"
         }
 
         //应用宝
         papaYingyongbao {
+            applicationId "cn.palaka.papaadventure"
             manifestPlaceholders = [CHANNEL_VALUE: "yingyongbao"]
             resValue "string", "app_name", "帕帕奇遇记"
-            resValue "drawable", "app_icon", "@drawable/ic_papa"
+            resValue "drawable", "app_icon", "@drawable/icon_papa"
             dimension "company"
         }
 
         //小米
         papaXiaomi {
+            applicationId "cn.palaka.papaadventure"
             manifestPlaceholders = [CHANNEL_VALUE: "xiaomi"]
             resValue "string", "app_name", "帕帕奇遇记"
-            resValue "drawable", "app_icon", "@drawable/ic_papa"
+            resValue "drawable", "app_icon", "@drawable/icon_papa"
             dimension "company"
         }
 
         //华为
         papaHuawei {
+            applicationId "cn.palaka.papaadventure"
             manifestPlaceholders = [CHANNEL_VALUE: "huawei"]
             resValue "string", "app_name", "帕帕奇遇记"
-            resValue "drawable", "app_icon", "@drawable/ic_papa"
+            resValue "drawable", "app_icon", "@drawable/icon_papa"
             dimension "company"
         }
 
         //OPPO
         papaOppo {
+            applicationId "cn.palaka.papaadventure"
             manifestPlaceholders = [CHANNEL_VALUE: "oppo"]
             resValue "string", "app_name", "帕帕奇遇记"
-            resValue "drawable", "app_icon", "@drawable/ic_papa"
+            resValue "drawable", "app_icon", "@drawable/icon_papa"
             dimension "company"
         }
 
         //vivo
-        papaVivo { //vivo的已经用这个包名上架了（截止2023/02/27）
-            applicationId "com.tatfook.paracraft"
+        papaVivo {
+            applicationId "cn.palaka.papaadventure"
             manifestPlaceholders = [CHANNEL_VALUE: "vivo"]
             resValue "string", "app_name", "帕帕奇遇记"
-            resValue "drawable", "app_icon", "@drawable/ic_papa"
+            resValue "drawable", "app_icon", "@drawable/icon_papa"
             dimension "company"
         }
 
         //荣耀
         papaHonor {
+            applicationId "cn.palaka.papaadventure"
             manifestPlaceholders = [CHANNEL_VALUE: "honor"]
             resValue "string", "app_name", "帕帕奇遇记"
-            resValue "drawable", "app_icon", "@drawable/ic_papa"
+            resValue "drawable", "app_icon", "@drawable/icon_papa"
             dimension "company"
         }
 
         //中兴
         papaZhongxing {
+            applicationId "cn.palaka.papaadventure"
             manifestPlaceholders = [CHANNEL_VALUE: "zhongxing"]
             resValue "string", "app_name", "帕帕奇遇记"
-            resValue "drawable", "app_icon", "@drawable/ic_papa"
+            resValue "drawable", "app_icon", "@drawable/icon_papa"
             dimension "company"
         }
 
         //360
         papaQihu360 {
+            applicationId "cn.palaka.papaadventure"
             manifestPlaceholders = [CHANNEL_VALUE: "qihu360"]
             resValue "string", "app_name", "帕帕奇遇记"
-            resValue "drawable", "app_icon", "@drawable/ic_papa"
+            resValue "drawable", "app_icon", "@drawable/icon_papa"
             dimension "company"
         }
 
