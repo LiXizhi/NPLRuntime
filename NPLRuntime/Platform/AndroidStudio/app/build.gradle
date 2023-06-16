@@ -42,7 +42,7 @@ android {
 
     externalNativeBuild {
         cmake {
-            version "3.22.3"
+            version "3.22.0-rc2"
             path "../../../CMakeLists.txt"
         }
     }
@@ -95,37 +95,55 @@ android {
         }
     }
 
-    flavorDimensions "company"
+    flavorDimensions "company", "abi"
 
     productFlavors {
         tatfook {
             applicationId "com.tatfook.paracraft"
             manifestPlaceholders = [CHANNEL_VALUE: "tatfook"]
             resValue "string", "app_name", "帕拉卡"
+            resValue "drawable", "app_icon", "@drawable/ic_launcher"
+            dimension "company"
+        }
+
+        palaka {
+            applicationId "cn.palaka.paracraft"
+            manifestPlaceholders = [CHANNEL_VALUE: "tatfook"]
+            resValue "string", "app_name", "帕拉卡"
+            resValue "drawable", "app_icon", "@drawable/ic_launcher"
+            dimension "company"
         }
 
         //应用宝
         yingyongbao {
             manifestPlaceholders = [CHANNEL_VALUE: "yingyongbao"]
             resValue "string", "app_name", "帕拉卡3D虚拟社区学习软件"
+            resValue "drawable", "app_icon", "@drawable/ic_launcher"
+            dimension "company"
         }
 
         //小米
         xiaomi {
             manifestPlaceholders = [CHANNEL_VALUE: "xiaomi"]
             resValue "string", "app_name", "帕拉卡3D虚拟社区学习软件"
+            resValue "drawable", "app_icon", "@drawable/ic_launcher"
+            dimension "company"
         }
 
         //华为
         huawei {
             manifestPlaceholders = [CHANNEL_VALUE: "huawei"]
             resValue "string", "app_name", "帕拉卡"
+            resValue "drawable", "app_icon", "@drawable/ic_launcher"
+            dimension "company"
         }
 
         //OPPO
         oppo {
             manifestPlaceholders = [CHANNEL_VALUE: "oppo"]
             resValue "string", "app_name", "帕拉卡"
+            resValue "drawable", "app_icon", "@drawable/ic_launcher"
+            dimension "company"
         }
 
         //vivo
@@ -133,41 +151,157 @@ android {
             applicationId "com.tatfook.paracraft"
             manifestPlaceholders = [CHANNEL_VALUE: "vivo"]
             resValue "string", "app_name", "帕拉卡"
+            resValue "drawable", "app_icon", "@drawable/ic_launcher"
+            dimension "company"
         }
 
         //荣耀
         honor {
             manifestPlaceholders = [CHANNEL_VALUE: "honor"]
             resValue "string", "app_name", "帕拉卡"
+            resValue "drawable", "app_icon", "@drawable/ic_launcher"
+            dimension "company"
         }
 
         //中兴
         zhongxing {
             manifestPlaceholders = [CHANNEL_VALUE: "zhongxing"]
             resValue "string", "app_name", "帕拉卡"
+            resValue "drawable", "app_icon", "@drawable/ic_launcher"
+            dimension "company"
         }
 
         //360
         qihu360 {
             manifestPlaceholders = [CHANNEL_VALUE: "qihu360"]
             resValue "string", "app_name", "帕拉卡"
+            resValue "drawable", "app_icon", "@drawable/ic_launcher"
+            dimension "company"
         }
 
         //百度
         baidu {
             manifestPlaceholders = [CHANNEL_VALUE: "baidu"]
             resValue "string", "app_name", "帕拉卡"
+            resValue "drawable", "app_icon", "@drawable/ic_launcher"
+            dimension "company"
         }
 
         //阿里应用分发开放平台
         ali9you {
             manifestPlaceholders = [CHANNEL_VALUE: "ali9you"]
             resValue "string", "app_name", "帕拉卡"
+            resValue "drawable", "app_icon", "@drawable/ic_launcher"
+            dimension "company"
         }
 
-        productFlavors.all { flavor ->
-            flavor.dimension "company"
+        /* papa adventure */
+        papaPalaka {
+            applicationId "cn.palaka.papa-adventure"
+            manifestPlaceholders = [CHANNEL_VALUE: "palaka"]
+            resValue "string", "app_name", "帕帕奇遇记"
+            resValue "drawable", "app_icon", "@drawable/ic_papa"
+            dimension "company"
         }
+
+        papaTatfook {
+            applicationId "com.tatfook.paracraft"
+            manifestPlaceholders = [CHANNEL_VALUE: "tatfook"]
+            resValue "string", "app_name", "帕帕奇遇记"
+            resValue "drawable", "app_icon", "@drawable/ic_papa"
+            dimension "company"
+        }
+
+        //应用宝
+        papaYingyongbao {
+            manifestPlaceholders = [CHANNEL_VALUE: "yingyongbao"]
+            resValue "string", "app_name", "帕帕奇遇记"
+            resValue "drawable", "app_icon", "@drawable/ic_papa"
+            dimension "company"
+        }
+
+        //小米
+        papaXiaomi {
+            manifestPlaceholders = [CHANNEL_VALUE: "xiaomi"]
+            resValue "string", "app_name", "帕帕奇遇记"
+            resValue "drawable", "app_icon", "@drawable/ic_papa"
+            dimension "company"
+        }
+
+        //华为
+        papaHuawei {
+            manifestPlaceholders = [CHANNEL_VALUE: "huawei"]
+            resValue "string", "app_name", "帕帕奇遇记"
+            resValue "drawable", "app_icon", "@drawable/ic_papa"
+            dimension "company"
+        }
+
+        //OPPO
+        papaOppo {
+            manifestPlaceholders = [CHANNEL_VALUE: "oppo"]
+            resValue "string", "app_name", "帕帕奇遇记"
+            resValue "drawable", "app_icon", "@drawable/ic_papa"
+            dimension "company"
+        }
+
+        //vivo
+        papaVivo { //vivo的已经用这个包名上架了（截止2023/02/27）
+            applicationId "com.tatfook.paracraft"
+            manifestPlaceholders = [CHANNEL_VALUE: "vivo"]
+            resValue "string", "app_name", "帕帕奇遇记"
+            resValue "drawable", "app_icon", "@drawable/ic_papa"
+            dimension "company"
+        }
+
+        //荣耀
+        papaHonor {
+            manifestPlaceholders = [CHANNEL_VALUE: "honor"]
+            resValue "string", "app_name", "帕帕奇遇记"
+            resValue "drawable", "app_icon", "@drawable/ic_papa"
+            dimension "company"
+        }
+
+        //中兴
+        papaZhongxing {
+            manifestPlaceholders = [CHANNEL_VALUE: "zhongxing"]
+            resValue "string", "app_name", "帕帕奇遇记"
+            resValue "drawable", "app_icon", "@drawable/ic_papa"
+            dimension "company"
+        }
+
+        //360
+        papaQihu360 {
+            manifestPlaceholders = [CHANNEL_VALUE: "qihu360"]
+            resValue "string", "app_name", "帕帕奇遇记"
+            resValue "drawable", "app_icon", "@drawable/ic_papa"
+            dimension "company"
+        }
+
+        /* ABI */
+        abiDefault {
+            ndk {
+                abiFilters "arm64-v8a", "armeabi-v7a"
+            }
+            dimension "abi"
+        }
+
+        arm64V8a {
+            ndk {
+                abiFilters "arm64-v8a"
+            }
+            dimension "abi"
+        }
+
+        armeabiV7a {
+            ndk {
+                abiFilters "armeabi-v7a"
+            }
+            dimension "abi"
+        }
+
+        // productFlavors.all { flavor ->
+        //     flavor.dimension "company"
+        // }
     }
 
     configurations {
