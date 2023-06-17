@@ -914,6 +914,23 @@ void ParaEngine::ParaEngineSettings::FlushDiskIO()
 #endif
 }
 
+#ifdef EMSCRIPTEN
+EM_JS(void, SendMsgToJS_JS_, (const char* c_msg_data_json), {
+    var msg_data_json = UTF8ToString(c_msg_data_json); 
+    if (typeof RecvMsgFromEmscripten == "function")
+    {
+        RecvMsgFromEmscripten(msg_data_json);
+    }
+})
+#endif
+
+void ParaEngine::ParaEngineSettings::SendMsgToJS(const char* msg_json_data)
+{
+#ifdef EMSCRIPTEN
+	SendMsgToJS_JS_(msg_json_data);
+#endif
+}
+
 void ParaEngine::ParaEngineSettings::SetConsoleTextAttribute( int wAttributes )
 {
 #ifdef USE_DIRECTX_RENDERER
@@ -1535,6 +1552,7 @@ int ParaEngineSettings::InstallFields(CAttributeClass* pClass, bool bOverride)
 	pClass->AddField("AudioDeviceName", FieldType_String, NULL, (void*)GetAudioDeviceName_s, NULL, NULL, bOverride);
 
 	pClass->AddField("FlushDiskIO", FieldType_void, (void*)FlushDiskIO_s, NULL, NULL, NULL, bOverride);
+	pClass->AddField("SendMsgToJS", FieldType_String, (void*)SendMsgToJS_s, NULL, NULL, NULL, bOverride);
 	pClass->AddField("DefaultFileAPIEncoding", FieldType_String, NULL, (void*)GetDefaultFileAPIEncoding_s, NULL, NULL, bOverride);
 
 #ifdef ANDROID

@@ -21,6 +21,7 @@ option(NPLRUNTIME_OCE "include NplOce" OFF)
 project(${NPLRUNTIME_PROJECT_NAME})
 
 # SDL 跨平台 window可以编译用于编写和调试代码, 非window默认通过LINUX宏开启SDL GUI
+# set(LOCAL_DEBUG TRUE)
 if (MSVC AND LOCAL_DEBUG)
 	set(SDL TRUE)
 	set(SDL_ROOT D:/workspace/program/sdl2)
@@ -227,7 +228,9 @@ endif ()
 # Using static lib for other modules if main NPLRuntime is built as static lib. 
 if (NPLRUNTIME_STATIC_LIB OR ANDROID OR IOS)
 	set(SQLITE_STATICLIB TRUE)
-	set(PHYSICS_STATICLIB TRUE)
+	if (NPLRUNTIME_PHYSICS)
+		set(PHYSICS_STATICLIB TRUE)
+	endif()
 	set(AUDIO_STATICLIB TRUE)
 endif ()
 

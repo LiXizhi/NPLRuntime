@@ -5,6 +5,10 @@
 #include "2dengine/GUIEdit.h"
 #include "SDL2/SDL.h"
 
+#ifdef EMSCRIPTEN
+#include "Js.h"
+#endif
+
 namespace ParaEngine {
 	void CGUIEditBox::CopyToClipboard()
 	{
@@ -50,11 +54,18 @@ namespace ParaEngine {
 
 	bool StringHelper::CopyTextToClipboard(const string& text_)
 	{
+#ifdef EMSCRIPTEN
+		JS::SetClipboardText(text_);
+		return true;
+#endif
 		return 0 == SDL_SetClipboardText(text_.c_str());
 	}
 
 	const char* StringHelper::GetTextFromClipboard()
 	{
+#ifdef EMSCRIPTEN
+		return JS::GetClipboardText().c_str();
+#endif
 		static std::string text;
 		if (SDL_HasClipboardText() == SDL_FALSE) return "";
 		char* str = SDL_GetClipboardText();

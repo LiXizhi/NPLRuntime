@@ -160,7 +160,7 @@ namespace ParaEngine {
 		m_sdl2_window = SDL_CreateWindow("Paracraft", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, defaultWdith, defaultHeight, SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE);
 		m_gl_context = SDL_GL_CreateContext(m_sdl2_window);
 #ifndef EMSCRIPTEN
-		gladLoadGLLoader((GLADloadproc)SDL_GL_GetProcAddress);
+		gladLoadGLLoader(GLADloadproc)SDL_GL_GetProcAddress);
 #endif
 		SDL_GL_SetSwapInterval(1);
 		std::cout << "GL_VERSION=" << glGetString(GL_VERSION) << std::endl;

@@ -460,7 +460,7 @@ bool CGUIEvent::InterpretMessage(MSG *msg,int option)
 		}
 	}else if (IsMapTo(msg->message,EM_KEY)) {
 		m_keyboard.nAlterKey=msg->message;
-#if PARA_TARGET_PLATFORM != PARA_PLATFORM_MAC
+#if PARA_TARGET_PLATFORM != PARA_PLATFORM_MAC && PARA_TARGET_PLATFORM != PARA_PLATFORM_EMSCRIPTEN
 		if (IsMapTo(msg->message,EM_KEY_NUMPAD0)) {
 			if (!NumLockPressed||ShiftPressed) {
 				m_keyboard.nAlterKey=EM_KEY_INSERT;

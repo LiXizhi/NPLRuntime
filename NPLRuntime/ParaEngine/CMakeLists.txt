@@ -143,6 +143,9 @@ list(APPEND NPLRUNTIME_INCLUDES ${PROJECT_SOURCE_DIR}/externals/Pinocchio/includ
 # remove some compile time warnings
 add_definitions(-DBOOST_BIND_GLOBAL_PLACEHOLDERS)
 
+if (SDL)
+    list(APPEND NPLRUNTIME_INCLUDES ${SDL_ROOT}/include)
+endif()
 ###################################################################
 ## Target
 
@@ -217,7 +220,7 @@ if (NPLRUNTIME_SUPPORT_FBX)
 	list(APPEND NPLRUNTIME_LIBS assimp)
 endif ()
 
-if (PHYSICS_STATICLIB)
+if (NPLRUNTIME_PHYSICS AND PHYSICS_STATICLIB)
 	list(APPEND NPLRUNTIME_LIBS PhysicsBT)
 endif ()
 
