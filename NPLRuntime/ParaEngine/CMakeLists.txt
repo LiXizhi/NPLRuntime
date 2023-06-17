@@ -33,7 +33,6 @@ ucm_add_dirs(
     protocol
     ParaXModel
     IO
-    # curllua
     debugtools
     InfoCenter
     BlockEngine
@@ -49,6 +48,10 @@ ucm_add_dirs(
 	AutoRigger
     TO sources_commmon RECURSIVE
 )
+
+if (NOT EMSCRIPTEN)
+    ucm_add_dirs(curllua TO sources_commmon RECURSIVE)
+endif()
 
 if (NPLRUNTIME_RENDERER STREQUAL "OPENGL")
     set(RenderSystem RenderSystemOpenGL)
@@ -243,6 +246,10 @@ if (NPLRUNTIME_OCE)
 endif ()
 
 if (EMSCRIPTEN)
+    if (NOT EMSCRIPTEN_SINGLE_THREAD)
+        list(APPEND NPLRUNTIME_LIBS libcurl)
+    endif()
+    
     target_link_libraries(ParaEngine PUBLIC 
     ${RenderSystem}
     ${NPLRUNTIME_LIBS}
