@@ -165,7 +165,7 @@ static std::string getFixedBaseUrl(const std::string& baseUrl)
 
     std::string activateStr = [activate UTF8String];
     std::string msgStr = [msg UTF8String];
-    std::string code = "NPL.activate(\"" + activateStr + "\", " + msgStr + ");";
+    std::string code = "NPL.activate('" + activateStr + "', { msg = [[" + msgStr + "]]});";
 
     ParaEngine::LuaObjcBridge::nplActivate(code, "");
 }
