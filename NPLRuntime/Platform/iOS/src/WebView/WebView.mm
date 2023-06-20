@@ -202,7 +202,7 @@ static std::string getFixedBaseUrl(const std::string& baseUrl)
     NSString *msgStr = [NSString stringWithCString:msg.c_str() encoding:[NSString defaultCStringEncoding]];
     NSString *filepathStr = [NSString stringWithCString:filepath.c_str() encoding:[NSString defaultCStringEncoding]];
 
-    NSString *jsStr = [NSString stringWithFormat:@"window.NPL.receive(\"%@\",\"%@\")", filepathStr, msgStr];
+    NSString *jsStr = [NSString stringWithFormat:@"window.NPL.receive('%@', `%@`)", filepathStr, msgStr];
     
     if (self.uiWebView)
     {
