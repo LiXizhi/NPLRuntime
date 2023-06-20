@@ -607,12 +607,12 @@ public class ParaEngineGLSurfaceView extends GLSurfaceView {
             onMouseRightKeyUp();
             return false;
         } else if (pKeyCode == KeyEvent.KEYCODE_BACK) {
-            // if ((System.currentTimeMillis() - exitTime) > 2000) {
-            //     Toast.makeText(sActivity, "再按一次退出", Toast.LENGTH_LONG).show();
-            //     exitTime = System.currentTimeMillis();
-            // } else {
-            //     ParaEngineActivity.onExit();
-            // }
+             if ((System.currentTimeMillis() - exitTime) > 2000) {
+                 Toast.makeText(sActivity, "再按一次退出", Toast.LENGTH_LONG).show();
+                 exitTime = System.currentTimeMillis();
+             } else {
+                 ParaEngineActivity.onExit();
+             }
 
             return super.onKeyUp(pKeyCode, pKeyEvent);
         } else {
