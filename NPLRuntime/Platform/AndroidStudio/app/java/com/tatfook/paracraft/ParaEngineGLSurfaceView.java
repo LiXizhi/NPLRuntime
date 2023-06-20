@@ -23,6 +23,8 @@ import android.view.Surface;
 import android.view.View;
 import android.view.SurfaceHolder;
 import android.view.inputmethod.InputMethodManager;
+import android.widget.Toast;
+
 import androidx.annotation.Keep;
 
 import org.json.JSONException;
@@ -50,6 +52,7 @@ public class ParaEngineGLSurfaceView extends GLSurfaceView {
     private boolean mIsOpen = false;
     private boolean mIsMoveView = false;
     private int mCtrlBottom = 0;
+    private float exitTime = 0;
     private static native void nativeDeleteBackward();
     private static native void nativePressEnterKey();
     private static native void nativeOnUnicodeChar(String text);
