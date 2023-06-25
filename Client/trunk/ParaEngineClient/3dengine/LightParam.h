@@ -26,7 +26,7 @@ namespace ParaEngine
 		void MakeRedDirectionalLight();
 
 		// calculate direction base on yaw/pitch/roll
-		void RecalculateDirection();
+		void RecalculateDirection(const Matrix4 * pLocalTransform = NULL);
 
 		/**
 		* return the parameters as a string. This is usually used for serialization.

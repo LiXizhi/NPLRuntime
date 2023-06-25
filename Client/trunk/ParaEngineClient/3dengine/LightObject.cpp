@@ -91,6 +91,7 @@ CLightParam* CLightObject::GetLightParams()
 void CLightObject::SetLocalTransform(const Matrix4& mXForm)
 {
 	m_mxLocalTransform = mXForm;
+	m_bRotationDirty = true;
 }
 
 void CLightObject::SetLocalTransform(float fScale, float fRotX, float fRotY, float fRotZ)
@@ -103,6 +104,7 @@ void CLightObject::SetLocalTransform(float fScale, float fRotX, float fRotY, flo
 	m_mxLocalTransform = m_mxLocalTransform * mx;
 	ParaMatrixRotationY(&mx, fRotY);
 	m_mxLocalTransform = m_mxLocalTransform * mx;
+	m_bRotationDirty = true;
 }
 
 void CLightObject::SetLocalTransform(float fScale, const Quaternion& quat)
@@ -111,6 +113,7 @@ void CLightObject::SetLocalTransform(float fScale, const Quaternion& quat)
 	ParaMatrixScaling(&m_mxLocalTransform, fScale, fScale, fScale);
 	quat.ToRotationMatrix(mx, Vector3::ZERO);
 	m_mxLocalTransform = m_mxLocalTransform * mx;
+	m_bRotationDirty = true;
 }
 
 void CLightObject::GetLocalTransform(Matrix4* localTransform)
@@ -249,7 +252,7 @@ const Vector3& CLightObject::GetDirection()
 	static const Vector3 g_default = { 1, 1, 1 };
 
 	if (IsRotationDirty()) {
-		m_pLightParams->RecalculateDirection();
+		m_pLightParams->RecalculateDirection(&m_mxLocalTransform);
 		SetRotationDirty(false);
 	}
 
@@ -424,11 +427,7 @@ int ParaEngine::CLightObject::PrepareRender(CBaseCamera* pCamera, SceneState * s
 
 HRESULT CLightObject::Draw(SceneState * sceneState)
 {
-	return S_OK;
-	if (IsDeferredLightOnly() && sceneState->IsDeferredShading())
-	{
-		RenderDeferredLightMesh(sceneState);
-	}
+	// use deferred rendering in PrepareRender()
 	return S_OK;
 }
 
@@ -498,7 +497,6 @@ void ParaEngine::CLightObject::RenderDeferredLightMesh(SceneState * sceneState)
 	// get world transform matrix
 	Matrix4 mxWorld;
 	GetRenderMatrix(mxWorld);
-	mxWorld = m_mxLocalTransform * mxWorld;
 	CGlobals::GetWorldMatrixStack().push(mxWorld);
 
 	struct LightVertex
