@@ -108,8 +108,7 @@ android {
         }
 
         palaka {
-            applicationId "com.palaka.paracraft"
-            manifestPlaceholders = [CHANNEL_VALUE: "tatfook"]
+            manifestPlaceholders = [CHANNEL_VALUE: "palaka"]
             resValue "string", "app_name", "帕拉卡"
             resValue "drawable", "app_icon", "@drawable/ic_launcher"
             dimension "company"
@@ -148,8 +147,7 @@ android {
         }
 
         //vivo
-        vivo { //vivo的已经用这个包名上架了（截止2023/02/27）
-            applicationId "com.tatfook.paracraft"
+        vivo {
             manifestPlaceholders = [CHANNEL_VALUE: "vivo"]
             resValue "string", "app_name", "帕拉卡"
             resValue "drawable", "app_icon", "@drawable/ic_launcher"
