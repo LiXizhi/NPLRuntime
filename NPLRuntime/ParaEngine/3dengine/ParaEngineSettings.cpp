@@ -1557,6 +1557,8 @@ int ParaEngineSettings::InstallFields(CAttributeClass* pClass, bool bOverride)
 
 #ifdef ANDROID
 	pClass->AddField("GetUsbMode", FieldType_Bool, NULL, (void*)GetUsbMode_s, NULL, NULL, bOverride);
+
+	pClass->AddField("SaveImageToGallery", FieldType_String, (void*)SaveImageToGallery_s, NULL, NULL, NULL, bOverride);
 #endif
 
 	return S_OK;

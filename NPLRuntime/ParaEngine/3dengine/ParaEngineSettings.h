@@ -234,6 +234,7 @@ namespace ParaEngine
 
 #ifdef ANDROID
         ATTRIBUTE_METHOD1(ParaEngineSettings, GetUsbMode_s, bool*) { *p1 = cls->GetUsbMode(); return S_OK; }
+        ATTRIBUTE_METHOD1(ParaEngineSettings, SaveImageToGallery_s, const char*) {cls->SaveImageToGallery(p1); return S_OK; }
 #endif
     public:
         static const char* GetModuleFileName();
@@ -716,6 +717,7 @@ namespace ParaEngine
 		const std::string& GetDefaultFileAPIEncoding();
 #ifdef ANDROID
         bool GetUsbMode();
+        void SaveImageToGallery(const char* imageData);
 #endif
     protected:
         void LoadNameIndex();

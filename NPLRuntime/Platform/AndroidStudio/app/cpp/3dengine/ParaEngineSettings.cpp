@@ -28,4 +28,11 @@ namespace ParaEngine {
     {
         return JniHelper::callStaticBooleanMethod("com/tatfook/paracraft/ParaEngineActivity", "getUsbMode");
     }
+
+    void ParaEngineSettings::SaveImageToGallery(const char* imageData)
+    {
+        if (imageData){
+            JniHelper::callStaticVoidMethod("com/tatfook/paracraft/ParaEngineActivity","saveImageToGallery",imageData);
+        }
+    }
 }
