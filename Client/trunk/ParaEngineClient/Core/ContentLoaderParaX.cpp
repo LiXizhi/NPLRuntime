@@ -201,15 +201,17 @@ HRESULT ParaEngine::CParaXProcessor::CopyToResource()
 {
 	if (m_asset.get() == 0)
 		return E_FAIL;
+	std::string sRootFileExt;
 	if (m_asset->m_MeshLODs.size() == 0)
 	{
 		string filename = m_asset->GetLocalFileName();
 
 		bool bLoadHeaderFromXFile = true;
 		bool bSingleLOD = true;
-		bool bIsXML = (CParaFile::GetFileExtension(filename) == "xml");
+		sRootFileExt = CParaFile::GetFileExtension(filename);
+		StringHelper::make_lower(sRootFileExt);
+		bool bIsXML = (sRootFileExt == "xml");
 		string sParentDirectory = CParaFile::GetParentDirectoryFromPath(filename);
-
 
 		// check in manifest
 		AssetFileEntry* pEntry = CAssetManifest::GetSingleton().GetFile(filename);
@@ -228,6 +230,7 @@ HRESULT ParaEngine::CParaXProcessor::CopyToResource()
 
 		if (bIsXML)
 		{
+			sRootFileExt = "";
 			CParaMeshXMLFile file;
 			if (file.LoadFromFile(filename, sParentDirectory))
 			{
@@ -296,9 +299,15 @@ HRESULT ParaEngine::CParaXProcessor::CopyToResource()
 					OUTPUT_LOG("warning: ParaX model file not found %s\n", iCur->m_sMeshFileName.c_str());
 					return E_FAIL;
 				}
-
-				std::string sExt = CParaFile::GetFileExtension(iCur->m_sMeshFileName);
-				StringHelper::make_lower(sExt);
+				std::string sExt;
+				if (sRootFileExt.empty()) {
+					sExt = CParaFile::GetFileExtension(iCur->m_sMeshFileName);
+					StringHelper::make_lower(sExt);
+				}
+				else {
+					sExt = sRootFileExt;
+				}
+					
 				if (sExt == "bmax")
 				{
 					// block max model. 
