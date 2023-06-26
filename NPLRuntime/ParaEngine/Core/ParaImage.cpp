@@ -5,10 +5,12 @@
 #include "png.h"
 #include "StringHelper.h"
 
-#include <boost/gil.hpp>
 #include <boost/gil/extension/numeric/sampler.hpp>
 #include <boost/gil/extension/numeric/resample.hpp>
 
+#include <boost/gil/image.hpp>
+#include <boost/gil/image_view.hpp>
+#include <boost/gil/image_view_factory.hpp>
 
 #ifdef WIN32
 // just for compatibility with previous version of libpng.lib built by earlier version of visual studio 2015
