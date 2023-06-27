@@ -688,15 +688,15 @@ NPL::NPLReturnCode NPL::CNPLConnection::SendMessage(const char* sCommandName, co
 
 NPL::NPLReturnCode NPL::CNPLConnection::SendMessage(NPLMsgOut_ptr& msg)
 {
-	// NOTE: m_state is not protected by a lock. This is ok, since its value is always one of the enumeration type. 
-	if (msg->empty())
-		return NPL_OK;
-
 	if (m_state < ConnectionConnected)
 	{
 		// NOTE: we will drop all pending messages, since it is not connected. 
 		return NPL_ConnectionNotEstablished;
 	}
+
+	// NOTE: m_state is not protected by a lock. This is ok, since its value is always one of the enumeration type. 
+	if (msg->empty())
+		return NPL_OK;
 
 	int nLength = (int)msg->GetBuffer().size();
 	NPLMsgOut_ptr * pFront = NULL;
