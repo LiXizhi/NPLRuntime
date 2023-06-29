@@ -6,6 +6,7 @@
 // ModifyDate: 2022.12.30
 //-----------------------------------------------------------------------------
 #import <Foundation/Foundation.h>
+#import <UIKit/UIKit.h>
 
 #include "ParaEngine.h"
 #include "ParaEngineSettings.h"
@@ -103,4 +104,18 @@ namespace ParaEngine {
         return str;
     }
 
+    void ParaEngineSettings::SaveImageToGallery(const char* jsonChar)
+    {
+        NSString *jsonStr = [NSString stringWithUTF8String:jsonChar];
+        NSData *jsonData = [jsonStr dataUsingEncoding:NSUTF8StringEncoding];
+        NSDictionary *dic = [NSJSONSerialization JSONObjectWithData:jsonData options:NSJSONReadingMutableLeaves error:nil];
+        
+        NSString *paraFilePath = [dic objectForKey:@"paraFilePath"];
+        BOOL isOpenFolder = [dic objectForKey:@"isOpenFolder"];
+        NSString *base64 = [dic objectForKey:@"base64"];
+        
+        NSData *imageData = [[NSData alloc] initWithBase64EncodedString:base64 options:0];
+        UIImage *image = [UIImage imageWithData:imageData];
+        UIImageWriteToSavedPhotosAlbum(image, nil, nil, nil);
+    }
 } // namespace ParaEngine
