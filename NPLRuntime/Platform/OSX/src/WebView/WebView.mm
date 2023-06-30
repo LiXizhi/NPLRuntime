@@ -383,7 +383,7 @@ namespace ParaEngine {
 
     void ParaEngineWebView::activate(const std::string &filepath, const std::string &msg)
     {
-        NSString *msgStr = [NSString stringWithCString:msg.c_str() encoding:[NSString defaultCStringEncoding]];
+        NSString *msgStr = [NSString stringWithUTF8String:msg.c_str()];
         NSString *filepathStr = [NSString stringWithCString:filepath.c_str() encoding:[NSString defaultCStringEncoding]];
 
         NSString *jsStr = [NSString stringWithFormat:@"window.NPL.receive('%@', `%@`)", filepathStr, msgStr];
