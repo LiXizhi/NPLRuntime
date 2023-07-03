@@ -85,16 +85,25 @@ static void DeleteWebViewByID(const std::string& id)
 	g_webviews.erase(id);
 }
 
-static std::function<void(const std::wstring&)> g_webview_on_msg_callback = [](const std::wstring& msg_json_str)
+static std::function<void(const std::wstring&)> g_webview_on_msg_callback = [](const std::wstring& filename_msg_json_wstr)
 {
-	std::string msg = WStringToString(msg_json_str);
-	auto msg_json = nlohmann::json::parse(msg, nullptr, false);
-	if (msg_json.is_discarded())
-	{
-		std::cout << "the input is invalid JSON!!!" << std::endl;
+	// filename=msg_json_str
+	// std::string msg = WStringToString(msg_json_str);
+	// auto msg_json = nlohmann::json::parse(msg, nullptr, false);
+	// if (msg_json.is_discarded())
+	// {
+	// 	std::cout << "the input is invalid JSON!!!" << std::endl;
+	// 	return;
+	// }
+	// std::string filename = msg_json["filename"];
+	std::string filename_msg_json_str = WStringToString(filename_msg_json_wstr);
+	auto pos = filename_msg_json_str.find_first_of("=");
+	if (pos == std::string::npos) {
+		std::cout << "invalid data: " << filename_msg_json_str << std::endl;
 		return;
 	}
-	std::string filename = msg_json["filename"];
+	std::string filename = filename_msg_json_str.substr(0, pos);
+	std::string msg = filename_msg_json_str.substr(pos + 1);
 	if (g_pStaticState == nullptr) return;
 	NPLInterface::NPLObjectProxy data;
 	data["msg"] = msg;
