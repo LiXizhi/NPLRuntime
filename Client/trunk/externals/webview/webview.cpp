@@ -497,8 +497,9 @@ void WebView::ParseProtoUrl(const std::wstring url)
 
 bool WebView::IsSupported()
 {
-	if (!IsWindows10OrGreater())
+	if (true || IsWindowsVersionOrGreater(9,0,0))
 	{
+		// for windows 7, it crashes with calling GetAvailableCoreWebView2BrowserVersionString when uninstalled
 		auto pv = ReadRegStr(HKEY_LOCAL_MACHINE, "SOFTWARE\\WOW6432Node\\Microsoft\\EdgeUpdate\\Clients\\{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}", "pv");
 		if (pv != "" && pv != "0.0.0.0") return true;
 		pv = ReadRegStr(HKEY_CURRENT_USER, "Software\\Microsoft\\EdgeUpdate\\Clients\\{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}", "pv");
@@ -509,6 +510,7 @@ bool WebView::IsSupported()
 	}
 	else
 	{
+		// for windows 10 or 11
 		wil::unique_cotaskmem_string webview_version = nullptr;
 		try
 		{
@@ -527,6 +529,12 @@ bool WebView::IsSupported()
 		}
 		catch (const std::exception&)
 		{
+			auto pv = ReadRegStr(HKEY_LOCAL_MACHINE, "SOFTWARE\\WOW6432Node\\Microsoft\\EdgeUpdate\\Clients\\{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}", "pv");
+			if (pv != "" && pv != "0.0.0.0") return true;
+			pv = ReadRegStr(HKEY_CURRENT_USER, "Software\\Microsoft\\EdgeUpdate\\Clients\\{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}", "pv");
+			if (pv != "" && pv != "0.0.0.0") return true;
+			pv = ReadRegStr(HKEY_LOCAL_MACHINE, "Software\\Microsoft\\EdgeUpdate\\Clients\\{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}", "pv");
+			if (pv != "" && pv != "0.0.0.0") return true;
 			return false;
 		}
 	}

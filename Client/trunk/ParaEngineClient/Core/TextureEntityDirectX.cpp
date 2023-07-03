@@ -49,12 +49,12 @@ namespace ParaEngine
 
 
 TextureEntityDirectX::TextureEntityDirectX(const AssetKey& key)
-:m_pTexture(NULL), TextureEntity(key)
+:m_pTexture(NULL), TextureEntity(key), m_dynamicTexture(NULL)
 {
 }
 
 TextureEntityDirectX::TextureEntityDirectX()
-: m_pTexture(NULL), TextureEntity()
+: m_pTexture(NULL), TextureEntity(), m_dynamicTexture(NULL)
 {
 }
 
@@ -1349,6 +1349,145 @@ TextureEntity* TextureEntityDirectX::CreateTexture(const uint8 * pTexels, int wi
 		}
 	}
 	return NULL;
+}
+
+TextureEntity* TextureEntityDirectX::LoadUint8Buffer(const uint8 * pTexels, int width, int height, int rowLength, int bytesPerPixel, uint32 nMipLevels /*= 0*/, D3DPOOL dwCreatePool /*= D3DPOOL_DEFAULT*/, DWORD nFormat /*= 0*/)
+{
+	IDirect3DDevice9* pD3d = CGlobals::GetRenderDevice();
+
+	if (!pTexels)
+		return 0;
+
+	if (bytesPerPixel == 4)
+	{
+		if (m_dynamicTexture == NULL) {
+			HRESULT hr = D3DXCreateTexture(pD3d, width, height, 0, D3DUSAGE_DYNAMIC, D3DFMT_A8R8G8B8, dwCreatePool, &m_dynamicTexture);
+			if (FAILED(hr))
+			{
+				OUTPUT_LOG("failed creating terrain texture\n");
+			}
+		}
+		if (m_dynamicTexture != NULL)
+		{
+			D3DLOCKED_RECT lr;
+			m_dynamicTexture->LockRect(0, &lr, NULL, 0);
+			memcpy(lr.pBits, pTexels, width*height * 4);
+			m_dynamicTexture->UnlockRect(0);
+		}
+	}
+	else if (bytesPerPixel == 3)
+	{
+		if (m_dynamicTexture == NULL) {
+			// please note, we will create D3DFMT_A8R8G8B8 instead of , D3DFMT_R8G8B8, since our device will use D3DFMT_A8R8G8B8 only
+			HRESULT hr = D3DXCreateTexture(pD3d, width, height, 0, D3DUSAGE_AUTOGENMIPMAP, D3DFMT_A8R8G8B8, dwCreatePool, &m_dynamicTexture);
+			if (FAILED(hr))
+			{
+				OUTPUT_LOG("failed creating terrain texture\n");
+			}
+		}
+		
+		if (m_dynamicTexture != NULL)
+		{
+			D3DLOCKED_RECT lockedRect;
+			m_dynamicTexture->LockRect(0, &lockedRect, NULL, 0);
+
+			//memcpy(lockedRect.pBits, pTexels, width*height*3);
+			uint8 *pp = (uint8*)lockedRect.pBits;
+			int index = 0, x = 0, y = 0;
+
+			for (y = 0; y < height; y++)
+			{
+				for (x = 0; x < width; x++)
+				{
+					int n = (y * 3 * width) + 3 * x;
+					pp[index++] = pTexels[n];
+					pp[index++] = pTexels[n + 1];
+					pp[index++] = pTexels[n + 2];
+					pp[index++] = 0xff;
+				}
+				index += lockedRect.Pitch - (width * 4);
+			}
+			m_dynamicTexture->UnlockRect(0);
+		}
+	}
+	else if (bytesPerPixel == 1)
+	{
+		HRESULT hr;
+		// whether D3DFMT_A8 is supported. -1 is unknown, 0 is not supported, 1 is supported. 
+		static int nSupportAlphaTexture = -1;
+		if (nSupportAlphaTexture == -1)
+		{
+			D3DFORMAT nDesiredFormat = D3DFMT_A8;
+			hr = D3DXCheckTextureRequirements(pD3d, NULL, NULL, NULL, 0, &nDesiredFormat, dwCreatePool);
+			if (SUCCEEDED(hr))
+			{
+				if (nDesiredFormat == D3DFMT_A8)
+					nSupportAlphaTexture = 1;
+				else
+				{
+					OUTPUT_LOG("warning: D3DFMT_A8 is not supported during terrain mask file creation, try using D3DFMT_A8R8G8B8\n");
+					nSupportAlphaTexture = 0;
+				}
+			}
+			else
+			{
+				OUTPUT_LOG("error: D3DXCheckTextureRequirements with D3DFMT_A8 failed.\n");
+				nSupportAlphaTexture = -2;
+			}
+		}
+
+		if (nSupportAlphaTexture == 1)
+		{
+			if (m_dynamicTexture == NULL) {
+				// D3DFMT_A8 is supported
+				HRESULT hr = D3DXCreateTexture(pD3d, width, height, 0, D3DUSAGE_AUTOGENMIPMAP, D3DFMT_A8, dwCreatePool, &m_dynamicTexture);
+				if (FAILED(hr))
+				{
+					OUTPUT_LOG("failed creating alpha terrain texture\n");
+				}
+			}
+			
+			if (m_dynamicTexture != NULL)
+			{
+				D3DLOCKED_RECT lr;
+				m_dynamicTexture->LockRect(0, &lr, NULL, 0);
+				memcpy(lr.pBits, pTexels, width*height * 1);
+				m_dynamicTexture->UnlockRect(0);
+			}
+		}
+		else if (nSupportAlphaTexture == 0)
+		{
+			if (m_dynamicTexture == NULL)
+			{
+				// D3DFMT_A8 is not supported, try D3DFMT_A8R8G8B8
+				HRESULT hr = D3DXCreateTexture(pD3d, width, height, 0, D3DUSAGE_AUTOGENMIPMAP, D3DFMT_A8R8G8B8, dwCreatePool, &m_dynamicTexture);
+				if (FAILED(hr))
+				{
+					OUTPUT_LOG("failed creating alpha terrain texture\n");
+				}
+			}
+			if (m_dynamicTexture != NULL)
+			{
+				D3DLOCKED_RECT lr;
+				m_dynamicTexture->LockRect(0, &lr, NULL, 0);
+				int nSize = width * height;
+				DWORD* pData = (DWORD*)(lr.pBits);
+				for (int x = 0; x < nSize; ++x)
+				{
+					pData[x] = (pTexels[x]) << 24;
+				}
+				m_dynamicTexture->UnlockRect(0);
+			}
+		}
+	}
+	else
+	{
+		OUTPUT_LOG("error: Unsupported texture format (bits per pixel must be 8,24, or 32)\n");
+	}
+	if (m_pTexture != m_dynamicTexture) {
+		m_pTexture = m_dynamicTexture;
+	}
+	return this;
 }
 
 HRESULT TextureEntityDirectX::LoadFromMemory(const char* buffer, DWORD nFileSize, UINT nMipLevels, D3DFORMAT dwTextureFormat, void** ppTexture_)
