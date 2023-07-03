@@ -105,14 +105,25 @@ endif()
 
 ##############################
 # add src files
-file (GLOB_RECURSE Main_Src_list ${CMAKE_CURRENT_SOURCE_DIR}/*.h ${CMAKE_CURRENT_SOURCE_DIR}/*.hpp)
-list(APPEND Lib_Src_list ${Main_Src_list})
+
+set(JSONCPP_ROOT ${CMAKE_CURRENT_SOURCE_DIR}/../../../../Server/trunk/jsoncpp-0.5.0)
+file (GLOB jsoncpp_headers ${JSONCPP_ROOT}/include/json/*.h)
+file (GLOB jsoncpp_sources 
+	${JSONCPP_ROOT}/src/lib_json/*.cpp
+	${JSONCPP_ROOT}/src/lib_json/*.h
+	${JSONCPP_ROOT}/src/lib_json/*.inl)
+list(APPEND Lib_Src_list ${jsoncpp_headers})
+list(APPEND Lib_Src_list ${jsoncpp_sources})
+
+# file (GLOB_RECURSE Main_Src_list ${CMAKE_CURRENT_SOURCE_DIR}/*.h ${CMAKE_CURRENT_SOURCE_DIR}/*.hpp)
+# list(APPEND Lib_Src_list ${Main_Src_list})
 
 list(APPEND Lib_Src_list ${CMAKE_CURRENT_SOURCE_DIR}/webview.cpp)
 list(APPEND Lib_Src_list ${CMAKE_CURRENT_SOURCE_DIR}/paramain.cpp)
 
 add_library(${LibName} SHARED ${Lib_Src_list})
 target_include_directories(${LibName} PUBLIC ${BoostRoot_DIR})
+target_include_directories(${LibName} PUBLIC ${JSONCPP_ROOT}/include)
 target_include_directories(${LibName} PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/${webview_arch}/include")
 target_link_libraries(${LibName} PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/${webview_arch}/lib/WebView2LoaderStatic.lib")
 ADD_CUSTOM_COMMAND(

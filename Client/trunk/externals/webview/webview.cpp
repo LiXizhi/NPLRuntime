@@ -577,28 +577,32 @@ void WebView::InitUrlEnv()
 	if (m_webview == nullptr) return;
 
 	m_webview->AddScriptToExecuteOnDocumentCreated(LR"(
-window.chrome.webview.addEventListener("message", function(event){
-	var msg = undefined;
-	try
-    {
-        msg = JSON.parse(event.data);
-    }
-    catch(e)
-    {
-        console.log(e);
-        console.log(event.data);
-    }
-	if (typeof msg != "object") 
-	{
-		console.log("无效数据:", event.data);
-		return;
-	}
-	if (typeof window.NPL == "object" && typeof window.NPL.receive == "function")
-	{
-		window.NPL.receive(msg.file, msg.params);
-	}
-}); 
-document.addEventListener('contextmenu', event => event.preventDefault());
+if (!window.chrome_webview_message_inited_cpp)
+{
+	window.chrome_webview_message_inited_cpp = true;
+	window.chrome.webview.addEventListener("message", function(event){
+		var msg = undefined;
+		try
+		{
+			msg = JSON.parse(event.data);
+		}
+		catch(e)
+		{
+			console.log(e);
+			console.log(event.data);
+		}
+		if (typeof msg != "object") 
+		{
+			console.log("无效数据:", event.data);
+			return;
+		}
+		if (typeof window.NPL == "object" && typeof window.NPL.receive == "function")
+		{
+			window.NPL.receive(msg.file, msg.params);
+		}
+	}); 
+	document.addEventListener('contextmenu', event => event.preventDefault());
+}
     )", nullptr);
 }
 

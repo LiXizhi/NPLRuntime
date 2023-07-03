@@ -21,14 +21,16 @@
 #include <locale>
 #include <string>
 #include <mutex>
-
+#include <unordered_map>
 #include "INPLRuntimeState.h"
 #include "IParaEngineCore.h"
 #include "IParaEngineApp.h"
 #include "IAttributeFields.h"
 #include "NPLInterface.hpp"
 
-#include "json.hpp"
+// #include "json.hpp"
+#include "json/json.h"
+
 #include "webview.h"
 using namespace ParaEngine;
 
@@ -85,21 +87,32 @@ static void DeleteWebViewByID(const std::string& id)
 	g_webviews.erase(id);
 }
 
-static std::function<void(const std::wstring&)> g_webview_on_msg_callback = [](const std::wstring& msg_json_str)
+static std::function<void(const std::wstring&)> g_webview_on_msg_callback = [](const std::wstring& msg_json_wstr)
 {
-	std::string msg = WStringToString(msg_json_str);
-	auto msg_json = nlohmann::json::parse(msg, nullptr, false);
-	if (msg_json.is_discarded())
+	std::string msg_json_str = WStringToString(msg_json_wstr);
+
+	Json::Value msg_json;   // will contains the root value after parsing.
+	// strict mode: no comments are allowed, root must be array or object, and string must be in utf8
+	Json::Reader reader(Json::Features().strictMode());
+	bool parsingSuccessful = reader.parse(msg_json_str.c_str(), msg_json_str.c_str() + msg_json_str.size(), msg_json, false);
+	if (!parsingSuccessful || !msg_json.isObject() || !msg_json.isMember("filename"))
 	{
-		std::cout << "the input is invalid JSON!!!" << std::endl;
+		// report to the user the failure and their locations in the document.
+		std::cout << "invalid json data: " << msg_json_str << std::endl;
 		return;
 	}
-	std::string filename = msg_json["filename"];
+	Json::Value filename_json = msg_json["filename"];
+	if (!filename_json.isString()) 
+	{
+		std::cout << "filename not exist!!!" << std::endl;
+		return;
+	}
+	std::string filename = filename_json.asString();
+	std::string msg = msg_json_str;
 	if (g_pStaticState == nullptr) return;
 	NPLInterface::NPLObjectProxy data;
 	data["msg"] = msg;
 	NPL_Activate(g_pStaticState, filename, data);
-	// g_pStaticState->activate(filename.c_str(), data);
 };
 
 struct WebViewParams
@@ -124,60 +137,6 @@ struct WebViewParams
 	std::string message_content;
 	std::string message_to;
 };
-
-nlohmann::json ToJson(WebViewParams p)
-{
-	nlohmann::json out;
-	out["cmd"] = p.cmd;
-	out["callback_file"] = p.callback_file;
-	out["cmdline"] = p.cmdline;
-	out["client_name"] = p.client_name;
-	out["parent_handle"] = p.parent_handle;
-	out["cefclient_config_filename"] = p.cefclient_config_filename;
-	out["pid"] = p.pid;
-	out["id"] = p.id;
-	out["url"] = p.url;
-	out["x"] = p.x;
-	out["y"] = p.y;
-	out["width"] = p.width;
-	out["height"] = p.height;
-	out["visible"] = p.visible;
-	out["resize"] = p.resize;
-	out["enabled"] = p.enabled;
-	out["zoom"] = p.zoom;
-	out["message_content"] = p.message_content;
-	return out;
-}
-
-nlohmann::json Read(NPLInterface::NPLObjectProxy tabMsg)
-{
-	WebViewParams params;
-	params.cmd = tabMsg["cmd"];
-	params.callback_file = tabMsg["callback_file"];
-	params.cmdline = tabMsg["cmdline"];
-	params.client_name = tabMsg["client_name"];
-	params.parent_handle = tabMsg["parent_handle"];
-	params.cefclient_config_filename = tabMsg["cefclient_config_filename"];
-	params.pid = tabMsg["pid"];
-	params.id = tabMsg["id"];
-	params.url = tabMsg["url"];
-	params.resize = tabMsg["resize"];
-	params.visible = tabMsg["visible"];
-	params.enabled = tabMsg["enabled"];
-	double x = tabMsg["x"];
-	double y = tabMsg["y"];
-	double width = tabMsg["width"];
-	double height = tabMsg["height"];
-	double zoom = tabMsg["zoom"];
-	params.x = (int)x;
-	params.y = (int)y;
-	params.width = (int)width;
-	params.height = (int)height;
-	params.zoom = zoom;
-	params.message_content = tabMsg["message_content"];
-
-	return ToJson(params);
-}
 
 #pragma region PE_DLL 
 
