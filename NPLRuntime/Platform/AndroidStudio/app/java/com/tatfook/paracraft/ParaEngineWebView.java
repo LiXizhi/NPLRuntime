@@ -11,7 +11,10 @@ package com.tatfook.paracraft;
 
 import android.annotation.SuppressLint;
 import android.content.Context;
+import android.graphics.Rect;
+import android.util.DisplayMetrics;
 import android.util.Log;
+import android.view.ViewGroup;
 import android.webkit.WebChromeClient;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
@@ -20,6 +23,8 @@ import android.graphics.Bitmap;
 import android.view.KeyEvent;
 
 import android.net.Uri;
+import android.widget.RelativeLayout;
+
 import java.util.concurrent.CountDownLatch;
 
 class ShouldStartLoadingWorker implements Runnable {
@@ -44,11 +49,13 @@ class ShouldStartLoadingWorker implements Runnable {
 
 public class ParaEngineWebView extends WebView {
     private static final String TAG = "ParaEngineWebView";
-
     private int mViewTag;
     private static String mAppScheme = "paracraft";
     private boolean mHideViewWhenClickBack = false;
     private static boolean m_bIgnoreCloseWhenClickBack = false;
+    private int lastWebViewHeight = 0;
+    public int defaultWidth = 0;
+    public int defaultHeight = 0;
 
     public ParaEngineWebView(Context context) {
         this(context, -1);
@@ -128,6 +135,25 @@ public class ParaEngineWebView extends WebView {
             @Override public Bitmap getDefaultVideoPoster() {
             // hide android ugly default poster.
             return Bitmap.createBitmap(10, 10, Bitmap.Config.ARGB_8888);
+            }
+        });
+
+        ParaEngineWebView.this.getViewTreeObserver().addOnGlobalLayoutListener(() -> {
+            Rect r = new Rect();
+            ParaEngineWebView.this.getWindowVisibleDisplayFrame(r);
+
+            DisplayMetrics metrics = new DisplayMetrics();
+            ParaEngineActivity.getContext().getWindowManager().getDefaultDisplay().getMetrics(metrics);
+            final int screenHeight = metrics.heightPixels;
+            final int screenWidth = metrics.widthPixels;
+
+            // keyboard logic is only enabled in fullscreen mode.
+            if ((Math.abs(screenWidth - defaultWidth) < 5) && (Math.abs(screenHeight - defaultHeight) < 5)) {
+                if (lastWebViewHeight != r.height()) {
+                    RelativeLayout.LayoutParams layoutParams = new RelativeLayout.LayoutParams(screenWidth, r.height());
+                    setLayoutParams(layoutParams);
+                    lastWebViewHeight = r.height();
+                }
             }
         });
     }

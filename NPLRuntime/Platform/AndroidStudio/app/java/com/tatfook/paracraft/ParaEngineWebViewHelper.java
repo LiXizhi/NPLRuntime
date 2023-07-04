@@ -41,7 +41,6 @@ public class ParaEngineWebViewHelper {
 	private static ParaEngineActivity sActivity;
 	private static Handler sHandler;
 	private static FrameLayout sLayout;
-
 	private static SparseArray<ParaEngineWebView> webViews;
 	private static int viewTag = 0;
     private static boolean isOpenUrlLoaded = false;
@@ -479,6 +478,8 @@ public class ParaEngineWebViewHelper {
                 if (webView != null) {
                     RelativeLayout webViewWrapper = (RelativeLayout) webView.getParent();
                     FrameLayout.LayoutParams wp = (FrameLayout.LayoutParams) webViewWrapper.getLayoutParams();
+                    webView.defaultWidth = w;
+                    webView.defaultHeight = h;
                     wp.width = w;
                     wp.height = h;
                     webViewWrapper.setLayoutParams(wp);
