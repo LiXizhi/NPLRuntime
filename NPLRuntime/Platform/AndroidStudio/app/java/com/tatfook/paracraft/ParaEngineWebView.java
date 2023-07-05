@@ -148,9 +148,9 @@ public class ParaEngineWebView extends WebView {
             final int screenWidth = metrics.widthPixels;
 
             // keyboard logic is only enabled in fullscreen mode.
-            if ((Math.abs(screenWidth - defaultWidth) < 5) && (Math.abs(screenHeight - defaultHeight) < 5)) {
+            if ((Math.abs(screenWidth - defaultWidth) < 100) && (Math.abs(screenHeight - defaultHeight) < 5)) {
                 if (lastWebViewHeight != r.height()) {
-                    RelativeLayout.LayoutParams layoutParams = new RelativeLayout.LayoutParams(screenWidth, r.height());
+                    RelativeLayout.LayoutParams layoutParams = new RelativeLayout.LayoutParams(defaultWidth, r.height());
                     setLayoutParams(layoutParams);
                     lastWebViewHeight = r.height();
                 }
