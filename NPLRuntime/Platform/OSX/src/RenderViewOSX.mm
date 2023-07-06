@@ -38,7 +38,7 @@ static const NSRange kEmptyRange = { NSNotFound, 0 };
         
         if (pRenderWindow)
         {
-            return (NSWindow*)pRenderWindow->GetNativeHandle();
+            return (NSWindow *)pRenderWindow->GetNativeHandle();
         }
     }
     
@@ -200,6 +200,10 @@ static const NSRange kEmptyRange = { NSNotFound, 0 };
 
 - (void)keyDown:(NSEvent *)event
 {
+    if (![self.window.firstResponder isEqual:self]) {
+        [self.window makeFirstResponder:self];
+    }
+    
     int keyCode = [event keyCode];
     NSNumber *keyCodeNumber = [NSNumber numberWithInt:keyCode];
     
