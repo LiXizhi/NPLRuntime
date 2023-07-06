@@ -8,12 +8,13 @@ static const NSRange kEmptyRange = { NSNotFound, 0 };
 
 - (instancetype)initWithFrame:(NSRect)frameRect
 {
-    self = [super initWithFrame : frameRect];
+    self = [super initWithFrame: frameRect];
     
     if (self != nil)
     {
         trackingArea = nil;
         markedText = [[NSMutableAttributedString alloc] init];
+        pressedKeys = [[NSMutableArray alloc] init];
         
         [self updateTrackingAreas];
     }
@@ -199,8 +200,18 @@ static const NSRange kEmptyRange = { NSNotFound, 0 };
 
 - (void)keyDown:(NSEvent *)event
 {
-    auto pRenderWindow = [RenderView getRenderWindow];
+    int keyCode = [event keyCode];
+    NSNumber *keyCodeNumber = [NSNumber numberWithInt:keyCode];
+    
+    for (NSNumber *curKeyCode in pressedKeys) {
+        if (curKeyCode == keyCodeNumber) {
+            return;
+        }
+    }
 
+    [pressedKeys addObject:keyCodeNumber];
+
+    auto pRenderWindow = [RenderView getRenderWindow];
     if (pRenderWindow)
     {
         pRenderWindow->OnKey(ParaEngine::EKeyState::PRESS, event);
@@ -211,11 +222,24 @@ static const NSRange kEmptyRange = { NSNotFound, 0 };
 
 - (void)keyUp:(NSEvent *)event
 {
+    int keyCode = [event keyCode];
+    NSNumber *keyCodeNumber = [NSNumber numberWithInt:keyCode];
+    
+    int index = 0;
+    for (NSNumber *curKeyCode in pressedKeys) {
+        if (curKeyCode == keyCodeNumber) {
+            [pressedKeys removeObjectAtIndex:index];
+            break;
+        }
+        
+        index++;
+    }
+
     auto pRenderWindow = [RenderView getRenderWindow];
-       if (pRenderWindow)
-       {
-           pRenderWindow->OnKey(ParaEngine::EKeyState::RELEASE, event);
-       }
+    if (pRenderWindow)
+    {
+       pRenderWindow->OnKey(ParaEngine::EKeyState::RELEASE, event);
+    }
 }
 
 - (void)flagsChanged:(NSEvent *)event
@@ -303,9 +327,6 @@ static const NSRange kEmptyRange = { NSNotFound, 0 };
     {
         return NSMakeRect(0, 0, 0, 0);
     }
-    
-    
-    
 }
 
 - (void)insertText:(id)string replacementRange:(NSRange)replacementRange
