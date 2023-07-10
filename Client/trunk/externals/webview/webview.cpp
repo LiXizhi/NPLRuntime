@@ -109,7 +109,11 @@ LRESULT CALLBACK WebViewWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM l
 
 bool WebView::Create(HINSTANCE hInstance, HWND hParentWnd)
 {
-	if (!IsSupported()) return false;
+	if (!IsSupported()) {
+		if (m_on_created_callback != nullptr)
+			m_on_created_callback();
+		return false;
+	}
 
 	if (m_hWnd || m_nWndState != WEBVIEW_STATE_UNINITIALIZED)
 	{
@@ -142,6 +146,8 @@ bool WebView::Create(HINSTANCE hInstance, HWND hParentWnd)
 		if (!RegisterClassEx(&wcex))
 		{
 			WriteLog("Error: WebView RegisterClassEx(%s) Failed!\n", wcex.lpszClassName);
+			if (m_on_created_callback != nullptr)
+				m_on_created_callback();
 			return false;
 		}
 
@@ -186,13 +192,23 @@ bool WebView::Create(HINSTANCE hInstance, HWND hParentWnd)
 			WriteLog("Error Msg: %s\n", (LPCTSTR)lpMsgBuf);
 			// MessageBox(NULL, (LPCTSTR)lpMsgBuf, "CreateWindowEx failed", MB_OK | MB_ICONERROR);
 			LocalFree(lpMsgBuf);
+
+			if (m_on_created_callback != nullptr)
+				m_on_created_callback();
 			return false;
 		}
 
 		if (m_bShow)
 			Show();
 
-		CreateWebView(m_hWnd);
+		if (! CreateWebView(m_hWnd))
+		{
+			WriteLog("failed to create webview window\n");
+			
+			if (m_on_created_callback != nullptr)
+				m_on_created_callback();
+			return false;
+		}
 
 		MSG msg;
 		while (GetMessage(&msg, NULL, 0, 0))
@@ -384,11 +400,21 @@ bool WebView::CreateWebView(HWND hWnd)
 	auto options = Microsoft::WRL::Make<CoreWebView2EnvironmentOptions>();
 	options->put_AdditionalBrowserArguments(L"--enable-features=AllowAutoplay --autoplay-policy=no-user-gesture-required");  // 视屏自动播放开启
 	HRESULT ok = CreateCoreWebView2EnvironmentWithOptions(nullptr, user_data_folder.c_str(), options.Get(), Callback<ICoreWebView2CreateCoreWebView2EnvironmentCompletedHandler>([hWnd, this](HRESULT result, ICoreWebView2Environment* env) -> HRESULT {
-		if (FAILED(result)) return result;
+		if (FAILED(result)) {
+			WriteLog("error: failed to call CreateCoreWebView2EnvironmentWithOptions\n");
+			if (m_on_created_callback != nullptr)
+				m_on_created_callback();
+			return result;
+		}
 
 		// Create a CoreWebView2Controller and get the associated CoreWebView2 whose parent is the main window hWnd
 		HRESULT ok = env->CreateCoreWebView2Controller(hWnd, Callback<ICoreWebView2CreateCoreWebView2ControllerCompletedHandler>([hWnd, this](HRESULT result, ICoreWebView2Controller* controller) -> HRESULT {
-			if (controller == nullptr) return E_FAIL;
+			if (controller == nullptr) {
+				WriteLog("error: failed to CreateCoreWebView2Controller\n");
+				if (m_on_created_callback != nullptr)
+					m_on_created_callback();
+				return E_FAIL;
+			}
 
 			m_webview_controller = controller;
 			m_webview_controller->get_CoreWebView2(&(m_webview));
