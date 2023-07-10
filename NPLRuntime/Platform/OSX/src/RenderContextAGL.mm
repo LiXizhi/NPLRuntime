@@ -34,26 +34,26 @@ ParaEngine::IRenderDevice *RenderContxtAGL::CreateDevice(const ParaEngine::Rende
         0
     };
     
-    NSOpenGLPixelFormat* pixelFormat = [[NSOpenGLPixelFormat alloc] initWithAttributes:attrs];
-    if(pixelFormat == nil)
+    NSOpenGLPixelFormat *pixelFormat = [[NSOpenGLPixelFormat alloc] initWithAttributes:attrs];
+    if (pixelFormat == nil)
     {
         NSLog(@"No valid matching OpenGL Pixel Format found");
         return nullptr;
     }
     
-    NSOpenGLContext* openGLContext = [[NSOpenGLContext alloc] initWithFormat:pixelFormat shareContext:nil];
+    NSOpenGLContext *openGLContext = [[NSOpenGLContext alloc] initWithFormat:pixelFormat shareContext:nil];
     [openGLContext makeCurrentContext];
     printf("OpenGL version supported by this platform (%s): \n",
            glGetString(GL_VERSION));
     
-    NSWindow* window = (NSWindow*)renderWindow->GetNativeHandle();
-    RenderView* view = [[RenderView alloc] initWithFrame:CGRectMake(0, 0, cfg.screenWidth, cfg.screenHeight)];
+    NSWindow *window = (NSWindow*)renderWindow->GetNativeHandle();
+    RenderView *view = [[RenderView alloc] initWithFrame:CGRectMake(0, 0, cfg.screenWidth, cfg.screenHeight)];
     
     [window setContentView:view];
     [openGLContext setView:view];
     [openGLContext update];
     
-    RenderDeviceAGL* device = new RenderDeviceAGL(openGLContext);
+    RenderDeviceAGL *device = new RenderDeviceAGL(openGLContext);
     
     return device;
 }

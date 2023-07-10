@@ -35,7 +35,6 @@ public class ParaEngineGLSurfaceView extends GLSurfaceView {
     private static ParaEngineActivity sActivity = null;
     private static ParaTextInputWrapper sParaTextInputWrapper = null;
     private static int mMsgCount = 0;
-
     private ParaEngineRenderer mRenderer;
     private ParaEngineEditBox mEditText = null;
     public Handler sHandler = null;

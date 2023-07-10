@@ -130,6 +130,14 @@ android {
             dimension "company"
         }
 
+        //魅族
+        meizu {
+            manifestPlaceholders = [CHANNEL_VALUE: "meizu"]
+            resValue "string", "app_name", "帕拉卡3D虚拟社区学习软件"
+            resValue "drawable", "app_icon", "@drawable/ic_launcher"
+            dimension "company"
+        }
+
         //华为
         huawei {
             manifestPlaceholders = [CHANNEL_VALUE: "huawei"]
