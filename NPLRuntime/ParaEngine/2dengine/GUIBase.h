@@ -830,7 +830,7 @@ namespace ParaEngine
 		* OnModify event is triggered whenever the user changes the contain of edit box, changes position of a slider,
 		*/
 		virtual bool		OnModify();
-
+		virtual void 		SetModified(){};
 		/** Default handler of OnSize event.*/
 		virtual bool		OnSize();
 
