@@ -623,6 +623,14 @@ void CGUIEditBox::SetText(const char16_t* wszText)
 	SetDirty(true);
 }
 
+void CGUIEditBox::SetModified()
+{
+	m_bIsModified = true;
+	MSG newMsg;
+	newMsg.message = EM_CTRL_MODIFY;
+	MsgProc(&newMsg);
+}
+
 //--------------------------------------------------------------------------------------
 HRESULT CGUIEditBox::GetTextCopy(std::u16string& out)
 {
