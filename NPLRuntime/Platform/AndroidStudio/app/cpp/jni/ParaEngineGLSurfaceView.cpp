@@ -156,6 +156,7 @@ extern "C" {
         {
             std::string strText = JniHelper::getStringUTFCharsJNI(env, text);
             pGUI->SetTextA(strText.c_str());
+            pGUI->SetModified();
         }
     }
 
