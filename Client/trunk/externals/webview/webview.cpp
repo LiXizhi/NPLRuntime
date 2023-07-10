@@ -358,8 +358,11 @@ void WebView::Destroy()
 
 	DestroyWindow(m_hWnd);
 	m_hWnd = NULL;
-	m_webview_controller->Close();
-	m_webview_controller = nullptr;
+	if (m_webview_controller)
+	{
+		m_webview_controller->Close();
+		m_webview_controller = nullptr;
+	}
 	m_webview = nullptr;
 	m_bShow = false;
 	m_nWndState = WEBVIEW_STATE_DESTROYED;
