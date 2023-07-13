@@ -145,7 +145,7 @@ bool WebView::Create(HINSTANCE hInstance, HWND hParentWnd)
 
 		if (!RegisterClassEx(&wcex))
 		{
-			WriteLog("Error: WebView RegisterClassEx(%s) Failed!\n", wcex.lpszClassName);
+			WriteLog("Error: ParaWebView RegisterClassEx(%s) Failed!\n", wcex.lpszClassName);
 			if (m_on_created_callback != nullptr)
 				m_on_created_callback();
 			return false;
@@ -177,7 +177,7 @@ bool WebView::Create(HINSTANCE hInstance, HWND hParentWnd)
 
 		if (!m_hWnd)
 		{
-			WriteLog("Error: WebView CreateWindow Failed\n");
+			WriteLog("Error: ParaWebView CreateWindow Failed\n");
 			DWORD dwError = GetLastError();
 			LPVOID lpMsgBuf;
 			FormatMessage(
@@ -189,7 +189,7 @@ bool WebView::Create(HINSTANCE hInstance, HWND hParentWnd)
 				MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
 				(LPTSTR)&lpMsgBuf,
 				0, NULL);
-			WriteLog("Error Msg: %s\n", (LPCTSTR)lpMsgBuf);
+			WriteLog("Error ParaWebView Msg: %s\n", (LPCTSTR)lpMsgBuf);
 			// MessageBox(NULL, (LPCTSTR)lpMsgBuf, "CreateWindowEx failed", MB_OK | MB_ICONERROR);
 			LocalFree(lpMsgBuf);
 
@@ -203,7 +203,7 @@ bool WebView::Create(HINSTANCE hInstance, HWND hParentWnd)
 
 		if (! CreateWebView(m_hWnd))
 		{
-			WriteLog("failed to create webview window\n");
+			WriteLog("Error ParaWebView: failed to create window\n");
 			
 			if (m_on_created_callback != nullptr)
 				m_on_created_callback();
@@ -331,12 +331,12 @@ void WebView::SetPosition(int x, int y, int w, int h, bool bUpdateWndPosition)
 	{
 		if (!SetWindowPos(m_hWnd, NULL, x, y, w, h, (m_bShow ? SWP_SHOWWINDOW : SWP_HIDEWINDOW) | SWP_NOACTIVATE))
 		{
-			WriteLog("Error: WebView failed to set position!\n");
+			WriteLog("Error: ParaWebView failed to set position!\n");
 		}
 	}
 	if (!UpdateWindow(m_hWnd)) 
 	{
-		WriteLog("Error: WebView failed to set UpdateWindow!\n");
+		WriteLog("Error: ParaWebView failed to set UpdateWindow!\n");
 	}
 
 	RECT bounds;
@@ -404,7 +404,7 @@ bool WebView::CreateWebView(HWND hWnd)
 	options->put_AdditionalBrowserArguments(L"--enable-features=AllowAutoplay --autoplay-policy=no-user-gesture-required");  // 视屏自动播放开启
 	HRESULT ok = CreateCoreWebView2EnvironmentWithOptions(nullptr, user_data_folder.c_str(), options.Get(), Callback<ICoreWebView2CreateCoreWebView2EnvironmentCompletedHandler>([hWnd, this](HRESULT result, ICoreWebView2Environment* env) -> HRESULT {
 		if (FAILED(result)) {
-			WriteLog("error: failed to call CreateCoreWebView2EnvironmentWithOptions\n");
+			WriteLog("error: ParaWebView failed to call CreateCoreWebView2EnvironmentWithOptions\n");
 			if (m_on_created_callback != nullptr)
 				m_on_created_callback();
 			return result;
@@ -413,7 +413,7 @@ bool WebView::CreateWebView(HWND hWnd)
 		// Create a CoreWebView2Controller and get the associated CoreWebView2 whose parent is the main window hWnd
 		HRESULT ok = env->CreateCoreWebView2Controller(hWnd, Callback<ICoreWebView2CreateCoreWebView2ControllerCompletedHandler>([hWnd, this](HRESULT result, ICoreWebView2Controller* controller) -> HRESULT {
 			if (controller == nullptr) {
-				WriteLog("error: failed to CreateCoreWebView2Controller\n");
+				WriteLog("error: ParaWebView failed to CreateCoreWebView2Controller\n");
 				if (m_on_created_callback != nullptr)
 					m_on_created_callback();
 				return E_FAIL;
@@ -552,7 +552,7 @@ bool WebView::IsSupported()
 			}
 			else if (webview_version == nullptr)
 			{
-				WriteLog("Error: WebView webview2 not installed. please install Miscrosoft Edge. \n");
+				WriteLog("Error: ParaWebView webview2 not installed. please install Miscrosoft Edge. \n");
 				return true;
 			}
 		}
@@ -588,13 +588,13 @@ bool WebView::DownloadAndInstallWV2RT(std::function<void()> successed, std::func
 
 		if (ShellExecuteEx(&shExInfo))
 		{
-			WriteLog("Webview: WV2RT Install successfull\n");
+			WriteLog("ParaWebView: WV2RT Install successfull\n");
 			if (successed != nullptr) successed();
 			return true;
 		}
 		else
 		{
-			WriteLog("Error Webview: WV2RT Install failed\n");
+			WriteLog("Error ParaWebView: WV2RT Install failed\n");
 			if (failed != nullptr) failed();
 		}
 	}
