@@ -87,7 +87,7 @@ namespace ParaEngine
 		* @param bSelected whether to set the selection only. This is usually false.
 		*/
 		void SetTextA( LPCSTR szText, bool bSelected );
-		
+		virtual void SetModified();
 		/**
 		* Set the text of this object
 		* @param szText 
