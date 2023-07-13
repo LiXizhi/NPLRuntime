@@ -12,7 +12,7 @@
 #include <cstdio>
 
 using namespace ParaEngine;
-ParaEngine::CReadFileAndroid::CReadFileAndroid(const std::string fileName)
+ParaEngine::CReadFileAndroid::CReadFileAndroid(const std::string& fileName)
 	:m_filename(fileName)
 	,m_asset(nullptr)
 {
