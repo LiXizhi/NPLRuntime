@@ -154,8 +154,8 @@ bool WebView::Create(HINSTANCE hInstance, HWND hParentWnd)
 		DWORD dwStyle;
 		if (hParentWnd)
 		{
-			dwStyle = WS_CHILD | WS_VISIBLE | WS_CLIPCHILDREN;
-			// dwStyle = WS_POPUP;
+			// dwStyle = WS_CHILD | WS_VISIBLE | WS_CLIPCHILDREN;
+			dwStyle = WS_CHILD | WS_CLIPCHILDREN;
 			SetWindowLong(hParentWnd, GWL_STYLE, GetWindowLong(hParentWnd, GWL_STYLE) | WS_CLIPCHILDREN);
 		}
 		else {
@@ -197,9 +197,6 @@ bool WebView::Create(HINSTANCE hInstance, HWND hParentWnd)
 				m_on_created_callback();
 			return false;
 		}
-
-		if (m_bShow)
-			Show();
 
 		if (! CreateWebView(m_hWnd))
 		{
@@ -273,6 +270,9 @@ void WebView::Show()
 
 	ShowWindow(m_hWnd, m_bShow ? SW_SHOW : SW_HIDE);
 	UpdateWindow(m_hWnd);
+
+	if (m_webview_controller)
+		m_webview_controller->put_IsVisible(IsShow() ? TRUE : FALSE);
 }
 
 void WebView::Hide()
@@ -282,6 +282,9 @@ void WebView::Hide()
 
 	ShowWindow(m_hWnd, m_bShow ? SW_SHOW : SW_HIDE);
 	UpdateWindow(m_hWnd);
+
+	if (m_webview_controller)
+		m_webview_controller->put_IsVisible(IsShow() ? TRUE : FALSE);
 }
 
 void WebView::Debug(bool enable)
@@ -478,6 +481,7 @@ bool WebView::CreateWebView(HWND hWnd)
 			if (!m_url.empty())
 				Open(m_url);
 			// m_webview->OpenDevToolsWindow();
+
 			if (IsShow())
 				Show();
 			else
