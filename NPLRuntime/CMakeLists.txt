@@ -78,6 +78,8 @@ elseif (APPLE)
 	add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-Wno-inconsistent-missing-override>)
 	add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-Wno-gnu-include-next>)
 	add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-Wno-null-conversion>)
+
+	set(CMAKE_OSX_ARCHITECTURES "arm64 x86_64" CACHE INTERNAL "" FORCE)
 elseif (WIN32)
     # Ugly warnings
     if (MSVC)
