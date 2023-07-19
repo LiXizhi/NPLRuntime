@@ -301,6 +301,26 @@ android {
             dimension "company"
         }
 
+        //百度
+        papaBaidu {
+            applicationId "cn.palaka.papaadventure"
+            manifestPlaceholders = [CHANNEL_VALUE: "baidu"]
+            resValue "string", "app_name", "帕帕奇遇记"
+            resValue "drawable", "app_icon", "@drawable/icon_papa"
+            resValue "drawable", "app_splash", "@drawable/splash_papa"
+            dimension "company"
+        }
+
+        //阿里应用分发开放平台
+        papaAli9you {
+            applicationId "cn.palaka.papaadventure"
+            manifestPlaceholders = [CHANNEL_VALUE: "ali9you"]
+            resValue "string", "app_name", "帕帕奇遇记"
+            resValue "drawable", "app_icon", "@drawable/icon_papa"
+            resValue "drawable", "app_splash", "@drawable/splash_papa"
+            dimension "company"
+        }
+
         /* ABI */
         abiDefault {
             ndk {
