@@ -466,7 +466,7 @@ LJ_FUNCA int lj_err_unwind_dwarf(int version, int actions,
     */
     lj_err_throw(L, errcode);
 #if LJ_TARGET_X64
-// #error "Broken build system -- only use the provided Makefiles!"
+#error "Broken build system -- only use the provided Makefiles!"
 #endif
 #endif
   }
