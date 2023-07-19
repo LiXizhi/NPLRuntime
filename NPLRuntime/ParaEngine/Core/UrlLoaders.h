@@ -3,8 +3,7 @@
 #include <vector>
 /* curl specific */
 #include "util/mutex.h"
-#ifndef EMSCRIPTEN
-
+#ifndef EMSCRIPTEN_SINGLE_THREAD
 #include <curl/curl.h>
 #else
 typedef enum {

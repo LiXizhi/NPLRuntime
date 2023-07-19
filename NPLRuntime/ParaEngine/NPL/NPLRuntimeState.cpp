@@ -289,10 +289,25 @@ int NPL::CNPLRuntimeState::Run_Async()
 	if (m_thread.get() == 0)
 	{
 #ifndef EMSCRIPTEN_SINGLE_THREAD
-		m_thread.reset(new npl_thread(boost::bind(&NPL::CNPLRuntimeState::Run, shared_from_this())));
+		m_thread.reset(new boost::thread(boost::bind(&NPL::CNPLRuntimeState::Run, shared_from_this())));
 #else
-		m_thread.reset(CoroutineThread::StartCoroutineThread([this](CoroutineThread*)->CO_ASYNC{
-			this->Run();
+		m_thread.reset(CoroutineThread::StartCoroutineThread([this](CoroutineThread* t)->CO_ASYNC{
+			NPLMessage_ptr msg;
+			int nRes = 0;
+			while (nRes != -1)
+			{
+				if (m_input_queue.try_pop(msg))
+				{
+					nRes = ProcessMsg(msg);
+				}
+				else
+				{
+					CO_AWAIT(t->Sleep(100));
+				}
+			}
+			// this is necessary, because we must finalize mono state before the thread is terminated. 
+			// Otherwise there will a exception when application exit via the main thread. 
+			SAFE_RELEASE(m_pMonoScriptingState);
 		}, nullptr));
 #endif
 	}

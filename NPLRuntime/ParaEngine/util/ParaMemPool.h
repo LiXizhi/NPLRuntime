@@ -114,7 +114,8 @@ namespace ParaEngine
 		}
 
 		//    memory allocation
-#ifdef EMSCRIPTEN_SINGLE_THREAD
+// #ifdef EMSCRIPTEN_SINGLE_THREAD
+#ifdef EMSCRIPTEN
 		inline pointer allocate(size_type cnt, const void* _ = 0) 
 #else
 		inline pointer allocate(size_type cnt, typename std::allocator<void>::const_pointer = 0) 
@@ -234,7 +235,8 @@ namespace ParaEngine
 		}
 
 		//    memory allocation
-#ifdef EMSCRIPTEN_SINGLE_THREAD
+// #ifdef EMSCRIPTEN_SINGLE_THREAD
+#ifdef EMSCRIPTEN
 		inline pointer allocate(size_type cnt, const void* _ = 0) 
 #else
 		inline pointer allocate(size_type cnt, typename std::allocator<void>::const_pointer = 0) 

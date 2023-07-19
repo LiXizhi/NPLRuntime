@@ -958,7 +958,7 @@ namespace ParaScripting
 
 	ParaScripting::ParaFileSystemWatcher ParaIO::GetFileSystemWatcher( const char* filename )
 	{
-#if defined(PARAENGINE_MOBILE) || defined(EMSCRIPTEN_SINGLE_THREAD)
+#if defined(PARAENGINE_MOBILE) || defined(EMSCRIPTEN)
 		return ParaFileSystemWatcher();
 #else
 		return ParaFileSystemWatcher(CFileSystemWatcherService::GetInstance()->GetDirWatcher(filename).get());
@@ -967,7 +967,7 @@ namespace ParaScripting
 
 	void ParaIO::DeleteFileSystemWatcher( const char* name )
     {
-#if !defined(PARAENGINE_MOBILE) && !defined(EMSCRIPTEN_SINGLE_THREAD)
+#if !defined(PARAENGINE_MOBILE) && !defined(EMSCRIPTEN)
         CFileSystemWatcherService::GetInstance()->DeleteDirWatcher(name);
 #endif
 	}
@@ -1950,7 +1950,7 @@ namespace ParaScripting
 
 	void ParaFileSystemWatcher::AddDirectory( const char* filename )
 	{
-#if !defined(PARAENGINE_MOBILE) && !defined(EMSCRIPTEN_SINGLE_THREAD)
+#if !defined(PARAENGINE_MOBILE) && !defined(EMSCRIPTEN)
 		if (m_watcher)
 			m_watcher->add_directory(filename);
 #endif
@@ -1958,12 +1958,12 @@ namespace ParaScripting
 
 	void ParaFileSystemWatcher::RemoveDirectory( const char* filename )
 	{
-#if !defined(PARAENGINE_MOBILE) && !defined(EMSCRIPTEN_SINGLE_THREAD)
+#if !defined(PARAENGINE_MOBILE) && !defined(EMSCRIPTEN)
 		if (m_watcher)
 			m_watcher->remove_directory(filename);
 #endif
 	}
-#if !defined(PARAENGINE_MOBILE) && !defined(EMSCRIPTEN_SINGLE_THREAD)
+#if !defined(PARAENGINE_MOBILE) && !defined(EMSCRIPTEN)
 	/** callback to npl runtime */
 	struct FileSystemWatcher_NPLCallback
 	{
@@ -1994,7 +1994,7 @@ namespace ParaScripting
 #endif
 	void ParaFileSystemWatcher::AddCallback( const char* sCallbackScript )
 	{
-#if !defined(PARAENGINE_MOBILE) && !defined(EMSCRIPTEN_SINGLE_THREAD)
+#if !defined(PARAENGINE_MOBILE) && !defined(EMSCRIPTEN)
 		if (m_watcher)
 			m_watcher->AddEventCallback(FileSystemWatcher_NPLCallback(sCallbackScript));
 #endif
@@ -2006,7 +2006,7 @@ namespace ParaScripting
 
 	}
 
-#if defined(PARAENGINE_MOBILE) || defined(EMSCRIPTEN_SINGLE_THREAD)
+#if defined(PARAENGINE_MOBILE) || defined(EMSCRIPTEN)
 	ParaFileSystemWatcher::ParaFileSystemWatcher(ParaFileSystemWatcher* watcher) : m_watcher(watcher)
 	{
 

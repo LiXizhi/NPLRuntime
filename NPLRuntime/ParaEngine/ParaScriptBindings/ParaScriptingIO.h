@@ -5,9 +5,7 @@
 //-----------------------------------------------------------------------------
 #pragma once
 #include "ParaScriptingCommon.h"
-#if defined(PARAENGINE_MOBILE) 
 #include "FileSystemWatcher.h"
-#endif
 #include "ZipWriter.h"
 
 namespace ParaScripting

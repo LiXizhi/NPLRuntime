@@ -933,6 +933,14 @@ void ParaEngine::ParaEngineSettings::SendMsgToJS(const char* msg_json_data)
 #endif
 }
 
+// std::string ParaEngine::ParaEngineSettings::PyToLua(std::string pycode)
+// {
+// #ifdef EMSCRIPTEN
+//     emscripten::val js_global_LuaCallPy2Lua = emscripten::val::global("LuaCallPy2Lua");
+// 	return js_global_LuaCallPy2Lua(pycode);
+// #endif
+// }
+
 void ParaEngine::ParaEngineSettings::SetConsoleTextAttribute( int wAttributes )
 {
 #ifdef USE_DIRECTX_RENDERER

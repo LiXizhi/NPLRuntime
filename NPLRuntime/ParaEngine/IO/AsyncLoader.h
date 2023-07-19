@@ -30,8 +30,10 @@ And each processor thread can be associated with just one processor queue. Pleas
 
 #ifdef EMSCRIPTEN_SINGLE_THREAD
 typedef CoroutineThread npl_thread;
+typedef CoroutineThread npl_boost_thread;
 #else
-typedef boost::thread npl_thread;
+typedef std::thread npl_thread;
+typedef boost::thread npl_boost_thread;
 #endif
 
 namespace ParaEngine
@@ -84,7 +86,7 @@ namespace ParaEngine
 			Log_Error,
 		};
 
-		typedef boost::shared_ptr<npl_thread> Boost_Thread_ptr_type;
+		typedef boost::shared_ptr<npl_boost_thread> Boost_Thread_ptr_type;
 
 		CAsyncLoader();
 		virtual ~CAsyncLoader();
@@ -328,7 +330,7 @@ namespace ParaEngine
 
 			~ProcessorWorkerThread();
 		public:
-			void reset(npl_thread * pThread) {m_thread.reset(pThread);}
+			void reset(npl_boost_thread * pThread) {m_thread.reset(pThread);}
 			void reset() {m_thread.reset();}
 			void join() { if(m_thread.get()) m_thread->join();}
 

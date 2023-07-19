@@ -22,9 +22,12 @@
 
 #ifdef EMSCRIPTEN_SINGLE_THREAD
 typedef CoroutineThread npl_thread;
+typedef CoroutineThread npl_boost_thread;
 #else
-typedef boost::thread npl_thread;
+typedef std::thread npl_thread;
+typedef boost::thread npl_boost_thread;
 #endif
+
 
 namespace ParaEngine
 {
@@ -381,7 +384,7 @@ namespace NPL
 		CNPLMessageQueue m_input_queue;
 
 		/** Thread in which the NPL runtime state are executed */
-		boost::shared_ptr<npl_thread> m_thread;
+		boost::shared_ptr<npl_boost_thread> m_thread;
 
 		/** provide thread safe access to shared data members in this class. */
 		ParaEngine::mutex m_mutex;

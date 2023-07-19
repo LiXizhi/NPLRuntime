@@ -36,13 +36,17 @@ if (SDL AND NOT EMSCRIPTEN)
 	target_include_directories(${TARGET_NAME} PUBLIC "${SDL_ROOT}/include")
 	target_link_libraries(${TARGET_NAME} PUBLIC ${SDL_ROOT}/lib/SDL2-static.lib ${SDL_ROOT}/lib/SDL2main.lib ws2_32.lib user32.lib gdi32.lib winmm.lib imm32.lib ole32.lib oleaut32.lib version.lib uuid.lib advapi32.lib setupapi.lib shell32.lib dinput8.lib OpenGL32.lib)
 elseif (EMSCRIPTEN)
-	# set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3 --use-preload-cache -sFULL_ES2=1 -sMAX_WEBGL_VERSION=2 -sINITIAL_MEMORY=128MB -sTOTAL_MEMORY=256MB -sALLOW_MEMORY_GROWTH -sPTHREAD_POOL_SIZE=16 -sSTACK_SIZE=16000000 -sASYNCIFY_STACK_SIZE=16000000 -lopenal -sFETCH -lidbfs.js -lwebsocket.js -pthread -sFORCE_FILESYSTEM -sASYNCIFY")
-	# set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -O3 --use-preload-cache -sFULL_ES2=1 -sMAX_WEBGL_VERSION=2 -sINITIAL_MEMORY=128MB -sTOTAL_MEMORY=256MB -sALLOW_MEMORY_GROWTH -sPTHREAD_POOL_SIZE=16 -sSTACK_SIZE=16000000 -sASYNCIFY_STACK_SIZE=16000000 -lopenal -sFETCH -lidbfs.js -lwebsocket.js -pthread -sFORCE_FILESYSTEM -sASYNCIFY")
-	set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++20 -O3 --use-preload-cache -sFULL_ES2=1 -sMAX_WEBGL_VERSION=2 -sINITIAL_MEMORY=128MB -sTOTAL_MEMORY=256MB -sALLOW_MEMORY_GROWTH -sSTACK_SIZE=16000000 -sASYNCIFY_STACK_SIZE=16000000 -lembind -lopenal -sFETCH -lidbfs.js -lwebsocket.js -sFORCE_FILESYSTEM -sASYNCIFY")
-	set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=c++20 -O3 --use-preload-cache -sFULL_ES2=1 -sMAX_WEBGL_VERSION=2 -sINITIAL_MEMORY=128MB -sTOTAL_MEMORY=256MB -sALLOW_MEMORY_GROWTH -sSTACK_SIZE=16000000 -sASYNCIFY_STACK_SIZE=16000000 -lembind -lopenal -sFETCH -lidbfs.js -lwebsocket.js -sFORCE_FILESYSTEM -sASYNCIFY")
-	# -sSTACK_SIZE=32000000 
+	set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3 --use-preload-cache -sFULL_ES2=1 -sMAX_WEBGL_VERSION=2 -lembind -lopenal -sFETCH -lidbfs.js -lwebsocket.js -sFORCE_FILESYSTEM -sASYNCIFY -sALLOW_MEMORY_GROWTH -sINITIAL_MEMORY=128MB -sTOTAL_MEMORY=256MB -sSTACK_SIZE=16000000 -sASYNCIFY_STACK_SIZE=16000000")
+	set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -O3 --use-preload-cache -sFULL_ES2=1 -sMAX_WEBGL_VERSION=2 -lembind -lopenal -sFETCH -lidbfs.js -lwebsocket.js -sFORCE_FILESYSTEM -sASYNCIFY -sALLOW_MEMORY_GROWTH -sINITIAL_MEMORY=128MB -sTOTAL_MEMORY=256MB -sSTACK_SIZE=16000000 -sASYNCIFY_STACK_SIZE=16000000")
+	if (EMSCRIPTEN_SINGLE_THREAD)
+		set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++20 -sASSERTIONS")
+		set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=c++20 -sASSERTIONS")
+		target_compile_definitions(${TARGET_NAME} PUBLIC EMSCRIPTEN_SINGLE_THREAD)
+	else()
+		set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pthread -sPTHREAD_POOL_SIZE=16 ")
+		set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -pthread -sPTHREAD_POOL_SIZE=16 ")
+	endif()
 	target_compile_definitions(${TARGET_NAME} PUBLIC EMSCRIPTEN)
-	target_compile_definitions(${TARGET_NAME} PUBLIC EMSCRIPTEN_SINGLE_THREAD)
 	target_include_directories(${TARGET_NAME} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/emscripten)
 endif()
 
@@ -79,6 +83,16 @@ if (EMSCRIPTEN)
 		COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_BINARY_DIR}/bin ${HTML_ROOT}
 	)
 
+	if (LOCAL_DEBUG)
+		add_custom_target(
+			download_main150727_pkg ALL
+			COMMAND curl http://10.28.18.3/main_dev.pkg -o main150727.pkg
+			COMMENT "下载  main150727.pkg"
+			OUTPUT_DIRECTORY ${APP_ROOT}
+			WORKING_DIRECTORY ${APP_ROOT}
+		)
+	endif()
+	
 	# 拷贝文件系统到根目录
 	add_custom_target(
 		paracraft_asset ALL
@@ -88,6 +102,7 @@ if (EMSCRIPTEN)
 		OUTPUT_DIRECTORY ${HTML_ROOT}
 		WORKING_DIRECTORY ${HTML_ROOT}
 	)
+
 	# # script
 	# add_custom_target(
 	# 	paracraft_script
@@ -110,4 +125,5 @@ if (EMSCRIPTEN)
 endif()
 
 # emcmake cmake -S NPLRuntime_Emscripten/NPLRuntime -B build/emscripten -DEMSCRIPTEN=ON -DCMAKE_BUILD_TYPE=RELEASE -DLOCAL_DEBUG=TRUE
+# emcmake cmake -S NPLRuntime_EmscriptenSingleThread/NPLRuntime -B build/emscripten -DEMSCRIPTEN=ON -DCMAKE_BUILD_TYPE=RELEASE -DLOCAL_DEBUG=TRUE
 # emcmake cmake -S NPLRuntime_EmscriptenSingleThread/NPLRuntime -B build/emscripten_single_thread -DEMSCRIPTEN=ON -DEMSCRIPTEN_SINGLE_THREAD=ON -DCMAKE_BUILD_TYPE=RELEASE -DLOCAL_DEBUG=TRUE

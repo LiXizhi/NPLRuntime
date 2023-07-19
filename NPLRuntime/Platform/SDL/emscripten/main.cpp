@@ -103,7 +103,7 @@ EM_PORT_API(void) emscripten_filesystem_inited()
 
 int main(int argc, char* argv[])
 {
-	std::cout << "===============emscripten paracraft=======================" << std::endl;
+	std::cout << "========================start paracraft=======================" << std::endl;
 	// std::cout << "main thread id: " << std::this_thread::get_id() << std::endl;
 	JS::StaticInit();
 	JS::SetTextInputCallback([](const std::string text) { GetApp()->OnChar(text);});
@@ -149,9 +149,14 @@ int main(int argc, char* argv[])
 	std::string username = JS::GetQueryStringArg("username");
 	std::string http_env = JS::GetQueryStringArg("http_env");
 	std::string token = JS::GetQueryStringArg("token");
+	std::string channelId = JS::GetQueryStringArg("channelId");
+	std::string world = JS::GetQueryStringArg("world");
+	std::string cmdline = JS::GetQueryStringArg("cmdline");
 
 	if (!username.empty()) sCmdLine = sCmdLine + " username=\"" + username + "\"";
 	if (!http_env.empty()) sCmdLine = sCmdLine + " http_env=\"" + http_env + "\"";
+	if (!channelId.empty()) sCmdLine = sCmdLine + " channelId=\"" + channelId + "\"";
+	if (!world.empty()) sCmdLine = sCmdLine + " world=\"" + world + "\"";
 	std::string pid = JS::GetQueryStringArg("pid");
 	std::string worldfile = JS::GetQueryStringArg("worldfile", false);
 	if (pid.empty())
@@ -163,6 +168,7 @@ int main(int argc, char* argv[])
 		sCmdLine += " paracraft://cmd/loadworld/" + pid;
 	}
 	if (!token.empty()) sCmdLine = sCmdLine + " paracraft://usertoken=\"" + token + "\"";
+	sCmdLine = sCmdLine + " " + cmdline;
 	std::cout << "cmdline: " << sCmdLine << std::endl;
 
 	GetApp()->m_cmdline = sCmdLine;
@@ -182,7 +188,6 @@ int main(int argc, char* argv[])
 		setInterval(function(){ FS.syncfs(false, function(err) { if (err) { console.log("FS.syncfs",err); } });}, 600000);  // 10分钟后同步到idbfs
     });
 
-	std::cout << "========================start paracraft=======================" << std::endl;
 	#ifdef EMSCRIPTEN
 		emscripten_set_main_loop_arg(mainloop, nullptr, -1, 1);
 	#endif
