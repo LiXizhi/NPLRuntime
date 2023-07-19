@@ -1,5 +1,6 @@
-#include "RenderDeviceAGL.h"
 #import <Cocoa/Cocoa.h>
+#include "RenderDeviceAGL.h"
+
 using namespace ParaEngine;
 RenderDeviceAGL::RenderDeviceAGL(NSOpenGLContext *context)
 :m_GLContext(context)
