@@ -447,7 +447,7 @@ static std::string getFixedBaseUrl(const std::string& baseUrl)
 @end
 
 namespace ParaEngine {
-    static std::unordered_map<std::string, std::shared_ptr<ParaEngineWebView>> webviews;
+    static std::unordered_map<std::string, ParaEngineWebView *> webviews;
     static int viewTags = 0;
     static bool isOpenUrlLoaded = false;
     static int openUrlViewTag = 0;
@@ -561,7 +561,7 @@ namespace ParaEngine {
         auto it = webviews.find(std::to_string(viewTag));
 
         if (it != webviews.end()) {
-            pView = it->second.get();
+            pView = it->second;
         }
 
         if (!pView)

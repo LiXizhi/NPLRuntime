@@ -414,7 +414,7 @@ public class ParaEngineActivity extends AppCompatActivity {
             )
         );
         imageView.setScaleType(ImageView.ScaleType.FIT_XY);
-        imageView.setImageResource(R.drawable.splash);
+        imageView.setImageResource(R.drawable.app_splash);
         mFrameLayout.addView(imageView);
 
         CountDownTimer countDownTimer = new CountDownTimer(3000, 1000) {

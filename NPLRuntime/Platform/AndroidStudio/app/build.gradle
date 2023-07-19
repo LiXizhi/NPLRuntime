@@ -16,7 +16,7 @@ android {
         targetSdkVersion PROP_TARGET_SDK_VERSION
         versionCode Integer.parseInt(VERSION_CODE)
         versionName VERSION_NAME
-
+        resValue "drawable", "app_splash", "@drawable/splash"
         externalNativeBuild {
             cmake {
                 arguments "-DCMAKE_FIND_ROOT_PATH=", "-DANDROID_STL=c++_shared", "-DANDROID_TOOLCHAIN=clang", "-DANDROID_ARM_NEON=TRUE", "-DANDROID_STUDIO=TRUE", "-DNPLRUNTIME_OCE=FALSE"
@@ -208,6 +208,7 @@ android {
             manifestPlaceholders = [CHANNEL_VALUE: "palaka"]
             resValue "string", "app_name", "帕帕奇遇记"
             resValue "drawable", "app_icon", "@drawable/icon_papa"
+            resValue "drawable", "app_splash", "@drawable/splash_papa"
             dimension "company"
         }
 
@@ -216,6 +217,7 @@ android {
             manifestPlaceholders = [CHANNEL_VALUE: "tatfook"]
             resValue "string", "app_name", "帕帕奇遇记"
             resValue "drawable", "app_icon", "@drawable/icon_papa"
+            resValue "drawable", "app_splash", "@drawable/splash_papa"
             dimension "company"
         }
 
@@ -225,6 +227,7 @@ android {
             manifestPlaceholders = [CHANNEL_VALUE: "yingyongbao"]
             resValue "string", "app_name", "帕帕奇遇记"
             resValue "drawable", "app_icon", "@drawable/icon_papa"
+            resValue "drawable", "app_splash", "@drawable/splash_papa"
             dimension "company"
         }
 
@@ -234,6 +237,7 @@ android {
             manifestPlaceholders = [CHANNEL_VALUE: "xiaomi"]
             resValue "string", "app_name", "帕帕奇遇记"
             resValue "drawable", "app_icon", "@drawable/icon_papa"
+            resValue "drawable", "app_splash", "@drawable/splash_papa"
             dimension "company"
         }
 
@@ -243,6 +247,7 @@ android {
             manifestPlaceholders = [CHANNEL_VALUE: "huawei"]
             resValue "string", "app_name", "帕帕奇遇记"
             resValue "drawable", "app_icon", "@drawable/icon_papa"
+            resValue "drawable", "app_splash", "@drawable/splash_papa"
             dimension "company"
         }
 
@@ -252,6 +257,7 @@ android {
             manifestPlaceholders = [CHANNEL_VALUE: "oppo"]
             resValue "string", "app_name", "帕帕奇遇记"
             resValue "drawable", "app_icon", "@drawable/icon_papa"
+            resValue "drawable", "app_splash", "@drawable/splash_papa"
             dimension "company"
         }
 
@@ -261,6 +267,7 @@ android {
             manifestPlaceholders = [CHANNEL_VALUE: "vivo"]
             resValue "string", "app_name", "帕帕奇遇记"
             resValue "drawable", "app_icon", "@drawable/icon_papa"
+            resValue "drawable", "app_splash", "@drawable/splash_papa"
             dimension "company"
         }
 
@@ -270,6 +277,7 @@ android {
             manifestPlaceholders = [CHANNEL_VALUE: "honor"]
             resValue "string", "app_name", "帕帕奇遇记"
             resValue "drawable", "app_icon", "@drawable/icon_papa"
+            resValue "drawable", "app_splash", "@drawable/splash_papa"
             dimension "company"
         }
 
@@ -279,6 +287,7 @@ android {
             manifestPlaceholders = [CHANNEL_VALUE: "zhongxing"]
             resValue "string", "app_name", "帕帕奇遇记"
             resValue "drawable", "app_icon", "@drawable/icon_papa"
+            resValue "drawable", "app_splash", "@drawable/splash_papa"
             dimension "company"
         }
 
@@ -288,6 +297,7 @@ android {
             manifestPlaceholders = [CHANNEL_VALUE: "qihu360"]
             resValue "string", "app_name", "帕帕奇遇记"
             resValue "drawable", "app_icon", "@drawable/icon_papa"
+            resValue "drawable", "app_splash", "@drawable/splash_papa"
             dimension "company"
         }
 
