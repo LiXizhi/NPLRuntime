@@ -1,11 +1,11 @@
-#include "ParaEngine.h"
-
+#import <Cocoa/Cocoa.h>
 #include "RenderContextAGL.h"
+#include "ParaEngine.h"
 #include "RenderWindowOSX.h"
 #include "RenderDeviceAGL.h"
 #include "RenderViewOSX.h"
 
-#import <Cocoa/Cocoa.h>
+
 using namespace ParaEngine;
 
 IRenderContext* IRenderContext::Create()

@@ -1,3 +1,4 @@
+#import <Cocoa/Cocoa.h>
 #include "ParaEngine.h"
 #include "ParaFileUtilsOSX.h"
 #include <zlib.h>
@@ -19,7 +20,6 @@
 #include <boost/filesystem/path.hpp>
 #include <boost/filesystem/fstream.hpp>
 #include <iostream>
-#include <Cocoa/Cocoa.h>
 
 namespace fs = boost::filesystem;
 #define BOOST_FILESYSTEM_NO_DEPRECATED

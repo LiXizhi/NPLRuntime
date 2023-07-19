@@ -256,6 +256,17 @@ parseArgs()
                 BUILD_MACOS=1
                 ;;
 
+            -m1)
+                MACOS_ARCHS="arm64 x86_64"
+                MACOS_ARCH_COUNT=0
+                MACOS_ARCH_FLAGS=""
+
+                for ARCH in $MACOS_ARCHS; do
+                    MACOS_ARCH_FLAGS="$MACOS_ARCH_FLAGS -arch $ARCH"
+                    ((MACOS_ARCH_COUNT++))
+                done
+                ;;
+
             --boost-version)
                 if [ -n $2 ]; then
                     BOOST_VERSION=$2

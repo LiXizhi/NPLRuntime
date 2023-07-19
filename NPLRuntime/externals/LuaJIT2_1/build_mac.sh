@@ -2,7 +2,7 @@
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 SRCDIR=$DIR/code
 DESTDIR=$DIR/prebuilt/mac
-MACOSX_DEPLOYMENT_TARGET="10.6"
+export MACOSX_DEPLOYMENT_TARGET="10.13"
 
 rm "$DESTDIR"/*.a
 
