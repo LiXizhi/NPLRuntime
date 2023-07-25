@@ -291,7 +291,7 @@ unsigned int ParaEngine::CParaAudioCapture::saveToFile(const char* filename, flo
 		fputs("WAVE", pFile);
 
 		fputs("fmt ", pFile);
-		fwrite32le(18, pFile); // 'fmt ' header len
+		fwrite32le(16, pFile); // 'fmt ' header len
 
 		// 16-bit val, format type id (1 = integer PCM, 3 = float PCM)
 		fwrite16le((mBits == 32) ? 0x0003 : 0x0001, pFile);
@@ -305,8 +305,6 @@ unsigned int ParaEngine::CParaAudioCapture::saveToFile(const char* filename, flo
 		fwrite16le(mFrameSize, pFile);
 		// 16-bit val, bits per sample
 		fwrite16le(mBits, pFile);
-		// 16-bit val, extra byte count
-		fwrite16le(0, pFile);
 
 		fputs("data", pFile);
 		const char* pData = pBuffer->getReadBuffer();
@@ -316,6 +314,8 @@ unsigned int ParaEngine::CParaAudioCapture::saveToFile(const char* filename, flo
 		fwrite(pData, 1, nDataLength, pFile);
 
 		nFileSize = ftell(pFile);
+		if (fseek(pFile, 4, SEEK_SET) == 0)
+			fwrite32le(nFileSize - 8, pFile);
 		fclose(pFile);
 	}
 	else if (sFilenameExt == ".ogg")
