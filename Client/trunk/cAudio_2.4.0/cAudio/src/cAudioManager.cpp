@@ -249,11 +249,13 @@ namespace cAudio
 			}
 
 			getLogger()->logError("AudioManager", "Failed to create Audio Source (%s): Error creating audio source.", toUTF8(audioName));
-			audio->drop();
+			if(audio)
+				audio->drop();
 			return NULL;
 		}
 		getLogger()->logError("AudioManager", "Failed to create Audio Source (%s): Audio data could not be decoded by (.%s) decoder.", toUTF8(audioName), toUTF8(decoder->getType()));
-		decoder->drop();
+		if(decoder)
+			decoder->drop();
 		return NULL;
 	}
 
@@ -287,10 +289,7 @@ namespace cAudio
 					IAudioSource* audio = createAudioSource(decoder, audioName, dataSourceName);
 					if(audio != NULL)
 						return audio;
-
-					if(source)
-						source->drop();
-
+					
 					return NULL;
 				}
 			}
@@ -352,8 +351,6 @@ namespace cAudio
 			IAudioSource* audio = createAudioSource(decoder, audioName, _CTEXT("cMemorySource"));
 			if(audio != NULL)
 				return audio;
-
-
 		}
 		return NULL;
 	}
@@ -629,9 +626,6 @@ namespace cAudio
 				if(source == audioSources[i])
 				{					
 					audioSources.erase(audioSources.begin()+i);		
-
-					
-
 					break;
 				}
 			}
