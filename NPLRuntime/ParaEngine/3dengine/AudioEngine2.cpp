@@ -160,7 +160,7 @@ HRESULT ParaEngine::CAudioEngine2::InitAudioEngine(IParaAudioEngine* pInteface)
 		m_pAudioEngine->registerLogReceiver([](const char* msg) {
 			OUTPUT_LOG("cAudioEngine: %s \n", msg);
 		});
-		
+
 	}
 	return (m_pAudioEngine != 0) ? S_OK : E_FAIL;
 }
@@ -601,7 +601,7 @@ ParaEngine::CAudioEngine2::CAudioPlaybackHistory& ParaEngine::CAudioEngine2::Set
 	AudioFileMap_type::iterator iter = m_audio_file_map.begin();
 	while (iter != m_audio_file_map.end())
 	{
-		auto & source = iter->second;
+		auto& source = iter->second;
 		if (source->IsPlaying()) {
 			source->m_nStartTime = nowTime;
 			source->m_nSeekPos = source->m_pSource->getCurrentAudioTime();
@@ -633,7 +633,6 @@ ParaEngine::CAudioEngine2::CAudioPlaybackHistory& ParaEngine::CAudioEngine2::Set
 
 	return m_PlaybackHistory;
 }
-
 
 /** async wave file call back. */
 class CWaveFileDownloadCallBackData2
@@ -942,6 +941,25 @@ void ParaEngine::CAudioEngine2::SetCaptureAudioQuality(float val)
 	m_fCaptureAudioQuality = val;
 }
 
+int ParaEngine::CAudioEngine2::GetCaptureFrequency()
+{
+	auto pAutoCapture = CreateGetAudioCapture();
+	if (pAutoCapture)
+	{
+		return pAutoCapture->getFrequency();
+	}
+	return 0;
+}
+
+void ParaEngine::CAudioEngine2::SetCaptureFrequency(int nFrequency)
+{
+	auto pAutoCapture = CreateGetAudioCapture();
+	if (pAutoCapture)
+	{
+		pAutoCapture->setFrequency(nFrequency);
+	}
+}
+
 ParaEngine::CAudioEngine2::CAudioPlaybackHistory& ParaEngine::CAudioEngine2::GetPlaybackHistory()
 {
 	return m_PlaybackHistory;
@@ -1154,6 +1172,7 @@ int ParaEngine::CAudioEngine2::InstallFields(CAttributeClass* pClass, bool bOver
 
 	pClass->AddField("DeviceName", FieldType_String, (void*)SetDeviceName_s, (void*)GetDeviceName_s, NULL, NULL, bOverride);
 	pClass->AddField("CaptureAudioQuality", FieldType_Float, (void*)SetCaptureAudioQuality_s, (void*)GetCaptureAudioQuality_s, NULL, "[0.1, 1]", bOverride);
+	pClass->AddField("CaptureFrequency", FieldType_Int, (void*)SetCaptureFrequency_s, (void*)GetCaptureFrequency_s, NULL, "16000", bOverride);
 
 	return S_OK;
 }
