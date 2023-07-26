@@ -138,16 +138,17 @@ public class ParaEngineWebView extends WebView {
             }
         });
 
-//        ParaEngineWebView.this.getViewTreeObserver().addOnGlobalLayoutListener(() -> {
-//            Rect r = new Rect();
-//            ParaEngineWebView.this.getWindowVisibleDisplayFrame(r);
-//
-//            DisplayMetrics metrics = new DisplayMetrics();
-//            ParaEngineActivity.getContext().getWindowManager().getDefaultDisplay().getMetrics(metrics);
-//            final int screenHeight = metrics.heightPixels;
-//            final int screenWidth = metrics.widthPixels;
-//
-//            // keyboard logic is only enabled in fullscreen mode.
+        ParaEngineWebView.this.getViewTreeObserver().addOnGlobalLayoutListener(() -> {
+            Rect r = new Rect();
+            ParaEngineWebView.this.getWindowVisibleDisplayFrame(r);
+
+            DisplayMetrics metrics = new DisplayMetrics();
+            ParaEngineActivity.getContext().getWindowManager().getDefaultDisplay().getMetrics(metrics);
+            final int screenHeight = metrics.heightPixels;
+            final int screenWidth = metrics.widthPixels;
+            // keyboard logic is only enabled in fullscreen mode.
+            String strData = ""+ screenWidth+","+screenHeight+","+r.width()+","+r.height();
+            ParaEngineWebViewHelper.SetSoftKeyBoard(strData);
 //            if ((Math.abs(screenWidth - defaultWidth) < 100) && (Math.abs(screenHeight - defaultHeight) < 5)) {
 //                if (lastWebViewHeight != r.height()) {
 //                    RelativeLayout.LayoutParams layoutParams = new RelativeLayout.LayoutParams(defaultWidth, r.height());
@@ -155,7 +156,7 @@ public class ParaEngineWebView extends WebView {
 //                    lastWebViewHeight = r.height();
 //                }
 //            }
-//        });
+        });
     }
 
     class ParaEngineWebViewClient extends WebViewClient {
