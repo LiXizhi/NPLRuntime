@@ -164,6 +164,11 @@ ParaEngine::IReadFile* ParaEngine::CParaFileUtilsAndroid::OpenFileForRead(const 
         return new CMemReadFile();
 
 	std::string fullPath = GetFullPathForFilename(filename);
+
+	if (fs::is_directory(fullPath)) {
+		return new CMemReadFile();
+	}
+
 	boost::system::error_code err_code;
 	if (fs::exists(fullPath, err_code))
 	{
