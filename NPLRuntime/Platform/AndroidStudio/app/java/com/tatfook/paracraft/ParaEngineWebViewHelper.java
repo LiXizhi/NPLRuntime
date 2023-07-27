@@ -53,6 +53,7 @@ public class ParaEngineWebViewHelper {
 //	private static native void onCloseView(int index);
 	public  static native void transportCmdLine(String cmdStr);
 
+    public  static native void SetSoftKeyBoard(String strData);
 	public ParaEngineWebViewHelper(FrameLayout layout) {
 		ParaEngineWebViewHelper.sLayout = layout;
         ParaEngineWebViewHelper.sHandler = new Handler(Looper.myLooper());
