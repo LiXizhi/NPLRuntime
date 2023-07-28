@@ -108,8 +108,8 @@ void CReadFile::openFile()
 		}
 		auto fileSize = ftell(m_pFile);
 
-		if (fileSize == -1) {
-			// handle error
+		if (fileSize == -1 || fileSize > 1000000000) {
+			// handle error, ftell return 0x7FFFFFFFFFFFFFFF or -1 on some linux system. 
 			m_FileSize = 0;
 			fclose(m_pFile);
 			m_pFile = 0;
