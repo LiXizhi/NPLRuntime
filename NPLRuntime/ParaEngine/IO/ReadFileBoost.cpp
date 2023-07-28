@@ -101,11 +101,24 @@ void CReadFileBoost::openFile()
 	{
 		// TODO: get FileSize, use fstat instead? opening folder or large file will crash with fseek. 
 		if(fseek(m_pFile, 0, SEEK_END) != 0) {
+			// handle error
 			fclose(m_pFile);
 			m_pFile = 0;
 			return;
 		}
-		m_FileSize = ftell(m_pFile);
+		auto fileSize = ftell(m_pFile);
+
+		if(fileSize == -1){
+			// handle error
+			m_FileSize = 0;
+			fclose(m_pFile);
+			m_pFile = 0;
+			return;
+		}
+		else{
+			m_FileSize = fileSize;
+		}
+		
 		fseek(m_pFile, 0, SEEK_SET);
 	}
 }
