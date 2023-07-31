@@ -291,7 +291,6 @@ public class ParaEngineGLSurfaceView extends GLSurfaceView {
         bundle.putBoolean("bMoveView", bMoveView);
         bundle.putInt("ctrlBottom", ctrlBottom);
         bundle.putBoolean("isGuiEdit", isGuiEdit);
-        bundle.putString("inputType", inputType);
 
         String curEditText = "";
         int selStart = 0;
@@ -302,6 +301,7 @@ public class ParaEngineGLSurfaceView extends GLSurfaceView {
             curEditText = obj.optString("curEditText");
             selStart = obj.optInt("selStart");
             selEnd = obj.optInt("selEnd");
+            inputType = obj.optString("inputType");
         } catch (JSONException e) {
             e.printStackTrace();
         }
@@ -309,6 +309,7 @@ public class ParaEngineGLSurfaceView extends GLSurfaceView {
         bundle.putString("curEditText", curEditText);
         bundle.putInt("selStart", selStart);
         bundle.putInt("selEnd", selEnd);
+        bundle.putString("inputType", inputType);
         msg.setData(bundle);
 
         mMsgCount = mMsgCount + 1;
