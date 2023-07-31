@@ -241,6 +241,7 @@ public class ParaEngineEditBox extends EditText {
                 this.mInputFlagConstraints = InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_NORMAL;
                 break;
             default:
+                this.mInputFlagConstraints = 0;
                 break;
         }
 

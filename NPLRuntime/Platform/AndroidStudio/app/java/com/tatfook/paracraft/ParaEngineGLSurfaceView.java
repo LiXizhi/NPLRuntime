@@ -30,6 +30,8 @@ import androidx.annotation.Keep;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.util.Objects;
+
 public class ParaEngineGLSurfaceView extends GLSurfaceView {
     private static ParaEngineGLSurfaceView mGLSurfaceView = null;
     private static ParaEngineActivity sActivity = null;
@@ -106,37 +108,12 @@ public class ParaEngineGLSurfaceView extends GLSurfaceView {
                 return false;
             }
 
-            // String defaultValue = msg.getData().getString("defaultValue");
-
-            // if (defaultValue != null) {
-            //     boolean bOpen = msg.getData().getBoolean("bOpen");
-            //     int maxLength = msg.getData().getInt("maxLength");
-            //     boolean isMultiline = msg.getData().getBoolean("isMultiline");
-            //     boolean confirmHold = msg.getData().getBoolean("confirmHold");
-            //     String confirmType = msg.getData().getString("confirmType");
-            //     String inputType = msg.getData().getString("inputType");
-
-            //     if (bOpen) {
-            //         ParaEngineEditBoxActivity.showNative(
-            //             defaultValue,
-            //             maxLength,
-            //             isMultiline,
-            //             confirmHold,
-            //             confirmType,
-            //             inputType
-            //         );
-            //     } else {
-            //         ParaEngineEditBoxActivity.hideNative();
-            //     }
-
-            //     return true;
-            // }
-
             mIsOpen = msg.getData().getBoolean("bOpen");
             mIsMoveView = msg.getData().getBoolean("bMoveView");
             mCtrlBottom = msg.getData().getInt("ctrlBottom");
             String curEditText = msg.getData().getString("curEditText").replaceAll("\r\n","\n");
             boolean isGuiEdit = msg.getData().getBoolean("isGuiEdit");
+            String inputType = msg.getData().getString("inputType");
             sParaTextInputWrapper.setIsGuiEdit(isGuiEdit);
 
             if (mIsOpen) {
@@ -145,6 +122,29 @@ public class ParaEngineGLSurfaceView extends GLSurfaceView {
 
                 if (selEnd <= 0 && curEditText.length() > 0) {
                     selStart = selEnd = Math.max(curEditText.length(), 0);
+                }
+
+                if (Objects.equals(inputType, "text")) {
+                    mEditText.setInputFlag(-1);
+                    mEditText.setInputMode(6);
+                } else if (Objects.equals(inputType, "password")) {
+                    mEditText.setInputFlag(0);
+                    mEditText.setInputMode(6);
+                } else if (Objects.equals(inputType, "phone")) {
+                    mEditText.setInputFlag(-1);
+                    mEditText.setInputMode(3);
+                } else if (Objects.equals(inputType, "number")) {
+                    mEditText.setInputFlag(-1);
+                    mEditText.setInputMode(2);
+                } else if (Objects.equals(inputType, "email")) {
+                    mEditText.setInputFlag(-1);
+                    mEditText.setInputMode(1);
+                } else if (Objects.equals(inputType, "url")) {
+                    mEditText.setInputFlag(-1);
+                    mEditText.setInputMode(4);
+                } else {
+                    mEditText.setInputFlag(-1);
+                    mEditText.setInputMode(6);
                 }
 
                 sParaTextInputWrapper.onFocus(curEditText, selStart, selEnd);
@@ -284,13 +284,14 @@ public class ParaEngineGLSurfaceView extends GLSurfaceView {
     }
 
     @Keep
-    public static void setIMEKeyboardState(boolean bOpen, boolean bMoveView, int ctrlBottom,String jsonEditParams, boolean isGuiEdit) {
+    public static void setIMEKeyboardState(boolean bOpen, boolean bMoveView, int ctrlBottom, String jsonEditParams, boolean isGuiEdit, String inputType) {
         Message msg = new Message();
         Bundle bundle = new Bundle();
         bundle.putBoolean("bOpen", bOpen);
         bundle.putBoolean("bMoveView", bMoveView);
         bundle.putInt("ctrlBottom", ctrlBottom);
         bundle.putBoolean("isGuiEdit", isGuiEdit);
+        bundle.putString("inputType", inputType);
 
         String curEditText = "";
         int selStart = 0;

@@ -42,10 +42,10 @@ namespace ParaEngine {
 
         if (useFloatEditBox) {
             JniHelper::callStaticVoidMethod(classname, "setIMEKeyboardState", bOpen, defaultValue, maxLength, isMultiline, confirmHold, confirmType, inputType);
-        }else{
+        } else {
             bool isGuiEdit = pGUI != NULL;
 
-            JniHelper::callStaticVoidMethod(classname, "setIMEKeyboardState", bOpen, bMoveView, ctrlBottom, editParams.c_str(), isGuiEdit);
+            JniHelper::callStaticVoidMethod(classname, "setIMEKeyboardState", bOpen, bMoveView, ctrlBottom, editParams.c_str(), isGuiEdit, inputType);
         }
     }
 }

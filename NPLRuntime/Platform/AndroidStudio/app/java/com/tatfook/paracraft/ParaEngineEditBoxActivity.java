@@ -1,5 +1,3 @@
-
-
 /****************************************************************************
  Copyright (c) 2010-2012 cocos2d-x.org
  Copyright (c) 2013-2016 Chukong Technologies Inc.
@@ -58,7 +56,6 @@ import android.app.Activity;
 import android.content.Intent;
 
 public class ParaEngineEditBoxActivity extends Activity {
-
     // a color of dark green, was used for confirm button background
     private static final int DARK_GREEN = Color.parseColor("#1fa014");
     private static final int DARK_GREEN_PRESS = Color.parseColor("#008e26");
