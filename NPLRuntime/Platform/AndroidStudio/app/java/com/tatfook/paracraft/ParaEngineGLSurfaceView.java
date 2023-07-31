@@ -301,7 +301,11 @@ public class ParaEngineGLSurfaceView extends GLSurfaceView {
             curEditText = obj.optString("curEditText");
             selStart = obj.optInt("selStart");
             selEnd = obj.optInt("selEnd");
-            inputType = obj.optString("inputType");
+            String _inputType = obj.optString("inputType");
+
+            if (!_inputType.isEmpty()) {
+                inputType = _inputType;
+            }
         } catch (JSONException e) {
             e.printStackTrace();
         }
