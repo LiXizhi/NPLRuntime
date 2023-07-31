@@ -1949,6 +1949,7 @@ void ParaEngine::CGUIRoot::SetSelStart(int start)
 {
 	m_nSelStart = start;
 }
+
 void ParaEngine::CGUIRoot::SetSelEnd(int end)
 {
 	m_nSelEnd = end;
@@ -1963,16 +1964,17 @@ void ParaEngine::CGUIRoot::SetIMEKeyboardState(bool bOpen)
 	tempStr = boost::regex_replace(tempStr,e1,"\\\"", boost::match_default | boost::format_all);
 	tempStr = boost::regex_replace(tempStr,e2,"\\\'", boost::match_default | boost::format_all);
 
-	boost::format fmt("{\"curEditText\":\"%1%\",\"selStart\":%2%,\"selEnd\":%3%}");
+	boost::format fmt("{\"curEditText\":\"%1%\",\"selStart\":%2%,\"selEnd\":%3%,\"inputType\":%4%}");
 	fmt % tempStr.c_str();
 	fmt % m_nSelStart;
 	fmt % m_nSelEnd;
+	fmt % m_sInputType;
 
 	tempStr = fmt.str();
 
 	if (bOpen)
 	{
-		CGlobals::GetApp()->setIMEKeyboardState(true, m_nCtrlBottom > 0, m_nCtrlBottom,tempStr);
+		CGlobals::GetApp()->setIMEKeyboardState(true, m_nCtrlBottom > 0, m_nCtrlBottom, tempStr);
 	}
 	else
 	{
@@ -2470,7 +2472,6 @@ int ParaEngine::CGUIRoot::InstallFields(CAttributeClass* pClass, bool bOverride)
 	pClass->AddField("MousePosition", FieldType_Vector2, (void*)SetMousePosition_s, (void*)GetMousePosition_s, NULL, NULL, bOverride);
 	pClass->AddField("BackBufferSize", FieldType_Vector2, NULL, (void*)GetBackBufferSize_s, NULL, NULL, bOverride);
 
-
 	pClass->AddField("HasIMEFocus", FieldType_Bool, (void*)SetHasIMEFocus_s, (void*)GetHasIMEFocus_s, NULL, NULL, bOverride);
 	pClass->AddField("EnableIME", FieldType_Bool, (void*)SetEnableIME_s, (void*)GetEnableIME_s, NULL, NULL, bOverride);
 #ifdef PARAENGINE_MOBILE
@@ -2479,8 +2480,8 @@ int ParaEngine::CGUIRoot::InstallFields(CAttributeClass* pClass, bool bOverride)
 	pClass->AddField("CurEditString", FieldType_String, (void*)SetCurEditString_s, (void*)GetCurEditString_s, NULL, NULL, bOverride);
 	pClass->AddField("SelStart", FieldType_Int, (void*)SetSelStart_s, nullptr, nullptr, nullptr, bOverride);
 	pClass->AddField("SelEnd", FieldType_Int, (void*)SetSelEnd_s, nullptr, nullptr, nullptr, bOverride);
+	pClass->AddField("InputType", FieldType_String, (void*)SetInputType_s, (void*)GetInputType_s, NULL, NULL, bOverride);
 #endif
-
 	pClass->AddField("UseSystemCursor", FieldType_Bool, (void*)SetUseSystemCursor_s, (void*)GetUseSystemCursor_s, NULL, NULL, bOverride);
 	pClass->AddField("CaptureMouse", FieldType_Bool, (void*)SetCaptureMouse_s, (void*)IsMouseCaptured_s, NULL, NULL, bOverride);
 	pClass->AddField("MouseFocusObjectId", FieldType_Int, (void*)0, (void*)GetMouseFocusObjectId_s, NULL, NULL, bOverride);

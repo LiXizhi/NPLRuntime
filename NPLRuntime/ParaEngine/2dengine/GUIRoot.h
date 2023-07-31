@@ -83,6 +83,9 @@ namespace ParaEngine
 		ATTRIBUTE_METHOD1(CGUIRoot, GetCurEditString_s, const char**) { *p1 = cls->GetCurEditText().c_str(); return S_OK; }
 		ATTRIBUTE_METHOD1(CGUIRoot, SetSelStart_s, int) { cls->SetSelStart(p1); return S_OK; }
 		ATTRIBUTE_METHOD1(CGUIRoot, SetSelEnd_s, int) { cls->SetSelEnd(p1); return S_OK; }
+
+		ATTRIBUTE_METHOD1(CGUIRoot, GetInputType_s, const char**) { *p1 = cls->GetInputType(); return S_OK; }
+		ATTRIBUTE_METHOD1(CGUIRoot, SetInputType_s, const char*) { cls->SetInputType(p1); return S_OK; }
 #endif
 
 		ATTRIBUTE_METHOD1(CGUIRoot, GetUseSystemCursor_s, bool*)	{ *p1 = cls->GetUseSystemCursor(); return S_OK; }
@@ -460,6 +463,10 @@ namespace ParaEngine
 		std::string GetCurEditText();
 		void SetSelStart(int start);
 		void SetSelEnd(int end);
+
+		//Type of filter for input characters,such as :"text","email","number","phone","password"
+		const char *GetInputType(){ return m_sInputType.c_str(); }
+		void SetInputType(const char *val){ m_sInputType = val; }
 #endif
 
 		/** confine the cursor in current window.
@@ -634,6 +641,7 @@ namespace ParaEngine
 		std::string m_curEditText;
 		int			m_nSelStart;
 		int			m_nSelEnd;
+		std::string m_sInputType;
 #endif
 		
 		friend CGUIBase;
