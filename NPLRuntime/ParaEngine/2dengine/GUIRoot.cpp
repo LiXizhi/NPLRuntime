@@ -1964,7 +1964,7 @@ void ParaEngine::CGUIRoot::SetIMEKeyboardState(bool bOpen)
 	tempStr = boost::regex_replace(tempStr,e1,"\\\"", boost::match_default | boost::format_all);
 	tempStr = boost::regex_replace(tempStr,e2,"\\\'", boost::match_default | boost::format_all);
 
-	boost::format fmt("{\"curEditText\":\"%1%\",\"selStart\":%2%,\"selEnd\":%3%,\"inputType\":%4%}");
+	boost::format fmt("{\"curEditText\":\"%1%\",\"selStart\":%2%,\"selEnd\":%3%,\"inputType\":\"%4%\"}");
 	fmt % tempStr.c_str();
 	fmt % m_nSelStart;
 	fmt % m_nSelEnd;

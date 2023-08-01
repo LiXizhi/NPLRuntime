@@ -125,7 +125,7 @@ static int selEnd;
     return mTextField;
 }
 
-+ (void)setIMEKeyboardState:(BOOL)bOpen bMoveView:(BOOL)bMoveView ctrlBottom:(int)ctrlBottom editParams:(NSString *)editParams;
++ (void)setIMEKeyboardState:(BOOL)bOpen bMoveView:(BOOL)bMoveView ctrlBottom:(int)ctrlBottom editParams:(NSString *)editParams inputType:(NSString *)inputType;
 {
     if (mTextField == nil) {
         return;
@@ -149,12 +149,41 @@ static int selEnd;
     curEditText = [editParamsDictionary valueForKey: @"curEditText"];
     selStart = (int)[editParamsDictionary[@"selStart"] integerValue];
     selEnd = (int)[editParamsDictionary[@"selEnd"] integerValue];
+    NSString *_inputType = [editParamsDictionary valueForKey:@"inputType"];
+
+    if (_inputType && ![_inputType isEqualToString:@""]) {
+        inputType = _inputType;
+    }
 
     mUpdateViewSizeWhenKeyboardChange = bMoveView;
     mCtrlBottom = ctrlBottom;
 
     if (bOpen) {
         [mTextField becomeFirstResponder];
+        
+        if ([inputType isEqualToString:@"text"]) {
+            mTextField.secureTextEntry = NO;
+            mTextField.keyboardType = UIKeyboardTypeDefault;
+        } else if ([inputType isEqualToString:@"password"]) {
+            mTextField.secureTextEntry = YES;
+            mTextField.keyboardType = UIKeyboardTypeDefault;
+        } else if ([inputType isEqualToString:@"phone"]) {
+            mTextField.secureTextEntry = NO;
+            mTextField.keyboardType = UIKeyboardTypePhonePad;
+        } else if ([inputType isEqualToString:@"number"]) {
+            mTextField.secureTextEntry = NO;
+            mTextField.keyboardType = UIKeyboardTypeNumberPad;
+        } else if ([inputType isEqualToString:@"email"]) {
+            mTextField.secureTextEntry = NO;
+            mTextField.keyboardType = UIKeyboardTypeEmailAddress;
+        } else if ([inputType isEqualToString:@"url"]) {
+            mTextField.secureTextEntry = NO;
+            mTextField.keyboardType = UIKeyboardTypeURL;
+        } else {
+            mTextField.secureTextEntry = NO;
+            mTextField.keyboardType = UIKeyboardTypeDefault;
+        }
+        
         [NSTimer scheduledTimerWithTimeInterval:0.01 target:instance selector:@selector(keyboardOnPressed) userInfo:nil repeats:NO];
     }
 

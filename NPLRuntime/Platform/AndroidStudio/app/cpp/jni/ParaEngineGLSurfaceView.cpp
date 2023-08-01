@@ -18,7 +18,7 @@
 namespace ParaEngine {
     const std::string ParaEngineGLSurfaceView::classname = "com/tatfook/paracraft/ParaEngineGLSurfaceView";
 
-    void ParaEngineGLSurfaceView::setIMEKeyboardState(bool bOpen, bool bMoveView, int ctrlBottom, const string& editParams)
+    void ParaEngineGLSurfaceView::setIMEKeyboardState(bool bOpen, bool bMoveView, int ctrlBottom, const string &editParams)
     {
         std::string defaultValue="";
         int maxLength = 0;
