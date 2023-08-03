@@ -630,11 +630,13 @@ public class ParaEngineActivity extends AppCompatActivity {
 
     @Override
     public boolean onKeyUp(int keyCode, KeyEvent event) {
+        ParaEngineHelper.setKeyState(keyCode,1);
         return super.onKeyUp(keyCode, event);
     }
 
     @Override
     public boolean onKeyDown(int keyCode, KeyEvent event) {
+        ParaEngineHelper.setKeyState(keyCode,0);
         return super.onKeyUp(keyCode, event);
     }
 

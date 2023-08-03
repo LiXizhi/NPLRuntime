@@ -13,6 +13,8 @@
 #include "ParaEngineSettings.h"
 #include "ParaScriptingWorld.h"
 
+#include "Framework/Common/Bridge/LuaJavaBridge.h"
+#include <boost/format.hpp>
 #include <android/asset_manager_jni.h>
 
 namespace ParaEngine {
@@ -167,5 +169,13 @@ extern "C" {
 	JNIEXPORT void JNICALL Java_com_tatfook_paracraft_ParaEngineHelper_OpenFileDialogNativeCallback(JNIEnv *env, jclass clazz, jstring filepath) {
 		// TODO: implement OpenFileDialogCallback()
 		ParaEngineHelper::OpenFileDialogCallback(JniHelper::jstring2string(filepath));
+	}
+
+	JNIEXPORT void JNICALL Java_com_tatfook_paracraft_ParaEngineHelper_setKeyState(JNIEnv *env, jclass clazz, jint key_code,jint key_state) {
+		// TODO: implement setKeyState()
+		boost::format fmt("NPL.activate('Keyboard.lua', {msg={type='keyEvent',keyCode=%d,keyState=%d}})");
+		fmt % key_code % key_state;
+		std::string code = fmt.str();
+		ParaEngine::LuaJavaBridge::nplActivate(code, "");
 	}
 }
