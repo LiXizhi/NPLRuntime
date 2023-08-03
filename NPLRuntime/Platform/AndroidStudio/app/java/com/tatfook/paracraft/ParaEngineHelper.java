@@ -47,6 +47,7 @@ public class ParaEngineHelper {
 	private static native String GetWorldDirectory();
 	private static native void OpenFileDialogNativeCallback(String filepath);
 
+	public static native void setKeyState(int keyCode, int keyState) ;
 	private static boolean mCanReadPhoneState = false;
 	public static void setCanReadPhoneState(boolean bool){
 		mCanReadPhoneState = bool;
