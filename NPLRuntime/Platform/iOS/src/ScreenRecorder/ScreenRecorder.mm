@@ -8,6 +8,7 @@
 #import "AppDelegate.h"
 #import "ScreenRecorder.h"
 #import <Photos/Photos.h>
+#import "LuaObjcBridge/CCLuaObjcBridge.h"
 
 #include "ParaEngine.h"
 
@@ -63,7 +64,9 @@ static ScreenRecorder *instance = nil;
 
             RPScreenRecorder *sharedRecorder = [RPScreenRecorder sharedRecorder];
             sharedRecorder.microphoneEnabled = YES;
-            [sharedRecorder startRecordingWithHandler:^(NSError * _Nullable error) {}];
+            [sharedRecorder startRecordingWithHandler:^(NSError * _Nullable error) {
+                NSLog(@"The video recording real started.");
+            }];
         }];
     }
 }
@@ -93,7 +96,11 @@ static ScreenRecorder *instance = nil;
 
                 RPScreenRecorder *sharedRecorder = [RPScreenRecorder sharedRecorder];
 
-                [sharedRecorder stopRecordingWithOutputURL:[NSURL fileURLWithPath:filePath] completionHandler:^(NSError * _Nullable error) {}];
+                [sharedRecorder stopRecordingWithOutputURL:[NSURL fileURLWithPath:filePath] completionHandler:^(NSError * _Nullable error) {
+                    std::string savedPath = [self.saveVideoPath UTF8String];
+                    std::string code = "MyCompany.Aries.Game.Mobile.ScreenRecorderHandler.recordFinishedCallbackFunc(\"" + savedPath + "\")";
+                    ParaEngine::LuaObjcBridge::nplActivate(code, "");
+                }];
             }
        );
     }
@@ -122,16 +129,44 @@ static ScreenRecorder *instance = nil;
     );
 }
 
-- (void)saveVideo
+- (NSString *)saveVideo
+{
+    if (!self.saveVideoPath) {
+        return @"";
+    }
+
+    UISaveVideoAtPathToSavedPhotosAlbum(self.saveVideoPath, self, @selector(videoSaved:didFinishSavingWithError:contextInfo:), nil);
+    return self.saveVideoPath;
+}
+
+- (void)videoSaved:(NSString *)videoPath didFinishSavingWithError:(NSError *)error contextInfo:(void *)contextInfo
+{
+    // ignore ALAssetsLibraryErrorDomain.
+    if (error && ![error.domain isEqualToString:@"ALAssetsLibraryErrorDomain"]) {
+        // Handle the error if saving fails.
+        NSLog(@"iOS save video fail.");
+    } else {
+        // Video saved successfully.
+        std::string savedPath = [self.saveVideoPath UTF8String];
+        std::string code = "MyCompany.Aries.Game.Mobile.ScreenRecorderHandler.savedCallbackFunc(\"" + savedPath + "\")";
+        ParaEngine::LuaObjcBridge::nplActivate(code, "");
+    }
+}
+
+- (void)removeVideo
 {
     if (!self.saveVideoPath) {
         return;
     }
-    
-    BOOL isCompatible = UIVideoAtPathIsCompatibleWithSavedPhotosAlbum(self.saveVideoPath);
 
-    if (isCompatible) {
-        UISaveVideoAtPathToSavedPhotosAlbum(self.saveVideoPath, self, nil, nil);
+    NSError *error;
+    BOOL success = [[NSFileManager defaultManager] removeItemAtPath:self.saveVideoPath error:&error];
+
+    if (success) {
+        // File deleted successfully.
+        NSLog(@"Delete file successed: %@", self.saveVideoPath);
+    } else {
+        // Handle the error if the file deletion fails.
     }
 }
 

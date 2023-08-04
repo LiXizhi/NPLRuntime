@@ -30,7 +30,9 @@
 // play preview
 - (void)playPreview;
 // save video
-- (void)saveVideo;
+- (NSString *)saveVideo;
+// remove video
+- (void)removeVideo;
 
 @end
 
