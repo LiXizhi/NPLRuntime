@@ -66,6 +66,8 @@ static ScreenRecorder *instance = nil;
             sharedRecorder.microphoneEnabled = YES;
             [sharedRecorder startRecordingWithHandler:^(NSError * _Nullable error) {
                 NSLog(@"The video recording real started.");
+                std::string code = "MyCompany.Aries.Game.Mobile.ScreenRecorderHandler.startedCallbackFunc()";
+                ParaEngine::LuaObjcBridge::nplActivate(code, "");
             }];
         }];
     }
