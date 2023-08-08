@@ -13,11 +13,12 @@ namespace ParaEngine {
 	class ScreenRecorder
 	{
 	public:
-        static void start();
-        static void stop();
-        static void save();
-        static void play();
-    private:
-		static const std::string classname;
+      static void start();
+      static void stop();
+      static std::string save();
+      static void play();
+      static void removeVideo();
+  private:
+      static const std::string classname;
     };
 }

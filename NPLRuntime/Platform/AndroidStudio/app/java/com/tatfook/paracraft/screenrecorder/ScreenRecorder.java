@@ -1,12 +1,11 @@
 //-----------------------------------------------------------------------------
 // ScreenRecorder.java
 // Authors: big
-// CreateDate: 2022.2.22
+// CreateDate: 2023.8.7
 //-----------------------------------------------------------------------------
 
 package com.tatfook.paracraft.screenrecorder;
 
-import android.content.ContentValues;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.Point;
@@ -20,7 +19,6 @@ import android.os.Build;
 import android.os.Environment;
 import androidx.annotation.Keep;
 
-import android.provider.MediaStore;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.RelativeLayout;
@@ -42,7 +40,6 @@ import java.util.Stack;
 import static android.Manifest.permission.RECORD_AUDIO;
 import static android.Manifest.permission.WRITE_EXTERNAL_STORAGE;
 import static android.content.Context.MEDIA_PROJECTION_SERVICE;
-import static android.os.Build.VERSION_CODES.S;
 import static com.tatfook.paracraft.screenrecorder.ScreenRecorderHelper.AUDIO_AAC;
 import static com.tatfook.paracraft.screenrecorder.ScreenRecorderHelper.VIDEO_AVC;
 
@@ -60,6 +57,8 @@ public class ScreenRecorder {
     private String mVideoCodecName;
     private String mAudioCodecName;
     private VirtualDisplay mVirtualDisplay;
+    private static native void nativeStartedCallbackFunc();
+    private static native void nativeRecordFinishedCallbackFunc(String filePath);
 
 //    private BroadcastReceiver mStopActionReceiver = new BroadcastReceiver() {
 //        @Override
@@ -83,7 +82,6 @@ public class ScreenRecorder {
     public static void start() {
         if (!hasPermissions()) {
             requestPermissions();
-
             return;
         }
 
@@ -110,9 +108,9 @@ public class ScreenRecorder {
     }
 
     @Keep
-    public static void save() throws IOException {
+    public static String save() throws IOException {
         if (mLastFilePath == null) {
-            return;
+            return "";
         }
 
         File file = new File(mLastFilePath);
@@ -132,30 +130,30 @@ public class ScreenRecorder {
         }
 
         if (!bSucceeded) {
-            return;
+            return "";
         }
 
-        if (false) {
-            ContentValues contentValues = new ContentValues();
-            long currentTime = System.currentTimeMillis();
+        // ContentValues contentValues = new ContentValues();
+        // long currentTime = System.currentTimeMillis();
 
-            contentValues.put(MediaStore.MediaColumns.TITLE, saveFile.getName());
-            contentValues.put(MediaStore.MediaColumns.DISPLAY_NAME, saveFile.getName());
-            contentValues.put(MediaStore.MediaColumns.DATE_MODIFIED, currentTime);
-            contentValues.put(MediaStore.MediaColumns.DATE_ADDED, currentTime);
-            contentValues.put(MediaStore.MediaColumns.SIZE, saveFile.length());
-            contentValues.put(MediaStore.Video.VideoColumns.DATE_TAKEN, currentTime);
-            contentValues.put(MediaStore.Video.VideoColumns.MIME_TYPE, "video/mp4");
+        // contentValues.put(MediaStore.MediaColumns.TITLE, saveFile.getName());
+        // contentValues.put(MediaStore.MediaColumns.DISPLAY_NAME, saveFile.getName());
+        // contentValues.put(MediaStore.MediaColumns.DATE_MODIFIED, currentTime);
+        // contentValues.put(MediaStore.MediaColumns.DATE_ADDED, currentTime);
+        // contentValues.put(MediaStore.MediaColumns.SIZE, saveFile.length());
+        // contentValues.put(MediaStore.Video.VideoColumns.DATE_TAKEN, currentTime);
+        // contentValues.put(MediaStore.Video.VideoColumns.MIME_TYPE, "video/mp4");
 
-            ParaEngineActivity.getContext().getContentResolver().insert(MediaStore.Video.Media.EXTERNAL_CONTENT_URI, contentValues);
-        } else {
-            MediaScannerConnection.scanFile(
-                ParaEngineActivity.getContext(),
-                new String[]{ mLastFileSavePath },
-                null,
-                null
-            );
-        }
+        // ParaEngineActivity.getContext().getContentResolver().insert(MediaStore.Video.Media.EXTERNAL_CONTENT_URI, contentValues);
+
+        MediaScannerConnection.scanFile(
+            ParaEngineActivity.getContext(),
+            new String[]{ mLastFileSavePath },
+            null,
+            null
+        );
+
+        return mLastFileSavePath;
     }
 
     @Keep
@@ -197,6 +195,11 @@ public class ScreenRecorder {
         });
     }
 
+    @Keep
+    public static void removeVideo() {
+        
+    }
+
     public static void onActivityResult(int requestCode, int resultCode, Intent data) {
         if (requestCode == REQUEST_MEDIA_PROJECTION) {
             getInstance().mScreenRecorderServiceIntent =
@@ -215,9 +218,11 @@ public class ScreenRecorder {
                 return;
             }
 
-            ParaEngineActivity
-                .getContext()
-                .startForegroundService(getInstance().mScreenRecorderServiceIntent);
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                ParaEngineActivity
+                    .getContext()
+                    .startForegroundService(getInstance().mScreenRecorderServiceIntent);
+            }
         }
     }
 
@@ -265,6 +270,7 @@ public class ScreenRecorder {
                 mVideoCodecName = videoNames[0];
             }
 
+            // prepare audio codec.
             Utils.findEncodersByTypeAsync(AUDIO_AAC, audioInfos -> {
                 String[] audioNames = new String[videoInfos.length];
 
@@ -297,10 +303,10 @@ public class ScreenRecorder {
         return mMediaProjection;
     }
 
-    private ScreenRecorderHelper newRecorderHelper(MediaProjection mediaProjection,
-                                                   VideoEncodeConfig video,
-                                                   AudioEncodeConfig audio,
-                                                   File output) {
+    private ScreenRecorderHelper recorderHelper(MediaProjection mediaProjection,
+                                                VideoEncodeConfig video,
+                                                AudioEncodeConfig audio,
+                                                File output) {
         final VirtualDisplay display = getOrCreateVirtualDisplay(mediaProjection, video);
 
         ScreenRecorderHelper r = new ScreenRecorderHelper(video, audio, display, output.getAbsolutePath());
@@ -317,10 +323,12 @@ public class ScreenRecorder {
                     .stopService(mScreenRecorderServiceIntent);
 
                 mInstance = null;
+                nativeRecordFinishedCallbackFunc(mLastFilePath);
             }
 
             @Override
             public void onStart() {
+                nativeStartedCallbackFunc();
             }
 
             @Override
@@ -349,33 +357,31 @@ public class ScreenRecorder {
             File dir;
             File saveDir;
 
-            if (false) {
-                dir = new File(
-                        ParaEngineActivity
-                            .getContext()
-                            .getExternalFilesDir(Environment.DIRECTORY_MOVIES),
-                            "ParacraftScreenRecorder/temp"
-                );
+            // dir = new File(
+            //         ParaEngineActivity
+            //             .getContext()
+            //             .getExternalFilesDir(Environment.DIRECTORY_MOVIES),
+            //             "ParacraftScreenRecorder/temp"
+            // );
 
-                saveDir = new File(
-                        ParaEngineActivity
-                            .getContext()
-                            .getExternalFilesDir(Environment.DIRECTORY_MOVIES),
-                            "ParacraftScreenRecorder"
-                );
-            } else {
-                dir = new File(
-                        Environment
-                            .getExternalStoragePublicDirectory(Environment.DIRECTORY_MOVIES),
-                        "ParacraftScreenRecorder/temp"
-                );
+            // saveDir = new File(
+            //         ParaEngineActivity
+            //             .getContext()
+            //             .getExternalFilesDir(Environment.DIRECTORY_MOVIES),
+            //             "ParacraftScreenRecorder"
+            // );
 
-                saveDir = new File(
-                        Environment
-                            .getExternalStoragePublicDirectory(Environment.DIRECTORY_MOVIES),
-                        "ParacraftScreenRecorder"
-                );
-            }
+            dir = new File(
+                Environment
+                    .getExternalStoragePublicDirectory(Environment.DIRECTORY_MOVIES),
+                "ParacraftScreenRecorder/temp"
+            );
+
+            saveDir = new File(
+                Environment
+                    .getExternalStoragePublicDirectory(Environment.DIRECTORY_MOVIES),
+                "ParacraftScreenRecorder"
+            );
 
             Stack<File> tmpFileStack = new Stack<File>();
             tmpFileStack.push(dir);
@@ -423,7 +429,7 @@ public class ScreenRecorder {
             mLastFilePath = file.toString();
             mLastFileSavePath = saveFile.toString();
 
-            mRecorderHelper = newRecorderHelper(mediaProjection, video, audio, file);
+            mRecorderHelper = recorderHelper(mediaProjection, video, audio, file);
 
             // permission
             if (!hasPermissions()) {
