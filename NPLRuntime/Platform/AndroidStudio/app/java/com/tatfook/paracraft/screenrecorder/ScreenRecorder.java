@@ -197,7 +197,12 @@ public class ScreenRecorder {
 
     @Keep
     public static void removeVideo() {
-        
+        // remove temp file
+        File fileToDelete = new File(mLastFilePath);
+
+        if (fileToDelete.exists()) {
+            fileToDelete.delete();
+        }
     }
 
     public static void onActivityResult(int requestCode, int resultCode, Intent data) {
