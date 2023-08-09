@@ -11,9 +11,11 @@ namespace ParaScripting
     class PE_CORE_DECL ParaScriptingScreenRecorder
 	{
     public:
+        static void LuabindRegisterScreenRecorderGlobalFunctions(lua_State *L);
         static void Start();
         static void Stop();
-        static void Save();
+        static std::string Save();
         static void Play();
+        static void RemoveVideo();
     };
 }
