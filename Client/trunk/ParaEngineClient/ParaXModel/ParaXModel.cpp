@@ -2399,7 +2399,8 @@ HRESULT CParaXModel::ClonePhysicsMesh(DWORD* pNumVertices, Vector3 ** ppVerts, D
 const char *CParaXModel::GetStrAnimIds()
 {
     int nAnim = (int)GetObjectNum().nAnimations;
-    std::string strAnimIds = "";
+    thread_local static std::string strAnimIds;
+	strAnimIds.clear();
     
     for (int i = 0;i < nAnim; i++) {
         strAnimIds = strAnimIds + std::to_string(anims[i].animID) + ";";
