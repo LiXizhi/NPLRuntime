@@ -135,7 +135,7 @@ public class ParaEngineGLSurfaceView extends GLSurfaceView {
                     mEditText.setInputMode(3);
                 } else if (Objects.equals(inputType, "number")) {
                     mEditText.setInputFlag(-1);
-                    mEditText.setInputMode(2);
+                    mEditText.setInputMode(5);
                 } else if (Objects.equals(inputType, "email")) {
                     mEditText.setInputFlag(-1);
                     mEditText.setInputMode(1);
