@@ -172,7 +172,7 @@ static int selEnd;
             mTextField.keyboardType = UIKeyboardTypePhonePad;
         } else if ([inputType isEqualToString:@"number"]) {
             mTextField.secureTextEntry = NO;
-            mTextField.keyboardType = UIKeyboardTypeDecimalPad;
+            mTextField.keyboardType = UIKeyboardTypeNumbersAndPunctuation;
         } else if ([inputType isEqualToString:@"email"]) {
             mTextField.secureTextEntry = NO;
             mTextField.keyboardType = UIKeyboardTypeEmailAddress;
