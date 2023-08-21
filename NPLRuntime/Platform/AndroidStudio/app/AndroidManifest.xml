@@ -46,7 +46,7 @@
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
-                <data android:scheme="paracraft" />
+                <data android:scheme="@string/app_scheme" />
             </intent-filter>
         </activity>
         <activity
