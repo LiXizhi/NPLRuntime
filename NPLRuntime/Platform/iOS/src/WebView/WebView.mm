@@ -151,7 +151,9 @@ static std::string getFixedBaseUrl(const std::string& baseUrl)
 {
     [self setVisible:NO];
     [self loadUrl:"" cleanCachedData:YES];
-    ParaEngine::CAudioEngine2::GetInstance()->ResetAudioDevice("");
+    std::string code = "AudioEngine.ResetAudioDevice();";
+
+    ParaEngine::LuaObjcBridge::nplActivate(code, "");
 }
 
 - (void)userContentController:(WKUserContentController *)userContentController didReceiveScriptMessage:(WKScriptMessage *)message

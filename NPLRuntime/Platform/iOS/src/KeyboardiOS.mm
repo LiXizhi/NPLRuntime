@@ -172,7 +172,7 @@ static int selEnd;
             mTextField.keyboardType = UIKeyboardTypePhonePad;
         } else if ([inputType isEqualToString:@"number"]) {
             mTextField.secureTextEntry = NO;
-            mTextField.keyboardType = UIKeyboardTypeDecimalPad;
+            mTextField.keyboardType = UIKeyboardTypeNumbersAndPunctuation;
         } else if ([inputType isEqualToString:@"email"]) {
             mTextField.secureTextEntry = NO;
             mTextField.keyboardType = UIKeyboardTypeEmailAddress;
@@ -286,6 +286,11 @@ static int selEnd;
     if (ParaEngine::CGlobals::GetApp()->GetAppState() == ParaEngine::PEAppState_Ready)
     {
         ParaEngine::CGUIBase *pGUI = ParaEngine::CGUIRoot::GetInstance()->GetUIKeyFocus();
+        
+        if (pGUI == NULL) {
+            [KeyboardiOSController setIMEKeyboardState:NO bMoveView:YES ctrlBottom:0 editParams:@"" inputType:@""];
+            return;
+        }
 
         if (isGuiEdit) {
             const char *curTextUTF8 = [mTextField.text UTF8String];
