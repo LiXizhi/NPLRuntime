@@ -2457,7 +2457,7 @@ LRESULT CParaEngineApp::MsgProcWinThread( HWND hWnd, UINT uMsg, WPARAM wParam, L
 	LRESULT result = 0;
 	bool bContinue = true;
 	// WM_POINTER is only supported in windows 8 or above, so if it is windows 7 touch event, we will disable touch inputting and use mouse event directly. 
-	bool s_bCanHasWM_POINTER = false;
+	static bool s_bCanHasWM_POINTER = false;
 
 	if (uMsg<=WM_MOUSELAST && uMsg>=WM_MOUSEFIRST)
 	{
@@ -2538,6 +2538,7 @@ LRESULT CParaEngineApp::MsgProcWinThread( HWND hWnd, UINT uMsg, WPARAM wParam, L
 		case WM_POINTERLEAVE:
 		{
 			s_bCanHasWM_POINTER = true;
+			SetTouchInputting(true);
 			m_touchPointX = GET_X_LPARAM(lParam);
 			m_touchPointY = GET_Y_LPARAM(lParam);
 			result = 0;

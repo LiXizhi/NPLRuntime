@@ -389,8 +389,8 @@ VOID CDirectMouse::Free()
 void ParaEngine::CDirectMouse::Update()
 {
 	bool isTouchInputting = CGlobals::GetApp()->IsTouchInputting();
-
 	m_isTouchInputting = isTouchInputting;
+
 	if (isTouchInputting)
 	{
 		// disable directX mouse when touch device is used by the user. we will handle all mouse event via the touch api. 
@@ -400,6 +400,17 @@ void ParaEngine::CDirectMouse::Update()
 	{
 		ReadImmediateData();
 		ReadBufferedData();
+	}
+
+	static bool s_isTouchInputting = isTouchInputting;
+	if (s_isTouchInputting != m_isTouchInputting)
+	{
+		s_isTouchInputting = m_isTouchInputting;
+
+		ResetLastMouseState();
+		m_lastMouseState.lX = m_curMouseState.lX;
+		m_lastMouseState.lY = m_curMouseState.lY;
+		m_dims2.lX = m_dims2.lY = 0;
 	}
 }
 
