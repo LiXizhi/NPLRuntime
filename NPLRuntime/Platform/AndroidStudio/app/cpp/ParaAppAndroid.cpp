@@ -14,6 +14,7 @@
 #include "jni/ParaEngineHelper.h"
 
 #include <boost/filesystem.hpp>
+#include <boost/filesystem/fstream.hpp>
 #include <boost/format.hpp>
 #include <unwind.h>
 #include <dlfcn.h>
