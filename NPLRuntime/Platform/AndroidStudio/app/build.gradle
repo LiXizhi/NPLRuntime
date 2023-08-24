@@ -150,7 +150,7 @@ android {
         //OPPO
         oppo {
             manifestPlaceholders = [CHANNEL_VALUE: "oppo"]
-            resValue "string", "app_name", "帕拉卡"
+            resValue "string", "app_name", "帕拉卡3D虚拟社区学习软件"
             resValue "drawable", "app_icon", "@drawable/ic_launcher"
             dimension "company"
         }
@@ -158,7 +158,7 @@ android {
         //vivo
         vivo {
             manifestPlaceholders = [CHANNEL_VALUE: "vivo"]
-            resValue "string", "app_name", "帕拉卡"
+            resValue "string", "app_name", "帕拉卡3D虚拟社区学习软件"
             resValue "drawable", "app_icon", "@drawable/ic_launcher"
             dimension "company"
         }
