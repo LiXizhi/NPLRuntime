@@ -245,6 +245,41 @@ if (NPLRUNTIME_OCE)
 	add_dependencies(ParaEngine nploce)
 endif ()
 
+set(NPLOCE_DEPS_ROOT "/mnt/d/workspace/npl/nploce-deps/install")
+if (EMSCRIPTEN AND NPLOCE_DEPS_ROOT)
+    link_directories(${NPLOCE_DEPS_ROOT}/harfbuzz/lib)
+    link_directories(${NPLOCE_DEPS_ROOT}/oce/lib)
+	list(APPEND NPLRUNTIME_LIBS  
+        ${NPLOCE_DEPS_ROOT}/oce/lib/libTKBO.a
+        ${NPLOCE_DEPS_ROOT}/oce/lib/libTKBool.a
+        ${NPLOCE_DEPS_ROOT}/oce/lib/libTKBRep.a
+        ${NPLOCE_DEPS_ROOT}/oce/lib/libTKernel.a
+        ${NPLOCE_DEPS_ROOT}/oce/lib/libTKFeat.a
+        ${NPLOCE_DEPS_ROOT}/oce/lib/libTKFillet.a
+        ${NPLOCE_DEPS_ROOT}/oce/lib/libTKG2d.a
+        ${NPLOCE_DEPS_ROOT}/oce/lib/libTKG3d.a
+        ${NPLOCE_DEPS_ROOT}/oce/lib/libTKGeomAlgo.a
+        ${NPLOCE_DEPS_ROOT}/oce/lib/libTKGeomBase.a
+        ${NPLOCE_DEPS_ROOT}/oce/lib/libTKHLR.a
+        ${NPLOCE_DEPS_ROOT}/oce/lib/libTKMath.a
+        ${NPLOCE_DEPS_ROOT}/oce/lib/libTKMesh.a
+        ${NPLOCE_DEPS_ROOT}/oce/lib/libTKOffset.a
+        ${NPLOCE_DEPS_ROOT}/oce/lib/libTKPrim.a
+        ${NPLOCE_DEPS_ROOT}/oce/lib/libTKShHealing.a
+        # ${NPLOCE_DEPS_ROOT}/oce/lib/TKIGES.a
+        # ${NPLOCE_DEPS_ROOT}/oce/lib/TKSTEP.a
+        # ${NPLOCE_DEPS_ROOT}/oce/lib/TKSTEP209.a
+        # ${NPLOCE_DEPS_ROOT}/oce/lib/TKSTEPAttr.a
+        # ${NPLOCE_DEPS_ROOT}/oce/lib/TKSTEPBase.a
+        # ${NPLOCE_DEPS_ROOT}/oce/lib/TKXSBase.a
+        ${NPLOCE_DEPS_ROOT}/oce/lib/libTKTopAlgo.a
+        ${NPLOCE_DEPS_ROOT}/oce/lib/libTKXMesh.a
+
+        ${NPLOCE_DEPS_ROOT}/harfbuzz/lib/libharfbuzz.a
+        ${NPLOCE_DEPS_ROOT}/freetype2/lib/libfreetype.a
+    )
+endif()
+
 if (EMSCRIPTEN)
     if (NOT EMSCRIPTEN_SINGLE_THREAD)
         list(APPEND NPLRUNTIME_LIBS libcurl)
@@ -270,6 +305,7 @@ if (EMSCRIPTEN)
     "${BOOST_ROOT}/stage/lib/libboost_system.a"
     "${BOOST_ROOT}/stage/lib/libboost_thread.a"
     "${BOOST_ROOT}/stage/lib/libboost_wserialization.a"
+    "${CMAKE_CURRENT_SOURCE_DIR}/../Plugins/NplOce/prebuilt/libnploce.a"
     )
 else()
     target_link_libraries(ParaEngine PUBLIC 

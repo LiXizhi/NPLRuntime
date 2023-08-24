@@ -42,6 +42,7 @@ public:
 	{
 		m_inited = false;
 		m_fs_inited = false;
+		m_paused = false;
 	}
 
 	virtual void RunLoopOnce()
@@ -66,10 +67,27 @@ public:
 	{
 		m_renderWindow.OnChar(text);
 	}
+
+	void SetPaused(bool paused)
+	{
+		setRenderEnabled(!paused);
+		// auto pWindow = (RenderWindowDelegate*)m_pRenderWindow;
+		// pWindow->m_paused = paused;
+		// if (paused)
+		// {
+		// 	OnPause();
+		// }
+		// else 
+		// {
+
+		// 	OnResume();
+		// }
+	}
 public:
 	std::string m_cmdline;
 	bool m_fs_inited;
 	bool m_inited;
+	bool m_paused;
 };
 
 static EmscriptenApplication* GetApp()
@@ -81,18 +99,27 @@ static EmscriptenApplication* GetApp()
 void mainloop(void* arg)
 {
 	// auto begin_time = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now().time_since_epoch()).count();
-	if (!GetApp()->m_fs_inited) return;
-	if (!GetApp()->m_inited)
+	auto app = GetApp();
+	if (!app->m_fs_inited) return;
+	if (!app->m_inited)
 	{
-		GetApp()->m_inited = true;
-		GetApp()->InitApp(nullptr, GetApp()->m_cmdline.c_str());
+		app->m_inited = true;
+		app->InitApp(nullptr, app->m_cmdline.c_str());
 		EM_ASM({
 			if (Module.HideLoading != undefined) Module.HideLoading();
 		});
 	}
-	GetApp()->RunLoopOnce();
+	if (app->m_paused) return;
+	app->RunLoopOnce();
 	// auto end_time = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now().time_since_epoch()).count();
 	// std::cout << "==========time:" << (end_time - begin_time) << std::endl;
+}
+
+// 暂停运行
+EM_PORT_API(void) SetAppPaused(bool paused)
+{
+    std::cout << "Is Paused App Run:" << paused << std::endl;
+	GetApp()->SetPaused(paused);
 }
 
 // 设置可写路径

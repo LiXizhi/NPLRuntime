@@ -68,6 +68,7 @@ namespace ParaEngine
 		EKeyState m_MouseState[(uint32_t)EMouseButton::COUNT];
 		EKeyState m_KeyState[(uint32_t)EVirtualKey::COUNT];
 		CVector2 m_MousePos;
-
+	public:
+		bool m_paused;
 	};
 }

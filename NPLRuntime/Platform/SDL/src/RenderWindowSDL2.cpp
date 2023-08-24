@@ -185,6 +185,7 @@ namespace ParaEngine {
 		, m_bLostFocus(false)
 	{
 		InitInput();
+		m_paused = false;
 	}
 
 	RenderWindowSDL2::~RenderWindowSDL2()
@@ -219,6 +220,10 @@ namespace ParaEngine {
 			{
 				m_IsQuit = true;
 				return;
+			}
+			else if (m_paused) 
+			{
+				continue;
 			}
 			else if (sdl_event.type == SDL_WINDOWEVENT) 
 			{
