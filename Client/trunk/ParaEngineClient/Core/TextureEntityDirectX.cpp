@@ -969,7 +969,20 @@ bool TextureEntityDirectX::LoadImageOfFormatEx(const std::string& sTextureFileNa
 	{
 		int nSize = width * height * nBytesPerPixel;
 		char* pData = new char[nSize];
-		memcpy(pData, pPixels, nSize);
+
+		unsigned pitch = FreeImage_GetPitch(dib);
+		if(pitch != width * nBytesPerPixel)
+		{
+			// copy line by line
+			for (int y = 0; y < height; y++)
+			{
+				memcpy(pData + y * width * nBytesPerPixel, pPixels + y * pitch, width * nBytesPerPixel);
+			}
+		}
+		else
+		{
+			memcpy(pData, pPixels, nSize);
+		}
 		if (ppBuffer)
 			*ppBuffer = (byte*)pData;
 		if (pBytesPerPixel)
