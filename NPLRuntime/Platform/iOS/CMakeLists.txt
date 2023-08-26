@@ -30,7 +30,6 @@ find_library(CoreTelephony CoreTelephony)
 
 add_executable(Paracraft
     ${app_src}
-    # ${INFO_FILE}
     ${IMAGES_FILE}
     ${RESOURCE_FILES}
     ${ASSETS_FILES}
@@ -55,7 +54,6 @@ target_link_libraries(Paracraft PUBLIC
 )
 
 set_source_files_properties(${RESOURCE_FILES} PROPERTIES MACOSX_PACKAGE_LOCATION Resources/res)
-set_source_files_properties(${INFO_FILE} PROPERTIES MACOSX_PACKAGE_LOCATION .)
 set_source_files_properties(${IMAGES_FILE} PROPERTIES MACOSX_PACKAGE_LOCATION Resources/Images.cassets)
 set_source_files_properties(${ASSETS_FILES} PROPERTIES MACOSX_PACKAGE_LOCATION Resources/assets)
 
