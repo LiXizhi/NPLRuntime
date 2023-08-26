@@ -2542,6 +2542,7 @@ LRESULT CParaEngineApp::MsgProcWinThread( HWND hWnd, UINT uMsg, WPARAM wParam, L
 			m_touchPointX = GET_X_LPARAM(lParam);
 			m_touchPointY = GET_Y_LPARAM(lParam);
 			result = 0;
+			bCallDefProcedure = false;
 			SendMessageToApp(hWnd, uMsg, wParam, lParam);
 			break;
 		}
