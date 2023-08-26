@@ -2106,6 +2106,15 @@ void ParaEngine::CGUIRoot::TranslateTouchEvent(const TouchEvent &touch)
 			s_lastMouseWheelPosY = ui_mouse_y;
 			pTouchSession->SetMouseMoveOffset(Vector2::ZERO);
 			pTouchSession->SetTag(-1);
+
+			CGUIBase* pUIObj = GetUIObject(ui_mouse_x, ui_mouse_y);
+			if (pUIObj && !pUIObj->IsMatchTouchTranslationAttribute(touch_translate_scroll) &&
+				!pUIObj->IsMatchTouchTranslationAttribute(touch_translate_rightbutton))
+			{
+				Vector2 mousePos((float)mouse_x, (float)mouse_y);
+				CGUIRoot::GetInstance()->GetMouse()->PushMouseEvent(DeviceMouseEventPtr(new DeviceMouseButtonEvent(pTouchSession->TranslateTouchButton(EMouseButton::LEFT), EKeyState::PRESS, (int)mousePos.x, (int)mousePos.y, true)));
+				pTouchSession->SetTag(1);
+			}
 		}
 		else if (touch.m_nTouchType == TouchEvent::TouchEvent_POINTER_UPDATE)
 		{
