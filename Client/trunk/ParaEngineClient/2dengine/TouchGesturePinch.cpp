@@ -36,28 +36,40 @@ int ParaEngine::CTouchGesturePinch::GetDeltaDistance()
 
 bool ParaEngine::CTouchGesturePinch::InterpreteTouchGesture(const TouchEvent* touch, TouchSessions* touch_sessions)
 {
-	if(!touch_sessions)
+	if (!touch_sessions)
 		touch_sessions = &(TouchSessions::GetInstance());
-	if (touch_sessions->GetSessionCount() == 2)
+
+	TouchEventSession* touch1 = NULL;
+	TouchEventSession* touch2 = NULL;
+	int nTouchSessionCount = 0;
+
+	// choose two sessons that are not handled by GUI objects. 
+	for (int i = 0; i < touch_sessions->GetSessionCount(); i++)
 	{
-		TouchEventSession* touch1 = (*touch_sessions)[0];
-		TouchEventSession* touch2 = (*touch_sessions)[1];
-		if (touch1->IsHandledByGUI() || touch2->IsHandledByGUI() || 
-			(touch1->GetMaxDragDistance() < m_nPinchThreshold  && touch2->GetMaxDragDistance() < m_nPinchThreshold)){
-			m_isActive = false;
-			m_lastDistance = -1;
-			return false;
+		auto touch = (*touch_sessions)[i];
+		if (!touch->IsHandledByGUI()) {
+			nTouchSessionCount++;
+			if (nTouchSessionCount == 1)
+				touch1 = touch;
+			else if (nTouchSessionCount == 2)
+				touch2 = touch;
 		}
+	}
+
+	if (nTouchSessionCount == 2)
+	{
 		m_distance = TouchEventSession::GetTouchDistanceBetween(&touch1->GetCurrentEvent(), &touch2->GetCurrentEvent());
-		if (m_lastDistance < 0){
-			m_isActive = false;
+		if (m_lastDistance < 0) {
 			m_lastDistance = m_distance;
+		}
+		if (touch1->GetMaxDragDistance() < touch1->GetFingerSize() && touch2->GetMaxDragDistance() < touch1->GetFingerSize()) {
+			m_isActive = false;
 			return false;
 		}
 
 		// decide pinch mode
 		int deltaDistance = m_distance - m_lastDistance;
-		if (deltaDistance > 0) 
+		if (deltaDistance > 0)
 			m_pinch_mode = PinchMode_Open;
 		else
 			m_pinch_mode = PinchMode_Closed;
