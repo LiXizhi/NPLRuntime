@@ -23,7 +23,6 @@ add_executable(Paracraft ${OSX_SRC}
     ${RESOURCE_FILES}
     ${ASSETS_FILES}
     ${IMAGES_FILE}
-    ${INFO_FILE}
     ${XIB_FILES}
     ${ICON_FILE}
 )
@@ -31,7 +30,6 @@ add_executable(Paracraft ${OSX_SRC}
 set_source_files_properties(${RESOURCE_FILES} PROPERTIES MACOSX_PACKAGE_LOCATION Resources/res)
 set_source_files_properties(${ASSETS_FILES} PROPERTIES MACOSX_PACKAGE_LOCATION Resources/assets)
 set_source_files_properties(${XIB_FILES} PROPERTIES MACOSX_PACKAGE_LOCATION Resources/xib)
-set_source_files_properties(${INFO_FILE} PROPERTIES MACOSX_PACKAGE_LOCATION .)
 set_source_files_properties(${ICON_FILE} PROPERTIES MACOSX_PACKAGE_LOCATION .)
 # set_source_files_properties(${IMAGES_FILE} PROPERTIES MACOSX_PACKAGE_LOCATION Resources/Images.cassets)
 
