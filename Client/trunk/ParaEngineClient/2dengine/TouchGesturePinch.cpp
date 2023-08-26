@@ -42,7 +42,8 @@ bool ParaEngine::CTouchGesturePinch::InterpreteTouchGesture(const TouchEvent* to
 	{
 		TouchEventSession* touch1 = (*touch_sessions)[0];
 		TouchEventSession* touch2 = (*touch_sessions)[1];
-		if ((touch1->GetMaxDragDistance() < m_nPinchThreshold  && touch2->GetMaxDragDistance())){
+		if (touch1->IsHandledByGUI() || touch2->IsHandledByGUI() || 
+			(touch1->GetMaxDragDistance() < m_nPinchThreshold  && touch2->GetMaxDragDistance() < m_nPinchThreshold)){
 			m_isActive = false;
 			m_lastDistance = -1;
 			return false;
