@@ -15,6 +15,13 @@
 #include <luabind/object.hpp>
 #include <luabind/luabind.hpp>
 
+#ifdef NPLRUNTIME_OCE
+namespace NplOceScripting
+{
+    int Register(lua_State *L);
+}
+#endif
+
 static void LuabindRegisterScreenRecorderGlobalFunctions(lua_State *L)
 {
     using namespace luabind;
@@ -39,6 +46,9 @@ void ParaScripting::CNPLScriptingState::LoadHAPI_Platform()
     lua_State *L = GetLuaState();
 
     LuabindRegisterScreenRecorderGlobalFunctions(L);
+#ifdef NPLRUNTIME_OCE
+    NplOceScripting::Register(L);
+#endif
 }
 
 bool ParaScripting::ParaGlobal::OpenFileDialog(const object& inout)
