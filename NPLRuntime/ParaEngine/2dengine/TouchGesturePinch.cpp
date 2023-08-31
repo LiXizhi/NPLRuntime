@@ -36,23 +36,36 @@ int ParaEngine::CTouchGesturePinch::GetDeltaDistance()
 
 bool ParaEngine::CTouchGesturePinch::InterpreteTouchGesture(const TouchEvent* touch, TouchSessions* touch_sessions)
 {
-	if(!touch_sessions)
+	if (!touch_sessions)
 		touch_sessions = &(TouchSessions::GetInstance());
 
 	TouchEventSession* touch1 = NULL;
 	TouchEventSession* touch2 = NULL;
 	int nTouchSessionCount = 0;
-
-	// choose two sessons that are not handled by GUI objects. 
+	const int PinchTag = 1001;
+	// choose two sessons that are not handled by GUI objects or dragging 
+	int nSceneTouchCount = 0;
 	for (int i = 0; i < touch_sessions->GetSessionCount(); i++)
 	{
 		auto touch = (*touch_sessions)[i];
 		if (!touch->IsHandledByGUI()) {
-			nTouchSessionCount++;
-			if (nTouchSessionCount == 1)
+			nSceneTouchCount++;
+			if (nSceneTouchCount == 1) {
 				touch1 = touch;
-			else if(nTouchSessionCount == 2)
+			}
+			else if (nSceneTouchCount == 2) {
 				touch2 = touch;
+			}
+		}
+	}
+	if (nSceneTouchCount == 2)
+	{
+		// tag must be undetermined and two fingers must be started together
+		if ((touch1->GetTag() == PinchTag && touch2->GetTag() == PinchTag) ||
+			((touch1->GetDuration() - touch2->GetDuration()) < 500 &&
+				touch1->GetTag() <= 0 && touch2->GetTag() <= 0))
+		{
+			nTouchSessionCount = 2;
 		}
 	}
 
@@ -62,18 +75,21 @@ bool ParaEngine::CTouchGesturePinch::InterpreteTouchGesture(const TouchEvent* to
 		if (m_lastDistance < 0) {
 			m_lastDistance = m_distance;
 		}
-		if (touch1->GetMaxDragDistance() < touch1->GetFingerSize()  && touch2->GetMaxDragDistance() < touch1->GetFingerSize()){
+		if (!m_isActive && (Math::Abs(GetDeltaDistance()) < (touch1->GetFingerSize() + touch2->GetFingerSize())) ||
+			(touch1->GetMaxDragDistance() < touch1->GetFingerSize() && touch2->GetMaxDragDistance() < touch1->GetFingerSize())) {
 			m_isActive = false;
-			return false;
 		}
-
-		// decide pinch mode
-		int deltaDistance = m_distance - m_lastDistance;
-		if (deltaDistance > 0) 
-			m_pinch_mode = PinchMode_Open;
 		else
-			m_pinch_mode = PinchMode_Closed;
-		m_isActive = handleGestureRecognized ? handleGestureRecognized(*this) : false;
+		{
+			int deltaDistance = m_distance - m_lastDistance;
+			m_pinch_mode = (deltaDistance > 0) ? PinchMode_Open : PinchMode_Closed;
+			if (handleGestureRecognized ? handleGestureRecognized(*this) : false) {
+				m_isActive = true;
+				touch1->SetTag(PinchTag); // disable this touch
+				touch2->SetTag(PinchTag); // disable this touch
+			}
+
+		}
 		return m_isActive;
 	}
 	else

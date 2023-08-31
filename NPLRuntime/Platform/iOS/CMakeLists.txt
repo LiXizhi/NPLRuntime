@@ -78,6 +78,10 @@ set_target_properties(
 
 target_include_directories(Paracraft PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
 
+if (NPLRUNTIME_OCE)
+    add_definitions(-DNPLRUNTIME_OCE)
+endif()
+
 #set(CMAKE_EXE_LINKER_FLAGS "-pagezero_size 10000 -image_base 100000000 ${CMAKE_EXE_LINKER_FLAGS}")
 
 set(APP_PATH "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/$<CONFIGURATION>/Paracraft.app")

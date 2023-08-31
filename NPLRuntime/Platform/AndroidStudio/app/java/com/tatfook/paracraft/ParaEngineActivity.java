@@ -246,6 +246,31 @@ public class ParaEngineActivity extends AppCompatActivity {
         NotchScreenManager.getInstance().setDisplayInNotch(this);
     }
 
+    @Override
+    protected void onNewIntent(Intent intent) {
+        super.onNewIntent(intent);
+
+        handleIntent(intent);
+    }
+
+    private void handleIntent(Intent intent) {
+        if (intent != null && Intent.ACTION_VIEW.equals(intent.getAction())) {
+            Uri data = intent.getData();
+            if (data != null) {
+                String protocol = data.getScheme();
+                String protocolData = intent.getDataString();
+                // 在这里处理传入的protocol
+                if (protocol == null || protocol == ""){
+                    return;
+                }
+                if (protocolData == null || protocolData == ""){
+                    return;
+                }
+                ParaEngineHelper.onCmdProtocol(protocolData);
+            }
+        }
+    }
+
     private void checkUsbMode(){
         // Determine whether the device uses USB
         Configuration configuration = getResources().getConfiguration();

@@ -169,7 +169,7 @@ public class ParaEngineWebView extends WebView {
 
                 if (uri != null)
                 {
-                    if (uri.getScheme().equals(mAppScheme)) {
+                    if (uri.getScheme().equals(mAppScheme) || uri.getScheme().equals("papa")) {
                         activity.runOnGLThread(new Runnable() {
                             @Override
                             public void run() {

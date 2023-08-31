@@ -48,6 +48,8 @@ public class ParaEngineHelper {
 	private static native void OpenFileDialogNativeCallback(String filepath);
 
 	public static native void setKeyState(int keyCode, int keyState) ;
+
+	public static native void onCmdProtocol(String strProtocol);
 	private static boolean mCanReadPhoneState = false;
 	public static void setCanReadPhoneState(boolean bool){
 		mCanReadPhoneState = bool;

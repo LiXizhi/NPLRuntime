@@ -12,6 +12,7 @@
 #include "JniHelper.h"
 #include "ParaEngineSettings.h"
 #include "ParaScriptingWorld.h"
+#include "AppDelegate.h"
 
 #include "Framework/Common/Bridge/LuaJavaBridge.h"
 #include <boost/format.hpp>
@@ -178,4 +179,11 @@ extern "C" {
 		std::string code = fmt.str();
 		ParaEngine::LuaJavaBridge::nplActivate(code, "");
 	}
+
+    JNIEXPORT void JNICALL Java_com_tatfook_paracraft_ParaEngineHelper_onCmdProtocol(JNIEnv *env, jclass clazz, jstring str_protocol) {
+        // TODO: implement onCmdProtocol()
+        std::string cmd = JniHelper::jstring2string(str_protocol);
+        env->DeleteLocalRef(str_protocol);
+        AppDelegate::getInstance().onCmdLine(cmd);
+    }
 }

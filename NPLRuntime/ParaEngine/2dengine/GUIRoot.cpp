@@ -2051,12 +2051,10 @@ bool ParaEngine::CGUIRoot::PushEvent(const MSG& msg)
 }
 
 
-void ParaEngine::CGUIRoot::TranslateTouchEvent(const TouchEvent &touch)
+void ParaEngine::CGUIRoot::TranslateTouchEvent(const TouchEvent& touch)
 {
 	if (TouchSessions::GetInstance().InterpreteTouchGestures(&touch))
-	{
 		return;
-	}
 
 	// Note: we will only translate to mouse event when is not handled by GUI control in NPL. 
 	TouchEventSession* pTouchSession = TouchSessions::GetInstance().GetTouchSession(touch.GetTouchId());
@@ -2070,13 +2068,15 @@ void ParaEngine::CGUIRoot::TranslateTouchEvent(const TouchEvent &touch)
 
 		if (touch.m_nTouchType == TouchEvent::TouchEvent_POINTER_UP)
 		{
-			if (pTouchSession->GetTag() == 1)
+			// OUTPUT_LOG("touch up event: %d %d\n", touch.m_nTouchType, pTouchSession->GetTag());
+
+			if (pTouchSession->GetTag() == 1 || pTouchSession->GetTag() == 11)
 			{
 				Vector2 mousePos((float)mouse_x, (float)mouse_y);
 				mousePos -= pTouchSession->GetMouseMoveOffset();
-				CGUIRoot::GetInstance()->GetMouse()->PushMouseEvent(DeviceMouseEventPtr(new DeviceMouseButtonEvent(pTouchSession->TranslateTouchButton(EMouseButton::LEFT),EKeyState::RELEASE, (int)mousePos.x, (int)mousePos.y, true)));
+				CGUIRoot::GetInstance()->GetMouse()->PushMouseEvent(DeviceMouseEventPtr(new DeviceMouseButtonEvent(pTouchSession->TranslateTouchButton(EMouseButton::LEFT), EKeyState::RELEASE, (int)mousePos.x, (int)mousePos.y, true)));
 			}
-			else if (pTouchSession->GetTag() == 2)
+			else if (pTouchSession->GetTag() == 2 || pTouchSession->GetTag() == 12)
 			{
 				Vector2 mousePos((float)mouse_x, (float)mouse_y);
 				mousePos -= pTouchSession->GetMouseMoveOffset();
@@ -2106,12 +2106,76 @@ void ParaEngine::CGUIRoot::TranslateTouchEvent(const TouchEvent &touch)
 			s_lastMouseWheelPosY = ui_mouse_y;
 			pTouchSession->SetMouseMoveOffset(Vector2::ZERO);
 			pTouchSession->SetTag(-1);
+			CGUIBase* pUIObj = GetUIObject(ui_mouse_x, ui_mouse_y);
+			if (pUIObj && !pUIObj->IsMatchTouchTranslationAttribute(touch_translate_scroll) &&
+				!pUIObj->IsMatchTouchTranslationAttribute(touch_translate_rightbutton))
+			{
+				Vector2 mousePos((float)mouse_x, (float)mouse_y);
+				CGUIRoot::GetInstance()->GetMouse()->PushMouseEvent(DeviceMouseEventPtr(new DeviceMouseButtonEvent(pTouchSession->TranslateTouchButton(EMouseButton::LEFT), EKeyState::PRESS, (int)mousePos.x, (int)mousePos.y, true)));
+				pTouchSession->SetTag(1);
+			}
 		}
 		else if (touch.m_nTouchType == TouchEvent::TouchEvent_POINTER_UPDATE)
 		{
 			bool bContinue = false;
 			if (pTouchSession->GetTag() == -1)
 			{
+				// two finger drag for right mouse dragging
+				bool isTwoFingerGesture = false;
+				// three finger drag for left + right mouse dragging (mostly translated to walk forward and drag)
+				bool isThreeFingerGesture = false;
+				auto touch_sessions = &(TouchSessions::GetInstance());
+				TouchEventSession* touch1 = NULL;
+				TouchEventSession* touch2 = NULL;
+				TouchEventSession* touch3 = NULL;
+				int nSceneTouchCount = 0;
+				for (int i = 0; i < touch_sessions->GetSessionCount(); i++)
+				{
+					auto touch = (*touch_sessions)[i];
+					if (!touch->IsHandledByGUI()) {
+						nSceneTouchCount++;
+						if (nSceneTouchCount == 1) {
+							touch1 = touch;
+						}
+						else if (nSceneTouchCount == 2) {
+							touch2 = touch;
+						}
+						else if (nSceneTouchCount == 3) {
+							touch3 = touch;
+						}
+					}
+				}
+				if (nSceneTouchCount >= 3)
+				{
+					// more than three fingers
+					if ((touch1->GetDuration() - touch2->GetDuration()) < 500 &&
+						(touch2->GetDuration() - touch3->GetDuration()) < 500 &&
+						(touch1->GetDuration() - touch3->GetDuration()) < 500 &&
+						touch1->GetDuration() < 500)
+					{
+						isThreeFingerGesture = true;
+
+						if (((touch1->GetTag() == -1) && (touch2->GetTag() == -1) && touch3->GetTag() == -1)) {
+							// disable all other touch sessions
+							for (int i = 0; i < touch_sessions->GetSessionCount(); i++)
+							{
+								auto touch = (*touch_sessions)[i];
+								if (!touch->IsHandledByGUI() && touch->GetTag() == -1 &&
+									(touch->GetDuration() - touch1->GetDuration()) < 500) {
+									touch->SetTag(1000);
+								}
+							}
+							touch1->SetTag(11); // left dragging
+							touch2->SetTag(12); // right dragging
+
+							Vector2 mousePos((float)mouse_x, (float)mouse_y);
+							CGUIRoot::GetInstance()->GetMouse()->PushMouseEvent(DeviceMouseEventPtr(new DeviceMouseButtonEvent(pTouchSession->TranslateTouchButton(EMouseButton::LEFT), EKeyState::PRESS, (int)mousePos.x, (int)mousePos.y, true)));
+							CGUIRoot::GetInstance()->GetMouse()->PushMouseEvent(DeviceMouseEventPtr(new DeviceMouseButtonEvent(pTouchSession->TranslateTouchButton(EMouseButton::RIGHT), EKeyState::PRESS, (int)mousePos.x, (int)mousePos.y, true)));
+							bContinue = true;
+						}
+					}
+				}
+
 				// OUTPUT_LOG("touch update: %d %d (drag:%d)\n", ui_mouse_x, ui_mouse_y, pTouchSession->GetMaxDragDistance());
 				if (pTouchSession->GetMaxDragDistance() >= pTouchSession->GetFingerSize())
 				{
@@ -2119,11 +2183,11 @@ void ParaEngine::CGUIRoot::TranslateTouchEvent(const TouchEvent &touch)
 					CGUIBase* pUIObj = GetUIObject(ui_mouse_x, ui_mouse_y);
 					if (pUIObj && pUIObj->IsMatchTouchTranslationAttribute(touch_translate_scroll) && pUIObj->IsScrollableOrHasMouseWheelRecursive())
 					{
-						// fixed a mouse wheeling invalid error on mobile platform.
+						// fixed a mouse wheeling invalid error.
 						// update the position of mouse to find ui object correctly in CGUIRoot::HandleUserInput()
 						// added by leio 2020/11/27
-
 						m_pMouse->SetMousePosition(ui_mouse_x, ui_mouse_y);
+
 						// OUTPUT_LOG("touch wheel: %d %d (drag:%d)\n", ui_mouse_x, ui_mouse_y, pTouchSession->GetMaxDragDistance());
 						// simulate a mouse wheel event(disable mouse down/up/move), if the UI control below is scrollable. 
 						pTouchSession->SetTag(3);
@@ -2139,16 +2203,37 @@ void ParaEngine::CGUIRoot::TranslateTouchEvent(const TouchEvent &touch)
 						Vector2 mousePos((float)mouse_x, (float)mouse_y);
 						mousePos -= pTouchSession->GetMouseMoveOffset();
 
-						// press hold and drag for right button drag, drag directly for left button drag. 
-						if (pTouchSession->GetDuration() < 500)
+						if (nSceneTouchCount == 2)
 						{
-							CGUIRoot::GetInstance()->GetMouse()->PushMouseEvent(DeviceMouseEventPtr(new DeviceMouseButtonEvent(pTouchSession->TranslateTouchButton(EMouseButton::LEFT), EKeyState::PRESS, (int)mousePos.x, (int)mousePos.y, true)));
-							pTouchSession->SetTag(1);
+							if ((touch1->GetDuration() - touch2->GetDuration()) < 500)
+							{
+								isTwoFingerGesture = true;
+
+								int startDeltaDist = TouchEventSession::GetTouchDistanceBetween(&touch1->GetStartEvent(), &touch2->GetStartEvent());
+								int curDeltaDist = TouchEventSession::GetTouchDistanceBetween(&touch1->GetCurrentEvent(), &touch2->GetCurrentEvent());
+								if (((touch1->GetTag() == -1) && (touch2->GetTag() == -1)) && touch1->GetMaxDragDistance() > touch1->GetFingerSize() && touch2->GetMaxDragDistance() > touch1->GetFingerSize() &&
+									Math::Abs(curDeltaDist - startDeltaDist) < (touch1->GetFingerSize())) {
+									touch1->SetTag(12); // right dragging
+									touch2->SetTag(1000); // disable the other touch
+									CGUIRoot::GetInstance()->GetMouse()->PushMouseEvent(DeviceMouseEventPtr(new DeviceMouseButtonEvent(pTouchSession->TranslateTouchButton(EMouseButton::RIGHT), EKeyState::PRESS, (int)mousePos.x, (int)mousePos.y, true)));
+									bContinue = true;
+								}
+							}
 						}
-						else
+
+						if (!isTwoFingerGesture && !isThreeFingerGesture)
 						{
-							CGUIRoot::GetInstance()->GetMouse()->PushMouseEvent(DeviceMouseEventPtr(new DeviceMouseButtonEvent(pTouchSession->TranslateTouchButton(EMouseButton::RIGHT), EKeyState::PRESS, (int)mousePos.x, (int)mousePos.y, true)));
-							pTouchSession->SetTag(2);
+							// press hold and drag for right button drag, drag directly for left button drag. 
+							if (pTouchSession->GetDuration() < 500)
+							{
+								CGUIRoot::GetInstance()->GetMouse()->PushMouseEvent(DeviceMouseEventPtr(new DeviceMouseButtonEvent(pTouchSession->TranslateTouchButton(EMouseButton::LEFT), EKeyState::PRESS, (int)mousePos.x, (int)mousePos.y, true)));
+								pTouchSession->SetTag(1);
+							}
+							else
+							{
+								CGUIRoot::GetInstance()->GetMouse()->PushMouseEvent(DeviceMouseEventPtr(new DeviceMouseButtonEvent(pTouchSession->TranslateTouchButton(EMouseButton::RIGHT), EKeyState::PRESS, (int)mousePos.x, (int)mousePos.y, true)));
+								pTouchSession->SetTag(2);
+							}
 						}
 					}
 				}
@@ -2156,6 +2241,15 @@ void ParaEngine::CGUIRoot::TranslateTouchEvent(const TouchEvent &touch)
 				{
 					bContinue = true;
 				}
+			}
+			else if (pTouchSession->GetTag() == 12)
+			{
+				// two finger drag for right dragging, just sending mouse move
+				bContinue = false;
+			}
+			else if (pTouchSession->GetTag() >= 1000) {
+				// disabled touch session
+				bContinue = true;
 			}
 			// how many pixels to be regarded as one mouse wheel step. must be divisible to 120. 
 			const float fMouseWheelDragStep = 20.f;

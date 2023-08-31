@@ -3,6 +3,7 @@
 # endif()
 
 set(CROSS_PLATFORM true)
+add_definitions(-DNPLRUNTIME_OCE)
 
 SET(FREETYPE_INCLUDE_DIRS ${PROJECT_SOURCE_DIR}/externals/freetype-2.8.1/include)
 SET(FREETYPE_INCLUDE_DIR ${FREETYPE_INCLUDE_DIRS})
