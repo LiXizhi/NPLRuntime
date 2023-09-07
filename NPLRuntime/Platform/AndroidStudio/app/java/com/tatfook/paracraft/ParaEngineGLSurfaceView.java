@@ -641,11 +641,13 @@ public class ParaEngineGLSurfaceView extends GLSurfaceView {
         }
 
         if (pMotionEvent.getAction() == MotionEvent.ACTION_SCROLL) {
-            if (pMotionEvent.getAxisValue(MotionEvent.AXIS_VSCROLL) < 0.0f) {
-                ParaEngineGLSurfaceView.this.mRenderer.handleMouseScroll(-1);
-            } else {
-                ParaEngineGLSurfaceView.this.mRenderer.handleMouseScroll(1);
-            }
+            final int deltaScroll = pMotionEvent.getAxisValue(MotionEvent.AXIS_VSCROLL) < 0.0f ? -1 : 1;
+            this.queueEvent(new Runnable() {
+                @Override
+                public void run() {
+                    ParaEngineGLSurfaceView.this.mRenderer.handleMouseScroll(deltaScroll);
+                }
+            });
         }
 
         if (mIsPressMouseLeftKey) {
