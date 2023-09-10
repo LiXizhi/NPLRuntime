@@ -33,6 +33,8 @@ namespace ParaEngine
 		/** block id */
 		enum BlockIDNum
 		{
+			// metal block will not have ambient occlusion shadows on it. 
+			MetalBlockId = 50,
 			// transparent block (cob web) will transmit bone weight, but will not be rendered. 
 			TransparentBlockId = 118,
 			// bones
