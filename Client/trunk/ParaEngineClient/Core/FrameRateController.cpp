@@ -10,6 +10,9 @@
 
 using namespace ParaEngine;
 
+/** define this to let io run as fast as possible. */
+#define REALTIME_FRAME_RATE_CONTROL
+
 namespace ParaEngine
 {
 	/**
@@ -37,18 +40,24 @@ void CFrameRateController::LoadFRCNormal(float fIdealInterval)
 	g_ioFRC.SetType(CFrameRateController::FRC_CONSTANT_OR_ABOVE);
 	g_simFRC.SetType(CFrameRateController::FRC_FIRSTORDER);
 #else
+#ifdef REALTIME_FRAME_RATE_CONTROL
+	g_ioFRC.SetType(CFrameRateController::FRC_NONE);
+	g_renderFRC.SetType(CFrameRateController::FRC_NONE);
+	g_simFRC.SetType(CFrameRateController::FRC_NONE);
+#else
 	g_renderFRC.SetType(CFrameRateController::FRC_CONSTANT_OR_BELOW); // specify FRC_CONSTANT will play slow motion under low frame rate if one want
 	g_ioFRC.SetType(CFrameRateController::FRC_CONSTANT_OR_BELOW); // specify FRC_CONSTANT will play slow motion under low frame rate if one want
 	g_simFRC.SetType(CFrameRateController::FRC_BELOW); // smooth the simulation one can also use FRC_FIRSTORDER
 #endif
-	fIdealInterval = fIdealInterval <=0 ? IDEAL_FRAME_RATE : fIdealInterval;
+#endif
+	fIdealInterval = fIdealInterval <= 0 ? IDEAL_FRAME_RATE : fIdealInterval;
 	g_renderFRC.m_fConstDeltaTime = fIdealInterval;
 	g_ioFRC.m_fConstDeltaTime = fIdealInterval;
 	g_simFRC.m_fConstDeltaTime = fIdealInterval;
 
-	g_renderFRC.m_fMinDeltaTime = 1/60.f;
-	g_ioFRC.m_fMinDeltaTime = 1/60.f;
-	g_simFRC.m_fMinDeltaTime = 1/60.f;
+	g_renderFRC.m_fMinDeltaTime = 1 / 60.f;
+	g_ioFRC.m_fMinDeltaTime = 1 / 60.f;
+	g_simFRC.m_fMinDeltaTime = 1 / 60.f;
 }
 
 /// Real time frame rate control
@@ -61,22 +70,22 @@ void CFrameRateController::LoadFRCRealtime(float fIdealInterval)
 	g_ioFRC.SetType(CFrameRateController::FRC_NONE);
 	g_simFRC.SetType(CFrameRateController::FRC_NONE);
 	// g_simFRC.SetType(CFrameRateController::FRC_BELOW);
-	
-	fIdealInterval = fIdealInterval <=0 ? IDEAL_FRAME_RATE : fIdealInterval;
+
+	fIdealInterval = fIdealInterval <= 0 ? IDEAL_FRAME_RATE : fIdealInterval;
 	g_renderFRC.m_fConstDeltaTime = fIdealInterval;
 	g_ioFRC.m_fConstDeltaTime = fIdealInterval;
 	g_simFRC.m_fConstDeltaTime = fIdealInterval;
 
-	g_renderFRC.m_fMinDeltaTime = 1/60.f;
-	g_ioFRC.m_fMinDeltaTime = 1/60.f;
-	g_simFRC.m_fMinDeltaTime = 1/60.f;
+	g_renderFRC.m_fMinDeltaTime = 1 / 60.f;
+	g_ioFRC.m_fMinDeltaTime = 1 / 60.f;
+	g_simFRC.m_fMinDeltaTime = 1 / 60.f;
 }
 
 void CFrameRateController::LoadFRCServerMode()
 {
 	LoadFRCNormal();
 
-	g_simFRC.m_fMinDeltaTime = 1/30.f;
+	g_simFRC.m_fMinDeltaTime = 1 / 30.f;
 	g_simFRC.m_fMaxDeltaTime = 0.99f;
 	g_simFRC.SetType(CFrameRateController::FRC_NONE);
 }
@@ -87,11 +96,11 @@ void CFrameRateController::LoadFRCCapture(int nFPS)
 	g_ioFRC.SetType(CFrameRateController::FRC_CONSTANT);
 	g_simFRC.SetType(CFrameRateController::FRC_CONSTANT);
 
-	g_renderFRC.m_fConstDeltaTime = 1.f/nFPS;
+	g_renderFRC.m_fConstDeltaTime = 1.f / nFPS;
 	g_renderFRC.m_fMinDeltaTime = IDEAL_FRAME_RATE;
-	g_ioFRC.m_fConstDeltaTime = 1.f/nFPS;
+	g_ioFRC.m_fConstDeltaTime = 1.f / nFPS;
 	g_ioFRC.m_fMinDeltaTime = IDEAL_FRAME_RATE;
-	g_simFRC.m_fConstDeltaTime = 1.f/nFPS;
+	g_simFRC.m_fConstDeltaTime = 1.f / nFPS;
 	g_simFRC.m_fMinDeltaTime = IDEAL_FRAME_RATE;
 }
 
@@ -107,9 +116,9 @@ CFrameRateController::CFrameRateController(ControllerType type, const char* sNam
 
 	m_fConstDeltaTime = IDEAL_FRAME_RATE;		// 30 FPS is the ideal frame rate
 	m_fMaxDeltaTime = 0.99f;				// over 1 second lag is truncated to 1.
-	m_fMinDeltaTime = 1/60.0f;			// 60 FPS is the highest frame rate we allow
-	m_fLinearSlope = 0.2f/30.0f;		// sloop = m_fConstDeltaTime/5, use 5 frames to catch up
-	m_fMaxLinearDeltaTime = 1/10.0f;	// use linear interpolation only if frame rate is over 10 FPS
+	m_fMinDeltaTime = 1 / 60.0f;			// 60 FPS is the highest frame rate we allow
+	m_fLinearSlope = 0.2f / 30.0f;		// sloop = m_fConstDeltaTime/5, use 5 frames to catch up
+	m_fMaxLinearDeltaTime = 1 / 10.0f;	// use linear interpolation only if frame rate is over 10 FPS
 
 	m_fTime = 0;
 	m_fLastTime = 0;
@@ -144,7 +153,7 @@ void CFrameRateController::SetType(ControllerType nType)
 	m_nType = nType;
 }
 
-int CFrameRateController::GetTime() 
+int CFrameRateController::GetTime()
 {
 	return (int)(m_fTime * 1000);
 }
@@ -154,7 +163,7 @@ void CFrameRateController::SetTime(int nTime)
 	m_fTime = nTime / 1000.0;
 }
 
-/** call this function to advance using delta time 
+/** call this function to advance using delta time
 return the desired elapsed time
 */
 double CFrameRateController::FrameMoveDelta(double deltatime)
@@ -162,7 +171,7 @@ double CFrameRateController::FrameMoveDelta(double deltatime)
 	return FrameMove(m_fLastTime + deltatime);
 }
 
-/** call this function to advance using absolute time, 
+/** call this function to advance using absolute time,
 return the desired elapsed time
 */
 double CFrameRateController::FrameMove(double time)
@@ -173,146 +182,146 @@ double CFrameRateController::FrameMove(double time)
 			return 0.f;
 		m_fTime = time;
 	}
-	
-	switch(m_nType)
+
+	switch (m_nType)
 	{
 	case FRC_NONE:
-		{
-			m_fElapsedTime = m_fTime - m_fLastTime;
-			
-			m_fLastTime = m_fTime;
-			m_fLastElapsedTime = m_fElapsedTime;
+	{
+		m_fElapsedTime = m_fTime - m_fLastTime;
 
-			if(m_fElapsedTime > m_fMaxDeltaTime)
-				m_fElapsedTime = m_fMaxDeltaTime;
-			break;
-		}
+		m_fLastTime = m_fTime;
+		m_fLastElapsedTime = m_fElapsedTime;
+
+		if (m_fElapsedTime > m_fMaxDeltaTime)
+			m_fElapsedTime = m_fMaxDeltaTime;
+		break;
+	}
 	case FRC_CONSTANT_OR_ABOVE:
+	{
+		m_fElapsedTime = m_fTime - m_fLastTime;
+		if (m_fElapsedTime > m_fConstDeltaTime)
 		{
-			m_fElapsedTime = m_fTime - m_fLastTime;
-			if(m_fElapsedTime > m_fConstDeltaTime)
-			{
-				m_fElapsedTime = m_fConstDeltaTime;
-			}
-
-			m_fLastTime = m_fTime;
-			m_fLastElapsedTime = m_fElapsedTime;
-			break;
+			m_fElapsedTime = m_fConstDeltaTime;
 		}
+
+		m_fLastTime = m_fTime;
+		m_fLastElapsedTime = m_fElapsedTime;
+		break;
+	}
 	case FRC_CONSTANT_OR_BELOW:
+	{
+		m_fElapsedTime = m_fTime - m_fLastTime;
+		if (m_fElapsedTime <= 0)
 		{
-			m_fElapsedTime = m_fTime - m_fLastTime;
-			if(m_fElapsedTime<=0)
-			{
-				return 0.f;
-			}
-			else if(m_fElapsedTime>=m_fConstDeltaTime)
-			{
-				m_fNextTime = m_fNextTime + m_fConstDeltaTime;
-				if(m_fElapsedTime < (m_fNextTime - m_fLastTime))
-				{
-					m_fElapsedTime = m_fConstDeltaTime;
-					m_fLastTime = m_fNextTime;
-				}
-				else
-				{
-					m_fNextTime = m_fTime + m_fConstDeltaTime;
-					m_fLastTime = m_fNextTime;
-					if(m_fElapsedTime > m_fMaxDeltaTime)
-						m_fElapsedTime = m_fMaxDeltaTime;
-				}
-			}
-			else
+			m_fElapsedTime = 0.f;
+		}
+		else if (m_fElapsedTime >= m_fConstDeltaTime)
+		{
+			m_fNextTime = m_fNextTime + m_fConstDeltaTime;
+			if (m_fElapsedTime < (m_fNextTime - m_fLastTime))
 			{
 				m_fElapsedTime = m_fConstDeltaTime;
-				m_fNextTime = m_fNextTime + m_fConstDeltaTime;
 				m_fLastTime = m_fNextTime;
-			}
-			break;
-		}
-	case FRC_BELOW:
-		{
-			// using real time but below a given frame rate. 
-			m_fElapsedTime = m_fTime - m_fLastTime;
-			if(m_fLastTime <= m_fNextTime)
-			{
-				if(m_fTime > m_fNextTime)
-				{
-					m_fNextTime = m_fNextTime + m_fConstDeltaTime;
-					if(m_fTime >= m_fNextTime)
-						m_fNextTime = m_fTime;
-					m_fLastTime = m_fTime;
-					if(m_fElapsedTime > m_fMaxDeltaTime)
-						m_fElapsedTime = m_fMaxDeltaTime;
-
-				}
-				else
-				{
-					return 0.f;
-				}
 			}
 			else
 			{
 				m_fNextTime = m_fTime + m_fConstDeltaTime;
-				m_fLastTime = m_fTime;
-				if(m_fElapsedTime > m_fMaxDeltaTime)
+				m_fLastTime = m_fNextTime;
+				if (m_fElapsedTime > m_fMaxDeltaTime)
 					m_fElapsedTime = m_fMaxDeltaTime;
 			}
-			break;
 		}
-	case FRC_CONSTANT:
+		else
 		{
-			if(m_fMinDeltaTime >=  (m_fTime- m_fLastTime))
-				return 0.0f;
 			m_fElapsedTime = m_fConstDeltaTime;
-			m_fLastTime = m_fTime;
-			m_fLastElapsedTime = m_fElapsedTime;
-			break;
+			m_fNextTime = m_fNextTime + m_fConstDeltaTime;
+			m_fLastTime = m_fNextTime;
 		}
-	case FRC_FIRSTORDER:
+		break;
+	}
+	case FRC_BELOW:
+	{
+		// using real time but below a given frame rate. 
+		m_fElapsedTime = m_fTime - m_fLastTime;
+		if (m_fLastTime <= m_fNextTime)
 		{
-			m_fElapsedTime = m_fTime - m_fLastTime;
-			if(fabs(m_fLastElapsedTime - m_fElapsedTime) <= m_fLinearSlope)
+			if (m_fTime > m_fNextTime)
 			{
-				
-			}
-			else if(m_fLastElapsedTime<m_fElapsedTime)
-			{
-				m_fElapsedTime = m_fLastElapsedTime + m_fLinearSlope;
-			}
-			else if(m_fLastElapsedTime>m_fElapsedTime)
-			{
-				m_fElapsedTime = m_fLastElapsedTime - m_fLinearSlope;
-			}
-			if(m_fElapsedTime > m_fMaxLinearDeltaTime)
-			{ // restore to normal 
-				m_fElapsedTime = m_fTime - m_fLastTime;
-				m_fLastElapsedTime = m_fConstDeltaTime;
+				m_fNextTime = m_fNextTime + m_fConstDeltaTime;
+				if (m_fTime >= m_fNextTime)
+					m_fNextTime = m_fTime;
 				m_fLastTime = m_fTime;
+				if (m_fElapsedTime > m_fMaxDeltaTime)
+					m_fElapsedTime = m_fMaxDeltaTime;
+
 			}
 			else
 			{
-				m_fLastTime += m_fElapsedTime;
-				m_fLastElapsedTime = m_fElapsedTime;
+				m_fElapsedTime = 0.f;
 			}
-			break;
 		}
-	default:
+		else
 		{
-			return m_fConstDeltaTime;
+			m_fNextTime = m_fTime + m_fConstDeltaTime;
+			m_fLastTime = m_fTime;
+			if (m_fElapsedTime > m_fMaxDeltaTime)
+				m_fElapsedTime = m_fMaxDeltaTime;
 		}
+		break;
+	}
+	case FRC_CONSTANT:
+	{
+		if (m_fMinDeltaTime >= (m_fTime - m_fLastTime))
+			return 0.0f;
+		m_fElapsedTime = m_fConstDeltaTime;
+		m_fLastTime = m_fTime;
+		m_fLastElapsedTime = m_fElapsedTime;
+		break;
+	}
+	case FRC_FIRSTORDER:
+	{
+		m_fElapsedTime = m_fTime - m_fLastTime;
+		if (fabs(m_fLastElapsedTime - m_fElapsedTime) <= m_fLinearSlope)
+		{
+
+		}
+		else if (m_fLastElapsedTime < m_fElapsedTime)
+		{
+			m_fElapsedTime = m_fLastElapsedTime + m_fLinearSlope;
+		}
+		else if (m_fLastElapsedTime > m_fElapsedTime)
+		{
+			m_fElapsedTime = m_fLastElapsedTime - m_fLinearSlope;
+		}
+		if (m_fElapsedTime > m_fMaxLinearDeltaTime)
+		{ // restore to normal 
+			m_fElapsedTime = m_fTime - m_fLastTime;
+			m_fLastElapsedTime = m_fConstDeltaTime;
+			m_fLastTime = m_fTime;
+		}
+		else
+		{
+			m_fLastTime += m_fElapsedTime;
+			m_fLastElapsedTime = m_fElapsedTime;
+		}
+		break;
+	}
+	default:
+	{
+		return m_fConstDeltaTime;
+	}
 	}
 
 	return m_fElapsedTime;
 }
 
-void CFrameRateController::SetConstDeltaTime( double fConstDeltaTime )
+void CFrameRateController::SetConstDeltaTime(double fConstDeltaTime)
 {
 	m_fConstDeltaTime = (float)fConstDeltaTime;
-	if(m_fMaxDeltaTime < m_fConstDeltaTime){
+	if (m_fMaxDeltaTime < m_fConstDeltaTime) {
 		m_fMaxDeltaTime = m_fConstDeltaTime;
 	}
-	if(m_fMinDeltaTime > m_fConstDeltaTime){
+	if (m_fMinDeltaTime > m_fConstDeltaTime) {
 		m_fMinDeltaTime = m_fConstDeltaTime;
 	}
 }
