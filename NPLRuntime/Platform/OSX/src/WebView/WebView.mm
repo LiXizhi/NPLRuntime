@@ -119,7 +119,7 @@
 @end
 
 namespace ParaEngine {
-    static std::unordered_map<std::string, std::shared_ptr<ParaEngineWebView>> webviews;
+    static std::unordered_map<std::string, ParaEngineWebView *> webviews;
     static int viewTags = 0;
     static bool isOpenUrlLoaded = false;
     static int openUrlViewTag = 0;
@@ -209,7 +209,7 @@ namespace ParaEngine {
         auto it = webviews.find(std::to_string(viewTag));
 
         if (it != webviews.end()) {
-            pView = it->second.get();
+            pView = it->second;
         }
 
         if (!pView)
@@ -259,6 +259,10 @@ namespace ParaEngine {
 
     ParaEngineWebView::~ParaEngineWebView()
     {
+        [_webViewController.webView stopLoading];
+        [_webViewController.webView removeFromSuperview];
+        _webViewController.webView = nil;
+        [_webViewController release];
         _webViewController = nil;
     }
 
@@ -383,10 +387,10 @@ namespace ParaEngine {
 
     void ParaEngineWebView::activate(const std::string &filepath, const std::string &msg)
     {
-        NSString *msgStr = [NSString stringWithCString:msg.c_str() encoding:[NSString defaultCStringEncoding]];
+        NSString *msgStr = [NSString stringWithUTF8String:msg.c_str()];
         NSString *filepathStr = [NSString stringWithCString:filepath.c_str() encoding:[NSString defaultCStringEncoding]];
 
-        NSString *jsStr = [NSString stringWithFormat:@"window.NPL.receive('%@', '%@')", filepathStr, msgStr];
+        NSString *jsStr = [NSString stringWithFormat:@"window.NPL.receive('%@', `%@`)", filepathStr, msgStr];
 
         if (_webViewController)
         {

@@ -18,7 +18,7 @@ namespace ParaEngine
 	class CReadFileAndroid : public IReadFile
 	{
 	public:
-		CReadFileAndroid(const std::string fileName);
+		CReadFileAndroid(const std::string& fileName);
 		virtual ~CReadFileAndroid() override;
 		virtual uint32_t read(void* buffer, uint32_t sizeToRead) override;
 		virtual bool seek(uint32_t finalPos, bool relativeMovement = false) override;

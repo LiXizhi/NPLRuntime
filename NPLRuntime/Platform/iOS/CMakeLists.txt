@@ -12,6 +12,7 @@ set(IMAGES_FILE ${CMAKE_CURRENT_SOURCE_DIR}/Images.xcassets)
 set(RESOURCE_FILES ${CMAKE_CURRENT_SOURCE_DIR}/res)
 set(ASSETS_FILES ${CMAKE_CURRENT_SOURCE_DIR}/assets)
 set(CMAKE_XCODE_BUILD_SYSTEM 12)
+set(CMAKE_OSX_DEPLOYMENT_TARGET "13.0" CACHE STRING "Deployment target for iOS" FORCE)
 
 find_library(UIKit UIKit)
 find_library(OpenGLES OpenGLES)
@@ -26,10 +27,11 @@ find_library(Photos Photos)
 find_library(AudioToolbox AudioToolbox)
 find_library(AVFoundation AVFoundation)
 find_library(CoreTelephony CoreTelephony)
+find_library(AdSupport AdSupport)
+find_library(AppTrackingTransparency AppTrackingTransparency)
 
 add_executable(Paracraft
     ${app_src}
-    # ${INFO_FILE}
     ${IMAGES_FILE}
     ${RESOURCE_FILES}
     ${ASSETS_FILES}
@@ -49,12 +51,13 @@ target_link_libraries(Paracraft PUBLIC
     ${AudioToolbox}
     ${AVFoundation}
     ${CoreTelephony}
+    ${AdSupport}
+    ${AppTrackingTransparency}
     RenderSystemOpenGL
     ParaEngine
 )
 
 set_source_files_properties(${RESOURCE_FILES} PROPERTIES MACOSX_PACKAGE_LOCATION Resources/res)
-set_source_files_properties(${INFO_FILE} PROPERTIES MACOSX_PACKAGE_LOCATION .)
 set_source_files_properties(${IMAGES_FILE} PROPERTIES MACOSX_PACKAGE_LOCATION Resources/Images.cassets)
 set_source_files_properties(${ASSETS_FILES} PROPERTIES MACOSX_PACKAGE_LOCATION Resources/assets)
 
@@ -78,6 +81,10 @@ set_target_properties(
 )
 
 target_include_directories(Paracraft PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
+
+if (NPLRUNTIME_OCE)
+    add_definitions(-DNPLRUNTIME_OCE)
+endif()
 
 #set(CMAKE_EXE_LINKER_FLAGS "-pagezero_size 10000 -image_base 100000000 ${CMAKE_EXE_LINKER_FLAGS}")
 

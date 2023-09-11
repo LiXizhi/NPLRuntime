@@ -7,7 +7,7 @@
 
 # Reference: https://github.com/torch/luajit-rocks/tree/master/luajit-2.1/cmake
 
-project ( luajit21 C ASM)
+project (luajit21 C ASM)
 IF(APPLE)
   CMAKE_MINIMUM_REQUIRED(VERSION 2.8.12 FATAL_ERROR)
   CMAKE_POLICY(VERSION 2.8.12)

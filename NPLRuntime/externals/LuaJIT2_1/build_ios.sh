@@ -32,88 +32,63 @@ buildLuajit_iphoneos()
     
     ISDKP=$(xcrun --sdk iphoneos --show-sdk-path)
     ICC=$(xcrun --sdk iphoneos --find clang)
-   
-    # armv7
-    ISDKF="-arch armv7 -isysroot $ISDKP -mios-simulator-version-min=10.0"
     make -C $SOURCE_ROOT clean 1>/dev/null 2>/dev/null
-    make -C $SOURCE_ROOT DEFAULT_CC=clang HOST_CC="clang -m32 " \
-        CROSS="$(dirname $ICC)/" TARGET_FLAGS="$ISDKF" TARGET_SYS=iOS >> "${LOG_DIR}/ios-build.log" 2>&1
-    if [ $? != 0 ]; then echo "Error building iPhoneOS-armv7. Check log."; exit 1; fi
-    
-    mv $SOURCE_ROOT/src/libluajit.a $BUILD_DIR/libluajit_armv7.a
-    
 
-    # armv7s
-    ISDKF="-arch armv7s -isysroot $ISDKP -mios-simulator-version-min=10.0"
-    make -C $SOURCE_ROOT clean 1>/dev/null 2>/dev/null
-    make -C $SOURCE_ROOT DEFAULT_CC=clang HOST_CC="clang -m32" \
-        CROSS="$(dirname $ICC)/" TARGET_FLAGS="$ISDKF" TARGET_SYS=iOS >> "${LOG_DIR}/ios-build.log" 2>&1
-    if [ $? != 0 ]; then echo "Error building iPhoneOS-armv7s. Check log."; exit 1; fi
-    
-    mv $SOURCE_ROOT/src/libluajit.a $BUILD_DIR/libluajit_armv7s.a
-   
     # arm64
-    ISDKF="-arch arm64 -isysroot $ISDKP -mios-simulator-version-min=10.0"
-    make -C $SOURCE_ROOT clean 1>/dev/null 2>/dev/null
-    make -C $SOURCE_ROOT DEFAULT_CC=clang HOST_CC="clang" \
-        CROSS="$(dirname $ICC)/" TARGET_FLAGS="$ISDKF" TARGET_SYS=iOS TARGET=arm64  >> "${LOG_DIR}/ios-build.log" 2>&1
+    ISDKF="-arch arm64 -isysroot $ISDKP -miphoneos-version-min=13.0"
+    make -C $SOURCE_ROOT DEFAULT_CC=clang HOST_CC="clang " CROSS="$(dirname $ICC)/" TARGET_FLAGS="$ISDKF" TARGET=arm64 TARGET_SYS=iOS clean >> "${LOG_DIR}/ios-build.log" 2>&1
+    make -C $SOURCE_ROOT DEFAULT_CC=clang HOST_CC="clang " CROSS="$(dirname $ICC)/" TARGET_FLAGS="$ISDKF" TARGET=arm64 TARGET_SYS=iOS >> "${LOG_DIR}/ios-build.log" 2>&1
+
     if [ $? != 0 ]; then echo "Error building iPhoneOS-arm64. Check log."; exit 1; fi
-    
-    mv $SOURCE_ROOT/src/libluajit.a $BUILD_DIR/libluajit_arm64.a
-    
-    lipo -create  $BUILD_DIR/libluajit_armv7.a $BUILD_DIR/libluajit_armv7s.a $BUILD_DIR/libluajit_arm64.a \
-        -output $BUILD_DIR/libluajit.a
-    rm -r $BUILD_DIR/libluajit_armv7.a
-    rm -r $BUILD_DIR/libluajit_armv7s.a
-    rm -r $BUILD_DIR/libluajit_arm64.a
-    mkdir -p $BUILD_DIR/iphoneos
-    mv  $BUILD_DIR/libluajit.a $BUILD_DIR/iphoneos/libluajit.a
+
+    mkdir $BUILD_DIR/iphoneos/
+    mv $SOURCE_ROOT/src/libluajit.a $BUILD_DIR/iphoneos/libluajit.a
+
     make -C $SOURCE_ROOT clean 1>/dev/null 2>/dev/null
     doneSection
 }
 
-
-buildLuajit_iphonesimulator()
-{
-    # Build Luajit for iphonesimulator
-    echo Build Luajit for iPhoneSimulator
+# buildLuajit_iphonesimulator()
+# {
+#     # Build Luajit for iphonesimulator
+#     echo Build Luajit for iPhoneSimulator
     
-    ISDKP=$(xcrun --sdk iphonesimulator --show-sdk-path)
-    ICC=$(xcrun --sdk iphonesimulator --find clang)
+#     ISDKP=$(xcrun --sdk iphonesimulator --show-sdk-path)
+#     ICC=$(xcrun --sdk iphonesimulator --find clang)
    
-    # i386
-    ISDKF="-arch i386 -mios-simulator-version-min=10.0 -isysroot $ISDKP"
-    make -C $SOURCE_ROOT clean 1>/dev/null 2>/dev/null
-    make -C $SOURCE_ROOT DEFAULT_CC=clang HOST_CFLAGS="-arch i386" HOST_LDFLAGS="-arch i386" \
-     TARGET=x86 CROSS="$(dirname $ICC)/" TARGET_FLAGS="$ISDKF" TARGET_SYS=iOS >> "${LOG_DIR}/iphonesim-build.log" 2>&1
-    if [ $? != 0 ]; then echo "Error building iphonesim-i386. Check log."; exit 1; fi
+#     # i386
+#     ISDKF="-arch i386 -mios-simulator-version-min=10.0 -isysroot $ISDKP"
+#     make -C $SOURCE_ROOT clean 1>/dev/null 2>/dev/null
+#     make -C $SOURCE_ROOT DEFAULT_CC=clang HOST_CFLAGS="-arch i386" HOST_LDFLAGS="-arch i386" \
+#      TARGET=x86 CROSS="$(dirname $ICC)/" TARGET_FLAGS="$ISDKF" TARGET_SYS=iOS >> "${LOG_DIR}/iphonesim-build.log" 2>&1
+#     if [ $? != 0 ]; then echo "Error building iphonesim-i386. Check log."; exit 1; fi
     
-    mv $SOURCE_ROOT/src/libluajit.a $BUILD_DIR/libluajit_i386.a
+#     mv $SOURCE_ROOT/src/libluajit.a $BUILD_DIR/libluajit_i386.a
     
 
-    # x86-64
-    ISDKF="-arch x86_64 -mios-simulator-version-min=10.0 -isysroot $ISDKP"
-    make -C $SOURCE_ROOT clean 1>/dev/null 2>/dev/null
-    make -C $SOURCE_ROOT DEFAULT_CC=clang HOST_CFLAGS="-arch x86_64" HOST_LDFLAGS="-arch x86_64" \
-     TARGET=x86_64 CROSS="$(dirname $ICC)/" TARGET_FLAGS="$ISDKF" TARGET_SYS=iOS >> "${LOG_DIR}/iphonesim-build.log" 2>&1
-    if [ $? != 0 ]; then echo "Error building iphonesim-x86_64. Check log."; exit 1; fi
+#     # x86-64
+#     ISDKF="-arch x86_64 -mios-simulator-version-min=10.0 -isysroot $ISDKP"
+#     make -C $SOURCE_ROOT clean 1>/dev/null 2>/dev/null
+#     make -C $SOURCE_ROOT DEFAULT_CC=clang HOST_CFLAGS="-arch x86_64" HOST_LDFLAGS="-arch x86_64" \
+#      TARGET=x86_64 CROSS="$(dirname $ICC)/" TARGET_FLAGS="$ISDKF" TARGET_SYS=iOS >> "${LOG_DIR}/iphonesim-build.log" 2>&1
+#     if [ $? != 0 ]; then echo "Error building iphonesim-x86_64. Check log."; exit 1; fi
     
-    mv $SOURCE_ROOT/src/libluajit.a $BUILD_DIR/libluajit_x86_64.a
+#     mv $SOURCE_ROOT/src/libluajit.a $BUILD_DIR/libluajit_x86_64.a
     
    
-    lipo -create  $BUILD_DIR/libluajit_i386.a $BUILD_DIR/libluajit_x86_64.a \
-        -output $BUILD_DIR/libluajit.a
-    rm -r $BUILD_DIR/libluajit_x86_64.a
-    rm -r $BUILD_DIR/libluajit_i386.a
+#     lipo -create  $BUILD_DIR/libluajit_i386.a $BUILD_DIR/libluajit_x86_64.a \
+#         -output $BUILD_DIR/libluajit.a
+#     rm -r $BUILD_DIR/libluajit_x86_64.a
+#     rm -r $BUILD_DIR/libluajit_i386.a
 
-    mkdir -p $BUILD_DIR/iphonesim
-    mv  $BUILD_DIR/libluajit.a $BUILD_DIR/iphonesim/libluajit.a
-    make -C $SOURCE_ROOT clean 1>/dev/null 2>/dev/null
-    doneSection
-}
+#     mkdir -p $BUILD_DIR/iphonesim
+#     mv  $BUILD_DIR/libluajit.a $BUILD_DIR/iphonesim/libluajit.a
+#     make -C $SOURCE_ROOT clean 1>/dev/null 2>/dev/null
+#     doneSection
+# }
 
 cleanup
 buildLuajit_iphoneos
-buildLuajit_iphonesimulator
+# buildLuajit_iphonesimulator
 
 echo "Completed successfully"

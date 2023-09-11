@@ -2,7 +2,8 @@
 // Title: ParaEngine Hard-coded strings.
 // Authors:	Li,Xizhi
 // Emails:	
-// Date:	2006.1.18
+// Date: 2006.1.18
+// ModifyDate: 2023.9.11
 // Desc: this functions defines strings embeded in ParaEngine executable or lib. 
 //-----------------------------------------------------------------------------
 #include "ParaEngine.h"
@@ -11,8 +12,8 @@
 using namespace std;
 
 #define PARAENGINE_MAJOR_VERSION	1
-// 升级版本号 2023/5/12 minor ver -> 4
-#define PARAENGINE_MINOR_VERSION	4
+// 升级版本号 2023/9/11 minor ver -> 6
+#define PARAENGINE_MINOR_VERSION	6
 
 #define PRODUCT_VERSION_MAJOR	1
 #define PRODUCT_VERSION_MINOR	0
@@ -25,7 +26,7 @@ namespace ParaEngineInfo
 	string g_sPublicKey = "PARAENGINE_LiXizhi";
 
 	string g_sAuthorizedTo = "ParaEngine Dev Team";
-	string g_sCopyright = "Copyright(c) 2005-2018";
+	string g_sCopyright = "Copyright(c) 2005-2023";
 
 	string CParaEngineInfo::GetVersion(){
 		if(g_sVersion.empty())

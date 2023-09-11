@@ -79,6 +79,7 @@ namespace ParaEngine
 		ATTRIBUTE_METHOD1(CParaXModel, GetAnimations_s, void**) { *p1 = (void*)(cls->anims); return S_OK; }
 		ATTRIBUTE_METHOD1(CParaXModel, SaveToDisk_s, char*) { cls->SaveToDisk(p1); return S_OK; }
 		ATTRIBUTE_METHOD1(CParaXModel, SaveToGltf_s, char*) { cls->SaveToGltf(p1); return S_OK; }
+        ATTRIBUTE_METHOD1(CParaXModel, GetStrAnimIds_s, const char**) { *p1 = cls->GetStrAnimIds(); return S_OK; }
 	public:
 		/** get polycount of this mesh object */
 		int GetPolyCount();
@@ -201,6 +202,9 @@ namespace ParaEngine
 		
 		/** return NULL if not exist */
 		const ModelAnimation* GetModelAnimByIndex(int nAnimIndex);
+        
+        /** get model animations as string */
+        const char *GetStrAnimIds();
 
 		/** get the mesh radius */
 		float GetBoundingRadius();

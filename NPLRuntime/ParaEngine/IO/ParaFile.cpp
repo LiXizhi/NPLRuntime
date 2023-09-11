@@ -771,6 +771,11 @@ bool ParaEngine::CParaFile::OpenFile(CArchive *pArchive, const char* filename, b
 
 bool CParaFile::OpenFile(const char* sfilename, bool bReadyOnly, const char* relativePath, bool bUseCompressed, uint32 dwWhereToOpen)
 {
+	if(sfilename == NULL || sfilename[0] == '\0'){
+		m_eof = true;
+		return false;
+	}
+	
 	int32 dwFoundPlace = FILE_NOT_FOUND;
 	if (dwWhereToOpen != FILE_ON_ZIP_ARCHIVE && ((dwWhereToOpen & FILE_ON_ZIP_ARCHIVE) > 0))
 	{

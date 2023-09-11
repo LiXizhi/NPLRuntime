@@ -112,12 +112,20 @@ namespace ParaEngine {
 
     void CParaEngineAppiOS::setIMEKeyboardState(bool bOpen, bool bMoveView, int ctrlBottom, const string& editParams)
     {
+        const char *inputType = "text";
         int x = 0;
         this->GameToClient(x, ctrlBottom);
         
-        NSString *_editParams = [NSString stringWithUTF8String: editParams.c_str()];
+        CGUIEditBox *pGUI = dynamic_cast<CGUIEditBox*>((CGUIRoot::GetInstance()->GetUIKeyFocus()));
 
-        [KeyboardiOSController setIMEKeyboardState:bOpen bMoveView:bMoveView ctrlBottom:ctrlBottom editParams:_editParams];
+        if (pGUI && bOpen) {
+            inputType = pGUI->GetInputType();
+        }
+
+        NSString *_editParams = [NSString stringWithUTF8String: editParams.c_str()];
+        NSString *_inputType = [NSString stringWithUTF8String: inputType];
+
+        [KeyboardiOSController setIMEKeyboardState:bOpen bMoveView:bMoveView ctrlBottom:ctrlBottom editParams:_editParams inputType:_inputType];
     }
 
     void CParaEngineAppiOS::Exit(int nReturnCode /*= 0*/)

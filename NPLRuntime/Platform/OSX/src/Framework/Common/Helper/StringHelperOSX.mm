@@ -1,7 +1,8 @@
+#import <Cocoa/Cocoa.h>
+
 #include "ParaEngine.h"
 #include "util/StringHelper.h"
 #include "2dengine/GUIEdit.h"
-#import <Cocoa/Cocoa.h>
 
 using namespace ParaEngine;
 

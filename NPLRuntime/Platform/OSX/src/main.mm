@@ -6,7 +6,6 @@
 
 //using namespace ParaEngine;
 int main(int argc, const char * argv[]) {
-    
     @autoreleasepool {
         [NSApplication sharedApplication];
         WindowDelegate* winDelegate = [WindowDelegate sharedDelegate];
@@ -15,5 +14,5 @@ int main(int argc, const char * argv[]) {
         [WindowDelegate closeDelegate];
         
         return 0;
-    }    
+    }
 }

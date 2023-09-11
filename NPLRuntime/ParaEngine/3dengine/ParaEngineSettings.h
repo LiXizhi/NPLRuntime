@@ -232,9 +232,15 @@ namespace ParaEngine
         ATTRIBUTE_METHOD1(ParaEngineSettings, SendMsgToJS_s, const char*) { cls->SendMsgToJS(p1); return S_OK; }
 		ATTRIBUTE_METHOD1(ParaEngineSettings, GetDefaultFileAPIEncoding_s, const char**) { *p1 = cls->GetDefaultFileAPIEncoding().c_str(); return S_OK; }
 
+        ATTRIBUTE_METHOD1(ParaEngineSettings, GetWebViewVersion_s, int*)	{ *p1 = cls->GetWebVersion(); return S_OK; }
 #ifdef ANDROID
         ATTRIBUTE_METHOD1(ParaEngineSettings, GetUsbMode_s, bool*) { *p1 = cls->GetUsbMode(); return S_OK; }
 #endif
+
+#if defined(ANDROID) || defined(IOS)
+        ATTRIBUTE_METHOD1(ParaEngineSettings, SaveImageToGallery_s, const char*) { cls->SaveImageToGallery(p1); return S_OK; }
+#endif
+
     public:
         static const char* GetModuleFileName();
 
@@ -354,13 +360,13 @@ namespace ParaEngine
         /** render refresh/io time interval. */
         static float GetRefreshTimer();
 
-        /**get platform id:  
-        #define PARA_PLATFORM_UNKNOWN            0
-        #define PARA_PLATFORM_IOS                1
-        #define PARA_PLATFORM_ANDROID            2
-        #define PARA_PLATFORM_WIN32              3
-        #define PARA_PLATFORM_MARMALADE          4
-        #define PARA_PLATFORM_LINUX              5
+        /** get platform id:  
+            #define PARA_PLATFORM_UNKNOWN            0
+            #define PARA_PLATFORM_IOS                1
+            #define PARA_PLATFORM_ANDROID            2
+            #define PARA_PLATFORM_WIN32              3
+            #define PARA_PLATFORM_MARMALADE          4
+            #define PARA_PLATFORM_LINUX              5
         */
         static int GetPlatform();
 
@@ -714,8 +720,19 @@ namespace ParaEngine
         const char* GetAudioDeviceName();
 
 		const std::string& GetDefaultFileAPIEncoding();
+
+        /**
+         ** webversion
+         * **/
+         int GetWebVersion();
 #ifdef ANDROID
+        /** Determine if usb mouse and keyboard are used. */
         bool GetUsbMode();
+#endif
+
+#if defined(ANDROID) || defined(IOS)
+        /** save image data. */
+        void SaveImageToGallery(const char* imageData);
 #endif
     protected:
         void LoadNameIndex();

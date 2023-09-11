@@ -29,16 +29,23 @@ namespace ParaScripting
         [instance stopRecordingWithHandler];
     }
 
-    void ParaScriptingScreenRecorder::Save()
+    std::string ParaScriptingScreenRecorder::Save()
     {
         ScreenRecorder *instance = [ScreenRecorder getInstance];
 
-        [instance saveVideo];
+        NSString *savePath = [instance saveVideo];
+        return [savePath UTF8String];
     }
 
     void ParaScriptingScreenRecorder::Play()
     {
         ScreenRecorder *instance = [ScreenRecorder getInstance];
         [instance playPreview];
+    }
+
+    void ParaScriptingScreenRecorder::RemoveVideo()
+    {
+        ScreenRecorder *instance = [ScreenRecorder getInstance];
+        [instance removeVideo];
     }
 }

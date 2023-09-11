@@ -23,7 +23,6 @@ add_executable(Paracraft ${OSX_SRC}
     ${RESOURCE_FILES}
     ${ASSETS_FILES}
     ${IMAGES_FILE}
-    ${INFO_FILE}
     ${XIB_FILES}
     ${ICON_FILE}
 )
@@ -31,7 +30,6 @@ add_executable(Paracraft ${OSX_SRC}
 set_source_files_properties(${RESOURCE_FILES} PROPERTIES MACOSX_PACKAGE_LOCATION Resources/res)
 set_source_files_properties(${ASSETS_FILES} PROPERTIES MACOSX_PACKAGE_LOCATION Resources/assets)
 set_source_files_properties(${XIB_FILES} PROPERTIES MACOSX_PACKAGE_LOCATION Resources/xib)
-set_source_files_properties(${INFO_FILE} PROPERTIES MACOSX_PACKAGE_LOCATION .)
 set_source_files_properties(${ICON_FILE} PROPERTIES MACOSX_PACKAGE_LOCATION .)
 # set_source_files_properties(${IMAGES_FILE} PROPERTIES MACOSX_PACKAGE_LOCATION Resources/Images.cassets)
 
@@ -74,7 +72,8 @@ target_link_libraries(Paracraft PUBLIC
     # ${AUTHENTICATION_SERVICES}
 )
 
-set(CMAKE_EXE_LINKER_FLAGS "-pagezero_size 10000 -image_base 100000000 ${CMAKE_EXE_LINKER_FLAGS}")
+# no longer needed for luajit2.1, only needed or luajit 2.0
+#set(CMAKE_EXE_LINKER_FLAGS "-pagezero_size 10000 -image_base 100000000 ${CMAKE_EXE_LINKER_FLAGS}")
 
 set(APP_PATH "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/$<CONFIGURATION>/Paracraft.app")
 set(DYLIB_PATH "${CMAKE_ARCHIVE_OUTPUT_DIRECTORY}/$<CONFIGURATION>")

@@ -151,7 +151,9 @@ static std::string getFixedBaseUrl(const std::string& baseUrl)
 {
     [self setVisible:NO];
     [self loadUrl:"" cleanCachedData:YES];
-    ParaEngine::CAudioEngine2::GetInstance()->ResetAudioDevice("");
+    std::string code = "AudioEngine.ResetAudioDevice();";
+
+    ParaEngine::LuaObjcBridge::nplActivate(code, "");
 }
 
 - (void)userContentController:(WKUserContentController *)userContentController didReceiveScriptMessage:(WKScriptMessage *)message
@@ -165,7 +167,7 @@ static std::string getFixedBaseUrl(const std::string& baseUrl)
 
     std::string activateStr = [activate UTF8String];
     std::string msgStr = [msg UTF8String];
-    std::string code = "NPL.activate(\"" + activateStr + "\", " + msgStr + ");";
+    std::string code = "NPL.activate('" + activateStr + "', { msg = [[" + msgStr + "]]});";
 
     ParaEngine::LuaObjcBridge::nplActivate(code, "");
 }
@@ -202,7 +204,7 @@ static std::string getFixedBaseUrl(const std::string& baseUrl)
     NSString *msgStr = [NSString stringWithCString:msg.c_str() encoding:[NSString defaultCStringEncoding]];
     NSString *filepathStr = [NSString stringWithCString:filepath.c_str() encoding:[NSString defaultCStringEncoding]];
 
-    NSString *jsStr = [NSString stringWithFormat:@"window.NPL.receive(\"%@\",\"%@\")", filepathStr, msgStr];
+    NSString *jsStr = [NSString stringWithFormat:@"window.NPL.receive('%@', `%@`)", filepathStr, msgStr];
     
     if (self.uiWebView)
     {
@@ -447,7 +449,7 @@ static std::string getFixedBaseUrl(const std::string& baseUrl)
 @end
 
 namespace ParaEngine {
-    static std::unordered_map<std::string, std::shared_ptr<ParaEngineWebView>> webviews;
+    static std::unordered_map<std::string, ParaEngineWebView *> webviews;
     static int viewTags = 0;
     static bool isOpenUrlLoaded = false;
     static int openUrlViewTag = 0;
@@ -561,7 +563,7 @@ namespace ParaEngine {
         auto it = webviews.find(std::to_string(viewTag));
 
         if (it != webviews.end()) {
-            pView = it->second.get();
+            pView = it->second;
         }
 
         if (!pView)

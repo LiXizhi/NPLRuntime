@@ -40,7 +40,7 @@ void CLightParam::MakeRedPointLight()
 	Pitch = 0;
 	Roll = 0;
 
- 	Range = 3.f;
+	Range = 3.f;
 	/* no Falloff */
 	Falloff = 1.f;
 
@@ -81,7 +81,7 @@ void ParaEngine::CLightParam::MakeRedSpotLight()
 
 void ParaEngine::CLightParam::MakeRedDirectionalLight()
 {
-	Type =  ELightType::Directional;;
+	Type = ELightType::Directional;
 
 	Diffuse = LinearColor(1.0f, 0, 0, 1.0f);
 	Specular = LinearColor(1.0f, 0, 0, 1.0f);
@@ -112,7 +112,7 @@ void ParaEngine::CLightParam::MakeRedDirectionalLight()
 	Phi = 1.0f;
 }
 
-void ParaEngine::CLightParam::RecalculateDirection()
+void ParaEngine::CLightParam::RecalculateDirection(const Matrix4* pLocalTransform)
 {
 	// Yaw - around axis y
 	// Pitch - around axis x
@@ -130,6 +130,9 @@ void ParaEngine::CLightParam::RecalculateDirection()
 	if (Yaw != 0.f)
 		mat = (*ParaMatrixRotationY(&transform, Yaw))*mat;
 
+	if (pLocalTransform) {
+		mat = mat * (*pLocalTransform);
+	}
 	Direction = InitDirection.TransformNormal(mat);
 }
 

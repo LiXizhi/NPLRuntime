@@ -629,12 +629,13 @@ bool ParaEngine::CParaEngineAppBase::FrameMove(double fTime)
 	if (fElapsedIOTime > 0)
 	{
 		HandleUserInput();
-		m_pRootScene->Animate((float)fElapsedIOTime);
 	}
-	else if (fElapsedGameTime > 0.f)
+
+	if (fElapsedEnvSimTime > 0 || fElapsedIOTime > 0)
 	{
-		m_pRootScene->Animate(0.f);
+		m_pRootScene->Animate(fElapsedEnvSimTime > 0 ? (float)fElapsedEnvSimTime : 0.f);
 	}
+
 #ifdef USE_XACT_AUDIO_ENGINE
 	/// for audio engine
 	if (m_pAudioEngine && m_pAudioEngine->IsAudioEngineEnabled())

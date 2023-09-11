@@ -217,9 +217,12 @@ public class ParaTextInputWrapper implements TextWatcher, TextView.OnEditorActio
 
         switch (keyCode) {
             case KeyEvent.KEYCODE_DEL:
-                mNativeView.onDeleteBackward();
-
-                return true;
+                if (this.lastText.length() == 0) {
+                    mNativeView.onDeleteBackward();
+                    return true;
+                } else {
+                    return false;
+                }
             case KeyEvent.KEYCODE_ENTER:
                 if (this.isGuiEdit) {
                     return true;

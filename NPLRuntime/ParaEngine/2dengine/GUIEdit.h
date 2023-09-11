@@ -46,14 +46,14 @@ namespace ParaEngine
 
 #ifdef PARAENGINE_MOBILE
 		ATTRIBUTE_METHOD1(CGUIEditBox, SetMoveViewWhenAttachWithIME_s, bool) { cls->setMoveViewWhenAttachWithIME(p1); return S_OK; }
-		ATTRIBUTE_METHOD1(CGUIEditBox, GetIsUseFloatEditBox_s, bool*)	{ *p1 = cls->IsUseFloatEditBox(); return S_OK; }
-		ATTRIBUTE_METHOD1(CGUIEditBox, SetIsUseFloatEditBox_s, bool)	{ cls->SetIsUseFloatEditBox(p1); return S_OK; }
-		ATTRIBUTE_METHOD1(CGUIEditBox, GetMaxWordLength_s, int*)	{ *p1 = cls->GetMaxWordLength(); return S_OK; }
-		ATTRIBUTE_METHOD1(CGUIEditBox, SetMaxWordLength_s, int)	{ cls->SetMaxWordLength(p1); return S_OK; }
-		ATTRIBUTE_METHOD1(CGUIEditBox, GetConfirmType_s, const char**)	{ *p1 = cls->GetConfirmType(); return S_OK; }
-		ATTRIBUTE_METHOD1(CGUIEditBox, SetConfirmType_s, const char*)	{ cls->SetConfirmType(p1); return S_OK; }
-		ATTRIBUTE_METHOD1(CGUIEditBox, GetInputType_s, const char**)	{ *p1 = cls->GetInputType(); return S_OK; }
-		ATTRIBUTE_METHOD1(CGUIEditBox, SetInputType_s, const char*)	{ cls->SetInputType(p1); return S_OK; }
+		ATTRIBUTE_METHOD1(CGUIEditBox, GetIsUseFloatEditBox_s, bool*) { *p1 = cls->IsUseFloatEditBox(); return S_OK; }
+		ATTRIBUTE_METHOD1(CGUIEditBox, SetIsUseFloatEditBox_s, bool) { cls->SetIsUseFloatEditBox(p1); return S_OK; }
+		ATTRIBUTE_METHOD1(CGUIEditBox, GetMaxWordLength_s, int*) { *p1 = cls->GetMaxWordLength(); return S_OK; }
+		ATTRIBUTE_METHOD1(CGUIEditBox, SetMaxWordLength_s, int) { cls->SetMaxWordLength(p1); return S_OK; }
+		ATTRIBUTE_METHOD1(CGUIEditBox, GetConfirmType_s, const char**) { *p1 = cls->GetConfirmType(); return S_OK; }
+		ATTRIBUTE_METHOD1(CGUIEditBox, SetConfirmType_s, const char*) { cls->SetConfirmType(p1); return S_OK; }
+		ATTRIBUTE_METHOD1(CGUIEditBox, GetInputType_s, const char**) { *p1 = cls->GetInputType(); return S_OK; }
+		ATTRIBUTE_METHOD1(CGUIEditBox, SetInputType_s, const char*) { cls->SetInputType(p1); return S_OK; }
 #endif
 
 	public:
@@ -87,7 +87,7 @@ namespace ParaEngine
 		* @param bSelected whether to set the selection only. This is usually false.
 		*/
 		void SetTextA( LPCSTR szText, bool bSelected );
-		
+		virtual void SetModified();
 		/**
 		* Set the text of this object
 		* @param szText 
@@ -219,10 +219,6 @@ namespace ParaEngine
 		const char * GetConfirmType(){return m_sComfirmType.c_str();}
 		void SetConfirmType(const char *val){m_sComfirmType=val;}
 
-		//Type of filter for input characters,such as :"text","email","number","phone","password"
-		const char * GetInputType(){return m_sInputType.c_str();}
-		void SetInputType(const char *val){m_sInputType=val;}
-
 #ifdef PARAENGINE_MOBILE
 		// ime delegate implementation. 
 	public:
@@ -230,6 +226,10 @@ namespace ParaEngine
 		virtual bool detachWithIME() override;
 
 		void setMoveViewWhenAttachWithIME(bool bMove);
+
+		//Type of filter for input characters,such as :"text","email","number","phone","password"
+		const char *GetInputType(){ return m_sInputType.c_str(); }
+		void SetInputType(const char *val){ m_sInputType = val; }
 	protected:
 		virtual bool canAttachWithIME() override;
 		virtual void didAttachWithIME() override;

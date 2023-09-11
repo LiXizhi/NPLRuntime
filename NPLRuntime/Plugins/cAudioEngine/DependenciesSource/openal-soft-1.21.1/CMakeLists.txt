@@ -412,20 +412,20 @@ endif()
 
 # Check for ARM Neon support
 option(ALSOFT_REQUIRE_NEON "Require ARM NEON support" OFF)
-if(HAVE_ARM_NEON_H)
-    option(ALSOFT_CPUEXT_NEON "Enable ARM NEON support" ON)
-    if(ALSOFT_CPUEXT_NEON)
-        check_c_source_compiles("#include <arm_neon.h>
-            int main()
-            {
-                int32x4_t ret4 = vdupq_n_s32(0);
-                return vgetq_lane_s32(ret4, 0);
-            }" HAVE_NEON_INTRINSICS)
-        if(HAVE_NEON_INTRINSICS)
-            set(HAVE_NEON 1)
-        endif()
-    endif()
-endif()
+# if(HAVE_ARM_NEON_H)
+#     option(ALSOFT_CPUEXT_NEON "Enable ARM NEON support" ON)
+#     if(ALSOFT_CPUEXT_NEON)
+#         check_c_source_compiles("#include <arm_neon.h>
+#             int main()
+#             {
+#                 int32x4_t ret4 = vdupq_n_s32(0);
+#                 return vgetq_lane_s32(ret4, 0);
+#             }" HAVE_NEON_INTRINSICS)
+#         if(HAVE_NEON_INTRINSICS)
+#             set(HAVE_NEON 1)
+#         endif()
+#     endif()
+# endif()
 if(ALSOFT_REQUIRE_NEON AND NOT HAVE_NEON)
     message(FATAL_ERROR "Failed to enabled required ARM NEON CPU extensions")
 endif()

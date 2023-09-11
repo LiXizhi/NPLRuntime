@@ -1390,6 +1390,11 @@ intptr_t ParaEngine::ParaEngineSettings::GetAppHWND()
 #endif
 }
 
+int ParaEngine::ParaEngineSettings::GetWebVersion()
+{
+	return 1;
+}
+
 void ParaEngine::ParaEngineSettings::ResetAudioDevice(const char* deviceName)
 {
 	CAudioEngine2::GetInstance()->ResetAudioDevice(deviceName);
@@ -1555,8 +1560,13 @@ int ParaEngineSettings::InstallFields(CAttributeClass* pClass, bool bOverride)
 	pClass->AddField("SendMsgToJS", FieldType_String, (void*)SendMsgToJS_s, NULL, NULL, NULL, bOverride);
 	pClass->AddField("DefaultFileAPIEncoding", FieldType_String, NULL, (void*)GetDefaultFileAPIEncoding_s, NULL, NULL, bOverride);
 
+	pClass->AddField("WebViewVersion", FieldType_Int, NULL, (void*)GetWebViewVersion_s, NULL, NULL, bOverride);
 #ifdef ANDROID
 	pClass->AddField("GetUsbMode", FieldType_Bool, NULL, (void*)GetUsbMode_s, NULL, NULL, bOverride);
+#endif
+
+#if defined(ANDROID) || defined(IOS)
+    pClass->AddField("SaveImageToGallery", FieldType_String, (void*)SaveImageToGallery_s, NULL, NULL, NULL, bOverride);
 #endif
 
 	return S_OK;

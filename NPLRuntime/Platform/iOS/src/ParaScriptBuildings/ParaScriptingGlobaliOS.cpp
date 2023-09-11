@@ -12,8 +12,31 @@
 #include "ParaScriptingGlobal.h"
 #include "NPL/NPLScriptingState.h"
 #include "ParaScriptingScreenRecorder.h"
+#include "ParaScriptingIDFA.h"
 #include <luabind/object.hpp>
 #include <luabind/luabind.hpp>
+
+#ifdef NPLRUNTIME_OCE
+namespace NplOceScripting
+{
+    int Register(lua_State *L);
+}
+#endif
+
+ static void LuabindRegisterIDFAGlobalFunctions(lua_State *L)
+ {
+     using namespace luabind;
+
+     module(L)
+     [
+         namespace_("IDFA")
+         [
+             class_<ParaScripting::ParaScriptingIDFA>("ParaScriptingIDFA"),
+             def("get", ParaScripting::ParaScriptingIDFA::Get),
+             def("requestTrackingAuthorization", ParaScripting::ParaScriptingIDFA::RequestTrackingAuthorization)
+         ]
+     ];
+ }
 
 static void LuabindRegisterScreenRecorderGlobalFunctions(lua_State *L)
 {
@@ -27,7 +50,8 @@ static void LuabindRegisterScreenRecorderGlobalFunctions(lua_State *L)
             def("start", ParaScripting::ParaScriptingScreenRecorder::Start),
             def("stop", ParaScripting::ParaScriptingScreenRecorder::Stop),
             def("play", ParaScripting::ParaScriptingScreenRecorder::Play),
-            def("save", ParaScripting::ParaScriptingScreenRecorder::Save)
+            def("save", ParaScripting::ParaScriptingScreenRecorder::Save),
+            def("removeVideo", ParaScripting::ParaScriptingScreenRecorder::RemoveVideo)
         ]
     ];
 }
@@ -38,6 +62,10 @@ void ParaScripting::CNPLScriptingState::LoadHAPI_Platform()
     lua_State *L = GetLuaState();
 
     LuabindRegisterScreenRecorderGlobalFunctions(L);
+    LuabindRegisterIDFAGlobalFunctions(L);
+#ifdef NPLRUNTIME_OCE
+    NplOceScripting::Register(L);
+#endif
 }
 
 bool ParaScripting::ParaGlobal::OpenFileDialog(const object& inout)
