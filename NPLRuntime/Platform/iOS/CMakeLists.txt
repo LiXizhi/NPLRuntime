@@ -27,6 +27,8 @@ find_library(Photos Photos)
 find_library(AudioToolbox AudioToolbox)
 find_library(AVFoundation AVFoundation)
 find_library(CoreTelephony CoreTelephony)
+find_library(AdSupport AdSupport)
+find_library(AppTrackingTransparency AppTrackingTransparency)
 
 add_executable(Paracraft
     ${app_src}
@@ -49,6 +51,8 @@ target_link_libraries(Paracraft PUBLIC
     ${AudioToolbox}
     ${AVFoundation}
     ${CoreTelephony}
+    ${AdSupport}
+    ${AppTrackingTransparency}
     RenderSystemOpenGL
     ParaEngine
 )
