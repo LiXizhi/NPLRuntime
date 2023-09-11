@@ -462,6 +462,17 @@ bool WebView::CreateWebView(HWND hWnd)
 			}).Get(), &token);
 			// </NavigationEvents>
 
+            // 默认允许使用相机
+            m_webview->add_PermissionRequested(Callback<ICoreWebView2PermissionRequestedEventHandler>(
+                [](ICoreWebView2* sender, ICoreWebView2PermissionRequestedEventArgs* args) -> HRESULT {
+                    COREWEBVIEW2_PERMISSION_KIND permissionType;
+                    args->get_PermissionKind(&permissionType);
+                    if (permissionType == COREWEBVIEW2_PERMISSION_KIND_CAMERA) {
+                        args->put_State(COREWEBVIEW2_PERMISSION_STATE_ALLOW);                                        
+                    }
+                    return S_OK;
+                }).Get(), &token);
+
 			// <CommunicationHostWeb>
 			// Step 6 - Communication between host and web content
 			// Set an event handler for the host to return received message back to the web content
