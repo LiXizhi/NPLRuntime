@@ -2,6 +2,7 @@
 // Class: ParaScriptingIDFA.mm
 // Authors: big
 // CreateDate: 2023.9.5
+// ModifyDate: 2023.9.11
 //-----------------------------------------------------------------------------
 
 #import <Foundation/Foundation.h>
@@ -53,13 +54,7 @@ namespace ParaScripting
         if (@available(iOS 14, *)) {
             requestTrackingAuthorizationAndFetchIDEA([](std::string result) {
                 IDFAStr = result;
-                std::string code = "System.os.RequestiOSTrackingAuthorization(true)";
-                ParaEngine::LuaObjcBridge::nplActivate(code, "");
             });
-        } else {
-            // Directly call the script callback method.
-            std::string code = "System.os.RequestiOSTrackingAuthorization(true)";
-            ParaEngine::LuaObjcBridge::nplActivate(code, "");
         }
     }
 }
