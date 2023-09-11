@@ -941,6 +941,25 @@ void ParaEngine::CAudioEngine2::SetCaptureAudioQuality(float val)
 	m_fCaptureAudioQuality = val;
 }
 
+int ParaEngine::CAudioEngine2::GetCaptureFrequency()
+{
+	auto pAutoCapture = CreateGetAudioCapture();
+	if (pAutoCapture)
+	{
+		return pAutoCapture->getFrequency();
+	}
+	return 0;
+}
+
+void ParaEngine::CAudioEngine2::SetCaptureFrequency(int nFrequency)
+{
+	auto pAutoCapture = CreateGetAudioCapture();
+	if (pAutoCapture)
+	{
+		pAutoCapture->setFrequency(nFrequency);
+	}
+}
+
 ParaEngine::CAudioEngine2::CAudioPlaybackHistory& ParaEngine::CAudioEngine2::GetPlaybackHistory()
 {
 	return m_PlaybackHistory;
@@ -1153,6 +1172,7 @@ int ParaEngine::CAudioEngine2::InstallFields(CAttributeClass* pClass, bool bOver
 
 	pClass->AddField("DeviceName", FieldType_String, (void*)SetDeviceName_s, (void*)GetDeviceName_s, NULL, NULL, bOverride);
 	pClass->AddField("CaptureAudioQuality", FieldType_Float, (void*)SetCaptureAudioQuality_s, (void*)GetCaptureAudioQuality_s, NULL, "[0.1, 1]", bOverride);
+	pClass->AddField("CaptureFrequency", FieldType_Int, (void*)SetCaptureFrequency_s, (void*)GetCaptureFrequency_s, NULL, "16000", bOverride);
 
 	return S_OK;
 }

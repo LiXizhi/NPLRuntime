@@ -52,6 +52,7 @@ namespace cAudio
 					{
 						//Yes, read it in
 						Stream->read(&tempint32, 4);
+						auto nextChunkPos = Stream->getCurrentPos() + tempint32;
 						if(tempint32 >= 16)
 						{
 							//Check that it is in PCM format, we don't support compressed wavs
@@ -75,8 +76,8 @@ namespace cAudio
 									//We only support 8 bit or 16 bit wavs
 									if(BitsPerSample == 8 || BitsPerSample == 16)
 									{
-										//Reset our pointer to start scanning for the data block
-										Stream->seek(startOffset, false);
+										// LiXizhi: this fixed a bug where fmt chunk is 18 instead of 16 bytes. 
+										Stream->seek(nextChunkPos, false);
 										//Scan for the first data chuck (not necessarily right after)
 										do
 										{

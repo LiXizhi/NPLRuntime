@@ -145,7 +145,7 @@ bool ParaScripting::ParaAudio::SaveRecording(const char* szWavePath)
 	if (pAutoCapture && szWavePath)
 	{
 		auto sFileExtension = CParaFile::GetFileExtension(szWavePath);
-		if (sFileExtension == "ogg")
+		if (sFileExtension == "ogg" || sFileExtension == "wav")
 		{
 			return pAutoCapture->saveToFile(szWavePath, CAudioEngine2::GetInstance()->GetCaptureAudioQuality()) != 0;
 		}

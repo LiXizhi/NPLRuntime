@@ -307,7 +307,7 @@ int ParaEngine::BMaxNode::TessellateBlock(BlockModel* tessellatedModel)
 		QueryNeighborBlockData(neighborBlocks + 1, 1, nNearbyBlockCount - 1);
 
 		//ao
-		uint32 aoFlags = CalculateCubeAO(neighborBlocks);
+		uint32 aoFlags = (block_template && block_template->GetID() != BMaxParser::MetalBlockId) ? CalculateCubeAO(neighborBlocks) : 0;
 
 		// model position offset
 		BlockVertexCompressed* pVertices = tessellatedModel->GetVertices();
@@ -329,19 +329,22 @@ int ParaEngine::BMaxNode::TessellateBlock(BlockModel* tessellatedModel)
 			// we will preserve the face when two bones does not belong to the same bone
 			if (!pCurBlock || (pCurBlock->GetBoneIndex() != bone_index || !pCurBlock->isSolid()))
 			{
-				for (int v = 0; v < 4; ++v)
+				if (aoFlags > 0)
 				{
-					int i = nFirstVertex + v;
-
-					int nShadowLevel = 0;
-					if (aoFlags > 0 && (nShadowLevel = tessellatedModel->CalculateCubeVertexAOShadowLevel(i, aoFlags)) != 0)
+					for (int v = 0; v < 4; ++v)
 					{
-						Color color(dwBlockColor);
-						float fShadow = (255 - nShadowLevel) / 255.f;
-						color.r = (uint8)(color.r * fShadow);
-						color.g = (uint8)(color.g * fShadow);
-						color.b = (uint8)(color.b * fShadow);
-						tessellatedModel->SetVertexColor(i, (DWORD)color);
+						int i = nFirstVertex + v;
+
+						int nShadowLevel = 0;
+						if ((nShadowLevel = tessellatedModel->CalculateCubeVertexAOShadowLevel(i, aoFlags)) != 0)
+						{
+							Color color(dwBlockColor);
+							float fShadow = (255 - nShadowLevel) / 255.f;
+							color.r = (uint8)(color.r * fShadow);
+							color.g = (uint8)(color.g * fShadow);
+							color.b = (uint8)(color.b * fShadow);
+							tessellatedModel->SetVertexColor(i, (DWORD)color);
+						}
 					}
 				}
 				SetFaceVisible(face);
@@ -350,7 +353,8 @@ int ParaEngine::BMaxNode::TessellateBlock(BlockModel* tessellatedModel)
 	}
 	else
 	{
-		// custom models like stairs, slabs, button, torch light, etc. 
+		// metal blocks, and custom models like stairs, slabs, button, torch light, etc. 
+		// they do not have ambient occlusion shadows on them. 
 
 		tessellatedModel->ClearVertices();
 		BlockModel& blockModel = block_template->GetBlockModelByData(this->block_data);

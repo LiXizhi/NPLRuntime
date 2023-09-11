@@ -182,6 +182,9 @@ namespace ParaEngine
 		ATTRIBUTE_METHOD1(CAudioEngine2, GetCaptureAudioQuality_s, float*) { *p1 = cls->GetCaptureAudioQuality(); return S_OK; }
 		ATTRIBUTE_METHOD1(CAudioEngine2, SetCaptureAudioQuality_s, float) { cls->SetCaptureAudioQuality(p1); return S_OK; }
 
+		ATTRIBUTE_METHOD1(CAudioEngine2, GetCaptureFrequency_s, int*) { *p1 = cls->GetCaptureFrequency(); return S_OK; }
+		ATTRIBUTE_METHOD1(CAudioEngine2, SetCaptureFrequency_s, int) { cls->SetCaptureFrequency(p1); return S_OK; }
+
 	public:
 
 		/** check load the plugin dll if any */
@@ -253,6 +256,12 @@ namespace ParaEngine
 		* @param baseQuality: value in range [0.1, 1].   0.1 is lowest quality, 1 is best quality.  0.4 is usual
 		*/
 		void SetCaptureAudioQuality(float val);
+
+		int GetCaptureFrequency();
+		/**
+		* @param nFrequency: value like 16000, 22050, 48000, 44100, 32000, 8000. default to the first available one in above order. 
+		*/
+		void SetCaptureFrequency(int nFrequency);
 	public:
 		//////////////////////////////////////////////////////////////////////////
 		// handy functions for playback

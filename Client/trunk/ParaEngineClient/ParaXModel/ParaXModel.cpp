@@ -2396,6 +2396,20 @@ HRESULT CParaXModel::ClonePhysicsMesh(DWORD* pNumVertices, Vector3 ** ppVerts, D
 	return S_OK;
 }
 
+const char *CParaXModel::GetStrAnimIds()
+{
+    int nAnim = (int)GetObjectNum().nAnimations;
+    thread_local static std::string strAnimIds;
+	strAnimIds.clear();
+    
+    for (int i = 0;i < nAnim; i++) {
+        strAnimIds = strAnimIds + std::to_string(anims[i].animID) + ";";
+    }
+    
+    const char *_strAnimIds = strAnimIds.c_str();
+    return _strAnimIds;
+}
+
 int CParaXModel::InstallFields(CAttributeClass* pClass, bool bOverride)
 {
 	// install parent fields if there are any. Please replace __super with your parent class name.
@@ -2417,6 +2431,7 @@ int CParaXModel::InstallFields(CAttributeClass* pClass, bool bOverride)
 	pClass->AddField("Animations", FieldType_void_pointer, (void*)0, (void*)GetAnimations_s, NULL, NULL, bOverride);
 	pClass->AddField("SaveToDisk", FieldType_String, (void*)SaveToDisk_s, NULL, NULL, NULL, bOverride);
 	pClass->AddField("SaveToGltf", FieldType_String, (void*)SaveToGltf_s, NULL, NULL, NULL, bOverride);
+	pClass->AddField("strAnimIds", FieldType_String, (void*)0, (void*)GetStrAnimIds_s, NULL, NULL, bOverride);
 
 	return S_OK;
 }

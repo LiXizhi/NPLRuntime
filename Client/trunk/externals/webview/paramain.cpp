@@ -200,12 +200,12 @@ public:
 
 	const char* Category()
 	{
-		return "ParaWebView Category";
+		return "ParaWebView";
 	}
 
 	const char* InternalName()
 	{
-		return "ParaWebView InternalName";
+		return "ParaWebView";
 	}
 
 	HINSTANCE HInstance()

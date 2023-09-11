@@ -1017,35 +1017,17 @@ HRESULT CParaEngineApp::FrameMove(double fTime)
 	{
 		bIOExecuted = true;
 
-		//PERF_BEGIN("IC");
-		////call the information center's frame move method
-		//CICRoot *m_icroot=CICRoot::Instance();
-		//m_icroot->FrameMove();
-		//PERF_END("IC");
-
 		if(m_bActive)
 		{
-			/**
-			* process all user key and mouse messages
-			*/
-			HandleUserInput(); // user input.
-
-			// we update the mouse position after dispatch to ensure the correct begin position for next FrameMove;
-			/**
-			* Engine required: Camera control
-			* some object in the scene requires to update its parameters each frame
-			* currently only Camera control responses.
-			*/
-			m_pRootScene->Animate( (float)fElapsedIOTime );
+			HandleUserInput();
 		}
 	}
-	else if(fElapsedGameTime > 0.f)
+	
+	if (fElapsedEnvSimTime > 0 || fElapsedIOTime > 0)
 	{
-		if (m_bActive)
-		{
-			m_pRootScene->Animate(0.f);
-		}
+		m_pRootScene->Animate(fElapsedEnvSimTime > 0 ? (float)fElapsedEnvSimTime : 0.f);
 	}
+
 #ifdef USE_XACT_AUDIO_ENGINE
 	/** for audio engine */
 	if(m_pAudioEngine && m_pAudioEngine->IsAudioEngineEnabled())
@@ -2457,7 +2439,7 @@ LRESULT CParaEngineApp::MsgProcWinThread( HWND hWnd, UINT uMsg, WPARAM wParam, L
 	LRESULT result = 0;
 	bool bContinue = true;
 	// WM_POINTER is only supported in windows 8 or above, so if it is windows 7 touch event, we will disable touch inputting and use mouse event directly. 
-	bool s_bCanHasWM_POINTER = false;
+	static bool s_bCanHasWM_POINTER = false;
 
 	if (uMsg<=WM_MOUSELAST && uMsg>=WM_MOUSEFIRST)
 	{
@@ -2538,9 +2520,11 @@ LRESULT CParaEngineApp::MsgProcWinThread( HWND hWnd, UINT uMsg, WPARAM wParam, L
 		case WM_POINTERLEAVE:
 		{
 			s_bCanHasWM_POINTER = true;
+			SetTouchInputting(true);
 			m_touchPointX = GET_X_LPARAM(lParam);
 			m_touchPointY = GET_Y_LPARAM(lParam);
 			result = 0;
+			bCallDefProcedure = false;
 			SendMessageToApp(hWnd, uMsg, wParam, lParam);
 			break;
 		}
