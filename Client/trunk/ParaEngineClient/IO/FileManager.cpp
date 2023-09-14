@@ -65,7 +65,7 @@ bool CFileManager::OpenArchiveEx(const std::string& path, const std::string& sRo
 	{
 		string sFileExt = sArchiveName.substr(nLen-3,3);
 		CArchive* pArchive = NULL;
-		if(sFileExt == "zip" || sFileExt == "pkg")
+		if(sFileExt == "zip" || sFileExt == "pkg" || sFileExt == "p3d")
 			pArchive = new CZipArchive(); // TODO
 		if(pArchive != NULL)
 		{

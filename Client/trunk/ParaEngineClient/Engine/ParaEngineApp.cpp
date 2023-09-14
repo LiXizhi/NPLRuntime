@@ -2747,11 +2747,12 @@ LRESULT CParaEngineApp::MsgProcWinThread( HWND hWnd, UINT uMsg, WPARAM wParam, L
 				int n = 0, count = DragQueryFile( query, 0xFFFFFFFF, 0, 0 );
 				std::string cmds = "";
 				while ( n < count ) {
-					char filename[MAX_FILENAME_LENGTH];
-					if(DragQueryFile( query, n, filename, MAX_FILENAME_LENGTH ) != 0)
+					WCHAR filename[MAX_FILENAME_LENGTH];
+					if(DragQueryFileW( query, n, filename, MAX_FILENAME_LENGTH ) != 0)
 					{
 						OUTPUT_LOG("drop files: %s\n", filename);
-						cmds += filename;
+						std::string sFilename = StringHelper::WideCharToMultiByte(filename, DEFAULT_FILE_ENCODING);
+						cmds += sFilename;
 						cmds += ";";
 					}
 					n++;
