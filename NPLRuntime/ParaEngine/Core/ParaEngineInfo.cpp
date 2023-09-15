@@ -12,8 +12,8 @@
 using namespace std;
 
 #define PARAENGINE_MAJOR_VERSION	1
-// 升级版本号 2023/9/11 minor ver -> 6
-#define PARAENGINE_MINOR_VERSION	6
+// 升级版本号 2023/9/15 minor ver -> 7
+#define PARAENGINE_MINOR_VERSION	7
 
 #define PRODUCT_VERSION_MAJOR	1
 #define PRODUCT_VERSION_MINOR	0
