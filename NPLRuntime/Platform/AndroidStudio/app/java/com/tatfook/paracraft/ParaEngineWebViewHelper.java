@@ -28,6 +28,8 @@ import android.widget.RelativeLayout;
 import android.widget.Toast;
 import androidx.annotation.Keep;
 
+import com.tatfook.paracraft.luabridge.PlatformBridge;
+
 class JsToAndroid extends Object {
     private native void receive(String filename, String msg);
 
@@ -214,6 +216,11 @@ public class ParaEngineWebViewHelper {
                 webView.setLayoutParams(layoutParams);
                 webView.setScrollBarStyle(WebView.SCROLLBARS_OUTSIDE_OVERLAY);
                 webView.addJavascriptInterface(new JsToAndroid(), "android");
+
+                String channelId = PlatformBridge.getChannelId(sActivity);
+                if (channelId.equals("vivo")) {
+                    webView.setLayerType(View.LAYER_TYPE_SOFTWARE, null);
+                }
 
                 webViewWrapper.addView(webView);
 
