@@ -103,14 +103,14 @@ android {
         tatfook {
             applicationId "com.tatfook.paracraft"
             manifestPlaceholders = [CHANNEL_VALUE: "tatfook"]
-            resValue "string", "app_name", "帕拉卡"
+            resValue "string", "app_name", "帕拉卡3D虚拟社区学习软件"
             resValue "drawable", "app_icon", "@drawable/ic_launcher"
             dimension "company"
         }
 
         palaka {
             manifestPlaceholders = [CHANNEL_VALUE: "palaka"]
-            resValue "string", "app_name", "帕拉卡"
+            resValue "string", "app_name", "帕拉卡3D虚拟社区学习软件"
             resValue "drawable", "app_icon", "@drawable/ic_launcher"
             dimension "company"
         }
