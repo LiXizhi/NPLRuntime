@@ -221,7 +221,7 @@ public class ParaEngineWebViewHelper {
                 if (channelId.equals("vivo")) {
                     webView.setLayerType(View.LAYER_TYPE_SOFTWARE, null);
                 }
-
+                webView.getSettings().setTextZoom(100); //设置webview字体大小不随系统改变
                 webViewWrapper.addView(webView);
 
                 webView.requestFocus();
