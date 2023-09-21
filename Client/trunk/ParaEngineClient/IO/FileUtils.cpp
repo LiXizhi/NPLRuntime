@@ -306,12 +306,19 @@ bool ParaEngine::CFileUtils::CopyFile(const char* src, const char* dest, bool bO
 		return true;
 #else
 		// try the system version, in case the src file is currently in use, such as the database. 
+
+		std::string src_ = std::string("\\\\?\\") + GetWritableFullPathForFilename(src);
+		std::replace(src_.begin(), src_.end(), '/', '\\');
+
+		std::string dest_ = std::string("\\\\?\\") + GetWritableFullPathForFilename(dest);
+		std::replace(dest_.begin(), dest_.end(), '/', '\\');
+
 #ifdef DEFAULT_FILE_ENCODING
-		std::wstring src16 = StringHelper::MultiByteToWideChar(src, DEFAULT_FILE_ENCODING);
-		std::wstring dest16 = StringHelper::MultiByteToWideChar(dest, DEFAULT_FILE_ENCODING);
+		std::wstring src16 = StringHelper::MultiByteToWideChar(src_.c_str(), DEFAULT_FILE_ENCODING);
+		std::wstring dest16 = StringHelper::MultiByteToWideChar(dest_.c_str(), DEFAULT_FILE_ENCODING);
 		return ::CopyFileW(src16.c_str(), dest16.c_str(), !bOverride) == TRUE;
 #else
-		return ::CopyFile(src, dest, !bOverride) == TRUE;
+		return ::CopyFile(src_.c_str(), dest_.c_str(), !bOverride) == TRUE;
 #endif
 		
 #endif
@@ -359,13 +366,18 @@ bool ParaEngine::CFileUtils::MoveFile(const char* src, const char* dest)
 #else
 	if (dest != NULL && src != NULL)
 	{
-		
+		std::string src_ = std::string("\\\\?\\") + GetWritableFullPathForFilename(src);
+		std::replace(src_.begin(), src_.end(), '/', '\\');
+
+		std::string dest_ = std::string("\\\\?\\") + GetWritableFullPathForFilename(dest);
+		std::replace(dest_.begin(), dest_.end(), '/', '\\');
+
 #ifdef DEFAULT_FILE_ENCODING
-		std::wstring src16 = StringHelper::MultiByteToWideChar(src, DEFAULT_FILE_ENCODING);
-		std::wstring dest16 = StringHelper::MultiByteToWideChar(dest, DEFAULT_FILE_ENCODING);
+		std::wstring src16 = StringHelper::MultiByteToWideChar(src_.c_str(), DEFAULT_FILE_ENCODING);
+		std::wstring dest16 = StringHelper::MultiByteToWideChar(dest_.c_str(), DEFAULT_FILE_ENCODING);
 		return ::MoveFileExW(src16.c_str(), dest16.c_str(), MOVEFILE_REPLACE_EXISTING | MOVEFILE_WRITE_THROUGH) == TRUE;
 #else
-		return ::MoveFileEx(src, dest, MOVEFILE_REPLACE_EXISTING | MOVEFILE_WRITE_THROUGH) == TRUE;
+		return ::MoveFileEx(src_.c_str(), dest_.c_str(), MOVEFILE_REPLACE_EXISTING | MOVEFILE_WRITE_THROUGH) == TRUE;
 #endif
 	}
 #endif
@@ -429,8 +441,11 @@ bool ParaEngine::CFileUtils::MakeDirectoryFromFilePath(const char * filename)
 				buf[i] = '\0';
 #ifdef DEFAULT_FILE_ENCODING
 #ifdef WIN32
-				LPCWSTR buf16 = StringHelper::MultiByteToWideChar(buf, DEFAULT_FILE_ENCODING);
-				if (!fs::exists(buf16)) {
+				std::string dirpath = std::string("\\\\?\\") + GetWritableFullPathForFilename(buf);
+				std::replace(dirpath.begin(), dirpath.end(), '/', '\\');
+
+				LPCWSTR buf16 = StringHelper::MultiByteToWideChar(dirpath.c_str(), DEFAULT_FILE_ENCODING);
+				if (dirpath[dirpath.size() - 1] != ':' && !fs::exists(buf16)) {
 #else
 				if (!fs::exists(buf)) {
 #endif
@@ -528,11 +543,14 @@ bool ParaEngine::CFileUtils::SaveBufferToFile(const string& filename, bool bRepl
 	if (FileExist(filename.c_str()) && (bReplace == false))
 		return false;
 	HANDLE hFile;
+	// proccess long file name to append "\\?\"
+	std::string filename_ = std::string("\\\\?\\") + GetWritableFullPathForFilename(filename);
+	std::replace(filename_.begin(), filename_.end(), '/', '\\');
 #ifdef DEFAULT_FILE_ENCODING
-	LPCWSTR filename16 = StringHelper::MultiByteToWideChar(filename.c_str(), DEFAULT_FILE_ENCODING);
+	LPCWSTR filename16 = StringHelper::MultiByteToWideChar(filename_.c_str(), DEFAULT_FILE_ENCODING);
 	hFile = ::CreateFileW(filename16, GENERIC_WRITE, 0, NULL, CREATE_ALWAYS, 0, NULL);
 #else
-	hFile = ::CreateFile(filename.c_str(), GENERIC_WRITE, 0, NULL, CREATE_ALWAYS, 0, NULL);
+	hFile = ::CreateFile(filename_.c_str(), GENERIC_WRITE, 0, NULL, CREATE_ALWAYS, 0, NULL);
 #endif
  
 	if (hFile != INVALID_HANDLE_VALUE)
@@ -574,11 +592,14 @@ bool ParaEngine::CFileUtils::DeleteFile(const char* filename)
 		return false;
 	}
 #else
+	std::string filename_ = std::string("\\\\?\\") + GetWritableFullPathForFilename(filename);
+	std::replace(filename_.begin(), filename_.end(), '/', '\\');
+
 #ifdef DEFAULT_FILE_ENCODING
-	LPCWSTR filename16 = StringHelper::MultiByteToWideChar(filename, DEFAULT_FILE_ENCODING);
+	LPCWSTR filename16 = StringHelper::MultiByteToWideChar(filename_.c_str(), DEFAULT_FILE_ENCODING);
 	return (::DeleteFileW(filename16) != 0);
 #else
-	return (::DeleteFile(filename) != 0);
+	return (::DeleteFile(filename_.c_str()) != 0);
 #endif
 #endif
 }
@@ -611,11 +632,14 @@ int ParaEngine::CFileUtils::DeleteDirectory(const char* filename)
 	}
 #else
 	
+	std::string filename_ = std::string("\\\\?\\") + GetWritableFullPathForFilename(filename);
+	std::replace(filename_.begin(), filename_.end(), '/', '\\');
+
 #ifdef DEFAULT_FILE_ENCODING
-	LPCWSTR filename16 = StringHelper::MultiByteToWideChar(filename, DEFAULT_FILE_ENCODING);
+	LPCWSTR filename16 = StringHelper::MultiByteToWideChar(filename_.c_str(), DEFAULT_FILE_ENCODING);
 	return ::DeleteFileW(filename16);
 #else
-	return ::DeleteFile(filename);
+	return ::DeleteFile(filename_.c_str());
 #endif
 #endif
 }
@@ -962,7 +986,8 @@ ParaEngine::FileData ParaEngine::CFileUtils::GetDataFromFile(const char* filenam
 
 	if (!CParaFile::GetDevDirectory().empty())
 	{
-		std::string sAbsFilePath = CParaFile::GetDevDirectory() + filename;
+		std::string sAbsFilePath = std::string("\\\\?\\") + GetWritableFullPathForFilename(CParaFile::GetDevDirectory() + filename);
+		std::replace(sAbsFilePath.begin(), sAbsFilePath.end(), '/', '\\');
 #ifdef DEFAULT_FILE_ENCODING
 		LPCWSTR sAbsFilePath16 = StringHelper::MultiByteToWideChar(sAbsFilePath.c_str(), DEFAULT_FILE_ENCODING);
 		hFile = ::CreateFileW(sAbsFilePath16, GENERIC_READ, FILE_SHARE_DELETE | FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
@@ -972,11 +997,14 @@ ParaEngine::FileData ParaEngine::CFileUtils::GetDataFromFile(const char* filenam
 	}
 	if (hFile == INVALID_HANDLE_VALUE)
 	{
+		// proccess long file name to append "\\?\"
+		std::string filename_ = std::string("\\\\?\\") + GetWritableFullPathForFilename(filename);
+		std::replace(filename_.begin(), filename_.end(), '/', '\\');
 #ifdef DEFAULT_FILE_ENCODING
-		LPCWSTR filename16 = StringHelper::MultiByteToWideChar(filename, DEFAULT_FILE_ENCODING);
+		LPCWSTR filename16 = StringHelper::MultiByteToWideChar(filename_.c_str(), DEFAULT_FILE_ENCODING);
 		hFile = ::CreateFileW(filename16, GENERIC_READ, FILE_SHARE_DELETE | FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
 #else
-		hFile = ::CreateFile(filename, GENERIC_READ, FILE_SHARE_DELETE | FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+		hFile = ::CreateFile(filename_.c_str(), GENERIC_READ, FILE_SHARE_DELETE | FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
 #endif
 	}
 
@@ -1168,11 +1196,13 @@ int ParaEngine::CFileUtils::GetFileSize(const char* sFilePath)
 #else
 	DWORD dwFileSize = 0;
 	HANDLE hFile;
+	std::string filename_ = std::string("\\\\?\\") + GetWritableFullPathForFilename(sFilePath);
+	std::replace(filename_.begin(), filename_.end(), '/', '\\');
 #ifdef DEFAULT_FILE_ENCODING
-	LPCWSTR sFilePath16 = StringHelper::MultiByteToWideChar(sFilePath, DEFAULT_FILE_ENCODING);
+	LPCWSTR sFilePath16 = StringHelper::MultiByteToWideChar(filename_.c_str(), DEFAULT_FILE_ENCODING);
 	hFile = ::CreateFileW(sFilePath16, FILE_READ_DATA/*GENERIC_READ*/, FILE_SHARE_DELETE | FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING, 0, NULL);
 #else
-	hFile = ::CreateFile(sFilePath, FILE_READ_DATA/*GENERIC_READ*/, FILE_SHARE_DELETE | FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING, 0, NULL);
+	hFile = ::CreateFile(filename_.c_str(), FILE_READ_DATA/*GENERIC_READ*/, FILE_SHARE_DELETE | FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING, 0, NULL);
 #endif
 	
 	if (hFile != INVALID_HANDLE_VALUE)
@@ -1210,12 +1240,15 @@ ParaEngine::FileHandle ParaEngine::CFileUtils::OpenFile(const char* filename, bo
 	return fileHandle;
 #else
 	HANDLE hFile;
+
+	std::string filename_ = std::string("\\\\?\\") + GetWritableFullPathForFilename(filename);
+	std::replace(filename_.begin(), filename_.end(), '/', '\\');
 #ifdef DEFAULT_FILE_ENCODING
-	LPCWSTR filename16 = StringHelper::MultiByteToWideChar(filename, DEFAULT_FILE_ENCODING);
+	LPCWSTR filename16 = StringHelper::MultiByteToWideChar(filename_.c_str(), DEFAULT_FILE_ENCODING);
 	hFile = ::CreateFileW(filename16, (bRead ? GENERIC_READ : 0) | (bWrite ? GENERIC_WRITE : 0), (bRead ? FILE_SHARE_READ : 0) | (bWrite ? FILE_SHARE_WRITE : 0),
 		NULL, bWrite ? OPEN_ALWAYS : 0, NULL, NULL);
 #else
-	hFile = ::CreateFile(filename, (bRead ? GENERIC_READ : 0) | (bWrite ? GENERIC_WRITE : 0), (bRead ? FILE_SHARE_READ : 0) | (bWrite ? FILE_SHARE_WRITE : 0),
+	hFile = ::CreateFile(filename_.c_str(), (bRead ? GENERIC_READ : 0) | (bWrite ? GENERIC_WRITE : 0), (bRead ? FILE_SHARE_READ : 0) | (bWrite ? FILE_SHARE_WRITE : 0),
 		NULL, bWrite ? OPEN_ALWAYS : 0, NULL, NULL);
 #endif
 	
