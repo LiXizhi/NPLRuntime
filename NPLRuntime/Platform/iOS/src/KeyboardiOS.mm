@@ -295,6 +295,7 @@ static int selEnd;
         if (isGuiEdit) {
             const char *curTextUTF8 = [mTextField.text UTF8String];
             pGUI->SetTextA(curTextUTF8);
+            pGUI->SetModified();
 
             NSInteger setCaretPosition = [mTextField offsetFromPosition:mTextField.beginningOfDocument toPosition:[mTextField.selectedTextRange start]];
 

@@ -5,6 +5,7 @@
 //-----------------------------------------------------------------------------
 
 #import "ScreenRecorder/ScreenRecorder.h"
+#import <AVFoundation/AVFoundation.h>
 
 #include "ParaScriptingScreenRecorder.h"
 
@@ -12,6 +13,14 @@ namespace ParaScripting
 {
 	void ParaScriptingScreenRecorder::Start()
 	{
+        [[AVAudioSession sharedInstance] setCategory: AVAudioSessionCategoryPlayAndRecord error: nil];
+        UInt32 doChangeDefault = 1;
+        AudioSessionSetProperty(kAudioSessionProperty_OverrideCategoryDefaultToSpeaker, sizeof(doChangeDefault), &doChangeDefault);
+
+//        [[AVAudioSession sharedInstance] setCategory: AVAudioSessionCategoryPlayAndRecord error: nil];
+//        UInt32 audioRouteOverride = kAudioSessionOverrideAudioRoute_Speaker;
+//        AudioSessionSetProperty(kAudioSessionProperty_OverrideAudioRoute, sizeof(audioRouteOverride), &audioRouteOverride);
+        
         if (![ScreenRecorder getInstance]) {
             ScreenRecorder *instance = [[ScreenRecorder alloc] init];
             [ScreenRecorder setInstance:instance];
