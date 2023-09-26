@@ -157,7 +157,7 @@ std::shared_ptr<CPhysicsBlockShape> CPhysicsBlock::GetShape(BlockModel& model, I
 
 	// hash 是否已被缓存
 	pShape->m_hash = isStdCubeShape ? CPhysicsBlockShape::GetStdCubeHash() : StringHelper::md5(source);
-	for (int i = 0; i < shapeList->size(); i++)
+	for (int i = 0; i < (int)shapeList->size(); i++)
 	{
 		if ((*shapeList)[i]->m_hash == pShape->m_hash) 
 		{
@@ -189,7 +189,7 @@ std::shared_ptr<CPhysicsBlockShape> CPhysicsBlock::GetShape(BlockModel& model, I
 		trimeshDesc.m_flags				= 0;
 		pShape->m_shape = world->CreateTriangleMeshShape(trimeshDesc);
 	}
-	shapeIndexMap->insert(std::make_pair(key, shapeList->size()));
+	shapeIndexMap->insert(std::make_pair(key, (uint16_t)shapeList->size()));
 	shapeList->push_back(pShape);
 	delete [] pIndices;
 	delete [] pVertices;
