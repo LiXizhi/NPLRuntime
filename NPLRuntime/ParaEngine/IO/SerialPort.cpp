@@ -34,6 +34,10 @@
 #include <boost/filesystem/fstream.hpp>
 #include <iostream>
 
+#ifdef PLATFORM_MAC
+#import "IOMac/SerialPortMac.h"
+#endif
+
 using namespace std;
 using namespace boost;
 
@@ -333,8 +337,11 @@ namespace ParaEngine
             {
             }
         }
+#elif defined(PLATFORM_MAC)
+        static SerialPortMac *serialPortMac;
+        ports = serialPortMac->GetPortNames();
 #else
-        // for linux / MAC, we need to use `ls /dev/tty*` to get all serial ports
+        // for linux , we need to use `ls /dev/tty*` to get all serial ports
         boost::filesystem::path kdr_path{"/proc/tty/drivers"};
         if (boost::filesystem::exists(kdr_path))
         {

@@ -60,7 +60,7 @@ find_library(OPENGL_LIBRARY OpenGL)
 find_library(WebView WebKit)
 # find_library(AUTHENTICATION_SERVICES AuthenticationServices)
 find_library(AVFAudio AVFAudio)
-
+find_library(IOKit IOKit)
 
 target_link_libraries(Paracraft PUBLIC
     RenderSystemOpenGL
@@ -70,6 +70,7 @@ target_link_libraries(Paracraft PUBLIC
     ${WebView}
     ${AVFAudio}
     # ${AUTHENTICATION_SERVICES}
+    ${IOKit}
 )
 
 # no longer needed for luajit2.1, only needed or luajit 2.0

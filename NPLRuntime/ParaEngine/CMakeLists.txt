@@ -1,7 +1,7 @@
 # Title: ParaEngine Cmake Lists
 # Author(s): kkvskkkk, big
 # CreateDate: 2018.11.02
-# ModifyDate: 2021.10.28
+# ModifyDate: 2023.09.26
 
 include(${PROJECT_SOURCE_DIR}/cmake/ucm.cmake)
 if (NOT EMSCRIPTEN)
@@ -151,7 +151,7 @@ endif()
 
 add_library(ParaEngine ${sources_commmon} ${sources_rendersystem})
 
-target_include_directories(ParaEngine PUBLIC
+set(include_dirs
     ${CMAKE_CURRENT_SOURCE_DIR}
     ${CMAKE_CURRENT_SOURCE_DIR}/Core
     ${CMAKE_CURRENT_SOURCE_DIR}/renderer
@@ -164,10 +164,16 @@ target_include_directories(ParaEngine PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/ParaScriptBindings
     ${CMAKE_CURRENT_SOURCE_DIR}/NPL
     ${CMAKE_CURRENT_SOURCE_DIR}/Framework/Interface
-	${CMAKE_CURRENT_SOURCE_DIR}/AutoRigger
+    ${CMAKE_CURRENT_SOURCE_DIR}/AutoRigger
     ${Boost_INCLUDE_DIRS}
     ${NPLRUNTIME_INCLUDES}
 )
+
+if (APPLE AND NOT IOS)
+    list(APPEND include_dirs ${CMAKE_CURRENT_SOURCE_DIR}/../Platform/OSX/src)
+endif()
+
+target_include_directories(ParaEngine PUBLIC ${include_dirs})
 
 if (ANDROID)
     set(PLATROM_SPEC_DEFINITIONS PARAENGINE_MOBILE ANDROID PLATFORM_ANDROID AUTOUPDATE_PARAENGINE)
