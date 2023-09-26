@@ -203,7 +203,7 @@ std::shared_ptr<CPhysicsBlockShape> CPhysicsBlock::GetShape(BlockModel& model, I
 		trimeshDesc.m_flags = 0;
 		pShape->m_shape = world->CreateTriangleMeshShape(trimeshDesc);
 	}
-	shapeIndexMap->insert(std::make_pair(key, shapeList->size()));
+	shapeIndexMap->insert(std::make_pair(key, (uint16_t)shapeList->size()));
 	shapeList->push_back(pShape);
 	delete[] pIndices;
 	delete[] pVertices;
@@ -547,6 +547,8 @@ void ParaEngine::CPhysicsWorld::LoadPhysicsBlock(CShapeAABB* aabb, int16_t frame
 	int16_t max_x = (int16_t)std::floor(max.x / BlockConfig::g_dBlockSize);
 	int16_t max_y = (int16_t)std::floor((max.y - offset_y) / BlockConfig::g_dBlockSize);
 	int16_t max_z = (int16_t)std::floor(max.z / BlockConfig::g_dBlockSize);
+	if (min_x < 0 || min_y < 0 || min_z < 0) return;
+
 	for (int16_t bx = min_x; bx <= max_x; bx++)
 	{
 		for (int16_t by = min_y; by <= max_y; by++)

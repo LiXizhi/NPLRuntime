@@ -355,6 +355,10 @@ bool CZipArchive::Open(const string& sArchiveName, int nPriority)
 	{
 		return OpenPkgFile(tempStr);
 	}
+	else if (sFileExt == "p3d")
+	{
+		return OpenZipFile(tempStr) || OpenPkgFile(tempStr);
+	}
 
 	DWORD dwFound = CParaFile::DoesFileExist2(tempStr.c_str(), FILE_ON_DISK | FILE_ON_SEARCH_PATH | FILE_ON_EXECUTABLE);
 	if (dwFound)
@@ -448,6 +452,7 @@ void CZipArchive::ReBuild()
 
 bool CZipArchive::OpenZipFile(const string& filename)
 {
+	SAFE_DELETE(m_pFile);
 	m_pFile = CParaFileUtils::GetInstance()->OpenFileForRead(filename);
 	m_bOpened = m_pFile->isOpen();
 	if (!m_bOpened)
@@ -487,6 +492,7 @@ bool CZipArchive::OpenPkgFile(const string& filename)
 {
 	ParaEngine::Lock lock_(m_mutex);
 
+	SAFE_DELETE(m_pFile);
 	m_pFile = CParaFileUtils::GetInstance()->OpenFileForRead(filename);
 	m_bOpened = m_pFile->isOpen();
 	if (!m_bOpened)
@@ -514,6 +520,7 @@ bool CZipArchive::OpenPkgFile(const string& filename)
 
 bool CZipArchive::OpenMemFile(const char* buffer, DWORD nSize, bool bDeleteBuffer)
 {
+	SAFE_DELETE(m_pFile);
 	m_pFile = new CMemReadFile((byte*)buffer, nSize, bDeleteBuffer);
 	m_bOpened = m_pFile->isOpen();
 	if (m_bOpened)
