@@ -217,10 +217,6 @@ public class ParaEngineWebViewHelper {
                 webView.setScrollBarStyle(WebView.SCROLLBARS_OUTSIDE_OVERLAY);
                 webView.addJavascriptInterface(new JsToAndroid(), "android");
 
-                String channelId = PlatformBridge.getChannelId(sActivity);
-                if (channelId.equals("vivo")) {
-                    webView.setLayerType(View.LAYER_TYPE_SOFTWARE, null);
-                }
                 webView.getSettings().setTextZoom(100); //设置webview字体大小不随系统改变
                 webViewWrapper.addView(webView);
 
