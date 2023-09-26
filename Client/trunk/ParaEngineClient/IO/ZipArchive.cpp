@@ -52,7 +52,7 @@ bool ParaEngine::IsZipData(const char* src, size_t size)
 {
 	if (size < sizeof(ZIP_EndOfCentralDirectoryBlock))
 		return false;
-	
+
 	if (IsPkgData(src))
 		return true;
 
@@ -98,7 +98,7 @@ bool ParaEngine::GetFirstFileData(const char* src, size_t size, std::string& out
 		// Ignore Case
 		uint8 ignoreCase;
 		file.read(&ignoreCase, sizeof(uint8));
-		
+
 		// number of files
 		DWORD nEntryNum = 0;
 		file.read(&nEntryNum, sizeof(DWORD));
@@ -126,7 +126,7 @@ bool ParaEngine::GetFirstFileData(const char* src, size_t size, std::string& out
 				return false;
 			}
 		}
-		
+
 		if (nEntryNum > 0)
 		{
 			SZipFileEntry entry;
@@ -151,7 +151,7 @@ bool ParaEngine::GetFirstFileData(const char* src, size_t size, std::string& out
 				nDataPos -= entry.zipFileName[0] * PKG_KEY1 + entry.zipFileName[1] * PKG_KEY2 + entry.zipFileName[2] * PKG_KEY3 + entry.zipFileName[3] * PKG_KEY4;
 			}
 			entry.fileDataPosition = nDataPos;
-			
+
 			DWORD nBytesRead = 0;
 			int index = 0;
 			switch (entry.CompressionMethod)
@@ -170,7 +170,7 @@ bool ParaEngine::GetFirstFileData(const char* src, size_t size, std::string& out
 				DWORD uncompressedSize = entry.UncompressedSize;
 				DWORD compressedSize = entry.CompressedSize;
 
-				byte *pcData = new byte[compressedSize];
+				byte* pcData = new byte[compressedSize];
 				if (pcData == 0)
 				{
 					OUTPUT_LOG("Not enough memory for decompressing %s\n", entry.zipFileName);
@@ -354,6 +354,10 @@ bool CZipArchive::Open(const string& sArchiveName, int nPriority)
 	{
 		return OpenPkgFile(tempStr);
 	}
+	else if (sFileExt == "p3d")
+	{
+		return OpenZipFile(tempStr) || OpenPkgFile(tempStr);
+	}
 
 	DWORD dwFound = CParaFile::DoesFileExist2(tempStr.c_str(), FILE_ON_DISK | FILE_ON_SEARCH_PATH | FILE_ON_EXECUTABLE);
 	if (dwFound)
@@ -445,6 +449,7 @@ void CZipArchive::ReBuild()
 
 bool CZipArchive::OpenZipFile(const string& filename)
 {
+	SAFE_DELETE(m_pFile);
 	m_pFile = new CReadFile(filename);
 	m_bOpened = m_pFile->isOpen();
 	if (!m_bOpened)
@@ -484,6 +489,7 @@ bool CZipArchive::OpenPkgFile(const string& filename)
 {
 	ParaEngine::Lock lock_(m_mutex);
 
+	SAFE_DELETE(m_pFile);
 	m_pFile = new CReadFile(filename);
 	m_bOpened = m_pFile->isOpen();
 	if (!m_bOpened)
@@ -511,6 +517,7 @@ bool CZipArchive::OpenPkgFile(const string& filename)
 
 bool CZipArchive::OpenMemFile(const char* buffer, DWORD nSize, bool bDeleteBuffer)
 {
+	SAFE_DELETE(m_pFile);
 	m_pFile = new CMemReadFile((byte*)buffer, nSize, bDeleteBuffer);
 	m_bOpened = m_pFile->isOpen();
 	if (m_bOpened)
@@ -1035,8 +1042,8 @@ int CZipArchive::findFile(const ArchiveFileFindItem* item)
 	int nIndex = findFileImp(item, filename, bRefreshHash);
 	if (nIndex < 0 && !m_fileAliasMap.empty())
 	{
-		const std::string *aliasFilename = GetAlias(filename);
-		if (aliasFilename!=nullptr)
+		const std::string* aliasFilename = GetAlias(filename);
+		if (aliasFilename != nullptr)
 		{
 			nIndex = findFileImp(item, aliasFilename->c_str(), true);
 		}
@@ -1281,7 +1288,7 @@ bool CZipArchive::ReadFile(FileHandle& handle, LPVOID lpBuffer, DWORD nNumberOfB
 			bCopyBuffer = true;
 		}
 
-		byte *pcData = new byte[compressedSize];
+		byte* pcData = new byte[compressedSize];
 		if (pcData == 0)
 		{
 			OUTPUT_LOG("Not enough memory for decompressing %s\n", m_FileList[index].m_pEntry->zipFileName);
@@ -1421,7 +1428,7 @@ int CZipArchive::LocateBlockWithSignature(DWORD signature, long endLocation, int
 	if (nTempBufSize < 4)
 		return -1;
 	pos = -1;
-	byte * pBuf = new byte[nTempBufSize];
+	byte* pBuf = new byte[nTempBufSize];
 	if (m_pFile->read(pBuf, nTempBufSize) == nTempBufSize)
 	{
 		for (int i = nTempBufSize - 4; i >= 0; --i)
@@ -1594,7 +1601,7 @@ void CZipArchive::FindFiles(CSearchResult& result, const string& sRootPath, cons
 		if (sRootPath.size() > 0)
 		{
 			char lastChar = sRootPath[sRootPath.size() - 1];
-			if (lastChar != '\\' &&  lastChar != '/')
+			if (lastChar != '\\' && lastChar != '/')
 			{
 				sFilePattern += "/";
 			}
@@ -1624,7 +1631,7 @@ void CZipArchive::FindFiles(CSearchResult& result, const string& sRootPath, cons
 		if (sRootPath.size() > 0)
 		{
 			char lastChar = sRootPath[sRootPath.size() - 1];
-			if (lastChar != '\\' &&  lastChar != '/')
+			if (lastChar != '\\' && lastChar != '/')
 			{
 				sFilePattern += "/";
 			}
@@ -1766,7 +1773,7 @@ const std::string& ParaEngine::CZipArchive::GetRootDirectory()
 	return m_sRootPath;
 }
 
-void ParaEngine::CZipArchive::SetBaseDirectory(const char * sBaseDir_)
+void ParaEngine::CZipArchive::SetBaseDirectory(const char* sBaseDir_)
 {
 	std::string sBaseDir = sBaseDir_;
 	if (!sBaseDir.empty())
@@ -1827,7 +1834,7 @@ void ParaEngine::CZipArchive::AddAlias(const std::string& from, const std::strin
 	m_fileAliasMap[from] = to;
 }
 
-const std::string *  ParaEngine::CZipArchive::GetAlias(const std::string& from)
+const std::string* ParaEngine::CZipArchive::GetAlias(const std::string& from)
 {
 	if (!m_fileAliasMap.empty()) {
 		auto it = m_fileAliasMap.find(from);
