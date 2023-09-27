@@ -13,7 +13,6 @@
 
 namespace ParaEngine {
     std::vector<std::string> SerialPortMac::GetPortNames() {
-        NSLog(@"from ParaEngine::SerialPortMac::GetPortNames!!!!!");
         std::vector<std::string> ports;
         CFMutableDictionaryRef matchingDict = IOServiceMatching(kIOSerialBSDServiceValue);
         CFDictionarySetValue(matchingDict, CFSTR(kIOSerialBSDTypeKey), CFSTR(kIOSerialBSDAllTypes));
