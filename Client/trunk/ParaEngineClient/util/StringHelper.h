@@ -243,7 +243,14 @@ namespace ParaEngine
 		static bool StrEndsWithWord(const string& str, const string& sequence);
 
 		static std::string GetDefaultCPName() { return defaultCPName.get(); }
-		private:
+
+		// replace " with \" in text
+		std::string EncodeStringInQuotation(const std::string& text);
+
+		/** // and \\ are replaced with / and \ */
+		void RemoveDoubleSlashesInString(std::string& sFilePath);
+
+	private:
 			class _CodePageName
 			{
 			public:

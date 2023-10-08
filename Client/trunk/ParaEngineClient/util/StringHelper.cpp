@@ -1640,3 +1640,33 @@ std::string ParaEngine::StringHelper::unbase64(const std::string& source)
 		return "";
 	}
 }
+
+std::string ParaEngine::StringHelper::EncodeStringInQuotation(const std::string& text)
+{
+	std::string sRet;
+	sRet.reserve(text.size() + 10);
+	for (int i = 0; i < (int)text.size(); ++i)
+	{
+		if (text[i] == '\"')
+			sRet += "\\\"";
+		else
+			sRet += text[i];
+	}
+	return sRet;
+}
+
+void ParaEngine::StringHelper::RemoveDoubleSlashesInString(std::string& sFilePath)
+{
+	const char* path = sFilePath.c_str();
+	char lastChar = *path;
+	for (path++; (*path) != '\0'; ++path) {
+		// path points to next char to read
+		if (lastChar == *path && (lastChar == '\\' || lastChar == '/')) {
+			// duplicate slash
+			int nIndex = path - sFilePath.c_str();
+			sFilePath.erase(nIndex, 1);
+			path = sFilePath.c_str() + nIndex - 1;
+		}
+		lastChar = *path;
+	}
+}
