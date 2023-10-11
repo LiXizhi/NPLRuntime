@@ -357,6 +357,14 @@ HRESULT CParaEngineApp::StartApp(const char* sCommandLine)
 {
 	SetCurrentInstance(this);
 	std::string strCmd;
+	
+#ifdef WIN32
+	// for drag and drop and double click to open, always use utf8 for commandline parameters
+	// auto sCmdLineW = GetCommandLineW();
+	// auto cmdLineW = StringHelper::WideCharToMultiByte(sCmdLineW, DEFAULT_FILE_ENCODING);
+	sCommandLine = StringHelper::WideCharToMultiByte(StringHelper::AnsiToWideChar(sCommandLine), DEFAULT_FILE_ENCODING);
+#endif
+
 	VerifyCommandLine(sCommandLine, strCmd);
 	InitApp(strCmd.c_str());
 	// loading packages
