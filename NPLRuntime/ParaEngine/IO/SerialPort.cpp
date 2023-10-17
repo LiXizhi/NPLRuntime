@@ -473,14 +473,13 @@ extern "C"
             {
 #ifdef ANDROID
                 std::string filename = msg["filename"];
-                ParaEngine::SerialPortAndroid serialPortAndroid;
 
                 if (!filename.empty())
                 {
                     std::string data = msg["data"];
                     if (!data.empty())
                     {
-                        serialPortAndroid.send(data);
+                        ParaEngine::SerialPortAndroid::GetInstance().send(data);
                     }
                 }
 #else
@@ -502,8 +501,7 @@ extern "C"
             else if (cmd == "close")
             {
 #ifdef ANDROID
-                ParaEngine::SerialPortAndroid serialPortAndroid;
-                serialPortAndroid.close();
+                ParaEngine::SerialPortAndroid::GetInstance().close();
 #else
                 std::string filename = msg["filename"];
                 if (!filename.empty())
@@ -515,8 +513,7 @@ extern "C"
             else if (cmd == "GetPortNames")
             {
 #ifdef ANDROID
-                ParaEngine::SerialPortAndroid serialPortAndroid;
-                std::string portName = serialPortAndroid.GetPortNames();
+                std::string portName = ParaEngine::SerialPortAndroid::GetInstance().GetPortNames();
                 std::string sCallback = msg["callback"];
 
                 if (!portName.empty() && !sCallback.empty()) {
