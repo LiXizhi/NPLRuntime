@@ -171,6 +171,8 @@ set(include_dirs
 
 if (APPLE AND NOT IOS)
     list(APPEND include_dirs ${CMAKE_CURRENT_SOURCE_DIR}/../Platform/OSX/src)
+elseif (ANDROID)
+    list(APPEND include_dirs ${CMAKE_CURRENT_SOURCE_DIR}/../Platform/AndroidStudio/app/cpp)
 endif()
 
 target_include_directories(ParaEngine PUBLIC ${include_dirs})

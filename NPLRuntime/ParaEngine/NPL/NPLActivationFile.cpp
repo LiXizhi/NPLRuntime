@@ -24,7 +24,7 @@ extern "C"
 	*/
 	extern PE_CORE_DECL NPL::NPLReturnCode NPL_activate_protocol_pb_cpp(NPL::INPLRuntimeState* pState);
 
-#ifdef PLATFORM_MAC
+#if defined(PLATFORM_MAC) || defined(ANDROID)
     extern PE_CORE_DECL NPL::NPLReturnCode NPL_activate_script_serialport_cpp(NPL::INPLRuntimeState* pState);
 #endif
 
@@ -46,7 +46,7 @@ NPL::NPL_C_Func_ActivationFile::NPL_C_Func_ActivationFile(const std::string& fil
 	// Load callback table
 	m_callbackTable["NPL_activate_protocol_pb_cpp"] = (NPL_Activate_CallbackFunc)&NPL_activate_protocol_pb_cpp;
 
-#ifdef PLATFORM_MAC
+#if defined(PLATFORM_MAC) || defined(ANDROID)
     m_callbackTable["NPL_activate_script_serialport_cpp"] = (NPL_Activate_CallbackFunc)&NPL_activate_script_serialport_cpp;
 #endif
 
