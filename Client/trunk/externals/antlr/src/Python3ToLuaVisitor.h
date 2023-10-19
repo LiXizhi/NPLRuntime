@@ -12,6 +12,12 @@ class Python3ToLuaVisitor : public Python3ParserBaseVisitor
         Scope(std::shared_ptr<Scope> parent = nullptr) : m_parent(parent) {}
         bool AddName(std::string name)
         {
+            name = name.substr(0, name.find("."));
+            if (name == "_G") 
+            {
+                return false;
+            }
+            
             auto it = m_names.find(name);
             if (it == m_names.end())
             {
