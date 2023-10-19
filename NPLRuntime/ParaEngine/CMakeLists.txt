@@ -280,6 +280,7 @@ else()
         libjpeg
         libpng
         Pinocchio
+        ParaAntlr4
         ${ICONV_LIB_NAME}
     )
 endif()

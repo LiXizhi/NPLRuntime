@@ -48,6 +48,8 @@
 #include <emscripten.h>
 #endif
 
+#include "ParaAntlr4.h"
+
 using namespace ParaEngine;
 using namespace luabind;
 
@@ -1453,7 +1455,10 @@ const std::string& ParaEngineSettings::GetDefaultFileAPIEncoding()
 	return ret;
 }
 
-
+void ParaEngine::ParaEngineSettings::SetPythonToLua(const char* python_code)
+{
+	*GetPythonToLua() = ParaPythonToLua(python_code);
+}
 
 int ParaEngineSettings::InstallFields(CAttributeClass* pClass, bool bOverride)
 {
@@ -1569,5 +1574,6 @@ int ParaEngineSettings::InstallFields(CAttributeClass* pClass, bool bOverride)
     pClass->AddField("SaveImageToGallery", FieldType_String, (void*)SaveImageToGallery_s, NULL, NULL, NULL, bOverride);
 #endif
 
+	pClass->AddField("PythonToLua", FieldType_String, (void*)SetPythonToLua_s, (void*)GetPythonToLua_s, NULL, NULL, bOverride);
 	return S_OK;
 }

@@ -233,6 +233,8 @@ namespace ParaEngine
 		ATTRIBUTE_METHOD1(ParaEngineSettings, GetDefaultFileAPIEncoding_s, const char**) { *p1 = cls->GetDefaultFileAPIEncoding().c_str(); return S_OK; }
 
         ATTRIBUTE_METHOD1(ParaEngineSettings, GetWebViewVersion_s, int*)	{ *p1 = cls->GetWebVersion(); return S_OK; }
+        ATTRIBUTE_METHOD1(ParaEngineSettings, GetPythonToLua_s, const char**) { *p1 = cls->GetPythonToLua()->c_str(); return S_OK; }
+		ATTRIBUTE_METHOD1(ParaEngineSettings, SetPythonToLua_s, const char*) { cls->SetPythonToLua(p1); return S_OK; }
 #ifdef ANDROID
         ATTRIBUTE_METHOD1(ParaEngineSettings, GetUsbMode_s, bool*) { *p1 = cls->GetUsbMode(); return S_OK; }
 #endif
@@ -721,6 +723,9 @@ namespace ParaEngine
 
 		const std::string& GetDefaultFileAPIEncoding();
 
+		static std::string* GetPythonToLua() { static std::string s_lua_code; return &s_lua_code; }
+		static void SetPythonToLua(const char* python_code);
+        
         /**
          ** webversion
          * **/

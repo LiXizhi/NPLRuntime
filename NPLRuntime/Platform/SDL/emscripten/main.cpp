@@ -129,8 +129,8 @@ int main(int argc, char* argv[])
 	ParaEngineSettings& settings = ParaEngineSettings::GetSingleton();
 	settings.SetCurrentLanguage(js_language == JS::JS_LANGUAGE_ZH ? LanguageType::CHINESE : LanguageType::ENGLISH);
 
-	std::string sCmdLine = R"(noupdate="true" debug="main" mc="true" bootstrapper="script/apps/Aries/main_loop.lua")";
-	// std::string sCmdLine = R"(noupdate="true" debug="main" mc="true" bootstrapper="script/apps/Aries/main_loop.lua" noclientupdate="true")";
+	// std::string sCmdLine = R"(noupdate="true" debug="main" mc="true" bootstrapper="script/apps/Aries/main_loop.lua")";
+	std::string sCmdLine = R"(noupdate="true" debug="main" mc="true" bootstrapper="script/apps/Aries/main_loop.lua" noclientupdate="true")";
 	// std::string sCmdLine = R"(noupdate="true" debug="main" mc="true" bootstrapper="script/apps/Aries/main_loop.lua" noclientupdate="true" channelId="tutorial" isDevMode="true")";
 
 	for (int i = 1; i < argc; ++i)
