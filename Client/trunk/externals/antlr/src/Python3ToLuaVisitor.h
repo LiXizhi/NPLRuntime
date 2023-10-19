@@ -17,8 +17,7 @@ class Python3ToLuaVisitor : public Python3ParserBaseVisitor
                 return false;
             }
 
-            auto it = m_names.find(name);
-            if (it == m_names.end())
+            if (IsExistName(name))
             {
                 m_names.insert(name);
                 return true;
