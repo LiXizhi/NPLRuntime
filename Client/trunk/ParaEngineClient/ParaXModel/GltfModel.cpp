@@ -1,4 +1,4 @@
-﻿#include "ParaEngine.h"
+﻿﻿#include "ParaEngine.h"
 #include "BMaxModel/BlocksParser.h"
 #include "ParaXModel.h"
 #include "ParaXSerializer.h"
@@ -189,7 +189,7 @@ namespace ParaEngine
         m_filename = filepath == "" ? ".temp.gltf" : filepath;
         CanvasAttachmentPtr canvas = model->m_pModelCanvas->m_root;
         Init();
-        // m_enable_animation = false;
+        m_enable_animation = false;
         std::shared_ptr<GLTFScene> scene = ExportScene();
         std::shared_ptr<GLTFNode> node = ExportCanvasAttachment(canvas, scene, this);
         // 人物会倒, 此变换可摆正, 但与装扮对不上
@@ -642,6 +642,13 @@ namespace ParaEngine
 
         // 默认动画ID
         uint32_t animId = 0;
+        for (uint32_t i = 0; i < paraXModel->m_objNum.nAnimations; i++) 
+        {
+            AnimIndex index = paraXModel->GetAnimIndexByID(i);
+            animId = index.nIndex;
+            if (index.IsValid()) break;
+        }
+
 		for (uint32_t i = 0; i < numBones; i++)
 		{
 			Bone& bone = paraXModel->bones[i];
@@ -947,8 +954,12 @@ namespace ParaEngine
         {
             node->skin = ExportSkin(paraXModel, node);
             uint32_t nAnimations = GetAnimationCount(paraXModel);
-            for (uint32_t index = 0; index < nAnimations; index++) {
-                m_gltf->animations.push_back(ExportAnimation(paraXModel, index, node->skin));
+            for (uint32_t animId = 0; animId < nAnimations; animId++) {
+                AnimIndex animIndex = paraXModel->GetAnimIndexByID(animId);
+                if (animIndex.IsValid()) {
+                    m_gltf->animations.push_back(ExportAnimation(paraXModel, animIndex.nIndex, node->skin));
+                }
+                // m_gltf->animations.push_back(ExportAnimation(paraXModel, animId, node->skin));
             }
         } 
 		return node;
