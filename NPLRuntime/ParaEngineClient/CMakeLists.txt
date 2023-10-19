@@ -908,7 +908,7 @@ if(APPLE)
 
 endif()
 
-
+list(APPEND ParaEngineClient_LIBS ParaAntlr4)
 
 target_link_libraries(ParaEngineClient ${ParaEngineClient_LIBS})
 

@@ -198,6 +198,7 @@ add_subdirectory (${SERVER_SOURCE_DIR}/pcl/common ${PROJECT_BINARY_DIR}/common)
 add_subdirectory (${SERVER_SOURCE_DIR}/pcl/features ${PROJECT_BINARY_DIR}/features)
 add_subdirectory (${SERVER_SOURCE_DIR}/Pinocchio ${PROJECT_BINARY_DIR}/Pinocchio)
 
+add_subdirectory (${PROJECT_SOURCE_DIR}/trunk/externals/antlr ${PROJECT_BINARY_DIR}/antlr)
 
 
 if(NOT NPLRUNTIME_STATIC_LIB) 

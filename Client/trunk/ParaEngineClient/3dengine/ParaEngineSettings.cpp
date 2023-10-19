@@ -48,6 +48,8 @@
 #include <boost/thread/tss.hpp>
 #include <time.h>
 
+#include "ParaAntlr4.h"
+
 using namespace ParaEngine;
 using namespace luabind;
 
@@ -1278,6 +1280,11 @@ void ParaEngine::ParaEngineSettings::SetWorldDirectory(const char* sWorldDirecto
 	CGlobals::GetWorldInfo()->ResetWorldName(sWorldDirectory);
 }
 
+void ParaEngine::ParaEngineSettings::SetPythonToLua(const char* python_code)
+{
+	*GetPythonToLua() = ParaPythonToLua(python_code);
+}
+
 void ParaEngine::ParaEngineSettings::LoadNameIndex()
 {
 	m_name_to_index.clear();
@@ -1742,5 +1749,7 @@ int ParaEngineSettings::InstallFields(CAttributeClass* pClass, bool bOverride)
 
 	pClass->AddField("DefaultFileAPIEncoding", FieldType_String, NULL, (void*)GetDefaultFileAPIEncoding_s, NULL, NULL, bOverride);
 	pClass->AddField("WorldDirectory", FieldType_String, (void*)SetWorldDirectory_s, (void*)GetWorldDirectory_s, NULL, NULL, bOverride);
+
+	pClass->AddField("PythonToLua", FieldType_String, (void*)SetPythonToLua_s, (void*)GetPythonToLua_s, NULL, NULL, bOverride);
 	return S_OK;
 }
