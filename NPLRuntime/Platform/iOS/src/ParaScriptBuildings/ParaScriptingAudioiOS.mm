@@ -10,20 +10,23 @@
 #include "ParaScriptingAudioiOS.h"
 #include <ogg/ogg.h>
 #include <vorbis/vorbisenc.h>
+#include <boost/filesystem.hpp>
 
 //UInt32 audioRouteOverride = kAudioSessionOverrideAudioRoute_Speaker;
 //AudioSessionSetProperty(kAudioSessionProperty_OverrideAudioRoute, sizeof(audioRouteOverride), &audioRouteOverride);
 
+namespace fs = boost::filesystem;
+
 static AVAudioRecorder *audioRecorder;
 
 bool ParaScripting::ParaScriptingAudioiOS::StartRecording() {
-    // 设置录音文件的保存位置和格式
+    // Set the saving location and format of recording files.
     NSArray *pathArray = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES);
     NSString *documentsDirectory = pathArray[0];
     NSString *outputFilePath = [documentsDirectory stringByAppendingPathComponent:@"Paracraft/files/temp/recordedAudio.wav"];
     NSURL *outputFileURL = [NSURL fileURLWithPath:outputFilePath];
 
-    // 设置录音参数
+    // Set recording parameters.
     NSDictionary *recordSettings = @{
         AVFormatIDKey: @(kAudioFormatLinearPCM),
         AVSampleRateKey: @44100.0,
@@ -62,6 +65,26 @@ bool ParaScripting::ParaScriptingAudioiOS::SaveRecording(const std::string &file
     NSArray *pathArray = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES);
     NSString *documentsDirectory = pathArray[0];
     NSString *inputFilePath = [documentsDirectory stringByAppendingPathComponent:@"Paracraft/files/temp/recordedAudio.wav"];
+    
+    size_t dotPos = filepath.find_last_of(".");
+    std::string fileExtension = "ogg";
+    if (dotPos != std::string::npos) {
+        fileExtension = filepath.substr(dotPos + 1);
+    }
+
+    if (fileExtension == "wav") {
+        std::string sourcePath = [inputFilePath UTF8String];
+        
+        try {
+            fs::rename(sourcePath, filepath);
+        } catch (const fs::filesystem_error &e) {
+            OUTPUT_LOG("move audio file fail!");
+            return false;
+        }
+        
+        return true;
+    }
+
     NSString *outputFilePath = [[NSString alloc] initWithBytes:filepath.c_str() length:filepath.length() encoding:NSUTF8StringEncoding];
 
     ogg_stream_state os; /* take physical pages, weld into a logical  stream of packets */
