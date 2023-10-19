@@ -1,4 +1,11 @@
-﻿#include <iostream>
+﻿//-----------------------------------------------------------------------------
+// Class: Python to NPL(lua) translator
+// Authors:	wuxiangan
+// Emails:
+// Date: 2023.10.19
+// Desc: 
+//----------------------------------------------------------------------------
+#include <iostream>
 #include <fstream>
 
 #include "antlr4-runtime.h"
