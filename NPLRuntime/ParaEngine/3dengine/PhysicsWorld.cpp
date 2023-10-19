@@ -1,4 +1,4 @@
-//-----------------------------------------------------------------------------
+﻿//-----------------------------------------------------------------------------
 // Class:	CPhysicsWorld
 // Authors:	Li, Xizhi
 // Emails:	LiXizhi@yeah.net
@@ -391,7 +391,11 @@ void CPhysicsWorld::ResetPhysics()
 
 void CPhysicsWorld::StepSimulation(double dTime)
 {
+#ifdef WIN32
+    Matrix4 matrix;
+#else
     alignas(16) Matrix4 matrix;
+#endif
 	CShapeAABB aabb;
 	static int16_t s_block_frame_id = 0;
 	s_block_frame_id++;
