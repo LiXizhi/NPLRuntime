@@ -48,8 +48,8 @@ import android.view.WindowManager;
 import android.widget.ImageView;
 
 import com.smarx.notchlib.NotchScreenManager;
-import com.tatfook.paracraft.luabridge.PlatformBridge;
 import com.tatfook.paracraft.screenrecorder.ScreenRecorder;
+import com.tatfook.paracraft.utils.USBSerialTransferUtil;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -57,9 +57,7 @@ import org.json.JSONObject;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.OutputStream;
-import java.util.Objects;
 
 import javax.microedition.khronos.egl.EGL10;
 import javax.microedition.khronos.egl.EGLConfig;
@@ -248,9 +246,8 @@ public class ParaEngineActivity extends AppCompatActivity {
 
     @Override
     protected void onNewIntent(Intent intent) {
-        super.onNewIntent(intent);
-
         handleIntent(intent);
+        super.onNewIntent(intent);
     }
 
     private void handleIntent(Intent intent) {

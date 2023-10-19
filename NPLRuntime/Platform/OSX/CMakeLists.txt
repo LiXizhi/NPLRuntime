@@ -15,7 +15,7 @@ set(RESOURCE_FILES ${CMAKE_CURRENT_SOURCE_DIR}/res)
 set(ASSETS_FILES ${CMAKE_CURRENT_SOURCE_DIR}/assets)
 set(INFO_FILE ${CMAKE_CURRENT_SOURCE_DIR}/Info.plist)
 set(ICON_FILE ${CMAKE_CURRENT_SOURCE_DIR}/icon.icns)
-set(CMAKE_OSX_DEPLOYMENT_TARGET "10.13" CACHE STRING "Deployment target for OSX" FORCE)
+set(CMAKE_OSX_DEPLOYMENT_TARGET "10.14" CACHE STRING "Deployment target for OSX" FORCE)
 set(CMAKE_XCODE_ATTRIBUTE_STRIP_STYLE "non-global" CACHE STRING "Non-Global Symbols" FORCE)
 # set(IMAGES_FILE ${CMAKE_CURRENT_SOURCE_DIR}/Images.xcassets)
 
@@ -60,7 +60,7 @@ find_library(OPENGL_LIBRARY OpenGL)
 find_library(WebView WebKit)
 # find_library(AUTHENTICATION_SERVICES AuthenticationServices)
 find_library(AVFAudio AVFAudio)
-
+find_library(IOKit IOKit)
 
 target_link_libraries(Paracraft PUBLIC
     RenderSystemOpenGL
@@ -70,6 +70,7 @@ target_link_libraries(Paracraft PUBLIC
     ${WebView}
     ${AVFAudio}
     # ${AUTHENTICATION_SERVICES}
+    ${IOKit}
 )
 
 # no longer needed for luajit2.1, only needed or luajit 2.0

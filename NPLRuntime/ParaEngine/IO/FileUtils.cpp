@@ -496,14 +496,38 @@ void ParaEngine::CFileUtils::AddEmbeddedResource(const char* name, const char* b
 	s_all_resources[name] = EmbeddedResource(buffer, nSize);
 }
 
+void RemoveDoubleSlashesInString(std::string& sFilePath)
+{
+	const char* path = sFilePath.c_str();
+	char lastChar = *path;
+	for (path++; (*path) != '\0'; ++path) {
+		// path points to next char to read
+		if (lastChar == *path && (lastChar == '\\' || lastChar == '/')) {
+			// duplicate slash
+			int nIndex = path - sFilePath.c_str();
+			sFilePath.erase(nIndex, 1);
+			path = sFilePath.c_str() + nIndex - 1;
+		}
+		lastChar = *path;
+	}
+}
+
 std::string ParaEngine::CFileUtils::GetWritableFullPathForFilename(const std::string& filename)
 {
 	std::string sFilePath = filename;
 	if (!IsAbsolutePath(sFilePath))
 	{
 		sFilePath = GetWritablePath() + sFilePath;
-		// sFilePath = GetFullPathForFilename(sFilePath);
 	}
+
+	RemoveDoubleSlashesInString(sFilePath);
+
+#ifdef WIN32
+	// since we are using fopen without file length limit. 
+	// std::replace(sFilePath.begin(), sFilePath.end(), '/', '\\');
+	// sFilePath = std::string("\\\\?\\") + sFilePath;
+#endif
+
 	return sFilePath;
 }
 

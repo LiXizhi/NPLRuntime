@@ -34,6 +34,12 @@
 #include <boost/filesystem/fstream.hpp>
 #include <iostream>
 
+#ifdef PLATFORM_MAC
+#import "IOMac/SerialPortMac.h"
+#elif defined(ANDROID)
+#include "util/SerialPortAndroid.h"
+#endif
+
 using namespace std;
 using namespace boost;
 
@@ -333,8 +339,11 @@ namespace ParaEngine
             {
             }
         }
+#elif defined(PLATFORM_MAC)
+        static SerialPortMac *serialPortMac;
+        ports = serialPortMac->GetPortNames();
 #else
-        // for linux / MAC, we need to use `ls /dev/tty*` to get all serial ports
+        // for linux , we need to use `ls /dev/tty*` to get all serial ports
         boost::filesystem::path kdr_path{"/proc/tty/drivers"};
         if (boost::filesystem::exists(kdr_path))
         {
@@ -428,6 +437,16 @@ extern "C"
             std::string cmd = msg["cmd"];
             if (cmd == "open")
             {
+#ifdef ANDROID
+                std::string filename = msg["filename"];
+                if (!filename.empty()) {
+                    std::string sCallback = msg["callback"];
+                    if (!sCallback.empty())
+                    {
+                        ParaEngine::SerialPortAndroid::GetInstance().open(filename, sCallback);
+                    }
+                }
+#else
                 std::string filename = msg["filename"];
                 if (!filename.empty())
                 {
@@ -448,9 +467,22 @@ extern "C"
                     }
                     pSerialPort->open(filename, baud_rate);
                 }
+#endif
             }
             else if (cmd == "send")
             {
+#ifdef ANDROID
+                std::string filename = msg["filename"];
+
+                if (!filename.empty())
+                {
+                    std::string data = msg["data"];
+                    if (!data.empty())
+                    {
+                        ParaEngine::SerialPortAndroid::GetInstance().send(data);
+                    }
+                }
+#else
                 std::string filename = msg["filename"];
                 if (!filename.empty())
                 {
@@ -464,17 +496,31 @@ extern "C"
                         }
                     }
 				}
+#endif
             }
             else if (cmd == "close")
             {
+#ifdef ANDROID
+                ParaEngine::SerialPortAndroid::GetInstance().close();
+#else
                 std::string filename = msg["filename"];
                 if (!filename.empty())
                 {
                     ParaEngine::Serial::GetSingleton()->RemoveSerialPort(filename);
                 }
+#endif
             }
             else if (cmd == "GetPortNames")
             {
+#ifdef ANDROID
+                std::string portName = ParaEngine::SerialPortAndroid::GetInstance().GetPortNames();
+                std::string sCallback = msg["callback"];
+
+                if (!portName.empty() && !sCallback.empty()) {
+                    std::string sNames = "msg={\"" + portName + "\",}";
+                    ParaEngine::CGlobals::GetNPLRuntime()->GetMainRuntimeState()->ActivateFile(sCallback, sNames.c_str(), (int)sNames.size());
+                }
+#else
                 std::string sCallback = msg["callback"];
                 if (!sCallback.empty())
                 {
@@ -489,6 +535,7 @@ extern "C"
                     sNames += "}";
                     ParaEngine::CGlobals::GetNPLRuntime()->GetMainRuntimeState()->ActivateFile(sCallback, sNames.c_str(), (int)sNames.size());
                 }
+#endif
             }
         }
         catch (...)

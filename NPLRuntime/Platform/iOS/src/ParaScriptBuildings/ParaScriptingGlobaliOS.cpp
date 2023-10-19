@@ -3,7 +3,7 @@
 // Authors: big
 // Emails: onedous@gmail.com
 // CreateDate: 2019.08.12
-// ModifyDate: 2022.05.12
+// ModifyDate: 2023.09.15
 //-----------------------------------------------------------------------------
 
 #include "FileDialogiOS.h"
@@ -13,6 +13,7 @@
 #include "NPL/NPLScriptingState.h"
 #include "ParaScriptingScreenRecorder.h"
 #include "ParaScriptingIDFA.h"
+#include "ParaScriptingAudioiOS.h"
 #include <luabind/object.hpp>
 #include <luabind/luabind.hpp>
 
@@ -23,20 +24,36 @@ namespace NplOceScripting
 }
 #endif
 
- static void LuabindRegisterIDFAGlobalFunctions(lua_State *L)
- {
-     using namespace luabind;
+static void LuabindRegisterParaAudioiOSGlobalFunctions(lua_State *L)
+{
+    using namespace luabind;
+    
+    module(L)
+    [
+        namespace_("ParaAudioiOS")
+        [
+            class_<ParaScripting::ParaScriptingAudioiOS>("ParaScriptingAudioiOS"),
+            def("StartRecording", ParaScripting::ParaScriptingAudioiOS::StartRecording),
+            def("StopRecording", ParaScripting::ParaScriptingAudioiOS::StopRecording),
+            def("SaveRecording", ParaScripting::ParaScriptingAudioiOS::SaveRecording)
+        ]
+    ];
+}
 
-     module(L)
-     [
-         namespace_("IDFA")
-         [
-             class_<ParaScripting::ParaScriptingIDFA>("ParaScriptingIDFA"),
-             def("get", ParaScripting::ParaScriptingIDFA::Get),
-             def("requestTrackingAuthorization", ParaScripting::ParaScriptingIDFA::RequestTrackingAuthorization)
-         ]
-     ];
- }
+static void LuabindRegisterIDFAGlobalFunctions(lua_State *L)
+{
+    using namespace luabind;
+
+    module(L)
+    [
+        namespace_("IDFA")
+        [
+            class_<ParaScripting::ParaScriptingIDFA>("ParaScriptingIDFA"),
+            def("get", ParaScripting::ParaScriptingIDFA::Get),
+            def("requestTrackingAuthorization", ParaScripting::ParaScriptingIDFA::RequestTrackingAuthorization)
+        ]
+    ];
+}
 
 static void LuabindRegisterScreenRecorderGlobalFunctions(lua_State *L)
 {
@@ -63,6 +80,7 @@ void ParaScripting::CNPLScriptingState::LoadHAPI_Platform()
 
     LuabindRegisterScreenRecorderGlobalFunctions(L);
     LuabindRegisterIDFAGlobalFunctions(L);
+    LuabindRegisterParaAudioiOSGlobalFunctions(L);
 #ifdef NPLRUNTIME_OCE
     NplOceScripting::Register(L);
 #endif

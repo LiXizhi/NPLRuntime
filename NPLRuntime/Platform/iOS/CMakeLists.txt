@@ -81,6 +81,8 @@ set_target_properties(
 )
 
 target_include_directories(Paracraft PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
+target_include_directories(Paracraft PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../../Plugins/cAudioEngine/DependenciesSource/libogg-1.3.2/include)
+target_include_directories(Paracraft PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../../Plugins/cAudioEngine/DependenciesSource/libvorbis-1.3.2/include)
 
 if (NPLRUNTIME_OCE)
     add_definitions(-DNPLRUNTIME_OCE)
