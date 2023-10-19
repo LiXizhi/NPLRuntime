@@ -39,7 +39,7 @@ add_subdirectory(runtime)
 
 file(GLOB SRC_FILES 
     ${CMAKE_CURRENT_SOURCE_DIR}/generated/*.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/*.*
 )
 
 list(APPEND INCLUDE_DIRS 

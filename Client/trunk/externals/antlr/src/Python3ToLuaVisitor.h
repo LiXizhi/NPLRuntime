@@ -12,8 +12,12 @@ class Python3ToLuaVisitor : public Python3ParserBaseVisitor
         Scope(std::shared_ptr<Scope> parent = nullptr) : m_parent(parent) {}
         bool AddName(std::string name)
         {
-            auto it = m_names.find(name);
-            if (it == m_names.end())
+            if (name == "_G" || name.find(".") != std::string::npos || name.find("[") != std::string::npos)
+            {
+                return false;
+            }
+
+            if (IsExistName(name))
             {
                 m_names.insert(name);
                 return true;
@@ -61,7 +65,7 @@ protected:
     }
 
 public:
-    virtual std::any visitTerminal(antlr4::tree::TerminalNode *node) override
+    virtual std::any visitTerminal(antlr4::tree::TerminalNode* node) override
     {
         auto symbol = node->getSymbol();
         if (symbol->getType() == Python3Parser::EOF)
@@ -94,12 +98,32 @@ public:
         }
     }
 
-    virtual std::any visitName(Python3Parser::NameContext *ctx) override
+    virtual std::any visitName(Python3Parser::NameContext* ctx) override
     {
         return GetScopePrefix() + ctx->getText();
     }
 
-    virtual std::any visitArgument(Python3Parser::ArgumentContext *ctx) override
+    virtual std::any visitGlobal_stmt(Python3Parser::Global_stmtContext* ctx) override
+    {
+        auto scope = m_scope;
+        auto parent_scope = m_scope->GetParent();
+        while (parent_scope != nullptr)
+        {
+            scope = parent_scope;
+            parent_scope = scope->GetParent();
+        }
+
+        auto names = ctx->name();
+        auto names_size = names.size();
+        for (auto i = 0; i < names_size; i++)
+        {
+            auto name = GetText(names[i]);
+            scope->AddName(name);
+        }
+        return std::string("");
+    }
+
+    virtual std::any visitArgument(Python3Parser::ArgumentContext* ctx) override
     {
         if (ctx->STAR())
         {
@@ -111,7 +135,7 @@ public:
         }
     }
 
-    virtual std::any visitSubscript_(Python3Parser::Subscript_Context *ctx) override
+    virtual std::any visitSubscript_(Python3Parser::Subscript_Context* ctx) override
     {
         if (ctx->COLON())
         {
@@ -147,7 +171,7 @@ public:
         }
     }
 
-    virtual std::any visitAtom(Python3Parser::AtomContext *ctx) override
+    virtual std::any visitAtom(Python3Parser::AtomContext* ctx) override
     {
         if (ctx->TRUE())
         {
@@ -275,14 +299,14 @@ public:
         }
     }
 
-    virtual std::any visitYield_expr(Python3Parser::Yield_exprContext *ctx) override
+    virtual std::any visitYield_expr(Python3Parser::Yield_exprContext* ctx) override
     {
         auto yield_arg = ctx->yield_arg();
         m_contain_yield = true;
         return "coroutine.yield(" + (yield_arg->test() ? GetText(yield_arg->test()) : GetText(yield_arg->testlist())) + ")";
     }
 
-    virtual std::any visitComp_for(Python3Parser::Comp_forContext *ctx) override
+    virtual std::any visitComp_for(Python3Parser::Comp_forContext* ctx) override
     {
         std::string result = "for _, " + GetText(ctx->exprlist()) + " in " + GetText(ctx->or_test()) + " do\n";
         result += ctx->comp_iter() ? GetText(ctx->comp_iter()) : m_comp_for_stmts;
@@ -290,7 +314,7 @@ public:
         return result;
     }
 
-    virtual std::any visitComp_if(Python3Parser::Comp_ifContext *ctx) override
+    virtual std::any visitComp_if(Python3Parser::Comp_ifContext* ctx) override
     {
         std::string result = "if (" + GetText(ctx->test_nocond()) + ") then\n";
         result += ctx->comp_iter() ? GetText(ctx->comp_iter()) : m_comp_for_stmts;
@@ -298,7 +322,7 @@ public:
         return result;
     }
 
-    virtual std::any visitDictorsetmaker(Python3Parser::DictorsetmakerContext *ctx) override
+    virtual std::any visitDictorsetmaker(Python3Parser::DictorsetmakerContext* ctx) override
     {
         auto comp_for = ctx->comp_for();
         if (comp_for == nullptr)
@@ -349,7 +373,7 @@ public:
         }
     }
 
-    virtual std::any visitTrailer(Python3Parser::TrailerContext *ctx) override
+    virtual std::any visitTrailer(Python3Parser::TrailerContext* ctx) override
     {
         if (ctx->subscriptlist())
         {
@@ -383,7 +407,7 @@ public:
         return Python3ParserBaseVisitor::visitTrailer(ctx);
     }
 
-    virtual std::any visitTest(Python3Parser::TestContext *ctx) override
+    virtual std::any visitTest(Python3Parser::TestContext* ctx) override
     {
         if (ctx->IF())
         {
@@ -399,7 +423,7 @@ public:
         }
     }
 
-    virtual std::any visitOr_test(Python3Parser::Or_testContext *ctx) override
+    virtual std::any visitOr_test(Python3Parser::Or_testContext* ctx) override
     {
         auto and_tests = ctx->and_test();
         auto ors = ctx->OR();
@@ -411,7 +435,7 @@ public:
         return result;
     }
 
-    virtual std::any visitAnd_test(Python3Parser::And_testContext *ctx) override
+    virtual std::any visitAnd_test(Python3Parser::And_testContext* ctx) override
     {
         auto not_tests = ctx->not_test();
         auto ands = ctx->AND();
@@ -423,12 +447,12 @@ public:
         return result;
     }
 
-    virtual std::any visitNot_test(Python3Parser::Not_testContext *ctx) override
+    virtual std::any visitNot_test(Python3Parser::Not_testContext* ctx) override
     {
         return Python3ParserBaseVisitor::visitNot_test(ctx);
     }
 
-    virtual std::any visitComparison(Python3Parser::ComparisonContext *ctx) override
+    virtual std::any visitComparison(Python3Parser::ComparisonContext* ctx) override
     {
         auto ops = ctx->comp_op();
         auto exprs = ctx->expr();
@@ -472,7 +496,7 @@ public:
         return std::accumulate(strs.begin(), strs.end(), std::string(""));
     }
 
-    virtual std::any visitExpr(Python3Parser::ExprContext *ctx) override
+    virtual std::any visitExpr(Python3Parser::ExprContext* ctx) override
     {
         auto adds = ctx->ADD();
         auto minus = ctx->MINUS();
@@ -545,7 +569,7 @@ public:
         }
     }
 
-    virtual std::any visitExpr_stmt(Python3Parser::Expr_stmtContext *ctx) override
+    virtual std::any visitExpr_stmt(Python3Parser::Expr_stmtContext* ctx) override
     {
         std::string result;
         auto assigns = ctx->ASSIGN();
@@ -652,12 +676,12 @@ public:
         return result;
     }
 
-    virtual std::any visitDel_stmt(Python3Parser::Del_stmtContext *ctx) override
+    virtual std::any visitDel_stmt(Python3Parser::Del_stmtContext* ctx) override
     {
         return std::any_cast<std::string>(ctx->exprlist()->accept(this)) + " = nil";
     }
 
-    virtual std::any visitIf_stmt(Python3Parser::If_stmtContext *ctx) override
+    virtual std::any visitIf_stmt(Python3Parser::If_stmtContext* ctx) override
     {
         std::string result = "if (" + std::any_cast<std::string>(ctx->test(0)->accept(this)) + ") then";
         result += std::any_cast<std::string>(ctx->block(0)->accept(this));
@@ -681,7 +705,7 @@ public:
         return result;
     }
 
-    virtual std::any visitWhile_stmt(Python3Parser::While_stmtContext *ctx) override
+    virtual std::any visitWhile_stmt(Python3Parser::While_stmtContext* ctx) override
     {
         std::string result = "while (" + std::any_cast<std::string>(ctx->test()->accept(this)) + ") do";
         result += std::any_cast<std::string>(ctx->block(0)->accept(this));
@@ -697,7 +721,7 @@ public:
         return result;
     }
 
-    virtual std::any visitFor_stmt(Python3Parser::For_stmtContext *ctx) override
+    virtual std::any visitFor_stmt(Python3Parser::For_stmtContext* ctx) override
     {
         auto exprlist_str = std::any_cast<std::string>(ctx->exprlist()->accept(this));
         auto testlist_str = std::any_cast<std::string>(ctx->testlist()->accept(this));
@@ -707,7 +731,7 @@ public:
         return result;
     }
 
-    virtual std::any visitAssert_stmt(Python3Parser::Assert_stmtContext *ctx) override
+    virtual std::any visitAssert_stmt(Python3Parser::Assert_stmtContext* ctx) override
     {
         std::string result = "assert(";
         auto tests = ctx->test();
@@ -724,12 +748,12 @@ public:
         return result;
     }
 
-    virtual std::any visitPass_stmt(Python3Parser::Pass_stmtContext *ctx) override
+    virtual std::any visitPass_stmt(Python3Parser::Pass_stmtContext* ctx) override
     {
         return std::string("");
     }
 
-    virtual std::any visitLambdef(Python3Parser::LambdefContext *ctx) override
+    virtual std::any visitLambdef(Python3Parser::LambdefContext* ctx) override
     {
         m_scope = std::make_shared<Scope>(m_scope);
         auto old_func_args_init_stmts = m_func_args_init_stmts;
@@ -741,7 +765,7 @@ public:
         return result;
     }
 
-    virtual std::any visitLambdef_nocond(Python3Parser::Lambdef_nocondContext *ctx) override
+    virtual std::any visitLambdef_nocond(Python3Parser::Lambdef_nocondContext* ctx) override
     {
         m_scope = std::make_shared<Scope>(m_scope);
         auto old_func_args_init_stmts = m_func_args_init_stmts;
@@ -753,7 +777,7 @@ public:
         return result;
     }
 
-    virtual std::any visitVarargslist(Python3Parser::VarargslistContext *ctx) override
+    virtual std::any visitVarargslist(Python3Parser::VarargslistContext* ctx) override
     {
         std::string result;
         std::vector<std::string> strs;
@@ -787,7 +811,7 @@ public:
         return std::accumulate(strs.begin(), strs.end(), std::string(""));
     }
 
-    virtual std::any visitClassdef(Python3Parser::ClassdefContext *ctx) override
+    virtual std::any visitClassdef(Python3Parser::ClassdefContext* ctx) override
     {
         std::string name = std::any_cast<std::string>(ctx->name()->accept(this));
         std::string result = "local " + name + " = class(function(" + name + ")";
@@ -804,7 +828,7 @@ public:
         return result;
     }
 
-    virtual std::any visitTypedargslist(Python3Parser::TypedargslistContext *ctx) override
+    virtual std::any visitTypedargslist(Python3Parser::TypedargslistContext* ctx) override
     {
         std::string result;
         std::vector<std::string> strs;
@@ -838,7 +862,7 @@ public:
         return std::accumulate(strs.begin(), strs.end(), std::string(""));
     }
 
-    virtual std::any visitFuncdef(Python3Parser::FuncdefContext *ctx) override
+    virtual std::any visitFuncdef(Python3Parser::FuncdefContext* ctx) override
     {
         m_scope = std::make_shared<Scope>(m_scope);
         std::string name = GetText(ctx->name());
@@ -872,7 +896,7 @@ public:
         return result;
     }
 
-    virtual std::any visitDecorated(Python3Parser::DecoratedContext *ctx) override
+    virtual std::any visitDecorated(Python3Parser::DecoratedContext* ctx) override
     {
         std::string result;
         std::string name;
@@ -906,7 +930,7 @@ public:
         return result;
     }
 
-    virtual std::any visitImport_name(Python3Parser::Import_nameContext *ctx) override
+    virtual std::any visitImport_name(Python3Parser::Import_nameContext* ctx) override
     {
         auto dotted_as_names = ctx->dotted_as_names()->dotted_as_name();
         auto dotted_as_names_size = dotted_as_names.size();
@@ -923,7 +947,7 @@ public:
         return result;
     }
 
-    virtual std::any visitImport_from(Python3Parser::Import_fromContext *ctx) override
+    virtual std::any visitImport_from(Python3Parser::Import_fromContext* ctx) override
     {
         if (ctx->dotted_name() == nullptr || ctx->import_as_names() == 0)
             return std::string("");
@@ -943,7 +967,7 @@ public:
     }
 
 protected:
-    std::string GetText(antlr4::ParserRuleContext *ctx)
+    std::string GetText(antlr4::ParserRuleContext* ctx)
     {
         return ctx == nullptr ? "" : std::any_cast<std::string>(ctx->accept(this));
     }
@@ -957,17 +981,17 @@ protected:
         return "";
     }
 
-    antlr4::ParserRuleContext *GetScopeContext(antlr4::tree::ParseTree *ctx)
+    antlr4::ParserRuleContext* GetScopeContext(antlr4::tree::ParseTree* ctx)
     {
         while (ctx != nullptr)
         {
             ctx = ctx->parent;
-            Python3Parser::FuncdefContext *func_ctx = dynamic_cast<Python3Parser::FuncdefContext *>(ctx);
+            Python3Parser::FuncdefContext* func_ctx = dynamic_cast<Python3Parser::FuncdefContext*>(ctx);
             if (func_ctx)
             {
                 return func_ctx;
             }
-            Python3Parser::ClassdefContext *class_ctx = dynamic_cast<Python3Parser::ClassdefContext *>(ctx);
+            Python3Parser::ClassdefContext* class_ctx = dynamic_cast<Python3Parser::ClassdefContext*>(ctx);
             if (class_ctx)
             {
                 return class_ctx;
