@@ -52,6 +52,7 @@ Client/trunk/*
 !Client/trunk/cAudio_2.4.0/
 !Client/trunk/externals/
 Client/trunk/externals/*
+!Client/trunk/externals/antlr
 !Client/trunk/externals/assimp*
 !Client/trunk/externals/bullet-2.75/
 !Client/trunk/externals/bullet3/

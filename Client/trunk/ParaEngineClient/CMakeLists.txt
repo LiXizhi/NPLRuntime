@@ -530,7 +530,7 @@ endif (WIN32)
 
 # Link the executable to the libraries.
 target_link_libraries (ParaEngineClient
-	sqlite libcurl lua jsoncpp tinyxpath luabind assimp
+	sqlite libcurl lua jsoncpp tinyxpath luabind assimp ParaAntlr4
 	${Boost_LIBRARIES} ${EXTRA_LIBRARIES}
 	#jblib pcre pcrecpp
 )
