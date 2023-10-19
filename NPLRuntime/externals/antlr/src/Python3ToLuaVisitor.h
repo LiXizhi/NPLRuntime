@@ -12,6 +12,11 @@ class Python3ToLuaVisitor : public Python3ParserBaseVisitor
         Scope(std::shared_ptr<Scope> parent = nullptr) : m_parent(parent) {}
         bool AddName(std::string name)
         {
+            if (name == "_G" || name.find(".") != std::string::npos  || name.find("[") != std::string::npos)
+            {
+                return false;
+            }
+
             auto it = m_names.find(name);
             if (it == m_names.end())
             {
@@ -97,6 +102,26 @@ public:
     virtual std::any visitName(Python3Parser::NameContext *ctx) override
     {
         return GetScopePrefix() + ctx->getText();
+    }
+
+    virtual std::any visitGlobal_stmt(Python3Parser::Global_stmtContext *ctx) override
+    {
+        auto scope = m_scope;
+        auto parent_scope = m_scope->GetParent();
+        while (parent_scope != nullptr)
+        {
+            scope = parent_scope;
+            parent_scope = scope->GetParent();
+        }
+
+        auto names = ctx->name();
+        auto names_size = names.size();
+        for (auto i = 0; i < names_size; i++)
+        {
+            auto name = GetText(names[i]);
+            scope->AddName(name);
+        }
+        return std::string("");
     }
 
     virtual std::any visitArgument(Python3Parser::ArgumentContext *ctx) override
