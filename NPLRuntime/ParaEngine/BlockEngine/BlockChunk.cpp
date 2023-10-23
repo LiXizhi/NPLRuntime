@@ -37,8 +37,12 @@ namespace ParaEngine
 			|| m_chunkId_rs.x == BlockConfig::g_regionChunkDimX - 1
 			|| m_chunkId_rs.y == BlockConfig::g_regionChunkDimY - 1
 			|| m_chunkId_rs.z == BlockConfig::g_regionChunkDimZ - 1);
-		
+
+#ifdef EMSCRIPTEN_SINGLE_THREAD		
+		m_lightmapArray.resize(BlockConfig::g_chunkBlockCount,LightData(0xf0));
+#else
 		m_lightmapArray.resize(BlockConfig::g_chunkBlockCount,LightData());
+#endif
 		s_total_chunks++;
 	}
 
@@ -60,15 +64,22 @@ namespace ParaEngine
 		SetDirty(false);
 		SetLightingInitialized(false);
 		m_emptyBlockSlotIndex = INVALID_BLOCK_INDEX;
+#ifdef EMSCRIPTEN_SINGLE_THREAD		
+		std::fill(m_lightmapArray.begin(),m_lightmapArray.end(),LightData(0xf0));
+#else
 		std::fill(m_lightmapArray.begin(),m_lightmapArray.end(),LightData());
+#endif
 	}
 
 	void BlockChunk::ClearAllLight()
 	{
 		SetLightingInitialized(false);
+#ifdef EMSCRIPTEN_SINGLE_THREAD		
+		std::fill(m_lightmapArray.begin(), m_lightmapArray.end(), LightData(0xf0));
+#else
 		std::fill(m_lightmapArray.begin(), m_lightmapArray.end(), LightData());
+#endif
 	}
-
 
 	void BlockChunk::ClearLightMap()
 	{

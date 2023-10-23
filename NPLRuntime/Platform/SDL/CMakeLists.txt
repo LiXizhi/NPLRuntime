@@ -91,6 +91,22 @@ if (EMSCRIPTEN)
 			OUTPUT_DIRECTORY ${APP_ROOT}
 			WORKING_DIRECTORY ${APP_ROOT}
 		)
+
+		add_custom_target(
+			download_assets_manifest_txt ALL
+			COMMAND curl http://10.28.18.3/assets_manifest.txt._P_E_0 -o assets_manifest.txt
+			COMMENT "下载 assets_manifest.txt"
+			OUTPUT_DIRECTORY ${APP_ROOT}
+			WORKING_DIRECTORY ${APP_ROOT}
+		)
+
+		add_custom_target(
+			download_ParacraftBuildinMod_zip ALL
+			COMMAND curl http://10.28.18.3/ParacraftBuildinMod.zip -o npl_packages/ParacraftBuildinMod.zip
+			COMMENT "下载  ParacraftBuildinMod.zip"
+			OUTPUT_DIRECTORY ${APP_ROOT}
+			WORKING_DIRECTORY ${APP_ROOT}
+		)
 	endif()
 	
 	# 拷贝文件系统到根目录

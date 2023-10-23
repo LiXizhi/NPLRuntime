@@ -123,7 +123,8 @@ CGUIRoot::CGUIRoot(void)
 	m_bMouseInClient(true), m_nLastTouchX(-1000), m_nLastTouchY(-1000), m_bIsNonClient(false), m_bSwapTouchButton(false),
 	m_fMinScreenWidth(400.f), m_fMinScreenHeight(300.f), m_bHasIMEFocus(false), m_bIsCursorClipped(false), m_nFingerSizePixels(60), m_nFingerStepSizePixels(10), m_pActiveWindow(NULL), m_pLastMouseDownObject(NULL), m_bMouseCaptured(false), m_bMouseOverScrollableUI(false),
 	m_fMaxScreenWidth(4096.f), m_fMaxScreenHeight(2160.f)
-#ifdef PARAENGINE_MOBILE
+// #ifdef PARAENGINE_MOBILE
+#if defined(PARAENGINE_MOBILE) || defined(EMSCRIPTEN)
 	, m_nCtrlBottom(0)
 #endif
 {
@@ -1086,7 +1087,8 @@ int CGUIRoot::HandleUserInput()
 			m_pMouse->Update();
 			if (!m_pMouse->IsLocked())
 			{
-#ifdef PARAENGINE_MOBILE
+// #ifdef PARAENGINE_MOBILE
+#if defined(PARAENGINE_MOBILE) || defined(EMSCRIPTEN)
 				if (nBufferedMessgeCount > 0)
 					UpdateCursorPosition();
 #else
@@ -1620,7 +1622,8 @@ void ParaEngine::CGUIRoot::Focus()
 
 void CGUIRoot::SetMouseInClient(bool bMouseInClient)
 {
-#ifdef PARAENGINE_MOBILE
+// #ifdef PARAENGINE_MOBILE
+#if defined(PARAENGINE_MOBILE) || defined(EMSCRIPTEN)
 	m_bMouseInClient = bMouseInClient;
 #else
 	if (m_bMouseInClient!=bMouseInClient) 
@@ -1925,7 +1928,8 @@ void ParaEngine::CGUIRoot::SetEnableIME(bool bEnableIME)
 
 }
 
-#ifdef PARAENGINE_MOBILE
+// #ifdef PARAENGINE_MOBILE
+#if defined(PARAENGINE_MOBILE) || defined(EMSCRIPTEN)
 void ParaEngine::CGUIRoot::SetControlBottom(int bottom)
 {
 	float fScaleX = 1.f;
@@ -2473,7 +2477,8 @@ int ParaEngine::CGUIRoot::InstallFields(CAttributeClass* pClass, bool bOverride)
 
 	pClass->AddField("HasIMEFocus", FieldType_Bool, (void*)SetHasIMEFocus_s, (void*)GetHasIMEFocus_s, NULL, NULL, bOverride);
 	pClass->AddField("EnableIME", FieldType_Bool, (void*)SetEnableIME_s, (void*)GetEnableIME_s, NULL, NULL, bOverride);
-#ifdef PARAENGINE_MOBILE
+// #ifdef PARAENGINE_MOBILE
+#if defined(PARAENGINE_MOBILE) || defined(EMSCRIPTEN)
 	pClass->AddField("ControlBottom", FieldType_Int, (void*)SetControlBottom_s, nullptr, nullptr, nullptr, bOverride);
 	pClass->AddField("IMEKeyboardState", FieldType_Bool, (void*)SetIMEKeyboardState_s, nullptr, nullptr, nullptr, bOverride);
 	pClass->AddField("CurEditString", FieldType_String, (void*)SetCurEditString_s, (void*)GetCurEditString_s, NULL, NULL, bOverride);

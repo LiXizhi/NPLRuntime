@@ -1,6 +1,7 @@
 #pragma once
 
-#ifdef PARAENGINE_MOBILE
+// #ifdef PARAENGINE_MOBILE
+#if defined(PARAENGINE_MOBILE) || defined(EMSCRIPTEN)
 
 #include "Globals.h"
 #include <boost/noncopyable.hpp>

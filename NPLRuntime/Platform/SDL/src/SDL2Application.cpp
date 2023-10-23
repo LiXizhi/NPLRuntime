@@ -50,100 +50,115 @@
 #include "DynamicAttributeField.h"
 #include "ParaEngineInfo.h"
 
-
 #include "SDL2/SDL.h"
 
-ParaEngine::IParaEngineApp* CreateParaEngineApp()
+#ifdef __EMSCRIPTEN__
+#include "emscripten.h"
+#endif
+
+ParaEngine::IParaEngineApp *CreateParaEngineApp()
 {
 	return new ParaEngine::CSDL2Application();
 }
 
+namespace ParaEngine
+{
 
-namespace ParaEngine {
-
-
-	void CSDL2Application::GameToClient(int& inout_x, int& inout_y, bool bInBackbuffer /*= true*/)
+	void CSDL2Application::GameToClient(int &inout_x, int &inout_y, bool bInBackbuffer /*= true*/)
 	{
-		//throw std::logic_error("The method or operation is not implemented.");
+		// throw std::logic_error("The method or operation is not implemented.");
 	}
 
-	void CSDL2Application::ClientToGame(int& inout_x, int& inout_y, bool bInBackbuffer /*= true*/)
+	void CSDL2Application::ClientToGame(int &inout_x, int &inout_y, bool bInBackbuffer /*= true*/)
 	{
-		//throw std::logic_error("The method or operation is not implemented.");
+		// throw std::logic_error("The method or operation is not implemented.");
 	}
 
 	void CSDL2Application::SetRefreshTimer(float fTimeInterval, int nFrameRateControl /*= 0*/)
 	{
-		//throw std::logic_error("The method or operation is not implemented.");
+		// throw std::logic_error("The method or operation is not implemented.");
 	}
 
 	bool CSDL2Application::AppHasFocus()
 	{
-		//throw std::logic_error("The method or operation is not implemented.");
+		// throw std::logic_error("The method or operation is not implemented.");
 		return true;
 	}
 
-	void CSDL2Application::GetStats(string& output, DWORD dwFields)
+	void CSDL2Application::GetStats(string &output, DWORD dwFields)
 	{
-		//throw std::logic_error("The method or operation is not implemented.");
+		// throw std::logic_error("The method or operation is not implemented.");
 	}
 
-	bool CSDL2Application::WriteRegStr(const string& root_key, const string& sSubKey, const string& name, const string& value)
+	bool CSDL2Application::WriteRegStr(const string &root_key, const string &sSubKey, const string &name, const string &value)
 	{
-		//throw std::logic_error("The method or operation is not implemented.");
+		// throw std::logic_error("The method or operation is not implemented.");
 		return true;
 	}
 
 	void CSDL2Application::SetAutoLowerFrameRateWhenNotFocused(bool bEnabled)
 	{
-		//throw std::logic_error("The method or operation is not implemented.");
+		// throw std::logic_error("The method or operation is not implemented.");
 	}
 
-	const char* CSDL2Application::ReadRegStr(const string& root_key, const string& sSubKey, const string& name)
+	const char *CSDL2Application::ReadRegStr(const string &root_key, const string &sSubKey, const string &name)
 	{
-		//throw std::logic_error("The method or operation is not implemented.");
+		// throw std::logic_error("The method or operation is not implemented.");
 		return "";
 	}
 
-	bool CSDL2Application::WriteRegDWORD(const string& root_key, const string& sSubKey, const string& name, DWORD value)
+	bool CSDL2Application::WriteRegDWORD(const string &root_key, const string &sSubKey, const string &name, DWORD value)
 	{
-		//throw std::logic_error("The method or operation is not implemented.");
+		// throw std::logic_error("The method or operation is not implemented.");
 		return true;
 	}
 
-	DWORD CSDL2Application::ReadRegDWORD(const string& root_key, const string& sSubKey, const string& name)
+	DWORD CSDL2Application::ReadRegDWORD(const string &root_key, const string &sSubKey, const string &name)
 	{
-		//throw std::logic_error("The method or operation is not implemented.");
-		return  0;
+		// throw std::logic_error("The method or operation is not implemented.");
+		return 0;
 	}
 
 	bool CSDL2Application::GetAutoLowerFrameRateWhenNotFocused()
 	{
-		//throw std::logic_error("The method or operation is not implemented.");
+		// throw std::logic_error("The method or operation is not implemented.");
 		return true;
 	}
 
 	void CSDL2Application::SetToggleSoundWhenNotFocused(bool bEnabled)
 	{
 		//	throw std::logic_error("The method or operation is not implemented.");
-
 	}
 
 	bool CSDL2Application::GetToggleSoundWhenNotFocused()
 	{
-		//throw std::logic_error("The method or operation is not implemented.");
+		// throw std::logic_error("The method or operation is not implemented.");
 		return true;
 	}
 
+	void CSDL2Application::setIMEKeyboardState(bool bOpen, bool bMoveView, int ctrlBottom, const string &editParams)
+	{
+		if (bOpen)
+		{
+			EM_ASM({
+				Module.StartTextInput();
+			});
+		}
+		else
+		{
+			EM_ASM({
+				Module.StopTextInput();
+			});
+		}
+	}
 
 	CSDL2Application::CSDL2Application()
-		: m_bUpdateScreenDevice(false)
-		, m_bSizeChanged(false)
+		: m_bUpdateScreenDevice(false), m_bSizeChanged(false)
 	{
-		//SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
-		//SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 3);
-		//SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24);
-		//SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
+		// SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
+		// SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 3);
+		// SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24);
+		// SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
 		SDL_Init(SDL_INIT_EVERYTHING);
 		m_exit = false;
 	}
@@ -153,12 +168,12 @@ namespace ParaEngine {
 		SDL_Quit();
 	}
 
-	bool CSDL2Application::InitApp(IRenderWindow* pWindow, const char* sCommandLine)
+	bool CSDL2Application::InitApp(IRenderWindow *pWindow, const char *sCommandLine)
 	{
 		BootStrapAndLoadConfig();
 		LoadAndApplySettings();
 
-		auto pWinDelegate = (RenderWindowDelegate*)&m_renderWindow;
+		auto pWinDelegate = (RenderWindowDelegate *)&m_renderWindow;
 		assert(pWinDelegate);
 
 		m_cfg.renderWindow = pWinDelegate;
@@ -166,7 +181,6 @@ namespace ParaEngine {
 
 		return CParaEngineAppBase::InitApp(pWinDelegate, sCommandLine);
 	}
-
 
 	int CSDL2Application::Run()
 	{
@@ -178,11 +192,11 @@ namespace ParaEngine {
 	}
 
 #ifndef EMSCRIPTEN_SINGLE_THREAD
-	void CSDL2Application::handle_mainloop_timer(const boost::system::error_code& err)
+	void CSDL2Application::handle_mainloop_timer(const boost::system::error_code &err)
 	{
 		if (!err)
 		{
-			auto pWindow = (RenderWindowDelegate*)m_pRenderWindow;
+			auto pWindow = (RenderWindowDelegate *)m_pRenderWindow;
 			assert(pWindow);
 
 			if (!pWindow->ShouldClose())
@@ -192,15 +206,15 @@ namespace ParaEngine {
 				this->DoWork();
 
 				double fNextInterval = 0.01f; // as fast as possible
-				//fNextInterval = this->GetRefreshTimer() - (ParaTimer::GetAbsoluteTime() - this->GetAppTime());
-				//fNextInterval = (std::min)(0.1, (std::max)(0.02, fNextInterval));  // [0.02, 0.1] 
+				// fNextInterval = this->GetRefreshTimer() - (ParaTimer::GetAbsoluteTime() - this->GetAppTime());
+				// fNextInterval = (std::min)(0.1, (std::max)(0.02, fNextInterval));  // [0.02, 0.1]
 
 				NextLoop((int)(fNextInterval * 1000), &CSDL2Application::handle_mainloop_timer, this);
 			}
 		}
 	}
 #endif
-	void CSDL2Application::WriteConfigFile(const char* FileName)
+	void CSDL2Application::WriteConfigFile(const char *FileName)
 	{
 		std::string sFileName;
 		if (FileName == nullptr || FileName[0] == '\0')
@@ -210,13 +224,13 @@ namespace ParaEngine {
 
 		{
 			// remove the read-only file attribute
-			//DWORD dwAttrs = ::GetFileAttributes(sFileName.c_str());
-			//if (dwAttrs != INVALID_FILE_ATTRIBUTES)
+			// DWORD dwAttrs = ::GetFileAttributes(sFileName.c_str());
+			// if (dwAttrs != INVALID_FILE_ATTRIBUTES)
 			//{
-				//if ((dwAttrs & FILE_ATTRIBUTE_READONLY))
-				//{
-					//::SetFileAttributes(sFileName.c_str(), dwAttrs & (~FILE_ATTRIBUTE_READONLY));
-				//}
+			// if ((dwAttrs & FILE_ATTRIBUTE_READONLY))
+			//{
+			//::SetFileAttributes(sFileName.c_str(), dwAttrs & (~FILE_ATTRIBUTE_READONLY));
+			//}
 			//}
 		}
 
@@ -234,7 +248,7 @@ namespace ParaEngine {
 		file.WriteFormated("-- GameEffectSet: initial game effect set, 0 is recommended. possible value is [1024, 0,1,2,-1,-2]. 1024 means FF, otherwise the larger the better.\n");
 		file.WriteFormated("-- language: possible values are enUS or zhCN\n");
 
-		ParaEngineSettings& settings = ParaEngineSettings::GetSingleton();
+		ParaEngineSettings &settings = ParaEngineSettings::GetSingleton();
 		CVariable value;
 
 		value = !m_cfg.isWindowed; //  IsWindowedMode();
@@ -262,7 +276,7 @@ namespace ParaEngine {
 		OUTPUT_LOG("ParaEngine config file is saved to %s\r\n", sFileName.c_str());
 	}
 
-	void CSDL2Application::GetScreenResolution(Vector2* pOut)
+	void CSDL2Application::GetScreenResolution(Vector2 *pOut)
 	{
 		if (pOut)
 		{
@@ -270,19 +284,19 @@ namespace ParaEngine {
 		}
 	}
 
-	void CSDL2Application::SetScreenResolution(const Vector2& vSize)
+	void CSDL2Application::SetScreenResolution(const Vector2 &vSize)
 	{
 		SetResolution(vSize.x, vSize.y);
 		UpdateScreenMode();
 
-		//if (m_cfg.isWindowed && m_pRenderWindow)
+		// if (m_cfg.isWindowed && m_pRenderWindow)
 		//{
 		//	auto pWinDelegate = (RenderWindowDelegate*)m_pRenderWindow;
 		//	pWinDelegate->SetSize((int)vSize.x, (int)vSize.y);
-		//}
+		// }
 	}
 
-	void CSDL2Application::GetResolution(float* pX, float* pY)
+	void CSDL2Application::GetResolution(float *pX, float *pY)
 	{
 		if (pX)
 		{
@@ -306,8 +320,7 @@ namespace ParaEngine {
 			m_cfg.screenWidth = _x;
 			m_cfg.screenHeight = _y;
 
-
-			ParaEngineSettings& settings = ParaEngineSettings::GetSingleton();
+			ParaEngineSettings &settings = ParaEngineSettings::GetSingleton();
 			CVariable value;
 			value = (int)(x);
 			settings.SetDynamicField("ScreenWidth", value);
@@ -319,9 +332,9 @@ namespace ParaEngine {
 	void CSDL2Application::LoadAndApplySettings()
 	{
 		// load from settings.
-		ParaEngineSettings& settings = ParaEngineSettings::GetSingleton();
+		ParaEngineSettings &settings = ParaEngineSettings::GetSingleton();
 
-		CDynamicAttributeField* pField = nullptr;
+		CDynamicAttributeField *pField = nullptr;
 		if ((pField = settings.GetDynamicField("StartFullscreen")))
 			m_cfg.isWindowed = !((bool)(*pField));
 		else
@@ -338,18 +351,18 @@ namespace ParaEngine {
 			m_cfg.screenHeight = 680;
 
 		if ((pField = settings.GetDynamicField("ScriptEditor")))
-			settings.SetScriptEditor((const std::string&)(*pField));
+			settings.SetScriptEditor((const std::string &)(*pField));
 
 		if ((pField = settings.GetDynamicField("InverseMouse")))
 			settings.SetMouseInverse((bool)(*pField));
 
 		if ((pField = settings.GetDynamicField("language")))
-			settings.SetLocale((const char*)(*pField));
+			settings.SetLocale((const char *)(*pField));
 
 		if ((pField = settings.GetDynamicField("TextureLOD")))
 			settings.SetTextureLOD((int)(*pField));
 
-		const char* sIsFullScreen = GetAppCommandLineByParam("fullscreen", nullptr);
+		const char *sIsFullScreen = GetAppCommandLineByParam("fullscreen", nullptr);
 		if (sIsFullScreen)
 			m_cfg.isWindowed = (strcmp("true", sIsFullScreen) != 0);
 	}
@@ -375,18 +388,18 @@ namespace ParaEngine {
 		return m_cfg.isWindowed;
 	}
 
-	void CSDL2Application::SetWindowText(const char* pChar)
+	void CSDL2Application::SetWindowText(const char *pChar)
 	{
 		std::wstring s = StringHelper::MultiByteToWideChar(pChar, CP_UTF8);
-		auto pWinDelegate = (RenderWindowDelegate*)m_pRenderWindow;
-		//if (pWinDelegate)::SetWindowTextW(pWinDelegate->GetHandle(), s.c_str());
+		auto pWinDelegate = (RenderWindowDelegate *)m_pRenderWindow;
+		// if (pWinDelegate)::SetWindowTextW(pWinDelegate->GetHandle(), s.c_str());
 	}
 
-	const char* CSDL2Application::GetWindowText()
+	const char *CSDL2Application::GetWindowText()
 	{
 		WCHAR g_wstr_title[256];
 		static std::string g_title;
-		auto pWinDelegate = (RenderWindowDelegate*)m_pRenderWindow;
+		auto pWinDelegate = (RenderWindowDelegate *)m_pRenderWindow;
 		if (pWinDelegate)
 		{
 			//::GetWindowTextW(pWinDelegate->GetHandle(), g_wstr_title, 255);
@@ -423,15 +436,15 @@ namespace ParaEngine {
 			OUTPUT_LOG("update screen device to (%d, %d) windowed: %s\n", m_cfg.screenWidth, m_cfg.screenHeight, m_cfg.isWindowed ? "true" : "false");
 			m_bUpdateScreenDevice = false;
 
-			auto pWinDelegate = (RenderWindowDelegate*)m_pRenderWindow;
-			//auto hWnd = pWinDelegate->GetHandle();
+			auto pWinDelegate = (RenderWindowDelegate *)m_pRenderWindow;
+			// auto hWnd = pWinDelegate->GetHandle();
 
 			bool bReset = false;
 
 			{
-				//RECT rect;
+				// RECT rect;
 				//::GetClientRect(hWnd, &rect);
-				//if (m_cfg.screenWidth != rect.right - rect.left
+				// if (m_cfg.screenWidth != rect.right - rect.left
 				//	|| m_cfg.screenHeight != rect.bottom - rect.top)
 				if (m_bSizeChanged)
 				{
@@ -467,8 +480,8 @@ namespace ParaEngine {
 
 	void CSDL2Application::FixWindowSize(bool fixed)
 	{
-		//auto pWinDelegate = (RenderWindowDelegate*)m_pRenderWindow;
-		//if (IsWindowedMode() && pWinDelegate)
+		// auto pWinDelegate = (RenderWindowDelegate*)m_pRenderWindow;
+		// if (IsWindowedMode() && pWinDelegate)
 		//{
 		//	auto hwnd = pWinDelegate->GetHandle();
 		//	if (!hwnd)

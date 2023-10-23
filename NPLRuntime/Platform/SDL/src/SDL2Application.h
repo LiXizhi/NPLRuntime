@@ -54,6 +54,8 @@ namespace ParaEngine
 		virtual bool InitApp(IRenderWindow* pWindow, const char* sCommandLine /* = nullptr */) override;
 	
 		virtual void StopApp() override { CParaEngineAppBase::StopApp(); m_exit = true; }
+		
+		virtual void setIMEKeyboardState(bool bOpen, bool bMoveView = false, int ctrlBottom = -1, const string& editParams="") override;
 
 		/** write the current setting to config file. Such as graphics mode and whether full screen, etc.
 		* config file at ./config.txt will be automatically loaded when the game engine starts.

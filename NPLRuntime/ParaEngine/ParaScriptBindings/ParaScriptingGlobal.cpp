@@ -13,6 +13,10 @@
 #include "DynamicAttributeField.h"
 #include "Framework/Common/Helper/EditorHelper.h"
 
+#ifdef EMSCRIPTEN
+#include "emscripten.h"
+#endif
+
 #ifdef WIN32
 	#include "Framework/Common/Helper/EditorHelper.h"
 	#include "SceneObject.h"
@@ -396,7 +400,20 @@ void ParaGlobal::Execute(const std::string& exe, const luabind::object& param, l
 
 bool ParaGlobal::ShellExecute(const char* lpOperation, const char* lpFile, const char* lpParameters, const char* lpDirectory, int nShowCmd)
 {
+#ifdef EMSCRIPTEN
+	if (lpOperation && strcmp(lpOperation, "open") == 0)
+	{
+		EM_ASM({
+			const url =  UTF8ToString($0);
+			console.log('open ' + url);
+			window.open(url);
+		}, lpFile);
+		return true;
+	}
+	return false;
+#else
 	return CEditorHelper::ShellExecute(lpOperation, lpFile, lpParameters, lpDirectory, nShowCmd);
+#endif
 }
 
 //////////////////////////////////////////////////////////////////////////

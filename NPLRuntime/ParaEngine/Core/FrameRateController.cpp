@@ -37,9 +37,15 @@ void CFrameRateController::LoadFRCNormal(float fIdealInterval)
 	g_ioFRC.SetType(CFrameRateController::FRC_CONSTANT_OR_ABOVE);
 	g_simFRC.SetType(CFrameRateController::FRC_FIRSTORDER);
 #else
+#ifdef REALTIME_FRAME_RATE_CONTROL
+	g_ioFRC.SetType(CFrameRateController::FRC_NONE);
+	g_renderFRC.SetType(CFrameRateController::FRC_NONE);
+	g_simFRC.SetType(CFrameRateController::FRC_NONE);
+#else
 	g_renderFRC.SetType(CFrameRateController::FRC_CONSTANT_OR_BELOW); // specify FRC_CONSTANT will play slow motion under low frame rate if one want
 	g_ioFRC.SetType(CFrameRateController::FRC_CONSTANT_OR_BELOW); // specify FRC_CONSTANT will play slow motion under low frame rate if one want
 	g_simFRC.SetType(CFrameRateController::FRC_BELOW); // smooth the simulation one can also use FRC_FIRSTORDER
+#endif
 #endif
 	fIdealInterval = fIdealInterval <= 0 ? IDEAL_FRAME_RATE : fIdealInterval;
 	g_renderFRC.m_fConstDeltaTime = fIdealInterval;
@@ -204,7 +210,7 @@ double CFrameRateController::FrameMove(double time)
 		m_fElapsedTime = m_fTime - m_fLastTime;
 		if (m_fElapsedTime <= 0)
 		{
-			return 0.f;
+			m_fElapsedTime = 0.f;
 		}
 		else if (m_fElapsedTime >= m_fConstDeltaTime)
 		{
@@ -248,7 +254,7 @@ double CFrameRateController::FrameMove(double time)
 			}
 			else
 			{
-				return 0.f;
+				m_fElapsedTime = 0.f;
 			}
 		}
 		else

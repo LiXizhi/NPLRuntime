@@ -231,7 +231,8 @@ namespace ParaEngine
         ATTRIBUTE_METHOD(ParaEngineSettings, FlushDiskIO_s)	{cls->FlushDiskIO(); return S_OK;}
         ATTRIBUTE_METHOD1(ParaEngineSettings, SendMsgToJS_s, const char*) { cls->SendMsgToJS(p1); return S_OK; }
 		ATTRIBUTE_METHOD1(ParaEngineSettings, GetDefaultFileAPIEncoding_s, const char**) { *p1 = cls->GetDefaultFileAPIEncoding().c_str(); return S_OK; }
-
+        ATTRIBUTE_METHOD1(ParaEngineSettings, GetPythonToLua_s, const char**) { *p1 = cls->GetPythonToLua()->c_str(); return S_OK; }
+		ATTRIBUTE_METHOD1(ParaEngineSettings, SetPythonToLua_s, const char*) { cls->SetPythonToLua(p1); return S_OK; }
 #ifdef ANDROID
         ATTRIBUTE_METHOD1(ParaEngineSettings, GetUsbMode_s, bool*) { *p1 = cls->GetUsbMode(); return S_OK; }
 #endif
@@ -715,6 +716,10 @@ namespace ParaEngine
         const char* GetAudioDeviceName();
 
 		const std::string& GetDefaultFileAPIEncoding();
+
+        static std::string* GetPythonToLua() { static std::string s_lua_code; return &s_lua_code; }
+		static void SetPythonToLua(const char* python_code);
+
 #ifdef ANDROID
         bool GetUsbMode();
 #endif

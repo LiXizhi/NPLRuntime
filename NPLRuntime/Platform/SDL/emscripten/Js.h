@@ -39,6 +39,7 @@ const std::string GetQueryStringArg(const std::string key, bool decode = true);
 const static int JS_LANGUAGE_EN = 0;   // 英文
 const static int JS_LANGUAGE_ZH = 1;   // 中文
 int GetBrowserLanguage();
+int IsTouchDevice();
 
 
 // 通信

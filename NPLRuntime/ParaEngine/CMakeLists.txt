@@ -245,7 +245,13 @@ if (NPLRUNTIME_OCE)
 	add_dependencies(ParaEngine nploce)
 endif ()
 
-set(NPLOCE_DEPS_ROOT "/mnt/d/workspace/npl/nploce-deps/install")
+if (EMSCRIPTEN)
+    if (EMSCRIPTEN_SINGLE_THREAD)
+        set(NPLOCE_DEPS_ROOT "/mnt/d/workspace/npl/nploce-deps/install")
+    else()
+        set(NPLOCE_DEPS_ROOT "/mnt/d/workspace/npl/nploce-deps/install_thread")
+    endif()
+endif()
 if (EMSCRIPTEN AND NPLOCE_DEPS_ROOT)
     link_directories(${NPLOCE_DEPS_ROOT}/harfbuzz/lib)
     link_directories(${NPLOCE_DEPS_ROOT}/oce/lib)
@@ -276,7 +282,8 @@ if (EMSCRIPTEN AND NPLOCE_DEPS_ROOT)
         ${NPLOCE_DEPS_ROOT}/oce/lib/libTKXMesh.a
 
         ${NPLOCE_DEPS_ROOT}/harfbuzz/lib/libharfbuzz.a
-        ${NPLOCE_DEPS_ROOT}/freetype2/lib/libfreetype.a
+        # ${NPLOCE_DEPS_ROOT}/freetype2_8_1/lib/libfreetype.a
+        ${NPLOCE_DEPS_ROOT}/nploce/libnploce.a
     )
 endif()
 
@@ -295,6 +302,7 @@ if (EMSCRIPTEN)
     luabind
     ParaSqlite 
     Pinocchio
+    ParaAntlr4
     ${ICONV_LIB_NAME}
     "${BOOST_ROOT}/stage/lib/libboost_atomic.a"
     "${BOOST_ROOT}/stage/lib/libboost_chrono.a"
@@ -305,7 +313,6 @@ if (EMSCRIPTEN)
     "${BOOST_ROOT}/stage/lib/libboost_system.a"
     "${BOOST_ROOT}/stage/lib/libboost_thread.a"
     "${BOOST_ROOT}/stage/lib/libboost_wserialization.a"
-    "${CMAKE_CURRENT_SOURCE_DIR}/../Plugins/NplOce/prebuilt/libnploce.a"
     )
 else()
     target_link_libraries(ParaEngine PUBLIC 
