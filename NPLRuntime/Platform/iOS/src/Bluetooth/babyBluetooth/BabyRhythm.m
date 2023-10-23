@@ -1,4 +1,9 @@
-
+//-----------------------------------------------------------------------------
+// Class: BabyRhythm.m
+// Authors: kkvskkkk, big
+// CreateDate: 2018.11.6
+// ModifyDate: 2023.10.20
+//-----------------------------------------------------------------------------
 
 #import "BabyRhythm.h"
 #import "BabyDefine.h"
@@ -12,24 +17,22 @@
 - (instancetype)init {
     self = [super init];
     if (self) {
-        //beatsInterval
+        // beatsInterval
         _beatsInterval = KBABYRHYTHM_BEATS_DEFAULT_INTERVAL;
     }
     return  self;
 }
 
 - (void)beats {
-    
     if (isOver) {
         BabyLog(@">>>beats isOver");
         return;
     }
-    
+
     BabyLog(@">>>beats at :%@",[NSDate date]);
     if (self.beatsTimer) {
         [self.beatsTimer setFireDate: [[NSDate date]dateByAddingTimeInterval:self.beatsInterval]];
-    }
-    else {
+    } else {
        self.beatsTimer = [NSTimer timerWithTimeInterval:self.beatsInterval target:self selector:@selector(beatsBreak) userInfo:nil repeats:YES];
         [self.beatsTimer setFireDate: [[NSDate date]dateByAddingTimeInterval:self.beatsInterval]];
         [[NSRunLoop currentRunLoop] addTimer:self.beatsTimer forMode:NSRunLoopCommonModes];
@@ -37,7 +40,7 @@
 }
 
 - (void)beatsBreak {
-     BabyLog(@">>>beatsBreak :%@",[NSDate date]);
+    BabyLog(@">>>beatsBreak :%@",[NSDate date]);
     [self.beatsTimer setFireDate:[NSDate distantFuture]];
     if (blockOnBeatBreak) {
         blockOnBeatBreak(self);
@@ -51,7 +54,6 @@
     if (blockOnBeatOver) {
         blockOnBeatOver(self);
     }
-    
 }
 
 - (void)beatsRestart {

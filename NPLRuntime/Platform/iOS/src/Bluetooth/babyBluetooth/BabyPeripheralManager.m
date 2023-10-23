@@ -1,9 +1,14 @@
-
+//-----------------------------------------------------------------------------
+// Class: BabyPeripheralManager.m
+// Authors: kkvskkkk, big
+// CreateDate: 2018.11.6
+// ModifyDate: 2023.10.20
+//-----------------------------------------------------------------------------
 
 #import "BabyPeripheralManager.h"
 #import "BabyDefine.h"
 
-#define callbackBlock(...) if ([[babySpeaker callback] __VA_ARGS__])   [[babySpeaker callback] __VA_ARGS__ ]
+#define callbackBlock(...) if ([[babySpeaker callback] __VA_ARGS__]) [[babySpeaker callback] __VA_ARGS__ ]
 
 @implementation BabyPeripheralManager {
     int PERIPHERAL_MANAGER_INIT_WAIT_TIMES;
@@ -20,37 +25,33 @@
     return  self;    
 }
 
-
 - (BabyPeripheralManager *(^)())startAdvertising {
     return [^BabyPeripheralManager *() {
-        
         if ([self canStartAdvertising]) {
             PERIPHERAL_MANAGER_INIT_WAIT_TIMES = 0;
             NSMutableArray *UUIDS = [NSMutableArray array];
             for (CBMutableService *s in _services) {
                 [UUIDS addObject:s.UUID];
             }
-            //启动广播
+            // 启动广播
             if (_manufacturerData) {
                 [_peripheralManager startAdvertising:
-                 @{
-                   CBAdvertisementDataServiceUUIDsKey :  UUIDS
-                   ,CBAdvertisementDataLocalNameKey : _localName,
+                @{
+                   CBAdvertisementDataServiceUUIDsKey :  UUIDS,
+                   CBAdvertisementDataLocalNameKey : _localName,
                    CBAdvertisementDataManufacturerDataKey:_manufacturerData
                 }];
             } else {
                 [_peripheralManager startAdvertising:
-                 @{
-                   CBAdvertisementDataServiceUUIDsKey :  UUIDS
-                   ,CBAdvertisementDataLocalNameKey : _localName
-                   }];
+                @{
+                   CBAdvertisementDataServiceUUIDsKey :  UUIDS,
+                   CBAdvertisementDataLocalNameKey : _localName
+                }];
             }
-          
-        }
-        else {
+        } else {
             PERIPHERAL_MANAGER_INIT_WAIT_TIMES++;
             if (PERIPHERAL_MANAGER_INIT_WAIT_TIMES > 5) {
-                BabyLog(@">>>error： 第%d次等待peripheralManager打开任然失败，请检查蓝牙设备是否可用",PERIPHERAL_MANAGER_INIT_WAIT_TIMES);
+                BabyLog(@">>> error: 第%d次等待peripheralManager打开任然失败，请检查蓝牙设备是否可用",PERIPHERAL_MANAGER_INIT_WAIT_TIMES);
             }
             dispatch_time_t popTime = dispatch_time(DISPATCH_TIME_NOW, 3.0 * NSEC_PER_SEC);
             dispatch_after(popTime, dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
@@ -58,7 +59,7 @@
             });
             BabyLog(@">>> 第%d次等待peripheralManager打开",PERIPHERAL_MANAGER_INIT_WAIT_TIMES);
         }
-        
+
         return self;
     } copy];
 }
@@ -143,7 +144,7 @@
             break;
         case CBPeripheralManagerStatePoweredOn:
             BabyLog(@">>>CBPeripheralManagerStatePoweredOn");
-            //发送centralManagerDidUpdateState通知
+            // 发送centralManagerDidUpdateState通知
             [[NSNotificationCenter defaultCenter]postNotificationName:@"CBPeripheralManagerStatePoweredOn" object:nil];
             break;
         default:
@@ -155,7 +156,6 @@
 //    }
     callbackBlock(blockOnPeripheralModelDidUpdateState)(peripheral);
 }
-
 
 - (void)peripheralManager:(CBPeripheralManager *)peripheral didAddService:(CBService *)service error:(NSError *)error {
     didAddServices++;
@@ -186,11 +186,9 @@
     callbackBlock(blockOnPeripheralModelDidUnSubscribeToCharacteristic)(peripheral,central,characteristic);
 }
 
-
 @end
 
 void makeCharacteristicToService(CBMutableService *service,NSString *UUID,NSString *properties,NSString *descriptor) {
-
     //paramter for properties
     CBCharacteristicProperties prop = 0x00;
     if ([properties containsString:@"r"]) {
@@ -206,35 +204,15 @@ void makeCharacteristicToService(CBMutableService *service,NSString *UUID,NSStri
         prop = CBCharacteristicPropertyRead | CBCharacteristicPropertyWrite;
     }
 
-    CBMutableCharacteristic *c = [[CBMutableCharacteristic alloc]initWithType:[CBUUID UUIDWithString:UUID] properties:prop  value:nil permissions:CBAttributePermissionsReadable | CBAttributePermissionsWriteable];
-    
-    //paramter for descriptor
+    CBMutableCharacteristic *c = [[CBMutableCharacteristic alloc]initWithType:[CBUUID UUIDWithString:UUID] properties:prop value:nil permissions:CBAttributePermissionsReadable | CBAttributePermissionsWriteable];
+
+    // paramter for descriptor
     if (!(descriptor == nil || [descriptor isEqualToString:@""])) {
-        //c设置description对应的haracteristics字段描述
+        // c设置description对应的haracteristics字段描述
         CBUUID *CBUUIDCharacteristicUserDescriptionStringUUID = [CBUUID UUIDWithString:CBUUIDCharacteristicUserDescriptionString];
         CBMutableDescriptor *desc = [[CBMutableDescriptor alloc]initWithType: CBUUIDCharacteristicUserDescriptionStringUUID value:descriptor];
         [c setDescriptors:@[desc]];
     }
-    
-    if (!service.characteristics) {
-        service.characteristics = @[];
-    }
-    NSMutableArray *cs = [service.characteristics mutableCopy];
-    [cs addObject:c];
-    service.characteristics = [cs copy];
-}
-void makeStaticCharacteristicToService(CBMutableService *service,NSString *UUID,NSString *descriptor,NSData *data) {
-    
-    CBMutableCharacteristic *c = [[CBMutableCharacteristic alloc]initWithType:[CBUUID UUIDWithString:UUID] properties:CBCharacteristicPropertyRead  value:data permissions:CBAttributePermissionsReadable];
-    
-    //paramter for descriptor
-    if (!(descriptor == nil || [descriptor isEqualToString:@""])) {
-        //c设置description对应的haracteristics字段描述
-        CBUUID *CBUUIDCharacteristicUserDescriptionStringUUID = [CBUUID UUIDWithString:CBUUIDCharacteristicUserDescriptionString];
-        CBMutableDescriptor *desc = [[CBMutableDescriptor alloc]initWithType: CBUUIDCharacteristicUserDescriptionStringUUID value:descriptor];
-        [c setDescriptors:@[desc]];
-    }
-    
     if (!service.characteristics) {
         service.characteristics = @[];
     }
@@ -243,6 +221,23 @@ void makeStaticCharacteristicToService(CBMutableService *service,NSString *UUID,
     service.characteristics = [cs copy];
 }
 
+void makeStaticCharacteristicToService(CBMutableService *service, NSString *UUID, NSString *descriptor, NSData *data) {
+    CBMutableCharacteristic *c = [[CBMutableCharacteristic alloc]initWithType:[CBUUID UUIDWithString:UUID] properties:CBCharacteristicPropertyRead value:data permissions:CBAttributePermissionsReadable];
+
+    // paramter for descriptor
+    if (!(descriptor == nil || [descriptor isEqualToString:@""])) {
+        // c设置description对应的haracteristics字段描述
+        CBUUID *CBUUIDCharacteristicUserDescriptionStringUUID = [CBUUID UUIDWithString:CBUUIDCharacteristicUserDescriptionString];
+        CBMutableDescriptor *desc = [[CBMutableDescriptor alloc]initWithType: CBUUIDCharacteristicUserDescriptionStringUUID value:descriptor];
+        [c setDescriptors:@[desc]];
+    }
+    if (!service.characteristics) {
+        service.characteristics = @[];
+    }
+    NSMutableArray *cs = [service.characteristics mutableCopy];
+    [cs addObject:c];
+    service.characteristics = [cs copy];
+}
 
 CBMutableService* makeCBService(NSString *UUID)
 {
@@ -250,15 +245,14 @@ CBMutableService* makeCBService(NSString *UUID)
     return s;
 }
 
-NSString * genUUID()
+NSString *genUUID()
 {
     CFUUIDRef uuid_ref = CFUUIDCreate(NULL);
     CFStringRef uuid_string_ref= CFUUIDCreateString(NULL, uuid_ref);
-    
+
     CFRelease(uuid_ref);
     NSString *uuid = [NSString stringWithString:(__bridge NSString*)uuid_string_ref];
-    
+
     CFRelease(uuid_string_ref);
     return uuid;
 }
-

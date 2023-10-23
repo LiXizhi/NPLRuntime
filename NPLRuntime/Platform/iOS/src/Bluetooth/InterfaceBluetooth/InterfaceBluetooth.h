@@ -1,3 +1,10 @@
+//-----------------------------------------------------------------------------
+// Class: InterfaceBluetooth.h
+// Authors: kkvskkkk, big
+// CreateDate: 2018.11.6
+// ModifyDate: 2023.10.20
+//-----------------------------------------------------------------------------
+
 /****************************************************************************
  Copyright (c) 2010-2011 cocos2d-x.org
  Copyright (c) 2010      Ricardo Quesada
@@ -37,7 +44,6 @@
 @property (nonatomic,strong)CBPeripheral *currPeripheral;
 @property (nonatomic,strong)CBCentralManager *cbCentralMgr;
 
-
 + (void)setDeviceName:(NSDictionary *) dict;
 + (void)setCharacteristicsUuid:(NSDictionary *) dict;
 + (void)setupBluetoothDelegate;
@@ -47,14 +53,14 @@
 + (void)linkDevice:(NSDictionary *) dict;
 + (void)writeToCharacteristic:(NSDictionary *) dict;
 + (NSString *)characteristicGetStrValue:(NSDictionary *) dict;
-+ (void) readAllBlueGatt:(NSDictionary *) dict;
++ (void)readAllBlueGatt:(NSDictionary *) dict;
 + (void)readCharacteristic:(NSDictionary *) dict;
 + (void)setCharacteristicNotification:(NSDictionary *) dict;
 + (void)_setCharacteristicNotification:(CBCharacteristic*)characteristic;
 + (void)stopBlu;
 + (instancetype) shareInstance;
 
-+(CBCharacteristic*) getCharacteristic:(NSString*) ser_uuid _:(NSString*) char_uuid;
++ (CBCharacteristic*) getCharacteristic:(NSString*) ser_uuid _:(NSString*) char_uuid;
 
 @end
 
