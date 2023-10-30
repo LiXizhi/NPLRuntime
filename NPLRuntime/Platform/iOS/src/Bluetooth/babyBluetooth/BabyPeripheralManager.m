@@ -20,9 +20,9 @@
     self = [super init];
     if (self) {
         _localName = @"baby-default-name";
-        _peripheralManager = [[CBPeripheralManager alloc]initWithDelegate:self queue:nil options:nil];
+        _peripheralManager = [[CBPeripheralManager alloc] initWithDelegate:self queue:nil options:nil];
     }
-    return  self;    
+    return self;
 }
 
 - (BabyPeripheralManager *(^)())startAdvertising {
@@ -37,15 +37,15 @@
             if (_manufacturerData) {
                 [_peripheralManager startAdvertising:
                 @{
-                   CBAdvertisementDataServiceUUIDsKey :  UUIDS,
-                   CBAdvertisementDataLocalNameKey : _localName,
+                   CBAdvertisementDataServiceUUIDsKey:UUIDS,
+                   CBAdvertisementDataLocalNameKey:_localName,
                    CBAdvertisementDataManufacturerDataKey:_manufacturerData
                 }];
             } else {
                 [_peripheralManager startAdvertising:
                 @{
-                   CBAdvertisementDataServiceUUIDsKey :  UUIDS,
-                   CBAdvertisementDataLocalNameKey : _localName
+                   CBAdvertisementDataServiceUUIDsKey:UUIDS,
+                   CBAdvertisementDataLocalNameKey:_localName
                 }];
             }
         } else {
@@ -145,7 +145,7 @@
         case CBPeripheralManagerStatePoweredOn:
             BabyLog(@">>>CBPeripheralManagerStatePoweredOn");
             // 发送centralManagerDidUpdateState通知
-            [[NSNotificationCenter defaultCenter]postNotificationName:@"CBPeripheralManagerStatePoweredOn" object:nil];
+            [[NSNotificationCenter defaultCenter] postNotificationName:@"CBPeripheralManagerStatePoweredOn" object:nil];
             break;
         default:
             break;

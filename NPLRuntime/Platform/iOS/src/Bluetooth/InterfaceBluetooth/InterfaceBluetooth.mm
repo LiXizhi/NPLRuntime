@@ -50,7 +50,7 @@ static int ON_READ_ALL_GATT_UUID = 1106;
 
 @interface InterfaceBluetooth () {
     // NSMutableArray *peripheralDataArray;
-    // NSString* logitowdevice;
+    // NSString *logitowdevice;
     // CBUUID *SERVICE_UUID;
     // CBUUID *CLIENT_UUID;
 }
@@ -82,19 +82,19 @@ static std::string s_lastAddr = "";
 
 static std::map<std::string, CBPeripheral*> s_peripherals;
 
-NSString *s_checkDeviceName = NULL;
+NSString *s_checkDeviceName = @"";
 static std::map<std::string, std::vector<std::string>> s_checkUuids;
 
-static void callBaseBridge(const int& pId, const std::string& extData)
+static void callBaseBridge(const int &pId, const std::string &extData)
 {
     char tempArray[20];
     sprintf(tempArray, "%d", pId);
     std::string mergeData = "msg = [[";
     mergeData = mergeData + tempArray + "_" + extData + "]]";
-    ParaEngine::LuaObjcBridge::nplActivate(mergeData.c_str(), s_luaPath); //"(gl)Mod/PluginBlueTooth/main.lua");
+    ParaEngine::LuaObjcBridge::nplActivate(mergeData.c_str(), s_luaPath);
 }
 
-+ (void)registerLuaCall:(NSDictionary *) dict
++ (void)registerLuaCall:(NSDictionary *)dict
 {
     s_interfaceBluetooth = [InterfaceBluetooth shareInstance];
     s_luaPath = [dict[@"luaPath"] UTF8String];
@@ -111,7 +111,7 @@ static void callBaseBridge(const int& pId, const std::string& extData)
 }
 
 // 重新连接蓝牙
-+ (void)reconnectBlu:(NSDictionary *) dict
++ (void)reconnectBlu:(NSDictionary *)dict
 {
     NSLog(@"%@",@"reconnectBlu true");
     InterfaceBluetooth* _self = [InterfaceBluetooth shareInstance];
@@ -139,7 +139,7 @@ static void callBaseBridge(const int& pId, const std::string& extData)
     [self blueDelegate];
 }
 
-+ (void)setDeviceName:(NSDictionary *) dict
++ (void)setDeviceName:(NSDictionary *)dict
 {
     s_checkDeviceName = dict[@"name"];
 }
@@ -485,7 +485,7 @@ static void callBaseBridge(const int& pId, const std::string& extData)
 			[_self->bblue notify:_self.currPeripheral
                 characteristic:characteristic
                 block:^(CBPeripheral *peripheral, CBCharacteristic *characteristics, NSError *error) {
-                    NSLog(@"new value %@",characteristics.value);
+                    NSLog(@"new value %@", characteristics.value);
                     // 应用状态LogitowAppManager
 
                     NSString * result = [[[[NSString stringWithFormat:@"%@",characteristics.value]

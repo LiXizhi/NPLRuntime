@@ -20,7 +20,7 @@
     static BabyBluetooth *share = nil;
     static dispatch_once_t oneToken;
     dispatch_once(&oneToken, ^{
-        share = [[BabyBluetooth alloc]init];
+        share = [[BabyBluetooth alloc] init];
     });
    return share;
 }
@@ -28,12 +28,12 @@
 - (instancetype)init {
     self = [super init];
     if (self) {
-        //初始化对象
-        babyCentralManager = [[BabyCentralManager alloc]init];
-        babySpeaker = [[BabySpeaker alloc]init];
+        // 初始化对象
+        babyCentralManager = [[BabyCentralManager alloc] init];
+        babySpeaker = [[BabySpeaker alloc] init];
         babyCentralManager->babySpeaker = babySpeaker;
-        
-        babyPeripheralManager = [[BabyPeripheralManager alloc]init];
+
+        babyPeripheralManager = [[BabyPeripheralManager alloc] init];
         babyPeripheralManager->babySpeaker = babySpeaker;
     }
     return self;
@@ -148,7 +148,7 @@
 
 // 设置蓝牙使用的参数参数
 - (void)setBabyOptionsWithScanForPeripheralsWithOptions:(NSDictionary *) scanForPeripheralsWithOptions
-    connectPeripheralWithOptions:(NSDictionary *) connectPeripheralWithOptions
+    connectPeripheralWithOptions:(NSDictionary *)connectPeripheralWithOptions
     scanForPeripheralsWithServices:(NSArray *)scanForPeripheralsWithServices
     discoverWithServices:(NSArray *)discoverWithServices
     discoverWithCharacteristics:(NSArray *)discoverWithCharacteristics
@@ -161,7 +161,7 @@
             discoverWithServices:discoverWithServices
             discoverWithCharacteristics:discoverWithCharacteristics];
 
-    [[babySpeaker callback]setBabyOptions:option];
+    [[babySpeaker callback] setBabyOptions:option];
 }
 
 /*
@@ -305,13 +305,13 @@
 // 设置查找Peripherals的规则
 - (void)setFilterOnDiscoverPeripherals:(BOOL (^)(NSString *peripheralName, NSDictionary *advertisementData, NSNumber *RSSI))filter
 {
-    [[babySpeaker callback]setFilterOnDiscoverPeripherals:filter];
+    [[babySpeaker callback] setFilterOnDiscoverPeripherals:filter];
 }
 
 // 设置连接Peripherals的规则
 - (void)setFilterOnConnectToPeripherals:(BOOL (^)(NSString *peripheralName, NSDictionary *advertisementData, NSNumber *RSSI))filter
 {
-    [[babySpeaker callback]setFilterOnconnectToPeripherals:filter];
+    [[babySpeaker callback] setFilterOnconnectToPeripherals:filter];
 }
 
 // 设置查找Peripherals的规则

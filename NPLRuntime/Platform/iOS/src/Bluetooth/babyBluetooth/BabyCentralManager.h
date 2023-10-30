@@ -11,7 +11,7 @@
 #import "BabySpeaker.h"
 #import "BabyDefine.h"
 
-@interface BabyCentralManager : NSObject<CBCentralManagerDelegate,CBPeripheralDelegate> {
+@interface BabyCentralManager : NSObject<CBCentralManagerDelegate, CBPeripheralDelegate> {
 
 @public
     // 方法是否处理
