@@ -70,6 +70,17 @@ public class PlatformBridge {
             ret = getChannelId(act);
         }else if(key.equals("onAgreeUserPrivacy")){
             act.onAgreeUserPrivacy();
+        } else if (key.equals("getDevicePermission")) {
+            String strPermission = "";
+            try {
+                JSONObject obj = new JSONObject(jsonParam);
+                strPermission = obj.optString("permission");
+            }catch (JSONException e){
+                e.printStackTrace();
+            }
+            if (strPermission != null && strPermission != ""){
+                ret = String.valueOf(ParaEngineActivity.HasPermission(strPermission));
+            }
         }
         return ret;
     }

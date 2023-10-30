@@ -35,6 +35,7 @@ import androidx.annotation.Keep;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.content.ContextCompat;
 
 import android.provider.MediaStore;
 import android.util.Base64;
@@ -138,6 +139,15 @@ public class ParaEngineActivity extends AppCompatActivity {
     public static void onExit(){
         sContext.finish();
         System.exit(0);
+    }
+
+    public static boolean HasPermission(String strPermission){
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) {
+            return true;
+        }
+        else{
+            return ContextCompat.checkSelfPermission(sContext,strPermission) == PackageManager.PERMISSION_GRANTED;
+        }
     }
 
     // 写入base64图片数据到相册
