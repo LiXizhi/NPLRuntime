@@ -222,11 +222,11 @@ namespace ParaEngine {
         [dict setObject:[NSNumber numberWithBool:value] forKey:key_];
     }
 
-    LuaObjcBridge::ReturnObject LuaObjcBridge::OcFunction::callFunction(const std::string& className_, const std::string& methodName_)
+    LuaObjcBridge::ReturnObject LuaObjcBridge::OcFunction::callFunction(const std::string &className_, const std::string &methodName_)
     {
         const char* className = className_.c_str();
         const char* methodName = methodName_.c_str();
-        
+
         LuaObjcBridge::ReturnValue rv;
         LuaObjcBridge::ReturnObject errRet(LuaObjcBridge::TypeInvalid, rv);
         
@@ -239,27 +239,23 @@ namespace ParaEngine {
         }
         
         SEL methodSel;
-        NSMutableDictionary* dict = (__bridge NSMutableDictionary*)argvDatas;
-        if (dict.count > 0)
-        {
+        NSMutableDictionary* dict = (__bridge NSMutableDictionary *)argvDatas;
+        if (dict.count > 0) {
             NSString *methodName_ = [NSString stringWithCString:methodName encoding:NSUTF8StringEncoding];
             methodName_ = [NSString stringWithFormat:@"%@:", methodName_];
             methodSel = NSSelectorFromString(methodName_);
-        }
-        else
-        {
+        } else {
             methodSel = NSSelectorFromString([NSString stringWithCString:methodName encoding:NSUTF8StringEncoding]);
         }
-        if (methodSel == (SEL)0)
-        {
+        
+        if (methodSel == (SEL)0) {
             NSString * method_str= [NSString stringWithCString:methodName_.c_str() encoding:[NSString defaultCStringEncoding]];
             NSLog(@"OcFunction::callFunction -- error:%@ could not found!", method_str);
             return errRet;
         }
         
         NSMethodSignature *methodSig = [targetClass methodSignatureForSelector:(SEL)methodSel];
-        if (methodSig == nil)
-        {
+        if (methodSig == nil) {
             NSLog(@"OcFunction::callFunction -- error: methodSig is nil!");
             return errRet;
         }
@@ -271,9 +267,11 @@ namespace ParaEngine {
             NSUInteger returnLength = [methodSig methodReturnLength];
             const char *returnType = [methodSig methodReturnType];
             
-            NSMutableDictionary* dict = (__bridge NSMutableDictionary*)argvDatas;
+            NSMutableDictionary* dict = (__bridge NSMutableDictionary *)argvDatas;
+            
             if(dict.count > 0)
                 [invocation setArgument:&dict atIndex:2];
+            
             [invocation invoke];
 
             

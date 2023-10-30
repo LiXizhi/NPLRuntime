@@ -113,17 +113,16 @@ static void callBaseBridge(const int &pId, const std::string &extData)
 // 重新连接蓝牙
 + (void)reconnectBlu:(NSDictionary *)dict
 {
-    NSLog(@"%@",@"reconnectBlu true");
-    InterfaceBluetooth* _self = [InterfaceBluetooth shareInstance];
+    InterfaceBluetooth *_self = [InterfaceBluetooth shareInstance];
 
     if (_self->connected) {
-        NSLog(@"%@",@"reconnectBlu true");
+        NSLog(@"reconnectBlu true");
         NSString *statstr = @"1";
-        //[LogitowAppManager setBlueStatus:statstr];
+
         return;
     } else {
         if (_self->bblue != nil) {
-            NSLog(@"%@",@"reconnectBlu false");
+            NSLog(@"reconnectBlu false");
             _self.cbCentralMgr = [[CBCentralManager alloc] initWithDelegate:nil queue:nil];
             //[bblue cancelAllPeripheralsConnection];
             _self->bblue.scanForPeripherals().begin();
@@ -144,7 +143,7 @@ static void callBaseBridge(const int &pId, const std::string &extData)
     s_checkDeviceName = dict[@"name"];
 }
 
-+ (void)setCharacteristicsUuid:(NSDictionary *) dict
++ (void)setCharacteristicsUuid:(NSDictionary *)dict
 {
     std::string serUuid = [dict[@"serUuid"] UTF8String];
     transform(serUuid.begin(), serUuid.end(), serUuid.begin(), ::toupper);
@@ -449,7 +448,7 @@ static void callBaseBridge(const int &pId, const std::string &extData)
 	callBaseBridge(ON_READ_CHARACTERISTIC_FINSH, "");
 }
 
-+ (void)readAllBlueGatt:(NSDictionary *) dict
++ (void)readAllBlueGatt:(NSDictionary *)dict
 {
     InterfaceBluetooth *_self = [InterfaceBluetooth shareInstance];
     Json::Value luajs_value;
