@@ -313,7 +313,7 @@
 
     if (error) {
         BabyLog(@"error didUpdateValueForCharacteristic %@ with error: %@", characteristic.UUID, [error localizedDescription]);
-        //        return;
+        // return;
     }
     // 查找字段订阅
     if ([babySpeaker notifyCallback:characteristic]) {

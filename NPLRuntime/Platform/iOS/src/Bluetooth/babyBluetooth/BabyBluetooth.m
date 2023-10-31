@@ -425,14 +425,10 @@
 // 开始并执行
 - (BabyBluetooth *(^)()) begin
 {
-    NSLog(@"from BabyBluetooth begin111111111111111!!!!!");
-    
     return [^BabyBluetooth *() {
-        NSLog(@"from BabyBluetooth begin!!!!!");
         // 取消未执行的stop定时任务
         [timerForStop invalidate];
         dispatch_sync(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
-            NSLog(@"from BabyBluetooth begin2222222222!!!!!");
             [self resetSeriseParmeter];
             // 处理链式函数缓存的数据
             if ([[babyCentralManager->pocket valueForKey:@"needScanForPeripherals"] isEqualToString:@"YES"]) {

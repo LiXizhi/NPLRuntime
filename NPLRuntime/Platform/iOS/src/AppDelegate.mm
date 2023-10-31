@@ -8,6 +8,7 @@
 #import "AppDelegate.h"
 #import "ViewController.h"
 #import "KeyboardiOS.h"
+#import "Bluetooth/InterfaceBluetooth/InterfaceBluetooth.h"
 
 #import <CoreTelephony/CTCellularData.h>
 #import <CoreTelephony/CTTelephonyNetworkInfo.h>
@@ -141,7 +142,7 @@ using namespace ParaEngine;
     [self.window setRootViewController: self.viewController];
     [self.window makeKeyAndVisible];
 
-    RenderWindowiOS* renderWindow = new RenderWindowiOS(self.view);
+    RenderWindowiOS *renderWindow = new RenderWindowiOS(self.view);
 
     [KeyboardiOSController InitLanguage];
 

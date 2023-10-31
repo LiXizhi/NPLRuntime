@@ -159,7 +159,7 @@ static void callBaseBridge(const int &pId, const std::string &extData)
     }
 }
 
-+ (void)linkDevice:(NSDictionary *) dict
++ (void)linkDevice:(NSDictionary *)dict
 {
     InterfaceBluetooth* _self = [InterfaceBluetooth shareInstance];
     [_self->bblue cancelScan];
@@ -168,11 +168,19 @@ static void callBaseBridge(const int &pId, const std::string &extData)
     }
     if (!s_lastAddr.empty()) {
         _self.currPeripheral = s_peripherals[s_lastAddr];
-        _self->bblue.having(_self.currPeripheral).connectToPeripherals().discoverServices().discoverCharacteristics().readValueForCharacteristic().discoverDescriptorsForCharacteristic().readValueForDescriptors().begin();
+        _self->bblue
+            .having(_self.currPeripheral)
+            .connectToPeripherals()
+            .discoverServices()
+            .discoverCharacteristics()
+            .readValueForCharacteristic()
+            .discoverDescriptorsForCharacteristic()
+            .readValueForDescriptors()
+            .begin();
     }
 }
 
-+ (void)writeToCharacteristic:(NSDictionary *) dict
++ (void)writeToCharacteristic:(NSDictionary *)dict
 {
     InterfaceBluetooth* _self = [InterfaceBluetooth shareInstance];
     std::string wdata = [dict[@"writeByte"] UTF8String];
@@ -196,7 +204,7 @@ static void callBaseBridge(const int &pId, const std::string &extData)
     }
 }
 
-+ (NSString *)characteristicGetStrValue:(NSDictionary *) dict
++ (NSString *)characteristicGetStrValue:(NSDictionary *)dict
 {
     InterfaceBluetooth* _self = [InterfaceBluetooth shareInstance];
     auto characteristic = [InterfaceBluetooth getCharacteristic:dict[@"ser_uuid"] _:dict[@"cha_uuid"]];
@@ -216,7 +224,7 @@ static void callBaseBridge(const int &pId, const std::string &extData)
     return @"";
 }
 
-+ (void)readCharacteristic:(NSDictionary *) dict
++ (void)readCharacteristic:(NSDictionary *)dict
 {
     InterfaceBluetooth* _self = [InterfaceBluetooth shareInstance];
     auto characteristic = [InterfaceBluetooth getCharacteristic:dict[@"ser_uuid"] _:dict[@"cha_uuid"]];
@@ -225,7 +233,7 @@ static void callBaseBridge(const int &pId, const std::string &extData)
 	}
 }
 
-+ (void)setCharacteristicNotification:(NSDictionary *) dict
++ (void)setCharacteristicNotification:(NSDictionary *)dict
 {
     InterfaceBluetooth* _self = [InterfaceBluetooth shareInstance];
     auto characteristic = [InterfaceBluetooth getCharacteristic:dict[@"ser_uuid"] _:dict[@"cha_uuid"]];
@@ -315,7 +323,7 @@ static void callBaseBridge(const int &pId, const std::string &extData)
 
     // 设置发现设service的Characteristics的委托
     [_self->bblue setBlockOnDiscoverCharacteristics:^(CBPeripheral *peripheral, CBService *service, NSError *error) {
-        NSLog(@"===service name:%@",service.UUID.UUIDString);
+        NSLog(@"service name:%@",service.UUID.UUIDString);
     }];
 
     // 设置读取characteristics的委托
@@ -337,9 +345,9 @@ static void callBaseBridge(const int &pId, const std::string &extData)
 
     // 设置发现characteristics的descriptors的委托
     [_self->bblue setBlockOnDiscoverDescriptorsForCharacteristic:^(CBPeripheral *peripheral, CBCharacteristic *characteristic, NSError *error) {
-        NSLog(@"===characteristic name:%@",characteristic.UUID);
+        NSLog(@"characteristic name:%@", characteristic.UUID);
         for (CBDescriptor *d in characteristic.descriptors) {
-            NSLog(@"CBDescriptor name is :%@",d.UUID);
+            NSLog(@"CBDescriptor name is :%@", d.UUID);
         }
     }];
 
@@ -373,22 +381,22 @@ static void callBaseBridge(const int &pId, const std::string &extData)
     
     // 设置设备连接成功的委托,同一个baby对象，使用不同的channel切换委托回调
     [_self->bblue setBlockOnConnectedAtChannel:channelOnRootView block:^(CBCentralManager *central, CBPeripheral *peripheral) {
-        NSLog(@"设备：%@--连接成功");
+        NSLog(@"设备：%@连接成功", peripheral.name);
     }];
 
     [_self->bblue setBlockOnConnected:^(CBCentralManager *central, CBPeripheral *peripheral) {
-        NSLog(@"设备：%@--连接成功", peripheral.name);
+        NSLog(@"设备：%@连接成功", peripheral.name);
     }];
 
     // 设置设备连接失败的委托
     [_self->bblue setBlockOnFailToConnectAtChannel:channelOnRootView block:^(CBCentralManager *central, CBPeripheral *peripheral, NSError *error) {
-        NSLog(@"设备：%@--连接失败", peripheral.name);
+        NSLog(@"设备：%@连接失败", peripheral.name);
         NSString *statstr = @"0";
     }];
 
     // 设置设备断开连接的委托
     [_self->bblue setBlockOnDisconnectAtChannel:channelOnRootView block:^(CBCentralManager *central, CBPeripheral *peripheral, NSError *error) {
-        NSLog(@"设备：%@--断开连接1", peripheral.name);
+        NSLog(@"设备：%@断开连接", peripheral.name);
         _self->connected = false;
         callBaseBridge(SET_BLUE_STATUS, "0");
         
@@ -399,7 +407,7 @@ static void callBaseBridge(const int &pId, const std::string &extData)
     [_self->bblue setBlockOnDiscoverServicesAtChannel:channelOnRootView block:^(CBPeripheral *peripheral, NSError *error) { }];
  
     [_self->bblue setBlockOnReadValueForCharacteristicAtChannel:channelOnRootView block:^(CBPeripheral *peripheral, CBCharacteristic *characteristics, NSError *error) {
-        NSLog(@"CharacteristicViewController===characteristic name:%@ value is:%@", characteristics.UUID, characteristics.value);
+        NSLog(@"CharacteristicViewController characteristic name:%@ value is:%@", characteristics.UUID, characteristics.value);
     }];
 
     // 设置写数据成功的block
@@ -430,8 +438,8 @@ static void callBaseBridge(const int &pId, const std::string &extData)
         NSLog(@"peripheral已经断开连接，请重新连接");
         return;
     }
-    
-    for (auto &s_itr: s_checkUuids)
+
+    for (auto &s_itr : s_checkUuids)
     {
         NSString *ser_uuid_nstr = [NSString stringWithCString:s_itr.first.c_str() encoding:[NSString defaultCStringEncoding]];
         
@@ -472,7 +480,7 @@ static void callBaseBridge(const int &pId, const std::string &extData)
     callBaseBridge(ON_READ_ALL_GATT_UUID, jsonstr);
 }
 
-+ (void)_setCharacteristicNotification:(CBCharacteristic*)characteristic
++ (void)_setCharacteristicNotification:(CBCharacteristic *)characteristic
 {
 	InterfaceBluetooth* _self = [InterfaceBluetooth shareInstance];
 	// 读取服务
