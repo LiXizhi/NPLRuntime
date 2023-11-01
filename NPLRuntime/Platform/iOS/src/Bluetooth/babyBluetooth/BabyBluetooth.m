@@ -7,7 +7,7 @@
 
 #import "BabyBluetooth.h"
 
-@implementation BabyBluetooth{
+@implementation BabyBluetooth {
     BabyCentralManager *babyCentralManager;
     BabyPeripheralManager *babyPeripheralManager;
     BabySpeaker *babySpeaker;
@@ -606,17 +606,17 @@
     }
 }
 
-- (BabyBluetooth *) and
+- (BabyBluetooth *)and
 {
     return self;
 }
 
-- (BabyBluetooth *) then
+- (BabyBluetooth *)then
 {
     return self;
 }
 
-- (BabyBluetooth *) with
+- (BabyBluetooth *)with
 {
     return self;
 }

@@ -21,7 +21,7 @@
             [NSDictionary dictionaryWithObjectsAndKeys:
                 // 蓝牙power没打开时alert提示框
                 [NSNumber numberWithBool:YES],CBCentralManagerOptionShowPowerAlertKey,
-                //重设centralManager恢复的IdentifierKey
+                // 重设centralManager恢复的IdentifierKey
                 @"babyBluetoothRestore",CBCentralManagerOptionRestoreIdentifierKey,
                 nil];
 #else
@@ -129,7 +129,7 @@
 - (void)centralManager:(CBCentralManager *)central didDiscoverPeripheral:(CBPeripheral *)peripheral advertisementData:(NSDictionary *)advertisementData RSSI:(NSNumber *)RSSI
 {
     // 日志
-//    BabyLog(@"当扫描到设备: %@", peripheral.name);
+    // BabyLog(@"当扫描到设备: %@", peripheral.name);
     [self addDiscoverPeripheral:peripheral];
     
     // 发出通知
@@ -276,7 +276,7 @@
 
     if (error) {
         BabyLog(@"error didDiscoverCharacteristicsForService for %@ with error: %@", service.UUID, [error localizedDescription]);
-        //        return;
+        // return;
     }
 
     // 回叫block
@@ -288,10 +288,10 @@
     if (needReadValueForCharacteristic) {
         for (CBCharacteristic *characteristic in service.characteristics) {
             [peripheral readValueForCharacteristic:characteristic];
-            //判断读写权限
-            //            if (characteristic.properties & CBCharacteristicPropertyRead ) {
-            //                [peripheral readValueForCharacteristic:characteristic];
-            //            }
+            // 判断读写权限
+            // if (characteristic.properties & CBCharacteristicPropertyRead ) {
+            //     [peripheral readValueForCharacteristic:characteristic];
+            // }
         }
     }
     
@@ -313,16 +313,15 @@
 
     if (error) {
         BabyLog(@"error didUpdateValueForCharacteristic %@ with error: %@", characteristic.UUID, [error localizedDescription]);
-        // return;
     }
     // 查找字段订阅
     if ([babySpeaker notifyCallback:characteristic]) {
-        [babySpeaker notifyCallback:characteristic](peripheral,characteristic,error);
+        [babySpeaker notifyCallback:characteristic](peripheral, characteristic, error);
         return;
     }
     // 回叫block
     if ([currChannel blockOnReadValueForCharacteristic]) {
-        [currChannel blockOnReadValueForCharacteristic](peripheral,characteristic,error);
+        [currChannel blockOnReadValueForCharacteristic](peripheral, characteristic, error);
     }
 }
 

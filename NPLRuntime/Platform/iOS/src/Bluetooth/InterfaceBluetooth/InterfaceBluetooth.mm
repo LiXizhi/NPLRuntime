@@ -185,7 +185,7 @@ static void callBaseBridge(const int &pId, const std::string &extData)
     InterfaceBluetooth* _self = [InterfaceBluetooth shareInstance];
     std::string wdata = [dict[@"writeByte"] UTF8String];
 
-    auto characteristic = [InterfaceBluetooth getCharacteristic:dict[@"ser_uuid"] _:dict[@"cha_uuid"]];
+    CBCharacteristic *characteristic = [InterfaceBluetooth getCharacteristic:dict[@"ser_uuid"] _:dict[@"cha_uuid"]];
     if (characteristic != NULL) {
         size_t bsLen = wdata.length() / 2;
         Byte *bs = new Byte[bsLen];
@@ -285,7 +285,7 @@ static void callBaseBridge(const int &pId, const std::string &extData)
         stringByReplacingOccurrencesOfString: @"<" withString: @""]
         stringByReplacingOccurrencesOfString: @">" withString: @""]
         stringByReplacingOccurrencesOfString: @" " withString: @""];
-    NSLog(@"bluetooth1:%@", result);
+    NSLog(@"bluetooth:%@", result);
     const char *anm = [result UTF8String];
 
     Json::Value luajs_value2;
@@ -328,7 +328,7 @@ static void callBaseBridge(const int &pId, const std::string &extData)
 
     // 设置读取characteristics的委托
     [_self->bblue setBlockOnReadValueForCharacteristic:^(CBPeripheral *peripheral, CBCharacteristic *characteristics, NSError *error) {
-        NSLog(@"characteristic name:%@ value is:%@", characteristics.UUID,characteristics.value);
+        NSLog(@"characteristic name:%@ value is:%@", characteristics.UUID, characteristics.value);
 
 	    Json::Value luajs_value;
 
@@ -347,13 +347,13 @@ static void callBaseBridge(const int &pId, const std::string &extData)
     [_self->bblue setBlockOnDiscoverDescriptorsForCharacteristic:^(CBPeripheral *peripheral, CBCharacteristic *characteristic, NSError *error) {
         NSLog(@"characteristic name:%@", characteristic.UUID);
         for (CBDescriptor *d in characteristic.descriptors) {
-            NSLog(@"CBDescriptor name is :%@", d.UUID);
+            NSLog(@"CBDescriptor name is:%@", d.UUID);
         }
     }];
 
     // 设置读取Descriptor的委托
     [_self->bblue setBlockOnReadValueForDescriptors:^(CBPeripheral *peripheral, CBDescriptor *descriptor, NSError *error) {
-        NSLog(@"Descriptor name:%@ value is:%@",descriptor.characteristic.UUID, descriptor.value);
+        NSLog(@"Descriptor name:%@ value is:%@", descriptor.characteristic.UUID, descriptor.value);
 
         if (_self->connected != true) {
             [InterfaceBluetooth setNotifiy];
