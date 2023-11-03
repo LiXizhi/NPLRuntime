@@ -20,15 +20,43 @@
 using namespace ParaEngine;
 
 CViewport::CViewport(CViewportManager* pViewportManager)
-	:m_position(), m_pScene(NULL), m_pCamera(NULL), m_pGUIRoot(NULL), m_pViewportManager(pViewportManager), m_fScalingX(1.f), m_fScalingY(1.f), m_fAspectRatio(1.f), m_bIsModifed(true), m_nZOrder(0), m_bIsEnabled(true), m_nEyeMode(STEREO_EYE_NORMAL), m_nPipelineOrder(-1), m_pRenderTarget(NULL), m_bDisableDeltaTime(false)
+	:m_position(), m_pScene(NULL), m_pGUIRoot(NULL), m_pViewportManager(pViewportManager), m_fScalingX(1.f), m_fScalingY(1.f), m_fAspectRatio(1.f), m_bIsModifed(true), m_nZOrder(0), m_bIsEnabled(true), m_nEyeMode(STEREO_EYE_NORMAL), m_nPipelineOrder(-1), m_pRenderTarget(NULL), m_bDisableDeltaTime(false)
 {
 	memset(&m_rect, 0, sizeof(m_rect));
 }
 
 CViewport::~CViewport(void)
 {
-	//SAFE_DELETE(m_pRenderTarget);
 	m_pRenderTarget.reset();
+}
+
+void ParaEngine::CViewport::SetCamera(CAutoCamera* val) 
+{ 
+	m_pCamera = val;
+}
+
+bool ParaEngine::CViewport::IsUseSceneCamera()
+{
+	return !m_pCamera;
+}
+
+void ParaEngine::CViewport::SetUseSceneCamera(bool bUseSceneCamera)
+{
+	if (bUseSceneCamera)
+	{
+		m_pCamera.reset();
+	}
+	else
+	{
+		if (!m_pCamera)
+		{
+			m_pCamera = new CAutoCamera();
+			// update camera from current camera settings
+			CBaseCamera* pFromCamera = CGlobals::GetScene()->GetCurrentCamera();
+			m_pCamera->CopyCameraParamsFrom(pFromCamera);
+			m_pCamera->UpdateProjParams();
+		}
+	}
 }
 
 CAutoCamera* ParaEngine::CViewport::GetCamera()
@@ -40,7 +68,7 @@ CAutoCamera* ParaEngine::CViewport::GetCamera()
 			return ((CAutoCamera*)GetScene()->GetCurrentCamera());
 		}
 	}
-	return m_pCamera;
+	return m_pCamera.get();
 }
 
 void ParaEngine::CViewport::ApplyCamera(CAutoCamera* pCamera)
@@ -235,6 +263,9 @@ HRESULT ParaEngine::CViewport::Render(double dTimeDelta, int nPipelineOrder)
 				}
 			}
 			
+			auto pLastCamera = pRootScene->GetCurrentCamera();
+			pRootScene->SetCurrentCamera(pCamera);
+
 			SetActive();
 			ApplyCamera(pCamera);
 			ApplyViewport();
@@ -264,6 +295,7 @@ HRESULT ParaEngine::CViewport::Render(double dTimeDelta, int nPipelineOrder)
 					pRootScene->AdvanceScene(dTimeDelta, nPipelineOrder);
 				}
 			}
+			pRootScene->SetCurrentCamera(pLastCamera);
 		}
 	}
 	else if (nPipelineOrder == PIPELINE_UI)
@@ -303,7 +335,31 @@ int ParaEngine::CViewport::InstallFields(CAttributeClass* pClass, bool bOverride
 	pClass->AddField("RenderScript", FieldType_String, (void*)SetRenderScript_s, (void*)GetRenderScript_s, NULL, NULL, bOverride);
 	pClass->AddField("RenderTargetName", FieldType_String, (void*)SetRenderTargetName_s, (void*)GetRenderTargetName_s, NULL, NULL, bOverride);
 	pClass->AddField("PipelineOrder", FieldType_Int, (void*)SetPipelineOrder_s, (void*)GetPipelineOrder_s, NULL, NULL, bOverride);
+	pClass->AddField("UseSceneCamera", FieldType_Bool, (void*)SetUseSceneCamera_s, (void*)IsUseSceneCamera_s, NULL, NULL, bOverride);
 	return S_OK;
+}
+
+IAttributeFields* ParaEngine::CViewport::GetChildAttributeObject(const char* sName)
+{
+	if (std::string(sName) == "camera")
+	{
+		return GetCamera();
+	}
+	return NULL;
+}
+
+int ParaEngine::CViewport::GetChildAttributeObjectCount(int nColumnIndex)
+{
+	return 1;
+}
+
+IAttributeFields* ParaEngine::CViewport::GetChildAttributeObject(int nRowIndex, int nColumnIndex)
+{
+	if(nRowIndex == 0 && nColumnIndex == 0)
+	{
+		return GetCamera();
+	}
+	return nullptr;
 }
 
 void ParaEngine::CViewport::OnParentSizeChanged(int nWidth, int nHeight)
