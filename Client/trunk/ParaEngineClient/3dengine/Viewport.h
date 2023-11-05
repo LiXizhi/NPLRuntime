@@ -70,7 +70,16 @@ namespace ParaEngine
 
 		ATTRIBUTE_METHOD1(CViewport, IsUseSceneCamera_s, bool*) { *p1 = cls->IsUseSceneCamera(); return S_OK; }
 		ATTRIBUTE_METHOD1(CViewport, SetUseSceneCamera_s, bool) { cls->SetUseSceneCamera(p1); return S_OK; }
+
+		ATTRIBUTE_METHOD1(CViewport, IsEnabled_s, bool*) { *p1 = cls->IsEnabled(); return S_OK; }
+		ATTRIBUTE_METHOD1(CViewport, SetIsEnabled_s, bool) { cls->SetIsEnabled(p1); return S_OK; }
+
+		ATTRIBUTE_METHOD1(CViewport, GetZOrder_s, int*) { *p1 = cls->GetZOrder(); return S_OK; }
+		ATTRIBUTE_METHOD1(CViewport, SetZOrder_s, int) { cls->SetZOrder(p1); return S_OK; }
 		
+		ATTRIBUTE_METHOD1(CViewport, IsDeltaTimeDisabled_s, bool*) { *p1 = cls->IsDeltaTimeDisabled(); return S_OK; }
+		ATTRIBUTE_METHOD1(CViewport, DisableDeltaTime_s, bool) { cls->DisableDeltaTime(p1); return S_OK; }
+
 	public:
 
 		struct ZOrderLessCompare

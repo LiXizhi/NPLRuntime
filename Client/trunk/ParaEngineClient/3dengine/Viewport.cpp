@@ -55,6 +55,10 @@ void ParaEngine::CViewport::SetUseSceneCamera(bool bUseSceneCamera)
 			CBaseCamera* pFromCamera = CGlobals::GetScene()->GetCurrentCamera();
 			m_pCamera->CopyCameraParamsFrom(pFromCamera);
 			m_pCamera->UpdateProjParams();
+			if (!m_pScene)
+			{
+				m_pScene = CGlobals::GetScene();
+			}
 		}
 	}
 }
@@ -270,6 +274,10 @@ HRESULT ParaEngine::CViewport::Render(double dTimeDelta, int nPipelineOrder)
 			ApplyCamera(pCamera);
 			ApplyViewport();
 			
+			auto vEye = pCamera->GetEyePosition();
+			Vector3 vEye_ = vEye;
+			pRootScene->RegenerateRenderOrigin(vEye_);
+
 			if (pRootScene->IsSceneEnabled())
 			{
 				//-- set up effects parameters
@@ -336,6 +344,9 @@ int ParaEngine::CViewport::InstallFields(CAttributeClass* pClass, bool bOverride
 	pClass->AddField("RenderTargetName", FieldType_String, (void*)SetRenderTargetName_s, (void*)GetRenderTargetName_s, NULL, NULL, bOverride);
 	pClass->AddField("PipelineOrder", FieldType_Int, (void*)SetPipelineOrder_s, (void*)GetPipelineOrder_s, NULL, NULL, bOverride);
 	pClass->AddField("UseSceneCamera", FieldType_Bool, (void*)SetUseSceneCamera_s, (void*)IsUseSceneCamera_s, NULL, NULL, bOverride);
+	pClass->AddField("enabled", FieldType_Bool, (void*)SetIsEnabled_s, (void*)IsEnabled_s, NULL, NULL, bOverride);
+	pClass->AddField("zorder", FieldType_Int, (void*)SetZOrder_s, (void*)GetZOrder_s, NULL, NULL, bOverride);
+	pClass->AddField("IsDeltaTimeDisabled", FieldType_Bool, (void*)DisableDeltaTime_s, (void*)IsDeltaTimeDisabled_s, NULL, NULL, bOverride);
 	return S_OK;
 }
 
