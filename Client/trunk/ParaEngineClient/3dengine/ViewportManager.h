@@ -43,6 +43,8 @@ namespace ParaEngine
 		ATTRIBUTE_METHOD1(CViewportManager, GetOmniForceLookatDistance_s, int*) { *p1 = cls->m_nOmniForceLookatDistance; return S_OK; }
 		ATTRIBUTE_METHOD1(CViewportManager, SetOmniForceLookatDistance_s, int) { cls->m_nOmniForceLookatDistance = (p1); return S_OK; }
 
+		ATTRIBUTE_METHOD1(CViewportManager, DeleteViewportByName_s, const char*) { cls->DeleteViewPort(p1); return S_OK; }
+
 		/** get attribute by child object. used to iterate across the attribute field hierarchy. */
 		virtual IAttributeFields* GetChildAttributeObject(const char * sName);
 
@@ -95,6 +97,7 @@ namespace ParaEngine
 		void SetActiveViewPort(CViewport* pViewport);
 
 		void DeleteViewPort(int nIndex=0);
+		void DeleteViewPort(const std::string& name);
 
 		void Cleanup();
 
