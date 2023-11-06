@@ -298,21 +298,19 @@ public class ParaEngineActivity extends AppCompatActivity {
         }
     }
 
-    //lua端调用，用户同意隐私政策和用户协议以后，再去进行相关敏感操作
+    // lua端调用，用户同意隐私政策和用户协议以后，再去进行相关敏感操作
     public void onAgreeUserPrivacy(){
         this.checkUsbMode();
         ParaEngineHelper.onAgreeUserPrivacy();
-        if(true){//PlatformBridge.getChannelId(this).equals("xiaomi")
+        if (true) {// PlatformBridge.getChannelId(this).equals("xiaomi")
             ParaEngineHelper.setCanReadPhoneState(false);
-        }else if(checkSelfPermission(Manifest.permission.READ_PHONE_STATE) != PackageManager.PERMISSION_GRANTED)
-        {
+        } else if(checkSelfPermission(Manifest.permission.READ_PHONE_STATE) != PackageManager.PERMISSION_GRANTED) {
             ParaEngineActivity
-                    .getContext()
-                    .requestPermissions(
-                            new String[]{READ_PHONE_STATE},
-                            PERMISSION_REQUEST_PHONE_STATE
-                    );
-
+                .getContext()
+                .requestPermissions(
+                    new String[]{READ_PHONE_STATE},
+                    PERMISSION_REQUEST_PHONE_STATE
+                );
         }
     }
 
@@ -629,6 +627,7 @@ public class ParaEngineActivity extends AppCompatActivity {
     @Override
     public void onRequestPermissionsResult(int requestCode, String permissions[], int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        RequestAndroidPermission.onRequestPermissionsResult(requestCode, permissions, grantResults);
 
         if (requestCode == PERMISSION_REQUEST_PHONE_STATE) {
             if (sContext == null) {
