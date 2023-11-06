@@ -20,7 +20,7 @@
 using namespace ParaEngine;
 
 CViewport::CViewport(CViewportManager* pViewportManager)
-	:m_position(), m_pScene(NULL), m_pGUIRoot(NULL), m_pViewportManager(pViewportManager), m_fScalingX(1.f), m_fScalingY(1.f), m_fAspectRatio(1.f), m_bIsModifed(true), m_nZOrder(0), m_bIsEnabled(true), m_nEyeMode(STEREO_EYE_NORMAL), m_nPipelineOrder(-1), m_pRenderTarget(NULL), m_bDisableDeltaTime(false)
+	:m_position(), m_pScene(NULL), m_pGUIRoot(NULL), m_pViewportManager(pViewportManager), m_fScalingX(1.f), m_fScalingY(1.f), m_fAspectRatio(1.f), m_bIsModifed(true), m_nZOrder(0), m_bIsEnabled(true), m_nEyeMode(STEREO_EYE_NORMAL), m_nPipelineOrder(-1), m_bDisableDeltaTime(false)
 {
 	memset(&m_rect, 0, sizeof(m_rect));
 }
@@ -210,12 +210,12 @@ const std::string& ParaEngine::CViewport::GetRenderTargetName() const
 	return m_sRenderTargetName;
 }
 
-std::shared_ptr<CRenderTarget> ParaEngine::CViewport::GetRenderTarget()
+CRenderTarget* ParaEngine::CViewport::GetRenderTarget()
 {
-	return m_pRenderTarget;
+	return m_pRenderTarget.get();
 }
 
-void ParaEngine::CViewport::SetRenderTarget(std::shared_ptr<CRenderTarget> target)
+void ParaEngine::CViewport::SetRenderTarget(CRenderTarget* target)
 {
 	m_pRenderTarget = target;
 }
@@ -228,7 +228,23 @@ void ParaEngine::CViewport::SetRenderTargetName(const std::string& val)
 		//SAFE_DELETE(m_pRenderTarget);
 		m_pRenderTarget.reset();
 		if (!m_sRenderTargetName.empty()){
-			m_pRenderTarget = std::make_shared<CRenderTarget>();
+
+			CRenderTarget* pRenderTarget = static_cast<CRenderTarget*>(CGlobals::GetScene()->FindObjectByNameAndType(m_sRenderTargetName, "CRenderTarget"));
+			if (pRenderTarget)
+			{
+				pRenderTarget->SetLifeTime(-1);
+				m_pRenderTarget = pRenderTarget;
+			}
+			else
+			{
+				// create one if not exist. 
+				CRenderTarget* pRenderTarget = new CRenderTarget();
+				pRenderTarget->SetIdentifier(m_sRenderTargetName);
+				CGlobals::GetScene()->AttachObject(pRenderTarget);
+				pRenderTarget->SetDirty(false);
+				pRenderTarget->SetVisibility(false);
+				m_pRenderTarget = pRenderTarget;
+			}
 			m_pRenderTarget->SetCanvasTextureName(val);
 		}
 	}

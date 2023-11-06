@@ -197,8 +197,8 @@ namespace ParaEngine
 		const std::string&  GetRenderTargetName() const;
 		void SetRenderTargetName(const std::string& val);
 
-		shared_ptr<CRenderTarget> GetRenderTarget();
-		void SetRenderTarget(shared_ptr<CRenderTarget> target);
+		CRenderTarget* GetRenderTarget();
+		void SetRenderTarget(CRenderTarget* target);
 
 		/** -1 or RENDER_PIPELINE_ORDER. if -1, it will be rendered for all pipeline stage */
 		int GetPipelineOrder() const;
@@ -288,7 +288,7 @@ namespace ParaEngine
 		int m_nZOrder;
 		std::string m_sName;
 		std::string m_sRenderTargetName;
-		std::shared_ptr<CRenderTarget> m_pRenderTarget;
+		ref_ptr<CRenderTarget> m_pRenderTarget;
 
 		STEREO_EYE m_nEyeMode;
 
