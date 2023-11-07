@@ -9,7 +9,7 @@ namespace ParaEngine
 	class CShapeAABB;
 	class CPortalFrustum;
 
-	enum CameraMode{
+	enum CameraMode {
 		CameraFollow = 1,
 		/// First person view of the Target object
 		CameraFollowFirstPerson = 2,
@@ -25,8 +25,8 @@ namespace ParaEngine
 		/// Camera as a first person. 
 		CameraCameraFirstPerson = 11
 	};
-	
-	
+
+
 	//-----------------------------------------------------------------------------
 	// Name: enum CharacterAndCameraKeys
 	// Desc: used by CCamera to map WM_KEYDOWN keys
@@ -72,168 +72,179 @@ namespace ParaEngine
 	public:
 		CBaseCamera();
 		// mapping from key id to key's direct input's scan code. 
-		static EVirtualKey			  m_scancode_key_map[MAX_KEYS]; 
+		static EVirtualKey			  m_scancode_key_map[MAX_KEYS];
 	public:
 		//////////////////////////////////////////////////////////////////////////
 		// implementation of IAttributeFields
 
 		/** attribute class ID should be identical, unless one knows how overriding rules work.*/
-		virtual int GetAttributeClassID(){return ATTRIBUTE_CLASSID_CBaseCamera;}
+		virtual int GetAttributeClassID() { return ATTRIBUTE_CLASSID_CBaseCamera; }
 		/** a static string, describing the attribute class object's name */
-		virtual const char* GetAttributeClassName(){static const char name[] = "CBaseCamera"; return name;}
+		virtual const char* GetAttributeClassName() { static const char name[] = "CBaseCamera"; return name; }
 		/** a static string, describing the attribute class object */
-		virtual const char* GetAttributeClassDescription(){static const char desc[] = ""; return desc;}
+		virtual const char* GetAttributeClassDescription() { static const char desc[] = ""; return desc; }
 		/** this class should be implemented if one wants to add new attribute. This function is always called internally.*/
 		virtual int InstallFields(CAttributeClass* pClass, bool bOverride);
 
-		ATTRIBUTE_METHOD1(CBaseCamera, GetNearPlane_s, float*)	{*p1 = cls->GetNearPlane(); return S_OK;}
-		ATTRIBUTE_METHOD1(CBaseCamera, SetNearPlane_s, float)	{cls->SetNearPlane(p1); return S_OK;}
+		ATTRIBUTE_METHOD1(CBaseCamera, GetNearPlane_s, float*) { *p1 = cls->GetNearPlane(); return S_OK; }
+		ATTRIBUTE_METHOD1(CBaseCamera, SetNearPlane_s, float) { cls->SetNearPlane(p1); return S_OK; }
 
-		ATTRIBUTE_METHOD1(CBaseCamera, GetFarPlane_s, float*)	{*p1 = cls->GetFarPlane(); return S_OK;}
-		ATTRIBUTE_METHOD1(CBaseCamera, SetFarPlane_s, float)	{cls->SetFarPlane(p1); return S_OK;}
+		ATTRIBUTE_METHOD1(CBaseCamera, GetFarPlane_s, float*) { *p1 = cls->GetFarPlane(); return S_OK; }
+		ATTRIBUTE_METHOD1(CBaseCamera, SetFarPlane_s, float) { cls->SetFarPlane(p1); return S_OK; }
 
-		ATTRIBUTE_METHOD1(CBaseCamera, GetFieldOfView_s, float*)	{*p1 = cls->GetFieldOfView(); return S_OK;}
-		ATTRIBUTE_METHOD1(CBaseCamera, SetFieldOfView_s, float)	{cls->SetFieldOfView(p1); return S_OK;}
+		ATTRIBUTE_METHOD1(CBaseCamera, GetFieldOfView_s, float*) { *p1 = cls->GetFieldOfView(); return S_OK; }
+		ATTRIBUTE_METHOD1(CBaseCamera, SetFieldOfView_s, float) { cls->SetFieldOfView(p1); return S_OK; }
 
-		ATTRIBUTE_METHOD1(CBaseCamera, GetAspectRatio_s, float*)	{*p1 = cls->GetAspectRatio(); return S_OK;}
-		ATTRIBUTE_METHOD1(CBaseCamera, SetAspectRatio_s, float)	{cls->SetAspectRatio(p1); return S_OK;}
+		ATTRIBUTE_METHOD1(CBaseCamera, GetAspectRatio_s, float*) { *p1 = cls->GetAspectRatio(); return S_OK; }
+		ATTRIBUTE_METHOD1(CBaseCamera, SetAspectRatio_s, float) { cls->SetAspectRatio(p1); return S_OK; }
 
-		ATTRIBUTE_METHOD1(CBaseCamera, IsPerspectiveView_s, bool*)	{*p1 = cls->IsPerspectiveView(); return S_OK;}
-		ATTRIBUTE_METHOD1(CBaseCamera, SetIsPerspectiveView_s, bool)	{cls->SetIsPerspectiveView(p1); return S_OK;}
-			
-		ATTRIBUTE_METHOD1(CBaseCamera, GetOrthoWidth_s, float*)	{*p1 = cls->GetOrthoWidth(); return S_OK;}
-		ATTRIBUTE_METHOD1(CBaseCamera, SetOrthoWidth_s, float)	{cls->SetOrthoWidth(p1); return S_OK;}
+		ATTRIBUTE_METHOD1(CBaseCamera, IsPerspectiveView_s, bool*) { *p1 = cls->IsPerspectiveView(); return S_OK; }
+		ATTRIBUTE_METHOD1(CBaseCamera, SetIsPerspectiveView_s, bool) { cls->SetIsPerspectiveView(p1); return S_OK; }
 
-		ATTRIBUTE_METHOD1(CBaseCamera, GetOrthoHeight_s, float*)	{*p1 = cls->GetOrthoHeight(); return S_OK;}
-		ATTRIBUTE_METHOD1(CBaseCamera, SetOrthoHeight_s, float)	{cls->SetOrthoHeight(p1); return S_OK;}
+		ATTRIBUTE_METHOD1(CBaseCamera, GetOrthoWidth_s, float*) { *p1 = cls->GetOrthoWidth(); return S_OK; }
+		ATTRIBUTE_METHOD1(CBaseCamera, SetOrthoWidth_s, float) { cls->SetOrthoWidth(p1); return S_OK; }
 
-		ATTRIBUTE_METHOD1(CBaseCamera, GetMoveScaler_s, float*)	{*p1 = cls->GetMoveScaler(); return S_OK;}
-		ATTRIBUTE_METHOD1(CBaseCamera, SetMoveScaler_s, float)	{cls->SetMoveScaler(p1); return S_OK;}
+		ATTRIBUTE_METHOD1(CBaseCamera, GetOrthoHeight_s, float*) { *p1 = cls->GetOrthoHeight(); return S_OK; }
+		ATTRIBUTE_METHOD1(CBaseCamera, SetOrthoHeight_s, float) { cls->SetOrthoHeight(p1); return S_OK; }
 
-		ATTRIBUTE_METHOD1(CBaseCamera, GetRotationScaler_s, float*)	{*p1 = cls->GetRotationScaler(); return S_OK;}
-		ATTRIBUTE_METHOD1(CBaseCamera, SetRotationScaler_s, float)	{cls->SetRotationScaler(p1); return S_OK;}
+		ATTRIBUTE_METHOD1(CBaseCamera, GetMoveScaler_s, float*) { *p1 = cls->GetMoveScaler(); return S_OK; }
+		ATTRIBUTE_METHOD1(CBaseCamera, SetMoveScaler_s, float) { cls->SetMoveScaler(p1); return S_OK; }
+
+		ATTRIBUTE_METHOD1(CBaseCamera, GetRotationScaler_s, float*) { *p1 = cls->GetRotationScaler(); return S_OK; }
+		ATTRIBUTE_METHOD1(CBaseCamera, SetRotationScaler_s, float) { cls->SetRotationScaler(p1); return S_OK; }
 
 
-		ATTRIBUTE_METHOD1(CBaseCamera, IsShiftMoveSwitched_s, bool*)	{*p1 = cls->IsShiftMoveSwitched(); return S_OK;}
-		ATTRIBUTE_METHOD1(CBaseCamera, SetShiftMoveSwitched_s, bool)	{cls->SetShiftMoveSwitched(p1); return S_OK;}
+		ATTRIBUTE_METHOD1(CBaseCamera, IsShiftMoveSwitched_s, bool*) { *p1 = cls->IsShiftMoveSwitched(); return S_OK; }
+		ATTRIBUTE_METHOD1(CBaseCamera, SetShiftMoveSwitched_s, bool) { cls->SetShiftMoveSwitched(p1); return S_OK; }
 
-		ATTRIBUTE_METHOD1(CBaseCamera, IsInvertPitch_s, bool*)	{*p1 = cls->IsInvertPitch(); return S_OK;}
-		ATTRIBUTE_METHOD1(CBaseCamera, SetInvertPitch_s, bool)	{cls->SetInvertPitch(p1); return S_OK;}
+		ATTRIBUTE_METHOD1(CBaseCamera, IsInvertPitch_s, bool*) { *p1 = cls->IsInvertPitch(); return S_OK; }
+		ATTRIBUTE_METHOD1(CBaseCamera, SetInvertPitch_s, bool) { cls->SetInvertPitch(p1); return S_OK; }
 
-		ATTRIBUTE_METHOD1(CBaseCamera, GetNumberOfFramesToSmoothMouseData_s, int*)	{*p1 = cls->GetNumberOfFramesToSmoothMouseData(); return S_OK;}
-		ATTRIBUTE_METHOD1(CBaseCamera, SetNumberOfFramesToSmoothMouseData_s, int)	{cls->SetNumberOfFramesToSmoothMouseData(p1); return S_OK;}
+		ATTRIBUTE_METHOD1(CBaseCamera, GetNumberOfFramesToSmoothMouseData_s, int*) { *p1 = cls->GetNumberOfFramesToSmoothMouseData(); return S_OK; }
+		ATTRIBUTE_METHOD1(CBaseCamera, SetNumberOfFramesToSmoothMouseData_s, int) { cls->SetNumberOfFramesToSmoothMouseData(p1); return S_OK; }
 
-		ATTRIBUTE_METHOD1(CBaseCamera, GetEyePosition_s, DVector3*)	{*p1 = cls->GetEyePosition(); return S_OK;}
-		ATTRIBUTE_METHOD1(CBaseCamera, GetLookAtPosition_s, DVector3*)	{*p1 =cls->GetLookAtPosition(); return S_OK;}
-		
+		ATTRIBUTE_METHOD1(CBaseCamera, GetEyePosition_s, DVector3*) { *p1 = cls->GetEyePosition(); return S_OK; }
+		ATTRIBUTE_METHOD1(CBaseCamera, SetEyePosition_s, DVector3) { cls->SetEyePosition(p1); return S_OK; }
 
-		ATTRIBUTE_METHOD1(CBaseCamera, GetMovementDrag_s, bool*)	{*p1 = cls->GetMovementDrag(); return S_OK;}
-		ATTRIBUTE_METHOD1(CBaseCamera, SetMovementDrag_s, bool)	{cls->SetMovementDrag(p1); return S_OK;}
+		ATTRIBUTE_METHOD1(CBaseCamera, GetLookAtPosition_s, DVector3*) { *p1 = cls->GetLookAtPosition(); return S_OK; }
+		ATTRIBUTE_METHOD1(CBaseCamera, SetLookAtPosition_s, DVector3) { cls->SetLookAtPosition(p1); return S_OK; }
 
-		ATTRIBUTE_METHOD1(CBaseCamera, GetTotalDragTime_s, float*)	{*p1 = cls->GetTotalDragTime(); return S_OK;}
-		ATTRIBUTE_METHOD1(CBaseCamera, SetTotalDragTime_s, float)	{cls->SetTotalDragTime(p1); return S_OK;}
-		
-		ATTRIBUTE_METHOD(CBaseCamera, FrameMove_s)	{cls->FrameMove(0.f); return S_OK;}
-		
-		
+		ATTRIBUTE_METHOD1(CBaseCamera, GetCameraUp_s, Vector3*) { *p1 = cls->GetCameraUp(); return S_OK; }
+		ATTRIBUTE_METHOD1(CBaseCamera, SetCameraUp_s, Vector3) { cls->SetCameraUp(p1); return S_OK; }
+
+		ATTRIBUTE_METHOD1(CBaseCamera, GetMovementDrag_s, bool*) { *p1 = cls->GetMovementDrag(); return S_OK; }
+		ATTRIBUTE_METHOD1(CBaseCamera, SetMovementDrag_s, bool) { cls->SetMovementDrag(p1); return S_OK; }
+
+		ATTRIBUTE_METHOD1(CBaseCamera, GetTotalDragTime_s, float*) { *p1 = cls->GetTotalDragTime(); return S_OK; }
+		ATTRIBUTE_METHOD1(CBaseCamera, SetTotalDragTime_s, float) { cls->SetTotalDragTime(p1); return S_OK; }
+
+		ATTRIBUTE_METHOD(CBaseCamera, FrameMove_s) { cls->FrameMove(0.f); return S_OK; }
+
+
 		DEFINE_SCRIPT_EVENT(CBaseCamera, FrameMove);
 
 		// Call these from client and use Get*Matrix() to read new matrices
-		virtual LRESULT HandleMessages( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam );
-		virtual void    FrameMove( FLOAT fElapsedTime );
+		virtual LRESULT HandleMessages(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
+		virtual void    FrameMove(FLOAT fElapsedTime);
 
 		/** update the culling planes according to view and projection matrix on top of the global stack*/
 		void UpdateFrustum();
 
 		/** get the camera view frustum info */
-		inline CCameraFrustum* GetFrustum(){return &m_frustum;};
+		inline CCameraFrustum* GetFrustum() { return &m_frustum; };
 
 		/** get the camera view frustum info */
-		inline CPortalFrustum* GetPortalFrustum(){return &m_frustum_portal;};
-		
-		/** get the object view frustum info 
+		inline CPortalFrustum* GetPortalFrustum() { return &m_frustum_portal; };
+
+		/** get the object view frustum info
 		object view frustum is smaller than m_frustum; its far plane is set at fog end
 		*/
-		inline CCameraFrustum* GetObjectFrustum(){return &m_frustum_object;};
+		inline CCameraFrustum* GetObjectFrustum() { return &m_frustum_object; };
 
-		/** get the shadow view frustum info 
+		/** get the shadow view frustum info
 		* shadow view frustum is smaller than m_frustum_object; its far plane is set at a fixed size, such as the smaller of 50 and fog end
 		*/
-		inline CCameraFrustum* GetShadowFrustum(){return &m_frustum_shadow;};
-		
+		inline CCameraFrustum* GetShadowFrustum() { return &m_frustum_shadow; };
+
 		/** test again view frustum */
-		bool  CanSeeObject (IViewClippingObject* pObj);
-		
+		bool  CanSeeObject(IViewClippingObject* pObj);
+
 		/** test to see if any of the vertices are inside the fog plane */
-		inline Plane& GetFogPlane() {return m_fog_plane;};
+		inline Plane& GetFogPlane() { return m_fog_plane; };
 
 		/** Reset the camera's position back to the default*/
-		virtual void Reset(); 
-		virtual void SetViewParams(const DVector3& vEyePt, const DVector3& vLookatPt);
+		virtual void Reset();
+		virtual void SetViewParams(const DVector3& vEyePt, const DVector3& vLookatPt, const Vector3* up = NULL);
 		void SetProjParams(FLOAT fFOV, FLOAT fAspect, FLOAT fNearPlane, FLOAT fFarPlane);
 
 		virtual void SetFollowTarget(CBaseObject* pObj) {};
-		virtual CBaseObject* GetFollowTarget(){ return NULL; };
-		virtual CameraMode GetCameraMode() {return CameraFollowFirstPerson; }
+		virtual CBaseObject* GetFollowTarget() { return NULL; };
+		virtual CameraMode GetCameraMode() { return CameraFollowFirstPerson; }
 
 		/**
-		* update the projection matrix using the current field of view and near and far plane values. 
+		* update the projection matrix using the current field of view and near and far plane values.
 		* this function should be called whenever field of view, near and far plane values, or aspect ratio changes.
 		* @param fAspect: the aspect ratio.
 		*/
 		void UpdateProjParams();
 		void UpdateProjParams(FLOAT fAspect);
-		
+
 		// Functions to change behavior
-		VOID SetInvertPitch( bool bInvertPitch );
-		bool IsInvertPitch(){return m_bInvertPitch;}
-		VOID SetDrag( bool bMovementDrag, FLOAT fTotalDragTimeToZero = 0.25f ) { m_bMovementDrag = bMovementDrag; m_fTotalDragTimeToZero = fTotalDragTimeToZero; }
-		VOID SetEnableYAxisMovement( bool bEnableYAxisMovement ) { m_bEnableYAxisMovement = bEnableYAxisMovement; }
-		VOID SetEnablePositionMovement( bool bEnablePositionMovement ) { m_bEnablePositionMovement = bEnablePositionMovement; }
-		VOID SetClipToBoundary( bool bClipToBoundary, Vector3* pvMinBoundary, Vector3* pvMaxBoundary ) { m_bClipToBoundary = bClipToBoundary; if( pvMinBoundary ) m_vMinBoundary = *pvMinBoundary; if( pvMaxBoundary ) m_vMaxBoundary = *pvMaxBoundary; }
-		VOID SetScalers( FLOAT fRotationScaler = 0.01f, FLOAT fMoveScaler = 5.0f )  { m_fRotationScaler = fRotationScaler; m_fMoveScaler = fMoveScaler; }
-		
-		VOID SetRotationScaler( FLOAT fRotationScaler = 0.01f);
+		VOID SetInvertPitch(bool bInvertPitch);
+		bool IsInvertPitch() { return m_bInvertPitch; }
+		VOID SetDrag(bool bMovementDrag, FLOAT fTotalDragTimeToZero = 0.25f) { m_bMovementDrag = bMovementDrag; m_fTotalDragTimeToZero = fTotalDragTimeToZero; }
+		VOID SetEnableYAxisMovement(bool bEnableYAxisMovement) { m_bEnableYAxisMovement = bEnableYAxisMovement; }
+		VOID SetEnablePositionMovement(bool bEnablePositionMovement) { m_bEnablePositionMovement = bEnablePositionMovement; }
+		VOID SetClipToBoundary(bool bClipToBoundary, Vector3* pvMinBoundary, Vector3* pvMaxBoundary) { m_bClipToBoundary = bClipToBoundary; if (pvMinBoundary) m_vMinBoundary = *pvMinBoundary; if (pvMaxBoundary) m_vMaxBoundary = *pvMaxBoundary; }
+		VOID SetScalers(FLOAT fRotationScaler = 0.01f, FLOAT fMoveScaler = 5.0f) { m_fRotationScaler = fRotationScaler; m_fMoveScaler = fMoveScaler; }
+
+		VOID SetRotationScaler(FLOAT fRotationScaler = 0.01f);
 		float GetRotationScaler();
-		VOID SetMoveScaler( FLOAT fMoveScaler = 5.0f);
+		VOID SetMoveScaler(FLOAT fMoveScaler = 5.0f);
 		float GetMoveScaler();
 
-		VOID SetNumberOfFramesToSmoothMouseData( int nFrames ) { if( nFrames > 0 ) m_fFramesToSmoothMouseData = (float)nFrames; }
-		int GetNumberOfFramesToSmoothMouseData( ) { return (int)m_fFramesToSmoothMouseData; }
-		VOID SetResetCursorAfterMove( bool bResetCursorAfterMove ) { m_bResetCursorAfterMove = bResetCursorAfterMove; }
+		VOID SetNumberOfFramesToSmoothMouseData(int nFrames) { if (nFrames > 0) m_fFramesToSmoothMouseData = (float)nFrames; }
+		int GetNumberOfFramesToSmoothMouseData() { return (int)m_fFramesToSmoothMouseData; }
+		VOID SetResetCursorAfterMove(bool bResetCursorAfterMove) { m_bResetCursorAfterMove = bResetCursorAfterMove; }
 		/** whether the AD and QE key are switched for character movement. */
-		bool IsShiftMoveSwitched(); 
+		bool IsShiftMoveSwitched();
 		/** whether the AD and QE key are switched for character movement. */
-		void SetShiftMoveSwitched(bool bSwitched = false); 
+		void SetShiftMoveSwitched(bool bSwitched = false);
 
 		// Functions to get state
-		inline Matrix4*  GetViewMatrix()            { return &m_mView; }
-		inline Matrix4*  GetProjMatrix()            { return &m_mProj; }
+		inline Matrix4*  GetViewMatrix() { return &m_mView; }
+		inline Matrix4*  GetProjMatrix() { return &m_mProj; }
 		inline bool IsBeingDragged() { return (m_bMouseLButtonDown || m_bMouseMButtonDown || m_bMouseRButtonDown); }
-		inline bool IsMouseLButtonDown() { return m_bMouseLButtonDown; } 
-		inline bool IsMouseMButtonDown() { return m_bMouseMButtonDown; } 
-		inline bool IsMouseRButtonDown() { return m_bMouseRButtonDown; } 
+		inline bool IsMouseLButtonDown() { return m_bMouseLButtonDown; }
+		inline bool IsMouseMButtonDown() { return m_bMouseMButtonDown; }
+		inline bool IsMouseRButtonDown() { return m_bMouseRButtonDown; }
 
 		void GetMouseRay(Vector3& vPickRayOrig, Vector3& vPickRayDir, POINT ptCursor, UINT nWidth, UINT nHeight, const Matrix4* pMatWorld);
 
 		// Get camera parameters
-		inline DVector3 GetEyePosition(){return m_vEye;};
-		inline DVector3 GetLookAtPosition(){return m_vLookAt;};
-		inline void SetLookAtPosition(DVector3 pos) { m_vLookAt = pos; };
-		inline float GetFieldOfView(){return m_fFOV;};
-		inline float GetAspectRatio(){return m_fAspect;};
-		inline float GetNearPlane(){return m_fNearPlane;};
-		inline float GetFarPlane(){return m_fFarPlane;};
-		inline float GetOrthoHeight(){return m_fOrthoHeight;};
-		inline float GetOrthoWidth(){return m_fOrthoWidth;};
+		inline DVector3 GetEyePosition() { return m_vEye; };
+		virtual void SetEyePosition(const DVector3& pos);
+		inline DVector3 GetLookAtPosition() { return m_vLookAt; };
+		virtual void SetLookAtPosition(const DVector3& pos);
+		
+		Vector3 GetCameraUp();
+		virtual void SetCameraUp(const Vector3& pos);
+
+		inline float GetFieldOfView() { return m_fFOV; };
+		inline float GetAspectRatio() { return m_fAspect; };
+		inline float GetNearPlane() { return m_fNearPlane; };
+		inline float GetFarPlane() { return m_fFarPlane; };
+		inline float GetOrthoHeight() { return m_fOrthoHeight; };
+		inline float GetOrthoWidth() { return m_fOrthoWidth; };
 
 		/** get  whether we use perspective view or orthogonal view */
-		inline bool IsPerspectiveView() { return m_bIsPerspectiveView; } 
+		inline bool IsPerspectiveView() { return m_bIsPerspectiveView; }
 		/** set whether we use perspective view or orthogonal view */
 		void  SetIsPerspectiveView(bool bIsPerspectiveView);
-		void SetFieldOfView(float fov_v, float fov_h);
+
 		/** change the field of view . it will internally call UpdateProjParams()*/
 		void SetFieldOfView(float fFieldofview);
+		void SetFieldOfView(float fov_v,float fov_h);
 		/** change the near plane. it will internally call UpdateProjParams()*/
 		void SetNearPlane(float fDist);
 		/** change the far plane. it will internally call UpdateProjParams()*/
@@ -249,10 +260,10 @@ namespace ParaEngine
 		void CopyCameraParamsFrom(CBaseCamera* pFromCamera);
 
 		// Functions to get state
-		inline Vector3  GetWorldRight()            { return Vector3( m_mCameraWorld._11, m_mCameraWorld._12, m_mCameraWorld._13 ); } 
-		inline Vector3  GetWorldUp()               { return Vector3( m_mCameraWorld._21, m_mCameraWorld._22, m_mCameraWorld._23 ); }
-		inline Vector3  GetWorldAhead()            { return Vector3( m_mCameraWorld._31, m_mCameraWorld._32, m_mCameraWorld._33 ); }
-		inline Vector3  GetEyePt()                 { return Vector3( m_mCameraWorld._41, m_mCameraWorld._42, m_mCameraWorld._43 ); }
+		inline Vector3  GetWorldRight() { return Vector3(m_mCameraWorld._11, m_mCameraWorld._12, m_mCameraWorld._13); }
+		inline Vector3  GetWorldUp() { return Vector3(m_mCameraWorld._21, m_mCameraWorld._22, m_mCameraWorld._23); }
+		inline Vector3  GetWorldAhead() { return Vector3(m_mCameraWorld._31, m_mCameraWorld._32, m_mCameraWorld._33); }
+		inline Vector3  GetEyePt() { return Vector3(m_mCameraWorld._41, m_mCameraWorld._42, m_mCameraWorld._43); }
 
 		virtual Vector3 GetRenderEyePosition();
 		// we can alter key map at runtime
@@ -261,37 +272,37 @@ namespace ParaEngine
 		static EVirtualKey GetKeyMap(CharacterAndCameraKeys key);
 
 	protected:
-		
+
 		// Functions to map a WM_KEYDOWN key to a CharacterAndCameraKeysenum
-		virtual CharacterAndCameraKeys MapKey( UINT nKey );    
-		BOOL IsKeyDown( BYTE key )  { return( (key & KEY_IS_DOWN_MASK) == KEY_IS_DOWN_MASK ); }
-		BOOL WasKeyDown( BYTE key ) { return( (key & KEY_WAS_DOWN_MASK) == KEY_WAS_DOWN_MASK ); }
+		virtual CharacterAndCameraKeys MapKey(UINT nKey);
+		BOOL IsKeyDown(BYTE key) { return((key & KEY_IS_DOWN_MASK) == KEY_IS_DOWN_MASK); }
+		BOOL WasKeyDown(BYTE key) { return((key & KEY_WAS_DOWN_MASK) == KEY_WAS_DOWN_MASK); }
 
 		/** Clamps pV to lie inside m_vMinBoundary & m_vMaxBoundary */
-		void ConstrainToBoundary( DVector3* pV);
-		void UpdateMouseDelta( float fElapsedTime );
+		void ConstrainToBoundary(DVector3* pV);
+		void UpdateMouseDelta(float fElapsedTime);
 		/**
-		* @param nDX: the x delta in multiple of 120. 
-		* @param nDY: the y delta in multiple of 120. 
+		* @param nDX: the x delta in multiple of 120.
+		* @param nDY: the y delta in multiple of 120.
 		*/
-		void UpdateMouseDelta( int nDX, int nDY);
-		void UpdateVelocity( float fElapsedTime );
+		void UpdateMouseDelta(int nDX, int nDY);
+		void UpdateVelocity(float fElapsedTime);
 
 
 		/**
 		* If true, then camera movement will slow to a stop otherwise movement is instant
-		* @param bEnable 
+		* @param bEnable
 		*/
 		void SetMovementDrag(bool bEnable);
 		bool GetMovementDrag();
 
 		/**
 		* Time it takes for velocity to go from full to 0. default value is 0.25 seconds
-		* @param fTime 
+		* @param fTime
 		*/
 		void SetTotalDragTime(float fTime);
 		float GetTotalDragTime();
-		
+
 		/** camera view frustum */
 		CCameraFrustum m_frustum;
 
@@ -304,11 +315,11 @@ namespace ParaEngine
 		/** portal frustum with many planes formed by the portal vertices and the camera eye position.*/
 		CPortalFrustum m_frustum_portal;
 
-		/** this is the fog end plane, it is plane with normal of the eye vector and distance of the fog range 
-		* because fogs in ParaEngine is emulated linearly along the camera z axis, we need this to decide whether a shape is completely in fog or not. 
+		/** this is the fog end plane, it is plane with normal of the eye vector and distance of the fog range
+		* because fogs in ParaEngine is emulated linearly along the camera z axis, we need this to decide whether a shape is completely in fog or not.
 		*/
 		Plane		m_fog_plane;
-		
+
 		/**
 		* @obsolete: the eye position is always added by the m_vEyeReferencePoint when changed
 		* it is initialized to be (0,0,0). Call ChangeEyeReferencePoint() at any time
@@ -318,7 +329,7 @@ namespace ParaEngine
 
 		Matrix4            m_mView;              // View matrix 
 		Matrix4            m_mProj;              // Projection matrix
-				
+
 		BYTE                  m_aKeys[MAX_KEYS];  // State of input - KEY_WAS_DOWN_MASK|KEY_IS_DOWN_MASK
 		POINT                 m_ptLastMousePosition;  // Last absolute position of mouse cursor
 		bool                  m_bMouseLButtonDown;    // True if left button is down 
@@ -333,6 +344,7 @@ namespace ParaEngine
 		DVector3           m_vDefaultLookAt;       // Default LookAt position
 		DVector3           m_vEye;                 // Camera eye position
 		DVector3           m_vLookAt;              // LookAt position
+		Vector3		   m_vUp;                  // Up vector of camera
 		float                 m_fCameraYawAngle;      // Yaw angle of camera
 		float                 m_fCameraPitchAngle;    // Pitch angle of camera
 
@@ -363,7 +375,7 @@ namespace ParaEngine
 		DVector3           m_vMaxBoundary;         // Max point in clip boundary
 
 		bool                  m_bResetCursorAfterMove;// If true, the class will reset the cursor position so that the cursor always has space to move 
-		
+
 		Matrix4 m_mCameraWorld;       // World matrix of the camera (inverse of the view matrix)
 	};
 
@@ -380,7 +392,7 @@ namespace ParaEngine
 		CFirstPersonCamera();
 
 		// Call these from client and use Get*Matrix() to read new matrices
-		virtual void FrameMove( float fElapsedTime );
+		virtual void FrameMove(float fElapsedTime);
 
 
 	protected:

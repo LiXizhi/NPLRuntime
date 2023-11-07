@@ -11,7 +11,7 @@ namespace ParaEngine
 	typedef std::pair<uint32, uint32> AnimRange;
 
 	// global time for global sequences
-	extern int globalTime;
+	extern int64_t globalTime;
 
 	/* Generic animated value class:
 	* T is the data type to animate

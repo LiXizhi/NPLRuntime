@@ -1853,12 +1853,12 @@ void CAutoCamera::SetViewParams(const DVector3& vEyePt, const DVector3& vLookatP
 	m_vDefaultLookAt = m_vLookAt = vLookatPt;
 
 	// Calc the view matrix
-	Vector3 vUp(0, 1, 0);
 	if (up != NULL) {
-		vUp = *up;
+		m_vUp = *up;
 	}
 	/// Update the view matrix
-	ComputeViewMatrix(&m_mView, &m_vEye, &m_vLookAt, &vUp);
+	CGlobals::GetScene()->RegenerateRenderOrigin(m_vEye);
+	ComputeViewMatrix(&m_mView, &m_vEye, &m_vLookAt, &m_vUp);
 
 	Matrix4 mInvView;
 	mInvView = m_mView.inverse();
@@ -1869,14 +1869,13 @@ void CAutoCamera::SetViewParams(const DVector3& vEyePt, const DVector3& vLookatP
 	Vector3* pZBasis = (Vector3*)&mInvView._31;
 
 	m_fCameraYawAngle = atan2f(pZBasis->x, pZBasis->z);
-	float fLen = sqrtf(pZBasis->z*pZBasis->z + pZBasis->x*pZBasis->x);
+	float fLen = sqrtf(pZBasis->z * pZBasis->z + pZBasis->x * pZBasis->x);
 	m_fCameraPitchAngle = -atan2f(pZBasis->y, fLen);
 
 	/** save a snapshot*/
 	m_vEyeLast = m_vEye;
 	m_vLookAtLast = m_vLookAt;
 	m_vLookUpLast = Vector3(0.0f, 1.0f, 0.0f);
-	CGlobals::GetScene()->RegenerateRenderOrigin(m_vEye);
 }
 
 void CAutoCamera::UpdateViewProjMatrix()

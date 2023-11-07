@@ -41,7 +41,7 @@
 
 namespace ParaEngine
 {
-	int globalTime = 0;
+	int64_t globalTime = 0;
 	VertexDeclarationPtr CParaXModel::m_pVertexDeclaration = NULL;
 
 	CEffectFile* CParaXModel::m_pEffectFile = NULL;

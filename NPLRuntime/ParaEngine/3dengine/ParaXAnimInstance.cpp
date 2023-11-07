@@ -24,7 +24,7 @@
 namespace ParaEngine
 {
 	// global time for global sequences
-	extern int globalTime;
+	extern int64_t globalTime;
 }
 
 using namespace ParaEngine;

@@ -11,9 +11,10 @@ namespace ParaEngine
 		VIEW_LAYOUT_STEREO_UP_DOWN,
 		VIEW_LAYOUT_STEREO_RED_BLUE,
 		VIEW_LAYOUT_STEREO_OMNI = 4,//ODS,360°VR
-		VIEW_LAYOUT_STEREO_OMNI_SINGLE_EYE = 5,//ODS,360°VR
+		VIEW_LAYOUT_STEREO_OMNI_SINGLE_EYE=5,//ODS,360°VR
 		//前后左右上下6个viewport组成一个立方体，然后通过shader转成球面，以实现180x360全景渲染
 		VIEW_LAYOUT_STEREO_OMNI_SINGLE_EYE_1 = 6,
+
 		VIEW_LAYOUT_INVALID,
 	};
 
@@ -41,6 +42,8 @@ namespace ParaEngine
 		ATTRIBUTE_METHOD1(CViewportManager, SetOmniAlwaysUseUpFrontCamera_s, bool) { cls->m_bOmniAlwaysUseUpFrontCamera = (p1); return S_OK; }
 		ATTRIBUTE_METHOD1(CViewportManager, GetOmniForceLookatDistance_s, int*) { *p1 = cls->m_nOmniForceLookatDistance; return S_OK; }
 		ATTRIBUTE_METHOD1(CViewportManager, SetOmniForceLookatDistance_s, int) { cls->m_nOmniForceLookatDistance = (p1); return S_OK; }
+
+		ATTRIBUTE_METHOD1(CViewportManager, DeleteViewportByName_s, const char*) { cls->DeleteViewPort(p1); return S_OK; }
 
 		/** get attribute by child object. used to iterate across the attribute field hierarchy. */
 		virtual IAttributeFields* GetChildAttributeObject(const char * sName);
@@ -94,6 +97,7 @@ namespace ParaEngine
 		void SetActiveViewPort(CViewport* pViewport);
 
 		void DeleteViewPort(int nIndex=0);
+		void DeleteViewPort(const std::string& name);
 
 		void Cleanup();
 
@@ -113,14 +117,14 @@ namespace ParaEngine
 		std::vector<CViewport*> m_viewportList;
 		std::vector<CViewport*> m_viewportSorted;
 
+		CViewport* m_normalScenePortInOdsSingleEye;
+
 		ParaViewport m_viewport;
 		int m_nWidth;
 		int m_nHeight;
 		int m_nActiveViewPortIndex;
 		VIEWPORT_LAYOUT m_nLayout;
 		int m_nCurrentFrameNumber;
-
-		CViewport* m_normalScenePortInOdsSingleEye;
 		float ods_fov;
 		int widthPerDegree;
 		bool m_bOmniAlwaysUseUpFrontCamera;//Whether the camera is forced to face straight ahead

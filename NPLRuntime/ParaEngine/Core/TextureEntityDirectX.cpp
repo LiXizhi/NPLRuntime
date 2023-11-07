@@ -45,7 +45,7 @@ using namespace ParaEngine;
 
 namespace ParaEngine
 {
-	extern int globalTime;
+	extern int64_t globalTime;
 }
 
 
@@ -113,11 +113,11 @@ DeviceTexturePtr_type TextureEntityDirectX::GetTexture()
 				{
 					if(pInfo->m_fFPS>=0)
 					{
-						pInfo->m_nCurrentFrameIndex = ((int)(globalTime * pInfo->m_fFPS / 1000)) % pInfo->m_nFrameCount;
+						pInfo->m_nCurrentFrameIndex = ((int64_t)(globalTime * pInfo->m_fFPS / 1000)) % pInfo->m_nFrameCount;
 					}
 					else
 					{
-						pInfo->m_nCurrentFrameIndex = pInfo->m_nFrameCount-1-((int)(-globalTime * pInfo->m_fFPS / 1000)) % pInfo->m_nFrameCount;
+						pInfo->m_nCurrentFrameIndex = pInfo->m_nFrameCount-1-((int64_t)(-globalTime * pInfo->m_fFPS / 1000)) % pInfo->m_nFrameCount;
 					}
 				}
 				tex = m_pTextureSequence[pInfo->m_nCurrentFrameIndex];
