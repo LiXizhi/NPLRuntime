@@ -114,7 +114,7 @@ namespace ParaEngine
 {
 	bool g_bShaderVersion3 = false;
 	
-	extern int globalTime;
+	extern int64_t globalTime;
 	
 	/** any object in the scene except. Usually for selection during scene editing.*/
 	extern OBJECT_FILTER_CALLBACK g_fncPickingAll;
