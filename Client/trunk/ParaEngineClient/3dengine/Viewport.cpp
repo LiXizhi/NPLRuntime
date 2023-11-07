@@ -17,6 +17,10 @@
 #include "RenderTarget.h"
 #include "Viewport.h"
 
+#ifdef USE_DIRECTX_RENDERER
+#include "DirectXEngine.h"
+#endif
+
 using namespace ParaEngine;
 
 CViewport::CViewport(CViewportManager* pViewportManager)
@@ -268,7 +272,13 @@ HRESULT ParaEngine::CViewport::Render(double dTimeDelta, int nPipelineOrder)
 		{
 			if (m_pRenderTarget)
 			{
+#ifdef USE_DIRECTX_RENDERER
+				// for multiple render targets (/shader 2 of fancy block rendering) to work, the render target must be the same size of the back buffer. 
+				m_pRenderTarget->SetRenderTargetSize(Vector2((float)(CGlobals::GetDirectXEngine().GetBackBufferWidth()), (float)(CGlobals::GetDirectXEngine().GetBackBufferHeight())));
+#else
 				m_pRenderTarget->SetRenderTargetSize(Vector2((float)GetWidth(), (float)GetHeight()));
+#endif
+				
 				m_pRenderTarget->GetPrimaryAsset(); // touch asset
 			}
 			UpdateRect();
