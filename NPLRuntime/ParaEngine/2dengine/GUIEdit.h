@@ -221,7 +221,7 @@ namespace ParaEngine
 		const char * GetConfirmType(){return m_sComfirmType.c_str();}
 		void SetConfirmType(const char *val){m_sComfirmType=val;}
 
-#ifdef PARAENGINE_MOBILE || || defined(EMSCRIPTEN)
+#ifdef PARAENGINE_MOBILE || defined(EMSCRIPTEN)
 		// ime delegate implementation. 
 	public:
 		virtual bool attachWithIME() override;
