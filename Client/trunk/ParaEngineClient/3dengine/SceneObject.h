@@ -534,7 +534,9 @@ namespace ParaEngine
 		inline CTerrainTileRoot* GetRootTile()	{return m_pTileRoot.get();};
 
 		/** get current camera*/
-		inline CBaseCamera* GetCurrentCamera(){	return m_pCurrentCamera;};
+		CBaseCamera* GetCurrentCamera();
+		void SetCurrentCamera(CBaseCamera* pCamera);
+
 
 		/** return NULL if no sky defined.*/
 		CSkyMesh*				GetCurrentSky();
@@ -1129,7 +1131,7 @@ namespace ParaEngine
 		
 		/// available cameras, the first one in the list is current
 		CameraPool_type		m_cameras;
-		CBaseCamera* m_pCurrentCamera;
+		ref_ptr<CBaseCamera> m_pCurrentCamera;
 		SkyMeshPool_type		m_skymeshes;
 		MiniSceneGraphPool_type		m_miniSceneGraphs;
 		

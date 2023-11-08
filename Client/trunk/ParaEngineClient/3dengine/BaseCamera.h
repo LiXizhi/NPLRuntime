@@ -124,8 +124,13 @@ namespace ParaEngine
 		ATTRIBUTE_METHOD1(CBaseCamera, SetNumberOfFramesToSmoothMouseData_s, int) { cls->SetNumberOfFramesToSmoothMouseData(p1); return S_OK; }
 
 		ATTRIBUTE_METHOD1(CBaseCamera, GetEyePosition_s, DVector3*) { *p1 = cls->GetEyePosition(); return S_OK; }
-		ATTRIBUTE_METHOD1(CBaseCamera, GetLookAtPosition_s, DVector3*) { *p1 = cls->GetLookAtPosition(); return S_OK; }
+		ATTRIBUTE_METHOD1(CBaseCamera, SetEyePosition_s, DVector3) { cls->SetEyePosition(p1); return S_OK; }
 
+		ATTRIBUTE_METHOD1(CBaseCamera, GetLookAtPosition_s, DVector3*) { *p1 = cls->GetLookAtPosition(); return S_OK; }
+		ATTRIBUTE_METHOD1(CBaseCamera, SetLookAtPosition_s, DVector3) { cls->SetLookAtPosition(p1); return S_OK; }
+
+		ATTRIBUTE_METHOD1(CBaseCamera, GetCameraUp_s, Vector3*) { *p1 = cls->GetCameraUp(); return S_OK; }
+		ATTRIBUTE_METHOD1(CBaseCamera, SetCameraUp_s, Vector3) { cls->SetCameraUp(p1); return S_OK; }
 
 		ATTRIBUTE_METHOD1(CBaseCamera, GetMovementDrag_s, bool*) { *p1 = cls->GetMovementDrag(); return S_OK; }
 		ATTRIBUTE_METHOD1(CBaseCamera, SetMovementDrag_s, bool) { cls->SetMovementDrag(p1); return S_OK; }
@@ -169,7 +174,7 @@ namespace ParaEngine
 
 		/** Reset the camera's position back to the default*/
 		virtual void Reset();
-		virtual void SetViewParams(const DVector3& vEyePt, const DVector3& vLookatPt);
+		virtual void SetViewParams(const DVector3& vEyePt, const DVector3& vLookatPt, const Vector3* up = NULL);
 		void SetProjParams(FLOAT fFOV, FLOAT fAspect, FLOAT fNearPlane, FLOAT fFarPlane);
 
 		virtual void SetFollowTarget(CBaseObject* pObj) {};
@@ -218,8 +223,13 @@ namespace ParaEngine
 
 		// Get camera parameters
 		inline DVector3 GetEyePosition() { return m_vEye; };
+		virtual void SetEyePosition(const DVector3& pos);
 		inline DVector3 GetLookAtPosition() { return m_vLookAt; };
-		inline void SetLookAtPosition(DVector3 pos) { m_vLookAt = pos; };
+		virtual void SetLookAtPosition(const DVector3& pos);
+		
+		Vector3 GetCameraUp();
+		virtual void SetCameraUp(const Vector3& pos);
+
 		inline float GetFieldOfView() { return m_fFOV; };
 		inline float GetAspectRatio() { return m_fAspect; };
 		inline float GetNearPlane() { return m_fNearPlane; };
@@ -334,6 +344,7 @@ namespace ParaEngine
 		DVector3           m_vDefaultLookAt;       // Default LookAt position
 		DVector3           m_vEye;                 // Camera eye position
 		DVector3           m_vLookAt;              // LookAt position
+		Vector3		   m_vUp;                  // Up vector of camera
 		float                 m_fCameraYawAngle;      // Yaw angle of camera
 		float                 m_fCameraPitchAngle;    // Pitch angle of camera
 

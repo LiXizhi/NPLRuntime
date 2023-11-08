@@ -97,6 +97,20 @@ void ParaEngine::CViewportManager::DeleteViewPort(int nIndex/*=0*/)
 	}
 }
 
+void ParaEngine::CViewportManager::DeleteViewPort(const std::string& name)
+{
+	for (auto iter = m_viewportList.begin(); iter != m_viewportList.end(); iter++)
+	{
+		CViewport* pViewPort = *iter;
+		if (pViewPort && pViewPort->GetIdentifier() == name)
+		{
+			m_viewportList.erase(iter);
+			SAFE_DELETE(pViewPort);
+			return;
+		}
+	}
+}
+
 void ParaEngine::CViewportManager::Cleanup()
 {
 	for (auto iter = m_viewportList.begin(); iter != m_viewportList.end(); iter++)
@@ -889,5 +903,6 @@ int ParaEngine::CViewportManager::InstallFields(CAttributeClass* pClass, bool bO
 	pClass->AddField("widthPerDegree", FieldType_Int, (void*)SetWidthPerDegree_s, (void*)GetWidthPerDegree_s, NULL, NULL, bOverride);
 	pClass->AddField("OmniAlwaysUseUpFrontCamera", FieldType_Bool, (void*)SetOmniAlwaysUseUpFrontCamera_s, (void*)GetOmniAlwaysUseUpFrontCamera_s, NULL, NULL, bOverride);
 	pClass->AddField("OmniForceLookatDistance", FieldType_Int, (void*)SetOmniForceLookatDistance_s, (void*)GetOmniForceLookatDistance_s, NULL, NULL, bOverride);
+	pClass->AddField("DeleteViewportByName", FieldType_String, (void*)DeleteViewportByName_s, (void*)0, NULL, NULL, bOverride);
 	return S_OK;
 }

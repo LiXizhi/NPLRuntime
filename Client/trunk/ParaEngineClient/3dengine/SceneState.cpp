@@ -22,7 +22,7 @@
 namespace ParaEngine
 {
 	CBaseObject* SceneState::m_pCurrentSceneObject = NULL;
-	extern int globalTime;
+	extern int64_t globalTime;
 
 	SceneState::SceneState(IScene * pScene)
 		:fAlphaFactor(1.0f), bIsBatchRender(false), m_bCameraMoved(true), m_bDeferredShading(false), m_nCurrentRenderPipeline(0),

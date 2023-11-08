@@ -88,7 +88,7 @@ CBaseCamera::CBaseCamera()
 	m_fOrthoHeight = 100.f;
 	m_fOrthoWidth = 100.f;
 	m_bIsPerspectiveView = true;
-
+	m_vUp = Vector3(0, 1.f, 0);
 
 	// Setup the view matrix
 	SetViewParams(vEyePt, vLookatPt);
@@ -119,14 +119,15 @@ VOID CBaseCamera::SetInvertPitch(bool bInvertPitch)
 // Name: SetViewParams
 // Desc: Client can call this to change the position and direction of camera
 //-----------------------------------------------------------------------------
-void CBaseCamera::SetViewParams(const DVector3& vEyePt, const DVector3& vLookatPt)
+void CBaseCamera::SetViewParams(const DVector3& vEyePt, const DVector3& vLookatPt, const Vector3* up)
 {
 	m_vDefaultEye = m_vEye = vEyePt;
 	m_vDefaultLookAt = m_vLookAt = vLookatPt;
-
 	// Calculate  the view matrix
-	Vector3 vUp(0, 1, 0);
-	ParaMatrixLookAtLH(&m_mView, vEyePt, vLookatPt, DVector3(vUp));
+	if (up != NULL) {
+		m_vUp = *up;
+	}
+	ParaMatrixLookAtLH(&m_mView, vEyePt, vLookatPt, DVector3(m_vUp));
 
 	Matrix4 mInvView;
 	mInvView = m_mView.inverse();
@@ -140,9 +141,6 @@ void CBaseCamera::SetViewParams(const DVector3& vEyePt, const DVector3& vLookatP
 	float fLen = sqrtf(pZBasis->z*pZBasis->z + pZBasis->x*pZBasis->x);
 	m_fCameraPitchAngle = -atan2f(pZBasis->y, fLen);
 }
-
-
-
 
 //-----------------------------------------------------------------------------
 // Name: SetProjParams
@@ -614,8 +612,9 @@ int CBaseCamera::InstallFields(CAttributeClass* pClass, bool bOverride)
 	pClass->AddField("TotalDragTime", FieldType_Float, (void*)SetTotalDragTime_s, (void*)GetTotalDragTime_s, NULL, NULL, bOverride);
 
 	pClass->AddField("SmoothFramesNum", FieldType_Int, (void*)SetNumberOfFramesToSmoothMouseData_s, (void*)GetNumberOfFramesToSmoothMouseData_s, NULL, NULL, bOverride);
-	pClass->AddField("Eye position", FieldType_DVector3, NULL, (void*)GetEyePosition_s, NULL, NULL, bOverride);
-	pClass->AddField("Lookat position", FieldType_DVector3, NULL, (void*)GetLookAtPosition_s, NULL, NULL, bOverride);
+	pClass->AddField("Eye position", FieldType_DVector3, (void*)SetEyePosition_s, (void*)GetEyePosition_s, NULL, NULL, bOverride);
+	pClass->AddField("Lookat position", FieldType_DVector3, (void*)SetLookAtPosition_s, (void*)GetLookAtPosition_s, NULL, NULL, bOverride);
+	pClass->AddField("CameraUp", FieldType_Vector3, (void*)SetCameraUp_s, (void*)GetCameraUp_s, NULL, NULL, bOverride);
 	pClass->AddField("FrameMove", FieldType_void, (void*)FrameMove_s, NULL, NULL, NULL, bOverride);
 
 	pClass->AddField("On_FrameMove", FieldType_String, (void*)SetFrameMove_s, (void*)GetFrameMove_s, CAttributeField::GetSimpleSchemaOfScript(), "", bOverride);
@@ -737,6 +736,25 @@ void CBaseCamera::GetMouseRay(Vector3& vPickRayOrig, Vector3& vPickRayDir, POINT
 	vPickRayDir.normalise();
 }
 
+void ParaEngine::CBaseCamera::SetEyePosition(const DVector3& pos)
+{
+	SetViewParams(pos, m_vLookAt);
+}
+
+void ParaEngine::CBaseCamera::SetLookAtPosition(const DVector3& pos)
+{
+	SetViewParams(m_vEye, pos);
+}
+
+void ParaEngine::CBaseCamera::SetCameraUp(const Vector3& pos)
+{
+	SetViewParams(m_vEye, m_vLookAt, &pos);
+}
+
+Vector3 ParaEngine::CBaseCamera::GetCameraUp()
+{
+	return m_vUp;
+}
 
 //-----------------------------------------------------------------------------
 // Name: UpdateFrustum()
