@@ -156,7 +156,7 @@ int main(int argc, char* argv[])
 	settings.SetCurrentLanguage(js_language == JS::JS_LANGUAGE_ZH ? LanguageType::CHINESE : LanguageType::ENGLISH);
 
 	// std::string sCmdLine = R"(noupdate="true" debug="main" mc="true" bootstrapper="script/apps/Aries/main_loop.lua")";
-	std::string sCmdLine = R"(noupdate="true" debug="main" mc="true" bootstrapper="script/apps/Aries/main_loop.lua" noclientupdate="true")";
+	std::string sCmdLine = R"(noupdate="true" debug="main" bootstrapper="script/apps/Aries/main_loop.lua" noclientupdate="true")";
 	// std::string sCmdLine = R"(noupdate="true" debug="main" mc="true" bootstrapper="script/apps/Aries/main_loop.lua" noclientupdate="true" channelId="tutorial" isDevMode="true")";
 	sCmdLine += JS::IsTouchDevice() ? R"( IsTouchDevice="true")" : "";
 	for (int i = 1; i < argc; ++i)
@@ -179,6 +179,17 @@ int main(int argc, char* argv[])
 	std::string world = JS::GetQueryStringArg("world");
 	std::string cmdline = JS::GetQueryStringArg("cmdline");
 
+	std::string mc = JS::GetQueryStringArg("mc");
+	std::string version = JS::GetQueryStringArg("version");
+	if (mc.empty()) 
+	{
+		sCmdLine = sCmdLine + " mc=\"true\" noclientupdate=\"true\" noupdate=\"true\"" ;
+	}
+	else
+	{
+		sCmdLine = sCmdLine + " mc=\"" + mc + "\" noclientupdate=\"false\" noupdate=\"false\"";
+	}
+	if (!version.empty()) sCmdLine = sCmdLine + " version=\"" + version + "\"";
 	if (!username.empty()) sCmdLine = sCmdLine + " username=\"" + username + "\"";
 	if (!http_env.empty()) sCmdLine = sCmdLine + " http_env=\"" + http_env + "\"";
 	if (!channelId.empty()) sCmdLine = sCmdLine + " channelId=\"" + channelId + "\"";

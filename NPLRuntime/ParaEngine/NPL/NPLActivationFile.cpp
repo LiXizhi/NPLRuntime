@@ -23,6 +23,7 @@ extern "C"
 	NPL.activate("protocol/pb.cpp");
 	*/
 	extern PE_CORE_DECL NPL::NPLReturnCode NPL_activate_protocol_pb_cpp(NPL::INPLRuntimeState* pState);
+	extern PE_CORE_DECL NPL::NPLReturnCode NPL_activate_script_serialport_cpp(NPL::INPLRuntimeState* pState);
 
 #ifdef ANDROID
 	/** to load the lib, please call:
@@ -54,6 +55,9 @@ NPL::NPL_C_Func_ActivationFile::NPL_C_Func_ActivationFile(const std::string& fil
 	m_callbackTable["NPL_activate_LuaObjcBridge_cpp"] = (NPL_Activate_CallbackFunc)&NPL_activate_LuaObjcBridge_cpp;
 #endif
 
+#ifdef EMSCRIPTEN
+	m_callbackTable["NPL_activate_script_serialport_cpp"] = (NPL_Activate_CallbackFunc)&NPL_activate_script_serialport_cpp;
+#endif
 	SetFunctionByName(filename);
 }
 

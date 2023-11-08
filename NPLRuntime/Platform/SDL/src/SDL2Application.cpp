@@ -160,6 +160,9 @@ namespace ParaEngine
 		// SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24);
 		// SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
 		SDL_Init(SDL_INIT_EVERYTHING);
+
+		SDL_SetHint(SDL_HINT_TOUCH_MOUSE_EVENTS, "0");
+		
 		m_exit = false;
 	}
 

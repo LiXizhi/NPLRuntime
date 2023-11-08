@@ -41,7 +41,6 @@ const static int JS_LANGUAGE_ZH = 1;   // 中文
 int GetBrowserLanguage();
 int IsTouchDevice();
 
-
 // 通信
 void SendMsgToJS(const std::string msg_data_json);
 void SetRecvMsgFromJSCallback(std::function<void(const std::string, const std::string)>);

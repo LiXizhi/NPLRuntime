@@ -92,8 +92,9 @@ namespace JS
 
     int IsTouchDevice()
     {
+
         int is_touch_device = EM_ASM_INT({
-            if ('ontouchstart' in window || navigator.maxTouchPoints > 0 || navigator.msMaxTouchPoints > 0)
+            if (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent))
             {
                 return 1;
             }
@@ -101,6 +102,14 @@ namespace JS
             {
                 return 0;
             }
+            // if ('ontouchstart' in window || navigator.maxTouchPoints > 0 || navigator.msMaxTouchPoints > 0)
+            // {
+            //     return 1;
+            // }
+            // else
+            // {
+            //     return 0;
+            // }
         });
         return is_touch_device;
     }
@@ -188,6 +197,8 @@ namespace JS
             return;
         s_on_text_input_callback(JsStringToString(js_text));
     }
+
+
 
 };
 

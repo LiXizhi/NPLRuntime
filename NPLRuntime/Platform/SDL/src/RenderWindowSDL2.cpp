@@ -7,8 +7,9 @@
 #include "emscripten.h"
 #endif
 
-namespace ParaEngine {
-	std::unordered_map<unsigned long, EVirtualKey> s_keymap;
+namespace ParaEngine
+{
+	static std::unordered_map<unsigned long, EVirtualKey> s_keymap;
 
 	static void InitVirtualKeyMap()
 	{
@@ -110,6 +111,7 @@ namespace ParaEngine {
 			s_keymap[SDLK_KP_DIVIDE] = EVirtualKey::KEY_DIVIDE;
 			s_keymap[SDLK_KP_MULTIPLY] = EVirtualKey::KEY_MULTIPLY;
 			s_keymap[SDLK_KP_MINUS] = EVirtualKey::KEY_SUBTRACT;
+			s_keymap[SDLK_MINUS] = EVirtualKey::KEY_MINUS;
 			s_keymap[SDLK_KP_PLUS] = EVirtualKey::KEY_ADD;
 			s_keymap[SDLK_SEPARATOR] = EVirtualKey::KEY_RETURN;
 			s_keymap[SDLK_LSHIFT] = EVirtualKey::KEY_LSHIFT;
@@ -122,10 +124,28 @@ namespace ParaEngine {
 		}
 	}
 
-	EVirtualKey SDL2VirtualKeyToParaVK(unsigned long vk)
+	EVirtualKey RenderWindowSDL2::SDL2VirtualKeyToParaVK(unsigned long vk)
 	{
-
 		InitVirtualKeyMap();
+		if (!m_isNumLockEnabled)
+		{
+			if (vk == SDLK_KP_4)
+				return EVirtualKey::KEY_LEFT;
+			else if (vk == SDLK_KP_6)
+				return EVirtualKey::KEY_RIGHT;
+			else if (vk == SDLK_KP_8)
+				return EVirtualKey::KEY_UP;
+			else if (vk == SDLK_KP_2)
+				return EVirtualKey::KEY_DOWN;
+			else if (vk == SDLK_KP_7)
+				return EVirtualKey::KEY_HOME;
+			else if (vk == SDLK_KP_1)
+				return EVirtualKey::KEY_END;
+			else if (vk == SDLK_KP_9)
+				return EVirtualKey::KEY_PRIOR;
+			else if (vk == SDLK_KP_3)
+				return EVirtualKey::KEY_NEXT;
+		}
 		auto result = s_keymap.find(vk);
 		if (result != s_keymap.end())
 		{
@@ -134,7 +154,7 @@ namespace ParaEngine {
 		return EVirtualKey::KEY_UNKNOWN;
 	}
 
-	unsigned long ParaVKToSDL2VirtualKey(EVirtualKey key)
+	unsigned long RenderWindowSDL2::ParaVKToSDL2VirtualKey(EVirtualKey key)
 	{
 		InitVirtualKeyMap();
 		for (auto kv : s_keymap)
@@ -144,7 +164,7 @@ namespace ParaEngine {
 				return kv.first;
 			}
 		}
-		//assert(false);
+		// assert(false);
 		return -1;
 	}
 
@@ -170,22 +190,19 @@ namespace ParaEngine {
 
 		m_Width = defaultWdith;
 		m_Height = defaultHeight;
+
+		const Uint8 *keyboardState = SDL_GetKeyboardState(NULL);
+
 		return true;
 	}
 
-	std::unordered_map<SDL_Window*, RenderWindowSDL2*> RenderWindowSDL2::g_WindowMap;
+	std::unordered_map<SDL_Window *, RenderWindowSDL2 *> RenderWindowSDL2::g_WindowMap;
 	RenderWindowSDL2::RenderWindowSDL2()
-		: m_sdl2_window(nullptr)
-		, m_gl_context(nullptr)
-		, m_Width(0)
-		, m_Height(0)
-		, m_mouse_x(0)
-		, m_mouse_y(0)
-		, m_IsQuit(false)
-		, m_bLostFocus(false)
+		: m_sdl2_window(nullptr), m_gl_context(nullptr), m_Width(0), m_Height(0), m_mouse_x(0), m_mouse_y(0), m_IsQuit(false), m_bLostFocus(false)
 	{
 		InitInput();
 		m_paused = false;
+		m_isNumLockEnabled = 2;
 	}
 
 	RenderWindowSDL2::~RenderWindowSDL2()
@@ -216,22 +233,22 @@ namespace ParaEngine {
 		SDL_Event sdl_event;
 		while (SDL_PollEvent(&sdl_event))
 		{
-			if (sdl_event.type == SDL_QUIT) 
+			if (sdl_event.type == SDL_QUIT)
 			{
 				m_IsQuit = true;
 				return;
 			}
-			else if (m_paused) 
+			else if (m_paused)
 			{
 				continue;
 			}
-			else if (sdl_event.type == SDL_WINDOWEVENT) 
+			else if (sdl_event.type == SDL_WINDOWEVENT)
 			{
 				switch (sdl_event.window.event)
 				{
 				case SDL_WINDOWEVENT_SIZE_CHANGED:
 #ifdef EMSCRIPTEN
-					OnSize(EM_ASM_INT({return document.documentElement.clientWidth;}), EM_ASM_INT({return document.documentElement.clientHeight;}));
+					OnSize(EM_ASM_INT({ return document.documentElement.clientWidth; }), EM_ASM_INT({ return document.documentElement.clientHeight; }));
 #else
 					OnSize(sdl_event.window.data1, sdl_event.window.data2);
 #endif
@@ -246,77 +263,100 @@ namespace ParaEngine {
 					break;
 				}
 			}
-			else if (sdl_event.type == SDL_MOUSEMOTION) 
+			else if (sdl_event.type == SDL_MOUSEMOTION)
 			{
 				m_mouse_x = sdl_event.motion.x;
 				m_mouse_y = sdl_event.motion.y;
 				OnMouseMove(sdl_event.motion.x, sdl_event.motion.y);
 			}
-			else if (sdl_event.type == SDL_MOUSEBUTTONDOWN) 
+			else if (sdl_event.type == SDL_MOUSEBUTTONDOWN)
 			{
+				// SetTouchInputting(false);
 				m_mouse_x = sdl_event.button.x;
 				m_mouse_y = sdl_event.button.y;
-				if (sdl_event.button.button == SDL_BUTTON_LEFT) 
+				if (sdl_event.button.button == SDL_BUTTON_LEFT)
 				{
 					m_MouseState[(uint32_t)EMouseButton::LEFT] = EKeyState::PRESS;
 					OnMouseButton(EMouseButton::LEFT, EKeyState::PRESS, sdl_event.button.x, sdl_event.button.y);
 				}
-				else if (sdl_event.button.button == SDL_BUTTON_RIGHT) 
+				else if (sdl_event.button.button == SDL_BUTTON_RIGHT)
 				{
 					m_MouseState[(uint32_t)EMouseButton::RIGHT] = EKeyState::PRESS;
 					OnMouseButton(EMouseButton::RIGHT, EKeyState::PRESS, sdl_event.button.x, sdl_event.button.y);
 				}
-				else if (sdl_event.button.button == SDL_BUTTON_MIDDLE) 
+				else if (sdl_event.button.button == SDL_BUTTON_MIDDLE)
 				{
 					m_MouseState[(uint32_t)EMouseButton::MIDDLE] = EKeyState::PRESS;
 					OnMouseButton(EMouseButton::MIDDLE, EKeyState::PRESS, sdl_event.button.x, sdl_event.button.y);
 				}
 				CheckFocus();
 			}
-			else if (sdl_event.type == SDL_MOUSEBUTTONUP) 
+			else if (sdl_event.type == SDL_MOUSEBUTTONUP)
 			{
 				m_mouse_x = sdl_event.button.x;
 				m_mouse_y = sdl_event.button.y;
-				if (sdl_event.button.button == SDL_BUTTON_LEFT) 
+				if (sdl_event.button.button == SDL_BUTTON_LEFT)
 				{
 					m_MouseState[(uint32_t)EMouseButton::LEFT] = EKeyState::RELEASE;
 					OnMouseButton(EMouseButton::LEFT, EKeyState::RELEASE, sdl_event.button.x, sdl_event.button.y);
 				}
-				else if (sdl_event.button.button == SDL_BUTTON_RIGHT) 
+				else if (sdl_event.button.button == SDL_BUTTON_RIGHT)
 				{
 					m_MouseState[(uint32_t)EMouseButton::RIGHT] = EKeyState::RELEASE;
 					OnMouseButton(EMouseButton::RIGHT, EKeyState::RELEASE, sdl_event.button.x, sdl_event.button.y);
 				}
-				else if (sdl_event.button.button == SDL_BUTTON_MIDDLE) 
+				else if (sdl_event.button.button == SDL_BUTTON_MIDDLE)
 				{
 					m_MouseState[(uint32_t)EMouseButton::MIDDLE] = EKeyState::RELEASE;
 					OnMouseButton(EMouseButton::MIDDLE, EKeyState::RELEASE, sdl_event.button.x, sdl_event.button.y);
 				}
 				CheckFocus();
 			}
-			else if (sdl_event.type == SDL_MOUSEWHEEL) 
+			else if (sdl_event.type == SDL_MOUSEWHEEL)
 			{
 				OnMouseWheel(m_mouse_x, m_mouse_y, sdl_event.wheel.preciseY);
 			}
-			else if (sdl_event.type == SDL_KEYDOWN) 
+			else if (sdl_event.type == SDL_KEYDOWN)
 			{
 				EKeyState state = EKeyState::PRESS;
 				DWORD msgKey = (DWORD)sdl_event.key.keysym.sym;
 				auto key = SDL2VirtualKeyToParaVK(msgKey);
-				if (key != EVirtualKey::KEY_UNKNOWN) m_KeyState[(uint32_t)key] = state;
+				if (key != EVirtualKey::KEY_UNKNOWN)
+					m_KeyState[(uint32_t)key] = state;
 				OnKey(key, state);
 			}
-			else if (sdl_event.type == SDL_KEYUP) 
+			else if (sdl_event.type == SDL_KEYUP)
 			{
+				if (sdl_event.key.keysym.sym == SDLK_NUMLOCKCLEAR || m_isNumLockEnabled == 2)
+				{
+					m_isNumLockEnabled = EM_ASM_INT({ return window.isNumLockEnabled; });
+				}
 				EKeyState state = EKeyState::RELEASE;
 				DWORD msgKey = (DWORD)sdl_event.key.keysym.sym;
 				auto key = SDL2VirtualKeyToParaVK(msgKey);
-				if (key != EVirtualKey::KEY_UNKNOWN) m_KeyState[(uint32_t)key] = state;
+				if (key != EVirtualKey::KEY_UNKNOWN)
+					m_KeyState[(uint32_t)key] = state;
 				OnKey(key, state);
 			}
-			else if (sdl_event.type == SDL_TEXTINPUT) 
+			else if (sdl_event.type == SDL_TEXTINPUT)
 			{
 				OnChar(sdl_event.text.text);
+			}
+			else if (sdl_event.type == SDL_FINGERDOWN)
+			{
+				// SetTouchInputting(true);
+				OnTouch(EH_TOUCH, TouchEvent::TouchEvent_POINTER_DOWN, sdl_event.tfinger.fingerId, sdl_event.tfinger.x * m_Width, sdl_event.tfinger.y * m_Height, sdl_event.tfinger.timestamp);
+				// std::cout << "Finger Down: id=" << sdl_event.tfinger.fingerId << ", x=" << sdl_event.tfinger.x << ", y=" << sdl_event.tfinger.y << ", timestamp=" << sdl_event.tfinger.timestamp << std::endl;
+			}
+			else if (sdl_event.type == SDL_FINGERMOTION)
+			{
+				OnTouch(EH_TOUCH, TouchEvent::TouchEvent_POINTER_UPDATE, sdl_event.tfinger.fingerId, sdl_event.tfinger.x * m_Width, sdl_event.tfinger.y * m_Height, sdl_event.tfinger.timestamp);
+				// std::cout << "Finger Motion: id=" << sdl_event.tfinger.fingerId << ", x=" << sdl_event.tfinger.x << ", y=" << sdl_event.tfinger.y << ", timestamp=" << sdl_event.tfinger.timestamp << std::endl;
+			}
+			else if (sdl_event.type == SDL_FINGERUP)
+			{
+				OnTouch(EH_TOUCH, TouchEvent::TouchEvent_POINTER_UP, sdl_event.tfinger.fingerId, sdl_event.tfinger.x * m_Width, sdl_event.tfinger.y * m_Height, sdl_event.tfinger.timestamp);
+				// std::cout << "Finger Up: id=" << sdl_event.tfinger.fingerId << ", x=" << sdl_event.tfinger.x << ", y=" << sdl_event.tfinger.y << ", timestamp=" << sdl_event.tfinger.timestamp << std::endl;
 			}
 		}
 	}

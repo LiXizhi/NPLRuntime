@@ -91,6 +91,8 @@ namespace ParaEngine
 		 */
 		virtual void ShowWindow(bool bShow) override;
 
+		virtual void SetTouchInputting(bool bTouchInputting) {CParaEngineAppBase::SetTouchInputting(bTouchInputting);}
+
 	protected:
 		void LoadAndApplySettings();
 		bool UpdateScreenDevice();

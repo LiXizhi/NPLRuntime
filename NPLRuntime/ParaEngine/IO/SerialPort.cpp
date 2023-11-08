@@ -13,7 +13,8 @@
  * Distributed under the Boost Software License, Version 1.0.
  * Created on September 7, 2009, 10:46 AM
  */
-#ifndef EMSCRIPTEN_SINGLE_THREAD
+#ifndef EMSCRIPTEN
+// #ifndef EMSCRIPTEN_SINGLE_THREAD
 
 #include "ParaEngine.h"
 #include "NPLRuntime.h"
@@ -488,6 +489,179 @@ extern "C"
 						sNames += sOutput + ",";
 					}
                     sNames += "}";
+                    ParaEngine::CGlobals::GetNPLRuntime()->GetMainRuntimeState()->ActivateFile(sCallback, sNames.c_str(), (int)sNames.size());
+                }
+            }
+        }
+        catch (...)
+        {
+            std::string sCallback = msg["callback"];
+            if (!sCallback.empty())
+            {
+                msg["error"] = true;
+                std::string callbackMsg;
+                NPL::NPLHelper::NPLTableToString("msg", msg, callbackMsg);
+                ParaEngine::CGlobals::GetNPLRuntime()->GetMainRuntimeState()->ActivateFile(sCallback, callbackMsg.c_str(), (int)callbackMsg.size());
+            }
+        }
+        return NPL::NPL_OK;
+    };
+}
+
+#else
+#include "ParaEngine.h"
+#include "NPLRuntime.h"
+#include "NPLTable.h"
+#include "NPLHelper.h"
+#include "INPLRuntimeState.h"
+
+#include "emscripten.h"
+
+// 定义函数导出宏
+// __EMSCRIPTEN__宏用于探测是否是Emscripten环境
+// __cplusplus用于探测是否C++环境
+// EMSCRIPTEN_KEEPALIVE是Emscripten特有的宏，用于告知编译器后续函数在优化时必须保留，并且该函数将被导出至JavaScript
+#ifndef EM_PORT_API
+#	if defined(__EMSCRIPTEN__)
+#		include <emscripten.h>
+#		if defined(__cplusplus)
+#			define EM_PORT_API(rettype) extern "C" rettype EMSCRIPTEN_KEEPALIVE
+#		else
+#			define EM_PORT_API(rettype) rettype EMSCRIPTEN_KEEPALIVE
+#		endif
+#	else
+#		if defined(__cplusplus)
+#			define EM_PORT_API(rettype) extern "C" rettype
+#		else
+#			define EM_PORT_API(rettype) rettype
+#		endif
+#	endif
+#endif
+
+static std::string s_callback_script;
+
+EM_PORT_API(void) RecvSerialPortData(const char *js_str)
+{
+    const std::string c_str = js_str;
+    free((void *)js_str);
+
+    if (!s_callback_script.empty())
+    {
+        NPL::NPLObjectProxy msg;
+        msg["data"] = c_str;
+        std::string sMsg;
+        NPL::NPLHelper::NPLTableToString("msg", msg, sMsg);
+        // std::cout << "RecvSerialPortData:" << sMsg << std::endl;
+        ParaEngine::CGlobals::GetNPLRuntime()->GetMainRuntimeState()->Activate_async(s_callback_script, sMsg.c_str(), (int)sMsg.size());
+    }
+}
+
+EM_ASYNC_JS(void, SerialPortOpen_JS, (const char *filename, int baud_rate), {
+    try
+    {
+        filename = UTF8ToString(filename);
+        await SerialPortInstance.Open(filename, baud_rate);
+    }
+    catch (e)
+    {
+        console.log(e);
+    }
+})
+
+EM_ASYNC_JS(void, SerialPortSend_JS, (const char *filename, const char* data), {
+    try
+    {
+        filename = UTF8ToString(filename);
+        data = UTF8ToString(data);
+        await SerialPortInstance.Send(filename, data);
+    }
+    catch (e)
+    {
+        console.log(e);
+    }
+})
+
+EM_ASYNC_JS(void, SerialPortClose_JS, (const char *filename), {
+    try
+    {
+        filename = UTF8ToString(filename);
+        await SerialPortInstance.Close(filename);
+    }
+    catch (e)
+    {
+        console.log(e);
+    }
+})
+
+EM_ASYNC_JS(const char *, SerialPortGetNames_JS, (), {
+    try
+    {
+        const names = await SerialPortInstance.GetGetSerialPortNames();
+        return window.JsStringToCString(names);
+    }
+    catch (e)
+    {
+        console.log(e);
+        return "";
+    }
+});
+
+extern "C"
+{
+    /*  NPL.activate("script/serialport.cpp", {cmd="open|close|GetPortNames", filename="COM1", baud_rate=115200})
+    */
+    PE_CORE_DECL NPL::NPLReturnCode NPL_activate_script_serialport_cpp(NPL::INPLRuntimeState* pState)
+    {
+        auto msg = NPL::NPLHelper::MsgStringToNPLTable(pState->GetCurrentMsg(), pState->GetCurrentMsgLength());
+
+        try
+        {
+            std::string cmd = msg["cmd"];
+            if (cmd == "open")
+            {
+                std::string filename = msg["filename"];
+                if (!filename.empty())
+                {
+                    int baud_rate = (int)(double)msg["baud_rate"];
+                    if (baud_rate == 0) {
+                        baud_rate = 115200;
+                    }
+                    std::string sCallback = msg["callback"];
+                    s_callback_script = sCallback;
+                    SerialPortOpen_JS(filename.c_str(), baud_rate);
+                }
+            }
+            else if (cmd == "send")
+            {
+                std::string filename = msg["filename"];
+                if (!filename.empty())
+                {
+                    std::string data = msg["data"];
+                    if (!data.empty())
+                    {
+                        SerialPortSend_JS(filename.c_str(), data.c_str());
+                    }
+				}
+            }
+            else if (cmd == "close")
+            {
+                std::string filename = msg["filename"];
+                if (!filename.empty())
+                {
+                    SerialPortClose_JS(filename.c_str());
+                }
+            }
+            else if (cmd == "GetPortNames")
+            {
+                const char* js_str = SerialPortGetNames_JS();
+                const std::string c_str = js_str;
+                free((void *)js_str);
+
+                std::string sCallback = msg["callback"];
+                if (!sCallback.empty())
+                {
+                    std::string sNames = "msg={" + c_str + "}";
+                    std::cout << "=========GetPortNames==========" << sNames << std::endl;
                     ParaEngine::CGlobals::GetNPLRuntime()->GetMainRuntimeState()->ActivateFile(sCallback, sNames.c_str(), (int)sNames.size());
                 }
             }
