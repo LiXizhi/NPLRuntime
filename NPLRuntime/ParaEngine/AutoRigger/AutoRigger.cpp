@@ -5,7 +5,9 @@
 // Company: ParaEngine
 // Date:	2018.9.10
 //-----------------------------------------------------------------------------
-
+#ifdef EMSCRIPTEN_SINGLE_THREAD
+#define bind2nd(x, y) bind(x, std::placeholders::_1, y)
+#endif
 #include "ParaEngine.h"
 #include "AutoRigger.h"
 #include "ParaWorldAsset.h"

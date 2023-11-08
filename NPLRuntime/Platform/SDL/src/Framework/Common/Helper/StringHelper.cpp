@@ -1,5 +1,7 @@
 #include "ParaEngine.h"
+#ifndef EMSCRIPTEN_SINGLE_THREAD
 #include <boost/thread/tss.hpp>
+#endif
 #include <boost/locale/encoding_utf.hpp>
 #include "util/StringHelper.h"
 #include "2dengine/GUIEdit.h"

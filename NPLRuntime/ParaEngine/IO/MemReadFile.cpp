@@ -24,7 +24,7 @@ CMemReadFile::CMemReadFile(void)
 CMemReadFile::CMemReadFile(IReadFile* pFile, uint32_t nSize)
 	: m_bOwnBuffer(true)
 {
-	m_CacheData = new byte[nSize];
+	m_CacheData = new unsigned char[nSize];
 	m_CacheStartPos = pFile->getPos();
 	m_curPos = m_CacheStartPos;
 	m_CacheEndPos = m_CacheStartPos + nSize;
@@ -35,7 +35,7 @@ CMemReadFile::CMemReadFile(IReadFile* pFile, uint32_t nSize)
 	}
 	pFile->seek(m_CacheStartPos, false); // restore file pos.
 }
-CMemReadFile::CMemReadFile(byte* buffer, uint32_t nSize, bool bDeleteBuffer)
+CMemReadFile::CMemReadFile(unsigned char* buffer, uint32_t nSize, bool bDeleteBuffer)
 	:m_bOwnBuffer(bDeleteBuffer)
 {
 	if (buffer != 0)
@@ -53,7 +53,7 @@ ParaEngine::CMemReadFile::CMemReadFile(const char * filename)
 	CParaFile file(filename);
 	if (!file.isEof())
 	{
-		m_CacheData = (byte*)file.getBuffer();
+		m_CacheData = (unsigned char*)file.getBuffer();
 		m_CacheEndPos = file.getSize();
 		file.GiveupBufferOwnership();
 	}
@@ -90,7 +90,7 @@ uint32_t CMemReadFile::read(void* buffer, uint32_t sizeToRead)
 	return 0;
 }
 
-byte* CMemReadFile::getBuffer()
+unsigned char* CMemReadFile::getBuffer()
 {
 	if (isOpen() && m_curPos >= m_CacheStartPos) {
 		return m_CacheData + (m_curPos - m_CacheStartPos);

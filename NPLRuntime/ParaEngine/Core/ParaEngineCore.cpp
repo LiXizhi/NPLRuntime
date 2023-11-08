@@ -14,8 +14,9 @@
 #include "ParaEngineAppBase.h"
 #include "ParaEngineRenderBase.h"
 
+#ifndef EMSCRIPTEN_SINGLE_THREAD
 #include <boost/thread/tss.hpp>
-
+#endif
 
 using namespace ParaEngine;
 
@@ -94,10 +95,8 @@ void ParaEngine::CParaEngineCore::Destroy()
 
 CParaEngineCore* ParaEngine::CParaEngineCore::GetInstance()
 {
-	static boost::thread_specific_ptr< CParaEngineCore > g_instance;
-	if (!g_instance.get())
-		g_instance.reset(new CParaEngineCore());
-	return (g_instance.get());
+	thread_local static CParaEngineCore g_instance;
+	return &g_instance;
 }
 
 IParaEngineCore* CParaEngineCore::GetStaticInterface()

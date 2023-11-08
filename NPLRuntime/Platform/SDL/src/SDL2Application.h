@@ -54,6 +54,8 @@ namespace ParaEngine
 		virtual bool InitApp(IRenderWindow* pWindow, const char* sCommandLine /* = nullptr */) override;
 	
 		virtual void StopApp() override { CParaEngineAppBase::StopApp(); m_exit = true; }
+		
+		virtual void setIMEKeyboardState(bool bOpen, bool bMoveView = false, int ctrlBottom = -1, const string& editParams="") override;
 
 		/** write the current setting to config file. Such as graphics mode and whether full screen, etc.
 		* config file at ./config.txt will be automatically loaded when the game engine starts.
@@ -89,12 +91,15 @@ namespace ParaEngine
 		 */
 		virtual void ShowWindow(bool bShow) override;
 
+		virtual void SetTouchInputting(bool bTouchInputting) {CParaEngineAppBase::SetTouchInputting(bTouchInputting);}
+
 	protected:
 		void LoadAndApplySettings();
 		bool UpdateScreenDevice();
 		bool UpdateViewPort();
+#ifndef EMSCRIPTEN_SINGLE_THREAD
 		void handle_mainloop_timer(const boost::system::error_code& err);
-
+#endif
 		RenderConfiguration m_cfg;
 
 		bool m_bUpdateScreenDevice;

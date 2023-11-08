@@ -11,13 +11,18 @@ struct lua_State;
 #include "IAttributeFields.h"
 
 #include <boost/scoped_ptr.hpp>
+
+#ifndef EMSCRIPTEN_SINGLE_THREAD
 #include <boost/thread/shared_mutex.hpp>
+#endif 
 
 namespace ParaEngine
 {
 	class INPLWebServiceClient;
 	class INPLJabberClient;
+#ifndef EMSCRIPTEN_SINGLE_THREAD
 	class CNPLNetClient;
+#endif
 	class CURLRequestTask;
 }
 
@@ -178,7 +183,7 @@ namespace NPL
 		* if 1, the input key will be modified so that the encoded message looks like plain text(this can be useful to pass some firewalls).
 		* if -1, the input key will be modified so that the encoded message is binary.
 		*/
-		virtual void SetCompressionKey(const byte* sKey = 0, int nSize = 0, int nUsePlainTextEncoding = 0);
+		virtual void SetCompressionKey(const unsigned char* sKey = 0, int nSize = 0, int nUsePlainTextEncoding = 0);
 
 		/** Set the zlib compression level to use in case compression is enabled.
 		* default to 0, which means no compression. Compression level, which is an integer in the range of -1 to 9.
@@ -512,7 +517,7 @@ namespace NPL
 		If(msg.username~=nil) then end
 		End
 		NPL.RegisterWSCallBack("http://paraengine.com/login.aspx",callbackFunc1);
-		NPL.activate("http://paraengine.com/login.aspx", {username=¡±lxz¡±});
+		NPL.activate("http://paraengine.com/login.aspx", {username=ï¿½ï¿½lxzï¿½ï¿½});
 		* @param sWebServiceFile URL of the web service
 		* @param sCode code to be executed when the web service is called. When a two-way web service call is invoked;
 		*  it internally will create a thread for the returning message. Please refer to .Net 3.0 network communication architecture.
@@ -589,12 +594,12 @@ namespace NPL
 		virtual void NPL_AddDNSRecord(const char * sDNSName, const char* sAddress);
 
 		/**
-		* Set the default channel ID, default value is 0. Default channel is used when NPL.activate() call¡¯s does not contain the channel property.
+		* Set the default channel ID, default value is 0. Default channel is used when NPL.activate() callï¿½ï¿½s does not contain the channel property.
 		* @param channel_ID It can be a number in [0,15].default is 0
 		*/
 		virtual void NPL_SetDefaultChannel(int channel_ID);
 		/**
-		* Get the default channel ID, default value is 0. Default channel is used when NPL.activate() call¡¯s does not contain the channel property.
+		* Get the default channel ID, default value is 0. Default channel is used when NPL.activate() callï¿½ï¿½s does not contain the channel property.
 		* @return channel_ID It can be a number in [0,15].default is 0
 		*/
 		virtual int NPL_GetDefaultChannel();
@@ -730,9 +735,10 @@ namespace NPL
 		CNPLNetServer* GetNetServer() { return m_net_server.get(); };
 		CNPLNetUDPServer* GetNetUDPServer() { return m_net_udp_server.get(); };
 
+#ifndef EMSCRIPTEN_SINGLE_THREAD
 		/** get the Net client implementation.*/
 		ParaEngine::CNPLNetClient* GetNetClient();
-
+#endif
 		/** whether we will process messages in the main threads in the frame move function.
 		* It is default to true;
 		* However, it is possible for server to set to false, if one wants to have a more responsive main state on the server.

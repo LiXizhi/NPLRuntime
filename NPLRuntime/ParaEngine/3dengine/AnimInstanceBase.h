@@ -15,9 +15,9 @@ namespace ParaEngine
 	public:
 		AnimIndex() :nIndex(-1), Provider(0), nCurrentFrame(0), nStartFrame(0), nEndFrame(0), loopType(0), nAnimID(0), nFramePlayed(0) {}
 		AnimIndex(int nIndex_) :nIndex(nIndex_), Provider(0), nCurrentFrame(0), nStartFrame(0), nEndFrame(0), loopType(0), nAnimID(0), nFramePlayed(0) {}
-		AnimIndex(int nIndex_, byte nProvider_) :nIndex(nIndex_), Provider(nProvider_), nCurrentFrame(0), nStartFrame(0), nEndFrame(0), loopType(0), nAnimID(0), nFramePlayed(0) {}
-		AnimIndex(int nIndex_, byte nProvider_, int nStartFrame_, int nEndFrame_, byte loopType_) :nIndex(nIndex_), Provider(nProvider_), nCurrentFrame(nStartFrame_), nStartFrame(nStartFrame_), nEndFrame(nEndFrame_), loopType(loopType_), nAnimID(0), nFramePlayed(0) {}
-		AnimIndex(int nIndex_, byte nProvider_, int nStartFrame_, int nEndFrame_, byte loopType_, int nAnimID) :nIndex(nIndex_), Provider(nProvider_), nCurrentFrame(nStartFrame_), nStartFrame(nStartFrame_), nEndFrame(nEndFrame_), loopType(loopType_), nAnimID(nAnimID), nFramePlayed(0) {}
+		AnimIndex(int nIndex_, unsigned char nProvider_) :nIndex(nIndex_), Provider(nProvider_), nCurrentFrame(0), nStartFrame(0), nEndFrame(0), loopType(0), nAnimID(0), nFramePlayed(0) {}
+		AnimIndex(int nIndex_, unsigned char nProvider_, int nStartFrame_, int nEndFrame_, unsigned char loopType_) :nIndex(nIndex_), Provider(nProvider_), nCurrentFrame(nStartFrame_), nStartFrame(nStartFrame_), nEndFrame(nEndFrame_), loopType(loopType_), nAnimID(0), nFramePlayed(0) {}
+		AnimIndex(int nIndex_, unsigned char nProvider_, int nStartFrame_, int nEndFrame_, unsigned char loopType_, int nAnimID) :nIndex(nIndex_), Provider(nProvider_), nCurrentFrame(nStartFrame_), nStartFrame(nStartFrame_), nEndFrame(nEndFrame_), loopType(loopType_), nAnimID(nAnimID), nFramePlayed(0) {}
 
 		/** whether index is valid*/
 		bool IsValid() const { return nIndex != -1; }
@@ -42,9 +42,9 @@ namespace ParaEngine
 		void AddCycle() { nFramePlayed += (nEndFrame - nStartFrame); }
 	public:
 		// bone animation provider: 0 for local model bone animation pool; 1 for global bone animation provider
-		byte Provider;
+		unsigned char Provider;
 		// 0 for looping, 1 for non-looping, 2 for undeterminted(the animation needs to be refreshed upon finish, such as during async-loading). 
-		byte loopType;
+		unsigned char loopType;
 		// current index, -1 if invalid
 		int nIndex;
 		// the animation ID as seen by outsiders

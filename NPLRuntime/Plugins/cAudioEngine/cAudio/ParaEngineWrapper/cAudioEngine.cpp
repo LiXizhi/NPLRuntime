@@ -31,7 +31,11 @@ namespace ParaEngine
 
 		void* Create(bool loading = FALSE)
 		{
+// #ifndef EMSCRIPTEN_SINGLE_THREAD
 			return new CParaAudioEngine();
+// #else
+			// return nullptr;
+// #endif
 		}
 
 		const char* ClassName()

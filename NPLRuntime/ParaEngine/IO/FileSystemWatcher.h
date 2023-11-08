@@ -1,6 +1,6 @@
 #pragma once
 
-#if !defined(PARAENGINE_MOBILE)
+#if !defined(PARAENGINE_MOBILE) && !defined(EMSCRIPTEN)
 
 #include "dirmonitor/basic_dir_monitor.hpp"
 #include <boost/thread.hpp>

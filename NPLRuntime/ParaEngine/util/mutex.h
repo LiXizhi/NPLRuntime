@@ -1,7 +1,9 @@
 #pragma once
 
+#ifndef EMSCRIPTEN_SINGLE_THREAD
 #include <boost/noncopyable.hpp>
 #include <boost/thread/mutex.hpp>
+#endif
 // Note: if one wants to use nested mutex, use this one. However, it is slightly heavier than traditional mutex. On windows, mutex can be nested by default. 
 // #include <boost/thread/recursive_mutex.hpp>
 
@@ -98,15 +100,17 @@ namespace ParaEngine
 		typedef scoped_Lock<mutex>  ScopedLock;
 	private:
 
+#ifndef EMSCRIPTEN_SINGLE_THREAD
 #ifdef WIN32
 		CRITICAL_SECTION _mutex; /**< Window mutex */
 #else
 		pthread_mutex_t _mutex; /**< posix mutex */
 #endif
-
+#endif
 		bool _locked;           /**< Fast locked look up used for copying */
 
 		void init(){
+#ifndef EMSCRIPTEN_SINGLE_THREAD
 #ifdef WIN32
 			InitializeCriticalSection(&_mutex);
 #else
@@ -115,6 +119,7 @@ namespace ParaEngine
 			pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_RECURSIVE);
 			pthread_mutex_init(&_mutex, &attr);
 			pthread_mutexattr_destroy(&attr);
+#endif
 #endif
 			_locked = false;
 		}
@@ -155,11 +160,13 @@ namespace ParaEngine
 		* @brief Destructor
 		*/
 		virtual ~mutex(){
+#ifndef EMSCRIPTEN_SINGLE_THREAD
 #ifdef WIN32
 			DeleteCriticalSection(&_mutex);
 #else
 			pthread_mutex_unlock(&_mutex);
 			pthread_mutex_destroy(&_mutex);
+#endif
 #endif
 		}
 
@@ -169,12 +176,16 @@ namespace ParaEngine
 		* @return POSIX true if success
 		*/
 		bool lock(){
+#ifdef EMSCRIPTEN_SINGLE_THREAD
+			return true;
+#else
 			_locked = true;
 #ifdef WIN32
 			EnterCriticalSection(&_mutex);
 			return true;
 #else
 			return pthread_mutex_lock(&_mutex) == 0;
+#endif
 #endif
 		}
 
@@ -183,11 +194,15 @@ namespace ParaEngine
 		* @return true if success else false (if busy or error)
 		*/
 		bool tryLock(){
+#ifdef EMSCRIPTEN_SINGLE_THREAD
+			return true;
+#else
 			_locked = true;
 #ifdef WIN32
 			return !!TryEnterCriticalSection(&_mutex);
 #else
 			return pthread_mutex_trylock(&_mutex) == 0;
+#endif
 #endif
 		}
 
@@ -196,13 +211,17 @@ namespace ParaEngine
 		* @return WIN true in every cases
 		* @return POSIX true if success
 		*/
-		bool unlock(){
+		bool unlock() {
+#ifdef EMSCRIPTEN_SINGLE_THREAD
+			return true;
+#else
 			_locked = false;
 #ifdef WIN32
 			LeaveCriticalSection(&_mutex);
 			return true;
 #else
 			return pthread_mutex_unlock(&_mutex) == 0;
+#endif
 #endif
 		}
 

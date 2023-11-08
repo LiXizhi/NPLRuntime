@@ -98,7 +98,7 @@ namespace NPL
 		* if 1, the input key will be modified so that the encoded message looks like plain text(this can be useful to pass some firewalls). 
 		* if -1, the input key will be modified so that the encoded message is binary. 
 		*/
-		virtual void SetCompressionKey(const byte* sKey=0, int nSize=0, int nUsePlainTextEncoding = 0) = 0;
+		virtual void SetCompressionKey(const unsigned char* sKey=0, int nSize=0, int nUsePlainTextEncoding = 0) = 0;
 
 		/** Set the zlib compression level to use in case compresssion is enabled. 
 		* default to 0, which means no compression. Compression level, which is an integer in the range of -1 to 9. 
@@ -291,12 +291,12 @@ namespace NPL
 		virtual void NPL_AddDNSRecord(const char * sDNSName, const char* sAddress) = 0;
 
 		/**
-		* Set the default channel ID, default value is 0. Default channel is used when NPL.activate() call¡¯s does not contain the channel property.
+		* Set the default channel ID, default value is 0. Default channel is used when NPL.activate() callï¿½ï¿½s does not contain the channel property.
 		* @param channel_ID It can be a number in [0,15].default is 0
 		*/
 		virtual void NPL_SetDefaultChannel(int channel_ID) = 0;
 		/**
-		* Get the default channel ID, default value is 0. Default channel is used when NPL.activate() call¡¯s does not contain the channel property.
+		* Get the default channel ID, default value is 0. Default channel is used when NPL.activate() callï¿½ï¿½s does not contain the channel property.
 		* @return channel_ID It can be a number in [0,15].default is 0
 		*/
 		virtual int NPL_GetDefaultChannel() = 0;

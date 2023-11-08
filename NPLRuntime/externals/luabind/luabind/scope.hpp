@@ -56,7 +56,7 @@ namespace luabind {
     struct LUABIND_API scope
     {
         scope();
-        explicit scope(std::auto_ptr<detail::registration> reg);
+        explicit scope(std::auto_ptr<detail::registration> reg):  m_chain(reg.release()) {}
         scope(scope const& other_);
         ~scope();
 

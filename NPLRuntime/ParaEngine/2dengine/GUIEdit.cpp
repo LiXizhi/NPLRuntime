@@ -46,7 +46,8 @@ const IType* CGUIEditBox::m_type = NULL;
 
 //--------------------------------------------------------------------------------------
 CGUIEditBox::CGUIEditBox() :CGUIBase()
-#ifdef PARAENGINE_MOBILE
+// #ifdef PARAENGINE_MOBILE
+#if defined(PARAENGINE_MOBILE) || defined(EMSCRIPTEN)
 	, m_bMoveViewWhenAttachWithIME(false)
 #endif
 {
@@ -784,7 +785,8 @@ void CGUIEditBox::UpdateRects()
 bool CGUIEditBox::OnFocusIn()
 {
 	bool bHandled = CGUIBase::OnFocusIn();
-#ifdef PARAENGINE_MOBILE
+// #ifdef PARAENGINE_MOBILE
+#if defined(PARAENGINE_MOBILE) || defined(EMSCRIPTEN)
 	if (m_bInputMethodEnabled) {
 		attachWithIME();
 	}
@@ -799,7 +801,8 @@ bool CGUIEditBox::OnFocusOut()
 #ifdef USE_DIRECTX_RENDERER
 	CGUIIME::OnFocusOut();
 #endif
-#ifdef PARAENGINE_MOBILE
+// #ifdef PARAENGINE_MOBILE
+#if defined(PARAENGINE_MOBILE) || defined(EMSCRIPTEN)
 	if (m_bInputMethodEnabled) {
 		detachWithIME();
 	}
@@ -1833,14 +1836,16 @@ int ParaEngine::CGUIEditBox::GetTextA(std::string& out)
 
 void ParaEngine::CGUIEditBox::OnSelectStart()
 {
-#ifdef PARAENGINE_MOBILE
+// #ifdef PARAENGINE_MOBILE
+#if defined(PARAENGINE_MOBILE) || defined(EMSCRIPTEN)
 	if (m_bInputMethodEnabled)
 		if (m_bHasFocus)
 			attachWithIME();
 #endif
 }
 
-#ifdef PARAENGINE_MOBILE
+// #ifdef PARAENGINE_MOBILE
+#if defined(PARAENGINE_MOBILE) || defined(EMSCRIPTEN)
 
 void ParaEngine::CGUIEditBox::setMoveViewWhenAttachWithIME(bool bMove)
 {
@@ -1980,7 +1985,8 @@ int CGUIEditBox::InstallFields(CAttributeClass* pClass, bool bOverride)
 	pClass->AddField("EmptyText", FieldType_String, (void*)SetEmptytext_s, (void*)GetEmptyTextColor_s, NULL, NULL, bOverride);
 	pClass->AddField("EmptyTextColor", FieldType_DWORD, (void*)SetEmptyTextColor_s, (void*)GetEmptyTextColor_s, NULL, NULL, bOverride);
 
-#ifdef PARAENGINE_MOBILE
+// #ifdef PARAENGINE_MOBILE
+#if defined(PARAENGINE_MOBILE) || defined(EMSCRIPTEN)
 	pClass->AddField("MoveViewWhenAttachWithIME", FieldType_Bool, (void*)SetMoveViewWhenAttachWithIME_s, nullptr, nullptr, nullptr, bOverride);
 
 	pClass->AddField("IsUseFloatEditBox", FieldType_Bool, (void*)GetIsUseFloatEditBox_s, (void*)SetIsUseFloatEditBox_s, NULL, NULL, bOverride);

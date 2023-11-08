@@ -6,6 +6,7 @@
 // Date:	2009.7.26
 // Desc: Cross platformed. 
 //-----------------------------------------------------------------------------
+#ifndef EMSCRIPTEN_SINGLE_THREAD
 #include "ParaEngine.h"
 
 #include "util/ParaTime.h"
@@ -264,3 +265,4 @@ int CParaEngineService::Run(const char* pCommandLine, IParaEngineApp* pApp)
 
 	return return_code;
 }
+#endif

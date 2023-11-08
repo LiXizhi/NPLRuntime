@@ -12,7 +12,9 @@
 #include "util/mutex.h"
 #include "Log.h"
 #include "util/os_calls.h"
+#ifndef EMSCRIPTEN_SINGLE_THREAD
 #include <boost/thread/tss.hpp>
+#endif
 #if ANDROID
 #include <android/log.h>
 #define LOGI(...) ((void)__android_log_print(ANDROID_LOG_INFO, "ParaEngine", __VA_ARGS__))
@@ -456,14 +458,7 @@ namespace ParaEngine
 	const char* CLogger::GetLog(int fromPos, int nCount)
 	{
 		ParaEngine::Lock lock_(m_mutex);
-		static boost::thread_specific_ptr< std::vector<char> > g_text_;
-		if( ! g_text_.get() ) {
-			// first time called by this thread
-			// construct test element to be used in all subsequent calls from this thread
-			g_text_.reset( new std::vector<char>());
-		}
-		std::vector<char>& g_text = *g_text_;
-		
+		thread_local static std::vector<char> g_text;
 		FILE * pFile = GetLogFileHandle();
 		if(pFile)
 		{

@@ -27,7 +27,7 @@ namespace ParaEngine
 	// and uncompressed size are set to zero in the local
 	// header
 
-	// Set byte packing for ZIP file header definition
+	// Set unsigned char packing for ZIP file header definition
 #	pragma pack( push, packing )
 #	pragma pack( 1 )
 
@@ -240,7 +240,7 @@ namespace ParaEngine
 	ParaEngine pkg File Format
 	========================
 	char[4] <file type id> ".pkg"
-	byte[4] <pkg file version> 0.0.0.1
+	unsigned char[4] <pkg file version> 0.0.0.1
 	[int] <length of string>
 	[string] "ParaEngine Tech Studio Package File Format. Please note that content in 
 	this file is meant to be protected and copyrighted by their author(s). Decoding this pkg file is illegal."
@@ -318,7 +318,7 @@ namespace ParaEngine
 
 		/* open a zip file in memory 
 		* @param buffer: 
-		* @param nLen: size in byte of the buffer
+		* @param nLen: size in unsigned char of the buffer
 		* @param bDeleteBuffer: true if the zip file will take the ownership of the buffer and will delete it on exit.
 		*/
 		bool OpenMemFile(const char* buffer, DWORD nLen, bool bDeleteBuffer=true);

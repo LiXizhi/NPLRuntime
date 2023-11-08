@@ -36,7 +36,9 @@
 #endif
 #endif
 
+#ifndef EMSCRIPTEN_SINGLE_THREAD
 #include <boost/thread/tss.hpp>
+#endif
 #include <boost/log/attributes/current_process_name.hpp>
 
 #include <time.h>
@@ -932,6 +934,14 @@ void ParaEngine::ParaEngineSettings::SendMsgToJS(const char* msg_json_data)
 	SendMsgToJS_JS_(msg_json_data);
 #endif
 }
+
+// std::string ParaEngine::ParaEngineSettings::PyToLua(std::string pycode)
+// {
+// #ifdef EMSCRIPTEN
+//     emscripten::val js_global_LuaCallPy2Lua = emscripten::val::global("LuaCallPy2Lua");
+// 	return js_global_LuaCallPy2Lua(pycode);
+// #endif
+// }
 
 void ParaEngine::ParaEngineSettings::SetConsoleTextAttribute( int wAttributes )
 {

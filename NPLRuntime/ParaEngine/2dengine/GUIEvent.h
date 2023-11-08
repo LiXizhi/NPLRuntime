@@ -221,7 +221,7 @@ namespace ParaEngine
 	public:
 		//this is a static member to temporarily store the keyboard state, 
 		//all mapping are in the EM_XX index
-		static byte KeyStates[EventCount];
+		static unsigned char KeyStates[EventCount];
 		static void StaticInit();
 	protected:
 		static int m_nDragBeginDistance;

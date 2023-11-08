@@ -1260,7 +1260,11 @@ namespace ParaEngine
 
 	bool CBlockLightGridClient::IsAsyncLightCalculation() const
 	{
+#ifdef EMSCRIPTEN_SINGLE_THREAD
+	return false;
+#else
 		return m_bIsAsyncLightCalculation;
+#endif
 	}
 
 	void CBlockLightGridClient::SetAsyncLightCalculation(bool val)

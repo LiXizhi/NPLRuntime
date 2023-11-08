@@ -8,6 +8,15 @@ if (NOT EMSCRIPTEN)
     include(${PROJECT_SOURCE_DIR}/cmake/ConfigBoost.cmake)
 endif()
 
+if (EMSCRIPTEN_SINGLE_THREAD)
+	set(CMAKE_CXX_STANDARD 20)
+	set(CMAKE_C_STANDARD 11)
+	set(CMAKE_CXX_STANDARD_REQUIRED TRUE)
+else()
+	set(CMAKE_CXX_STANDARD 11)
+	set(CMAKE_C_STANDARD 11)
+endif()
+
 # includes
 set(NPLRUNTIME_INCLUDES)
 
@@ -24,7 +33,6 @@ ucm_add_dirs(
     protocol
     ParaXModel
     IO
-    curllua
     debugtools
     InfoCenter
     BlockEngine
@@ -40,6 +48,10 @@ ucm_add_dirs(
 	AutoRigger
     TO sources_commmon RECURSIVE
 )
+
+if (NOT EMSCRIPTEN)
+    ucm_add_dirs(curllua TO sources_commmon RECURSIVE)
+endif()
 
 if (NPLRUNTIME_RENDERER STREQUAL "OPENGL")
     set(RenderSystem RenderSystemOpenGL)
@@ -242,17 +254,63 @@ if (NPLRUNTIME_OCE)
 endif ()
 
 if (EMSCRIPTEN)
+    if (EMSCRIPTEN_SINGLE_THREAD)
+        set(NPLOCE_DEPS_ROOT "/mnt/d/workspace/npl/nploce-deps/install")
+    else()
+        set(NPLOCE_DEPS_ROOT "/mnt/d/workspace/npl/nploce-deps/install_thread")
+    endif()
+endif()
+if (EMSCRIPTEN AND NPLOCE_DEPS_ROOT)
+    link_directories(${NPLOCE_DEPS_ROOT}/harfbuzz/lib)
+    link_directories(${NPLOCE_DEPS_ROOT}/oce/lib)
+	list(APPEND NPLRUNTIME_LIBS  
+        ${NPLOCE_DEPS_ROOT}/oce/lib/libTKBO.a
+        ${NPLOCE_DEPS_ROOT}/oce/lib/libTKBool.a
+        ${NPLOCE_DEPS_ROOT}/oce/lib/libTKBRep.a
+        ${NPLOCE_DEPS_ROOT}/oce/lib/libTKernel.a
+        ${NPLOCE_DEPS_ROOT}/oce/lib/libTKFeat.a
+        ${NPLOCE_DEPS_ROOT}/oce/lib/libTKFillet.a
+        ${NPLOCE_DEPS_ROOT}/oce/lib/libTKG2d.a
+        ${NPLOCE_DEPS_ROOT}/oce/lib/libTKG3d.a
+        ${NPLOCE_DEPS_ROOT}/oce/lib/libTKGeomAlgo.a
+        ${NPLOCE_DEPS_ROOT}/oce/lib/libTKGeomBase.a
+        ${NPLOCE_DEPS_ROOT}/oce/lib/libTKHLR.a
+        ${NPLOCE_DEPS_ROOT}/oce/lib/libTKMath.a
+        ${NPLOCE_DEPS_ROOT}/oce/lib/libTKMesh.a
+        ${NPLOCE_DEPS_ROOT}/oce/lib/libTKOffset.a
+        ${NPLOCE_DEPS_ROOT}/oce/lib/libTKPrim.a
+        ${NPLOCE_DEPS_ROOT}/oce/lib/libTKShHealing.a
+        # ${NPLOCE_DEPS_ROOT}/oce/lib/TKIGES.a
+        # ${NPLOCE_DEPS_ROOT}/oce/lib/TKSTEP.a
+        # ${NPLOCE_DEPS_ROOT}/oce/lib/TKSTEP209.a
+        # ${NPLOCE_DEPS_ROOT}/oce/lib/TKSTEPAttr.a
+        # ${NPLOCE_DEPS_ROOT}/oce/lib/TKSTEPBase.a
+        # ${NPLOCE_DEPS_ROOT}/oce/lib/TKXSBase.a
+        ${NPLOCE_DEPS_ROOT}/oce/lib/libTKTopAlgo.a
+        ${NPLOCE_DEPS_ROOT}/oce/lib/libTKXMesh.a
+
+        ${NPLOCE_DEPS_ROOT}/harfbuzz/lib/libharfbuzz.a
+        # ${NPLOCE_DEPS_ROOT}/freetype2_8_1/lib/libfreetype.a
+        ${NPLOCE_DEPS_ROOT}/nploce/libnploce.a
+    )
+endif()
+
+if (EMSCRIPTEN)
+    if (NOT EMSCRIPTEN_SINGLE_THREAD)
+        list(APPEND NPLRUNTIME_LIBS libcurl)
+    endif()
+    
     target_link_libraries(ParaEngine PUBLIC 
     ${RenderSystem}
     ${NPLRUNTIME_LIBS}
     ${PLATFORM_SPE_LIBS}
     ${LUA_LIB_LIST}
-    libcurl
     jsoncpp
     tinyxpath
     luabind
     ParaSqlite 
     Pinocchio
+    ParaAntlr4
     ${ICONV_LIB_NAME}
     "${BOOST_ROOT}/stage/lib/libboost_atomic.a"
     "${BOOST_ROOT}/stage/lib/libboost_chrono.a"

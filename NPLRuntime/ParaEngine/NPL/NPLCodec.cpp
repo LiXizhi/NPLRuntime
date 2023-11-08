@@ -16,7 +16,7 @@ using namespace NPL;
 namespace NPL
 {
 	/** the private is usually NPL_PRIVATE_KEY_SIZE+1 long, and should contain \0 at some position but not too close to the beginning.*/
-	byte NPLCodec::m_sPrivateKey[] = "\
+	unsigned char NPLCodec::m_sPrivateKey[] = "\
 NPLCodec Secret Private Key.ParaEngine All Rights Reserved.V001\0";
 }
 
@@ -24,13 +24,13 @@ NPLCodec Secret Private Key.ParaEngine All Rights Reserved.V001\0";
 The current custom algorithm is as follow
 1. shift the private key by nPublicKey mod private key size. 
 2. for each src char, computer the dest char as XOR of src and private key
-3. increase src, dest, and private key by 1 byte, and repeat 2. If private key char is '\0', reset the private key to the beginning.
+3. increase src, dest, and private key by 1 unsigned char, and repeat 2. If private key char is '\0', reset the private key to the beginning.
 */
 int NPLCodec::Decode(char* dest, const char* src, int nSrcSize, uint32 nPublicKey)
 {
-	const byte* pSrc = (const byte*)src;
-	byte* pDest = (byte*)dest;
-	byte* pPrivateKey = m_sPrivateKey + (nPublicKey % NPL_PRIVATE_KEY_SIZE);
+	const unsigned char* pSrc = (const unsigned char*)src;
+	unsigned char* pDest = (unsigned char*)dest;
+	unsigned char* pPrivateKey = m_sPrivateKey + (nPublicKey % NPL_PRIVATE_KEY_SIZE);
 
 	int i=0;
 	for(; i<nSrcSize; ++i, ++pDest, ++pSrc, ++pPrivateKey)
@@ -44,9 +44,9 @@ int NPLCodec::Decode(char* dest, const char* src, int nSrcSize, uint32 nPublicKe
 
 int NPLCodec::Encode(char* dest, const char* src, int nSrcSize, uint32 nPublicKey)
 {
-	const byte* pSrc = (const byte*)src;
-	byte* pDest = (byte*)dest;
-	byte* pPrivateKey = m_sPrivateKey + (nPublicKey % NPL_PRIVATE_KEY_SIZE);
+	const unsigned char* pSrc = (const unsigned char*)src;
+	unsigned char* pDest = (unsigned char*)dest;
+	unsigned char* pPrivateKey = m_sPrivateKey + (nPublicKey % NPL_PRIVATE_KEY_SIZE);
 
 	int i=0;
 	for(; i<nSrcSize; ++i, ++pDest, ++pSrc, ++pPrivateKey)
@@ -65,7 +65,7 @@ void NPLCodec::UsePlainTextEncoding(bool bUsePlainTextEncoding)
 		// make sure all higher bit of char is 0
 		for(int i=0; i<NPL_PRIVATE_KEY_SIZE; i++)
 		{
-			byte key = m_sPrivateKey[i];
+			unsigned char key = m_sPrivateKey[i];
 			if((key & 0x80) != 0)
 			{
 				m_sPrivateKey[i] = key & 0x7f;
@@ -77,7 +77,7 @@ void NPLCodec::UsePlainTextEncoding(bool bUsePlainTextEncoding)
 		// make sure all higher bit of char is 1
 		for(int i=0; i<NPL_PRIVATE_KEY_SIZE; i++)
 		{
-			byte key = m_sPrivateKey[i];
+			unsigned char key = m_sPrivateKey[i];
 			if((key & 0x80) == 0)
 			{
 				m_sPrivateKey[i] = key | 0x80;
@@ -86,7 +86,7 @@ void NPLCodec::UsePlainTextEncoding(bool bUsePlainTextEncoding)
 	}
 }
 
-void NPLCodec::SetGenericKey(const byte* sKey, int nSize)
+void NPLCodec::SetGenericKey(const unsigned char* sKey, int nSize)
 {
 	if(sKey == 0)
 		return;

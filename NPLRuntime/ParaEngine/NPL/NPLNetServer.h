@@ -1,11 +1,13 @@
 #pragma once
+#include "NPLDispatcher.h"
+#include "NPLConnectionManager.h"
+#ifndef EMSCRIPTEN_SINGLE_THREAD
+
 #include <boost/thread.hpp>
 #include <boost/asio.hpp>
 #include <boost/noncopyable.hpp>
 #include <boost/scoped_ptr.hpp>
 #include <boost/asio/steady_timer.hpp>
-#include "NPLConnectionManager.h"
-#include "NPLDispatcher.h"
 
 namespace NPL
 {
@@ -195,3 +197,55 @@ namespace NPL
 		CNPLDispatcher m_msg_dispatcher;
 	};
 }
+
+#else
+namespace NPL
+{
+	class CNPLNetServer 
+	{
+	public:
+		CNPLNetServer():m_connection_manager(), m_msg_dispatcher(this) {}
+		void start(const char* server=NULL, const char* port=NULL) {}
+		void stop() {}
+		CNPLDispatcher& GetDispatcher(){return m_msg_dispatcher;};
+		NPLConnection_ptr CreateConnection(NPLRuntimeAddress_ptr pAddress) { 
+			NPLConnection_ptr pConnection(new CNPLConnection());
+			return pConnection;
+		}
+
+		static const std::string& GetExternalIPList()
+		{
+			static std::string s_ip = "";
+			return s_ip;
+		}
+
+		static const std::string& GetBroadcastAddressList()
+		{
+			static std::string s_ips = "";
+			return s_ips;
+		}
+		CNPLConnectionManager& GetConnectionManager(){return m_connection_manager;};
+		static int Ping(const char* host, const char* port, unsigned int waitTime = 1000) { return 0;}
+		void SetTCPKeepAlive(bool bEnable) { }
+		bool IsTCPKeepAliveEnabled(){ return false; }
+		void SetTCPNoDelay(bool bEnable) {}
+		bool IsTcpNoDelay() { return false;}
+		void SetKeepAlive(bool bEnable) {}
+		bool IsKeepAliveEnabled() { return false; }
+		void EnableIdleTimeout(bool bEnable) {}
+		bool IsIdleTimeoutEnabled() { return false; }
+		void SetIdleTimeoutPeriod(int nMilliseconds) {}
+		int GetIdleTimeoutPeriod() { return 0;}
+		void EnableAnsiMode(bool bEnable) {}
+		bool IsAnsiMode() { return false;}
+		virtual const std::string& GetHostPort() { static std::string s_port = ""; return s_port; }
+		virtual const std::string& GetHostIP(){ static std::string s_ip = ""; return s_ip; }
+		virtual bool IsServerStarted() { return false; }
+		std::string GetExternalIP(){ static std::string s_ip = ""; return s_ip; }
+		int GetMaxPendingConnections() const { return 0; }
+		void SetMaxPendingConnections(int val) {}
+		CNPLDispatcher m_msg_dispatcher;
+		CNPLConnectionManager m_connection_manager;
+	};
+}
+#endif

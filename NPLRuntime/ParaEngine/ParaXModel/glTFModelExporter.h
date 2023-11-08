@@ -1,4 +1,8 @@
 #pragma once
+#ifdef EMSCRIPTEN_SINGLE_THREAD
+// #define auto_ptr unique_ptr
+#include "AutoPtr.h"
+#endif
 #include "ParaVector3.h"
 #include "ParaQuaternion.h"
 #include "ParaXBone.h"

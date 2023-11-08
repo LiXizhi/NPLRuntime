@@ -459,7 +459,7 @@ bool ParaEngine::XFileCharModelExporter::WriteParaXRawData(XFileDataObjectPtr pD
 bool ParaEngine::XFileCharModelExporter::WriteParaXBodyChild(XFileDataObjectPtr pData, const string& strTemplateName, const string& strName /*= ""*/)
 {
 	if (strTemplateName == "XDWORDArray") {
-		// ÎÄ¼þ½âÎöÊ±ºòÃ»ÓÐ"XGlobalSequences"½ÚµãµÄÏà¹Ø´¦ÀíÂß¼­£¬¹Ê´Ë´¦Ò²²»×ö´¦Àí
+		// ï¿½Ä¼ï¿½ï¿½ï¿½ï¿½ï¿½Ê±ï¿½ï¿½Ã»ï¿½ï¿½"XGlobalSequences"ï¿½Úµï¿½ï¿½ï¿½ï¿½Ø´ï¿½ï¿½ï¿½ï¿½ß¼ï¿½ï¿½ï¿½ï¿½Ê´Ë´ï¿½Ò²ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 		////XGlobalSequences
 		//// Get the frame name (if any)
 		//if (pSubData->GetName() == "XGlobalSequences") {
@@ -564,7 +564,7 @@ bool ParaEngine::XFileCharModelExporter::WriteXGlobalSequences(XFileDataObjectPt
 		int nSize = 4 + nGlobalSequences * sizeof(DWORD);
 		pData->ResizeBuffer(nSize);
 		*(DWORD*)(pData->GetBuffer()) = (DWORD)nGlobalSequences;
-		byte *bytes = (byte*)(pData->GetBuffer() + 4);
+		unsigned char *bytes = (unsigned char*)(pData->GetBuffer() + 4);
 		memcpy(pData->GetBuffer() + 4, m_pMesh->globalSequences, nSize - 4);
 	}
 	return true;
@@ -585,7 +585,7 @@ bool ParaEngine::XFileCharModelExporter::WriteXVertices(XFileDataObjectPtr pData
 	data.nVertexBytes = sizeof(ModelVertex);
 	data.nVertices = nVertices;
 
-	// m_pRawÐÅÏ¢Ìî³ä
+	// m_pRawï¿½ï¿½Ï¢ï¿½ï¿½ï¿½
 	data.ofsVertices = m_pRawData->AddRawData((const DWORD*)m_pMesh->m_origVertices, data.nVertices*data.nVertexBytes / 4);
 
 	memcpy(pData->GetBuffer(), &data, nSize);

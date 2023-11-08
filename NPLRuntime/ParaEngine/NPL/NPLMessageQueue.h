@@ -2,9 +2,19 @@
 #include "NPLMessage.h"
 
 #include <boost/circular_buffer.hpp>
+#ifndef EMSCRIPTEN_SINGLE_THREAD
 #include <boost/thread.hpp>
+#endif
 #include "util/mutex.h"
 #include <queue>
+
+#ifdef EMSCRIPTEN_SINGLE_THREAD
+typedef ParaEngine::mutex boost_mutex;
+typedef ParaEngine::scoped_Lock<boost_mutex> boost_mutex_scoped_lock;
+#else
+typedef boost::mutex boost_mutex;
+typedef boost::mutex::scoped_lock boost_mutex_scoped_lock;
+#endif
 
 namespace NPL
 {
@@ -22,7 +32,11 @@ namespace NPL
 	};
 
 	// forward declare
+#ifdef EMSCRIPTEN_SINGLE_THREAD
+	template <typename Data, typename Condition = dummy_condition_variable>
+#else
 	template <typename Data, typename Condition = boost::condition_variable>
+#endif
 	class concurrent_ptr_queue;
 
 	/**
@@ -40,7 +54,7 @@ namespace NPL
 		typedef typename container_type::size_type size_type;
 		typedef typename container_type::value_type value_type;
 
-		mutable boost::mutex m_mutex;
+		mutable boost_mutex m_mutex;
 		Condition m_condition_variable;
 
 		/** whether to use event to inform consumer when new data items are added to the queue. Default to true.
@@ -68,7 +82,7 @@ namespace NPL
 		*/
 		void SetUseEvent(bool bUseEvent)
 		{
-			boost::mutex::scoped_lock lock(m_mutex);
+			boost_mutex_scoped_lock lock(m_mutex);
 			m_use_event = bUseEvent;
 		}
 
@@ -80,7 +94,7 @@ namespace NPL
 		*/
 		BufferStatus try_push(value_type& item) 
 		{
-			boost::mutex::scoped_lock lock(m_mutex);
+			boost_mutex_scoped_lock lock(m_mutex);
 			BufferStatus bufferStatus = m_container.empty() ? BufferFirst : BufferNormal;
 			if(m_container.full())
 			{
@@ -106,7 +120,7 @@ namespace NPL
 		*/
 		BufferStatus try_push_get_front(value_type& item, value_type** ppFrontItem) 
 		{
-			boost::mutex::scoped_lock lock(m_mutex);
+			boost_mutex_scoped_lock lock(m_mutex);
 			BufferStatus bufferStatus = m_container.empty() ? BufferFirst : BufferNormal;
 			if(m_container.full())
 			{
@@ -131,7 +145,7 @@ namespace NPL
 		*/
 		void push(value_type& data)
 		{
-			boost::mutex::scoped_lock lock(m_mutex);
+			boost_mutex_scoped_lock lock(m_mutex);
 			m_container.push_back(data);
 			data.reset();
 			lock.unlock();
@@ -146,7 +160,7 @@ namespace NPL
 		*/
 		void push_front(value_type & data)
 		{
-			boost::mutex::scoped_lock lock(m_mutex);
+			boost_mutex_scoped_lock lock(m_mutex);
 			m_container.push_front(data);
 			data.reset();
 			lock.unlock();
@@ -156,7 +170,7 @@ namespace NPL
 
 		bool try_pop(value_type& popped_value)
 		{
-			boost::mutex::scoped_lock lock(m_mutex);
+			boost_mutex_scoped_lock lock(m_mutex);
 			if(m_container.empty())
 			{
 				return false;
@@ -169,7 +183,7 @@ namespace NPL
 
 		void wait_and_pop(value_type& popped_value)
 		{
-			boost::mutex::scoped_lock lock(m_mutex);
+			boost_mutex_scoped_lock lock(m_mutex);
 			while(m_container.empty())
 			{
 				m_condition_variable.wait(lock);
@@ -184,7 +198,7 @@ namespace NPL
 		*/
 		void wait(int nMessageCount = -1)
 		{
-			boost::mutex::scoped_lock lock(m_mutex);
+			boost_mutex_scoped_lock lock(m_mutex);
 			if (nMessageCount >= 0 && (nMessageCount != (int)m_container.size() || nMessageCount>= (int)m_container.capacity()))
 				return;
 			m_condition_variable.wait(lock);
@@ -196,7 +210,7 @@ namespace NPL
 		*/
 		value_type peek(size_type nIndex)
 		{
-			boost::mutex::scoped_lock lock(m_mutex);
+			boost_mutex_scoped_lock lock(m_mutex);
 			if (nIndex < m_container.size())
 			{
 				return m_container.at(nIndex);
@@ -209,7 +223,7 @@ namespace NPL
 		*/
 		bool try_pop_at(size_type nIndex, value_type& popped_value)
 		{
-			boost::mutex::scoped_lock lock(m_mutex);
+			boost_mutex_scoped_lock lock(m_mutex);
 			if (nIndex < m_container.size())
 			{
 				if (nIndex == 0)
@@ -236,7 +250,7 @@ namespace NPL
 		*/
 		value_type * try_front()
 		{
-			boost::mutex::scoped_lock lock(m_mutex);
+			boost_mutex_scoped_lock lock(m_mutex);
 			return m_container.empty() ? NULL : &(m_container.front());
 		}
 
@@ -248,7 +262,7 @@ namespace NPL
 		*/
 		bool try_next(value_type** ppValueFront) 
 		{
-			boost::mutex::scoped_lock lock(m_mutex);
+			boost_mutex_scoped_lock lock(m_mutex);
 			if(m_container.empty())
 			{
 				return false;
@@ -266,18 +280,18 @@ namespace NPL
 
 		bool empty() const
 		{
-			boost::mutex::scoped_lock lock(m_mutex);
+			boost_mutex_scoped_lock lock(m_mutex);
 			return m_container.empty();
 		}
 		bool full() const {
-			boost::mutex::scoped_lock lock(m_mutex);
+			boost_mutex_scoped_lock lock(m_mutex);
 			return m_container.full();
 		};
 
 		/** Get the number of elements currently stored in the circular_buffer */
 		size_type size() const
 		{
-			boost::mutex::scoped_lock lock(m_mutex);
+			boost_mutex_scoped_lock lock(m_mutex);
 			return m_container.size();
 		}
 
@@ -290,7 +304,7 @@ namespace NPL
 		/** Set the max number of elements that can be stored in the circular_buffer */
 		void set_capacity(size_type new_capacity) 
 		{
-			boost::mutex::scoped_lock lock(m_mutex);
+			boost_mutex_scoped_lock lock(m_mutex);
 			m_container.set_capacity(new_capacity);
 		}
 	};
@@ -307,6 +321,5 @@ namespace NPL
 	public:
 
 	};
-
-
 }
+

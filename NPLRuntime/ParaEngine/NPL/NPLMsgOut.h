@@ -4,8 +4,9 @@
 #include "NPLMsgHeader.h"
 #include "util/PoolBase.h"
 #include "util/StringBuilder.h"
-
+#ifndef EMSCRIPTEN_SINGLE_THREAD
 #include <boost/asio.hpp>
+#endif
 #include <boost/noncopyable.hpp>
 #include <boost/enable_shared_from_this.hpp>
 

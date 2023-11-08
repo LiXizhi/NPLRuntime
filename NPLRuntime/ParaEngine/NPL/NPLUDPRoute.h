@@ -5,8 +5,9 @@
 #include "NPLMsgOut.h"
 #include "NPLMsgIn_parser.h"
 #include "NPLMessageQueue.h"
-
+#ifndef EMSCRIPTEN_SINGLE_THREAD
 #include <boost/asio.hpp>
+#endif
 #include <boost/array.hpp>
 #include <boost/noncopyable.hpp>
 #include <boost/shared_ptr.hpp>
@@ -24,32 +25,41 @@ namespace NPL
 		public boost::enable_shared_from_this<NPLUDPAddress>,
 		private boost::noncopyable
 	{
-		NPLUDPAddress(const string& sHost, unsigned short port, const string& sNID)
-			: m_ep(boost::asio::ip::make_address_v4(sHost), port)
-			, m_sNID(sNID)
+#ifndef EMSCRIPTEN_SINGLE_THREAD
+		NPLUDPAddress(const string& sHost, unsigned short port, const string& sNID): m_ep(boost::asio::ip::make_address_v4(sHost), port), m_sNID(sNID)
+#else			
+		NPLUDPAddress(const string& sHost, unsigned short port, const string& sNID): m_sNID(sNID)
+#endif
+			
 		{
 
 		}
 
-		NPLUDPAddress(unsigned int host, unsigned short port, const string& sNID)
-			: m_ep(boost::asio::ip::address_v4(host), port)
-			, m_sNID(sNID)
+#ifndef EMSCRIPTEN_SINGLE_THREAD
+		NPLUDPAddress(unsigned int host, unsigned short port, const string& sNID): m_ep(boost::asio::ip::address_v4(host), port), m_sNID(sNID)
+#else	
+		NPLUDPAddress(unsigned int host, unsigned short port, const string& sNID): m_sNID(sNID)
+#endif
 		{
 
 		}
 
 
+#ifndef EMSCRIPTEN_SINGLE_THREAD
 		NPLUDPAddress(const boost::asio::ip::udp::endpoint& ep, const string& sNID) 
 			: m_ep(ep)
 			, m_sNID(sNID)
 		{
 		}
+#endif
 
-		inline const std::string GetHost() const { return m_ep.address().to_string(); }
-		inline unsigned short GetPort() const { return m_ep.port(); }
+
 		inline const std::string& GetNID() const { return m_sNID; }
 		inline void SetNID(const char* nid) { m_sNID = nid; }
 		inline void SetNID(const std::string& nid) { m_sNID = nid; }
+#ifndef EMSCRIPTEN_SINGLE_THREAD
+		inline const std::string GetHost() const { return m_ep.address().to_string(); }
+		inline unsigned short GetPort() const { return m_ep.port(); }
 		inline const boost::asio::ip::udp::endpoint&  GetEndPoint() const {return m_ep; }
 		inline unsigned long long GetHash() const { return ComputerHash(m_ep); }
 
@@ -60,12 +70,19 @@ namespace NPL
 
 			return (ip << 32) | port;
 		}
+#else
+		inline unsigned long long GetHash() const { return 0; }
+		inline const std::string GetHost() const { return "0.0.0.0"; }
+		inline unsigned short GetPort() const { return 0; }
+#endif
 
 	private:
 		//
 		// ip address and port are const, because NPL udp address are immutable.
 		//
+#ifndef EMSCRIPTEN_SINGLE_THREAD
 		boost::asio::ip::udp::endpoint m_ep;
+#endif
 
 		// nid may be changed during the course of authentication. 
 		std::string m_sNID;
@@ -248,7 +265,9 @@ namespace NPL
 		unsigned long long getHash();
 
 		//
+#ifndef EMSCRIPTEN_SINGLE_THREAD
 		void handle_send(const boost::system::error_code& error, size_t bytes_transferred, const char* buff, size_t buff_size);
+#endif
 	private:
 
 		/// handle disconnection of this object
