@@ -39,8 +39,6 @@ namespace fs = boost::filesystem;
 #define BOOST_FILESYSTEM_NO_DEPRECATED
 using namespace ParaEngine;
 
-
-
 CParaFileUtils* CParaFileUtils::GetInstance()
 {
 	static CParaFileUtilsAndroid androidImpl;
@@ -164,8 +162,14 @@ ParaEngine::IReadFile* ParaEngine::CParaFileUtilsAndroid::OpenFileForRead(const 
         return new CMemReadFile();
 
 	std::string fullPath = GetFullPathForFilename(filename);
+	fs::path fsFullPath(fullPath);
+
+	if (fs::is_directory(fsFullPath)) {
+		return new CMemReadFile();
+	}
+
 	boost::system::error_code err_code;
-	if (fs::exists(fullPath, err_code))
+	if (fs::exists(fsFullPath, err_code))
 	{
 		return new CReadFileBoost(fullPath);
 	}

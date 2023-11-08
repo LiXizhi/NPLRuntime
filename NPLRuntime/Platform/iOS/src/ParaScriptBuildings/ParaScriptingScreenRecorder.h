@@ -13,7 +13,8 @@ namespace ParaScripting
     public:
         static void Start();
         static void Stop();
-        static void Save();
+        static std::string Save();
         static void Play();
+        static void RemoveVideo();
     };
 }

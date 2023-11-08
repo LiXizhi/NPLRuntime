@@ -34,6 +34,12 @@ namespace ParaEngine
 		/** this class should be implemented if one wants to add new attribute. This function is always called internally.*/
 		virtual int InstallFields(CAttributeClass* pClass, bool bOverride);
 
+		/** get attribute by child object. used to iterate across the attribute field hierarchy. */
+		virtual IAttributeFields* GetChildAttributeObject(const char* sName);
+		/** get the number of child objects (row count) in the given column. please note different columns can have different row count. */
+		virtual int GetChildAttributeObjectCount(int nColumnIndex = 0);
+		virtual IAttributeFields* GetChildAttributeObject(int nRowIndex, int nColumnIndex = 0);
+
 		ATTRIBUTE_METHOD1(CViewport, SetAlignment_s, const char*)	{ cls->SetAlignment(p1); return S_OK; }
 		
 		ATTRIBUTE_METHOD1(CViewport, SetLeft_s, int)	{ cls->SetLeft(p1); return S_OK; }
@@ -61,7 +67,19 @@ namespace ParaEngine
 
 		ATTRIBUTE_METHOD1(CViewport, GetPipelineOrder_s, int*)	{ *p1 = cls->GetPipelineOrder(); return S_OK; }
 		ATTRIBUTE_METHOD1(CViewport, SetPipelineOrder_s, int)	{ cls->SetPipelineOrder(p1); return S_OK; }
+
+		ATTRIBUTE_METHOD1(CViewport, IsUseSceneCamera_s, bool*) { *p1 = cls->IsUseSceneCamera(); return S_OK; }
+		ATTRIBUTE_METHOD1(CViewport, SetUseSceneCamera_s, bool) { cls->SetUseSceneCamera(p1); return S_OK; }
+
+		ATTRIBUTE_METHOD1(CViewport, IsEnabled_s, bool*) { *p1 = cls->IsEnabled(); return S_OK; }
+		ATTRIBUTE_METHOD1(CViewport, SetIsEnabled_s, bool) { cls->SetIsEnabled(p1); return S_OK; }
+
+		ATTRIBUTE_METHOD1(CViewport, GetZOrder_s, int*) { *p1 = cls->GetZOrder(); return S_OK; }
+		ATTRIBUTE_METHOD1(CViewport, SetZOrder_s, int) { cls->SetZOrder(p1); return S_OK; }
 		
+		ATTRIBUTE_METHOD1(CViewport, IsDeltaTimeDisabled_s, bool*) { *p1 = cls->IsDeltaTimeDisabled(); return S_OK; }
+		ATTRIBUTE_METHOD1(CViewport, DisableDeltaTime_s, bool) { cls->DisableDeltaTime(p1); return S_OK; }
+
 	public:
 
 		struct ZOrderLessCompare
@@ -160,8 +178,13 @@ namespace ParaEngine
 		CSceneObject* GetScene() { return m_pScene; }
 		void SetScene(CSceneObject* val) { m_pScene = val; }
 
-		CAutoCamera* GetCamera() ;
-		void SetCamera(CAutoCamera* val) { m_pCamera = val; }
+		CAutoCamera* GetCamera();
+		void SetCamera(CAutoCamera* val);
+
+		/** whether to share the global scene camera */
+		bool IsUseSceneCamera();
+		/** set whether to share the global scene camera, if false, we will create our custom camera */
+		void SetUseSceneCamera(bool bUseSceneCamera);
 
 		CGUIRoot* GetGUIRoot() { return m_pGUIRoot; }
 		void SetGUIRoot(CGUIRoot* val) { m_pGUIRoot = val; }
@@ -174,8 +197,8 @@ namespace ParaEngine
 		const std::string&  GetRenderTargetName() const;
 		void SetRenderTargetName(const std::string& val);
 
-		shared_ptr<CRenderTarget> GetRenderTarget();
-		void SetRenderTarget(shared_ptr<CRenderTarget> target);
+		CRenderTarget* GetRenderTarget();
+		void SetRenderTarget(CRenderTarget* target);
 
 		/** -1 or RENDER_PIPELINE_ORDER. if -1, it will be rendered for all pipeline stage */
 		int GetPipelineOrder() const;
@@ -248,7 +271,7 @@ namespace ParaEngine
 		float GetStereoEyeSeparation();
 	private:
 		CSceneObject* m_pScene;
-		CAutoCamera* m_pCamera;
+		ref_ptr<CAutoCamera> m_pCamera;
 		CGUIRoot* m_pGUIRoot;
 		
 		CGUIPosition m_position;
@@ -265,7 +288,7 @@ namespace ParaEngine
 		int m_nZOrder;
 		std::string m_sName;
 		std::string m_sRenderTargetName;
-		std::shared_ptr<CRenderTarget> m_pRenderTarget;
+		ref_ptr<CRenderTarget> m_pRenderTarget;
 
 		STEREO_EYE m_nEyeMode;
 

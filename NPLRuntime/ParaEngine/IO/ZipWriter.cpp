@@ -140,7 +140,7 @@ namespace ParaEngine
 			{
 				std::string sExt = CParaFile::GetFileExtension(m_destFilename);
 				int CompressionLevel = -1;
-				if (sExt == "pkg" || sExt == "zip" || sExt == "ogg" || sExt == "png" || sExt == "jpg" || sExt == "mp3")
+				if (sExt == "pkg" || sExt == "zip" || sExt == "p3d" || sExt == "ogg" || sExt == "png" || sExt == "jpg" || sExt == "mp3")
 				{
 					// no compression
 					if (m_pFile)

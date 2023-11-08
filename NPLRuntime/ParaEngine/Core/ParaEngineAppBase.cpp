@@ -637,6 +637,7 @@ bool ParaEngine::CParaEngineAppBase::FrameMove(double fTime)
 	{
 		m_pRootScene->Animate(fElapsedEnvSimTime > 0 ? (float)fElapsedEnvSimTime : 0.f);
 	}
+
 #ifdef USE_XACT_AUDIO_ENGINE
 	/// for audio engine
 	if (m_pAudioEngine && m_pAudioEngine->IsAudioEngineEnabled())

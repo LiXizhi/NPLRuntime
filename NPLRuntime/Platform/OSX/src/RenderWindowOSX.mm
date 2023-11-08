@@ -1,7 +1,7 @@
+#include "RenderWindowOSX.h"
 #include "ParaEngine.h"
 #include "2dengine/GUIRoot.h"
 #include "2dengine/GUIEdit.h"
-#include "RenderWindowOSX.h"
 #include "WindowDelegate.h"
 
 #include <Carbon/Carbon.h> /* For kVK_ constants, and TIS functions. */

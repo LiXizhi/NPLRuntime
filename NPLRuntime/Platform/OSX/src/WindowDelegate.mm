@@ -1,5 +1,5 @@
-#include "ParaEngine.h"
 #include "WindowDelegate.h"
+#include "ParaEngine.h"
 #include "RenderWindowOSX.h"
 #include "ParaAppOSX.h"
 #include "ParaEngineSettings.h"
@@ -37,9 +37,9 @@ static WindowDelegate* sInstance = nil;
     [super dealloc];
 }
 
-- (void) windowWillClose:(NSNotification *)notificationƒurl
+- (void) windowWillClose:(NSNotification *)notificationurl
 {
-   [[NSRunningApplication currentApplication] terminate];
+   // [[NSRunningApplication currentApplication] terminate];
 }
 
 - (BOOL) applicationShouldTerminateAfterLastWindowClosed:(NSApplication *)sender
@@ -206,20 +206,20 @@ static WindowDelegate* sInstance = nil;
 - (void) startup
 {
      _renderWindow = new RenderWindowOSX(1280, 720);
-    
+
     _app = new CParaEngineAppOSX();
-    
+
     _renderWindow->PollEvents();
-    
+
     bool ret = _app->InitApp(_renderWindow, _url.c_str());
     if(!ret)
     {
         OUTPUT_LOG("Initialize ParaEngineApp failed.");
         return;
     }
-    
+
     _app->Run(0);
-    
+
     SAFE_DELETE(_app);
     SAFE_DELETE(_renderWindow);
     

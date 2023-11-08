@@ -16,7 +16,7 @@
 using namespace ParaEngine;
 
 ParaEngine::BMaxNode::BMaxNode(BMaxParser* pParser, int16 x_, int16 y_, int16 z_, int32 template_id_, int32 block_data_) :
-m_pParser(pParser), x(x_), y(y_), z(z_), template_id(template_id_), block_data(block_data_), m_color(0), m_nBoneIndex(-1), m_pBlockModel(nullptr), m_pParaXModel(nullptr), m_bIsSolid(true)
+	m_pParser(pParser), x(x_), y(y_), z(z_), template_id(template_id_), block_data(block_data_), m_color(0), m_nBoneIndex(-1), m_pBlockModel(0), m_pParaXModel(0), m_bIsSolid(true)
 {
 	memset(m_facesStatus, faceInvisible, sizeof(m_facesStatus));
 }
@@ -44,12 +44,12 @@ DWORD ParaEngine::BMaxNode::GetColor()
 	return m_color;
 }
 
-BlockModel * ParaEngine::BMaxNode::GetBlockModel()
+BlockModel* ParaEngine::BMaxNode::GetBlockModel()
 {
 	return m_pBlockModel;
 }
 
-ParaEngine::CParaXModel * BMaxNode::GetParaXModel()
+ParaEngine::CParaXModel* BMaxNode::GetParaXModel()
 {
 	return m_pParaXModel;
 }
@@ -77,7 +77,7 @@ BMaxFrameNode* ParaEngine::BMaxNode::ToBoneNode()
 
 bool ParaEngine::BMaxNode::HasBoneWeight()
 {
-	return m_nBoneIndex>=0;
+	return m_nBoneIndex >= 0;
 }
 
 int ParaEngine::BMaxNode::GetBoneIndex()
@@ -290,59 +290,61 @@ bool BMaxNode::IsFaceNotUse(int nIndex)
 int ParaEngine::BMaxNode::TessellateBlock(BlockModel* tessellatedModel)
 {
 	int bone_index = GetBoneIndex();
-	// we will assume tessellatedModel is cube model. 
-	// tessellatedModel->LoadCubeModel();
+
 
 	BlockTemplate* block_template = BlockWorldClient::GetInstance()->GetBlockTemplate((uint16)template_id);
-	
+
 	if (block_template == 0 || block_template->isSolidBlock() || block_template->GetID() == BMaxParser::BoneBlockId)
 	{
 		// standard cube 
 		DWORD dwBlockColor = GetColor();
 
-	//neighbor blocks
-	const int nNearbyBlockCount = 27;
-	BMaxNode* neighborBlocks[nNearbyBlockCount];
-	neighborBlocks[rbp_center] = this;
-	memset(neighborBlocks + 1, 0, sizeof(BMaxNode*) * (nNearbyBlockCount - 1));
-	QueryNeighborBlockData(neighborBlocks + 1, 1, nNearbyBlockCount - 1);
+		//neighbor blocks
+		const int nNearbyBlockCount = 27;
+		BMaxNode* neighborBlocks[nNearbyBlockCount];
+		neighborBlocks[rbp_center] = this;
+		memset(neighborBlocks + 1, 0, sizeof(BMaxNode*) * (nNearbyBlockCount - 1));
+		QueryNeighborBlockData(neighborBlocks + 1, 1, nNearbyBlockCount - 1);
 
-	//ao
-	uint32 aoFlags = CalculateCubeAO(neighborBlocks);
+		//ao
+		uint32 aoFlags = (block_template && block_template->GetID() != BMaxParser::MetalBlockId) ? CalculateCubeAO(neighborBlocks) : 0;
 
-	// model position offset
-	BlockVertexCompressed* pVertices = tessellatedModel->GetVertices();
-	int count = tessellatedModel->GetVerticesCount();
-	const Vector3& vCenter = m_pParser->GetCenterPos();
-	Vector3 vOffset((float)x - vCenter.x, (float)y, (float)z - vCenter.z);
-	for (int k = 0; k < count; k++)
-	{
-		pVertices[k].OffsetPosition(vOffset);
-		pVertices[k].SetBlockColor(dwBlockColor);
-	}
+		// model position offset
+		BlockVertexCompressed* pVertices = tessellatedModel->GetVertices();
+		int count = tessellatedModel->GetVerticesCount();
+		const Vector3& vCenter = m_pParser->GetCenterPos();
+		Vector3 vOffset((float)x - vCenter.x, (float)y, (float)z - vCenter.z);
+		for (int k = 0; k < count; k++)
+		{
+			pVertices[k].OffsetPosition(vOffset);
+			pVertices[k].SetBlockColor(dwBlockColor);
+		}
 
-	for (int face = 0; face < 6; ++face)
-	{
-		int nFirstVertex = face * 4;
+		for (int face = 0; face < 6; ++face)
+		{
+			int nFirstVertex = face * 4;
 
-		BMaxNode* pCurBlock = neighborBlocks[BlockCommon::RBP_SixNeighbors[face]];
+			BMaxNode* pCurBlock = neighborBlocks[BlockCommon::RBP_SixNeighbors[face]];
 
 			// we will preserve the face when two bones does not belong to the same bone
 			if (!pCurBlock || (pCurBlock->GetBoneIndex() != bone_index || !pCurBlock->isSolid()))
 			{
-				for (int v = 0; v < 4; ++v)
+				if (aoFlags > 0)
 				{
-					int i = nFirstVertex + v;
-
-					int nShadowLevel = 0;
-					if (aoFlags > 0 && (nShadowLevel = tessellatedModel->CalculateCubeVertexAOShadowLevel(i, aoFlags)) != 0)
+					for (int v = 0; v < 4; ++v)
 					{
-						Color color(dwBlockColor);
-						float fShadow = (255 - nShadowLevel) / 255.f;
-						color.r = (uint8)(color.r * fShadow);
-						color.g = (uint8)(color.g * fShadow);
-						color.b = (uint8)(color.b * fShadow);
-						tessellatedModel->SetVertexColor(i, (DWORD)color);
+						int i = nFirstVertex + v;
+
+						int nShadowLevel = 0;
+						if ((nShadowLevel = tessellatedModel->CalculateCubeVertexAOShadowLevel(i, aoFlags)) != 0)
+						{
+							Color color(dwBlockColor);
+							float fShadow = (255 - nShadowLevel) / 255.f;
+							color.r = (uint8)(color.r * fShadow);
+							color.g = (uint8)(color.g * fShadow);
+							color.b = (uint8)(color.b * fShadow);
+							tessellatedModel->SetVertexColor(i, (DWORD)color);
+						}
 					}
 				}
 				SetFaceVisible(face);
@@ -351,11 +353,12 @@ int ParaEngine::BMaxNode::TessellateBlock(BlockModel* tessellatedModel)
 	}
 	else
 	{
-		// custom models like stairs, slabs, button, torch light, etc. 
+		// metal blocks, and custom models like stairs, slabs, button, torch light, etc. 
+		// they do not have ambient occlusion shadows on them. 
 
 		tessellatedModel->ClearVertices();
 		BlockModel& blockModel = block_template->GetBlockModelByData(this->block_data);
-		if (blockModel.IsUniformLighting())
+		//if (blockModel.IsUniformLighting())
 		{
 			DWORD dwBlockColor = GetColor();
 			tessellatedModel->SetUniformLighting(true);

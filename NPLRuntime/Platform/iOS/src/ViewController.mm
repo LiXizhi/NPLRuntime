@@ -130,6 +130,8 @@ using namespace ParaEngine;
 
         if (flagKey != "" && !KeyboardiOS::IsKeyPress(flagKey)) {
             KeyboardiOS::OnKeyDown(flagKey);
+        } else {
+            KeyboardiOS::OnKeyUp();
         }
 
         [super pressesBegan:presses withEvent:event];

@@ -108,7 +108,7 @@ namespace ParaEngine
 {
 	bool g_bShaderVersion3 = false;
 	
-	extern int globalTime;
+	extern int64_t globalTime;
 	
 	/** any object in the scene except. Usually for selection during scene editing.*/
 	extern OBJECT_FILTER_CALLBACK g_fncPickingAll;
@@ -132,7 +132,7 @@ CSceneObject::CSceneObject()
 :m_event(NULL),m_pickObj(NULL),m_bPickFlag(false),m_pActor(NULL), m_pEnvironmentSim(NULL),
 m_bModified(false),m_bShowLocalLightMesh(false),m_bShowHeadOnDisplay(false), 
 m_fMaxHeadOnDisplayDistance(50.f), m_bEnablePostProcessing(false),m_bEnablePortalZone(true),m_bUseWireFrame(false),
-m_bShowPortalSystem(false), m_fShadowRadius(DEFAULT_SHADOW_RADIUS), m_bIsPersistent(true), m_bBlockInput(false), m_pCurrentCamera(NULL),m_nCursorHotSpotX(-1),m_nCursorHotSpotY(-1),
+m_bShowPortalSystem(false), m_fShadowRadius(DEFAULT_SHADOW_RADIUS), m_bIsPersistent(true), m_bBlockInput(false), m_nCursorHotSpotX(-1),m_nCursorHotSpotY(-1),
 #ifdef USE_DIRECTX_RENDERER
 m_dropShadowRenderer(new DropShadowRenderer()),
 #endif
@@ -1133,7 +1133,7 @@ void CSceneObject::Cleanup()
 	/// delete m_cameras
 	{
 		m_cameras.clear();
-		m_pCurrentCamera = NULL;
+		m_pCurrentCamera.reset();
 	}
 
 	// delete all mini scene graph 
@@ -2084,7 +2084,7 @@ HRESULT CSceneObject::AdvanceScene(double dTimeDelta, int nPipelineOrder)
 	if(CGlobals::GetFrameRateController(FRC_GAME)->IsPaused() && dTimeDelta > 0.f)
 		dTimeDelta = CGlobals::GetFrameRateController(FRC_GAME)->GetElapsedTime();
 
-	globalTime =  (int)(CGlobals::GetGameTime()*1000);
+	globalTime =  (int64_t)(CGlobals::GetGameTime()*1000);
 	SceneState& sceneState = *(m_sceneState.get());
 	
 	sceneState.SetCurrentRenderPipeline(nPipelineOrder);
@@ -2650,6 +2650,16 @@ int CSceneObject::RenderHeadOnDisplay(int nPass)
 	}
 	CGUIRoot::GetInstance()->SetUIScale(fScaleX, fScaleY, true, true, false);
 	return nTotalCount;
+}
+
+CBaseCamera* ParaEngine::CSceneObject::GetCurrentCamera()
+{
+	return m_pCurrentCamera.get();
+}
+
+void ParaEngine::CSceneObject::SetCurrentCamera(CBaseCamera* pCamera)
+{
+	m_pCurrentCamera = pCamera;
 }
 
 CSkyMesh* CSceneObject::GetCurrentSky()

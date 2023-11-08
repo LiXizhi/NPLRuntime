@@ -206,7 +206,7 @@ namespace ParaEngine {
 
 	void ParaEngineWebView::activate(const std::string &filepath, const std::string &msg)
 	{
-        boost::format fmt("window.NPL.receive(\"%s\", \"%s\")");
+        boost::format fmt("""window.NPL.receive(\"%s\", `%s`)""");
 		fmt % filepath % msg;
 
 		JniHelper::callStaticVoidMethod(
@@ -262,4 +262,13 @@ extern "C" {
 		std::string code = fmt.str();
 		ParaEngine::LuaJavaBridge::nplActivate(code, "");
 	}
+
+    JNIEXPORT void JNICALL Java_com_tatfook_paracraft_ParaEngineWebViewHelper_SetSoftKeyBoard(JNIEnv *env, jclass clazz,jstring str_data)
+    {
+        std::string strData = JniHelper::jstring2string(str_data);
+		boost::format fmt("NPL.activate('Keyboard.lua', { msg = [[%s]]})");
+		fmt % strData;
+		std::string code = fmt.str();
+		ParaEngine::LuaJavaBridge::nplActivate(code, "");
+    }
 }

@@ -50,6 +50,8 @@
 	<string>we need to save screen record video to photo library.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>we need to save screen record video to photo library.</string>
+	<key>NSUserTrackingUsageDescription</key>
+	<string>In order to provide a personalized advertising experience, please allow us to access your advertising identifier.</string>
 	<key>UILaunchStoryboardName</key>
 	<string>LaunchImage</string>
 	<key>UIMainStoryboardFile</key>

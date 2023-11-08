@@ -23,17 +23,20 @@ import android.view.Surface;
 import android.view.View;
 import android.view.SurfaceHolder;
 import android.view.inputmethod.InputMethodManager;
+import android.widget.Toast;
+
 import androidx.annotation.Keep;
 
 import org.json.JSONException;
 import org.json.JSONObject;
+
+import java.util.Objects;
 
 public class ParaEngineGLSurfaceView extends GLSurfaceView {
     private static ParaEngineGLSurfaceView mGLSurfaceView = null;
     private static ParaEngineActivity sActivity = null;
     private static ParaTextInputWrapper sParaTextInputWrapper = null;
     private static int mMsgCount = 0;
-
     private ParaEngineRenderer mRenderer;
     private ParaEngineEditBox mEditText = null;
     public Handler sHandler = null;
@@ -50,6 +53,7 @@ public class ParaEngineGLSurfaceView extends GLSurfaceView {
     private boolean mIsOpen = false;
     private boolean mIsMoveView = false;
     private int mCtrlBottom = 0;
+    private float exitTime = 0;
     private static native void nativeDeleteBackward();
     private static native void nativePressEnterKey();
     private static native void nativeOnUnicodeChar(String text);
@@ -104,37 +108,12 @@ public class ParaEngineGLSurfaceView extends GLSurfaceView {
                 return false;
             }
 
-            // String defaultValue = msg.getData().getString("defaultValue");
-
-            // if (defaultValue != null) {
-            //     boolean bOpen = msg.getData().getBoolean("bOpen");
-            //     int maxLength = msg.getData().getInt("maxLength");
-            //     boolean isMultiline = msg.getData().getBoolean("isMultiline");
-            //     boolean confirmHold = msg.getData().getBoolean("confirmHold");
-            //     String confirmType = msg.getData().getString("confirmType");
-            //     String inputType = msg.getData().getString("inputType");
-
-            //     if (bOpen) {
-            //         ParaEngineEditBoxActivity.showNative(
-            //             defaultValue,
-            //             maxLength,
-            //             isMultiline,
-            //             confirmHold,
-            //             confirmType,
-            //             inputType
-            //         );
-            //     } else {
-            //         ParaEngineEditBoxActivity.hideNative();
-            //     }
-
-            //     return true;
-            // }
-
             mIsOpen = msg.getData().getBoolean("bOpen");
             mIsMoveView = msg.getData().getBoolean("bMoveView");
             mCtrlBottom = msg.getData().getInt("ctrlBottom");
             String curEditText = msg.getData().getString("curEditText").replaceAll("\r\n","\n");
             boolean isGuiEdit = msg.getData().getBoolean("isGuiEdit");
+            String inputType = msg.getData().getString("inputType");
             sParaTextInputWrapper.setIsGuiEdit(isGuiEdit);
 
             if (mIsOpen) {
@@ -143,6 +122,29 @@ public class ParaEngineGLSurfaceView extends GLSurfaceView {
 
                 if (selEnd <= 0 && curEditText.length() > 0) {
                     selStart = selEnd = Math.max(curEditText.length(), 0);
+                }
+
+                if (Objects.equals(inputType, "text")) {
+                    mEditText.setInputFlag(-1);
+                    mEditText.setInputMode(6);
+                } else if (Objects.equals(inputType, "password")) {
+                    mEditText.setInputFlag(0);
+                    mEditText.setInputMode(6);
+                } else if (Objects.equals(inputType, "phone")) {
+                    mEditText.setInputFlag(-1);
+                    mEditText.setInputMode(3);
+                } else if (Objects.equals(inputType, "number")) {
+                    mEditText.setInputFlag(-1);
+                    mEditText.setInputMode(5);
+                } else if (Objects.equals(inputType, "email")) {
+                    mEditText.setInputFlag(-1);
+                    mEditText.setInputMode(1);
+                } else if (Objects.equals(inputType, "url")) {
+                    mEditText.setInputFlag(-1);
+                    mEditText.setInputMode(4);
+                } else {
+                    mEditText.setInputFlag(-1);
+                    mEditText.setInputMode(6);
                 }
 
                 sParaTextInputWrapper.onFocus(curEditText, selStart, selEnd);
@@ -282,7 +284,7 @@ public class ParaEngineGLSurfaceView extends GLSurfaceView {
     }
 
     @Keep
-    public static void setIMEKeyboardState(boolean bOpen, boolean bMoveView, int ctrlBottom,String jsonEditParams, boolean isGuiEdit) {
+    public static void setIMEKeyboardState(boolean bOpen, boolean bMoveView, int ctrlBottom, String jsonEditParams, boolean isGuiEdit, String inputType) {
         Message msg = new Message();
         Bundle bundle = new Bundle();
         bundle.putBoolean("bOpen", bOpen);
@@ -299,6 +301,11 @@ public class ParaEngineGLSurfaceView extends GLSurfaceView {
             curEditText = obj.optString("curEditText");
             selStart = obj.optInt("selStart");
             selEnd = obj.optInt("selEnd");
+            String _inputType = obj.optString("inputType");
+
+            if (!_inputType.isEmpty()) {
+                inputType = _inputType;
+            }
         } catch (JSONException e) {
             e.printStackTrace();
         }
@@ -306,6 +313,7 @@ public class ParaEngineGLSurfaceView extends GLSurfaceView {
         bundle.putString("curEditText", curEditText);
         bundle.putInt("selStart", selStart);
         bundle.putInt("selEnd", selEnd);
+        bundle.putString("inputType", inputType);
         msg.setData(bundle);
 
         mMsgCount = mMsgCount + 1;
@@ -607,12 +615,12 @@ public class ParaEngineGLSurfaceView extends GLSurfaceView {
             onMouseRightKeyUp();
             return false;
         } else if (pKeyCode == KeyEvent.KEYCODE_BACK) {
-            // if ((System.currentTimeMillis() - exitTime) > 2000) {
-            //     Toast.makeText(sActivity, "再按一次退出", Toast.LENGTH_LONG).show();
-            //     exitTime = System.currentTimeMillis();
-            // } else {
-            //     ParaEngineActivity.onExit();
-            // }
+             if ((System.currentTimeMillis() - exitTime) > 2000) {
+                 Toast.makeText(sActivity, "再按一次退出", Toast.LENGTH_LONG).show();
+                 exitTime = System.currentTimeMillis();
+             } else {
+                 ParaEngineActivity.onExit();
+             }
 
             return super.onKeyUp(pKeyCode, pKeyEvent);
         } else {
@@ -633,11 +641,13 @@ public class ParaEngineGLSurfaceView extends GLSurfaceView {
         }
 
         if (pMotionEvent.getAction() == MotionEvent.ACTION_SCROLL) {
-            if (pMotionEvent.getAxisValue(MotionEvent.AXIS_VSCROLL) < 0.0f) {
-                ParaEngineGLSurfaceView.this.mRenderer.handleMouseScroll(-1);
-            } else {
-                ParaEngineGLSurfaceView.this.mRenderer.handleMouseScroll(1);
-            }
+            final int deltaScroll = pMotionEvent.getAxisValue(MotionEvent.AXIS_VSCROLL) < 0.0f ? -1 : 1;
+            this.queueEvent(new Runnable() {
+                @Override
+                public void run() {
+                    ParaEngineGLSurfaceView.this.mRenderer.handleMouseScroll(deltaScroll);
+                }
+            });
         }
 
         if (mIsPressMouseLeftKey) {

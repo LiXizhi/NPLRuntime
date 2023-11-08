@@ -24,7 +24,7 @@
 
 using namespace ParaEngine;
 
-EVirtualKey ParaEngine::CBaseCamera::m_scancode_key_map[] ={
+EVirtualKey ParaEngine::CBaseCamera::m_scancode_key_map[] = {
 	EVirtualKey::KEY_A,
 	EVirtualKey::KEY_D,
 	EVirtualKey::KEY_W,
@@ -45,14 +45,14 @@ EVirtualKey ParaEngine::CBaseCamera::m_scancode_key_map[] ={
 //-----------------------------------------------------------------------------
 CBaseCamera::CBaseCamera()
 {
-	ZeroMemory( m_aKeys, sizeof(BYTE)*MAX_KEYS );
+	ZeroMemory(m_aKeys, sizeof(BYTE)*MAX_KEYS);
 
 	// Set attributes for the view matrix
-	DVector3 vEyePt(0.0f,0.0f,0.0f);
-	DVector3 vLookatPt(0.0f,0.0f,1.0f);
+	DVector3 vEyePt(0.0f, 0.0f, 0.0f);
+	DVector3 vLookatPt(0.0f, 0.0f, 1.0f);
 
 #ifdef WIN32
-	GetCursorPos( &m_ptLastMousePosition );
+	GetCursorPos(&m_ptLastMousePosition);
 #endif
 	m_bMouseLButtonDown = false;
 	m_bMouseMButtonDown = false;
@@ -63,32 +63,32 @@ CBaseCamera::CBaseCamera()
 	m_fCameraYawAngle = 0.0f;
 	m_fCameraPitchAngle = 0.0f;
 
-	m_vVelocity     = Vector3(0,0,0);
+	m_vVelocity = Vector3(0, 0, 0);
 	m_bMovementDrag = true;
-	m_vVelocityDrag = Vector3(0,0,0);
-	m_fDragTimer    = 0.0f;
+	m_vVelocityDrag = Vector3(0, 0, 0);
+	m_fDragTimer = 0.0f;
 	m_fTotalDragTimeToZero = 0.5f;
-	m_vRotVelocity = Vector2(0,0);
+	m_vRotVelocity = Vector2(0, 0);
 
-	m_fRotationScaler = 0.01f;           
-	m_fMoveScaler = 5.0f;           
+	m_fRotationScaler = 0.01f;
+	m_fMoveScaler = 5.0f;
 
 	m_bInvertPitch = CGlobals::GetSettings().GetMouseInverse();
 	m_bEnableYAxisMovement = true;
 	m_bEnablePositionMovement = true;
 
-	m_vMouseDelta   = Vector2(0,0);
+	m_vMouseDelta = Vector2(0, 0);
 	m_fFramesToSmoothMouseData = 2.0f;
 
 	m_bClipToBoundary = false;
-	m_vMinBoundary = DVector3(-1,-1,-1);
-	m_vMaxBoundary = DVector3(1,1,1);
+	m_vMinBoundary = DVector3(-1, -1, -1);
+	m_vMaxBoundary = DVector3(1, 1, 1);
 
 	m_bResetCursorAfterMove = false;
 	m_fOrthoHeight = 100.f;
 	m_fOrthoWidth = 100.f;
 	m_bIsPerspectiveView = true;
-
+	m_vUp = Vector3(0, 1.f, 0);
 
 	// Setup the view matrix
 	SetViewParams(vEyePt, vLookatPt);
@@ -110,8 +110,8 @@ void ParaEngine::CBaseCamera::CopyCameraParamsFrom(CBaseCamera* pFromCamera)
 	m_bIsPerspectiveView = pFromCamera->m_bIsPerspectiveView;
 }
 
-VOID CBaseCamera::SetInvertPitch( bool bInvertPitch ) 
-{ 
+VOID CBaseCamera::SetInvertPitch(bool bInvertPitch)
+{
 	m_bInvertPitch = bInvertPitch;
 }
 
@@ -119,14 +119,15 @@ VOID CBaseCamera::SetInvertPitch( bool bInvertPitch )
 // Name: SetViewParams
 // Desc: Client can call this to change the position and direction of camera
 //-----------------------------------------------------------------------------
-void CBaseCamera::SetViewParams(const DVector3& vEyePt, const DVector3& vLookatPt)
+void CBaseCamera::SetViewParams(const DVector3& vEyePt, const DVector3& vLookatPt, const Vector3* up)
 {
 	m_vDefaultEye = m_vEye = vEyePt;
 	m_vDefaultLookAt = m_vLookAt = vLookatPt;
-
 	// Calculate  the view matrix
-	Vector3 vUp(0,1,0);
-	ParaMatrixLookAtLH(&m_mView, vEyePt, vLookatPt, DVector3(vUp));
+	if (up != NULL) {
+		m_vUp = *up;
+	}
+	ParaMatrixLookAtLH(&m_mView, vEyePt, vLookatPt, DVector3(m_vUp));
 
 	Matrix4 mInvView;
 	mInvView = m_mView.inverse();
@@ -134,37 +135,34 @@ void CBaseCamera::SetViewParams(const DVector3& vEyePt, const DVector3& vLookatP
 	// The axis basis vectors and camera position are stored inside the 
 	// position matrix in the 4 rows of the camera's world matrix.
 	// To figure out the yaw/pitch of the camera, we just need the Z basis vector
-	Vector3* pZBasis = (Vector3*) &mInvView._31;
+	Vector3* pZBasis = (Vector3*)&mInvView._31;
 
-	m_fCameraYawAngle   = atan2f( pZBasis->x, pZBasis->z );
+	m_fCameraYawAngle = atan2f(pZBasis->x, pZBasis->z);
 	float fLen = sqrtf(pZBasis->z*pZBasis->z + pZBasis->x*pZBasis->x);
-	m_fCameraPitchAngle = -atan2f( pZBasis->y, fLen );
+	m_fCameraPitchAngle = -atan2f(pZBasis->y, fLen);
 }
-
-
-
 
 //-----------------------------------------------------------------------------
 // Name: SetProjParams
 // Desc: Calculates the projection matrix based on input params
 //-----------------------------------------------------------------------------
-void CBaseCamera::SetProjParams( FLOAT fFOV, FLOAT fAspect, FLOAT fNearPlane,
-								FLOAT fFarPlane )
+void CBaseCamera::SetProjParams(FLOAT fFOV, FLOAT fAspect, FLOAT fNearPlane,
+	FLOAT fFarPlane)
 {
 	// Set attributes for the projection matrix
-	m_fFOV        = fFOV;
-	m_fAspect     = fAspect;
-	m_fNearPlane  = fNearPlane;
-	m_fFarPlane   = fFarPlane;
+	m_fFOV = fFOV;
+	m_fAspect = fAspect;
+	m_fNearPlane = fNearPlane;
+	m_fFarPlane = fFarPlane;
 
-	if(IsPerspectiveView())
+	if (IsPerspectiveView())
 	{
-		ParaMatrixPerspectiveFovLH( &m_mProj, fFOV, fAspect, fNearPlane, fFarPlane );
+		ParaMatrixPerspectiveFovLH(&m_mProj, fFOV, fAspect, fNearPlane, fFarPlane);
 	}
 	else
 	{
 		// orthographic projection matrix, if fov is very small.
-		ParaMatrixOrthoLH( &m_mProj, GetOrthoWidth(), GetOrthoHeight(), fNearPlane, fFarPlane );
+		ParaMatrixOrthoLH(&m_mProj, GetOrthoWidth(), GetOrthoHeight(), fNearPlane, fFarPlane);
 	}
 }
 
@@ -176,7 +174,7 @@ void  CBaseCamera::SetIsPerspectiveView(bool bIsPerspectiveView)
 
 void CBaseCamera::UpdateProjParams()
 {
-	SetProjParams( GetFieldOfView(), GetAspectRatio(), GetNearPlane(), GetFarPlane());
+	SetProjParams(GetFieldOfView(), GetAspectRatio(), GetNearPlane(), GetFarPlane());
 }
 
 void CBaseCamera::UpdateProjParams(FLOAT fAspect)
@@ -217,7 +215,7 @@ void CBaseCamera::SetFieldOfView(float fFov)
 void CBaseCamera::SetFieldOfView(float fov_v, float fov_h)
 {
 	float p_fAspect = tan(fov_h / 2) / tan(fov_v / 2);
-	if (m_fFOV != fov_v || m_fAspect != p_fAspect)
+	if (m_fFOV != fov_v || m_fAspect!= p_fAspect)
 	{
 		m_fFOV = fov_v;
 		m_fAspect = p_fAspect;
@@ -225,16 +223,15 @@ void CBaseCamera::SetFieldOfView(float fov_v, float fov_h)
 	}
 }
 
-
 void CBaseCamera::SetNearPlane(float fNearPlane)
 {
-	m_fNearPlane  = fNearPlane;
+	m_fNearPlane = fNearPlane;
 	UpdateProjParams();
 }
 
 void CBaseCamera::SetFarPlane(float fFarPlane)
 {
-	m_fFarPlane   = fFarPlane;
+	m_fFarPlane = fFarPlane;
 	UpdateProjParams();
 }
 
@@ -244,72 +241,72 @@ void CBaseCamera::SetFarPlane(float fFarPlane)
 // Desc: Call this from your message proc so this class can handle window messages
 // this is no longer called.
 //-----------------------------------------------------------------------------
-LRESULT CBaseCamera::HandleMessages( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam )
+LRESULT CBaseCamera::HandleMessages(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
 #if defined( USE_DIRECTX_RENDERER)
-	UNREFERENCED_PARAMETER( hWnd );
-	UNREFERENCED_PARAMETER( lParam );
+	UNREFERENCED_PARAMETER(hWnd);
+	UNREFERENCED_PARAMETER(lParam);
 
-	switch( uMsg )
+	switch (uMsg)
 	{
 	case WM_KEYDOWN:
+	{
+		// Map this key to a CharacterAndCameraKeysenum and update the
+		// state of m_aKeys[] by adding the KEY_WAS_DOWN_MASK|KEY_IS_DOWN_MASK mask
+		// only if the key is not down
+		CharacterAndCameraKeys mappedKey = MapKey((UINT)wParam);
+		if (mappedKey != KEY_UNKNOWN)
 		{
-			// Map this key to a CharacterAndCameraKeysenum and update the
-			// state of m_aKeys[] by adding the KEY_WAS_DOWN_MASK|KEY_IS_DOWN_MASK mask
-			// only if the key is not down
-			CharacterAndCameraKeys mappedKey = MapKey( (UINT)wParam );
-			if( mappedKey != KEY_UNKNOWN )
-			{
-				if( FALSE == IsKeyDown(m_aKeys[mappedKey]) )
-					m_aKeys[ mappedKey ] = KEY_WAS_DOWN_MASK | KEY_IS_DOWN_MASK;
-			}
-			break;
+			if (FALSE == IsKeyDown(m_aKeys[mappedKey]))
+				m_aKeys[mappedKey] = KEY_WAS_DOWN_MASK | KEY_IS_DOWN_MASK;
 		}
+		break;
+	}
 
 	case WM_KEYUP:
+	{
+		// Map this key to a CharacterAndCameraKeysenum and update the
+		// state of m_aKeys[] by removing the KEY_IS_DOWN_MASK mask.
+		CharacterAndCameraKeys mappedKey = MapKey((UINT)wParam);
+		if (mappedKey != KEY_UNKNOWN)
+			m_aKeys[mappedKey] &= ~KEY_IS_DOWN_MASK;
+		break;
+	}
+
+	case WM_RBUTTONDOWN:
+	case WM_MBUTTONDOWN:
+	case WM_LBUTTONDOWN:
+	{
+		// Update member var state
+		if (uMsg == WM_LBUTTONDOWN) { m_bMouseLButtonDown = true; m_nCurrentButtonMask |= MOUSE_LEFT_BUTTON; }
+		if (uMsg == WM_MBUTTONDOWN) { m_bMouseMButtonDown = true; m_nCurrentButtonMask |= MOUSE_MIDDLE_BUTTON; }
+		if (uMsg == WM_RBUTTONDOWN) { m_bMouseRButtonDown = true; m_nCurrentButtonMask |= MOUSE_RIGHT_BUTTON; }
+
+		// Capture the mouse, so if the mouse button is 
+		// released outside the window, we'll get the WM_LBUTTONUP message
+		SetCapture(hWnd);
+		GetCursorPos(&m_ptLastMousePosition);
+		return TRUE;
+	}
+
+	case WM_RBUTTONUP:
+	case WM_MBUTTONUP:
+	case WM_LBUTTONUP:
+	{
+		// Update member var state
+		if (uMsg == WM_LBUTTONUP) { m_bMouseLButtonDown = false; m_nCurrentButtonMask &= ~MOUSE_LEFT_BUTTON; }
+		if (uMsg == WM_MBUTTONUP) { m_bMouseMButtonDown = false; m_nCurrentButtonMask &= ~MOUSE_MIDDLE_BUTTON; }
+		if (uMsg == WM_RBUTTONUP) { m_bMouseRButtonDown = false; m_nCurrentButtonMask &= ~MOUSE_RIGHT_BUTTON; }
+
+		// Release the capture if no mouse buttons down
+		if (!m_bMouseLButtonDown &&
+			!m_bMouseRButtonDown &&
+			!m_bMouseMButtonDown)
 		{
-			// Map this key to a CharacterAndCameraKeysenum and update the
-			// state of m_aKeys[] by removing the KEY_IS_DOWN_MASK mask.
-			CharacterAndCameraKeys mappedKey = MapKey( (UINT)wParam );
-			if( mappedKey != KEY_UNKNOWN )
-				m_aKeys[ mappedKey ] &= ~KEY_IS_DOWN_MASK;
-			break;
+			ReleaseCapture();
 		}
-
-	case WM_RBUTTONDOWN: 
-	case WM_MBUTTONDOWN: 
-	case WM_LBUTTONDOWN: 
-		{
-			// Update member var state
-			if( uMsg == WM_LBUTTONDOWN ) { m_bMouseLButtonDown = true; m_nCurrentButtonMask |= MOUSE_LEFT_BUTTON; }
-			if( uMsg == WM_MBUTTONDOWN ) { m_bMouseMButtonDown = true; m_nCurrentButtonMask |= MOUSE_MIDDLE_BUTTON; }
-			if( uMsg == WM_RBUTTONDOWN ) { m_bMouseRButtonDown = true; m_nCurrentButtonMask |= MOUSE_RIGHT_BUTTON; }
-
-			// Capture the mouse, so if the mouse button is 
-			// released outside the window, we'll get the WM_LBUTTONUP message
-			SetCapture(hWnd);
-			GetCursorPos( &m_ptLastMousePosition ); 
-			return TRUE;
-		}
-
-	case WM_RBUTTONUP: 
-	case WM_MBUTTONUP: 
-	case WM_LBUTTONUP:   
-		{
-			// Update member var state
-			if( uMsg == WM_LBUTTONUP ) { m_bMouseLButtonDown = false; m_nCurrentButtonMask &= ~MOUSE_LEFT_BUTTON; }
-			if( uMsg == WM_MBUTTONUP ) { m_bMouseMButtonDown = false; m_nCurrentButtonMask &= ~MOUSE_MIDDLE_BUTTON; }
-			if( uMsg == WM_RBUTTONUP ) { m_bMouseRButtonDown = false; m_nCurrentButtonMask &= ~MOUSE_RIGHT_BUTTON; }
-
-			// Release the capture if no mouse buttons down
-			if( !m_bMouseLButtonDown  && 
-				!m_bMouseRButtonDown &&
-				!m_bMouseMButtonDown )
-			{
-				ReleaseCapture();
-			}
-			break;
-		}
+		break;
+	}
 
 	case WM_MOUSEWHEEL:
 		// Update member var state
@@ -321,17 +318,17 @@ LRESULT CBaseCamera::HandleMessages( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM
 }
 
 
-void CBaseCamera::UpdateMouseDelta( int nDX, int nDY)
+void CBaseCamera::UpdateMouseDelta(int nDX, int nDY)
 {
 	POINT ptCurMouseDelta;
 	// Calc how far it's moved since last frame
 	ptCurMouseDelta.x = nDX;
 	ptCurMouseDelta.y = nDY;
-	
+
 	// Smooth the relative mouse data over a few frames so it isn't 
 	// jerky when moving slowly at low frame rates.
-	float fPercentOfNew =  1.0f / m_fFramesToSmoothMouseData;
-	float fPercentOfOld =  1.0f - fPercentOfNew;
+	float fPercentOfNew = 1.0f / m_fFramesToSmoothMouseData;
+	float fPercentOfOld = 1.0f - fPercentOfNew;
 	m_vMouseDelta.x = m_vMouseDelta.x*fPercentOfOld + ptCurMouseDelta.x*fPercentOfNew;
 	m_vMouseDelta.y = m_vMouseDelta.y*fPercentOfOld + ptCurMouseDelta.y*fPercentOfNew;
 	if (Math::Abs(m_vMouseDelta.x - ptCurMouseDelta.x) <= 1.0)
@@ -345,16 +342,16 @@ void CBaseCamera::UpdateMouseDelta( int nDX, int nDY)
 // Name: UpdateMouseDelta
 // Desc: Figure out the mouse delta based on mouse movement
 //-----------------------------------------------------------------------------
-void CBaseCamera::UpdateMouseDelta( float fElapsedTime )
+void CBaseCamera::UpdateMouseDelta(float fElapsedTime)
 {
 #ifdef USE_DIRECTX_RENDERER
-	UNREFERENCED_PARAMETER( fElapsedTime );
+	UNREFERENCED_PARAMETER(fElapsedTime);
 
 	POINT ptCurMouseDelta;
 	POINT ptCurMousePos;
 
 	// Get current position of mouse
-	GetCursorPos( &ptCurMousePos );
+	GetCursorPos(&ptCurMousePos);
 
 	// Calc how far it's moved since last frame
 	ptCurMouseDelta.x = ptCurMousePos.x - m_ptLastMousePosition.x;
@@ -363,7 +360,7 @@ void CBaseCamera::UpdateMouseDelta( float fElapsedTime )
 	// Record current position for next time
 	m_ptLastMousePosition = ptCurMousePos;
 
-	if( m_bResetCursorAfterMove )
+	if (m_bResetCursorAfterMove)
 	{
 		// Set position of camera to center of desktop, 
 		// so it always has room to move.  This is very useful
@@ -372,17 +369,17 @@ void CBaseCamera::UpdateMouseDelta( float fElapsedTime )
 		// and the user can't tell what happened
 		POINT ptCenter;
 		RECT rcDesktop;
-		GetWindowRect( GetDesktopWindow(), &rcDesktop );
+		GetWindowRect(GetDesktopWindow(), &rcDesktop);
 		ptCenter.x = (rcDesktop.right - rcDesktop.left) / 2;
-		ptCenter.y = (rcDesktop.bottom - rcDesktop.top) / 2;   
-		SetCursorPos( ptCenter.x, ptCenter.y );
+		ptCenter.y = (rcDesktop.bottom - rcDesktop.top) / 2;
+		SetCursorPos(ptCenter.x, ptCenter.y);
 		m_ptLastMousePosition = ptCenter;
 	}
 
 	// Smooth the relative mouse data over a few frames so it isn't 
 	// jerky when moving slowly at low frame rates.
-	float fPercentOfNew =  1.0f / m_fFramesToSmoothMouseData;
-	float fPercentOfOld =  1.0f - fPercentOfNew;
+	float fPercentOfNew = 1.0f / m_fFramesToSmoothMouseData;
+	float fPercentOfOld = 1.0f - fPercentOfNew;
 	m_vMouseDelta.x = m_vMouseDelta.x*fPercentOfOld + ptCurMouseDelta.x*fPercentOfNew;
 	m_vMouseDelta.y = m_vMouseDelta.y*fPercentOfOld + ptCurMouseDelta.y*fPercentOfNew;
 	if (Math::Abs(m_vMouseDelta.x - ptCurMouseDelta.x) <= 1.0)
@@ -400,28 +397,28 @@ void CBaseCamera::UpdateMouseDelta( float fElapsedTime )
 // Name: UpdateVelocity
 // Desc: Figure out the velocity based on keyboard input & drag if any
 //-----------------------------------------------------------------------------
-void CBaseCamera::UpdateVelocity( float fElapsedTime )
+void CBaseCamera::UpdateVelocity(float fElapsedTime)
 {
 	Matrix4 mRotDelta;
-	Vector3 vAccel = Vector3(0,0,0);
+	Vector3 vAccel = Vector3(0, 0, 0);
 
-	if( m_bEnablePositionMovement )
+	if (m_bEnablePositionMovement)
 	{
 		// Update acceleration vector based on keyboard state
-		if( IsKeyDown(m_aKeys[MOVE_FORWARD]) )
+		if (IsKeyDown(m_aKeys[MOVE_FORWARD]))
 			vAccel.z += 1.0f;
-		if( IsKeyDown(m_aKeys[MOVE_BACKWARD]) )
+		if (IsKeyDown(m_aKeys[MOVE_BACKWARD]))
 			vAccel.z -= 1.0f;
-		if( m_bEnableYAxisMovement )
+		if (m_bEnableYAxisMovement)
 		{
-			if( IsKeyDown(m_aKeys[SHIFT_RIGHT]) )
+			if (IsKeyDown(m_aKeys[SHIFT_RIGHT]))
 				vAccel.y += 1.0f;
-			if( IsKeyDown(m_aKeys[SHIFT_LEFT]) )
+			if (IsKeyDown(m_aKeys[SHIFT_LEFT]))
 				vAccel.y -= 1.0f;
 		}
-		if( IsKeyDown(m_aKeys[MOVE_RIGHT]) )
+		if (IsKeyDown(m_aKeys[MOVE_RIGHT]))
 			vAccel.x += 1.0f;
-		if( IsKeyDown(m_aKeys[MOVE_LEFT]) )
+		if (IsKeyDown(m_aKeys[MOVE_LEFT]))
 			vAccel.x -= 1.0f;
 	}
 
@@ -432,10 +429,10 @@ void CBaseCamera::UpdateVelocity( float fElapsedTime )
 	// Scale the acceleration vector
 	vAccel *= m_fMoveScaler;
 
-	if( m_bMovementDrag )
+	if (m_bMovementDrag)
 	{
 		// Is there any acceleration this frame?
-		if( vAccel.squaredLength() > 0 )
+		if (vAccel.squaredLength() > 0)
 		{
 			// If so, then this means the user has pressed a movement key\
 			// so change the velocity immediately to acceleration 
@@ -445,10 +442,10 @@ void CBaseCamera::UpdateVelocity( float fElapsedTime )
 			m_fDragTimer = m_fTotalDragTimeToZero;
 			m_vVelocityDrag = vAccel / m_fDragTimer;
 		}
-		else 
+		else
 		{
 			// If no key being pressed, then slowly decrease velocity to 0
-			if( m_fDragTimer > 0 )
+			if (m_fDragTimer > 0)
 			{
 				// Drag until timer is <= 0
 				m_vVelocity -= m_vVelocityDrag * fElapsedTime;
@@ -457,7 +454,7 @@ void CBaseCamera::UpdateVelocity( float fElapsedTime )
 			else
 			{
 				// Zero velocity
-				m_vVelocity = Vector3(0,0,0);
+				m_vVelocity = Vector3(0, 0, 0);
 			}
 		}
 	}
@@ -485,12 +482,12 @@ void CBaseCamera::ConstrainToBoundary(DVector3* pV)
 // Name: MapKey
 // Desc: Maps a windows virtual key to an enum
 //-----------------------------------------------------------------------------
-CharacterAndCameraKeys CBaseCamera::MapKey( UINT nKey )
+CharacterAndCameraKeys CBaseCamera::MapKey(UINT nKey)
 {
 #ifdef USE_DIRECTX_RENDERER
 	// This could be upgraded to a method that's user-definable but for 
 	// simplicity, we'll use a hard-coded mapping.
-	switch( nKey )
+	switch (nKey)
 	{
 	case VK_LEFT:  return MOVE_LEFT;
 	case VK_RIGHT: return MOVE_RIGHT;
@@ -512,7 +509,7 @@ CharacterAndCameraKeys CBaseCamera::MapKey( UINT nKey )
 	case VK_NUMPAD6: return MOVE_RIGHT;
 	case VK_NUMPAD8: return MOVE_FORWARD;
 	case VK_NUMPAD2: return MOVE_BACKWARD;
-	case VK_NUMPAD9: return SHIFT_RIGHT;        
+	case VK_NUMPAD9: return SHIFT_RIGHT;
 	case VK_NUMPAD7: return SHIFT_LEFT;
 
 	case VK_END:	 return CAM_RESET;
@@ -531,34 +528,34 @@ CFirstPersonCamera::CFirstPersonCamera()
 {
 }
 
-void CFirstPersonCamera::FrameMove( float fElapsedTime )
+void CFirstPersonCamera::FrameMove(float fElapsedTime)
 {
-	if( IsKeyDown(m_aKeys[CAM_RESET]) )
+	if (IsKeyDown(m_aKeys[CAM_RESET]))
 		Reset();
 
 	// Get amount of velocity based on the keyboard input and drag (if any)
-	UpdateVelocity( fElapsedTime );
+	UpdateVelocity(fElapsedTime);
 
 	// Simple euler method to calculate position delta
 	Vector3 vPosDelta = m_vVelocity * fElapsedTime;
 
 	// If rotating the camera 
-	if( m_bMouseLButtonDown ||  m_bMouseMButtonDown || m_bMouseRButtonDown )
+	if (m_bMouseLButtonDown || m_bMouseMButtonDown || m_bMouseRButtonDown)
 	{
 		// Update the pitch & yaw angle based on mouse movement
-		float fYawDelta   = m_vRotVelocity.x;
+		float fYawDelta = m_vRotVelocity.x;
 		float fPitchDelta = m_vRotVelocity.y;
 
 		// Invert pitch if requested
-		if( m_bInvertPitch )
+		if (m_bInvertPitch)
 			fPitchDelta = -fPitchDelta;
 
 		m_fCameraPitchAngle += fPitchDelta;
-		m_fCameraYawAngle   += fYawDelta;
+		m_fCameraYawAngle += fYawDelta;
 
 		// Limit pitch to straight up or straight down
-		m_fCameraPitchAngle = max( -MATH_PI/2.0f,  m_fCameraPitchAngle );
-		m_fCameraPitchAngle = min( +MATH_PI/2.0f,  m_fCameraPitchAngle );
+		m_fCameraPitchAngle = max(-MATH_PI / 2.0f, m_fCameraPitchAngle);
+		m_fCameraPitchAngle = min(+MATH_PI / 2.0f, m_fCameraPitchAngle);
 	}
 
 	// Make a rotation matrix based on the camera's yaw & pitch
@@ -567,21 +564,21 @@ void CFirstPersonCamera::FrameMove( float fElapsedTime )
 
 	// Transform vectors based on camera's rotation matrix
 	Vector3 vWorldUp, vWorldAhead;
-	Vector3 vLocalUp    = Vector3(0,1,0);
-	Vector3 vLocalAhead = Vector3(0,0,1);
-	ParaVec3TransformCoord( &vWorldUp, &vLocalUp, &mCameraRot );
-	ParaVec3TransformCoord( &vWorldAhead, &vLocalAhead, &mCameraRot );
+	Vector3 vLocalUp = Vector3(0, 1, 0);
+	Vector3 vLocalAhead = Vector3(0, 0, 1);
+	ParaVec3TransformCoord(&vWorldUp, &vLocalUp, &mCameraRot);
+	ParaVec3TransformCoord(&vWorldAhead, &vLocalAhead, &mCameraRot);
 
 	// Transform the position delta by the camera's rotation 
 	Vector3 vPosDeltaWorld;
-	ParaVec3TransformCoord( &vPosDeltaWorld, &vPosDelta, &mCameraRot );
-	if( !m_bEnableYAxisMovement )
+	ParaVec3TransformCoord(&vPosDeltaWorld, &vPosDelta, &mCameraRot);
+	if (!m_bEnableYAxisMovement)
 		vPosDeltaWorld.y = 0.0f;
 
 	// Move the eye position 
 	m_vEye += vPosDeltaWorld;
-	if( m_bClipToBoundary )
-		ConstrainToBoundary( &m_vEye );
+	if (m_bClipToBoundary)
+		ConstrainToBoundary(&m_vEye);
 
 	// Update the lookAt position based on the eye position 
 	m_vLookAt = m_vEye + vWorldAhead;
@@ -615,8 +612,9 @@ int CBaseCamera::InstallFields(CAttributeClass* pClass, bool bOverride)
 	pClass->AddField("TotalDragTime", FieldType_Float, (void*)SetTotalDragTime_s, (void*)GetTotalDragTime_s, NULL, NULL, bOverride);
 
 	pClass->AddField("SmoothFramesNum", FieldType_Int, (void*)SetNumberOfFramesToSmoothMouseData_s, (void*)GetNumberOfFramesToSmoothMouseData_s, NULL, NULL, bOverride);
-	pClass->AddField("Eye position", FieldType_DVector3, NULL, (void*)GetEyePosition_s, NULL, NULL, bOverride);
-	pClass->AddField("Lookat position", FieldType_DVector3, NULL, (void*)GetLookAtPosition_s, NULL, NULL, bOverride);
+	pClass->AddField("Eye position", FieldType_DVector3, (void*)SetEyePosition_s, (void*)GetEyePosition_s, NULL, NULL, bOverride);
+	pClass->AddField("Lookat position", FieldType_DVector3, (void*)SetLookAtPosition_s, (void*)GetLookAtPosition_s, NULL, NULL, bOverride);
+	pClass->AddField("CameraUp", FieldType_Vector3, (void*)SetCameraUp_s, (void*)GetCameraUp_s, NULL, NULL, bOverride);
 	pClass->AddField("FrameMove", FieldType_void, (void*)FrameMove_s, NULL, NULL, NULL, bOverride);
 
 	pClass->AddField("On_FrameMove", FieldType_String, (void*)SetFrameMove_s, (void*)GetFrameMove_s, CAttributeField::GetSimpleSchemaOfScript(), "", bOverride);
@@ -624,7 +622,7 @@ int CBaseCamera::InstallFields(CAttributeClass* pClass, bool bOverride)
 	return S_OK;
 }
 
-void ParaEngine::CBaseCamera::SetMovementDrag( bool bEnable )
+void ParaEngine::CBaseCamera::SetMovementDrag(bool bEnable)
 {
 	m_bMovementDrag = bEnable;
 }
@@ -634,7 +632,7 @@ bool ParaEngine::CBaseCamera::GetMovementDrag()
 	return m_bMovementDrag;
 }
 
-void ParaEngine::CBaseCamera::SetTotalDragTime( float fTime )
+void ParaEngine::CBaseCamera::SetTotalDragTime(float fTime)
 {
 	m_fTotalDragTimeToZero = fTime;
 }
@@ -650,7 +648,7 @@ void ParaEngine::CBaseCamera::SetKeyMap(CharacterAndCameraKeys key, const EVirtu
 	m_scancode_key_map[key] = scancode;
 }
 
-ParaEngine::EVirtualKey ParaEngine::CBaseCamera::GetKeyMap( CharacterAndCameraKeys key )
+ParaEngine::EVirtualKey ParaEngine::CBaseCamera::GetKeyMap(CharacterAndCameraKeys key)
 {
 	return m_scancode_key_map[key];
 }
@@ -669,7 +667,7 @@ float ParaEngine::CBaseCamera::GetRotationScaler()
 	return m_fRotationScaler;
 }
 
-VOID ParaEngine::CBaseCamera::SetMoveScaler( FLOAT fMoveScaler /*= 5.0f*/ )
+VOID ParaEngine::CBaseCamera::SetMoveScaler(FLOAT fMoveScaler /*= 5.0f*/)
 {
 	m_fMoveScaler = fMoveScaler;
 }
@@ -681,18 +679,18 @@ float ParaEngine::CBaseCamera::GetMoveScaler()
 
 bool ParaEngine::CBaseCamera::IsShiftMoveSwitched()
 {
-	return !( m_scancode_key_map[MOVE_LEFT] == EVirtualKey::KEY_A);
+	return !(m_scancode_key_map[MOVE_LEFT] == EVirtualKey::KEY_A);
 }
 
-void ParaEngine::CBaseCamera::SetShiftMoveSwitched( bool bSwitched /*= false*/ )
+void ParaEngine::CBaseCamera::SetShiftMoveSwitched(bool bSwitched /*= false*/)
 {
-	if(bSwitched){
-		 m_scancode_key_map[MOVE_LEFT] = EVirtualKey::KEY_Q;
-		 m_scancode_key_map[MOVE_RIGHT] = EVirtualKey::KEY_E;
-		 m_scancode_key_map[SHIFT_LEFT] = EVirtualKey::KEY_A;
-		 m_scancode_key_map[SHIFT_RIGHT] = EVirtualKey::KEY_D;
+	if (bSwitched) {
+		m_scancode_key_map[MOVE_LEFT] = EVirtualKey::KEY_Q;
+		m_scancode_key_map[MOVE_RIGHT] = EVirtualKey::KEY_E;
+		m_scancode_key_map[SHIFT_LEFT] = EVirtualKey::KEY_A;
+		m_scancode_key_map[SHIFT_RIGHT] = EVirtualKey::KEY_D;
 	}
-	else{
+	else {
 		m_scancode_key_map[MOVE_LEFT] = EVirtualKey::KEY_A;
 		m_scancode_key_map[MOVE_RIGHT] = EVirtualKey::KEY_D;
 		m_scancode_key_map[SHIFT_LEFT] = EVirtualKey::KEY_Q;
@@ -718,9 +716,9 @@ void CBaseCamera::GetMouseRay(Vector3& vPickRayOrig, Vector3& vPickRayDir, POINT
 
 	// Compute the vector of the pick ray in screen space
 	Vector3 v;
-	v.x =  ( ( ( 2.0f * ptCursor.x ) / nWidth  ) - 1.0f ) / pMatProj->_11;
-	v.y = -( ( ( 2.0f * ptCursor.y ) / nHeight ) - 1.0f ) / pMatProj->_22;
-	v.z =  1.0f;
+	v.x = (((2.0f * ptCursor.x) / nWidth) - 1.0f) / pMatProj->_11;
+	v.y = -(((2.0f * ptCursor.y) / nHeight) - 1.0f) / pMatProj->_22;
+	v.z = 1.0f;
 
 	// Get the inverse of the composite view and world matrix
 	Matrix4*	pMatView = GetViewMatrix();
@@ -729,15 +727,34 @@ void CBaseCamera::GetMouseRay(Vector3& vPickRayOrig, Vector3& vPickRayDir, POINT
 	m.invert();
 
 	// Transform the screen space pick ray into 3D space
-	vPickRayDir.x  = v.x*m._11 + v.y*m._21 + v.z*m._31;
-	vPickRayDir.y  = v.x*m._12 + v.y*m._22 + v.z*m._32;
-	vPickRayDir.z  = v.x*m._13 + v.y*m._23 + v.z*m._33;
+	vPickRayDir.x = v.x*m._11 + v.y*m._21 + v.z*m._31;
+	vPickRayDir.y = v.x*m._12 + v.y*m._22 + v.z*m._32;
+	vPickRayDir.z = v.x*m._13 + v.y*m._23 + v.z*m._33;
 	vPickRayOrig.x = m._41;
 	vPickRayOrig.y = m._42;
-	vPickRayOrig.z = m._43;	
+	vPickRayOrig.z = m._43;
 	vPickRayDir.normalise();
 }
 
+void ParaEngine::CBaseCamera::SetEyePosition(const DVector3& pos)
+{
+	SetViewParams(pos, m_vLookAt);
+}
+
+void ParaEngine::CBaseCamera::SetLookAtPosition(const DVector3& pos)
+{
+	SetViewParams(m_vEye, pos);
+}
+
+void ParaEngine::CBaseCamera::SetCameraUp(const Vector3& pos)
+{
+	SetViewParams(m_vEye, m_vLookAt, &pos);
+}
+
+Vector3 ParaEngine::CBaseCamera::GetCameraUp()
+{
+	return m_vUp;
+}
 
 //-----------------------------------------------------------------------------
 // Name: UpdateFrustum()
@@ -753,7 +770,7 @@ void CBaseCamera::UpdateFrustum()
 	const Matrix4& matProj = CGlobals::GetProjectionMatrixStack().SafeGetTop();
 
 	Matrix4 matViewProj_inverse;
-	ParaMatrixMultiply( &matViewProj_inverse, &matView, &matProj );
+	ParaMatrixMultiply(&matViewProj_inverse, &matView, &matProj);
 	matViewProj_inverse = matViewProj_inverse.inverse();
 
 	float fNearPlane = 0.f;
@@ -762,7 +779,7 @@ void CBaseCamera::UpdateFrustum()
 	m_frustum.UpdateFrustum(&matViewProj_inverse, true, fNearPlane, 1.f);
 
 	// update the object view frustum
-	if(IsPerspectiveView())
+	if (IsPerspectiveView())
 	{
 		// perspective view
 		float fFarPlane = CGlobals::GetScene()->GetFogEnd();
@@ -786,12 +803,12 @@ void CBaseCamera::UpdateFrustum()
 	}
 
 	// update portal frustum
-	Vector3 vEyePos(0,0,0);
+	Vector3 vEyePos(0, 0, 0);
 #ifdef USE_OPENGL_RENDERER
 	// opengl, z axis is in range -1,1
 	vEyePos.z = -1.f;
 #endif
-	ParaVec3TransformCoord( &vEyePos, &vEyePos, &matViewProj_inverse );
+	ParaVec3TransformCoord(&vEyePos, &vEyePos, &matViewProj_inverse);
 	m_frustum_portal.setOrigin(vEyePos);
 	m_frustum_portal.RemoveAllExtraCullingPlanes();
 	// the near plane of the portal frustum must be zero, so shift m_fNearPlane
@@ -799,7 +816,7 @@ void CBaseCamera::UpdateFrustum()
 
 	// fog plane is a plane whose positive side is along the eye direction and distance to eye is the fog far end.
 	const Plane& plane = m_frustum.planeFrustum[0]; // near plane
-	m_fog_plane.Set(plane.a(), plane.b(), plane.c(), (plane.d - CGlobals::GetScene()->GetFogEnd()) );
+	m_fog_plane.Set(plane.a(), plane.b(), plane.c(), (plane.d - CGlobals::GetScene()->GetFogEnd()));
 }
 
 /**

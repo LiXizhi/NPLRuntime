@@ -3,7 +3,7 @@
 // Authors: big
 // Emails: onedous@gmail.com
 // CreateDate: 2019.08.12
-// ModifyDate: 2022.05.12
+// ModifyDate: 2023.09.15
 //-----------------------------------------------------------------------------
 
 #include "FileDialogiOS.h"
@@ -12,8 +12,48 @@
 #include "ParaScriptingGlobal.h"
 #include "NPL/NPLScriptingState.h"
 #include "ParaScriptingScreenRecorder.h"
+#include "ParaScriptingIDFA.h"
+#include "ParaScriptingAudioiOS.h"
 #include <luabind/object.hpp>
 #include <luabind/luabind.hpp>
+
+#ifdef NPLRUNTIME_OCE
+namespace NplOceScripting
+{
+    int Register(lua_State *L);
+}
+#endif
+
+static void LuabindRegisterParaAudioiOSGlobalFunctions(lua_State *L)
+{
+    using namespace luabind;
+    
+    module(L)
+    [
+        namespace_("ParaAudioiOS")
+        [
+            class_<ParaScripting::ParaScriptingAudioiOS>("ParaScriptingAudioiOS"),
+            def("StartRecording", ParaScripting::ParaScriptingAudioiOS::StartRecording),
+            def("StopRecording", ParaScripting::ParaScriptingAudioiOS::StopRecording),
+            def("SaveRecording", ParaScripting::ParaScriptingAudioiOS::SaveRecording)
+        ]
+    ];
+}
+
+static void LuabindRegisterIDFAGlobalFunctions(lua_State *L)
+{
+    using namespace luabind;
+
+    module(L)
+    [
+        namespace_("IDFA")
+        [
+            class_<ParaScripting::ParaScriptingIDFA>("ParaScriptingIDFA"),
+            def("get", ParaScripting::ParaScriptingIDFA::Get),
+            def("requestTrackingAuthorization", ParaScripting::ParaScriptingIDFA::RequestTrackingAuthorization)
+        ]
+    ];
+}
 
 static void LuabindRegisterScreenRecorderGlobalFunctions(lua_State *L)
 {
@@ -27,7 +67,8 @@ static void LuabindRegisterScreenRecorderGlobalFunctions(lua_State *L)
             def("start", ParaScripting::ParaScriptingScreenRecorder::Start),
             def("stop", ParaScripting::ParaScriptingScreenRecorder::Stop),
             def("play", ParaScripting::ParaScriptingScreenRecorder::Play),
-            def("save", ParaScripting::ParaScriptingScreenRecorder::Save)
+            def("save", ParaScripting::ParaScriptingScreenRecorder::Save),
+            def("removeVideo", ParaScripting::ParaScriptingScreenRecorder::RemoveVideo)
         ]
     ];
 }
@@ -38,6 +79,11 @@ void ParaScripting::CNPLScriptingState::LoadHAPI_Platform()
     lua_State *L = GetLuaState();
 
     LuabindRegisterScreenRecorderGlobalFunctions(L);
+    LuabindRegisterIDFAGlobalFunctions(L);
+    LuabindRegisterParaAudioiOSGlobalFunctions(L);
+#ifdef NPLRUNTIME_OCE
+    NplOceScripting::Register(L);
+#endif
 }
 
 bool ParaScripting::ParaGlobal::OpenFileDialog(const object& inout)

@@ -83,8 +83,8 @@ CGUIContainer::~CGUIContainer()
 	}
 	if (m_renderTarget)
 	{
-		// do not SetDead immediately, instead we will let it live 100 frames to see if it is used again. 
-		((CRenderTarget*)m_renderTarget.get())->SetLifeTime(100);
+		// set dead immediately to be destroyed in the next frame move. 
+		((CRenderTarget*)m_renderTarget.get())->SetLifeTime(0);
 	}
 }
 /**

@@ -514,7 +514,6 @@ void ParaEngine::CBatchedElementDraw::DrawBatchedParticles(bool bClear /*= true*
 
 		pEffect->EndPass();
 		pEffect->end();
-		pEffectManager->SetCullingMode(true);
 	}
 	
 	if (bClear)

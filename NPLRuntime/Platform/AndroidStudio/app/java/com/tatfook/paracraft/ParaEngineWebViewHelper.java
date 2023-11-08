@@ -28,6 +28,8 @@ import android.widget.RelativeLayout;
 import android.widget.Toast;
 import androidx.annotation.Keep;
 
+import com.tatfook.paracraft.luabridge.PlatformBridge;
+
 class JsToAndroid extends Object {
     private native void receive(String filename, String msg);
 
@@ -41,7 +43,6 @@ public class ParaEngineWebViewHelper {
 	private static ParaEngineActivity sActivity;
 	private static Handler sHandler;
 	private static FrameLayout sLayout;
-
 	private static SparseArray<ParaEngineWebView> webViews;
 	private static int viewTag = 0;
     private static boolean isOpenUrlLoaded = false;
@@ -54,6 +55,7 @@ public class ParaEngineWebViewHelper {
 //	private static native void onCloseView(int index);
 	public  static native void transportCmdLine(String cmdStr);
 
+    public  static native void SetSoftKeyBoard(String strData);
 	public ParaEngineWebViewHelper(FrameLayout layout) {
 		ParaEngineWebViewHelper.sLayout = layout;
         ParaEngineWebViewHelper.sHandler = new Handler(Looper.myLooper());
@@ -215,6 +217,7 @@ public class ParaEngineWebViewHelper {
                 webView.setScrollBarStyle(WebView.SCROLLBARS_OUTSIDE_OVERLAY);
                 webView.addJavascriptInterface(new JsToAndroid(), "android");
 
+                webView.getSettings().setTextZoom(100); //设置webview字体大小不随系统改变
                 webViewWrapper.addView(webView);
 
                 webView.requestFocus();
@@ -479,6 +482,8 @@ public class ParaEngineWebViewHelper {
                 if (webView != null) {
                     RelativeLayout webViewWrapper = (RelativeLayout) webView.getParent();
                     FrameLayout.LayoutParams wp = (FrameLayout.LayoutParams) webViewWrapper.getLayoutParams();
+                    webView.defaultWidth = w;
+                    webView.defaultHeight = h;
                     wp.width = w;
                     wp.height = h;
                     webViewWrapper.setLayoutParams(wp);

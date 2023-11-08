@@ -47,6 +47,6 @@ namespace ParaEngine
 
 + (ParaTextField *)GetTextField;
 
-+ (void)setIMEKeyboardState:(BOOL)bOpen bMoveView:(BOOL)bMoveView ctrlBottom:(int)ctrlBottom editParams:(NSString *)editParams;
++ (void)setIMEKeyboardState:(BOOL)bOpen bMoveView:(BOOL)bMoveView ctrlBottom:(int)ctrlBottom editParams:(NSString *)editParams inputType:(NSString *)inputType;
 
 @end

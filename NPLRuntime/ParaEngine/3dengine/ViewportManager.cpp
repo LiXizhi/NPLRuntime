@@ -97,6 +97,20 @@ void ParaEngine::CViewportManager::DeleteViewPort(int nIndex/*=0*/)
 	}
 }
 
+void ParaEngine::CViewportManager::DeleteViewPort(const std::string& name)
+{
+	for (auto iter = m_viewportList.begin(); iter != m_viewportList.end(); iter++)
+	{
+		CViewport* pViewPort = *iter;
+		if (pViewPort && pViewPort->GetIdentifier() == name)
+		{
+			m_viewportList.erase(iter);
+			SAFE_DELETE(pViewPort);
+			return;
+		}
+	}
+}
+
 void ParaEngine::CViewportManager::Cleanup()
 {
 	for (auto iter = m_viewportList.begin(); iter != m_viewportList.end(); iter++)
@@ -155,8 +169,7 @@ HRESULT ParaEngine::CViewportManager::Render(double dTimeDelta, int nPipelineOrd
 				uiScaleX = pViewPort->GetGUIRoot()->GetUIScalingX();
 				uiScaleY = pViewPort->GetGUIRoot()->GetUIScalingY();
 				uiHeight = (float)pViewPort->GetHeight();
-			}
-			else if (pViewPort->GetIdentifier() == "GUI_ods") {
+			}else if (pViewPort->GetIdentifier() == "GUI_ods") {
 				uiScaleX = pViewPort->GetGUIRoot()->GetUIScalingX();
 				uiScaleY = pViewPort->GetGUIRoot()->GetUIScalingY();
 				float scale = pViewPort->GetHeight() / uiHeight;
@@ -429,7 +442,7 @@ void ParaEngine::CViewportManager::SetLayout(VIEWPORT_LAYOUT nLayout, CSceneObje
 				CViewport* pMainSceneViewport = CreateGetViewPort(portNum);
 				pMainSceneViewport->SetIdentifier("scene_ods_ui");
 				pMainSceneViewport->SetScene(pMainScene);
-				pMainSceneViewport->SetPosition("_lt", cubeWidth * 2, cubeWidth * 1, _width, _height);
+				pMainSceneViewport->SetPosition("_lt", cubeWidth*2, cubeWidth * 1, _width, _height);
 				pMainSceneViewport->SetEyeMode(STEREO_EYE_ODS);
 				pMainSceneViewport->SetZOrder(0);
 				pMainSceneViewport->SetPipelineOrder(PIPELINE_3D_SCENE);
@@ -678,7 +691,7 @@ void ParaEngine::CViewportManager::SetLayout(VIEWPORT_LAYOUT nLayout, CSceneObje
 			param.m_bOmniAlwaysUseUpFrontCamera = m_bOmniAlwaysUseUpFrontCamera;
 			param.m_nOmniForceLookatDistance = m_nOmniForceLookatDistance;
 			viewport->SetStereoODSparam(param);
-			viewport->DisableDeltaTime(i > 0);
+			viewport->DisableDeltaTime(i>0);
 			//viewport->SetRenderTargetName(randerTargetname);
 		}
 		portNum += num;
@@ -890,5 +903,6 @@ int ParaEngine::CViewportManager::InstallFields(CAttributeClass* pClass, bool bO
 	pClass->AddField("widthPerDegree", FieldType_Int, (void*)SetWidthPerDegree_s, (void*)GetWidthPerDegree_s, NULL, NULL, bOverride);
 	pClass->AddField("OmniAlwaysUseUpFrontCamera", FieldType_Bool, (void*)SetOmniAlwaysUseUpFrontCamera_s, (void*)GetOmniAlwaysUseUpFrontCamera_s, NULL, NULL, bOverride);
 	pClass->AddField("OmniForceLookatDistance", FieldType_Int, (void*)SetOmniForceLookatDistance_s, (void*)GetOmniForceLookatDistance_s, NULL, NULL, bOverride);
+	pClass->AddField("DeleteViewportByName", FieldType_String, (void*)DeleteViewportByName_s, (void*)0, NULL, NULL, bOverride);
 	return S_OK;
 }

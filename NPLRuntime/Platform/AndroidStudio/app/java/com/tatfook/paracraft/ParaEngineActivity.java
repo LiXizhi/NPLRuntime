@@ -12,9 +12,14 @@ import static android.Manifest.permission.READ_PHONE_STATE;
 import android.Manifest;
 import android.app.Activity;
 import android.app.KeyguardManager;
+import android.content.ContentResolver;
+import android.content.ContentValues;
 import android.content.res.Configuration;
+import android.media.MediaScannerConnection;
 import android.net.Uri;
+import android.os.Build;
 import android.os.CountDownTimer;
+import android.os.Environment;
 import android.os.PowerManager;
 import android.content.Context;
 import android.content.Intent;
@@ -30,8 +35,10 @@ import androidx.annotation.Keep;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.content.ContextCompat;
 
 import android.provider.MediaStore;
+import android.util.Base64;
 import android.util.Log;
 import android.view.InputDevice;
 import android.view.KeyEvent;
@@ -42,13 +49,16 @@ import android.view.WindowManager;
 import android.widget.ImageView;
 
 import com.smarx.notchlib.NotchScreenManager;
-import com.tatfook.paracraft.luabridge.PlatformBridge;
 import com.tatfook.paracraft.screenrecorder.ScreenRecorder;
+import com.tatfook.paracraft.utils.USBSerialTransferUtil;
+
+import org.json.JSONException;
+import org.json.JSONObject;
 
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
+import java.io.OutputStream;
 
 import javax.microedition.khronos.egl.EGL10;
 import javax.microedition.khronos.egl.EGLConfig;
@@ -131,6 +141,72 @@ public class ParaEngineActivity extends AppCompatActivity {
         System.exit(0);
     }
 
+    public static boolean HasPermission(String strPermission){
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) {
+            return true;
+        }
+        else{
+            return ContextCompat.checkSelfPermission(sContext,strPermission) == PackageManager.PERMISSION_GRANTED;
+        }
+    }
+
+    // 写入base64图片数据到相册
+    public static void saveImageToGallery(String imageData) throws JSONException {
+        // 将Base64字符串解码为byte数组
+        String imageName = "default.png";
+        Log.d("ParaEngineHelper", "saveImageToGallery: " + imageData);
+
+        JSONObject jsonObject = new JSONObject(imageData);
+
+        String base64Data = jsonObject.getString("base64");
+        if (base64Data.length() == 0){
+            return;
+        }
+        byte[] decodedString = Base64.decode(base64Data, Base64.DEFAULT);
+        if (jsonObject.getString("paraFilePath") != ""){
+            imageName = jsonObject.getString("paraFilePath");
+        }
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            // Android Q及以上版本需要使用ContentResolver.insert()方法插入数据
+            ContentValues values = new ContentValues();
+            values.put(MediaStore.Images.Media.DISPLAY_NAME, imageName);
+            values.put(MediaStore.Images.Media.MIME_TYPE, "image/png");
+            values.put(MediaStore.Images.Media.RELATIVE_PATH, Environment.DIRECTORY_PICTURES + "/paracrat");
+
+            ContentResolver resolver = sContext.getContentResolver();
+            Uri uri = resolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values);
+            if (uri == null) {
+                return;
+            }
+
+            try (OutputStream outputStream = resolver.openOutputStream(uri)) {
+                outputStream.write(decodedString);
+                outputStream.flush();
+                outputStream.close();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        } else {
+            // Android Q以下版本可以直接向外部存储写入数据
+            File dir = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), "paracrat");
+            if (!dir.exists()) {
+                dir.mkdirs();
+            }
+            File file = new File(dir, imageName);
+
+            try (FileOutputStream stream = new FileOutputStream(file)) {
+                stream.write(decodedString);
+                stream.flush();
+                stream.close();
+
+                // 通知系统图库更新文件
+                MediaScannerConnection.scanFile(sContext, new String[]{file.getAbsolutePath()}, null, null);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
     public void OpenFileDialog(String filter) {
         mOpenFileDialogLuancher.launch(filter);
     }
@@ -178,6 +254,30 @@ public class ParaEngineActivity extends AppCompatActivity {
         NotchScreenManager.getInstance().setDisplayInNotch(this);
     }
 
+    @Override
+    protected void onNewIntent(Intent intent) {
+        handleIntent(intent);
+        super.onNewIntent(intent);
+    }
+
+    private void handleIntent(Intent intent) {
+        if (intent != null && Intent.ACTION_VIEW.equals(intent.getAction())) {
+            Uri data = intent.getData();
+            if (data != null) {
+                String protocol = data.getScheme();
+                String protocolData = intent.getDataString();
+                // 在这里处理传入的protocol
+                if (protocol == null || protocol == ""){
+                    return;
+                }
+                if (protocolData == null || protocolData == ""){
+                    return;
+                }
+                ParaEngineHelper.onCmdProtocol(protocolData);
+            }
+        }
+    }
+
     private void checkUsbMode(){
         // Determine whether the device uses USB
         Configuration configuration = getResources().getConfiguration();
@@ -198,21 +298,19 @@ public class ParaEngineActivity extends AppCompatActivity {
         }
     }
 
-    //lua端调用，用户同意隐私政策和用户协议以后，再去进行相关敏感操作
+    // lua端调用，用户同意隐私政策和用户协议以后，再去进行相关敏感操作
     public void onAgreeUserPrivacy(){
         this.checkUsbMode();
         ParaEngineHelper.onAgreeUserPrivacy();
-        if(true){//PlatformBridge.getChannelId(this).equals("xiaomi")
+        if (true) {// PlatformBridge.getChannelId(this).equals("xiaomi")
             ParaEngineHelper.setCanReadPhoneState(false);
-        }else if(checkSelfPermission(Manifest.permission.READ_PHONE_STATE) != PackageManager.PERMISSION_GRANTED)
-        {
+        } else if(checkSelfPermission(Manifest.permission.READ_PHONE_STATE) != PackageManager.PERMISSION_GRANTED) {
             ParaEngineActivity
-                    .getContext()
-                    .requestPermissions(
-                            new String[]{READ_PHONE_STATE},
-                            PERMISSION_REQUEST_PHONE_STATE
-                    );
-
+                .getContext()
+                .requestPermissions(
+                    new String[]{READ_PHONE_STATE},
+                    PERMISSION_REQUEST_PHONE_STATE
+                );
         }
     }
 
@@ -344,7 +442,7 @@ public class ParaEngineActivity extends AppCompatActivity {
             )
         );
         imageView.setScaleType(ImageView.ScaleType.FIT_XY);
-        imageView.setImageResource(R.drawable.splash);
+        imageView.setImageResource(R.drawable.app_splash);
         mFrameLayout.addView(imageView);
 
         CountDownTimer countDownTimer = new CountDownTimer(3000, 1000) {
@@ -529,6 +627,7 @@ public class ParaEngineActivity extends AppCompatActivity {
     @Override
     public void onRequestPermissionsResult(int requestCode, String permissions[], int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        RequestAndroidPermission.onRequestPermissionsResult(requestCode, permissions, grantResults);
 
         if (requestCode == PERMISSION_REQUEST_PHONE_STATE) {
             if (sContext == null) {
@@ -562,11 +661,13 @@ public class ParaEngineActivity extends AppCompatActivity {
 
     @Override
     public boolean onKeyUp(int keyCode, KeyEvent event) {
+        ParaEngineHelper.setKeyState(keyCode,1);
         return super.onKeyUp(keyCode, event);
     }
 
     @Override
     public boolean onKeyDown(int keyCode, KeyEvent event) {
+        ParaEngineHelper.setKeyState(keyCode,0);
         return super.onKeyUp(keyCode, event);
     }
 
@@ -576,6 +677,11 @@ public class ParaEngineActivity extends AppCompatActivity {
 
         this.hasFocus = hasFocus;
         resumeIfHasFocus();
+        //沉浸模式设置
+        if(hasFocus && Build.VERSION.SDK_INT>=19) {
+            View decorView=getWindow().getDecorView();
+            decorView.setSystemUiVisibility( View.SYSTEM_UI_FLAG_LAYOUT_STABLE |View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION |View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN |View.SYSTEM_UI_FLAG_HIDE_NAVIGATION |View.SYSTEM_UI_FLAG_FULLSCREEN |View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY);
+        }
     }
 
     @Keep

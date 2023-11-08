@@ -360,8 +360,6 @@ void NPL::CNPLConnection::stop(bool bRemoveConnection, int nReason)
 			SendMessage("connect_overriden", "");
 		}
 		// Post a call to the stop function so that stop() is safe to call from any thread.
-		//m_socket.get_io_service().post(boost::bind(&CNPLConnection::handle_stop, shared_from_this()));
-
 		boost::asio::post(m_socket.get_executor(), boost::bind(&CNPLConnection::handle_stop, shared_from_this()));
 	}
 }
@@ -693,15 +691,15 @@ NPL::NPLReturnCode NPL::CNPLConnection::SendMessage(const char* sCommandName, co
 
 NPL::NPLReturnCode NPL::CNPLConnection::SendMessage(NPLMsgOut_ptr& msg)
 {
-	// NOTE: m_state is not protected by a lock. This is ok, since its value is always one of the enumeration type. 
-	if (msg->empty())
-		return NPL_OK;
-
 	if (m_state < ConnectionConnected)
 	{
 		// NOTE: we will drop all pending messages, since it is not connected. 
 		return NPL_ConnectionNotEstablished;
 	}
+
+	// NOTE: m_state is not protected by a lock. This is ok, since its value is always one of the enumeration type. 
+	if (msg->empty())
+		return NPL_OK;
 
 	int nLength = (int)msg->GetBuffer().size();
 	NPLMsgOut_ptr * pFront = NULL;

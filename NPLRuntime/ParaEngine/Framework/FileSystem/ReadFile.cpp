@@ -97,10 +97,26 @@ void CReadFile::openFile()
 
 	if (m_pFile)
 	{
-		// get FileSize
+		// TODO: get FileSize, use fstat instead? opening folder or large file will crash with fseek. 
+		if(fseek(m_pFile, 0, SEEK_END) != 0) {
+			// handle error
+			fclose(m_pFile);
+			m_pFile = 0;
+			return;
+		}
+		auto fileSize = ftell(m_pFile);
 
-		fseek(m_pFile, 0, SEEK_END);
-		m_FileSize = ftell(m_pFile);
+		if(fileSize == -1 || fileSize > 1000000000){
+			// handle error, ftell return 0x7FFFFFFFFFFFFFFF or -1 on some linux system. 
+			m_FileSize = 0;
+			fclose(m_pFile);
+			m_pFile = 0;
+			return;
+		}
+		else{
+			m_FileSize = fileSize;
+		}
+		
 		fseek(m_pFile, 0, SEEK_SET);
 	}
 }

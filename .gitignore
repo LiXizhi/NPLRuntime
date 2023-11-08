@@ -81,3 +81,4 @@ out/
 SDL*/
 SDL2-2.0.22.tar.gz
 local.properties
+NPLRuntime.code-workspace

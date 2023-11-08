@@ -33,6 +33,8 @@ namespace ParaEngine
 		/** block id */
 		enum BlockIDNum
 		{
+			// metal block will not have ambient occlusion shadows on it. 
+			MetalBlockId = 50,
 			// transparent block (cob web) will transmit bone weight, but will not be rendered. 
 			TransparentBlockId = 118,
 			// bones
@@ -41,11 +43,11 @@ namespace ParaEngine
 			BlockModelBlockId = 254,
 		};
 
-		BMaxParser( const char* filename = NULL, BMaxParser* pParent = NULL);
+		BMaxParser(const char* filename = NULL, BMaxParser* pParent = NULL);
 		virtual ~BMaxParser(void);
 		CParaXModel* ParseParaXModel();
 		CParaXModel* ParseParaXModel(uint32 nMaxTriangleCount);
-		
+
 		const std::string& GetFilename() const;
 		void SetFilename(const std::string& val);
 
@@ -69,14 +71,14 @@ namespace ParaEngine
 		void MergeCoplanerBlockFace();
 		bool IsCoplaneNode(BMaxNode* node1, BMaxNode* node2, int nFaceIndex);
 		void FindCoplanerFace(BMaxNode* node, uint32 nFaceIndex);
-		void FindNeighbourFace(Rectangle *rectangle, uint32 i, uint32 nFaceIndex);
+		void FindNeighbourFace(Rectangle* rectangle, uint32 i, uint32 nFaceIndex);
 
 		void CalculateLod(uint32 nMaxTriangleCount);
-		void GetLodTable(uint32 faceCount, vector<uint32>&lodTable);
+		void GetLodTable(uint32 faceCount, vector<uint32>& lodTable);
 		void PerformLod();
-		void CalculateAABB(vector<BMaxNodePtr>&nodes);
-		void CalculateLodNode(map<int64, BMaxNodePtr> &nodeMap, int x, int y, int z);
-	
+		void CalculateAABB(vector<BMaxNodePtr>& nodes);
+		void CalculateLodNode(map<int64, BMaxNodePtr>& nodeMap, int x, int y, int z);
+
 		inline uint64 GetNodeIndex(uint16 x, uint16 y, uint16 z)
 		{
 			return (uint64)x + ((uint64)z << 16) + ((uint64)y << 32);
@@ -101,7 +103,7 @@ namespace ParaEngine
 
 		void ParseBlocks(BMaxXMLDocument& doc);
 		void ParseBlocks_Internal(const char* value);
-		
+
 		void ParseVisibleBlocks();
 		void ParseHead(BMaxXMLDocument& doc);
 		// parse bones
@@ -109,7 +111,7 @@ namespace ParaEngine
 
 		void CreateDefaultAnimations();
 
-		void AutoAddWalkAnimation(int nAnimID, int nStartTime, int nEndTime, float fMoveSpeed=4.f, bool bMoveForward = true);
+		void AutoAddWalkAnimation(int nAnimID, int nStartTime, int nEndTime, float fMoveSpeed = 4.f, bool bMoveForward = true);
 
 		BMaxFrameNode* GetFrameNode(int16 x, int16 y, int16 z);
 
@@ -122,7 +124,7 @@ namespace ParaEngine
 
 		void CalculateBoneSkin(BMaxFrameNode* pBoneNode);
 		/**
-		* @param bMustBeSameColor: if true we will only add bone if color is the same as the bone. 
+		* @param bMustBeSameColor: if true we will only add bone if color is the same as the bone.
 		*/
 		void CalculateBoneWeightForBlock(BMaxFrameNode* pBoneNode, BMaxNode* node, bool bMustBeSameColor = true);
 		/** find the first root bone index. In most cases it is 0.
@@ -134,10 +136,10 @@ namespace ParaEngine
 		void ParseBlockAnimationSet(BMaxXMLElement* node);
 		void ParseBlockAnimation(BMaxXMLElement* node);
 		void ParseBlockAnimationKeys(uint16 x, uint16 y, uint16 z, BMaxXMLElement* node, int nIndex);
-		void ParseBlockAnimationKey(BMaxXMLElement* node,Bone* bone,const std::string propertyType);
+		void ParseBlockAnimationKey(BMaxXMLElement* node, Bone* bone, const std::string propertyType);
 
 		void ClearModel();
-		void FillParaXModelData(CParaXModel *pMesh, int32 nMaxTriangleCount = -1);
+		void FillParaXModelData(CParaXModel* pMesh, int32 nMaxTriangleCount = -1);
 		void FillVerticesAndIndices(int32 nMaxTriangleCount = -1);
 		//void ProcessBoneNodes();
 		//int CreateBoneIndex(uint16 x, uint16 y, uint16 z, int parentIndex);

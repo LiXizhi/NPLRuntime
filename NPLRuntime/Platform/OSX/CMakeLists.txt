@@ -15,7 +15,7 @@ set(RESOURCE_FILES ${CMAKE_CURRENT_SOURCE_DIR}/res)
 set(ASSETS_FILES ${CMAKE_CURRENT_SOURCE_DIR}/assets)
 set(INFO_FILE ${CMAKE_CURRENT_SOURCE_DIR}/Info.plist)
 set(ICON_FILE ${CMAKE_CURRENT_SOURCE_DIR}/icon.icns)
-set(CMAKE_OSX_DEPLOYMENT_TARGET "10.13" CACHE STRING "Deployment target for OSX" FORCE)
+set(CMAKE_OSX_DEPLOYMENT_TARGET "10.14" CACHE STRING "Deployment target for OSX" FORCE)
 set(CMAKE_XCODE_ATTRIBUTE_STRIP_STYLE "non-global" CACHE STRING "Non-Global Symbols" FORCE)
 # set(IMAGES_FILE ${CMAKE_CURRENT_SOURCE_DIR}/Images.xcassets)
 
@@ -23,7 +23,6 @@ add_executable(Paracraft ${OSX_SRC}
     ${RESOURCE_FILES}
     ${ASSETS_FILES}
     ${IMAGES_FILE}
-    ${INFO_FILE}
     ${XIB_FILES}
     ${ICON_FILE}
 )
@@ -31,7 +30,6 @@ add_executable(Paracraft ${OSX_SRC}
 set_source_files_properties(${RESOURCE_FILES} PROPERTIES MACOSX_PACKAGE_LOCATION Resources/res)
 set_source_files_properties(${ASSETS_FILES} PROPERTIES MACOSX_PACKAGE_LOCATION Resources/assets)
 set_source_files_properties(${XIB_FILES} PROPERTIES MACOSX_PACKAGE_LOCATION Resources/xib)
-set_source_files_properties(${INFO_FILE} PROPERTIES MACOSX_PACKAGE_LOCATION .)
 set_source_files_properties(${ICON_FILE} PROPERTIES MACOSX_PACKAGE_LOCATION .)
 # set_source_files_properties(${IMAGES_FILE} PROPERTIES MACOSX_PACKAGE_LOCATION Resources/Images.cassets)
 
@@ -62,7 +60,7 @@ find_library(OPENGL_LIBRARY OpenGL)
 find_library(WebView WebKit)
 # find_library(AUTHENTICATION_SERVICES AuthenticationServices)
 find_library(AVFAudio AVFAudio)
-
+find_library(IOKit IOKit)
 
 target_link_libraries(Paracraft PUBLIC
     RenderSystemOpenGL
@@ -72,9 +70,11 @@ target_link_libraries(Paracraft PUBLIC
     ${WebView}
     ${AVFAudio}
     # ${AUTHENTICATION_SERVICES}
+    ${IOKit}
 )
 
-set(CMAKE_EXE_LINKER_FLAGS "-pagezero_size 10000 -image_base 100000000 ${CMAKE_EXE_LINKER_FLAGS}")
+# no longer needed for luajit2.1, only needed or luajit 2.0
+#set(CMAKE_EXE_LINKER_FLAGS "-pagezero_size 10000 -image_base 100000000 ${CMAKE_EXE_LINKER_FLAGS}")
 
 set(APP_PATH "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/$<CONFIGURATION>/Paracraft.app")
 set(DYLIB_PATH "${CMAKE_ARCHIVE_OUTPUT_DIRECTORY}/$<CONFIGURATION>")

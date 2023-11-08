@@ -10,6 +10,9 @@
 
 using namespace ParaEngine;
 
+/** define this to let io run as fast as possible. */
+#define REALTIME_FRAME_RATE_CONTROL
+
 namespace ParaEngine
 {
 	/**
@@ -282,11 +285,11 @@ double CFrameRateController::FrameMove(double time)
 		{
 
 		}
-		else if (m_fLastElapsedTime<m_fElapsedTime)
+		else if (m_fLastElapsedTime < m_fElapsedTime)
 		{
 			m_fElapsedTime = m_fLastElapsedTime + m_fLinearSlope;
 		}
-		else if (m_fLastElapsedTime>m_fElapsedTime)
+		else if (m_fLastElapsedTime > m_fElapsedTime)
 		{
 			m_fElapsedTime = m_fLastElapsedTime - m_fLinearSlope;
 		}

@@ -2,13 +2,14 @@
 // Class: AppDelegate.m
 // Authors: 袁全伟, big
 // CreateDate: 2018.11.02
-// ModifyDate: 2022.1.5
+// ModifyDate: 2023.9.13
 //-----------------------------------------------------------------------------
 
 #import "AppDelegate.h"
 #import "ViewController.h"
 #import "KeyboardiOS.h"
-#import <AVFoundation/AVFoundation.h>
+#import "Bluetooth/InterfaceBluetooth/InterfaceBluetooth.h"
+
 #import <CoreTelephony/CTCellularData.h>
 #import <CoreTelephony/CTTelephonyNetworkInfo.h>
 
@@ -141,7 +142,7 @@ using namespace ParaEngine;
     [self.window setRootViewController: self.viewController];
     [self.window makeKeyAndVisible];
 
-    RenderWindowiOS* renderWindow = new RenderWindowiOS(self.view);
+    RenderWindowiOS *renderWindow = new RenderWindowiOS(self.view);
 
     [KeyboardiOSController InitLanguage];
 
@@ -154,10 +155,6 @@ using namespace ParaEngine;
     [self.displayLink addToRunLoop:[NSRunLoop currentRunLoop] forMode:NSRunLoopCommonModes];
 
     [KeyboardiOSController keyboardInit:self];
-
-    [[AVAudioSession sharedInstance] setCategory: AVAudioSessionCategoryPlayAndRecord error: nil];
-    UInt32 audioRouteOverride = kAudioSessionOverrideAudioRoute_Speaker;
-    AudioSessionSetProperty(kAudioSessionProperty_OverrideAudioRoute, sizeof(audioRouteOverride), &audioRouteOverride);
 
     CGUIRoot::GetInstance()->SetUIScale(renderWindow->GetScaleX(), renderWindow->GetScaleY(), true, true, false);
 }

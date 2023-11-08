@@ -63,7 +63,7 @@ CFontRendererOpenGL* ParaEngine::CFontRendererOpenGL::create(const std::string& 
 
 	if (pFontRenderer->m_nFontSize <= 14)
 	{
-		pFontRenderer->m_nRealFontSize = 14;
+		pFontRenderer->m_nRealFontSize = 20;
 	}
 	else if (pFontRenderer->m_nFontSize <= 28)
 	{
