@@ -491,6 +491,8 @@ IParaPhysicsActor* ParaEngine::CPhysicsWorld::CreateDynamicMesh(CBaseObject* obj
 		return NULL; // model is not ready, such as not loaded from disk. 
 
 	IParaPhysicsShape* pShape = m_pPhysicsWorld->CreateSimpleShape(desc);
+	if (!pShape)
+		return NULL;
 
 	ParaPhysicsActorDesc ActorDesc;
 	ActorDesc.m_group = obj->GetPhysicsGroup();
@@ -513,6 +515,8 @@ IParaPhysicsActor* ParaEngine::CPhysicsWorld::CreateDynamicMesh(CBaseObject* obj
 	quat.ToRotationMatrix((Matrix3&)ActorDesc.m_rotation);
 
 	IParaPhysicsActor* pActor = m_pPhysicsWorld->CreateActor(ActorDesc);
+	if (!pActor)
+		return NULL;
 	pActor->SetUserData(obj);
 	m_mapDynamicActors.insert(pActor);
 	return pActor;
