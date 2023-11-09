@@ -381,6 +381,11 @@ bool ParaEngine::RenderDeviceOpenGL::SetRenderState(const ERenderState State, co
 			glDisable(GL_SCISSOR_TEST);
 		break;
 	}
+	case ERenderState::COLORWRITEENABLE:
+	{
+		glColorMask((Value & 0x1) ? GL_TRUE : GL_FALSE, (Value & 0x2) ? GL_TRUE : GL_FALSE, (Value & 0x4) ? GL_TRUE : GL_FALSE, (Value & 0x8) ? GL_TRUE : GL_FALSE);
+		break;
+	}
 	default:
 		//assert(false,"Unknow render state.");
 		break;
