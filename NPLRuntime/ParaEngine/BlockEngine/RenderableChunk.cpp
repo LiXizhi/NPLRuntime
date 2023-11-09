@@ -6,7 +6,9 @@
 // Date:	2012.11.26
 //-----------------------------------------------------------------------------
 #include "ParaEngine.h"
+#ifndef EMSCRIPTEN_SINGLE_THREAD
 #include <boost/thread/tss.hpp>
+#endif
 #include "RenderableChunk.h"
 #include "ParaVertexBufferPool.h"
 #include "BlockRegion.h"
@@ -516,10 +518,7 @@ namespace ParaEngine
 
 	BlockGeneralTessellator& RenderableChunk::GetBlockTessellator()
 	{
-		static boost::thread_specific_ptr <BlockGeneralTessellator> tls_tessellator;
-		if (!tls_tessellator.get())
-			tls_tessellator.reset(new BlockGeneralTessellator(m_pWorld));
-		BlockGeneralTessellator& tessellator = *tls_tessellator;
+		thread_local static BlockGeneralTessellator tessellator(m_pWorld);
 		tessellator.SetWorld(m_pWorld);
 		return tessellator;
 	}
@@ -536,18 +535,14 @@ namespace ParaEngine
 
 	std::vector<RenderableChunk::InstanceGroup* >& RenderableChunk::GetInstanceGroups()
 	{
-		static boost::thread_specific_ptr <std::vector<InstanceGroup*>> tls_instanceGroups(StaticReleaseInstGroup);
-		if (!tls_instanceGroups.get())
-			tls_instanceGroups.reset(new std::vector<InstanceGroup*>());
-		return *tls_instanceGroups;
+		thread_local static std::vector<InstanceGroup*> tls_instanceGroups;
+		return tls_instanceGroups;
 	}
 
 	std::map<int64_t, int>& RenderableChunk::GetInstanceMap()
 	{
-		static boost::thread_specific_ptr <std::map<int64_t, int>> tls_instance_map;
-		if (!tls_instance_map.get())
-			tls_instance_map.reset(new std::map<int64_t, int>());
-		return *tls_instance_map;
+		thread_local static std::map<int64_t, int> tls_instance_map;
+		return tls_instance_map;
 	}
 
 	void RenderableChunk::ResetInstanceGroups()

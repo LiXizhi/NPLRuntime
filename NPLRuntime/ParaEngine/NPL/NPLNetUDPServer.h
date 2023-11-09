@@ -1,11 +1,12 @@
 #pragma once
+#include "NPLUDPDispatcher.h"
+#include "NPLUDPRouteManager.h"
+#ifndef EMSCRIPTEN_SINGLE_THREAD
 #include <boost/thread.hpp>
 #include <boost/asio.hpp>
 #include <boost/noncopyable.hpp>
 #include <boost/scoped_ptr.hpp>
 #include <boost/asio/steady_timer.hpp>
-#include "NPLUDPRouteManager.h"
-#include "NPLUDPDispatcher.h"
 
 namespace NPL
 {
@@ -146,3 +147,47 @@ namespace NPL
 	};
 
 } // namespace NPL
+
+#else 
+namespace NPL
+{
+	class CNPLNetUDPServer 
+	{
+	public:
+
+		/// @def default NPL UDP server port
+		static const unsigned short NPL_DEFAULT_UDP_PORT = 8099;
+		/** how many milliseconds to assume connection time out, default to 2 mins. */
+		static const unsigned int DEFAULT_IDLE_TIMEOUT_MS = 120000;
+		/** @def the number of milliseconds that checks all connections in the system about timeout. */
+		static const unsigned int IDLE_TIMEOUT_TIMER_INTERVAL = 120000;
+		// 
+		static const size_t RECEIVE_BUFF_SIZE = 4096 * 2;
+
+		CNPLNetUDPServer():m_route_manager(), m_msg_dispatcher(*this, m_route_manager) {}
+		void start(const char* server = nullptr, unsigned short port = NPL_DEFAULT_UDP_PORT) {}
+		void stop() {}
+		static int Ping(const char* host, const char* port, unsigned int waitTime = 1000) { return 0; }
+		unsigned short GetHostPort(){ return 0;}
+		CNPLUDPDispatcher& GetDispatcher() { return m_msg_dispatcher; };
+
+		void EnableIdleTimeout(bool bEnable) {}
+		bool IsIdleTimeoutEnabled() { return false;}
+		void SetIdleTimeoutPeriod(int nMilliseconds){}
+		int GetIdleTimeoutPeriod(){ return 0;}
+		const std::string& GetHostIP() { static std::string s_ip = ""; return s_ip; }
+		bool IsServerStarted() { return false;}
+		NPLUDPRoute_ptr CreateRoute(NPLUDPAddress_ptr pAddress)
+		{
+			NPLUDPRoute_ptr pRoute(new CNPLUDPRoute(*this, m_route_manager, m_msg_dispatcher));
+			pRoute->SetNPLUDPAddress(pAddress);
+			m_route_manager.start(pRoute);
+			return pRoute;
+		}
+
+		CNPLUDPDispatcher m_msg_dispatcher;
+		CNPLUDPRouteManager m_route_manager;
+
+	};
+}
+#endif

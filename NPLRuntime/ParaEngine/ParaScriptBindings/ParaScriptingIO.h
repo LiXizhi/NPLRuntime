@@ -21,7 +21,7 @@ namespace ParaScripting
 	{
 	public:
 		ParaFileSystemWatcher();
-#if defined(PARAENGINE_MOBILE)
+#if defined(PARAENGINE_MOBILE) || defined(EMSCRIPTEN)
         ParaFileSystemWatcher(ParaFileSystemWatcher* watcher);
 #else
         ParaFileSystemWatcher(CFileSystemWatcher* watcher);
@@ -46,7 +46,7 @@ namespace ParaScripting
 		*/
 		void AddCallback(const char* sCallbackScript);
     public:
-#if defined(PARAENGINE_MOBILE)
+#if defined(PARAENGINE_MOBILE) || defined(EMSCRIPTEN)
         ParaFileSystemWatcher* m_watcher;
 #else
         CFileSystemWatcher* m_watcher;
@@ -732,8 +732,8 @@ namespace ParaScripting
 		static void DeleteFileSystemWatcher(const char* name);
 
 		/**
-		* if DEFAULT_FILE_ENCODING is defined£¬ParaIO.GetCurDirectory() return a utf8 string£¬mostly£¬it works well with NplRuntime£¬
-		* but sometimes we need to Need to pass parameters to the external environment,such as write the path to a ".bat" file£¬it must be ansci.
+		* if DEFAULT_FILE_ENCODING is definedï¿½ï¿½ParaIO.GetCurDirectory() return a utf8 stringï¿½ï¿½mostlyï¿½ï¿½it works well with NplRuntimeï¿½ï¿½
+		* but sometimes we need to Need to pass parameters to the external environment,such as write the path to a ".bat" fileï¿½ï¿½it must be ansci.
 		*/
 		static std::string ConvertPathFromUTF8ToAnsci(const char* path);
 	};

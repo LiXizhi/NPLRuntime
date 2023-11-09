@@ -24,7 +24,10 @@
 #ifdef PARAENGINE_CLIENT
 #include "DirectXEngine.h"
 #endif
-
+#ifdef EMSCRIPTEN_SINGLE_THREAD
+// #define auto_ptr unique_ptr
+#include "AutoPtr.h"
+#endif
 extern "C"
 {
 #include "lua.h"

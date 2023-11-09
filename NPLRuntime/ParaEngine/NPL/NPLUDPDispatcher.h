@@ -1,7 +1,9 @@
 #pragma once
 
 #include <boost/bimap.hpp>
+#ifndef EMSCRIPTEN_SINGLE_THREAD
 #include <boost/thread/shared_mutex.hpp>
+#endif
 #include <string>
 
 #include "NPLCommon.h"

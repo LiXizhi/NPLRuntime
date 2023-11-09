@@ -99,19 +99,29 @@ int ParaEngine::CUrlLoader::GetEstimatedSizeInBytes()
 //
 //////////////////////////////////////////////////////////////////////////
 ParaEngine::CUrlProcessor::CUrlProcessor()
-	:m_pFormPost(0), m_pHttpHeaders(0), m_nTimeOutTime(DEFAULT_TIME_OUT), m_nStartTime(0), m_responseCode(0), m_nLastProgressTime(0),
-	m_pFormLast(0), m_pUserData(0), m_returnCode(CURLE_OK), m_type(URL_REQUEST_HTTP_AUTO),
+	:m_nTimeOutTime(DEFAULT_TIME_OUT), m_nStartTime(0), m_responseCode(0), m_nLastProgressTime(0),
+	m_pUserData(0), m_returnCode(CURLE_OK), m_type(URL_REQUEST_HTTP_AUTO),
 	m_nPriority(0), m_nStatus(URL_REQUEST_UNSTARTED), m_pfuncCallBack(0), m_nBytesReceived(0), m_pUploadContext(NULL),
 	m_nTotalBytes(0), m_nUserDataType(0), m_pFile(NULL), m_pThreadLocalData(NULL), m_bForbidReuse(false), m_bEnableProgressUpdate(true), m_bIsSyncCallbackMode(false)
 {
+#ifndef EMSCRIPTEN
+	m_pHttpHeaders = 0;
+	m_pFormPost = 0;
+	m_pFormLast = 0;
+#endif
 }
 
 ParaEngine::CUrlProcessor::CUrlProcessor(const string& url, const string& npl_callback)
-	:m_pFormPost(0), m_pHttpHeaders(0), m_nTimeOutTime(DEFAULT_TIME_OUT), m_nStartTime(0), m_responseCode(0), m_nLastProgressTime(0),
-	m_pFormLast(0), m_pUserData(0), m_returnCode(CURLE_OK), m_type(URL_REQUEST_HTTP_AUTO),
+	:m_nTimeOutTime(DEFAULT_TIME_OUT), m_nStartTime(0), m_responseCode(0), m_nLastProgressTime(0),
+	m_pUserData(0), m_returnCode(CURLE_OK), m_type(URL_REQUEST_HTTP_AUTO),
 	m_nPriority(0), m_nStatus(URL_REQUEST_UNSTARTED), m_pfuncCallBack(0), m_nBytesReceived(0), m_pUploadContext(NULL),
 	m_nTotalBytes(0), m_nUserDataType(0), m_pFile(NULL), m_pThreadLocalData(NULL), m_bEnableProgressUpdate(true), m_bIsSyncCallbackMode(false)
 {
+#ifndef EMSCRIPTEN
+	m_pHttpHeaders = 0;
+	m_pFormPost = 0;
+	m_pFormLast = 0;
+#endif
 	m_url = url;
 	SetScriptCallback(npl_callback.c_str());
 }
@@ -125,6 +135,7 @@ ParaEngine::CUrlProcessor::~CUrlProcessor()
 void ParaEngine::CUrlProcessor::CleanUp()
 {
 	SAFE_DELETE(m_pFile);
+#ifndef EMSCRIPTEN
 	if (m_pFormPost)
 	{
 		/* then cleanup the form post chain */
@@ -136,6 +147,7 @@ void ParaEngine::CUrlProcessor::CleanUp()
 		curl_slist_free_all(m_pHttpHeaders);
 		m_pHttpHeaders = NULL;
 	}
+#endif
 	SafeDeleteUserData();
 	SAFE_DELETE(m_pUploadContext);
 }
@@ -181,7 +193,6 @@ HRESULT ParaEngine::CUrlProcessor::Destroy()
 void ParaEngine::CUrlProcessor::EmscriptenFetch()
 {
 #ifdef EMSCRIPTEN
-
 	std::vector<const char*> request_headers;
 	int request_headers_size = m_request_headers.size();
 	for (int i = 0; i < request_headers_size; i++) request_headers.push_back(m_request_headers[i].c_str());
@@ -191,7 +202,7 @@ void ParaEngine::CUrlProcessor::EmscriptenFetch()
     emscripten_fetch_attr_init(&attr);
 	std::string method = "GET";
 	if (m_options && m_options->GetField("CURLOPT_CUSTOMREQUEST")->isString()) method = m_options->GetField("CURLOPT_CUSTOMREQUEST").c_str();
-	else if (m_pFormPost != nullptr || !m_sRequestData.empty()) method = "POST";
+	else if (!m_sRequestData.empty()) method = "POST";
 	else method = "GET";
     strcpy(attr.requestMethod, method.c_str());
     attr.attributes = EMSCRIPTEN_FETCH_LOAD_TO_MEMORY | EMSCRIPTEN_FETCH_SYNCHRONOUS;
@@ -224,10 +235,60 @@ void ParaEngine::CUrlProcessor::EmscriptenFetch()
 	// return S_OK;
 }
 
+void ParaEngine::CUrlProcessor::EmscriptenFetch2()
+{
+#ifdef EMSCRIPTEN
+	std::vector<const char*> request_headers;
+	int request_headers_size = m_request_headers.size();
+	for (int i = 0; i < request_headers_size; i++) request_headers.push_back(m_request_headers[i].c_str());
+	request_headers.push_back(0);
+
+    bool fetch_finish = false;
+    emscripten_fetch_attr_t attr;
+    emscripten_fetch_attr_init(&attr);
+	std::string method = "GET";
+	if (m_options && m_options->GetField("CURLOPT_CUSTOMREQUEST")->isString()) method = m_options->GetField("CURLOPT_CUSTOMREQUEST").c_str();
+	else if (!m_sRequestData.empty()) method = "POST";
+	else method = "GET";
+    strcpy(attr.requestMethod, method.c_str());
+    attr.userData = &fetch_finish;
+    attr.attributes = EMSCRIPTEN_FETCH_LOAD_TO_MEMORY;
+	attr.requestData = m_sRequestData.c_str();
+	attr.requestDataSize = m_sRequestData.size();
+	attr.requestHeaders = request_headers.data();
+	attr.onsuccess = [](emscripten_fetch_t *fetch)  { *(bool*)(fetch->userData) = true; };
+	attr.onerror = [](emscripten_fetch_t *fetch) { *(bool*)(fetch->userData) = true; };
+	emscripten_fetch_t *fetch = emscripten_fetch(&attr, m_url.c_str()); // Blocks here until the operation is complete.
+	while (!fetch_finish) emscripten_sleep(100);
+	m_responseCode = fetch->status;
+	std::vector<char> response_header;
+	size_t headersLengthBytes = emscripten_fetch_get_response_headers_length(fetch) + 1;
+	response_header.resize(headersLengthBytes);
+  	emscripten_fetch_get_response_headers(fetch, response_header.data(), headersLengthBytes);
+	write_header_callback(response_header.data(), response_header.size(), 1);
+	write_data_callback((void*)(fetch->data), fetch->totalBytes, 1);
+  	emscripten_fetch_close(fetch); // Also free data on failure.
+	m_nStatus = CUrlProcessor::URL_REQUEST_COMPLETED;
+	// {
+	// 	std::cout << "=================request error=================" << std::endl;
+	// 	std::cout << "method: " << method << std::endl;
+	// 	std::cout << "url: " << m_url << std::endl;
+	// 	std::cout << "request data:" << m_sRequestData << std::endl;
+	// 	std::cout << "status code: " << m_responseCode << std::endl;
+	// 	std::cout << "response header size: " << headersLengthBytes << std::endl;
+	// 	std::cout << "response data size: " << fetch->totalBytes << std::endl;
+	// }
+#endif
+	// return S_OK;
+}
+
 HRESULT ParaEngine::CUrlProcessor::Process(void* pData, int cBytes)
 {
-
-
+#ifdef EMSCRIPTEN_SINGLE_THREAD
+	EmscriptenFetch2();
+	m_returnCode = CURLE_OK;
+	return S_OK;
+#endif
 #ifdef EMSCRIPTEN
 	EmscriptenFetch();
 	m_returnCode = CURLE_OK;
@@ -361,7 +422,7 @@ void ParaEngine::CUrlProcessor::AddBytesReceived(int nByteCount)
 	}
 }
 
-
+#ifndef EMSCRIPTEN
 void ParaEngine::CUrlProcessor::SetCurlEasyOpt(CURL* handle)
 {
 	// reset data 
@@ -531,7 +592,7 @@ void ParaEngine::CUrlProcessor::SetCurlEasyOpt(CURL* handle)
 		curl_easy_setopt(handle, CURLOPT_NOBODY, (m_type == URL_REQUEST_HTTP_HEADERS_ONLY) ? 1 : 0);
 	}
 }
-
+#endif
 
 size_t ParaEngine::CUrlProcessor::CUrl_read_email_payload(void *ptr, size_t size, size_t nmemb, void *userp)
 {
@@ -773,12 +834,16 @@ void ParaEngine::CUrlProcessor::AppendHTTPHeader(const char* text)
 
 CURLFORMcode ParaEngine::CUrlProcessor::AppendFormParam(const char* name, const char* value)
 {
-
+#ifndef EMSCRIPTEN
 	return curl_formadd(&m_pFormPost, &m_pFormLast, CURLFORM_COPYNAME, name, CURLFORM_COPYCONTENTS, value, CURLFORM_END);
+#else
+	return CURL_FORMADD_OK;
+#endif
 }
 
 CURLFORMcode ParaEngine::CUrlProcessor::AppendFormParam(const char* name, const char* type, const char* file, const char* data, int datalen, bool bCacheData)
 {
+#ifndef EMSCRIPTEN
 	CURLFORMcode rc = CURL_FORMADD_OK;
 	if (bCacheData)
 	{
@@ -819,6 +884,9 @@ CURLFORMcode ParaEngine::CUrlProcessor::AppendFormParam(const char* name, const 
 		OUTPUT_LOG("warning:  cannot add form: %d \n", rc);
 	}
 	return rc;
+#else
+	return CURL_FORMADD_OK;
+#endif
 }
 
 void ParaEngine::CUrlProcessor::SetCallBack(URL_LOADER_CALLBACK pFuncCallback, CUrlProcessorUserData* pUserData, bool bDeleteUserData)

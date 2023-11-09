@@ -144,11 +144,11 @@ namespace ParaEngine
 		inline void SetShadow()
 		{
 			// color = (180<<24) | (color&0x00ffffff);
-			color = (((byte)(color>>24)-45)<<24) | (color&0x00ffffff);
+			color = (((unsigned char)(color>>24)-45)<<24) | (color&0x00ffffff);
 		}
 
 		/** similar to SetShadow, except that it uses a user provided value [0,255] */
-		inline void SetColorStrength(byte strength)
+		inline void SetColorStrength(unsigned char strength)
 		{
 			color = (strength<<24) | (color&0x00ffffff);
 		}

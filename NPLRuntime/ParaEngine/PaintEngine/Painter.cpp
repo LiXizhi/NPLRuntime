@@ -24,7 +24,7 @@ using namespace ParaEngine;
 /** text shadow color threshold */
 const float g_ColorThreshold = 0.5f;
 /** text shadow alpha*/
-const byte g_ShadowAlpha = 160;
+const unsigned char g_ShadowAlpha = 160;
 
 //--------------------------------------------------------------------------------------
 
@@ -33,7 +33,7 @@ the shadow color is automatically decided according to text color. if text color
 */
 Color ComputeTextShadowColor(const LinearColor& color)
 {
-	byte shadowColor = ((color.r > g_ColorThreshold) || (color.g > g_ColorThreshold) || (color.b > g_ColorThreshold)) ? 0 : 255;
+	unsigned char shadowColor = ((color.r > g_ColorThreshold) || (color.g > g_ColorThreshold) || (color.b > g_ColorThreshold)) ? 0 : 255;
 	return COLOR_ARGB(uint8(color.a * g_ShadowAlpha), shadowColor, shadowColor, shadowColor);
 }
 

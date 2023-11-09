@@ -15,7 +15,8 @@ namespace ParaEngine
 	// EditBox control
 	//-----------------------------------------------------------------------------
 	class CGUIEditBox : public CGUIBase
-#ifdef PARAENGINE_MOBILE
+// #ifdef PARAENGINE_MOBILE
+#if defined(PARAENGINE_MOBILE) || defined(EMSCRIPTEN)
 		, public GUIIMEDelegate
 #endif
 	{
@@ -44,7 +45,8 @@ namespace ParaEngine
 		ATTRIBUTE_METHOD1(CGUIEditBox, GetEmptyText_s, const char**)	{ *p1 = cls->GetEmptyText().c_str(); return S_OK; }
 		ATTRIBUTE_METHOD1(CGUIEditBox, SetEmptytext_s, const char*)	{ cls->SetEmptytext(p1); return S_OK; }
 
-#ifdef PARAENGINE_MOBILE
+// #ifdef PARAENGINE_MOBILE
+#if defined(PARAENGINE_MOBILE) || defined(EMSCRIPTEN)
 		ATTRIBUTE_METHOD1(CGUIEditBox, SetMoveViewWhenAttachWithIME_s, bool) { cls->setMoveViewWhenAttachWithIME(p1); return S_OK; }
 		ATTRIBUTE_METHOD1(CGUIEditBox, GetIsUseFloatEditBox_s, bool*) { *p1 = cls->IsUseFloatEditBox(); return S_OK; }
 		ATTRIBUTE_METHOD1(CGUIEditBox, SetIsUseFloatEditBox_s, bool) { cls->SetIsUseFloatEditBox(p1); return S_OK; }
@@ -219,7 +221,7 @@ namespace ParaEngine
 		const char * GetConfirmType(){return m_sComfirmType.c_str();}
 		void SetConfirmType(const char *val){m_sComfirmType=val;}
 
-#ifdef PARAENGINE_MOBILE
+#if defined(PARAENGINE_MOBILE) || defined(EMSCRIPTEN)
 		// ime delegate implementation. 
 	public:
 		virtual bool attachWithIME() override;

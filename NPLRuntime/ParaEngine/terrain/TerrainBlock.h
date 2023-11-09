@@ -14,6 +14,7 @@ namespace ParaTerrain
 {
 	using namespace ParaEngine;
 	class TerrainBlock;
+	class TriangleStrip;
 	typedef TerrainBlock* TerrainBlockPtr;
 	typedef std::deque<TerrainBlockPtr,  FixedSizedAllocator<TerrainBlockPtr> >	deque_TerrainBlockPtr_Type;
 	typedef std::queue<TerrainBlockPtr, deque_TerrainBlockPtr_Type> queue_TerrainBlockPtr_Type;

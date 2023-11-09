@@ -115,15 +115,20 @@ namespace NPL {
 	}
 
 
+#ifndef EMSCRIPTEN_SINGLE_THREAD
 	bool CNPLUDPRouteManager::HasRoute(const boost::asio::ip::udp::endpoint& ep)
 	{
 		return HasRoute(NPLUDPAddress::ComputerHash(ep));
 	}
-
+#endif
 	bool CNPLUDPRouteManager::HasRoute(const char* ip, unsigned short port)
 	{
+#ifndef EMSCRIPTEN_SINGLE_THREAD
 		boost::asio::ip::udp::endpoint ep(boost::asio::ip::make_address_v4(ip), port);
 		return HasRoute(ep);
+#else
+		return false;
+#endif
 	}
 
 	bool CNPLUDPRouteManager::HasRoute(unsigned long long hash)
@@ -133,15 +138,20 @@ namespace NPL {
 	}
 
 	///
+#ifndef EMSCRIPTEN_SINGLE_THREAD
 	NPLUDPRoute_ptr CNPLUDPRouteManager::GetRoute(const boost::asio::ip::udp::endpoint& ep)
 	{
 		return GetRoute(NPLUDPAddress::ComputerHash(ep));
 	}
-
+#endif
 	NPLUDPRoute_ptr CNPLUDPRouteManager::GetRoute(const char* ip, unsigned short port)
 	{
+#ifndef EMSCRIPTEN_SINGLE_THREAD
 		boost::asio::ip::udp::endpoint ep(boost::asio::ip::make_address_v4(ip), port);
 		return GetRoute(ep);
+#else
+		return GetRoute(0);
+#endif
 	}
 
 	NPLUDPRoute_ptr CNPLUDPRouteManager::GetRoute(unsigned long long hash)

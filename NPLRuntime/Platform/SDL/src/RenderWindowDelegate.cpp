@@ -2,6 +2,7 @@
 #include "RenderWindowDelegate.h"
 #include "2dengine/GUIRoot.h"
 #include "NPL/NPLHelper.h"
+#include "SDL2Application.h"
 #include "EventsCenter.h"
 #include "util/StringHelper.h"
 
@@ -15,12 +16,33 @@ ParaEngine::IRenderWindow* CreateParaRenderWindow(const int width, const int hei
 
 namespace ParaEngine {
 
-	void RenderWindowDelegate::OnMouseButton(EMouseButton button, EKeyState state, uint32_t x, uint32_t y)
+	void RenderWindowDelegate::OnTouch(int nType, TouchEvent::TouchEventMsgType nTouchType, int touch_id, float x, float y, int nTimeTick) 
 	{
-
 		if (CGlobals::GetApp()->GetAppState() != PEAppState_Ready)
 		{
 			return;
+		}
+
+		if (nTouchType == TouchEvent::TouchEvent_POINTER_DOWN)
+		{
+			((CSDL2Application*)(CGlobals::GetApp()))->SetTouchInputting(true);
+		}
+
+		TouchEvent e(nType, nTouchType, touch_id, x, y, nTimeTick);
+		std::cout << "handleTouchEvent" << std::endl;
+		CGUIRoot::GetInstance()->handleTouchEvent(e);
+	}
+
+	void RenderWindowDelegate::OnMouseButton(EMouseButton button, EKeyState state, uint32_t x, uint32_t y)
+	{
+		if (CGlobals::GetApp()->GetAppState() != PEAppState_Ready)
+		{
+			return;
+		}
+
+		if (state == EKeyState::PRESS)
+		{
+			((CSDL2Application*)(CGlobals::GetApp()))->SetTouchInputting(false);
 		}
 
 		CGUIRoot::GetInstance()->GetMouse()->PushMouseEvent(DeviceMouseEventPtr(new DeviceMouseButtonEvent(button, state, x, y)));

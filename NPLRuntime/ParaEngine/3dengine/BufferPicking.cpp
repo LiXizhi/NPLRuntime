@@ -195,11 +195,11 @@ int ParaEngine::CBufferPicking::Pick(const QRect& region_, int nViewportId /*= -
 #ifdef USE_OPENGL_RENDERER
 		for (auto & result : m_pickingResult)
 		{
-			byte * byte_ptr = reinterpret_cast<byte*>(&result);
-			byte red = *byte_ptr++;
-			byte green = *byte_ptr++;
-			byte blue = *byte_ptr++;
-			byte alpha = *byte_ptr;
+			unsigned char * byte_ptr = reinterpret_cast<unsigned char*>(&result);
+			unsigned char red = *byte_ptr++;
+			unsigned char green = *byte_ptr++;
+			unsigned char blue = *byte_ptr++;
+			unsigned char alpha = *byte_ptr;
 			result = (alpha << 24) | (red << 16) | (green << 8) | (blue);
 		}
 #endif
@@ -323,6 +323,11 @@ bool ParaEngine::CBufferPicking::BeginBuffer()
 						pViewport->ApplyCamera((CAutoCamera*)pCamera);
 						pViewport->ApplyViewport();
 					}
+
+					auto vEye = pCamera->GetEyePosition();
+					Vector3 vEye_ = vEye;
+					pScene->RegenerateRenderOrigin(vEye_);
+
 					CGlobals::GetWorldMatrixStack().push(Matrix4::IDENTITY);
 					CGlobals::GetProjectionMatrixStack().push(*pCamera->GetProjMatrix());
 					CGlobals::GetViewMatrixStack().push(*pCamera->GetViewMatrix());
@@ -373,8 +378,8 @@ void ParaEngine::CBufferPicking::DrawObjects()
 		// but with PIPELINE_COLOR_PICKING enabled.
 		pScene->GetSceneState()->SetCurrentRenderPipeline(PIPELINE_COLOR_PICKING);
 		// Note: This will lead to potential crash if drawing non-overlay without week references.
-		auto layout = CGlobals::GetViewportManager()->GetLayout();
-		if (layout == VIEW_LAYOUT_STEREO_OMNI_SINGLE_EYE || layout == VIEW_LAYOUT_STEREO_OMNI_SINGLE_EYE_1 || layout == VIEW_LAYOUT_STEREO_OMNI)
+		// auto layout = CGlobals::GetViewportManager()->GetLayout();
+		// if (layout == VIEW_LAYOUT_STEREO_OMNI_SINGLE_EYE || layout == VIEW_LAYOUT_STEREO_OMNI_SINGLE_EYE_1 || layout == VIEW_LAYOUT_STEREO_OMNI)
 		{
 			// this fixed a bug, if current scene states is not the main scene, such as in ods layout, the last rendered scene is the bottom view. 
 			CGlobals::GetScene()->PrepareRender(pScene->GetCurrentCamera(), pScene->GetSceneState());

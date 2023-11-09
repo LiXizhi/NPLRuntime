@@ -15,7 +15,7 @@ namespace ParaEngine
 			++nByteRead;
 			if ((b & 0x80) == 0)
 			{
-				// single-byte
+				// single-unsigned char
 				value = (VALUE_TYPE)b;
 				return true;
 			}
@@ -49,7 +49,7 @@ namespace ParaEngine
 			int count = 0, index = 0;
 			do
 			{
-				buffer[index++] = (byte)((value & 0x7F) | 0x80);
+				buffer[index++] = (unsigned char)((value & 0x7F) | 0x80);
 				value >>= 7;
 				count++;
 			} while (value != 0);
@@ -72,7 +72,7 @@ namespace ParaEngine
 		{
 			int nCount = data.size();
 			if (nCount == 0) return 0;
-			byte buffer[10];
+			unsigned char buffer[10];
 			int last = -1, len = 0;
 			for (int i = 0; i < nCount;)
 			{
@@ -125,7 +125,7 @@ namespace ParaEngine
 			int nCount = data.size();
 			if (nCount == 0) return 0;
 			int len = 0;
-			byte buffer[10];
+			unsigned char buffer[10];
 			len += EncodeUInt32((VALUE_TYPE)(data[0]), buffer, stream);
 
 			for (int i = 1; i < nCount; ++i)
@@ -162,7 +162,7 @@ namespace ParaEngine
 		{
 			int nCount = data.size();
 			if (nCount == 0) return 0;
-			byte buffer[10];
+			unsigned char buffer[10];
 			int len = 0;
 			int last = data[0];
 			uint32_t size = 0;
@@ -232,7 +232,7 @@ namespace ParaEngine
 			int nCount = data.size();
 			if (nCount == 0) return 0;
 			int len = 0;
-			byte buffer[10];
+			unsigned char buffer[10];
 			for (int i = 0; i < nCount; ++i)
 			{
 				len += EncodeUInt32(data[i], buffer, stream);
@@ -321,7 +321,7 @@ namespace ParaEngine
 		{
 			if (m_nLastValueCount > 0)
 			{
-				byte buffer[10];
+				unsigned char buffer[10];
 				CIntegerEncoder::EncodeUInt32(m_nLastValue, buffer, *m_pStream);
 				CIntegerEncoder::EncodeUInt32(m_nLastValueCount - 1, buffer, *m_pStream);
 			}

@@ -26,7 +26,7 @@ CharTextureComponent::CharTextureComponent()
 {
 }
 
-bool CharTextureComponent::GetPixels(byte* pBuffer, int* nWidth, int* nHeight)
+bool CharTextureComponent::GetPixels(unsigned char* pBuffer, int* nWidth, int* nHeight)
 {
 	bool bOK = true;
 #ifdef USE_DIRECTX_RENDERER

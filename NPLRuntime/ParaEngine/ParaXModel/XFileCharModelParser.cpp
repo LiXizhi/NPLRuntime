@@ -122,7 +122,7 @@ CParaXModel* ParaEngine::XFileCharModelParser::LoadParaX_Body()
 		DWORD			dwSize;
 		const char* pBuffer = NULL;
 		m_pRaw = NULL;
-		// Lock the raw byte data if any
+		// Lock the raw unsigned char data if any
 		if (m_pParaXRawData && (m_pParaXRawData->Lock(&dwSize, &pBuffer)))
 			m_pRaw = pBuffer + 4;
 
@@ -266,7 +266,7 @@ CParaXModel* ParaEngine::XFileCharModelParser::LoadParaX_Body()
 		}
 
 
-		// unlock raw byte data
+		// unlock raw unsigned char data
 		if (m_pRaw != NULL)
 		{
 			m_pRaw = NULL;
@@ -495,11 +495,11 @@ bool XFileCharModelParser::ReadXTextures(CParaXModel& xmesh, XFileDataObjectPtr 
 						xmesh.textures[i] = CGlobals::GetAssetManager()->LoadTexture("", sFilename.c_str(), TextureEntity::StaticTexture);
 					}
 
-					pTex = (ModelTextureDef_*)(((byte*)pTex) + 8 + sFilename.size() + 1);
+					pTex = (ModelTextureDef_*)(((unsigned char*)pTex) + 8 + sFilename.size() + 1);
 				}
 				else
 				{
-					pTex = (ModelTextureDef_*)(((byte*)pTex) + 8 + 1);
+					pTex = (ModelTextureDef_*)(((unsigned char*)pTex) + 8 + 1);
 					xmesh.textures[i].reset();
 				}
 			}

@@ -299,7 +299,7 @@ bool XFileDataObject::ReadXTextures(XFileParser& parser)
 		{
 			memcpy(&(data.name), name.c_str(), name.size() + 1);
 		}
-		pData = (ModelTextureDef_*)(((byte*)pData) + 8 + name.size() + 1);
+		pData = (ModelTextureDef_*)(((unsigned char*)pData) + 8 + name.size() + 1);
 	}
 	ResizeBuffer((int)(((char*)pData) - GetBuffer()));
 	parser.ReadToEndOfDataObject();
@@ -795,7 +795,7 @@ void ParaEngine::XFileDataObject::WriteParaXHeader(ofstream& strm, XFileExporter
 
 void ParaEngine::XFileDataObject::WriteParaXBody(ofstream& strm, XFileExporter& exporter)
 {
-	// ParaXBodyµÄ×Ó¶ÔÏó»áÔÚCParaXModelWriterÖÐ±éÀúµ¼³ö
+	// ParaXBodyï¿½ï¿½ï¿½Ó¶ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½CParaXModelWriterï¿½Ð±ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 	/*for (int i = 0;i<GetChildCount();++i)
 	{
 	auto child = GetChild(i);

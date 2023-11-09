@@ -12,7 +12,7 @@ namespace ParaEngine
 		/** WORD[0]: component type, WORD[1] color */
 		WORD data[2];
 		/** scaling, rotation and translation: SRT[0] for scaling,SRT[1] for rotation, SRT[2] for translation_X, SRT[3] for translation_Y */
-		byte  SRT[4];
+		unsigned char  SRT[4];
 	public:
 		/** initialize to full color, 0 type, 0 scale, 0 rotation, 0 position.*/
 		FaceComponent();

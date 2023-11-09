@@ -4,7 +4,7 @@
 // Emails:	LiXizhi@yeah.net
 // Date:	2006.1.10
 // Revised: 2006.11.27
-// Notes: 
+// Notes:
 // Index building for 20000 files in a zip archive is 0.10 seconds
 // random file access using this index for 20000 files is 0.000025 seconds
 //-----------------------------------------------------------------------------
@@ -27,29 +27,29 @@
 #endif
 
 /** keys used when encoding the pkg file. A pkg package muse be encoded and decoded with the same key, or decoding will fail.*/
-#define PKG_KEY1	1
-#define PKG_KEY2	2
-#define PKG_KEY3	3
-#define PKG_KEY4	4
+#define PKG_KEY1 1
+#define PKG_KEY2 2
+#define PKG_KEY3 3
+#define PKG_KEY4 4
 
-#define PKG_FILE_VERSION	1
-#define PKG_FILE_VERSION2	2
+#define PKG_FILE_VERSION 1
+#define PKG_FILE_VERSION2 2
 
 /** @def define this macro to cache read all header information to memory from the central directory.
 this will reduce disk IO counts. However, there does not seem to be a performance penalty even with 20000+ IO read.
 so there is no need to use it. */
-//#define ENABLE_INDEX_CACHE
+// #define ENABLE_INDEX_CACHE
 
 using namespace ParaEngine;
 
 // check if it is ".pkg" file
-static bool IsPkgData(const char* src)
+static bool IsPkgData(const char *src)
 {
 	return ((src[0] == '.') && (src[1] == 'p') && (src[2] == 'k') && (src[3] == 'g'));
 }
 
-// return true if data is a zip file or pkg file. 
-bool ParaEngine::IsZipData(const char* src, size_t size)
+// return true if data is a zip file or pkg file.
+bool ParaEngine::IsZipData(const char *src, size_t size)
 {
 	if (size < sizeof(ZIP_EndOfCentralDirectoryBlock))
 		return false;
@@ -59,14 +59,14 @@ bool ParaEngine::IsZipData(const char* src, size_t size)
 
 	src += size - sizeof(ZIP_EndOfCentralDirectoryBlock);
 
-	ZIP_EndOfCentralDirectoryBlock* p = (ZIP_EndOfCentralDirectoryBlock*)src;
+	ZIP_EndOfCentralDirectoryBlock *p = (ZIP_EndOfCentralDirectoryBlock *)src;
 
 	return p->sig == ZIP_CONST_ENDSIG;
 }
 
-const SZIPFileHeader* ParaEngine::GetFirstFileInfo(const char* src, std::string* filename)
+const SZIPFileHeader *ParaEngine::GetFirstFileInfo(const char *src, std::string *filename)
 {
-	const SZIPFileHeader* p = (const SZIPFileHeader*)src;
+	const SZIPFileHeader *p = (const SZIPFileHeader *)src;
 	if (p->Sig == ZIP_CONST_LOCALHEADERSIG)
 	{
 		if (filename != nullptr)
@@ -80,11 +80,11 @@ const SZIPFileHeader* ParaEngine::GetFirstFileInfo(const char* src, std::string*
 		return nullptr;
 }
 
-bool ParaEngine::GetFirstFileData(const char* src, size_t size, std::string& out)
+bool ParaEngine::GetFirstFileData(const char *src, size_t size, std::string &out)
 {
 	if (IsPkgData(src))
 	{
-		CMemReadFile file((byte*)src, size, false);
+		CMemReadFile file((unsigned char *)src, size, false);
 		// sig + version(only support PKG version 2)
 		file.seek(8, true);
 
@@ -148,7 +148,7 @@ bool ParaEngine::GetFirstFileData(const char* src, size_t size, std::string& out
 			int nDataPos = nEncodedDataPos;
 			if (entry.fileNameLen >= 4)
 			{
-				// take the file name into consideration. 
+				// take the file name into consideration.
 				nDataPos -= entry.zipFileName[0] * PKG_KEY1 + entry.zipFileName[1] * PKG_KEY2 + entry.zipFileName[2] * PKG_KEY3 + entry.zipFileName[3] * PKG_KEY4;
 			}
 			entry.fileDataPosition = nDataPos;
@@ -167,11 +167,11 @@ bool ParaEngine::GetFirstFileData(const char* src, size_t size, std::string& out
 			case 8:
 			{
 				out.resize(entry.UncompressedSize);
-				char* pBuf = &out[0];
+				char *pBuf = &out[0];
 				DWORD uncompressedSize = entry.UncompressedSize;
 				DWORD compressedSize = entry.CompressedSize;
 
-				byte* pcData = new byte[compressedSize];
+				unsigned char *pcData = new unsigned char[compressedSize];
 				if (pcData == 0)
 				{
 					OUTPUT_LOG("Not enough memory for decompressing %s\n", entry.zipFileName);
@@ -185,9 +185,9 @@ bool ParaEngine::GetFirstFileData(const char* src, size_t size, std::string& out
 				z_stream stream;
 				int err;
 
-				stream.next_in = (Bytef*)pcData;
+				stream.next_in = (Bytef *)pcData;
 				stream.avail_in = (uInt)compressedSize;
-				stream.next_out = (Bytef*)pBuf;
+				stream.next_out = (Bytef *)pBuf;
 				stream.avail_out = uncompressedSize;
 				stream.zalloc = (alloc_func)0;
 				stream.zfree = (free_func)0;
@@ -213,12 +213,12 @@ bool ParaEngine::GetFirstFileData(const char* src, size_t size, std::string& out
 	}
 	else
 	{
-		const SZIPFileHeader* info = (const SZIPFileHeader*)src;
+		const SZIPFileHeader *info = (const SZIPFileHeader *)src;
 		if (info->Sig != ZIP_CONST_LOCALHEADERSIG)
 			return false;
 
 		auto filedata = src + sizeof(SZIPFileHeader) + info->FilenameLength + info->ExtraFieldLength;
-		if (info->CompressionMethod == 0)  // 8 for zip, 0 for no compression.
+		if (info->CompressionMethod == 0) // 8 for zip, 0 for no compression.
 		{
 			out = std::string(filedata, info->DataDescriptor.UncompressedSize);
 			return true;
@@ -230,9 +230,9 @@ bool ParaEngine::GetFirstFileData(const char* src, size_t size, std::string& out
 			z_stream stream;
 			int err;
 
-			stream.next_in = (Bytef*)filedata;
+			stream.next_in = (Bytef *)filedata;
 			stream.avail_in = (uInt)info->DataDescriptor.CompressedSize;
-			stream.next_out = (Bytef*)(&*out.begin());
+			stream.next_out = (Bytef *)(&*out.begin());
 			stream.avail_out = info->DataDescriptor.UncompressedSize;
 			stream.zalloc = (alloc_func)0;
 			stream.zfree = (free_func)0;
@@ -248,7 +248,6 @@ bool ParaEngine::GetFirstFileData(const char* src, size_t size, std::string& out
 				err = Z_OK;
 				inflateEnd(&stream);
 			}
-
 
 			if (err == Z_OK)
 			{
@@ -271,15 +270,12 @@ bool ParaEngine::GetFirstFileData(const char* src, size_t size, std::string& out
 }
 
 CZipArchive::CZipArchive(void)
-	:m_pFile(NULL), m_bIgnoreCase(true), m_zipComment(NULL), m_pEntries(NULL), m_bRelativePath(false)
-	, m_bDirty(true)
+	: m_pFile(NULL), m_bIgnoreCase(true), m_zipComment(NULL), m_pEntries(NULL), m_bRelativePath(false), m_bDirty(true)
 {
-
 }
 
 CZipArchive::CZipArchive(bool bIgnoreCase)
-	:m_pFile(NULL), m_bIgnoreCase(bIgnoreCase), m_zipComment(NULL), m_pEntries(NULL), m_bRelativePath(false)
-	, m_bDirty(true)
+	: m_pFile(NULL), m_bIgnoreCase(bIgnoreCase), m_zipComment(NULL), m_pEntries(NULL), m_bRelativePath(false), m_bDirty(true)
 {
 }
 
@@ -326,7 +322,7 @@ end
 pkg File Format
 ========================
 char[4] <file type id> ".pkg"
-byte[4] <pkg file version> 0.0.0.1
+unsigned char[4] <pkg file version> 0.0.0.1
 [int] <length of string>
 [string] "ParaEngine Tech Studio Package File Format. Please note that content in
 this file is meant to be protected and copyrighted by their author(s). Decoding this pkg file is illegal."
@@ -343,7 +339,7 @@ this file is meant to be protected and copyrighted by their author(s). Decoding 
 ...
 [data n]
 */
-bool CZipArchive::Open(const string& sArchiveName, int nPriority)
+bool CZipArchive::Open(const string &sArchiveName, int nPriority)
 {
 	Close();
 	CArchive::Open(sArchiveName, nPriority);
@@ -399,7 +395,7 @@ bool CZipArchive::Open(const string& sArchiveName, int nPriority)
 	return m_bOpened;
 }
 
-void CZipArchive::SetRootDirectory(const string& filename)
+void CZipArchive::SetRootDirectory(const string &filename)
 {
 	char tmp[1024];
 	int nLastPos = 0;
@@ -441,16 +437,14 @@ void CZipArchive::ReBuild()
 	if (m_bDirty)
 	{
 
-		std::sort(m_FileList.begin(), m_FileList.end(), [](const SZipFileEntryPtr& a, const SZipFileEntryPtr& b)
-		{
-			return a.m_pEntry->hashValue < b.m_pEntry->hashValue;
-		});
+		std::sort(m_FileList.begin(), m_FileList.end(), [](const SZipFileEntryPtr &a, const SZipFileEntryPtr &b)
+				  { return a.m_pEntry->hashValue < b.m_pEntry->hashValue; });
 
 		m_bDirty = false;
 	}
 }
 
-bool CZipArchive::OpenZipFile(const string& filename)
+bool CZipArchive::OpenZipFile(const string &filename)
 {
 	SAFE_DELETE(m_pFile);
 	m_pFile = CParaFileUtils::GetInstance()->OpenFileForRead(filename);
@@ -466,15 +460,15 @@ bool CZipArchive::OpenZipFile(const string& filename)
 	if (m_bOpened)
 	{
 		// scan local headers
-		// it does not sequentially transverse the file, 
+		// it does not sequentially transverse the file,
 		// instead it uses central directory records at the end of the zip file
 
-		//PERF_BEGIN(sArchiveName.c_str());
+		// PERF_BEGIN(sArchiveName.c_str());
 		m_bOpened = ReadEntries();
-		//PERF_END(sArchiveName.c_str());
+		// PERF_END(sArchiveName.c_str());
 
 		// prepare file index for binary search
-		//Sort();
+		// Sort();
 
 		if (m_bOpened)
 		{
@@ -488,7 +482,7 @@ bool CZipArchive::OpenZipFile(const string& filename)
 	return m_bOpened;
 }
 
-bool CZipArchive::OpenPkgFile(const string& filename)
+bool CZipArchive::OpenPkgFile(const string &filename)
 {
 	ParaEngine::Lock lock_(m_mutex);
 
@@ -508,7 +502,7 @@ bool CZipArchive::OpenPkgFile(const string& filename)
 	{
 		m_bOpened = _ReadEntries_pkg();
 
-		// no need to sort since already sorted in file. 
+		// no need to sort since already sorted in file.
 		// m_FileList.sort();
 		if (m_bOpened)
 		{
@@ -518,10 +512,10 @@ bool CZipArchive::OpenPkgFile(const string& filename)
 	return m_bOpened;
 }
 
-bool CZipArchive::OpenMemFile(const char* buffer, DWORD nSize, bool bDeleteBuffer)
+bool CZipArchive::OpenMemFile(const char *buffer, DWORD nSize, bool bDeleteBuffer)
 {
 	SAFE_DELETE(m_pFile);
-	m_pFile = new CMemReadFile((byte*)buffer, nSize, bDeleteBuffer);
+	m_pFile = new CMemReadFile((unsigned char *)buffer, nSize, bDeleteBuffer);
 	m_bOpened = m_pFile->isOpen();
 	if (m_bOpened)
 	{
@@ -536,7 +530,7 @@ int CZipArchive::GetFileCount()
 	return (int)(m_FileList.size());
 }
 
-bool CZipArchive::GeneratePkgFile2(const char* filename)
+bool CZipArchive::GeneratePkgFile2(const char *filename)
 {
 	CParaFile file;
 	if (!file.CreateNewFile(filename))
@@ -551,9 +545,12 @@ bool CZipArchive::GeneratePkgFile2(const char* filename)
 	// version number
 	file.WriteDWORD(PKG_FILE_VERSION2);
 	// reserved bytes
-	file.WriteDWORD(0); file.WriteDWORD(0); file.WriteDWORD(0); file.WriteDWORD(0);
+	file.WriteDWORD(0);
+	file.WriteDWORD(0);
+	file.WriteDWORD(0);
+	file.WriteDWORD(0);
 	// comment
-	const char* comments = "ParaEngine Tech Studio Package File.";
+	const char *comments = "ParaEngine Tech Studio Package File.";
 	int nLen = (int)strlen(comments);
 	file.WriteDWORD(nLen);
 	file.WriteString(comments, nLen);
@@ -572,7 +569,7 @@ bool CZipArchive::GeneratePkgFile2(const char* filename)
 		// get name buff size
 		for (; i < nEntryNum; i++)
 		{
-			SZipFileEntry& entry = *(m_FileList[i].m_pEntry);
+			SZipFileEntry &entry = *(m_FileList[i].m_pEntry);
 			nameBlockSize += entry.fileNameLen + 1;
 		}
 	}
@@ -586,15 +583,14 @@ bool CZipArchive::GeneratePkgFile2(const char* filename)
 		input.reserve(nameBlockSize);
 		for (i = 0; i < nEntryNum; i++)
 		{
-			SZipFileEntry& entry = *(m_FileList[i].m_pEntry);
+			SZipFileEntry &entry = *(m_FileList[i].m_pEntry);
 			input += entry.zipFileName;
 			input.push_back(0);
 		}
 
 		std::string output;
-		if (CZipWriter::Compress(output, (const char*)input.c_str(), input.size()) != 1)
+		if (CZipWriter::Compress(output, (const char *)input.c_str(), input.size()) != 1)
 			return false;
-
 
 		file.WriteDWORD(output.size());
 		file.write(output.c_str(), output.size());
@@ -605,12 +601,11 @@ bool CZipArchive::GeneratePkgFile2(const char* filename)
 
 		for (i = 0; i < nEntryNum; i++)
 		{
-			SZipFileEntry& entry = *(m_FileList[i].m_pEntry);
+			SZipFileEntry &entry = *(m_FileList[i].m_pEntry);
 			file.write(entry.zipFileName, entry.fileNameLen);
 			file.WriteByte(0);
 		}
 	}
-
 
 	const DWORD entrySize = sizeof(WORD) + sizeof(DWORD) + sizeof(uint32) + sizeof(WORD) + sizeof(DWORD) * 3;
 	DWORD dataPos = (DWORD)file.getPos() + (entrySize * nEntryNum);
@@ -620,7 +615,7 @@ bool CZipArchive::GeneratePkgFile2(const char* filename)
 		if (m_FileList[i].m_pEntry == nullptr)
 			continue;
 
-		SZipFileEntry& entry = *(m_FileList[i].m_pEntry);
+		SZipFileEntry &entry = *(m_FileList[i].m_pEntry);
 		// name len
 		auto nFileNameLen = entry.fileNameLen;
 		file.write(&nFileNameLen, sizeof(WORD));
@@ -630,32 +625,30 @@ bool CZipArchive::GeneratePkgFile2(const char* filename)
 		// name hash
 		file.write(&entry.hashValue, sizeof(entry.hashValue));
 
-
 		file.write(&entry.CompressionMethod, sizeof(WORD));
 		file.WriteDWORD(entry.CompressedSize);
 		file.WriteDWORD(entry.UncompressedSize);
-		// encode this size. 
+		// encode this size.
 		DWORD encodedSize = dataPos;
 		if (nFileNameLen >= 4)
 		{
-			// take the file name into consideration. 
+			// take the file name into consideration.
 			encodedSize += entry.zipFileName[0] * PKG_KEY1 + entry.zipFileName[1] * PKG_KEY2 + entry.zipFileName[2] * PKG_KEY3 + entry.zipFileName[3] * PKG_KEY4;
 		}
 		file.WriteDWORD(encodedSize);
 		dataPos += entry.CompressedSize;
 	}
 
-
 	// write data
 	{
-		vector<byte> cData;
+		vector<unsigned char> cData;
 
 		for (i = 0; i < nEntryNum; ++i)
 		{
 			if (m_FileList[i].m_pEntry == nullptr)
 				continue;
 
-			SZipFileEntry& entry = *(m_FileList[i].m_pEntry);
+			SZipFileEntry &entry = *(m_FileList[i].m_pEntry);
 			if (cData.size() < entry.CompressedSize)
 				cData.resize(entry.CompressedSize);
 			if (entry.CompressedSize > 0)
@@ -671,7 +664,7 @@ bool CZipArchive::GeneratePkgFile2(const char* filename)
 	return true;
 }
 
-bool CZipArchive::GeneratePkgFile(const char* filename)
+bool CZipArchive::GeneratePkgFile(const char *filename)
 {
 	CParaFile file;
 	if (!file.CreateNewFile(filename))
@@ -686,9 +679,12 @@ bool CZipArchive::GeneratePkgFile(const char* filename)
 	// version number
 	file.WriteDWORD(PKG_FILE_VERSION);
 	// reserved bytes
-	file.WriteDWORD(0); file.WriteDWORD(0); file.WriteDWORD(0); file.WriteDWORD(0);
+	file.WriteDWORD(0);
+	file.WriteDWORD(0);
+	file.WriteDWORD(0);
+	file.WriteDWORD(0);
 	// comment
-	const char* comments = "ParaEngine Tech Studio Package File.";
+	const char *comments = "ParaEngine Tech Studio Package File.";
 	int nLen = (int)strlen(comments);
 	file.WriteDWORD(nLen);
 	file.WriteString(comments, nLen);
@@ -701,7 +697,7 @@ bool CZipArchive::GeneratePkgFile(const char* filename)
 		// get dir section size
 		for (i = 0; i < nEntryNum; ++i)
 		{
-			SZipFileEntry& entry = *(m_FileList[i].m_pEntry);
+			SZipFileEntry &entry = *(m_FileList[i].m_pEntry);
 			int nFileNameLen = (int)entry.fileNameLen;
 			nDirSize += sizeof(WORD) + nFileNameLen + sizeof(WORD) + sizeof(DWORD) * 3;
 		}
@@ -712,18 +708,18 @@ bool CZipArchive::GeneratePkgFile(const char* filename)
 		if (m_FileList[i].m_pEntry == nullptr)
 			continue;
 
-		SZipFileEntry& entry = *(m_FileList[i].m_pEntry);
+		SZipFileEntry &entry = *(m_FileList[i].m_pEntry);
 		WORD nFileNameLen = (WORD)entry.fileNameLen;
 		file.write(&nFileNameLen, sizeof(WORD));
 		file.WriteString(entry.zipFileName);
 		file.write(&entry.CompressionMethod, sizeof(WORD));
 		file.WriteDWORD(entry.CompressedSize);
 		file.WriteDWORD(entry.UncompressedSize);
-		// encode this size. 
+		// encode this size.
 		DWORD encodedSize = dataPos;
 		if (nFileNameLen >= 4)
 		{
-			// take the file name into consideration. 
+			// take the file name into consideration.
 			encodedSize += entry.zipFileName[0] * PKG_KEY1 + entry.zipFileName[1] * PKG_KEY2 + entry.zipFileName[2] * PKG_KEY3 + entry.zipFileName[3] * PKG_KEY4;
 		}
 		file.WriteDWORD(encodedSize);
@@ -731,14 +727,14 @@ bool CZipArchive::GeneratePkgFile(const char* filename)
 	}
 	// write data
 	{
-		vector<byte> cData;
+		vector<unsigned char> cData;
 
 		for (i = 0; i < nEntryNum; ++i)
 		{
 			if (m_FileList[i].m_pEntry == nullptr)
 				continue;
 
-			SZipFileEntry& entry = *(m_FileList[i].m_pEntry);
+			SZipFileEntry &entry = *(m_FileList[i].m_pEntry);
 			if (cData.size() < entry.CompressedSize)
 				cData.resize(entry.CompressedSize);
 			if (entry.CompressedSize > 0)
@@ -783,7 +779,6 @@ bool CZipArchive::_ReadEntries_pkg()
 		return false;
 	}
 }
-
 
 bool CZipArchive::ReadEntries_pkg2()
 {
@@ -841,7 +836,7 @@ bool CZipArchive::ReadEntries_pkg2()
 	for (DWORD i = 0; i < nEntryNum; i++)
 	{
 		m_FileList[i].m_pEntry = &m_pEntries[i];
-		SZipFileEntry& entry = *(m_FileList[i].m_pEntry);
+		SZipFileEntry &entry = *(m_FileList[i].m_pEntry);
 
 		// read filename
 		m_pFile->read(&entry.fileNameLen, sizeof(WORD));
@@ -853,7 +848,6 @@ bool CZipArchive::ReadEntries_pkg2()
 		// read hash
 		m_pFile->read(&entry.hashValue, sizeof(uint32));
 
-
 		m_pFile->read(&entry.CompressionMethod, sizeof(WORD));
 		m_pFile->read(&entry.CompressedSize, sizeof(DWORD));
 		m_pFile->read(&entry.UncompressedSize, sizeof(DWORD));
@@ -863,7 +857,7 @@ bool CZipArchive::ReadEntries_pkg2()
 		int nDataPos = nEncodedDataPos;
 		if (entry.fileNameLen >= 4)
 		{
-			// take the file name into consideration. 
+			// take the file name into consideration.
 			nDataPos -= entry.zipFileName[0] * PKG_KEY1 + entry.zipFileName[1] * PKG_KEY2 + entry.zipFileName[2] * PKG_KEY3 + entry.zipFileName[3] * PKG_KEY4;
 		}
 		entry.fileDataPosition = nDataPos;
@@ -904,7 +898,7 @@ bool CZipArchive::ReadEntries_pkg()
 	if (nEntryNum > 0)
 	{
 		m_FileList[0].m_pEntry = &m_pEntries[0];
-		SZipFileEntry& entry = *(m_FileList[0].m_pEntry);
+		SZipFileEntry &entry = *(m_FileList[0].m_pEntry);
 
 		auto pos = m_pFile->getPos();
 
@@ -930,11 +924,10 @@ bool CZipArchive::ReadEntries_pkg()
 		m_nameBlock.resize(size);
 	}
 
-
 	for (int i = 0; i < nEntryNum; ++i)
 	{
 		m_FileList[i].m_pEntry = &m_pEntries[i];
-		SZipFileEntry& entry = *(m_FileList[i].m_pEntry);
+		SZipFileEntry &entry = *(m_FileList[i].m_pEntry);
 
 		// read filename
 		WORD nNameSize = 0;
@@ -958,12 +951,11 @@ bool CZipArchive::ReadEntries_pkg()
 		int nDataPos = nEncodedDataPos;
 		if (nNameSize >= 4)
 		{
-			// take the file name into consideration. 
+			// take the file name into consideration.
 			nDataPos -= entry.zipFileName[0] * PKG_KEY1 + entry.zipFileName[1] * PKG_KEY2 + entry.zipFileName[2] * PKG_KEY3 + entry.zipFileName[3] * PKG_KEY4;
 		}
 		entry.fileDataPosition = nDataPos;
 	}
-
 
 	return true;
 }
@@ -991,20 +983,19 @@ void CZipArchive::Close()
 	m_bOpened = false;
 }
 
-bool CZipArchive::DoesFileExist(const string& filename)
+bool CZipArchive::DoesFileExist(const string &filename)
 {
 	ArchiveFileFindItem item(filename.c_str());
 	return findFile(&item) >= 0;
 }
 
-int CZipArchive::findFile(const ArchiveFileFindItem* item)
+int CZipArchive::findFile(const ArchiveFileFindItem *item)
 {
-	const char* filename = item->filename;
+	const char *filename = item->filename;
 	bool bRefreshHash = false;
 
 	if (!m_bRelativePath)
 	{
-
 	}
 	else
 	{
@@ -1022,7 +1013,6 @@ int CZipArchive::findFile(const ArchiveFileFindItem* item)
 		else
 			return -1; // return file not found
 	}
-
 
 	char tmp[MAX_PATH_LENGTH + 1];
 	if (m_bIgnoreCase)
@@ -1044,7 +1034,7 @@ int CZipArchive::findFile(const ArchiveFileFindItem* item)
 	int nIndex = findFileImp(item, filename, bRefreshHash);
 	if (nIndex < 0 && !m_fileAliasMap.empty())
 	{
-		const std::string* aliasFilename = GetAlias(filename);
+		const std::string *aliasFilename = GetAlias(filename);
 		if (aliasFilename != nullptr)
 		{
 			nIndex = findFileImp(item, aliasFilename->c_str(), true);
@@ -1053,9 +1043,9 @@ int CZipArchive::findFile(const ArchiveFileFindItem* item)
 	return nIndex;
 }
 
-int ParaEngine::CZipArchive::findFileImp(const ArchiveFileFindItem* item, const char* filename, bool bRefreshHash)
+int ParaEngine::CZipArchive::findFileImp(const ArchiveFileFindItem *item, const char *filename, bool bRefreshHash)
 {
-	//auto hash = (hashValue == nullptr) ? (SZipFileEntry::Hash(filename, false)): *hashValue;
+	// auto hash = (hashValue == nullptr) ? (SZipFileEntry::Hash(filename, false)): *hashValue;
 	uint32 hash;
 	if (bRefreshHash)
 		hash = SZipFileEntry::Hash(filename, false);
@@ -1070,17 +1060,14 @@ int ParaEngine::CZipArchive::findFileImp(const ArchiveFileFindItem* item, const 
 			hash = item->hashValue ? *item->hashValue : SZipFileEntry::Hash(filename, false);
 		}
 	}
-	auto it = std::lower_bound(m_FileList.begin(), m_FileList.end(), hash, [](const SZipFileEntryPtr& a, const uint32& hash)
-	{
-		return a.m_pEntry->hashValue < hash;
-
-	});
+	auto it = std::lower_bound(m_FileList.begin(), m_FileList.end(), hash, [](const SZipFileEntryPtr &a, const uint32 &hash)
+							   { return a.m_pEntry->hashValue < hash; });
 
 	if (m_bIgnoreCase)
 	{
 		for (; it != m_FileList.end() && it->m_pEntry->hashValue == hash; it++)
 		{
-			auto& entry = *(it->m_pEntry);
+			auto &entry = *(it->m_pEntry);
 			bool eq = true;
 			for (size_t i = 0; i < entry.fileNameLen && filename[i] != 0; i++)
 			{
@@ -1115,7 +1102,7 @@ int ParaEngine::CZipArchive::findFileImp(const ArchiveFileFindItem* item, const 
 	return -1;
 }
 
-bool CZipArchive::OpenFile(const ArchiveFileFindItem* item, FileHandle& handle)
+bool CZipArchive::OpenFile(const ArchiveFileFindItem *item, FileHandle &handle)
 {
 	handle.m_index = findFile(item);
 
@@ -1125,13 +1112,13 @@ bool CZipArchive::OpenFile(const ArchiveFileFindItem* item, FileHandle& handle)
 	return bRes;
 }
 
-bool CZipArchive::OpenFile(const char* filename, FileHandle& handle)
+bool CZipArchive::OpenFile(const char *filename, FileHandle &handle)
 {
 	ArchiveFileFindItem item(filename);
 	return OpenFile(&item, handle);
 }
 
-DWORD CZipArchive::GetFileSize(FileHandle& handle)
+DWORD CZipArchive::GetFileSize(FileHandle &handle)
 {
 	if (handle.m_index != -1)
 	{
@@ -1140,7 +1127,7 @@ DWORD CZipArchive::GetFileSize(FileHandle& handle)
 	return 0;
 }
 
-string CZipArchive::GetNameInArchive(FileHandle& handle)
+string CZipArchive::GetNameInArchive(FileHandle &handle)
 {
 	if (handle.m_index != -1)
 	{
@@ -1149,7 +1136,7 @@ string CZipArchive::GetNameInArchive(FileHandle& handle)
 	return "";
 }
 
-string CZipArchive::GetOriginalNameInArchive(FileHandle& handle)
+string CZipArchive::GetOriginalNameInArchive(FileHandle &handle)
 {
 	if (handle.m_index != -1)
 	{
@@ -1158,7 +1145,7 @@ string CZipArchive::GetOriginalNameInArchive(FileHandle& handle)
 	return "";
 }
 
-bool CZipArchive::ReadFileRaw(FileHandle& handle, LPVOID* lppBuffer, LPDWORD pnCompressedSize, LPDWORD pnUncompressedSize)
+bool CZipArchive::ReadFileRaw(FileHandle &handle, LPVOID *lppBuffer, LPDWORD pnCompressedSize, LPDWORD pnUncompressedSize)
 {
 	ParaEngine::Lock lock_(m_mutex);
 
@@ -1183,7 +1170,7 @@ bool CZipArchive::ReadFileRaw(FileHandle& handle, LPVOID* lppBuffer, LPDWORD pnC
 		{
 			return true;
 		}
-		(*lppBuffer) = new byte[compressedSize];
+		(*lppBuffer) = new unsigned char[compressedSize];
 		if (!(*lppBuffer))
 		{
 			OUTPUT_LOG("Not enough memory for reading archive file %s\n", m_FileList[index].m_pEntry->zipFileName);
@@ -1211,9 +1198,9 @@ bool CZipArchive::Decompress(LPVOID lpCompressedBuffer, DWORD nCompressedSize, L
 	z_stream stream;
 	int err;
 
-	stream.next_in = (Bytef*)lpCompressedBuffer;
+	stream.next_in = (Bytef *)lpCompressedBuffer;
 	stream.avail_in = (uInt)nCompressedSize;
-	stream.next_out = (Bytef*)lpUnCompressedBuffer;
+	stream.next_out = (Bytef *)lpUnCompressedBuffer;
 	stream.avail_out = (uInt)nUncompressedSize;
 	stream.zalloc = (alloc_func)0;
 	stream.zfree = (free_func)0;
@@ -1238,21 +1225,21 @@ bool CZipArchive::Decompress(LPVOID lpCompressedBuffer, DWORD nCompressedSize, L
 /*
 this function is based on Nikolaus Gebhardt's CZipReader in the "Irrlicht Engine".
 */
-bool CZipArchive::ReadFile(FileHandle& handle, LPVOID lpBuffer, DWORD nNumberOfBytesToRead, LPDWORD lpNumberOfBytesRead, LPDWORD lpLastWriteTime)
+bool CZipArchive::ReadFile(FileHandle &handle, LPVOID lpBuffer, DWORD nNumberOfBytesToRead, LPDWORD lpNumberOfBytesRead, LPDWORD lpLastWriteTime)
 {
 	ParaEngine::Lock lock_(m_mutex);
 
-	//0 - The file is stored (no compression)
-	//1 - The file is Shrunk
-	//2 - The file is Reduced with compression factor 1
-	//3 - The file is Reduced with compression factor 2
-	//4 - The file is Reduced with compression factor 3
-	//5 - The file is Reduced with compression factor 4
-	//6 - The file is Imploded
-	//7 - Reserved for Tokenizing compression algorithm
-	//8 - The file is Deflated
-	//9 - Reserved for enhanced Deflating
-	//10 - PKWARE Date Compression Library Imploding
+	// 0 - The file is stored (no compression)
+	// 1 - The file is Shrunk
+	// 2 - The file is Reduced with compression factor 1
+	// 3 - The file is Reduced with compression factor 2
+	// 4 - The file is Reduced with compression factor 3
+	// 5 - The file is Reduced with compression factor 4
+	// 6 - The file is Imploded
+	// 7 - Reserved for Tokenizing compression algorithm
+	// 8 - The file is Deflated
+	// 9 - Reserved for enhanced Deflating
+	// 10 - PKWARE Date Compression Library Imploding
 	DWORD nBytesRead = 0;
 	int index = handle.m_index;
 	switch (m_FileList[index].m_pEntry->CompressionMethod)
@@ -1264,7 +1251,7 @@ bool CZipArchive::ReadFile(FileHandle& handle, LPVOID lpBuffer, DWORD nNumberOfB
 		if (lpNumberOfBytesRead)
 			*lpNumberOfBytesRead = nBytesRead;
 
-		//break;
+		// break;
 		return true;
 	}
 	case 8:
@@ -1275,11 +1262,11 @@ bool CZipArchive::ReadFile(FileHandle& handle, LPVOID lpBuffer, DWORD nNumberOfB
 		DWORD compressedSize = m_FileList[index].m_pEntry->CompressedSize;
 		DWORD lastWriteTime = m_FileList[index].m_pEntry->LastModifiedTime;
 
-		void* pBuf = lpBuffer;
+		void *pBuf = lpBuffer;
 		bool bCopyBuffer = false;
 		if (nNumberOfBytesToRead < uncompressedSize)
 		{
-			pBuf = new byte[uncompressedSize];
+			pBuf = new unsigned char[uncompressedSize];
 			if (!pBuf)
 			{
 				OUTPUT_LOG("Not enough memory for decompressing %s\n", m_FileList[index].m_pEntry->zipFileName);
@@ -1288,14 +1275,14 @@ bool CZipArchive::ReadFile(FileHandle& handle, LPVOID lpBuffer, DWORD nNumberOfB
 			bCopyBuffer = true;
 		}
 
-		byte* pcData = new byte[compressedSize];
+		unsigned char *pcData = new unsigned char[compressedSize];
 		if (pcData == 0)
 		{
 			OUTPUT_LOG("Not enough memory for decompressing %s\n", m_FileList[index].m_pEntry->zipFileName);
 			return false;
 		}
 
-		//memset(pcData, 0, compressedSize );
+		// memset(pcData, 0, compressedSize );
 		m_pFile->seek(m_FileList[index].m_pEntry->fileDataPosition);
 		m_pFile->read(pcData, compressedSize);
 
@@ -1303,9 +1290,9 @@ bool CZipArchive::ReadFile(FileHandle& handle, LPVOID lpBuffer, DWORD nNumberOfB
 		z_stream stream;
 		int err;
 
-		stream.next_in = (Bytef*)pcData;
+		stream.next_in = (Bytef *)pcData;
 		stream.avail_in = (uInt)compressedSize;
-		stream.next_out = (Bytef*)pBuf;
+		stream.next_out = (Bytef *)pBuf;
 		stream.avail_out = uncompressedSize;
 		stream.zalloc = (alloc_func)0;
 		stream.zfree = (free_func)0;
@@ -1318,12 +1305,10 @@ bool CZipArchive::ReadFile(FileHandle& handle, LPVOID lpBuffer, DWORD nNumberOfB
 			inflateEnd(&stream);
 			if (err == Z_STREAM_END)
 				err = Z_OK;
-
 			err = Z_OK;
 			inflateEnd(&stream);
 		}
 		delete[] pcData;
-
 		if (err == Z_OK)
 		{
 			if (lpNumberOfBytesRead)
@@ -1333,7 +1318,7 @@ bool CZipArchive::ReadFile(FileHandle& handle, LPVOID lpBuffer, DWORD nNumberOfB
 			if (bCopyBuffer)
 			{
 				memcpy(lpBuffer, pBuf, nNumberOfBytesToRead);
-				delete[](byte*)pBuf;
+				delete[] (unsigned char *)pBuf;
 			}
 			return true;
 		}
@@ -1341,7 +1326,7 @@ bool CZipArchive::ReadFile(FileHandle& handle, LPVOID lpBuffer, DWORD nNumberOfB
 		{
 			OUTPUT_LOG("Error decompressing %s\n", m_FileList[index].m_pEntry->zipFileName);
 			if (bCopyBuffer)
-				delete[](byte*)pBuf;
+				delete[] (unsigned char *)pBuf;
 			return false;
 		}
 
@@ -1357,9 +1342,9 @@ bool CZipArchive::ReadFile(FileHandle& handle, LPVOID lpBuffer, DWORD nNumberOfB
 	return false; // SFileReadFile(handle.m_handle, lpBuffer, nNumberOfBytesToRead, lpNumberOfBytesRead, 0);
 }
 
-bool CZipArchive::CloseFile(FileHandle& hFile)
+bool CZipArchive::CloseFile(FileHandle &hFile)
 {
-	// Zip file does not need to be closed. 
+	// Zip file does not need to be closed.
 	hFile.m_index = -1;
 	return true;
 }
@@ -1371,7 +1356,7 @@ bool CZipArchive::scanLocalHeader()
 	SZipFileEntryPtr entryPtr(new SZipFileEntry());
 	if (entryPtr.m_pEntry == 0)
 		return false;
-	SZipFileEntry& entry = *entryPtr.m_pEntry;
+	SZipFileEntry &entry = *entryPtr.m_pEntry;
 
 	m_pFile->read(&entry.header, sizeof(SZIPFileHeader));
 
@@ -1384,7 +1369,7 @@ bool CZipArchive::scanLocalHeader()
 	tmp[entry.header.FilenameLength] = 0x0;
 
 	entry.zipFileName = tmp;
-	//if (m_bIgnoreCase)
+	// if (m_bIgnoreCase)
 	//	StringHelper::make_lower(entry.zipFileName);
 	entry.RefreshHash(m_bIgnoreCase);
 
@@ -1416,19 +1401,20 @@ bool CZipArchive::scanLocalHeader()
 int CZipArchive::LocateBlockWithSignature(DWORD signature, long endLocation, int minimumBlockSize, int maximumVariableData)
 {
 	int pos = endLocation - minimumBlockSize;
-	if (pos < 0) {
+	if (pos < 0)
+	{
 		return -1;
 	}
 
 	int giveUpMarker = max(pos - maximumVariableData, 0);
 
-	// read the entire block from giveUpMarker to pos. 
+	// read the entire block from giveUpMarker to pos.
 	m_pFile->seek(giveUpMarker, false);
 	int nTempBufSize = pos - giveUpMarker;
 	if (nTempBufSize < 4)
 		return -1;
 	pos = -1;
-	byte* pBuf = new byte[nTempBufSize];
+	unsigned char *pBuf = new unsigned char[nTempBufSize];
 	if (m_pFile->read(pBuf, nTempBufSize) == nTempBufSize)
 	{
 		for (int i = nTempBufSize - 4; i >= 0; --i)
@@ -1442,7 +1428,7 @@ int CZipArchive::LocateBlockWithSignature(DWORD signature, long endLocation, int
 				break;
 			}
 		}
-		delete[]pBuf;
+		delete[] pBuf;
 	}
 	return pos;
 }
@@ -1451,15 +1437,16 @@ bool CZipArchive::ReadEntries()
 {
 	// Search for the End Of Central Directory.  When a zip comment is
 	// present the directory may start earlier.
-	// 
+	//
 	// TODO: The search is limited to 64K which is the maximum size of a trailing comment field to aid speed.
 	// This should be compatible with both SFX and ZIP files but has only been tested for Zip files
 	// Need to confirm this is valid in all cases.
-	// Could also speed this up by reading memory in larger blocks.			
+	// Could also speed this up by reading memory in larger blocks.
 
 	// search 4 bytes, if failed search 64KB
 	long locatedCentralDirOffset = LocateBlockWithSignature(ZIP_CONST_ENDSIG, m_pFile->getSize(), sizeof(ZIP_EndOfCentralDirectory), 0x4);
-	if (locatedCentralDirOffset < 0) {
+	if (locatedCentralDirOffset < 0)
+	{
 		locatedCentralDirOffset = LocateBlockWithSignature(ZIP_CONST_ENDSIG, m_pFile->getSize(), sizeof(ZIP_EndOfCentralDirectory), 0xffff);
 		if (locatedCentralDirOffset < 0)
 			return false;
@@ -1481,10 +1468,12 @@ bool CZipArchive::ReadEntries()
 	// This applies to Zip files that are appended to the end of the SFX stub.
 	// Zip files created by some archivers have the offsets altered to reflect the true offsets
 	// and so do not require any adjustment here...
-	if (EndOfCentralDir.offsetOfCentralDir < locatedCentralDirOffset - (4 + EndOfCentralDir.centralDirSize)) {
+	if (EndOfCentralDir.offsetOfCentralDir < locatedCentralDirOffset - (4 + EndOfCentralDir.centralDirSize))
+	{
 		offsetOfFirstEntry = locatedCentralDirOffset - (4 + EndOfCentralDir.centralDirSize + EndOfCentralDir.offsetOfCentralDir);
-		if (offsetOfFirstEntry <= 0) {
-			return false;//throw new ZipException("Invalid SFX file");
+		if (offsetOfFirstEntry <= 0)
+		{
+			return false; // throw new ZipException("Invalid SFX file");
 		}
 	}
 
@@ -1492,7 +1481,7 @@ bool CZipArchive::ReadEntries()
 
 	m_pFile->seek(CentralDirPos, false);
 
-	IReadFile* pReader = NULL;
+	IReadFile *pReader = NULL;
 
 #ifdef ENABLE_INDEX_CACHE
 	CMemReadFile memfile(m_pFile, locatedCentralDirOffset - m_pFile->getPos());
@@ -1503,7 +1492,6 @@ bool CZipArchive::ReadEntries()
 
 	int nEntryNum = EndOfCentralDir.entriesForThisDisk;
 	m_FileList.clear();
-
 
 	m_FileList.resize(nEntryNum);
 	m_bDirty = true;
@@ -1520,7 +1508,6 @@ bool CZipArchive::ReadEntries()
 	DWORD nameOffset = 0;
 	DWORD nameBlcokSize = 0;
 
-
 	for (int i = 0; i < nEntryNum; ++i)
 	{
 		ZIP_CentralDirectory CentralDir;
@@ -1536,7 +1523,7 @@ bool CZipArchive::ReadEntries()
 		m_nameBlock[nameBlcokSize - 1] = 0;
 
 		m_FileList[i].m_pEntry = &m_pEntries[i];
-		SZipFileEntry& entry = *(m_FileList[i].m_pEntry);
+		SZipFileEntry &entry = *(m_FileList[i].m_pEntry);
 
 		entry.zipFileName = &m_nameBlock[nameOffset];
 		entry.zipFileNameOriginal = &m_nameBlock[nameOffset];
@@ -1561,17 +1548,17 @@ bool CZipArchive::ReadEntries()
 		entry.LastModifiedTime = (CentralDir.LastModFileDate << 16) + (CentralDir.LastModFileTime & 0xffff);
 
 		int nExtraLength = 0;
-		//if (CentralDir.ExtraSize > 0) 
+		// if (CentralDir.ExtraSize > 0)
 		{
 			pReader->seek(CentralDir.ExtraSize, true);
 
 			/**
-			* extra field length fixed by LiXizhi 2007.6.20: this still not exactly matches the zip definition.
-			* by definition: the following code block must be run for each zip entity.
-			* However, I know that winzip does not generate extra field and it is always 0.
-			* the zip utility I used, will write some extra data such as time to the extra field.
-			* The following code is run under the assumption that if the CentralDir.ExtraSize is not 0, then we will fetch the extra size from the file list chunk.
-			*/
+			 * extra field length fixed by LiXizhi 2007.6.20: this still not exactly matches the zip definition.
+			 * by definition: the following code block must be run for each zip entity.
+			 * However, I know that winzip does not generate extra field and it is always 0.
+			 * the zip utility I used, will write some extra data such as time to the extra field.
+			 * The following code is run under the assumption that if the CentralDir.ExtraSize is not 0, then we will fetch the extra size from the file list chunk.
+			 */
 			{
 				DWORD oldPos = pReader->getPos();
 				pReader->seek(CentralDir.LocalHeaderOffset, false);
@@ -1580,29 +1567,28 @@ bool CZipArchive::ReadEntries()
 				nExtraLength = header.ExtraFieldLength;
 				pReader->seek(oldPos, false);
 			}
-
 		}
 
-		if (CentralDir.CommentSize > 0) {
+		if (CentralDir.CommentSize > 0)
+		{
 			pReader->seek(CentralDir.CommentSize, true);
 		}
 		// calculate data pos offset.
 		int nDataPos = CentralDir.LocalHeaderOffset + sizeof(SZIPFileHeader) + CentralDir.NameSize + nExtraLength;
 
 		entry.fileDataPosition = nDataPos;
-		//entry.LocalHeaderOffset = CentralDir.LocalHeaderOffset;
+		// entry.LocalHeaderOffset = CentralDir.LocalHeaderOffset;
 	}
 
 	return true;
 }
 
-
-void CZipArchive::FindFiles(CSearchResult& result, const string& sRootPath, const string& sPattern, int nSubLevel)
+void CZipArchive::FindFiles(CSearchResult &result, const string &sRootPath, const string &sPattern, int nSubLevel)
 {
 
 	if (sPattern.size() > 1 && (sPattern[0] == ':'))
 	{
-		// search using regular expression if the pattern begins with ":", things after ":" is treated like a regular expression. 
+		// search using regular expression if the pattern begins with ":", things after ":" is treated like a regular expression.
 		string sFilePattern = sRootPath;
 		if (sRootPath.size() > 0)
 		{
@@ -1619,7 +1605,7 @@ void CZipArchive::FindFiles(CSearchResult& result, const string& sRootPath, cons
 		int nSize = m_FileList.size();
 		for (int index = 0; index < nSize; ++index)
 		{
-			const SZipFileEntryPtr& entry = m_FileList[index];
+			const SZipFileEntryPtr &entry = m_FileList[index];
 			if (regex_search(entry.m_pEntry->zipFileName, re))
 			{
 				result.AddResult(entry.m_pEntry->zipFileName, entry.m_pEntry->CompressedSize);
@@ -1629,7 +1615,7 @@ void CZipArchive::FindFiles(CSearchResult& result, const string& sRootPath, cons
 	else
 	{
 		//////////////////////////////////////////////////////////////////////////
-		// it performs wild cards search by default, where /\ matches to direction. * matches to anything except /\. and . matches to . itself. 
+		// it performs wild cards search by default, where /\ matches to direction. * matches to anything except /\. and . matches to . itself.
 		// the following code just hard-coded to support search patterns like. "*.*", "*.", "worlds/*.abc", "*/*.jpg", etc
 		// It now only support a single sub folder, and uses a linear search.
 
@@ -1663,7 +1649,7 @@ void CZipArchive::FindFiles(CSearchResult& result, const string& sRootPath, cons
 			}
 			else
 			{
-				// we will continue to try to match without relative path. 
+				// we will continue to try to match without relative path.
 			}
 		}
 
@@ -1686,7 +1672,7 @@ void CZipArchive::FindFiles(CSearchResult& result, const string& sRootPath, cons
 
 		for (int index = 0; index < nSize; ++index)
 		{
-			const SZipFileEntryPtr& entry = m_FileList[index];
+			const SZipFileEntryPtr &entry = m_FileList[index];
 			std::string filename = entry.m_pEntry->zipFileName;
 
 			if (m_bIgnoreCase)
@@ -1717,8 +1703,8 @@ void CZipArchive::FindFiles(CSearchResult& result, const string& sRootPath, cons
 						{
 							if ((i + 1) < nCount)
 							{
-								// this is a folder match, add folder with 0 size.  
-								//std::string filename = entry.m_pEntry->zipFileName.substr(remove_head_len, i - remove_head_len);
+								// this is a folder match, add folder with 0 size.
+								// std::string filename = entry.m_pEntry->zipFileName.substr(remove_head_len, i - remove_head_len);
 								std::string filename(entry.m_pEntry->zipFileName + remove_head_len, i - remove_head_len);
 								result.AddResult(filename, 0);
 							}
@@ -1762,8 +1748,8 @@ void CZipArchive::FindFiles(CSearchResult& result, const string& sRootPath, cons
 			{
 				if (remove_head_len != 0)
 				{
-					//std::string filename = entry.m_pEntry->zipFileName.substr(remove_head_len);	
-					const char* filename = entry.m_pEntry->zipFileName + remove_head_len;
+					// std::string filename = entry.m_pEntry->zipFileName.substr(remove_head_len);
+					const char *filename = entry.m_pEntry->zipFileName + remove_head_len;
 					result.AddResult(filename, entry.m_pEntry->CompressedSize);
 				}
 				else
@@ -1771,15 +1757,14 @@ void CZipArchive::FindFiles(CSearchResult& result, const string& sRootPath, cons
 			}
 		}
 	}
-
 }
 
-const std::string& ParaEngine::CZipArchive::GetRootDirectory()
+const std::string &ParaEngine::CZipArchive::GetRootDirectory()
 {
 	return m_sRootPath;
 }
 
-void ParaEngine::CZipArchive::SetBaseDirectory(const char* sBaseDir_)
+void ParaEngine::CZipArchive::SetBaseDirectory(const char *sBaseDir_)
 {
 	std::string sBaseDir = sBaseDir_;
 	if (!sBaseDir.empty())
@@ -1799,7 +1784,7 @@ void ParaEngine::CZipArchive::SetBaseDirectory(const char* sBaseDir_)
 		// get dir section size
 		for (int i = 0; i < nEntryNum; ++i)
 		{
-			SZipFileEntry* pEntry = m_FileList[i].m_pEntry;
+			SZipFileEntry *pEntry = m_FileList[i].m_pEntry;
 
 			// check if zipFileName begins with sBaseDir
 			std::string filename = pEntry->zipFileName;
@@ -1809,7 +1794,7 @@ void ParaEngine::CZipArchive::SetBaseDirectory(const char* sBaseDir_)
 			if ((int)filename.size() > nBaseSize &&
 				filename.compare(0, nBaseSize, sBaseDir) == 0)
 			{
-				//pEntry->zipFileName = pEntry->zipFileName.substr(nBaseSize);
+				// pEntry->zipFileName = pEntry->zipFileName.substr(nBaseSize);
 				pEntry->zipFileName += nBaseSize;
 				pEntry->fileNameLen -= nBaseSize;
 				pEntry->RefreshHash(m_bIgnoreCase);
@@ -1818,16 +1803,15 @@ void ParaEngine::CZipArchive::SetBaseDirectory(const char* sBaseDir_)
 
 		m_bDirty = true;
 	}
-
 }
 
 static std::string tmp_alias_from;
-void ParaEngine::CZipArchive::AddAliasFrom(const char* from)
+void ParaEngine::CZipArchive::AddAliasFrom(const char *from)
 {
 	tmp_alias_from = from;
 }
 
-void ParaEngine::CZipArchive::AddAliasTo(const char* to)
+void ParaEngine::CZipArchive::AddAliasTo(const char *to)
 {
 	if (!tmp_alias_from.empty() && to)
 	{
@@ -1835,14 +1819,15 @@ void ParaEngine::CZipArchive::AddAliasTo(const char* to)
 	}
 }
 
-void ParaEngine::CZipArchive::AddAlias(const std::string& from, const std::string& to)
+void ParaEngine::CZipArchive::AddAlias(const std::string &from, const std::string &to)
 {
 	m_fileAliasMap[from] = to;
 }
 
-const std::string* ParaEngine::CZipArchive::GetAlias(const std::string& from)
+const std::string *ParaEngine::CZipArchive::GetAlias(const std::string &from)
 {
-	if (!m_fileAliasMap.empty()) {
+	if (!m_fileAliasMap.empty())
+	{
 		auto it = m_fileAliasMap.find(from);
 		if (it != m_fileAliasMap.end())
 		{
@@ -1852,17 +1837,17 @@ const std::string* ParaEngine::CZipArchive::GetAlias(const std::string& from)
 	return nullptr;
 }
 
-int ParaEngine::CZipArchive::InstallFields(CAttributeClass* pClass, bool bOverride)
+int ParaEngine::CZipArchive::InstallFields(CAttributeClass *pClass, bool bOverride)
 {
 	CArchive::InstallFields(pClass, bOverride);
 
-	pClass->AddField("SetBaseDirectory", FieldType_String, (void*)SetBaseDirectory_s, NULL, NULL, NULL, bOverride);
-	pClass->AddField("RootDirectory", FieldType_String, (void*)SetRootDirectory_s, (void*)GetRootDirectory_s, NULL, NULL, bOverride);
-	pClass->AddField("GeneratePkgFileV1", FieldType_String, (void*)GeneratePkgFileV1_s, (void*)0, NULL, NULL, bOverride);
-	pClass->AddField("GeneratePkgFileV2", FieldType_String, (void*)GeneratePkgFileV2_s, (void*)0, NULL, NULL, bOverride);
-	pClass->AddField("FileCount", FieldType_Int, (void*)0, (void*)GetFileCount_s, NULL, NULL, bOverride);
-	pClass->AddField("IsIgnoreCase", FieldType_Bool, (void*)0, (void*)IsIgnoreCase_s, NULL, NULL, bOverride);
-	pClass->AddField("AddAliasFrom", FieldType_String, (void*)AddAliasFrom_s, NULL, NULL, NULL, bOverride);
-	pClass->AddField("AddAliasTo", FieldType_String, (void*)AddAliasTo_s, NULL, NULL, NULL, bOverride);
+	pClass->AddField("SetBaseDirectory", FieldType_String, (void *)SetBaseDirectory_s, NULL, NULL, NULL, bOverride);
+	pClass->AddField("RootDirectory", FieldType_String, (void *)SetRootDirectory_s, (void *)GetRootDirectory_s, NULL, NULL, bOverride);
+	pClass->AddField("GeneratePkgFileV1", FieldType_String, (void *)GeneratePkgFileV1_s, (void *)0, NULL, NULL, bOverride);
+	pClass->AddField("GeneratePkgFileV2", FieldType_String, (void *)GeneratePkgFileV2_s, (void *)0, NULL, NULL, bOverride);
+	pClass->AddField("FileCount", FieldType_Int, (void *)0, (void *)GetFileCount_s, NULL, NULL, bOverride);
+	pClass->AddField("IsIgnoreCase", FieldType_Bool, (void *)0, (void *)IsIgnoreCase_s, NULL, NULL, bOverride);
+	pClass->AddField("AddAliasFrom", FieldType_String, (void *)AddAliasFrom_s, NULL, NULL, NULL, bOverride);
+	pClass->AddField("AddAliasTo", FieldType_String, (void *)AddAliasTo_s, NULL, NULL, NULL, bOverride);
 	return S_OK;
 }

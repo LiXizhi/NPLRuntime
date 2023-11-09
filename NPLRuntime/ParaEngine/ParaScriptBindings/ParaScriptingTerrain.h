@@ -378,9 +378,9 @@ namespace ParaScripting
 		//////////////////////////////////////////////////////////////////////////
 		static void PaintTerrainData(float x, float y, float radius, unsigned int data, unsigned int dataMask, unsigned int bitOffset);
 
-		static uint32 GetTerrainData(float x, float y, uint32 dataMask, byte bitOffset);
+		static uint32 GetTerrainData(float x, float y, uint32 dataMask, unsigned char bitOffset);
 
-		static void SetVisibleDataMask(uint32 mask, byte bitOffset);
+		static void SetVisibleDataMask(uint32 mask, unsigned char bitOffset);
 
 
 		//////////////////////////////////////////////////////////////////////////

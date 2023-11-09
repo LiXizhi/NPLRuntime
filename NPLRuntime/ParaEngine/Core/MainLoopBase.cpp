@@ -3,8 +3,11 @@
 
 namespace ParaEngine
 {
+#ifndef EMSCRIPTEN_SINGLE_THREAD
+	MainLoopBase::MainLoopBase(): m_main_timer(m_main_io_service)
+#else
 	MainLoopBase::MainLoopBase()
-		: m_main_timer(m_main_io_service)
+#endif
 	{
 
 	}
@@ -17,6 +20,8 @@ namespace ParaEngine
 
 	void MainLoopBase::MainLoopRun()
 	{
+#ifndef EMSCRIPTEN_SINGLE_THREAD
 		m_main_io_service.run();
+#endif
 	}
 }

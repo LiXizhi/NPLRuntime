@@ -8,6 +8,8 @@ namespace ParaEngine
 	public:
 		RenderWindowDelegate() {};
 
+		virtual void OnTouch(int nType, TouchEvent::TouchEventMsgType nTouchType, int touch_id, float x, float y, int nTimeTick) override;
+
 		virtual void OnMouseButton(EMouseButton button, EKeyState state, uint32_t x, uint32_t y) override;
 		virtual void OnMouseMove(uint32_t x, uint32_t y) override;
 

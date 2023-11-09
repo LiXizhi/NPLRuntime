@@ -21,7 +21,7 @@ DetailTexture::DetailTexture(Texture * pTexture, Texture * pMask)
 	SetTexture(pTexture);
 }
 
-DetailTexture::DetailTexture(Texture * pTexture,byte DefaultMaskValue)
+DetailTexture::DetailTexture(Texture * pTexture,unsigned char DefaultMaskValue)
 {
 	m_bOwnTexture = false;
 	m_bOwnMask = true;
@@ -34,7 +34,7 @@ DetailTexture::DetailTexture(Texture * pTexture,byte DefaultMaskValue)
 	}
 }
 
-Texture* DetailTexture::RegenerateMask(byte DefaultMaskValue)
+Texture* DetailTexture::RegenerateMask(unsigned char DefaultMaskValue)
 {
 	int textureMaskWidth = (m_pMask && m_pMask->GetWidth()>0) ? m_pMask->GetWidth() : Settings::GetInstance()->GetTextureMaskWidth();
 	int textureMaskHeight = textureMaskWidth;
@@ -146,15 +146,15 @@ void DetailTexture::Unbind()
 #define INVALID_DETAIL_TEXTURE	0xffffff00
 
 #define MAX_BUFFER	65544
-static byte g_output[MAX_BUFFER];
+static unsigned char g_output[MAX_BUFFER];
 
 /**
 * @param input: if this is NULL, a white mask will be written. 
 */
-void EncodeMaskBuffer(const byte* input, int nInputSize, byte** output, int* nOutbutSize)
+void EncodeMaskBuffer(const unsigned char* input, int nInputSize, unsigned char** output, int* nOutbutSize)
 {
 	bool bCanEncode = true;
-	byte c = 0xff;
+	unsigned char c = 0xff;
 	if(input!=NULL)
 	{
 		c = input[0];
@@ -200,11 +200,11 @@ void EncodeMaskBuffer(const byte* input, int nInputSize, byte** output, int* nOu
 
 /**
 * @param input: 
-* @param nInputRead: number of byte read from input during decoding. 
+* @param nInputRead: number of unsigned char read from input during decoding. 
 * @param 
 * @param 
 */
-void DecodeMaskBuffer(const byte* input, int* nInputRead, byte** output, int* nOutbufSize)
+void DecodeMaskBuffer(const unsigned char* input, int* nInputRead, unsigned char** output, int* nOutbufSize)
 {
 	//int nByteCount = *(int*)(input);
 	//int nOutSize = *((int*)(input)+1);
@@ -263,7 +263,7 @@ void DetailTexture::WriteMask(CParaFile& file, Terrain * pTerrain)
 
 	if(nIndex <0 )
 	{
-		byte* output = NULL;
+		unsigned char* output = NULL;
 		int nOutputSize = 0;
 		if(m_pMask != 0)
 		{
@@ -344,7 +344,7 @@ void DetailTexture::ReadMask(CParaFile& file, Terrain * pTerrain)
 	if (nSharedIndex==-1 || pTexture!=NULL)
 	{
 		// read mask file from file. 
-		byte * MaskBuf = (byte*)file.getPointer();
+		unsigned char * MaskBuf = (unsigned char*)file.getPointer();
 		
 		if(textureMaskWidth == 0)
 		{
@@ -358,7 +358,7 @@ void DetailTexture::ReadMask(CParaFile& file, Terrain * pTerrain)
 		if(nSharedIndex==-1)
 		{
 			int nSize=0;
-			DecodeMaskBuffer((const byte*)file.getPointer(), &nCompressedSize, &MaskBuf, &nSize);
+			DecodeMaskBuffer((const unsigned char*)file.getPointer(), &nCompressedSize, &MaskBuf, &nSize);
 			if(nSize == 0)
 			{
 				// For white mask file, do not create the mask.

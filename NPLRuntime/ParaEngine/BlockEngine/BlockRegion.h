@@ -1,8 +1,6 @@
 ﻿#pragma once
 #include <stdint.h>
 #include <vector>
-#include <luabind/luabind.hpp>
-#include <luabind/object.hpp>
 #include <thread>
 #include "BlockReadWriteLock.h"
 #include "BlockConfig.h"
@@ -10,7 +8,12 @@
 #include "BlockChunk.h"
 #include "IAttributeFields.h"
 #include "ChunkMaxHeight.h"
-
+#ifdef EMSCRIPTEN_SINGLE_THREAD
+// #define auto_ptr unique_ptr
+#include "AutoPtr.h"
+#endif
+#include <luabind/luabind.hpp>
+#include <luabind/object.hpp>
 namespace ParaEngine
 {
 	class VerticalChunkIterator;
@@ -238,10 +241,10 @@ namespace ParaEngine
 		int GetChunksCount();
 
 		/** 0 means not available, 1 means loaded before*/
-		std::vector<byte> m_chunkTimestamp;
+		std::vector<unsigned char> m_chunkTimestamp;
 
 		/** 512*512 biomes values*/
-		std::vector<byte> m_biomes;
+		std::vector<unsigned char> m_biomes;
 
 		//store the highest block 
 		//first is highest block,second is highest soiled block

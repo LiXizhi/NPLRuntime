@@ -15,6 +15,7 @@ ProcessOneChunk() is most time consuming. takes 20-30ms per chunk (typically 300
 #include "BlockWorld.h"
 #include "ParaTime.h"
 #include "ChunkVertexBuilderManager.h"
+#include "CoroutineThread.h"
 
 using namespace ParaEngine;
 
@@ -88,6 +89,7 @@ void ParaEngine::ChunkVertexBuilderManager::Cleanup()
 		m_pendingUploadChunks.clear();
 		m_pendingChunks.clear();
 	}
+#ifndef EMSCRIPTEN_SINGLE_THREAD
 	if (m_pBlockWorld && m_bChunkThreadStarted && m_chunk_build_thread.joinable())
 	{
 		if (!m_pBlockWorld->GetReadWriteLock().HasWriterLock())
@@ -105,6 +107,9 @@ void ParaEngine::ChunkVertexBuilderManager::Cleanup()
 			m_chunk_build_thread.join();
 		}
 	}
+#else
+		m_bChunkThreadStarted = false;
+#endif	
 }
 
 void ParaEngine::ChunkVertexBuilderManager::UploadPendingChunksToDevice()
@@ -228,10 +233,24 @@ void ParaEngine::ChunkVertexBuilderManager::StartChunkBuildThread(CBlockWorld* p
 		Cleanup();
 		m_pBlockWorld = pBlockWorld;
 		m_bChunkThreadStarted = true;
+#ifndef EMSCRIPTEN_SINGLE_THREAD
 		m_chunk_build_thread = std::thread(std::bind(&ChunkVertexBuilderManager::ChunkBuildThreadProc, this));
+#else
+		static CoroutineThread* s_chunk_build_thread = nullptr;
+		if (s_chunk_build_thread == nullptr)
+		{
+			s_chunk_build_thread = CoroutineThread::StartCoroutineThread([this](CoroutineThread* co_thread) -> CO_ASYNC {
+				while (true)
+				{
+					this->ChunkBuildThreadProc();
+					CO_AWAIT(co_thread->Sleep(10));
+				}
+				CO_RETURN;
+			}, nullptr);
+		}
+#endif
 	}
 }
-
 
 int ParaEngine::ChunkVertexBuilderManager::ProcessOneChunk(Scoped_ReadLock<BlockReadWriteLock>& ReadWriteLock_)
 {
@@ -289,6 +308,7 @@ void ParaEngine::ChunkVertexBuilderManager::ChunkBuildThreadProc()
 	{
 		if (ProcessOneChunk(lock_) == 0)
 		{
+
 			if (m_pendingChunks.empty())
 			{
 				lock_.unlock();
@@ -296,7 +316,11 @@ void ParaEngine::ChunkVertexBuilderManager::ChunkBuildThreadProc()
 					std::unique_lock<std::mutex> QueueLock_(m_queueMutex);
 					if (m_pendingChunks.empty())
 					{
+#ifndef EMSCRIPTEN_SINGLE_THREAD
 						m_chunk_request_signal.wait(QueueLock_);
+#else
+						return;
+#endif
 					}
 				}
 				lock_.lock();

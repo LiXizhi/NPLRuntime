@@ -10,10 +10,23 @@
 #include "util/unordered_array.hpp"
 #include <set>
 
+#ifndef EMSCRIPTEN_SINGLE_THREAD
 #include <boost/thread.hpp>
+#else
+#include "util/CoroutineThread.h"
+#endif
 #include <boost/noncopyable.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/enable_shared_from_this.hpp>
+
+
+#ifdef EMSCRIPTEN_SINGLE_THREAD
+typedef CoroutineThread npl_thread;
+typedef CoroutineThread npl_boost_thread;
+#else
+typedef std::thread npl_thread;
+typedef boost::thread npl_boost_thread;
+#endif
 
 
 namespace ParaEngine
@@ -371,14 +384,17 @@ namespace NPL
 		CNPLMessageQueue m_input_queue;
 
 		/** Thread in which the NPL runtime state are executed */
-		boost::shared_ptr<boost::thread> m_thread;
+		boost::shared_ptr<npl_boost_thread> m_thread;
 
 		/** provide thread safe access to shared data members in this class. */
 		ParaEngine::mutex m_mutex;
 
 		/** a counting semaphore used to inform this NPL runtime state's thread that more work are to be done. */
+#ifdef EMSCRIPTEN_SINGLE_THREAD
+		dummy_condition_variable m_semaphore;
+#else
 		boost::condition_variable m_semaphore;
-
+#endif 
 		/** whether we will use semaphore for message inform.*/
 		bool m_bUseMessageEvent;
 

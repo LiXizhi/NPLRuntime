@@ -104,7 +104,7 @@ namespace NPL{
 			else
 			{
 				// 0xff is the binary version for NPL append
-				byte method_[] = { 0xff, ' ' };
+				unsigned char method_[] = { 0xff, ' ' };
 				Append((const char*)method_, 2);
 			}
 		}

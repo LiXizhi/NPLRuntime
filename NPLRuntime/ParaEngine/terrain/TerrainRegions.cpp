@@ -129,11 +129,11 @@ DWORD CRegionLayer::GetPixelValue(int x, int y)
 	if(y>=m_nHeight)
 		y = m_nHeight -1;
 
-	byte* pPixel = (byte*)(m_pData + m_nBytesPerRow * y + x * m_nBytesPerPixel); 
+	unsigned char* pPixel = (unsigned char*)(m_pData + m_nBytesPerRow * y + x * m_nBytesPerPixel); 
 	DWORD color = 0;
 	for(int i=0; i < m_nBytesPerPixel; ++i, ++pPixel)
 	{
-		// Following is just byte order. 
+		// Following is just unsigned char order. 
 		// color += (*pPixel)<<(8 * (m_nBytesPerPixel-i-1));
 		color += (*pPixel)<<(8 *i);
 	}

@@ -1,4 +1,5 @@
 #pragma once
+
 #include "NPLMessage.h"
 #include "NPLCommon.h"
 #include "NPLMsgIn.h"
@@ -7,12 +8,15 @@
 #include "NPLMessageQueue.h"
 #include "WebSocket/WebSocketReader.h"
 #include "WebSocket/WebSocketWriter.h"
-
+#ifndef EMSCRIPTEN_SINGLE_THREAD
 #include <boost/asio.hpp>
+#endif
 #include <boost/array.hpp>
 #include <boost/noncopyable.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/enable_shared_from_this.hpp>
+
+#ifndef EMSCRIPTEN_SINGLE_THREAD
 
 namespace NPL
 {
@@ -45,8 +49,10 @@ namespace NPL
 		~CNPLConnection();
 		
 		/// Construct a connection with the given io_service.
+#ifndef EMSCRIPTEN_SINGLE_THREAD
 		explicit CNPLConnection(boost::asio::io_service& io_service,
 			CNPLConnectionManager& manager, CNPLDispatcher& msg_dispatcher);
+#endif
 
 		/// Get the socket associated with the connection.
 		boost::asio::ip::tcp::socket& socket();
@@ -286,13 +292,17 @@ namespace NPL
 		/// handle connection init. This is only used for active connection to server. 
 		void handle_connect(const boost::system::error_code& error, boost::asio::ip::tcp::resolver::iterator endpoint_iterator);
 
+#ifndef EMSCRIPTEN_SINGLE_THREAD
 		/// Socket for the connection.
 		boost::asio::ip::tcp::socket m_socket;
+#endif
 
 	private:
 		typedef boost::array<char, 8192> Buffer_Type;
+#ifndef EMSCRIPTEN_SINGLE_THREAD
 		/** for address resolving. only created when needed. */
 		boost::shared_ptr< boost::asio::ip::tcp::resolver > m_resolver;
+#endif
 
 		/// The manager for this connection.
 		CNPLConnectionManager& m_connection_manager;
@@ -394,3 +404,38 @@ namespace NPL
 		}
 	};
 }
+
+#else
+namespace NPL
+{
+	class CNPLConnection 
+	{
+	public:
+		enum ProtocolType
+		{
+			NPL = 0,
+			WEBSOCKET = 1,
+			TCP_CUSTOM = 2, // any custom protocol, like google protocol buffer
+		};
+		void start() {}
+		void stop(bool bRemoveConnection = true, int nReason = 0) {}
+		bool IsConnected() const { return false;}
+		const string& GetNID() const {static std::string s_str = ""; return s_str;}
+		NPLReturnCode SendMessage(const NPLFileName& file_name, const char * code = NULL, int nLength=0, int priority=0) { return NPL_OK; }
+		void SetAuthenticated(bool bAuthenticated) {}
+		bool IsAuthenticated() const { return false; }
+		void SetProtocol(ProtocolType protocolType = ProtocolType::NPL) {}
+		int CheckIdleTimeout(unsigned int nCurTime) { return 0; }
+		string GetIP() { return "0.0.0.0"; }
+		NPLRuntimeAddress_ptr m_address;
+	};
+
+	struct NPLConnection_PtrOps
+	{	// functor for operator<
+		bool operator()(const NPLConnection_ptr& _Left, const NPLConnection_ptr& _Right) const
+		{	// apply operator< to operands
+			return (_Left.get()<_Right.get());
+		}
+	};
+}
+#endif

@@ -13,6 +13,10 @@
 #include "DynamicAttributeField.h"
 #include "Framework/Common/Helper/EditorHelper.h"
 
+#ifdef EMSCRIPTEN
+#include "emscripten.h"
+#endif
+
 #ifdef WIN32
 	#include "Framework/Common/Helper/EditorHelper.h"
 	#include "SceneObject.h"
@@ -43,8 +47,9 @@
 #endif
 
 #include <boost/bind.hpp>
+#ifndef EMSCRIPTEN_SINGLE_THREAD
 #include <boost/asio.hpp>
-
+#endif
 #include "ParaScriptBindings/ParaScriptingNPL.h"
 
 /**@def PARAENGINE_SUPPORT_WRITE_REG: to support writing to registry*/
@@ -334,6 +339,7 @@ bool ParaGlobal::CreateProcess(const char* lpApplicationName, const char* lpComm
 
 bool ParaGlobal::IsPortAvailable(const std::string& ip, const int port, lua_State* L)
 {
+#ifndef EMSCRIPTEN_SINGLE_THREAD
 	using namespace boost::asio;
 	using ip::tcp;
 
@@ -350,6 +356,9 @@ bool ParaGlobal::IsPortAvailable(const std::string& ip, const int port, lua_Stat
 	a.close();
 
 	return !(ec == boost::asio::error::address_in_use);
+#else
+	return false;
+#endif
 }
 
 void ParaGlobal::Execute(const std::string& exe, const luabind::object& param, lua_State* L)
@@ -391,7 +400,20 @@ void ParaGlobal::Execute(const std::string& exe, const luabind::object& param, l
 
 bool ParaGlobal::ShellExecute(const char* lpOperation, const char* lpFile, const char* lpParameters, const char* lpDirectory, int nShowCmd)
 {
+#ifdef EMSCRIPTEN
+	if (lpOperation && strcmp(lpOperation, "open") == 0)
+	{
+		EM_ASM({
+			const url =  UTF8ToString($0);
+			console.log('open ' + url);
+			window.open(url);
+		}, lpFile);
+		return true;
+	}
+	return false;
+#else
 	return CEditorHelper::ShellExecute(lpOperation, lpFile, lpParameters, lpDirectory, nShowCmd);
+#endif
 }
 
 //////////////////////////////////////////////////////////////////////////

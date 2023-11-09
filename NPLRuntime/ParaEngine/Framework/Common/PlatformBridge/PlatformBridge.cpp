@@ -1,5 +1,8 @@
 #include "PlatformBridge.h"
-
+#ifdef EMSCRIPTEN_SINGLE_THREAD
+// #define auto_ptr unique_ptr
+#include "AutoPtr.h"
+#endif
 #include "ParaEngine.h"
 extern "C"
 {
@@ -66,7 +69,7 @@ namespace ParaEngine {
 		delete cb;
 	}
 
-	/*平台各自实现
+	/*平台锟斤拷锟斤拷实锟斤拷
 	std::string PlatformBridge::call_native(std::string key, const std::string jsonParam) {return "";}
 
 	void PlatformBridge::call_native_withCB(std::string key, LuaCB * cb, const std::string jsonParam){}

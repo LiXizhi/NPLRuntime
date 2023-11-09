@@ -451,7 +451,7 @@ bool TextureEntity::SaveToFile(const char* filename, PixelFormat dwFormat, int w
 	return false;
 }
 
-void TextureEntity::LoadImage(char *sBufMemFile, int sizeBuf, int &width, int &height, byte ** ppBuffer, bool bAlpha)
+void TextureEntity::LoadImage(char *sBufMemFile, int sizeBuf, int &width, int &height, unsigned char ** ppBuffer, bool bAlpha)
 {
 #ifdef USE_DIRECTX_RENDERER
 	TextureEntityDirectX::LoadImage(sBufMemFile, sizeBuf, width, height, ppBuffer, bAlpha);
@@ -482,7 +482,7 @@ TextureEntity* TextureEntity::CreateTexture(const char* pFileName, uint32 nMipLe
 #endif
 }
 
-bool TextureEntity::LoadImageOfFormatEx(const std::string& sTextureFileName, char *sBufMemFile, int sizeBuf, int &width, int &height, byte ** ppBuffer, int* pBytesPerPixel, int nFormat, ImageExtendInfo *info)
+bool TextureEntity::LoadImageOfFormatEx(const std::string& sTextureFileName, char *sBufMemFile, int sizeBuf, int &width, int &height, unsigned char ** ppBuffer, int* pBytesPerPixel, int nFormat, ImageExtendInfo *info)
 {
 #ifdef USE_DIRECTX_RENDERER
 	return TextureEntityDirectX::LoadImageOfFormatEx(sTextureFileName, sBufMemFile, sizeBuf, width, height, ppBuffer, pBytesPerPixel, nFormat, info);
@@ -491,7 +491,7 @@ bool TextureEntity::LoadImageOfFormatEx(const std::string& sTextureFileName, cha
 #endif
 }
 
-bool TextureEntity::LoadImageOfFormat(const std::string& sTextureFileName, char *sBufMemFile, int sizeBuf, int &width, int &height, byte ** ppBuffer, int* pBytesPerPixel, int nFormat)
+bool TextureEntity::LoadImageOfFormat(const std::string& sTextureFileName, char *sBufMemFile, int sizeBuf, int &width, int &height, unsigned char ** ppBuffer, int* pBytesPerPixel, int nFormat)
 {
 #ifdef USE_DIRECTX_RENDERER
 	return TextureEntityDirectX::LoadImageOfFormat(sTextureFileName, sBufMemFile, sizeBuf, width, height, ppBuffer, pBytesPerPixel, nFormat);
@@ -534,7 +534,7 @@ void TextureEntity::SetTextureFramePointer(int framePointer)
 	int* colors = (int*)framePointer;
 	int width = GetWidth();
 	int height = GetHeight();
-	if (m_bRABG) { //×Ý×ø±êµ¹Ðò
+	if (m_bRABG) { //ï¿½ï¿½ï¿½ï¿½ï¿½êµ¹ï¿½ï¿½
 		static int i, j;
 		static int color1;
 		static int index1, index2;

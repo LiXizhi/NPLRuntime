@@ -1727,7 +1727,7 @@ namespace ParaEngine
 		if (nIndex < m_chunkTimestamp.size())
 		{
 			int nOldValue = m_chunkTimestamp[nIndex];
-			m_chunkTimestamp[nIndex] = (byte)nTimeStamp;
+			m_chunkTimestamp[nIndex] = (unsigned char)nTimeStamp;
 
 			if (nOldValue == 0 && nTimeStamp > 0)
 			{
@@ -2341,8 +2341,8 @@ namespace ParaEngine
 		m_nTotalBytes = nBytes
 			+ sizeof(BlockRegion)
 			+ sizeof(BlockChunkPtr) * GetChunksCount()
-			+ sizeof(byte) * m_chunkTimestamp.size()
-			+ sizeof(byte) * m_biomes.size()
+			+ sizeof(unsigned char) * m_chunkTimestamp.size()
+			+ sizeof(unsigned char) * m_biomes.size()
 			+ sizeof(ChunkMaxHeight) * m_blockHeightMap.size()
 			;
 	}

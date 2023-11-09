@@ -5,6 +5,17 @@
 // Description:	API for ParaEngine types. 
 //-----------------------------------------------------------------------------
 #pragma once
+#include <string>
+#include <vector>
+#include <list>
+#include <stdio.h>
+#include <stdarg.h> 
+#include <algorithm> 
+#include <math.h>
+#include <limits>
+#include <stack>
+#include <iostream>
+using namespace std;
 
 #ifdef USE_DIRECTX_RENDERER
 #include <d3dx9math.h>
@@ -75,7 +86,9 @@ typedef uint8_t uint8;
 typedef uint16_t uint16;
 typedef uint32_t uint32;
 typedef uint64_t uint64;
+#ifndef EMSCRIPTEN_SINGLE_THREAD
 typedef uint8_t byte;
+#endif
 #define FALSE 0
 #define TRUE 1
 #define VOID            void
@@ -557,14 +570,4 @@ namespace luabind
 	using adl::object;
 }
 
-#include <string>
-#include <vector>
-#include <list>
-#include <stdio.h>
-#include <stdarg.h> 
-#include <algorithm> 
-#include <math.h>
-#include <limits>
-#include <stack>
-#include <iostream>
-using namespace std;
+

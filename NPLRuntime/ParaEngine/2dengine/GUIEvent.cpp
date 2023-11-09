@@ -40,7 +40,7 @@ using namespace ParaEngine;
 //////////////////////////////////////////////////////////////////////////
 int CGUIEvent::m_nDragBeginDistance=EVENT_DRAG_DISTANCE;
 int CGUIEvent::m_nDBClickInterval=EVENT_DOUBLECLICK_TIME;
-byte CGUIEvent::KeyStates[EventCount];
+unsigned char CGUIEvent::KeyStates[EventCount];
 CGUIEvent::CGUIEvent()
 	:m_eventbinding(EventBinding_cow_type::eNo)
 {
@@ -613,7 +613,7 @@ void CGUIEvent::AddHoldKey(DWORD key,DWORD nTime)
 
 CHAR CGUIEvent::GetChar(DWORD key)
 {
-	const byte *tempstate=CGUIEvent::KeyStates;
+	const unsigned char *tempstate=CGUIEvent::KeyStates;
 
 	if (!ControlPressed&&!AltPressed) {
 		switch(key){
@@ -823,7 +823,7 @@ CHAR CGUIEvent::GetChar(DWORD key)
 //{
 //	string text;
 //	DWORD a;
-//	byte tempstate[256];
+//	unsigned char tempstate[256];
 //	CGUIKeyboardVirtual *pKeyboard=CGlobals::GetGUI()->m_pKeyboard;
 //	memcpy(tempstate,pKeyboard->m_lastkeystate,256);
 //	for (a=0;a<m_keyboard.Size;a++) {

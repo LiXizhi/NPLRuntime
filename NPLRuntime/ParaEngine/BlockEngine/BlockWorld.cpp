@@ -2529,7 +2529,11 @@ bool ParaEngine::CBlockWorld::IsRenderBlocks()
 
 bool ParaEngine::CBlockWorld::IsUseAsyncLoadWorld() const
 {
+#ifdef EMSCRIPTEN_SINGLE_THREAD
+	return false;
+#else
 	return m_bUseAsyncLoadWorld;
+#endif
 }
 
 void ParaEngine::CBlockWorld::SetUseAsyncLoadWorld(bool val)

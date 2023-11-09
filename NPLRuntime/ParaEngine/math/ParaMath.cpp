@@ -977,7 +977,7 @@ Matrix4 Math::makeViewMatrix(const Vector3& position, const Quaternion& orientat
 
 int Math::log2 (unsigned int x)
 {
-	static const byte log_2[256] = {
+	static const unsigned char log_2[256] = {
 		0,1,2,2,3,3,3,3,4,4,4,4,4,4,4,4,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,
 		6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,
 		7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,

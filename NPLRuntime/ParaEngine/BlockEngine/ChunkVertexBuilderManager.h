@@ -5,6 +5,7 @@
 #include <condition_variable>
 #include "BlockReadWriteLock.h"
 #include "IAttributeFields.h"
+#include "CoroutineThread.h"
 
 namespace ParaEngine
 {
@@ -67,7 +68,9 @@ namespace ParaEngine
 		std::vector<RenderableChunk*> m_pendingUploadChunks;
 		std::mutex m_mutex;
 		std::mutex m_queueMutex;
+#ifndef EMSCRIPTEN_SINGLE_THREAD
 		std::thread m_chunk_build_thread;
+#endif
 		std::condition_variable m_chunk_request_signal;
 		bool m_bChunkThreadStarted;
 		CBlockWorld* m_pBlockWorld;

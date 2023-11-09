@@ -9,7 +9,9 @@
 #include "ParaEngine.h"
 
 #include "MidiMsg.h"
-
+#ifdef EMSCRIPTEN
+#include <emscripten.h>
+#endif
 using namespace ParaEngine;
 
 CMidiMsg::CMidiMsg() : 
@@ -96,6 +98,21 @@ CMidiMsg& CMidiMsg::GetSingleton()
 
 int CMidiMsg::PlayMidiMsg(DWORD dwMsg)
 {
+#ifdef EMSCRIPTEN
+	int channel = dwMsg & 0xff;
+	char note = (dwMsg & 0xff00) >> 8;
+	char velocity = (dwMsg & 0xff0000) >> 16;
+	int baseNote = (dwMsg & 0xff000000) >> 24;
+	EM_ASM({
+		let note = $0;
+		let velocity = $1;
+		velocity = velocity / 127;
+		const synth = new Tone.Synth().toDestination();
+        synth.triggerAttackRelease(Tone.Frequency(note, "midi").toNote(), "8n", Tone.now(), velocity);
+	}, static_cast<int>(note), static_cast<int>(velocity));
+	return S_OK;
+#endif
+	
 	if (m_mediaPlayer) {
         int channel = dwMsg & 0xff;
 		char note = (dwMsg & 0xff00) >> 8;
@@ -116,7 +133,6 @@ int CMidiMsg::PlayMidiMsg(DWORD dwMsg)
 		midiOutShortMsg(m_deviceMidiOut, dwMsg);
 		return S_OK;
 	}
-
 #endif
 	return E_FAIL;
 }

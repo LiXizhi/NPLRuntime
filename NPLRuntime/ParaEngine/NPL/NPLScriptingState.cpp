@@ -46,7 +46,10 @@ extern "C"
 #include "lualib.h"
 #include "lauxlib.h"
 }
-
+#ifdef EMSCRIPTEN_SINGLE_THREAD
+// #define auto_ptr unique_ptr
+#include "AutoPtr.h"
+#endif
 #include <luabind/luabind.hpp>
 
 #include "memdebug.h"
@@ -426,13 +429,13 @@ int ParaScripting::CNPLScriptingState::GetNPLCodeFromFile(ParaEngine::CParaFile*
 
 		if (nSize >= 2)
 		{
-			if ((((byte)buf[0]) == 0xEF) && (((byte)buf[1]) == 0xBB) && (((byte)buf[2]) == 0xBF))
+			if ((((unsigned char)buf[0]) == 0xEF) && (((unsigned char)buf[1]) == 0xBB) && (((unsigned char)buf[2]) == 0xBF))
 			{
 				buf += 3;
 				nSize -= 3;
 				nEncodingCode = CP_UTF8;
 			}
-			else if (((((byte)buf[0]) == 0xFF) && (((byte)buf[1]) == 0xFE)) || ((((byte)buf[0]) == 0xFE) && (((byte)buf[1]) == 0xFF)))
+			else if (((((unsigned char)buf[0]) == 0xFF) && (((unsigned char)buf[1]) == 0xFE)) || ((((unsigned char)buf[0]) == 0xFE) && (((unsigned char)buf[1]) == 0xFF)))
 			{
 				buf += 2;
 				nSize -= 2;

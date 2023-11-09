@@ -284,6 +284,7 @@ namespace ParaEngine
         void AllocConsole();
         void FlushDiskIO();
         void SendMsgToJS(const char* msg_name_data);
+        // std::string PyToLua(std::string pycode);
         /** Sets the attributes of characters written to the console screen buffer by the WriteFile  or WriteConsole  function, or echoed by the ReadFile  or ReadConsole  function. 
         * This function affects text written after the function call. 
         * @param wAttributes: please see SetConsoleTextAttribute for a list of font color and styles. 

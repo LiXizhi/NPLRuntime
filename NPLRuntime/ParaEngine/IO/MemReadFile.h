@@ -12,10 +12,10 @@ namespace ParaEngine
 		CMemReadFile(IReadFile* pFile, uint32_t nSize);
 		/* zip buffer
 		* @param buffer:
-		* @param nSize: size in byte of the buffer
+		* @param nSize: size in unsigned char of the buffer
 		* @param bDeleteBuffer: true if the zip file will take the ownership of the buffer and will delete it on exit.
 		*/
-		CMemReadFile(byte* buffer, uint32_t nSize, bool bDeleteBuffer = true);
+		CMemReadFile(unsigned char* buffer, uint32_t nSize, bool bDeleteBuffer = true);
 
 		virtual ~CMemReadFile(void);
 
@@ -43,12 +43,12 @@ namespace ParaEngine
 		virtual void Release() { delete this; };
 
 		/** get the buffer at current location*/
-		byte* getBuffer();
+		unsigned char* getBuffer();
 	private:
 		uint32_t	m_CacheStartPos;
 		uint32_t	m_CacheEndPos;
 		uint32_t	m_curPos;
-		byte*	m_CacheData;
+		unsigned char*	m_CacheData;
 		bool	m_bOwnBuffer;
 
 		void Unload();

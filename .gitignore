@@ -59,6 +59,7 @@ Server/trunk/*
 build/
 build_emscripten/
 build_emscripten_release/
+build_emscripten_single_thread/
 build_emscripten_win64/
 buildvm_arch.h
 .DS_Store

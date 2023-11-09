@@ -303,7 +303,7 @@ void TextureCell::OptimizeLayer()
 		Texture * pMask = (*Iter)->GetMask();
 		if(pMask)
 		{
-			byte* buf = pMask->GetBuffer();
+			unsigned char* buf = pMask->GetBuffer();
 			int nBytes = pMask->GetWidth()*pMask->GetHeight()*pMask->GetBytesPerPixel();
 			int k;
 			for(k=0; (k<nBytes) && (buf[k] == 0); ++k)

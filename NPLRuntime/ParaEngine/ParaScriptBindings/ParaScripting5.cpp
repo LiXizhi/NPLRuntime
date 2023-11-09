@@ -12,7 +12,10 @@
 #include "util/StringHelper.h"
 #include "util/bitlib_lua.h"
 #include "util/lua_pack.h"
-
+#ifdef EMSCRIPTEN_SINGLE_THREAD
+// #define auto_ptr unique_ptr
+#include "AutoPtr.h"
+#endif
 using namespace ParaEngine;
 
 #if defined(PARAENGINE_CLIENT) && !defined(NPLRUNTIME)
@@ -54,6 +57,14 @@ extern "C"
 #include "luaSQLite.h"
 #include "InfoCenter/ICConfigManager.h"
 #include "ParaScriptingMovie.h"
+
+
+#ifdef __EMSCRIPTEN__
+namespace NplOceScripting
+{
+	int Register(lua_State* L);
+}
+#endif
 
 namespace ParaScripting
 {
@@ -245,6 +256,10 @@ void CNPLScriptingState::LoadHAPI_Globals()
 	lua_register(L, "luaopen_bit", luaopen_bit_local);
 	// load string.pack
 	lua_register(L, "luaopen_lua_pack", luaopen_lua_pack);
+
+#ifdef __EMSCRIPTEN__
+	NplOceScripting::Register(L);
+#endif
 
 #if defined(USE_NPL_CURL)
 	// load cURL
