@@ -270,6 +270,7 @@ HRESULT ParaEngine::CViewport::Render(double dTimeDelta, int nPipelineOrder)
 		CAutoCamera* pCamera = GetCamera();
 		if (pRootScene && pCamera)
 		{
+			UpdateRect();
 			if (m_pRenderTarget)
 			{
 #ifdef USE_DIRECTX_RENDERER
@@ -281,8 +282,7 @@ HRESULT ParaEngine::CViewport::Render(double dTimeDelta, int nPipelineOrder)
 				
 				m_pRenderTarget->GetPrimaryAsset(); // touch asset
 			}
-			UpdateRect();
-
+			
 			//ScopedPaintOnRenderTarget painter_(m_pRenderTarget.get());
 			ScopedPaintOnRenderTarget painter_(m_pRenderTarget.get(), m_rect.left, m_rect.top, m_rect.right - m_rect.left, m_rect.bottom - m_rect.top);
 			
