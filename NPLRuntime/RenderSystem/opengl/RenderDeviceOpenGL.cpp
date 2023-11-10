@@ -6,6 +6,7 @@
 #include "ViewportManager.h"
 #include "OpenGLWrapper/GLType.h"
 #include "OpenGLWrapper/GLTexture2D.h"
+#include <stack>
 
 using namespace ParaEngine;
 
@@ -622,10 +623,11 @@ bool ParaEngine::RenderDeviceOpenGL::SetStreamSource(uint32_t StreamNumber, Vert
 	return true;
 }
 
+std::stack<pair<uint32_t, uint32_t>> g_stackRenderTargetSizes;
+
 void ParaEngine::RenderDeviceOpenGL::BeginRenderTarget(uint32_t width, uint32_t height)
 {
-	m_LastRenderTargetWidth = m_RenderTargetWidth;
-	m_LastRenderTargetHeight = m_RenderTargetHeight;
+	g_stackRenderTargetSizes.push(std::make_pair(m_RenderTargetWidth, m_RenderTargetHeight));
 	m_RenderTargetWidth = width;
 	m_RenderTargetHeight = height;
 	m_isBeginRenderTarget = true;
@@ -634,8 +636,14 @@ void ParaEngine::RenderDeviceOpenGL::BeginRenderTarget(uint32_t width, uint32_t 
 void ParaEngine::RenderDeviceOpenGL::EndRenderTarget()
 {
 	m_isBeginRenderTarget = false;
-	m_RenderTargetWidth = m_LastRenderTargetWidth;
-	m_RenderTargetHeight = m_LastRenderTargetHeight;
+
+	// safe pop last from queue
+	if (!g_stackRenderTargetSizes.empty())
+	{
+		m_RenderTargetWidth = g_stackRenderTargetSizes.top().first;
+		m_RenderTargetHeight = g_stackRenderTargetSizes.top().second;
+		g_stackRenderTargetSizes.pop();
+	}
 }
 
 bool ParaEngine::RenderDeviceOpenGL::BeginScene()
@@ -643,13 +651,15 @@ bool ParaEngine::RenderDeviceOpenGL::BeginScene()
 	// tricky: always render full screen
 	m_RenderTargetWidth = CGlobals::GetApp()->GetRenderWindow()->GetWidth();
 	m_RenderTargetHeight = CGlobals::GetApp()->GetRenderWindow()->GetHeight();
+	
+	if (!g_stackRenderTargetSizes.empty())
+		g_stackRenderTargetSizes.swap(std::stack<pair<uint32_t, uint32_t>>());
 	return true;
 }
 
 bool ParaEngine::RenderDeviceOpenGL::EndScene()
 {
 	return true;
-
 }
 
 void ParaEngine::RenderDeviceOpenGL::Flush()
