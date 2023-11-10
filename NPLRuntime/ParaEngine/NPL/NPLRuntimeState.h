@@ -9,6 +9,7 @@
 #include "util/mutex.h"
 #include "util/unordered_array.hpp"
 #include <set>
+#include <thread>
 
 #ifndef EMSCRIPTEN_SINGLE_THREAD
 #include <boost/thread.hpp>

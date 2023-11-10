@@ -26,6 +26,11 @@ target_link_libraries(ParaEngineServer PUBLIC
     ParaEngine
 	${EXTRA_LIBRARIES}
 )
+
+target_link_libraries(ParaEngineServer PRIVATE
+	dl
+)
+
 target_compile_definitions(ParaEngineServer PUBLIC 
 	PARAENGINE_SERVER
 )
