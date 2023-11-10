@@ -143,3 +143,8 @@ endif()
 # emcmake cmake -S NPLRuntime_Emscripten/NPLRuntime -B build/emscripten -DEMSCRIPTEN=ON -DCMAKE_BUILD_TYPE=RELEASE -DLOCAL_DEBUG=TRUE
 # emcmake cmake -S NPLRuntime_EmscriptenSingleThread/NPLRuntime -B build/emscripten -DEMSCRIPTEN=ON -DCMAKE_BUILD_TYPE=RELEASE -DLOCAL_DEBUG=TRUE
 # emcmake cmake -S NPLRuntime_EmscriptenSingleThread/NPLRuntime -B build/emscripten_single_thread -DEMSCRIPTEN=ON -DEMSCRIPTEN_SINGLE_THREAD=ON -DCMAKE_BUILD_TYPE=RELEASE -DLOCAL_DEBUG=TRUE
+
+# 多线程
+# emcmake cmake -S NPLRuntime_EmscriptenSingleThread/NPLRuntime -B build/emscripten -DEMSCRIPTEN=ON -DCMAKE_BUILD_TYPE=RELEASE 
+# 单线程
+# emcmake cmake -S NPLRuntime_EmscriptenSingleThread/NPLRuntime -B build/emscripten_single_thread -DEMSCRIPTEN=ON -DEMSCRIPTEN_SINGLE_THREAD=ON -DCMAKE_BUILD_TYPE=RELEASE 
