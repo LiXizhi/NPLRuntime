@@ -637,6 +637,7 @@ void ParaEngine::CRenderTarget::Clear(const LinearColor& color, float depthValue
 		RenderDevicePtr pRenderDevice = CGlobals::GetRenderDevice();
 		pRenderDevice->SetClearColor(Color4f(color.r,color.g,color.b,color.a));
 		pRenderDevice->SetClearDepth(depthValue);
+		pRenderDevice->SetRenderState(ERenderState::ZWRITEENABLE, TRUE);
 
 		/*pRenderDevice->SetClearStencil(1);
 		pRenderDevice->Clear(true, true, true);
