@@ -189,22 +189,22 @@ static void callBaseBridge(const int &pId, const std::string &extData)
 
     CBCharacteristic *characteristic = [InterfaceBluetooth getCharacteristic:dict[@"serUUID"] _:dict[@"chaUUID"]];
     if (characteristic != NULL) {
-//        size_t bsLen = wdata.length() / 2;
-//        Byte *bs = new Byte[bsLen];
-//        for (int i = 0; i < bsLen; i++) {
-//            std::string subStr = wdata.substr(i * 2, i * 2 + 2);
-//            std::stringstream ss;
-//            unsigned int bit;
-//            ss << std::hex << subStr;
-//            ss >> bit;
-//            bs[i] = (Byte)bit;
-//        }
-//
-//        NSData *data = [NSData dataWithBytes:bs length:bsLen];
-        // 将NSString转为NSData
         NSData *data = [objcString dataUsingEncoding:NSUTF8StringEncoding];
-        [_self.currPeripheral writeValue:data forCharacteristic:characteristic type:CBCharacteristicWriteWithResponse];
-//        delete [] bs;
+        NSUInteger chunkSize = 20;
+
+        NSData *startData = [@"start" dataUsingEncoding:NSUTF8StringEncoding];
+        [_self.currPeripheral writeValue:startData forCharacteristic:characteristic type:CBCharacteristicWriteWithResponse];
+
+        for (NSUInteger offset = 0; offset < data.length; offset += chunkSize) {
+            NSRange range = NSMakeRange(offset, MIN(chunkSize, data.length - offset));
+            NSData *chunk = [data subdataWithRange:range];
+            NSLog(@"%@", chunk);
+
+            [_self.currPeripheral writeValue:chunk forCharacteristic:characteristic type:CBCharacteristicWriteWithResponse];
+        }
+
+        NSData *endData = [@"end" dataUsingEncoding:NSUTF8StringEncoding];
+        [_self.currPeripheral writeValue:endData forCharacteristic:characteristic type:CBCharacteristicWriteWithResponse];
     }
 }
 
