@@ -90,12 +90,8 @@ namespace ParaEngine
 		{
 			uint64 index = GetNodeIndex(x, y, z);
 
-            if (!m_nodes.empty() && (index >= 0 && index < m_nodes.size())) {
-                auto iter = m_nodes.find(index);
-                return (iter != m_nodes.end()) ? iter->second.get() : NULL;
-            }
-
-            return NULL;
+            auto iter = m_nodes.find(index);
+            return (iter != m_nodes.end()) ? iter->second.get() : NULL;
 		}
 		inline BMaxNode* GetNodeByIndex(int64 index)
 		{
