@@ -140,12 +140,14 @@ namespace ParaEngine
 	{
 		if (bOpen)
 		{
+			m_inputing = true;
 			EM_ASM({
 				Module.StartTextInput();
 			});
 		}
 		else
 		{
+			m_inputing = false;
 			EM_ASM({
 				Module.StopTextInput();
 			});
@@ -164,6 +166,8 @@ namespace ParaEngine
 		SDL_SetHint(SDL_HINT_TOUCH_MOUSE_EVENTS, "0");
 		
 		m_exit = false;
+
+		m_inputing = false;
 	}
 
 	CSDL2Application::~CSDL2Application()
