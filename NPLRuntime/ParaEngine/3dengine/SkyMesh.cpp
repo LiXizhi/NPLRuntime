@@ -743,6 +743,7 @@ void ParaEngine::CSkyMesh::DrawSimulatedSky(EffectManager* pEffectManager, Scene
 		pEffectManager->EnableZWrite(false);
 		CGlobals::GetRenderDevice()->SetStreamSource(0, m_simsky_vb.GetDevicePointer(), 0, sizeof(mesh_vertex_plain));
 		CGlobals::GetRenderDevice()->SetIndices(m_simsky_ib.GetDevicePointer());
+		CGlobals::GetRenderDevice()->SetRenderState(ERenderState::COLORWRITEENABLE, 0x7);
 
 		if (pEffectFile->begin(false))
 		{
@@ -786,6 +787,7 @@ void ParaEngine::CSkyMesh::DrawSimulatedSky(EffectManager* pEffectManager, Scene
 		}
 		CGlobals::GetRenderDevice()->SetIndices(0);
 		CGlobals::GetRenderDevice()->SetTexture(1, 0);
+		CGlobals::GetRenderDevice()->SetRenderState(ERenderState::COLORWRITEENABLE, 0xF);
 		CGlobals::GetWorldMatrixStack().pop();
 	}
 }

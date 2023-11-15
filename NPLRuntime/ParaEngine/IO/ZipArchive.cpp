@@ -353,7 +353,7 @@ bool CZipArchive::Open(const string &sArchiveName, int nPriority)
 	}
 	else if (sFileExt == "p3d")
 	{
-		return OpenZipFile(tempStr) || OpenPkgFile(tempStr);
+		return OpenPkgFile(tempStr) || OpenZipFile(tempStr);
 	}
 
 	DWORD dwFound = CParaFile::DoesFileExist2(tempStr.c_str(), FILE_ON_DISK | FILE_ON_SEARCH_PATH | FILE_ON_EXECUTABLE);
@@ -759,7 +759,6 @@ bool CZipArchive::_ReadEntries_pkg()
 	}
 	else
 	{
-		OUTPUT_LOG("ParaEngine PKG archiver file header is incorrect.\r\n");
 		return false;
 	}
 
