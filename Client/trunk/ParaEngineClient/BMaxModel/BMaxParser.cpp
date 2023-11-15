@@ -1613,9 +1613,9 @@ namespace ParaEngine
 		return 0;
 	}
 
-
 	void BMaxParser::CalculateBoneWeightFromNeighbours(BMaxNode* node)
 	{
+#ifdef USE_RECURSION_FOR_BONEWEIGHT_CALCULATION
 		if (node != NULL && !node->HasBoneWeight())
 		{
 			bool bFoundBone = false;
@@ -1642,6 +1642,44 @@ namespace ParaEngine
 				}
 			}
 		}
+#else
+		std::stack<BMaxNode*> nodeStack;
+		if (node)
+			nodeStack.push(node);
+
+		while (!nodeStack.empty())
+		{
+			auto cur = nodeStack.top();
+			nodeStack.pop();
+
+			if (!cur->HasBoneWeight())
+			{
+				bool bFoundBone = false;
+				for (int i = 0; i < 6 && !bFoundBone; i++)
+				{
+					BlockDirection::Side side = BlockDirection::GetBlockSide(i);
+					BMaxNode* pNeighbourNode = cur->GetNeighbour(side);
+					if (pNeighbourNode && pNeighbourNode->HasBoneWeight())
+					{
+						cur->SetBoneIndex(pNeighbourNode->GetBoneIndex());
+						bFoundBone = true;
+					}
+				}
+				if (bFoundBone)
+				{
+					for (int i = 0; i < 6; i++)
+					{
+						BlockDirection::Side side = BlockDirection::GetBlockSide(i);
+						BMaxNode* pNeighbourNode = cur->GetNeighbour(side);
+						if (pNeighbourNode && !pNeighbourNode->HasBoneWeight())
+						{
+							nodeStack.push(pNeighbourNode);
+						}
+					}
+				}
+			}
+		}
+#endif
 	}
 
 	void BMaxParser::CalculateBoneWeights()
