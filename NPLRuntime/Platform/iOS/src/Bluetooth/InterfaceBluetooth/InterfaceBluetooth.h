@@ -49,7 +49,8 @@
 + (void)setupBluetoothDelegate;
 
 + (void)registerLuaCall:(NSDictionary *)dict;
-+ (void)reconnectBlu:(NSDictionary *)dict;
++ (void)reconnectBlueTooth:(NSDictionary *)dict;
++ (void)disconnectBlueTooth:(NSDictionary *)dict;
 + (void)linkDevice:(NSDictionary *)dict;
 + (void)writeToCharacteristic:(NSDictionary *)dict;
 + (NSString *)characteristicGetStrValue:(NSDictionary *)dict;
