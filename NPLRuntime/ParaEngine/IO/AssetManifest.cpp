@@ -984,6 +984,8 @@ bool CFileReplaceMap::IsEmpty()
 
 bool CFileReplaceMap::ReplaceFile(string& inout)
 {
+	ParaEngine::Lock lock_(m_mutex);
+
 	Asset_Replace_Map_Type::const_iterator iter = m_replace_map.find(inout);
 	if (iter != m_replace_map.end())
 	{
@@ -995,6 +997,8 @@ bool CFileReplaceMap::ReplaceFile(string& inout)
 
 void CFileReplaceMap::LoadReplaceFile(const string& filename, bool bReplaceExistingOnes)
 {
+	ParaEngine::Lock lock_(m_mutex);
+
 	if (bReplaceExistingOnes)
 	{
 		if (!m_replace_map.empty())

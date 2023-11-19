@@ -212,6 +212,9 @@ namespace ParaEngine
 		* This function is very useful to temperarily change the 3D and 2D theme of the entire game world, in which only a text file needs to be updated.
 		*/
 		Asset_Replace_Map_Type m_replace_map;
+
+		/** a mutex to protect the map. */
+		ParaEngine::mutex m_mutex;
 	};
 
 	/**
