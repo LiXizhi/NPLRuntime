@@ -211,6 +211,22 @@ HRESULT ParaEngine::CRenderTarget::SaveToFile(const char* sFileName, int nImageW
 {
 	if (m_pCanvasTexture == 0)
 		return E_FAIL;
+
+	RECT rect;
+	std::string filename;
+	if (srcWidth == 0 && ParaEngine::StringHelper::GetImageAndRect(sFileName, filename, &rect) != 0)
+	{
+		srcLeft = rect.left;
+		srcTop = rect.top;
+		srcWidth = rect.right - rect.left;
+		srcHeight = rect.bottom - rect.top;
+		if (nImageWidth == 0) {
+			nImageWidth = srcWidth;
+			nImageHeight = srcHeight;
+		}
+	}
+	sFileName = filename.c_str();
+
 #ifdef USE_DIRECTX_RENDERER
 	string sFile = sFileName;
 	string sExt = CParaFile::GetFileExtension(sFileName);
@@ -753,6 +769,7 @@ int ParaEngine::CRenderTarget::InstallFields(CAttributeClass* pClass, bool bOver
 	pClass->AddField("RenderTargetSize", FieldType_Vector2, (void*)SetRenderTargetSize_s, (void*)GetRenderTargetSize_s, NULL, "", bOverride);
 	pClass->AddField("Dirty", FieldType_Bool, (void*)SetDirty_s, (void*)IsDirty_s, NULL, "", bOverride);
 	pClass->AddField("IsPersistentRenderTarget", FieldType_Bool, (void*)SetPersistentRenderTarget_s, (void*)IsPersistentRenderTarget_s, NULL, "", bOverride);
+	pClass->AddField("SaveToFile", FieldType_String, (void*)SaveToFile_s, (void*)0, NULL, NULL, bOverride);
 	return S_OK;
 }
 
