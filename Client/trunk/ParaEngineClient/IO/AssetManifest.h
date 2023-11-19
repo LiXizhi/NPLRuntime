@@ -100,7 +100,7 @@ namespace ParaEngine
 		* @return S_OK if download is initiated.
 		*/
 		HRESULT SyncFile_Async(URL_LOADER_CALLBACK pFuncCallback = NULL, CUrlProcessorUserData* pUserData = NULL, bool bDeleteUserData = false);
-		
+
 		/** this function is not thread safe, it must be called from the main render thread.
 		* This function is same as SyncFile_Async(), except that it allows multiple event listeners for the same entity.
 		* if the current file is already being updated, it will not be called multiple times.
@@ -212,6 +212,9 @@ namespace ParaEngine
 		* This function is very useful to temperarily change the 3D and 2D theme of the entire game world, in which only a text file needs to be updated.
 		*/
 		Asset_Replace_Map_Type m_replace_map;
+
+		/** a mutex to protect the map. */
+		ParaEngine::mutex m_mutex;
 	};
 
 	/**
@@ -325,7 +328,7 @@ namespace ParaEngine
 		void SetUseLocalFileFirst(bool val);
 
 	private:
-		bool ParseAssetEntryStr(const string &sFilename, string &fileKey, string &md5, string& filesize);
+		bool ParseAssetEntryStr(const string& sFilename, string& fileKey, string& md5, string& filesize);
 	private:
 		typedef std::map<string, AssetFileEntry*>  Asset_Manifest_Map_Type;
 
