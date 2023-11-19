@@ -138,7 +138,7 @@ using namespace ParaEngine;
 
         return;
     }
-    
+
     [self.window setRootViewController: self.viewController];
     [self.window makeKeyAndVisible];
 

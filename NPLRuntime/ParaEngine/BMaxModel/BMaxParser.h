@@ -84,13 +84,14 @@ namespace ParaEngine
 			return (uint64)x + ((uint64)z << 16) + ((uint64)y << 32);
 		}
 		/* same as GetNode except that it checks for boundary condition. */
-		BMaxNode* GetBMaxNode(int x, int y, int z);
+		BMaxNode *GetBMaxNode(int x, int y, int z);
 
-		inline BMaxNode* GetNode(uint16 x, uint16 y, uint16 z)
+		inline BMaxNode *GetNode(uint16 x, uint16 y, uint16 z)
 		{
 			uint64 index = GetNodeIndex(x, y, z);
-			auto iter = m_nodes.find(index);
-			return (iter != m_nodes.end()) ? iter->second.get() : NULL;
+
+            auto iter = m_nodes.find(index);
+            return (iter != m_nodes.end()) ? iter->second.get() : NULL;
 		}
 		inline BMaxNode* GetNodeByIndex(int64 index)
 		{

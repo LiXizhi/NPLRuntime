@@ -130,8 +130,11 @@
 {
     // 日志
     // BabyLog(@"当扫描到设备: %@", peripheral.name);
-    [self addDiscoverPeripheral:peripheral];
+    NSString *peripheralRealName = [advertisementData objectForKey:@"kCBAdvDataLocalName"];
+    // BabyLog(@"当扫描到设备: %@", peripheralRealName);
     
+    [self addDiscoverPeripheral:peripheral];
+
     // 发出通知
     [[NSNotificationCenter defaultCenter]
         postNotificationName:BabyNotificationAtDidDiscoverPeripheral
@@ -139,7 +142,7 @@
 
     // 扫描到设备callback
     if ([currChannel filterOnDiscoverPeripherals]) {
-        if ([currChannel filterOnDiscoverPeripherals](peripheral.name, advertisementData, RSSI)) {
+        if ([currChannel filterOnDiscoverPeripherals](peripheralRealName, advertisementData, RSSI)) {
             if ([currChannel blockOnDiscoverPeripherals]) {
                 [[babySpeaker callbackOnCurrChannel] blockOnDiscoverPeripherals](central, peripheral, advertisementData, RSSI);
             }
@@ -330,7 +333,7 @@
 {
     if (error) {
         BabyLog(@"error Discovered DescriptorsForCharacteristic for %@ with error: %@", characteristic.UUID, [error localizedDescription]);
-        //        return;
+        // return;
     }
     // 回叫block
     if ([currChannel blockOnDiscoverDescriptorsForCharacteristic]) {

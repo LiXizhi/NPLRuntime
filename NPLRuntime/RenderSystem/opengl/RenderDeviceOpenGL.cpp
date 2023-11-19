@@ -652,8 +652,10 @@ bool ParaEngine::RenderDeviceOpenGL::BeginScene()
 	m_RenderTargetWidth = CGlobals::GetApp()->GetRenderWindow()->GetWidth();
 	m_RenderTargetHeight = CGlobals::GetApp()->GetRenderWindow()->GetHeight();
 	
-	if (!g_stackRenderTargetSizes.empty())
-		g_stackRenderTargetSizes.swap(std::stack<pair<uint32_t, uint32_t>>());
+	if (!g_stackRenderTargetSizes.empty()) {
+		std::stack<std::pair<uint32_t, uint32_t>> emptyStack;
+		g_stackRenderTargetSizes.swap(emptyStack);
+	}
 	return true;
 }
 

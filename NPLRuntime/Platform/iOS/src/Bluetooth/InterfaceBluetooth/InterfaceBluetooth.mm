@@ -50,10 +50,6 @@ static int ON_READ_ALL_GATT_UUID = 1106;
 static int ON_SERVICE = 1107;
 
 @interface InterfaceBluetooth () {
-    // NSMutableArray *peripheralDataArray;
-    // NSString *logitowdevice;
-    // CBUUID *SERVICE_UUID;
-    // CBUUID *CLIENT_UUID;
 }
 
 @end
@@ -112,22 +108,30 @@ static void callBaseBridge(const int &pId, const std::string &extData)
 }
 
 // 重新连接蓝牙
-+ (void)reconnectBlu:(NSDictionary *)dict
++ (void)reconnectBlueTooth:(NSDictionary *)dict
 {
     InterfaceBluetooth *_self = [InterfaceBluetooth shareInstance];
 
     if (_self->connected) {
-        NSLog(@"reconnectBlu true");
-        NSString *statstr = @"1";
-
+        NSLog(@"blue tooth connected.");
         return;
     } else {
+        NSLog(@"blue tooth disconnected");
         if (_self->bblue != nil) {
-            NSLog(@"reconnectBlu false");
             _self.cbCentralMgr = [[CBCentralManager alloc] initWithDelegate:nil queue:nil];
-            //[bblue cancelAllPeripheralsConnection];
+            [_self->bblue cancelAllPeripheralsConnection];
             _self->bblue.scanForPeripherals().begin();
         }
+    }
+}
+
++ (void)disconnectBlueTooth:(NSDictionary *)dict
+{
+    InterfaceBluetooth *_self = [InterfaceBluetooth shareInstance];
+
+    if (_self->connected) {
+        [_self->bblue cancelAllPeripheralsConnection];
+        _self->connected = false;
     }
 }
 
@@ -189,22 +193,26 @@ static void callBaseBridge(const int &pId, const std::string &extData)
 
     CBCharacteristic *characteristic = [InterfaceBluetooth getCharacteristic:dict[@"serUUID"] _:dict[@"chaUUID"]];
     if (characteristic != NULL) {
-//        size_t bsLen = wdata.length() / 2;
-//        Byte *bs = new Byte[bsLen];
-//        for (int i = 0; i < bsLen; i++) {
-//            std::string subStr = wdata.substr(i * 2, i * 2 + 2);
-//            std::stringstream ss;
-//            unsigned int bit;
-//            ss << std::hex << subStr;
-//            ss >> bit;
-//            bs[i] = (Byte)bit;
-//        }
-//
-//        NSData *data = [NSData dataWithBytes:bs length:bsLen];
-        // 将NSString转为NSData
         NSData *data = [objcString dataUsingEncoding:NSUTF8StringEncoding];
-        [_self.currPeripheral writeValue:data forCharacteristic:characteristic type:CBCharacteristicWriteWithResponse];
-//        delete [] bs;
+        NSUInteger chunkSize = 20;
+
+        NSData *startData = [@"start" dataUsingEncoding:NSUTF8StringEncoding];
+        [_self.currPeripheral writeValue:startData forCharacteristic:characteristic type:CBCharacteristicWriteWithResponse];
+
+        for (NSUInteger offset = 0; offset < data.length; offset += chunkSize) {
+            NSRange range = NSMakeRange(offset, MIN(chunkSize, data.length - offset));
+            NSData *chunk = [data subdataWithRange:range];
+            NSLog(@"%@", chunk);
+
+            [_self.currPeripheral writeValue:chunk forCharacteristic:characteristic type:CBCharacteristicWriteWithResponse];
+        }
+
+        NSData *endData = [@"end" dataUsingEncoding:NSUTF8StringEncoding];
+        [_self.currPeripheral writeValue:endData forCharacteristic:characteristic type:CBCharacteristicWriteWithResponse];
+        
+        if (dict[@"reset"]) {
+            _self->connected = false;
+        }
     }
 }
 
@@ -307,6 +315,12 @@ static void callBaseBridge(const int &pId, const std::string &extData)
     [_self->bblue setBlockOnCentralManagerDidUpdateState:^(CBCentralManager *central) {
         if (central.state == CBCentralManagerStatePoweredOn) {
             NSLog(@"设备打开成功，开始扫描设备");
+
+            if (_self->bblue != nil) {
+                _self.cbCentralMgr = [[CBCentralManager alloc] initWithDelegate:nil queue:nil];
+                [_self->bblue cancelAllPeripheralsConnection];
+                _self->bblue.scanForPeripherals().begin();
+            }
         }
     }];
 
@@ -401,7 +415,6 @@ static void callBaseBridge(const int &pId, const std::string &extData)
     // 设置设备连接失败的委托
     [_self->bblue setBlockOnFailToConnectAtChannel:channelOnRootView block:^(CBCentralManager *central, CBPeripheral *peripheral, NSError *error) {
         NSLog(@"OnFailToConnectAtChannel %@连接失败", peripheral.name);
-        NSString *statstr = @"0";
     }];
 
     // 设置设备断开连接的委托
@@ -491,7 +504,7 @@ static void callBaseBridge(const int &pId, const std::string &extData)
 
 + (void)_setCharacteristicNotification:(CBCharacteristic *)characteristic
 {
-	InterfaceBluetooth* _self = [InterfaceBluetooth shareInstance];
+	InterfaceBluetooth *_self = [InterfaceBluetooth shareInstance];
 	// 读取服务
 	_self->bblue.channel(channelOnRootView).characteristicDetails(_self.currPeripheral, characteristic);
 	if (characteristic.properties & CBCharacteristicPropertyNotify ||  characteristic.properties & CBCharacteristicPropertyIndicate) 
@@ -508,7 +521,7 @@ static void callBaseBridge(const int &pId, const std::string &extData)
                         stringByReplacingOccurrencesOfString: @"<" withString: @""]
                         stringByReplacingOccurrencesOfString: @">" withString: @""]
                         stringByReplacingOccurrencesOfString: @" " withString: @""];
-                    NSLog(@"bluetooth:%@",result);
+                    NSLog(@"bluetooth: %@",result);
                     const char * anm =[result UTF8String];
 
                     Json::Value luajs_value;
