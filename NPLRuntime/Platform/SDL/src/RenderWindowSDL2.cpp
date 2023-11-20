@@ -18,6 +18,7 @@ namespace ParaEngine
 			s_keymap[SDLK_UNKNOWN] = EVirtualKey::KEY_UNKNOWN;
 			s_keymap[SDLK_SPACE] = EVirtualKey::KEY_SPACE;
 			s_keymap[SDLK_QUOTEDBL] = EVirtualKey::KEY_APOSTROPHE;
+			s_keymap[SDLK_BACKQUOTE] = EVirtualKey::KEY_GRAVE;
 			s_keymap[SDLK_COMMA] = EVirtualKey::KEY_COMMA;
 			s_keymap[SDLK_PERIOD] = EVirtualKey::KEY_PERIOD;
 			s_keymap[SDLK_SLASH] = EVirtualKey::KEY_SLASH;
@@ -32,7 +33,6 @@ namespace ParaEngine
 			s_keymap[SDLK_8] = EVirtualKey::KEY_8;
 			s_keymap[SDLK_9] = EVirtualKey::KEY_9;
 			s_keymap[SDLK_SEMICOLON] = EVirtualKey::KEY_SEMICOLON;
-			s_keymap[SDLK_PLUS] = EVirtualKey::KEY_EQUALS;
 			s_keymap[SDLK_a] = EVirtualKey::KEY_A;
 			s_keymap[SDLK_b] = EVirtualKey::KEY_B;
 			s_keymap[SDLK_c] = EVirtualKey::KEY_C;
@@ -121,6 +121,9 @@ namespace ParaEngine
 			s_keymap[SDLK_LALT] = EVirtualKey::KEY_LMENU;
 			s_keymap[SDLK_RALT] = EVirtualKey::KEY_RMENU;
 			s_keymap[SDLK_MENU] = EVirtualKey::KEY_ALT;
+			s_keymap[SDLK_EQUALS] = EVirtualKey::KEY_EQUALS;
+			s_keymap[SDLK_KP_EQUALS] = EVirtualKey::KEY_NUMPADEQUALS;
+			s_keymap[SDLK_QUOTE] = EVirtualKey::KEY_APOSTROPHE;
 		}
 	}
 
