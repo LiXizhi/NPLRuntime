@@ -106,7 +106,7 @@ namespace ParaEngine
 			s_keymap[SDLK_KP_7] = EVirtualKey::KEY_NUMPAD7;
 			s_keymap[SDLK_KP_8] = EVirtualKey::KEY_NUMPAD8;
 			s_keymap[SDLK_KP_9] = EVirtualKey::KEY_NUMPAD9;
-
+			s_keymap[SDLK_KP_ENTER] = EVirtualKey::KEY_NUMPADENTER;
 			s_keymap[SDLK_KP_DECIMAL] = EVirtualKey::KEY_DECIMAL;
 			s_keymap[SDLK_KP_DIVIDE] = EVirtualKey::KEY_DIVIDE;
 			s_keymap[SDLK_KP_MULTIPLY] = EVirtualKey::KEY_MULTIPLY;
@@ -145,6 +145,10 @@ namespace ParaEngine
 				return EVirtualKey::KEY_PRIOR;
 			else if (vk == SDLK_KP_3)
 				return EVirtualKey::KEY_NEXT;
+			else if (vk == SDLK_KP_0)
+				return EVirtualKey::KEY_INSERT;
+			else if (vk == SDLK_KP_PERIOD)
+				return EVirtualKey::KEY_DELETE;
 		}
 		auto result = s_keymap.find(vk);
 		if (result != s_keymap.end())

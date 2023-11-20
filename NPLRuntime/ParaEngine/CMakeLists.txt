@@ -296,9 +296,9 @@ if (EMSCRIPTEN AND NPLOCE_DEPS_ROOT)
 endif()
 
 if (EMSCRIPTEN)
-    if (NOT EMSCRIPTEN_SINGLE_THREAD)
-        list(APPEND NPLRUNTIME_LIBS libcurl)
-    endif()
+    # if (NOT EMSCRIPTEN_SINGLE_THREAD)
+    #     list(APPEND NPLRUNTIME_LIBS libcurl)
+    # endif()
     
     target_link_libraries(ParaEngine PUBLIC 
     ${RenderSystem}

@@ -7,16 +7,17 @@
 #include "util/StringHelper.h"
 
 extern HINSTANCE g_hAppInstance;
-ParaEngine::IRenderWindow* CreateParaRenderWindow(const int width, const int height)
+ParaEngine::IRenderWindow *CreateParaRenderWindow(const int width, const int height)
 {
 	auto p = new ParaEngine::RenderWindowDelegate();
 	p->Create(width, height);
 	return p;
 }
 
-namespace ParaEngine {
+namespace ParaEngine
+{
 
-	void RenderWindowDelegate::OnTouch(int nType, TouchEvent::TouchEventMsgType nTouchType, int touch_id, float x, float y, int nTimeTick) 
+	void RenderWindowDelegate::OnTouch(int nType, TouchEvent::TouchEventMsgType nTouchType, int touch_id, float x, float y, int nTimeTick)
 	{
 		if (CGlobals::GetApp()->GetAppState() != PEAppState_Ready)
 		{
@@ -25,11 +26,10 @@ namespace ParaEngine {
 
 		if (nTouchType == TouchEvent::TouchEvent_POINTER_DOWN)
 		{
-			((CSDL2Application*)(CGlobals::GetApp()))->SetTouchInputting(true);
+			((CSDL2Application *)(CGlobals::GetApp()))->SetTouchInputting(true);
 		}
 
 		TouchEvent e(nType, nTouchType, touch_id, x, y, nTimeTick);
-		std::cout << "handleTouchEvent" << std::endl;
 		CGUIRoot::GetInstance()->handleTouchEvent(e);
 	}
 
@@ -42,7 +42,7 @@ namespace ParaEngine {
 
 		if (state == EKeyState::PRESS)
 		{
-			((CSDL2Application*)(CGlobals::GetApp()))->SetTouchInputting(false);
+			((CSDL2Application *)(CGlobals::GetApp()))->SetTouchInputting(false);
 		}
 
 		CGUIRoot::GetInstance()->GetMouse()->PushMouseEvent(DeviceMouseEventPtr(new DeviceMouseButtonEvent(button, state, x, y)));
@@ -77,7 +77,8 @@ namespace ParaEngine {
 		{
 			CGUIRoot::GetInstance()->SendKeyDownEvent(key);
 		}
-		else {
+		else
+		{
 			CGUIRoot::GetInstance()->SendKeyUpEvent(key);
 		}
 	}
@@ -113,7 +114,7 @@ namespace ParaEngine {
 			}
 		}
 	}
-	void RenderWindowDelegate::OnDropFiles(const std::string& files)
+	void RenderWindowDelegate::OnDropFiles(const std::string &files)
 	{
 		if (!files.empty())
 		{
@@ -131,7 +132,30 @@ namespace ParaEngine {
 
 	void RenderWindowDelegate::OnSize(int w, int h)
 	{
+		static int s_last_width = 0;
+		static int s_last_height = 0;
 		auto app = CGlobals::GetApp();
+		if (app->IsTouchInputting())
+		{
+			if (s_last_width != w && s_last_height != h)
+			{
+				std::cout << "last_width: " << s_last_width << " last_height: " << s_last_height << " width: " << w << " height: " << h << std::endl;
+				s_last_width = w;
+				s_last_height = h;
+			}
+			else if (s_last_width == w && s_last_height != h)
+			{
+				// 触屏方式忽略垂直高度变化(输入法影响)
+				return;
+			}
+
+			if (((CSDL2Application *)(CGlobals::GetApp()))->IsInputing())
+			{
+				return;
+			}
+		}
+
+		std::cout << "====OnSize====" << std::endl;
 
 		if (w > 0 && h > 0)
 		{

@@ -29,7 +29,8 @@
 
 using namespace ParaEngine;
 
-#ifndef EMSCRIPTEN_SINGLE_THREAD
+// #ifndef EMSCRIPTEN_SINGLE_THREAD
+#ifndef EMSCRIPTEN
 
 static CNPLNetClient* g_pNPLNetClient;
 
@@ -372,7 +373,8 @@ ParaEngine::CRequestTaskPool::~CRequestTaskPool()
 		}
 		m_task_pool.clear();
 	}
-#ifndef EMSCRIPTEN_SINGLE_THREAD
+// #ifndef EMSCRIPTEN_SINGLE_THREAD
+#ifndef EMSCRIPTEN
 	// free multi
 	if(m_multi_handle)
 		curl_multi_cleanup(m_multi_handle);
@@ -391,7 +393,8 @@ ParaEngine::CRequestTaskPool::~CRequestTaskPool()
 
 int ParaEngine::CRequestTaskPool::DoProcess()
 {
-#ifndef EMSCRIPTEN_SINGLE_THREAD
+// #ifndef EMSCRIPTEN_SINGLE_THREAD
+#ifndef EMSCRIPTEN
 	if(m_task_pool.size() == 0)
 		return 0;
 	int nCount = 0;
@@ -479,7 +482,8 @@ int ParaEngine::CRequestTaskPool::DoProcess()
 
 ParaEngine::CRequestTaskPool::CUrlWorkerState* ParaEngine::CRequestTaskPool::GetFreeWorkerSlot()
 {
-#ifndef EMSCRIPTEN_SINGLE_THREAD
+// #ifndef EMSCRIPTEN_SINGLE_THREAD
+#ifndef EMSCRIPTEN
 	if(m_nRunningTaskCount >= m_nMaxWorkerThreads)
 		return NULL;
 	if(m_multi_handle == NULL)
@@ -527,7 +531,8 @@ ParaEngine::CRequestTaskPool::CUrlWorkerState* ParaEngine::CRequestTaskPool::Get
 
 int ParaEngine::CRequestTaskPool::CURL_MultiPerform()
 {
-#ifndef EMSCRIPTEN_SINGLE_THREAD
+// #ifndef EMSCRIPTEN_SINGLE_THREAD
+#ifndef EMSCRIPTEN
 	if(m_multi_handle == NULL)
 		return 0;
 
@@ -629,7 +634,8 @@ void ParaEngine::CRequestTaskPool::SetMaxTaskSlotsCount(int nCount)
 {
 	m_nMaxWorkerThreads = nCount;
 }
-#ifndef EMSCRIPTEN_SINGLE_THREAD
+// #ifndef EMSCRIPTEN_SINGLE_THREAD
+#ifndef EMSCRIPTEN
 void ParaEngine::CURLRequestTask::SetCurlEasyOpt( CURL* handle )
 {
 	// reset data 

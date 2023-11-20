@@ -127,7 +127,8 @@ void CNPLRuntime::Cleanup()
 		m_pWebServiceClient = NULL;
 	}
 
-#ifndef EMSCRIPTEN_SINGLE_THREAD
+// #ifndef EMSCRIPTEN_SINGLE_THREAD
+#ifndef EMSCRIPTEN
 	ParaEngine::CNPLNetClient::ReleaseInstance();
 #endif
 
@@ -544,7 +545,8 @@ bool CNPLRuntime::LoadWebServicePlugin()
 			}
 		}
 #else
-#ifndef EMSCRIPTEN_SINGLE_THREAD
+// #ifndef EMSCRIPTEN_SINGLE_THREAD
+#ifndef EMSCRIPTEN
 		m_pWebServiceClient = ParaEngine::CNPLNetClient::GetInstance();
 #endif
 #endif
