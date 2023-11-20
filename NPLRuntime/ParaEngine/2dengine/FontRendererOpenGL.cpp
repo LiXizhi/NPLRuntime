@@ -60,7 +60,7 @@ CFontRendererOpenGL* ParaEngine::CFontRendererOpenGL::create(const std::string& 
 
 	// TODO: force size to be 50. font-rendering crashes on android with big font.
 	pFontRenderer->m_nFontSize = nFontSize;
-
+#if defined(EMSCRIPTEN) || defined(WIN32) || defined(PLATFORM_MAC)
 	if (pFontRenderer->m_nFontSize <= 12)
 	{
 		pFontRenderer->m_nRealFontSize = 12;
@@ -85,6 +85,24 @@ CFontRendererOpenGL* ParaEngine::CFontRendererOpenGL::create(const std::string& 
 	{
 		pFontRenderer->m_nRealFontSize = 50;
 	}
+#else
+	if (pFontRenderer->m_nFontSize <= 14)
+	{
+		pFontRenderer->m_nRealFontSize = 20;
+	}
+	else if (pFontRenderer->m_nFontSize <= 28)
+	{
+		pFontRenderer->m_nRealFontSize = 28;
+	}
+	else if (pFontRenderer->m_nFontSize <= 50)
+	{
+		pFontRenderer->m_nRealFontSize = 50;
+	}
+	else
+	{
+		pFontRenderer->m_nRealFontSize = 50;
+	}
+#endif
 
 	pFontRenderer->m_fFontScaling = float(nFontSize) / pFontRenderer->m_nRealFontSize;
 
