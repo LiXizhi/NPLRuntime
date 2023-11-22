@@ -296,7 +296,9 @@ HRESULT ParaEngine::CParaXProcessor::CopyToResource()
 
 				if (myFile.isEof())
 				{
-					OUTPUT_LOG("warning: ParaX model file not found %s\n", iCur->m_sMeshFileName.c_str());
+					if (!iCur->m_sMeshFileName.empty()) {
+						OUTPUT_LOG("warning: ParaX model file not found %s\n", iCur->m_sMeshFileName.c_str());
+					}
 					return E_FAIL;
 				}
 				std::string sExt;
