@@ -99,7 +99,7 @@ ParaEngine::CParaXProcessor::~CParaXProcessor()
 bool ParaEngine::CParaXProcessor::CreateMeshLODLevel(float fromDepth, const string& sFilename)
 {
 	MeshLOD meshLOD;
-	meshLOD.m_fromDepthSquared = fromDepth*fromDepth;
+	meshLOD.m_fromDepthSquared = fromDepth * fromDepth;
 	meshLOD.m_sMeshFileName = sFilename;
 
 	m_MeshLODs.push_back(meshLOD);
@@ -133,7 +133,7 @@ HRESULT ParaEngine::CParaXProcessor::UnLockDeviceObject()
 		}
 
 		// load data from mesh. 
-		std::vector<MeshLOD> & pMeshLODs = m_asset->m_MeshLODs;
+		std::vector<MeshLOD>& pMeshLODs = m_asset->m_MeshLODs;
 		std::vector<MeshLOD>::iterator iCur, iEnd = pMeshLODs.end();
 		for (iCur = pMeshLODs.begin(); iCur != iEnd; ++iCur)
 		{
@@ -162,9 +162,9 @@ HRESULT ParaEngine::CParaXProcessor::CleanUp()
 class SParaXCallBackData
 {
 public:
-	SParaXCallBackData(ParaXEntity * pAsset_) :pAsset(pAsset_){}
+	SParaXCallBackData(ParaXEntity* pAsset_) :pAsset(pAsset_) {}
 
-	ParaXEntity * pAsset;
+	ParaXEntity* pAsset;
 
 	void operator()(int nResult, AssetFileEntry* pAssetFileEntry)
 	{
@@ -287,16 +287,18 @@ HRESULT ParaEngine::CParaXProcessor::CopyToResource()
 	try
 	{
 		// preload file data to memory in the IO thread. 
-		std::vector<MeshLOD> & pMeshLODs = m_MeshLODs.size() > 0 ? m_MeshLODs : m_asset->m_MeshLODs;
+		std::vector<MeshLOD>& pMeshLODs = m_MeshLODs.size() > 0 ? m_MeshLODs : m_asset->m_MeshLODs;
 		for (auto iCur = pMeshLODs.begin(); iCur != pMeshLODs.end(); ++iCur)
 		{
-			if ( ! (iCur->m_pParaXMesh) )
+			if (!(iCur->m_pParaXMesh))
 			{
 				CParaFile myFile(iCur->m_sMeshFileName.c_str());
 
 				if (myFile.isEof())
 				{
-					OUTPUT_LOG("warning: ParaX model file not found %s\n", iCur->m_sMeshFileName.c_str());
+					if (!iCur->m_sMeshFileName.empty()) {
+						OUTPUT_LOG("warning: ParaX model file not found %s\n", iCur->m_sMeshFileName.c_str());
+					}
 					return E_FAIL;
 				}
 				std::string sExt;
@@ -307,7 +309,7 @@ HRESULT ParaEngine::CParaXProcessor::CopyToResource()
 				else {
 					sExt = sRootFileExt;
 				}
-					
+
 				if (sExt == "bmax")
 				{
 					// block max model. 
@@ -351,9 +353,9 @@ HRESULT ParaEngine::CParaXProcessor::CopyToResource()
 							float fMaxDistance;
 						};
 						const LODSetting nLodsMaxTriangleCounts[] = { {2000, 60.f}, {500, 90.f}, {100, 120.f} };
-						
+
 						// from second lod
-						for (int i = 0; pParaXMesh && i < sizeof(nLodsMaxTriangleCounts)/sizeof(LODSetting); i++)
+						for (int i = 0; pParaXMesh && i < sizeof(nLodsMaxTriangleCounts) / sizeof(LODSetting); i++)
 						{
 							if ((int)pParaXMesh->GetPolyCount() >= nLodsMaxTriangleCounts[i].nMaxTriangleCount)
 							{
@@ -364,7 +366,7 @@ HRESULT ParaEngine::CParaXProcessor::CopyToResource()
 								{
 									if (pMeshLODs.size() == 1)
 									{
-										iCur->m_fromDepthSquared = Math::Sqr(nLodsMaxTriangleCounts[0].fMaxDistance*0.5f);
+										iCur->m_fromDepthSquared = Math::Sqr(nLodsMaxTriangleCounts[0].fMaxDistance * 0.5f);
 									}
 									pParaXMesh = lod.m_pParaXMesh;
 									pMeshLODs.push_back(lod);

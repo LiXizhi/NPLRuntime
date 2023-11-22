@@ -950,7 +950,7 @@ SequenceEntity* CParaWorldAsset::LoadSequence(const string& sName)
 	return res.first;
 }
 
-ParaXEntity* CParaWorldAsset::LoadParaX(const string&  sIdentifier, const string&  fileName)
+ParaXEntity* CParaWorldAsset::LoadParaX(const string& sIdentifier, const string& fileName)
 {
 	string sFileName;
 	CParaFile::ToCanonicalFilePath(sFileName, fileName, false);
@@ -959,8 +959,30 @@ ParaXEntity* CParaWorldAsset::LoadParaX(const string&  sIdentifier, const string
 	pair<ParaXEntity*, bool> res = GetParaXManager().CreateEntity(sIdentifier, sFileName);
 	if (res.second == true)
 	{
+		bool bIsRemoteFile = false;
+		int nSize = (int)fileName.size();
+		if (nSize > 5)
+		{
+			// it is a remote file if the filename starts with "http:", or "https:" or "ftp:"
+			bIsRemoteFile = ((fileName[0] == 'h' && fileName[1] == 't' && fileName[2] == 't' && fileName[3] == 'p' && (fileName[4] == ':' || fileName[5] == ':')) ||
+				(fileName[0] == 'f' && fileName[1] == 't' && fileName[2] == 'p' && fileName[3] == ':'));
+		}
 		ParaXEntity* pNewEntity = res.first;
-		pNewEntity->Init(sFileName.c_str());
+
+		if (bIsRemoteFile)
+		{
+			// set as remote file
+			pNewEntity->SetState(AssetEntity::ASSET_STATE_REMOTE);
+			// this new version uses local Resource store. 
+			string sCode = "ParaAsset.GetRemoteParaX(\"";
+			sCode += sFileName;
+			sCode += "\");";
+			CGlobals::GetNPLRuntime()->GetMainRuntimeState()->DoString(sCode.c_str(), (int)sCode.size());
+		}
+		else
+		{
+			pNewEntity->Init(sFileName.c_str());
+		}
 	}
 	return res.first;
 }
