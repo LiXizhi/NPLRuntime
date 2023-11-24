@@ -43,8 +43,8 @@ void ParaEngine::TextureParams::Init(const char * str)
 			{
 				if (filename.empty())
 					filename.append(&(str[0]), i);
+				break;
 			}
-			break;
 		}
 	}
 	if (filename.empty())
