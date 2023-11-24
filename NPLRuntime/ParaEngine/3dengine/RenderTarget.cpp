@@ -15,6 +15,7 @@
 #include "ParaWorldAsset.h"
 #include "PaintEngine/PaintEngineGPU.h"
 #include "ImageEntity.h"
+#include "util/StringHelper.h"
 #include "RenderTarget.h"
 #if USE_DIRECTX_RENDERER
 #include "RenderDeviceD3D9.h"
@@ -225,6 +226,22 @@ HRESULT ParaEngine::CRenderTarget::SaveToFile(const char* sFileName, int nImageW
 {
 	if (m_pCanvasTexture == 0)
 		return E_FAIL;
+
+	RECT rect;
+	std::string filename;
+	if (srcWidth == 0 && ParaEngine::StringHelper::GetImageAndRect(sFileName, filename, &rect) != 0)
+	{
+		srcLeft = rect.left;
+		srcTop = rect.top;
+		srcWidth = rect.right - rect.left;
+		srcHeight = rect.bottom - rect.top;
+		if (nImageWidth == 0) {
+			nImageWidth = srcWidth;
+			nImageHeight = srcHeight;
+		}
+	}
+	sFileName = filename.c_str();
+
 #ifdef USE_DIRECTX_RENDERER
 	string sFile = sFileName;
 	string sExt = CParaFile::GetFileExtension(sFileName);
@@ -343,7 +360,7 @@ HRESULT ParaEngine::CRenderTarget::SaveToFile(const char* sFileName, int nImageW
 		}
 	}
 #elif defined(USE_OPENGL_RENDERER)
-	ImageEntity* image = NewImage(true);
+	ImageEntity* image = NewImage(true, 0, srcLeft, srcTop, srcWidth, srcHeight);
 	if (image)
 	{
 		if (image->IsValid())
@@ -357,7 +374,7 @@ HRESULT ParaEngine::CRenderTarget::SaveToFile(const char* sFileName, int nImageW
 }
 
 
-ImageEntity* ParaEngine::CRenderTarget::NewImage(bool bFlipImage, Color colorKey)
+ImageEntity* ParaEngine::CRenderTarget::NewImage(bool bFlipImage, Color colorKey, int srcLeft, int srcTop, int srcWidth, int srcHeight)
 {
 #ifdef USE_OPENGL_RENDERER
 	if (nullptr == GetTexture())
@@ -378,20 +395,36 @@ ImageEntity* ParaEngine::CRenderTarget::NewImage(bool bFlipImage, Color colorKey
 	ImageEntity* image = new ImageEntity();
 	do
 	{
-		if(!(buffer = new (std::nothrow) GLubyte[savedBufferWidth * savedBufferHeight * 4]))
+		if (srcWidth == 0)
+			srcWidth = savedBufferWidth;
+		else
+		{
+			if (srcLeft + srcWidth > savedBufferWidth)
+				srcWidth = savedBufferWidth - srcLeft;
+		}
+		if (srcHeight == 0)
+			srcHeight = savedBufferHeight;
+		else
+		{
+			if (srcTop + srcHeight > savedBufferHeight)
+				srcHeight = savedBufferHeight - srcTop;
+		}
+
+
+		if(!(buffer = new (std::nothrow) GLubyte[srcWidth * srcHeight * 4]))
 			break;
 
 		glGetIntegerv(GL_FRAMEBUFFER_BINDING, &_oldFBO);
 		glBindFramebuffer(GL_FRAMEBUFFER, _FBO);
 
 		glPixelStorei(GL_PACK_ALIGNMENT, 1);
-		glReadPixels(0, 0, savedBufferWidth, savedBufferHeight, GL_RGBA, GL_UNSIGNED_BYTE, buffer);
+		glReadPixels(srcLeft, srcTop, srcWidth, srcHeight, GL_RGBA, GL_UNSIGNED_BYTE, buffer);
 		glBindFramebuffer(GL_FRAMEBUFFER, _oldFBO);
 
 		if ((DWORD)colorKey != 0)
 		{
 			// make colorKey transparent
-			int nSize = savedBufferWidth * savedBufferHeight;
+			int nSize = srcWidth * srcHeight;
 			DWORD* pPixelData = (DWORD*)(buffer);
 			DWORD dwTransparentColorKey = colorKey;
 			for (int i = 0; i < nSize; ++i, ++pPixelData)
@@ -405,7 +438,7 @@ ImageEntity* ParaEngine::CRenderTarget::NewImage(bool bFlipImage, Color colorKey
 		if (bFlipImage) 
 		{
 			GLubyte *tempData = nullptr;
-			if (!(tempData = new (std::nothrow) GLubyte[savedBufferWidth * savedBufferHeight * 4]))
+			if (!(tempData = new (std::nothrow) GLubyte[srcWidth * srcHeight * 4]))
 			{
 				delete[] buffer;
 				buffer = nullptr;
@@ -414,18 +447,18 @@ ImageEntity* ParaEngine::CRenderTarget::NewImage(bool bFlipImage, Color colorKey
 
 			// to get the actual texture data
 			// #640 the image read from render target is dirty
-			for (int i = 0; i < savedBufferHeight; ++i)
+			for (int i = 0; i < srcHeight; ++i)
 			{
-				memcpy(&tempData[i * savedBufferWidth * 4],
-					&buffer[(savedBufferHeight - i - 1) * savedBufferWidth * 4],
-					savedBufferWidth * 4);
+				memcpy(&tempData[i * srcWidth * 4],
+					&buffer[(srcHeight - i - 1) * srcWidth * 4],
+					srcWidth * 4);
 			}
-			image->LoadFromRawData(tempData, savedBufferWidth * savedBufferHeight * 4, savedBufferWidth, savedBufferHeight, 8);
+			image->LoadFromRawData(tempData, srcWidth * srcHeight * 4, srcWidth, srcHeight, 8);
 			SAFE_DELETE_ARRAY(tempData);
 		}
 		else
 		{
-			image->LoadFromRawData(buffer, savedBufferWidth * savedBufferHeight * 4, savedBufferWidth, savedBufferHeight, 8);
+			image->LoadFromRawData(buffer, srcWidth * srcHeight * 4, srcWidth, srcHeight, 8);
 		}
 
 	} while (0);
@@ -771,6 +804,7 @@ int ParaEngine::CRenderTarget::InstallFields(CAttributeClass* pClass, bool bOver
 	pClass->AddField("RenderTargetSize", FieldType_Vector2, (void*)SetRenderTargetSize_s, (void*)GetRenderTargetSize_s, NULL, "", bOverride);
 	pClass->AddField("Dirty", FieldType_Bool, (void*)SetDirty_s, (void*)IsDirty_s, NULL, "", bOverride);
 	pClass->AddField("IsPersistentRenderTarget", FieldType_Bool, (void*)SetPersistentRenderTarget_s, (void*)IsPersistentRenderTarget_s, NULL, "", bOverride);
+	pClass->AddField("SaveToFile", FieldType_String, (void*)SaveToFile_s, (void*)0, NULL, NULL, bOverride);
 	return S_OK;
 }
 

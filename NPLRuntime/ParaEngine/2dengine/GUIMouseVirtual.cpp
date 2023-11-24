@@ -44,8 +44,8 @@ void CGUIMouseVirtual::PushMouseEvent(const DeviceMouseEventPtr &e)
             {
                 if(m_buffered_mouse_msgs[i]->GetEventType() == EMouseEventType::Wheel)
                 {
-                    int delta = (static_cast<const DeviceMouseWheelEvent*>(e.get()))->GetWhell();
-                    delta += (static_cast<const DeviceMouseWheelEvent*>(m_buffered_mouse_msgs[i].get()))->GetWhell();
+                    int delta = (static_cast<const DeviceMouseWheelEvent*>(e.get()))->GetWheel();
+                    delta += (static_cast<const DeviceMouseWheelEvent*>(m_buffered_mouse_msgs[i].get()))->GetWheel();
                     m_buffered_mouse_msgs[i] = DeviceMouseEventPtr(new DeviceMouseWheelEvent(delta));
                     return;
                 }
@@ -191,8 +191,8 @@ bool ParaEngine::CGUIMouseVirtual::ReadBufferedData()
 			}
 			case EMouseEventType::Wheel:
 			{
-				const DeviceMouseWheelEvent* whellEvent = (DeviceMouseWheelEvent*)(e.get());
-				m_curMouseState.z = whellEvent->GetWhell();
+				const DeviceMouseWheelEvent* wheelEvent = (DeviceMouseWheelEvent*)(e.get());
+				m_curMouseState.z = wheelEvent->GetWheel();
 				break;
 			}
 			case EMouseEventType::Unknown:

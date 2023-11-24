@@ -40,6 +40,8 @@ namespace ParaEngine
 		ATTRIBUTE_METHOD1(CRenderTarget, IsPersistentRenderTarget_s, bool*)		{ *p1 = cls->IsPersistentRenderTarget(); return S_OK; }
 		ATTRIBUTE_METHOD1(CRenderTarget, SetPersistentRenderTarget_s, bool)		{ cls->SetPersistentRenderTarget(p1); return S_OK; }
 
+		ATTRIBUTE_METHOD1(CRenderTarget, SaveToFile_s, const char*) { cls->SaveToFile(p1); return S_OK; }
+
 		/** define the On_Paint script callback for painting in 2d space. */
 		DEFINE_SCRIPT_EVENT(CRenderTarget, Paint);
 
@@ -114,6 +116,7 @@ namespace ParaEngine
 		* save o a different texture file format and save with full mipmapping to disk.
 		* @param sFileName a texture file path to save the file to.
 		*	we support ".dds", ".jpg", ".png" files. If the file extension is not recognized, ".png" file is used.
+		*  it can also be "output.jpg;0 0 width height" to specify srcLeft, srcTop, srcWidth, srcHeight, such as via Attribute Field
 		* @param width: if this is zero, the original size is used. If it is dds, all mip map levels are saved.
 		* @param dwDXTFormat: if 0, it mean automatic according to file extension. if filename is *.dds, it will be saved as DXT3.
 		*		1,2,3,4,5, stands for D3DFMT_DXT1-5.
@@ -125,7 +128,7 @@ namespace ParaEngine
 		Caller is responsible for releasing it by calling delete.
 		* @param colorKey: if 0 no color key is used. for black color key use 0xff000000
 		*/
-		ImageEntity* NewImage(bool bFlipImage = true, Color colorKey = 0);
+		ImageEntity* NewImage(bool bFlipImage = true, Color colorKey = 0, int srcLeft = 0, int srcTop = 0, int srcWidth = 0, int srcHeight = 0);
 
 		/**
 		* set the canvas size in pixels
