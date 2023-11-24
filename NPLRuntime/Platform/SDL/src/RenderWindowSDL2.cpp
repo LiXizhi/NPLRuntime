@@ -321,7 +321,7 @@ namespace ParaEngine
 			}
 			else if (sdl_event.type == SDL_MOUSEWHEEL)
 			{
-				OnMouseWheel(m_mouse_x, m_mouse_y, sdl_event.wheel.preciseY);
+				OnMouseWheel(m_mouse_x, m_mouse_y, sdl_event.wheel.preciseY * 120);
 			}
 			else if (sdl_event.type == SDL_KEYDOWN)
 			{

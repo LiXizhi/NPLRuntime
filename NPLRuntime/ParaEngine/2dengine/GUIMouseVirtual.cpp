@@ -45,8 +45,11 @@ void CGUIMouseVirtual::PushMouseEvent(const DeviceMouseEventPtr &e)
                 if(m_buffered_mouse_msgs[i]->GetEventType() == EMouseEventType::Wheel)
                 {
                     int delta = (static_cast<const DeviceMouseWheelEvent*>(e.get()))->GetWheel();
+					int nLastDelta = delta;
                     delta += (static_cast<const DeviceMouseWheelEvent*>(m_buffered_mouse_msgs[i].get()))->GetWheel();
                     m_buffered_mouse_msgs[i] = DeviceMouseEventPtr(new DeviceMouseWheelEvent(delta));
+
+					OUTPUT_LOG("PushMouseEvent: delta %d, total: %d\n", delta - nLastDelta, delta);
                     return;
                 }
             }
