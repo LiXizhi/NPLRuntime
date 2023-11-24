@@ -1185,7 +1185,7 @@ int CGUIRoot::HandleUserInput()
 			{
 				const DeviceMouseWheelEvent* buttonEvent = static_cast<const DeviceMouseWheelEvent*>(e.get());
 				newMsg.message = EM_MOUSE_WHEEL;
-				newMsg.lParam = (int)buttonEvent->GetWhell();
+				newMsg.lParam = (int)buttonEvent->GetWheel();
 			}break;
 			}
 			if (newMsg.message == EM_MOUSE_MOVE)
