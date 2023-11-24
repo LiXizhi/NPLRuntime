@@ -17,7 +17,7 @@
 #include "util/StringHelper.h"
 #include "ParaWorldAsset.h"
 #include "util/regularexpression.h"
-
+#include <fstream>
 /** we will load these files as assets manifest file. such as "assets_manifest*.txt" */
 #define ASSETS_MANIFEST_FILE_PATTERN		"assets_manifest*.txt"
 
@@ -240,7 +240,7 @@ DWORD AssetFileEntry_Request_CallBack(int nResult, CUrlProcessor* pRequest, CUrl
 	bool bSucceed = false;
 	if (lpUserData)
 	{
-		CAssetFileEntryUserData * pData = (CAssetFileEntryUserData*)lpUserData;
+		CAssetFileEntryUserData* pData = (CAssetFileEntryUserData*)lpUserData;
 		CAsyncLoader* pAsyncLoader = &(CAsyncLoader::GetSingleton());
 
 		string url = pData->m_pAssetFileEntry->GetAbsoluteUrl();
@@ -255,7 +255,7 @@ DWORD AssetFileEntry_Request_CallBack(int nResult, CUrlProcessor* pRequest, CUrl
 			}
 			else
 			{
-				string sTmp = string("AssetFile ASync Failed cannot save to disk:") + url + "\n";
+				string sTmp = string("AssetFile ASync Failed cannot save to disk:") + url + "\n filename: " + pData->m_pAssetFileEntry->GetLocalFileName() + "\n";
 				pAsyncLoader->log(sTmp);
 			}
 		}
@@ -325,7 +325,7 @@ DWORD AssetFileEntry_Request_Signal_CallBack(int nResult, CUrlProcessor* pReques
 	bool bSucceed = false;
 	if (lpUserData)
 	{
-		CAssetFileEntryUserData * pData = (CAssetFileEntryUserData*)lpUserData;
+		CAssetFileEntryUserData* pData = (CAssetFileEntryUserData*)lpUserData;
 		CAsyncLoader* pAsyncLoader = &(CAsyncLoader::GetSingleton());
 
 		string url = pData->m_pAssetFileEntry->GetAbsoluteUrl();
@@ -340,7 +340,7 @@ DWORD AssetFileEntry_Request_Signal_CallBack(int nResult, CUrlProcessor* pReques
 			}
 			else
 			{
-				string sTmp = string("AssetFile ASync Failed cannot save to disk:") + url + "\n";
+				string sTmp = string("AssetFile ASync Failed cannot save to disk:") + url + "\n filename: " + pData->m_pAssetFileEntry->GetLocalFileName() + "\n";
 				pAsyncLoader->log(CAsyncLoader::Log_Warn, sTmp);
 				OUTPUT_LOG("warn: %s", sTmp.c_str());
 			}
@@ -349,7 +349,7 @@ DWORD AssetFileEntry_Request_Signal_CallBack(int nResult, CUrlProcessor* pReques
 		{
 			string sTmp = string("AssetFile ASync Failed http code!=200:") + url + "\n";
 			pAsyncLoader->log(CAsyncLoader::Log_Warn, sTmp);
-			
+
 			if (!pData->m_pAssetFileEntry->HasReachedMaxRetryCount() && nResult == CURLE_OPERATION_TIMEDOUT)
 			{
 				// try downloading again
@@ -492,12 +492,16 @@ bool AssetFileEntry::CheckMD5AndSize(const char* buffer, int nSize)
 
 	int nFileNameCount = (int)m_localFileName.size();
 	if (nFileNameCount <= nCount)
+	{
 		return false;
+	}
 
 	for (int i = 0; i < nCount; ++i)
 	{
 		if (file_size[i] != m_localFileName[nFileNameCount - nCount + i])
+		{
 			return false;
+		}
 	}
 
 	// compare the md5 part
@@ -514,7 +518,7 @@ bool AssetFileEntry::CheckMD5AndSize(const char* buffer, int nSize)
 
 std::string AssetFileEntry::GetFullFilePath()
 {
-#ifdef PARAENGINE_MOBILE
+#if defined(PARAENGINE_MOBILE) || defined(EMSCRIPTEN)
 	return CFileUtils::GetWritableFullPathForFilename(GetLocalFileName());
 #else
 	return GetLocalFileName();
@@ -536,7 +540,11 @@ bool AssetFileEntry::SaveToDisk(const char* buffer, int nSize, bool bCheckMD5)
 	static ParaEngine::mutex s_save_file_mutex;
 	ParaEngine::Lock lock_(s_save_file_mutex);
 
+#ifdef EMSCRIPTEN
+	string tmpName = GetLocalFileName();
+#else
 	string tmpName = GetLocalFileName() + ".tmp";
+#endif
 	if (m_bIsZipFile)
 	{
 		// for zipped file
@@ -567,6 +575,7 @@ bool AssetFileEntry::SaveToDisk(const char* buffer, int nSize, bool bCheckMD5)
 		{
 			file.write(buffer, nSize);
 			file.close();
+
 			if (CParaFile::MoveFile(tmpName.c_str(), GetLocalFileName().c_str()))
 			{
 				m_nStatus = AssetFileStatus_Downloaded;
@@ -740,7 +749,7 @@ void CAssetManifest::LoadManifest()
 	}
 	else
 	{
-#if defined(PARAENGINE_MOBILE) || defined(PLATFORM_MAC)
+#if defined(PARAENGINE_MOBILE) || defined(PLATFORM_MAC) || defined(EMSCRIPTEN)
 		const char* sDefaultFile = "assets_manifest.txt";
 		if (CParaFile::DoesFileExist(sDefaultFile))
 		{
@@ -777,7 +786,7 @@ string md5 = result.str(2);
 string filesize = result.str(3);
 }
 */
-bool CAssetManifest::ParseAssetEntryStr(const string &sFilename, string &fileKey, string &md5, string& filesize)
+bool CAssetManifest::ParseAssetEntryStr(const string& sFilename, string& fileKey, string& md5, string& filesize)
 {
 	int nSize = (int)sFilename.size();
 	const char* line = sFilename.c_str();
@@ -883,7 +892,6 @@ void CAssetManifest::AddEntry(const char* filename)
 		pEntry->m_localFileName[11] = md5[0];
 		pEntry->m_localFileName += md5;
 		pEntry->m_localFileName += filesize;
-
 		pEntry->m_bIsZipFile = bIsZipfile;
 		pEntry->m_nFileSize = nFileSize;
 		pEntry->SetFileType(file_extension); // note: this function must be called after file size is set. 
@@ -976,6 +984,8 @@ bool CFileReplaceMap::IsEmpty()
 
 bool CFileReplaceMap::ReplaceFile(string& inout)
 {
+	ParaEngine::Lock lock_(m_mutex);
+
 	Asset_Replace_Map_Type::const_iterator iter = m_replace_map.find(inout);
 	if (iter != m_replace_map.end())
 	{
@@ -987,6 +997,8 @@ bool CFileReplaceMap::ReplaceFile(string& inout)
 
 void CFileReplaceMap::LoadReplaceFile(const string& filename, bool bReplaceExistingOnes)
 {
+	ParaEngine::Lock lock_(m_mutex);
+
 	if (bReplaceExistingOnes)
 	{
 		if (!m_replace_map.empty())

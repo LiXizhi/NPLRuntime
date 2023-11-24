@@ -740,6 +740,7 @@ void ParaEngine::CSkyMesh::DrawSimulatedSky(EffectManager* pEffectManager, Scene
 		pEffectManager->EnableZWrite(false);
 		pd3dDevice->SetStreamSource(0, m_simsky_vb.GetDevicePointer(), 0, sizeof(mesh_vertex_plain));
 		pd3dDevice->SetIndices(m_simsky_ib.GetDevicePointer());
+		pd3dDevice->SetRenderState(D3DRS_COLORWRITEENABLE, 0x7);
 
 		if (pEffectFile->begin(false))
 		{
@@ -783,6 +784,7 @@ void ParaEngine::CSkyMesh::DrawSimulatedSky(EffectManager* pEffectManager, Scene
 		}
 		pd3dDevice->SetIndices(0);
 		pd3dDevice->SetTexture(1, 0);
+		pd3dDevice->SetRenderState(D3DRS_COLORWRITEENABLE, 0xF);
 		CGlobals::GetWorldMatrixStack().pop();
 	}
 }
