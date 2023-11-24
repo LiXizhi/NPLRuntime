@@ -36,6 +36,10 @@ void ParaEngine::TextureParams::Init(const char * str)
 				if (filename.empty())
 					filename.append(&(str[0]), i);
 			}
+			else 
+			{
+				m_left = 0; m_top = 0; m_right = 0; m_bottom = 0;
+			}
 		}
 		else if (c == ':' && i > 2) // this fixed a bug for win32 absolute path like "c:/"
 		{
@@ -44,6 +48,10 @@ void ParaEngine::TextureParams::Init(const char * str)
 				if (filename.empty())
 					filename.append(&(str[0]), i);
 				break;
+			}
+			else
+			{
+				m_toLeft = 0; m_toTop = 0; m_toRight = 0; m_toBottom = 0;
 			}
 		}
 	}
