@@ -12,7 +12,7 @@
 namespace ParaEngine
 {
 	std::vector<BlockRenderTask*> BlockRenderTask::g_renderTaskPool;
-	std::map<int,bool> BlockRenderTask::g_emptySlotIndices;
+	std::map<int, bool> BlockRenderTask::g_emptySlotIndices;
 	std::mutex BlockRenderTask::g_renderTaskMutex;
 
 	BlockRenderTask* BlockRenderTask::CreateTask()
@@ -22,7 +22,7 @@ namespace ParaEngine
 			std::lock_guard<std::mutex> lock_(g_renderTaskMutex);
 			if (g_emptySlotIndices.size() == 0)
 			{
-				BlockRenderTask *newTask = new BlockRenderTask();
+				BlockRenderTask* newTask = new BlockRenderTask();
 				g_renderTaskPool.push_back(newTask);
 				pResult = newTask;
 				pResult->SetInternalIndex(g_renderTaskPool.size() - 1);
@@ -47,9 +47,10 @@ namespace ParaEngine
 	BlockRenderTask::BlockRenderTask()
 	{
 		memset(this, 0, sizeof(BlockRenderTask));
+		m_materialId = -1;
 	}
 
-	void BlockRenderTask::Init(BlockTemplate *pTemplate, uint16_t nBlockData, uint32_t vertexOffset, VertexBufferDevicePtr_type pBuffer,Uint16x3& minBlockId_ws)
+	void BlockRenderTask::Init(BlockTemplate* pTemplate, uint16_t nBlockData, uint32_t vertexOffset, VertexBufferDevicePtr_type pBuffer, Uint16x3& minBlockId_ws)
 	{
 		m_nBlockData = nBlockData;
 		m_nVertexOffset = vertexOffset;
@@ -58,6 +59,7 @@ namespace ParaEngine
 		m_renderOrder = 0;
 		m_pTemplate = pTemplate;
 		m_minBlockId_ws = minBlockId_ws;
+		m_materialId = -1;
 	}
 
 	void BlockRenderTask::Init(BlockTemplate* pTemplate, uint16_t nBlockData, uint32_t vertexOffset, Uint16x3& minBlockId_ws, int32 nBufferIndex)
@@ -69,6 +71,7 @@ namespace ParaEngine
 		m_renderOrder = 0;
 		m_pTemplate = pTemplate;
 		m_minBlockId_ws = minBlockId_ws;
+		m_materialId = -1;
 	}
 
 	void BlockRenderTask::Reset()
@@ -78,15 +81,16 @@ namespace ParaEngine
 		m_pTemplate = nullptr;
 		m_nBlockData = 0;
 		m_pVertexBuffer = 0;
+		m_materialId = -1;
 	}
 
 	void BlockRenderTask::ReleaseTaskPool()
 	{
 		std::lock_guard<std::mutex> lock_(g_renderTaskMutex);
 
-		if(g_renderTaskPool.size() > 0)
+		if (g_renderTaskPool.size() > 0)
 		{
-			for(uint32_t i=0;i<g_renderTaskPool.size();i++)
+			for (uint32_t i = 0; i < g_renderTaskPool.size(); i++)
 			{
 				delete g_renderTaskPool[i];
 			}

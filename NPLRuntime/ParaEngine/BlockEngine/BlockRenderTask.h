@@ -18,7 +18,7 @@ namespace ParaEngine
 		static void ReleaseTask(BlockRenderTask* pRenderTask);
 
 		static void ReleaseTaskPool();
-		
+
 		inline uint16_t GetTemplateId()
 		{
 			return m_pTemplate->GetID();
@@ -34,8 +34,8 @@ namespace ParaEngine
 			return m_pTemplate;
 		}
 
-		void SetVertexBuffer(VertexBufferDevicePtr_type val) { 
-			m_pVertexBuffer = val; 
+		void SetVertexBuffer(VertexBufferDevicePtr_type val) {
+			m_pVertexBuffer = val;
 		}
 
 		inline VertexBufferDevicePtr_type GetVertexBuffer()
@@ -64,7 +64,7 @@ namespace ParaEngine
 			m_renderOrder = renderOrder;
 		}
 
-		inline Uint16x3& GetMinBlockPos() {return m_minBlockId_ws; }
+		inline Uint16x3& GetMinBlockPos() { return m_minBlockId_ws; }
 
 		//render order is a uint_32 value can be used to sort render object.
 		//it compose of  render priority,material id and relative distance
@@ -84,18 +84,18 @@ namespace ParaEngine
 
 		int32 GetBufferIndex() const { return m_pBufferIndex; }
 		void SetBufferIndex(int32 val) { m_pBufferIndex = val; }
-	
+
 		int32_t GetMaterialId() const { return m_materialId; }
 		void SetMaterialId(int32_t materialId) { m_materialId = materialId; }
 	private:
-		static std::vector<BlockRenderTask*> g_renderTaskPool;		
-		static std::map<int,bool> g_emptySlotIndices;
+		static std::vector<BlockRenderTask*> g_renderTaskPool;
+		static std::map<int, bool> g_emptySlotIndices;
 		static std::mutex g_renderTaskMutex;
 		uint32_t m_renderOrder;
 		uint32_t m_nVertexOffset;
 		uint16_t m_nRectFaceCount;
 		int16_t m_internalIndex;
-		
+
 		Uint16x3 m_minBlockId_ws;
 
 		BlockTemplate* m_pTemplate;
@@ -107,8 +107,8 @@ namespace ParaEngine
 			VertexBufferDevicePtr_type m_pVertexBuffer;
 			int32 m_pBufferIndex;
 		};
-		
-		
+
+
 		BlockRenderTask();
 
 		void Reset();
