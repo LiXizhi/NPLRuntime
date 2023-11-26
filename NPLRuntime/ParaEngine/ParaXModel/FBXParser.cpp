@@ -870,7 +870,7 @@ void ParaEngine::FBXParser::ParseMaterialByName(const std::string& sMatName, FBX
 			}
 		}
 
-		if (nMarkIndex == 0 || sMatName[nMarkIndex - 1] == '_')
+		if (nMarkIndex == 0 || (nMarkIndex >= 1 && sMatName[nMarkIndex - 1] == '_'))
 		{
 			symbol = sMatName[nMarkIndex];
 			switch (symbol)

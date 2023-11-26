@@ -593,7 +593,7 @@ ParaEngine::FileHandle ParaEngine::CFileUtils::OpenFile(const char* filename, bo
 	{
 		if (sFilePath != filename)
 		{
-			OUTPUT_LOG("open file rename %s => %s\n", filename, sFilePath.c_str());
+			// OUTPUT_LOG("open file rename %s => %s\n", filename, sFilePath.c_str());
 		}
 	}
 	FileHandle fileHandle;
