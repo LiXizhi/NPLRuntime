@@ -78,6 +78,8 @@ namespace ParaEngine
 	public:
 		virtual ~IDataProcessor(){};
 
+		virtual bool AsyncProcess(std::function<void()>) { return false; }
+
 		/** LockDeviceObject is called from the Graphics thread to lock the device object (D3D9), unless IsDeviceObject() is false. */
 		virtual HRESULT LockDeviceObject() = 0;
 		/** UnLockDeviceObject is called from the Graphics thread to unlock the device object, or call updatesubresource for D3D10, unless IsDeviceObject() is false. */
