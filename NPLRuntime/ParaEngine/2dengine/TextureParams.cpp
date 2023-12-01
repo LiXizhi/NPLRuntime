@@ -12,20 +12,20 @@
 
 using namespace ParaEngine;
 
-ParaEngine::TextureParams::TextureParams(const char * str)
+ParaEngine::TextureParams::TextureParams(const char* str)
 	:m_left(0), m_top(0), m_right(0), m_bottom(0), m_toLeft(0), m_toTop(0), m_toRight(0), m_toBottom(0), m_pTexture(NULL)
 {
 	Init(str);
 }
 
-void ParaEngine::TextureParams::Init(const char * str)
+void ParaEngine::TextureParams::Init(const char* str)
 {
 	if (!str)
 		return;
 	int nInnerRectIndex = 0;
 	char c = 0;
 	std::string filename;
-	for (int i = 0; (c=str[i]) != '\0'; ++i)
+	for (int i = 0; (c = str[i]) != '\0'; ++i)
 	{
 		if (c == ';' || c == '#')
 		{
@@ -36,6 +36,10 @@ void ParaEngine::TextureParams::Init(const char * str)
 				if (filename.empty())
 					filename.append(&(str[0]), i);
 			}
+			else
+			{
+				m_left = 0; m_top = 0; m_right = 0; m_bottom = 0;
+			}
 		}
 		else if (c == ':' && i > 2) // this fixed a bug for win32 absolute path like "c:/"
 		{
@@ -43,8 +47,12 @@ void ParaEngine::TextureParams::Init(const char * str)
 			{
 				if (filename.empty())
 					filename.append(&(str[0]), i);
+				break;
 			}
-			break;
+			else
+			{
+				m_toLeft = 0; m_toTop = 0; m_toRight = 0; m_toBottom = 0;
+			}
 		}
 	}
 	if (filename.empty())
@@ -103,7 +111,7 @@ int ParaEngine::TextureParams::GetImageRects(RECT* rcTextures)
 	return 0;
 }
 
-void ParaEngine::TextureParams::DrawSingleTexture(CPainter* painter, int x, int y, int w, int h, const RECT &rc)
+void ParaEngine::TextureParams::DrawSingleTexture(CPainter* painter, int x, int y, int w, int h, const RECT& rc)
 {
 	painter->drawTexture(x, y, w, h, GetTexture(), rc.left, rc.top, rc.right - rc.left, rc.bottom - rc.top);
 }
@@ -134,7 +142,7 @@ void ParaEngine::TextureParams::DrawNineTileTexture(CPainter* painter, int x, in
 	rc = &rcTextures[7];
 	painter->drawTexture(rcInner.left, rcInner.bottom, rcInner.right - rcInner.left, rect.bottom - rcInner.bottom, GetTexture(), rc->left, rc->top, rc->right - rc->left, rc->bottom - rc->top);
 	rc = &rcTextures[8];
-	painter->drawTexture(rcInner.right, rcInner.bottom, rect.right - rcInner.right, rect.bottom - rcInner.bottom, GetTexture(), rc->left, rc->top, rc->right - rc->left, rc->bottom - rc->top);	
+	painter->drawTexture(rcInner.right, rcInner.bottom, rect.right - rcInner.right, rect.bottom - rcInner.bottom, GetTexture(), rc->left, rc->top, rc->right - rc->left, rc->bottom - rc->top);
 }
 
 
