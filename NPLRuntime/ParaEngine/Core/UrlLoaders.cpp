@@ -298,8 +298,8 @@ bool ParaEngine::CUrlProcessor::AsyncProcess(std::function<void()> callback)
 		size_t headersLengthBytes = emscripten_fetch_get_response_headers_length(fetch);
 		self->m_fetch_response_header.resize(headersLengthBytes);
 		self->m_fetch_response_data.resize(fetch->totalBytes);
-		emscripten_fetch_get_response_headers(fetch, self->m_fetch_response_header.data(), headersLengthBytes);
-		memcpy(self->m_fetch_response_data.data(), fetch->data, fetch->totalBytes);
+		emscripten_fetch_get_response_headers(fetch, (char*)(self->m_fetch_response_header.data()), headersLengthBytes);
+		memcpy((void*)(self->m_fetch_response_data.data()), fetch->data, fetch->totalBytes);
 		// emscripten_fetch_close(fetch); // Also free data on failure.
 		self->m_nStatus = CUrlProcessor::URL_REQUEST_COMPLETED;		
 		if (self->m_async_callback != nullptr) self->m_async_callback();
