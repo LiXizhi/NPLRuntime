@@ -235,7 +235,10 @@ namespace ParaEngine
 
 		void CleanUp();
 
+#ifdef EMSCRIPTEN
 		virtual bool AsyncProcess(std::function<void()> callback);
+#endif
+
 	// overrides
 	public:
 		virtual HRESULT LockDeviceObject();
