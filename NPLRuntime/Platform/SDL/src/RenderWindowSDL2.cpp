@@ -254,8 +254,9 @@ namespace ParaEngine
 				switch (sdl_event.window.event)
 				{
 				case SDL_WINDOWEVENT_SIZE_CHANGED:
+					std::cout << std::endl << "Window size changed: " << sdl_event.window.data1 << " " << sdl_event.window.data2 << std::endl;
 #ifdef EMSCRIPTEN
-					OnSize(EM_ASM_INT({ return document.documentElement.clientWidth; }), EM_ASM_INT({ return document.documentElement.clientHeight; }));
+					OnSize(EM_ASM_INT({ return document.documentElement.clientWidth * window.devicePixelRatio; }), EM_ASM_INT({ return document.documentElement.clientHeight * window.devicePixelRatio; }));
 #else
 					OnSize(sdl_event.window.data1, sdl_event.window.data2);
 #endif

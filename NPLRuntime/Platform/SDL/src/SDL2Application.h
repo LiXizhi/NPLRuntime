@@ -91,11 +91,11 @@ namespace ParaEngine
 		 */
 		virtual void ShowWindow(bool bShow) override;
 
-		virtual void SetTouchInputting(bool bTouchInputting) {
+		virtual void SetTouchInputting(bool bTouchInputting) override {
 			CParaEngineAppBase::SetTouchInputting(bTouchInputting);
 		}
 
-		inline bool IsInputing() { return m_inputing; }
+		bool IsInputing();
 	protected:
 		void LoadAndApplySettings();
 		bool UpdateScreenDevice();
@@ -109,6 +109,5 @@ namespace ParaEngine
 		bool m_bSizeChanged;
 		RenderWindowDelegate m_renderWindow;
 		bool m_exit;
-		bool m_inputing;
 	};
 }
