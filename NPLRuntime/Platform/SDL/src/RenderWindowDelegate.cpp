@@ -132,31 +132,30 @@ namespace ParaEngine
 
 	void RenderWindowDelegate::OnSize(int w, int h)
 	{
-		static int s_last_width = 0;
-		static int s_last_height = 0;
 		auto app = CGlobals::GetApp();
+		// static int s_last_width = 0;
+		// static int s_last_height = 0;
 		if (app->IsTouchInputting())
 		{
-			if (s_last_width != w && s_last_height != h)
-			{
-				std::cout << "last_width: " << s_last_width << " last_height: " << s_last_height << " width: " << w << " height: " << h << std::endl;
-				s_last_width = w;
-				s_last_height = h;
-			}
-			else if (s_last_width == w && s_last_height != h)
-			{
-				// 触屏方式忽略垂直高度变化(输入法影响)
-				return;
-			}
+			// if (s_last_width != w && s_last_height != h)
+			// {
+			// 	std::cout << "last_width: " << s_last_width << " last_height: " << s_last_height << " width: " << w << " height: " << h << std::endl;
+			// 	s_last_width = w;
+			// 	s_last_height = h;
+			// }
+			// else if (s_last_width == w && s_last_height != h)
+			// {
+			// 	// 触屏方式忽略垂直高度变化(输入法影响)
+			// 	return;
+			// }
 
 			if (((CSDL2Application *)(CGlobals::GetApp()))->IsInputing())
 			{
 				return;
 			}
 		}
-
-		std::cout << "====OnSize====" << std::endl;
-
+		
+		std::cout << "OnSize" << " w: " << w << " h: " << h << std::endl;
 		if (w > 0 && h > 0)
 		{
 			app->SetResolution((float)w, (float)h);
