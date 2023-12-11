@@ -75,7 +75,7 @@ public class BluetoothLeService extends Service {
 	{
 		String currDataStr = "";
 		final StringBuilder stringBuilder = new StringBuilder(data.length);
-		for(int i=0;i<data.length;i++)
+		for (int i = 0; i < data.length; i++)
 		{
 			byte byteChar = data[i];
 			String str = String.format("%02X ", byteChar);
@@ -140,7 +140,6 @@ public class BluetoothLeService extends Service {
 		{
         	Log.i(TAG, "onCharacteristicRead uuid: " + characteristic.getUuid().toString() + ",data:" + new String(characteristic.getValue()) );
 
-
 			final Intent intent = new Intent(BluetoothLeService.ACTION_DATA_CHARACTERISTIC);
 			intent.putExtra(BluetoothLeService.ON_CHARACTERISTIC_UUID, characteristic.getUuid().toString());
 			intent.putExtra(BluetoothLeService.ON_CHARACTERISTIC_IO, "r");
@@ -185,7 +184,6 @@ public class BluetoothLeService extends Service {
 			sendBroadcast(intent);
         }
 
-		
         public void onDescriptorWrite(BluetoothGatt paramBluetoothGatt, BluetoothGattDescriptor paramBluetoothGattDescriptor, int paramInt)
         {
         	Log.i(TAG, "onDescriptorWrite: ");

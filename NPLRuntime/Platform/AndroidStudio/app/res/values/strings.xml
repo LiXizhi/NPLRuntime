@@ -2,11 +2,11 @@
 <resources>
     <!-- <string name="app_name">Paracraft</string> -->
     <string name="PluginInfo" translatable="false">
-      [{
+        [{
           "packname": "com.tatfook.plugin.bluetooth.InterfaceBluetooth",
           "key": "test",
           "debug": true
-      }]
+        }]
     </string>
     <!--EditBox Confirm Button Title-->
     <string name="done" translatable="false">Done</string>
@@ -14,21 +14,18 @@
     <string name="search" translatable="false">Search</string>
     <string name="go" translatable="false">Go</string>
     <string name="send" translatable="false">Send</string>
-  <!--
+    <!--
     <string name="PluginInfo">
-      [{
-      "packname": "com.xxx.xxx",
-      "key": "1234",
-      "debug": true
-      },
-
-      {
-      "packname": "com.xxx.xxx2",
-      "key": "1234",
-      "debug": false
-      }
-      ]
+        [{
+        "packname": "com.xxx.xxx",
+        "key": "1234",
+        "debug": true
+        },
+        {
+        "packname": "com.xxx.xxx2",
+        "key": "1234",
+        "debug": false
+        }]
     </string>
     -->
-
 </resources>
