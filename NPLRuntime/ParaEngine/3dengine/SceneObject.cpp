@@ -1855,7 +1855,21 @@ int CSceneObject::PrepareRender(CBaseCamera* pCamera, SceneState* pSceneState)
 
 	CGlobals::GetWorldMatrixStack().push(*CGlobals::GetIdentityMatrix());
 	CGlobals::GetViewMatrixStack().push(*(pCamera->GetViewMatrix()));
-	CGlobals::GetProjectionMatrixStack().push(*(pCamera->GetProjMatrix()));
+
+	if (CGlobals::GetApp()->GetLandscapeMode() == "flip") 
+	{
+		Matrix4 matProj;
+		Quaternion q;
+		q.FromAngleAxis(Radian(MATH_PI / 2.f), Vector3(0, 0, 1.f));
+		q.ToRotationMatrix(matProj, Vector3(0, 0, 0));
+		matProj = (*(pCamera->GetProjMatrix())) * matProj;
+		CGlobals::GetProjectionMatrixStack().push(matProj);
+	}
+	else 
+	{
+		CGlobals::GetProjectionMatrixStack().push(*(pCamera->GetProjMatrix()));
+	}
+	
 
 #ifdef USE_DIRECTX_RENDERER
 	CGlobals::GetEffectManager()->UpdateD3DPipelineTransform(true,true, true);

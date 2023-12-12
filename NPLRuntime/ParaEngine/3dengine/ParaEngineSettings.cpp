@@ -1470,7 +1470,7 @@ void ParaEngine::ParaEngineSettings::SetPythonToLua(const char* python_code)
 	*GetPythonToLua() = ParaPythonToLua(python_code);
 }
 
-std::string ParaEngine::ParaEngineSettings::GetLandscapeMode()
+const std::string& ParaEngine::ParaEngineSettings::GetLandscapeMode()
 {
 	static std::string s_landscape = "";
 	s_landscape = CGlobals::GetApp()->GetLandscapeMode();

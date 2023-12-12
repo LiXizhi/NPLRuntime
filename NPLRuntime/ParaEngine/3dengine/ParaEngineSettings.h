@@ -731,7 +731,7 @@ namespace ParaEngine
 		static std::string* GetPythonToLua() { static std::string s_lua_code; return &s_lua_code; }
 		static void SetPythonToLua(const char* python_code);
         
-        std::string GetLandscapeMode();
+        const std::string& GetLandscapeMode();
         void SetLandscapeMode(const char* mode);
         /**
          ** webversion
