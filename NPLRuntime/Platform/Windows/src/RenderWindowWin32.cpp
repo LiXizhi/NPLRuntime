@@ -309,6 +309,12 @@ namespace ParaEngine {
 		}		
 	}
 
+	void RenderWindowWin32::SetScreenOrientation(int orientation) 
+	{
+		m_screen_orientation = orientation; 
+		SetWindowSize(m_window_width, m_window_height); 
+	}
+
 	void RenderWindowWin32::SetWindowSize(int width, int height)
 	{
 		m_window_width = width;
@@ -317,20 +323,17 @@ namespace ParaEngine {
 		m_screen_rotated = m_screen_orientation == s_screen_orientation_landscape && m_window_width < m_window_height;
 		m_screen_rotated = m_screen_rotated || (m_screen_orientation == s_screen_orientation_portrait && m_window_width > m_window_height);
 		
-		// m_screen_rotated = true;
-
 		if (m_screen_rotated)
 		{
-			OnSize(m_window_height, m_window_width);
 			m_Width = m_window_height;
 			m_Height = m_window_width;
 		}
 		else
 		{
-			OnSize(m_window_width, m_window_height);
 			m_Width = m_window_width;
 			m_Height = m_window_height;
 		}
+		OnSize(m_Width, m_Height);
 	}
 
 	void RenderWindowWin32::SetSize(int w, int h)
@@ -370,6 +373,9 @@ namespace ParaEngine {
 
 		m_Width = defaultWdith;
 		m_Height = defaultHeight;
+
+		m_window_width = m_Width;
+		m_window_height = m_Height;
 
 		WNDCLASSW wndClass = { 0, RenderWindowWin32::WindowProc, 0, 0, hInstance,
 			NULL,

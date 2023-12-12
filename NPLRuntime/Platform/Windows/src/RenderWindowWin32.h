@@ -55,7 +55,7 @@ namespace ParaEngine
 		static const int s_screen_orientation_landscape = 1; // 横屏 渲染宽大于等于渲染高
 		static const int s_screen_orientation_portrait  = 2; // 竖屏 渲染宽小于等于渲染高
 
-		void SetScreenOrientation(int orientation) { m_screen_orientation = orientation; SetWindowSize(m_window_width, m_window_height); }
+		void SetScreenOrientation(int orientation);
 		int GetScreenOrientation() { return m_screen_orientation; }
 		void SetWindowSize(int width, int height);
     	void WindowXYToRenderXY(int window_x, int window_y, int& render_x, int& render_y);

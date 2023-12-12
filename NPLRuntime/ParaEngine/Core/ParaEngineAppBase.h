@@ -62,6 +62,9 @@ namespace ParaEngine
 
 		virtual void setIMEKeyboardState(bool bOpen, bool bMoveView = false, int ctrlBottom = -1, const string& editParams="") override;
 		
+		virtual void SetLandscapeMode(std::string landscapeMode);
+		virtual std::string GetLandscapeMode();
+
 		/** return true if this is a render tick, otherwise false.
 		* @param pNextInterval: main_loop timer interval.
 		* @return frameDelta. if this is bigger than 0, we will render a frame.
@@ -117,6 +120,7 @@ namespace ParaEngine
 		std::string m_sModuleDir;
 		/** initial working directory*/
 		std::string m_sInitialWorkingDir;
+		std::string m_sLandscapeMode;
 		/** application state */
 		PEAppState m_nAppState;
 		ref_ptr<CGUIRoot> m_pGUIRoot;
