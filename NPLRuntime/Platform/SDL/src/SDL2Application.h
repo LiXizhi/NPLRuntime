@@ -97,6 +97,7 @@ namespace ParaEngine
 
 		virtual void SetLandscapeMode(std::string landscapeMode);
 		virtual std::string GetLandscapeMode();
+		virtual bool IsRotateScreen();
 
 		bool IsInputing();
 	protected:
