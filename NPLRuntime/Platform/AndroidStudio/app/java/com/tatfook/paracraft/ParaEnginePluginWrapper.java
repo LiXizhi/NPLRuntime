@@ -21,7 +21,7 @@ public class ParaEnginePluginWrapper {
     protected static Context sContext = null;
     private static final String TAG = "ParaEngine";
 
-    protected static Map<String , Object> sPlugins = new LinkedHashMap<String , Object>();
+    protected static Map<String, Object> sPlugins = new LinkedHashMap<String, Object>();
     protected static List<PluginInfo> pluginInfoList = new LinkedList<PluginInfo>();
     private static int count = 0;
 
@@ -32,7 +32,7 @@ public class ParaEnginePluginWrapper {
     public static class PluginInfo {
         public boolean debug;
         public String name;
-        public Map<String , Object> initParams = null;
+        public Map<String, Object> initParams = null;
     }
 
     public static void addPluginInfo(PluginInfo info) {
@@ -43,9 +43,7 @@ public class ParaEnginePluginWrapper {
         return sContext;
     }
 
-    protected static Object initPlugin(String classFullName,
-                                       Map<String , Object> initParams,
-                                       boolean bDebug) {
+    protected static Object initPlugin(String classFullName, Map<String, Object> initParams, boolean bDebug) {
         Log.i(TAG, "class name : ----" + classFullName + "----");
 
         if (sPlugins.containsKey(classFullName)) {
@@ -64,7 +62,6 @@ public class ParaEnginePluginWrapper {
         }
 
         try {
-            
             Object o = c.newInstance();
             if (o != null) {
                 sPlugins.put(classFullName, o);
@@ -85,20 +82,14 @@ public class ParaEnginePluginWrapper {
 
     public static Object getPlugin(String classFullName)
     {
-        if (sPlugins.containsKey(classFullName)) 
-        {
+        if (sPlugins.containsKey(classFullName)) {
             return sPlugins.get(classFullName);
-        }
-        else
-        {
+        } else {
             return null;
         }
     }
 
-    public static boolean loadPlugin(String classFullName
-            , Map<String , Object> initParams
-            , boolean bDebug
-            , final PluginWrapperListener listener)
+    public static boolean loadPlugin(String classFullName, Map<String , Object> initParams, boolean bDebug, final PluginWrapperListener listener)
     {
         if (getContext() == null)
         {
@@ -114,7 +105,7 @@ public class ParaEnginePluginWrapper {
         
         if (p != null)
         {
-            ParaEnginePluginInterface plugin = (ParaEnginePluginInterface) p;
+            ParaEnginePluginInterface plugin = (ParaEnginePluginInterface)p;
 
             return plugin.onCreate(getContext(), null, listener);
         }
@@ -149,25 +140,23 @@ public class ParaEnginePluginWrapper {
                 PluginInfo info = pluginInfoList.get(i);
                 Object p = initPlugin(info.name, info.initParams, info.debug);
                 if (p != null) {
-                    ParaEnginePluginInterface plugin = (ParaEnginePluginInterface) p;
+                    ParaEnginePluginInterface plugin = (ParaEnginePluginInterface)p;
 
                     if (plugin.onCreate(sContext, savedInstanceState,
-                            new ParaEnginePluginWrapper.PluginWrapperListener() {
-                                @Override
-                                public void onInit() {
-                                    count--;
-                                    assert(count >= 0);
-                                    if (count == 0) {
-                                        listener.onInit();
-                                    }
+                        new ParaEnginePluginWrapper.PluginWrapperListener() {
+                            @Override
+                            public void onInit() {
+                                count--;
+                                assert(count >= 0);
+                                if (count == 0) {
+                                    listener.onInit();
                                 }
-                            })) {
+                            }
+                        })) {
                         count++;
 
                         bRet = true;
-                    }
-                    else
-                    {
+                    } else {
                         Log.e(TAG, "==========initPlugin(info.name) is null=======");
                     }
                 }
@@ -195,7 +184,7 @@ public class ParaEnginePluginWrapper {
     public static void onDestroy() {
         try {
             for (Map.Entry<String, Object> entry : sPlugins.entrySet()) {
-                ParaEnginePluginInterface plugin = (ParaEnginePluginInterface) entry.getValue();
+                ParaEnginePluginInterface plugin = (ParaEnginePluginInterface)entry.getValue();
                 if (plugin != null) {
                     plugin.onDestroy();
                 }
@@ -208,7 +197,7 @@ public class ParaEnginePluginWrapper {
     public static void onStart() {
         try {
             for (Map.Entry<String, Object> entry : sPlugins.entrySet()) {
-                ParaEnginePluginInterface plugin = (ParaEnginePluginInterface) entry.getValue();
+                ParaEnginePluginInterface plugin = (ParaEnginePluginInterface)entry.getValue();
                 if (plugin != null) {
                     plugin.onStart();
 
@@ -223,7 +212,7 @@ public class ParaEnginePluginWrapper {
     public static void onStop() {
         try {
             for (Map.Entry<String, Object> entry : sPlugins.entrySet()) {
-                ParaEnginePluginInterface plugin = (ParaEnginePluginInterface) entry.getValue();
+                ParaEnginePluginInterface plugin = (ParaEnginePluginInterface)entry.getValue();
                 if (plugin != null) {
                     plugin.onStop();
                 }
@@ -237,7 +226,7 @@ public class ParaEnginePluginWrapper {
     public static void onPause() {
         try {
             for (Map.Entry<String, Object> entry : sPlugins.entrySet()) {
-                ParaEnginePluginInterface plugin = (ParaEnginePluginInterface) entry.getValue();
+                ParaEnginePluginInterface plugin = (ParaEnginePluginInterface)entry.getValue();
                 if (plugin != null) {
                     plugin.onPause();
                 }
@@ -251,7 +240,7 @@ public class ParaEnginePluginWrapper {
     public static void onResume() {
         try {
             for (Map.Entry<String, Object> entry : sPlugins.entrySet()) {
-                ParaEnginePluginInterface plugin = (ParaEnginePluginInterface) entry.getValue();
+                ParaEnginePluginInterface plugin = (ParaEnginePluginInterface)entry.getValue();
                 if (plugin != null) {
                     plugin.onResume();
                 }
@@ -265,13 +254,12 @@ public class ParaEnginePluginWrapper {
     public static void onActivityResult(int requestCode, int resultCode, Intent data) {
         try {
             for (Map.Entry<String, Object> entry : sPlugins.entrySet()) {
-                ParaEnginePluginInterface plugin = (ParaEnginePluginInterface) entry.getValue();
+                ParaEnginePluginInterface plugin = (ParaEnginePluginInterface)entry.getValue();
 
                 if (plugin != null) {
                     plugin.onActivityResult(requestCode, resultCode, data);
                 }
             }
-
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -280,7 +268,7 @@ public class ParaEnginePluginWrapper {
     public static void onAppBackground() {
         try {
             for (Map.Entry<String, Object> entry : sPlugins.entrySet()) {
-                ParaEnginePluginInterface plugin = (ParaEnginePluginInterface) entry.getValue();
+                ParaEnginePluginInterface plugin = (ParaEnginePluginInterface)entry.getValue();
                 if (plugin != null) {
                     plugin.onAppBackground();
                 }
@@ -294,12 +282,11 @@ public class ParaEnginePluginWrapper {
     public static void onAppForeground() {
         try {
             for (Map.Entry<String, Object> entry : sPlugins.entrySet()) {
-                ParaEnginePluginInterface plugin = (ParaEnginePluginInterface) entry.getValue();
+                ParaEnginePluginInterface plugin = (ParaEnginePluginInterface)entry.getValue();
                 if (plugin != null) {
                     plugin.onAppForeground();
                 }
             }
-
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -308,12 +295,11 @@ public class ParaEnginePluginWrapper {
     public static void onSaveInstanceState(Bundle outState) {
         try {
             for (Map.Entry<String, Object> entry : sPlugins.entrySet()) {
-                ParaEnginePluginInterface plugin = (ParaEnginePluginInterface) entry.getValue();
+                ParaEnginePluginInterface plugin = (ParaEnginePluginInterface)entry.getValue();
                 if (plugin != null) {
                     plugin.onSaveInstanceState(outState);
                 }
             }
-
         } catch (Exception e) {
             e.printStackTrace();
         }

@@ -5,7 +5,13 @@
           android:versionName="1.4">
     <!-- This is the platform API where NativeActivity was introduced. -->
     <uses-feature android:glEsVersion="0x00020000" android:required="true" />
+    <uses-feature android:name="android.hardware.bluetooth_le" android:required="true" />
 
+    <uses-permission android:name="android.permission.BIND_SERVICE"/>
+    <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
+    <uses-permission android:name="android.permission.BLUETOOTH_SCAN" />
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
     <uses-permission android:name="android.permission.INTERNET" />
@@ -63,6 +69,9 @@
                  android:enabled="true"
                  android:foregroundServiceType="mediaProjection">
         </service>
+        <service android:name="com.tatfook.plugin.bluetooth.BluetoothLeService"
+                 android:enabled="true"
+                 android:exported="false" />
         <meta-data android:name="PlguinWrapper"
                    android:value="@string/PluginInfo"/>
         <!--要记得在build.gradle里添加manifestPlaceholders-->

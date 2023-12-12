@@ -42,7 +42,6 @@ import android.webkit.MimeTypeMap;
 
 @Keep
 public class ParaEngineHelper {
-
 	private static native void nativeSetContext(final Context pContext, final AssetManager pAssetManager);
 	private static native String GetWorldDirectory();
 	private static native void OpenFileDialogNativeCallback(String filepath);
@@ -51,7 +50,7 @@ public class ParaEngineHelper {
 
 	public static native void onCmdProtocol(String strProtocol);
 	private static boolean mCanReadPhoneState = false;
-	public static void setCanReadPhoneState(boolean bool){
+	public static void setCanReadPhoneState(boolean bool) {
 		mCanReadPhoneState = bool;
 	}
 
