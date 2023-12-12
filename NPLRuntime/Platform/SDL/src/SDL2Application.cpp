@@ -561,4 +561,11 @@ namespace ParaEngine
 			return "auto";
 		}
 	}
+
+	bool CSDL2Application::IsRotateScreen()
+	{
+		auto pWinDelegate = (RenderWindowDelegate *)&m_renderWindow;
+		return pWinDelegate->IsRotateScreen();
+	}
+
 } // end namespace

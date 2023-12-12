@@ -527,6 +527,7 @@ namespace ParaEngine
 
 		virtual void SetLandscapeMode(std::string landscapeMode) {}
 		virtual std::string GetLandscapeMode() { return "auto"; }
+		virtual bool IsRotateScreen() { return false; }
 	};
 
 }
