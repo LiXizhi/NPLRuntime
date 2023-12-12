@@ -524,6 +524,9 @@ namespace ParaEngine
 		virtual void SetWindowMaximized(bool isMaximized) {};
 		virtual bool IsWindowMaximized() { return false; };
 		virtual void GetVisibleSize(Vector2* pOut) {};
+
+		virtual void SetLandscapeMode(std::string landscapeMode) {}
+		virtual std::string GetLandscapeMode() { return "auto"; }
 	};
 
 }
