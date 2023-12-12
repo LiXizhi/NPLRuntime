@@ -95,6 +95,9 @@ namespace ParaEngine
 			CParaEngineAppBase::SetTouchInputting(bTouchInputting);
 		}
 
+		virtual void SetLandscapeMode(std::string landscapeMode);
+		virtual std::string GetLandscapeMode();
+
 		bool IsInputing();
 	protected:
 		void LoadAndApplySettings();

@@ -213,7 +213,6 @@ namespace ParaEngine
 				pWindow->PollEvents();
 				UpdateScreenDevice();
 				this->DoWork();
-
 				double fNextInterval = 0.01f; // as fast as possible
 				// fNextInterval = this->GetRefreshTimer() - (ParaTimer::GetAbsoluteTime() - this->GetAppTime());
 				// fNextInterval = (std::min)(0.1, (std::max)(0.02, fNextInterval));  // [0.02, 0.1]
@@ -527,4 +526,39 @@ namespace ParaEngine
 		//	}
 	}
 
+
+	void CSDL2Application::SetLandscapeMode(std::string landscapeMode)
+	{
+		auto pWinDelegate = (RenderWindowDelegate *)&m_renderWindow;
+		if (landscapeMode == "on")
+		{
+			pWinDelegate->SetScreenOrientation(RenderWindowDelegate::s_screen_orientation_landscape);
+		}
+		else if (landscapeMode == "off")
+		{
+			pWinDelegate->SetScreenOrientation(RenderWindowDelegate::s_screen_orientation_portrait);
+		}
+		else
+		{
+			pWinDelegate->SetScreenOrientation(RenderWindowDelegate::s_screen_orientation_auto);
+		}
+	}
+
+	std::string CSDL2Application::GetLandscapeMode()
+	{
+		auto pWinDelegate = (RenderWindowDelegate *)&m_renderWindow;
+		auto screen_orientation = pWinDelegate->GetScreenOrientation();
+		if (screen_orientation == RenderWindowDelegate::s_screen_orientation_landscape)
+		{
+			return "on";
+		}
+		else if (screen_orientation == RenderWindowDelegate::s_screen_orientation_portrait)
+		{
+			return "off";
+		}
+		else
+		{
+			return "auto";
+		}
+	}
 } // end namespace

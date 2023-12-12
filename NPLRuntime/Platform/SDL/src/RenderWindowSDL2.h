@@ -47,14 +47,29 @@ namespace ParaEngine
 		virtual void OnChar(std::string text) {};
 		virtual void OnSize(int w, int h) {};
 		virtual void OnDropFiles(const std::string& files) {};
+	public:
+	    static const int s_screen_orientation_auto      = 0; // 保持真实窗口方向
+		static const int s_screen_orientation_landscape = 1; // 横屏 渲染宽大于等于渲染高
+		static const int s_screen_orientation_portrait  = 2; // 竖屏 渲染宽小于等于渲染高
 
-
+		void SetScreenOrientation(int orientation) { m_screen_orientation = orientation; SetSDLWindowSize(m_sdl_window_width, m_sdl_window_height); }
+		int GetScreenOrientation() { return m_screen_orientation; }
+		void SetSDLWindowSize(int width, int height);
+    	void WindowXYToRenderXY(int window_x, int window_y, int& render_x, int& render_y);
+		bool IsRotateScreent() { return m_screen_rotated; }
 	private:
 		SDL_GLContext m_gl_context;
+		GLuint m_scene_fbo;
+    	GLuint m_scene_texture;
 		SDL_Window* m_sdl2_window;
+		int m_window_width;
+		int m_window_height;
+		int m_sdl_window_width;
+		int m_sdl_window_height;
+    	int m_screen_orientation;  // 屏幕方向
+    	bool m_screen_rotated;     // 屏幕是否旋转
+
 		int m_isNumLockEnabled;
-		int m_Width;
-		int m_Height;
 		int m_mouse_x;
 		int m_mouse_y;
 		bool m_Windowed;
