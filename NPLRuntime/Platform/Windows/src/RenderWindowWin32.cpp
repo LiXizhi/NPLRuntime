@@ -364,8 +364,18 @@ namespace ParaEngine {
 
 		MoveWindow(m_hWnd, rect.left, rect.top, rect.right - rect.left, rect.bottom - rect.top, TRUE);
 
-		m_Width = w;
-		m_Height = h;
+		m_window_width = w;
+		m_window_height = h;
+		if (m_screen_rotated)
+		{
+			m_Width = m_window_height;
+			m_Height = m_window_width;
+		}
+		else
+		{
+			m_Width = m_window_width;
+			m_Height = m_window_height;
+		}
 	}
 
 	bool RenderWindowWin32::Create(HINSTANCE hInstance, int defaultWdith, int defaultHeight)

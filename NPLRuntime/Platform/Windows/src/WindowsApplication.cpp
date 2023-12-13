@@ -441,7 +441,13 @@ namespace ParaEngine {
 				//	|| m_cfg.screenHeight != rect.bottom - rect.top)
 				if (m_bSizeChanged)
 				{
-					pWinDelegate->SetSize(m_cfg.screenWidth, m_cfg.screenHeight);
+					int width = m_cfg.screenWidth;
+					int height = m_cfg.screenHeight;
+					if(IsRotateScreen()){
+						width = m_cfg.screenHeight;
+						height = m_cfg.screenWidth;
+					}
+					pWinDelegate->SetSize(width, height);
 					bReset = true;
 					m_bSizeChanged = false;
 				}
