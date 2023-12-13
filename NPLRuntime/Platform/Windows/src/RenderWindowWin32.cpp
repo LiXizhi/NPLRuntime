@@ -346,8 +346,8 @@ namespace ParaEngine {
 		RECT rect;
 		::GetWindowRect(m_hWnd, &rect);
 
-		rect.right = rect.left + m_window_width;
-		rect.bottom = rect.top + m_window_height;
+		rect.right = rect.left + w;
+		rect.bottom = rect.top + h;
 
 		RECT oldRect = rect;
 
@@ -363,6 +363,9 @@ namespace ParaEngine {
 		rect.bottom -= offsetY;
 
 		MoveWindow(m_hWnd, rect.left, rect.top, rect.right - rect.left, rect.bottom - rect.top, TRUE);
+
+		m_Width = w;
+		m_Height = h;
 	}
 
 	bool RenderWindowWin32::Create(HINSTANCE hInstance, int defaultWdith, int defaultHeight)
