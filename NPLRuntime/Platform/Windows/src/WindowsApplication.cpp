@@ -513,7 +513,7 @@ namespace ParaEngine {
 
 	void CWindowsApplication::SetLandscapeMode(std::string landscapeMode)
 	{
-		auto pWinDelegate = (RenderWindowDelegate *)&m_pRenderWindow;
+		auto pWinDelegate = (RenderWindowDelegate *)m_pRenderWindow;
 		if (landscapeMode == "on")
 		{
 			pWinDelegate->SetScreenOrientation(RenderWindowDelegate::s_screen_orientation_landscape);
@@ -530,7 +530,7 @@ namespace ParaEngine {
 
 	std::string CWindowsApplication::GetLandscapeMode()
 	{
-		auto pWinDelegate = (RenderWindowDelegate *)&m_pRenderWindow;
+		auto pWinDelegate = (RenderWindowDelegate *)m_pRenderWindow;
 		auto screen_orientation = pWinDelegate->GetScreenOrientation();
 		if (screen_orientation == RenderWindowDelegate::s_screen_orientation_landscape)
 		{
@@ -548,7 +548,7 @@ namespace ParaEngine {
 
 	bool CWindowsApplication::IsRotateScreen()
 	{
-		auto pWinDelegate = (RenderWindowDelegate *)&m_pRenderWindow;
+		auto pWinDelegate = (RenderWindowDelegate *)m_pRenderWindow;
 		return pWinDelegate->IsRotateScreen();
 	}
 } // end namespace
