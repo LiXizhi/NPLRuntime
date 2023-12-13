@@ -128,8 +128,16 @@ public class BluetoothLeService extends Service {
         @Override
         public void onServicesDiscovered(BluetoothGatt gatt, int status) {
             if (status == BluetoothGatt.GATT_SUCCESS) {
-				final Intent intent = new Intent(BluetoothLeService.ACTION_GATT_SERVICES_DISCOVERED);
-				sendBroadcast(intent);   
+                BluetoothGattService service = gatt.getServices().get(gatt.getServices().size() - 1);
+                UUID serviceUUID = service.getUuid();
+                BluetoothGattCharacteristic characteristic = service.getCharacteristics().get(0);
+                UUID characteristicUUID = characteristic.getUuid();
+
+                final Intent intent = new Intent(BluetoothLeService.ACTION_GATT_SERVICES_DISCOVERED);
+                intent.putExtra("serviceUUID", serviceUUID.toString());
+                intent.putExtra("characteristicUUID", characteristicUUID.toString());
+
+                sendBroadcast(intent);
             } else {
                 Log.i(TAG, "onServicesDiscovered received: " + status);
             }
@@ -168,7 +176,6 @@ public class BluetoothLeService extends Service {
 			
 			sendBroadcast(intent);
         }
-
 
         public void onCharacteristicWrite(BluetoothGatt paramBluetoothGatt, BluetoothGattCharacteristic characteristic, int paramInt)
         {
@@ -283,7 +290,7 @@ public class BluetoothLeService extends Service {
 		return mBluetoothGatt;
 	}
 
-    public void disconnect() 
+    public void disconnect()
 	{
         if (mBluetoothAdapter == null || mBluetoothGatt == null) {
             Log.w(TAG, "BluetoothAdapter not initialized");
@@ -318,7 +325,7 @@ public class BluetoothLeService extends Service {
         }
         
         boolean isWrite = mBluetoothGatt.writeCharacteristic(characteristic);
-        Log.i(TAG, "mBluetoothGatt writeCharacteristic="+isWrite);
+        Log.i(TAG, "mBluetoothGatt writeCharacteristic=" + isWrite);
     }
 
     public void setCharacteristicNotification(BluetoothGattCharacteristic characteristic, boolean enabled) 
