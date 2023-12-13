@@ -1,4 +1,4 @@
-#include "ParaEngine.h"
+﻿#include "ParaEngine.h"
 #include "RenderWindowWin32.h"
 #include "resource.h"
 #include "Winuser.h"
@@ -174,6 +174,9 @@ namespace ParaEngine {
 		assert(window->GetHandle() == hWnd);
 		int xPos = GET_X_LPARAM(lParam);
 		int yPos = GET_Y_LPARAM(lParam);
+		
+		window->WindowXYToRenderXY(xPos, yPos, xPos, yPos);
+
 		switch (message)
 		{
 		case WM_MOUSEMOVE:
@@ -252,7 +255,8 @@ namespace ParaEngine {
 		{
 			int nWidth = LOWORD(lParam);
 			int nHeight = HIWORD(lParam);
-			window->OnSize(nWidth, nHeight);
+			// window->OnSize(nWidth, nHeight);
+			window->SetWindowSize(nWidth, nHeight);
 			break;
 		}
 		case WM_DROPFILES:
@@ -286,10 +290,50 @@ namespace ParaEngine {
 			break;
 		}
 
-
-
 		// Handle any messages the switch statement didn't
 		return  DefWindowProcW(hWnd, message, wParam, lParam);
+	}
+
+	void RenderWindowWin32::WindowXYToRenderXY(int window_x, int window_y, int& render_x, int& render_y)
+	{
+		if (m_screen_rotated)
+		{
+			// 逆时针旋转
+			window_x = render_y;
+			window_y = m_Width - 1 - render_x;
+		}
+		else
+		{
+			window_x = render_x;
+			window_y = render_y;
+		}		
+	}
+
+	void RenderWindowWin32::SetScreenOrientation(int orientation) 
+	{
+		m_screen_orientation = orientation; 
+		SetWindowSize(m_window_width, m_window_height); 
+	}
+
+	void RenderWindowWin32::SetWindowSize(int width, int height)
+	{
+		m_window_width = width;
+		m_window_height = height;
+
+		m_screen_rotated = m_screen_orientation == s_screen_orientation_landscape && m_window_width < m_window_height;
+		m_screen_rotated = m_screen_rotated || (m_screen_orientation == s_screen_orientation_portrait && m_window_width > m_window_height);
+		
+		if (m_screen_rotated)
+		{
+			m_Width = m_window_height;
+			m_Height = m_window_width;
+		}
+		else
+		{
+			m_Width = m_window_width;
+			m_Height = m_window_height;
+		}
+		OnSize(m_Width, m_Height);
 	}
 
 	void RenderWindowWin32::SetSize(int w, int h)
@@ -329,6 +373,9 @@ namespace ParaEngine {
 
 		m_Width = defaultWdith;
 		m_Height = defaultHeight;
+
+		m_window_width = m_Width;
+		m_window_height = m_Height;
 
 		WNDCLASSW wndClass = { 0, RenderWindowWin32::WindowProc, 0, 0, hInstance,
 			NULL,
@@ -391,6 +438,11 @@ namespace ParaEngine {
 		, m_bLostFocus(false)
 	{
 		InitInput();
+
+		m_window_width = 0;
+		m_window_height = 0;
+		m_screen_orientation = s_screen_orientation_auto;
+		m_screen_rotated = false;
 	}
 
 	RenderWindowWin32::~RenderWindowWin32()
@@ -472,8 +524,6 @@ namespace ParaEngine {
 	{
 		return m_MousePos;
 	}
-
-
 
 	void RenderWindowWin32::ProcessInput(const MSG& msg)
 	{

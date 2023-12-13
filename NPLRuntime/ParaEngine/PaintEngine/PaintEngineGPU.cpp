@@ -757,6 +757,18 @@ void ParaEngine::CPaintEngineGPU::updateClipScissorTest()
 		if (state->rectangleClip.isValid())
 		{
 			RECT clipRect = state->rectangleClip;
+
+			if (CGlobals::GetApp()->GetLandscapeMode() == "on")
+			{
+				RECT clipRect2 = clipRect;
+				clipRect.left = clipRect2.top;
+				ParaViewport viewport;
+				CGlobals::GetViewportManager()->GetCurrentViewport(viewport);
+				auto viewHeight = viewport.Height;
+				clipRect.top = viewHeight - clipRect2.right;
+				clipRect.right = clipRect2.bottom;
+				clipRect.bottom = viewHeight - clipRect2.left;
+			}
 			CGlobals::GetRenderDevice()->SetRenderState(ERenderState::SCISSORTESTENABLE, TRUE);
 			CGlobals::GetRenderDevice()->SetScissorRect(&clipRect);
 		}

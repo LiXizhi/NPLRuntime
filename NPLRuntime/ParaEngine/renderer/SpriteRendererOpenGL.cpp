@@ -59,6 +59,15 @@ HRESULT ParaEngine::CSpriteRendererOpenGL::Begin(DWORD Flags)
 			ParaMatrixOrthoOffCenterLH(&matProj, (float)(m_viewport.X), (float)(m_viewport.X + m_viewport.Width), (float)(m_viewport.Y + m_viewport.Height), (float)(m_viewport.Y), 0.f, 1.f);
 			// the following is used by opengl
 			//ParaMatrixOrthoOffCenterOpenGL(&matProj, 0.f, lastScreenSize.x, 0.f, lastScreenSize.y, 0.f, 1.f);
+
+			if (CGlobals::GetApp()->GetLandscapeMode() == "on")
+			{
+				Matrix4 matProj2;
+				Quaternion q;
+				q.FromAngleAxis(Radian(MATH_PI / 2.f), Vector3(0, 0, 1.f));
+				q.ToRotationMatrix(matProj2, Vector3(0, 0, 0));
+				matProj = matProj * matProj2;
+			}
 		}
 
 		CGlobals::GetProjectionMatrixStack().push(matProj);

@@ -50,7 +50,22 @@ namespace ParaEngine
 		virtual void OnSize(int w, int h) {};
 		virtual void OnDropFiles(const std::string& files) {};
 
+	public:
+	    static const int s_screen_orientation_auto      = 0; // 保持真实窗口方向
+		static const int s_screen_orientation_landscape = 1; // 横屏 渲染宽大于等于渲染高
+		static const int s_screen_orientation_portrait  = 2; // 竖屏 渲染宽小于等于渲染高
 
+		void SetScreenOrientation(int orientation);
+		int GetScreenOrientation() { return m_screen_orientation; }
+		void SetWindowSize(int width, int height);
+    	void WindowXYToRenderXY(int window_x, int window_y, int& render_x, int& render_y);
+		bool IsRotateScreen() { return m_screen_rotated; }
+
+	public:
+		int m_window_width;
+		int m_window_height;
+		int m_screen_orientation;  // 屏幕方向
+    	bool m_screen_rotated;     // 屏幕是否旋转
 	private:
 		HWND m_hWnd;
 		HACCEL m_hAccel;

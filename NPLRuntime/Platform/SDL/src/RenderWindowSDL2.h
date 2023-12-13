@@ -56,7 +56,7 @@ namespace ParaEngine
 		int GetScreenOrientation() { return m_screen_orientation; }
 		void SetSDLWindowSize(int width, int height);
     	void WindowXYToRenderXY(int window_x, int window_y, int& render_x, int& render_y);
-		bool IsRotateScreent() { return m_screen_rotated; }
+		bool IsRotateScreen() { return m_screen_rotated; }
 	private:
 		SDL_GLContext m_gl_context;
 		GLuint m_scene_fbo;

@@ -1721,3 +1721,13 @@ void ParaEngine::CParaEngineAppBase::InitSystemModules()
 	m_pViewportManager.reset(new CViewportManager());
 	m_pViewportManager->SetLayout(VIEW_LAYOUT_DEFAULT, m_pRootScene.get(), m_pGUIRoot.get());
 }
+
+void ParaEngine::CParaEngineAppBase::SetLandscapeMode(std::string landscapeMode)
+{
+	m_sLandscapeMode = landscapeMode;
+}
+
+std::string ParaEngine::CParaEngineAppBase::GetLandscapeMode()
+{
+	return m_sLandscapeMode;
+}
