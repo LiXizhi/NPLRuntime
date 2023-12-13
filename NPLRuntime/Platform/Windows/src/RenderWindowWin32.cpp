@@ -323,6 +323,8 @@ namespace ParaEngine {
 		m_screen_rotated = m_screen_orientation == s_screen_orientation_landscape && m_window_width < m_window_height;
 		m_screen_rotated = m_screen_rotated || (m_screen_orientation == s_screen_orientation_portrait && m_window_width > m_window_height);
 		
+		// m_screen_rotated = true;
+		
 		if (m_screen_rotated)
 		{
 			m_Width = m_window_height;
@@ -344,8 +346,8 @@ namespace ParaEngine {
 		RECT rect;
 		::GetWindowRect(m_hWnd, &rect);
 
-		rect.right = rect.left + w;
-		rect.bottom = rect.top + h;
+		rect.right = rect.left + m_window_width;
+		rect.bottom = rect.top + m_window_height;
 
 		RECT oldRect = rect;
 
@@ -361,9 +363,6 @@ namespace ParaEngine {
 		rect.bottom -= offsetY;
 
 		MoveWindow(m_hWnd, rect.left, rect.top, rect.right - rect.left, rect.bottom - rect.top, TRUE);
-
-		m_Width = w;
-		m_Height = h;
 	}
 
 	bool RenderWindowWin32::Create(HINSTANCE hInstance, int defaultWdith, int defaultHeight)
