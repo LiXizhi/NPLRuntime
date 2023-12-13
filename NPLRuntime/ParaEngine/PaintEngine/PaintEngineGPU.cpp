@@ -758,7 +758,7 @@ void ParaEngine::CPaintEngineGPU::updateClipScissorTest()
 		{
 			RECT clipRect = state->rectangleClip;
 
-			if (CGlobals::GetApp()->GetLandscapeMode() == "on")
+			if (CGlobals::GetApp()->IsRotateScreen())
 			{
 				RECT clipRect2 = clipRect;
 				clipRect.left = clipRect2.top;

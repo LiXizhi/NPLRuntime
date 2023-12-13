@@ -60,7 +60,7 @@ HRESULT ParaEngine::CSpriteRendererOpenGL::Begin(DWORD Flags)
 			// the following is used by opengl
 			//ParaMatrixOrthoOffCenterOpenGL(&matProj, 0.f, lastScreenSize.x, 0.f, lastScreenSize.y, 0.f, 1.f);
 
-			if (CGlobals::GetApp()->GetLandscapeMode() == "on")
+			if (CGlobals::GetApp()->IsRotateScreen())
 			{
 				Matrix4 matProj2;
 				Quaternion q;

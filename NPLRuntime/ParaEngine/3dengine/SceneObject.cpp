@@ -1856,7 +1856,7 @@ int CSceneObject::PrepareRender(CBaseCamera* pCamera, SceneState* pSceneState)
 	CGlobals::GetWorldMatrixStack().push(*CGlobals::GetIdentityMatrix());
 	CGlobals::GetViewMatrixStack().push(*(pCamera->GetViewMatrix()));
 
-	if (CGlobals::GetApp()->GetLandscapeMode() == "on") 
+	if (CGlobals::GetApp()->IsRotateScreen()) 
 	{
 		Matrix4 matProj;
 		Quaternion q;
