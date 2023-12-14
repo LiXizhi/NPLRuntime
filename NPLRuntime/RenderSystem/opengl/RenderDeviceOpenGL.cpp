@@ -649,8 +649,16 @@ void ParaEngine::RenderDeviceOpenGL::EndRenderTarget()
 bool ParaEngine::RenderDeviceOpenGL::BeginScene()
 {
 	// tricky: always render full screen
-	m_RenderTargetWidth = CGlobals::GetApp()->GetRenderWindow()->GetWidth();
-	m_RenderTargetHeight = CGlobals::GetApp()->GetRenderWindow()->GetHeight();
+	if (CGlobals::GetApp()->IsRotateScreen())
+	{
+		m_RenderTargetWidth = CGlobals::GetApp()->GetRenderWindow()->GetHeight();
+		m_RenderTargetHeight = CGlobals::GetApp()->GetRenderWindow()->GetWidth();
+	}
+	else
+	{
+		m_RenderTargetWidth = CGlobals::GetApp()->GetRenderWindow()->GetWidth();
+		m_RenderTargetHeight = CGlobals::GetApp()->GetRenderWindow()->GetHeight();
+	}
 	
 	if (!g_stackRenderTargetSizes.empty()) {
 		std::stack<std::pair<uint32_t, uint32_t>> emptyStack;

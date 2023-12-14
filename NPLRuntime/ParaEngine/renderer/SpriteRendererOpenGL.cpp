@@ -57,21 +57,10 @@ HRESULT ParaEngine::CSpriteRendererOpenGL::Begin(DWORD Flags)
 			if (CGlobals::GetApp()->IsRotateScreen())
 			{
 				ParaMatrixOrthoOffCenterLH(&matProj, (float)(m_viewport.Y), (float)(m_viewport.Y + m_viewport.Height), (float)(m_viewport.X + m_viewport.Width), (float)(m_viewport.X), 0.f, 1.f);
-
-				Matrix4 matProj2;
-				Quaternion q;
-				q.FromAngleAxis(Radian(MATH_PI / 2.f), Vector3(0, 0, 1.f));
-				q.ToRotationMatrix(matProj2, Vector3(0, 0, 0));
-				matProj = matProj * matProj2;
-
-				// // Assuming you have a projection matrix 'projectionMatrix' and viewport dimensions 'viewportWidth' and 'viewportHeight'
-				// Matrix centerTranslation = Matrix.CreateTranslation(-viewportWidth / 2f, -viewportHeight / 2f, 0);
-				// Matrix rotation = Matrix.CreateRotationZ(MathHelper.ToRadians(90)); // Rotate by 90 degrees
-				// Matrix inverseCenterTranslation = Matrix.CreateTranslation(viewportWidth / 2f, viewportHeight / 2f, 0);
-				// 
-				// // Apply the transformations
-				// Matrix transformedProjectionMatrix = centerTranslation * rotation * inverseCenterTranslation * projectionMatrix;
-
+				
+				Matrix4 rotationZ;
+				rotationZ.makeRot(Quaternion(Vector3(0, 0, 1.f), MATH_PI / 2.f), Vector3(0, 0, 0));
+				matProj = matProj * rotationZ;
 			}
 			else
 			{
