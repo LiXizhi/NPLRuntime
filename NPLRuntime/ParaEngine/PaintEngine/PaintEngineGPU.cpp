@@ -467,15 +467,17 @@ void ParaEngine::CPaintEngineGPU::drawLines(const Vector3 *vertices, int lineCou
 {
 	ApplyStateChanges();
 	auto state = GetState();
-	if (!state)
+	if (!state || lineCount<=0)
 		return;
 	float fLineThickness = state->m_pen.widthF();
 
 	Color color = state->color();
 	auto pWhiteTexture = CGlobals::GetAssetManager()->GetDefaultTexture(0);
+	// for performance reason will only calculate line width from the first vertex instead of every vertex.  
+	float fLineWidth = AdjustLineWidth(fLineThickness, vertices[0]);
 	for (int i = 0; i < lineCount; ++i)
 	{
-		float fLineWidth = Math::Max(AdjustLineWidth(fLineThickness, vertices[i * 2]), AdjustLineWidth(fLineThickness, vertices[i * 2 + 1]));
+		// fLineWidth = Math::Max(AdjustLineWidth(fLineThickness, vertices[i * 2]), AdjustLineWidth(fLineThickness, vertices[i * 2 + 1]));
 		GetSprite()->DrawLine(pWhiteTexture, NULL, vertices[i * 2], vertices[i * 2 + 1], fLineWidth, color);
 	}
 }
@@ -848,7 +850,9 @@ float ParaEngine::CPaintEngineGPU::GetPixelWidthAtPos(const Vector3& vPos)
 	const Matrix4& mat = GetWorldViewMatrix();
 	// since Y axis is downward
 	Vector3 vPosCameraSpace = vPos.InvertYCopy() * mat;
-	return vPosCameraSpace.z / CGlobals::GetProjectionMatrixStack().SafeGetTop()._22 * 2.f 
-		/ CGlobals::GetViewportManager()->GetActiveViewPort()->GetHeight() 
-		/ GetWorldScaling().y;
+	// assume field of view is 90 and ensure it is at least 2.f pixels on screen. 
+	return vPosCameraSpace.z * 2.0f / CGlobals::GetViewportManager()->GetActiveViewPort()->GetHeight() / GetWorldScaling().y;
+	// return vPosCameraSpace.z / CGlobals::GetProjectionMatrixStack().SafeGetTop()._22 * 2.f 
+	//  	/ CGlobals::GetViewportManager()->GetActiveViewPort()->GetHeight() 
+	//  	/ GetWorldScaling().y;
 }
