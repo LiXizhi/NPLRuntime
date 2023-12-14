@@ -697,10 +697,8 @@ ParaViewport ParaEngine::CViewport::SetViewport(DWORD x, DWORD y, DWORD width, D
 			RECT clipRect;
 			RECT clipRect2 = m_rect;
 			CurrentViewport.X = y;
-			ParaViewport viewport;
-			CGlobals::GetViewportManager()->GetCurrentViewport(viewport);
-			auto viewHeight = viewport.Height;
-			CurrentViewport.Y = viewHeight - (x + width);
+			uint32_t viewWidth = CGlobals::GetViewportManager()->GetWidth();
+			CurrentViewport.Y = viewWidth - (x + width);
 			CurrentViewport.Width = height;
 			CurrentViewport.Height = width;
 		}

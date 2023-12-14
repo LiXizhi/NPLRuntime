@@ -49,29 +49,23 @@ HRESULT ParaEngine::CSpriteRendererOpenGL::Begin(DWORD Flags)
 	if (!IsUseObjectSpaceTransform())
 	{
 		CGlobals::GetViewMatrixStack().push(Matrix4::IDENTITY);
-		static Matrix4 matProj;
-		if (m_lastViewport != m_viewport)
+		Matrix4 matProj;
+		if (CGlobals::GetApp()->IsRotateScreen())
 		{
-			m_lastViewport = m_viewport;
-
-			if (CGlobals::GetApp()->IsRotateScreen())
-			{
-				ParaMatrixOrthoOffCenterLH(&matProj, (float)(m_viewport.Y), (float)(m_viewport.Y + m_viewport.Height), (float)(m_viewport.X + m_viewport.Width), (float)(m_viewport.X), 0.f, 1.f);
+			ParaMatrixOrthoOffCenterLH(&matProj, (float)(m_viewport.Y), (float)(m_viewport.Y + m_viewport.Height), (float)(m_viewport.X + m_viewport.Width), (float)(m_viewport.X), 0.f, 1.f);
 				
-				Matrix4 rotationZ;
-				rotationZ.makeRot(Quaternion(Vector3(0, 0, 1.f), MATH_PI / 2.f), Vector3(0, 0, 0));
-				matProj = matProj * rotationZ;
-			}
-			else
-			{
-				// @NOTE: directX and openGL screen space coordinate system differs by 1-y
-				// we modified the projection matrix, and swapped top and bottom to make it behave like DirectX
-				ParaMatrixOrthoOffCenterLH(&matProj, (float)(m_viewport.X), (float)(m_viewport.X + m_viewport.Width), (float)(m_viewport.Y + m_viewport.Height), (float)(m_viewport.Y), 0.f, 1.f);
-				// the following is used by opengl
-				//ParaMatrixOrthoOffCenterOpenGL(&matProj, 0.f, lastScreenSize.x, 0.f, lastScreenSize.y, 0.f, 1.f);
-			}
+			Matrix4 rotationZ;
+			rotationZ.makeRot(Quaternion(Vector3(0, 0, 1.f), MATH_PI / 2.f), Vector3(0, 0, 0));
+			matProj = matProj * rotationZ;
 		}
-
+		else
+		{
+			// @NOTE: directX and openGL screen space coordinate system differs by 1-y
+			// we modified the projection matrix, and swapped top and bottom to make it behave like DirectX
+			ParaMatrixOrthoOffCenterLH(&matProj, (float)(m_viewport.X), (float)(m_viewport.X + m_viewport.Width), (float)(m_viewport.Y + m_viewport.Height), (float)(m_viewport.Y), 0.f, 1.f);
+			// the following is used by opengl
+			//ParaMatrixOrthoOffCenterOpenGL(&matProj, 0.f, lastScreenSize.x, 0.f, lastScreenSize.y, 0.f, 1.f);
+		}
 		CGlobals::GetProjectionMatrixStack().push(matProj);
 	}
 
