@@ -171,7 +171,6 @@ namespace ParaEngine
 				return kv.first;
 			}
 		}
-		// assert(false);
 		return -1;
 	}
 
@@ -258,7 +257,7 @@ namespace ParaEngine
 		m_screen_rotated = m_screen_orientation == s_screen_orientation_landscape && m_sdl_window_width < m_sdl_window_height;
 		m_screen_rotated = m_screen_rotated || (m_screen_orientation == s_screen_orientation_portrait && m_sdl_window_width > m_sdl_window_height);
 		
-		// m_screen_rotated = true;
+		// m_screen_rotated = true;  // debug
 
 		if (m_screen_rotated)
 		{
@@ -275,14 +274,14 @@ namespace ParaEngine
 		if (m_screen_rotated)
 		{
 			// 逆时针旋转
-			window_x = render_y;
-			window_y = m_window_width - 1 - render_x;
+			render_x = m_sdl_window_height - 1 - window_y;
+			render_y = window_x;
 		}
 		else
 		{
-			window_x = render_x;
-			window_y = render_y;
-		}		
+			render_x = window_x;
+			render_y = window_y;
+		}
 	}
 
 	void RenderWindowSDL2::PollEvents()
@@ -304,8 +303,7 @@ namespace ParaEngine
 				switch (sdl_event.window.event)
 				{
 				case SDL_WINDOWEVENT_SIZE_CHANGED:
-					std::cout << std::endl
-							  << "Window size changed: " << sdl_event.window.data1 << " " << sdl_event.window.data2 << std::endl;
+					std::cout << std::endl << "Window size changed: " << sdl_event.window.data1 << " " << sdl_event.window.data2 << std::endl;
 #ifdef EMSCRIPTEN
 					SetSDLWindowSize(EM_ASM_INT({ return document.documentElement.clientWidth * window.devicePixelRatio; }), EM_ASM_INT({ return document.documentElement.clientHeight * window.devicePixelRatio; }));
 #else
