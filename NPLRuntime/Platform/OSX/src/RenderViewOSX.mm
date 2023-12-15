@@ -203,17 +203,6 @@ static const NSRange kEmptyRange = { NSNotFound, 0 };
     if (![self.window.firstResponder isEqual:self]) {
         [self.window makeFirstResponder:self];
     }
-    
-    int keyCode = [event keyCode];
-    NSNumber *keyCodeNumber = [NSNumber numberWithInt:keyCode];
-    
-    for (NSNumber *curKeyCode in pressedKeys) {
-        if (curKeyCode == keyCodeNumber) {
-            return;
-        }
-    }
-
-    [pressedKeys addObject:keyCodeNumber];
 
     auto pRenderWindow = [RenderView getRenderWindow];
     if (pRenderWindow)
@@ -226,19 +215,6 @@ static const NSRange kEmptyRange = { NSNotFound, 0 };
 
 - (void)keyUp:(NSEvent *)event
 {
-    int keyCode = [event keyCode];
-    NSNumber *keyCodeNumber = [NSNumber numberWithInt:keyCode];
-    
-    int index = 0;
-    for (NSNumber *curKeyCode in pressedKeys) {
-        if (curKeyCode == keyCodeNumber) {
-            [pressedKeys removeObjectAtIndex:index];
-            break;
-        }
-        
-        index++;
-    }
-
     auto pRenderWindow = [RenderView getRenderWindow];
     if (pRenderWindow)
     {
