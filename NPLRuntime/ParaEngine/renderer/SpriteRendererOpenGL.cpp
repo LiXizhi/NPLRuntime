@@ -50,7 +50,7 @@ HRESULT ParaEngine::CSpriteRendererOpenGL::Begin(DWORD Flags)
 	{
 		CGlobals::GetViewMatrixStack().push(Matrix4::IDENTITY);
 		Matrix4 matProj;
-		if (CGlobals::GetApp()->IsRotateScreen())
+		if (CGlobals::GetApp()->IsRotateScreen() && CGlobals::GetViewportManager()->GetActiveViewPort()->GetRenderTarget() == NULL)
 		{
 			ParaMatrixOrthoOffCenterLH(&matProj, (float)(m_viewport.Y), (float)(m_viewport.Y + m_viewport.Height), (float)(m_viewport.X + m_viewport.Width), (float)(m_viewport.X), 0.f, 1.f);
 				

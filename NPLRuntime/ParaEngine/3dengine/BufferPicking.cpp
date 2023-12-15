@@ -168,18 +168,6 @@ int ParaEngine::CBufferPicking::Pick(const QRect& region_, int nViewportId /*= -
 			// offset by viewport of 3d scene
 			CViewport* pViewport = CGlobals::GetViewportManager()->CreateGetViewPort(1);
 			region.translate(pViewport->GetLeft(), pViewport->GetTop());
-
-			if (CGlobals::GetApp()->IsRotateScreen())
-			{
-				auto x = region.x();
-				auto y = region.y();
-				auto width = region.width();
-				auto height = region.height();
-				region.setX(y);
-				region.setY(CGlobals::GetViewportManager()->GetWidth() - (x + width));
-				region.setWidth(height);
-				region.setHeight(width);
-			}
 		}
 
 		if (fScalingX != 1.f || fScalingY != 1.f)
@@ -329,9 +317,16 @@ bool ParaEngine::CBufferPicking::BeginBuffer()
 
 					CSceneObject* pScene = CGlobals::GetScene();
 					CBaseCamera* pCamera = pScene->GetCurrentCamera();
+					CRenderTarget* pViewportRenderTarget = NULL;
 					if (pViewport) {
+						pViewportRenderTarget = pViewport->GetRenderTarget();
+						if (pViewportRenderTarget != pRenderTarget)
+						{
+							pViewport->SetRenderTarget(pRenderTarget);
+						}
 						pViewport->SetActive();
 						pViewport->ApplyCamera((CAutoCamera*)pCamera);
+						
 						pViewport->ApplyViewport();
 					}
 
@@ -348,6 +343,10 @@ bool ParaEngine::CBufferPicking::BeginBuffer()
 
 					DrawObjects();
 
+					if ((pViewportRenderTarget != pRenderTarget) && pViewport)
+					{
+						pViewport->SetRenderTarget(pViewportRenderTarget);
+					}
 					return true;
 				}
 			}

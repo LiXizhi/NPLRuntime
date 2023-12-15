@@ -1856,7 +1856,8 @@ int CSceneObject::PrepareRender(CBaseCamera* pCamera, SceneState* pSceneState)
 	CGlobals::GetWorldMatrixStack().push(*CGlobals::GetIdentityMatrix());
 	CGlobals::GetViewMatrixStack().push(*(pCamera->GetViewMatrix()));
 
-	if (CGlobals::GetApp()->IsRotateScreen()) 
+	
+	if (CGlobals::GetApp()->IsRotateScreen() && CGlobals::GetViewportManager()->GetActiveViewPort()->GetRenderTarget() == NULL)
 	{
 		Matrix4 matProj;
 		Quaternion q;
