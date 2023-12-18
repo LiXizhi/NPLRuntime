@@ -674,7 +674,7 @@ bool CGUIListBox::MsgProc(MSG *event)
 		else if (m_bDrag&&m_event->IsMapTo(nEvent, EM_LB_ACTIONEND)) {
 			m_bDrag = false;
 
-			if (m_nSelected != -1)
+			if (m_nSelected != -1 && m_nSelStart >= 0)
 			{
 				// Set all items between m_nSelStart and m_nSelected to
 				// the same state as m_nSelStart
