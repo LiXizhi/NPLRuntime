@@ -58,6 +58,7 @@ if (NPLRUNTIME_RENDERER STREQUAL "OPENGL")
 
     ucm_add_dirs(OpenGLWrapper TO sources_rendersystem RECURSIVE)
 
+    # Embedded Resource For *.fx source code
     file(GLOB SHADER_FILES ${CMAKE_CURRENT_SOURCE_DIR}/shaders/opengl_spec/*.fx)
 
     foreach(src_file ${SHADER_FILES})	

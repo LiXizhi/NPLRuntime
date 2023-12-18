@@ -61,6 +61,7 @@ using namespace ParaEngine;
 		ADD_RESOURCE(":IDR_FX_SKYDOME", skydome_fx);
 		ADD_RESOURCE(":IDR_FX_TERRAIN_NORMAL", terrain_normal_fx);
 		ADD_RESOURCE(":IDR_FX_BMAXMODEL", BMaxModel_fx);
+		ADD_RESOURCE(":IDR_FX_REDBLUESTEREO", RedBlueStereo_fx);
 #endif // USE_OPENGL_RENDERER
 
 
