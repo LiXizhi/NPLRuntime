@@ -235,6 +235,9 @@ namespace ParaEngine
 
 		ATTRIBUTE_METHOD1(ParaEngineSettings, GetPythonToLua_s, const char**) { *p1 = cls->GetPythonToLua()->c_str(); return S_OK; }
 		ATTRIBUTE_METHOD1(ParaEngineSettings, SetPythonToLua_s, const char*) { cls->SetPythonToLua(p1); return S_OK; }
+
+		ATTRIBUTE_METHOD1(ParaEngineSettings, GetLandscapeMode_s, const char**) { *p1 = cls->GetLandscapeMode().c_str(); return S_OK; }
+		ATTRIBUTE_METHOD1(ParaEngineSettings, SetLandscapeMode_s, const char*) { cls->SetLandscapeMode(p1); return S_OK; }
 	public:
 		/** if true, IO is restricted to current working directory and writable directory.  Under win32, this is true by default. */
 		static bool IsSandboxMode();
@@ -731,6 +734,9 @@ namespace ParaEngine
 
 		static std::string* GetPythonToLua() { static std::string s_lua_code; return &s_lua_code; }
 		static void SetPythonToLua(const char* python_code);
+
+		const std::string& GetLandscapeMode();
+        void SetLandscapeMode(const char* mode);
 	protected:
 		void LoadNameIndex();
 	private:

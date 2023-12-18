@@ -103,11 +103,7 @@ public:
         return GetScopePrefix() + ctx->getText();
     }
 
-<<<<<<< HEAD
     virtual std::any visitGlobal_stmt(Python3Parser::Global_stmtContext *ctx) override
-=======
-    virtual std::any visitGlobal_stmt(Python3Parser::Global_stmtContext* ctx) override
->>>>>>> e58dc46142ee5f2fd3a84cf6bb178eba10734b45
     {
         auto scope = m_scope;
         auto parent_scope = m_scope->GetParent();
@@ -127,11 +123,7 @@ public:
         return std::string("");
     }
 
-<<<<<<< HEAD
-    virtual std::any visitArgument(Python3Parser::ArgumentContext *ctx) override
-=======
     virtual std::any visitArgument(Python3Parser::ArgumentContext* ctx) override
->>>>>>> e58dc46142ee5f2fd3a84cf6bb178eba10734b45
     {
         if (ctx->STAR())
         {

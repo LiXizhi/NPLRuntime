@@ -70,6 +70,7 @@
 #include "BufferPicking.h"
 #include "memdebug.h"
 #include "StringHelper.h"
+#include "IParaEngineApp.h"
 
 /** @def shadow radius around the eye, larger than which shadows will not be considered.  */
 #define SHADOW_RADIUS	100.f
@@ -1860,7 +1861,20 @@ int CSceneObject::PrepareRender(CBaseCamera* pCamera, SceneState* pSceneState)
 
 	CGlobals::GetWorldMatrixStack().push(*CGlobals::GetIdentityMatrix());
 	CGlobals::GetViewMatrixStack().push(*(pCamera->GetViewMatrix()));
-	CGlobals::GetProjectionMatrixStack().push(*(pCamera->GetProjMatrix()));
+
+	if (CGlobals::GetApp()->IsRotateScreen() && CGlobals::GetViewportManager()->GetActiveViewPort()->GetRenderTarget() == NULL)
+	{
+		Matrix4 matProj;
+		Quaternion q;
+		q.FromAngleAxis(Radian(MATH_PI / 2.f), Vector3(0, 0, 1.f));
+		q.ToRotationMatrix(matProj, Vector3(0, 0, 0));
+		matProj = (*(pCamera->GetProjMatrix())) * matProj;
+		CGlobals::GetProjectionMatrixStack().push(matProj);
+	}
+	else 
+	{
+		CGlobals::GetProjectionMatrixStack().push(*(pCamera->GetProjMatrix()));
+	}
 
 #ifdef USE_DIRECTX_RENDERER
 	CGlobals::GetEffectManager()->UpdateD3DPipelineTransform(true,true, true);

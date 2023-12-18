@@ -17,7 +17,7 @@ VSYNC parameters. It is up to the user to properly configure their hardware devi
 The default behavior of Present method prior to Direct 9 was to wait for GPU to become available 
 for performing presentation operation, thus causing a stall in runtime or driver. This behavior 
 changed in DirectX 9 by including a special presentation flag in swap chain Present method. 
-Instead of using device¡¯s Present method (which is really a shortcut to swap chain¡¯s presentation 
+Instead of using deviceï¿½ï¿½s Present method (which is really a shortcut to swap chainï¿½ï¿½s presentation 
 function) retrieve a swap chain and use it for presentation with D3DPRESENT_DONOTWAIT flag. 
 If CPU is currently unavailable for performing presentation, Present will return D3DERR_WASSTILLDRAWING error code. 
 Using this presentation method can give scarce CPU cycles back to the application and improve CPU and graphics hardware parallelism.
@@ -814,7 +814,6 @@ HRESULT CD3DApplication::ChooseInitialD3DSettings()
     return S_OK;
 }
 
-
 //-----------------------------------------------------------------------------
 // Name: HandlePossibleSizeChange()
 // Desc: Reset the device if the client area size has changed.
@@ -846,7 +845,7 @@ HRESULT CD3DApplication::HandlePossibleSizeChange(bool bUpdateSizeOnly)
 
 			m_d3dpp.BackBufferWidth  = std::max(1, (int)(m_rcWindowClient.right - m_rcWindowClient.left));
 			m_d3dpp.BackBufferHeight = std::max(1, (int)(m_rcWindowClient.bottom - m_rcWindowClient.top));
-
+            
 			m_d3dSettings.Windowed_Width = m_d3dpp.BackBufferWidth;
 			m_d3dSettings.Windowed_Height = m_d3dpp.BackBufferHeight;
 
@@ -1007,7 +1006,6 @@ HRESULT CD3DApplication::Initialize3DEnvironment()
 	Let ParaEngine to manage window focus changes, such as Alt-tab and mouse activate. 
 	*/
 
-	
     hr = m_pD3D->CreateDevice( m_d3dSettings.AdapterOrdinal(), pDeviceInfo->DevType,
                                m_hWndFocus, behaviorFlags | D3DCREATE_FPU_PRESERVE /*| D3DCREATE_NOWINDOWCHANGES*/ , &m_d3dpp,
                                &m_pd3dDevice );

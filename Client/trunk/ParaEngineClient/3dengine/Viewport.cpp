@@ -99,7 +99,7 @@ void ParaEngine::CViewport::ApplyCamera(CAutoCamera* pCamera)
 			double fCameraObjectDist = pCamera->GetCameraObjectDistance();
 			if (m_stereoODSparam.m_bOmniAlwaysUseUpFrontCamera) {
 				pCamera->SetForceOmniCameraPitch(0);
-				//Ê¼ÖÕË®Æ½£¬½«oldLookAtPosÐý×ªµ½Ë®Æ½·½ÏòÉÏ
+				//Ê¼ï¿½ï¿½Ë®Æ½ï¿½ï¿½ï¿½ï¿½oldLookAtPosï¿½ï¿½×ªï¿½ï¿½Ë®Æ½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 				{
 					Vector3 sightDir = oldLookAtPos - dEyePos;
 					sightDir.normalise();
@@ -688,6 +688,19 @@ ParaViewport ParaEngine::CViewport::SetViewport(DWORD x, DWORD y, DWORD width, D
 	myViewport.Y = y;
 	myViewport.Width = width;
 	myViewport.Height = height;
+
+	// for back buffer
+	if (CGlobals::GetApp()->IsRotateScreen())
+	{
+		RECT clipRect;
+		RECT clipRect2 = m_rect;
+		myViewport.X = y;
+		uint32_t viewWidth = CGlobals::GetViewportManager()->GetWidth();
+		myViewport.Y = viewWidth - (x + width);
+		myViewport.Width = height;
+		myViewport.Height = width;
+	}
+
 	CGlobals::GetRenderDevice()->SetViewport(reinterpret_cast<const D3DVIEWPORT9*>(&myViewport));
 	return myViewport;
 }

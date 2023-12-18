@@ -1642,6 +1642,18 @@ float ParaEngineSettings::GetRefreshTimer()
 	return CGlobals::GetApp()->GetRefreshTimer();
 }
 
+const std::string& ParaEngine::ParaEngineSettings::GetLandscapeMode()
+{
+	static std::string s_landscape = "";
+	s_landscape = CGlobals::GetApp()->GetLandscapeMode();
+	return s_landscape;
+}
+
+void ParaEngine::ParaEngineSettings::SetLandscapeMode(const char* mode)
+{
+	CGlobals::GetApp()->SetLandscapeMode(mode);
+}
+
 int ParaEngineSettings::InstallFields(CAttributeClass* pClass, bool bOverride)
 {
 	IAttributeFields::InstallFields(pClass, bOverride);
