@@ -441,7 +441,13 @@ namespace ParaEngine {
 				//	|| m_cfg.screenHeight != rect.bottom - rect.top)
 				if (m_bSizeChanged)
 				{
-					pWinDelegate->SetSize(m_cfg.screenWidth, m_cfg.screenHeight);
+					int width = m_cfg.screenWidth;
+					int height = m_cfg.screenHeight;
+					if(IsRotateScreen()){
+						width = m_cfg.screenHeight;
+						height = m_cfg.screenWidth;
+					}
+					pWinDelegate->SetSize(width, height);
 					bReset = true;
 					m_bSizeChanged = false;
 				}
@@ -511,4 +517,44 @@ namespace ParaEngine {
 		}
 	}
 
+	void CWindowsApplication::SetLandscapeMode(std::string landscapeMode)
+	{
+		auto pWinDelegate = (RenderWindowDelegate *)m_pRenderWindow;
+		if (landscapeMode == "on")
+		{
+			pWinDelegate->SetScreenOrientation(RenderWindowDelegate::s_screen_orientation_landscape);
+		}
+		else if (landscapeMode == "off")
+		{
+			pWinDelegate->SetScreenOrientation(RenderWindowDelegate::s_screen_orientation_portrait);
+		}
+		else
+		{
+			pWinDelegate->SetScreenOrientation(RenderWindowDelegate::s_screen_orientation_auto);
+		}
+	}
+
+	std::string CWindowsApplication::GetLandscapeMode()
+	{
+		auto pWinDelegate = (RenderWindowDelegate *)m_pRenderWindow;
+		auto screen_orientation = pWinDelegate->GetScreenOrientation();
+		if (screen_orientation == RenderWindowDelegate::s_screen_orientation_landscape)
+		{
+			return "on";
+		}
+		else if (screen_orientation == RenderWindowDelegate::s_screen_orientation_portrait)
+		{
+			return "off";
+		}
+		else
+		{
+			return "auto";
+		}
+	}
+
+	bool CWindowsApplication::IsRotateScreen()
+	{
+		auto pWinDelegate = (RenderWindowDelegate *)m_pRenderWindow;
+		return pWinDelegate->IsRotateScreen();
+	}
 } // end namespace

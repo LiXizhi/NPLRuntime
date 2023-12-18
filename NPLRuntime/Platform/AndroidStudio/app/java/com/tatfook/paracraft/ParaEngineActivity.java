@@ -51,6 +51,7 @@ import android.widget.ImageView;
 import com.smarx.notchlib.NotchScreenManager;
 import com.tatfook.paracraft.screenrecorder.ScreenRecorder;
 import com.tatfook.paracraft.utils.USBSerialTransferUtil;
+import com.tatfook.plugin.bluetooth.InterfaceBluetooth;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -68,7 +69,6 @@ public class ParaEngineActivity extends AppCompatActivity {
     private static ParaEngineActivity sContext = null;
     private static ParaEngineRenderer sRenderer = null;
     private static boolean sBGranted = false;
-    private static final int PERMISSION_REQUEST_PHONE_STATE = 100;
     // native method,call GLViewImpl::getGLContextAttrs() to get the OpenGL ES context attributions
     private static native int[] getGLContextAttrs();
     // Optional meta-that can be in the manifest for this component,
@@ -302,16 +302,7 @@ public class ParaEngineActivity extends AppCompatActivity {
     public void onAgreeUserPrivacy(){
         this.checkUsbMode();
         ParaEngineHelper.onAgreeUserPrivacy();
-        if (true) {// PlatformBridge.getChannelId(this).equals("xiaomi")
-            ParaEngineHelper.setCanReadPhoneState(false);
-        } else if(checkSelfPermission(Manifest.permission.READ_PHONE_STATE) != PackageManager.PERMISSION_GRANTED) {
-            ParaEngineActivity
-                .getContext()
-                .requestPermissions(
-                    new String[]{READ_PHONE_STATE},
-                    PERMISSION_REQUEST_PHONE_STATE
-                );
-        }
+        ParaEngineHelper.setCanReadPhoneState(false);
     }
 
     @Override
@@ -472,6 +463,17 @@ public class ParaEngineActivity extends AppCompatActivity {
 
         if (mWebViewHelper == null)
             mWebViewHelper = new ParaEngineWebViewHelper(mFrameLayout);
+
+        ParaEnginePluginWrapper.init(
+            this,
+            savedInstanceState,
+            new ParaEnginePluginWrapper.PluginWrapperListener() {
+            @Override
+                public void onInit() {
+                    // TODO...
+                }
+            }
+        );
     }
 
     protected ParaEngineGLSurfaceView onCreateView() {
@@ -627,9 +629,10 @@ public class ParaEngineActivity extends AppCompatActivity {
     @Override
     public void onRequestPermissionsResult(int requestCode, String permissions[], int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        ParaEnginePluginWrapper.onRequestPermissionsResult(requestCode, permissions, grantResults);
         RequestAndroidPermission.onRequestPermissionsResult(requestCode, permissions, grantResults);
 
-        if (requestCode == PERMISSION_REQUEST_PHONE_STATE) {
+        if (requestCode == RequestAndroidPermission.PHONE_STATE_PERMISSION_CODE) {
             if (sContext == null) {
                 if (grantResults[0] == PackageManager.PERMISSION_GRANTED) {
                     sBGranted = true;
@@ -641,7 +644,7 @@ public class ParaEngineActivity extends AppCompatActivity {
             } else {
                 onCheckPermissionFinish(mSavedInstanceState, sBGranted);
             }
-        } else if (requestCode == ScreenRecorder.REQUEST_PERMISSIONS) {
+        } else if (requestCode == RequestAndroidPermission.SCREEN_RECORD_PERMISSIONS_CODE) {
             int granted = PackageManager.PERMISSION_GRANTED;
 
             for (int r : grantResults) {
@@ -649,9 +652,6 @@ public class ParaEngineActivity extends AppCompatActivity {
             }
 
             ScreenRecorder.onRequestPermissionsResult(granted);
-        } else {
-            // TODO: Fix crash.
-            // ParaEnginePluginWrapper.onRequestPermissionsResult(requestCode, permissions, grantResults);
         }
     }
 

@@ -234,6 +234,11 @@ namespace ParaEngine
 		~CUrlProcessor();
 
 		void CleanUp();
+
+#ifdef EMSCRIPTEN
+		virtual bool AsyncProcess(std::function<void()> callback);
+#endif
+
 	// overrides
 	public:
 		virtual HRESULT LockDeviceObject();
@@ -462,6 +467,9 @@ namespace ParaEngine
 
 #ifdef EMSCRIPTEN
 		std::vector<std::string> m_request_headers;
+		std::function<void()> m_async_callback;
+		std::string m_fetch_response_data;
+		std::string m_fetch_response_header;
 #endif 
 	};
 }

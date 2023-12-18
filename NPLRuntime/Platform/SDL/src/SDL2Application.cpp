@@ -136,18 +136,22 @@ namespace ParaEngine
 		return true;
 	}
 
+	bool CSDL2Application::IsInputing()
+	{
+		int inputing = EM_ASM_INT({ return Module.IsInputing(); });
+		return inputing == 1;
+	}
+
 	void CSDL2Application::setIMEKeyboardState(bool bOpen, bool bMoveView, int ctrlBottom, const string &editParams)
 	{
 		if (bOpen)
 		{
-			m_inputing = true;
 			EM_ASM({
 				Module.StartTextInput();
 			});
 		}
 		else
 		{
-			m_inputing = false;
 			EM_ASM({
 				Module.StopTextInput();
 			});
@@ -166,8 +170,6 @@ namespace ParaEngine
 		SDL_SetHint(SDL_HINT_TOUCH_MOUSE_EVENTS, "0");
 		
 		m_exit = false;
-
-		m_inputing = false;
 	}
 
 	CSDL2Application::~CSDL2Application()
@@ -211,7 +213,6 @@ namespace ParaEngine
 				pWindow->PollEvents();
 				UpdateScreenDevice();
 				this->DoWork();
-
 				double fNextInterval = 0.01f; // as fast as possible
 				// fNextInterval = this->GetRefreshTimer() - (ParaTimer::GetAbsoluteTime() - this->GetAppTime());
 				// fNextInterval = (std::min)(0.1, (std::max)(0.02, fNextInterval));  // [0.02, 0.1]
@@ -523,6 +524,48 @@ namespace ParaEngine
 		//			::ShowWindow(CGlobals::GetAppHWND(), bShow ? SW_SHOW : SW_HIDE);
 		//		}
 		//	}
+	}
+
+
+	void CSDL2Application::SetLandscapeMode(std::string landscapeMode)
+	{
+		auto pWinDelegate = (RenderWindowDelegate *)&m_renderWindow;
+		if (landscapeMode == "on")
+		{
+			pWinDelegate->SetScreenOrientation(RenderWindowDelegate::s_screen_orientation_landscape);
+		}
+		else if (landscapeMode == "off")
+		{
+			pWinDelegate->SetScreenOrientation(RenderWindowDelegate::s_screen_orientation_portrait);
+		}
+		else
+		{
+			pWinDelegate->SetScreenOrientation(RenderWindowDelegate::s_screen_orientation_auto);
+		}
+	}
+
+	std::string CSDL2Application::GetLandscapeMode()
+	{
+		auto pWinDelegate = (RenderWindowDelegate *)&m_renderWindow;
+		auto screen_orientation = pWinDelegate->GetScreenOrientation();
+		if (screen_orientation == RenderWindowDelegate::s_screen_orientation_landscape)
+		{
+			return "on";
+		}
+		else if (screen_orientation == RenderWindowDelegate::s_screen_orientation_portrait)
+		{
+			return "off";
+		}
+		else
+		{
+			return "auto";
+		}
+	}
+
+	bool CSDL2Application::IsRotateScreen()
+	{
+		auto pWinDelegate = (RenderWindowDelegate *)&m_renderWindow;
+		return pWinDelegate->IsRotateScreen();
 	}
 
 } // end namespace

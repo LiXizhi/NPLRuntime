@@ -25,6 +25,7 @@ import android.widget.RelativeLayout;
 
 import com.shuyu.gsyvideoplayer.video.StandardGSYVideoPlayer;
 import com.tatfook.paracraft.ParaEngineActivity;
+import com.tatfook.paracraft.RequestAndroidPermission;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -44,7 +45,6 @@ import static com.tatfook.paracraft.screenrecorder.ScreenRecorderHelper.AUDIO_AA
 import static com.tatfook.paracraft.screenrecorder.ScreenRecorderHelper.VIDEO_AVC;
 
 public class ScreenRecorder {
-    public static final int REQUEST_PERMISSIONS = 2;
     private static final int REQUEST_MEDIA_PROJECTION = 1;
     private static ScreenRecorder mInstance;
     private static String mLastFilePath;
@@ -242,7 +242,7 @@ public class ScreenRecorder {
             .getContext()
             .requestPermissions(
                 new String[]{WRITE_EXTERNAL_STORAGE, RECORD_AUDIO},
-                REQUEST_PERMISSIONS
+                RequestAndroidPermission.SCREEN_RECORD_PERMISSIONS_CODE
             );
     }
 

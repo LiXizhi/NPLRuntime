@@ -90,6 +90,10 @@ namespace ParaEngine
 		virtual bool IsWindowMaximized();
 
 		virtual void GetVisibleSize(Vector2* pOut);
+
+		virtual void SetLandscapeMode(std::string landscapeMode);
+		virtual std::string GetLandscapeMode();
+		virtual bool IsRotateScreen();
 	private:
 		void LoadAndApplySettings();
 		bool UpdateScreenDevice();

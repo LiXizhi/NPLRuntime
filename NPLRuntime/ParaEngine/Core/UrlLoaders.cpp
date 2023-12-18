@@ -282,18 +282,69 @@ void ParaEngine::CUrlProcessor::EmscriptenFetch2()
 	// return S_OK;
 }
 
+#ifdef EMSCRIPTEN
+bool ParaEngine::CUrlProcessor::AsyncProcess(std::function<void()> callback)
+{
+	std::vector<const char*> request_headers;
+	int request_headers_size = m_request_headers.size();
+	for (int i = 0; i < request_headers_size; i++) request_headers.push_back(m_request_headers[i].c_str());
+	request_headers.push_back(0);
+
+	m_async_callback = callback;
+	auto fetch_finished_callback = [](emscripten_fetch_t *fetch) {
+		auto self = (ParaEngine::CUrlProcessor*)(fetch->userData);
+		if (self->m_async_callback == nullptr) return;
+		self->m_responseCode = fetch->status;
+		size_t headersLengthBytes = emscripten_fetch_get_response_headers_length(fetch);
+		self->m_fetch_response_header.resize(headersLengthBytes);
+		self->m_fetch_response_data.resize(fetch->totalBytes);
+		emscripten_fetch_get_response_headers(fetch, (char*)(self->m_fetch_response_header.data()), headersLengthBytes);
+		memcpy((void*)(self->m_fetch_response_data.data()), fetch->data, fetch->totalBytes);
+		// emscripten_fetch_close(fetch); // Also free data on failure.
+		self->m_nStatus = CUrlProcessor::URL_REQUEST_COMPLETED;		
+		if (self->m_async_callback != nullptr) self->m_async_callback();
+		self->m_async_callback = nullptr;
+	};
+	
+    emscripten_fetch_attr_t attr;
+    emscripten_fetch_attr_init(&attr);
+	std::string method = "GET";
+	if (m_options && m_options->GetField("CURLOPT_CUSTOMREQUEST")->isString()) method = m_options->GetField("CURLOPT_CUSTOMREQUEST").c_str();
+	else if (!m_sRequestData.empty()) method = "POST";
+	else method = "GET";
+    strcpy(attr.requestMethod, method.c_str());
+    attr.userData = this;
+    attr.attributes = EMSCRIPTEN_FETCH_LOAD_TO_MEMORY;
+	attr.requestData = m_sRequestData.c_str();
+	attr.requestDataSize = m_sRequestData.size();
+	attr.requestHeaders = request_headers.data();
+	attr.onsuccess = fetch_finished_callback;
+	attr.onerror = fetch_finished_callback;
+	emscripten_fetch(&attr, m_url.c_str()); // Blocks here until the operation is complete.
+	return true;
+}
+#endif
+
 HRESULT ParaEngine::CUrlProcessor::Process(void* pData, int cBytes)
 {
-#ifdef EMSCRIPTEN_SINGLE_THREAD
-	EmscriptenFetch2();
-	m_returnCode = CURLE_OK;
-	return S_OK;
-#endif
 #ifdef EMSCRIPTEN
-	EmscriptenFetch();
+	if (m_responseCode == 0) 
+	{
+#ifdef EMSCRIPTEN_SINGLE_THREAD
+		EmscriptenFetch2();
+#else
+		EmscriptenFetch();
+	    // std::thread(&ParaEngine::CUrlProcessor::EmscriptenFetch, this).join();
+#endif 
+	}
+	else
+	{
+		write_header_callback((void*)m_fetch_response_header.data(), m_fetch_response_header.size(), 1);
+		write_data_callback((void*)m_fetch_response_data.data(), m_fetch_response_data.size(), 1);
+	}
 	m_returnCode = CURLE_OK;
-    // std::thread(&ParaEngine::CUrlProcessor::EmscriptenFetch, this).join();
 	return S_OK;
+
 #else
 	// Let us do the easy way. 
 	CURL *curl = NULL;

@@ -689,6 +689,21 @@ ParaViewport ParaEngine::CViewport::SetViewport(DWORD x, DWORD y, DWORD width, D
 	CurrentViewport.Width = width;
 	CurrentViewport.Height = height;
 
+	if (!m_pRenderTarget)
+	{
+		// for back buffer
+		if (CGlobals::GetApp()->IsRotateScreen())
+		{
+			RECT clipRect;
+			RECT clipRect2 = m_rect;
+			CurrentViewport.X = y;
+			uint32_t viewWidth = CGlobals::GetViewportManager()->GetWidth();
+			CurrentViewport.Y = viewWidth - (x + width);
+			CurrentViewport.Width = height;
+			CurrentViewport.Height = width;
+		}
+	}
+
 	CGlobals::GetRenderDevice()->SetViewport(CurrentViewport);
 	return CurrentViewport;
 }

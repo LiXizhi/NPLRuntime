@@ -31,6 +31,10 @@ add_executable(${TARGET_NAME} ${app_src} ${app_main_src})
 target_include_directories(${TARGET_NAME} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
 target_link_libraries(${TARGET_NAME} PUBLIC RenderSystemOpenGL ParaEngine)
 
+if (NOT MSVC)
+	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-inconsistent-missing-override")
+endif()
+
 if (SDL AND NOT EMSCRIPTEN) 
 	message("SDL_ROOT:" ${SDL_ROOT})
 	target_include_directories(${TARGET_NAME} PUBLIC "${SDL_ROOT}/include")
@@ -131,6 +135,7 @@ if (EMSCRIPTEN)
 	# 拷贝缓存文件系统到根目录
 	add_custom_target(
 		paracraft_asset_temp
+		# paracraft_asset_temp ALL
 		COMMAND $ENV{EMSDK}/upstream/emscripten/tools/file_packager paracraft_asset_temp.data --preload "${APP_ROOT}_temp@/" --js-output=paracraft_asset_temp.js
 		# paracraft_asset_temp ALL
 		# COMMAND $ENV{EMSDK}/upstream/emscripten/tools/file_packager paracraft_asset_temp.data --embed "${APP_ROOT}_temp@/" --js-output=paracraft_asset_temp.js

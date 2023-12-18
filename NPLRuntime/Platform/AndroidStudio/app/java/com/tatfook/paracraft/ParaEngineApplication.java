@@ -24,12 +24,10 @@ public class ParaEngineApplication extends Application {
 	@Override
 	public void onCreate()	{
 		super.onCreate();
-
 		this.initPluginWrapper();
 	}
 
 	private void initPluginWrapper() {
-
 		ApplicationInfo applicationInfo; 
 		String info = "";
 
@@ -38,18 +36,16 @@ public class ParaEngineApplication extends Application {
             if (applicationInfo.metaData != null) {
                 info = applicationInfo.metaData.getString(META_DATA_PLUGIN_INFO);
 			}
-		}catch (PackageManager.NameNotFoundException e) {
+		} catch (PackageManager.NameNotFoundException e) {
             throw new RuntimeException("Error getting application info", e);
-        } 
+        }
 
 		Log.i("ParaEngine", info);
 
 		if (info.equals(""))
 			return;
 
-		try
-		{
-
+		try {
 			JSONArray pluginInfos = new JSONArray(info);
 
 			for (int i = 0; i < pluginInfos.length(); i++)
@@ -62,28 +58,23 @@ public class ParaEngineApplication extends Application {
 				pi.debug = bDebug;
 				pi.name = packname;
 
-				if (pluginInfo.length() > 2)
-				{
-					pi.initParams = new HashMap<String , Object>();
+				if (pluginInfo.length() > 2) {
+					pi.initParams = new HashMap<String, Object>();
 
 					Iterator<String> iterator = pluginInfo.keys(); 
-					while(iterator.hasNext())
-					{
-						String key = (String) iterator.next();
+					while (iterator.hasNext()) {
+						String key = (String)iterator.next();
 						if (key.equals("packname") || key.equals("debug"))
 							continue;
 
 						Object value = pluginInfo.get(key);
-
 						pi.initParams.put(key, value);
 					}
 				}
 
 				ParaEnginePluginWrapper.addPluginInfo(pi);
 			}
-		}
-		catch(JSONException e)
-		{
+		} catch(JSONException e) {
 			throw new RuntimeException("Error parser plugin info", e);
 		}
 	}

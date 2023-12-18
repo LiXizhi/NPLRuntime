@@ -1,4 +1,4 @@
-#include "ParaEngine.h"
+﻿#include "ParaEngine.h"
 #include "RenderWindowSDL2.h"
 #include "2dengine/GUIRoot.h"
 #include <unordered_map>
@@ -171,15 +171,7 @@ namespace ParaEngine
 				return kv.first;
 			}
 		}
-		// assert(false);
 		return -1;
-	}
-
-	void RenderWindowSDL2::SetSize(int w, int h)
-	{
-		SDL_SetWindowSize(m_sdl2_window, w, h);
-		m_Width = w;
-		m_Height = h;
 	}
 
 	bool RenderWindowSDL2::Create(int defaultWdith, int defaultHeight)
@@ -195,8 +187,8 @@ namespace ParaEngine
 		glClear(GL_COLOR_BUFFER_BIT);
 		g_WindowMap[m_sdl2_window] = this;
 
-		m_Width = defaultWdith;
-		m_Height = defaultHeight;
+		m_window_width = defaultWdith;
+		m_window_height = defaultHeight;
 
 		const Uint8 *keyboardState = SDL_GetKeyboardState(NULL);
 
@@ -205,11 +197,18 @@ namespace ParaEngine
 
 	std::unordered_map<SDL_Window *, RenderWindowSDL2 *> RenderWindowSDL2::g_WindowMap;
 	RenderWindowSDL2::RenderWindowSDL2()
-		: m_sdl2_window(nullptr), m_gl_context(nullptr), m_Width(0), m_Height(0), m_mouse_x(0), m_mouse_y(0), m_IsQuit(false), m_bLostFocus(false)
+		: m_sdl2_window(nullptr), m_gl_context(nullptr), m_mouse_x(0), m_mouse_y(0), m_IsQuit(false), m_bLostFocus(false)
 	{
 		InitInput();
 		m_paused = false;
 		m_isNumLockEnabled = 2;
+
+		m_window_width = 0;
+		m_window_height = 0;
+		m_sdl_window_width = 0;
+		m_sdl_window_height = 0;
+		m_screen_orientation = s_screen_orientation_auto;
+		m_screen_rotated = false;
 	}
 
 	RenderWindowSDL2::~RenderWindowSDL2()
@@ -218,8 +217,16 @@ namespace ParaEngine
 		{
 			g_WindowMap.erase(m_sdl2_window);
 		}
-
-		m_sdl2_window = nullptr;
+		if (m_gl_context)
+		{
+			SDL_GL_DeleteContext(m_gl_context);
+			m_gl_context = nullptr;
+		}
+		if (m_sdl2_window)
+		{
+			SDL_DestroyWindow(m_sdl2_window);
+			m_sdl2_window = nullptr;
+		}
 	}
 
 	void RenderWindowSDL2::CheckFocus()
@@ -233,6 +240,52 @@ namespace ParaEngine
 	bool RenderWindowSDL2::ShouldClose() const
 	{
 		return m_IsQuit;
+	}
+
+	void RenderWindowSDL2::SetSize(int w, int h)
+	{
+		m_window_width = w;
+		m_window_height = h;
+		SDL_SetWindowSize(m_sdl2_window, m_sdl_window_width, m_sdl_window_height);
+	}
+
+	void RenderWindowSDL2::SetSDLWindowSize(int width, int height)
+	{
+		m_sdl_window_width = width;
+		m_sdl_window_height = height;
+
+		m_screen_rotated = m_screen_orientation == s_screen_orientation_landscape && m_sdl_window_width < m_sdl_window_height;
+		m_screen_rotated = m_screen_rotated || (m_screen_orientation == s_screen_orientation_portrait && m_sdl_window_width > m_sdl_window_height);
+		
+		// m_screen_rotated = true;  // debug
+		std::cout << "screen_rotated=" << m_screen_rotated << " " << m_sdl_window_width << " " << m_sdl_window_height << std::endl;
+
+		if (m_screen_rotated)
+		{
+			m_window_width = m_sdl_window_height;
+			m_window_height = m_sdl_window_width;
+		}
+		else
+		{
+			m_window_width = m_sdl_window_width;
+			m_window_height = m_sdl_window_height;
+		}
+		OnSize(m_window_width, m_window_height);
+	}
+
+	void RenderWindowSDL2::WindowXYToRenderXY(int window_x, int window_y, int& render_x, int& render_y)
+	{
+		if (m_screen_rotated)
+		{
+			// 逆时针旋转
+			render_x = m_sdl_window_height - 1 - window_y;
+			render_y = window_x;
+		}
+		else
+		{
+			render_x = window_x;
+			render_y = window_y;
+		}
 	}
 
 	void RenderWindowSDL2::PollEvents()
@@ -254,10 +307,11 @@ namespace ParaEngine
 				switch (sdl_event.window.event)
 				{
 				case SDL_WINDOWEVENT_SIZE_CHANGED:
+					std::cout << std::endl << "Window size changed: " << sdl_event.window.data1 << " " << sdl_event.window.data2 << std::endl;
 #ifdef EMSCRIPTEN
-					OnSize(EM_ASM_INT({ return document.documentElement.clientWidth; }), EM_ASM_INT({ return document.documentElement.clientHeight; }));
+					SetSDLWindowSize(EM_ASM_INT({ return document.documentElement.clientWidth * window.devicePixelRatio; }), EM_ASM_INT({ return document.documentElement.clientHeight * window.devicePixelRatio; }));
 #else
-					OnSize(sdl_event.window.data1, sdl_event.window.data2);
+					SetSDLWindowSize(sdl_event.window.data1, sdl_event.window.data2);
 #endif
 					break;
 				case SDL_WINDOWEVENT_FOCUS_LOST:
@@ -274,27 +328,29 @@ namespace ParaEngine
 			{
 				m_mouse_x = sdl_event.motion.x;
 				m_mouse_y = sdl_event.motion.y;
-				OnMouseMove(sdl_event.motion.x, sdl_event.motion.y);
+            	WindowXYToRenderXY(m_mouse_x, m_mouse_y, m_mouse_x, m_mouse_y);
+				OnMouseMove(m_mouse_x, m_mouse_y);
 			}
 			else if (sdl_event.type == SDL_MOUSEBUTTONDOWN)
 			{
 				// SetTouchInputting(false);
 				m_mouse_x = sdl_event.button.x;
 				m_mouse_y = sdl_event.button.y;
+            	WindowXYToRenderXY(m_mouse_x, m_mouse_y, m_mouse_x, m_mouse_y);
 				if (sdl_event.button.button == SDL_BUTTON_LEFT)
 				{
 					m_MouseState[(uint32_t)EMouseButton::LEFT] = EKeyState::PRESS;
-					OnMouseButton(EMouseButton::LEFT, EKeyState::PRESS, sdl_event.button.x, sdl_event.button.y);
+					OnMouseButton(EMouseButton::LEFT, EKeyState::PRESS, m_mouse_x, m_mouse_y);
 				}
 				else if (sdl_event.button.button == SDL_BUTTON_RIGHT)
 				{
 					m_MouseState[(uint32_t)EMouseButton::RIGHT] = EKeyState::PRESS;
-					OnMouseButton(EMouseButton::RIGHT, EKeyState::PRESS, sdl_event.button.x, sdl_event.button.y);
+					OnMouseButton(EMouseButton::RIGHT, EKeyState::PRESS, m_mouse_x, m_mouse_y);
 				}
 				else if (sdl_event.button.button == SDL_BUTTON_MIDDLE)
 				{
 					m_MouseState[(uint32_t)EMouseButton::MIDDLE] = EKeyState::PRESS;
-					OnMouseButton(EMouseButton::MIDDLE, EKeyState::PRESS, sdl_event.button.x, sdl_event.button.y);
+					OnMouseButton(EMouseButton::MIDDLE, EKeyState::PRESS, m_mouse_x, m_mouse_y);
 				}
 				CheckFocus();
 			}
@@ -302,20 +358,21 @@ namespace ParaEngine
 			{
 				m_mouse_x = sdl_event.button.x;
 				m_mouse_y = sdl_event.button.y;
+            	WindowXYToRenderXY(m_mouse_x, m_mouse_y, m_mouse_x, m_mouse_y);
 				if (sdl_event.button.button == SDL_BUTTON_LEFT)
 				{
 					m_MouseState[(uint32_t)EMouseButton::LEFT] = EKeyState::RELEASE;
-					OnMouseButton(EMouseButton::LEFT, EKeyState::RELEASE, sdl_event.button.x, sdl_event.button.y);
+					OnMouseButton(EMouseButton::LEFT, EKeyState::RELEASE, m_mouse_x, m_mouse_y);
 				}
 				else if (sdl_event.button.button == SDL_BUTTON_RIGHT)
 				{
 					m_MouseState[(uint32_t)EMouseButton::RIGHT] = EKeyState::RELEASE;
-					OnMouseButton(EMouseButton::RIGHT, EKeyState::RELEASE, sdl_event.button.x, sdl_event.button.y);
+					OnMouseButton(EMouseButton::RIGHT, EKeyState::RELEASE, m_mouse_x, m_mouse_y);
 				}
 				else if (sdl_event.button.button == SDL_BUTTON_MIDDLE)
 				{
 					m_MouseState[(uint32_t)EMouseButton::MIDDLE] = EKeyState::RELEASE;
-					OnMouseButton(EMouseButton::MIDDLE, EKeyState::RELEASE, sdl_event.button.x, sdl_event.button.y);
+					OnMouseButton(EMouseButton::MIDDLE, EKeyState::RELEASE, m_mouse_x, m_mouse_y);
 				}
 				CheckFocus();
 			}
@@ -352,17 +409,26 @@ namespace ParaEngine
 			else if (sdl_event.type == SDL_FINGERDOWN)
 			{
 				// SetTouchInputting(true);
-				OnTouch(EH_TOUCH, TouchEvent::TouchEvent_POINTER_DOWN, sdl_event.tfinger.fingerId, sdl_event.tfinger.x * m_Width, sdl_event.tfinger.y * m_Height, sdl_event.tfinger.timestamp);
+				int mouse_x = sdl_event.tfinger.x * m_sdl_window_width;
+				int mouse_y = sdl_event.tfinger.y * m_sdl_window_height;
+            	WindowXYToRenderXY(mouse_x, mouse_y, mouse_x, mouse_y);
+				OnTouch(EH_TOUCH, TouchEvent::TouchEvent_POINTER_DOWN, sdl_event.tfinger.fingerId, mouse_x, mouse_y, sdl_event.tfinger.timestamp);
 				// std::cout << "Finger Down: id=" << sdl_event.tfinger.fingerId << ", x=" << sdl_event.tfinger.x << ", y=" << sdl_event.tfinger.y << ", timestamp=" << sdl_event.tfinger.timestamp << std::endl;
 			}
 			else if (sdl_event.type == SDL_FINGERMOTION)
 			{
-				OnTouch(EH_TOUCH, TouchEvent::TouchEvent_POINTER_UPDATE, sdl_event.tfinger.fingerId, sdl_event.tfinger.x * m_Width, sdl_event.tfinger.y * m_Height, sdl_event.tfinger.timestamp);
+				int mouse_x = sdl_event.tfinger.x * m_sdl_window_width;
+				int mouse_y = sdl_event.tfinger.y * m_sdl_window_height;
+            	WindowXYToRenderXY(mouse_x, mouse_y, mouse_x, mouse_y);
+				OnTouch(EH_TOUCH, TouchEvent::TouchEvent_POINTER_UPDATE, sdl_event.tfinger.fingerId, mouse_x, mouse_y, sdl_event.tfinger.timestamp);
 				// std::cout << "Finger Motion: id=" << sdl_event.tfinger.fingerId << ", x=" << sdl_event.tfinger.x << ", y=" << sdl_event.tfinger.y << ", timestamp=" << sdl_event.tfinger.timestamp << std::endl;
 			}
 			else if (sdl_event.type == SDL_FINGERUP)
 			{
-				OnTouch(EH_TOUCH, TouchEvent::TouchEvent_POINTER_UP, sdl_event.tfinger.fingerId, sdl_event.tfinger.x * m_Width, sdl_event.tfinger.y * m_Height, sdl_event.tfinger.timestamp);
+				int mouse_x = sdl_event.tfinger.x * m_sdl_window_width;
+				int mouse_y = sdl_event.tfinger.y * m_sdl_window_height;
+            	WindowXYToRenderXY(mouse_x, mouse_y, mouse_x, mouse_y);
+				OnTouch(EH_TOUCH, TouchEvent::TouchEvent_POINTER_UP, sdl_event.tfinger.fingerId, mouse_x, mouse_y, sdl_event.tfinger.timestamp);
 				// std::cout << "Finger Up: id=" << sdl_event.tfinger.fingerId << ", x=" << sdl_event.tfinger.x << ", y=" << sdl_event.tfinger.y << ", timestamp=" << sdl_event.tfinger.timestamp << std::endl;
 			}
 		}
@@ -375,12 +441,12 @@ namespace ParaEngine
 
 	unsigned int RenderWindowSDL2::GetWidth() const
 	{
-		return m_Width;
+		return m_window_width;
 	}
 
 	unsigned int RenderWindowSDL2::GetHeight() const
 	{
-		return m_Height;
+		return m_window_height;
 	}
 
 	bool RenderWindowSDL2::IsWindowed() const
@@ -422,5 +488,4 @@ namespace ParaEngine
 			m_KeyState[i] = EKeyState::RELEASE;
 		}
 	}
-
 } // end namespace

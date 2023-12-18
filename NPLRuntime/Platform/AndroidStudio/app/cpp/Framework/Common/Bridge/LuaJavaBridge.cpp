@@ -755,7 +755,7 @@ namespace ParaEngine {
 
         } while (false);
 
-    error_end:	
+    error_end:
         mInfo.env->DeleteLocalRef(mInfo.classID);
 
         auto t = luabind::newtable(L);
@@ -763,7 +763,7 @@ namespace ParaEngine {
         return t;
     }
 
-    LuaJavaBridge::ValueType LuaJavaBridge::checkType(const std::string& sig, size_t *pos)
+    LuaJavaBridge::ValueType LuaJavaBridge::checkType(const std::string &sig, size_t *pos)
     {
         switch (sig[*pos])
         {

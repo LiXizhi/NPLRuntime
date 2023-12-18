@@ -984,6 +984,28 @@ int ParaEngine::CAsyncLoader::AddWorkItem( IDataLoader* pDataLoader, IDataProces
 	if( !pDataLoader || !pDataProcessor )
 		return E_INVALIDARG;
 
+#ifdef EMSCRIPTEN
+	auto async_callback = [this, pDataLoader, pDataProcessor, pHResult, ppDeviceObject, nProcessorThreadID] () {
+		ResourceRequest_ptr msg(new ResourceRequest(ResourceRequestType_Local));
+		msg->m_nProcessorQueueID = nProcessorThreadID;
+		msg->m_pDataLoader = pDataLoader;
+		msg->m_pDataProcessor = pDataProcessor;
+		msg->m_pHR = pHResult;
+		msg->m_ppDeviceObject = ppDeviceObject;
+		msg->m_bCopy = false;
+		msg->m_bLock = false;
+		msg->m_bError = false;
+		
+		if( ppDeviceObject)
+			*ppDeviceObject = NULL;
+
+		AddWorkItem(msg);
+	};
+
+	if (!pDataProcessor->AsyncProcess(async_callback)) async_callback();
+
+	return S_OK;
+#else
 	ResourceRequest_ptr msg(new ResourceRequest(ResourceRequestType_Local));
 	msg->m_nProcessorQueueID = nProcessorThreadID;
 	msg->m_pDataLoader = pDataLoader;
@@ -999,6 +1021,7 @@ int ParaEngine::CAsyncLoader::AddWorkItem( IDataLoader* pDataLoader, IDataProces
 
 	AddWorkItem(msg);
 	return S_OK;
+#endif
 }
 
 int ParaEngine::CAsyncLoader::AddWorkItem( ResourceRequest_ptr& msg)
@@ -1017,11 +1040,11 @@ int ParaEngine::CAsyncLoader::AddWorkItem( ResourceRequest_ptr& msg)
 	}
 	int nSizeBytes = msg->m_pDataLoader->GetEstimatedSizeInBytes();
 
-	if(m_IOQueue.try_push(msg) != m_IOQueue.BufferOverFlow)
+	if(this->m_IOQueue.try_push(msg) != this->m_IOQueue.BufferOverFlow)
 	{
-		ParaEngine::Lock lock_(m_request_stats);
-		m_nRemainingBytes += nSizeBytes;
-		m_NumOutstandingResources ++;
+		ParaEngine::Lock lock_(this->m_request_stats);
+		this->m_nRemainingBytes += nSizeBytes;
+		this->m_NumOutstandingResources ++;
 	}
 	else
 	{
