@@ -280,11 +280,7 @@ namespace ParaScripting
 
 	bool CParaEngine::SetVertexDeclaration( int nIndex )
 	{
-#ifdef USE_DIRECTX_RENDERER
 		return SUCCEEDED(CGlobals::GetEffectManager()->SetVertexDeclaration(nIndex));
-#else
-		return false;
-#endif
 	}
 
 	// draw in the current viewport

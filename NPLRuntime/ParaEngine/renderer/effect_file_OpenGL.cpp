@@ -258,6 +258,11 @@ bool ParaEngine::CEffectFileOpenGL::isMatrixUsed(eParameterHandles index)
 	return isParameterUsed(index);
 }
 
+CParameterBlock* ParaEngine::CEffectFileOpenGL::GetParamBlock(bool bCreateIfNotExist /*= false*/)
+{
+	return &m_SharedParamBlock;
+}
+
 bool ParaEngine::CEffectFileOpenGL::setParameter(Uniform* uniform, const void* data, int32 size)
 {
 	bool ret = false;
@@ -817,7 +822,7 @@ void ParaEngine::CEffectFileOpenGL::applyGlobalLightingData(CSunLight& sunlight)
 	//});
 }
 
-bool ParaEngine::CEffectFileOpenGL::begin(bool bApplyParam /*= true*/, DWORD flag /*= 0*/)
+bool ParaEngine::CEffectFileOpenGL::begin(bool bApplyParam /*= true*/, DWORD flag /*= 0*/, bool bForceBegin)
 {
 	IScene* pScene = CGlobals::GetEffectManager()->GetScene();
 	auto program = GetGLProgram(m_nTechniqueIndex, m_nActivePassIndex);

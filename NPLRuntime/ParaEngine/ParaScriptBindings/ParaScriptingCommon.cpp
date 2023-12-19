@@ -299,32 +299,38 @@ object ParaScripting::ParaAssetObject::GetBoundingBox( const object& box )
 
 bool ParaScripting::ParaAssetObject::Begin()
 {
-#ifdef USE_DIRECTX_RENDERER
 	if(IsValid() && m_pAsset->GetType()==AssetEntity::effectfile)
 	{
 		// fixed: end any previous effect. 
 		CGlobals::GetEffectManager()->EndEffect();
-
 		CEffectFile* pEffect = (CEffectFile*) m_pAsset;
+
 		pEffect->LoadAsset();
 		if(pEffect->IsValid())
 		{
+#if defined(USE_OPENGL_RENDERER)
+			const AssetKey& sEffectFileName = pEffect->GetFileName();
+			if (sEffectFileName == ":IDR_FX_REDBLUESTEREO")
+			{
+				auto pd3dDevice = CGlobals::GetRenderDevice();
+				pd3dDevice->SetIndices(0);
+				pd3dDevice->SetStreamSource(0, 0, 0, 0);
+				pd3dDevice->SetRenderState(ERenderState::CULLMODE, RSV_CULL_NONE);
+			}
+#endif
 			return pEffect->begin(true, 0, true);
 		}
 	}
-#endif
 	return false;
 }
 
 bool ParaScripting::ParaAssetObject::BeginPass( int nPass )
 {
-#ifdef USE_DIRECTX_RENDERER
 	if(IsValid() && m_pAsset->GetType()==AssetEntity::effectfile)
 	{
 		CEffectFile* pEffect = (CEffectFile*) m_pAsset;
 		return pEffect->BeginPass(nPass, true);
 	}
-#endif
 	return false;
 }
 
@@ -871,25 +877,17 @@ bool ParaAsset::DeleteBoneAnimProvider( int nAnimID )
 
 ParaScripting::ParaAssetObject ParaAsset::LoadEffectFile( const char* strAssetName, const char* strFilePath )
 {
-#ifdef PARAENGINE_CLIENT
 	CEffectFile* pEffect = CGlobals::GetEffectManager()->GetByName(strAssetName);
 	if(pEffect == 0)
 		pEffect = CGlobals::GetAssetManager()->LoadEffectFile(strAssetName, strFilePath);//"shaders/simple_mesh_normal_low.fx"
 
 	return ParaAssetObject(pEffect);
-#else
-	return ParaAssetObject();
-#endif
 }
 
 ParaScripting::ParaAssetObject ParaAsset::GetEffectFile( const char* strAssetName )
 {
-#ifdef PARAENGINE_CLIENT
 	CEffectFile* pEffect = CGlobals::GetEffectManager()->GetByName(strAssetName);
 	return ParaAssetObject(pEffect);
-#else
-	return ParaAssetObject();
-#endif
 }
 
 ParaScripting::ParaAssetObject ParaAsset::GetBlockMaterial(int32_t materialId)

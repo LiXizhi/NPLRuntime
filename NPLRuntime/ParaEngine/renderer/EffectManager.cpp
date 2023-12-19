@@ -2362,7 +2362,14 @@ bool EffectManager::BeginEffectShader(int nHandle, CEffectFile** pOutEffect)
 		break;
 	}
 	default:
+	{
+		if (pEffect->GetParamBlock())
+		{
+			// apply per effect parameters. 
+			pEffect->GetParamBlock()->ApplyToEffect(pEffect);
+		}
 		break;
+	}
 	}
 #endif
 	return true;

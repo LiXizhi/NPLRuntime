@@ -526,13 +526,7 @@ bool ParaEngine::CViewport::DrawQuad()
 	float fY = m_rect.top / fHeight;
 	float fRight = m_rect.right / fWidth;
 	float fBottom = m_rect.bottom / fHeight;
-
-	/*mesh_vertex_plain quadVertices[4] = {
-		{ Vector3(fX*2-1, -fBottom*2+1, 0), Vector2(fX, fBottom) },
-		{ Vector3(fRight * 2 - 1, -fBottom * 2 + 1, 0), Vector2(fRight, fBottom) },
-		{ Vector3(fX*2 - 1, -fY*2+1, 0), Vector2(fX, fY) },
-		{ Vector3(fRight * 2 - 1, -fY * 2 + 1, 0), Vector2(fRight, fY) },
-	};*/
+	
 	mesh_vertex_plain quadVertices[4] = {
 		{ Vector3(-1, -1, 0), Vector2(fX, fBottom) },
 		{ Vector3(1, -1, 0), Vector2(fRight, fBottom) },
@@ -540,17 +534,22 @@ bool ParaEngine::CViewport::DrawQuad()
 		{ Vector3(1, 1, 0), Vector2(fRight, fY) },
 	};
 
+#if defined(USE_OPENGL_RENDERER)
+	// in openGL, Y position is inverted. 
+	for (int i = 0; i < 4; ++i)
+	{
+		quadVertices[i].p.y = -quadVertices[i].p.y;
+	}
+#endif
+
 	// this is done in shader code
 	//
 	// offset the texture coordinate by half texel in order to match texel to pixel. 
 	// This takes me hours to figure out. :-(
 	// float fhalfTexelWidth = 0.5f/m_glowtextureWidth;
 	// float fhalfTexelHeight = 0.5f/m_glowtextureHeight;
-	bool bSucceed = false;
-#ifdef USE_DIRECTX_RENDERER
-	bSucceed = SUCCEEDED(RenderDevice::DrawPrimitiveUP(CGlobals::GetRenderDevice(), RenderDevice::DRAW_PERF_TRIANGLES_UNKNOWN, D3DPT_TRIANGLESTRIP, 2, quadVertices, sizeof(mesh_vertex_plain)));
-#endif
 
+	bool bSucceed = CGlobals::GetRenderDevice()->DrawPrimitiveUP(EPrimitiveType::TRIANGLESTRIP, 2, quadVertices, sizeof(mesh_vertex_plain));
 	return bSucceed;
 }
 
@@ -694,8 +693,6 @@ ParaViewport ParaEngine::CViewport::SetViewport(DWORD x, DWORD y, DWORD width, D
 		// for back buffer
 		if (CGlobals::GetApp()->IsRotateScreen())
 		{
-			RECT clipRect;
-			RECT clipRect2 = m_rect;
 			CurrentViewport.X = y;
 			uint32_t viewWidth = CGlobals::GetViewportManager()->GetWidth();
 			CurrentViewport.Y = viewWidth - (x + width);

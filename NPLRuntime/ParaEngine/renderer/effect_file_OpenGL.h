@@ -86,7 +86,7 @@ namespace ParaEngine
 
 		bool SetBoolean(int nIndex, bool value);
 
-		bool begin(bool bApplyParam = true, DWORD flag = 0);
+		bool begin(bool bApplyParam = true, DWORD flag = 0, bool bForceBegin = false);
 		bool BeginPass(int pass, bool bForceBegin = false);
 		void CommitChanges();
 		void EndPass(bool bForceEnd = false);
@@ -94,6 +94,12 @@ namespace ParaEngine
 
 		virtual HRESULT InitDeviceObjects() override;
 		virtual HRESULT DeleteDeviceObjects() override;
+
+		/** get effect parameter block with this object.
+		* @param bCreateIfNotExist:
+		*/
+		virtual CParameterBlock* GetParamBlock(bool bCreateIfNotExist = false);
+
 		/** 
 		* @param nPass: -1 to release all 
 		*/
@@ -231,6 +237,11 @@ namespace ParaEngine
 		
 		std::vector<CParameter> m_pendingChanges;
 		uint32 m_pendingChangesCount;
+
+		/** parameters that are shared by all objects using this effect.  When you call begin(), these parameters are set.
+		* It will overridden predefined parameter names, however most user will set custom shader parameters and textures that are shared by all objects here.
+		*/
+		CParameterBlock m_SharedParamBlock;
 	};
 
 	
