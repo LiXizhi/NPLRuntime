@@ -105,6 +105,7 @@ public:
 
 	/** whether the d3d device is managed externally */
 	bool IsExternalD3DDevice(){return m_bIsExternalD3DDevice;}
+
 protected:
 	// Internal constructor
 	CD3DApplication();
@@ -178,5 +179,4 @@ protected:
 	bool m_bIsExternalD3DDevice;
 	/** application state */
 	ParaEngine::PEAppState m_nAppState;
-
 };

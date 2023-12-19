@@ -48,5 +48,6 @@ namespace NPL
 // give access to global objects and functions
 #include "Globals.h"
 #include "FileManager.h"
+#include "IParaEngineApp.h"
 
 

@@ -103,7 +103,7 @@ public:
         return GetScopePrefix() + ctx->getText();
     }
 
-    virtual std::any visitGlobal_stmt(Python3Parser::Global_stmtContext* ctx) override
+    virtual std::any visitGlobal_stmt(Python3Parser::Global_stmtContext *ctx) override
     {
         auto scope = m_scope;
         auto parent_scope = m_scope->GetParent();

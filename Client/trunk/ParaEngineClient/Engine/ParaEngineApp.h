@@ -265,6 +265,7 @@ namespace ParaEngine
 		/** render the current frame and does not return until everything is presented to screen.
 		* this function is usually used to draw the animated loading screen. */
 		virtual bool ForceRender();
+
 	public:
 		/** this function should be called when the application is created. I.e. the windows HWND is valid.
 		*/
@@ -576,6 +577,18 @@ namespace ParaEngine
 
 		ITouchInputTranslator* LoadTouchInputPlug();
 
+	public:
+		static const int s_screen_orientation_auto      = 0; // 保持真实窗口方向
+		static const int s_screen_orientation_landscape = 1; // 横屏 渲染宽大于等于渲染高
+		static const int s_screen_orientation_portrait  = 2; // 竖屏 渲染宽小于等于渲染高
+
+		virtual void SetLandscapeMode(std::string landscapeMode);
+		virtual std::string GetLandscapeMode();
+		virtual bool IsRotateScreen();
+    	HRESULT HandlePossibleSizeChange(bool bUpdateSizeOnly = false);
+
+		int m_screen_orientation;  // 屏幕方向
+		bool m_screen_rotated;     // 屏幕是否旋转
 	};
 
 }

@@ -157,6 +157,8 @@ CParaEngineApp::CParaEngineApp()
 	m_bToggleSoundWhenNotFocused(true), m_bAppHasFocus(true), m_hwndTopLevelWnd(NULL), m_fFPS(0.f), m_bInitialIsWindowMaximized(false)
 {
 	g_pHwndHWND = &m_hWnd;
+	m_screen_orientation = s_screen_orientation_auto;
+    m_screen_rotated = false;
 	CFrameRateController::LoadFRCNormal();
 }
 
@@ -167,6 +169,8 @@ CParaEngineApp::CParaEngineApp(const char* lpCmdLine)
 	m_bToggleSoundWhenNotFocused(true), m_bAppHasFocus(true), m_hwndTopLevelWnd(NULL), m_bInitialIsWindowMaximized(false)
 {
 	g_pHwndHWND = &m_hWnd;
+	m_screen_orientation = s_screen_orientation_auto;
+    m_screen_rotated = false;
 	CFrameRateController::LoadFRCNormal();
 	StartApp(lpCmdLine);
 }
@@ -1749,6 +1753,69 @@ void CParaEngineApp::ClientToGame(int& inout_x,int & inout_y, bool bInBackbuffer
 			inout_y = (int)(m_d3dpp.BackBufferHeight * (float)inout_y/(float)height);
 		}
 	}
+
+	if (m_screen_rotated)
+	{
+		// 逆时针旋转
+		inout_x = m_nClientHeight - 1 - inout_y;
+		inout_y = inout_x;
+	}
+	else
+	{
+		inout_x = inout_x;
+		inout_y = inout_y;
+	}
+}
+
+
+void CParaEngineApp::SetLandscapeMode(std::string landscapeMode)
+{
+    if (landscapeMode == "on")
+    {
+        m_screen_orientation = s_screen_orientation_landscape;
+    }
+    else if (landscapeMode == "off")
+    {
+        m_screen_orientation = s_screen_orientation_portrait;
+    }
+    else
+    {
+        m_screen_orientation = s_screen_orientation_auto;
+    }
+
+    HandlePossibleSizeChange();
+}
+
+std::string CParaEngineApp::GetLandscapeMode()
+{
+    if (m_screen_orientation == s_screen_orientation_landscape)
+    {
+        return "on";
+    }
+    else if (m_screen_orientation == s_screen_orientation_portrait)
+    {
+        return "off";
+    }
+    else
+    {
+        return "auto";
+    }
+}
+
+bool CParaEngineApp::IsRotateScreen()
+{
+    // return true;
+    return m_screen_rotated;
+}
+
+HRESULT CParaEngineApp::HandlePossibleSizeChange(bool bUpdateSizeOnly)
+{
+	auto result = CD3DApplication::HandlePossibleSizeChange(bUpdateSizeOnly);
+
+    m_screen_rotated = m_screen_orientation == s_screen_orientation_landscape && m_nClientWidth < m_nClientHeight;
+    m_screen_rotated = m_screen_rotated || (m_screen_orientation == s_screen_orientation_portrait && m_nClientWidth > m_nClientHeight);
+
+	return result;
 }
 
 /* Using SetForegroundWindow on Windows Owned by Other Processes
