@@ -87,6 +87,7 @@ void ParaEngine::CViewport::ApplyCamera(CAutoCamera* pCamera)
 		pCamera->EnableStereoVision(true);
 		if (GetEyeMode() != STEREO_EYE_ODS) {
 			pCamera->SetStereoEyeShiftDistance(GetEyeMode() == STEREO_EYE_LEFT ? -GetStereoEyeSeparation() : GetStereoEyeSeparation());
+			pCamera->SetStereoConvergenceOffset(CGlobals::GetMoviePlatform()->GetStereoConvergenceOffset());
 		}
 		if (m_stereoODSparam.isODS) {
 			pCamera->SetStereoEyeShiftDistance(m_stereoODSparam.eyeShiftDistance);
@@ -99,7 +100,6 @@ void ParaEngine::CViewport::ApplyCamera(CAutoCamera* pCamera)
 			double fCameraObjectDist = pCamera->GetCameraObjectDistance();
 			if (m_stereoODSparam.m_bOmniAlwaysUseUpFrontCamera) {
 				pCamera->SetForceOmniCameraPitch(0);
-				//ʼ��ˮƽ����oldLookAtPos��ת��ˮƽ������
 				{
 					Vector3 sightDir = oldLookAtPos - dEyePos;
 					sightDir.normalise();
@@ -549,7 +549,6 @@ bool ParaEngine::CViewport::DrawQuad()
 #ifdef USE_DIRECTX_RENDERER
 	bSucceed = SUCCEEDED(RenderDevice::DrawPrimitiveUP(CGlobals::GetRenderDevice(), RenderDevice::DRAW_PERF_TRIANGLES_UNKNOWN, D3DPT_TRIANGLESTRIP, 2, quadVertices, sizeof(mesh_vertex_plain)));
 #endif
-
 	return bSucceed;
 }
 

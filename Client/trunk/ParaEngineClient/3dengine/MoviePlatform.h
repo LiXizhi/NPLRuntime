@@ -79,6 +79,10 @@ namespace ParaEngine
 
 		ATTRIBUTE_METHOD1(CMoviePlatform, GetStereoEyeSeparation_s, float*)	{ *p1 = cls->GetStereoEyeSeparation(); return S_OK; }
 		ATTRIBUTE_METHOD1(CMoviePlatform, SetStereoEyeSeparation_s, float)	{ cls->SetStereoEyeSeparation(p1); return S_OK; }
+
+		ATTRIBUTE_METHOD1(CMoviePlatform, GetStereoConvergenceOffset_s, float*) { *p1 = cls->GetStereoConvergenceOffset(); return S_OK; }
+		ATTRIBUTE_METHOD1(CMoviePlatform, SetStereoConvergenceOffset_s, float) { cls->SetStereoConvergenceOffset(p1); return S_OK; }
+
 	public:
 		/**encode a random dummy video to the given filename with given codec. */
 		void video_encode_example(const char *filename, int codec_id = 0);
@@ -265,6 +269,10 @@ namespace ParaEngine
 		* since ParaEngine games usually use meter as its rendering unit, the value is such near the real eye separation distance.*/
 		float  GetStereoEyeSeparation();
 
+		/** offset along the eye look at position. this will make the stereo scene pop out of paralex convergence plane */
+		void SetStereoConvergenceOffset(float fDist);
+		float GetStereoConvergenceOffset();
+
 		/** get the current frame number to be recorded. This is usually used for stereo vision capture mode, when the even frame number is left eye, and odd is for right eye.
 		* if capture has not begun, it is always 0.
 		*/
@@ -349,6 +357,9 @@ namespace ParaEngine
 		* since ParaEngine games usually use meter as its rendering unit, the value is such near the real eye separation distance.*/
 		float m_nStereoEyeSeparation;
 	
+		/** offset along the eye look at position. this will make the stereo scene pop out of paralex convergence plane */
+		float m_fStereoConvergenceOffset;
+
 		bool m_isLeftEye;
 	};
 }

@@ -201,6 +201,7 @@ CAutoCamera::CAutoCamera()
 
 	m_bEnableStereoVision = false;
 	m_fStereoEyeShiftDistance = 0.035f;
+	m_fStereoConvergenceOffset = 0.f;
 	m_nMouseDragDistance = 0;
 
 	LoadDefaultEventBinding();
@@ -1826,11 +1827,18 @@ void CAutoCamera::ComputeViewMatrix(Matrix4 *pOut, const DVector3 *pEye, const D
 		DVector3 vDir = vEye - vAt;
 		DVector3 vEyeDirection = vDir.normalisedCopy();
 
+		float fOffset = GetStereoConvergenceOffset();
+		if (fOffset != 0.f)
+		{
+			vAt -= vEyeDirection * fOffset;
+		}
+
 		DVector3 vShiftDir(0, 0, 1.f);
 		vShiftDir = vEyeDirection.crossProduct(DVector3(*pUp)).normalisedCopy();
 		vEye += vShiftDir * m_fStereoEyeShiftDistance;
 		m_vRenderEyePos = vEye + vOffset;
 		ParaMatrixLookAtLH(pOut, vEye, vAt, DVector3(*pUp));
+		
 	}
 }
 
