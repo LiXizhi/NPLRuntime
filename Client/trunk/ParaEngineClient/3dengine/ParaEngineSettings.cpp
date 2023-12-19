@@ -1654,6 +1654,15 @@ void ParaEngine::ParaEngineSettings::SetLandscapeMode(const char* mode)
 	CGlobals::GetApp()->SetLandscapeMode(mode);
 }
 
+const char* ParaEngine::ParaEngineSettings::GetRendererName()
+{
+#ifdef USE_DIRECTX_RENDERER
+	return "DirectX";
+#else
+	return "OpenGL";
+#endif
+}
+
 int ParaEngineSettings::InstallFields(CAttributeClass* pClass, bool bOverride)
 {
 	IAttributeFields::InstallFields(pClass, bOverride);
@@ -1763,5 +1772,7 @@ int ParaEngineSettings::InstallFields(CAttributeClass* pClass, bool bOverride)
 	pClass->AddField("WorldDirectory", FieldType_String, (void*)SetWorldDirectory_s, (void*)GetWorldDirectory_s, NULL, NULL, bOverride);
 
 	pClass->AddField("PythonToLua", FieldType_String, (void*)SetPythonToLua_s, (void*)GetPythonToLua_s, NULL, NULL, bOverride);
+	pClass->AddField("LandscapeMode", FieldType_String, (void*)SetLandscapeMode_s, (void*)GetLandscapeMode_s, NULL, NULL, bOverride);
+	pClass->AddField("RendererName", FieldType_String, NULL, (void*)GetRendererName_s, NULL, NULL, bOverride);
 	return S_OK;
 }

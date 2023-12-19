@@ -238,6 +238,9 @@ namespace ParaEngine
 
 		ATTRIBUTE_METHOD1(ParaEngineSettings, GetLandscapeMode_s, const char**) { *p1 = cls->GetLandscapeMode().c_str(); return S_OK; }
 		ATTRIBUTE_METHOD1(ParaEngineSettings, SetLandscapeMode_s, const char*) { cls->SetLandscapeMode(p1); return S_OK; }
+
+		ATTRIBUTE_METHOD1(ParaEngineSettings, GetRendererName_s, const char**) { *p1 = cls->GetRendererName(); return S_OK; }
+
 	public:
 		/** if true, IO is restricted to current working directory and writable directory.  Under win32, this is true by default. */
 		static bool IsSandboxMode();
@@ -737,6 +740,10 @@ namespace ParaEngine
 
 		const std::string& GetLandscapeMode();
         void SetLandscapeMode(const char* mode);
+
+		/** @return "OpenGL" or "DirectX" */
+		const char* GetRendererName();
+
 	protected:
 		void LoadNameIndex();
 	private:
