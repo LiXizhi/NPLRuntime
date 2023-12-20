@@ -214,6 +214,16 @@ float CMoviePlatform::GetStereoEyeSeparation()
 	return m_nStereoEyeSeparation;
 }
 
+void ParaEngine::CMoviePlatform::SetStereoConvergenceOffset(float fDist)
+{
+	m_fStereoConvergenceOffset = fDist;
+}
+
+float ParaEngine::CMoviePlatform::GetStereoConvergenceOffset()
+{
+	return m_fStereoConvergenceOffset;
+}
+
 void CMoviePlatform::GetMovieScreenSize(int* nWidth, int* nHeight)
 {
 	if(nWidth!=0)
@@ -1437,6 +1447,7 @@ int CMoviePlatform::InstallFields(CAttributeClass* pClass, bool bOverride)
 
 	pClass->AddField("StereoCaptureMode", FieldType_Int, (void*)SetStereoCaptureMode_s, (void*)GetStereoCaptureMode_s, NULL, NULL, bOverride);
 	pClass->AddField("StereoEyeSeparation", FieldType_Float, (void*)SetStereoEyeSeparation_s, (void*)GetStereoEyeSeparation_s, NULL, NULL, bOverride);
+	pClass->AddField("StereoConvergenceOffset", FieldType_Float, (void*)SetStereoConvergenceOffset_s, (void*)GetStereoConvergenceOffset_s, NULL, NULL, bOverride);
 
 	return S_OK;
 }

@@ -341,6 +341,9 @@ public:
 	/** this is usually half of the Stereo eye separation distance. negative value is left eye, positive value is right eye.*/
 	void SetStereoEyeShiftDistance(float fDist) {m_fStereoEyeShiftDistance = fDist;} 
 	float GetStereoEyeShiftDistance() {return m_fStereoEyeShiftDistance;} 
+	
+	void SetStereoConvergenceOffset(float fDist) { m_fStereoConvergenceOffset = fDist; }
+	float GetStereoConvergenceOffset() { return m_fStereoConvergenceOffset; }
 
 	/** the camera object distance after all kinds of constraints are applied.*/
 	void SetCameraObjectDistance(double fDist);
@@ -573,6 +576,9 @@ private:
 
 	/** this is usually half of the Stereo eye separation distance. negative value is left eye, positive value is right eye.*/
 	float m_fStereoEyeShiftDistance;
+	
+	/** offset along the eye look at position. this will make the stereo scene pop out of paralex convergence plane */
+	float m_fStereoConvergenceOffset;
 
 	// the pixel mouse drag distance from a mouse down and mouse move
 	int  m_nMouseDragDistance;    

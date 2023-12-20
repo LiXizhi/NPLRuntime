@@ -70,7 +70,17 @@ bool CParameterBlock::ApplyToEffect( CEffectFile* pEffectFile )
 			CParameter& p = itCur->second;
 			if(p.m_type == CParameter::PARAM_TEXTURE_ENTITY)
 			{
-				// TODO: support in opengl
+#if defined(USE_OPENGL_RENDERER)
+				// if it is texture parameter, the name must be numeric. 
+				const char* name = p.GetName().c_str();
+				TextureEntity* pTextureEntity = (TextureEntity*)p;
+				if (pTextureEntity != NULL && pTextureEntity->GetTexture())
+				{
+					// use predefined texture
+					int nIndex = (int)(name[0] - '0');
+					((CEffectFileOpenGL*)pEffectFile)->setTexture(nIndex, pTextureEntity);
+				}
+#endif
 #if defined(USE_DIRECTX_RENDERER)
 				// if it is texture parameter, the name must be numeric. 
 				const char* name = p.GetName().c_str();
@@ -470,12 +480,12 @@ void CParameterBlock::SetParamByStringValue(const char* sParamName, const char* 
 		{
 			CGlobals::GetViewportManager()->GetActiveViewPort()->GetViewportTransform(NULL, &v);
 		}
-#if defined(USE_DIRECTX_RENDERER)
 		else if (sValue == "vec2ScreenSize")
 		{
-			v.x = (float)(CGlobals::GetDirectXEngine().m_d3dsdBackBuffer.Width);
-			v.y = (float)(CGlobals::GetDirectXEngine().m_d3dsdBackBuffer.Height);
+			v.x = (float)CGlobals::GetViewportManager()->GetWidth();
+			v.y = (float)CGlobals::GetViewportManager()->GetHeight();
 		}
+#if defined(USE_DIRECTX_RENDERER)
 		else if (sValue == "vec2ShadowMapSize")
 		{
 			v.x = (float)(CGlobals::GetEffectManager()->GetShadowMap()->GetShadowMapTexelSize());

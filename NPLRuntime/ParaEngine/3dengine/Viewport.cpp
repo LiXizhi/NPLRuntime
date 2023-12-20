@@ -34,8 +34,8 @@ CViewport::~CViewport(void)
 	m_pRenderTarget.reset();
 }
 
-void ParaEngine::CViewport::SetCamera(CAutoCamera* val) 
-{ 
+void ParaEngine::CViewport::SetCamera(CAutoCamera* val)
+{
 	m_pCamera = val;
 }
 
@@ -87,19 +87,19 @@ void ParaEngine::CViewport::ApplyCamera(CAutoCamera* pCamera)
 		pCamera->EnableStereoVision(true);
 		if (GetEyeMode() != STEREO_EYE_ODS) {
 			pCamera->SetStereoEyeShiftDistance(GetEyeMode() == STEREO_EYE_LEFT ? -GetStereoEyeSeparation() : GetStereoEyeSeparation());
+			pCamera->SetStereoConvergenceOffset(CGlobals::GetMoviePlatform()->GetStereoConvergenceOffset());
 		}
 		if (m_stereoODSparam.isODS) {
 			pCamera->SetStereoEyeShiftDistance(m_stereoODSparam.eyeShiftDistance);
 			DVector3 dEyePos = m_stereoODSparam.oldEyePos;
 			DVector3 oldLookAtPos = m_stereoODSparam.oldLookAtPos;
 
-			if (m_stereoODSparam.m_nOmniForceLookatDistance>0) {
+			if (m_stereoODSparam.m_nOmniForceLookatDistance > 0) {
 				pCamera->SetForceOmniCameraObjectDistance(m_stereoODSparam.m_nOmniForceLookatDistance);
 			}
 			double fCameraObjectDist = pCamera->GetCameraObjectDistance();
 			if (m_stereoODSparam.m_bOmniAlwaysUseUpFrontCamera) {
 				pCamera->SetForceOmniCameraPitch(0);
-				//始终水平，将oldLookAtPos旋转到水平方向上
 				{
 					Vector3 sightDir = oldLookAtPos - dEyePos;
 					sightDir.normalise();
@@ -110,9 +110,9 @@ void ParaEngine::CViewport::ApplyCamera(CAutoCamera* pCamera)
 					DVector3 newLookAt = DVector3(newSightDir * fCameraObjectDist) + dEyePos;
 
 					oldLookAtPos = newLookAt;
-				}				
+				}
 			}
-			pCamera->UpdateViewMatrix();			
+			pCamera->UpdateViewMatrix();
 			m_stereoODSparam.needRecoverCamera = true;
 
 			Vector3 up = pCamera->GetWorldUp();
@@ -129,7 +129,7 @@ void ParaEngine::CViewport::ApplyCamera(CAutoCamera* pCamera)
 
 			//if (abs(m_stereoODSparam.moreRotX) > 0.00001f)//pitch 
 			{
-				
+
 				Quaternion q_pitch(Radian(m_stereoODSparam.moreRotX), right);
 				q_pitch.ToRotationMatrix(mRotPitch);
 
@@ -138,45 +138,45 @@ void ParaEngine::CViewport::ApplyCamera(CAutoCamera* pCamera)
 
 				Vector3 newSightDir = Vector3(mRotPitch * sightDir);
 				DVector3 newLookAt = DVector3(newSightDir * fCameraObjectDist) + dEyePos;
-				
+
 				//pCamera->SetViewParams(dEyePos, newLookAt, &up);
 				oldLookAtPos = newLookAt;
 			}
 
 			/*auto m_mCameraWorld = pCamera->GetViewMatrix()->inverse();
 			up = Vector3(m_mCameraWorld._21, m_mCameraWorld._22, m_mCameraWorld._23);*/
-			
+
 			//if(abs(m_stereoODSparam.moreRotY)>0.00001f) //yaw
 			{
 				Quaternion q_yaw(Radian(m_stereoODSparam.moreRotY), up);
 				q_yaw.ToRotationMatrix(mRotYaw);
 
 				Vector3 sightDir = oldLookAtPos - dEyePos;
-				sightDir.normalise(); 
+				sightDir.normalise();
 				Vector3 newSightDir = Vector3(mRotYaw * sightDir);
 				DVector3 newLookAt = DVector3(newSightDir * fCameraObjectDist) + dEyePos;
 
 				//pCamera->SetViewParams(dEyePos, newLookAt, &up);
 				oldLookAtPos = newLookAt;
 			}
-			
+
 			//if (abs(m_stereoODSparam.moreRotZ) > 0.00001f) //roll
 			{
-				if (abs(m_stereoODSparam.moreRotZ - (-1.57))<0.0001) {
+				if (abs(m_stereoODSparam.moreRotZ - (-1.57)) < 0.0001) {
 					int i = 0;
 				}
 				Quaternion q_roll(Radian(m_stereoODSparam.moreRotZ), up);
 				float oldYaw = pCamera->GetCameraRotY();
 				up = Vector3(mRotPitch * up);
 				up.normalise();
-				
+
 				q_roll.ToRotationMatrix(mRotRoll);
 				up = Vector3(mRotRoll * up);
 				up.normalise();
 			}
 			pCamera->SetViewParams(dEyePos, oldLookAtPos, &up);
 			pCamera->SetFieldOfView(m_stereoODSparam.fov, m_stereoODSparam.fov_h);
-			
+
 		}
 		else {
 			pCamera->UpdateViewMatrix();
@@ -231,7 +231,7 @@ void ParaEngine::CViewport::SetRenderTargetName(const std::string& val)
 		m_sRenderTargetName = val;
 		//SAFE_DELETE(m_pRenderTarget);
 		m_pRenderTarget.reset();
-		if (!m_sRenderTargetName.empty()){
+		if (!m_sRenderTargetName.empty()) {
 
 			CRenderTarget* pRenderTarget = static_cast<CRenderTarget*>(CGlobals::GetScene()->FindObjectByNameAndType(m_sRenderTargetName, "CRenderTarget"));
 			if (pRenderTarget)
@@ -278,29 +278,28 @@ HRESULT ParaEngine::CViewport::Render(double dTimeDelta, int nPipelineOrder)
 				m_pRenderTarget->SetRenderTargetSize(Vector2((float)(CGlobals::GetDirectXEngine().GetBackBufferWidth()), (float)(CGlobals::GetDirectXEngine().GetBackBufferHeight())));
 #else
 				m_pRenderTarget->SetRenderTargetSize(Vector2((float)GetWidth(), (float)GetHeight()));
-				// m_pRenderTarget->SetRenderTargetSize(Vector2((float)m_pViewportManager->GetWidth(), (float)m_pViewportManager->GetHeight()));
-				
 #endif
+
 				m_pRenderTarget->GetPrimaryAsset(); // touch asset
 			}
 
 			//ScopedPaintOnRenderTarget painter_(m_pRenderTarget.get());
 			ScopedPaintOnRenderTarget painter_(m_pRenderTarget.get(), m_rect.left, m_rect.top, m_rect.right - m_rect.left, m_rect.bottom - m_rect.top);
-			
+
 			if (m_pRenderTarget && nPipelineOrder == PIPELINE_3D_SCENE)
 			{
 				if (m_stereoODSparam.ods_group_size <= 0 || (m_stereoODSparam.ods_group_size > 0 && m_stereoODSparam.ods_group_idx == 0)) {
 					m_pRenderTarget->Clear(pRootScene->GetFogColor());
 				}
 			}
-			
+
 			auto pLastCamera = pRootScene->GetCurrentCamera();
 			pRootScene->SetCurrentCamera(pCamera);
 
 			SetActive();
 			ApplyCamera(pCamera);
 			ApplyViewport();
-			
+
 			auto vEye = pCamera->GetEyePosition();
 			Vector3 vEye_ = vEye;
 			pRootScene->RegenerateRenderOrigin(vEye_);
@@ -310,7 +309,7 @@ HRESULT ParaEngine::CViewport::Render(double dTimeDelta, int nPipelineOrder)
 				//-- set up effects parameters
 				// Light direction is same as camera front (reversed)
 				pCamera->UpdateViewProjMatrix();
-				
+
 				// Draw next scene
 				if (pRootScene->IsScenePaused())
 					pRootScene->AdvanceScene(0);
@@ -393,7 +392,7 @@ int ParaEngine::CViewport::GetChildAttributeObjectCount(int nColumnIndex)
 
 IAttributeFields* ParaEngine::CViewport::GetChildAttributeObject(int nRowIndex, int nColumnIndex)
 {
-	if(nRowIndex == 0 && nColumnIndex == 0)
+	if (nRowIndex == 0 && nColumnIndex == 0)
 	{
 		return GetCamera();
 	}
@@ -404,8 +403,8 @@ void ParaEngine::CViewport::OnParentSizeChanged(int nWidth, int nHeight)
 {
 	RECT parent = { 0, 0, nWidth, nHeight };
 	m_position.CalculateAbsPosition(&m_rect, &parent);
-	m_fScalingX = GetWidth()!=nWidth ? ((float)GetWidth() / (float)nWidth) : 1.f;
-	m_fScalingY = GetHeight()!=nHeight ? ((float)GetHeight() / (float)nHeight) : 1.f;
+	m_fScalingX = GetWidth() != nWidth ? ((float)GetWidth() / (float)nWidth) : 1.f;
+	m_fScalingY = GetHeight() != nHeight ? ((float)GetHeight() / (float)nHeight) : 1.f;
 	m_fAspectRatio = (float)GetWidth() / (float)GetHeight();
 	m_bIsModifed = false;
 
@@ -441,7 +440,7 @@ void ParaEngine::CViewport::GetPointOnViewport(int& x, int& y, int* pWidth, int*
 {
 	x -= m_rect.left;
 	y -= m_rect.top;
-	
+
 	if (pWidth)
 		*pWidth = GetWidth();
 	if (pHeight)
@@ -521,7 +520,7 @@ bool ParaEngine::CViewport::DrawQuad()
 	float fHeight = (float)m_pViewportManager->GetHeight();
 
 	ApplyViewport();
-	
+
 	float fX = m_rect.left / fWidth;
 	float fY = m_rect.top / fHeight;
 	float fRight = m_rect.right / fWidth;
@@ -540,17 +539,22 @@ bool ParaEngine::CViewport::DrawQuad()
 		{ Vector3(1, 1, 0), Vector2(fRight, fY) },
 	};
 
+#if defined(USE_OPENGL_RENDERER)
+	// in openGL, Y position is inverted. 
+	for (int i = 0; i < 4; ++i)
+	{
+		quadVertices[i].p.y = -quadVertices[i].p.y;
+	}
+#endif
+
 	// this is done in shader code
 	//
 	// offset the texture coordinate by half texel in order to match texel to pixel. 
 	// This takes me hours to figure out. :-(
 	// float fhalfTexelWidth = 0.5f/m_glowtextureWidth;
 	// float fhalfTexelHeight = 0.5f/m_glowtextureHeight;
-	bool bSucceed = false;
-#ifdef USE_DIRECTX_RENDERER
-	bSucceed = SUCCEEDED(RenderDevice::DrawPrimitiveUP(CGlobals::GetRenderDevice(), RenderDevice::DRAW_PERF_TRIANGLES_UNKNOWN, D3DPT_TRIANGLESTRIP, 2, quadVertices, sizeof(mesh_vertex_plain)));
-#endif
 
+	bool bSucceed = CGlobals::GetRenderDevice()->DrawPrimitiveUP(EPrimitiveType::TRIANGLESTRIP, 2, quadVertices, sizeof(mesh_vertex_plain));
 	return bSucceed;
 }
 
@@ -560,7 +564,7 @@ bool ParaEngine::CViewport::DrawQuad2()
 #ifdef USE_DIRECTX_RENDERER
 	D3DVIEWPORT9 old_vp;
 	CGlobals::GetRenderDevice()->GetViewport(&old_vp);
-	IDirect3DSurface9 * rt = nullptr;
+	IDirect3DSurface9* rt = nullptr;
 	CGlobals::GetRenderDevice()->GetRenderTarget(0, &rt);
 	D3DSURFACE_DESC desc;
 	rt->GetDesc(&desc);
@@ -609,10 +613,10 @@ ParaViewport ParaEngine::CViewport::GetTextureViewport(float fTexWidth, float fT
 	float fRight = m_rect.right / fWidth;
 	float fBottom = m_rect.bottom / fHeight;
 
-	newViewport.X = (int)(fX*fTexWidth);
-	newViewport.Y = (int)(fY*fTexHeight);
-	newViewport.Width = (int)(fRight*fTexHeight - newViewport.X);
-	newViewport.Height = (int)(fBottom*fTexWidth - newViewport.Y);
+	newViewport.X = (int)(fX * fTexWidth);
+	newViewport.Y = (int)(fY * fTexHeight);
+	newViewport.Width = (int)(fRight * fTexHeight - newViewport.X);
+	newViewport.Height = (int)(fBottom * fTexWidth - newViewport.Y);
 	newViewport.MinZ = 0.0f;
 	newViewport.MaxZ = 1.0f;
 	return newViewport;
@@ -660,13 +664,13 @@ void ParaEngine::CViewport::SetEyeMode(ParaEngine::STEREO_EYE val)
 
 /** Camera yaw angle increment when recording Stereo video.*/
 void ParaEngine::CViewport::SetStereoODSparam(ParaEngine::CViewport::StereoODSparam& param)
-{ 
-	m_stereoODSparam = param; 
+{
+	m_stereoODSparam = param;
 }
 
 ParaEngine::CViewport::StereoODSparam& ParaEngine::CViewport::GetStereoODSparam()
 {
-	return m_stereoODSparam; 
+	return m_stereoODSparam;
 }
 
 float ParaEngine::CViewport::GetStereoEyeSeparation()
@@ -691,11 +695,9 @@ ParaViewport ParaEngine::CViewport::SetViewport(DWORD x, DWORD y, DWORD width, D
 
 	if (!m_pRenderTarget)
 	{
-		// for back buffer
-		if (CGlobals::GetApp()->IsRotateScreen())
-		{
-			RECT clipRect;
-			RECT clipRect2 = m_rect;
+	// for back buffer
+	if (CGlobals::GetApp()->IsRotateScreen())
+	{
 			CurrentViewport.X = y;
 			uint32_t viewWidth = CGlobals::GetViewportManager()->GetWidth();
 			CurrentViewport.Y = viewWidth - (x + width);

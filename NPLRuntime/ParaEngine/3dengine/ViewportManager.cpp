@@ -813,6 +813,7 @@ void ParaEngine::CViewportManager::SetLayout(VIEWPORT_LAYOUT nLayout, CSceneObje
 		pMainSceneViewportRight->SetPosition("_fi", 0, 0, 0, 0);
 		pMainSceneViewportRight->SetZOrder(1);
 		pMainSceneViewportRight->SetEyeMode(STEREO_EYE_RIGHT);
+		pMainSceneViewportRight->SetRenderTargetName("_ColorRT"); // use private render target
 		pMainSceneViewportRight->DisableDeltaTime();
 
 		// final full screen quad

@@ -2362,7 +2362,14 @@ bool EffectManager::BeginEffectShader(int nHandle, CEffectFile** pOutEffect)
 		break;
 	}
 	default:
+	{
+		if (pEffect->GetParamBlock())
+		{
+			// apply per effect parameters. 
+			pEffect->GetParamBlock()->ApplyToEffect(pEffect);
+		}
 		break;
+	}
 	}
 #endif
 	return true;
@@ -2961,6 +2968,9 @@ void EffectManager::SetDefaultEffectMapping(int nLevel)
 	MapHandleToEffect(TECH_TERRAIN, pEffect);
 	// using normal in vertex shader
 	CGlobals::GetGlobalTerrain()->EnableLighting(true);
+
+	// preload mapping
+	pEffect = GetEffectByName("RedBlueStereo");
 #endif
 }
 
@@ -3181,6 +3191,14 @@ CEffectFile* EffectManager::GetEffectByName( const string& sName )
 		if (pEffect == 0)
 		{
 			pEffect = CGlobals::GetAssetManager()->LoadEffectFile("singleColor", ":IDR_FX_SINGLECOLOR");
+		}
+	}
+	else if (sName == "RedBlueStereo")
+	{
+		pEffect = GetByName("RedBlueStereo");
+		if (pEffect == 0)
+		{
+			pEffect = CGlobals::GetAssetManager()->LoadEffectFile("RedBlueStereo", ":IDR_FX_REDBLUESTEREO");
 		}
 	}
 	else if (sName == "simple_mesh_normal")
