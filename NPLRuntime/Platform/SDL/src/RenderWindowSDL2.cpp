@@ -1,6 +1,7 @@
 ﻿#include "ParaEngine.h"
 #include "RenderWindowSDL2.h"
 #include "2dengine/GUIRoot.h"
+#include "SDL2Application.h"
 #include <unordered_map>
 
 #ifdef EMSCRIPTEN
@@ -251,13 +252,19 @@ namespace ParaEngine
 
 	void RenderWindowSDL2::SetSDLWindowSize(int width, int height)
 	{
+		if (((CSDL2Application *)(CGlobals::GetApp()))->IsInputing()) 
+		{
+			SDL_SetWindowSize(m_sdl2_window, m_sdl_window_width, m_sdl_window_height);
+			return ;
+		}
+
 		m_sdl_window_width = width;
 		m_sdl_window_height = height;
 
 		m_screen_rotated = m_screen_orientation == s_screen_orientation_landscape && m_sdl_window_width < m_sdl_window_height;
 		m_screen_rotated = m_screen_rotated || (m_screen_orientation == s_screen_orientation_portrait && m_sdl_window_width > m_sdl_window_height);
 		
-		// m_screen_rotated = true;  // debug
+		// m_screen_rotated = false;  // debug
 		std::cout << "screen_rotated=" << m_screen_rotated << " " << m_sdl_window_width << " " << m_sdl_window_height << std::endl;
 
 		if (m_screen_rotated)
@@ -271,6 +278,7 @@ namespace ParaEngine
 			m_window_height = m_sdl_window_height;
 		}
 		OnSize(m_window_width, m_window_height);
+		SDL_SetWindowSize(m_sdl2_window, m_sdl_window_width, m_sdl_window_height);
 	}
 
 	void RenderWindowSDL2::WindowXYToRenderXY(int window_x, int window_y, int& render_x, int& render_y)
