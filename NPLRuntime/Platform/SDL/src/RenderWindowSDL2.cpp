@@ -258,11 +258,6 @@ namespace ParaEngine
 			return;
 		}
 
-		if (m_sdl_window_width != width || m_sdl_window_height != height)
-		{
-			SDL_SetWindowSize(m_sdl2_window, m_sdl_window_width, m_sdl_window_height);
-		}
-
 		m_sdl_window_width = width;
 		m_sdl_window_height = height;
 
@@ -282,6 +277,7 @@ namespace ParaEngine
 			m_window_width = m_sdl_window_width;
 			m_window_height = m_sdl_window_height;
 		}
+		SDL_SetWindowSize(m_sdl2_window, m_sdl_window_width, m_sdl_window_height);
 		OnSize(m_window_width, m_window_height);
 	}
 
