@@ -236,6 +236,9 @@ namespace ParaEngine
 		ATTRIBUTE_METHOD1(ParaEngineSettings, GetPythonToLua_s, const char**) { *p1 = cls->GetPythonToLua()->c_str(); return S_OK; }
 		ATTRIBUTE_METHOD1(ParaEngineSettings, SetPythonToLua_s, const char*) { cls->SetPythonToLua(p1); return S_OK; }
 
+		ATTRIBUTE_METHOD1(ParaEngineSettings, GetCppToLua_s, const char**) { *p1 = cls->GetCppToLua()->c_str(); return S_OK; }
+		ATTRIBUTE_METHOD1(ParaEngineSettings, SetCppToLua_s, const char*) { cls->SetCppToLua(p1); return S_OK; }
+
 		ATTRIBUTE_METHOD1(ParaEngineSettings, GetLandscapeMode_s, const char**) { *p1 = cls->GetLandscapeMode().c_str(); return S_OK; }
 		ATTRIBUTE_METHOD1(ParaEngineSettings, SetLandscapeMode_s, const char*) { cls->SetLandscapeMode(p1); return S_OK; }
 
@@ -737,6 +740,9 @@ namespace ParaEngine
 
 		static std::string* GetPythonToLua() { static std::string s_lua_code; return &s_lua_code; }
 		static void SetPythonToLua(const char* python_code);
+
+		static std::string* GetCppToLua() { static std::string s_lua_code; return &s_lua_code; }
+		static void SetCppToLua(const char* cpp_code);
 
 		const std::string& GetLandscapeMode();
         void SetLandscapeMode(const char* mode);
