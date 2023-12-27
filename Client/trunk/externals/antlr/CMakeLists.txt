@@ -38,13 +38,15 @@ set(WITH_STATIC_CRT OFF)
 add_subdirectory(runtime)
 
 file(GLOB SRC_FILES 
-    ${CMAKE_CURRENT_SOURCE_DIR}/generated/*.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/python_generated/*.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/cpp_generated/*.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/*.*
 )
 
 list(APPEND INCLUDE_DIRS 
     ${CMAKE_CURRENT_SOURCE_DIR}/src
-    ${CMAKE_CURRENT_SOURCE_DIR}/generated
+    ${CMAKE_CURRENT_SOURCE_DIR}/python_generated
+    ${CMAKE_CURRENT_SOURCE_DIR}/cpp_generated
     ${CMAKE_CURRENT_SOURCE_DIR}/runtime/runtime/src
     ${CMAKE_CURRENT_SOURCE_DIR}/runtime/runtime/src/misc
     ${CMAKE_CURRENT_SOURCE_DIR}/runtime/runtime/src/atn
