@@ -1,5 +1,5 @@
-﻿#ifndef CPP14TOLUA_H
-#define CPP14TOLUA_H
+﻿#ifndef __CPP14_TO_LUA_VISITOR_H__
+#define __CPP14_TO_LUA_VISITOR_H__
 
 #include "CPP14Lexer.h"
 #include "CPP14Parser.h"
@@ -12,6 +12,8 @@
 #include <sstream>
 #include <string>
 #include <unordered_set>
+
+#define DEBUG
 
 class CPP14ToLuaVisitor : public CPP14ParserBaseVisitor
 {
@@ -36,11 +38,27 @@ public:
     virtual std::any visitTerminal(antlr4::tree::TerminalNode *node) override
     {
         auto symbol = node->getSymbol();
-        auto text = symbol->getText();
-        auto type = symbol->getType();
+        auto text   = symbol->getText();
+        auto type   = symbol->getType();
         if (type == CPP14Parser::EOF)
         {
             return std::string("");
+        }
+        else if (symbol->getType() == CPP14Parser::Not)
+        {
+            return std::string("not ");
+        }
+        else if (symbol->getType() == CPP14Parser::AndAnd)
+        {
+            return std::string(" and ");
+        }
+        else if (symbol->getType() == CPP14Parser::OrOr)
+        {
+            return std::string(" or ");
+        }
+        else if (symbol->getType() == CPP14Parser::NotEqual)
+        {
+            return std::string(" ~= ");
         }
         else if (type == CPP14Parser::Return)
         {
@@ -69,9 +87,19 @@ public:
 #endif
 
         auto type_name = GetText(ctx->declSpecifierSeq());
-        auto var_name = GetText(ctx->initDeclaratorList());
-        if (type_name.empty())
+        auto var_name  = GetText(ctx->initDeclaratorList());
+        if (type_name.empty()) // 类型为基本类型
         {
+            // auto init_declarator_list = ctx->initDeclaratorList();
+            // auto init_declarator       = init_declarator_list == nullptr ? nullptr : init_declarator_list->initDeclarator(0);
+            // auto declarator = init_declarator == nullptr? nullptr : init_declarator->declarator();
+            // auto pointer_declarator = declarator == nullptr? nullptr : declarator->pointerDeclarator();
+            // auto no_pointer_declarator = pointer_declarator == nullptr? nullptr : pointer_declarator->noPointerDeclarator();
+            // // 函数声明
+            // if (declarator != nullptr && declarator->parametersAndQualifiers() != nullptr) return "";
+
+            if (var_name.find("(") != std::string::npos && var_name.find("=") == std::string::npos) return NullString();
+
             if (ctx->declSpecifierSeq() == nullptr)
             {
                 return var_name + "\n";
@@ -90,7 +118,7 @@ public:
             }
             else
             {
-                return var_name + " " + type_name + "()\n";
+                return var_name + " = " + type_name + "()\n";
             }
         }
     }
@@ -100,26 +128,27 @@ public:
 #ifdef DEBUG
         CPP14ParserBaseVisitor::visitSelectionStatement(ctx);
 #endif
-        auto statements = ctx->statement();
+        auto statements      = ctx->statement();
         auto statements_size = statements.size();
-        auto if_stmt = statements_size > 0 ? GetText(statements[0]) : NullString();
+        auto if_stmt         = statements_size > 0 ? statements[0] : nullptr;
+        auto else_stmt       = statements_size > 1 ? statements[1] : nullptr;
         std::ostringstream oss;
         oss << "if (" << GetText(ctx->condition()) << ") then" << std::endl
-            << if_stmt << std::endl;
+            << GetText(if_stmt) << std::endl;
         if (ctx->Else() == nullptr || statements_size <= 1)
         {
             oss << "end" << std::endl;
         }
         else
         {
-            if (statements.size() > 2)
+            if (else_stmt->selectionStatement() != nullptr)
             {
-                oss << "else" << GetText(statements[1]);
+                oss << "else" << GetText(else_stmt);
             }
             else
             {
                 oss << "else" << std::endl
-                    << GetText(statements[1]) << std::endl
+                    << GetText(else_stmt) << std::endl
                     << "end" << std::endl;
             }
         }
@@ -154,25 +183,7 @@ public:
 
     virtual std::any visitCompoundStatement(CPP14Parser::CompoundStatementContext *ctx) override
     {
-#ifdef DEBUG
-        CPP14ParserBaseVisitor::visitCompoundStatement(ctx);
-#endif
-
-        std::ostringstream oss;
-        oss << "(function()" << std::endl
-            << GetText(ctx->statementSeq()) << std::endl
-            << "end)()";
-        return oss.str();
-    }
-
-    virtual std::any visitFunctionBody(CPP14Parser::FunctionBodyContext *ctx) override
-    {
-#ifdef DEBUG
-        CPP14ParserBaseVisitor::visitFunctionBody(ctx);
-#endif
-        std::ostringstream oss;
-        oss << "return " << GetText(ctx->compoundStatement());
-        return oss.str();
+        return GetText(ctx->statementSeq());
     }
 
     virtual std::any visitFunctionDefinition(CPP14Parser::FunctionDefinitionContext *ctx) override
@@ -193,5 +204,6 @@ private:
         return ctx == nullptr ? NullString() : std::any_cast<std::string>(ctx->accept(this));
     }
 };
+
 
 #endif
