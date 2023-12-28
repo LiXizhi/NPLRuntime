@@ -75,20 +75,22 @@ public:
 #ifdef DEBUG
         // CPP14ParserBaseVisitor::visitPostfixExpression(ctx);
 #endif
-        std::ostringstream oss;
+        // std::ostringstream oss;
         if (ctx->postfixExpression() != nullptr)
         {
             if (ctx->PlusPlus() != nullptr)
             {
                 auto var = GetText(ctx->postfixExpression());
-                oss << "(function() local temp = " << var << "; i = i + 1; return temp; end)()";
-                return oss.str();
+                return var + " = " + var + " + 1";
+                // oss << "(function() local temp = " << var << "; i = i + 1; return temp; end)()";
+                // return oss.str();
             }
             else if (ctx->MinusMinus() != nullptr)
             {
                 auto var = GetText(ctx->postfixExpression());
-                oss << "(function() local temp = " << var << "; i = i - 1; return temp; end)()";
-                return oss.str();
+                return var + " = " + var + " - 1";
+                // oss << "(function() local temp = " << var << "; i = i - 1; return temp; end)()";
+                // return oss.str();
             }
             else
             {
@@ -98,6 +100,11 @@ public:
         return CPP14ParserBaseVisitor::visitPostfixExpression(ctx);
     }
 
+    // virtual std::any virtualMultiplicativeExpression(CPP14Parser::MultiplicativeExpressionContext *ctx)
+    // {
+
+    // }
+
     virtual std::any visitAssignmentExpression(CPP14Parser::AssignmentExpressionContext *ctx)
     {
         auto logicalOrExpressionText = GetText(ctx->logicalOrExpression());
@@ -105,7 +112,7 @@ public:
         auto initializerClauseText = GetText(ctx->initializerClause());
         auto assignmentOperator = ctx->assignmentOperator();
         if (assignmentOperator == nullptr) return CPP14ParserBaseVisitor::visitAssignmentExpression(ctx);
-        
+
         if (assignmentOperator->PlusAssign() != nullptr)
         {
             return logicalOrExpressionText + " = " + logicalOrExpressionText + " + " + initializerClauseText;
