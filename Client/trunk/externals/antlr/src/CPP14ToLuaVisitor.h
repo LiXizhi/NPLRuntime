@@ -98,6 +98,60 @@ public:
         return CPP14ParserBaseVisitor::visitPostfixExpression(ctx);
     }
 
+    virtual std::any visitAssignmentExpression(CPP14Parser::AssignmentExpressionContext *ctx)
+    {
+        auto logicalOrExpressionText = GetText(ctx->logicalOrExpression());
+        auto assignmentOperatorText                  = GetText(ctx->assignmentOperator());
+        auto initializerClauseText = GetText(ctx->initializerClause());
+        auto assignmentOperator = ctx->assignmentOperator();
+        if (assignmentOperator == nullptr) return CPP14ParserBaseVisitor::visitAssignmentExpression(ctx);
+        
+        if (assignmentOperator->PlusAssign() != nullptr)
+        {
+            return logicalOrExpressionText + " = " + logicalOrExpressionText + " + " + initializerClauseText;
+        }
+        else if (assignmentOperator->MinusAssign()!= nullptr)
+        {
+            return logicalOrExpressionText + " = " + logicalOrExpressionText + " - " + initializerClauseText;
+        }
+        else if (assignmentOperator->StarAssign()!= nullptr)
+        {
+            return logicalOrExpressionText + " = " + logicalOrExpressionText + " * " + initializerClauseText;
+        }
+        else if (assignmentOperator->DivAssign()!= nullptr)
+        {
+            return logicalOrExpressionText + " = " + logicalOrExpressionText + " / " + initializerClauseText;
+        }
+        else if (assignmentOperator->ModAssign()!= nullptr)
+        {
+            return logicalOrExpressionText + " = mod_operator(" + logicalOrExpressionText + ", " + initializerClauseText + ")";
+        }
+        else if (assignmentOperator->AndAssign()!= nullptr)
+        {
+            return logicalOrExpressionText + " = bit.band(" + logicalOrExpressionText + ", " + initializerClauseText + ")";
+        }
+        else if (assignmentOperator->XorAssign()!= nullptr)
+        {
+            return logicalOrExpressionText + " = bit.bxor(" + logicalOrExpressionText + ", " + initializerClauseText + ")";
+        }
+        else if (assignmentOperator->OrAssign()!= nullptr)
+        {
+            return logicalOrExpressionText + " = bit.bor(" + logicalOrExpressionText + ", " + initializerClauseText + ")";
+        }
+        else if (assignmentOperator->LeftShiftAssign()!= nullptr)
+        {
+            return logicalOrExpressionText + " = bit.blshift(" + logicalOrExpressionText + ", " + initializerClauseText + ")";
+        }
+        else if (assignmentOperator->RightShiftAssign()!= nullptr)
+        {
+            return logicalOrExpressionText + " = bit.brshift(" + logicalOrExpressionText + ", " + initializerClauseText + ")";
+        }
+        else
+        {
+            return logicalOrExpressionText + logicalOrExpressionText + initializerClauseText;
+        }
+    }
+
     virtual std::any visitUnaryExpression(CPP14Parser::UnaryExpressionContext *ctx)
     {
 #ifdef DEBUG
@@ -219,7 +273,8 @@ public:
 #ifdef DEBUG
         // CPP14ParserBaseVisitor::visitExpressionStatement(ctx);
 #endif
-        return GetText(ctx->expression()) + "\n";
+        auto text = GetText(ctx->expression()) + "\n";
+        return text;
     }
 
     virtual std::any visitIterationStatement(CPP14Parser::IterationStatementContext *ctx) override
@@ -255,10 +310,10 @@ public:
 
     virtual std::any visitStatement(CPP14Parser::StatementContext *ctx)
     {
-        auto text = CPP14ParserBaseVisitor::visitStatement(ctx);
+        auto text = std::any_cast<std::string>(CPP14ParserBaseVisitor::visitStatement(ctx));
         return text;
     }
-    
+
     virtual std::any visitCompoundStatement(CPP14Parser::CompoundStatementContext *ctx) override
     {
         auto text = GetText(ctx->statementSeq());
