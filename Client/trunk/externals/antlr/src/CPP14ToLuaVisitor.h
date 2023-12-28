@@ -98,7 +98,7 @@ public:
             // // 函数声明
             // if (declarator != nullptr && declarator->parametersAndQualifiers() != nullptr) return "";
 
-            if (var_name.find("(") != std::string::npos && var_name.find("=") == std::string::npos) return NullString();
+            if (ctx->declSpecifierSeq() != nullptr && var_name.find("(") != std::string::npos && var_name.find("=") == std::string::npos) return NullString();
 
             if (ctx->declSpecifierSeq() == nullptr)
             {
@@ -128,13 +128,15 @@ public:
 #ifdef DEBUG
         CPP14ParserBaseVisitor::visitSelectionStatement(ctx);
 #endif
+        // 不支持 switch case
+        if (ctx->Switch() != nullptr) return NullString();
+
         auto statements      = ctx->statement();
         auto statements_size = statements.size();
         auto if_stmt         = statements_size > 0 ? statements[0] : nullptr;
         auto else_stmt       = statements_size > 1 ? statements[1] : nullptr;
         std::ostringstream oss;
-        oss << "if (" << GetText(ctx->condition()) << ") then" << std::endl
-            << GetText(if_stmt) << std::endl;
+        oss << "if (" << GetText(ctx->condition()) << ") then" << std::endl << GetText(if_stmt) << std::endl;
         if (ctx->Else() == nullptr || statements_size <= 1)
         {
             oss << "end" << std::endl;
@@ -198,6 +200,13 @@ public:
         return oss.str();
     }
 
+//     virtual std::any visitAttributeSpecifier(CPP14Parser::AttributeSpecifierContext *ctx)
+//     {
+// #ifdef DEBUG
+//         CPP14ParserBaseVisitor::visitAttributeSpecifier(ctx);
+// #endif
+//         return NullString();
+//     }
 private:
     std::string GetText(antlr4::ParserRuleContext *ctx)
     {
