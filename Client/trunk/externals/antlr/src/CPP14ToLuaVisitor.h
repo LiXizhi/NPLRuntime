@@ -211,30 +211,32 @@ public:
         }
         return operand;
     }
-    virtual std::any visitLogicalAndExpression(CPP14Parser::LogicalAndExpressionContext *ctx) override
-    {
-        auto inclusiveOrExpression     = ctx->inclusiveOrExpression();
-        auto inclusiveOrExpressionSize = inclusiveOrExpression.size();
-        auto operand                   = GetText(inclusiveOrExpression[0]);
-        for (int i = 1; i < inclusiveOrExpressionSize; i++)
-        {
-            auto nextOperand = GetText(inclusiveOrExpression[i]);
-            operand          = operand + " and " + nextOperand;
-        }
-        return operand;
-    }
-    virtual std::any visitLogicalOrExpression(CPP14Parser::LogicalOrExpressionContext *ctx) override
-    {
-        auto logicalAndExpression     = ctx->logicalAndExpression();
-        auto logicalAndExpressionSize = logicalAndExpression.size();
-        auto operand                  = GetText(logicalAndExpression[0]);
-        for (int i = 1; i < logicalAndExpressionSize; i++)
-        {
-            auto nextOperand = GetText(logicalAndExpression[i]);
-            operand          = operand + " or " + nextOperand;
-        }
-        return operand;
-    }
+    
+    // virtual std::any visitLogicalAndExpression(CPP14Parser::LogicalAndExpressionContext *ctx) override
+    // {
+    //     auto inclusiveOrExpression     = ctx->inclusiveOrExpression();
+    //     auto inclusiveOrExpressionSize = inclusiveOrExpression.size();
+    //     auto operand                   = GetText(inclusiveOrExpression[0]);
+    //     for (int i = 1; i < inclusiveOrExpressionSize; i++)
+    //     {
+    //         auto nextOperand = GetText(inclusiveOrExpression[i]);
+    //         operand          = operand + " and " + nextOperand;
+    //     }
+    //     return operand;
+    // }
+    // virtual std::any visitLogicalOrExpression(CPP14Parser::LogicalOrExpressionContext *ctx) override
+    // {
+    //     auto logicalAndExpression     = ctx->logicalAndExpression();
+    //     auto logicalAndExpressionSize = logicalAndExpression.size();
+    //     auto operand                  = GetText(logicalAndExpression[0]);
+    //     for (int i = 1; i < logicalAndExpressionSize; i++)
+    //     {
+    //         auto nextOperand = GetText(logicalAndExpression[i]);
+    //         operand          = operand + " or " + nextOperand;
+    //     }
+    //     return operand;
+    // }
+
     virtual std::any visitConditionalExpression(CPP14Parser::ConditionalExpressionContext *ctx) override
     {
         auto logicalOrExpression = GetText(ctx->logicalOrExpression());
