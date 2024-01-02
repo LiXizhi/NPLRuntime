@@ -154,6 +154,28 @@ public:
         return operand;
     }
 
+    virtual std::any visitShiftExpression(CPP14Parser::ShiftExpressionContext *ctx)
+    {
+        auto additiveExpression     = ctx->additiveExpression();
+        auto additiveExpressionSize = additiveExpression.size();
+        auto operand                = GetText(additiveExpression[0]);
+
+        for (int i = 1; i < additiveExpressionSize; i++)
+        {
+            auto oper        = ctx->children[i * 2 - 1]->getText();
+            auto nextOperand = GetText(additiveExpression[i]);
+            if (oper == "<<")
+            {
+                operand = "bit.blshift(" + operand + ", " + nextOperand + ")";
+            }
+            else
+            {
+                operand = "bit.brshift(" + operand + ", " + nextOperand + ")";
+            }
+        }
+        return operand;
+    }
+
     virtual std::any visitEqualityExpression(CPP14Parser::EqualityExpressionContext *ctx)
     {
         auto relationalExpression     = ctx->relationalExpression();
@@ -211,7 +233,7 @@ public:
         }
         return operand;
     }
-    
+
     // virtual std::any visitLogicalAndExpression(CPP14Parser::LogicalAndExpressionContext *ctx) override
     // {
     //     auto inclusiveOrExpression     = ctx->inclusiveOrExpression();
@@ -396,7 +418,8 @@ public:
         {
             auto if_stmt   = statements_size > 0 ? statements[0] : nullptr;
             auto else_stmt = statements_size > 1 ? statements[1] : nullptr;
-            oss << "if (" << GetText(ctx->condition()) << ") then" << std::endl << GetText(if_stmt);
+            oss << "if (" << GetText(ctx->condition()) << ") then" << std::endl
+                << GetText(if_stmt);
             if (ctx->Else() == nullptr || statements_size <= 1)
             {
                 oss << "end" << std::endl;
@@ -409,7 +432,8 @@ public:
                 }
                 else
                 {
-                    oss << "else" << std::endl << GetText(else_stmt) << "end" << std::endl;
+                    oss << "else" << std::endl
+                        << GetText(else_stmt) << "end" << std::endl;
                 }
             }
         }
@@ -442,7 +466,8 @@ public:
         {
             if (m_in_switch_case) oss << "end" << std::endl;
             m_in_switch_case = true;
-            oss << "if (__switch_case__ or (__switch_condition__ == " << GetText(ctx->constantExpression()) << ")) then" << std::endl << GetText(ctx->statement());
+            oss << "if (__switch_case__ or (__switch_condition__ == " << GetText(ctx->constantExpression()) << ")) then" << std::endl
+                << GetText(ctx->statement());
         }
         else if (ctx->Default() != nullptr)
         {
@@ -466,13 +491,7 @@ public:
     {
         std::ostringstream oss;
 
-        if (ctx->While() != nullptr)
-        {
-            oss << "while (" << GetText(ctx->condition()) << ") do" << std::endl
-                << GetText(ctx->statement())
-                << "end";
-        }
-        else if (ctx->For() != nullptr)
+        if (ctx->For() != nullptr)
         {
             auto for_ctr            = ctx->For();
             auto for_init_statement = ctx->forInitStatement();
@@ -491,7 +510,12 @@ public:
                 << GetText(ctx->statement())
                 << "until (not (" << GetText(ctx->expression()) << "))";
         }
-
+        else if (ctx->While() != nullptr)
+        {
+            oss << "while (" << GetText(ctx->condition()) << ") do" << std::endl
+                << GetText(ctx->statement())
+                << "end";
+        }
         return oss.str();
     }
 
