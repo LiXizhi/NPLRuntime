@@ -12,6 +12,7 @@
 #include "Python3Lexer.h"
 #include "Python3Parser.h"
 #include "Python3ToLuaVisitor.h"
+#include "CPP14ToLuaVisitor.h"
 
 using namespace antlr4;
 
@@ -23,5 +24,16 @@ std::string ParaPythonToLua(std::string python_code)
     Python3Parser parser(&tokens);
     Python3ToLuaVisitor visitor;
     std::any result = visitor.visitFile_input(parser.file_input());
+    return std::any_cast<std::string>(result);
+}
+
+std::string ParaCppToLua(std::string cpp_code)
+{
+    ANTLRInputStream input(cpp_code.data(), cpp_code.size());
+    CPP14Lexer lexer(&input);
+    CommonTokenStream tokens(&lexer);
+    CPP14Parser parser(&tokens);
+    CPP14ToLuaVisitor visitor;
+    std::any result = visitor.visitTranslationUnit(parser.translationUnit());
     return std::any_cast<std::string>(result);
 }
