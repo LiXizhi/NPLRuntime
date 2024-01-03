@@ -178,7 +178,7 @@ int main(int argc, char* argv[])
 	std::string channelId = JS::GetQueryStringArg("channelId");
 	std::string world = JS::GetQueryStringArg("world");
 	std::string cmdline = JS::GetQueryStringArg("cmdline");
-
+	std::string worldcmd = JS::GetQueryStringArg("cmd");
 	std::string mc = JS::GetQueryStringArg("mc");
 	std::string version = JS::GetQueryStringArg("version");
 	if (mc.empty()) 
@@ -205,9 +205,9 @@ int main(int argc, char* argv[])
 		sCmdLine += " paracraft://cmd/loadworld/" + pid;
 	}
 	if (!token.empty()) sCmdLine = sCmdLine + " paracraft://usertoken=\"" + token + "\"";
+	if (!worldcmd.empty()) sCmdLine = sCmdLine + " world/cmd(" + worldcmd + ")";
 	sCmdLine = sCmdLine + " " + cmdline;
 	std::cout << "cmdline: " << sCmdLine << std::endl;
-
 	GetApp()->m_cmdline = sCmdLine;
 
 	EM_ASM({

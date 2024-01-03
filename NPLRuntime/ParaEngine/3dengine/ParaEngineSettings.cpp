@@ -1470,6 +1470,11 @@ void ParaEngine::ParaEngineSettings::SetPythonToLua(const char* python_code)
 	*GetPythonToLua() = ParaPythonToLua(python_code);
 }
 
+void ParaEngine::ParaEngineSettings::SetCppToLua(const char* cpp_code)
+{
+	*GetCppToLua() = ParaCppToLua(cpp_code);
+}
+
 const std::string& ParaEngine::ParaEngineSettings::GetLandscapeMode()
 {
 	static std::string s_landscape = "";
@@ -1606,6 +1611,7 @@ int ParaEngineSettings::InstallFields(CAttributeClass* pClass, bool bOverride)
 #endif
 
 	pClass->AddField("PythonToLua", FieldType_String, (void*)SetPythonToLua_s, (void*)GetPythonToLua_s, NULL, NULL, bOverride);
+	pClass->AddField("CppToLua", FieldType_String, (void*)SetCppToLua_s, (void*)GetCppToLua_s, NULL, NULL, bOverride);
 	pClass->AddField("LandscapeMode", FieldType_String, (void*)SetLandscapeMode_s, (void*)GetLandscapeMode_s, NULL, NULL, bOverride);
 
 	pClass->AddField("RendererName", FieldType_String, NULL, (void*)GetRendererName_s, NULL, NULL, bOverride);

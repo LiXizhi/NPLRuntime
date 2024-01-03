@@ -1,6 +1,7 @@
 ﻿#include "ParaEngine.h"
 #include "RenderWindowSDL2.h"
 #include "2dengine/GUIRoot.h"
+#include "SDL2Application.h"
 #include <unordered_map>
 
 #ifdef EMSCRIPTEN
@@ -246,18 +247,24 @@ namespace ParaEngine
 	{
 		m_window_width = w;
 		m_window_height = h;
-		SDL_SetWindowSize(m_sdl2_window, m_sdl_window_width, m_sdl_window_height);
+		// SDL_SetWindowSize(m_sdl2_window, m_sdl_window_width, m_sdl_window_height);
 	}
 
 	void RenderWindowSDL2::SetSDLWindowSize(int width, int height)
 	{
+		if (((CSDL2Application *)(CGlobals::GetApp()))->IsInputing())
+		{
+			SDL_SetWindowSize(m_sdl2_window, m_sdl_window_width, m_sdl_window_height);
+			return;
+		}
+
 		m_sdl_window_width = width;
 		m_sdl_window_height = height;
 
 		m_screen_rotated = m_screen_orientation == s_screen_orientation_landscape && m_sdl_window_width < m_sdl_window_height;
 		m_screen_rotated = m_screen_rotated || (m_screen_orientation == s_screen_orientation_portrait && m_sdl_window_width > m_sdl_window_height);
-		
-		// m_screen_rotated = true;  // debug
+
+		// m_screen_rotated = false;  // debug
 		std::cout << "screen_rotated=" << m_screen_rotated << " " << m_sdl_window_width << " " << m_sdl_window_height << std::endl;
 
 		if (m_screen_rotated)
@@ -270,10 +277,11 @@ namespace ParaEngine
 			m_window_width = m_sdl_window_width;
 			m_window_height = m_sdl_window_height;
 		}
+		SDL_SetWindowSize(m_sdl2_window, m_sdl_window_width, m_sdl_window_height);
 		OnSize(m_window_width, m_window_height);
 	}
 
-	void RenderWindowSDL2::WindowXYToRenderXY(int window_x, int window_y, int& render_x, int& render_y)
+	void RenderWindowSDL2::WindowXYToRenderXY(int window_x, int window_y, int &render_x, int &render_y)
 	{
 		if (m_screen_rotated)
 		{
@@ -307,7 +315,8 @@ namespace ParaEngine
 				switch (sdl_event.window.event)
 				{
 				case SDL_WINDOWEVENT_SIZE_CHANGED:
-					std::cout << std::endl << "Window size changed: " << sdl_event.window.data1 << " " << sdl_event.window.data2 << std::endl;
+					std::cout << std::endl
+							  << "Window size changed: " << sdl_event.window.data1 << " " << sdl_event.window.data2 << std::endl;
 #ifdef EMSCRIPTEN
 					SetSDLWindowSize(EM_ASM_INT({ return document.documentElement.clientWidth * window.devicePixelRatio; }), EM_ASM_INT({ return document.documentElement.clientHeight * window.devicePixelRatio; }));
 #else
@@ -328,7 +337,7 @@ namespace ParaEngine
 			{
 				m_mouse_x = sdl_event.motion.x;
 				m_mouse_y = sdl_event.motion.y;
-            	WindowXYToRenderXY(m_mouse_x, m_mouse_y, m_mouse_x, m_mouse_y);
+				WindowXYToRenderXY(m_mouse_x, m_mouse_y, m_mouse_x, m_mouse_y);
 				OnMouseMove(m_mouse_x, m_mouse_y);
 			}
 			else if (sdl_event.type == SDL_MOUSEBUTTONDOWN)
@@ -336,7 +345,7 @@ namespace ParaEngine
 				// SetTouchInputting(false);
 				m_mouse_x = sdl_event.button.x;
 				m_mouse_y = sdl_event.button.y;
-            	WindowXYToRenderXY(m_mouse_x, m_mouse_y, m_mouse_x, m_mouse_y);
+				WindowXYToRenderXY(m_mouse_x, m_mouse_y, m_mouse_x, m_mouse_y);
 				if (sdl_event.button.button == SDL_BUTTON_LEFT)
 				{
 					m_MouseState[(uint32_t)EMouseButton::LEFT] = EKeyState::PRESS;
@@ -358,7 +367,7 @@ namespace ParaEngine
 			{
 				m_mouse_x = sdl_event.button.x;
 				m_mouse_y = sdl_event.button.y;
-            	WindowXYToRenderXY(m_mouse_x, m_mouse_y, m_mouse_x, m_mouse_y);
+				WindowXYToRenderXY(m_mouse_x, m_mouse_y, m_mouse_x, m_mouse_y);
 				if (sdl_event.button.button == SDL_BUTTON_LEFT)
 				{
 					m_MouseState[(uint32_t)EMouseButton::LEFT] = EKeyState::RELEASE;
@@ -411,7 +420,7 @@ namespace ParaEngine
 				// SetTouchInputting(true);
 				int mouse_x = sdl_event.tfinger.x * m_sdl_window_width;
 				int mouse_y = sdl_event.tfinger.y * m_sdl_window_height;
-            	WindowXYToRenderXY(mouse_x, mouse_y, mouse_x, mouse_y);
+				WindowXYToRenderXY(mouse_x, mouse_y, mouse_x, mouse_y);
 				OnTouch(EH_TOUCH, TouchEvent::TouchEvent_POINTER_DOWN, sdl_event.tfinger.fingerId, mouse_x, mouse_y, sdl_event.tfinger.timestamp);
 				// std::cout << "Finger Down: id=" << sdl_event.tfinger.fingerId << ", x=" << sdl_event.tfinger.x << ", y=" << sdl_event.tfinger.y << ", timestamp=" << sdl_event.tfinger.timestamp << std::endl;
 			}
@@ -419,7 +428,7 @@ namespace ParaEngine
 			{
 				int mouse_x = sdl_event.tfinger.x * m_sdl_window_width;
 				int mouse_y = sdl_event.tfinger.y * m_sdl_window_height;
-            	WindowXYToRenderXY(mouse_x, mouse_y, mouse_x, mouse_y);
+				WindowXYToRenderXY(mouse_x, mouse_y, mouse_x, mouse_y);
 				OnTouch(EH_TOUCH, TouchEvent::TouchEvent_POINTER_UPDATE, sdl_event.tfinger.fingerId, mouse_x, mouse_y, sdl_event.tfinger.timestamp);
 				// std::cout << "Finger Motion: id=" << sdl_event.tfinger.fingerId << ", x=" << sdl_event.tfinger.x << ", y=" << sdl_event.tfinger.y << ", timestamp=" << sdl_event.tfinger.timestamp << std::endl;
 			}
@@ -427,7 +436,7 @@ namespace ParaEngine
 			{
 				int mouse_x = sdl_event.tfinger.x * m_sdl_window_width;
 				int mouse_y = sdl_event.tfinger.y * m_sdl_window_height;
-            	WindowXYToRenderXY(mouse_x, mouse_y, mouse_x, mouse_y);
+				WindowXYToRenderXY(mouse_x, mouse_y, mouse_x, mouse_y);
 				OnTouch(EH_TOUCH, TouchEvent::TouchEvent_POINTER_UP, sdl_event.tfinger.fingerId, mouse_x, mouse_y, sdl_event.tfinger.timestamp);
 				// std::cout << "Finger Up: id=" << sdl_event.tfinger.fingerId << ", x=" << sdl_event.tfinger.x << ", y=" << sdl_event.tfinger.y << ", timestamp=" << sdl_event.tfinger.timestamp << std::endl;
 			}
