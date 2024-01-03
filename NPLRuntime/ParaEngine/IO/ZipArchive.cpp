@@ -1506,7 +1506,7 @@ bool CZipArchive::ReadEntries()
 	}
 	m_pEntries = new SZipFileEntry[nEntryNum];
 	DWORD nameOffset = 0;
-	DWORD nameBlcokSize = 0;
+	DWORD nameBlockSize = 0;
 
 	for (int i = 0; i < nEntryNum; ++i)
 	{
@@ -1518,9 +1518,15 @@ bool CZipArchive::ReadEntries()
 		}
 
 		// read filename
-		nameBlcokSize = nameOffset + CentralDir.NameSize + 1;
+		nameBlockSize = nameOffset + CentralDir.NameSize + 1;
 		pReader->read(&m_nameBlock[nameOffset], CentralDir.NameSize);
-		m_nameBlock[nameBlcokSize - 1] = 0;
+		// replace \\ with /
+		for (int j = nameOffset; j < nameBlockSize; ++j)
+		{
+			if (m_nameBlock[j] == '\\')
+				m_nameBlock[j] = '/';
+		}
+		m_nameBlock[nameBlockSize - 1] = 0;
 
 		m_FileList[i].m_pEntry = &m_pEntries[i];
 		SZipFileEntry &entry = *(m_FileList[i].m_pEntry);
