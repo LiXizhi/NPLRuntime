@@ -159,21 +159,36 @@ public:
         auto additiveExpression     = ctx->additiveExpression();
         auto additiveExpressionSize = additiveExpression.size();
         auto operand                = GetText(additiveExpression[0]);
-
+        bool is_cin_cout = operand == "cin" || operand == "cout" || operand == "std::cin" || operand == "std::cout";
+        std::ostringstream oss;
         for (int i = 1; i < additiveExpressionSize; i++)
         {
             auto oper        = ctx->children[i * 2 - 1]->getText();
             auto nextOperand = GetText(additiveExpression[i]);
             if (oper == "<<")
             {
-                operand = "bit.blshift(" + operand + ", " + nextOperand + ")";
+                if (is_cin_cout)
+                {
+                    oss << "cout(" << nextOperand << ")" << std::endl;
+                }
+                else
+                {
+                    operand = "bit.blshift(" + operand + ", " + nextOperand + ")";
+                }
             }
             else
             {
-                operand = "bit.brshift(" + operand + ", " + nextOperand + ")";
+                if (is_cin_cout)
+                {
+                    oss << nextOperand << " = cin()" << std::endl;
+                }
+                else
+                {
+                    operand = "bit.brshift(" + operand + ", " + nextOperand + ")";
+                }
             }
         }
-        return operand;
+        return is_cin_cout ? oss.str() : operand;
     }
 
     virtual std::any visitEqualityExpression(CPP14Parser::EqualityExpressionContext *ctx)
