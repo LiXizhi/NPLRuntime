@@ -74,6 +74,8 @@ NPLRuntime/externals/LuaJIT2_0/log/
 NPLRuntime/externals/LuaJIT2_1/log/
 *.entitlements
 !/NPLRuntime/Platform/OSX/Paracraft.entitlements
+!/NPLRuntime/Platform/OSX/papa_Paracraft.entitlements
+!/NPLRuntime/Platform/OSX/universal_Paracraft.entitlements
 out/
 Client/
 win32build/
