@@ -7,12 +7,21 @@ include(${PROJECT_SOURCE_DIR}/cmake/ucm.cmake)
 
 ucm_add_dirs(src TO app_src RECURSIVE ADDITIONAL_EXT mm m)
 
-set(INFO_FILE ${CMAKE_CURRENT_SOURCE_DIR}/Info.plist)
-set(IMAGES_FILE ${CMAKE_CURRENT_SOURCE_DIR}/Images.xcassets)
+set(channel_id $ENV{channel_id})
+message("current channel id is: ${channel_id}")
+
+if (channel_id STREQUAL "papa")
+    set(INFO_FILE ${CMAKE_CURRENT_SOURCE_DIR}/papa_Info.plist)
+    set(IMAGES_FILE ${CMAKE_CURRENT_SOURCE_DIR}/papa_Images.xcassets)
+else()
+    set(INFO_FILE ${CMAKE_CURRENT_SOURCE_DIR}/Info.plist)
+    set(IMAGES_FILE ${CMAKE_CURRENT_SOURCE_DIR}/Images.xcassets)
+endif()
+
 set(RESOURCE_FILES ${CMAKE_CURRENT_SOURCE_DIR}/res)
 set(ASSETS_FILES ${CMAKE_CURRENT_SOURCE_DIR}/assets)
 set(CMAKE_XCODE_BUILD_SYSTEM 12)
-set(CMAKE_OSX_DEPLOYMENT_TARGET "13.0" CACHE STRING "Deployment target for iOS" FORCE)
+set(CMAKE_OSX_DEPLOYMENT_TARGET "14.0" CACHE STRING "Deployment target for iOS" FORCE)
 
 find_library(UIKit UIKit)
 find_library(OpenGLES OpenGLES)
@@ -63,6 +72,14 @@ set_source_files_properties(${ASSETS_FILES} PROPERTIES MACOSX_PACKAGE_LOCATION R
 
 set(RESOURCE_LIST ${IMAGES_FILE} ${RESOURCE_FILES} ${ASSETS_FILES})
 
+if (channel_id STREQUAL "papa")
+    set(development_team "5QLPT4C3EB")
+    set(product_name "帕帕奇遇记")
+else()
+    set(development_team "3FHAD7P7A5")
+    set(product_name "Paracraft")
+endif()
+
 set_target_properties(
     Paracraft PROPERTIES
     MACOSX_BUNDLE TRUE
@@ -74,6 +91,8 @@ set_target_properties(
     XCODE_ATTRIBUTE_ASSETCATALOG_COMPILER_LAUNCHIMAGE_NAME "LaunchImage"
     XCODE_ATTRIBUTE_CODE_SIGN_IDENTITY "iPhone Developer"
     XCODE_ATTRIBUTE_CODE_SIGN_STYLE "Automatic"
+    XCODE_ATTRIBUTE_DEVELOPMENT_TEAM ${development_team}
+    XCODE_ATTRIBUTE_PRODUCT_NAME ${product_name}
     XCODE_ATTRIBUTE_INSTALL_PATH "$(LOCAL_APPS_DIR)"
     XCODE_ATTRIBUTE_SKIP_INSTALL "No"
     XCODE_ATTRIBUTE_ENABLE_BITCODE "No"
