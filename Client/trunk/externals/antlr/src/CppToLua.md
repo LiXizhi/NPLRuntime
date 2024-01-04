@@ -217,3 +217,26 @@ function main()
     i= not (1 and 2 or 3);
 end
 ```
+
+### 输入输出
+CPP 代码
+```cpp
+void main()
+{
+    int x;
+    int y;
+    std::cin >> x >> y;
+    std::cout << x << y;
+}
+```
+LUA 代码
+```lua
+function main()
+    local x
+    local y
+    x = cin()
+    y = cin()
+    cout(x)
+    cout(y)
+end
+```
