@@ -402,6 +402,43 @@ public:
                 // 类型声明
                 // 移除函数声明
                 if (var_name.find("(") != std::string::npos && var_name.find("=") == std::string::npos) return NullString();
+                auto equal_pos = var_name.find("=");
+                std::string name = "";
+                std::string value = "";
+                if (equal_pos == std::string::npos)
+                {
+                    name = var_name;
+                }
+                else
+                {
+                    name = var_name.substr(0, equal_pos);
+                    value = var_name.substr(equal_pos + 1);
+                }
+                // 是数组
+                if (name.find("[") != std::string::npos && name.find("]")!= std::string::npos)
+                {
+                    std::ostringstream oss;
+                    auto bracket_start = name.find("[");
+                    auto bracket_end = name.find("]");
+                    auto subname = name.substr(0, bracket_start);
+                    auto arrsize = name.substr(bracket_start + 1, bracket_end - bracket_start - 1);
+                    oss << "local " << subname << " = NewMultiArray(" << arrsize;
+                    name = name.substr(bracket_end + 1);
+                    while (name.find("[") != std::string::npos && name.find("]")!= std::string::npos)
+                    {
+                        bracket_start = name.find("[");
+                        bracket_end = name.find("]");     
+                        arrsize = name.substr(bracket_start + 1, bracket_end - bracket_start - 1);
+                        oss << "," << arrsize;
+                        name = name.substr(bracket_end + 1);
+                    }
+                    oss << ")" << std::endl;
+                    if (!value.empty())
+                    {
+                        oss << "InitMultiArray(" << subname << "," << value << ")"<< std::endl;
+                    }
+                    return oss.str();
+                }
                 // 保留类型声明
                 return "local " + var_name + "\n";
             }
