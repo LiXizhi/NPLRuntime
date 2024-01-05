@@ -1531,6 +1531,12 @@ bool CZipArchive::ReadEntries()
 		// read filename
 		nameBlockSize = nameOffset + CentralDir.NameSize + 1;
 		pReader->read(&m_nameBlock[nameOffset], CentralDir.NameSize);
+		// replace \\ with /
+		for (int j = nameOffset; j < nameBlockSize; ++j)
+		{
+			if (m_nameBlock[j] == '\\')
+				m_nameBlock[j] = '/';
+		}
 		m_nameBlock[nameBlockSize - 1] = 0;
 
 		m_FileList[i].m_pEntry = &m_pEntries[i];
