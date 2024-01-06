@@ -11,10 +11,29 @@ include(${PROJECT_SOURCE_DIR}/cmake/ucm.cmake)
 ucm_add_dirs(src TO OSX_SRC RECURSIVE ADDITIONAL_EXT mm m)
 ucm_add_dirs(xib TO XIB_FILES RECURSIVE ADDITIONAL_EXT xib)
 
+set(channel_id $ENV{channel_id})
+message("current channel id is: ${channel_id}")
+
 set(RESOURCE_FILES ${CMAKE_CURRENT_SOURCE_DIR}/res)
 set(ASSETS_FILES ${CMAKE_CURRENT_SOURCE_DIR}/assets)
-set(INFO_FILE ${CMAKE_CURRENT_SOURCE_DIR}/Info.plist)
-set(ICON_FILE ${CMAKE_CURRENT_SOURCE_DIR}/icon.icns)
+
+if (channel_id STREQUAL "papa")
+    set(INFO_FILE ${CMAKE_CURRENT_SOURCE_DIR}/papa_Info.plist)
+    set(ICON_FILE ${CMAKE_CURRENT_SOURCE_DIR}/papa_icon/icon.icns)
+elseif(channel_id STREQUAL "431")
+    set(INFO_FILE ${CMAKE_CURRENT_SOURCE_DIR}/edu_Info.plist)
+    set(ICON_FILE ${CMAKE_CURRENT_SOURCE_DIR}/edu_icon/icon.icns)
+elseif(channel_id STREQUAL "universal")
+    set(INFO_FILE ${CMAKE_CURRENT_SOURCE_DIR}/Info.plist)
+    set(ICON_FILE ${CMAKE_CURRENT_SOURCE_DIR}/icon/icon.icns)
+elseif(channel_id STREQUAL "universal_papa")
+    set(INFO_FILE ${CMAKE_CURRENT_SOURCE_DIR}/papa_Info.plist)
+    set(ICON_FILE ${CMAKE_CURRENT_SOURCE_DIR}/papa_icon/icon.icns)
+else()
+    set(INFO_FILE ${CMAKE_CURRENT_SOURCE_DIR}/Info.plist)
+    set(ICON_FILE ${CMAKE_CURRENT_SOURCE_DIR}/icon/icon.icns)
+endif()
+
 set(CMAKE_OSX_DEPLOYMENT_TARGET "10.14" CACHE STRING "Deployment target for OSX" FORCE)
 set(CMAKE_XCODE_ATTRIBUTE_STRIP_STYLE "non-global" CACHE STRING "Non-Global Symbols" FORCE)
 # set(IMAGES_FILE ${CMAKE_CURRENT_SOURCE_DIR}/Images.xcassets)
@@ -37,19 +56,43 @@ target_compile_definitions(Paracraft PUBLIC PLATFORM_MAC)
 
 set(RESOURCE_LIST ${RESOURCE_FILES} ${ASSETS_FILES} ${XIB_FILES} ${ICON_FILE})
 
+if (channel_id STREQUAL "universal")
+    set(development_team "3FHAD7P7A5")
+    set(entitlements ${CMAKE_CURRENT_SOURCE_DIR}/universal_Paracraft.entitlements)
+    set(product_name "Paracraft")
+elseif (channel_id STREQUAL "universal_papa")
+    set(development_team "5QLPT4C3EB")
+    set(entitlements ${CMAKE_CURRENT_SOURCE_DIR}/universal_Paracraft.entitlements)
+    set(product_name "帕帕奇遇记")
+elseif (channel_id STREQUAL "papa")
+    set(development_team "5QLPT4C3EB")
+    set(entitlements ${CMAKE_CURRENT_SOURCE_DIR}/papa_Paracraft.entitlements)
+    set(product_name "帕帕奇遇记")
+elseif (channel_id STREQUAL "431")
+    set(development_team "5QLPT4C3EB")
+    set(entitlements ${CMAKE_CURRENT_SOURCE_DIR}/papa_Paracraft.entitlements)
+    set(product_name "帕拉卡智慧教育客户端")
+else()
+    set(development_team "3FHAD7P7A5")
+    set(entitlements ${CMAKE_CURRENT_SOURCE_DIR}/Paracraft.entitlements)
+    set(product_name "Paracraft")
+endif()
+
 set_target_properties(Paracraft PROPERTIES 
     MACOSX_BUNDLE TRUE
     MACOSX_BUNDLE_INFO_PLIST ${INFO_FILE}
     # MACOSX_BUNDLE_ICON_FILE ${CMAKE_CURRENT_SOURCE_DIR}/icon.icns
     XCODE_ATTRIBUTE_CODE_SIGN_IDENTITY "Mac Developer"
     XCODE_ATTRIBUTE_CODE_SIGN_STYLE "Automatic"
+    XCODE_ATTRIBUTE_DEVELOPMENT_TEAM ${development_team}
+    XCODE_ATTRIBUTE_PRODUCT_NAME ${product_name}
     # XCODE_ATTRIBUTE_OTHER_CODE_SIGNING_FLAGS "--deep" [DO THIS MANUTALLY IN SETTINGS IF SANDBOX IS ENABLED!]
     XCODE_ATTRIBUTE_INSTALL_PATH "$(LOCAL_APPS_DIR)"
     XCODE_ATTRIBUTE_SKIP_INSTALL "No"
     # XCODE_ATTRIBUTE_ASSETCATALOG_COMPILER_APPICON_NAME "AppIcon"
     RESOURCE "${RESOURCE_LIST}"
     INSTALL_RPATH "@executable_path/../Frameworks/"
-    XCODE_ATTRIBUTE_CODE_SIGN_ENTITLEMENTS ${CMAKE_CURRENT_SOURCE_DIR}/Paracraft.entitlements
+    XCODE_ATTRIBUTE_CODE_SIGN_ENTITLEMENTS ${entitlements}
     BUILD_WITH_INSTALL_RPATH TRUE
 )
 
