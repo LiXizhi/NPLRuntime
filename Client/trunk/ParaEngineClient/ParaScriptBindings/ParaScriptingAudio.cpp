@@ -43,7 +43,11 @@ int ParaScripting::ParaAudio::PlayMidiMsg(DWORD dwMsg)
 
 int ParaScripting::ParaAudio::StopMidiMsg(int channel)
 {
+#ifdef PARAENGINE_CLIENT
 	return CMidiMsg::GetSingleton().StopMidiMsg(channel);
+#else
+	return 0;
+#endif
 }
 
 bool ParaAudio::PlayWaveFile( const char* szWavePath,int nLoopCount )
@@ -128,6 +132,25 @@ bool ParaScripting::ParaAudio::StartRecording()
 		return pAutoCapture->beginCapture();
 	}
 	return false;
+}
+
+const std::string& ParaScripting::ParaAudio::GetCapturedAudio(int nMaxSize)
+{
+	static std::string data;
+	auto pAutoCapture = CAudioEngine2::GetInstance()->CreateGetAudioCapture();
+	if (pAutoCapture)
+	{
+		auto nSize = pAutoCapture->getCurrentCapturedAudioSize();
+		if (nSize > 0)
+		{
+			nSize = (nMaxSize > 0 && nSize > nMaxSize) ? nMaxSize : nSize;
+			data.resize(nSize);
+			int nReadSize = pAutoCapture->getCapturedAudio(&(data[0]), nSize);
+			return data;
+		}
+	}
+	data.clear();
+	return data;
 }
 
 void ParaScripting::ParaAudio::StopRecording()

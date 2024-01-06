@@ -328,8 +328,16 @@ namespace ParaScripting
 		*/
 		static bool ReleaseWaveFile(const char* szWavePath);
 
+		
 		/// ---------------- Audio Recorder ----------------
 		static bool StartRecording();
+
+		/** Can be called at any time between StartRecording and StopRecording() to retrieve recorded audio.  It is recommended that you call it every so often with long recordings to prevent the internal buffer from growing too large.
+		Once successfully retrieved, the captured audio will be deleted from the internal buffer.
+		@param nMaxSize: max number of bytes to copy. if -1, it will read all
+		@return array of bytesto copy the audio data to.  
+		*/
+		static const std::string& GetCapturedAudio(int nMaxSize);
 
 		static void StopRecording();
 
