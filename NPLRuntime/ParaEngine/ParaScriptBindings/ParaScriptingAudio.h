@@ -10,10 +10,10 @@ using namespace std;
 
 namespace luabind
 {
-	namespace adl{
+	namespace adl {
 		class object;
 	}
-	using adl::object;	
+	using adl::object;
 }
 
 namespace ParaScripting
@@ -23,7 +23,7 @@ namespace ParaScripting
 	using namespace luabind;
 
 	/** @ingroup ParaAudio
-	* It represents a 2D or 3D audio source object. 
+	* It represents a 2D or 3D audio source object.
 	*/
 	class ParaAudioSource
 	{
@@ -36,20 +36,20 @@ namespace ParaScripting
 		/** true if valid*/
 		bool IsValid() const;
 
-		/** stop and unload this audio source from memory. It will make the sound source invalid after calling this function.  
-		* it is good practice to unload unused sound. 
+		/** stop and unload this audio source from memory. It will make the sound source invalid after calling this function.
+		* it is good practice to unload unused sound.
 		*/
 		void release();
 
 		/** Plays the source with the last set parameters.
-		@return True if the source is playing, false if not. 
+		@return True if the source is playing, false if not.
 		*/
 		bool play();
 
 		/** get the source name. (this may not be the file name) */
 		const char* GetName();
 
-		/** Plays the source in 2D mode. 
+		/** Plays the source in 2D mode.
 		No automatic attenuation or panning will take place in this mode, but using setPosition will allow you to manually pan mono audio streams.
 		@param toLoop: Whether to loop (restart) the audio when the end is reached.
 		@return True if the source is playing, false if not. */
@@ -62,7 +62,7 @@ namespace ParaScripting
 		@param toLoop: Whether to loop (restart) the audio when the end is reached.
 		\return True if the source is playing, false if not. */
 		bool play3d(float x, float y, float z, float soundstr, bool toLoop);
-		
+
 		/// Pauses playback of the sound source.
 		void pause();
 
@@ -163,13 +163,13 @@ namespace ParaScripting
 		@param maxVolume: New maximum volume of the source. */
 		void setMaxVolume(float maxVolume);
 
-		/** Sets the angle of the inner sound cone of the source.  The cone opens up in the direction of the source as set by setDirection(). 
+		/** Sets the angle of the inner sound cone of the source.  The cone opens up in the direction of the source as set by setDirection().
 		Note: This causes the sound to be loudest only if the listener is inside this cone.
 		Range: 0.0f to 360.0f (Default: 360.0f).
 		@param innerAngle: Inside angle of the cone. */
 		void setInnerConeAngle(float innerAngle);
 
-		/** Sets the angle of the outer sound cone of the source. The cone opens up in the direction of the source as set by setDirection(). 
+		/** Sets the angle of the outer sound cone of the source. The cone opens up in the direction of the source as set by setDirection().
 		Note: If the listener is outside of this cone, the sound cannot be heard.  Between the inner cone angle and this angle, the sound volume will fall off.
 		Range: 0.0f to 360.0f (Default: 360.0f).
 		@param outerAngle: Outside angle of the cone. */
@@ -179,7 +179,7 @@ namespace ParaScripting
 		Range: 0.0f to +inf (Default: 0.0f).
 		@param outerVolume: Volume of the source in the outside cone. */
 		void setOuterConeVolume(float outerVolume);
-		
+
 		/** Convenience function to automatically set the velocity and position for you in a single call.
 		Velocity will be set to new position - last position.
 		* @param position: Position to move the source to. */
@@ -241,49 +241,49 @@ namespace ParaScripting
 
 		/// enable Audio Engine
 		static void EnableAudioEngine(bool bEnable);
-		
 
-		/** Set the volume of all categories and all currently playing wave files. 
-		* @param fVolume: usually between [0,1], where 0 is silent and 1 is full. value larger than 1 is also possible. 
+
+		/** Set the volume of all categories and all currently playing wave files.
+		* @param fVolume: usually between [0,1], where 0 is silent and 1 is full. value larger than 1 is also possible.
 		*/
 		static void SetVolume(float fVolume);
 
 		/** Get the volume of average if all categories
-		* @return usually between [0,1], where 0 is silent and 1 is full. value larger than 1 is also possible. 
+		* @return usually between [0,1], where 0 is silent and 1 is full. value larger than 1 is also possible.
 		*/
 		static float GetVolume();
-		
-		/** create a given audio source by name. If no audio source with the name is loaded before, we will create one new; otherwise we will overwrite the previous one. 
-		* @param sName: the audio source name. Usually same as the audio file path, however it can be any string.  
-		* @param sWavePath: if NULL, it will defaults to sName. Please note, in order to play the same music at the same time, they must be created with different names. 
-		* @param bStream: whether to stream the music once created. 
-		* @return CAudioSource2_ptr object returned. It may be null if failed. 
+
+		/** create a given audio source by name. If no audio source with the name is loaded before, we will create one new; otherwise we will overwrite the previous one.
+		* @param sName: the audio source name. Usually same as the audio file path, however it can be any string.
+		* @param sWavePath: if NULL, it will defaults to sName. Please note, in order to play the same music at the same time, they must be created with different names.
+		* @param bStream: whether to stream the music once created.
+		* @return CAudioSource2_ptr object returned. It may be null if failed.
 		*/
 		static ParaAudioSource Create(const char* sName, const char* sWavePath, bool bStream);
 
 		/** get audio source by name. The source should be created by Create() function. */
 		static ParaAudioSource Get(const char* sName);
 
-		/** get a given audio source by name. If no audio source with the name is loaded before, we will create one. 
-		* @param sName: the audio source name. Usually same as the audio file path, however it can be any string.  
-		* @param sWavePath: if NULL, it will defaults to sName. Please note, in order to play the same music at the same time, they must be created with different names. 
-		* @param bStream: whether to stream the music once created. 
-		* @return CAudioSource2_ptr object returned. It may be null if failed. 
+		/** get a given audio source by name. If no audio source with the name is loaded before, we will create one.
+		* @param sName: the audio source name. Usually same as the audio file path, however it can be any string.
+		* @param sWavePath: if NULL, it will defaults to sName. Please note, in order to play the same music at the same time, they must be created with different names.
+		* @param bStream: whether to stream the music once created.
+		* @return CAudioSource2_ptr object returned. It may be null if failed.
 		*/
 		static ParaAudioSource CreateGet(const char* sName, const char* sWavePath, bool bStream);
 
 		/**
-		* set the audio distance model. 
+		* set the audio distance model.
 		* see: http://connect.creativelabs.com/openal/Documentation/OpenAL%201.1%20Specification.htm
-		* @param eDistModel: int of following. 
+		* @param eDistModel: int of following.
 			enum ParaAudioDistanceModelEnum
 			{
-				Audio_DistModel_NONE = 0, 
-				Audio_DistModel_INVERSE_DISTANCE, 
-				Audio_DistModel_INVERSE_DISTANCE_CLAMPED, 
-				Audio_DistModel_LINEAR_DISTANCE, 
-				Audio_DistModel_LINEAR_DISTANCE_CLAMPED, 
-				Audio_DistModel_EXPONENT_DISTANCE, 
+				Audio_DistModel_NONE = 0,
+				Audio_DistModel_INVERSE_DISTANCE,
+				Audio_DistModel_INVERSE_DISTANCE_CLAMPED,
+				Audio_DistModel_LINEAR_DISTANCE,
+				Audio_DistModel_LINEAR_DISTANCE_CLAMPED,
+				Audio_DistModel_EXPONENT_DISTANCE,
 				Audio_DistModel_EXPONENT_DISTANCE_CLAMPED,
 			};
 		*/
@@ -296,9 +296,9 @@ namespace ParaScripting
 		//////////////////////////////////////////////////////////////////////////
 		/**
 		* Prepare and play a wave object from a standard wave file (wav, mp3, ogg/vorbis).
-		* If a wave file is already prepared before. It will be reused. 
-		* @param szWavePath Path to the wave file. It can be from asset_manifest or relative to current directory path. 
-		* @param nLoop 0 means non-looping. 1 means looping. 
+		* If a wave file is already prepared before. It will be reused.
+		* @param szWavePath Path to the wave file. It can be from asset_manifest or relative to current directory path.
+		* @param nLoop 0 means non-looping. 1 means looping.
 		*/
 		static bool PlayWaveFile(const char* szWavePath, int nLoop);
 		static bool PlayWaveFile1(const char* szWavePath);
@@ -306,25 +306,38 @@ namespace ParaScripting
 		* @param dwMsg: MIDI message. The message is packed into a DWORD value with the first byte of the message in the low-order byte. The message is packed into this parameter as follows.
 		*/
 		static int PlayMidiMsg(DWORD dwMsg);
+		/**
+		* step a midi track.
+		* @param channel: midi track number.
+		*/
+		static int StopMidiMsg(int channel = 0);
 
 		/**
 		* stop a wave file
-		* @param szWavePath Path to the wave file. 
-		* @param bImmediateStop if false, it plays the wave to completion, then stops. For looping waves, 
+		* @param szWavePath Path to the wave file.
+		* @param bImmediateStop if false, it plays the wave to completion, then stops. For looping waves,
 		* this flag plays the current iteration to completion, then stops (ignoring any subsequent iterations).
-		* In either case, any release (or tail) is played. To stop the wave immediately, use true. 
+		* In either case, any release (or tail) is played. To stop the wave immediately, use true.
 		*/
 		static bool StopWaveFile(const char* szWavePath, bool bImmediateStop);
 		static bool StopWaveFile1(const char* szWavePath);
 
 		/**
 		* release a wave file
-		* @param szWavePath Path to the wave file. 
+		* @param szWavePath Path to the wave file.
 		*/
 		static bool ReleaseWaveFile(const char* szWavePath);
 
+
 		/// ---------------- Audio Recorder ----------------
 		static bool StartRecording();
+
+		/** Can be called at any time between StartRecording and StopRecording() to retrieve recorded audio.  It is recommended that you call it every so often with long recordings to prevent the internal buffer from growing too large.
+		Once successfully retrieved, the captured audio will be deleted from the internal buffer.
+		@param nMaxSize: max number of bytes to copy. if -1, it will read all
+		@return array of bytesto copy the audio data to.
+		*/
+		static const std::string& GetCapturedAudio(int nMaxSize);
 
 		static void StopRecording();
 

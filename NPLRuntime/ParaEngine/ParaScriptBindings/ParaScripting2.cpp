@@ -108,6 +108,7 @@ void CNPLScriptingState::LoadHAPI_Audio()
 				def("ReleaseWaveFile", &ParaAudio::ReleaseWaveFile),
 				def("StartRecording", &ParaAudio::StartRecording),
 				def("StopRecording", &ParaAudio::StopRecording),
+				def("GetCapturedAudio", &ParaAudio::GetCapturedAudio),
 				def("SaveRecording", &ParaAudio::SaveRecording)
 			]
 		];
