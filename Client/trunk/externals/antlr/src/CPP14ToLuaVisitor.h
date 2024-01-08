@@ -180,7 +180,7 @@ public:
             {
                 if (is_cin_cout)
                 {
-                    oss << nextOperand << " = cin()" << std::endl;
+                    oss << nextOperand << " = cin(" << nextOperand << ")" << std::endl;
                 }
                 else
                 {
