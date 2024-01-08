@@ -159,7 +159,7 @@ public:
         auto additiveExpression     = ctx->additiveExpression();
         auto additiveExpressionSize = additiveExpression.size();
         auto operand                = GetText(additiveExpression[0]);
-        bool is_cin_cout = operand == "cin" || operand == "cout" || operand == "std::cin" || operand == "std::cout";
+        bool is_cin_cout            = operand == "cin" || operand == "cout" || operand == "std::cin" || operand == "std::cout";
         std::ostringstream oss;
         for (int i = 1; i < additiveExpressionSize; i++)
         {
@@ -191,27 +191,6 @@ public:
         return is_cin_cout ? oss.str() : operand;
     }
 
-    virtual std::any visitEqualityExpression(CPP14Parser::EqualityExpressionContext *ctx)
-    {
-        auto relationalExpression     = ctx->relationalExpression();
-        auto relationalExpressionSize = relationalExpression.size();
-        auto operand                  = GetText(relationalExpression[0]);
-
-        for (int i = 1; i < relationalExpressionSize; i++)
-        {
-            auto oper        = ctx->children[i * 2 - 1]->getText();
-            auto nextOperand = GetText(relationalExpression[i]);
-            if (oper != "==")
-            {
-                operand = operand + " == " + nextOperand;
-            }
-            else
-            {
-                operand = operand + " ~= " + nextOperand;
-            }
-        }
-        return operand;
-    }
     virtual std::any visitAndExpression(CPP14Parser::AndExpressionContext *ctx) override
     {
         auto equalityExpression     = ctx->equalityExpression();
@@ -249,31 +228,6 @@ public:
         return operand;
     }
 
-    // virtual std::any visitLogicalAndExpression(CPP14Parser::LogicalAndExpressionContext *ctx) override
-    // {
-    //     auto inclusiveOrExpression     = ctx->inclusiveOrExpression();
-    //     auto inclusiveOrExpressionSize = inclusiveOrExpression.size();
-    //     auto operand                   = GetText(inclusiveOrExpression[0]);
-    //     for (int i = 1; i < inclusiveOrExpressionSize; i++)
-    //     {
-    //         auto nextOperand = GetText(inclusiveOrExpression[i]);
-    //         operand          = operand + " and " + nextOperand;
-    //     }
-    //     return operand;
-    // }
-    // virtual std::any visitLogicalOrExpression(CPP14Parser::LogicalOrExpressionContext *ctx) override
-    // {
-    //     auto logicalAndExpression     = ctx->logicalAndExpression();
-    //     auto logicalAndExpressionSize = logicalAndExpression.size();
-    //     auto operand                  = GetText(logicalAndExpression[0]);
-    //     for (int i = 1; i < logicalAndExpressionSize; i++)
-    //     {
-    //         auto nextOperand = GetText(logicalAndExpression[i]);
-    //         operand          = operand + " or " + nextOperand;
-    //     }
-    //     return operand;
-    // }
-
     virtual std::any visitConditionalExpression(CPP14Parser::ConditionalExpressionContext *ctx) override
     {
         auto logicalOrExpression = GetText(ctx->logicalOrExpression());
@@ -298,7 +252,11 @@ public:
         auto assignmentOperator      = ctx->assignmentOperator();
         if (assignmentOperator == nullptr) return CPP14ParserBaseVisitor::visitAssignmentExpression(ctx);
 
-        if (assignmentOperator->PlusAssign() != nullptr)
+        if (assignmentOperator->Assign() != nullptr)
+        {
+            return logicalOrExpressionText + " = " + initializerClauseText;
+        }
+        else if (assignmentOperator->PlusAssign() != nullptr)
         {
             return logicalOrExpressionText + " = " + logicalOrExpressionText + " + " + initializerClauseText;
         }
@@ -340,7 +298,7 @@ public:
         }
         else
         {
-            return logicalOrExpressionText + logicalOrExpressionText + initializerClauseText;
+            return logicalOrExpressionText + assignmentOperatorText + initializerClauseText;
         }
     }
 
@@ -375,6 +333,16 @@ public:
         return CPP14ParserBaseVisitor::visitParameterDeclaration(ctx);
     }
 
+    virtual std::any visitUsingDeclaration(CPP14Parser::UsingDeclarationContext *ctx) override
+    {
+        return NullString();
+    }
+
+    virtual std::any visitUsingDirective(CPP14Parser::UsingDirectiveContext *ctx) override
+    {
+        return NullString();
+    }
+
     virtual std::any visitSimpleTypeSpecifier(CPP14Parser::SimpleTypeSpecifierContext *ctx) override
     {
 #ifdef DEBUG
@@ -388,77 +356,118 @@ public:
 #ifdef DEBUG
         // CPP14ParserBaseVisitor::visitSimpleDeclaration(ctx);
 #endif
-        auto type_name = GetText(ctx->declSpecifierSeq());
-        auto var_name  = GetText(ctx->initDeclaratorList());
-        if (type_name.empty()) // 类型为基本类型
+        auto declSpecifierSeq   = ctx->declSpecifierSeq();
+        auto initDeclaratorList = ctx->initDeclaratorList();
+        auto initDeclarator     = initDeclaratorList->initDeclarator();
+        auto initDeclaratorSize = initDeclarator.size();
+
+        // 函数调用
+        if (declSpecifierSeq == nullptr) return GetText(initDeclaratorList) + "\n";
+
+        auto raw_type_name = declSpecifierSeq->stop->getText();
+        auto type_name     = GetText(ctx->declSpecifierSeq());
+
+        std::ostringstream oss;
+        for (int i = 0; i < initDeclaratorSize; i++)
         {
-            if (ctx->declSpecifierSeq() == nullptr)
+            auto declarator = GetText(initDeclarator[i]);
+            if (type_name.empty()) // 类型为基本类型
             {
-                // 函数调用
-                return var_name + "\n";
-            }
-            else
-            {
+                // 移除函数声明 无类型存在(不存在=被解析成函数声明
+                if (declarator.find("(") != std::string::npos && declarator.find("=") == std::string::npos) continue;
+
                 // 类型声明
-                // 移除函数声明
-                if (var_name.find("(") != std::string::npos && var_name.find("=") == std::string::npos) return NullString();
-                auto equal_pos = var_name.find("=");
-                std::string name = "";
+                auto equal_pos    = declarator.find("=");
+                std::string name  = "";
                 std::string value = "";
                 if (equal_pos == std::string::npos)
                 {
-                    name = var_name;
+                    name = declarator;
                 }
                 else
                 {
-                    name = var_name.substr(0, equal_pos);
-                    value = var_name.substr(equal_pos + 1);
+                    name  = declarator.substr(0, equal_pos);
+                    value = declarator.substr(equal_pos + 1);
                 }
-                // 是数组
-                if (name.find("[") != std::string::npos && name.find("]")!= std::string::npos)
+
+                // 解析指针符和数组符
+                auto star_size  = std::count(name.begin(), name.end(), '*');
+                auto array_size = std::count(name.begin(), name.end(), '[');
+
+                // 移除指针符
+                if (star_size > 0) name = name.substr(name.find_last_of("*") + 1);
+
+                // 设置默认值 没有默认值且不是数组直接跳过
+                if (value.empty())
                 {
-                    std::ostringstream oss;
+                    if (raw_type_name == "char")
+                    {
+                        if ((array_size == 0 && star_size > 0) || (array_size == 1 && star_size == 0))
+                        {
+                            if (array_size > 0) name = name.substr(0, name.find("["));
+                            oss << "local " + name + " = \"\"" << std::endl;
+                            continue;
+                        }
+                        if (star_size == 0 && array_size == 0)
+                        {
+                            oss << "local " + name + " = 0" << std::endl;
+                            continue;
+                        }
+                    }
+                    else if (array_size == 0 && star_size == 0)
+                    {
+                        oss << "local " + name + " = 0" << std::endl;
+                        continue; 
+                    }
+                }
+
+                // 是数组
+                if (name.find("[") != std::string::npos && name.find("]") != std::string::npos)
+                {
                     auto bracket_start = name.find("[");
-                    auto bracket_end = name.find("]");
-                    auto subname = name.substr(0, bracket_start);
-                    auto arrsize = name.substr(bracket_start + 1, bracket_end - bracket_start - 1);
+                    auto bracket_end   = name.find("]");
+                    auto subname       = name.substr(0, bracket_start);
+                    auto arrsize       = name.substr(bracket_start + 1, bracket_end - bracket_start - 1);
                     oss << "local " << subname << " = NewMultiArray(" << arrsize;
                     name = name.substr(bracket_end + 1);
-                    while (name.find("[") != std::string::npos && name.find("]")!= std::string::npos)
+                    while (name.find("[") != std::string::npos && name.find("]") != std::string::npos)
                     {
                         bracket_start = name.find("[");
-                        bracket_end = name.find("]");     
-                        arrsize = name.substr(bracket_start + 1, bracket_end - bracket_start - 1);
+                        bracket_end   = name.find("]");
+                        arrsize       = name.substr(bracket_start + 1, bracket_end - bracket_start - 1);
                         oss << "," << arrsize;
                         name = name.substr(bracket_end + 1);
                     }
                     oss << ")" << std::endl;
                     if (!value.empty())
                     {
-                        oss << "InitMultiArray(" << subname << "," << value << ")"<< std::endl;
+                        oss << "InitMultiArray(" << subname << "," << value << ")" << std::endl;
                     }
-                    return oss.str();
                 }
-                // 保留类型声明
-                return "local " + var_name + "\n";
-            }
-        }
-        else
-        {
-            auto pos = var_name.find("(");
-            if (pos == std::string::npos)
-            {
-                return var_name + " = " + type_name + "()\n";
-            }
-            else if (pos == 0)
-            {
-                return type_name + var_name + "\n";
+                else
+                {
+                    // 保留类型声明
+                    oss << "local " << name << " = " << value << std::endl;
+                }
             }
             else
             {
-                return "local " + var_name.substr(0, pos) + " = " + type_name + var_name.substr(pos) + "\n";
+                auto pos = declarator.find("(");
+                if (pos == std::string::npos)
+                {
+                    oss << "local " << declarator << " = " << type_name << "()" << std::endl;
+                }
+                else if (pos == 0)
+                {
+                    oss << type_name << declarator << std::endl;
+                }
+                else
+                {
+                    oss <<  "local " << declarator.substr(0, pos) << " = " << type_name << declarator.substr(pos) << std::endl;
+                }
             }
         }
+        return oss.str();
     }
 
     virtual std::any visitSelectionStatement(CPP14Parser::SelectionStatementContext *ctx) override
@@ -547,14 +556,11 @@ public:
         {
             auto for_ctr            = ctx->For();
             auto for_init_statement = ctx->forInitStatement();
-            if (for_init_statement != nullptr)
-            {
-                oss << GetText(for_init_statement)
-                    << "while (" << Trim(GetText(ctx->condition())) << ") do" << std::endl
-                    << GetText(ctx->statement())
-                    << GetText(ctx->expression()) << std::endl
-                    << "end";
-            }
+            oss << GetText(for_init_statement) << std::endl
+                << "while (" << Trim(GetText(ctx->condition())) << ") do" << std::endl
+                << GetText(ctx->statement())
+                << GetText(ctx->expression()) << std::endl
+                << "end";
         }
         else if (ctx->Do() != nullptr)
         {
@@ -632,3 +638,49 @@ private:
 };
 
 #endif
+
+// virtual std::any visitEqualityExpression(CPP14Parser::EqualityExpressionContext *ctx)
+// {
+//     auto relationalExpression     = ctx->relationalExpression();
+//     auto relationalExpressionSize = relationalExpression.size();
+//     auto operand                  = GetText(relationalExpression[0]);
+
+//     for (int i = 1; i < relationalExpressionSize; i++)
+//     {
+//         auto oper        = ctx->children[i * 2 - 1]->getText();
+//         auto nextOperand = GetText(relationalExpression[i]);
+//         if (oper != "==")
+//         {
+//             operand = operand + " == " + nextOperand;
+//         }
+//         else
+//         {
+//             operand = operand + " ~= " + nextOperand;
+//         }
+//     }
+//     return operand;
+// }
+// virtual std::any visitLogicalAndExpression(CPP14Parser::LogicalAndExpressionContext *ctx) override
+// {
+//     auto inclusiveOrExpression     = ctx->inclusiveOrExpression();
+//     auto inclusiveOrExpressionSize = inclusiveOrExpression.size();
+//     auto operand                   = GetText(inclusiveOrExpression[0]);
+//     for (int i = 1; i < inclusiveOrExpressionSize; i++)
+//     {
+//         auto nextOperand = GetText(inclusiveOrExpression[i]);
+//         operand          = operand + " and " + nextOperand;
+//     }
+//     return operand;
+// }
+// virtual std::any visitLogicalOrExpression(CPP14Parser::LogicalOrExpressionContext *ctx) override
+// {
+//     auto logicalAndExpression     = ctx->logicalAndExpression();
+//     auto logicalAndExpressionSize = logicalAndExpression.size();
+//     auto operand                  = GetText(logicalAndExpression[0]);
+//     for (int i = 1; i < logicalAndExpressionSize; i++)
+//     {
+//         auto nextOperand = GetText(logicalAndExpression[i]);
+//         operand          = operand + " or " + nextOperand;
+//     }
+//     return operand;
+// }
