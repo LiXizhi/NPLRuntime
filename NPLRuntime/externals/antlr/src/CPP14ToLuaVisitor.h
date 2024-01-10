@@ -65,6 +65,10 @@ public:
         {
             return std::string(" ~= ");
         }
+        // else if (symbol->getType() == CPP14Parser::Doublecolon)
+        // {
+        //     return std::string(".");
+        // }
         else if (type == CPP14Parser::Return)
         {
             return text + " ";
@@ -109,12 +113,14 @@ public:
         // std::ostringstream oss;
         if (ctx->postfixExpression() != nullptr)
         {
-            if (ctx->PlusPlus() != nullptr)
+            if (ctx->Dot() != nullptr || ctx->Arrow() != nullptr)
+            {
+                return GetText(ctx->postfixExpression()) + ":" + GetText(ctx->idExpression());
+            }
+            else if (ctx->PlusPlus() != nullptr)
             {
                 auto var = GetText(ctx->postfixExpression());
                 return var + " = " + var + " + 1";
-                // oss << "(function() local temp = " << var << "; i = i + 1; return temp; end)()";
-                // return oss.str();
             }
             else if (ctx->MinusMinus() != nullptr)
             {
@@ -159,7 +165,7 @@ public:
         auto additiveExpression     = ctx->additiveExpression();
         auto additiveExpressionSize = additiveExpression.size();
         auto operand                = GetText(additiveExpression[0]);
-        bool is_cin_cout            = operand == "cin" || operand == "cout" || operand == "std::cin" || operand == "std::cout";
+        bool is_cin_cout            = operand == "cin" || operand == "cout" || operand == "std::cin" || operand == "std::cout" || operand == "cerr" || operand == "std::cerr";
         std::ostringstream oss;
         for (int i = 1; i < additiveExpressionSize; i++)
         {
@@ -169,6 +175,7 @@ public:
             {
                 if (is_cin_cout)
                 {
+                    if (nextOperand.find("std::") == 0) nextOperand = nextOperand.substr(5);
                     oss << "cout(" << nextOperand << ")" << std::endl;
                 }
                 else
@@ -358,6 +365,8 @@ public:
 #endif
         auto declSpecifierSeq   = ctx->declSpecifierSeq();
         auto initDeclaratorList = ctx->initDeclaratorList();
+        if (initDeclaratorList == nullptr) return NullString();
+
         auto initDeclarator     = initDeclaratorList->initDeclarator();
         auto initDeclaratorSize = initDeclarator.size();
 
@@ -452,6 +461,7 @@ public:
             }
             else
             {
+                if (type_name == "string") type_name = "CppString";
                 auto pos = declarator.find("(");
                 if (pos == std::string::npos)
                 {
@@ -508,7 +518,7 @@ public:
             oss << "local __switch_case__ = false;" << std::endl
                 << "local __switch_condition__ = " << Trim(GetText(ctx->condition())) << ";" << std::endl
                 << "repeat" << std::endl
-                << GetText(statements[0]);
+                << GetText(statements_size > 0 ? statements[0] : nullptr);
 
             if (m_in_switch_case) oss << "end" << std::endl;
             oss << "until (true);" << std::endl;
@@ -554,9 +564,7 @@ public:
 
         if (ctx->For() != nullptr)
         {
-            auto for_ctr            = ctx->For();
-            auto for_init_statement = ctx->forInitStatement();
-            oss << GetText(for_init_statement) << std::endl
+            oss << GetText(ctx->forInitStatement()) << std::endl
                 << "while (" << Trim(GetText(ctx->condition())) << ") do" << std::endl
                 << GetText(ctx->statement())
                 << GetText(ctx->expression()) << std::endl
