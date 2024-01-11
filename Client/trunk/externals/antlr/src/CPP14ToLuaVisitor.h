@@ -155,8 +155,8 @@ public:
         {
             if (ctx->Dot() != nullptr || ctx->Arrow() != nullptr)
             {
-                return CPP14ParserBaseVisitor::visitPostfixExpression(ctx);
-                // return GetText(ctx->postfixExpression()) + ":" + GetText(ctx->idExpression());
+                // return CPP14ParserBaseVisitor::visitPostfixExpression(ctx);
+                return GetText(ctx->postfixExpression()) + (ctx->Dot() != nullptr ? "." : ":") + GetText(ctx->idExpression());
             }
             else if (ctx->PlusPlus() != nullptr)
             {
