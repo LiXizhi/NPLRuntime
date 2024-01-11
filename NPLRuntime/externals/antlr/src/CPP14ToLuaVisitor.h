@@ -9,19 +9,59 @@
 #include <fstream>
 #include <iostream>
 #include <numeric>
+#include <regex>
 #include <sstream>
 #include <string>
-#include <unordered_set>
+#include <unordered_map>
 
 #define DEBUG
 
 class CPP14ToLuaVisitor : public CPP14ParserBaseVisitor
 {
 public:
+    class Scope
+    {
+    public:
+        Scope(std::shared_ptr<Scope> parent = nullptr) : m_parent(parent) {}
+
+        void AddVariable(std::string varname, std::string vartype)
+        {
+            m_variables[varname] = vartype;
+        }
+
+        std::string GetVariableType(std::string varname)
+        {
+            auto it = m_variables.find(varname);
+            if (it == m_variables.end())
+            {
+                return m_parent == nullptr ? varname : m_parent->GetVariableType(varname);
+            }
+            return it->second;
+        }
+
+        bool IsExist(std::string varname)
+        {
+            auto it = m_variables.find(varname);
+            if (it == m_variables.end())
+            {
+                return m_parent == nullptr ? false : m_parent->IsExist(varname);
+            }
+            return true;
+        }
+
+        std::shared_ptr<Scope> GetParent() { return m_parent; }
+
+    public:
+        std::shared_ptr<Scope> m_parent;
+        std::unordered_map<std::string, std::string> m_variables;
+    };
+
+public:
     CPP14ToLuaVisitor()
     {
         m_in_switch      = false;
         m_in_switch_case = false;
+        m_scope          = std::make_shared<Scope>();
     }
 
     ~CPP14ToLuaVisitor() {}
@@ -115,7 +155,8 @@ public:
         {
             if (ctx->Dot() != nullptr || ctx->Arrow() != nullptr)
             {
-                return GetText(ctx->postfixExpression()) + ":" + GetText(ctx->idExpression());
+                // return CPP14ParserBaseVisitor::visitPostfixExpression(ctx);
+                return GetText(ctx->postfixExpression()) + (ctx->Dot() != nullptr ? "." : ":") + GetText(ctx->idExpression());
             }
             else if (ctx->PlusPlus() != nullptr)
             {
@@ -150,7 +191,16 @@ public:
             }
             else if (oper == "/")
             {
-                operand = operand + " / " + nextOperand;
+                auto left_operand_type  = m_scope->GetVariableType(operand);
+                auto right_operand_type = m_scope->GetVariableType(nextOperand);
+                if (IsInteger(left_operand_type) && IsInteger(right_operand_type))
+                {
+                    operand = "math.floor(" + operand + " / " + nextOperand + ")";
+                }
+                else
+                {
+                    operand = operand + " / " + nextOperand;
+                }
             }
             else
             {
@@ -277,7 +327,16 @@ public:
         }
         else if (assignmentOperator->DivAssign() != nullptr)
         {
-            return logicalOrExpressionText + " = " + logicalOrExpressionText + " / " + initializerClauseText;
+            auto left_operand_type  = m_scope->GetVariableType(logicalOrExpressionText);
+            auto right_operand_type = m_scope->GetVariableType(initializerClauseText);
+            if (IsInteger(left_operand_type) && IsInteger(right_operand_type))
+            {
+                return logicalOrExpressionText + " = math.floor(" + logicalOrExpressionText + " / " + initializerClauseText + ")";
+            }
+            else
+            {
+                return logicalOrExpressionText + " = " + logicalOrExpressionText + " / " + initializerClauseText;
+            }
         }
         else if (assignmentOperator->ModAssign() != nullptr)
         {
@@ -350,13 +409,13 @@ public:
         return NullString();
     }
 
-    virtual std::any visitSimpleTypeSpecifier(CPP14Parser::SimpleTypeSpecifierContext *ctx) override
-    {
-#ifdef DEBUG
-        // CPP14ParserBaseVisitor::visitSimpleTypeSpecifier(ctx);
-#endif
-        return GetText(ctx->theTypeName());
-    }
+    //     virtual std::any visitSimpleTypeSpecifier(CPP14Parser::SimpleTypeSpecifierContext *ctx) override
+    //     {
+    // #ifdef DEBUG
+    //         // CPP14ParserBaseVisitor::visitSimpleTypeSpecifier(ctx);
+    // #endif
+    //         return GetText(ctx->theTypeName());
+    //     }
 
     virtual std::any visitSimpleDeclaration(CPP14Parser::SimpleDeclarationContext *ctx) override
     {
@@ -376,11 +435,15 @@ public:
         auto raw_type_name = declSpecifierSeq->stop->getText();
         auto type_name     = GetText(ctx->declSpecifierSeq());
 
+        bool is_base_type = raw_type_name == "string" || raw_type_name == "auto" || raw_type_name == "void" || raw_type_name == "bool" || raw_type_name == "char";
+        is_base_type      = is_base_type || raw_type_name == "int" || raw_type_name == "float" || raw_type_name == "double" || raw_type_name == "long";
+        is_base_type      = is_base_type || raw_type_name == "short" || raw_type_name == "unsigned" || raw_type_name == "signed";
+
         std::ostringstream oss;
         for (int i = 0; i < initDeclaratorSize; i++)
         {
             auto declarator = GetText(initDeclarator[i]);
-            if (type_name.empty()) // 类型为基本类型
+            if (is_base_type) // 类型为基本类型
             {
                 // 移除函数声明 无类型存在(不存在=被解析成函数声明
                 if (declarator.find("(") != std::string::npos && declarator.find("=") == std::string::npos) continue;
@@ -406,6 +469,9 @@ public:
                 // 移除指针符
                 if (star_size > 0) name = name.substr(name.find_last_of("*") + 1);
 
+                // 添加变量
+                m_scope->AddVariable(name.substr(0, name.find("[")), raw_type_name);
+
                 // 设置默认值 没有默认值且不是数组直接跳过
                 if (value.empty())
                 {
@@ -423,10 +489,19 @@ public:
                             continue;
                         }
                     }
+                    else if (raw_type_name == "string")
+                    {
+                        oss << "local " + name + " = \"\"" << std::endl;
+                        continue;
+                    }
                     else if (array_size == 0 && star_size == 0)
                     {
                         oss << "local " + name + " = 0" << std::endl;
-                        continue; 
+                        continue;
+                    }
+                    else
+                    {
+                        value = "{0}";
                     }
                 }
 
@@ -473,7 +548,7 @@ public:
                 }
                 else
                 {
-                    oss <<  "local " << declarator.substr(0, pos) << " = " << type_name << declarator.substr(pos) << std::endl;
+                    oss << "local " << declarator.substr(0, pos) << " = " << type_name << declarator.substr(pos) << std::endl;
                 }
             }
         }
@@ -598,7 +673,10 @@ public:
 
     virtual std::any visitCompoundStatement(CPP14Parser::CompoundStatementContext *ctx) override
     {
-        return GetText(ctx->statementSeq());
+        m_scope   = std::make_shared<Scope>(m_scope);
+        auto text = GetText(ctx->statementSeq());
+        m_scope   = m_scope->GetParent();
+        return text;
     }
 
     virtual std::any visitLambdaExpression(CPP14Parser::LambdaExpressionContext *ctx) override
@@ -640,9 +718,26 @@ private:
         // clang-format on
     }
 
+    bool IsInteger(std::string vartype)
+    {
+        if (vartype == "int" || vartype == "long" || vartype == "short" || vartype == "unsignedint" || vartype == "unsignedlong" || vartype == "unsignedshort") return true;
+        std::regex number_pattern("^\\d+$");
+        std::regex cast_number_pattern("^\\((int|unsignedint|long|unsignedlong|short|unsignedshort)\\)\\([\\d\\.]+\\)$");
+        if (std::regex_match(vartype, number_pattern)) return true;
+        if (std::regex_match(vartype, cast_number_pattern)) return true;
+        if (vartype.find("[") != std::string::npos && vartype.back() == ']')
+        {
+            vartype = vartype.substr(0, vartype.find("["));
+            vartype = m_scope->GetVariableType(vartype);
+            return IsInteger(vartype);
+        }
+        return false;
+    }
+
 private:
     bool m_in_switch;
     bool m_in_switch_case;
+    std::shared_ptr<Scope> m_scope;
 };
 
 #endif
