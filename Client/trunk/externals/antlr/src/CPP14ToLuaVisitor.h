@@ -449,6 +449,7 @@ public:
                 text = matchs.suffix();
             }
             match_text += text;
+            if (match_result.empty()) return match_text;
             return match_result + " = " + match_text;
         }
 
