@@ -155,7 +155,8 @@ public:
         {
             if (ctx->Dot() != nullptr || ctx->Arrow() != nullptr)
             {
-                return GetText(ctx->postfixExpression()) + ":" + GetText(ctx->idExpression());
+                // return CPP14ParserBaseVisitor::visitPostfixExpression(ctx);
+                return GetText(ctx->postfixExpression()) + (ctx->Dot() != nullptr ? "." : ":") + GetText(ctx->idExpression());
             }
             else if (ctx->PlusPlus() != nullptr)
             {
@@ -434,9 +435,9 @@ public:
         auto raw_type_name = declSpecifierSeq->stop->getText();
         auto type_name     = GetText(ctx->declSpecifierSeq());
 
-        bool is_base_type  = raw_type_name == "string" || raw_type_name == "auto" || raw_type_name == "void" || raw_type_name == "bool" || raw_type_name == "char";
-        is_base_type = is_base_type || raw_type_name == "int" || raw_type_name == "float" || raw_type_name == "double" || raw_type_name == "long";
-        is_base_type = is_base_type || raw_type_name == "short" || raw_type_name == "unsigned" || raw_type_name == "signed";
+        bool is_base_type = raw_type_name == "string" || raw_type_name == "auto" || raw_type_name == "void" || raw_type_name == "bool" || raw_type_name == "char";
+        is_base_type      = is_base_type || raw_type_name == "int" || raw_type_name == "float" || raw_type_name == "double" || raw_type_name == "long";
+        is_base_type      = is_base_type || raw_type_name == "short" || raw_type_name == "unsigned" || raw_type_name == "signed";
 
         std::ostringstream oss;
         for (int i = 0; i < initDeclaratorSize; i++)
@@ -491,11 +492,16 @@ public:
                     else if (raw_type_name == "string")
                     {
                         oss << "local " + name + " = \"\"" << std::endl;
+                        continue;
                     }
                     else if (array_size == 0 && star_size == 0)
                     {
                         oss << "local " + name + " = 0" << std::endl;
                         continue;
+                    }
+                    else
+                    {
+                        value = "{0}";
                     }
                 }
 
