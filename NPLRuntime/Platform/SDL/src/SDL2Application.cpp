@@ -399,27 +399,14 @@ namespace ParaEngine
 
 	void CSDL2Application::SetWindowText(const char *pChar)
 	{
-		std::wstring s = StringHelper::MultiByteToWideChar(pChar, CP_UTF8);
+		m_title = pChar;
 		auto pWinDelegate = (RenderWindowDelegate *)m_pRenderWindow;
-		// if (pWinDelegate)::SetWindowTextW(pWinDelegate->GetHandle(), s.c_str());
+		if (pWinDelegate) pWinDelegate->SetWindowText(m_title);
 	}
 
 	const char *CSDL2Application::GetWindowText()
 	{
-		WCHAR g_wstr_title[256];
-		static std::string g_title;
-		auto pWinDelegate = (RenderWindowDelegate *)m_pRenderWindow;
-		if (pWinDelegate)
-		{
-			//::GetWindowTextW(pWinDelegate->GetHandle(), g_wstr_title, 255);
-			g_title = StringHelper::WideCharToMultiByte(g_wstr_title, CP_UTF8);
-
-			return g_title.c_str();
-		}
-		else
-		{
-			return "";
-		}
+		return m_title.c_str();
 	}
 
 	bool CSDL2Application::UpdateViewPort()
