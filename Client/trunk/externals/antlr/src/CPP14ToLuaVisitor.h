@@ -422,6 +422,7 @@ public:
 #ifdef DEBUG
         // CPP14ParserBaseVisitor::visitSimpleDeclaration(ctx);
 #endif
+        std::ostringstream oss;
         auto declSpecifierSeq   = ctx->declSpecifierSeq();
         auto initDeclaratorList = ctx->initDeclaratorList();
         if (initDeclaratorList == nullptr) return NullString();
@@ -430,7 +431,36 @@ public:
         auto initDeclaratorSize = initDeclarator.size();
 
         // 函数调用
-        if (declSpecifierSeq == nullptr) return GetText(initDeclaratorList) + "\n";
+        if (declSpecifierSeq == nullptr)
+        {
+            auto text = GetText(initDeclaratorList) + "\n";
+            auto argument_pos = text.find("(");
+            auto arguments = text.substr(argument_pos);
+            std::string match_text = text.substr(0, argument_pos);
+            std::string match_result;
+            auto equal_pos = match_text.find("=");
+            if (equal_pos != std::string::npos)
+            {
+                match_result = match_text.substr(0, equal_pos);
+                match_text = match_text.substr(equal_pos + 1);
+            }
+            std::regex ref_name_regex(R"(&?[a-zA-Z_][a-zA-Z0-9_]*)");
+            std::smatch matchs;
+            while (std::regex_search(arguments, matchs, ref_name_regex))
+            {
+                std::string ref_name   = matchs[0];
+                auto is_ref_name = ref_name[0] == '&' ? true : false;
+                ref_name = is_ref_name ? ref_name.substr(1) : ref_name;
+                if (match_result.empty()) match_result = (is_ref_name ? ref_name : "_");
+                else match_result += ", " + (is_ref_name ? ref_name : "_");
+                match_text += matchs.prefix();
+                match_text += ref_name;
+                arguments = matchs.suffix();
+            }
+            match_text += arguments;
+            if (match_result.empty()) return match_text;
+            return match_result + " = " + match_text;
+        }
 
         auto raw_type_name = declSpecifierSeq->stop->getText();
         auto type_name     = GetText(ctx->declSpecifierSeq());
@@ -439,7 +469,6 @@ public:
         is_base_type      = is_base_type || raw_type_name == "int" || raw_type_name == "float" || raw_type_name == "double" || raw_type_name == "long";
         is_base_type      = is_base_type || raw_type_name == "short" || raw_type_name == "unsigned" || raw_type_name == "signed";
 
-        std::ostringstream oss;
         for (int i = 0; i < initDeclaratorSize; i++)
         {
             auto declarator = GetText(initDeclarator[i]);
