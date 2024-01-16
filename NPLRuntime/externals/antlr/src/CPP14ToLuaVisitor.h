@@ -434,21 +434,30 @@ public:
         if (declSpecifierSeq == nullptr)
         {
             auto text = GetText(initDeclaratorList) + "\n";
-            std::string match_text;
+            auto argument_pos = text.find("(");
+            auto arguments = text.substr(argument_pos);
+            std::string match_text = text.substr(0, argument_pos);
             std::string match_result;
-            std::regex ref_name_regex(R"(&[a-zA-Z_][a-zA-Z0-9_]*)");
+            auto equal_pos = match_text.find("=");
+            if (equal_pos != std::string::npos)
+            {
+                match_result = match_text.substr(0, equal_pos);
+                match_text = match_text.substr(equal_pos + 1);
+            }
+            std::regex ref_name_regex(R"(&?[a-zA-Z_][a-zA-Z0-9_]*)");
             std::smatch matchs;
-            while (std::regex_search(text, matchs, ref_name_regex))
+            while (std::regex_search(arguments, matchs, ref_name_regex))
             {
                 std::string ref_name   = matchs[0];
-                ref_name = ref_name.substr(1);
-                if (match_result.empty()) match_result = ref_name;
-                else match_result += ", " + ref_name;
+                auto is_ref_name = ref_name[0] == '&' ? true : false;
+                ref_name = is_ref_name ? ref_name.substr(1) : ref_name;
+                if (match_result.empty()) match_result = (is_ref_name ? ref_name : "_");
+                else match_result += ", " + (is_ref_name ? ref_name : "_");
                 match_text += matchs.prefix();
                 match_text += ref_name;
-                text = matchs.suffix();
+                arguments = matchs.suffix();
             }
-            match_text += text;
+            match_text += arguments;
             if (match_result.empty()) return match_text;
             return match_result + " = " + match_text;
         }
