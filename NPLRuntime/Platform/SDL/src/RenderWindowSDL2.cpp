@@ -243,6 +243,11 @@ namespace ParaEngine
 		return m_IsQuit;
 	}
 
+	void RenderWindowSDL2::SetWindowText(std::string title)
+	{
+		SDL_SetWindowTitle(m_sdl2_window, title.c_str());
+	}
+
 	void RenderWindowSDL2::SetSize(int w, int h)
 	{
 		m_window_width = w;

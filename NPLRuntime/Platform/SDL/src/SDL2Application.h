@@ -113,5 +113,6 @@ namespace ParaEngine
 		bool m_bSizeChanged;
 		RenderWindowDelegate m_renderWindow;
 		bool m_exit;
+		std::string m_title;
 	};
 }
