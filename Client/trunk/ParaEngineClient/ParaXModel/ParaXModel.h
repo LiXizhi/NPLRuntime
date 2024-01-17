@@ -22,7 +22,7 @@ namespace ParaEngine
 	struct LightParams;
 	class CFaceGroup;
 	struct ModelAttachment;
-
+	class ParaVoxelModel;
 
 	/**
 	* ParaX model is the model file for character animation, etc in the game world.
@@ -321,6 +321,7 @@ namespace ParaEngine
 		ModelCamera cam;
 		Bone *bones;
 		asset_ptr<TextureEntity> *textures;
+		ParaVoxelModel* m_pVoxelModel;
 
 		std::vector<ModelRenderPass> passes;
 		/** it has the same number of element as the passes. the int value denotes the index into the m_faceGroups*/
