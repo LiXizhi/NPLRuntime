@@ -18,6 +18,13 @@ using namespace ParaEngine;
 
 ParaVoxelModel::ParaVoxelModel()
 {
+	m_chunks.push_back(VoxelChunk(1));
+	m_pRootNode = &(m_chunks[0][0]);
+}
+
+ParaVoxelModel::~ParaVoxelModel()
+{
+	m_chunks.clear();
 }
 
 int ParaEngine::ParaVoxelModel::InstallFields(CAttributeClass* pClass, bool bOverride)
@@ -26,9 +33,6 @@ int ParaEngine::ParaVoxelModel::InstallFields(CAttributeClass* pClass, bool bOve
 	return S_OK;
 }
 
-ParaVoxelModel::~ParaVoxelModel()
-{
-}
 
 bool ParaVoxelModel::Load(const char* pBuffer, int nCount)
 {
