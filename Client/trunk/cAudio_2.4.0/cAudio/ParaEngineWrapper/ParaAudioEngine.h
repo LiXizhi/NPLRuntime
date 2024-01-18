@@ -335,7 +335,7 @@ namespace ParaEngine
 		virtual IParaAudioCapture* CreateGetAudioCapture(bool initializeDefault = true);
 
 		//! If threading is disabled, you must call this function every frame to update the playback buffers of audio sources.  Otherwise it should not be called.
-		virtual void update() {/*m_audio_manager->update();*/};
+		virtual void update();
 
 		//! Returns an Audio Source by its "name" and NULL if the name is not found
 		/**

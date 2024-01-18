@@ -65,25 +65,26 @@ IParaAudioEngine* ParaEngine::CAudioEngine2::GetInterface()
 
 void ParaEngine::CAudioEngine2::Update()
 {
-	if (IsAudioEngineEnabled() && GetAutoMoveListener())
+	if (IsAudioEngineEnabled())
 	{
-		CBaseCamera* pCamera = CGlobals::GetScene()->GetCurrentCamera();
-		if (pCamera != NULL)
+		if (GetAutoMoveListener())
 		{
-			//CAudioEngine2::GetInstance()->setPosition((const PARAVECTOR3&)(pCamera->GetEyePosition()));
-			Vector3 v = pCamera->GetEyePosition();
-			move(reinterpret_cast<const PARAVECTOR3&>(v));
-			v = pCamera->GetWorldUp();
-			setUpVector(reinterpret_cast<const PARAVECTOR3&>(v));
-			v = pCamera->GetWorldAhead();
-			setDirection(reinterpret_cast<const PARAVECTOR3&>(v));
+			CBaseCamera* pCamera = CGlobals::GetScene()->GetCurrentCamera();
+			if (pCamera != NULL)
+			{
+				//CAudioEngine2::GetInstance()->setPosition((const PARAVECTOR3&)(pCamera->GetEyePosition()));
+				Vector3 v = pCamera->GetEyePosition();
+				move(reinterpret_cast<const PARAVECTOR3&>(v));
+				v = pCamera->GetWorldUp();
+				setUpVector(reinterpret_cast<const PARAVECTOR3&>(v));
+				v = pCamera->GetWorldAhead();
+				setDirection(reinterpret_cast<const PARAVECTOR3&>(v));
+			}
 		}
-#ifdef PARAENGINE_MOBILE
+		
 		if (m_pAudioEngine)
 			m_pAudioEngine->update();
-#endif
 	}
-
 }
 
 HRESULT ParaEngine::CAudioEngine2::InitAudioEngine(IParaAudioEngine* pInteface)
