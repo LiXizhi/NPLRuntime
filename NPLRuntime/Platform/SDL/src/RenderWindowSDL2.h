@@ -36,7 +36,8 @@ namespace ParaEngine
 
 		bool Create(int defaultWdith, int defaultHeight);
 		void SetSize(int w, int h);
-
+		void SetWindowText(std::string title);
+		
 	protected:
 		virtual void OnTouch(int nType, TouchEvent::TouchEventMsgType nTouchType, int touch_id, float x, float y, int nTimeTick) {};
 		virtual void OnMouseButton(EMouseButton button, EKeyState state, uint32_t x, uint32_t y) {};
