@@ -31,6 +31,10 @@
 #   define CAUDIO_API
 #endif
 
+#if defined(EMSCRIPTEN_SINGLE_THREAD) || defined(EMSCRIPTEN)
+#undef CAUDIO_MAKE_THREAD_SAFE
+#define CAUDIO_MAKE_THREAD_SAFE  0
+#endif
 //! Define enables threading for the main update loop.  Disable to run the internal update loop yourself. NOTE: Internal threading should NOT be used if the library is not thread safe!
 #if CAUDIO_MAKE_THREAD_SAFE == 1
 	#define CAUDIO_USE_INTERNAL_THREAD

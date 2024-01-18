@@ -264,6 +264,20 @@ ParaEngine::IParaAudioCapture* ParaEngine::CParaAudioEngine::CreateGetAudioCaptu
 	return m_pAudioCapture;
 }
 
+//! If threading is disabled, you must call this function every frame to update the playback buffers of audio sources.  Otherwise it should not be called.
+
+void ParaEngine::CParaAudioEngine::update() 
+{
+#ifndef CAUDIO_USE_INTERNAL_THREAD
+	if (m_audio_manager) {
+		m_audio_manager->update();
+	}
+	if (m_pAudioCapture) {
+		m_pAudioCapture->updateCaptureBuffer();
+	}
+#endif
+}
+
 ///////////////////////////////////////////////////////////////////////
 // Audio Source
 ///////////////////////////////////////////////////////////////////////
