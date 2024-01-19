@@ -4,6 +4,8 @@
 namespace ParaEngine
 {
 	struct SceneState;
+	class VoxelChunk;
+	struct VoxelOctreeNode;
 
 #pragma pack(push,1)
 	/** a voxel octree data node
@@ -15,17 +17,37 @@ namespace ParaEngine
 	*/
 	struct VoxelOctreeNode
 	{
-		VoxelOctreeNode();
+		/** default to create a full leaf block */
+		VoxelOctreeNode(uint8_t isBlockMask = 0xff);
 
 		// 8 bits isBlockMask whether the 8 spaces in octree are blocks. 
 		uint8_t isBlockMask;
 		// 24 bits for color
 		uint8_t colorRGB[3];
+		// low 24 bits for base chunk offset, high 8 bits for voxel shape. 
 		uint32_t baseChunkOffset;
 		union {
 			uint8_t childOffsets[8];
 			uint64_t childMask;
 		};
+
+		static VoxelOctreeNode EmptyNode;
+		static VoxelOctreeNode FullNode;
+	public:
+		inline void MakeEmpty() { isBlockMask = 0; };
+		inline void MakeFullBlock() { isBlockMask = 0xff; };
+		inline uint32 GetColor() { return colorRGB[0] | (colorRGB[1] << 8) | (colorRGB[2] << 16); };
+		inline void SetColor(uint32 color) { colorRGB[0] = color & 0xff; colorRGB[1] = (color >> 8) & 0xff; colorRGB[2] = (color >> 16) & 0xff; };
+		// only 24 bits are used
+		inline int GetBaseChunkOffset() { return baseChunkOffset & 0xffffff; };
+		inline void SetBaseChunkOffset(uint32_t value) { baseChunkOffset = value & 0xffffff; };
+		inline void SetVoxelShape(uint32_t shape) {
+			baseChunkOffset |= (shape << 24);
+		}
+		inline uint8_t GetVoxelShape() {
+			return uint8_t(baseChunkOffset >> 24);
+		}
+
 		inline bool IsLeaf() { return childMask == 0xffffffffffffffff; };
 		inline int GetBlockCountInMask() { 
 			int count = 0;
@@ -37,8 +59,88 @@ namespace ParaEngine
 			return count;
 		};
 		inline int IsBlock() { return IsLeaf() || (GetBlockCountInMask() >= 4); }
+		inline void MarkDeleted() {
+			baseChunkOffset = 0xffffff;
+		}
+		inline void UnMarkDeleted() {
+			baseChunkOffset = 0;
+		}
+		inline bool IsDeleted() {
+			return baseChunkOffset == 0xffffff;
+		}
 	};
 #pragma pack(pop)
+
+	/** a chunk of at most 254 octree nodes. */
+	class VoxelChunk : public std::vector<VoxelOctreeNode>
+	{
+	public:
+		VoxelChunk():m_nSize(0), m_nTailFreeItemIndex(0), m_nHeadFreeItemIndex(0){
+			resize(254);
+			for (int i = 0; i < 254; i++) {
+				(*this)[i].MarkDeleted();
+			}
+		};
+		~VoxelChunk() {};
+
+		void erase(int index) {
+			(*this)[index].MarkDeleted();
+			if (index == m_nTailFreeItemIndex - 1) {
+				m_nTailFreeItemIndex--;
+			}
+			if (index < m_nHeadFreeItemIndex) {
+				m_nHeadFreeItemIndex = index;
+			}
+			m_nSize--;
+		};
+		inline int GetUsedSize() { return m_nSize; };
+		inline int GetFreeSize() { return 254 - m_nSize; };
+		inline VoxelOctreeNode& SafeCreateNode(const VoxelOctreeNode* pCopyFromNode = NULL) {
+			auto index = CreateNode(pCopyFromNode);
+			if (index != 0xff) {
+				return (*this)[index];
+			}
+			else {
+				return (*this)[0];
+			}
+		}
+		inline uint8_t CreateNode(const VoxelOctreeNode* pCopyFromNode = NULL) {
+			if (m_nSize < 254) 
+			{
+				uint8_t index = m_nHeadFreeItemIndex;
+				if(pCopyFromNode != 0)
+					(*this)[m_nHeadFreeItemIndex] = *pCopyFromNode;
+				else
+					(*this)[m_nHeadFreeItemIndex].UnMarkDeleted();
+				m_nSize++;
+				
+				if (index == m_nTailFreeItemIndex)
+				{
+					m_nTailFreeItemIndex++;
+					m_nHeadFreeItemIndex++;
+				}
+				else
+				{
+					for (int i = index + 1; i <= m_nTailFreeItemIndex; i++) {
+						if ((*this)[i].IsDeleted()) {
+							m_nHeadFreeItemIndex = i;
+							break;
+						}
+					}
+				}
+				return index;
+			}
+			else
+			{
+				return 0xff;
+			}
+		}
+		
+	private:
+		uint8_t m_nTailFreeItemIndex;
+		uint8_t m_nHeadFreeItemIndex;
+		uint8_t m_nSize;
+	};
 
 	/** a octree based sparse voxel model, with 8 bits color per node. 
 	* The AABB of the model is always 1*1*1, one needs to transform the model when used. 
@@ -95,7 +197,8 @@ namespace ParaEngine
 		/** optimize the model to remove and merge octree node. */
 		void Optimize();
 		void OptimizeNode(VoxelOctreeNode* pNode);
-		/** 
+
+		/** the color of the parent node is the average of its children.
 		* @param nodes: update nodes from nodes[nNodeCount - 1](smallest child) to nodes[0] (root node). 
 		*/
 		void UpdateNode(VoxelOctreeNode* nodes[], int nNodeCount);
@@ -110,12 +213,13 @@ namespace ParaEngine
 		VoxelOctreeNode* CreateGetChildNode(VoxelOctreeNode* pNode, int nChildIndex);
 		VoxelOctreeNode* GetChildNode(VoxelOctreeNode* pNode, int nChildIndex);
 
+		void RemoveNodeChildren(VoxelOctreeNode* pNode, int isBlockMask = 0xff);
+
 		void DumpOctree();
 		void DumpOctreeNode(VoxelOctreeNode* pNode, int nDepth, int nChunkIndex, int offset);
 
 		VoxelOctreeNode* GetRootNode();
 	private:
-		typedef std::vector<VoxelOctreeNode> VoxelChunk;
 		std::vector< VoxelChunk* > m_chunks;
 	};
 }

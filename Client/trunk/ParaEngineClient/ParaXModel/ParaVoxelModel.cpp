@@ -20,18 +20,17 @@
 #define MAX_VOXEL_DEPTH 12
 
 using namespace ParaEngine;
+VoxelOctreeNode VoxelOctreeNode::EmptyNode(0x0);
+VoxelOctreeNode VoxelOctreeNode::FullNode(0xff);
 
-VoxelOctreeNode::VoxelOctreeNode()
-	: isBlockMask(0xff), colorRGB{ 0,0,0 }, baseChunkOffset(0), childMask(0xffffffffffffffff)
+VoxelOctreeNode::VoxelOctreeNode(uint8_t isBlockMask)
+	: isBlockMask(isBlockMask), colorRGB{ 0,0,0 }, baseChunkOffset(0), childMask(0xffffffffffffffff)
 {
 }
 
 ParaVoxelModel::ParaVoxelModel()
 {
-	CreateGetFreeChunkIndex();
-	VoxelOctreeNode rootNode;
-	rootNode.isBlockMask = 0; // start as empty, or 0xff to start as full.
-	m_chunks[0]->push_back(rootNode);
+	m_chunks[CreateGetFreeChunkIndex()]->SafeCreateNode(&VoxelOctreeNode::EmptyNode);
 }
 
 ParaVoxelModel::~ParaVoxelModel()
@@ -87,13 +86,12 @@ int ParaEngine::ParaVoxelModel::CreateGetFreeChunkIndex(int nMinFreeSize)
 	int nMinSize = 0xfe - nMinFreeSize;
 	for (int i = 0; i < nCount; ++i)
 	{
-		if ((int)m_chunks[i]->size() <= nMinSize)
+		if ((int)m_chunks[i]->GetUsedSize() <= nMinSize)
 		{
 			return i;
 		}
 	}
 	VoxelChunk* chunk = new VoxelChunk();
-	chunk->reserve(255);
 	m_chunks.push_back(chunk);
 	return m_chunks.size() - 1;
 }
@@ -104,41 +102,41 @@ VoxelOctreeNode* ParaEngine::ParaVoxelModel::CreateGetChildNode(VoxelOctreeNode*
 	if (nChildOffset == 0xff)
 	{
 		// create a new child node
-		auto& chunk = *(m_chunks[pNode->baseChunkOffset]);
-		if(chunk.size() >= 254)
+		auto& chunk = *(m_chunks[pNode->GetBaseChunkOffset()]);
+		if(chunk.GetUsedSize() >= 254)
 		{
-			pNode->baseChunkOffset = CreateGetFreeChunkIndex();
-			auto& newChunk = *(m_chunks[pNode->baseChunkOffset]);
-
+			pNode->SetBaseChunkOffset(CreateGetFreeChunkIndex());
+			auto& newChunk = *(m_chunks[pNode->GetBaseChunkOffset()]);
+			auto baseChunkIndex = pNode->GetBaseChunkOffset();
 			// create a new chunk and move all existing child nodes to the new chunk. 
 			for (int i = 0; i < 8; ++i)
 			{
 				if (pNode->childOffsets[i] != 0xff)
 				{
 					// move child to new chunk
-					newChunk.push_back(chunk[pNode->childOffsets[i]]);
-					pNode->childOffsets[i] = (uint8_t)(newChunk.size() - 1);
-					chunk.erase(chunk.begin() + pNode->childOffsets[i]);
-					newChunk.back().baseChunkOffset = pNode->baseChunkOffset;
+					auto index = newChunk.CreateNode(&chunk[pNode->childOffsets[i]]);
+					chunk.erase(pNode->childOffsets[i]);
+					pNode->childOffsets[i] = index;
+					newChunk[index].SetBaseChunkOffset(baseChunkIndex);
 				}
 			}
-			newChunk.push_back(VoxelOctreeNode());
-			pNode->childOffsets[nChildIndex] = (uint8_t)(newChunk.size() - 1);
-			newChunk.back().baseChunkOffset = pNode->baseChunkOffset;
-			return &(newChunk.back());
+			auto index = newChunk.CreateNode(&VoxelOctreeNode::FullNode);
+			pNode->childOffsets[nChildIndex] = index;
+			newChunk[index].SetBaseChunkOffset(baseChunkIndex);
+			return &(newChunk[index]);
 		}
 		else
 		{
 			// create in current chunk
-			chunk.push_back(VoxelOctreeNode());
-			pNode->childOffsets[nChildIndex] = (uint8_t)(chunk.size() - 1);
-			chunk.back().baseChunkOffset = pNode->baseChunkOffset;
-			return &(chunk.back());
+			auto index = chunk.CreateNode(&VoxelOctreeNode::FullNode);
+			pNode->childOffsets[nChildIndex] = index;
+			chunk[index].SetBaseChunkOffset(pNode->GetBaseChunkOffset());
+			return &(chunk[index]);
 		}
 	}
 	else
 	{
-		return &((*m_chunks[pNode->baseChunkOffset])[nChildOffset]);
+		return &((*m_chunks[pNode->GetBaseChunkOffset()])[nChildOffset]);
 	}
 }
 
@@ -151,7 +149,21 @@ VoxelOctreeNode* ParaEngine::ParaVoxelModel::GetChildNode(VoxelOctreeNode* pNode
 	}
 	else
 	{
-		return &((*m_chunks[pNode->baseChunkOffset])[nChildOffset]);
+		return &((*m_chunks[pNode->GetBaseChunkOffset()])[nChildOffset]);
+	}
+}
+
+void ParaEngine::ParaVoxelModel::RemoveNodeChildren(VoxelOctreeNode* pNode, int isBlockMask)
+{
+	auto& chunk = *m_chunks[pNode->GetBaseChunkOffset()];
+	for (int k = 0; k < 8; ++k)
+	{
+		if ((isBlockMask & (1 << k)) && pNode->childOffsets[k] != 0xff)
+		{
+			auto pChild = GetChildNode(pNode, k);
+			RemoveNodeChildren(pChild, 0xff);
+			chunk.erase(pNode->childOffsets[k]);
+		}
 	}
 }
 
@@ -165,7 +177,7 @@ void ParaEngine::ParaVoxelModel::DumpOctree()
 void ParaEngine::ParaVoxelModel::DumpOctreeNode(VoxelOctreeNode* pNode, int nDepth, int nChunkIndex, int offset)
 {
 	char tmp[256];
-	StringHelper::fast_sprintf(tmp, "Node[%d][%d]: baseChunkOffset %d, blockMask: %d color: %2x%2x%2x\n", nChunkIndex, offset, pNode->baseChunkOffset, pNode->isBlockMask, pNode->colorRGB[0], pNode->colorRGB[1], pNode->colorRGB[2]);
+	StringHelper::fast_sprintf(tmp, "Node[%d][%d]: baseChunkOffset %d, blockMask: %d color: #%06x\n", nChunkIndex, offset, pNode->GetBaseChunkOffset(), pNode->isBlockMask, pNode->GetColor());
 	OUTPUT_LOG(tmp);
 
 	if(pNode->IsLeaf())
@@ -179,11 +191,11 @@ void ParaEngine::ParaVoxelModel::DumpOctreeNode(VoxelOctreeNode* pNode, int nDep
 		if (pNode->childOffsets[k] != 0xff)
 		{
 			OUTPUT_LOG("%d: ", k);
-			DumpOctreeNode(GetChildNode(pNode, k), nDepth + 1, pNode->baseChunkOffset, pNode->childOffsets[k]);
+			DumpOctreeNode(GetChildNode(pNode, k), nDepth + 1, pNode->GetBaseChunkOffset(), pNode->childOffsets[k]);
 		}
 		else
 		{
-			OUTPUT_LOG("%d: None\n", k);
+			OUTPUT_LOG("%d:\n", k);
 		}
 	}
 }
@@ -210,9 +222,7 @@ void ParaVoxelModel::SetBlock(uint32 x, uint32 y, uint32 z, int level, int color
 			pNode = CreateGetChildNode(pNode, nChildIndex);
 			parentNodes[nLevel] = pNode;
 		}
-		pNode->colorRGB[0] = (color & 0xff0000) >> 16;
-		pNode->colorRGB[1] = (color & 0x00ff00) >> 8;
-		pNode->colorRGB[2] = color & 0x0000ff;
+		pNode->SetColor((uint32_t)color);
 		UpdateNode(parentNodes, nLevel);
 	}
 	else
@@ -276,16 +286,22 @@ void ParaEngine::ParaVoxelModel::UpdateNode(VoxelOctreeNode* nodes[], int nNodeC
 			continue;
 		}
 		uint8_t isBlockMask = 0;
+		uint32_t color = 0;
+		int nChildCount = 0;
 		for (int k = 0; k < 8; ++k)
 		{
 			auto pChild = GetChildNode(pNode, k);
 			if (pChild)
 			{
+				color += pChild->GetColor();
+				nChildCount++;
 				if (pChild->IsBlock())
 					isBlockMask |= (1 << k);
 			}
 		}
 		pNode->isBlockMask = isBlockMask;
+		if(nChildCount > 0)
+			pNode->SetColor(color / nChildCount);
 	}
 }
 
