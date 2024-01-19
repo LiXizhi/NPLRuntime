@@ -145,6 +145,11 @@ public:
         return CPP14ParserBaseVisitor::visitUnaryExpression(ctx);
     }
 
+    virtual std::any visitTrailingReturnType(CPP14Parser::TrailingReturnTypeContext *ctx)
+    {
+        return ":" + GetText(ctx->trailingTypeSpecifierSeq()) + GetText(ctx->abstractDeclarator());
+    }
+
     virtual std::any visitPostfixExpression(CPP14Parser::PostfixExpressionContext *ctx)
     {
 #ifdef DEBUG
@@ -420,9 +425,6 @@ public:
 
     virtual std::any visitSimpleDeclaration(CPP14Parser::SimpleDeclarationContext *ctx) override
     {
-#ifdef DEBUG
-        // CPP14ParserBaseVisitor::visitSimpleDeclaration(ctx);
-#endif
         std::ostringstream oss;
         auto declSpecifierSeq   = ctx->declSpecifierSeq();
         auto initDeclaratorList = ctx->initDeclaratorList();
@@ -436,6 +438,9 @@ public:
 
         auto raw_type_name = declSpecifierSeq->stop->getText();
         auto type_name     = GetText(ctx->declSpecifierSeq());
+        auto base_text = std::any_cast<std::string>(CPP14ParserBaseVisitor::visitSimpleDeclaration(ctx));
+        auto type_name_size = type_name.size();
+        if (base_text[type_name_size] == '.') return base_text;
 
         bool is_base_type = raw_type_name == "string" || raw_type_name == "auto" || raw_type_name == "void" || raw_type_name == "bool" || raw_type_name == "char";
         is_base_type      = is_base_type || raw_type_name == "int" || raw_type_name == "float" || raw_type_name == "double" || raw_type_name == "long";
@@ -669,9 +674,8 @@ public:
     std::string ParseStatement(std::string text)
     {
         bool is_function_call = false;
-        is_function_call      = is_function_call || std::regex_match(text, std::regex("^\\s*[a-zA-Z_][a-zA-Z0-9_]*\\s*\\(.*\\)\\s*$"));
-        is_function_call      = is_function_call || std::regex_match(text, std::regex("^.*=\\s*[a-zA-Z_][a-zA-Z0-9_]*\\s*\\(.*\\)\\s*$"));
-        is_function_call      = is_function_call || std::regex_match(text, std::regex("^.*(:|\\.)[a-zA-Z_][a-zA-Z0-9_]*\\s*\\(.*\\)\\s*$"));
+        is_function_call      = is_function_call || std::regex_match(text, std::regex("^\\s*[a-zA-Z_][a-zA-Z0-9_]*\\s*\\(.*\\)\\s*[;]?\\s*$"));
+        is_function_call      = is_function_call || std::regex_match(text, std::regex("^.*(\\:|\\.)[a-zA-Z_][a-zA-Z0-9_]*\\s*\\(.*\\)\\s*[;]?\\s*$"));
 
         if (!is_function_call) return text;
         auto argument_pos          = text.find_last_of("(");
