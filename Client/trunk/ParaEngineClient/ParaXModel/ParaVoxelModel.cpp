@@ -53,6 +53,7 @@ int ParaEngine::ParaVoxelModel::InstallFields(CAttributeClass* pClass, bool bOve
 {
 	IAttributeFields::InstallFields(pClass, bOverride);
 	pClass->AddField("SetBlock", FieldType_String, (void*)SetBlock_s, NULL, NULL, NULL, bOverride);
+	pClass->AddField("PaintBlock", FieldType_String, (void*)PaintBlock_s, NULL, NULL, NULL, bOverride);
 	pClass->AddField("DumpOctree", FieldType_void, (void*)DumpOctree_s, NULL, NULL, NULL, bOverride);
 	return S_OK;
 }
@@ -96,6 +97,24 @@ int ParaEngine::ParaVoxelModel::CreateGetFreeChunkIndex(int nMinFreeSize)
 	return m_chunks.size() - 1;
 }
 
+VoxelOctreeNode* ParaEngine::ParaVoxelModel::GetNode(uint32 x, uint32 y, uint32 z, int level)
+{
+	int nDepth = LevelToDepth(level);
+	VoxelOctreeNode* pNode = GetRootNode();
+
+	nDepth--;
+	
+	int nChildIndex = 0;
+	int nLevel = 1;
+	for (; nDepth >= 0 && pNode != NULL; nDepth--, nLevel++)
+	{
+		uint32 lx = x >> nDepth, ly = y >> nDepth, lz = z >> nDepth;
+		nChildIndex = (lx & 1) + ((ly & 1) << 1) + ((lz & 1) << 2);
+		pNode = GetChildNode(pNode, nChildIndex);
+	}
+	return pNode;
+}
+
 VoxelOctreeNode* ParaEngine::ParaVoxelModel::CreateGetChildNode(VoxelOctreeNode* pNode, int nChildIndex)
 {
 	int nChildOffset = pNode->childOffsets[nChildIndex];
@@ -103,6 +122,7 @@ VoxelOctreeNode* ParaEngine::ParaVoxelModel::CreateGetChildNode(VoxelOctreeNode*
 	{
 		// create a new child node
 		auto& chunk = *(m_chunks[pNode->GetBaseChunkOffset()]);
+		VoxelOctreeNode* pChild = NULL;
 		if(chunk.GetUsedSize() >= 254)
 		{
 			pNode->SetBaseChunkOffset(CreateGetFreeChunkIndex());
@@ -123,6 +143,9 @@ VoxelOctreeNode* ParaEngine::ParaVoxelModel::CreateGetChildNode(VoxelOctreeNode*
 			auto index = newChunk.CreateNode(&VoxelOctreeNode::FullNode);
 			pNode->childOffsets[nChildIndex] = index;
 			newChunk[index].SetBaseChunkOffset(baseChunkIndex);
+			if(!pNode->IsBlockAt(nChildIndex))
+				newChunk[index].MakeEmpty();
+			
 			return &(newChunk[index]);
 		}
 		else
@@ -131,6 +154,8 @@ VoxelOctreeNode* ParaEngine::ParaVoxelModel::CreateGetChildNode(VoxelOctreeNode*
 			auto index = chunk.CreateNode(&VoxelOctreeNode::FullNode);
 			pNode->childOffsets[nChildIndex] = index;
 			chunk[index].SetBaseChunkOffset(pNode->GetBaseChunkOffset());
+			if (!pNode->IsBlockAt(nChildIndex))
+				chunk[index].MakeEmpty();
 			return &(chunk[index]);
 		}
 	}
@@ -153,7 +178,7 @@ VoxelOctreeNode* ParaEngine::ParaVoxelModel::GetChildNode(VoxelOctreeNode* pNode
 	}
 }
 
-void ParaEngine::ParaVoxelModel::RemoveNodeChildren(VoxelOctreeNode* pNode, int isBlockMask)
+void ParaEngine::ParaVoxelModel::RemoveNodeChildren(VoxelOctreeNode* pNode, uint8_t isBlockMask)
 {
 	auto& chunk = *m_chunks[pNode->GetBaseChunkOffset()];
 	for (int k = 0; k < 8; ++k)
@@ -163,8 +188,10 @@ void ParaEngine::ParaVoxelModel::RemoveNodeChildren(VoxelOctreeNode* pNode, int 
 			auto pChild = GetChildNode(pNode, k);
 			RemoveNodeChildren(pChild, 0xff);
 			chunk.erase(pNode->childOffsets[k]);
+			pNode->childOffsets[k] = 0xff;
 		}
 	}
+	pNode->isBlockMask &= (~isBlockMask);
 }
 
 void ParaEngine::ParaVoxelModel::DumpOctree()
@@ -207,27 +234,38 @@ void ParaVoxelModel::SetBlock(uint32 x, uint32 y, uint32 z, int level, int color
 	VoxelOctreeNode* pNode = GetRootNode();
 	
 	nDepth--;
+	VoxelOctreeNode* parentNodes[MAX_VOXEL_DEPTH];
+	parentNodes[0] = pNode;
+	
+	int nChildIndex = 0;
+	int nLevel = 1;
+	for (; nDepth >= 0; nDepth--, nLevel++)
+	{
+		uint32 lx = x >> nDepth, ly = y >> nDepth, lz = z >> nDepth;
+		nChildIndex = (lx & 1) + ((ly & 1) << 1) + ((lz & 1) << 2);
+		pNode = CreateGetChildNode(pNode, nChildIndex);
+		parentNodes[nLevel] = pNode;
+	}
 	if (color > 0)
 	{
-		VoxelOctreeNode* parentNodes[MAX_VOXEL_DEPTH];
-		parentNodes[0] = pNode;
 		// create or set block
-		int nChildIndex = 0;
-		int nLevel = 1;
-		for(;nDepth >= 0; nDepth--, nLevel++)
-		{
-			uint32 lx = x >> nDepth, ly = y >> nDepth, lz = z >> nDepth;
-			nChildIndex = (lx & 1) + ((ly & 1) << 1) + ((lz & 1) << 2);
-			// pNode->isBlockMask |= (1 << nChildIndex);
-			pNode = CreateGetChildNode(pNode, nChildIndex);
-			parentNodes[nLevel] = pNode;
-		}
+		RemoveNodeChildren(pNode, 0xff);
 		pNode->SetColor((uint32_t)color);
+		pNode->MakeFullBlock();
 		UpdateNode(parentNodes, nLevel);
 	}
 	else
 	{
 		// delete block
+		if (nLevel >= 2) {
+			RemoveNodeChildren(parentNodes[nLevel - 2], 1 << nChildIndex);
+			UpdateNode(parentNodes, nLevel-1);
+		}
+		else {
+			// for root node
+			RemoveNodeChildren(pNode, 0xff);
+			pNode->MakeEmpty(); 
+		}
 	}
 }
 
@@ -242,9 +280,54 @@ void ParaEngine::ParaVoxelModel::SetBlockCmd(const char* cmd)
 	}
 }
 
+bool ParaEngine::ParaVoxelModel::SetNodeColor(VoxelOctreeNode* pNode, uint32 color)
+{
+	auto& chunk = *m_chunks[pNode->GetBaseChunkOffset()];
+	pNode->SetColor(color);
+	bool isFullySolid = true;
+	int nChildCount = 0;
+	for (int k = 0; k < 8; ++k)
+	{
+		if (pNode->childOffsets[k] != 0xff)
+		{
+			auto pChild = GetChildNode(pNode, k);
+			// merge same color nodes
+			if (SetNodeColor(pChild, color))
+				RemoveNodeChildren(pNode, 1<<k);
+			else
+				isFullySolid = false;
+			
+			nChildCount++;
+		}
+	}
+	return isFullySolid && pNode->IsSolid();
+}
+
+void ParaEngine::ParaVoxelModel::PaintBlock(uint32 x, uint32 y, uint32 z, int level, uint32_t color)
+{
+	VoxelOctreeNode* pNode = GetNode(x, y, z, level);
+	if(pNode)
+		SetNodeColor(pNode, color);
+}
+
+void ParaEngine::ParaVoxelModel::PaintBlockCmd(const char* cmd)
+{
+	uint32 x, y, z;
+	int level;
+	int color;
+	if (sscanf(cmd, "%d,%d,%d,%d,%d", &x, &y, &z, &level, &color) == 5)
+	{
+		if(color > 0)
+			PaintBlock(x, y, z, level, color);
+		else
+			SetBlock(x, y, z, level, color);
+	}
+}
+
 int ParaVoxelModel::GetBlock(uint32 x, uint32 y, uint32 z, int level)
 {
-	return 0;
+	VoxelOctreeNode* pNode = GetNode(x, y, z, level);
+	return (pNode && !pNode->IsEmpty()) ? pNode->GetColor() : -1;
 }
 
 bool ParaVoxelModel::RayPicking(const Vector3& origin, const Vector3& dir, Vector3& hitPos, int& hitColor, int level)
@@ -279,15 +362,19 @@ void ParaEngine::ParaVoxelModel::OptimizeNode(VoxelOctreeNode* pNode)
 
 void ParaEngine::ParaVoxelModel::UpdateNode(VoxelOctreeNode* nodes[], int nNodeCount)
 {
+	int fullySolidBlockColor = -1;
 	for (int i = nNodeCount - 1; i >= 0; --i)
 	{
 		auto pNode = nodes[i];
-		if (pNode->IsLeaf()) {
+		if (pNode->IsFullySolid()) {
+			fullySolidBlockColor = pNode->GetColor();
 			continue;
 		}
 		uint8_t isBlockMask = 0;
 		uint32_t color = 0;
+		uint32_t thisColor = pNode->GetColor();
 		int nChildCount = 0;
+		int blockCount = 0;
 		for (int k = 0; k < 8; ++k)
 		{
 			auto pChild = GetChildNode(pNode, k);
@@ -298,10 +385,44 @@ void ParaEngine::ParaVoxelModel::UpdateNode(VoxelOctreeNode* nodes[], int nNodeC
 				if (pChild->IsBlock())
 					isBlockMask |= (1 << k);
 			}
+			else if (pNode->IsBlockAt(k))
+			{
+				blockCount++;
+				isBlockMask |= (1 << k);
+				color += thisColor;
+			}
 		}
 		pNode->isBlockMask = isBlockMask;
-		if(nChildCount > 0)
-			pNode->SetColor(color / nChildCount);
+		if (nChildCount > 0) {
+			// average on rgb color separately
+			blockCount += nChildCount;
+			color = (((color>>16) / blockCount) << 16) + (((color>>8) / blockCount) << 8) + ((color / blockCount));
+			pNode->SetColor(color);
+			if (fullySolidBlockColor == pNode->GetColor() && pNode->IsSolid())
+			{
+				bool bIsFullySolid = true;
+				for (int k = 0; k < 8; ++k)
+				{
+					auto pChild = GetChildNode(pNode, k);
+					if (pChild && !pChild->IsFullySolid())
+					{
+						bIsFullySolid = false;
+						break;
+					}
+				}
+				if (bIsFullySolid)
+				{
+					RemoveNodeChildren(pNode, 0xff);
+					pNode->MakeFullBlock();
+				}
+				else
+					fullySolidBlockColor = -1;
+			}
+			else
+				fullySolidBlockColor = -1;
+		}
+		else
+			fullySolidBlockColor = -1;
 	}
 }
 

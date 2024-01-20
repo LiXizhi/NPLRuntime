@@ -34,8 +34,13 @@ namespace ParaEngine
 		static VoxelOctreeNode EmptyNode;
 		static VoxelOctreeNode FullNode;
 	public:
-		inline void MakeEmpty() { isBlockMask = 0; };
-		inline void MakeFullBlock() { isBlockMask = 0xff; };
+		inline bool IsLeaf() { return childMask == 0xffffffffffffffff; };
+		inline bool IsBlock() { return IsLeaf() || (GetBlockCountInMask() >= 4); }
+		inline bool IsBlockAt(uint8_t index) { return isBlockMask & (1 << index);  }
+		inline bool IsSolid() { return isBlockMask == 0xff; };
+		inline bool IsEmpty() { return isBlockMask == 0x0; };
+		inline bool IsFullySolid() { return IsSolid() && IsLeaf(); };
+
 		inline uint32 GetColor() { return colorRGB[0] | (colorRGB[1] << 8) | (colorRGB[2] << 16); };
 		inline void SetColor(uint32 color) { colorRGB[0] = color & 0xff; colorRGB[1] = (color >> 8) & 0xff; colorRGB[2] = (color >> 16) & 0xff; };
 		// only 24 bits are used
@@ -48,7 +53,9 @@ namespace ParaEngine
 			return uint8_t(baseChunkOffset >> 24);
 		}
 
-		inline bool IsLeaf() { return childMask == 0xffffffffffffffff; };
+		inline void MakeEmpty() { isBlockMask = 0; };
+		inline void MakeFullBlock() { isBlockMask = 0xff; };
+
 		inline int GetBlockCountInMask() { 
 			int count = 0;
 			uint8_t n = isBlockMask;
@@ -58,7 +65,7 @@ namespace ParaEngine
 			}
 			return count;
 		};
-		inline int IsBlock() { return IsLeaf() || (GetBlockCountInMask() >= 4); }
+		
 		inline void MarkDeleted() {
 			baseChunkOffset = 0xffffff;
 		}
@@ -155,6 +162,8 @@ namespace ParaEngine
 		ATTRIBUTE_DEFINE_CLASS(ParaVoxelModel);
 
 		ATTRIBUTE_METHOD1(ParaVoxelModel, SetBlock_s, char*) { cls->SetBlockCmd(p1); return S_OK; }
+		ATTRIBUTE_METHOD1(ParaVoxelModel, PaintBlock_s, char*) { cls->PaintBlockCmd(p1); return S_OK; }
+		
 		ATTRIBUTE_METHOD(ParaVoxelModel, DumpOctree_s) { cls->DumpOctree(); return S_OK; }
 		
 		/** this class should be implemented if one wants to add new attribute. This function is always called internally.*/
@@ -179,6 +188,9 @@ namespace ParaEngine
 		*/
 		void SetBlockCmd(const char* cmd);
 
+		void PaintBlock(uint32 x, uint32 y, uint32 z, int level, uint32_t color);
+		void PaintBlockCmd(const char* cmd);
+
 		/** get the block color at the given position and level
 		* @return -1 if the block is empty. or return 8 bits color of the block.
 		*/
@@ -193,7 +205,7 @@ namespace ParaEngine
 		*/
 		void Draw(SceneState* pSceneState);
 		
-	public:
+	protected:
 		/** optimize the model to remove and merge octree node. */
 		void Optimize();
 		void OptimizeNode(VoxelOctreeNode* pNode);
@@ -210,10 +222,15 @@ namespace ParaEngine
 
 		int CreateGetFreeChunkIndex(int nMinFreeSize = 8);
 
+		VoxelOctreeNode* GetNode(uint32 x, uint32 y, uint32 z, int level);
 		VoxelOctreeNode* CreateGetChildNode(VoxelOctreeNode* pNode, int nChildIndex);
-		VoxelOctreeNode* GetChildNode(VoxelOctreeNode* pNode, int nChildIndex);
+		inline VoxelOctreeNode* GetChildNode(VoxelOctreeNode* pNode, int nChildIndex);
 
-		void RemoveNodeChildren(VoxelOctreeNode* pNode, int isBlockMask = 0xff);
+		void RemoveNodeChildren(VoxelOctreeNode* pNode, uint8_t isBlockMask = 0xff);
+		/** set color to the node and all of its children 
+		* @return true if pNode is fully solid node.
+		*/
+		bool SetNodeColor(VoxelOctreeNode* pNode, uint32 color);
 
 		void DumpOctree();
 		void DumpOctreeNode(VoxelOctreeNode* pNode, int nDepth, int nChunkIndex, int offset);
