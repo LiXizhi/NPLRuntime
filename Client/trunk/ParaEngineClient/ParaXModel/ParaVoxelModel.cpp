@@ -204,7 +204,9 @@ void ParaEngine::ParaVoxelModel::DumpOctree()
 void ParaEngine::ParaVoxelModel::DumpOctreeNode(VoxelOctreeNode* pNode, int nDepth, int nChunkIndex, int offset)
 {
 	char tmp[256];
-	StringHelper::fast_sprintf(tmp, "Node[%d][%d]: baseChunkOffset %d, blockMask: %d color: #%06x\n", nChunkIndex, offset, pNode->GetBaseChunkOffset(), pNode->isBlockMask, pNode->GetColor());
+	StringHelper::fast_sprintf(tmp, "Node[%d][%d]: baseChunkOffset %d, blockMask: %d shapeMask:%d  color: #%06x\n", 
+		nChunkIndex, offset, pNode->GetBaseChunkOffset(), 
+		pNode->isBlockMask, pNode->GetVoxelShape(), pNode->GetColor());
 	OUTPUT_LOG(tmp);
 
 	if(pNode->IsLeaf())
@@ -234,8 +236,8 @@ void ParaVoxelModel::SetBlock(uint32 x, uint32 y, uint32 z, int level, int color
 	VoxelOctreeNode* pNode = GetRootNode();
 	
 	nDepth--;
-	VoxelOctreeNode* parentNodes[MAX_VOXEL_DEPTH];
-	parentNodes[0] = pNode;
+	TempVoxelOctreeNodeRef parentNodes[MAX_VOXEL_DEPTH];
+	parentNodes[0] = TempVoxelOctreeNodeRef(pNode, 0,0,0,1);
 	
 	int nChildIndex = 0;
 	int nLevel = 1;
@@ -244,7 +246,8 @@ void ParaVoxelModel::SetBlock(uint32 x, uint32 y, uint32 z, int level, int color
 		uint32 lx = x >> nDepth, ly = y >> nDepth, lz = z >> nDepth;
 		nChildIndex = (lx & 1) + ((ly & 1) << 1) + ((lz & 1) << 2);
 		pNode = CreateGetChildNode(pNode, nChildIndex);
-		parentNodes[nLevel] = pNode;
+		auto& lastNode = parentNodes[nLevel - 1];
+		parentNodes[nLevel] = TempVoxelOctreeNodeRef(pNode, (lastNode.x<<1) + lx, (lastNode.y << 1) + ly, (lastNode.z << 1) + lz, nLevel);
 	}
 	if (color > 0)
 	{
@@ -258,7 +261,7 @@ void ParaVoxelModel::SetBlock(uint32 x, uint32 y, uint32 z, int level, int color
 	{
 		// delete block
 		if (nLevel >= 2) {
-			RemoveNodeChildren(parentNodes[nLevel - 2], 1 << nChildIndex);
+			RemoveNodeChildren(parentNodes[nLevel - 2].pNode, 1 << nChildIndex);
 			UpdateNode(parentNodes, nLevel-1);
 		}
 		else {
@@ -292,8 +295,10 @@ bool ParaEngine::ParaVoxelModel::SetNodeColor(VoxelOctreeNode* pNode, uint32 col
 		{
 			auto pChild = GetChildNode(pNode, k);
 			// merge same color nodes
-			if (SetNodeColor(pChild, color))
-				RemoveNodeChildren(pNode, 1<<k);
+			if (SetNodeColor(pChild, color)) {
+				RemoveNodeChildren(pNode, 1 << k);
+				pNode->isBlockMask |= (1 << k);
+			}
 			else
 				isFullySolid = false;
 			
@@ -360,19 +365,18 @@ void ParaEngine::ParaVoxelModel::OptimizeNode(VoxelOctreeNode* pNode)
 	pNode->isBlockMask = isBlockMask;
 }
 
-void ParaEngine::ParaVoxelModel::UpdateNode(VoxelOctreeNode* nodes[], int nNodeCount)
+void ParaEngine::ParaVoxelModel::UpdateNode(TempVoxelOctreeNodeRef nodes[], int nNodeCount)
 {
 	int fullySolidBlockColor = -1;
 	for (int i = nNodeCount - 1; i >= 0; --i)
 	{
-		auto pNode = nodes[i];
+		auto pNode = nodes[i].pNode;
 		if (pNode->IsFullySolid()) {
 			fullySolidBlockColor = pNode->GetColor();
 			continue;
 		}
 		uint8_t isBlockMask = 0;
-		uint32_t color = 0;
-		uint32_t thisColor = pNode->GetColor();
+		uint16_t color[3] = { 0,0,0 };
 		int nChildCount = 0;
 		int blockCount = 0;
 		for (int k = 0; k < 8; ++k)
@@ -380,7 +384,9 @@ void ParaEngine::ParaVoxelModel::UpdateNode(VoxelOctreeNode* nodes[], int nNodeC
 			auto pChild = GetChildNode(pNode, k);
 			if (pChild)
 			{
-				color += pChild->GetColor();
+				color[0] += pChild->colorRGB[0];
+				color[1] += pChild->colorRGB[1];
+				color[2] += pChild->colorRGB[2];
 				nChildCount++;
 				if (pChild->IsBlock())
 					isBlockMask |= (1 << k);
@@ -389,15 +395,20 @@ void ParaEngine::ParaVoxelModel::UpdateNode(VoxelOctreeNode* nodes[], int nNodeC
 			{
 				blockCount++;
 				isBlockMask |= (1 << k);
-				color += thisColor;
 			}
 		}
 		pNode->isBlockMask = isBlockMask;
 		if (nChildCount > 0) {
 			// average on rgb color separately
-			blockCount += nChildCount;
-			color = (((color>>16) / blockCount) << 16) + (((color>>8) / blockCount) << 8) + ((color / blockCount));
-			pNode->SetColor(color);
+			if(blockCount == 0)
+			{
+				// if the node has both child nodes and solid blocks, the color is the color of the non-child blocks.
+				// if the node has only child nodes and no blocks, the color is the average of color of the its child blocks.
+				pNode->colorRGB[0] = (uint8)(color[0] / nChildCount);
+				pNode->colorRGB[1] = (uint8)(color[1] / nChildCount);
+				pNode->colorRGB[2] = (uint8)(color[2] / nChildCount);
+			}
+
 			if (fullySolidBlockColor == pNode->GetColor() && pNode->IsSolid())
 			{
 				bool bIsFullySolid = true;

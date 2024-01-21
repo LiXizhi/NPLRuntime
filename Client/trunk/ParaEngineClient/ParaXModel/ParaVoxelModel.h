@@ -12,8 +12,11 @@ namespace ParaEngine
 	* 1(isBlockMask)+3(color)+4(base)+8(children) = 16 bytes
 	* a chunk contains at most 254 nodes = 16*254 = 4064 bytes ~= 4KB
 	* 
-	* if it is a leaf node or there are over 4 blocks in the 8 children, we will consider it as a block-typed node.
-	* block are rendered as cube at its level of detail regardless of its completely full or only half full. 
+	* A node is a block node, if it is a leaf node or there are over 4 blocks in the 8 children.
+	* A block node is rendered as cube at its level of detail regardless of its completely full or only half full. 
+	* 
+	* if the node has both child nodes and non-child blocks, the color is the color of the non-child blocks.
+	* if the node has only child nodes, the color is the average color of the its child blocks.
 	*/
 	struct VoxelOctreeNode
 	{
@@ -46,7 +49,8 @@ namespace ParaEngine
 		// only 24 bits are used
 		inline int GetBaseChunkOffset() { return baseChunkOffset & 0xffffff; };
 		inline void SetBaseChunkOffset(uint32_t value) { baseChunkOffset = value & 0xffffff; };
-		inline void SetVoxelShape(uint32_t shape) {
+		// 8 bits for voxel shape, 6 bits is for each of the 6 sides of the cube. If a bit is 1, the side is connecting to a solid.
+		inline void SetVoxelShape(uint8_t shape) {
 			baseChunkOffset |= (shape << 24);
 		}
 		inline uint8_t GetVoxelShape() {
@@ -77,6 +81,19 @@ namespace ParaEngine
 		}
 	};
 #pragma pack(pop)
+
+	// only used internally when traversing the octree
+	struct TempVoxelOctreeNodeRef
+	{
+		TempVoxelOctreeNodeRef(VoxelOctreeNode* pNode, uint32 x, uint32 y, uint32 z, int level) :pNode(pNode), x(x), y(y), z(z), level(level) {};
+		TempVoxelOctreeNodeRef() {};
+		VoxelOctreeNode* pNode;
+		uint32 x;
+		uint32 y;
+		uint32 z;
+		int level;
+	};
+
 
 	/** a chunk of at most 254 octree nodes. */
 	class VoxelChunk : public std::vector<VoxelOctreeNode>
@@ -210,11 +227,12 @@ namespace ParaEngine
 		void Optimize();
 		void OptimizeNode(VoxelOctreeNode* pNode);
 
-		/** the color of the parent node is the average of its children.
+		/** update isBlockMask, color, and voxel shape of the node, and also changing its parent and possible siblings.
+		* one needs to call this function when a node is changed to update all the way to the root node.
 		* @param nodes: update nodes from nodes[nNodeCount - 1](smallest child) to nodes[0] (root node). 
 		*/
-		void UpdateNode(VoxelOctreeNode* nodes[], int nNodeCount);
-
+		void UpdateNode(TempVoxelOctreeNodeRef nodes[], int nNodeCount);
+		
 		/** get the depth of the octree at the given level. 
 		* e.g. LevelToDepth(1024) == 10
 		*/
