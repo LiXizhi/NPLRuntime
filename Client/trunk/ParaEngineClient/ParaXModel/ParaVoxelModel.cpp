@@ -24,7 +24,7 @@ VoxelOctreeNode VoxelOctreeNode::EmptyNode(0x0);
 VoxelOctreeNode VoxelOctreeNode::FullNode(0xff);
 
 VoxelOctreeNode::VoxelOctreeNode(uint8_t isBlockMask)
-	: isBlockMask(isBlockMask), colorRGB{ 0,0,0 }, baseChunkOffset(0), childMask(0xffffffffffffffff)
+	: isBlockMask(isBlockMask), isChildMask(0), colorRGB(0), baseChunkOffset(0), childMask(0xffffffffffffffff)
 {
 }
 
@@ -257,7 +257,7 @@ void ParaVoxelModel::SetBlock(uint32 x, uint32 y, uint32 z, int level, int color
 	{
 		// create or set block
 		RemoveNodeChildren(pNode, 0xff);
-		pNode->SetColor((uint32_t)color);
+		pNode->SetColor32((uint32_t)color);
 		pNode->MakeFullBlock();
 		UpdateNode(parentNodes, nLevel);
 	}
@@ -290,7 +290,7 @@ void ParaEngine::ParaVoxelModel::SetBlockCmd(const char* cmd)
 bool ParaEngine::ParaVoxelModel::SetNodeColor(VoxelOctreeNode* pNode, uint32 color)
 {
 	auto& chunk = *m_chunks[pNode->GetBaseChunkOffset()];
-	pNode->SetColor(color);
+	pNode->SetColor32(color);
 	bool isFullySolid = true;
 	int nChildCount = 0;
 	for (int k = 0; k < 8; ++k)
@@ -371,7 +371,7 @@ void ParaEngine::ParaVoxelModel::OptimizeNode(VoxelOctreeNode* pNode)
 
 void ParaEngine::ParaVoxelModel::UpdateNode(TempVoxelOctreeNodeRef nodes[], int nNodeCount)
 {
-	int fullySolidBlockColor = -1;
+	int32_t fullySolidBlockColor = -1;
 	for (int i = nNodeCount - 1; i >= 0; --i)
 	{
 		auto pNode = nodes[i].pNode;

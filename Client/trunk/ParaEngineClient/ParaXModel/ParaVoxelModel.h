@@ -9,8 +9,8 @@ namespace ParaEngine
 
 #pragma pack(push,1)
 	/** a voxel octree data node
-	* 1(isBlockMask)+3(color)+4(base)+8(children) = 16 bytes
-	* a chunk contains at most 254 nodes = 16*254 = 4064 bytes ~= 4KB
+	* 1(isBlockMask)+1(isChildMask)+2(color)+4(base)+8(children) = 16 bytes
+	* a chunk contains at most 256 nodes = 16*256 = 4096 bytes = 4KB
 	* 
 	* A node is a block node, if it is a leaf node or there are over 4 blocks in the 8 children.
 	* A block node is rendered as cube at its level of detail regardless of its completely full or only half full. 
@@ -23,15 +23,21 @@ namespace ParaEngine
 		/** default to create a full leaf block */
 		VoxelOctreeNode(uint8_t isBlockMask = 0xff);
 
-		// 8 bits isBlockMask whether the 8 spaces in octree are blocks. 
+		// 8 bits whether the 8 spaces in octree are blocks. 
 		uint8_t isBlockMask;
-		// 24 bits for color
-		uint8_t colorRGB[3];
+		// 8 bits whether the 8 spaces in octree are non-leaf node. 
+		uint8_t isChildMask;
+		// 16 bits for color: 5 bits for each of the 3 color channels. the high 1 bit is not used.
+		uint16_t colorRGB;
 		// low 24 bits for base chunk offset, high 8 bits for voxel shape. 
 		uint32_t baseChunkOffset;
 		union {
-			uint8_t childOffsets[8];
-			uint64_t childMask;
+			// for non-leaf node, this is the offset to the chunk. 
+			uint8_t childOffsets[8]; 
+			// for leaf node, this is the child's voxel shape.
+			uint8_t childVoxelShape[8];
+			// obsoleted
+			uint64_t childMask; 
 		};
 
 		static VoxelOctreeNode EmptyNode;
@@ -44,15 +50,17 @@ namespace ParaEngine
 		inline bool IsEmpty() { return isBlockMask == 0x0; };
 		inline bool IsFullySolid() { return IsSolid() && IsLeaf(); };
 
-		inline uint32 GetColor() { return colorRGB[0] | (colorRGB[1] << 8) | (colorRGB[2] << 16); };
-		inline uint8_t GetColor0() { return colorRGB[0]; };
-		inline uint8_t GetColor1() { return colorRGB[1]; };
-		inline uint8_t GetColor2() { return colorRGB[2]; };
-		inline void SetColor0(uint8_t value) { colorRGB[0] = value; };
-		inline void SetColor1(uint8_t value) { colorRGB[1] = value; };
-		inline void SetColor2(uint8_t value) { colorRGB[2] = value; };
-
-		inline void SetColor(uint32 color) { colorRGB[0] = color & 0xff; colorRGB[1] = (color >> 8) & 0xff; colorRGB[2] = (color >> 16) & 0xff; };
+		inline uint32 GetColor32() { return (colorRGB&0x1f)<<3 | ((colorRGB&0x3e0) << 11) | ((colorRGB&0x7c00) << 19); };
+		inline void SetColor32(uint32 color) { colorRGB = (uint16_t)((color & 0xf8) >> 3 | ((color & 0xf800) >> 6) | ((color & 0xf80000) >> 9)); };
+		inline uint16 GetColor() { return colorRGB; };
+		inline void SetColor(uint16 color) { colorRGB = color; };
+		inline uint8_t GetColor0() { return (colorRGB & 0x1f); };
+		inline uint8_t GetColor1() { return ((colorRGB & 0x3e0) >> 5); };
+		inline uint8_t GetColor2() { return ((colorRGB & 0x7c00) >> 10); };
+		inline void SetColor0(uint8_t value) { colorRGB = (colorRGB & 0x7fe0) | value; };
+		inline void SetColor1(uint8_t value) { colorRGB = (colorRGB & 0x7c1f) | (value << 5); };
+		inline void SetColor2(uint8_t value) { colorRGB = (colorRGB & 0x3ff) | (value << 10); };
+		
 		// only 24 bits are used
 		inline int GetBaseChunkOffset() { return baseChunkOffset & 0xffffff; };
 		inline void SetBaseChunkOffset(uint32_t value) { baseChunkOffset = value & 0xffffff; };
