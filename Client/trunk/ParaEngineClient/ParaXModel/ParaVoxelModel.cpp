@@ -48,7 +48,6 @@ VoxelOctreeNode* ParaEngine::ParaVoxelModel::GetRootNode()
 	return &((*m_chunks[0])[0]);
 }
 
-
 int ParaEngine::ParaVoxelModel::InstallFields(CAttributeClass* pClass, bool bOverride)
 {
 	IAttributeFields::InstallFields(pClass, bOverride);
@@ -97,22 +96,27 @@ int ParaEngine::ParaVoxelModel::CreateGetFreeChunkIndex(int nMinFreeSize)
 	return m_chunks.size() - 1;
 }
 
-VoxelOctreeNode* ParaEngine::ParaVoxelModel::GetNode(uint32 x, uint32 y, uint32 z, int level)
+VoxelOctreeNode* ParaEngine::ParaVoxelModel::GetNode(int32 x, int32 y, int32 z, int level)
 {
-	int nDepth = LevelToDepth(level);
-	VoxelOctreeNode* pNode = GetRootNode();
-
-	nDepth--;
-	
-	int nChildIndex = 0;
-	int nLevel = 1;
-	for (; nDepth >= 0 && pNode != NULL; nDepth--, nLevel++)
+	if (x >= 0 && x < level && y >= 0 && y < level && z >= 0 && z < level)
 	{
-		uint32 lx = x >> nDepth, ly = y >> nDepth, lz = z >> nDepth;
-		nChildIndex = (lx & 1) + ((ly & 1) << 1) + ((lz & 1) << 2);
-		pNode = GetChildNode(pNode, nChildIndex);
+		int nDepth = LevelToDepth(level);
+		VoxelOctreeNode* pNode = GetRootNode();
+
+		nDepth--;
+
+		int nChildIndex = 0;
+		int nLevel = 1;
+		for (; nDepth >= 0 && pNode != NULL; nDepth--, nLevel++)
+		{
+			uint32 lx = x >> nDepth, ly = y >> nDepth, lz = z >> nDepth;
+			nChildIndex = (lx & 1) + ((ly & 1) << 1) + ((lz & 1) << 2);
+			pNode = GetChildNode(pNode, nChildIndex);
+		}
+		return pNode;
 	}
-	return pNode;
+	else
+		return NULL;
 }
 
 VoxelOctreeNode* ParaEngine::ParaVoxelModel::CreateGetChildNode(VoxelOctreeNode* pNode, int nChildIndex)
@@ -373,58 +377,62 @@ void ParaEngine::ParaVoxelModel::UpdateNode(TempVoxelOctreeNodeRef nodes[], int 
 		auto pNode = nodes[i].pNode;
 		if (pNode->IsFullySolid()) {
 			fullySolidBlockColor = pNode->GetColor();
-			continue;
 		}
-		uint8_t isBlockMask = 0;
-		uint16_t color[3] = { 0,0,0 };
-		int nChildCount = 0;
-		int blockCount = 0;
-		for (int k = 0; k < 8; ++k)
+		else
 		{
-			auto pChild = GetChildNode(pNode, k);
-			if (pChild)
+			uint8_t isBlockMask = 0;
+			uint16_t color[3] = { 0,0,0 };
+			int nChildCount = 0;
+			int blockCount = 0;
+			for (int k = 0; k < 8; ++k)
 			{
-				color[0] += pChild->colorRGB[0];
-				color[1] += pChild->colorRGB[1];
-				color[2] += pChild->colorRGB[2];
-				nChildCount++;
-				if (pChild->IsBlock())
-					isBlockMask |= (1 << k);
-			}
-			else if (pNode->IsBlockAt(k))
-			{
-				blockCount++;
-				isBlockMask |= (1 << k);
-			}
-		}
-		pNode->isBlockMask = isBlockMask;
-		if (nChildCount > 0) {
-			// average on rgb color separately
-			if(blockCount == 0)
-			{
-				// if the node has both child nodes and solid blocks, the color is the color of the non-child blocks.
-				// if the node has only child nodes and no blocks, the color is the average of color of the its child blocks.
-				pNode->colorRGB[0] = (uint8)(color[0] / nChildCount);
-				pNode->colorRGB[1] = (uint8)(color[1] / nChildCount);
-				pNode->colorRGB[2] = (uint8)(color[2] / nChildCount);
-			}
-
-			if (fullySolidBlockColor == pNode->GetColor() && pNode->IsSolid())
-			{
-				bool bIsFullySolid = true;
-				for (int k = 0; k < 8; ++k)
+				auto pChild = GetChildNode(pNode, k);
+				if (pChild)
 				{
-					auto pChild = GetChildNode(pNode, k);
-					if (pChild && !pChild->IsFullySolid())
-					{
-						bIsFullySolid = false;
-						break;
-					}
+					color[0] += pChild->GetColor0();
+					color[1] += pChild->GetColor1();
+					color[2] += pChild->GetColor2();
+					nChildCount++;
+					if (pChild->IsBlock())
+						isBlockMask |= (1 << k);
 				}
-				if (bIsFullySolid)
+				else if (pNode->IsBlockAt(k))
 				{
-					RemoveNodeChildren(pNode, 0xff);
-					pNode->MakeFullBlock();
+					blockCount++;
+					isBlockMask |= (1 << k);
+				}
+			}
+			pNode->isBlockMask = isBlockMask;
+			if (nChildCount > 0) {
+				// average on rgb color separately
+				if (blockCount == 0)
+				{
+					// if the node has both child nodes and solid blocks, the color is the color of the non-child blocks.
+					// if the node has only child nodes and no blocks, the color is the average of color of the its child blocks.
+					pNode->SetColor0((uint8)(color[0] / nChildCount));
+					pNode->SetColor1((uint8)(color[1] / nChildCount));
+					pNode->SetColor2((uint8)(color[2] / nChildCount));
+				}
+
+				if (fullySolidBlockColor == pNode->GetColor() && pNode->IsSolid())
+				{
+					bool bIsFullySolid = true;
+					for (int k = 0; k < 8; ++k)
+					{
+						auto pChild = GetChildNode(pNode, k);
+						if (pChild && !pChild->IsFullySolid())
+						{
+							bIsFullySolid = false;
+							break;
+						}
+					}
+					if (bIsFullySolid)
+					{
+						RemoveNodeChildren(pNode, 0xff);
+						pNode->MakeFullBlock();
+					}
+					else
+						fullySolidBlockColor = -1;
 				}
 				else
 					fullySolidBlockColor = -1;
@@ -432,9 +440,70 @@ void ParaEngine::ParaVoxelModel::UpdateNode(TempVoxelOctreeNodeRef nodes[], int 
 			else
 				fullySolidBlockColor = -1;
 		}
-		else
-			fullySolidBlockColor = -1;
 	}
+}
+
+
+const uint8_t s_oppositeSides[] = { 1, 0, 3, 2, 5, 4 };
+const int32_t s_sideOffset_x[] = { 1, -1, 0, 0, 0, 0 };
+const int32_t s_sideOffset_y[] = { 0, 0, 1, -1, 0, 0 };
+const int32_t s_sideOffset_z[] = { 0, 0, 0, 0, 1, -1 };
+
+inline uint8_t ParaEngine::ParaVoxelModel::GetOppositeSide(uint8_t nSide)
+{
+	return s_oppositeSides[nSide];
+}
+
+void ParaEngine::ParaVoxelModel::UpdateNodeShape(const TempVoxelOctreeNodeRef& node)
+{
+	auto pNode = node.pNode;
+	uint8_t shape = 0;
+	if (pNode->IsBlock())
+	{
+		for (int k = 0; k < 6; ++k)
+		{
+			auto pNeighbourNode = GetNode(node.x + s_sideOffset_x[k], node.y + s_sideOffset_y[k], node.z + s_sideOffset_z[k], node.level);
+			if (pNeighbourNode)
+			{
+				if (!pNeighbourNode->IsBlock())
+				{
+					shape |= (1 << k);
+				}
+				else 
+				{
+					uint8_t neighbourShape = pNeighbourNode->GetVoxelShape();
+					if ((neighbourShape & (1 << (s_oppositeSides[k]))) != 0)
+					{
+						// if both are solid, then it is a hidden side. 
+						neighbourShape &= (~(1 << (s_oppositeSides[k])));
+						pNeighbourNode->SetVoxelShape(neighbourShape);
+					}
+				}
+			}
+			else
+				shape |= (1 << k);
+		}
+	}
+	else
+	{
+		for (int k = 0; k < 6; ++k)
+		{
+			auto pNeighbourNode = GetNode(node.x + s_sideOffset_x[k], node.y + s_sideOffset_y[k], node.z + s_sideOffset_z[k], node.level);
+			if (pNeighbourNode)
+			{
+				if (pNeighbourNode->IsBlock())
+				{
+					uint8_t neighbourShape = pNeighbourNode->GetVoxelShape();
+					if ((neighbourShape & (1 << (s_oppositeSides[k]))) == 0)
+					{
+						neighbourShape |= (1 << (s_oppositeSides[k]));
+						pNeighbourNode->SetVoxelShape(neighbourShape);
+					}
+				}
+			}
+		}
+	}
+	pNode->SetVoxelShape(shape);
 }
 
 void ParaVoxelModel::Draw(SceneState* pSceneState)

@@ -45,6 +45,13 @@ namespace ParaEngine
 		inline bool IsFullySolid() { return IsSolid() && IsLeaf(); };
 
 		inline uint32 GetColor() { return colorRGB[0] | (colorRGB[1] << 8) | (colorRGB[2] << 16); };
+		inline uint8_t GetColor0() { return colorRGB[0]; };
+		inline uint8_t GetColor1() { return colorRGB[1]; };
+		inline uint8_t GetColor2() { return colorRGB[2]; };
+		inline void SetColor0(uint8_t value) { colorRGB[0] = value; };
+		inline void SetColor1(uint8_t value) { colorRGB[1] = value; };
+		inline void SetColor2(uint8_t value) { colorRGB[2] = value; };
+
 		inline void SetColor(uint32 color) { colorRGB[0] = color & 0xff; colorRGB[1] = (color >> 8) & 0xff; colorRGB[2] = (color >> 16) & 0xff; };
 		// only 24 bits are used
 		inline int GetBaseChunkOffset() { return baseChunkOffset & 0xffffff; };
@@ -85,12 +92,12 @@ namespace ParaEngine
 	// only used internally when traversing the octree
 	struct TempVoxelOctreeNodeRef
 	{
-		TempVoxelOctreeNodeRef(VoxelOctreeNode* pNode, uint32 x, uint32 y, uint32 z, int level) :pNode(pNode), x(x), y(y), z(z), level(level) {};
-		TempVoxelOctreeNodeRef() {};
+		TempVoxelOctreeNodeRef(VoxelOctreeNode* pNode, int32 x, int32 y, int32 z, int level) :pNode(pNode), x(x), y(y), z(z), level(level) {};
+		TempVoxelOctreeNodeRef():pNode(NULL), x(0), y(0), z(0), level(0) {};
 		VoxelOctreeNode* pNode;
-		uint32 x;
-		uint32 y;
-		uint32 z;
+		int32 x;
+		int32 y;
+		int32 z;
 		int level;
 	};
 
@@ -232,6 +239,7 @@ namespace ParaEngine
 		* @param nodes: update nodes from nodes[nNodeCount - 1](smallest child) to nodes[0] (root node). 
 		*/
 		void UpdateNode(TempVoxelOctreeNodeRef nodes[], int nNodeCount);
+		void UpdateNodeShape(const TempVoxelOctreeNodeRef& node);
 		
 		/** get the depth of the octree at the given level. 
 		* e.g. LevelToDepth(1024) == 10
@@ -240,7 +248,7 @@ namespace ParaEngine
 
 		int CreateGetFreeChunkIndex(int nMinFreeSize = 8);
 
-		VoxelOctreeNode* GetNode(uint32 x, uint32 y, uint32 z, int level);
+		VoxelOctreeNode* GetNode(int32 x, int32 y, int32 z, int level);
 		VoxelOctreeNode* CreateGetChildNode(VoxelOctreeNode* pNode, int nChildIndex);
 		inline VoxelOctreeNode* GetChildNode(VoxelOctreeNode* pNode, int nChildIndex);
 
@@ -254,6 +262,8 @@ namespace ParaEngine
 		void DumpOctreeNode(VoxelOctreeNode* pNode, int nDepth, int nChunkIndex, int offset);
 
 		VoxelOctreeNode* GetRootNode();
+
+		inline uint8_t GetOppositeSide(uint8_t nSide);
 	private:
 		std::vector< VoxelChunk* > m_chunks;
 	};
