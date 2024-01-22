@@ -115,7 +115,14 @@ public:
         }
         else
         {
-            return text;
+            if (text == "end")
+            {
+                return std::string("end_");
+            }
+            else
+            {
+                return text;
+            }
         }
     }
 
@@ -673,6 +680,16 @@ public:
 
     std::string ParseStatement(std::string text)
     {
+        if (text.find("swap(") == 0)
+        {
+            auto pos1 = text.find("(");
+            auto pos2 = text.find(",");
+            auto pos3 = text.find_last_of(")");
+            auto arg1 = text.substr(pos1 + 1, pos2 - pos1 - 1);
+            auto arg2 = text.substr(pos2 + 1, pos3 - pos2 - 1);
+            return arg2 + ", " + arg1 + " = " + text;
+        }
+        
         bool is_function_call = false;
         is_function_call      = is_function_call || std::regex_match(text, std::regex("^\\s*[a-zA-Z_][a-zA-Z0-9_]*\\s*\\(.*\\)\\s*[;]?\\s*$"));
         is_function_call      = is_function_call || std::regex_match(text, std::regex("^.*(\\:|\\.)[a-zA-Z_][a-zA-Z0-9_]*\\s*\\(.*\\)\\s*[;]?\\s*$"));
@@ -680,6 +697,7 @@ public:
         if (!is_function_call) return text;
         auto argument_pos          = text.find_last_of("(");
         auto argument_string       = text.substr(argument_pos);
+
         // 参数不存在引用直接返回
         if (!std::regex_match(argument_string, std::regex(".*[,\\(]\\s*\\&[a-zA-Z_][a-zA-Z0-9_]*.*"))) return text;
 
