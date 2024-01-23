@@ -46,7 +46,7 @@ namespace ParaEngine
 		static VoxelOctreeNode FullNode;
 	public:
 		inline bool IsLeaf() { return isChildMask == 0; };
-		inline bool IsBlock() { return IsLeaf() || (GetBlockCountInMask() >= 4); }
+		inline bool IsBlock() { return (GetBlockCountInMask() >= 4); }
 		inline bool IsBlockAt(uint8_t index) { return isBlockMask & (1 << index);  }
 		inline bool IsSolid() { return isBlockMask == 0xff; };
 		inline bool IsEmpty() { return isBlockMask == 0x0; };
@@ -236,7 +236,7 @@ namespace ParaEngine
 		* @return -1 if the block is empty. or return 8 bits color of the block.
 		*/
 		int GetBlock(uint32 x, uint32 y, uint32 z, int level);
-
+		
 		/** ray picking at given level
 		* @param level: the model level at which to pick. this should be a power of 2, like 1, 2, 4, 8, 16, ..., 1024, ...
 		*/
@@ -256,8 +256,13 @@ namespace ParaEngine
 		* @param nodes: update nodes from nodes[nNodeCount - 1](smallest child) to nodes[0] (root node). 
 		*/
 		void UpdateNode(TempVoxelOctreeNodeRef nodes[], int nNodeCount);
-		void UpdateNodeShape(const TempVoxelOctreeNodeRef& node);
-		
+		void UpdateNodeShape(uint32 x, uint32 y, uint32 z, int level);
+		/**
+		* the `side` of the block is `isSolid`, update the voxel shape 
+		*/
+		void UpdateNodeShapeByNeighbour(int32 x, int32 y, int32 z, int level, int side, bool isSolid);
+		bool IsBlock(int32 x, int32 y, int32 z, int level);
+
 		/** get the depth of the octree at the given level. 
 		* e.g. LevelToDepth(1024) == 10
 		*/
