@@ -29,26 +29,35 @@ namespace ParaEngine
 		uint8_t isChildMask;
 		// 16 bits for color: 5 bits for each of the 3 color channels. the high 1 bit is not used.
 		uint16_t colorRGB;
-		// low 24 bits for base chunk offset, high 8 bits for voxel shape. 
+		// lower 23 bits for base chunk offset, 
+		// the 24th bit is for whether the node is a fully solid node, 
+		// high 8 bits for voxel shape. 
 		uint32_t baseChunkOffset;
 		union {
 			// for non-leaf node, this is the offset to the chunk. 
 			uint8_t childOffsets[8]; 
 			// for leaf node, this is the child's voxel shape.
 			uint8_t childVoxelShape[8];
-			// obsoleted
+			// just for assignment
 			uint64_t childMask; 
 		};
 
 		static VoxelOctreeNode EmptyNode;
 		static VoxelOctreeNode FullNode;
 	public:
-		inline bool IsLeaf() { return childMask == 0xffffffffffffffff; };
+		inline bool IsLeaf() { return isChildMask == 0; };
 		inline bool IsBlock() { return IsLeaf() || (GetBlockCountInMask() >= 4); }
 		inline bool IsBlockAt(uint8_t index) { return isBlockMask & (1 << index);  }
 		inline bool IsSolid() { return isBlockMask == 0xff; };
 		inline bool IsEmpty() { return isBlockMask == 0x0; };
-		inline bool IsFullySolid() { return IsSolid() && IsLeaf(); };
+		// if fully opache. but it may contain child nodes with different colors.
+		inline bool IsFullySolid() { return (baseChunkOffset & 0x800000); };
+		inline void SetFullySolid(bool bOn) {
+			baseChunkOffset = (baseChunkOffset & 0xff7fffff) | (bOn ? 0x800000 : 0); 
+		};
+		inline bool IsChildAt(uint8_t index) { return isChildMask & (1 << index); }
+		inline void SetChild(uint8_t index, uint8_t offset) { isChildMask |= (1 << index); childOffsets[index] = offset; };
+		inline void RemoveChild(uint8_t index) { isChildMask &= ~(1 << index); childOffsets[index] = 0; };
 
 		inline uint32 GetColor32() { return (colorRGB&0x1f)<<3 | ((colorRGB&0x3e0) << 11) | ((colorRGB&0x7c00) << 19); };
 		inline void SetColor32(uint32 color) { colorRGB = (uint16_t)((color & 0xf8) >> 3 | ((color & 0xf800) >> 6) | ((color & 0xf80000) >> 9)); };
@@ -61,9 +70,9 @@ namespace ParaEngine
 		inline void SetColor1(uint8_t value) { colorRGB = (colorRGB & 0x7c1f) | (value << 5); };
 		inline void SetColor2(uint8_t value) { colorRGB = (colorRGB & 0x3ff) | (value << 10); };
 		
-		// only 24 bits are used
-		inline int GetBaseChunkOffset() { return baseChunkOffset & 0xffffff; };
-		inline void SetBaseChunkOffset(uint32_t value) { baseChunkOffset = value & 0xffffff; };
+		// only lower 23 bits are used, which is over 32GB data at most.
+		inline int GetBaseChunkOffset() { return baseChunkOffset & 0x7fffff; };
+		inline void SetBaseChunkOffset(uint32_t value) { baseChunkOffset = value & 0x7fffff; };
 		// 8 bits for voxel shape, 6 bits is for each of the 6 sides of the cube. If a bit is 1, the side is connecting to a solid.
 		inline void SetVoxelShape(uint8_t shape) {
 			baseChunkOffset |= (shape << 24);
@@ -72,8 +81,8 @@ namespace ParaEngine
 			return uint8_t(baseChunkOffset >> 24);
 		}
 
-		inline void MakeEmpty() { isBlockMask = 0; };
-		inline void MakeFullBlock() { isBlockMask = 0xff; };
+		inline void MakeEmpty() { isBlockMask = 0; SetFullySolid(false);};
+		inline void MakeFullBlock() { isBlockMask = 0xff; SetFullySolid(true); };
 
 		inline int GetBlockCountInMask() { 
 			int count = 0;
@@ -238,7 +247,7 @@ namespace ParaEngine
 		void Draw(SceneState* pSceneState);
 		
 	protected:
-		/** optimize the model to remove and merge octree node. */
+		/** optimize the model to remove and merge octree node for invisible nodes. */
 		void Optimize();
 		void OptimizeNode(VoxelOctreeNode* pNode);
 
