@@ -27,6 +27,7 @@
 #include "IO/FileUtils.h"
 #include "ViewportManager.h"
 #include "glTFModelExporter.h"
+#include "ParaVoxelModel.h"
 #include "GltfModel.h"
 
 
@@ -80,7 +81,7 @@ void CParaXModel::SetHeader(const ParaXHeaderDef& xheader)
 CParaXModel::CParaXModel(const ParaXHeaderDef& xheader)
 	: m_bIsValid(true), m_nCurrentFrameNumber(0), m_nHasAlphaBlendedRenderPass(-1), m_bTextureLoaded(false)
 	, m_vNeckYawAxis(Vector3::UNIT_Y), m_vNeckPitchAxis(Vector3::UNIT_Z)
-	, m_vbState(NOT_SET)
+	, m_vbState(NOT_SET), m_pVoxelModel(NULL)
 {
 	SetHeader(xheader);
 	
@@ -189,7 +190,8 @@ CParaXModel::~CParaXModel(void)
 		SAFE_DELETE_ARRAY(m_frame_number_vertices);
 
 		SAFE_DELETE_ARRAY(bones);
-		
+		SAFE_DELETE(m_pVoxelModel);
+
 		if (!animGeometry) {
 		}
 
@@ -1287,6 +1289,11 @@ void CParaXModel::RenderBMaxModel(SceneState* pSceneState, CParameterBlock* pMat
 						startVB += p.indexCount;
 					}
 				}
+				if (m_pVoxelModel)
+				{
+					m_pVoxelModel->Draw(pSceneState);
+				}
+
 				pEffect->EndPass(0);
 			}
 			pEffect->end();
@@ -2199,6 +2206,9 @@ int CParaXModel::GetChildAttributeObjectCount(int nColumnIndex /*= 0*/)
 	else if (nColumnIndex == 1){
 		return (int)GetObjectNum().nTextures;
 	}
+	else if (nColumnIndex == 2) {
+		return (m_pVoxelModel != NULL) ? 1 : 0;
+	}
 	return 0;
 }
 
@@ -2219,17 +2229,29 @@ IAttributeFields* CParaXModel::GetChildAttributeObject(int nRowIndex, int nColum
 			}
 		}
 	}
+	else if (nColumnIndex == 2)
+	{
+		return m_pVoxelModel;
+	}
+	
 	return 0;
 }
 
 IAttributeFields* CParaXModel::GetChildAttributeObject(const char * sName)
 {
+	if (strcmp(sName, "VoxelModel") == 0)
+	{
+		if (m_pVoxelModel == NULL) {
+			m_pVoxelModel = new ParaVoxelModel();
+		}
+		return m_pVoxelModel;
+	}
 	return 0;
 }
 
 int CParaXModel::GetChildAttributeColumnCount()
 {
-	return 2;
+	return 3;
 }
 
 int CParaXModel::GetNextPhysicsGroupID(int nPhysicsGroup)
