@@ -3,7 +3,13 @@
 // Authors:	LiXizhi
 // Emails:	LiXizhi@yeah.net
 // Date:	2024.1.17
+// Desc: Use a very compact octree to represent voxel model. 
+// it is very fast to load and save from disk. i.e. memory and disk layout are the same.
+// it is also fairly fast to be used in real-time voxel editing. i.e. only neighbouring nodes are updated.  
+// 
+// e.g.
 // local model = entity:GetInnerObject():GetPrimaryAsset():GetAttributeObject():GetChildAt(0):GetChild("VoxelModel")
+// model:SetField("MinVoxelPixelSize", 4);
 // model:SetField("SetBlock", "7,7,7,8,254");
 // model:CallField("DumpOctree");
 //-----------------------------------------------------------------------------
@@ -14,6 +20,7 @@
 #include "ParaXModel.h"
 #include "effect_file.h"
 #include "StringHelper.h"
+#include "ViewportManager.h"
 #include "ParaVoxelModel.h"
 
 // max octree depth is 12, which is 4096*4096*4096
@@ -29,6 +36,7 @@ VoxelOctreeNode::VoxelOctreeNode(uint8_t isBlockMask)
 }
 
 ParaVoxelModel::ParaVoxelModel()
+	: m_fMinVoxelPixelSize(4.f)
 {
 	m_chunks[CreateGetFreeChunkIndex()]->SafeCreateNode(&VoxelOctreeNode::EmptyNode);
 }
@@ -54,9 +62,9 @@ int ParaEngine::ParaVoxelModel::InstallFields(CAttributeClass* pClass, bool bOve
 	pClass->AddField("SetBlock", FieldType_String, (void*)SetBlock_s, NULL, NULL, NULL, bOverride);
 	pClass->AddField("PaintBlock", FieldType_String, (void*)PaintBlock_s, NULL, NULL, NULL, bOverride);
 	pClass->AddField("DumpOctree", FieldType_void, (void*)DumpOctree_s, NULL, NULL, NULL, bOverride);
+	pClass->AddField("MinVoxelPixelSize", FieldType_Float, (void*)SetMinVoxelPixelSize_s, (void*)GetMinVoxelPixelSize_s, NULL, NULL, bOverride);
 	return S_OK;
 }
-
 
 bool ParaVoxelModel::Load(const char* pBuffer, int nCount)
 {
@@ -105,7 +113,7 @@ VoxelOctreeNode* ParaEngine::ParaVoxelModel::CreateGetChildNode(VoxelOctreeNode*
 		// create a new child node
 		auto& chunk = *(m_chunks[pNode->GetBaseChunkOffset()]);
 		VoxelOctreeNode* pChild = NULL;
-		if(chunk.GetUsedSize() >= 254)
+		if (chunk.GetUsedSize() >= 254)
 		{
 			pNode->SetBaseChunkOffset(CreateGetFreeChunkIndex());
 			auto& newChunk = *(m_chunks[pNode->GetBaseChunkOffset()]);
@@ -135,9 +143,13 @@ VoxelOctreeNode* ParaEngine::ParaVoxelModel::CreateGetChildNode(VoxelOctreeNode*
 			pChild->SetBaseChunkOffset(pNode->GetBaseChunkOffset());
 			pNode->SetChild(nChildIndex, index);
 		}
+
+		// inherit parent node's color by default
+		pChild->SetColor(pNode->GetColor());
+
 		if (!pNode->IsBlockAt(nChildIndex))
 			pChild->MakeEmpty();
-		else if(nChildShape!= 0)
+		else if (nChildShape != 0)
 		{
 			if (nChildShape & 1) // -x
 			{
@@ -231,10 +243,10 @@ void ParaEngine::ParaVoxelModel::DumpOctreeNode(VoxelOctreeNode* pNode, int nDep
 	char tmp[256];
 	StringHelper::fast_sprintf(tmp, "Node[%d][%d]: baseChunkOffset %d, blockMask: %d opache:%d shapeMask: #%x  color: #%06x childMask: %x\n",
 		nChunkIndex, offset, pNode->GetBaseChunkOffset(),
-		pNode->isBlockMask, pNode->IsFullySolid() ? 1 : 0,  pNode->GetVoxelShape(), pNode->GetColor(), pNode->isChildMask);
+		pNode->isBlockMask, pNode->IsFullySolid() ? 1 : 0, pNode->GetVoxelShape(), pNode->GetColor32(), pNode->isChildMask);
 	OUTPUT_LOG(tmp);
 
-	if(pNode->IsLeaf() && (pNode->IsSolid() || pNode->IsEmpty()))
+	if (pNode->IsLeaf() && (pNode->IsSolid() || pNode->IsEmpty()))
 		return;
 	for (int i = 0; i < nDepth; i++)
 		tmp[i] = '-';
@@ -259,11 +271,11 @@ void ParaVoxelModel::SetBlock(uint32 x, uint32 y, uint32 z, int level, int color
 	int nDepth = LevelToDepth(level);
 	// create get octree node
 	VoxelOctreeNode* pNode = GetRootNode();
-	
+
 	nDepth--;
 	TempVoxelOctreeNodeRef parentNodes[MAX_VOXEL_DEPTH];
-	parentNodes[0] = TempVoxelOctreeNodeRef(pNode, 0,0,0,1);
-	
+	parentNodes[0] = TempVoxelOctreeNodeRef(pNode, 0, 0, 0, 1);
+
 	int nChildIndex = 0;
 	int nLevel = 1;
 	for (; nDepth >= 0; nDepth--, nLevel++)
@@ -272,7 +284,7 @@ void ParaVoxelModel::SetBlock(uint32 x, uint32 y, uint32 z, int level, int color
 		nChildIndex = (lx & 1) + ((ly & 1) << 1) + ((lz & 1) << 2);
 		pNode = CreateGetChildNode(pNode, nChildIndex);
 		auto& lastNode = parentNodes[nLevel - 1];
-		parentNodes[nLevel] = TempVoxelOctreeNodeRef(pNode, (lastNode.x<<1) + lx, (lastNode.y << 1) + ly, (lastNode.z << 1) + lz, nLevel);
+		parentNodes[nLevel] = TempVoxelOctreeNodeRef(pNode, (lastNode.x << 1) + lx, (lastNode.y << 1) + ly, (lastNode.z << 1) + lz, nLevel);
 	}
 	if (color > 0)
 	{
@@ -288,13 +300,13 @@ void ParaVoxelModel::SetBlock(uint32 x, uint32 y, uint32 z, int level, int color
 		// delete block
 		if (nLevel >= 2) {
 			RemoveNodeChildren(parentNodes[nLevel - 2].pNode, 1 << nChildIndex);
-			UpdateNode(parentNodes, nLevel-1);
+			UpdateNode(parentNodes, nLevel - 1);
 			UpdateNodeShape(x, y, z, level);
 		}
 		else {
 			// for root node
 			RemoveNodeChildren(pNode, 0xff);
-			pNode->MakeEmpty(); 
+			pNode->MakeEmpty();
 			pNode->SetVoxelShape(0);
 		}
 	}
@@ -331,7 +343,7 @@ bool ParaEngine::ParaVoxelModel::SetNodeColor(VoxelOctreeNode* pNode, uint32 col
 			}
 			else
 				isFullySolid = false;
-			
+
 			nChildCount++;
 		}
 	}
@@ -380,7 +392,7 @@ void ParaEngine::ParaVoxelModel::PaintBlockCmd(const char* cmd)
 	int color;
 	if (sscanf(cmd, "%d,%d,%d,%d,%d", &x, &y, &z, &level, &color) == 5)
 	{
-		if(color > 0)
+		if (color > 0)
 			PaintBlock(x, y, z, level, color);
 		else
 			SetBlock(x, y, z, level, color);
@@ -519,6 +531,16 @@ bool ParaVoxelModel::RayPicking(const Vector3& origin, const Vector3& dir, Vecto
 	return false;
 }
 
+void ParaEngine::ParaVoxelModel::SetMinVoxelPixelSize(float fMinVoxelPixelSize)
+{
+	m_fMinVoxelPixelSize = fMinVoxelPixelSize;
+}
+
+float ParaEngine::ParaVoxelModel::GetMinVoxelPixelSize()
+{
+	return m_fMinVoxelPixelSize;
+}
+
 void ParaVoxelModel::Optimize()
 {
 
@@ -528,7 +550,7 @@ void ParaEngine::ParaVoxelModel::OptimizeNode(VoxelOctreeNode* pNode)
 {
 	if (pNode->IsLeaf())
 		return;
-	
+
 	int solidCount = 0;
 	uint8_t isBlockMask = 0;
 	for (int k = 0; k < 8; ++k)
@@ -537,7 +559,7 @@ void ParaEngine::ParaVoxelModel::OptimizeNode(VoxelOctreeNode* pNode)
 		if (pChild)
 		{
 			OptimizeNode(pChild);
-			if(pChild->IsBlock())
+			if (pChild->IsBlock())
 				isBlockMask |= (1 << k);
 		}
 	}
@@ -569,7 +591,7 @@ void ParaEngine::ParaVoxelModel::UpdateNode(TempVoxelOctreeNodeRef nodes[], int 
 					color[1] += pChild->GetColor1();
 					color[2] += pChild->GetColor2();
 					nChildCount++;
-					if (pChild->IsBlock()) 
+					if (pChild->IsBlock())
 						isBlockMask |= (1 << k);
 					isChildFullySolid = isChildFullySolid && pChild->IsFullySolid();
 				}
@@ -581,7 +603,7 @@ void ParaEngine::ParaVoxelModel::UpdateNode(TempVoxelOctreeNodeRef nodes[], int 
 			}
 			pNode->isBlockMask = isBlockMask;
 			pNode->SetFullySolid(isChildFullySolid && pNode->IsSolid());
-			
+
 			if (nChildCount > 0) {
 				// average on rgb color separately
 				if (blockCount == 0)
@@ -642,7 +664,7 @@ void ParaEngine::ParaVoxelModel::UpdateNodeShape(uint32 x, uint32 y, uint32 z, i
 				shape |= (IsBlock(nx, ny, nz, level) ? 0 : (1 << k));
 			}
 		}
-		
+
 		int nChildIndex = 0;
 		int nLevel = 1;
 		for (; nDepth >= 0; nDepth--, nLevel++)
@@ -681,66 +703,188 @@ void ParaEngine::ParaVoxelModel::UpdateNodeShape(uint32 x, uint32 y, uint32 z, i
 	}
 }
 
+const bmax_vertex cubeVertices[36] = {
+	// left face
+	{{0,0,1}, {-1,0,0}, 0},
+	{{0,1,1}, {-1,0,0}, 0},
+	{{0,1,0}, {-1,0,0}, 0},
+	{{0,0,1}, {-1,0,0}, 0},
+	{{0,1,0}, {-1,0,0}, 0},
+	{{0,0,0}, {-1,0,0}, 0},
+	// right face
+	{{1,0,0}, {1,0,0}, 0},
+	{{1,1,0}, {1,0,0}, 0},
+	{{1,1,1}, {1,0,0}, 0},
+	{{1,0,0}, {1,0,0}, 0},
+	{{1,1,1}, {1,0,0}, 0},
+	{{1,0,1}, {1,0,0}, 0},
+	// bottom face
+	{{0,0,1}, {0,-1,0}, 0},
+	{{0,0,0}, {0,-1,0}, 0},
+	{{1,0,0}, {0,-1,0}, 0},
+	{{0,0,1}, {0,-1,0}, 0},
+	{{1,0,0}, {0,-1,0}, 0},
+	{{1,0,1}, {0,-1,0}, 0},
+	// top face
+	{{0,1,0}, {0,1,0}, 0},
+	{{0,1,1}, {0,1,0}, 0},
+	{{1,1,1}, {0,1,0}, 0},
+	{{0,1,0}, {0,1,0}, 0},
+	{{1,1,1}, {0,1,0}, 0},
+	{{1,1,0}, {0,1,0}, 0},
+	// front face
+	{{0,0,0}, {0,0,-1}, 0},
+	{{0,1,0}, {0,0,-1}, 0},
+	{{1,1,0}, {0,0,-1}, 0},
+	{{0,0,0}, {0,0,-1}, 0},
+	{{1,1,0}, {0,0,-1}, 0},
+	{{1,0,0}, {0,0,-1}, 0},
+	// back face
+	{{0,0,1}, {0,0,1}, 0},
+	{{1,0,1}, {0,0,1}, 0},
+	{{1,1,1}, {0,0,1}, 0},
+	{{0,0,1}, {0,0,1}, 0},
+	{{1,1,1}, {0,0,1}, 0},
+	{{0,1,1}, {0,0,1}, 0},
+};
+
+
+int ParaEngine::ParaVoxelModel::GetLodDepth(float fCameraObjectDist, float fScaling)
+{
+	float fScreenWidth = (float)CGlobals::GetViewportManager()->GetWidth();
+	int lod = (int)std::log2f(fScreenWidth / m_fMinVoxelPixelSize / (fCameraObjectDist / fScaling));
+	if (lod <= 1)
+		lod = 1;
+	else if (lod > 10)
+		lod = 10;
+	return lod;
+}
+
 void ParaVoxelModel::Draw(SceneState* pSceneState)
 {
 	CBaseObject* pBaseObj = pSceneState->GetCurrentSceneObject();
 	if (pBaseObj != NULL) pBaseObj->ApplyMaterial();
 
-
 	RenderDevicePtr pd3dDevice = CGlobals::GetRenderDevice();
-	int start = 0;
 	int indexCount = 0;
 
-	bmax_vertex* vb_vertices = NULL;
-	bmax_vertex* ov = NULL;
-	int nNumLockedVertice;
-	int nNumFinishedVertice = 0;
 	DynamicVertexBufferEntity* pBufEntity = CGlobals::GetAssetManager()->GetDynamicBuffer(DVB_XYZ_NORM_DIF);
 	pd3dDevice->SetStreamSource(0, pBufEntity->GetBuffer(), 0, sizeof(bmax_vertex));
 
-	do
-	{
-		indexCount = 3;
-		if ((nNumLockedVertice = pBufEntity->Lock((indexCount - nNumFinishedVertice),
-			(void**)(&vb_vertices))) > 0)
+	static std::vector<bmax_vertex> vertices;
+	// how many vertices per draw call at most. 
+#define VoxelBatchSize 1024
+	vertices.resize(VoxelBatchSize + 36);
+
+	auto drawBatched = [&]() {
+		if (indexCount == 0)
+			return;
+		int nNumLockedVertice;
+		int nNumFinishedVertice = 0;
+		bmax_vertex* vb_vertices = NULL;
+		do
 		{
-			int nLockedNum = nNumLockedVertice / 3;
-
-			bmax_vertex origVertices[] = {
-				{ Vector3(1, 0.5, 0), Vector3(0, 1, 0), 0xffffffff },
-				{ Vector3(0, 0.5, 1), Vector3(0, 1, 0), 0xffffffff },
-				{ Vector3(1, 0.5, 1), Vector3(0, 1, 0), 0xffffffff }
-			};
-			
-			for (int i = 0; i < nLockedNum; ++i)
+			if ((nNumLockedVertice = pBufEntity->Lock((indexCount - nNumFinishedVertice),
+				(void**)(&vb_vertices))) > 0)
 			{
-				int nVB = 3 * i;
-				for (int k = 0; k < 3; ++k, ++nVB)
+				int nLockedNum = nNumLockedVertice / 3;
+				memcpy(vb_vertices, &vertices[nNumFinishedVertice], sizeof(bmax_vertex) * nNumLockedVertice);
+				pBufEntity->Unlock();
+
+				if (pBufEntity->IsMemoryBuffer())
+					RenderDevice::DrawPrimitiveUP(pd3dDevice, RenderDevice::DRAW_PERF_TRIANGLES_CHARACTER, D3DPT_TRIANGLELIST, nLockedNum, pBufEntity->GetBaseVertexPointer(), pBufEntity->m_nUnitSize);
+				else
+					RenderDevice::DrawPrimitive(pd3dDevice, RenderDevice::DRAW_PERF_TRIANGLES_CHARACTER, D3DPT_TRIANGLELIST, pBufEntity->GetBaseVertex(), nLockedNum);
+
+				if ((indexCount - nNumFinishedVertice) > nNumLockedVertice)
 				{
-					uint16 a = k;
-					bmax_vertex& out_vertex = vb_vertices[nVB];
-					ov = origVertices + a;
-					out_vertex.p = ov->p;
-					out_vertex.n = ov->n;
-					out_vertex.color = ov->color;
+					nNumFinishedVertice += nNumLockedVertice;
 				}
-			}
-			
-			pBufEntity->Unlock();
-
-			if (pBufEntity->IsMemoryBuffer())
-				RenderDevice::DrawPrimitiveUP(pd3dDevice, RenderDevice::DRAW_PERF_TRIANGLES_CHARACTER, D3DPT_TRIANGLELIST, nLockedNum, pBufEntity->GetBaseVertexPointer(), pBufEntity->m_nUnitSize);
-			else
-				RenderDevice::DrawPrimitive(pd3dDevice, RenderDevice::DRAW_PERF_TRIANGLES_CHARACTER, D3DPT_TRIANGLELIST, pBufEntity->GetBaseVertex(), nLockedNum);
-
-			if ((indexCount - nNumFinishedVertice) > nNumLockedVertice)
-			{
-				nNumFinishedVertice += nNumLockedVertice;
+				else
+					break;
 			}
 			else
 				break;
+		} while (1);
+		indexCount = 0;
+	};
+
+	int nMaxDrawDepth = GetLodDepth(pSceneState->GetCameraToCurObjectDistance(), 1.f);
+
+	auto drawVoxelShape = [&indexCount, &drawBatched](uint8_t shape, float x, float y, float z, float size, uint32_t color) {
+		DWORD dwColor = color | 0xff000000;
+		Vector3 origin(x, y, z);
+		for (int k = 0; k < 6; ++k)
+		{
+			if (shape & (1 << k))
+			{
+				int srcIndex = k * 6;
+				for (int i = 0; i < 6; ++i)
+				{
+					auto& v = cubeVertices[srcIndex + i];
+					vertices[indexCount].p = v.p * size + origin;
+					vertices[indexCount].n = v.n;
+					vertices[indexCount].color = dwColor;
+					indexCount++;
+				}
+			}
+		}
+		if (indexCount >= VoxelBatchSize)
+			drawBatched();
+	};
+
+	std::function<void(VoxelOctreeNode*, float, float, float, float, int)> drawNode;
+	drawNode = [&drawNode, &nMaxDrawDepth, &drawVoxelShape, this](VoxelOctreeNode* pNode, float x, float y, float z, float size, int nDepth)
+	{
+		if (nDepth >= nMaxDrawDepth)
+		{
+			if (pNode->GetVoxelShape() != 0)
+				drawVoxelShape(pNode->GetVoxelShape(), x, y, z, size, pNode->GetColor32());
 		}
 		else
-			break;
-	} while (1);
+		{
+			if (pNode->IsLeaf() && pNode->IsSolid() && pNode->GetVoxelShape() != 0)
+			{
+				drawVoxelShape(pNode->GetVoxelShape(), x, y, z, size, pNode->GetColor32());
+				return;
+			}
+
+			size = size / 2.f;
+			auto color = pNode->GetColor32();
+			if (pNode->IsChildAt(0))
+				drawNode(GetChildNode(pNode, 0), x, y, z, size, nDepth + 1);
+			else if (pNode->childVoxelShape[0] != 0)
+				drawVoxelShape(pNode->childVoxelShape[0], x, y, z, size, color);
+			if (pNode->IsChildAt(1))
+				drawNode(GetChildNode(pNode, 1), x + size, y, z, size, nDepth + 1);
+			else if (pNode->childVoxelShape[1] != 0)
+				drawVoxelShape(pNode->childVoxelShape[1], x + size, y, z, size, color);
+			if (pNode->IsChildAt(2))
+				drawNode(GetChildNode(pNode, 2), x, y + size, z, size, nDepth + 1);
+			else if (pNode->childVoxelShape[2] != 0)
+				drawVoxelShape(pNode->childVoxelShape[2], x, y + size, z, size, color);
+			if (pNode->IsChildAt(3))
+				drawNode(GetChildNode(pNode, 3), x + size, y + size, z, size, nDepth + 1);
+			else if (pNode->childVoxelShape[3] != 0)
+				drawVoxelShape(pNode->childVoxelShape[3], x + size, y + size, z, size, color);
+			if (pNode->IsChildAt(4))
+				drawNode(GetChildNode(pNode, 4), x, y, z + size, size, nDepth + 1);
+			else if (pNode->childVoxelShape[4] != 0)
+				drawVoxelShape(pNode->childVoxelShape[4], x, y, z + size, size, color);
+			if (pNode->IsChildAt(5))
+				drawNode(GetChildNode(pNode, 5), x + size, y, z + size, size, nDepth + 1);
+			else if (pNode->childVoxelShape[5] != 0)
+				drawVoxelShape(pNode->childVoxelShape[5], x + size, y, z + size, size, color);
+			if (pNode->IsChildAt(6))
+				drawNode(GetChildNode(pNode, 6), x, y + size, z + size, size, nDepth + 1);
+			else if (pNode->childVoxelShape[6] != 0)
+				drawVoxelShape(pNode->childVoxelShape[6], x, y + size, z + size, size, color);
+			if (pNode->IsChildAt(7))
+				drawNode(GetChildNode(pNode, 7), x + size, y + size, z + size, size, nDepth + 1);
+			else if (pNode->childVoxelShape[7] != 0)
+				drawVoxelShape(pNode->childVoxelShape[7], x + size, y + size, z + size, size, color);
+		}
+	};
+	drawNode(GetRootNode(), -0.5f, 0, -0.5f, 1.f, 0);
+	drawBatched();
 }

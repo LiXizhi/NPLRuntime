@@ -11,10 +11,10 @@ namespace ParaEngine
 	/** a voxel octree data node
 	* 1(isBlockMask)+1(isChildMask)+2(color)+4(base)+8(children) = 16 bytes
 	* a chunk contains at most 256 nodes = 16*256 = 4096 bytes = 4KB
-	* 
+	*
 	* A node is a block node, if it is a leaf node or there are over 4 blocks in the 8 children.
-	* A block node is rendered as cube at its level of detail regardless of its completely full or only half full. 
-	* 
+	* A block node is rendered as cube at its level of detail regardless of its completely full or only half full.
+	*
 	* if the node has both child nodes and non-child blocks, the color is the color of the non-child blocks.
 	* if the node has only child nodes, the color is the average color of the its child blocks.
 	*/
@@ -35,11 +35,11 @@ namespace ParaEngine
 		uint32_t baseChunkOffset;
 		union {
 			// for non-leaf node, this is the offset to the chunk. 
-			uint8_t childOffsets[8]; 
+			uint8_t childOffsets[8];
 			// for leaf node, this is the child's voxel shape.
 			uint8_t childVoxelShape[8];
 			// just for assignment
-			uint64_t childMask; 
+			uint64_t childMask;
 		};
 
 		static VoxelOctreeNode EmptyNode;
@@ -47,19 +47,19 @@ namespace ParaEngine
 	public:
 		inline bool IsLeaf() { return isChildMask == 0; };
 		inline bool IsBlock() { return (GetBlockCountInMask() >= 4); }
-		inline bool IsBlockAt(uint8_t index) { return isBlockMask & (1 << index);  }
+		inline bool IsBlockAt(uint8_t index) { return isBlockMask & (1 << index); }
 		inline bool IsSolid() { return isBlockMask == 0xff; };
 		inline bool IsEmpty() { return isBlockMask == 0x0; };
 		// if fully opache. but it may contain child nodes with different colors.
 		inline bool IsFullySolid() { return (baseChunkOffset & 0x800000); };
 		inline void SetFullySolid(bool bOn) {
-			baseChunkOffset = (baseChunkOffset & 0xff7fffff) | (bOn ? 0x800000 : 0); 
+			baseChunkOffset = (baseChunkOffset & 0xff7fffff) | (bOn ? 0x800000 : 0);
 		};
 		inline bool IsChildAt(uint8_t index) { return isChildMask & (1 << index); }
 		inline void SetChild(uint8_t index, uint8_t offset) { isChildMask |= (1 << index); childOffsets[index] = offset; };
 		inline void RemoveChild(uint8_t index) { isChildMask &= ~(1 << index); childOffsets[index] = 0; };
 
-		inline uint32 GetColor32() { return (colorRGB&0x1f)<<3 | ((colorRGB&0x3e0) << 11) | ((colorRGB&0x7c00) << 19); };
+		inline uint32 GetColor32() { return (colorRGB & 0x1f) << 3 | ((colorRGB & 0x3e0) << 6) | ((colorRGB & 0x7c00) << 9); };
 		inline void SetColor32(uint32 color) { colorRGB = (uint16_t)((color & 0xf8) >> 3 | ((color & 0xf800) >> 6) | ((color & 0xf80000) >> 9)); };
 		inline uint16 GetColor() { return colorRGB; };
 		inline void SetColor(uint16 color) { colorRGB = color; };
@@ -69,7 +69,7 @@ namespace ParaEngine
 		inline void SetColor0(uint8_t value) { colorRGB = (colorRGB & 0x7fe0) | value; };
 		inline void SetColor1(uint8_t value) { colorRGB = (colorRGB & 0x7c1f) | (value << 5); };
 		inline void SetColor2(uint8_t value) { colorRGB = (colorRGB & 0x3ff) | (value << 10); };
-		
+
 		// only lower 23 bits are used, which is over 32GB data at most.
 		inline int GetBaseChunkOffset() { return baseChunkOffset & 0x7fffff; };
 		inline void SetBaseChunkOffset(uint32_t value) { baseChunkOffset = value & 0x7fffff; };
@@ -81,10 +81,10 @@ namespace ParaEngine
 			return uint8_t(baseChunkOffset >> 24);
 		}
 
-		inline void MakeEmpty() { isBlockMask = 0; SetFullySolid(false);};
+		inline void MakeEmpty() { isBlockMask = 0; SetFullySolid(false); };
 		inline void MakeFullBlock() { isBlockMask = 0xff; SetFullySolid(true); };
 
-		inline int GetBlockCountInMask() { 
+		inline int GetBlockCountInMask() {
 			int count = 0;
 			uint8_t n = isBlockMask;
 			while (n) {
@@ -93,7 +93,7 @@ namespace ParaEngine
 			}
 			return count;
 		};
-		
+
 		inline void MarkDeleted() {
 			baseChunkOffset = 0xffffff;
 		}
@@ -110,7 +110,7 @@ namespace ParaEngine
 	struct TempVoxelOctreeNodeRef
 	{
 		TempVoxelOctreeNodeRef(VoxelOctreeNode* pNode, int32 x, int32 y, int32 z, int level) :pNode(pNode), x(x), y(y), z(z), level(level) {};
-		TempVoxelOctreeNodeRef():pNode(NULL), x(0), y(0), z(0), level(0) {};
+		TempVoxelOctreeNodeRef() :pNode(NULL), x(0), y(0), z(0), level(0) {};
 		VoxelOctreeNode* pNode;
 		int32 x;
 		int32 y;
@@ -123,7 +123,7 @@ namespace ParaEngine
 	class VoxelChunk : public std::vector<VoxelOctreeNode>
 	{
 	public:
-		VoxelChunk():m_nSize(0), m_nTailFreeItemIndex(0), m_nHeadFreeItemIndex(0){
+		VoxelChunk() :m_nSize(0), m_nTailFreeItemIndex(0), m_nHeadFreeItemIndex(0) {
 			resize(254);
 			for (int i = 0; i < 254; i++) {
 				(*this)[i].MarkDeleted();
@@ -153,15 +153,15 @@ namespace ParaEngine
 			}
 		}
 		inline uint8_t CreateNode(const VoxelOctreeNode* pCopyFromNode = NULL) {
-			if (m_nSize < 254) 
+			if (m_nSize < 254)
 			{
 				uint8_t index = m_nHeadFreeItemIndex;
-				if(pCopyFromNode != 0)
+				if (pCopyFromNode != 0)
 					(*this)[m_nHeadFreeItemIndex] = *pCopyFromNode;
 				else
 					(*this)[m_nHeadFreeItemIndex].UnMarkDeleted();
 				m_nSize++;
-				
+
 				if (index == m_nTailFreeItemIndex)
 				{
 					m_nTailFreeItemIndex++;
@@ -183,16 +183,16 @@ namespace ParaEngine
 				return 0xff;
 			}
 		}
-		
+
 	private:
 		uint8_t m_nTailFreeItemIndex;
 		uint8_t m_nHeadFreeItemIndex;
 		uint8_t m_nSize;
 	};
 
-	/** a octree based sparse voxel model, with 8 bits color per node. 
-	* The AABB of the model is always 1*1*1, one needs to transform the model when used. 
-	* It uses extremely small memory, and can be dynamically changed. 
+	/** a octree based sparse voxel model, with 8 bits color per node.
+	* The AABB of the model is always 1*1*1, one needs to transform the model when used.
+	* It uses extremely small memory, and can be dynamically changed.
 	*/
 	class ParaVoxelModel : public IAttributeFields
 	{
@@ -204,12 +204,15 @@ namespace ParaEngine
 
 		ATTRIBUTE_METHOD1(ParaVoxelModel, SetBlock_s, char*) { cls->SetBlockCmd(p1); return S_OK; }
 		ATTRIBUTE_METHOD1(ParaVoxelModel, PaintBlock_s, char*) { cls->PaintBlockCmd(p1); return S_OK; }
-		
+
+		ATTRIBUTE_METHOD1(ParaVoxelModel, GetMinVoxelPixelSize_s, float*) { *p1 = cls->GetMinVoxelPixelSize(); return S_OK; }
+		ATTRIBUTE_METHOD1(ParaVoxelModel, SetMinVoxelPixelSize_s, float) { cls->SetMinVoxelPixelSize(p1); return S_OK; }
+
 		ATTRIBUTE_METHOD(ParaVoxelModel, DumpOctree_s) { cls->DumpOctree(); return S_OK; }
-		
+
 		/** this class should be implemented if one wants to add new attribute. This function is always called internally.*/
 		virtual int InstallFields(CAttributeClass* pClass, bool bOverride);
-			
+
 	public:
 		/** load the model from a binary buffer. */
 		bool Load(const char* pBuffer, int nCount = -1);
@@ -217,14 +220,14 @@ namespace ParaEngine
 		/** save the model to a binary buffer. */
 		bool Save(std::vector<char>& output);
 
-		/** set the block at the given position. 
+		/** set the block at the given position.
 		* @param x, y, z : the position of the block relative to level.
 		* @param level: the level or model width. this should be a power of 2, like 1, 2, 4, 8, 16, ..., 1024, ...
 		* @param color: the 24 bits color of the block. -1 if the block is empty.
 		*/
 		void SetBlock(uint32 x, uint32 y, uint32 z, int level, int color);
 		/**
-		* @param cmd: the command string to set the block. 
+		* @param cmd: the command string to set the block.
 		* e.g. "7,7,7,8,254" means set the block at (7,7,7) at level 8 to color 254.
 		*/
 		void SetBlockCmd(const char* cmd);
@@ -236,7 +239,7 @@ namespace ParaEngine
 		* @return -1 if the block is empty. or return 8 bits color of the block.
 		*/
 		int GetBlock(uint32 x, uint32 y, uint32 z, int level);
-		
+
 		/** ray picking at given level
 		* @param level: the model level at which to pick. this should be a power of 2, like 1, 2, 4, 8, 16, ..., 1024, ...
 		*/
@@ -245,7 +248,12 @@ namespace ParaEngine
 		/** draw blocks with dynamic level of detail with reference to the camera position in scene state.
 		*/
 		void Draw(SceneState* pSceneState);
-		
+
+		/* how many pixels that the smallest voxel should occupy on screen. [1,4] are reasonable values.
+		* the smaller the value, the finer the voxel model will be rendered.
+		*/
+		void SetMinVoxelPixelSize(float fMinVoxelPixelSize);
+		float GetMinVoxelPixelSize();
 	protected:
 		/** optimize the model to remove and merge octree node for invisible nodes. */
 		void Optimize();
@@ -253,17 +261,17 @@ namespace ParaEngine
 
 		/** update isBlockMask, color, and voxel shape of the node, and also changing its parent and possible siblings.
 		* one needs to call this function when a node is changed to update all the way to the root node.
-		* @param nodes: update nodes from nodes[nNodeCount - 1](smallest child) to nodes[0] (root node). 
+		* @param nodes: update nodes from nodes[nNodeCount - 1](smallest child) to nodes[0] (root node).
 		*/
 		void UpdateNode(TempVoxelOctreeNodeRef nodes[], int nNodeCount);
 		void UpdateNodeShape(uint32 x, uint32 y, uint32 z, int level);
 		/**
-		* the `side` of the block is `isSolid`, update the voxel shape 
+		* the `side` of the block is `isSolid`, update the voxel shape
 		*/
 		void UpdateNodeShapeByNeighbour(int32 x, int32 y, int32 z, int level, int side, bool isSolid);
 		bool IsBlock(int32 x, int32 y, int32 z, int level);
 
-		/** get the depth of the octree at the given level. 
+		/** get the depth of the octree at the given level.
 		* e.g. LevelToDepth(1024) == 10
 		*/
 		inline int LevelToDepth(int level);
@@ -275,7 +283,7 @@ namespace ParaEngine
 		inline VoxelOctreeNode* GetChildNode(VoxelOctreeNode* pNode, int nChildIndex);
 
 		void RemoveNodeChildren(VoxelOctreeNode* pNode, uint8_t isBlockMask = 0xff);
-		/** set color to the node and all of its children 
+		/** set color to the node and all of its children
 		* @return true if pNode is fully solid node.
 		*/
 		bool SetNodeColor(VoxelOctreeNode* pNode, uint32 color);
@@ -286,7 +294,15 @@ namespace ParaEngine
 		VoxelOctreeNode* GetRootNode();
 
 		inline uint8_t GetOppositeSide(uint8_t nSide);
+
+		// return level of detail at the given distance from camera. 1 means a cube, the bigger the higher resolition. 
+		// usually between [1, 12].  12 is max LOD depth allowed, which is 4096*4096*4096.
+		int GetLodDepth(float fCameraObjectDist, float fScaling = 1.f);
 	private:
 		std::vector< VoxelChunk* > m_chunks;
+
+		// how many pixels that the smallest voxel should occupy on screen. [1,4] are reasonable values. 
+		// the smaller the value, the finer the voxel model will be rendered.
+		float m_fMinVoxelPixelSize;
 	};
 }
