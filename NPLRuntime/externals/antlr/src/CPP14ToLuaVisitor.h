@@ -115,7 +115,14 @@ public:
         }
         else
         {
-            return text;
+            if (text == "end")
+            {
+                return std::string("end_");
+            }
+            else
+            {
+                return text;
+            }
         }
     }
 
@@ -143,6 +150,11 @@ public:
             }
         }
         return CPP14ParserBaseVisitor::visitUnaryExpression(ctx);
+    }
+
+    virtual std::any visitTrailingReturnType(CPP14Parser::TrailingReturnTypeContext *ctx)
+    {
+        return ":" + GetText(ctx->trailingTypeSpecifierSeq()) + GetText(ctx->abstractDeclarator());
     }
 
     virtual std::any visitPostfixExpression(CPP14Parser::PostfixExpressionContext *ctx)
@@ -420,9 +432,6 @@ public:
 
     virtual std::any visitSimpleDeclaration(CPP14Parser::SimpleDeclarationContext *ctx) override
     {
-#ifdef DEBUG
-        // CPP14ParserBaseVisitor::visitSimpleDeclaration(ctx);
-#endif
         std::ostringstream oss;
         auto declSpecifierSeq   = ctx->declSpecifierSeq();
         auto initDeclaratorList = ctx->initDeclaratorList();
@@ -436,6 +445,9 @@ public:
 
         auto raw_type_name = declSpecifierSeq->stop->getText();
         auto type_name     = GetText(ctx->declSpecifierSeq());
+        auto base_text = std::any_cast<std::string>(CPP14ParserBaseVisitor::visitSimpleDeclaration(ctx));
+        auto type_name_size = type_name.size();
+        if (base_text[type_name_size] == '.') return base_text;
 
         bool is_base_type = raw_type_name == "string" || raw_type_name == "auto" || raw_type_name == "void" || raw_type_name == "bool" || raw_type_name == "char";
         is_base_type      = is_base_type || raw_type_name == "int" || raw_type_name == "float" || raw_type_name == "double" || raw_type_name == "long";
@@ -668,14 +680,24 @@ public:
 
     std::string ParseStatement(std::string text)
     {
+        if (text.find("swap(") == 0)
+        {
+            auto pos1 = text.find("(");
+            auto pos2 = text.find(",");
+            auto pos3 = text.find_last_of(")");
+            auto arg1 = text.substr(pos1 + 1, pos2 - pos1 - 1);
+            auto arg2 = text.substr(pos2 + 1, pos3 - pos2 - 1);
+            return arg2 + ", " + arg1 + " = " + text;
+        }
+        
         bool is_function_call = false;
-        is_function_call      = is_function_call || std::regex_match(text, std::regex("^\\s*[a-zA-Z_][a-zA-Z0-9_]*\\s*\\(.*\\)\\s*$"));
-        is_function_call      = is_function_call || std::regex_match(text, std::regex("^.*=\\s*[a-zA-Z_][a-zA-Z0-9_]*\\s*\\(.*\\)\\s*$"));
-        is_function_call      = is_function_call || std::regex_match(text, std::regex("^.*(:|\\.)[a-zA-Z_][a-zA-Z0-9_]*\\s*\\(.*\\)\\s*$"));
+        is_function_call      = is_function_call || std::regex_match(text, std::regex("^\\s*[a-zA-Z_][a-zA-Z0-9_]*\\s*\\(.*\\)\\s*[;]?\\s*$"));
+        is_function_call      = is_function_call || std::regex_match(text, std::regex("^.*(\\:|\\.)[a-zA-Z_][a-zA-Z0-9_]*\\s*\\(.*\\)\\s*[;]?\\s*$"));
 
         if (!is_function_call) return text;
         auto argument_pos          = text.find_last_of("(");
         auto argument_string       = text.substr(argument_pos);
+
         // 参数不存在引用直接返回
         if (!std::regex_match(argument_string, std::regex(".*[,\\(]\\s*\\&[a-zA-Z_][a-zA-Z0-9_]*.*"))) return text;
 
