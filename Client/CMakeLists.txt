@@ -29,7 +29,6 @@ if(WIN32)
 	option(NPLRUNTIME_CAUDIOENGINE "include audioengine plugin" OFF)
 	option(NPLRUNTIME_HAQI_LAUNCHER "haqi launcher" OFF)
 	option(NPLRUNTIME_WEBVIEW "microsoft edge webview2 support" OFF)
-	option(NPLRUNTIME_BLE "Microsoft BLE module" OFF)
 endif()
 # OSX Default Option
 if(APPLE)
@@ -193,10 +192,6 @@ endif()
 
 if(NPLRUNTIME_WEBVIEW)
 	add_subdirectory (${PROJECT_SOURCE_DIR}/trunk/externals/webview ${PROJECT_BINARY_DIR}/webview)
-endif()
-
-if(NPLRUNTIME_BLE)
-	add_subdirectory(${PROJECT_SOURCE_DIR}/trunk/externals/BLE ${PROJECT_BINARY_DIR}/ParaBLE)
 endif()
 
 if(PARAENGINE_CLIENT_DLL)
