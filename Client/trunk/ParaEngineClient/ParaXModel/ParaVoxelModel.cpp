@@ -31,7 +31,7 @@ VoxelOctreeNode VoxelOctreeNode::EmptyNode(0x0);
 VoxelOctreeNode VoxelOctreeNode::FullNode(0xff);
 
 VoxelOctreeNode::VoxelOctreeNode(uint8_t isBlockMask)
-	: isBlockMask(isBlockMask), isChildMask(0), colorRGB(0), baseChunkOffset(0), childMask(0)
+	: isBlockMask(isBlockMask), isChildMask(0), colorRGB(0), baseChunkOffset(0), offsetAndShape(0)
 {
 }
 
@@ -292,8 +292,17 @@ void ParaVoxelModel::SetBlock(uint32 x, uint32 y, uint32 z, int level, int color
 		RemoveNodeChildren(pNode, 0xff);
 		pNode->SetColor32((uint32_t)color);
 		pNode->MakeFullBlock();
-		UpdateNode(parentNodes, nLevel);
-		UpdateNodeShape(x, y, z, level);
+		if (level > 1)
+		{
+			UpdateNode(parentNodes, nLevel);
+			UpdateNodeShape(x, y, z, level);
+		}
+		else
+		{
+			// for root node
+			pNode->SetVoxelShape(0x3f);
+			pNode->offsetAndShape = 0x3f3f3f3f3f3f3f3f;
+		}
 	}
 	else
 	{
@@ -478,6 +487,14 @@ void ParaEngine::ParaVoxelModel::UpdateNodeShapeByNeighbour(int32 x, int32 y, in
 					}
 					else
 						pNode->childVoxelShape[nChildIndex] = 0;
+				}
+				else
+				{
+					if (pNode->IsBlockAt(nChildIndex))
+					{
+						if (!isSolid)
+							pNode->childVoxelShape[nChildIndex] |= (1 << side);
+					}
 				}
 				return;
 			}

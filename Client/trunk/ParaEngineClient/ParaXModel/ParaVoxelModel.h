@@ -39,7 +39,7 @@ namespace ParaEngine
 			// for leaf node, this is the child's voxel shape.
 			uint8_t childVoxelShape[8];
 			// just for assignment
-			uint64_t childMask;
+			uint64_t offsetAndShape;
 		};
 
 		static VoxelOctreeNode EmptyNode;
