@@ -105,17 +105,24 @@ public:
         {
             return std::string(" ~= ");
         }
-        // else if (symbol->getType() == CPP14Parser::Doublecolon)
-        // {
-        //     return std::string(".");
-        // }
+        else if (symbol->getType() == CPP14Parser::Doublecolon)
+        {
+            return std::string(".");
+        }
         else if (type == CPP14Parser::Return)
         {
             return text + " ";
         }
         else
         {
-            return text;
+            if (text == "end")
+            {
+                return std::string("end_");
+            }
+            else
+            {
+                return text;
+            }
         }
     }
 
@@ -143,6 +150,11 @@ public:
             }
         }
         return CPP14ParserBaseVisitor::visitUnaryExpression(ctx);
+    }
+
+    virtual std::any visitTrailingReturnType(CPP14Parser::TrailingReturnTypeContext *ctx)
+    {
+        return ":" + GetText(ctx->trailingTypeSpecifierSeq()) + GetText(ctx->abstractDeclarator());
     }
 
     virtual std::any visitPostfixExpression(CPP14Parser::PostfixExpressionContext *ctx)
@@ -215,7 +227,7 @@ public:
         auto additiveExpression     = ctx->additiveExpression();
         auto additiveExpressionSize = additiveExpression.size();
         auto operand                = GetText(additiveExpression[0]);
-        bool is_cin_cout            = operand == "cin" || operand == "cout" || operand == "std::cin" || operand == "std::cout" || operand == "cerr" || operand == "std::cerr";
+        bool is_cin_cout            = operand == "cin" || operand == "cout" || operand == "cerr" || operand == "std::cin" || operand == "std::cout" || operand == "std::cerr" || operand == "std.cin" || operand == "std.cout" || operand == "std.cerr";
         std::ostringstream oss;
         for (int i = 1; i < additiveExpressionSize; i++)
         {
@@ -226,6 +238,7 @@ public:
                 if (is_cin_cout)
                 {
                     if (nextOperand.find("std::") == 0) nextOperand = nextOperand.substr(5);
+                    if (nextOperand.find("std.") == 0) nextOperand = nextOperand.substr(4);
                     oss << "cout(" << nextOperand << ")" << std::endl;
                 }
                 else
@@ -419,9 +432,6 @@ public:
 
     virtual std::any visitSimpleDeclaration(CPP14Parser::SimpleDeclarationContext *ctx) override
     {
-#ifdef DEBUG
-        // CPP14ParserBaseVisitor::visitSimpleDeclaration(ctx);
-#endif
         std::ostringstream oss;
         auto declSpecifierSeq   = ctx->declSpecifierSeq();
         auto initDeclaratorList = ctx->initDeclaratorList();
@@ -431,39 +441,13 @@ public:
         auto initDeclaratorSize = initDeclarator.size();
 
         // 函数调用
-        if (declSpecifierSeq == nullptr)
-        {
-            auto text = GetText(initDeclaratorList) + "\n";
-            auto argument_pos = text.find("(");
-            auto arguments = text.substr(argument_pos);
-            std::string match_text = text.substr(0, argument_pos);
-            std::string match_result;
-            auto equal_pos = match_text.find("=");
-            if (equal_pos != std::string::npos)
-            {
-                match_result = match_text.substr(0, equal_pos);
-                match_text = match_text.substr(equal_pos + 1);
-            }
-            std::regex ref_name_regex(R"(&?[a-zA-Z_][a-zA-Z0-9_]*)");
-            std::smatch matchs;
-            while (std::regex_search(arguments, matchs, ref_name_regex))
-            {
-                std::string ref_name   = matchs[0];
-                auto is_ref_name = ref_name[0] == '&' ? true : false;
-                ref_name = is_ref_name ? ref_name.substr(1) : ref_name;
-                if (match_result.empty()) match_result = (is_ref_name ? ref_name : "_");
-                else match_result += ", " + (is_ref_name ? ref_name : "_");
-                match_text += matchs.prefix();
-                match_text += ref_name;
-                arguments = matchs.suffix();
-            }
-            match_text += arguments;
-            if (match_result.empty()) return match_text;
-            return match_result + " = " + match_text;
-        }
+        if (declSpecifierSeq == nullptr) return GetText(initDeclaratorList) + "\n";
 
         auto raw_type_name = declSpecifierSeq->stop->getText();
         auto type_name     = GetText(ctx->declSpecifierSeq());
+        auto base_text = std::any_cast<std::string>(CPP14ParserBaseVisitor::visitSimpleDeclaration(ctx));
+        auto type_name_size = type_name.size();
+        if (base_text[type_name_size] == '.') return base_text;
 
         bool is_base_type = raw_type_name == "string" || raw_type_name == "auto" || raw_type_name == "void" || raw_type_name == "bool" || raw_type_name == "char";
         is_base_type      = is_base_type || raw_type_name == "int" || raw_type_name == "float" || raw_type_name == "double" || raw_type_name == "long";
@@ -694,10 +678,113 @@ public:
         return std::any_cast<std::string>(CPP14ParserBaseVisitor::visitJumpStatement(ctx));
     }
 
+    std::string ParseStatement(std::string text)
+    {
+        if (text.find("swap(") == 0)
+        {
+            auto pos1 = text.find("(");
+            auto pos2 = text.find(",");
+            auto pos3 = text.find_last_of(")");
+            auto arg1 = text.substr(pos1 + 1, pos2 - pos1 - 1);
+            auto arg2 = text.substr(pos2 + 1, pos3 - pos2 - 1);
+            return arg2 + ", " + arg1 + " = " + text;
+        }
+        
+        bool is_function_call = false;
+        is_function_call      = is_function_call || std::regex_match(text, std::regex("^\\s*[a-zA-Z_][a-zA-Z0-9_]*\\s*\\(.*\\)\\s*[;]?\\s*$"));
+        is_function_call      = is_function_call || std::regex_match(text, std::regex("^.*(\\:|\\.)[a-zA-Z_][a-zA-Z0-9_]*\\s*\\(.*\\)\\s*[;]?\\s*$"));
+
+        if (!is_function_call) return text;
+        auto argument_pos          = text.find_last_of("(");
+        auto argument_string       = text.substr(argument_pos);
+
+        // 参数不存在引用直接返回
+        if (!std::regex_match(argument_string, std::regex(".*[,\\(]\\s*\\&[a-zA-Z_][a-zA-Z0-9_]*.*"))) return text;
+
+        std::string functin_string = text.substr(0, argument_pos);
+        std::string return_string;
+        auto equal_pos = functin_string.find("=");
+        if (equal_pos != std::string::npos)
+        {
+            return_string  = functin_string.substr(0, equal_pos);
+            functin_string = functin_string.substr(equal_pos + 1);
+        }
+
+        auto argument_string_size        = argument_string.size();
+        static const int s_flag_none     = 0;
+        static const int s_flag_string   = 1;
+        static const int s_flag_variable = 2;
+        static const int s_flag_ref      = 3;
+        int flag                         = 0;
+        std::string varname;
+        for (int i = 0; i < argument_string_size; i++)
+        {
+            auto ch = argument_string[i];
+            if (ch == '\\')
+            {
+                functin_string += ch;
+                functin_string += argument_string[i + 1];
+                i++;
+            }
+            else if (ch == '"')
+            {
+                functin_string += ch;
+                if (flag == s_flag_string)
+                {
+                    flag = s_flag_none;
+                    if (return_string.empty())
+                        return_string += "_";
+                    else
+                        return_string += ", _";
+                }
+                else
+                {
+                    flag = s_flag_string;
+                }
+            }
+            else if (flag == s_flag_string)
+            {
+                functin_string += ch;
+            }
+            else if (flag == s_flag_variable || flag == s_flag_ref)
+            {
+                if (ch == '_' || ('a' <= ch && ch <= 'z') || ('A' <= ch && ch <= 'Z') || ('0' <= ch && ch <= '9') || ch == '[' || ch == ']')
+                {
+                    varname += ch;
+                    functin_string += ch;
+                }
+                else
+                {
+                    flag = s_flag_none;
+                    functin_string += ch;
+                    if (return_string.empty())
+                        return_string += varname;
+                    else
+                        return_string += ", " + varname;
+                }
+            }
+            else if ((flag == s_flag_none) && (ch == '&' || ch == '_' || ('a' <= ch && ch <= 'z') || ('A' <= ch && ch <= 'Z')))
+            {
+                varname = "";
+                flag    = ch == '&' ? s_flag_ref : s_flag_variable;
+                if (flag == s_flag_variable)
+                {
+                    varname += ch;
+                    functin_string += ch;
+                }
+            }
+            else
+            {
+                functin_string += ch;
+            }
+        }
+        return return_string + " = " + functin_string;
+    }
+
     virtual std::any visitStatement(CPP14Parser::StatementContext *ctx)
     {
         auto text = std::any_cast<std::string>(CPP14ParserBaseVisitor::visitStatement(ctx));
-        return Trim(text) + "\n";
+        return ParseStatement(Trim(text)) + "\n";
     }
 
     virtual std::any visitCompoundStatement(CPP14Parser::CompoundStatementContext *ctx) override
