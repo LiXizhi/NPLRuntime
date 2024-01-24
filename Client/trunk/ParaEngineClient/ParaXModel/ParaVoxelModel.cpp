@@ -826,7 +826,10 @@ void ParaVoxelModel::Draw(SceneState* pSceneState)
 		indexCount = 0;
 	};
 
-	int nMaxDrawDepth = GetLodDepth(pSceneState->GetCameraToCurObjectDistance(), 1.f);
+	Matrix4 mat = CGlobals::GetWorldMatrixStack().SafeGetTop();
+	Vector3 scaleX(mat.m[0][0], mat.m[0][1], mat.m[0][2]);
+	float fScaling = scaleX.length();
+	int nMaxDrawDepth = GetLodDepth(pSceneState->GetCameraToCurObjectDistance(), fScaling);
 
 	auto drawVoxelShape = [&indexCount, &drawBatched](uint8_t shape, float x, float y, float z, float size, uint32_t color) {
 		DWORD dwColor = color | 0xff000000;
