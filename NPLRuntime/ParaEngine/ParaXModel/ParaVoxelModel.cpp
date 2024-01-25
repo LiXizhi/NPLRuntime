@@ -31,7 +31,7 @@ VoxelOctreeNode VoxelOctreeNode::EmptyNode(0x0);
 VoxelOctreeNode VoxelOctreeNode::FullNode(0xff);
 
 VoxelOctreeNode::VoxelOctreeNode(uint8_t isBlockMask)
-	: isBlockMask(isBlockMask), isChildMask(0), colorRGB(0), baseChunkOffset(0), childMask(0)
+	: isBlockMask(isBlockMask), isChildMask(0), colorRGB(0), baseChunkOffset(0), offsetAndShape(0)
 {
 }
 
@@ -292,8 +292,24 @@ void ParaVoxelModel::SetBlock(uint32 x, uint32 y, uint32 z, int level, int color
 		RemoveNodeChildren(pNode, 0xff);
 		pNode->SetColor32((uint32_t)color);
 		pNode->MakeFullBlock();
-		UpdateNode(parentNodes, nLevel);
-		UpdateNodeShape(x, y, z, level);
+		if (level > 1)
+		{
+			UpdateNode(parentNodes, nLevel);
+			UpdateNodeShape(x, y, z, level);
+		}
+		else
+		{
+			// for root node
+			pNode->SetVoxelShape(0x3f);
+			pNode->childVoxelShape[0] = 0x15;
+			pNode->childVoxelShape[1] = 0x16;
+			pNode->childVoxelShape[2] = 0x19;
+			pNode->childVoxelShape[3] = 0x1a;
+			pNode->childVoxelShape[4] = 0x25;
+			pNode->childVoxelShape[5] = 0x26;
+			pNode->childVoxelShape[6] = 0x29;
+			pNode->childVoxelShape[7] = 0x2a;
+		}
 	}
 	else
 	{
@@ -308,6 +324,7 @@ void ParaVoxelModel::SetBlock(uint32 x, uint32 y, uint32 z, int level, int color
 			RemoveNodeChildren(pNode, 0xff);
 			pNode->MakeEmpty();
 			pNode->SetVoxelShape(0);
+			pNode->offsetAndShape = 0;
 		}
 	}
 }
@@ -478,6 +495,20 @@ void ParaEngine::ParaVoxelModel::UpdateNodeShapeByNeighbour(int32 x, int32 y, in
 					}
 					else
 						pNode->childVoxelShape[nChildIndex] = 0;
+				}
+				else
+				{
+					if (!isSolid)
+					{
+						if (pNode->IsBlockAt(nChildIndex))
+						{
+							// the current block is solid at a higher level of detail than neighbour, while the neighbour block is not solid
+							// split the current block until we are at the same level of detail. 
+							pChildNode = CreateGetChildNode(pNode, nChildIndex);
+							pNode = pChildNode;
+							continue;
+						}
+					}
 				}
 				return;
 			}
@@ -809,7 +840,10 @@ void ParaVoxelModel::Draw(SceneState* pSceneState)
 		indexCount = 0;
 	};
 
-	int nMaxDrawDepth = GetLodDepth(pSceneState->GetCameraToCurObjectDistance(), 1.f);
+	Matrix4 mat = CGlobals::GetWorldMatrixStack().SafeGetTop();
+	Vector3 scaleX(mat.m[0][0], mat.m[0][1], mat.m[0][2]);
+	float fScaling = scaleX.length();
+	int nMaxDrawDepth = GetLodDepth(pSceneState->GetCameraToCurObjectDistance(), fScaling);
 
 	auto drawVoxelShape = [&indexCount, &drawBatched](uint8_t shape, float x, float y, float z, float size, uint32_t color) {
 		DWORD dwColor = color | 0xff000000;
