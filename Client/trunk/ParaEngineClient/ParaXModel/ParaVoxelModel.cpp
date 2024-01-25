@@ -91,7 +91,7 @@ inline int ParaEngine::ParaVoxelModel::LevelToDepth(int level)
 int ParaEngine::ParaVoxelModel::CreateGetFreeChunkIndex(int nMinFreeSize)
 {
 	int nCount = m_chunks.size();
-	int nMinSize = 0xfe - nMinFreeSize;
+	int nMinSize = MAX_VOXEL_CHUNK_SIZE - nMinFreeSize - 1;
 	for (int i = 0; i < nCount; ++i)
 	{
 		if ((int)m_chunks[i]->GetUsedSize() <= nMinSize)
@@ -113,7 +113,7 @@ VoxelOctreeNode* ParaEngine::ParaVoxelModel::CreateGetChildNode(VoxelOctreeNode*
 		// create a new child node
 		auto& chunk = *(m_chunks[pNode->GetBaseChunkOffset()]);
 		VoxelOctreeNode* pChild = NULL;
-		if (chunk.GetUsedSize() >= 254)
+		if (chunk.GetFreeSize() < 8)
 		{
 			pNode->SetBaseChunkOffset(CreateGetFreeChunkIndex());
 			auto& newChunk = *(m_chunks[pNode->GetBaseChunkOffset()]);
