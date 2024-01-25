@@ -301,7 +301,14 @@ void ParaVoxelModel::SetBlock(uint32 x, uint32 y, uint32 z, int level, int color
 		{
 			// for root node
 			pNode->SetVoxelShape(0x3f);
-			pNode->offsetAndShape = 0x3f3f3f3f3f3f3f3f;
+			pNode->childVoxelShape[0] = 0x15;
+			pNode->childVoxelShape[1] = 0x16;
+			pNode->childVoxelShape[2] = 0x19;
+			pNode->childVoxelShape[3] = 0x1a;
+			pNode->childVoxelShape[4] = 0x25;
+			pNode->childVoxelShape[5] = 0x26;
+			pNode->childVoxelShape[6] = 0x29;
+			pNode->childVoxelShape[7] = 0x2a;
 		}
 	}
 	else
@@ -317,6 +324,7 @@ void ParaVoxelModel::SetBlock(uint32 x, uint32 y, uint32 z, int level, int color
 			RemoveNodeChildren(pNode, 0xff);
 			pNode->MakeEmpty();
 			pNode->SetVoxelShape(0);
+			pNode->offsetAndShape = 0;
 		}
 	}
 }
@@ -490,10 +498,16 @@ void ParaEngine::ParaVoxelModel::UpdateNodeShapeByNeighbour(int32 x, int32 y, in
 				}
 				else
 				{
-					if (pNode->IsBlockAt(nChildIndex))
+					if (!isSolid)
 					{
-						if (!isSolid)
-							pNode->childVoxelShape[nChildIndex] |= (1 << side);
+						if (pNode->IsBlockAt(nChildIndex))
+						{
+							// the current block is solid at a higher level of detail than neighbour, while the neighbour block is not solid
+							// split the current block until we are at the same level of detail. 
+							pChildNode = CreateGetChildNode(pNode, nChildIndex);
+							pNode = pChildNode;
+							continue;
+						}
 					}
 				}
 				return;
@@ -809,9 +823,9 @@ void ParaVoxelModel::Draw(SceneState* pSceneState)
 				pBufEntity->Unlock();
 
 				if (pBufEntity->IsMemoryBuffer())
-					RenderDevice::DrawPrimitiveUP(pd3dDevice, RenderDevice::DRAW_PERF_TRIANGLES_CHARACTER, D3DPT_TRIANGLELIST, nLockedNum, pBufEntity->GetBaseVertexPointer(), pBufEntity->m_nUnitSize);
+					pd3dDevice->DrawPrimitiveUP(EPrimitiveType::TRIANGLELIST, nLockedNum, pBufEntity->GetBaseVertexPointer(), pBufEntity->m_nUnitSize);
 				else
-					RenderDevice::DrawPrimitive(pd3dDevice, RenderDevice::DRAW_PERF_TRIANGLES_CHARACTER, D3DPT_TRIANGLELIST, pBufEntity->GetBaseVertex(), nLockedNum);
+					pd3dDevice->DrawPrimitive(EPrimitiveType::TRIANGLELIST, pBufEntity->GetBaseVertex(), nLockedNum);
 
 				if ((indexCount - nNumFinishedVertice) > nNumLockedVertice)
 				{

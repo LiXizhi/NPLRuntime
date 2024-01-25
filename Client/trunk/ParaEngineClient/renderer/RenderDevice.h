@@ -2,6 +2,17 @@
 
 namespace ParaEngine
 {
+	// Primitives supported by draw-primitive API
+	class EPrimitiveType {
+	public:
+		static const D3DPRIMITIVETYPE POINTLIST = D3DPT_POINTLIST;
+		static const D3DPRIMITIVETYPE LINELIST = D3DPT_LINELIST;
+		static const D3DPRIMITIVETYPE LINESTRIP = D3DPT_LINESTRIP;
+		static const D3DPRIMITIVETYPE TRIANGLELIST = D3DPT_TRIANGLELIST;
+		static const D3DPRIMITIVETYPE TRIANGLESTRIP = D3DPT_TRIANGLESTRIP;
+		static const D3DPRIMITIVETYPE TRIANGLEFAN = D3DPT_TRIANGLEFAN;
+	};
+
 	class RenderDeviceBase
 	{
 	public:

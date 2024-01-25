@@ -267,6 +267,7 @@ namespace ParaEngine
 		void UpdateNodeShape(uint32 x, uint32 y, uint32 z, int level);
 		/**
 		* the `side` of the block is `isSolid`, update the voxel shape
+		* @param isSolid: true if the side is solid, false if the side block is empty.
 		*/
 		void UpdateNodeShapeByNeighbour(int32 x, int32 y, int32 z, int level, int side, bool isSolid);
 		bool IsBlock(int32 x, int32 y, int32 z, int level);
