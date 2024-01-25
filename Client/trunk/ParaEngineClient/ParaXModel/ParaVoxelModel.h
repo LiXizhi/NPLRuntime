@@ -75,7 +75,7 @@ namespace ParaEngine
 		inline void SetBaseChunkOffset(uint32_t value) { baseChunkOffset = value & 0x7fffff; };
 		// 8 bits for voxel shape, 6 bits is for each of the 6 sides of the cube. If a bit is 1, the side is connecting to a solid.
 		inline void SetVoxelShape(uint8_t shape) {
-			baseChunkOffset |= (shape << 24);
+			baseChunkOffset = (shape << 24) | (baseChunkOffset & 0xffffff);
 		}
 		inline uint8_t GetVoxelShape() {
 			return uint8_t(baseChunkOffset >> 24);
