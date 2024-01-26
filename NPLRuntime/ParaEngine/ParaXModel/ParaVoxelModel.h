@@ -117,15 +117,15 @@ namespace ParaEngine
 		int32 z;
 		int level;
 	};
+#define MAX_VOXEL_CHUNK_SIZE 256
 
-
-	/** a chunk of at most 254 octree nodes. */
+	/** a chunk of at most MAX_VOXEL_CHUNK_SIZE(256) octree nodes. */
 	class VoxelChunk : public std::vector<VoxelOctreeNode>
 	{
 	public:
 		VoxelChunk() :m_nSize(0), m_nTailFreeItemIndex(0), m_nHeadFreeItemIndex(0) {
-			resize(254);
-			for (int i = 0; i < 254; i++) {
+			resize(MAX_VOXEL_CHUNK_SIZE);
+			for (int i = 0; i < MAX_VOXEL_CHUNK_SIZE; i++) {
 				(*this)[i].MarkDeleted();
 			}
 		};
@@ -142,18 +142,13 @@ namespace ParaEngine
 			m_nSize--;
 		};
 		inline int GetUsedSize() { return m_nSize; };
-		inline int GetFreeSize() { return 254 - m_nSize; };
+		inline int GetFreeSize() { return MAX_VOXEL_CHUNK_SIZE - m_nSize; };
 		inline VoxelOctreeNode& SafeCreateNode(const VoxelOctreeNode* pCopyFromNode = NULL) {
 			auto index = CreateNode(pCopyFromNode);
-			if (index != 0xff) {
-				return (*this)[index];
-			}
-			else {
-				return (*this)[0];
-			}
+			return (*this)[index];
 		}
 		inline uint8_t CreateNode(const VoxelOctreeNode* pCopyFromNode = NULL) {
-			if (m_nSize < 254)
+			if (m_nSize < MAX_VOXEL_CHUNK_SIZE)
 			{
 				uint8_t index = m_nHeadFreeItemIndex;
 				if (pCopyFromNode != 0)
@@ -180,14 +175,15 @@ namespace ParaEngine
 			}
 			else
 			{
-				return 0xff;
+				assert(false);
+				return 0;
 			}
 		}
 
 	private:
-		uint8_t m_nTailFreeItemIndex;
-		uint8_t m_nHeadFreeItemIndex;
-		uint8_t m_nSize;
+		uint16_t m_nTailFreeItemIndex;
+		uint16_t m_nHeadFreeItemIndex;
+		uint16_t m_nSize;
 	};
 
 	/** a octree based sparse voxel model, with 8 bits color per node.
