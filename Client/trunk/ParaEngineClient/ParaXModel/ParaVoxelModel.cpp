@@ -115,10 +115,10 @@ VoxelOctreeNode* ParaEngine::ParaVoxelModel::CreateGetChildNode(VoxelOctreeNode*
 		VoxelOctreeNode* pChild = NULL;
 		if (chunk.GetFreeSize() < 8)
 		{
+			// create a new chunk and move all existing child nodes to the new chunk. 
 			pNode->SetBaseChunkOffset(CreateGetFreeChunkIndex());
 			auto& newChunk = *(m_chunks[pNode->GetBaseChunkOffset()]);
 			auto baseChunkIndex = pNode->GetBaseChunkOffset();
-			// create a new chunk and move all existing child nodes to the new chunk. 
 			for (int i = 0; i < 8; ++i)
 			{
 				if (pNode->IsChildAt(i))
@@ -127,7 +127,6 @@ VoxelOctreeNode* ParaEngine::ParaVoxelModel::CreateGetChildNode(VoxelOctreeNode*
 					auto index = newChunk.CreateNode(&chunk[pNode->childOffsets[i]]);
 					chunk.erase(pNode->childOffsets[i]);
 					pNode->SetChild(i, index);
-					newChunk[index].SetBaseChunkOffset(baseChunkIndex);
 				}
 			}
 			auto index = newChunk.CreateNode(&VoxelOctreeNode::FullNode);
