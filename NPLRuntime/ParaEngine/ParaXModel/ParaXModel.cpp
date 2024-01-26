@@ -1284,14 +1284,17 @@ void CParaXModel::RenderBMaxModel(SceneState* pSceneState, CParameterBlock* pMat
 						{
 							pEffect->CommitChanges();
 							DrawPass_BMax_VB(p, startVB);
+							
+							// TODO: do voxel model rendering in its own render pass
+							if (m_pVoxelModel && nPass == 0)
+							{
+								m_pVoxelModel->Draw(pSceneState);
+							}
+
 							p.deinit_bmax_FX(pSceneState);
 						}
 						startVB += p.indexCount;
 					}
-				}
-				if (m_pVoxelModel)
-				{
-					m_pVoxelModel->Draw(pSceneState);
 				}
 
 				pEffect->EndPass(0);
