@@ -12,7 +12,7 @@ namespace ParaEngine
 	* 1(isBlockMask)+1(isChildMask)+2(color)+4(base)+8(children) = 16 bytes
 	* a chunk contains at most 256 nodes = 16*256 = 4096 bytes = 4KB
 	*
-	* A node is a block node, if it is a leaf node or there are over 4 blocks in the 8 children.
+	* A node is a block node, if it is a leaf node or there are 1 block in the 8 children.
 	* A block node is rendered as cube at its level of detail regardless of its completely full or only half full.
 	*
 	* if the node has both child nodes and non-child blocks, the color is the color of the non-child blocks.
@@ -46,7 +46,7 @@ namespace ParaEngine
 		static VoxelOctreeNode FullNode;
 	public:
 		inline bool IsLeaf() { return isChildMask == 0; };
-		inline bool IsBlock() { return (GetBlockCountInMask() >= 4); }
+		inline bool IsBlock() { return isBlockMask != 0x0; /*(GetBlockCountInMask() >= 4);*/ }
 		inline bool IsBlockAt(uint8_t index) { return isBlockMask & (1 << index); }
 		inline bool IsSolid() { return isBlockMask == 0xff; };
 		inline bool IsEmpty() { return isBlockMask == 0x0; };
@@ -56,7 +56,10 @@ namespace ParaEngine
 			baseChunkOffset = (baseChunkOffset & 0xff7fffff) | (bOn ? 0x800000 : 0);
 		};
 		inline bool IsChildAt(uint8_t index) { return isChildMask & (1 << index); }
-		inline void SetChild(uint8_t index, uint8_t offset) { isChildMask |= (1 << index); childOffsets[index] = offset; };
+		inline void SetChild(uint8_t index, uint8_t offset) {
+			isChildMask |= (1 << index);
+			childOffsets[index] = offset;
+		};
 		inline void RemoveChild(uint8_t index) { isChildMask &= ~(1 << index); childOffsets[index] = 0; };
 
 		inline uint32 GetColor32() { return (colorRGB & 0x1f) << 3 | ((colorRGB & 0x3e0) << 6) | ((colorRGB & 0x7c00) << 9); };

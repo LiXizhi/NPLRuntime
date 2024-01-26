@@ -514,7 +514,7 @@ void ParaEngine::ParaVoxelModel::UpdateNodeShapeByNeighbour(int32 x, int32 y, in
 		}
 		if (nDepth <= 0 && pNode)
 		{
-			if (pNode->IsSolid())
+			if (pNode->IsBlock())
 			{
 				if (!isSolid)
 					pNode->SetVoxelShape(pNode->GetVoxelShape() | (1 << side));
