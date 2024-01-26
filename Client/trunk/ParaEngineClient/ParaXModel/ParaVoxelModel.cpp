@@ -782,7 +782,7 @@ const bmax_vertex cubeVertices[36] = {
 int ParaEngine::ParaVoxelModel::GetLodDepth(float fCameraObjectDist, float fScaling)
 {
 	float fScreenWidth = (float)CGlobals::GetViewportManager()->GetWidth();
-	int lod = (int)std::log2f(fScreenWidth / m_fMinVoxelPixelSize / (fCameraObjectDist / fScaling));
+	int lod = (int)std::log2f(fScreenWidth / m_fMinVoxelPixelSize / ((abs(fCameraObjectDist)+0.001f) / fScaling));
 	if (lod <= 1)
 		lod = 1;
 	else if (lod > 10)
