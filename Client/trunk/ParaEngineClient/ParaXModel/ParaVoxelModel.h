@@ -49,6 +49,9 @@ namespace ParaEngine
 		inline bool IsBlock() { return isBlockMask != 0x0; /*(GetBlockCountInMask() >= 4);*/ }
 		inline bool IsBlockAt(uint8_t index) { return isBlockMask & (1 << index); }
 		inline bool IsSolid() { return isBlockMask == 0xff; };
+		// if the 4 child blocks on the given side are neither all empty or all blocks.
+		// @param nSide: 0~5, one of the 6 sides of the cube.
+		inline bool IsSideSplited(int nSide);
 		inline bool IsEmpty() { return isBlockMask == 0x0; };
 		// if fully opache. but it may contain child nodes with different colors.
 		inline bool IsFullySolid() { return (baseChunkOffset & 0x800000); };
@@ -153,7 +156,7 @@ namespace ParaEngine
 		inline uint8_t CreateNode(const VoxelOctreeNode* pCopyFromNode = NULL) {
 			if (m_nSize < MAX_VOXEL_CHUNK_SIZE)
 			{
-				uint8_t index = m_nHeadFreeItemIndex;
+				auto index = m_nHeadFreeItemIndex;
 				if (pCopyFromNode != 0)
 					(*this)[m_nHeadFreeItemIndex] = *pCopyFromNode;
 				else
@@ -174,7 +177,7 @@ namespace ParaEngine
 						}
 					}
 				}
-				return index;
+				return (uint8_t)index;
 			}
 			else
 			{
@@ -265,10 +268,9 @@ namespace ParaEngine
 		void UpdateNode(TempVoxelOctreeNodeRef nodes[], int nNodeCount);
 		void UpdateNodeShape(uint32 x, uint32 y, uint32 z, int level);
 		/**
-		* the `side` of the block is `isSolid`, update the voxel shape
-		* @param isSolid: true if the side is solid, false if the side block is empty.
+		* the `side` of the block is `isBlock`, update the voxel shape
 		*/
-		void UpdateNodeShapeByNeighbour(int32 x, int32 y, int32 z, int level, int side, bool isSolid);
+		void UpdateNodeShapeByNeighbour(int32 x, int32 y, int32 z, int level, int side, bool isBlock, bool IsSideSplited);
 		bool IsBlock(int32 x, int32 y, int32 z, int level);
 
 		/** get the depth of the octree at the given level.
@@ -289,7 +291,7 @@ namespace ParaEngine
 		bool SetNodeColor(VoxelOctreeNode* pNode, uint32 color);
 
 		void DumpOctree();
-		void DumpOctreeNode(VoxelOctreeNode* pNode, int nDepth, int nChunkIndex, int offset);
+		void DumpOctreeNode(VoxelOctreeNode* pNode, int nDepth, int nChunkIndex, int offset, int x, int y, int z);
 
 		VoxelOctreeNode* GetRootNode();
 

@@ -26,6 +26,15 @@
 // max octree depth is 12, which is 4096*4096*4096
 #define MAX_VOXEL_DEPTH 12
 
+const uint8_t s_oppositeSides[] = { 1, 0, 3, 2, 5, 4 };
+const int32_t s_sideOffset_x[] = { -1, 1, 0, 0, 0, 0 };
+const int32_t s_sideOffset_y[] = { 0, 0, -1, 1, 0, 0 };
+const int32_t s_sideOffset_z[] = { 0, 0, 0, 0, -1, 1 };
+
+const int32_t s_childOffset_x[] = { 0, 1, 0, 1, 0, 1, 0, 1};
+const int32_t s_childOffset_y[] = { 0, 0, 1, 1, 0, 0, 1, 1 };
+const int32_t s_childOffset_z[] = { 0, 0, 0, 0, 1, 1, 1, 1 };
+
 using namespace ParaEngine;
 VoxelOctreeNode VoxelOctreeNode::EmptyNode(0x0);
 VoxelOctreeNode VoxelOctreeNode::FullNode(0xff);
@@ -33,6 +42,13 @@ VoxelOctreeNode VoxelOctreeNode::FullNode(0xff);
 VoxelOctreeNode::VoxelOctreeNode(uint8_t isBlockMask)
 	: isBlockMask(isBlockMask), isChildMask(0), colorRGB(0), baseChunkOffset(0), offsetAndShape(0)
 {
+}
+
+const uint8_t SideSolidMask[6] = { 0xff, 0xaa, 0x33, 0xcc, 0xf, 0xf0 };
+bool ParaEngine::VoxelOctreeNode::IsSideSplited(int nSide) {
+	uint8_t mask = SideSolidMask[nSide];
+	uint8_t sideMask = (mask & isBlockMask);
+	return (sideMask) != mask && sideMask != 0;
 }
 
 ParaVoxelModel::ParaVoxelModel()
@@ -234,13 +250,13 @@ void ParaEngine::ParaVoxelModel::DumpOctree()
 {
 	OUTPUT_LOG("dumping ParaVoxelModel %d chunks:\n", (int)m_chunks.size());
 	VoxelOctreeNode* pNode = GetRootNode();
-	DumpOctreeNode(pNode, 0, 0, 0);
+	DumpOctreeNode(pNode, 0, 0, 0, 0, 0, 0);
 }
 
-void ParaEngine::ParaVoxelModel::DumpOctreeNode(VoxelOctreeNode* pNode, int nDepth, int nChunkIndex, int offset)
+void ParaEngine::ParaVoxelModel::DumpOctreeNode(VoxelOctreeNode* pNode, int nDepth, int nChunkIndex, int offset, int x, int y, int z)
 {
 	char tmp[256];
-	StringHelper::fast_sprintf(tmp, "Node[%d][%d]: baseChunkOffset %d, blockMask: %d opache:%d shapeMask: #%x  color: #%06x childMask: %x\n",
+	StringHelper::fast_sprintf(tmp, "Node[%d][%d]: baseChunkOffset %d, blockMask: #%x opache:%d shapeMask: #%x  color: #%06x childMask: %x\n",
 		nChunkIndex, offset, pNode->GetBaseChunkOffset(),
 		pNode->isBlockMask, pNode->IsFullySolid() ? 1 : 0, pNode->GetVoxelShape(), pNode->GetColor32(), pNode->isChildMask);
 	OUTPUT_LOG(tmp);
@@ -250,17 +266,23 @@ void ParaEngine::ParaVoxelModel::DumpOctreeNode(VoxelOctreeNode* pNode, int nDep
 	for (int i = 0; i < nDepth; i++)
 		tmp[i] = '-';
 	tmp[nDepth] = '\0';
+	
+	int nLevel = (int)pow(2, nDepth+1);
 	for (int k = 0; k < 8; ++k)
 	{
 		OUTPUT_LOG("%s", tmp);
+		auto nx = x + s_childOffset_x[k];
+		auto ny = y + s_childOffset_y[k];
+		auto nz = z + s_childOffset_z[k];
+
 		if (pNode->IsChildAt(k))
 		{
-			OUTPUT_LOG("%d: ", k);
-			DumpOctreeNode(GetChildNode(pNode, k), nDepth + 1, pNode->GetBaseChunkOffset(), pNode->childOffsets[k]);
+			OUTPUT_LOG("%d: (%d,%d,%d)/%d ", k, nx, ny, nz, nLevel);
+			DumpOctreeNode(GetChildNode(pNode, k), nDepth + 1, pNode->GetBaseChunkOffset(), pNode->childOffsets[k], nx*2, ny * 2, nz * 2);
 		}
 		else
 		{
-			OUTPUT_LOG("%d: #%x\n", k, pNode->childVoxelShape[k]);
+			OUTPUT_LOG("%d: (%d,%d,%d)/%d #%x %s\n", k, nx,ny,nz, nLevel, pNode->childVoxelShape[k], pNode->IsBlockAt(k) ? "solid" : "");
 		}
 	}
 }
@@ -353,6 +375,7 @@ bool ParaEngine::ParaVoxelModel::SetNodeColor(VoxelOctreeNode* pNode, uint32 col
 			// merge same color nodes
 			if (SetNodeColor(pChild, color)) {
 				auto childShape = pChild->GetVoxelShape();
+				// TODO: check neaby node shape, if we can remove children.
 				RemoveNodeChildren(pNode, 1 << k);
 				pNode->isBlockMask |= (1 << k);
 				pNode->childVoxelShape[k] = childShape;
@@ -370,6 +393,8 @@ void ParaEngine::ParaVoxelModel::PaintBlock(uint32 x, uint32 y, uint32 z, int le
 {
 	int nDepth = LevelToDepth(level);
 	VoxelOctreeNode* pNode = GetRootNode();
+	TempVoxelOctreeNodeRef parentNodes[MAX_VOXEL_DEPTH];
+	parentNodes[0] = TempVoxelOctreeNodeRef(pNode, 0, 0, 0, 1);
 
 	nDepth--;
 
@@ -380,8 +405,11 @@ void ParaEngine::ParaVoxelModel::PaintBlock(uint32 x, uint32 y, uint32 z, int le
 		uint32 lx = x >> nDepth, ly = y >> nDepth, lz = z >> nDepth;
 		nChildIndex = (lx & 1) + ((ly & 1) << 1) + ((lz & 1) << 2);
 		auto pChild = GetChildNode(pNode, nChildIndex);
-		if (pChild)
+		if (pChild) {
 			pNode = pChild;
+			auto& lastNode = parentNodes[nLevel - 1];
+			parentNodes[nLevel] = TempVoxelOctreeNodeRef(pNode, (lastNode.x << 1) + lx, (lastNode.y << 1) + ly, (lastNode.z << 1) + lz, nLevel);
+		}
 		else
 		{
 			if (nDepth == 0)
@@ -398,6 +426,35 @@ void ParaEngine::ParaVoxelModel::PaintBlock(uint32 x, uint32 y, uint32 z, int le
 	if (pNode)
 	{
 		SetNodeColor(pNode, color);
+
+		// also merge parent nodes if they are fully solid and have the same color
+		for (int i = nLevel - 1; i >= 0; --i)
+		{
+			auto pNode = parentNodes[i].pNode;
+			auto thisColor = pNode->GetColor();
+			if (pNode->IsFullySolid())
+			{
+				bool isSameColor = true;
+				for (int k = 0; k < 8; ++k)
+				{
+					if (pNode->IsChildAt(k))
+					{
+						if (thisColor != GetChildNode(pNode, k)->GetColor())
+						{
+							isSameColor = false;
+							break;
+						}
+					}
+				}
+				if (isSameColor)
+				{
+					// TODO: check neaby node shape, if we can remove children.
+					RemoveNodeChildren(pNode);
+				}
+			}
+			else
+				break;
+		}
 	}
 }
 
@@ -463,7 +520,7 @@ VoxelOctreeNode* ParaEngine::ParaVoxelModel::GetNode(int32 x, int32 y, int32 z, 
 		return NULL;
 }
 
-void ParaEngine::ParaVoxelModel::UpdateNodeShapeByNeighbour(int32 x, int32 y, int32 z, int level, int side, bool isSolid)
+void ParaEngine::ParaVoxelModel::UpdateNodeShapeByNeighbour(int32 x, int32 y, int32 z, int level, int side, bool isBlock, bool IsSideSplited)
 {
 	if (x >= 0 && x < level && y >= 0 && y < level && z >= 0 && z < level)
 	{
@@ -487,17 +544,28 @@ void ParaEngine::ParaVoxelModel::UpdateNodeShapeByNeighbour(int32 x, int32 y, in
 				{
 					if (pNode->IsBlockAt(nChildIndex))
 					{
-						if (!isSolid)
+						if (!isBlock)
 							pNode->childVoxelShape[nChildIndex] |= (1 << side);
 						else
-							pNode->childVoxelShape[nChildIndex] &= (~(1 << side));
+						{
+							if (IsSideSplited)
+							{
+								pChildNode = CreateGetChildNode(pNode, nChildIndex);
+								pNode = pChildNode;
+								continue;
+							}
+							else
+							{
+								pNode->childVoxelShape[nChildIndex] &= (~(1 << side));
+							}
+						}
 					}
 					else
 						pNode->childVoxelShape[nChildIndex] = 0;
 				}
 				else
 				{
-					if (!isSolid)
+					if (!isBlock)
 					{
 						if (pNode->IsBlockAt(nChildIndex))
 						{
@@ -508,6 +576,18 @@ void ParaEngine::ParaVoxelModel::UpdateNodeShapeByNeighbour(int32 x, int32 y, in
 							continue;
 						}
 					}
+					else
+					{
+						if (IsSideSplited)
+						{
+							if (pNode->IsBlockAt(nChildIndex))
+							{
+								pChildNode = CreateGetChildNode(pNode, nChildIndex);
+								pNode = pChildNode;
+								continue;
+							}
+						}
+					}
 				}
 				return;
 			}
@@ -516,7 +596,7 @@ void ParaEngine::ParaVoxelModel::UpdateNodeShapeByNeighbour(int32 x, int32 y, in
 		{
 			if (pNode->IsBlock())
 			{
-				if (!isSolid)
+				if (!isBlock)
 					pNode->SetVoxelShape(pNode->GetVoxelShape() | (1 << side));
 				else
 					pNode->SetVoxelShape(pNode->GetVoxelShape() & (~(1 << side)));
@@ -663,12 +743,6 @@ void ParaEngine::ParaVoxelModel::UpdateNode(TempVoxelOctreeNodeRef nodes[], int 
 	}
 }
 
-
-const uint8_t s_oppositeSides[] = { 1, 0, 3, 2, 5, 4 };
-const int32_t s_sideOffset_x[] = { -1, 1, 0, 0, 0, 0 };
-const int32_t s_sideOffset_y[] = { 0, 0, -1, 1, 0, 0 };
-const int32_t s_sideOffset_z[] = { 0, 0, 0, 0, -1, 1 };
-
 inline uint8_t ParaEngine::ParaVoxelModel::GetOppositeSide(uint8_t nSide)
 {
 	return s_oppositeSides[nSide];
@@ -677,55 +751,53 @@ inline uint8_t ParaEngine::ParaVoxelModel::GetOppositeSide(uint8_t nSide)
 void ParaEngine::ParaVoxelModel::UpdateNodeShape(uint32 x, uint32 y, uint32 z, int level)
 {
 	bool isBlock = IsBlock(x, y, z, level);
-	{
-		// update this block's shape
-		uint8_t shape = 0;
-		int nDepth = LevelToDepth(level);
-		VoxelOctreeNode* pNode = GetRootNode();
-		nDepth--;
+	// update this block's shape
+	uint8_t shape = 0;
+	int nDepth = LevelToDepth(level);
+	VoxelOctreeNode* pNode = GetRootNode();
+	nDepth--;
 
-		if (isBlock)
-		{
-			for (int k = 0; k < 6; ++k)
-			{
-				auto nx = x + s_sideOffset_x[k];
-				auto ny = y + s_sideOffset_y[k];
-				auto nz = z + s_sideOffset_z[k];
-				shape |= (IsBlock(nx, ny, nz, level) ? 0 : (1 << k));
-			}
-		}
-
-		int nChildIndex = 0;
-		int nLevel = 1;
-		for (; nDepth >= 0; nDepth--, nLevel++)
-		{
-			uint32 lx = x >> nDepth, ly = y >> nDepth, lz = z >> nDepth;
-			nChildIndex = (lx & 1) + ((ly & 1) << 1) + ((lz & 1) << 2);
-			auto pChildNode = GetChildNode(pNode, nChildIndex);
-			if (pChildNode)
-				pNode = pChildNode;
-			else
-			{
-				if (nDepth == 0)
-				{
-					pNode->childVoxelShape[nChildIndex] = shape;
-				}
-				pNode = NULL;
-				break;
-			}
-		}
-		if (nDepth <= 0 && pNode)
-			pNode->SetVoxelShape(shape);
-	}
+	if (isBlock)
 	{
-		// update six neighbour block's shape
 		for (int k = 0; k < 6; ++k)
 		{
 			auto nx = x + s_sideOffset_x[k];
 			auto ny = y + s_sideOffset_y[k];
 			auto nz = z + s_sideOffset_z[k];
-			UpdateNodeShapeByNeighbour(nx, ny, nz, level, s_oppositeSides[k], isBlock);
+			shape |= (IsBlock(nx, ny, nz, level) ? 0 : (1 << k));
 		}
+	}
+
+	int nChildIndex = 0;
+	int nLevel = 1;
+	for (; nDepth >= 0; nDepth--, nLevel++)
+	{
+		uint32 lx = x >> nDepth, ly = y >> nDepth, lz = z >> nDepth;
+		nChildIndex = (lx & 1) + ((ly & 1) << 1) + ((lz & 1) << 2);
+		auto pChildNode = GetChildNode(pNode, nChildIndex);
+		if (pChildNode)
+			pNode = pChildNode;
+		else
+		{
+			if (nDepth == 0)
+			{
+				pNode->childVoxelShape[nChildIndex] = shape;
+			}
+			pNode = NULL;
+			break;
+		}
+	}
+	if (nDepth <= 0 && pNode) {
+		pNode->SetVoxelShape(shape);
+	}
+	// update six neighbour block's shape
+	for (int k = 0; k < 6; ++k)
+	{
+		auto nx = x + s_sideOffset_x[k];
+		auto ny = y + s_sideOffset_y[k];
+		auto nz = z + s_sideOffset_z[k];
+		bool isSideSplited = pNode != 0 ? pNode->IsSideSplited(k) : false;
+		UpdateNodeShapeByNeighbour(nx, ny, nz, level, s_oppositeSides[k], isBlock, isSideSplited);
 	}
 
 	if (level > 1) {
