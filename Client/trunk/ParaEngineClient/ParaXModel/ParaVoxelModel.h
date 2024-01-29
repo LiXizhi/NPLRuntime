@@ -261,16 +261,44 @@ namespace ParaEngine
 		void Optimize();
 		void OptimizeNode(VoxelOctreeNode* pNode);
 
-		/** update isBlockMask, color, and voxel shape of the node, and also changing its parent and possible siblings.
-		* one needs to call this function when a node is changed to update all the way to the root node.
-		* @param nodes: update nodes from nodes[nNodeCount - 1](smallest child) to nodes[0] (root node).
+		/**
+		* update isBlockMask, color, and isFullySolid property for this and all of its parent nodes.
+		* the above property has nothing to do with their neighouring nodes.
+		* whenever a node is changed, calling this function immediately to update all the way to the root node, to ensure all these	properties are correct.
+		*/
+		void UpdateNodeSolidityAndColor(TempVoxelOctreeNodeRef nodes[], int nNodeCount);
+
+		/** suppose the node at the position is changed, call this function to update all affected blocks' shape in the scene. 
+		* @note: the block at the given position should be either a fully solid block or empty block.
+		* this function is usually called when you just set a given node to empty or fully solid.
+		*/
+		void UpdateNodeShape(uint32 x, uint32 y, uint32 z, int level);
+
+		/** update a given node and all of its child nodes that are adjacent to a given side of a fully solid or empty neighbour node.
+		* @param isSolidOrEmpty: whether the neighbour node is fully solid or fully empty. 
+		* if the neighbour node is not fully solid or empty, this function should not be called.
+		* Hence, we only call this function of the neighbour node that has just been set by SetBlock()
+		*/
+		void UpdateNodeAndChildShapeByNeighbour(int32 x, int32 y, int32 z, int level, int side, bool isSolidOrEmpty);
+		void UpdateNodeShapeByNeighbour(int32 x, int32 y, int32 z, int level, int side, bool isSolidOrEmpty, bool IsSideSplited);
+
+
+		/** suppose the node at the position is changed, call this function to update all affected blocks in the scene. 
+		* whenever a node is changed, calling this function immediately to update all the way to the root node, to ensure all properties are correct.
 		*/
 		void UpdateNode(TempVoxelOctreeNodeRef nodes[], int nNodeCount);
-		void UpdateNodeShape(uint32 x, uint32 y, uint32 z, int level);
-		/**
-		* the `side` of the block is `isBlock`, update the voxel shape
+		
+		/** no recursion, update just this node and its neighour at the given level.
+		* blocks at lower or higher levels are ignored. 
 		*/
-		void UpdateNodeShapeByNeighbour(int32 x, int32 y, int32 z, int level, int side, bool isBlock, bool IsSideSplited);
+		void UpdateNodeShapeAtLevel(VoxelOctreeNode* pNode, uint32 x, uint32 y, uint32 z, int level);
+		/** no recursion, update just this node.
+		* return true if neighour node is a block
+		*/ 
+		bool UpdateNodeShapeByNeighbourAtLevel(int32 x, int32 y, int32 z, int level, int side, bool isBlock);
+		
+
+		/** if the node at the given position and level is a block node. */
 		bool IsBlock(int32 x, int32 y, int32 z, int level);
 
 		/** get the depth of the octree at the given level.

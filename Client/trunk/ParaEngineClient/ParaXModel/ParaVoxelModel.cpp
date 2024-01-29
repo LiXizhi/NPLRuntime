@@ -44,7 +44,8 @@ VoxelOctreeNode::VoxelOctreeNode(uint8_t isBlockMask)
 {
 }
 
-const uint8_t SideSolidMask[6] = { 0xff, 0xaa, 0x33, 0xcc, 0xf, 0xf0 };
+// each of the 8 bits represents if a child node is on the side. 
+const uint8_t SideSolidMask[6] = { 0x55, 0xaa, 0x33, 0xcc, 0xf, 0xf0 };
 bool ParaEngine::VoxelOctreeNode::IsSideSplited(int nSide) {
 	uint8_t mask = SideSolidMask[nSide];
 	uint8_t sideMask = (mask & isBlockMask);
@@ -295,14 +296,14 @@ void ParaVoxelModel::SetBlock(uint32 x, uint32 y, uint32 z, int level, int color
 
 	nDepth--;
 	TempVoxelOctreeNodeRef parentNodes[MAX_VOXEL_DEPTH];
-	parentNodes[0] = TempVoxelOctreeNodeRef(pNode, 0, 0, 0, 1);
+	parentNodes[0] = TempVoxelOctreeNodeRef(pNode, 0, 0, 0, 0);
 
 	int nChildIndex = 0;
 	int nLevel = 1;
 	for (; nDepth >= 0; nDepth--, nLevel++)
 	{
-		uint32 lx = x >> nDepth, ly = y >> nDepth, lz = z >> nDepth;
-		nChildIndex = (lx & 1) + ((ly & 1) << 1) + ((lz & 1) << 2);
+		uint32 lx = (x >> nDepth) & 1, ly = (y >> nDepth) & 1, lz = (z >> nDepth) & 1;
+		nChildIndex = lx + (ly << 1) + (lz << 2);
 		pNode = CreateGetChildNode(pNode, nChildIndex);
 		auto& lastNode = parentNodes[nLevel - 1];
 		parentNodes[nLevel] = TempVoxelOctreeNodeRef(pNode, (lastNode.x << 1) + lx, (lastNode.y << 1) + ly, (lastNode.z << 1) + lz, nLevel);
@@ -315,7 +316,7 @@ void ParaVoxelModel::SetBlock(uint32 x, uint32 y, uint32 z, int level, int color
 		pNode->MakeFullBlock();
 		if (level > 1)
 		{
-			UpdateNode(parentNodes, nLevel);
+			UpdateNodeSolidityAndColor(parentNodes, nLevel);
 			UpdateNodeShape(x, y, z, level);
 		}
 		else
@@ -337,7 +338,7 @@ void ParaVoxelModel::SetBlock(uint32 x, uint32 y, uint32 z, int level, int color
 		// delete block
 		if (nLevel >= 2) {
 			RemoveNodeChildren(parentNodes[nLevel - 2].pNode, 1 << nChildIndex);
-			UpdateNode(parentNodes, nLevel - 1);
+			UpdateNodeSolidityAndColor(parentNodes, nLevel);
 			UpdateNodeShape(x, y, z, level);
 		}
 		else {
@@ -394,7 +395,7 @@ void ParaEngine::ParaVoxelModel::PaintBlock(uint32 x, uint32 y, uint32 z, int le
 	int nDepth = LevelToDepth(level);
 	VoxelOctreeNode* pNode = GetRootNode();
 	TempVoxelOctreeNodeRef parentNodes[MAX_VOXEL_DEPTH];
-	parentNodes[0] = TempVoxelOctreeNodeRef(pNode, 0, 0, 0, 1);
+	parentNodes[0] = TempVoxelOctreeNodeRef(pNode, 0, 0, 0, 0);
 
 	nDepth--;
 
@@ -402,8 +403,8 @@ void ParaEngine::ParaVoxelModel::PaintBlock(uint32 x, uint32 y, uint32 z, int le
 	int nLevel = 1;
 	for (; nDepth >= 0; nDepth--, nLevel++)
 	{
-		uint32 lx = x >> nDepth, ly = y >> nDepth, lz = z >> nDepth;
-		nChildIndex = (lx & 1) + ((ly & 1) << 1) + ((lz & 1) << 2);
+		uint32 lx = (x >> nDepth) & 1, ly = (y >> nDepth) & 1, lz = (z >> nDepth) & 1;
+		nChildIndex = lx + (ly << 1) + (lz << 2);
 		auto pChild = GetChildNode(pNode, nChildIndex);
 		if (pChild) {
 			pNode = pChild;
@@ -518,6 +519,141 @@ VoxelOctreeNode* ParaEngine::ParaVoxelModel::GetNode(int32 x, int32 y, int32 z, 
 	}
 	else
 		return NULL;
+}
+
+bool ParaEngine::ParaVoxelModel::UpdateNodeShapeByNeighbourAtLevel(int32 x, int32 y, int32 z, int level, int side, bool isBlock)
+{
+	bool isThisBlock = false;
+	if (x >= 0 && x < level && y >= 0 && y < level && z >= 0 && z < level)
+	{
+		int nDepth = LevelToDepth(level);
+		VoxelOctreeNode* pNode = GetRootNode();
+
+		nDepth--;
+
+		int nChildIndex = 0;
+		int nLevel = 1;
+		for (; nDepth >= 0; nDepth--, nLevel++)
+		{
+			uint32 lx = x >> nDepth, ly = y >> nDepth, lz = z >> nDepth;
+			nChildIndex = (lx & 1) + ((ly & 1) << 1) + ((lz & 1) << 2);
+			auto pChildNode = GetChildNode(pNode, nChildIndex);
+			if (pChildNode)
+				pNode = pChildNode;
+			else
+			{
+				if (nDepth == 0)
+				{
+					if (pNode->IsBlockAt(nChildIndex))
+					{
+						isThisBlock = true;
+						if (!isBlock)
+							pNode->childVoxelShape[nChildIndex] |= (1 << side);
+						else
+							pNode->childVoxelShape[nChildIndex] &= (~(1 << side));
+					}
+					else
+						pNode->childVoxelShape[nChildIndex] = 0;
+				}
+				else
+				{
+					isThisBlock = pNode->IsBlockAt(nChildIndex);
+				}
+				return isThisBlock;
+			}
+		}
+		if (nDepth <= 0 && pNode)
+		{
+			if (pNode->IsBlock())
+			{
+				isThisBlock = true;
+				if (!isBlock)
+					pNode->SetVoxelShape(pNode->GetVoxelShape() | (1 << side));
+				else
+					pNode->SetVoxelShape(pNode->GetVoxelShape() & (~(1 << side)));
+			}
+			else
+				pNode->SetVoxelShape(0);
+		}
+	}
+	return isThisBlock;
+}
+
+void ParaEngine::ParaVoxelModel::UpdateNodeAndChildShapeByNeighbour(int32 x, int32 y, int32 z, int level, int side, bool isSolidOrEmpty)
+{
+	if (x >= 0 && x < level && y >= 0 && y < level && z >= 0 && z < level)
+	{
+		int nDepth = LevelToDepth(level);
+		VoxelOctreeNode* pNode = GetRootNode();
+
+		nDepth--;
+		int nChildIndex = 0;
+		int nLevel = 1;
+		for (; nDepth >= 0; nDepth--, nLevel++)
+		{
+			uint32 lx = x >> nDepth, ly = y >> nDepth, lz = z >> nDepth;
+			nChildIndex = (lx & 1) + ((ly & 1) << 1) + ((lz & 1) << 2);
+			auto pChildNode = GetChildNode(pNode, nChildIndex);
+			if (pChildNode)
+				pNode = pChildNode;
+			else
+			{
+				if (nDepth == 0)
+				{
+					if (pNode->IsBlockAt(nChildIndex))
+					{
+						if (!isSolidOrEmpty)
+							pNode->childVoxelShape[nChildIndex] |= (1 << side);
+						else
+							pNode->childVoxelShape[nChildIndex] &= (~(1 << side));
+					}
+					else
+						pNode->childVoxelShape[nChildIndex] = 0;
+				}
+				// no child nodes, we have finished and return
+				return;
+			}
+		}
+		if (nDepth <= 0 && pNode)
+		{
+			// update all child nodes that are adjacent to the side
+			uint8_t sideMask = SideSolidMask[side];
+
+			// create a recursive function to update all child nodes
+			std::function<void(VoxelOctreeNode*)> updateChildShape;
+			updateChildShape = [&sideMask, &side, &isSolidOrEmpty, &updateChildShape, this](VoxelOctreeNode* pNode) {
+				if (pNode->IsBlock())
+				{
+					if (!isSolidOrEmpty)
+						pNode->SetVoxelShape(pNode->GetVoxelShape() | (1 << side));
+					else
+						pNode->SetVoxelShape(pNode->GetVoxelShape() & (~(1 << side)));
+
+					for (int k = 0; k < 8; ++k)
+					{
+						if ((sideMask & (1 << k)) && pNode->IsBlockAt(k))
+						{
+							if (pNode->IsChildAt(k))
+							{
+								VoxelOctreeNode* pChildNode = GetChildNode(pNode, k);
+								updateChildShape(pChildNode);
+							}
+							else
+							{
+								if (!isSolidOrEmpty)
+									pNode->childVoxelShape[k] |= (1 << side);
+								else
+									pNode->childVoxelShape[k] &= (~(1 << side));
+							}
+						}
+					}
+				}
+				else
+					pNode->SetVoxelShape(0);
+			};
+			updateChildShape(pNode);
+		}
+	}
 }
 
 void ParaEngine::ParaVoxelModel::UpdateNodeShapeByNeighbour(int32 x, int32 y, int32 z, int level, int side, bool isBlock, bool IsSideSplited)
@@ -676,8 +812,66 @@ void ParaEngine::ParaVoxelModel::OptimizeNode(VoxelOctreeNode* pNode)
 	pNode->isBlockMask = isBlockMask;
 }
 
+
+void ParaEngine::ParaVoxelModel::UpdateNodeSolidityAndColor(TempVoxelOctreeNodeRef nodes[], int nNodeCount)
+{
+	int32_t fullySolidBlockColor = -1;
+	for (int i = nNodeCount - 1; i >= 0; --i)
+	{
+		auto pNode = nodes[i].pNode;
+		if (pNode->IsSolid() && pNode->IsLeaf()) {
+			fullySolidBlockColor = pNode->GetColor();
+		}
+		else
+		{
+			uint8_t isBlockMask = 0;
+			uint16_t color[3] = { 0,0,0 };
+			int nChildCount = 0;
+			int blockCount = 0;
+			bool isChildFullySolid = true;
+			for (int k = 0; k < 8; ++k)
+			{
+				auto pChild = GetChildNode(pNode, k);
+				if (pChild)
+				{
+					color[0] += pChild->GetColor0();
+					color[1] += pChild->GetColor1();
+					color[2] += pChild->GetColor2();
+					nChildCount++;
+					if (pChild->IsBlock())
+						isBlockMask |= (1 << k);
+					isChildFullySolid = isChildFullySolid && pChild->IsFullySolid();
+				}
+				else if (pNode->IsBlockAt(k))
+				{
+					blockCount++;
+					isBlockMask |= (1 << k);
+				}
+			}
+			pNode->isBlockMask = isBlockMask;
+			pNode->SetFullySolid(isChildFullySolid && pNode->IsSolid());
+
+			if (nChildCount > 0) {
+				// average on rgb color separately
+				if (blockCount == 0)
+				{
+					// if the node has both child nodes and solid blocks, the color is the color of the non-child blocks.
+					// if the node has only child nodes and no blocks, the color is the average of color of the its child blocks.
+					pNode->SetColor0((uint8)(color[0] / nChildCount));
+					pNode->SetColor1((uint8)(color[1] / nChildCount));
+					pNode->SetColor2((uint8)(color[2] / nChildCount));
+				}
+			}
+			if (!pNode->IsLeaf())
+				fullySolidBlockColor = -1;
+		}
+	}
+}
+
+// not used
 void ParaEngine::ParaVoxelModel::UpdateNode(TempVoxelOctreeNodeRef nodes[], int nNodeCount)
 {
+	/*
 	int32_t fullySolidBlockColor = -1;
 	for (int i = nNodeCount - 1; i >= 0; --i)
 	{
@@ -741,6 +935,7 @@ void ParaEngine::ParaVoxelModel::UpdateNode(TempVoxelOctreeNodeRef nodes[], int 
 				fullySolidBlockColor = -1;
 		}
 	}
+	*/
 }
 
 inline uint8_t ParaEngine::ParaVoxelModel::GetOppositeSide(uint8_t nSide)
@@ -748,14 +943,34 @@ inline uint8_t ParaEngine::ParaVoxelModel::GetOppositeSide(uint8_t nSide)
 	return s_oppositeSides[nSide];
 }
 
+void ParaEngine::ParaVoxelModel::UpdateNodeShapeAtLevel(VoxelOctreeNode* pNode, uint32 x, uint32 y, uint32 z, int level)
+{
+	bool isBlock = pNode->IsBlock();
+	// update this block's shape
+	uint8_t shape = 0;
+
+	for (int k = 0; k < 6; ++k)
+	{
+		auto nx = x + s_sideOffset_x[k];
+		auto ny = y + s_sideOffset_y[k];
+		auto nz = z + s_sideOffset_z[k];
+		bool isNeighbourBlock = UpdateNodeShapeByNeighbourAtLevel(nx, ny, nz, level, s_oppositeSides[k], isBlock);
+		shape |= (isNeighbourBlock ? 0 : (1 << k));
+	}
+	if(isBlock)
+		pNode->SetVoxelShape(shape);
+}
+
 void ParaEngine::ParaVoxelModel::UpdateNodeShape(uint32 x, uint32 y, uint32 z, int level)
 {
 	bool isBlock = IsBlock(x, y, z, level);
-	// update this block's shape
+	// update this block's shape 
 	uint8_t shape = 0;
 	int nDepth = LevelToDepth(level);
 	VoxelOctreeNode* pNode = GetRootNode();
-	nDepth--;
+	TempVoxelOctreeNodeRef parentNodes[MAX_VOXEL_DEPTH];
+	parentNodes[0] = TempVoxelOctreeNodeRef(pNode, 0, 0, 0, 0);
+	nDepth --;
 
 	if (isBlock)
 	{
@@ -772,11 +987,14 @@ void ParaEngine::ParaVoxelModel::UpdateNodeShape(uint32 x, uint32 y, uint32 z, i
 	int nLevel = 1;
 	for (; nDepth >= 0; nDepth--, nLevel++)
 	{
-		uint32 lx = x >> nDepth, ly = y >> nDepth, lz = z >> nDepth;
-		nChildIndex = (lx & 1) + ((ly & 1) << 1) + ((lz & 1) << 2);
+		uint32 lx = (x >> nDepth) & 1, ly = (y >> nDepth) & 1, lz = (z >> nDepth) & 1;
+		nChildIndex = lx + (ly << 1) + (lz << 2);
 		auto pChildNode = GetChildNode(pNode, nChildIndex);
-		if (pChildNode)
+		if (pChildNode) {
 			pNode = pChildNode;
+			auto& lastNode = parentNodes[nLevel - 1];
+			parentNodes[nLevel] = TempVoxelOctreeNodeRef(pNode, (lastNode.x << 1) + lx, (lastNode.y << 1) + ly, (lastNode.z << 1) + lz, nLevel);
+		}
 		else
 		{
 			if (nDepth == 0)
@@ -790,18 +1008,22 @@ void ParaEngine::ParaVoxelModel::UpdateNodeShape(uint32 x, uint32 y, uint32 z, i
 	if (nDepth <= 0 && pNode) {
 		pNode->SetVoxelShape(shape);
 	}
-	// update six neighbour block's shape
+	// update six neighbour nodess shape and all of their child nodes
 	for (int k = 0; k < 6; ++k)
 	{
 		auto nx = x + s_sideOffset_x[k];
 		auto ny = y + s_sideOffset_y[k];
 		auto nz = z + s_sideOffset_z[k];
-		bool isSideSplited = pNode != 0 ? pNode->IsSideSplited(k) : false;
-		UpdateNodeShapeByNeighbour(nx, ny, nz, level, s_oppositeSides[k], isBlock, isSideSplited);
+		UpdateNodeAndChildShapeByNeighbour(nx, ny, nz, level, s_oppositeSides[k], isBlock);
+		// bool isSideSplited = pNode != 0 ? pNode->IsSideSplited(k) : false;
+		// UpdateNodeShapeByNeighbour(nx, ny, nz, level, s_oppositeSides[k], isBlock, isSideSplited);
 	}
 
-	if (level > 1) {
-		UpdateNodeShape(x >> 1, y >> 1, z >> 1, level >> 1);
+	// update all parent nodes' shape and their neighbour nodes at the same level
+	for (int i = nLevel - 1; i >= 0; --i)
+	{
+		auto & parent = parentNodes[i];
+		UpdateNodeShapeAtLevel(parent.pNode, parent.x, parent.y, parent.z, 1<<parent.level);
 	}
 }
 
