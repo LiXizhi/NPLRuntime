@@ -63,7 +63,7 @@ namespace ParaEngine
 			isChildMask |= (1 << index); 
 			childOffsets[index] = offset; 
 		};
-		inline void RemoveChild(uint8_t index) { isChildMask &= ~(1 << index); childOffsets[index] = 0; };
+		inline void RemoveChild(uint8_t index) { isChildMask &= ~(1 << index); childVoxelShape[index] = 0; };
 
 		inline uint32 GetColor32() { return (colorRGB & 0x1f) << 3 | ((colorRGB & 0x3e0) << 6) | ((colorRGB & 0x7c00) << 9); };
 		inline void SetColor32(uint32 color) { colorRGB = (uint16_t)((color & 0xf8) >> 3 | ((color & 0xf800) >> 6) | ((color & 0xf80000) >> 9)); };
@@ -115,13 +115,14 @@ namespace ParaEngine
 	// only used internally when traversing the octree
 	struct TempVoxelOctreeNodeRef
 	{
-		TempVoxelOctreeNodeRef(VoxelOctreeNode* pNode, int32 x, int32 y, int32 z, int level) :pNode(pNode), x(x), y(y), z(z), level(level) {};
+		TempVoxelOctreeNodeRef(VoxelOctreeNode* pNode, int32 x, int32 y, int32 z, uint32 level, uint8 childIndex_ = 0) :pNode(pNode), x(x), y(y), z(z), level(level), childIndex(childIndex_){};
 		TempVoxelOctreeNodeRef() :pNode(NULL), x(0), y(0), z(0), level(0) {};
 		VoxelOctreeNode* pNode;
 		int32 x;
 		int32 y;
 		int32 z;
-		int level;
+		uint32 level;
+		uint8 childIndex;
 	};
 #define MAX_VOXEL_CHUNK_SIZE 256
 
@@ -266,7 +267,7 @@ namespace ParaEngine
 		* the above property has nothing to do with their neighouring nodes.
 		* whenever a node is changed, calling this function immediately to update all the way to the root node, to ensure all these	properties are correct.
 		*/
-		void UpdateNodeSolidityAndColor(TempVoxelOctreeNodeRef nodes[], int nNodeCount);
+		void UpdateNodeParentsSolidityAndColor(TempVoxelOctreeNodeRef nodes[], int nNodeCount);
 
 		/** suppose the node at the position is changed, call this function to update all affected blocks' shape in the scene. 
 		* @note: the block at the given position should be either a fully solid block or empty block.
@@ -281,6 +282,11 @@ namespace ParaEngine
 		*/
 		void UpdateNodeAndChildShapeByNeighbour(int32 x, int32 y, int32 z, int level, int side, bool isSolidOrEmpty);
 		void UpdateNodeShapeByNeighbour(int32 x, int32 y, int32 z, int level, int side, bool isSolidOrEmpty, bool IsSideSplited);
+
+		/** we will try to merge or split fully solid node at the given node and all its parents, according to their neighouring nodes. */
+		void MergeNodeAndParents(int32 x, int32 y, int32 z, int level);
+		/** when a node is changed, call this function to make sure all affected fully solid nodes in the scene are merged or splitted. */
+		void MergeNodeAndNeighbours(int32 x, int32 y, int32 z, int level);
 
 
 		/** suppose the node at the position is changed, call this function to update all affected blocks in the scene. 

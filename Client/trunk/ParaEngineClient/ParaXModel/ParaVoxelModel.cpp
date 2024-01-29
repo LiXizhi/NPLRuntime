@@ -306,7 +306,7 @@ void ParaVoxelModel::SetBlock(uint32 x, uint32 y, uint32 z, int level, int color
 		nChildIndex = lx + (ly << 1) + (lz << 2);
 		pNode = CreateGetChildNode(pNode, nChildIndex);
 		auto& lastNode = parentNodes[nLevel - 1];
-		parentNodes[nLevel] = TempVoxelOctreeNodeRef(pNode, (lastNode.x << 1) + lx, (lastNode.y << 1) + ly, (lastNode.z << 1) + lz, nLevel);
+		parentNodes[nLevel] = TempVoxelOctreeNodeRef(pNode, (lastNode.x << 1) + lx, (lastNode.y << 1) + ly, (lastNode.z << 1) + lz, nLevel, nChildIndex);
 	}
 	if (color > 0)
 	{
@@ -316,8 +316,9 @@ void ParaVoxelModel::SetBlock(uint32 x, uint32 y, uint32 z, int level, int color
 		pNode->MakeFullBlock();
 		if (level > 1)
 		{
-			UpdateNodeSolidityAndColor(parentNodes, nLevel);
+			UpdateNodeParentsSolidityAndColor(parentNodes, nLevel);
 			UpdateNodeShape(x, y, z, level);
+			MergeNodeAndNeighbours(x, y, z, level);
 		}
 		else
 		{
@@ -338,8 +339,9 @@ void ParaVoxelModel::SetBlock(uint32 x, uint32 y, uint32 z, int level, int color
 		// delete block
 		if (nLevel >= 2) {
 			RemoveNodeChildren(parentNodes[nLevel - 2].pNode, 1 << nChildIndex);
-			UpdateNodeSolidityAndColor(parentNodes, nLevel);
+			UpdateNodeParentsSolidityAndColor(parentNodes, nLevel);
 			UpdateNodeShape(x, y, z, level);
+			MergeNodeAndNeighbours(x, y, z, level);
 		}
 		else {
 			// for root node
@@ -409,7 +411,7 @@ void ParaEngine::ParaVoxelModel::PaintBlock(uint32 x, uint32 y, uint32 z, int le
 		if (pChild) {
 			pNode = pChild;
 			auto& lastNode = parentNodes[nLevel - 1];
-			parentNodes[nLevel] = TempVoxelOctreeNodeRef(pNode, (lastNode.x << 1) + lx, (lastNode.y << 1) + ly, (lastNode.z << 1) + lz, nLevel);
+			parentNodes[nLevel] = TempVoxelOctreeNodeRef(pNode, (lastNode.x << 1) + lx, (lastNode.y << 1) + ly, (lastNode.z << 1) + lz, nLevel, nChildIndex);
 		}
 		else
 		{
@@ -743,6 +745,80 @@ void ParaEngine::ParaVoxelModel::UpdateNodeShapeByNeighbour(int32 x, int32 y, in
 	}
 }
 
+void ParaEngine::ParaVoxelModel::MergeNodeAndParents(int32 x, int32 y, int32 z, int level)
+{
+	int nDepth = LevelToDepth(level);
+	VoxelOctreeNode* pNode = GetRootNode();
+	TempVoxelOctreeNodeRef parentNodes[MAX_VOXEL_DEPTH];
+	parentNodes[0] = TempVoxelOctreeNodeRef(pNode, 0, 0, 0, 0);
+	nDepth--;
+	int nChildIndex = 0;
+	int nLevel = 1;
+	for (; nDepth >= 0; nDepth--, nLevel++)
+	{
+		uint32 lx = (x >> nDepth) & 1, ly = (y >> nDepth) & 1, lz = (z >> nDepth) & 1;
+		nChildIndex = lx + (ly << 1) + (lz << 2);
+		auto pChild = GetChildNode(pNode, nChildIndex);
+		if (pChild) {
+			pNode = pChild;
+			auto& lastNode = parentNodes[nLevel - 1];
+			parentNodes[nLevel] = TempVoxelOctreeNodeRef(pNode, (lastNode.x << 1) + lx, (lastNode.y << 1) + ly, (lastNode.z << 1) + lz, nLevel, nChildIndex);
+		}
+		else
+		{
+			break;
+		}
+	}
+	// merge this node and its parents until we reach a node that is not fully solid or empty
+	for (int i = nLevel - 1; i >= 0; --i)
+	{
+		auto pNode = parentNodes[i].pNode;
+		if (pNode->IsFullySolid() && pNode->IsLeaf())
+		{
+			// merge this fully solid node
+			auto parentShape = pNode->GetVoxelShape();
+
+			// if child and parent share the same shape, we can merge them
+			if ((pNode->childVoxelShape[0] == (parentShape & 0x15)) &&
+				(pNode->childVoxelShape[1] == (parentShape & 0x16)) &&
+				(pNode->childVoxelShape[2] == (parentShape & 0x19)) &&
+				(pNode->childVoxelShape[3] == (parentShape & 0x1a)) &&
+				(pNode->childVoxelShape[4] == (parentShape & 0x25)) &&
+				(pNode->childVoxelShape[5] == (parentShape & 0x26)) &&
+				(pNode->childVoxelShape[6] == (parentShape & 0x29)) &&
+				(pNode->childVoxelShape[7] == (parentShape & 0x2a))) 
+			{
+				auto pChild = pNode;
+				pNode = parentNodes[i - 1].pNode;
+				uint8_t k = parentNodes[i].childIndex;
+				auto childShape = pChild->GetVoxelShape();
+				RemoveNodeChildren(pNode, 1 << k);
+				pNode->isBlockMask |= (1 << k);
+				pNode->childVoxelShape[k] = childShape;
+			}
+			else
+			{
+				break;
+			}
+		}
+		else if (pNode->IsEmpty() && pNode->IsLeaf() &&  i >= 1)
+		{
+			// always merge empty node
+			RemoveNodeChildren(parentNodes[i - 1].pNode, 1 << (parentNodes[i].childIndex));
+		}
+		else
+		{
+			break;
+		}
+	}
+}
+
+void ParaEngine::ParaVoxelModel::MergeNodeAndNeighbours(int32 x, int32 y, int32 z, int level)
+{
+	MergeNodeAndParents(x, y, z, level);
+	// TODO: merge or split three neighbouring nodes and their child nodes as well. 
+}
+
 bool ParaEngine::ParaVoxelModel::IsBlock(int32 x, int32 y, int32 z, int level)
 {
 	if (x >= 0 && x < level && y >= 0 && y < level && z >= 0 && z < level)
@@ -813,7 +889,7 @@ void ParaEngine::ParaVoxelModel::OptimizeNode(VoxelOctreeNode* pNode)
 }
 
 
-void ParaEngine::ParaVoxelModel::UpdateNodeSolidityAndColor(TempVoxelOctreeNodeRef nodes[], int nNodeCount)
+void ParaEngine::ParaVoxelModel::UpdateNodeParentsSolidityAndColor(TempVoxelOctreeNodeRef nodes[], int nNodeCount)
 {
 	int32_t fullySolidBlockColor = -1;
 	for (int i = nNodeCount - 1; i >= 0; --i)
@@ -993,7 +1069,7 @@ void ParaEngine::ParaVoxelModel::UpdateNodeShape(uint32 x, uint32 y, uint32 z, i
 		if (pChildNode) {
 			pNode = pChildNode;
 			auto& lastNode = parentNodes[nLevel - 1];
-			parentNodes[nLevel] = TempVoxelOctreeNodeRef(pNode, (lastNode.x << 1) + lx, (lastNode.y << 1) + ly, (lastNode.z << 1) + lz, nLevel);
+			parentNodes[nLevel] = TempVoxelOctreeNodeRef(pNode, (lastNode.x << 1) + lx, (lastNode.y << 1) + ly, (lastNode.z << 1) + lz, nLevel, nChildIndex);
 		}
 		else
 		{
@@ -1007,6 +1083,18 @@ void ParaEngine::ParaVoxelModel::UpdateNodeShape(uint32 x, uint32 y, uint32 z, i
 	}
 	if (nDepth <= 0 && pNode) {
 		pNode->SetVoxelShape(shape);
+		if (pNode->IsLeaf() && pNode->IsSolid())
+		{
+			// assume all child nodes' shape is same as parent node
+			pNode->childVoxelShape[0] = (shape & 0x15);
+			pNode->childVoxelShape[1] = (shape & 0x16);
+			pNode->childVoxelShape[2] = (shape & 0x19);
+			pNode->childVoxelShape[3] = (shape & 0x1a);
+			pNode->childVoxelShape[4] = (shape & 0x25);
+			pNode->childVoxelShape[5] = (shape & 0x26);
+			pNode->childVoxelShape[6] = (shape & 0x29);
+			pNode->childVoxelShape[7] = (shape & 0x2a);
+		}
 	}
 	// update six neighbour nodess shape and all of their child nodes
 	for (int k = 0; k < 6; ++k)
