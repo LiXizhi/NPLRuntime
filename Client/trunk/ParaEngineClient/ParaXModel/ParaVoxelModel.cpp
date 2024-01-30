@@ -180,6 +180,7 @@ VoxelOctreeNode* ParaEngine::ParaVoxelModel::CreateGetChildNode(VoxelOctreeNode*
 
 		// inherit parent node's color by default
 		pChild->SetColor(pNode->GetColor());
+		pNode->SetSingleShape(false);
 
 		if (!pNode->IsBlockAt(nChildIndex)) {
 			pChild->MakeEmpty();
@@ -237,6 +238,7 @@ void ParaEngine::ParaVoxelModel::RemoveNodeChildren(VoxelOctreeNode* pNode, uint
 		}
 	}
 	pNode->isBlockMask &= (~isBlockMask);
+	pNode->SetSingleShape(false);
 }
 
 void ParaEngine::ParaVoxelModel::DumpOctree()
@@ -768,24 +770,25 @@ void ParaEngine::ParaVoxelModel::MergeNodeAndParents(int32 x, int32 y, int32 z, 
 		auto pNode = parentNodes[i].pNode;
 		if (pNode->IsFullySolid() && pNode->IsLeaf())
 		{
-			// merge this fully solid node
-			auto parentShape = pNode->GetVoxelShape();
-
 			// if child and parent share the same shape and color, we can merge them
-			if (pNode->IsChildSameShapeAsParent() && (pNode->GetColor() == parentNodes[i-1].pNode->GetColor()))
+			if (pNode->IsChildSameShapeAsParent())
 			{
-				auto pChild = pNode;
-				pNode = parentNodes[i - 1].pNode;
-				uint8_t k = parentNodes[i].childIndex;
-				auto childShape = pChild->GetVoxelShape();
-				RemoveNodeChildren(pNode, 1 << k);
-				pNode->isBlockMask |= (1 << k);
-				pNode->childVoxelShape[k] = childShape;
+				pNode->SetSingleShape(true);
+				if (pNode->GetColor() == parentNodes[i - 1].pNode->GetColor())
+				{
+					auto pChild = pNode;
+					pNode = parentNodes[i - 1].pNode;
+					uint8_t k = parentNodes[i].childIndex;
+					auto childShape = pChild->GetVoxelShape();
+					RemoveNodeChildren(pNode, 1 << k);
+					pNode->isBlockMask |= (1 << k);
+					pNode->childVoxelShape[k] = childShape;
+				}
+				else
+					break;
 			}
 			else
-			{
 				break;
-			}
 		}
 		else if (pNode->IsEmpty() && pNode->IsLeaf())
 		{
@@ -1548,8 +1551,14 @@ void ParaVoxelModel::Draw(SceneState* pSceneState)
 		}
 		else
 		{
-			size = size / 2.f;
 			auto color = pNode->GetColor32();
+			if(pNode->IsSingleShape())
+			{
+				drawVoxelShape(pNode->GetVoxelShape(), x, y, z, size, color);
+				return;
+			}
+			size = size / 2.f;
+
 			if (pNode->IsChildAt(0))
 				drawNode(GetChildNode(pNode, 0), x, y, z, size, nDepth + 1);
 			else if (pNode->childVoxelShape[0] != 0)
