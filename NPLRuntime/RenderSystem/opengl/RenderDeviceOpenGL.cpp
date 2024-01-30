@@ -830,3 +830,33 @@ void ParaEngine::RenderDeviceOpenGL::ApplyBlendingModeChange()
 	}
 
 }
+
+RenderDevice* RenderDevice::GetInstance()
+{
+	static RenderDevice g_instance;
+	return &g_instance;
+}
+
+HRESULT RenderDevice::DrawPrimitive(IRenderDevice* pRenderDevice, int nStatisticsType, EPrimitiveType PrimitiveType, uint32_t StartVertex, uint32_t PrimitiveCount)
+{
+	IncrementDrawBatchAndVertices(1, PrimitiveCount, nStatisticsType);
+	return pRenderDevice->DrawPrimitive(PrimitiveType, StartVertex, PrimitiveCount);
+}
+
+HRESULT RenderDevice::DrawPrimitiveUP(IRenderDevice* pRenderDevice, int nStatisticsType, EPrimitiveType PrimitiveType, uint32_t PrimitiveCount, const void* pVertexStreamZeroData, uint32_t VertexStreamZeroStride)
+{
+	IncrementDrawBatchAndVertices(1, PrimitiveCount, nStatisticsType);
+	return pRenderDevice->DrawPrimitiveUP(PrimitiveType, PrimitiveCount, pVertexStreamZeroData, VertexStreamZeroStride);
+}
+
+HRESULT RenderDevice::DrawIndexedPrimitive(IRenderDevice* pRenderDevice, int nStatisticsType, EPrimitiveType Type, int32_t BaseVertexIndex, uint32_t MinIndex, uint32_t NumVertices, uint32_t indexStart, uint32_t PrimitiveCount)
+{
+	IncrementDrawBatchAndVertices(1, PrimitiveCount, nStatisticsType);
+	return pRenderDevice->DrawIndexedPrimitive(Type, BaseVertexIndex, MinIndex, NumVertices, indexStart, PrimitiveCount);
+}
+
+HRESULT RenderDevice::DrawIndexedPrimitiveUP(IRenderDevice* pRenderDevice, int nStatisticsType, EPrimitiveType PrimitiveType, uint32_t MinVertexIndex, uint32_t NumVertices, uint32_t PrimitiveCount, const void* pIndexData, PixelFormat IndexDataFormat, const void* pVertexStreamZeroData, uint32_t VertexStreamZeroStride)
+{
+	IncrementDrawBatchAndVertices(1, PrimitiveCount, nStatisticsType);
+	return pRenderDevice->DrawIndexedPrimitiveUP(PrimitiveType, MinVertexIndex, NumVertices, PrimitiveCount, pIndexData, IndexDataFormat, pVertexStreamZeroData, VertexStreamZeroStride);
+}

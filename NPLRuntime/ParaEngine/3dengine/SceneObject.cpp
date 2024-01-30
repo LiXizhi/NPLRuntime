@@ -84,7 +84,7 @@
 /**@def  maximum number of mirror surfaces in the scene. */
 #define MAX_MIRRORSURFACES_NUM	3
 
-/** @default distance within which onclick event will be fired. 
+/** @default distance within which onclick event will be fired.
 the mouse ray picking distance for onclick event. usually 30-100 meters.*/
 #define DEFAULT_ON_CLICK_DISTANCE	50.f
 
@@ -107,9 +107,9 @@ the mouse ray picking distance for onclick event. usually 30-100 meters.*/
 namespace ParaEngine
 {
 	bool g_bShaderVersion3 = false;
-	
+
 	extern int64_t globalTime;
-	
+
 	/** any object in the scene except. Usually for selection during scene editing.*/
 	extern OBJECT_FILTER_CALLBACK g_fncPickingAll;
 
@@ -129,16 +129,16 @@ using namespace ParaEngine;
 
 
 CSceneObject::CSceneObject()
-:m_event(NULL),m_pickObj(NULL),m_bPickFlag(false),m_pActor(NULL), m_pEnvironmentSim(NULL),
-m_bModified(false),m_bShowLocalLightMesh(false),m_bShowHeadOnDisplay(false), 
-m_fMaxHeadOnDisplayDistance(50.f), m_bEnablePostProcessing(false),m_bEnablePortalZone(true),m_bUseWireFrame(false),
-m_bShowPortalSystem(false), m_fShadowRadius(DEFAULT_SHADOW_RADIUS), m_bIsPersistent(true), m_bBlockInput(false), m_nCursorHotSpotX(-1),m_nCursorHotSpotY(-1),
+	:m_event(NULL), m_pickObj(NULL), m_bPickFlag(false), m_pActor(NULL), m_pEnvironmentSim(NULL),
+	m_bModified(false), m_bShowLocalLightMesh(false), m_bShowHeadOnDisplay(false),
+	m_fMaxHeadOnDisplayDistance(50.f), m_bEnablePostProcessing(false), m_bEnablePortalZone(true), m_bUseWireFrame(false),
+	m_bShowPortalSystem(false), m_fShadowRadius(DEFAULT_SHADOW_RADIUS), m_bIsPersistent(true), m_bBlockInput(false), m_nCursorHotSpotX(-1), m_nCursorHotSpotY(-1),
 #ifdef USE_DIRECTX_RENDERER
-m_dropShadowRenderer(new DropShadowRenderer()),
+	m_dropShadowRenderer(new DropShadowRenderer()),
 #endif
-m_globalTerrain(new ParaTerrain::CGlobalTerrain()),
-m_sceneState(new ParaTerrain::SceneState()),
-m_dwPhysicsGroupMask(DEFAULT_PHYSICS_GROUP_MASK), m_renderDropShadow(false), m_bShowMainPlayer(true), m_bCanShowMainPlayer(true), m_fPostRenderQueueOrder(100.f)
+	m_globalTerrain(new ParaTerrain::CGlobalTerrain()),
+	m_sceneState(new ParaTerrain::SceneState()),
+	m_dwPhysicsGroupMask(DEFAULT_PHYSICS_GROUP_MASK), m_renderDropShadow(false), m_bShowMainPlayer(true), m_bCanShowMainPlayer(true), m_fPostRenderQueueOrder(100.f)
 {
 #ifdef _DEBUG
 	// test local light
@@ -171,20 +171,20 @@ m_dwPhysicsGroupMask(DEFAULT_PHYSICS_GROUP_MASK), m_renderDropShadow(false), m_b
 
 	m_nMaxCharTriangles = 50000;
 	m_scripts.init();
-	
-	m_bCandrag=false;
-	m_event=new CGUIEvent();
+
+	m_bCandrag = false;
+	m_event = new CGUIEvent();
 	m_event->SetBinding(this);
-	CEventBinding *pBinding=new CEventBinding();
+	CEventBinding* pBinding = new CEventBinding();
 	pBinding->InitEventMappingTable();
 	pBinding->EnableKeyboard();
 	pBinding->EnableMouse();
 	pBinding->DefaultMap_Mouse();
 	pBinding->DefaultMap_Text();
-	m_event->m_eventbinding=EventBinding_cow_type(pBinding);
+	m_event->m_eventbinding = EventBinding_cow_type(pBinding);
 	LoadDefaultEventBinding();
 
-	m_fFullscreenGlowIntensity = 0.8f; 
+	m_fFullscreenGlowIntensity = 0.8f;
 	m_fFullscreenGlowBlendingFactor = 2;
 	m_bEnableMiniScenegraph = true;
 
@@ -194,13 +194,13 @@ m_dwPhysicsGroupMask(DEFAULT_PHYSICS_GROUP_MASK), m_renderDropShadow(false), m_b
 	m_fFogStart = FOG_START_DEFAULT;
 	m_fFogEnd = FOG_END_DEFAULT;
 	m_fFogDensity = FOG_DENSITY_DEFAULT;
-	m_dwObjCullingMethod =  CENTER_ON_FRUSTUM | VIEW_RADIUS_FRUSTUM;// CENTER_ON_CAMERA|VIEW_RADIUS_FOG;
+	m_dwObjCullingMethod = CENTER_ON_FRUSTUM | VIEW_RADIUS_FRUSTUM;// CENTER_ON_CAMERA|VIEW_RADIUS_FOG;
 	m_fCullingPixelsHeight = DEFAULT_CULLING_PIXELS_HEIGHT;
 	m_fMinPopUpDistance = MINPOPUPDISTANCE_DEFAULT;
 
 	/// Default view culling radius
 	/// view-culling: render objects within 30 meters from the eye position
-	m_sceneState->fViewCullingRadius = OBJ_UNIT*40;
+	m_sceneState->fViewCullingRadius = OBJ_UNIT * 40;
 
 	m_bSnapToTerrain = true;
 	m_bRenderMeshShadow = false;
@@ -270,7 +270,7 @@ void CSceneObject::CreateAttributeModels()
 #ifdef PARAENGINE_CLIENT
 	m_attribute_models.push_back(new CArrayAttributeProxy< MirrorSufacePool_Type >(&m_mirrorSurfaces, "mirrorSurfaces"));
 #endif
-	
+
 }
 
 
@@ -278,30 +278,30 @@ void CSceneObject::ResetScene()
 {
 	Cleanup();
 
-	if(m_pPhysicsWorld)
+	if (m_pPhysicsWorld)
 		m_pPhysicsWorld->ResetPhysics();
 
 	m_currentplayer = NULL;
-	
+
 	/// create a default camera
 	/// Camera for interactive character navigation
-	CAutoCamera * pCamera = new CAutoCamera(); 
+	CAutoCamera* pCamera = new CAutoCamera();
 	m_pCurrentCamera = pCamera;
 	m_cameras.push_back(pCamera);
 
 	/// default tile root
-	m_pTileRoot->ResetTerrain( 1280.f, 7); 
-	
-	m_vRenderOrigin = Vector3(0,0,0);
+	m_pTileRoot->ResetTerrain(1280.f, 7);
+
+	m_vRenderOrigin = Vector3(0, 0, 0);
 	ClearConsoleStr();
-	if(IsInitialized())
+	if (IsInitialized())
 	{
 		// restore the aspect ratio of camera and reset fog parameters.
 		ResetCameraAndFog();
 	}
 #ifdef PARAENGINE_CLIENT
 	// two reserved mirrors at a time
-	if(m_mirrorSurfaces.size()<2)
+	if (m_mirrorSurfaces.size() < 2)
 	{
 		m_mirrorSurfaces.push_back(NULL);
 		m_mirrorSurfaces.push_back(NULL);
@@ -315,7 +315,7 @@ void CSceneObject::ResetScene()
 /** set the environment simulator to be used with this world. */
 void CSceneObject::SetEnvironmentSim(IEnvironmentSim* pSim)
 {
-	if(m_pEnvironmentSim!=pSim)
+	if (m_pEnvironmentSim != pSim)
 	{
 		SAFE_RELEASE(m_pEnvironmentSim);
 		m_pEnvironmentSim = pSim;
@@ -342,20 +342,20 @@ void CSceneObject::SetCurrentActor(CBaseObject* pActor)
 	m_pActor = pActor;
 }
 
-const CEventBinding * CSceneObject::GetEventBinding()
+const CEventBinding* CSceneObject::GetEventBinding()
 {
 	return m_event->GetConstEventBindingObj();
 }
 
 void CSceneObject::LoadDefaultEventBinding()
 {
-	if(GetEventBinding()==NULL)
+	if (GetEventBinding() == NULL)
 		return;
-	CEventBinding *pBinding=m_event->GetEventBindingObj();
-	pBinding->MapEvent(EM_KEY_P,EM_GM_PAUSE);
+	CEventBinding* pBinding = m_event->GetEventBindingObj();
+	pBinding->MapEvent(EM_KEY_P, EM_GM_PAUSE);
 }
 
-void CSceneObject::SetMaxCharTriangles( int nNum )
+void CSceneObject::SetMaxCharTriangles(int nNum)
 {
 	m_nMaxCharTriangles = nNum;
 }
@@ -382,7 +382,7 @@ int CSceneObject::GetMaximumNumShadowCasters()
 
 void CSceneObject::SetMaximumNumShadowCasters(int nNum)
 {
-	if(nNum<=0)
+	if (nNum <= 0)
 	{
 		m_nMaxNumShadowCasters = 0;
 		SetShadow(false);
@@ -391,12 +391,12 @@ void CSceneObject::SetMaximumNumShadowCasters(int nNum)
 		m_nMaxNumShadowCasters = nNum;
 }
 
-CZoneNode * CSceneObject::CreateGetZoneNode( const char* sName )
+CZoneNode* CSceneObject::CreateGetZoneNode(const char* sName)
 {
-	if(sName == 0)
+	if (sName == 0)
 		return NULL;
 	map <string, CZoneNode*>::iterator iter = m_zones.find(sName);
-	if(iter != m_zones.end())
+	if (iter != m_zones.end())
 	{
 		return (*iter).second;
 	}
@@ -409,20 +409,20 @@ CZoneNode * CSceneObject::CreateGetZoneNode( const char* sName )
 	}
 }
 
-CZoneNode * CSceneObject::GetZoneNode( const char* sName )
+CZoneNode* CSceneObject::GetZoneNode(const char* sName)
 {
-	if(sName == 0)
+	if (sName == 0)
 		return NULL;
 	map <string, CZoneNode*>::iterator iter = m_zones.find(sName);
 	return (iter != m_zones.end()) ? (*iter).second : NULL;
 }
 
-CPortalNode * CSceneObject::CreateGetPortalNode( const char* sName )
+CPortalNode* CSceneObject::CreateGetPortalNode(const char* sName)
 {
-	if(sName == 0)
+	if (sName == 0)
 		return NULL;
 	map <string, CPortalNode*>::iterator iter = m_portals.find(sName);
-	if(iter != m_portals.end())
+	if (iter != m_portals.end())
 	{
 		return (*iter).second;
 	}
@@ -435,16 +435,16 @@ CPortalNode * CSceneObject::CreateGetPortalNode( const char* sName )
 	}
 }
 
-CPortalNode * CSceneObject::GetPortalNode( const char* sName )
+CPortalNode* CSceneObject::GetPortalNode(const char* sName)
 {
-	if(sName == 0)
+	if (sName == 0)
 		return NULL;
 	map <string, CPortalNode*>::iterator iter = m_portals.find(sName);
 	return (iter != m_portals.end()) ? (*iter).second : NULL;
 }
 
 
-void CSceneObject::ShowPortalSystem( bool bEnable )
+void CSceneObject::ShowPortalSystem(bool bEnable)
 {
 	m_bShowPortalSystem = bEnable;
 }
@@ -457,13 +457,13 @@ bool CSceneObject::IsPortalSystemShown()
 CMirrorSurface* CSceneObject::GetMirrorSurface(int nIndex)
 {
 #ifdef USE_DIRECTX_RENDERER
-	if(nIndex>=(int)m_mirrorSurfaces.size())
+	if (nIndex >= (int)m_mirrorSurfaces.size())
 	{
-		if(nIndex>MAX_MIRRORSURFACES_NUM)
+		if (nIndex > MAX_MIRRORSURFACES_NUM)
 			return NULL;
-		m_mirrorSurfaces.resize(nIndex+1,NULL);
+		m_mirrorSurfaces.resize(nIndex + 1, NULL);
 	}
-	if(m_mirrorSurfaces[nIndex]==0)
+	if (m_mirrorSurfaces[nIndex] == 0)
 	{
 		m_mirrorSurfaces[nIndex] = new CMirrorSurface();
 	}
@@ -478,7 +478,7 @@ bool CSceneObject::IsShowMainPlayer()
 	return m_bShowMainPlayer;
 }
 
-void CSceneObject::ShowMainPlayer( bool bEnable )
+void CSceneObject::ShowMainPlayer(bool bEnable)
 {
 	m_bShowMainPlayer = bEnable;
 }
@@ -544,7 +544,7 @@ DWORD CSceneObject::GetPhysicsGroupMask()
 	return m_dwPhysicsGroupMask;
 }
 
-void CSceneObject::SetPhysicsGroupMask( DWORD dwValue )
+void CSceneObject::SetPhysicsGroupMask(DWORD dwValue)
 {
 	m_dwPhysicsGroupMask = dwValue;
 }
@@ -553,7 +553,7 @@ void CSceneObject::ResetCameraAndFog()
 {
 }
 
-ParaTerrain::CGlobalTerrain*	CSceneObject::GetGlobalTerrain()
+ParaTerrain::CGlobalTerrain* CSceneObject::GetGlobalTerrain()
 {
 	return m_globalTerrain.get();
 }
@@ -561,65 +561,65 @@ ParaTerrain::CGlobalTerrain*	CSceneObject::GetGlobalTerrain()
 CBaseObject* CSceneObject::FindObjectByNameAndType(const std::string& sName, const std::string& sClassName)
 {
 	CBaseObject* pParent = GetChildByName(sClassName);
-	if (pParent){
+	if (pParent) {
 		return pParent->GetChildByName(sName, false);
 	}
 	return NULL;
 }
 
-IObject* CSceneObject::AttachObject(CBaseObject * pObject)
+IObject* CSceneObject::AttachObject(CBaseObject* pObject)
 {
-	IObject * pParentObj = NULL;
+	IObject* pParentObj = NULL;
 	switch (pObject->GetType())
 	{
 	case CBaseObject::ManagedLoader:
+	{
+		CManagedLoader* pLoader = GetManagedLoader(pObject->GetIdentifier());
+		if (pLoader)
 		{
-			CManagedLoader* pLoader = GetManagedLoader(pObject->GetIdentifier());
-			if(pLoader)
-			{
-				pLoader->AttachObjectsToScene();
-				pParentObj = m_pTileRoot.get();
-			}
-			break;
+			pLoader->AttachObjectsToScene();
+			pParentObj = m_pTileRoot.get();
 		}
+		break;
+	}
 	default:
+	{
+		if (pObject->IsTileObject())
 		{
-			if (pObject->IsTileObject())
+			if (pObject->IsGlobal())
 			{
-				if (pObject->IsGlobal())
-				{
-					pParentObj = m_pTileRoot->AttachGlobalObject(pObject);
-				}
-				else
-				{
-					pParentObj = m_pTileRoot->AttachLocalObject(pObject);
-				}
+				pParentObj = m_pTileRoot->AttachGlobalObject(pObject);
 			}
 			else
 			{
-				// attach it to container of its type. 
-				CBaseObject* pParent = GetChildByName(pObject->GetAttributeClassName());
-				if (!pParent){
-					OUTPUT_LOG("info: Object container automatically created for class: %s \n", pObject->GetAttributeClassName());
-					pParent = CContainerObject::Create();
-					pParent->SetIdentifier(pObject->GetAttributeClassName());
-					AddChild(pParent);
-				}
-				if (pParent)
-					pParent->AddChild(pObject);
-				pParentObj = pParent;
+				pParentObj = m_pTileRoot->AttachLocalObject(pObject);
 			}
 		}
+		else
+		{
+			// attach it to container of its type. 
+			CBaseObject* pParent = GetChildByName(pObject->GetAttributeClassName());
+			if (!pParent) {
+				OUTPUT_LOG("info: Object container automatically created for class: %s \n", pObject->GetAttributeClassName());
+				pParent = CContainerObject::Create();
+				pParent->SetIdentifier(pObject->GetAttributeClassName());
+				AddChild(pParent);
+			}
+			if (pParent)
+				pParent->AddChild(pObject);
+			pParentObj = pParent;
+		}
+	}
 	}
 	return pParentObj;
 }
 
-void CSceneObject::AddSentientObject(IGameObject* pObj,bool bCheckDuplicate)
+void CSceneObject::AddSentientObject(IGameObject* pObj, bool bCheckDuplicate)
 {
-	if(pObj!=NULL)
+	if (pObj != NULL)
 	{
 		++(pObj->m_nSentientObjCount);
-		if(!bCheckDuplicate)
+		if (!bCheckDuplicate)
 		{
 			m_sentientGameObjects.push_back(pObj->GetWeakReference());
 		}
@@ -627,9 +627,9 @@ void CSceneObject::AddSentientObject(IGameObject* pObj,bool bCheckDuplicate)
 		{
 			// check duplicates
 			list_IObjectWeakPtr_Type::iterator itCur, itEnd = m_sentientGameObjects.end();
-			for (itCur = m_sentientGameObjects.begin();itCur!=itEnd;++itCur)
+			for (itCur = m_sentientGameObjects.begin(); itCur != itEnd; ++itCur)
 			{
-				if((*itCur)==pObj){
+				if ((*itCur) == pObj) {
 					return;
 				}
 			}
@@ -641,11 +641,11 @@ void CSceneObject::AddSentientObject(IGameObject* pObj,bool bCheckDuplicate)
 
 bool CSceneObject::DeleteSentientObject(IGameObject* pObject)
 {
-	if(pObject != NULL)
+	if (pObject != NULL)
 	{
 		// delete object from the sentient object list.
 		list_IObjectWeakPtr_Type::iterator itCur, itEnd = m_sentientGameObjects.end();
-		for (itCur = m_sentientGameObjects.begin();itCur!=itEnd;++itCur)
+		for (itCur = m_sentientGameObjects.begin(); itCur != itEnd; ++itCur)
 		{
 			if ((*itCur) == pObject)
 			{
@@ -658,44 +658,44 @@ bool CSceneObject::DeleteSentientObject(IGameObject* pObject)
 	return false;
 }
 
-bool CSceneObject::DetachObject(CBaseObject * pObject)
+bool CSceneObject::DetachObject(CBaseObject* pObject)
 {
 	bool bDetached = false;
 
-	switch(pObject->GetType())
+	switch (pObject->GetType())
 	{
 	case CBaseObject::ManagedLoader:
+	{
+		CManagedLoader* pLoader = GetManagedLoader(pObject->GetIdentifier());
+		if (pLoader)
 		{
-			CManagedLoader* pLoader = GetManagedLoader(pObject->GetIdentifier());
-			if(pLoader)
-			{
-				pLoader->DetachObjectsFromScene();
-			}
-			break;
+			pLoader->DetachObjectsFromScene();
 		}
+		break;
+	}
 	default:
+	{
+		/// compress object, so that physics and resource assets will be released.
+		pObject->CompressObject();
+		if (pObject->IsTileObject())
 		{
-			/// compress object, so that physics and resource assets will be released.
-			pObject->CompressObject();
-			if (pObject->IsTileObject())
+			bDetached = m_pTileRoot->DetachObject(pObject);
+			IGameObject* pGameObject = pObject->QueryIGameObject();
+			if (pGameObject != NULL)
+				DeleteSentientObject(pGameObject);
+		}
+		else
+		{
+			CBaseObject* pParent = GetChildByName(pObject->GetAttributeClassName());
+			if (pParent)
 			{
-				bDetached = m_pTileRoot->DetachObject(pObject);
-				IGameObject* pGameObject = pObject->QueryIGameObject();
-				if (pGameObject != NULL)
-					DeleteSentientObject(pGameObject);
-			}
-			else
-			{
-				CBaseObject* pParent = GetChildByName(pObject->GetAttributeClassName());
-				if (pParent)
+				if (pParent->RemoveChild(pObject) > 0)
 				{
-					if (pParent->RemoveChild(pObject) > 0)
-					{
-						bDetached = true;
-					}
+					bDetached = true;
 				}
 			}
 		}
+	}
 	}
 	return bDetached;
 }
@@ -712,7 +712,7 @@ CBaseObject* CSceneObject::GetLocalObject(const string& sName, const Vector3& vP
 
 CBaseObject* CSceneObject::GetObject(const string& sName, const Vector3& vPos, bool bGlobal)
 {
-	return bGlobal? GetGlobalObject(sName) : GetLocalObject(sName, vPos);
+	return bGlobal ? GetGlobalObject(sName) : GetLocalObject(sName, vPos);
 }
 
 CBaseObject* CSceneObject::GetLocalObject(const Vector3& vPos, float fEpsilon)
@@ -720,30 +720,30 @@ CBaseObject* CSceneObject::GetLocalObject(const Vector3& vPos, float fEpsilon)
 	return m_pTileRoot->GetLocalObject(vPos, fEpsilon);
 }
 
-CBaseObject* CSceneObject::GetLocalObject( const Vector3& vPos, const std::string& sName, float fEpsilon/*=0.01f*/ )
+CBaseObject* CSceneObject::GetLocalObject(const Vector3& vPos, const std::string& sName, float fEpsilon/*=0.01f*/)
 {
 	return m_pTileRoot->GetLocalObject(vPos, sName, fEpsilon);
 }
 
-CBaseObject* CSceneObject::GetObjectByViewBox( const CShapeAABB& viewbox )
+CBaseObject* CSceneObject::GetObjectByViewBox(const CShapeAABB& viewbox)
 {
 	return m_pTileRoot->GetObjectByViewBox(viewbox);
 }
 
-bool CSceneObject::DeleteObject(CBaseObject * pObject)
+bool CSceneObject::DeleteObject(CBaseObject* pObject)
 {
-	switch(pObject->GetType())
+	switch (pObject->GetType())
 	{
 	case CBaseObject::ManagedLoader:
 		DeleteManagedLoader(pObject->GetIdentifier());
 		break;
 	default:
-		if(pObject->GetType() == CBaseObject::ZoneNode)
+		if (pObject->GetType() == CBaseObject::ZoneNode)
 		{
 			map <string, CZoneNode*>::iterator itCurCP, itEndCP = m_zones.end();
-			for( itCurCP = m_zones.begin(); itCurCP != itEndCP;)
+			for (itCurCP = m_zones.begin(); itCurCP != itEndCP;)
 			{
-				if(((*itCurCP).second) == pObject)
+				if (((*itCurCP).second) == pObject)
 				{
 					pObject->AddToAutoReleasePool();
 					pObject->Release();
@@ -752,12 +752,12 @@ bool CSceneObject::DeleteObject(CBaseObject * pObject)
 				itCurCP++;
 			}
 		}
-		else if(pObject->GetType() == CBaseObject::PortalNode)
+		else if (pObject->GetType() == CBaseObject::PortalNode)
 		{
 			map <string, CPortalNode*>::iterator itCurCP, itEndCP = m_portals.end();
-			for( itCurCP = m_portals.begin(); itCurCP != itEndCP; ++ itCurCP)
+			for (itCurCP = m_portals.begin(); itCurCP != itEndCP; ++itCurCP)
 			{
-				if(((*itCurCP).second) == pObject)
+				if (((*itCurCP).second) == pObject)
 				{
 					pObject->AddToAutoReleasePool();
 					pObject->Release();
@@ -775,14 +775,14 @@ bool CSceneObject::DeleteObject(CBaseObject * pObject)
 	return true;
 }
 
-void CSceneObject::UnloadObjectResources(CBaseObject * pObject)
+void CSceneObject::UnloadObjectResources(CBaseObject* pObject)
 {
 
 }
 
-void CSceneObject::DestroyObjectByName(const char * id)
+void CSceneObject::DestroyObjectByName(const char* id)
 {
-	if(strcmp(id, "\\"))
+	if (strcmp(id, "\\"))
 	{
 		Cleanup();
 	}
@@ -795,7 +795,7 @@ void CSceneObject::DestroyObjectByName(const char * id)
 CManagedLoader* CSceneObject::GetManagedLoader(string sName)
 {
 	map <string, CManagedLoader*>::iterator	iter = m_managedloader.find(sName);
-	if(iter!=m_managedloader.end())
+	if (iter != m_managedloader.end())
 	{
 		return (*iter).second;
 	}
@@ -805,7 +805,7 @@ CManagedLoader* CSceneObject::GetManagedLoader(string sName)
 bool CSceneObject::DeleteManagedLoader(string sName)
 {
 	map <string, CManagedLoader*>::iterator	iter = m_managedloader.find(sName);
-	if(iter!=m_managedloader.end())
+	if (iter != m_managedloader.end())
 	{
 		iter->second->Release();
 		m_managedloader.erase(iter);
@@ -817,12 +817,12 @@ bool CSceneObject::DeleteManagedLoader(string sName)
 CManagedLoader* CSceneObject::CreateManagedLoader(string sName)
 {
 	CManagedLoader* pLoader = GetManagedLoader(sName);
-	if(pLoader==NULL)
+	if (pLoader == NULL)
 	{
 		pLoader = new CManagedLoader();
 		pLoader->SetIdentifier(sName);
 		pLoader->addref();
-		pair<map <string, CManagedLoader*>::iterator, bool> res = 
+		pair<map <string, CManagedLoader*>::iterator, bool> res =
 			m_managedloader.insert(pair<string, CManagedLoader*>(sName, pLoader));
 		PE_ASSERT(res.second);
 	}
@@ -843,27 +843,27 @@ HRESULT CSceneObject::InitDeviceObjects()
 
 	{
 		SkyMeshPool_type::iterator itCurCP, itEndCP = m_skymeshes.end();
-		for( itCurCP = m_skymeshes.begin(); itCurCP != itEndCP; ++ itCurCP)
+		for (itCurCP = m_skymeshes.begin(); itCurCP != itEndCP; ++itCurCP)
 		{
 			(*itCurCP)->InitDeviceObjects();
 		}
 	}
 #ifdef USE_DIRECTX_RENDERER
-	for (int i=0;i<(int)m_mirrorSurfaces.size();++i)
+	for (int i = 0; i < (int)m_mirrorSurfaces.size(); ++i)
 	{
-		if(m_mirrorSurfaces[i]!=0)
+		if (m_mirrorSurfaces[i] != 0)
 			m_mirrorSurfaces[i]->InitDeviceObjects();
 	}
-	
+
 	{
 		MiniSceneGraphPool_type::iterator itCur, itEnd = m_miniSceneGraphs.end();
-		for (itCur = m_miniSceneGraphs.begin(); itCur!=itEnd; ++itCur)
+		for (itCur = m_miniSceneGraphs.begin(); itCur != itEnd; ++itCur)
 		{
 			(*itCur)->InitDeviceObjects();
 		}
 	}
 #endif
-	
+
 	return hr;
 }
 
@@ -871,21 +871,21 @@ HRESULT CSceneObject::RestoreDeviceObjects()
 {
 	CBaseObject::RestoreDeviceObjects();
 #ifdef USE_DIRECTX_RENDERER
-	g_bShaderVersion3 = CGlobals::GetDirectXEngine().m_d3dCaps.VertexShaderVersion >= D3DVS_VERSION(3,0);
+	g_bShaderVersion3 = CGlobals::GetDirectXEngine().m_d3dCaps.VertexShaderVersion >= D3DVS_VERSION(3, 0);
 #endif
 	ResetCameraAndFog();
 
 	CGlobals::GetOceanManager()->RestoreDeviceObjects();
 #ifdef USE_DIRECTX_RENDERER
-	for (int i=0;i<(int)m_mirrorSurfaces.size();++i)
+	for (int i = 0; i < (int)m_mirrorSurfaces.size(); ++i)
 	{
-		if(m_mirrorSurfaces[i]!=0)
+		if (m_mirrorSurfaces[i] != 0)
 			m_mirrorSurfaces[i]->RestoreDeviceObjects();
 	}
 
 	{
 		MiniSceneGraphPool_type::iterator itCur, itEnd = m_miniSceneGraphs.end();
-		for (itCur = m_miniSceneGraphs.begin(); itCur!=itEnd; ++itCur)
+		for (itCur = m_miniSceneGraphs.begin(); itCur != itEnd; ++itCur)
 		{
 			(*itCur)->RestoreDeviceObjects();
 		}
@@ -906,21 +906,21 @@ HRESULT CSceneObject::InvalidateDeviceObjects()
 
 	m_pBlockWorldClient->InvalidateDeviceObjects();
 #ifdef USE_DIRECTX_RENDERER
-	for (int i=0;i<(int)m_mirrorSurfaces.size();++i)
+	for (int i = 0; i < (int)m_mirrorSurfaces.size(); ++i)
 	{
-		if(m_mirrorSurfaces[i]!=0)
+		if (m_mirrorSurfaces[i] != 0)
 			m_mirrorSurfaces[i]->InvalidateDeviceObjects();
 	}
 #endif
 
 	{
 		MiniSceneGraphPool_type::iterator itCur, itEnd = m_miniSceneGraphs.end();
-		for (itCur = m_miniSceneGraphs.begin(); itCur!=itEnd; ++itCur)
+		for (itCur = m_miniSceneGraphs.begin(); itCur != itEnd; ++itCur)
 		{
 			(*itCur)->InvalidateDeviceObjects();
 		}
 	}
-	
+
 	return hr;
 }
 
@@ -948,11 +948,11 @@ HRESULT CSceneObject::DeleteDeviceObjects()
 	CBaseObject::DeleteDeviceObjects();
 	HRESULT hr = S_OK;
 	m_globalTerrain->DeleteDeviceObjects();
-	
+
 	m_pBlockWorldClient->DeleteDeviceObjects();
 	{
 		SkyMeshPool_type::iterator itCurCP, itEndCP = m_skymeshes.end();
-		for( itCurCP = m_skymeshes.begin(); itCurCP != itEndCP; ++ itCurCP)
+		for (itCurCP = m_skymeshes.begin(); itCurCP != itEndCP; ++itCurCP)
 		{
 			(*itCurCP)->DeleteDeviceObjects();
 		}
@@ -961,15 +961,15 @@ HRESULT CSceneObject::DeleteDeviceObjects()
 	m_dropShadowRenderer->DeleteDeviceObjects();
 	CGlobals::GetOceanManager()->DeleteDeviceObjects();
 
-	for (int i=0;i<(int)m_mirrorSurfaces.size();++i)
+	for (int i = 0; i < (int)m_mirrorSurfaces.size(); ++i)
 	{
-		if(m_mirrorSurfaces[i]!=0)
+		if (m_mirrorSurfaces[i] != 0)
 			m_mirrorSurfaces[i]->DeleteDeviceObjects();
 	}
 #endif
 	{
 		MiniSceneGraphPool_type::iterator itCur, itEnd = m_miniSceneGraphs.end();
-		for (itCur = m_miniSceneGraphs.begin(); itCur!=itEnd; ++itCur)
+		for (itCur = m_miniSceneGraphs.begin(); itCur != itEnd; ++itCur)
 		{
 			(*itCur)->DeleteDeviceObjects();
 		}
@@ -978,17 +978,17 @@ HRESULT CSceneObject::DeleteDeviceObjects()
 
 	return hr;
 }
-void CSceneObject::AddConsoleStr(const char * pStr)
+void CSceneObject::AddConsoleStr(const char* pStr)
 {
 	OUTPUT_LOG("%s\n", pStr);
 }
-	
+
 void CSceneObject::ClearConsoleStr()
 {
 	m_sConsoleString[0] = '\0';
 }
 
-void CSceneObject::SetBackGroundColor( const LinearColor& bgColor )
+void CSceneObject::SetBackGroundColor(const LinearColor& bgColor)
 {
 	m_dwBackGroundColor = bgColor;
 }
@@ -1086,7 +1086,7 @@ void CSceneObject::Cleanup()
 	{
 		map <string, CPortalNode*>::iterator itCurCP, itEndCP = m_portals.end();
 
-		for( itCurCP = m_portals.begin(); itCurCP != itEndCP; ++ itCurCP)
+		for (itCurCP = m_portals.begin(); itCurCP != itEndCP; ++itCurCP)
 		{
 			((*itCurCP).second)->Release();
 		}
@@ -1096,7 +1096,7 @@ void CSceneObject::Cleanup()
 	{
 		map <string, CZoneNode*>::iterator itCurCP, itEndCP = m_zones.end();
 
-		for( itCurCP = m_zones.begin(); itCurCP != itEndCP; ++ itCurCP)
+		for (itCurCP = m_zones.begin(); itCurCP != itEndCP; ++itCurCP)
 		{
 			((*itCurCP).second)->Release();
 		}
@@ -1115,14 +1115,14 @@ void CSceneObject::Cleanup()
 	/*if(m_pEnvironmentSim)
 		m_pEnvironmentSim->CleanupImtermediateData();*/
 
-	// clean scene state
+		// clean scene state
 	m_sceneState->Cleanup();
 	m_missiles.clear();
 	/// remove all loaders
 	{
 		map <string, CManagedLoader*>::iterator itCurCP, itEndCP = m_managedloader.end();
 
-		for( itCurCP = m_managedloader.begin(); itCurCP != itEndCP; ++ itCurCP)
+		for (itCurCP = m_managedloader.begin(); itCurCP != itEndCP; ++itCurCP)
 		{
 			((*itCurCP).second)->Release();
 		}
@@ -1156,21 +1156,21 @@ void CSceneObject::Cleanup()
 
 	{/// delete shadow volumes
 		ShadowVolumePool_Type::iterator itCurCP, itEndCP = m_ShadowVolumes.end();
-		
-		for( itCurCP = m_ShadowVolumes.begin(); itCurCP != itEndCP; ++ itCurCP)
+
+		for (itCurCP = m_ShadowVolumes.begin(); itCurCP != itEndCP; ++itCurCP)
 		{
-			delete *itCurCP;
+			delete* itCurCP;
 		}
 		m_ShadowVolumes.clear();
 	}
 
 	/// reset physics environment
-	if(m_pPhysicsWorld)
+	if (m_pPhysicsWorld)
 		m_pPhysicsWorld->ExitPhysics();
 #ifdef USE_DIRECTX_RENDERER
-	for (int i=0;i<(int)m_mirrorSurfaces.size();++i)
+	for (int i = 0; i < (int)m_mirrorSurfaces.size(); ++i)
 	{
-		if(m_mirrorSurfaces[i]!=0)
+		if (m_mirrorSurfaces[i] != 0)
 		{
 			m_mirrorSurfaces[i]->InvalidateDeviceObjects();
 			m_mirrorSurfaces[i]->DeleteDeviceObjects();
@@ -1184,20 +1184,20 @@ void CSceneObject::Cleanup()
 void CSceneObject::AutoGenPlayerRipple(float fTimeDelta)
 {
 	BlockWorldClient* pBlockWorldClient = BlockWorldClient::GetInstance();
-	if(m_bAutoPlayerRipple)
+	if (m_bAutoPlayerRipple)
 	{
-		static float g_fLastRippleTime=MAX_RIPPLE_INTERVAL;
+		static float g_fLastRippleTime = MAX_RIPPLE_INTERVAL;
 
 		CBipedObject* pPlayer = GetCurrentPlayer();
-		if(pPlayer!=0)
+		if (pPlayer != 0)
 		{
 			Vector3 vPos = pPlayer->GetPosition();
-			float fWaterLevel = pBlockWorldClient->GetWaterLevel(vPos.x, vPos.y+pPlayer->GetHeight(), vPos.z, 2);
-			
+			float fWaterLevel = pBlockWorldClient->GetWaterLevel(vPos.x, vPos.y + pPlayer->GetHeight(), vPos.z, 2);
+
 			/** only add a ripple if (1) the character is moving, (2) character is on or below water surface, (3) character's head is above water surface */
-			if( (!pPlayer->IsStanding() || fabs(pPlayer->GetVerticalSpeed())>0.1f) && vPos.y<=fWaterLevel && (fWaterLevel-vPos.y)<(pPlayer->GetPhysicsHeight()*0.78f) )
+			if ((!pPlayer->IsStanding() || fabs(pPlayer->GetVerticalSpeed()) > 0.1f) && vPos.y <= fWaterLevel && (fWaterLevel - vPos.y) < (pPlayer->GetPhysicsHeight() * 0.78f))
 			{
-				if(g_fLastRippleTime>=MAX_RIPPLE_INTERVAL)
+				if (g_fLastRippleTime >= MAX_RIPPLE_INTERVAL)
 				{
 					g_fLastRippleTime = 0;
 
@@ -1209,7 +1209,7 @@ void CSceneObject::AutoGenPlayerRipple(float fTimeDelta)
 				}
 				else
 				{
-					g_fLastRippleTime +=fTimeDelta;
+					g_fLastRippleTime += fTimeDelta;
 				}
 			}
 			else
@@ -1226,34 +1226,34 @@ void CSceneObject::AutoGenPlayerRipple(float fTimeDelta)
 ///       the scene. Animate the camera. This should match the speed of 
 ///       rendering, otherwise the scene will not seem to move.
 //-----------------------------------------------------------------------------
-void CSceneObject::Animate( double dTimeDelta, int nRenderNumber )
+void CSceneObject::Animate(double dTimeDelta, int nRenderNumber)
 {
 	RemoveDeadObjects();
-	if( !m_bGameEnabled || !m_bInitialized)
+	if (!m_bGameEnabled || !m_bInitialized)
 		return;
 	m_pBlockWorldClient->OnFrameMove();
 
 	/// Update the camera 
-	GetCurrentCamera()->FrameMove( (FLOAT)dTimeDelta );
+	GetCurrentCamera()->FrameMove((FLOAT)dTimeDelta);
 
 	// when game time is paused, also pause the scene delta time
 	if (CGlobals::GetFrameRateController(FRC_GAME)->IsPaused() && dTimeDelta > 0.f)
 		dTimeDelta = CGlobals::GetFrameRateController(FRC_GAME)->GetElapsedTime();
 
-	if(m_bGamePaused)
+	if (m_bGamePaused)
 		return;
 
 	AutoGenPlayerRipple((float)dTimeDelta);
-	
-	if(CGlobals::WillGenReport())
+
+	if (CGlobals::WillGenReport())
 	{
 		/// report current player position and facing
-		if(GetCurrentPlayer())
+		if (GetCurrentPlayer())
 		{
 			char sDesc[256];
 			Vector3 vPlayerPos = GetCurrentPlayer()->GetPosition();
-			snprintf( sDesc,255, " time: %2.f pos<%2.1f,%2.1f, %2.1f> %2.1f", 
-				(float)(CGlobals::GetGameTime()), vPlayerPos.x, vPlayerPos.y, vPlayerPos.z, GetCurrentPlayer()->GetFacing() );
+			snprintf(sDesc, 255, " time: %2.f pos<%2.1f,%2.1f, %2.1f> %2.1f",
+				(float)(CGlobals::GetGameTime()), vPlayerPos.x, vPlayerPos.y, vPlayerPos.z, GetCurrentPlayer()->GetFacing());
 			CGlobals::GetReport()->SetString("PInfo", sDesc);
 		}
 	}
@@ -1264,7 +1264,7 @@ void CSceneObject::Animate( double dTimeDelta, int nRenderNumber )
 	}
 }
 
-HRESULT CSceneObject::Draw(SceneState * sceneState)
+HRESULT CSceneObject::Draw(SceneState* sceneState)
 {
 	return S_OK;
 }
@@ -1274,15 +1274,15 @@ bool CSceneObject::IsInitialized()
 	return m_bInitialized;
 }
 
-int ClipZone(SceneState& sceneState, PostRenderObject& zone, CPortalFrustum& portalFrustum );
+int ClipZone(SceneState& sceneState, PostRenderObject& zone, CPortalFrustum& portalFrustum);
 
 template <class T>
 int RemovePortalOccludedObjects(T& renderlist)
 {
-	typename T::iterator itCur, itEnd =  renderlist.end();
-	for(itCur = renderlist.begin();itCur!=itEnd;)
+	typename T::iterator itCur, itEnd = renderlist.end();
+	for (itCur = renderlist.begin(); itCur != itEnd;)
 	{
-		if((*itCur).m_nOccluded>=0)
+		if ((*itCur).m_nOccluded >= 0)
 			itCur = renderlist.erase(itCur);
 		else
 			++itCur;
@@ -1293,11 +1293,11 @@ int RemovePortalOccludedObjects(T& renderlist)
 template <class T>
 int RemoveZoneObjects(T& renderlist)
 {
-	typename T::iterator itCur, itEnd =  renderlist.end();
-	for(itCur = renderlist.begin();itCur!=itEnd;)
+	typename T::iterator itCur, itEnd = renderlist.end();
+	for (itCur = renderlist.begin(); itCur != itEnd;)
 	{
 		CBaseObject* pObj = (*itCur).m_pRenderObject;
-		if(pObj->GetHomeZone())
+		if (pObj->GetHomeZone())
 			itCur = renderlist.erase(itCur);
 		else
 			++itCur;
@@ -1310,101 +1310,101 @@ bool CSceneObject::PrepareRenderObject(CBaseObject* pObj, CBaseCamera* pCamera, 
 	// fNewViewRadius is usually the camera far plane distance, however, it can be set to a smaller value according to the size of the object. 
 	float fNewViewRadius;
 	float fR = pViewClippingObject->GetRadius();
-	if(fR == 0.f && pObj->CheckVolumnField(OBJ_BIG_STATIC_OBJECT))
+	if (fR == 0.f && pObj->CheckVolumnField(OBJ_BIG_STATIC_OBJECT))
 	{
 		// This is tricky: due to asynchronous loading of mesh entity, we do not know how big the associated mesh is when game world is loaded. 
 		// so in case, the object is marked as big static object, we will use the radius of the object instead of mesh entity for view culling. 
 		pViewClippingObject = pObj;
 		fR = pViewClippingObject->GetRadius();
 	}
-	
+
 	float fRenderDistance = pObj->GetRenderDistance();
-	if(fRenderDistance <= 0.f)
+	if (fRenderDistance <= 0.f)
 	{
-		fNewViewRadius = (fR>0.2f) ? m_fCoefK*fR : m_fCoefN;
-		
-		if(fNewViewRadius<m_fMinPopUpDistance)
+		fNewViewRadius = (fR > 0.2f) ? m_fCoefK * fR : m_fCoefN;
+
+		if (fNewViewRadius < m_fMinPopUpDistance)
 			fNewViewRadius = m_fMinPopUpDistance;
 	}
 	else
 	{
 		fNewViewRadius = fRenderDistance;
 	}
-	if(fNewViewRadius > m_fFogEnd)
+	if (fNewViewRadius > m_fFogEnd)
 		fNewViewRadius = m_fFogEnd;
 
 	bool bDrawObj = false;
-	
-	/*  the intersection of two spheres: one sphere with center at the eye position; another at the camera frustum's bounding volumne origin. 
+
+	/*  the intersection of two spheres: one sphere with center at the eye position; another at the camera frustum's bounding volumne origin.
 	bool bEyeRoughTestPassed = bRoughTestPassed = pViewClippingObject->TestCollisionSphere(& (sceneState.vEye), fNewViewRadius,1);
 	if(!bEyeCenteredTest && bRoughTestPassed)
 	{
 		bRoughTestPassed = pViewClippingObject->TestCollisionSphere(& vViewCenter, fViewRadius,1);
 	}*/
-	
+
 	///  rough test is performed first followed by precise bounding box test, with the camera's view frustum.
-	if( pViewClippingObject->TestCollisionSphere(pCamera, fNewViewRadius)
+	if (pViewClippingObject->TestCollisionSphere(pCamera, fNewViewRadius)
 		&& pViewClippingObject->TestCollision(pCamera))
 	{
 		bDrawObj = true;
-		
+
 		ObjectType oType = pObj->GetMyType();
-		if(oType ==  _PC_Zone)
+		if (oType == _PC_Zone)
 		{
 			bDrawObj = false;
 			sceneState.listZones.push_back(PostRenderObject(pObj, 0));
 			return true;
 		}
-		else if(oType ==  _PC_Portal)
+		else if (oType == _PC_Portal)
 		{
 			sceneState.listPortals.push_back(PostRenderObject(pObj, 0));
 			bDrawObj = false;
 			return true;
 		}
 	}
-	
+
 	bool bIsShadowCaster = false;
-	
+
 	//////////////////////////////////////////////////////////////////////////
 	// test if this is shadow caster or shadow receiver
 	//  it is only a shadow receiver if it is visible. 
 	bool bIsShadowReceiver = bDrawObj && pObj->IsShadowReceiver();
-	
+
 	// if a mesh is shadow receiver, it will not be caster caster at the same time, so...
 	// if an object has a home zone, it must not be shadow caster
 	// if object is visible, it is shadow caster already.
 	Vector3 vSunDir = GetSunLight().GetSunDirection();
-	bIsShadowCaster = ( m_bRenderMeshShadow && pObj->IsShadowCaster() && pObj->GetHomeZone()==0)
-		&& ((pViewClippingObject->TestCollisionSphere(& (sceneState.vEye), GetShadowRadius(),1) 
-					&& pViewClippingObject->TestShadowSweptSphere(pCamera, &(vSunDir))));
-	
+	bIsShadowCaster = (m_bRenderMeshShadow && pObj->IsShadowCaster() && pObj->GetHomeZone() == 0)
+		&& ((pViewClippingObject->TestCollisionSphere(&(sceneState.vEye), GetShadowRadius(), 1)
+			&& pViewClippingObject->TestShadowSweptSphere(pCamera, &(vSunDir))));
+
 	/// draw this object
-	if(bDrawObj || bIsShadowCaster)
+	if (bDrawObj || bIsShadowCaster)
 	{
-		float fObjectToCameraDist = (pObj->GetObjectToCameraDistance()<=0.f) ?  pViewClippingObject->GetObjectToPointDistance(& (sceneState.vEye)) : pObj->GetObjectToCameraDistance();
-		if(bDrawObj)
+		float fObjectToCameraDist = (pObj->GetObjectToCameraDistance() <= 0.f) ? pViewClippingObject->GetObjectToPointDistance(&(sceneState.vEye)) : pObj->GetObjectToCameraDistance();
+		if (bDrawObj)
 		{
-			if(pObj->IsShowBoundingBox())
+			if (pObj->IsShowBoundingBox())
 			{
-				DWORD dwColor = COLOR_ARGB(255,255,0,0);
+				DWORD dwColor = COLOR_ARGB(255, 255, 0, 0);
 				pViewClippingObject->DrawBoundingBox(&sceneState, dwColor);
 			}
-			if(pObj->GetSelectGroupIndex() >= 0)
+			if (pObj->GetSelectGroupIndex() >= 0)
 			{
-				sceneState.listSelections.push_back(PostRenderObject(pObj,fObjectToCameraDist));
+				sceneState.listSelections.push_back(PostRenderObject(pObj, fObjectToCameraDist));
 			}
 		}
-		/** To which post rendering list the object goes to. this is only for debugging purposes. 
+		/** To which post rendering list the object goes to. this is only for debugging purposes.
 		* the bounding box of object from different render list are drawn using different colors.
 		* 0 means biped post rendering list.
 		* 1 means solid object rendering list.
 		* 2 means transparent or small rendering list.
 		* */
 		//int nPostRenderType = 0;
-		if(pObj->IsBiped())
+		if (pObj->IsBiped())
 		{
 			// this is a biped object
-			if(bDrawObj)
+			if (bDrawObj)
 			{
 				PostRenderObject o(pObj, fObjectToCameraDist, sceneState.m_nOccluded);
 				if (pObj->GetRenderOrder() >= m_fPostRenderQueueOrder)
@@ -1412,9 +1412,9 @@ bool CSceneObject::PrepareRenderObject(CBaseObject* pObj, CBaseCamera* pCamera, 
 				else if (!pObj->HasAlphaBlendedObjects())
 					sceneState.listPRBiped.push_back(o);
 				else
-					sceneState.listPRTransparentBiped.push_back(o); 
+					sceneState.listPRTransparentBiped.push_back(o);
 			}
-			if(bIsShadowCaster && pObj->GetOpacity()>0.f)
+			if (bIsShadowCaster && pObj->GetOpacity() > 0.f)
 			{
 				PostRenderObject o(pObj, fObjectToCameraDist);
 				sceneState.listShadowCasters.push_back(o);
@@ -1425,27 +1425,27 @@ bool CSceneObject::PrepareRenderObject(CBaseObject* pObj, CBaseCamera* pCamera, 
 		}
 		else
 		{
-			/** for ordinary mesh objects, we will check its distance from the camera eye to its surface. 
+			/** for ordinary mesh objects, we will check its distance from the camera eye to its surface.
 			* if */
-			float fObjRenderTangentAngle=0;
-			if(pObj->IsTransparent() && bDrawObj)
+			float fObjRenderTangentAngle = 0;
+			if (pObj->IsTransparent() && bDrawObj)
 			{
 				pObj->AutoSelectTechnique();
 				sceneState.listPRTransparentObject.push_back(AlphaPostRenderObject(pObj, fObjectToCameraDist, sceneState.m_nOccluded));
 				//nPostRenderType = 2;
 			}
-			else if( fObjectToCameraDist<=ALWAYS_DRAW_RADIUS || (fObjRenderTangentAngle = pViewClippingObject->GetRadius()/fObjectToCameraDist)>ALWAYS_DRAW__TAN_ANGLE)
+			else if (fObjectToCameraDist <= ALWAYS_DRAW_RADIUS || (fObjRenderTangentAngle = pViewClippingObject->GetRadius() / fObjectToCameraDist) > ALWAYS_DRAW__TAN_ANGLE)
 			{
 				/// if the mesh is very near the camera, or it has a very big view angle, we will draw it as solid mesh,
 				/// and thus it shall go to solid list.
 				pObj->AutoSelectTechnique();
-				if(bDrawObj)
+				if (bDrawObj)
 				{
-					if (pObj->GetRenderOrder() >= m_fPostRenderQueueOrder){
+					if (pObj->GetRenderOrder() >= m_fPostRenderQueueOrder) {
 						PostRenderObject o(pObj, fObjectToCameraDist, sceneState.m_nOccluded);
 						sceneState.listPostRenderingObjects.push_back(o);
 					}
-					else if(!pObj->HasAlphaBlendedObjects())
+					else if (!pObj->HasAlphaBlendedObjects())
 						sceneState.listPRSolidObject.push_back(PostRenderObject(pObj, fObjectToCameraDist, sceneState.m_nOccluded));
 					else
 					{
@@ -1454,7 +1454,7 @@ bool CSceneObject::PrepareRenderObject(CBaseObject* pObj, CBaseCamera* pCamera, 
 				}
 				if (pObj->IsVisible())
 				{
-					if (bIsShadowCaster && pObj->GetOpacity()>0.f)
+					if (bIsShadowCaster && pObj->GetOpacity() > 0.f)
 					{
 						sceneState.listShadowCasters.push_back(PostRenderObject(pObj, fObjectToCameraDist));
 					}
@@ -1467,15 +1467,15 @@ bool CSceneObject::PrepareRenderObject(CBaseObject* pObj, CBaseCamera* pCamera, 
 				}
 				//nPostRenderType = 1;
 			}
-			else if(bDrawObj)
+			else if (bDrawObj)
 			{
 				/// if the mesh is far away from the camera, and it has a small view angle, we will draw it as transparent mesh,
 				float fAlpha = 1.0f;
-				if(fObjectToCameraDist > m_fFogStart)
+				if (fObjectToCameraDist > m_fFogStart)
 					fAlpha = 0.5f;
 				// TODO: fAlpha animation should be enabled, according to whether a object is drawn in last frame.
 				pObj->AutoSelectTechnique();
-				if (pObj->GetRenderOrder() >= m_fPostRenderQueueOrder){
+				if (pObj->GetRenderOrder() >= m_fPostRenderQueueOrder) {
 					PostRenderObject o(pObj, fObjectToCameraDist, sceneState.m_nOccluded);
 					sceneState.listPostRenderingObjects.push_back(o);
 				}
@@ -1499,7 +1499,7 @@ bool CSceneObject::PrepareRenderObject(CBaseObject* pObj, CBaseCamera* pCamera, 
 	return bDrawObj;
 }
 
-void CSceneObject::PrepareTileObjects(CBaseCamera* pCamera, SceneState &sceneState)
+void CSceneObject::PrepareTileObjects(CBaseCamera* pCamera, SceneState& sceneState)
 {
 	Vector3 vViewCenter(0, 0, 0);
 	queue_CTerrainTilePtr_Type queueTiles;
@@ -1691,7 +1691,7 @@ void CSceneObject::PrepareTileObjects(CBaseCamera* pCamera, SceneState &sceneSta
 }
 
 
-void CSceneObject::PrepareMissileObjects(CBaseCamera* pCamera, SceneState &sceneState)
+void CSceneObject::PrepareMissileObjects(CBaseCamera* pCamera, SceneState& sceneState)
 {
 	MissileObjectPool_Type::iterator itCurCP, itEndCP = m_missiles.end();
 
@@ -1707,7 +1707,7 @@ void CSceneObject::PrepareMissileObjects(CBaseCamera* pCamera, SceneState &scene
 	}
 }
 
-void CSceneObject::PreparePortalsAndZones(CBaseCamera* pCamera, SceneState &sceneState)
+void CSceneObject::PreparePortalsAndZones(CBaseCamera* pCamera, SceneState& sceneState)
 {
 #ifdef USE_DIRECTX_RENDERER
 	if (!sceneState.listZones.empty() && IsPortalZoneEnabled())
@@ -1772,7 +1772,7 @@ void CSceneObject::PreparePortalsAndZones(CBaseCamera* pCamera, SceneState &scen
 #endif
 }
 
-void CSceneObject::PrepareCameraState(CBaseCamera* pCamera, SceneState &sceneState)
+void CSceneObject::PrepareCameraState(CBaseCamera* pCamera, SceneState& sceneState)
 {
 	// update the culling planes according to view and projection matrix on top of the global stack
 	pCamera->UpdateFrustum();
@@ -1793,11 +1793,11 @@ void CSceneObject::PrepareCameraState(CBaseCamera* pCamera, SceneState &sceneSta
 			CBipedObject* camTarget = GetCurrentPlayer();
 			if (camTarget == nullptr)
 				m_pBlockWorldClient->OnViewCenterMove(sceneState.vEye.x, sceneState.vEye.y, sceneState.vEye.z);
-			else{
+			else {
 				DVector3 vPos = camTarget->GetPosition();
 				m_pBlockWorldClient->OnViewCenterMove((float)vPos.x, (float)vPos.y, (float)vPos.z);
 			}
-				
+
 		}
 	}
 	else
@@ -1832,10 +1832,10 @@ int CSceneObject::PrepareRender(CBaseCamera* pCamera, SceneState* pSceneState)
 	sceneState.EnableGlobalLOD(IsLODEnabled());
 	sceneState.vEye = pCamera->GetEyePosition();
 	sceneState.vLookAt = pCamera->GetLookAtPosition();
-	
+
 	/// Set up a rotation matrix to orient the billboard towards the camera.
 	sceneState.BillBoardInfo().UpdateBillBoardInfo(&sceneState);
-	
+
 	///////////////////////////////////////////////////////////////////////////
 	// update the default material
 	sceneState.GetGlobalMaterial().Ambient = GetSunLight().GetSunAmbientHue();
@@ -1846,17 +1846,17 @@ int CSceneObject::PrepareRender(CBaseCamera* pCamera, SceneState* pSceneState)
 	// set initial transformations for both the fixed and programmable pipeline
 
 	// set up transformation stack
-	while(! CGlobals::GetWorldMatrixStack().empty())
+	while (!CGlobals::GetWorldMatrixStack().empty())
 		CGlobals::GetWorldMatrixStack().pop();
-	while(! CGlobals::GetViewMatrixStack().empty())
+	while (!CGlobals::GetViewMatrixStack().empty())
 		CGlobals::GetViewMatrixStack().pop();
-	while(! CGlobals::GetProjectionMatrixStack().empty())
+	while (!CGlobals::GetProjectionMatrixStack().empty())
 		CGlobals::GetProjectionMatrixStack().pop();
 
 	CGlobals::GetWorldMatrixStack().push(*CGlobals::GetIdentityMatrix());
 	CGlobals::GetViewMatrixStack().push(*(pCamera->GetViewMatrix()));
 
-	
+
 	if (CGlobals::GetApp()->IsRotateScreen() && CGlobals::GetViewportManager()->GetActiveViewPort()->GetRenderTarget() == NULL)
 	{
 		Matrix4 matProj;
@@ -1866,14 +1866,14 @@ int CSceneObject::PrepareRender(CBaseCamera* pCamera, SceneState* pSceneState)
 		matProj = (*(pCamera->GetProjMatrix())) * matProj;
 		CGlobals::GetProjectionMatrixStack().push(matProj);
 	}
-	else 
+	else
 	{
 		CGlobals::GetProjectionMatrixStack().push(*(pCamera->GetProjMatrix()));
 	}
-	
+
 
 #ifdef USE_DIRECTX_RENDERER
-	CGlobals::GetEffectManager()->UpdateD3DPipelineTransform(true,true, true);
+	CGlobals::GetEffectManager()->UpdateD3DPipelineTransform(true, true, true);
 #endif
 	PrepareCameraState(pCamera, sceneState);
 
@@ -1892,14 +1892,14 @@ int CSceneObject::PrepareRender(CBaseCamera* pCamera, SceneState* pSceneState)
 	//
 	//////////////////////////////////////////////////////////////////////////
 	/*
-	To reduce the number of state changes and associated overhead, applications can sort and batch rendered objects 
-	by shaders or rather "effects" that include combination of shaders, textures and other states. 
-	On the other hand it might be beneficial to sort objects by distance for HYPER Z optimizations. 
+	To reduce the number of state changes and associated overhead, applications can sort and batch rendered objects
+	by shaders or rather "effects" that include combination of shaders, textures and other states.
+	On the other hand it might be beneficial to sort objects by distance for HYPER Z optimizations.
 	Sorting objects by effect/state quite often conflicts with sorting by distance used in front to back rendering.
 
-	Shader switching is one of the most expensive state changes. Batching rendering by vertex shader is always a good idea. 
-	When switches between shaders are inevitable, try limiting frequent switches only to recently used smaller shaders 
-	as driver and hardware can more effectively cache them. Switching between fixed function and programmable pipeline 
+	Shader switching is one of the most expensive state changes. Batching rendering by vertex shader is always a good idea.
+	When switches between shaders are inevitable, try limiting frequent switches only to recently used smaller shaders
+	as driver and hardware can more effectively cache them. Switching between fixed function and programmable pipeline
 	is in most cases more expensive that switching between equivalent shaders because of the extra driver overhead.
 	*/
 
@@ -1923,13 +1923,13 @@ int CSceneObject::PrepareRender(CBaseCamera* pCamera, SceneState* pSceneState)
 	std::sort(sceneState.listPRTransparentBiped.begin(), sceneState.listPRTransparentBiped.end(), GreaterPostRenderObj_NoTechBatch<PostRenderObject>());
 
 	/** sort by distance: front to back */
-	if( m_nMaxNumShadowCasters <(int)sceneState.listShadowCasters.size())
+	if (m_nMaxNumShadowCasters < (int)sceneState.listShadowCasters.size())
 	{
 		// remove shadows casters that are far from the eye position.
 		std::sort(sceneState.listShadowCasters.begin(), sceneState.listShadowCasters.end(), LessPostRenderObj_NoTechBatch<PostRenderObject>());
 		int nRemoveNum = (int)sceneState.listShadowCasters.size() - m_nMaxNumShadowCasters;
 		SceneState::List_PostRenderObject_Type::iterator itFrom = sceneState.listShadowCasters.end();
-		for (int i=0;i<nRemoveNum;++i)
+		for (int i = 0; i < nRemoveNum; ++i)
 			--itFrom;
 		sceneState.listShadowCasters.erase(itFrom, sceneState.listShadowCasters.end());
 	}
@@ -1940,13 +1940,13 @@ int CSceneObject::PrepareRender(CBaseCamera* pCamera, SceneState* pSceneState)
 	sceneState.bIsBatchRender = true;
 
 	std::sort(sceneState.listPostRenderingObjects.begin(), sceneState.listPostRenderingObjects.end(), GreaterPostRenderObj_ByOrder<PostRenderObject>());
-	
 
-	if(CGlobals::WillGenReport())
+
+	if (CGlobals::WillGenReport())
 	{
 		/** number of shadow casters and receivers are now reported to the console in the format:
 		*/
-		if(m_bRenderMeshShadow)
+		if (m_bRenderMeshShadow)
 		{
 			static char sNumReport[50];
 			snprintf(sNumReport, 50, "casters:%d receivers:%d", (int)sceneState.listShadowCasters.size(), (int)sceneState.listShadowReceivers.size());
@@ -1964,7 +1964,7 @@ int CSceneObject::PrepareRender(CBaseCamera* pCamera, SceneState* pSceneState)
 }
 
 
-void CSceneObject::UpdateMovableObjectZone(SceneState &sceneState, SceneState::List_PostRenderObject_Type& listPRBiped)
+void CSceneObject::UpdateMovableObjectZone(SceneState& sceneState, SceneState::List_PostRenderObject_Type& listPRBiped)
 {
 	SceneState::List_PostRenderObject_Type::iterator itCur, itEnd = listPRBiped.end();
 	for (itCur = listPRBiped.begin(); itCur != itEnd; ++itCur)
@@ -1996,13 +1996,13 @@ void CSceneObject::UpdateMovableObjectZone(SceneState &sceneState, SceneState::L
 
 
 template <class T>
-int PerformPortalOcclusionTest(T& renderlist,PostRenderObject& zone,  CPortalFrustum& portalFrustum)
+int PerformPortalOcclusionTest(T& renderlist, PostRenderObject& zone, CPortalFrustum& portalFrustum)
 {
-	typename T::iterator itCur, itEnd =  renderlist.end();
-	for(itCur = renderlist.begin();itCur!=itEnd;++itCur)
+	typename T::iterator itCur, itEnd = renderlist.end();
+	for (itCur = renderlist.begin(); itCur != itEnd; ++itCur)
 	{
 		CBaseObject* pObj = (*itCur).m_pRenderObject;
-		if((*itCur).m_nOccluded>=0 && pObj->GetHomeZone() == zone.m_pRenderObject)
+		if ((*itCur).m_nOccluded >= 0 && pObj->GetHomeZone() == zone.m_pRenderObject)
 		{
 			IViewClippingObject* pViewClippingObject = pObj->GetViewClippingObject();
 			(*itCur).m_nOccluded = (portalFrustum.CanSeeObject_PortalOnly(pViewClippingObject)) ? -1 : 1;
@@ -2011,7 +2011,7 @@ int PerformPortalOcclusionTest(T& renderlist,PostRenderObject& zone,  CPortalFru
 	return 0;
 }
 
-int ClipZone(SceneState& sceneState, PostRenderObject& zone, CPortalFrustum& portalFrustum )
+int ClipZone(SceneState& sceneState, PostRenderObject& zone, CPortalFrustum& portalFrustum)
 {
 	// cull objects by the give zone
 	PerformPortalOcclusionTest(sceneState.listPRBiped, zone, portalFrustum);
@@ -2020,20 +2020,20 @@ int ClipZone(SceneState& sceneState, PostRenderObject& zone, CPortalFrustum& por
 
 	zone.m_nOccluded = -1;
 	// this will prevent recursion 
-	if(zone.m_pRenderObject)
+	if (zone.m_pRenderObject)
 	{
-		CZoneNode* pZone =  (CZoneNode*)(zone.m_pRenderObject);
+		CZoneNode* pZone = (CZoneNode*)(zone.m_pRenderObject);
 		RefList::const_iterator itCur, itEnd = pZone->GetRefList().end();
-		for(itCur = pZone->GetRefList().begin();itCur!=itEnd && ((*itCur).m_tag == -1);++itCur)
+		for (itCur = pZone->GetRefList().begin(); itCur != itEnd && ((*itCur).m_tag == -1); ++itCur)
 		{
 			CPortalNode* pPortal = (CPortalNode*)((*itCur).m_object);
 			pPortal->CheckFrameNumber(sceneState.m_nRenderCount); // ensure that derived data are updated. 
 
-			if(portalFrustum.isVisible(pPortal))
+			if (portalFrustum.isVisible(pPortal))
 			{
-				CZoneNode* pTargetZone =  pPortal->GetZone(pZone);
-				PostRenderObject* pZoneObj =  sceneState.FindObject(sceneState.listZones, pTargetZone);
-				if(pZoneObj && pZoneObj->m_nOccluded == 0)
+				CZoneNode* pTargetZone = pPortal->GetZone(pZone);
+				PostRenderObject* pZoneObj = sceneState.FindObject(sceneState.listZones, pTargetZone);
+				if (pZoneObj && pZoneObj->m_nOccluded == 0)
 				{
 					portalFrustum.AddPortalCullingPlanes(pPortal);
 					ClipZone(sceneState, *pZoneObj, portalFrustum);
@@ -2041,7 +2041,7 @@ int ClipZone(SceneState& sceneState, PostRenderObject& zone, CPortalFrustum& por
 				}
 			}
 		}
-		
+
 	}
 	else
 	{
@@ -2050,20 +2050,20 @@ int ClipZone(SceneState& sceneState, PostRenderObject& zone, CPortalFrustum& por
 
 		// this is the outer world zone. we will add all portals to it.
 		SceneState::List_PostRenderObject_Type::iterator itCurCP, itEndCP = sceneState.listZones.end();
-		for(itCurCP = sceneState.listZones.begin(); itCurCP !=itEndCP; ++itCurCP)
+		for (itCurCP = sceneState.listZones.begin(); itCurCP != itEndCP; ++itCurCP)
 		{
 			CZoneNode* pZone = (CZoneNode*)((*itCurCP).m_pRenderObject);
 			// if zone is not the outer world and that its occlusion are undetermined. 
-			if(pZone && (*itCurCP).m_nOccluded==0)
+			if (pZone && (*itCurCP).m_nOccluded == 0)
 			{
 				RefList::const_iterator itCur, itEnd = pZone->GetRefList().end();
-				for(itCur = pZone->GetRefList().begin();itCur!=itEnd && ((*itCur).m_tag == -1);++itCur)
+				for (itCur = pZone->GetRefList().begin(); itCur != itEnd && ((*itCur).m_tag == -1); ++itCur)
 				{
 					CPortalNode* pPortal = (CPortalNode*)((*itCur).m_object);
 					pPortal->CheckFrameNumber(sceneState.m_nRenderCount); // ensure that derived data are updated. 
 
 					// if a zone has portal that connect to the outer world and that the portal is not faced away from the frustum
-					if(pPortal->GetZoneCount()==1 && portalFrustum.isVisible(pPortal, false))
+					if (pPortal->GetZoneCount() == 1 && portalFrustum.isVisible(pPortal, false))
 					{
 						// this algorithm is limited in that the camera can see into a room via at most one portal
 						portalFrustum.AddPortalCullingPlanes(pPortal);
@@ -2092,41 +2092,41 @@ void CSceneObject::UpdateOcean()
 //-----------------------------------------------------------------------------
 HRESULT CSceneObject::AdvanceScene(double dTimeDelta, int nPipelineOrder)
 {
-	if(!m_bInitialized)
+	if (!m_bInitialized)
 		return E_FAIL;
 
 	// when game time is paused, also pause the scene delta time
-	if(CGlobals::GetFrameRateController(FRC_GAME)->IsPaused() && dTimeDelta > 0.f)
+	if (CGlobals::GetFrameRateController(FRC_GAME)->IsPaused() && dTimeDelta > 0.f)
 		dTimeDelta = CGlobals::GetFrameRateController(FRC_GAME)->GetElapsedTime();
 
-	globalTime =  (int64_t)(CGlobals::GetGameTime()*1000);
+	globalTime = (int64_t)(CGlobals::GetGameTime() * 1000);
 	SceneState& sceneState = *(m_sceneState.get());
-	
+
 	sceneState.SetCurrentRenderPipeline(nPipelineOrder);
 	auto pd3dDevice = CGlobals::GetRenderDevice();
 
 #ifdef USE_DIRECTX_RENDERER
-	GETD3D(CGlobals::GetRenderDevice())->SetRenderTarget(1,NULL);
-	GETD3D(CGlobals::GetRenderDevice())->SetRenderTarget(2,NULL);
-	GETD3D(CGlobals::GetRenderDevice())->SetRenderTarget(3,NULL);
+	GETD3D(CGlobals::GetRenderDevice())->SetRenderTarget(1, NULL);
+	GETD3D(CGlobals::GetRenderDevice())->SetRenderTarget(2, NULL);
+	GETD3D(CGlobals::GetRenderDevice())->SetRenderTarget(3, NULL);
 #endif
-	if(nPipelineOrder == PIPELINE_POST_UI_3D_SCENE)
+	if (nPipelineOrder == PIPELINE_POST_UI_3D_SCENE)
 	{
 		//////////////////////////////////////////////////////////////////////////
 		// 
 		// for mini scene graphs that have their own camera and render order is Post UI. 
 		//
 		//////////////////////////////////////////////////////////////////////////
-		if(IsMiniSceneGraphEnabled())
+		if (IsMiniSceneGraphEnabled())
 		{
 			int nCount = 0;
 			MiniSceneGraphPool_type::iterator itCur, itEnd = m_miniSceneGraphs.end();
-			for (itCur = m_miniSceneGraphs.begin(); itCur!=itEnd; ++itCur)
+			for (itCur = m_miniSceneGraphs.begin(); itCur != itEnd; ++itCur)
 			{
 				CMiniSceneGraph* pObj = (*itCur);
-				if(pObj && (pObj->GetRenderPipelineOrder() == PIPELINE_POST_UI_3D_SCENE) && pObj->IsVisible() && pObj->IsCameraEnabled() && pObj->IsDirty())
+				if (pObj && (pObj->GetRenderPipelineOrder() == PIPELINE_POST_UI_3D_SCENE) && pObj->IsVisible() && pObj->IsCameraEnabled() && pObj->IsDirty())
 				{
-					if(nCount == 0)
+					if (nCount == 0)
 					{
 						// clear z buffer
 						CGlobals::GetRenderDevice()->SetClearDepth(1.0f);
@@ -2145,21 +2145,21 @@ HRESULT CSceneObject::AdvanceScene(double dTimeDelta, int nPipelineOrder)
 	// for mini scene graphs that have their own render target and camera.
 	//
 	//////////////////////////////////////////////////////////////////////////
-	if(IsMiniSceneGraphEnabled())
+	if (IsMiniSceneGraphEnabled())
 	{
 		int nCount = 0;
 		MiniSceneGraphPool_type::iterator itCur, itEnd = m_miniSceneGraphs.end();
-		for (itCur = m_miniSceneGraphs.begin(); itCur!=itEnd; ++itCur)
+		for (itCur = m_miniSceneGraphs.begin(); itCur != itEnd; ++itCur)
 		{
 			CMiniSceneGraph* pObj = (*itCur);
-			if(pObj && pObj->IsNeedUpdate() &&  pObj->IsVisible() && pObj->IsCameraEnabled() && pObj->IsDirty() && (pObj->GetRenderPipelineOrder()<PIPELINE_UI))
+			if (pObj && pObj->IsNeedUpdate() && pObj->IsVisible() && pObj->IsCameraEnabled() && pObj->IsDirty() && (pObj->GetRenderPipelineOrder() < PIPELINE_UI))
 			{
 				pObj->Draw((float)dTimeDelta);
 				nCount++;
 			}
 		}
 		// end previous effects, since they may serve different IScene instance.
-		if(nCount>0)
+		if (nCount > 0)
 			CGlobals::GetEffectManager()->EndEffect();
 	}
 
@@ -2181,12 +2181,12 @@ HRESULT CSceneObject::AdvanceScene(double dTimeDelta, int nPipelineOrder)
 	// Render objects in the scene state
 	//
 	//////////////////////////////////////////////////////////////////////////
-	
+
 	CAutoCamera* pCamera = (CAutoCamera*)GetCurrentCamera();
 	sceneState.dTimeDelta = dTimeDelta;
-	++ sceneState.m_nRenderCount; 
+	++sceneState.m_nRenderCount;
 	SetFrameNumber(sceneState.m_nRenderCount);
-	
+
 	PrepareRender(pCamera, &sceneState);
 
 	//////////////////////////////////////////////////////////////////////////
@@ -2199,13 +2199,13 @@ HRESULT CSceneObject::AdvanceScene(double dTimeDelta, int nPipelineOrder)
 	GETD3D(CGlobals::GetRenderDevice())->SetMaterial((D3DMATERIAL9*)&(sceneState.GetGlobalMaterial()));
 
 
-	if(IsUseWireFrame())
+	if (IsUseWireFrame())
 	{
-		CGlobals::GetRenderDevice()->SetRenderState( ERenderState::FILLMODE, D3DFILL_WIREFRAME );
+		CGlobals::GetRenderDevice()->SetRenderState(ERenderState::FILLMODE, D3DFILL_WIREFRAME);
 	}
 	else
 	{
-		CGlobals::GetRenderDevice()->SetRenderState( ERenderState::FILLMODE, D3DFILL_SOLID );
+		CGlobals::GetRenderDevice()->SetRenderState(ERenderState::FILLMODE, D3DFILL_SOLID);
 	}
 #endif
 	/////////////////////////////////////////////////////////////////
@@ -2213,7 +2213,7 @@ HRESULT CSceneObject::AdvanceScene(double dTimeDelta, int nPipelineOrder)
 
 	// this ensures that particles are not animated or created in canvas's coordinate system.
 	double oldDelta = m_sceneState->dTimeDelta;
-	m_sceneState->dTimeDelta = 0; 
+	m_sceneState->dTimeDelta = 0;
 
 	// like render target object
 	RenderSelection(RENDER_OWNER_DRAW);
@@ -2236,18 +2236,18 @@ HRESULT CSceneObject::AdvanceScene(double dTimeDelta, int nPipelineOrder)
 	bool bSimulateOcean = pOcean->UpdateReflectionTexture(sceneState);
 
 	//replace ambient params for under water scene;
-	if(bSimulateOcean && pOcean->IsUnderWater() && !pOcean->IsScreenSpaceFog())
+	if (bSimulateOcean && pOcean->IsUnderWater() && !pOcean->IsScreenSpaceFog())
 	{
 		ApplyWaterFogParam();
 	}
-	
+
 	//////////////////////////////////////////////////////////////////////////
 	// render all reflection map in the scene. 
-	if(sceneState.m_bCameraMoved || pOcean->IsRedrawStillReflection())
+	if (sceneState.m_bCameraMoved || pOcean->IsRedrawStillReflection())
 	{
-		for (int i=0;i<(int)m_mirrorSurfaces.size();++i)
+		for (int i = 0; i < (int)m_mirrorSurfaces.size(); ++i)
 		{
-			if(m_mirrorSurfaces[i]!=0)
+			if (m_mirrorSurfaces[i] != 0)
 			{
 				m_mirrorSurfaces[i]->RenderReflectionTexture();
 			}
@@ -2255,12 +2255,12 @@ HRESULT CSceneObject::AdvanceScene(double dTimeDelta, int nPipelineOrder)
 	}
 #endif	
 	// terrain tessellation goes here. This is CPU time consuming.
-	if(!(sceneState.m_bSkipTerrain) && m_globalTerrain->TerrainRenderingEnabled())
+	if (!(sceneState.m_bSkipTerrain) && m_globalTerrain->TerrainRenderingEnabled())
 		m_globalTerrain->Update();
 
 	//////////////////////////////////////////////////////////////////////////
 	// render the shadow map
-	if( IsShadowMapEnabled() && (!(sceneState.m_bSkipTerrain) || BlockWorldClient::GetInstance()->GetBlockRenderMethod() == BLOCK_RENDER_FANCY_SHADER))
+	if (IsShadowMapEnabled() && (!(sceneState.m_bSkipTerrain) || BlockWorldClient::GetInstance()->GetBlockRenderMethod() == BLOCK_RENDER_FANCY_SHADER))
 	{
 		sceneState.GetFaceGroups()->Clear();
 		sceneState.m_bEnableTranslucentFaceSorting = false;
@@ -2268,21 +2268,21 @@ HRESULT CSceneObject::AdvanceScene(double dTimeDelta, int nPipelineOrder)
 	}
 
 	m_sceneState->dTimeDelta = oldDelta;
-	
+
 	//////////////////////////////////////////////////////////////////////////
 	//
 	// the normal pipeline: terrain, mesh, shadows, bipeds, missiles, sky, ocean, semi-transparent, particles, bounding boxes, etc.
 	// TODO: we may put these info a pipeline xml for adjustment. 
 	//
 	//////////////////////////////////////////////////////////////////////////
-	
+
 	BlockWorldClient::GetInstance()->DrawMultiFrameBlockWorld();
 	// prepare render target first for deferred shading if fancy graphics is enabled in block world.
 	BlockWorldClient::GetInstance()->PrepareAllRenderTargets();
-	
+
 	//////////////////////////////////////////////////////////////////////////
 	/// draw the terrain
-	if(!(sceneState.m_bSkipTerrain))
+	if (!(sceneState.m_bSkipTerrain))
 		RenderSelection(RENDER_GLOBAL_TERRAIN);
 
 	m_pBlockWorldClient->PreRender();
@@ -2293,9 +2293,9 @@ HRESULT CSceneObject::AdvanceScene(double dTimeDelta, int nPipelineOrder)
 		// we will render sky and fog in post processor. Current sky shader does not render to multiple render target, it will cause glitches. 
 		// sceneState.m_bSkipSky = true;
 	}
-	
+
 	// so that mesh and character that contains translucent faces are sorted. 
-	if(!sceneState.GetFaceGroups()->IsEmpty())
+	if (!sceneState.GetFaceGroups()->IsEmpty())
 	{
 		sceneState.GetFaceGroups()->Clear();
 	}
@@ -2310,21 +2310,21 @@ HRESULT CSceneObject::AdvanceScene(double dTimeDelta, int nPipelineOrder)
 		Their bounding boxes will be rendered as blue boxes.
 	- Biped list: sorted by primary asset. In mesh report, it will display "Biped:%d". Their bounding boxes will be rendered as green boxes.
 	*/
-	int nMeshRendered = 0; 
+	int nMeshRendered = 0;
 	{
 		PERF1("Render_Mesh");
 		// object num in potentially visible set from current view point
-		
+
 		//////////////////////////////////////////////////////////////////////////
 		/// draw solid object rendering list from front to back.
-		if(!sceneState.listPRSolidObject.empty())
+		if (!sceneState.listPRSolidObject.empty())
 		{
 			RenderSelection(RENDER_MESH_FRONT_TO_BACK);
 		}
 
 		//////////////////////////////////////////////////////////////////////////
 		// draw smaller object rendering list from back to front.
-		if(!sceneState.listPRSmallObject.empty())
+		if (!sceneState.listPRSmallObject.empty())
 		{
 			nMeshRendered = RenderSelection(RENDER_MESH_BACK_TO_FRONT);
 		}
@@ -2332,14 +2332,14 @@ HRESULT CSceneObject::AdvanceScene(double dTimeDelta, int nPipelineOrder)
 #ifdef USE_DIRECTX_RENDERER
 	//////////////////////////////////////////////////////////////////////////
 	/// Sprite post-rendering list
-	if(!sceneState.listPRSprite.empty())
+	if (!sceneState.listPRSprite.empty())
 	{
 		RenderSelection(RENDER_SPRITES);
 	}
 
 	//////////////////////////////////////////////////////////////////////////
 	/// animate the local animation of the biped object
-	
+
 	//////////////////////////////////////////////////////////////////////////
 	/// render shadow volumes
 	// RenderShadows();
@@ -2349,13 +2349,13 @@ HRESULT CSceneObject::AdvanceScene(double dTimeDelta, int nPipelineOrder)
 	/// Draw queued bipeds
 	/// we draw biped after its shadow, because we do not want biped to cast shadows on its own
 	int nCharacterRendered = 0;
-	if(!sceneState.listPRBiped.empty())
+	if (!sceneState.listPRBiped.empty())
 	{
 		nCharacterRendered += RenderSelection(RENDER_CHARACTERS);
 	}
 
 	RenderSelection(RENDER_SELECTION);
-	
+
 	// draw solid head on
 	RenderHeadOnDisplay(3);
 	//////////////////////////////////////////////////////////////////////////
@@ -2367,7 +2367,7 @@ HRESULT CSceneObject::AdvanceScene(double dTimeDelta, int nPipelineOrder)
 
 	//////////////////////////////////////////////////////////////////////////
 	/// draw missile objects
-	if(!sceneState.listPRMissiles.empty())
+	if (!sceneState.listPRMissiles.empty())
 	{
 		RenderSelection(RENDER_MISSILES);
 	}
@@ -2385,7 +2385,7 @@ HRESULT CSceneObject::AdvanceScene(double dTimeDelta, int nPipelineOrder)
 
 	// draw transparent particles
 	m_pBatchedElementDraw->DrawBatchedParticles(true);
-	
+
 	// alpha blended objects should be rendered after deferred shading with normal rendering order. 
 	m_pBlockWorldClient->Render(BlockRenderPass_AlphaBlended);
 
@@ -2402,11 +2402,11 @@ HRESULT CSceneObject::AdvanceScene(double dTimeDelta, int nPipelineOrder)
 	// draw the head on display GUI
 	RenderHeadOnDisplay(0);
 
-	if(CGlobals::WillGenReport())
+	if (CGlobals::WillGenReport())
 	{
 		// print the mesh report.
 		static char sMeshReport[50];
-		snprintf(sMeshReport, 50, "F->B:%d B->F:%d(%d) char:%d(%d) post:%d", 
+		snprintf(sMeshReport, 50, "F->B:%d B->F:%d(%d) char:%d(%d) post:%d",
 			(int)sceneState.listPRSolidObject.size(), (int)sceneState.listPRSmallObject.size(), nMeshRendered, (int)(sceneState.listPRBiped.size() + sceneState.listPRTransparentBiped.size()), nCharacterRendered, (int)sceneState.listPRTransparentObject.size());
 		sMeshReport[49] = '\0';
 		CGlobals::GetReport()->SetString("meshes", sMeshReport);
@@ -2415,11 +2415,11 @@ HRESULT CSceneObject::AdvanceScene(double dTimeDelta, int nPipelineOrder)
 #ifdef USE_DIRECTX_RENDERER
 	//////////////////////////////////////////////////////////////////////////
 	/// draw ocean if any
-	if(bSimulateOcean){
+	if (bSimulateOcean) {
 		pOcean->Render(&sceneState);
 	}
-	else{
-		if(CGlobals::WillGenReport())
+	else {
+		if (CGlobals::WillGenReport())
 			CGlobals::GetReport()->SetValue("ocean tile", 0);
 	}
 #endif
@@ -2428,14 +2428,14 @@ HRESULT CSceneObject::AdvanceScene(double dTimeDelta, int nPipelineOrder)
 
 	//////////////////////////////////////////////////////////////////////////
 	// draw transparent object rendering list from back to front.it is rendered after ocean to prevent the ocean color over the particles. 
-	if(!sceneState.listPRTransparentObject.empty())
+	if (!sceneState.listPRTransparentObject.empty())
 	{
 		RenderSelection(RENDER_MESH_TRANSPARENT);
 	}
 
 	//////////////////////////////////////////////////////////////////////////
 	// render translucent face groups.
-	if(!sceneState.GetFaceGroups()->IsEmpty())
+	if (!sceneState.GetFaceGroups()->IsEmpty())
 	{
 		RenderSelection(RENDER_TRANSLUCENT_FACE_GROUPS);
 		sceneState.GetFaceGroups()->Clear();
@@ -2453,9 +2453,9 @@ HRESULT CSceneObject::AdvanceScene(double dTimeDelta, int nPipelineOrder)
 	/// it is rendered after ocean to prevent the ocean color over the particles. since all particles are z write disabled.
 	{
 		int nParticlesCount = RenderSelection(RENDER_PARTICLES, dTimeDelta);
-		if(CGlobals::WillGenReport()){
+		if (CGlobals::WillGenReport()) {
 			/** the particle system instance count and the total particle counts are now reported to the console in the format:
-			* nParticles: %2     
+			* nParticles: %2
 			* where %2 is the total particle counts */
 			static char sParticleReport[50];
 			snprintf(sParticleReport, 50, "%d", nParticlesCount);
@@ -2467,37 +2467,37 @@ HRESULT CSceneObject::AdvanceScene(double dTimeDelta, int nPipelineOrder)
 #ifdef USE_DIRECTX_RENDERER
 	//////////////////////////////////////////////////////////////////////////
 	// call the post processor if any. 
-	if(IsPostProcessingEnabled())
+	if (IsPostProcessingEnabled())
 	{
 		// post processing in the scripting interface 
-		if(!m_sPostPorcessorCallbackScript.empty())
+		if (!m_sPostPorcessorCallbackScript.empty())
 		{
 			CGlobals::GetNPLRuntime()->GetMainRuntimeState()->DoString(m_sPostPorcessorCallbackScript.c_str(), (int)m_sPostPorcessorCallbackScript.size());
 		}
 	}
-	else if(BlockWorldClient::GetInstance()->GetBlockRenderMethod() != BLOCK_RENDER_FANCY_SHADER)
+	else if (BlockWorldClient::GetInstance()->GetBlockRenderMethod() != BLOCK_RENDER_FANCY_SHADER)
 	{
 		//////////////////////////////////////////////////////////////////////////
 		// full screen glow effect
-		if(IsUsingFullScreenGlow())
+		if (IsUsingFullScreenGlow())
 		{
-			if(!pOcean->IsUnderWater())
+			if (!pOcean->IsUnderWater())
 			{
-				RenderFullScreenGlowEffect();				
+				RenderFullScreenGlowEffect();
 			}
-			else if(!IsUsingScreenWaveEffect())
+			else if (!IsUsingScreenWaveEffect())
 			{
 				RenderFullScreenGlowEffect();
 			}
 		}
 	}
 
-	if(bSimulateOcean && IsUsingScreenWaveEffect() && pOcean->IsUnderWater())
+	if (bSimulateOcean && IsUsingScreenWaveEffect() && pOcean->IsUnderWater())
 	{
 		RenderScreenWaveEffect();
 	}
 
-	if(bSimulateOcean && !pOcean->IsScreenSpaceFog())
+	if (bSimulateOcean && !pOcean->IsScreenSpaceFog())
 	{
 		GetSunLight().SetSunAmbient(defaultAmbColor);
 		SetFogColor(defaultFogColor);
@@ -2507,19 +2507,19 @@ HRESULT CSceneObject::AdvanceScene(double dTimeDelta, int nPipelineOrder)
 #endif
 	/////////////////////////////////////////////////////////////////////////
 	// render the physics debug mode
-	if(GetPhysicsDebugDrawMode() != 0)
+	if (GetPhysicsDebugDrawMode() != 0)
 	{
-		PARAVECTOR3 vOffset( -m_vRenderOrigin.x, -m_vRenderOrigin.y, -m_vRenderOrigin.z);
+		PARAVECTOR3 vOffset(-m_vRenderOrigin.x, -m_vRenderOrigin.y, -m_vRenderOrigin.z);
 		GetBatchedElementDrawer()->SetRenderOffset(vOffset);
 		CGlobals::GetPhysicsWorld()->GetPhysicsInterface()->DebugDrawWorld();
-		GetBatchedElementDrawer()->SetRenderOffset(PARAVECTOR3(0,0,0));
+		GetBatchedElementDrawer()->SetRenderOffset(PARAVECTOR3(0, 0, 0));
 	}
 
 	//////////////////////////////////////////////////////////////////////////
 	// bounding box
 	RenderSelection(RENDER_BOUNDINGBOX);
 
-	if(m_bShowPortalSystem)
+	if (m_bShowPortalSystem)
 		RenderSelection(RENDER_PORTAL_SYSTEM);
 
 	// draw overlays
@@ -2530,10 +2530,10 @@ HRESULT CSceneObject::AdvanceScene(double dTimeDelta, int nPipelineOrder)
 
 	//////////////////////////////////////////////////////////////////////////
 	// TODO: draw debugging objects
-	
+
 	//////////////////////////////////////////////////////////////////////////
 	// Now begins the GUI
-	
+
 	RemoveDeadObjects();
 
 	// make picking result dirty when scene is redrawn.
@@ -2547,32 +2547,32 @@ template <class T>
 void RenderHeadOnDisplayList(T& renderlist, int& nObjCount, SceneState* pSceneState, CGUIText** ppObjUITextDefault, bool bZEnable = true, bool b3DText = false, bool bZWriteEnable = false, bool bRenderSolid = false)
 {
 	typename T::const_iterator itCurCP, itEnd = renderlist.end();
-	for(itCurCP = renderlist.begin(); itCurCP !=itEnd; ++itCurCP)
+	for (itCurCP = renderlist.begin(); itCurCP != itEnd; ++itCurCP)
 	{
 		CBaseObject* pObj = (*itCurCP).m_pRenderObject;
-		if (pObj && pObj->HasHeadOnDisplay() && (pObj->IsHeadOnSolid() == bRenderSolid)  && !IHeadOn3D::DrawHeadOnUI(pObj, nObjCount, pSceneState, ppObjUITextDefault, bZEnable, b3DText, bZWriteEnable))
+		if (pObj && pObj->HasHeadOnDisplay() && (pObj->IsHeadOnSolid() == bRenderSolid) && !IHeadOn3D::DrawHeadOnUI(pObj, nObjCount, pSceneState, ppObjUITextDefault, bZEnable, b3DText, bZWriteEnable))
 			break;
 	}
 }
 
 int CSceneObject::RenderHeadOnDisplay(int nPass)
 {
-	if(!IsHeadOnDisplayShown())
+	if (!IsHeadOnDisplayShown())
 		return 0;
 	SceneState& sceneState = *(m_sceneState.get());
-	
-	
+
+
 	CGUIText* pObjUITextDefault = NULL;
 	int nTotalCount = 0;
-	
-	
+
+
 	float fScaleX, fScaleY;
 	CGUIRoot::GetInstance()->GetUIScale(&fScaleX, &fScaleY);
 	CGUIRoot::GetInstance()->SetUIScale(1, 1, true, true, false);
 	{
 		// render mesh object with 3d text. 
 		bool bUsePointTexture = CGUIRoot::GetInstance()->GetUsePointTextureFiltering();
-		if(!bUsePointTexture)
+		if (!bUsePointTexture)
 		{
 			CGUIRoot::GetInstance()->SetUsePointTextureFiltering(true);
 		}
@@ -2645,9 +2645,9 @@ int CSceneObject::RenderHeadOnDisplay(int nPass)
 			if (!sceneState.listPRTransparentBiped.empty())
 				RenderHeadOnDisplayList(sceneState.listPRTransparentBiped, nObjCount, &sceneState, &pObjUITextDefault, true, false, false, true);
 			IHeadOn3D::DrawHeadOnUI(NULL, nObjCount, &sceneState);
-		}		
-		nTotalCount+=nObjCount;
-		if(!bUsePointTexture)
+		}
+		nTotalCount += nObjCount;
+		if (!bUsePointTexture)
 		{
 			CGUIRoot::GetInstance()->SetUsePointTextureFiltering(bUsePointTexture);
 		}
@@ -2656,12 +2656,12 @@ int CSceneObject::RenderHeadOnDisplay(int nPass)
 	{
 		// Draw all character's with 2d text facing the camera. 
 		int nObjCount = 0;
-		if(!sceneState.listPRBiped.empty())
+		if (!sceneState.listPRBiped.empty())
 			RenderHeadOnDisplayList(sceneState.listPRBiped, nObjCount, &sceneState, &pObjUITextDefault, true, false);
 		if (!sceneState.listPRTransparentBiped.empty())
 			RenderHeadOnDisplayList(sceneState.listPRTransparentBiped, nObjCount, &sceneState, &pObjUITextDefault, true, false);
 		IHeadOn3D::DrawHeadOnUI(NULL, nObjCount, &sceneState);
-		nTotalCount+=nObjCount;
+		nTotalCount += nObjCount;
 	}
 	CGUIRoot::GetInstance()->SetUIScale(fScaleX, fScaleY, true, true, false);
 	return nTotalCount;
@@ -2678,20 +2678,20 @@ void ParaEngine::CSceneObject::SetCurrentCamera(CBaseCamera* pCamera)
 }
 
 CSkyMesh* CSceneObject::GetCurrentSky()
-{	
-	if(m_skymeshes.empty())
+{
+	if (m_skymeshes.empty())
 		return NULL;
 	else
 		return m_skymeshes.back();
 }
-bool CSceneObject::CreateSkyBox(const string& strObjectName, AssetEntity& MeshAsset, float fScaleX, float fScaleY,float fScaleZ, float fHeightOffset)
+bool CSceneObject::CreateSkyBox(const string& strObjectName, AssetEntity& MeshAsset, float fScaleX, float fScaleY, float fScaleZ, float fHeightOffset)
 {
 	// if the object already exists, just select it as the current sky.
 	SkyMeshPool_type::iterator itCurCP, itEndCP = m_skymeshes.end();
 
-	for( itCurCP = m_skymeshes.begin(); itCurCP != itEndCP; ++ itCurCP)
+	for (itCurCP = m_skymeshes.begin(); itCurCP != itEndCP; ++itCurCP)
 	{
-		if((*itCurCP)->GetIdentifier() == strObjectName)
+		if ((*itCurCP)->GetIdentifier() == strObjectName)
 		{
 			ref_ptr<CSkyMesh> pTmp(*itCurCP);
 			m_skymeshes.erase(itCurCP);
@@ -2702,19 +2702,19 @@ bool CSceneObject::CreateSkyBox(const string& strObjectName, AssetEntity& MeshAs
 	}
 
 	// if the sky name does not exist, we will create it and select it as the current sky mesh. 
-	if(!MeshAsset.IsValid())
+	if (!MeshAsset.IsValid())
 	{
 		return false;
 	}
 	else
 	{
-		CSkyMesh * pSky = new CSkyMesh();
-		if( pSky == NULL )
+		CSkyMesh* pSky = new CSkyMesh();
+		if (pSky == NULL)
 			return false;
-		pSky->CreateSkyStaticMesh(strObjectName,MeshAsset,fScaleX, fScaleY, fScaleZ, fHeightOffset );
+		pSky->CreateSkyStaticMesh(strObjectName, MeshAsset, fScaleX, fScaleY, fScaleZ, fHeightOffset);
 		m_skymeshes.push_back(pSky);
 		// sky added and selected as current.
-		return true; 
+		return true;
 	}
 
 	return false;
@@ -2722,7 +2722,7 @@ bool CSceneObject::CreateSkyBox(const string& strObjectName, AssetEntity& MeshAs
 
 bool CSceneObject::DeleteSkyBox(const string& strObjectName)
 {
-	if(strObjectName=="")
+	if (strObjectName == "")
 	{
 		m_skymeshes.clear();
 	}
@@ -2730,7 +2730,7 @@ bool CSceneObject::DeleteSkyBox(const string& strObjectName)
 }
 
 CSunLight& CSceneObject::GetSunLight()
-{	
+{
 	/** only used when there is no sky created. */
 	return *m_pSunLight;
 }
@@ -2742,28 +2742,28 @@ CSunLight& CSceneObject::GetSunLight()
 // in the current sceneState. It then performs step 2 of the rendering pipeline(see below)
 	/** Shadow volume rendering
 	1. Render the portion of the scene which will receive shadows.
-	2. For each active light in the scene. { 
+	2. For each active light in the scene. {
 		2.1. Build shadow volume for each enabled shadow caster, with regard to the current light.
 		2.2. Render the shadow volumes to stencil buffer twice to get the shaded region.
 		2.3. Render the shadow (i.e. alpha blending a big quad of the shadow color to the screen), with regard to the stencil buffer
 	}
 	3. Render the portion of the scene that does not receive shadows.
 	*/
-//--------------------------------------------------------------------------
+	//--------------------------------------------------------------------------
 void CSceneObject::RenderShadows()
 {
 #ifdef USE_DIRECTX_RENDERER
 	SceneState& sceneState = *(m_sceneState.get());
-	CAutoCamera* pCamera =  (CAutoCamera*)GetCurrentCamera();
+	CAutoCamera* pCamera = (CAutoCamera*)GetCurrentCamera();
 	auto pd3dDevice = CGlobals::GetRenderDevice();
 
-	if(m_bRenderMeshShadow)
+	if (m_bRenderMeshShadow)
 	{// for each light, we cast shadows
 		//LPDIRECT3DSTATEBLOCK9 pStateBlock;
 		//pd3dDevice->CreateStateBlock( D3DSBT_ALL, &pStateBlock );
 		//pStateBlock->Capture();
 		ShadowVolume* pShadowVolume = NULL;
-		if(m_ShadowVolumes.empty())
+		if (m_ShadowVolumes.empty())
 		{
 			m_ShadowVolumes.push_back(new ShadowVolume());
 		}
@@ -2775,7 +2775,7 @@ void CSceneObject::RenderShadows()
 		GETD3D(CGlobals::GetRenderDevice())->SetTexture(0, NULL);
 
 		/** update the shadow volume global information, which is shared by all shadow volumes in the current frame */
-		{ 
+		{
 			Matrix4 matModelview;
 			Matrix4 matProjection;
 			ParaViewport  viewport;
@@ -2790,53 +2790,53 @@ void CSceneObject::RenderShadows()
 		{
 			// currently, we only have one light, i.e. the Sun
 			LightParams vShadowLight;
-			Para3DLight* pLight =  GetSunLight().GetD3DLight();
+			Para3DLight* pLight = GetSunLight().GetD3DLight();
 			vShadowLight.Position = pLight->Position;
 			vShadowLight.Direction = pLight->Direction;
 			vShadowLight.Diffuse = pLight->Diffuse;
 			vShadowLight.Range = pLight->Range;
 			vShadowLight.bIsDirectional = true;
-			
+
 			/// update shadow volume information for this light
 			pShadowVolume->SetLightParams(&vShadowLight);
 			pShadowVolume->ReCalculateOcclusionPyramid(pCamera);
-			
+
 			// set world transform as identity, since all volume shadows are in world coordinates
 			GETD3D(CGlobals::GetRenderDevice())->SetTransform(D3DTS_WORLD, Matrix4::IDENTITY.GetConstPointer());
-								
+
 			/// clear stencil buffer
-			GETD3D(CGlobals::GetRenderDevice())->Clear( 0L, NULL, D3DCLEAR_STENCIL, 0, 0, 0L );
+			GETD3D(CGlobals::GetRenderDevice())->Clear(0L, NULL, D3DCLEAR_STENCIL, 0, 0, 0L);
 
 			/** set up render states */
 			// Disable z-buffer writes (note: z-testing still occurs), and enable the
 			// stencil-buffer
-			pd3dDevice->SetRenderState( ERenderState::ZWRITEENABLE,  FALSE );
-			pd3dDevice->SetRenderState( ERenderState::STENCILENABLE, TRUE );
+			pd3dDevice->SetRenderState(ERenderState::ZWRITEENABLE, FALSE);
+			pd3dDevice->SetRenderState(ERenderState::STENCILENABLE, TRUE);
 
 			// Make sure that no pixels get drawn to the frame buffer
-			pd3dDevice->SetRenderState( ERenderState::ALPHABLENDENABLE, TRUE );
-			pd3dDevice->SetRenderState( ERenderState::ALPHATESTENABLE, FALSE);
-			pd3dDevice->SetRenderState( ERenderState::SRCBLEND,  D3DBLEND_ZERO );
-			pd3dDevice->SetRenderState( ERenderState::DESTBLEND, D3DBLEND_ONE );
-			
+			pd3dDevice->SetRenderState(ERenderState::ALPHABLENDENABLE, TRUE);
+			pd3dDevice->SetRenderState(ERenderState::ALPHATESTENABLE, FALSE);
+			pd3dDevice->SetRenderState(ERenderState::SRCBLEND, D3DBLEND_ZERO);
+			pd3dDevice->SetRenderState(ERenderState::DESTBLEND, D3DBLEND_ONE);
+
 			// Do not bother with interpolating color
 			//pd3dDevice->SetRenderState( ERenderState::SHADEMODE,     D3DSHADE_FLAT );
 
 			// Set up stencil compare function, reference value, and masks.
 			// Stencil test passes if ((ref & mask) cmpfn (stencil & mask)) is true.
-			pd3dDevice->SetRenderState( ERenderState::STENCILFUNC,  D3DCMP_ALWAYS );
-			pd3dDevice->SetRenderState( ERenderState::STENCILREF,       0x1 );			// 0x0
-			pd3dDevice->SetRenderState( ERenderState::STENCILMASK,      0xffffffff );
-			pd3dDevice->SetRenderState( ERenderState::STENCILWRITEMASK, 0xffffffff );
+			pd3dDevice->SetRenderState(ERenderState::STENCILFUNC, D3DCMP_ALWAYS);
+			pd3dDevice->SetRenderState(ERenderState::STENCILREF, 0x1);			// 0x0
+			pd3dDevice->SetRenderState(ERenderState::STENCILMASK, 0xffffffff);
+			pd3dDevice->SetRenderState(ERenderState::STENCILWRITEMASK, 0xffffffff);
 
 			/// Build and render shadow volume for these bipeds
-			if(!sceneState.listShadowCasters.empty())
+			if (!sceneState.listShadowCasters.empty())
 			{
 				SceneState::List_PostRenderObject_Type::iterator itCurCP, itEndCP = sceneState.listShadowCasters.end();
-				
-				for( itCurCP = sceneState.listShadowCasters.begin(); itCurCP != itEndCP; ++ itCurCP)
+
+				for (itCurCP = sceneState.listShadowCasters.begin(); itCurCP != itEndCP; ++itCurCP)
 				{
-					if((*itCurCP).m_pRenderObject->IsBiped())
+					if ((*itCurCP).m_pRenderObject->IsBiped())
 					{
 						// use shadow volume for biped shadow casters
 						CBipedObject* pBiped = (CBipedObject*)((*itCurCP).m_pRenderObject);
@@ -2845,110 +2845,110 @@ void CSceneObject::RenderShadows()
 						// build shadow volume
 						pBiped->BuildShadowVolume(&sceneState, pShadowVolume, &vShadowLight);
 						// render shadow volume
-						if(pShadowVolume->m_nNumVertices>0)
+						if (pShadowVolume->m_nNumVertices > 0)
 						{
-							if(pShadowVolume->m_shadowMethod == ShadowVolume::SHADOW_Z_PASS)
+							if (pShadowVolume->m_shadowMethod == ShadowVolume::SHADOW_Z_PASS)
 							{
 								/// Z-Pass 
-								if(( CGlobals::GetDirectXEngine().m_d3dCaps.StencilCaps & D3DSTENCILCAPS_TWOSIDED ) != 0 )
+								if ((CGlobals::GetDirectXEngine().m_d3dCaps.StencilCaps & D3DSTENCILCAPS_TWOSIDED) != 0)
 								{
 									// With 2-sided stencil, we can avoid rendering twice:
-									pd3dDevice->SetRenderState( ERenderState::STENCILFAIL,  D3DSTENCILOP_KEEP );
-									pd3dDevice->SetRenderState( ERenderState::STENCILZFAIL, D3DSTENCILOP_KEEP );
-									pd3dDevice->SetRenderState( ERenderState::STENCILPASS,      D3DSTENCILOP_INCR );
+									pd3dDevice->SetRenderState(ERenderState::STENCILFAIL, D3DSTENCILOP_KEEP);
+									pd3dDevice->SetRenderState(ERenderState::STENCILZFAIL, D3DSTENCILOP_KEEP);
+									pd3dDevice->SetRenderState(ERenderState::STENCILPASS, D3DSTENCILOP_INCR);
 
-									pd3dDevice->SetRenderState( ERenderState::TWOSIDEDSTENCILMODE, TRUE );
-									pd3dDevice->SetRenderState( ERenderState::CCW_STENCILFUNC,  D3DCMP_ALWAYS );
-									pd3dDevice->SetRenderState( ERenderState::CCW_STENCILZFAIL, D3DSTENCILOP_KEEP );
-									pd3dDevice->SetRenderState( ERenderState::CCW_STENCILFAIL,  D3DSTENCILOP_KEEP );
-									pd3dDevice->SetRenderState( ERenderState::CCW_STENCILPASS, D3DSTENCILOP_DECR );
+									pd3dDevice->SetRenderState(ERenderState::TWOSIDEDSTENCILMODE, TRUE);
+									pd3dDevice->SetRenderState(ERenderState::CCW_STENCILFUNC, D3DCMP_ALWAYS);
+									pd3dDevice->SetRenderState(ERenderState::CCW_STENCILZFAIL, D3DSTENCILOP_KEEP);
+									pd3dDevice->SetRenderState(ERenderState::CCW_STENCILFAIL, D3DSTENCILOP_KEEP);
+									pd3dDevice->SetRenderState(ERenderState::CCW_STENCILPASS, D3DSTENCILOP_DECR);
 
-									pd3dDevice->SetRenderState( ERenderState::CULLMODE,  RSV_CULL_NONE );
+									pd3dDevice->SetRenderState(ERenderState::CULLMODE, RSV_CULL_NONE);
 
 									// Draw both sides of shadow volume in stencil/z only
-									pShadowVolume->Render( &sceneState );
+									pShadowVolume->Render(&sceneState);
 
-									pd3dDevice->SetRenderState( ERenderState::TWOSIDEDSTENCILMODE, FALSE );
+									pd3dDevice->SetRenderState(ERenderState::TWOSIDEDSTENCILMODE, FALSE);
 								}
 								else
 								{
 									// render front faces on z pass
-									pd3dDevice->SetRenderState( ERenderState::CULLMODE,  RSV_CULL_CCW );
-									pd3dDevice->SetRenderState( ERenderState::STENCILFAIL,  D3DSTENCILOP_KEEP );
-									pd3dDevice->SetRenderState( ERenderState::STENCILZFAIL, D3DSTENCILOP_KEEP );
-									pd3dDevice->SetRenderState( ERenderState::STENCILPASS,      D3DSTENCILOP_INCR );
+									pd3dDevice->SetRenderState(ERenderState::CULLMODE, RSV_CULL_CCW);
+									pd3dDevice->SetRenderState(ERenderState::STENCILFAIL, D3DSTENCILOP_KEEP);
+									pd3dDevice->SetRenderState(ERenderState::STENCILZFAIL, D3DSTENCILOP_KEEP);
+									pd3dDevice->SetRenderState(ERenderState::STENCILPASS, D3DSTENCILOP_INCR);
 
 									// Draw front-side of shadow volume in stencil/z only
-									pShadowVolume->Render( &sceneState );
+									pShadowVolume->Render(&sceneState);
 
 									// Now reverse cull order so back sides of shadow volume are written.
-									pd3dDevice->SetRenderState( ERenderState::CULLMODE,   RSV_CULL_CW );
-									pd3dDevice->SetRenderState( ERenderState::STENCILPASS, D3DSTENCILOP_DECR );
+									pd3dDevice->SetRenderState(ERenderState::CULLMODE, RSV_CULL_CW);
+									pd3dDevice->SetRenderState(ERenderState::STENCILPASS, D3DSTENCILOP_DECR);
 
 									// Draw back-side of shadow volume in stencil/z only
-									pShadowVolume->Render( &sceneState );
+									pShadowVolume->Render(&sceneState);
 								}
 							}
-							else if(pShadowVolume->m_shadowMethod == ShadowVolume::SHADOW_Z_FAIL)
+							else if (pShadowVolume->m_shadowMethod == ShadowVolume::SHADOW_Z_FAIL)
 							{
 								/// Z-Fail
 								{
 									// render front faces on z pass
-									pd3dDevice->SetRenderState( ERenderState::CULLMODE,  RSV_CULL_CW );
-									pd3dDevice->SetRenderState( ERenderState::STENCILFAIL,  D3DSTENCILOP_KEEP );
-									pd3dDevice->SetRenderState( ERenderState::STENCILZFAIL, D3DSTENCILOP_INCR );
-									pd3dDevice->SetRenderState( ERenderState::STENCILPASS,  D3DSTENCILOP_KEEP);
+									pd3dDevice->SetRenderState(ERenderState::CULLMODE, RSV_CULL_CW);
+									pd3dDevice->SetRenderState(ERenderState::STENCILFAIL, D3DSTENCILOP_KEEP);
+									pd3dDevice->SetRenderState(ERenderState::STENCILZFAIL, D3DSTENCILOP_INCR);
+									pd3dDevice->SetRenderState(ERenderState::STENCILPASS, D3DSTENCILOP_KEEP);
 
 									// Draw front-side of shadow volume in stencil/z only
-									pShadowVolume->Render( &sceneState );
+									pShadowVolume->Render(&sceneState);
 
 									// Now reverse cull order so back sides of shadow volume are written.
-									pd3dDevice->SetRenderState( ERenderState::CULLMODE,   RSV_CULL_CCW );
-									pd3dDevice->SetRenderState( ERenderState::STENCILZFAIL, D3DSTENCILOP_DECR );
+									pd3dDevice->SetRenderState(ERenderState::CULLMODE, RSV_CULL_CCW);
+									pd3dDevice->SetRenderState(ERenderState::STENCILZFAIL, D3DSTENCILOP_DECR);
 
 									// Draw back-side of shadow volume in stencil/z only
-									pShadowVolume->Render( &sceneState );
+									pShadowVolume->Render(&sceneState);
 								}
 							}
 						}
 					}
-					
+
 				}
 			}
 			/** Draw the big square as shadow.
 			*/
 			// Set render states (disable z-buffering, enable stencil, disable fog, and
 			// turn on alpha blending)
-			pd3dDevice->SetRenderState( ERenderState::ZENABLE,          FALSE );
-			pd3dDevice->SetRenderState( ERenderState::STENCILENABLE,    TRUE );
-			pd3dDevice->SetRenderState( ERenderState::FOGENABLE,        FALSE );
-			pd3dDevice->SetRenderState( ERenderState::ALPHABLENDENABLE, TRUE );
-			pd3dDevice->SetRenderState( ERenderState::SRCBLEND,  D3DBLEND_SRCALPHA );
-			pd3dDevice->SetRenderState( ERenderState::DESTBLEND, D3DBLEND_INVSRCALPHA );
+			pd3dDevice->SetRenderState(ERenderState::ZENABLE, FALSE);
+			pd3dDevice->SetRenderState(ERenderState::STENCILENABLE, TRUE);
+			pd3dDevice->SetRenderState(ERenderState::FOGENABLE, FALSE);
+			pd3dDevice->SetRenderState(ERenderState::ALPHABLENDENABLE, TRUE);
+			pd3dDevice->SetRenderState(ERenderState::SRCBLEND, D3DBLEND_SRCALPHA);
+			pd3dDevice->SetRenderState(ERenderState::DESTBLEND, D3DBLEND_INVSRCALPHA);
 			//pd3dDevice->SetRenderState( ERenderState::SHADEMODE, D3DSHADE_GOURAUD );
-			pd3dDevice->SetRenderState( ERenderState::CULLMODE,  RSV_CULL_CCW );
+			pd3dDevice->SetRenderState(ERenderState::CULLMODE, RSV_CULL_CCW);
 
 
 			// Only write where stencil val >= 1 (count indicates # of shadows that
 			// overlap that pixel)
-			pd3dDevice->SetRenderState( ERenderState::STENCILWRITEMASK,      0x0 );// do not write to stencil buffer
-			pd3dDevice->SetRenderState( ERenderState::STENCILFUNC, D3DCMP_LESSEQUAL ); // D3DCMP_EQUAL
-			pd3dDevice->SetRenderState( ERenderState::STENCILREF,  0x1 );	// 0x0
-			pd3dDevice->SetRenderState( ERenderState::STENCILPASS, D3DSTENCILOP_KEEP );
-			pd3dDevice->SetRenderState( ERenderState::STENCILFAIL,  D3DSTENCILOP_KEEP );
-			pd3dDevice->SetRenderState( ERenderState::STENCILZFAIL, D3DSTENCILOP_KEEP );
+			pd3dDevice->SetRenderState(ERenderState::STENCILWRITEMASK, 0x0);// do not write to stencil buffer
+			pd3dDevice->SetRenderState(ERenderState::STENCILFUNC, D3DCMP_LESSEQUAL); // D3DCMP_EQUAL
+			pd3dDevice->SetRenderState(ERenderState::STENCILREF, 0x1);	// 0x0
+			pd3dDevice->SetRenderState(ERenderState::STENCILPASS, D3DSTENCILOP_KEEP);
+			pd3dDevice->SetRenderState(ERenderState::STENCILFAIL, D3DSTENCILOP_KEEP);
+			pd3dDevice->SetRenderState(ERenderState::STENCILZFAIL, D3DSTENCILOP_KEEP);
 
 			// Draw a big, gray square
-			GETD3D(CGlobals::GetRenderDevice())->SetFVF( SHADOWVERTEX::FVF );
+			GETD3D(CGlobals::GetRenderDevice())->SetFVF(SHADOWVERTEX::FVF);
 			GETD3D(CGlobals::GetRenderDevice())->SetMaterial((D3DMATERIAL9*)&(sceneState.GetGlobalMaterial()));
-			GETD3D(CGlobals::GetRenderDevice())->SetStreamSource( 0, sceneState.pAssetManager->GetShadowSquareVB(), 0, sizeof(SHADOWVERTEX) );
-			CGlobals::GetRenderDevice()->DrawPrimitive(EPrimitiveType::TRIANGLESTRIP, 0, 2 );
+			GETD3D(CGlobals::GetRenderDevice())->SetStreamSource(0, sceneState.pAssetManager->GetShadowSquareVB(), 0, sizeof(SHADOWVERTEX));
+			CGlobals::GetRenderDevice()->DrawPrimitive(EPrimitiveType::TRIANGLESTRIP, 0, 2);
 
 			// Restore render states
-			pd3dDevice->SetRenderState( ERenderState::ZENABLE,          TRUE );
-			pd3dDevice->SetRenderState( ERenderState::STENCILENABLE,    FALSE );
-			pd3dDevice->SetRenderState( ERenderState::FOGENABLE,        TRUE );
-			pd3dDevice->SetRenderState( ERenderState::ALPHABLENDENABLE, FALSE );
+			pd3dDevice->SetRenderState(ERenderState::ZENABLE, TRUE);
+			pd3dDevice->SetRenderState(ERenderState::STENCILENABLE, FALSE);
+			pd3dDevice->SetRenderState(ERenderState::FOGENABLE, TRUE);
+			pd3dDevice->SetRenderState(ERenderState::ALPHABLENDENABLE, FALSE);
 		}//for each light 
 		//pStateBlock->Apply();
 		//SAFE_RELEASE(pStateBlock);
@@ -2960,32 +2960,32 @@ void CSceneObject::RenderShadows()
 /// desc: GetCurrentPlayer, the first element in the m_player list.
 /// if the list is empty, NULL is returned
 //---------------------------------------------------------------------
-CBipedObject*	CSceneObject::GetCurrentPlayer()
-{	
+CBipedObject* CSceneObject::GetCurrentPlayer()
+{
 	return m_currentplayer;
 }
 
-CBipedObject*	CSceneObject::GetNextPlayer(CBipedObject* pLast)
+CBipedObject* CSceneObject::GetNextPlayer(CBipedObject* pLast)
 {
-	if(pLast)
+	if (pLast)
 	{
 		auto itEndCP = m_pTileRoot->m_listSolidObj.end();
 		bool bFound = false;
-		int i=0;
-		for(auto itCurCP = m_pTileRoot->m_listSolidObj.begin(); itCurCP != itEndCP && i<2;)
+		int i = 0;
+		for (auto itCurCP = m_pTileRoot->m_listSolidObj.begin(); itCurCP != itEndCP && i < 2;)
 		{
-			if(bFound && ((*itCurCP)->IsBiped()))
+			if (bFound && ((*itCurCP)->IsBiped()))
 			{
-				if((*itCurCP)!=pLast)
+				if ((*itCurCP) != pLast)
 					return (CBipedObject*)(*itCurCP);
 				else
 					break;
 			}
-			if((*itCurCP) == pLast)
+			if ((*itCurCP) == pLast)
 				bFound = true;
-			if((++itCurCP) == itEndCP)
+			if ((++itCurCP) == itEndCP)
 			{
-				if(!bFound)
+				if (!bFound)
 					break;
 				itCurCP = m_pTileRoot->m_listSolidObj.begin();
 				++i;
@@ -3000,7 +3000,7 @@ CBipedObject*	CSceneObject::GetNextPlayer(CBipedObject* pLast)
 
 void CSceneObject::PauseScene(bool bEnable)
 {
-	if(m_bGamePaused != bEnable)
+	if (m_bGamePaused != bEnable)
 	{
 		m_bGamePaused = bEnable;
 	}
@@ -3008,7 +3008,7 @@ void CSceneObject::PauseScene(bool bEnable)
 
 void CSceneObject::EnableScene(bool bEnable)
 {
-	if(m_bGameEnabled != bEnable)
+	if (m_bGameEnabled != bEnable)
 	{
 		m_bGameEnabled = bEnable;
 	}
@@ -3038,17 +3038,17 @@ CMissileObject* CSceneObject::NewMissile()
 	/** find in memory if there is any exploded missile which can be reused.*/
 	MissileObjectPool_Type::const_iterator itCurCP, itEndCP = m_missiles.end();
 
-	for( itCurCP = m_missiles.begin(); itCurCP != itEndCP; ++ itCurCP)
+	for (itCurCP = m_missiles.begin(); itCurCP != itEndCP; ++itCurCP)
 	{
 		pMissile = (*itCurCP);
-		if(pMissile->IsExploded())
+		if (pMissile->IsExploded())
 		{
 			return pMissile; // found exploded missile
 		}
 	}
 	// if there is no exploded missile, we will create a new one
 	pMissile = new CMissileObject();
-	if(pMissile)
+	if (pMissile)
 		m_missiles.push_back(pMissile);
 	return pMissile;
 
@@ -3056,76 +3056,76 @@ CMissileObject* CSceneObject::NewMissile()
 
 bool CSceneObject::HandleUserInput()
 {
-	if(!m_bInitialized || IsBlockInput())
+	if (!m_bInitialized || IsBlockInput())
 		return false;
 	bool bHasKeyEvent = false;
 
-	MouseEvent mouse_down_event(0,0,0,-1);
-	MouseEvent mouse_up_event(0,0,0,-1);
-	MouseEvent mouse_move_event(0,0,0,-1);
-	MouseEvent mouse_click_event(0,0,0, -1);
+	MouseEvent mouse_down_event(0, 0, 0, -1);
+	MouseEvent mouse_up_event(0, 0, 0, -1);
+	MouseEvent mouse_move_event(0, 0, 0, -1);
+	MouseEvent mouse_click_event(0, 0, 0, -1);
 	MouseEvent mouse_wheel_event(0, 0, 0, -1);
-	KeyEvent key_event(0,0);
+	KeyEvent key_event(0, 0);
 
-	CGUIMouseVirtual* pMouse=CGlobals::GetGUI()->m_pMouse;
-	if (pMouse && CGlobals::GetGUI()->m_events.size()>0)
+	CGUIMouseVirtual* pMouse = CGlobals::GetGUI()->m_pMouse;
+	if (pMouse && CGlobals::GetGUI()->m_events.size() > 0)
 	{
-		GUIMsgEventList_type::iterator iter=CGlobals::GetGUI()->m_events.begin(),iterend=CGlobals::GetGUI()->m_events.end();
-		MSG *pMsg;
-		for (;iter!=iterend;++iter)
+		GUIMsgEventList_type::iterator iter = CGlobals::GetGUI()->m_events.begin(), iterend = CGlobals::GetGUI()->m_events.end();
+		MSG* pMsg;
+		for (; iter != iterend; ++iter)
 		{
-			pMsg=&(*iter);
+			pMsg = &(*iter);
 			//////////////////////////////////////////////////////////////////////////
 			//
 			// handle mouse event
 			//
 			//////////////////////////////////////////////////////////////////////////
-			if ( !m_bGamePaused && m_event->IsMapTo(pMsg->message,EM_MOUSE))
+			if (!m_bGamePaused && m_event->IsMapTo(pMsg->message, EM_MOUSE))
 			{
 				static bool g_lastMouseLocked = false;
 				g_lastMouseLocked |= pMouse->IsLocked();
-				static MouseEvent g_lastMouseDown(0,0,0);
-				if ((mouse_down_event.m_nEventType==-1) && m_event->IsMapTo(pMsg->message,EM_MOUSE_DOWN))
+				static MouseEvent g_lastMouseDown(0, 0, 0);
+				if ((mouse_down_event.m_nEventType == -1) && m_event->IsMapTo(pMsg->message, EM_MOUSE_DOWN))
 				{
 					g_lastMouseDown.m_MouseState = pMsg->message;
 					g_lastMouseDown.m_x = pMsg->pt.x;
 					g_lastMouseDown.m_y = pMsg->pt.y;
 					g_lastMouseLocked = pMouse->IsLocked();
-					
+
 					mouse_down_event.m_MouseState = pMsg->message;
 					mouse_down_event.m_x = pMsg->pt.x;
 					mouse_down_event.m_y = pMsg->pt.y;
 					mouse_down_event.m_nEventType = EVENT_MOUSE_DOWN;
 					//OUTPUT_LOG("MouseDown %d %d \n", mouse_move_event.m_x, mouse_move_event.m_y);
 				}
-				else if((mouse_move_event.m_nEventType==-1) && m_event->IsMapTo(pMsg->message,EM_MOUSE_MOVE))
+				else if ((mouse_move_event.m_nEventType == -1) && m_event->IsMapTo(pMsg->message, EM_MOUSE_MOVE))
 				{
 					mouse_move_event.m_MouseState = pMsg->message;
-					
+
 					// please note: mouse move is delta value. 
 					mouse_move_event.m_x = pMouse->GetMouseXDeltaSteps();
 					mouse_move_event.m_y = pMouse->GetMouseYDeltaSteps();
-					
+
 					mouse_move_event.m_nEventType = EVENT_MOUSE_MOVE;
 					//OUTPUT_LOG("MouseMove %d %d \n", mouse_move_event.m_x, mouse_move_event.m_y);
 				}
-				else if(mouse_up_event.m_nEventType == -1 && m_event->IsMapTo(pMsg->message,EM_MOUSE_UP))
+				else if (mouse_up_event.m_nEventType == -1 && m_event->IsMapTo(pMsg->message, EM_MOUSE_UP))
 				{
 					mouse_up_event.m_MouseState = pMsg->message;
 					mouse_up_event.m_x = pMsg->pt.x;
 					mouse_up_event.m_y = pMsg->pt.y;
 					mouse_up_event.m_nEventType = EVENT_MOUSE_UP;
 
-					if ((mouse_click_event.m_nEventType==0) && !g_lastMouseLocked/** this ensures that the mouse is not locked during the mouse down and mouse up event*/ )
+					if ((mouse_click_event.m_nEventType == 0) && !g_lastMouseLocked/** this ensures that the mouse is not locked during the mouse down and mouse up event*/)
 					{
 						// Note: mouse click is rarely used, since it can be produced in NPL via mouse down move and up. However, lazy NPL programmer can still use it if they do not like to write other mouse handlers in NPL.
-						/** @def 3d scene will not handle mouse drag. Only the distance between the mouse down position and mouse up position is smaller 
-						than this value is considered a mouse click, and is sent to the scripting interface. 
+						/** @def 3d scene will not handle mouse drag. Only the distance between the mouse down position and mouse up position is smaller
+						than this value is considered a mouse click, and is sent to the scripting interface.
 						Note: in the Auto camera class, we have locked the mouse when a mouse drag operation is performed, hence the delta will always be 0 or 1
 						*/
 						// TODO: we should use mouse drag distance in mouse move function to determine whether it is a click event, like what I does in the NPL. However this is also fine. 
 #define MOUSE_DRAG_INSTANCE_IN_PIXEL	1
-						if((abs(g_lastMouseDown.m_x-pMsg->pt.x)+abs(g_lastMouseDown.m_y-pMsg->pt.y))< MOUSE_DRAG_INSTANCE_IN_PIXEL)
+						if ((abs(g_lastMouseDown.m_x - pMsg->pt.x) + abs(g_lastMouseDown.m_y - pMsg->pt.y)) < MOUSE_DRAG_INSTANCE_IN_PIXEL)
 						{
 							mouse_click_event.m_MouseState = pMsg->message;
 							mouse_click_event.m_x = pMsg->pt.x;
@@ -3139,25 +3139,25 @@ bool CSceneObject::HandleUserInput()
 					mouse_wheel_event.m_MouseState = pMsg->message;
 
 					// please note: mouse move is delta value.
-                    int nDelta = ((int32)(pMsg->lParam))/120;
-                    if(nDelta == 0)
-                        nDelta = ((int32)(pMsg->lParam)) > 0 ? 1 : -1;
+					int nDelta = ((int32)(pMsg->lParam)) / 120;
+					if (nDelta == 0)
+						nDelta = ((int32)(pMsg->lParam)) > 0 ? 1 : -1;
 					mouse_wheel_event.m_x = nDelta;
 					mouse_wheel_event.m_y = 0;
 
 					mouse_wheel_event.m_nEventType = EVENT_MOUSE_WHEEL;
 				}
-				
+
 			}
 			//////////////////////////////////////////////////////////////////////////
 			//
 			// handle key events
 			//
 			//////////////////////////////////////////////////////////////////////////
-			else if (m_event->IsMapTo(pMsg->message,EM_KEY))
+			else if (m_event->IsMapTo(pMsg->message, EM_KEY))
 			{
 				bool bIsKeyDown = IS_KEYDOWN(pMsg->lParam);
-				if(bIsKeyDown)
+				if (bIsKeyDown)
 				{
 					key_event.m_KeyState = (DWORD)pMsg->lParam;
 					key_event.m_nKey = pMsg->message;
@@ -3175,15 +3175,15 @@ bool CSceneObject::HandleUserInput()
 		}
 	}
 
-	if(m_dwEnableMouseEvent == 0xffff && (mouse_click_event.m_nEventType>0))
+	if (m_dwEnableMouseEvent == 0xffff && (mouse_click_event.m_nEventType > 0))
 	{
 		//////////////////////////////////////////////////////////////////////////
 		// scene game object's on click event is handled here
 		ParaScripting::ParaObject obj = ParaScripting::ParaScene::MousePick(GetOnClickDistance(), "biped");
-		if(obj.IsCharacter())
+		if (obj.IsCharacter())
 		{
 			IGameObject* gameobj = obj.m_pObj->QueryIGameObject();
-			if(gameobj!=NULL)
+			if (gameobj != NULL)
 			{
 				gameobj->On_Click(mouse_click_event.m_MouseState, mouse_click_event.m_x, mouse_click_event.m_y);
 			}
@@ -3192,16 +3192,16 @@ bool CSceneObject::HandleUserInput()
 
 	//////////////////////////////////////////////////////////////////////////
 	// user registered custom mouse events are handled here: in the order mouse down, move, up, click
-	
+
 	// call mouse down event handlers
-	if(mouse_down_event.m_nEventType>=0) 
+	if (mouse_down_event.m_nEventType >= 0)
 		CGlobals::GetEventsCenter()->FireEvent(mouse_down_event);
 	// call mouse click event handlers
-	if(mouse_move_event.m_nEventType>=0) {
+	if (mouse_move_event.m_nEventType >= 0) {
 		CGlobals::GetEventsCenter()->FireEvent(mouse_move_event);
 	}
-	else{
-		if(pMouse->IsLocked() && (pMouse->GetMouseXDeltaSteps()!=0 || pMouse->GetMouseYDeltaSteps()!=0) && CGlobals::GetGUI()->IsActive())
+	else {
+		if (pMouse->IsLocked() && (pMouse->GetMouseXDeltaSteps() != 0 || pMouse->GetMouseYDeltaSteps() != 0) && CGlobals::GetGUI()->IsActive())
 		{
 			mouse_move_event.m_MouseState = 0;
 
@@ -3214,10 +3214,10 @@ bool CSceneObject::HandleUserInput()
 		}
 	}
 	// call mouse up event handlers
-	if(mouse_up_event.m_nEventType>=0) 
+	if (mouse_up_event.m_nEventType >= 0)
 		CGlobals::GetEventsCenter()->FireEvent(mouse_up_event);
 	// call mouse click event handlers
-	if(mouse_click_event.m_nEventType>=0) 
+	if (mouse_click_event.m_nEventType >= 0)
 		CGlobals::GetEventsCenter()->FireEvent(mouse_click_event);
 	if (mouse_wheel_event.m_nEventType >= 0)
 		CGlobals::GetEventsCenter()->FireEvent(mouse_wheel_event);
@@ -3255,7 +3255,7 @@ int CSceneObject::RenderCharacters(SceneState& sceneState, SceneState::List_Post
 					if (itCurCP->m_pRenderObject->IsBiped())
 					{
 						CBipedObject* pBiped = (CBipedObject*)itCurCP->m_pRenderObject;
-						if (pBiped->GetMaxSpeed() <= 0 || pBiped->GetOpacity()==0.f)
+						if (pBiped->GetMaxSpeed() <= 0 || pBiped->GetOpacity() == 0.f)
 							continue;
 					}
 
@@ -3275,7 +3275,7 @@ int CSceneObject::RenderCharacters(SceneState& sceneState, SceneState::List_Post
 					float depth = aabb.GetDepth();
 					float radius = (width > depth) ? depth : width;
 
-					m_dropShadowRenderer->AddInstance(worldPos, renderPos, radius*1.8f);
+					m_dropShadowRenderer->AddInstance(worldPos, renderPos, radius * 1.8f);
 				}
 			}
 			m_dropShadowRenderer->Render();
@@ -3295,7 +3295,7 @@ int CSceneObject::RenderCharacters(SceneState& sceneState, SceneState::List_Post
 			{
 				if (item.m_pRenderObject == pPlayer && !CanShowMainPlayer())
 					continue;
-				if (0 < (nStartCharCount + GetMaxCharTriangles()))
+				if (RenderDevice::GetPerfCount(RenderDevice::DRAW_PERF_TRIANGLES_CHARACTER) < (nStartCharCount + GetMaxCharTriangles()))
 				{
 					sceneState.SetCameraToCurObjectDistance(item.m_fObjectToCameraDistance);
 					item.m_pRenderObject->Draw(&sceneState);
@@ -3315,7 +3315,7 @@ int CSceneObject::RenderSelection(DWORD dwSelection, double dTimeDelta)
 	sceneState.m_nCurRenderGroup = dwSelection;
 	if (CHECK_SELECTION(RENDER_SKY_BOX))
 	{
-		CSkyMesh * pSky = GetCurrentSky();
+		CSkyMesh* pSky = GetCurrentSky();
 		if (pSky != 0 && IsRenderSky())
 		{
 			pSky->Draw(&sceneState);
@@ -3332,15 +3332,15 @@ int CSceneObject::RenderSelection(DWORD dwSelection, double dTimeDelta)
 		}
 	}
 #ifdef USE_DIRECTX_RENDERER
-	if(CHECK_SELECTION(RENDER_GEN_SM_TERRAIN) && m_globalTerrain->TerrainRenderingEnabled())
+	if (CHECK_SELECTION(RENDER_GEN_SM_TERRAIN) && m_globalTerrain->TerrainRenderingEnabled())
 	{
 		if (m_globalTerrain->IsTerrainEngineEnabled() && m_globalTerrain->TerrainRenderingEnabled())
 		{
 			// this is very tricky. the draw sequence must be: RENDER_GLOBAL_TERRAIN(reflection), RENDER_GEN_SM_TERRAIN, RENDER_GLOBAL_TERRAIN(normal)
 			// otherwise,the tessellation may use wrong camera settings.
-			if(CGlobals::GetEffectManager()->BeginEffect(TECH_TERRAIN, &(sceneState.m_pCurrentEffect)))
+			if (CGlobals::GetEffectManager()->BeginEffect(TECH_TERRAIN, &(sceneState.m_pCurrentEffect)))
 			{
-				if(sceneState.m_pCurrentEffect)
+				if (sceneState.m_pCurrentEffect)
 				{
 					m_globalTerrain->Render();
 					++nObjCount;
@@ -3349,33 +3349,33 @@ int CSceneObject::RenderSelection(DWORD dwSelection, double dTimeDelta)
 		}
 	}
 #endif 
-	if(CHECK_SELECTION(RENDER_MESH_FRONT_TO_BACK))
+	if (CHECK_SELECTION(RENDER_MESH_FRONT_TO_BACK))
 	{
 		/// draw solid object rendering list from front to back.
-		if(!sceneState.listPRSolidObject.empty())
+		if (!sceneState.listPRSolidObject.empty())
 		{
-			sceneState.fAlphaFactor=1.0f;
+			sceneState.fAlphaFactor = 1.0f;
 			nObjCount += RenderList(sceneState.listPRSolidObject, sceneState);
 		}
 	}
-	if(CHECK_SELECTION(RENDER_MESH_TRANSPARENT))
+	if (CHECK_SELECTION(RENDER_MESH_TRANSPARENT))
 	{
 		//////////////////////////////////////////////////////////////////////////
 		// render without hardware occlusion testing
 		nObjCount += RenderList(sceneState.listPRTransparentObject, sceneState);
 	}
-	if(CHECK_SELECTION(RENDER_MESH_BACK_TO_FRONT))
+	if (CHECK_SELECTION(RENDER_MESH_BACK_TO_FRONT))
 	{
 		// draw transparent object rendering list from back to front.
-		if(!sceneState.listPRSmallObject.empty())
+		if (!sceneState.listPRSmallObject.empty())
 		{
 			// run the occlusion test pass, if there are more than 25 small objects to render. 
 			PerformOcclusionTest(sceneState.listPRSmallObject, sceneState, 25);
-			
+
 			//////////////////////////////////////////////////////////////////////////
 			// render normally
 			nObjCount += RenderList(sceneState.listPRSmallObject, sceneState);
-			sceneState.fAlphaFactor=1.0f;
+			sceneState.fAlphaFactor = 1.0f;
 		}
 	}
 
@@ -3415,7 +3415,7 @@ int CSceneObject::RenderSelection(DWORD dwSelection, double dTimeDelta)
 	//		++nObjCount;
 	//	}
 	//}
-	if(CHECK_SELECTION(RENDER_CHARACTERS))
+	if (CHECK_SELECTION(RENDER_CHARACTERS))
 	{
 		/// Draw all characters including the player itself.
 		nObjCount += RenderCharacters(sceneState, sceneState.listPRBiped);
@@ -3425,12 +3425,12 @@ int CSceneObject::RenderSelection(DWORD dwSelection, double dTimeDelta)
 		/// Draw all characters including the player itself.
 		nObjCount += RenderCharacters(sceneState, sceneState.listPRTransparentBiped);
 	}
-	if(CHECK_SELECTION(RENDER_SELECTION))
+	if (CHECK_SELECTION(RENDER_SELECTION))
 	{
-		if(!sceneState.listSelections.empty())
+		if (!sceneState.listSelections.empty())
 		{
 			SceneState::List_PostRenderObject_Type::iterator itCurCP, itEndCP = sceneState.listSelections.end();
-			for(itCurCP = sceneState.listSelections.begin(); itCurCP !=itEndCP; ++itCurCP)
+			for (itCurCP = sceneState.listSelections.begin(); itCurCP != itEndCP; ++itCurCP)
 			{
 				sceneState.SetCameraToCurObjectDistance((*itCurCP).m_fObjectToCameraDistance);
 				(*itCurCP).m_pRenderObject->Draw(&sceneState);
@@ -3439,30 +3439,30 @@ int CSceneObject::RenderSelection(DWORD dwSelection, double dTimeDelta)
 		}
 	}
 #ifdef USE_DIRECTX_RENDERER
-	if(CHECK_SELECTION(RENDER_SPRITES))
+	if (CHECK_SELECTION(RENDER_SPRITES))
 	{
 		/// -- Sprite post-rendering list
 		auto pd3dDevice = CGlobals::GetRenderDevice();
-		if(!sceneState.listPRSprite.empty())
+		if (!sceneState.listPRSprite.empty())
 		{
-			GETD3D(CGlobals::GetRenderDevice())->SetVertexShader( NULL );			// always set this
-			GETD3D(CGlobals::GetRenderDevice())->SetFVF( SPRITEVERTEX::FVF );
+			GETD3D(CGlobals::GetRenderDevice())->SetVertexShader(NULL);			// always set this
+			GETD3D(CGlobals::GetRenderDevice())->SetFVF(SPRITEVERTEX::FVF);
 
 			AssetEntity* pLastAsset = NULL;
 			CSpriteObject* pObj;
 
 			SceneState::List_CSpriteObjectPtr_Type::iterator itCurCP, itEndCP = sceneState.listPRSprite.end();
-			for( itCurCP = sceneState.listPRSprite.begin(); itCurCP != itEndCP; ++ itCurCP)
+			for (itCurCP = sceneState.listPRSprite.begin(); itCurCP != itEndCP; ++itCurCP)
 			{
 				pObj = (*itCurCP);
-				if(pObj->GetPrimaryAsset() != pLastAsset)
+				if (pObj->GetPrimaryAsset() != pLastAsset)
 				{
 					/* beginning of a new bunch with the same texture*/
 					pLastAsset = pObj->GetPrimaryAsset();
 
 					/* set vertex buffer, texture once and for all object in the bunch*/
-					GETD3D(CGlobals::GetRenderDevice())->SetStreamSource( 0, pObj->m_pSprite->GetVB(), 0, sizeof(SPRITEVERTEX) );
-					if(pObj->m_ppTexture)
+					GETD3D(CGlobals::GetRenderDevice())->SetStreamSource(0, pObj->m_pSprite->GetVB(), 0, sizeof(SPRITEVERTEX));
+					if (pObj->m_ppTexture)
 						GETD3D(CGlobals::GetRenderDevice())->SetTexture(0, pObj->m_ppTexture->GetTexture());
 					pObj->SetRenderState(pd3dDevice);
 				}
@@ -3474,10 +3474,10 @@ int CSceneObject::RenderSelection(DWORD dwSelection, double dTimeDelta)
 
 		}
 	}
-	if(CHECK_SELECTION(RENDER_PORTAL_SYSTEM))
+	if (CHECK_SELECTION(RENDER_PORTAL_SYSTEM))
 	{
 		// Turn off effect: TODO: this should be removed
-		if(!sceneState.listZones.empty() || !sceneState.listPortals.empty())
+		if (!sceneState.listZones.empty() || !sceneState.listPortals.empty())
 		{
 			CGlobals::GetEffectManager()->BeginEffect(TECH_NONE, &(sceneState.m_pCurrentEffect));
 			auto pd3dDevice = CGlobals::GetRenderDevice();
@@ -3485,9 +3485,9 @@ int CSceneObject::RenderSelection(DWORD dwSelection, double dTimeDelta)
 			// draw zones
 			{
 				SceneState::List_PostRenderObject_Type::iterator itCurCP, itEndCP = sceneState.listZones.end();
-				for(itCurCP = sceneState.listZones.begin(); itCurCP !=itEndCP; ++itCurCP)
+				for (itCurCP = sceneState.listZones.begin(); itCurCP != itEndCP; ++itCurCP)
 				{
-					if((*itCurCP).m_pRenderObject)
+					if ((*itCurCP).m_pRenderObject)
 					{
 						(*itCurCP).m_pRenderObject->Draw(&sceneState);
 						++nObjCount;
@@ -3497,7 +3497,7 @@ int CSceneObject::RenderSelection(DWORD dwSelection, double dTimeDelta)
 			// draw portals
 			{
 				SceneState::List_PostRenderObject_Type::iterator itCurCP, itEndCP = sceneState.listPortals.end();
-				for(itCurCP = sceneState.listPortals.begin(); itCurCP !=itEndCP; ++itCurCP)
+				for (itCurCP = sceneState.listPortals.begin(); itCurCP != itEndCP; ++itCurCP)
 				{
 					(*itCurCP).m_pRenderObject->Draw(&sceneState);
 					++nObjCount;
@@ -3506,15 +3506,15 @@ int CSceneObject::RenderSelection(DWORD dwSelection, double dTimeDelta)
 		}
 	}
 #endif
-	if(CHECK_SELECTION(RENDER_MISSILES))
+	if (CHECK_SELECTION(RENDER_MISSILES))
 	{
 		/// -- Draw all characters including the player itself.
-		if(!sceneState.listPRMissiles.empty())
+		if (!sceneState.listPRMissiles.empty())
 		{
 			CGlobals::GetEffectManager()->BeginEffect(TECH_CHARACTER, &(sceneState.m_pCurrentEffect));
 
 			SceneState::List_AlphaPostRenderObject_Type::iterator itCurCP, itEndCP = sceneState.listPRMissiles.end();
-			for( itCurCP = sceneState.listPRMissiles.begin(); itCurCP != itEndCP; ++ itCurCP)
+			for (itCurCP = sceneState.listPRMissiles.begin(); itCurCP != itEndCP; ++itCurCP)
 			{
 				sceneState.SetCameraToCurObjectDistance((*itCurCP).m_fObjectToCameraDistance);
 				(*itCurCP).m_pRenderObject->Draw(&sceneState);
@@ -3522,7 +3522,7 @@ int CSceneObject::RenderSelection(DWORD dwSelection, double dTimeDelta)
 			}
 		}
 	}
-	if(CHECK_SELECTION(RENDER_PARTICLES))
+	if (CHECK_SELECTION(RENDER_PARTICLES))
 	{
 		bool bEffectSet = false;
 
@@ -3530,18 +3530,18 @@ int CSceneObject::RenderSelection(DWORD dwSelection, double dTimeDelta)
 
 		int nPSInstancesCount = 0;	// statistic:number of particles instances 
 		int nParticlesCount = 0;	// statistic:number of particles 
-		
+
 		for (auto itCurCP = sceneState.listParticleSystems.begin(); itCurCP != sceneState.listParticleSystems.end();)
 		{
 			ParticleSystem* PS = (*itCurCP).get();
 
-			map <void*, ParticleList*>& instances =  PS->m_instances;
+			map <void*, ParticleList*>& instances = PS->m_instances;
 			map<void*, ParticleList*>::iterator iter;
 			bool bHasInstance = false;
-			for (iter = instances.begin(); iter!=instances.end();)
+			for (iter = instances.begin(); iter != instances.end();)
 			{
 				ParticleList* instancePS = iter->second;
-				if(instancePS->m_pSceneState == (&sceneState))
+				if (instancePS->m_pSceneState == (&sceneState))
 				{
 					bHasInstance = true;
 				}
@@ -3551,52 +3551,52 @@ int CSceneObject::RenderSelection(DWORD dwSelection, double dTimeDelta)
 					continue;
 				}
 
-				if(instancePS->m_bUpdated == false)
+				if (instancePS->m_bUpdated == false)
 				{
-					if(instancePS->m_bUseAbsCord)
+					if (instancePS->m_bUseAbsCord)
 					{ /// for globally un-updated instances, animate the remaining particles
 						Vector3 vRenderOriginOffset = (Vector3)(instancePS->m_vLastRenderOrigin) - vRenderOrigin;
 						instancePS->m_vLastRenderOrigin = *((Vector3*)(&vRenderOrigin));// update render origin
-						if(PS->AnimateExistingParticles((float)dTimeDelta, vRenderOriginOffset, instancePS))
+						if (PS->AnimateExistingParticles((float)dTimeDelta, vRenderOriginOffset, instancePS))
 						{
-							if(!bEffectSet){
+							if (!bEffectSet) {
 								CGlobals::GetEffectManager()->BeginEffect(TECH_PARTICLES, &(sceneState.m_pCurrentEffect));
 								bEffectSet = true;
 							}
 							PS->drawInstance(instancePS);
-							if(CGlobals::WillGenReport())
+							if (CGlobals::WillGenReport())
 								nParticlesCount += (int)instancePS->particles.size();
 							++iter;
 						}
 						else
 						{
 							// delete the particle system instance, if there is no particle instances left.
-							SAFE_DELETE(instancePS) ;
+							SAFE_DELETE(instancePS);
 							iter = instances.erase(iter);
 						}
 					}
 					else
 					{
 						/// for local un-updated instances, delete the instance.
-						SAFE_DELETE(instancePS) ;
+						SAFE_DELETE(instancePS);
 						iter = instances.erase(iter);
 					}
 				}
 				else
 				{
 					instancePS->m_bUpdated = false;
-					if(instancePS->m_bUseAbsCord)
+					if (instancePS->m_bUseAbsCord)
 					{ /// for globally updated instances, just draw it.
-						if(instancePS->m_bRender)
+						if (instancePS->m_bRender)
 						{
-							if(!bEffectSet){
+							if (!bEffectSet) {
 								CGlobals::GetEffectManager()->BeginEffect(TECH_PARTICLES, &(sceneState.m_pCurrentEffect));
 								bEffectSet = true;
 							}
 							PS->drawInstance(instancePS);
 							instancePS->m_bRender = false;
 
-							if(CGlobals::WillGenReport())
+							if (CGlobals::WillGenReport())
 								nParticlesCount += (int)instancePS->particles.size();
 						}
 						++iter;
@@ -3606,7 +3606,7 @@ int CSceneObject::RenderSelection(DWORD dwSelection, double dTimeDelta)
 						/// for local updated instances, ignore it, since it has already been draw with the model to which it is attached.
 						++iter;
 
-						if(CGlobals::WillGenReport())
+						if (CGlobals::WillGenReport())
 							nParticlesCount += (int)instancePS->particles.size();
 					}
 				}
@@ -3617,13 +3617,13 @@ int CSceneObject::RenderSelection(DWORD dwSelection, double dTimeDelta)
 			else
 			{
 				++itCurCP;
-				if(CGlobals::WillGenReport())
+				if (CGlobals::WillGenReport())
 					nPSInstancesCount += (int)instances.size();
 			}
 		}
 		nObjCount = nParticlesCount;
 	}
-	if(CHECK_SELECTION(RENDER_BOUNDINGBOX))
+	if (CHECK_SELECTION(RENDER_BOUNDINGBOX))
 	{
 		if (m_bShowBoundingBox && GetBatchedElementDrawer())
 		{
@@ -3658,7 +3658,7 @@ int CSceneObject::RenderSelection(DWORD dwSelection, double dTimeDelta)
 			{
 				GetBatchedElementDrawer()->SetDefaultColor(PARAVECTOR3(0, 0, 1.f));
 				SceneState::List_AlphaPostRenderObject_Type::iterator itCurCP, itEndCP = sceneState.listPRMissiles.end();
-				for(itCurCP = sceneState.listPRMissiles.begin(); itCurCP !=itEndCP; ++itCurCP)
+				for (itCurCP = sceneState.listPRMissiles.begin(); itCurCP != itEndCP; ++itCurCP)
 				{
 					if (!((*itCurCP).m_pRenderObject->CheckAttribute(OBJ_CUSTOM_RENDERER)))
 					{
@@ -3670,7 +3670,7 @@ int CSceneObject::RenderSelection(DWORD dwSelection, double dTimeDelta)
 			}
 			{
 				SceneState::List_PostRenderObject_Type::iterator itCurCP, itEndCP = sceneState.listPRBiped.end();
-				for( itCurCP = sceneState.listPRBiped.begin(); itCurCP != itEndCP; ++ itCurCP)
+				for (itCurCP = sceneState.listPRBiped.begin(); itCurCP != itEndCP; ++itCurCP)
 				{
 					if (itCurCP->m_pRenderObject != 0 && !((*itCurCP).m_pRenderObject->CheckAttribute(OBJ_CUSTOM_RENDERER)))
 					{
@@ -3689,13 +3689,13 @@ int CSceneObject::RenderSelection(DWORD dwSelection, double dTimeDelta)
 			m_pBatchedElementDraw->DrawAll(true);
 		}
 	}
-	if(CHECK_SELECTION(RENDER_TRANSLUCENT_FACE_GROUPS))
+	if (CHECK_SELECTION(RENDER_TRANSLUCENT_FACE_GROUPS))
 	{
-		if(!sceneState.GetFaceGroups()->IsEmpty())
+		if (!sceneState.GetFaceGroups()->IsEmpty())
 		{
-			if(!sceneState.GetFaceGroups()->IsSorted())
+			if (!sceneState.GetFaceGroups()->IsSorted())
 			{
-				sceneState.GetFaceGroups()->Sort(CGlobals::GetScene()->GetCurrentCamera()->GetEyePosition()-GetRenderOrigin());
+				sceneState.GetFaceGroups()->Sort(CGlobals::GetScene()->GetCurrentCamera()->GetEyePosition() - GetRenderOrigin());
 			}
 
 			CGlobals::GetEffectManager()->BeginEffect(TECH_SIMPLE_MESH_NORMAL);
@@ -3733,14 +3733,14 @@ int CSceneObject::RenderSelection(DWORD dwSelection, double dTimeDelta)
 	// CGlobals::GetEffectManager()->EndEffect();
 	return nObjCount;
 }
-CSceneScripts&	CSceneObject::GetScripts()
+CSceneScripts& CSceneObject::GetScripts()
 {
 	return m_scripts;
 }
 
 void CSceneObject::EnableMouseEvent(bool bEnable, DWORD dwEvents)
 {
-	if(bEnable)
+	if (bEnable)
 		m_dwEnableMouseEvent = 0xffff;
 	else
 		m_dwEnableMouseEvent = 0;
@@ -3748,9 +3748,9 @@ void CSceneObject::EnableMouseEvent(bool bEnable, DWORD dwEvents)
 
 void CSceneObject::SetCurrentPlayer(CBipedObject* pPlayer)
 {
-	if(pPlayer!=NULL)
+	if (pPlayer != NULL)
 	{
-		if(m_currentplayer!=pPlayer)
+		if (m_currentplayer != pPlayer)
 		{
 			// note: no need to disable always sentient when player control changes, since AlwaysSentient is completely controlled by scripting interface. 
 			/*if(m_currentplayer!=NULL)
@@ -3769,21 +3769,21 @@ void CSceneObject::SetCurrentPlayer(CBipedObject* pPlayer)
 				}
 			}
 
-			m_currentplayer=pPlayer;
+			m_currentplayer = pPlayer;
 			// note: always make sentient if we take control of a player. this may not be the default behavior. we shall move this in future. 
 			pPlayer->SetAlwaysSentient(true);
 			pPlayer->MakeSentient(true);
 		}
-		
+
 	}
 }
 void CSceneObject::SetShadowMapTexelSizeLevel(int nLevel)
 {
 #if defined(USE_DIRECTX_RENDERER)||defined(USE_OPENGL_RENDERER)
-	if(CGlobals::GetRenderDevice())
+	if (CGlobals::GetRenderDevice())
 	{
 		CShadowMap* pShadowMap = CGlobals::GetEffectManager()->GetShadowMap();
-		if(pShadowMap!=0) 
+		if (pShadowMap != 0)
 		{
 			pShadowMap->SetShadowMapTexelSizeLevel(nLevel);
 		}
@@ -3799,7 +3799,7 @@ void CSceneObject::SetShadowMapTexelSize(int nWidth, int nHeight)
 {
 #if defined(USE_DIRECTX_RENDERER)||defined(USE_OPENGL_RENDERER)
 	CShadowMap* pShadowMap = CGlobals::GetEffectManager()->GetShadowMap();
-	if(pShadowMap!=0) 
+	if (pShadowMap != 0)
 	{
 		pShadowMap->SetShadowMapTexelSize(nWidth, nHeight);
 	}
@@ -3811,17 +3811,17 @@ void CSceneObject::SetShadow(bool bRenderShadow)
 {
 	m_bRenderMeshShadow = bRenderShadow;
 #if defined(USE_DIRECTX_RENDERER)||defined(USE_OPENGL_RENDERER)
-	if(bRenderShadow)
+	if (bRenderShadow)
 	{
 		// never allow shadow rendering, if the shader version is below 20. 
-		if(CGlobals::GetEffectManager()->GetDefaultEffectMapping()<20)
+		if (CGlobals::GetEffectManager()->GetDefaultEffectMapping() < 20)
 		{
 			m_bRenderMeshShadow = false;
 		}
 	}
 
 	CGlobals::GetEffectManager()->EnableUsingShadowMap(m_bRenderMeshShadow);
-	if(m_bRenderMeshShadow)
+	if (m_bRenderMeshShadow)
 	{
 		SetShadowMapTexelSizeLevel(0);
 	}
@@ -3830,28 +3830,28 @@ void CSceneObject::SetShadow(bool bRenderShadow)
 
 bool CSceneObject::IsShadowMapEnabled()
 {
-	if(!m_bRenderMeshShadow)
+	if (!m_bRenderMeshShadow)
 		return m_bRenderMeshShadow;
 	else
 	{
-		return fabs(GetSunLight().GetSunAngle())<NO_SHADOW_SUN_ANGLE;
+		return fabs(GetSunLight().GetSunAngle()) < NO_SHADOW_SUN_ANGLE;
 	}
 }
 void CSceneObject::RenderShadowMap()
 {
 #if defined(USE_DIRECTX_RENDERER)||defined(USE_OPENGL_RENDERER)
 	// render a blank image even if sceneState.listShadowCasters.empty() 
-	
+
 	SceneState& sceneState = *(m_sceneState.get());
 	CShadowMap* pShadowMap = CGlobals::GetEffectManager()->GetShadowMap();
-	if((pShadowMap!=0) && SUCCEEDED(pShadowMap->BeginShadowPass()))
+	if ((pShadowMap != 0) && SUCCEEDED(pShadowMap->BeginShadowPass()))
 	{
 		sceneState.SetShadowPass(true);
 		double oldDelta = sceneState.dTimeDelta;
 		sceneState.dTimeDelta = 0; // this ensures that particles are not animated another time during shadow map pass.
 
 		// render the terrain 
-		if(pShadowMap->UsingBlurredShadowMap())
+		if (pShadowMap->UsingBlurredShadowMap())
 		{
 			RenderSelection(RENDER_GEN_SM_TERRAIN);
 		}
@@ -3868,7 +3868,7 @@ void CSceneObject::RenderShadowMap()
 #endif
 }
 
-BOOL CSceneObject::IsOnObject(int x,int y, int z)
+BOOL CSceneObject::IsOnObject(int x, int y, int z)
 {
 	/*if(m_bPickFlag){
 		ParaScripting::ParaObject obj=ParaScripting::ParaScene::MousePick(30, "");
@@ -3894,14 +3894,14 @@ int CSceneObject::RemoveCharacterFromDB(IGameObject* pObj)
 {
 #ifdef USE_DIRECTX_RENDERER
 	CNpcDatabase* pDB = CGlobals::GetDataProviderManager()->GetNpcDB();
-	if(pObj!=NULL && pObj->GetType() == CBaseObject::RPGBiped)
+	if (pObj != NULL && pObj->GetType() == CBaseObject::RPGBiped)
 	{
 		// only save persistent RPG character. 
 		CRpgCharacter* pChar = (CRpgCharacter*)(pObj);
-		
-		if(!pChar->IsPersistent() && pChar->GetCharacterID()>0)
+
+		if (!pChar->IsPersistent() && pChar->GetCharacterID() > 0)
 		{
-			if(pDB->DeleteNPCByID(pChar->GetCharacterID()))
+			if (pDB->DeleteNPCByID(pChar->GetCharacterID()))
 			{
 				return S_OK;
 			}
@@ -3919,21 +3919,21 @@ int CSceneObject::SaveCharacterToDB(IGameObject* pObj)
 {
 #ifdef USE_DIRECTX_RENDERER
 	CNpcDatabase* pDB = CGlobals::GetDataProviderManager()->GetNpcDB();
-	if(pObj!=NULL && pObj->GetType() == CBaseObject::RPGBiped)
+	if (pObj != NULL && pObj->GetType() == CBaseObject::RPGBiped)
 	{
 		// only save persistent RPG character. 
 		CRpgCharacter* pChar = (CRpgCharacter*)(pObj);
-		if(/*pChar->IsModified() &&*/ pChar->IsPersistent())
+		if (/*pChar->IsModified() &&*/ pChar->IsPersistent())
 		{
 			CNpcDbItem npc;
-			if(pChar->ToNpcDbItem(npc))
+			if (pChar->ToNpcDbItem(npc))
 			{
-				if(npc.m_nID > 0)
+				if (npc.m_nID > 0)
 				{
 					// update
-					if(pDB->UpdateNPC(npc, CNpcDbItem::ALL_ATTRIBUTES))
+					if (pDB->UpdateNPC(npc, CNpcDbItem::ALL_ATTRIBUTES))
 					{
-						
+
 					}
 					else
 					{
@@ -3943,7 +3943,7 @@ int CSceneObject::SaveCharacterToDB(IGameObject* pObj)
 				else
 				{
 					// insert
-					if(pDB->InsertNPC(npc))
+					if (pDB->InsertNPC(npc))
 					{
 						pChar->SetCharacterID(npc.m_nID);
 					}
@@ -3966,7 +3966,7 @@ int CSceneObject::SaveAllCharacters()
 #ifdef USE_DIRECTX_RENDERER
 	CNpcDatabase* pDB = CGlobals::GetDataProviderManager()->GetNpcDB();
 	// use transactions to speed up. 
-	if(pDB->GetDBEntity())
+	if (pDB->GetDBEntity())
 		pDB->GetDBEntity()->ExecuteSqlScript("BEGIN");
 
 	int nCount = 0;
@@ -3977,16 +3977,16 @@ int CSceneObject::SaveAllCharacters()
 		{
 			// only save persistent RPG character. 
 			CRpgCharacter* pChar = (CRpgCharacter*)pObject;
-			if(pChar->IsPersistent())
+			if (pChar->IsPersistent())
 			{
-				if(SaveCharacterToDB(pChar->QueryIGameObject()) == S_OK)
+				if (SaveCharacterToDB(pChar->QueryIGameObject()) == S_OK)
 				{
 					nCount++;
 				}
 			}
 		}
 	}
-	if(pDB->GetDBEntity())
+	if (pDB->GetDBEntity())
 		pDB->GetDBEntity()->ExecuteSqlScript("END");
 	return nCount;
 #else
@@ -3996,7 +3996,7 @@ int CSceneObject::SaveAllCharacters()
 
 int CSceneObject::SaveLocalCharacters()
 {
-	if(IsModified() == false)
+	if (IsModified() == false)
 		return 0;
 #ifdef USE_DIRECTX_RENDERER
 	CNpcDatabase* pDB = CGlobals::GetDataProviderManager()->GetNpcDB();
@@ -4008,15 +4008,15 @@ int CSceneObject::SaveLocalCharacters()
 		{
 			// only save persistent RPG character. 
 			CRpgCharacter* pChar = (CRpgCharacter*)pObject;
-			if(pChar->IsModified() && pChar->IsPersistent())
+			if (pChar->IsModified() && pChar->IsPersistent())
 			{
 				CNpcDbItem npc;
-				if(pChar->ToNpcDbItem(npc))
+				if (pChar->ToNpcDbItem(npc))
 				{
-					if(npc.m_nID > 0)
+					if (npc.m_nID > 0)
 					{
 						// update
-						if(pDB->UpdateNPC(npc, CNpcDbItem::ALL_ATTRIBUTES))
+						if (pDB->UpdateNPC(npc, CNpcDbItem::ALL_ATTRIBUTES))
 						{
 							++nCount;
 						}
@@ -4028,7 +4028,7 @@ int CSceneObject::SaveLocalCharacters()
 					else
 					{
 						// insert
-						if(pDB->InsertNPC(npc))
+						if (pDB->InsertNPC(npc))
 						{
 							++nCount;
 							pChar->SetCharacterID(npc.m_nID);
@@ -4041,8 +4041,8 @@ int CSceneObject::SaveLocalCharacters()
 				}
 				pChar->SetModified(false);
 			}
-		}		
-	}	
+		}
+	}
 	return nCount;
 #else
 	return 0;
@@ -4063,9 +4063,9 @@ bool CSceneObject::IsModified()
 bool CSceneObject::DB_LoadNPCByID(int nNPCID, CRpgCharacter** pOut, bool bReload)
 {
 #ifdef USE_DIRECTX_RENDERER
-	CNpcDatabase* pDB = CGlobals::GetDataProviderManager()->GetNpcDB();	
+	CNpcDatabase* pDB = CGlobals::GetDataProviderManager()->GetNpcDB();
 	CNpcDbItem npc;
-	if(pDB->SelectNPCByID(nNPCID, npc))
+	if (pDB->SelectNPCByID(nNPCID, npc))
 	{
 		return LoadNPCByNPCDbItem(npc, pOut, bReload);
 	}
@@ -4075,9 +4075,9 @@ bool CSceneObject::DB_LoadNPCByID(int nNPCID, CRpgCharacter** pOut, bool bReload
 bool CSceneObject::DB_LoadNPCByName(const string& sName, CRpgCharacter** pOut, bool bReload)
 {
 #ifdef USE_DIRECTX_RENDERER
-	CNpcDatabase* pDB = CGlobals::GetDataProviderManager()->GetNpcDB();	
+	CNpcDatabase* pDB = CGlobals::GetDataProviderManager()->GetNpcDB();
 	CNpcDbItem npc;
-	if(pDB->SelectNPCByName(sName, npc))
+	if (pDB->SelectNPCByName(sName, npc))
 	{
 		return LoadNPCByNPCDbItem(npc, pOut, bReload);
 	}
@@ -4088,62 +4088,62 @@ int CSceneObject::DB_LoadNPCsByRegion(const Vector3& vMin, const Vector3& vMax, 
 {
 	int nCount = 0;
 #ifdef USE_DIRECTX_RENDERER
-	CNpcDatabase* pDB = CGlobals::GetDataProviderManager()->GetNpcDB();	
+	CNpcDatabase* pDB = CGlobals::GetDataProviderManager()->GetNpcDB();
 	NPCDBItemList listNpc;
-	if(pDB->SelectNPCListByRegion(&listNpc, vMin, vMax))
+	if (pDB->SelectNPCListByRegion(&listNpc, vMin, vMax))
 	{
 		NPCDBItemList::iterator itCur, itEnd = listNpc.end();
-		for ( itCur = listNpc.begin(); itCur!=itEnd; ++itCur)
+		for (itCur = listNpc.begin(); itCur != itEnd; ++itCur)
 		{
-			CRpgCharacter* pChar=NULL;
-			if(LoadNPCByNPCDbItem(*itCur, &pChar, bReload))
+			CRpgCharacter* pChar = NULL;
+			if (LoadNPCByNPCDbItem(*itCur, &pChar, bReload))
 			{
 				++nCount;
 			}
 		}
-		
+
 	}
 #endif
 	return nCount;
 }
 
 
-bool CSceneObject::LoadNPCByNPCDbItem(CNpcDbItem& npc,CRpgCharacter** pOut, bool bReload)
+bool CSceneObject::LoadNPCByNPCDbItem(CNpcDbItem& npc, CRpgCharacter** pOut, bool bReload)
 {
 #ifdef USE_DIRECTX_RENDERER
-	CRpgCharacter * pObj = NULL;
-	CBaseObject* OldObj=NULL;
-	if((OldObj = GetObject(npc.m_sName, npc.m_vPos, npc.m_bIsGlobal)) == NULL)
+	CRpgCharacter* pObj = NULL;
+	CBaseObject* OldObj = NULL;
+	if ((OldObj = GetObject(npc.m_sName, npc.m_vPos, npc.m_bIsGlobal)) == NULL)
 	{
-		if(CGlobals::WillGenReport())
+		if (CGlobals::WillGenReport())
 		{
 			/// check for invalid objects
 			AssetEntity* pMAE = NULL;
-			if(!npc.m_sAssetName.empty())
+			if (!npc.m_sAssetName.empty())
 			{
 				pMAE = CGlobals::GetAssetManager()->LoadParaX("", npc.m_sAssetName);
-				if(pMAE)
+				if (pMAE)
 				{
-					if(!pMAE->IsValid())
+					if (!pMAE->IsValid())
 						pMAE = NULL;
 				}
 			}
-			if(pMAE==NULL)
+			if (pMAE == NULL)
 			{
 				OUTPUT_LOG("error: model asset not found for %s. character not created.\r\n", npc.m_sName.c_str());
 				return false;
 			}
 		}
-		
+
 		pObj = new CRpgCharacter();
-		if(pObj==NULL)
+		if (pObj == NULL)
 			return false;
 	}
 	else
 	{
-		if(bReload)
+		if (bReload)
 		{
-			if(OldObj->GetType() == CBaseObject::RPGBiped)
+			if (OldObj->GetType() == CBaseObject::RPGBiped)
 			{
 				pObj = (CRpgCharacter*)OldObj;
 				// TODO: reset base model if they are different.
@@ -4159,9 +4159,9 @@ bool CSceneObject::LoadNPCByNPCDbItem(CNpcDbItem& npc,CRpgCharacter** pOut, bool
 		else
 			return false;
 	}
-	
+
 	pObj->UpdateFromNPCDbItem(npc, CNpcDbItem::ALL_ATTRIBUTES);
-	
+
 	// make it unmodified, since it is just loaded
 	pObj->SetModified(false);
 	// make it persistent, since it is loaded from a persistent database.
@@ -4181,14 +4181,14 @@ bool CSceneObject::IsUsingFullScreenGlow()
 #endif
 }
 
-void CSceneObject::EnableFullScreenGlow( bool bEnable)
+void CSceneObject::EnableFullScreenGlow(bool bEnable)
 {
 #ifdef USE_DIRECTX_RENDERER
 	CGlobals::GetEffectManager()->EnableFullScreenGlow(bEnable);
 #endif 
 }
 
-void CSceneObject::SetFullscreenGlowIntensity(float fGlowIntensity) 
+void CSceneObject::SetFullscreenGlowIntensity(float fGlowIntensity)
 {
 	m_fFullscreenGlowIntensity = fGlowIntensity;
 }
@@ -4206,7 +4206,7 @@ float CSceneObject::GetFullscreenGlowBlendingFactor()
 	return m_fFullscreenGlowBlendingFactor;
 }
 
-void CSceneObject::SetGlowness( const Vector4& Glowness )
+void CSceneObject::SetGlowness(const Vector4& Glowness)
 {
 #ifdef USE_DIRECTX_RENDERER
 	CGlobals::GetEffectManager()->SetGlowness(Glowness);
@@ -4226,15 +4226,15 @@ void CSceneObject::RenderFullScreenGlowEffect()
 {
 #ifdef USE_DIRECTX_RENDERER
 	// render a blank image even if sceneState.listShadowCasters.empty() 
-	if(!IsUsingFullScreenGlow()) 
+	if (!IsUsingFullScreenGlow())
 		return;
-	CGlowEffect* pGlowEffect= CGlobals::GetEffectManager()->GetGlowEffect();
-	if(pGlowEffect!=0)
+	CGlowEffect* pGlowEffect = CGlobals::GetEffectManager()->GetGlowEffect();
+	if (pGlowEffect != 0)
 	{
-		if(CGlobals::GetOceanManager()->OceanEnabled() && CGlobals::GetOceanManager()->IsUnderWater())
+		if (CGlobals::GetOceanManager()->OceanEnabled() && CGlobals::GetOceanManager()->IsUnderWater())
 			pGlowEffect->Render(0.3f, 1.1f);
 		else
-			pGlowEffect->Render( m_fFullscreenGlowIntensity,m_fFullscreenGlowBlendingFactor);
+			pGlowEffect->Render(m_fFullscreenGlowIntensity, m_fFullscreenGlowBlendingFactor);
 	}
 #endif
 }
@@ -4252,7 +4252,7 @@ void CSceneObject::EnableScreenWaveEffect(bool value)
 {
 #ifdef USE_DIRECTX_RENDERER
 	COceanManager* pOcean = CGlobals::GetOceanManager();
-	if(pOcean != NULL)
+	if (pOcean != NULL)
 		pOcean->EnableScreenSpaceFog(!value);
 	return CGlobals::GetEffectManager()->EnableScreenWaveEffect(value);
 #endif
@@ -4261,11 +4261,11 @@ void CSceneObject::EnableScreenWaveEffect(bool value)
 void CSceneObject::RenderScreenWaveEffect()
 {
 #ifdef USE_DIRECTX_RENDERER
-	if(!IsUsingScreenWaveEffect())
+	if (!IsUsingScreenWaveEffect())
 		return;
 
 	WaveEffect* pWaveEffect = CGlobals::GetEffectManager()->GetScreenWaveEffect();
-	if(pWaveEffect!=0)
+	if (pWaveEffect != 0)
 	{
 		pWaveEffect->Render();
 	}
@@ -4275,10 +4275,10 @@ void CSceneObject::RenderScreenWaveEffect()
 void CSceneObject::ApplyWaterFogParam()
 {
 #ifdef USE_DIRECTX_RENDERER
-	LinearColor waterAmb(0,0.749f,0.902f,0);
+	LinearColor waterAmb(0, 0.749f, 0.902f, 0);
 	GetSunLight().SetSunAmbient(waterAmb);
 
-	LinearColor waterFogColor(0.686f,1,1,0);
+	LinearColor waterFogColor(0.686f, 1, 1, 0);
 	SetFogColor(waterFogColor);
 	SetFogStart(60);
 	SetFogEnd(210);
@@ -4298,10 +4298,10 @@ bool CSceneObject::ScreenShotReflection()
 {
 #ifdef USE_DIRECTX_RENDERER
 	// render the ocean's X flipped reflection map.
-	static unsigned short i=0;
+	static unsigned short i = 0;
 	string filename = "Screen Shots\\reflectionmap0.jpg";
-	filename[filename.size()-5] = '0'+(char)(++i);
-	D3DXSaveTextureToFile(filename.c_str(),D3DXIFF_JPG, CGlobals::GetOceanManager()->m_waveReflectionTexture, NULL );
+	filename[filename.size() - 5] = '0' + (char)(++i);
+	D3DXSaveTextureToFile(filename.c_str(), D3DXIFF_JPG, CGlobals::GetOceanManager()->m_waveReflectionTexture, NULL);
 #endif
 	return true;
 }
@@ -4309,12 +4309,12 @@ bool CSceneObject::ScreenShotReflection()
 bool CSceneObject::ScreenShotShadowMap()
 {
 #ifdef USE_DIRECTX_RENDERER
-	CShadowMap* pShadowMap= CGlobals::GetEffectManager()->GetShadowMap();
-	if(pShadowMap!=0)
+	CShadowMap* pShadowMap = CGlobals::GetEffectManager()->GetShadowMap();
+	if (pShadowMap != 0)
 	{
-		static unsigned short i=0;
+		static unsigned short i = 0;
 		string filename = "Screen Shots\\shadowmap0.jpg";
-		filename[filename.size()-5] = '0'+(char)(++i);
+		filename[filename.size() - 5] = '0' + (char)(++i);
 		return pShadowMap->SaveShadowMapToFile(filename);
 	}
 #endif
@@ -4325,12 +4325,12 @@ bool CSceneObject::ScreenShotGlowMap()
 {
 #ifdef USE_DIRECTX_RENDERER
 	// out glow textures
-	CGlowEffect* pGlowEffect= CGlobals::GetEffectManager()->GetGlowEffect();
-	if(pGlowEffect!=0)
+	CGlowEffect* pGlowEffect = CGlobals::GetEffectManager()->GetGlowEffect();
+	if (pGlowEffect != 0)
 	{
-		static unsigned short i=0;
+		static unsigned short i = 0;
 		string filename = "Screen Shots\\glowmap0.jpg";
-		filename[filename.size()-5] = '0'+(char)(++i);
+		filename[filename.size() - 5] = '0' + (char)(++i);
 		pGlowEffect->SaveGlowTexturesToFile(filename);
 		return true;
 	}
@@ -4341,35 +4341,35 @@ bool CSceneObject::ScreenShotGlowMap()
 CBaseObject* CSceneObject::TogglePlayer()
 {
 	CBipedObject* pLast = GetCurrentPlayer();
-	if(pLast!=0)
+	if (pLast != 0)
 	{
 		RefListItem* item = pLast->GetRefObjectByTag(0);
-		if(item!=0 && ((CBaseObject*)item->m_object)->IsGlobal() &&  ((CBaseObject*)item->m_object)->IsBiped() )
+		if (item != 0 && ((CBaseObject*)item->m_object)->IsGlobal() && ((CBaseObject*)item->m_object)->IsBiped())
 		{
 			SetCurrentPlayer((CBipedObject*)(item->m_object));
-			CAutoCamera* pCamera =  (CAutoCamera*)GetCurrentCamera();
-			pCamera->FollowBiped( GetCurrentPlayer(), CameraFollowThirdPerson, 0);
+			CAutoCamera* pCamera = (CAutoCamera*)GetCurrentCamera();
+			pCamera->FollowBiped(GetCurrentPlayer(), CameraFollowThirdPerson, 0);
 		}
 		else
 		{
 			auto itEndCP = m_pTileRoot->m_listSolidObj.end();
 			bool bFound = false;
-			int i=0;
-			for(auto itCurCP = m_pTileRoot->m_listSolidObj.begin(); itCurCP!=itEndCP  && i<2;)
+			int i = 0;
+			for (auto itCurCP = m_pTileRoot->m_listSolidObj.begin(); itCurCP != itEndCP && i < 2;)
 			{
-				if(bFound && ((*itCurCP)->IsBiped()))
+				if (bFound && ((*itCurCP)->IsBiped()))
 				{
 					SetCurrentPlayer((CBipedObject*)(*itCurCP));
-					CAutoCamera* pCamera =  (CAutoCamera*)GetCurrentCamera();
-					pCamera->FollowBiped( GetCurrentPlayer(), CameraFollowThirdPerson, 0);
+					CAutoCamera* pCamera = (CAutoCamera*)GetCurrentCamera();
+					pCamera->FollowBiped(GetCurrentPlayer(), CameraFollowThirdPerson, 0);
 					break;
 				}
-				if((*itCurCP) == pLast)
+				if ((*itCurCP) == pLast)
 					bFound = true;
 
-				if((++itCurCP) == itEndCP)
+				if ((++itCurCP) == itEndCP)
 				{
-					if(!bFound)
+					if (!bFound)
 						break;
 					itCurCP = m_pTileRoot->m_listSolidObj.begin();
 					++i;
@@ -4388,13 +4388,13 @@ void CSceneObject::OnTerrainChanged(const Vector3& vCenter, float fRadius)
 	{
 		if (pObject->IsBiped())
 		{
-			CBipedObject * pBiped = (CBipedObject*)pObject;
-			
-			if(pBiped->TestCollisionSphere(&vCenter, fRadius, 1))
+			CBipedObject* pBiped = (CBipedObject*)pObject;
+
+			if (pBiped->TestCollisionSphere(&vCenter, fRadius, 1))
 			{
 				Vector3 vPos = pBiped->GetPosition();
 				float fElev = CGlobals::GetGlobalTerrain()->GetElevation(vPos.x, vPos.z);
-				if(fElev<vPos.y)
+				if (fElev < vPos.y)
 				{
 					// let the biped fall to the ground
 					pBiped->FallDown();
@@ -4410,7 +4410,7 @@ void CSceneObject::OnTerrainChanged(const Vector3& vCenter, float fRadius)
 	}
 }
 
-void CSceneObject::SetUseWireFrame(bool UseWireFrame )
+void CSceneObject::SetUseWireFrame(bool UseWireFrame)
 {
 	m_bUseWireFrame = UseWireFrame;
 }
@@ -4419,13 +4419,13 @@ template <class T>
 int FilterScreenObjectToList(T& renderlist, list<CBaseObject*>& output, CPortalFrustum* pFrustum, OBJECT_FILTER_CALLBACK pFnctFilter)
 {
 	int nCount = 0;
-	typename T::iterator itCur, itEnd =  renderlist.end();
-	for(itCur = renderlist.begin();itCur!=itEnd;++itCur)
+	typename T::iterator itCur, itEnd = renderlist.end();
+	for (itCur = renderlist.begin(); itCur != itEnd; ++itCur)
 	{
 		CBaseObject* pObject = (*itCur).m_pRenderObject;
-		if(pObject && pFrustum->CanSeeObject_CompleteCull(pObject->GetViewClippingObject(), 4))
+		if (pObject && pFrustum->CanSeeObject_CompleteCull(pObject->GetViewClippingObject(), 4))
 		{
-			if(pFnctFilter(pObject))
+			if (pFnctFilter(pObject))
 			{
 				output.push_back(pObject);
 				++nCount;
@@ -4435,19 +4435,19 @@ int FilterScreenObjectToList(T& renderlist, list<CBaseObject*>& output, CPortalF
 	return nCount;
 }
 
-int CSceneObject::GetObjectsByScreenRect( list<CBaseObject*>& output, const RECT& rect, OBJECT_FILTER_CALLBACK pFnctFilter/*=NULL*/, float fMaxDistance)
+int CSceneObject::GetObjectsByScreenRect(list<CBaseObject*>& output, const RECT& rect, OBJECT_FILTER_CALLBACK pFnctFilter/*=NULL*/, float fMaxDistance)
 {
 	auto pViewportManager = CGlobals::GetViewportManager();
-	if(rect.top >= rect.bottom || rect.left >= rect.right || pViewportManager==0)
+	if (rect.top >= rect.bottom || rect.left >= rect.right || pViewportManager == 0)
 	{
 		return 0;
 	}
-	if(pFnctFilter==0)
+	if (pFnctFilter == 0)
 		pFnctFilter = g_fncPickingAll;
 	CBaseCamera* pCamera = GetCurrentCamera();
 	static CPortalFrustum g_frustum;
 	CPortalFrustum* pFrustum = &g_frustum;
-	
+
 	const Matrix4& matWorld = Matrix4::IDENTITY;
 
 	POINT ptCursor[5];
@@ -4491,7 +4491,7 @@ int CSceneObject::GetObjectsByScreenRect( list<CBaseObject*>& output, const RECT
 	pCamera->GetMouseRay(vPickRayOrig, vPickRayDir[4], ptCursor[4], nWidth, nHeight, &matWorld);
 
 	// add the four side planes 
-	for (int i=0;i<4;++i)
+	for (int i = 0; i < 4; ++i)
 	{
 		Vector3 vNormal;
 		auto nextIndex = (i + 1) % 4;
@@ -4533,11 +4533,11 @@ int CSceneObject::GetObjectsByScreenRect( list<CBaseObject*>& output, const RECT
 	return nCount;
 }
 
-int CSceneObject::GetObjectsBySphere( list<CBaseObject*>& output, const CShapeSphere& sphere, OBJECT_FILTER_CALLBACK pFnctFilter, int nMethod/*=0*/ )
+int CSceneObject::GetObjectsBySphere(list<CBaseObject*>& output, const CShapeSphere& sphere, OBJECT_FILTER_CALLBACK pFnctFilter, int nMethod/*=0*/)
 {
-	if(pFnctFilter==0)
+	if (pFnctFilter == 0)
 		pFnctFilter = g_fncPickingAll;
-	
+
 	Vector3 vCenter = sphere.GetCenter();
 	float fRadius = sphere.GetRadius();
 	int nCount = 0;
@@ -4548,12 +4548,12 @@ int CSceneObject::GetObjectsBySphere( list<CBaseObject*>& output, const CShapeSp
 	/// select object on root tile
 
 	// pTile is now the root tile
-	if(pTile->m_listVisitors.empty() == false)
+	if (pTile->m_listVisitors.empty() == false)
 	{
 		/// add all visitor biped objects, only the last time will have this list non-empty
 		VisitorList_type::iterator itCurCP, itEndCP = pTile->m_listVisitors.end();
 
-		for( itCurCP = pTile->m_listVisitors.begin(); itCurCP != itEndCP; ++ itCurCP)
+		for (itCurCP = pTile->m_listVisitors.begin(); itCurCP != itEndCP; ++itCurCP)
 		{
 			IGameObject* pObject = (*itCurCP);
 			if (pObject)
@@ -4570,28 +4570,28 @@ int CSceneObject::GetObjectsBySphere( list<CBaseObject*>& output, const CShapeSp
 			}
 		}
 	}
-	
+
 	/// breadth first transversing the scene(the root tile is ignored)
 	/// pTile is now the root tile. object attached to it are never rendered directly
 	bool bQueueTilesEmpty = false;
-	while(bQueueTilesEmpty == false)
+	while (bQueueTilesEmpty == false)
 	{
 		/// add other tiles
-		for(int i=0; i<MAX_NUM_SUBTILE; i++)
+		for (int i = 0; i < MAX_NUM_SUBTILE; i++)
 		{
-			if(pTile->m_subtiles[i])
+			if (pTile->m_subtiles[i])
 			{
 				/// rough culling algorithm using the quad tree terrain tiles
 				/// test against a sphere round the eye
-				if(pTile->m_subtiles[i]->TestCollisionSphere(& vCenter, fRadius))
+				if (pTile->m_subtiles[i]->TestCollisionSphere(&vCenter, fRadius))
 				{
-					queueTiles.push( pTile->m_subtiles[i] );
-				}		
+					queueTiles.push(pTile->m_subtiles[i]);
+				}
 			}
 		}
 
 		/// go down the quad tree terrain tile to render objects
-		if(queueTiles.empty())
+		if (queueTiles.empty())
 		{
 			/// even we know that the tile is empty, we still need to see if there is anything in the queueNode for rendering
 			/// so when both queue are empty, we can exit the main rendering transversing loop
@@ -4607,7 +4607,7 @@ int CSceneObject::GetObjectsBySphere( list<CBaseObject*>& output, const CShapeSp
 				for (auto& pObject : pTile->m_listFreespace)
 				{
 					IViewClippingObject* pViewClippingObject = pObject->GetViewClippingObject();
-					if(pViewClippingObject->TestCollisionSphere(& vCenter, fRadius,2))
+					if (pViewClippingObject->TestCollisionSphere(&vCenter, fRadius, 2))
 					{
 						if (pFnctFilter(pObject))
 						{
@@ -4622,7 +4622,7 @@ int CSceneObject::GetObjectsBySphere( list<CBaseObject*>& output, const CShapeSp
 				for (auto& pObject : pTile->m_listSolidObj)
 				{
 					IViewClippingObject* pViewClippingObject = pObject->GetViewClippingObject();
-					if(pViewClippingObject->TestCollisionSphere(& vCenter, fRadius,2))
+					if (pViewClippingObject->TestCollisionSphere(&vCenter, fRadius, 2))
 					{
 						if (pFnctFilter(pObject))
 						{
@@ -4635,7 +4635,7 @@ int CSceneObject::GetObjectsBySphere( list<CBaseObject*>& output, const CShapeSp
 			{
 				/// add all visitor biped objects to the queue.
 				VisitorList_type::iterator itCurCP, itEndCP = pTile->m_listVisitors.end();
-				for( itCurCP = pTile->m_listVisitors.begin(); itCurCP != itEndCP; ++ itCurCP)
+				for (itCurCP = pTile->m_listVisitors.begin(); itCurCP != itEndCP; ++itCurCP)
 				{
 					IGameObject* pObject = *itCurCP;
 					if (pObject)
@@ -4662,7 +4662,7 @@ CMiniSceneGraph* CSceneObject::GetPostProcessingScene()
 	return GetMiniSceneGraph(g_sPSSceneName);
 }
 
-void CSceneObject::EnablePostProcessing( bool bEnable, const char* sCallbackScript)
+void CSceneObject::EnablePostProcessing(bool bEnable, const char* sCallbackScript)
 {
 	m_bEnablePostProcessing = bEnable;
 	m_sPostPorcessorCallbackScript = sCallbackScript;
@@ -4673,7 +4673,7 @@ bool CSceneObject::IsPostProcessingEnabled()
 	return m_bEnablePostProcessing;
 }
 
-void CSceneObject::EnableMiniSceneGraph( bool bEnable )
+void CSceneObject::EnableMiniSceneGraph(bool bEnable)
 {
 	m_bEnableMiniScenegraph = bEnable;
 }
@@ -4687,7 +4687,7 @@ const std::string& CSceneObject::GetAllMiniSceneGraphNames()
 {
 	m_sMiniSceneGraphNames.clear();
 	MiniSceneGraphPool_type::iterator itCur, itEnd = m_miniSceneGraphs.end();
-	for (itCur = m_miniSceneGraphs.begin(); itCur!=itEnd; ++itCur)
+	for (itCur = m_miniSceneGraphs.begin(); itCur != itEnd; ++itCur)
 	{
 		m_sMiniSceneGraphNames += (*itCur)->GetIdentifier();
 		m_sMiniSceneGraphNames += ",";
@@ -4695,12 +4695,12 @@ const std::string& CSceneObject::GetAllMiniSceneGraphNames()
 	return m_sMiniSceneGraphNames;
 }
 
-CMiniSceneGraph* CSceneObject::GetMiniSceneGraph( const string& name )
+CMiniSceneGraph* CSceneObject::GetMiniSceneGraph(const string& name)
 {
 	MiniSceneGraphPool_type::iterator itCur, itEnd = m_miniSceneGraphs.end();
-	for (itCur = m_miniSceneGraphs.begin(); itCur!=itEnd; ++itCur)
+	for (itCur = m_miniSceneGraphs.begin(); itCur != itEnd; ++itCur)
 	{
-		if((*itCur)->GetIdentifier() == name)
+		if ((*itCur)->GetIdentifier() == name)
 		{
 			return (*itCur);
 		}
@@ -4714,19 +4714,19 @@ CMiniSceneGraph* CSceneObject::GetMiniSceneGraph( const string& name )
 	m_miniSceneGraphs.push_back(pGraph);
 
 	// if this is a post processing scene. 
-	if(name == g_sPSSceneName)
+	if (name == g_sPSSceneName)
 	{
 		pGraph->SetVisibility(false);
 	}
 	return pGraph;
 }
 
-int CSceneObject::DeleteMiniSceneGraph( const string& name )
+int CSceneObject::DeleteMiniSceneGraph(const string& name)
 {
 	int nCount = 0;
-	for (MiniSceneGraphPool_type::iterator itCur = m_miniSceneGraphs.begin(); itCur!=m_miniSceneGraphs.end(); )
+	for (MiniSceneGraphPool_type::iterator itCur = m_miniSceneGraphs.begin(); itCur != m_miniSceneGraphs.end(); )
 	{
-		if(name=="" || name == "*" || (*itCur)->GetIdentifier() == name)
+		if (name == "" || name == "*" || (*itCur)->GetIdentifier() == name)
 		{
 			itCur = m_miniSceneGraphs.erase(itCur);
 			++nCount;
@@ -4749,9 +4749,9 @@ bool CSceneObject::IsForceExportPhysics()
 
 void CSceneObject::SetMaxRenderCount(int nRenderImportance, int nCount)
 {
-	if(nRenderImportance >= (int)m_MaxRenderCount.size())
+	if (nRenderImportance >= (int)m_MaxRenderCount.size())
 	{
-		m_MaxRenderCount.resize(nRenderImportance+1, 65535);
+		m_MaxRenderCount.resize(nRenderImportance + 1, 65535);
 	}
 	m_MaxRenderCount[nRenderImportance] = nCount;
 
@@ -4761,16 +4761,16 @@ void CSceneObject::SetMaxRenderCount(int nRenderImportance, int nCount)
 
 int CSceneObject::GetMaxRenderCount(int nRenderImportance)
 {
-	if(nRenderImportance < (int)m_MaxRenderCount.size())
+	if (nRenderImportance < (int)m_MaxRenderCount.size())
 	{
 		return m_MaxRenderCount[nRenderImportance];
 	}
 	return 0;
 }
 
-void CSceneObject::SetPhysicsDebugDrawMode( int nMode )
+void CSceneObject::SetPhysicsDebugDrawMode(int nMode)
 {
-	if(GetBatchedElementDrawer())
+	if (GetBatchedElementDrawer())
 	{
 		CGlobals::GetPhysicsWorld()->GetPhysicsInterface()->SetDebugDrawMode(nMode);
 	}
@@ -4781,7 +4781,7 @@ int CSceneObject::GetPhysicsDebugDrawMode()
 	return (GetBatchedElementDrawer()) ? CGlobals::GetPhysicsWorld()->GetPhysicsInterface()->GetDebugDrawMode() : 0;
 }
 
-void CSceneObject::SetShadowRadius( float fShadowRadius /*= 50.f*/ )
+void CSceneObject::SetShadowRadius(float fShadowRadius /*= 50.f*/)
 {
 	m_fShadowRadius = fShadowRadius;
 }
@@ -4792,10 +4792,10 @@ void CSceneObject::ClearParticles()
 	m_missiles.clear();
 	{
 		SceneState::List_ParticleSystemPtr_Type::iterator itCurCP, iterEnd = m_sceneState->listParticleSystems.end();
-		for( itCurCP = m_sceneState->listParticleSystems.begin(); itCurCP != iterEnd; itCurCP++)
+		for (itCurCP = m_sceneState->listParticleSystems.begin(); itCurCP != iterEnd; itCurCP++)
 		{
 			ParticleSystem* PS = (*itCurCP).get();
-			if(PS)
+			if (PS)
 			{
 				PS->ClearAllInstances();
 			}
@@ -4804,9 +4804,9 @@ void CSceneObject::ClearParticles()
 	}
 }
 
-void CSceneObject::SetCursor( const char* szCursorFile, int nHotSpotX /*= -1*/, int nHotSpotY /*= -1*/ )
+void CSceneObject::SetCursor(const char* szCursorFile, int nHotSpotX /*= -1*/, int nHotSpotY /*= -1*/)
 {
-	if(szCursorFile)
+	if (szCursorFile)
 		m_sCursorFile = szCursorFile;
 	else
 		m_sCursorFile.clear();
@@ -4814,13 +4814,13 @@ void CSceneObject::SetCursor( const char* szCursorFile, int nHotSpotX /*= -1*/, 
 	m_nCursorHotSpotY = nHotSpotY;
 }
 
-const std::string& CSceneObject::GetCursor( int* pnHotSpotX /*= 0*/, int* pnHotSpotY /*= 0*/ ) const
+const std::string& CSceneObject::GetCursor(int* pnHotSpotX /*= 0*/, int* pnHotSpotY /*= 0*/) const
 {
-	if(pnHotSpotX)
+	if (pnHotSpotX)
 	{
 		*pnHotSpotX = m_nCursorHotSpotX;
 	}
-	if(pnHotSpotY)
+	if (pnHotSpotY)
 	{
 		*pnHotSpotY = m_nCursorHotSpotY;
 	}
@@ -4855,13 +4855,13 @@ Vector3 CSceneObject::GetFogColor(float fCelestialAngle)
 
 void CSceneObject::UpdateFogColor()
 {
-	CSkyMesh * pSky = GetCurrentSky();
+	CSkyMesh* pSky = GetCurrentSky();
 	if (pSky != 0 && IsRenderSky() && pSky->IsSimulatedSkyEnabled())
 	{
 		float fSunAngle = GetSunLight().GetCelestialAngle();
 		LinearColor fogColor = GetFogColor(fSunAngle);
 		Vector3 vLookat = GetCurrentCamera()->GetWorldAhead();
-		Vector3 vSunPos = - GetSunLight().GetSunDirection();
+		Vector3 vSunPos = -GetSunLight().GetSunDirection();
 		float fDotAngle = vLookat.dotProduct(vSunPos);
 		if (fDotAngle < 0.f)
 			fDotAngle = 0.f;
@@ -4873,14 +4873,14 @@ void CSceneObject::UpdateFogColor()
 			{
 				// apply blending
 				float fBlending = pvSunColor->a;
-				pvSunColor->r = fogColor.r*(1.f - fBlending) + fBlending * pvSunColor->r;
-				pvSunColor->g = fogColor.g*(1.f - fBlending) + fBlending * pvSunColor->g;
-				pvSunColor->b = fogColor.b*(1.f - fBlending) + fBlending * pvSunColor->b;
+				pvSunColor->r = fogColor.r * (1.f - fBlending) + fBlending * pvSunColor->r;
+				pvSunColor->g = fogColor.g * (1.f - fBlending) + fBlending * pvSunColor->g;
+				pvSunColor->b = fogColor.b * (1.f - fBlending) + fBlending * pvSunColor->b;
 
 				// apply camera look direction
-				fogColor.r = fogColor.r*(1.f - fDotAngle) + fDotAngle * pvSunColor->r;
-				fogColor.g = fogColor.g*(1.f - fDotAngle) + fDotAngle * pvSunColor->g;
-				fogColor.b = fogColor.b*(1.f - fDotAngle) + fDotAngle * pvSunColor->b;
+				fogColor.r = fogColor.r * (1.f - fDotAngle) + fDotAngle * pvSunColor->r;
+				fogColor.g = fogColor.g * (1.f - fDotAngle) + fDotAngle * pvSunColor->g;
+				fogColor.b = fogColor.b * (1.f - fDotAngle) + fDotAngle * pvSunColor->b;
 			}
 		}
 		// TODO: shall we take rain, block lighting in to consideration here? 
@@ -4905,7 +4905,7 @@ void CSceneObject::AddToDeadObjectPool(CBaseObject* pObject)
 
 void CSceneObject::RemoveDeadObjects()
 {
-	for (auto& pObject: m_dead_objects)
+	for (auto& pObject : m_dead_objects)
 	{
 		if (pObject->IsDead())
 		{
@@ -4925,13 +4925,13 @@ void CSceneObject::RemoveDeadObjects()
 	m_dead_objects.clear();
 }
 
-const char * ParaEngine::CSceneObject::GetConsoleString() const
+const char* ParaEngine::CSceneObject::GetConsoleString() const
 {
 	return m_sConsoleString;
 }
 
 
-IAttributeFields* CSceneObject::GetChildAttributeObject(const char * sName)
+IAttributeFields* CSceneObject::GetChildAttributeObject(const char* sName)
 {
 	if (std::string(sName) == "SceneState")
 	{
@@ -4984,7 +4984,7 @@ int CSceneObject::InstallFields(CAttributeClass* pClass, bool bOverride)
 	pClass->AddField("MaxNumShadowCaster", FieldType_Int, (void*)SetMaximumNumShadowCasters_s, (void*)GetMaximumNumShadowCasters_s, NULL, NULL, bOverride);
 	pClass->AddField("MaxNumShadowReceiver", FieldType_Int, (void*)SetMaximumNumShadowReceivers_s, (void*)GetMaximumNumShadowReceivers_s, NULL, NULL, bOverride);
 	pClass->AddField("MaxCharTriangles", FieldType_Int, (void*)SetMaxCharTriangles_s, (void*)GetMaxCharTriangles_s, NULL, NULL, bOverride);
-	
+
 	pClass->AddField("BackgroundColor", FieldType_Vector3, (void*)SetBackGroundColor_s, (void*)GetBackGroundColor_s, CAttributeField::GetSimpleSchema(SCHEMA_RGB), NULL, bOverride);
 	pClass->AddField("EnableFog", FieldType_Bool, (void*)EnableFog_s, (void*)IsFogEnabled_s, NULL, NULL, bOverride);
 	pClass->AddField("FogColor", FieldType_Vector3, (void*)SetFogColor_s, (void*)GetFogColor_s, CAttributeField::GetSimpleSchema(SCHEMA_RGB), NULL, bOverride);
