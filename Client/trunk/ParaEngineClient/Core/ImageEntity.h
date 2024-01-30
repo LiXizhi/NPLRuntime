@@ -3,6 +3,10 @@
 
 namespace ParaEngine
 {
+	class ParaImage {
+	public:
+	};
+
 	/** Unlike TextureEntity, ImageEntity is a device independent entity in memory. 
 	* Hence, it is thread safe by itself. 
 	*/

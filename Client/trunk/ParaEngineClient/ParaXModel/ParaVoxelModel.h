@@ -59,9 +59,9 @@ namespace ParaEngine
 			baseChunkOffset = (baseChunkOffset & 0xff7fffff) | (bOn ? 0x800000 : 0);
 		};
 		inline bool IsChildAt(uint8_t index) { return isChildMask & (1 << index); }
-		inline void SetChild(uint8_t index, uint8_t offset) { 
-			isChildMask |= (1 << index); 
-			childOffsets[index] = offset; 
+		inline void SetChild(uint8_t index, uint8_t offset) {
+			isChildMask |= (1 << index);
+			childOffsets[index] = offset;
 		};
 		inline void RemoveChild(uint8_t index) { isChildMask &= ~(1 << index); childVoxelShape[index] = 0; };
 
@@ -115,7 +115,7 @@ namespace ParaEngine
 	// only used internally when traversing the octree
 	struct TempVoxelOctreeNodeRef
 	{
-		TempVoxelOctreeNodeRef(VoxelOctreeNode* pNode, int32 x, int32 y, int32 z, uint32 level, uint8 childIndex_ = 0) :pNode(pNode), x(x), y(y), z(z), level(level), childIndex(childIndex_){};
+		TempVoxelOctreeNodeRef(VoxelOctreeNode* pNode, int32 x, int32 y, int32 z, uint32 level, uint8 childIndex_ = 0) :pNode(pNode), x(x), y(y), z(z), level(level), childIndex(childIndex_) {};
 		TempVoxelOctreeNodeRef() :pNode(NULL), x(0), y(0), z(0), level(0) {};
 		VoxelOctreeNode* pNode;
 		int32 x;
@@ -269,14 +269,14 @@ namespace ParaEngine
 		*/
 		void UpdateNodeParentsSolidityAndColor(TempVoxelOctreeNodeRef nodes[], int nNodeCount);
 
-		/** suppose the node at the position is changed, call this function to update all affected blocks' shape in the scene. 
+		/** suppose the node at the position is changed, call this function to update all affected blocks' shape in the scene.
 		* @note: the block at the given position should be either a fully solid block or empty block.
 		* this function is usually called when you just set a given node to empty or fully solid.
 		*/
 		void UpdateNodeShape(uint32 x, uint32 y, uint32 z, int level);
 
 		/** update a given node and all of its child nodes that are adjacent to a given side of a fully solid or empty neighbour node.
-		* @param isSolidOrEmpty: whether the neighbour node is fully solid or fully empty. 
+		* @param isSolidOrEmpty: whether the neighbour node is fully solid or fully empty.
 		* if the neighbour node is not fully solid or empty, this function should not be called.
 		* Hence, we only call this function of the neighbour node that has just been set by SetBlock()
 		*/
@@ -289,20 +289,20 @@ namespace ParaEngine
 		void MergeNodeAndNeighbours(int32 x, int32 y, int32 z, int level);
 
 
-		/** suppose the node at the position is changed, call this function to update all affected blocks in the scene. 
+		/** suppose the node at the position is changed, call this function to update all affected blocks in the scene.
 		* whenever a node is changed, calling this function immediately to update all the way to the root node, to ensure all properties are correct.
 		*/
 		void UpdateNode(TempVoxelOctreeNodeRef nodes[], int nNodeCount);
-		
+
 		/** no recursion, update just this node and its neighour at the given level.
-		* blocks at lower or higher levels are ignored. 
+		* blocks at lower or higher levels are ignored.
 		*/
 		void UpdateNodeShapeAtLevel(VoxelOctreeNode* pNode, uint32 x, uint32 y, uint32 z, int level);
 		/** no recursion, update just this node.
 		* return true if neighour node is a block
-		*/ 
+		*/
 		bool UpdateNodeShapeByNeighbourAtLevel(int32 x, int32 y, int32 z, int level, int side, bool isBlock);
-		
+
 
 		/** if the node at the given position and level is a block node. */
 		bool IsBlock(int32 x, int32 y, int32 z, int level);

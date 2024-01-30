@@ -246,6 +246,29 @@ bool TextureEntity::IsPending()
 		(GetTexture() == 0 && (GetState() != AssetEntity::ASSET_STATE_FAILED_TO_LOAD) && !(GetKey().empty()));
 }
 
+void ParaEngine::TextureEntity::SetImage(ParaImage* pImage)
+{
+}
+
+bool ParaEngine::TextureEntity::SetRawDataForImage(const char* pData, int nSize, bool bDeleteData)
+{
+	return false;
+}
+
+bool ParaEngine::TextureEntity::SetRawDataForImage(const unsigned char* pixel, size_t datalen, int width, int height, int bitsPerComponent, bool preMulti, bool bDeleteData)
+{
+	return false;
+}
+
+const ParaImage* ParaEngine::TextureEntity::GetImage() const
+{
+	return nullptr;
+}
+
+void ParaEngine::TextureEntity::SwapImage(TextureEntity* other)
+{
+}
+
 void TextureEntity::SetTextureFPS(float FPS)
 {
 	if(SurfaceType==TextureSequence)

@@ -31,7 +31,7 @@ const int32_t s_sideOffset_x[] = { -1, 1, 0, 0, 0, 0 };
 const int32_t s_sideOffset_y[] = { 0, 0, -1, 1, 0, 0 };
 const int32_t s_sideOffset_z[] = { 0, 0, 0, 0, -1, 1 };
 
-const int32_t s_childOffset_x[] = { 0, 1, 0, 1, 0, 1, 0, 1};
+const int32_t s_childOffset_x[] = { 0, 1, 0, 1, 0, 1, 0, 1 };
 const int32_t s_childOffset_y[] = { 0, 0, 1, 1, 0, 0, 1, 1 };
 const int32_t s_childOffset_z[] = { 0, 0, 0, 0, 1, 1, 1, 1 };
 
@@ -267,8 +267,8 @@ void ParaEngine::ParaVoxelModel::DumpOctreeNode(VoxelOctreeNode* pNode, int nDep
 	for (int i = 0; i < nDepth; i++)
 		tmp[i] = '-';
 	tmp[nDepth] = '\0';
-	
-	int nLevel = (int)pow(2, nDepth+1);
+
+	int nLevel = (int)pow(2, nDepth + 1);
 	for (int k = 0; k < 8; ++k)
 	{
 		OUTPUT_LOG("%s", tmp);
@@ -279,11 +279,11 @@ void ParaEngine::ParaVoxelModel::DumpOctreeNode(VoxelOctreeNode* pNode, int nDep
 		if (pNode->IsChildAt(k))
 		{
 			OUTPUT_LOG("%d: (%d,%d,%d)/%d ", k, nx, ny, nz, nLevel);
-			DumpOctreeNode(GetChildNode(pNode, k), nDepth + 1, pNode->GetBaseChunkOffset(), pNode->childOffsets[k], nx*2, ny * 2, nz * 2);
+			DumpOctreeNode(GetChildNode(pNode, k), nDepth + 1, pNode->GetBaseChunkOffset(), pNode->childOffsets[k], nx * 2, ny * 2, nz * 2);
 		}
 		else
 		{
-			OUTPUT_LOG("%d: (%d,%d,%d)/%d #%x %s\n", k, nx,ny,nz, nLevel, pNode->childVoxelShape[k], pNode->IsBlockAt(k) ? "solid" : "");
+			OUTPUT_LOG("%d: (%d,%d,%d)/%d #%x %s\n", k, nx, ny, nz, nLevel, pNode->childVoxelShape[k], pNode->IsBlockAt(k) ? "solid" : "");
 		}
 	}
 }
@@ -786,7 +786,7 @@ void ParaEngine::ParaVoxelModel::MergeNodeAndParents(int32 x, int32 y, int32 z, 
 				(pNode->childVoxelShape[4] == (parentShape & 0x25)) &&
 				(pNode->childVoxelShape[5] == (parentShape & 0x26)) &&
 				(pNode->childVoxelShape[6] == (parentShape & 0x29)) &&
-				(pNode->childVoxelShape[7] == (parentShape & 0x2a))) 
+				(pNode->childVoxelShape[7] == (parentShape & 0x2a)))
 			{
 				auto pChild = pNode;
 				pNode = parentNodes[i - 1].pNode;
@@ -801,7 +801,7 @@ void ParaEngine::ParaVoxelModel::MergeNodeAndParents(int32 x, int32 y, int32 z, 
 				break;
 			}
 		}
-		else if (pNode->IsEmpty() && pNode->IsLeaf() &&  i >= 1)
+		else if (pNode->IsEmpty() && pNode->IsLeaf() && i >= 1)
 		{
 			// always merge empty node
 			RemoveNodeChildren(parentNodes[i - 1].pNode, 1 << (parentNodes[i].childIndex));
@@ -1033,7 +1033,7 @@ void ParaEngine::ParaVoxelModel::UpdateNodeShapeAtLevel(VoxelOctreeNode* pNode, 
 		bool isNeighbourBlock = UpdateNodeShapeByNeighbourAtLevel(nx, ny, nz, level, s_oppositeSides[k], isBlock);
 		shape |= (isNeighbourBlock ? 0 : (1 << k));
 	}
-	if(isBlock)
+	if (isBlock)
 		pNode->SetVoxelShape(shape);
 }
 
@@ -1046,7 +1046,7 @@ void ParaEngine::ParaVoxelModel::UpdateNodeShape(uint32 x, uint32 y, uint32 z, i
 	VoxelOctreeNode* pNode = GetRootNode();
 	TempVoxelOctreeNodeRef parentNodes[MAX_VOXEL_DEPTH];
 	parentNodes[0] = TempVoxelOctreeNodeRef(pNode, 0, 0, 0, 0);
-	nDepth --;
+	nDepth--;
 
 	if (isBlock)
 	{
@@ -1110,8 +1110,8 @@ void ParaEngine::ParaVoxelModel::UpdateNodeShape(uint32 x, uint32 y, uint32 z, i
 	// update all parent nodes' shape and their neighbour nodes at the same level
 	for (int i = nLevel - 1; i >= 0; --i)
 	{
-		auto & parent = parentNodes[i];
-		UpdateNodeShapeAtLevel(parent.pNode, parent.x, parent.y, parent.z, 1<<parent.level);
+		auto& parent = parentNodes[i];
+		UpdateNodeShapeAtLevel(parent.pNode, parent.x, parent.y, parent.z, 1 << parent.level);
 	}
 }
 
@@ -1164,7 +1164,7 @@ const bmax_vertex cubeVertices[36] = {
 int ParaEngine::ParaVoxelModel::GetLodDepth(float fCameraObjectDist, float fScaling)
 {
 	float fScreenWidth = (float)CGlobals::GetViewportManager()->GetWidth();
-	int lod = (int)std::log2f(fScreenWidth / m_fMinVoxelPixelSize / ((abs(fCameraObjectDist)+0.001f) / fScaling));
+	int lod = (int)std::log2f(fScreenWidth / m_fMinVoxelPixelSize / ((abs(fCameraObjectDist) + 0.001f) / fScaling));
 	if (lod <= 1)
 		lod = 1;
 	else if (lod > 10)
@@ -1204,9 +1204,9 @@ void ParaVoxelModel::Draw(SceneState* pSceneState)
 				pBufEntity->Unlock();
 
 				if (pBufEntity->IsMemoryBuffer())
-					pd3dDevice->DrawPrimitiveUP(EPrimitiveType::TRIANGLELIST, nLockedNum, pBufEntity->GetBaseVertexPointer(), pBufEntity->m_nUnitSize);
+					RenderDevice::DrawPrimitiveUP(pd3dDevice, RenderDevice::DRAW_PERF_TRIANGLES_CHARACTER, EPrimitiveType::TRIANGLELIST, nLockedNum, pBufEntity->GetBaseVertexPointer(), pBufEntity->m_nUnitSize);
 				else
-					pd3dDevice->DrawPrimitive(EPrimitiveType::TRIANGLELIST, pBufEntity->GetBaseVertex(), nLockedNum);
+					RenderDevice::DrawPrimitive(pd3dDevice, RenderDevice::DRAW_PERF_TRIANGLES_CHARACTER, EPrimitiveType::TRIANGLELIST, pBufEntity->GetBaseVertex(), nLockedNum);
 
 				if ((indexCount - nNumFinishedVertice) > nNumLockedVertice)
 				{
@@ -1258,12 +1258,6 @@ void ParaVoxelModel::Draw(SceneState* pSceneState)
 		}
 		else
 		{
-			if (pNode->IsLeaf() && pNode->IsSolid() && pNode->GetVoxelShape() != 0)
-			{
-				drawVoxelShape(pNode->GetVoxelShape(), x, y, z, size, pNode->GetColor32());
-				return;
-			}
-
 			size = size / 2.f;
 			auto color = pNode->GetColor32();
 			if (pNode->IsChildAt(0))

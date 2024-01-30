@@ -61,7 +61,7 @@ namespace ParaEngine
 		/** we support multi-dimensional child object. by default objects have only one column. */
 		virtual int GetChildAttributeColumnCount();
 		/** get attribute by child object. used to iterate across the attribute field hierarchy. */
-		virtual IAttributeFields* GetChildAttributeObject(const char * sName);
+		virtual IAttributeFields* GetChildAttributeObject(const char* sName);
 		/** get the number of child objects (row count) in the given column. please note different columns can have different row count. */
 		virtual int GetChildAttributeObjectCount(int nColumnIndex = 0);
 		virtual IAttributeFields* GetChildAttributeObject(int nRowIndex, int nColumnIndex = 0);
@@ -122,19 +122,19 @@ namespace ParaEngine
 		*/
 		bool SetupTransformByID(int nID);
 
-		void drawModel(SceneState * pSceneState, CParameterBlock* pMaterialParam = NULL, int nRenderMethod = -1);
+		void drawModel(SceneState* pSceneState, CParameterBlock* pMaterialParam = NULL, int nRenderMethod = -1);
 
 		/** animate the entire model according to the current animation and blending settings.
 		* @param pPose: it will override the poses defined in the model.:*/
-		void animate(SceneState * pSceneState, CharacterPose* pPose, IAttributeFields* pAnimInstance = NULL);
+		void animate(SceneState* pSceneState, CharacterPose* pPose, IAttributeFields* pAnimInstance = NULL);
 
 		/** render the model, according to the current animation states. make sure to call animate before calling this functions.*/
-		void draw(SceneState * pSceneState, CParameterBlock* materialParams = NULL, int nRenderMethod = -1);
+		void draw(SceneState* pSceneState, CParameterBlock* materialParams = NULL, int nRenderMethod = -1);
 
 		/** Build Shadow Volume*/
-		void BuildShadowVolume(ShadowVolume * pShadowVolume, LightParams* pLight, Matrix4* mxWorld);
+		void BuildShadowVolume(ShadowVolume* pShadowVolume, LightParams* pLight, Matrix4* mxWorld);
 
-		void updateEmitters(SceneState * pSceneState, float dt);
+		void updateEmitters(SceneState* pSceneState, float dt);
 		void drawBones();
 		void drawBoundingVolume();
 
@@ -151,7 +151,7 @@ namespace ParaEngine
 		* 1.0 will use solely the blending frame, whereas 0.0 will use only the current frame.
 		* [0,1), blendingFrame*(blendingFactor)+(1-blendingFactor)*currentFrame
 		*/
-		void calcBones(CharacterPose* pPose, const AnimIndex& CurrentAnim, const AnimIndex& BlendingAnim, float blendingFactor, const AnimIndex & upperAnim, const AnimIndex & upperBlendingAnim, float upperBlendingFactor, IAttributeFields* pAnimInstance = NULL);
+		void calcBones(CharacterPose* pPose, const AnimIndex& CurrentAnim, const AnimIndex& BlendingAnim, float blendingFactor, const AnimIndex& upperAnim, const AnimIndex& upperBlendingAnim, float upperBlendingFactor, IAttributeFields* pAnimInstance = NULL);
 
 		/** for model without animations, but with bones.*/
 		void calcBones();
@@ -164,7 +164,7 @@ namespace ParaEngine
 		* @param bRecalcBone: whether we will recalculate bone chains according to the current animation pose.
 		* @return: NULL if not successful, otherwise it is pOut.
 		*/
-		Matrix4* GetAttachmentMatrix(Matrix4* pOut, int nAttachmentID, const AnimIndex& CurrentAnim, const AnimIndex& BlendingAnim, float blendingFactor, const AnimIndex & upperAnim, const AnimIndex & upperBlendingAnim, float upperBlendingFactor, bool bRecalcBone = true, IAttributeFields* pAnimInstance = NULL);
+		Matrix4* GetAttachmentMatrix(Matrix4* pOut, int nAttachmentID, const AnimIndex& CurrentAnim, const AnimIndex& BlendingAnim, float blendingFactor, const AnimIndex& upperAnim, const AnimIndex& upperBlendingAnim, float upperBlendingFactor, bool bRecalcBone = true, IAttributeFields* pAnimInstance = NULL);
 
 		/** whether we have attachment matrix.
 		* @param nAttachmentID: the attachment id.
@@ -204,7 +204,7 @@ namespace ParaEngine
 		const ModelAnimation* GetModelAnimByIndex(int nAnimIndex);
 
 		/** get model animations as string */
-        const char *GetStrAnimIds();
+		const char* GetStrAnimIds();
 
 		/** get the mesh radius */
 		float GetBoundingRadius();
@@ -218,11 +218,11 @@ namespace ParaEngine
 		void RenderShaderAnim(SceneState* pSceneState);
 		void RenderBMaxModel(SceneState* pSceneState, CParameterBlock* pMaterialParams = NULL);
 		/** only called inside Render* function*/
-		void DrawPass(ModelRenderPass &p);
-		void DrawPass_NoAnim(ModelRenderPass &p);
-		void DrawPass_NoAnim_VB(ModelRenderPass &p, size_t start);
-		void DrawPass_BMax_VB(ModelRenderPass &p, size_t start);
-		void DrawPass_BMax(ModelRenderPass &p);
+		void DrawPass(ModelRenderPass& p);
+		void DrawPass_NoAnim(ModelRenderPass& p);
+		void DrawPass_NoAnim_VB(ModelRenderPass& p, size_t start);
+		void DrawPass_BMax_VB(ModelRenderPass& p, size_t start);
+		void DrawPass_BMax(ModelRenderPass& p);
 		/** clear all face groups. */
 		void ClearFaceGroups();
 		bool HasAlphaBlendedObjects();
@@ -240,7 +240,7 @@ namespace ParaEngine
 		* @param nMeshPhysicsGroup [in|out]: the mesh physics group to get. On return it will be assigned with the next mesh group.
 		* @return S_OK, if succeed.
 		*/
-		HRESULT ClonePhysicsMesh(DWORD* pNumVertices, Vector3 ** ppVerts, DWORD* pNumTriangles, DWORD** ppIndices, int* pnMeshPhysicsGroup = NULL, int* pnTotalMeshGroupCount = NULL);
+		HRESULT ClonePhysicsMesh(DWORD* pNumVertices, Vector3** ppVerts, DWORD* pNumTriangles, DWORD** ppIndices, int* pnMeshPhysicsGroup = NULL, int* pnTotalMeshGroupCount = NULL);
 
 		void SaveToDisk(const char* path);
 
@@ -280,10 +280,10 @@ namespace ParaEngine
 		const static int MAX_MODEL_ATTACHMENTS = 40;
 
 		/** animation info for the current model*/
-		ModelAnimation *anims;
+		ModelAnimation* anims;
 
 		/**	The effect file entity used to render the animated model */
-		static CEffectFile * m_pEffectFile;
+		static CEffectFile* m_pEffectFile;
 		/** vertex declaration used in the vertex shader of the effect file */
 		static VertexDeclarationPtr m_pVertexDeclaration;
 		/** vertex buffer for skinned vertex*/
@@ -297,30 +297,30 @@ namespace ParaEngine
 		bool rotatePartice2SpeedVector : 1;
 		bool forceAnim : 1;
 
-		TextureAnim *texanims;
-		int *globalSequences;
-		ModelColor *colors;
-		ModelTransparency *transparency;
-		ModelLight *lights;
-		ParticleSystem *particleSystems;
-		RibbonEmitter *ribbons;
+		TextureAnim* texanims;
+		int* globalSequences;
+		ModelColor* colors;
+		ModelTransparency* transparency;
+		ModelLight* lights;
+		ParticleSystem* particleSystems;
+		RibbonEmitter* ribbons;
 
-		ModelVertex *m_origVertices;
+		ModelVertex* m_origVertices;
 		/** this always contains the same number of items as m_origVertices.
 		* it stores the frame number that a certain vertices are used. This avoids the same vertex to be calculated multiple times in a single animation pose.
 		*/
 		int* m_frame_number_vertices;
 		int m_nCurrentFrameNumber;
-		Vector3 * m_vertices, *m_normals;// the position and normals for the vertices
-		Vector2 *texcoords1;// the texture coordinates for the vertices
-		uint16 *m_indices;
+		Vector3* m_vertices, * m_normals;// the position and normals for the vertices
+		Vector2* texcoords1;// the texture coordinates for the vertices
+		uint16* m_indices;
 
-		Vector3 *bounds;
-		uint16 *boundTris;
+		Vector3* bounds;
+		uint16* boundTris;
 
 		ModelCamera cam;
-		Bone *bones;
-		asset_ptr<TextureEntity> *textures;
+		Bone* bones;
+		asset_ptr<TextureEntity>* textures;
 		ParaVoxelModel* m_pVoxelModel;
 
 		std::vector<ModelRenderPass> passes;
@@ -332,7 +332,7 @@ namespace ParaEngine
 		std::vector<ModelGeoset> geosets;
 		/** a list of face group */
 
-		bool *showGeosets;
+		bool* showGeosets;
 
 		int specialTextures[MAX_MODEL_TEXTURES];
 		TextureEntity* replaceTextures[MAX_MODEL_TEXTURES];

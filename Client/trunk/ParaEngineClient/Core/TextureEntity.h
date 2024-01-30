@@ -4,6 +4,7 @@
 namespace ParaEngine
 {
 	class ImageEntity;
+	class ParaImage;
 
 	struct ImageExtendInfo
 	{
@@ -216,6 +217,19 @@ namespace ParaEngine
 		bool IsPending();
 		void SetEmbeddedTexture(bool bEmbeddedTexture) { m_bEmbeddedTexture = bEmbeddedTexture; }
 		bool IsEmbeddedTexture() { return m_bEmbeddedTexture; }
+
+		/** set image from which to load the texture. image ownership is transfered to this entity. the caller should never delete the image. instead
+		this entity will delete the image. */
+		void SetImage(ParaImage* pImage);
+		/* set raw texture data form which to load the texture, data will load by ParaImage */
+		bool SetRawDataForImage(const char* pData, int nSize, bool bDeleteData = true);
+		bool SetRawDataForImage(const unsigned char* pixel, size_t datalen, int width, int height, int bitsPerComponent, bool preMulti, bool bDeleteData = true);
+
+		/* get image */
+		const ParaImage* GetImage() const;
+		/* */
+		void SwapImage(TextureEntity* other);
+
 		/** set raw texture data from which to load the texture. data ownership is transfered to this entity. the caller should never delete the data. instead
 		this entity will delete the data. */
 		void SetRawData(char* pData, int nSize);
