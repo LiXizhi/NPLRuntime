@@ -89,7 +89,7 @@ namespace ParaEngine
 
 		inline void MakeEmpty() { isBlockMask = 0; SetFullySolid(false); };
 		inline void MakeFullBlock() { isBlockMask = 0xff; SetFullySolid(true); };
-
+		inline bool IsChildSameShapeAsParent();
 		inline int GetBlockCountInMask() {
 			int count = 0;
 			uint8_t n = isBlockMask;
@@ -288,6 +288,13 @@ namespace ParaEngine
 		/** when a node is changed, call this function to make sure all affected fully solid nodes in the scene are merged or splitted. */
 		void MergeNodeAndNeighbours(int32 x, int32 y, int32 z, int level);
 
+		/** the input node should be a solid leaf node. we will try to split it into 8 child nodes if its neighbours has holes on its sides.
+		* @return true if the node is splitted. false if the node is not splitted (should be merged instead).
+		*/
+		bool SplitSolidNode(TempVoxelOctreeNodeRef* node);
+		/** check if a given node and all of its child nodes that are adjacent to a given side of node has holes on the side.
+		*/
+		bool HasHolesOnSide(int32 x, int32 y, int32 z, int level, int side);
 
 		/** suppose the node at the position is changed, call this function to update all affected blocks in the scene.
 		* whenever a node is changed, calling this function immediately to update all the way to the root node, to ensure all properties are correct.
