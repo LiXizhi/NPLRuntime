@@ -14,9 +14,6 @@
 #include "ParaXBone.h"
 #include "particle.h"
 #include "memdebug.h"
-#if USE_DIRECTX_RENDERER
-#include "RenderDeviceD3D9.h"
-#endif
 using namespace ParaEngine;
 
 /** @def whether the particles of a particle system will default to global particles.
@@ -373,9 +370,9 @@ void ParticleSystem::drawInstance(ParticleList* instancePS)
 			pd3dDevice->SetRenderState(ERenderState::SRCBLEND, D3DBLEND_SRCALPHA);
 			pd3dDevice->SetRenderState(ERenderState::DESTBLEND, D3DBLEND_ONE);
 			// we want the alpha to be the modulation of the texture and the diffuse color
-			GETD3D(pd3dDevice)->SetTextureStageState(0, D3DTSS_ALPHAARG1, D3DTA_TEXTURE);
-			GETD3D(pd3dDevice)->SetTextureStageState(0, D3DTSS_ALPHAARG2, D3DTA_DIFFUSE);
-			GETD3D(pd3dDevice)->SetTextureStageState(0, D3DTSS_ALPHAOP, D3DTOP_MODULATE);
+			pd3dDevice->SetTextureStageState(0, D3DTSS_ALPHAARG1, D3DTA_TEXTURE);
+			pd3dDevice->SetTextureStageState(0, D3DTSS_ALPHAARG2, D3DTA_DIFFUSE);
+			pd3dDevice->SetTextureStageState(0, D3DTSS_ALPHAOP, D3DTOP_MODULATE);
 			break;
 		}
 #endif
@@ -408,13 +405,12 @@ void ParticleSystem::drawInstance(ParticleList* instancePS)
 			pEffect->EnableAlphaBlending(true);
 			pd3dDevice->SetRenderState(ERenderState::SRCBLEND, D3DBLEND_SRCALPHA);
 			pd3dDevice->SetRenderState(ERenderState::DESTBLEND, D3DBLEND_ONE);
-			// we want the alpha to be the modulation of the texture and the diffuse color
 #if USE_DIRECTX_RENDERER
-			GETD3D(pd3dDevice)->SetTextureStageState(0, D3DTSS_ALPHAARG1, D3DTA_TEXTURE);
-			GETD3D(pd3dDevice)->SetTextureStageState(0, D3DTSS_ALPHAARG2, D3DTA_DIFFUSE);
-			GETD3D(pd3dDevice)->SetTextureStageState(0, D3DTSS_ALPHAOP, D3DTOP_MODULATE);
+			// we want the alpha to be the modulation of the texture and the diffuse color
+			pd3dDevice->SetTextureStageState(0, D3DTSS_ALPHAARG1, D3DTA_TEXTURE);
+			pd3dDevice->SetTextureStageState(0, D3DTSS_ALPHAARG2, D3DTA_DIFFUSE);
+			pd3dDevice->SetTextureStageState(0, D3DTSS_ALPHAOP, D3DTOP_MODULATE);
 #endif
-
 			break;
 		}
 	}
@@ -477,9 +473,8 @@ void ParticleSystem::drawInstance(ParticleList* instancePS)
 			pd3dDevice->SetRenderState(ERenderState::SRCBLEND, D3DBLEND_SRCALPHA);
 			pd3dDevice->SetRenderState(ERenderState::DESTBLEND, D3DBLEND_INVSRCALPHA);
 #if USE_DIRECTX_RENDERER
-			GETD3D(pd3dDevice)->SetTextureStageState(0, D3DTSS_ALPHAOP, D3DTOP_SELECTARG1);
+			pd3dDevice->SetTextureStageState(0, D3DTSS_ALPHAOP, D3DTOP_SELECTARG1);
 #endif
-
 			break;
 		default:
 			pd3dDevice->SetRenderState(ERenderState::SRCBLEND, D3DBLEND_SRCALPHA);
@@ -501,9 +496,8 @@ void ParticleSystem::drawInstance(ParticleList* instancePS)
 			pd3dDevice->SetRenderState(ERenderState::SRCBLEND, D3DBLEND_SRCALPHA);
 			pd3dDevice->SetRenderState(ERenderState::DESTBLEND, D3DBLEND_INVSRCALPHA);
 #if USE_DIRECTX_RENDERER
-			GETD3D(pd3dDevice)->SetTextureStageState(0, D3DTSS_ALPHAOP, D3DTOP_SELECTARG1);
+			pd3dDevice->SetTextureStageState(0, D3DTSS_ALPHAOP, D3DTOP_SELECTARG1);
 #endif
-
 			break;
 		default:
 			pd3dDevice->SetRenderState(ERenderState::SRCBLEND, D3DBLEND_SRCALPHA);
@@ -735,9 +729,9 @@ void ParticleSystem::DrawInstanceSub(ParticleList* instancePS)
 				}
 				pBufEntity->Unlock();
 				if (pBufEntity->IsMemoryBuffer())
-					pd3dDevice->DrawPrimitiveUP(EPrimitiveType::TRIANGLELIST, nLockedNum, pBufEntity->GetBaseVertexPointer(), pBufEntity->m_nUnitSize);
+					RenderDevice::DrawPrimitiveUP(pd3dDevice, RenderDevice::DRAW_PERF_TRIANGLES_CHARACTER, EPrimitiveType::TRIANGLELIST, nLockedNum, pBufEntity->GetBaseVertexPointer(), pBufEntity->m_nUnitSize);
 				else
-					pd3dDevice->DrawPrimitive(EPrimitiveType::TRIANGLELIST, pBufEntity->GetBaseVertex(), nLockedNum);
+					RenderDevice::DrawPrimitive(pd3dDevice, RenderDevice::DRAW_PERF_TRIANGLES_CHARACTER, EPrimitiveType::TRIANGLELIST, pBufEntity->GetBaseVertex(), nLockedNum);
 
 				if ((nTotalVertices - nNumFinishedVertice) > nNumLockedVertice)
 					nNumFinishedVertice += (nLockedNum * 3);
@@ -816,10 +810,9 @@ void ParticleSystem::DrawInstanceSub(ParticleList* instancePS)
 				}
 				pBufEntity->Unlock();
 				if (pBufEntity->IsMemoryBuffer())
-					pd3dDevice->DrawPrimitiveUP(EPrimitiveType::TRIANGLELIST, nLockedNum, pBufEntity->GetBaseVertexPointer(), pBufEntity->m_nUnitSize);
+					RenderDevice::DrawPrimitiveUP(pd3dDevice, RenderDevice::DRAW_PERF_TRIANGLES_CHARACTER, EPrimitiveType::TRIANGLELIST, nLockedNum, pBufEntity->GetBaseVertexPointer(), pBufEntity->m_nUnitSize);
 				else
-					pd3dDevice->DrawPrimitive(EPrimitiveType::TRIANGLELIST, pBufEntity->GetBaseVertex(), nLockedNum);
-
+					RenderDevice::DrawPrimitive(pd3dDevice, RenderDevice::DRAW_PERF_TRIANGLES_CHARACTER, EPrimitiveType::TRIANGLELIST, pBufEntity->GetBaseVertex(), nLockedNum);
 
 				if ((nTotalVertices - nNumFinishedVertice) > nNumLockedVertice)
 					nNumFinishedVertice += (nLockedNum * 3);
@@ -1042,11 +1035,10 @@ void RibbonEmitter::draw(SceneState* pSceneState)
 
 	// we want the alpha to be the modulation of the texture and the diffuse color
 #if USE_DIRECTX_RENDERER
-	GETD3D(pd3dDevice)->SetTextureStageState(0, D3DTSS_ALPHAARG1, D3DTA_TEXTURE);
-	GETD3D(pd3dDevice)->SetTextureStageState(0, D3DTSS_ALPHAARG2, D3DTA_DIFFUSE);
-	GETD3D(pd3dDevice)->SetTextureStageState(0, D3DTSS_ALPHAOP, D3DTOP_MODULATE);
+	pd3dDevice->SetTextureStageState(0, D3DTSS_ALPHAARG1, D3DTA_TEXTURE);
+	pd3dDevice->SetTextureStageState(0, D3DTSS_ALPHAARG2, D3DTA_DIFFUSE);
+	pd3dDevice->SetTextureStageState(0, D3DTSS_ALPHAOP, D3DTOP_MODULATE);
 #endif
-
 
 	// texture
 	pd3dDevice->SetTexture(0, GetDeviceTexture());
@@ -1126,7 +1118,7 @@ void RibbonEmitter::draw(SceneState* pSceneState)
 #ifdef USE_DIRECTX_RENDERER
 				///////////////////////////////////////////////////////////////////////////
 				// fixed function pipeline
-				pd3dDevice->DrawPrimitive(EPrimitiveType::TRIANGLESTRIP, pBufEntity->m_dwBase, nLockedNum / 2);
+				RenderDevice::DrawPrimitive(pd3dDevice, RenderDevice::DRAW_PERF_TRIANGLES_CHARACTER, D3DPT_TRIANGLESTRIP, pBufEntity->m_dwBase, nLockedNum / 2);
 #endif
 			}
 			else
@@ -1138,11 +1130,10 @@ void RibbonEmitter::draw(SceneState* pSceneState)
 					if (pEffect->BeginPass(0))
 					{
 						pEffect->CommitChanges();
-
 						if (pBufEntity->IsMemoryBuffer())
-							pd3dDevice->DrawPrimitiveUP(EPrimitiveType::TRIANGLESTRIP, nLockedNum / 2, pBufEntity->GetBaseVertexPointer(), pBufEntity->m_nUnitSize);
+							RenderDevice::DrawPrimitiveUP(pd3dDevice, RenderDevice::DRAW_PERF_TRIANGLES_CHARACTER, EPrimitiveType::TRIANGLESTRIP, nLockedNum / 2, pBufEntity->GetBaseVertexPointer(), pBufEntity->m_nUnitSize);
 						else
-							pd3dDevice->DrawPrimitive(EPrimitiveType::TRIANGLESTRIP, pBufEntity->GetBaseVertex(), nLockedNum / 2);
+							RenderDevice::DrawPrimitive(pd3dDevice, RenderDevice::DRAW_PERF_TRIANGLES_CHARACTER, EPrimitiveType::TRIANGLESTRIP, pBufEntity->GetBaseVertex(), nLockedNum / 2);
 
 					}
 					pEffect->EndPass(0);
@@ -1163,7 +1154,7 @@ void RibbonEmitter::draw(SceneState* pSceneState)
 	pd3dDevice->SetRenderState(ERenderState::SRCBLEND, D3DBLEND_SRCALPHA);
 	pd3dDevice->SetRenderState(ERenderState::DESTBLEND, D3DBLEND_INVSRCALPHA);
 #if USE_DIRECTX_RENDERER
-	GETD3D(pd3dDevice)->SetTextureStageState(0, D3DTSS_ALPHAOP, D3DTOP_SELECTARG1);
+	pd3dDevice->SetTextureStageState(0, D3DTSS_ALPHAOP, D3DTOP_SELECTARG1);
 #endif
 	pd3dDevice->SetRenderState(ERenderState::SRCBLEND, D3DBLEND_SRCALPHA);
 	pd3dDevice->SetRenderState(ERenderState::DESTBLEND, D3DBLEND_INVSRCALPHA);
