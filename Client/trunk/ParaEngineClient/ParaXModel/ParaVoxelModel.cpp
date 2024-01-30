@@ -801,8 +801,44 @@ void ParaEngine::ParaVoxelModel::MergeNodeAndParents(int32 x, int32 y, int32 z, 
 
 void ParaEngine::ParaVoxelModel::MergeNodeAndNeighbours(int32 x, int32 y, int32 z, int level)
 {
+	int nDepth = LevelToDepth(level);
+	VoxelOctreeNode* pNode = GetRootNode();
+	TempVoxelOctreeNodeRef parentNodes[MAX_VOXEL_DEPTH];
+	parentNodes[0] = TempVoxelOctreeNodeRef(pNode, 0, 0, 0, 0);
+	nDepth--;
+	int nChildIndex = 0;
+	int nLevel = 1;
+	for (; nDepth >= 0; nDepth--, nLevel++)
+	{
+		uint32 lx = (x >> nDepth) & 1, ly = (y >> nDepth) & 1, lz = (z >> nDepth) & 1;
+		nChildIndex = lx + (ly << 1) + (lz << 2);
+		auto pChild = GetChildNode(pNode, nChildIndex);
+		if (pChild) {
+			pNode = pChild;
+			auto& lastNode = parentNodes[nLevel - 1];
+			parentNodes[nLevel] = TempVoxelOctreeNodeRef(pNode, (lastNode.x << 1) + lx, (lastNode.y << 1) + ly, (lastNode.z << 1) + lz, nLevel, nChildIndex);
+		}
+		else
+		{
+			break;
+		}
+	}
+
+	// merge this node and parent
 	MergeNodeAndParents(x, y, z, level);
-	// TODO: merge or split three neighbouring nodes and their child nodes as well. 
+
+	// merge three neighbouring nodes and their parent nodes as well. 
+	for (int side = 0; side < 6; ++side)
+	{
+		uint8_t sideMask = SideSolidMask[side];
+		if (sideMask & (1 << nChildIndex))
+		{
+			int xx = x + s_sideOffset_x[side];
+			int yy = y + s_sideOffset_y[side];
+			int zz = z + s_sideOffset_z[side];
+			MergeNodeAndParents(xx, yy, zz, level);
+		}
+	}
 }
 
 bool ParaEngine::ParaVoxelModel::SplitSolidNode(TempVoxelOctreeNodeRef* node)
@@ -1162,12 +1198,14 @@ void ParaEngine::ParaVoxelModel::UpdateNodeParentsSolidityAndColor(TempVoxelOctr
 				auto pChild = GetChildNode(pNode, k);
 				if (pChild)
 				{
-					color[0] += pChild->GetColor0();
-					color[1] += pChild->GetColor1();
-					color[2] += pChild->GetColor2();
-					nChildCount++;
 					if (pChild->IsBlock())
+					{
+						color[0] += pChild->GetColor0();
+						color[1] += pChild->GetColor1();
+						color[2] += pChild->GetColor2();
+						nChildCount++;
 						isBlockMask |= (1 << k);
+					}
 					isChildFullySolid = isChildFullySolid && pChild->IsFullySolid();
 				}
 				else if (pNode->IsBlockAt(k))
