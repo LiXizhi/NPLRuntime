@@ -30,8 +30,6 @@
 #include "ParaVoxelModel.h"
 #include "GltfModel.h"
 
-
-
 /** def this, if one wants the animation to be very accurate. */
 //#define	ONLY_REMOVE_EQUAL_KEYS
 
@@ -44,13 +42,11 @@ namespace ParaEngine
 {
 	int64_t globalTime = 0;
 	VertexDeclarationPtr CParaXModel::m_pVertexDeclaration = NULL;
-
 	CEffectFile* CParaXModel::m_pEffectFile = NULL;
 }
 using namespace ParaEngine;
 
 size_t CParaXModel::m_uUsedVB = 0;
-
 
 void CParaXModel::SetHeader(const ParaXHeaderDef& xheader)
 {
@@ -154,16 +150,15 @@ CParaXModel::~CParaXModel(void)
 				auto pTexture = textures[i].get();
 				if (pTexture) {
 					textures[i].reset();
-
 					if (pTexture->IsEmbeddedTexture() && (pTexture->GetRawData() || pTexture->GetImage()))
 					{
 						pTexture->UnloadAsset();
 						pTexture->SetRawDataForImage(NULL, 0);
 						pTexture->SetRawData(NULL, 0);
 						pTexture->MakeInvalid();
-						// for embedded textures, this will release the texture memory as well. 
 						if (pTexture->GetRefCount() == 1)
 						{
+							// for embedded textures, this will release the texture memory as well. 
 							auto& texManager = CGlobals::GetAssetManager()->GetTextureManager();
 							texManager.DeleteEntity(pTexture);
 						}
@@ -191,9 +186,6 @@ CParaXModel::~CParaXModel(void)
 
 		SAFE_DELETE_ARRAY(bones);
 		SAFE_DELETE(m_pVoxelModel);
-
-		if (!animGeometry) {
-		}
 
 		if (animTextures)
 			SAFE_DELETE_ARRAY(texanims);
@@ -308,7 +300,7 @@ AnimIndex CParaXModel::GetAnimIndexByID(int nAnimID)
 	{
 		if (anims[i].animID == nAnimID)
 		{
-			return AnimIndex(i, 0, anims[i].timeStart, anims[i].timeEnd, (unsigned char)(anims[i].loopType), nAnimID);
+			return AnimIndex(i, 0, anims[i].timeStart, anims[i].timeEnd, (byte)(anims[i].loopType), nAnimID);
 		}
 	}
 	return AnimIndex(-1);
@@ -726,15 +718,7 @@ bool CParaXModel::SetupTransformByID(int nID)
 }
 
 
-Matrix4* CParaXModel::GetAttachmentMatrix(Matrix4* pOut
-	, int nAttachmentID
-	, const AnimIndex& CurrentAnim
-	, const AnimIndex& BlendingAnim
-	, float blendingFactor, const AnimIndex& upperAnim
-	, const AnimIndex& upperBlendingAnim
-	, float upperBlendingFactor
-	, bool bRecalcBone
-	, IAttributeFields* pAnimInstance)
+Matrix4* CParaXModel::GetAttachmentMatrix(Matrix4* pOut, int nAttachmentID, const AnimIndex& CurrentAnim, const AnimIndex& BlendingAnim, float blendingFactor, const AnimIndex& upperAnim, const AnimIndex& upperBlendingAnim, float upperBlendingFactor, bool bRecalcBone, IAttributeFields* pAnimInstance)
 {
 	int nAttachmentIndex = m_attLookup[nAttachmentID];
 	if (nAttachmentIndex >= 0)
@@ -796,14 +780,7 @@ void CParaXModel::calcBones()
 	PostCalculateBoneMatrix(nBones);
 }
 
-void CParaXModel::calcBones(CharacterPose* pPose
-	, const AnimIndex& CurrentAnim
-	, const AnimIndex& BlendingAnim
-	, float blendingFactor
-	, const AnimIndex& upperAnim
-	, const AnimIndex& upperBlendingAnim
-	, float upperBlendingFactor
-	, IAttributeFields* pAnimInstance)
+void CParaXModel::calcBones(CharacterPose* pPose, const AnimIndex& CurrentAnim, const AnimIndex& BlendingAnim, float blendingFactor, const AnimIndex& upperAnim, const AnimIndex& upperBlendingAnim, float upperBlendingFactor, IAttributeFields* pAnimInstance)
 {
 	uint32 nBones = (uint32)GetObjectNum().nBones;
 
@@ -823,7 +800,6 @@ void CParaXModel::calcBones(CharacterPose* pPose
 	if (pPose)
 	{
 		// TODO: check if this is an valid character model.
-
 		if (pPose->m_fUpperBodyFacingAngle != 0.f && m_vNeckYawAxis != Vector3::ZERO)
 		{
 			int nHeadAttachmentIndex = m_attLookup[ATT_ID_HEAD];
@@ -994,7 +970,7 @@ void CParaXModel::RenderNoAnim(SceneState* pSceneState)
 			if (p.init(this, pSceneState))
 			{
 				// we don't want to render completely transparent parts
-				pd3dDevice->DrawIndexedPrimitive(EPrimitiveType::TRIANGLELIST, 0, 0, m_objNum.nVertices, p.m_nIndexStart, p.indexCount / 3);
+				RenderDevice::DrawIndexedPrimitive(pd3dDevice, RenderDevice::DRAW_PERF_TRIANGLES_CHARACTER, EPrimitiveType::TRIANGLELIST, 0, 0, m_objNum.nVertices, p.m_nIndexStart, p.indexCount / 3);
 				p.deinit();
 			}
 		}
@@ -1006,7 +982,7 @@ void CParaXModel::RenderNoAnim(SceneState* pSceneState)
 		// programmable pipeline
 		if (pEffect->begin())
 		{
-			if (pEffect->BeginPass(GetRenderPass(NULL)))
+			if (pEffect->BeginPass(GetRenderPass()))
 			{
 				for (int i = 0; i < nPasses; i++)
 				{
@@ -1015,7 +991,7 @@ void CParaXModel::RenderNoAnim(SceneState* pSceneState)
 					{
 						// we don't want to render completely transparent parts
 						pEffect->CommitChanges();
-						pd3dDevice->DrawIndexedPrimitive(EPrimitiveType::TRIANGLELIST, 0, 0, m_objNum.nVertices, p.m_nIndexStart, p.indexCount / 3);
+						RenderDevice::DrawIndexedPrimitive(pd3dDevice, RenderDevice::DRAW_PERF_TRIANGLES_CHARACTER, EPrimitiveType::TRIANGLELIST, 0, 0, m_objNum.nVertices, p.m_nIndexStart, p.indexCount / 3);
 						p.deinit_FX(pSceneState);
 					}
 				}
@@ -1297,7 +1273,7 @@ void CParaXModel::RenderBMaxModel(SceneState* pSceneState, CParameterBlock* pMat
 					}
 				}
 
-				pEffect->EndPass(0);
+				pEffect->EndPass();
 			}
 			pEffect->end();
 		}
@@ -1520,7 +1496,7 @@ void CParaXModel::DrawPass_BMax_VB(ModelRenderPass& p, size_t start)
 		return;
 
 	RenderDevicePtr pd3dDevice = CGlobals::GetRenderDevice();
-	pd3dDevice->DrawPrimitive(EPrimitiveType::TRIANGLELIST, (UINT)start, p.indexCount / 3);
+	RenderDevice::DrawPrimitive(pd3dDevice, RenderDevice::DRAW_PERF_TRIANGLES_CHARACTER, EPrimitiveType::TRIANGLELIST, (UINT)start, p.indexCount / 3);
 }
 
 void CParaXModel::DrawPass_NoAnim_VB(ModelRenderPass& p, size_t start)
@@ -1535,7 +1511,7 @@ void CParaXModel::DrawPass_NoAnim_VB(ModelRenderPass& p, size_t start)
 		return;
 
 	RenderDevicePtr pd3dDevice = CGlobals::GetRenderDevice();
-	pd3dDevice->DrawPrimitive(EPrimitiveType::TRIANGLELIST, (UINT)start, p.indexCount / 3);
+	RenderDevice::DrawPrimitive(pd3dDevice, RenderDevice::DRAW_PERF_TRIANGLES_CHARACTER, EPrimitiveType::TRIANGLELIST, (UINT)start, p.indexCount / 3);
 }
 
 
@@ -1578,9 +1554,9 @@ void CParaXModel::DrawPass_NoAnim(ModelRenderPass& p)
 				pBufEntity->Unlock();
 
 				if (pBufEntity->IsMemoryBuffer())
-					pd3dDevice->DrawPrimitiveUP(EPrimitiveType::TRIANGLELIST, nLockedNum, pBufEntity->GetBaseVertexPointer(), pBufEntity->m_nUnitSize);
+					RenderDevice::DrawPrimitiveUP(pd3dDevice, RenderDevice::DRAW_PERF_TRIANGLES_CHARACTER, EPrimitiveType::TRIANGLELIST, nLockedNum, pBufEntity->GetBaseVertexPointer(), pBufEntity->m_nUnitSize);
 				else
-					pd3dDevice->DrawPrimitive(EPrimitiveType::TRIANGLELIST, pBufEntity->GetBaseVertex(), nLockedNum);
+					RenderDevice::DrawPrimitive(pd3dDevice, RenderDevice::DRAW_PERF_TRIANGLES_CHARACTER, EPrimitiveType::TRIANGLELIST, pBufEntity->GetBaseVertex(), nLockedNum);
 
 				if ((p.indexCount - nNumFinishedVertice) > nNumLockedVertice)
 				{
@@ -1666,9 +1642,9 @@ void CParaXModel::DrawPass_BMax(ModelRenderPass& p)
 			pBufEntity->Unlock();
 
 			if (pBufEntity->IsMemoryBuffer())
-				pd3dDevice->DrawPrimitiveUP(EPrimitiveType::TRIANGLELIST, nLockedNum, pBufEntity->GetBaseVertexPointer(), pBufEntity->m_nUnitSize);
+				RenderDevice::DrawPrimitiveUP(pd3dDevice, RenderDevice::DRAW_PERF_TRIANGLES_CHARACTER, EPrimitiveType::TRIANGLELIST, nLockedNum, pBufEntity->GetBaseVertexPointer(), pBufEntity->m_nUnitSize);
 			else
-				pd3dDevice->DrawPrimitive(EPrimitiveType::TRIANGLELIST, pBufEntity->GetBaseVertex(), nLockedNum);
+				RenderDevice::DrawPrimitive(pd3dDevice, RenderDevice::DRAW_PERF_TRIANGLES_CHARACTER, EPrimitiveType::TRIANGLELIST, pBufEntity->GetBaseVertex(), nLockedNum);
 
 			if ((p.indexCount - nNumFinishedVertice) > nNumLockedVertice)
 			{
@@ -1690,7 +1666,7 @@ void CParaXModel::DrawPass(ModelRenderPass& p)
 		return;
 	if (p.is_rigid_body)
 	{
-		// for rigid body, do not use skinning. 
+		// for rigid body with many vertices, do skinning on GPU instead of CPU. 
 		DrawPass_NoAnim(p);
 		return;
 	}
@@ -1771,9 +1747,9 @@ void CParaXModel::DrawPass(ModelRenderPass& p)
 			pBufEntity->Unlock();
 
 			if (pBufEntity->IsMemoryBuffer())
-				pd3dDevice->DrawPrimitiveUP(EPrimitiveType::TRIANGLELIST, nLockedNum, pBufEntity->GetBaseVertexPointer(), pBufEntity->m_nUnitSize);
+				RenderDevice::DrawPrimitiveUP(pd3dDevice, RenderDevice::DRAW_PERF_TRIANGLES_CHARACTER, EPrimitiveType::TRIANGLELIST, nLockedNum, pBufEntity->GetBaseVertexPointer(), pBufEntity->m_nUnitSize);
 			else
-				pd3dDevice->DrawPrimitive(EPrimitiveType::TRIANGLELIST, pBufEntity->GetBaseVertex(), nLockedNum);
+				RenderDevice::DrawPrimitive(pd3dDevice, RenderDevice::DRAW_PERF_TRIANGLES_CHARACTER, EPrimitiveType::TRIANGLELIST, pBufEntity->GetBaseVertex(), nLockedNum);
 
 			if ((p.indexCount - nNumFinishedVertice) > nNumLockedVertice)
 			{
@@ -2236,7 +2212,6 @@ IAttributeFields* CParaXModel::GetChildAttributeObject(int nRowIndex, int nColum
 	{
 		return m_pVoxelModel;
 	}
-
 	return 0;
 }
 
@@ -2454,7 +2429,7 @@ HRESULT CParaXModel::ClonePhysicsMesh(DWORD* pNumVertices, Vector3** ppVerts, DW
 const char* CParaXModel::GetStrAnimIds()
 {
 	int nAnim = (int)GetObjectNum().nAnimations;
-	thread_local static std::string strAnimIds = "";
+	thread_local static std::string strAnimIds;
 	strAnimIds.clear();
 
 	for (int i = 0; i < nAnim; i++) {
@@ -2484,7 +2459,6 @@ int CParaXModel::InstallFields(CAttributeClass* pClass, bool bOverride)
 	pClass->AddField("Geosets", FieldType_void_pointer, (void*)0, (void*)GetGeosets_s, NULL, NULL, bOverride);
 	pClass->AddField("Indices", FieldType_void_pointer, (void*)0, (void*)GetIndices_s, NULL, NULL, bOverride);
 	pClass->AddField("Animations", FieldType_void_pointer, (void*)0, (void*)GetAnimations_s, NULL, NULL, bOverride);
-	//pClass->AddField("SaveToDisk", FieldType_String, (void*)SaveToDisk_s, (void*)SaveToDisk_s, NULL, NULL, bOverride);
 	pClass->AddField("SaveToDisk", FieldType_String, (void*)SaveToDisk_s, NULL, NULL, NULL, bOverride);
 	pClass->AddField("SaveToGltf", FieldType_String, (void*)SaveToGltf_s, NULL, NULL, NULL, bOverride);
 	pClass->AddField("strAnimIds", FieldType_String, (void*)0, (void*)GetStrAnimIds_s, NULL, NULL, bOverride);

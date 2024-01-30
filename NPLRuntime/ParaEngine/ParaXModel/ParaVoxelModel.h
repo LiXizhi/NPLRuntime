@@ -49,6 +49,9 @@ namespace ParaEngine
 		inline bool IsBlock() { return isBlockMask != 0x0; /*(GetBlockCountInMask() >= 4);*/ }
 		inline bool IsBlockAt(uint8_t index) { return isBlockMask & (1 << index); }
 		inline bool IsSolid() { return isBlockMask == 0xff; };
+		// if the 4 child blocks on the given side are neither all empty or all blocks.
+		// @param nSide: 0~5, one of the 6 sides of the cube.
+		inline bool IsSideSplited(int nSide);
 		inline bool IsEmpty() { return isBlockMask == 0x0; };
 		// if fully opache. but it may contain child nodes with different colors.
 		inline bool IsFullySolid() { return (baseChunkOffset & 0x800000); };
@@ -60,7 +63,7 @@ namespace ParaEngine
 			isChildMask |= (1 << index);
 			childOffsets[index] = offset;
 		};
-		inline void RemoveChild(uint8_t index) { isChildMask &= ~(1 << index); childOffsets[index] = 0; };
+		inline void RemoveChild(uint8_t index) { isChildMask &= ~(1 << index); childVoxelShape[index] = 0; };
 
 		inline uint32 GetColor32() { return (colorRGB & 0x1f) << 3 | ((colorRGB & 0x3e0) << 6) | ((colorRGB & 0x7c00) << 9); };
 		inline void SetColor32(uint32 color) { colorRGB = (uint16_t)((color & 0xf8) >> 3 | ((color & 0xf800) >> 6) | ((color & 0xf80000) >> 9)); };
@@ -112,13 +115,14 @@ namespace ParaEngine
 	// only used internally when traversing the octree
 	struct TempVoxelOctreeNodeRef
 	{
-		TempVoxelOctreeNodeRef(VoxelOctreeNode* pNode, int32 x, int32 y, int32 z, int level) :pNode(pNode), x(x), y(y), z(z), level(level) {};
+		TempVoxelOctreeNodeRef(VoxelOctreeNode* pNode, int32 x, int32 y, int32 z, uint32 level, uint8 childIndex_ = 0) :pNode(pNode), x(x), y(y), z(z), level(level), childIndex(childIndex_) {};
 		TempVoxelOctreeNodeRef() :pNode(NULL), x(0), y(0), z(0), level(0) {};
 		VoxelOctreeNode* pNode;
 		int32 x;
 		int32 y;
 		int32 z;
-		int level;
+		uint32 level;
+		uint8 childIndex;
 	};
 #define MAX_VOXEL_CHUNK_SIZE 256
 
@@ -153,7 +157,7 @@ namespace ParaEngine
 		inline uint8_t CreateNode(const VoxelOctreeNode* pCopyFromNode = NULL) {
 			if (m_nSize < MAX_VOXEL_CHUNK_SIZE)
 			{
-				uint8_t index = m_nHeadFreeItemIndex;
+				auto index = m_nHeadFreeItemIndex;
 				if (pCopyFromNode != 0)
 					(*this)[m_nHeadFreeItemIndex] = *pCopyFromNode;
 				else
@@ -174,7 +178,7 @@ namespace ParaEngine
 						}
 					}
 				}
-				return index;
+				return (uint8_t)index;
 			}
 			else
 			{
@@ -258,17 +262,49 @@ namespace ParaEngine
 		void Optimize();
 		void OptimizeNode(VoxelOctreeNode* pNode);
 
-		/** update isBlockMask, color, and voxel shape of the node, and also changing its parent and possible siblings.
-		* one needs to call this function when a node is changed to update all the way to the root node.
-		* @param nodes: update nodes from nodes[nNodeCount - 1](smallest child) to nodes[0] (root node).
+		/**
+		* update isBlockMask, color, and isFullySolid property for this and all of its parent nodes.
+		* the above property has nothing to do with their neighouring nodes.
+		* whenever a node is changed, calling this function immediately to update all the way to the root node, to ensure all these	properties are correct.
+		*/
+		void UpdateNodeParentsSolidityAndColor(TempVoxelOctreeNodeRef nodes[], int nNodeCount);
+
+		/** suppose the node at the position is changed, call this function to update all affected blocks' shape in the scene.
+		* @note: the block at the given position should be either a fully solid block or empty block.
+		* this function is usually called when you just set a given node to empty or fully solid.
+		*/
+		void UpdateNodeShape(uint32 x, uint32 y, uint32 z, int level);
+
+		/** update a given node and all of its child nodes that are adjacent to a given side of a fully solid or empty neighbour node.
+		* @param isSolidOrEmpty: whether the neighbour node is fully solid or fully empty.
+		* if the neighbour node is not fully solid or empty, this function should not be called.
+		* Hence, we only call this function of the neighbour node that has just been set by SetBlock()
+		*/
+		void UpdateNodeAndChildShapeByNeighbour(int32 x, int32 y, int32 z, int level, int side, bool isSolidOrEmpty);
+		void UpdateNodeShapeByNeighbour(int32 x, int32 y, int32 z, int level, int side, bool isSolidOrEmpty, bool IsSideSplited);
+
+		/** we will try to merge or split fully solid node at the given node and all its parents, according to their neighouring nodes. */
+		void MergeNodeAndParents(int32 x, int32 y, int32 z, int level);
+		/** when a node is changed, call this function to make sure all affected fully solid nodes in the scene are merged or splitted. */
+		void MergeNodeAndNeighbours(int32 x, int32 y, int32 z, int level);
+
+
+		/** suppose the node at the position is changed, call this function to update all affected blocks in the scene.
+		* whenever a node is changed, calling this function immediately to update all the way to the root node, to ensure all properties are correct.
 		*/
 		void UpdateNode(TempVoxelOctreeNodeRef nodes[], int nNodeCount);
-		void UpdateNodeShape(uint32 x, uint32 y, uint32 z, int level);
-		/**
-		* the `side` of the block is `isSolid`, update the voxel shape
-		* @param isSolid: true if the side is solid, false if the side block is empty.
+
+		/** no recursion, update just this node and its neighour at the given level.
+		* blocks at lower or higher levels are ignored.
 		*/
-		void UpdateNodeShapeByNeighbour(int32 x, int32 y, int32 z, int level, int side, bool isSolid);
+		void UpdateNodeShapeAtLevel(VoxelOctreeNode* pNode, uint32 x, uint32 y, uint32 z, int level);
+		/** no recursion, update just this node.
+		* return true if neighour node is a block
+		*/
+		bool UpdateNodeShapeByNeighbourAtLevel(int32 x, int32 y, int32 z, int level, int side, bool isBlock);
+
+
+		/** if the node at the given position and level is a block node. */
 		bool IsBlock(int32 x, int32 y, int32 z, int level);
 
 		/** get the depth of the octree at the given level.
@@ -289,7 +325,7 @@ namespace ParaEngine
 		bool SetNodeColor(VoxelOctreeNode* pNode, uint32 color);
 
 		void DumpOctree();
-		void DumpOctreeNode(VoxelOctreeNode* pNode, int nDepth, int nChunkIndex, int offset);
+		void DumpOctreeNode(VoxelOctreeNode* pNode, int nDepth, int nChunkIndex, int offset, int x, int y, int z);
 
 		VoxelOctreeNode* GetRootNode();
 
