@@ -430,6 +430,8 @@ void ParaEngine::ParaVoxelModel::PaintBlock(uint32 x, uint32 y, uint32 z, int le
 				if (pNode->IsBlockAt(nChildIndex) && pNode->GetColor32() != color)
 				{
 					pNode = CreateGetChildNode(pNode, nChildIndex);
+					auto& lastNode = parentNodes[nLevel - 1];
+					parentNodes[nLevel] = TempVoxelOctreeNodeRef(pNode, (lastNode.x << 1) + lx, (lastNode.y << 1) + ly, (lastNode.z << 1) + lz, nLevel, nChildIndex);
 					continue;
 				}
 			}
