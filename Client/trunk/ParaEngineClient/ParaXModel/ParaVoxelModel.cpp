@@ -380,7 +380,6 @@ void ParaEngine::ParaVoxelModel::SetBlockCmd(const char* cmd)
 
 bool ParaEngine::ParaVoxelModel::SetNodeColor(VoxelOctreeNode* pNode, uint32 color)
 {
-	auto& chunk = *m_chunks[pNode->GetBaseChunkOffset()];
 	pNode->SetColor32(color);
 	bool isFullySolid = true;
 	for (int k = 0; k < 8; ++k)
@@ -399,7 +398,15 @@ bool ParaEngine::ParaVoxelModel::SetNodeColor(VoxelOctreeNode* pNode, uint32 col
 				isFullySolid = false;
 		}
 	}
-	return isFullySolid && pNode->IsSolid();
+	if (isFullySolid && pNode->IsSolid())
+	{
+		if (pNode->IsLeaf() && pNode->IsChildSameShapeAsParent())
+		{
+			pNode->SetSingleShape(true);
+		}
+		return true;
+	}
+	return false;
 }
 
 void ParaEngine::ParaVoxelModel::PaintBlock(uint32 x, uint32 y, uint32 z, int level, uint32_t color)
@@ -430,19 +437,24 @@ void ParaEngine::ParaVoxelModel::PaintBlock(uint32 x, uint32 y, uint32 z, int le
 				if (pNode->IsBlockAt(nChildIndex) && pNode->GetColor32() != color)
 				{
 					pNode = CreateGetChildNode(pNode, nChildIndex);
+					pNode->SetColor32((uint32_t)color);
+					
 					auto& lastNode = parentNodes[nLevel - 1];
 					parentNodes[nLevel] = TempVoxelOctreeNodeRef(pNode, (lastNode.x << 1) + lx, (lastNode.y << 1) + ly, (lastNode.z << 1) + lz, nLevel, nChildIndex);
 					continue;
 				}
 			}
+			// early exit if the node is empty, we have nothing to paint on. 
 			break;
 		}
 	}
-	if (pNode)
+	if (pNode && nDepth <= 0)
 	{
 		if (SetNodeColor(pNode, color))
 		{
 			UpdateNodeParentsSolidityAndColor(parentNodes, nLevel);
+			// node merge is done in SetNodeColor, so there is no need to double check here. 
+			// MergeNodeAndNeighbours(x, y, z, level);
 		}
 	}
 }
