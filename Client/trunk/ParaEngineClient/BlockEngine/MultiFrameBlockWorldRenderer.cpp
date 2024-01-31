@@ -24,7 +24,7 @@
 using namespace ParaEngine;
 
 ParaEngine::CMultiFrameBlockWorldRenderer::CMultiFrameBlockWorldRenderer(BlockWorldClient* pWorld)
-	:m_pWorld(pWorld), m_bIsDirty(false), m_bIsFinished(false), m_bEnabled(false), m_nMaxChunksToDrawPerTick(16), m_bDrawToSkybox(true), m_nProgress(0), 
+	:m_pWorld(pWorld), m_bIsDirty(false), m_bIsFinished(false), m_bEnabled(false), m_nMaxChunksToDrawPerTick(16), m_bDrawToSkybox(true), m_nProgress(0),
 	m_chunkViewSize(0), m_nRenderDistance(2048), m_pCamera(NULL), m_bUseMyCamera(false), m_bDebugImage(false), m_nCurRenderPass(0), m_bCanResumeProgress(false)
 {
 	if (GetIdentifier().empty())
@@ -68,7 +68,7 @@ bool ParaEngine::CMultiFrameBlockWorldRenderer::Draw(int nMaxChunks)
 	}
 	if (IsFinished())
 		return true;
-	
+
 	CRenderTarget* pRenderTarget = CreateGetRenderTarget();
 	if (pRenderTarget)
 	{
@@ -168,11 +168,11 @@ void ParaEngine::CMultiFrameBlockWorldRenderer::SetDirty(bool val)
 	if (m_bIsDirty != val)
 	{
 		m_bIsDirty = val;
-		if (m_bIsDirty){
+		if (m_bIsDirty) {
 			m_nProgress = 0;
 			m_nCurRenderPass = 0;
 			m_bIsFinished = false;
-			
+
 			m_tempRenderTasks.clear();
 			m_alphaTestTasks.clear();
 			m_alphaBlendTasks.clear();
@@ -262,9 +262,9 @@ bool ParaEngine::CMultiFrameBlockWorldRenderer::DrawToSkybox()
 
 	if (painter->begin(CGlobals::GetGUI()))
 	{
-		RenderDevicePtr pd3dDevice = CGlobals::GetRenderDevice();
-		pd3dDevice->SetRenderState(D3DRS_ZENABLE, TRUE);
-		pd3dDevice->SetRenderState(D3DRS_ZWRITEENABLE, FALSE);
+		RenderDevicePtr pRenderDevice = CGlobals::GetRenderDevice();
+		pRenderDevice->SetRenderState(ERenderState::ZENABLE, TRUE);
+		pRenderDevice->SetRenderState(ERenderState::ZWRITEENABLE, FALSE);
 
 		painter->setCompositionMode(CPainter::CompositionMode_SourceBlend);
 		painter->setPen(Color::White);
@@ -276,11 +276,11 @@ bool ParaEngine::CMultiFrameBlockWorldRenderer::DrawToSkybox()
 		ParaViewport viewport;
 		auto viewportManager = CGlobals::GetViewportManager();
 		viewportManager->GetCurrentViewport(viewport);
-		painter->drawTexture(QRectF((float)viewport.X / viewportManager->GetWidth(), (float)viewport.Y / viewportManager->GetHeight(), 
+		painter->drawTexture(QRectF((float)viewport.X / viewportManager->GetWidth(), (float)viewport.Y / viewportManager->GetHeight(),
 			painter->FromUnitSpaceX((float)viewport.Width / viewportManager->GetWidth()), painter->FromUnitSpaceY((float)viewport.Height / viewportManager->GetHeight())), pRenderTarget->GetTexture(), QRectF(), 1.f);
-		
+
 		painter->Flush();
-		pd3dDevice->SetRenderState(D3DRS_ZWRITEENABLE, TRUE);
+		pRenderDevice->SetRenderState(ERenderState::ZWRITEENABLE, TRUE);
 		painter->end();
 	}
 	return true;
@@ -317,7 +317,7 @@ bool ParaEngine::CMultiFrameBlockWorldRenderer::GetChunkByProgress(int nProgress
 			bIsResuming = false;
 		if (!bIsResuming)
 			ResetProgress();
-		
+
 		for (m_length = bIsResuming ? m_length : 1; m_length <= m_chunkViewSize; ++m_length)
 		{
 			for (m_k = bIsResuming ? m_k : 1; m_k <= 2; ++m_k)
@@ -394,7 +394,7 @@ void ParaEngine::CMultiFrameBlockWorldRenderer::UpdateViewParams()
 		CBaseCamera* pFromCamera = CGlobals::GetScene()->GetCurrentCamera();
 		CBaseCamera* pCamera = GetCamera();
 		pCamera->CopyCameraParamsFrom(pFromCamera);
-		pCamera->SetFarPlane(GetRenderDistance()*BlockConfig::g_blockSize);
+		pCamera->SetFarPlane(GetRenderDistance() * BlockConfig::g_blockSize);
 		pCamera->UpdateProjParams();
 
 		CGlobals::GetProjectionMatrixStack().push(*pCamera->GetProjMatrix());
@@ -407,14 +407,14 @@ void ParaEngine::CMultiFrameBlockWorldRenderer::UpdateViewParams()
 	Vector3 camMin;
 	Vector3 camMax;
 	m_frustum = *(GetCamera()->GetFrustum());
-	CCameraFrustum*  frustum = &m_frustum;
+	CCameraFrustum* frustum = &m_frustum;
 
 	// calculate aabb for frustum
 	Vector3* frusCorner = frustum->vecFrustum;
 	camMin = frusCorner[0];
 	camMax = frusCorner[0];
 
-	for (int i = 1; i<8; i++)
+	for (int i = 1; i < 8; i++)
 	{
 		Vector3& v = frusCorner[i];
 
@@ -450,7 +450,7 @@ void ParaEngine::CMultiFrameBlockWorldRenderer::UpdateViewParams()
 	BlockCommon::ConvertToBlockIndex(camMax.x, camMax.y, camMax.z, m_endIdx.x, m_endIdx.y, m_endIdx.z);
 	m_endIdx.x /= 16; m_endIdx.y /= 16; m_endIdx.z /= 16;
 	m_endIdx.y = m_endIdx.y < 15 ? m_endIdx.y + 1 : 15;
-	
+
 	float fRenderDist = GetRenderDistance() * BlockConfig::g_blockSize;
 	m_sEyeSphere = CShapeSphere(camWorldPos, fRenderDist);
 
@@ -507,7 +507,7 @@ RenderableChunk* ParaEngine::CMultiFrameBlockWorldRenderer::GetRenderableChunkBy
 		pChunk = NULL;
 		int16_t regionX = chunkPos.x >> 5;
 		int16_t regionZ = chunkPos.z >> 5;
-		BlockRegion *pRegion = m_pWorld->GetRegion(regionX, regionZ);
+		BlockRegion* pRegion = m_pWorld->GetRegion(regionX, regionZ);
 
 		if (pRegion && !(pRegion->IsLocked()))
 		{
@@ -518,11 +518,11 @@ RenderableChunk* ParaEngine::CMultiFrameBlockWorldRenderer::GetRenderableChunkBy
 			pChunk = m_activeChunks[nBufferIndex];
 			pChunk->ReuseChunk(pRegion, chunkIndex);
 		}
-		
+
 		if (pbFromMainBuffer)
 			*pbFromMainBuffer = false;
 	}
-	
+
 	return pChunk;
 }
 
@@ -617,7 +617,7 @@ bool ParaEngine::CMultiFrameBlockWorldRenderer::DrawInternal(int nMaxChunks)
 				// nearby terrain not loaded, we will escape this. 
 				m_nProgress++;
 				// too many chunk columns processed, we will escape after 100 empty chunks anyway
-				if((m_nProgress - nLastProgress)>100)
+				if ((m_nProgress - nLastProgress) > 100)
 					break;
 			}
 			else
@@ -639,7 +639,7 @@ bool ParaEngine::CMultiFrameBlockWorldRenderer::DrawInternal(int nMaxChunks)
 			BlockRenderPass nCurRenderPass = postRenderPasses[nPass];
 			if (nCurRenderPass == m_nCurRenderPass)
 			{
-				std::vector<Int16x3>& taskPositions = (m_nCurRenderPass == BlockRenderPass_AlphaTest) ? m_alphaTestTasks : 
+				std::vector<Int16x3>& taskPositions = (m_nCurRenderPass == BlockRenderPass_AlphaTest) ? m_alphaTestTasks :
 					((m_nCurRenderPass == BlockRenderPass_AlphaBlended) ? m_alphaBlendTasks : m_reflectedWaterTasks);
 
 				m_tempRenderTasks.clear();
@@ -691,7 +691,7 @@ bool ParaEngine::CMultiFrameBlockWorldRenderer::DrawInternal(int nMaxChunks)
 			}
 		}
 	}
-	
+
 	m_tempRenderTasks.clear();
 	if (bFinished)
 		SetFinished(true);
