@@ -333,15 +333,27 @@ void ParaVoxelModel::SetBlock(uint32 x, uint32 y, uint32 z, int level, int color
 	}
 	else
 	{
+		// delete block
 		for (; nDepth >= 0; nDepth--, nLevel++)
 		{
 			uint32 lx = (x >> nDepth) & 1, ly = (y >> nDepth) & 1, lz = (z >> nDepth) & 1;
 			nChildIndex = lx + (ly << 1) + (lz << 2);
 			if (pNode->IsBlockAt(nChildIndex))
 			{
-				pNode = CreateGetChildNode(pNode, nChildIndex);
-				auto& lastNode = parentNodes[nLevel - 1];
-				parentNodes[nLevel] = TempVoxelOctreeNodeRef(pNode, (lastNode.x << 1) + lx, (lastNode.y << 1) + ly, (lastNode.z << 1) + lz, nLevel, nChildIndex);
+				if (nDepth > 0) {
+					pNode = CreateGetChildNode(pNode, nChildIndex);
+					auto& lastNode = parentNodes[nLevel - 1];
+					parentNodes[nLevel] = TempVoxelOctreeNodeRef(pNode, (lastNode.x << 1) + lx, (lastNode.y << 1) + ly, (lastNode.z << 1) + lz, nLevel, nChildIndex);
+				}
+				else // if(nDepth == 0)
+				{
+					// delete child and update node
+					RemoveNodeChildren(pNode, 1 << nChildIndex);
+					UpdateNodeParentsSolidityAndColor(parentNodes, nLevel);
+					UpdateNodeShape(x, y, z, level);
+					MergeNodeAndNeighbours(x, y, z, level);
+					return;
+				}
 			}
 			else
 			{
@@ -349,21 +361,13 @@ void ParaVoxelModel::SetBlock(uint32 x, uint32 y, uint32 z, int level, int color
 				return;
 			}
 		}
-
-		// delete block
-		if (nLevel >= 2) {
-			RemoveNodeChildren(parentNodes[nLevel - 2].pNode, 1 << nChildIndex);
-			UpdateNodeParentsSolidityAndColor(parentNodes, nLevel);
-			UpdateNodeShape(x, y, z, level);
-			MergeNodeAndNeighbours(x, y, z, level);
-		}
-		else {
-			// for root node
-			RemoveNodeChildren(pNode, 0xff);
-			pNode->MakeEmpty();
-			pNode->SetVoxelShape(0);
-			pNode->offsetAndShape = 0;
-		}
+		
+		assert(nLevel == 1);
+		// for root node
+		RemoveNodeChildren(pNode, 0xff);
+		pNode->MakeEmpty();
+		pNode->SetVoxelShape(0);
+		pNode->offsetAndShape = 0;
 	}
 }
 
