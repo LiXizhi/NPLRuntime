@@ -460,11 +460,15 @@ namespace ParaScripting
 		/**
 		* Open or create a file
 		* e.g. ParaIO.open("temp/test.txt", "w");
+		* e.g. ParaIO.open("", "buffer");
+		* e.g. ParaIO.open("<memory>", "w");
 		* @param filename: the file name to open. if it is "<memory>" and mode is "w". it is a memory buffer. 
 		* @param mode : access mode
 		*  - "r" Opens for reading. If the file does not exist or cannot be found, the call fails.
 		*  - "w" Opens an empty file for writing. If the given file exists, its contents are destroyed.If not, file will be created.
 		*  - "a" append to the end of an existing file. if file does not exist, a new one is created.
+		*  - "image" load image file 
+		*  - "buffer" filename/obj is a string(byte£©buffer
 		* @return file object is returned.
 		*/
 		static ParaFileObject open(const object& obj, const char *mode);
