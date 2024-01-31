@@ -96,42 +96,42 @@ namespace ParaEngine
 		static const char* UTF8ToAnsi(const char* name);
 		static const char* AnsiToUTF8(const char* name);
 
-		/** get the number of characters in str. Str is assumed to be in ANSI code page. 
+		/** get the number of characters in str. Str is assumed to be in ANSI code page.
 		* it is converted to Unicode and return the character count. */
 		static int GetUnicodeCharNum(const char* str);
 
-		/** 
+		/**
 		* same as LUA string.sub(), except that the index is character.
-		* get a sub string of a ANSI Code page string. However, the index are unicode characters. 
+		* get a sub string of a ANSI Code page string. However, the index are unicode characters.
 		* @param str: the string to use
-		* @param nFrom: character index beginning from 1. 
+		* @param nFrom: character index beginning from 1.
 		*/
 		static string UniSubString(const char* str, int nFrom, int nTo);
 
 		/** encode a string using really simple algorithm. it just makes the source ineligible. It is still not immune to crackers.
-		* str = SimpleDecode(SimpleEncode(str)) 
+		* str = SimpleDecode(SimpleEncode(str))
 		* @return: it may return NULL if input invalid
 		*/
 		static string SimpleEncode(const string& source);
 
-		/** decode a string using really simple algorithm.  
-		* str = SimpleDecode(SimpleEncode(str)) 
+		/** decode a string using really simple algorithm.
+		* str = SimpleDecode(SimpleEncode(str))
 		* @return: it may return NULL if input invalid
 		*/
 		static string SimpleDecode(const string& source);
 
 		/**
 		* Converts an entire byte array from one encoding to another.
-		* @param srcEncoding: any encoding name. If nil or "", it is the default coding in NPL. 
+		* @param srcEncoding: any encoding name. If nil or "", it is the default coding in NPL.
 		* see Encoding.GetEncoding(). Below are some commonly used field
 		| *Code Page* | *Name* |
 		| 950   |  big5   |
 		| 936   |  gb2312 |
 		| 65001 |  utf-8  |
 		| 65005 |  utf-32  |
-		* There is one special code name called "HTML", which contains HTML special characters in ascii code page. This is usually true for most "iso8859-15" encoding in western worlds. 
-		* It just writes the unicode number\U+XXXX in ascii character "&#XXXX;" where & is optional. 
-		* @param dstEncoding: save as above. If nil or "", it will be converted to default coding in NPL. 
+		* There is one special code name called "HTML", which contains HTML special characters in ascii code page. This is usually true for most "iso8859-15" encoding in western worlds.
+		* It just writes the unicode number\U+XXXX in ascii character "&#XXXX;" where & is optional.
+		* @param dstEncoding: save as above. If nil or "", it will be converted to default coding in NPL.
 		* @bytes: the source bytes.
 		* e.g. The most common use of this function is to create HTML special character to NPL string, like below
 		* local text = ParaMisc.EncodingConvert("HTML", "", "Chinese characters: &#24320;&#21457;")
@@ -146,7 +146,7 @@ namespace ParaEngine
 		static const char* GetTextFromClipboard();
 
 		/** divide string */
-		static void DevideString(const string& input,string& str1,string&str2,char separator=';');
+		static void DevideString(const string& input, string& str1, string& str2, char separator = ';');
 
 		/** splite string by token */
 		static void split(const std::string& src, const std::string& token, std::vector<std::string>& vect);
@@ -162,27 +162,27 @@ namespace ParaEngine
 		* @param data The data to check for validity.
 		* @return @@b True if the input is valid UTF-8, @b false otherwise.
 		*/
-		static bool checkValidXMLChars( const std::string& data );
+		static bool checkValidXMLChars(const std::string& data);
 
 		/**
 		* remove invalid characters in the given input.
 		* @param data The data to check for validity.
-		* @return @@b True if the input is valid UTF-8, @b false otherwise. If false, invalid chars in input will be removed. 
+		* @return @@b True if the input is valid UTF-8, @b false otherwise. If false, invalid chars in input will be removed.
 		*/
-		static bool removeInValidXMLChars( std::string& data );
+		static bool removeInValidXMLChars(std::string& data);
 
-		static bool IsNumber(const char * str);
-		static bool IsLetter(const char * str);
-		static int StrToInt(const char *str);
-		static double StrToFloat(const char * str);
-		static bool RegularMatch(const char *input,const char *expression);
+		static bool IsNumber(const char* str);
+		static bool IsLetter(const char* str);
+		static int StrToInt(const char* str);
+		static double StrToFloat(const char* str);
+		static bool RegularMatch(const char* input, const char* expression);
 		//replace all "\" in a string to "\\"
 		static std::string ToCString(const char* input);
-		static std::string StrReplace(const char* inputstring, char srcchar,char destchar);
-		static RECT * GetImageAndRect(const std::string &str,std::string &imagefile, RECT * pOut=NULL);
+		static std::string StrReplace(const char* inputstring, char srcchar, char destchar);
+		static RECT* GetImageAndRect(const std::string& str, std::string& imagefile, RECT* pOut = NULL);
 
-		/** convert the md5 of the input source string. 
-		* @param bBinary: if false (default), result is 32 hex number chars. if true, result is 16 bytes binary string. 
+		/** convert the md5 of the input source string.
+		* @param bBinary: if false (default), result is 32 hex number chars. if true, result is 16 bytes binary string.
 		*/
 		static std::string md5(const std::string& source, bool bBinary = false);
 
@@ -199,36 +199,36 @@ namespace ParaEngine
 
 
 
-		/** a fast printf function that support limited functions. 
+		/** a fast printf function that support limited functions.
 		The formats supported by this implementation are: 'd' 'u' 'c' 's' 'x' 'X' 'f'.
 		Zero padding and field width are also supported.
 		One very important feature is that %f behaves like %d if float is integer
 		*/
-		static void fast_sprintf(char* s,const char *fmt, ...);
-		static void fast_snprintf(char* s, int nMaxCount, const char *fmt, ...);
+		static void fast_sprintf(char* s, const char* fmt, ...);
+		static void fast_snprintf(char* s, int nMaxCount, const char* fmt, ...);
 
 		/** fast itoa modified from http://code.google.com/p/maxmods/
-		@param value: the value to be converted. 
-		@param result: the array to hold the result. 
-		@param buf_size: the result buffer size. 
+		@param value: the value to be converted.
+		@param result: the array to hold the result.
+		@param buf_size: the result buffer size.
 		@param base: can only be [2,16]
-		@return the number of characters(not including the trailing '\0') in result. 
+		@return the number of characters(not including the trailing '\0') in result.
 		*/
-		static int fast_itoa( int64 value, char* result, int buf_size, int base = 10 );
+		static int fast_itoa(int64 value, char* result, int buf_size, int base = 10);
 
-		/** doing a fast (may not be accurate) double to string conversion. 
-		* it is similar to "%.xxf", except that it will remove all trailing zero, and ensures that nBuffSize is not exceed for out of range numbers, etc. 
+		/** doing a fast (may not be accurate) double to string conversion.
+		* it is similar to "%.xxf", except that it will remove all trailing zero, and ensures that nBuffSize is not exceed for out of range numbers, etc.
 		@param num: Value to be converted to a string. NaN, +Inf,-Inf will generate "0"
 		@param str: output string, array in memory where to store the resulting null-terminated string.
-		@param nBuffSize: the output buff size. 
+		@param nBuffSize: the output buff size.
 		@param max_decimal: max number of numbers after the decimal point. It will remove trailing '0'
-		@param radix: the radix. 
-		@return the number of characters(not including the trailing '\0') in result. 
+		@param radix: the radix.
+		@return the number of characters(not including the trailing '\0') in result.
 		*/
-		static int fast_dtoa(double num, char* str, int nBuffSize=40, int max_decimal=5, int radix = 10);
+		static int fast_dtoa(double num, char* str, int nBuffSize = 40, int max_decimal = 5, int radix = 10);
 
 		/** check if the input string matches the wild card pattern
-		* @param sWildcardPattern: such as "*.*" or "*" or "main_*.pkg", etc. 
+		* @param sWildcardPattern: such as "*.*" or "*" or "main_*.pkg", etc.
 		*/
 		static bool MatchWildcard(const std::string& str, const std::string& sWildcardPattern);
 
@@ -237,7 +237,7 @@ namespace ParaEngine
 		*/
 		static bool StrEndsWith(const string& str, const string& sequence);
 
-		/** check whether str ends with sequence without spaces in front of it. 
+		/** check whether str ends with sequence without spaces in front of it.
 		@param sequence: it may contain ?, which matches to 1 any character.
 		*/
 		static bool StrEndsWithWord(const string& str, const string& sequence);
@@ -250,39 +250,50 @@ namespace ParaEngine
 		/** // and \\ are replaced with / and \ */
 		void RemoveDoubleSlashesInString(std::string& sFilePath);
 
+		/** fast check isdigit without considering locale */
+		static inline bool isdigit(char c) {
+			return ((c >= '0') && (c <= '9'));
+		}
+
+		/** fast check isalnum without considering locale */
+		static inline bool isalnum(char c)
+		{
+			return ((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9') );
+		}
+
 	private:
-			class _CodePageName
+		class _CodePageName
+		{
+		public:
+			_CodePageName()
 			{
-			public:
-				_CodePageName()
-				{
 #ifdef DEFAULT_FILE_ENCODING
-					name = "utf-8";
+				name = "utf-8";
 #else
 #ifdef WIN32
-					auto cp = GetACP();
-					char tmp[30];
-					ParaEngine::StringHelper::fast_itoa((int)cp, tmp, 30);
+				auto cp = GetACP();
+				char tmp[30];
+				ParaEngine::StringHelper::fast_itoa((int)cp, tmp, 30);
 
-					name = "CP";
-					name += tmp;
+				name = "CP";
+				name += tmp;
 #else
-					name = "utf-8";
+				name = "utf-8";
 #endif
 #endif
-				}
+			}
 
-				const std::string& get() const
-				{
-					return name;
-				}
+			const std::string& get() const
+			{
+				return name;
+			}
 
-			private:
-				std::string name;
+		private:
+			std::string name;
 
-			};
+		};
 
-			static _CodePageName defaultCPName;
+		static _CodePageName defaultCPName;
 
 	};
 }

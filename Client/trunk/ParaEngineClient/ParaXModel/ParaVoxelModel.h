@@ -81,14 +81,14 @@ namespace ParaEngine
 		inline void SetBaseChunkOffset(uint32_t value) { baseChunkOffset = value & 0x7fffff; };
 		// 8 bits for voxel shape, 6 bits is for each of the 6 sides of the cube. If a bit is 1, the side is connecting to a solid.
 		inline void SetVoxelShape(uint8_t shape) {
-			baseChunkOffset = ((shape&0x3f) << 24) | (baseChunkOffset & 0xffffff);
+			baseChunkOffset = ((shape & 0x3f) << 24) | (baseChunkOffset & 0xffffff);
 		}
 		inline uint8_t GetVoxelShape() {
 			return uint8_t((baseChunkOffset >> 24) & 0x3f);
 		}
 		/** a single bit to mark if the node has the same voxel shape as its 8 children.
 		* we should render the node directly instead of its children if this bit is set.
-		* this bit is on usually for leaf colored node that has not been splitted by neighbouring nodes.  
+		* this bit is on usually for leaf colored node that has not been splitted by neighbouring nodes.
 		*/
 		inline bool IsSingleShape() { return uint8_t((baseChunkOffset >> 24) & 0x40); };
 		inline void SetSingleShape(bool bOn) {
