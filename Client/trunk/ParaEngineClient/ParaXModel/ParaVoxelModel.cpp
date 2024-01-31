@@ -295,7 +295,7 @@ void ParaVoxelModel::SetBlock(uint32 x, uint32 y, uint32 z, int level, int color
 	int nChildIndex = 0;
 	int nLevel = 1;
 
-	if (color > 0)
+	if (color >= 0)
 	{
 		for (; nDepth >= 0; nDepth--, nLevel++)
 		{
@@ -793,10 +793,13 @@ void ParaEngine::ParaVoxelModel::MergeNodeAndParents(int32 x, int32 y, int32 z, 
 			else
 				break;
 		}
-		else if (pNode->IsEmpty() && pNode->IsLeaf())
+		else if (pNode->IsEmpty() && pNode->IsLeaf() && i >= 1)
 		{
 			// always merge empty node
-			RemoveNodeChildren(parentNodes[i - 1].pNode, 1 << (parentNodes[i].childIndex));
+			pNode = parentNodes[i - 1].pNode;
+			uint8_t k = parentNodes[i].childIndex;
+			RemoveNodeChildren(pNode, 1 << k);
+			pNode->childVoxelShape[k] = 0;
 		}
 		else
 		{
