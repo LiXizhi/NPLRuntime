@@ -72,21 +72,24 @@ bool ParaEngine::CMultiFrameBlockWorldRenderer::Draw(int nMaxChunks)
 	CRenderTarget* pRenderTarget = CreateGetRenderTarget();
 	if (pRenderTarget)
 	{
-		ParaViewport viewport;
-		CGlobals::GetViewportManager()->GetCurrentViewport(viewport);
-		//  shall use the same buffer size as the current selected viewport
-		pRenderTarget->SetRenderTargetSize(viewport.Width, viewport.Height);
-
-		if (pRenderTarget->GetPrimaryAsset())
+		if (!CGlobals::GetViewportManager()->GetActiveViewPort()->GetRenderTarget())
 		{
-			if (pRenderTarget->Begin())
-			{
-				if (nMaxChunks <= 0)
-					nMaxChunks = GetMaxChunksToDrawPerTick();
-				DrawInternal(nMaxChunks);
+			ParaViewport viewport;
+			CGlobals::GetViewportManager()->GetCurrentViewport(viewport);
+			//  shall use the same buffer size as the current selected viewport
+			pRenderTarget->SetRenderTargetSize(viewport.Width, viewport.Height);
 
-				pRenderTarget->End();
-				return true;
+			if (pRenderTarget->GetPrimaryAsset())
+			{
+				if (pRenderTarget->Begin())
+				{
+					if (nMaxChunks <= 0)
+						nMaxChunks = GetMaxChunksToDrawPerTick();
+					DrawInternal(nMaxChunks);
+
+					pRenderTarget->End();
+					return true;
+				}
 			}
 		}
 	}
