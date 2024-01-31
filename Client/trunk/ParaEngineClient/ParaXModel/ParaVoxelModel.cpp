@@ -466,7 +466,7 @@ void ParaEngine::ParaVoxelModel::PaintBlockCmd(const char* cmd)
 	int color;
 	if (sscanf(cmd, "%d,%d,%d,%d,%d", &x, &y, &z, &level, &color) == 5)
 	{
-		if (color > 0)
+		if (color >= 0)
 			PaintBlock(x, y, z, level, color);
 		else
 			SetBlock(x, y, z, level, color);
