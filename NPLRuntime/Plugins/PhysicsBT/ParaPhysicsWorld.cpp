@@ -354,7 +354,7 @@ bool CParaPhysicsWorld::InitPhysics()
 
 bool CParaPhysicsWorld::StepSimulation(float fDeltaTime)
 {
-	m_dynamicsWorld->stepSimulation(fDeltaTime);
+	m_dynamicsWorld->stepSimulation(fDeltaTime, 3, 1 / 60.f);
 	return true;
 }
 
