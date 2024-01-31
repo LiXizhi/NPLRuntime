@@ -78,7 +78,7 @@ namespace ParaEngine
 
 		// only lower 23 bits are used, which is over 32GB data at most.
 		inline int GetBaseChunkOffset() { return baseChunkOffset & 0x7fffff; };
-		inline void SetBaseChunkOffset(uint32_t value) { baseChunkOffset = value & 0x7fffff; };
+		inline void SetBaseChunkOffset(uint32_t value) { baseChunkOffset = (baseChunkOffset & 0xff800000) | (value & 0x7fffff); };
 		// 8 bits for voxel shape, 6 bits is for each of the 6 sides of the cube. If a bit is 1, the side is connecting to a solid.
 		inline void SetVoxelShape(uint8_t shape) {
 			baseChunkOffset = ((shape & 0x3f) << 24) | (baseChunkOffset & 0xffffff);
@@ -138,7 +138,7 @@ namespace ParaEngine
 	class VoxelChunk : public std::vector<VoxelOctreeNode>
 	{
 	public:
-		VoxelChunk() :m_nSize(0), m_nTailFreeItemIndex(0), m_nHeadFreeItemIndex(0) {
+		VoxelChunk() :m_nSize(0), m_nFirstFreeItemIndex(0) {
 			resize(MAX_VOXEL_CHUNK_SIZE);
 			for (int i = 0; i < MAX_VOXEL_CHUNK_SIZE; i++) {
 				(*this)[i].MarkDeleted();
@@ -148,11 +148,8 @@ namespace ParaEngine
 
 		void erase(int index) {
 			(*this)[index].MarkDeleted();
-			if (index == m_nTailFreeItemIndex - 1) {
-				m_nTailFreeItemIndex--;
-			}
-			if (index < m_nHeadFreeItemIndex) {
-				m_nHeadFreeItemIndex = index;
+			if (index < m_nFirstFreeItemIndex) {
+				m_nFirstFreeItemIndex = index;
 			}
 			m_nSize--;
 		};
@@ -162,42 +159,31 @@ namespace ParaEngine
 			auto index = CreateNode(pCopyFromNode);
 			return (*this)[index];
 		}
-		inline uint8_t CreateNode(const VoxelOctreeNode* pCopyFromNode = NULL) {
+		uint8_t CreateNode(const VoxelOctreeNode* pCopyFromNode = NULL) {
 			if (m_nSize < MAX_VOXEL_CHUNK_SIZE)
 			{
-				auto index = m_nHeadFreeItemIndex;
+				auto index = m_nFirstFreeItemIndex;
 				if (pCopyFromNode != 0)
-					(*this)[m_nHeadFreeItemIndex] = *pCopyFromNode;
+					(*this)[m_nFirstFreeItemIndex] = *pCopyFromNode;
 				else
-					(*this)[m_nHeadFreeItemIndex].UnMarkDeleted();
+					(*this)[m_nFirstFreeItemIndex].UnMarkDeleted();
 				m_nSize++;
 
-				if (index == m_nTailFreeItemIndex)
-				{
-					m_nTailFreeItemIndex++;
-					m_nHeadFreeItemIndex++;
-				}
-				else
-				{
-					for (int i = index + 1; i <= m_nTailFreeItemIndex; i++) {
-						if ((*this)[i].IsDeleted()) {
-							m_nHeadFreeItemIndex = i;
-							break;
-						}
+				for (int i = index + 1; i < MAX_VOXEL_CHUNK_SIZE; i++) {
+					if ((*this)[i].IsDeleted()) {
+						m_nFirstFreeItemIndex = i;
+						return (uint8_t)index;
 					}
 				}
+				m_nFirstFreeItemIndex = MAX_VOXEL_CHUNK_SIZE;
 				return (uint8_t)index;
 			}
-			else
-			{
-				assert(false);
-				return 0;
-			}
+			assert(false);
+			return 0;
 		}
 
 	private:
-		uint16_t m_nTailFreeItemIndex;
-		uint16_t m_nHeadFreeItemIndex;
+		uint16_t m_nFirstFreeItemIndex;
 		uint16_t m_nSize;
 	};
 
