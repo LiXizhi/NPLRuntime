@@ -261,6 +261,18 @@ namespace ParaEngine
 			return ((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9') );
 		}
 
+		/** fast check is alpha letter without considering locale */
+		static inline bool isalpha(char c)
+		{
+			return ((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z'));
+		}
+
+		/** fast check is lower cased alpha letter without considering locale */
+		static inline bool isalphaLowerCase(char c)
+		{
+			return ((c >= 'a' && c <= 'z'));
+		}
+
 	private:
 		class _CodePageName
 		{

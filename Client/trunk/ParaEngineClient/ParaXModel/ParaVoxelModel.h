@@ -249,6 +249,7 @@ namespace ParaEngine
 
 		ATTRIBUTE_METHOD1(ParaVoxelModel, SetBlock_s, char*) { cls->SetBlockCmd(p1); return S_OK; }
 		ATTRIBUTE_METHOD1(ParaVoxelModel, PaintBlock_s, char*) { cls->PaintBlockCmd(p1); return S_OK; }
+		ATTRIBUTE_METHOD1(ParaVoxelModel, RunCommandList_s, char*) { cls->RunCommandList(p1); return S_OK; }
 
 		ATTRIBUTE_METHOD1(ParaVoxelModel, GetMinVoxelPixelSize_s, float*) { *p1 = cls->GetMinVoxelPixelSize(); return S_OK; }
 		ATTRIBUTE_METHOD1(ParaVoxelModel, SetMinVoxelPixelSize_s, float) { cls->SetMinVoxelPixelSize(p1); return S_OK; }
@@ -285,6 +286,18 @@ namespace ParaEngine
 
 		void PaintBlock(uint32 x, uint32 y, uint32 z, int level, uint32_t color);
 		void PaintBlockCmd(const char* cmd);
+		/** run voxel command list: it is in the format of cmd name, cmd param, cmd param, ...
+		* e.g. "set 0,0,0,1,-1 level 8 color 0xff0000 pos 0,0,0,1,1,1,0,1,0"
+		* offset x,y,z: e.g. "offset 2,0,0", all position in the following commands will be offset by 2,0,0.
+		* level l: e.g. "level 8", all positions in the following commands will be at level 8.
+		* color c: e.g. "color 0xff0000", all colors in the following commands will be set to 0xff0000.
+		* del x1,y1,z1,x2,y2,z2, ... : e.g. "del block at all given positions at predefined level. 
+		* set x1,y1,z1,x2,y2,z2, ... : e.g. "set block at all given positions at predefined level and color.
+		* paint x1,y1,z1,x2,y2,z2, ... : e.g. "paint block at all given positions at predefined level and color.
+		* setblock x,y,z,level,color,... : e.g. "setblock 0,0,0,1,-1". set the block at (0,0,0) at level 1 to empty.
+		* paintblock x,y,z,level,color,... : e.g. "paintblock 0,0,0,1,0xff0000". paint all blocks to red. 
+		*/
+		void RunCommandList(const char* cmd);
 
 		/** get the block color at the given position and level
 		* @return -1 if the block is empty. or return 8 bits color of the block.

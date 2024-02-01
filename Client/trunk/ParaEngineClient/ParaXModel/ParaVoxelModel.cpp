@@ -106,6 +106,7 @@ int ParaEngine::ParaVoxelModel::InstallFields(CAttributeClass* pClass, bool bOve
 	pClass->AddField("DumpOctree", FieldType_void, (void*)DumpOctree_s, NULL, NULL, NULL, bOverride);
 	pClass->AddField("MinVoxelPixelSize", FieldType_Float, (void*)SetMinVoxelPixelSize_s, (void*)GetMinVoxelPixelSize_s, NULL, NULL, bOverride);
 	pClass->AddField("Editable", FieldType_Bool, (void*)SetEditable_s, (void*)IsEditable_s, NULL, NULL, bOverride);
+	pClass->AddField("RunCommandList", FieldType_String, (void*)RunCommandList_s, NULL, NULL, NULL, bOverride);
 	return S_OK;
 }
 
@@ -577,6 +578,58 @@ void ParaEngine::ParaVoxelModel::PaintBlockCmd(const char* cmd)
 			PaintBlock(x, y, z, level, color);
 		else
 			SetBlock(x, y, z, level, color);
+	}
+}
+
+void ParaEngine::ParaVoxelModel::RunCommandList(const char* cmd)
+{
+	std::string curCmd;
+	auto parseNextCmd = [&]() {
+		const char* pos = cmd;
+		while (*pos != '\0' && StringHelper::isalphaLowerCase(*pos))
+			pos++;
+		curCmd.assign(cmd, pos - cmd);
+		if (*pos != '\0')
+			pos++;
+		cmd = pos;
+	};
+	auto parseUnsignedInteger = [&]() {
+		int n = 0;
+		const char* pos = cmd;
+		while (*pos != '\0' && StringHelper::isdigit(*pos)) {
+			n = n * 10 + (*pos - '0');
+			pos++;
+		}
+		if (*pos != '\0')
+			pos++;
+		cmd = pos;
+		return n;
+	};
+	parseNextCmd();
+	while (!curCmd.empty())
+	{
+		OUTPUT_LOG("RunCommandList: %s\n", curCmd.c_str());
+		if (curCmd == "setblock") {
+			uint32 x = parseUnsignedInteger();
+			uint32 y = parseUnsignedInteger();
+			uint32 z = parseUnsignedInteger();
+			int level = parseUnsignedInteger();
+			int color = parseUnsignedInteger();
+			SetBlock(x, y, z, level, color);
+		}
+		else if (curCmd == "paintblock") {
+			uint32 x = parseUnsignedInteger();
+			uint32 y = parseUnsignedInteger();
+			uint32 z = parseUnsignedInteger();
+			int level = parseUnsignedInteger();
+			int color = parseUnsignedInteger();
+			PaintBlock(x, y, z, level, color);
+		}
+		else {
+			OUTPUT_LOG("RunCommandList: unknown command %s\n", curCmd.c_str());
+			break;
+		}
+		parseNextCmd();
 	}
 }
 
@@ -1620,7 +1673,7 @@ void ParaVoxelModel::Draw(SceneState* pSceneState)
 			exShapeMask |= sides[4] ? 0x10 : 0x20;
 		else
 			exShapeMask |= 0x30;
-		// TODO: for special case like 0x3, 0xcx, 0x30, we need to check if the camera is inside the child node of the octree 
+		// TODO: for special case like 0x3, 0xc, 0x30, we need to check if the camera is inside the child node of the octree 
 		// until parallel sides belongs to the same side of the camera.
 		// however, since voxel model is usually small, we can ignore this case for now.
 	}
