@@ -382,7 +382,7 @@ void ParaEngine::ParaVoxelModel::SetBlockCmd(const char* cmd)
 	}
 }
 
-bool ParaEngine::ParaVoxelModel::SetNodeColor(VoxelOctreeNode* pNode, uint32 color)
+bool ParaEngine::ParaVoxelModel::SetNodeAndChildColor(VoxelOctreeNode* pNode, uint32 color)
 {
 	pNode->SetColor32(color);
 	bool isFullySolid = true;
@@ -392,7 +392,7 @@ bool ParaEngine::ParaVoxelModel::SetNodeColor(VoxelOctreeNode* pNode, uint32 col
 		{
 			auto pChild = GetChildNode(pNode, k);
 			// merge same color nodes
-			if (SetNodeColor(pChild, color) && pChild->IsChildSameShapeAsParent()) {
+			if (SetNodeAndChildColor(pChild, color) && pChild->IsChildSameShapeAsParent()) {
 				auto childShape = pChild->GetVoxelShape();
 				RemoveNodeChildren(pNode, 1 << k);
 				pNode->isBlockMask |= (1 << k);
@@ -454,12 +454,12 @@ void ParaEngine::ParaVoxelModel::PaintBlock(uint32 x, uint32 y, uint32 z, int le
 	}
 	if (pNode && nDepth <= 0)
 	{
-		if (SetNodeColor(pNode, color))
-		{
+		if(SetNodeAndChildColor(pNode, color))
 			UpdateNodeParentsSolidityAndColor(parentNodes, nLevel);
-			// node merge is done in SetNodeColor, so there is no need to double check here. 
-			// MergeNodeAndNeighbours(x, y, z, level);
-		}
+		else
+			UpdateNodeParentsColor(parentNodes, nLevel);
+		// node merge is done in SetNodeAndChildColor, so there is no need to double udpate here. 
+		// MergeNodeAndNeighbours(x, y, z, level);
 	}
 }
 
@@ -1243,6 +1243,40 @@ void ParaEngine::ParaVoxelModel::UpdateNodeParentsSolidityAndColor(TempVoxelOctr
 			}
 			if (!pNode->IsLeaf())
 				fullySolidBlockColor = -1;
+		}
+	}
+}
+
+void ParaEngine::ParaVoxelModel::UpdateNodeParentsColor(TempVoxelOctreeNodeRef nodes[], int nNodeCount)
+{
+	for (int i = nNodeCount - 1; i >= 0; --i)
+	{
+		auto pNode = nodes[i].pNode;
+		if(!pNode->IsLeaf() && !(pNode->HasNonChildNodeBlock()))
+		{
+			uint16_t color[3] = { 0,0,0 };
+			int nChildCount = 0;
+			for (int k = 0; k < 8; ++k)
+			{
+				auto pChild = GetChildNode(pNode, k);
+				if (pChild)
+				{
+					if (pChild->IsBlock())
+					{
+						color[0] += pChild->GetColor0();
+						color[1] += pChild->GetColor1();
+						color[2] += pChild->GetColor2();
+						nChildCount++;
+					}
+				}
+			}
+			if (nChildCount > 0) {
+				// if the node has both child nodes and solid blocks, the color is the color of the non-child blocks.
+				// if the node has only child nodes and no blocks, the color is the average of color of the its child blocks.
+				pNode->SetColor0((uint8)(color[0] / nChildCount));
+				pNode->SetColor1((uint8)(color[1] / nChildCount));
+				pNode->SetColor2((uint8)(color[2] / nChildCount));
+			}
 		}
 	}
 }

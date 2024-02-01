@@ -52,6 +52,10 @@ namespace ParaEngine
 		// if the 4 child blocks on the given side are neither all empty or all blocks.
 		// @param nSide: 0~5, one of the 6 sides of the cube.
 		inline bool IsSideSplited(int nSide);
+		/** return true if there is a child block that is not a child node*/
+		inline bool HasNonChildNodeBlock() {
+			return (~isChildMask) & isBlockMask;
+		};
 		inline bool IsEmpty() { return isBlockMask == 0x0; };
 		// if fully opache. but it may contain child nodes with different colors.
 		inline bool IsFullySolid() { return (baseChunkOffset & 0x800000); };
@@ -262,6 +266,7 @@ namespace ParaEngine
 		* whenever a node is changed, calling this function immediately to update all the way to the root node, to ensure all these	properties are correct.
 		*/
 		void UpdateNodeParentsSolidityAndColor(TempVoxelOctreeNodeRef nodes[], int nNodeCount);
+		void UpdateNodeParentsColor(TempVoxelOctreeNodeRef nodes[], int nNodeCount);
 
 		/** suppose the node at the position is changed, call this function to update all affected blocks' shape in the scene.
 		* @note: the block at the given position should be either a fully solid block or empty block.
@@ -323,7 +328,7 @@ namespace ParaEngine
 		/** set color to the node and all of its children
 		* @return true if pNode is fully solid node.
 		*/
-		bool SetNodeColor(VoxelOctreeNode* pNode, uint32 color);
+		bool SetNodeAndChildColor(VoxelOctreeNode* pNode, uint32 color);
 
 		void DumpOctree();
 		void DumpOctreeNode(VoxelOctreeNode* pNode, int nDepth, int nChunkIndex, int offset, int x, int y, int z);
