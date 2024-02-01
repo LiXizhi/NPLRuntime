@@ -16,6 +16,7 @@
 #include "ParaEngine.h"
 #include "ParaWorldAsset.h"
 #include "SceneObject.h"
+#include "BaseCamera.h"
 #include "DynamicAttributeField.h"
 #include "ParaXModel.h"
 #include "effect_file.h"
@@ -71,9 +72,12 @@ inline bool ParaEngine::VoxelOctreeNode::IsChildSameShapeAsParent()
 }
 
 ParaVoxelModel::ParaVoxelModel()
-	: m_fMinVoxelPixelSize(4.f)
+	: m_fMinVoxelPixelSize(4.f), m_nFirstFreeChunkIndex(0)
 {
-	m_chunks[CreateGetFreeChunkIndex()]->SafeCreateNode(&VoxelOctreeNode::EmptyNode);
+	VoxelChunk* chunk = new VoxelChunk(1);
+	m_chunks.push_back(chunk);
+	m_chunks[0]->CreateNode(&VoxelOctreeNode::EmptyNode);
+	m_bIsEditable = false;
 }
 
 ParaVoxelModel::~ParaVoxelModel()
@@ -98,6 +102,7 @@ int ParaEngine::ParaVoxelModel::InstallFields(CAttributeClass* pClass, bool bOve
 	pClass->AddField("PaintBlock", FieldType_String, (void*)PaintBlock_s, NULL, NULL, NULL, bOverride);
 	pClass->AddField("DumpOctree", FieldType_void, (void*)DumpOctree_s, NULL, NULL, NULL, bOverride);
 	pClass->AddField("MinVoxelPixelSize", FieldType_Float, (void*)SetMinVoxelPixelSize_s, (void*)GetMinVoxelPixelSize_s, NULL, NULL, bOverride);
+	pClass->AddField("Editable", FieldType_Bool, (void*)SetEditable_s, (void*)IsEditable_s, NULL, NULL, bOverride);
 	return S_OK;
 }
 
@@ -129,14 +134,17 @@ int ParaEngine::ParaVoxelModel::CreateGetFreeChunkIndex(int nMinFreeSize)
 	int nMinSize = MAX_VOXEL_CHUNK_SIZE - nMinFreeSize - 1;
 	for (int i = 0; i < nCount; ++i)
 	{
-		if ((int)m_chunks[i]->GetUsedSize() <= nMinSize)
+		int nIndex = (m_nFirstFreeChunkIndex + i) % nCount;
+		if ((int)m_chunks[nIndex]->GetUsedSize() <= nMinSize)
 		{
-			return i;
+			m_nFirstFreeChunkIndex = nIndex;
+			return nIndex;
 		}
 	}
 	VoxelChunk* chunk = new VoxelChunk();
 	m_chunks.push_back(chunk);
-	return (int)m_chunks.size() - 1;
+	m_nFirstFreeChunkIndex = (int)m_chunks.size() - 1;
+	return m_nFirstFreeChunkIndex;
 }
 
 VoxelOctreeNode* ParaEngine::ParaVoxelModel::CreateGetChildNode(VoxelOctreeNode* pNode, int nChildIndex)
@@ -146,7 +154,8 @@ VoxelOctreeNode* ParaEngine::ParaVoxelModel::CreateGetChildNode(VoxelOctreeNode*
 	{
 		const uint8_t nChildShape = nChildOffset;
 		// create a new child node
-		auto& chunk = *(m_chunks[pNode->GetBaseChunkOffset()]);
+		auto nLastChunkIndex = pNode->GetBaseChunkOffset();
+		auto& chunk = *(m_chunks[nLastChunkIndex]);
 		VoxelOctreeNode* pChild = NULL;
 		if (chunk.GetFreeSize() < 8)
 		{
@@ -160,7 +169,7 @@ VoxelOctreeNode* ParaEngine::ParaVoxelModel::CreateGetChildNode(VoxelOctreeNode*
 				{
 					// move child to new chunk
 					auto index = newChunk.CreateNode(&chunk[pNode->childOffsets[i]]);
-					chunk.erase(pNode->childOffsets[i]);
+					DeleteNode(nLastChunkIndex, pNode->childOffsets[i]);
 					pNode->SetChild(i, index);
 				}
 			}
@@ -224,16 +233,25 @@ VoxelOctreeNode* ParaEngine::ParaVoxelModel::GetChildNode(VoxelOctreeNode* pNode
 	}
 }
 
+void ParaEngine::ParaVoxelModel::DeleteNode(uint32_t chunkIndex, uint8_t nodeIndex)
+{
+	auto chunk = m_chunks[chunkIndex];
+	chunk->erase(nodeIndex);
+	if (chunkIndex < m_nFirstFreeChunkIndex)
+	{
+		m_nFirstFreeChunkIndex = chunkIndex;
+	}
+}
+
 void ParaEngine::ParaVoxelModel::RemoveNodeChildren(VoxelOctreeNode* pNode, uint8_t isBlockMask)
 {
-	auto& chunk = *m_chunks[pNode->GetBaseChunkOffset()];
 	for (int k = 0; k < 8; ++k)
 	{
 		if ((isBlockMask & (1 << k)) && pNode->IsChildAt(k))
 		{
 			auto pChild = GetChildNode(pNode, k);
 			RemoveNodeChildren(pChild, 0xff);
-			chunk.erase(pNode->childOffsets[k]);
+			DeleteNode(pNode->GetBaseChunkOffset(), pNode->childOffsets[k]);
 			pNode->RemoveChild(k);
 		}
 	}
@@ -284,6 +302,7 @@ void ParaEngine::ParaVoxelModel::DumpOctreeNode(VoxelOctreeNode* pNode, int nDep
 
 void ParaVoxelModel::SetBlock(uint32 x, uint32 y, uint32 z, int level, int color)
 {
+	SetEditable(true);
 	int nDepth = LevelToDepth(level);
 	// create get octree node
 	VoxelOctreeNode* pNode = GetRootNode();
@@ -415,6 +434,7 @@ bool ParaEngine::ParaVoxelModel::SetNodeAndChildColor(VoxelOctreeNode* pNode, ui
 
 void ParaEngine::ParaVoxelModel::PaintBlock(uint32 x, uint32 y, uint32 z, int level, uint32_t color)
 {
+	SetEditable(true);
 	int nDepth = LevelToDepth(level);
 	VoxelOctreeNode* pNode = GetRootNode();
 	TempVoxelOctreeNodeRef parentNodes[MAX_VOXEL_DEPTH];
@@ -1164,6 +1184,27 @@ float ParaEngine::ParaVoxelModel::GetMinVoxelPixelSize()
 	return m_fMinVoxelPixelSize;
 }
 
+void ParaEngine::ParaVoxelModel::SetEditable(bool bEditable)
+{
+	if (m_bIsEditable != bEditable)
+	{
+		m_bIsEditable = bEditable;
+		if (m_bIsEditable)
+		{
+			// resize all chunks to full size
+			for (auto& chunk : m_chunks)
+			{
+				chunk->MakeEditable();
+			}
+		}
+	}
+}
+
+bool ParaEngine::ParaVoxelModel::IsEditable()
+{
+	return m_bIsEditable;
+}
+
 void ParaVoxelModel::Optimize()
 {
 
@@ -1279,76 +1320,6 @@ void ParaEngine::ParaVoxelModel::UpdateNodeParentsColor(TempVoxelOctreeNodeRef n
 			}
 		}
 	}
-}
-
-// not used
-void ParaEngine::ParaVoxelModel::UpdateNode(TempVoxelOctreeNodeRef nodes[], int nNodeCount)
-{
-	/*
-	int32_t fullySolidBlockColor = -1;
-	for (int i = nNodeCount - 1; i >= 0; --i)
-	{
-		auto pNode = nodes[i].pNode;
-		if (pNode->IsSolid() && pNode->IsLeaf()) {
-			fullySolidBlockColor = pNode->GetColor();
-		}
-		else
-		{
-			uint8_t isBlockMask = 0;
-			uint16_t color[3] = { 0,0,0 };
-			int nChildCount = 0;
-			int blockCount = 0;
-			bool isChildFullySolid = true;
-			for (int k = 0; k < 8; ++k)
-			{
-				auto pChild = GetChildNode(pNode, k);
-				if (pChild)
-				{
-					color[0] += pChild->GetColor0();
-					color[1] += pChild->GetColor1();
-					color[2] += pChild->GetColor2();
-					nChildCount++;
-					if (pChild->IsBlock())
-						isBlockMask |= (1 << k);
-					isChildFullySolid = isChildFullySolid && pChild->IsFullySolid();
-				}
-				else if (pNode->IsBlockAt(k))
-				{
-					blockCount++;
-					isBlockMask |= (1 << k);
-				}
-			}
-			pNode->isBlockMask = isBlockMask;
-			pNode->SetFullySolid(isChildFullySolid && pNode->IsSolid());
-
-			if (nChildCount > 0) {
-				// average on rgb color separately
-				if (blockCount == 0)
-				{
-					// if the node has both child nodes and solid blocks, the color is the color of the non-child blocks.
-					// if the node has only child nodes and no blocks, the color is the average of color of the its child blocks.
-					pNode->SetColor0((uint8)(color[0] / nChildCount));
-					pNode->SetColor1((uint8)(color[1] / nChildCount));
-					pNode->SetColor2((uint8)(color[2] / nChildCount));
-				}
-				auto thisColor = pNode->GetColor();
-				for (int k = 0; k < 8; ++k)
-				{
-					auto pChild = GetChildNode(pNode, k);
-					if (pChild && pChild->IsLeaf() && pChild->IsSolid() && thisColor == pChild->GetColor())
-					{
-						auto childShape = pChild->GetVoxelShape();
-						RemoveNodeChildren(pNode, 1 << k);
-						pNode->isBlockMask |= (1 << k);
-						pNode->childVoxelShape[k] = childShape;
-					}
-				}
-			}
-			if (!pNode->IsLeaf())
-				fullySolidBlockColor = -1;
-		}
-	}
-	*/
 }
 
 inline uint8_t ParaEngine::ParaVoxelModel::GetOppositeSide(uint8_t nSide)
@@ -1517,6 +1488,18 @@ void ParaVoxelModel::Draw(SceneState* pSceneState)
 	RenderDevicePtr pd3dDevice = CGlobals::GetRenderDevice();
 	int indexCount = 0;
 
+	// calculate the max lod depth according to the distance from camera to the object
+	Matrix4 mat = CGlobals::GetWorldMatrixStack().SafeGetTop();
+	Vector3 scaleX(mat.m[0][0], mat.m[0][1], mat.m[0][2]);
+	float fScaling = scaleX.length();
+	int nMaxDrawDepth = GetLodDepth(pSceneState->GetCameraToCurObjectDistance(), fScaling);
+
+	if (m_chunks.size() > 2)
+	{
+		// if there are many chunks, we will test which if the three sides are facing towards the camera
+		auto pCamera = pSceneState->GetCamera();
+	}
+
 	DynamicVertexBufferEntity* pBufEntity = CGlobals::GetAssetManager()->GetDynamicBuffer(DVB_XYZ_NORM_DIF);
 	pd3dDevice->SetStreamSource(0, pBufEntity->GetBuffer(), 0, sizeof(bmax_vertex));
 
@@ -1558,10 +1541,6 @@ void ParaVoxelModel::Draw(SceneState* pSceneState)
 		indexCount = 0;
 	};
 
-	Matrix4 mat = CGlobals::GetWorldMatrixStack().SafeGetTop();
-	Vector3 scaleX(mat.m[0][0], mat.m[0][1], mat.m[0][2]);
-	float fScaling = scaleX.length();
-	int nMaxDrawDepth = GetLodDepth(pSceneState->GetCameraToCurObjectDistance(), fScaling);
 
 	auto drawVoxelShape = [&indexCount, &drawBatched](uint8_t shape, float x, float y, float z, float size, uint32_t color) {
 		DWORD dwColor = color | 0xff000000;

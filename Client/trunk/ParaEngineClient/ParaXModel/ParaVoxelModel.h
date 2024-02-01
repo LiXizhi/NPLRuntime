@@ -138,17 +138,32 @@ namespace ParaEngine
 	};
 #define MAX_VOXEL_CHUNK_SIZE 256
 
-	/** a chunk of at most MAX_VOXEL_CHUNK_SIZE(256) octree nodes. */
+	/** a chunk of at most MAX_VOXEL_CHUNK_SIZE(256) octree nodes. 
+	* non-editable chunks are allocated with just enough memory to hold the static octree.
+	* editable chunks are pre-allocated with 256 nodes to allow quick editing.
+	*/
 	class VoxelChunk : public std::vector<VoxelOctreeNode>
 	{
 	public:
-		VoxelChunk() :m_nSize(0), m_nFirstFreeItemIndex(0) {
-			resize(MAX_VOXEL_CHUNK_SIZE);
-			for (int i = 0; i < MAX_VOXEL_CHUNK_SIZE; i++) {
+		/* the capacity of the chunk. usually 256 for editable chunks. it can not be bigger than 256. */
+		VoxelChunk(int nCapacity = MAX_VOXEL_CHUNK_SIZE) :m_nSize(0), m_nFirstFreeItemIndex(0) {
+			resize(nCapacity);
+			for (int i = 0; i < nCapacity; i++) {
 				(*this)[i].MarkDeleted();
 			}
 		};
 		~VoxelChunk() {};
+
+		void MakeEditable() {
+			auto nLastSize = size();
+			if (nLastSize < MAX_VOXEL_CHUNK_SIZE)
+			{
+				resize(MAX_VOXEL_CHUNK_SIZE);
+				for (int i = nLastSize; i < MAX_VOXEL_CHUNK_SIZE; i++) {
+					(*this)[i].MarkDeleted();
+				}
+			}
+		}
 
 		void erase(int index) {
 			(*this)[index].MarkDeleted();
@@ -158,13 +173,14 @@ namespace ParaEngine
 			m_nSize--;
 		};
 		inline int GetUsedSize() { return m_nSize; };
-		inline int GetFreeSize() { return MAX_VOXEL_CHUNK_SIZE - m_nSize; };
+		inline int GetFreeSize() { return (int)(size() - m_nSize); };
 		inline VoxelOctreeNode& SafeCreateNode(const VoxelOctreeNode* pCopyFromNode = NULL) {
 			auto index = CreateNode(pCopyFromNode);
 			return (*this)[index];
 		}
 		uint8_t CreateNode(const VoxelOctreeNode* pCopyFromNode = NULL) {
-			if (m_nSize < MAX_VOXEL_CHUNK_SIZE)
+			int nCapacity = (int)size();
+			if (m_nSize < nCapacity)
 			{
 				auto index = m_nFirstFreeItemIndex;
 				if (pCopyFromNode != 0)
@@ -173,13 +189,13 @@ namespace ParaEngine
 					(*this)[m_nFirstFreeItemIndex].UnMarkDeleted();
 				m_nSize++;
 
-				for (int i = index + 1; i < MAX_VOXEL_CHUNK_SIZE; i++) {
+				for (int i = index + 1; i < nCapacity; i++) {
 					if ((*this)[i].IsDeleted()) {
 						m_nFirstFreeItemIndex = i;
 						return (uint8_t)index;
 					}
 				}
-				m_nFirstFreeItemIndex = MAX_VOXEL_CHUNK_SIZE;
+				m_nFirstFreeItemIndex = nCapacity;
 				return (uint8_t)index;
 			}
 			assert(false);
@@ -208,6 +224,9 @@ namespace ParaEngine
 
 		ATTRIBUTE_METHOD1(ParaVoxelModel, GetMinVoxelPixelSize_s, float*) { *p1 = cls->GetMinVoxelPixelSize(); return S_OK; }
 		ATTRIBUTE_METHOD1(ParaVoxelModel, SetMinVoxelPixelSize_s, float) { cls->SetMinVoxelPixelSize(p1); return S_OK; }
+
+		ATTRIBUTE_METHOD1(ParaVoxelModel, IsEditable_s, bool*) { *p1 = cls->IsEditable(); return S_OK; }
+		ATTRIBUTE_METHOD1(ParaVoxelModel, SetEditable_s, bool) { cls->SetEditable(p1); return S_OK; }
 
 		ATTRIBUTE_METHOD(ParaVoxelModel, DumpOctree_s) { cls->DumpOctree(); return S_OK; }
 
@@ -255,6 +274,14 @@ namespace ParaEngine
 		*/
 		void SetMinVoxelPixelSize(float fMinVoxelPixelSize);
 		float GetMinVoxelPixelSize();
+
+		/** if the model is editable. when model is first loaded, its chunks only allocate enough memory to hold the static octree, without pre-allocating memory for the voxel chunks.
+		* when the model is editable, we will pre-allocate memory for the voxel chunks to full size to allow quick editing.
+		* usually this is false when model first loaded from disk, and set to true automatically when user edited the model.
+		*/
+		void SetEditable(bool bEditable);
+		bool IsEditable();
+
 	protected:
 		/** optimize the model to remove and merge octree node for invisible nodes. */
 		void Optimize();
@@ -295,11 +322,6 @@ namespace ParaEngine
 		*/
 		bool HasHolesOnSide(int32 x, int32 y, int32 z, int level, int side);
 
-		/** suppose the node at the position is changed, call this function to update all affected blocks in the scene.
-		* whenever a node is changed, calling this function immediately to update all the way to the root node, to ensure all properties are correct.
-		*/
-		void UpdateNode(TempVoxelOctreeNodeRef nodes[], int nNodeCount);
-
 		/** no recursion, update just this node and its neighour at the given level.
 		* blocks at lower or higher levels are ignored.
 		*/
@@ -323,6 +345,7 @@ namespace ParaEngine
 		VoxelOctreeNode* GetNode(int32 x, int32 y, int32 z, int level);
 		VoxelOctreeNode* CreateGetChildNode(VoxelOctreeNode* pNode, int nChildIndex);
 		inline VoxelOctreeNode* GetChildNode(VoxelOctreeNode* pNode, int nChildIndex);
+		void DeleteNode(uint32_t chunkIndex, uint8_t nodeIndex);
 
 		void RemoveNodeChildren(VoxelOctreeNode* pNode, uint8_t isBlockMask = 0xff);
 		/** set color to the node and all of its children
@@ -341,10 +364,16 @@ namespace ParaEngine
 		// usually between [1, 12].  12 is max LOD depth allowed, which is 4096*4096*4096.
 		int GetLodDepth(float fCameraObjectDist, float fScaling = 1.f);
 	private:
+
 		std::vector< VoxelChunk* > m_chunks;
+		// this is just an estimate of the smallest chunk that has a node just deleted. It just help to make the CreateGetFreeChunkIndex() faster.
+		uint32_t m_nFirstFreeChunkIndex;
 
 		// how many pixels that the smallest voxel should occupy on screen. [1,4] are reasonable values. 
 		// the smaller the value, the finer the voxel model will be rendered.
 		float m_fMinVoxelPixelSize;
+		// if the model is editable. when model is first loaded, its chunks only allocate enough memory to hold the static octree, without pre-allocating memory for the voxel chunks.
+		// when the model is editable, we will pre-allocate memory for the voxel chunks to full size to allow quick editing.
+		bool m_bIsEditable;
 	};
 }
