@@ -1577,10 +1577,52 @@ void ParaVoxelModel::Draw(SceneState* pSceneState)
 	float fScaling = scaleX.length();
 	int nMaxDrawDepth = GetLodDepth(pSceneState->GetCameraToCurObjectDistance(), fScaling);
 
-	if (m_chunks.size() > 2)
+	// if there are many chunks, we will test compute the three sides are facing towards the camera
+	// and we will disable back facing surface rendering for all nodes in the octree.
+	uint8_t exShapeMask = 0x3f;
+	if (m_chunks.size() > 1 && nMaxDrawDepth > 2)
 	{
-		// if there are many chunks, we will test which if the three sides are facing towards the camera
-		auto pCamera = pSceneState->GetCamera();
+		// world view matrix. 	
+		mat *= CGlobals::GetViewMatrixStack().SafeGetTop();
+		Vector3 vNormalX(-1, 0, 0);
+		Vector3 vNormalY(0, -1, 0);
+		Vector3 vNormalZ(0, 0, -1);
+		Matrix4 matRot = mat;
+		matRot.RemoveScaling();
+		auto quatRot = matRot.extractQuaternion();
+		vNormalX = quatRot * vNormalX;
+		vNormalY = quatRot * vNormalY;
+		vNormalZ = quatRot * vNormalZ;
+
+		// min, max point in camera space
+		Vector3 vMin(-0.5, 0, -0.5);
+		Vector3 vMax(0.5, 0, 0.5);
+		vMin = vMin * mat;
+		vMax = vMax * mat;
+		bool sides[6];
+		// check if the camera(0,0,0) is on the positve side of the 6 planes
+		sides[0] = vNormalX.dotProduct(vMin) < 0;
+		sides[1] = vNormalX.dotProduct(vMax) > 0;
+		sides[2] = vNormalY.dotProduct(vMin) < 0;
+		sides[3] = vNormalY.dotProduct(vMax) > 0;
+		sides[4] = vNormalZ.dotProduct(vMin) < 0;
+		sides[5] = vNormalZ.dotProduct(vMax) > 0;
+		exShapeMask = 0;
+		if (sides[0] != sides[1])
+			exShapeMask |= sides[0] ? 1 : 2;
+		else
+			exShapeMask |= 0x3;
+		if (sides[2] != sides[3])
+			exShapeMask |= sides[2] ? 4 : 8;
+		else
+			exShapeMask |= 0xc;
+		if (sides[4] != sides[5])
+			exShapeMask |= sides[4] ? 0x10 : 0x20;
+		else
+			exShapeMask |= 0x30;
+		// TODO: for special case like 0x3, 0xcx, 0x30, we need to check if the camera is inside the child node of the octree 
+		// until parallel sides belongs to the same side of the camera.
+		// however, since voxel model is usually small, we can ignore this case for now.
 	}
 
 	DynamicVertexBufferEntity* pBufEntity = CGlobals::GetAssetManager()->GetDynamicBuffer(DVB_XYZ_NORM_DIF);
@@ -1625,12 +1667,12 @@ void ParaVoxelModel::Draw(SceneState* pSceneState)
 	};
 
 
-	auto drawVoxelShape = [&indexCount, &drawBatched](uint8_t shape, float x, float y, float z, float size, uint32_t color) {
+	auto drawVoxelShape = [&indexCount, &drawBatched, &exShapeMask](uint8_t shape, float x, float y, float z, float size, uint32_t color) {
 		DWORD dwColor = color | 0xff000000;
 		Vector3 origin(x, y, z);
 		for (int k = 0; k < 6; ++k)
 		{
-			if (shape & (1 << k))
+			if (shape & exShapeMask & (1 << k))
 			{
 				int srcIndex = k * 6;
 				for (int i = 0; i < 6; ++i)
