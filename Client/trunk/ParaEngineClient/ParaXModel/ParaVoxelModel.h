@@ -298,9 +298,10 @@ namespace ParaEngine
 		* delwithoffset x1,y1,z1,x2,y2,z2, ... : e.g. "del block at all given positions at predefined level. 
 		* set x1,y1,z1,x2,y2,z2, ... : e.g. "set block at all given positions at predefined level and color.
 		* setwithoffset x1,y1,z1,x2,y2,z2, ... : e.g. "set block at all given positions at predefined offset, level, and color.
+		* setxyzcolor x1,y1,z1,color1,x2,y2,z2,color2, ... : e.g. "set block at all given positions at predefined level.
+		* setblock x,y,z,level,color,... : e.g. "setblock 0,0,0,1,-1". set the block at (0,0,0) at level 1 to empty.
 		* paint x1,y1,z1,x2,y2,z2, ... : e.g. "paint block at all given positions at predefined level and color.
 		* paintwithoffset x1,y1,z1,x2,y2,z2, ... : e.g. "paint block at all given positions at predefined level and color.
-		* setblock x,y,z,level,color,... : e.g. "setblock 0,0,0,1,-1". set the block at (0,0,0) at level 1 to empty.
 		* paintblock x,y,z,level,color,... : e.g. "paintblock 0,0,0,1,0xff0000". paint all blocks to red. 
 		*/
 		void RunCommandList(const char* cmd);

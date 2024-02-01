@@ -584,7 +584,7 @@ void ParaEngine::ParaVoxelModel::PaintBlockCmd(const char* cmd)
 void ParaEngine::ParaVoxelModel::RunCommandList(const char* cmd)
 {
 	static std::string curCmd;
-	static uint32_t curLevel = 1;
+	static int32 curLevel = 1;
 	static int32 curColor = 0;
 	static int32 offsetX = 0, offsetY = 0, offsetZ = 0;
 	auto parseNextCmd = [&]() {
@@ -611,7 +611,7 @@ void ParaEngine::ParaVoxelModel::RunCommandList(const char* cmd)
 				pos++;
 				// parse value in hex
 				char c;
-				while ((c = *pos) != '\0' && c != ' ' && c != '#') {
+				while ((c = *pos) != '\0' && ((c >= 'a' && c <= 'f') || ((c >= '0') && (c <= '9')))) {
 					int hex = c - 'a';
 					n = n << 4;
 					n += (hex >= 0) ? (hex + 10) : (c - '0');
@@ -623,11 +623,12 @@ void ParaEngine::ParaVoxelModel::RunCommandList(const char* cmd)
 				return n;
 			}
 		}
-		while (*pos != '\0' && StringHelper::isdigit(*pos)) {
-			n = n * 10 + (*pos - '0');
+		char c;
+		while ((c=*pos) != '\0' && StringHelper::isdigit(c)) {
+			n = n * 10 + (c - '0');
 			pos++;
 		}
-		if (*pos != '\0')
+		if (c != '\0' && c != '#')
 			pos++;
 		cmd = pos;
 		return isPositive ? n : -n;
@@ -676,6 +677,16 @@ void ParaEngine::ParaVoxelModel::RunCommandList(const char* cmd)
 				int32 y = parseInteger();
 				int32 z = parseInteger();
 				SetBlock(x, y, z, curLevel, curColor);
+			}
+		}
+		else if (curCmd == "setxyzcolor") {
+			while (*cmd != '\0' && !StringHelper::isalphaLowerCase(*cmd))
+			{
+				int32 x = parseInteger();
+				int32 y = parseInteger();
+				int32 z = parseInteger();
+				int color = parseInteger();
+				SetBlock(x, y, z, curLevel, color);
 			}
 		}
 		else if (curCmd == "setwithoffset") {
