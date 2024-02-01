@@ -21,6 +21,7 @@
 #include "ParaXModel.h"
 #include "effect_file.h"
 #include "StringHelper.h"
+#include "ParaFile.h"
 #include "ViewportManager.h"
 #include "ParaVoxelModel.h"
 
@@ -98,6 +99,8 @@ VoxelOctreeNode* ParaEngine::ParaVoxelModel::GetRootNode()
 int ParaEngine::ParaVoxelModel::InstallFields(CAttributeClass* pClass, bool bOverride)
 {
 	IAttributeFields::InstallFields(pClass, bOverride);
+	pClass->AddField("LoadFromFile", FieldType_String, (void*)LoadFromFile_s, NULL, NULL, NULL, bOverride);
+	pClass->AddField("SaveToFile", FieldType_String, (void*)SaveToFile_s, NULL, NULL, NULL, bOverride);
 	pClass->AddField("SetBlock", FieldType_String, (void*)SetBlock_s, NULL, NULL, NULL, bOverride);
 	pClass->AddField("PaintBlock", FieldType_String, (void*)PaintBlock_s, NULL, NULL, NULL, bOverride);
 	pClass->AddField("DumpOctree", FieldType_void, (void*)DumpOctree_s, NULL, NULL, NULL, bOverride);
@@ -108,11 +111,91 @@ int ParaEngine::ParaVoxelModel::InstallFields(CAttributeClass* pClass, bool bOve
 
 bool ParaVoxelModel::Load(const char* pBuffer, int nCount)
 {
+	// read chunk count
+	int count = ((uint32_t*)pBuffer)[0];
+	pBuffer += 4;
+	int nOldSize = (int)m_chunks.size();
+	for (int i = 0; i < count; ++i)
+	{
+		// for each chunk, read chunk size and chunk data
+		uint8_t nSize = ((uint8_t*)pBuffer)[0];
+		pBuffer += 1;
+		if(nOldSize <= i)
+			m_chunks.push_back(new VoxelChunk(nSize));
+		m_chunks[i]->LoadFromBuffer(pBuffer, nSize);
+		pBuffer += nSize * sizeof(VoxelOctreeNode);
+	}
+	for(int i = count; i < (int)nOldSize; ++i)
+	{
+		delete m_chunks[i];
+	}
+	m_chunks.resize(count);
+	m_nFirstFreeChunkIndex = 0;
+	m_bIsEditable = false;
+	return true;
+}
+
+bool ParaEngine::ParaVoxelModel::LoadFromFile(const char* filename)
+{
+	CParaFile file(filename);
+	if (!file.isEof())
+	{
+		//'v'<<24 + 'o'<<16 + 'x'<<8 + '0' + 1;
+		uint32_t fileTypeId = file.ReadDWORD();
+		if (fileTypeId == 0x766f7830 + 1)
+		{
+			return Load(file.getBuffer()+4, file.getSize()-4);
+		}
+	}
 	return false;
 }
 
 bool ParaVoxelModel::Save(std::vector<char>& output)
 {
+	int nTotalSize = 0;
+	int count = (int)m_chunks.size();
+	for(int i = 0; i < count; ++i)
+	{
+		auto& chunk = *(m_chunks[i]);
+		nTotalSize += chunk.GetDiskSize() * sizeof(VoxelOctreeNode);
+	}
+	output.resize(nTotalSize + 4 + count);
+	// write chunk count
+	char* pData = &output[0];
+	((uint32_t*)pData)[0] = count;
+	pData += 4;
+
+	for (int i = 0; i < count; ++i)
+	{
+		// for each chunk, write chunk size and chunk data
+		auto& chunk = *(m_chunks[i]);
+		uint8_t nSize = chunk.GetDiskSize();
+		((uint8_t*)pData)[0] = nSize;
+		pData += 1;
+		if(nSize > 0)
+		{
+			memcpy(pData, (char*)(&chunk[0]), nSize * sizeof(VoxelOctreeNode));
+			pData += nSize * sizeof(VoxelOctreeNode);
+		}
+	}
+	return true;
+}
+
+bool ParaEngine::ParaVoxelModel::SaveToFile(const char* filename)
+{
+	CParaFile file;
+	if (file.CreateNewFile(filename, true))
+	{
+		std::vector<char> output;
+		if (Save(output))
+		{
+			//'v'<<24 + 'o'<<16 + 'x'<<8 + '0' + 1;
+			uint32_t fileTypeId = 0x766f7830 + 1;
+			file.WriteDWORD(fileTypeId);
+			file.write(&output[0], (int)output.size());
+			return true;
+		}
+	}
 	return false;
 }
 

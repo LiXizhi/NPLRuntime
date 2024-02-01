@@ -178,6 +178,15 @@ namespace ParaEngine
 			auto index = CreateNode(pCopyFromNode);
 			return (*this)[index];
 		}
+		int GetDiskSize() { 
+			int nSize = (int)size();
+			for (int i = nSize - 1; i >= m_nSize; i--) {
+				if (!(*this)[i].IsDeleted()) {
+					return i + 1;
+				}
+			}
+			return m_nSize;
+		};
 		uint8_t CreateNode(const VoxelOctreeNode* pCopyFromNode = NULL) {
 			int nCapacity = (int)size();
 			if (m_nSize < nCapacity)
@@ -201,7 +210,23 @@ namespace ParaEngine
 			assert(false);
 			return 0;
 		}
-
+		void LoadFromBuffer(const char* pBuffer, int nSize)
+		{
+			resize(nSize);
+			if (nSize > 0) {
+				memcpy(data(), pBuffer, nSize * sizeof(VoxelOctreeNode));
+			}
+			m_nSize = 0;
+			m_nFirstFreeItemIndex = nSize;
+			for (int i = 0; i < nSize; i++) {
+				if (!(*this)[i].IsDeleted()) {
+					m_nSize++;
+				}
+				else if(i < m_nFirstFreeItemIndex){
+					m_nFirstFreeItemIndex = i;
+				}
+			}
+		}
 	private:
 		uint16_t m_nFirstFreeItemIndex;
 		uint16_t m_nSize;
@@ -218,6 +243,9 @@ namespace ParaEngine
 		virtual ~ParaVoxelModel();
 
 		ATTRIBUTE_DEFINE_CLASS(ParaVoxelModel);
+
+		ATTRIBUTE_METHOD1(ParaVoxelModel, LoadFromFile_s, char*) { cls->LoadFromFile(p1); return S_OK; }
+		ATTRIBUTE_METHOD1(ParaVoxelModel, SaveToFile_s, char*) { cls->SaveToFile(p1); return S_OK; }
 
 		ATTRIBUTE_METHOD1(ParaVoxelModel, SetBlock_s, char*) { cls->SetBlockCmd(p1); return S_OK; }
 		ATTRIBUTE_METHOD1(ParaVoxelModel, PaintBlock_s, char*) { cls->PaintBlockCmd(p1); return S_OK; }
@@ -236,9 +264,12 @@ namespace ParaEngine
 	public:
 		/** load the model from a binary buffer. */
 		bool Load(const char* pBuffer, int nCount = -1);
+		bool LoadFromFile(const char* filename);
 
 		/** save the model to a binary buffer. */
 		bool Save(std::vector<char>& output);
+		bool SaveToFile(const char* filename);
+		
 
 		/** set the block at the given position.
 		* @param x, y, z : the position of the block relative to level.
