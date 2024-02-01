@@ -107,6 +107,7 @@ int ParaEngine::ParaVoxelModel::InstallFields(CAttributeClass* pClass, bool bOve
 	pClass->AddField("MinVoxelPixelSize", FieldType_Float, (void*)SetMinVoxelPixelSize_s, (void*)GetMinVoxelPixelSize_s, NULL, NULL, bOverride);
 	pClass->AddField("Editable", FieldType_Bool, (void*)SetEditable_s, (void*)IsEditable_s, NULL, NULL, bOverride);
 	pClass->AddField("RunCommandList", FieldType_String, (void*)RunCommandList_s, NULL, NULL, NULL, bOverride);
+	pClass->AddField("run", FieldType_String, (void*)RunCommandList_s, NULL, NULL, NULL, bOverride);
 	return S_OK;
 }
 
