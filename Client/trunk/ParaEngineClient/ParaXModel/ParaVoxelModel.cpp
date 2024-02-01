@@ -583,7 +583,10 @@ void ParaEngine::ParaVoxelModel::PaintBlockCmd(const char* cmd)
 
 void ParaEngine::ParaVoxelModel::RunCommandList(const char* cmd)
 {
-	std::string curCmd;
+	static std::string curCmd;
+	static uint32_t curLevel = 1;
+	static int32 curColor = 0;
+	static int32 offsetX = 0, offsetY = 0, offsetZ = 0;
 	auto parseNextCmd = [&]() {
 		const char* pos = cmd;
 		while (*pos != '\0' && StringHelper::isalphaLowerCase(*pos))
@@ -593,9 +596,33 @@ void ParaEngine::ParaVoxelModel::RunCommandList(const char* cmd)
 			pos++;
 		cmd = pos;
 	};
-	auto parseUnsignedInteger = [&]() {
+	// "1", "-1", "#ff0000" are all valid values. ' ', ':', ';' are all valid separaters.
+	auto parseInteger = [&]() {
 		int n = 0;
 		const char* pos = cmd;
+		bool isPositive = true;
+		if (!StringHelper::isdigit(*pos))
+		{
+			if (*pos == '-') {
+				pos++;
+				isPositive = false;
+			}
+			else if (*pos == '#') {
+				pos++;
+				// parse value in hex
+				char c;
+				while ((c = *pos) != '\0' && c != ' ' && c != '#') {
+					int hex = c - 'a';
+					n = n << 4;
+					n += (hex >= 0) ? (hex + 10) : (c - '0');
+					pos++;
+				}
+				if (c != '\0' && c != '#')
+					pos++;
+				cmd = pos;
+				return n;
+			}
+		}
 		while (*pos != '\0' && StringHelper::isdigit(*pos)) {
 			n = n * 10 + (*pos - '0');
 			pos++;
@@ -603,33 +630,105 @@ void ParaEngine::ParaVoxelModel::RunCommandList(const char* cmd)
 		if (*pos != '\0')
 			pos++;
 		cmd = pos;
-		return n;
+		return isPositive ? n : -n;
 	};
-	parseNextCmd();
-	while (!curCmd.empty())
+	while (*cmd != '\0')
 	{
-		OUTPUT_LOG("RunCommandList: %s\n", curCmd.c_str());
+		if (StringHelper::isalphaLowerCase(*cmd))
+			parseNextCmd();
 		if (curCmd == "setblock") {
-			uint32 x = parseUnsignedInteger();
-			uint32 y = parseUnsignedInteger();
-			uint32 z = parseUnsignedInteger();
-			int level = parseUnsignedInteger();
-			int color = parseUnsignedInteger();
-			SetBlock(x, y, z, level, color);
+			while (*cmd != '\0' && !StringHelper::isalphaLowerCase(*cmd))
+			{
+				uint32 x = parseInteger();
+				uint32 y = parseInteger();
+				uint32 z = parseInteger();
+				int level = parseInteger();
+				int color = parseInteger();
+				SetBlock(x, y, z, level, color);
+			}
 		}
 		else if (curCmd == "paintblock") {
-			uint32 x = parseUnsignedInteger();
-			uint32 y = parseUnsignedInteger();
-			uint32 z = parseUnsignedInteger();
-			int level = parseUnsignedInteger();
-			int color = parseUnsignedInteger();
-			PaintBlock(x, y, z, level, color);
+			while (*cmd != '\0' && !StringHelper::isalphaLowerCase(*cmd))
+			{
+				uint32 x = parseInteger();
+				uint32 y = parseInteger();
+				uint32 z = parseInteger();
+				int level = parseInteger();
+				int color = parseInteger();
+				PaintBlock(x, y, z, level, color);
+			}
 		}
-		else {
-			OUTPUT_LOG("RunCommandList: unknown command %s\n", curCmd.c_str());
+		else if (curCmd == "level") {
+			curLevel = parseInteger();
+		}
+		else if (curCmd == "color") {
+			curColor = parseInteger();
+		}
+		else if (curCmd == "offset") {
+			offsetX = parseInteger();
+			offsetY = parseInteger();
+			offsetZ = parseInteger();
+		}
+		else if (curCmd == "set") {
+			while (*cmd != '\0' && !StringHelper::isalphaLowerCase(*cmd))
+			{
+				int32 x = parseInteger();
+				int32 y = parseInteger();
+				int32 z = parseInteger();
+				SetBlock(x, y, z, curLevel, curColor);
+			}
+		}
+		else if (curCmd == "setwithoffset") {
+			while (*cmd != '\0' && !StringHelper::isalphaLowerCase(*cmd))
+			{
+				int32 x = parseInteger() + offsetX;
+				int32 y = parseInteger() + offsetY;
+				int32 z = parseInteger() + offsetZ;
+				if (x >= 0 && x < curLevel && y >= 0 && y < curLevel && z >= 0 && z < curLevel)
+					SetBlock(x, y, z, curLevel, curColor);
+			}
+		}
+		else if (curCmd == "del") {
+			while (*cmd != '\0' && !StringHelper::isalphaLowerCase(*cmd))
+			{
+				int32 x = parseInteger();
+				int32 y = parseInteger();
+				int32 z = parseInteger();
+				SetBlock(x, y, z, curLevel, -1);
+			}
+		}
+		else if (curCmd == "delwithoffset") {
+			while (*cmd != '\0' && !StringHelper::isalphaLowerCase(*cmd))
+			{
+				int32 x = parseInteger() + offsetX;
+				int32 y = parseInteger() + offsetY;
+				int32 z = parseInteger() + offsetZ;
+				if (x >= 0 && x < curLevel && y >= 0 && y < curLevel && z >= 0 && z < curLevel)
+					SetBlock(x, y, z, curLevel, -1);
+			}
+		}
+		else if (curCmd == "paint") {
+			while (*cmd != '\0' && !StringHelper::isalphaLowerCase(*cmd))
+			{
+				int32 x = parseInteger();
+				int32 y = parseInteger();
+				int32 z = parseInteger();
+				PaintBlock(x, y, z, curLevel, curColor);
+			}
+		}
+		else if (curCmd == "paintwithoffset") {
+			while (*cmd != '\0' && !StringHelper::isalphaLowerCase(*cmd))
+			{
+				int32 x = parseInteger() + offsetX;
+				int32 y = parseInteger() + offsetY;
+				int32 z = parseInteger() + offsetZ;
+				if (x >= 0 && x < curLevel && y >= 0 && y < curLevel && z >= 0 && z < curLevel)
+					PaintBlock(x, y, z, curLevel, curColor);
+			}
+		}
+		else { 
 			break;
 		}
-		parseNextCmd();
 	}
 }
 

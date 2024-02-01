@@ -287,13 +287,19 @@ namespace ParaEngine
 		void PaintBlock(uint32 x, uint32 y, uint32 z, int level, uint32_t color);
 		void PaintBlockCmd(const char* cmd);
 		/** run voxel command list: it is in the format of cmd name, cmd param, cmd param, ...
-		* e.g. "set 0,0,0,1,-1 level 8 color 0xff0000 pos 0,0,0,1,1,1,0,1,0"
+		* e.g. "setblock 0,0,0,1,-1 level 8 color #ff0000 set 0,0,0,1,1,1,0,1,0"
+		* @note: one can also call this function multiple times to separate a long command like:
+		*   first send "offset 4,4,4 level 8 color #ff0000 setwithoffset", then "0,0,0,1,1,1,0,1,0".  it will cache previous states of cmd, level and color.
+		*   this allows one to reuse long command list string with different offset, level, and color.
 		* offset x,y,z: e.g. "offset 2,0,0", all position in the following commands will be offset by 2,0,0.
 		* level l: e.g. "level 8", all positions in the following commands will be at level 8.
-		* color c: e.g. "color 0xff0000", all colors in the following commands will be set to 0xff0000.
+		* color c: e.g. "color #ff0000", "color -1", all colors in the following commands will be set to 0xff0000.
 		* del x1,y1,z1,x2,y2,z2, ... : e.g. "del block at all given positions at predefined level. 
+		* delwithoffset x1,y1,z1,x2,y2,z2, ... : e.g. "del block at all given positions at predefined level. 
 		* set x1,y1,z1,x2,y2,z2, ... : e.g. "set block at all given positions at predefined level and color.
+		* setwithoffset x1,y1,z1,x2,y2,z2, ... : e.g. "set block at all given positions at predefined offset, level, and color.
 		* paint x1,y1,z1,x2,y2,z2, ... : e.g. "paint block at all given positions at predefined level and color.
+		* paintwithoffset x1,y1,z1,x2,y2,z2, ... : e.g. "paint block at all given positions at predefined level and color.
 		* setblock x,y,z,level,color,... : e.g. "setblock 0,0,0,1,-1". set the block at (0,0,0) at level 1 to empty.
 		* paintblock x,y,z,level,color,... : e.g. "paintblock 0,0,0,1,0xff0000". paint all blocks to red. 
 		*/
