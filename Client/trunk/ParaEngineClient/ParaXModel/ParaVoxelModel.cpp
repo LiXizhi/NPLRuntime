@@ -765,6 +765,16 @@ void ParaEngine::ParaVoxelModel::RunCommandList(const char* cmd)
 					PaintBlock(x, y, z, curLevel, curColor);
 			}
 		}
+		else if (curCmd == "paintxyzcolor") {
+			while (*cmd != '\0' && !StringHelper::isalphaLowerCase(*cmd))
+			{
+				int32 x = parseInteger();
+				int32 y = parseInteger();
+				int32 z = parseInteger();
+				int color = parseInteger();
+				PaintBlock(x, y, z, curLevel, color);
+			}
+		}
 		else if (curCmd == "paintrect") {
 			uint32 fromX = parseInteger();
 			uint32 fromY = parseInteger();
