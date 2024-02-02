@@ -300,9 +300,12 @@ namespace ParaEngine
 		* setwithoffset x1,y1,z1,x2,y2,z2, ... : e.g. "set block at all given positions at predefined offset, level, and color.
 		* setxyzcolor x1,y1,z1,color1,x2,y2,z2,color2, ... : e.g. "set block at all given positions at predefined level.
 		* setblock x,y,z,level,color,... : e.g. "setblock 0,0,0,1,-1". set the block at (0,0,0) at level 1 to empty.
+		* setrect fromX,fromY,fromZ,toX,toY,toZ: e.g. "color 0;level 64;setrect 0,0,0,63,63,0". with current color and level.
 		* paint x1,y1,z1,x2,y2,z2, ... : e.g. "paint block at all given positions at predefined level and color.
 		* paintwithoffset x1,y1,z1,x2,y2,z2, ... : e.g. "paint block at all given positions at predefined level and color.
-		* paintblock x,y,z,level,color,... : e.g. "paintblock 0,0,0,1,0xff0000". paint all blocks to red. 
+		* paintblock x,y,z,level,color,... : e.g. "paintblock 0,0,0,1,#ff0000". paint all blocks to red. 
+		* paintrect fromX,fromY,fromZ,toX,toY,toZ,color1,color2,...: e.g. "paintrect 0,0,0,63,63,0,#ff#ff00#ffff00(...64*64 color values)". 
+		*    if for example fromX is bigger than toX, the rect will be painted flipped on x axis, this allow applys to y and z. 
 		*/
 		void RunCommandList(const char* cmd);
 

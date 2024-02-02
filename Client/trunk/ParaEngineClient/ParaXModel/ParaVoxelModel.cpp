@@ -700,6 +700,33 @@ void ParaEngine::ParaVoxelModel::RunCommandList(const char* cmd)
 					SetBlock(x, y, z, curLevel, curColor);
 			}
 		}
+		else if (curCmd == "setrect") {
+			uint32 fromX = parseInteger();
+			uint32 fromY = parseInteger();
+			uint32 fromZ = parseInteger();
+			uint32 toX = parseInteger();
+			uint32 toY = parseInteger();
+			uint32 toZ = parseInteger();
+
+			// make sure the level is large enough to cover the rect
+			uint32 level = curLevel;
+			uint32 maxSize = max(max(max(fromX, toX), max(fromY, toY)), max(fromZ, toZ));
+			if (level < maxSize) {
+				level = 1 << LevelToDepth(maxSize);
+				if (level < maxSize)
+					level <<= 1;
+			}
+
+			// scan from x to z to y; this is usually the case for how image data is saved. (assume image is on xy, zy, xz plane)
+			for (uint32 x = fromX; x <= toX; x++) {
+				for (uint32 y = fromY; y <= toY; y++) {
+					for (uint32 z = fromZ; z <= toZ; z++)
+					{
+						SetBlock(x, y, z, level, curColor);
+					}
+				}
+			}
+		}
 		else if (curCmd == "del") {
 			while (*cmd != '\0' && !StringHelper::isalphaLowerCase(*cmd))
 			{
@@ -736,6 +763,45 @@ void ParaEngine::ParaVoxelModel::RunCommandList(const char* cmd)
 				int32 z = parseInteger() + offsetZ;
 				if (x >= 0 && x < curLevel && y >= 0 && y < curLevel && z >= 0 && z < curLevel)
 					PaintBlock(x, y, z, curLevel, curColor);
+			}
+		}
+		else if (curCmd == "paintrect") {
+			uint32 fromX = parseInteger();
+			uint32 fromY = parseInteger();
+			uint32 fromZ = parseInteger();
+			uint32 toX = parseInteger();
+			uint32 toY = parseInteger();
+			uint32 toZ = parseInteger();
+
+			// make sure the level is large enough to cover the rect
+			uint32 level = curLevel;
+			uint32 maxSize = max(max(max(fromX, toX), max(fromY, toY)), max(fromZ, toZ));
+			if (level < maxSize) {
+				level = 1 << LevelToDepth(maxSize);
+				if(level < maxSize)
+					level <<= 1;
+			}
+
+			// scan from x to z to y; this is usually the case for how image data is saved. (assume image is on xy, zy, xz plane)
+			uint32 x = fromX, y = fromY, z = fromZ;
+			while (true) {
+				z = fromZ;
+				while (true) {
+					x = fromX;
+					while(true){
+						uint32 color = parseInteger();
+						PaintBlock(x, y, z, level, color);
+						if (x == toX)
+							break;
+						x += (fromX < toX) ? 1 : -1;
+					}
+					if (z == toZ)
+						break;
+					z += (fromZ < toZ) ? 1 : -1;
+				}
+				if (y == toY)
+					break;
+				y += (fromY < toY) ? 1 : -1;
 			}
 		}
 		else { 
