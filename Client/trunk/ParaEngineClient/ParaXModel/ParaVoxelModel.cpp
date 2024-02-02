@@ -571,6 +571,38 @@ void ParaEngine::ParaVoxelModel::PaintBlock(uint32 x, uint32 y, uint32 z, int le
 	}
 }
 
+void ParaEngine::ParaVoxelModel::PaintBlockFastMode(uint32 x, uint32 y, uint32 z, int level, uint32_t color)
+{
+	int nDepth = LevelToDepth(level);
+	VoxelOctreeNode* pNode = GetRootNode();
+	nDepth--;
+	int nChildIndex = 0;
+	int nLevel = 1;
+	for (; nDepth >= 0; nDepth--, nLevel++)
+	{
+		uint32 lx = (x >> nDepth) & 1, ly = (y >> nDepth) & 1, lz = (z >> nDepth) & 1;
+		nChildIndex = lx + (ly << 1) + (lz << 2);
+		auto pChild = GetChildNode(pNode, nChildIndex);
+		if (pChild) {
+			pNode = pChild;
+			pNode->SetColor32((uint32_t)color);
+		}
+		else
+		{
+			if (nDepth == 0)
+			{
+				if (pNode->IsBlockAt(nChildIndex) && pNode->GetColor32() != color)
+				{
+					SetEditable(true);
+					pNode = CreateGetChildNode(pNode, nChildIndex);
+					pNode->SetColor32((uint32_t)color);
+				}
+			}
+			break;
+		}
+	}
+}
+
 void ParaEngine::ParaVoxelModel::PaintBlockCmd(const char* cmd)
 {
 	uint32 x, y, z;
@@ -824,7 +856,8 @@ void ParaEngine::ParaVoxelModel::RunCommandList(const char* cmd)
 									while (true) {
 										uint32 color = (*pData) & 0xffffff;
 										pData++;
-										PaintBlock(x, y, z, level, color);
+										PaintBlockFastMode(x, y, z, level, color);
+										// PaintBlock(x, y, z, level, color);
 										if (x == toX)
 											break;
 										x += (fromX < toX) ? 1 : -1;

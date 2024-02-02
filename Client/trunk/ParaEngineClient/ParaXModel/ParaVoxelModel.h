@@ -285,6 +285,12 @@ namespace ParaEngine
 		void SetBlockCmd(const char* cmd);
 
 		void PaintBlock(uint32 x, uint32 y, uint32 z, int level, uint32_t color);
+		/* in fast mode, the parent node will have the same color as the child nodes, instead of the average color.
+		* and we will never merge node this mode.
+		* this is useful when painting millions of blocks from an image file data. 
+		* we will also automatically use fast mode, if we run `paintrect` command with image data.
+		*/
+		void PaintBlockFastMode(uint32 x, uint32 y, uint32 z, int level, uint32_t color);
 		void PaintBlockCmd(const char* cmd);
 		/** run voxel command list: it is in the format of cmd name, cmd param, cmd param, ...
 		* e.g. "setblock 0,0,0,1,-1 level 8 color #ff0000 set 0,0,0,1,1,1,0,1,0"
