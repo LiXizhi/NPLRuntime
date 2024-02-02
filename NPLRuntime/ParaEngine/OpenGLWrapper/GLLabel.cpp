@@ -379,18 +379,7 @@ bool LabelTextFormatter::createStringSprites(GLLabel *theLabel)
 
 	float lastCharWidth = tempDefinition.width * contentScaleFactor;
 	Size tmpSize;
-	// If the last character processed has an xAdvance which is less that the width of the characters image, then we need
-	// to adjust the width of the string to take this into account, or the character will overlap the end of the bounding
-	// box
-	if (charAdvance < lastCharWidth)
-	{
-		tmpSize.width = longestLine - charAdvance + lastCharWidth;
-	}
-	else
-	{
-		tmpSize.width = longestLine;
-	}
-
+	tmpSize.width = longestLine;
 	tmpSize.height = totalHeight;
 
 	if (theLabel->_labelHeight > 0)
