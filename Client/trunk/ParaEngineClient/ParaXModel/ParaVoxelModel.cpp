@@ -122,12 +122,12 @@ bool ParaVoxelModel::Load(const char* pBuffer, int nCount)
 		// for each chunk, read chunk size and chunk data
 		uint8_t nSize = ((uint8_t*)pBuffer)[0];
 		pBuffer += 1;
-		if(nOldSize <= i)
+		if (nOldSize <= i)
 			m_chunks.push_back(new VoxelChunk(nSize));
 		m_chunks[i]->LoadFromBuffer(pBuffer, nSize);
 		pBuffer += nSize * sizeof(VoxelOctreeNode);
 	}
-	for(int i = count; i < (int)nOldSize; ++i)
+	for (int i = count; i < (int)nOldSize; ++i)
 	{
 		delete m_chunks[i];
 	}
@@ -146,7 +146,7 @@ bool ParaEngine::ParaVoxelModel::LoadFromFile(const char* filename)
 		uint32_t fileTypeId = file.ReadDWORD();
 		if (fileTypeId == 0x766f7830 + 1)
 		{
-			return Load(file.getBuffer()+4, file.getSize()-4);
+			return Load(file.getBuffer() + 4, file.getSize() - 4);
 		}
 	}
 	return false;
@@ -156,7 +156,7 @@ bool ParaVoxelModel::Save(std::vector<char>& output)
 {
 	int nTotalSize = 0;
 	int count = (int)m_chunks.size();
-	for(int i = 0; i < count; ++i)
+	for (int i = 0; i < count; ++i)
 	{
 		auto& chunk = *(m_chunks[i]);
 		nTotalSize += chunk.GetDiskSize() * sizeof(VoxelOctreeNode);
@@ -174,7 +174,7 @@ bool ParaVoxelModel::Save(std::vector<char>& output)
 		uint8_t nSize = chunk.GetDiskSize();
 		((uint8_t*)pData)[0] = nSize;
 		pData += 1;
-		if(nSize > 0)
+		if (nSize > 0)
 		{
 			memcpy(pData, (char*)(&chunk[0]), nSize * sizeof(VoxelOctreeNode));
 			pData += nSize * sizeof(VoxelOctreeNode);
@@ -465,7 +465,7 @@ void ParaVoxelModel::SetBlock(uint32 x, uint32 y, uint32 z, int level, int color
 				return;
 			}
 		}
-		
+
 		assert(nLevel == 1);
 		// for root node
 		RemoveNodeChildren(pNode, 0xff);
@@ -550,7 +550,7 @@ void ParaEngine::ParaVoxelModel::PaintBlock(uint32 x, uint32 y, uint32 z, int le
 				{
 					pNode = CreateGetChildNode(pNode, nChildIndex);
 					pNode->SetColor32((uint32_t)color);
-					
+
 					auto& lastNode = parentNodes[nLevel - 1];
 					parentNodes[nLevel] = TempVoxelOctreeNodeRef(pNode, (lastNode.x << 1) + lx, (lastNode.y << 1) + ly, (lastNode.z << 1) + lz, nLevel, nChildIndex);
 					continue;
@@ -562,7 +562,7 @@ void ParaEngine::ParaVoxelModel::PaintBlock(uint32 x, uint32 y, uint32 z, int le
 	}
 	if (pNode && nDepth <= 0)
 	{
-		if(SetNodeAndChildColor(pNode, color))
+		if (SetNodeAndChildColor(pNode, color))
 			UpdateNodeParentsSolidityAndColor(parentNodes, nLevel);
 		else
 			UpdateNodeParentsColor(parentNodes, nLevel);
@@ -660,7 +660,7 @@ void ParaEngine::ParaVoxelModel::RunCommandList(const char* cmd)
 			}
 		}
 		char c;
-		while ((c=*pos) != '\0' && StringHelper::isdigit(c)) {
+		while ((c = *pos) != '\0' && StringHelper::isdigit(c)) {
 			n = n * 10 + (c - '0');
 			pos++;
 		}
@@ -823,7 +823,7 @@ void ParaEngine::ParaVoxelModel::RunCommandList(const char* cmd)
 			uint32 maxSize = max(max(max(fromX, toX), max(fromY, toY)), max(fromZ, toZ)) + 1;
 			if (level < maxSize) {
 				level = 1 << LevelToDepth(maxSize);
-				if(level < maxSize)
+				if (level < maxSize)
 					level <<= 1;
 			}
 
@@ -838,12 +838,12 @@ void ParaEngine::ParaVoxelModel::RunCommandList(const char* cmd)
 					dataFormat = "temp.jpg";
 				else
 					dataFormat = "";
-				if (!dataFormat.empty()) 
+				if (!dataFormat.empty())
 				{
 					std::string buffer = StringHelper::unbase64(cmd, -1);
 					int texWidth, texHeight, nBytesPerPixel;
 					byte* imageData = NULL;
-					if (TextureEntity::LoadImageOfFormat(dataFormat, &buffer[0], (int)buffer.size(), texWidth, texHeight, &imageData, &nBytesPerPixel))
+					if (TextureEntity::LoadImageOfFormat(dataFormat, (char*)(buffer.c_str()), (int)buffer.size(), texWidth, texHeight, &imageData, &nBytesPerPixel))
 					{
 						if (nBytesPerPixel == 4)
 						{
@@ -900,7 +900,7 @@ void ParaEngine::ParaVoxelModel::RunCommandList(const char* cmd)
 				}
 			}
 		}
-		else { 
+		else {
 			break;
 		}
 	}
@@ -1702,7 +1702,7 @@ void ParaEngine::ParaVoxelModel::UpdateNodeParentsColor(TempVoxelOctreeNodeRef n
 	for (int i = nNodeCount - 1; i >= 0; --i)
 	{
 		auto pNode = nodes[i].pNode;
-		if(!pNode->IsLeaf() && !(pNode->HasNonChildNodeBlock()))
+		if (!pNode->IsLeaf() && !(pNode->HasNonChildNodeBlock()))
 		{
 			uint16_t color[3] = { 0,0,0 };
 			int nChildCount = 0;
