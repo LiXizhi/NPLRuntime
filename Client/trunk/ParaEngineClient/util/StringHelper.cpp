@@ -17,10 +17,8 @@
 
 #include <unordered_map>
 
-//#undef USE_ICONV
-
 #ifdef USE_ICONV
-	#include "iconv.h"
+#include "iconv.h"
 #endif
 
 #ifdef USE_BOOST_REGULAR_EXPRESSION
@@ -39,6 +37,9 @@ StringHelper::_CodePageName StringHelper::defaultCPName;
 
 const WCHAR* ParaEngine::StringHelper::MultiByteToWideChar(const char* name, unsigned int nCodePage, size_t* outLen)
 {
+	if (name == NULL)
+		return NULL;
+
 	thread_local static vector<WCHAR> wsName;
 
 #ifdef WIN32
@@ -65,19 +66,19 @@ const WCHAR* ParaEngine::StringHelper::MultiByteToWideChar(const char* name, uns
 
 	return &(wsName[0]);
 #else
-	size_t nLength = mbstowcs( 0, name, 0);
-	if(nLength != (size_t)(-1))
+	size_t nLength = mbstowcs(0, name, 0);
+	if (nLength != (size_t)(-1))
 	{
-		if(wsName.size()<=nLength) 
-			wsName.resize(nLength+1);
-		size_t nResult= mbstowcs( &(wsName[0]), name, nLength+1);
+		if (wsName.size() <= nLength)
+			wsName.resize(nLength + 1);
+		size_t nResult = mbstowcs(&(wsName[0]), name, nLength + 1);
 
 		if (outLen)
 			*outLen = nResult;
 	}
 	else
 	{
-		if(((int)wsName.size())<1) 
+		if (((int)wsName.size()) < 1)
 			wsName.resize(1);
 		wsName[0] = L'\0';
 
@@ -119,19 +120,19 @@ const char* ParaEngine::StringHelper::WideCharToMultiByte(const WCHAR* name, uns
 	}
 	return &(cName[0]);
 #else
-	size_t nLength=wcstombs( 0, name, 0);
-	if(nLength != (size_t)(-1))
+	size_t nLength = wcstombs(0, name, 0);
+	if (nLength != (size_t)(-1))
 	{
-		if(cName.size()<nLength) 
+		if (cName.size() < nLength)
 			cName.resize(nLength);
-		wcstombs( &(cName[0]), name, nLength+1);
+		wcstombs(&(cName[0]), name, nLength + 1);
 
 		if (outLen)
 			*outLen = nLength;
 	}
 	else
 	{
-		if(((int)cName.size())<1) 
+		if (((int)cName.size()) < 1)
 			cName.resize(1);
 		cName[0] = '\0';
 
@@ -192,7 +193,7 @@ const char* ParaEngine::StringHelper::WideCharToAnsi(const WCHAR* name)
 
 #ifdef USE_ICONV
 
-static const std::string& code_convert(const char *from_charset, const char *to_charset, const char *inbuf, size_t inlen, bool appendZero = false)
+static const std::string& code_convert(const char* from_charset, const char* to_charset, const char* inbuf, size_t inlen, bool appendZero = false)
 {
 
 	struct ZeroInfo
@@ -204,7 +205,7 @@ static const std::string& code_convert(const char *from_charset, const char *to_
 	struct iconvObject
 	{
 		iconvObject(iconv_t _cd) : cd(_cd) {};
-		iconvObject() : cd((iconv_t)-1){};
+		iconvObject() : cd((iconv_t)-1) {};
 
 		iconvObject& operator = (iconv_t _cd)
 		{
@@ -260,7 +261,7 @@ static const std::string& code_convert(const char *from_charset, const char *to_
 			else
 			{
 				static const char zero = '\0';
-				
+
 				iconv_t z_cd = iconv_open(to_charset, "gb2312");
 				if (z_cd == (iconv_t)-1)
 				{
@@ -318,7 +319,7 @@ static const std::string& code_convert(const char *from_charset, const char *to_
 
 		ret = iconv(cd, &pInbuf, &inlen, &s, &outlen);
 
-		if (ret == (size_t )-1)
+		if (ret == (size_t)-1)
 		{
 			break;
 		}
@@ -357,12 +358,12 @@ const char* ParaEngine::StringHelper::UTF8ToAnsi(const char* name)
 	return s.c_str();
 
 #else
-	#ifdef WIN32
-		return WideCharToMultiByte(MultiByteToWideChar(name, CP_UTF8), CP_ACP);
-	#else
-		// this is not supported in linux, just forward input to output.
-		return name;
-	#endif
+#ifdef WIN32
+	return WideCharToMultiByte(MultiByteToWideChar(name, CP_UTF8), CP_ACP);
+#else
+	// this is not supported in linux, just forward input to output.
+	return name;
+#endif
 #endif
 }
 
@@ -376,12 +377,12 @@ const char* ParaEngine::StringHelper::AnsiToUTF8(const char* name)
 	return s.c_str();
 
 #else
-	#ifdef WIN32
-		return WideCharToMultiByte(MultiByteToWideChar(name, CP_ACP), CP_UTF8);
-	#else
-		// this is not supported in linux, just forward input to output
-		return name;
-	#endif
+#ifdef WIN32
+	return WideCharToMultiByte(MultiByteToWideChar(name, CP_ACP), CP_UTF8);
+#else
+	// this is not supported in linux, just forward input to output
+	return name;
+#endif
 #endif
 }
 
@@ -409,7 +410,7 @@ std::string StringHelper::UniSubString(const char* szText, int nFrom, int nTo)
 	nTo--;
 
 	std::u16string wideStr;
-	if (UTF8ToUTF16(szText, wideStr) && (int)wideStr.size()>nFrom)
+	if (UTF8ToUTF16(szText, wideStr) && (int)wideStr.size() > nFrom)
 	{
 		wideStr = wideStr.substr(nFrom, nTo - nFrom + 1);
 		std::string str;
@@ -700,7 +701,7 @@ bool ParaEngine::StringHelper::CopyTextToClipboard(const string& text_)
 		HGLOBAL hBlock = GlobalAlloc(GMEM_MOVEABLE, sizeof(char16_t) * (text.size() + 1));
 		if (hBlock)
 		{
-			char16_t *szText = (char16_t*)GlobalLock(hBlock);
+			char16_t* szText = (char16_t*)GlobalLock(hBlock);
 			if (szText)
 			{
 				CopyMemory(szText, &(text[0]), text.size() * sizeof(char16_t));
@@ -730,11 +731,11 @@ const char* ParaEngine::StringHelper::GetTextFromClipboard()
 		HANDLE handle = GetClipboardData(CF_UNICODETEXT);
 		if (handle)
 		{
-			const char16_t *szText = (const char16_t*)GlobalLock(handle);
+			const char16_t* szText = (const char16_t*)GlobalLock(handle);
 			if (szText)
 			{
 				std::u16string szText_(szText);
-				 ParaEngine::StringHelper::UTF16ToUTF8(szText_, g_str);
+				ParaEngine::StringHelper::UTF16ToUTF8(szText_, g_str);
 				bSucceed = true;
 				GlobalUnlock(handle);
 			}
@@ -748,7 +749,7 @@ const char* ParaEngine::StringHelper::GetTextFromClipboard()
 	return g_str.c_str();
 }
 
-void ParaEngine::StringHelper::DevideString(const string& input, string& str1, string&str2, char separator)
+void ParaEngine::StringHelper::DevideString(const string& input, string& str1, string& str2, char separator)
 {
 	str1.clear();
 	str2.clear();
@@ -814,12 +815,12 @@ bool ParaEngine::StringHelper::checkValidXMLChars(const std::string& data)
 	std::string::const_iterator it = data.begin();
 	for (; it != data.end()
 		&& ((unsigned char)(*it) == 0x09
-		|| (unsigned char)(*it) == 0x0a
-		|| (unsigned char)(*it) == 0x0d
-		|| ((unsigned char)(*it) >= 0x20
-		&& (unsigned char)(*it) != 0xc0
-		&& (unsigned char)(*it) != 0xc1
-		&& (unsigned char)(*it) < 0xf5)); ++it)
+			|| (unsigned char)(*it) == 0x0a
+			|| (unsigned char)(*it) == 0x0d
+			|| ((unsigned char)(*it) >= 0x20
+				&& (unsigned char)(*it) != 0xc0
+				&& (unsigned char)(*it) != 0xc1
+				&& (unsigned char)(*it) < 0xf5)); ++it)
 		;
 	return (it == data.end());
 }
@@ -841,9 +842,9 @@ bool ParaEngine::StringHelper::removeInValidXMLChars(std::string& data)
 				|| src_char == 0x0a
 				|| src_char == 0x0d
 				|| (src_char >= 0x20
-				&& src_char != 0xc0
-				&& src_char != 0xc1
-				&& src_char < 0xf5))
+					&& src_char != 0xc0
+					&& src_char != 0xc1
+					&& src_char < 0xf5))
 			{
 				data[dest] = src_char;
 				dest++;
@@ -859,7 +860,7 @@ bool ParaEngine::StringHelper::removeInValidXMLChars(std::string& data)
 	}
 }
 
-RECT* ParaEngine::StringHelper::GetImageAndRect(const string &str, string &imagefile, RECT * prect)
+RECT* ParaEngine::StringHelper::GetImageAndRect(const string& str, string& imagefile, RECT* prect)
 {
 	string srect;
 	size_t pos = str.find_first_of("#;");
@@ -867,7 +868,7 @@ RECT* ParaEngine::StringHelper::GetImageAndRect(const string &str, string &image
 		imagefile.assign(str.c_str(), pos);
 		srect.assign(str.c_str(), pos + 1, str.size() - pos - 1);
 	}
-	else{
+	else {
 		imagefile = str;
 	}
 
@@ -891,9 +892,9 @@ RECT* ParaEngine::StringHelper::GetImageAndRect(const string &str, string &image
 	return NULL;
 
 }
-bool ParaEngine::StringHelper::IsNumber(const char * str)
+bool ParaEngine::StringHelper::IsNumber(const char* str)
 {
-	const char *ptr = str;
+	const char* ptr = str;
 	while ((*ptr)) {
 		if ((*ptr) > '9' || (*ptr) < '0') {
 			return false;
@@ -905,7 +906,7 @@ bool ParaEngine::StringHelper::IsNumber(const char * str)
 
 bool ParaEngine::StringHelper::IsLetter(const char* str)
 {
-	const char *ptr = str;
+	const char* ptr = str;
 	while ((*ptr)) {
 		if (!(((*ptr) >= 'a' && (*ptr) <= 'z') || ((*ptr) >= 'A' && (*ptr) <= 'Z'))) {
 			return false;
@@ -915,30 +916,30 @@ bool ParaEngine::StringHelper::IsLetter(const char* str)
 	return true;
 }
 
-int ParaEngine::StringHelper::StrToInt(const char *str)
+int ParaEngine::StringHelper::StrToInt(const char* str)
 {
-	if (str != NULL){
+	if (str != NULL) {
 		return atoi(str);
 	}
 	return 0;
 }
 
-double ParaEngine::StringHelper::StrToFloat(const char * str)
+double ParaEngine::StringHelper::StrToFloat(const char* str)
 {
 	return atof(str);
 }
 
-bool ParaEngine::StringHelper::RegularMatch(const char *input, const char *expression)
+bool ParaEngine::StringHelper::RegularMatch(const char* input, const char* expression)
 {
 	if (input == NULL || expression == NULL) return false;
 #ifdef USE_BOOST_REGULAR_EXPRESSION
 	boost::regex strExp(expression, boost::regex::basic);
-	string sinput=input;
+	string sinput = input;
 	boost::match_results<std::string::const_iterator> result;
 	if ((0 == boost::regex_match(sinput, result, strExp))) {
 		return false;
 	}
-	if (result[0].matched==true) {
+	if (result[0].matched == true) {
 		return true;
 	}
 #endif
@@ -1029,7 +1030,7 @@ static char a2i(char ch, const char** src, int base, int* nump)
 	int digit;
 	while ((digit = a2d(ch)) >= 0) {
 		if (digit > base) break;
-		num = num*base + digit;
+		num = num * base + digit;
 		ch = *p++;
 	}
 	*src = p;
@@ -1037,7 +1038,7 @@ static char a2i(char ch, const char** src, int base, int* nump)
 	return ch;
 }
 
-void tfp_format(void* putp, putcf putf, const char *fmt, va_list va)
+void tfp_format(void* putp, putcf putf, const char* fmt, va_list va)
 {
 	char bf[30];
 	char ch;
@@ -1100,7 +1101,7 @@ inline void putcp(void* p, char c)
 	*(*((char**)p))++ = c;
 }
 
-void ParaEngine::StringHelper::fast_sprintf(char* s, const char *fmt, ...)
+void ParaEngine::StringHelper::fast_sprintf(char* s, const char* fmt, ...)
 {
 	va_list va;
 	va_start(va, fmt);
@@ -1109,7 +1110,7 @@ void ParaEngine::StringHelper::fast_sprintf(char* s, const char *fmt, ...)
 	va_end(va);
 }
 /** e.g. fast_snprintf(line, MAX_LINE, "%f ok", 10.f); */
-void ParaEngine::StringHelper::fast_snprintf(char* s, int nMaxCount, const char *fmt, ...)
+void ParaEngine::StringHelper::fast_snprintf(char* s, int nMaxCount, const char* fmt, ...)
 {
 	va_list va;
 	va_start(va, fmt);
@@ -1130,7 +1131,7 @@ int ParaEngine::StringHelper::fast_itoa(int64 value, char* result, int buf_size,
 	int nSize = 0;
 	buf_size -= 2; // always save one byte for the minors sign char and '\0'. 
 
-	char* ptr = result, *ptr1 = result, tmp_char;
+	char* ptr = result, * ptr1 = result, tmp_char;
 	int64 tmp_value;
 
 	do {
@@ -1141,7 +1142,7 @@ int ParaEngine::StringHelper::fast_itoa(int64 value, char* result, int buf_size,
 	} while (value && nSize < buf_size);
 
 	// Apply negative sign
-	if (tmp_value < 0)	{
+	if (tmp_value < 0) {
 		*ptr++ = '-';
 		++nSize;
 	}
@@ -1328,7 +1329,7 @@ bool ParaEngine::StringHelper::MatchWildcard(const std::string& str, const std::
 					char destChar = sWildcardPattern[j + nLookhead];
 					if (destChar == '*')
 						break;
-					else if (srcChar != destChar){
+					else if (srcChar != destChar) {
 						bLookAheadMatch = false;
 						break;
 					}
@@ -1427,13 +1428,13 @@ bool ParaEngine::StringHelper::UTF8ToUTF16_Safe(const std::string& utf8, std::u1
 	{
 		std::string utf8_safe = utf8;
 		int nSize = (int)utf8.size();
-		for (int i=0; i < nSize; ++i)
+		for (int i = 0; i < nSize; ++i)
 		{
 			char c = utf8_safe[i];
 			if (c < 0)
 				utf8_safe[i] = '?';
 		}
-		if (! UTF8ToUTF16(utf8_safe, outUtf16))
+		if (!UTF8ToUTF16(utf8_safe, outUtf16))
 		{
 			OUTPUT_LOG("error: UTF8ToUTF16 for string %s\n", utf8.c_str());
 		}
@@ -1511,7 +1512,7 @@ std::string ParaEngine::StringHelper::sha1(const std::string& source, bool bBina
 	uint8_t hash[SHA1HashSize];
 
 	if (!err)
-		err = SHA1Input(&sha, (const unsigned char *)source.c_str(), source.size());
+		err = SHA1Input(&sha, (const unsigned char*)source.c_str(), source.size());
 
 	if (!err)
 		err = SHA1Result(&sha, hash);
@@ -1546,7 +1547,7 @@ std::string ParaEngine::StringHelper::base64(const std::string& source)
 		std::string outBase64Buffers;
 		outBase64Buffers.resize(nBufferSize);
 		int nSize = CyoEncode::Base64Encode(&(outBase64Buffers[0]), source.c_str(), size);
-		if (nSize >= 0 && nSize!= nBufferSize)
+		if (nSize >= 0 && nSize != nBufferSize)
 			outBase64Buffers.resize(nSize);
 		return outBase64Buffers;
 	}
@@ -1554,7 +1555,7 @@ std::string ParaEngine::StringHelper::base64(const std::string& source)
 	{
 		return "";
 	}
-	
+
 }
 
 std::string ParaEngine::StringHelper::unbase64(const std::string& source)
@@ -1578,7 +1579,7 @@ std::string ParaEngine::StringHelper::unbase64(const std::string& source)
 
 std::string ParaEngine::StringHelper::unbase64(const char* src, int size)
 {
-	if(size < 0)
+	if (size < 0)
 		size = (int)strlen(src);
 	if (size > 0)
 	{
