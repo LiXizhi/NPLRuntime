@@ -257,14 +257,14 @@ void ParaEngine::CSpriteRendererOpenGL::FlushQuads()
 			m_vertices[nBaseIndex].pos.y = curSprite.pos.y - curSprite.center.y;
 			m_vertices[nBaseIndex].pos.z = curSprite.pos.z - curSprite.center.z;
 			m_vertices[nBaseIndex + 1].pos.x = spritewidth + curSprite.pos.x - curSprite.center.x;
-			m_vertices[nBaseIndex + 1].pos.y = curSprite.pos.y - curSprite.center.y;
-			m_vertices[nBaseIndex + 1].pos.z = curSprite.pos.z - curSprite.center.z;
-			m_vertices[nBaseIndex + 2].pos.x = spritewidth + curSprite.pos.x - curSprite.center.x;
+			m_vertices[nBaseIndex + 1].pos.y = m_vertices[nBaseIndex].pos.y;
+			m_vertices[nBaseIndex + 1].pos.z = m_vertices[nBaseIndex].pos.z;
+			m_vertices[nBaseIndex + 2].pos.x = m_vertices[nBaseIndex + 1].pos.x;
 			m_vertices[nBaseIndex + 2].pos.y = spriteheight + curSprite.pos.y - curSprite.center.y;
-			m_vertices[nBaseIndex + 2].pos.z = curSprite.pos.z - curSprite.center.z;
-			m_vertices[nBaseIndex + 3].pos.x = curSprite.pos.x - curSprite.center.x;
-			m_vertices[nBaseIndex + 3].pos.y = spriteheight + curSprite.pos.y - curSprite.center.y;
-			m_vertices[nBaseIndex + 3].pos.z = curSprite.pos.z - curSprite.center.z;
+			m_vertices[nBaseIndex + 2].pos.z = m_vertices[nBaseIndex].pos.z;
+			m_vertices[nBaseIndex + 3].pos.x = m_vertices[nBaseIndex].pos.x;
+			m_vertices[nBaseIndex + 3].pos.y = m_vertices[nBaseIndex + 2].pos.y;
+			m_vertices[nBaseIndex + 3].pos.z = m_vertices[nBaseIndex].pos.z;
 			m_vertices[nBaseIndex].col = curSprite.color;
 			m_vertices[nBaseIndex + 1].col = curSprite.color;
 			m_vertices[nBaseIndex + 2].col = curSprite.color;
@@ -272,11 +272,11 @@ void ParaEngine::CSpriteRendererOpenGL::FlushQuads()
 			m_vertices[nBaseIndex].tex.x = (float)curSprite.rect.left / (float)curSprite.texw;
 			m_vertices[nBaseIndex].tex.y = (float)curSprite.rect.top / (float)curSprite.texh;
 			m_vertices[nBaseIndex + 1].tex.x = (float)curSprite.rect.right / (float)curSprite.texw;
-			m_vertices[nBaseIndex + 1].tex.y = (float)curSprite.rect.top / (float)curSprite.texh;
-			m_vertices[nBaseIndex + 2].tex.x = (float)curSprite.rect.right / (float)curSprite.texw;
+			m_vertices[nBaseIndex + 1].tex.y = m_vertices[nBaseIndex].tex.y;
+			m_vertices[nBaseIndex + 2].tex.x = m_vertices[nBaseIndex + 1].tex.x;
 			m_vertices[nBaseIndex + 2].tex.y = (float)curSprite.rect.bottom / (float)curSprite.texh;
-			m_vertices[nBaseIndex + 3].tex.x = (float)curSprite.rect.left / (float)curSprite.texw;
-			m_vertices[nBaseIndex + 3].tex.y = (float)curSprite.rect.bottom / (float)curSprite.texh;
+			m_vertices[nBaseIndex + 3].tex.x = m_vertices[nBaseIndex].tex.x;
+			m_vertices[nBaseIndex + 3].tex.y = m_vertices[nBaseIndex + 2].tex.y;
 
 			ParaVec3TransformCoordArray(&m_vertices[nBaseIndex].pos, sizeof(sprite_vertex),
 				&m_vertices[nBaseIndex].pos, sizeof(sprite_vertex), &curSprite.transform, 4);
