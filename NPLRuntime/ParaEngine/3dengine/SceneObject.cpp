@@ -209,11 +209,10 @@ CSceneObject::CSceneObject()
 
 	/// turn on sky rendering, if there is any available sky meshes
 	m_bRenderSky = true;
+	m_bShowBoundingBox = false;
 #ifdef _DEBUG
-	m_bShowBoundingBox = true;
 	m_bGenerateReport = true;
 #else
-	m_bShowBoundingBox = false;
 	m_bGenerateReport = false;
 #endif
 
