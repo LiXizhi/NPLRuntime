@@ -961,7 +961,11 @@ HRESULT CPainter::CalcTextRect(const char16_t* strText, GUIFontElement* pElement
 
 	if (pFontNode == NULL || strText == NULL)
 		return E_FAIL;
-
+	if (strText[0] == 0)
+	{
+		prcDest->left = prcDest->top = prcDest->right = prcDest->bottom = 0;
+		return S_OK;
+	}
 	DWORD dwTextFormat = pElement->dwTextFormat | DT_CALCRECT;
 	// Since we are only computing the rectangle, we don't need a sprite.
 	if (pFontNode != NULL) {
