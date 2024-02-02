@@ -688,67 +688,6 @@ const std::string& StringHelper::EncodingConvert(const std::string& srcEncoding,
 
 }
 
-bool ParaEngine::StringHelper::CopyTextToClipboard(const string& text_)
-{
-#ifdef WIN32
-	if (OpenClipboard(NULL))
-	{
-		EmptyClipboard();
-
-		std::u16string text;
-		UTF8ToUTF16(text_, text);
-
-		HGLOBAL hBlock = GlobalAlloc(GMEM_MOVEABLE, sizeof(char16_t) * (text.size() + 1));
-		if (hBlock)
-		{
-			char16_t* szText = (char16_t*)GlobalLock(hBlock);
-			if (szText)
-			{
-				CopyMemory(szText, &(text[0]), text.size() * sizeof(char16_t));
-				szText[(int)text.size()] = '\0';  // Terminate it
-				GlobalUnlock(hBlock);
-			}
-			SetClipboardData(CF_UNICODETEXT, hBlock);
-		}
-		CloseClipboard();
-		// We must not free the object until CloseClipboard is called.
-		if (hBlock)
-			GlobalFree(hBlock);
-		return true;
-	}
-#endif
-	return false;
-}
-
-const char* ParaEngine::StringHelper::GetTextFromClipboard()
-{
-	thread_local static std::string g_str;
-
-	bool bSucceed = false;
-#ifdef WIN32
-	if (OpenClipboard(NULL))
-	{
-		HANDLE handle = GetClipboardData(CF_UNICODETEXT);
-		if (handle)
-		{
-			const char16_t* szText = (const char16_t*)GlobalLock(handle);
-			if (szText)
-			{
-				std::u16string szText_(szText);
-				ParaEngine::StringHelper::UTF16ToUTF8(szText_, g_str);
-				bSucceed = true;
-				GlobalUnlock(handle);
-			}
-		}
-		CloseClipboard();
-	}
-#endif
-	if (!bSucceed)
-		g_str.clear();
-
-	return g_str.c_str();
-}
-
 void ParaEngine::StringHelper::DevideString(const string& input, string& str1, string& str2, char separator)
 {
 	str1.clear();
