@@ -710,7 +710,7 @@ void ParaEngine::ParaVoxelModel::RunCommandList(const char* cmd)
 
 			// make sure the level is large enough to cover the rect
 			uint32 level = curLevel;
-			uint32 maxSize = max(max(max(fromX, toX), max(fromY, toY)), max(fromZ, toZ));
+			uint32 maxSize = max(max(max(fromX, toX), max(fromY, toY)), max(fromZ, toZ)) + 1;
 			if (level < maxSize) {
 				level = 1 << LevelToDepth(maxSize);
 				if (level < maxSize)
@@ -775,7 +775,7 @@ void ParaEngine::ParaVoxelModel::RunCommandList(const char* cmd)
 
 			// make sure the level is large enough to cover the rect
 			uint32 level = curLevel;
-			uint32 maxSize = max(max(max(fromX, toX), max(fromY, toY)), max(fromZ, toZ));
+			uint32 maxSize = max(max(max(fromX, toX), max(fromY, toY)), max(fromZ, toZ)) + 1;
 			if (level < maxSize) {
 				level = 1 << LevelToDepth(maxSize);
 				if(level < maxSize)
