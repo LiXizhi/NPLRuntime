@@ -843,7 +843,7 @@ void ParaEngine::ParaVoxelModel::RunCommandList(const char* cmd)
 					std::string buffer = StringHelper::unbase64(cmd, -1);
 					int texWidth, texHeight, nBytesPerPixel;
 					byte* imageData = NULL;
-					if (TextureEntity::LoadImageOfFormat(dataFormat, &buffer[0], (int)buffer.size(), texWidth, texHeight, &imageData, &nBytesPerPixel))
+					if (TextureEntity::LoadImageOfFormat(dataFormat, (char *)(buffer.c_str()), (int)buffer.size(), texWidth, texHeight, &imageData, &nBytesPerPixel))
 					{
 						if (nBytesPerPixel == 4)
 						{
