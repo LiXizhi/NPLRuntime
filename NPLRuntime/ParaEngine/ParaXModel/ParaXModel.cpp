@@ -300,7 +300,7 @@ AnimIndex CParaXModel::GetAnimIndexByID(int nAnimID)
 	{
 		if (anims[i].animID == nAnimID)
 		{
-			return AnimIndex(i, 0, anims[i].timeStart, anims[i].timeEnd, (byte)(anims[i].loopType), nAnimID);
+			return AnimIndex(i, 0, anims[i].timeStart, anims[i].timeEnd, (unsigned char)(anims[i].loopType), nAnimID);
 		}
 	}
 	return AnimIndex(-1);
