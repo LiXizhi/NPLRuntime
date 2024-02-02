@@ -196,6 +196,7 @@ namespace ParaEngine
 		static std::string base64(const std::string& source);
 		/** return unbase64 of the input source string. */
 		static std::string unbase64(const std::string& source);
+		static std::string unbase64(const char* src, int nLength);
 
 
 
@@ -258,7 +259,19 @@ namespace ParaEngine
 		/** fast check isalnum without considering locale */
 		static inline bool isalnum(char c)
 		{
-			return ((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9'));
+			return ((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9') );
+		}
+
+		/** fast check is alpha letter without considering locale */
+		static inline bool isalpha(char c)
+		{
+			return ((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z'));
+		}
+
+		/** fast check is lower cased alpha letter without considering locale */
+		static inline bool isalphaLowerCase(char c)
+		{
+			return ((c >= 'a' && c <= 'z'));
 		}
 
 	private:

@@ -138,17 +138,32 @@ namespace ParaEngine
 	};
 #define MAX_VOXEL_CHUNK_SIZE 256
 
-	/** a chunk of at most MAX_VOXEL_CHUNK_SIZE(256) octree nodes. */
+	/** a chunk of at most MAX_VOXEL_CHUNK_SIZE(256) octree nodes. 
+	* non-editable chunks are allocated with just enough memory to hold the static octree.
+	* editable chunks are pre-allocated with 256 nodes to allow quick editing.
+	*/
 	class VoxelChunk : public std::vector<VoxelOctreeNode>
 	{
 	public:
-		VoxelChunk() :m_nSize(0), m_nFirstFreeItemIndex(0) {
-			resize(MAX_VOXEL_CHUNK_SIZE);
-			for (int i = 0; i < MAX_VOXEL_CHUNK_SIZE; i++) {
+		/* the capacity of the chunk. usually 256 for editable chunks. it can not be bigger than 256. */
+		VoxelChunk(int nCapacity = MAX_VOXEL_CHUNK_SIZE) :m_nSize(0), m_nFirstFreeItemIndex(0) {
+			resize(nCapacity);
+			for (int i = 0; i < nCapacity; i++) {
 				(*this)[i].MarkDeleted();
 			}
 		};
 		~VoxelChunk() {};
+
+		void MakeEditable() {
+			auto nLastSize = size();
+			if (nLastSize < MAX_VOXEL_CHUNK_SIZE)
+			{
+				resize(MAX_VOXEL_CHUNK_SIZE);
+				for (int i = nLastSize; i < MAX_VOXEL_CHUNK_SIZE; i++) {
+					(*this)[i].MarkDeleted();
+				}
+			}
+		}
 
 		void erase(int index) {
 			(*this)[index].MarkDeleted();
@@ -158,13 +173,23 @@ namespace ParaEngine
 			m_nSize--;
 		};
 		inline int GetUsedSize() { return m_nSize; };
-		inline int GetFreeSize() { return MAX_VOXEL_CHUNK_SIZE - m_nSize; };
+		inline int GetFreeSize() { return (int)(size() - m_nSize); };
 		inline VoxelOctreeNode& SafeCreateNode(const VoxelOctreeNode* pCopyFromNode = NULL) {
 			auto index = CreateNode(pCopyFromNode);
 			return (*this)[index];
 		}
+		int GetDiskSize() { 
+			int nSize = (int)size();
+			for (int i = nSize - 1; i >= m_nSize; i--) {
+				if (!(*this)[i].IsDeleted()) {
+					return i + 1;
+				}
+			}
+			return m_nSize;
+		};
 		uint8_t CreateNode(const VoxelOctreeNode* pCopyFromNode = NULL) {
-			if (m_nSize < MAX_VOXEL_CHUNK_SIZE)
+			int nCapacity = (int)size();
+			if (m_nSize < nCapacity)
 			{
 				auto index = m_nFirstFreeItemIndex;
 				if (pCopyFromNode != 0)
@@ -173,19 +198,35 @@ namespace ParaEngine
 					(*this)[m_nFirstFreeItemIndex].UnMarkDeleted();
 				m_nSize++;
 
-				for (int i = index + 1; i < MAX_VOXEL_CHUNK_SIZE; i++) {
+				for (int i = index + 1; i < nCapacity; i++) {
 					if ((*this)[i].IsDeleted()) {
 						m_nFirstFreeItemIndex = i;
 						return (uint8_t)index;
 					}
 				}
-				m_nFirstFreeItemIndex = MAX_VOXEL_CHUNK_SIZE;
+				m_nFirstFreeItemIndex = nCapacity;
 				return (uint8_t)index;
 			}
 			assert(false);
 			return 0;
 		}
-
+		void LoadFromBuffer(const char* pBuffer, int nSize)
+		{
+			resize(nSize);
+			if (nSize > 0) {
+				memcpy(data(), pBuffer, nSize * sizeof(VoxelOctreeNode));
+			}
+			m_nSize = 0;
+			m_nFirstFreeItemIndex = nSize;
+			for (int i = 0; i < nSize; i++) {
+				if (!(*this)[i].IsDeleted()) {
+					m_nSize++;
+				}
+				else if(i < m_nFirstFreeItemIndex){
+					m_nFirstFreeItemIndex = i;
+				}
+			}
+		}
 	private:
 		uint16_t m_nFirstFreeItemIndex;
 		uint16_t m_nSize;
@@ -203,11 +244,18 @@ namespace ParaEngine
 
 		ATTRIBUTE_DEFINE_CLASS(ParaVoxelModel);
 
+		ATTRIBUTE_METHOD1(ParaVoxelModel, LoadFromFile_s, char*) { cls->LoadFromFile(p1); return S_OK; }
+		ATTRIBUTE_METHOD1(ParaVoxelModel, SaveToFile_s, char*) { cls->SaveToFile(p1); return S_OK; }
+
 		ATTRIBUTE_METHOD1(ParaVoxelModel, SetBlock_s, char*) { cls->SetBlockCmd(p1); return S_OK; }
 		ATTRIBUTE_METHOD1(ParaVoxelModel, PaintBlock_s, char*) { cls->PaintBlockCmd(p1); return S_OK; }
+		ATTRIBUTE_METHOD1(ParaVoxelModel, RunCommandList_s, char*) { cls->RunCommandList(p1); return S_OK; }
 
 		ATTRIBUTE_METHOD1(ParaVoxelModel, GetMinVoxelPixelSize_s, float*) { *p1 = cls->GetMinVoxelPixelSize(); return S_OK; }
 		ATTRIBUTE_METHOD1(ParaVoxelModel, SetMinVoxelPixelSize_s, float) { cls->SetMinVoxelPixelSize(p1); return S_OK; }
+
+		ATTRIBUTE_METHOD1(ParaVoxelModel, IsEditable_s, bool*) { *p1 = cls->IsEditable(); return S_OK; }
+		ATTRIBUTE_METHOD1(ParaVoxelModel, SetEditable_s, bool) { cls->SetEditable(p1); return S_OK; }
 
 		ATTRIBUTE_METHOD(ParaVoxelModel, DumpOctree_s) { cls->DumpOctree(); return S_OK; }
 
@@ -217,9 +265,12 @@ namespace ParaEngine
 	public:
 		/** load the model from a binary buffer. */
 		bool Load(const char* pBuffer, int nCount = -1);
+		bool LoadFromFile(const char* filename);
 
 		/** save the model to a binary buffer. */
 		bool Save(std::vector<char>& output);
+		bool SaveToFile(const char* filename);
+		
 
 		/** set the block at the given position.
 		* @param x, y, z : the position of the block relative to level.
@@ -234,7 +285,37 @@ namespace ParaEngine
 		void SetBlockCmd(const char* cmd);
 
 		void PaintBlock(uint32 x, uint32 y, uint32 z, int level, uint32_t color);
+		/* in fast mode, the parent node will have the same color as the child nodes, instead of the average color.
+		* and we will never merge node this mode.
+		* this is useful when painting millions of blocks from an image file data. 
+		* we will also automatically use fast mode, if we run `paintrect` command with image data.
+		*/
+		void PaintBlockFastMode(uint32 x, uint32 y, uint32 z, int level, uint32_t color);
 		void PaintBlockCmd(const char* cmd);
+		/** run voxel command list: it is in the format of cmd name, cmd param, cmd param, ...
+		* e.g. "setblock 0,0,0,1,-1 level 8 color #ff0000 set 0,0,0,1,1,1,0,1,0"
+		* @note: one can also call this function multiple times to separate a long command like:
+		*   first send "offset 4,4,4 level 8 color #ff0000 setwithoffset", then "0,0,0,1,1,1,0,1,0".  it will cache previous states of cmd, level and color.
+		*   this allows one to reuse long command list string with different offset, level, and color.
+		* offset x,y,z: e.g. "offset 2,0,0", all position in the following commands will be offset by 2,0,0.
+		* level l: e.g. "level 8", all positions in the following commands will be at level 8.
+		* color c: e.g. "color #ff0000", "color -1", all colors in the following commands will be set to 0xff0000.
+		* del x1,y1,z1,x2,y2,z2, ... : e.g. "del block at all given positions at predefined level. 
+		* delwithoffset x1,y1,z1,x2,y2,z2, ... : e.g. "del block at all given positions at predefined level. 
+		* set x1,y1,z1,x2,y2,z2, ... : e.g. "set block at all given positions at predefined level and color.
+		* setwithoffset x1,y1,z1,x2,y2,z2, ... : e.g. "set block at all given positions at predefined offset, level, and color.
+		* setxyzcolor x1,y1,z1,color1,x2,y2,z2,color2, ... : e.g. "set block at all given positions at predefined level.
+		* setblock x,y,z,level,color,... : e.g. "setblock 0,0,0,1,-1". set the block at (0,0,0) at level 1 to empty.
+		* setrect fromX,fromY,fromZ,toX,toY,toZ: e.g. "color 0;level 64;setrect 0,0,0,63,63,0". with current color and level.
+		* paint x1,y1,z1,x2,y2,z2, ... : e.g. "paint block at all given positions at predefined level and color.
+		* paintwithoffset x1,y1,z1,x2,y2,z2, ... : e.g. "paint block at all given positions at predefined level and color.
+		* paintblock x,y,z,level,color,... : e.g. "paintblock 0,0,0,1,#ff0000". paint all blocks to red. 
+		* paintxyzcolor x1,y1,z1,color1,x2,y2,z2,color2, ... : e.g. "paint block at all given positions at predefined level.
+		* paintrect fromX,fromY,fromZ,toX,toY,toZ,color1,color2,...: e.g. "paintrect 0,0,0,63,63,0,#ff#ff00#ffff00(...64*64 color values)". 
+		*    if for example fromX is bigger than toX, the rect will be painted flipped on x axis, this allow applys to y and z. 
+		* paintrect fromX,fromY,fromZ,toX,toY,toZ,data:image/png;base64,...: paint the rect with image data.
+		*/
+		void RunCommandList(const char* cmd);
 
 		/** get the block color at the given position and level
 		* @return -1 if the block is empty. or return 8 bits color of the block.
@@ -255,6 +336,14 @@ namespace ParaEngine
 		*/
 		void SetMinVoxelPixelSize(float fMinVoxelPixelSize);
 		float GetMinVoxelPixelSize();
+
+		/** if the model is editable. when model is first loaded, its chunks only allocate enough memory to hold the static octree, without pre-allocating memory for the voxel chunks.
+		* when the model is editable, we will pre-allocate memory for the voxel chunks to full size to allow quick editing.
+		* usually this is false when model first loaded from disk, and set to true automatically when user edited the model.
+		*/
+		void SetEditable(bool bEditable);
+		bool IsEditable();
+
 	protected:
 		/** optimize the model to remove and merge octree node for invisible nodes. */
 		void Optimize();
@@ -295,11 +384,6 @@ namespace ParaEngine
 		*/
 		bool HasHolesOnSide(int32 x, int32 y, int32 z, int level, int side);
 
-		/** suppose the node at the position is changed, call this function to update all affected blocks in the scene.
-		* whenever a node is changed, calling this function immediately to update all the way to the root node, to ensure all properties are correct.
-		*/
-		void UpdateNode(TempVoxelOctreeNodeRef nodes[], int nNodeCount);
-
 		/** no recursion, update just this node and its neighour at the given level.
 		* blocks at lower or higher levels are ignored.
 		*/
@@ -323,6 +407,7 @@ namespace ParaEngine
 		VoxelOctreeNode* GetNode(int32 x, int32 y, int32 z, int level);
 		VoxelOctreeNode* CreateGetChildNode(VoxelOctreeNode* pNode, int nChildIndex);
 		inline VoxelOctreeNode* GetChildNode(VoxelOctreeNode* pNode, int nChildIndex);
+		void DeleteNode(uint32_t chunkIndex, uint8_t nodeIndex);
 
 		void RemoveNodeChildren(VoxelOctreeNode* pNode, uint8_t isBlockMask = 0xff);
 		/** set color to the node and all of its children
@@ -341,10 +426,16 @@ namespace ParaEngine
 		// usually between [1, 12].  12 is max LOD depth allowed, which is 4096*4096*4096.
 		int GetLodDepth(float fCameraObjectDist, float fScaling = 1.f);
 	private:
+
 		std::vector< VoxelChunk* > m_chunks;
+		// this is just an estimate of the smallest chunk that has a node just deleted. It just help to make the CreateGetFreeChunkIndex() faster.
+		uint32_t m_nFirstFreeChunkIndex;
 
 		// how many pixels that the smallest voxel should occupy on screen. [1,4] are reasonable values. 
 		// the smaller the value, the finer the voxel model will be rendered.
 		float m_fMinVoxelPixelSize;
+		// if the model is editable. when model is first loaded, its chunks only allocate enough memory to hold the static octree, without pre-allocating memory for the voxel chunks.
+		// when the model is editable, we will pre-allocate memory for the voxel chunks to full size to allow quick editing.
+		bool m_bIsEditable;
 	};
 }

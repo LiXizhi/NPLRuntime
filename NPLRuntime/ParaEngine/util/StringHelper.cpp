@@ -13,9 +13,6 @@
 #include "util/CyoEncode.h"
 #include "util/CyoDecode.h"
 #include "StringHelper.h"
-#ifndef EMSCRIPTEN_SINGLE_THREAD
-#include <boost/thread/tss.hpp>
-#endif
 #include <boost/locale/encoding_utf.hpp>
 #include "ConvertUTF.h"
 
@@ -424,7 +421,6 @@ std::string StringHelper::UniSubString(const char* szText, int nFrom, int nTo)
 
 std::string StringHelper::SimpleEncode(const std::string& source)
 {
-
 	thread_local static std::string g_code;
 	g_code.clear();
 	g_code.shrink_to_fit();
@@ -692,6 +688,66 @@ const std::string& StringHelper::EncodingConvert(const std::string& srcEncoding,
 
 }
 
+bool ParaEngine::StringHelper::CopyTextToClipboard(const string& text_)
+{
+#ifdef WIN32
+	if (OpenClipboard(NULL))
+	{
+		EmptyClipboard();
+
+		std::u16string text;
+		UTF8ToUTF16(text_, text);
+
+		HGLOBAL hBlock = GlobalAlloc(GMEM_MOVEABLE, sizeof(char16_t) * (text.size() + 1));
+		if (hBlock)
+		{
+			char16_t* szText = (char16_t*)GlobalLock(hBlock);
+			if (szText)
+			{
+				CopyMemory(szText, &(text[0]), text.size() * sizeof(char16_t));
+				szText[(int)text.size()] = '\0';  // Terminate it
+				GlobalUnlock(hBlock);
+			}
+			SetClipboardData(CF_UNICODETEXT, hBlock);
+		}
+		CloseClipboard();
+		// We must not free the object until CloseClipboard is called.
+		if (hBlock)
+			GlobalFree(hBlock);
+		return true;
+	}
+#endif
+	return false;
+}
+
+const char* ParaEngine::StringHelper::GetTextFromClipboard()
+{
+	thread_local static std::string g_str;
+
+	bool bSucceed = false;
+#ifdef WIN32
+	if (OpenClipboard(NULL))
+	{
+		HANDLE handle = GetClipboardData(CF_UNICODETEXT);
+		if (handle)
+		{
+			const char16_t* szText = (const char16_t*)GlobalLock(handle);
+			if (szText)
+			{
+				std::u16string szText_(szText);
+				ParaEngine::StringHelper::UTF16ToUTF8(szText_, g_str);
+				bSucceed = true;
+				GlobalUnlock(handle);
+			}
+		}
+		CloseClipboard();
+	}
+#endif
+	if (!bSucceed)
+		g_str.clear();
+
+	return g_str.c_str();
+}
 
 void ParaEngine::StringHelper::DevideString(const string& input, string& str1, string&str2, char separator)
 {
@@ -1499,5 +1555,55 @@ std::string ParaEngine::StringHelper::unbase64(const std::string& source)
 	else
 	{
 		return "";
+	}
+}
+
+std::string ParaEngine::StringHelper::unbase64(const char* src, int size)
+{
+	if (size < 0)
+		size = (int)strlen(src);
+	if (size > 0)
+	{
+		int nBufferSize = CyoDecode::Base64DecodeGetLength(size);
+		std::string out;
+		out.resize(nBufferSize);
+		int nSize = CyoDecode::Base64Decode(&(out[0]), src, size);
+		if (nSize >= 0 && nSize != nBufferSize)
+			out.resize(nSize);
+		return out;
+	}
+	else
+	{
+		return "";
+	}
+}
+
+std::string ParaEngine::StringHelper::EncodeStringInQuotation(const std::string& text)
+{
+	std::string sRet;
+	sRet.reserve(text.size() + 10);
+	for (int i = 0; i < (int)text.size(); ++i)
+	{
+		if (text[i] == '\"')
+			sRet += "\\\"";
+		else
+			sRet += text[i];
+	}
+	return sRet;
+}
+
+void ParaEngine::StringHelper::RemoveDoubleSlashesInString(std::string& sFilePath)
+{
+	const char* path = sFilePath.c_str();
+	char lastChar = *path;
+	for (path++; (*path) != '\0'; ++path) {
+		// path points to next char to read
+		if (lastChar == *path && (lastChar == '\\' || lastChar == '/')) {
+			// duplicate slash
+			int nIndex = path - sFilePath.c_str();
+			sFilePath.erase(nIndex, 1);
+			path = sFilePath.c_str() + nIndex - 1;
+		}
+		lastChar = *path;
 	}
 }
