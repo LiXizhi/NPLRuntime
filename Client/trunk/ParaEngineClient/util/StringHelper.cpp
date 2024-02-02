@@ -1641,6 +1641,26 @@ std::string ParaEngine::StringHelper::unbase64(const std::string& source)
 	}
 }
 
+std::string ParaEngine::StringHelper::unbase64(const char* src, int size)
+{
+	if(size < 0)
+		size = (int)strlen(src);
+	if (size > 0)
+	{
+		int nBufferSize = CyoDecode::Base64DecodeGetLength(size);
+		std::string out;
+		out.resize(nBufferSize);
+		int nSize = CyoDecode::Base64Decode(&(out[0]), src, size);
+		if (nSize >= 0 && nSize != nBufferSize)
+			out.resize(nSize);
+		return out;
+	}
+	else
+	{
+		return "";
+	}
+}
+
 std::string ParaEngine::StringHelper::EncodeStringInQuotation(const std::string& text)
 {
 	std::string sRet;

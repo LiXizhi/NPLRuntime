@@ -196,6 +196,7 @@ namespace ParaEngine
 		static std::string base64(const std::string& source);
 		/** return unbase64 of the input source string. */
 		static std::string unbase64(const std::string& source);
+		static std::string unbase64(const char* src, int nLength);
 
 
 

@@ -490,20 +490,23 @@ bool ParaEngine::ParaVoxelModel::SetNodeAndChildColor(VoxelOctreeNode* pNode, ui
 {
 	pNode->SetColor32(color);
 	bool isFullySolid = true;
-	for (int k = 0; k < 8; ++k)
+	if (!pNode->IsLeaf())
 	{
-		if (pNode->IsChildAt(k))
+		for (int k = 0; k < 8; ++k)
 		{
-			auto pChild = GetChildNode(pNode, k);
-			// merge same color nodes
-			if (SetNodeAndChildColor(pChild, color) && pChild->IsChildSameShapeAsParent()) {
-				auto childShape = pChild->GetVoxelShape();
-				RemoveNodeChildren(pNode, 1 << k);
-				pNode->isBlockMask |= (1 << k);
-				pNode->childVoxelShape[k] = childShape;
+			if (pNode->IsChildAt(k))
+			{
+				auto pChild = GetChildNode(pNode, k);
+				// merge same color nodes
+				if (SetNodeAndChildColor(pChild, color) && pChild->IsChildSameShapeAsParent()) {
+					auto childShape = pChild->GetVoxelShape();
+					RemoveNodeChildren(pNode, 1 << k);
+					pNode->isBlockMask |= (1 << k);
+					pNode->childVoxelShape[k] = childShape;
+				}
+				else
+					isFullySolid = false;
 			}
-			else
-				isFullySolid = false;
 		}
 	}
 	if (isFullySolid && pNode->IsSolid())
@@ -792,26 +795,76 @@ void ParaEngine::ParaVoxelModel::RunCommandList(const char* cmd)
 					level <<= 1;
 			}
 
-			// scan from x to z to y; this is usually the case for how image data is saved. (assume image is on xy, zy, xz plane)
-			uint32 x = fromX, y = fromY, z = fromZ;
-			while (true) {
-				z = fromZ;
-				while (true) {
-					x = fromX;
-					while(true){
-						uint32 color = parseInteger();
-						PaintBlock(x, y, z, level, color);
-						if (x == toX)
-							break;
-						x += (fromX < toX) ? 1 : -1;
+			if (*cmd == 'd') {
+				std::string dataFormat;
+				// "data:image/png;base64,"
+				dataFormat.assign(cmd, 22);
+				cmd += 22;
+				if (dataFormat == "data:image/png;base64,")
+					dataFormat = "temp.png";
+				else if (dataFormat == "data:image/jpg;base64,")
+					dataFormat = "temp.jpg";
+				else
+					dataFormat = "";
+				if (!dataFormat.empty()) 
+				{
+					std::string buffer = StringHelper::unbase64(cmd, -1);
+					int texWidth, texHeight, nBytesPerPixel;
+					byte* imageData = NULL;
+					if (TextureEntity::LoadImageOfFormat(dataFormat, &buffer[0], (int)buffer.size(), texWidth, texHeight, &imageData, &nBytesPerPixel))
+					{
+						if (nBytesPerPixel == 4)
+						{
+							DWORD* pData = (DWORD*)imageData;
+							uint32 x = fromX, y = fromY, z = fromZ;
+							while (true) {
+								z = fromZ;
+								while (true) {
+									x = fromX;
+									while (true) {
+										uint32 color = (*pData) & 0xffffff;
+										pData++;
+										PaintBlock(x, y, z, level, color);
+										if (x == toX)
+											break;
+										x += (fromX < toX) ? 1 : -1;
+									}
+									if (z == toZ)
+										break;
+									z += (fromZ < toZ) ? 1 : -1;
+								}
+								if (y == toY)
+									break;
+								y += (fromY < toY) ? 1 : -1;
+							}
+						}
+						SAFE_DELETE_ARRAY(imageData);
 					}
-					if (z == toZ)
-						break;
-					z += (fromZ < toZ) ? 1 : -1;
 				}
-				if (y == toY)
-					break;
-				y += (fromY < toY) ? 1 : -1;
+			}
+			else
+			{
+				// scan from x to z to y; this is usually the case for how image data is saved. (assume image is on xy, zy, xz plane)
+				uint32 x = fromX, y = fromY, z = fromZ;
+				while (true) {
+					z = fromZ;
+					while (true) {
+						x = fromX;
+						while (true) {
+							uint32 color = parseInteger();
+							PaintBlock(x, y, z, level, color);
+							if (x == toX)
+								break;
+							x += (fromX < toX) ? 1 : -1;
+						}
+						if (z == toZ)
+							break;
+						z += (fromZ < toZ) ? 1 : -1;
+					}
+					if (y == toY)
+						break;
+					y += (fromY < toY) ? 1 : -1;
+				}
 			}
 		}
 		else { 

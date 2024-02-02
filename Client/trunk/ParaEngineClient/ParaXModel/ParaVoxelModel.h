@@ -307,6 +307,7 @@ namespace ParaEngine
 		* paintxyzcolor x1,y1,z1,color1,x2,y2,z2,color2, ... : e.g. "paint block at all given positions at predefined level.
 		* paintrect fromX,fromY,fromZ,toX,toY,toZ,color1,color2,...: e.g. "paintrect 0,0,0,63,63,0,#ff#ff00#ffff00(...64*64 color values)". 
 		*    if for example fromX is bigger than toX, the rect will be painted flipped on x axis, this allow applys to y and z. 
+		* paintrect fromX,fromY,fromZ,toX,toY,toZ,data:image/png;base64,...: paint the rect with image data.
 		*/
 		void RunCommandList(const char* cmd);
 
