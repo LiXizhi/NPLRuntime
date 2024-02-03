@@ -1321,9 +1321,9 @@ namespace ParaScripting
 		* @remark: if local mesh's name begins with "g_", it can also be retrieved by calling this function.
 		* however, if a global object has the same name, the global object is always returned instead of the local mesh.
 		* @param strObjName: the format of the name is as below: 
-		*	strObjName := [<_type>]string \n
-		*	_type := managed_loader | OPC | NPC | player | zone | portal \n
-		* e.g. strObjName = "creatures1" or "<managed_loader>sceneloader1" or "<player>".
+		*	strObjName := [<_type>]string 
+		*	_type := managed_loader | OPC | NPC | player | zone | portal | CRenderTarget 
+		* e.g. strObjName = "creatures1" or "<managed_loader>sceneloader1" or "<player>" or "<CRenderTarget>name".
 		*/
 		static ParaObject GetObject(const char * strObjName);
 

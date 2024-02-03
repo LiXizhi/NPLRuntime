@@ -567,6 +567,9 @@ bool ParaEngine::CRenderTarget::Begin()
 
 	
 #elif defined(USE_OPENGL_RENDERER)
+	if (m_pCanvasTexture)
+		m_pCanvasTexture->SetHitCount(0);
+
 	glGetIntegerv(GL_FRAMEBUFFER_BINDING, &_oldFBO);
 	
 	glBindFramebuffer(GL_FRAMEBUFFER, _FBO);
@@ -703,7 +706,16 @@ HRESULT ParaEngine::CRenderTarget::Draw(SceneState * sceneState)
 
 bool ParaEngine::CRenderTarget::IsDirty() const
 {
-	return m_bIsDirty || IsActiveRenderingEnabled();
+	if (m_bIsDirty)
+		return true;
+	else if (IsActiveRenderingEnabled())
+	{
+		if (m_pCanvasTexture)
+			return m_pCanvasTexture->GetHitCount() > 0;
+		else
+			return true;
+	}
+	return false;
 }
 
 void ParaEngine::CRenderTarget::SetDirty(bool val)
