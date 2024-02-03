@@ -1665,7 +1665,12 @@ ParaObject ParaScene::GetObject(const char * strObjName)
 		// get global non-player PC
 		pObj = CGlobals::GetScene()->GetRootTile()->SearchObject(strObjName);
 	}
-	
+	else
+	{
+		// _type can be "CRenderTarget", ...
+		pObj = CGlobals::GetScene()->FindObjectByNameAndType(strObjName, _type);
+	}
+
 	return ParaObject(pObj);
 }
 

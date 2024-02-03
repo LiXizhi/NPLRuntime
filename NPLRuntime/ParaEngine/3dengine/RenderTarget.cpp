@@ -738,7 +738,16 @@ HRESULT ParaEngine::CRenderTarget::Draw(SceneState * sceneState)
 
 bool ParaEngine::CRenderTarget::IsDirty() const
 {
-	return m_bIsDirty || IsActiveRenderingEnabled();
+	if (m_bIsDirty)
+		return true;
+	else if (IsActiveRenderingEnabled())
+	{
+		if (m_pCanvasTexture)
+			return m_pCanvasTexture->GetHitCount() > 0;
+		else
+			return true;
+	}
+	return false;
 }
 
 void ParaEngine::CRenderTarget::SetDirty(bool val)
