@@ -9,9 +9,9 @@ namespace ParaEngine
 	class CPaintEngine;
 	class CPainter;
 
-	/** a render target scene object. 
-	* render target is not initialized until the first Begin() End() pair is called. 
-	* to update the render target, draw objects between Begin() and End(). 
+	/** a render target scene object.
+	* render target is not initialized until the first Begin() End() pair is called.
+	* to update the render target, draw objects between Begin() and End().
 	*/
 	class CRenderTarget : public CBaseObject, public CPaintDevice
 	{
@@ -25,29 +25,30 @@ namespace ParaEngine
 		/** this class should be implemented if one wants to add new attribute. This function is always called internally.*/
 		virtual int InstallFields(CAttributeClass* pClass, bool bOverride);
 
-		ATTRIBUTE_METHOD1(CRenderTarget, GetClearColor_s, Vector3*)		{ *p1 = cls->GetClearColor().ToVector3(); return S_OK; }
-		ATTRIBUTE_METHOD1(CRenderTarget, SetClearColor_s, Vector3)		{ LinearColor c(p1.x, p1.y, p1.z, 1); cls->SetClearColor(c); return S_OK; }
+		ATTRIBUTE_METHOD1(CRenderTarget, GetClearColor_s, Vector3*) { *p1 = cls->GetClearColor().ToVector3(); return S_OK; }
+		ATTRIBUTE_METHOD1(CRenderTarget, SetClearColor_s, Vector3) { LinearColor c(p1.x, p1.y, p1.z, 1); cls->SetClearColor(c); return S_OK; }
 
-		ATTRIBUTE_METHOD1(CRenderTarget, GetRenderTargetSize_s, Vector2*)		{ *p1 = cls->GetRenderTargetSize(); return S_OK; }
-		ATTRIBUTE_METHOD1(CRenderTarget, SetRenderTargetSize_s, Vector2)		{ cls->SetRenderTargetSize(p1); return S_OK; }
+		ATTRIBUTE_METHOD1(CRenderTarget, GetRenderTargetSize_s, Vector2*) { *p1 = cls->GetRenderTargetSize(); return S_OK; }
+		ATTRIBUTE_METHOD1(CRenderTarget, SetRenderTargetSize_s, Vector2) { cls->SetRenderTargetSize(p1); return S_OK; }
 
-		ATTRIBUTE_METHOD1(CRenderTarget, IsActiveRenderingEnabled_s, bool*)		{ *p1 = cls->IsActiveRenderingEnabled(); return S_OK; }
-		ATTRIBUTE_METHOD1(CRenderTarget, EnableActiveRendering_s, bool)		{ cls->EnableActiveRendering(p1); return S_OK; }
+		ATTRIBUTE_METHOD1(CRenderTarget, IsActiveRenderingEnabled_s, bool*) { *p1 = cls->IsActiveRenderingEnabled(); return S_OK; }
+		ATTRIBUTE_METHOD1(CRenderTarget, EnableActiveRendering_s, bool) { cls->EnableActiveRendering(p1); return S_OK; }
 
-		ATTRIBUTE_METHOD1(CRenderTarget, IsDirty_s, bool*)		{ *p1 = cls->IsDirty(); return S_OK; }
-		ATTRIBUTE_METHOD1(CRenderTarget, SetDirty_s, bool)		{ cls->SetDirty(p1); return S_OK; }
+		ATTRIBUTE_METHOD1(CRenderTarget, IsDirty_s, bool*) { *p1 = cls->IsDirty(); return S_OK; }
+		ATTRIBUTE_METHOD1(CRenderTarget, SetDirty_s, bool) { cls->SetDirty(p1); return S_OK; }
 
-		ATTRIBUTE_METHOD1(CRenderTarget, IsPersistentRenderTarget_s, bool*)		{ *p1 = cls->IsPersistentRenderTarget(); return S_OK; }
-		ATTRIBUTE_METHOD1(CRenderTarget, SetPersistentRenderTarget_s, bool)		{ cls->SetPersistentRenderTarget(p1); return S_OK; }
+		ATTRIBUTE_METHOD1(CRenderTarget, IsPersistentRenderTarget_s, bool*) { *p1 = cls->IsPersistentRenderTarget(); return S_OK; }
+		ATTRIBUTE_METHOD1(CRenderTarget, SetPersistentRenderTarget_s, bool) { cls->SetPersistentRenderTarget(p1); return S_OK; }
 
 		ATTRIBUTE_METHOD1(CRenderTarget, SaveToFile_s, const char*) { cls->SaveToFile(p1); return S_OK; }
+		ATTRIBUTE_METHOD1(CRenderTarget, RunCommandList_s, char*) { cls->RunCommandList(p1); return S_OK; }
 
 		/** define the On_Paint script callback for painting in 2d space. */
 		DEFINE_SCRIPT_EVENT(CRenderTarget, Paint);
 
-		
+
 	public:
-		virtual CPaintEngine * paintEngine() const;
+		virtual CPaintEngine* paintEngine() const;
 		virtual int metric(PaintDeviceMetric metric) const;
 
 		/** initializes a RenderTexture object with width and height in Points and a pixel format( only RGB and RGBA formats are valid ) and depthStencil format*/
@@ -55,7 +56,7 @@ namespace ParaEngine
 
 		virtual int PrepareRender(CBaseCamera* pCamera, SceneState* pSceneState);
 		/// only for drawable objects
-		virtual HRESULT Draw(SceneState * sceneState);
+		virtual HRESULT Draw(SceneState* sceneState);
 
 		/** starts rendering to texture. /sa ScopedPaintOnRenderTarget */
 		virtual bool Begin();
@@ -86,8 +87,8 @@ namespace ParaEngine
 		HRESULT DeleteDeviceObjects();
 		/** clean up all resource objects */
 		virtual void Cleanup();
-		/** invoke the On_Paint script event handler if any. Normally this is called between Begin() and End(). 
-		* subclass can also inherit this method, to provide its own custom drawing functions. 
+		/** invoke the On_Paint script event handler if any. Normally this is called between Begin() and End().
+		* subclass can also inherit this method, to provide its own custom drawing functions.
 		*/
 		virtual void DoPaint(CPainter* painter = NULL);
 
@@ -157,16 +158,18 @@ namespace ParaEngine
 		void SetCanvasTextureName(const std::string& sValue);
 
 		virtual HRESULT RendererRecreated() override;
+
+		void RunCommandList(const char* cmd);
 	protected:
 		// whether device is created.
 		bool		m_bInitialized;
-		
+
 		bool		m_bPersistentRenderTarget;
 		int			m_nTextureWidth;
 		int         m_nTextureHeight;
 		/* -1 means alive forever. 0 means dead. any other value means number of frames to live before it is released. */
 		int m_nLifeTime;
-		
+
 		DWORD		m_depthStencilFormat;
 		/** render target*/
 		asset_ptr<TextureEntity> m_pCanvasTexture;
@@ -198,7 +201,7 @@ namespace ParaEngine
 		/** render target canvas name */
 		std::string m_sCanvasTextureName;
 
-		mutable CPaintEngine *engine;
+		mutable CPaintEngine* engine;
 	};
 
 	/** helper class for painting on render target*/

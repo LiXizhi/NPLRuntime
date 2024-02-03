@@ -375,7 +375,7 @@ bool ParaScripting::ParaAssetObject::CommitChanges()
 
 ParaScripting::ParaAttributeObject ParaScripting::ParaAssetObject::GetAttributeObject()
 {
-	return ParaAttributeObject(IsValid() ? m_pAsset->GetAttributeObject() : NULL);
+	return ParaAttributeObject(m_pAsset ? m_pAsset->GetAttributeObject() : NULL);
 }
 
 void ParaScripting::ParaAssetObject::UnloadAsset()

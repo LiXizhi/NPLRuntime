@@ -527,39 +527,22 @@ int TextureEntity::GetFormatByFileName(const std::string& filename)
 	return dwTextureFormat;
 }
 
-void TextureEntity::SetTextureFramePointer(int framePointer)
+TextureEntity* ParaEngine::TextureEntity::LoadUint8Buffer(const uint8* pTexels, int width, int height, int rowLength, int bytesPerPixel, uint32 nMipLevels, D3DPOOL dwCreatePool, DWORD nFormat)
 {
-	uint8_t * frames = (uint8_t*)framePointer;
+	return NULL;
+}
 
-	int* colors = (int*)framePointer;
-	int width = GetWidth();
-	int height = GetHeight();
-	if (m_bRABG) { //�����굹��
-		static int i, j;
-		static int color1;
-		static int index1, index2;
-		for (j = 0; j < height/2; j++) {
-			for (i = 0; i < width; i++) {
-				index1 = (j * width) + i;
-				index2 = ((height - j - 1) * width) + i;
-				color1 = colors[index1];
-				colors[index1] = colors[index2];
-				colors[index2] = color1;
-
-			}
-		}
-	}
-	this->LoadUint8Buffer(frames, width, height, height, 4);
+bool ParaEngine::TextureEntity::LoadImageFromString(const char* pImageString)
+{
+	return false;
 }
 
 int TextureEntity::InstallFields(CAttributeClass* pClass, bool bOverride)
 {
 	AssetEntity::InstallFields(pClass, bOverride);
 
-	pClass->AddField("IsRGBA", FieldType_Bool, (void*)SetIsRGBA_s, (void*)0, NULL, NULL, bOverride);
-	pClass->AddField("TextureFramePointer", FieldType_Int, (void*)SetTextureFramePointer_s, (void*)0, NULL, NULL, bOverride);
-#ifdef USE_DIRECTX_RENDERER
-#else
-#endif
+	pClass->AddField("HitCount", FieldType_Int, (void*)SetHitCount_s, (void*)GetHitCount_s, NULL, NULL, bOverride);
+	pClass->AddField("LoadImageFromString", FieldType_String, (void*)LoadImageFromString_s, NULL, NULL, NULL, bOverride);
+
 	return S_OK;
 }

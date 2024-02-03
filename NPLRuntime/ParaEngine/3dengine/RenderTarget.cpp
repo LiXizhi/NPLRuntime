@@ -731,7 +731,10 @@ HRESULT ParaEngine::CRenderTarget::Draw(SceneState * sceneState)
 		SetDirty(false);
 
 		ScopedPaintOnRenderTarget paint(this);
-		DoPaint();
+		if (m_bIsBegin)
+		{
+			DoPaint();
+		}
 	}
 	return S_OK;
 }
@@ -804,6 +807,11 @@ void ParaEngine::CRenderTarget::SetDead()
 	m_nLifeTime = 0;
 }
 
+
+void ParaEngine::CRenderTarget::RunCommandList(const char* cmd)
+{
+}
+
 int ParaEngine::CRenderTarget::InstallFields(CAttributeClass* pClass, bool bOverride)
 {
 	CBaseObject::InstallFields(pClass, bOverride);
@@ -814,6 +822,9 @@ int ParaEngine::CRenderTarget::InstallFields(CAttributeClass* pClass, bool bOver
 	pClass->AddField("Dirty", FieldType_Bool, (void*)SetDirty_s, (void*)IsDirty_s, NULL, "", bOverride);
 	pClass->AddField("IsPersistentRenderTarget", FieldType_Bool, (void*)SetPersistentRenderTarget_s, (void*)IsPersistentRenderTarget_s, NULL, "", bOverride);
 	pClass->AddField("SaveToFile", FieldType_String, (void*)SaveToFile_s, (void*)0, NULL, NULL, bOverride);
+	pClass->AddField("RunCommandList", FieldType_String, (void*)RunCommandList_s, (void*)0, NULL, NULL, bOverride);
+	pClass->AddField("run", FieldType_String, (void*)RunCommandList_s, (void*)0, NULL, NULL, bOverride);
 	return S_OK;
 }
+
 

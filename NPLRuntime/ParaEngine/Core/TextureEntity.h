@@ -78,6 +78,8 @@ namespace ParaEngine
 			TextureSurface,
 			/// depth stencil surface 
 			DEPTHSTENCIL,
+			/// dynamic texture, such as video textures, etc.
+			DynamicTexture,
 		} SurfaceType;
 
 		/** basic texture information */
@@ -341,15 +343,22 @@ namespace ParaEngine
 		static TextureEntity* CreateTexture(const uint8 * pTexels, int width, int height, int rowLength, int bytesPerPixel, uint32 nMipLevels = 0, EPoolType dwCreatePool= EPoolType::Managed, DWORD nFormat = 0);
 		/** create a texture entity from file path. */
 		static TextureEntity* CreateTexture(const char* pFileName, uint32 nMipLevels = 0, EPoolType dwCreatePool = EPoolType::Managed);
+		
+		/** calling this function will change the texture to DynamicTexture. */
+		virtual TextureEntity* LoadUint8Buffer(const uint8* pTexels, int width, int height, int rowLength, int bytesPerPixel, uint32 nMipLevels = 0, D3DPOOL dwCreatePool = D3DPOOL_DEFAULT, DWORD nFormat = 0);
+
+		/** calling this function will change the texture to DynamicTexture.
+		* @param pImageString: long command string like
+		* "paintrect fromX,fromY,toX,toY,data:image/png;base64,xxxxx"
+		*/
+		virtual bool LoadImageFromString(const char* pImageString);
+
 	public:
-			virtual TextureEntity* LoadUint8Buffer(const uint8 * pTexels, int width, int height, int rowLength, int bytesPerPixel, uint32 nMipLevels = 0, D3DPOOL dwCreatePool = D3DPOOL_MANAGED, DWORD nFormat = 0) { return NULL; }
-			virtual int InstallFields(CAttributeClass* pClass, bool bOverride);
-			ATTRIBUTE_METHOD1(TextureEntity, SetIsRGBA_s, bool) { cls->SetIsRGBA(p1); return S_OK; }
-			ATTRIBUTE_METHOD1(TextureEntity, SetTextureFramePointer_s, int) { cls->SetTextureFramePointer(p1); return S_OK; }
-	protected:
-		bool m_bRABG = false;
-		void SetTextureFramePointer(int framePointer);
-		void SetIsRGBA(bool isRGBA) { m_bRABG = isRGBA; }
+		virtual int InstallFields(CAttributeClass* pClass, bool bOverride);
+
+		ATTRIBUTE_METHOD1(TextureEntity, SetHitCount_s, int) { cls->SetHitCount(p1); return S_OK; }
+		ATTRIBUTE_METHOD1(TextureEntity, GetHitCount_s, int*) { *p1 = cls->GetHitCount(); return S_OK; }
+		ATTRIBUTE_METHOD1(TextureEntity, LoadImageFromString_s, char*) { cls->LoadImageFromString(p1); return S_OK; }
 	};
 }
 
