@@ -46,8 +46,20 @@ CFontRendererOpenGL* ParaEngine::CFontRendererOpenGL::create(const std::string& 
 		char szPath[MAX_PATH];
 		GetWindowsDirectoryA(szPath, MAX_PATH);
 		fontFile = szPath;
-		//fontFile = "fonts/DroidSansFallback.ttf"; // 3.6MB
-		fontFile = fontFile + "/fonts/msyh.ttc";
+		fontFile = fontFile + "/fonts/msyh.ttc"; // try Chinese font first
+		
+		if (!CFileUtils::FileExist(fontFile.c_str()))
+		{
+			fontFile = fontFile + "/fonts/segoeui.ttf"; // this is usually windows default font
+			if (!CFileUtils::FileExist(fontFile.c_str()))
+			{
+				fontFile = fontFile + "/fonts/arial.ttc"; // try English font
+				if (!CFileUtils::FileExist(fontFile.c_str()))
+				{
+					fontFile = "fonts/DroidSansFallback.ttf"; // use buildin default font
+				}
+			}
+		}
 #else
 		fontFile = "fonts/DroidSansFallback.ttf"; // 3.6MB
 #endif
@@ -56,6 +68,39 @@ CFontRendererOpenGL* ParaEngine::CFontRendererOpenGL::create(const std::string& 
 	else
 	{
 		fontFile = sFontName;
+		if (! CFileUtils::FileExist(fontFile.c_str()))
+		{
+#if defined(WIN32) && 0 
+			// try to find the font file from registry, since font fallback is not supported, we will not enable this. 
+			HKEY hKey;
+			if (RegOpenKeyExA(HKEY_LOCAL_MACHINE, "SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Fonts", 0, KEY_READ, &hKey) == ERROR_SUCCESS)
+			{
+				char szValue[1024];
+				DWORD dwType = REG_SZ;
+				DWORD dwSize = sizeof(szValue);
+				// iterate all child key names
+				for (DWORD i = 0; RegEnumValueA(hKey, i, szValue, &dwSize, NULL, &dwType, NULL, NULL) == ERROR_SUCCESS; i++)
+				{
+					// check if szValue begins with sFontName with case insensitive
+					if (_strnicmp(szValue, sFontName.c_str(), sFontName.length()) == 0)
+					{
+						if (RegQueryValueExA(hKey, szValue, NULL, &dwType, (LPBYTE)szValue, &dwSize) == ERROR_SUCCESS)
+						{
+							char szPath[MAX_PATH];
+							GetWindowsDirectoryA(szPath, MAX_PATH);
+							fontFile = szPath;
+							fontFile += "/fonts/";
+							fontFile += szValue;
+						}
+						break;
+					}
+					dwSize = sizeof(szValue);
+				}
+
+				RegCloseKey(hKey);
+			}
+#endif
+		}
 	}
 
 	// TODO: force size to be 50. font-rendering crashes on android with big font.
