@@ -141,9 +141,14 @@ namespace ParaEngine
 		static TextureEntity* CreateTexture(const uint8 * pTexels, int width, int height, int rowLength, int bytesPerPixel, uint32 nMipLevels = 0, D3DPOOL dwCreatePool = D3DPOOL_MANAGED, DWORD nFormat = 0);
 		static TextureEntity* CreateTexture(const char* pFileName, uint32 nMipLevels = 0, D3DPOOL dwCreatePool = D3DPOOL_MANAGED);
 
+		/** calling this function will change the texture to DynamicTexture. */
 		virtual TextureEntity* LoadUint8Buffer(const uint8 * pTexels, int width, int height, int rowLength, int bytesPerPixel, uint32 nMipLevels = 0, D3DPOOL dwCreatePool = D3DPOOL_DEFAULT, DWORD nFormat = 0);
-	private:
-		LPDIRECT3DTEXTURE9 m_dynamicTexture;
+
+		/** calling this function will change the texture to DynamicTexture. 
+		* @param pImageString: long command string like 
+		* "paintrect fromX,fromY,toX,toY,data:image/png;base64,xxxxx"
+		*/
+		virtual bool LoadImageFromString(const char* pImageString);
 	};
 
 	// the manager class

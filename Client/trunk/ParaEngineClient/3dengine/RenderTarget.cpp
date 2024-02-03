@@ -31,7 +31,7 @@ using namespace ParaEngine;
 
 ParaEngine::CRenderTarget::CRenderTarget()
 	: engine(0),
-	m_bInitialized(false), m_bIsBegin(false), m_dwClearColor(0), m_nTextureWidth(DEFAULT_CANVAS_MAP_WIDTH), m_nTextureHeight(DEFAULT_CANVAS_MAP_HEIGHT), 
+	m_bInitialized(false), m_bIsBegin(false), m_dwClearColor(0), m_nTextureWidth(DEFAULT_CANVAS_MAP_WIDTH), m_nTextureHeight(DEFAULT_CANVAS_MAP_HEIGHT),
 	m_bActiveRendering(false), m_bIsDirty(true), m_nLifeTime(-1), m_bPersistentRenderTarget(false),
 	m_depthStencilFormat(D3DFMT_D24S8)
 {
@@ -109,7 +109,7 @@ HRESULT ParaEngine::CRenderTarget::RestoreDeviceObjects()
 
 #ifdef USE_DIRECTX_RENDERER
 	HRESULT hr;
-	
+
 	/*hr = pD3dDevice->CreateTexture(nWidth, 	nHeight,
 	1, D3DUSAGE_RENDERTARGET,
 	D3DFMT_X8R8G8B8, D3DPOOL_DEFAULT, &m_pCanvasTexture, NULL);
@@ -262,7 +262,7 @@ HRESULT ParaEngine::CRenderTarget::SaveToFile(const char* sFileName, int nImageW
 			OUTPUT_LOG("miniscenegraph portrait %d taken for %s", m_nTextureWidth, sFile.c_str());
 		}
 	}
-	else if (FileFormat == D3DXIFF_DDS  && srcWidth == 0)
+	else if (FileFormat == D3DXIFF_DDS && srcWidth == 0)
 	{
 		if (dwFormat == 1)
 			dwFormat = D3DFMT_DXT1;
@@ -344,7 +344,7 @@ HRESULT ParaEngine::CRenderTarget::SaveToFile(const char* sFileName, int nImageW
 #else 
 					if (SUCCEEDED(D3DXSaveSurfaceToFile(sFile.c_str(), FileFormat, pSurDest, NULL, NULL)))
 #endif
-					
+
 					{
 						OUTPUT_LOG("miniscenegraph portrait (%d X %d) taken for %s", nImageWidth, nImageHeight, sFile.c_str());
 					}
@@ -386,12 +386,12 @@ ImageEntity* ParaEngine::CRenderTarget::NewImage(bool bFlipImage, Color colorKey
 	int savedBufferWidth = (int)s.x;
 	int savedBufferHeight = (int)s.y;
 
-	GLubyte *buffer = nullptr;
-	
+	GLubyte* buffer = nullptr;
+
 	ImageEntity* image = new ImageEntity();
 	do
 	{
-		if(!(buffer = new (std::nothrow) GLubyte[savedBufferWidth * savedBufferHeight * 4]))
+		if (!(buffer = new (std::nothrow) GLubyte[savedBufferWidth * savedBufferHeight * 4]))
 			break;
 
 		glGetIntegerv(GL_FRAMEBUFFER_BINDING, &_oldFBO);
@@ -415,9 +415,9 @@ ImageEntity* ParaEngine::CRenderTarget::NewImage(bool bFlipImage, Color colorKey
 		}
 
 		// flip is required when saving image to file. 
-		if (bFlipImage) 
+		if (bFlipImage)
 		{
-			GLubyte *tempData = nullptr;
+			GLubyte* tempData = nullptr;
 			if (!(tempData = new (std::nothrow) GLubyte[savedBufferWidth * savedBufferHeight * 4]))
 			{
 				delete[] buffer;
@@ -442,7 +442,7 @@ ImageEntity* ParaEngine::CRenderTarget::NewImage(bool bFlipImage, Color colorKey
 		}
 
 	} while (0);
-	
+
 	SAFE_DELETE_ARRAY(buffer);
 
 	return image;
@@ -483,7 +483,7 @@ ParaEngine::Vector2 ParaEngine::CRenderTarget::GetRenderTargetSize()
 
 const std::string& ParaEngine::CRenderTarget::GetCanvasTextureName()
 {
-	if (m_sCanvasTextureName.empty()){
+	if (m_sCanvasTextureName.empty()) {
 		m_sCanvasTextureName = "_miniscenegraph_";
 		m_sCanvasTextureName += GetIdentifier();
 	}
@@ -492,9 +492,14 @@ const std::string& ParaEngine::CRenderTarget::GetCanvasTextureName()
 
 void ParaEngine::CRenderTarget::SetCanvasTextureName(const std::string& sValue)
 {
-	if (m_sCanvasTextureName != sValue){
+	if (m_sCanvasTextureName != sValue) {
 		m_sCanvasTextureName = sValue;
 	}
+}
+
+HRESULT ParaEngine::CRenderTarget::RendererRecreated()
+{
+	return S_OK;
 }
 
 bool ParaEngine::CRenderTarget::InitWithWidthAndHeight(int width, int height, D3DFORMAT format, D3DFORMAT depthStencilFormat /*= D3DFMT_D16*/)
@@ -565,16 +570,16 @@ bool ParaEngine::CRenderTarget::Begin()
 	}
 	pd3dDevice->SetDepthStencilSurface(m_pDepthStencilSurface);
 
-	
+
 #elif defined(USE_OPENGL_RENDERER)
 	if (m_pCanvasTexture)
 		m_pCanvasTexture->SetHitCount(0);
 
 	glGetIntegerv(GL_FRAMEBUFFER_BINDING, &_oldFBO);
-	
+
 	glBindFramebuffer(GL_FRAMEBUFFER, _FBO);
 	// no need to bind depth buffer, since it is automatically bind by opengl when frame buffer is bind. 
-	
+
 	pd3dDevice->BeginRenderTarget(m_nTextureWidth, m_nTextureHeight);
 
 	//calculate viewport
@@ -605,7 +610,7 @@ void ParaEngine::CRenderTarget::End()
 	// restore render origin
 	CGlobals::GetScene()->RegenerateRenderOrigin(m_vOldRenderOrigin);
 #ifdef USE_DIRECTX_RENDERER
-	
+
 	// restore old depth surface
 	pd3dDevice->SetDepthStencilSurface(m_pOldZBuffer);
 	SAFE_RELEASE(m_pOldZBuffer);
@@ -617,7 +622,7 @@ void ParaEngine::CRenderTarget::End()
 #elif defined(USE_OPENGL_RENDERER)
 	glBindFramebuffer(GL_FRAMEBUFFER, _oldFBO);
 	pd3dDevice->EndRenderTarget();
-	
+
 	// TODO: this should be removed, when we handle glClear() by ourselves instead of cocos. 
 	LinearColor color(CGlobals::GetScene()->GetClearColor());
 	glClearColor(color.r, color.g, color.b, color.a);
@@ -651,12 +656,12 @@ void ParaEngine::CRenderTarget::Clear(const LinearColor& color, float depthValue
 	}
 }
 
-CPaintEngine * ParaEngine::CRenderTarget::paintEngine() const
+CPaintEngine* ParaEngine::CRenderTarget::paintEngine() const
 {
 	if (engine)
 		return engine;
 
-	CPaintEngine *engine_ = CPaintEngineGPU::GetInstance();
+	CPaintEngine* engine_ = CPaintEngineGPU::GetInstance();
 	if (engine_->isActive() && engine_->paintDevice() != this) {
 		engine_ = new CPaintEngineGPU();
 		return engine_;
@@ -692,14 +697,17 @@ int ParaEngine::CRenderTarget::PrepareRender(CBaseCamera* pCamera, SceneState* p
 	return S_OK;
 }
 
-HRESULT ParaEngine::CRenderTarget::Draw(SceneState * sceneState)
+HRESULT ParaEngine::CRenderTarget::Draw(SceneState* sceneState)
 {
 	if (IsDirty())
 	{
 		SetDirty(false);
 
 		ScopedPaintOnRenderTarget paint(this);
-		DoPaint();
+		if (m_bIsBegin)
+		{
+			DoPaint();
+		}
 	}
 	return S_OK;
 }
@@ -772,6 +780,10 @@ void ParaEngine::CRenderTarget::SetDead()
 	m_nLifeTime = 0;
 }
 
+void ParaEngine::CRenderTarget::RunCommandList(const char* cmd)
+{
+}
+
 int ParaEngine::CRenderTarget::InstallFields(CAttributeClass* pClass, bool bOverride)
 {
 	CBaseObject::InstallFields(pClass, bOverride);
@@ -782,6 +794,8 @@ int ParaEngine::CRenderTarget::InstallFields(CAttributeClass* pClass, bool bOver
 	pClass->AddField("Dirty", FieldType_Bool, (void*)SetDirty_s, (void*)IsDirty_s, NULL, "", bOverride);
 	pClass->AddField("IsPersistentRenderTarget", FieldType_Bool, (void*)SetPersistentRenderTarget_s, (void*)IsPersistentRenderTarget_s, NULL, "", bOverride);
 	pClass->AddField("SaveToFile", FieldType_String, (void*)SaveToFile_s, (void*)0, NULL, NULL, bOverride);
+	pClass->AddField("RunCommandList", FieldType_String, (void*)RunCommandList_s, (void*)0, NULL, NULL, bOverride);
+	pClass->AddField("run", FieldType_String, (void*)RunCommandList_s, (void*)0, NULL, NULL, bOverride);
 	return S_OK;
 }
 

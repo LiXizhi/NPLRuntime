@@ -34,7 +34,7 @@ namespace ParaEngine
 			}
 		}
 
-		void ScaleMinifyByTwo(byte *Target, byte *Source, int SrcWidth, int SrcHeight, int nStride = 3)
+		void ScaleMinifyByTwo(byte* Target, byte* Source, int SrcWidth, int SrcHeight, int nStride = 3)
 		{
 			int x, y, x2, y2;
 			int TgtWidth, TgtHeight;
@@ -46,7 +46,7 @@ namespace ParaEngine
 				for (y = 0; y < TgtHeight; y++) {
 					y2 = 2 * y;
 					for (x = 0; x < TgtWidth; x++) {
-						average(Target + (y * TgtWidth + x)*nStride, Source + (y2 * SrcWidth + x)*nStride, Source + (y2 * SrcWidth + x)*nStride, Source + ((y2 + 1)*SrcWidth + x)*nStride, Source + ((y2 + 1)*SrcWidth + x)*nStride, nStride);
+						average(Target + (y * TgtWidth + x) * nStride, Source + (y2 * SrcWidth + x) * nStride, Source + (y2 * SrcWidth + x) * nStride, Source + ((y2 + 1) * SrcWidth + x) * nStride, Source + ((y2 + 1) * SrcWidth + x) * nStride, nStride);
 					}
 				}
 			}
@@ -55,7 +55,7 @@ namespace ParaEngine
 				for (y = 0; y < TgtHeight; y++) {
 					for (x = 0; x < TgtWidth; x++) {
 						x2 = 2 * x;
-						average(Target + (y * TgtWidth + x)*nStride, Source + (y * SrcWidth + x2)*nStride, Source + (y * SrcWidth + x2 + 1)*nStride, Source + (y*SrcWidth + x2)*nStride, Source + (y*SrcWidth + x2 + 1)*nStride, nStride);
+						average(Target + (y * TgtWidth + x) * nStride, Source + (y * SrcWidth + x2) * nStride, Source + (y * SrcWidth + x2 + 1) * nStride, Source + (y * SrcWidth + x2) * nStride, Source + (y * SrcWidth + x2 + 1) * nStride, nStride);
 					}
 				}
 			}
@@ -65,13 +65,13 @@ namespace ParaEngine
 					y2 = 2 * y;
 					for (x = 0; x < TgtWidth; x++) {
 						x2 = 2 * x;
-						average(Target + (y * TgtWidth + x)*nStride, Source + (y2 * SrcWidth + x2)*nStride, Source + (y2 * SrcWidth + x2 + 1)*nStride, Source + ((y2 + 1)*SrcWidth + x2)*nStride, Source + ((y2 + 1)*SrcWidth + x2 + 1)*nStride, nStride);
+						average(Target + (y * TgtWidth + x) * nStride, Source + (y2 * SrcWidth + x2) * nStride, Source + (y2 * SrcWidth + x2 + 1) * nStride, Source + ((y2 + 1) * SrcWidth + x2) * nStride, Source + ((y2 + 1) * SrcWidth + x2 + 1) * nStride, nStride);
 					}
 				}
 			}
 		};
 
-		int CalculateMipMapPixelCount(int SrcWidth, int SrcHeight, int*pOutLevel = NULL, int nMaxLevel = 10)
+		int CalculateMipMapPixelCount(int SrcWidth, int SrcHeight, int* pOutLevel = NULL, int nMaxLevel = 10)
 		{
 			int nCount = SrcWidth * SrcHeight;
 			int i = 1;
@@ -89,7 +89,7 @@ namespace ParaEngine
 			return nCount;
 		}
 
-		void GenerateMipMap(byte * out, byte *Source, int SrcWidth, int SrcHeight, int nStride = 3, int nMaxLevel = 10)
+		void GenerateMipMap(byte* out, byte* Source, int SrcWidth, int SrcHeight, int nStride = 3, int nMaxLevel = 10)
 		{
 			int i = 1;
 			for (; i < nMaxLevel; ++i)
@@ -108,7 +108,7 @@ namespace ParaEngine
 }
 
 TextureEntity::TextureEntity(const AssetKey& key)
-	:AssetEntity(key), SurfaceType(StaticTexture), 	
+	:AssetEntity(key), SurfaceType(StaticTexture),
 	m_bAsyncLoad(true), m_bEmbeddedTexture(false),
 	m_pRawData(NULL), m_nRawDataSize(0),
 	m_pTextureInfo(NULL), m_nHitCount(0), m_dwColorKey(0)
@@ -154,7 +154,7 @@ bool TextureEntity::GiveupRawDataOwnership()
 	return true;
 }
 
-bool TextureEntity::LoadFromImage(ImageEntity * image, D3DFORMAT dwTextureFormat /*= D3DFMT_UNKNOWN*/, UINT nMipLevels, void** ppTexture)
+bool TextureEntity::LoadFromImage(ImageEntity* image, D3DFORMAT dwTextureFormat /*= D3DFMT_UNKNOWN*/, UINT nMipLevels, void** ppTexture)
 {
 	if (image)
 	{
@@ -179,13 +179,13 @@ bool TextureEntity::IsFlipY()
 	return false;
 }
 
-void TextureEntity::SetColorKey(Color colorKey) 
+void TextureEntity::SetColorKey(Color colorKey)
 {
 	m_dwColorKey = colorKey;
 }
 
-Color TextureEntity::GetColorKey() 
-{ 
+Color TextureEntity::GetColorKey()
+{
 	return m_dwColorKey;
 }
 
@@ -210,20 +210,20 @@ bool TextureEntity::IsSamplerStateBlocky()
 
 void TextureEntity::SetTextureInfo(const TextureEntity::TextureInfo& tInfo)
 {
-	if(SurfaceType!=TextureSequence)
+	if (SurfaceType != TextureSequence)
 	{
-		if(m_pTextureInfo==NULL)
+		if (m_pTextureInfo == NULL)
 		{
 			m_pTextureInfo = new TextureInfo(tInfo);
-			if(m_pTextureInfo==NULL)
+			if (m_pTextureInfo == NULL)
 				OUTPUT_LOG("failed creating texture info for %s\n", GetKey().c_str());
 		}
 		else
 		{
-			if(m_pTextureInfo->m_width != tInfo.m_width || m_pTextureInfo->m_height != tInfo.m_height)
+			if (m_pTextureInfo->m_width != tInfo.m_width || m_pTextureInfo->m_height != tInfo.m_height)
 			{
 				(*m_pTextureInfo) = tInfo;
-				if(m_bIsInitialized)
+				if (m_bIsInitialized)
 				{
 					// reset the render target to the new size
 					InvalidateDeviceObjects();
@@ -242,7 +242,7 @@ bool TextureEntity::IsLoaded()
 
 bool TextureEntity::IsPending()
 {
-	return IsLocked() || 
+	return IsLocked() ||
 		(GetTexture() == 0 && (GetState() != AssetEntity::ASSET_STATE_FAILED_TO_LOAD) && !(GetKey().empty()));
 }
 
@@ -271,44 +271,44 @@ void ParaEngine::TextureEntity::SwapImage(TextureEntity* other)
 
 void TextureEntity::SetTextureFPS(float FPS)
 {
-	if(SurfaceType==TextureSequence)
+	if (SurfaceType == TextureSequence)
 	{
 		// animated texture
 		AnimatedTextureInfo* pInfo = GetAnimatedTextureInfo();
-		if(pInfo!=0)
+		if (pInfo != 0)
 			pInfo->m_fFPS = FPS;
 	}
 }
 
 void TextureEntity::EnableTextureAutoAnimation(bool bEnable)
 {
-	if(SurfaceType==TextureSequence)
+	if (SurfaceType == TextureSequence)
 	{
 		// animated texture
 		AnimatedTextureInfo* pInfo = GetAnimatedTextureInfo();
-		if(pInfo!=0)
+		if (pInfo != 0)
 			pInfo->m_bAutoAnimation = bEnable;
 	}
 }
 
 void TextureEntity::SetCurrentFrameNumber(int nFrame)
 {
-	if(SurfaceType==TextureSequence)
+	if (SurfaceType == TextureSequence)
 	{
 		// animated texture
 		AnimatedTextureInfo* pInfo = GetAnimatedTextureInfo();
-		if(pInfo!=0)
+		if (pInfo != 0)
 			pInfo->m_nCurrentFrameIndex = nFrame;
 	}
 }
 
 int TextureEntity::GetCurrentFrameNumber()
 {
-	if(SurfaceType==TextureSequence)
+	if (SurfaceType == TextureSequence)
 	{
 		// animated texture
 		AnimatedTextureInfo* pInfo = GetAnimatedTextureInfo();
-		if(pInfo!=0)
+		if (pInfo != 0)
 			return pInfo->m_nCurrentFrameIndex;
 	}
 	return 0;
@@ -316,11 +316,11 @@ int TextureEntity::GetCurrentFrameNumber()
 
 int TextureEntity::GetFrameCount()
 {
-	if(SurfaceType==TextureSequence)
+	if (SurfaceType == TextureSequence)
 	{
 		// animated texture
 		AnimatedTextureInfo* pInfo = GetAnimatedTextureInfo();
-		if(pInfo!=0)
+		if (pInfo != 0)
 			return pInfo->m_nFrameCount;
 	}
 	return 0;
@@ -328,25 +328,25 @@ int TextureEntity::GetFrameCount()
 
 TextureEntity::AnimatedTextureInfo* TextureEntity::GetAnimatedTextureInfo()
 {
-	if(SurfaceType==TextureSequence)
+	if (SurfaceType == TextureSequence)
 	{
-		if(m_pAnimatedTextureInfo==NULL)
+		if (m_pAnimatedTextureInfo == NULL)
 		{
 			m_pAnimatedTextureInfo = new AnimatedTextureInfo();
 			const string& sTextureFileName = GetLocalFileName();
 			int nSize = (int)sTextureFileName.size();
 			int nTotalTextureSequence = -1;
-			if(nSize > 8)
+			if (nSize > 8)
 			{
-				if(sTextureFileName[nSize-8] == 'a')
+				if (sTextureFileName[nSize - 8] == 'a')
 				{
 					nTotalTextureSequence = 0;
-					for (int i=0;i<3;++i)
+					for (int i = 0; i < 3; ++i)
 					{
-						char s=sTextureFileName[nSize-5-i];
-						if(s>='0' && s<='9')
+						char s = sTextureFileName[nSize - 5 - i];
+						if (s >= '0' && s <= '9')
 						{
-							nTotalTextureSequence += (int)(s-'0')*(int)pow((float)10,i);
+							nTotalTextureSequence += (int)(s - '0') * (int)pow((float)10, i);
 						}
 						else
 						{
@@ -355,14 +355,14 @@ TextureEntity::AnimatedTextureInfo* TextureEntity::GetAnimatedTextureInfo()
 						}
 					}
 					m_pAnimatedTextureInfo->m_nFrameCount = nTotalTextureSequence;
-					
+
 					size_t nFrom = sTextureFileName.find("_fps");
-					if(nFrom!=-1)
+					if (nFrom != -1)
 					{
-						size_t nTo = sTextureFileName.find('_', nFrom+4);
-						if(nTo!=-1)	
+						size_t nTo = sTextureFileName.find('_', nFrom + 4);
+						if (nTo != -1)
 						{
-							string sFPS = sTextureFileName.substr(nFrom+4, nTo-nFrom-4);
+							string sFPS = sTextureFileName.substr(nFrom + 4, nTo - nFrom - 4);
 							try
 							{
 								m_pAnimatedTextureInfo->m_fFPS = (float)atof(sFPS.c_str());
@@ -394,7 +394,7 @@ HRESULT TextureEntity::InitDeviceObjects()
 
 void TextureEntity::Refresh(const char* sFilename, bool bLazyLoad)
 {
-	if(sFilename != NULL && sFilename[0] != '\0')
+	if (sFilename != NULL && sFilename[0] != '\0')
 	{
 		// set valid to true again, just in case the texture file is downloaded. 
 		SetLocalFileName(sFilename);
@@ -412,8 +412,8 @@ void TextureEntity::Refresh(const char* sFilename, bool bLazyLoad)
 	}
 
 	SAFE_DELETE(m_pTextureInfo);
-	
-	if(!bLazyLoad)
+
+	if (!bLazyLoad)
 		LoadAsset();
 }
 
@@ -485,7 +485,7 @@ bool TextureEntity::SaveToFile(const char* filename, D3DFORMAT dwFormat, int wid
 	return false;
 }
 
-void TextureEntity::LoadImage(char *sBufMemFile, int sizeBuf, int &width, int &height, byte ** ppBuffer, bool bAlpha)
+void TextureEntity::LoadImage(char* sBufMemFile, int sizeBuf, int& width, int& height, byte** ppBuffer, bool bAlpha)
 {
 #ifdef USE_DIRECTX_RENDERER
 	TextureEntityDirectX::LoadImage(sBufMemFile, sizeBuf, width, height, ppBuffer, bAlpha);
@@ -494,7 +494,7 @@ void TextureEntity::LoadImage(char *sBufMemFile, int sizeBuf, int &width, int &h
 #endif
 }
 
-TextureEntity* TextureEntity::CreateTexture(const uint8 * pTexels, int width, int height, int rowLength, int bytesPerPixel, uint32 nMipLevels /*= 0*/, D3DPOOL dwCreatePool/*= D3DPOOL_MANAGED*/, DWORD nFormat /*= 0*/)
+TextureEntity* TextureEntity::CreateTexture(const uint8* pTexels, int width, int height, int rowLength, int bytesPerPixel, uint32 nMipLevels /*= 0*/, D3DPOOL dwCreatePool/*= D3DPOOL_MANAGED*/, DWORD nFormat /*= 0*/)
 {
 #ifdef USE_DIRECTX_RENDERER
 	return TextureEntityDirectX::CreateTexture(pTexels, width, height, rowLength, bytesPerPixel, nMipLevels, dwCreatePool, nFormat);
@@ -516,7 +516,7 @@ TextureEntity* TextureEntity::CreateTexture(const char* pFileName, uint32 nMipLe
 #endif
 }
 
-bool TextureEntity::LoadImageOfFormatEx(const std::string& sTextureFileName, char *sBufMemFile, int sizeBuf, int &width, int &height, byte ** ppBuffer, int* pBytesPerPixel, int nFormat, ImageExtendInfo *info)
+bool TextureEntity::LoadImageOfFormatEx(const std::string& sTextureFileName, char* sBufMemFile, int sizeBuf, int& width, int& height, byte** ppBuffer, int* pBytesPerPixel, int nFormat, ImageExtendInfo* info)
 {
 #ifdef USE_DIRECTX_RENDERER
 	return TextureEntityDirectX::LoadImageOfFormatEx(sTextureFileName, sBufMemFile, sizeBuf, width, height, ppBuffer, pBytesPerPixel, nFormat, info);
@@ -525,7 +525,7 @@ bool TextureEntity::LoadImageOfFormatEx(const std::string& sTextureFileName, cha
 #endif
 }
 
-bool TextureEntity::LoadImageOfFormat(const std::string& sTextureFileName, char *sBufMemFile, int sizeBuf, int &width, int &height, byte ** ppBuffer, int* pBytesPerPixel, int nFormat)
+bool TextureEntity::LoadImageOfFormat(const std::string& sTextureFileName, char* sBufMemFile, int sizeBuf, int& width, int& height, byte** ppBuffer, int* pBytesPerPixel, int nFormat)
 {
 #ifdef USE_DIRECTX_RENDERER
 	return TextureEntityDirectX::LoadImageOfFormat(sTextureFileName, sBufMemFile, sizeBuf, width, height, ppBuffer, pBytesPerPixel, nFormat);
@@ -561,40 +561,17 @@ int TextureEntity::GetFormatByFileName(const std::string& filename)
 	return dwTextureFormat;
 }
 
-void TextureEntity::SetTextureFramePointer(int framePointer)
+bool ParaEngine::TextureEntity::LoadImageFromString(const char* pImageString)
 {
-	uint8_t * frames = (uint8_t*)framePointer;
-	int width = GetWidth();
-	int height = GetHeight();
-	if (m_bRABG) { //RGBA转成ARGB
-		static int i, j, r, g, b, a,index;
-		for (i = 0; i < width; i++) {
-			for (j = 0; j < height; j++) {
-				index = (j * 4 * width) + 4 * i;
-				g = frames[index + 0]; //绿色 g
-				//r = frames[index + 1]; //红色 r
-				a = frames[index + 2]; //透明度 a 
-				//b = frames[index + 3]; //蓝色 b
-
-				frames[index + 0] = a;
-				//frames[index + 1] = r;
-				frames[index + 2] = g;
-				//frames[index + 3] = b;
-			}
-		}
-
-	}
-	this->LoadUint8Buffer(frames, width, height, height, 4);
+	return false;
 }
 
 int TextureEntity::InstallFields(CAttributeClass* pClass, bool bOverride)
 {
 	AssetEntity::InstallFields(pClass, bOverride);
 
-	pClass->AddField("IsRGBA", FieldType_Bool, (void*)SetIsRGBA_s, (void*)0, NULL, NULL, bOverride);
-	pClass->AddField("TextureFramePointer", FieldType_Int, (void*)SetTextureFramePointer_s, (void*)0, NULL, NULL, bOverride);
-#ifdef USE_DIRECTX_RENDERER
-#else
-#endif
+	pClass->AddField("HitCount", FieldType_Int, (void*)SetHitCount_s, (void*)GetHitCount_s, NULL, NULL, bOverride);
+	pClass->AddField("LoadImageFromString", FieldType_String, (void*)LoadImageFromString_s, NULL, NULL, NULL, bOverride);
+
 	return S_OK;
 }

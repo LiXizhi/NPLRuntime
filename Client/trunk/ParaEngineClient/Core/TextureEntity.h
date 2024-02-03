@@ -19,7 +19,7 @@ namespace ParaEngine
 
 
 
-	/** 
+	/**
 	Which DXT Compression to Use?
 	Obviously, there are some trade-offs between the different formats which make them better or worse for different types of images. Some general rules of thumb for good use of DXT textures are as follows:
 	If your image has no alpha, use DXT1 compression. Using DXT3/5 will double your image size over DXT1 and not gain anything.
@@ -46,12 +46,12 @@ namespace ParaEngine
 		* disabling this will reduce memory usage by 6 times, but the rendered image will not be as sharp. since DXT5 or DXT3 compression is used instead. */
 		static bool g_bEnable32bitsTexture;
 
-		/* get image format by filename 
+		/* get image format by filename
 		* @return : -1 unknown, 24 dds, 13 png, 2 jpg, 17 tga
 		*/
 		static int GetFormatByFileName(const std::string& filename);
 	public:
-		virtual AssetEntity::AssetType GetType(){ return AssetEntity::texture; };
+		virtual AssetEntity::AssetType GetType() { return AssetEntity::texture; };
 
 		enum _SurfaceType
 		{
@@ -78,6 +78,8 @@ namespace ParaEngine
 			TextureSurface,
 			/// depth stencil surface 
 			DEPTHSTENCIL,
+			/// dynamic texture, such as video textures, etc.
+			DynamicTexture,
 		} SurfaceType;
 
 		/** basic texture information */
@@ -85,35 +87,35 @@ namespace ParaEngine
 		{
 			static const TextureInfo Empty;
 			int m_width, m_height;
-			
-			enum TEXTURE_FORMAT{
+
+			enum TEXTURE_FORMAT {
 				FMT_A8R8G8B8,
 				FMT_ALPHA8,
 				FMT_X8R8G8B8,
 				FMT_UNKNOWN
 			}m_format;
-			
-			enum SUB_TYPE{
+
+			enum SUB_TYPE {
 				TYPE_SCREENSIZE,
 				TYPE_UNKNOWN
 			}m_subtype;
-			
+
 		public:
 			TextureInfo(int width, int height, TEXTURE_FORMAT format, SUB_TYPE subtype)
-				: m_width(width), m_height(height), m_format(format), m_subtype(subtype){};
+				: m_width(width), m_height(height), m_format(format), m_subtype(subtype) {};
 			TextureInfo()
-				: m_width(0), m_height(0), m_format(FMT_UNKNOWN), m_subtype(TYPE_UNKNOWN){};
+				: m_width(0), m_height(0), m_format(FMT_UNKNOWN), m_subtype(TYPE_UNKNOWN) {};
 			TextureInfo(const TextureInfo& t)
-				: m_width(t.m_width), m_height(t.m_height), m_format(t.m_format), m_subtype(t.m_subtype){};
-			virtual ~TextureInfo(){};
-			
+				: m_width(t.m_width), m_height(t.m_height), m_format(t.m_format), m_subtype(t.m_subtype) {};
+			virtual ~TextureInfo() {};
+
 			TEXTURE_FORMAT GetFormat() const { return m_format; }
 			int GetHeight() const { return m_height; }
 			int GetWidth() const { return m_width; }
 		};
 
 		/** for animated texture*/
-		struct AnimatedTextureInfo : TextureInfo{
+		struct AnimatedTextureInfo : TextureInfo {
 			/// default value is 15
 			float  m_fFPS;
 			int m_nFrameCount;
@@ -121,8 +123,8 @@ namespace ParaEngine
 			/// if true, the animation texture will be automatically animated.
 			bool m_bAutoAnimation;
 		public:
-			AnimatedTextureInfo() :m_fFPS(15.f), m_nFrameCount(0), m_nCurrentFrameIndex(0), m_bAutoAnimation(true){};
-			virtual ~AnimatedTextureInfo(){};
+			AnimatedTextureInfo() :m_fFPS(15.f), m_nFrameCount(0), m_nCurrentFrameIndex(0), m_bAutoAnimation(true) {};
+			virtual ~AnimatedTextureInfo() {};
 		};
 
 		/// it may be different struct for different surface type, but all must inherit from TextureInfo virtual base
@@ -169,12 +171,12 @@ namespace ParaEngine
 		*/
 		virtual HRESULT LoadFromMemory(const char* buffer, DWORD nFileSize, UINT nMipLevels, D3DFORMAT dwTextureFormat = D3DFMT_UNKNOWN, void** ppTexture = NULL) { return E_FAIL; };
 
-		
+
 		/**  Initializes a texture from an ImageEntity object.
 		* NOTE: It will not convert the pvr image file.
-		* @param dwTextureFormat: if 0, we will use the image file format. 
+		* @param dwTextureFormat: if 0, we will use the image file format.
 		*/
-		virtual bool LoadFromImage(ImageEntity * image, D3DFORMAT dwTextureFormat = D3DFMT_UNKNOWN, UINT nMipLevels = 0, void** ppTexture = NULL);
+		virtual bool LoadFromImage(ImageEntity* image, D3DFORMAT dwTextureFormat = D3DFMT_UNKNOWN, UINT nMipLevels = 0, void** ppTexture = NULL);
 
 
 		/** this function is mostly used internally.
@@ -195,7 +197,7 @@ namespace ParaEngine
 
 		// make this texture render target. 
 		virtual bool SetRenderTarget(int nIndex = 0) { return false; };
-		
+
 		/** whether we will use blocky or non-blocky (anti-aliased) texture */
 		virtual void SetSamplerStateBlocky(bool bIsBlocky);
 		virtual bool IsSamplerStateBlocky();
@@ -254,18 +256,18 @@ namespace ParaEngine
 		virtual int32 GetWidth();
 		virtual int32 GetHeight();
 
-		/** in most cases this is false, where the image origin is at left, top. 
-		* however, in opengl frame buffer, the frame buffer's origin is at left, bottom. 
+		/** in most cases this is false, where the image origin is at left, top.
+		* however, in opengl frame buffer, the frame buffer's origin is at left, bottom.
 		*/
 		virtual bool IsFlipY();
 
 		/* this value will be increased by one every time GetTexture() or GetSurface() is called.
 		* normally we never needs to care about this. Except in some rare cases, such as the mini scene graph needs to know if its being used by others in the last frame. */
-		int GetHitCount(){ return m_nHitCount; }
+		int GetHitCount() { return m_nHitCount; }
 
 		/* this value will be increased by one every time GetTexture() or GetSurface() is called.
 		* normally we never needs to care about this. Except in some rare cases, such as the mini scene graph needs to know if its being used by others in the last frame. */
-		void SetHitCount(int nHitCount){ m_nHitCount = nHitCount; }
+		void SetHitCount(int nHitCount) { m_nHitCount = nHitCount; }
 
 		/** make the current texture an invalid one. It will release all resources and change the texture type to static and reference an empty texture path.
 		After calling this function, one will no longer intend to use this entity any more. and other object reference this texture will render a blank image. */
@@ -310,7 +312,7 @@ namespace ParaEngine
 		* @return frame number is returned
 		*/
 		int GetFrameCount();
-		
+
 		/**
 		* save any texture to a different texture file format and save with full mipmapping to disk.
 		*/
@@ -324,27 +326,34 @@ namespace ParaEngine
 		* @param ppBuffer: buffer containing the read data. it may be 4 bytes per pixel or 3 bytes per pixel.
 		*		this function will allocate buffer using new [] operator, the caller is responsible to delete it using delete [] operator.
 		* @param bAlpha: if (bAlpha) D3DFMT_A8R8G8B8 4 bytes per pixel else D3DFMT_R8G8B8 3 bytes per pixel. */
-		static void LoadImage(char *sBufMemFile, int sizeBuf, int &width, int &height, byte ** ppBuffer, bool bAlpha);
+		static void LoadImage(char* sBufMemFile, int sizeBuf, int& width, int& height, byte** ppBuffer, bool bAlpha);
 		/** this function uses FreeImage lib and support more formats. and width, height can be any number instead of square of 2.
 		* @param sTextureFileName: only used for file format deduction.
 		* @param nFormat: default to 32bits ARGB. PixelFormat24bppRGB, PixelFormat16bppGrayScale, PixelFormat8bppIndexed, PixelFormat32bppARGB, etc
 		*/
-		static bool LoadImageOfFormat(const std::string& sTextureFileName, char *sBufMemFile, int sizeBuf, int &width, int &height, byte ** ppBuffer, int* pBytesPerPixel = NULL, int nFormat = -1);
-		static bool LoadImageOfFormatEx(const std::string& sTextureFileName, char *sBufMemFile, int sizeBuf, int &width, int &height, byte ** ppBuffer, int* pBytesPerPixel = NULL, int nFormat = -1, ImageExtendInfo *info = nullptr);
+		static bool LoadImageOfFormat(const std::string& sTextureFileName, char* sBufMemFile, int sizeBuf, int& width, int& height, byte** ppBuffer, int* pBytesPerPixel = NULL, int nFormat = -1);
+		static bool LoadImageOfFormatEx(const std::string& sTextureFileName, char* sBufMemFile, int sizeBuf, int& width, int& height, byte** ppBuffer, int* pBytesPerPixel = NULL, int nFormat = -1, ImageExtendInfo* info = nullptr);
 
 		/** create a texture entity from memory buffer. */
-		static TextureEntity* CreateTexture(const uint8 * pTexels, int width, int height, int rowLength, int bytesPerPixel, uint32 nMipLevels = 0, D3DPOOL dwCreatePool= D3DPOOL_MANAGED, DWORD nFormat = 0);
+		static TextureEntity* CreateTexture(const uint8* pTexels, int width, int height, int rowLength, int bytesPerPixel, uint32 nMipLevels = 0, D3DPOOL dwCreatePool = D3DPOOL_MANAGED, DWORD nFormat = 0);
 		/** create a texture entity from file path. */
 		static TextureEntity* CreateTexture(const char* pFileName, uint32 nMipLevels = 0, D3DPOOL dwCreatePool = D3DPOOL_MANAGED);
+
+		/** calling this function will change the texture to DynamicTexture. */
+		virtual TextureEntity* LoadUint8Buffer(const uint8* pTexels, int width, int height, int rowLength, int bytesPerPixel, uint32 nMipLevels = 0, D3DPOOL dwCreatePool = D3DPOOL_DEFAULT, DWORD nFormat = 0);
+
+		/** calling this function will change the texture to DynamicTexture.
+		* @param pImageString: long command string like
+		* "paintrect fromX,fromY,toX,toY,data:image/png;base64,xxxxx"
+		*/
+		virtual bool LoadImageFromString(const char* pImageString);
+
 	public:
-		virtual TextureEntity* LoadUint8Buffer(const uint8 * pTexels, int width, int height, int rowLength, int bytesPerPixel, uint32 nMipLevels = 0, D3DPOOL dwCreatePool = D3DPOOL_DEFAULT, DWORD nFormat = 0) { return NULL; }
 		virtual int InstallFields(CAttributeClass* pClass, bool bOverride);
-		ATTRIBUTE_METHOD1(TextureEntity, SetIsRGBA_s, bool) { cls->SetIsRGBA(p1); return S_OK; }
-		ATTRIBUTE_METHOD1(TextureEntity, SetTextureFramePointer_s, int) { cls->SetTextureFramePointer(p1); return S_OK; }
-	protected:
-		bool m_bRABG = false;
-		void SetTextureFramePointer(int framePointer);
-		void SetIsRGBA(bool isRGBA) { m_bRABG = isRGBA; }
+		
+		ATTRIBUTE_METHOD1(TextureEntity, SetHitCount_s, int) { cls->SetHitCount(p1); return S_OK; }
+		ATTRIBUTE_METHOD1(TextureEntity, GetHitCount_s, int*) { *p1 = cls->GetHitCount(); return S_OK; }
+		ATTRIBUTE_METHOD1(TextureEntity, LoadImageFromString_s, char*) { cls->LoadImageFromString(p1); return S_OK; }
 	};
 }
 
@@ -354,7 +363,7 @@ namespace ParaEngine
 #elif defined(USE_OPENGL_RENDERER)
 #include "TextureEntityOpenGL.h"
 #else
-namespace ParaEngine{
+namespace ParaEngine {
 	typedef AssetManager<TextureEntity, TextureEntity> TextureAssetManager;
 }
 #endif

@@ -49,12 +49,12 @@ namespace ParaEngine
 
 
 TextureEntityDirectX::TextureEntityDirectX(const AssetKey& key)
-:m_pTexture(NULL), TextureEntity(key), m_dynamicTexture(NULL)
+:m_pTexture(NULL), TextureEntity(key)
 {
 }
 
 TextureEntityDirectX::TextureEntityDirectX()
-: m_pTexture(NULL), TextureEntity(), m_dynamicTexture(NULL)
+: m_pTexture(NULL), TextureEntity()
 {
 }
 
@@ -775,7 +775,7 @@ HRESULT TextureEntityDirectX::RestoreDeviceObjects()
 
 HRESULT TextureEntityDirectX::InvalidateDeviceObjects()
 {
-	if(SurfaceType == TextureEntityDirectX::RenderTarget || (SurfaceType == TextureEntityDirectX::DEPTHSTENCIL))
+	if(SurfaceType == TextureEntityDirectX::RenderTarget || (SurfaceType == TextureEntityDirectX::DEPTHSTENCIL) || SurfaceType == TextureEntityDirectX::DynamicTexture)
 	{
 		SAFE_RELEASE(m_pTexture);
 		m_bIsInitialized = false;
@@ -1370,39 +1370,51 @@ TextureEntity* TextureEntityDirectX::LoadUint8Buffer(const uint8 * pTexels, int 
 
 	if (!pTexels)
 		return 0;
+	
+	if (SurfaceType != DynamicTexture)
+	{
+		UnloadAsset();
+		SurfaceType = DynamicTexture;
+	}
+	if (m_pTextureInfo && (m_pTextureInfo->m_width != width || m_pTextureInfo->m_height != height))
+	{
+		UnloadAsset();
+		m_pTextureInfo->m_width = -1;
+		m_pTextureInfo->m_height = -1;
+	}
 
 	if (bytesPerPixel == 4)
 	{
-		if (m_dynamicTexture == NULL) {
-			HRESULT hr = D3DXCreateTexture(pD3d, width, height, 0, D3DUSAGE_DYNAMIC, D3DFMT_A8R8G8B8, dwCreatePool, &m_dynamicTexture);
+		if (m_pTexture == NULL) {
+			HRESULT hr = D3DXCreateTexture(pD3d, width, height, 0, D3DUSAGE_DYNAMIC, D3DFMT_A8R8G8B8, dwCreatePool, &m_pTexture);
 			if (FAILED(hr))
 			{
 				OUTPUT_LOG("failed creating terrain texture\n");
 			}
 		}
-		if (m_dynamicTexture != NULL)
+		if (m_pTexture != NULL)
 		{
 			D3DLOCKED_RECT lr;
-			m_dynamicTexture->LockRect(0, &lr, NULL, 0);
+			m_pTexture->LockRect(0, &lr, NULL, 0);
 			memcpy(lr.pBits, pTexels, width*height * 4);
-			m_dynamicTexture->UnlockRect(0);
+			m_pTexture->UnlockRect(0);
 		}
 	}
 	else if (bytesPerPixel == 3)
 	{
-		if (m_dynamicTexture == NULL) {
+		if (m_pTexture == NULL) {
 			// please note, we will create D3DFMT_A8R8G8B8 instead of , D3DFMT_R8G8B8, since our device will use D3DFMT_A8R8G8B8 only
-			HRESULT hr = D3DXCreateTexture(pD3d, width, height, 0, D3DUSAGE_AUTOGENMIPMAP, D3DFMT_A8R8G8B8, dwCreatePool, &m_dynamicTexture);
+			HRESULT hr = D3DXCreateTexture(pD3d, width, height, 0, D3DUSAGE_AUTOGENMIPMAP, D3DFMT_A8R8G8B8, dwCreatePool, &m_pTexture);
 			if (FAILED(hr))
 			{
 				OUTPUT_LOG("failed creating terrain texture\n");
 			}
 		}
 		
-		if (m_dynamicTexture != NULL)
+		if (m_pTexture != NULL)
 		{
 			D3DLOCKED_RECT lockedRect;
-			m_dynamicTexture->LockRect(0, &lockedRect, NULL, 0);
+			m_pTexture->LockRect(0, &lockedRect, NULL, 0);
 
 			//memcpy(lockedRect.pBits, pTexels, width*height*3);
 			uint8 *pp = (uint8*)lockedRect.pBits;
@@ -1420,7 +1432,7 @@ TextureEntity* TextureEntityDirectX::LoadUint8Buffer(const uint8 * pTexels, int 
 				}
 				index += lockedRect.Pitch - (width * 4);
 			}
-			m_dynamicTexture->UnlockRect(0);
+			m_pTexture->UnlockRect(0);
 		}
 	}
 	else if (bytesPerPixel == 1)
@@ -1451,45 +1463,45 @@ TextureEntity* TextureEntityDirectX::LoadUint8Buffer(const uint8 * pTexels, int 
 
 		if (nSupportAlphaTexture == 1)
 		{
-			if (m_dynamicTexture == NULL) {
+			if (m_pTexture == NULL) {
 				// D3DFMT_A8 is supported
-				HRESULT hr = D3DXCreateTexture(pD3d, width, height, 0, D3DUSAGE_AUTOGENMIPMAP, D3DFMT_A8, dwCreatePool, &m_dynamicTexture);
+				HRESULT hr = D3DXCreateTexture(pD3d, width, height, 0, D3DUSAGE_AUTOGENMIPMAP, D3DFMT_A8, dwCreatePool, &m_pTexture);
 				if (FAILED(hr))
 				{
 					OUTPUT_LOG("failed creating alpha terrain texture\n");
 				}
 			}
 			
-			if (m_dynamicTexture != NULL)
+			if (m_pTexture != NULL)
 			{
 				D3DLOCKED_RECT lr;
-				m_dynamicTexture->LockRect(0, &lr, NULL, 0);
+				m_pTexture->LockRect(0, &lr, NULL, 0);
 				memcpy(lr.pBits, pTexels, width*height * 1);
-				m_dynamicTexture->UnlockRect(0);
+				m_pTexture->UnlockRect(0);
 			}
 		}
 		else if (nSupportAlphaTexture == 0)
 		{
-			if (m_dynamicTexture == NULL)
+			if (m_pTexture == NULL)
 			{
 				// D3DFMT_A8 is not supported, try D3DFMT_A8R8G8B8
-				HRESULT hr = D3DXCreateTexture(pD3d, width, height, 0, D3DUSAGE_AUTOGENMIPMAP, D3DFMT_A8R8G8B8, dwCreatePool, &m_dynamicTexture);
+				HRESULT hr = D3DXCreateTexture(pD3d, width, height, 0, D3DUSAGE_AUTOGENMIPMAP, D3DFMT_A8R8G8B8, dwCreatePool, &m_pTexture);
 				if (FAILED(hr))
 				{
 					OUTPUT_LOG("failed creating alpha terrain texture\n");
 				}
 			}
-			if (m_dynamicTexture != NULL)
+			if (m_pTexture != NULL)
 			{
 				D3DLOCKED_RECT lr;
-				m_dynamicTexture->LockRect(0, &lr, NULL, 0);
+				m_pTexture->LockRect(0, &lr, NULL, 0);
 				int nSize = width * height;
 				DWORD* pData = (DWORD*)(lr.pBits);
 				for (int x = 0; x < nSize; ++x)
 				{
 					pData[x] = (pTexels[x]) << 24;
 				}
-				m_dynamicTexture->UnlockRect(0);
+				m_pTexture->UnlockRect(0);
 			}
 		}
 	}
@@ -1497,8 +1509,14 @@ TextureEntity* TextureEntityDirectX::LoadUint8Buffer(const uint8 * pTexels, int 
 	{
 		OUTPUT_LOG("error: Unsupported texture format (bits per pixel must be 8,24, or 32)\n");
 	}
-	if (m_pTexture != m_dynamicTexture) {
-		m_pTexture = m_dynamicTexture;
+	if (m_pTexture) 
+	{
+		m_bIsInitialized = true;
+		m_bIsValid = true;
+		if (m_pTextureInfo == NULL)
+			m_pTextureInfo = new TextureInfo();
+		m_pTextureInfo->m_width = width;
+		m_pTextureInfo->m_height = height;
 	}
 	return this;
 }
@@ -1665,6 +1683,151 @@ HRESULT TextureEntityDirectX::LoadFromMemory(const char* buffer, DWORD nFileSize
 	return hr;
 }
 
+bool ParaEngine::TextureEntityDirectX::LoadImageFromString(const char* cmd)
+{
+	static std::string curCmd;
+	static int32 curLevel = 1;
+	static int32 curColor = 0;
+	static int32 offsetX = 0, offsetY = 0, offsetZ = 0;
+	auto parseNextCmd = [&]() {
+		const char* pos = cmd;
+		while (*pos != '\0' && StringHelper::isalphaLowerCase(*pos))
+			pos++;
+		curCmd.assign(cmd, pos - cmd);
+		if (*pos != '\0')
+			pos++;
+		cmd = pos;
+	};
+	// "1", "-1", "#ff0000" are all valid values. ' ', ':', ';' are all valid separaters.
+	auto parseInteger = [&]() {
+		int n = 0;
+		const char* pos = cmd;
+		bool isPositive = true;
+		if (!StringHelper::isdigit(*pos))
+		{
+			if (*pos == '-') {
+				pos++;
+				isPositive = false;
+			}
+			else if (*pos == '#') {
+				pos++;
+				// parse value in hex
+				char c;
+				while ((c = *pos) != '\0' && ((c >= 'a' && c <= 'f') || ((c >= '0') && (c <= '9')))) {
+					int hex = c - 'a';
+					n = n << 4;
+					n += (hex >= 0) ? (hex + 10) : (c - '0');
+					pos++;
+				}
+				if (c != '\0' && c != '#')
+					pos++;
+				cmd = pos;
+				return n;
+			}
+		}
+		char c;
+		while ((c = *pos) != '\0' && StringHelper::isdigit(c)) {
+			n = n * 10 + (c - '0');
+			pos++;
+		}
+		if (c != '\0' && c != '#')
+			pos++;
+		cmd = pos;
+		return isPositive ? n : -n;
+	};
+	while (*cmd != '\0')
+	{
+		if (StringHelper::isalphaLowerCase(*cmd))
+			parseNextCmd();
+		if (curCmd == "paintrect") {
+			int fromX = parseInteger();
+			int fromY = parseInteger();
+			int toX = parseInteger();
+			int toY = parseInteger();
+			int nTextureWidth = std::max(fromX+1, toX+1);
+			int nTextureHeight = std::max(fromY+1, toY+1);
 
+			if (*cmd == 'd') {
+				std::string dataFormat;
+				// "data:image/png;base64,"
+				dataFormat.assign(cmd, 22);
+				cmd += 22;
+				if (dataFormat == "data:image/png;base64,")
+					dataFormat = "temp.png";
+				else if (dataFormat == "data:image/jpg;base64,")
+					dataFormat = "temp.jpg";
+				else
+					dataFormat = "";
+				if (!dataFormat.empty())
+				{
+					std::string buffer = StringHelper::unbase64(cmd, -1);
+					int texWidth, texHeight, nBytesPerPixel;
+					unsigned char* imageData = NULL;
+					if (TextureEntity::LoadImageOfFormat(dataFormat, (char*)(buffer.c_str()), (int)buffer.size(), texWidth, texHeight, &imageData, &nBytesPerPixel))
+					{
+						nTextureWidth = std::max(nTextureWidth, texWidth);
+						nTextureHeight = std::max(nTextureHeight, texHeight);
+						if (nBytesPerPixel == 4)
+						{
+							DWORD* pData = (DWORD*)imageData;
+							uint32 x = fromX, y = fromY;
+
+							if (SurfaceType != DynamicTexture)
+							{
+								UnloadAsset();
+								SurfaceType = DynamicTexture;
+							}
+							if (m_pTextureInfo && (m_pTextureInfo->m_width != nTextureWidth || m_pTextureInfo->m_height != nTextureHeight))
+							{
+								UnloadAsset();
+								m_pTextureInfo->m_width = -1;
+								m_pTextureInfo->m_height = -1;
+							}
+							if (!m_pTexture)
+							{
+								HRESULT hr = D3DXCreateTexture(CGlobals::GetRenderDevice(), nTextureWidth, nTextureHeight, 0, D3DUSAGE_DYNAMIC, D3DFMT_A8R8G8B8, D3DPOOL_DEFAULT, &m_pTexture);
+							}
+							if (m_pTexture)
+							{
+								D3DLOCKED_RECT lockedRect;
+								if (SUCCEEDED(m_pTexture->LockRect(0, &lockedRect, NULL, D3DLOCK_DISCARD)))
+								{
+									DWORD* pDest = (DWORD*)lockedRect.pBits;
+									while (true) {
+										x = fromX;
+										int srcX = 0;
+										while (true) {
+											pDest[x + y * nTextureWidth] = *(pData + srcX);
+											if (x == toX)
+												break;
+											x += (fromX < toX) ? 1 : -1;
+											srcX++;
+										}
+										pData += texWidth;
+										if (y == toY)
+											break;
+										y += (fromY < toY) ? 1 : -1;
+									}
+									m_pTexture->UnlockRect(0);
+								}
+								m_bIsInitialized = true;
+								m_bIsValid = true;
+								if(m_pTextureInfo == NULL)
+									m_pTextureInfo = new TextureInfo();
+								m_pTextureInfo->m_width = nTextureWidth;
+								m_pTextureInfo->m_height = nTextureHeight;
+							}
+						}
+						SAFE_DELETE_ARRAY(imageData);
+					}
+				}
+			}
+		}
+		else {
+			break;
+		}
+	}
+	return false;
+}
 
 #endif
