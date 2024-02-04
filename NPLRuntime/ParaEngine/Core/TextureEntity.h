@@ -355,6 +355,10 @@ namespace ParaEngine
 
 		int GetSurfaceType() const;
 		void SetSurfaceType(int nType);
+
+		/** only dynamic texture support this function. */
+		virtual bool GetImageData(void** ppData, int* pSize, int* pWidth, int* pHeight, int* pBytesPerPixel);
+
 	public:
 		virtual int InstallFields(CAttributeClass* pClass, bool bOverride);
 

@@ -1101,4 +1101,25 @@ bool ParaEngine::TextureEntityOpenGL::LoadImageFromString(const char* cmd)
 	}
 	return false;
 }
+
+bool ParaEngine::TextureEntityOpenGL::GetImageData(void** ppData, int* pSize, int* pWidth, int* pHeight, int* pBytesPerPixel)
+{
+	if (SurfaceType == DynamicTexture && m_texture && m_pTextureInfo)
+	{
+		int width = m_pTextureInfo->GetWidth();
+		int height = m_pTextureInfo->GetHeight();
+		*pWidth = width;
+		*pHeight = height;
+		*pBytesPerPixel = 4;
+		*pSize = width * height * 4;
+		uint8* pData = new uint8[*pSize];
+		
+		GL::bindTexture2D(m_texture->getName());
+		glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_UNSIGNED_BYTE, pData);
+		PE_CHECK_GL_ERROR_DEBUG();
+		*ppData = pData;
+		return true;
+	}
+	return false;
+}
 #endif

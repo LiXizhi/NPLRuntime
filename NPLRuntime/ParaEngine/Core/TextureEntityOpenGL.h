@@ -90,6 +90,9 @@ namespace ParaEngine
 		*/
 		virtual bool LoadImageFromString(const char* pImageString);
 
+		/** only dynamic texture support this function. */
+		virtual bool GetImageData(void** ppData, int* pSize, int* pWidth, int* pHeight, int* pBytesPerPixel);
+
 	protected:
 		friend class CRenderTarget;
 		union{
