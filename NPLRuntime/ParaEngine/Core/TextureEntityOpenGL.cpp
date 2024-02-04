@@ -12,6 +12,7 @@
 #include "ImageEntity.h"
 #include "TextureEntity.h"
 #include "OpenGLWrapper/GLImage.h"
+#include "StringHelper.h"
 #include "os_calls.h"
 
 #include "ParaScriptingIO.h"
@@ -647,15 +648,8 @@ bool ParaEngine::TextureEntityOpenGL::LoadImageOfFormat(const std::string& sText
 	if (nFormat >= 0)
 		return false;
 
-	CParaFile file;
-	if (!file.OpenFile(sTextureFileName.c_str()))
-	{
-		OUTPUT_LOG("warning:unable to open file when doing GetImageInfo, %s\n", sTextureFileName.c_str());
-		return false;
-	}
-
 	ParaImage img;
-	if (!img.initWithImageData((unsigned char*)file.getBuffer(), file.getSize()))
+	if (!img.initWithImageData((unsigned char*)sBufMemFile, sizeBuf))
 	{
 		OUTPUT_LOG("warning:unable to load image when doing GetImageInfo, %s\n", sTextureFileName.c_str());
 		return false;
@@ -962,4 +956,149 @@ bool ParaEngine::TextureEntityOpenGL::IsFlipY()
 	return SurfaceType == RenderTarget;
 }
 
+bool ParaEngine::TextureEntityOpenGL::LoadImageFromString(const char* cmd)
+{
+	static std::string curCmd;
+	static int32 curLevel = 1;
+	static int32 curColor = 0;
+	static int32 offsetX = 0, offsetY = 0, offsetZ = 0;
+	auto parseNextCmd = [&]() {
+		const char* pos = cmd;
+		while (*pos != '\0' && StringHelper::isalphaLowerCase(*pos))
+			pos++;
+		curCmd.assign(cmd, pos - cmd);
+		if (*pos != '\0')
+			pos++;
+		cmd = pos;
+	};
+	// "1", "-1", "#ff0000" are all valid values. ' ', ':', ';' are all valid separaters.
+	auto parseInteger = [&]() {
+		int n = 0;
+		const char* pos = cmd;
+		bool isPositive = true;
+		if (!StringHelper::isdigit(*pos))
+		{
+			if (*pos == '-') {
+				pos++;
+				isPositive = false;
+			}
+			else if (*pos == '#') {
+				pos++;
+				// parse value in hex
+				char c;
+				while ((c = *pos) != '\0' && ((c >= 'a' && c <= 'f') || ((c >= '0') && (c <= '9')))) {
+					int hex = c - 'a';
+					n = n << 4;
+					n += (hex >= 0) ? (hex + 10) : (c - '0');
+					pos++;
+				}
+				if (c != '\0' && c != '#')
+					pos++;
+				cmd = pos;
+				return n;
+			}
+		}
+		char c;
+		while ((c = *pos) != '\0' && StringHelper::isdigit(c)) {
+			n = n * 10 + (c - '0');
+			pos++;
+		}
+		if (c != '\0' && c != '#')
+			pos++;
+		cmd = pos;
+		return isPositive ? n : -n;
+	};
+	while (*cmd != '\0')
+	{
+		if (StringHelper::isalphaLowerCase(*cmd))
+			parseNextCmd();
+		if (curCmd == "paintrect") {
+			int fromX = parseInteger();
+			int fromY = parseInteger();
+			int toX = parseInteger();
+			int toY = parseInteger();
+			int nTextureWidth = std::max(fromX + 1, toX + 1);
+			int nTextureHeight = std::max(fromY + 1, toY + 1);
+
+			if (*cmd == 'd') {
+				std::string dataFormat;
+				// "data:image/png;base64,"
+				dataFormat.assign(cmd, 22);
+				cmd += 22;
+				if (dataFormat == "data:image/png;base64,")
+					dataFormat = "temp.png";
+				else if (dataFormat == "data:image/jpg;base64,")
+					dataFormat = "temp.jpg";
+				else
+					dataFormat = "";
+				if (!dataFormat.empty())
+				{
+					std::string buffer = StringHelper::unbase64(cmd, -1);
+					int texWidth, texHeight, nBytesPerPixel;
+					unsigned char* imageData = NULL;
+					if (TextureEntity::LoadImageOfFormat(dataFormat, (char*)(buffer.c_str()), (int)buffer.size(), texWidth, texHeight, &imageData, &nBytesPerPixel))
+					{
+						nTextureWidth = std::max(nTextureWidth, texWidth);
+						nTextureHeight = std::max(nTextureHeight, texHeight);
+						if (nBytesPerPixel == 4)
+						{
+							DWORD* pData = (DWORD*)imageData;
+							uint32 x = fromX, y = fromY;
+
+							if (SurfaceType != DynamicTexture)
+							{
+								UnloadAsset();
+								SurfaceType = DynamicTexture;
+							}
+							if (m_pTextureInfo && (m_pTextureInfo->m_width != nTextureWidth || m_pTextureInfo->m_height != nTextureHeight))
+							{
+								UnloadAsset();
+								m_pTextureInfo->m_width = -1;
+								m_pTextureInfo->m_height = -1;
+							}
+							DWORD* pDest = new DWORD[nTextureWidth * nTextureHeight];
+							while (true) {
+								x = fromX;
+								int srcX = 0;
+								while (true) {
+									pDest[x + y * nTextureWidth] = *(pData + srcX);
+									if (x == toX)
+										break;
+									x += (fromX < toX) ? 1 : -1;
+									srcX++;
+								}
+								pData += texWidth;
+								if (y == toY)
+									break;
+								y += (fromY < toY) ? 1 : -1;
+							}
+							if (!m_texture)
+							{
+								// for now, we do not generate mipmap.
+								m_texture = new (std::nothrow) GLTexture2D();
+								m_texture->initWithData(pDest, nTextureWidth * nTextureHeight * 4, PixelFormat::A8R8G8B8, nTextureWidth, nTextureHeight, Size((float)nTextureWidth, (float)nTextureHeight));
+							}
+							else
+							{
+								m_texture->updateWithData(pDest, 0, 0, nTextureWidth, nTextureHeight);
+							}
+							SAFE_DELETE_ARRAY(pDest);
+							m_bIsInitialized = true;
+							m_bIsValid = true;
+							if (m_pTextureInfo == NULL)
+								m_pTextureInfo = new TextureInfo();
+							m_pTextureInfo->m_width = nTextureWidth;
+							m_pTextureInfo->m_height = nTextureHeight;
+						}
+						SAFE_DELETE_ARRAY(imageData);
+					}
+				}
+			}
+		}
+		else {
+			break;
+		}
+	}
+	return false;
+}
 #endif
