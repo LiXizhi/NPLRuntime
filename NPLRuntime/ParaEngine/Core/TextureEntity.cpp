@@ -537,12 +537,32 @@ bool ParaEngine::TextureEntity::LoadImageFromString(const char* pImageString)
 	return false;
 }
 
+int ParaEngine::TextureEntity::GetSurfaceType() const
+{
+	return SurfaceType;
+}
+
+void ParaEngine::TextureEntity::SetSurfaceType(int nType)
+{
+	if (SurfaceType != nType)
+	{
+		SurfaceType = (_SurfaceType)nType;
+		m_bIsValid = true;
+		UnloadAsset();
+	}
+}
+
 int TextureEntity::InstallFields(CAttributeClass* pClass, bool bOverride)
 {
 	AssetEntity::InstallFields(pClass, bOverride);
 
 	pClass->AddField("HitCount", FieldType_Int, (void*)SetHitCount_s, (void*)GetHitCount_s, NULL, NULL, bOverride);
 	pClass->AddField("LoadImageFromString", FieldType_String, (void*)LoadImageFromString_s, NULL, NULL, NULL, bOverride);
-
+	pClass->AddField("run", FieldType_String, (void*)LoadImageFromString_s, NULL, NULL, NULL, bOverride);
+	pClass->AddField("SurfaceType", FieldType_Int, (void*)SetSurfaceType_s, (void*)GetSurfaceType_s, NULL, NULL, bOverride);
+	pClass->AddField("ColorKey", FieldType_DWORD, (void*)SetColorKey_s, (void*)GetColorKey_s, NULL, NULL, bOverride);
+	pClass->AddField("width", FieldType_Int, (void*)NULL, (void*)GetWidth_s, NULL, NULL, bOverride);
+	pClass->AddField("height", FieldType_Int, (void*)NULL, (void*)GetHeight_s, NULL, NULL, bOverride);
+	pClass->AddField("CurrentFrameNumber", FieldType_Int, (void*)SetCurrentFrameNumber_s, (void*)GetCurrentFrameNumber_s, NULL, NULL, bOverride);
 	return S_OK;
 }
