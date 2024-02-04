@@ -561,6 +561,11 @@ int TextureEntity::GetFormatByFileName(const std::string& filename)
 	return dwTextureFormat;
 }
 
+TextureEntity* ParaEngine::TextureEntity::LoadUint8Buffer(const uint8* pTexels, int width, int height, int rowLength, int bytesPerPixel, uint32 nMipLevels, D3DPOOL dwCreatePool, DWORD nFormat)
+{
+	return NULL;
+}
+
 bool ParaEngine::TextureEntity::LoadImageFromString(const char* pImageString)
 {
 	return false;
