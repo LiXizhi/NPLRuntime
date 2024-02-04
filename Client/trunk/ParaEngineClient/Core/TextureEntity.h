@@ -348,12 +348,22 @@ namespace ParaEngine
 		*/
 		virtual bool LoadImageFromString(const char* pImageString);
 
+		int GetSurfaceType() const;
+		void SetSurfaceType(int nType);
 	public:
 		virtual int InstallFields(CAttributeClass* pClass, bool bOverride);
 		
 		ATTRIBUTE_METHOD1(TextureEntity, SetHitCount_s, int) { cls->SetHitCount(p1); return S_OK; }
 		ATTRIBUTE_METHOD1(TextureEntity, GetHitCount_s, int*) { *p1 = cls->GetHitCount(); return S_OK; }
+		ATTRIBUTE_METHOD1(TextureEntity, GetWidth_s, int*) { *p1 = cls->GetWidth(); return S_OK; }
+		ATTRIBUTE_METHOD1(TextureEntity, GetHeight_s, int*) { *p1 = cls->GetHeight(); return S_OK; }
 		ATTRIBUTE_METHOD1(TextureEntity, LoadImageFromString_s, char*) { cls->LoadImageFromString(p1); return S_OK; }
+		ATTRIBUTE_METHOD1(TextureEntity, SetSurfaceType_s, int) { cls->SetSurfaceType(p1); return S_OK; }
+		ATTRIBUTE_METHOD1(TextureEntity, GetSurfaceType_s, int*) { *p1 = cls->GetSurfaceType(); return S_OK; }
+		ATTRIBUTE_METHOD1(TextureEntity, SetColorKey_s, DWORD) { cls->SetColorKey(p1); return S_OK; }
+		ATTRIBUTE_METHOD1(TextureEntity, GetColorKey_s, DWORD*) { *p1 = cls->GetColorKey(); return S_OK; }
+		ATTRIBUTE_METHOD1(TextureEntity, SetCurrentFrameNumber_s, int) { cls->SetCurrentFrameNumber(p1); return S_OK; }
+		ATTRIBUTE_METHOD1(TextureEntity, GetCurrentFrameNumber_s, int*) { *p1 = cls->GetCurrentFrameNumber(); return S_OK; }
 	};
 }
 

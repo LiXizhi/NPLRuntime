@@ -351,7 +351,7 @@ TextureEntity* CParaWorldAsset::LoadTexture(const string&  sIdentifier, const st
 				TextureEntity* pNewEntity = res.first;
 				// contains the initial url.
 				pNewEntity->SetLocalFileName(sInitURL.c_str());
-				pNewEntity->SurfaceType = TextureEntity::HTMLTexture;
+				pNewEntity->SetSurfaceType((int)TextureEntity::HTMLTexture);
 			}
 			return res.first;
 		}

@@ -1785,7 +1785,9 @@ bool ParaEngine::TextureEntityDirectX::LoadImageFromString(const char* cmd)
 							}
 							if (!m_pTexture)
 							{
-								HRESULT hr = D3DXCreateTexture(CGlobals::GetRenderDevice(), nTextureWidth, nTextureHeight, 0, D3DUSAGE_DYNAMIC, D3DFMT_A8R8G8B8, D3DPOOL_DEFAULT, &m_pTexture);
+								// for now, we do not generate mipmap.
+								int nMipmaps = 1;
+								HRESULT hr = D3DXCreateTexture(CGlobals::GetRenderDevice(), nTextureWidth, nTextureHeight, nMipmaps, D3DUSAGE_DYNAMIC, D3DFMT_A8R8G8B8, D3DPOOL_DEFAULT, &m_pTexture);
 							}
 							if (m_pTexture)
 							{
