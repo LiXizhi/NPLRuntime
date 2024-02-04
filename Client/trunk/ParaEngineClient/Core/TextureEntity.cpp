@@ -586,6 +586,11 @@ void ParaEngine::TextureEntity::SetSurfaceType(int nType)
 	}
 }
 
+bool ParaEngine::TextureEntity::GetImageData(void** ppData, int* pSize, int* pWidth, int* pHeight, int* pBytesPerPixel)
+{
+	return false;
+}
+
 int TextureEntity::InstallFields(CAttributeClass* pClass, bool bOverride)
 {
 	AssetEntity::InstallFields(pClass, bOverride);

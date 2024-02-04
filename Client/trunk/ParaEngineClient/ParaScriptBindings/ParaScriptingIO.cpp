@@ -11,6 +11,7 @@
 #include "FileUtils.h"
 #include "ZipArchive.h"
 #include "ZipWriter.h"
+#include "ParaWorldAsset.h"
 #ifdef USE_TINYXML2
 	#include <tinyxml2.h>
 #else
@@ -384,6 +385,33 @@ namespace ParaScripting
 					file.m_pFile->SetFilePointer(0, FILE_BEGIN);
 					file.m_pFile->TakeBufferOwnership();
 					SAFE_DELETE_ARRAY(pTextureImage);
+				}
+			}
+			else
+			{
+				// load from texture entity
+				auto pTextureEntity = CGlobals::GetAssetManager()->GetTexture(filename);
+				if(pTextureEntity)
+				{
+					void* pTextureImage = NULL;
+					int nSize;
+					int width, height, nBytesPerPixel;
+					if(pTextureEntity->GetImageData(&pTextureImage, &nSize, &width, &height, &nBytesPerPixel))
+					{
+						int nHeaderSize = sizeof(DWORD) * 4;
+						char* pFileBuffer = new char[nSize + nHeaderSize];
+						DWORD* pData = (DWORD*)pFileBuffer;
+						*pData = 0; pData++;
+						*pData = width; pData++;
+						*pData = height; pData++;
+						*pData = nBytesPerPixel; pData++;
+						memcpy(pData, pTextureImage, nSize);
+
+						file.m_pFile.reset(new CParaFile(pFileBuffer, nSize + nHeaderSize, false));
+						file.m_pFile->SetFilePointer(0, FILE_BEGIN);
+						file.m_pFile->TakeBufferOwnership(); // take ownership of pFileBuffer
+						SAFE_DELETE_ARRAY(pTextureImage);
+					}
 				}
 			}
 		}

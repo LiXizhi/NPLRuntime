@@ -149,6 +149,9 @@ namespace ParaEngine
 		* "paintrect fromX,fromY,toX,toY,data:image/png;base64,xxxxx"
 		*/
 		virtual bool LoadImageFromString(const char* pImageString);
+
+		/** only dynamic texture support this function. */
+		virtual bool GetImageData(void** ppData, int* pSize, int* pWidth, int* pHeight, int* pBytesPerPixel);
 	};
 
 	// the manager class

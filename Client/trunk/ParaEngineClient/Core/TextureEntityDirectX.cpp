@@ -1770,7 +1770,6 @@ bool ParaEngine::TextureEntityDirectX::LoadImageFromString(const char* cmd)
 						if (nBytesPerPixel == 4)
 						{
 							DWORD* pData = (DWORD*)imageData;
-							uint32 x = fromX, y = fromY;
 
 							if (SurfaceType != DynamicTexture)
 							{
@@ -1794,6 +1793,10 @@ bool ParaEngine::TextureEntityDirectX::LoadImageFromString(const char* cmd)
 								D3DLOCKED_RECT lockedRect;
 								if (SUCCEEDED(m_pTexture->LockRect(0, &lockedRect, NULL, D3DLOCK_DISCARD)))
 								{
+									// for direcX, the origin is at the top-left corner, so we need to flip the image.
+									std::swap(fromY, toY);
+									uint32 x = fromX, y = fromY;
+
 									DWORD* pDest = (DWORD*)lockedRect.pBits;
 									while (true) {
 										x = fromX;
@@ -1828,6 +1831,39 @@ bool ParaEngine::TextureEntityDirectX::LoadImageFromString(const char* cmd)
 		else {
 			break;
 		}
+	}
+	return false;
+}
+
+bool ParaEngine::TextureEntityDirectX::GetImageData(void** ppData, int* pSize, int* pWidth, int* pHeight, int* pBytesPerPixel)
+{
+	if(SurfaceType == DynamicTexture && m_pTexture && m_pTextureInfo)
+	{
+		int width = m_pTextureInfo->GetWidth();
+		int height = m_pTextureInfo->GetHeight();
+		*pWidth = width;
+		*pHeight = height;
+		*pBytesPerPixel = 4;
+		*pSize = width * height * 4;
+		uint8* pData = new uint8[*pSize];
+		D3DLOCKED_RECT lockedRect;
+		if (SUCCEEDED(m_pTexture->LockRect(0, &lockedRect, NULL, D3DLOCK_READONLY)))
+		{
+			DWORD* pDest = (DWORD*)pData;
+			for(int y = 0; y < height; y++)
+			{
+				for(int x = 0; x < width; x++)
+				{
+					DWORD* pSrc = (DWORD*)((uint8*)lockedRect.pBits + y * lockedRect.Pitch + x * 4);
+					*pDest = *pSrc;
+					pDest++;
+				}
+			}
+			m_pTexture->UnlockRect(0);
+			*ppData = pData;
+			return true;
+		}
+		delete[] pData;
 	}
 	return false;
 }
