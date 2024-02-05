@@ -1798,11 +1798,12 @@ bool ParaEngine::TextureEntityDirectX::LoadImageFromString(const char* cmd)
 									uint32 x = fromX, y = fromY;
 
 									DWORD* pDest = (DWORD*)lockedRect.pBits;
+									int rowLength = lockedRect.Pitch >> 2;
 									while (true) {
 										x = fromX;
 										int srcX = 0;
 										while (true) {
-											pDest[x + y * nTextureWidth] = *(pData + srcX);
+											pDest[x + y * rowLength] = *(pData + srcX);
 											if (x == toX)
 												break;
 											x += (fromX < toX) ? 1 : -1;
