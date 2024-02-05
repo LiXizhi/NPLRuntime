@@ -1115,8 +1115,22 @@ bool ParaEngine::TextureEntityOpenGL::GetImageData(void** ppData, int* pSize, in
 		uint8* pData = new uint8[*pSize];
 		
 		GL::bindTexture2D(m_texture->getName());
+
+#ifdef USE_OPENGL_GETTEXIMAGE
 		glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_UNSIGNED_BYTE, pData);
 		PE_CHECK_GL_ERROR_DEBUG();
+#else
+		// glGetTexImage is not supported on opengl es 2.0, we need to use FBO to get the data.
+		GLuint fbo;
+		glGenFramebuffers(1, &fbo);
+		glBindFramebuffer(GL_FRAMEBUFFER, fbo);
+		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, m_texture->getName(), 0);
+
+		glReadPixels(0, 0, width, height, GL_RGBA, GL_UNSIGNED_BYTE, pData);
+
+		glBindFramebuffer(GL_FRAMEBUFFER, 0);
+		glDeleteFramebuffers(1, &fbo);
+#endif
 		*ppData = pData;
 		return true;
 	}
