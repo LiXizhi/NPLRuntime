@@ -518,64 +518,98 @@ TextureEntity* TextureEntityOpenGL::LoadUint8Buffer(const uint8 * pTexels, int w
 {
 	if (!pTexels)
 		return NULL;
-	GLTexture2D * texture = m_texture;
-	if (texture)
-	{
-		int dataLen = width * height * bytesPerPixel;
-		if (bytesPerPixel == 4)
-		{
-			if (!texture->initWithData(pTexels, dataLen, PixelFormat::A8R8G8B8, width, height, Size((float)width, (float)height)))
-			{
-				SAFE_DELETE(texture);
-			}
-		}
-		else if (bytesPerPixel == 3)
-		{
-			dataLen = width * height * 4;
-			uint8 *pp = new uint8[dataLen];
-			int index = 0, x = 0, y = 0;
-			for (y = 0; y < height; y++)
-			{
-				for (x = 0; x < width; x++)
-				{
-					int n = (y * 3 * width) + 3 * x;
-					pp[index++] = pTexels[n];
-					pp[index++] = pTexels[n + 1];
-					pp[index++] = pTexels[n + 2];
-					pp[index++] = 0xff;
-				}
-			}
-			if (!texture->initWithData(pTexels, dataLen, PixelFormat::A8R8G8B8, width, height, Size((float)width, (float)height)))
-			{
-				SAFE_DELETE(texture);
-			}
-			delete[] pp;
-		}
-		else if (bytesPerPixel == 1)
-		{
-			/** -1 not determined, 0 do not support A8, 1 support A8. we will only try it once. */
-			static int nSupportA8PixelFormat = -1;
 
-			if (nSupportA8PixelFormat == 0 || !texture->initWithData(pTexels, dataLen, PixelFormat::A8, width, height, Size((float)width, (float)height)))
-			{
-				if (nSupportA8PixelFormat == -1)
-					nSupportA8PixelFormat = 0;
-				int nSize = width * height;
-				DWORD* pData = new DWORD[nSize];
-				for (int x = 0; x < nSize; ++x)
-				{
-					pData[x] = (pTexels[x]) << 24;
-				}
-				if (!texture->initWithData(pData, width*height * 4, PixelFormat::A8R8G8B8, width, height, Size((float)width, (float)height)))
-				{
-					SAFE_DELETE(texture);
-				}
-				delete[] pData;
-			}
-			else if (nSupportA8PixelFormat == -1)
-				nSupportA8PixelFormat = 1;
+	if (SurfaceType != DynamicTexture)
+	{
+		UnloadAsset();
+		SurfaceType = DynamicTexture;
+	}
+	if (m_pTextureInfo && (m_pTextureInfo->m_width != width || m_pTextureInfo->m_height != height))
+	{
+		UnloadAsset();
+		m_pTextureInfo->m_width = -1;
+		m_pTextureInfo->m_height = -1;
+	}
+
+	int dataLen = width * height * bytesPerPixel;
+	if (bytesPerPixel == 4)
+	{
+		if (!m_texture)
+		{
+			// for now, we do not generate mipmap.
+			m_texture = new (std::nothrow) GLTexture2D();
+			m_texture->initWithData(pTexels, dataLen, PixelFormat::A8R8G8B8, width, height, Size((float)width, (float)height));
+		}
+		else
+		{
+			m_texture->updateWithData(pTexels, 0, 0, width, height);
 		}
 	}
+	else if (bytesPerPixel == 3)
+	{
+		dataLen = width * height * 4;
+		uint8 *pp = new uint8[dataLen];
+		int index = 0, x = 0, y = 0;
+		for (y = 0; y < height; y++)
+		{
+			for (x = 0; x < width; x++)
+			{
+				int n = (y * 3 * width) + 3 * x;
+				pp[index++] = pTexels[n];
+				pp[index++] = pTexels[n + 1];
+				pp[index++] = pTexels[n + 2];
+				pp[index++] = 0xff;
+			}
+		}
+		pTexels = pp;
+		if (!m_texture)
+		{
+			// for now, we do not generate mipmap.
+			m_texture = new (std::nothrow) GLTexture2D();
+			m_texture->initWithData(pTexels, dataLen, PixelFormat::A8R8G8B8, width, height, Size((float)width, (float)height));
+		}
+		else
+		{
+			m_texture->updateWithData(pTexels, 0, 0, width, height);
+		}
+		delete[] pp;
+	}
+	else if (bytesPerPixel == 1)
+	{
+		/** -1 not determined, 0 do not support A8, 1 support A8. we will only try it once. */
+		static int nSupportA8PixelFormat = -1;
+		if (!m_texture)
+		{
+			// for now, we do not generate mipmap.
+			m_texture = new (std::nothrow) GLTexture2D();
+		}
+
+		if (nSupportA8PixelFormat == 0 || !m_texture->initWithData(pTexels, dataLen, PixelFormat::A8, width, height, Size((float)width, (float)height)))
+		{
+			if (nSupportA8PixelFormat == -1)
+				nSupportA8PixelFormat = 0;
+			int nSize = width * height;
+			DWORD* pData = new DWORD[nSize];
+			for (int x = 0; x < nSize; ++x)
+			{
+				pData[x] = (pTexels[x]) << 24;
+			}
+			if (!m_texture->initWithData(pData, width*height * 4, PixelFormat::A8R8G8B8, width, height, Size((float)width, (float)height)))
+			{
+				SAFE_DELETE(m_texture);
+			}
+			delete[] pData;
+		}
+		else if (nSupportA8PixelFormat == -1)
+			nSupportA8PixelFormat = 1;
+	}
+	
+	m_bIsInitialized = true;
+	m_bIsValid = true;
+	if (m_pTextureInfo == NULL)
+		m_pTextureInfo = new TextureInfo();
+	m_pTextureInfo->m_width = width;
+	m_pTextureInfo->m_height = height;
 
 	return this;
 }
@@ -605,41 +639,6 @@ void ParaEngine::TextureEntityOpenGL::LoadImage(char *sBufMemFile, int sizeBuf, 
 		CC_SAFE_RELEASE(image);
 	}
 	*/
-}
-
-static void copySurfaceRGB(void* pDest, const void* pSrc, UINT pitch, UINT width, UINT height)
-{
-	BYTE* pDst = (BYTE*)pDest;
-	const BYTE* data = (const BYTE*)pSrc;
-
-	int index = 0, x = 0, y = 0;
-
-	for (y = 0; y < height; y++)
-	{
-		for (x = 0; x < width; x++)
-		{
-			int n = (y * 3 * width) + 3 * x;
-			pDst[index++] = data[n];
-			pDst[index++] = data[n + 1];
-			pDst[index++] = data[n + 2];
-			pDst[index++] = 0xff;
-		}
-		index += pitch - (width * 4);
-	}
-}
-
-static void copySurface(void* pDest, const void* pSrc, UINT pitch, UINT width, UINT height, UINT bpp)
-{
-	BYTE* pDst = (BYTE*)pDest;
-	const BYTE* data = (const BYTE*)pSrc;
-
-	for (UINT h = 0; h < height; h++)
-	{
-		memcpy(pDst, data, bpp * width / 8);
-
-		data += bpp * width / 8;
-		pDst += pitch;
-	}
 }
 
 bool ParaEngine::TextureEntityOpenGL::LoadImageOfFormat(const std::string& sTextureFileName, char *sBufMemFile, int sizeBuf, int &width, int &height, unsigned char ** ppBuffer, int* pBytesPerPixel /*= NULL*/, int nFormat /*= -1*/)
@@ -1094,6 +1093,28 @@ bool ParaEngine::TextureEntityOpenGL::LoadImageFromString(const char* cmd)
 					}
 				}
 			}
+			else
+			{
+				DWORD* imageData = new DWORD[nTextureWidth * nTextureHeight];
+				uint32 x = fromX, y = fromY;
+				while (true) {
+					x = fromX;
+					while (true) {
+						uint32 color = parseInteger();
+						// convert from 0xAARRGGBB to 0xAABBGGRR
+						imageData[x + y * nTextureWidth] = (color & 0xff00ff00) | ((color & 0x00ff0000) >> 16) | ((color & 0x000000ff) << 16);
+						// imageData[x + y * nTextureWidth] = color;
+						if (x == toX)
+							break;
+						x += (fromX < toX) ? 1 : -1;
+					}
+					if (y == toY)
+						break;
+					y += (fromY < toY) ? 1 : -1;
+				}
+				LoadUint8Buffer((const uint8*)imageData, nTextureWidth, nTextureHeight, nTextureWidth * 4, 4);
+				SAFE_DELETE_ARRAY(imageData);
+			}
 		}
 		else {
 			break;
@@ -1131,6 +1152,13 @@ bool ParaEngine::TextureEntityOpenGL::GetImageData(void** ppData, int* pSize, in
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);
 		glDeleteFramebuffers(1, &fbo);
 #endif
+		// convert from 0xAARRGGBB to 0xAABBGGRR
+		int nSize = *pSize / 4;
+		for (int i = 0; i < nSize; ++i)
+		{
+			uint32 color = *(uint32*)(pData + i * 4);
+			*(uint32*)(pData + i * 4) = (color & 0xff00ff00) | ((color & 0x00ff0000) >> 16) | ((color & 0x000000ff) << 16);
+		}
 		*ppData = pData;
 		return true;
 	}
