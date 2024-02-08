@@ -1396,7 +1396,12 @@ TextureEntity* TextureEntityDirectX::LoadUint8Buffer(const uint8 * pTexels, int 
 		{
 			D3DLOCKED_RECT lr;
 			m_pTexture->LockRect(0, &lr, NULL, 0);
-			memcpy(lr.pBits, pTexels, width*height * 4);
+			// flip y 
+			for (int y = 0; y < height; y++)
+			{
+				memcpy((uint8*)lr.pBits + y * lr.Pitch, pTexels + (height - y - 1) * width * 4, width * 4);
+			}
+			// memcpy(lr.pBits, pTexels, width*height * 4);
 			m_pTexture->UnlockRect(0);
 		}
 	}
@@ -1827,6 +1832,28 @@ bool ParaEngine::TextureEntityDirectX::LoadImageFromString(const char* cmd)
 						SAFE_DELETE_ARRAY(imageData);
 					}
 				}
+			}
+			else
+			{
+				DWORD* imageData = new DWORD[nTextureWidth * nTextureHeight];
+				// for direcX, the origin is at the top-left corner, so we need to flip the image.
+				std::swap(fromY, toY);
+				uint32 x = fromX, y = fromY;
+				while (true) {
+					x = fromX;
+					while (true) {
+						uint32 color = parseInteger();
+						imageData[x + y * nTextureWidth] = color;
+						if (x == toX)
+							break;
+						x += (fromX < toX) ? 1 : -1;
+					}
+					if (y == toY)
+						break;
+					y += (fromY < toY) ? 1 : -1;
+				}
+				LoadUint8Buffer((const uint8*)imageData, nTextureWidth, nTextureHeight, nTextureWidth * 4, 4);
+				SAFE_DELETE_ARRAY(imageData);
 			}
 		}
 		else {
