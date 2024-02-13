@@ -581,7 +581,7 @@ void ParaEngine::CSlopeModelProvider::cloneAndRotateModels(BlockModel &tempModel
 				model.AddVertex(vert);
 				
 			}
-			Vector3 &normal = calculateModelNormalOfFace(model, face*4);
+			calculateModelNormalOfFace(model, face*4);
 
 			//int tempFaceCount = model.GetFaceCount();
 			//if (normal.positionEquals(Vector3(0, 0, 0))) {//表示这不是一个正常的面，直接剪裁掉
