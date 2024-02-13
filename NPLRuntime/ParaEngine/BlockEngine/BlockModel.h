@@ -14,6 +14,7 @@ namespace ParaEngine
 	public:
 		float position[3];  //4byte
 		float normal[3];  //4byte
+		
 		/** for fixed function: ao_shadow, max_light, max_light, max_light 
 		for shader:  ao_shadow, sun_light, block_light, block_id
 		*/
@@ -21,7 +22,7 @@ namespace ParaEngine
 		/** color of the block, default to white. Only used in color block.*/
 		DWORD color2;	  //4byte;
 		float texcoord[2];  //8byte
-
+		
 	public:
 		BlockVertexCompressed()
 			:color(0xffffffff), color2(0xffffffff)
@@ -54,6 +55,11 @@ namespace ParaEngine
 			vPos.x = position[0];
 			vPos.y = position[1];
 			vPos.z = position[2];
+		}
+
+		Vector3 GetPosition()
+		{
+			return Vector3(position[0], position[1], position[2]);
 		}
 
 		inline void SetNormal(float x,float y,float z)
@@ -120,6 +126,11 @@ namespace ParaEngine
 			v = texcoord[1];
 		}
 
+		inline Vector2 GetTexcoord()
+		{
+			return Vector2(texcoord[0], texcoord[1]);
+		}
+
 		/** only used for fixed function rendering */
 		inline void SetLightIntensity(float amount)
 		{
@@ -144,11 +155,11 @@ namespace ParaEngine
 		inline void SetShadow()
 		{
 			// color = (180<<24) | (color&0x00ffffff);
-			color = (((unsigned char)(color>>24)-45)<<24) | (color&0x00ffffff);
+			color = (((byte)(color>>24)-45)<<24) | (color&0x00ffffff);
 		}
 
 		/** similar to SetShadow, except that it uses a user provided value [0,255] */
-		inline void SetColorStrength(unsigned char strength)
+		inline void SetColorStrength(byte strength)
 		{
 			color = (strength<<24) | (color&0x00ffffff);
 		}

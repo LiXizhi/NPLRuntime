@@ -10,8 +10,7 @@ namespace ParaEngine
 		BlockModel mOuterCornerBlockModels[8];
 		BlockModel mInnerCornerBlockModels[8];
 		BlockModel mHEdgeBlockModels[8];
-		BlockModel mHOuterCornerBlockModels[8];
-		BlockModel mHInnerCornerBlockModels[8];
+		BlockModel mInnerCornerBlockModels2[8];
 
 		//锥形，6个方向各有4个翻滚角，共24个(包含上面的mOuterCornerBlockModels) https://i.bmp.ovh/imgs/2022/08/25/42439e0218bc849d.png
 		BlockModel mOutCornerModels_1[24];
@@ -27,8 +26,7 @@ namespace ParaEngine
 		void _builOuterCornerBlockModels();
 		void _buildInnerCornerBlockModels();
 		void _buildHEdgeBlockModels();
-		void _buildHOuterCornerBlockModels();
-		void _buildHInnerCornerBlockModels();
+		void _buildInnerCornerBlockModels2();
 		void _buildOutCornerModels_1();
 		void _buildOutCornerModels_2();
 

@@ -7,16 +7,18 @@
 #include "SlopeModelProvider.h"
 using namespace ParaEngine;
 ParaEngine::CSlopeModelProvider::CSlopeModelProvider(BlockTemplate* pBlockTemplate)
-	:CLinearModelProvider(pBlockTemplate, sizeof(mEdgeBlockModels) / sizeof(mEdgeBlockModels[0]) + sizeof(mOuterCornerBlockModels) / sizeof(mOuterCornerBlockModels[0]) + sizeof(mInnerCornerBlockModels) / sizeof(mInnerCornerBlockModels[0]) +
-		sizeof(mHEdgeBlockModels) / sizeof(mHEdgeBlockModels[0]) + sizeof(mHOuterCornerBlockModels) / sizeof(mHOuterCornerBlockModels[0]) + sizeof(mHInnerCornerBlockModels) / sizeof(mHInnerCornerBlockModels[0])+
+	:CLinearModelProvider(pBlockTemplate, sizeof(mEdgeBlockModels) / sizeof(mEdgeBlockModels[0]) + 
+		sizeof(mOuterCornerBlockModels) / sizeof(mOuterCornerBlockModels[0]) + 
+		sizeof(mInnerCornerBlockModels) / sizeof(mInnerCornerBlockModels[0]) + 
+		sizeof(mHEdgeBlockModels) / sizeof(mHEdgeBlockModels[0]) + 
+		sizeof(mInnerCornerBlockModels2) / sizeof(mInnerCornerBlockModels2[0]) +
 		sizeof(mOutCornerModels_1) / sizeof(mOutCornerModels_1[0]) + sizeof(mOutCornerModels_2) / sizeof(mOutCornerModels_2[0]))
 {
 	_buildEdgeBlockModels();
 	_builOuterCornerBlockModels();
 	_buildInnerCornerBlockModels();
 	_buildHEdgeBlockModels();
-	_buildHOuterCornerBlockModels();
-	_buildHInnerCornerBlockModels();
+	_buildInnerCornerBlockModels2();
 
 	_buildOutCornerModels_1();
 	_buildOutCornerModels_2();
@@ -40,7 +42,7 @@ BlockModel& ParaEngine::CSlopeModelProvider::GetBlockModel(int nIndex /*= 0*/)
 			model = mOutCornerModels_2;
 		}
 
-		nIndex += 48;
+		nIndex += 32;
 	}
 	else {
 		const int type_index = nIndex / 8;
@@ -61,10 +63,7 @@ BlockModel& ParaEngine::CSlopeModelProvider::GetBlockModel(int nIndex /*= 0*/)
 			model = mHEdgeBlockModels;
 			break;
 		case 4:
-			model = mHOuterCornerBlockModels;
-			break;
-		case 5:
-			model = mHInnerCornerBlockModels;
+			model = mInnerCornerBlockModels2;
 			break;
 		}
 	}
@@ -78,18 +77,17 @@ BlockModel& ParaEngine::CSlopeModelProvider::GetBlockModel(CBlockWorld* pBlockMa
 
 	BlockModel * model = mEdgeBlockModels;
 	int block_index = 0;
-	if (nBlockData >= 100) {//新加的用1000以上的，避开旧的影响
+	if (nBlockData >= 100) {//新加的用100以上的，避开旧的影响
 		nBlockData -= 100;
 		if (nBlockData < 24) {
 			block_index = nBlockData;
 			model = mOutCornerModels_1;
 		}
-		else if (nBlockData < 24 + 8) {
+		else if (nBlockData < 32) {
 			block_index = nBlockData - 24;
 			model = mOutCornerModels_2;
 		}
-
-		nBlockData += 48;
+		nBlockData += 32;
 	}
 	else {
 		const int type_index = nBlockData / 8;
@@ -109,10 +107,7 @@ BlockModel& ParaEngine::CSlopeModelProvider::GetBlockModel(CBlockWorld* pBlockMa
 			model = mHEdgeBlockModels;
 			break;
 		case 4:
-			model = mHOuterCornerBlockModels;
-			break;
-		case 5:
-			model = mHInnerCornerBlockModels;
+			model = mInnerCornerBlockModels2;
 			break;
 		}
 	}
@@ -246,7 +241,6 @@ void ParaEngine::CSlopeModelProvider::_buildInnerCornerBlockModels()
 	tempModel.AddVertex(vert);
 	tempModel.SetFaceCount(tempModel.Vertices().size() / 4);
 
-	//旧的 2-1和2-5明显不是内凸的，这里改了，应该没多少地方用到
 	Vector3 angleArr[8] = {
 		Vector3(0,0,0),
 		Vector3(3.14f,1.57f,0),
@@ -261,6 +255,56 @@ void ParaEngine::CSlopeModelProvider::_buildInnerCornerBlockModels()
 	cloneAndRotateModels(tempModel, angleArr, mInnerCornerBlockModels, modelNum);
 
 	for (auto& model : mInnerCornerBlockModels) {
+		model.SetFaceCount(model.Vertices().size() / 4);
+		model.SetUseAmbientOcclusion(false);
+		model.SetUniformLighting(true);
+	}
+}
+
+void ParaEngine::CSlopeModelProvider::_buildInnerCornerBlockModels2()
+{
+	BlockModel cube_mode;
+	cube_mode.LoadModelByTexture(0);
+	int modelNum = sizeof(mInnerCornerBlockModels2) / sizeof(mInnerCornerBlockModels2[0]);
+
+	for (int i = 0; i < modelNum; i++) {
+		mInnerCornerBlockModels2[i].ClearVertices();
+		mInnerCornerBlockModels2[i] = cube_mode;
+	}
+
+	BlockModel tempModel = cube_mode;
+	//shift FRT to FRB
+	tempModel = cube_mode;
+	tempModel.Vertices()[BlockModel::g_frtRT].SetPosition(cube_mode.Vertices()[BlockModel::g_frtRB].position[0], cube_mode.Vertices()[BlockModel::g_frtRB].position[1], cube_mode.Vertices()[BlockModel::g_frtRB].position[2]);
+	tempModel.Vertices()[BlockModel::g_topRB].SetPosition(cube_mode.Vertices()[BlockModel::g_topRT].GetPosition());
+	tempModel.Vertices()[BlockModel::g_rightLT].SetPosition(cube_mode.Vertices()[BlockModel::g_frtRB].position[0], cube_mode.Vertices()[BlockModel::g_frtRB].position[1], cube_mode.Vertices()[BlockModel::g_frtRB].position[2]);
+	tempModel.Vertices()[BlockModel::g_topRB].SetTexcoord(cube_mode.Vertices()[BlockModel::g_topRT].GetTexcoord());
+	
+	// add another sloping face
+	auto vert = tempModel.Vertices()[BlockModel::g_frtRB];
+	tempModel.AddVertex(vert);
+	vert = tempModel.Vertices()[BlockModel::g_topLB];
+	tempModel.AddVertex(vert);
+	vert = tempModel.Vertices()[BlockModel::g_topRT];
+	tempModel.AddVertex(vert);
+	vert = tempModel.Vertices()[BlockModel::g_frtRB];
+	tempModel.AddVertex(vert);
+	tempModel.SetFaceCount(tempModel.Vertices().size() / 4);
+
+	Vector3 angleArr[8] = {
+		Vector3(0,0,0),
+		Vector3(3.14f,1.57f,0),
+		Vector3(0,1.57f,0),
+		Vector3(3.14f,3.14f,0),
+		Vector3(0,3.14f,0),
+		Vector3(3.14f,-1.57f,0),
+		Vector3(0,-1.57f,0),
+		Vector3(3.14f,0,0)
+	};
+
+	cloneAndRotateModels(tempModel, angleArr, mInnerCornerBlockModels2, modelNum);
+
+	for (auto& model : mInnerCornerBlockModels2) {
 		model.SetFaceCount(model.Vertices().size() / 4);
 		model.SetUseAmbientOcclusion(false);
 		model.SetUniformLighting(true);
@@ -307,14 +351,6 @@ void ParaEngine::CSlopeModelProvider::_buildHEdgeBlockModels()
 		model.SetUseAmbientOcclusion(false);
 		model.SetUniformLighting(true);
 	}
-}
-
-void ParaEngine::CSlopeModelProvider::_buildHOuterCornerBlockModels()
-{
-}
-
-void ParaEngine::CSlopeModelProvider::_buildHInnerCornerBlockModels()
-{
 }
 
 void ParaEngine::CSlopeModelProvider::_buildOutCornerModels_1()
