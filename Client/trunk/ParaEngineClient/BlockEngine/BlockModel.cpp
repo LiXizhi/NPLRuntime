@@ -24,6 +24,7 @@ namespace ParaEngine
 	BlockModel::BlockModel(int32_t texFaceNum)
 		:m_bUseAO(true), m_nFaceCount(6), m_bDisableFaceCulling(false), m_bUseSelfLighting(false), m_bIsCubeAABB(true), m_nTextureIndex(0), m_bUniformLighting(false)
 	{
+		memset(m_faceShape, 0, sizeof(m_faceShape));
 		m_Vertices.resize(24);
 		LoadModelByTexture(6);
 		m_shapeAABB.SetMinMax(Vector3(0, 0, 0), Vector3(BlockConfig::g_blockSize, BlockConfig::g_blockSize, BlockConfig::g_blockSize));
@@ -481,7 +482,7 @@ namespace ParaEngine
 	{
 		m_Vertices[nIndex].SetHeightScale(scale);
 	}
-	
+
 	void BlockModel::SetVerticalScale(EdgeVertexFlag vertex,float scale)
 	{
 		if(vertex == evf_xyz)
@@ -1492,5 +1493,172 @@ namespace ParaEngine
 		m_Vertices[nIndex].SetBlockColor(color);
 	}
 
+	void BlockModel::RecalculateNormals()
+	{
+		for (int i = 0; i < m_nFaceCount; ++i)
+		{
+			RecalculateNormalsOfRectFace(i * 4);
+		}
+	}
+
+	void RoundNormal(float& f)
+	{
+		if (f > 0.99f)
+			f = 1;
+		else if (f < -0.99f)
+			f = -1;
+		else if (f < 0.01f && f > -0.01f)
+			f = 0;
+	}
+
+	Vector3 BlockModel::RecalculateNormalsOfRectFace(int startIdxOfFace)
+	{
+		int idx = startIdxOfFace + 0;
+		Vector3 pt_0 = Vector3(m_Vertices[idx].position[0], m_Vertices[idx].position[1], m_Vertices[idx].position[2]);
+
+		idx = startIdxOfFace + 1;
+		Vector3 pt_1 = Vector3(m_Vertices[idx].position[0], m_Vertices[idx].position[1], m_Vertices[idx].position[2]);
+
+		idx = startIdxOfFace + 2;
+		Vector3 pt_2 = Vector3(m_Vertices[idx].position[0], m_Vertices[idx].position[1], m_Vertices[idx].position[2]);
+
+		idx = startIdxOfFace + 3;
+		Vector3 pt_3 = Vector3(m_Vertices[idx].position[0], m_Vertices[idx].position[1], m_Vertices[idx].position[2]);
+
+		Vector3 dir0_1 = pt_0 - pt_1;
+		Vector3 dir0_2 = pt_0 - pt_2;
+		Vector3 dir0_3 = pt_0 - pt_3;
+
+		Vector3 normal = Vector3(0, 0, 0);
+		if (!dir0_1.positionEquals(normal) && !dir0_2.positionEquals(normal) && !dir0_1.positionEquals(dir0_2)) {
+			normal = dir0_1.crossProduct(dir0_2);
+			normal.normalise();
+		}
+		else if (!dir0_1.positionEquals(normal) && !dir0_3.positionEquals(normal) && !dir0_1.positionEquals(dir0_3)) {
+			normal = dir0_1.crossProduct(dir0_3);
+			normal.normalise();
+		}
+		else if (!dir0_2.positionEquals(normal) && !dir0_3.positionEquals(normal) && !dir0_2.positionEquals(dir0_3)) {
+			normal = dir0_2.crossProduct(dir0_3);
+			normal.normalise();
+		}
+		RoundNormal(normal.x);
+		RoundNormal(normal.y);
+		RoundNormal(normal.z);
+
+		for (int i = 0; i < 4; i++) {
+			int idx = startIdxOfFace + i;
+			m_Vertices[idx].SetNormal(normal);
+		}
+		return normal;
+	}
+
+	uint8 setFaceShapeByXY(float x, float y) 
+	{
+		uint8 shape = 0;
+		if (x == 0 && y == 0)
+			shape |= 1;
+		else if (x == 1 && y == 0)
+			shape |= 2;
+		else if (x == 1 && y == 1)
+			shape |= 4;
+		else if (x == 0 && y == 1)
+			shape |= 8;
+		return shape;
+	}
+	uint8 setFaceShapeBy4Corners(BlockVertexCompressed* pVertices, int axis ,float axisValue) {
+		uint8 shape = 0;
+		if(axis == 0) {
+			if (pVertices[0].position[0] == axisValue)
+				shape |= setFaceShapeByXY(pVertices[0].position[1], pVertices[0].position[2]);
+			if (pVertices[1].position[0] == axisValue)
+				shape |= setFaceShapeByXY(pVertices[1].position[1], pVertices[1].position[2]);
+			if (pVertices[2].position[0] == axisValue)
+				shape |= setFaceShapeByXY(pVertices[2].position[1], pVertices[2].position[2]);
+			if (pVertices[3].position[0] == axisValue)
+				shape |= setFaceShapeByXY(pVertices[3].position[1], pVertices[3].position[2]);
+		}
+		else if(axis == 1) {
+			if (pVertices[0].position[1] == axisValue)
+				shape |= setFaceShapeByXY(pVertices[0].position[0], pVertices[0].position[2]);
+			if (pVertices[1].position[1] == axisValue)
+				shape |= setFaceShapeByXY(pVertices[1].position[0], pVertices[1].position[2]);
+			if (pVertices[2].position[1] == axisValue)
+				shape |= setFaceShapeByXY(pVertices[2].position[0], pVertices[2].position[2]);
+			if (pVertices[3].position[1] == axisValue)
+				shape |= setFaceShapeByXY(pVertices[3].position[0], pVertices[3].position[2]);
+		}
+		else if(axis == 2) {
+			if (pVertices[0].position[2] == axisValue)
+				shape |= setFaceShapeByXY(pVertices[0].position[0], pVertices[0].position[1]);
+			if (pVertices[1].position[2] == axisValue)
+				shape |= setFaceShapeByXY(pVertices[1].position[0], pVertices[1].position[1]);
+			if (pVertices[2].position[2] == axisValue)
+				shape |= setFaceShapeByXY(pVertices[2].position[0], pVertices[2].position[1]);
+			if (pVertices[3].position[2] == axisValue)
+				shape |= setFaceShapeByXY(pVertices[3].position[0], pVertices[3].position[1]);
+		}
+		return shape;
+	}
+
+	const static struct {
+		Vector3 normal;
+		uint8 axis;
+		float axisValue;
+
+	} faceNormals[6] = {
+		{Vector3(0, 1, 0), 1, 1},
+		{Vector3(0, 0, -1), 2, 0},
+		{Vector3(0, -1, 0), 1, 0},
+		{Vector3(-1, 0, 0), 0, 0},
+		{Vector3(1, 0, 0), 0, 1},
+		{Vector3(0, 0, 1), 2, 1}
+	};
+
+	void BlockModel::RecalculateFaceShapeAndSortFaces()
+	{
+		auto swapFaces = [this](int fromIndex, int toIndex) {
+			// swap the face order
+			BlockVertexCompressed temp[4];
+			memcpy(temp, &m_Vertices[fromIndex], sizeof(BlockVertexCompressed) * 4);
+			memcpy(&m_Vertices[fromIndex], &m_Vertices[toIndex], sizeof(BlockVertexCompressed) * 4);
+			memcpy(&m_Vertices[toIndex], temp, sizeof(BlockVertexCompressed) * 4);
+		};
+
+		// sort the faces by the normal direction so that the first 6 faces are in the order of default cube model face order.
+		for(int faceIndex = 0; faceIndex < 6; ++faceIndex)
+		{
+			m_faceShape[faceIndex] = 0;
+			if (faceIndex < m_nFaceCount)
+			{
+				const auto& vNormal = faceNormals[faceIndex].normal;
+				for (int j = 0; j < m_nFaceCount; ++j)
+				{
+					if (vNormal == Vector3(m_Vertices[j * 4].normal))
+					{
+						if (j != faceIndex) {
+							swapFaces(faceIndex * 4, j * 4);
+						}
+						m_faceShape[faceIndex] = setFaceShapeBy4Corners(&m_Vertices[faceIndex * 4], faceNormals[faceIndex].axis, faceNormals[faceIndex].axisValue);
+						break;
+					}
+				}
+			}
+		}
+	}
+
+	void BlockModel::DumpToLog()
+	{
+		OUTPUT_LOG("BlockModel: %d faces\n", m_nFaceCount);
+		for (int i = 0; i < m_nFaceCount; ++i)
+		{
+			OUTPUT_LOG("Face %d: shape: %d\n", i, m_faceShape[i]);
+			for (int j = 0; j < 4; ++j)
+			{
+				OUTPUT_LOG("  pos %d: %f %f %f\n", j, m_Vertices[i * 4 + j].position[0], m_Vertices[i * 4 + j].position[1], m_Vertices[i * 4 + j].position[2]);
+				OUTPUT_LOG("  norm %d: %f %f %f\n", j, m_Vertices[i * 4 + j].normal[0], m_Vertices[i * 4 + j].normal[1], m_Vertices[i * 4 + j].normal[2]);
+			}
+		}
+	}
 }
 

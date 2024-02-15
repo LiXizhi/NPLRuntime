@@ -904,6 +904,8 @@ void ParaEngine::BlockGeneralTessellator::TessellateLiquidOrIce(BlockRenderMetho
 	}
 }
 
+const int oppositeSides[6] = { 2, 5, 0, 4, 3, 1 };
+
 void ParaEngine::BlockGeneralTessellator::TessellateStdCube(BlockRenderMethod dwShaderID, int materialId)
 {
 	FetchNearbyBlockInfo(m_pChunk, m_blockId_cs, 27);
@@ -932,7 +934,7 @@ void ParaEngine::BlockGeneralTessellator::TessellateStdCube(BlockRenderMethod dw
 
 		Block* pCurBlock = neighborBlocks[BlockCommon::RBP_SixNeighbors[face]];
 
-		if ((!pCurBlock || (pCurBlock->GetTemplate()->GetLightOpacity() < 15)) && 
+		if (((!pCurBlock) || (pCurBlock->GetTemplate()->GetLightOpacity() < 15 && (pCurBlock->GetFaceShape(oppositeSides[face]) != 0xf))) &&
 			/** we will skip standard material if there is a block material */
 			((materialId < 0 && (!bHasBlockMaterial || m_pChunk->GetBlockFaceMaterial(packedBlockId, (int16)face) < 0)) ||
 			/** we will only output the give block material */

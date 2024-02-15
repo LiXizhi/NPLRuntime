@@ -334,6 +334,23 @@ namespace ParaEngine
 
 		void SetVertexHeightScale(int nIndex, float scale);
 
+		/** assume that 4 vertices(two triangles) are a rect face. There can be 2 overlapping vertices. */
+		void RecalculateNormals();
+		Vector3 RecalculateNormalsOfRectFace(int startIdxOfFace);
+
+		/** 
+		* @param nFaceIndex: [0,5]
+		*/
+		inline uint8 GetFaceShape(int nFaceIndex) const
+		{
+			return m_faceShape[nFaceIndex];
+		}
+
+		/* sort the first 6 faces +x, -x, +y,-y,+z, -z and calculate its face shape. */
+		void RecalculateFaceShapeAndSortFaces();
+
+		// for debugging only
+		void DumpToLog();
 		//
 		//    LT  -----  RT
 		//       |     |
@@ -379,7 +396,11 @@ namespace ParaEngine
 	private:
 		/** all vertices */
 		std::vector<BlockVertexCompressed> m_Vertices;
-
+		/** face shape. the lower 4 bits are 1 if one of the four corners has a vertex. for example, a cube is 0xf for each face. 
+		* the higher 4 bits represents irregular shape if not 0.
+		* we may remove the face during rendering if the neighbor block' is solid's face has the same face shape value.
+		*/
+		uint8 m_faceShape[6];
 		/** since we use triangle list. this is 24 for cube model, and 12 for */
 		bool m_bUseAO;
 		/** disable culling */

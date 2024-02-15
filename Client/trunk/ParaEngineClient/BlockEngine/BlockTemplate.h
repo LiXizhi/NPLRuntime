@@ -161,6 +161,10 @@ namespace ParaEngine
 
 		BlockModel& GetBlockModelByData(uint32 nData);
 
+		/** get the face shape on the given side
+		*/
+		int GetFaceShape(int nSide, int32_t nData);
+
 		/** get model by block position.
 		* @param neighborBlocks: 27 neighbor blocks
 		*/
@@ -269,6 +273,7 @@ namespace ParaEngine
 		}
 		void SetPhysicsProperty(const char* property) { m_physics_property = property; }
 		std::string& GetPhysicsProperty() { return m_physics_property; }
+
 	private:
 		/** unique id */
 		uint16_t m_id;

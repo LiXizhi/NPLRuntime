@@ -140,7 +140,7 @@ void ParaEngine::CSlopeModelProvider::_buildEdgeBlockModels()
 	tempModel.Vertices()[BlockModel::g_frtLT].SetNormal(0, 0, 0);
 	tempModel.Vertices()[BlockModel::g_bkRT].SetNormal(0, 0, 0);
 
-	calculateModelNormalOfFace(tempModel, BlockModel::g_leftLB);//左侧变成了斜面，法线重新计算
+	tempModel.RecalculateNormalsOfRectFace(BlockModel::g_leftLB);//左侧变成了斜面，法线重新计算
 
 	Vector3 angleArr[8] = { 
 		Vector3(0,0,0),
@@ -154,10 +154,13 @@ void ParaEngine::CSlopeModelProvider::_buildEdgeBlockModels()
 	};
 	cloneAndRotateModels(tempModel, angleArr, mEdgeBlockModels, modelNum);
 
+	int i = 0;
 	for (auto& model : mEdgeBlockModels) {
 		model.SetFaceCount(model.Vertices().size() / 4);
 		model.SetUseAmbientOcclusion(false);
 		model.SetUniformLighting(true);
+		OUTPUT_LOG("--%d--------------\n", i++);
+		model.DumpToLog();
 	}
 }
 
@@ -581,57 +584,9 @@ void ParaEngine::CSlopeModelProvider::cloneAndRotateModels(BlockModel &tempModel
 				model.AddVertex(vert);
 				
 			}
-			calculateModelNormalOfFace(model, face*4);
-
-			//int tempFaceCount = model.GetFaceCount();
-			//if (normal.positionEquals(Vector3(0, 0, 0))) {//表示这不是一个正常的面，直接剪裁掉
-			//	int start = face * 4;//去掉这个面的四个顶点，并前移数组
-			//	for (int v = start; v < tempFaceCount * 4 - 4; v++) {
-			//		model.Vertices()[v] = model.Vertices()[v + 4];
-			//	}
-			//	for (int v = 0; v < 4; v++) {
-			//		model.Vertices().pop_back();
-			//	}
-			//	tempFaceCount--;
-			//}
-			//model.SetFaceCount(tempFaceCount);
+			model.RecalculateNormalsOfRectFace(face*4);
 		}
+		model.SetFaceCount(faceNum);
+		model.RecalculateFaceShapeAndSortFaces();
 	}
-}
-
-Vector3 ParaEngine::CSlopeModelProvider::calculateModelNormalOfFace(BlockModel &tempModel, int startIdxOfFace)
-{
-	int idx = startIdxOfFace + 0;
-	Vector3 pt_0 = Vector3(tempModel.Vertices()[idx].position[0], tempModel.Vertices()[idx].position[1], tempModel.Vertices()[idx].position[2]);
-
-	idx = startIdxOfFace + 1;
-	Vector3 pt_1 = Vector3(tempModel.Vertices()[idx].position[0], tempModel.Vertices()[idx].position[1], tempModel.Vertices()[idx].position[2]);
-
-	idx = startIdxOfFace + 2;
-	Vector3 pt_2 = Vector3(tempModel.Vertices()[idx].position[0], tempModel.Vertices()[idx].position[1], tempModel.Vertices()[idx].position[2]);
-
-	idx = startIdxOfFace + 3;
-	Vector3 pt_3 = Vector3(tempModel.Vertices()[idx].position[0], tempModel.Vertices()[idx].position[1], tempModel.Vertices()[idx].position[2]);
-
-	Vector3 dir0_1 = pt_0 - pt_1;
-	Vector3 dir0_2 = pt_0 - pt_2;
-	Vector3 dir0_3 = pt_0 - pt_3;
-
-	Vector3 normal = Vector3(0, 0, 0);
-	if (!dir0_1.positionEquals(normal) && !dir0_2.positionEquals(normal) && !dir0_1.positionEquals(dir0_2)) {
-		normal = dir0_1.crossProduct(dir0_2);
-	}
-	else if (!dir0_1.positionEquals(normal) && !dir0_3.positionEquals(normal) && !dir0_1.positionEquals(dir0_3)) {
-		normal = dir0_1.crossProduct(dir0_3);
-	}
-	else if (!dir0_2.positionEquals(normal) && !dir0_3.positionEquals(normal) && !dir0_2.positionEquals(dir0_3)) {
-		normal = dir0_2.crossProduct(dir0_3);
-	}
-	
-	normal.normalise();
-	for (int i = 0; i < 4; i++) {
-		int idx = startIdxOfFace + i;
-		tempModel.Vertices()[idx].SetNormal(normal);
-	}
-	return normal;
 }
