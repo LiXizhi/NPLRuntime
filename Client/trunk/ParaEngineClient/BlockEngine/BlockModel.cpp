@@ -22,7 +22,7 @@
 namespace ParaEngine
 {
 	BlockModel::BlockModel(int32_t texFaceNum)
-		:m_bUseAO(true), m_nFaceCount(6), m_bDisableFaceCulling(false), m_bUseSelfLighting(false), m_bIsCubeAABB(true), m_nTextureIndex(0), m_bUniformLighting(false)
+		:m_bUseAO(true), m_nFaceCount(6), m_bDisableFaceCulling(false), m_bUseSelfLighting(false), m_bIsCubeAABB(true), m_nTextureIndex(0), m_bUniformLighting(false), m_bHasFaceShape(false)
 	{
 		memset(m_faceShape, 0, sizeof(m_faceShape));
 		m_Vertices.resize(24);
@@ -737,6 +737,7 @@ namespace ParaEngine
 
 				SetAABB(Vector3(0,0.5f*BlockConfig::g_blockSize,0), Vector3(BlockConfig::g_blockSize,BlockConfig::g_blockSize,BlockConfig::g_blockSize));
 			}
+			RecalculateFaceShapeAndSortFaces();
 		}
 		else if(sModelName.find("halfvine") == 0)
 		{
@@ -1005,6 +1006,7 @@ namespace ParaEngine
 
 				SetAABB(Vector3(0, 0, 0.92f*BlockConfig::g_blockSize), Vector3(BlockConfig::g_blockSize, BlockConfig::g_blockSize, BlockConfig::g_blockSize));
 			}
+			RecalculateFaceShapeAndSortFaces();
 		}
 		else if(sModelName.find("vine") == 0)
 		{
@@ -1568,36 +1570,23 @@ namespace ParaEngine
 	}
 	uint8 setFaceShapeBy4Corners(BlockVertexCompressed* pVertices, int axis ,float axisValue) {
 		uint8 shape = 0;
-		if(axis == 0) {
-			if (pVertices[0].position[0] == axisValue)
-				shape |= setFaceShapeByXY(pVertices[0].position[1], pVertices[0].position[2]);
-			if (pVertices[1].position[0] == axisValue)
-				shape |= setFaceShapeByXY(pVertices[1].position[1], pVertices[1].position[2]);
-			if (pVertices[2].position[0] == axisValue)
-				shape |= setFaceShapeByXY(pVertices[2].position[1], pVertices[2].position[2]);
-			if (pVertices[3].position[0] == axisValue)
-				shape |= setFaceShapeByXY(pVertices[3].position[1], pVertices[3].position[2]);
+		int nCount = 0;
+		for(int i = 0; i < 4; i++) {
+			if(pVertices[i].position[axis] == axisValue) {
+				float x = pVertices[i].position[(axis + 1) % 3];
+				float y = pVertices[i].position[(axis + 2) % 3];
+				auto faceShape = setFaceShapeByXY(x, y);
+				if(faceShape != 0)
+					shape |= faceShape;
+				else {
+					// this is some magical shape value for point not on the corner of the face.
+					shape |= ((int(x * 4 + y * 8 + 1)) & 0xf) << 4;
+				}
+				nCount++;
+			}
 		}
-		else if(axis == 1) {
-			if (pVertices[0].position[1] == axisValue)
-				shape |= setFaceShapeByXY(pVertices[0].position[0], pVertices[0].position[2]);
-			if (pVertices[1].position[1] == axisValue)
-				shape |= setFaceShapeByXY(pVertices[1].position[0], pVertices[1].position[2]);
-			if (pVertices[2].position[1] == axisValue)
-				shape |= setFaceShapeByXY(pVertices[2].position[0], pVertices[2].position[2]);
-			if (pVertices[3].position[1] == axisValue)
-				shape |= setFaceShapeByXY(pVertices[3].position[0], pVertices[3].position[2]);
-		}
-		else if(axis == 2) {
-			if (pVertices[0].position[2] == axisValue)
-				shape |= setFaceShapeByXY(pVertices[0].position[0], pVertices[0].position[1]);
-			if (pVertices[1].position[2] == axisValue)
-				shape |= setFaceShapeByXY(pVertices[1].position[0], pVertices[1].position[1]);
-			if (pVertices[2].position[2] == axisValue)
-				shape |= setFaceShapeByXY(pVertices[2].position[0], pVertices[2].position[1]);
-			if (pVertices[3].position[2] == axisValue)
-				shape |= setFaceShapeByXY(pVertices[3].position[0], pVertices[3].position[1]);
-		}
+		if(nCount <= 2)
+			shape = 0;
 		return shape;
 	}
 
@@ -1636,15 +1625,17 @@ namespace ParaEngine
 				{
 					if (vNormal == Vector3(m_Vertices[j * 4].normal))
 					{
-						if (j != faceIndex) {
+						m_faceShape[faceIndex] |= setFaceShapeBy4Corners(&m_Vertices[j * 4], faceNormals[faceIndex].axis, faceNormals[faceIndex].axisValue);
+
+						// only swap for the first 6 faces, while computing all faces on the first 6 sides, such as for stair model.
+						if (j != faceIndex && j < 6) {
 							swapFaces(faceIndex * 4, j * 4);
 						}
-						m_faceShape[faceIndex] = setFaceShapeBy4Corners(&m_Vertices[faceIndex * 4], faceNormals[faceIndex].axis, faceNormals[faceIndex].axisValue);
-						break;
 					}
 				}
 			}
 		}
+		m_bHasFaceShape = true;
 	}
 
 	void BlockModel::DumpToLog()
@@ -1652,7 +1643,7 @@ namespace ParaEngine
 		OUTPUT_LOG("BlockModel: %d faces\n", m_nFaceCount);
 		for (int i = 0; i < m_nFaceCount; ++i)
 		{
-			OUTPUT_LOG("Face %d: shape: %d\n", i, m_faceShape[i]);
+			OUTPUT_LOG("Face %d: shape: %d\n", i, (i < 6) ? m_faceShape[i] : -1);
 			for (int j = 0; j < 4; ++j)
 			{
 				OUTPUT_LOG("  pos %d: %f %f %f\n", j, m_Vertices[i * 4 + j].position[0], m_Vertices[i * 4 + j].position[1], m_Vertices[i * 4 + j].position[2]);

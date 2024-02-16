@@ -349,6 +349,12 @@ namespace ParaEngine
 		/* sort the first 6 faces +x, -x, +y,-y,+z, -z and calculate its face shape. */
 		void RecalculateFaceShapeAndSortFaces();
 
+		/** if m_faceShape is calculated and used in rendering. */
+		inline bool HasFaceShape() const
+		{
+			return m_bHasFaceShape;
+		}
+
 		// for debugging only
 		void DumpToLog();
 		//
@@ -401,6 +407,9 @@ namespace ParaEngine
 		* we may remove the face during rendering if the neighbor block' is solid's face has the same face shape value.
 		*/
 		uint8 m_faceShape[6];
+		/** if m_faceShape is calculated and used in rendering. */
+		bool m_bHasFaceShape;
+
 		/** since we use triangle list. this is 24 for cube model, and 12 for */
 		bool m_bUseAO;
 		/** disable culling */

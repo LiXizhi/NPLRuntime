@@ -154,13 +154,11 @@ void ParaEngine::CSlopeModelProvider::_buildEdgeBlockModels()
 	};
 	cloneAndRotateModels(tempModel, angleArr, mEdgeBlockModels, modelNum);
 
-	int i = 0;
 	for (auto& model : mEdgeBlockModels) {
 		model.SetFaceCount(model.Vertices().size() / 4);
 		model.SetUseAmbientOcclusion(false);
 		model.SetUniformLighting(true);
-		OUTPUT_LOG("--%d--------------\n", i++);
-		model.DumpToLog();
+		// model.DumpToLog();
 	}
 }
 

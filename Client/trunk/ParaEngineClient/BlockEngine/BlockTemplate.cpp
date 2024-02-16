@@ -318,7 +318,6 @@ namespace ParaEngine
 			m_block_models.resize(2, GetBlockModel());
 			m_block_models[0].LoadModel("slab_top");
 			m_block_models[1].LoadModel("slab_bottom");
-
 			SetPhysicalHeight(0.5f);
 		}
 		else if (sModelName == "vine")
