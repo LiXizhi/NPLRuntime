@@ -38,7 +38,7 @@ BlockModel& ParaEngine::CStairModelProvider::GetBlockModel(CBlockWorld* pBlockMa
 
 static void _AddVertex(BlockModel& tmp, const Vector3 *pts, Vector3 &normal)
 {
-	static Vector2 texCoord[4] = {
+	static const Vector2 texCoord[4] = {
 		Vector2(0,1),
 		Vector2(0,0),
 		Vector2(1,0),

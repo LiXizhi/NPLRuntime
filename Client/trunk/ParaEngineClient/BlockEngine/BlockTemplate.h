@@ -165,6 +165,8 @@ namespace ParaEngine
 		*/
 		int GetFaceShape(int nSide, int32_t nData);
 
+		int GetFaceShapeDirect(int nSide, int32_t nData);
+
 		/** get model by block position.
 		* @param neighborBlocks: 27 neighbor blocks
 		*/
@@ -242,6 +244,10 @@ namespace ParaEngine
 
 		inline bool IsAlphaBlendedTexture() {
 			return IsMatchAttribute(batt_blendedTexture);
+		};
+
+		inline bool IsTransparentModel() {
+			return IsMatchAttribute(batt_transparent);
 		};
 
 

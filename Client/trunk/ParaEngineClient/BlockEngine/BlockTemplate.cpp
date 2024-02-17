@@ -244,6 +244,19 @@ namespace ParaEngine
 		return 0;
 	}
 
+	int BlockTemplate::GetFaceShapeDirect(int nSide, int32_t nData)
+	{
+		if (IsMatchAttribute(batt_cubeModel))
+		{
+			if (IsMatchAttribute(batt_solid))
+				return 0xf;
+			else if (m_pBlockModelFilter != 0)
+			{
+				return GetBlockModelByData(nData).GetFaceShape(nSide);
+			}
+		}
+		return 0;
+	}
 
 	BlockModel& BlockTemplate::GetBlockModel(int nIndex)
 	{

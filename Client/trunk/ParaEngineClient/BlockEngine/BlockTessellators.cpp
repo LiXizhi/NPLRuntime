@@ -300,7 +300,7 @@ int32 ParaEngine::BlockGeneralTessellator::TessellateBlock(BlockChunk* pChunk, u
 		}
 		else
 		{
-			// standard cube including tree leaves. 
+			// standard cube including tree leaves, transparent cubes. 
 			TessellateStdCube(dwShaderID, materialId);
 		}
 	}
@@ -359,6 +359,7 @@ void ParaEngine::BlockGeneralTessellator::TessellateUniformLightingCustomModel(B
 
 	if (m_pCurBlockModel->HasFaceShape())
 	{
+		bool bIsTransparent = m_pCurBlockTemplate->IsTransparentModel();
 		float fLightValue = 0;
 		uint8 block_lightvalue = 0, sun_lightvalue = 0;
 		// for slope, stairs, slab which have face shape precalculated,
@@ -387,8 +388,9 @@ void ParaEngine::BlockGeneralTessellator::TessellateUniformLightingCustomModel(B
 			if (face < 6)
 			{
 				Block* pCurBlock = neighborBlocks[BlockCommon::RBP_SixNeighbors[face]];
-				bRemoveFace = !(!pCurBlock || m_pCurBlockModel->GetFaceShape(face) == 0 || (pCurBlock->GetTemplate()->GetLightOpacity() < 15 && 
-					(pCurBlock->GetFaceShape(oppositeSides[face]) != m_pCurBlockModel->GetFaceShape(face))));
+				bRemoveFace = !(!pCurBlock || m_pCurBlockModel->GetFaceShape(face) == 0 || (pCurBlock->GetTemplate()->GetLightOpacity() < 15 &&
+						((!bIsTransparent || pCurBlock->IsTransparentModel() != bIsTransparent) ? (pCurBlock->GetFaceShape(oppositeSides[face]) != m_pCurBlockModel->GetFaceShape(face)) : (pCurBlock->GetFaceShapeDirect(oppositeSides[face]) != m_pCurBlockModel->GetFaceShape(face)))
+					));
 			}
 			else
 			{
@@ -398,10 +400,23 @@ void ParaEngine::BlockGeneralTessellator::TessellateUniformLightingCustomModel(B
 					Block* pCurBlock = neighborBlocks[BlockCommon::RBP_SixNeighbors[nFaceId]];
 					if(pCurBlock)
 					{
-						auto neighbourFaceShape = pCurBlock->GetFaceShape(oppositeSides[nFaceId]);
-						if(neighbourFaceShape == 0xf || neighbourFaceShape == m_pCurBlockModel->GetFaceShape(nFaceId))
+						if ((!bIsTransparent || pCurBlock->IsTransparentModel() != bIsTransparent))
 						{
-							bRemoveFace = true;
+							auto neighbourFaceShape = pCurBlock->GetFaceShape(oppositeSides[nFaceId]);
+							if (neighbourFaceShape == 0xf || neighbourFaceShape == m_pCurBlockModel->GetFaceShape(nFaceId))
+							{
+								bRemoveFace = true;
+							}
+						}
+						else
+						{
+							// tricky: transparent block should remove faces if the neighbour block is also transparent, 
+							// for example, transparent stairs should remove faces if the neighbour block is also transparent, even they are of different color.
+							auto neighbourFaceShape = pCurBlock->GetFaceShapeDirect(oppositeSides[nFaceId]);
+							if (neighbourFaceShape == 0xf || neighbourFaceShape == m_pCurBlockModel->GetFaceShape(nFaceId))
+							{
+								bRemoveFace = true;
+							}
 						}
 					}
 				}

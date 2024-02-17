@@ -61,11 +61,7 @@ namespace ParaEngine
 	protected:
 		int m_nModelCount;
 	protected:
-		/** 将一个点绕轴旋转
-		*/
 		Vector3 vec3Rotate(const Vector3 &pt, const Vector3 &angles);
-		/**将一个点绕点旋转
-		*/
 		Vector3 vec3RotateByPoint(const Vector3 &originPt, const Vector3 &pt, const Vector3 &angles);
 	};
 

@@ -38,6 +38,19 @@ namespace ParaEngine
 			return m_pTemplate->GetFaceShape(nFaceIndex, m_blockData);
 		}
 
+		inline int GetFaceShapeDirect(int nFaceIndex)
+		{
+			return m_pTemplate->GetFaceShapeDirect(nFaceIndex, m_blockData);
+		}
+
+		inline bool IsTransparent(){
+			return m_pTemplate->IsTransparent();
+		}
+
+		inline bool IsTransparentModel() {
+			return m_pTemplate->IsTransparentModel();
+		}
+
 		inline uint32_t GetUserData(){return m_blockData;}
 
 		/* get the texture index into the main block template. */
