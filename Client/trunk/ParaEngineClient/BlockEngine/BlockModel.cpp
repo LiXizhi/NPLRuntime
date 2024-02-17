@@ -1651,5 +1651,23 @@ namespace ParaEngine
 			}
 		}
 	}
+
+	int BlockVertexCompressed::GetCubeFaceId() const
+	{
+		if (normal[1] == 1.0f)
+			return position[1] == 1 ? 0 : -1;
+		else if (normal[2] == -1.0f)
+			return position[2] == 0 ? 1 : -1;
+		else if (normal[1] == -1.0f)
+			return position[1] == 0.f ? 2 : -1;
+		else if (normal[0] == -1.0f)
+			return position[0] == 0.f ? 3 : -1;
+		else if (normal[0] == 1.0f)
+			return position[0] == 1.f ? 4 : -1;
+		else if (normal[2] == 1.0f)
+			return position[2] == 1.f ? 5 : -1;
+		else
+			return -1;
+	}
 }
 

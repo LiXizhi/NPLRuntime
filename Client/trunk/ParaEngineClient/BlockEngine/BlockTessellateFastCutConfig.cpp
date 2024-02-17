@@ -1,4 +1,6 @@
 #include "ParaEngine.h"
+
+#ifdef USE_OLD_BLOCK_DATA_CUT_CONFIG_MAPPING
 #include "BlockTessellateFastCutConfig.h"
 #include <map>
 #include <set>
@@ -11148,3 +11150,4 @@ const ParaEngine::FastCutInfo* ParaEngine::BlockTessellateFastCutCfg::GetCutInfo
 	auto iter = _fastCutMap.find(encodedKey);
 	return (iter != _fastCutMap.end()) ? iter->second : NULL;
 }
+#endif

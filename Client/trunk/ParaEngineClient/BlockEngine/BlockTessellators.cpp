@@ -14,7 +14,9 @@
 #include "BlockWorld.h"
 #include "VertexFVF.h"
 #include "BlockTessellators.h"
+#ifdef USE_OLD_BLOCK_DATA_CUT_CONFIG_MAPPING
 #include "BlockTessellateFastCutConfig.h"
+#endif
 #include <map>
 #include <set>
 #include <boost/container/small_vector.hpp>
@@ -339,7 +341,6 @@ bool checkFaceContain(Vector2 *rectSelf,Vector2 *rectTemp) {
 	return true;
 }
 
-
 void ParaEngine::BlockGeneralTessellator::TessellateUniformLightingCustomModel(BlockRenderMethod dwShaderID, int materialId)
 {
 	if (m_pChunk->GetBlockFaceMaterial(m_packedBlockId, 0) != materialId) return;
@@ -358,6 +359,8 @@ void ParaEngine::BlockGeneralTessellator::TessellateUniformLightingCustomModel(B
 
 	if (m_pCurBlockModel->HasFaceShape())
 	{
+		float fLightValue = 0;
+		uint8 block_lightvalue = 0, sun_lightvalue = 0;
 		// for slope, stairs, slab which have face shape precalculated,
 		// We can do a more precision hidden face removal with standard solid cubes and other face shape enabled blocks.
 		if (dwShaderID == BLOCK_RENDER_FIXED_FUNCTION)
@@ -366,64 +369,58 @@ void ParaEngine::BlockGeneralTessellator::TessellateUniformLightingCustomModel(B
 
 			// not render completely dark
 			max_light = Math::Max(max_light, 2);
-			float fLightValue = m_pWorld->GetLightBrightnessLinearFloat(max_light);
-			for (int face = 0; face < nFaceCount; ++face)
-			{
-				int nFirstVertex = face * 4;
-				bool bRemoveFace = false;
-				if (face < 6)
-				{
-					Block* pCurBlock = neighborBlocks[BlockCommon::RBP_SixNeighbors[face]];
-					bRemoveFace = !(!pCurBlock || m_pCurBlockModel->GetFaceShape(face) == 0 || (pCurBlock->GetTemplate()->GetLightOpacity() < 15 && 
-						(pCurBlock->GetFaceShape(oppositeSides[face]) != m_pCurBlockModel->GetFaceShape(face))));
-				}
-				if (!bRemoveFace)
-				{
-					for (int v = 0; v < 4; ++v)
-					{
-						int i = nFirstVertex + v;
-						int nIndex = tessellatedModel.AddVertex(*m_pCurBlockModel, i);
-						tessellatedModel.SetLightIntensity(nIndex, fLightValue);
-						if (bHasColorData)
-							tessellatedModel.SetVertexColor(nIndex, dwBlockColor);
-					}
-					tessellatedModel.IncrementFaceCount(1);
-				}
-			}
+			fLightValue = m_pWorld->GetLightBrightnessLinearFloat(max_light);
 		}
 		else
 		{
 			max_sun_light = GetMeshBrightness(m_pCurBlockTemplate, &(blockBrightness[rbp_center + nFetchNearybyCount * 2]));
 			max_block_light = GetMeshBrightness(m_pCurBlockTemplate, &(blockBrightness[rbp_center + nFetchNearybyCount]));
 
-			int curModelId = m_pCurBlockTemplate->GetID();
-			auto modelId = BlockTessellateFastCutCfg::GetModelIDFromModelName(m_pCurBlockTemplate->GetModelName());
+			block_lightvalue = m_pWorld->GetLightBrightnessInt(max_block_light);
+			sun_lightvalue = max_sun_light << 4;
+		}
 
-			uint8 block_lightvalue = m_pWorld->GetLightBrightnessInt(max_block_light);
-			uint8 sun_lightvalue = max_sun_light << 4;
-
-			for (int face = 0; face < nFaceCount; ++face)
+		for (int face = 0; face < nFaceCount; ++face)
+		{
+			int nFirstVertex = face * 4;
+			bool bRemoveFace = false;
+			if (face < 6)
 			{
-				int nFirstVertex = face * 4;
-				bool bRemoveFace = false;
-				if (face < 6)
+				Block* pCurBlock = neighborBlocks[BlockCommon::RBP_SixNeighbors[face]];
+				bRemoveFace = !(!pCurBlock || m_pCurBlockModel->GetFaceShape(face) == 0 || (pCurBlock->GetTemplate()->GetLightOpacity() < 15 && 
+					(pCurBlock->GetFaceShape(oppositeSides[face]) != m_pCurBlockModel->GetFaceShape(face))));
+			}
+			else
+			{
+				int nFaceId = m_pCurBlockModel->GetVertices()[nFirstVertex].GetCubeFaceId();
+				if (nFaceId >= 0 && m_pCurBlockModel->GetFaceShape(nFaceId) != 0)
 				{
-					Block* pCurBlock = neighborBlocks[BlockCommon::RBP_SixNeighbors[face]];
-					bRemoveFace = !(!pCurBlock || m_pCurBlockModel->GetFaceShape(face) == 0 || (pCurBlock->GetTemplate()->GetLightOpacity() < 15 &&
-						(pCurBlock->GetFaceShape(oppositeSides[face]) != m_pCurBlockModel->GetFaceShape(face))));
-				}
-				if (!bRemoveFace)
-				{
-					for (int v = 0; v < 4; ++v)
+					Block* pCurBlock = neighborBlocks[BlockCommon::RBP_SixNeighbors[nFaceId]];
+					if(pCurBlock)
 					{
-						int i = nFirstVertex + v;
-						int nIndex = tessellatedModel.AddVertex(*m_pCurBlockModel, i);
-						tessellatedModel.SetVertexLight(nIndex, block_lightvalue, sun_lightvalue);
-						if (bHasColorData)
-							tessellatedModel.SetVertexColor(nIndex, dwBlockColor);
+						auto neighbourFaceShape = pCurBlock->GetFaceShape(oppositeSides[nFaceId]);
+						if(neighbourFaceShape == 0xf || neighbourFaceShape == m_pCurBlockModel->GetFaceShape(nFaceId))
+						{
+							bRemoveFace = true;
+						}
 					}
-					tessellatedModel.IncrementFaceCount(1);
 				}
+			}
+			if (!bRemoveFace)
+			{
+				for (int v = 0; v < 4; ++v)
+				{
+					int i = nFirstVertex + v;
+					int nIndex = tessellatedModel.AddVertex(*m_pCurBlockModel, i);
+					if (dwShaderID != BLOCK_RENDER_FIXED_FUNCTION)
+						tessellatedModel.SetVertexLight(nIndex, block_lightvalue, sun_lightvalue);
+					else
+						tessellatedModel.SetLightIntensity(nIndex, fLightValue);
+						
+					if (bHasColorData)
+						tessellatedModel.SetVertexColor(nIndex, dwBlockColor);
+				}
+				tessellatedModel.IncrementFaceCount(1);
 			}
 		}
 		return;
@@ -459,15 +456,15 @@ void ParaEngine::BlockGeneralTessellator::TessellateUniformLightingCustomModel(B
 		max_sun_light = GetMeshBrightness(m_pCurBlockTemplate, &(blockBrightness[rbp_center + nFetchNearybyCount * 2]));
 		max_block_light = GetMeshBrightness(m_pCurBlockTemplate, &(blockBrightness[rbp_center + nFetchNearybyCount]));
 
-		int curModelId = m_pCurBlockTemplate->GetID();
-		auto modelId = BlockTessellateFastCutCfg::GetModelIDFromModelName(m_pCurBlockTemplate->GetModelName());
-
 		uint8 block_lightvalue = m_pWorld->GetLightBrightnessInt(max_block_light);
 		uint8 sun_lightvalue = max_sun_light << 4;
 		
 		int tempFaceCount = nFaceCount;
 // obsoleted, now we use face shape instead
-#ifdef USE_OLD_DATA_MAPPING
+#ifdef USE_OLD_BLOCK_DATA_CUT_CONFIG_MAPPING
+		int curModelId = m_pCurBlockTemplate->GetID();
+		auto modelId = BlockTessellateFastCutCfg::GetModelIDFromModelName(m_pCurBlockTemplate->GetModelName());
+
 		int cur_id_data = m_nBlockData;
 		cur_id_data = cur_id_data & 0xff;
 

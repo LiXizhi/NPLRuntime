@@ -88,6 +88,9 @@ namespace ParaEngine
 			return Vector3(normal[0], normal[1], normal[2]);
 		}
 
+		/** get the face id according to normal.-1 for none. 0-5 for the 6 faces. */
+		int GetCubeFaceId() const;
+
 		inline void OffsetPosition(float dx,float dy,float dz)
 		{
 			position[0] += dx;
@@ -129,6 +132,11 @@ namespace ParaEngine
 		inline Vector2 GetTexcoord()
 		{
 			return Vector2(texcoord[0], texcoord[1]);
+		}
+		
+		inline void SetLightColor(DWORD color_)
+		{
+			color = color_;
 		}
 
 		/** only used for fixed function rendering */
