@@ -14,9 +14,10 @@
 #include "BMaxParser.h"
 #include "BMaxNode.h"
 using namespace ParaEngine;
+const int oppositeSides[6] = { 2, 5, 0, 4, 3, 1 };
 
 ParaEngine::BMaxNode::BMaxNode(BMaxParser* pParser, int16 x_, int16 y_, int16 z_, int32 template_id_, int32 block_data_) :
-	m_pParser(pParser), x(x_), y(y_), z(z_), template_id(template_id_), block_data(block_data_), m_color(0), m_nBoneIndex(-1), m_pBlockModel(0), m_pParaXModel(0), m_bIsSolid(true)
+	m_pParser(pParser), x(x_), y(y_), z(z_), template_id(template_id_), block_data(block_data_), m_color(0), m_nBoneIndex(-1), m_pBlockModel(0), m_bIsSolid(true)
 {
 	memset(m_facesStatus, faceInvisible, sizeof(m_facesStatus));
 }
@@ -44,14 +45,14 @@ DWORD ParaEngine::BMaxNode::GetColor()
 	return m_color;
 }
 
-BlockModel* ParaEngine::BMaxNode::GetBlockModel()
+BlockModel * ParaEngine::BMaxNode::GetBlockModel()
 {
 	return m_pBlockModel;
 }
 
-ParaEngine::CParaXModel* BMaxNode::GetParaXModel()
+ParaEngine::CParaXModel * BMaxNode::GetParaXModel()
 {
-	return m_pParaXModel;
+	return NULL;
 }
 
 
@@ -287,13 +288,20 @@ bool BMaxNode::IsFaceNotUse(int nIndex)
 	return m_facesStatus[nIndex] == faceVisibleNotSign;
 }
 
+int ParaEngine::BMaxNode::GetFaceShape(int nIndex) 
+{
+	if(m_bIsSolid)
+		return 0xf;
+	BlockTemplate* block_template = BlockWorldClient::GetInstance()->GetBlockTemplate((uint16)template_id);
+	return block_template ? block_template->GetFaceShapeDirect(nIndex, block_data) : 0;
+}
+
 int ParaEngine::BMaxNode::TessellateBlock(BlockModel* tessellatedModel)
 {
 	int bone_index = GetBoneIndex();
 
-
 	BlockTemplate* block_template = BlockWorldClient::GetInstance()->GetBlockTemplate((uint16)template_id);
-
+	
 	if (block_template == 0 || block_template->isSolidBlock() || block_template->GetID() == BMaxParser::BoneBlockId)
 	{
 		// standard cube 
@@ -327,7 +335,7 @@ int ParaEngine::BMaxNode::TessellateBlock(BlockModel* tessellatedModel)
 			BMaxNode* pCurBlock = neighborBlocks[BlockCommon::RBP_SixNeighbors[face]];
 
 			// we will preserve the face when two bones does not belong to the same bone
-			if (!pCurBlock || (pCurBlock->GetBoneIndex() != bone_index || !pCurBlock->isSolid()))
+			if (!pCurBlock || (pCurBlock->GetBoneIndex() != bone_index || (!pCurBlock->isSolid() && pCurBlock->GetFaceShape(oppositeSides[face]) != 0xf)))
 			{
 				if (aoFlags > 0)
 				{
@@ -355,19 +363,75 @@ int ParaEngine::BMaxNode::TessellateBlock(BlockModel* tessellatedModel)
 	{
 		// metal blocks, and custom models like stairs, slabs, button, torch light, etc. 
 		// they do not have ambient occlusion shadows on them. 
-
 		tessellatedModel->ClearVertices();
 		BlockModel& blockModel = block_template->GetBlockModelByData(this->block_data);
-		//if (blockModel.IsUniformLighting())
-		{
-			DWORD dwBlockColor = GetColor();
-			tessellatedModel->SetUniformLighting(true);
-			tessellatedModel->CloneVertices(blockModel);
 
+		DWORD dwBlockColor = GetColor();
+		tessellatedModel->SetUniformLighting(true);
+		
+		const Vector3& vCenter = m_pParser->GetCenterPos();
+		Vector3 vOffset((float)x - vCenter.x, (float)y, (float)z - vCenter.z);
+
+		if (blockModel.HasFaceShape())
+		{
+			// for slope, stairs, slab which have face shape precalculated,
+			// We can do a more precision hidden face removal with standard solid cubes and other face shape enabled blocks.
+			const uint16_t nFaceCount = blockModel.GetFaceCount();
+			
+			//neighbor blocks
+			const int nNearbyBlockCount = 7;
+			BMaxNode* neighborBlocks[nNearbyBlockCount];
+			neighborBlocks[rbp_center] = this;
+			memset(neighborBlocks + 1, 0, sizeof(BMaxNode*) * (nNearbyBlockCount - 1));
+			QueryNeighborBlockData(neighborBlocks + 1, 1, nNearbyBlockCount - 1);
+
+			for (int face = 0; face < nFaceCount; ++face)
+			{
+				int nFirstVertex = face * 4;
+				if (blockModel.GetVertices()[nFirstVertex].IsEmptyFace())
+					continue;
+				bool bRemoveFace = false;
+				if (face < 6)
+				{
+					auto pCurBlock = neighborBlocks[BlockCommon::RBP_SixNeighbors[face]];
+					bRemoveFace = !(!pCurBlock || blockModel.GetFaceShape(face) == 0 || (!pCurBlock->isSolid() &&
+						(pCurBlock->GetFaceShape(oppositeSides[face]) != blockModel.GetFaceShape(face))));
+				}
+				else
+				{
+					int nFaceId = blockModel.GetVertices()[nFirstVertex].GetCubeFaceId();
+					if (nFaceId >= 0 && blockModel.GetFaceShape(nFaceId) != 0)
+					{
+						auto pCurBlock = neighborBlocks[BlockCommon::RBP_SixNeighbors[nFaceId]];
+						if (pCurBlock)
+						{
+							auto neighbourFaceShape = pCurBlock->GetFaceShape(oppositeSides[nFaceId]);
+							if (neighbourFaceShape == 0xf || neighbourFaceShape == blockModel.GetFaceShape(nFaceId))
+							{
+								bRemoveFace = true;
+							}
+						}
+					}
+				}
+				if (!bRemoveFace)
+				{
+					for (int v = 0; v < 4; ++v)
+					{
+						int i = nFirstVertex + v;
+						int nIndex = tessellatedModel->AddVertex(blockModel, i);
+						tessellatedModel->GetVertices()[nIndex].OffsetPosition(vOffset);
+						tessellatedModel->GetVertices()[nIndex].SetBlockColor(dwBlockColor);
+					}
+					tessellatedModel->IncrementFaceCount(1);
+				}
+			}
+		}
+		else
+		{
+			// for other transparent models, we will render without hidden face removal
+			tessellatedModel->CloneVertices(blockModel);
 			BlockVertexCompressed* pVertices = tessellatedModel->GetVertices();
 			int count = tessellatedModel->GetVerticesCount();
-			const Vector3& vCenter = m_pParser->GetCenterPos();
-			Vector3 vOffset((float)x - vCenter.x, (float)y, (float)z - vCenter.z);
 			for (int k = 0; k < count; k++)
 			{
 				pVertices[k].OffsetPosition(vOffset);
@@ -375,7 +439,6 @@ int ParaEngine::BMaxNode::TessellateBlock(BlockModel* tessellatedModel)
 			}
 		}
 	}
-
 
 	return tessellatedModel->GetVerticesCount();
 }
