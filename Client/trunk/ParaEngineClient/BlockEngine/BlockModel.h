@@ -91,6 +91,12 @@ namespace ParaEngine
 		/** get the face id according to normal.-1 for none. 0-5 for the 6 faces. */
 		int GetCubeFaceId() const;
 
+		/** if normal is zero, this is a hidden face. */
+		inline bool BlockVertexCompressed::IsEmptyFace() const
+		{
+			return normal[0] == 0 && normal[1] == 0 && normal[2] == 0;
+		}
+
 		inline void OffsetPosition(float dx,float dy,float dz)
 		{
 			position[0] += dx;

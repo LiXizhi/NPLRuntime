@@ -532,6 +532,30 @@ void ParaEngine::CSlopeModelProvider::_buildOutCornerModels_2()
 			};
 			_AddVertex(template_1, pts, normal);
 		}
+		// empty face
+		{
+			BlockVertexCompressed vertArr[4];
+			Vector3 normal = Vector3(0, 0, 0);
+			Vector3 pts[4] = {
+				Vector3(0, 0, 0),
+				Vector3(0, 0, 0),
+				Vector3(0, 0, 0),
+				Vector3(0, 0, 0)
+			};
+			_AddVertex(template_1, pts, normal);
+		}
+		// empty face
+		{
+			BlockVertexCompressed vertArr[4];
+			Vector3 normal = Vector3(0, 0, 0);
+			Vector3 pts[4] = {
+				Vector3(0, 0, 0),
+				Vector3(0, 0, 0),
+				Vector3(0, 0, 0),
+				Vector3(0, 0, 0)
+			};
+			_AddVertex(template_1, pts, normal);
+		}
 	}
 
 	template_1.SetFaceCount(template_1.Vertices().size() / 4);
