@@ -161,6 +161,12 @@ namespace ParaEngine
 
 		BlockModel& GetBlockModelByData(uint32 nData);
 
+		/** get the face shape on the given side
+		*/
+		int GetFaceShape(int nSide, int32_t nData);
+
+		int GetFaceShapeDirect(int nSide, int32_t nData);
+
 		/** get model by block position.
 		* @param neighborBlocks: 27 neighbor blocks
 		*/
@@ -240,6 +246,10 @@ namespace ParaEngine
 			return IsMatchAttribute(batt_blendedTexture);
 		};
 
+		inline bool IsTransparentModel() {
+			return IsMatchAttribute(batt_transparent);
+		};
+
 
 		/** [0,1] when player is walking into this block, this is the speed reduction. default to 1.0, which is no speed reduction. */
 		float GetSpeedReductionPercent() const;
@@ -267,10 +277,9 @@ namespace ParaEngine
 		inline const std::string& GetModelName() {
 			return modelName;
 		}
-
 		void SetPhysicsProperty(const char* property) { m_physics_property = property; }
 		std::string& GetPhysicsProperty() { return m_physics_property; }
-		
+
 	private:
 		/** unique id */
 		uint16_t m_id;
@@ -314,7 +323,6 @@ namespace ParaEngine
 		int m_nTileSize;
 		std::string modelName;
 		friend class IBlockModelProvider;
-
 		std::string m_physics_property;
 	};
 }

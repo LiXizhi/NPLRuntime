@@ -22,8 +22,9 @@
 namespace ParaEngine
 {
 	BlockModel::BlockModel(int32_t texFaceNum)
-		:m_bUseAO(true), m_nFaceCount(6), m_bDisableFaceCulling(false), m_bUseSelfLighting(false), m_bIsCubeAABB(true), m_nTextureIndex(0), m_bUniformLighting(false)
+		:m_bUseAO(true), m_nFaceCount(6), m_bDisableFaceCulling(false), m_bUseSelfLighting(false), m_bIsCubeAABB(true), m_nTextureIndex(0), m_bUniformLighting(false), m_bHasFaceShape(false)
 	{
+		memset(m_faceShape, 0, sizeof(m_faceShape));
 		m_Vertices.resize(24);
 		LoadModelByTexture(6);
 		m_shapeAABB.SetMinMax(Vector3(0, 0, 0), Vector3(BlockConfig::g_blockSize, BlockConfig::g_blockSize, BlockConfig::g_blockSize));
@@ -481,7 +482,7 @@ namespace ParaEngine
 	{
 		m_Vertices[nIndex].SetHeightScale(scale);
 	}
-	
+
 	void BlockModel::SetVerticalScale(EdgeVertexFlag vertex,float scale)
 	{
 		if(vertex == evf_xyz)
@@ -736,6 +737,7 @@ namespace ParaEngine
 
 				SetAABB(Vector3(0,0.5f*BlockConfig::g_blockSize,0), Vector3(BlockConfig::g_blockSize,BlockConfig::g_blockSize,BlockConfig::g_blockSize));
 			}
+			RecalculateFaceShapeAndSortFaces();
 		}
 		else if(sModelName.find("halfvine") == 0)
 		{
@@ -1004,6 +1006,7 @@ namespace ParaEngine
 
 				SetAABB(Vector3(0, 0, 0.92f*BlockConfig::g_blockSize), Vector3(BlockConfig::g_blockSize, BlockConfig::g_blockSize, BlockConfig::g_blockSize));
 			}
+			RecalculateFaceShapeAndSortFaces();
 		}
 		else if(sModelName.find("vine") == 0)
 		{
@@ -1492,5 +1495,179 @@ namespace ParaEngine
 		m_Vertices[nIndex].SetBlockColor(color);
 	}
 
+	void BlockModel::RecalculateNormals()
+	{
+		for (int i = 0; i < m_nFaceCount; ++i)
+		{
+			RecalculateNormalsOfRectFace(i * 4);
+		}
+	}
+
+	void RoundNormal(float& f)
+	{
+		if (f > 0.99f)
+			f = 1;
+		else if (f < -0.99f)
+			f = -1;
+		else if (f < 0.01f && f > -0.01f)
+			f = 0;
+	}
+
+	Vector3 BlockModel::RecalculateNormalsOfRectFace(int startIdxOfFace)
+	{
+		int idx = startIdxOfFace + 0;
+		Vector3 pt_0 = Vector3(m_Vertices[idx].position[0], m_Vertices[idx].position[1], m_Vertices[idx].position[2]);
+
+		idx = startIdxOfFace + 1;
+		Vector3 pt_1 = Vector3(m_Vertices[idx].position[0], m_Vertices[idx].position[1], m_Vertices[idx].position[2]);
+
+		idx = startIdxOfFace + 2;
+		Vector3 pt_2 = Vector3(m_Vertices[idx].position[0], m_Vertices[idx].position[1], m_Vertices[idx].position[2]);
+
+		idx = startIdxOfFace + 3;
+		Vector3 pt_3 = Vector3(m_Vertices[idx].position[0], m_Vertices[idx].position[1], m_Vertices[idx].position[2]);
+
+		Vector3 dir0_1 = pt_0 - pt_1;
+		Vector3 dir0_2 = pt_0 - pt_2;
+		Vector3 dir0_3 = pt_0 - pt_3;
+
+		Vector3 normal = Vector3(0, 0, 0);
+		if (!dir0_1.positionEquals(normal) && !dir0_2.positionEquals(normal) && !dir0_1.positionEquals(dir0_2)) {
+			normal = dir0_1.crossProduct(dir0_2);
+			normal.normalise();
+		}
+		else if (!dir0_1.positionEquals(normal) && !dir0_3.positionEquals(normal) && !dir0_1.positionEquals(dir0_3)) {
+			normal = dir0_1.crossProduct(dir0_3);
+			normal.normalise();
+		}
+		else if (!dir0_2.positionEquals(normal) && !dir0_3.positionEquals(normal) && !dir0_2.positionEquals(dir0_3)) {
+			normal = dir0_2.crossProduct(dir0_3);
+			normal.normalise();
+		}
+		RoundNormal(normal.x);
+		RoundNormal(normal.y);
+		RoundNormal(normal.z);
+
+		for (int i = 0; i < 4; i++) {
+			int idx = startIdxOfFace + i;
+			m_Vertices[idx].SetNormal(normal);
+		}
+		return normal;
+	}
+
+	uint8 setFaceShapeByXY(float x, float y) 
+	{
+		uint8 shape = 0;
+		if (x == 0 && y == 0)
+			shape |= 1;
+		else if (x == 1 && y == 0)
+			shape |= 2;
+		else if (x == 1 && y == 1)
+			shape |= 4;
+		else if (x == 0 && y == 1)
+			shape |= 8;
+		return shape;
+	}
+	uint8 setFaceShapeBy4Corners(BlockVertexCompressed* pVertices, int axis ,float axisValue) {
+		uint8 shape = 0;
+		int nCount = 0;
+		for(int i = 0; i < 4; i++) {
+			if(pVertices[i].position[axis] == axisValue) {
+				float x = pVertices[i].position[(axis + 1) % 3];
+				float y = pVertices[i].position[(axis + 2) % 3];
+				auto faceShape = setFaceShapeByXY(x, y);
+				if(faceShape != 0)
+					shape |= faceShape;
+				else {
+					// this is some magical shape value for point not on the corner of the face.
+					shape |= ((int(x * 4 + y * 8 + 1)) & 0xf) << 4;
+				}
+				nCount++;
+			}
+		}
+		if(nCount <= 2)
+			shape = 0;
+		return shape;
+	}
+
+	const static struct {
+		Vector3 normal;
+		uint8 axis;
+		float axisValue;
+
+	} faceNormals[6] = {
+		{Vector3(0, 1, 0), 1, 1},
+		{Vector3(0, 0, -1), 2, 0},
+		{Vector3(0, -1, 0), 1, 0},
+		{Vector3(-1, 0, 0), 0, 0},
+		{Vector3(1, 0, 0), 0, 1},
+		{Vector3(0, 0, 1), 2, 1}
+	};
+
+	void BlockModel::RecalculateFaceShapeAndSortFaces()
+	{
+		auto swapFaces = [this](int fromIndex, int toIndex) {
+			// swap the face order
+			BlockVertexCompressed temp[4];
+			memcpy(temp, &m_Vertices[fromIndex], sizeof(BlockVertexCompressed) * 4);
+			memcpy(&m_Vertices[fromIndex], &m_Vertices[toIndex], sizeof(BlockVertexCompressed) * 4);
+			memcpy(&m_Vertices[toIndex], temp, sizeof(BlockVertexCompressed) * 4);
+		};
+
+		// sort the faces by the normal direction so that the first 6 faces are in the order of default cube model face order.
+		for(int faceIndex = 0; faceIndex < 6; ++faceIndex)
+		{
+			m_faceShape[faceIndex] = 0;
+			if (faceIndex < m_nFaceCount)
+			{
+				const auto& vNormal = faceNormals[faceIndex].normal;
+				for (int j = 0; j < m_nFaceCount; ++j)
+				{
+					if (vNormal == Vector3(m_Vertices[j * 4].normal))
+					{
+						m_faceShape[faceIndex] |= setFaceShapeBy4Corners(&m_Vertices[j * 4], faceNormals[faceIndex].axis, faceNormals[faceIndex].axisValue);
+
+						// only swap for the first 6 faces, while computing all faces on the first 6 sides, such as for stair model.
+						if (j != faceIndex && j < 6) {
+							swapFaces(faceIndex * 4, j * 4);
+						}
+					}
+				}
+			}
+		}
+		m_bHasFaceShape = true;
+	}
+
+	void BlockModel::DumpToLog()
+	{
+		OUTPUT_LOG("BlockModel: %d faces\n", m_nFaceCount);
+		for (int i = 0; i < m_nFaceCount; ++i)
+		{
+			OUTPUT_LOG("Face %d: shape: %d\n", i, (i < 6) ? m_faceShape[i] : -1);
+			for (int j = 0; j < 4; ++j)
+			{
+				OUTPUT_LOG("  pos %d: %f %f %f\n", j, m_Vertices[i * 4 + j].position[0], m_Vertices[i * 4 + j].position[1], m_Vertices[i * 4 + j].position[2]);
+				OUTPUT_LOG("  norm %d: %f %f %f\n", j, m_Vertices[i * 4 + j].normal[0], m_Vertices[i * 4 + j].normal[1], m_Vertices[i * 4 + j].normal[2]);
+			}
+		}
+	}
+
+	int BlockVertexCompressed::GetCubeFaceId() const
+	{
+		if (normal[1] == 1.0f)
+			return position[1] == 1 ? 0 : -1;
+		else if (normal[2] == -1.0f)
+			return position[2] == 0 ? 1 : -1;
+		else if (normal[1] == -1.0f)
+			return position[1] == 0.f ? 2 : -1;
+		else if (normal[0] == -1.0f)
+			return position[0] == 0.f ? 3 : -1;
+		else if (normal[0] == 1.0f)
+			return position[0] == 1.f ? 4 : -1;
+		else if (normal[2] == 1.0f)
+			return position[2] == 1.f ? 5 : -1;
+		else
+			return -1;
+	}
 }
 

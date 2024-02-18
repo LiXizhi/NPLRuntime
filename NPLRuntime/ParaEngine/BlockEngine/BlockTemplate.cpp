@@ -230,6 +230,33 @@ namespace ParaEngine
 			return m_block_models[0];
 	}
 
+	int BlockTemplate::GetFaceShape(int nSide, int32_t nData)
+	{
+		if (IsMatchAttribute(batt_cubeModel) && !IsMatchAttribute(batt_transparent))
+		{
+			if (IsMatchAttribute(batt_solid))
+				return 0xf;
+			else if (m_pBlockModelFilter != 0)
+			{
+				return GetBlockModelByData(nData).GetFaceShape(nSide);
+			}
+		}
+		return 0;
+	}
+
+	int BlockTemplate::GetFaceShapeDirect(int nSide, int32_t nData)
+	{
+		if (IsMatchAttribute(batt_cubeModel))
+		{
+			if (IsMatchAttribute(batt_solid))
+				return 0xf;
+			else if (m_pBlockModelFilter != 0)
+			{
+				return GetBlockModelByData(nData).GetFaceShape(nSide);
+			}
+		}
+		return 0;
+	}
 
 	BlockModel& BlockTemplate::GetBlockModel(int nIndex)
 	{
@@ -304,7 +331,6 @@ namespace ParaEngine
 			m_block_models.resize(2, GetBlockModel());
 			m_block_models[0].LoadModel("slab_top");
 			m_block_models[1].LoadModel("slab_bottom");
-
 			SetPhysicalHeight(0.5f);
 		}
 		else if (sModelName == "vine")

@@ -14,12 +14,15 @@
 #include "BlockWorld.h"
 #include "VertexFVF.h"
 #include "BlockTessellators.h"
+#ifdef USE_OLD_BLOCK_DATA_CUT_CONFIG_MAPPING
 #include "BlockTessellateFastCutConfig.h"
+#endif
 #include <map>
 #include <set>
 #include <boost/container/small_vector.hpp>
 
 using namespace ParaEngine;
+const int oppositeSides[6] = { 2, 5, 0, 4, 3, 1 };
 
 ParaEngine::BlockTessellatorBase::BlockTessellatorBase(CBlockWorld* pWorld)
 	: m_pWorld(pWorld), m_pCurBlockTemplate(0), m_pCurBlockModel(0), m_blockId_ws(0, 0, 0), m_nBlockData(0), m_pChunk(0), m_blockId_cs(0, 0, 0)
@@ -297,7 +300,7 @@ int32 ParaEngine::BlockGeneralTessellator::TessellateBlock(BlockChunk* pChunk, u
 		}
 		else
 		{
-			// standard cube including tree leaves. 
+			// standard cube including tree leaves, transparent cubes. 
 			TessellateStdCube(dwShaderID, materialId);
 		}
 	}
@@ -338,25 +341,108 @@ bool checkFaceContain(Vector2 *rectSelf,Vector2 *rectTemp) {
 	return true;
 }
 
-
 void ParaEngine::BlockGeneralTessellator::TessellateUniformLightingCustomModel(BlockRenderMethod dwShaderID, int materialId)
 {
 	if (m_pChunk->GetBlockFaceMaterial(m_packedBlockId, 0) != materialId) return;
 
 	int nFetchNearybyCount = 7; //  m_pCurBlockTemplate->IsTransparent() ? 7 : 1;
 	FetchNearbyBlockInfo(m_pChunk, m_blockId_cs, nFetchNearybyCount);
-
-	tessellatedModel.CloneVertices(m_pCurBlockTemplate->GetBlockModel(m_pWorld, m_blockId_ws.x, m_blockId_ws.y, m_blockId_ws.z, (uint16)m_nBlockData, neighborBlocks));
-
 	const uint16_t nFaceCount = m_pCurBlockModel->GetFaceCount();
 
-	// custom model does not use AO and does not remove any invisible faces. 
+	// custom model does not use AO
 	int32_t max_light = 0;
 	int32_t max_sun_light = 0;
 	int32_t max_block_light = 0;
 
 	DWORD dwBlockColor = m_pCurBlockTemplate->GetDiffuseColor(m_nBlockData);
 	const bool bHasColorData = dwBlockColor != Color::White;
+
+	if (m_pCurBlockModel->HasFaceShape())
+	{
+		bool bIsTransparent = m_pCurBlockTemplate->IsTransparentModel();
+		float fLightValue = 0;
+		uint8 block_lightvalue = 0, sun_lightvalue = 0;
+		// for slope, stairs, slab which have face shape precalculated,
+		// We can do a more precision hidden face removal with standard solid cubes and other face shape enabled blocks.
+		if (dwShaderID == BLOCK_RENDER_FIXED_FUNCTION)
+		{
+			max_light = GetMeshBrightness(m_pCurBlockTemplate, &(blockBrightness[rbp_center]));
+
+			// not render completely dark
+			max_light = Math::Max(max_light, 2);
+			fLightValue = m_pWorld->GetLightBrightnessLinearFloat(max_light);
+		}
+		else
+		{
+			max_sun_light = GetMeshBrightness(m_pCurBlockTemplate, &(blockBrightness[rbp_center + nFetchNearybyCount * 2]));
+			max_block_light = GetMeshBrightness(m_pCurBlockTemplate, &(blockBrightness[rbp_center + nFetchNearybyCount]));
+
+			block_lightvalue = m_pWorld->GetLightBrightnessInt(max_block_light);
+			sun_lightvalue = max_sun_light << 4;
+		}
+
+		for (int face = 0; face < nFaceCount; ++face)
+		{
+			int nFirstVertex = face * 4;
+			bool bRemoveFace = false;
+			if (face < 6)
+			{
+				Block* pCurBlock = neighborBlocks[BlockCommon::RBP_SixNeighbors[face]];
+				bRemoveFace = !(!pCurBlock || m_pCurBlockModel->GetFaceShape(face) == 0 || (pCurBlock->GetTemplate()->GetLightOpacity() < 15 &&
+						((!bIsTransparent || pCurBlock->IsTransparentModel() != bIsTransparent) ? (pCurBlock->GetFaceShape(oppositeSides[face]) != m_pCurBlockModel->GetFaceShape(face)) : (pCurBlock->GetFaceShapeDirect(oppositeSides[face]) != m_pCurBlockModel->GetFaceShape(face)))
+					));
+			}
+			else
+			{
+				int nFaceId = m_pCurBlockModel->GetVertices()[nFirstVertex].GetCubeFaceId();
+				if (nFaceId >= 0 && m_pCurBlockModel->GetFaceShape(nFaceId) != 0)
+				{
+					Block* pCurBlock = neighborBlocks[BlockCommon::RBP_SixNeighbors[nFaceId]];
+					if(pCurBlock)
+					{
+						if ((!bIsTransparent || pCurBlock->IsTransparentModel() != bIsTransparent))
+						{
+							auto neighbourFaceShape = pCurBlock->GetFaceShape(oppositeSides[nFaceId]);
+							if (neighbourFaceShape == 0xf || neighbourFaceShape == m_pCurBlockModel->GetFaceShape(nFaceId))
+							{
+								bRemoveFace = true;
+							}
+						}
+						else
+						{
+							// tricky: transparent block should remove faces if the neighbour block is also transparent, 
+							// for example, transparent stairs should remove faces if the neighbour block is also transparent, even they are of different color.
+							auto neighbourFaceShape = pCurBlock->GetFaceShapeDirect(oppositeSides[nFaceId]);
+							if (neighbourFaceShape == 0xf || neighbourFaceShape == m_pCurBlockModel->GetFaceShape(nFaceId))
+							{
+								bRemoveFace = true;
+							}
+						}
+					}
+				}
+			}
+			if (!bRemoveFace)
+			{
+				for (int v = 0; v < 4; ++v)
+				{
+					int i = nFirstVertex + v;
+					int nIndex = tessellatedModel.AddVertex(*m_pCurBlockModel, i);
+					if (dwShaderID != BLOCK_RENDER_FIXED_FUNCTION)
+						tessellatedModel.SetVertexLight(nIndex, block_lightvalue, sun_lightvalue);
+					else
+						tessellatedModel.SetLightIntensity(nIndex, fLightValue);
+						
+					if (bHasColorData)
+						tessellatedModel.SetVertexColor(nIndex, dwBlockColor);
+				}
+				tessellatedModel.IncrementFaceCount(1);
+			}
+		}
+		return;
+	}
+
+    // for other models, that does not remove hidden surfaces. 
+	tessellatedModel.CloneVertices(m_pCurBlockTemplate->GetBlockModel(m_pWorld, m_blockId_ws.x, m_blockId_ws.y, m_blockId_ws.z, (uint16)m_nBlockData, neighborBlocks));
 
 	if (dwShaderID == BLOCK_RENDER_FIXED_FUNCTION)
 	{
@@ -365,7 +451,6 @@ void ParaEngine::BlockGeneralTessellator::TessellateUniformLightingCustomModel(B
 		// not render completely dark
 		max_light = Math::Max(max_light, 2);
 		float fLightValue = m_pWorld->GetLightBrightnessLinearFloat(max_light);
-
 		for (int face = 0; face < nFaceCount; ++face)
 		{
 			int nFirstVertex = face * 4;
@@ -386,14 +471,15 @@ void ParaEngine::BlockGeneralTessellator::TessellateUniformLightingCustomModel(B
 		max_sun_light = GetMeshBrightness(m_pCurBlockTemplate, &(blockBrightness[rbp_center + nFetchNearybyCount * 2]));
 		max_block_light = GetMeshBrightness(m_pCurBlockTemplate, &(blockBrightness[rbp_center + nFetchNearybyCount]));
 
+		uint8 block_lightvalue = m_pWorld->GetLightBrightnessInt(max_block_light);
+		uint8 sun_lightvalue = max_sun_light << 4;
+		
+		int tempFaceCount = nFaceCount;
+// obsoleted, now we use face shape instead
+#ifdef USE_OLD_BLOCK_DATA_CUT_CONFIG_MAPPING
 		int curModelId = m_pCurBlockTemplate->GetID();
 		auto modelId = BlockTessellateFastCutCfg::GetModelIDFromModelName(m_pCurBlockTemplate->GetModelName());
 
-		uint8 block_lightvalue = m_pWorld->GetLightBrightnessInt(max_block_light);
-		uint8 sun_lightvalue = max_sun_light << 4;
-
-		
-		int tempFaceCount = nFaceCount;
 		int cur_id_data = m_nBlockData;
 		cur_id_data = cur_id_data & 0xff;
 
@@ -430,7 +516,7 @@ void ParaEngine::BlockGeneralTessellator::TessellateUniformLightingCustomModel(B
 			auto& verts = tessellatedModel.Vertices();
 			for (auto iter = facesNeedCut.rbegin(); iter != facesNeedCut.rend(); iter++) {
 				int selfFace = *iter;
-				int start = selfFace * 4;//去掉这个面的四个顶点，并前移数组
+				int start = selfFace * 4;   //去掉这个面的四个顶点，并前移数组
 				for (int v = start; v < tempFaceCount * 4 - 4; v++) {
 					verts[v] = verts[v + 4];
 				}
@@ -647,7 +733,7 @@ void ParaEngine::BlockGeneralTessellator::TessellateUniformLightingCustomModel(B
 		}
 		
 #endif
-
+#endif
 		for (int face = 0; face < tempFaceCount; ++face)
 		{
 			int nFirstVertex = face * 4;
@@ -737,6 +823,8 @@ void ParaEngine::BlockGeneralTessellator::TessellateLiquidOrIce(BlockRenderMetho
 	//----------calc vertex lighting----------------
 	for (int face = 0; face < nFaceCount; ++face)
 	{
+		// if (m_pChunk->GetBlockFaceMaterial(m_packedBlockId, face) != materialId) continue;
+
 		int nFirstVertex = face * 4;
 
 		Block* pCurBlock = neighborBlocks[BlockCommon::RBP_SixNeighbors[face]];
@@ -931,7 +1019,7 @@ void ParaEngine::BlockGeneralTessellator::TessellateStdCube(BlockRenderMethod dw
 
 		Block* pCurBlock = neighborBlocks[BlockCommon::RBP_SixNeighbors[face]];
 
-		if ((!pCurBlock || (pCurBlock->GetTemplate()->GetLightOpacity() < 15)) && 
+		if (((!pCurBlock) || (pCurBlock->GetTemplate()->GetLightOpacity() < 15 && (pCurBlock->GetFaceShape(oppositeSides[face]) != 0xf))) &&
 			/** we will skip standard material if there is a block material */
 			((materialId < 0 && (!bHasBlockMaterial || m_pChunk->GetBlockFaceMaterial(packedBlockId, (int16)face) < 0)) ||
 			/** we will only output the give block material */

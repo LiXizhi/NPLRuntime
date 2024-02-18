@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 #include <vector>
 #include <set>
 #include "BlockTemplate.h"
@@ -31,6 +31,24 @@ namespace ParaEngine
 		inline uint16_t GetTemplateId()
 		{
 			return m_pTemplate->GetID();
+		}
+
+		inline int GetFaceShape(int nFaceIndex)
+		{
+			return m_pTemplate->GetFaceShape(nFaceIndex, m_blockData);
+		}
+
+		inline int GetFaceShapeDirect(int nFaceIndex)
+		{
+			return m_pTemplate->GetFaceShapeDirect(nFaceIndex, m_blockData);
+		}
+
+		inline bool IsTransparent(){
+			return m_pTemplate->IsTransparent();
+		}
+
+		inline bool IsTransparentModel() {
+			return m_pTemplate->IsTransparentModel();
 		}
 
 		inline uint32_t GetUserData(){return m_blockData;}
@@ -112,8 +130,10 @@ namespace ParaEngine
 	class LightData
 	{
 	public:
-		inline LightData():m_value(0) {}
-		LightData(uint8 value): m_value(value) {}
+		inline LightData():m_value(0)
+		{
+		}
+
 		uint8_t GetBrightness(bool isSunLight);
 
 		void SetBrightness(uint8_t value,bool isSunLight);
@@ -146,7 +166,7 @@ namespace ParaEngine
 
 		/** 16*16*16 of light data (fixed sized at initialization)*/
 		std::vector<LightData> m_lightmapArray;
-		
+
 		/* indices, materialCount map of all blocks that has at least one external block material associated to its faces. */
 		std::map<uint16_t, uint8_t> m_materialBlockIndices;
 
@@ -289,7 +309,7 @@ namespace ParaEngine
 
 		void ClearAllLight();
 		void ClearLightMap();
-		
+
 		/** check if a given block contains at least one block material */
 		bool HasBlockMaterial(Uint16x3& blockId_r);
 		bool HasBlockMaterial(uint16 nPackedBlockID);
