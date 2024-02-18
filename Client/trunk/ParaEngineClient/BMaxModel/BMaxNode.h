@@ -51,7 +51,7 @@ namespace ParaEngine
 		*/
 		BMaxNode* GetNeighbour(BlockDirection::Side nSize);
 		BMaxNode* GetNeighbourByOffset(Vector3 offset);
-		inline bool isSolid();
+		inline bool isSolid() { return m_bIsSolid; };
 		void setSolid(bool bValue);
 
 		/** 

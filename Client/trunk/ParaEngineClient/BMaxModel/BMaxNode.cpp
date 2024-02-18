@@ -108,11 +108,6 @@ BMaxNode* ParaEngine::BMaxNode::GetNeighbourByOffset(Vector3 offset)
 	return m_pParser->GetBMaxNode(nX, nY, nZ);
 }
 
-bool ParaEngine::BMaxNode::isSolid()
-{
-	return m_bIsSolid;
-}
-
 void ParaEngine::BMaxNode::setSolid(bool bValue)
 {
 	m_bIsSolid = bValue;
