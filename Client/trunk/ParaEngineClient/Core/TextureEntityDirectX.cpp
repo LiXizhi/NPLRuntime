@@ -1390,12 +1390,11 @@ TextureEntity* TextureEntityDirectX::LoadUint8Buffer(const uint8 * pTexels, int 
 		{
 			D3DLOCKED_RECT lr;
 			m_pTexture->LockRect(0, &lr, NULL, 0);
-			// flip y 
+			// memcpy(lr.pBits, pTexels, width*height * 4);
 			for (int y = 0; y < height; y++)
 			{
-				memcpy((uint8*)lr.pBits + y * lr.Pitch, pTexels + (height - y - 1) * width * 4, width * 4);
+				memcpy((uint8*)lr.pBits + y * lr.Pitch, pTexels + y * width * 4, width * 4);
 			}
-			// memcpy(lr.pBits, pTexels, width*height * 4);
 			m_pTexture->UnlockRect(0);
 		}
 	}
@@ -1766,6 +1765,10 @@ bool ParaEngine::TextureEntityDirectX::LoadImageFromString(const char* cmd)
 					{
 						nTextureWidth = std::max(nTextureWidth, texWidth);
 						nTextureHeight = std::max(nTextureHeight, texHeight);
+						if(toX < 0)
+							toX = nTextureWidth - 1;
+						if(toY < 0)
+							toY = nTextureHeight - 1;
 						if (nBytesPerPixel == 4)
 						{
 							DWORD* pData = (DWORD*)imageData;
@@ -1792,8 +1795,6 @@ bool ParaEngine::TextureEntityDirectX::LoadImageFromString(const char* cmd)
 								D3DLOCKED_RECT lockedRect;
 								if (SUCCEEDED(m_pTexture->LockRect(0, &lockedRect, NULL, D3DLOCK_DISCARD)))
 								{
-									// for direcX, the origin is at the top-left corner, so we need to flip the image.
-									std::swap(fromY, toY);
 									uint32 x = fromX, y = fromY;
 
 									DWORD* pDest = (DWORD*)lockedRect.pBits;
@@ -1830,8 +1831,6 @@ bool ParaEngine::TextureEntityDirectX::LoadImageFromString(const char* cmd)
 			else
 			{
 				DWORD* imageData = new DWORD[nTextureWidth * nTextureHeight];
-				// for direcX, the origin is at the top-left corner, so we need to flip the image.
-				std::swap(fromY, toY);
 				uint32 x = fromX, y = fromY;
 				while (true) {
 					x = fromX;
