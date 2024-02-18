@@ -142,15 +142,15 @@ void ParaEngine::CStairModelProvider::_buildBlockModels()
 			_AddVertex(template_1, pts, normal);
 		}
 
-		//左边的上半部分
+		//左边的下半部分
 		{
 			BlockVertexCompressed vertArr[4];
 			Vector3 normal = Vector3(0, 0, -1);
 			Vector3 pts[4] = {
-				Vector3(0, 0.5f, 0.5f),
-				Vector3(0, 1, 0.5f),
-				Vector3(1, 1, 0.5f),
-				Vector3(1, 0.5f, 0.5f)
+				Vector3(0, 0, 0),
+				Vector3(0, 0.5f, 0),
+				Vector3(1, 0.5f, 0),
+				Vector3(1, 0, 0)
 			};
 			_AddVertex(template_1, pts, normal);
 		}
@@ -233,19 +233,18 @@ void ParaEngine::CStairModelProvider::_buildBlockModels()
 			_AddVertex(template_1, pts, normal);
 		}
 
-		//左边的下半部分
+		//左边的上半部分
 		{
 			BlockVertexCompressed vertArr[4];
 			Vector3 normal = Vector3(0, 0, -1);
 			Vector3 pts[4] = {
-				Vector3(0, 0, 0),
-				Vector3(0, 0.5f, 0),
-				Vector3(1, 0.5f, 0),
-				Vector3(1, 0, 0)
+				Vector3(0, 0.5f, 0.5f),
+				Vector3(0, 1, 0.5f),
+				Vector3(1, 1, 0.5f),
+				Vector3(1, 0.5f, 0.5f)
 			};
 			_AddVertex(template_1, pts, normal);
 		}
-
 	}
 
 	//第2个形状
@@ -264,15 +263,15 @@ void ParaEngine::CStairModelProvider::_buildBlockModels()
 			_AddVertex(template_2, pts, normal);
 		}
 
-		//上面的左边部分
+		//上面的右下部分
 		{
 			BlockVertexCompressed vertArr[4];
 			Vector3 normal = Vector3(0, 1, 0);
 			Vector3 pts[4] = {
-				Vector3(0,0.5f,0),
-				Vector3(0, 0.5f, 1),
-				Vector3(0.5f, 0.5f, 1),
-				Vector3(0.5f, 0.5f, 0)
+				Vector3(0.5f, 1, 0),
+				Vector3(0.5f, 1, 0.5f),
+				Vector3(1, 1, 0.5f),
+				Vector3(1, 1, 0)
 			};
 			_AddVertex(template_2, pts, normal);
 		}
@@ -290,19 +289,19 @@ void ParaEngine::CStairModelProvider::_buildBlockModels()
 			_AddVertex(template_2, pts, normal);
 		}
 		
-		//左面上部分
+		//左面下部分
 		{
 			BlockVertexCompressed vertArr[4];
 			Vector3 normal = Vector3(-1, 0, 0);
 			Vector3 pts[4] = {
-				Vector3(0.5f, 0.5f, 0.5f),
-				Vector3(0.5f,1, 0.5f),
-				Vector3(0.5f,1,0),
-				Vector3(0.5f, 0.5f,0)
+				Vector3(0,0,1),
+				Vector3(0,0.5f,1),
+				Vector3(0,0.5f,0),
+				Vector3(0,0, 0)
 			};
 			_AddVertex(template_2, pts, normal);
 		}
-		
+
 		//右面上部分
 		{
 			BlockVertexCompressed vertArr[4];
@@ -312,19 +311,6 @@ void ParaEngine::CStairModelProvider::_buildBlockModels()
 				Vector3(1, 1, 0),
 				Vector3(1, 1, 0.5f),
 				Vector3(1, 0.5f, 0.5f)
-			};
-			_AddVertex(template_2, pts, normal);
-		}
-		
-		//后面的上部分
-		{
-			BlockVertexCompressed vertArr[4];
-			Vector3 normal = Vector3(0, 0, 1);
-			Vector3 pts[4] = {
-				Vector3(1, 0.5f, 0.5f),
-				Vector3(1, 1, 0.5f),
-				Vector3(0.5f, 1, 0.5f),
-				Vector3(0.5f, 0.5f, 0.5f)
 			};
 			_AddVertex(template_2, pts, normal);
 		}
@@ -341,6 +327,19 @@ void ParaEngine::CStairModelProvider::_buildBlockModels()
 			_AddVertex(template_2, pts, normal);
 		}
 
+		//后面的上部分
+		{
+			BlockVertexCompressed vertArr[4];
+			Vector3 normal = Vector3(0, 0, 1);
+			Vector3 pts[4] = {
+				Vector3(1, 0.5f, 0.5f),
+				Vector3(1, 1, 0.5f),
+				Vector3(0.5f, 1, 0.5f),
+				Vector3(0.5f, 0.5f, 0.5f)
+			};
+			_AddVertex(template_2, pts, normal);
+		}
+		
 		//上面的右上部分
 		{
 			BlockVertexCompressed vertArr[4];
@@ -353,18 +352,19 @@ void ParaEngine::CStairModelProvider::_buildBlockModels()
 			};
 			_AddVertex(template_2, pts, normal);
 		}
-		//上面的右下部分
+		//上面的左边部分
 		{
 			BlockVertexCompressed vertArr[4];
 			Vector3 normal = Vector3(0, 1, 0);
 			Vector3 pts[4] = {
-				Vector3(0.5f, 1, 0),
-				Vector3(0.5f, 1, 0.5f),
-				Vector3(1, 1, 0.5f),
-				Vector3(1, 1, 0)
+				Vector3(0,0.5f,0),
+				Vector3(0, 0.5f, 1),
+				Vector3(0.5f, 0.5f, 1),
+				Vector3(0.5f, 0.5f, 0)
 			};
 			_AddVertex(template_2, pts, normal);
 		}
+
 		//前面的下部分
 		{
 			BlockVertexCompressed vertArr[4];
@@ -377,18 +377,19 @@ void ParaEngine::CStairModelProvider::_buildBlockModels()
 			};
 			_AddVertex(template_2, pts, normal);
 		}
-		//左面下部分
+		//左面上部分
 		{
 			BlockVertexCompressed vertArr[4];
 			Vector3 normal = Vector3(-1, 0, 0);
 			Vector3 pts[4] = {
-				Vector3(0,0,1),
-				Vector3(0,0.5f,1),
-				Vector3(0,0.5f,0),
-				Vector3(0,0, 0)
+				Vector3(0.5f, 0.5f, 0.5f),
+				Vector3(0.5f,1, 0.5f),
+				Vector3(0.5f,1,0),
+				Vector3(0.5f, 0.5f,0)
 			};
 			_AddVertex(template_2, pts, normal);
 		}
+		
 		//右面下部分
 		{
 			BlockVertexCompressed vertArr[4];
