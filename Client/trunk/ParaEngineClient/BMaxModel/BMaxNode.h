@@ -32,7 +32,7 @@ namespace ParaEngine
 		}
 		virtual DWORD GetColor();
 		BlockModel *GetBlockModel();
-		CParaXModel *GetParaXModel();
+		virtual CParaXModel *GetParaXModel();
 		virtual bool HasTransform();
 		virtual Matrix4 GetTransform();
 		/** set block model weak reference. */
@@ -51,8 +51,8 @@ namespace ParaEngine
 		*/
 		BMaxNode* GetNeighbour(BlockDirection::Side nSize);
 		BMaxNode* GetNeighbourByOffset(Vector3 offset);
-		virtual bool isSolid();
-		virtual void setSolid(bool bValue);
+		inline bool isSolid();
+		void setSolid(bool bValue);
 
 		/** 
 		* @param tessellatedModel: generate block model vertices
@@ -69,6 +69,8 @@ namespace ParaEngine
 		void SetFaceVisible(int nIndex);
 		void SetFaceUsed(int nIndex);
 		bool IsFaceNotUse(int nIndex);
+
+		int GetFaceShape(int nIndex);
 	public:
 		int16 x;
 		int16 y;
@@ -82,7 +84,6 @@ namespace ParaEngine
 		DWORD m_color;
 		/* weak reference to block model*/
 		BlockModel * m_pBlockModel;
-		CParaXModel * m_pParaXModel;
 		FaceStatus m_facesStatus[6];
 	};
 	typedef ref_ptr<BMaxNode> BMaxNodePtr;

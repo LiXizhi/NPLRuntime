@@ -17,8 +17,7 @@ namespace ParaEngine
 		virtual bool HasTransform();
 		virtual Matrix4 GetTransform();
 		void SetTransform(Matrix4& mat);
-
-		virtual bool isSolid();
+		virtual CParaXModel* GetParaXModel();
 
 		virtual int TessellateBlock(BlockModel* tessellatedModel);
 	public:
@@ -26,6 +25,8 @@ namespace ParaEngine
 		float m_fFacing;
 		Matrix4 matLocalTrans;
 		bool bHasTransform;
+		CParaXModel* m_pParaXModel;
+
 	};
 	typedef ref_ptr<BMaxBlockModelNode> BMaxBlockModelNodePtr;
 }

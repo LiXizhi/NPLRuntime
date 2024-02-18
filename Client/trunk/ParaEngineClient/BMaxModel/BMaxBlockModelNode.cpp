@@ -17,8 +17,9 @@
 using namespace ParaEngine;
 
 ParaEngine::BMaxBlockModelNode::BMaxBlockModelNode(BMaxParser* pParser, int16 x_, int16 y_, int16 z_, int32 template_id_, int32 block_data_)
-	:BMaxNode(pParser, x_, y_, z_, template_id_, block_data_), bHasTransform(false)
+	:BMaxNode(pParser, x_, y_, z_, template_id_, block_data_), bHasTransform(false), m_pParaXModel(NULL)
 {
+	m_bIsSolid = false;
 	matLocalTrans.identity();
 }
 
@@ -53,9 +54,9 @@ void ParaEngine::BMaxBlockModelNode::SetTransform(Matrix4& mat)
 	matLocalTrans = mat;
 }
 
-bool ParaEngine::BMaxBlockModelNode::isSolid()
+CParaXModel* ParaEngine::BMaxBlockModelNode::GetParaXModel() 
 {
-	return false;
+	return m_pParaXModel;
 }
 
 int ParaEngine::BMaxBlockModelNode::TessellateBlock(BlockModel* tessellatedModel)
