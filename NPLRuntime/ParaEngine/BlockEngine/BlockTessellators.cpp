@@ -384,6 +384,8 @@ void ParaEngine::BlockGeneralTessellator::TessellateUniformLightingCustomModel(B
 		for (int face = 0; face < nFaceCount; ++face)
 		{
 			int nFirstVertex = face * 4;
+			if(m_pCurBlockModel->GetVertices()[nFirstVertex].IsEmptyFace())
+				continue;
 			bool bRemoveFace = false;
 			if (face < 6)
 			{
