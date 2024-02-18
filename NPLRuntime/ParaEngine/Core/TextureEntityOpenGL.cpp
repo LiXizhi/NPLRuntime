@@ -1051,6 +1051,10 @@ bool ParaEngine::TextureEntityOpenGL::LoadImageFromString(const char* cmd)
 					{
 						nTextureWidth = std::max(nTextureWidth, texWidth);
 						nTextureHeight = std::max(nTextureHeight, texHeight);
+						if (toX < 0)
+							toX = nTextureWidth - 1;
+						if (toY < 0)
+							toY = nTextureHeight - 1;
 						if (nBytesPerPixel == 4)
 						{
 							DWORD* pData = (DWORD*)imageData;
