@@ -14,22 +14,22 @@ namespace ParaEngine
 	public:
 		float position[3];  //4byte
 		float normal[3];  //4byte
-		
-		/** for fixed function: ao_shadow, max_light, max_light, max_light 
+
+		/** for fixed function: ao_shadow, max_light, max_light, max_light
 		for shader:  ao_shadow, sun_light, block_light, block_id
 		*/
 		DWORD color;	  //4byte;
 		/** color of the block, default to white. Only used in color block.*/
 		DWORD color2;	  //4byte;
 		float texcoord[2];  //8byte
-		
+
 	public:
 		BlockVertexCompressed()
 			:color(0xffffffff), color2(0xffffffff)
 		{
 		}
 
-		inline void SetPosition(float x,float y,float z)
+		inline void SetPosition(float x, float y, float z)
 		{
 			position[0] = x;
 			position[1] = y;
@@ -62,7 +62,7 @@ namespace ParaEngine
 			return Vector3(position[0], position[1], position[2]);
 		}
 
-		inline void SetNormal(float x,float y,float z)
+		inline void SetNormal(float x, float y, float z)
 		{
 			normal[0] = x;
 			normal[1] = y;
@@ -92,12 +92,12 @@ namespace ParaEngine
 		int GetCubeFaceId() const;
 
 		/** if normal is zero, this is a hidden face. */
-		inline bool BlockVertexCompressed::IsEmptyFace() const
+		inline bool IsEmptyFace() const
 		{
 			return normal[0] == 0 && normal[1] == 0 && normal[2] == 0;
 		}
 
-		inline void OffsetPosition(float dx,float dy,float dz)
+		inline void OffsetPosition(float dx, float dy, float dz)
 		{
 			position[0] += dx;
 			position[1] += dy;
@@ -116,7 +116,7 @@ namespace ParaEngine
 			position[1] *= scale;
 		}
 
-		inline void SetTexcoord(float u,float v)
+		inline void SetTexcoord(float u, float v)
 		{
 			texcoord[0] = u;
 			texcoord[1] = v;
@@ -129,7 +129,7 @@ namespace ParaEngine
 		}
 
 
-		inline void GetTexcoord(float& u,float& v)
+		inline void GetTexcoord(float& u, float& v)
 		{
 			u = texcoord[0];
 			v = texcoord[1];
@@ -139,7 +139,7 @@ namespace ParaEngine
 		{
 			return Vector2(texcoord[0], texcoord[1]);
 		}
-		
+
 		inline void SetLightColor(DWORD color_)
 		{
 			color = color_;
@@ -149,36 +149,36 @@ namespace ParaEngine
 		inline void SetLightIntensity(float amount)
 		{
 			DWORD light = (DWORD)(amount * 255);
-			color = (color&0xff000000) | (light<<16 | light<<8 | light);
+			color = (color & 0xff000000) | (light << 16 | light << 8 | light);
 		}
 
 		/** used for shader rendering */
 		inline void SetVertexLight(DWORD nBlockLight, DWORD nSunLight)
 		{
-			color = (color&0xff0000ff) | (nSunLight<<16 | nBlockLight<<8);
+			color = (color & 0xff0000ff) | (nSunLight << 16 | nBlockLight << 8);
 		}
 
 		/** used for shader rendering */
 		inline void SetCategoryID(DWORD nBlockID)
 		{
-			color = (color&0xffffff00) | nBlockID;
+			color = (color & 0xffffff00) | nBlockID;
 		}
 
-		/** make it darker, each time this function is called. 
+		/** make it darker, each time this function is called.
 		*/
 		inline void SetShadow()
 		{
 			// color = (180<<24) | (color&0x00ffffff);
-			color = (((byte)(color>>24)-45)<<24) | (color&0x00ffffff);
+			color = (((unsigned char)(color >> 24) - 45) << 24) | (color & 0x00ffffff);
 		}
 
 		/** similar to SetShadow, except that it uses a user provided value [0,255] */
-		inline void SetColorStrength(byte strength)
+		inline void SetColorStrength(unsigned char strength)
 		{
-			color = (strength<<24) | (color&0x00ffffff);
+			color = (strength << 24) | (color & 0x00ffffff);
 		}
 
-		
+
 		inline void SetBlockColor(DWORD color)
 		{
 			color2 = color;
@@ -202,32 +202,32 @@ namespace ParaEngine
 		{
 			evf_none = 0,
 			//edge
-			evf_topFront	= 0x001,
-			evf_topLeft		= 0x002,
-			evf_topRight	= 0x004,
-			evf_topBack		= 0x008,
-			evf_LeftFront	= 0x010,
-			evf_leftBack	= 0x020,
-			evf_rightFont	= 0x040,
-			evf_rightBack	= 0x080,
-			evf_bottomFront	= 0x100,
-			evf_bottomLeft	= 0x200,
-			evf_bottomRight	= 0x400,
-			evf_bottomBack	= 0x800,
+			evf_topFront = 0x001,
+			evf_topLeft = 0x002,
+			evf_topRight = 0x004,
+			evf_topBack = 0x008,
+			evf_LeftFront = 0x010,
+			evf_leftBack = 0x020,
+			evf_rightFont = 0x040,
+			evf_rightBack = 0x080,
+			evf_bottomFront = 0x100,
+			evf_bottomLeft = 0x200,
+			evf_bottomRight = 0x400,
+			evf_bottomBack = 0x800,
 
 			//vertex
-			evf_xyz		= 0x01000,
-			evf_xyNz	= 0x02000,
-			evf_xNyz	= 0x04000,
-			evf_xNyNz	= 0x08000,
+			evf_xyz = 0x01000,
+			evf_xyNz = 0x02000,
+			evf_xNyz = 0x04000,
+			evf_xNyNz = 0x08000,
 
-			evf_Nxyz	= 0x10000,
-			evf_NxyNz	= 0x20000,
-			evf_NxNyz	= 0x40000,
-			evf_NxNyNz  = 0x80000,
+			evf_Nxyz = 0x10000,
+			evf_NxyNz = 0x20000,
+			evf_NxNyz = 0x40000,
+			evf_NxNyNz = 0x80000,
 		};
 
-		BlockModel(int32_t texFaceNum=0);
+		BlockModel(int32_t texFaceNum = 0);
 
 		/** clone the given block model. */
 		void CloneRenderData(const BlockModel& from_block);
@@ -236,33 +236,33 @@ namespace ParaEngine
 		/** clear all vertices */
 		void ClearVertices();
 		/** add a new vertex
-		* @return the added vertex index. 
+		* @return the added vertex index.
 		*/
 		int AddVertex(const BlockVertexCompressed& vertex);
-		/** add vertex from another block. 
+		/** add vertex from another block.
 		* @return the added vertex index.
 		*/
 		int AddVertex(const BlockModel& from_block, int32 nVertexIndex);
 		void CloneVertices(const BlockModel& from_block);
-		
+
 		/** vertices */
 		std::vector<BlockVertexCompressed>& Vertices();
 
 		void SetAOMask(uint32_t edges);
 
-		void SetVerticalScale(EdgeVertexFlag vertexId,float scale);
+		void SetVerticalScale(EdgeVertexFlag vertexId, float scale);
 
 		/** offset the vertices */
 		void TranslateVertices(float dx, float dy, float dz);
 
-		/** only used for fixed function pipeline. 
+		/** only used for fixed function pipeline.
 		*/
-		inline void SetLightIntensity(uint32_t vertexId,float value)
+		inline void SetLightIntensity(uint32_t vertexId, float value)
 		{
 			m_Vertices[vertexId].SetLightIntensity(value);
 		}
 
-		/** 
+		/**
 		@param nBlockLight: 0-255
 		@param nSunLight: 0-255
 		*/
@@ -276,8 +276,8 @@ namespace ParaEngine
 
 
 		/** get bounding box vertices */
-		void GetBoundingBoxVertices(Vector3 * pVertices, int* pNumber);
-		static void GetBoundingBoxVertices(CShapeAABB& aabb, Vector3 * pVertices, int* pNumber);
+		void GetBoundingBoxVertices(Vector3* pVertices, int* pNumber);
+		static void GetBoundingBoxVertices(CShapeAABB& aabb, Vector3* pVertices, int* pNumber);
 
 		/** whether AABB is a cube */
 		bool IsCubeAABB();
@@ -287,13 +287,13 @@ namespace ParaEngine
 		void GetAABB(CShapeAABB* pOut) const;
 		const CShapeAABB& GetAABB() const;
 		void SetAABB(const Vector3& vMin, const Vector3& vMax);
-		
+
 		/** whether use ambient occlusion. */
-		bool IsUseAmbientOcclusion(){return m_bUseAO;};
-		void SetUseAmbientOcclusion(bool bValue){m_bUseAO = bValue;};
+		bool IsUseAmbientOcclusion() { return m_bUseAO; };
+		void SetUseAmbientOcclusion(bool bValue) { m_bUseAO = bValue; };
 
 		/** get face count. */
-		int GetFaceCount(){return m_nFaceCount;}
+		int GetFaceCount() { return m_nFaceCount; }
 		void SetFaceCount(int nFaceCount);
 		int IncrementFaceCount(int nDelta = 1);
 		/** get number of vertices */
@@ -301,12 +301,12 @@ namespace ParaEngine
 		void ReserveVertices(int nReservedSize = 24);
 
 		/** Is disable face culling */
-		bool IsDisableFaceCulling(){return m_bDisableFaceCulling;};
-		void SetDisableFaceCulling(bool bDisabled){ m_bDisableFaceCulling = bDisabled; };
+		bool IsDisableFaceCulling() { return m_bDisableFaceCulling; };
+		void SetDisableFaceCulling(bool bDisabled) { m_bDisableFaceCulling = bDisabled; };
 
 		/** whether to disable block and sun lighting when rendering this block. */
-		bool IsUsingSelfLighting() {return m_bUseSelfLighting;}
-		void SetUsingSelfLighting(bool bEnable) {m_bUseSelfLighting = bEnable;}
+		bool IsUsingSelfLighting() { return m_bUseSelfLighting; }
+		void SetUsingSelfLighting(bool bEnable) { m_bUseSelfLighting = bEnable; }
 
 		/** whether all vertices have same lighting value. */
 		bool IsUniformLighting() const { return m_bUniformLighting; }
@@ -336,13 +336,13 @@ namespace ParaEngine
 		void LoadCubeModel();
 		/** load from known model name */
 		void LoadModel(const std::string& sModelName);
-		/** set the vertex in shadow as in ao calculation. 
+		/** set the vertex in shadow as in ao calculation.
 		* @param nShadowLevel: [0,255]. 255 is completely dark. 0 is un-shadowed
 		*/
 		void SetVertexShadow(int nIndex, unsigned char nShadowLevel);
 		void SetVertexShadowFromAOFlags(int nIndex, int nCubeIndex, uint32 aoFlags);
 		void SetVertexColor(int nIndex, DWORD color);
-		
+
 		/** @return [0,255] the shadow level from current ambient occlusion flags.*/
 		unsigned char CalculateCubeVertexAOShadowLevel(int nIndex, uint32 aoFlags);
 
@@ -352,7 +352,7 @@ namespace ParaEngine
 		void RecalculateNormals();
 		Vector3 RecalculateNormalsOfRectFace(int startIdxOfFace);
 
-		/** 
+		/**
 		* @param nFaceIndex: [0,5]
 		*/
 		inline uint8 GetFaceShape(int nFaceIndex) const
@@ -412,11 +412,11 @@ namespace ParaEngine
 		static const int32_t g_bkLT = 21;
 		static const int32_t g_bkRT = 22;
 		static const int32_t g_bkRB = 23;
-		
+
 	private:
 		/** all vertices */
 		std::vector<BlockVertexCompressed> m_Vertices;
-		/** face shape. the lower 4 bits are 1 if one of the four corners has a vertex. for example, a cube is 0xf for each face. 
+		/** face shape. the lower 4 bits are 1 if one of the four corners has a vertex. for example, a cube is 0xf for each face.
 		* the higher 4 bits represents irregular shape if not 0.
 		* we may remove the face during rendering if the neighbor block' is solid's face has the same face shape value.
 		*/
@@ -433,7 +433,7 @@ namespace ParaEngine
 		bool m_bUseSelfLighting;
 		/** all vertices have same lighting value. */
 		bool m_bUniformLighting;
-		
+
 		/** whether AABB is a cube*/
 		bool m_bIsCubeAABB;
 
@@ -441,7 +441,7 @@ namespace ParaEngine
 		int m_nFaceCount;
 		/** index to the parent block template's texture array */
 		int m_nTextureIndex;
-		
+
 		/** the aabb bounding box */
 		CShapeAABB m_shapeAABB;
 
