@@ -92,7 +92,7 @@ namespace ParaEngine
 		int GetCubeFaceId() const;
 
 		/** if normal is zero, this is a hidden face. */
-		inline bool BlockVertexCompressed::IsEmptyFace() const
+		inline bool IsEmptyFace() const
 		{
 			return normal[0] == 0 && normal[1] == 0 && normal[2] == 0;
 		}
