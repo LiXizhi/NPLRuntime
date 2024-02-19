@@ -1329,6 +1329,8 @@ namespace ParaEngine
 
 		m_pBlockWorld->SuspendLightUpdate();
 
+		OUTPUT_LOG("111111111111111: BlockRegion ParserFile begin \n");
+
 		if ((data_mask & ChunkDataMask_HasCustomData) > 0)
 		{
 			// read all custom data until we meet ChunkCustomDataType_ChunksData
@@ -1588,6 +1590,7 @@ namespace ParaEngine
 
 			if (readSize != compressedSize)
 			{
+				OUTPUT_LOG("error: failed to read compressed data from file in BlockRegion parser %d (%d)\n", readSize, compressedSize);
 				delete[] compressedData;
 				delete[] uncompressedData;
 				return;
@@ -1612,7 +1615,7 @@ namespace ParaEngine
 
 			if (ret != Z_STREAM_END && ret != Z_OK)
 			{
-				OUTPUT_LOG("failure decompressing compressed data");
+				OUTPUT_LOG("error: failed to decompress data in BlockRegion\n");
 
 				delete[] compressedData;
 				delete[] uncompressedData;
