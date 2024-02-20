@@ -13,22 +13,21 @@
 
 #define INVALID_BLOCK_INDEX		0xffff
 #define GET_METERIAL_FACE_KEY(face, index) ((face)*4096+index)
-
 namespace ParaEngine
 {
 	int BlockChunk::s_total_chunks = 0;
 
-	BlockChunk::BlockChunk(uint16_t nPackedChunkId, BlockRegion* pRegion) : 
+	BlockChunk::BlockChunk(uint16_t nPackedChunkId, BlockRegion* pRegion) :
 		m_blockIndices(BlockConfig::g_chunkBlockCount, -1), m_nDirty(1), m_emptyBlockSlotIndex(INVALID_BLOCK_INDEX),
 		m_ownerBlockRegion(pRegion), m_packedChunkID(nPackedChunkId), m_isBoundaryChunk(0)
 	{
 		// m_blocks.reserve(4096);
 		SetLightingInitialized(false);
-		UnpackChunkIndex(m_packedChunkID,m_chunkId_rs.x,m_chunkId_rs.y,m_chunkId_rs.z);
-		
-		m_minBlockId_rs.x = m_chunkId_rs.x*16;
-		m_minBlockId_rs.y = m_chunkId_rs.y*16;
-		m_minBlockId_rs.z = m_chunkId_rs.z*16;
+		UnpackChunkIndex(m_packedChunkID, m_chunkId_rs.x, m_chunkId_rs.y, m_chunkId_rs.z);
+
+		m_minBlockId_rs.x = m_chunkId_rs.x * 16;
+		m_minBlockId_rs.y = m_chunkId_rs.y * 16;
+		m_minBlockId_rs.z = m_chunkId_rs.z * 16;
 
 		m_minBlockId_ws.x = pRegion->m_minBlockId_ws.x + m_minBlockId_rs.x;
 		m_minBlockId_ws.y = pRegion->m_minBlockId_ws.y + m_minBlockId_rs.y;
@@ -38,8 +37,12 @@ namespace ParaEngine
 			|| m_chunkId_rs.x == BlockConfig::g_regionChunkDimX - 1
 			|| m_chunkId_rs.y == BlockConfig::g_regionChunkDimY - 1
 			|| m_chunkId_rs.z == BlockConfig::g_regionChunkDimZ - 1);
-		
-		m_lightmapArray.resize(BlockConfig::g_chunkBlockCount,LightData());
+
+#ifdef EMSCRIPTEN_SINGLE_THREAD		
+		m_lightmapArray.resize(BlockConfig::g_chunkBlockCount, LightData(0xf0));
+#else
+		m_lightmapArray.resize(BlockConfig::g_chunkBlockCount, LightData());
+#endif
 		s_total_chunks++;
 	}
 
@@ -48,30 +51,35 @@ namespace ParaEngine
 		s_total_chunks--;
 	}
 
-	void BlockChunk::ReserveBlocks( int nCount )
+	void BlockChunk::ReserveBlocks(int nCount)
 	{
 		m_blocks.reserve(nCount);
 	}
 
 	void BlockChunk::Reset()
 	{
-		std::fill(m_blockIndices.begin(),m_blockIndices.end(),-1);
+		std::fill(m_blockIndices.begin(), m_blockIndices.end(), -1);
 		m_blocks.clear();
 		m_lightBlockIndices.clear();
 		SetDirty(false);
 		SetLightingInitialized(false);
 		m_emptyBlockSlotIndex = INVALID_BLOCK_INDEX;
-		std::fill(m_lightmapArray.begin(),m_lightmapArray.end(),LightData());
-		m_materialBlockIndices.clear();
-		m_materialsKeyIdMap.clear();
+#ifdef EMSCRIPTEN_SINGLE_THREAD		
+		std::fill(m_lightmapArray.begin(), m_lightmapArray.end(), LightData(0xf0));
+#else
+		std::fill(m_lightmapArray.begin(), m_lightmapArray.end(), LightData());
+#endif
 	}
 
 	void BlockChunk::ClearAllLight()
 	{
 		SetLightingInitialized(false);
+#ifdef EMSCRIPTEN_SINGLE_THREAD		
+		std::fill(m_lightmapArray.begin(), m_lightmapArray.end(), LightData(0xf0));
+#else
 		std::fill(m_lightmapArray.begin(), m_lightmapArray.end(), LightData());
+#endif
 	}
-
 
 	void BlockChunk::ClearLightMap()
 	{
@@ -95,15 +103,16 @@ namespace ParaEngine
 		return (iter != m_materialsKeyIdMap.end()) ? iter->second : -1;
 	}
 
+
 	void BlockChunk::ApplyBlockMaterial(uint16 nPackedBlockID, int16 nFaceIndex, int32 nMaterialID)
 	{
 		Block* pBlock = GetBlock(nPackedBlockID);
-		if (pBlock) 
+		if (pBlock)
 		{
 			BlockTemplate* pTemplate = pBlock->GetTemplate();
 			if (pTemplate)
 			{
-				if (pTemplate->IsMatchAttribute(BlockTemplate::batt_liquid)) return ;
+				if (pTemplate->IsMatchAttribute(BlockTemplate::batt_liquid)) return;
 				uint16_t x, y, z;
 				UnpackBlockIndex(nPackedBlockID, x, y, z);
 				x = m_minBlockId_ws.x + x;
@@ -112,7 +121,7 @@ namespace ParaEngine
 				BlockModel* pModel = &(pTemplate->GetBlockModel(GetBlockWorld(), x, y, z, (uint16)pBlock->GetUserData(), nullptr));
 				if (pModel)
 				{
-					if (pModel->IsUsingSelfLighting()) return ;
+					if (pModel->IsUsingSelfLighting()) return;
 					if (pModel->IsUniformLighting())
 					{
 						int nFaceCount = pModel->GetFaceCount();
@@ -140,7 +149,7 @@ namespace ParaEngine
 			auto iter = m_materialBlockIndices.find(nPackedBlockID);
 			if (iter != m_materialBlockIndices.end())
 			{
-				iter->second ++;
+				iter->second++;
 			}
 			else
 			{
@@ -151,14 +160,13 @@ namespace ParaEngine
 
 	void BlockChunk::RemoveBlockMaterial(uint16 nPackedBlockID, int16 nFaceIndex)
 	{
-	
 		Block* pBlock = GetBlock(nPackedBlockID);
-		if (pBlock) 
+		if (pBlock)
 		{
 			BlockTemplate* pTemplate = pBlock->GetTemplate();
 			if (pTemplate)
 			{
-				if (pTemplate->IsMatchAttribute(BlockTemplate::batt_liquid)) return ;
+				if (pTemplate->IsMatchAttribute(BlockTemplate::batt_liquid)) return;
 				uint16_t x, y, z;
 				UnpackBlockIndex(nPackedBlockID, x, y, z);
 				x = m_minBlockId_ws.x + x;
@@ -167,7 +175,7 @@ namespace ParaEngine
 				BlockModel* pModel = &(pTemplate->GetBlockModel(GetBlockWorld(), x, y, z, (uint16)pBlock->GetUserData(), nullptr));
 				if (pModel)
 				{
-					if (pModel->IsUsingSelfLighting()) return ;
+					if (pModel->IsUsingSelfLighting()) return;
 					if (pModel->IsUniformLighting())
 					{
 						int nFaceCount = pModel->GetFaceCount();
@@ -218,7 +226,7 @@ namespace ParaEngine
 		{
 			AddLight(nBlockIndex);
 		}
-		bool isTransparent = pTemplate? pTemplate->IsTransparent() : false;
+		bool isTransparent = pTemplate ? pTemplate->IsTransparent() : false;
 		UpdateHeightMapAtLoadTime(nBlockIndex, isTransparent);
 	}
 
@@ -243,7 +251,7 @@ namespace ParaEngine
 			for (int i = 1; i < nIndexSize; ++i)
 			{
 				nBlockIndex = blockIndices[i];
-				if (m_blockIndices[nBlockIndex] >=0)
+				if (m_blockIndices[nBlockIndex] >= 0)
 				{
 					// untested code: this should only happen when the function is called after load time, which almost never happens. 
 					Uint16x3 nPos = GetBlockPosRs(nBlockIndex);
@@ -251,7 +259,7 @@ namespace ParaEngine
 				}
 				pBlock->IncreaseInstanceCount();
 				m_blockIndices[nBlockIndex] = nIndex;
-				
+
 				if (bIsLightBlock)
 				{
 					AddLight(nBlockIndex);
@@ -259,7 +267,7 @@ namespace ParaEngine
 				UpdateHeightMapAtLoadTime(nBlockIndex, isTransparent);
 			}
 		}
-		
+
 		return nIndexSize;
 	}
 
@@ -280,12 +288,12 @@ namespace ParaEngine
 		if (pTemplate)
 		{
 			int16 nIndex = FindBlock(pTemplate);
-			if (nIndex > 0){
+			if (nIndex > 0) {
 				m_blockIndices[nBlockIndex] = nIndex;
 				m_blocks[nIndex].IncreaseInstanceCount();
 				return;
 			}
-			else{
+			else {
 				Block* pBlock = CreateBlock(nBlockIndex);
 				if (pBlock)
 				{
@@ -307,18 +315,18 @@ namespace ParaEngine
 		{
 			if (pBlock->GetUserData() != nData)
 			{
-				BlockTemplate * pTemplate = pBlock->GetTemplate();
+				BlockTemplate* pTemplate = pBlock->GetTemplate();
 				SetBlockEmpty(nBlockIndex, *pBlock);
-				
+
 				if (pTemplate)
 				{
 					int16 nIndex = FindBlock(pTemplate, nData);
-					if (nIndex > 0){
+					if (nIndex > 0) {
 						m_blockIndices[nBlockIndex] = nIndex;
 						m_blocks[nIndex].IncreaseInstanceCount();
 						return;
 					}
-					else{
+					else {
 						Block* pBlock = CreateBlock(nBlockIndex);
 						if (pBlock)
 						{
@@ -349,12 +357,12 @@ namespace ParaEngine
 		if (pTemplate)
 		{
 			int16 nIndex = FindBlock(pTemplate, nData);
-			if (nIndex > 0){
+			if (nIndex > 0) {
 				m_blockIndices[nBlockIndex] = nIndex;
 				m_blocks[nIndex].IncreaseInstanceCount();
 				return;
 			}
-			else{
+			else {
 				Block* pBlock = CreateBlock(nBlockIndex);
 				if (pBlock)
 				{
@@ -435,7 +443,7 @@ namespace ParaEngine
 	{
 		uint16_t nIndex = CalcPackedBlockID(blockId_r);
 		int32_t blockIndex = m_blockIndices[nIndex];
-		if(blockIndex >= 0)
+		if (blockIndex >= 0)
 		{
 			if (HasBlockMaterial(nIndex))
 			{
@@ -444,7 +452,7 @@ namespace ParaEngine
 
 			Block& block = m_blocks[blockIndex];
 
-			if(block.GetTemplate()->IsMatchAttribute(BlockTemplate::batt_light))
+			if (block.GetTemplate()->IsMatchAttribute(BlockTemplate::batt_light))
 			{
 				RemoveLight(blockId_r);
 			}
@@ -461,12 +469,12 @@ namespace ParaEngine
 		return (blockIndex > -1) ? &m_blocks[blockIndex] : NULL;
 	}
 
-	bool BlockChunk::RemoveLight( Uint16x3& blockId_r )
+	bool BlockChunk::RemoveLight(Uint16x3& blockId_r)
 	{
 		uint16_t nBlockIndex = CalcPackedBlockID(blockId_r);
 
 		auto iter = m_lightBlockIndices.find(nBlockIndex);
-		if(iter!=m_lightBlockIndices.end())
+		if (iter != m_lightBlockIndices.end())
 		{
 			m_lightBlockIndices.erase(iter);
 			return true;
@@ -474,7 +482,7 @@ namespace ParaEngine
 		return false;
 	}
 
-	void BlockChunk::AddLight( Uint16x3& blockId_r )
+	void BlockChunk::AddLight(Uint16x3& blockId_r)
 	{
 		uint16_t nBlockIndex = CalcPackedBlockID(blockId_r);
 		m_lightBlockIndices.insert(nBlockIndex);
@@ -485,12 +493,12 @@ namespace ParaEngine
 		m_lightBlockIndices.insert(nPackedBlockID);
 	}
 
-	bool BlockChunk::IsVisibleBlock( int32_t index,Block* pBlock )
+	bool BlockChunk::IsVisibleBlock(int32_t index, Block* pBlock)
 	{
-		if(!pBlock)
+		if (!pBlock)
 		{
 			pBlock = GetBlock(index);
-			if(!pBlock)
+			if (!pBlock)
 			{
 				return false;
 			}
@@ -502,25 +510,25 @@ namespace ParaEngine
 			return false;
 		}
 
-		uint16_t blockIdX_cs,blockIdY_cs,blockIdZ_cs;
-		UnpackBlockIndex(index,blockIdX_cs,blockIdY_cs,blockIdZ_cs);
+		uint16_t blockIdX_cs, blockIdY_cs, blockIdZ_cs;
+		UnpackBlockIndex(index, blockIdX_cs, blockIdY_cs, blockIdZ_cs);
 		const int16_t maxIndex = BlockConfig::g_chunkBlockDim - 1;
 
 		BlockTemplate* pTemplate = pBlock->GetTemplate();
-		if(pTemplate->IsMatchAttribute(BlockTemplate::batt_liquid))
+		if (pTemplate->IsMatchAttribute(BlockTemplate::batt_liquid))
 		{
 			//hide block if it's surrounded by same kind of liquid
-			if(blockIdX_cs==0 || blockIdY_cs==0 || blockIdZ_cs == 0 || maxIndex==blockIdX_cs || maxIndex==blockIdY_cs || maxIndex==blockIdZ_cs)
+			if (blockIdX_cs == 0 || blockIdY_cs == 0 || blockIdZ_cs == 0 || maxIndex == blockIdX_cs || maxIndex == blockIdY_cs || maxIndex == blockIdZ_cs)
 			{
 				//boundary block
-				Block* neighborBlocks[6] = {0,0,0,0,0,0};
+				Block* neighborBlocks[6] = { 0,0,0,0,0,0 };
 				Uint16x3 blockId_cs(blockIdX_cs, blockIdY_cs, blockIdZ_cs);
 				QueryNeighborBlockData(blockId_cs, neighborBlocks, 1, 6);
 
-				for(int i=0; i<6; ++i)
+				for (int i = 0; i < 6; ++i)
 				{
 					Block* pBlock = neighborBlocks[i];
-					if(!pBlock || pBlock->GetTemplate() != pTemplate)
+					if (!pBlock || pBlock->GetTemplate() != pTemplate)
 						return true;
 				}
 				return false;
@@ -533,35 +541,35 @@ namespace ParaEngine
 				uint16_t curZ = blockIdZ_cs;
 				Block* pBlock = NULL;
 
-				pBlock = GetBlock(PackBlockId(curX,curY,curZ));
-				if(!pBlock || pBlock->GetTemplate() != pTemplate)
+				pBlock = GetBlock(PackBlockId(curX, curY, curZ));
+				if (!pBlock || pBlock->GetTemplate() != pTemplate)
 					return true;
 
 				curX = blockIdX_cs + 1;
-				pBlock = GetBlock(PackBlockId(curX,curY,curZ));
-				if(!pBlock || pBlock->GetTemplate() != pTemplate)
+				pBlock = GetBlock(PackBlockId(curX, curY, curZ));
+				if (!pBlock || pBlock->GetTemplate() != pTemplate)
 					return true;
 
 				curX = blockIdX_cs;
 				curY = blockIdY_cs - 1;
-				pBlock = GetBlock(PackBlockId(curX,curY,curZ));
-				if(!pBlock || pBlock->GetTemplate() != pTemplate)
+				pBlock = GetBlock(PackBlockId(curX, curY, curZ));
+				if (!pBlock || pBlock->GetTemplate() != pTemplate)
 					return true;
 
 				curY = blockIdY_cs + 1;
-				pBlock = GetBlock(PackBlockId(curX,curY,curZ));
-				if(!pBlock || pBlock->GetTemplate() != pTemplate)
+				pBlock = GetBlock(PackBlockId(curX, curY, curZ));
+				if (!pBlock || pBlock->GetTemplate() != pTemplate)
 					return true;
 
 				curY = blockIdY_cs;
 				curZ = blockIdZ_cs - 1;
-				pBlock = GetBlock(PackBlockId(curX,curY,curZ));
-				if(!pBlock || pBlock->GetTemplate() != pTemplate)
+				pBlock = GetBlock(PackBlockId(curX, curY, curZ));
+				if (!pBlock || pBlock->GetTemplate() != pTemplate)
 					return true;
 
 				curZ = blockIdZ_cs + 1;
-				pBlock = GetBlock(PackBlockId(curX,curY,curZ));
-				if(!pBlock || pBlock->GetTemplate() != pTemplate)
+				pBlock = GetBlock(PackBlockId(curX, curY, curZ));
+				if (!pBlock || pBlock->GetTemplate() != pTemplate)
 					return true;
 
 				return false;
@@ -569,72 +577,72 @@ namespace ParaEngine
 		}
 		else
 		{
-			if(blockIdX_cs==0 || blockIdY_cs==0 || blockIdZ_cs == 0 || maxIndex==blockIdX_cs || maxIndex==blockIdY_cs || maxIndex==blockIdZ_cs)
+			if (blockIdX_cs == 0 || blockIdY_cs == 0 || blockIdZ_cs == 0 || maxIndex == blockIdX_cs || maxIndex == blockIdY_cs || maxIndex == blockIdZ_cs)
 			{
-				Block* neighborBlocks[6] = {0,0,0,0,0,0};
+				Block* neighborBlocks[6] = { 0,0,0,0,0,0 };
 				Uint16x3 blockId_cs(blockIdX_cs, blockIdY_cs, blockIdZ_cs);
 				QueryNeighborBlockData(blockId_cs, neighborBlocks, 1, 6);
 
-				if(!pTemplate->IsMatchAttribute(BlockTemplate::batt_transparent))
+				if (!pTemplate->IsMatchAttribute(BlockTemplate::batt_transparent))
 				{
 					// for non-transparent solid blocks, if all six nearby blocks are solid and non-transparent, we will make it invisible. 
-					for(int i=0; i<6; ++i)
+					for (int i = 0; i < 6; ++i)
 					{
 						Block* pBlock = neighborBlocks[i];
-						if(!pBlock || (!pBlock->GetTemplate()->IsMatchAttribute(BlockTemplate::batt_solid) || pBlock->GetTemplate()->IsMatchAttribute(BlockTemplate::batt_transparent)))
+						if (!pBlock || (!pBlock->GetTemplate()->IsMatchAttribute(BlockTemplate::batt_solid) || pBlock->GetTemplate()->IsMatchAttribute(BlockTemplate::batt_transparent)))
 							return true;
 					}
 				}
 				else
 				{
 					// for solid-transparent blocks(life tree-leaves), if all six nearby blocks are solid, we will make it invisible. 
-					for(int i=0; i<6; ++i)
+					for (int i = 0; i < 6; ++i)
 					{
 						Block* pBlock = neighborBlocks[i];
-						if(!pBlock || (!pBlock->GetTemplate()->IsMatchAttribute(BlockTemplate::batt_solid)))
+						if (!pBlock || (!pBlock->GetTemplate()->IsMatchAttribute(BlockTemplate::batt_solid)))
 							return true;
 					}
 				}
 				return false;
 			}
-			else if(!pTemplate->IsMatchAttribute(BlockTemplate::batt_transparent))
+			else if (!pTemplate->IsMatchAttribute(BlockTemplate::batt_transparent))
 			{
 				// for non-transparent solid blocks, if all six nearby blocks are solid and non-transparent, we will make it invisible. 
 				uint16_t curX = blockIdX_cs - 1;
 				uint16_t curY = blockIdY_cs;
 				uint16_t curZ = blockIdZ_cs;
 
-				Block * pBlock;
+				Block* pBlock;
 
-				pBlock = GetBlock(PackBlockId(curX,curY,curZ));
-				if(!pBlock || (!pBlock->GetTemplate()->IsMatchAttribute(BlockTemplate::batt_solid) || pBlock->GetTemplate()->IsMatchAttribute(BlockTemplate::batt_transparent)))
+				pBlock = GetBlock(PackBlockId(curX, curY, curZ));
+				if (!pBlock || (!pBlock->GetTemplate()->IsMatchAttribute(BlockTemplate::batt_solid) || pBlock->GetTemplate()->IsMatchAttribute(BlockTemplate::batt_transparent)))
 					return true;
 
 				curX = blockIdX_cs + 1;
-				pBlock = GetBlock(PackBlockId(curX,curY,curZ));
-				if(!pBlock || (!pBlock->GetTemplate()->IsMatchAttribute(BlockTemplate::batt_solid) || pBlock->GetTemplate()->IsMatchAttribute(BlockTemplate::batt_transparent)))
+				pBlock = GetBlock(PackBlockId(curX, curY, curZ));
+				if (!pBlock || (!pBlock->GetTemplate()->IsMatchAttribute(BlockTemplate::batt_solid) || pBlock->GetTemplate()->IsMatchAttribute(BlockTemplate::batt_transparent)))
 					return true;
 
 				curX = blockIdX_cs;
 				curY = blockIdY_cs - 1;
-				pBlock = GetBlock(PackBlockId(curX,curY,curZ));
-				if(!pBlock || (!pBlock->GetTemplate()->IsMatchAttribute(BlockTemplate::batt_solid) || pBlock->GetTemplate()->IsMatchAttribute(BlockTemplate::batt_transparent)))
+				pBlock = GetBlock(PackBlockId(curX, curY, curZ));
+				if (!pBlock || (!pBlock->GetTemplate()->IsMatchAttribute(BlockTemplate::batt_solid) || pBlock->GetTemplate()->IsMatchAttribute(BlockTemplate::batt_transparent)))
 					return true;
 
 				curY = blockIdY_cs + 1;
-				pBlock = GetBlock(PackBlockId(curX,curY,curZ));
-				if(!pBlock || (!pBlock->GetTemplate()->IsMatchAttribute(BlockTemplate::batt_solid) || pBlock->GetTemplate()->IsMatchAttribute(BlockTemplate::batt_transparent)))
+				pBlock = GetBlock(PackBlockId(curX, curY, curZ));
+				if (!pBlock || (!pBlock->GetTemplate()->IsMatchAttribute(BlockTemplate::batt_solid) || pBlock->GetTemplate()->IsMatchAttribute(BlockTemplate::batt_transparent)))
 					return true;
 
 				curY = blockIdY_cs;
 				curZ = blockIdZ_cs - 1;
-				pBlock = GetBlock(PackBlockId(curX,curY,curZ));
-				if(!pBlock || (!pBlock->GetTemplate()->IsMatchAttribute(BlockTemplate::batt_solid) || pBlock->GetTemplate()->IsMatchAttribute(BlockTemplate::batt_transparent)))
+				pBlock = GetBlock(PackBlockId(curX, curY, curZ));
+				if (!pBlock || (!pBlock->GetTemplate()->IsMatchAttribute(BlockTemplate::batt_solid) || pBlock->GetTemplate()->IsMatchAttribute(BlockTemplate::batt_transparent)))
 					return true;
 
 				curZ = blockIdZ_cs + 1;
-				pBlock = GetBlock(PackBlockId(curX,curY,curZ));
-				if(!pBlock || (!pBlock->GetTemplate()->IsMatchAttribute(BlockTemplate::batt_solid) || pBlock->GetTemplate()->IsMatchAttribute(BlockTemplate::batt_transparent)))
+				pBlock = GetBlock(PackBlockId(curX, curY, curZ));
+				if (!pBlock || (!pBlock->GetTemplate()->IsMatchAttribute(BlockTemplate::batt_solid) || pBlock->GetTemplate()->IsMatchAttribute(BlockTemplate::batt_transparent)))
 					return true;
 			}
 			else
@@ -643,37 +651,37 @@ namespace ParaEngine
 				uint16_t curX = blockIdX_cs - 1;
 				uint16_t curY = blockIdY_cs;
 				uint16_t curZ = blockIdZ_cs;
-				Block * pBlock;
+				Block* pBlock;
 
-				pBlock = GetBlock(PackBlockId(curX,curY,curZ));
-				if(!pBlock || (!pBlock->GetTemplate()->IsMatchAttribute(BlockTemplate::batt_solid)))
+				pBlock = GetBlock(PackBlockId(curX, curY, curZ));
+				if (!pBlock || (!pBlock->GetTemplate()->IsMatchAttribute(BlockTemplate::batt_solid)))
 					return true;
 
 				curX = blockIdX_cs + 1;
-				pBlock = GetBlock(PackBlockId(curX,curY,curZ));
-				if(!pBlock || (!pBlock->GetTemplate()->IsMatchAttribute(BlockTemplate::batt_solid)))
+				pBlock = GetBlock(PackBlockId(curX, curY, curZ));
+				if (!pBlock || (!pBlock->GetTemplate()->IsMatchAttribute(BlockTemplate::batt_solid)))
 					return true;
 
 				curX = blockIdX_cs;
 				curY = blockIdY_cs - 1;
-				pBlock = GetBlock(PackBlockId(curX,curY,curZ));
-				if(!pBlock || (!pBlock->GetTemplate()->IsMatchAttribute(BlockTemplate::batt_solid)))
+				pBlock = GetBlock(PackBlockId(curX, curY, curZ));
+				if (!pBlock || (!pBlock->GetTemplate()->IsMatchAttribute(BlockTemplate::batt_solid)))
 					return true;
 
 				curY = blockIdY_cs + 1;
-				pBlock = GetBlock(PackBlockId(curX,curY,curZ));
-				if(!pBlock || (!pBlock->GetTemplate()->IsMatchAttribute(BlockTemplate::batt_solid)))
+				pBlock = GetBlock(PackBlockId(curX, curY, curZ));
+				if (!pBlock || (!pBlock->GetTemplate()->IsMatchAttribute(BlockTemplate::batt_solid)))
 					return true;
 
 				curY = blockIdY_cs;
 				curZ = blockIdZ_cs - 1;
-				pBlock = GetBlock(PackBlockId(curX,curY,curZ));
-				if(!pBlock || (!pBlock->GetTemplate()->IsMatchAttribute(BlockTemplate::batt_solid)))
+				pBlock = GetBlock(PackBlockId(curX, curY, curZ));
+				if (!pBlock || (!pBlock->GetTemplate()->IsMatchAttribute(BlockTemplate::batt_solid)))
 					return true;
 
 				curZ = blockIdZ_cs + 1;
-				pBlock = GetBlock(PackBlockId(curX,curY,curZ));
-				if(!pBlock || (!pBlock->GetTemplate()->IsMatchAttribute(BlockTemplate::batt_solid)))
+				pBlock = GetBlock(PackBlockId(curX, curY, curZ));
+				if (!pBlock || (!pBlock->GetTemplate()->IsMatchAttribute(BlockTemplate::batt_solid)))
 					return true;
 			}
 
@@ -682,16 +690,16 @@ namespace ParaEngine
 		}
 	}
 
-	void BlockChunk::QueryNeighborBlockData( const Uint16x3& blockId_cs,Block** pBlockData,int nFrom /*= 0*/, int nTo /*= 26*/ )
+	void BlockChunk::QueryNeighborBlockData(const Uint16x3& blockId_cs, Block** pBlockData, int nFrom /*= 0*/, int nTo /*= 26*/)
 	{
 		const Int16x3* neighborOfsTable = BlockCommon::NeighborOfsTable;
 
 		//best case all neighbor blocks are in same chunk
-		if((blockId_cs.x != 0 && (blockId_cs.x != BlockConfig::g_chunkBlockDim - 1)
+		if ((blockId_cs.x != 0 && (blockId_cs.x != BlockConfig::g_chunkBlockDim - 1)
 			&& (blockId_cs.y != 0) && (blockId_cs.y != BlockConfig::g_chunkBlockDim - 1)
 			&& (blockId_cs.z != 0) && blockId_cs.z != BlockConfig::g_chunkBlockDim - 1))
 		{
-			for(int i= nFrom; i<=nTo; ++i)
+			for (int i = nFrom; i <= nTo; ++i)
 			{
 				Uint16x3 curBlockId;
 				curBlockId.x = blockId_cs.x + neighborOfsTable[i].x;
@@ -700,27 +708,27 @@ namespace ParaEngine
 				// curBlockId.y = curBlockId.y == 0xffff ? 0 : curBlockId.y;
 				curBlockId.z = blockId_cs.z + neighborOfsTable[i].z;
 
-				Block* pBlock = GetBlock(PackBlockId(curBlockId.x,curBlockId.y,curBlockId.z));
-				pBlockData[i-nFrom] = pBlock;
+				Block* pBlock = GetBlock(PackBlockId(curBlockId.x, curBlockId.y, curBlockId.z));
+				pBlockData[i - nFrom] = pBlock;
 			}
 		}
 		else
 		{
 			//ok all neighbors are still in same region
-			if(!IsBoundaryChunk())
+			if (!IsBoundaryChunk())
 			{
 				Uint16x3 blockId_rs;
 				blockId_rs.x = m_minBlockId_rs.x + blockId_cs.x;
 				blockId_rs.y = m_minBlockId_rs.y + blockId_cs.y;
 				blockId_rs.z = m_minBlockId_rs.z + blockId_cs.z;
 
-				for(int i= nFrom; i<=nTo; ++i)
+				for (int i = nFrom; i <= nTo; ++i)
 				{
 					Uint16x3 curBlockId_rs;
 					curBlockId_rs.x = blockId_rs.x + neighborOfsTable[i].x;
 					curBlockId_rs.y = blockId_rs.y + neighborOfsTable[i].y;
 					//curBlockId_rs.y = curBlockId_rs.y == 0xffff ? 0 : curBlockId_rs.y;
-					if(curBlockId_rs.y >= BlockConfig::g_regionBlockDimY)
+					if (curBlockId_rs.y >= BlockConfig::g_regionBlockDimY)
 					{
 						continue;
 					}
@@ -728,10 +736,10 @@ namespace ParaEngine
 
 					uint16_t packedChunkId_rs = CalcPackedChunkID(curBlockId_rs);
 					BlockChunk* pChunk = m_ownerBlockRegion->GetChunk(packedChunkId_rs, false);
-					if(pChunk)
+					if (pChunk)
 					{
 						Block* pBlock = pChunk->GetBlock(CalcPackedBlockID(curBlockId_rs.x, curBlockId_rs.y, curBlockId_rs.z));
-						pBlockData[i-nFrom] = pBlock;
+						pBlockData[i - nFrom] = pBlock;
 					}
 				}
 			}
@@ -744,13 +752,13 @@ namespace ParaEngine
 				blockId_ws.z = m_minBlockId_ws.z + blockId_cs.z;
 
 				CBlockWorld* pWorld = GetBlockWorld();
-				for(int i= nFrom; i<=nTo; ++i)
+				for (int i = nFrom; i <= nTo; ++i)
 				{
 					Uint16x3 curBlockId_ws;
 					curBlockId_ws.x = blockId_ws.x + neighborOfsTable[i].x;
 					curBlockId_ws.y = blockId_ws.y + neighborOfsTable[i].y;
 					//curBlockId_ws.y = curBlockId_ws.y == 0xffff ? 0 : curBlockId_ws.y;
-					if(curBlockId_ws.y >= BlockConfig::g_regionBlockDimY)
+					if (curBlockId_ws.y >= BlockConfig::g_regionBlockDimY)
 					{
 						continue;
 					}
@@ -762,7 +770,7 @@ namespace ParaEngine
 		}
 	}
 
-	LightData* BlockChunk::GetLightData( uint16_t nIndex )
+	LightData* BlockChunk::GetLightData(uint16_t nIndex)
 	{
 		return &(m_lightmapArray[nIndex]);
 	}
@@ -770,9 +778,9 @@ namespace ParaEngine
 	bool BlockChunk::IsInfluenceBySunLight()
 	{
 		uint32_t nCount = m_lightmapArray.size();
-		for(uint32_t i = 0;i<nCount;i++)
+		for (uint32_t i = 0; i < nCount; i++)
 		{
-			if(m_lightmapArray[i].IsInfluencedBySun())
+			if (m_lightmapArray[i].IsInfluencedBySun())
 				return true;
 		}
 		return false;
@@ -780,11 +788,11 @@ namespace ParaEngine
 
 	bool BlockChunk::IsNearbyChunksLoaded()
 	{
-		CBlockWorld* pWorld =  GetBlockWorld();
+		CBlockWorld* pWorld = GetBlockWorld();
 		return ((m_minBlockId_ws.x < 16 || pWorld->GetChunkColumnTimeStamp(m_minBlockId_ws.x - 16, m_minBlockId_ws.z) > 0) &&
-				pWorld->GetChunkColumnTimeStamp(m_minBlockId_ws.x + 16, m_minBlockId_ws.z) > 0 && 
-				(m_minBlockId_ws.z < 16 || pWorld->GetChunkColumnTimeStamp(m_minBlockId_ws.x, m_minBlockId_ws.z-16) > 0) &&
-				pWorld->GetChunkColumnTimeStamp(m_minBlockId_ws.x, m_minBlockId_ws.z+16) > 0);
+			pWorld->GetChunkColumnTimeStamp(m_minBlockId_ws.x + 16, m_minBlockId_ws.z) > 0 &&
+			(m_minBlockId_ws.z < 16 || pWorld->GetChunkColumnTimeStamp(m_minBlockId_ws.x, m_minBlockId_ws.z - 16) > 0) &&
+			pWorld->GetChunkColumnTimeStamp(m_minBlockId_ws.x, m_minBlockId_ws.z + 16) > 0);
 	}
 
 	CBlockWorld* BlockChunk::GetBlockWorld()
@@ -875,7 +883,7 @@ namespace ParaEngine
 
 	void BlockChunk::SetDirty(bool val)
 	{
-		m_nDirty = val ? (m_nDirty==0 ? 1 : (m_nDirty | 0x1)) : 0;
+		m_nDirty = val ? (m_nDirty == 0 ? 1 : (m_nDirty | 0x1)) : 0;
 	}
 
 
@@ -938,13 +946,13 @@ namespace ParaEngine
 
 	int BlockChunk::GetTotalBytes()
 	{
-		return (sizeof(BlockChunk) + (sizeof(LightData) + sizeof(int16))*(16 * 16 * 16)) + sizeof(Block) * GetBlockCount() + sizeof(uint16) * m_lightBlockIndices.size();
+		return (sizeof(BlockChunk) + (sizeof(LightData) + sizeof(int16)) * (16 * 16 * 16)) + sizeof(Block) * GetBlockCount() + sizeof(uint16) * m_lightBlockIndices.size();
 	}
-	
-	void LightData::SetBrightness( uint8_t value,bool isSunLight )
+
+	void LightData::SetBrightness(uint8_t value, bool isSunLight)
 	{
 		uint16_t light = (value & BlockConfig::g_maxValidLightValue);
-		if(isSunLight)
+		if (isSunLight)
 		{
 			m_value = (m_value & 0x0F) | (light << 4);
 		}
@@ -954,9 +962,9 @@ namespace ParaEngine
 		}
 	}
 
-	uint8_t LightData::GetBrightness( bool isSunLight )
+	uint8_t LightData::GetBrightness(bool isSunLight)
 	{
-		if(isSunLight)
+		if (isSunLight)
 		{
 			return (uint8_t)((m_value & 0xF0) >> 4);
 		}
