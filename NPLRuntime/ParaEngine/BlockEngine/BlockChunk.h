@@ -130,9 +130,8 @@ namespace ParaEngine
 	class LightData
 	{
 	public:
-		inline LightData():m_value(0)
-		{
-		}
+		inline LightData():m_value(0){}
+		LightData(uint8 value) : m_value(value) {}
 
 		uint8_t GetBrightness(bool isSunLight);
 
