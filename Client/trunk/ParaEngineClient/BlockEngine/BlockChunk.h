@@ -19,7 +19,7 @@ namespace ParaEngine
 		Block() :m_pTemplate(nullptr), m_blockData(0), m_nInstanceCount(0)
 		{
 		}
-		Block(BlockTemplate *pTemplate, uint32_t nData = 0) :m_pTemplate(pTemplate), m_blockData(nData), m_nInstanceCount(0)
+		Block(BlockTemplate* pTemplate, uint32_t nData = 0) :m_pTemplate(pTemplate), m_blockData(nData), m_nInstanceCount(0)
 		{
 		}
 
@@ -43,7 +43,7 @@ namespace ParaEngine
 			return m_pTemplate->GetFaceShapeDirect(nFaceIndex, m_blockData);
 		}
 
-		inline bool IsTransparent(){
+		inline bool IsTransparent() {
 			return m_pTemplate->IsTransparent();
 		}
 
@@ -51,42 +51,42 @@ namespace ParaEngine
 			return m_pTemplate->IsTransparentModel();
 		}
 
-		inline uint32_t GetUserData(){return m_blockData;}
+		inline uint32_t GetUserData() { return m_blockData; }
 
 		/* get the texture index into the main block template. */
 		int32 GetTextureIndex();
 	protected:
-		inline void SetTemplate(BlockTemplate *pTemplate){
+		inline void SetTemplate(BlockTemplate* pTemplate) {
 			m_pTemplate = pTemplate;
 		}
-		inline void SetUserData(uint32_t data){ 
-			m_blockData = (uint16)data; 
+		inline void SetUserData(uint32_t data) {
+			m_blockData = (uint16)data;
 		}
-		void PushEmptySlotIndex(uint16 nIndex){
+		void PushEmptySlotIndex(uint16 nIndex) {
 			m_pTemplate = NULL;
 			m_blockData = nIndex;
 			m_nInstanceCount = 0;
 		}
 		/* return the next empty slot index. */
-		uint16 PopEmptySlot(){
+		uint16 PopEmptySlot() {
 			uint16 nNextEmptySlotIndex = m_blockData;
 			m_blockData = 0;
 			return nNextEmptySlotIndex;
 		}
-		
-		bool IsEmptySlot(){
+
+		bool IsEmptySlot() {
 			return m_nInstanceCount == 0;
 		}
 
-		uint16 GetInstanceCount(){
+		uint16 GetInstanceCount() {
 			return m_nInstanceCount;
 		}
 
-		uint16 DecreaseInstanceCount(){
+		uint16 DecreaseInstanceCount() {
 			--m_nInstanceCount;
 			return m_nInstanceCount;
 		}
-		uint16 IncreaseInstanceCount(){
+		uint16 IncreaseInstanceCount() {
 			++m_nInstanceCount;
 			return m_nInstanceCount;
 		}
@@ -98,9 +98,9 @@ namespace ParaEngine
 
 	/** chunk data mask*/
 	enum ChunkDataMask {
-		ChunkDataMask_HasMaskData = 0x1<<31,
-		ChunkDataMask_HasCustomData = 0x1<<30,
-		ChunkDataMask_HasBlockData = 0x1<<29,
+		ChunkDataMask_HasMaskData = 0x1 << 31,
+		ChunkDataMask_HasCustomData = 0x1 << 30,
+		ChunkDataMask_HasBlockData = 0x1 << 29,
 	};
 
 	/**custom chunk data */
@@ -130,13 +130,12 @@ namespace ParaEngine
 	class LightData
 	{
 	public:
-		inline LightData():m_value(0)
-		{
-		}
+		inline LightData() :m_value(0) {}
+		LightData(uint8 value) : m_value(value) {}
 
 		uint8_t GetBrightness(bool isSunLight);
 
-		void SetBrightness(uint8_t value,bool isSunLight);
+		void SetBrightness(uint8_t value, bool isSunLight);
 
 		uint8_t GetMaxBrightness(CBlockWorld* pBlockWorld);
 
@@ -147,8 +146,8 @@ namespace ParaEngine
 		{
 			return (m_value & 0xF0) > 0;
 		}
-	
-		inline bool IsZero(){ return m_value == 0; }
+
+		inline bool IsZero() { return m_value == 0; }
 	private:
 		//bit usage:[0,3] point light brightness,[4,7] sun light
 		uint8 m_value;
@@ -160,7 +159,7 @@ namespace ParaEngine
 	public:
 		/* 16*16*16 index for blocks (fixed sized at initialization). Index is -1 if block not exist. */
 		std::vector<int16_t> m_blockIndices;
-		
+
 		/* set of indices of all light emitting blocks in current chunk. */
 		std::set<uint16_t> m_lightBlockIndices;
 
@@ -188,11 +187,11 @@ namespace ParaEngine
 		uint32 m_nDirty;
 		uint16 m_isBoundaryChunk;
 		uint16 m_emptyBlockSlotIndex;
-		BlockRegion*  m_ownerBlockRegion;
+		BlockRegion* m_ownerBlockRegion;
 		int16_t m_packedChunkID;
 
-		inline bool IsBoundaryChunk() const { return m_isBoundaryChunk>0; }
-		void SetBoundaryChunk(bool val) { m_isBoundaryChunk = val ? 1:0; }
+		inline bool IsBoundaryChunk() const { return m_isBoundaryChunk > 0; }
+		void SetBoundaryChunk(bool val) { m_isBoundaryChunk = val ? 1 : 0; }
 		/** find block in the m_blocks pool by template. return -1 if not found. */
 		int16 FindBlock(BlockTemplate* pTemplate);
 		int16 FindBlock(BlockTemplate* pTemplate, uint32 nData);
@@ -211,7 +210,7 @@ namespace ParaEngine
 		/** get total number of memory bytes that this chunk occupies. for memory algorithm or stats.*/
 		int GetTotalBytes();
 
-		/** blocks higher than the highest solid block in the height map can sky. Note, the top most opaque block can not see the sky. 
+		/** blocks higher than the highest solid block in the height map can sky. Note, the top most opaque block can not see the sky.
 		* @param x,y,z: in world space
 		*/
 		bool CanBlockSeeTheSkyWS(uint16 x, uint16 y, uint16 z);
@@ -239,13 +238,13 @@ namespace ParaEngine
 		/** the caller should ensure that nBlockIndex is valid. */
 		Block& GetBlockByIndex(uint16_t nBlockIndex);
 
-		/** get block 
+		/** get block
 		* @param nBlockIndex: [0,4096)
 		*/
 		Block* GetBlock(uint16_t nBlockIndex);
-		
-		/** load one or more blocks of a given block type. usually called when chunk is loaded from file 
-		* return the number of blocks created. 
+
+		/** load one or more blocks of a given block type. usually called when chunk is loaded from file
+		* return the number of blocks created.
 		*/
 		int LoadBlocks(const std::vector<uint16_t>& blockIndices, BlockTemplate* pTemplate);
 
@@ -265,12 +264,12 @@ namespace ParaEngine
 		CBlockWorld* GetBlockWorld();
 
 		/** set block to empty
-		* @param blockId_r: region space 
+		* @param blockId_r: region space
 		*/
 		bool SetBlockToAir(Uint16x3& blockId_r);
 
 		/** remove light
-		* @param blockId_r: region space 
+		* @param blockId_r: region space
 		*/
 		bool RemoveLight(Uint16x3& blockId_r);
 
@@ -278,7 +277,7 @@ namespace ParaEngine
 		void AddLight(Uint16x3& blockId_r);
 		void AddLight(uint16 nPackedBlockID);
 
-		/** get the light data. may return NULL. 
+		/** get the light data. may return NULL.
 		* @param nIndex: parameters
 		*/
 		LightData* GetLightData(uint16_t nIndex);
@@ -293,13 +292,13 @@ namespace ParaEngine
 		//for transparent-liquid block return true if any neighbor is not the same
 		//kind template.
 		//@param index: packed chunk space block index [0,4096)
-		bool IsVisibleBlock(int32_t index,Block* pBlock = NULL);
+		bool IsVisibleBlock(int32_t index, Block* pBlock = NULL);
 
 		/**
 		@param pBlockData: Block* neighborBlocks[27] depending on nFrom, nTo;
 		@param nFrom, nTo: default to query all 27 neighbor. Other frequently used ones are 1,6 (for six adjacent ones)
 		*/
-		void QueryNeighborBlockData(const Uint16x3& blockId_cs,Block** pBlockData, int nFrom = 0, int nTo = 26);
+		void QueryNeighborBlockData(const Uint16x3& blockId_cs, Block** pBlockData, int nFrom = 0, int nTo = 26);
 
 		/** return true if the nearby 4 chunk columns have been generated (and loaded) */
 		bool IsNearbyChunksLoaded();
@@ -315,13 +314,13 @@ namespace ParaEngine
 		bool HasBlockMaterial(uint16 nPackedBlockID);
 
 		/** get material id for given block's given face
-		* @param nFaceIndex: [0,5) 6 faces of a block 
+		* @param nFaceIndex: [0,5) 6 faces of a block
 		* @return -1 if not found
 		*/
 		int32 GetBlockFaceMaterial(uint16 nPackedBlockID, int16 nFaceIndex);
 
-		/** Apply a given block material to a block face. 
-		* @param nFaceIndex: [0,5) 6 faces of a block 
+		/** Apply a given block material to a block face.
+		* @param nFaceIndex: [0,5) 6 faces of a block
 		* @param nMaterialID: global unique material id in CBlockMaterialManager
 		*/
 		void ApplyBlockMaterial(uint16 nPackedBlockID, int16 nFaceIndex, int32 nMaterialID);
