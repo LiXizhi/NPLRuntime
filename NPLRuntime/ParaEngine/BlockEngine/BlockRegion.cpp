@@ -9,7 +9,6 @@
 #include "ParaEngine.h"
 #include "BlockRegion.h"
 #include "BlockWorld.h"
-#include "terrain/Settings.h"
 #include "util/StringBuilder.h"
 #include "BlockLightGridBase.h"
 #include "BlockCommon.h"
@@ -1645,14 +1644,21 @@ namespace ParaEngine
 		CParaFile gameSaveFile;
 		CParaFile tempFile;
 		SetModified(false);
-		tempFile.OpenAssetFile(fileName.c_str(), true, ParaTerrain::Settings::GetInstance()->GetMediaPath());
+		tempFile.OpenAssetFile(fileName.c_str(), true);
 		if (!tempFile.isEof())
+		{
 			pFile = &tempFile;
+		}
+		else
+		{
+			OUTPUT_LOG("error: failed to load region file %s. It may not exist.\n", fileName.c_str());
+		}
+			
 
 		if (!pFile)
 		{
 			fileName = m_pBlockWorld->GetWorldInfo().GetBlockRegionFileName(m_regionX, m_regionZ, false);
-			gameSaveFile.OpenAssetFile(fileName.c_str(), true, ParaTerrain::Settings::GetInstance()->GetMediaPath());
+			gameSaveFile.OpenAssetFile(fileName.c_str(), true);
 			if (!gameSaveFile.isEof())
 				pFile = &gameSaveFile;
 		}
@@ -1666,7 +1672,7 @@ namespace ParaEngine
 
 		uint32_t fileTypeId = pFile->ReadDWORD();
 
-		OUTPUT_LOG("load region file %s. version: %x\n", fileName.c_str(), fileTypeId);
+		// OUTPUT_LOG("load region file %s. version: %x\n", fileName.c_str(), fileTypeId);
 
 		if (fileTypeId == 0x626c6f63)
 		{
