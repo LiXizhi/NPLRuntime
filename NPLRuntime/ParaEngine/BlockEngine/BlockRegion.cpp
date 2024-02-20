@@ -1329,8 +1329,6 @@ namespace ParaEngine
 
 		m_pBlockWorld->SuspendLightUpdate();
 
-		OUTPUT_LOG("111111111111111: BlockRegion ParserFile begin \n");
-
 		if ((data_mask & ChunkDataMask_HasCustomData) > 0)
 		{
 			// read all custom data until we meet ChunkCustomDataType_ChunksData
@@ -1662,10 +1660,14 @@ namespace ParaEngine
 		if (pFile == nullptr)
 		{
 			m_nEventAsyncLoadWorldFinished = 2;
+			OUTPUT_LOG("error: failed to load region file %s. It may not exist.\n", fileName.c_str());
 			return;
 		}
 
 		uint32_t fileTypeId = pFile->ReadDWORD();
+
+		OUTPUT_LOG("load region file %s. version: %x\n", fileName.c_str(), fileTypeId);
+
 		if (fileTypeId == 0x626c6f63)
 		{
 			ParserFile(pFile);
