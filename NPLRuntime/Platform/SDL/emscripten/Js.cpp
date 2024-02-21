@@ -92,7 +92,7 @@ namespace JS
 
     int IsTouchDevice()
     {
-
+        // clang-format off
         int is_touch_device = EM_ASM_INT({
             if (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent))
             {
@@ -111,6 +111,7 @@ namespace JS
             //     return 0;
             // }
         });
+        // clang-format oon
         return is_touch_device;
     }
 
@@ -198,8 +199,33 @@ namespace JS
         s_on_text_input_callback(JsStringToString(js_text));
     }
 
+    static std::function<void(int keycode)> s_on_key_down_callback = nullptr;
+    void SetKeyDownCallback(std::function<void(int keycode)> on_key_down_callback)
+    {
+        s_on_key_down_callback = on_key_down_callback;
+    }
 
+    EM_PORT_API(void)
+    OnKeyDown(int keycode)
+    {
+        if (s_on_key_down_callback == nullptr)
+            return;
+        s_on_key_down_callback(keycode);
+    }
 
+    static std::function<void(int keycode)> s_on_key_up_callback = nullptr;
+    void SetKeyUpCallback(std::function<void(int keycode)> on_key_up_callback)
+    {
+        s_on_key_up_callback = on_key_up_callback;
+    }
+
+    EM_PORT_API(void)
+    OnKeyUp(int keycode)
+    {
+        if (s_on_key_up_callback == nullptr)
+            return;
+        s_on_key_up_callback(keycode);
+    }
 };
 
 #endif

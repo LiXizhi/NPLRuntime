@@ -17,6 +17,7 @@ namespace ParaEngine
 {
 	class RenderWindowSDL2 : public CParaEngineRenderBase
 	{
+	public:
 		EVirtualKey SDL2VirtualKeyToParaVK(unsigned long vk);
 		unsigned long ParaVKToSDL2VirtualKey(EVirtualKey key);
 	public:

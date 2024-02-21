@@ -51,6 +51,8 @@ std::string GetClipboardText();
 void SetClipboardText(std::string text);
 // 文本输入
 void SetTextInputCallback(std::function<void(const std::string)>);
+void SetKeyDownCallback(std::function<void(int keycode)>);
+void SetKeyUpCallback(std::function<void(int keycode)>);
 };
 
 #endif
