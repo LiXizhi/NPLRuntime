@@ -163,6 +163,7 @@ elseif (WIN32)
 	option(NPLRUNTIME_PHYSICS "include physics" ON)
 	option(NPLRUNTIME_AUDIO "include audio" ON)
 	option(NPLRUNTIME_HAQI_LAUNCHER "haqi launcher" OFF)
+	option(NPLRUNTIME_WEBVIEW "microsoft edge webview2 support" OFF)
 elseif (LINUX)
 	# Win32 Default Option
 	option(NPLRUNTIME_STATIC_LIB "static lib or not" ON)

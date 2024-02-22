@@ -109,3 +109,7 @@ else ()
     #    # add_subdirectory (${SERVER_SOURCE_DIR}luasql ${PROJECT_BINARY_DIR}/luasql)
     #endif ()
 endif ()
+
+if(NPLRUNTIME_WEBVIEW)
+	add_subdirectory (webview ${PROJECT_BINARY_DIR}/webview)
+endif()
