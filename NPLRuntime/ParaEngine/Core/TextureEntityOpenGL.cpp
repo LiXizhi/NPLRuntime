@@ -674,19 +674,26 @@ bool ParaEngine::TextureEntityOpenGL::LoadImageOfFormat(const std::string& sText
 		if (outTempData == img.getData())
 		{
 			outTempData = new unsigned char[img.getDataLen()];
-			// memcpy(outTempData, img.getData(), img.getDataLen());
-
-			// convert from 0xAABBGGRR to 0xAARRGGBB
-			int nSize = img.getDataLen() / 4;
-			DWORD* pData = (DWORD*)img.getData();
-			DWORD* pOutData = (DWORD*)outTempData;
-			for (int i = 0; i < nSize; ++i)
+			if (nFormat == -2)
 			{
-				DWORD color = *pData;
-				*pOutData = (color & 0xff00ff00) | ((color & 0x00ff0000) >> 16) | ((color & 0x000000ff) << 16);
-				pData++;
-				pOutData++;
+				// do nothing to the data
+				memcpy(outTempData, img.getData(), img.getDataLen());
 			}
+			else // if (nFormat == -1)
+			{
+				// convert from 0xAABBGGRR to 0xAARRGGBB
+				int nSize = img.getDataLen() / 4;
+				DWORD* pData = (DWORD*)img.getData();
+				DWORD* pOutData = (DWORD*)outTempData;
+				for (int i = 0; i < nSize; ++i)
+				{
+					DWORD color = *pData;
+					*pOutData = (color & 0xff00ff00) | ((color & 0x00ff0000) >> 16) | ((color & 0x000000ff) << 16);
+					pData++;
+					pOutData++;
+				}
+			}
+			
 		}
 
 		*ppBuffer = outTempData;
@@ -1047,7 +1054,8 @@ bool ParaEngine::TextureEntityOpenGL::LoadImageFromString(const char* cmd)
 					std::string buffer = StringHelper::unbase64(cmd, -1);
 					int texWidth, texHeight, nBytesPerPixel;
 					unsigned char* imageData = NULL;
-					if (TextureEntity::LoadImageOfFormat(dataFormat, (char*)(buffer.c_str()), (int)buffer.size(), texWidth, texHeight, &imageData, &nBytesPerPixel))
+					// tricky: nFormat is -2 to preserve the AGBR byte order instead of default ARGB
+					if (TextureEntity::LoadImageOfFormat(dataFormat, (char*)(buffer.c_str()), (int)buffer.size(), texWidth, texHeight, &imageData, &nBytesPerPixel, -2))
 					{
 						nTextureWidth = std::max(nTextureWidth, texWidth);
 						nTextureHeight = std::max(nTextureHeight, texHeight);
