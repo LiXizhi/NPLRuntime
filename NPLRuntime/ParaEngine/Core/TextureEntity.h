@@ -367,6 +367,7 @@ namespace ParaEngine
 		ATTRIBUTE_METHOD1(TextureEntity, GetWidth_s, int*) { *p1 = cls->GetWidth(); return S_OK; }
 		ATTRIBUTE_METHOD1(TextureEntity, GetHeight_s, int*) { *p1 = cls->GetHeight(); return S_OK; }
 		ATTRIBUTE_METHOD1(TextureEntity, LoadImageFromString_s, char*) { cls->LoadImageFromString(p1); return S_OK; }
+		ATTRIBUTE_METHOD1(TextureEntity, SaveToFile_s, char*) { cls->SaveToFile(p1, PixelFormat::Unknown, -1, -1); return S_OK; }
 		ATTRIBUTE_METHOD1(TextureEntity, SetSurfaceType_s, int) { cls->SetSurfaceType(p1); return S_OK; }
 		ATTRIBUTE_METHOD1(TextureEntity, GetSurfaceType_s, int*) { *p1 = cls->GetSurfaceType(); return S_OK; }
 		ATTRIBUTE_METHOD1(TextureEntity, SetColorKey_s, DWORD) { cls->SetColorKey(p1); return S_OK; }
