@@ -9,7 +9,6 @@
 #include "ParaEngine.h"
 #include "BlockRegion.h"
 #include "BlockWorld.h"
-#include "terrain/Settings.h"
 #include "util/StringBuilder.h"
 #include "BlockLightGridBase.h"
 #include "BlockCommon.h"
@@ -19,6 +18,7 @@
 
 #include <zlib.h>
 #include <unordered_map>
+
 namespace ParaEngine
 {
 	/**	we will not use custom data for blocks that has very few instances(less than this value),
@@ -54,7 +54,7 @@ namespace ParaEngine
 
 		int32_t chunkCount = GetChunksCount();
 		m_chunks = new BlockChunkPtr[chunkCount];
-		memset(m_chunks, 0, sizeof(BlockChunkPtr)*chunkCount);
+		memset(m_chunks, 0, sizeof(BlockChunkPtr) * chunkCount);
 
 		m_blockHeightMap.resize(BlockConfig::g_regionBlockDimX * BlockConfig::g_regionBlockDimZ, ChunkMaxHeight(0, 0));
 
@@ -66,7 +66,7 @@ namespace ParaEngine
 
 	int BlockRegion::GetChunksCount()
 	{
-		return BlockConfig::g_regionChunkDimX * BlockConfig::g_regionChunkDimY *BlockConfig::g_regionChunkDimZ;
+		return BlockConfig::g_regionChunkDimX * BlockConfig::g_regionChunkDimY * BlockConfig::g_regionChunkDimZ;
 	}
 
 	BlockRegion::~BlockRegion()
@@ -95,7 +95,7 @@ namespace ParaEngine
 
 	BlockChunk* BlockRegion::GetChunk(uint16_t packedChunkID, bool createIfNotExist = true)
 	{
-		BlockChunk * pChunk = m_chunks[packedChunkID];
+		BlockChunk* pChunk = m_chunks[packedChunkID];
 		if (pChunk)
 			return pChunk;
 		else if (createIfNotExist)
@@ -137,7 +137,7 @@ namespace ParaEngine
 
 	Block* BlockRegion::GetBlock(uint16_t chunkId, Uint16x3& blockID_r)
 	{
-		BlockChunk * pChunk = m_chunks[chunkId];
+		BlockChunk* pChunk = m_chunks[chunkId];
 		return (pChunk) ? pChunk->GetBlock(CalcPackedBlockID(blockID_r)) : NULL;
 	}
 
@@ -150,7 +150,7 @@ namespace ParaEngine
 
 	bool BlockRegion::SetBlockToAir(uint16_t packedChunkId_rs, Uint16x3& blockId_r)
 	{
-		BlockChunk * pChunk = m_chunks[packedChunkId_rs];
+		BlockChunk* pChunk = m_chunks[packedChunkId_rs];
 		if (pChunk)
 		{
 			return pChunk->SetBlockToAir(blockId_r);
@@ -536,7 +536,7 @@ namespace ParaEngine
 			{
 				uint16_t startBlockIdY_ws = y << 4;
 				uint16_t packedChunkId_rs = PackChunkIndex(chunkX_rs, y, chunkZ_rs);
-				BlockChunk * pChunk = m_chunks[packedChunkId_rs];
+				BlockChunk* pChunk = m_chunks[packedChunkId_rs];
 				if (pChunk)
 				{
 					uint32_t nCount = pChunk->m_blockIndices.size();
@@ -585,7 +585,7 @@ namespace ParaEngine
 		{
 			uint16_t startBlockIdY_ws = y << 4;
 			uint16_t packedChunkId_rs = PackChunkIndex(chunkX_rs, y, chunkZ_rs);
-			BlockChunk * pChunk = m_chunks[packedChunkId_rs];
+			BlockChunk* pChunk = m_chunks[packedChunkId_rs];
 			if (pChunk)
 			{
 				uint32_t nCount = pChunk->m_blockIndices.size();
@@ -912,7 +912,7 @@ namespace ParaEngine
 				for (int y = chunkY_rs; y >= 0; y--)
 				{
 					uint16_t packedChunkId_rs = PackChunkIndex(chunkX_rs, y, chunkZ_rs);
-					BlockChunk * pChunk = m_chunks[packedChunkId_rs];
+					BlockChunk* pChunk = m_chunks[packedChunkId_rs];
 					if (pChunk)
 					{
 						for (int cy = BlockConfig::g_chunkBlockDim - 1; cy >= 0; cy--)
@@ -1016,7 +1016,7 @@ namespace ParaEngine
 			{
 				// TODO: heightmap of each 512*512 chunk column. 
 			}
-			if(!GetTag().empty())
+			if (!GetTag().empty())
 			{
 				memFile.WriteEncodedUInt(ChunkCustomDataType_Tag);
 				memFile.WriteEncodedUInt((int)GetTag().size());
@@ -1027,7 +1027,7 @@ namespace ParaEngine
 				int chunksCount = GetChunksCount();
 				uint32_t totalSize = 0;
 				std::unordered_map<uint16_t, std::shared_ptr<std::unordered_map<uint32_t, std::shared_ptr<std::vector<uint16_t>>>>> chunkMaterialKeyMap;
-				for (int i = 0 ; i < chunksCount; i++)
+				for (int i = 0; i < chunksCount; i++)
 				{
 					BlockChunk* pChunk = m_chunks[i];
 					if (!pChunk) continue;
@@ -1045,7 +1045,7 @@ namespace ParaEngine
 							keyList = std::make_shared<std::vector<uint16_t>>();
 							materialKeyMap->insert(std::make_pair(materialId, keyList));
 							totalSize += sizeof(uint32_t) + sizeof(uint32_t); // material id size + key list length size
-						}	
+						}
 						else
 						{
 							keyList = keyListIt->second;
@@ -1079,7 +1079,7 @@ namespace ParaEngine
 			uint32_t nCount = GetChunksCount();
 			for (uint32_t i = 0; i < nCount; i++)
 			{
-				BlockChunk * pChunk = m_chunks[i];
+				BlockChunk* pChunk = m_chunks[i];
 				if (!pChunk)
 					continue;
 				// first 32bits stores chunkid and data mask
@@ -1115,7 +1115,7 @@ namespace ParaEngine
 				for (auto itCur = blockIDToIndex.begin(); itCur != blockIDToIndex.end(); ++itCur)
 				{
 					int nBlockCount = itCur->second.size();
-					if (nBlockCount < SKIP_CUSTOM_BLOCK_COUNT  && nBlockCount >0)
+					if (nBlockCount < SKIP_CUSTOM_BLOCK_COUNT && nBlockCount >0)
 					{
 						// we will not use custom data for blocks that has very few instances,
 						// since custom data has 64bits overhead. 
@@ -1389,7 +1389,7 @@ namespace ParaEngine
 							pFile->read(keys.data(), keyCount * sizeof(uint16_t));
 							nByteCount = nByteCount - sizeof(uint32_t) - sizeof(uint32_t) - keyCount * sizeof(uint16_t);
 							for (uint32_t j = 0; j < keyCount; j++)
-							{	
+							{
 								uint16_t key = keys[j];
 								uint16_t blockIndex = key % 4096;
 								uint16_t faceIndex = key / 4096;
@@ -1477,7 +1477,7 @@ namespace ParaEngine
 						}
 						if (nBlockCount > 0)
 						{
-							BlockTemplate *pTemplate = m_pBlockWorld->GetBlockTemplate(nBlockID);
+							BlockTemplate* pTemplate = m_pBlockWorld->GetBlockTemplate(nBlockID);
 							if (pTemplate)
 							{
 								BlockChunk* pChunk = GetChunk(chunkId, true);
@@ -1511,8 +1511,8 @@ namespace ParaEngine
 				blockData.resize(blockCount);
 				if (blockData.size() > 0)
 				{
-					std::pair<uint16_t, uint16_t> *pData = &blockData[0];
-					pFile->read(pData, dataItemSize*blockCount);
+					std::pair<uint16_t, uint16_t>* pData = &blockData[0];
+					pFile->read(pData, dataItemSize * blockCount);
 				}
 
 				BlockChunk* pChunk = GetChunk(chunkId, true);
@@ -1522,7 +1522,7 @@ namespace ParaEngine
 					for (uint32_t i = 0; i < blockCount; i++)
 					{
 						std::pair<uint16_t, uint16_t>& curBlockData = blockData[i];
-						BlockTemplate *pTemplate = m_pBlockWorld->GetBlockTemplate(curBlockData.second);
+						BlockTemplate* pTemplate = m_pBlockWorld->GetBlockTemplate(curBlockData.second);
 						if (pTemplate)
 						{
 							pChunk->LoadBlock(curBlockData.first, pTemplate);
@@ -1536,8 +1536,8 @@ namespace ParaEngine
 				uint32_t blockCount = pFile->ReadDWORD();
 
 				blockData.resize(blockCount);
-				std::pair<uint16_t, uint16_t> *pData = &blockData[0];
-				pFile->read(pData, dataItemSize*blockCount);
+				std::pair<uint16_t, uint16_t>* pData = &blockData[0];
+				pFile->read(pData, dataItemSize * blockCount);
 
 				BlockChunk* pChunk = GetChunk(chunkId);
 				if (pChunk)
@@ -1587,6 +1587,7 @@ namespace ParaEngine
 
 			if (readSize != compressedSize)
 			{
+				OUTPUT_LOG("error: failed to read compressed data from file in BlockRegion parser %d (%d)\n", readSize, compressedSize);
 				delete[] compressedData;
 				delete[] uncompressedData;
 				return;
@@ -1611,7 +1612,7 @@ namespace ParaEngine
 
 			if (ret != Z_STREAM_END && ret != Z_OK)
 			{
-				OUTPUT_LOG("failure decompressing compressed data");
+				OUTPUT_LOG("error: failed to decompress data in BlockRegion\n");
 
 				delete[] compressedData;
 				delete[] uncompressedData;
@@ -1643,14 +1644,21 @@ namespace ParaEngine
 		CParaFile gameSaveFile;
 		CParaFile tempFile;
 		SetModified(false);
-		tempFile.OpenAssetFile(fileName.c_str(), true, ParaTerrain::Settings::GetInstance()->GetMediaPath());
+		tempFile.OpenAssetFile(fileName.c_str(), true);
 		if (!tempFile.isEof())
+		{
 			pFile = &tempFile;
+		}
+		else
+		{
+			OUTPUT_LOG("error: failed to load region file %s. It may not exist.\n", fileName.c_str());
+		}
+
 
 		if (!pFile)
 		{
 			fileName = m_pBlockWorld->GetWorldInfo().GetBlockRegionFileName(m_regionX, m_regionZ, false);
-			gameSaveFile.OpenAssetFile(fileName.c_str(), true, ParaTerrain::Settings::GetInstance()->GetMediaPath());
+			gameSaveFile.OpenAssetFile(fileName.c_str(), true);
 			if (!gameSaveFile.isEof())
 				pFile = &gameSaveFile;
 		}
@@ -1658,10 +1666,14 @@ namespace ParaEngine
 		if (pFile == nullptr)
 		{
 			m_nEventAsyncLoadWorldFinished = 2;
+			OUTPUT_LOG("error: failed to load region file %s. It may not exist.\n", fileName.c_str());
 			return;
 		}
 
 		uint32_t fileTypeId = pFile->ReadDWORD();
+
+		// OUTPUT_LOG("load region file %s. version: %x\n", fileName.c_str(), fileTypeId);
+
 		if (fileTypeId == 0x626c6f63)
 		{
 			ParserFile(pFile);
@@ -1692,7 +1704,7 @@ namespace ParaEngine
 		{
 			SLEEP(10);
 		}
-				
+
 		uint32_t nCount = GetChunksCount();
 		for (uint32_t i = 0; i < nCount; i++)
 		{
@@ -1726,7 +1738,7 @@ namespace ParaEngine
 		if (nIndex < m_chunkTimestamp.size())
 		{
 			int nOldValue = m_chunkTimestamp[nIndex];
-			m_chunkTimestamp[nIndex] = (byte)nTimeStamp;
+			m_chunkTimestamp[nIndex] = (unsigned char)nTimeStamp;
 
 			if (nOldValue == 0 && nTimeStamp > 0)
 			{
@@ -1797,7 +1809,7 @@ namespace ParaEngine
 				outputStream.appendBinary((uint32)nBlockCount);
 				uint16_t startBlockIdY_ws = y << 4;
 				uint16_t packedChunkId_rs = PackChunkIndex(chunkX_rs, y, chunkZ_rs);
-				BlockChunk * pChunk = m_chunks[packedChunkId_rs];
+				BlockChunk* pChunk = m_chunks[packedChunkId_rs];
 				if (pChunk)
 				{
 					blockIdEncoder.Reset();
@@ -1906,7 +1918,7 @@ namespace ParaEngine
 						assert(sBlockId.size() == 4096 && sBlockData.size() == 4096);
 
 						uint16_t packedChunkId_rs = PackChunkIndex(chunkX_rs, chunkY_rs, chunkZ_rs);
-						BlockChunk * pChunk = GetChunk(packedChunkId_rs, false);
+						BlockChunk* pChunk = GetChunk(packedChunkId_rs, false);
 						if (pChunk == NULL)
 						{
 							pChunk = GetChunk(packedChunkId_rs, true);
@@ -2048,7 +2060,7 @@ namespace ParaEngine
 						CSameIntegerDecoder<uint32_t>::SkipDecodeSameIntegerOfCount(file, 4096);
 
 						uint16_t packedChunkId_rs = PackChunkIndex(chunkX_rs, chunkY_rs, chunkZ_rs);
-						BlockChunk * pChunk = GetChunk(packedChunkId_rs, false);
+						BlockChunk* pChunk = GetChunk(packedChunkId_rs, false);
 						if (pChunk)
 						{
 							// clear this chunk if has any data
@@ -2166,7 +2178,7 @@ namespace ParaEngine
 		uint32_t nCount = GetChunksCount();
 		for (uint32_t i = 0; i < nCount; i++)
 		{
-			BlockChunk * pChunk = m_chunks[i];
+			BlockChunk* pChunk = m_chunks[i];
 			if (pChunk)
 			{
 				pChunk->ClearAllLight();
@@ -2198,7 +2210,7 @@ namespace ParaEngine
 					for (uint16 ry = 0; ry < 16; ry++)
 					{
 						uint16_t nIndex = PackBlockIndex(rx, ry, rz);
-						BlockChunk * pChunk = m_chunks[nIndex];
+						BlockChunk* pChunk = m_chunks[nIndex];
 						if (pChunk)
 						{
 							pChunk->ClearLightMap();
@@ -2331,7 +2343,7 @@ namespace ParaEngine
 		uint32_t nCount = GetChunksCount();
 		for (uint32_t i = 0; i < nCount; i++)
 		{
-			BlockChunk * pChunk = m_chunks[i];
+			BlockChunk* pChunk = m_chunks[i];
 			if (pChunk)
 			{
 				nBytes += pChunk->GetTotalBytes();
@@ -2340,8 +2352,8 @@ namespace ParaEngine
 		m_nTotalBytes = nBytes
 			+ sizeof(BlockRegion)
 			+ sizeof(BlockChunkPtr) * GetChunksCount()
-			+ sizeof(byte) * m_chunkTimestamp.size()
-			+ sizeof(byte) * m_biomes.size()
+			+ sizeof(unsigned char) * m_chunkTimestamp.size()
+			+ sizeof(unsigned char) * m_biomes.size()
 			+ sizeof(ChunkMaxHeight) * m_blockHeightMap.size()
 			;
 	}

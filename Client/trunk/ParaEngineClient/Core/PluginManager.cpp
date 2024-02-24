@@ -184,7 +184,7 @@ void DLLPlugInEntity::Init(const char* sFilename)
 
 #ifdef WIN32
 	// check for core dll files
-	if (GetKey().find("cAudioEngine") != std::string::npos || GetKey().find("PhysicsBT") != std::string::npos || GetKey().find("sqlite") != std::string::npos)
+	if (GetKey().find("cAudioEngine") != std::string::npos || GetKey().find("PhysicsBT") != std::string::npos || GetKey().find("sqlite") != std::string::npos || GetKey().find("ParaWebView") != std::string::npos)
 	{
 		// we will try to find core dll files only in executable directory first, such as in "bin64/..."
 		std::string sFullPath = CGlobals::GetApp()->GetModuleDir();

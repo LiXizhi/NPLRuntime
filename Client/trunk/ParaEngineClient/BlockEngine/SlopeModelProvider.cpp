@@ -15,7 +15,7 @@ ParaEngine::CSlopeModelProvider::CSlopeModelProvider(BlockTemplate* pBlockTempla
 		sizeof(mOutCornerModels_1) / sizeof(mOutCornerModels_1[0]) + sizeof(mOutCornerModels_2) / sizeof(mOutCornerModels_2[0]))
 {
 	_buildEdgeBlockModels();
-	_builOuterCornerBlockModels();
+	_buildOuterCornerBlockModels();
 	_buildInnerCornerBlockModels();
 	_buildHEdgeBlockModels();
 	_buildInnerCornerBlockModels2();
@@ -162,7 +162,7 @@ void ParaEngine::CSlopeModelProvider::_buildEdgeBlockModels()
 	}
 }
 
-void ParaEngine::CSlopeModelProvider::_builOuterCornerBlockModels()
+void ParaEngine::CSlopeModelProvider::_buildOuterCornerBlockModels()
 {
 	BlockModel cube_mode;
 	cube_mode.LoadModelByTexture(0);

@@ -23,7 +23,7 @@ namespace ParaEngine
 		virtual BlockModel& GetBlockModel(CBlockWorld* pBlockManager, uint16_t block_id, uint16_t bx, uint16_t by, uint16_t bz, uint16_t nBlockData = 0, Block** neighborBlocks = NULL);
 	protected:
 		void _buildEdgeBlockModels();
-		void _builOuterCornerBlockModels();
+		void _buildOuterCornerBlockModels();
 		void _buildInnerCornerBlockModels();
 		void _buildHEdgeBlockModels();
 		void _buildInnerCornerBlockModels2();
