@@ -597,6 +597,7 @@ int TextureEntity::InstallFields(CAttributeClass* pClass, bool bOverride)
 
 	pClass->AddField("HitCount", FieldType_Int, (void*)SetHitCount_s, (void*)GetHitCount_s, NULL, NULL, bOverride);
 	pClass->AddField("LoadImageFromString", FieldType_String, (void*)LoadImageFromString_s, NULL, NULL, NULL, bOverride);
+	pClass->AddField("SaveToFile", FieldType_String, (void*)SaveToFile_s, NULL, NULL, NULL, bOverride);
 	pClass->AddField("run", FieldType_String, (void*)LoadImageFromString_s, NULL, NULL, NULL, bOverride);
 	pClass->AddField("SurfaceType", FieldType_Int, (void*)SetSurfaceType_s, (void*)GetSurfaceType_s, NULL, NULL, bOverride);
 	pClass->AddField("ColorKey", FieldType_DWORD, (void*)SetColorKey_s, (void*)GetColorKey_s, NULL, NULL, bOverride);
