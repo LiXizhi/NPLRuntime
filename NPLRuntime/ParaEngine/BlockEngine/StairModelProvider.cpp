@@ -608,24 +608,20 @@ void ParaEngine::CStairModelProvider::_buildBlockModels()
 	}
 
 	{
-		Vector3 angles[6] = {
+		Vector3 angles[8] = {
 			Vector3(0,1.57f,0),
 			Vector3(0,0,0),
 			Vector3(0,-1.57f,0),
 			Vector3(0,3.14f,0),
 			Vector3(3.14f,3.14f,0),
 			Vector3(3.14f,1.57f,0),
+			Vector3(3.14f,0,0),
+			Vector3(3.14f,-1.57f,0),
 		};
 		int startOutIdx = 18;
 		cloneAndRotateModels(template_3, angles, mBlockModels, sizeof(angles) / sizeof(angles[0]), startOutIdx);
 	}
-	{
-		Vector3 angles[1] = {
-			Vector3(3.14f,3.14f,0),
-		};
-		int startOutIdx = 9;
-		cloneAndRotateModels(template_3, angles, mBlockModels, sizeof(angles) / sizeof(angles[0]), startOutIdx);
-	}
+
 	{
 		Vector3 angles[4] = {
 			Vector3(0, 3.14f, -1.57f),
@@ -633,7 +629,7 @@ void ParaEngine::CStairModelProvider::_buildBlockModels()
 			Vector3(0, 0, 1.57f),
 			Vector3(0, 0, -1.57f),
 		};
-		int startOutIdx = 24;
+		int startOutIdx = 26;
 		cloneAndRotateModels(template_1, angles, mBlockModels, sizeof(angles) / sizeof(angles[0]), startOutIdx);
 	}
 	for (auto& model : mBlockModels) {
