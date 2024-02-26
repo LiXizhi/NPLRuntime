@@ -325,12 +325,15 @@ namespace ParaEngine
 			SetLightOpacity(5);
 			// set model filter
 			SAFE_DELETE(m_pBlockModelFilter);
-			m_pBlockModelFilter = new CLinearModelProvider(this, 2);
+			m_pBlockModelFilter = new CLinearModelProvider(this, 6);
 
-			// modify 16 different scaling and 
-			m_block_models.resize(2, GetBlockModel());
+			m_block_models.resize(6, GetBlockModel());
 			m_block_models[0].LoadModel("slab_top");
 			m_block_models[1].LoadModel("slab_bottom");
+			m_block_models[2].LoadModel("slab_side0");
+			m_block_models[3].LoadModel("slab_side1");
+			m_block_models[4].LoadModel("slab_side2");
+			m_block_models[5].LoadModel("slab_side3");
 			SetPhysicalHeight(0.5f);
 		}
 		else if (sModelName == "vine")

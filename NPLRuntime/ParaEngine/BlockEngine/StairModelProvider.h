@@ -6,7 +6,7 @@ namespace ParaEngine
 		:public CLinearModelProvider
 	{
 	protected:
-		BlockModel mBlockModels[24];
+		BlockModel mBlockModels[30];
 		
 	public:
 		CStairModelProvider(BlockTemplate* pBlockTemplate);
