@@ -654,6 +654,117 @@ namespace ParaEngine
 			m_Vertices[6].SetTexcoord(1,1);
 			m_Vertices[7].SetTexcoord(0,1);
 		}
+		else if (sModelName.find("slab_side") == 0)
+		{
+			// slab_side0, slab_side1, slab_side2, slab_side3
+			int nSide = sModelName[sModelName.size()-1] - '0';
+			if(nSide == 0) // z+
+			{
+				//front face
+				m_Vertices[g_frtLB].position[2] = 0.5;
+				m_Vertices[g_frtLT].position[2] = 0.5;
+				m_Vertices[g_frtRT].position[2] = 0.5;
+				m_Vertices[g_frtRB].position[2] = 0.5;
+
+				//top face
+				m_Vertices[g_topLB].position[2] = 0.5;
+				m_Vertices[g_topRB].position[2] = 0.5;
+
+				//left face
+				m_Vertices[g_leftRT].position[2] = 0.5;
+				m_Vertices[g_leftRB].position[2] = 0.5;
+
+				//right face
+				m_Vertices[g_rightLT].position[2] = 0.5;
+				m_Vertices[g_rightLB].position[2] = 0.5;
+
+				//bottom face
+				m_Vertices[g_btmLT].position[2] = 0.5;
+				m_Vertices[g_btmRT].position[2] = 0.5;
+
+				SetAABB(Vector3(0, 0, BlockConfig::g_blockSize * 0.5f), Vector3(BlockConfig::g_blockSize, BlockConfig::g_blockSize, BlockConfig::g_blockSize));
+			}
+			else if(nSide == 1) // z-
+			{
+				//back face
+				m_Vertices[g_bkLB].position[2] = 0.5;
+				m_Vertices[g_bkLT].position[2] = 0.5;
+				m_Vertices[g_bkRT].position[2] = 0.5;
+				m_Vertices[g_bkRB].position[2] = 0.5;
+
+				//top face
+				m_Vertices[g_topLT].position[2] = 0.5;
+				m_Vertices[g_topRT].position[2] = 0.5;
+
+				//left face
+				m_Vertices[g_leftLB].position[2] = 0.5;
+				m_Vertices[g_leftLT].position[2] = 0.5;
+
+				//right face
+				m_Vertices[g_rightRB].position[2] = 0.5;
+				m_Vertices[g_rightRT].position[2] = 0.5;
+
+				//bottom face
+				m_Vertices[g_btmLB].position[2] = 0.5;
+				m_Vertices[g_btmRB].position[2] = 0.5;
+				
+				SetAABB(Vector3(0, 0, 0), Vector3(BlockConfig::g_blockSize, BlockConfig::g_blockSize, BlockConfig::g_blockSize * 0.5f));
+			}
+			else if (nSide == 2) // x+
+			{
+				//left face
+				m_Vertices[g_leftLB].position[0] = 0.5;
+				m_Vertices[g_leftLT].position[0] = 0.5;
+				m_Vertices[g_leftRT].position[0] = 0.5;
+				m_Vertices[g_leftRB].position[0] = 0.5;
+
+				//top face
+				m_Vertices[g_topLB].position[0] = 0.5;
+				m_Vertices[g_topLT].position[0] = 0.5;
+
+				//front face
+				m_Vertices[g_frtLT].position[0] = 0.5;
+				m_Vertices[g_frtLB].position[0] = 0.5;
+
+				//back face
+				m_Vertices[g_bkRT].position[0] = 0.5;
+				m_Vertices[g_bkRB].position[0] = 0.5;
+
+				//bottom face
+				m_Vertices[g_btmLT].position[0] = 0.5;
+				m_Vertices[g_btmLB].position[0] = 0.5;
+
+				SetAABB(Vector3(BlockConfig::g_blockSize * 0.5f, 0, 0), Vector3(BlockConfig::g_blockSize, BlockConfig::g_blockSize, BlockConfig::g_blockSize));
+			}
+			else if (nSide == 3) // x-
+			{
+				//right face
+				m_Vertices[g_rightLB].position[0] = 0.5;
+				m_Vertices[g_rightLT].position[0] = 0.5;
+				m_Vertices[g_rightRT].position[0] = 0.5;
+				m_Vertices[g_rightRB].position[0] = 0.5;
+
+				//top face
+				m_Vertices[g_topRB].position[0] = 0.5;
+				m_Vertices[g_topRT].position[0] = 0.5;
+
+				//front face
+				m_Vertices[g_frtRT].position[0] = 0.5;
+				m_Vertices[g_frtRB].position[0] = 0.5;
+
+				//back face
+				m_Vertices[g_bkLT].position[0] = 0.5;
+				m_Vertices[g_bkLB].position[0] = 0.5;
+
+				//bottom face
+				m_Vertices[g_btmRT].position[0] = 0.5;
+				m_Vertices[g_btmRB].position[0] = 0.5;
+
+				SetAABB(Vector3(0, 0, 0), Vector3(BlockConfig::g_blockSize * 0.5f, BlockConfig::g_blockSize, BlockConfig::g_blockSize));
+			}
+
+			RecalculateFaceShapeAndSortFaces();
+		}
 		else if(sModelName == "slab_top" || sModelName == "slab_bottom")
 		{
 			float u, v;
