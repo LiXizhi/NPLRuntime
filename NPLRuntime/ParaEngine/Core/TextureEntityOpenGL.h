@@ -92,6 +92,7 @@ namespace ParaEngine
 
 		/** only dynamic texture support this function. */
 		virtual bool GetImageData(void** ppData, int* pSize, int* pWidth, int* pHeight, int* pBytesPerPixel);
+		bool GetImageDataOriginal(void** ppData, int* pSize, int* pWidth, int* pHeight, int* pBytesPerPixel);
 
 	protected:
 		friend class CRenderTarget;

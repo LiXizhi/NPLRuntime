@@ -401,7 +401,7 @@ bool CMoviePlatform::TakeScreenShot(const string& filename, int width, int heigh
 
     if (CParaFile::CreateDirectory(Filename.c_str()))
     {
-        std::vector<unsigned int> pixels;
+        std::vector<DWORD> pixels;
         int _width = CGlobals::GetApp()->GetRenderWindow()->GetWidth();
         int _height = CGlobals::GetApp()->GetRenderWindow()->GetHeight();
 
@@ -411,16 +411,16 @@ bool CMoviePlatform::TakeScreenShot(const string& filename, int width, int heigh
 
         PE_CHECK_GL_ERROR_DEBUG();
 
-        std::vector<unsigned int> img_pixels;
+        std::vector<DWORD> img_pixels;
         img_pixels.resize(pixels.size());
 
         for (int row = 0; row < height; ++row)
         {
-            memcpy(&img_pixels[width*row], &pixels[width*(height - row - 1)], width * sizeof(unsigned int));
+            memcpy(&img_pixels[width*row], &pixels[width*(height - row - 1)], width * sizeof(DWORD));
         }
 
         ParaImage img;
-        img.initWithRawData(reinterpret_cast<const unsigned char*>(&img_pixels[0]), img_pixels.size() * sizeof(unsigned int), width, height, 32);
+        img.initWithRawData(reinterpret_cast<const unsigned char*>(&img_pixels[0]), img_pixels.size() * sizeof(DWORD), width, height, 32);
         img.saveToFile(Filename);
 
         return true;
@@ -546,23 +546,6 @@ bool CMoviePlatform::TakeScreenShot(const string& filename)
 		img.initWithRawData(reinterpret_cast<const unsigned char*>(&img_pixels[0]), img_pixels.size() * sizeof(unsigned int), width, height, 32);
 		img.saveToFile(Filename);
 
-		/*
-		int width = cocos2d::Director::getInstance()->getOpenGLView()->getFrameSize().width;
-		int height = cocos2d::Director::getInstance()->getOpenGLView()->getFrameSize().height;
-		std::vector<unsigned int> pixels;
-		pixels.resize(width*height);
-		glReadPixels(0, 0, width, height, GL_RGBA, GL_UNSIGNED_BYTE, &pixels[0]);
-		CHECK_GL_ERROR_DEBUG();
-		std::vector<unsigned int> img_pixels;
-		img_pixels.resize(pixels.size());
-		for (int row = 0; row < height; ++row)
-		{
-			memcpy(&img_pixels[width*row], &pixels[width*(height - row - 1)], width * sizeof(unsigned int));
-		}
-		cocos2d::CCImage img;
-		img.initWithRawData(reinterpret_cast<const unsigned char*>(&img_pixels[0]), img_pixels.size() * sizeof(unsigned int), width, height, 32);
-		img.saveToFile(Filename);
-		*/
 		return true;
 	}
 

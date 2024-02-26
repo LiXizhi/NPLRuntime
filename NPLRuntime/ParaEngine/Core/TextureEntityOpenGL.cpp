@@ -706,84 +706,18 @@ bool ParaEngine::TextureEntityOpenGL::LoadImageOfFormat(const std::string& sText
 
 bool ParaEngine::TextureEntityOpenGL::SaveToFile(const char* filename, PixelFormat dwFormat, int width, int height, UINT MipLevels /*= 1*/, DWORD Filter /*= D3DX_DEFAULT*/, Color ColorKey /*= 0*/)
 {
-	// std::string src_file = GetKey();
-	// width = GetWidth();
-	// height = GetHeight();
-	// GLuint textureId = GetTexture()->getName();
-	// GLuint framebuffer;
-	// glGenFramebuffers(1, &framebuffer);
-	// glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
-	// glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, textureId, 0);
-	// GLint readType, readFormat;
-	// glGetIntegerv(GL_IMPLEMENTATION_COLOR_READ_TYPE, &readType);
-	// glGetIntegerv(GL_IMPLEMENTATION_COLOR_READ_FORMAT, &readFormat);
-	// unsigned int bytesPerPixel = 0;
-	// switch (readType)
-	// {
-	// case GL_UNSIGNED_BYTE:
-	// case GL_BYTE:
-	// 	switch (readFormat)
-	// 	{
-	// 	case GL_RGBA:
-	// 		bytesPerPixel = 4;
-	// 		break;
-	// 	case GL_RGB:
-	// 	case GL_RGB_INTEGER:
-	// 		bytesPerPixel = 3;
-	// 		break;		
-	// 	case GL_RG:
-	// 	case GL_RG_INTEGER:
-	// 	case GL_LUMINANCE_ALPHA:
-	// 		bytesPerPixel = 2;
-	// 		break;
-	// 	case GL_RED:
-	// 	case GL_RED_INTEGER:
-	// 	case GL_ALPHA:
-	// 	case GL_LUMINANCE:
-	// 		bytesPerPixel = 1;
-	// 		break;
-	// 	default:
-	// 		break;
-	// 	}
-	// 	break;
-	// case GL_FLOAT:
-	// case GL_UNSIGNED_INT:
-	// case GL_INT:
-	// 	switch (readFormat)
-	// 	{
-	// 	case GL_RGBA:
-	// 		bytesPerPixel = 16;
-	// 		break;
-	// 	case GL_RGB:
-	// 	case GL_RGB_INTEGER:
-	// 		bytesPerPixel = 12;
-	// 		break;		
-	// 	case GL_RG:
-	// 	case GL_RG_INTEGER:
-	// 	case GL_LUMINANCE_ALPHA:
-	// 		bytesPerPixel = 8;
-	// 		break;
-	// 	case GL_RED:
-	// 	case GL_RED_INTEGER:
-	// 	case GL_ALPHA:
-	// 	case GL_LUMINANCE:
-	// 		bytesPerPixel = 4;
-	// 		break;
-	// 	default:
-	// 		break;
-	// 	}
-	// 	break;
-	// default:
-	// 	break;
-	// }
-	// GLubyte* pixels = (GLubyte*)malloc(width * height * bytesPerPixel);
-	// glReadPixels(0, 0, width, height, readFormat, readType, pixels);
-	// ParaImage image;
-	// image.initWithRawData(pixels, width * height * bytesPerPixel, width, height, bytesPerPixel);
-	// image.saveImageToPNG(filename, false);
-	// free(pixels);
-	// glBindFramebuffer(GL_FRAMEBUFFER, 0);
-	// glDeleteFramebuffers(1, &framebuffer);
+	void* pTextureImage = NULL;
+	int nSize;
+	int nBytesPerPixel;
+	if (GetImageDataOriginal(&pTextureImage, &nSize, &width, &height, &nBytesPerPixel))
+	{
+		ParaImage img;
+		img.initWithRawData(reinterpret_cast<const unsigned char*>(pTextureImage), nSize, width, height, 32);
+		img.saveToFile(filename);
+
+		SAFE_DELETE_ARRAY(pTextureImage);
+		return true;
+	}
 	return false;
 }
 
@@ -873,7 +807,7 @@ bool ParaEngine::TextureEntityOpenGL::LoadFromImage(ImageEntity * imageEntity, P
 		GLImage image;
 		bool bRet = false;
 		if (imageEntity->getRenderFormat() == PixelFormat::A8R8G8B8)
-			bRet = image.initWithRawData((const unsigned char*)buffer, nFileSize, imageEntity->getWidth(), imageEntity->getHeight(), imageEntity->hasPremultipliedAlpha());
+			bRet = image.initWithRawData((const unsigned char*)buffer, nFileSize, imageEntity->getWidth(), imageEntity->getHeight(), 32);
 		else
 			bRet = image.initWithImageData((const unsigned char*)buffer, nFileSize);
 		
@@ -1149,6 +1083,26 @@ bool ParaEngine::TextureEntityOpenGL::LoadImageFromString(const char* cmd)
 
 bool ParaEngine::TextureEntityOpenGL::GetImageData(void** ppData, int* pSize, int* pWidth, int* pHeight, int* pBytesPerPixel)
 {
+	if(GetImageDataOriginal(ppData, pSize, pWidth, pHeight, pBytesPerPixel))
+	{
+		if (*pBytesPerPixel == 4)
+		{
+			// convert from 0xAARRGGBB to 0xAABBGGRR
+			int nSize = *pSize / 4;
+			uint32* pData = (uint32*)(*ppData);
+			for (int i = 0; i < nSize; ++i)
+			{
+				uint32 color = pData[i];
+				pData[i] = (color & 0xff00ff00) | ((color & 0x00ff0000) >> 16) | ((color & 0x000000ff) << 16);
+			}
+		}
+		return true;
+	}
+	return false;
+}
+
+bool ParaEngine::TextureEntityOpenGL::GetImageDataOriginal(void** ppData, int* pSize, int* pWidth, int* pHeight, int* pBytesPerPixel)
+{
 	if (SurfaceType == DynamicTexture && m_texture && m_pTextureInfo)
 	{
 		int width = m_pTextureInfo->GetWidth();
@@ -1158,7 +1112,7 @@ bool ParaEngine::TextureEntityOpenGL::GetImageData(void** ppData, int* pSize, in
 		*pBytesPerPixel = 4;
 		*pSize = width * height * 4;
 		uint8* pData = new uint8[*pSize];
-		
+
 		GL::bindTexture2D(m_texture->getName());
 
 #ifdef USE_OPENGL_GETTEXIMAGE
@@ -1176,13 +1130,7 @@ bool ParaEngine::TextureEntityOpenGL::GetImageData(void** ppData, int* pSize, in
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);
 		glDeleteFramebuffers(1, &fbo);
 #endif
-		// convert from 0xAARRGGBB to 0xAABBGGRR
-		int nSize = *pSize / 4;
-		for (int i = 0; i < nSize; ++i)
-		{
-			uint32 color = *(uint32*)(pData + i * 4);
-			*(uint32*)(pData + i * 4) = (color & 0xff00ff00) | ((color & 0x00ff0000) >> 16) | ((color & 0x000000ff) << 16);
-		}
+
 		*ppData = pData;
 		return true;
 	}
