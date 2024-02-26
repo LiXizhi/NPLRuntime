@@ -626,7 +626,16 @@ void ParaEngine::CStairModelProvider::_buildBlockModels()
 		int startOutIdx = 9;
 		cloneAndRotateModels(template_3, angles, mBlockModels, sizeof(angles) / sizeof(angles[0]), startOutIdx);
 	}
-
+	{
+		Vector3 angles[4] = {
+			Vector3(0, 3.14f, -1.57f),
+			Vector3(0, 3.14f, 1.57f),
+			Vector3(0, 0, 1.57f),
+			Vector3(0, 0, -1.57f),
+		};
+		int startOutIdx = 24;
+		cloneAndRotateModels(template_1, angles, mBlockModels, sizeof(angles) / sizeof(angles[0]), startOutIdx);
+	}
 	for (auto& model : mBlockModels) {
 		model.SetFaceCount(model.Vertices().size() / 4);
 		model.SetUseAmbientOcclusion(false);
