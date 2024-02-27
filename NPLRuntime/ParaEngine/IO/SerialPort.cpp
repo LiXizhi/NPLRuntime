@@ -328,7 +328,7 @@ namespace ParaEngine
 #ifdef WIN32
         char lpTargetPath[5000]; // buffer to store the path of the COMPORTS
         
-        for (int i = 0; i < 99; i++) // checking ports from COM0 to COM99 or COM255
+        for (int i = 0; i < 255; i++) // checking ports from COM0 to COM99 or COM255
         {
             std::string str = "COM" + std::to_string(i); // converting to COM0, COM1, COM2
             DWORD test = QueryDosDevice(str.c_str(), lpTargetPath, 5000);
