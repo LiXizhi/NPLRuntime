@@ -18,9 +18,9 @@
 
 using namespace ParaEngine;
 
-namespace ParaEngine 
+namespace ParaEngine
 {
-	void dosdatetime2filetime(WORD dosdate, WORD dostime, time_t *ft)
+	void dosdatetime2filetime(WORD dosdate, WORD dostime, time_t* ft)
 	{
 		tm st;
 		st.tm_year = (WORD)((dosdate >> 9) + 1980 - 1900);
@@ -29,7 +29,7 @@ namespace ParaEngine
 		st.tm_hour = (WORD)(dostime >> 11);
 		st.tm_min = (WORD)((dostime >> 5) & 0x3f);
 		st.tm_sec = (WORD)((dostime & 0x1f) * 2);
-		*ft = mktime( &st );
+		*ft = mktime(&st);
 	}
 
 #ifdef WIN32
@@ -47,25 +47,25 @@ namespace ParaEngine
 #else
 	void standardtime2osfiletime(time_t source_t, time_t* target_t)
 	{
-		if(target_t)
+		if (target_t)
 			*target_t = source_t;
-	}    
+	}
 #endif
 
-	void filetime2dosdatetime(const time_t& ft, WORD *dosdate, WORD *dostime)
+	void filetime2dosdatetime(const time_t& ft, WORD* dosdate, WORD* dostime)
 	{
 		// struct tm *st = gmtime(&ft); // convert to UTC time
-		struct tm *st = localtime(&ft); // convert to Local time
-		
+		struct tm* st = localtime(&ft); // convert to Local time
+
 		*dosdate = (uint16_t)(((st->tm_year + 1900 - 1980) & 0x7f) << 9);
-		*dosdate |= (uint16_t)(((st->tm_mon+1) & 0xf) << 5);
+		*dosdate |= (uint16_t)(((st->tm_mon + 1) & 0xf) << 5);
 		*dosdate |= (uint16_t)((st->tm_mday & 0x1f));
 		*dostime = (uint16_t)((st->tm_hour & 0x1f) << 11);
 		*dostime |= (uint16_t)((st->tm_min & 0x3f) << 5);
 		*dostime |= (uint16_t)((st->tm_sec / 2) & 0x1f);
 	}
 
-	void GetFileTime(const std::string& filename, WORD *dosdate, WORD *dostime)
+	void GetFileTime(const std::string& filename, WORD* dosdate, WORD* dostime)
 	{
 		using namespace boost::filesystem;
 		boost::filesystem::path filePath(filename);
@@ -80,16 +80,18 @@ namespace ParaEngine
 	}
 
 	/** a single file in zip archive to be written to disk */
-	class ZipArchiveEntry : public CRefCounted 
+	class ZipArchiveEntry : public CRefCounted
 	{
 	public:
 		ZipArchiveEntry() : m_offsetOfCompressedData(0), m_offsetOfSerializedLocalFileHeader(0), m_pFile(nullptr)
 		{
 			memset(&m_localFileHeader, 0, sizeof(SZIPFileHeader));
 			m_localFileHeader.Sig = ZIP_CONST_LOCALHEADERSIG;
+			// set general bit flag to use utf8 filename
+			m_localFileHeader.GeneralBitFlag = 0x800;
 		}
 
-		virtual ~ZipArchiveEntry() 
+		virtual ~ZipArchiveEntry()
 		{
 			if (m_pFile)
 				delete m_pFile;
@@ -98,7 +100,7 @@ namespace ParaEngine
 
 		/**
 		* @param destFilename: filename in zip file
-		* @param filename: filename in system. if empty, it means destFilename is a directory. 
+		* @param filename: filename in system. if empty, it means destFilename is a directory.
 		*/
 		void Init(const char* destFilename, const char* filename = NULL)
 		{
@@ -121,7 +123,7 @@ namespace ParaEngine
 			m_pFile = pFile;
 		}
 
-		void SerializeLocalFileHeader(CParaFile& file) 
+		void SerializeLocalFileHeader(CParaFile& file)
 		{
 			// save offset of stream here
 			m_offsetOfSerializedLocalFileHeader = file.getPos();
@@ -129,14 +131,14 @@ namespace ParaEngine
 			m_localFileHeader.DataDescriptor.CompressedSize = 0;
 			m_localFileHeader.DataDescriptor.UncompressedSize = 0;
 			m_localFileHeader.DataDescriptor.CRC32 = 0;
-			
+
 			// serialize header
 			file.write(&m_localFileHeader, sizeof(SZIPFileHeader));
 			file.WriteString(m_destFilename);
 
 			m_offsetOfCompressedData = file.getPos();
 			// serialize body of compressed file
-			if (!IsDirectory()) 
+			if (!IsDirectory())
 			{
 				std::string sExt = CParaFile::GetFileExtension(m_destFilename);
 				int CompressionLevel = -1;
@@ -161,7 +163,7 @@ namespace ParaEngine
 						file.write(&m_localFileHeader, sizeof(SZIPFileHeader));
 						file.seek(currentPos);
 					}
-					else 
+					else
 					{
 						CMemReadFile input(m_filename.c_str());
 						if (input.isOpen())
@@ -253,6 +255,7 @@ namespace ParaEngine
 			ZIP_CentralDirectory _centralDirectoryFileHeader;
 			memset(&_centralDirectoryFileHeader, 0, sizeof(ZIP_CentralDirectory));
 			_centralDirectoryFileHeader.Sig = ZIP_CONST_CENSIG;
+			_centralDirectoryFileHeader.Flags = m_localFileHeader.GeneralBitFlag;
 			_centralDirectoryFileHeader.LastModFileTime = m_localFileHeader.LastModFileTime;
 			_centralDirectoryFileHeader.LastModFileDate = m_localFileHeader.LastModFileDate;
 			_centralDirectoryFileHeader.FileCRC = m_localFileHeader.DataDescriptor.CRC32;
@@ -342,14 +345,14 @@ ParaEngine::CZipWriter::~CZipWriter()
 	close();
 }
 
-CZipWriter* CZipWriter::CreateZip(const char *fn, const char *password)
+CZipWriter* CZipWriter::CreateZip(const char* fn, const char* password)
 {
 	CZipWriter* zipWriter = new CZipWriter();
 	zipWriter->InitNewZip(fn, password);
 	return zipWriter;
 }
 
-bool CZipWriter::IsValid() 
+bool CZipWriter::IsValid()
 {
 	return true;
 }
@@ -360,7 +363,7 @@ DWORD CZipWriter::close()
 	return 0;
 }
 
-void ParaEngine::CZipWriter::InitNewZip(const char * filename, const char * password)
+void ParaEngine::CZipWriter::InitNewZip(const char* filename, const char* password)
 {
 	m_filename = filename;
 	m_password = password ? password : "";
@@ -397,7 +400,7 @@ DWORD CZipWriter::AddDirectory(const char* dstzn, const char* filepattern, int n
 	if (sDestFolder.size() > 0)
 	{
 		char lastChar = sDestFolder[sDestFolder.size() - 1];
-		if (lastChar != '\\' &&  lastChar != '/')
+		if (lastChar != '\\' && lastChar != '/')
 		{
 			sDestFolder += "/";
 		}
@@ -434,7 +437,7 @@ DWORD CZipWriter::AddDirectory(const char* dstzn, const char* filepattern, int n
 					// - delete the temp zip at the temp location. 
 					string diskfile = (rootpath + item).c_str();
 					string tempfile = diskfile + ".temp";
-					
+
 					if (CFileUtils::CopyFile(diskfile.c_str(), tempfile.c_str(), false))
 					{
 						result = ZipAdd((sDestFolder + item).c_str(), tempfile.c_str());
