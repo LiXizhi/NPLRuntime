@@ -734,8 +734,12 @@ int ParaEngine::CFileUtils::DeleteFiles(const std::string& sFilePattern, bool bS
 		std::vector<std::wstring> files;
 		do
 		{
-			files.push_back(FindFileData.cFileName);
-			++nFileCount;
+			// skip . and .. special folders
+			if (wcscmp(FindFileData.cFileName, L".") != 0 && wcscmp(FindFileData.cFileName, L"..") != 0)
+			{
+				files.push_back(FindFileData.cFileName);
+				++nFileCount;
+			}
 		} while (FindNextFileW(hFind, &FindFileData) != 0);
 
 		dwError = GetLastError();
@@ -750,7 +754,9 @@ int ParaEngine::CFileUtils::DeleteFiles(const std::string& sFilePattern, bool bS
 			}
 			else
 			{
-				OUTPUT_LOG("warning, unable to delete file %s\n", filename.c_str());
+				// wchar to utf
+				std::string filename_ = StringHelper::WideCharToMultiByte(filename.c_str(), DEFAULT_FILE_ENCODING);
+				OUTPUT_LOG("warning, unable to delete file %s\n", filename_.c_str());
 			}
 		}
 
