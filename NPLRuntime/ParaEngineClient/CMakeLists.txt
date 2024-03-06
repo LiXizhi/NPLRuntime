@@ -24,7 +24,6 @@ set(ParaEngineClient_SRCS)
 # Libraries 
 set(ParaEngineClient_LIBS)
 
-
 set (External_Dir ${ParaEngineClient_SOURCE_DIR}/../externals)
 
 # All Source

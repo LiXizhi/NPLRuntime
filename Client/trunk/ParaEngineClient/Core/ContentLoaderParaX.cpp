@@ -13,6 +13,7 @@
 #include "ParaXEntity.h"
 #include "ParaXModel/ParaXModel.h"
 #include "ParaXModel/FBXParser.h"
+#include "ParaXModel/PLYParser.h"
 #include "BMaxModel/BMaxParser.h"
 #include "ParaXSerializer.h"
 #include "ParaMeshXMLFile.h"
@@ -386,6 +387,11 @@ HRESULT ParaEngine::CParaXProcessor::CopyToResource()
 					iCur->m_pParaXMesh = parser.ParseParaXModel(myFile.getBuffer(), myFile.getSize(), sExt.c_str());
 				}
 #endif
+				else if(sExt == "ply"){
+					// ply point cloud 
+					PLYParser parser(iCur->m_sMeshFileName);
+					iCur->m_pParaXMesh = parser.ParseParaXModel(myFile.getBuffer(), myFile.getSize(), sExt.c_str());
+				}
 				else
 				{
 					CParaXSerializer serializer;
