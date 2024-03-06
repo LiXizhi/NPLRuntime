@@ -1202,7 +1202,7 @@ int CParaXModel::GetRenderPass(CParameterBlock* pMaterialParams)
 void CParaXModel::RenderBMaxModel(SceneState* pSceneState, CParameterBlock* pMaterialParams)
 {
 	int nPasses = (int)passes.size();
-	if (nPasses <= 0)
+	if (nPasses <= 0 && m_pVoxelModel == NULL)
 		return;
 
 	RenderDevicePtr pd3dDevice = CGlobals::GetRenderDevice();
@@ -1260,21 +1260,24 @@ void CParaXModel::RenderBMaxModel(SceneState* pSceneState, CParameterBlock* pMat
 						{
 							pEffect->CommitChanges();
 							DrawPass_BMax_VB(p, startVB);
-
-							// TODO: do voxel model rendering in its own render pass
-							if (m_pVoxelModel && nPass == 0)
-							{
-								m_pVoxelModel->Draw(pSceneState);
-							}
-
 							p.deinit_bmax_FX(pSceneState);
 						}
 						startVB += p.indexCount;
 					}
 				}
 
+				if (m_pVoxelModel)
+				{
+					CBaseObject* pBaseObj = pSceneState->GetCurrentSceneObject();
+					if (pBaseObj != NULL) pBaseObj->ApplyMaterial();
+					pEffect->setFloat(CEffectFile::k_opacity, 1.f);
+					pEffect->CommitChanges();
+					m_pVoxelModel->Draw(pSceneState);
+				}
+
 				pEffect->EndPass();
 			}
+			
 			pEffect->end();
 		}
 	}
@@ -1770,7 +1773,7 @@ void CParaXModel::RenderShaderAnim(SceneState* pSceneState)
 
 void CParaXModel::drawModel(SceneState* pSceneState, CParameterBlock* pMaterialParam, int nRenderMethod)
 {
-	if (passes.size() == 0)
+	if (passes.size() == 0 && m_pVoxelModel == NULL)
 		return;
 	CEffectFile* pEffect = CGlobals::GetEffectManager()->GetCurrentEffectFile();
 	if (pEffect == 0)
@@ -2219,12 +2222,18 @@ IAttributeFields* CParaXModel::GetChildAttributeObject(const char* sName)
 {
 	if (strcmp(sName, "VoxelModel") == 0)
 	{
-		if (m_pVoxelModel == NULL) {
-			m_pVoxelModel = new ParaVoxelModel();
-		}
-		return m_pVoxelModel;
+		return CreateGetVoxelModel();
 	}
 	return 0;
+}
+
+
+ParaVoxelModel* CParaXModel::CreateGetVoxelModel()
+{
+	if (m_pVoxelModel == NULL) {
+		m_pVoxelModel = new ParaVoxelModel();
+	}
+	return m_pVoxelModel;
 }
 
 int CParaXModel::GetChildAttributeColumnCount()

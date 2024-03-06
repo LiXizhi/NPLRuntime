@@ -158,9 +158,9 @@ add_definitions(-DBOOST_BIND_GLOBAL_PLACEHOLDERS)
 if (SDL)
     list(APPEND NPLRUNTIME_INCLUDES ${SDL_ROOT}/include)
 endif()
+
 ###################################################################
 ## Target
-
 add_library(ParaEngine ${sources_commmon} ${sources_rendersystem})
 
 set(include_dirs

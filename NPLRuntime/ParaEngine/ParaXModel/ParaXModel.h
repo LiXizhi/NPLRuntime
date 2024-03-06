@@ -257,6 +257,7 @@ namespace ParaEngine
 
 		friend struct ModelRenderPass;
 
+		ParaVoxelModel* CreateGetVoxelModel();
 	private:
 		void InitVertexBuffer_NOANIM();
 		void InitVertexBuffer_BMAX();

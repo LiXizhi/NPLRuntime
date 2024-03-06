@@ -344,6 +344,11 @@ namespace ParaEngine
 		void SetEditable(bool bEditable);
 		bool IsEditable();
 
+		/** get the depth of the octree at the given level.
+		* e.g. LevelToDepth(1024) == 10
+		*/
+		static inline int LevelToDepth(int level);
+
 	protected:
 		/** optimize the model to remove and merge octree node for invisible nodes. */
 		void Optimize();
@@ -393,14 +398,8 @@ namespace ParaEngine
 		*/
 		bool UpdateNodeShapeByNeighbourAtLevel(int32 x, int32 y, int32 z, int level, int side, bool isBlock);
 
-
 		/** if the node at the given position and level is a block node. */
 		bool IsBlock(int32 x, int32 y, int32 z, int level);
-
-		/** get the depth of the octree at the given level.
-		* e.g. LevelToDepth(1024) == 10
-		*/
-		inline int LevelToDepth(int level);
 
 		int CreateGetFreeChunkIndex(int nMinFreeSize = 8);
 
