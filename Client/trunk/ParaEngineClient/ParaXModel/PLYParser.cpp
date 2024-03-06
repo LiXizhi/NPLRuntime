@@ -168,7 +168,7 @@ CParaXModel* PLYParser::ParseParaXModel(const char* buffer, int nSize, const cha
 	int32 dx = maxX - minX;
 	int32 dy = maxY - minY;
 	int32 dz = maxZ - minZ;
-	int32 maxD = max(max(dx, dy), dz);
+	int32 maxD = max(max(dx, dy), dz) + 1;
 	int32 nLevel = maxD;
 	int nDepth = 0;
 	while (nLevel > 1)
@@ -176,8 +176,8 @@ CParaXModel* PLYParser::ParseParaXModel(const char* buffer, int nSize, const cha
 		nLevel >>= 1;
 		nDepth++;
 	}
-	nLevel = (int32)pow(nDepth, 2);
-	if (nLevel <= maxD)
+	nLevel = (int32)pow(2, nDepth);
+	if (nLevel < maxD)
 	{
 		nLevel *= 2;
 	}
