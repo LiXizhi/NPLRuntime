@@ -943,8 +943,13 @@ namespace ParaEngine
 	}
 
 
-	bool ParaImage::saveToFile(const std::string &filename, bool isToRGB)
+	bool ParaImage::saveToFile(const std::string &filename_, bool isToRGB)
 	{
+		std::string filename = filename_;
+		if (!CParaFile::IsAbsolutePath(filename)) {
+			filename = CParaFile::GetWritablePath() + filename;
+		}
+
         std::string fileExtension = filename.substr(filename.find_last_of('.'));
         
         if (fileExtension == ".png")
