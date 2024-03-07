@@ -235,7 +235,7 @@ namespace luabind { namespace detail {
     // -- interface ---------------------------------------------------------
 
     class_base::class_base(char const* name)
-        : scope(std::auto_ptr<registration>(
+        : scope(std::movable_auto_ptr<registration>(
                 m_registration = new class_registration(name))
           )
     {
@@ -258,13 +258,13 @@ namespace luabind { namespace detail {
 
 	void class_base::add_member(registration* member)
 	{
-		std::auto_ptr<registration> ptr(member);
+		std::movable_auto_ptr<registration> ptr(member);
 		m_registration->m_members.operator,(scope(ptr));
 	}
 
 	void class_base::add_default_member(registration* member)
 	{
-		std::auto_ptr<registration> ptr(member);
+		std::movable_auto_ptr<registration> ptr(member);
 		m_registration->m_default_members.operator,(scope(ptr));
 	}
 

@@ -8,7 +8,7 @@
 # include <cassert>
 # include <limits>
 # include <map>
-# include <memory>
+# include <luabind/memory.hpp>
 # include <vector>
 # include <luabind/typeid.hpp>
 # include <boost/scoped_ptr.hpp>

@@ -26,7 +26,7 @@
 #include <luabind/prefix.hpp>
 #include <luabind/config.hpp>
 #include <luabind/lua_include.hpp>
-#include <memory>
+#include <luabind/memory.hpp>
 
 namespace luabind { 
     
@@ -56,7 +56,7 @@ namespace luabind {
     struct LUABIND_API scope
     {
         scope();
-        explicit scope(std::auto_ptr<detail::registration> reg):  m_chain(reg.release()) {}
+        explicit scope(std::movable_auto_ptr<detail::registration> reg):  m_chain(reg.release()) {}
         scope(scope const& other_);
         ~scope();
 
