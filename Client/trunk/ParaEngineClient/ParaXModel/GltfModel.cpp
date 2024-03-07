@@ -1,5 +1,4 @@
-﻿﻿
-#include "ParaEngine.h"
+﻿#include "ParaEngine.h"
 #include "BMaxModel/BlocksParser.h"
 #include "ParaXModel.h"
 #include "ParaXSerializer.h"
@@ -56,7 +55,7 @@ namespace ParaEngine
         return "";
     }
 
-    GltfModel::GltfModel() 
+    GltfModel::GltfModel() : m_isEmbedTexture(true), m_enable_animation(true)
 	{
 
 	}	
@@ -94,7 +93,7 @@ namespace ParaEngine
         textureIndex = 0;
 
         m_json_gltf = Json::Value();
-        m_string_builder = StringBuilder();
+        m_string_builder.clear();
         m_string_builder.reserve(1024 * 1024 * 5); // 5M
         m_gltf = std::make_shared<GLTF>();
 
@@ -103,6 +102,7 @@ namespace ParaEngine
         m_gltf->buffers.push_back(buffer);
 
         m_enable_animation = true;
+        m_isEmbedTexture = true;
 	}
 
     void GltfModel::Export(CParaXModel* paraXModel, std::string filepath) 
@@ -458,7 +458,6 @@ namespace ParaEngine
         int tex = pass.tex;
         std::shared_ptr<GLTFImage> image = std::make_shared<GLTFImage>();
         image->index = imageIndex++;
-        // image->uri = imagePrefix + std::to_string((unsigned long long)paraXModel) + "_" + std::to_string(tex) + ".png";
         image->uri = imagePrefix + std::to_string(image->index) + ".png";
         image->filename = CParaFile::GetParentDirectoryFromPath(m_filename) + image->uri;
         m_gltf->images.push_back(image);
@@ -475,7 +474,25 @@ namespace ParaEngine
 #else
             paraXModel->replaceTextures[paraXModel->specialTextures[tex]]->SaveToFile(image->filename.c_str(), PixelFormat::DXT3, 0, 0);
 #endif
-      }
+        }
+        if(m_isEmbedTexture) 
+		{
+            CParaFile file;
+            if (file.OpenFile(image->filename.c_str(), true)) 
+            {
+                int nSize = (int)file.getSize();
+                if (nSize > 0)
+                {
+                    std::string imageData;
+                    imageData.resize(nSize);
+                    file.read((char*)(&(imageData[0])), nSize);
+                    image->uri = std::string("data:image/png;base64,") + ParaEngine::StringHelper::base64(imageData);
+                    file.close();
+                    CParaFile::DeleteFile(image->filename.c_str());
+                }
+            }
+            
+		}
         return image;
     }
 
