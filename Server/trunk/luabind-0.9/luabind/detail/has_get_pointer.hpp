@@ -26,7 +26,7 @@
 # include <boost/type_traits/add_reference.hpp>
 
 # ifndef BOOST_NO_ARGUMENT_DEPENDENT_LOOKUP
-#  include <memory>
+#  include <luabind/memory.hpp>
 # endif
 
 namespace luabind { namespace detail { 
@@ -58,7 +58,7 @@ namespace has_get_pointer_
   T* get_pointer(T const volatile*);
 
   template<class T>
-  T* get_pointer(std::auto_ptr<T> const&);
+  T* get_pointer(std::movable_auto_ptr<T> const&);
 
 # endif
 

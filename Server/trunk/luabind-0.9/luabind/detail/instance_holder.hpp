@@ -57,7 +57,7 @@ inline mpl::true_ check_const_pointer(void const*)
 }
 
 template <class T>
-void release_ownership(std::auto_ptr<T>& p)
+void release_ownership(std::movable_auto_ptr<T>& p)
 {
     p.release();
 }

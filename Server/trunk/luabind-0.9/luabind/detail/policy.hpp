@@ -28,7 +28,7 @@
 
 #include <typeinfo>
 #include <string>
-#include <memory>
+#include <luabind/memory.hpp>
 
 #include <boost/type_traits/is_enum.hpp>
 #include <boost/type_traits/is_array.hpp>
@@ -179,7 +179,7 @@ namespace luabind { namespace detail
     template <class T>
     void make_pointee_instance(lua_State* L, T& x, mpl::false_, mpl::true_)
     {
-        std::auto_ptr<T> ptr(new T(x));
+        std::movable_auto_ptr<T> ptr(new T(x));
         make_instance(L, ptr);
     }
 
