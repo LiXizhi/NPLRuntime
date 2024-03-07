@@ -9,7 +9,7 @@
 #include "ParaXBone.h"
 #include "CustomCharModelInstance.h"
 #include "ParaXModelCanvas.h"
-#include "GlTFModel.h"
+#include "GltfModel.h"
 #include "MeshObject.h"
 
 namespace ParaEngine
@@ -1481,17 +1481,19 @@ namespace ParaEngine
 		}
 	}
 
-    static GltfModel gltf;
     void GltfModel::ExportBlocks(const char* blocks, const char* filepath) 
     {
+        GltfModel gltf;
         gltf.Export(blocks, filepath);
     }
     void GltfModel::ExportParaXModel(CParaXModel* model, const char* filepath) 
     {
+        GltfModel gltf;
         gltf.Export(model, filepath);
     }
     void GltfModel::ExportCharModel(CharModelInstance* model, const char* filepath)
     {
+        GltfModel gltf;
         gltf.Export(model, filepath);
     }
 
