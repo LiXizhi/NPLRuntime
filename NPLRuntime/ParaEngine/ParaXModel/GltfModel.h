@@ -338,6 +338,7 @@ namespace ParaEngine {
 		Json::Value m_json_gltf;
 		std::string m_filename;
 		bool m_enable_animation;
+		bool m_isEmbedTexture;
 		uint32_t bufferIndex;
 		uint32_t bufferViewIndex;
 		uint32_t sceneIndex;
