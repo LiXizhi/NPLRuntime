@@ -1285,6 +1285,7 @@ namespace ParaEngine
             std::shared_ptr<GLTFImage> image = m_gltf->images[i];
             Json::Value jsonImage;
             jsonImage["uri"] = image->uri;
+            jsonImage["name"] = image->filename;
             images[image->index] = jsonImage;
         }
         if (m_gltf->images.size() > 0) m_json_gltf["images"] = images;
