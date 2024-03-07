@@ -10,6 +10,7 @@ namespace std {
 	{
 	public:
 		movable_auto_ptr(T* p = 0) : m_ptr(p) {}
+		movable_auto_ptr(const movable_auto_ptr& other) : m_ptr(std::move(const_cast<movable_auto_ptr&>(other).m_ptr)) {}
 		movable_auto_ptr(movable_auto_ptr&& r) : m_ptr(std::move(r.m_ptr)) {}
 		movable_auto_ptr& operator=(movable_auto_ptr&& r) {
 			if (this != &r) {
