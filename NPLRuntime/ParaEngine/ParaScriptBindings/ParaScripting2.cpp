@@ -11,10 +11,6 @@
 #include "ParaEngine.h"
 #include "ParaEngineSettings.h"
 using namespace ParaEngine;
-#ifdef EMSCRIPTEN_SINGLE_THREAD
-// #define auto_ptr unique_ptr
-#include "AutoPtr.h"
-#endif
 
 /** 
 for luabind, The main drawback of this approach is that the compilation time will increase for the file 

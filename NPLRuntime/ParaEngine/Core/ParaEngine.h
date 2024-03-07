@@ -33,6 +33,10 @@
 #include <boost/bind.hpp>
 #endif
 #include "util/intrusive_ptr.h"
+#ifdef EMSCRIPTEN_SINGLE_THREAD
+// #define auto_ptr unique_ptr
+#include "util/AutoPtr.h"
+#endif
 
 using namespace boost::placeholders;
 

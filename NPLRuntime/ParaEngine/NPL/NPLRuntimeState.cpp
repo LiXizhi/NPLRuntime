@@ -19,10 +19,6 @@
 #include "util/ScopedLock.h"
 #include <boost/bind.hpp>
 #include "NPLRuntimeState.h"
-#ifdef EMSCRIPTEN_SINGLE_THREAD
-// #define auto_ptr unique_ptr
-#include "AutoPtr.h"
-#endif
 /**
 for luabind, The main drawback of this approach is that the compilation time will increase for the file
 that does the registration, it is therefore recommended that you register everything in the same cpp-file.

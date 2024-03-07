@@ -4,10 +4,6 @@
 // Description:	API for common objects. 
 //-----------------------------------------------------------------------------
 #pragma once
-#ifdef EMSCRIPTEN_SINGLE_THREAD
-// #define auto_ptr unique_ptr
-#include "AutoPtr.h"
-#endif
 #include "ParaScriptingGlobal.h"
 #include <string>
 

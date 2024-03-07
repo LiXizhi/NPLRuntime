@@ -12,10 +12,7 @@
 #include "util/StringHelper.h"
 #include "util/bitlib_lua.h"
 #include "util/lua_pack.h"
-#ifdef EMSCRIPTEN_SINGLE_THREAD
-// #define auto_ptr unique_ptr
-#include "AutoPtr.h"
-#endif
+
 using namespace ParaEngine;
 
 #if defined(PARAENGINE_CLIENT) && !defined(NPLRUNTIME)

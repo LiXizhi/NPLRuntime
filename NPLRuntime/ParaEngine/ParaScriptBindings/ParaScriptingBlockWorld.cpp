@@ -14,10 +14,6 @@
 
 /**@define  user defined block index */
 #define CUSTOM_BLOCK_ID_BEGIN 2000
-#ifdef EMSCRIPTEN_SINGLE_THREAD
-// #define auto_ptr unique_ptr
-#include "AutoPtr.h"
-#endif
 
 extern "C"
 {

@@ -8,10 +8,6 @@
 #include "BlockChunk.h"
 #include "IAttributeFields.h"
 #include "ChunkMaxHeight.h"
-#ifdef EMSCRIPTEN_SINGLE_THREAD
-// #define auto_ptr unique_ptr
-#include "AutoPtr.h"
-#endif
 #include <luabind/luabind.hpp>
 #include <luabind/object.hpp>
 namespace ParaEngine

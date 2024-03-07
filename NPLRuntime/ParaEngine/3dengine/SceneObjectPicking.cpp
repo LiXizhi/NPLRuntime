@@ -20,10 +20,6 @@
 #include "ViewportManager.h"
 #include "SceneObjectPicking.h"
 #include "TerrainTileRoot.h"
-#ifdef EMSCRIPTEN_SINGLE_THREAD
-// #define auto_ptr unique_ptr
-#include "AutoPtr.h"
-#endif
 #include <luabind/object.hpp>
 
 #include "memdebug.h"
