@@ -9,17 +9,23 @@ namespace std {
 	class movable_auto_ptr
 	{
 	public:
-		movable_auto_ptr(T* p = 0): m_ptr(p) {}
-		movable_auto_ptr(const movable_auto_ptr& r): m_ptr(std::move(r.m_ptr)) {}
-		inline T* get() const  { return m_ptr.get(); }
+		movable_auto_ptr(T* p = 0) : m_ptr(p) {}
+		movable_auto_ptr(movable_auto_ptr&& r) : m_ptr(std::move(r.m_ptr)) {}
+		movable_auto_ptr& operator=(movable_auto_ptr&& r) {
+			if (this != &r) {
+				m_ptr = std::move(r.m_ptr);
+			}
+			return *this;
+		}
+		inline T* get() const { return m_ptr.get(); }
 		inline T& operator*() const { return *m_ptr; }
 		inline T* operator->() const { return m_ptr.get(); }
-		inline void reset( T* p = 0 ) { m_ptr.reset(p); }
+		inline void reset(T* p = 0) { m_ptr.reset(p); }
 		inline T* release() { return m_ptr.release(); }
 	private:
 		std::unique_ptr<T> m_ptr;
 	};
-}	
+}
 
 namespace boost {
 	template<class T> T* get_pointer(std::movable_auto_ptr<T> const& p)
