@@ -1103,10 +1103,13 @@ bool ParaEngine::TextureEntityOpenGL::GetImageData(void** ppData, int* pSize, in
 
 bool ParaEngine::TextureEntityOpenGL::GetImageDataOriginal(void** ppData, int* pSize, int* pWidth, int* pHeight, int* pBytesPerPixel)
 {
-	if (SurfaceType == DynamicTexture && m_texture && m_pTextureInfo)
+	if (m_texture)
 	{
-		int width = m_pTextureInfo->GetWidth();
-		int height = m_pTextureInfo->GetHeight();
+		auto pTextureInfo = GetTextureInfo();
+		if(!pTextureInfo)
+			return false;
+		int width = pTextureInfo->GetWidth();
+		int height = pTextureInfo->GetHeight();
 		*pWidth = width;
 		*pHeight = height;
 		*pBytesPerPixel = 4;

@@ -477,11 +477,22 @@ namespace ParaEngine
         CParaFile::MakeDirectoryFromFilePath(filename.c_str());
         if (texture)
         {
+            auto & lastFilename = texture->GetLocalFileName();
+            auto fileExt = CParaFile::GetFileExtension(lastFilename);
+            if (fileExt == "png")
+			{
+                filename = lastFilename;
+			}
+            else
+            {
+
 #if defined(USE_DIRECTX_RENDERER)
-            texture->SaveToFile(filename.c_str(), D3DFORMAT::D3DFMT_DXT3, 0, 0);
+                texture->SaveToFile(filename.c_str(), D3DFORMAT::D3DFMT_DXT3, 0, 0);
 #else
-            texture->SaveToFile(filename.c_str(), PixelFormat::DXT3, 0, 0);
+                texture->SaveToFile(filename.c_str(), PixelFormat::DXT3, 0, 0);
 #endif
+            }
+
             if (m_isEmbedTexture)
             {
                 CParaFile file;
@@ -495,7 +506,9 @@ namespace ParaEngine
                         file.read((char*)(&(imageData[0])), nSize);
                         image->uri = std::string("data:image/png;base64,") + ParaEngine::StringHelper::base64(imageData);
                         file.close();
-                        CParaFile::DeleteFile(image->filename.c_str());
+                        if (filename != lastFilename) {
+                            CParaFile::DeleteFile(filename);
+                        }
                     }
                 }
                 else
