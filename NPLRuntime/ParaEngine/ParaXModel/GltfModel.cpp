@@ -1,3 +1,4 @@
+﻿﻿
 #include "ParaEngine.h"
 #include "BMaxModel/BlocksParser.h"
 #include "ParaXModel.h"
@@ -54,7 +55,7 @@ namespace ParaEngine
         if (type == GLTFType::GLTF_MAT4) return "MAT4";
         return "";
     }
-    
+
     GltfModel::GltfModel() 
 	{
 
@@ -94,7 +95,7 @@ namespace ParaEngine
 
         m_json_gltf = Json::Value();
         m_string_builder = StringBuilder();
-        m_string_builder.reserve(1024 * 1024 * 5); // 500M
+        m_string_builder.reserve(1024 * 1024 * 5); // 5M
         m_gltf = std::make_shared<GLTF>();
 
 		buffer = std::make_shared<GLTFBuffer>();
@@ -1217,7 +1218,7 @@ namespace ParaEngine
             Json::Value jsonScene;
 		    Json::Value jsonSceneNodes = Json::Value(Json::arrayValue);
             std::shared_ptr<GLTFScene> scene = m_gltf->scenes[i];
-            for (int j = 0; j < scene->nodes.size(); j++)
+            for (unsigned int j = 0; j < scene->nodes.size(); j++)
             {
                 std::shared_ptr<GLTFNode> node = scene->nodes[j];
                 jsonSceneNodes[j] = node->index;
@@ -1480,19 +1481,20 @@ namespace ParaEngine
 		}
 	}
 
-    static GltfModel gltf;
     void GltfModel::ExportBlocks(const char* blocks, const char* filepath) 
     {
+        GltfModel gltf;
         gltf.Export(blocks, filepath);
     }
     void GltfModel::ExportParaXModel(CParaXModel* model, const char* filepath) 
     {
+        GltfModel gltf;
         gltf.Export(model, filepath);
     }
     void GltfModel::ExportCharModel(CharModelInstance* model, const char* filepath)
     {
+        GltfModel gltf;
         gltf.Export(model, filepath);
     }
 
 } // namespace ParaEngine
-

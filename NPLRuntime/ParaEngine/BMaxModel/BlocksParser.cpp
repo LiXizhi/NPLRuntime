@@ -57,7 +57,7 @@ namespace ParaEngine
 
 			auto pBlockTemplate = pBlockWorld->GetBlockTemplate(template_id);
 
-			if (pBlockTemplate && m_nHelperBlockId != template_id)
+			if (pBlockTemplate)
 			{
 				BMaxNodePtr node;
 				if (template_id == BlockModelBlockId)
@@ -256,7 +256,7 @@ namespace ParaEngine
 		blockRectangles.clear();
 		for (auto& item : m_nodes)
 		{
-			BMaxNode *node = item.second.get();
+			BMaxNode* node = item.second.get();
 			auto block_template = BlockWorldClient::GetInstance()->GetBlockTemplate(node->template_id);
 			if (block_template != nullptr)
 				blockTextures[node->template_id] = block_template->GetTexture0(node->block_data);
@@ -297,7 +297,7 @@ namespace ParaEngine
 		blockRectangles[node->template_id].push_back(rectangle);
 	}
 
-	void BlocksParser::FillParaXModelData(CParaXModel *pMesh, int32 nMaxTriangleCount /*= -1*/)
+	void BlocksParser::FillParaXModelData(CParaXModel* pMesh, int32 nMaxTriangleCount /*= -1*/)
 	{
 		if (pMesh == NULL)
 		{
@@ -350,7 +350,7 @@ namespace ParaEngine
 			if (m_anims.size() > 0)
 			{
 				pMesh->anims = new ModelAnimation[m_anims.size()];
-				memcpy(pMesh->anims, &(m_anims[0]), sizeof(ModelAnimation)*m_anims.size());
+				memcpy(pMesh->anims, &(m_anims[0]), sizeof(ModelAnimation) * m_anims.size());
 			}
 			pMesh->animBones = true;
 			pMesh->animated = true;
@@ -396,7 +396,7 @@ namespace ParaEngine
 
 			for (uint32 i = 0; i < block_rectangles.second.size(); i++)
 			{
-				Rectangle *rectangle = block_rectangles.second[i].get();
+				Rectangle* rectangle = block_rectangles.second[i].get();
 				BlockVertexCompressed* pVertices = rectangle->GetVertices();
 
 				int nVertices = 4;
@@ -428,8 +428,8 @@ namespace ParaEngine
 					pVertices->GetNormal(modelVertex.normal);
 					pVertices->GetTexcoord(modelVertex.texcoords.x, modelVertex.texcoords.y);
 
-					modelVertex.color0 = pVertices->color;
-					modelVertex.color1 = pVertices->color2;
+					modelVertex.color0 = pVertices->color2;
+					modelVertex.color1 = 0xffffffff; // unused
 					//set bone and weight, only a single bone
 					int nBoneIndex = rectangle->GetBoneIndexAt(k);
 					// if no bone is found, use the default root bone
@@ -466,8 +466,7 @@ namespace ParaEngine
 				!block_template->GetBlockModel().IsUniformLighting() ||
 				!block_template->IsMatchAttribute(BlockTemplate::batt_transparent);
 			pass->SetStartIndex(nStartIndex);
-			geoset->SetVertexStart(total_count);
-			nStartVertex = 0;
+			geoset->SetVertexStart((int32)m_vertices.size());
 
 			for (uint32_t i = 0; i < block_nodes.second.size(); i++)
 			{
@@ -497,8 +496,7 @@ namespace ParaEngine
 							pass->cull = block_template->IsMatchAttribute(BlockTemplate::batt_solid) ||
 								!block_template->GetBlockModel().IsUniformLighting() ||
 								!block_template->IsMatchAttribute(BlockTemplate::batt_transparent);
-							geoset->SetVertexStart(total_count);
-							nStartVertex = 0;
+							geoset->SetVertexStart((int32)m_vertices.size());
 						}
 
 						geoset->icount += nIndexCount;
@@ -567,7 +565,7 @@ namespace ParaEngine
 					const Vector3& vCenter = GetCenterPos();
 					Vector3 vOffset((float)node->x - vCenter.x + BlockConfig::g_half_blockSize, (float)node->y, (float)node->z - vCenter.z + BlockConfig::g_half_blockSize);
 
-					ModelVertex *ov = pModel->m_origVertices;
+					ModelVertex* ov = pModel->m_origVertices;
 					int nVertices = pModel->GetObjectNum().nVertices;
 					for (int i = 0; i < nVertices; i++)
 					{
@@ -577,8 +575,8 @@ namespace ParaEngine
 
 						if (m_bHasTransform)
 						{
-							modelVertex.pos = (ov->pos*matLocalTrans + vOffset);
-							modelVertex.normal = (ov->normal*matLocalTrans);
+							modelVertex.pos = (ov->pos * matLocalTrans + vOffset);
+							modelVertex.normal = (ov->normal * matLocalTrans);
 						}
 						else
 						{
@@ -600,7 +598,7 @@ namespace ParaEngine
 
 					for (int nPass = 0; nPass < nPasses; nPass++)
 					{
-						ModelRenderPass &p = pModel->passes[nPass];
+						ModelRenderPass& p = pModel->passes[nPass];
 						if (pModel->showGeosets[p.geoset])
 						{
 							int nIndexCount = p.indexCount;
@@ -641,3 +639,4 @@ namespace ParaEngine
 	}
 
 }
+
