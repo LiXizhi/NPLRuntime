@@ -2,15 +2,15 @@
 
 #include <memory>
 namespace std {
-	template<typename T>
 
 	// A std::unique_ptr with move sematics for single-threaded environment
 	// since std::auto_ptr is deprecated in C++11, use this one instead
+	template<typename T>
 	class movable_auto_ptr
 	{
 	public:
 		movable_auto_ptr(T* p = 0): m_ptr(p) {}
-		movable_auto_ptr(movable_auto_ptr& r): m_ptr(std::move(r.m_ptr)) {}
+		movable_auto_ptr(const movable_auto_ptr& r): m_ptr(std::move(r.m_ptr)) {}
 		inline T* get() const  { return m_ptr.get(); }
 		inline T& operator*() const { return *m_ptr; }
 		inline T* operator->() const { return m_ptr.get(); }
