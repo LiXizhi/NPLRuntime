@@ -1,6 +1,6 @@
 |// Low-level VM code for MIPS CPUs.
 |// Bytecode interpreter, fast functions and helper functions.
-|// Copyright (C) 2005-2017 Mike Pall. See Copyright Notice in luajit.h
+|// Copyright (C) 2005-2023 Mike Pall. See Copyright Notice in luajit.h
 |
 |.arch mips
 |.section code_op, code_sub
@@ -341,7 +341,7 @@ static void build_subroutines(BuildCtx *ctx)
   |  xori AT, TMP0, FRAME_C
   |   and TMP2, PC, TMP2
   |  bnez AT, ->vm_returnp
-  |   subu TMP2, BASE, TMP2		// TMP2 = previous base.
+  |.  subu TMP2, BASE, TMP2		// TMP2 = previous base.
   |
   |  addiu TMP1, RD, -8
   |   sw TMP2, L->base
@@ -603,11 +603,11 @@ static void build_subroutines(BuildCtx *ctx)
   |.endif
   |     lw PC, -16+HI(RB)		// Restore PC from [cont|PC].
   |   addu TMP2, RA, RD
-  |    lw TMP1, LFUNC:TMP1->pc
   |.if FFI
   |  bnez AT, >1
   |.endif
   |.  sw TISNIL, -8+HI(TMP2)		// Ensure one valid arg.
+  |    lw TMP1, LFUNC:TMP1->pc
   |  // BASE = base, RA = resultptr, RB = meta base
   |  jr TMP0				// Jump to continuation.
   |.  lw KBASE, PC2PROTO(k)(TMP1)
@@ -1244,9 +1244,13 @@ static void build_subroutines(BuildCtx *ctx)
   |//-- Base library: catch errors ----------------------------------------
   |
   |.ffunc pcall
+  |   lw TMP1, L->maxstack
+  |   addu TMP2, BASE, NARGS8:RC
   |  lbu TMP3, DISPATCH_GL(hookmask)(DISPATCH)
   |  beqz NARGS8:RC, ->fff_fallback
-  |   move TMP2, BASE
+  |.  sltu AT, TMP1, TMP2
+  |   bnez AT, ->fff_fallback
+  |.   move TMP2, BASE
   |   addiu BASE, BASE, 8
   |  // Remember active hook before pcall.
   |  srl TMP3, TMP3, HOOK_ACTIVE_SHIFT
@@ -1256,8 +1260,12 @@ static void build_subroutines(BuildCtx *ctx)
   |.  addiu NARGS8:RC, NARGS8:RC, -8
   |
   |.ffunc xpcall
+  |   lw TMP1, L->maxstack
+  |   addu TMP2, BASE, NARGS8:RC
   |    sltiu AT, NARGS8:RC, 16
   |  lw CARG4, 8+HI(BASE)
+  |   sltu TMP1, TMP1, TMP2
+  |    or AT, AT, TMP1
   |    bnez AT, ->fff_fallback
   |.  ldc1 FARG2, 8(BASE)
   |   ldc1 FARG1, 0(BASE)
@@ -2163,9 +2171,8 @@ static void build_subroutines(BuildCtx *ctx)
   |.  addu RA, RA, BASE
   |
   |3:  // Rethrow error from the right C frame.
-  |  load_got lj_err_throw
-  |  negu CARG2, CRET1
-  |  call_intern lj_err_throw		// (lua_State *L, int errcode)
+  |  load_got lj_err_run
+  |  call_intern lj_err_run		// (lua_State *L)
   |.  move CARG1, L
   |.endif
   |

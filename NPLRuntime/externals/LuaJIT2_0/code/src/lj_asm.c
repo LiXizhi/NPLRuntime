@@ -1,6 +1,6 @@
 /*
 ** IR assembler (SSA IR -> machine code).
-** Copyright (C) 2005-2017 Mike Pall. See Copyright Notice in luajit.h
+** Copyright (C) 2005-2023 Mike Pall. See Copyright Notice in luajit.h
 */
 
 #define lj_asm_c
@@ -22,7 +22,6 @@
 #include "lj_ircall.h"
 #include "lj_iropt.h"
 #include "lj_mcode.h"
-#include "lj_iropt.h"
 #include "lj_trace.h"
 #include "lj_snap.h"
 #include "lj_asm.h"
@@ -72,6 +71,7 @@ typedef struct ASMState {
   IRRef snaprename;	/* Rename highwater mark for snapshot check. */
   SnapNo snapno;	/* Current snapshot number. */
   SnapNo loopsnapno;	/* Loop snapshot number. */
+  BloomFilter snapfilt1, snapfilt2;	/* Filled with snapshot refs. */
 
   IRRef fuseref;	/* Fusion limit (loopref, 0 or FUSE_DISABLED). */
   IRRef sectref;	/* Section base reference (loopref or 0). */
@@ -826,7 +826,10 @@ static int asm_sunk_store(ASMState *as, IRIns *ira, IRIns *irs)
 static void asm_snap_alloc1(ASMState *as, IRRef ref)
 {
   IRIns *ir = IR(ref);
-  if (!irref_isk(ref) && (!(ra_used(ir) || ir->r == RID_SUNK))) {
+  if (!irref_isk(ref) && ir->r != RID_SUNK) {
+    bloomset(as->snapfilt1, ref);
+    bloomset(as->snapfilt2, hashrot(ref, ref + HASH_BIAS));
+    if (ra_used(ir)) return;
     if (ir->r == RID_SINK) {
       ir->r = RID_SUNK;
 #if LJ_HASFFI
@@ -883,6 +886,7 @@ static void asm_snap_alloc(ASMState *as)
   SnapShot *snap = &as->T->snap[as->snapno];
   SnapEntry *map = &as->T->snapmap[snap->mapofs];
   MSize n, nent = snap->nent;
+  as->snapfilt1 = as->snapfilt2 = 0;
   for (n = 0; n < nent; n++) {
     SnapEntry sn = map[n];
     IRRef ref = snap_ref(sn);
@@ -905,18 +909,12 @@ static void asm_snap_alloc(ASMState *as)
 */
 static int asm_snap_checkrename(ASMState *as, IRRef ren)
 {
-  SnapShot *snap = &as->T->snap[as->snapno];
-  SnapEntry *map = &as->T->snapmap[snap->mapofs];
-  MSize n, nent = snap->nent;
-  for (n = 0; n < nent; n++) {
-    SnapEntry sn = map[n];
-    IRRef ref = snap_ref(sn);
-    if (ref == ren || (LJ_SOFTFP && (sn & SNAP_SOFTFPNUM) && ++ref == ren)) {
-      IRIns *ir = IR(ref);
-      ra_spill(as, ir);  /* Register renamed, so force a spill slot. */
-      RA_DBGX((as, "snaprensp $f $s", ref, ir->s));
-      return 1;  /* Found. */
-    }
+  if (bloomtest(as->snapfilt1, ren) &&
+      bloomtest(as->snapfilt2, hashrot(ren, ren + HASH_BIAS))) {
+    IRIns *ir = IR(ren);
+    ra_spill(as, ir);  /* Register renamed, so force a spill slot. */
+    RA_DBGX((as, "snaprensp $f $s", ren, ir->s));
+    return 1;  /* Found. */
   }
   return 0;  /* Not found. */
 }
@@ -1367,6 +1365,8 @@ static void asm_head_side(ASMState *as)
   IRRef1 sloadins[RID_MAX];
   RegSet allow = RSET_ALL;  /* Inverse of all coalesced registers. */
   RegSet live = RSET_EMPTY;  /* Live parent registers. */
+  RegSet pallow = RSET_GPR;  /* Registers needed by the parent stack check. */
+  Reg pbase;
   IRIns *irp = &as->parent->ir[REF_BASE];  /* Parent base. */
   int32_t spadj, spdelta;
   int pass2 = 0;
@@ -1378,7 +1378,11 @@ static void asm_head_side(ASMState *as)
     as->snapno = 0;
     asm_snap_alloc(as);
   }
-  allow = asm_head_side_base(as, irp, allow);
+  pbase = asm_head_side_base(as, irp);
+  if (pbase != RID_NONE) {
+    rset_clear(allow, pbase);
+    rset_clear(pallow, pbase);
+  }
 
   /* Scan all parent SLOADs and collect register dependencies. */
   for (i = as->stopins; i > REF_BASE; i--) {
@@ -1406,6 +1410,7 @@ static void asm_head_side(ASMState *as)
       sloadins[rs] = (IRRef1)i;
       rset_set(live, rs);  /* Block live parent register. */
     }
+    if (!ra_hasspill(regsp_spill(rs))) rset_clear(pallow, regsp_reg(rs));
   }
 
   /* Calculate stack frame adjustment. */
@@ -1522,7 +1527,7 @@ static void asm_head_side(ASMState *as)
     ExitNo exitno = as->J->exitno;
 #endif
     as->T->topslot = (uint8_t)as->topslot;  /* Remember for child traces. */
-    asm_stack_check(as, as->topslot, irp, allow & RSET_GPR, exitno);
+    asm_stack_check(as, as->topslot, irp, pallow, exitno);
   }
 }
 
@@ -1719,12 +1724,13 @@ static void asm_setup_regsp(ASMState *as)
 #if LJ_SOFTFP
     case IR_MIN: case IR_MAX:
       if ((ir+1)->o != IR_HIOP) break;
-      /* fallthrough */
 #endif
+    /* fallthrough */
     /* C calls evict all scratch regs and return results in RID_RET. */
     case IR_SNEW: case IR_XSNEW: case IR_NEWREF:
       if (REGARG_NUMGPR < 3 && as->evenspill < 3)
 	as->evenspill = 3;  /* lj_str_new and lj_tab_newkey need 3 args. */
+      /* fallthrough */
     case IR_TNEW: case IR_TDUP: case IR_CNEW: case IR_CNEWI: case IR_TOSTR:
       ir->prev = REGSP_HINT(RID_RET);
       if (inloop)
@@ -1750,7 +1756,7 @@ static void asm_setup_regsp(ASMState *as)
 #endif
 	continue;
       }
-      /* fallthrough for integer POW */
+      /* fallthrough */ /* for integer POW */
     case IR_DIV: case IR_MOD:
       if (!irt_isnum(ir->t)) {
 	ir->prev = REGSP_HINT(RID_RET);
@@ -1833,7 +1839,7 @@ void lj_asm_trace(jit_State *J, GCtrace *T)
 
   /* Ensure an initialized instruction beyond the last one for HIOP checks. */
   J->cur.nins = lj_ir_nextins(J);
-  J->cur.ir[J->cur.nins].o = IR_NOP;
+  lj_ir_nop(&J->cur.ir[J->cur.nins]);
 
   /* Setup initial state. Copy some fields to reduce indirections. */
   as->J = J;

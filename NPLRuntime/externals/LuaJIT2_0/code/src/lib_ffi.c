@@ -1,6 +1,6 @@
 /*
 ** FFI library.
-** Copyright (C) 2005-2017 Mike Pall. See Copyright Notice in luajit.h
+** Copyright (C) 2005-2023 Mike Pall. See Copyright Notice in luajit.h
 */
 
 #define lib_ffi_c
@@ -615,7 +615,7 @@ LJLIB_CF(ffi_alignof)	LJLIB_REC(ffi_xof FF_ffi_alignof)
   CTState *cts = ctype_cts(L);
   CTypeID id = ffi_checkctype(L, cts, NULL);
   CTSize sz = 0;
-  CTInfo info = lj_ctype_info(cts, id, &sz);
+  CTInfo info = lj_ctype_info_raw(cts, id, &sz);
   setintV(L->top-1, 1 << ctype_align(info));
   return 1;
 }
@@ -743,13 +743,13 @@ LJLIB_CF(ffi_metatype)
   CTypeID id = ffi_checkctype(L, cts, NULL);
   GCtab *mt = lj_lib_checktab(L, 2);
   GCtab *t = cts->miscmap;
-  CType *ct = ctype_get(cts, id);  /* Only allow raw types. */
+  CType *ct = ctype_raw(cts, id);
   TValue *tv;
   GCcdata *cd;
   if (!(ctype_isstruct(ct->info) || ctype_iscomplex(ct->info) ||
 	ctype_isvector(ct->info)))
     lj_err_arg(L, 1, LJ_ERR_FFI_INVTYPE);
-  tv = lj_tab_setinth(L, t, -(int32_t)id);
+  tv = lj_tab_setinth(L, t, -(int32_t)ctype_typeid(cts, ct));
   if (!tvisnil(tv))
     lj_err_caller(L, LJ_ERR_PROTMT);
   settabV(L, tv, mt);

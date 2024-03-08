@@ -1,7 +1,7 @@
 ------------------------------------------------------------------------------
 -- DynASM x86/x64 module.
 --
--- Copyright (C) 2005-2017 Mike Pall. All rights reserved.
+-- Copyright (C) 2005-2023 Mike Pall. All rights reserved.
 -- See dynasm.lua for full copyright notice.
 ------------------------------------------------------------------------------
 
@@ -739,7 +739,7 @@ local function parseoperand(param)
       if t.disp then break end
 
       -- [reg+xreg...]
-      local xreg, tailx = match(tailr, "^+%s*([@%w_:]+)%s*(.*)$")
+      local xreg, tailx = match(tailr, "^%+%s*([@%w_:]+)%s*(.*)$")
       xreg, t.xreg, tp = rtexpr(xreg)
       if not t.xreg then
 	-- [reg+-expr]

@@ -1,6 +1,6 @@
 /*
 ** OS library.
-** Copyright (C) 2005-2017 Mike Pall. See Copyright Notice in luajit.h
+** Copyright (C) 2005-2023 Mike Pall. See Copyright Notice in luajit.h
 **
 ** Major portions taken verbatim or adapted from the Lua interpreter.
 ** Copyright (C) 1994-2008 Lua.org, PUC-Rio. See Copyright Notice in lua.h
@@ -31,19 +31,12 @@
 #endif
 
 /* ------------------------------------------------------------------------ */
+
 #define LJLIB_MODULE_os
 
 LJLIB_CF(os_execute)
 {
-// For iOS 11 
-#if LJ_52
-  errno = ENOSYS;
-  return luaL_fileresult(L, 0, NULL);
-#else
-  lua_pushinteger(L, -1);
-  return 1;
-#endif
-/*#if LJ_NO_SYSTEM
+#if LJ_NO_SYSTEM
 #if LJ_52
   errno = ENOSYS;
   return luaL_fileresult(L, 0, NULL);
@@ -62,7 +55,7 @@ LJLIB_CF(os_execute)
   setintV(L->top++, stat);
 #endif
   return 1;
-#endif*/
+#endif
 }
 
 LJLIB_CF(os_remove)

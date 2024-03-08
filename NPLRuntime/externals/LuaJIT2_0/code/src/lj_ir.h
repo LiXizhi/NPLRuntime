@@ -1,6 +1,6 @@
 /*
 ** SSA IR (Intermediate Representation) format.
-** Copyright (C) 2005-2017 Mike Pall. See Copyright Notice in luajit.h
+** Copyright (C) 2005-2023 Mike Pall. See Copyright Notice in luajit.h
 */
 
 #ifndef _LJ_IR_H
@@ -126,7 +126,7 @@
   _(XBAR,	S , ___, ___) \
   \
   /* Type conversions. */ \
-  _(CONV,	NW, ref, lit) \
+  _(CONV,	N , ref, lit) \
   _(TOBIT,	N , ref, ref) \
   _(TOSTR,	N , ref, ___) \
   _(STRTO,	N , ref, ___) \
@@ -346,6 +346,7 @@ typedef struct IRType1 { uint8_t irt; } IRType1;
 #define irt_isu32(t)		(irt_type(t) == IRT_U32)
 #define irt_isi64(t)		(irt_type(t) == IRT_I64)
 #define irt_isu64(t)		(irt_type(t) == IRT_U64)
+#define irt_isp32(t)		(irt_type(t) == IRT_P32)
 
 #define irt_isfp(t)		(irt_isnum(t) || irt_isfloat(t))
 #define irt_isinteger(t)	(irt_typerange((t), IRT_I8, IRT_INT))
@@ -547,5 +548,13 @@ static LJ_AINLINE int ir_sideeff(IRIns *ir)
 }
 
 LJ_STATIC_ASSERT((int)IRT_GUARD == (int)IRM_W);
+
+/* Replace IR instruction with NOP. */
+static LJ_AINLINE void lj_ir_nop(IRIns *ir)
+{
+  ir->ot = IRT(IR_NOP, IRT_NIL);
+  ir->op1 = ir->op2 = 0;
+  ir->prev = 0;
+}
 
 #endif

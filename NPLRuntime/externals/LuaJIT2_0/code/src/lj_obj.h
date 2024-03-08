@@ -1,6 +1,6 @@
 /*
 ** LuaJIT VM tags, values and objects.
-** Copyright (C) 2005-2017 Mike Pall. See Copyright Notice in luajit.h
+** Copyright (C) 2005-2023 Mike Pall. See Copyright Notice in luajit.h
 **
 ** Portions taken verbatim or adapted from the Lua interpreter.
 ** Copyright (C) 1994-2008 Lua.org, PUC-Rio. See Copyright Notice in lua.h
@@ -327,7 +327,7 @@ typedef struct GCproto {
 #define PROTO_UV_IMMUTABLE	0x4000	/* Immutable upvalue. */
 
 #define proto_kgc(pt, idx) \
-  check_exp((uintptr_t)(intptr_t)(idx) >= (uintptr_t)-(intptr_t)(pt)->sizekgc, \
+  check_exp((uintptr_t)(intptr_t)(idx) >= ~(uintptr_t)(pt)->sizekgc+1u, \
 	    gcref(mref((pt)->k, GCRef)[(idx)]))
 #define proto_knumtv(pt, idx) \
   check_exp((uintptr_t)(idx) < (pt)->sizekn, &mref((pt)->k, TValue)[(idx)])
@@ -420,7 +420,7 @@ typedef struct GCtab {
 } GCtab;
 
 #define sizetabcolo(n)	((n)*sizeof(TValue) + sizeof(GCtab))
-#define tabref(r)	(&gcref((r))->tab)
+#define tabref(r)	((GCtab *)gcref((r)))
 #define noderef(r)	(mref((r), Node))
 #define nextnode(n)	(mref((n)->next, Node))
 
@@ -816,14 +816,22 @@ static LJ_AINLINE int32_t lj_num2bit(lua_Number n)
 #define lj_num2int(n)   ((int32_t)(n))
 #endif
 
+/*
+** This must match the JIT backend behavior. In particular for archs
+** that don't have a common hardware instruction for this conversion.
+** Note that signed FP to unsigned int conversions have an undefined
+** result and should never be relied upon in portable FFI code.
+** See also: C99 or C11 standard, 6.3.1.4, footnote of (1).
+*/
 static LJ_AINLINE uint64_t lj_num2u64(lua_Number n)
 {
-#ifdef _MSC_VER
-  if (n >= 9223372036854775808.0)  /* They think it's a feature. */
-    return (uint64_t)(int64_t)(n - 18446744073709551616.0);
-  else
+#if LJ_TARGET_X86ORX64 || LJ_TARGET_MIPS
+  int64_t i = (int64_t)n;
+  if (i < 0) i = (int64_t)(n - 18446744073709551616.0);
+  return (uint64_t)i;
+#else
+  return (uint64_t)n;
 #endif
-    return (uint64_t)n;
 }
 
 static LJ_AINLINE int32_t numberVint(cTValue *o)

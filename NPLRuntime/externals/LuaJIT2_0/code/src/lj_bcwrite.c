@@ -1,6 +1,6 @@
 /*
 ** Bytecode writer.
-** Copyright (C) 2005-2017 Mike Pall. See Copyright Notice in luajit.h
+** Copyright (C) 2005-2023 Mike Pall. See Copyright Notice in luajit.h
 */
 
 #define lj_bcwrite_c
@@ -124,7 +124,7 @@ static void bcwrite_ktab(BCWriteCtx *ctx, const GCtab *t)
     MSize i, hmask = t->hmask;
     Node *node = noderef(t->node);
     for (i = 0; i <= hmask; i++)
-      nhash += !tvisnil(&node[i].val);
+      nhash += !tvisnil(&node[i].key);
   }
   /* Write number of array slots and hash slots. */
   bcwrite_uleb128(ctx, narray);
@@ -139,7 +139,7 @@ static void bcwrite_ktab(BCWriteCtx *ctx, const GCtab *t)
     MSize i = nhash;
     Node *node = noderef(t->node) + t->hmask;
     for (;; node--)
-      if (!tvisnil(&node->val)) {
+      if (!tvisnil(&node->key)) {
 	bcwrite_ktabk(ctx, &node->key, 0);
 	bcwrite_ktabk(ctx, &node->val, 1);
 	if (--i == 0) break;
@@ -258,10 +258,7 @@ static void bcwrite_bytecode(BCWriteCtx *ctx, GCproto *pt)
 	p[LJ_ENDIAN_SELECT(0, 3)] = (uint8_t)(op-BC_IFORL+BC_FORL);
       } else if (op == BC_JFORL || op == BC_JITERL || op == BC_JLOOP) {
 	BCReg rd = p[LJ_ENDIAN_SELECT(2, 1)] + (p[LJ_ENDIAN_SELECT(3, 0)] << 8);
-	BCIns ins = traceref(J, rd)->startins;
-	p[LJ_ENDIAN_SELECT(0, 3)] = (uint8_t)(op-BC_JFORL+BC_FORL);
-	p[LJ_ENDIAN_SELECT(2, 1)] = bc_c(ins);
-	p[LJ_ENDIAN_SELECT(3, 0)] = bc_b(ins);
+	memcpy(p, &traceref(J, rd)->startins, 4);
       }
     }
   }

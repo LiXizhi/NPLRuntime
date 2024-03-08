@@ -1,6 +1,6 @@
 |// Low-level VM code for ARM CPUs.
 |// Bytecode interpreter, fast functions and helper functions.
-|// Copyright (C) 2005-2017 Mike Pall. See Copyright Notice in luajit.h
+|// Copyright (C) 2005-2023 Mike Pall. See Copyright Notice in luajit.h
 |
 |.arch arm
 |.section code_op, code_sub
@@ -524,13 +524,13 @@ static void build_subroutines(BuildCtx *ctx)
   |    cmp CARG1, #1
   |.endif
   |   ldr PC, [CARG4, #-12]		// Restore PC from [cont|PC].
-  |  ldr CARG3, LFUNC:CARG3->field_pc
   |    mvn INS, #~LJ_TNIL
   |    add CARG2, RA, RC
   |    str INS, [CARG2, #-4]		// Ensure one valid arg.
   |.if FFI
   |    bls >1
   |.endif
+  |  ldr CARG3, LFUNC:CARG3->field_pc
   |  ldr KBASE, [CARG3, #PC2PROTO(k)]
   |  // BASE = base, RA = resultptr, CARG4 = meta base
   |    bx CARG1
@@ -1155,8 +1155,11 @@ static void build_subroutines(BuildCtx *ctx)
   |//-- Base library: catch errors ----------------------------------------
   |
   |.ffunc pcall
+  |   ldr RB, L->maxstack
+  |   add INS, BASE, NARGS8:RC
   |  ldrb RA, [DISPATCH, #DISPATCH_GL(hookmask)]
   |   cmp NARGS8:RC, #8
+  |   cmphs RB, INS
   |   blo ->fff_fallback
   |  tst RA, #HOOK_ACTIVE		// Remember active hook before pcall.
   |   mov RB, BASE
@@ -1167,7 +1170,11 @@ static void build_subroutines(BuildCtx *ctx)
   |  b ->vm_call_dispatch
   |
   |.ffunc_2 xpcall
+  |   ldr RB, L->maxstack
+  |   add INS, BASE, NARGS8:RC
   |  ldrb RA, [DISPATCH, #DISPATCH_GL(hookmask)]
+  |   cmp RB, INS
+  |   blo ->fff_fallback
   |  checkfunc CARG4, ->fff_fallback	// Traceback must be a function.
   |   mov RB, BASE
   |  strd CARG12, [BASE, #8]		// Swap function and traceback.
@@ -2201,9 +2208,8 @@ static void build_subroutines(BuildCtx *ctx)
   |  bx OP
   |
   |3:  // Rethrow error from the right C frame.
-  |  rsb CARG2, CARG1, #0
   |  mov CARG1, L
-  |  bl extern lj_err_throw		// (lua_State *L, int errcode)
+  |  bl extern lj_err_run		// (lua_State *L)
   |.endif
   |
   |//-----------------------------------------------------------------------

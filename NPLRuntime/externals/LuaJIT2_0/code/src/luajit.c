@@ -1,6 +1,6 @@
 /*
 ** LuaJIT frontend. Runs commands, scripts, read-eval-print (REPL) etc.
-** Copyright (C) 2005-2017 Mike Pall. See Copyright Notice in luajit.h
+** Copyright (C) 2005-2023 Mike Pall. See Copyright Notice in luajit.h
 **
 ** Major portions taken verbatim or adapted from the Lua interpreter.
 ** Copyright (C) 1994-2008 Lua.org, PUC-Rio. See Copyright Notice in lua.h
@@ -39,6 +39,7 @@
 
 static lua_State *globalL = NULL;
 static const char *progname = LUA_PROGNAME;
+static char *empty_argv[2] = { NULL, NULL };
 
 #if !LJ_TARGET_CONSOLE
 static void lstop(lua_State *L, lua_Debug *ar)
@@ -79,9 +80,9 @@ static void print_usage(void)
   fflush(stderr);
 }
 
-static void l_message(const char *pname, const char *msg)
+static void l_message(const char *msg)
 {
-  if (pname) fprintf(stderr, "%s: ", pname);
+  if (progname) fprintf(stderr, "%s: ", progname);
   fprintf(stderr, "%s\n", msg);
   fflush(stderr);
 }
@@ -91,7 +92,7 @@ static int report(lua_State *L, int status)
   if (status && !lua_isnil(L, -1)) {
     const char *msg = lua_tostring(L, -1);
     if (msg == NULL) msg = "(error object is not a string)";
-    l_message(progname, msg);
+    l_message(msg);
     lua_pop(L, 1);
   }
   return status;
@@ -151,6 +152,7 @@ static void print_jit_status(lua_State *L)
     fputs(s, stdout);
   }
   putc('\n', stdout);
+  lua_settop(L, 0);  /* clear stack */
 }
 
 static int getargs(lua_State *L, char **argv, int n)
@@ -263,9 +265,8 @@ static void dotty(lua_State *L)
       lua_getglobal(L, "print");
       lua_insert(L, 1);
       if (lua_pcall(L, lua_gettop(L)-1, 0, 0) != 0)
-	l_message(progname,
-	  lua_pushfstring(L, "error calling " LUA_QL("print") " (%s)",
-			      lua_tostring(L, -1)));
+	l_message(lua_pushfstring(L, "error calling " LUA_QL("print") " (%s)",
+				  lua_tostring(L, -1)));
     }
   }
   lua_settop(L, 0);  /* clear stack */
@@ -308,8 +309,7 @@ static int loadjitmodule(lua_State *L)
   lua_getfield(L, -1, "start");
   if (lua_isnil(L, -1)) {
   nomodule:
-    l_message(progname,
-	      "unknown luaJIT command or jit.* modules not installed");
+    l_message("unknown luaJIT command or jit.* modules not installed");
     return 1;
   }
   lua_remove(L, -2);  /* Drop module table. */
@@ -419,6 +419,7 @@ static int collectargs(char **argv, int *flags)
       break;
     case 'e':
       *flags |= FLAGS_EXEC;
+      /* fallthrough */
     case 'j':  /* LuaJIT extension */
     case 'l':
       *flags |= FLAGS_OPTION;
@@ -512,7 +513,6 @@ static int pmain(lua_State *L)
   int script;
   int flags = 0;
   globalL = L;
-  if (argv[0] && argv[0][0]) progname = argv[0];
   LUAJIT_VERSION_SYM();  /* linker-enforced version check */
   script = collectargs(argv, &flags);
   if (script < 0) {  /* invalid args? */
@@ -556,9 +556,11 @@ static int pmain(lua_State *L)
 int main(int argc, char **argv)
 {
   int status;
-  lua_State *L = lua_open();  /* create state */
+  lua_State *L;
+  if (!argv[0]) argv = empty_argv; else if (argv[0][0]) progname = argv[0];
+  L = lua_open();  /* create state */
   if (L == NULL) {
-    l_message(argv[0], "cannot create state: not enough memory");
+    l_message("cannot create state: not enough memory");
     return EXIT_FAILURE;
   }
   smain.argc = argc;

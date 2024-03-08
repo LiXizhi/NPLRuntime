@@ -1,7 +1,7 @@
 ----------------------------------------------------------------------------
 -- LuaJIT module to save/list bytecode.
 --
--- Copyright (C) 2005-2017 Mike Pall. All rights reserved.
+-- Copyright (C) 2005-2023 Mike Pall. All rights reserved.
 -- Released under the MIT license. See Copyright Notice in luajit.h
 ----------------------------------------------------------------------------
 --
@@ -11,7 +11,7 @@
 ------------------------------------------------------------------------------
 
 local jit = require("jit")
-assert(jit.version_num == 20005, "LuaJIT core/library version mismatch")
+assert(jit.version_num == 20099, "LuaJIT core/library version mismatch")
 local bit = require("bit")
 
 -- Symbol name prefix for LuaJIT bytecode.
@@ -119,7 +119,7 @@ local function bcsave_c(ctx, output, s)
   local fp = savefile(output, "w")
   if ctx.type == "c" then
     fp:write(string.format([[
-#ifdef _cplusplus
+#ifdef __cplusplus
 extern "C"
 #endif
 #ifdef _WIN32
@@ -275,7 +275,7 @@ typedef struct {
   o.sect[2].size = fofs(ofs)
   o.sect[3].type = f32(3) -- .strtab
   o.sect[3].ofs = fofs(sofs + ofs)
-  o.sect[3].size = fofs(#symname+1)
+  o.sect[3].size = fofs(#symname+2)
   ffi.copy(o.space+ofs+1, symname)
   ofs = ofs + #symname + 2
   o.sect[4].type = f32(1) -- .rodata

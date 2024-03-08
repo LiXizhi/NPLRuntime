@@ -1,6 +1,6 @@
 /*
 ** PPC IR assembler (SSA IR -> machine code).
-** Copyright (C) 2005-2017 Mike Pall. See Copyright Notice in luajit.h
+** Copyright (C) 2005-2023 Mike Pall. See Copyright Notice in luajit.h
 */
 
 /* -- Register allocator extensions --------------------------------------- */
@@ -1852,6 +1852,9 @@ static void asm_stack_restore(ASMState *as, SnapShot *snap)
 
 /* -- GC handling --------------------------------------------------------- */
 
+/* Marker to prevent patching the GC check exit. */
+#define PPC_NOPATCH_GC_CHECK	PPCI_ORIS
+
 /* Check GC threshold and do one or more GC steps. */
 static void asm_gc_check(ASMState *as)
 {
@@ -1863,6 +1866,7 @@ static void asm_gc_check(ASMState *as)
   l_end = emit_label(as);
   /* Exit trace if in GCSatomic or GCSfinalize. Avoids syncing GC objects. */
   asm_guardcc(as, CC_NE);  /* Assumes asm_snap_prep() already done. */
+  *--as->mcp = PPC_NOPATCH_GC_CHECK;
   emit_ai(as, PPCI_CMPWI, RID_RET, 0);
   args[0] = ASMREF_TMP1;  /* global_State *g */
   args[1] = ASMREF_TMP2;  /* MSize steps     */
@@ -1911,7 +1915,7 @@ static void asm_head_root_base(ASMState *as)
 }
 
 /* Coalesce BASE register for a side trace. */
-static RegSet asm_head_side_base(ASMState *as, IRIns *irp, RegSet allow)
+static Reg asm_head_side_base(ASMState *as, IRIns *irp)
 {
   IRIns *ir = IR(REF_BASE);
   Reg r = ir->r;
@@ -1920,15 +1924,15 @@ static RegSet asm_head_side_base(ASMState *as, IRIns *irp, RegSet allow)
     if (rset_test(as->modset, r) || irt_ismarked(ir->t))
       ir->r = RID_INIT;  /* No inheritance for modified BASE register. */
     if (irp->r == r) {
-      rset_clear(allow, r);  /* Mark same BASE register as coalesced. */
+      return r;  /* Same BASE register already coalesced. */
     } else if (ra_hasreg(irp->r) && rset_test(as->freeset, irp->r)) {
-      rset_clear(allow, irp->r);
       emit_mr(as, r, irp->r);  /* Move from coalesced parent reg. */
+      return irp->r;
     } else {
       emit_getgl(as, r, jit_base);  /* Otherwise reload BASE. */
     }
   }
-  return allow;
+  return RID_NONE;
 }
 
 /* -- Tail of trace ------------------------------------------------------- */
@@ -2124,7 +2128,7 @@ void lj_asm_patchexit(jit_State *J, GCtrace *T, ExitNo exitno, MCode *target)
   MCode *px = exitstub_trace_addr(T, exitno);
   MCode *cstart = NULL;
   MCode *mcarea = lj_mcode_patch(J, p, 0);
-  int clearso = 0;
+  int clearso = 0, patchlong = 1;
   for (; p < pe; p++) {
     /* Look for exitstub branch, try to replace with branch to target. */
     uint32_t ins = *p;
@@ -2136,7 +2140,9 @@ void lj_asm_patchexit(jit_State *J, GCtrace *T, ExitNo exitno, MCode *target)
 	delta -= sizeof(MCode);
       }
       /* Many, but not all short-range branches can be patched directly. */
-      if (((delta + 0x8000) >> 16) == 0) {
+      if (p[-1] == PPC_NOPATCH_GC_CHECK) {
+	patchlong = 0;
+      } else if (((delta + 0x8000) >> 16) == 0) {
 	*p = (ins & 0xffdf0000u) | ((uint32_t)delta & 0xffffu) |
 	     ((delta & 0x8000) * (PPCF_Y/0x8000));
 	if (!cstart) cstart = p;
@@ -2149,7 +2155,8 @@ void lj_asm_patchexit(jit_State *J, GCtrace *T, ExitNo exitno, MCode *target)
       if (!cstart) cstart = p;
     }
   }
-  {  /* Always patch long-range branch in exit stub itself. */
+  /* Always patch long-range branch in exit stub itself. Except, if we can't. */
+  if (patchlong) {
     ptrdiff_t delta = (char *)target - (char *)px - clearso;
     lua_assert(((delta + 0x02000000) >> 26) == 0);
     *px = PPCI_B | ((uint32_t)delta & 0x03ffffffu);

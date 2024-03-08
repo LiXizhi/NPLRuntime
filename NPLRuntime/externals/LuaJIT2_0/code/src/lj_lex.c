@@ -1,6 +1,6 @@
 /*
 ** Lexical analyzer.
-** Copyright (C) 2005-2017 Mike Pall. See Copyright Notice in luajit.h
+** Copyright (C) 2005-2023 Mike Pall. See Copyright Notice in luajit.h
 **
 ** Major portions taken verbatim or adapted from the Lua interpreter.
 ** Copyright (C) 1994-2008 Lua.org, PUC-Rio. See Copyright Notice in lua.h
@@ -49,6 +49,10 @@ static int fillbuf(LexState *ls)
   size_t sz;
   const char *buf = ls->rfunc(ls->L, ls->rdata, &sz);
   if (buf == NULL || sz == 0) return END_OF_STREAM;
+  if (sz >= LJ_MAX_MEM) {
+    if (sz != ~(size_t)0) lj_err_mem(ls->L);
+    ls->endmark = 1;
+  }
   ls->n = (MSize)sz - 1;
   ls->p = buf;
   return char2int(*(ls->p++));
@@ -140,7 +144,7 @@ static int skip_sep(LexState *ls)
   int s = ls->current;
   lua_assert(s == '[' || s == ']');
   save_and_next(ls);
-  while (ls->current == '=') {
+  while (ls->current == '=' && count < 0x20000000) {
     save_and_next(ls);
     count++;
   }
@@ -382,6 +386,7 @@ int lj_lex_setup(lua_State *L, LexState *ls)
   ls->lookahead = TK_eof;  /* No look-ahead token. */
   ls->linenumber = 1;
   ls->lastline = 1;
+  ls->endmark = 0;
   lj_str_resizebuf(ls->L, &ls->sb, LJ_MIN_SBUF);
   next(ls);  /* Read-ahead first char. */
   if (ls->current == 0xef && ls->n >= 2 && char2int(ls->p[0]) == 0xbb &&

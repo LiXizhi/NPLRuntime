@@ -3,7 +3,7 @@
 ** AA: Alias Analysis using high-level semantic disambiguation.
 ** FWD: Load Forwarding (L2L) + Store Forwarding (S2L).
 ** DSE: Dead-Store Elimination.
-** Copyright (C) 2005-2017 Mike Pall. See Copyright Notice in luajit.h
+** Copyright (C) 2005-2023 Mike Pall. See Copyright Notice in luajit.h
 */
 
 #define lj_opt_mem_c
@@ -154,6 +154,7 @@ static TRef fwd_ahload(jit_State *J, IRRef xref)
     if (ir->o == IR_TNEW || (ir->o == IR_TDUP && irref_isk(xr->op2))) {
       /* A NEWREF with a number key may end up pointing to the array part.
       ** But it's referenced from HSTORE and not found in the ASTORE chain.
+      ** Or a NEWREF may rehash the table and move unrelated number keys.
       ** For now simply consider this a conflict without forwarding anything.
       */
       if (xr->o == IR_AREF) {
@@ -164,6 +165,11 @@ static TRef fwd_ahload(jit_State *J, IRRef xref)
 	    goto cselim;
 	  ref2 = newref->prev;
 	}
+      } else {
+	IRIns *key = IR(xr->op2);
+	if (key->o == IR_KSLOT) key = IR(key->op1);
+	if (irt_isnum(key->t) && J->chain[IR_NEWREF] > tab)
+	  goto cselim;
       }
       /* NEWREF inhibits CSE for HREF, and dependent FLOADs from HREFK/AREF.
       ** But the above search for conflicting stores was limited by xref.
@@ -179,23 +185,23 @@ static TRef fwd_ahload(jit_State *J, IRRef xref)
 	}
 	ref = store->prev;
       }
-      lua_assert(ir->o != IR_TNEW || irt_isnil(fins->t));
-      if (irt_ispri(fins->t)) {
-	return TREF_PRI(irt_type(fins->t));
-      } else if (irt_isnum(fins->t) || (LJ_DUALNUM && irt_isint(fins->t)) ||
-		 irt_isstr(fins->t)) {
+      /* Simplified here: let loop_unroll() figure out any type instability. */
+      if (ir->o == IR_TNEW) {
+	return TREF_NIL;
+      } else {
 	TValue keyv;
 	cTValue *tv;
 	IRIns *key = IR(xr->op2);
 	if (key->o == IR_KSLOT) key = IR(key->op1);
 	lj_ir_kvalue(J->L, &keyv, key);
 	tv = lj_tab_get(J->L, ir_ktab(IR(ir->op1)), &keyv);
-	lua_assert(itype2irt(tv) == irt_type(fins->t));
-	if (irt_isnum(fins->t))
+	if (tvispri(tv))
+	  return TREF_PRI(itype2irt(tv));
+	else if (tvisnum(tv))
 	  return lj_ir_knum_u64(J, tv->u64);
-	else if (LJ_DUALNUM && irt_isint(fins->t))
+	else if (tvisint(tv))
 	  return lj_ir_kint(J, intV(tv));
-	else
+	else if (tvisgcv(tv))
 	  return lj_ir_kstr(J, strV(tv));
       }
       /* Othwerwise: don't intern as a constant. */
@@ -351,10 +357,7 @@ TRef LJ_FASTCALL lj_opt_dse_ahstore(jit_State *J)
 	    goto doemit;  /* No elimination possible. */
 	/* Remove redundant store from chain and replace with NOP. */
 	*refp = store->prev;
-	store->o = IR_NOP;
-	store->t.irt = IRT_NIL;
-	store->op1 = store->op2 = 0;
-	store->prev = 0;
+	lj_ir_nop(store);
 	/* Now emit the new store instead. */
       }
       goto doemit;
@@ -455,10 +458,7 @@ TRef LJ_FASTCALL lj_opt_dse_ustore(jit_State *J)
 	    goto doemit;  /* No elimination possible. */
 	/* Remove redundant store from chain and replace with NOP. */
 	*refp = store->prev;
-	store->o = IR_NOP;
-	store->t.irt = IRT_NIL;
-	store->op1 = store->op2 = 0;
-	store->prev = 0;
+	lj_ir_nop(store);
 	if (ref+1 < J->cur.nins &&
 	    store[1].o == IR_OBAR && store[1].op1 == xref) {
 	  IRRef1 *bp = &J->chain[IR_OBAR];
@@ -467,10 +467,7 @@ TRef LJ_FASTCALL lj_opt_dse_ustore(jit_State *J)
 	    bp = &obar->prev;
 	  /* Remove OBAR, too. */
 	  *bp = obar->prev;
-	  obar->o = IR_NOP;
-	  obar->t.irt = IRT_NIL;
-	  obar->op1 = obar->op2 = 0;
-	  obar->prev = 0;
+	  lj_ir_nop(obar);
 	}
 	/* Now emit the new store instead. */
       }
@@ -561,10 +558,7 @@ TRef LJ_FASTCALL lj_opt_dse_fstore(jit_State *J)
 	    goto doemit;  /* No elimination possible. */
 	/* Remove redundant store from chain and replace with NOP. */
 	*refp = store->prev;
-	store->o = IR_NOP;
-	store->t.irt = IRT_NIL;
-	store->op1 = store->op2 = 0;
-	store->prev = 0;
+	lj_ir_nop(store);
 	/* Now emit the new store instead. */
       }
       goto doemit;
@@ -815,10 +809,7 @@ TRef LJ_FASTCALL lj_opt_dse_xstore(jit_State *J)
 	    goto doemit;  /* No elimination possible. */
 	/* Remove redundant store from chain and replace with NOP. */
 	*refp = store->prev;
-	store->o = IR_NOP;
-	store->t.irt = IRT_NIL;
-	store->op1 = store->op2 = 0;
-	store->prev = 0;
+	lj_ir_nop(store);
 	/* Now emit the new store instead. */
       }
       goto doemit;
@@ -888,6 +879,8 @@ int lj_opt_fwd_wasnonnil(jit_State *J, IROpT loadop, IRRef xref)
 	if (skref == xkref || !irref_isk(skref) || !irref_isk(xkref))
 	  return 0;  /* A nil store with same const key or var key MAY alias. */
 	/* Different const keys CANNOT alias. */
+      } else if (irt_isp32(IR(skref)->t) != irt_isp32(IR(xkref)->t)) {
+	return 0;  /* HREF and HREFK MAY alias. */
       }  /* Different key types CANNOT alias. */
     }  /* Other non-nil stores MAY alias. */
     ref = store->prev;

@@ -1,6 +1,6 @@
 /*
 ** C data arithmetic.
-** Copyright (C) 2005-2017 Mike Pall. See Copyright Notice in luajit.h
+** Copyright (C) 2005-2023 Mike Pall. See Copyright Notice in luajit.h
 */
 
 #include "lj_obj.h"
@@ -42,9 +42,13 @@ static int carith_checkarg(lua_State *L, CTState *cts, CDArith *ca)
 	p = (uint8_t *)cdata_getptr(p, ct->size);
 	if (ctype_isref(ct->info)) ct = ctype_rawchild(cts, ct);
       } else if (ctype_isfunc(ct->info)) {
+	CTypeID id0 = i ? ctype_typeid(cts, ca->ct[0]) : 0;
 	p = (uint8_t *)*(void **)p;
 	ct = ctype_get(cts,
 	  lj_ctype_intern(cts, CTINFO(CT_PTR, CTALIGN_PTR|id), CTSIZE_PTR));
+	if (i) {  /* cts->tab may have been reallocated. */
+	  ca->ct[0] = ctype_get(cts, id0);
+	}
       }
       if (ctype_isenum(ct->info)) ct = ctype_child(cts, ct);
       ca->ct[i] = ct;
@@ -205,7 +209,7 @@ static int carith_int64(lua_State *L, CTState *cts, CDArith *ca, MMS mm)
       else
 	*up = lj_carith_powu64(u0, u1);
       break;
-    case MM_unm: *up = (uint64_t)-(int64_t)u0; break;
+    case MM_unm: *up = ~u0+1u; break;
     default: lua_assert(0); break;
     }
     lj_gc_check(L);
@@ -263,7 +267,7 @@ int lj_carith_op(lua_State *L, MMS mm)
 {
   CTState *cts = ctype_cts(L);
   CDArith ca;
-  if (carith_checkarg(L, cts, &ca)) {
+  if (carith_checkarg(L, cts, &ca) && mm != MM_len && mm != MM_concat) {
     if (carith_int64(L, cts, &ca, mm) || carith_ptr(L, cts, &ca, mm)) {
       copyTV(L, &G(L)->tmptv2, L->top-1);  /* Remember for trace recorder. */
       return 1;

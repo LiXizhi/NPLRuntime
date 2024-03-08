@@ -1,6 +1,6 @@
 /*
 ** FFI C library loader.
-** Copyright (C) 2005-2017 Mike Pall. See Copyright Notice in luajit.h
+** Copyright (C) 2005-2023 Mike Pall. See Copyright Notice in luajit.h
 */
 
 #include "lj_obj.h"
@@ -24,7 +24,7 @@
 #include <dlfcn.h>
 #include <stdio.h>
 
-#if defined(RTLD_DEFAULT)
+#if defined(RTLD_DEFAULT) && !defined(NO_RTLD_DEFAULT)
 #define CLIB_DEFHANDLE	RTLD_DEFAULT
 #elif LJ_TARGET_OSX || LJ_TARGET_BSD
 #define CLIB_DEFHANDLE	((void *)(intptr_t)-2)
@@ -118,12 +118,13 @@ static void *clib_loadlib(lua_State *L, const char *name, int global)
 		   RTLD_LAZY | (global?RTLD_GLOBAL:RTLD_LOCAL));
   if (!h) {
     const char *e, *err = dlerror();
-    if (*err == '/' && (e = strchr(err, ':')) &&
+    if (err && *err == '/' && (e = strchr(err, ':')) &&
 	(name = clib_resolve_lds(L, strdata(lj_str_new(L, err, e-err))))) {
       h = dlopen(name, RTLD_LAZY | (global?RTLD_GLOBAL:RTLD_LOCAL));
       if (h) return h;
       err = dlerror();
     }
+    if (!err) err = "dlopen failed";
     lj_err_callermsg(L, err);
   }
   return h;
@@ -363,6 +364,7 @@ TValue *lj_clib_index(lua_State *L, CLibrary *cl, GCstr *name)
       cd = lj_cdata_new(cts, id, CTSIZE_PTR);
       *(void **)cdataptr(cd) = p;
       setcdataV(L, tv, cd);
+      lj_gc_anybarriert(L, cl->cache);
     }
   }
   return tv;
