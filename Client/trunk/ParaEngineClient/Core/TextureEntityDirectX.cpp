@@ -1858,7 +1858,7 @@ bool ParaEngine::TextureEntityDirectX::LoadImageFromString(const char* cmd)
 
 bool ParaEngine::TextureEntityDirectX::GetImageData(void** ppData, int* pSize, int* pWidth, int* pHeight, int* pBytesPerPixel)
 {
-	if(SurfaceType == DynamicTexture && m_pTexture && m_pTextureInfo)
+	if(m_pTexture && m_pTextureInfo)
 	{
 		int width = m_pTextureInfo->GetWidth();
 		int height = m_pTextureInfo->GetHeight();
@@ -1868,21 +1868,39 @@ bool ParaEngine::TextureEntityDirectX::GetImageData(void** ppData, int* pSize, i
 		*pSize = width * height * 4;
 		uint8* pData = new uint8[*pSize];
 		D3DLOCKED_RECT lockedRect;
-		if (SUCCEEDED(m_pTexture->LockRect(0, &lockedRect, NULL, D3DLOCK_READONLY)))
+
+		if (SurfaceType != TextureEntityDirectX::RenderTarget)
 		{
-			DWORD* pDest = (DWORD*)pData;
-			for(int y = 0; y < height; y++)
+			if (SUCCEEDED(m_pTexture->LockRect(0, &lockedRect, NULL, D3DLOCK_READONLY)))
 			{
-				for(int x = 0; x < width; x++)
+				DWORD* pDest = (DWORD*)pData;
+				for (int y = 0; y < height; y++)
 				{
-					DWORD* pSrc = (DWORD*)((uint8*)lockedRect.pBits + y * lockedRect.Pitch + x * 4);
-					*pDest = *pSrc;
-					pDest++;
+					for (int x = 0; x < width; x++)
+					{
+						DWORD* pSrc = (DWORD*)((uint8*)lockedRect.pBits + y * lockedRect.Pitch + x * 4);
+						*pDest = *pSrc;
+						pDest++;
+					}
 				}
+				m_pTexture->UnlockRect(0);
+				*ppData = pData;
+				return true;
 			}
-			m_pTexture->UnlockRect(0);
-			*ppData = pData;
-			return true;
+		}
+		else
+		{
+			// for render target, we need to copy the data from the surface
+			LPDIRECT3DSURFACE9 pSurface = NULL;
+			if (SUCCEEDED(m_pTexture->GetSurfaceLevel(0, &pSurface)))
+			{
+				// get pixels from the render target.
+				// 1. copy current render target to another render target of picking size
+				// 2. create a off screen memory surface of picking size and GetRenderTargetData to it. 
+				// 3. read pixels from the off screen memory surface.
+
+				SAFE_RELEASE(pSurface);
+			}
 		}
 		delete[] pData;
 	}
