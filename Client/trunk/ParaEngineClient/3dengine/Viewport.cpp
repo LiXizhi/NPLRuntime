@@ -274,8 +274,13 @@ HRESULT ParaEngine::CViewport::Render(double dTimeDelta, int nPipelineOrder)
 			if (m_pRenderTarget)
 			{
 #ifdef USE_DIRECTX_RENDERER
-				// for multiple render targets (/shader 2 of fancy block rendering) to work, the render target must be the same size of the back buffer. 
-				m_pRenderTarget->SetRenderTargetSize(Vector2((float)(CGlobals::GetDirectXEngine().GetBackBufferWidth()), (float)(CGlobals::GetDirectXEngine().GetBackBufferHeight())));
+				if (CGlobals::GetSceneState()->IsDeferredShading()) {
+					// for multiple render targets (/shader 2 of fancy block rendering) to work, the render target must be the same size of the back buffer. 
+					// if we are using deferred shading, we must use the back buffer size.
+					m_pRenderTarget->SetRenderTargetSize(Vector2((float)(CGlobals::GetDirectXEngine().GetBackBufferWidth()), (float)(CGlobals::GetDirectXEngine().GetBackBufferHeight())));
+				}
+				else
+					m_pRenderTarget->SetRenderTargetSize(Vector2((float)GetWidth(), (float)GetHeight()));
 #else
 				m_pRenderTarget->SetRenderTargetSize(Vector2((float)GetWidth(), (float)GetHeight()));
 #endif
