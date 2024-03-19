@@ -1866,13 +1866,13 @@ bool ParaEngine::TextureEntityDirectX::GetImageData(void** ppData, int* pSize, i
 		*pHeight = height;
 		*pBytesPerPixel = 4;
 		*pSize = width * height * 4;
-		uint8* pData = new uint8[*pSize];
-		D3DLOCKED_RECT lockedRect;
-
+		
 		if (SurfaceType != TextureEntityDirectX::RenderTarget)
 		{
+			D3DLOCKED_RECT lockedRect;
 			if (SUCCEEDED(m_pTexture->LockRect(0, &lockedRect, NULL, D3DLOCK_READONLY)))
 			{
+				uint8* pData = new uint8[*pSize];
 				DWORD* pDest = (DWORD*)pData;
 				for (int y = 0; y < height; y++)
 				{
@@ -1898,11 +1898,59 @@ bool ParaEngine::TextureEntityDirectX::GetImageData(void** ppData, int* pSize, i
 				// 1. copy current render target to another render target of picking size
 				// 2. create a off screen memory surface of picking size and GetRenderTargetData to it. 
 				// 3. read pixels from the off screen memory surface.
-
+				bool bRes = false;
+				D3DFORMAT colorFormat = D3DFMT_A8R8G8B8;
+				LPDIRECT3DTEXTURE9 pTextureDest = NULL;
+				LPDIRECT3DSURFACE9 pSurDest = NULL;
+				int nLeft = 0, nTop = 0, nWidth = width, nHeight = height;
+				RECT srcRect = { nLeft, nTop, nLeft + nWidth, nTop + nHeight };
+				RECT destRect = { 0, 0, nWidth, nHeight };
+				auto pd3dDevice = CGlobals::GetRenderDevice();
+				if (SUCCEEDED(pd3dDevice->CreateTexture(nWidth, nHeight, 1, D3DUSAGE_RENDERTARGET, colorFormat, D3DPOOL_DEFAULT, &pTextureDest, NULL)))
+				{
+					if (SUCCEEDED(pTextureDest->GetSurfaceLevel(0, &pSurDest)))
+					{
+						// Copy scene to render target texture
+						if (SUCCEEDED(pd3dDevice->StretchRect(pSurface, &srcRect, pSurDest, &destRect, D3DTEXF_NONE)))
+						{
+							LPDIRECT3DSURFACE9 pSurDestInMem = NULL;
+							if (SUCCEEDED(pd3dDevice->CreateOffscreenPlainSurface(nWidth, nHeight, colorFormat, D3DPOOL_SYSTEMMEM, &pSurDestInMem, NULL)))
+							{
+								if (SUCCEEDED(pd3dDevice->GetRenderTargetData(pSurDest, pSurDestInMem)))
+								{
+									// Read the pixels 
+									D3DLOCKED_RECT lockedRect;
+									RECT rect = { 0, 0, nWidth, nHeight };
+									int nIndex = 0;
+									if (SUCCEEDED(pSurDestInMem->LockRect(&lockedRect, &rect, D3DLOCK_READONLY)))
+									{
+										uint8* pData = new uint8[*pSize];
+										DWORD* pDest = (DWORD*)pData;
+										for (int y = 0; y < nHeight; ++y)
+										{
+											DWORD* pBits = (DWORD*)(((BYTE*)lockedRect.pBits) + (y * lockedRect.Pitch));
+											for (int x = 0; x < nWidth; ++x)
+											{
+												DWORD dwColor = (*pBits++);
+												pDest[nIndex++] = dwColor;
+											}
+										}
+										pSurDestInMem->UnlockRect();
+										*ppData = pData;
+										bRes = true;
+									}
+								}
+								SAFE_RELEASE(pSurDestInMem);
+							}
+						}
+					}
+				}
+				SAFE_RELEASE(pSurDest);
+				SAFE_RELEASE(pTextureDest);
 				SAFE_RELEASE(pSurface);
+				return bRes;
 			}
 		}
-		delete[] pData;
 	}
 	return false;
 }
