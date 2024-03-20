@@ -1380,7 +1380,8 @@ TextureEntity* TextureEntityDirectX::LoadUint8Buffer(const uint8 * pTexels, int 
 	if (bytesPerPixel == 4)
 	{
 		if (m_pTexture == NULL) {
-			HRESULT hr = D3DXCreateTexture(pD3d, width, height, 0, D3DUSAGE_DYNAMIC, D3DFMT_A8R8G8B8, dwCreatePool, &m_pTexture);
+			// no mipmapping, or one can use mipmapping with "0, D3DUSAGE_DYNAMIC | D3DUSAGE_AUTOGENMIPMAP"
+			HRESULT hr = D3DXCreateTexture(pD3d, width, height, 1, D3DUSAGE_DYNAMIC, D3DFMT_A8R8G8B8, dwCreatePool, &m_pTexture);
 			if (FAILED(hr))
 			{
 				OUTPUT_LOG("failed creating terrain texture\n");
@@ -1389,20 +1390,23 @@ TextureEntity* TextureEntityDirectX::LoadUint8Buffer(const uint8 * pTexels, int 
 		if (m_pTexture != NULL)
 		{
 			D3DLOCKED_RECT lr;
-			m_pTexture->LockRect(0, &lr, NULL, 0);
-			// memcpy(lr.pBits, pTexels, width*height * 4);
-			for (int y = 0; y < height; y++)
+			if (SUCCEEDED(m_pTexture->LockRect(0, &lr, NULL, 0)))
 			{
-				memcpy((uint8*)lr.pBits + y * lr.Pitch, pTexels + y * width * 4, width * 4);
+				// memcpy(lr.pBits, pTexels, width*height * 4);
+				for (int y = 0; y < height; y++)
+				{
+					memcpy((uint8*)lr.pBits + y * lr.Pitch, pTexels + y * width * 4, width * 4);
+				}
+				m_pTexture->UnlockRect(0);
 			}
-			m_pTexture->UnlockRect(0);
 		}
 	}
 	else if (bytesPerPixel == 3)
 	{
 		if (m_pTexture == NULL) {
 			// please note, we will create D3DFMT_A8R8G8B8 instead of , D3DFMT_R8G8B8, since our device will use D3DFMT_A8R8G8B8 only
-			HRESULT hr = D3DXCreateTexture(pD3d, width, height, 0, D3DUSAGE_AUTOGENMIPMAP, D3DFMT_A8R8G8B8, dwCreatePool, &m_pTexture);
+			// no mipmapping, or one can use mipmapping with "0, D3DUSAGE_DYNAMIC | D3DUSAGE_AUTOGENMIPMAP"
+			HRESULT hr = D3DXCreateTexture(pD3d, width, height, 1, D3DUSAGE_DYNAMIC, D3DFMT_A8R8G8B8, dwCreatePool, &m_pTexture);
 			if (FAILED(hr))
 			{
 				OUTPUT_LOG("failed creating terrain texture\n");
@@ -1412,25 +1416,26 @@ TextureEntity* TextureEntityDirectX::LoadUint8Buffer(const uint8 * pTexels, int 
 		if (m_pTexture != NULL)
 		{
 			D3DLOCKED_RECT lockedRect;
-			m_pTexture->LockRect(0, &lockedRect, NULL, 0);
-
-			//memcpy(lockedRect.pBits, pTexels, width*height*3);
-			uint8 *pp = (uint8*)lockedRect.pBits;
-			int index = 0, x = 0, y = 0;
-
-			for (y = 0; y < height; y++)
+			if (SUCCEEDED(m_pTexture->LockRect(0, &lockedRect, NULL, 0)))
 			{
-				for (x = 0; x < width; x++)
+				//memcpy(lockedRect.pBits, pTexels, width*height*3);
+				uint8* pp = (uint8*)lockedRect.pBits;
+				int index = 0, x = 0, y = 0;
+
+				for (y = 0; y < height; y++)
 				{
-					int n = (y * 3 * width) + 3 * x;
-					pp[index++] = pTexels[n];
-					pp[index++] = pTexels[n + 1];
-					pp[index++] = pTexels[n + 2];
-					pp[index++] = 0xff;
+					for (x = 0; x < width; x++)
+					{
+						int n = (y * 3 * width) + 3 * x;
+						pp[index++] = pTexels[n];
+						pp[index++] = pTexels[n + 1];
+						pp[index++] = pTexels[n + 2];
+						pp[index++] = 0xff;
+					}
+					index += lockedRect.Pitch - (width * 4);
 				}
-				index += lockedRect.Pitch - (width * 4);
+				m_pTexture->UnlockRect(0);
 			}
-			m_pTexture->UnlockRect(0);
 		}
 	}
 	else if (bytesPerPixel == 1)
@@ -1473,9 +1478,11 @@ TextureEntity* TextureEntityDirectX::LoadUint8Buffer(const uint8 * pTexels, int 
 			if (m_pTexture != NULL)
 			{
 				D3DLOCKED_RECT lr;
-				m_pTexture->LockRect(0, &lr, NULL, 0);
-				memcpy(lr.pBits, pTexels, width*height * 1);
-				m_pTexture->UnlockRect(0);
+				if (SUCCEEDED(m_pTexture->LockRect(0, &lr, NULL, 0))) 
+				{
+					memcpy(lr.pBits, pTexels, width * height * 1);
+					m_pTexture->UnlockRect(0);
+				}
 			}
 		}
 		else if (nSupportAlphaTexture == 0)
@@ -1492,14 +1499,16 @@ TextureEntity* TextureEntityDirectX::LoadUint8Buffer(const uint8 * pTexels, int 
 			if (m_pTexture != NULL)
 			{
 				D3DLOCKED_RECT lr;
-				m_pTexture->LockRect(0, &lr, NULL, 0);
-				int nSize = width * height;
-				DWORD* pData = (DWORD*)(lr.pBits);
-				for (int x = 0; x < nSize; ++x)
+				if (SUCCEEDED(m_pTexture->LockRect(0, &lr, NULL, 0)))
 				{
-					pData[x] = (pTexels[x]) << 24;
+					int nSize = width * height;
+					DWORD* pData = (DWORD*)(lr.pBits);
+					for (int x = 0; x < nSize; ++x)
+					{
+						pData[x] = (pTexels[x]) << 24;
+					}
+					m_pTexture->UnlockRect(0);
 				}
-				m_pTexture->UnlockRect(0);
 			}
 		}
 	}
