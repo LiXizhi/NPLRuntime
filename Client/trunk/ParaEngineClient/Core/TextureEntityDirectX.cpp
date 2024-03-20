@@ -1380,8 +1380,7 @@ TextureEntity* TextureEntityDirectX::LoadUint8Buffer(const uint8 * pTexels, int 
 	if (bytesPerPixel == 4)
 	{
 		if (m_pTexture == NULL) {
-			// no mipmapping, or one can use mipmapping with "0, D3DUSAGE_DYNAMIC | D3DUSAGE_AUTOGENMIPMAP"
-			HRESULT hr = D3DXCreateTexture(pD3d, width, height, 1, D3DUSAGE_DYNAMIC, D3DFMT_A8R8G8B8, dwCreatePool, &m_pTexture);
+			HRESULT hr = D3DXCreateTexture(pD3d, width, height, nMipLevels, D3DUSAGE_DYNAMIC | D3DUSAGE_AUTOGENMIPMAP, D3DFMT_A8R8G8B8, dwCreatePool, &m_pTexture);
 			if (FAILED(hr))
 			{
 				OUTPUT_LOG("failed creating terrain texture\n");
@@ -1405,8 +1404,7 @@ TextureEntity* TextureEntityDirectX::LoadUint8Buffer(const uint8 * pTexels, int 
 	{
 		if (m_pTexture == NULL) {
 			// please note, we will create D3DFMT_A8R8G8B8 instead of , D3DFMT_R8G8B8, since our device will use D3DFMT_A8R8G8B8 only
-			// no mipmapping, or one can use mipmapping with "0, D3DUSAGE_DYNAMIC | D3DUSAGE_AUTOGENMIPMAP"
-			HRESULT hr = D3DXCreateTexture(pD3d, width, height, 1, D3DUSAGE_DYNAMIC, D3DFMT_A8R8G8B8, dwCreatePool, &m_pTexture);
+			HRESULT hr = D3DXCreateTexture(pD3d, width, height, nMipLevels, D3DUSAGE_DYNAMIC | D3DUSAGE_AUTOGENMIPMAP, D3DFMT_A8R8G8B8, dwCreatePool, &m_pTexture);
 			if (FAILED(hr))
 			{
 				OUTPUT_LOG("failed creating terrain texture\n");
