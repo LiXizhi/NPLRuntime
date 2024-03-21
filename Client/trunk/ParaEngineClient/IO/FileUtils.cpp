@@ -110,7 +110,33 @@ std::map<std::string, ParaEngine::CFileUtils::EmbeddedResource> ParaEngine::CFil
 namespace ParaEngine
 {
 	std::string ParaEngine::CFileUtils::s_writepath;
-	
+
+	/**
+	A FILETIME is defined as : Contains a 64-bit value representing the number of 100-nanosecond intervals since January 1, 1601 (UTC).
+	*/
+	void TimetToFileTime(const std::time_t& t, FILETIME* pft)
+	{
+		// Microseconds between 1601-01-01 00:00:00 UTC and 1970-01-01 00:00:00 UTC
+		int64_t ll = Int32x32To64(t, 10000000) + 116444736000000000;
+		pft->dwLowDateTime = (DWORD)ll;
+		pft->dwHighDateTime = ll >> 32;
+	}
+
+	/**
+	A FILETIME is defined as : Contains a 64-bit value representing the number of 100-nanosecond intervals since January 1, 1601 (UTC).
+	time_t is an integral value holding the number of seconds (not counting leap seconds) since 00:00, Jan 1 1970 UTC, corresponding to POSIX time
+	*/
+	time_t FileTimeToTimet(const FILETIME& ft)
+	{
+		// Microseconds between 1601-01-01 00:00:00 UTC and 1970-01-01 00:00:00 UTC
+		static const uint64_t EPOCH_DIFFERENCE_MICROS = 11644473600000000ull;
+
+		// First convert 100-ns intervals to microseconds, then adjust for the
+		// epoch difference
+		uint64_t total_us = (((uint64_t)ft.dwHighDateTime << 32) | (uint64_t)ft.dwLowDateTime) / 10;
+		total_us -= EPOCH_DIFFERENCE_MICROS;
+		return (time_t)(total_us / 1000000);
+	}
 }
 
 ParaEngine::CParaFileInfo::CParaFileInfo() 

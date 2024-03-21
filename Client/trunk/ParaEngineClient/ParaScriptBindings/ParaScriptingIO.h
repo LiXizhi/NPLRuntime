@@ -525,6 +525,8 @@ namespace ParaScripting
 		*/
 		static void write(const char* buffer, int nSize);
 
+		static void flush();
+
 		/** if no file is opened, it means readline from stdin.
 		* a deprecated usage is reading from current open file. 
 		* read line as a string. The string is guaranteed to be ended with '\0'.
@@ -740,6 +742,12 @@ namespace ParaScripting
 		* but sometimes we need to Need to pass parameters to the external environment,such as write the path to a ".bat" file£¬it must be ansci.
 		*/
 		static std::string ConvertPathFromUTF8ToAnsci(const char* path);
+
+		static int CBind_SetCurrentFile(lua_State* L);
+		static int CBind_seek(lua_State* L);
+		static int CBind_ReadUInt(lua_State* L);
+		static int CBind_ReadNumber(lua_State* L);
+		static int CBind_ReadNumbers(lua_State* L);
 	};
 
 	/**
