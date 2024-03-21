@@ -95,6 +95,30 @@ namespace ParaScripting
 		}
 	}
 
+	/**
+	* register functions into a given table. create the table if it does not exist.
+	*/
+	static void lua_register_on_table(lua_State* L, char const* const tableName, lua_func_entry entries[])
+	{
+		lua_getfield(L, LUA_GLOBALSINDEX, tableName);  // push table onto stack
+		if (!lua_istable(L, -1))                       // not a table, create it
+		{
+			lua_createtable(L, 0, 1);      // create new table
+			lua_setfield(L, LUA_GLOBALSINDEX, tableName);  // add it to global context
+
+			// reset table on stack
+			lua_pop(L, 1);                 // pop table (nil value) from stack
+			lua_getfield(L, LUA_GLOBALSINDEX, tableName);  // push table onto stack
+		}
+		int index;
+		for (index = 0; entries[index].name; index++)
+		{
+			lua_pushstring(L, entries[index].name);
+			lua_pushcfunction(L, entries[index].func);
+			lua_rawset(L, -3);
+		}
+		lua_pop(L, 1);                     // pop table from stack
+	}
 
 /** 
 * @ingroup global
@@ -623,5 +647,15 @@ void CNPLScriptingState::LoadHAPI_Globals()
 			def("DeleteFileSystemWatcher", & ParaIO::DeleteFileSystemWatcher)
 		]
 	];
+
+	lua_func_entry ParaIO_api_entries[] = {
+		{ "SetCurrentFile", ParaIO::CBind_SetCurrentFile},
+		{ "seek", ParaIO::CBind_seek },
+		{ "ReadUInt", ParaIO::CBind_ReadUInt },
+		{ "ReadNumbers", ParaIO::CBind_ReadNumbers },
+		{ "ReadNumber", ParaIO::CBind_ReadNumber },
+		{ 0, 0 }
+	};
+	lua_register_on_table(L, "ParaIO", ParaIO_api_entries);
 }
 }//namespace ParaScripting

@@ -736,6 +736,12 @@ namespace ParaScripting
 		* but sometimes we need to Need to pass parameters to the external environment,such as write the path to a ".bat" file��it must be ansci.
 		*/
 		static std::string ConvertPathFromUTF8ToAnsci(const char* path);
+
+		static int CBind_SetCurrentFile(lua_State* L);
+		static int CBind_seek(lua_State* L);
+		static int CBind_ReadUInt(lua_State* L);
+		static int CBind_ReadNumber(lua_State* L);
+		static int CBind_ReadNumbers(lua_State* L);
 	};
 
 	/**

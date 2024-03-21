@@ -13,9 +13,9 @@
 #include "ZipWriter.h"
 #include "ParaWorldAsset.h"
 #ifdef USE_TINYXML2
-	#include <tinyxml2.h>
+#include <tinyxml2.h>
 #else
-	#include <tinyxml.h>
+#include <tinyxml.h>
 #endif
 #include "AISimulator.h"
 #include "AssetManifest.h"
@@ -23,9 +23,7 @@
 #include "util/StringHelper.h"
 #include "NPLWriter.h"
 #include "NPLHelper.h"
-#ifndef EMSCRIPTEN_SINGLE_THREAD
-#include <boost/thread/tss.hpp>
-#endif
+
 #include <vector>
 #include <time.h>
 
@@ -68,11 +66,12 @@ namespace ParaEngine
 	extern time_t FileTimeToTimet(const FILETIME& ft);
 }
 
+static ParaEngine::CParaFile* g_curFile = NULL;
 
 namespace ParaScripting
 {
 	/// the current IO file.
-	CParaFile g_currentIOfile;
+	static CParaFile g_currentIOfile;
 
 	ParaIO::ParaIO(void)
 	{
@@ -81,7 +80,7 @@ namespace ParaScripting
 	ParaIO::~ParaIO(void)
 	{
 	}
-	void ParaIO::UpdateMirrorFiles( const char* dirName, bool bOverwrite)
+	void ParaIO::UpdateMirrorFiles(const char* dirName, bool bOverwrite)
 	{
 #ifdef WIN32
 		CFileLogger::GetInstance()->UpdateMirrorFiles(dirName, bOverwrite);
@@ -90,7 +89,7 @@ namespace ParaScripting
 
 	bool ParaIO::CopyFile(const char* src, const char* dest, bool bOverride)
 	{
-		if(dest!=NULL && src!=NULL)
+		if (dest != NULL && src != NULL)
 		{
 			if (!CParaFile::IsWritablePath(dest))
 				return false;
@@ -102,7 +101,7 @@ namespace ParaScripting
 	{
 		return CParaFile::CreateDirectory(filename);
 	}
-	bool ParaIO::CreateNewFile(const char * filename)
+	bool ParaIO::CreateNewFile(const char* filename)
 	{
 		OUTPUT_LOG("warning: ParaIO::CreateNewFile is absoleted. Use ParaIO.open() instead.\r\n");
 
@@ -112,7 +111,7 @@ namespace ParaScripting
 		return g_currentIOfile.CreateNewFile(filename);
 	}
 
-	bool ParaIO::OpenFileWrite(const char * filename)
+	bool ParaIO::OpenFileWrite(const char* filename)
 	{
 		OUTPUT_LOG("warning: ParaIO::OpenFileWrite is absoleted. Use ParaIO.open() instead.\r\n");
 
@@ -123,7 +122,7 @@ namespace ParaScripting
 		return g_currentIOfile.OpenFile(filename, false);
 	}
 
-	bool ParaIO::OpenFile(const char * filename)
+	bool ParaIO::OpenFile(const char* filename)
 	{
 		OUTPUT_LOG("warning: ParaIO::OpenFile is absoleted. Use ParaIO.open() instead.\r\n");
 
@@ -131,11 +130,12 @@ namespace ParaScripting
 			return false;
 
 		g_currentIOfile.close();
+		g_curFile = &g_currentIOfile;
 		return g_currentIOfile.OpenFile(filename);
 	}
 
 
-	ParaScripting::ParaFileObject ParaIO::openimage2(const char * filename, const char* mode, const object& oExInfo)
+	ParaScripting::ParaFileObject ParaIO::openimage2(const char* filename, const char* mode, const object& oExInfo)
 	{
 		ParaFileObject file;
 		if (filename == NULL)
@@ -151,14 +151,14 @@ namespace ParaScripting
 		if (!cFile.isEof())
 		{
 			int texWidth, texHeight, nBytesPerPixel;
-			unsigned char *pTextureImage = NULL;
+			unsigned char* pTextureImage = NULL;
 			ImageExtendInfo exInfo;
 			if (TextureEntity::LoadImageOfFormatEx(filename, cFile.getBuffer(), (int)cFile.getSize(), texWidth, texHeight, &pTextureImage, &nBytesPerPixel, -1, &exInfo))
 			{
-				int nSize = texWidth*texHeight*nBytesPerPixel;
+				int nSize = texWidth * texHeight * nBytesPerPixel;
 				int nHeaderSize = sizeof(DWORD) * 4;
 				unsigned char* pFileBuffer = new unsigned char[nSize + nHeaderSize];
-				DWORD * pData = (DWORD*)pFileBuffer;
+				DWORD* pData = (DWORD*)pFileBuffer;
 				*pData = 0; pData++;
 				*pData = texWidth; pData++;
 				*pData = texHeight; pData++;
@@ -180,11 +180,11 @@ namespace ParaScripting
 				}
 			}
 		}
-
+		g_curFile = file.m_pFile.get();
 		return file;
 	}
 
-	ParaScripting::ParaFileObject ParaIO::openimage(const object& filename, const char *mode )
+	ParaScripting::ParaFileObject ParaIO::openimage(const object& filename, const char* mode)
 	{
 		return ParaIO::open(filename, "image");
 	}
@@ -198,12 +198,13 @@ namespace ParaScripting
 	ParaFileObject ParaIO::OpenAssetFile2(const char* filename, bool bDownloadIfNotUpToDate)
 	{
 		ParaFileObject file;
-		if(filename == NULL)
+		if (filename == NULL)
 			return file;
 
 		file.m_pFile.reset(new CParaFile());
 		if (!file.m_pFile->OpenAssetFile(filename, bDownloadIfNotUpToDate))
 			file.m_pFile.reset();
+		g_curFile = file.m_pFile.get();
 		return file;
 	}
 
@@ -221,21 +222,21 @@ namespace ParaScripting
 	class CAssetScriptCallbackData
 	{
 	public:
-		CAssetScriptCallbackData(const char* sCallbackScript) : m_sCallbackScript(sCallbackScript){}
+		CAssetScriptCallbackData(const char* sCallbackScript) : m_sCallbackScript(sCallbackScript) {}
 		string m_sCallbackScript;
 		void operator()(int nResult, AssetFileEntry* pAssetFileEntry)
 		{
-			if(!m_sCallbackScript.empty())
+			if (!m_sCallbackScript.empty())
 			{
 				string filename, scode;
 				ParaEngine::StringHelper::DevideString(m_sCallbackScript, filename, scode);
-				if(nResult == 0)
+				if (nResult == 0)
 				{
-					scode = "msg={res=0};"+scode;
+					scode = "msg={res=0};" + scode;
 				}
 				else
 				{
-					scode = "msg={res=-1};"+scode;
+					scode = "msg={res=-1};" + scode;
 				}
 				ParaEngine::CGlobals::GetAISim()->NPLActivate(filename.c_str(), scode.c_str(), (int)(scode.size()));
 			}
@@ -245,16 +246,16 @@ namespace ParaScripting
 	int ParaIO::SyncAssetFile_Async(const char* filename, const char* sCallBackScript)
 	{
 		ParaEngine::AssetFileEntry* pEntry = ParaEngine::CAssetManifest::GetSingleton().GetFile(filename);
-		if(pEntry)
+		if (pEntry)
 		{
-			if(pEntry->DoesFileExist())
+			if (pEntry->DoesFileExist())
 			{
 				return 1;
 			}
 			else
 			{
 				// download and async load the file
-				if(FAILED(pEntry->SyncFile_Async(CAssetScriptCallbackData(sCallBackScript))))
+				if (FAILED(pEntry->SyncFile_Async(CAssetScriptCallbackData(sCallBackScript))))
 				{
 					return -1;
 				}
@@ -270,17 +271,17 @@ namespace ParaScripting
 	int ParaIO::CheckAssetFile(const char* filename)
 	{
 		ParaEngine::AssetFileEntry* pEntry = ParaEngine::CAssetManifest::GetSingleton().GetFile(filename);
-		if(pEntry)
+		if (pEntry)
 		{
-			if(pEntry->IsDownloading())
+			if (pEntry->IsDownloading())
 			{
 				return -3;
 			}
-			else if(pEntry->DoesFileExist())
+			else if (pEntry->DoesFileExist())
 			{
 				return 1;
 			}
-			else if(pEntry->HasReachedMaxRetryCount())
+			else if (pEntry->HasReachedMaxRetryCount())
 			{
 				return -1;
 			}
@@ -298,7 +299,7 @@ namespace ParaScripting
 		ParaEngine::CFileReplaceMap::GetSingleton().LoadReplaceFile(filename, bReplaceExistingOnes);
 	}
 
-	ParaFileObject ParaIO::open( const object& obj, const char *mode )
+	ParaFileObject ParaIO::open(const object& obj, const char* mode)
 	{
 		ParaFileObject file;
 
@@ -308,14 +309,14 @@ namespace ParaScripting
 		int len = 0;
 		auto filename = NPL::NPLHelper::LuaObjectToString(obj, &len);
 
-		if(filename == NULL)
+		if (filename == NULL)
 			return file;
 		if (!CParaFile::IsWritablePath(filename))
 			return file;
 
 		if (mode[0] == 'r')
 		{
-			if(mode[1] != 'w')
+			if (mode[1] != 'w')
 			{
 				file.m_pFile.reset(new CParaFile());
 				// 'r', if we have opened an read only file, we will first look in asset manifest.
@@ -331,7 +332,7 @@ namespace ParaScripting
 				file.m_pFile.reset(new CParaFile());
 				if (file.m_pFile->OpenFile(filename, false))
 				{
-					file.m_pFile->SetFilePointer(0,FILE_BEGIN);
+					file.m_pFile->SetFilePointer(0, FILE_BEGIN);
 				}
 				else
 				{
@@ -345,9 +346,9 @@ namespace ParaScripting
 			file.m_pFile.reset(new CParaFile());
 			if (file.m_pFile->OpenFile(filename, false))
 			{
-				file.m_pFile->SetFilePointer(0,FILE_BEGIN);
+				file.m_pFile->SetFilePointer(0, FILE_BEGIN);
 				file.m_pFile->SetEndOfFile();
-				file.m_pFile->SetFilePointer(0,FILE_BEGIN);
+				file.m_pFile->SetFilePointer(0, FILE_BEGIN);
 			}
 			else
 			{
@@ -360,7 +361,7 @@ namespace ParaScripting
 			file.m_pFile.reset(new CParaFile());
 			if (file.m_pFile->OpenFile(filename, false))
 			{
-				file.m_pFile->SetFilePointer(0,FILE_END);
+				file.m_pFile->SetFilePointer(0, FILE_END);
 			}
 			else
 			{
@@ -377,13 +378,13 @@ namespace ParaScripting
 			if (!cFile.isEof())
 			{
 				int texWidth, texHeight, nBytesPerPixel;
-				unsigned char *pTextureImage = NULL;
+				unsigned char* pTextureImage = NULL;
 				if (TextureEntity::LoadImageOfFormat(filename, cFile.getBuffer(), (int)cFile.getSize(), texWidth, texHeight, &pTextureImage, &nBytesPerPixel))
 				{
-					int nSize = texWidth*texHeight*nBytesPerPixel;
+					int nSize = texWidth * texHeight * nBytesPerPixel;
 					int nHeaderSize = sizeof(DWORD) * 4;
 					unsigned char* pFileBuffer = new unsigned char[nSize + nHeaderSize];
-					DWORD * pData = (DWORD*)pFileBuffer;
+					DWORD* pData = (DWORD*)pFileBuffer;
 					*pData = 0; pData++;
 					*pData = texWidth; pData++;
 					*pData = texHeight; pData++;
@@ -433,6 +434,7 @@ namespace ParaScripting
 			file.m_pFile.reset(new CParaFile((char*)filename, len, false));
 		}
 
+		g_curFile = file.m_pFile.get();
 		return file;
 	}
 
@@ -466,7 +468,7 @@ namespace ParaScripting
 	void ParaIO::flush()
 	{
 #ifdef EMSCRIPTEN
-	EM_ASM(FS.syncfs(false, function(err) { if (err) { console.log("FS.syncfs", err); } }););
+		EM_ASM(FS.syncfs(false, function(err) { if (err) { console.log("FS.syncfs", err); } }););
 #endif
 	}
 
@@ -480,7 +482,7 @@ namespace ParaScripting
 			return readline2("");
 		}
 		else
-			g_currentIOfile.GetNextLine(line, MAX_LINE_CHARACTER_NUM-1);
+			g_currentIOfile.GetNextLine(line, MAX_LINE_CHARACTER_NUM - 1);
 		return line;
 	}
 
@@ -495,12 +497,12 @@ namespace ParaScripting
 		return NULL;
 	}
 
-	bool ParaIO::DoesFileExist(const char * filename, bool bSearchZipFiles)
+	bool ParaIO::DoesFileExist(const char* filename, bool bSearchZipFiles)
 	{
 		return CParaFile::DoesFileExist(filename, bSearchZipFiles, true);
 	}
 
-	bool ParaIO::DoesFileExist_(const char * filename)
+	bool ParaIO::DoesFileExist_(const char* filename)
 	{
 		return CParaFile::DoesFileExist(filename, false, true);
 	}
@@ -512,7 +514,7 @@ namespace ParaScripting
 
 	ParaSearchResult ParaIO::SearchFiles(const char* sRootPath, const char* sFilePattern, const char* sZipArchive, int nSubLevel, int nMaxFilesNum, int nFrom)
 	{
-		if(sRootPath!=NULL && sFilePattern!=NULL && sZipArchive!=NULL)
+		if (sRootPath != NULL && sFilePattern != NULL && sZipArchive != NULL)
 			return ParaSearchResult(CFileManager::GetInstance()->SearchFiles(sRootPath, sFilePattern, sZipArchive, nSubLevel, nMaxFilesNum, nFrom));
 		else
 			return ParaSearchResult();
@@ -532,7 +534,7 @@ namespace ParaScripting
 
 	void ParaSearchResult::Release()
 	{
-		if(IsValid())
+		if (IsValid())
 		{
 			m_pResult->Release();
 		}
@@ -540,7 +542,7 @@ namespace ParaScripting
 
 	string ParaSearchResult::GetRootPath()
 	{
-		if(IsValid())
+		if (IsValid())
 		{
 			return m_pResult->GetRootPath();
 		}
@@ -549,7 +551,7 @@ namespace ParaScripting
 
 	int ParaSearchResult::GetNumOfResult()
 	{
-		if(IsValid())
+		if (IsValid())
 		{
 			return m_pResult->GetNumOfResult();
 		}
@@ -558,7 +560,7 @@ namespace ParaScripting
 
 	bool ParaSearchResult::AddResult(const char* sItem)
 	{
-		if(IsValid())
+		if (IsValid())
 		{
 			return m_pResult->AddResult(sItem);
 		}
@@ -567,7 +569,7 @@ namespace ParaScripting
 
 	string ParaSearchResult::GetItem(int nIndex)
 	{
-		if(IsValid())
+		if (IsValid())
 		{
 			return m_pResult->GetItem(nIndex);
 		}
@@ -577,8 +579,8 @@ namespace ParaScripting
 	// file time to 1982-11-26 type string.
 	string FileTimeToDateString(const FILETIME* pTime)
 	{
-#ifdef PARAENGINE_CLIENT
-		if(pTime->dwHighDateTime==0 && pTime->dwLowDateTime==0)
+#ifdef WIN32
+		if (pTime->dwHighDateTime == 0 && pTime->dwLowDateTime == 0)
 			return "2000-01-01-00-00";
 		SYSTEMTIME stUTC, stLocal;
 		char outputTime[256];
@@ -587,7 +589,7 @@ namespace ParaScripting
 		FileTimeToSystemTime(pTime, &stUTC);
 		SystemTimeToTzSpecificLocalTime(NULL, &stUTC, &stLocal);
 		// Build a string showing the date and time.
-		snprintf(outputTime, 256, "%d-%d-%d-%d-%d",stLocal.wYear, stLocal.wMonth, stLocal.wDay, stLocal.wHour, stLocal.wMinute);
+		snprintf(outputTime, 256, "%d-%d-%d-%d-%d", stLocal.wYear, stLocal.wMonth, stLocal.wDay, stLocal.wHour, stLocal.wMinute);
 
 		return string(outputTime);
 #else
@@ -599,7 +601,7 @@ namespace ParaScripting
 		{
 			char outputTime[256];
 			memset(outputTime, 0, sizeof(outputTime));
-			snprintf(outputTime, 256, "%d-%d-%d-%d-%d", (pGmTime->tm_year+1900), pGmTime->tm_mon+1, pGmTime->tm_mday, pGmTime->tm_hour, pGmTime->tm_min);
+			snprintf(outputTime, 256, "%d-%d-%d-%d-%d", (pGmTime->tm_year + 1900), pGmTime->tm_mon + 1, pGmTime->tm_mday, pGmTime->tm_hour, pGmTime->tm_min);
 			return string(outputTime);
 		}
 		else
@@ -609,12 +611,12 @@ namespace ParaScripting
 #endif
 	}
 
-	object ParaSearchResult::GetItemData( int nIndex, const object& output )
+	object ParaSearchResult::GetItemData(int nIndex, const object& output)
 	{
-		if(IsValid())
+		if (IsValid())
 		{
 			const ParaEngine::CFileFindData* pData = m_pResult->GetItemData(nIndex);
-			if(pData)
+			if (pData)
 			{
 				output["filename"] = pData->m_sFileName;
 				output["filesize"] = (int)(pData->m_dwFileSize);
@@ -635,7 +637,7 @@ namespace ParaScripting
 
 	string ParaIO::GetParentDirectoryFromPath(const char* sfilename, int nParentCounts)
 	{
-		if(sfilename != NULL)
+		if (sfilename != NULL)
 			return CParaFile::GetParentDirectoryFromPath(sfilename, nParentCounts);
 		else
 			return "";
@@ -645,7 +647,7 @@ namespace ParaScripting
 	{
 		thread_local static std::string g_str;
 
-		if(sfilename != NULL)
+		if (sfilename != NULL)
 			g_str = CParaFile::GetParentDirectoryFromPath(sfilename, nParentCounts);
 		else
 			g_str.clear();
@@ -654,7 +656,7 @@ namespace ParaScripting
 
 	string ParaIO::AutoFindParaEngineRootPath(const char* sFile)
 	{
-		if(sFile == NULL)
+		if (sFile == NULL)
 			return "";
 		return CParaFile::AutoFindParaEngineRootPath(sFile);
 	}
@@ -663,20 +665,20 @@ namespace ParaScripting
 	{
 		thread_local static std::string g_str;
 
-		if(sFile != NULL)
+		if (sFile != NULL)
 			g_str = CParaFile::AutoFindParaEngineRootPath(sFile);
 		else
 			g_str.clear();
 		return g_str.c_str();
 	}
 
-	string ParaIO::ChangeFileExtension(const char* sfilename, const string & sExt)
+	string ParaIO::ChangeFileExtension(const char* sfilename, const string& sExt)
 	{
-		if(sfilename == NULL)
+		if (sfilename == NULL)
 			return "";
 		//TODO: search if the directory is outside the application directory. If so, we should now allow user to delete file there.
 		string sFileName = sfilename;
-		if(!CParaFile::IsWritablePath(sfilename, false))
+		if (!CParaFile::IsWritablePath(sfilename, false))
 		{
 			// only relative path is allowed.
 			OUTPUT_LOG("security alert: some one is telling the engine to change file extension to a file %s which is not allowed\r\n", sFileName.c_str());
@@ -684,11 +686,11 @@ namespace ParaScripting
 		}
 		return CParaFile::ChangeFileExtension(sfilename, sExt);
 	}
-	const char* ParaIO::ChangeFileExtension_(const char* sfilename, const string & sExt)
+	const char* ParaIO::ChangeFileExtension_(const char* sfilename, const string& sExt)
 	{
 		thread_local static std::string g_str;
 
-		if(sfilename != NULL)
+		if (sfilename != NULL)
 			g_str = CParaFile::ChangeFileExtension(sfilename, sExt);
 		else
 			g_str.clear();
@@ -697,7 +699,7 @@ namespace ParaScripting
 
 	string ParaIO::GetFileExtension(const char* sfilename)
 	{
-		if(sfilename != NULL)
+		if (sfilename != NULL)
 			return CParaFile::GetFileExtension(sfilename);
 		else
 			return "";
@@ -707,7 +709,7 @@ namespace ParaScripting
 	{
 		thread_local static std::string g_str;
 
-		if(sfilename != NULL)
+		if (sfilename != NULL)
 			g_str = CParaFile::GetFileExtension(sfilename);
 		else
 			g_str.clear();
@@ -716,7 +718,7 @@ namespace ParaScripting
 
 	string ParaIO::GetAbsolutePath(const char* sRelativePath, const char* sRootPath)
 	{
-		if(sRelativePath != NULL && sRootPath!=NULL)
+		if (sRelativePath != NULL && sRootPath != NULL)
 			return CParaFile::GetAbsolutePath(sRelativePath, sRootPath);
 		else
 			return "";
@@ -726,7 +728,7 @@ namespace ParaScripting
 	{
 		thread_local static std::string g_str;
 
-		if(sRelativePath != NULL && sRootPath!=NULL)
+		if (sRelativePath != NULL && sRootPath != NULL)
 			g_str = CParaFile::GetAbsolutePath(sRelativePath, sRootPath);
 		else
 			g_str.clear();
@@ -735,7 +737,7 @@ namespace ParaScripting
 
 	string ParaIO::GetRelativePath(const char* sAbsolutePath, const char* sRootPath)
 	{
-		if(sAbsolutePath != NULL && sRootPath!=NULL)
+		if (sAbsolutePath != NULL && sRootPath != NULL)
 			return CParaFile::GetRelativePath(sAbsolutePath, sRootPath);
 		else
 			return "";
@@ -745,7 +747,7 @@ namespace ParaScripting
 	{
 		thread_local static std::string g_str;
 
-		if(sAbsolutePath != NULL && sRootPath!=NULL)
+		if (sAbsolutePath != NULL && sRootPath != NULL)
 			g_str = CParaFile::GetRelativePath(sAbsolutePath, sRootPath);
 		else
 			g_str.clear();
@@ -754,7 +756,7 @@ namespace ParaScripting
 
 	string ParaIO::GetFileName(const char* sfilename)
 	{
-		if(sfilename != NULL)
+		if (sfilename != NULL)
 			return CParaFile::GetFileName(sfilename);
 		else
 			return "";
@@ -763,7 +765,7 @@ namespace ParaScripting
 	{
 		thread_local static std::string g_str;
 
-		if(sfilename != NULL)
+		if (sfilename != NULL)
 			g_str = CParaFile::GetFileName(sfilename);
 		else
 			g_str.clear();
@@ -777,7 +779,7 @@ namespace ParaScripting
 
 	string ParaIO::ToCanonicalFilePath(const char* sfilename, bool bBackSlash)
 	{
-		if(sfilename != NULL)
+		if (sfilename != NULL)
 		{
 			string output;
 			CParaFile::ToCanonicalFilePath(output, sfilename, bBackSlash);
@@ -791,7 +793,7 @@ namespace ParaScripting
 	{
 		thread_local static std::string g_str;
 
-		if(sfilename != NULL)
+		if (sfilename != NULL)
 		{
 			CParaFile::ToCanonicalFilePath(g_str, sfilename, bBackSlash);
 		}
@@ -817,7 +819,7 @@ namespace ParaScripting
 
 	int ParaIO::GetFileSize(const char* sFilePath)
 	{
-		if(sFilePath == NULL)
+		if (sFilePath == NULL)
 			return 0;
 
 		return CParaFile::GetFileSize(sFilePath);
@@ -853,28 +855,28 @@ namespace ParaScripting
 
 	int ParaIO::DeleteFile(const char* sFilePattern)
 	{
-		if(sFilePattern!=0)
+		if (sFilePattern != 0)
 		{
 			return CParaFile::DeleteFile(sFilePattern);
 		}
 		return 0;
 	}
 
-	bool ParaIO::MoveFile( const char* src, const char* dest )
+	bool ParaIO::MoveFile(const char* src, const char* dest)
 	{
-		if(dest!=NULL && src!=NULL)
+		if (dest != NULL && src != NULL)
 		{
 			string sDestPath = dest;
 			//TODO: search if the directory is outside the application directory. If so, we should now allow user to delete file there.
-			if(!CParaFile::IsWritablePath(sDestPath))
+			if (!CParaFile::IsWritablePath(sDestPath))
 			{
 				// only relative path is allowed.
 				OUTPUT_LOG("security alert: some one is telling the engine to move a file to %s which is not allowed\r\n", sDestPath.c_str());
 				return false;
 			}
-			
 
-			string sSrcPath = dest;
+
+			string sSrcPath = src;
 			//TODO: search if the directory is outside the application directory. If so, we should now allow user to delete file there.
 			if (!CParaFile::IsWritablePath(sSrcPath))
 			{
@@ -887,19 +889,19 @@ namespace ParaScripting
 		return false;
 	}
 
-	unsigned long ParaIO::CRC32( const char* filename )
+	unsigned long ParaIO::CRC32(const char* filename)
 	{
-		if(filename == NULL)
+		if (filename == NULL)
 			return 0;
 		return CParaFile::CRC32(filename);
 	}
 
-	ParaScripting::ParaZipWriter ParaIO::CreateZip( const char *fn, const char *password )
+	ParaScripting::ParaZipWriter ParaIO::CreateZip(const char* fn, const char* password)
 	{
 		return ParaScripting::ParaZipWriter(CZipWriter::CreateZip(fn, password));
 	}
 
-	void ParaIO::SetDiskFilePriority( int nPriority )
+	void ParaIO::SetDiskFilePriority(int nPriority)
 	{
 		CParaFile::SetDiskFilePriority(nPriority);
 	}
@@ -909,17 +911,17 @@ namespace ParaScripting
 		return CParaFile::GetDiskFilePriority();
 	}
 
-	bool ParaIO::AddSearchPath( const char* sFile )
+	bool ParaIO::AddSearchPath(const char* sFile)
 	{
 		return AddSearchPath2(sFile, 0);
 	}
 
-	bool ParaIO::AddSearchPath2( const char* sFile, int nPriority )
+	bool ParaIO::AddSearchPath2(const char* sFile, int nPriority)
 	{
 		return CFileManager::GetInstance()->AddSearchPath(sFile, nPriority);
 	}
 
-	bool ParaIO::RemoveSearchPath( const char* sFile )
+	bool ParaIO::RemoveSearchPath(const char* sFile)
 	{
 		return CFileManager::GetInstance()->RemoveSearchPath(sFile);
 	}
@@ -929,10 +931,10 @@ namespace ParaScripting
 		return CFileManager::GetInstance()->ClearAllSearchPath();
 	}
 
-	const char* ParaIO::DecodePath( const char* input )
+	const char* ParaIO::DecodePath(const char* input)
 	{
 		thread_local static std::string g_str;
-		if(input)
+		if (input)
 		{
 			CPathReplaceables::GetSingleton().DecodePath(g_str, input);
 			return g_str.c_str();
@@ -941,10 +943,10 @@ namespace ParaScripting
 			return NULL;
 	}
 
-	const char* ParaIO::EncodePath( const char* input )
+	const char* ParaIO::EncodePath(const char* input)
 	{
 		thread_local static std::string g_str;
-		if(input)
+		if (input)
 		{
 			CPathReplaceables::GetSingleton().EncodePath(g_str, input);
 			return g_str.c_str();
@@ -955,11 +957,11 @@ namespace ParaScripting
 
 	const char* ParaIO::EncodePath2(const char* input, const char* varNames)
 	{
-		if(varNames == NULL)
+		if (varNames == NULL)
 			return EncodePath(input);
-		else if(input)
+		else if (input)
 		{
-		thread_local static std::string g_str;
+			thread_local static std::string g_str;
 
 			CPathReplaceables::GetSingleton().EncodePath(g_str, input, varNames);
 			return g_str.c_str();
@@ -968,11 +970,11 @@ namespace ParaScripting
 			return NULL;
 	}
 
-	bool ParaIO::AddPathVariable( const char * sVarName, const char * sVarValue )
+	bool ParaIO::AddPathVariable(const char* sVarName, const char* sVarValue)
 	{
-		if(sVarName)
+		if (sVarName)
 		{
-			if(sVarValue)
+			if (sVarValue)
 				return CPathReplaceables::GetSingleton().AddVariable(CPathVariable(sVarName, sVarValue, true, true));
 			else
 				return CPathReplaceables::GetSingleton().RemoveVariable(sVarName, true);
@@ -981,7 +983,7 @@ namespace ParaScripting
 			return false;
 	}
 
-	ParaScripting::ParaFileSystemWatcher ParaIO::GetFileSystemWatcher( const char* filename )
+	ParaScripting::ParaFileSystemWatcher ParaIO::GetFileSystemWatcher(const char* filename)
 	{
 #if defined(PARAENGINE_MOBILE) || defined(EMSCRIPTEN)
 		return ParaFileSystemWatcher();
@@ -990,10 +992,10 @@ namespace ParaScripting
 #endif
 	}
 
-	void ParaIO::DeleteFileSystemWatcher( const char* name )
-    {
+	void ParaIO::DeleteFileSystemWatcher(const char* name)
+	{
 #if !defined(PARAENGINE_MOBILE) && !defined(EMSCRIPTEN)
-        CFileSystemWatcherService::GetInstance()->DeleteDirWatcher(name);
+		CFileSystemWatcherService::GetInstance()->DeleteDirWatcher(name);
 #endif
 	}
 
@@ -1014,6 +1016,99 @@ namespace ParaScripting
 #endif
 	}
 
+
+	int ParaIO::CBind_SetCurrentFile(lua_State* L)
+	{
+		// get the file object as user data
+		luabind::object o(luabind::from_stack(L, 1));
+		ParaFileObject* pFile = luabind::object_cast<ParaFileObject*>(o);
+		if (pFile) {
+			g_curFile = pFile->m_pFile.get();
+		}
+		return 0;
+	}
+
+	int ParaIO::CBind_seek(lua_State* L)
+	{
+		// get the seek pos
+		int nPos = (int)luaL_checkinteger(L, 1);
+		if (g_curFile) {
+			g_curFile->seek(nPos);
+		}
+		return 0;
+	}
+
+	int ParaIO::CBind_ReadUInt(lua_State* L)
+	{
+		if (g_curFile) {
+			uint32 data;
+			g_curFile->read(&data, 4);
+			lua_pushinteger(L, data);
+			return 1;
+		}
+		return 0;
+	}
+
+	int ParaIO::CBind_ReadNumber(lua_State* L)
+	{
+		if (g_curFile) {
+			int nByteCount = (int)luaL_checkinteger(L, 1);
+			uint32_t data = 0;
+			g_curFile->read(&data, nByteCount);
+			lua_pushnumber(L, data);
+			return 1;
+		}
+		return 0;
+	}
+
+	/*
+	* @param nCount: number of numbers to read
+	* @param nNumberByteCount: number of bytes for each number, can be 1,2,4,8
+	* @return n1,n2, .. nCount numbers
+	*/
+	int ParaIO::CBind_ReadNumbers(lua_State* L)
+	{
+		if (g_curFile) {
+			int nCount = (int)luaL_checkinteger(L, 1);
+			int nNumberByteCount = (int)luaL_checkinteger(L, 2);
+			if (nCount > 0 && nCount < 10) {
+				if (nNumberByteCount == 4) {
+					for (int i = 0; i < nCount; i++) {
+						uint32 data;
+						g_curFile->read(&data, 4);
+						lua_pushinteger(L, data);
+					}
+				}
+				else if (nNumberByteCount == 2) {
+					for (int i = 0; i < nCount; i++) {
+						uint16 data;
+						g_curFile->read(&data, 2);
+						lua_pushinteger(L, data);
+					}
+				}
+				else if (nNumberByteCount == 1) {
+					for (int i = 0; i < nCount; i++) {
+						uint8 data;
+						g_curFile->read(&data, 1);
+						lua_pushinteger(L, data);
+					}
+				}
+				else if (nNumberByteCount == 8) {
+					for (int i = 0; i < nCount; i++) {
+						double data;
+						g_curFile->read(&data, 8);
+						lua_pushnumber(L, data);
+					}
+				}
+				else {
+					OUTPUT_LOG("ParaIO::ReadNumbers: invalid number byte count %d. Can only be 1,2,4,8\n", nNumberByteCount);
+					return 0;
+				}
+				return nCount;
+			}
+		}
+		return 0;
+	}
 
 	//////////////////////////////////////////////////////////////////////////
 	//
@@ -1041,7 +1136,7 @@ namespace ParaScripting
 
 	void ParaFileObject::WriteString(const char* str)
 	{
-		if(IsValid())
+		if (IsValid())
 		{
 			m_pFile->WriteString(str);
 		}
@@ -1049,24 +1144,24 @@ namespace ParaScripting
 
 	const char* ParaFileObject::readline()
 	{
-		if(IsValid())
+		if (IsValid())
 		{
-			if(m_pFile->isEof())
+			if (m_pFile->isEof())
 				return NULL;
 			else
 			{
-				if(m_sTempBuffer.size()<MAX_LINE_CHARACTER_NUM)
+				if (m_sTempBuffer.size() < MAX_LINE_CHARACTER_NUM)
 					m_sTempBuffer.resize(MAX_LINE_CHARACTER_NUM);
 
 				int nFromIndex = 0;
 				while (m_pFile->GetNextLine(&(m_sTempBuffer[nFromIndex]), (int)m_sTempBuffer.size() - nFromIndex) == ((int)m_sTempBuffer.size() - nFromIndex - 1))
 				{
 					// have not finished.
-					if(m_pFile->isEof())
+					if (m_pFile->isEof())
 						break;
 					char c = *m_pFile->getPointer();
 
-					if((c != '\r') || (c != '\n'))
+					if ((c != '\r') || (c != '\n'))
 					{
 						// have not finished last line.
 						nFromIndex = (int)m_sTempBuffer.size() - 1;
@@ -1096,7 +1191,7 @@ namespace ParaScripting
 					// UTF-8[t 1]	EF BB BF
 					text += 3;
 				}
-				else if ( ((((unsigned char)text[0]) == 0xFF) && (((unsigned char)text[1]) == 0xFE)) || ((((unsigned char)text[0]) == 0xFE) && (((unsigned char)text[1]) == 0xFF)))
+				else if (((((unsigned char)text[0]) == 0xFF) && (((unsigned char)text[1]) == 0xFE)) || ((((unsigned char)text[0]) == 0xFE) && (((unsigned char)text[1]) == 0xFF)))
 				{
 					// UTF - 16 (BigEndian)    FE FF
 					// UTF - 16 (LittleEndian) FF FE
@@ -1104,7 +1199,7 @@ namespace ParaScripting
 					std::u16string input;
 					input.resize((output.size() - 2) / 2);
 					memcpy((char*)(&(input[0])), text, input.size() * 2);
-					
+
 					m_sTempBuffer.clear();
 					if (StringHelper::UTF16ToUTF8(input, m_sTempBuffer))
 					{
@@ -1122,12 +1217,12 @@ namespace ParaScripting
 	{
 		// this is now thread-safe and multiple instance can be used at the same time
 		m_sTempBuffer.clear();
-		if(IsValid())
+		if (IsValid())
 		{
 			int nSize = (int)m_pFile->getSize();
-			if(nCount <0)
+			if (nCount < 0)
 				nCount = nSize - fromPos;
-			if(nCount>0)
+			if (nCount > 0)
 			{
 				m_sTempBuffer.resize(nCount);
 				int nOldPos = m_pFile->getPos();
@@ -1157,7 +1252,7 @@ namespace ParaScripting
 			if (nCount > 0)
 			{
 				m_pFile->seek(fromPos + nCount);
-	
+
 				lua_pushlstring(L, m_pFile->getBuffer() + fromPos, nCount);
 				object o(from_stack(L, -1));
 				lua_pop(L, 1);
@@ -1175,23 +1270,23 @@ namespace ParaScripting
 
 	void ParaFileObject::write(const char* buffer, int nSize)
 	{
-		if(IsValid())
+		if (IsValid())
 		{
 			m_pFile->write(buffer, nSize);
 		}
 	}
 
-	void ParaFileObject::seek( int offset )
+	void ParaFileObject::seek(int offset)
 	{
-		if(IsValid())
+		if (IsValid())
 		{
 			m_pFile->seek(offset);
 		}
 	}
 
-	void ParaFileObject::seekRelative( int offset )
+	void ParaFileObject::seekRelative(int offset)
 	{
-		if(IsValid())
+		if (IsValid())
 		{
 			m_pFile->seekRelative(offset);
 		}
@@ -1208,7 +1303,7 @@ namespace ParaScripting
 
 	void ParaFileObject::SetFilePointer(int lDistanceToMove, int dwMoveMethod)
 	{
-		if(IsValid())
+		if (IsValid())
 		{
 			m_pFile->SetFilePointer(lDistanceToMove, dwMoveMethod);
 		}
@@ -1216,27 +1311,27 @@ namespace ParaScripting
 
 	bool ParaFileObject::SetEndOfFile()
 	{
-		if(IsValid())
+		if (IsValid())
 		{
 			return m_pFile->SetEndOfFile();
 		}
 		return true;
 	}
 
-	int ParaFileObject::WriteBytes( int nSize, const object& input )
+	int ParaFileObject::WriteBytes(int nSize, const object& input)
 	{
-		if(IsValid())
+		if (IsValid())
 		{
 			std::vector<unsigned char> data;
 			data.resize(nSize);
 			// convert script array object to vector unsigned char array.
-			for (int i=0; i<nSize; ++i)
+			for (int i = 0; i < nSize; ++i)
 			{
-				int value = object_cast<int>(input[i+1]);
+				int value = object_cast<int>(input[i + 1]);
 				data[i] = (unsigned char)value;
 			}
 
-			if(nSize>0)
+			if (nSize > 0)
 			{
 				return m_pFile->write(&(data[0]), nSize);
 			}
@@ -1244,12 +1339,12 @@ namespace ParaScripting
 		return 0;
 	}
 
-	object ParaFileObject::ReadBytes( int nSize, const object& output )
+	object ParaFileObject::ReadBytes(int nSize, const object& output)
 	{
-		if(IsValid())
+		if (IsValid())
 		{
 			std::string data;
-			if(nSize <= 0)
+			if (nSize <= 0)
 			{
 				nSize = GetFileSize();
 			}
@@ -1257,12 +1352,12 @@ namespace ParaScripting
 
 			nSize = (int)m_pFile->read(&(data[0]), nSize);
 
-			if(type(output) == LUA_TTABLE)
+			if (type(output) == LUA_TTABLE)
 			{
 				// convert vector unsigned char array to script array object.
-				for (int i=0; i<nSize; ++i)
+				for (int i = 0; i < nSize; ++i)
 				{
-					output[i+1] = (int)((unsigned char)(data[i]));
+					output[i + 1] = (int)((unsigned char)(data[i]));
 				}
 			}
 			else
@@ -1275,14 +1370,14 @@ namespace ParaScripting
 
 	void ParaFileObject::WriteFloat(float data)
 	{
-		if(IsValid())
+		if (IsValid())
 		{
 			m_pFile->write(&data, 4);
 		}
 	}
 	float ParaFileObject::ReadFloat()
 	{
-		if(IsValid())
+		if (IsValid())
 		{
 			float data;
 			m_pFile->read(&data, 4);
@@ -1340,7 +1435,7 @@ namespace ParaScripting
 
 	void ParaFileObject::WriteInt(int data)
 	{
-		if(IsValid())
+		if (IsValid())
 		{
 			int32 data_ = (int32)data;
 			m_pFile->write(&data_, 4);
@@ -1348,7 +1443,7 @@ namespace ParaScripting
 	}
 	int ParaFileObject::ReadInt()
 	{
-		if(IsValid())
+		if (IsValid())
 		{
 			int32 data;
 			m_pFile->read(&data, 4);
@@ -1457,43 +1552,43 @@ namespace ParaScripting
 
 	int ParaFileObject::GetFileSize()
 	{
-		if(IsValid())
+		if (IsValid())
 		{
 			return (int)(m_pFile->getSize());
 		}
 		return 0;
 	}
 
-	int ParaFileObject::SetSegment( int nFromByte, int nByteCount )
+	int ParaFileObject::SetSegment(int nFromByte, int nByteCount)
 	{
 		m_nFromByte = nFromByte;
 		m_nByteCount = nByteCount;
 		return -1;
 	}
 
-	const char* ParaFileObject::GetBase64StringEx( int * pnStrLength/*=0*/ )
+	const char* ParaFileObject::GetBase64StringEx(int* pnStrLength/*=0*/)
 	{
-		if(IsValid())
+		if (IsValid())
 		{
-			unsigned long nSrcSize = (m_nByteCount>0 && (m_nFromByte + m_nByteCount) <= (int)m_pFile->getSize()) ? m_nByteCount : ((int)m_pFile->getSize() - m_nFromByte);
-			if(nSrcSize == 0)
+			unsigned long nSrcSize = (m_nByteCount > 0 && (m_nFromByte + m_nByteCount) <= (int)m_pFile->getSize()) ? m_nByteCount : ((int)m_pFile->getSize() - m_nFromByte);
+			if (nSrcSize == 0)
 			{
 				return CGlobals::GetString(0).c_str();
 			}
 			int nBufferSize = CyoEncode::Base64EncodeGetLength(nSrcSize);
 			const int MAX_BINARY_DATA_SIZE = 1024000;
-			if(nBufferSize<MAX_BINARY_DATA_SIZE)
+			if (nBufferSize < MAX_BINARY_DATA_SIZE)
 			{
-				if((int)m_sTempBuffer.size()<(nBufferSize+10))
+				if ((int)m_sTempBuffer.size() < (nBufferSize + 10))
 				{
-					m_sTempBuffer.resize(nBufferSize+10);
+					m_sTempBuffer.resize(nBufferSize + 10);
 				}
 
-				int filledsize = (int)CyoEncode::Base64Encode(&(m_sTempBuffer[0]), m_pFile->getBuffer()+m_nFromByte, nSrcSize);
+				int filledsize = (int)CyoEncode::Base64Encode(&(m_sTempBuffer[0]), m_pFile->getBuffer() + m_nFromByte, nSrcSize);
 				if (filledsize >= 0 && filledsize < (int)m_sTempBuffer.size())
 				{
 					m_sTempBuffer[filledsize] = '\0';
-					if(pnStrLength!=0)
+					if (pnStrLength != 0)
 					{
 						(*pnStrLength) = filledsize;
 					}
@@ -1534,7 +1629,7 @@ namespace ParaScripting
 
 	}
 
-	ParaZipWriter::ParaZipWriter(CZipWriter * writer)
+	ParaZipWriter::ParaZipWriter(CZipWriter* writer)
 		:m_writer(writer)
 	{
 	}
@@ -1550,25 +1645,25 @@ namespace ParaScripting
 			return -1;
 	}
 
-	DWORD ParaZipWriter::ZipAdd( const char* dstzn, const char* fn )
+	DWORD ParaZipWriter::ZipAdd(const char* dstzn, const char* fn)
 	{
-		if(m_writer)
+		if (m_writer)
 			return m_writer->ZipAdd(dstzn, fn);
 		else
 			return -1;
 	}
 
-	DWORD ParaZipWriter::ZipAddFolder( const char* dstzn )
+	DWORD ParaZipWriter::ZipAddFolder(const char* dstzn)
 	{
-		if(m_writer)
+		if (m_writer)
 			return m_writer->ZipAddFolder(dstzn);
 		else
 			return -1;
 	}
 
-	DWORD ParaZipWriter::AddDirectory( const char* dstzn, const char* filepattern, int nSubLevel/*=0*/ )
+	DWORD ParaZipWriter::AddDirectory(const char* dstzn, const char* filepattern, int nSubLevel/*=0*/)
 	{
-		if(m_writer)
+		if (m_writer)
 			return m_writer->AddDirectory(dstzn, filepattern, nSubLevel);
 		else
 			return -1;
@@ -1576,7 +1671,7 @@ namespace ParaScripting
 
 	DWORD ParaZipWriter::close()
 	{
-		if(m_writer)
+		if (m_writer)
 		{
 			m_writer.reset();
 			return 0;
@@ -1610,7 +1705,7 @@ namespace ParaScripting
 	comments and other definitions are ignored
 	*/
 #ifdef USE_TINYXML2
-	void ParaXML::LuaXML_ParseNode(lua_State *L, void* pNode_)
+	void ParaXML::LuaXML_ParseNode(lua_State* L, void* pNode_)
 	{
 		if (!pNode_) return;
 		using namespace tinyxml2;
@@ -1649,7 +1744,7 @@ namespace ParaScripting
 		}
 
 		// children
-		XMLNode *pChild = pNode->FirstChild();
+		XMLNode* pChild = pNode->FirstChild();
 		if (pChild) {
 			int iChildCount = 0;
 			for (; pChild; pChild = pChild->NextSibling())
@@ -1678,34 +1773,34 @@ namespace ParaScripting
 					lua_newtable(L);
 					{
 						// element name
-						lua_pushstring(L,"name");
-						lua_pushstring(L,"unknown");
-						lua_settable(L,-3);
+						lua_pushstring(L, "name");
+						lua_pushstring(L, "unknown");
+						lua_settable(L, -3);
 
 						// output value in child[1]
 						// convert UTF8 to ANSI.
 						//lua_pushstring(L,ParaEngine::StringHelper::UTF8ToAnsi(pChild->ValueStr().c_str()));
-						lua_pushstring(L,pChild->Value());
-						lua_rawseti(L,-2, 1);
+						lua_pushstring(L, pChild->Value());
+						lua_rawseti(L, -2, 1);
 #ifdef OUTPUT_XML_WITH_TABLE_N
 						// set n = 1
-						lua_pushstring(L,"n");
+						lua_pushstring(L, "n");
 						lua_pushnumber(L, 1);
-						lua_settable(L,-3);
+						lua_settable(L, -3);
 #endif
 					}
-					lua_rawseti(L,-2,++iChildCount);
+					lua_rawseti(L, -2, ++iChildCount);
 				}
 			}
 #ifdef OUTPUT_XML_WITH_TABLE_N
-			lua_pushstring(L,"n");
-			lua_pushnumber(L,iChildCount);
+			lua_pushstring(L, "n");
+			lua_pushnumber(L, iChildCount);
 			lua_settable(L, -3);
 #endif
 		}
 	}
 #else
-	void ParaXML::LuaXML_ParseNode (lua_State *L,void* pNode_) {
+	void ParaXML::LuaXML_ParseNode(lua_State* L, void* pNode_) {
 		if (!pNode_) return;
 
 		TiXmlNode* pNode = (TiXmlNode*)pNode_;
@@ -1717,47 +1812,47 @@ namespace ParaScripting
 		TiXmlElement* pElem = pNode->ToElement();
 		if (pElem) {
 			// element name
-			lua_pushstring(L,"name");
-			lua_pushstring(L,pElem->Value());
-			lua_settable(L,-3);
+			lua_pushstring(L, "name");
+			lua_pushstring(L, pElem->Value());
+			lua_settable(L, -3);
 			//lua_setfield(L,-2,"name");
 
 			// parse attributes
 			TiXmlAttribute* pAttr = pElem->FirstAttribute();
 			if (pAttr) {
-				lua_pushstring(L,"attr");
+				lua_pushstring(L, "attr");
 				lua_newtable(L);
-				for (;pAttr;pAttr = pAttr->Next()) {
-					lua_pushstring(L,pAttr->Name());
+				for (; pAttr; pAttr = pAttr->Next()) {
+					lua_pushstring(L, pAttr->Name());
 					// LXZ: convert UTF8 to ANSI.
 					//lua_pushstring(L,ParaEngine::StringHelper::UTF8ToAnsi(pAttr->ValueStr().c_str()));
-					lua_pushstring(L,pAttr->ValueStr().c_str());
+					lua_pushstring(L, pAttr->ValueStr().c_str());
 
 					//lua_setfield(L,-2,pAttr->Name());
-					lua_settable(L,-3);
+					lua_settable(L, -3);
 
 				}
 				//lua_setfield(L,-2,"attr");
-				lua_settable(L,-3);
+				lua_settable(L, -3);
 			}
 		}
 
 		// children
-		TiXmlNode *pChild = pNode->FirstChild();
+		TiXmlNode* pChild = pNode->FirstChild();
 		if (pChild) {
 			int iChildCount = 0;
-			for(;pChild;pChild = pChild->NextSibling()) {
+			for (; pChild; pChild = pChild->NextSibling()) {
 				switch (pChild->Type()) {
-					case TiXmlNode::DOCUMENT: break;
-					case TiXmlNode::ELEMENT:
-						// normal element, parse recursive
-						lua_newtable(L);
-						LuaXML_ParseNode(L,pChild);
-						lua_rawseti(L,-2,++iChildCount);
-						break;
-					case TiXmlNode::COMMENT: break;
-					case TiXmlNode::TEXT:
-						// plaintext, push raw
+				case TiXmlNode::DOCUMENT: break;
+				case TiXmlNode::ELEMENT:
+					// normal element, parse recursive
+					lua_newtable(L);
+					LuaXML_ParseNode(L, pChild);
+					lua_rawseti(L, -2, ++iChildCount);
+					break;
+				case TiXmlNode::COMMENT: break;
+				case TiXmlNode::TEXT:
+					// plaintext, push raw
 
 #ifdef _DEBUG
 						//{
@@ -1786,64 +1881,64 @@ namespace ParaScripting
 #endif
 						// LXZ: convert UTF8 to ANSI.
 						//lua_pushstring(L,ParaEngine::StringHelper::UTF8ToAnsi(pChild->ValueStr().c_str()));
-						lua_pushstring(L,pChild->ValueStr().c_str());
-						lua_rawseti(L,-2,++iChildCount);
-						break;
-					case TiXmlNode::DECLARATION: break;
-					case TiXmlNode::UNKNOWN:
-						{
-							// LiXizhi 2008.5.16
-							// this will handle all unknown tags inside <>, such as <!...> <?...> <%...%>
-							// it will return text inside <>, such as !..., ?..., %...
-							// the result is returned inside a NPL table {name="unknown", [1] = "value", n=1}
-							lua_newtable(L);
-							{
-								// element name
-								lua_pushstring(L,"name");
-								lua_pushstring(L,"unknown");
-								lua_settable(L,-3);
+					lua_pushstring(L, pChild->ValueStr().c_str());
+					lua_rawseti(L, -2, ++iChildCount);
+					break;
+				case TiXmlNode::DECLARATION: break;
+				case TiXmlNode::UNKNOWN:
+				{
+					// LiXizhi 2008.5.16
+					// this will handle all unknown tags inside <>, such as <!...> <?...> <%...%>
+					// it will return text inside <>, such as !..., ?..., %...
+					// the result is returned inside a NPL table {name="unknown", [1] = "value", n=1}
+					lua_newtable(L);
+					{
+						// element name
+						lua_pushstring(L, "name");
+						lua_pushstring(L, "unknown");
+						lua_settable(L, -3);
 
-								// output value in child[1]
-								// convert UTF8 to ANSI.
-								//lua_pushstring(L,ParaEngine::StringHelper::UTF8ToAnsi(pChild->ValueStr().c_str()));
-								lua_pushstring(L,pChild->ValueStr().c_str());
-								lua_rawseti(L,-2, 1);
+						// output value in child[1]
+						// convert UTF8 to ANSI.
+						//lua_pushstring(L,ParaEngine::StringHelper::UTF8ToAnsi(pChild->ValueStr().c_str()));
+						lua_pushstring(L, pChild->ValueStr().c_str());
+						lua_rawseti(L, -2, 1);
 #ifdef OUTPUT_XML_WITH_TABLE_N
-								// set n = 1
-								lua_pushstring(L,"n");
-								lua_pushnumber(L, 1);
-								lua_settable(L,-3);
+						// set n = 1
+						lua_pushstring(L, "n");
+						lua_pushnumber(L, 1);
+						lua_settable(L, -3);
 #endif
-							}
-							lua_rawseti(L,-2,++iChildCount);
-							break;
-						}
+					}
+					lua_rawseti(L, -2, ++iChildCount);
+					break;
+				}
 				};
 			}
 #ifdef OUTPUT_XML_WITH_TABLE_N
-			lua_pushstring(L,"n");
-			lua_pushnumber(L,iChildCount);
+			lua_pushstring(L, "n");
+			lua_pushnumber(L, iChildCount);
 			lua_settable(L, -3);
 #endif
 		}
 	}
 #endif
-	int ParaXML::LuaXML_ParseFile (lua_State *L) {
-		const char* sFileName = luaL_checkstring(L,1);
+	int ParaXML::LuaXML_ParseFile(lua_State* L) {
+		const char* sFileName = luaL_checkstring(L, 1);
 
 		int nResult = 0;
 
 		// assume it is UTF-8?, or use TIXML_DEFAULT_ENCODING if one want it to be automatically determined from data
 		CParaFile file;
 		file.OpenAssetFile(sFileName);
-		if(!file.isEof())
+		if (!file.isEof())
 		{
 			try
 			{
 				std::string sCode;
 				std::string* pData = &sCode;
 				std::string uncompressedData;
-				if((int)file.getSize()> 0)
+				if ((int)file.getSize() > 0)
 				{
 					sCode.resize((int)file.getSize());
 					file.read(&(sCode[0]), (int)file.getSize());
@@ -1865,7 +1960,7 @@ namespace ParaScripting
 				namespace TXML = tinyxml2;
 				TXML::XMLDocument doc(true, TXML::COLLAPSE_WHITESPACE);
 				doc.Parse(pData->c_str(), (int)pData->size());
-				if(doc.Error())
+				if (doc.Error())
 				{
 					OUTPUT_LOG("error: failed parsing xml file : %s. error %d msg:%s, %s \n", sFileName, (int)doc.ErrorID(), doc.GetErrorStr1(), doc.GetErrorStr2());
 					return nResult;
@@ -1875,7 +1970,7 @@ namespace ParaScripting
 				doc.Parse(pData->c_str(), 0, TIXML_ENCODING_UTF8);
 #endif
 				lua_newtable(L);
-				LuaXML_ParseNode(L,&doc);
+				LuaXML_ParseNode(L, &doc);
 				nResult = 1;
 			}
 			catch (...)
@@ -1886,7 +1981,7 @@ namespace ParaScripting
 		return nResult;
 	}
 
-	int ParaXML::LuaXML_ParseString (lua_State *L) {
+	int ParaXML::LuaXML_ParseString(lua_State* L) {
 		const char* sString = nullptr;
 		int len = -1;
 
@@ -1926,7 +2021,7 @@ namespace ParaScripting
 
 			// assume it is UTF-8?, or use TIXML_DEFAULT_ENCODING if one want it to be automatically determined from data
 			doc.Parse(sTemp.c_str(), -1);
-			if(doc.Error())
+			if (doc.Error())
 			{
 				OUTPUT_LOG("error: failed parsing xml string: %s. error %d msg:%s, %s \n", sString, (int)doc.ErrorID(), doc.GetErrorStr1(), doc.GetErrorStr2());
 				return nResult;
@@ -1934,10 +2029,10 @@ namespace ParaScripting
 #else
 			TiXmlDocument doc;
 			// assume it is UTF-8?, or use TIXML_DEFAULT_ENCODING if one want it to be automatically determined from data
-			doc.Parse(sString,0,TIXML_ENCODING_UTF8);
+			doc.Parse(sString, 0, TIXML_ENCODING_UTF8);
 #endif
 			lua_newtable(L);
-			LuaXML_ParseNode(L,&doc);
+			LuaXML_ParseNode(L, &doc);
 			nResult = 1;
 		}
 		catch (...)
@@ -1949,7 +2044,7 @@ namespace ParaScripting
 
 
 	static bool s_bIsWhiteSpaceCollapsed = true;
-	void ParaXML::SetCondenseWhiteSpace( bool condense )
+	void ParaXML::SetCondenseWhiteSpace(bool condense)
 	{
 #ifdef USE_TINYXML2
 		s_bIsWhiteSpaceCollapsed = condense;
@@ -1973,7 +2068,7 @@ namespace ParaScripting
 	//
 	//////////////////////////////////////////////////////////////////////////
 
-	void ParaFileSystemWatcher::AddDirectory( const char* filename )
+	void ParaFileSystemWatcher::AddDirectory(const char* filename)
 	{
 #if !defined(PARAENGINE_MOBILE) && !defined(EMSCRIPTEN)
 		if (m_watcher)
@@ -1981,7 +2076,7 @@ namespace ParaScripting
 #endif
 	}
 
-	void ParaFileSystemWatcher::RemoveDirectory( const char* filename )
+	void ParaFileSystemWatcher::RemoveDirectory(const char* filename)
 	{
 #if !defined(PARAENGINE_MOBILE) && !defined(EMSCRIPTEN)
 		if (m_watcher)
@@ -1993,7 +2088,7 @@ namespace ParaScripting
 	struct FileSystemWatcher_NPLCallback
 	{
 	public:
-		FileSystemWatcher_NPLCallback(const std::string& sCallback):m_sCallbackScript(sCallback){};
+		FileSystemWatcher_NPLCallback(const std::string& sCallback) :m_sCallbackScript(sCallback) {};
 
 		void operator()(const ParaEngine::CFileSystemWatcher::DirMonitorEvent& event)
 		{
@@ -2017,7 +2112,7 @@ namespace ParaScripting
 		std::string m_sCallbackScript;
 	};
 #endif
-	void ParaFileSystemWatcher::AddCallback( const char* sCallbackScript )
+	void ParaFileSystemWatcher::AddCallback(const char* sCallbackScript)
 	{
 #if !defined(PARAENGINE_MOBILE) && !defined(EMSCRIPTEN)
 		if (m_watcher)
@@ -2037,10 +2132,10 @@ namespace ParaScripting
 
 	}
 #else
-    ParaFileSystemWatcher::ParaFileSystemWatcher(CFileSystemWatcher* watcher) : m_watcher(watcher)
-    {
+	ParaFileSystemWatcher::ParaFileSystemWatcher(CFileSystemWatcher* watcher) : m_watcher(watcher)
+	{
 
-    }
+	}
 #endif
 
-	}//namespace ParaScripting
+}//namespace ParaScripting
