@@ -50,6 +50,11 @@ void ParaEngine::XFileDataObject::Init(XFileParser& parser, const std::string& o
 		if (!ReadXVertices(parser))
 			OUTPUT_LOG("error loading vertices");
 	}
+	else if (objectName == "XVoxels")
+	{
+		if (!ReadXVertices(parser))
+			OUTPUT_LOG("error loading voxels");
+	}
 	else if (objectName == "XTextures")
 	{
 		if (!ReadXTextures(parser))
@@ -716,6 +721,10 @@ void ParaEngine::XFileDataObject::WriteInfo(ofstream& strm, XFileExporter& expor
 	{
 		WriteXVertices(strm, exporter);
 	}
+	else if (m_sTemplateName == "XVoxels")
+	{
+		WriteXVertices(strm, exporter);
+	}
 	else if (m_sTemplateName == "XTextures")
 	{
 		WriteXTextures(strm, exporter);
@@ -795,7 +804,6 @@ void ParaEngine::XFileDataObject::WriteParaXHeader(ofstream& strm, XFileExporter
 
 void ParaEngine::XFileDataObject::WriteParaXBody(ofstream& strm, XFileExporter& exporter)
 {
-	// ParaXBody���Ӷ������CParaXModelWriter�б�������
 	/*for (int i = 0;i<GetChildCount();++i)
 	{
 	auto child = GetChild(i);
@@ -810,7 +818,7 @@ void ParaEngine::XFileDataObject::WriteXDWORDArray(ofstream& strm, XFileExporter
 	exporter.WriteInt(strm, nCount);
 
 	uint32* pData = (uint32*)(GetBuffer() + 4);
-	for (int i = 0; i<nCount; ++i)
+	for (int i = 0; i < nCount; ++i)
 	{
 		exporter.WriteInt(strm, *pData);
 		++pData;
@@ -836,7 +844,7 @@ void ParaEngine::XFileDataObject::WriteXTextures(ofstream& strm, XFileExporter& 
 	DWORD nCount = *((DWORD*)GetBuffer());
 	exporter.WriteInt(strm, nCount);
 	ModelTextureDef_* pData = (ModelTextureDef_ *)(GetBuffer() + 4);
-	for (DWORD i = 0; i<nCount; ++i)
+	for (DWORD i = 0; i < nCount; ++i)
 	{
 		ModelTextureDef_& data = *pData;
 		exporter.WriteInt(strm, data.type);

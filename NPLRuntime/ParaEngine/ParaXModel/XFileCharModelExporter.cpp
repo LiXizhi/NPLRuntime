@@ -1,5 +1,6 @@
 #include "ParaEngine.h"
 #include "XFileCharModelExporter.h"
+#include "ParaVoxelModel.h"
 #include "./ParaXSerializer.h"
 #include "Core/TextureEntity.h"
 #include "util/StringHelper.h"
@@ -43,7 +44,7 @@ bool ParaEngine::XFileCharModelExporter::Export(const string& filepath, CParaXMo
 #else
 	ofstream file(filepath, ios_base::binary);
 #endif
-
+	
 	if (file.is_open())
 	{
 		XFileCharModelExporter exporter(file, pMesh);
@@ -145,6 +146,14 @@ void ParaEngine::XFileCharModelExporter::InitTemplates()
 
 		stTemplate.clear();
 		stTemplate.Init("XVertices", UUID_XVertices);
+		stTemplate.members.push_back(XFileTemplateMember_t("nType", "DWORD"));
+		stTemplate.members.push_back(XFileTemplateMember_t("nVertexBytes", "DWORD"));
+		stTemplate.members.push_back(XFileTemplateMember_t("nVertices", "DWORD"));
+		stTemplate.members.push_back(XFileTemplateMember_t("ofsVertices", "DWORD"));
+		vec.push_back(stTemplate);
+
+		stTemplate.clear();
+		stTemplate.Init("XVoxels", UUID_XVoxels);
 		stTemplate.members.push_back(XFileTemplateMember_t("nType", "DWORD"));
 		stTemplate.members.push_back(XFileTemplateMember_t("nVertexBytes", "DWORD"));
 		stTemplate.members.push_back(XFileTemplateMember_t("nVertices", "DWORD"));
@@ -429,8 +438,8 @@ bool ParaEngine::XFileCharModelExporter::WriteParaXBody(XFileDataObjectPtr pData
 	pData->m_sTemplateName = "ParaXBody";
 	pData->m_sName = strName;
 
-	static vector<string> vecChildNames{ "XViews","XTextures","XAttachments","XVertices" ,"XIndices0" ,"XGeosets" ,"XRenderPass" ,"XBones" ,"XAnimations" ,
-		"XTransparency" ,"XTexAnims","XParticleEmitters","XRibbonEmitters","XColors","XCameras","XLights" };
+	static vector<string> vecChildNames{ "XViews","XTextures","XAttachments","XVertices", "XVoxels", "XIndices0" ,"XGeosets" ,"XRenderPass" ,"XBones" ,"XAnimations" ,
+		"XTransparency" ,"XTexAnims","XParticleEmitters","XRibbonEmitters","XColors","XCameras","XLights"};
 	for (string strChildName : vecChildNames)
 	{
 		XFileDataObjectPtr pChildData(new XFileDataObject());
@@ -459,96 +468,61 @@ bool ParaEngine::XFileCharModelExporter::WriteParaXRawData(XFileDataObjectPtr pD
 bool ParaEngine::XFileCharModelExporter::WriteParaXBodyChild(XFileDataObjectPtr pData, const string& strTemplateName, const string& strName /*= ""*/)
 {
 	if (strTemplateName == "XDWORDArray") {
-		// �ļ�����ʱ��û��"XGlobalSequences"�ڵ����ش����߼����ʴ˴�Ҳ��������
-		////XGlobalSequences
-		//// Get the frame name (if any)
-		//if (pSubData->GetName() == "XGlobalSequences") {
-		//	ReadXGlobalSequences(*pMesh, pSubData);
-		//}
+		
 	}
-	else if (strTemplateName == "XVertices") {//XVertices
+	else if (strTemplateName == "XVertices") {
 		WriteXVertices(pData, strName);
-		/*if (!ReadXVertices(*pMesh, pSubData))
-		OUTPUT_LOG("error loading vertices");*/
 	}
-	else if (strTemplateName == "XTextures") {//XTextures
+	else if (strTemplateName == "XTextures") {
 		WriteXTextures(pData, strName);
-		/*if (!ReadXTextures(*pMesh, pSubData))
-		OUTPUT_LOG("error loading XTextures");*/
 	}
-	else if (strTemplateName == "XAttachments") {//XAttachments
+	else if (strTemplateName == "XAttachments") {
 		WriteXAttachments(pData, strName);
-		/*if (!ReadXAttachments(*pMesh, pSubData))
-		OUTPUT_LOG("error loading XAttachments");*/
 	}
-	else if (strTemplateName == "XTransparency") {//XTransparency
+	else if (strTemplateName == "XTransparency") {
 		WriteXTransparency(pData, strName);
-		/*if (!ReadXTransparency(*pMesh, pSubData))
-		OUTPUT_LOG("error loading XTransparency");*/
 	}
-	else if (strTemplateName == "XViews") {//XViews
+	else if (strTemplateName == "XViews") {
 		WriteXViews(pData, strName);
-		/*if (!ReadXViews(*pMesh, pSubData))
-		OUTPUT_LOG("error loading XViews");*/
 	}
-	else if (strTemplateName == "XIndices0") {//XIndices0
+	else if (strTemplateName == "XIndices0") {
 		WriteXIndices0(pData, strName);
-		/*if (!ReadXIndices0(*pMesh, pSubData))
-		OUTPUT_LOG("error loading XIndices0");*/
 	}
-	else if (strTemplateName == "XGeosets") {//XGeosets
+	else if (strTemplateName == "XGeosets") {
 		WriteXGeosets(pData, strName);
-		/*if (!ReadXGeosets(*pMesh, pSubData))
-		OUTPUT_LOG("error loading XGeosets");*/
 	}
-	else if (strTemplateName == "XRenderPass") {//XRenderPass
+	else if (strTemplateName == "XRenderPass") {
 		WriteXRenderPass(pData, strName);
-		/*if (!ReadXRenderPass(*pMesh, pSubData))
-		OUTPUT_LOG("error loading XRenderPass");*/
 	}
-	else if (strTemplateName == "XBones") {//XBones
+	else if (strTemplateName == "XBones") {
 		WriteXBones(pData, strName);
-		/*if (!ReadXBones(*pMesh, pSubData))
-		OUTPUT_LOG("error loading XBones");*/
 	}
-	else if (strTemplateName == "XTexAnims") {//XTexAnims
+	else if (strTemplateName == "XTexAnims") {
 		WriteXTexAnims(pData, strName);
-		/*if (!ReadXTexAnims(*pMesh, pSubData))
-		OUTPUT_LOG("error loading XTexAnims");*/
 	}
-	else if (strTemplateName == "XParticleEmitters") {//XParticleEmitters
+	else if (strTemplateName == "XParticleEmitters") {
 		WriteXParticleEmitters(pData, strName);
-		/*if (!ReadXParticleEmitters(*pMesh, pSubData))
-		OUTPUT_LOG("error loading XParticleEmitters");*/
 	}
-	else if (strTemplateName == "XRibbonEmitters") {//XRibbonEmitters
+	else if (strTemplateName == "XRibbonEmitters") {
 		WriteXRibbonEmitters(pData, strName);
-		/*if (!ReadXRibbonEmitters(*pMesh, pSubData))
-		OUTPUT_LOG("error loading XRibbonEmitters");*/
 	}
-	else if (strTemplateName == "XColors") {//XColors
+	else if (strTemplateName == "XColors") {
 		WriteXColors(pData, strName);
-		/*if (!ReadXColors(*pMesh, pSubData))
-		OUTPUT_LOG("error loading XColors");*/
 	}
-	else if (strTemplateName == "XCameras") {//XCameras
+	else if (strTemplateName == "XCameras") {
 		WriteXCameras(pData, strName);
-		/*if (!ReadXCameras(*pMesh, pSubData))
-		OUTPUT_LOG("error loading XCameras");*/
 	}
 	else if (strTemplateName == "XLights")
 	{
-		//XLights
 		WriteXLights(pData, strName);
-		/*if (!ReadXLights(*pMesh, pSubData))
-		OUTPUT_LOG("error loading XLights");*/
 	}
 	else if (strTemplateName == "XAnimations")
 	{
-		//XAnimations
 		WriteXAnimations(pData, strName);
-		/*if (!ReadXAnimations(*pMesh, pSubData))
-		OUTPUT_LOG("error loading XAnimations");*/
+	}
+	else if (strTemplateName == "XVoxels")
+	{
+		WriteXVoxels(pData, strName);
 	}
 	return true;
 }
@@ -564,7 +538,7 @@ bool ParaEngine::XFileCharModelExporter::WriteXGlobalSequences(XFileDataObjectPt
 		int nSize = 4 + nGlobalSequences * sizeof(DWORD);
 		pData->ResizeBuffer(nSize);
 		*(DWORD*)(pData->GetBuffer()) = (DWORD)nGlobalSequences;
-		unsigned char *bytes = (unsigned char*)(pData->GetBuffer() + 4);
+		unsigned char* bytes = (unsigned char*)(pData->GetBuffer() + 4);
 		memcpy(pData->GetBuffer() + 4, m_pMesh->globalSequences, nSize - 4);
 	}
 	return true;
@@ -585,11 +559,36 @@ bool ParaEngine::XFileCharModelExporter::WriteXVertices(XFileDataObjectPtr pData
 	data.nVertexBytes = sizeof(ModelVertex);
 	data.nVertices = nVertices;
 
-	// m_pRaw��Ϣ���
 	data.ofsVertices = m_pRawData->AddRawData((const DWORD*)m_pMesh->m_origVertices, data.nVertices*data.nVertexBytes / 4);
 
 	memcpy(pData->GetBuffer(), &data, nSize);
 	return true;
+}
+
+
+bool ParaEngine::XFileCharModelExporter::WriteXVoxels(XFileDataObjectPtr pData, const string& strName)
+{
+	if (m_pMesh->m_pVoxelModel)
+	{
+		std::vector<char> output;
+		if (m_pMesh->m_pVoxelModel->Save(output))
+		{
+			pData->m_sTemplateName = "XVoxels";
+			pData->m_sName = strName;
+
+			int nSize = sizeof(XVerticesDef);
+			pData->ResizeBuffer(nSize);
+
+			XVerticesDef data;
+			data.nType = 1; // 1 for XVoxels
+			data.nVertexBytes = 1;
+			data.nVertices = (DWORD)output.size(); // byte count
+			data.ofsVertices = m_pRawData->AddRawData((const char*)(&output[0]), data.nVertices);
+			memcpy(pData->GetBuffer(), &data, nSize);
+			return true;
+		}
+	}
+	return false;
 }
 
 bool ParaEngine::XFileCharModelExporter::WriteXTextures(XFileDataObjectPtr pData, const string& strName /*= ""*/)
