@@ -10,6 +10,7 @@
 #include "ParaWorldAsset.h"
 #include "ParaXModel.h"
 #include "ParaXBone.h"
+#include "ParaVoxelModel.h"
 #include "particle.h"
 #include "XFileParsing.inl"
 #include "XFileHelper.h"
@@ -141,7 +142,7 @@ CParaXModel* ParaEngine::XFileCharModelParser::LoadParaX_Body()
 					const std::string& Type = pSubData->GetType();
 					// Get the template type
 					if (Type == "XDWORDArray") {//XGlobalSequences
-												// Get the frame name (if any)
+						// Get the frame name (if any)
 						if (pSubData->GetName() == "XGlobalSequences") {
 							ReadXGlobalSequences(*pMesh, pSubData);
 						}
@@ -210,6 +211,10 @@ CParaXModel* ParaEngine::XFileCharModelParser::LoadParaX_Body()
 						if (!ReadXAnimations(*pMesh, pSubData))
 							OUTPUT_LOG("error loading XAnimations");
 					}
+					else if (Type == "XVoxels") {
+						if (!ReadXVoxels(*pMesh, pSubData))
+							OUTPUT_LOG("error loading XAnimations");
+					}
 				}
 				pSubData.reset();
 			}
@@ -222,7 +227,7 @@ CParaXModel* ParaEngine::XFileCharModelParser::LoadParaX_Body()
 			// optimize to see if any pass contains rigid body. For rigid body we will render without skinning, thus saving lots of CPU cycles. 
 			// TODO: move this to ParaX Exporter instead. 
 			{
-				uint16 * indices = pMesh->m_indices;
+				uint16* indices = pMesh->m_indices;
 				int nRenderPasses = (int)pMesh->passes.size();
 				for (int j = 0; j < nRenderPasses; ++j)
 				{
@@ -232,8 +237,8 @@ CParaXModel* ParaEngine::XFileCharModelParser::LoadParaX_Body()
 					{
 						bool bIsRigidBody = true;
 						int nVertexOffset = p.GetVertexStart(pMesh);
-						ModelVertex * origVertices = pMesh->m_origVertices;
-						ModelVertex * ov = NULL;
+						ModelVertex* origVertices = pMesh->m_origVertices;
+						ModelVertex* ov = NULL;
 						uint8 nLastBoneIndex = origVertices[indices[p.m_nIndexStart] + nVertexOffset].bones[0];
 
 						int nIndexOffset = p.m_nIndexStart;
@@ -373,7 +378,7 @@ DEFINE_ReadAnimationBlock(Animated<Quaternion>, Quaternion);
 bool XFileCharModelParser::ReadParaXHeader(ParaXHeaderDef& xheader, XFileDataObjectPtr pFileData)
 {
 	DWORD       dwSize;
-	const char       *pBuffer;
+	const char* pBuffer;
 	// Get the template data
 	if ((pFileData->Lock(&dwSize, (&pBuffer))))
 	{
@@ -387,7 +392,7 @@ bool XFileCharModelParser::ReadParaXHeader(ParaXHeaderDef& xheader, XFileDataObj
 bool XFileCharModelParser::ReadXGlobalSequences(CParaXModel& xmesh, XFileDataObjectPtr pFileData)
 {
 	DWORD       dwSize;
-	const char       *pBuffer = NULL;
+	const char* pBuffer = NULL;
 	// Get the template data
 	if ((pFileData->Lock(&dwSize, (&pBuffer))))
 	{
@@ -408,7 +413,7 @@ bool XFileCharModelParser::ReadXGlobalSequences(CParaXModel& xmesh, XFileDataObj
 bool XFileCharModelParser::ReadXVertices(CParaXModel& xmesh, XFileDataObjectPtr pFileData)
 {
 	DWORD       dwSize;
-	const char       *pBuffer = NULL;
+	const char* pBuffer = NULL;
 	// Get the template data
 	if ((pFileData->Lock(&dwSize, (&pBuffer))))
 	{
@@ -424,7 +429,7 @@ bool XFileCharModelParser::ReadXVertices(CParaXModel& xmesh, XFileDataObjectPtr 
 bool XFileCharModelParser::ReadXTextures(CParaXModel& xmesh, XFileDataObjectPtr pFileData)
 {
 	DWORD       dwSize;
-	const char       *pBuffer = NULL;
+	const char* pBuffer = NULL;
 	// Get the template data
 
 	if ((pFileData->Lock(&dwSize, (&pBuffer))))
@@ -503,11 +508,11 @@ bool XFileCharModelParser::ReadXTextures(CParaXModel& xmesh, XFileDataObjectPtr 
 						xmesh.textures[i] = CGlobals::GetAssetManager()->LoadTexture("", sFilename.c_str(), TextureEntity::StaticTexture);
 					}
 
-					pTex = (ModelTextureDef_*)(((byte*)pTex) + 8 + sFilename.size() + 1);
+					pTex = (ModelTextureDef_*)(((unsigned char*)pTex) + 8 + sFilename.size() + 1);
 				}
 				else
 				{
-					pTex = (ModelTextureDef_*)(((byte*)pTex) + 8 + 1);
+					pTex = (ModelTextureDef_*)(((unsigned char*)pTex) + 8 + 1);
 					xmesh.textures[i].reset();
 				}
 			}
@@ -522,7 +527,7 @@ bool XFileCharModelParser::ReadXTextures(CParaXModel& xmesh, XFileDataObjectPtr 
 bool XFileCharModelParser::ReadXAttachments(CParaXModel& xmesh, XFileDataObjectPtr pFileData)
 {
 	DWORD       dwSize;
-	const char       *pBuffer = NULL;
+	const char* pBuffer = NULL;
 	// Get the template data
 	if ((pFileData->Lock(&dwSize, (&pBuffer))))
 	{
@@ -539,8 +544,8 @@ bool XFileCharModelParser::ReadXAttachments(CParaXModel& xmesh, XFileDataObjectP
 		xmesh.m_objNum.nAttachments = nAttachments;
 		xmesh.m_objNum.nAttachLookup = nAttachmentLookup;
 
-		ModelAttachmentDef *attachments = (ModelAttachmentDef *)(pBuffer + 8);
-		int32 * attLookup = (int32 *)(pBuffer + 8 + sizeof(ModelAttachmentDef)*nAttachments);
+		ModelAttachmentDef* attachments = (ModelAttachmentDef*)(pBuffer + 8);
+		int32* attLookup = (int32*)(pBuffer + 8 + sizeof(ModelAttachmentDef) * nAttachments);
 
 		// attachments
 		xmesh.m_atts.reserve(nAttachments);
@@ -567,7 +572,7 @@ bool XFileCharModelParser::ReadXAttachments(CParaXModel& xmesh, XFileDataObjectP
 bool XFileCharModelParser::ReadXColors(CParaXModel& xmesh, XFileDataObjectPtr pFileData)
 {
 	DWORD       dwSize;
-	const char       *pBuffer = NULL;
+	const char* pBuffer = NULL;
 	// Get the template data
 	if ((pFileData->Lock(&dwSize, (&pBuffer))))
 	{
@@ -579,7 +584,7 @@ bool XFileCharModelParser::ReadXColors(CParaXModel& xmesh, XFileDataObjectPtr pF
 		xmesh.m_objNum.nColors = nColors;
 		if (nColors > 0)
 		{ // at least one Bone
-			ModelColorDef *colorDefs = (ModelColorDef*)(pBuffer + 4);
+			ModelColorDef* colorDefs = (ModelColorDef*)(pBuffer + 4);
 			xmesh.colors = new ModelColor[nColors];
 			for (int i = 0; i < nColors; ++i)
 			{
@@ -598,7 +603,7 @@ bool XFileCharModelParser::ReadXColors(CParaXModel& xmesh, XFileDataObjectPtr pF
 bool XFileCharModelParser::ReadXTransparency(CParaXModel& xmesh, XFileDataObjectPtr pFileData)
 {
 	DWORD       dwSize;
-	const char       *pBuffer = NULL;
+	const char* pBuffer = NULL;
 	// Get the template data
 	if ((pFileData->Lock(&dwSize, (&pBuffer))))
 	{
@@ -610,7 +615,7 @@ bool XFileCharModelParser::ReadXTransparency(CParaXModel& xmesh, XFileDataObject
 		xmesh.m_objNum.nTransparency = nTransparency;
 		if (nTransparency > 0)
 		{ // at least one item
-			ModelTransDef *transDefs = (ModelTransDef*)(pBuffer + 4);
+			ModelTransDef* transDefs = (ModelTransDef*)(pBuffer + 4);
 			xmesh.transparency = new ModelTransparency[nTransparency];
 			for (int i = 0; i < nTransparency; ++i)
 			{
@@ -634,7 +639,7 @@ bool XFileCharModelParser::ReadXViews(CParaXModel& xmesh, XFileDataObjectPtr pFi
 bool XFileCharModelParser::ReadXIndices0(CParaXModel& xmesh, XFileDataObjectPtr pFileData)
 {
 	DWORD       dwSize;
-	const char       *pBuffer = NULL;
+	const char* pBuffer = NULL;
 	// Get the template data
 	if ((pFileData->Lock(&dwSize, (&pBuffer))))
 	{
@@ -649,7 +654,7 @@ bool XFileCharModelParser::ReadXIndices0(CParaXModel& xmesh, XFileDataObjectPtr 
 bool XFileCharModelParser::ReadXGeosets(CParaXModel& xmesh, XFileDataObjectPtr pFileData)
 {
 	DWORD       dwSize;
-	const char       *pBuffer = NULL;
+	const char* pBuffer = NULL;
 	// Get the template data
 	if ((pFileData->Lock(&dwSize, (&pBuffer))))
 	{
@@ -666,7 +671,7 @@ bool XFileCharModelParser::ReadXGeosets(CParaXModel& xmesh, XFileDataObjectPtr p
 		xmesh.geosets.resize(nGeosets);
 		if (nGeosets > 0)
 		{
-			memcpy(&xmesh.geosets[0], pGeosets, sizeof(ModelGeoset)*nGeosets);
+			memcpy(&xmesh.geosets[0], pGeosets, sizeof(ModelGeoset) * nGeosets);
 			if (xmesh.CheckMinVersion(1, 0, 0, 1))
 			{
 				/* since Intel is little endian.
@@ -694,7 +699,7 @@ bool XFileCharModelParser::ReadXGeosets(CParaXModel& xmesh, XFileDataObjectPtr p
 bool XFileCharModelParser::ReadXRenderPass(CParaXModel& xmesh, XFileDataObjectPtr pFileData)
 {
 	DWORD       dwSize;
-	const char       *pBuffer = NULL;
+	const char* pBuffer = NULL;
 	// Get the template data
 	if ((pFileData->Lock(&dwSize, (&pBuffer))))
 	{
@@ -708,7 +713,7 @@ bool XFileCharModelParser::ReadXRenderPass(CParaXModel& xmesh, XFileDataObjectPt
 		xmesh.passes.resize(nRenderPasses);
 		if (nRenderPasses > 0)
 		{
-			memcpy(&xmesh.passes[0], passes, sizeof(ModelRenderPass)*nRenderPasses);
+			memcpy(&xmesh.passes[0], passes, sizeof(ModelRenderPass) * nRenderPasses);
 
 			// for opaque faces, always enable culling.
 			for (int i = 0; i < nRenderPasses; ++i)
@@ -738,7 +743,7 @@ bool XFileCharModelParser::ReadXRenderPass(CParaXModel& xmesh, XFileDataObjectPt
 bool XFileCharModelParser::ReadXBones(CParaXModel& xmesh, XFileDataObjectPtr pFileData)
 {
 	DWORD       dwSize;
-	const char       *pBuffer = NULL;
+	const char* pBuffer = NULL;
 	// Get the template data
 	if ((pFileData->Lock(&dwSize, (&pBuffer))))
 	{
@@ -752,14 +757,14 @@ bool XFileCharModelParser::ReadXBones(CParaXModel& xmesh, XFileDataObjectPtr pFi
 		{ // at least one Bone
 			xmesh.bones = new Bone[nBones];
 
-			ModelBoneDef *mb = (ModelBoneDef*)(pBuffer + 4);
+			ModelBoneDef* mb = (ModelBoneDef*)(pBuffer + 4);
 
 
 
 			for (int i = 0; i < nBones; ++i)
 			{
 				Bone& bone = xmesh.bones[i];
-				const ModelBoneDef&b = mb[i];
+				const ModelBoneDef& b = mb[i];
 				bone.parent = b.parent;
 				bone.flags = b.flags;
 				if ((bone.flags & 0x80000000) != 0)
@@ -812,7 +817,7 @@ bool XFileCharModelParser::ReadXBones(CParaXModel& xmesh, XFileDataObjectPtr pFi
 bool XFileCharModelParser::ReadXTexAnims(CParaXModel& xmesh, XFileDataObjectPtr pFileData)
 {
 	DWORD       dwSize;
-	const char       *pBuffer = NULL;
+	const char* pBuffer = NULL;
 	// Get the template data
 	if ((pFileData->Lock(&dwSize, (&pBuffer))))
 	{
@@ -824,12 +829,12 @@ bool XFileCharModelParser::ReadXTexAnims(CParaXModel& xmesh, XFileDataObjectPtr 
 		xmesh.m_objNum.nTexAnims = nTexAnims;
 		if (nTexAnims > 0)
 		{ // at least one Bone
-			ModelTexAnimDef *texanims = (ModelTexAnimDef*)(pBuffer + 4);
+			ModelTexAnimDef* texanims = (ModelTexAnimDef*)(pBuffer + 4);
 			xmesh.texanims = new TextureAnim[nTexAnims];
 			for (int i = 0; i < nTexAnims; ++i)
 			{
 				TextureAnim& TexAnim = xmesh.texanims[i];
-				const ModelTexAnimDef &texanim = texanims[i];
+				const ModelTexAnimDef& texanim = texanims[i];
 				ReadAnimationBlock(&texanim.trans, TexAnim.trans, xmesh.globalSequences);
 				ReadAnimationBlock(&texanim.rot, TexAnim.rot, xmesh.globalSequences);
 				ReadAnimationBlock(&texanim.scale, TexAnim.scale, xmesh.globalSequences);
@@ -845,7 +850,7 @@ bool XFileCharModelParser::ReadXTexAnims(CParaXModel& xmesh, XFileDataObjectPtr 
 bool XFileCharModelParser::ReadXParticleEmitters(CParaXModel& xmesh, XFileDataObjectPtr pFileData)
 {
 	DWORD       dwSize;
-	const char       *pBuffer = NULL;
+	const char* pBuffer = NULL;
 	// Get the template data
 	if ((pFileData->Lock(&dwSize, (&pBuffer))))
 	{
@@ -858,12 +863,12 @@ bool XFileCharModelParser::ReadXParticleEmitters(CParaXModel& xmesh, XFileDataOb
 		xmesh.m_objNum.nParticleEmitters = nParticleEmitters;
 		if (nParticleEmitters > 0)
 		{ // at least one item
-			ModelParticleEmitterDef *particleSystems = (ModelParticleEmitterDef*)(pBuffer + 4);
+			ModelParticleEmitterDef* particleSystems = (ModelParticleEmitterDef*)(pBuffer + 4);
 			xmesh.particleSystems = new ParticleSystem[nParticleEmitters];
 			for (int i = 0; i < nParticleEmitters; ++i)
 			{
 				ParticleSystem& ps = xmesh.particleSystems[i];
-				const ModelParticleEmitterDef & PSDef = particleSystems[i];
+				const ModelParticleEmitterDef& PSDef = particleSystems[i];
 				ps.model = &xmesh;
 
 				if (xmesh.rotatePartice2SpeedVector)
@@ -925,7 +930,7 @@ bool XFileCharModelParser::ReadXParticleEmitters(CParaXModel& xmesh, XFileDataOb
 bool XFileCharModelParser::ReadXRibbonEmitters(CParaXModel& xmesh, XFileDataObjectPtr pFileData)
 {
 	DWORD       dwSize;
-	const char       *pBuffer = NULL;
+	const char* pBuffer = NULL;
 	// Get the template data
 	if ((pFileData->Lock(&dwSize, (&pBuffer))))
 	{
@@ -937,13 +942,13 @@ bool XFileCharModelParser::ReadXRibbonEmitters(CParaXModel& xmesh, XFileDataObje
 		xmesh.m_objNum.nRibbonEmitters = nRibbonEmitters;
 		if (nRibbonEmitters > 0)
 		{ // at least one item
-			ModelRibbonEmitterDef *ribbons = (ModelRibbonEmitterDef*)(pBuffer + 4);
+			ModelRibbonEmitterDef* ribbons = (ModelRibbonEmitterDef*)(pBuffer + 4);
 			xmesh.ribbons = new RibbonEmitter[nRibbonEmitters];
 
 			for (int i = 0; i < nRibbonEmitters; ++i)
 			{
 				RibbonEmitter& emitter = xmesh.ribbons[i];
-				const ModelRibbonEmitterDef & emitterDef = ribbons[i];
+				const ModelRibbonEmitterDef& emitterDef = ribbons[i];
 				emitter.model = &xmesh;
 
 				emitter.pos = emitterDef.pos;
@@ -974,7 +979,7 @@ bool XFileCharModelParser::ReadXRibbonEmitters(CParaXModel& xmesh, XFileDataObje
 bool XFileCharModelParser::ReadXCameras(CParaXModel& xmesh, XFileDataObjectPtr pFileData)
 {
 	DWORD       dwSize;
-	const char       *pBuffer = NULL;
+	const char* pBuffer = NULL;
 	// Get the template data
 	if ((pFileData->Lock(&dwSize, (&pBuffer))))
 	{
@@ -986,7 +991,7 @@ bool XFileCharModelParser::ReadXCameras(CParaXModel& xmesh, XFileDataObjectPtr p
 		xmesh.m_objNum.nCameras = nCameras;
 		if (nCameras > 0)
 		{ // at least one item
-			ModelCameraDef *cameras = (ModelCameraDef*)(pBuffer + 4);
+			ModelCameraDef* cameras = (ModelCameraDef*)(pBuffer + 4);
 			int i = 0;
 			{
 				ModelCamera& camera = xmesh.cam; // just one camera
@@ -1015,7 +1020,7 @@ bool XFileCharModelParser::ReadXCameras(CParaXModel& xmesh, XFileDataObjectPtr p
 bool XFileCharModelParser::ReadXLights(CParaXModel& xmesh, XFileDataObjectPtr pFileData)
 {
 	DWORD       dwSize;
-	const char       *pBuffer = NULL;
+	const char* pBuffer = NULL;
 	// Get the template data
 	if ((pFileData->Lock(&dwSize, (&pBuffer))))
 	{
@@ -1027,12 +1032,12 @@ bool XFileCharModelParser::ReadXLights(CParaXModel& xmesh, XFileDataObjectPtr pF
 		xmesh.m_objNum.nLights = nLights;
 		if (nLights > 0)
 		{ // at least one item
-			ModelLightDef *lights = (ModelLightDef*)(pBuffer + 4);
+			ModelLightDef* lights = (ModelLightDef*)(pBuffer + 4);
 			xmesh.lights = new ModelLight[nLights];
 			for (int i = 0; i < nLights; ++i)
 			{
 				ModelLight& light = xmesh.lights[i];
-				const ModelLightDef & lightDef = lights[i];
+				const ModelLightDef& lightDef = lights[i];
 
 				light.pos = lightDef.pos;
 				light.type = lightDef.type;
@@ -1055,7 +1060,7 @@ bool XFileCharModelParser::ReadXLights(CParaXModel& xmesh, XFileDataObjectPtr pF
 bool XFileCharModelParser::ReadXAnimations(CParaXModel& xmesh, XFileDataObjectPtr pFileData)
 {
 	DWORD       dwSize;
-	const char       *pBuffer = NULL;
+	const char* pBuffer = NULL;
 	// Get the template data
 	if ((pFileData->Lock(&dwSize, (&pBuffer))))
 	{
@@ -1066,10 +1071,31 @@ bool XFileCharModelParser::ReadXAnimations(CParaXModel& xmesh, XFileDataObjectPt
 
 		xmesh.m_objNum.nAnimations = nAnimations;
 
-		ModelAnimation *anims = (ModelAnimation *)(pBuffer + 4);
+		ModelAnimation* anims = (ModelAnimation*)(pBuffer + 4);
 		xmesh.anims = new ModelAnimation[nAnimations];
 		if (xmesh.anims) {
-			memcpy(xmesh.anims, anims, sizeof(ModelAnimation)*nAnimations);
+			memcpy(xmesh.anims, anims, sizeof(ModelAnimation) * nAnimations);
+		}
+	}
+	else
+		return false;
+	return true;
+}
+
+bool ParaEngine::XFileCharModelParser::ReadXVoxels(CParaXModel& xmesh, XFileDataObjectPtr pFileData)
+{
+	DWORD       dwSize;
+	const char* pBuffer = NULL;
+	// Get the template data
+	if ((pFileData->Lock(&dwSize, (&pBuffer))))
+	{
+		XVerticesDef* pXVert = (XVerticesDef*)pBuffer;
+		auto nByteCount = pXVert->nVertices;
+		auto pData = GetRawData(pXVert->ofsVertices);
+		auto pVoxelMesh = xmesh.CreateGetVoxelModel();
+		if (pVoxelMesh) 
+		{
+			pVoxelMesh->Load(pData, nByteCount);
 		}
 	}
 	else

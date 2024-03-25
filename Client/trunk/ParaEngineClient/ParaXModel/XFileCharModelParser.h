@@ -59,6 +59,7 @@ namespace ParaEngine
 		bool ReadXCameras(CParaXModel& xmesh, XFileDataObjectPtr pFileData);
 		bool ReadXLights(CParaXModel& xmesh, XFileDataObjectPtr pFileData);
 		bool ReadXAnimations(CParaXModel& xmesh, XFileDataObjectPtr pFileData);
+		bool ReadXVoxels(CParaXModel& xmesh, XFileDataObjectPtr pFileData);
 
 
 		/** read animation block to Animated<> struct

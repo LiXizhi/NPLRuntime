@@ -50,6 +50,11 @@ void ParaEngine::XFileDataObject::Init(XFileParser& parser, const std::string& o
 		if (!ReadXVertices(parser))
 			OUTPUT_LOG("error loading vertices");
 	}
+	else if (objectName == "XVoxels")
+	{
+		if (!ReadXVertices(parser))
+			OUTPUT_LOG("error loading voxels");
+	}
 	else if (objectName == "XTextures")
 	{
 		if (!ReadXTextures(parser))
@@ -299,7 +304,7 @@ bool XFileDataObject::ReadXTextures(XFileParser& parser)
 		{
 			memcpy(&(data.name), name.c_str(), name.size() + 1);
 		}
-		pData = (ModelTextureDef_*)(((byte*)pData) + 8 + name.size() + 1);
+		pData = (ModelTextureDef_*)(((unsigned char*)pData) + 8 + name.size() + 1);
 	}
 	ResizeBuffer((int)(((char*)pData) - GetBuffer()));
 	parser.ReadToEndOfDataObject();
@@ -716,6 +721,10 @@ void ParaEngine::XFileDataObject::WriteInfo(ofstream& strm, XFileExporter& expor
 	{
 		WriteXVertices(strm, exporter);
 	}
+	else if (m_sTemplateName == "XVoxels")
+	{
+		WriteXVertices(strm, exporter);
+	}
 	else if (m_sTemplateName == "XTextures")
 	{
 		WriteXTextures(strm, exporter);
@@ -795,7 +804,6 @@ void ParaEngine::XFileDataObject::WriteParaXHeader(ofstream& strm, XFileExporter
 
 void ParaEngine::XFileDataObject::WriteParaXBody(ofstream& strm, XFileExporter& exporter)
 {
-	// ParaXBody的子对象会在CParaXModelWriter中遍历导出
 	/*for (int i = 0;i<GetChildCount();++i)
 	{
 	auto child = GetChild(i);

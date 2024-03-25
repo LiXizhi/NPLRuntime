@@ -12,7 +12,9 @@
 #include "ParaXModel/ParaXModel.h"
 #include "ParaXModel/particle.h"
 #include "ParaXModel/ParaXBone.h"
+#include "ParaXModel/ParaVoxelModel.h"
 #include "ParaXModel/XFileCharModelExporter.h"
+
 #include "ParaXSerializer.h"
 #ifdef USE_DIRECTX_RENDERER
 // for ParaEngine x file template registration
@@ -216,13 +218,13 @@ bool CParaXSerializer::WriteXRawBytes(const CParaXModel& xmesh, LPFileSaveObject
 	int nDWORD = nCount/4+1;
 	if(nDWORD>0 )
 	{
-		byte* pData = 0;
+		unsigned char* pData = 0;
 		int nSize = 4+nDWORD*4;
-		pData = new byte[nSize];
+		pData = new unsigned char[nSize];
 		if(pData==0)
 			return false;
 		*(DWORD*)(pData) = (DWORD)nDWORD;
-		byte *bytes = (byte*)(pData+4);
+		unsigned char *bytes = (unsigned char*)(pData+4);
 		memcpy(bytes, m_rawdata.GetBuffer(), nCount);
 
 		LPFileSaveData pDataNode;
@@ -561,13 +563,13 @@ bool CParaXSerializer::WriteXGlobalSequences(const CParaXModel& xmesh, LPFileSav
 	int nGlobalSequences = xmesh.GetObjectNum().nGlobalSequences;
 	if(nGlobalSequences>0 )
 	{
-		byte* pData = 0;
+		unsigned char* pData = 0;
 		int nSize = 4+nGlobalSequences*sizeof(DWORD);
-		pData = new byte[nSize];
+		pData = new unsigned char[nSize];
 		if(pData==0)
 			return false;
 		*(DWORD*)(pData) = (DWORD)nGlobalSequences;
-		byte *bytes = (byte*)(pData+4);
+		unsigned char *bytes = (unsigned char*)(pData+4);
 		memcpy(bytes, xmesh.globalSequences, nSize-4);
 
 		LPFileSaveData pDataNode;
@@ -637,13 +639,32 @@ bool CParaXSerializer::ReadXVertices(CParaXModel& xmesh, LPFileData pFileData)
 	return true;
 }
 
+bool CParaXSerializer::ReadXVoxels(CParaXModel& xmesh, LPFileData pFileData)
+{
+	SIZE_T       dwSize;
+	const char* pBuffer = NULL;
+	// Get the template data
+	if (SUCCEEDED(pFileData->Lock(&dwSize, (LPCVOID*)(&pBuffer))))
+	{
+		XVerticesDef* pXVert = (XVerticesDef*)pBuffer;
+		auto pVoxelMesh = xmesh.CreateGetVoxelModel();
+		if (pVoxelMesh)
+		{
+			pVoxelMesh->Load((const char*)GetRawData(pXVert->ofsVertices), pXVert->nVertices);
+		}
+	}
+	else
+		return false;
+	return true;
+}
+
 bool CParaXSerializer::WriteXTextures(const CParaXModel& xmesh, LPFileSaveData pFileData)
 {
 	int nTextures = xmesh.GetObjectNum().nTextures;
 	if(nTextures)
 	{
 		int nSize = 500*nTextures;
-		byte* pData = new byte[nSize];
+		unsigned char* pData = new unsigned char[nSize];
 		if(pData==0)
 			return false;
 		*(DWORD*)(pData) = nTextures;
@@ -749,11 +770,11 @@ bool CParaXSerializer::ReadXTextures(CParaXModel& xmesh, LPFileData pFileData)
 						xmesh.textures[i] = CGlobals::GetAssetManager()->LoadTexture("", sFilename.c_str(), TextureEntity::StaticTexture);
 					}
 
-					pTex = (ModelTextureDef_*)(((byte*)pTex) + 8 + sFilename.size() + 1);
+					pTex = (ModelTextureDef_*)(((unsigned char*)pTex) + 8 + sFilename.size() + 1);
 				}
 				else
 				{
-					pTex = (ModelTextureDef_*)(((byte*)pTex) + 8 + 1);
+					pTex = (ModelTextureDef_*)(((unsigned char*)pTex) + 8 + 1);
 					xmesh.textures[i].reset();
 				}
 			}
@@ -770,9 +791,9 @@ bool CParaXSerializer::WriteXAttachments(const CParaXModel& xmesh, LPFileSaveDat
 	int nAttachmentLookup = xmesh.GetObjectNum().nAttachLookup;
 	if(nAttachments>0 || nAttachmentLookup>0 )
 	{
-		byte* pData = 0;
+		unsigned char* pData = 0;
 		int nSize = 8+sizeof(ModelAttachmentDef)*nAttachments+4*nAttachmentLookup;
-		pData = new byte[nSize];
+		pData = new unsigned char[nSize];
 		if(pData==0)
 			return false;
 		*(DWORD*)(pData) = (DWORD)nAttachments;
@@ -845,9 +866,9 @@ bool CParaXSerializer::WriteXColors(const CParaXModel& xmesh, LPFileSaveData pFi
 	int nColors = xmesh.GetObjectNum().nColors;
 	if(nColors>0 )
 	{
-		byte* pData = 0;
+		unsigned char* pData = 0;
 		int nSize = 4+sizeof(ModelColorDef)*nColors;
-		pData = new byte[nSize];
+		pData = new unsigned char[nSize];
 		if(pData==0)
 			return false;
 		*(DWORD*)(pData) = (DWORD)nColors;
@@ -900,9 +921,9 @@ bool CParaXSerializer::WriteXTransparency(const CParaXModel& xmesh, LPFileSaveDa
 	int nTransparency = xmesh.GetObjectNum().nTransparency;
 	if(nTransparency>0 )
 	{
-		byte* pData = 0;
+		unsigned char* pData = 0;
 		int nSize = 4+sizeof(ModelTransDef)*nTransparency;
-		pData = new byte[nSize];
+		pData = new unsigned char[nSize];
 		if(pData==0)
 			return false;
 		*(DWORD*)(pData) = (DWORD)nTransparency;
@@ -954,9 +975,9 @@ bool CParaXSerializer::WriteXViews(const CParaXModel& xmesh, LPFileSaveData pFil
 	// there is only one view
 	int nView = 1;
 	{
-		byte* pData = 0;
+		unsigned char* pData = 0;
 		int nSize = 4+sizeof(ModelView)*nView;
-		pData = new byte[nSize];
+		pData = new unsigned char[nSize];
 		if(pData==0)
 			return false;
 		*(DWORD*)(pData) = (DWORD)nView;
@@ -1027,9 +1048,9 @@ bool CParaXSerializer::WriteXGeosets(const CParaXModel& xmesh, LPFileSaveData pF
 	int nGeosets = (int)xmesh.geosets.size();
 	if(nGeosets>0 )
 	{
-		byte* pData = 0;
+		unsigned char* pData = 0;
 		int nSize = 4+sizeof(ModelGeoset)*nGeosets;
-		pData = new byte[nSize];
+		pData = new unsigned char[nSize];
 		if(pData==0)
 			return false;
 		*(DWORD*)(pData) = (DWORD)nGeosets;
@@ -1093,9 +1114,9 @@ bool CParaXSerializer::WriteXRenderPass(const CParaXModel& xmesh, LPFileSaveData
 	int nRenderPasses = (int)xmesh.passes.size();
 	if(nRenderPasses>0 )
 	{
-		byte* pData = 0;
+		unsigned char* pData = 0;
 		int nSize = 4+sizeof(ModelRenderPass)*nRenderPasses;
-		pData = new byte[nSize];
+		pData = new unsigned char[nSize];
 		if(pData==0)
 			return false;
 		*(DWORD*)(pData) = (DWORD)nRenderPasses;
@@ -1156,9 +1177,9 @@ bool CParaXSerializer::WriteXBones(const CParaXModel& xmesh, LPFileSaveData pFil
 	int nBones = xmesh.GetObjectNum().nBones;
 	if(nBones>0 && xmesh.animBones)
 	{
-		byte* pData = 0;
+		unsigned char* pData = 0;
 		int nSize = 4+sizeof(ModelBoneDef)*nBones;
-		pData = new byte[nSize];
+		pData = new unsigned char[nSize];
 		if(pData==0)
 			return false;
 		memset(pData, 0, nSize);
@@ -1252,9 +1273,9 @@ bool CParaXSerializer::WriteXTexAnims(const CParaXModel& xmesh, LPFileSaveData p
 	int nTexAnims = xmesh.GetObjectNum().nTexAnims;
 	if(nTexAnims>0 && xmesh.animTextures)
 	{
-		byte* pData = 0;
+		unsigned char* pData = 0;
 		int nSize = 4+sizeof(ModelTexAnimDef)*nTexAnims;
-		pData = new byte[nSize];
+		pData = new unsigned char[nSize];
 		if(pData==0)
 			return false;
 		*(DWORD*)(pData) = (DWORD)nTexAnims;
@@ -1309,9 +1330,10 @@ bool CParaXSerializer::WriteXParticleEmitters(const CParaXModel& xmesh, LPFileSa
 {
 	int nParticleEmitters = xmesh.GetObjectNum().nParticleEmitters;
 	if(nParticleEmitters>0)
-	{		byte* pData = 0;
+	{		
+		unsigned char* pData = 0;
 		int nSize = 4+sizeof(ModelParticleEmitterDef)*nParticleEmitters;
-		pData = new byte[nSize];
+		pData = new unsigned char[nSize];
 		if(pData==0)
 			return false;
 		memset(pData, 0, nSize);
@@ -1449,9 +1471,9 @@ bool CParaXSerializer::WriteXRibbonEmitters(const CParaXModel& xmesh, LPFileSave
 	int nRibbonEmitters = xmesh.GetObjectNum().nRibbonEmitters;
 	if(nRibbonEmitters>0)
 	{
-		byte* pData = 0;
+		unsigned char* pData = 0;
 		int nSize = 4+sizeof(ModelRibbonEmitterDef)*nRibbonEmitters;
-		pData = new byte[nSize];
+		pData = new unsigned char[nSize];
 		if(pData==0)
 			return false;
 		memset(pData, 0, nSize);
@@ -1542,9 +1564,9 @@ bool CParaXSerializer::WriteXCameras(const CParaXModel& xmesh, LPFileSaveData pF
 	{
 		// we export just one camera
 		nCameras = 1;
-		byte* pData = 0;
+		unsigned char* pData = 0;
 		int nSize = 4+sizeof(ModelCameraDef)*nCameras;
-		pData = new byte[nSize];
+		pData = new unsigned char[nSize];
 		if(pData==0)
 			return false;
 		memset(pData, 0, nSize);
@@ -1615,9 +1637,9 @@ bool CParaXSerializer::WriteXLights(const CParaXModel& xmesh, LPFileSaveData pFi
 	int nLights = xmesh.GetObjectNum().nLights;
 	if(nLights>0)
 	{
-		byte* pData = 0;
+		unsigned char* pData = 0;
 		int nSize = 4+sizeof(ModelLightDef)*nLights;
-		pData = new byte[nSize];
+		pData = new unsigned char[nSize];
 		if(pData==0)
 			return false;
 		*(DWORD*)(pData) = (DWORD)nLights;
@@ -1686,9 +1708,9 @@ bool CParaXSerializer::WriteXAnimations(const CParaXModel& xmesh, LPFileSaveData
 	int nAnimations = (int)xmesh.GetObjectNum().nAnimations;
 	if(nAnimations>0 && xmesh.anims && xmesh.animated)
 	{
-		byte* pData = 0;
+		unsigned char* pData = 0;
 		int nSize = 4+sizeof(ModelAnimation)*nAnimations;
-		pData = new byte[nSize];
+		pData = new unsigned char[nSize];
 		if(pData==0)
 			return false;
 		*(DWORD*)(pData) = (DWORD)nAnimations;
@@ -1741,9 +1763,9 @@ void* CParaXSerializer::LoadParaX_Body(ParaXParser& Parser)
 	if(Parser.m_pParaXBody)
 	{
 		SIZE_T			dwSize;
-		const byte      *pBuffer=NULL;
+		const unsigned char      *pBuffer=NULL;
 		m_pRaw = NULL;
-		// Lock the raw byte data if any
+		// Lock the raw unsigned char data if any
 		if(Parser.m_pParaXRawData && SUCCEEDED(Parser.m_pParaXRawData->Lock(&dwSize, (LPCVOID*)(&pBuffer))))
 			m_pRaw = pBuffer+4;
 
@@ -1785,6 +1807,10 @@ void* CParaXSerializer::LoadParaX_Body(ParaXParser& Parser)
 						}
 						else if(Type == TID_XVertices)	{//XVertices
 							if(!ReadXVertices(*pMesh, pSubData))
+								OUTPUT_LOG("error loading vertices");
+						}
+						else if (Type == TID_XVoxels) {
+							if (!ReadXVoxels(*pMesh, pSubData))
 								OUTPUT_LOG("error loading vertices");
 						}
 						else if(Type == TID_XTextures)	{//XTextures
@@ -1904,7 +1930,7 @@ void* CParaXSerializer::LoadParaX_Body(ParaXParser& Parser)
 		}
 		
 
-		// unlock raw byte data
+		// unlock raw unsigned char data
 		if(m_pRaw!=NULL)
 		{
 			m_pRaw = NULL;

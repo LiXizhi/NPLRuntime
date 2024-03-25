@@ -30,14 +30,14 @@ namespace ParaEngine
 	{
 	private:
 		/** raw data referenced by offset.*/
-		std::vector<byte> m_RawData;
+		std::vector<unsigned char> m_RawData;
 	public:
 		CParaRawData(){}
 
 		/** current size */
 		unsigned int GetSize() {return (unsigned int)m_RawData.size();}
 		/** get the buffer from the beginning */
-		const byte* GetBuffer() {return &m_RawData.front();}
+		const unsigned char* GetBuffer() {return &m_RawData.front();}
 
 		/** Add specified data to raw data
 		@param nCount: number of objects.
@@ -169,13 +169,13 @@ namespace ParaEngine
 
 	private:	
 		CParaRawData m_rawdata;
-		const byte*		 m_pRaw;
+		const unsigned char*		 m_pRaw;
 		std::string m_sFilename;
 	public:
 		/** get the raw data pointer at the specified offset.
 		* return NULL if raw data is not available
 		*/
-		inline const byte* GetRawData(int nOffset) const { return (m_pRaw!=0)?(m_pRaw+nOffset):NULL; };
+		inline const unsigned char* GetRawData(int nOffset) const { return (m_pRaw!=0)?(m_pRaw+nOffset):NULL; };
 		/**
 		* load an existing mesh at one time. To selectively parse file, use LoadParaX_XXX() functions.
 		* @param f: file to be saved to.
@@ -271,6 +271,7 @@ namespace ParaEngine
 		/** read all sub data*/
 		bool ReadXGlobalSequences(CParaXModel& xmesh, LPFileData pFileData);
 		bool ReadXVertices(CParaXModel& xmesh, LPFileData pFileData);
+		bool ReadXVoxels(CParaXModel& xmesh, LPFileData pFileData);
 		bool ReadXTextures(CParaXModel& xmesh, LPFileData pFileData);
 		bool ReadXAttachments(CParaXModel& xmesh, LPFileData pFileData);
 		bool ReadXColors(CParaXModel& xmesh, LPFileData pFileData);
