@@ -1924,7 +1924,7 @@ bool ParaEngine::TextureEntityDirectX::GetImageData(void** ppData, int* pSize, i
 									// In DirectX9 the main supported back buffer formats were D3DFMT_X8R8B8G8 and 
 									// D3DFMT_A8R8G8B8(Both being BGRA in layout).
 									// convert from BGRA to RGBA format
-									dwColor = ((dwColor & 0xff00ff00) | ((dwColor & 0xff) << 16) | ((dwColor & 0xff0000) >> 16));
+									//dwColor = ((dwColor & 0xff00ff00) | ((dwColor & 0xff) << 16) | ((dwColor & 0xff0000) >> 16));
 									pDest[nIndex++] = dwColor;
 								}
 							}
