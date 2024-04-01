@@ -4,9 +4,9 @@
 
 namespace ParaEngine
 {
-	/** 
+	/**
 	* AssetManager manages a set of asset entities of a certain type.
-	* IDTYPE must be AssetEntity derived class. ClassImpType is the actually implement of the type. 
+	* IDTYPE must be AssetEntity derived class. ClassImpType is the actually implement of the type.
 	* We can access the singleton via AssetManager<type>::GetInstance()
 	*/
 	template <class IDTYPE, class ClassImpType = IDTYPE, class ETYPE = AssetEntity>
@@ -31,14 +31,14 @@ namespace ParaEngine
 		ATTRIBUTE_DEFINE_CLASS(AssetManager);
 
 		/** get attribute by child object. used to iterate across the attribute field hierarchy. */
-		virtual IAttributeFields* GetChildAttributeObject(const char * sName){
+		virtual IAttributeFields* GetChildAttributeObject(const char* sName) {
 			return GetByName(sName);
 		};
 		/** get the number of child objects (row count) in the given column. please note different columns can have different row count. */
 		virtual int GetChildAttributeObjectCount(int nColumnIndex = 0) { return (int)m_items.size(); };
 		/** we support multi-dimensional child object. by default objects have only one column. */
 		virtual int GetChildAttributeColumnCount() { return 1; };
-		virtual IAttributeFields* GetChildAttributeObject(int nRowIndex, int nColumnIndex = 0){
+		virtual IAttributeFields* GetChildAttributeObject(int nRowIndex, int nColumnIndex = 0) {
 			if (nRowIndex < (int)m_items.size())
 			{
 				auto iter = m_items.begin();
@@ -56,7 +56,7 @@ namespace ParaEngine
 		virtual const std::string& GetIdentifier() {
 			return m_sName;
 		}
-		virtual void SetIdentifier(const std::string& sName){
+		virtual void SetIdentifier(const std::string& sName) {
 			m_sName = sName;
 		}
 
@@ -68,12 +68,12 @@ namespace ParaEngine
 		{
 			/// clean up items
 			typename AssetItemsSet_t::iterator itCurCP, itEndCP = m_items.end();
-			for( itCurCP = m_items.begin(); itCurCP != itEndCP; ++ itCurCP)
+			for (itCurCP = m_items.begin(); itCurCP != itEndCP; ++itCurCP)
 			{
 #ifdef _DEBUG
-				ETYPE* pAsset =itCurCP->second;
-				if(pAsset->GetRefCount()>1){
-					OUTPUT_LOG("warning: asset <%s> exits with ref %d\n", pAsset->m_key.c_str(), pAsset->GetRefCount()-1);
+				ETYPE* pAsset = itCurCP->second;
+				if (pAsset->GetRefCount() > 1) {
+					OUTPUT_LOG("warning: asset <%s> exits with ref %d\n", pAsset->m_key.c_str(), pAsset->GetRefCount() - 1);
 				}
 #endif
 				// normally, it should have 0 reference count at this place. And a delete this operation is performed. 
@@ -92,19 +92,19 @@ namespace ParaEngine
 		}
 
 		/**
-		* get the lower cased key string. 
+		* get the lower cased key string.
 		*/
-		inline void GetLowerCaseString(std::string& outNameLowered, const AssetKey& key){
+		inline void GetLowerCaseString(std::string& outNameLowered, const AssetKey& key) {
 			const char A = (char)'A';
 			const char Z = (char)'Z';
 			const char diff = (char)'a' - A;
 			int nLen = (int)key.size();
 			outNameLowered = key;
 			char c;
-			for (int i=0; i<nLen; ++i)
+			for (int i = 0; i < nLen; ++i)
 			{
 				c = key[i];
-				if (c>=A && c<=Z)
+				if (c >= A && c <= Z)
 					outNameLowered[i] = c + diff;
 			}
 		}
@@ -114,9 +114,9 @@ namespace ParaEngine
 		* be unloaded.
 		* CAUTION: be sure that there is no named asset referencing this asset before calling this function.
 		* because the point to the asset will be invalid after this call.So use UnloadAsset(),
-		* if one just wants to temporarily remove the asset. 
+		* if one just wants to temporarily remove the asset.
 		* return: return true, if the reference count is negative and that object is deleted from the memory, otherwise false.
-		* @note: it does not delete name mapping. To delete a named entity, please use DeleteByName()
+		* @note: it also delete name mapping of the entity's key name
 		*/
 		virtual bool DeleteEntity(ETYPE* entity)
 		{
@@ -127,10 +127,10 @@ namespace ParaEngine
 			std::string sNameLowered;
 			GetLowerCaseString(sNameLowered, key);
 			typename AssetItemsNameMap_t::iterator iter = m_lowercase_item_maps.find(sNameLowered);
-			if( iter != m_lowercase_item_maps.end())
+			if (iter != m_lowercase_item_maps.end())
 			{
 				// remove name mapping
-				if(iter->second != entity)
+				if (iter->second != entity)
 				{
 					OUTPUT_LOG("warning: DeleteEntity %s with multiple candidates\n", key.c_str());
 				}
@@ -138,17 +138,24 @@ namespace ParaEngine
 			}
 
 			// remove anyway
-			typename AssetItemsSet_t::iterator itCur = m_items.find(key);
-			if(itCur!=m_items.end())
+			auto itCur = m_items.find(key);
+			if (itCur != m_items.end())
 			{
 				m_items.erase(itCur);
 			}
 
 			// check references
-			if(entity->GetRefCount() > 1) 
+			if (entity->GetRefCount() > 1)
 			{
 				OUTPUT_LOG("warning: you are deleting an entity %s whose has unreleased external references\n", entity->GetKey().c_str());
 			}
+			// remove name mapping if any
+			auto iter1 = m_names.find(key);
+			if (iter1 != m_names.end() && iter1->second == entity)
+			{
+				m_names.erase(iter1);
+			}
+
 			// unload anyway.
 			entity->UnloadAsset();
 			// normally, it should have 0 reference count at this place. And a delete this operation is performed. 
@@ -161,17 +168,19 @@ namespace ParaEngine
 		* delete the object by user specified name.
 		* CAUTION: be sure that there is no other asset referencing this named asset before calling this function.
 		* because the point to the asset will be invalid after this call.So use UnloadAsset(),
-		* if one just wants to temporarily remove the asset. 
+		* if one just wants to temporarily remove the asset.
 		*/
 		void DeleteByName(const std::string& name)
 		{
-			typename AssetItemsNameMap_t::iterator iter = m_names.find(name);
-			if( iter != m_names.end())
+			auto iter = m_names.find(name);
+			if (iter != m_names.end())
 			{
-				// delete entity
-				DeleteEntity((*iter).second);
 				// remove name mapping
+				auto pEntity = (*iter).second;
 				m_names.erase(iter);
+
+				// delete entity
+				DeleteEntity(pEntity);
 			}
 		}
 
@@ -182,7 +191,7 @@ namespace ParaEngine
 		IDTYPE* GetByName(const std::string& name)
 		{
 			typename AssetItemsNameMap_t::iterator iter = m_names.find(name);
-			if( iter != m_names.end())
+			if (iter != m_names.end())
 				return (IDTYPE*)((*iter).second);
 			else
 				return NULL;
@@ -196,7 +205,7 @@ namespace ParaEngine
 		{
 			// first search using asset key, if not found, we will search the lower cased AssetKey version. 
 			typename AssetItemsSet_t::iterator iter = m_items.find(key);
-			if(iter != m_items.end())
+			if (iter != m_items.end())
 			{
 				return iter->second;
 			}
@@ -206,22 +215,21 @@ namespace ParaEngine
 				std::string sNameLowered;
 				GetLowerCaseString(sNameLowered, key);
 				typename AssetItemsNameMap_t::iterator iter1 = m_lowercase_item_maps.find(sNameLowered);
-				if( iter1 != m_lowercase_item_maps.end())
+				if (iter1 != m_lowercase_item_maps.end())
 				{
 					// remove name mapping
 					return iter1->second;
 				}
-
 			}
 			return NULL;
 		}
 	public:
 
-		/** just create the entity instance without adding to the manager. 
-		* the caller is responsible to delete the entity and manage device lost. 
-		* Use CreateEntity for manager managed entity. 
+		/** just create the entity instance without adding to the manager.
+		* the caller is responsible to delete the entity and manage device lost.
+		* Use CreateEntity for manager managed entity.
 		*/
-		IDTYPE* NewEntity(const AssetKey& key){
+		IDTYPE* NewEntity(const AssetKey& key) {
 			IDTYPE* pEntity = new ClassImpType(key);
 			return pEntity;
 		}
@@ -243,7 +251,7 @@ namespace ParaEngine
 					}
 				}
 			}
-			
+
 			{
 				if (!name.empty())
 				{
@@ -264,10 +272,10 @@ namespace ParaEngine
 		/**
 		* Create a new entity object and add it to the manager.
 		* an asset entity will only be created if there is no asset which the same key.
-		* we will assign a new named asset reference, even if the object has been created before 
+		* we will assign a new named asset reference, even if the object has been created before
 		* thus we can assign different names to the same asset object. This is useful in scripting.
-		* 
-		* @param name: a human readable name associated with the object. 
+		*
+		* @param name: a human readable name associated with the object.
 		*	it can be "", in which case it does not have a human readable name.
 		* @param key: the asset key object to be used for creating this asset.
 		* @return : pair.first always contains the object pointer whose asset key is key.
@@ -277,14 +285,14 @@ namespace ParaEngine
 		pair<IDTYPE*, bool> CreateEntity(const string& name, const AssetKey& key)
 		{
 			ETYPE* pEntity = get(key);
-			if(pEntity)
+			if (pEntity)
 			{
-				if( ! name.empty() )
+				if (!name.empty())
 				{
 					/// we will assign a new named asset reference, even if the object has been created elsewhere 
 					/// thus we can assign different names to the same object
 					ETYPE* pOld = GetByName(name);
-					if(pOld == NULL)
+					if (pOld == NULL)
 					{
 						// add a named asset reference.
 						m_names[name] = pEntity;
@@ -296,7 +304,7 @@ namespace ParaEngine
 			else
 			{
 				pEntity = NewEntity(key);
-				if( ! name.empty() )
+				if (!name.empty())
 				{
 					// add a named asset reference.
 					m_names[name] = pEntity;
@@ -313,7 +321,7 @@ namespace ParaEngine
 			}
 		}
 
-		
+
 		/**
 		* get the entity by its entity key name
 		*/
@@ -323,57 +331,57 @@ namespace ParaEngine
 		}
 
 		/** initialize all assets created so far to accelerate loading during game play. */
-		void LoadAsset(){
+		void LoadAsset() {
 			typename AssetItemsSet_t::iterator itCurCP, itEndCP = m_items.end();
-			for( itCurCP = m_items.begin(); itCurCP != itEndCP; ++ itCurCP)
+			for (itCurCP = m_items.begin(); itCurCP != itEndCP; ++itCurCP)
 			{
 				itCurCP->second->LoadAsset();
 			}
 		}
 		/** uninitialize all assets created so far to save some memory */
-		void UnloadAsset(){
+		void UnloadAsset() {
 			typename AssetItemsSet_t::iterator itCurCP, itEndCP = m_items.end();
-			for( itCurCP = m_items.begin(); itCurCP != itEndCP; ++ itCurCP)
+			for (itCurCP = m_items.begin(); itCurCP != itEndCP; ++itCurCP)
 			{
 				itCurCP->second->UnloadAsset();
 			}
 		}
 		/** Garbage Collect(free resources of) all unused entity.*/
-		void GarbageCollectAll(){
+		void GarbageCollectAll() {
 			typename AssetItemsSet_t::iterator itCurCP, itEndCP = m_items.end();
-			for( itCurCP = m_items.begin(); itCurCP != itEndCP; ++ itCurCP)
+			for (itCurCP = m_items.begin(); itCurCP != itEndCP; ++itCurCP)
 			{
 				itCurCP->second->GarbageCollectMe();
 			}
 		}
 
 		/**
-		* check if the entity exist, if so call Refresh().  
+		* check if the entity exist, if so call Refresh().
 		* @param sEntityName: the asset entity key
 		* @param bLazyLoad if true it will be lazy loaded.
 		*/
 		bool CheckRefresh(const std::string& sEntityName)
 		{
 			ETYPE* pEntity = GetEntity(sEntityName);
-			if(pEntity!=0){
+			if (pEntity != 0) {
 				pEntity->Refresh();
 				return true;
 			}
 			return false;
 		}
 
-		/** print all asset file to a given file. Each asset is on a single line, in the following format: 
+		/** print all asset file to a given file. Each asset is on a single line, in the following format:
 		[AssetFileName]
 		* @param pOutputFile: to which file object the result is written to
-		* @return: the number of results are returned. 
+		* @return: the number of results are returned.
 		*/
 		virtual int PrintToFile(CParaFile* pOutputFile)
 		{
-			int i=0;
+			int i = 0;
 			if (pOutputFile)
 			{
 				typename AssetItemsSet_t::iterator itCurCP, itEndCP = m_items.end();
-				for( itCurCP = m_items.begin(); itCurCP != itEndCP; ++ itCurCP,++i)
+				for (itCurCP = m_items.begin(); itCurCP != itEndCP; ++itCurCP, ++i)
 				{
 					pOutputFile->WriteString(itCurCP->second->GetKey());
 					pOutputFile->WriteString("\n");
@@ -383,30 +391,30 @@ namespace ParaEngine
 		}
 
 	public:
-		virtual void InitDeviceObjects(){
+		virtual void InitDeviceObjects() {
 			typename AssetItemsSet_t::iterator itCurCP, itEndCP = m_items.end();
-			for( itCurCP = m_items.begin(); itCurCP != itEndCP; ++ itCurCP)
+			for (itCurCP = m_items.begin(); itCurCP != itEndCP; ++itCurCP)
 			{
 				itCurCP->second->InitDeviceObjects();
 			}
 		};
-		virtual void RestoreDeviceObjects(){
+		virtual void RestoreDeviceObjects() {
 			typename AssetItemsSet_t::iterator itCurCP, itEndCP = m_items.end();
-			for( itCurCP = m_items.begin(); itCurCP != itEndCP; ++ itCurCP)
+			for (itCurCP = m_items.begin(); itCurCP != itEndCP; ++itCurCP)
 			{
 				itCurCP->second->RestoreDeviceObjects();
 			}
 		}
-		virtual void InvalidateDeviceObjects(){
+		virtual void InvalidateDeviceObjects() {
 			typename AssetItemsSet_t::iterator itCurCP, itEndCP = m_items.end();
-			for( itCurCP = m_items.begin(); itCurCP != itEndCP; ++ itCurCP)
+			for (itCurCP = m_items.begin(); itCurCP != itEndCP; ++itCurCP)
 			{
 				itCurCP->second->InvalidateDeviceObjects();
 			}
 		}
-		virtual void DeleteDeviceObjects(){
+		virtual void DeleteDeviceObjects() {
 			typename AssetItemsSet_t::iterator itCurCP, itEndCP = m_items.end();
-			for( itCurCP = m_items.begin(); itCurCP != itEndCP; ++ itCurCP)
+			for (itCurCP = m_items.begin(); itCurCP != itEndCP; ++itCurCP)
 			{
 				itCurCP->second->DeleteDeviceObjects();
 			}
@@ -414,7 +422,7 @@ namespace ParaEngine
 		/** callback of listening the event that renderer was recreated on Android/WP8
 		all opengl related id has already become invalid at this time, no need to release them, just recreate them all in this function.
 		*/
-		virtual void RendererRecreated(){
+		virtual void RendererRecreated() {
 			typename AssetItemsSet_t::iterator itCurCP, itEndCP = m_items.end();
 			for (itCurCP = m_items.begin(); itCurCP != itEndCP; ++itCurCP)
 			{
@@ -424,8 +432,8 @@ namespace ParaEngine
 	public:
 		/** identifier */
 		std::string m_sName;
-		/** human readable name of asset object, which can be used as key to retrieve entity from its manager 
-		* Internally we use the key object to uniquely identify an assset.SIdentifer can be nil. 
+		/** human readable name of asset object, which can be used as key to retrieve entity from its manager
+		* Internally we use the key object to uniquely identify an assset.SIdentifer can be nil.
 		*/
 		AssetItemsNameMap_t m_names;
 		/**
@@ -433,7 +441,7 @@ namespace ParaEngine
 		*/
 		AssetItemsSet_t m_items;
 		/**
-		* mapping from lower cased AssetKey to asset entity. 
+		* mapping from lower cased AssetKey to asset entity.
 		*/
 		AssetItemsNameMap_t m_lowercase_item_maps;
 	};
