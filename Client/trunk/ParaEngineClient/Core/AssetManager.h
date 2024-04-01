@@ -116,7 +116,7 @@ namespace ParaEngine
 		* because the point to the asset will be invalid after this call.So use UnloadAsset(),
 		* if one just wants to temporarily remove the asset. 
 		* return: return true, if the reference count is negative and that object is deleted from the memory, otherwise false.
-		* @note: it does not delete name mapping. To delete a named entity, please use DeleteByName()
+		* @note: it also delete name mapping of the entity's key name
 		*/
 		virtual bool DeleteEntity(ETYPE* entity)
 		{
@@ -138,7 +138,7 @@ namespace ParaEngine
 			}
 
 			// remove anyway
-			typename AssetItemsSet_t::iterator itCur = m_items.find(key);
+			auto itCur = m_items.find(key);
 			if(itCur!=m_items.end())
 			{
 				m_items.erase(itCur);
@@ -149,6 +149,13 @@ namespace ParaEngine
 			{
 				OUTPUT_LOG("warning: you are deleting an entity %s whose has unreleased external references\n", entity->GetKey().c_str());
 			}
+			// remove name mapping if any
+			auto iter1 = m_names.find(key);
+			if (iter1 != m_names.end() && iter1->second == entity)
+			{
+				m_names.erase(iter1);
+			}
+
 			// unload anyway.
 			entity->UnloadAsset();
 			// normally, it should have 0 reference count at this place. And a delete this operation is performed. 
@@ -165,13 +172,15 @@ namespace ParaEngine
 		*/
 		void DeleteByName(const std::string& name)
 		{
-			typename AssetItemsNameMap_t::iterator iter = m_names.find(name);
+			auto iter = m_names.find(name);
 			if( iter != m_names.end())
 			{
-				// delete entity
-				DeleteEntity((*iter).second);
 				// remove name mapping
+				auto pEntity = (*iter).second;
 				m_names.erase(iter);
+
+				// delete entity
+				DeleteEntity(pEntity);
 			}
 		}
 
@@ -211,7 +220,6 @@ namespace ParaEngine
 					// remove name mapping
 					return iter1->second;
 				}
-
 			}
 			return NULL;
 		}
