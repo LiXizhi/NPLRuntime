@@ -148,8 +148,8 @@ namespace ParaEngine
 		{
 			// std::cout << bMoveView << " " << ctrlBottom << " " << editParams << std::endl;
 			EM_ASM({
-				Module.StartTextInput($0);
-			}, ctrlBottom);
+				Module.StartTextInput($0, $1);
+			}, ctrlBottom, editParams.c_str());
 		}
 		else
 		{
