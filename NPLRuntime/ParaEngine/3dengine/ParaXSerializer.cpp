@@ -14,6 +14,7 @@
 #include "ParaXModel/ParaXBone.h"
 #include "ParaXModel/ParaVoxelModel.h"
 #include "ParaXModel/XFileCharModelExporter.h"
+#include "ZipArchive.h"
 
 #include "ParaXSerializer.h"
 #ifdef USE_DIRECTX_RENDERER
@@ -21,7 +22,7 @@
 #include <rmxfguid.h>
 #include "mdxfile/ParaXFileGUID.h"
 #include <algorithm>
-/** define this to enable testing saving. See SaveParaXMesh() 
+/** define this to enable testing saving. See SaveParaXMesh()
 * text encoding is enforced when the macro is on. */
 // #define TEST_NODE
 #endif
@@ -45,10 +46,17 @@ using namespace ParaEngine;
 /// ParaXParser															//
 //////////////////////////////////////////////////////////////////////////
 ParaXParser::ParaXParser(CParaFile& file, LPD3DXFILE	pDXFileParser)
-: m_file(file), m_bHeaderLoaded(false), m_bIsValid(true), m_pDXEnum(NULL), m_pParaXBody(NULL), m_pParaXRawData(NULL),
-m_pParaXRef(NULL), m_pD3DMesh(NULL), m_pD3DRootFrame(NULL)
+	: m_pBuffer(file.getBuffer()), m_nBufferSize(file.getSize()), m_bHeaderLoaded(false), m_bIsValid(true), m_pDXEnum(NULL), m_pParaXBody(NULL), m_pParaXRawData(NULL),
+	m_pParaXRef(NULL), m_pD3DMesh(NULL), m_pD3DRootFrame(NULL)
 {
 	m_pDXFileParser = (pDXFileParser != 0) ? pDXFileParser : CGlobals::GetAssetManager()->GetParaXFileParser();
+}
+
+ParaEngine::ParaXParser::ParaXParser(const char* pBuffer, int32 nSize)
+	: m_pBuffer(pBuffer), m_nBufferSize(nSize), m_bHeaderLoaded(false), m_bIsValid(true), m_pDXEnum(NULL), m_pParaXBody(NULL), m_pParaXRawData(NULL),
+	m_pParaXRef(NULL), m_pD3DMesh(NULL), m_pD3DRootFrame(NULL)
+{
+	m_pDXFileParser = CGlobals::GetAssetManager()->GetParaXFileParser();
 }
 
 void ParaXParser::Finalize()
@@ -68,7 +76,7 @@ void ParaXParser::Finalize()
 //////////////////////////////////////////////////////////////////////////
 
 CParaXSerializer::CParaXSerializer(void)
-:m_pRaw(NULL)
+	:m_pRaw(NULL)
 {
 }
 
@@ -86,14 +94,25 @@ void CParaXSerializer::SetFilename(std::string val)
 	m_sFilename = val;
 }
 
-void* CParaXSerializer::LoadParaXMesh(CParaFile &f)
+void* CParaXSerializer::LoadParaXMesh(CParaFile& f)
 {
-	void* pMesh=NULL;
-	
+	void* pMesh = NULL;
+	const char* pBuffer = f.getBuffer();
+	int32 nSize = f.getSize();
+	std::string uncompressedData;
+	if (ParaEngine::IsZipData(pBuffer, nSize))
+	{
+		if (ParaEngine::GetFirstFileData(pBuffer, nSize, uncompressedData))
+		{
+			pBuffer = uncompressedData.c_str();
+			nSize = uncompressedData.size();
+		}
+	}
+
 #if defined(USE_DIRECTX_RENDERER) && !defined(_DEBUG)
 	{
 		bool bIsStaticModel = false;
-		ParaXParser p(f);
+		ParaXParser p(pBuffer, nSize);
 		if (LoadParaX_Header(p)) {
 			pMesh = LoadParaX_Body(p);
 			if (!pMesh && p.m_pD3DMesh)
@@ -102,14 +121,14 @@ void* CParaXSerializer::LoadParaXMesh(CParaFile &f)
 			}
 			LoadParaX_Finalize(p);
 		}
-		if(!bIsStaticModel)
+		if (!bIsStaticModel)
 			return pMesh;
 	}
- #endif
-	
+#endif
+
 	try
 	{
-		XFileCharModelParser p(f.getBuffer(), f.getSize());
+		XFileCharModelParser p(pBuffer, nSize);
 		p.SetFilename(GetFilename());
 		pMesh = p.ParseParaXModel();
 	}
@@ -120,10 +139,10 @@ void* CParaXSerializer::LoadParaXMesh(CParaFile &f)
 	return pMesh;
 }
 #ifdef USE_DIRECTX_RENDERER
-void* CParaXSerializer::LoadParaXMesh(CParaFile &f, ParaXParser& p)
+void* CParaXSerializer::LoadParaXMesh(CParaFile& f, ParaXParser& p)
 {
-	void* pMesh=NULL;
-	if(LoadParaX_Header(p)){
+	void* pMesh = NULL;
+	if (LoadParaX_Header(p)) {
 		pMesh = LoadParaX_Body(p);
 		LoadParaX_Finalize(p);
 	}
@@ -137,77 +156,77 @@ void CParaXSerializer::LoadParaX_Finalize(ParaXParser& Parser)
 
 bool CParaXSerializer::LoadParaX_Header(ParaXParser& Parser)
 {
-	if(!Parser.m_bIsValid)
+	if (!Parser.m_bIsValid)
 		return false;
 	// if header already loaded, return 
-	if(Parser.m_bHeaderLoaded)
+	if (Parser.m_bHeaderLoaded)
 		return true;
-	if(Parser.GetFileParser() == NULL){
+	if (Parser.GetFileParser() == NULL) {
 		Parser.m_bIsValid = false;
 		return false;
 	}
 	D3DXF_FILELOADMEMORY memData;
-	memData.dSize = (int)Parser.m_file.getSize();
-	memData.lpMemory =  Parser.m_file.getBuffer();
-	if(memData.lpMemory==0)
+	memData.dSize = (int)Parser.m_nBufferSize;
+	memData.lpMemory = Parser.m_pBuffer;
+	if (memData.lpMemory == 0)
 	{
 		Parser.m_bIsValid = false;
 		return false;
 	}
 
-	HRESULT res=Parser.GetFileParser()->CreateEnumObject(&memData, D3DXF_FILELOAD_FROMMEMORY, &Parser.m_pDXEnum);
-	if(FAILED(res))
+	HRESULT res = Parser.GetFileParser()->CreateEnumObject(&memData, D3DXF_FILELOAD_FROMMEMORY, &Parser.m_pDXEnum);
+	if (FAILED(res))
 	{
-		if(res == D3DXFERR_BADTYPE)
+		if (res == D3DXFERR_BADTYPE)
 			OUTPUT_LOG("warning: failed reading ParaX header. CreateEnumObject return D3DXFERR_BADTYPE\n");
-		else if(res == D3DXFERR_PARSEERROR)
+		else if (res == D3DXFERR_PARSEERROR)
 			OUTPUT_LOG("warning: failed reading ParaX header. CreateEnumObject return D3DXFERR_PARSEERROR\n");
 		Parser.m_bIsValid = false;
 		return false;
 	}
 
-	LPFileData pData=NULL;
+	LPFileData pData = NULL;
 	SIZE_T nCount;
 	Parser.m_pDXEnum->GetChildren(&nCount);
-	for(int i = 0; i<(int)nCount;i++)
+	for (int i = 0; i < (int)nCount; i++)
 	{
 		Parser.m_pDXEnum->GetChild(i, &pData);
 		GUID Type;
 		// Get the template type
-		if(FAILED(pData->GetType(&Type)))
+		if (FAILED(pData->GetType(&Type)))
 			break;
-		if(Type == TID_ParaXHeader)
+		if (Type == TID_ParaXHeader)
 		{
 			Parser.m_bHeaderLoaded = ReadParaXHeader(Parser.m_xheader, pData);
-			if(!Parser.m_bHeaderLoaded)
+			if (!Parser.m_bHeaderLoaded)
 			{
 				Parser.m_xheader.type = (DWORD)PARAX_MODEL_INVALID;
 				break;
 			}
 			SAFE_RELEASE(pData);
 		}
-		else if(Type == TID_ParaXBody)
+		else if (Type == TID_ParaXBody)
 			Parser.m_pParaXBody = pData;
-		else if(Type == TID_XDWORDArray)
+		else if (Type == TID_XDWORDArray)
 			Parser.m_pParaXRawData = pData;
-		else if(Type == TID_ParaXRefSection)
+		else if (Type == TID_ParaXRefSection)
 			Parser.m_pParaXRef = pData;
-		else if(Type == TID_D3DRMMesh)
+		else if (Type == TID_D3DRMMesh)
 			Parser.m_pD3DMesh = pData;
-		else if(Type == TID_D3DRMFrame)
+		else if (Type == TID_D3DRMFrame)
 			Parser.m_pD3DRootFrame = pData;
 		else
 		{
 			SAFE_RELEASE(pData);
-			
-			if(i==0)
+
+			if (i == 0)
 			{
 				// this is not a ParaX file. since it does not have the ParaX header at the beginning.
 				Parser.m_xheader.type = (DWORD)PARAX_MODEL_DX_STATIC;
 			}
 		}
 	}
-	
+
 	return true;
 }
 
@@ -215,154 +234,154 @@ bool CParaXSerializer::WriteXRawBytes(const CParaXModel& xmesh, LPFileSaveObject
 {
 	int nCount = m_rawdata.GetSize();
 	// save as DWORD, so 
-	int nDWORD = nCount/4+1;
-	if(nDWORD>0 )
+	int nDWORD = nCount / 4 + 1;
+	if (nDWORD > 0)
 	{
 		unsigned char* pData = 0;
-		int nSize = 4+nDWORD*4;
+		int nSize = 4 + nDWORD * 4;
 		pData = new unsigned char[nSize];
-		if(pData==0)
+		if (pData == 0)
 			return false;
 		*(DWORD*)(pData) = (DWORD)nDWORD;
-		unsigned char *bytes = (unsigned char*)(pData+4);
+		unsigned char* bytes = (unsigned char*)(pData + 4);
 		memcpy(bytes, m_rawdata.GetBuffer(), nCount);
 
 		LPFileSaveData pDataNode;
-		if(FAILED(pFileData->AddDataObject(TID_XDWORDArray, "ParaXRawData", NULL, nSize, pData, &pDataNode)))
+		if (FAILED(pFileData->AddDataObject(TID_XDWORDArray, "ParaXRawData", NULL, nSize, pData, &pDataNode)))
 		{
-			delete [] pData;
+			delete[] pData;
 			return false;
 		}
 		SAFE_RELEASE(pDataNode);
 
-		delete [] pData;
+		delete[] pData;
 	}
 	return true;
 }
 
 bool CParaXSerializer::WriteAnimationBlock(AnimationBlock* b, const Animated<Vector3>& anims)
 {
-	if(b==0) return false;
-	memset(b,0, sizeof(AnimationBlock));
+	if (b == 0) return false;
+	memset(b, 0, sizeof(AnimationBlock));
 	b->type = anims.type;
 	b->seq = anims.seq;
 	b->nTimes = b->nKeys = (uint32)anims.times.size();
-	if(anims.ranges.size()==1 && anims.seq==-1 && anims.type!=0)
+	if (anims.ranges.size() == 1 && anims.seq == -1 && anims.type != 0)
 	{
-		b->nRanges=0;
-		b->ofsRanges=0;
+		b->nRanges = 0;
+		b->ofsRanges = 0;
 	}
 	else
-		b->nRanges=(uint32)anims.ranges.size();
-	if(b->nRanges>0)
-		b->ofsRanges = m_rawdata.AddRawData( (const Vector2*)(&anims.ranges[0]), b->nRanges);
-	if(b->nTimes>0)
-		b->ofsTimes = m_rawdata.AddRawData( (const DWORD*)(&anims.times[0]), b->nTimes);
-	if(b->type == INTERPOLATION_HERMITE)
+		b->nRanges = (uint32)anims.ranges.size();
+	if (b->nRanges > 0)
+		b->ofsRanges = m_rawdata.AddRawData((const Vector2*)(&anims.ranges[0]), b->nRanges);
+	if (b->nTimes > 0)
+		b->ofsTimes = m_rawdata.AddRawData((const DWORD*)(&anims.times[0]), b->nTimes);
+	if (b->type == INTERPOLATION_HERMITE)
 	{
 		// not tested
 		vector<Vector3> data;
 		data.insert(data.end(), anims.data.begin(), anims.data.end());
 		data.insert(data.end(), anims.in.begin(), anims.in.end());
 		data.insert(data.end(), anims.out.begin(), anims.out.end());
-		b->ofsKeys = m_rawdata.AddRawData( (const Vector3*)(&data[0]), b->nKeys*3);
+		b->ofsKeys = m_rawdata.AddRawData((const Vector3*)(&data[0]), b->nKeys * 3);
 	}
 	else
-		b->ofsKeys = m_rawdata.AddRawData( (const Vector3*)(&anims.data[0]), b->nKeys);
+		b->ofsKeys = m_rawdata.AddRawData((const Vector3*)(&anims.data[0]), b->nKeys);
 	return true;
 }
 
 bool CParaXSerializer::WriteAnimationBlock(AnimationBlock* b, const AnimatedShort& anims)
 {
-	if(b==0) return false;
-	memset(b,0, sizeof(AnimationBlock));
+	if (b == 0) return false;
+	memset(b, 0, sizeof(AnimationBlock));
 	b->type = anims.type;
 	b->seq = anims.seq;
 	b->nTimes = b->nKeys = (uint32)anims.times.size();
-	if(anims.ranges.size()==1 && anims.seq==-1 && anims.type!=0)
+	if (anims.ranges.size() == 1 && anims.seq == -1 && anims.type != 0)
 	{
-		b->nRanges=0;
-		b->ofsRanges=0;
+		b->nRanges = 0;
+		b->ofsRanges = 0;
 	}
 	else
-		b->nRanges=(uint32)anims.ranges.size();
-	if(b->nRanges>0)
-		b->ofsRanges = m_rawdata.AddRawData( (const Vector2*)(&anims.ranges[0]), b->nRanges);
-	if(b->nTimes>0)
-		b->ofsTimes = m_rawdata.AddRawData( (const DWORD*)(&anims.times[0]), b->nTimes);
-	if(b->type == INTERPOLATION_HERMITE)
+		b->nRanges = (uint32)anims.ranges.size();
+	if (b->nRanges > 0)
+		b->ofsRanges = m_rawdata.AddRawData((const Vector2*)(&anims.ranges[0]), b->nRanges);
+	if (b->nTimes > 0)
+		b->ofsTimes = m_rawdata.AddRawData((const DWORD*)(&anims.times[0]), b->nTimes);
+	if (b->type == INTERPOLATION_HERMITE)
 	{
 		// not tested
 		vector<float> data;
 		data.insert(data.end(), anims.data.begin(), anims.data.end());
 		data.insert(data.end(), anims.in.begin(), anims.in.end());
 		data.insert(data.end(), anims.out.begin(), anims.out.end());
-		b->ofsKeys = m_rawdata.AddRawData( (const DWORD*)(&data[0]), b->nKeys*3);
+		b->ofsKeys = m_rawdata.AddRawData((const DWORD*)(&data[0]), b->nKeys * 3);
 	}
-	else 
-		b->ofsKeys = m_rawdata.AddRawData( (const DWORD*)(&anims.data[0]), b->nKeys);
+	else
+		b->ofsKeys = m_rawdata.AddRawData((const DWORD*)(&anims.data[0]), b->nKeys);
 	return true;
 }
 bool CParaXSerializer::WriteAnimationBlock(AnimationBlock* b, const Animated<float>& anims)
 {
-	if(b==0) return false;
-	memset(b,0, sizeof(AnimationBlock));
+	if (b == 0) return false;
+	memset(b, 0, sizeof(AnimationBlock));
 	b->type = anims.type;
 	b->seq = anims.seq;
 	b->nTimes = b->nKeys = (uint32)anims.times.size();
-	if(anims.ranges.size()==1 && anims.seq==-1 && anims.type!=0)
+	if (anims.ranges.size() == 1 && anims.seq == -1 && anims.type != 0)
 	{
-		b->nRanges=0;
-		b->ofsRanges=0;
+		b->nRanges = 0;
+		b->ofsRanges = 0;
 	}
 	else
-		b->nRanges=(uint32)anims.ranges.size();
-	if(b->nRanges>0)
-		b->ofsRanges = m_rawdata.AddRawData( (const Vector2*)(&anims.ranges[0]), b->nRanges);
-	if(b->nTimes>0)
-		b->ofsTimes = m_rawdata.AddRawData( (const DWORD*)(&anims.times[0]), b->nTimes);
-	if(b->type == INTERPOLATION_HERMITE)
+		b->nRanges = (uint32)anims.ranges.size();
+	if (b->nRanges > 0)
+		b->ofsRanges = m_rawdata.AddRawData((const Vector2*)(&anims.ranges[0]), b->nRanges);
+	if (b->nTimes > 0)
+		b->ofsTimes = m_rawdata.AddRawData((const DWORD*)(&anims.times[0]), b->nTimes);
+	if (b->type == INTERPOLATION_HERMITE)
 	{
 		// not tested
 		vector<float> data;
 		data.insert(data.end(), anims.data.begin(), anims.data.end());
 		data.insert(data.end(), anims.in.begin(), anims.in.end());
 		data.insert(data.end(), anims.out.begin(), anims.out.end());
-		b->ofsKeys = m_rawdata.AddRawData( (const DWORD*)(&data[0]), b->nKeys*3);
+		b->ofsKeys = m_rawdata.AddRawData((const DWORD*)(&data[0]), b->nKeys * 3);
 	}
 	else
-		b->ofsKeys = m_rawdata.AddRawData( (const DWORD*)(&anims.data[0]), b->nKeys);
+		b->ofsKeys = m_rawdata.AddRawData((const DWORD*)(&anims.data[0]), b->nKeys);
 	return true;
 }
 bool CParaXSerializer::WriteAnimationBlock(AnimationBlock* b, const Animated<Quaternion>& anims)
 {
-	if(b==0) return false;
-	memset(b,0, sizeof(AnimationBlock));
+	if (b == 0) return false;
+	memset(b, 0, sizeof(AnimationBlock));
 	b->type = anims.type;
 	b->seq = anims.seq;
 	b->nTimes = b->nKeys = (uint32)anims.times.size();
-	if(anims.ranges.size()==1 && anims.seq==-1 && anims.type!=0)
+	if (anims.ranges.size() == 1 && anims.seq == -1 && anims.type != 0)
 	{
-		b->nRanges=0;
-		b->ofsRanges=0;
+		b->nRanges = 0;
+		b->ofsRanges = 0;
 	}
 	else
-		b->nRanges=(uint32)anims.ranges.size();
-	if(b->nRanges>0)
-		b->ofsRanges = m_rawdata.AddRawData( (const Vector2*)(&anims.ranges[0]), b->nRanges);
-	if(b->nTimes>0)
-		b->ofsTimes = m_rawdata.AddRawData( (const DWORD*)(&anims.times[0]), b->nTimes);
-	if(b->type == INTERPOLATION_HERMITE)
+		b->nRanges = (uint32)anims.ranges.size();
+	if (b->nRanges > 0)
+		b->ofsRanges = m_rawdata.AddRawData((const Vector2*)(&anims.ranges[0]), b->nRanges);
+	if (b->nTimes > 0)
+		b->ofsTimes = m_rawdata.AddRawData((const DWORD*)(&anims.times[0]), b->nTimes);
+	if (b->type == INTERPOLATION_HERMITE)
 	{
 		// not tested
 		vector<Quaternion> data;
 		data.insert(data.end(), anims.data.begin(), anims.data.end());
 		data.insert(data.end(), anims.in.begin(), anims.in.end());
 		data.insert(data.end(), anims.out.begin(), anims.out.end());
-		b->ofsKeys = m_rawdata.AddRawData( (const Vector4*)(&data[0]), b->nKeys*3);
+		b->ofsKeys = m_rawdata.AddRawData((const Vector4*)(&data[0]), b->nKeys * 3);
 	}
-	else 
-		b->ofsKeys = m_rawdata.AddRawData( (const Vector4*)(&anims.data[0]), b->nKeys);
+	else
+		b->ofsKeys = m_rawdata.AddRawData((const Vector4*)(&anims.data[0]), b->nKeys);
 	return true;
 }
 
@@ -436,76 +455,76 @@ bool CParaXSerializer::SaveParaXMesh(const string& filename, const CParaXModel& 
 {
 	/// Save animation file ParaEngine X file format
 	LPFileSaveObject pDXSaveObj = NULL;
-	ID3DXFileData       *pDXData = NULL;
+	ID3DXFileData* pDXData = NULL;
 
 	LPD3DXFILE pDXFile = CGlobals::GetAssetManager()->GetParaXFileParser();
 
-	if(pDXFile == NULL)
+	if (pDXFile == NULL)
 		return false;
-	if(pOptions==NULL)
+	if (pOptions == NULL)
 		pOptions = &g_pDefaultOption;
 
 #ifdef TEST_NODE
 	pOptions->m_bBinary = false;
 #endif
 
-	D3DXF_FILEFORMAT dwFileFormat = pOptions->m_bBinary? D3DXF_FILEFORMAT_BINARY:D3DXF_FILEFORMAT_TEXT;
-	dwFileFormat |= pOptions->m_bCompressed? D3DXF_FILEFORMAT_COMPRESSED:0;
+	D3DXF_FILEFORMAT dwFileFormat = pOptions->m_bBinary ? D3DXF_FILEFORMAT_BINARY : D3DXF_FILEFORMAT_TEXT;
+	dwFileFormat |= pOptions->m_bCompressed ? D3DXF_FILEFORMAT_COMPRESSED : 0;
 
-	if(FAILED(pDXFile->CreateSaveObject(filename.c_str(), D3DXF_FILESAVE_TOFILE, dwFileFormat, &pDXSaveObj)))
+	if (FAILED(pDXFile->CreateSaveObject(filename.c_str(), D3DXF_FILESAVE_TOFILE, dwFileFormat, &pDXSaveObj)))
 	{
 		OUTPUT_LOG("failed saving ParaX file %s", filename.c_str());
 		return false;
 	}
 
 	/// top level: ParaXHeader node
-	if(!WriteParaXHeader(xmesh, pDXSaveObj))
+	if (!WriteParaXHeader(xmesh, pDXSaveObj))
 		return false;
 
 	/// top level: ParaXBody node
-	LPFileSaveData pFileData=0;
-	if(SUCCEEDED(pDXSaveObj->AddDataObject(TID_ParaXBody, NULL, NULL, 0, NULL, &pFileData)))
+	LPFileSaveData pFileData = 0;
+	if (SUCCEEDED(pDXSaveObj->AddDataObject(TID_ParaXBody, NULL, NULL, 0, NULL, &pFileData)))
 	{
 
 #ifndef TEST_NODE
 		/// global sequences must be serialized first.
-		if(!(WriteXGlobalSequences(xmesh,pFileData)))
+		if (!(WriteXGlobalSequences(xmesh, pFileData)))
 			OUTPUT_LOG("failed exporting X global sequences");
 		/// the following can be serialized in any order.
-		if(!(WriteXViews(xmesh,pFileData)))
+		if (!(WriteXViews(xmesh, pFileData)))
 			OUTPUT_LOG("failed exporting X views");
-		if(!(WriteXTextures(xmesh,pFileData)))
+		if (!(WriteXTextures(xmesh, pFileData)))
 			OUTPUT_LOG("failed exporting X textures");
-		if(!(WriteXAttachments(xmesh,pFileData)))
+		if (!(WriteXAttachments(xmesh, pFileData)))
 			OUTPUT_LOG("failed exporting X attachments");
-		if(!(WriteXColors(xmesh,pFileData)))
+		if (!(WriteXColors(xmesh, pFileData)))
 			OUTPUT_LOG("failed exporting X colors");
-		if(!(WriteXTransparency(xmesh,pFileData)))
+		if (!(WriteXTransparency(xmesh, pFileData)))
 			OUTPUT_LOG("failed exporting X transparency");
-		if(!(WriteXVertices(xmesh,pFileData)))
+		if (!(WriteXVertices(xmesh, pFileData)))
 			OUTPUT_LOG("failed exporting X vertices");
-		if(!(WriteXIndices0(xmesh,pFileData)))
+		if (!(WriteXIndices0(xmesh, pFileData)))
 			OUTPUT_LOG("failed exporting X indices0");
-		if(!(WriteXGeosets(xmesh,pFileData)))
+		if (!(WriteXGeosets(xmesh, pFileData)))
 			OUTPUT_LOG("failed exporting X geosets for 0 view");
-		if(!(WriteXRenderPass(xmesh,pFileData)))
+		if (!(WriteXRenderPass(xmesh, pFileData)))
 			OUTPUT_LOG("failed exporting X render passes for 0 view");
-		if(!(WriteXBones(xmesh,pFileData)))
+		if (!(WriteXBones(xmesh, pFileData)))
 			OUTPUT_LOG("failed exporting X bones");
-		if(!(WriteXCameras(xmesh,pFileData)))
+		if (!(WriteXCameras(xmesh, pFileData)))
 			OUTPUT_LOG("failed exporting X cameras");
-		if(!(WriteXAnimations(xmesh,pFileData)))
+		if (!(WriteXAnimations(xmesh, pFileData)))
 			OUTPUT_LOG("failed exporting X animations");
 #endif
-		
+
 		// TODO: the following nodes are not tested
-		if(!(WriteXTexAnims(xmesh,pFileData)))
+		if (!(WriteXTexAnims(xmesh, pFileData)))
 			OUTPUT_LOG("failed exporting X texture animations");
-		if(!(WriteXParticleEmitters(xmesh,pFileData)))
+		if (!(WriteXParticleEmitters(xmesh, pFileData)))
 			OUTPUT_LOG("failed exporting X particle systems");
-		if(!(WriteXRibbonEmitters(xmesh,pFileData)))
+		if (!(WriteXRibbonEmitters(xmesh, pFileData)))
 			OUTPUT_LOG("failed exporting X ribbon emitters");
-		if(!(WriteXLights(xmesh,pFileData)))
+		if (!(WriteXLights(xmesh, pFileData)))
 			OUTPUT_LOG("failed exporting X lights");
 
 		SAFE_RELEASE(pFileData);
@@ -515,17 +534,17 @@ bool CParaXSerializer::SaveParaXMesh(const string& filename, const CParaXModel& 
 
 #ifndef TEST_NODE
 	/// raw bytes must be serialized last.
-	if(!(WriteXRawBytes(xmesh,pDXSaveObj)))
+	if (!(WriteXRawBytes(xmesh, pDXSaveObj)))
 		OUTPUT_LOG("failed exporting raw bytes");
 #endif
 
 	// save to disk, 
-	if(FAILED(pDXSaveObj->Save()))
+	if (FAILED(pDXSaveObj->Save()))
 	{
 		OUTPUT_LOG("failed saving ParaX file %s", filename.c_str());
 		return false;
 	}
-	
+
 	SAFE_RELEASE(pDXSaveObj);
 
 	return true;
@@ -535,9 +554,9 @@ bool CParaXSerializer::WriteParaXHeader(const CParaXModel& xmesh, LPFileSaveObje
 {
 	ParaXHeaderDef xheader;
 	memcpy(&xheader, &xmesh.GetHeader(), sizeof(ParaXHeaderDef));
-	
+
 	LPFileSaveData pDataNode;
-	if(FAILED(pFileData->AddDataObject(TID_ParaXHeader, NULL, NULL, sizeof(ParaXHeaderDef), &xheader, &pDataNode)))
+	if (FAILED(pFileData->AddDataObject(TID_ParaXHeader, NULL, NULL, sizeof(ParaXHeaderDef), &xheader, &pDataNode)))
 		return false;
 	SAFE_RELEASE(pDataNode);
 	return true;
@@ -546,9 +565,9 @@ bool CParaXSerializer::WriteParaXHeader(const CParaXModel& xmesh, LPFileSaveObje
 bool CParaXSerializer::ReadParaXHeader(ParaXHeaderDef& xheader, LPFileData pFileData)
 {
 	SIZE_T       dwSize;
-	const char       *pBuffer;
+	const char* pBuffer;
 	// Get the template data
-	if(SUCCEEDED(pFileData->Lock(&dwSize, (LPCVOID*)(&pBuffer))))
+	if (SUCCEEDED(pFileData->Lock(&dwSize, (LPCVOID*)(&pBuffer))))
 	{
 		memcpy(&xheader, pBuffer, sizeof(ParaXHeaderDef));
 		pFileData->Unlock();
@@ -561,40 +580,40 @@ bool CParaXSerializer::ReadParaXHeader(ParaXHeaderDef& xheader, LPFileData pFile
 bool CParaXSerializer::WriteXGlobalSequences(const CParaXModel& xmesh, LPFileSaveData pFileData)
 {
 	int nGlobalSequences = xmesh.GetObjectNum().nGlobalSequences;
-	if(nGlobalSequences>0 )
+	if (nGlobalSequences > 0)
 	{
 		unsigned char* pData = 0;
-		int nSize = 4+nGlobalSequences*sizeof(DWORD);
+		int nSize = 4 + nGlobalSequences * sizeof(DWORD);
 		pData = new unsigned char[nSize];
-		if(pData==0)
+		if (pData == 0)
 			return false;
 		*(DWORD*)(pData) = (DWORD)nGlobalSequences;
-		unsigned char *bytes = (unsigned char*)(pData+4);
-		memcpy(bytes, xmesh.globalSequences, nSize-4);
+		unsigned char* bytes = (unsigned char*)(pData + 4);
+		memcpy(bytes, xmesh.globalSequences, nSize - 4);
 
 		LPFileSaveData pDataNode;
-		if(FAILED(pFileData->AddDataObject(TID_XDWORDArray, "XGlobalSequences", NULL, nSize, pData, &pDataNode)))
+		if (FAILED(pFileData->AddDataObject(TID_XDWORDArray, "XGlobalSequences", NULL, nSize, pData, &pDataNode)))
 		{
-			delete [] pData;
+			delete[] pData;
 			return false;
 		}
 		SAFE_RELEASE(pDataNode);
 
-		delete [] pData;
+		delete[] pData;
 	}
 	return true;
 }
 bool CParaXSerializer::ReadXGlobalSequences(CParaXModel& xmesh, LPFileData pFileData)
 {
 	SIZE_T       dwSize;
-	const char       *pBuffer=NULL;
+	const char* pBuffer = NULL;
 	// Get the template data
 	if (SUCCEEDED(pFileData->Lock(&dwSize, (LPCVOID*)(&pBuffer))))
 	{
 		xmesh.m_objNum.nGlobalSequences = *(DWORD*)(pBuffer);
 		xmesh.globalSequences = new int[xmesh.m_objNum.nGlobalSequences];
-		if(xmesh.globalSequences)
-			memcpy(xmesh.globalSequences, pBuffer+4, xmesh.m_objNum.nGlobalSequences*sizeof(DWORD));
+		if (xmesh.globalSequences)
+			memcpy(xmesh.globalSequences, pBuffer + 4, xmesh.m_objNum.nGlobalSequences * sizeof(DWORD));
 		else
 			return false;
 	}
@@ -605,16 +624,16 @@ bool CParaXSerializer::ReadXGlobalSequences(CParaXModel& xmesh, LPFileData pFile
 
 bool CParaXSerializer::WriteXVertices(const CParaXModel& xmesh, LPFileSaveData pFileData)
 {
-	if((xmesh.m_RenderMethod == CParaXModel::SOFT_ANIM || xmesh.m_RenderMethod == CParaXModel::NO_ANIM) && xmesh.m_origVertices)
+	if ((xmesh.m_RenderMethod == CParaXModel::SOFT_ANIM || xmesh.m_RenderMethod == CParaXModel::NO_ANIM) && xmesh.m_origVertices)
 	{
 		XVerticesDef data;
-		data.nType = 0; 
+		data.nType = 0;
 		data.nVertexBytes = sizeof(ModelVertex);
 		data.nVertices = xmesh.GetObjectNum().nVertices;
-		data.ofsVertices = m_rawdata.AddRawData((const DWORD*)xmesh.m_origVertices, data.nVertices*data.nVertexBytes/4);
-		
+		data.ofsVertices = m_rawdata.AddRawData((const DWORD*)xmesh.m_origVertices, data.nVertices * data.nVertexBytes / 4);
+
 		LPFileSaveData pDataNode;
-		if(FAILED(pFileData->AddDataObject(TID_XVertices, NULL, NULL, sizeof(XVerticesDef), &data, &pDataNode)))
+		if (FAILED(pFileData->AddDataObject(TID_XVertices, NULL, NULL, sizeof(XVerticesDef), &data, &pDataNode)))
 			return false;
 		SAFE_RELEASE(pDataNode);
 	}
@@ -627,12 +646,12 @@ bool CParaXSerializer::WriteXVertices(const CParaXModel& xmesh, LPFileSaveData p
 bool CParaXSerializer::ReadXVertices(CParaXModel& xmesh, LPFileData pFileData)
 {
 	SIZE_T       dwSize;
-	const char       *pBuffer=NULL;
+	const char* pBuffer = NULL;
 	// Get the template data
 	if (SUCCEEDED(pFileData->Lock(&dwSize, (LPCVOID*)(&pBuffer))))
 	{
 		XVerticesDef* pXVert = (XVerticesDef*)pBuffer;
-		xmesh.initVertices( pXVert->nVertices, (ModelVertex*)(GetRawData(pXVert->ofsVertices)));
+		xmesh.initVertices(pXVert->nVertices, (ModelVertex*)(GetRawData(pXVert->ofsVertices)));
 	}
 	else
 		return false;
@@ -661,11 +680,11 @@ bool CParaXSerializer::ReadXVoxels(CParaXModel& xmesh, LPFileData pFileData)
 bool CParaXSerializer::WriteXTextures(const CParaXModel& xmesh, LPFileSaveData pFileData)
 {
 	int nTextures = xmesh.GetObjectNum().nTextures;
-	if(nTextures)
+	if (nTextures)
 	{
-		int nSize = 500*nTextures;
+		int nSize = 500 * nTextures;
 		unsigned char* pData = new unsigned char[nSize];
-		if(pData==0)
+		if (pData == 0)
 			return false;
 		*(DWORD*)(pData) = nTextures;
 		nSize = 4;
@@ -675,15 +694,16 @@ bool CParaXSerializer::WriteXTextures(const CParaXModel& xmesh, LPFileSaveData p
 			uint32 flags;
 			char sName;
 		};
-		for (int i=0; i<nTextures; i++) {
-			ModelTextureDef_* pTexDef = (ModelTextureDef_*)(pData+nSize);
-			
+		for (int i = 0; i < nTextures; i++) {
+			ModelTextureDef_* pTexDef = (ModelTextureDef_*)(pData + nSize);
+
 			pTexDef->flags = 0; // unused
 			if (xmesh.textures[i].get() == 0) {
 				pTexDef->type = xmesh.specialTextures[i];
 				pTexDef->sName = '\0';
-				nSize += 8+1;
-			} else {
+				nSize += 8 + 1;
+			}
+			else {
 				pTexDef->type = 0;
 				int nameLen = (uint32)xmesh.textures[i]->GetKey().size();
 				strcpy(&pTexDef->sName, xmesh.textures[i]->GetKey().c_str());
@@ -691,14 +711,14 @@ bool CParaXSerializer::WriteXTextures(const CParaXModel& xmesh, LPFileSaveData p
 			}
 		}
 		LPFileSaveData pDataNode;
-		if(FAILED(pFileData->AddDataObject(TID_XTextures, NULL, NULL, nSize, pData, &pDataNode)))
+		if (FAILED(pFileData->AddDataObject(TID_XTextures, NULL, NULL, nSize, pData, &pDataNode)))
 		{
-			delete [] pData;
+			delete[] pData;
 			return false;
 		}
 		SAFE_RELEASE(pDataNode);
 
-		delete [] pData;
+		delete[] pData;
 	}
 	return true;
 }
@@ -706,7 +726,7 @@ bool CParaXSerializer::WriteXTextures(const CParaXModel& xmesh, LPFileSaveData p
 bool CParaXSerializer::ReadXTextures(CParaXModel& xmesh, LPFileData pFileData)
 {
 	SIZE_T       dwSize;
-	const char       *pBuffer=NULL;
+	const char* pBuffer = NULL;
 	// Get the template data
 	if (SUCCEEDED(pFileData->Lock(&dwSize, (LPCVOID*)(&pBuffer))))
 	{
@@ -718,7 +738,7 @@ bool CParaXSerializer::ReadXTextures(CParaXModel& xmesh, LPFileData pFileData)
 			uint32 nOffsetEmbeddedTexture;
 			char sName;
 		};
-		if(nTextures>0)
+		if (nTextures > 0)
 		{ // at least one texture
 			typedef TextureEntity* LPTextureEntity;
 			xmesh.textures = new asset_ptr<TextureEntity>[nTextures];
@@ -789,37 +809,37 @@ bool CParaXSerializer::WriteXAttachments(const CParaXModel& xmesh, LPFileSaveDat
 {
 	int nAttachments = xmesh.GetObjectNum().nAttachments;
 	int nAttachmentLookup = xmesh.GetObjectNum().nAttachLookup;
-	if(nAttachments>0 || nAttachmentLookup>0 )
+	if (nAttachments > 0 || nAttachmentLookup > 0)
 	{
 		unsigned char* pData = 0;
-		int nSize = 8+sizeof(ModelAttachmentDef)*nAttachments+4*nAttachmentLookup;
+		int nSize = 8 + sizeof(ModelAttachmentDef) * nAttachments + 4 * nAttachmentLookup;
 		pData = new unsigned char[nSize];
-		if(pData==0)
+		if (pData == 0)
 			return false;
 		*(DWORD*)(pData) = (DWORD)nAttachments;
-		*(((DWORD*)(pData))+1) = (DWORD)nAttachmentLookup;
-		ModelAttachmentDef *attachments = (ModelAttachmentDef *)(pData+8);
-		int32 * attLookup = (int32 *)(pData+8+sizeof(ModelAttachmentDef)*nAttachments);
-		for (int i=0; i<nAttachments; i++) {
+		*(((DWORD*)(pData)) + 1) = (DWORD)nAttachmentLookup;
+		ModelAttachmentDef* attachments = (ModelAttachmentDef*)(pData + 8);
+		int32* attLookup = (int32*)(pData + 8 + sizeof(ModelAttachmentDef) * nAttachments);
+		for (int i = 0; i < nAttachments; i++) {
 			const ModelAttachment& att = xmesh.m_atts[i];
 			attachments[i].id = att.id;
 			attachments[i].bone = att.bone;
 			attachments[i].pos = att.pos;
 			// TODO: this member is not used.
-			memset(&attachments[i].unk, 0 , sizeof(AnimationBlock));
+			memset(&attachments[i].unk, 0, sizeof(AnimationBlock));
 		}
-		if(nAttachmentLookup>0)
-			memcpy(attLookup, xmesh.m_attLookup, 4*nAttachmentLookup);
+		if (nAttachmentLookup > 0)
+			memcpy(attLookup, xmesh.m_attLookup, 4 * nAttachmentLookup);
 
 		LPFileSaveData pDataNode;
-		if(FAILED(pFileData->AddDataObject(TID_XAttachments, NULL, NULL, nSize, pData, &pDataNode)))
+		if (FAILED(pFileData->AddDataObject(TID_XAttachments, NULL, NULL, nSize, pData, &pDataNode)))
 		{
-			delete [] pData;
+			delete[] pData;
 			return false;
 		}
 		SAFE_RELEASE(pDataNode);
 
-		delete [] pData;
+		delete[] pData;
 	}
 	return true;
 }
@@ -828,21 +848,21 @@ bool CParaXSerializer::WriteXAttachments(const CParaXModel& xmesh, LPFileSaveDat
 bool CParaXSerializer::ReadXAttachments(CParaXModel& xmesh, LPFileData pFileData)
 {
 	SIZE_T       dwSize;
-	const char       *pBuffer=NULL;
+	const char* pBuffer = NULL;
 	// Get the template data
 	if (SUCCEEDED(pFileData->Lock(&dwSize, (LPCVOID*)(&pBuffer))))
 	{
 		int nAttachments = *(DWORD*)(pBuffer);
-		int nAttachmentLookup = *(((DWORD*)(pBuffer))+1);
+		int nAttachmentLookup = *(((DWORD*)(pBuffer)) + 1);
 		xmesh.m_objNum.nAttachments = nAttachments;
 		xmesh.m_objNum.nAttachLookup = nAttachmentLookup;
-		
-		ModelAttachmentDef *attachments = (ModelAttachmentDef *)(pBuffer+8);
-		int32 * attLookup = (int32 *)(pBuffer+8+sizeof(ModelAttachmentDef)*nAttachments);
+
+		ModelAttachmentDef* attachments = (ModelAttachmentDef*)(pBuffer + 8);
+		int32* attLookup = (int32*)(pBuffer + 8 + sizeof(ModelAttachmentDef) * nAttachments);
 
 		// attachments
 		xmesh.m_atts.reserve(nAttachments);
-		for (int i=0; i<nAttachments; ++i) {
+		for (int i = 0; i < nAttachments; ++i) {
 			ModelAttachment att;
 			const ModelAttachmentDef& mad = attachments[i];
 			att.pos = mad.pos;
@@ -851,9 +871,9 @@ bool CParaXSerializer::ReadXAttachments(CParaXModel& xmesh, LPFileData pFileData
 			xmesh.m_atts.push_back(att);
 		}
 		// attachment lookups
-		if(nAttachmentLookup>0){
-			PE_ASSERT(nAttachmentLookup<=40);
-			memcpy(xmesh.m_attLookup, attLookup, 4*nAttachmentLookup);
+		if (nAttachmentLookup > 0) {
+			PE_ASSERT(nAttachmentLookup <= 40);
+			memcpy(xmesh.m_attLookup, attLookup, 4 * nAttachmentLookup);
 		}
 	}
 	else
@@ -864,46 +884,46 @@ bool CParaXSerializer::ReadXAttachments(CParaXModel& xmesh, LPFileData pFileData
 bool CParaXSerializer::WriteXColors(const CParaXModel& xmesh, LPFileSaveData pFileData)
 {
 	int nColors = xmesh.GetObjectNum().nColors;
-	if(nColors>0 )
+	if (nColors > 0)
 	{
 		unsigned char* pData = 0;
-		int nSize = 4+sizeof(ModelColorDef)*nColors;
+		int nSize = 4 + sizeof(ModelColorDef) * nColors;
 		pData = new unsigned char[nSize];
-		if(pData==0)
+		if (pData == 0)
 			return false;
 		*(DWORD*)(pData) = (DWORD)nColors;
-		ModelColorDef *colorDefs = (ModelColorDef*)(pData+4);
-		for (int i=0; i<nColors; i++) {
+		ModelColorDef* colorDefs = (ModelColorDef*)(pData + 4);
+		for (int i = 0; i < nColors; i++) {
 			const ModelColor& att = xmesh.colors[i];
 			WriteAnimationBlock(&colorDefs[i].color, att.color);
 			WriteAnimationBlock(&colorDefs[i].opacity, att.opacity);
 		}
 		LPFileSaveData pDataNode;
-		if(FAILED(pFileData->AddDataObject(TID_XColors, NULL, NULL, nSize, pData, &pDataNode)))
+		if (FAILED(pFileData->AddDataObject(TID_XColors, NULL, NULL, nSize, pData, &pDataNode)))
 		{
-			delete [] pData;
+			delete[] pData;
 			return false;
 		}
 		SAFE_RELEASE(pDataNode);
 
-		delete [] pData;
+		delete[] pData;
 	}
 	return true;
 }
 bool CParaXSerializer::ReadXColors(CParaXModel& xmesh, LPFileData pFileData)
 {
 	SIZE_T       dwSize;
-	const char       *pBuffer=NULL;
+	const char* pBuffer = NULL;
 	// Get the template data
 	if (SUCCEEDED(pFileData->Lock(&dwSize, (LPCVOID*)(&pBuffer))))
 	{
 		int nColors = *(DWORD*)(pBuffer);
 		xmesh.m_objNum.nColors = nColors;
-		if(nColors>0)
+		if (nColors > 0)
 		{ // at least one Bone
-			ModelColorDef *colorDefs = (ModelColorDef*)(pBuffer+4);
+			ModelColorDef* colorDefs = (ModelColorDef*)(pBuffer + 4);
 			xmesh.colors = new ModelColor[nColors];
-			for (int i=0;i<nColors;++i) 
+			for (int i = 0; i < nColors; ++i)
 			{
 				ModelColor& att = xmesh.colors[i];
 				ReadAnimationBlock(&colorDefs[i].color, att.color, xmesh.globalSequences);
@@ -919,28 +939,28 @@ bool CParaXSerializer::ReadXColors(CParaXModel& xmesh, LPFileData pFileData)
 bool CParaXSerializer::WriteXTransparency(const CParaXModel& xmesh, LPFileSaveData pFileData)
 {
 	int nTransparency = xmesh.GetObjectNum().nTransparency;
-	if(nTransparency>0 )
+	if (nTransparency > 0)
 	{
 		unsigned char* pData = 0;
-		int nSize = 4+sizeof(ModelTransDef)*nTransparency;
+		int nSize = 4 + sizeof(ModelTransDef) * nTransparency;
 		pData = new unsigned char[nSize];
-		if(pData==0)
+		if (pData == 0)
 			return false;
 		*(DWORD*)(pData) = (DWORD)nTransparency;
-		ModelTransDef *transDefs = (ModelTransDef*)(pData+4);
-		for (int i=0; i<nTransparency; i++) {
+		ModelTransDef* transDefs = (ModelTransDef*)(pData + 4);
+		for (int i = 0; i < nTransparency; i++) {
 			const ModelTransparency& transp = xmesh.transparency[i];
 			WriteAnimationBlock(&transDefs[i].trans, transp.trans);
 		}
 		LPFileSaveData pDataNode;
-		if(FAILED(pFileData->AddDataObject(TID_XTransparency, NULL, NULL, nSize, pData, &pDataNode)))
+		if (FAILED(pFileData->AddDataObject(TID_XTransparency, NULL, NULL, nSize, pData, &pDataNode)))
 		{
-			delete [] pData;
+			delete[] pData;
 			return false;
 		}
 		SAFE_RELEASE(pDataNode);
 
-		delete [] pData;
+		delete[] pData;
 	}
 	return true;
 }
@@ -948,17 +968,17 @@ bool CParaXSerializer::WriteXTransparency(const CParaXModel& xmesh, LPFileSaveDa
 bool CParaXSerializer::ReadXTransparency(CParaXModel& xmesh, LPFileData pFileData)
 {
 	SIZE_T       dwSize;
-	const char       *pBuffer=NULL;
+	const char* pBuffer = NULL;
 	// Get the template data
-	if(SUCCEEDED(pFileData->Lock(&dwSize, (LPCVOID*)(&pBuffer))))
+	if (SUCCEEDED(pFileData->Lock(&dwSize, (LPCVOID*)(&pBuffer))))
 	{
 		int nTransparency = *(DWORD*)(pBuffer);
 		xmesh.m_objNum.nTransparency = nTransparency;
-		if(nTransparency>0)
+		if (nTransparency > 0)
 		{ // at least one item
-			ModelTransDef *transDefs = (ModelTransDef*)(pBuffer+4);
+			ModelTransDef* transDefs = (ModelTransDef*)(pBuffer + 4);
 			xmesh.transparency = new ModelTransparency[nTransparency];
-			for (int i=0;i<nTransparency;++i) 
+			for (int i = 0; i < nTransparency; ++i)
 			{
 				ReadAnimationBlock(&transDefs[i].trans, xmesh.transparency[i].trans, xmesh.globalSequences);
 			}
@@ -976,27 +996,27 @@ bool CParaXSerializer::WriteXViews(const CParaXModel& xmesh, LPFileSaveData pFil
 	int nView = 1;
 	{
 		unsigned char* pData = 0;
-		int nSize = 4+sizeof(ModelView)*nView;
+		int nSize = 4 + sizeof(ModelView) * nView;
 		pData = new unsigned char[nSize];
-		if(pData==0)
+		if (pData == 0)
 			return false;
 		*(DWORD*)(pData) = (DWORD)nView;
-		ModelView* view = (ModelView*)(pData+4);
-		for (int i=0; i<nView; i++) {
-			memset(&view[i], 0 , sizeof(ModelView));
+		ModelView* view = (ModelView*)(pData + 4);
+		for (int i = 0; i < nView; i++) {
+			memset(&view[i], 0, sizeof(ModelView));
 			view[i].nTris = (uint32)xmesh.GetObjectNum().nIndices; // TODO:rename nTris to nIndices
 			view[i].nSub = (uint32)xmesh.geosets.size();
 			view[i].nTex = (uint32)xmesh.passes.size(); // TODO: rename nTex to render pass
 		}
 		LPFileSaveData pDataNode;
-		if(FAILED(pFileData->AddDataObject(TID_XViews, NULL, NULL, nSize, pData, &pDataNode)))
+		if (FAILED(pFileData->AddDataObject(TID_XViews, NULL, NULL, nSize, pData, &pDataNode)))
 		{
-			delete [] pData;
+			delete[] pData;
 			return false;
 		}
 		SAFE_RELEASE(pDataNode);
 
-		delete [] pData;
+		delete[] pData;
 	}
 	return true;
 }
@@ -1008,21 +1028,21 @@ bool CParaXSerializer::ReadXViews(CParaXModel& xmesh, LPFileData pFileData)
 
 bool CParaXSerializer::WriteXIndices0(const CParaXModel& xmesh, LPFileSaveData pFileData)
 {
-	if((xmesh.m_RenderMethod == CParaXModel::SOFT_ANIM || xmesh.m_RenderMethod == CParaXModel::NO_ANIM) && xmesh.m_indices)
+	if ((xmesh.m_RenderMethod == CParaXModel::SOFT_ANIM || xmesh.m_RenderMethod == CParaXModel::NO_ANIM) && xmesh.m_indices)
 	{
 		int nIndices = (int)xmesh.GetObjectNum().nIndices;
 		{
-			
+
 			Indice0Def indices0;
 			indices0.nIndices = nIndices;
 			indices0.ofsIndices = m_rawdata.AddRawData((const short*)xmesh.m_indices, nIndices);
 			LPFileSaveData pDataNode;
-			if(FAILED(pFileData->AddDataObject(TID_XIndices0, NULL, NULL, sizeof(Indice0Def), &indices0, &pDataNode)))
+			if (FAILED(pFileData->AddDataObject(TID_XIndices0, NULL, NULL, sizeof(Indice0Def), &indices0, &pDataNode)))
 				return false;
 			SAFE_RELEASE(pDataNode);
 		}
 	}
-	else 
+	else
 	{
 		//TODO: read from index buffer.
 	}
@@ -1031,12 +1051,12 @@ bool CParaXSerializer::WriteXIndices0(const CParaXModel& xmesh, LPFileSaveData p
 bool CParaXSerializer::ReadXIndices0(CParaXModel& xmesh, LPFileData pFileData)
 {
 	SIZE_T       dwSize;
-	const char       *pBuffer=NULL;
+	const char* pBuffer = NULL;
 	// Get the template data
-	if(SUCCEEDED(pFileData->Lock(&dwSize, (LPCVOID*)(&pBuffer))))
+	if (SUCCEEDED(pFileData->Lock(&dwSize, (LPCVOID*)(&pBuffer))))
 	{
 		Indice0Def* pIndices = (Indice0Def*)pBuffer;
-		xmesh.initIndices( pIndices->nIndices, (uint16*)(GetRawData(pIndices->ofsIndices)));
+		xmesh.initIndices(pIndices->nIndices, (uint16*)(GetRawData(pIndices->ofsIndices)));
 	}
 	else
 		return false;
@@ -1046,44 +1066,44 @@ bool CParaXSerializer::ReadXIndices0(CParaXModel& xmesh, LPFileData pFileData)
 bool CParaXSerializer::WriteXGeosets(const CParaXModel& xmesh, LPFileSaveData pFileData)
 {
 	int nGeosets = (int)xmesh.geosets.size();
-	if(nGeosets>0 )
+	if (nGeosets > 0)
 	{
 		unsigned char* pData = 0;
-		int nSize = 4+sizeof(ModelGeoset)*nGeosets;
+		int nSize = 4 + sizeof(ModelGeoset) * nGeosets;
 		pData = new unsigned char[nSize];
-		if(pData==0)
+		if (pData == 0)
 			return false;
 		*(DWORD*)(pData) = (DWORD)nGeosets;
-		ModelGeoset *geosets = (ModelGeoset*)(pData+4);
-		memcpy(geosets, &xmesh.geosets[0], nSize-4);
+		ModelGeoset* geosets = (ModelGeoset*)(pData + 4);
+		memcpy(geosets, &xmesh.geosets[0], nSize - 4);
 		LPFileSaveData pDataNode;
-		if(FAILED(pFileData->AddDataObject(TID_XGeosets, NULL, NULL, nSize, pData, &pDataNode)))
+		if (FAILED(pFileData->AddDataObject(TID_XGeosets, NULL, NULL, nSize, pData, &pDataNode)))
 		{
-			delete [] pData;
+			delete[] pData;
 			return false;
 		}
 		SAFE_RELEASE(pDataNode);
 
-		delete [] pData;
+		delete[] pData;
 	}
 	return true;
 }
 bool CParaXSerializer::ReadXGeosets(CParaXModel& xmesh, LPFileData pFileData)
 {
 	SIZE_T       dwSize;
-	const char       *pBuffer=NULL;
+	const char* pBuffer = NULL;
 	// Get the template data
-	if(SUCCEEDED(pFileData->Lock(&dwSize, (LPCVOID*)(&pBuffer))))
+	if (SUCCEEDED(pFileData->Lock(&dwSize, (LPCVOID*)(&pBuffer))))
 	{
 		int nGeosets = *(DWORD*)(pBuffer);
-		ModelGeoset* pGeosets = (ModelGeoset*)(pBuffer+4);
+		ModelGeoset* pGeosets = (ModelGeoset*)(pBuffer + 4);
 		xmesh.showGeosets = new bool[nGeosets];
-		for(int i=0;i<nGeosets;++i)
+		for (int i = 0; i < nGeosets; ++i)
 			xmesh.showGeosets[i] = true;
 
 		xmesh.geosets.resize(nGeosets);
 		if (nGeosets > 0) {
-			memcpy(&xmesh.geosets[0], pGeosets, sizeof(ModelGeoset)*nGeosets);
+			memcpy(&xmesh.geosets[0], pGeosets, sizeof(ModelGeoset) * nGeosets);
 			if (xmesh.CheckMinVersion(1, 0, 0, 1))
 			{
 				/* since Intel is little endian.
@@ -1102,7 +1122,7 @@ bool CParaXSerializer::ReadXGeosets(CParaXModel& xmesh, LPFileData pFileData)
 				}
 			}
 		}
-			
+
 	}
 	else
 		return false;
@@ -1112,52 +1132,52 @@ bool CParaXSerializer::ReadXGeosets(CParaXModel& xmesh, LPFileData pFileData)
 bool CParaXSerializer::WriteXRenderPass(const CParaXModel& xmesh, LPFileSaveData pFileData)
 {
 	int nRenderPasses = (int)xmesh.passes.size();
-	if(nRenderPasses>0 )
+	if (nRenderPasses > 0)
 	{
 		unsigned char* pData = 0;
-		int nSize = 4+sizeof(ModelRenderPass)*nRenderPasses;
+		int nSize = 4 + sizeof(ModelRenderPass) * nRenderPasses;
 		pData = new unsigned char[nSize];
-		if(pData==0)
+		if (pData == 0)
 			return false;
 		*(DWORD*)(pData) = (DWORD)nRenderPasses;
-		ModelRenderPass *opsDefs = (ModelRenderPass*)(pData+4);
-		memcpy(opsDefs, &xmesh.passes[0], nSize-4);
+		ModelRenderPass* opsDefs = (ModelRenderPass*)(pData + 4);
+		memcpy(opsDefs, &xmesh.passes[0], nSize - 4);
 		LPFileSaveData pDataNode;
-		if(FAILED(pFileData->AddDataObject(TID_XRenderPass, NULL, NULL, nSize, pData, &pDataNode)))
+		if (FAILED(pFileData->AddDataObject(TID_XRenderPass, NULL, NULL, nSize, pData, &pDataNode)))
 		{
-			delete [] pData;
+			delete[] pData;
 			return false;
 		}
 		SAFE_RELEASE(pDataNode);
 
-		delete [] pData;
+		delete[] pData;
 	}
 	return true;
 }
 bool CParaXSerializer::ReadXRenderPass(CParaXModel& xmesh, LPFileData pFileData)
 {
 	SIZE_T       dwSize;
-	const char       *pBuffer=NULL;
+	const char* pBuffer = NULL;
 	// Get the template data
-	if(SUCCEEDED(pFileData->Lock(&dwSize, (LPCVOID*)(&pBuffer))))
+	if (SUCCEEDED(pFileData->Lock(&dwSize, (LPCVOID*)(&pBuffer))))
 	{
 		int nRenderPasses = *(DWORD*)(pBuffer);
-		ModelRenderPass* passes = (ModelRenderPass*)(pBuffer+4);
+		ModelRenderPass* passes = (ModelRenderPass*)(pBuffer + 4);
 		xmesh.passes.resize(nRenderPasses);
-		if(nRenderPasses>0)
+		if (nRenderPasses > 0)
 		{
-			memcpy(&xmesh.passes[0],passes, sizeof(ModelRenderPass)*nRenderPasses);
+			memcpy(&xmesh.passes[0], passes, sizeof(ModelRenderPass) * nRenderPasses);
 
 			// for opaque faces, always enable culling.
-			for (int i=0;i<nRenderPasses;++i)
+			for (int i = 0; i < nRenderPasses; ++i)
 			{
 				ModelRenderPass& pass = xmesh.passes[i];
-				if(pass.blendmode == BM_OPAQUE)
+				if (pass.blendmode == BM_OPAQUE)
 				{
 					pass.cull = true;
 				}
 				/** fix 2009.1.14 by LiXizhi, use 32 bits index offset */
-				if(pass.indexStart != 0xffff)
+				if (pass.indexStart != 0xffff)
 				{
 					pass.m_nIndexStart = pass.indexStart;
 				}
@@ -1175,17 +1195,17 @@ bool CParaXSerializer::ReadXRenderPass(CParaXModel& xmesh, LPFileData pFileData)
 bool CParaXSerializer::WriteXBones(const CParaXModel& xmesh, LPFileSaveData pFileData)
 {
 	int nBones = xmesh.GetObjectNum().nBones;
-	if(nBones>0 && xmesh.animBones)
+	if (nBones > 0 && xmesh.animBones)
 	{
 		unsigned char* pData = 0;
-		int nSize = 4+sizeof(ModelBoneDef)*nBones;
+		int nSize = 4 + sizeof(ModelBoneDef) * nBones;
 		pData = new unsigned char[nSize];
-		if(pData==0)
+		if (pData == 0)
 			return false;
 		memset(pData, 0, nSize);
 		*(DWORD*)(pData) = (DWORD)nBones;
-		ModelBoneDef *bones = (ModelBoneDef*)(pData+4);
-		for (int i=0; i<nBones; i++) {
+		ModelBoneDef* bones = (ModelBoneDef*)(pData + 4);
+		for (int i = 0; i < nBones; i++) {
 			const Bone& bone = xmesh.bones[i];
 			bones[i].parent = bone.parent;
 			bones[i].pivot = bone.pivot;
@@ -1196,39 +1216,39 @@ bool CParaXSerializer::WriteXBones(const CParaXModel& xmesh, LPFileSaveData pFil
 			WriteAnimationBlock(&bones[i].scaling, bone.scale);
 		}
 		LPFileSaveData pDataNode;
-		if(FAILED(pFileData->AddDataObject(TID_XBones, NULL, NULL, nSize, pData, &pDataNode)))
+		if (FAILED(pFileData->AddDataObject(TID_XBones, NULL, NULL, nSize, pData, &pDataNode)))
 		{
-			delete [] pData;
+			delete[] pData;
 			return false;
 		}
 		SAFE_RELEASE(pDataNode);
 
-		delete [] pData;
+		delete[] pData;
 	}
 	return true;
 }
 bool CParaXSerializer::ReadXBones(CParaXModel& xmesh, LPFileData pFileData)
 {
 	SIZE_T       dwSize;
-	const char       *pBuffer=NULL;
+	const char* pBuffer = NULL;
 	// Get the template data
-	if(SUCCEEDED(pFileData->Lock(&dwSize, (LPCVOID*)(&pBuffer))))
+	if (SUCCEEDED(pFileData->Lock(&dwSize, (LPCVOID*)(&pBuffer))))
 	{
 		int nBones = *(DWORD*)(pBuffer);
 		xmesh.m_objNum.nBones = nBones;
-		if(nBones>0)
+		if (nBones > 0)
 		{ // at least one Bone
 			xmesh.bones = new Bone[nBones];
-			ModelBoneDef *mb = (ModelBoneDef*)(pBuffer+4);
-			for (int i=0;i<nBones;++i) 
+			ModelBoneDef* mb = (ModelBoneDef*)(pBuffer + 4);
+			for (int i = 0; i < nBones; ++i)
 			{
 				Bone& bone = xmesh.bones[i];
-				const ModelBoneDef&b = mb[i];
+				const ModelBoneDef& b = mb[i];
 				bone.parent = b.parent;
 				bone.flags = b.flags;
 				bone.nIndex = i;
-				
-				if(b.boneid>0 && b.boneid<MAX_KNOWN_BONE_NODE)
+
+				if (b.boneid > 0 && b.boneid < MAX_KNOWN_BONE_NODE)
 				{
 					xmesh.m_boneLookup[b.boneid] = i;
 					bone.nBoneID = b.boneid;
@@ -1252,7 +1272,7 @@ bool CParaXSerializer::ReadXBones(CParaXModel& xmesh, LPFileData pFileData)
 				{
 					bone.pivot = b.pivot;
 				}
-				
+
 				if (!bone.IsStaticTransform())
 				{
 					ReadAnimationBlock(&b.translation, bone.trans, xmesh.globalSequences);
@@ -1271,50 +1291,50 @@ bool CParaXSerializer::ReadXBones(CParaXModel& xmesh, LPFileData pFileData)
 bool CParaXSerializer::WriteXTexAnims(const CParaXModel& xmesh, LPFileSaveData pFileData)
 {
 	int nTexAnims = xmesh.GetObjectNum().nTexAnims;
-	if(nTexAnims>0 && xmesh.animTextures)
+	if (nTexAnims > 0 && xmesh.animTextures)
 	{
 		unsigned char* pData = 0;
-		int nSize = 4+sizeof(ModelTexAnimDef)*nTexAnims;
+		int nSize = 4 + sizeof(ModelTexAnimDef) * nTexAnims;
 		pData = new unsigned char[nSize];
-		if(pData==0)
+		if (pData == 0)
 			return false;
 		*(DWORD*)(pData) = (DWORD)nTexAnims;
-		ModelTexAnimDef *texanims = (ModelTexAnimDef*)(pData+4);
-		for (int i=0; i<nTexAnims; i++) {
+		ModelTexAnimDef* texanims = (ModelTexAnimDef*)(pData + 4);
+		for (int i = 0; i < nTexAnims; i++) {
 			const TextureAnim& TexAnim = xmesh.texanims[i];
 			WriteAnimationBlock(&texanims[i].trans, TexAnim.trans);
 			WriteAnimationBlock(&texanims[i].rot, TexAnim.rot);
 			WriteAnimationBlock(&texanims[i].scale, TexAnim.scale);
 		}
 		LPFileSaveData pDataNode;
-		if(FAILED(pFileData->AddDataObject(TID_XTexAnims, NULL, NULL, nSize, pData, &pDataNode)))
+		if (FAILED(pFileData->AddDataObject(TID_XTexAnims, NULL, NULL, nSize, pData, &pDataNode)))
 		{
-			delete [] pData;
+			delete[] pData;
 			return false;
 		}
 		SAFE_RELEASE(pDataNode);
 
-		delete [] pData;
+		delete[] pData;
 	}
 	return true;
 }
 bool CParaXSerializer::ReadXTexAnims(CParaXModel& xmesh, LPFileData pFileData)
 {
 	SIZE_T       dwSize;
-	const char       *pBuffer=NULL;
+	const char* pBuffer = NULL;
 	// Get the template data
-	if(SUCCEEDED(pFileData->Lock(&dwSize, (LPCVOID*)(&pBuffer))))
+	if (SUCCEEDED(pFileData->Lock(&dwSize, (LPCVOID*)(&pBuffer))))
 	{
 		int nTexAnims = *(DWORD*)(pBuffer);
 		xmesh.m_objNum.nTexAnims = nTexAnims;
-		if(nTexAnims>0)
+		if (nTexAnims > 0)
 		{ // at least one Bone
-			ModelTexAnimDef *texanims = (ModelTexAnimDef*)(pBuffer+4);
+			ModelTexAnimDef* texanims = (ModelTexAnimDef*)(pBuffer + 4);
 			xmesh.texanims = new TextureAnim[nTexAnims];
-			for (int i=0;i<nTexAnims;++i) 
+			for (int i = 0; i < nTexAnims; ++i)
 			{
 				TextureAnim& TexAnim = xmesh.texanims[i];
-				const ModelTexAnimDef &texanim = texanims[i];
+				const ModelTexAnimDef& texanim = texanims[i];
 				ReadAnimationBlock(&texanim.trans, TexAnim.trans, xmesh.globalSequences);
 				ReadAnimationBlock(&texanim.rot, TexAnim.rot, xmesh.globalSequences);
 				ReadAnimationBlock(&texanim.scale, TexAnim.scale, xmesh.globalSequences);
@@ -1329,21 +1349,21 @@ bool CParaXSerializer::ReadXTexAnims(CParaXModel& xmesh, LPFileData pFileData)
 bool CParaXSerializer::WriteXParticleEmitters(const CParaXModel& xmesh, LPFileSaveData pFileData)
 {
 	int nParticleEmitters = xmesh.GetObjectNum().nParticleEmitters;
-	if(nParticleEmitters>0)
-	{		
+	if (nParticleEmitters > 0)
+	{
 		unsigned char* pData = 0;
-		int nSize = 4+sizeof(ModelParticleEmitterDef)*nParticleEmitters;
+		int nSize = 4 + sizeof(ModelParticleEmitterDef) * nParticleEmitters;
 		pData = new unsigned char[nSize];
-		if(pData==0)
+		if (pData == 0)
 			return false;
 		memset(pData, 0, nSize);
 		*(DWORD*)(pData) = (DWORD)nParticleEmitters;
-		ModelParticleEmitterDef *particleSystems = (ModelParticleEmitterDef*)(pData+4);
-		for (int i=0; i<nParticleEmitters; i++) {
+		ModelParticleEmitterDef* particleSystems = (ModelParticleEmitterDef*)(pData + 4);
+		for (int i = 0; i < nParticleEmitters; i++) {
 			const ParticleSystem& particleSystem = xmesh.particleSystems[i];
-			
-			for (int k=0; k<3; k++) {
-				particleSystems[i].p.colors[k] = (DWORD)LinearColor((float*)&particleSystem.colors[k]) ;
+
+			for (int k = 0; k < 3; k++) {
+				particleSystems[i].p.colors[k] = (DWORD)LinearColor((float*)&particleSystem.colors[k]);
 				particleSystems[i].p.sizes[k] = particleSystem.sizes[k];
 			}
 			particleSystems[i].p.mid = particleSystem.mid;
@@ -1354,21 +1374,21 @@ bool CParaXSerializer::WriteXParticleEmitters(const CParaXModel& xmesh, LPFileSa
 			particleSystems[i].rows = particleSystem.rows;
 			particleSystems[i].cols = particleSystem.cols;
 			particleSystems[i].s1 = particleSystem.type;
-			particleSystems[i].type = particleSystem.emitter ? particleSystem.emitter->GetEmitterType():ParticleEmitter::TYPE_NONE;
+			particleSystems[i].type = particleSystem.emitter ? particleSystem.emitter->GetEmitterType() : ParticleEmitter::TYPE_NONE;
 
-			if(!particleSystem.billboard)
+			if (!particleSystem.billboard)
 				particleSystems[i].flags |= 4096;
 			else
 				particleSystems[i].flags = 0;
-			
-			for(uint32 m=0;m<xmesh.GetObjectNum().nBones;++m){
-				if((xmesh.bones+m) == particleSystem.parent){
+
+			for (uint32 m = 0; m < xmesh.GetObjectNum().nBones; ++m) {
+				if ((xmesh.bones + m) == particleSystem.parent) {
 					particleSystems[i].bone = (int16)m;
 					break;
 				}
 			}
 			particleSystems[i].texture = (int16)particleSystem.m_texture_index;
-			
+
 			WriteAnimationBlock(&particleSystems[i].params[0], particleSystem.speed);
 			WriteAnimationBlock(&particleSystems[i].params[1], particleSystem.variation);
 			WriteAnimationBlock(&particleSystems[i].params[2], particleSystem.spread);
@@ -1381,14 +1401,14 @@ bool CParaXSerializer::WriteXParticleEmitters(const CParaXModel& xmesh, LPFileSa
 			WriteAnimationBlock(&particleSystems[i].params[9], particleSystem.grav2);
 		}
 		LPFileSaveData pDataNode;
-		if(FAILED(pFileData->AddDataObject(TID_XParticleEmitters, NULL, NULL, nSize, pData, &pDataNode)))
+		if (FAILED(pFileData->AddDataObject(TID_XParticleEmitters, NULL, NULL, nSize, pData, &pDataNode)))
 		{
-			delete [] pData;
+			delete[] pData;
 			return false;
 		}
 		SAFE_RELEASE(pDataNode);
 
-		delete [] pData;
+		delete[] pData;
 	}
 	return true;
 }
@@ -1397,26 +1417,26 @@ bool CParaXSerializer::WriteXParticleEmitters(const CParaXModel& xmesh, LPFileSa
 bool CParaXSerializer::ReadXParticleEmitters(CParaXModel& xmesh, LPFileData pFileData)
 {
 	SIZE_T       dwSize;
-	const char       *pBuffer=NULL;
+	const char* pBuffer = NULL;
 	// Get the template data
-	if(SUCCEEDED(pFileData->Lock(&dwSize, (LPCVOID*)(&pBuffer))))
+	if (SUCCEEDED(pFileData->Lock(&dwSize, (LPCVOID*)(&pBuffer))))
 	{
 		int nParticleEmitters = *(DWORD*)(pBuffer);
 		xmesh.m_objNum.nParticleEmitters = nParticleEmitters;
-		if(nParticleEmitters>0)
+		if (nParticleEmitters > 0)
 		{ // at least one item
-			ModelParticleEmitterDef *particleSystems = (ModelParticleEmitterDef*)(pBuffer+4);
+			ModelParticleEmitterDef* particleSystems = (ModelParticleEmitterDef*)(pBuffer + 4);
 			xmesh.particleSystems = new ParticleSystem[nParticleEmitters];
-			for (int i=0;i<nParticleEmitters;++i) 
+			for (int i = 0; i < nParticleEmitters; ++i)
 			{
 				ParticleSystem& ps = xmesh.particleSystems[i];
-				const ModelParticleEmitterDef & PSDef =  particleSystems[i];
+				const ModelParticleEmitterDef& PSDef = particleSystems[i];
 				ps.model = &xmesh;
 
-				if(xmesh.rotatePartice2SpeedVector)
+				if (xmesh.rotatePartice2SpeedVector)
 					ps.rotate2SpeedDirection = true;
 
-				for (size_t i=0; i<3; i++) {
+				for (size_t i = 0; i < 3; i++) {
 					ps.colors[i] = reinterpret_cast<const Vector4&>(LinearColor(Color(PSDef.p.colors[i])));
 					ps.sizes[i] = PSDef.p.sizes[i];// * PSDef.p.scales[i];
 				}
@@ -1469,45 +1489,45 @@ bool CParaXSerializer::ReadXParticleEmitters(CParaXModel& xmesh, LPFileData pFil
 bool CParaXSerializer::WriteXRibbonEmitters(const CParaXModel& xmesh, LPFileSaveData pFileData)
 {
 	int nRibbonEmitters = xmesh.GetObjectNum().nRibbonEmitters;
-	if(nRibbonEmitters>0)
+	if (nRibbonEmitters > 0)
 	{
 		unsigned char* pData = 0;
-		int nSize = 4+sizeof(ModelRibbonEmitterDef)*nRibbonEmitters;
+		int nSize = 4 + sizeof(ModelRibbonEmitterDef) * nRibbonEmitters;
 		pData = new unsigned char[nSize];
-		if(pData==0)
+		if (pData == 0)
 			return false;
 		memset(pData, 0, nSize);
 		*(DWORD*)(pData) = (DWORD)nRibbonEmitters;
-		ModelRibbonEmitterDef *ribbons = (ModelRibbonEmitterDef*)(pData+4);
-		for (int i=0; i<nRibbonEmitters; i++) {
+		ModelRibbonEmitterDef* ribbons = (ModelRibbonEmitterDef*)(pData + 4);
+		for (int i = 0; i < nRibbonEmitters; i++) {
 			const RibbonEmitter& ribbon = xmesh.ribbons[i];
 
 			ribbons[i].pos = ribbon.pos;
 			ribbons[i].res = (float)ribbon.numsegs;
 			ribbons[i].length = ribbon.seglen;
 
-			for(uint32 m=0;m<xmesh.GetObjectNum().nBones;++m){
-				if((xmesh.bones+m) == ribbon.parent){
+			for (uint32 m = 0; m < xmesh.GetObjectNum().nBones; ++m) {
+				if ((xmesh.bones + m) == ribbon.parent) {
 					ribbons[i].bone = m;
 					break;
 				}
 			}
 			ribbons[i].ofsTextures = ribbon.m_texture_index;
-			
+
 			WriteAnimationBlock(&ribbons[i].color, ribbon.color);
 			WriteAnimationBlock(&ribbons[i].opacity, ribbon.opacity);
 			WriteAnimationBlock(&ribbons[i].above, ribbon.above);
 			WriteAnimationBlock(&ribbons[i].below, ribbon.below);
 		}
 		LPFileSaveData pDataNode;
-		if(FAILED(pFileData->AddDataObject(TID_XRibbonEmitters, NULL, NULL, nSize, pData, &pDataNode)))
+		if (FAILED(pFileData->AddDataObject(TID_XRibbonEmitters, NULL, NULL, nSize, pData, &pDataNode)))
 		{
-			delete [] pData;
+			delete[] pData;
 			return false;
 		}
 		SAFE_RELEASE(pDataNode);
 
-		delete [] pData;
+		delete[] pData;
 	}
 	return true;
 }
@@ -1516,21 +1536,21 @@ bool CParaXSerializer::WriteXRibbonEmitters(const CParaXModel& xmesh, LPFileSave
 bool CParaXSerializer::ReadXRibbonEmitters(CParaXModel& xmesh, LPFileData pFileData)
 {
 	SIZE_T       dwSize;
-	const char       *pBuffer=NULL;
+	const char* pBuffer = NULL;
 	// Get the template data
-	if(SUCCEEDED(pFileData->Lock(&dwSize, (LPCVOID*)(&pBuffer))))
+	if (SUCCEEDED(pFileData->Lock(&dwSize, (LPCVOID*)(&pBuffer))))
 	{
 		int nRibbonEmitters = *(DWORD*)(pBuffer);
 		xmesh.m_objNum.nRibbonEmitters = nRibbonEmitters;
-		if(nRibbonEmitters>0)
+		if (nRibbonEmitters > 0)
 		{ // at least one item
-			ModelRibbonEmitterDef *ribbons = (ModelRibbonEmitterDef*)(pBuffer+4);
+			ModelRibbonEmitterDef* ribbons = (ModelRibbonEmitterDef*)(pBuffer + 4);
 			xmesh.ribbons = new RibbonEmitter[nRibbonEmitters];
 
-			for (int i=0;i<nRibbonEmitters;++i) 
+			for (int i = 0; i < nRibbonEmitters; ++i)
 			{
 				RibbonEmitter& emitter = xmesh.ribbons[i];
-				const ModelRibbonEmitterDef & emitterDef =  ribbons[i];
+				const ModelRibbonEmitterDef& emitterDef = ribbons[i];
 				emitter.model = &xmesh;
 
 				emitter.pos = emitterDef.pos;
@@ -1560,19 +1580,19 @@ bool CParaXSerializer::ReadXRibbonEmitters(CParaXModel& xmesh, LPFileData pFileD
 bool CParaXSerializer::WriteXCameras(const CParaXModel& xmesh, LPFileSaveData pFileData)
 {
 	int nCameras = xmesh.GetObjectNum().nCameras;
-	if(nCameras>0)
+	if (nCameras > 0)
 	{
 		// we export just one camera
 		nCameras = 1;
 		unsigned char* pData = 0;
-		int nSize = 4+sizeof(ModelCameraDef)*nCameras;
+		int nSize = 4 + sizeof(ModelCameraDef) * nCameras;
 		pData = new unsigned char[nSize];
-		if(pData==0)
+		if (pData == 0)
 			return false;
 		memset(pData, 0, nSize);
 		*(DWORD*)(pData) = (DWORD)nCameras;
-		ModelCameraDef *cameras = (ModelCameraDef*)(pData+4);
-		for (int i=0; i<nCameras; i++) {
+		ModelCameraDef* cameras = (ModelCameraDef*)(pData + 4);
+		for (int i = 0; i < nCameras; i++) {
 			const ModelCamera& camera = xmesh.cam; // just one camera
 			cameras[i].nearclip = camera.nearclip;
 			cameras[i].farclip = camera.farclip;
@@ -1585,14 +1605,14 @@ bool CParaXSerializer::WriteXCameras(const CParaXModel& xmesh, LPFileSaveData pF
 			WriteAnimationBlock(&cameras[i].rot, camera.rot);
 		}
 		LPFileSaveData pDataNode;
-		if(FAILED(pFileData->AddDataObject(TID_XCameras, NULL, NULL, nSize, pData, &pDataNode)))
+		if (FAILED(pFileData->AddDataObject(TID_XCameras, NULL, NULL, nSize, pData, &pDataNode)))
 		{
-			delete [] pData;
+			delete[] pData;
 			return false;
 		}
 		SAFE_RELEASE(pDataNode);
 
-		delete [] pData;
+		delete[] pData;
 	}
 	return true;
 }
@@ -1600,16 +1620,16 @@ bool CParaXSerializer::WriteXCameras(const CParaXModel& xmesh, LPFileSaveData pF
 bool CParaXSerializer::ReadXCameras(CParaXModel& xmesh, LPFileData pFileData)
 {
 	SIZE_T       dwSize;
-	const char       *pBuffer=NULL;
+	const char* pBuffer = NULL;
 	// Get the template data
-	if(SUCCEEDED(pFileData->Lock(&dwSize, (LPCVOID*)(&pBuffer))))
+	if (SUCCEEDED(pFileData->Lock(&dwSize, (LPCVOID*)(&pBuffer))))
 	{
 		int nCameras = *(DWORD*)(pBuffer);
 		xmesh.m_objNum.nCameras = nCameras;
-		if(nCameras>0)
+		if (nCameras > 0)
 		{ // at least one item
-			ModelCameraDef *cameras = (ModelCameraDef*)(pBuffer+4);
-			int i=0;
+			ModelCameraDef* cameras = (ModelCameraDef*)(pBuffer + 4);
+			int i = 0;
 			{
 				ModelCamera& camera = xmesh.cam; // just one camera
 				xmesh.hasCamera = true;
@@ -1635,17 +1655,17 @@ bool CParaXSerializer::ReadXCameras(CParaXModel& xmesh, LPFileData pFileData)
 bool CParaXSerializer::WriteXLights(const CParaXModel& xmesh, LPFileSaveData pFileData)
 {
 	int nLights = xmesh.GetObjectNum().nLights;
-	if(nLights>0)
+	if (nLights > 0)
 	{
 		unsigned char* pData = 0;
-		int nSize = 4+sizeof(ModelLightDef)*nLights;
+		int nSize = 4 + sizeof(ModelLightDef) * nLights;
 		pData = new unsigned char[nSize];
-		if(pData==0)
+		if (pData == 0)
 			return false;
 		*(DWORD*)(pData) = (DWORD)nLights;
-		ModelLightDef *lights = (ModelLightDef*)(pData+4);
-		for (int i=0; i<nLights; i++) {
-			const ModelLight& light = xmesh.lights[i]; 
+		ModelLightDef* lights = (ModelLightDef*)(pData + 4);
+		for (int i = 0; i < nLights; i++) {
+			const ModelLight& light = xmesh.lights[i];
 			lights[i].pos = light.pos;
 			lights[i].type = light.type;
 			lights[i].bone = light.parent;
@@ -1655,14 +1675,14 @@ bool CParaXSerializer::WriteXLights(const CParaXModel& xmesh, LPFileSaveData pFi
 			WriteAnimationBlock(&lights[i].intensity, light.diffIntensity);
 		}
 		LPFileSaveData pDataNode;
-		if(FAILED(pFileData->AddDataObject(TID_XLights, NULL, NULL, nSize, pData, &pDataNode)))
+		if (FAILED(pFileData->AddDataObject(TID_XLights, NULL, NULL, nSize, pData, &pDataNode)))
 		{
-			delete [] pData;
+			delete[] pData;
 			return false;
 		}
 		SAFE_RELEASE(pDataNode);
 
-		delete [] pData;
+		delete[] pData;
 	}
 	return true;
 }
@@ -1671,25 +1691,25 @@ bool CParaXSerializer::WriteXLights(const CParaXModel& xmesh, LPFileSaveData pFi
 bool CParaXSerializer::ReadXLights(CParaXModel& xmesh, LPFileData pFileData)
 {
 	SIZE_T       dwSize;
-	const char       *pBuffer=NULL;
+	const char* pBuffer = NULL;
 	// Get the template data
-	if(SUCCEEDED(pFileData->Lock(&dwSize, (LPCVOID*)(&pBuffer))))
+	if (SUCCEEDED(pFileData->Lock(&dwSize, (LPCVOID*)(&pBuffer))))
 	{
 		int nLights = *(DWORD*)(pBuffer);
 		xmesh.m_objNum.nLights = nLights;
-		if(nLights>0)
+		if (nLights > 0)
 		{ // at least one item
-			ModelLightDef *lights = (ModelLightDef*)(pBuffer+4);
+			ModelLightDef* lights = (ModelLightDef*)(pBuffer + 4);
 			xmesh.lights = new ModelLight[nLights];
-			for (int i=0;i<nLights;++i) 
+			for (int i = 0; i < nLights; ++i)
 			{
-				ModelLight& light = xmesh.lights[i]; 
-				const ModelLightDef & lightDef = lights[i];
+				ModelLight& light = xmesh.lights[i];
+				const ModelLightDef& lightDef = lights[i];
 
 				light.pos = lightDef.pos;
 				light.type = lightDef.type;
 				light.parent = lightDef.bone;
-				light.tdir = light.dir = Vector3(0,1,0);
+				light.tdir = light.dir = Vector3(0, 1, 0);
 
 				ReadAnimationBlock(&lightDef.ambColor, light.ambColor, xmesh.globalSequences);
 				ReadAnimationBlock(&lightDef.ambIntensity, light.ambIntensity, xmesh.globalSequences);
@@ -1706,25 +1726,25 @@ bool CParaXSerializer::ReadXLights(CParaXModel& xmesh, LPFileData pFileData)
 bool CParaXSerializer::WriteXAnimations(const CParaXModel& xmesh, LPFileSaveData pFileData)
 {
 	int nAnimations = (int)xmesh.GetObjectNum().nAnimations;
-	if(nAnimations>0 && xmesh.anims && xmesh.animated)
+	if (nAnimations > 0 && xmesh.anims && xmesh.animated)
 	{
 		unsigned char* pData = 0;
-		int nSize = 4+sizeof(ModelAnimation)*nAnimations;
+		int nSize = 4 + sizeof(ModelAnimation) * nAnimations;
 		pData = new unsigned char[nSize];
-		if(pData==0)
+		if (pData == 0)
 			return false;
 		*(DWORD*)(pData) = (DWORD)nAnimations;
-		ModelAnimation *anims = (ModelAnimation*)(pData+4);
-		memcpy(anims, xmesh.anims, nSize-4);
+		ModelAnimation* anims = (ModelAnimation*)(pData + 4);
+		memcpy(anims, xmesh.anims, nSize - 4);
 		LPFileSaveData pDataNode;
-		if(FAILED(pFileData->AddDataObject(TID_XAnimations, NULL, NULL, nSize, pData, &pDataNode)))
+		if (FAILED(pFileData->AddDataObject(TID_XAnimations, NULL, NULL, nSize, pData, &pDataNode)))
 		{
-			delete [] pData;
+			delete[] pData;
 			return false;
 		}
 		SAFE_RELEASE(pDataNode);
 
-		delete [] pData;
+		delete[] pData;
 	}
 	return true;
 }
@@ -1732,17 +1752,17 @@ bool CParaXSerializer::WriteXAnimations(const CParaXModel& xmesh, LPFileSaveData
 bool CParaXSerializer::ReadXAnimations(CParaXModel& xmesh, LPFileData pFileData)
 {
 	SIZE_T       dwSize;
-	const char       *pBuffer=NULL;
+	const char* pBuffer = NULL;
 	// Get the template data
-	if(SUCCEEDED(pFileData->Lock(&dwSize, (LPCVOID*)(&pBuffer))))
+	if (SUCCEEDED(pFileData->Lock(&dwSize, (LPCVOID*)(&pBuffer))))
 	{
 		uint32 nAnimations = *(DWORD*)(pBuffer);
 		xmesh.m_objNum.nAnimations = nAnimations;
 
-		ModelAnimation *anims = (ModelAnimation *)(pBuffer+4);
+		ModelAnimation* anims = (ModelAnimation*)(pBuffer + 4);
 		xmesh.anims = new ModelAnimation[nAnimations];
-		if(xmesh.anims){
-			memcpy(xmesh.anims, anims, sizeof(ModelAnimation)*nAnimations);
+		if (xmesh.anims) {
+			memcpy(xmesh.anims, anims, sizeof(ModelAnimation) * nAnimations);
 		}
 	}
 	else
@@ -1753,26 +1773,26 @@ bool CParaXSerializer::ReadXAnimations(CParaXModel& xmesh, LPFileData pFileData)
 void* CParaXSerializer::LoadParaX_Body(ParaXParser& Parser)
 {
 	// load header if not done so yet.
-	if(!Parser.m_bHeaderLoaded)
+	if (!Parser.m_bHeaderLoaded)
 	{
-		if(!LoadParaX_Header(Parser))
+		if (!LoadParaX_Header(Parser))
 			return false;
 	}
 	CParaXModel* pMesh = NULL;
-	
-	if(Parser.m_pParaXBody)
+
+	if (Parser.m_pParaXBody)
 	{
 		SIZE_T			dwSize;
-		const unsigned char      *pBuffer=NULL;
+		const unsigned char* pBuffer = NULL;
 		m_pRaw = NULL;
 		// Lock the raw unsigned char data if any
-		if(Parser.m_pParaXRawData && SUCCEEDED(Parser.m_pParaXRawData->Lock(&dwSize, (LPCVOID*)(&pBuffer))))
-			m_pRaw = pBuffer+4;
+		if (Parser.m_pParaXRawData && SUCCEEDED(Parser.m_pParaXRawData->Lock(&dwSize, (LPCVOID*)(&pBuffer))))
+			m_pRaw = pBuffer + 4;
 
-		if(Parser.m_xheader.type == PARAX_MODEL_ANIMATED || Parser.m_xheader.type == PARAX_MODEL_BMAX)
+		if (Parser.m_xheader.type == PARAX_MODEL_ANIMATED || Parser.m_xheader.type == PARAX_MODEL_BMAX)
 		{
 			pMesh = new CParaXModel(Parser.m_xheader);
-			
+
 			if (Parser.m_xheader.nModelFormat & PARAX_FORMAT_EXTENDED_HEADER2)
 			{
 				ParaXHeaderDef2 header2;
@@ -1786,91 +1806,91 @@ void* CParaXSerializer::LoadParaX_Body(ParaXParser& Parser)
 			// Scan for data nodes inside the ParaXBody
 			SIZE_T nCount;
 			Parser.m_pParaXBody->GetChildren(&nCount);
-			for(int i = 0; i<(int)nCount;i++)
+			for (int i = 0; i < (int)nCount; i++)
 			{
-				LPFileData pSubData=NULL;
+				LPFileData pSubData = NULL;
 				Parser.m_pParaXBody->GetChild(i, &pSubData);
-				if(!pSubData->IsReference())
+				if (!pSubData->IsReference())
 				{
 					GUID Type;
 					// Get the template type
-					if(SUCCEEDED(pSubData->GetType(&Type)))
+					if (SUCCEEDED(pSubData->GetType(&Type)))
 					{
-						if(Type == TID_XDWORDArray)	{//XGlobalSequences
-							SIZE_T nSize=100;
-							char szName[100+1];
+						if (Type == TID_XDWORDArray) {//XGlobalSequences
+							SIZE_T nSize = 100;
+							char szName[100 + 1];
 							// Get the frame name (if any)
-							if(SUCCEEDED(pSubData->GetName(szName, &nSize))){
-								if( strcmp("XGlobalSequences",szName)==0 )
+							if (SUCCEEDED(pSubData->GetName(szName, &nSize))) {
+								if (strcmp("XGlobalSequences", szName) == 0)
 									ReadXGlobalSequences(*pMesh, pSubData);
 							}
 						}
-						else if(Type == TID_XVertices)	{//XVertices
-							if(!ReadXVertices(*pMesh, pSubData))
+						else if (Type == TID_XVertices) {//XVertices
+							if (!ReadXVertices(*pMesh, pSubData))
 								OUTPUT_LOG("error loading vertices");
 						}
 						else if (Type == TID_XVoxels) {
 							if (!ReadXVoxels(*pMesh, pSubData))
 								OUTPUT_LOG("error loading vertices");
 						}
-						else if(Type == TID_XTextures)	{//XTextures
-							if(!ReadXTextures(*pMesh, pSubData))
+						else if (Type == TID_XTextures) {//XTextures
+							if (!ReadXTextures(*pMesh, pSubData))
 								OUTPUT_LOG("error loading XTextures");
 						}
-						else if(Type == TID_XAttachments)	{//XAttachments
-							if(!ReadXAttachments(*pMesh, pSubData))
+						else if (Type == TID_XAttachments) {//XAttachments
+							if (!ReadXAttachments(*pMesh, pSubData))
 								OUTPUT_LOG("error loading XAttachments");
 						}
-						else if(Type == TID_XTransparency)	{//XTransparency
-							if(!ReadXTransparency(*pMesh, pSubData))
+						else if (Type == TID_XTransparency) {//XTransparency
+							if (!ReadXTransparency(*pMesh, pSubData))
 								OUTPUT_LOG("error loading XTransparency");
 						}
-						else if(Type == TID_XViews)	{//XViews
-							if(!ReadXViews(*pMesh, pSubData))
+						else if (Type == TID_XViews) {//XViews
+							if (!ReadXViews(*pMesh, pSubData))
 								OUTPUT_LOG("error loading XViews");
 						}
-						else if(Type == TID_XIndices0)	{//XIndices0
-							if(!ReadXIndices0(*pMesh, pSubData))
+						else if (Type == TID_XIndices0) {//XIndices0
+							if (!ReadXIndices0(*pMesh, pSubData))
 								OUTPUT_LOG("error loading XIndices0");
 						}
-						else if(Type == TID_XGeosets)	{//XGeosets
-							if(!ReadXGeosets(*pMesh, pSubData))
+						else if (Type == TID_XGeosets) {//XGeosets
+							if (!ReadXGeosets(*pMesh, pSubData))
 								OUTPUT_LOG("error loading XGeosets");
 						}
-						else if(Type == TID_XRenderPass)	{//XRenderPass
-							if(!ReadXRenderPass(*pMesh, pSubData))
+						else if (Type == TID_XRenderPass) {//XRenderPass
+							if (!ReadXRenderPass(*pMesh, pSubData))
 								OUTPUT_LOG("error loading XRenderPass");
 						}
-						else if(Type == TID_XBones)	{//XBones
-							if(!ReadXBones(*pMesh, pSubData))
+						else if (Type == TID_XBones) {//XBones
+							if (!ReadXBones(*pMesh, pSubData))
 								OUTPUT_LOG("error loading XBones");
 						}
-						else if(Type == TID_XTexAnims)	{//XTexAnims
-							if(!ReadXTexAnims(*pMesh, pSubData))
+						else if (Type == TID_XTexAnims) {//XTexAnims
+							if (!ReadXTexAnims(*pMesh, pSubData))
 								OUTPUT_LOG("error loading XTexAnims");
 						}
-						else if(Type == TID_XParticleEmitters)	{//XParticleEmitters
-							if(!ReadXParticleEmitters(*pMesh, pSubData))
+						else if (Type == TID_XParticleEmitters) {//XParticleEmitters
+							if (!ReadXParticleEmitters(*pMesh, pSubData))
 								OUTPUT_LOG("error loading XParticleEmitters");
 						}
-						else if(Type == TID_XRibbonEmitters)	{//XRibbonEmitters
-							if(!ReadXRibbonEmitters(*pMesh, pSubData))
+						else if (Type == TID_XRibbonEmitters) {//XRibbonEmitters
+							if (!ReadXRibbonEmitters(*pMesh, pSubData))
 								OUTPUT_LOG("error loading XRibbonEmitters");
 						}
-						else if(Type == TID_XColors)	{//XColors
-							if(!ReadXColors(*pMesh, pSubData))
+						else if (Type == TID_XColors) {//XColors
+							if (!ReadXColors(*pMesh, pSubData))
 								OUTPUT_LOG("error loading XColors");
 						}
-						else if(Type == TID_XCameras)	{//XCameras
-							if(!ReadXCameras(*pMesh, pSubData))
+						else if (Type == TID_XCameras) {//XCameras
+							if (!ReadXCameras(*pMesh, pSubData))
 								OUTPUT_LOG("error loading XCameras");
 						}
-						else if(Type == TID_XLights)	{//XLights
-							if(!ReadXLights(*pMesh, pSubData))
+						else if (Type == TID_XLights) {//XLights
+							if (!ReadXLights(*pMesh, pSubData))
 								OUTPUT_LOG("error loading XLights");
 						}
-						else if(Type == TID_XAnimations)	{//XAnimations
-							if(!ReadXAnimations(*pMesh, pSubData))
+						else if (Type == TID_XAnimations) {//XAnimations
+							if (!ReadXAnimations(*pMesh, pSubData))
 								OUTPUT_LOG("error loading XAnimations");
 						}
 					}
@@ -1878,7 +1898,7 @@ void* CParaXSerializer::LoadParaX_Body(ParaXParser& Parser)
 				SAFE_RELEASE(pSubData);
 			}
 
-			if(pMesh->m_RenderMethod == CParaXModel::NO_ANIM)
+			if (pMesh->m_RenderMethod == CParaXModel::NO_ANIM)
 			{
 				pMesh->calcBones();
 			}
@@ -1886,37 +1906,37 @@ void* CParaXSerializer::LoadParaX_Body(ParaXParser& Parser)
 			// optimize to see if any pass contains rigid body. For rigid body we will render without skinning, thus saving lots of CPU cycles. 
 			// TODO: move this to ParaX Exporter instead. 
 			{
-				uint16 * indices = pMesh->m_indices;
+				uint16* indices = pMesh->m_indices;
 				int nRenderPasses = (int)pMesh->passes.size();
-				for(int j=0; j < nRenderPasses; ++j)
+				for (int j = 0; j < nRenderPasses; ++j)
 				{
 					ModelRenderPass& p = pMesh->passes[j];
 					int nLockedNum = p.indexCount / 3;
-					if(nLockedNum>0 && !(p.is_rigid_body))
+					if (nLockedNum > 0 && !(p.is_rigid_body))
 					{
 						bool bIsRigidBody = true;
 						int nVertexOffset = p.GetVertexStart(pMesh);
-						ModelVertex * origVertices = pMesh->m_origVertices;
-						ModelVertex * ov = NULL;
+						ModelVertex* origVertices = pMesh->m_origVertices;
+						ModelVertex* ov = NULL;
 						uint8 nLastBoneIndex = origVertices[indices[p.m_nIndexStart] + nVertexOffset].bones[0];
-						
+
 						int nIndexOffset = p.m_nIndexStart;
-						for(int i=0;i<nLockedNum && bIsRigidBody;++i)
+						for (int i = 0; i < nLockedNum && bIsRigidBody; ++i)
 						{
-							int nVB = 3*i;
-							for(int k=0; k<3; ++k, ++nVB)
+							int nVB = 3 * i;
+							for (int k = 0; k < 3; ++k, ++nVB)
 							{
 								uint16 a = indices[nIndexOffset + nVB] + nVertexOffset;
 								ov = origVertices + a;
 								// weighted vertex
-								if( ov->weights[1] != 0 || ov->bones[0] != nLastBoneIndex)
+								if (ov->weights[1] != 0 || ov->bones[0] != nLastBoneIndex)
 								{
 									bIsRigidBody = false;
 									break;
 								}
 							}
 						}
-						if(bIsRigidBody)
+						if (bIsRigidBody)
 						{
 							p.is_rigid_body = bIsRigidBody;
 						}
@@ -1924,14 +1944,14 @@ void* CParaXSerializer::LoadParaX_Body(ParaXParser& Parser)
 				}
 			}
 		}
-		else if(Parser.m_xheader.type == PARAX_MODEL_DX_STATIC)
+		else if (Parser.m_xheader.type == PARAX_MODEL_DX_STATIC)
 		{
 			// TODO: for original dx model file.
 		}
-		
+
 
 		// unlock raw unsigned char data
-		if(m_pRaw!=NULL)
+		if (m_pRaw != NULL)
 		{
 			m_pRaw = NULL;
 			Parser.m_pParaXRawData->Unlock();
