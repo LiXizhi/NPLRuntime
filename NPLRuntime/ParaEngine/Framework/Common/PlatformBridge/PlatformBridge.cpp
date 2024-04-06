@@ -9,6 +9,7 @@ extern "C"
 #include <luabind/object.hpp>
 #include "Core/NPLInterface.hpp"
 #include "NPL/NPLHelper.h"
+#include <sstream>
 
 namespace ParaEngine {
 	std::string PlatformBridge::LuaCallNative(const object& params)

@@ -1,14 +1,14 @@
 #pragma once
 
-#include "ParaEngine.h"
 #include "BaseObject.h"
-#include <thread>
 
+#ifdef ENABLE_AUTO_RIGGER
+
+#include <thread>
 class Mesh;
 
 namespace ParaEngine
 {
-
 	struct ParaXEntity;
 	class CParaXModel;
 	class CAutoRigger : public CBaseObject
@@ -61,3 +61,17 @@ namespace ParaEngine
 		std::atomic_bool m_bIsRunnging;
 	};
 }
+#else
+namespace ParaEngine
+{
+	/* empty class 
+	*/
+	class CAutoRigger : public CBaseObject
+	{
+	public:
+		ATTRIBUTE_DEFINE_CLASS(CAutoRigger);
+		ATTRIBUTE_SUPPORT_CREATE_FACTORY(CAutoRigger);
+		CAutoRigger(){};
+	};
+}
+#endif
