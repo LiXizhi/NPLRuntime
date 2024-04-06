@@ -262,6 +262,7 @@ if (EMSCRIPTEN AND NOT NPLOCE_DEPS_ROOT)
 endif()
 if (EMSCRIPTEN AND NPLOCE_DEPS_ROOT AND (EXISTS ${NPLOCE_DEPS_ROOT}/oce/lib/libTKBO.a))
     # check if ${NPLOCE_DEPS_ROOT}/oce/lib/libTKBO.a exists    
+    add_definitions(-DEMSCRIPTEN_HAS_OCE)
     link_directories(${NPLOCE_DEPS_ROOT}/harfbuzz/lib)
     link_directories(${NPLOCE_DEPS_ROOT}/oce/lib)
 	list(APPEND NPLRUNTIME_LIBS  
