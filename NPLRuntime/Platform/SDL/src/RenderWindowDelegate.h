@@ -20,6 +20,7 @@ namespace ParaEngine
 
 		virtual void OnChar(unsigned int character) override;
 		virtual void OnChar(std::string text) override;
+		virtual void OnClearChar(std::string text);
 
 		virtual void OnSize(int w, int h) override;
 

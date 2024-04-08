@@ -226,6 +226,18 @@ namespace JS
             return;
         s_on_key_up_callback(keycode);
     }
+
+    static std::function<void(const std::string)> s_on_clear_text_input_callback = nullptr;
+    void SetClearTextInputCallback(std::function<void(const std::string)> on_clear_text_input_callback)
+    {
+        s_on_clear_text_input_callback = on_clear_text_input_callback;
+    }
+    EM_PORT_API(void)
+    OnClearTextInput(const char *js_text)
+    {
+        if (s_on_clear_text_input_callback == nullptr) return;
+        s_on_clear_text_input_callback(JsStringToString(js_text));
+    }
 };
 
 #endif
