@@ -98,12 +98,18 @@ namespace ParaEngine
 		}
 	}
 
+	void RenderWindowDelegate::OnClearChar(std::string text) 
+	{
+		auto pGUI = CGUIRoot::GetInstance()->GetUIKeyFocus();
+		if (pGUI) pGUI->SetTextA("");
+		OnChar(text);
+	}
+
 	void RenderWindowDelegate::OnChar(std::string sTextUTF8)
 	{
-		if (CGlobals::GetApp()->GetAppState() != PEAppState_Ready)
-		{
-			return;
-		}
+		auto app = CGlobals::GetApp();
+		if (app->GetAppState() != PEAppState_Ready) return;
+
 		auto pGUI = CGUIRoot::GetInstance()->GetUIKeyFocus();
 		if (pGUI)
 		{
