@@ -339,7 +339,7 @@ else()
         ParaSqlite 
         libjpeg
         libpng
-        Pinocchio
+        #Pinocchio
         ParaAntlr4
         ${ICONV_LIB_NAME}
     )
