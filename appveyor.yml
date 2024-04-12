@@ -3,6 +3,7 @@ clone_folder: c:\projects\nplruntime
 image: Visual Studio 2022
 environment:
   matrix:
+  - CMAKE_VERSION: 3.28.1
   - addresss_mode: 32
     installer_name: C:\projects\nplruntime\installer\nplruntime_x86.nsi
     zip_name: NPLRuntime_32bit.zip
@@ -17,7 +18,7 @@ environment:
 matrix:
   fast_finish: true     # set this flag to immediately finish build once one of the jobs fails.
 install:
-  - ps: Install-Product cmake 3.28.1
+  - set PATH=C:\Program Files\CMake\bin\%CMAKE_VERSION%\bin;%PATH%
 
 ############################################################################
 # Install a recent CMake
