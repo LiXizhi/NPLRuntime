@@ -3,7 +3,6 @@ clone_folder: c:\projects\nplruntime
 image: Visual Studio 2022
 environment:
   matrix:
-  - CMAKE_VERSION: 3.28.1
   - addresss_mode: 32
     installer_name: C:\projects\nplruntime\installer\nplruntime_x86.nsi
     zip_name: NPLRuntime_32bit.zip
@@ -62,11 +61,13 @@ install:
     cd C:\projects\nplruntime\Server\trunk\boost_1_78_0\
 
     set BOOST_ROOT=C:\projects\nplruntime\Server\trunk\boost_1_78_0
+
+    rd /s %BOOST_ROOT%
     
     bootstrap.bat
 
-    b2 address-model=%addresss_mode% runtime-link=static threading=multi variant=release --with-thread --with-date_time --with-filesystem --with-system --with-chrono --with-serialization --with-iostreams --with-regex --with-log --with-locale stage
-
+    b2 address-model=%addresss_mode% runtime-link=static threading=multi variant=release --with-thread --with-date_time --with-filesystem --with-system --with-chrono --with-regex --with-serialization --with-iostreams  --with-log --with-locale stage
+                                                                                                thread        date_time        filesystem         system       chrono        regex        serialization        iostreams         log        locale
     dir %BOOST_ROOT%\stage\lib
 
     cd C:\projects\nplruntime
