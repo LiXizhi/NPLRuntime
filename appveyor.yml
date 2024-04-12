@@ -17,6 +17,7 @@ environment:
 matrix:
   fast_finish: true     # set this flag to immediately finish build once one of the jobs fails.
 install:
+  - ps: Install-Product cmake 3.28.1
 
 ############################################################################
 # Install a recent CMake
