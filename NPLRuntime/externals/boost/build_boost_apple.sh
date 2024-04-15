@@ -416,7 +416,7 @@ downloadBoost()
         BOOST_VERSION_UNDERSCODE=${BOOST_VERSION//./_}
 
         curl -L -o "$BOOST_TARBALL" \
-            https://cdn.keepwork.com/paracraft/ios/boost_${BOOST_VERSION_UNDERSCODE}.tar.bz2
+            https://boostorg.jfrog.io/artifactory/main/release/${BOOST_VERSION}/source/boost_${BOOST_VERSION_UNDERSCODE}.tar.bz2
 
         doneSection
     fi
