@@ -32,25 +32,27 @@ template<class T> T SQR(const T & x) { return x * x; }
 template<class T> T CUBE(const T & x) { return x * x * x; }
 template<class T> T QUAD(const T & x) { return SQR(SQR(x)); }
 
-template <class T> class maximum : public binary_function<T, T, T>
+template <class T> class maximum
 {
 public:
+    typedef T result_type;
     T operator()(const T &a1, const T &a2) const { return max(a1, a2); }
 };
 
-template <class T> class minimum : public binary_function<T, T, T>
+template <class T> class minimum
 {
 public:
+    typedef T result_type;
     T operator()(const T &a1, const T &a2) const { return min(a1, a2); }
 };
 
-template <class A1, class A2, class R> class myMult : public binary_function<A1, A2, R>
+template <class A1, class A2, class R> class myMult
 {
 public:
     R operator()(const A1 &a1, const A2 &a2) const { return a1 * a2; }
 };
 
-template <class A1, class A2, class R> class myDiv : public binary_function<A1, A2, R>
+template <class A1, class A2, class R> class myDiv
 {
 public:
     R operator()(const A1 &a1, const A2 &a2) const { return a1 / a2; }

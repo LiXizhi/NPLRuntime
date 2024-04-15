@@ -40,7 +40,7 @@ CLEAN=
 NO_CLEAN=
 NO_FRAMEWORK=
 
-BOOST_VERSION=1.78.0
+BOOST_VERSION=1.84.0
 
 MIN_IOS_VERSION=10.0
 IOS_SDK_VERSION=`xcrun --sdk iphoneos --show-sdk-version`
@@ -416,7 +416,7 @@ downloadBoost()
         BOOST_VERSION_UNDERSCODE=${BOOST_VERSION//./_}
 
         curl -L -o "$BOOST_TARBALL" \
-            https://cdn.keepwork.com/paracraft/ios/boost_${BOOST_VERSION_UNDERSCODE}.tar.bz2
+            https://boostorg.jfrog.io/artifactory/main/release/${BOOST_VERSION}/source/boost_${BOOST_VERSION_UNDERSCODE}.tar.bz2
 
         doneSection
     fi

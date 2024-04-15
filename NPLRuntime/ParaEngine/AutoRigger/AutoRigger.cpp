@@ -5,6 +5,7 @@
 // Company: ParaEngine
 // Date:	2018.9.10
 //-----------------------------------------------------------------------------
+#ifdef ENABLE_AUTO_RIGGER
 #ifdef EMSCRIPTEN_SINGLE_THREAD
 #define bind2nd(x, y) bind(x, std::placeholders::_1, y)
 #endif
@@ -1350,3 +1351,4 @@ void CAutoRigger::BindTargetModelDefault()
 
 	targetModel->SaveToDisk(m_OutputFilePath.c_str());
 }
+#endif // ENABLE_AUTO_RIGGER

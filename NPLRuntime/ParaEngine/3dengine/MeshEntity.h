@@ -22,10 +22,9 @@ namespace ParaEngine
 		CParaXModelPtr m_pParaXMesh;
 	};
 
-	struct MeshLodSortLess :
-		public std::binary_function<const MeshLOD&, const MeshLOD&, bool>
+	struct MeshLodSortLess
 	{
-		bool operator() (const MeshLOD& mesh1, const MeshLOD& mesh2)
+		bool operator() (const MeshLOD& mesh1, const MeshLOD& mesh2) const
 		{
 			// sort ascending by depth
 			return mesh1.m_fromDepthSquared < mesh2.m_fromDepthSquared;

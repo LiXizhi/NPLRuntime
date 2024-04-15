@@ -68,6 +68,11 @@ public:
 		m_renderWindow.OnChar(text);
 	}
 
+	virtual void OnClearChar(std::string text)
+	{
+		m_renderWindow.OnClearChar(text);
+	}
+
 	virtual void OnKeyDown(int keycode)
 	{
 		m_renderWindow.OnKey(m_renderWindow.SDL2VirtualKeyToParaVK(keycode), EKeyState::PRESS);
@@ -142,6 +147,7 @@ int main(int argc, char* argv[])
 	// std::cout << "main thread id: " << std::this_thread::get_id() << std::endl;
 	JS::StaticInit();
 	JS::SetTextInputCallback([](const std::string text) { GetApp()->OnChar(text);});
+	JS::SetClearTextInputCallback([](const std::string text) { GetApp()->OnClearChar(text);});
 	JS::SetKeyDownCallback([](int keycode) { GetApp()->OnKeyDown(keycode);});
 	JS::SetKeyUpCallback([](int keycode) { GetApp()->OnKeyUp(keycode);});
 	JS::SetRecvMsgFromJSCallback(std::function<void(const std::string, const std::string)>([](const std::string filename, const std::string msg_data_json){

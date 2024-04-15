@@ -359,8 +359,8 @@ bool CZipWriter::IsValid()
 
 DWORD CZipWriter::close()
 {
-	SaveAndClose();
-	return 0;
+	auto nCount = SaveAndClose();
+	return nCount;
 }
 
 void ParaEngine::CZipWriter::InitNewZip(const char* filename, const char* password)
@@ -488,6 +488,7 @@ void ParaEngine::CZipWriter::removeAllEntries()
 int ParaEngine::CZipWriter::SaveAndClose()
 {
 	CParaFile file;
+	int nCount = 0;
 	if (file.OpenFile(m_filename.c_str(), false))
 	{
 		// make file to 0 size
@@ -522,8 +523,9 @@ int ParaEngine::CZipWriter::SaveAndClose()
 		file.write(&_endOfCentralDirectoryBlock, sizeof(ZIP_EndOfCentralDirectoryBlock));
 
 		file.close();
+		nCount = m_entries.size();
 	}
 
 	removeAllEntries();
-	return 0;
+	return nCount;
 }

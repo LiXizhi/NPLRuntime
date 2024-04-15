@@ -60,6 +60,9 @@ extern "C"
 namespace NplOceScripting
 {
 	int Register(lua_State* L);
+	#ifndef EMSCRIPTEN_HAS_OCE
+	int Register(lua_State* L) {return 0;};
+	#endif
 }
 #endif
 
