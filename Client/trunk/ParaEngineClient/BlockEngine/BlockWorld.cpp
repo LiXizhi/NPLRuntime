@@ -34,20 +34,20 @@ namespace ParaEngine
 
 	inline int64_t GetBlockSparseIndex(uint16_t bx, uint16_t by, uint16_t bz)
 	{
-		return (((uint64)bx)<<32) + (((uint64)by) << 16)  + bz;
+		return (((uint64)bx) << 32) + (((uint64)by) << 16) + bz;
 	}
 }
 
 CBlockWorld::CBlockWorld()
 	:m_curChunkIdW(-1), m_activeChunkDim(0), m_lastChunkIdW(-1), m_lastChunkIdW_RegionCache(-1), m_lastViewCheckIdW(0), m_dwBlockRenderMethod(BLOCK_RENDER_FAST_SHADER), m_sunIntensity(1), m_isVisibleChunkDirty(true), m_curRegionIdX(0), m_curRegionIdZ(0),
-m_pLightGrid(new CBlockLightGridBase(this)), m_bReadOnlyWorld(false), m_bIsRemote(false), m_bIsServerWorld(false), m_bCubeModePicking(false), m_isInWorld(false), m_bSaveLightMap(false), 
-m_bUseAsyncLoadWorld(true), m_bRenderBlocks(true), m_group_by_chunk_before_texture(false), m_is_linear_torch_brightness(false), m_maxCacheRegionCount(0),
-m_minWorldPos(0, 0, 0), m_maxWorldPos(0xffff, 0xffff, 0xffff), m_minRegionX(0), m_minRegionZ(0), m_maxRegionX(63), m_maxRegionZ(63)
+	m_pLightGrid(new CBlockLightGridBase(this)), m_bReadOnlyWorld(false), m_bIsRemote(false), m_bIsServerWorld(false), m_bCubeModePicking(false), m_isInWorld(false), m_bSaveLightMap(false),
+	m_bUseAsyncLoadWorld(true), m_bRenderBlocks(true), m_group_by_chunk_before_texture(false), m_is_linear_torch_brightness(false), m_maxCacheRegionCount(0),
+	m_minWorldPos(0, 0, 0), m_maxWorldPos(0xffff, 0xffff, 0xffff), m_minRegionX(0), m_minRegionZ(0), m_maxRegionX(63), m_maxRegionZ(63)
 {
 	m_bAutoPhysics = true;
 
 	// 256 blocks, so that it never wraps
-	m_activeChunkDimY = 16; 
+	m_activeChunkDimY = 16;
 	SetActiveChunkRadius(12);
 	m_blockTemplatesArray.resize(256, 0);
 
@@ -118,7 +118,7 @@ void ParaEngine::CBlockWorld::EnterWorld(const string& sWorldDir, float x, float
 	m_maxCacheRegionCount = (sizeof(void*) > 4) ? 16 : 9;
 
 	/** only cache 4 region for networked world*/
-	if(IsRemote())
+	if (IsRemote())
 		m_maxCacheRegionCount = 4;
 
 	m_minActiveChunkId_ws.SetValue(0);
@@ -160,17 +160,17 @@ void CBlockWorld::LoadBlockMaterialData()
 	try
 	{
 #ifdef USE_TINYXML2
-	using namespace tinyxml2;
-	typedef tinyxml2::XMLDocument XMLDocumentType;
-	typedef XMLDeclaration XMLDeclarationType;
-	typedef XMLElement XMLElementType;
-	typedef XMLNode XMLNodeType;
+		using namespace tinyxml2;
+		typedef tinyxml2::XMLDocument XMLDocumentType;
+		typedef XMLDeclaration XMLDeclarationType;
+		typedef XMLElement XMLElementType;
+		typedef XMLNode XMLNodeType;
 #define XML_SUCCESS_ENUM_TYPE XMLError::XML_SUCCESS
 #else
-	typedef TiXmlDocument XMLDocumentType;
-	typedef TiXmlDeclaration XMLDeclarationType;
-	typedef TiXmlElement XMLElementType;
-	typedef TiXmlNode XMLNodeType;
+		typedef TiXmlDocument XMLDocumentType;
+		typedef TiXmlDeclaration XMLDeclarationType;
+		typedef TiXmlElement XMLElementType;
+		typedef TiXmlNode XMLNodeType;
 #define XML_SUCCESS_ENUM_TYPE TIXML_SUCCESS
 #endif
 
@@ -293,7 +293,11 @@ void CBlockWorld::SaveBlockMaterialData()
 		root->LinkEndChild(pNewItem);
 	}
 	std::string fileName = m_worldInfo.GetBlockMaterialFileName(true);
-	doc.SaveFile(fileName);
+	std::string sText;
+	sText << doc;
+	CParaFile file;
+	if (file.CreateNewFile(fileName.c_str(), true))
+		file.write(sText.c_str(), sText.size());
 }
 
 void CBlockWorld::SaveToFile(bool saveToTemp)
@@ -367,11 +371,11 @@ void ParaEngine::CBlockWorld::LeaveWorld()
 		UnloadRegion(pRegion, false);
 	}
 
-	for (int i = 0; i<m_activeChunkDim; i++)
+	for (int i = 0; i < m_activeChunkDim; i++)
 	{
-		for (int j = 0; j<m_activeChunkDimY; j++)
+		for (int j = 0; j < m_activeChunkDimY; j++)
 		{
-			for (int k = 0; k<m_activeChunkDim; k++)
+			for (int k = 0; k < m_activeChunkDim; k++)
 			{
 				GetActiveChunk(i, j, k).OnLeaveWorld();
 			}
@@ -393,7 +397,7 @@ void ParaEngine::CBlockWorld::LeaveWorld()
 
 bool ParaEngine::CBlockWorld::MatchTemplateAttribute(uint16_t templateId, BlockTemplate::BlockAttrubiteFlag flag)
 {
-	BlockTemplate *pTemplate = GetBlockTemplate(templateId);
+	BlockTemplate* pTemplate = GetBlockTemplate(templateId);
 	if (pTemplate)
 	{
 		return pTemplate->IsMatchAttribute(flag);
@@ -437,7 +441,7 @@ void ParaEngine::CBlockWorld::SetActiveChunkRadius(int nActiveChunkRadius)
 		int nActiveChunkDim = 2 * (nActiveChunkRadius + 1) + 1;
 		if (nActiveChunkDim != m_activeChunkDim)
 		{
-			if (nActiveChunkDim>m_activeChunkDim)
+			if (nActiveChunkDim > m_activeChunkDim)
 			{
 				m_activeChunks.resize(nActiveChunkDim * m_activeChunkDimY * nActiveChunkDim, NULL);
 				for (int i = 0; i < (int)(m_activeChunks.size()); ++i)
@@ -463,7 +467,7 @@ void ParaEngine::CBlockWorld::SetActiveChunkRadius(int nActiveChunkRadius)
 void CBlockWorld::SetRenderDist(int nValue)
 {
 	SetActiveChunkRadius((int)((float)nValue / (float)BlockConfig::g_chunkBlockDim + 0.5f));
-	m_nRenderDistance = min(nValue, m_activeChunkDim*BlockConfig::g_chunkBlockDim / 2);
+	m_nRenderDistance = min(nValue, m_activeChunkDim * BlockConfig::g_chunkBlockDim / 2);
 	GetLightGrid().SetLightGridSize((int)(m_nRenderDistance * 2 / BlockConfig::g_chunkBlockDim) + 2);
 
 	int nMinRegionCount = ((int)(m_nRenderDistance / 512) + 2) ^ 2;
@@ -533,7 +537,7 @@ BlockRegion* CBlockWorld::CreateGetRegion(uint16_t region_x, uint16_t region_z)
 	{
 		return pRegion;
 	}
-	else if (region_x <= m_maxRegionX && region_z <= m_maxRegionZ && region_x>=m_minRegionX && region_z>=m_minRegionZ)
+	else if (region_x <= m_maxRegionX && region_z <= m_maxRegionZ && region_x >= m_minRegionX && region_z >= m_minRegionZ)
 	{
 		pRegion = new BlockRegion(region_x, region_z, this);
 		if (pRegion)
@@ -571,7 +575,7 @@ bool ParaEngine::CBlockWorld::UnloadRegion(uint16_t block_x, uint16_t block_y, u
 {
 	uint16_t rx, ry, rz;
 	BlockRegion* pRegion = GetRegion(block_x, block_y, block_z, rx, ry, rz);
-	if (pRegion){
+	if (pRegion) {
 		UnloadRegion(pRegion, bAutoSave);
 		return true;
 	}
@@ -671,7 +675,7 @@ void ParaEngine::CBlockWorld::ClearAllBlockTemplates()
 {
 	for (auto& it : m_blockTemplates)
 	{
-		if (it.first < 256){
+		if (it.first < 256) {
 			m_blockTemplatesArray[it.first] = NULL;
 		}
 		SAFE_DELETE(it.second);
@@ -719,7 +723,11 @@ void CBlockWorld::SaveBlockTemplateData()
 		root->LinkEndChild(pNewItem);
 	}
 	std::string fileName = m_worldInfo.GetBlockTemplateFileName(true);
-	doc.SaveFile(fileName.c_str());
+	std::string sText;
+	sText << doc;
+	CParaFile file;
+	if (file.CreateNewFile(fileName.c_str(), true))
+		file.write(sText.c_str(), sText.size());
 #else
 	TiXmlDocument doc;
 
@@ -756,7 +764,11 @@ void CBlockWorld::SaveBlockTemplateData()
 		root->LinkEndChild(pNewItem);
 	}
 	std::string fileName = m_worldInfo.GetBlockTemplateFileName(true);
-	doc.SaveFile(fileName);
+	std::string sText;
+	sText << doc;
+	CParaFile file;
+	if (file.CreateNewFile(fileName.c_str(), true))
+		file.write(sText.c_str(), sText.size());
 #endif
 }
 
@@ -828,7 +840,7 @@ void CBlockWorld::LoadBlockTemplateData()
 										pTemplate->SetNormalMap(normalMap);
 								}
 							}
-						}
+}
 					}
 				}
 			}
@@ -939,7 +951,7 @@ BlockTemplate* CBlockWorld::RegisterTemplate(uint16_t id, uint32_t attFlag, uint
 	if (GetBlockTemplate(id))
 		return NULL;
 
-	BlockTemplate *newTemplate = new BlockTemplate(id, attFlag, category_id);
+	BlockTemplate* newTemplate = new BlockTemplate(id, attFlag, category_id);
 	m_blockTemplates.insert(std::pair<uint16_t, BlockTemplate*>(id, newTemplate));
 	if (id < 256)
 		m_blockTemplatesArray[id] = newTemplate;
@@ -1051,7 +1063,7 @@ uint32_t ParaEngine::CBlockWorld::SetBlockId(uint16_t x, uint16_t y, uint16_t z,
 {
 	if (y >= 256)
 		return 0;
-	
+
 	uint16_t lx, ly, lz;
 	BlockRegion* pRegion = GetRegion(x, y, z, lx, ly, lz);
 
@@ -1277,7 +1289,7 @@ bool CBlockWorld::RefreshChunkColumn(int16_t curChunkWX, int16_t curChunkWZ)
 	{
 		int16_t regionX = curChunkWX >> 5;
 		int16_t regionZ = curChunkWZ >> 5;
-		BlockRegion *pRegion = GetRegion(regionX, regionZ);
+		BlockRegion* pRegion = GetRegion(regionX, regionZ);
 
 		for (int16_t curChunkWY = 0; curChunkWY < 16; curChunkWY++)
 		{
@@ -1330,7 +1342,7 @@ void CBlockWorld::UpdateActiveChunk()
 					int16_t regionX = curChunkWX >> 5;
 					int16_t regionZ = curChunkWZ >> 5;
 					// check load regions
-					BlockRegion *pRegion = CreateGetRegion(regionX, regionZ);
+					BlockRegion* pRegion = CreateGetRegion(regionX, regionZ);
 
 					if (pRegion)
 					{
@@ -1401,7 +1413,7 @@ void CBlockWorld::UpdateActiveChunk()
 
 					int16_t regionX = curChunkWX >> 5;
 					int16_t regionZ = curChunkWZ >> 5;
-					BlockRegion *pRegion = CreateGetRegion(regionX, regionZ);
+					BlockRegion* pRegion = CreateGetRegion(regionX, regionZ);
 					ReuseActiveChunk(curChunkWX, curChunkWY, curChunkWZ, pRegion);
 					if (!pRegion)
 					{
@@ -1538,7 +1550,7 @@ int32_t CBlockWorld::GetBlocksInRegion(Uint16x3& startChunk_ws, Uint16x3& endChu
 			BlockRegion* pRegion = GetRegion(regionX, regionZ);
 			if (pRegion)
 			{
-				if (verticalSectionFilter==0)
+				if (verticalSectionFilter == 0)
 					pRegion->GetBlocksInChunk(x, z, startChunk_ws.y, endChunk_ws.y, matchType, result, blockCount);
 				else
 					pRegion->GetBlocksInChunk(x, z, verticalSectionFilter, matchType, result, blockCount);
@@ -1652,7 +1664,7 @@ bool CBlockWorld::Pick(const Vector3& rayOrig, const Vector3& dir, float length,
 	}
 	else
 		errDist.z = maxRayDist;
-	
+
 	int16_t curRegionX = -1;
 	int16_t curRegionZ = -1;
 	BlockRegion* curRegion = NULL;
@@ -1731,7 +1743,7 @@ bool CBlockWorld::Pick(const Vector3& rayOrig, const Vector3& dir, float length,
 				// use AABB for non-cube model
 				CShapeAABB aabb;
 				pBlockTemplate->GetAABB(this, curBlockIdX, curBlockIdY, curBlockIdZ, &aabb);
-				Vector3 vOrig = rayOrig - Vector3((float)(blockSize*curBlockIdX), (float)(blockSize*curBlockIdY + GetVerticalOffset()), (float)(blockSize*curBlockIdZ));
+				Vector3 vOrig = rayOrig - Vector3((float)(blockSize * curBlockIdX), (float)(blockSize * curBlockIdY + GetVerticalOffset()), (float)(blockSize * curBlockIdZ));
 
 				float fHitDist = -1;
 				int nHitSide = 0;
@@ -1850,7 +1862,7 @@ void CBlockWorld::SetTemplateTexture(uint16_t id, const char* textureName)
 				pTemplate->SetAttribute(BlockTemplate::batt_fourSideTex, false);
 				pTemplate->GetBlockModel().LoadModelByTexture(0);
 				ClearBlockRenderCache();
-			}
+}
 		}
 #endif
 		pTemplate->SetTexture0(textureName);
@@ -2135,7 +2147,7 @@ void CBlockWorld::UpdateRegionCache()
 	}
 	else
 	{
-		
+
 	}
 }
 
@@ -2176,7 +2188,7 @@ void CBlockWorld::OnViewCenterMove(float viewCenterX, float viewCenterY, float v
 
 void CBlockWorld::UpdateVisibleChunks(bool bIsShadowPass)
 {
-	
+
 }
 
 void CBlockWorld::SetSunIntensity(float intensity)
@@ -2185,7 +2197,7 @@ void CBlockWorld::SetSunIntensity(float intensity)
 	if (intensity > 1) intensity = 1;
 
 	float fDelta = m_sunIntensity - intensity;
-	if (fDelta!=0.f)
+	if (fDelta != 0.f)
 	{
 		m_sunIntensity = intensity;
 
@@ -2255,7 +2267,7 @@ void CBlockWorld::UpdateSelectedBlockNearbyValues(uint16_t x, uint16_t y, uint16
 	UpdateSelectedBlockValue(x, y - 1, z, nGroupID);
 	UpdateSelectedBlockValue(x - 1, y, z, nGroupID);
 	UpdateSelectedBlockValue(x + 1, y, z, nGroupID);
-	UpdateSelectedBlockValue(x, y, z+1, nGroupID);
+	UpdateSelectedBlockValue(x, y, z + 1, nGroupID);
 }
 
 void CBlockWorld::UpdateSelectedBlockValue(uint16_t x, uint16_t y, uint16_t z, int nGroupID)
@@ -2271,7 +2283,7 @@ void CBlockWorld::UpdateSelectedBlockValue(uint16_t x, uint16_t y, uint16_t z, i
 			if (blocks.find(GetBlockSparseIndex(x, y + 1, z)) == blocks.end()) {
 				v = v | 0x1;
 			}
-			if (blocks.find(GetBlockSparseIndex(x, y, z-1)) == blocks.end()) {
+			if (blocks.find(GetBlockSparseIndex(x, y, z - 1)) == blocks.end()) {
 				v = v | (0x1 << 1);
 			}
 			if (blocks.find(GetBlockSparseIndex(x, y - 1, z)) == blocks.end()) {
@@ -2283,7 +2295,7 @@ void CBlockWorld::UpdateSelectedBlockValue(uint16_t x, uint16_t y, uint16_t z, i
 			if (blocks.find(GetBlockSparseIndex(x + 1, y, z)) == blocks.end()) {
 				v = v | (0x1 << 4);
 			}
-			if (blocks.find(GetBlockSparseIndex(x, y, z+1)) == blocks.end()) {
+			if (blocks.find(GetBlockSparseIndex(x, y, z + 1)) == blocks.end()) {
 				v = v | (0x1 << 5);
 			}
 			blocks[nIndex] = v;
@@ -2315,7 +2327,7 @@ ParaEngine::BlockRenderMethod ParaEngine::CBlockWorld::GetBlockRenderMethod()
 void CBlockWorld::OnGenerateTerrain(int nRegionX, int nRegionY, int nChunkX, int nChunkZ)
 {
 	ScriptCallback* pCallback = GetScriptCallback(Type_GeneratorScript);
-	if (pCallback){
+	if (pCallback) {
 		char sMsg[512];
 		snprintf(sMsg, 512, "msg={region_x=%d, region_y=%d,chunk_x=%d, chunk_z=%d};", nRegionX, nRegionY, nChunkX, nChunkZ);
 		std::string script = sMsg;
@@ -2328,7 +2340,7 @@ void CBlockWorld::OnGenerateTerrain(int nRegionX, int nRegionY, int nChunkX, int
 int ParaEngine::CBlockWorld::OnBeforeLoadBlockRegion(int x, int y)
 {
 	ScriptCallback* pCallback = GetScriptCallback(Type_BeforeLoadBlockRegion);
-	if (pCallback){
+	if (pCallback) {
 		char sMsg[100];
 		snprintf(sMsg, 100, "msg={x=%d,y=%d};", x, y);
 		std::string script = sMsg;
@@ -2342,7 +2354,7 @@ int ParaEngine::CBlockWorld::OnBeforeLoadBlockRegion(int x, int y)
 int CBlockWorld::OnLoadBlockRegion(int x, int y)
 {
 	ScriptCallback* pCallback = GetScriptCallback(Type_LoadBlockRegion);
-	if (pCallback){
+	if (pCallback) {
 		char sMsg[100];
 		snprintf(sMsg, 100, "msg={x=%d,y=%d};", x, y);
 		std::string script = sMsg;
@@ -2355,7 +2367,7 @@ int CBlockWorld::OnLoadBlockRegion(int x, int y)
 int CBlockWorld::OnUnLoadBlockRegion(int x, int y)
 {
 	ScriptCallback* pCallback = GetScriptCallback(Type_UnLoadBlockRegion);
-	if (pCallback){
+	if (pCallback) {
 		char sMsg[100];
 		snprintf(sMsg, 100, "msg={x=%d,y=%d};", x, y);
 		std::string script = sMsg;
@@ -2368,7 +2380,7 @@ int CBlockWorld::OnUnLoadBlockRegion(int x, int y)
 int ParaEngine::CBlockWorld::OnSaveBlockRegion(int x, int y)
 {
 	ScriptCallback* pCallback = GetScriptCallback(Type_SaveRegionCallbackScript);
-	if (pCallback){
+	if (pCallback) {
 		char sMsg[100];
 		snprintf(sMsg, 100, "msg={x=%d,y=%d,type=\"raw\"};", x, y);
 		std::string script = sMsg;
@@ -2459,11 +2471,11 @@ bool ParaEngine::CBlockWorld::ChunkColumnExists(uint16_t chunkX, uint16_t chunkZ
 	uint16_t y = 0;
 	uint16_t x = chunkPos.GetCenterWorldX();
 	uint16_t z = chunkPos.GetCenterWorldZ();
-	
+
 	BlockRegion* pRegion = GetRegion(x, y, z, x, y, z);
-	if (pRegion && ! pRegion->IsLocked())
+	if (pRegion && !pRegion->IsLocked())
 	{
-		return pRegion->GetChunkColumnTimeStamp(x, z)>0;
+		return pRegion->GetChunkColumnTimeStamp(x, z) > 0;
 	}
 	return false;
 }
@@ -2529,7 +2541,11 @@ bool ParaEngine::CBlockWorld::IsRenderBlocks()
 
 bool ParaEngine::CBlockWorld::IsUseAsyncLoadWorld() const
 {
+#ifdef EMSCRIPTEN_SINGLE_THREAD
+	return false;
+#else
 	return m_bUseAsyncLoadWorld;
+#endif
 }
 
 void ParaEngine::CBlockWorld::SetUseAsyncLoadWorld(bool val)
@@ -2550,7 +2566,7 @@ int ParaEngine::CBlockWorld::GetNumOfLockedBlockRegion()
 	int nCount = 0;
 	for (auto& iter : m_regionCache)
 	{
-		if(iter.second->IsLocked())
+		if (iter.second->IsLocked())
 			nCount++;
 	}
 	return nCount;
@@ -2687,7 +2703,7 @@ void ParaEngine::CBlockWorld::ClearOutOfRangeActiveChunkData()
 	}
 }
 
-IAttributeFields* ParaEngine::CBlockWorld::GetChildAttributeObject(const char * sName)
+IAttributeFields* ParaEngine::CBlockWorld::GetChildAttributeObject(const char* sName)
 {
 	for (auto& iter : m_regionCache)
 	{
@@ -2739,7 +2755,7 @@ int ParaEngine::CBlockWorld::InstallFields(CAttributeClass* pClass, bool bOverri
 	IAttributeFields::InstallFields(pClass, bOverride);
 
 	PE_ASSERT(pClass != NULL);
-	
+
 	pClass->AddField("BlockRenderMethod", FieldType_Int, (void*)SetBlockRenderMethod_s, (void*)GetBlockRenderMethod_s, NULL, NULL, bOverride);
 
 	pClass->AddField("ResumeLightUpdate", FieldType_void, (void*)ResumeLightUpdate_s, NULL, NULL, "", bOverride);
@@ -2751,11 +2767,11 @@ int ParaEngine::CBlockWorld::InstallFields(CAttributeClass* pClass, bool bOverri
 	pClass->AddField("UnlockWorld", FieldType_void, (void*)UnlockWorld_s, NULL, NULL, "", bOverride);
 
 	pClass->AddField("IsLightUpdateSuspended", FieldType_Bool, NULL, (void*)IsLightUpdateSuspended_s, NULL, NULL, bOverride);
-	
+
 	pClass->AddField("SetChunkColumnTimeStamp", FieldType_Float_Float_Float, (void*)SetChunkColumnTimeStamp_s, NULL, NULL, NULL, bOverride);
 
 	pClass->AddField("RenderDist", FieldType_Int, (void*)SetRenderDist_s, (void*)GetRenderDist_s, NULL, NULL, bOverride);
-	
+
 	pClass->AddField("DirtyColumnCount", FieldType_Int, NULL, (void*)GetDirtyColumnCount_s, NULL, NULL, bOverride);
 	pClass->AddField("DirtyBlockCount", FieldType_Int, NULL, (void*)GetDirtyBlockCount_s, NULL, NULL, bOverride);
 	pClass->AddField("IsReadOnly", FieldType_Bool, (void*)SetReadOnly_s, (void*)IsReadOnly_s, NULL, NULL, bOverride);
@@ -2765,7 +2781,7 @@ int ParaEngine::CBlockWorld::InstallFields(CAttributeClass* pClass, bool bOverri
 	pClass->AddField("UseAsyncLoadWorld", FieldType_Bool, (void*)SetUseAsyncLoadWorld_s, (void*)IsUseAsyncLoadWorld_s, NULL, NULL, bOverride);
 	pClass->AddField("UseLinearTorchBrightness", FieldType_Bool, (void*)UseLinearTorchBrightness_s, (void*)0, NULL, NULL, bOverride);
 	pClass->AddField("GeneratorScript", FieldType_String, (void*)SetGeneratorScript_s, (void*)GetGeneratorScript_s, NULL, NULL, bOverride);
-	
+
 	pClass->AddField("OnBeforeLoadBlockRegion", FieldType_String, (void*)SetBeforeLoadBlockRegion_s, (void*)GetBeforeLoadBlockRegion_s, CAttributeField::GetSimpleSchemaOfScript(), "", bOverride);
 	pClass->AddField("OnLoadBlockRegion", FieldType_String, (void*)SetLoadBlockRegion_s, (void*)GetLoadBlockRegion_s, CAttributeField::GetSimpleSchemaOfScript(), "", bOverride);
 	pClass->AddField("OnUnLoadBlockRegion", FieldType_String, (void*)SetUnLoadBlockRegion_s, (void*)GetUnLoadBlockRegion_s, CAttributeField::GetSimpleSchemaOfScript(), "", bOverride);
