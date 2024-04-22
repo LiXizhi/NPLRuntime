@@ -48,6 +48,8 @@
 	<string>MainMenu</string>
 	<key>NSMicrophoneUsageDescription</key>
 	<string>We need to use the microphone to recording.</string>
+	<key>NSCameraUsageDescription</key>
+	<string>We need to use the camera.</string>
 	<key>NSPrincipalClass</key>
 	<string>NSApplication</string>
 </dict>
