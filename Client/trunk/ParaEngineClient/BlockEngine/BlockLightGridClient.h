@@ -8,13 +8,19 @@
 #include <map>
 #include <utility>
 #include <bitset>
+#ifndef EMSCRIPTEN_SINGLE_THREAD
 #include <boost/circular_buffer.hpp>
 #include <boost/thread.hpp>
+#else
+#include "util/CoroutineThread.h"
+#endif
 #include <boost/shared_ptr.hpp>
 #include <boost/enable_shared_from_this.hpp>
 #include "util/ParaMemPool.h"
 #include "BlockReadWriteLock.h"
 #include "BlockLightGridBase.h"
+
+
 
 namespace ParaEngine
 {
@@ -106,7 +112,11 @@ namespace ParaEngine
 		void EmitSunLight(uint16_t blockIdX_ws,uint16_t blockIdZ_ws, bool bInitialSet=false);
 
 		/** light thread proc */
+#ifdef EMSCRIPTEN_SINGLE_THREAD
+		CoroutineThread::Coroutine LightThreadProc(CoroutineThread* co_thread);
+#else
 		void LightThreadProc();
+#endif	
 
 		void SetLightingInChunkColumnInitialized(uint16_t chunkX_ws, uint16_t chunkBlockZ);
 
@@ -177,7 +187,11 @@ namespace ParaEngine
 		bool m_bIsLightThreadStarted;
 
 		/** Thread used for light calculation and some other parallel task. */
+#ifdef EMSCRIPTEN_SINGLE_THREAD
+		CoroutineThread* m_light_thread;
+#else
 		std::thread m_light_thread;
+#endif
 
 		/** whether to calculate light in a separate thread. */
 		bool m_bIsAsyncLightCalculation;
