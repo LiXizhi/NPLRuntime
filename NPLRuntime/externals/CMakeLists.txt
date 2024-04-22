@@ -63,7 +63,7 @@ if (NOT EMSCRIPTEN)
 	add_subdirectory(jpeg)
 endif()
 add_subdirectory(freetype-2.8.1)
-add_subdirectory(Pinocchio)
+# add_subdirectory(Pinocchio)
 
 if (${NPLRUNTIME_RENDERER} STREQUAL "NULL")
     # exclude graphics lib if no renderer are specified, such as under linux

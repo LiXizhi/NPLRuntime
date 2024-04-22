@@ -260,7 +260,9 @@ if (EMSCRIPTEN AND NOT NPLOCE_DEPS_ROOT)
         set(NPLOCE_DEPS_ROOT "/mnt/d/workspace/npl/nploce-deps/install_thread")
     endif()
 endif()
-if (EMSCRIPTEN AND NPLOCE_DEPS_ROOT)
+if (EMSCRIPTEN AND NPLOCE_DEPS_ROOT AND (EXISTS ${NPLOCE_DEPS_ROOT}/oce/lib/libTKBO.a))
+    # check if ${NPLOCE_DEPS_ROOT}/oce/lib/libTKBO.a exists    
+    add_definitions(-DEMSCRIPTEN_HAS_OCE)
     link_directories(${NPLOCE_DEPS_ROOT}/harfbuzz/lib)
     link_directories(${NPLOCE_DEPS_ROOT}/oce/lib)
 	list(APPEND NPLRUNTIME_LIBS  
@@ -309,7 +311,7 @@ if (EMSCRIPTEN)
     tinyxpath
     luabind
     ParaSqlite 
-    Pinocchio
+    #Pinocchio
     ParaAntlr4
     ${ICONV_LIB_NAME}
     "${BOOST_ROOT}/stage/lib/libboost_atomic.a"
@@ -337,7 +339,7 @@ else()
         ParaSqlite 
         libjpeg
         libpng
-        Pinocchio
+        #Pinocchio
         ParaAntlr4
         ${ICONV_LIB_NAME}
     )

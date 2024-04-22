@@ -1,0 +1,62 @@
+name: CII
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
+
+jobs:
+  build:
+    name: Build
+    runs-on: windows-latest
+
+    strategy:
+      matrix:
+        address_mode: [32, 64]
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v2
+
+      - name: Install Boost
+        run: |
+          git submodule init
+          git submodule update --init --recursive
+          del C:\projects\nplruntime\npl_packages\main\* /q
+          rmdir "C:/Program Files/MySQL" /s /q
+          rmdir "C:/Program Files/PostgreSQL" /s /q
+          curl -L -o boost.7z https://boostorg.jfrog.io/artifactory/main/release/1.78.0/source/boost_1_78_0.7z
+          7z x boost.7z -oC:\projects\nplruntime\Server\trunk\
+          cd C:\projects\nplruntime\Server\trunk\boost_1_78_0\
+          set BOOST_ROOT=C:\projects\nplruntime\Server\trunk\boost_1_78_0
+          bootstrap.bat
+          b2 address-model=%address_mode% runtime-link=static threading=multi variant=release --with-thread --with-date_time --with-filesystem --with-system --with-chrono --with-regex --with-serialization --with-iostreams  --with-log --with-locale stage
+          dir %BOOST_ROOT%\stage\lib
+          cd C:\projects\nplruntime
+
+      - name: Configure and Build
+        run: |
+          mkdir bin\client
+          cd bin\client
+          if %address_mode%==64 (
+            cmake ../../NPLRuntime -DCMAKE_GENERATOR_PLATFORM=x64
+          ) else (
+            cmake ../../NPLRuntime
+          )
+          msbuild c:\projects\nplruntime\bin\client\NPLRuntime.sln /verbosity:minimal /property:Configuration=Release /logger:"C:\Program Files\AppVeyor\BuildAgent\Appveyor.MSBuildLogger.dll"
+          7z a NPLRuntime_${{ matrix.address_mode }}bit.zip C:\projects\nplruntime\ParaWorld\bin${{ matrix.address_mode }}
+      
+      - name: Package Installer
+        run: |
+          "C:/Program Files (x86)/NSIS/makensis" C:\projects\nplruntime\installer\nplruntime_x${{ matrix.address_mode }}.nsi
+
+      - name: Upload Artifacts
+        uses: actions/upload-artifact@v2
+        with:
+          name: NPLRuntime_${{ matrix.address_mode }}bit
+          path: |
+            C:\projects\nplruntime\NPLRuntime_${{ matrix.address_mode }}bit.zip
+            C:\projects\nplruntime\installer\nplruntime_v1.0-alpha.10_Windows_x${{ matrix.address_mode }}.exe

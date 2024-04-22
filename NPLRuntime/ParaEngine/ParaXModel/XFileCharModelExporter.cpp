@@ -5,6 +5,7 @@
 #include "Core/TextureEntity.h"
 #include "util/StringHelper.h"
 #include "ParaXBone.h"
+#include "ZipWriter.h"
 #include "particle.h"
 #include <fstream>
 
@@ -44,11 +45,30 @@ bool ParaEngine::XFileCharModelExporter::Export(const string& filepath, CParaXMo
 #else
 	ofstream file(filepath, ios_base::binary);
 #endif
-	
+
 	if (file.is_open())
 	{
 		XFileCharModelExporter exporter(file, pMesh);
 		exporter.ExportParaXModel(file);
+
+		// compress the file to zip if file size is bigger than 10KB
+		if (file.tellp() > 10240)
+		{
+			file.close();
+			CZipWriter writer;
+			std::string filename = CParaFile::GetWritablePath();
+			filename = filename + "temp/xfile.zip";
+			writer.InitNewZip(filename.c_str());
+			writer.ZipAdd("data", filepath.c_str());
+			if (writer.close() == 0) {
+				OUTPUT_LOG("failed to compress the xfile to zip %s \n", filename.c_str());
+				return false;
+			}
+			if (!CParaFile::CopyFile(filename.c_str(), filepath.c_str(), true)) {
+				OUTPUT_LOG("failed to copy the zip file %s to %s \n", filename.c_str(), filepath.c_str());
+				return false;
+			}
+		}
 		return true;
 	}
 	return false;
@@ -439,7 +459,7 @@ bool ParaEngine::XFileCharModelExporter::WriteParaXBody(XFileDataObjectPtr pData
 	pData->m_sName = strName;
 
 	static vector<string> vecChildNames{ "XViews","XTextures","XAttachments","XVertices", "XVoxels", "XIndices0" ,"XGeosets" ,"XRenderPass" ,"XBones" ,"XAnimations" ,
-		"XTransparency" ,"XTexAnims","XParticleEmitters","XRibbonEmitters","XColors","XCameras","XLights"};
+		"XTransparency" ,"XTexAnims","XParticleEmitters","XRibbonEmitters","XColors","XCameras","XLights" };
 	for (string strChildName : vecChildNames)
 	{
 		XFileDataObjectPtr pChildData(new XFileDataObject());
@@ -468,7 +488,7 @@ bool ParaEngine::XFileCharModelExporter::WriteParaXRawData(XFileDataObjectPtr pD
 bool ParaEngine::XFileCharModelExporter::WriteParaXBodyChild(XFileDataObjectPtr pData, const string& strTemplateName, const string& strName /*= ""*/)
 {
 	if (strTemplateName == "XDWORDArray") {
-		
+
 	}
 	else if (strTemplateName == "XVertices") {
 		WriteXVertices(pData, strName);
@@ -559,7 +579,7 @@ bool ParaEngine::XFileCharModelExporter::WriteXVertices(XFileDataObjectPtr pData
 	data.nVertexBytes = sizeof(ModelVertex);
 	data.nVertices = nVertices;
 
-	data.ofsVertices = m_pRawData->AddRawData((const DWORD*)m_pMesh->m_origVertices, data.nVertices*data.nVertexBytes / 4);
+	data.ofsVertices = m_pRawData->AddRawData((const DWORD*)m_pMesh->m_origVertices, data.nVertices * data.nVertexBytes / 4);
 
 	memcpy(pData->GetBuffer(), &data, nSize);
 	return true;
@@ -605,7 +625,7 @@ bool ParaEngine::XFileCharModelExporter::WriteXTextures(XFileDataObjectPtr pData
 		pData->m_sName = strName;
 
 		// 255 is the reserved texture file length
-		pData->ResizeBuffer((sizeof(ModelTextureDef_) + 255)*nTextures + 4);
+		pData->ResizeBuffer((sizeof(ModelTextureDef_) + 255) * nTextures + 4);
 
 		*(int32*)pData->GetBuffer() = nTextures;
 
@@ -616,10 +636,10 @@ bool ParaEngine::XFileCharModelExporter::WriteXTextures(XFileDataObjectPtr pData
 			pBuffer->nOffsetEmbeddedTexture = 0;
 
 			if (m_pMesh->textures[i].get() == nullptr) {
-                if(m_pMesh->specialTextures[i] < CParaXModel::MAX_MODEL_TEXTURES)
-				    pBuffer->type = m_pMesh->specialTextures[i];
-                else
-                    pBuffer->type = 0;
+				if (m_pMesh->specialTextures[i] < CParaXModel::MAX_MODEL_TEXTURES)
+					pBuffer->type = m_pMesh->specialTextures[i];
+				else
+					pBuffer->type = 0;
 				//pBuffer->sName = '\0';
 				//pBuffer = (ModelTextureDef_*)((char*)pBuffer + 8 + 1);
 
@@ -628,10 +648,10 @@ bool ParaEngine::XFileCharModelExporter::WriteXTextures(XFileDataObjectPtr pData
 				pBuffer = (ModelTextureDef_*)((char*)pBuffer + 8 + name.size() + 1);
 			}
 			else {
-                if (m_pMesh->specialTextures[i] < CParaXModel::MAX_MODEL_TEXTURES)
-                    pBuffer->type = m_pMesh->specialTextures[i];
-                else
-                    pBuffer->type = 0;
+				if (m_pMesh->specialTextures[i] < CParaXModel::MAX_MODEL_TEXTURES)
+					pBuffer->type = m_pMesh->specialTextures[i];
+				else
+					pBuffer->type = 0;
 				string name = m_pMesh->textures[i]->GetKey();
 				if (m_pMesh->textures[i]->GetRawData())
 				{
@@ -660,12 +680,12 @@ bool ParaEngine::XFileCharModelExporter::WriteXAttachments(XFileDataObjectPtr pD
 		pData->m_sTemplateName = "XAttachments";
 		pData->m_sName = strName;
 
-		int nSize = 8 + sizeof(ModelAttachmentDef)*nAttachments + 4 * nAttachmentLookup;
+		int nSize = 8 + sizeof(ModelAttachmentDef) * nAttachments + 4 * nAttachmentLookup;
 		pData->ResizeBuffer(nSize);
 		*(DWORD*)(pData->GetBuffer()) = (DWORD)nAttachments;
 		*(((DWORD*)(pData->GetBuffer())) + 1) = (DWORD)nAttachmentLookup;
-		ModelAttachmentDef *attachments = (ModelAttachmentDef *)(pData->GetBuffer() + 8);
-		int32 * attLookup = (int32 *)(pData->GetBuffer() + 8 + sizeof(ModelAttachmentDef)*nAttachments);
+		ModelAttachmentDef* attachments = (ModelAttachmentDef*)(pData->GetBuffer() + 8);
+		int32* attLookup = (int32*)(pData->GetBuffer() + 8 + sizeof(ModelAttachmentDef) * nAttachments);
 		for (int i = 0; i < nAttachments; i++) {
 			const ModelAttachment& att = m_pMesh->m_atts[i];
 			attachments[i].id = att.id;
@@ -689,10 +709,10 @@ bool ParaEngine::XFileCharModelExporter::WriteXColors(XFileDataObjectPtr pData, 
 		pData->m_sTemplateName = "XColors";
 		pData->m_sName = strName;
 
-		int nSize = 4 + sizeof(ModelColorDef)*nColors;
+		int nSize = 4 + sizeof(ModelColorDef) * nColors;
 		pData->ResizeBuffer(nSize);
 		*(DWORD*)(pData->GetBuffer()) = (DWORD)nColors;
-		ModelColorDef *colorDefs = (ModelColorDef*)(pData->GetBuffer() + 4);
+		ModelColorDef* colorDefs = (ModelColorDef*)(pData->GetBuffer() + 4);
 		for (int i = 0; i < nColors; i++) {
 			const ModelColor& att = m_pMesh->colors[i];
 			WriteAnimationBlock(&colorDefs[i].color, att.color);
@@ -711,10 +731,10 @@ bool ParaEngine::XFileCharModelExporter::WriteXTransparency(XFileDataObjectPtr p
 		pData->m_sTemplateName = "XTransparency";
 		pData->m_sName = strName;
 
-		int nSize = 4 + sizeof(ModelTransDef)*nTransparency;
+		int nSize = 4 + sizeof(ModelTransDef) * nTransparency;
 		pData->ResizeBuffer(nSize);
 		*(DWORD*)(pData->GetBuffer()) = (DWORD)nTransparency;
-		ModelTransDef *transDefs = (ModelTransDef*)(pData->GetBuffer() + 4);
+		ModelTransDef* transDefs = (ModelTransDef*)(pData->GetBuffer() + 4);
 		for (int i = 0; i < nTransparency; i++) {
 			const ModelTransparency& transp = m_pMesh->transparency[i];
 			WriteAnimationBlock(&transDefs[i].trans, transp.trans);
@@ -732,7 +752,7 @@ bool ParaEngine::XFileCharModelExporter::WriteXViews(XFileDataObjectPtr pData, c
 
 	int nView = 1;
 	{
-		int nSize = 4 + sizeof(ModelView)*nView;
+		int nSize = 4 + sizeof(ModelView) * nView;
 		pData->ResizeBuffer(nSize);
 		*(DWORD*)(pData->GetBuffer()) = (DWORD)nView;
 		ModelView* view = (ModelView*)(pData->GetBuffer() + 4);
@@ -777,10 +797,10 @@ bool ParaEngine::XFileCharModelExporter::WriteXGeosets(XFileDataObjectPtr pData,
 		pData->m_sTemplateName = "XGeosets";
 		pData->m_sName = strName;
 
-		int nSize = 4 + sizeof(ModelGeoset)*nGeosets;
+		int nSize = 4 + sizeof(ModelGeoset) * nGeosets;
 		pData->ResizeBuffer(nSize);
 		*(DWORD*)(pData->GetBuffer()) = (DWORD)nGeosets;
-		ModelGeoset *geosets = (ModelGeoset*)(pData->GetBuffer() + 4);
+		ModelGeoset* geosets = (ModelGeoset*)(pData->GetBuffer() + 4);
 		memcpy(geosets, &m_pMesh->geosets[0], nSize - 4);
 	}
 	return true;
@@ -794,10 +814,10 @@ bool ParaEngine::XFileCharModelExporter::WriteXRenderPass(XFileDataObjectPtr pDa
 		pData->m_sTemplateName = "XRenderPass";
 		pData->m_sName = strName;
 
-		int nSize = 4 + sizeof(ModelRenderPass)*nRenderPasses;
+		int nSize = 4 + sizeof(ModelRenderPass) * nRenderPasses;
 		pData->ResizeBuffer(nSize);
 		*(DWORD*)(pData->GetBuffer()) = (DWORD)nRenderPasses;
-		ModelRenderPass *opsDefs = (ModelRenderPass*)(pData->GetBuffer() + 4);
+		ModelRenderPass* opsDefs = (ModelRenderPass*)(pData->GetBuffer() + 4);
 		memcpy(opsDefs, &m_pMesh->passes[0], nSize - 4);
 	}
 	return true;
@@ -811,11 +831,11 @@ bool ParaEngine::XFileCharModelExporter::WriteXBones(XFileDataObjectPtr pData, c
 		pData->m_sTemplateName = "XBones";
 		pData->m_sName = strName;
 
-		int nSize = 4 + sizeof(ModelBoneDef)*nBones;
+		int nSize = 4 + sizeof(ModelBoneDef) * nBones;
 		pData->ResizeBuffer(nSize);
 		memset(pData->GetBuffer(), 0, nSize);
 		*(DWORD*)(pData->GetBuffer()) = (DWORD)nBones;
-		ModelBoneDef *bones = (ModelBoneDef*)(pData->GetBuffer() + 4);
+		ModelBoneDef* bones = (ModelBoneDef*)(pData->GetBuffer() + 4);
 		for (int i = 0; i < nBones; i++) {
 			const Bone& bone = m_pMesh->bones[i];
 			bones[i].parent = bone.parent;
@@ -855,10 +875,10 @@ bool ParaEngine::XFileCharModelExporter::WriteXTexAnims(XFileDataObjectPtr pData
 		pData->m_sTemplateName = "XTexAnims";
 		pData->m_sName = strName;
 
-		int nSize = 4 + sizeof(ModelTexAnimDef)*nTexAnims;
+		int nSize = 4 + sizeof(ModelTexAnimDef) * nTexAnims;
 		pData->ResizeBuffer(nSize);
 		*(DWORD*)(pData->GetBuffer()) = (DWORD)nTexAnims;
-		ModelTexAnimDef *texanims = (ModelTexAnimDef*)(pData->GetBuffer() + 4);
+		ModelTexAnimDef* texanims = (ModelTexAnimDef*)(pData->GetBuffer() + 4);
 		for (int i = 0; i < nTexAnims; i++) {
 			const TextureAnim& TexAnim = m_pMesh->texanims[i];
 			WriteAnimationBlock(&texanims[i].trans, TexAnim.trans);
@@ -878,11 +898,11 @@ bool ParaEngine::XFileCharModelExporter::WriteXParticleEmitters(XFileDataObjectP
 		pData->m_sTemplateName = "XParticleEmitters";
 		pData->m_sName = strName;
 
-		int nSize = 4 + sizeof(ModelParticleEmitterDef)*nParticleEmitters;
+		int nSize = 4 + sizeof(ModelParticleEmitterDef) * nParticleEmitters;
 		pData->ResizeBuffer(nSize);
 		memset(pData->GetBuffer(), 0, nSize);
 		*(DWORD*)(pData->GetBuffer()) = (DWORD)nParticleEmitters;
-		ModelParticleEmitterDef *particleSystems = (ModelParticleEmitterDef*)(pData->GetBuffer() + 4);
+		ModelParticleEmitterDef* particleSystems = (ModelParticleEmitterDef*)(pData->GetBuffer() + 4);
 		for (int i = 0; i < nParticleEmitters; i++) {
 			const ParticleSystem& particleSystem = m_pMesh->particleSystems[i];
 
@@ -937,11 +957,11 @@ bool ParaEngine::XFileCharModelExporter::WriteXRibbonEmitters(XFileDataObjectPtr
 		pData->m_sTemplateName = "XRibbonEmitters";
 		pData->m_sName = strName;
 
-		int nSize = 4 + sizeof(ModelRibbonEmitterDef)*nRibbonEmitters;
+		int nSize = 4 + sizeof(ModelRibbonEmitterDef) * nRibbonEmitters;
 		pData->ResizeBuffer(nSize);
 		memset(pData->GetBuffer(), 0, nSize);
 		*(DWORD*)(pData->GetBuffer()) = (DWORD)nRibbonEmitters;
-		ModelRibbonEmitterDef *ribbons = (ModelRibbonEmitterDef*)(pData->GetBuffer() + 4);
+		ModelRibbonEmitterDef* ribbons = (ModelRibbonEmitterDef*)(pData->GetBuffer() + 4);
 		for (int i = 0; i < nRibbonEmitters; i++) {
 			const RibbonEmitter& ribbon = m_pMesh->ribbons[i];
 
@@ -974,11 +994,11 @@ bool ParaEngine::XFileCharModelExporter::WriteXCameras(XFileDataObjectPtr pData,
 		pData->m_sTemplateName = "XCameras";
 		pData->m_sName = strName;
 
-		int nSize = 4 + sizeof(ModelRibbonEmitterDef)*nRibbonEmitters;
+		int nSize = 4 + sizeof(ModelRibbonEmitterDef) * nRibbonEmitters;
 		pData->ResizeBuffer(nSize);
 		memset(pData->GetBuffer(), 0, nSize);
 		*(DWORD*)(pData->GetBuffer()) = (DWORD)nRibbonEmitters;
-		ModelRibbonEmitterDef *ribbons = (ModelRibbonEmitterDef*)(pData->GetBuffer() + 4);
+		ModelRibbonEmitterDef* ribbons = (ModelRibbonEmitterDef*)(pData->GetBuffer() + 4);
 		for (int i = 0; i < nRibbonEmitters; i++) {
 			const RibbonEmitter& ribbon = m_pMesh->ribbons[i];
 
@@ -1012,10 +1032,10 @@ bool ParaEngine::XFileCharModelExporter::WriteXLights(XFileDataObjectPtr pData, 
 		pData->m_sTemplateName = "XLights";
 		pData->m_sName = strName;
 
-		int nSize = 4 + sizeof(ModelLightDef)*nLights;
+		int nSize = 4 + sizeof(ModelLightDef) * nLights;
 		pData->ResizeBuffer(nSize);
 		*(DWORD*)(pData->GetBuffer()) = (DWORD)nLights;
-		ModelLightDef *lights = (ModelLightDef*)(pData->GetBuffer() + 4);
+		ModelLightDef* lights = (ModelLightDef*)(pData->GetBuffer() + 4);
 		for (int i = 0; i < nLights; i++) {
 			const ModelLight& light = m_pMesh->lights[i];
 			lights[i].pos = light.pos;
@@ -1039,10 +1059,10 @@ bool ParaEngine::XFileCharModelExporter::WriteXAnimations(XFileDataObjectPtr pDa
 		pData->m_sTemplateName = "XAnimations";
 		pData->m_sName = strName;
 
-		int nSize = 4 + sizeof(ModelAnimation)*nAnimations;
+		int nSize = 4 + sizeof(ModelAnimation) * nAnimations;
 		pData->ResizeBuffer(nSize);
 		*(DWORD*)(pData->GetBuffer()) = (DWORD)nAnimations;
-		ModelAnimation *anims = (ModelAnimation*)(pData->GetBuffer() + 4);
+		ModelAnimation* anims = (ModelAnimation*)(pData->GetBuffer() + 4);
 		memcpy(anims, m_pMesh->anims, nSize - 4);
 	}
 

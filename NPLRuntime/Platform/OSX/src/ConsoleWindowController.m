@@ -72,7 +72,7 @@ const int MAX_LINES_COUNT   = 1024;
 
 - (void) changeScroll
 {
-    auto scroll = [checkScroll state] == NSOnState;
+    bool scroll = [checkScroll state] == NSOnState;
     if (scroll)
     {
         [self.textView scrollRangeToVisible:NSMakeRange(self.textView.string.length, 0)];
@@ -92,7 +92,7 @@ const int MAX_LINES_COUNT   = 1024;
 
 - (IBAction)onTopChange:(id)sender
 {
-    auto isTop = [topCheckBox state] == NSOnState;
+    bool isTop = [topCheckBox state] == NSOnState;
     if (isTop)
     {
         [self.window setLevel:NSFloatingWindowLevel];
