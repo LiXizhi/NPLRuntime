@@ -612,9 +612,9 @@ namespace ParaEngine
 				}
 			}
 		}
+exit_function:
 		m_nDirtyBlocksCount = 0;
 		m_bIsLightThreadStarted = false;
-exit_function:
 	}
 
 	void CBlockLightGridClient::UpdateLighting()
