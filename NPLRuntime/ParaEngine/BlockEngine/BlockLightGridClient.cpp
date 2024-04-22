@@ -20,6 +20,8 @@ The RefreshLight() function for a single block of second pass can take as long a
 #include "BlockLightGridClient.h"
 #include "BlockFacing.h"
 
+
+
 /** whether to use separate thread for light calculation. */
 #define ASYNC_LIGHT_CALCULATION
 
@@ -39,12 +41,14 @@ namespace ParaEngine
 	CBlockLightGridClient::~CBlockLightGridClient()
 	{
 		OnLeaveWorld();
+#ifndef EMSCRIPTEN_SINGLE_THREAD
 		if (m_light_thread.joinable())
 		{
 			OUTPUT_LOG("begin exiting light thread ...\n");
 			m_light_thread.join();
 			OUTPUT_LOG("light thread exited \n");
 		}
+#endif
 	}
 
 	void CBlockLightGridClient::OnEnterWorld()
@@ -81,6 +85,7 @@ namespace ParaEngine
 			m_nDirtyBlocksCount = 0;
 		}
 
+#ifndef EMSCRIPTEN_SINGLE_THREAD
 		if (m_pBlockWorld && m_bIsLightThreadStarted && m_light_thread.joinable())
 		{
 			if (!m_pBlockWorld->GetReadWriteLock().HasWriterLock())
@@ -95,6 +100,7 @@ namespace ParaEngine
 				m_light_thread.join();
 			}
 		}
+#endif
 		{
 			std::lock_guard<std::recursive_mutex> Lock_(m_mutex);
 			m_dirtyCells.clear();
@@ -359,7 +365,13 @@ namespace ParaEngine
 			m_bIsLightThreadStarted = true;
 			try
 			{
+#ifdef EMSCRIPTEN_SINGLE_THREAD
+				m_light_thread = CoroutineThread::StartCoroutineThread([this](CoroutineThread* t) -> CO_ASYNC {
+					CO_AWAIT(this->LightThreadProc(t));
+				}, nullptr);
+#else
 				m_light_thread = std::thread(std::bind(&CBlockLightGridClient::LightThreadProc, this));
+#endif
 			}
 			catch (...)
 			{
@@ -369,8 +381,11 @@ namespace ParaEngine
 			}
 		}
 	}
-
+#ifdef EMSCRIPTEN_SINGLE_THREAD
+	CoroutineThread::Coroutine CBlockLightGridClient::LightThreadProc(CoroutineThread* co_thread)
+#else
 	void CBlockLightGridClient::LightThreadProc()
+#endif
 	{
 		Scoped_ReadLock<BlockReadWriteLock> lock_(m_pBlockWorld->GetReadWriteLock());
 
@@ -394,7 +409,7 @@ namespace ParaEngine
 	lock_.lock(); \
 	if(!m_pBlockWorld->IsInBlockWorld()){\
 		m_bIsLightThreadStarted = false;\
-		return;\
+		goto exit_function;\
 				}\
 						}
 
@@ -523,14 +538,14 @@ namespace ParaEngine
 							if (!RefreshLight(light_data.blockId, true, light_data.sunlightUpdateRange, &lock_, &nYieldCPUTimes))
 							{
 								m_bIsLightThreadStarted = false;
-								return;
+								goto exit_function;
 							}
 						}
 						if (light_data.pointLightUpdateRange >= 0){
 							if (!RefreshLight(light_data.blockId, false, light_data.pointLightUpdateRange, &lock_, &nYieldCPUTimes))
 							{
 								m_bIsLightThreadStarted = false;
-								return;
+								goto exit_function;
 							}
 						}
 						it = m_dirtyCells.erase(it);
@@ -552,14 +567,20 @@ namespace ParaEngine
 
 				if (m_dirtyCells.size() == 0 && processedCount == 0){
 					m_nDirtyBlocksCount = 0;
-#ifdef __EMSCRIPTEN__
+#if defined(EMSCRIPTEN_SINGLE_THREAD)
+					CO_AWAIT(co_thread->Sleep(30));
+					// CO_SLEEP(co_thread, 30);
+#elif defined(__EMSCRIPTEN__)
 					SLEEP(50);
 #else
 					SLEEP(10);
 #endif
 				}
 				while (IsLightUpdateSuspended() && m_pBlockWorld->IsInBlockWorld()){
-#ifdef __EMSCRIPTEN__
+#if defined(EMSCRIPTEN_SINGLE_THREAD)
+					CO_AWAIT(co_thread->Sleep(30));
+					// CO_SLEEP(co_thread, 30);
+#elif defined(__EMSCRIPTEN__)
 					SLEEP(30);
 #else
 					SLEEP(1);
@@ -579,7 +600,10 @@ namespace ParaEngine
 				if (m_dirtyCells.size() == 0 && processedCount == 0){
 					m_nDirtyBlocksCount = 0;
 					lock_.unlock();
-#ifdef __EMSCRIPTEN__
+#if defined(EMSCRIPTEN_SINGLE_THREAD)
+					// CO_SLEEP(co_thread, 30);
+					CO_AWAIT(co_thread->Sleep(30));
+#elif defined(__EMSCRIPTEN__)
 					SLEEP(50);
 #else
 					SLEEP(10);
@@ -590,6 +614,7 @@ namespace ParaEngine
 		}
 		m_nDirtyBlocksCount = 0;
 		m_bIsLightThreadStarted = false;
+exit_function:
 	}
 
 	void CBlockLightGridClient::UpdateLighting()
@@ -1260,11 +1285,12 @@ namespace ParaEngine
 
 	bool CBlockLightGridClient::IsAsyncLightCalculation() const
 	{
-#ifdef EMSCRIPTEN_SINGLE_THREAD
-	return false;
-#else
 		return m_bIsAsyncLightCalculation;
-#endif
+// #ifdef EMSCRIPTEN_SINGLE_THREAD
+// 	return false;
+// #else
+// 		return m_bIsAsyncLightCalculation;
+// #endif
 	}
 
 	void CBlockLightGridClient::SetAsyncLightCalculation(bool val)

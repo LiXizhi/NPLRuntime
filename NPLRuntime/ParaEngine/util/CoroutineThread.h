@@ -11,6 +11,7 @@
 #include <iostream>
 
 #define CO_ASYNC CoroutineThread::Coroutine
+#define CO_SLEEP(co_thread, ms) { co_thread->AsyncSleep(ms); co_yield; }
 #define CO_AWAIT(expr) { auto _v_corountine = (expr); while (!_v_corountine.IsDone()) { co_await _v_corountine; _v_corountine.Resume();} }
 #define CO_RETURN co_return
 
@@ -44,6 +45,7 @@ public:
         bool await_ready() { return IsDone(); }
         void await_suspend(std::coroutine_handle<> h) {}
         void await_resume() {}
+
     private:
         inline void StdMove(Coroutine* other) { if (other == this) return; m_coroutine = other->m_coroutine; other->m_coroutine = nullptr; }
     protected:
@@ -76,7 +78,7 @@ public:
         }
     }
 public:
-    CoroutineThread(std::function<CO_ASYNC(CoroutineThread*)> thread_func, void* thread_data)
+    CoroutineThread(std::function<CO_ASYNC(CoroutineThread*)> thread_func = nullptr, void* thread_data = nullptr)
     {
         m_thread_data = thread_data;
         m_thread_func = thread_func;
@@ -84,6 +86,12 @@ public:
         m_sleep_timestmap = 0;
     }
 
+    ~CoroutineThread()
+    {
+        GetCoroutineThreads()->erase(this);
+    }
+
+    bool joinable() { return false; }
     void join() {}
     void detach() {}
     template<typename TimeDuration>
