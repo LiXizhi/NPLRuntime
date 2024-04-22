@@ -39,12 +39,14 @@ namespace ParaEngine
 	CBlockLightGridClient::~CBlockLightGridClient()
 	{
 		OnLeaveWorld();
+#ifndef EMSCRIPTEN_SINGLE_THREAD
 		if (m_light_thread.joinable())
 		{
 			OUTPUT_LOG("begin exiting light thread ...\n");
 			m_light_thread.join();
 			OUTPUT_LOG("light thread exited \n");
 		}
+#endif
 	}
 
 	void CBlockLightGridClient::OnEnterWorld()
@@ -81,6 +83,7 @@ namespace ParaEngine
 			m_nDirtyBlocksCount = 0;
 		}
 
+#ifndef EMSCRIPTEN_SINGLE_THREAD
 		if (m_pBlockWorld && m_bIsLightThreadStarted && m_light_thread.joinable())
 		{
 			if (!m_pBlockWorld->GetReadWriteLock().HasWriterLock())
@@ -95,6 +98,7 @@ namespace ParaEngine
 				m_light_thread.join();
 			}
 		}
+#endif
 		{
 			std::lock_guard<std::recursive_mutex> Lock_(m_mutex);
 			m_dirtyCells.clear();
@@ -359,7 +363,13 @@ namespace ParaEngine
 			m_bIsLightThreadStarted = true;
 			try
 			{
+#ifdef EMSCRIPTEN_SINGLE_THREAD
+				m_light_thread = CoroutineThread::StartCoroutineThread([this](CoroutineThread* t) -> CO_ASYNC {
+					CO_AWAIT(this->LightThreadProc(t));
+				}, nullptr);
+#else
 				m_light_thread = std::thread(std::bind(&CBlockLightGridClient::LightThreadProc, this));
+#endif
 			}
 			catch (...)
 			{
@@ -394,7 +404,7 @@ namespace ParaEngine
 	lock_.lock(); \
 	if(!m_pBlockWorld->IsInBlockWorld()){\
 		m_bIsLightThreadStarted = false;\
-		return;\
+		goto exit_function;\
 				}\
 						}
 
@@ -523,14 +533,14 @@ namespace ParaEngine
 							if (!RefreshLight(light_data.blockId, true, light_data.sunlightUpdateRange, &lock_, &nYieldCPUTimes))
 							{
 								m_bIsLightThreadStarted = false;
-								return;
+								goto exit_function;
 							}
 						}
 						if (light_data.pointLightUpdateRange >= 0){
 							if (!RefreshLight(light_data.blockId, false, light_data.pointLightUpdateRange, &lock_, &nYieldCPUTimes))
 							{
 								m_bIsLightThreadStarted = false;
-								return;
+								goto exit_function;
 							}
 						}
 						it = m_dirtyCells.erase(it);
@@ -552,10 +562,24 @@ namespace ParaEngine
 
 				if (m_dirtyCells.size() == 0 && processedCount == 0){
 					m_nDirtyBlocksCount = 0;
+#if defined(EMSCRIPTEN_SINGLE_THREAD)
+					CO_AWAIT(co_thread->Sleep(30));
+					// CO_SLEEP(co_thread, 30);
+#elif defined(__EMSCRIPTEN__)
+					SLEEP(50);
+#else
 					SLEEP(10);
+#endif
 				}
 				while (IsLightUpdateSuspended() && m_pBlockWorld->IsInBlockWorld()){
+#if defined(EMSCRIPTEN_SINGLE_THREAD)
+					CO_AWAIT(co_thread->Sleep(30));
+					// CO_SLEEP(co_thread, 30);
+#elif defined(__EMSCRIPTEN__)
+					SLEEP(30);
+#else
 					SLEEP(1);
+#endif
 				}
 				// since we are using our own read/write lock, this function will block until writers are freed. 
 				// in most cases when no writer request, it will lock immediately again, thus utilizing more CPU to process remaining light cells.  
@@ -571,11 +595,19 @@ namespace ParaEngine
 				if (m_dirtyCells.size() == 0 && processedCount == 0){
 					m_nDirtyBlocksCount = 0;
 					lock_.unlock();
+#if defined(EMSCRIPTEN_SINGLE_THREAD)
+					// CO_SLEEP(co_thread, 30);
+					CO_AWAIT(co_thread->Sleep(30));
+#elif defined(__EMSCRIPTEN__)
+					SLEEP(50);
+#else
 					SLEEP(10);
+#endif
 					lock_.lock();
 				}
 			}
 		}
+exit_function:
 		m_nDirtyBlocksCount = 0;
 		m_bIsLightThreadStarted = false;
 	}
