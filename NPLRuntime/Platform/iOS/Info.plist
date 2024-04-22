@@ -44,6 +44,8 @@
 	<string>we allow external programmable devices to connect to our software, providing functions for STEM educations.</string>
 	<key>NSBluetoothPeripheralUsageDescription</key>
 	<string>we allow external programmable devices to connect to our software, providing functions for STEM educations.</string>
+	<key>NSCameraUsageDescription</key>
+	<string>We need to use the camrea.</string>
 	<key>NSMicrophoneUsageDescription</key>
 	<string>We need to use the microphone to recording.</string>
 	<key>NSPhotoLibraryAddUsageDescription</key>
