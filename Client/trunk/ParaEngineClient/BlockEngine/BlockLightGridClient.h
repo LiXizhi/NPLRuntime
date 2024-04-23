@@ -87,10 +87,6 @@ namespace ParaEngine
 		/** thread safe: */
 		virtual bool IsChunkColumnLoaded(int nChunkX, int nChunkZ);
 	public:
-		/** whether to calculate light in a separate thread. */
-		bool IsAsyncLightCalculation() const;
-		void SetAsyncLightCalculation(bool val);
-
 		/** thread safe: check to see if the block pos's light is already or being calculated. */
 		bool IsChunkColumnLoadedWorldPos(int nWorldX, int nWorldY, int nWorldZ);
 		
@@ -192,9 +188,6 @@ namespace ParaEngine
 #else
 		std::thread m_light_thread;
 #endif
-
-		/** whether to calculate light in a separate thread. */
-		bool m_bIsAsyncLightCalculation;
 
 		std::recursive_mutex m_mutex;
 	};

@@ -63,7 +63,6 @@ namespace ParaEngine
 		ATTRIBUTE_METHOD1(BlockWorldClient, IsAsyncChunkMode_s, bool*)		{ *p1 = cls->IsAsyncChunkMode(); return S_OK; }
 		ATTRIBUTE_METHOD1(BlockWorldClient, SetAsyncChunkMode_s, bool)	{ cls->SetAsyncChunkMode(p1); return S_OK; }
 
-
 		ATTRIBUTE_METHOD1(BlockWorldClient, GetAlwaysInVertexBufferChunkRadius_s, int*)		{ *p1 = cls->GetAlwaysInVertexBufferChunkRadius(); return S_OK; }
 		ATTRIBUTE_METHOD1(BlockWorldClient, SetAlwaysInVertexBufferChunkRadius_s, int)	{ cls->SetAlwaysInVertexBufferChunkRadius(p1); return S_OK; }
 
