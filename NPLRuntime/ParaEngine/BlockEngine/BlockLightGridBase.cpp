@@ -12,7 +12,7 @@
 namespace ParaEngine
 {
 	CBlockLightGridBase::CBlockLightGridBase(CBlockWorld* pBlockWorld)
-		: m_nLightGridChunkSize(0), m_pBlockWorld(pBlockWorld), m_suspendLightUpdate(false), m_nLightCalculationStep(0)
+		: m_nLightGridChunkSize(0), m_pBlockWorld(pBlockWorld), m_suspendLightUpdate(false), m_nLightCalculationStep(0), m_bIsAsyncLightCalculation(true)
 	{
 	}
 
@@ -143,6 +143,16 @@ namespace ParaEngine
 	void CBlockLightGridBase::SetColumnUnloaded(uint16_t chunkX_ws, uint16_t chunkZ_ws)
 	{
 
+	}
+
+	bool CBlockLightGridBase::IsAsyncLightCalculation() const
+	{
+		return m_bIsAsyncLightCalculation;
+	}
+
+	void CBlockLightGridBase::SetAsyncLightCalculation(bool val)
+	{
+		m_bIsAsyncLightCalculation = val;
 	}
 
 	int CBlockLightGridBase::InstallFields(CAttributeClass* pClass, bool bOverride)

@@ -31,7 +31,7 @@ The RefreshLight() function for a single block of second pass can take as long a
 namespace ParaEngine
 {
 	CBlockLightGridClient::CBlockLightGridClient(int32_t chunkCacheDim, CBlockWorld* pBlockWorld)
-		: CBlockLightGridBase(pBlockWorld), m_bIsLightThreadStarted(false), m_bIsAsyncLightCalculation(true),
+		: CBlockLightGridBase(pBlockWorld), m_bIsLightThreadStarted(false),
 		m_minChunkIdX_ws(-1000), m_minChunkIdZ_ws(-1000), m_maxChunkIdX_ws(-1), m_maxChunkIdZ_ws(-1), m_minLightBlockIdX(-1000), m_maxLightBlockIdX(-1),
 		m_minLightBlockIdZ(-1000), m_maxLightBlockIdZ(-1), m_centerChunkIdX_ws(-1), m_centerChunkIdZ_ws(-1), m_max_cells_per_frame(500), m_max_cells_left_per_frame(5000), m_nDirtyBlocksCount(0)
 	{

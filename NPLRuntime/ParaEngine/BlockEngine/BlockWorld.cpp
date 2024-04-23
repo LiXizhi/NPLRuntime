@@ -2749,6 +2749,16 @@ void ParaEngine::CBlockWorld::SetAutoPhysics(bool bValue)
 	m_bAutoPhysics = bValue;
 }
 
+bool ParaEngine::CBlockWorld::IsAsyncLightCalculation()
+{
+	return m_pLightGrid->IsAsyncLightCalculation();
+}
+
+void ParaEngine::CBlockWorld::SetAsyncLightCalculation(bool val)
+{
+	m_pLightGrid->SetAsyncLightCalculation(val);
+}
+
 int ParaEngine::CBlockWorld::InstallFields(CAttributeClass* pClass, bool bOverride)
 {
 	// install parent fields if there are any. Please replace __super with your parent class name.
@@ -2788,6 +2798,8 @@ int ParaEngine::CBlockWorld::InstallFields(CAttributeClass* pClass, bool bOverri
 	pClass->AddField("OnSaveRegionCallbackScript", FieldType_String, (void*)SetSaveRegionCallbackScript_s, (void*)GetSaveRegionCallbackScript_s, NULL, NULL, bOverride);
 
 	pClass->AddField("LightCalculationStep", FieldType_Int, (void*)SetLightCalculationStep_s, (void*)GetLightCalculationStep_s, NULL, NULL, bOverride);
+	pClass->AddField("IsAsyncLightCalculation", FieldType_Bool, (void*)SetAsyncLightCalculation_s, (void*)IsAsyncLightCalculation_s, NULL, NULL, bOverride);
+	
 	pClass->AddField("RenderBlocks", FieldType_Bool, (void*)SetRenderBlocks_s, (void*)IsRenderBlocks_s, NULL, NULL, bOverride);
 	pClass->AddField("NumOfLockedBlockRegion", FieldType_Int, (void*)NULL, (void*)GetNumOfLockedBlockRegion_s, NULL, NULL, bOverride);
 	pClass->AddField("NumOfBlockRegion", FieldType_Int, (void*)NULL, (void*)GetNumOfBlockRegion_s, NULL, NULL, bOverride);

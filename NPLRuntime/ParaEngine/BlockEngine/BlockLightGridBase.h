@@ -137,6 +137,9 @@ namespace ParaEngine
 		void ResumeLightUpdate();
 
 		bool IsLightUpdateSuspended();
+
+		bool IsAsyncLightCalculation() const;
+		void SetAsyncLightCalculation(bool val);
 	protected:
 		BlockIndex  CalcLightDataIndex(const Uint16x3& blockId, bool bCreateIfNotExist = true);
 		LightData* GetLightData(const BlockIndex& index);
@@ -148,5 +151,8 @@ namespace ParaEngine
 		CBlockWorld* m_pBlockWorld;
 		int32 m_nLightGridChunkSize;
 		uint32 m_nLightCalculationStep;
+
+		/** whether to calculate light in a separate thread. */
+		bool m_bIsAsyncLightCalculation;
 	};
 }
