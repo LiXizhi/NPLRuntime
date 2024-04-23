@@ -94,6 +94,9 @@ namespace ParaEngine
 		ATTRIBUTE_METHOD1(CBlockWorld, GetLightCalculationStep_s, int*)		{ *p1 = cls->GetLightCalculationStep(); return S_OK; }
 		ATTRIBUTE_METHOD1(CBlockWorld, SetLightCalculationStep_s, int)	{ cls->SetLightCalculationStep(p1); return S_OK; }
 
+		ATTRIBUTE_METHOD1(CBlockWorld, IsAsyncLightCalculation_s, bool*)		{ *p1 = cls->IsAsyncLightCalculation(); return S_OK; }
+		ATTRIBUTE_METHOD1(CBlockWorld, SetAsyncLightCalculation_s, bool)	{ cls->SetAsyncLightCalculation(p1); return S_OK; }
+
 		ATTRIBUTE_METHOD1(CBlockWorld, GetMaxCacheRegionCount_s, int*)		{ *p1 = cls->GetMaxCacheRegionCount(); return S_OK; }
 		ATTRIBUTE_METHOD1(CBlockWorld, SetMaxCacheRegionCount_s, int)	{ cls->SetMaxCacheRegionCount(p1); return S_OK; }
 
@@ -488,6 +491,9 @@ namespace ParaEngine
 		void ResumeLightUpdate();
 
 		bool IsLightUpdateSuspended();
+		
+		bool IsAsyncLightCalculation();
+		void SetAsyncLightCalculation(bool val);
 
 		/** @param brightness: must be in the range of [0,15] */
 		float GetLightBrightnessFloat(uint8_t brightness);
