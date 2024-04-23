@@ -190,8 +190,7 @@ namespace ParaEngine
 #else
 		std::thread m_light_thread;
 #endif
-		/** whether to calculate light in a separate thread. */
-		bool m_bIsAsyncLightCalculation;
+
 
 		std::recursive_mutex m_mutex;
 	};
