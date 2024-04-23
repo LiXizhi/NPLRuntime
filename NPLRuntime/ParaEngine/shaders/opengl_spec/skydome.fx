@@ -128,9 +128,10 @@ float4 frag_night(v2f i) : COLOR
 	float dotMoonAngle = dot(moonVector.xyz, normal);
 	float dotMoonAnglePos = clamp(dotMoonAngle, 0.0, 1.0);
 	
-	float moonHighlight = 0.0;
-	if(dotMoonAnglePos > 0.9975)
-		moonHighlight = clamp(pow((dotMoonAnglePos - 0.9975)*300.0, 0.5), 0.0, 1.0);
+	float moonSizeDot = dotMoonAnglePos - (1.0 - 1.25 / moonSize.x);
+    float moonHighlight = 0.0;
+    if (moonSizeDot > 0.0)
+        moonHighlight = clamp(pow(moonSizeDot * 300, 0.5), 0.0, 1.0);
 
 	float moonHalo = pow(dotMoonAnglePos, moonSize.y)*sunIntensity.y;
 	skyColor += float3(1.0, 1.0, 0.6) * (moonHalo + moonHighlight);
