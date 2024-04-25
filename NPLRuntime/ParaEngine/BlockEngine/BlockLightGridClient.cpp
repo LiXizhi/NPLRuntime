@@ -36,6 +36,9 @@ namespace ParaEngine
 		m_minLightBlockIdZ(-1000), m_maxLightBlockIdZ(-1), m_centerChunkIdX_ws(-1), m_centerChunkIdZ_ws(-1), m_max_cells_per_frame(500), m_max_cells_left_per_frame(5000), m_nDirtyBlocksCount(0)
 	{
 		SetLightGridSize(chunkCacheDim);
+#ifdef EMSCRIPTEN_SINGLE_THREAD
+		m_light_thread = nullptr;
+#endif
 	}
 
 	CBlockLightGridClient::~CBlockLightGridClient()
@@ -48,6 +51,8 @@ namespace ParaEngine
 			m_light_thread.join();
 			OUTPUT_LOG("light thread exited \n");
 		}
+#else 
+	    CoroutineThread::DestroyCoroutineThread(&m_light_thread);
 #endif
 	}
 
@@ -100,6 +105,8 @@ namespace ParaEngine
 				m_light_thread.join();
 			}
 		}
+#else 
+	    CoroutineThread::DestroyCoroutineThread(&m_light_thread);
 #endif
 		{
 			std::lock_guard<std::recursive_mutex> Lock_(m_mutex);
