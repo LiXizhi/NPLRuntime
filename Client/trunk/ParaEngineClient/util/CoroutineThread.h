@@ -58,6 +58,16 @@ public:
         return CreateCoroutineThread(thread_func, thread_data)->Start();
     }
 
+    static void DestroyCoroutineThread(CoroutineThread** thread)
+    {
+        if (thread != nullptr && *thread != nullptr)
+        {
+            (*thread)->Stop();
+            GetCoroutineThreads()->erase(*thread);
+            *thread = nullptr;
+        }
+    }
+
     static void Tick()
     {
         auto coroutine_threads = GetCoroutineThreads();
@@ -84,11 +94,6 @@ public:
         m_thread_func = thread_func;
         m_state = CoroutineThreadState_Inited;
         m_sleep_timestmap = 0;
-    }
-
-    ~CoroutineThread()
-    {
-        GetCoroutineThreads()->erase(this);
     }
 
     bool joinable() { return false; }

@@ -239,7 +239,7 @@ public:
             }
             else
             {
-                return result;
+                return result.empty() ? "tuple({})" : result;
             }
         }
         else if (ctx->OPEN_BRACK() && ctx->CLOSE_BRACK())
