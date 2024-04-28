@@ -1810,18 +1810,23 @@ void ParaEngine::CGUIRoot::SetUIScale(float fScalingX, float fScalingY, bool bEn
 
 	if (bNotifySizeChange)
 	{
-		if (bEnsureMinimumScreenSize || bEnsureMaximumScreenSize)
-		{
-			if (bEnsureMinimumScreenSize)
-				SetMinimumScreenSize(-1, -1, true);
-			if (bEnsureMaximumScreenSize)
-				SetMaximumScreenSize(-1, -1, true);
-		}
-		else
-		{
-			CViewport* pViewport = CGlobals::GetViewportManager()->CreateGetViewPort(0);
-			UpdateViewport(pViewport->GetLeft(), pViewport->GetTop(), pViewport->GetWidth(), pViewport->GetHeight(), true);
-		}
+#ifdef PLATFORM_MAC
+        CViewport* pViewport = CGlobals::GetViewportManager()->CreateGetViewPort(0);
+        UpdateViewport(pViewport->GetLeft(), pViewport->GetTop(), pViewport->GetWidth(), pViewport->GetHeight(), true);
+#else
+        if (bEnsureMinimumScreenSize || bEnsureMaximumScreenSize)
+        {
+            if (bEnsureMinimumScreenSize)
+                SetMinimumScreenSize(-1, -1, true);
+            if (bEnsureMaximumScreenSize)
+                SetMaximumScreenSize(-1, -1, true);
+        }
+        else
+        {
+            CViewport* pViewport = CGlobals::GetViewportManager()->CreateGetViewPort(0);
+            UpdateViewport(pViewport->GetLeft(), pViewport->GetTop(), pViewport->GetWidth(), pViewport->GetHeight(), true);
+        }
+#endif
 	}
 }
 
