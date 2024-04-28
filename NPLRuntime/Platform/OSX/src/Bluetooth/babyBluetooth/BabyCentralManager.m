@@ -226,7 +226,7 @@
 
     [self deletePeripheral:peripheral];
     if ([currChannel blockOnDisconnect]) {
-        [currChannel blockOnDisconnect](central,peripheral,error);
+        [currChannel blockOnDisconnect](central, peripheral, error);
     }
     
     // 判断是否全部链接都已经段开,调用blockOnCancelAllPeripheralsConnection委托
@@ -239,9 +239,9 @@
     }
     
     // 检查并重新连接需要重连的设备
-    if ([reConnectPeripherals containsObject:peripheral]) {
-        [self connectToPeripheral:peripheral];
-    }
+    // if ([reConnectPeripherals containsObject:peripheral]) {
+    //    [self connectToPeripheral:peripheral];
+    // }
 }
 
 // 扫描到服务

@@ -90,7 +90,6 @@ static void callBaseBridge(const int &pId, const std::string &extData)
     } else {
         NSLog(@"blue tooth disconnected");
         if (_self->bblue != nil) {
-            NSLog(@"bblue exist!!!!!");
             _self.cbCentralMgr = [[CBCentralManager alloc] initWithDelegate:nil queue:nil];
             [_self->bblue cancelAllPeripheralsConnection];
             _self->bblue.scanForPeripherals().begin();
@@ -163,28 +162,33 @@ static void callBaseBridge(const int &pId, const std::string &extData)
     InterfaceBluetooth *_self = [InterfaceBluetooth shareInstance];
     std::string wdata = [dict[@"writeByte"] UTF8String];
     NSString *objcString = [NSString stringWithCString:wdata.c_str() encoding:NSUTF8StringEncoding];
+    bool isShortMsg = [dict objectForKey:@"isShortMsg"] != nil && [dict[@"isShortMsg"] boolValue];
 
     CBCharacteristic *characteristic = [InterfaceBluetooth getCharacteristic:dict[@"serUUID"] _:dict[@"chaUUID"]];
     if (characteristic != NULL) {
         NSData *data = [objcString dataUsingEncoding:NSUTF8StringEncoding];
         NSUInteger chunkSize = 20;
 
-        NSData *startData = [@"start" dataUsingEncoding:NSUTF8StringEncoding];
-        [_self.currPeripheral writeValue:startData forCharacteristic:characteristic type:CBCharacteristicWriteWithResponse];
+        if (isShortMsg) {
+            [_self.currPeripheral writeValue:data forCharacteristic:characteristic type:CBCharacteristicWriteWithResponse];
+        } else {
+            NSData *startData = [@"start" dataUsingEncoding:NSUTF8StringEncoding];
+            [_self.currPeripheral writeValue:startData forCharacteristic:characteristic type:CBCharacteristicWriteWithResponse];
 
-        for (NSUInteger offset = 0; offset < data.length; offset += chunkSize) {
-            NSRange range = NSMakeRange(offset, MIN(chunkSize, data.length - offset));
-            NSData *chunk = [data subdataWithRange:range];
-            NSLog(@"%@", chunk);
+            for (NSUInteger offset = 0; offset < data.length; offset += chunkSize) {
+                NSRange range = NSMakeRange(offset, MIN(chunkSize, data.length - offset));
+                NSData *chunk = [data subdataWithRange:range];
+                NSLog(@"%@", chunk);
 
-            [_self.currPeripheral writeValue:chunk forCharacteristic:characteristic type:CBCharacteristicWriteWithResponse];
-        }
+                [_self.currPeripheral writeValue:chunk forCharacteristic:characteristic type:CBCharacteristicWriteWithResponse];
+            }
 
-        NSData *endData = [@"end" dataUsingEncoding:NSUTF8StringEncoding];
-        [_self.currPeripheral writeValue:endData forCharacteristic:characteristic type:CBCharacteristicWriteWithResponse];
-        
-        if (dict[@"reset"]) {
-            _self->connected = false;
+            NSData *endData = [@"end" dataUsingEncoding:NSUTF8StringEncoding];
+            [_self.currPeripheral writeValue:endData forCharacteristic:characteristic type:CBCharacteristicWriteWithResponse];
+            
+            if (dict[@"reset"]) {
+                _self->connected = false;
+            }
         }
     }
 }
@@ -363,7 +367,6 @@ static void callBaseBridge(const int &pId, const std::string &extData)
     [_self->bblue setFilterOnDiscoverPeripherals:^BOOL(NSString *peripheralName, NSDictionary *advertisementData, NSNumber *RSSI) {
         // 最常用的场景是查找某一个前缀开头的设备
         if (s_checkDeviceName != NULL && [peripheralName hasPrefix:s_checkDeviceName] ) {
-            NSLog(@"peripheralName: %@, s_checkDeviceName: %@", peripheralName, s_checkDeviceName);
             return YES;
         }
         return NO;
@@ -378,27 +381,27 @@ static void callBaseBridge(const int &pId, const std::string &extData)
     // }];
     
     // 设置设备连接成功的委托,同一个baby对象，使用不同的channel切换委托回调
-    [_self->bblue setBlockOnConnectedAtChannel:channelOnRootView block:^(CBCentralManager *central, CBPeripheral *peripheral) {
-        NSLog(@"OnConnectedAtChannel %@连接成功", peripheral.name);
-    }];
+//    [_self->bblue setBlockOnConnectedAtChannel:channelOnRootView block:^(CBCentralManager *central, CBPeripheral *peripheral) {
+//        NSLog(@"OnConnectedAtChannel %@连接成功", peripheral.name);
+//    }];
 
     [_self->bblue setBlockOnConnected:^(CBCentralManager *central, CBPeripheral *peripheral) {
-        NSLog(@"OnConnected %@连接成功", peripheral.name);
+        NSLog(@"OnConnected %@ 连接成功", peripheral.name);
     }];
 
     // 设置设备连接失败的委托
-    [_self->bblue setBlockOnFailToConnectAtChannel:channelOnRootView block:^(CBCentralManager *central, CBPeripheral *peripheral, NSError *error) {
-        NSLog(@"OnFailToConnectAtChannel %@连接失败", peripheral.name);
+    [_self->bblue setBlockOnFailToConnect:^(CBCentralManager *central, CBPeripheral *peripheral, NSError *error) {
+        NSLog(@"OnFailToConnectAtChannel %@ 连接失败", peripheral.name);
     }];
 
     // 设置设备断开连接的委托
-    [_self->bblue setBlockOnDisconnectAtChannel:channelOnRootView block:^(CBCentralManager *central, CBPeripheral *peripheral, NSError *error) {
-        NSLog(@"OnDisconnectAtChannel %@断开连接", peripheral.name);
+    [_self->bblue setBlockOnDisconnect:^(CBCentralManager *central, CBPeripheral *peripheral, NSError *error) {
+        NSLog(@"OnDisconnectAtChannel %@ 断开连接", peripheral.name);
         _self->connected = false;
         callBaseBridge(SET_BLUE_STATUS, "0");
-        
-        NSDictionary *dictNil = @{};
-        [InterfaceBluetooth linkDevice:dictNil];
+
+        // NSDictionary *dictNil = @{};
+        // [InterfaceBluetooth linkDevice:dictNil];
     }];
 
     [_self->bblue setBlockOnDiscoverServicesAtChannel:channelOnRootView block:^(CBPeripheral *peripheral, NSError *error) { }];
