@@ -22,6 +22,7 @@ static int ON_CHARACTERISTIC = 1104;
 static int ON_DESCRIPTOR = 1105;
 static int ON_READ_ALL_GATT_UUID = 1106;
 static int ON_SERVICE = 1107;
+static int RECEIVE_CHARACTERISTIC_NOTIFY = 1108;
 
 @interface InterfaceBluetooth () {
 }
@@ -270,12 +271,12 @@ static void callBaseBridge(const int &pId, const std::string &extData)
 
 + (std::string)characteristicData2JsStrValue:(CBCharacteristic *)characteristics
 {
-    NSString * result = [[[[NSString stringWithFormat:@"%@", characteristics.value]
+    NSString *result = [[[[NSString stringWithFormat:@"%@", characteristics.value]
         stringByReplacingOccurrencesOfString: @"<" withString: @""]
         stringByReplacingOccurrencesOfString: @">" withString: @""]
         stringByReplacingOccurrencesOfString: @" " withString: @""];
-    NSLog(@"bluetooth:%@", result);
-    const char *anm = [result UTF8String];
+
+    const char *anm = [[[NSString alloc] initWithData:characteristics.value encoding:NSUTF8StringEncoding] UTF8String];
 
     Json::Value luajs_value2;
     luajs_value2["len"] = Json::UInt(characteristics.value.length);
@@ -318,7 +319,7 @@ static void callBaseBridge(const int &pId, const std::string &extData)
 
     // 设置发现设service的Characteristics的委托
     [_self->bblue setBlockOnDiscoverCharacteristics:^(CBPeripheral *peripheral, CBService *service, NSError *error) {
-        NSLog(@"service name:%@", service.UUID.UUIDString);
+        NSLog(@"service name: %@", service.UUID.UUIDString);
         Json::Value luajs_value;
         luajs_value["uuid"] = [service.UUID.UUIDString UTF8String];
         
@@ -330,7 +331,7 @@ static void callBaseBridge(const int &pId, const std::string &extData)
 
     // 设置读取characteristics的委托
     [_self->bblue setBlockOnReadValueForCharacteristic:^(CBPeripheral *peripheral, CBCharacteristic *characteristics, NSError *error) {
-        NSLog(@"OnReadValueForCharacteristic characteristic name:%@ value is:%@", characteristics.UUID, characteristics.value);
+        NSLog(@"OnReadValueForCharacteristic characteristic name: %@ value is: %@", characteristics.UUID, characteristics.value);
 
         Json::Value luajs_value;
         luajs_value["uuid"] = [characteristics.UUID.UUIDString UTF8String];
@@ -399,19 +400,12 @@ static void callBaseBridge(const int &pId, const std::string &extData)
         NSLog(@"OnDisconnectAtChannel %@ 断开连接", peripheral.name);
         _self->connected = false;
         callBaseBridge(SET_BLUE_STATUS, "0");
-
-        // NSDictionary *dictNil = @{};
-        // [InterfaceBluetooth linkDevice:dictNil];
     }];
 
-    [_self->bblue setBlockOnDiscoverServicesAtChannel:channelOnRootView block:^(CBPeripheral *peripheral, NSError *error) { }];
- 
-    [_self->bblue setBlockOnReadValueForCharacteristicAtChannel:channelOnRootView block:^(CBPeripheral *peripheral, CBCharacteristic *characteristics, NSError *error) {
-        NSLog(@"CharacteristicViewController characteristic name:%@ value is:%@", characteristics.UUID, characteristics.value);
-    }];
+    // [_self->bblue setBlockOnDiscoverServicesAtChannel:channelOnRootView block:^(CBPeripheral *peripheral, NSError *error) { }];
 
     // 设置写数据成功的block
-    [_self->bblue setBlockOnDidWriteValueForCharacteristicAtChannel:channelOnRootView block:^(CBCharacteristic *characteristic, NSError *error) {
+    [_self->bblue setBlockOnDidWriteValueForCharacteristic:^(CBCharacteristic *characteristic, NSError *error) {
         NSLog(@"setBlockOnDidWriteValueForCharacteristicAtChannel characteristic:%@ and new value:%@", characteristic.UUID, characteristic.value);
     }];
 
@@ -491,10 +485,7 @@ static void callBaseBridge(const int &pId, const std::string &extData)
             [_self->bblue notify:_self.currPeripheral
                 characteristic:characteristic
                 block:^(CBPeripheral *peripheral, CBCharacteristic *characteristics, NSError *error) {
-                    NSLog(@"new value %@", characteristics.value);
-                    // 应用状态LogitowAppManager
-
-                    NSString * result = [[[[NSString stringWithFormat:@"%@",characteristics.value]
+                    NSString *result = [[[[NSString stringWithFormat:@"%@",characteristics.value]
                         stringByReplacingOccurrencesOfString: @"<" withString: @""]
                         stringByReplacingOccurrencesOfString: @">" withString: @""]
                         stringByReplacingOccurrencesOfString: @" " withString: @""];
@@ -511,7 +502,7 @@ static void callBaseBridge(const int &pId, const std::string &extData)
                     Json::FastWriter writer;
                     std::string jsonstr = writer.write(luajs_value);
 
-                    callBaseBridge(ON_CHARACTERISTIC, jsonstr);
+                    callBaseBridge(RECEIVE_CHARACTERISTIC_NOTIFY, jsonstr);
                 }];
         }
     } else {
