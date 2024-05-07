@@ -86,6 +86,11 @@ ENDIF()
 # add the executable
 add_executable(ParaEngineClientApp ${ParaEngineClientApp_SRCS})
 
+IF(WIN32)
+# for windows, we need to set DPI awareness to PerMonitor
+# set_property(TARGET ParaEngineClientApp PROPERTY VS_DPI_AWARE "PerMonitor")
+ENDIF(WIN32)
+
 # When this property is set to true the executable when linked on Windows will be created with a WinMain() entry point instead of of just main().
 set_target_properties(ParaEngineClientApp PROPERTIES WIN32_EXECUTABLE true)
 # set_target_properties(ParaEngineClientApp PROPERTIES LINK_FLAGS /MANIFESTUAC:"level='requireAdministrator' uiAccess='false'")
@@ -94,7 +99,6 @@ set_target_properties(ParaEngineClientApp PROPERTIES WIN32_EXECUTABLE true)
 
 set_target_properties(ParaEngineClientApp PROPERTIES OUTPUT_NAME "ParaEngineClient")
 set_target_properties(ParaEngineClientApp PROPERTIES DEBUG_OUTPUT_NAME "ParaEngineClient_d")
-
 
 # Link the executable to the libraries. 
 target_link_libraries (ParaEngineClientApp Psapi.lib ${Boost_LIBRARIES}) 
