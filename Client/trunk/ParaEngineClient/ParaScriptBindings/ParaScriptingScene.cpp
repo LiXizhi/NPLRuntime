@@ -2308,6 +2308,8 @@ int ParaScene::SelectObject1( int nGroupIndex, float x1,float y1, float z1,float
 ParaObject ParaScene::Pick(float rayX, float rayY, float rayZ, float dirX, float dirY, float dirZ, float fMaxDistance, const char* sFilterFunc)
 {
 	CBaseObject* pObj = NULL;
+	if (dirX == 0.f && dirY == 0.f && dirZ == 0.f)
+		return ParaObject(NULL);
 	OBJECT_FILTER_CALLBACK pFilterFunc = GetFilterFuncByName(sFilterFunc);
 	if (strcmp(sFilterFunc, "point") == 0 || strcmp(sFilterFunc, "walkpoint") == 0 || strcmp(sFilterFunc, "terrain") == 0)
 	{
