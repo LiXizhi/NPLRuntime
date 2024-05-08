@@ -104,6 +104,7 @@ find_library(WebView WebKit)
 # find_library(AUTHENTICATION_SERVICES AuthenticationServices)
 find_library(AVFAudio AVFAudio)
 find_library(IOKit IOKit)
+find_library(CoreBluetooth CoreBluetooth)
 
 target_link_libraries(Paracraft PUBLIC
     RenderSystemOpenGL
@@ -114,6 +115,7 @@ target_link_libraries(Paracraft PUBLIC
     ${AVFAudio}
     # ${AUTHENTICATION_SERVICES}
     ${IOKit}
+    ${CoreBluetooth}
 )
 
 # no longer needed for luajit2.1, only needed or luajit 2.0

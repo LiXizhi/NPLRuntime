@@ -7,6 +7,8 @@
 #include <Carbon/Carbon.h> /* For kVK_ constants, and TIS functions. */
 #include <unordered_map>
 
+#import "LuaObjcBridge/CCLuaObjcBridge.h"
+
 @interface GLWindow : NSWindow
 {
 
@@ -536,7 +538,9 @@ void RenderWindowOSX::PollEvents()
 
             if (currentBackingScaleFactor != x) {
                 currentBackingScaleFactor = x;
-
+                // Fixed display issues with WebView at different resolutions.
+                std::string scaleStr = std::to_string(currentBackingScaleFactor);
+                ParaEngine::LuaObjcBridge::nplActivate("System.options.default_ui_scaling = { " + scaleStr + " , " + scaleStr + " };", "");
                 CGUIRoot::GetInstance()->SetUIScale(x, y, true, true, false);
             }
         }
