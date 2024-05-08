@@ -37,7 +37,6 @@ Default value is 200KB */
 /** whether to enable tcp level keep alive. Keep alive is a system socket feature*/
 // #define NPL_INCOMING_KEEPALIVE
 
-#ifndef EMSCRIPTEN_SINGLE_THREAD
 NPL::CNPLConnection::CNPLConnection(boost::asio::io_service& io_service, CNPLConnectionManager& manager, CNPLDispatcher& msg_dispatcher)
 	: m_socket(io_service), m_connection_manager(manager), m_msg_dispatcher(msg_dispatcher), m_totalBytesIn(0), m_totalBytesOut(0),
 	m_queueOutput(DEFAULT_NPL_OUTPUT_QUEUE_SIZE), m_state(ConnectionDisconnected),
@@ -52,7 +51,6 @@ NPL::CNPLConnection::CNPLConnection(boost::asio::io_service& io_service, CNPLCon
 	m_input_msg.npl_version_minor = NPL_VERSION_MINOR;
 	m_input_msg.m_pConnection = this;
 }
-#endif
 
 NPL::CNPLConnection::~CNPLConnection()
 {
@@ -557,7 +555,8 @@ void NPL::CNPLConnection::handle_connect(const boost::system::error_code& err,
 		m_resolved_address = endpoint.address().to_string();
 
 	}
-	else if ((++endpoint_iterator) != boost::asio::ip::tcp::resolver::iterator())
+	else if ((endpoint_iterator) != boost::asio::ip::tcp::resolver::iterator() &&
+		(++endpoint_iterator) != boost::asio::ip::tcp::resolver::iterator())
 	{
 		// That endpoint didn't work, try the next one.
 		boost::system::error_code ec;
@@ -570,7 +569,7 @@ void NPL::CNPLConnection::handle_connect(const boost::system::error_code& err,
 		boost::asio::ip::tcp::endpoint endpoint = *endpoint_iterator;
 		m_socket.async_connect(endpoint,
 			boost::bind(&CNPLConnection::handle_connect, shared_from_this(),
-				boost::asio::placeholders::error, ++endpoint_iterator));
+				boost::asio::placeholders::error, endpoint_iterator));
 	}
 	else
 	{
@@ -601,14 +600,14 @@ void NPL::CNPLConnection::connect()
 			boost::asio::placeholders::iterator));
 }
 
-void NPL::CNPLConnection::GetStatistics(int &totalIn, int &totalOut)
+void NPL::CNPLConnection::GetStatistics(int& totalIn, int& totalOut)
 {
 	totalIn = m_totalBytesIn;
 	totalOut = m_totalBytesOut;
 }
 
 
-NPL::NPLReturnCode NPL::CNPLConnection::SendMessage(const NPLFileName& file_name, const char * code /*= NULL*/, int nLength/*=0*/, int priority/*=0*/)
+NPL::NPLReturnCode NPL::CNPLConnection::SendMessage(const NPLFileName& file_name, const char* code /*= NULL*/, int nLength/*=0*/, int priority/*=0*/)
 {
 
 	NPLMsgOut_ptr msg_out(new NPLMsgOut());
@@ -702,7 +701,7 @@ NPL::NPLReturnCode NPL::CNPLConnection::SendMessage(NPLMsgOut_ptr& msg)
 		return NPL_OK;
 
 	int nLength = (int)msg->GetBuffer().size();
-	NPLMsgOut_ptr * pFront = NULL;
+	NPLMsgOut_ptr* pFront = NULL;
 	m_nSendCount++;
 	RingBuffer_Type::BufferStatus bufStatus = m_queueOutput.try_push_get_front(msg, &pFront);
 
