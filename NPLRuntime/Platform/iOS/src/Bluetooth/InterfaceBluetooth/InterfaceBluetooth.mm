@@ -2,33 +2,8 @@
 // Class: InterfaceBluetooth.mm
 // Authors: kkvskkkk, big
 // CreateDate: 2018.11.6
-// ModifyDate: 2023.10.20
+// ModifyDate: 2024.5.8
 //-----------------------------------------------------------------------------
-
-/****************************************************************************
- Copyright (c) 2010-2011 cocos2d-x.org
- Copyright (c) 2010      Ricardo Quesada
- 
- http://www.cocos2d-x.org
- 
- Permission is hereby granted, free of charge, to any person obtaining a copy
- of this software and associated documentation files (the "Software"), to deal
- in the Software without restriction, including without limitation the rights
- to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- copies of the Software, and to permit persons to whom the Software is
- furnished to do so, subject to the following conditions:
- 
- The above copyright notice and this permission notice shall be included in
- all copies or substantial portions of the Software.
- 
- THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
- THE SOFTWARE.
- ****************************************************************************/
 
 #include <sstream>
 
@@ -48,13 +23,21 @@ static int ON_CHARACTERISTIC = 1104;
 static int ON_DESCRIPTOR = 1105;
 static int ON_READ_ALL_GATT_UUID = 1106;
 static int ON_SERVICE = 1107;
+static int RECEIVE_CHARACTERISTIC_NOTIFY = 1108;
 
 @interface InterfaceBluetooth () {
 }
-
 @end
 
 @implementation InterfaceBluetooth
+
+NSString *s_checkDeviceName = @"";
+
+static InterfaceBluetooth *s_interfaceBluetooth = nil;
+static std::string s_luaPath = "";
+static std::string s_lastAddr = "";
+static std::map<std::string, CBPeripheral*> s_peripherals;
+static std::map<std::string, std::vector<std::string>> s_checkUuids;
 
 - (id)init
 {
@@ -73,19 +56,10 @@ static int ON_SERVICE = 1107;
     NSLog(@"RootViewController,viewWillDisappear");
 }
 
-static InterfaceBluetooth *s_interfaceBluetooth = nil;
-static std::string s_luaPath = "";
-static std::string s_lastAddr = "";
-
-static std::map<std::string, CBPeripheral*> s_peripherals;
-
-NSString *s_checkDeviceName = @"";
-static std::map<std::string, std::vector<std::string>> s_checkUuids;
-
 static void callBaseBridge(const int &pId, const std::string &extData)
 {
     char tempArray[20];
-    sprintf(tempArray, "%d", pId);
+    snprintf(tempArray, sizeof(tempArray), "%d", pId);
     std::string mergeData = "msg = [[";
     mergeData = mergeData + tempArray + "_" + extData + "]]";
     ParaEngine::LuaObjcBridge::nplActivate(mergeData.c_str(), s_luaPath);
@@ -99,9 +73,9 @@ static void callBaseBridge(const int &pId, const std::string &extData)
 
 + (instancetype)shareInstance
 {
-    static dispatch_once_t onceToken ;
+    static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^{
-        s_interfaceBluetooth = [[self alloc] init] ;
+        s_interfaceBluetooth = [[self alloc] init];
     });
     
     return s_interfaceBluetooth;
@@ -190,28 +164,33 @@ static void callBaseBridge(const int &pId, const std::string &extData)
     InterfaceBluetooth *_self = [InterfaceBluetooth shareInstance];
     std::string wdata = [dict[@"writeByte"] UTF8String];
     NSString *objcString = [NSString stringWithCString:wdata.c_str() encoding:NSUTF8StringEncoding];
+    bool isShortMsg = [dict objectForKey:@"isShortMsg"] != nil && [dict[@"isShortMsg"] boolValue];
 
     CBCharacteristic *characteristic = [InterfaceBluetooth getCharacteristic:dict[@"serUUID"] _:dict[@"chaUUID"]];
     if (characteristic != NULL) {
         NSData *data = [objcString dataUsingEncoding:NSUTF8StringEncoding];
         NSUInteger chunkSize = 20;
 
-        NSData *startData = [@"start" dataUsingEncoding:NSUTF8StringEncoding];
-        [_self.currPeripheral writeValue:startData forCharacteristic:characteristic type:CBCharacteristicWriteWithResponse];
+        if (isShortMsg) {
+            [_self.currPeripheral writeValue:data forCharacteristic:characteristic type:CBCharacteristicWriteWithResponse];
+        } else {
+            NSData *startData = [@"start" dataUsingEncoding:NSUTF8StringEncoding];
+            [_self.currPeripheral writeValue:startData forCharacteristic:characteristic type:CBCharacteristicWriteWithResponse];
 
-        for (NSUInteger offset = 0; offset < data.length; offset += chunkSize) {
-            NSRange range = NSMakeRange(offset, MIN(chunkSize, data.length - offset));
-            NSData *chunk = [data subdataWithRange:range];
-            NSLog(@"%@", chunk);
+            for (NSUInteger offset = 0; offset < data.length; offset += chunkSize) {
+                NSRange range = NSMakeRange(offset, MIN(chunkSize, data.length - offset));
+                NSData *chunk = [data subdataWithRange:range];
+                NSLog(@"%@", chunk);
 
-            [_self.currPeripheral writeValue:chunk forCharacteristic:characteristic type:CBCharacteristicWriteWithResponse];
-        }
+                [_self.currPeripheral writeValue:chunk forCharacteristic:characteristic type:CBCharacteristicWriteWithResponse];
+            }
 
-        NSData *endData = [@"end" dataUsingEncoding:NSUTF8StringEncoding];
-        [_self.currPeripheral writeValue:endData forCharacteristic:characteristic type:CBCharacteristicWriteWithResponse];
-        
-        if (dict[@"reset"]) {
-            _self->connected = false;
+            NSData *endData = [@"end" dataUsingEncoding:NSUTF8StringEncoding];
+            [_self.currPeripheral writeValue:endData forCharacteristic:characteristic type:CBCharacteristicWriteWithResponse];
+            
+            if (dict[@"reset"]) {
+                _self->connected = false;
+            }
         }
     }
 }
@@ -240,9 +219,9 @@ static void callBaseBridge(const int &pId, const std::string &extData)
 {
     InterfaceBluetooth* _self = [InterfaceBluetooth shareInstance];
     auto characteristic = [InterfaceBluetooth getCharacteristic:dict[@"ser_uuid"] _:dict[@"cha_uuid"]];
-    if (characteristic != NULL) {	
-		_self->bblue.channel(channelOnRootView).characteristicDetails(_self.currPeripheral, characteristic);
-	}
+    if (characteristic != NULL) {
+        _self->bblue.channel(channelOnRootView).characteristicDetails(_self.currPeripheral, characteristic);
+    }
 }
 
 + (void)setCharacteristicNotification:(NSDictionary *)dict
@@ -250,8 +229,8 @@ static void callBaseBridge(const int &pId, const std::string &extData)
     InterfaceBluetooth *_self = [InterfaceBluetooth shareInstance];
     auto characteristic = [InterfaceBluetooth getCharacteristic:dict[@"ser_uuid"] _:dict[@"cha_uuid"]];
     if (characteristic != NULL) {
-		[InterfaceBluetooth _setCharacteristicNotification:characteristic];
-	}
+        [InterfaceBluetooth _setCharacteristicNotification:characteristic];
+    }
 }
 
 // 停止搜索蓝牙
@@ -271,10 +250,10 @@ static void callBaseBridge(const int &pId, const std::string &extData)
     if (_self.currPeripheral == NULL)
         return ret;
 
-	if (char_uuid == NULL || ser_uuid == NULL)
-		return ret;
+    if (char_uuid == NULL || ser_uuid == NULL)
+        return ret;
 
-	NSString *cha = [char_uuid uppercaseString];
+    NSString *cha = [char_uuid uppercaseString];
     NSString *ser = [ser_uuid uppercaseString];
 
     for (CBService *s in _self.currPeripheral.services) {
@@ -293,12 +272,12 @@ static void callBaseBridge(const int &pId, const std::string &extData)
 
 + (std::string)characteristicData2JsStrValue:(CBCharacteristic *)characteristics
 {
-    NSString * result = [[[[NSString stringWithFormat:@"%@", characteristics.value]
+    NSString *result = [[[[NSString stringWithFormat:@"%@", characteristics.value]
         stringByReplacingOccurrencesOfString: @"<" withString: @""]
         stringByReplacingOccurrencesOfString: @">" withString: @""]
         stringByReplacingOccurrencesOfString: @" " withString: @""];
-    NSLog(@"bluetooth:%@", result);
-    const char *anm = [result UTF8String];
+
+    const char *anm = [[[NSString alloc] initWithData:characteristics.value encoding:NSUTF8StringEncoding] UTF8String];
 
     Json::Value luajs_value2;
     luajs_value2["len"] = Json::UInt(characteristics.value.length);
@@ -341,7 +320,7 @@ static void callBaseBridge(const int &pId, const std::string &extData)
 
     // 设置发现设service的Characteristics的委托
     [_self->bblue setBlockOnDiscoverCharacteristics:^(CBPeripheral *peripheral, CBService *service, NSError *error) {
-        NSLog(@"service name:%@", service.UUID.UUIDString);
+        NSLog(@"service name: %@", service.UUID.UUIDString);
         Json::Value luajs_value;
         luajs_value["uuid"] = [service.UUID.UUIDString UTF8String];
         
@@ -353,18 +332,18 @@ static void callBaseBridge(const int &pId, const std::string &extData)
 
     // 设置读取characteristics的委托
     [_self->bblue setBlockOnReadValueForCharacteristic:^(CBPeripheral *peripheral, CBCharacteristic *characteristics, NSError *error) {
-        NSLog(@"OnReadValueForCharacteristic characteristic name:%@ value is:%@", characteristics.UUID, characteristics.value);
+        NSLog(@"OnReadValueForCharacteristic characteristic name: %@ value is: %@", characteristics.UUID, characteristics.value);
 
-	    Json::Value luajs_value;
-	    luajs_value["uuid"] = [characteristics.UUID.UUIDString UTF8String];
-	    luajs_value["io"] = "r";
-	    luajs_value["status"] = "";
+        Json::Value luajs_value;
+        luajs_value["uuid"] = [characteristics.UUID.UUIDString UTF8String];
+        luajs_value["io"] = "r";
+        luajs_value["status"] = "";
         luajs_value["data"] = [InterfaceBluetooth characteristicData2JsStrValue:characteristics];
 
-	    Json::FastWriter writer;
-	    std::string jsonstr = writer.write(luajs_value);
+        Json::FastWriter writer;
+        std::string jsonstr = writer.write(luajs_value);
 
-	    callBaseBridge(ON_CHARACTERISTIC, jsonstr);
+        callBaseBridge(ON_CHARACTERISTIC, jsonstr);
     }];
 
     // 设置发现characteristics的descriptors的委托
@@ -404,37 +383,30 @@ static void callBaseBridge(const int &pId, const std::string &extData)
     // }];
     
     // 设置设备连接成功的委托,同一个baby对象，使用不同的channel切换委托回调
-    [_self->bblue setBlockOnConnectedAtChannel:channelOnRootView block:^(CBCentralManager *central, CBPeripheral *peripheral) {
-        NSLog(@"OnConnectedAtChannel %@连接成功", peripheral.name);
-    }];
+//    [_self->bblue setBlockOnConnectedAtChannel:channelOnRootView block:^(CBCentralManager *central, CBPeripheral *peripheral) {
+//        NSLog(@"OnConnectedAtChannel %@连接成功", peripheral.name);
+//    }];
 
     [_self->bblue setBlockOnConnected:^(CBCentralManager *central, CBPeripheral *peripheral) {
-        NSLog(@"OnConnected %@连接成功", peripheral.name);
+        NSLog(@"OnConnected %@ 连接成功", peripheral.name);
     }];
 
     // 设置设备连接失败的委托
-    [_self->bblue setBlockOnFailToConnectAtChannel:channelOnRootView block:^(CBCentralManager *central, CBPeripheral *peripheral, NSError *error) {
-        NSLog(@"OnFailToConnectAtChannel %@连接失败", peripheral.name);
+    [_self->bblue setBlockOnFailToConnect:^(CBCentralManager *central, CBPeripheral *peripheral, NSError *error) {
+        NSLog(@"OnFailToConnectAtChannel %@ 连接失败", peripheral.name);
     }];
 
     // 设置设备断开连接的委托
-    [_self->bblue setBlockOnDisconnectAtChannel:channelOnRootView block:^(CBCentralManager *central, CBPeripheral *peripheral, NSError *error) {
-        NSLog(@"OnDisconnectAtChannel %@断开连接", peripheral.name);
+    [_self->bblue setBlockOnDisconnect:^(CBCentralManager *central, CBPeripheral *peripheral, NSError *error) {
+        NSLog(@"OnDisconnectAtChannel %@ 断开连接", peripheral.name);
         _self->connected = false;
         callBaseBridge(SET_BLUE_STATUS, "0");
-        
-        NSDictionary *dictNil = @{};
-        [InterfaceBluetooth linkDevice:dictNil];
     }];
 
-    [_self->bblue setBlockOnDiscoverServicesAtChannel:channelOnRootView block:^(CBPeripheral *peripheral, NSError *error) { }];
- 
-    [_self->bblue setBlockOnReadValueForCharacteristicAtChannel:channelOnRootView block:^(CBPeripheral *peripheral, CBCharacteristic *characteristics, NSError *error) {
-        NSLog(@"CharacteristicViewController characteristic name:%@ value is:%@", characteristics.UUID, characteristics.value);
-    }];
+    // [_self->bblue setBlockOnDiscoverServicesAtChannel:channelOnRootView block:^(CBPeripheral *peripheral, NSError *error) { }];
 
     // 设置写数据成功的block
-    [_self->bblue setBlockOnDidWriteValueForCharacteristicAtChannel:channelOnRootView block:^(CBCharacteristic *characteristic, NSError *error) {
+    [_self->bblue setBlockOnDidWriteValueForCharacteristic:^(CBCharacteristic *characteristic, NSError *error) {
         NSLog(@"setBlockOnDidWriteValueForCharacteristicAtChannel characteristic:%@ and new value:%@", characteristic.UUID, characteristic.value);
     }];
 
@@ -475,7 +447,7 @@ static void callBaseBridge(const int &pId, const std::string &extData)
         }
     }
 
-	callBaseBridge(ON_READ_CHARACTERISTIC_FINSH, "");
+    callBaseBridge(ON_READ_CHARACTERISTIC_FINSH, "");
 }
 
 + (void)readAllBlueGatt:(NSDictionary *)dict
@@ -504,20 +476,17 @@ static void callBaseBridge(const int &pId, const std::string &extData)
 
 + (void)_setCharacteristicNotification:(CBCharacteristic *)characteristic
 {
-	InterfaceBluetooth *_self = [InterfaceBluetooth shareInstance];
-	// 读取服务
-	_self->bblue.channel(channelOnRootView).characteristicDetails(_self.currPeripheral, characteristic);
-	if (characteristic.properties & CBCharacteristicPropertyNotify ||  characteristic.properties & CBCharacteristicPropertyIndicate) 
-	{
-		if(!characteristic.isNotifying) 
-		{
-			[_self->bblue notify:_self.currPeripheral
+    InterfaceBluetooth *_self = [InterfaceBluetooth shareInstance];
+    // 读取服务
+    _self->bblue.channel(channelOnRootView).characteristicDetails(_self.currPeripheral, characteristic);
+    if (characteristic.properties & CBCharacteristicPropertyNotify ||  characteristic.properties & CBCharacteristicPropertyIndicate)
+    {
+        if(!characteristic.isNotifying)
+        {
+            [_self->bblue notify:_self.currPeripheral
                 characteristic:characteristic
                 block:^(CBPeripheral *peripheral, CBCharacteristic *characteristics, NSError *error) {
-                    NSLog(@"new value %@", characteristics.value);
-                    // 应用状态LogitowAppManager
-
-                    NSString * result = [[[[NSString stringWithFormat:@"%@",characteristics.value]
+                    NSString *result = [[[[NSString stringWithFormat:@"%@",characteristics.value]
                         stringByReplacingOccurrencesOfString: @"<" withString: @""]
                         stringByReplacingOccurrencesOfString: @">" withString: @""]
                         stringByReplacingOccurrencesOfString: @" " withString: @""];
@@ -534,39 +503,39 @@ static void callBaseBridge(const int &pId, const std::string &extData)
                     Json::FastWriter writer;
                     std::string jsonstr = writer.write(luajs_value);
 
-                    callBaseBridge(ON_CHARACTERISTIC, jsonstr);
+                    callBaseBridge(RECEIVE_CHARACTERISTIC_NOTIFY, jsonstr);
                 }];
-		}
-	} else {
-		NSLog(@"这个characteristic没有nofity的权限");
-		return;
-	}
+        }
+    } else {
+        NSLog(@"这个characteristic没有nofity的权限");
+        return;
+    }
 }
 
 // Override to allow orientations other than the default portrait orientation.
 // This method is deprecated on ios6
-+ (BOOL)shouldAutorotateToInterfaceOrientation:(UIInterfaceOrientation)interfaceOrientation
-{
-    return UIInterfaceOrientationIsLandscape(interfaceOrientation);
-}
+//+ (BOOL)shouldAutorotateToInterfaceOrientation:(UIInterfaceOrientation)interfaceOrientation
+//{
+//    return UIInterfaceOrientationIsLandscape(interfaceOrientation);
+//}
 
 // For ios6, use supportedInterfaceOrientations & shouldAutorotate instead
-+ (NSUInteger)supportedInterfaceOrientations
-{
-#ifdef __IPHONE_6_0
-    return UIInterfaceOrientationMaskAllButUpsideDown;
-#endif
-}
+//+ (NSUInteger)supportedInterfaceOrientations
+//{
+//#ifdef __IPHONE_6_0
+//    return UIInterfaceOrientationMaskAllButUpsideDown;
+//#endif
+//}
 
 - (BOOL)shouldAutorotate
 {
     return YES;
 }
 
-- (void)didRotateFromInterfaceOrientation:(UIInterfaceOrientation)fromInterfaceOrientation
-{
-    //[super didRotateFromInterfaceOrientation:fromInterfaceOrientation];
-}
+//- (void)didRotateFromInterfaceOrientation:(UIInterfaceOrientation)fromInterfaceOrientation
+//{
+//    //[super didRotateFromInterfaceOrientation:fromInterfaceOrientation];
+//}
 
 // fix not hide status on ios7
 - (BOOL)prefersStatusBarHidden
