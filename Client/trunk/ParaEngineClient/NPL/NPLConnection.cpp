@@ -6,6 +6,7 @@
 // Date:	2009.6.1
 // Desc:  
 //-----------------------------------------------------------------------------
+#ifndef EMSCRIPTEN_SINGLE_THREAD
 #include "ParaEngine.h"
 #include <boost/bind.hpp>
 #include "NPLDispatcher.h"
@@ -554,7 +555,7 @@ void NPL::CNPLConnection::handle_connect(const boost::system::error_code& err,
 		m_resolved_address = endpoint.address().to_string();
 
 	}
-	else if ((endpoint_iterator) != boost::asio::ip::tcp::resolver::iterator() && 
+	else if ((endpoint_iterator) != boost::asio::ip::tcp::resolver::iterator() &&
 		(++endpoint_iterator) != boost::asio::ip::tcp::resolver::iterator())
 	{
 		// That endpoint didn't work, try the next one.
@@ -599,14 +600,14 @@ void NPL::CNPLConnection::connect()
 			boost::asio::placeholders::iterator));
 }
 
-void NPL::CNPLConnection::GetStatistics(int &totalIn, int &totalOut)
+void NPL::CNPLConnection::GetStatistics(int& totalIn, int& totalOut)
 {
 	totalIn = m_totalBytesIn;
 	totalOut = m_totalBytesOut;
 }
 
 
-NPL::NPLReturnCode NPL::CNPLConnection::SendMessage(const NPLFileName& file_name, const char * code /*= NULL*/, int nLength/*=0*/, int priority/*=0*/)
+NPL::NPLReturnCode NPL::CNPLConnection::SendMessage(const NPLFileName& file_name, const char* code /*= NULL*/, int nLength/*=0*/, int priority/*=0*/)
 {
 
 	NPLMsgOut_ptr msg_out(new NPLMsgOut());
@@ -700,7 +701,7 @@ NPL::NPLReturnCode NPL::CNPLConnection::SendMessage(NPLMsgOut_ptr& msg)
 		return NPL_OK;
 
 	int nLength = (int)msg->GetBuffer().size();
-	NPLMsgOut_ptr * pFront = NULL;
+	NPLMsgOut_ptr* pFront = NULL;
 	m_nSendCount++;
 	RingBuffer_Type::BufferStatus bufStatus = m_queueOutput.try_push_get_front(msg, &pFront);
 
@@ -976,3 +977,4 @@ void NPL::CNPLConnection::SetProtocol(ProtocolType protocolType)
 	m_protocolType = protocolType;
 }
 
+#endif
