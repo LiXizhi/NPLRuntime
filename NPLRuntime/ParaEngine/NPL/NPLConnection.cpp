@@ -6,8 +6,8 @@
 // Date:	2009.6.1
 // Desc:  
 //-----------------------------------------------------------------------------
-#ifndef EMSCRIPTEN_SINGLE_THREAD
 #include "ParaEngine.h"
+#ifndef EMSCRIPTEN_SINGLE_THREAD
 #include <boost/bind.hpp>
 #include "NPLDispatcher.h"
 #include "NPLRuntime.h"
