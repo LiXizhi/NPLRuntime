@@ -554,7 +554,8 @@ void NPL::CNPLConnection::handle_connect(const boost::system::error_code& err,
 		m_resolved_address = endpoint.address().to_string();
 
 	}
-	else if ((++endpoint_iterator) != boost::asio::ip::tcp::resolver::iterator())
+	else if ((endpoint_iterator) != boost::asio::ip::tcp::resolver::iterator() && 
+		(++endpoint_iterator) != boost::asio::ip::tcp::resolver::iterator())
 	{
 		// That endpoint didn't work, try the next one.
 		boost::system::error_code ec;
@@ -567,7 +568,7 @@ void NPL::CNPLConnection::handle_connect(const boost::system::error_code& err,
 		boost::asio::ip::tcp::endpoint endpoint = *endpoint_iterator;
 		m_socket.async_connect(endpoint,
 			boost::bind(&CNPLConnection::handle_connect, shared_from_this(),
-				boost::asio::placeholders::error, ++endpoint_iterator));
+				boost::asio::placeholders::error, endpoint_iterator));
 	}
 	else
 	{
