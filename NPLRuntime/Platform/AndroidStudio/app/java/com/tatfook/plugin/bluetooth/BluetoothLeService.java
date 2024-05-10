@@ -170,8 +170,7 @@ public class BluetoothLeService extends Service {
 			intent.putExtra(BluetoothLeService.ON_CHARACTERISTIC_IO, "c");
 			intent.putExtra(BluetoothLeService.ON_CHARACTERISTIC_STATUS, "");
 
-			final byte[] data = characteristic.getValue();
-			String currDataStr = characteristicData2JsStrValue(data);
+			String currDataStr = new String(characteristic.getValue()); // characteristicData2JsStrValue(data);
 			intent.putExtra(BluetoothLeService.ON_CHARACTERISTIC_DATA, currDataStr);
 			
 			sendBroadcast(intent);
