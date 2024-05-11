@@ -287,7 +287,7 @@ public class InterfaceBluetooth implements ParaEnginePluginInterface {
         }
     }
 
-    public static void writeToCharacteristic(String ser_uuid, String cha_uuid, String data) {
+    public static void writeToCharacteristic(String ser_uuid, String cha_uuid, String data, boolean isShortMsg) {
         byte[] dataBytes = data.getBytes();
         int chunkSize = 20;
         ScheduledExecutorService scheduledExecutorService = Executors.newScheduledThreadPool(1);
@@ -296,40 +296,45 @@ public class InterfaceBluetooth implements ParaEnginePluginInterface {
 
         BluetoothGattCharacteristic characteristic = getCharacteristic(ser_uuid, cha_uuid);
         if (characteristic != null) {
-            scheduledExecutorService.schedule(new Runnable() {
-                @Override
-                public void run() {
-                    characteristic.setValue("start".getBytes());
-                    mSingle.mBluetoothLeService.writeCharacteristic(characteristic);
-                }
-            }, delayCount * delayBetweenTask, TimeUnit.MILLISECONDS);
+            if (isShortMsg) {
+                characteristic.setValue(dataBytes);
+                mSingle.mBluetoothLeService.writeCharacteristic(characteristic);
+            } else {
+                scheduledExecutorService.schedule(new Runnable() {
+                    @Override
+                    public void run() {
+                        characteristic.setValue("start".getBytes());
+                        mSingle.mBluetoothLeService.writeCharacteristic(characteristic);
+                    }
+                }, delayCount * delayBetweenTask, TimeUnit.MILLISECONDS);
 
-            for (int offset = 0; offset < dataBytes.length; offset += chunkSize) {
+                for (int offset = 0; offset < dataBytes.length; offset += chunkSize) {
+                    delayCount++;
+                    byte[] chunk = Arrays.copyOfRange(dataBytes, offset, offset + Math.min(chunkSize, dataBytes.length - offset));
+
+                    scheduledExecutorService.schedule(new Runnable() {
+                        @Override
+                        public void run() {
+                            characteristic.setValue(chunk);
+                            mSingle.mBluetoothLeService.writeCharacteristic(characteristic);
+                        }
+                    }, delayCount * delayBetweenTask, TimeUnit.MILLISECONDS);
+                }
+
                 delayCount++;
-                byte[] chunk = Arrays.copyOfRange(dataBytes, offset, offset + Math.min(chunkSize, dataBytes.length - offset));
 
                 scheduledExecutorService.schedule(new Runnable() {
                     @Override
                     public void run() {
-                        characteristic.setValue(chunk);
+                        characteristic.setValue("end".getBytes());
                         mSingle.mBluetoothLeService.writeCharacteristic(characteristic);
+                        mSingle.mReconnect = true;
+                        disconnectBlueTooth();
                     }
                 }, delayCount * delayBetweenTask, TimeUnit.MILLISECONDS);
+
+                scheduledExecutorService.shutdown();
             }
-
-            delayCount++;
-
-            scheduledExecutorService.schedule(new Runnable() {
-                @Override
-                public void run() {
-                    characteristic.setValue("end".getBytes());
-                    mSingle.mBluetoothLeService.writeCharacteristic(characteristic);
-                    mSingle.mReconnect = true;
-                    disconnectBlueTooth();
-                }
-            }, delayCount * delayBetweenTask, TimeUnit.MILLISECONDS);
-
-            scheduledExecutorService.shutdown();
         }
     }
 
