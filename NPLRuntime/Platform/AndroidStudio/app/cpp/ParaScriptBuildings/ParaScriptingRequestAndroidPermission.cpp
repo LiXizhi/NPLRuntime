@@ -20,7 +20,9 @@ namespace ParaScripting
             namespace_("RequestAndroidPermission")
             [
                 class_<ParaScripting::ParaScriptingRequestAndroidPermission>("ParaScriptingRequestAndroidPermission"),
-                def("RequestRecordAudioPermission", ParaScripting::ParaScriptingRequestAndroidPermission::RequestRecordAudioPermission)
+                def("RequestRecordAudioPermission", ParaScripting::ParaScriptingRequestAndroidPermission::RequestRecordAudioPermission),
+                def("HasPermission", ParaScripting::ParaScriptingRequestAndroidPermission::HasPermission),
+                def("RequestPermission", ParaScripting::ParaScriptingRequestAndroidPermission::RequestPermission)
             ]
         ];
     }
@@ -28,5 +30,15 @@ namespace ParaScripting
     void ParaScriptingRequestAndroidPermission::RequestRecordAudioPermission()
     {
         ParaEngine::JniHelper::callStaticBooleanMethod(classname, "RequestRecordAudio");
+    }
+
+    bool ParaScriptingRequestAndroidPermission::HasPermission(int permissionCode)
+    {
+        return ParaEngine::JniHelper::callStaticBooleanMethod(classname, "HasPermission", permissionCode);
+    }
+
+    void ParaScriptingRequestAndroidPermission::RequestPermission(int permissionCode)
+    {
+        ParaEngine::JniHelper::callStaticVoidMethod(classname, "RequestPermission", permissionCode);
     }
 }
