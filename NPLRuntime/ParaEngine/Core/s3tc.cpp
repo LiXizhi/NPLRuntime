@@ -123,7 +123,8 @@ static void s3tc_decode_block(uint8_t** blockData,
 		{
 			for (int x = 0; x < 4; ++x)
 			{
-				decodeBlockData[x] = (alphaArray[alpha & 5] << 24) + colors[pixelsIndex & 3];
+				// LiXizhi: fixed dxt5 alpha mast of 3 bits, it should be 7 instead of 5. 
+				decodeBlockData[x] = (alphaArray[alpha & 7] << 24) + colors[pixelsIndex & 3];
 				pixelsIndex >>= 2;
 				alpha >>= 3;
 			}
