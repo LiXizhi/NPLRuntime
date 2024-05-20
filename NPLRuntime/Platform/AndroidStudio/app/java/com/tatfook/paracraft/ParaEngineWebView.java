@@ -15,6 +15,7 @@ import android.graphics.Rect;
 import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.ViewGroup;
+import android.webkit.PermissionRequest;
 import android.webkit.WebChromeClient;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
@@ -133,8 +134,19 @@ public class ParaEngineWebView extends WebView {
         this.setWebViewClient(new ParaEngineWebViewClient());
         this.setWebChromeClient(new WebChromeClient() {
             @Override public Bitmap getDefaultVideoPoster() {
-            // hide android ugly default poster.
-            return Bitmap.createBitmap(10, 10, Bitmap.Config.ARGB_8888);
+                // hide android ugly default poster.
+                return Bitmap.createBitmap(10, 10, Bitmap.Config.ARGB_8888);
+            }
+
+            @Override
+            public void onPermissionRequest(PermissionRequest request) {
+                for (String resource : request.getResources()) {
+                    Log.d(TAG, "onPermissionRequest: " + resource);
+                    if (PermissionRequest.RESOURCE_VIDEO_CAPTURE.equals(resource)) {
+                        // Authorization is required here for WebView to access the camera.
+                        request.grant(request.getResources());
+                    }
+                }
             }
         });
 

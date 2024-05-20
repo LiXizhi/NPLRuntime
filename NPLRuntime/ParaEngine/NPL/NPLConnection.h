@@ -49,10 +49,8 @@ namespace NPL
 		~CNPLConnection();
 		
 		/// Construct a connection with the given io_service.
-#ifndef EMSCRIPTEN_SINGLE_THREAD
 		explicit CNPLConnection(boost::asio::io_service& io_service,
 			CNPLConnectionManager& manager, CNPLDispatcher& msg_dispatcher);
-#endif
 
 		/// Get the socket associated with the connection.
 		boost::asio::ip::tcp::socket& socket();
@@ -292,17 +290,13 @@ namespace NPL
 		/// handle connection init. This is only used for active connection to server. 
 		void handle_connect(const boost::system::error_code& error, boost::asio::ip::tcp::resolver::iterator endpoint_iterator);
 
-#ifndef EMSCRIPTEN_SINGLE_THREAD
 		/// Socket for the connection.
 		boost::asio::ip::tcp::socket m_socket;
-#endif
 
 	private:
 		typedef boost::array<char, 8192> Buffer_Type;
-#ifndef EMSCRIPTEN_SINGLE_THREAD
 		/** for address resolving. only created when needed. */
 		boost::shared_ptr< boost::asio::ip::tcp::resolver > m_resolver;
-#endif
 
 		/// The manager for this connection.
 		CNPLConnectionManager& m_connection_manager;

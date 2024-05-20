@@ -17,6 +17,7 @@ public class RequestAndroidPermission {
     static public final int SCREEN_RECORD_PERMISSIONS_CODE = 4;
     static public final int COARSE_LOCATION_PERMISSION_CODE = 5;
     static public final int BLUETOOTH_CONNECT_PERMISSION_REQUEST_CODE = 6;
+    static public final int CAMERA_PERMISSION_REQUEST_CODE = 7;
 
     public interface RequestPermissionCallback {
         void Callback(Boolean succeeded);
@@ -88,6 +89,81 @@ public class RequestAndroidPermission {
         }
     }
 
+    static public boolean RequestCamera() {
+        int permission = mParaEngineActivity.checkSelfPermission(Manifest.permission.CAMERA);
+
+        if (permission != PackageManager.PERMISSION_GRANTED) {
+            ParaEngineActivity.getContext().requestPermissions(
+                new String[]{Manifest.permission.CAMERA},
+                CAMERA_PERMISSION_REQUEST_CODE
+            );
+            return false;
+        } else {
+            return true;
+        }
+    }
+
+    static public boolean HasPermission(int permissionCode) {
+        String permissionString = "";
+        
+        switch (permissionCode) {
+            case RECORD_AUDIO_PERMISSION_REQUEST_CODE:
+                permissionString = Manifest.permission.RECORD_AUDIO;
+                break;
+            case COARSE_LOCATION_PERMISSION_CODE:
+                permissionString = Manifest.permission.ACCESS_COARSE_LOCATION;
+                break;
+            case BLUETOOTH_CONNECT_PERMISSION_REQUEST_CODE:
+                permissionString = Manifest.permission.BLUETOOTH_CONNECT;
+                break;
+            case BLUETOOTH_SCAN_PERMISSION_REQUEST_CODE:
+                permissionString = Manifest.permission.BLUETOOTH_SCAN;
+                break;
+            case CAMERA_PERMISSION_REQUEST_CODE:
+                permissionString = Manifest.permission.CAMERA;
+                break;
+            default:
+                Log.e(TAG, "Unknown permission code: " + permissionCode);
+                return false;
+        }
+
+        int permission = mParaEngineActivity.checkSelfPermission(permissionString);
+
+        if (permission != PackageManager.PERMISSION_GRANTED) {
+            return false;
+        } else {
+            return true;
+        }
+    }
+
+    static public void RequestPermission(int permissionCode) {
+        RequestPermissionCallback callback = new RequestPermissionCallback() {
+            @Override
+            public void Callback(Boolean succeeded) {}
+        };
+
+        switch (permissionCode) {
+            case RECORD_AUDIO_PERMISSION_REQUEST_CODE:
+                RequestRecordAudio();
+                break;
+            case COARSE_LOCATION_PERMISSION_CODE:
+                RequestLocation(callback);
+                break;
+            case BLUETOOTH_CONNECT_PERMISSION_REQUEST_CODE:
+                RequestBLEConnect(callback);
+                break;
+            case BLUETOOTH_SCAN_PERMISSION_REQUEST_CODE:
+                RequestBLEScan(callback);
+                break;
+            case CAMERA_PERMISSION_REQUEST_CODE:
+                RequestCamera();
+                break;
+            default:
+                Log.e(TAG, "Unknown permission code: " + permissionCode);
+                break;
+        }
+    }
+
     static public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
         if (requestCode == RECORD_AUDIO_PERMISSION_REQUEST_CODE) {
             if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
@@ -121,6 +197,8 @@ public class RequestAndroidPermission {
             } else {
                 curCallback.Callback(true);
             }
+        } else if (requestCode == CAMERA_PERMISSION_REQUEST_CODE) {
+
         }
     }
 }

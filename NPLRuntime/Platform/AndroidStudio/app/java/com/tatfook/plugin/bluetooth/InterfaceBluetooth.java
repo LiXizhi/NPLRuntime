@@ -70,6 +70,7 @@ public class InterfaceBluetooth implements ParaEnginePluginInterface {
     public final static int ON_CHARACTERISTIC = 1104;
     public final static int ON_DESCRIPTOR = 1105;
     public final static int ON_SERVICE = 1107;
+    public final static int RECEIVE_CHARACTERISTIC_NOTIFY = 1108;
 
     private BluetoothAdapter mBluetoothAdapter;
     private final static int REQUEST_BLUETOOTH_CONNECT = 2;
@@ -158,21 +159,21 @@ public class InterfaceBluetooth implements ParaEnginePluginInterface {
                 callBaseBridge(ON_SERVICE, onServiceParams.toString());
             } else if (BluetoothLeService.ACTION_DATA_CHARACTERISTIC.equals(action)) {
                 Log.i(TAG, "mGattUpdateReceiver.onReceive.ACTION_DATA_CHARACTERISTIC");
-//                String uuid = intent.getStringExtra(BluetoothLeService.ON_CHARACTERISTIC_UUID);
-//                String io = intent.getStringExtra(BluetoothLeService.ON_CHARACTERISTIC_IO);
-//                String status = intent.getStringExtra(BluetoothLeService.ON_CHARACTERISTIC_STATUS);
-//                String data = intent.getStringExtra(BluetoothLeService.ON_CHARACTERISTIC_DATA);
-//                JSONObject luajs_value = new JSONObject();
-//                try {
-//                    luajs_value.put("uuid", uuid);
-//                    luajs_value.put("io", io);
-//                    luajs_value.put("status", status);
-//                    luajs_value.put("data", data);
-//                } catch (JSONException e) {
-//                    e.printStackTrace();
-//                }
-//                System.out.println(luajs_value.toString());
-//                callBaseBridge(ON_CHARACTERISTIC, luajs_value.toString());
+                String uuid = intent.getStringExtra(BluetoothLeService.ON_CHARACTERISTIC_UUID);
+                String io = intent.getStringExtra(BluetoothLeService.ON_CHARACTERISTIC_IO);
+                String status = intent.getStringExtra(BluetoothLeService.ON_CHARACTERISTIC_STATUS);
+                String data = intent.getStringExtra(BluetoothLeService.ON_CHARACTERISTIC_DATA);
+                JSONObject luajs_value = new JSONObject();
+                try {
+                    luajs_value.put("uuid", uuid);
+                    luajs_value.put("io", io);
+                    luajs_value.put("status", status);
+                    luajs_value.put("data", data);
+                } catch (JSONException e) {
+                    e.printStackTrace();
+                }
+                System.out.println(luajs_value.toString());
+                callBaseBridge(RECEIVE_CHARACTERISTIC_NOTIFY, luajs_value.toString());
             } else if (BluetoothLeService.ACTION_DATA_DESCRIPTOR.equals(action)) {
 //                warpCheckUUid();
 
@@ -286,7 +287,7 @@ public class InterfaceBluetooth implements ParaEnginePluginInterface {
         }
     }
 
-    public static void writeToCharacteristic(String ser_uuid, String cha_uuid, String data) {
+    public static void writeToCharacteristic(String ser_uuid, String cha_uuid, String data, boolean isShortMsg) {
         byte[] dataBytes = data.getBytes();
         int chunkSize = 20;
         ScheduledExecutorService scheduledExecutorService = Executors.newScheduledThreadPool(1);
@@ -295,40 +296,45 @@ public class InterfaceBluetooth implements ParaEnginePluginInterface {
 
         BluetoothGattCharacteristic characteristic = getCharacteristic(ser_uuid, cha_uuid);
         if (characteristic != null) {
-            scheduledExecutorService.schedule(new Runnable() {
-                @Override
-                public void run() {
-                    characteristic.setValue("start".getBytes());
-                    mSingle.mBluetoothLeService.writeCharacteristic(characteristic);
-                }
-            }, delayCount * delayBetweenTask, TimeUnit.MILLISECONDS);
+            if (isShortMsg) {
+                characteristic.setValue(dataBytes);
+                mSingle.mBluetoothLeService.writeCharacteristic(characteristic);
+            } else {
+                scheduledExecutorService.schedule(new Runnable() {
+                    @Override
+                    public void run() {
+                        characteristic.setValue("start".getBytes());
+                        mSingle.mBluetoothLeService.writeCharacteristic(characteristic);
+                    }
+                }, delayCount * delayBetweenTask, TimeUnit.MILLISECONDS);
 
-            for (int offset = 0; offset < dataBytes.length; offset += chunkSize) {
+                for (int offset = 0; offset < dataBytes.length; offset += chunkSize) {
+                    delayCount++;
+                    byte[] chunk = Arrays.copyOfRange(dataBytes, offset, offset + Math.min(chunkSize, dataBytes.length - offset));
+
+                    scheduledExecutorService.schedule(new Runnable() {
+                        @Override
+                        public void run() {
+                            characteristic.setValue(chunk);
+                            mSingle.mBluetoothLeService.writeCharacteristic(characteristic);
+                        }
+                    }, delayCount * delayBetweenTask, TimeUnit.MILLISECONDS);
+                }
+
                 delayCount++;
-                byte[] chunk = Arrays.copyOfRange(dataBytes, offset, offset + Math.min(chunkSize, dataBytes.length - offset));
 
                 scheduledExecutorService.schedule(new Runnable() {
                     @Override
                     public void run() {
-                        characteristic.setValue(chunk);
+                        characteristic.setValue("end".getBytes());
                         mSingle.mBluetoothLeService.writeCharacteristic(characteristic);
+                        mSingle.mReconnect = true;
+                        disconnectBlueTooth();
                     }
                 }, delayCount * delayBetweenTask, TimeUnit.MILLISECONDS);
+
+                scheduledExecutorService.shutdown();
             }
-
-            delayCount++;
-
-            scheduledExecutorService.schedule(new Runnable() {
-                @Override
-                public void run() {
-                    characteristic.setValue("end".getBytes());
-                    mSingle.mBluetoothLeService.writeCharacteristic(characteristic);
-                    mSingle.mReconnect = true;
-                    disconnectBlueTooth();
-                }
-            }, delayCount * delayBetweenTask, TimeUnit.MILLISECONDS);
-
-            scheduledExecutorService.shutdown();
         }
     }
 
@@ -433,8 +439,8 @@ public class InterfaceBluetooth implements ParaEnginePluginInterface {
         mMainActivity.startActivity(new Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS));
     }
 
-    public static void setupBluetoothDelegate() {
-        Log.i(TAG, "setupBluetoothDelegate");
+    public static void reconnectBlueTooth() {
+        Log.i(TAG, "reconnectBlueTooth");
 
         if (mSingle == null || mSingle.mConnected)
             return;
