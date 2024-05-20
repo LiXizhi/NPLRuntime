@@ -320,7 +320,7 @@ if (EMSCRIPTEN)
     "${BOOST_ROOT}/stage/lib/libboost_date_time.a"
     "${BOOST_ROOT}/stage/lib/libboost_filesystem.a"
     "${BOOST_ROOT}/stage/lib/libboost_serialization.a"
-    "${BOOST_ROOT}/stage/lib/libboost_system.a"
+    #"${BOOST_ROOT}/stage/lib/libboost_system.a"
     "${BOOST_ROOT}/stage/lib/libboost_thread.a"
     "${BOOST_ROOT}/stage/lib/libboost_wserialization.a"
     )
