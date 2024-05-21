@@ -15,6 +15,8 @@ namespace ParaScripting
     public:
         static void LuabindRegisterRequestAndroidPermissionFunctions(lua_State *L);
         static void RequestRecordAudioPermission();
+        static bool HasPermission(int permissionCode);
+        static void RequestPermission(int permissionCode);
     private:
         static const std::string classname;
     };

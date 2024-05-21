@@ -23,10 +23,10 @@ if [ ! -d $PARACRAFT_APP_DIR ]; then
     mkdir -p $PARACRAFT_APP_DIR
 fi
 
-## check cmake version is above 3.29. 
+## check cmake version is above 3.28. 
 cmake_version=`cmake --version | head -n 1 | cut -d ' ' -f 3 | cut -d '.' -f 1,2`
-if [ $(echo "$cmake_version >= 3.29" | bc) -eq '0' ]; then
-    echo "cmake $cmake_version is too low, please download cmake 3.29 or above and add it to PATH"
+if [ $(echo "$cmake_version >= 3.28" | bc) -eq '0' ]; then
+    echo "cmake $cmake_version is too low, please download cmake 3.28 or above and add it to PATH"
     # export PATH=$HOME/cmake-3.29.1-linux-x86_64/bin:$PATH
     exit 1
 fi
@@ -39,7 +39,7 @@ if [ ! -d ${EMSDK_DIR} ]; then
     git clone https://github.com/emscripten-core/emsdk.git
     cd emsdk
     ./emsdk install latest
-    ./emsdk activate latest
+    ./emsdk activate latestcd ..
     popd
 fi
 

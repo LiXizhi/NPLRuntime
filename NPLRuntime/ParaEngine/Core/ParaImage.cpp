@@ -887,6 +887,8 @@ namespace ParaEngine
 		int decodeOffset = 0;
 		width = _width;  height = _height;
 
+		int bytePerPixel = 4;
+		std::vector<unsigned char> decodeImageData(width * height * bytePerPixel);
 		for (int i = 0; i < _numberOfMipmaps && (width || height); ++i)
 		{
 			if (width == 0) width = 1;
@@ -901,13 +903,8 @@ namespace ParaEngine
 			}
 			else
 			{   //if it is not gles or device do not support S3TC, decode texture by software
-
 				// OUTPUT_LOG("Hardware S3TC decoder not present. Using software decoder");
-
-				int bytePerPixel = 4;
 				unsigned int stride = width * bytePerPixel;
-
-				std::vector<unsigned char> decodeImageData(stride * height);
 				if (FOURCC_DXT1 == header->ddsd.DUMMYUNIONNAMEN4.ddpfPixelFormat.fourCC)
 				{
 					s3tc_decode(pixelData + encodeOffset, &decodeImageData[0], width, height, S3TCDecodeFlag::DXT1);

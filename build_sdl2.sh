@@ -14,7 +14,7 @@ if [ ! -d ${LIB_INSTALL_DIR} ]; then
         if [ -f ${LIB_SRC_TAR_GZ} ]; then
             tar -vxf ${LIB_SRC_TAR_GZ} -C ${SOURCE_DIR}
         else
-            wget https://ghproxy.com/https://github.com/libsdl-org/SDL/releases/download/release-${LIB_VERSION}/${LIB_NAME}.tar.gz -O ${LIB_SRC_TAR_GZ}
+            wget https://github.com/libsdl-org/SDL/releases/download/release-${LIB_VERSION}/${LIB_NAME}.tar.gz -O ${LIB_SRC_TAR_GZ}
             tar -vxf ${LIB_SRC_TAR_GZ} -C ${SOURCE_DIR}
         fi
     fi

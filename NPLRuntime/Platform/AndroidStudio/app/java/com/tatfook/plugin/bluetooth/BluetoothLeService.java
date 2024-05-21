@@ -146,7 +146,7 @@ public class BluetoothLeService extends Service {
         @Override
         public void onCharacteristicRead(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic, int status) 
 		{
-        	Log.i(TAG, "onCharacteristicRead uuid: " + characteristic.getUuid().toString() + ",data:" + new String(characteristic.getValue()) );
+        	Log.i(TAG, "onCharacteristicRead uuid: " + characteristic.getUuid().toString() + ",data:" + new String(characteristic.getValue()));
 
 			final Intent intent = new Intent(BluetoothLeService.ACTION_DATA_CHARACTERISTIC);
 			intent.putExtra(BluetoothLeService.ON_CHARACTERISTIC_UUID, characteristic.getUuid().toString());
@@ -170,8 +170,7 @@ public class BluetoothLeService extends Service {
 			intent.putExtra(BluetoothLeService.ON_CHARACTERISTIC_IO, "c");
 			intent.putExtra(BluetoothLeService.ON_CHARACTERISTIC_STATUS, "");
 
-			final byte[] data = characteristic.getValue();
-			String currDataStr = characteristicData2JsStrValue(data);
+			String currDataStr = new String(characteristic.getValue()); // characteristicData2JsStrValue(data);
 			intent.putExtra(BluetoothLeService.ON_CHARACTERISTIC_DATA, currDataStr);
 			
 			sendBroadcast(intent);

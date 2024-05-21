@@ -1,8 +1,7 @@
 //-----------------------------------------------------------------------------
 // Class: InterfaceBluetooth.mm
-// Authors: kkvskkkk, big
-// CreateDate: 2018.11.6
-// ModifyDate: 2024.5.8
+// Authors: big
+// CreateDate: 2024.04.24
 //-----------------------------------------------------------------------------
 
 #include <sstream>
