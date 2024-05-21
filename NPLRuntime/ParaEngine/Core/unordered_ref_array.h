@@ -69,7 +69,7 @@ public:
 	/** Move constructor */
 	unordered_ref_array<T>(unordered_ref_array<T>&& other)
 	{
-		m_data = std::move(other._data);
+		m_data = std::move(other.m_data);
 	}
 
 	/** Copy assignment operator */
@@ -88,7 +88,7 @@ public:
 	{
 		if (this != &other) {
 			clear();
-			m_data = std::move(other._data);
+			m_data = std::move(other.m_data);
 		}
 		return *this;
 	}

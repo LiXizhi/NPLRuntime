@@ -1,4 +1,4 @@
-#include "ParaEngine.h"
+﻿#include "ParaEngine.h"
 #include "RenderWindowDelegate.h"
 #include "2dengine/GUIRoot.h"
 #include "NPL/NPLHelper.h"

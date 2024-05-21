@@ -128,6 +128,30 @@ namespace ParaEngine
 		}
 	}
 
+	char RenderWindowSDL2::GetKeyChar(unsigned long vk)
+	{
+		if (vk == SDLK_KP_0) return !m_isNumLockEnabled ? -1 : '0';
+		else if (vk == SDLK_KP_1) return !m_isNumLockEnabled ? -1 : '1';
+		else if (vk == SDLK_KP_2) return !m_isNumLockEnabled ? -1 : '2';
+		else if (vk == SDLK_KP_3) return !m_isNumLockEnabled ? -1 : '3';
+		else if (vk == SDLK_KP_4) return !m_isNumLockEnabled ? -1 : '4';
+		else if (vk == SDLK_KP_5) return '5';
+		else if (vk == SDLK_KP_6) return !m_isNumLockEnabled ? -1 : '6';
+		else if (vk == SDLK_KP_7) return !m_isNumLockEnabled ? -1 : '7';
+		else if (vk == SDLK_KP_8) return !m_isNumLockEnabled ? -1 : '8';
+		else if (vk == SDLK_KP_9) return !m_isNumLockEnabled ? -1 : '9';
+		else if (vk == SDLK_KP_DECIMAL) return !m_isNumLockEnabled ? -1 : '.';
+		else if (vk == SDLK_KP_PERIOD) return !m_isNumLockEnabled ? -1 : '.';
+		// else if (vk == SDLK_KP_ENTER) return m_isNumLockEnabled ? -1 : '\r';
+		else if (vk == SDLK_KP_DIVIDE) return '/';
+		else if (vk == SDLK_KP_MULTIPLY) return '*';
+		else if (vk == SDLK_KP_MINUS) return '-';
+		else if (vk == SDLK_KP_PLUS) return '+';
+		else if (vk == SDLK_KP_EQUALS) return !m_isNumLockEnabled ? -1 : '=';
+		
+		return -1;
+	}
+
 	EVirtualKey RenderWindowSDL2::SDL2VirtualKeyToParaVK(unsigned long vk)
 	{
 		InitVirtualKeyMap();
@@ -180,7 +204,7 @@ namespace ParaEngine
 		m_sdl2_window = SDL_CreateWindow("Paracraft", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, defaultWdith, defaultHeight, SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE);
 		m_gl_context = SDL_GL_CreateContext(m_sdl2_window);
 #ifndef EMSCRIPTEN
-		gladLoadGLLoader(GLADloadproc)SDL_GL_GetProcAddress);
+		gladLoadGLLoader((GLADloadproc)SDL_GL_GetProcAddress);
 #endif
 		SDL_GL_SetSwapInterval(1);
 		std::cout << "GL_VERSION=" << glGetString(GL_VERSION) << std::endl;
@@ -402,13 +426,17 @@ namespace ParaEngine
 				if (key != EVirtualKey::KEY_UNKNOWN)
 					m_KeyState[(uint32_t)key] = state;
 				OnKey(key, state);
+				char c = GetKeyChar(msgKey);
+				if (c >= 0) OnChar(c);
 			}
 			else if (sdl_event.type == SDL_KEYUP)
 			{
+#ifdef EMSCRIPTEN
 				if (sdl_event.key.keysym.sym == SDLK_NUMLOCKCLEAR || m_isNumLockEnabled == 2)
 				{
 					m_isNumLockEnabled = EM_ASM_INT({ return window.isNumLockEnabled; });
 				}
+#endif
 				EKeyState state = EKeyState::RELEASE;
 				DWORD msgKey = (DWORD)sdl_event.key.keysym.sym;
 				auto key = SDL2VirtualKeyToParaVK(msgKey);

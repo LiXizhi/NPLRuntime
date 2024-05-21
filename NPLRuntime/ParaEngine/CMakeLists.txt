@@ -317,7 +317,6 @@ if (EMSCRIPTEN)
     "${BOOST_ROOT}/stage/lib/libboost_atomic.a"
     "${BOOST_ROOT}/stage/lib/libboost_chrono.a"
     "${BOOST_ROOT}/stage/lib/libboost_date_time.a"
-    "${BOOST_ROOT}/stage/lib/libboost_date_time.a"
     "${BOOST_ROOT}/stage/lib/libboost_filesystem.a"
     "${BOOST_ROOT}/stage/lib/libboost_serialization.a"
     #"${BOOST_ROOT}/stage/lib/libboost_system.a"
@@ -345,10 +344,9 @@ else()
     )
 endif()
 
-
 set(PARAENGINE_DEF_LIST)
 list(APPEND PARAENGINE_DEF_LIST USE_FREEIMAGE USE_ICONV TIXML_USE_STL BOOST_SIGNALS_NO_DEPRECATION_WARNING _CRT_SECURE_NO_WARNINGS NPLRUNTIME ${PLATROM_SPEC_DEFINITIONS})
-if (SDL)
+if (SDL OR EMSCRIPTEN)
     list(APPEND PARAENGINE_DEF_LIST PLATFORM_SDL2)
 endif()
 
