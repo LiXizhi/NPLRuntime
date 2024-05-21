@@ -138,12 +138,17 @@ namespace ParaEngine
 
 	bool CSDL2Application::IsInputing()
 	{
+#ifdef EMSCRIPTEN
 		int inputing = EM_ASM_INT({ return Module.IsInputing(); });
 		return inputing == 1;
+#else
+		return 0;
+#endif
 	}
 
 	void CSDL2Application::setIMEKeyboardState(bool bOpen, bool bMoveView, int ctrlBottom, const string &editParams)
 	{
+#ifdef EMSCRIPTEN
 		if (bOpen)
 		{
 			// std::cout << bMoveView << " " << ctrlBottom << " " << editParams << std::endl;
@@ -157,6 +162,7 @@ namespace ParaEngine
 				Module.StopTextInput();
 			});
 		}
+#endif
 	}
 
 	CSDL2Application::CSDL2Application()

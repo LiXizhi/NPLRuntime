@@ -22,6 +22,12 @@ SDL_ROOT 值为SDL库安装目录, 下载SDL源码直接cmake编译安装即可,
 	emcmake cmake -S NPLRuntime -B build\emscripten -DEMSCRIPTEN=ON -DCMAKE_BUILD_TYPE=RELEASE -DBOOST_ROOT="boost_directory" -DAPP_ROOT="app_diectory"
 	cd build\emscripten
 	emmake make
+
+# 编译boost1.85.0
+1. CMakeLists.txt 添加  `set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fdeclspec -sNO_DISABLE_EXCEPTION_CATCHING -pthread")`
+2. emcmake cmake -S . -B build/emscripten -DCMAKE_BUILD_TYPE=Release -DBOOST_INCLUDE_LIBRARIES="filesystem;chrono;date_time;serialization;system"
+3. cd build/emscripten; emmake make
+4. cp stage/lib/*.a ../../stage/lib
 ```
 **boost_directory 为boost根目录**
 **app_diectory 为应用程序根目录, 此目录需放置ParaCraft所需相关文件**
