@@ -163,6 +163,7 @@ add_subdirectory (${SERVER_SOURCE_DIR}/pcl/features ${PROJECT_BINARY_DIR}/featur
 add_subdirectory (${SERVER_SOURCE_DIR}/Pinocchio ${PROJECT_BINARY_DIR}/Pinocchio)
 
 add_subdirectory (${PROJECT_SOURCE_DIR}/trunk/externals/antlr ${PROJECT_BINARY_DIR}/antlr)
+add_subdirectory (${PROJECT_SOURCE_DIR}/trunk/externals/darknet ${PROJECT_BINARY_DIR}/darknet)
 
 if(NOT NPLRUNTIME_STATIC_LIB) 
 	add_subdirectory (${SERVER_SOURCE_DIR}luasql ${PROJECT_BINARY_DIR}/luasql)

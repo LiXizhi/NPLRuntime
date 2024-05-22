@@ -910,6 +910,7 @@ if(APPLE)
 endif()
 
 list(APPEND ParaEngineClient_LIBS ParaAntlr4)
+list(APPEND ParaEngineClient_LIBS darknet)
 
 target_link_libraries(ParaEngineClient ${ParaEngineClient_LIBS})
 

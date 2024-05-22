@@ -62,6 +62,7 @@ Client/trunk/externals/*
 !Client/trunk/externals/gl*
 !Client/trunk/externals/icon/
 !Client/trunk/externals/FreeImage_3120/
+!Client/trunk/externals/darknet/
 
 !Server/
 Server/*
