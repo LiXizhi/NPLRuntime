@@ -37,6 +37,7 @@ extern "C"
 	extern int profiler_stop(lua_State *L);
 #endif
 	extern int luaopen_lfs (lua_State *L);
+	extern int luaopen_LuaDarkNet(lua_State *L);
 	// extern int luaopen_profiler(lua_State *L);
 }
 
@@ -297,8 +298,7 @@ void CNPLScriptingState::LoadHAPI_Globals()
 
 	// load lua file system
 	lua_register(L, "luaopen_lfs", luaopen_lfs);
-
-	
+	luaopen_LuaDarkNet(L);
 
 	// load luaxml
 	lua_register(L, "luaopen_luaxml", luaopen_luaxml);

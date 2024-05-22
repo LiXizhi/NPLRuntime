@@ -253,6 +253,8 @@ if (NPLRUNTIME_OCE)
 	add_dependencies(ParaEngine nploce)
 endif ()
 
+list(APPEND NPLRUNTIME_LIBS darknet)
+
 if (EMSCRIPTEN AND NOT NPLOCE_DEPS_ROOT)
     if (EMSCRIPTEN_SINGLE_THREAD)
         set(NPLOCE_DEPS_ROOT "/mnt/d/workspace/npl/nploce-deps/install")
