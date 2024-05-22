@@ -95,6 +95,7 @@ endif ()
 add_subdirectory(EmbedResource)
 add_subdirectory(openssl)
 add_subdirectory(antlr)
+add_subdirectory(darknet)
 
 if (ANDROID)
 else ()
