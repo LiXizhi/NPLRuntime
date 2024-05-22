@@ -1,10 +1,16 @@
-﻿#ifndef STB_IMAGE_IMPLEMENTATION
+﻿// NPLOCE 也是使用stb库, 造成重复函数定义, 且版本不一致.
+#if defined(__EMSCRIPTEN__) || defined(DNPLRUNTIME_OCE)
+#include "stb_image.h"
+#include "stb_image_write.h"
+#else
+#ifndef STB_IMAGE_IMPLEMENTATION
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
 #endif
 #ifndef STB_IMAGE_WRITE_IMPLEMENTATION
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include "stb_image_write.h"
+#endif
 #endif
 
 #include "Image.h"
