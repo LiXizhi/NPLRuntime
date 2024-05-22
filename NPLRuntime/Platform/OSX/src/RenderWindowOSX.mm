@@ -222,7 +222,7 @@ unsigned int RenderWindowOSX::GetHeight() const
 {   
     auto point = NSMakePoint(0, m_window.contentView.frame.size.height);
     auto backingPoint = [m_window.contentView convertPointToBacking:point];
-    
+
     return (unsigned int )backingPoint.y;
 }
 
@@ -230,7 +230,7 @@ unsigned int RenderWindowOSX::GetWidth() const
 {    
     auto point = NSMakePoint(m_window.contentView.frame.size.width, 0);
     auto backingPoint = [m_window.contentView convertPointToBacking:point];
-    
+
     return (unsigned int )backingPoint.x;
 }
 
@@ -239,9 +239,25 @@ void RenderWindowOSX::GetScaleFactor(double &x, double &y) const
     auto point = NSMakePoint(m_window.contentView.frame.size.width, m_window.contentView.frame.size.height);
     
     auto backingPoint = [m_window.contentView convertPointToBacking:point];
-    
+
     x = backingPoint.x / point.x;
     y = backingPoint.y / point.y;
+}
+
+void RenderWindowOSX::GetScreenResolution(float *pX, float *pY)
+{
+    if (pX) {
+        *pX = GetWidth() / currentBackingScaleFactor;
+    }
+
+    if (pY) {
+        *pY = GetHeight() / currentBackingScaleFactor;
+    }
+}
+
+void RenderWindowOSX::SetScreenResolution(CGFloat w, CGFloat h)
+{
+    [m_window setContentSize:NSMakeSize(w, h)];
 }
 
 bool RenderWindowOSX::ShouldClose() const
@@ -635,7 +651,7 @@ void RenderWindowOSX::setTitle(const char* title)
     [m_window setTitle:titleNS];
 }
 
-const char*  RenderWindowOSX::getTitle()
+const char* RenderWindowOSX::getTitle()
 {
     const char* ret = [[m_window title] UTF8String];
     return ret;

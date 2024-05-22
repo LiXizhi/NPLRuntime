@@ -76,6 +76,10 @@ namespace ParaEngine
         /** get the window title when at windowed mode */
         virtual const char* GetWindowText() override;
 
+		/** change the full screen mode, it does not immediately change the device, call UpdateScreenMode() to update the device. */
+		virtual void GetScreenResolution(Vector2* pOut) override;
+		virtual void SetScreenResolution(const Vector2& vSize) override;
+
         void handle_mainloop_timer(const boost::system::error_code& err);
 	protected:
 

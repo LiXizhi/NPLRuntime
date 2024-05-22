@@ -25,6 +25,8 @@ namespace ParaEngine
         
         void GetScaleFactor(double& x, double& y) const;
         float currentBackingScaleFactor = 1;
+        void GetScreenResolution(float* pX, float* pY);
+        void SetScreenResolution(CGFloat w, CGFloat h);
     public:
         bool OnShouldClose();
         
