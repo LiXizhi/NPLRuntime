@@ -253,7 +253,9 @@ if (NPLRUNTIME_OCE)
 	add_dependencies(ParaEngine nploce)
 endif ()
 
-list(APPEND NPLRUNTIME_LIBS darknet)
+if (NPLRUNTIME_DARKNET)
+    list(APPEND NPLRUNTIME_LIBS darknet)
+endif()
 
 if (EMSCRIPTEN AND NOT NPLOCE_DEPS_ROOT)
     if (EMSCRIPTEN_SINGLE_THREAD)
@@ -379,6 +381,10 @@ endif ()
 if (NPLRUNTIME_SERVER)
 	list(APPEND PARAENGINE_DEF_LIST NPLRUNTIME_SERVER)
 endif ()
+
+if (NPLRUNTIME_DARKNET)
+    list(APPEND PARAENGINE_DEF_LIST USE_NPL_DARKNET)
+endif()
 
 target_compile_definitions(ParaEngine PUBLIC ${PARAENGINE_DEF_LIST})
 
