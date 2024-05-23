@@ -36,8 +36,25 @@ namespace ParaEngine
 
 	void BlockTemplate::Init(uint32_t attFlag, uint16_t category_id)
 	{
-		m_attFlag = attFlag;
+		m_textures0.resize(1);
+		m_textures1.resize(1);
+
+		m_block_models.resize(1);
+		SAFE_DELETE(m_pBlockModelFilter);
+
+		SetAttFlag(attFlag);
+		SetCategoryID(category_id);
+	}
+
+	void BlockTemplate::SetCategoryID(uint16_t category_id)
+	{
 		m_category_id = category_id;
+		GetBlockModel().SetCategoryID(GetCategoryID());
+	}
+
+	void BlockTemplate::SetAttFlag(uint32_t attFlag)
+	{
+		m_attFlag = attFlag;
 
 		// init default parameters
 		m_fPhysicalHeight = 1.f;
@@ -49,9 +66,6 @@ namespace ParaEngine
 		m_nLightValue = 0xf;
 		m_fSpeedReductionPercent = 1.f;
 		m_renderPass = BlockRenderPass_Opaque;
-
-		m_textures0.resize(1);
-		m_textures1.resize(1);
 
 		// render priority: opaque object, alpha tested object, and then alpha blended object. 
 		if (IsAlphaBlendedTexture() && !IsAlphaTestTexture())
@@ -139,11 +153,8 @@ namespace ParaEngine
 			SetPhysicalHeight(-1.f);
 		}
 
-		m_block_models.resize(1);
-		SAFE_DELETE(m_pBlockModelFilter);
-
 		GetBlockModel().LoadModelByTexture(uvPattern);
-		GetBlockModel().SetCategoryID(GetCategoryID());
+
 		if (!IsMatchAttribute(BlockTemplate::batt_cubeModel) && IsMatchAttribute(BlockTemplate::batt_customModel))
 		{
 			GetBlockModel().SetUniformLighting(true);

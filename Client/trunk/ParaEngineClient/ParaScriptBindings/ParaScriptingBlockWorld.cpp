@@ -180,13 +180,15 @@ bool ParaScripting::ParaBlockWorld::RegisterBlockTemplate_(CBlockWorld* pWorld, 
 				pTemplate->setTileSize(nTile);
 			}
 
-
 			bool bRefreshBlockTemplate = false;
-			attFlag = attFlag != 0 ? attFlag : pTemplate->GetAttFlag();
-			category_id = bHasCategoryID ? category_id : pTemplate->GetCategoryID();
-			if ((pTemplate->GetAttFlag() != attFlag) || (pTemplate->GetCategoryID() != category_id))
+			if ((attFlag != 0) && (pTemplate->GetAttFlag() != attFlag))
 			{
-				pTemplate->Init(attFlag, category_id);
+				pTemplate->SetAttFlag(attFlag);
+				bRefreshBlockTemplate = true;
+			}
+			if(bHasCategoryID && pTemplate->GetCategoryID() != category_id)
+			{
+				pTemplate->SetCategoryID(category_id);
 				bRefreshBlockTemplate = true;
 			}
 

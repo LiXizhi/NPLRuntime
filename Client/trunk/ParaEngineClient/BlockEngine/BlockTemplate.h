@@ -62,11 +62,13 @@ namespace ParaEngine
 		{
 			return m_category_id;
 		}
+		void SetCategoryID(uint16_t category_id);
 
 		inline uint32_t GetAttFlag()  const
 		{
 			return m_attFlag;
 		}
+		void SetAttFlag(uint32_t attFlag);
 
 		/** if match any of the given attributes */
 		inline bool IsMatchAttribute(uint32_t attFlags) const
