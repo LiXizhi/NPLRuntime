@@ -29,6 +29,7 @@ if(WIN32)
 	option(NPLRUNTIME_CAUDIOENGINE "include audioengine plugin" OFF)
 	option(NPLRUNTIME_HAQI_LAUNCHER "haqi launcher" OFF)
 	option(NPLRUNTIME_WEBVIEW "microsoft edge webview2 support" OFF)
+	option(NPLRUNTIME_DARKNET "darknet support" OFF)
 endif()
 # OSX Default Option
 if(APPLE)
@@ -163,7 +164,10 @@ add_subdirectory (${SERVER_SOURCE_DIR}/pcl/features ${PROJECT_BINARY_DIR}/featur
 add_subdirectory (${SERVER_SOURCE_DIR}/Pinocchio ${PROJECT_BINARY_DIR}/Pinocchio)
 
 add_subdirectory (${PROJECT_SOURCE_DIR}/trunk/externals/antlr ${PROJECT_BINARY_DIR}/antlr)
-add_subdirectory (${PROJECT_SOURCE_DIR}/trunk/externals/darknet ${PROJECT_BINARY_DIR}/darknet)
+
+if (NPLRUNTIME_DARKNET)
+	add_subdirectory (${PROJECT_SOURCE_DIR}/trunk/externals/darknet ${PROJECT_BINARY_DIR}/darknet)
+endif()
 
 if(NOT NPLRUNTIME_STATIC_LIB) 
 	add_subdirectory (${SERVER_SOURCE_DIR}luasql ${PROJECT_BINARY_DIR}/luasql)
