@@ -15,6 +15,7 @@
 /**@define  user defined block index */
 #define CUSTOM_BLOCK_ID_BEGIN 2000
 
+
 extern "C"
 {
 #include "lua.h"
@@ -50,7 +51,7 @@ luabind::object ParaScripting::ParaBlockWorld::GetWorld(const object& sWorldName
 	{
 		sWorldName = object_cast<const char*> (sWorldName_);
 	}
-	void * pWorld = NULL;
+	void* pWorld = NULL;
 	if (!sWorldName.empty())
 		pWorld = CBlockWorldManager::GetSingleton()->CreateGetBlockWorld(sWorldName);
 	else
@@ -97,6 +98,7 @@ bool ParaScripting::ParaBlockWorld::RegisterBlockTemplate_(CBlockWorld* pWorld, 
 	bool bProvidePower = false;
 	bool bCustomBlockModel = false;
 	bool bIsVisible = true;
+	bool bHasCategoryID = false;
 	int nTile = -1;
 	Color under_water_color = 0;
 	if (type(params) == LUA_TNUMBER)
@@ -115,8 +117,10 @@ bool ParaScripting::ParaBlockWorld::RegisterBlockTemplate_(CBlockWorld* pWorld, 
 			sModelName = object_cast<const char*>(params["modelName"]);
 		if (type(params["normalMap"]) == LUA_TSTRING)
 			sNormalMap = object_cast<const char*>(params["normalMap"]);
-		if (type(params["categoryID"]) == LUA_TNUMBER)
+		if (type(params["categoryID"]) == LUA_TNUMBER) {
 			category_id = (uint16_t)(object_cast<double> (params["categoryID"]));
+			bHasCategoryID = true;
+		}
 		if (type(params["associated_blockid"]) == LUA_TNUMBER)
 			associated_blockid = (uint16_t)(object_cast<double> (params["associated_blockid"]));
 		if (type(params["associated_blockid"]) == LUA_TNUMBER)
@@ -178,9 +182,11 @@ bool ParaScripting::ParaBlockWorld::RegisterBlockTemplate_(CBlockWorld* pWorld, 
 
 
 			bool bRefreshBlockTemplate = false;
-			if (attFlag != 0 && pTemplate->GetAttFlag() != attFlag)	
+			attFlag = attFlag != 0 ? attFlag : pTemplate->GetAttFlag();
+			category_id = bHasCategoryID ? category_id : pTemplate->GetCategoryID();
+			if ((pTemplate->GetAttFlag() != attFlag) || (pTemplate->GetCategoryID() != category_id))
 			{
-				pTemplate->Init(attFlag, pTemplate->GetCategoryID());
+				pTemplate->Init(attFlag, category_id);
 				bRefreshBlockTemplate = true;
 			}
 
@@ -190,7 +196,7 @@ bool ParaScripting::ParaBlockWorld::RegisterBlockTemplate_(CBlockWorld* pWorld, 
 				pTemplate->SetTorchLight(nTorchLight);
 				bRefreshBlockTemplate = true;
 			}
-			
+
 			if (bRefreshBlockTemplate)
 			{
 				pWorld->RefreshBlockTemplate(templateId);
@@ -244,7 +250,7 @@ bool ParaScripting::ParaBlockWorld::RegisterBlockTemplate_(CBlockWorld* pWorld, 
 				pTemplate->setTileSize(nTile);
 			}
 
-			if (bCustomBlockModel && type(params["models"]) == LUA_TTABLE && sModelName!="stairs")
+			if (bCustomBlockModel && type(params["models"]) == LUA_TTABLE && sModelName != "stairs")
 			{
 				const object& models = params["models"];
 				int nMaxDataId = -1;
@@ -518,7 +524,7 @@ void ParaScripting::ParaBlockWorld::SaveBlockWorld(const object& pWorld_, bool s
 	pWorld->SaveToFile(saveToTemp);
 }
 
-object ParaScripting::ParaBlockWorld::GetBlockModelInfo(int template_id, int blockData,const luabind::object& result)
+object ParaScripting::ParaBlockWorld::GetBlockModelInfo(int template_id, int blockData, const luabind::object& result)
 {
 	static std::map<int, luabind::object> _map;
 	int key = template_id * 10000 + blockData;
@@ -532,7 +538,7 @@ object ParaScripting::ParaBlockWorld::GetBlockModelInfo(int template_id, int blo
 	float u, v;
 	result["m_Vertices"] = luabind::newtable(result.interpreter());
 	for (int i = 0; i < vertNum; i++) {
-		BlockVertexCompressed &vert = blockModel.Vertices()[i];
+		BlockVertexCompressed& vert = blockModel.Vertices()[i];
 		vert.GetPosition(pt);
 		vert.GetNormal(normal);
 		vert.GetTexcoord(u, v);
@@ -549,7 +555,7 @@ object ParaScripting::ParaBlockWorld::GetBlockModelInfo(int template_id, int blo
 		result["m_Vertices"][idx]["normal"]["z"] = normal.z;
 
 		result["m_Vertices"][idx]["texcoord"] = luabind::newtable(result.interpreter());
-		result["m_Vertices"][idx]["texcoord"]["u"] =u;
+		result["m_Vertices"][idx]["texcoord"]["u"] = u;
 		result["m_Vertices"][idx]["texcoord"]["v"] = v;
 
 		result["m_Vertices"][idx]["color"] = vert.color;
