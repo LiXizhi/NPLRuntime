@@ -95,7 +95,10 @@ endif ()
 add_subdirectory(EmbedResource)
 add_subdirectory(openssl)
 add_subdirectory(antlr)
-add_subdirectory(darknet)
+
+if (NPLRUNTIME_DARKNET)
+	add_subdirectory(darknet)
+endif()
 
 if (ANDROID)
 else ()

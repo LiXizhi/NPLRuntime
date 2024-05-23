@@ -17,6 +17,7 @@ option(NPLRUNTIME_ICONV "include iconv" ON)
 option(NPLRUNTIME_SERVER "Generate server ver" OFF)
 option(ANDROID_STUDIO "Generate AndroidStudio ver" OFF)
 option(NPLRUNTIME_OCE "include NplOce" OFF)
+option(NPLRUNTIME_DARKNET "darknet support" OFF)
 
 project(${NPLRUNTIME_PROJECT_NAME})
 
