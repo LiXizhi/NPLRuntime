@@ -51,8 +51,8 @@ luabind::object ParaScripting::ParaBlockWorld::GetWorld(const object& sWorldName
 	{
 		sWorldName = object_cast<const char*> (sWorldName_);
 	}
-	void * pWorld = NULL;
-	if ( !sWorldName.empty() )
+	void* pWorld = NULL;
+	if (!sWorldName.empty())
 		pWorld = CBlockWorldManager::GetSingleton()->CreateGetBlockWorld(sWorldName);
 	else
 		pWorld = BlockWorldClient::GetInstance();
@@ -98,6 +98,7 @@ bool ParaScripting::ParaBlockWorld::RegisterBlockTemplate_(CBlockWorld* pWorld, 
 	bool bProvidePower = false;
 	bool bCustomBlockModel = false;
 	bool bIsVisible = true;
+	bool bHasCategoryID = false;
 	int nTile = -1;
 	Color under_water_color = 0;
 	if (type(params) == LUA_TNUMBER)
@@ -108,7 +109,7 @@ bool ParaScripting::ParaBlockWorld::RegisterBlockTemplate_(CBlockWorld* pWorld, 
 	{
 		if (type(params["IsUpdating"]) == LUA_TBOOLEAN)
 			bIsUpdating = object_cast<bool> (params["IsUpdating"]);
-		if(type(params["customBlockModel"]) == LUA_TBOOLEAN)
+		if (type(params["customBlockModel"]) == LUA_TBOOLEAN)
 			bCustomBlockModel = object_cast<bool> (params["customBlockModel"]);
 		if (type(params["attFlag"]) == LUA_TNUMBER)
 			attFlag = (uint32_t)(object_cast<double> (params["attFlag"]));
@@ -116,8 +117,10 @@ bool ParaScripting::ParaBlockWorld::RegisterBlockTemplate_(CBlockWorld* pWorld, 
 			sModelName = object_cast<const char*>(params["modelName"]);
 		if (type(params["normalMap"]) == LUA_TSTRING)
 			sNormalMap = object_cast<const char*>(params["normalMap"]);
-		if (type(params["categoryID"]) == LUA_TNUMBER)
+		if (type(params["categoryID"]) == LUA_TNUMBER) {
 			category_id = (uint16_t)(object_cast<double> (params["categoryID"]));
+			bHasCategoryID = true;
+		}
 		if (type(params["associated_blockid"]) == LUA_TNUMBER)
 			associated_blockid = (uint16_t)(object_cast<double> (params["associated_blockid"]));
 		if (type(params["associated_blockid"]) == LUA_TNUMBER)
@@ -141,7 +144,7 @@ bool ParaScripting::ParaBlockWorld::RegisterBlockTemplate_(CBlockWorld* pWorld, 
 		if (type(params["opacity"]) == LUA_TNUMBER)
 			nOpacity = (int)(object_cast<double> (params["opacity"]));
 		if (type(params["isVisible"]) == LUA_TBOOLEAN)
-			bIsVisible = object_cast<bool> (params["isVisible"]);	
+			bIsVisible = object_cast<bool> (params["isVisible"]);
 		if (type(params["under_water_color"]) == LUA_TSTRING)
 			under_water_color = Color::FromString(object_cast<const char*>(params["under_water_color"]));
 		if (type(params["tile"]) == LUA_TNUMBER)
@@ -167,9 +170,9 @@ bool ParaScripting::ParaBlockWorld::RegisterBlockTemplate_(CBlockWorld* pWorld, 
 				pTemplate->SetTexture0(sTexture4.c_str(), 4);
 			if (fSpeedReduction < 1.f)
 				pTemplate->SetSpeedReductionPercent(fSpeedReduction);
-			if (nOpacity>0)
+			if (nOpacity > 0)
 				pTemplate->SetLightOpacity(nOpacity);
-			if ((DWORD)dwMapColor !=0)
+			if ((DWORD)dwMapColor != 0)
 				pTemplate->SetMapColor(dwMapColor);
 			if ((DWORD)under_water_color != 0)
 				pTemplate->setUnderWaterColor(under_water_color);
@@ -179,19 +182,21 @@ bool ParaScripting::ParaBlockWorld::RegisterBlockTemplate_(CBlockWorld* pWorld, 
 
 
 			bool bRefreshBlockTemplate = false;
-			if (attFlag != 0 && pTemplate->GetAttFlag() != attFlag)
+			attFlag = attFlag != 0 ? attFlag : pTemplate->GetAttFlag();
+			category_id = bHasCategoryID ? category_id : pTemplate->GetCategoryID();
+			if ((pTemplate->GetAttFlag() != attFlag) || (pTemplate->GetCategoryID() != category_id))
 			{
-				pTemplate->Init(attFlag, pTemplate->GetCategoryID());
+				pTemplate->Init(attFlag, category_id);
 				bRefreshBlockTemplate = true;
 			}
 
 			bRefreshBlockTemplate = bRefreshBlockTemplate || pWorld->SetBlockVisible(templateId, bIsVisible, false) || bRefreshBlockTemplate;
-			if (nTorchLight >= 0 && pTemplate->GetTorchLight() != nTorchLight) 
+			if (nTorchLight >= 0 && pTemplate->GetTorchLight() != nTorchLight)
 			{
 				pTemplate->SetTorchLight(nTorchLight);
 				bRefreshBlockTemplate = true;
 			}
-			
+
 			if (bRefreshBlockTemplate)
 			{
 				pWorld->RefreshBlockTemplate(templateId);
@@ -203,7 +208,7 @@ bool ParaScripting::ParaBlockWorld::RegisterBlockTemplate_(CBlockWorld* pWorld, 
 	{
 		BlockTemplate* pTemplate = pWorld->GetBlockTemplate(templateId);
 
-		if (pTemplate!=NULL && templateId >= CUSTOM_BLOCK_ID_BEGIN)
+		if (pTemplate != NULL && templateId >= CUSTOM_BLOCK_ID_BEGIN)
 		{
 			// we will allow user defined custom block to be overridden
 			// make all chunks dirty, to reflect the changes. 
@@ -212,7 +217,7 @@ bool ParaScripting::ParaBlockWorld::RegisterBlockTemplate_(CBlockWorld* pWorld, 
 		}
 		else
 			pTemplate = pWorld->RegisterTemplate(templateId, attFlag, category_id);
-		
+
 		if (pTemplate)
 		{
 			if (!sModelName.empty())
@@ -235,7 +240,7 @@ bool ParaScripting::ParaBlockWorld::RegisterBlockTemplate_(CBlockWorld* pWorld, 
 				pTemplate->SetTorchLight(nTorchLight);
 			if (fSpeedReduction < 1.f)
 				pTemplate->SetSpeedReductionPercent(fSpeedReduction);
-			if (nOpacity>0)
+			if (nOpacity > 0)
 				pTemplate->SetLightOpacity(nOpacity);
 			if ((DWORD)dwMapColor != 0)
 				pTemplate->SetMapColor(dwMapColor);
@@ -245,7 +250,7 @@ bool ParaScripting::ParaBlockWorld::RegisterBlockTemplate_(CBlockWorld* pWorld, 
 				pTemplate->setTileSize(nTile);
 			}
 
-			if (bCustomBlockModel && type(params["models"]) == LUA_TTABLE && sModelName!="stairs")
+			if (bCustomBlockModel && type(params["models"]) == LUA_TTABLE && sModelName != "stairs")
 			{
 				const object& models = params["models"];
 				int nMaxDataId = -1;
@@ -257,7 +262,7 @@ bool ParaScripting::ParaBlockWorld::RegisterBlockTemplate_(CBlockWorld* pWorld, 
 					{
 						std::string assetfile = object_cast<const char*>(model["assetfile"]);
 						Matrix4 mat = Matrix4::IDENTITY;
-							
+
 						if (type(model["transform"]) == LUA_TSTRING)
 						{
 							std::string transform = object_cast<const char*>(model["transform"]);
@@ -331,7 +336,7 @@ void ParaScripting::ParaBlockWorld::SetBlockId(const object& pWorld_, uint16_t x
 uint32_t ParaScripting::ParaBlockWorld::GetBlockId(const object& pWorld_, uint16_t x, uint16_t y, uint16_t z)
 {
 	GETBLOCKWORLD(pWorld, pWorld_);
-	return pWorld->GetBlockTemplateIdByIdx(x,y,z);
+	return pWorld->GetBlockTemplateIdByIdx(x, y, z);
 }
 
 void ParaScripting::ParaBlockWorld::SetBlockData(const object& pWorld_, uint16_t x, uint16_t y, uint16_t z, uint32_t data)
@@ -343,7 +348,7 @@ void ParaScripting::ParaBlockWorld::SetBlockData(const object& pWorld_, uint16_t
 uint32_t ParaScripting::ParaBlockWorld::GetBlockData(const object& pWorld_, uint16_t x, uint16_t y, uint16_t z)
 {
 	GETBLOCKWORLD(pWorld, pWorld_);
-	return pWorld->GetBlockUserDataByIdx(x,y,z);	
+	return pWorld->GetBlockUserDataByIdx(x, y, z);
 }
 
 luabind::object ParaScripting::ParaBlockWorld::GetBlocksInRegion(const object& pWorld_, int32_t startChunkX, int32_t startChunkY, int32_t startChunkZ, int32_t endChunkX, int32_t endChunkY, int32_t endChunkZ, uint32_t matchType, const object& result)
@@ -419,7 +424,7 @@ luabind::object ParaScripting::ParaBlockWorld::GetVisibleChunkRegion(const objec
 	}
 	return object(result);
 }
- 
+
 luabind::object ParaScripting::ParaBlockWorld::Pick(const object& pWorld_, float rayX, float rayY, float rayZ, float dirX, float dirY, float dirZ, float fMaxDistance, const object& result, uint32_t filter /*= 0xffffffff*/)
 {
 	GETBLOCKWORLD(pWorld, pWorld_);
@@ -482,7 +487,7 @@ void ParaScripting::ParaBlockWorld::DeselectAllBlock1(const object& pWorld_, int
 
 void ParaScripting::ParaBlockWorld::DeselectAllBlock(const object& pWorld_)
 {
-	DeselectAllBlock1(pWorld_, - 1);
+	DeselectAllBlock1(pWorld_, -1);
 }
 
 void ParaScripting::ParaBlockWorld::SetDamagedBlock(const object& pWorld_, uint16_t x, uint16_t y, uint16_t z)
@@ -519,7 +524,7 @@ void ParaScripting::ParaBlockWorld::SaveBlockWorld(const object& pWorld_, bool s
 	pWorld->SaveToFile(saveToTemp);
 }
 
-object ParaScripting::ParaBlockWorld::GetBlockModelInfo(int template_id, int blockData,const luabind::object& result)
+object ParaScripting::ParaBlockWorld::GetBlockModelInfo(int template_id, int blockData, const luabind::object& result)
 {
 	static std::map<int, luabind::object> _map;
 	int key = template_id * 10000 + blockData;
@@ -533,7 +538,7 @@ object ParaScripting::ParaBlockWorld::GetBlockModelInfo(int template_id, int blo
 	float u, v;
 	result["m_Vertices"] = luabind::newtable(result.interpreter());
 	for (int i = 0; i < vertNum; i++) {
-		BlockVertexCompressed &vert = blockModel.Vertices()[i];
+		BlockVertexCompressed& vert = blockModel.Vertices()[i];
 		vert.GetPosition(pt);
 		vert.GetNormal(normal);
 		vert.GetTexcoord(u, v);
@@ -550,7 +555,7 @@ object ParaScripting::ParaBlockWorld::GetBlockModelInfo(int template_id, int blo
 		result["m_Vertices"][idx]["normal"]["z"] = normal.z;
 
 		result["m_Vertices"][idx]["texcoord"] = luabind::newtable(result.interpreter());
-		result["m_Vertices"][idx]["texcoord"]["u"] =u;
+		result["m_Vertices"][idx]["texcoord"]["u"] = u;
 		result["m_Vertices"][idx]["texcoord"]["v"] = v;
 
 		result["m_Vertices"][idx]["color"] = vert.color;
