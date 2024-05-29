@@ -308,11 +308,17 @@ namespace NPL {
 				// a complete message is read to m_input_msg.
 				handleMessageIn();
 			}
-			else if (!result)
+			else
 			{
-				m_input_msg.reset();
+				// raw message
 				m_parser.reset();
-				break;
+				m_input_msg.reset();
+				m_input_msg.method = "B";
+				m_input_msg.m_n_filename = -40; 
+				m_input_msg.m_code.resize(bytes_transferred);
+				memcpy((void*)m_input_msg.m_code.c_str(), buff, bytes_transferred);
+				handleMessageIn();
+				return true;
 			}
 		}
 
@@ -440,23 +446,29 @@ namespace NPL {
 		//		return NPL_WrongProtocol;
 		//	}
 		//}
-		//else
-		if (code[0] == '\0')
+		if (file_name.sRelativePath == "raw")
 		{
-			writer.AddFirstLine(file_name, file_id, "B ");
-			nLength--;
-			writer.AddBody(code + 1, nLength, (nLength <= m_nCompressionThreshold ? 0 : m_nCompressionLevel));
+			writer.Append(code, nLength);
 		}
 		else
 		{
-			// for NPL message 
-			writer.AddFirstLine(file_name, file_id);
-			//writer.AddHeaderPair(name,value);
-			//writer.AddHeaderPair(name2,value2);
+			if (code[0] == '\0')
+			{
+				writer.AddFirstLine(file_name, file_id, "B ");
+				nLength--;
+				writer.AddBody(code + 1, nLength, (nLength <= m_nCompressionThreshold ? 0 : m_nCompressionLevel));
+			}
+			else
+			{
+				// for NPL message 
+				writer.AddFirstLine(file_name, file_id);
+				//writer.AddHeaderPair(name,value);
+				//writer.AddHeaderPair(name2,value2);
 
-			if (nLength < 0)
-				nLength = strlen(code);
-			writer.AddMsgBody(code, nLength, (nLength <= m_nCompressionThreshold ? 0 : m_nCompressionLevel));
+				if (nLength < 0)
+					nLength = strlen(code);
+				writer.AddMsgBody(code, nLength, (nLength <= m_nCompressionThreshold ? 0 : m_nCompressionLevel));
+			}
 		}
 
 		return SendMessage(msg_out);
