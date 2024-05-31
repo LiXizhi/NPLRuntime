@@ -28,6 +28,11 @@ endif()
 
 add_executable(${TARGET_NAME} ${app_src} ${app_main_src})
 
+if (EMSCRIPTEN)
+	set_property(TARGET ${TARGET_NAME} APPEND_STRING PROPERTY LINK_FLAGS
+		"--js-library ${CMAKE_CURRENT_SOURCE_DIR}/emscripten/library_webxr.js")
+endif()
+
 target_include_directories(${TARGET_NAME} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
 target_link_libraries(${TARGET_NAME} PUBLIC RenderSystemOpenGL ParaEngine)
 

@@ -952,6 +952,7 @@ HRESULT ParaEngine::CParaEngineAppBase::DoWork()
         if (getRenderEnabled())
         {
 			Render();
+			// TODO: The following code is not executed in VR mode.
 			m_pRenderDevice->Present();
         }
 		

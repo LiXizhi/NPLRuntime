@@ -363,11 +363,11 @@ void ParaEngine::CViewportManager::SetLayout(VIEWPORT_LAYOUT nLayout, CSceneObje
 		int portNum = 0;
 
 		//offscreen rendering
-		const int num = 4;//ºáÏò4¸ö·½Ïò
+		const int num = 4;//æ¨ªå‘4ä¸ªæ–¹å‘
 		const int cubeWidth = (GetWidth() / num);
 
 		const bool needCompositeUI = GetHeight() - cubeWidth * 2 > 200;
-		if (!needCompositeUI) {//Ã»ÓĞ×ã¹»µÄÎ»ÖÃÁô¸øUIÁË,Ö±½ÓÏÔÊ¾Ò»¸öÈ«ÆÁUI
+		if (!needCompositeUI) {//æ²¡æœ‰è¶³å¤Ÿçš„ä½ç½®ç•™ç»™UIäº†,ç›´æ¥æ˜¾ç¤ºä¸€ä¸ªå…¨å±UI
 			CViewport* pUIViewport = CreateGetViewPort(portNum);
 			pUIViewport->SetIdentifier("GUI");
 			pUIViewport->SetGUIRoot(pGUIRoot);
@@ -398,7 +398,7 @@ void ParaEngine::CViewportManager::SetLayout(VIEWPORT_LAYOUT nLayout, CSceneObje
 			}
 			*/
 
-			//²Ù×÷ÇøÓò³¡¾°+UI
+			//æ“ä½œåŒºåŸŸåœºæ™¯+UI
 			CViewport* pUIViewport = CreateGetViewPort(portNum);
 			pUIViewport->SetIdentifier("GUI_ods_user");
 			pUIViewport->SetGUIRoot(pGUIRoot);
@@ -425,7 +425,7 @@ void ParaEngine::CViewportManager::SetLayout(VIEWPORT_LAYOUT nLayout, CSceneObje
 			}
 			portNum += 1;
 
-			//È«¾°ÇøÓò³¡¾°+UI
+			//å…¨æ™¯åŒºåŸŸåœºæ™¯+UI
 			{
 				_height = cubeWidth;
 				_width = (int)(_height * aspect);
@@ -469,7 +469,7 @@ void ParaEngine::CViewportManager::SetLayout(VIEWPORT_LAYOUT nLayout, CSceneObje
 		const float fov_h = diffRotY;
 		const float fov_v = atan(tan(MATH_PI / num) / aspect) * 2;
 
-		const int ods_group_size = 6;//ÓĞ¼¸¸öviewPort¹²ÓÃÒ»¸örenderTarget
+		const int ods_group_size = 6;//æœ‰å‡ ä¸ªviewPortå…±ç”¨ä¸€ä¸ªrenderTarget
 		const std::string randerTargetname = "ods_render_target";
 
 		const int portCoords[6][2] = {
@@ -552,18 +552,18 @@ void ParaEngine::CViewportManager::SetLayout(VIEWPORT_LAYOUT nLayout, CSceneObje
 		portNum += 1;*/
 
 		//offscreen rendering
-		int perWidth = widthPerDegree;//Ã¿Ò»¸öviewPortµÄ¿í¶È
-		//perWidth = 1;//ÀíÏëÇé¿öÊÇ¿í¶ÈÎª1
-		int num = GetWidth() / perWidth;//ºáÏòÉÏ·Ö³É¶àÉÙ¸öviewPort
+		int perWidth = widthPerDegree;//æ¯ä¸€ä¸ªviewPortçš„å®½åº¦
+		//perWidth = 1;//ç†æƒ³æƒ…å†µæ˜¯å®½åº¦ä¸º1
+		int num = GetWidth() / perWidth;//æ¨ªå‘ä¸Šåˆ†æˆå¤šå°‘ä¸ªviewPort
 		int halfHeight = (GetHeight() / 2);
 
 		const float diffRotY = MATH_2PI / (num);
 		const float aspect = (float)perWidth / (float)halfHeight;
 
 		float fov = atan(tan(MATH_PI / num) / aspect) * 2;
-		fov = 90 * MATH_PI / 180;//ÊúÖ±·½ÏòµÄÊÓ½Ç£¬ÉÏ¿´90¶È¡¢ÏÂ¿´90¶È£¬Ò»¹²180¶È
+		fov = 90 * MATH_PI / 180;//ç«–ç›´æ–¹å‘çš„è§†è§’ï¼Œä¸Šçœ‹90åº¦ã€ä¸‹çœ‹90åº¦ï¼Œä¸€å…±180åº¦
 		ods_fov = fov;
-		float morePitch = fov / 2;//Ì§Í·45¡ã½Ç¿´Ìì,´¹Ö±fov·¶Î§90¡ã
+		float morePitch = fov / 2;//æŠ¬å¤´45Â°è§’çœ‹å¤©,å‚ç›´fovèŒƒå›´90Â°
 		const std::string randerTargetname = "ods_render_target";
 		for (int i = 0; i < num; i++) {
 			CViewport* viewport = CreateGetViewPort(portNum + i);
@@ -652,8 +652,8 @@ void ParaEngine::CViewportManager::SetLayout(VIEWPORT_LAYOUT nLayout, CSceneObje
 		portNum += 1;*/
 
 
-		int perWidth = widthPerDegree;//Ã¿Ò»¸öviewPortµÄ¿í¶È
-		int num = GetWidth() / perWidth;//ºáÏòÉÏ·Ö³É¶àÉÙ¸öviewPort
+		int perWidth = widthPerDegree;//æ¯ä¸€ä¸ªviewPortçš„å®½åº¦
+		int num = GetWidth() / perWidth;//æ¨ªå‘ä¸Šåˆ†æˆå¤šå°‘ä¸ªviewPort
 		int halfHeight = GetHeight() / 4;
 
 		int extraWidth = GetWidth() - perWidth * num;
@@ -662,9 +662,9 @@ void ParaEngine::CViewportManager::SetLayout(VIEWPORT_LAYOUT nLayout, CSceneObje
 		const float aspect = (float)perWidth / (float)halfHeight;
 
 		float fov = atan(tan(MATH_PI / num) / aspect) * 2;
-		fov = 90 * MATH_PI / 180;//ÊúÖ±·½ÏòµÄÊÓ½Ç£¬ÉÏ¿´90¶È¡¢ÏÂ¿´90¶È£¬Ò»¹²180¶È
+		fov = 90 * MATH_PI / 180;//ç«–ç›´æ–¹å‘çš„è§†è§’ï¼Œä¸Šçœ‹90åº¦ã€ä¸‹çœ‹90åº¦ï¼Œä¸€å…±180åº¦
 		ods_fov = fov;
-		float morePitch = fov / 2;//Ì§Í·45¡ã½Ç¿´Ìì,´¹Ö±fov·¶Î§90¡ã
+		float morePitch = fov / 2;//æŠ¬å¤´45Â°è§’çœ‹å¤©,å‚ç›´fovèŒƒå›´90Â°
 		const std::string randerTargetname = "ods_render_target";
 		for (int i = 0; i < num; i++) {
 			//left eye,up 90
@@ -905,5 +905,6 @@ int ParaEngine::CViewportManager::InstallFields(CAttributeClass* pClass, bool bO
 	pClass->AddField("OmniAlwaysUseUpFrontCamera", FieldType_Bool, (void*)SetOmniAlwaysUseUpFrontCamera_s, (void*)GetOmniAlwaysUseUpFrontCamera_s, NULL, NULL, bOverride);
 	pClass->AddField("OmniForceLookatDistance", FieldType_Int, (void*)SetOmniForceLookatDistance_s, (void*)GetOmniForceLookatDistance_s, NULL, NULL, bOverride);
 	pClass->AddField("DeleteViewportByName", FieldType_String, (void*)DeleteViewportByName_s, (void*)0, NULL, NULL, bOverride);
+	pClass->AddField("isXR", FieldType_Bool, (void*)SetIsXR_s, (void*)GetIsXR_s, NULL, NULL, bOverride);
 	return S_OK;
 }

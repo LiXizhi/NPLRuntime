@@ -10,9 +10,9 @@ namespace ParaEngine
 		VIEW_LAYOUT_STEREO_LEFT_RIGHT,
 		VIEW_LAYOUT_STEREO_UP_DOWN,
 		VIEW_LAYOUT_STEREO_RED_BLUE,
-		VIEW_LAYOUT_STEREO_OMNI = 4,//ODS,360°VR
-		VIEW_LAYOUT_STEREO_OMNI_SINGLE_EYE=5,//ODS,360°VR
-		//前后左右上下6个viewport组成一个立方体，然后通过shader转成球面，以实现180x360全景渲染
+		VIEW_LAYOUT_STEREO_OMNI = 4,//ODS,360掳VR
+		VIEW_LAYOUT_STEREO_OMNI_SINGLE_EYE=5,//ODS,360掳VR
+		//鍓嶅悗宸﹀彸涓婁笅6涓獀iewport缁勬垚涓�涓珛鏂逛綋锛岀劧鍚庨�氳繃shader杞垚鐞冮潰锛屼互瀹炵幇180x360鍏ㄦ櫙娓叉煋
 		VIEW_LAYOUT_STEREO_OMNI_SINGLE_EYE_1 = 6,
 
 		VIEW_LAYOUT_INVALID,
@@ -44,6 +44,9 @@ namespace ParaEngine
 		ATTRIBUTE_METHOD1(CViewportManager, SetOmniForceLookatDistance_s, int) { cls->m_nOmniForceLookatDistance = (p1); return S_OK; }
 
 		ATTRIBUTE_METHOD1(CViewportManager, DeleteViewportByName_s, const char*) { cls->DeleteViewPort(p1); return S_OK; }
+        
+        ATTRIBUTE_METHOD1(CViewportManager, GetIsXR_s, bool*) { return S_OK; }
+        ATTRIBUTE_METHOD1(CViewportManager, SetIsXR_s, bool*) { return S_OK; }
 
 		/** get attribute by child object. used to iterate across the attribute field hierarchy. */
 		virtual IAttributeFields* GetChildAttributeObject(const char * sName);
