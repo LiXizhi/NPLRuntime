@@ -23,6 +23,7 @@
 #ifdef EMSCRIPTEN
 #include "emscripten.h"
 #include "Js.h"
+#include "webxr.h"
 #endif
 
 using namespace ParaEngine;
@@ -68,6 +69,11 @@ public:
 		m_renderWindow.OnChar(text);
 	}
 
+	RenderWindowDelegate * GetRenderWindowDelegate()
+	{
+		return (RenderWindowDelegate*)&m_renderWindow;
+	}
+
 	virtual void OnClearChar(std::string text)
 	{
 		m_renderWindow.OnClearChar(text);
@@ -75,6 +81,11 @@ public:
 
 	virtual void OnKeyDown(int keycode)
 	{
+		// webxr_request_session(
+		// 	WEBXR_SESSION_MODE_IMMERSIVE_VR,
+		// 	WEBXR_SESSION_FEATURE_LOCAL,
+		// 	WEBXR_SESSION_FEATURE_LOCAL
+		// );
 		m_renderWindow.OnKey(m_renderWindow.SDL2VirtualKeyToParaVK(keycode), EKeyState::PRESS);
 	}
 
@@ -243,6 +254,37 @@ int main(int argc, char* argv[])
     });
 
 	#ifdef EMSCRIPTEN
+		webxr_init(
+			[](void* userData, int time, WebXRRigidTransform* headPose, WebXRView views[2], int viewCount) {
+				//std::cout << viewCount << std::endl;
+				//std::cout << static_cast<EmscriptenApplication*>(userData)->test << std::endl;
+
+				//static_cast<EmscriptenApplication*>(userData)->GetRenderWindowDelegate()->SetSDLWindowSize(1, 1);
+				static_cast<EmscriptenApplication*>(userData)->RunLoopOnce();
+
+				// std::cout << "x1: " << views[0].viewport[0] << std::endl;
+				// std::cout << "y1: " << views[0].viewport[1] << std::endl;
+				// std::cout << "width1: " << views[0].viewport[2] << std::endl;
+				// std::cout << "height1: " << views[0].viewport[3] << std::endl;
+				// std::cout << "x2: " << views[1].viewport[0] << std::endl;
+				// std::cout << "y2: " << views[1].viewport[1] << std::endl;
+				// std::cout << "width2: " << views[1].viewport[2] << std::endl;
+				// std::cout << "height2: " << views[1].viewport[2] << std::endl;
+
+				//--std::cout << "view.viewMatrix1: " << views[0].viewMatrix << std::endl;
+				//std::cout << "webxr_frame_callback_func" << std::endl;
+			},
+			[](void* userData, int mode) {
+				std::cout << "webxr_session_callback_func start" << std::endl;
+			},
+			[](void* userData, int mode) {
+				std::cout << "webxr_session_callback_func end" << std::endl;
+			},
+			[](void* userData, int error) {
+				std::cout << "webxr_error_callback_func" << std::endl;
+			},
+			GetApp());
+
 		emscripten_set_main_loop_arg(mainloop, nullptr, -1, 1);
 	#endif
 	std::cout << "========================stop paracraft=======================" << std::endl;
