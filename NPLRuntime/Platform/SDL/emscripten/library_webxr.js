@@ -149,7 +149,6 @@ webxr_init: function(frameCallback, startSessionCallback, endSessionCallback, er
 
         /* Set and reset environment for webxr_get_input_pose calls */
         Module['webxr_frame'] = frame;
-        console.log("webxr views: ", views)
         dynCall('viiiii', frameCallback, [userData, time, modelMatrix, views, pose.views.length]);
         Module['webxr_frame'] = null;
     };

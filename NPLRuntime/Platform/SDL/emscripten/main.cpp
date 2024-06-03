@@ -19,7 +19,9 @@
 #include "SDL2Application.h"
 #include "ParaFile.h"
 #include "NPLInterface.hpp"
+#include "ViewportManager.h"
 #include <iostream>
+
 #ifdef EMSCRIPTEN
 #include "emscripten.h"
 #include "Js.h"
@@ -31,262 +33,253 @@ using namespace ParaEngine;
 #ifdef _WIN32
 CParaFileUtils* CParaFileUtils::GetInstance()
 {
-	static CParaFileUtils win32Impl;
-	return &win32Impl;
+    static CParaFileUtils win32Impl;
+    return &win32Impl;
 }
 #endif
-
 class EmscriptenApplication: public CSDL2Application
 {
 public:
-	EmscriptenApplication()
-	{
-		m_inited = false;
-		m_fs_inited = false;
-		m_paused = false;
-	}
+    EmscriptenApplication()
+    {
+        m_inited = false;
+        m_fs_inited = false;
+        m_paused = false;
+    }
 
-	virtual void RunLoopOnce()
-	{
-		auto pWindow = (RenderWindowDelegate*)m_pRenderWindow;
-		assert(pWindow);
-		// std::cout << "===============Run begin=======================" << std::endl;
-		if (!pWindow->ShouldClose())
-		{
-			pWindow->PollEvents();
-			UpdateScreenDevice();
-			this->DoWork();
-		}
-		// std::cout << "===============Run end=======================" << std::endl;
+    virtual void RunLoopOnce()
+    {
+        auto pWindow = (RenderWindowDelegate*)m_pRenderWindow;
+        assert(pWindow);
+        // std::cout << "===============Run begin=======================" << std::endl;
+        if (!pWindow->ShouldClose())
+        {
+            pWindow->PollEvents();
+            UpdateScreenDevice();
+            this->DoWork();
+        }
+        // std::cout << "===============Run end=======================" << std::endl;
 
 #ifdef EMSCRIPTEN
-		if (m_exit) emscripten_cancel_main_loop();
+        if (m_exit) emscripten_cancel_main_loop();
 #endif
-	}
+    }
 
-	virtual void OnChar(std::string text)
-	{
-		m_renderWindow.OnChar(text);
-	}
+    virtual void OnChar(std::string text)
+    {
+        m_renderWindow.OnChar(text);
+    }
 
-	RenderWindowDelegate * GetRenderWindowDelegate()
-	{
-		return (RenderWindowDelegate*)&m_renderWindow;
-	}
+    RenderWindowDelegate * GetRenderWindowDelegate()
+    {
+        return (RenderWindowDelegate*)&m_renderWindow;
+    }
 
-	virtual void OnClearChar(std::string text)
-	{
-		m_renderWindow.OnClearChar(text);
-	}
+    virtual void OnClearChar(std::string text)
+    {
+        m_renderWindow.OnClearChar(text);
+    }
 
-	virtual void OnKeyDown(int keycode)
-	{
-		// webxr_request_session(
-		// 	WEBXR_SESSION_MODE_IMMERSIVE_VR,
-		// 	WEBXR_SESSION_FEATURE_LOCAL,
-		// 	WEBXR_SESSION_FEATURE_LOCAL
-		// );
-		m_renderWindow.OnKey(m_renderWindow.SDL2VirtualKeyToParaVK(keycode), EKeyState::PRESS);
-	}
+    virtual void OnKeyDown(int keycode)
+    {
+        m_renderWindow.OnKey(m_renderWindow.SDL2VirtualKeyToParaVK(keycode), EKeyState::PRESS);
+    }
 
-	virtual void OnKeyUp(int keycode)
-	{
-		m_renderWindow.OnKey(m_renderWindow.SDL2VirtualKeyToParaVK(keycode), EKeyState::RELEASE);
-	}
-	void SetPaused(bool paused)
-	{
-		setRenderEnabled(!paused);
-		// auto pWindow = (RenderWindowDelegate*)m_pRenderWindow;
-		// pWindow->m_paused = paused;
-		// if (paused)
-		// {
-		// 	OnPause();
-		// }
-		// else 
-		// {
-		// 	OnResume();
-		// }
-	}
+    virtual void OnKeyUp(int keycode)
+    {
+        m_renderWindow.OnKey(m_renderWindow.SDL2VirtualKeyToParaVK(keycode), EKeyState::RELEASE);
+    }
+    void SetPaused(bool paused)
+    {
+        setRenderEnabled(!paused);
+        // auto pWindow = (RenderWindowDelegate*)m_pRenderWindow;
+        // pWindow->m_paused = paused;
+        // if (paused)
+        // {
+        // 	OnPause();
+        // }
+        // else 
+        // {
+        // 	OnResume();
+        // }
+    }
 public:
-	std::string m_cmdline;
-	bool m_fs_inited;
-	bool m_inited;
-	bool m_paused;
+    std::string m_cmdline;
+    bool m_fs_inited;
+    bool m_inited;
+    bool m_paused;
 };
 
 static EmscriptenApplication* GetApp()
 {
-	static EmscriptenApplication s_app;
-	return &s_app;
+    static EmscriptenApplication s_app;
+    return &s_app;
 }
 
 void mainloop(void* arg)
 {
-	// auto begin_time = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now().time_since_epoch()).count();
-	auto app = GetApp();
-	if (!app->m_fs_inited) return;
-	if (!app->m_inited)
-	{
-		app->m_inited = true;
-		app->InitApp(nullptr, app->m_cmdline.c_str());
-		EM_ASM({
-			if (Module.HideLoading != undefined) Module.HideLoading();
-		});
-	}
-	if (app->m_paused) return;
-	app->RunLoopOnce();
-	// auto end_time = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now().time_since_epoch()).count();
-	// std::cout << "==========time:" << (end_time - begin_time) << std::endl;
+    // auto begin_time = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now().time_since_epoch()).count();
+    auto app = GetApp();
+    if (!app->m_fs_inited) return;
+    if (!app->m_inited)
+    {
+        app->m_inited = true;
+        app->InitApp(nullptr, app->m_cmdline.c_str());
+        EM_ASM({
+            if (Module.HideLoading != undefined) Module.HideLoading();
+        });
+    }
+    if (app->m_paused) return;
+    app->RunLoopOnce();
+    // auto end_time = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now().time_since_epoch()).count();
+    // std::cout << "==========time:" << (end_time - begin_time) << std::endl;
 }
 
 // 暂停运行
 EM_PORT_API(void) SetAppPaused(bool paused)
 {
     std::cout << "Is Paused App Run:" << paused << std::endl;
-	GetApp()->SetPaused(paused);
+    GetApp()->SetPaused(paused);
 }
 
 // 设置可写路径
 EM_PORT_API(void) emscripten_filesystem_inited()
 {
-	GetApp()->m_fs_inited = true;
+    GetApp()->m_fs_inited = true;
 }
 
 int main(int argc, char* argv[])
 {
-	std::cout << "========================start paracraft=======================" << std::endl;
-	// std::cout << "main thread id: " << std::this_thread::get_id() << std::endl;
-	JS::StaticInit();
-	JS::SetTextInputCallback([](const std::string text) { GetApp()->OnChar(text);});
-	JS::SetClearTextInputCallback([](const std::string text) { GetApp()->OnClearChar(text);});
-	JS::SetKeyDownCallback([](int keycode) { GetApp()->OnKeyDown(keycode);});
-	JS::SetKeyUpCallback([](int keycode) { GetApp()->OnKeyUp(keycode);});
-	JS::SetRecvMsgFromJSCallback(std::function<void(const std::string, const std::string)>([](const std::string filename, const std::string msg_data_json){
-		NPL::NPLRuntimeState_ptr pState = CGlobals::GetNPLRuntime()->GetMainRuntimeState();
-		// std::cout << "JS::SetRecvMsgFromJSCallback => " << filename << " : " << msg_data_json << std::endl;
-		// NPL::CNPLWriter writer;
-		// writer.WriteName("msg");
-		// writer.BeginTable();
-		// writer.WriteName("msg");
-		// writer.WriteValue(msg_data_json);
-		// writer.EndTable();
-		// pState->activate(filename.c_str(), writer.ToString().c_str(), (int)(writer.ToString().size()));
+    std::cout << "========================start paracraft=======================" << std::endl;
+    // std::cout << "main thread id: " << std::this_thread::get_id() << std::endl;
+    JS::StaticInit();
+    JS::SetTextInputCallback([](const std::string text) { GetApp()->OnChar(text);});
+    JS::SetClearTextInputCallback([](const std::string text) { GetApp()->OnClearChar(text);});
+    JS::SetKeyDownCallback([](int keycode) { GetApp()->OnKeyDown(keycode);});
+    JS::SetKeyUpCallback([](int keycode) { GetApp()->OnKeyUp(keycode);});
+    JS::SetRecvMsgFromJSCallback(std::function<void(const std::string, const std::string)>([](const std::string filename, const std::string msg_data_json){
+        NPL::NPLRuntimeState_ptr pState = CGlobals::GetNPLRuntime()->GetMainRuntimeState();
+        // std::cout << "JS::SetRecvMsgFromJSCallback => " << filename << " : " << msg_data_json << std::endl;
+        // NPL::CNPLWriter writer;
+        // writer.WriteName("msg");
+        // writer.BeginTable();
+        // writer.WriteName("msg");
+        // writer.WriteValue(msg_data_json);
+        // writer.EndTable();
+        // pState->activate(filename.c_str(), writer.ToString().c_str(), (int)(writer.ToString().size()));
 
-		NPLInterface::NPLObjectProxy data;
-		data["msg"] = msg_data_json;
-		std::string data_string;
-		NPLInterface::NPLHelper::NPLTableToString("msg", data, data_string);
-		pState->activate(filename.c_str(), data_string.c_str(), (int)data_string.length());
-	}));
+        NPLInterface::NPLObjectProxy data;
+        data["msg"] = msg_data_json;
+        std::string data_string;
+        NPLInterface::NPLHelper::NPLTableToString("msg", data, data_string);
+        pState->activate(filename.c_str(), data_string.c_str(), (int)data_string.length());
+    }));
 
-	int js_language = JS::GetBrowserLanguage();
-	ParaEngineSettings& settings = ParaEngineSettings::GetSingleton();
-	settings.SetCurrentLanguage(js_language == JS::JS_LANGUAGE_ZH ? LanguageType::CHINESE : LanguageType::ENGLISH);
+    int js_language = JS::GetBrowserLanguage();
+    ParaEngineSettings& settings = ParaEngineSettings::GetSingleton();
+    settings.SetCurrentLanguage(js_language == JS::JS_LANGUAGE_ZH ? LanguageType::CHINESE : LanguageType::ENGLISH);
 
-	// std::string sCmdLine = R"(noupdate="true" debug="main" mc="true" bootstrapper="script/apps/Aries/main_loop.lua")";
-	std::string sCmdLine = R"(noupdate="true" debug="main" bootstrapper="script/apps/Aries/main_loop.lua" noclientupdate="true")";
-	// std::string sCmdLine = R"(noupdate="true" debug="main" mc="true" bootstrapper="script/apps/Aries/main_loop.lua" noclientupdate="true" channelId="tutorial" isDevMode="true")";
-	sCmdLine += JS::IsTouchDevice() ? R"( IsTouchDevice="true")" : "";
-	for (int i = 1; i < argc; ++i)
-	{
-		if (argv[i])
-		{
-			if (sCmdLine.empty())
-				sCmdLine = argv[i];
-			else
-			{
-				sCmdLine += " ";
-				sCmdLine += argv[i];
-			}
-		}
-	}
-	std::string username = JS::GetQueryStringArg("username");
-	std::string http_env = JS::GetQueryStringArg("http_env");
-	std::string token = JS::GetQueryStringArg("token");
-	std::string channelId = JS::GetQueryStringArg("channelId");
-	std::string world = JS::GetQueryStringArg("world");
-	std::string cmdline = JS::GetQueryStringArg("cmdline");
-	std::string worldcmd = JS::GetQueryStringArg("cmd");
-	std::string mc = JS::GetQueryStringArg("mc");
-	std::string version = JS::GetQueryStringArg("version");
-	if (mc.empty()) 
-	{
-		sCmdLine = sCmdLine + " mc=\"true\" noclientupdate=\"true\" noupdate=\"true\"" ;
-	}
-	else
-	{
-		sCmdLine = sCmdLine + " mc=\"" + mc + "\" noclientupdate=\"false\" noupdate=\"false\"";
-	}
-	if (!version.empty()) sCmdLine = sCmdLine + " version=\"" + version + "\"";
-	if (!username.empty()) sCmdLine = sCmdLine + " username=\"" + username + "\"";
-	if (!http_env.empty()) sCmdLine = sCmdLine + " http_env=\"" + http_env + "\"";
-	if (!channelId.empty()) sCmdLine = sCmdLine + " channelId=\"" + channelId + "\"";
-	if (!world.empty()) sCmdLine = sCmdLine + " world=\"" + world + "\"";
-	std::string pid = JS::GetQueryStringArg("pid");
-	std::string worldfile = JS::GetQueryStringArg("worldfile", false);
-	if (pid.empty())
-	{
-		if (!worldfile.empty()) sCmdLine += " paracraft://cmd/loadworld/" + worldfile;
-	}
-	else
-	{
-		sCmdLine += " paracraft://cmd/loadworld/" + pid;
-	}
-	if (!token.empty()) sCmdLine = sCmdLine + " paracraft://usertoken=\"" + token + "\"";
-	if (!worldcmd.empty()) sCmdLine = sCmdLine + " world/cmd(" + worldcmd + ")";
-	sCmdLine = sCmdLine + " " + cmdline;
-	std::cout << "cmdline: " << sCmdLine << std::endl;
-	GetApp()->m_cmdline = sCmdLine;
+    // std::string sCmdLine = R"(noupdate="true" debug="main" mc="true" bootstrapper="script/apps/Aries/main_loop.lua")";
+    std::string sCmdLine = R"(noupdate="true" debug="main" bootstrapper="script/apps/Aries/main_loop.lua" noclientupdate="true")";
+    // std::string sCmdLine = R"(noupdate="true" debug="main" mc="true" bootstrapper="script/apps/Aries/main_loop.lua" noclientupdate="true" channelId="tutorial" isDevMode="true")";
+    sCmdLine += JS::IsTouchDevice() ? R"( IsTouchDevice="true")" : "";
+    for (int i = 1; i < argc; ++i)
+    {
+        if (argv[i])
+        {
+            if (sCmdLine.empty())
+                sCmdLine = argv[i];
+            else
+            {
+                sCmdLine += " ";
+                sCmdLine += argv[i];
+            }
+        }
+    }
+    std::string username = JS::GetQueryStringArg("username");
+    std::string http_env = JS::GetQueryStringArg("http_env");
+    std::string token = JS::GetQueryStringArg("token");
+    std::string channelId = JS::GetQueryStringArg("channelId");
+    std::string world = JS::GetQueryStringArg("world");
+    std::string cmdline = JS::GetQueryStringArg("cmdline");
+    std::string worldcmd = JS::GetQueryStringArg("cmd");
+    std::string mc = JS::GetQueryStringArg("mc");
+    std::string version = JS::GetQueryStringArg("version");
+    if (mc.empty()) 
+    {
+        sCmdLine = sCmdLine + " mc=\"true\" noclientupdate=\"true\" noupdate=\"true\"" ;
+    }
+    else
+    {
+        sCmdLine = sCmdLine + " mc=\"" + mc + "\" noclientupdate=\"false\" noupdate=\"false\"";
+    }
+    if (!version.empty()) sCmdLine = sCmdLine + " version=\"" + version + "\"";
+    if (!username.empty()) sCmdLine = sCmdLine + " username=\"" + username + "\"";
+    if (!http_env.empty()) sCmdLine = sCmdLine + " http_env=\"" + http_env + "\"";
+    if (!channelId.empty()) sCmdLine = sCmdLine + " channelId=\"" + channelId + "\"";
+    if (!world.empty()) sCmdLine = sCmdLine + " world=\"" + world + "\"";
+    std::string pid = JS::GetQueryStringArg("pid");
+    std::string worldfile = JS::GetQueryStringArg("worldfile", false);
+    if (pid.empty())
+    {
+        if (!worldfile.empty()) sCmdLine += " paracraft://cmd/loadworld/" + worldfile;
+    }
+    else
+    {
+        sCmdLine += " paracraft://cmd/loadworld/" + pid;
+    }
+    if (!token.empty()) sCmdLine = sCmdLine + " paracraft://usertoken=\"" + token + "\"";
+    if (!worldcmd.empty()) sCmdLine = sCmdLine + " world/cmd(" + worldcmd + ")";
+    sCmdLine = sCmdLine + " " + cmdline;
+    std::cout << "cmdline: " << sCmdLine << std::endl;
+    GetApp()->m_cmdline = sCmdLine;
 
-	EM_ASM({
-		FS.mkdir('/apps');
+    EM_ASM({
+        FS.mkdir('/apps');
         FS.mount(IDBFS, { root: '/apps' }, '/apps');
-	    FS.mkdir('/worlds');
+        FS.mkdir('/worlds');
         FS.mount(IDBFS, { root: '/worlds' }, '/worlds');
-	    FS.mkdir('/Database');
+        FS.mkdir('/Database');
         FS.mount(IDBFS, { root: '/Database' }, '/Database');
         FS.syncfs(true, function(err) {
             console.log("加载IDBFS!!!");
             Module._emscripten_filesystem_inited();
         });
-		setTimeout(function(){ FS.syncfs(false, function(err) { if (err) { console.log("FS.syncfs",err); } });}, 180000);  // 3分钟后同步到idbfs
-		setInterval(function(){ FS.syncfs(false, function(err) { if (err) { console.log("FS.syncfs",err); } });}, 600000);  // 10分钟后同步到idbfs
+        setTimeout(function(){ FS.syncfs(false, function(err) { if (err) { console.log("FS.syncfs",err); } });}, 180000);  // 3分钟后同步到idbfs
+        setInterval(function(){ FS.syncfs(false, function(err) { if (err) { console.log("FS.syncfs",err); } });}, 600000);  // 10分钟后同步到idbfs
     });
 
-	#ifdef EMSCRIPTEN
-		webxr_init(
-			[](void* userData, int time, WebXRRigidTransform* headPose, WebXRView views[2], int viewCount) {
-				//std::cout << viewCount << std::endl;
-				//std::cout << static_cast<EmscriptenApplication*>(userData)->test << std::endl;
+    #ifdef EMSCRIPTEN
+        webxr_init(
+            [](void* userData, int time, WebXRRigidTransform *headPose, WebXRView views[2], int viewCount) {
+                //static_cast<EmscriptenApplication*>(userData)->GetRenderWindowDelegate()->SetSDLWindowSize(1, 1);
+                static_cast<EmscriptenApplication*>(userData)->RunLoopOnce();
 
-				//static_cast<EmscriptenApplication*>(userData)->GetRenderWindowDelegate()->SetSDLWindowSize(1, 1);
-				static_cast<EmscriptenApplication*>(userData)->RunLoopOnce();
+                CGlobals::GetViewportManager()->SaveWebXRView(time, headPose, views, viewCount);
+                //std::cout << "x1: " << views[0].viewport[0] << std::endl;
+                // std::cout << "y1: " << views[0].viewport[1] << std::endl;
+                // std::cout << "width1: " << views[0].viewport[2] << std::endl;
+                // std::cout << "height1: " << views[0].viewport[3] << std::endl;
+                // std::cout << "x2: " << views[1].viewport[0] << std::endl;
+                // std::cout << "y2: " << views[1].viewport[1] << std::endl;
+                // std::cout << "width2: " << views[1].viewport[2] << std::endl;
+                // std::cout << "height2: " << views[1].viewport[2] << std::endl;
 
-				// std::cout << "x1: " << views[0].viewport[0] << std::endl;
-				// std::cout << "y1: " << views[0].viewport[1] << std::endl;
-				// std::cout << "width1: " << views[0].viewport[2] << std::endl;
-				// std::cout << "height1: " << views[0].viewport[3] << std::endl;
-				// std::cout << "x2: " << views[1].viewport[0] << std::endl;
-				// std::cout << "y2: " << views[1].viewport[1] << std::endl;
-				// std::cout << "width2: " << views[1].viewport[2] << std::endl;
-				// std::cout << "height2: " << views[1].viewport[2] << std::endl;
-
-				//--std::cout << "view.viewMatrix1: " << views[0].viewMatrix << std::endl;
-				//std::cout << "webxr_frame_callback_func" << std::endl;
-			},
-			[](void* userData, int mode) {
-				std::cout << "webxr_session_callback_func start" << std::endl;
-			},
-			[](void* userData, int mode) {
-				std::cout << "webxr_session_callback_func end" << std::endl;
-			},
-			[](void* userData, int error) {
-				std::cout << "webxr_error_callback_func" << std::endl;
-			},
-			GetApp());
-
-		emscripten_set_main_loop_arg(mainloop, nullptr, -1, 1);
-	#endif
-	std::cout << "========================stop paracraft=======================" << std::endl;
-	return 0;
+                //--std::cout << "view.viewMatrix1: " << views[0].viewMatrix << std::endl;
+                //std::cout << "webxr_frame_callback_func" << std::endl;
+            },
+            [](void* userData, int mode) {
+                std::cout << "webxr_session_callback_func start" << std::endl;
+            },
+            [](void* userData, int mode) {
+                std::cout << "webxr_session_callback_func end" << std::endl;
+            },
+            [](void* userData, int error) {
+                std::cout << "webxr_error_callback_func" << std::endl;
+            },
+            GetApp());
+        emscripten_set_main_loop_arg(mainloop, nullptr, -1, 1);
+    #endif
+    std::cout << "========================stop paracraft=======================" << std::endl;
+    return 0;
 }

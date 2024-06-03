@@ -1,8 +1,7 @@
 //-----------------------------------------------------------------------------
 // Class:	Linux ParaEngineSettings
-// Authors:	big
-// Emails:	onedou@126.com
-// Date:	2020.6.15
+// Authors:	wxa
+// Date:	2022.7.8
 //-----------------------------------------------------------------------------
 #include "ParaEngine.h"
 #include "ParaEngineSettings.h"

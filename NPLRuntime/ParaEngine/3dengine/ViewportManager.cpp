@@ -286,7 +286,7 @@ void ParaEngine::CViewportManager::SetViewportCount(int nCount)
 
 void ParaEngine::CViewportManager::UpdateLayout()
 {
-	if (GetLayout() == VIEW_LAYOUT_STEREO_LEFT_RIGHT)
+	if (GetLayout() == VIEW_LAYOUT_STEREO_LEFT_RIGHT || GetLayout() == VIEW_LAYOUT_STEREO_WEBXR)
 	{
 		int nHalfWidth = (int)(GetWidth() / 2);
 		CViewport* pUIViewportLeft = CreateGetViewPort(0);
@@ -326,7 +326,7 @@ void ParaEngine::CViewportManager::SetLayout(VIEWPORT_LAYOUT nLayout, CSceneObje
 	SetViewportCount(0);
 	m_normalScenePortInOdsSingleEye = NULL;
 	m_nLayout = nLayout;
-	if (nLayout == VIEW_LAYOUT_STEREO_LEFT_RIGHT)
+	if (nLayout == VIEW_LAYOUT_STEREO_LEFT_RIGHT || GetLayout() == VIEW_LAYOUT_STEREO_WEBXR)
 	{
 		int nHalfWidth = (int)(GetWidth() / 2);
 		CViewport* pUIViewportLeft = CreateGetViewPort(0);
@@ -905,6 +905,12 @@ int ParaEngine::CViewportManager::InstallFields(CAttributeClass* pClass, bool bO
 	pClass->AddField("OmniAlwaysUseUpFrontCamera", FieldType_Bool, (void*)SetOmniAlwaysUseUpFrontCamera_s, (void*)GetOmniAlwaysUseUpFrontCamera_s, NULL, NULL, bOverride);
 	pClass->AddField("OmniForceLookatDistance", FieldType_Int, (void*)SetOmniForceLookatDistance_s, (void*)GetOmniForceLookatDistance_s, NULL, NULL, bOverride);
 	pClass->AddField("DeleteViewportByName", FieldType_String, (void*)DeleteViewportByName_s, (void*)0, NULL, NULL, bOverride);
+#ifdef EMSCRIPTEN
 	pClass->AddField("isXR", FieldType_Bool, (void*)SetIsXR_s, (void*)GetIsXR_s, NULL, NULL, bOverride);
+	pClass->AddField("webXRTime", FieldType_Int, NULL, (void*)GetWebXRTime_s, NULL, NULL, bOverride);
+	pClass->AddField("webXRHeadPose", FieldType_String, NULL, (void*)GetWebXRHeadPose_s, NULL, NULL, bOverride);
+	pClass->AddField("webXRViews", FieldType_String, NULL, (void*)GetWebXRViews_s, NULL, NULL, bOverride);
+	pClass->AddField("webXRViewsCount", FieldType_Int, NULL, (void*)GetWebXRViewsCount_s, NULL, NULL, bOverride);
+#endif
 	return S_OK;
 }
