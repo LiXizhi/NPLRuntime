@@ -10,7 +10,6 @@ namespace ParaEngine
     enum VIEWPORT_LAYOUT {
         VIEW_LAYOUT_DEFAULT,
         VIEW_LAYOUT_STEREO_LEFT_RIGHT,
-        VIEW_LAYOUT_STEREO_WEBXR,
         VIEW_LAYOUT_STEREO_UP_DOWN,
         VIEW_LAYOUT_STEREO_RED_BLUE,
         VIEW_LAYOUT_STEREO_OMNI = 4,//ODS,360°VR
@@ -19,6 +18,7 @@ namespace ParaEngine
         VIEW_LAYOUT_STEREO_OMNI_SINGLE_EYE_1 = 6,
 
         VIEW_LAYOUT_INVALID,
+        VIEW_LAYOUT_STEREO_WEBXR,
     };
 
     /** manager multiple viewport
