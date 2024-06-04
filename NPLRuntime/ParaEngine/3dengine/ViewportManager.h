@@ -3,7 +3,9 @@
 #include "ViewportManager.h"
 #include "Viewport.h"
 
+#ifdef EMSCRIPTEN
 #include "webxr.h"
+#endif
 
 namespace ParaEngine
 {
