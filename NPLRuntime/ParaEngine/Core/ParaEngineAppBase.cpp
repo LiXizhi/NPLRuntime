@@ -952,11 +952,14 @@ HRESULT ParaEngine::CParaEngineAppBase::DoWork()
         if (getRenderEnabled())
         {
 			Render();
-
-			if (!CGlobals::GetViewportManager()->GetIsXR())
-			{
-				m_pRenderDevice->Present();
-			}
+#ifdef EMSCRIPTEN
+            if (!CGlobals::GetViewportManager()->GetIsXR())
+            {
+                m_pRenderDevice->Present();
+            }
+#else
+            m_pRenderDevice->Present();
+#endif
         }
 		
 		return S_OK;
