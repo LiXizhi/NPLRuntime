@@ -11,35 +11,35 @@ extern "C"
 {
 
 /** Errors enum */
-enum WebXRError {
+enum ParaWebXRError {
     WEBXR_ERR_API_UNSUPPORTED = -2, /**< WebXR Device API not supported in this browser */
     WEBXR_ERR_GL_INCAPABLE = -3, /**< GL context cannot render WebXR */
     WEBXR_ERR_SESSION_UNSUPPORTED = -4, /**< given session mode not supported */
 };
 
-/** WebXR handedness */
-enum WebXRHandedness {
+/** ParaWebXR handedness */
+enum ParaWebXRHandedness {
     WEBXR_HANDEDNESS_NONE = -1,
     WEBXR_HANDEDNESS_LEFT = 0,
     WEBXR_HANDEDNESS_RIGHT = 1,
 };
 
-/** WebXR target ray mode */
-enum WebXRTargetRayMode {
+/** ParaWebXR target ray mode */
+enum ParaWebXRTargetRayMode {
     WEBXR_TARGET_RAY_MODE_GAZE = 0,
     WEBXR_TARGET_RAY_MODE_TRACKED_POINTER = 1,
     WEBXR_TARGET_RAY_MODE_SCREEN = 2,
 };
 
-/** WebXR 'XRSessionMode' enum*/
-enum WebXRSessionMode {
+/** ParaWebXR 'XRSessionMode' enum*/
+enum ParaWebXRSessionMode {
     WEBXR_SESSION_MODE_INLINE = 0, /** "inline" */
     WEBXR_SESSION_MODE_IMMERSIVE_VR = 1, /** "immersive-vr" */
     WEBXR_SESSION_MODE_IMMERSIVE_AR = 2, /** "immersive-ar" */
 };
 
-/** WebXR 'XRSessionMode' enum*/
-enum WebXRSessionFeatures {
+/** ParaWebXR 'XRSessionMode' enum*/
+enum ParaWebXRSessionFeatures {
     WEBXR_SESSION_FEATURE_LOCAL = 0, /** "local" */
     WEBXR_SESSION_FEATURE_LOCAL_FLOOR = 1, /** "local-floor" */
     WEBXR_SESSION_FEATURE_BOUNDED_FLOOR = 2, /** "bounded-floor" */
@@ -47,34 +47,34 @@ enum WebXRSessionFeatures {
     WEBXR_SESSION_FEATURE_HIT_TEST = 4, /** "hit-test" */
 };
 
-/** WebXR 'XRSessionMode' enum*/
-enum WebXRInputPoseMode {
+/** ParaWebXR 'XRSessionMode' enum*/
+enum ParaWebXRInputPoseMode {
     WEBXR_INPUT_POSE_GRIP = 0, /** gripSpace */
     WEBXR_INPUT_POSE_TARGET_RAY = 1, /** targetRaySpace */
 };
 
-/** WebXR rigid transform */
-typedef struct WebXRRigidTransform {
+/** ParaWebXR rigid transform */
+typedef struct ParaWebXRRigidTransform {
     float matrix[16];
     float position[3];
     float orientation[4];
-} WebXRRigidTransform;
+} ParaWebXRRigidTransform;
 
-/** WebXR view */
-typedef struct WebXRView {
+/** ParaWebXR view */
+typedef struct ParaWebXRView {
     /* view pose */
-    WebXRRigidTransform viewPose;
+    ParaWebXRRigidTransform viewPose;
     /* projection matrix */
     float projectionMatrix[16];
     /* x, y, width, height of the eye viewport on target texture */
     int viewport[4];
-} WebXRView;
+} ParaWebXRView;
 
-typedef struct WebXRInputSource {
+typedef struct ParaWebXRInputSource {
     int id;
-    WebXRHandedness handedness;
-    WebXRTargetRayMode targetRayMode;
-} WebXRInputSource;
+    ParaWebXRHandedness handedness;
+    ParaWebXRTargetRayMode targetRayMode;
+} ParaWebXRInputSource;
 
 /**
 Callback for errors
@@ -93,7 +93,7 @@ Callback for frame rendering
 @param views Array of `viewCount` @ref WebXRView "webxr views"
 @param viewCount Size of `views`
 */
-typedef void (*webxr_frame_callback_func)(void* userData, int time, WebXRRigidTransform* headPose, WebXRView views[2], int viewCount);
+typedef void (*webxr_frame_callback_func)(void* userData, int time, ParaWebXRRigidTransform* headPose, ParaWebXRView views[2], int viewCount);
 
 /**
 Callback for VR session start
@@ -141,7 +141,7 @@ Test if session mode is supported
 @param supportedCallback Callback which will be called once the
         result has become available
 */
-extern void webxr_is_session_supported(WebXRSessionMode mode,
+extern void webxr_is_session_supported(ParaWebXRSessionMode mode,
         webxr_session_supported_callback_func supportedCallback);
 /*
 Request session presentation start
@@ -152,9 +152,9 @@ Request session presentation start
 
 Needs to be called from a [user activation event](https://html.spec.whatwg.org/multipage/interaction.html#triggered-by-user-activation).
 */
-extern void webxr_request_session(WebXRSessionMode mode,
-    WebXRSessionFeatures requiredFeatures,
-    WebXRSessionFeatures optionalFeatures);
+extern void webxr_request_session(ParaWebXRSessionMode mode,
+    ParaWebXRSessionFeatures requiredFeatures,
+    ParaWebXRSessionFeatures optionalFeatures);
 
 /*
 Request that the webxr presentation exits VR mode
@@ -180,7 +180,7 @@ Callback for primary input action.
 
 @param userData User pointer passed to @ref webxr_set_select_callback, @ref webxr_set_select_end_callback or @ref webxr_set_select_start_callback.
 */
-typedef void (*webxr_input_callback_func)(WebXRInputSource* inputSource, void* userData);
+typedef void (*webxr_input_callback_func)(ParaWebXRInputSource* inputSource, void* userData);
 
 
 /**
@@ -201,7 +201,7 @@ Get input sources.
 @param outCount Will receive the number of input sources valid in outArray.
 */
 extern void webxr_get_input_sources(
-        WebXRInputSource* outArray, int max, int* outCount);
+        ParaWebXRInputSource* outArray, int max, int* outCount);
 
 /**
 Get input pose. Can only be called during the frame callback.
@@ -210,7 +210,7 @@ Get input pose. Can only be called during the frame callback.
 @param outPose Where to store the pose.
 @returns `false` if updating the pose failed, `true` otherwise.
 */
-extern int webxr_get_input_pose(WebXRInputSource* source, WebXRRigidTransform* outPose, WebXRInputPoseMode mode=WEBXR_INPUT_POSE_GRIP);
+extern int webxr_get_input_pose(ParaWebXRInputSource* source, ParaWebXRRigidTransform* outPose, ParaWebXRInputPoseMode mode = WEBXR_INPUT_POSE_GRIP);
 
 }
 

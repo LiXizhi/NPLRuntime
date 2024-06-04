@@ -113,7 +113,7 @@ namespace ParaEngine
 #ifdef EMSCRIPTEN
         void SetIsXR(bool isXR);
         bool GetIsXR();
-        void SaveWebXRView(int time, WebXRRigidTransform *headPose, WebXRView views[2], int viewCount);
+        void SaveWebXRView(int time, ParaWebXRRigidTransform *headPose, ParaWebXRView views[2], int viewCount);
 #endif
         void Cleanup();
 
@@ -148,8 +148,8 @@ namespace ParaEngine
 #ifdef EMSCRIPTEN
         bool m_isXR;
         int m_webXRTime;
-        WebXRRigidTransform *m_webXRHeadPose;
-        WebXRView m_webXRViews[2];
+        ParaWebXRRigidTransform *m_webXRHeadPose;
+        ParaWebXRView m_webXRViews[2];
         int m_webXRViewCount;
 #endif
     };

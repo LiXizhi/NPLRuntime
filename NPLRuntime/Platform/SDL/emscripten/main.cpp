@@ -251,7 +251,7 @@ int main(int argc, char* argv[])
 
     #ifdef EMSCRIPTEN
         webxr_init(
-            [](void* userData, int time, WebXRRigidTransform *headPose, WebXRView views[2], int viewCount) {
+            [](void* userData, int time, ParaWebXRRigidTransform *headPose, ParaWebXRView views[2], int viewCount) {
                 //static_cast<EmscriptenApplication*>(userData)->GetRenderWindowDelegate()->SetSDLWindowSize(1, 1);
                 static_cast<EmscriptenApplication*>(userData)->RunLoopOnce();
 

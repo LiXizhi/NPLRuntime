@@ -40,7 +40,7 @@ bool ParaEngine::CViewportManager::GetIsXR()
     return m_isXR;
 }
 
-void ParaEngine::CViewportManager::SaveWebXRView(int time, WebXRRigidTransform *headPose, WebXRView views[2], int viewCount)
+void ParaEngine::CViewportManager::SaveWebXRView(int time, ParaWebXRRigidTransform *headPose, ParaWebXRView views[2], int viewCount)
 {
     m_webXRTime = time;
     m_webXRHeadPose = headPose;
