@@ -363,11 +363,11 @@ void ParaEngine::CViewportManager::SetLayout(VIEWPORT_LAYOUT nLayout, CSceneObje
 		int portNum = 0;
 
 		//offscreen rendering
-		const int num = 4;//横向4个方向
+		const int num = 4;
 		const int cubeWidth = (GetWidth() / num);
 
 		const bool needCompositeUI = GetHeight() - cubeWidth * 2 > 200;
-		if (!needCompositeUI) {//没有足够的位置留给UI了,直接显示一个全屏UI
+		if (!needCompositeUI) {
 			CViewport* pUIViewport = CreateGetViewPort(portNum);
 			pUIViewport->SetIdentifier("GUI");
 			pUIViewport->SetGUIRoot(pGUIRoot);
@@ -398,7 +398,6 @@ void ParaEngine::CViewportManager::SetLayout(VIEWPORT_LAYOUT nLayout, CSceneObje
 			}
 			*/
 
-			//操作区域场景+UI
 			CViewport* pUIViewport = CreateGetViewPort(portNum);
 			pUIViewport->SetIdentifier("GUI_ods_user");
 			pUIViewport->SetGUIRoot(pGUIRoot);
@@ -425,7 +424,6 @@ void ParaEngine::CViewportManager::SetLayout(VIEWPORT_LAYOUT nLayout, CSceneObje
 			}
 			portNum += 1;
 
-			//全景区域场景+UI
 			{
 				_height = cubeWidth;
 				_width = (int)(_height * aspect);
@@ -552,18 +550,18 @@ void ParaEngine::CViewportManager::SetLayout(VIEWPORT_LAYOUT nLayout, CSceneObje
 		portNum += 1;*/
 
 		//offscreen rendering
-		int perWidth = widthPerDegree;//每一个viewPort的宽度
-		//perWidth = 1;//理想情况是宽度为1
-		int num = GetWidth() / perWidth;//横向上分成多少个viewPort
+		int perWidth = widthPerDegree;
+		//perWidth = 1;
+		int num = GetWidth() / perWidth;
 		int halfHeight = (GetHeight() / 2);
 
 		const float diffRotY = MATH_2PI / (num);
 		const float aspect = (float)perWidth / (float)halfHeight;
 
 		float fov = atan(tan(MATH_PI / num) / aspect) * 2;
-		fov = 90 * MATH_PI / 180;//竖直方向的视角，上看90度、下看90度，一共180度
+		fov = 90 * MATH_PI / 180;
 		ods_fov = fov;
-		float morePitch = fov / 2;//抬头45°角看天,垂直fov范围90°
+		float morePitch = fov / 2;
 		const std::string randerTargetname = "ods_render_target";
 		for (int i = 0; i < num; i++) {
 			CViewport* viewport = CreateGetViewPort(portNum + i);
@@ -652,8 +650,8 @@ void ParaEngine::CViewportManager::SetLayout(VIEWPORT_LAYOUT nLayout, CSceneObje
 		portNum += 1;*/
 
 
-		int perWidth = widthPerDegree;//每一个viewPort的宽度
-		int num = GetWidth() / perWidth;//横向上分成多少个viewPort
+		int perWidth = widthPerDegree;
+		int num = GetWidth() / perWidth;
 		int halfHeight = GetHeight() / 4;
 
 		int extraWidth = GetWidth() - perWidth * num;
@@ -662,9 +660,9 @@ void ParaEngine::CViewportManager::SetLayout(VIEWPORT_LAYOUT nLayout, CSceneObje
 		const float aspect = (float)perWidth / (float)halfHeight;
 
 		float fov = atan(tan(MATH_PI / num) / aspect) * 2;
-		fov = 90 * MATH_PI / 180;//竖直方向的视角，上看90度、下看90度，一共180度
+		fov = 90 * MATH_PI / 180;
 		ods_fov = fov;
-		float morePitch = fov / 2;//抬头45°角看天,垂直fov范围90°
+		float morePitch = fov / 2;
 		const std::string randerTargetname = "ods_render_target";
 		for (int i = 0; i < num; i++) {
 			//left eye,up 90
