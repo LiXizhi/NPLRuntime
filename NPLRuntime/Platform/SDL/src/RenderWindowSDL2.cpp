@@ -4,6 +4,10 @@
 #include "SDL2Application.h"
 #include <unordered_map>
 
+#include "ViewportManager.h"
+#include "Globals.h"
+#include "IParaWebXR.h"
+
 #ifdef EMSCRIPTEN
 #include "emscripten.h"
 #endif
@@ -347,7 +351,15 @@ namespace ParaEngine
 					std::cout << std::endl
 							  << "Window size changed: " << sdl_event.window.data1 << " " << sdl_event.window.data2 << std::endl;
 #ifdef EMSCRIPTEN
-					SetSDLWindowSize(EM_ASM_INT({ return document.documentElement.clientWidth * window.devicePixelRatio; }), EM_ASM_INT({ return document.documentElement.clientHeight * window.devicePixelRatio; }));
+					if (((IParaWebXR *)CGlobals::GetViewportManager()->GetChildAttributeObject("WebXR"))->GetIsXR()) {
+						Vector4 leftView = ((IParaWebXR *)CGlobals::GetViewportManager()->GetChildAttributeObject("WebXR"))->m_webXRLeftView;
+						SetSDLWindowSize(leftView[2] * 2, leftView[3]);
+						return;
+					}
+					else
+					{
+						SetSDLWindowSize(EM_ASM_INT({ return document.documentElement.clientWidth * window.devicePixelRatio; }), EM_ASM_INT({ return document.documentElement.clientHeight * window.devicePixelRatio; }));
+					}
 #else
 					SetSDLWindowSize(sdl_event.window.data1, sdl_event.window.data2);
 #endif

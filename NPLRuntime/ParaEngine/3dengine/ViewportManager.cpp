@@ -14,6 +14,11 @@
 #include "MoviePlatform.h"
 #include "3dengine/RenderTarget.h"
 #include "2dengine/GUIRoot.h"
+#include "IParaWebXR.h"
+
+#ifdef EMSCRIPTEN
+#include "3dengine/WebXR.h"
+#endif
 
 using namespace ParaEngine;
 
@@ -326,7 +331,7 @@ void ParaEngine::CViewportManager::SetLayout(VIEWPORT_LAYOUT nLayout, CSceneObje
 	SetViewportCount(0);
 	m_normalScenePortInOdsSingleEye = NULL;
 	m_nLayout = nLayout;
-	if (nLayout == VIEW_LAYOUT_STEREO_LEFT_RIGHT || GetLayout() == VIEW_LAYOUT_STEREO_WEBXR)
+	if (nLayout == VIEW_LAYOUT_STEREO_LEFT_RIGHT)
 	{
 		int nHalfWidth = (int)(GetWidth() / 2);
 		CViewport* pUIViewportLeft = CreateGetViewPort(0);
@@ -352,6 +357,39 @@ void ParaEngine::CViewportManager::SetLayout(VIEWPORT_LAYOUT nLayout, CSceneObje
 		pMainSceneViewportRight->SetIdentifier("right_scene");
 		pMainSceneViewportRight->SetScene(pMainScene);
 		pMainSceneViewportRight->SetPosition("_mr", 0, 0, nHalfWidth, 0);
+		pMainSceneViewportRight->SetZOrder(1);
+		pMainSceneViewportRight->SetEyeMode(STEREO_EYE_RIGHT);
+		pMainSceneViewportRight->DisableDeltaTime();
+
+		SetViewportCount(4);
+	}
+	else if (nLayout == VIEW_LAYOUT_STEREO_WEBXR)
+	{
+		int nHalfWidth = (int)(GetWidth() / 2);
+		int nHeight = GetHeight();
+		CViewport* pUIViewportLeft = CreateGetViewPort(0);
+		pUIViewportLeft->SetIdentifier("left_GUI");
+		pUIViewportLeft->SetGUIRoot(pGUIRoot);
+		pUIViewportLeft->SetPosition("_lt", 0, 0, 0, 0);
+		pUIViewportLeft->SetZOrder(100);
+		pUIViewportLeft->SetEyeMode(STEREO_EYE_LEFT);
+		CViewport* pMainSceneViewportLeft = CreateGetViewPort(1);
+		pMainSceneViewportLeft->SetIdentifier("left_scene");
+		pMainSceneViewportLeft->SetScene(pMainScene);
+		pMainSceneViewportLeft->SetPosition("_lt", 0, 0, 0, 0);
+		pMainSceneViewportLeft->SetEyeMode(STEREO_EYE_LEFT);
+
+		CViewport* pUIViewportRight = CreateGetViewPort(2);
+		pUIViewportRight->SetIdentifier("right_GUI");
+		pUIViewportRight->SetGUIRoot(pGUIRoot);
+		pUIViewportRight->SetPosition("_lt", 0, 0, 0, 0);
+		pUIViewportRight->SetZOrder(101);
+		pUIViewportRight->SetEyeMode(STEREO_EYE_RIGHT);
+		pUIViewportRight->DisableDeltaTime();
+		CViewport* pMainSceneViewportRight = CreateGetViewPort(3);
+		pMainSceneViewportRight->SetIdentifier("right_scene");
+		pMainSceneViewportRight->SetScene(pMainScene);
+		pMainSceneViewportRight->SetPosition("_lt", 0, 0, 0, 0);
 		pMainSceneViewportRight->SetZOrder(1);
 		pMainSceneViewportRight->SetEyeMode(STEREO_EYE_RIGHT);
 		pMainSceneViewportRight->DisableDeltaTime();
@@ -873,9 +911,12 @@ void ParaEngine::CViewportManager::GetCurrentViewport(ParaViewport& out)
 	out = CGlobals::GetRenderDevice()->GetViewport();
 }
 
-int ParaEngine::CViewportManager::GetChildAttributeObjectCount(int nColumnIndex /*= 0*/)
+int ParaEngine::CViewportManager::GetChildAttributeObjectCount(int nColumnIndex)
 {
-	return (int)m_viewportList.size();
+	if (nColumnIndex == 0)
+		return (int)m_viewportList.size();
+	else if (nColumnIndex == 1)
+		return 1;
 }
 
 IAttributeFields* ParaEngine::CViewportManager::GetChildAttributeObject(const char* sName)
@@ -885,12 +926,22 @@ IAttributeFields* ParaEngine::CViewportManager::GetChildAttributeObject(const ch
 		if (viewport && viewport->GetIdentifier() == sName)
 			return viewport;
 	}
+	if (strcmp(sName, "WebXR") == 0)
+	{
+		return CParaWebXRFactory::GetInstance();
+	}
 	return NULL;
 }
 
 IAttributeFields* ParaEngine::CViewportManager::GetChildAttributeObject(int nRowIndex, int nColumnIndex /*= 0*/)
 {
-	return (nRowIndex < GetChildAttributeObjectCount()) ? m_viewportList[nRowIndex] : NULL;
+	if (nColumnIndex == 0)
+		return (nRowIndex < GetChildAttributeObjectCount()) ? m_viewportList[nRowIndex] : NULL;
+	else if (nColumnIndex == 1)
+	{
+		if (nRowIndex == 0)
+			return CParaWebXRFactory::GetInstance();
+	}
 }
 
 int ParaEngine::CViewportManager::InstallFields(CAttributeClass* pClass, bool bOverride)
@@ -903,12 +954,16 @@ int ParaEngine::CViewportManager::InstallFields(CAttributeClass* pClass, bool bO
 	pClass->AddField("OmniAlwaysUseUpFrontCamera", FieldType_Bool, (void*)SetOmniAlwaysUseUpFrontCamera_s, (void*)GetOmniAlwaysUseUpFrontCamera_s, NULL, NULL, bOverride);
 	pClass->AddField("OmniForceLookatDistance", FieldType_Int, (void*)SetOmniForceLookatDistance_s, (void*)GetOmniForceLookatDistance_s, NULL, NULL, bOverride);
 	pClass->AddField("DeleteViewportByName", FieldType_String, (void*)DeleteViewportByName_s, (void*)0, NULL, NULL, bOverride);
-#ifdef EMSCRIPTEN
-	pClass->AddField("isXR", FieldType_Bool, (void*)SetIsXR_s, (void*)GetIsXR_s, NULL, NULL, bOverride);
-	pClass->AddField("webXRTime", FieldType_Int, NULL, (void*)GetWebXRTime_s, NULL, NULL, bOverride);
-	pClass->AddField("webXRHeadPose", FieldType_String, NULL, (void*)GetWebXRHeadPose_s, NULL, NULL, bOverride);
-	pClass->AddField("webXRViews", FieldType_String, NULL, (void*)GetWebXRViews_s, NULL, NULL, bOverride);
-	pClass->AddField("webXRViewsCount", FieldType_Int, NULL, (void*)GetWebXRViewsCount_s, NULL, NULL, bOverride);
-#endif
 	return S_OK;
+}
+
+IParaWebXR* CParaWebXRFactory::GetInstance()
+{
+#ifdef EMSCRIPTEN
+	static CParaWebXR s_instance;
+	return & s_instance;
+#else
+	static IParaWebXR s_instance;
+	return & s_instance;
+#endif
 }

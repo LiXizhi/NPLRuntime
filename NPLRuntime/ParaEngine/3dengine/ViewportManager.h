@@ -2,11 +2,6 @@
 #include "IAttributeFields.h"
 #include "ViewportManager.h"
 #include "Viewport.h"
-
-#ifdef EMSCRIPTEN
-#include "webxr.h"
-#endif
-
 namespace ParaEngine
 {
     enum VIEWPORT_LAYOUT {
@@ -49,15 +44,6 @@ namespace ParaEngine
         ATTRIBUTE_METHOD1(CViewportManager, SetOmniForceLookatDistance_s, int) { cls->m_nOmniForceLookatDistance = (p1); return S_OK; }
 
         ATTRIBUTE_METHOD1(CViewportManager, DeleteViewportByName_s, const char*) { cls->DeleteViewPort(p1); return S_OK; }
-
-#ifdef EMSCRIPTEN
-        ATTRIBUTE_METHOD1(CViewportManager, GetIsXR_s, bool*) { *p1 = cls->m_isXR; return S_OK; }
-        ATTRIBUTE_METHOD1(CViewportManager, SetIsXR_s, bool) { cls->SetIsXR((p1)); return S_OK; }
-        ATTRIBUTE_METHOD1(CViewportManager, GetWebXRTime_s, int*) { *p1 = cls->m_webXRTime; return S_OK; }
-        ATTRIBUTE_METHOD1(CViewportManager, GetWebXRHeadPose_s, const char**) { *p1 = ""; return S_OK; }
-        ATTRIBUTE_METHOD1(CViewportManager, GetWebXRViews_s, const char**) { *p1 = ""; return S_OK; }
-        ATTRIBUTE_METHOD1(CViewportManager, GetWebXRViewsCount_s, int*) { *p1 = cls->m_webXRViewCount; return S_OK; }
-#endif
         /** get attribute by child object. used to iterate across the attribute field hierarchy. */
         virtual IAttributeFields* GetChildAttributeObject(const char * sName);
 
@@ -111,12 +97,6 @@ namespace ParaEngine
 
         void DeleteViewPort(int nIndex=0);
         void DeleteViewPort(const std::string& name);
-
-#ifdef EMSCRIPTEN
-        void SetIsXR(bool isXR);
-        bool GetIsXR();
-        void SaveWebXRView(int time, ParaWebXRRigidTransform *headPose, ParaWebXRView views[2], int viewCount);
-#endif
         void Cleanup();
 
         int GetWidth() const;
@@ -147,14 +127,6 @@ namespace ParaEngine
         int widthPerDegree;
         bool m_bOmniAlwaysUseUpFrontCamera;//Whether the camera is forced to face straight ahead
         int m_nOmniForceLookatDistance;
-#ifdef EMSCRIPTEN
-        bool m_isXR;
-        int m_webXRTime;
-        ParaWebXRRigidTransform *m_webXRHeadPose;
-        ParaWebXRView m_webXRViews[2];
-        int m_webXRViewCount;
-#endif
     };
-
 }
 

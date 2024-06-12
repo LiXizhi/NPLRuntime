@@ -20,6 +20,7 @@
 #include "ParaFile.h"
 #include "NPLInterface.hpp"
 #include "ViewportManager.h"
+#include "IParaWebXR.h"
 #include <iostream>
 
 #ifdef EMSCRIPTEN
@@ -252,21 +253,29 @@ int main(int argc, char* argv[])
     #ifdef EMSCRIPTEN
         webxr_init(
             [](void* userData, int time, ParaWebXRRigidTransform *headPose, ParaWebXRView views[2], int viewCount) {
-                //static_cast<EmscriptenApplication*>(userData)->GetRenderWindowDelegate()->SetSDLWindowSize(1, 1);
+                static bool isWebXRinited = false;
+
+                if (!isWebXRinited)
+                {
+                    isWebXRinited = true;
+                    static_cast<EmscriptenApplication*>(userData)->GetRenderWindowDelegate()->SetSDLWindowSize(views[0].viewport[2] * 2, views[0].viewport[3]);
+                }
+
+                Vector4 leftView = Vector4(views[0].viewport[0], views[0].viewport[1], views[0].viewport[2], views[0].viewport[3]);
+                Vector3 leftPosition = Vector3(views[0].viewPose.position[0], views[0].viewPose.position[1], views[0].viewPose.position[2]);
+                Vector4 leftOrientation = Vector4(views[0].viewPose.orientation[0], views[0].viewPose.orientation[1], views[0].viewPose.orientation[2], views[0].viewPose.orientation[3]);
+
+                Vector4 rightView = Vector4(views[1].viewport[0], views[1].viewport[1], views[1].viewport[2], views[1].viewport[3]);
+                Vector3 rightPosition = Vector3(views[1].viewPose.position[0], views[1].viewPose.position[1], views[1].viewPose.position[2]);
+                Vector4 rightOrientation = Vector4(views[1].viewPose.orientation[0], views[1].viewPose.orientation[1], views[1].viewPose.orientation[2], views[1].viewPose.orientation[3]);
+
+                ((IParaWebXR *)CGlobals::GetViewportManager()->GetChildAttributeObject("WebXR"))->UpdateWebXRView(
+                    time,
+                    leftView, leftPosition, leftOrientation,
+                    rightView, rightPosition, rightOrientation,
+                    viewCount);
+
                 static_cast<EmscriptenApplication*>(userData)->RunLoopOnce();
-
-                CGlobals::GetViewportManager()->SaveWebXRView(time, headPose, views, viewCount);
-                //std::cout << "x1: " << views[0].viewport[0] << std::endl;
-                // std::cout << "y1: " << views[0].viewport[1] << std::endl;
-                // std::cout << "width1: " << views[0].viewport[2] << std::endl;
-                // std::cout << "height1: " << views[0].viewport[3] << std::endl;
-                // std::cout << "x2: " << views[1].viewport[0] << std::endl;
-                // std::cout << "y2: " << views[1].viewport[1] << std::endl;
-                // std::cout << "width2: " << views[1].viewport[2] << std::endl;
-                // std::cout << "height2: " << views[1].viewport[2] << std::endl;
-
-                //--std::cout << "view.viewMatrix1: " << views[0].viewMatrix << std::endl;
-                //std::cout << "webxr_frame_callback_func" << std::endl;
             },
             [](void* userData, int mode) {
                 std::cout << "webxr_session_callback_func start" << std::endl;

@@ -186,7 +186,7 @@ if (APPLE AND NOT IOS)
 elseif (ANDROID)
     list(APPEND include_dirs ${CMAKE_CURRENT_SOURCE_DIR}/../Platform/AndroidStudio/app/cpp)
 elseif (EMSCRIPTEN)
-    list(APPEND include_dirs ${CMAKE_CURRENT_SOURCE_DIR}/../Platform/SDL/emscripten)
+    list(APPEND include_dirs ${CMAKE_CURRENT_SOURCE_DIR}/../Platform/SDL/src)
 endif()
 
 target_include_directories(ParaEngine PUBLIC ${include_dirs})

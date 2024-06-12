@@ -62,6 +62,7 @@
 #include "Core/EventClasses.h"
 #include "AutoRigger.h"
 #include "ScriptParticle.h"
+#include "IParaWebXR.h"
 
 #if USE_DIRECTX_RENDERER
 //#include "Render/context/d3d9/RenderContextD3D9.h"
@@ -953,7 +954,7 @@ HRESULT ParaEngine::CParaEngineAppBase::DoWork()
         {
 			Render();
 #ifdef EMSCRIPTEN
-            if (!CGlobals::GetViewportManager()->GetIsXR())
+            if (!((IParaWebXR *)CGlobals::GetViewportManager()->GetChildAttributeObject("WebXR"))->GetIsXR())
             {
                 m_pRenderDevice->Present();
             }
