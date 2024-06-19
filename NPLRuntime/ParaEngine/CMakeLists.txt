@@ -187,6 +187,8 @@ elseif (ANDROID)
     list(APPEND include_dirs ${CMAKE_CURRENT_SOURCE_DIR}/../Platform/AndroidStudio/app/cpp)
 elseif (EMSCRIPTEN)
     list(APPEND include_dirs ${CMAKE_CURRENT_SOURCE_DIR}/../Platform/SDL/src)
+elseif (WIN32)
+    list(APPEND include_dirs ${CMAKE_CURRENT_SOURCE_DIR}/../Platform/Windows/src)
 endif()
 
 target_include_directories(ParaEngine PUBLIC ${include_dirs})

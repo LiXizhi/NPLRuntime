@@ -16,7 +16,7 @@
 #include "2dengine/GUIRoot.h"
 #include "IParaWebXR.h"
 
-#ifdef EMSCRIPTEN
+#if defined(EMSCRIPTEN) || defined(WIN32)
 #include "3dengine/WebXR.h"
 #endif
 
@@ -959,7 +959,7 @@ int ParaEngine::CViewportManager::InstallFields(CAttributeClass* pClass, bool bO
 
 IParaWebXR* CParaWebXRFactory::GetInstance()
 {
-#ifdef EMSCRIPTEN
+#if defined(EMSCRIPTEN) || defined(WIN32)
 	static CParaWebXR s_instance;
 	return & s_instance;
 #else
