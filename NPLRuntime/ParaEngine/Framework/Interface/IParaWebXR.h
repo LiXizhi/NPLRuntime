@@ -12,7 +12,9 @@ namespace ParaEngine {
             int time,
             Vector4 leftView, Vector3 leftPosition, Vector4 leftOrientation,
             Vector4 rightView, Vector3 rightPosition, Vector4 rightOrientation, 
-            int viewCount) {};
+            int viewCount,
+            Vector3 leftHandPosition, Vector3 rightHandPosition,
+            Vector4 leftHandOrientation, Vector4 rightHandOrientation) {};
 
         ATTRIBUTE_METHOD1(IParaWebXR, GetIsXR_s, bool*) { *p1 = cls->m_isXR; return S_OK; }
         ATTRIBUTE_METHOD1(IParaWebXR, SetIsXR_s, bool) { cls->SetIsXR((p1)); return S_OK; }
@@ -24,6 +26,8 @@ namespace ParaEngine {
         ATTRIBUTE_METHOD1(IParaWebXR, GetWebXRRightPosition_s, Vector3*) { *p1 = cls->m_webXRRightPosition; return S_OK; }
         ATTRIBUTE_METHOD1(IParaWebXR, GetWebXRRightOrientation_s, Vector4*) { *p1 = cls->m_webXRRightOrientation; return S_OK; }
         ATTRIBUTE_METHOD1(IParaWebXR, GetWebXRViewsCount_s, int*) { *p1 = cls->m_webXRViewCount; return S_OK; }
+        ATTRIBUTE_METHOD1(IParaWebXR, GetWebXRLeftHandPosition_s, Vector3*) { *p1 = cls->m_webXRLeftHandPosition; return S_OK; }
+        ATTRIBUTE_METHOD1(IParaWebXR, GetWebXRRightHandPosition_s, Vector3*) { *p1 = cls->m_webXRRightHandPosition; return S_OK; }
 
         virtual int InstallFields(CAttributeClass *pClass, bool bOverride) {
             IAttributeFields::InstallFields(pClass, bOverride);
@@ -36,6 +40,10 @@ namespace ParaEngine {
             pClass->AddField("webXRLeftOrientation", FieldType_Vector4, NULL, (void*)GetWebXRLeftOrientation_s, NULL, NULL, bOverride);
             pClass->AddField("webXRRightOrientation", FieldType_Vector4, NULL, (void*)GetWebXRRightOrientation_s, NULL, NULL, bOverride);
             pClass->AddField("webXRViewsCount", FieldType_Int, NULL, (void*)GetWebXRViewsCount_s, NULL, NULL, bOverride);
+            pClass->AddField("webXRLeftHandPosition", FieldType_Vector3, NULL, (void*)GetWebXRLeftHandPosition_s, NULL, NULL, bOverride);
+            pClass->AddField("webXRRightHandPosition", FieldType_Vector3, NULL, (void*)GetWebXRRightHandPosition_s, NULL, NULL, bOverride);
+            pClass->AddField("webXRLeftHandOrientation", FieldType_Vector4, NULL, (void*)GetWebXRLeftHandPosition_s, NULL, NULL, bOverride);
+            pClass->AddField("webXRRightHandOrientation", FieldType_Vector4, NULL, (void*)GetWebXRRightHandPosition_s, NULL, NULL, bOverride);
             return S_OK;
         };
 
@@ -48,8 +56,12 @@ namespace ParaEngine {
         Vector4 m_webXRRightView;
         Vector3 m_webXRRightPosition;
         Vector4 m_webXRRightOrientation;
-
         int m_webXRViewCount;
+
+        Vector3 m_webXRLeftHandPosition;
+        Vector3 m_webXRRightHandPosition;
+        Vector4 m_webXRLeftHandOrientation;
+        Vector4 m_webXRRightHandOrientation;
     };
 
     class CParaWebXRFactory

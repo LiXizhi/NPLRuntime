@@ -8,6 +8,7 @@
 
 #pragma once
 #include "ParaEngine.h"
+#include "NPLRuntime.h"
 #include "ViewportManager.h"
 #include "Globals.h"
 #include "../../emscripten/webxr.h"
@@ -42,7 +43,9 @@ void ParaEngine::CParaWebXR::UpdateWebXRView(
     int time,
     Vector4 leftView, Vector3 leftPosition, Vector4 leftOrientation,
     Vector4 rightView, Vector3 rightPosition, Vector4 rightOrientation, 
-    int viewCount)
+    int viewCount,
+    Vector3 leftHandPosition, Vector3 rightHandPosition,
+    Vector4 leftHandOrientation, Vector4 rightHandOrientation)
 {
     m_webXRTime = time;
     m_webXRViewCount = viewCount;
@@ -54,4 +57,9 @@ void ParaEngine::CParaWebXR::UpdateWebXRView(
     m_webXRRightView = rightView;
     m_webXRRightPosition = rightPosition;
     m_webXRRightOrientation = rightOrientation;
+    
+    m_webXRLeftHandPosition = leftHandPosition;
+    m_webXRRightHandPosition = rightHandPosition;
+    m_webXRLeftHandOrientation = leftHandOrientation;
+    m_webXRRightHandOrientation = rightHandOrientation;
 }

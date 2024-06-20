@@ -21,7 +21,9 @@ namespace ParaEngine
             int time,
             Vector4 leftView, Vector3 leftPosition, Vector4 leftOrientation,
             Vector4 rightView, Vector3 rightPosition, Vector4 rightOrientation, 
-            int viewCount) override;
+            int viewCount,
+            Vector3 leftHandPosition, Vector3 rightHandPosition,
+            Vector4 leftHandOrientation, Vector4 rightHandOrientation) override;
     };
 }
 

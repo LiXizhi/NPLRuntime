@@ -261,6 +261,7 @@ int main(int argc, char* argv[])
                     static_cast<EmscriptenApplication*>(userData)->GetRenderWindowDelegate()->SetSDLWindowSize(views[0].viewport[2] * 2, views[0].viewport[3]);
                 }
 
+                // view information.
                 Vector4 leftView = Vector4(views[0].viewport[0], views[0].viewport[1], views[0].viewport[2], views[0].viewport[3]);
                 Vector3 leftPosition = Vector3(views[0].viewPose.position[0], views[0].viewPose.position[1], views[0].viewPose.position[2]);
                 Vector4 leftOrientation = Vector4(views[0].viewPose.orientation[0], views[0].viewPose.orientation[1], views[0].viewPose.orientation[2], views[0].viewPose.orientation[3]);
@@ -269,11 +270,39 @@ int main(int argc, char* argv[])
                 Vector3 rightPosition = Vector3(views[1].viewPose.position[0], views[1].viewPose.position[1], views[1].viewPose.position[2]);
                 Vector4 rightOrientation = Vector4(views[1].viewPose.orientation[0], views[1].viewPose.orientation[1], views[1].viewPose.orientation[2], views[1].viewPose.orientation[3]);
 
+                // hand information.
+                static ParaWebXRRigidTransform _controllerTransformations[2];
+                ParaWebXRInputSource * source;
+                int sourcesCount = 0;
+                webxr_get_input_sources(source, 5, &sourcesCount);
+
+                std::cout << sourcesCount << std::endl;
+
+                for(int i = 0; i < sourcesCount; ++i) {
+                    webxr_get_input_pose(&source[i], _controllerTransformations + i);
+                }
+
+                Vector3 leftHandPosition = Vector3(_controllerTransformations[0].position[0], _controllerTransformations[0].position[1], _controllerTransformations[0].position[2]);
+                Vector3 rightHandPosition = Vector3(_controllerTransformations[1].position[0], _controllerTransformations[1].position[1], _controllerTransformations[1].position[2]);
+
+                Vector4 leftHandOrientation = Vector4(
+                    _controllerTransformations[0].orientation[0],
+                    _controllerTransformations[0].orientation[1],
+                    _controllerTransformations[0].orientation[2],
+                    _controllerTransformations[0].orientation[3]);
+
+                Vector4 rightHandOrientation = Vector4(
+                    _controllerTransformations[1].orientation[0],
+                    _controllerTransformations[1].orientation[1],
+                    _controllerTransformations[1].orientation[2],
+                    _controllerTransformations[1].orientation[3]);
+
                 ((IParaWebXR *)CGlobals::GetViewportManager()->GetChildAttributeObject("WebXR"))->UpdateWebXRView(
                     time,
                     leftView, leftPosition, leftOrientation,
                     rightView, rightPosition, rightOrientation,
-                    viewCount);
+                    viewCount,
+                    leftHandPosition, rightHandPosition, leftHandOrientation, rightHandOrientation);
 
                 static_cast<EmscriptenApplication*>(userData)->RunLoopOnce();
             },
