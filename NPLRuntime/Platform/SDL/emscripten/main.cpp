@@ -272,14 +272,12 @@ int main(int argc, char* argv[])
 
                 // hand information.
                 static ParaWebXRRigidTransform _controllerTransformations[2];
-                ParaWebXRInputSource * source;
+                ParaWebXRInputSource sources[2];
                 int sourcesCount = 0;
-                webxr_get_input_sources(source, 5, &sourcesCount);
-
-                std::cout << sourcesCount << std::endl;
+                webxr_get_input_sources(sources, 5, &sourcesCount);
 
                 for(int i = 0; i < sourcesCount; ++i) {
-                    webxr_get_input_pose(&source[i], _controllerTransformations + i);
+                    webxr_get_input_pose(&sources[i], _controllerTransformations + i, WEBXR_INPUT_POSE_GRIP);
                 }
 
                 Vector3 leftHandPosition = Vector3(_controllerTransformations[0].position[0], _controllerTransformations[0].position[1], _controllerTransformations[0].position[2]);
