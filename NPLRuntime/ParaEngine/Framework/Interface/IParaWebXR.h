@@ -28,6 +28,8 @@ namespace ParaEngine {
         ATTRIBUTE_METHOD1(IParaWebXR, GetWebXRViewsCount_s, int*) { *p1 = cls->m_webXRViewCount; return S_OK; }
         ATTRIBUTE_METHOD1(IParaWebXR, GetWebXRLeftHandPosition_s, Vector3*) { *p1 = cls->m_webXRLeftHandPosition; return S_OK; }
         ATTRIBUTE_METHOD1(IParaWebXR, GetWebXRRightHandPosition_s, Vector3*) { *p1 = cls->m_webXRRightHandPosition; return S_OK; }
+        ATTRIBUTE_METHOD1(IParaWebXR, GetWebXRLeftHandOrientation_s, Vector4*) { *p1 = cls->m_webXRLeftHandOrientation; return S_OK; }
+        ATTRIBUTE_METHOD1(IParaWebXR, GetWebXRRightHandOrientation_s, Vector4*) { *p1 = cls->m_webXRRightHandOrientation; return S_OK; }
 
         virtual int InstallFields(CAttributeClass *pClass, bool bOverride) {
             IAttributeFields::InstallFields(pClass, bOverride);
@@ -42,8 +44,8 @@ namespace ParaEngine {
             pClass->AddField("webXRViewsCount", FieldType_Int, NULL, (void*)GetWebXRViewsCount_s, NULL, NULL, bOverride);
             pClass->AddField("webXRLeftHandPosition", FieldType_Vector3, NULL, (void*)GetWebXRLeftHandPosition_s, NULL, NULL, bOverride);
             pClass->AddField("webXRRightHandPosition", FieldType_Vector3, NULL, (void*)GetWebXRRightHandPosition_s, NULL, NULL, bOverride);
-            pClass->AddField("webXRLeftHandOrientation", FieldType_Vector4, NULL, (void*)GetWebXRLeftHandPosition_s, NULL, NULL, bOverride);
-            pClass->AddField("webXRRightHandOrientation", FieldType_Vector4, NULL, (void*)GetWebXRRightHandPosition_s, NULL, NULL, bOverride);
+            pClass->AddField("webXRLeftHandOrientation", FieldType_Vector4, NULL, (void*)GetWebXRLeftHandOrientation_s, NULL, NULL, bOverride);
+            pClass->AddField("webXRRightHandOrientation", FieldType_Vector4, NULL, (void*)GetWebXRRightHandOrientation_s, NULL, NULL, bOverride);
             return S_OK;
         };
 

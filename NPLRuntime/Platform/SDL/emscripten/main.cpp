@@ -280,16 +280,16 @@ int main(int argc, char* argv[])
                     webxr_get_input_pose(&sources[i], _controllerTransformations + i, WEBXR_INPUT_POSE_GRIP);
                 }
 
-                Vector3 leftHandPosition = Vector3(_controllerTransformations[0].position[0], _controllerTransformations[0].position[1], _controllerTransformations[0].position[2]);
-                Vector3 rightHandPosition = Vector3(_controllerTransformations[1].position[0], _controllerTransformations[1].position[1], _controllerTransformations[1].position[2]);
+                Vector3 rightHandPosition = Vector3(_controllerTransformations[0].position[0], _controllerTransformations[0].position[1], _controllerTransformations[0].position[2]);
+                Vector3 leftHandPosition = Vector3(_controllerTransformations[1].position[0], _controllerTransformations[1].position[1], _controllerTransformations[1].position[2]);
 
-                Vector4 leftHandOrientation = Vector4(
+                Vector4 rightHandOrientation = Vector4(
                     _controllerTransformations[0].orientation[0],
                     _controllerTransformations[0].orientation[1],
                     _controllerTransformations[0].orientation[2],
                     _controllerTransformations[0].orientation[3]);
 
-                Vector4 rightHandOrientation = Vector4(
+                Vector4 leftHandOrientation = Vector4(
                     _controllerTransformations[1].orientation[0],
                     _controllerTransformations[1].orientation[1],
                     _controllerTransformations[1].orientation[2],
