@@ -1849,8 +1849,20 @@ Vector3 ParaEngine::CAutoCamera::GetRenderEyePosition()
 void CAutoCamera::UpdateViewMatrix()
 {
 	/// Update the view matrix
-	Vector3 vUp(0, 1, 0);
-	ComputeViewMatrix(&m_mView, &m_vEye, &m_vLookAt, &vUp);
+	ComputeViewMatrix(&m_mView, &m_vEye, &m_vLookAt, &m_vUp);
+
+	if (m_vLookAtOffset != Vector3::ZERO)
+	{
+		m_mView._41 += m_vLookAtOffset.x;
+		m_mView._42 += m_vLookAtOffset.y;
+		m_mView._43 += m_vLookAtOffset.z;
+	}
+	if (m_vAdditionalCameraRotate != Vector3::ZERO)
+	{
+		Matrix4 matRot;
+		ParaMatrixRotationRollPitchYaw(&matRot, m_vAdditionalCameraRotate.z, m_vAdditionalCameraRotate.y, m_vAdditionalCameraRotate.x);
+		m_mView = m_mView * matRot;
+	}
 }
 
 void CAutoCamera::SetViewParams(const DVector3& vEyePt, const DVector3& vLookatPt, const Vector3* up)
