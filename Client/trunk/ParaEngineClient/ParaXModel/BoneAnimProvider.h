@@ -104,6 +104,9 @@ namespace ParaEngine
 		Bone* GetBone(KNOWN_BONE_NODES KnownBoneID);
 		/** get bone by index. return NULL if no bones at the index */
 		Bone* GetBoneByIndex(int nIndex);
+
+		/** get bone by its unique name, it must not be empty string. */
+		Bone* GetBoneByName(const std::string& sName);
 	
 		/** how bone animation is meant to be used with a parax model.*/
 		MergeMode GetMergeMode();
@@ -126,6 +129,12 @@ namespace ParaEngine
 		* @param pSpeed: out value
 		*/
 		void GetAnimMoveSpeed(float* pSpeed, int nSubAnimID=0);
+
+		/** root bone has the name Root or it is the first parent bone that has an non-empty name. 
+		* In most bipeds, it is the Hip of the character.
+		*/
+		int FindRootBone();
+
 	private:
 		/** check load asset, call this as often as one like. */
 		bool LoadAsset();
@@ -159,6 +168,9 @@ namespace ParaEngine
 
 		/** animation sequence info: in most cases, there is only one animation.*/
 		vector<ModelAnimation> m_anims;
+
+		/** bone name to index mapping. */
+		map<string, int> m_mapBoneNameToIndex;
 
 		/** how bone animation is meant to be used with a parax model.*/
 		MergeMode m_MergeMode;

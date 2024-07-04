@@ -44,18 +44,18 @@ namespace ParaEngine
 }
 
 CBoneAnimProvider::CBoneAnimProvider(int nAnimID, const char* name, const char* filename)
-:m_bLoaded(false)
+	:m_bLoaded(false)
 {
 	m_nAnimID = nAnimID;
 	m_nSubAnimID = 0;
-	if(name)
+	if (name)
 		m_sName = name;
-	if(filename)
+	if (filename)
 		m_sFileName = filename;
 
-	for (int i=0; i<MAX_KNOWN_BONE_NODE;++i)
+	for (int i = 0; i < MAX_KNOWN_BONE_NODE; ++i)
 		m_boneLookup[i] = -1;
-	
+
 	m_MergeMode = MergeMode_ReplaceExisting;
 
 	std::string  sExt = CParaFile::GetFileExtension(m_sFileName);
@@ -72,10 +72,10 @@ CBoneAnimProvider::~CBoneAnimProvider(void)
 	m_anims.clear();
 }
 
-CBoneAnimProvider* ParaEngine::CBoneAnimProvider::GetProviderByID( int id )
+CBoneAnimProvider* ParaEngine::CBoneAnimProvider::GetProviderByID(int id)
 {
 	map<int, CBoneAnimProvider*>::iterator it = g_mapProviderIDs.find(id);
-	if(it!=g_mapProviderIDs.end())
+	if (it != g_mapProviderIDs.end())
 	{
 		it->second->LoadAsset();
 		return it->second;
@@ -83,49 +83,49 @@ CBoneAnimProvider* ParaEngine::CBoneAnimProvider::GetProviderByID( int id )
 	return NULL;
 }
 
-int ParaEngine::CBoneAnimProvider::GetProviderIDByName( const char* sName )
+int ParaEngine::CBoneAnimProvider::GetProviderIDByName(const char* sName)
 {
-	if(sName)
+	if (sName)
 	{
 		map<string, CBoneAnimProvider*>::iterator it = g_mapProviderNames.find(sName);
-		if(it!=g_mapProviderNames.end())
+		if (it != g_mapProviderNames.end())
 		{
-			if((it->second)!=NULL)
+			if ((it->second) != NULL)
 			{
 				(it->second)->LoadAsset();
-				return (it->second)->GetAnimID();	
+				return (it->second)->GetAnimID();
 			}
 		}
 	}
 	return -1;
 }
 
-CBoneAnimProvider* ParaEngine::CBoneAnimProvider::CreateProvider( int nAnimID, const char* name, const char* filename, bool bOverwrite )
+CBoneAnimProvider* ParaEngine::CBoneAnimProvider::CreateProvider(int nAnimID, const char* name, const char* filename, bool bOverwrite)
 {
-	if(!bOverwrite)
+	if (!bOverwrite)
 	{
 		int nID = GetProviderIDByName(name);
-		if(nID<0)
+		if (nID < 0)
 		{
 			nID = nAnimID;
 		}
 
 		CBoneAnimProvider* pProvider = GetProviderByID(nID);
-		if(pProvider)
+		if (pProvider)
 			return pProvider;
 	}
-	if(nAnimID<0 )
+	if (nAnimID < 0)
 	{
 		static int AutoIncID = FIRST_AUTO_INC_ANIM_ID;
 		nAnimID = AutoIncID;
 		AutoIncID++;
 	}
 	CBoneAnimProvider* pProvider = new CBoneAnimProvider(nAnimID, name, filename);
-	if(pProvider)
+	if (pProvider)
 	{
 		DeleteProvider(nAnimID);
 		g_mapProviderIDs[nAnimID] = pProvider;
-		if(name)
+		if (name)
 			g_mapProviderNames[name] = pProvider;
 	}
 	return pProvider;
@@ -134,8 +134,8 @@ CBoneAnimProvider* ParaEngine::CBoneAnimProvider::CreateProvider( int nAnimID, c
 
 bool ParaEngine::CBoneAnimProvider::CleanupAllProviders()
 {
-	map<int, CBoneAnimProvider*>::iterator itCur, itEnd =  g_mapProviderIDs.end();
-	for (itCur = g_mapProviderIDs.begin(); itCur!=itEnd; ++itCur)
+	map<int, CBoneAnimProvider*>::iterator itCur, itEnd = g_mapProviderIDs.end();
+	for (itCur = g_mapProviderIDs.begin(); itCur != itEnd; ++itCur)
 	{
 		delete (itCur->second);
 	}
@@ -144,10 +144,10 @@ bool ParaEngine::CBoneAnimProvider::CleanupAllProviders()
 	return true;
 }
 
-bool ParaEngine::CBoneAnimProvider::DeleteProvider( int nAnimID )
+bool ParaEngine::CBoneAnimProvider::DeleteProvider(int nAnimID)
 {
 	CBoneAnimProvider* pProvider = GetProviderByID(nAnimID);
-	if(pProvider)
+	if (pProvider)
 	{
 		{
 			map<int, CBoneAnimProvider*>::iterator it = g_mapProviderIDs.find(nAnimID);
@@ -156,9 +156,9 @@ bool ParaEngine::CBoneAnimProvider::DeleteProvider( int nAnimID )
 
 		{
 			map<string, CBoneAnimProvider*>::iterator it = g_mapProviderNames.find(pProvider->GetAnimName());
-			if(it!=g_mapProviderNames.end())
+			if (it != g_mapProviderNames.end())
 			{
-				if((it->second)==pProvider)
+				if ((it->second) == pProvider)
 				{
 					g_mapProviderNames.erase(it);
 				}
@@ -171,28 +171,28 @@ bool ParaEngine::CBoneAnimProvider::DeleteProvider( int nAnimID )
 
 AnimIndex CBoneAnimProvider::GetAnimIndex(int nAnimID)
 {
-	if(!LoadAsset())
+	if (!LoadAsset())
 	{
 		// this is tricky, if an animation is still being loaded, we shall play an empty undetermined animation for 1 seconds
 		// so, if the animation is loaded within 1 seconds, the ParaXAnimInstance will reload AnimIndex structure.
 		return AnimIndex(m_nAnimID, 1, 0, 1000, 2 /* make undetermined */);
 	}
-	int nAnim =(int)m_anims.size();
-	for (int i=0; i<nAnim ; i++) {
-		if (m_anims[i].animID == nAnimID) 
+	int nAnim = (int)m_anims.size();
+	for (int i = 0; i < nAnim; i++) {
+		if (m_anims[i].animID == nAnimID)
 		{
 			return AnimIndex(m_nAnimID, 1, m_anims[i].timeStart, m_anims[i].timeEnd, (byte)m_anims[i].loopType);
 		}
 	}
-	
+
 	return AnimIndex(-1);
 }
 
 void CBoneAnimProvider::GetAnimMoveSpeed(float* pSpeed, int nSubAnimID)
 {
-	int nAnim =(int)m_anims.size();
-	for (int i=0; i<nAnim ; i++) {
-		if (m_anims[i].animID == nSubAnimID) 
+	int nAnim = (int)m_anims.size();
+	for (int i = 0; i < nAnim; i++) {
+		if (m_anims[i].animID == nSubAnimID)
 		{
 			*pSpeed = m_anims[i].moveSpeed;
 			break;
@@ -200,15 +200,52 @@ void CBoneAnimProvider::GetAnimMoveSpeed(float* pSpeed, int nSubAnimID)
 	}
 }
 
+int CBoneAnimProvider::FindRootBone()
+{
+	if (m_boneLookup[Bone_Root] >= 0)
+	{
+		return m_boneLookup[Bone_Root];
+	}
+	// find the first root bone that is not a pure transformation node, this usually a root bone like Hip in bipeds.
+	int nBones = (int)m_bones.size();
+	int nRootBoneIndex = -1;
+	for (int i = 0; i < nBones; i++)
+	{
+		// if the bone has no parent, it is the root bone
+		if (!m_bones[i].IsTransformationNode() && !m_bones[i].GetIdentifier().empty())
+		{
+			int nParentIndex = m_bones[i].GetParentIndex();
+			bool isAllParentTransformationNode = true;
+			while (nParentIndex >= 0)
+			{
+				if (!m_bones[nParentIndex].IsTransformationNode())
+				{
+					isAllParentTransformationNode = false;
+					break;
+				}
+				nParentIndex = m_bones[nParentIndex].GetParentIndex();
+			}
+			if (isAllParentTransformationNode)
+			{
+				nRootBoneIndex = i;
+				m_bones[i].SetBoneID(Bone_Root);
+				m_boneLookup[Bone_Root] = i;
+				break;
+			}
+		}
+	}
+	return nRootBoneIndex;
+}
+
 bool CBoneAnimProvider::LoadAsset()
 {
-	if(m_bLoaded)
+	if (m_bLoaded)
 		return true;
 	ParaXEntity* pAsset = m_asset.get();
-	if(pAsset && pAsset->GetPrimaryTechniqueHandle() > 0)
+	if (pAsset && pAsset->GetPrimaryTechniqueHandle() > 0)
 	{
 		CParaXModel* pModel = pAsset->GetModel();
-		if(pModel)
+		if (pModel)
 		{
 			m_asset.reset();
 			m_bLoaded = true;
@@ -219,15 +256,21 @@ bool CBoneAnimProvider::LoadAsset()
 			// copy bones
 			int nBones = pModel->GetObjectNum().nBones;
 			m_bones.resize(nBones);
-			for (int i=0;i<nBones;++i)
+			for (int i = 0; i < nBones; ++i)
 			{
 				m_bones[i] = pModel->bones[i];
+				if (!m_bones[i].GetIdentifier().empty())
+				{
+					m_mapBoneNameToIndex[m_bones[i].GetIdentifier()] = i;
+				}
 			}
+
+			FindRootBone();
 
 			// copy animation sequence info
 			int nAnimations = pModel->GetObjectNum().nAnimations;
 			m_anims.resize(nAnimations);
-			for (int i=0;i<nAnimations ;++i)
+			for (int i = 0; i < nAnimations; ++i)
 			{
 				m_anims[i] = pModel->anims[i];
 			}
@@ -239,19 +282,19 @@ bool CBoneAnimProvider::LoadAsset()
 }
 
 
-bool ParaEngine::CBoneAnimProvider::LoadFromBVHFile( const char* filename )
+bool ParaEngine::CBoneAnimProvider::LoadFromBVHFile(const char* filename)
 {
 	// TODO: please refer to BVH format and my old BVH serialization code. 
 	return false;
 }
 
-bool ParaEngine::CBoneAnimProvider::LoadFromParaXFile( const char* filename )
+bool ParaEngine::CBoneAnimProvider::LoadFromParaXFile(const char* filename)
 {
 	// just copy data from the ParaXModel. 
 	// TODO: Shall we release the ParaX model after get its data? Sometimes, the ParaX model can be displayed for testing bone animations.
 
 	ParaXEntity* pAsset = m_asset.get();
-	if(pAsset == NULL)
+	if (pAsset == NULL)
 	{
 		pAsset = CGlobals::GetAssetManager()->LoadParaX("", filename);
 		pAsset->LoadAsset();
@@ -263,6 +306,16 @@ bool ParaEngine::CBoneAnimProvider::LoadFromParaXFile( const char* filename )
 Bone* ParaEngine::CBoneAnimProvider::GetBoneByIndex(int nIndex)
 {
 	return (nIndex >= 0 && nIndex < (int)(m_bones.size())) ? &(m_bones[nIndex]) : NULL;
+}
+
+Bone* ParaEngine::CBoneAnimProvider::GetBoneByName(const std::string& sName)
+{
+	auto it = m_mapBoneNameToIndex.find(sName);
+	if (it != m_mapBoneNameToIndex.end())
+	{
+		return GetBoneByIndex(it->second);
+	}
+	return nullptr;
 }
 
 Bone* ParaEngine::CBoneAnimProvider::GetBone(KNOWN_BONE_NODES KnownBoneID)

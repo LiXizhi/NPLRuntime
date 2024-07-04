@@ -37,7 +37,7 @@ void Bone::RemoveRedundentKeys()
 #endif
 
 }
-void Bone::calcMatrix(Bone *allbones)
+void Bone::calcMatrix(Bone* allbones)
 {
 	if (calc)
 		return;
@@ -65,7 +65,7 @@ only the Bone_Root and facial bone's translation animation (which is also scaled
 This conforms to the BVH file format, where only the root node has translation and rotation animation, where all other nodes contains only rotation animation.
 This allows the same animation data to be applied to different models with different bone lengths, but the same topology.
 */
-bool Bone::calcMatrix(Bone *allbones, const AnimIndex & CurrentAnim, const AnimIndex & BlendingAnim, float blendingFactor, IAttributeFields* pAnimInstance)
+bool Bone::calcMatrix(Bone* allbones, const AnimIndex& CurrentAnim, const AnimIndex& BlendingAnim, float blendingFactor, IAttributeFields* pAnimInstance)
 {
 	if (calc)
 		return true;
@@ -102,8 +102,8 @@ bool Bone::calcMatrix(Bone *allbones, const AnimIndex & CurrentAnim, const AnimI
 		blendingFactor = 0.f;
 
 	auto current_blending_factor = blendingFactor;
-	auto & current_anim = CurrentAnim;
-	auto & current_blending_anim = BlendingAnim;
+	auto& current_anim = CurrentAnim;
+	auto& current_blending_anim = BlendingAnim;
 
 	CBoneAnimProvider* pCurProvider = NULL;
 	// the bone in the external bone provider that corresponding to the current bone. 
@@ -113,22 +113,7 @@ bool Bone::calcMatrix(Bone *allbones, const AnimIndex & CurrentAnim, const AnimI
 		pCurProvider = CBoneAnimProvider::GetProviderByID(current_anim.nIndex);
 		if (pCurProvider)
 		{
-			if (nBoneID > 0)
-			{
-				// if the bone is one of the known biped bones, we will find in the external provider.
-				// if no such a bone in the provider, we will use the default value (0). 
-				pCurBone = pCurProvider->GetBone((KNOWN_BONE_NODES)nBoneID);
-			}
-			else
-			{
-				// if the bone is one of the unknown biped bones, both locally and externally. we will try to use external animation by matching bone index. 
-				// if no unknown bone in the external provider with the same index and parent index, we will use the default animation (0). 
-				Bone* bone_ = pCurProvider->GetBoneByIndex(this->nIndex);
-				if (bone_ != 0 && bone_->nBoneID <= 0 && parent == bone_->parent)
-				{
-					pCurBone = bone_;
-				}
-			}
+			pCurBone = FindMatchingBoneInProvider(pCurProvider);
 		}
 	}
 	CBoneAnimProvider* pBlendingProvider = NULL;
@@ -139,22 +124,7 @@ bool Bone::calcMatrix(Bone *allbones, const AnimIndex & CurrentAnim, const AnimI
 		pBlendingProvider = CBoneAnimProvider::GetProviderByID(current_blending_anim.nIndex);
 		if (pBlendingProvider)
 		{
-			if (nBoneID > 0)
-			{
-				// if the bone is one of the known biped bones, we will find in the external provider.
-				// if no such a bone in the provider, we will use the default value (0). 
-				pBlendBone = pBlendingProvider->GetBone((KNOWN_BONE_NODES)nBoneID);
-			}
-			else
-			{
-				// if the bone is one of the unknown biped bones, both locally and externally. we will try to use external animation by matching bone index. 
-				// if no unknown bone in the external provider with the same index and parent index, we will use the default animation (0). 
-				Bone* bone_ = pBlendingProvider->GetBoneByIndex(this->nIndex);
-				if (bone_ != 0 && bone_->nBoneID <= 0 && parent == bone_->parent)
-				{
-					pBlendBone = bone_;
-				}
-			}
+			pBlendBone = FindMatchingBoneInProvider(pBlendingProvider);
 		}
 	}
 	Quaternion q;
@@ -179,7 +149,7 @@ bool Bone::calcMatrix(Bone *allbones, const AnimIndex & CurrentAnim, const AnimI
 				// use pivot point
 				if (IsPivotBone())
 				{
-					m.makeTrans(pivot*-1.0f);
+					m.makeTrans(pivot * -1.0f);
 					if (GetExternalScaling(pAnimInstance, sc))
 					{
 						m.m[0][0] = sc.x;
@@ -233,7 +203,7 @@ bool Bone::calcMatrix(Bone *allbones, const AnimIndex & CurrentAnim, const AnimI
 					m = matTransform;
 			}
 		}
-		else if (rot.used || scale.used || trans.used || IsBillBoarded())
+		else if (HasBoneAnimation())
 		{
 			// #define PERFOAMRNCE_TEST_calcMatrix
 #ifdef PERFOAMRNCE_TEST_calcMatrix
@@ -243,7 +213,7 @@ bool Bone::calcMatrix(Bone *allbones, const AnimIndex & CurrentAnim, const AnimI
 			if (bUsePivot)
 			{
 				// use pivot point
-				m.makeTrans(pivot*-1.0f);
+				m.makeTrans(pivot * -1.0f);
 
 				if (GetExternalScaling(pAnimInstance, sc) ||
 					(scale.used && (sc = scale.getValue(nCurrentAnim, currentFrame/*, nBlendingAnim, blendingFrame, blendingFactor*/)) != Vector3::UNIT_SCALE))
@@ -349,7 +319,7 @@ bool Bone::calcMatrix(Bone *allbones, const AnimIndex & CurrentAnim, const AnimI
 		if (bUsePivot)
 		{
 			// use pivot point
-			m.makeTrans(pivot*-1.0f);
+			m.makeTrans(pivot * -1.0f);
 			if (scale.used)
 			{
 				// always uses local scale
@@ -376,9 +346,10 @@ bool Bone::calcMatrix(Bone *allbones, const AnimIndex & CurrentAnim, const AnimI
 				Quaternion blendValue;
 				if (pCurBone != NULL)
 				{
-					currentValue = pCurBone->rot.getValue(pCurProvider->GetSubAnimID(), current_anim.nCurrentFrame);
+					if (pCurBone->rot.used)
+						currentValue = pCurBone->rot.getValue(pCurProvider->GetSubAnimID(), current_anim.nCurrentFrame);
 				}
-				else
+				else if (rot.used)
 				{
 					if (current_anim.Provider == 0)
 						currentValue = rot.getValue(current_anim);
@@ -389,9 +360,10 @@ bool Bone::calcMatrix(Bone *allbones, const AnimIndex & CurrentAnim, const AnimI
 				{
 					if (pBlendBone != NULL)
 					{
-						blendValue = pBlendBone->rot.getValue(pBlendingProvider->GetSubAnimID(), current_blending_anim.nCurrentFrame);
+						if (pBlendBone->rot.used)
+							blendValue = pBlendBone->rot.getValue(pBlendingProvider->GetSubAnimID(), current_blending_anim.nCurrentFrame);
 					}
-					else
+					else if (rot.used)
 					{
 						if (current_blending_anim.Provider == 0)
 							blendValue = rot.getValue(current_blending_anim);
@@ -469,14 +441,14 @@ bool Bone::calcMatrix(Bone *allbones, const AnimIndex & CurrentAnim, const AnimI
 			}
 			m.offsetTrans(pivot);
 		}
-		else if (IsStaticTransform())
+		else if (IsStaticTransform() && (pCurBone == NULL || pCurBone->IsStaticTransform()) && (pBlendBone == NULL || pBlendBone->IsStaticTransform()))
 		{
 			if (GetExternalRot(pAnimInstance, q))
 			{
 				// use pivot point
 				if (IsPivotBone())
 				{
-					m.makeTrans(pivot*-1.0f);
+					m.makeTrans(pivot * -1.0f);
 					mLocalRot = Matrix4(q);
 					m = m.Multiply4x3(mLocalRot);
 					m.offsetTrans(pivot);
@@ -495,40 +467,139 @@ bool Bone::calcMatrix(Bone *allbones, const AnimIndex & CurrentAnim, const AnimI
 		else
 		{
 			// external animation is not applied when there is no pivot point in the bone
-			// no pivot point is used; 
-			if (scale.used)
+			if ((pCurBone && pCurBone->scale.used) || (pBlendBone && pBlendBone->scale.used))
 			{
-				// always uses local scale
-				sc = scale.getValue(current_anim);
+				Vector3 currentValue(0, 0, 0);
+				Vector3 blendValue(0, 0, 0);
 
-				m.makeScale(sc);
-				if (GetExternalRot(pAnimInstance, q))
+				if (pCurBone != NULL)
 				{
-					mLocalRot = Matrix4(q);
-					m = m.Multiply4x3(mLocalRot);
+					currentValue = pCurBone->scale.getValue(pCurProvider->GetSubAnimID(), current_anim.nCurrentFrame);
+					// currentValue *= (pivot.y / pCurBone->pivot.y);
 				}
-				else if (rot.used) {
-					q = rot.getValue(nCurrentAnim, currentFrame, nBlendingAnim, blendingFrame, current_blending_factor);
-					mLocalRot = Matrix4(q.invertWinding());
-					m = m.Multiply4x3(mLocalRot);
+				else if (scale.used)
+				{
+					if (current_anim.Provider == 0)
+						currentValue = scale.getValue(current_anim);
+					else
+						currentValue = scale.getDefaultValue();
 				}
+
+				if (current_blending_factor != 0.f)
+				{
+					if (pBlendBone != NULL)
+					{
+						blendValue = pBlendBone->scale.getValue(pBlendingProvider->GetSubAnimID(), current_blending_anim.nCurrentFrame);
+						// blendValue *= (pivot.y / pBlendBone->pivot.y);
+					}
+					else if (scale.used)
+					{
+						if (current_blending_anim.Provider == 0)
+							blendValue = scale.getValue(current_blending_anim);
+						else
+							blendValue = currentValue;
+					}
+					if (pCurBone == NULL && current_anim.Provider != 0)
+					{
+						currentValue = blendValue;
+					}
+				}
+				sc = trans.BlendValues(currentValue, blendValue, current_blending_factor);
+				m.makeScale(sc);
+			}
+			else if (scale.used)
+			{
+				sc = scale.getValue(current_anim);
+				m.makeScale(sc);
+			}
+			if (GetExternalRot(pAnimInstance, q))
+			{
+				mLocalRot = Matrix4(q);
+				m = m.Multiply4x3(mLocalRot);
 			}
 			else
 			{
-				if (GetExternalRot(pAnimInstance, q))
+				Quaternion currentValue;
+				Quaternion blendValue;
+				if (pCurBone != NULL)
 				{
-					mLocalRot = Matrix4(q);
-					m = mLocalRot;
+					if (pCurBone->rot.used)
+						currentValue = pCurBone->rot.getValue(pCurProvider->GetSubAnimID(), current_anim.nCurrentFrame);
 				}
-				else if (rot.used) {
-					q = rot.getValue(nCurrentAnim, currentFrame, nBlendingAnim, blendingFrame, current_blending_factor);
-					mLocalRot = Matrix4(q.invertWinding());
-					m = mLocalRot;
+				else if (rot.used)
+				{
+					if (current_anim.Provider == 0)
+						currentValue = rot.getValue(current_anim);
+					else
+						currentValue = rot.getDefaultValue();
 				}
-				else
-					m.identity();
+				if (current_blending_factor != 0.f)
+				{
+					if (pBlendBone != NULL)
+					{
+						if (pBlendBone->rot.used)
+							blendValue = pBlendBone->rot.getValue(pBlendingProvider->GetSubAnimID(), current_blending_anim.nCurrentFrame);
+					}
+					else if (rot.used)
+					{
+						if (current_blending_anim.Provider == 0)
+							blendValue = rot.getValue(current_blending_anim);
+						else
+							blendValue = currentValue;
+					}
+					if (pCurBone == NULL && current_anim.Provider != 0)
+					{
+						currentValue = blendValue;
+					}
+				}
+				q = rot.BlendValues(currentValue, blendValue, current_blending_factor);
+				mLocalRot = Matrix4(q.invertWinding());
+				m = m.Multiply4x3(mLocalRot);
 			}
-			if (trans.used) {
+
+			// translation is only applied to root bone like Hips
+			if ((pCurBone && pCurBone->trans.used && pCurBone->GetBoneID() == Bone_Root) || (pBlendBone && pBlendBone->trans.used && pBlendBone->GetBoneID() == Bone_Root))
+			{
+				// TODO: translation animation is scaled uniformly according to root bone height ratio in external vs local model.
+				Vector3 currentValue(0, 0, 0);
+				Vector3 blendValue(0, 0, 0);
+
+				if (pCurBone != NULL)
+				{
+					currentValue = pCurBone->trans.getValue(pCurProvider->GetSubAnimID(), current_anim.nCurrentFrame);
+					// currentValue *= (pivot.y / pCurBone->pivot.y);
+				}
+				else if (trans.used)
+				{
+					if (current_anim.Provider == 0)
+						currentValue = trans.getValue(current_anim);
+					else
+						currentValue = trans.getDefaultValue();
+				}
+
+				if (current_blending_factor != 0.f)
+				{
+					if (pBlendBone != NULL)
+					{
+						blendValue = pBlendBone->trans.getValue(pBlendingProvider->GetSubAnimID(), current_blending_anim.nCurrentFrame);
+						// blendValue *= (pivot.y / pBlendBone->pivot.y);
+					}
+					else if (trans.used)
+					{
+						if (current_blending_anim.Provider == 0)
+							blendValue = trans.getValue(current_blending_anim);
+						else
+							blendValue = currentValue;
+					}
+					if (pCurBone == NULL && current_anim.Provider != 0)
+					{
+						currentValue = blendValue;
+					}
+				}
+				tr = trans.BlendValues(currentValue, blendValue, current_blending_factor);
+				m.offsetTrans(tr);
+			}
+			else if (trans.used) {
 				tr = trans.getValue(current_anim, current_blending_anim, current_blending_factor);
 				m.offsetTrans(tr);
 			}
@@ -578,7 +649,7 @@ bool Bone::calcMatrix(Bone *allbones, const AnimIndex & CurrentAnim, const AnimI
 		// fixed pivot LXZ 2008.12.3. 
 		if (bUsePivot)
 		{
-			mtrans.makeTrans(pivot*-1.0f);
+			mtrans.makeTrans(pivot * -1.0f);
 			mtrans = mtrans * mbb;
 			mtrans.offsetTrans(pivot);
 			mbb = mtrans;
@@ -774,8 +845,8 @@ void ParaEngine::Bone::SetName(const std::string& val)
 		auto nToPos = val.find_last_of('}');
 		if (nToPos != string::npos)
 		{
-			if(nFromPos >= 1 && val[nFromPos-1]==' ')
-				m_sIdentifer = val.substr(0, nFromPos-1);
+			if (nFromPos >= 1 && val[nFromPos - 1] == ' ')
+				m_sIdentifer = val.substr(0, nFromPos - 1);
 			else
 				m_sIdentifer = val.substr(0, nFromPos);
 			m_sTag = val.substr(nFromPos, nToPos - nFromPos + 1);
@@ -1247,12 +1318,12 @@ void ParaEngine::Bone::SetFinalRot(const ParaEngine::Quaternion& val)
 	m_finalRot = val;
 }
 
-const Vector3 & ParaEngine::Bone::GetFinalTrans() const
+const Vector3& ParaEngine::Bone::GetFinalTrans() const
 {
 	return m_finalTrans;
 }
 
-void ParaEngine::Bone::SetFinalTrans(const Vector3 &val)
+void ParaEngine::Bone::SetFinalTrans(const Vector3& val)
 {
 	m_finalTrans = val;
 }
@@ -1290,7 +1361,7 @@ ParaEngine::Matrix4 ParaEngine::Bone::GetPivotRotMatrix()
 
 void ParaEngine::Bone::MakeDirty(bool bForce)
 {
-	if(!IsDummyNode())
+	if (!IsDummyNode())
 		calc = false;
 }
 
@@ -1417,5 +1488,32 @@ void ParaEngine::Bone::RemoveUnusedAnimKeys()
 	rot.RemoveUnusedAnimKeys();
 	trans.RemoveUnusedAnimKeys();
 	scale.RemoveUnusedAnimKeys();
+}
+
+Bone* ParaEngine::Bone::FindMatchingBoneInProvider(CBoneAnimProvider* pProvider)
+{
+	Bone* pCurBone = 0;
+	if (this->nBoneID > 0)
+	{
+		// if the bone is one of the known biped bones, we will find in the external provider.
+		// if no such a bone in the provider, we will use the default value (0). 
+		pCurBone = pProvider->GetBone((KNOWN_BONE_NODES)(this->nBoneID));
+	}
+	else
+	{
+		if (!GetIdentifier().empty())
+			pCurBone = pProvider->GetBoneByName(GetIdentifier());
+		if (pCurBone == 0)
+		{
+			// if the bone is one of the unknown biped bones, both locally and externally. we will try to use external animation by matching bone index. 
+			// if no unknown bone in the external provider with the same index and parent index, we will use the default animation (0). 
+			Bone* bone_ = pProvider->GetBoneByIndex(this->nIndex);
+			if (bone_ != 0 && bone_->nBoneID <= 0 && this->parent == bone_->parent)
+			{
+				pCurBone = bone_;
+			}
+		}
+	}
+	return pCurBone;
 }
 
