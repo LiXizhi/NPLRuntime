@@ -5,6 +5,7 @@
 namespace ParaEngine
 {
 	class CBVHSerializer;
+	class CBoneAnimProvider;
 
 	/** a single animated bone,  it contains both the bone instance data and all animation data of the bone. 
 	There are three ways to calculate final bone matrix. 
@@ -92,6 +93,11 @@ namespace ParaEngine
 		/** whether the bone contains animation data. */
 		bool CheckHasAnimation();
 
+		/** whether the bone contains bone rotation, scaling or translation animation data. */
+		inline bool HasBoneAnimation() {
+			return rot.used || scale.used || trans.used || IsBillBoarded();
+		}
+
 		const std::string& GetName() const;
 		void SetName(const std::string& val);
 
@@ -170,6 +176,9 @@ namespace ParaEngine
 		/** call this before save to disk to compress the size of the file, if it is loaded from FBX files */
 		void RemoveUnusedAnimKeys();
 	
+		/** find the matching bone in the provider. */
+		Bone* FindMatchingBoneInProvider(CBoneAnimProvider* pProvider);
+
 	public:
 		enum BONE_FLAGS
 		{
