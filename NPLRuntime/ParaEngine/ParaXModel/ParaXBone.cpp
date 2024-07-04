@@ -839,21 +839,19 @@ const std::string& ParaEngine::Bone::GetIdentifier()
 
 void ParaEngine::Bone::SetName(const std::string& val)
 {
+	m_sIdentifer = val;
+
+	// extract tag from the name in {}
 	auto nFromPos = val.find_first_of('{');
 	if (nFromPos != string::npos)
 	{
 		auto nToPos = val.find_last_of('}');
 		if (nToPos != string::npos)
 		{
-			if (nFromPos >= 1 && val[nFromPos - 1] == ' ')
-				m_sIdentifer = val.substr(0, nFromPos - 1);
-			else
-				m_sIdentifer = val.substr(0, nFromPos);
 			m_sTag = val.substr(nFromPos, nToPos - nFromPos + 1);
 			return;
 		}
 	}
-	m_sIdentifer = val;
 	m_sTag.clear();
 }
 
