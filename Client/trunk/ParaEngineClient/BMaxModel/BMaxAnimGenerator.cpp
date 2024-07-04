@@ -16,15 +16,15 @@ namespace ParaEngine
 	bool BMaxAnimGenerator::s_bInitedBoneState = false;
 	std::map<pair<BoneName, BoneFlag>, std::map<int, BoneState>> BMaxAnimGenerator::s_boneStates = std::map<pair<BoneName, BoneFlag>, std::map<int, BoneState>>();
 
-	BMaxAnimGenerator::BMaxAnimGenerator() : 
+	BMaxAnimGenerator::BMaxAnimGenerator() :
 		m_pParser(NULL), m_bHasSetMaxMinPosition(false),
-		m_vLeftBonePosition(0, 0, 0), m_vRightBonePosition(0,0,0) 
+		m_vLeftBonePosition(0, 0, 0), m_vRightBonePosition(0, 0, 0)
 	{
 		InitBoneState();
 	}
 
-	BMaxAnimGenerator::BMaxAnimGenerator(BMaxParser *pParser) : 
-		m_pParser(pParser), m_bHasSetMaxMinPosition(false), 
+	BMaxAnimGenerator::BMaxAnimGenerator(BMaxParser* pParser) :
+		m_pParser(pParser), m_bHasSetMaxMinPosition(false),
 		m_vLeftBonePosition(0, 0, 0), m_vRightBonePosition(0, 0, 0)
 	{
 		InitBoneState();
@@ -40,7 +40,7 @@ namespace ParaEngine
 		auto iter = s_boneStates.find(pair<string, string>(boneName, boneFlag));
 		if (iter != s_boneStates.end())
 		{
-			auto &boneStates = iter->second;
+			auto& boneStates = iter->second;
 			auto boneStatesIter = boneStates.find(animID);
 			if (boneStatesIter != boneStates.end())
 			{
@@ -161,7 +161,19 @@ namespace ParaEngine
 
 				string boneFlag = "default";
 
-				string::size_type addFlag = cmdcontent.find_first_of("-");
+				int nFlagPos = 0;
+				// skip tag between {} in name
+				int nFromPos = cmdcontent.find_first_of('{');
+				if (nFromPos != string::npos)
+				{
+					int nToPos = cmdcontent.find_last_of('}');
+					if (nToPos != string::npos)
+					{
+						nFlagPos = nToPos;
+					}
+				}
+
+				string::size_type addFlag = cmdcontent.find_first_of("-", nFlagPos);
 				if (addFlag != string::npos)
 				{
 					_boneName = string(cmdcontent, 0, addFlag);
@@ -169,7 +181,7 @@ namespace ParaEngine
 					boneFlag = _boneFlag;
 				}
 
-				addFlag = cmdcontent.find_first_of("|");
+				addFlag = cmdcontent.find_first_of("|", nFlagPos);
 				if (addFlag != string::npos)
 				{
 					_boneName = string(cmdcontent, 0, addFlag);
@@ -222,7 +234,7 @@ namespace ParaEngine
 				}
 				else
 				{
-					vector<BoneInfo> &boneInfos = iter->second;
+					vector<BoneInfo>& boneInfos = iter->second;
 					boneInfos.push_back(boneInfo);
 					//CountBonePosition(_boneName,boneFlag,boneInfos);
 				}
@@ -244,10 +256,10 @@ namespace ParaEngine
 			centerBonePosition.y = (m_vLeftBonePosition.y - m_vRightBonePosition.y) / 2 + m_vRightBonePosition.y;
 			centerBonePosition.z = (m_vLeftBonePosition.z - m_vRightBonePosition.z) / 2 + m_vRightBonePosition.z;
 		}
-		for (auto &boneInfosIter : m_boneInfoMap)
+		for (auto& boneInfosIter : m_boneInfoMap)
 		{
-			auto &boneInfos = boneInfosIter.second;
-			for (auto &boneInfo : boneInfos)
+			auto& boneInfos = boneInfosIter.second;
+			for (auto& boneInfo : boneInfos)
 			{
 				if (boneInfo.bz > centerBonePosition.z)
 				{
@@ -318,15 +330,15 @@ namespace ParaEngine
 		auto bonePositionInfoIter = m_bonePositionInfoMap.find(pair<BoneName, BoneFlag>(boneName, boneFlag));
 		if (bonePositionInfoIter != m_bonePositionInfoMap.end())
 		{
-			std::vector<int> &bonePositionInfo = bonePositionInfoIter->second;
+			std::vector<int>& bonePositionInfo = bonePositionInfoIter->second;
 			for (auto boneInfoIter : boneInfos)
 			{
-				BoneInfo &boneInfo = boneInfoIter;
+				BoneInfo& boneInfo = boneInfoIter;
 				if (CompareBonePosition(newBoneInfo, boneInfo))
 				{
 					for (auto bonePositionIter = bonePositionInfo.begin(); bonePositionIter != bonePositionInfo.end(); bonePositionIter++)
 					{
-						int &BoneIndex = *bonePositionIter;
+						int& BoneIndex = *bonePositionIter;
 						if (BoneIndex == boneInfo.index)
 						{
 							bonePositionInfo.insert(bonePositionIter, newBoneInfo.index);
@@ -380,7 +392,7 @@ namespace ParaEngine
 				{
 					for (auto boneInfo : boneInfos.second)
 					{
-						auto &bone = m_pParser->m_bones[boneInfo.index];
+						auto& bone = m_pParser->m_bones[boneInfo.index];
 						Bone* pBone = bone->GetBone();
 
 						Vector3 vAxis = bone->GetAxis();
@@ -395,7 +407,7 @@ namespace ParaEngine
 
 						//Vector3 rotAxis = GetRotAxis(boneName, boneFlag, nAnimID, vAxis);
 
-						BoneState &_boneState = boneState->second;
+						BoneState& _boneState = boneState->second;
 
 						for (auto rotState : _boneState.boneRot)
 						{
