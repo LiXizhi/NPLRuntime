@@ -271,29 +271,36 @@ int main(int argc, char* argv[])
                 Vector4 rightOrientation = Vector4(views[1].viewPose.orientation[0], views[1].viewPose.orientation[1], views[1].viewPose.orientation[2], views[1].viewPose.orientation[3]);
 
                 // hand information.
-                static ParaWebXRRigidTransform _controllerTransformations[2];
+                // static ParaWebXRRigidTransform _controllerTransformations[2];
                 ParaWebXRInputSource sources[2];
                 int sourcesCount = 0;
                 webxr_get_input_sources(sources, 5, &sourcesCount);
 
-                for(int i = 0; i < sourcesCount; ++i) {
-                    webxr_get_input_pose(&sources[i], _controllerTransformations + i, WEBXR_INPUT_POSE_GRIP);
+                Vector3 leftHandPosition;
+                Vector4 leftHandOrientation;
+                Vector3 rightHandPosition;
+                Vector4 rightHandOrientation;
+
+                for (int i = 0; i < sourcesCount; ++i) {
+                    static ParaWebXRRigidTransform *_controllerTransformations;
+                    webxr_get_input_pose(&sources[i], _controllerTransformations, WEBXR_INPUT_POSE_GRIP);
+
+                    if (sources[i].handedness == WEBXR_HANDEDNESS_LEFT) {
+                        leftHandPosition = Vector3(_controllerTransformations->position[0], _controllerTransformations->position[1], _controllerTransformations->position[2]);
+                        leftHandOrientation = Vector4(
+                            _controllerTransformations->orientation[0],
+                            _controllerTransformations->orientation[1],
+                            _controllerTransformations->orientation[2],
+                            _controllerTransformations->orientation[3]);
+                    } else if (sources[i].handedness == WEBXR_HANDEDNESS_RIGHT) {
+                        rightHandPosition = Vector3(_controllerTransformations->position[0], _controllerTransformations->position[1], _controllerTransformations->position[2]);
+                        rightHandOrientation = Vector4(
+                            _controllerTransformations->orientation[0],
+                            _controllerTransformations->orientation[1],
+                            _controllerTransformations->orientation[2],
+                            _controllerTransformations->orientation[3]);
+                    }
                 }
-
-                Vector3 rightHandPosition = Vector3(_controllerTransformations[0].position[0], _controllerTransformations[0].position[1], _controllerTransformations[0].position[2]);
-                Vector3 leftHandPosition = Vector3(_controllerTransformations[1].position[0], _controllerTransformations[1].position[1], _controllerTransformations[1].position[2]);
-
-                Vector4 rightHandOrientation = Vector4(
-                    _controllerTransformations[0].orientation[0],
-                    _controllerTransformations[0].orientation[1],
-                    _controllerTransformations[0].orientation[2],
-                    _controllerTransformations[0].orientation[3]);
-
-                Vector4 leftHandOrientation = Vector4(
-                    _controllerTransformations[1].orientation[0],
-                    _controllerTransformations[1].orientation[1],
-                    _controllerTransformations[1].orientation[2],
-                    _controllerTransformations[1].orientation[3]);
 
                 ((IParaWebXR *)CGlobals::GetViewportManager()->GetChildAttributeObject("WebXR"))->UpdateWebXRView(
                     time,
