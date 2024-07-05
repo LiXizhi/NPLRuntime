@@ -181,7 +181,7 @@ AnimIndex CBoneAnimProvider::GetAnimIndex(int nAnimID)
 	for (int i = 0; i < nAnim; i++) {
 		if (m_anims[i].animID == nAnimID)
 		{
-			return AnimIndex(m_nAnimID, 1, m_anims[i].timeStart, m_anims[i].timeEnd, (byte)m_anims[i].loopType);
+			return AnimIndex(m_nAnimID, 1, m_anims[i].timeStart, m_anims[i].timeEnd, (unsigned char)m_anims[i].loopType);
 		}
 	}
 
