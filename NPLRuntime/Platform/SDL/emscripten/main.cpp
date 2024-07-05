@@ -281,6 +281,11 @@ int main(int argc, char* argv[])
                 Vector3 rightHandPosition;
                 Vector4 rightHandOrientation;
 
+                int leftHandKey[7];
+                int rightHandKey[7];
+                Vector4 leftAxes;
+                Vector4 rightAxes;
+
                 for (int i = 0; i < sourcesCount; ++i) {
                     static ParaWebXRRigidTransform *_controllerTransformations;
                     webxr_get_input_pose(&sources[i], _controllerTransformations, WEBXR_INPUT_POSE_GRIP);
@@ -292,6 +297,10 @@ int main(int argc, char* argv[])
                             _controllerTransformations->orientation[1],
                             _controllerTransformations->orientation[2],
                             _controllerTransformations->orientation[3]);
+
+                        memcpy(leftHandKey, sources[i].gamepad.buttons, sizeof(sources[i].gamepad.buttons));
+
+                        leftAxes = Vector4(sources[i].gamepad.axes[0], sources[i].gamepad.axes[1], sources[i].gamepad.axes[2], sources[i].gamepad.axes[3]);
                     } else if (sources[i].handedness == WEBXR_HANDEDNESS_RIGHT) {
                         rightHandPosition = Vector3(_controllerTransformations->position[0], _controllerTransformations->position[1], _controllerTransformations->position[2]);
                         rightHandOrientation = Vector4(
@@ -299,6 +308,10 @@ int main(int argc, char* argv[])
                             _controllerTransformations->orientation[1],
                             _controllerTransformations->orientation[2],
                             _controllerTransformations->orientation[3]);
+
+                        memcpy(rightHandKey, sources[i].gamepad.buttons, sizeof(sources[i].gamepad.buttons));
+                        
+                        rightAxes = Vector4(sources[i].gamepad.axes[0], sources[i].gamepad.axes[1], sources[i].gamepad.axes[2], sources[i].gamepad.axes[3]);
                     }
                 }
 
@@ -307,7 +320,8 @@ int main(int argc, char* argv[])
                     leftView, leftPosition, leftOrientation,
                     rightView, rightPosition, rightOrientation,
                     viewCount,
-                    leftHandPosition, rightHandPosition, leftHandOrientation, rightHandOrientation);
+                    leftHandPosition, rightHandPosition, leftHandOrientation, rightHandOrientation,
+                    leftHandKey, rightHandKey, leftAxes, rightAxes);
 
                 static_cast<EmscriptenApplication*>(userData)->RunLoopOnce();
             },

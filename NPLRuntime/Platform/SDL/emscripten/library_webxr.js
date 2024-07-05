@@ -38,19 +38,44 @@ $WebXR: {
     /* Sets input source values to offset and returns pointer after struct */
     _nativize_input_source: function(offset, inputSource, id) {
         var handedness = -1;
-        if(inputSource.handedness == "left") handedness = 0;
+        if (inputSource.handedness == "left") handedness = 0;
         else if(inputSource.handedness == "right") handedness = 1;
 
         var targetRayMode = 0;
-        if(inputSource.targetRayMode == "tracked-pointer") targetRayMode = 1;
+        if (inputSource.targetRayMode == "tracked-pointer") targetRayMode = 1;
         else if(inputSource.targetRayMode == "screen") targetRayMode = 2;
 
+        var gamepad = null;
+        if (inputSource.gamepad) gamepad = inputSource.gamepad;
+
         setValue(offset, id, 'i32');
-        offset +=4;
+        offset += 4;
         setValue(offset, handedness, 'i32');
-        offset +=4;
+        offset += 4;
         setValue(offset, targetRayMode, 'i32');
-        offset +=4;
+        offset += 4;
+
+        // gamepad
+        for (let i = 0; i < 7; ++i) {
+            if (gamepad.buttons[i]) {
+                setValue(offset, gamepad.buttons[i].value, 'i32');
+                offset += 4;
+            } else {
+                setValue(offset, 0, 'i32');
+                offset += 4;
+            }
+        }
+
+        // axes
+        for (let i = 0; i < 4; ++i) {
+            if (gamepad.axes[i]) {
+                setValue(offset, axes[i], 'i32');
+                offset += 4;
+            } else {
+                setValue(offset, 0, 'i32');
+                offset += 4;
+            }
+        }
 
         return offset;
     },
@@ -120,7 +145,7 @@ webxr_init: function(frameCallback, startSessionCallback, endSessionCallback, er
         const glLayer = session.renderState.baseLayer;
         pose.views.forEach(function(view) {
             const viewport = glLayer.getViewport(view);
-            let offset = views + SIZE_OF_WEBXR_VIEW*(view.eye == 'right' ? 1 : 0);
+            let offset = views + SIZE_OF_WEBXR_VIEW * (view.eye == 'right' ? 1 : 0);
             offset = WebXR._nativize_rigid_transform(offset, view.transform);
             offset = WebXR._nativize_matrix(offset, view.projectionMatrix);
 
@@ -131,7 +156,7 @@ webxr_init: function(frameCallback, startSessionCallback, endSessionCallback, er
         });
 
         /* Model matrix */
-        const modelMatrix = views + SIZE_OF_WEBXR_VIEW*2;
+        const modelMatrix = views + SIZE_OF_WEBXR_VIEW * 2;
         WebXR._nativize_matrix(modelMatrix, pose.transform.matrix);
 
         /* If framebuffer is non-null, compositor is enabled and we bind it.
@@ -165,7 +190,7 @@ webxr_init: function(frameCallback, startSessionCallback, endSessionCallback, er
         });
 
         // Ensure our context can handle WebXR rendering
-        console.log(Module.ctx)
+        // console.log(Module.ctx)
         Module.ctx.makeXRCompatible().then(function() {
             // Create the base layer
             const layer = Module['webxr_baseLayer'] = new window.XRWebGLLayer(session, Module.ctx, {
@@ -291,6 +316,7 @@ webxr_get_input_sources: function(outArrayPtr, max, outCountPtr) {
     if(!s) return; // TODO(squareys) warning or return error
 
     let i = 0;
+    //window.test1 = s.inputSources;
     for (let inputSource of s.inputSources) {
         if(i >= max) break;
         outArrayPtr = WebXR._nativize_input_source(outArrayPtr, inputSource, i);
@@ -312,7 +338,7 @@ webxr_get_input_pose: function(source, outPosePtr, space) {
     const s = space == 0 ? input.gripSpace : input.targetRaySpace;
     if(!s) return false;
     const pose = f.getPose(s, WebXR.refSpaces[WebXR.refSpace]);
-
+ 
     if(!pose || Number.isNaN(pose.transform.matrix[0])) return false;
 
     WebXR._nativize_rigid_transform(outPosePtr, pose.transform);

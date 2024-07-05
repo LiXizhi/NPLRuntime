@@ -17,13 +17,16 @@ namespace ParaEngine
     public:
         virtual void SetIsXR(bool isXR) override;
         virtual bool GetIsXR() override;
+        virtual bool IsPressLeftHandKey(int keyCode) override;
+        virtual bool IsPressRightHandKey(int keyCode) override;
         virtual void UpdateWebXRView(
             int time,
             Vector4 leftView, Vector3 leftPosition, Vector4 leftOrientation,
             Vector4 rightView, Vector3 rightPosition, Vector4 rightOrientation, 
             int viewCount,
             Vector3 leftHandPosition, Vector3 rightHandPosition,
-            Vector4 leftHandOrientation, Vector4 rightHandOrientation) override;
+            Vector4 leftHandOrientation, Vector4 rightHandOrientation,
+            int leftHandKey[7], int rightHandKey[7], Vector4 leftAxes, Vector4 rightAxes) override;
     };
 }
 

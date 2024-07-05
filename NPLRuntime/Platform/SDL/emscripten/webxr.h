@@ -70,10 +70,16 @@ typedef struct ParaWebXRView {
     int viewport[4];
 } ParaWebXRView;
 
+typedef struct ParaWebXRGamepad {
+    int buttons[7];
+    int axes[4];
+} ParaWebXRGamepad;
+
 typedef struct ParaWebXRInputSource {
     int id;
     ParaWebXRHandedness handedness;
     ParaWebXRTargetRayMode targetRayMode;
+    ParaWebXRGamepad gamepad;
 } ParaWebXRInputSource;
 
 /**
@@ -200,8 +206,7 @@ Get input sources.
 @param max Size of outArray (in elements).
 @param outCount Will receive the number of input sources valid in outArray.
 */
-extern void webxr_get_input_sources(
-        ParaWebXRInputSource* outArray, int max, int* outCount);
+extern void webxr_get_input_sources(ParaWebXRInputSource* outArray, int max, int* outCount);
 
 /**
 Get input pose. Can only be called during the frame callback.
