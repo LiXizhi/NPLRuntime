@@ -4446,8 +4446,16 @@ int FilterScreenObjectToList(T& renderlist, list<CBaseObject*>& output, CPortalF
 	return nCount;
 }
 
-int CSceneObject::GetObjectsByScreenRect( list<CBaseObject*>& output, const RECT& rect, OBJECT_FILTER_CALLBACK pFnctFilter/*=NULL*/, float fMaxDistance)
+int CSceneObject::GetObjectsByScreenRect( list<CBaseObject*>& output, const RECT& rect_, OBJECT_FILTER_CALLBACK pFnctFilter/*=NULL*/, float fMaxDistance)
 {
+	RECT rect = rect_;
+	float fScaleX = 1.f, fScaleY = 1.f;
+	CGlobals::GetGUI()->GetUIScale(&fScaleX, &fScaleY);
+	rect.left = (fScaleX == 1.f) ? rect.left : (int)(rect.left * fScaleX);
+	rect.top = (fScaleY == 1.f) ? rect.top : (int)(rect.top * fScaleY);
+	rect.right = (fScaleX == 1.f) ? rect.right : (int)(rect.right * fScaleX);
+	rect.bottom = (fScaleY == 1.f) ? rect.bottom : (int)(rect.bottom * fScaleY);
+
 	auto pViewportManager = CGlobals::GetViewportManager();
 	if(rect.top >= rect.bottom || rect.left >= rect.right || pViewportManager==0)
 	{
