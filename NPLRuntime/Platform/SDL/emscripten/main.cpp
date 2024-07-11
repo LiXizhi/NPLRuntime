@@ -283,8 +283,8 @@ int main(int argc, char* argv[])
 
                 int leftHandKey[7];
                 int rightHandKey[7];
-                Vector4 leftAxes;
-                Vector4 rightAxes;
+                Vector4 leftAxes = Vector4(0, 0, 0, 0);
+                Vector4 rightAxes = Vector4(0, 0, 0, 0);
 
                 for (int i = 0; i < sourcesCount; ++i) {
                     static ParaWebXRRigidTransform *_controllerTransformations;
