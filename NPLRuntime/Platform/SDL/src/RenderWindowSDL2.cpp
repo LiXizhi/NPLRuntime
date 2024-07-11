@@ -10,6 +10,7 @@
 
 #ifdef EMSCRIPTEN
 #include "emscripten.h"
+#include "Js.h"
 #endif
 
 namespace ParaEngine
@@ -446,7 +447,10 @@ namespace ParaEngine
 #ifdef EMSCRIPTEN
 				if (sdl_event.key.keysym.sym == SDLK_NUMLOCKCLEAR || m_isNumLockEnabled == 2)
 				{
-					m_isNumLockEnabled = EM_ASM_INT({ return window.isNumLockEnabled; });
+					if (JS::GetOperatingSystem() != "mac")
+					{
+						m_isNumLockEnabled = EM_ASM_INT({ return window.isNumLockEnabled; });
+					}
 				}
 #endif
 				EKeyState state = EKeyState::RELEASE;
