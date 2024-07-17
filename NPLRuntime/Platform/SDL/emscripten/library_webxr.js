@@ -69,10 +69,10 @@ $WebXR: {
         // axes
         for (let i = 0; i < 4; ++i) {
             if (gamepad.axes[i]) {
-                setValue(offset, axes[i], 'i32');
+                setValue(offset, gamepad.axes[i], 'float');
                 offset += 4;
             } else {
-                setValue(offset, 0, 'i32');
+                setValue(offset, 0, 'float');
                 offset += 4;
             }
         }
@@ -316,7 +316,6 @@ webxr_get_input_sources: function(outArrayPtr, max, outCountPtr) {
     if(!s) return; // TODO(squareys) warning or return error
 
     let i = 0;
-    //window.test1 = s.inputSources;
     for (let inputSource of s.inputSources) {
         if(i >= max) break;
         outArrayPtr = WebXR._nativize_input_source(outArrayPtr, inputSource, i);

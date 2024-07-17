@@ -72,7 +72,7 @@ typedef struct ParaWebXRView {
 
 typedef struct ParaWebXRGamepad {
     int buttons[7];
-    int axes[4];
+    float axes[4];
 } ParaWebXRGamepad;
 
 typedef struct ParaWebXRInputSource {

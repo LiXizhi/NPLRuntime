@@ -124,6 +124,20 @@ namespace JS
         }
     })
 
+    // get operating system.
+    EM_JS(const char*, get_operating_system, (), {
+        var os = getOperatingSystem();
+        var lengthBytes = lengthBytesUTF8(os) + 1;
+        var stringOnWasmHeap = _malloc(lengthBytes);
+        stringToUTF8(os, stringOnWasmHeap, lengthBytes);
+        return stringOnWasmHeap;
+    });
+
+    std::string GetOperatingSystem()
+    {
+        return get_operating_system();
+    }
+
     // 定义JS方法执行C++代码
     EM_PORT_API(void)
     SendMsgToEmscripten(const char *js_filename, const char *js_msg_data_json)
