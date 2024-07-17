@@ -46,10 +46,10 @@ CBaseObject::CBaseObject()
 CBaseObject::~CBaseObject()
 {
 	SAFE_DELETE(m_pEffectParamBlock);
-	if(m_nID != 0)
+	if (m_nID != 0)
 	{
 		map<int, CBaseObject*>::iterator iter = g_mapObjectID.find(m_nID);
-		if(iter != g_mapObjectID.end())
+		if (iter != g_mapObjectID.end())
 		{
 			g_mapObjectID.erase(iter);
 		}
@@ -57,7 +57,7 @@ CBaseObject::~CBaseObject()
 }
 
 void ParaEngine::CBaseObject::SetSelectGroupIndex(int nGroupIndex)
-{ 
+{
 	m_nSelectGroupIndex = nGroupIndex;
 }
 
@@ -80,7 +80,7 @@ int ParaEngine::CBaseObject::GetID()
 {
 	static int g_nLastID = 1;
 	// generate on first call. 
-	if(m_nID == 0)
+	if (m_nID == 0)
 	{
 		m_nID = ++g_nLastID;
 		g_mapObjectID[m_nID] = this;
@@ -93,10 +93,10 @@ void ParaEngine::CBaseObject::SetOnAssetLoaded(const char* sCallbackScript)
 	AddScriptCallback(Type_OnAssetLoaded, sCallbackScript);
 }
 
-CBaseObject* ParaEngine::CBaseObject::GetObjectByID( int nID )
+CBaseObject* ParaEngine::CBaseObject::GetObjectByID(int nID)
 {
 	map<int, CBaseObject*>::iterator iter = g_mapObjectID.find(nID);
-	if(iter != g_mapObjectID.end())
+	if (iter != g_mapObjectID.end())
 		return iter->second;
 	return NULL;
 }
@@ -104,40 +104,40 @@ CBaseObject* ParaEngine::CBaseObject::GetObjectByID( int nID )
 
 bool CBaseObject::IsGlobal()
 {
-	return (m_objType>=_GlobalBiped);
+	return (m_objType >= _GlobalBiped);
 }
 
 
 bool CBaseObject::ActivateScript(int func_type, const string& precode, const string& postcode)
 {
 	ScriptCallback* pCallback = GetScriptCallback((CallBackType)func_type);
-	if(pCallback)
+	if (pCallback)
 	{
 		string sFile, sCode;
 		StringHelper::DevideString(pCallback->script_func, sFile, sCode, ';');
-		if(!GetName().empty())
+		if (!GetName().empty())
 		{
 			// sensor_name="[GetName()]"
-			string script="sensor_name=";
-			NPL::NPLHelper::EncodeStringInQuotation(script,(int)(script.size()), GetName());
-			script+=";";
-			sCode = script+sCode;
+			string script = "sensor_name=";
+			NPL::NPLHelper::EncodeStringInQuotation(script, (int)(script.size()), GetName());
+			script += ";";
+			sCode = script + sCode;
 		}
 		{
 			// sensor_id=[GetID()]
 			int nID = GetID();
 			char temp[32];
 			ParaEngine::StringHelper::fast_itoa(nID, temp, 32);
-			string script="sensor_id=";
-			script+=temp;
-			script+=";";
-			sCode = script+sCode;
+			string script = "sensor_id=";
+			script += temp;
+			script += ";";
+			sCode = script + sCode;
 		}
-		if(!precode.empty())
+		if (!precode.empty())
 		{
 			sCode = precode + sCode;
 		}
-		if(!postcode.empty())
+		if (!postcode.empty())
 		{
 			sCode += postcode;
 		}
@@ -159,8 +159,8 @@ bool CBaseObject::ActivateScript(int func_type)
 void CBaseObject::SetMyType(ObjectType t)
 {
 	m_objType = t;
-	DWORD dwVol=0;
-	switch(m_objType)
+	DWORD dwVol = 0;
+	switch (m_objType)
 	{
 	case _Tile:
 	case _MeshTerrain:
@@ -208,13 +208,13 @@ std::string CBaseObject::ToString(DWORD nMethod)
 	return sScript;
 }
 
-void CBaseObject::Animate( double dTimeDelta, int nRenderNumber)
+void CBaseObject::Animate(double dTimeDelta, int nRenderNumber)
 {
 }
 
-void CBaseObject::AddChild(CBaseObject * pObject)
+void CBaseObject::AddChild(CBaseObject* pObject)
 {
-	if(pObject)
+	if (pObject)
 	{
 		CBaseObject* pParent = pObject->GetParent();
 		if (pParent != NULL) {
@@ -235,8 +235,8 @@ void CBaseObject::DestroyChildren()
 	m_children.clear();
 }
 
-void CBaseObject::Report( vector < string > & v_sReport ){}
-HRESULT CBaseObject::ResetTime(){return S_OK;}
+void CBaseObject::Report(vector < string >& v_sReport) {}
+HRESULT CBaseObject::ResetTime() { return S_OK; }
 
 void CBaseObject::CompressObject(CompressOption option)
 {
@@ -251,14 +251,14 @@ void CBaseObject::GetBoundingBox(float* fOBB_X, float* fOBB_Y, float* fOBB_Z, fl
 	*fOBB_X = GetWidth();
 	*fOBB_Y = GetHeight();
 	*fOBB_Z = GetDepth();
-	*fFacing = GetFacing(); 
+	*fFacing = GetFacing();
 }
 
-void CBaseObject::SetBoundRect(float fWidth ,float fHeight, float fFacing)
+void CBaseObject::SetBoundRect(float fWidth, float fHeight, float fFacing)
 {
 }
 
-void CBaseObject::GetBoundRect(float* fWidth ,float* fHeight, float* fFacing)
+void CBaseObject::GetBoundRect(float* fWidth, float* fHeight, float* fFacing)
 {
 	*fWidth = GetWidth();
 	*fHeight = GetDepth();
@@ -279,7 +279,11 @@ float CBaseObject::GetPhysicsRadius()
 }
 float CBaseObject::GetHeight()
 {
-	return GetRadius()*2.f;
+	return GetRadius() * 2.f;
+}
+
+void ParaEngine::CBaseObject::SetHeight(float fHeight)
+{
 }
 
 float ParaEngine::CBaseObject::GetAssetHeight()
@@ -287,25 +291,21 @@ float ParaEngine::CBaseObject::GetAssetHeight()
 	return GetHeight();
 }
 
-void ParaEngine::CBaseObject::SetHeight( float fHeight )
-{
-}
-
 float ParaEngine::CBaseObject::GetWidth()
 {
-	return GetRadius()*2.f;
+	return GetRadius() * 2.f;
 }
 
-void ParaEngine::CBaseObject::SetWidth( float fWidth )
+void ParaEngine::CBaseObject::SetWidth(float fWidth)
 {
 }
 
 float ParaEngine::CBaseObject::GetDepth()
 {
-	return GetRadius()*2.f;
+	return GetRadius() * 2.f;
 }
 
-void ParaEngine::CBaseObject::SetDepth( float fDepth )
+void ParaEngine::CBaseObject::SetDepth(float fDepth)
 {
 }
 
@@ -320,32 +320,32 @@ const std::string& ParaEngine::CBaseObject::GetAssetFileName()
 
 void ParaEngine::CBaseObject::SetAssetFileName(const std::string& sFilename)
 {
-	
+
 }
 
 Vector3 CBaseObject::GetNormal()
 {
-	if(CGlobals::GetScene()->IsSnapToTerrain())
+	if (CGlobals::GetScene()->IsSnapToTerrain())
 	{
 		Vector3 vPos = GetPosition();
 		CGlobals::GetGlobalTerrain()->GetNormal((float)vPos.x, vPos.z, vPos.x, vPos.y, vPos.z);
 		return vPos;
 	}
-	return Vector3 (0,1,0); // default is the y axis
+	return Vector3(0, 1, 0); // default is the y axis
 }
 
 void CBaseObject::SnapToTerrainSurface(bool bUseNorm)
 {
 	DVector3 vPos = GetPosition();
-		
+
 	/// set the norm of the object to the terrain surface norm.
-	if(bUseNorm)
+	if (bUseNorm)
 	{
-		Vector3 vNorm(0,1,0);// default is the y axis
+		Vector3 vNorm(0, 1, 0);// default is the y axis
 		CGlobals::GetGlobalTerrain()->GetNormal((float)vPos.x, (float)vPos.z, vNorm.x, vNorm.y, vNorm.z);
 		SetNormal(vNorm);
 	}
-	
+
 	/// set the position.y to the height of the terrain at that point 
 	float height = CGlobals::GetGlobalTerrain()->GetElevation((float)vPos.x, (float)vPos.z);
 	DVector3 v(vPos.x, height, vPos.z);
@@ -353,13 +353,13 @@ void CBaseObject::SnapToTerrainSurface(bool bUseNorm)
 }
 
 
-HRESULT CBaseObject::Draw( SceneState * sceneState)
+HRESULT CBaseObject::Draw(SceneState* sceneState)
 {
 	return S_OK;
 }
 
 float g_fLastFacing = 0;
-DVector3 g_fLastPos(0,0,0);
+DVector3 g_fLastPos(0, 0, 0);
 void CBaseObject::PushParam()
 {
 	g_fLastPos = GetPosition();
@@ -385,7 +385,7 @@ void CBaseObject::UnloadPhysics()
 void CBaseObject::SetVisibility(bool bVisible)
 {
 	SetAttribute(OBJ_VOLUMN_INVISIBLE, !bVisible);
-	if(!bVisible)
+	if (!bVisible)
 	{
 		// unload physics
 		UnloadPhysics();
@@ -440,19 +440,19 @@ void CBaseObject::SetPrimaryTechniqueHandle(int nHandle)
 void CBaseObject::AutoSelectTechnique()
 {
 	int nTech = GetPrimaryTechniqueHandle();
-	if(nTech>0)
+	if (nTech > 0)
 	{
 		float fPercentage = GetCtorPercentage();
-		if(fPercentage <1.0f)
+		if (fPercentage < 1.0f)
 		{
-			if(nTech == TECH_SIMPLE_MESH_NORMAL || nTech == TECH_SIMPLE_MESH_NORMAL_VEGETATION)
+			if (nTech == TECH_SIMPLE_MESH_NORMAL || nTech == TECH_SIMPLE_MESH_NORMAL_VEGETATION)
 				SetPrimaryTechniqueHandle(TECH_SIMPLE_MESH_NORMAL_CTOR);
 		}
-		else if(fPercentage >= 1.0f)
+		else if (fPercentage >= 1.0f)
 		{
-			if(nTech == TECH_SIMPLE_MESH_NORMAL_CTOR)
+			if (nTech == TECH_SIMPLE_MESH_NORMAL_CTOR)
 			{
-				if(IsVegetation())
+				if (IsVegetation())
 					SetPrimaryTechniqueHandle(TECH_SIMPLE_MESH_NORMAL_VEGETATION);
 				else
 					SetPrimaryTechniqueHandle(TECH_SIMPLE_MESH_NORMAL);
@@ -470,7 +470,7 @@ void CBaseObject::OnSelect(int nGroupID)
 {
 	SetSelectGroupIndex(nGroupID);
 	AutoSelectTechnique();
-	
+
 	/*int nLastTechnique = GetPrimaryTechniqueHandle();
 	if(nLastTechnique == TECH_SIMPLE_MESH_NORMAL || nLastTechnique == TECH_SIMPLE_MESH_NORMAL_VEGETATION)
 	{
@@ -494,7 +494,7 @@ void CBaseObject::OnDeSelect()
 
 CBaseObject* CBaseObject::GetChildByName(const string& name, bool bRecursive)
 {
-	if(!bRecursive)
+	if (!bRecursive)
 	{
 		for (auto pChild : m_children)
 		{
@@ -509,14 +509,14 @@ CBaseObject* CBaseObject::GetChildByName(const string& name, bool bRecursive)
 	{
 		for (auto pNode : m_children)
 		{
-			if(pNode->GetIdentifier() == name)
+			if (pNode->GetIdentifier() == name)
 			{
 				return pNode;
 			}
 			else
 			{
 				CBaseObject* pChild = pNode->GetChildByName(name, bRecursive);
-				if(pChild != NULL)
+				if (pChild != NULL)
 					return pChild;
 			}
 		}
@@ -526,13 +526,13 @@ CBaseObject* CBaseObject::GetChildByName(const string& name, bool bRecursive)
 
 int CBaseObject::DestroyChildByName(const string& name, bool bRecursive)
 {
-	if(!bRecursive)
+	if (!bRecursive)
 	{
 		CChildObjectList_Type::iterator itCur, itEnd = m_children.end();
-		for (itCur = m_children.begin(); itCur!=itEnd; ++itCur)
+		for (itCur = m_children.begin(); itCur != itEnd; ++itCur)
 		{
 			CBaseObject* pNode = (*itCur);
-			if(pNode->GetIdentifier() == name)
+			if (pNode->GetIdentifier() == name)
 			{
 				m_children.erase(itCur);
 				return 1;
@@ -543,10 +543,10 @@ int CBaseObject::DestroyChildByName(const string& name, bool bRecursive)
 	else
 	{
 		CChildObjectList_Type::iterator itCur, itEnd = m_children.end();
-		for (itCur = m_children.begin(); itCur!=itEnd; ++itCur)
+		for (itCur = m_children.begin(); itCur != itEnd; ++itCur)
 		{
 			CBaseObject* pNode = (*itCur);
-			if(pNode->GetIdentifier() == name)
+			if (pNode->GetIdentifier() == name)
 			{
 				m_children.erase(itCur);
 				return 1;
@@ -554,7 +554,7 @@ int CBaseObject::DestroyChildByName(const string& name, bool bRecursive)
 			else
 			{
 				int nCount = pNode->DestroyChildByName(name, bRecursive);
-				if(nCount >0)
+				if (nCount > 0)
 					return nCount;
 			}
 		}
@@ -562,15 +562,15 @@ int CBaseObject::DestroyChildByName(const string& name, bool bRecursive)
 	}
 }
 
-int CBaseObject::RemoveChildByName( const string& name, bool bRecursive /*= false*/ )
+int CBaseObject::RemoveChildByName(const string& name, bool bRecursive /*= false*/)
 {
-	if(!bRecursive)
+	if (!bRecursive)
 	{
 		CChildObjectList_Type::iterator itCur, itEnd = m_children.end();
-		for (itCur = m_children.begin(); itCur!=itEnd; ++itCur)
+		for (itCur = m_children.begin(); itCur != itEnd; ++itCur)
 		{
 			CBaseObject* pNode = (*itCur);
-			if(pNode->GetIdentifier() == name)
+			if (pNode->GetIdentifier() == name)
 			{
 				m_children.erase(itCur);
 				return 1;
@@ -581,10 +581,10 @@ int CBaseObject::RemoveChildByName( const string& name, bool bRecursive /*= fals
 	else
 	{
 		CChildObjectList_Type::iterator itCur, itEnd = m_children.end();
-		for (itCur = m_children.begin(); itCur!=itEnd; ++itCur)
+		for (itCur = m_children.begin(); itCur != itEnd; ++itCur)
 		{
 			CBaseObject* pNode = (*itCur);
-			if(pNode->GetIdentifier() == name)
+			if (pNode->GetIdentifier() == name)
 			{
 				m_children.erase(itCur);
 				return 1;
@@ -592,7 +592,7 @@ int CBaseObject::RemoveChildByName( const string& name, bool bRecursive /*= fals
 			else
 			{
 				int nCount = pNode->RemoveChildByName(name, bRecursive);
-				if(nCount >0)
+				if (nCount > 0)
 					return nCount;
 			}
 		}
@@ -600,15 +600,15 @@ int CBaseObject::RemoveChildByName( const string& name, bool bRecursive /*= fals
 	}
 }
 
-int ParaEngine::CBaseObject::RemoveChild( const CBaseObject* pObj, bool bRecursive /*= false*/ )
+int ParaEngine::CBaseObject::RemoveChild(const CBaseObject* pObj, bool bRecursive /*= false*/)
 {
-	if(!bRecursive)
+	if (!bRecursive)
 	{
 		CChildObjectList_Type::iterator itCur, itEnd = m_children.end();
-		for (itCur = m_children.begin(); itCur!=itEnd; ++itCur)
+		for (itCur = m_children.begin(); itCur != itEnd; ++itCur)
 		{
 			CBaseObject* pNode = (*itCur);
-			if(pNode == pObj)
+			if (pNode == pObj)
 			{
 				m_children.erase(itCur);
 				return 1;
@@ -619,10 +619,10 @@ int ParaEngine::CBaseObject::RemoveChild( const CBaseObject* pObj, bool bRecursi
 	else
 	{
 		CChildObjectList_Type::iterator itCur, itEnd = m_children.end();
-		for (itCur = m_children.begin(); itCur!=itEnd; ++itCur)
+		for (itCur = m_children.begin(); itCur != itEnd; ++itCur)
 		{
 			CBaseObject* pNode = (*itCur);
-			if(pNode == pObj)
+			if (pNode == pObj)
 			{
 				m_children.erase(itCur);
 				return 1;
@@ -630,7 +630,7 @@ int ParaEngine::CBaseObject::RemoveChild( const CBaseObject* pObj, bool bRecursi
 			else
 			{
 				int nCount = pNode->RemoveChild(pObj, bRecursive);
-				if(nCount >0)
+				if (nCount > 0)
 					return nCount;
 			}
 		}
@@ -638,35 +638,35 @@ int ParaEngine::CBaseObject::RemoveChild( const CBaseObject* pObj, bool bRecursi
 	}
 }
 
-CParameterBlock* ParaEngine::CBaseObject::GetEffectParamBlock( bool bCreateIfNotExist /*= false*/ )
+CParameterBlock* ParaEngine::CBaseObject::GetEffectParamBlock(bool bCreateIfNotExist /*= false*/)
 {
-	if(m_pEffectParamBlock) 
+	if (m_pEffectParamBlock)
 	{
 		return m_pEffectParamBlock;
 	}
 	else
 	{
-		if(bCreateIfNotExist)
+		if (bCreateIfNotExist)
 			m_pEffectParamBlock = new CParameterBlock();
 		return m_pEffectParamBlock;
 	}
 }
 
-Matrix4* ParaEngine::CBaseObject::GetAttachmentMatrix( Matrix4& pOut, int nAttachmentID , int nRenderNumber)
+Matrix4* ParaEngine::CBaseObject::GetAttachmentMatrix(Matrix4& pOut, int nAttachmentID, int nRenderNumber)
 {
 	return NULL;
 }
 
-bool ParaEngine::CBaseObject::HasAttachmentPoint( int nAttachmentID/*=0*/ )
+bool ParaEngine::CBaseObject::HasAttachmentPoint(int nAttachmentID/*=0*/)
 {
 	static Matrix4 mat;
-	return (GetAttachmentMatrix(mat,nAttachmentID)!=NULL);
+	return (GetAttachmentMatrix(mat, nAttachmentID) != NULL);
 }
 
-Vector3* ParaEngine::CBaseObject::GetAttachmentPosition( Vector3& pOut, int nAttachmentID/*=0*/, int nRenderNumber )
+Vector3* ParaEngine::CBaseObject::GetAttachmentPosition(Vector3& pOut, int nAttachmentID/*=0*/, int nRenderNumber)
 {
 	Matrix4 mat;
-	if(GetAttachmentMatrix(mat, nAttachmentID, nRenderNumber))
+	if (GetAttachmentMatrix(mat, nAttachmentID, nRenderNumber))
 	{
 		// world translation
 		Matrix4 mxWorld;
@@ -680,7 +680,7 @@ Vector3* ParaEngine::CBaseObject::GetAttachmentPosition( Vector3& pOut, int nAtt
 		mxWorld._41 += vPos.x;
 		mxWorld._42 += vPos.y;
 		mxWorld._43 += vPos.z;
-		vPos = Vector3(0,0,0)*mxWorld;
+		vPos = Vector3(0, 0, 0) * mxWorld;
 
 		// save to output
 		pOut = vPos;
@@ -692,30 +692,30 @@ Vector3* ParaEngine::CBaseObject::GetAttachmentPosition( Vector3& pOut, int nAtt
 CZoneNode* ParaEngine::CBaseObject::GetHomeZone()
 {
 	RefListItem* item = GetRefObjectByTag(3);// 3 is always for reference object;
-	if(item!=0)
+	if (item != 0)
 		return (CZoneNode*)(item->m_object);
-	return NULL; 
+	return NULL;
 }
 
-void ParaEngine::CBaseObject::SetHomeZone( CZoneNode* pZone )
+void ParaEngine::CBaseObject::SetHomeZone(CZoneNode* pZone)
 {
-	if(pZone)
+	if (pZone)
 	{
-		if(GetHomeZone()!=pZone)
+		if (GetHomeZone() != pZone)
 			pZone->addNode(this);
 	}
 	else
 	{
 		pZone = GetHomeZone();
-		if(pZone)
+		if (pZone)
 			DeleteReference(pZone);
 	}
 }
 
-void ParaEngine::CBaseObject::SetHomeZoneName( const char* sName )
+void ParaEngine::CBaseObject::SetHomeZoneName(const char* sName)
 {
 	CZoneNode* pNode = NULL;
-	if(sName && sName[0]!='\0')
+	if (sName && sName[0] != '\0')
 		pNode = CGlobals::GetScene()->CreateGetZoneNode(sName);
 	SetHomeZone(pNode);
 }
@@ -723,19 +723,19 @@ void ParaEngine::CBaseObject::SetHomeZoneName( const char* sName )
 const char* ParaEngine::CBaseObject::GetHomeZoneName()
 {
 	CZoneNode* pNode = GetHomeZone();
-	if(pNode)
+	if (pNode)
 		return pNode->GetName().c_str();
 	return CGlobals::GetString().c_str();
 }
 
-void ParaEngine::CBaseObject::UpdateFrameNumber( int nFrameNumber )
+void ParaEngine::CBaseObject::UpdateFrameNumber(int nFrameNumber)
 {
 	SetFrameNumber(nFrameNumber);
 }
 
-bool ParaEngine::CBaseObject::CheckFrameNumber( int nFrameNumber )
+bool ParaEngine::CBaseObject::CheckFrameNumber(int nFrameNumber)
 {
-	if(m_nFrameNumber!=nFrameNumber){
+	if (m_nFrameNumber != nFrameNumber) {
 		SetFrameNumber(nFrameNumber);
 		return true;
 	}
@@ -743,12 +743,12 @@ bool ParaEngine::CBaseObject::CheckFrameNumber( int nFrameNumber )
 		return false;
 }
 
-bool ParaEngine::CBaseObject::SetReplaceableTexture( int ReplaceableTextureID, TextureEntity* pTextureEntity )
+bool ParaEngine::CBaseObject::SetReplaceableTexture(int ReplaceableTextureID, TextureEntity* pTextureEntity)
 {
 	return true;
 }
 
-TextureEntity* ParaEngine::CBaseObject::GetReplaceableTexture( int ReplaceableTextureID )
+TextureEntity* ParaEngine::CBaseObject::GetReplaceableTexture(int ReplaceableTextureID)
 {
 	return NULL;
 }
@@ -758,7 +758,7 @@ int ParaEngine::CBaseObject::GetNumReplaceableTextures()
 	return 0;
 }
 
-TextureEntity* ParaEngine::CBaseObject::GetDefaultReplaceableTexture( int ReplaceableTextureID )
+TextureEntity* ParaEngine::CBaseObject::GetDefaultReplaceableTexture(int ReplaceableTextureID)
 {
 	return NULL;
 }
@@ -774,31 +774,6 @@ void ParaEngine::CBaseObject::SetAlwaysLoadPhysics(bool bEnable)
 }
 
 bool ParaEngine::CBaseObject::IsPhysicsEnabled()
-{
-	return false;
-}
-
-void ParaEngine::CBaseObject::SetPhysicsShape(const char* shape)
-{
-
-}
-const char* ParaEngine::CBaseObject::GetPhysicsShape()
-{
-	return "box";
-}
-void ParaEngine::CBaseObject::SetPhysicsProperty(const char* property)
-{
-
-}
-const char* ParaEngine::CBaseObject::GetPhysicsProperty()
-{
-	return "{}";
-}
-
-void ParaEngine::CBaseObject::EnableDynamicPhysics(bool bEnable)
-{
-}
-bool ParaEngine::CBaseObject::IsDynamicPhysicsEnabled()
 {
 	return false;
 }
@@ -823,7 +798,7 @@ void ParaEngine::CBaseObject::SetObjectToCameraDistance(float val)
 
 }
 
-void ParaEngine::CBaseObject::SetRenderDistance( float fDist )
+void ParaEngine::CBaseObject::SetRenderDistance(float fDist)
 {
 	m_fRenderDistance = fDist;
 }
@@ -838,14 +813,14 @@ int ParaEngine::CBaseObject::GetSelectionEffect()
 	return g_nObjectSelectionEffect;
 }
 
-void ParaEngine::CBaseObject::SetSelectionEffect( int nStyle )
+void ParaEngine::CBaseObject::SetSelectionEffect(int nStyle)
 {
 	g_nObjectSelectionEffect = nStyle;
 }
 
 bool ParaEngine::CBaseObject::CanPick()
 {
-	return ! CheckAttribute(OBJ_SKIP_PICKING); // OBJ_SKIP_PICKING | OBJ_VOLUMN_INVISIBLE 
+	return !CheckAttribute(OBJ_SKIP_PICKING); // OBJ_SKIP_PICKING | OBJ_VOLUMN_INVISIBLE 
 }
 
 bool ParaEngine::CBaseObject::CanHasPhysics()
@@ -863,7 +838,7 @@ bool ParaEngine::CBaseObject::IsSkipTerrainNormal()
 	return CheckAttribute(OBJ_SKIP_TERRAIN_NORMAL);
 }
 
-void ParaEngine::CBaseObject::SetPhysicsGroupMask( DWORD dwValue )
+void ParaEngine::CBaseObject::SetPhysicsGroupMask(DWORD dwValue)
 {
 }
 
@@ -877,7 +852,7 @@ bool ParaEngine::CBaseObject::IsPersistent()
 	return true;
 }
 
-void ParaEngine::CBaseObject::SetPersistent( bool bPersistent )
+void ParaEngine::CBaseObject::SetPersistent(bool bPersistent)
 {
 
 }
@@ -925,9 +900,10 @@ float ParaEngine::CBaseObject::GetOpacity()
 	return 1.f;
 }
 
-IAttributeFields* ParaEngine::CBaseObject::GetChildAttributeObject(const char * sName)
+IAttributeFields* ParaEngine::CBaseObject::GetChildAttributeObject(const char* sName)
 {
-	CBaseObject* pObj = GetChildByName(sName, false);
+	std::string strName = sName;
+	CBaseObject* pObj = GetChildByName(strName, false);
 	return (pObj) ? pObj->GetAttributeObject() : NULL;
 }
 
@@ -968,7 +944,7 @@ bool ParaEngine::CBaseObject::HasAlphaBlendedObjects()
 	return false;
 }
 
-int ParaEngine::CBaseObject::PrepareRender(CBaseCamera* pCamera, SceneState * sceneState)
+int ParaEngine::CBaseObject::PrepareRender(CBaseCamera* pCamera, SceneState* sceneState)
 {
 	sceneState->GetScene()->PrepareRenderObject(this, pCamera, *sceneState);
 	return 0;
@@ -976,7 +952,7 @@ int ParaEngine::CBaseObject::PrepareRender(CBaseCamera* pCamera, SceneState * sc
 
 DVector3 ParaEngine::CBaseObject::GetPosition()
 {
-	return DVector3(0,0,0);
+	return DVector3(0, 0, 0);
 }
 
 void ParaEngine::CBaseObject::SetPosition(const DVector3& v)
@@ -1084,9 +1060,9 @@ int ParaEngine::CBaseObject::GetMeshTriangleList(vector<Vector3>& output, int nO
 					{
 						int nIndexOffset = p.GetStartIndex();
 						int numFaces = p.indexCount / 3;
-						if(output.capacity() < (output.size() + p.indexCount))
+						if (output.capacity() < (output.size() + p.indexCount))
 							output.reserve(output.size() + p.indexCount);
-						for (int i= 0; i< numFaces; ++i)
+						for (int i = 0; i < numFaces; ++i)
 						{
 							int nVB = 3 * i;
 							for (int k = 0; k < 3; ++k)
@@ -1150,20 +1126,21 @@ void* ParaEngine::CBaseObject::QueryObject(int nObjectType)
 
 void CBaseObject::Clone(CBaseObject* obj)
 {
-	if(obj!=NULL)
+	if (obj != NULL)
 	{
 		// *obj = *this;
-		memcpy((void*)obj, (void*)this,sizeof(CBaseObject));
+		memcpy((void*)obj, (void*)this, sizeof(CBaseObject));
 		obj->m_refcount = 0;
 	}
 }
 
 CBaseObject* CBaseObject::Clone()
 {
-	CBaseObject *obj = new CBaseObject();
+	CBaseObject* obj = new CBaseObject();
 	Clone(obj);
 	return obj;
 }
+
 
 void CBaseObject::ApplyMaterial()
 {
@@ -1175,19 +1152,19 @@ void CBaseObject::ApplyMaterial()
 	CEffectFile* pEffect = pEffectManager->GetCurrentEffectFile();
 	if (!pEffect) return;
 	CParameter* materialUV = paramBlock->GetParameter("MaterialUV");
-	if (materialUV) 
+	if (materialUV)
 		pEffect->setParameter(CEffectFile::k_material_uv, materialUV->GetRawData(), materialUV->GetRawDataLength());
 	CParameter* baseColor = paramBlock->GetParameter("BaseColor");
-	if (baseColor) 
+	if (baseColor)
 		pEffect->setParameter(CEffectFile::k_material_base_color, baseColor->GetRawData(), baseColor->GetRawDataLength());
 	CParameter* metallic = paramBlock->GetParameter("Metallic");
-	if (metallic) 
+	if (metallic)
 		pEffect->setParameter(CEffectFile::k_material_metallic, metallic->GetRawData(), metallic->GetRawDataLength());
 	CParameter* specular = paramBlock->GetParameter("Specular");
-	if (specular) 
+	if (specular)
 		pEffect->setParameter(CEffectFile::k_material_specular, specular->GetRawData(), specular->GetRawDataLength());
 	CParameter* roughness = paramBlock->GetParameter("Roughness");
-	if (roughness) 
+	if (roughness)
 		pEffect->setParameter(CEffectFile::k_material_roughness, roughness->GetRawData(), roughness->GetRawDataLength());
 	CParameter* emissiveColor = paramBlock->GetParameter("EmissiveColor");
 	if (emissiveColor)
@@ -1199,13 +1176,13 @@ void CBaseObject::ApplyMaterial()
 	RenderDevicePtr pDevice = CGlobals::GetRenderDevice();
 	bool bHasDiffuseTex = false;
 	CParameter* diffuse = paramBlock->GetParameter("DiffuseFullPath");
-	if (diffuse) 
+	if (diffuse)
 	{
 		const std::string& sFilename = diffuse->GetValueAsConstString();
 		if (!sFilename.empty())
 		{
 			auto tex = CGlobals::GetAssetManager()->GetTexture(sFilename);
-			if(tex == NULL)
+			if (tex == NULL)
 				tex = CGlobals::GetAssetManager()->LoadTexture(sFilename, sFilename);
 			if (tex)
 			{
@@ -1214,7 +1191,7 @@ void CBaseObject::ApplyMaterial()
 			}
 		}
 	}
-	if(!bHasDiffuseTex)
+	if (!bHasDiffuseTex)
 	{
 		auto curTex = CGlobals::GetAssetManager()->GetDefaultTexture(0)->GetTexture();
 		pDevice->SetTexture(0, curTex);
@@ -1254,25 +1231,22 @@ void CBaseObject::ApplyMaterial()
 		}
 	}
 }
-
-void CBaseObject::SetMaterialId(int materialId) 
-{ 
-	m_nMaterialId = materialId; 
+void CBaseObject::SetMaterialId(int materialId)
+{
+	m_nMaterialId = materialId;
 	auto params = GetEffectParamBlock(true);
 	*(params->CreateGetParameter("MaterialID")) = m_nMaterialId;
 }
-
-int CBaseObject::GetMaterialId() 
-{ 
-	return m_nMaterialId; 
+int CBaseObject::GetMaterialId()
+{
+	return m_nMaterialId;
 }
-
 int CBaseObject::InstallFields(CAttributeClass* pClass, bool bOverride)
 {
 	// install parent fields if there are any. Please replace __super with your parent class name.
 	IViewClippingObject::InstallFields(pClass, bOverride);
 
-	PE_ASSERT(pClass!=NULL);
+	PE_ASSERT(pClass != NULL);
 	pClass->AddField("id", FieldType_Int, (void*)NULL, (void*)GetID_s, NULL, NULL, bOverride);
 	pClass->AddField("global", FieldType_Bool, NULL, (void*)IsGlobal_s, NULL, "whether object is global", bOverride);
 	pClass->AddField("facing", FieldType_Float, (void*)SetFacing_s, (void*)GetFacing_s, CAttributeField::GetSimpleSchemaOfFloat(-3.1416f, 3.1416f), "facing in the range [-PI,PI]", bOverride);
@@ -1299,6 +1273,8 @@ int CBaseObject::InstallFields(CAttributeClass* pClass, bool bOverride)
 	pClass->AddField("ApplyCentralImpulse", FieldType_Vector3, (void*)ApplyCentralImpulse_s, NULL, NULL, "", bOverride);
 	pClass->AddField("SelectGroupIndex", FieldType_Int, (void*)SetSelectGroupIndex_s, (void*)GetSelectGroupIndex_s, NULL, NULL, bOverride);
 	pClass->AddField("On_AssetLoaded", FieldType_String, (void*)SetOnAssetLoaded_s, (void*)GetOnAssetLoaded_s, NULL, NULL, bOverride);
+	pClass->AddField("ViewTouch", FieldType_Bool, (void*)NULL, (void*)GetViewTouch_s, NULL, "", bOverride);
+	pClass->AddField("UpdateGeometry", FieldType_void, (void*)UpdateGeometry_s, NULL, NULL, "", bOverride);
 	pClass->AddField("RenderOrder", FieldType_Float, (void*)SetRenderOrder_s, (void*)GetRenderOrder_s, NULL, "", bOverride);
 	pClass->AddField("ObjectToCameraDistance", FieldType_Float, (void*)SetObjectToCameraDistance_s, (void*)GetObjectToCameraDistance_s, NULL, "", bOverride);
 	pClass->AddField("RenderImportance", FieldType_Int, (void*)SetRenderImportance_s, (void*)GetRenderImportance_s, NULL, "", bOverride);
