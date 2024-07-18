@@ -1791,17 +1791,25 @@ void CAutoCamera::ComputeViewMatrix(Matrix4* pOut, const DVector3* pEye, const D
 	DVector3 vEye = *pEye;
 	DVector3 vAt = *pAt;
 	Vector3 vUp = *pUp;
+	Vector3 vOffset = CGlobals::GetScene()->GetRenderOrigin();
 
 	if (m_vAdditionalCameraRotate != Vector3::ZERO)
 	{
+		Vector3 vDir = (Vector3)(vAt - vEye);
 		Matrix4 matRot;
 		ParaMatrixRotationRollPitchYaw(&matRot, m_vAdditionalCameraRotate.z, m_vAdditionalCameraRotate.y, m_vAdditionalCameraRotate.x);
-		vUp = vUp * matRot;
-		Vector3 vDir = (Vector3)(vAt - vEye);
-		vAt = vEye + vDir * matRot;
+		DVector3 vEye1(0, 0, 0);
+		DVector3 vAt1 = vAt - vEye;
+		Matrix4 matView1;
+		Matrix3 matViewRot;
+		ParaMatrixLookAtLH(&matView1, vEye1, vAt1, DVector3(vUp));
+		matView1 = matView1 * matRot;
+		matView1.invert();
+		matView1.extract3x3Matrix(matViewRot);
+		vAt = (Vector3(0, 0, 1.0f) * matViewRot) * vDir.length() + vEye;
+		vUp = Vector3(0, 1.0f, 0) * matViewRot;
 	}
-
-	Vector3 vOffset = CGlobals::GetScene()->GetRenderOrigin();
+	
 	/// Update the view matrix
 	if (!m_bEnableStereoVision)
 	{
