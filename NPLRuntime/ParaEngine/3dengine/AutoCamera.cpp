@@ -148,8 +148,8 @@ void CAutoCamera::CameraConstraint::BoundToFocusConstraint(Vector3* pEye, Vector
 CAutoCamera::CAutoCamera()
 	:m_fLookAtShiftY(0), m_event(NULL), m_dwPhysicsGroupMask(DEFAULT_PHYSICS_GROUP_MASK),
 	m_bEnableMouseLeftDrag(true), m_bEnableMouseRightDrag(true), m_bUseCharacterLookup(false), m_bUseCharacterLookupWhenMounted(true), m_nCharacterLookupBoneIndex(-1),
-	m_bBlockInput(false), m_bAlwaysRotateCameraWhenFPS(false), m_bFirstPerson(false), m_vLookAtOffset(0, 0, 0), m_vAdditionalCameraRotate(0, 0, 0), m_fAllowedCharYShift(0), m_fLastCharY(0), m_fLastUsedCharY(0), m_bipedFlyNormal(0, 1, 0), m_fMaxYShiftSpeed(1.f), m_bEnableBlockCollision(true), m_bEnableTerrainCollision(true), m_bIgnoreEyeBlockCollisionInSunlight(true), m_bLockMouseWhenDragging(false)
-	, m_fForceOmniCameraObjectDistance(-10000), m_fForceOmniCameraPitch(-10000)
+	m_bBlockInput(false), m_bAlwaysRotateCameraWhenFPS(false), m_bFirstPerson(false), m_vLookAtOffset(0, 0, 0), m_vAdditionalCameraRotate(0, 0, 0), m_fAllowedCharYShift(0), m_fLastCharY(0), m_fLastUsedCharY(0), m_bipedFlyNormal(0, 1, 0), m_fMaxYShiftSpeed(1.f), m_bEnableBlockCollision(true), m_bEnableTerrainCollision(true), m_bIgnoreEyeBlockCollisionInSunlight(true), m_bLockMouseWhenDragging(false),
+	m_fForceOmniCameraObjectDistance(-10000), m_fForceOmniCameraPitch(-10000)
 {
 	m_bUseRightButtonBipedFacing = true;
 	m_bTurnBipedWhenWalkBackward = false;
@@ -183,7 +183,7 @@ CAutoCamera::CAutoCamera()
 	SetClipToBoundary(true, &a, &b);
 
 	SetDefaultAngles();
-	SetCameraObjectDistance(FFPVIEW_MIN_HEIGHT*OBJ_UNIT);	// 5 meters
+	SetCameraObjectDistance(FFPVIEW_MIN_HEIGHT * OBJ_UNIT);	// 5 meters
 	m_fCameraRotX = 0.f;
 	m_fCameraRotY = 0.f;
 	m_fCameraRotZ = 0.f;
@@ -191,7 +191,7 @@ CAutoCamera::CAutoCamera()
 	m_fKeyboardRotVelocity = MATH_PI / 4;
 	m_fKeyboardMovVelocity = OBJ_UNIT * KEYBOARD_MOVE_VELOCITY; /** old value is 5. I set 20 is for debugging purposes*/
 
-																// default mode
+	// default mode
 	m_lastCameraMode = m_currentCameraMode = CameraFollowFirstPerson;
 
 	m_vEyeReferencePoint = Vector3(0, 0, 0);
@@ -267,7 +267,7 @@ void CAutoCamera::LoadDefaultEventBinding()
 	m_event->MapEvent(EM_KEY_4, EM_PL_ACTION4);
 }
 
-CEventBinding * CAutoCamera::GetEventBinding()
+CEventBinding* CAutoCamera::GetEventBinding()
 {
 	if (m_event == 0)
 	{
@@ -338,9 +338,9 @@ void CAutoCamera::FollowBiped(CBaseObject* pBiped, CameraMode modeCamera, double
 				/*CBipedObject* pBiped = ((CBipedObject*)m_pTargetObject);
 				if(!pBiped->IsStanding())
 				{
-				CBipedStateManager* pState =  pBiped->GetBipedStateManager();
-				if(pState)
-				pState->AddAction(CBipedStateManager::S_STANDING);
+					CBipedStateManager* pState =  pBiped->GetBipedStateManager();
+					if(pState)
+						pState->AddAction(CBipedStateManager::S_STANDING);
 				}*/
 			}
 		}
@@ -364,29 +364,29 @@ void CAutoCamera::FollowBiped(CBaseObject* pBiped, CameraMode modeCamera, double
 // pBiped can be nil, in which case the same biped is followed.
 Transition
 1 (default) smooth move
-0 intermediate move
+ 0 intermediate move
 
 Mode
 <integer>
-CameraFollowFirstPerson = 2,	// First person view of the Target object
+ CameraFollowFirstPerson = 2,	// First person view of the Target object
 CameraFollowThirdPerson = 3,	// Third person view, allow rotation, character centered
 CameraFollowDefault = 5,		// Third person view, disable rotation, character
 CameraCameraFirstPerson = 11 	// Camera as a first person.
 
 
 Parameters means difficult things under different mode
-//-- CameraFollowFirstPerson,	// First person view of the Target object
+	//-- CameraFollowFirstPerson,	// First person view of the Target object
 param0->m_fCameraObjectDistance;	// follow first person radius
 param1->m_fCameraLiftupAngle;	// follow first person lift up angle, this is a constant usually Pi/4: 45 degrees
-//-- CameraFollowThirdPerson,	// Third person view, allow rotation, character centered
+	//-- CameraFollowThirdPerson,	// Third person view, allow rotation, character centered
 param0->m_fFTPRadius;	// follow Third person radius
 param1->m_fFTPFacing;	// follow Third person: camera facing
 param2->m_fFTPAngle;	// follow Third person lift up angle, this is a constant usually Pi/4: 45 degrees
-//-- CameraFollowDefault: Third person view, disable rotation, character restricted to a rectangular
+	//-- CameraFollowDefault: Third person view, disable rotation, character restricted to a rectangular
 CameraConstraint	m_constrantsFollow; // define the camera constraints for follow default mode
 param0->m_fDEFAngle; // follow default lift up angle, this is a constant usually Pi/4: 45 degrees
 param1->m_fDEFHeight;
-//-- CameraCameraFirstPerson 	// Camera as a first person.
+	//-- CameraCameraFirstPerson 	// Camera as a first person.
 CameraConstraint	m_constrants;
 param0->m_vEye.x + biped.x
 param1->m_vEye.y + biped.y
@@ -408,7 +408,7 @@ void CAutoCamera::FollowBiped(CBaseObject* pBiped, int nTranstionMode, int modeC
 	else
 		FollowBiped(pBiped, (CameraMode)modeCamera, 1); // smooth move.
 
-														/** set camera mode */
+	/** set camera mode */
 	SetCameraMode((CameraMode)modeCamera);
 
 	/** set params. */
@@ -505,16 +505,16 @@ VOID CAutoCamera::FrameMove(FLOAT fElapsedTime)
 	//m_vMaxBoundary = *pvMaxBoundary; }
 
 	Vector3 vWorldUp(0, 1.f, 0);
-	CBipedObject * pBiped = NULL;
+	CBipedObject* pBiped = NULL;
 	bool bShowCharacter = true; // if in first person view, it will hide the character.
-								// true if the camera needs to be updated
+	// true if the camera needs to be updated
 	bool bDoUpdateView = true;
 	// whether to ignore eye's near plane above global terrain check.
 	bool bIgnoreGlobalTerrain = !IsEnableTerrainCollision();
 
 	if (m_currentCameraMode == CameraCameraFirstPerson)
 	{// camera's first person mode
-	 // update key board move velocity in this mode.
+		// update key board move velocity in this mode.
 #define ADJUST_KEYBOARD_MOV_SPEED
 #ifdef ADJUST_KEYBOARD_MOV_SPEED
 		float fCameraSpeedUpFactor = 1.f;
@@ -523,7 +523,7 @@ VOID CAutoCamera::FrameMove(FLOAT fElapsedTime)
 			fCameraSpeedUpFactor *= (1 + m_nMouseWheelDelta * 0.1f);
 			m_nMouseWheelDelta = 0;
 		}
-		SetKeyboardMovVelocity(GetKeyboardMovVelocity()*fCameraSpeedUpFactor);
+		SetKeyboardMovVelocity(GetKeyboardMovVelocity() * fCameraSpeedUpFactor);
 #endif
 
 		// Get amount of velocity based on the keyboard input and drag (if any)
@@ -597,7 +597,7 @@ VOID CAutoCamera::FrameMove(FLOAT fElapsedTime)
 	else if ((m_currentCameraMode > CameraFollow) && m_pTargetObject != NULL)
 	{ // all are Camera Follow modes
 
-		IViewClippingObject * pChar = m_pTargetObject->GetViewClippingObject();
+		IViewClippingObject* pChar = m_pTargetObject->GetViewClippingObject();
 
 		pBiped = GetTargetAsBiped();
 		if (pBiped)
@@ -624,7 +624,7 @@ VOID CAutoCamera::FrameMove(FLOAT fElapsedTime)
 
 				if (m_fLastCharY == fCharPosY)
 				{
-					double fDeltaDist = fElapsedTime * (m_fMaxYShiftSpeed*(0.1f + fDist));
+					double fDeltaDist = fElapsedTime * (m_fMaxYShiftSpeed * (0.1f + fDist));
 					if (fDist <= fDeltaDist)
 					{
 						vCharPos.y = fCharPosY;
@@ -703,7 +703,7 @@ VOID CAutoCamera::FrameMove(FLOAT fElapsedTime)
 				}
 				if (m_bControlBiped && (m_pTargetObject->IsBiped()))
 				{
-					pBiped = (CBipedObject *)m_pTargetObject;
+					pBiped = (CBipedObject*)m_pTargetObject;
 
 					bool cameraMoved = false;
 					bool bAnyMovementButton = false;
@@ -821,7 +821,7 @@ VOID CAutoCamera::FrameMove(FLOAT fElapsedTime)
 							pBiped->SetHeadTurningAngle(0.f);
 							pBiped->SetHeadUpdownAngle(0.f);
 							pState->AddAction(CBipedStateManager::S_TURNING);
-							pState->SetAngleDelta(CBipedObject::SPEED_TURN*fElapsedTime);
+							pState->SetAngleDelta(CBipedObject::SPEED_TURN * fElapsedTime);
 						}
 						else
 						{
@@ -834,16 +834,16 @@ VOID CAutoCamera::FrameMove(FLOAT fElapsedTime)
 								if (pBiped->IsStanding())
 								{
 									pState->AddAction(CBipedStateManager::S_TURNING);
-									pState->SetAngleDelta(CBipedObject::SPEED_TURN*fElapsedTime);
+									pState->SetAngleDelta(CBipedObject::SPEED_TURN * fElapsedTime);
 								}
 								else
 								{
-									pState->SetAngleDelta(pState->GetAngleDelta() + CBipedObject::SPEED_TURN*fElapsedTime);
+									pState->SetAngleDelta(pState->GetAngleDelta() + CBipedObject::SPEED_TURN * fElapsedTime);
 								}
 							}
 							else
 							{
-								m_fCameraRotY += CBipedObject::SPEED_TURN*fElapsedTime;
+								m_fCameraRotY += CBipedObject::SPEED_TURN * fElapsedTime;
 								m_fCameraRotY = Math::ToStandardAngle(m_fCameraRotY);
 								cameraMoved = true;
 							}
@@ -865,7 +865,7 @@ VOID CAutoCamera::FrameMove(FLOAT fElapsedTime)
 							pBiped->SetHeadTurningAngle(0.f);
 							pBiped->SetHeadUpdownAngle(0.f);
 							pState->AddAction(CBipedStateManager::S_TURNING);
-							pState->SetAngleDelta(-CBipedObject::SPEED_TURN*fElapsedTime);
+							pState->SetAngleDelta(-CBipedObject::SPEED_TURN * fElapsedTime);
 						}
 						else
 						{
@@ -878,16 +878,16 @@ VOID CAutoCamera::FrameMove(FLOAT fElapsedTime)
 								if (pBiped->IsStanding())
 								{
 									pState->AddAction(CBipedStateManager::S_TURNING);
-									pState->SetAngleDelta(-CBipedObject::SPEED_TURN*fElapsedTime);
+									pState->SetAngleDelta(-CBipedObject::SPEED_TURN * fElapsedTime);
 								}
 								else
 								{
-									pState->SetAngleDelta(pState->GetAngleDelta() - CBipedObject::SPEED_TURN*fElapsedTime);
+									pState->SetAngleDelta(pState->GetAngleDelta() - CBipedObject::SPEED_TURN * fElapsedTime);
 								}
 							}
 							else
 							{
-								m_fCameraRotY -= CBipedObject::SPEED_TURN*fElapsedTime;
+								m_fCameraRotY -= CBipedObject::SPEED_TURN * fElapsedTime;
 								m_fCameraRotY = Math::ToStandardAngle(m_fCameraRotY);
 
 								cameraMoved = true;
@@ -974,7 +974,7 @@ VOID CAutoCamera::FrameMove(FLOAT fElapsedTime)
 					*/
 					if (m_nMouseWheelDelta != 0)
 					{
-						fCameraZoomDelta += -m_nMouseWheelDelta * m_fCameraObjectDistance *0.1f;
+						fCameraZoomDelta += -m_nMouseWheelDelta * m_fCameraObjectDistance * 0.1f;
 						m_nMouseWheelDelta = 0;
 					}
 					if (fCameraZoomDelta != 0.f)
@@ -1028,7 +1028,7 @@ VOID CAutoCamera::FrameMove(FLOAT fElapsedTime)
 						Vector3 desireNormal(0, 1, 0);
 						Vector3 delta = m_bipedFlyNormal - desireNormal;
 
-						if (fabs(delta.x) < 0.001 && fabs(delta.y) < 0.001&& fabs(delta.z) < 0.001)
+						if (fabs(delta.x) < 0.001 && fabs(delta.y) < 0.001 && fabs(delta.z) < 0.001)
 						{
 							m_bipedFlyNormal = desireNormal;
 							pBiped->SetNormal(m_bipedFlyNormal);
@@ -1125,7 +1125,7 @@ VOID CAutoCamera::FrameMove(FLOAT fElapsedTime)
 			Quaternion q = qYaw * qPitch;
 			Matrix3 mRot;
 			q.ToRotationMatrix(mRot);
-			vEye = vLookAt - DVector3(Vector3::UNIT_X * mRot)*fCameraObjectDist;
+			vEye = vLookAt - DVector3(Vector3::UNIT_X * mRot) * fCameraObjectDist;
 			vWorldUp = vWorldUp * mRot;
 
 			if (IsUseCharacterLookupWhenMounted())
@@ -1337,16 +1337,16 @@ VOID CAutoCamera::FrameMove(FLOAT fElapsedTime)
 				if (pBlockWorldClient->Pick(vLookAt, vReverseLineOfSight, fDesiredLineOfSightLen, result, BlockTemplate::batt_solid | BlockTemplate::batt_blockcamera)
 					&& result.Distance <= fDesiredLineOfSightLen)
 				{
-					const float camera_box_size = BlockConfig::g_blockSize*0.15f;
+					const float camera_box_size = BlockConfig::g_blockSize * 0.15f;
 
 					/*
 					if(result.Distance > BlockConfig::g_blockSize && (result.Side != 4 && result.Side != 5) )
 					{
-					// tricky: this makes the camera away from the vertical block surface.
-					if(result.Distance > BlockConfig::g_blockSize*1.25f)
-					result.Distance -= BlockConfig::g_blockSize *0.25f;
-					else
-					result.Distance = BlockConfig::g_blockSize;
+						// tricky: this makes the camera away from the vertical block surface.
+						if(result.Distance > BlockConfig::g_blockSize*1.25f)
+							result.Distance -= BlockConfig::g_blockSize *0.25f;
+						else
+							result.Distance = BlockConfig::g_blockSize;
 					}
 					*/
 					bool bIgnoreCollision = false;
@@ -1412,7 +1412,7 @@ VOID CAutoCamera::FrameMove(FLOAT fElapsedTime)
 						{
 							Vector3 vPos = pBiped->GetPosition();
 							float fTerrainHeight = CGlobals::GetGlobalTerrain()->GetElevation(vPos.x, vPos.z);
-							if (fTerrainHeight >(vPos.y + 0.5) || CGlobals::GetGlobalTerrain()->IsHole(vPos.x, vPos.z))
+							if (fTerrainHeight > (vPos.y + 0.5) || CGlobals::GetGlobalTerrain()->IsHole(vPos.x, vPos.z))
 							{
 								bIgnoreGlobalTerrain = true;
 							}
@@ -1527,7 +1527,7 @@ VOID CAutoCamera::FrameMove(FLOAT fElapsedTime)
 
 						vEye = vPos;
 						Vector3 vNewLineOfSight = vPos - vLookAt;
-						if (vNewLineOfSight.x*vReverseLineOfSight.x < 0 || vNewLineOfSight.y*vReverseLineOfSight.y < 0 || vNewLineOfSight.z*vReverseLineOfSight.z < 0)
+						if (vNewLineOfSight.x * vReverseLineOfSight.x < 0 || vNewLineOfSight.y * vReverseLineOfSight.y < 0 || vNewLineOfSight.z * vReverseLineOfSight.z < 0)
 						{
 							vLookAt = vEye - vReverseLineOfSight * result.Distance;
 						}
@@ -1547,7 +1547,7 @@ VOID CAutoCamera::FrameMove(FLOAT fElapsedTime)
 					(fCameraObjectDist > fLastCameraObjectDistance))
 				{
 					// used some acceleration based on differences
-					double fDelta = (0.1f + m_fCameraRollbackSpeed + m_fCameraRollbackSpeed * (fCameraObjectDist - fLastCameraObjectDistance))*fElapsedTime;
+					double fDelta = (0.1f + m_fCameraRollbackSpeed + m_fCameraRollbackSpeed * (fCameraObjectDist - fLastCameraObjectDistance)) * fElapsedTime;
 					if (fCameraObjectDist > (fLastCameraObjectDistance + fDelta))
 					{
 						double fDist = fLastCameraObjectDistance + fDelta;
@@ -1569,7 +1569,7 @@ VOID CAutoCamera::FrameMove(FLOAT fElapsedTime)
 		*/
 		if (m_dTransitionAmt > 0)
 		{
-			if (SmoothMove(&m_vEye, vEye, m_vEye, fEyeSpeed*fElapsedTime, 0.0f))
+			if (SmoothMove(&m_vEye, vEye, m_vEye, fEyeSpeed * fElapsedTime, 0.0f))
 				// no need to smooth move again, if we have reached the target.
 				m_dTransitionAmt = 0;
 			else
@@ -1685,40 +1685,19 @@ VOID CAutoCamera::FrameMove(FLOAT fElapsedTime)
 		/// the following is only here to repair floating point accuracy. Is there a better way in the future?
 		/*Vector3 dTempDelta = m_vEye - m_vEyeLast;
 		if(fabs(dTempDelta.x)<0.01f || fabs(dTempDelta.y)<0.01f || fabs(dTempDelta.z)<0.01f)
-		m_vEye = m_vEyeLast;
+			m_vEye = m_vEyeLast;
 		dTempDelta = m_vLookAt - m_vLookAtLast;
 		if(fabs(dTempDelta.x)<0.01f || fabs(dTempDelta.y)<0.01f || fabs(dTempDelta.z)<0.01f)
-		m_vLookAt = m_vLookAtLast;*/
+			m_vLookAt = m_vLookAtLast;*/
 
-		/** Update the view matrix */
+			/** Update the view matrix */
 		ComputeViewMatrix(&m_mView, &(m_vEye), &(m_vLookAt), &vWorldUp);
-		if (m_vLookAtOffset != Vector3::ZERO)
-		{
-			m_mView._41 += m_vLookAtOffset.x;
-			m_mView._42 += m_vLookAtOffset.y;
-			m_mView._43 += m_vLookAtOffset.z;
-		}
-		if (m_vAdditionalCameraRotate != Vector3::ZERO)
-		{
-			Matrix4 matRot;
-			ParaMatrixRotationRollPitchYaw(&matRot, m_vAdditionalCameraRotate.z, m_vAdditionalCameraRotate.y, m_vAdditionalCameraRotate.x);
-			m_mView = m_mView * matRot;
-		}
 		m_mCameraWorld = m_mView.inverse();
 	}
 	else if (IsStereoVisionEnabled())
 	{
 		/** Update the view matrix */
 		ComputeViewMatrix(&m_mView, &(m_vEye), &(m_vLookAt), &vWorldUp);
-		m_mView._41 += m_vLookAtOffset.x;
-		m_mView._42 += m_vLookAtOffset.y;
-		m_mView._43 += m_vLookAtOffset.z;
-		if (m_vAdditionalCameraRotate != Vector3::ZERO)
-		{
-			Matrix4 matRot;
-			ParaMatrixRotationRollPitchYaw(&matRot, m_vAdditionalCameraRotate.z, m_vAdditionalCameraRotate.y, m_vAdditionalCameraRotate.x);
-			m_mView = m_mView * matRot;
-		}
 		m_mCameraWorld = m_mView.inverse();
 	}
 
@@ -1802,31 +1781,44 @@ VOID CAutoCamera::FrameMove(FLOAT fElapsedTime)
 #ifdef _DEBUG
 	/*Vector3 vOffset = CGlobals::GetScene()->GetRenderOrigin();
 	OUTPUT_LOG("eye: %f %f %f   lookat: %f %f %f   render origin:%f %f %f dt:%f\n", m_vEye.x, m_vEye.y, m_vEye.z,
-	m_vLookAt.x, m_vLookAt.y, m_vLookAt.z, vOffset.x, vOffset.y, vOffset.z, fElapsedTime);*/
+		m_vLookAt.x, m_vLookAt.y, m_vLookAt.z, vOffset.x, vOffset.y, vOffset.z, fElapsedTime);*/
 #endif
 }
 
 
-void CAutoCamera::ComputeViewMatrix(Matrix4 *pOut, const DVector3 *pEye, const DVector3 *pAt, const Vector3 *pUp)
+void CAutoCamera::ComputeViewMatrix(Matrix4* pOut, const DVector3* pEye, const DVector3* pAt, const Vector3* pUp)
 {
+	DVector3 vEye = *pEye;
+	DVector3 vAt = *pAt;
+	Vector3 vUp = *pUp;
+
+	if (m_vAdditionalCameraRotate != Vector3::ZERO)
+	{
+		Matrix4 matRot;
+		ParaMatrixRotationRollPitchYaw(&matRot, m_vAdditionalCameraRotate.z, m_vAdditionalCameraRotate.y, m_vAdditionalCameraRotate.x);
+		vUp = vUp * matRot;
+		Vector3 vDir = (Vector3)(vAt - vEye);
+		vAt = vEye + vDir * matRot;
+	}
+
 	Vector3 vOffset = CGlobals::GetScene()->GetRenderOrigin();
 	/// Update the view matrix
 	if (!m_bEnableStereoVision)
 	{
-		m_vRenderEyePos = *pEye;
+		m_vRenderEyePos = vEye;
 		// standard way
-		DVector3 vEye = *pEye - vOffset;
-		DVector3 vAt = *pAt - vOffset;
-		ParaMatrixLookAtLH(pOut, vEye, vAt, DVector3(*pUp));
+		vEye = vEye - vOffset;
+		vAt = vAt - vOffset;
+		ParaMatrixLookAtLH(pOut, vEye, vAt, DVector3(vUp));
 	}
 	else
 	{
 		// stereo vision is enabled. Tricky code goes here:
-		DVector3 vEye = (*pEye - vOffset);
-		DVector3 vAt = (*pAt - vOffset);
+		vEye = (vEye - vOffset);
+		vAt = (vAt - vOffset);
 		DVector3 vDir = vEye - vAt;
 		DVector3 vEyeDirection = vDir.normalisedCopy();
-		
+
 		float fOffset = GetStereoConvergenceOffset();
 		if (fOffset != 0.f)
 		{
@@ -1834,10 +1826,17 @@ void CAutoCamera::ComputeViewMatrix(Matrix4 *pOut, const DVector3 *pEye, const D
 		}
 
 		DVector3 vShiftDir(0, 0, 1.f);
-		vShiftDir = vEyeDirection.crossProduct(DVector3(*pUp)).normalisedCopy();
+		vShiftDir = vEyeDirection.crossProduct(DVector3(vUp)).normalisedCopy();
 		vEye += vShiftDir * m_fStereoEyeShiftDistance;
 		m_vRenderEyePos = vEye + vOffset;
-		ParaMatrixLookAtLH(pOut, vEye, vAt, DVector3(*pUp));
+		ParaMatrixLookAtLH(pOut, vEye, vAt, DVector3(vUp));
+	}
+
+	if (m_vLookAtOffset != Vector3::ZERO)
+	{
+		pOut->_41 += m_vLookAtOffset.x;
+		pOut->_42 += m_vLookAtOffset.y;
+		pOut->_43 += m_vLookAtOffset.z;
 	}
 }
 
@@ -1849,24 +1848,7 @@ Vector3 ParaEngine::CAutoCamera::GetRenderEyePosition()
 void CAutoCamera::UpdateViewMatrix()
 {
 	/// Update the view matrix
-	DVector3 vLookAt = m_vLookAt;
-	Vector3 vUp = m_vUp;
-	if (m_vAdditionalCameraRotate != Vector3::ZERO)
-	{
-		Matrix4 matRot;
-		ParaMatrixRotationRollPitchYaw(&matRot, m_vAdditionalCameraRotate.z, m_vAdditionalCameraRotate.y, m_vAdditionalCameraRotate.x);
-		vUp = vUp * matRot;
-		Vector3 vDir = (Vector3)(m_vLookAt - m_vEye);
-		vLookAt = m_vEye + vDir * matRot;
-	}
-	ComputeViewMatrix(&m_mView, &m_vEye, &vLookAt, &vUp);
-
-	if (m_vLookAtOffset != Vector3::ZERO)
-	{
-		m_mView._41 += m_vLookAtOffset.x;
-		m_mView._42 += m_vLookAtOffset.y;
-		m_mView._43 += m_vLookAtOffset.z;
-	}
+	ComputeViewMatrix(&m_mView, &m_vEye, &m_vLookAt, &m_vUp);
 }
 
 void CAutoCamera::SetViewParams(const DVector3& vEyePt, const DVector3& vLookatPt, const Vector3* up)
@@ -2001,7 +1983,7 @@ void CAutoCamera::HandleUserInput()
 	if (pMouse && CGlobals::GetGUI()->m_events.size() > 0)
 	{
 		GUIMsgEventList_type::const_iterator iter = CGlobals::GetGUI()->m_events.begin(), iterend = CGlobals::GetGUI()->m_events.end();
-		const MSG *pMsg;
+		const MSG* pMsg;
 		for (; iter != iterend; ++iter)
 		{
 			pMsg = &(*iter);
@@ -2081,21 +2063,21 @@ void CAutoCamera::HandleUserInput()
 				// state based key events: allowing holding state
 				/*
 				if (m_event->IsMapTo(pMsg->message,EM_CAM_FORWARD))
-				SetKeyDownState(MOVE_FORWARD, bIsKeyDown);
+					SetKeyDownState(MOVE_FORWARD, bIsKeyDown);
 				else if (m_event->IsMapTo(pMsg->message,EM_CAM_BACKWARD))
-				SetKeyDownState(MOVE_BACKWARD, bIsKeyDown);
+					SetKeyDownState(MOVE_BACKWARD, bIsKeyDown);
 				else if (m_event->IsMapTo(pMsg->message,EM_CAM_LEFT))
-				SetKeyDownState(MOVE_LEFT, bIsKeyDown);
+					SetKeyDownState(MOVE_LEFT, bIsKeyDown);
 				else if (m_event->IsMapTo(pMsg->message,EM_CAM_RIGHT))
-				SetKeyDownState(MOVE_RIGHT, bIsKeyDown);
+					SetKeyDownState(MOVE_RIGHT, bIsKeyDown);
 				else if (m_event->IsMapTo(pMsg->message,EM_CAM_SHIFTLEFT))
-				SetKeyDownState(SHIFT_LEFT, bIsKeyDown);
+					SetKeyDownState(SHIFT_LEFT, bIsKeyDown);
 				else if (m_event->IsMapTo(pMsg->message,EM_CAM_SHIFTRIGHT))
-				SetKeyDownState(SHIFT_RIGHT, bIsKeyDown);
+					SetKeyDownState(SHIFT_RIGHT, bIsKeyDown);
 				else if (m_event->IsMapTo(pMsg->message,EM_CAM_ZOOM_IN))
-				SetKeyDownState(ZOOM_IN, bIsKeyDown);
+					SetKeyDownState(ZOOM_IN, bIsKeyDown);
 				else if (m_event->IsMapTo(pMsg->message,EM_CAM_ZOOM_OUT))
-				SetKeyDownState(ZOOM_OUT, bIsKeyDown);
+					SetKeyDownState(ZOOM_OUT, bIsKeyDown);
 				*/
 				//////////////////////////////////////////////////////////////////////////
 				// camera control's ordinary key events
@@ -2230,13 +2212,13 @@ void CAutoCamera::HandleUserInput()
 						Matrix4 rotMat;
 						ParaMatrixRotationRollPitchYaw(&rotMat, (float)m_fCameraRotZ, (float)(-m_fCameraLiftupAngle), (float)(-1.57f + m_fCameraRotY));
 						Vector3 normal;
-						normal = Vector3(0, 1, 0)*rotMat;
+						normal = Vector3(0, 1, 0) * rotMat;
 						pBiped->SetNormal(normal);
 						m_bipedFlyNormal = normal;
 
 						pBiped->SetFacing((float)m_fCameraRotY);
 
-						normal = Vector3(0, 0, -1)*rotMat;
+						normal = Vector3(0, 0, -1) * rotMat;
 						pBiped->SetFlyingDirection(&normal);
 					}
 				}
@@ -2279,7 +2261,6 @@ void CAutoCamera::HandleUserInput()
 #endif // PARAENGINE_MOBILE
 }
 
-
 void CAutoCamera::SetCameraObjectDistance(double fDistance)
 {
 	if (m_fForceOmniCameraObjectDistance > -9999) {
@@ -2316,7 +2297,6 @@ void CAutoCamera::SetForceOmniCameraPitch(double fPitch)
 		m_fCameraLiftupAngle = m_fCameraRotX = fPitch;
 	}
 }
-
 
 void CAutoCamera::Reset()
 {
@@ -2556,7 +2536,7 @@ void ParaEngine::CAutoCamera::SetEnableTerrainCollision(bool val)
 	m_bEnableTerrainCollision = val;
 }
 
-void ParaEngine::CAutoCamera::UpdateBipedFlyDir(CBipedObject * pBiped)
+void ParaEngine::CAutoCamera::UpdateBipedFlyDir(CBipedObject* pBiped)
 {
 	if (!pBiped)
 		pBiped = GetTargetAsBiped();
@@ -2569,21 +2549,21 @@ void ParaEngine::CAutoCamera::UpdateBipedFlyDir(CBipedObject * pBiped)
 		ParaMatrixRotationX(&matPitch, (float)(-m_fCameraLiftupAngle));
 		rotMat = (matRoll * matPitch) * matYaw;
 		Vector3 normal;
-		normal = Vector3(0, 1, 0)*rotMat;
+		normal = Vector3(0, 1, 0) * rotMat;
 		pBiped->SetNormal(normal);
 		m_bipedFlyNormal = normal;
 
 		pBiped->SetFacing((float)m_fCameraRotY);
 
-		normal = Vector3(0, 0, -1)*rotMat;
+		normal = Vector3(0, 0, -1) * rotMat;
 		pBiped->SetFlyingDirection(&normal);
 	}
 }
 
-CBipedObject * ParaEngine::CAutoCamera::GetTargetAsBiped()
+CBipedObject* ParaEngine::CAutoCamera::GetTargetAsBiped()
 {
 	if (m_pTargetObject && m_pTargetObject->IsBiped())
-		return (CBipedObject *)m_pTargetObject;
+		return (CBipedObject*)m_pTargetObject;
 	else
 		return NULL;
 }
