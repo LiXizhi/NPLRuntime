@@ -442,23 +442,30 @@ namespace ParaEngine
 				OnKey(key, state);
 				char c = GetKeyChar(msgKey);
 				std::cout << "c: " << c << std::endl;
-				if (c >= 0) OnChar(c);
+
+				if (JS::GetOperatingSystem() == "mac")
+				{
+					SDL_version version;
+					SDL_GetVersion(&version);
+
+					if (version.major >= 2 && version.minor >= 28)
+					{
+						std::cout << "11111111" << std::endl;
+						if (c >= 0) OnChar(c);
+					}
+					else
+					{
+						std::cout << "222222" << std::endl;
+					}
+				}
+				else
+				{
+					if (c >= 0) OnChar(c);
+				}
 			}
 			else if (sdl_event.type == SDL_KEYUP)
 			{
 				std::cout << "SDL_KEYUP" << std::endl;
-
-				SDL_version compiled;
-				SDL_version linked;
-
-				SDL_VERSION(&compiled);
-				SDL_GetVersion(&linked);
-
-				printf("We compiled against SDL version %d.%d.%d ...\n",
-						compiled.major, compiled.minor, compiled.patch);
-				printf("But we are linking against SDL version %d.%d.%d.\n",
-						linked.major, linked.minor, linked.patch);
-
 #ifdef EMSCRIPTEN
 				if (sdl_event.key.keysym.sym == SDLK_NUMLOCKCLEAR || m_isNumLockEnabled == 2)
 				{
