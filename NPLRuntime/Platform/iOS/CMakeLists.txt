@@ -77,7 +77,7 @@ if (channel_id STREQUAL "papa")
     set(product_name "帕帕奇遇记")
 else()
     set(development_team "3FHAD7P7A5")
-    set(product_name "Paracraft")
+    set(product_name "帕拉卡3D虚拟社区学习软件")
 endif()
 
 set_target_properties(
