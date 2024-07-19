@@ -433,7 +433,6 @@ namespace ParaEngine
 			}
 			else if (sdl_event.type == SDL_KEYDOWN)
 			{
-				std::cout << "SDL_KEYDOWN" << std::endl;
 				EKeyState state = EKeyState::PRESS;
 				DWORD msgKey = (DWORD)sdl_event.key.keysym.sym;
 				auto key = SDL2VirtualKeyToParaVK(msgKey);
@@ -441,7 +440,6 @@ namespace ParaEngine
 					m_KeyState[(uint32_t)key] = state;
 				OnKey(key, state);
 				char c = GetKeyChar(msgKey);
-				std::cout << "c: " << c << std::endl;
 
 				if (JS::GetOperatingSystem() == "mac")
 				{
@@ -450,12 +448,7 @@ namespace ParaEngine
 
 					if (version.major >= 2 && version.minor >= 28)
 					{
-						std::cout << "11111111" << std::endl;
 						if (c >= 0) OnChar(c);
-					}
-					else
-					{
-						std::cout << "222222" << std::endl;
 					}
 				}
 				else
@@ -465,7 +458,6 @@ namespace ParaEngine
 			}
 			else if (sdl_event.type == SDL_KEYUP)
 			{
-				std::cout << "SDL_KEYUP" << std::endl;
 #ifdef EMSCRIPTEN
 				if (sdl_event.key.keysym.sym == SDLK_NUMLOCKCLEAR || m_isNumLockEnabled == 2)
 				{
@@ -484,7 +476,6 @@ namespace ParaEngine
 			}
 			else if (sdl_event.type == SDL_TEXTINPUT)
 			{
-				std::cout << "SDL_TEXTINPUT" << std::endl;
 				OnChar(sdl_event.text.text);
 			}
 			else if (sdl_event.type == SDL_FINGERDOWN)
