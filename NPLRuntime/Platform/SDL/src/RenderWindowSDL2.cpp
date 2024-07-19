@@ -454,6 +454,10 @@ namespace ParaEngine
 					{
 						m_isNumLockEnabled = EM_ASM_INT({ return window.isNumLockEnabled; });
 					}
+					else
+					{
+						std::cout << "macOS!!!!!" << std::endl;
+					}
 				}
 #endif
 				EKeyState state = EKeyState::RELEASE;
