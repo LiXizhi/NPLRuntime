@@ -68,6 +68,7 @@ namespace ParaEngine
 
 	void RenderWindowDelegate::OnKey(EVirtualKey key, EKeyState state)
 	{
+		std::cout << "RenderWindowDelegate::OnKey!!!!!" << std::endl;
 		if (CGlobals::GetApp()->GetAppState() != PEAppState_Ready)
 		{
 			return;
@@ -85,6 +86,7 @@ namespace ParaEngine
 
 	void RenderWindowDelegate::OnChar(unsigned int character)
 	{
+		std::cout << "RenderWindowDelegate::OnChar!!!!" << std::endl;
 		if (CGlobals::GetApp()->GetAppState() != PEAppState_Ready)
 		{
 			return;
