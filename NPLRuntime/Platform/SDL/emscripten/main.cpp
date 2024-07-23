@@ -330,6 +330,9 @@ int main(int argc, char* argv[])
             },
             [](void* userData, int mode) {
                 std::cout << "webxr_session_callback_func end" << std::endl;
+                ((IParaWebXR *)CGlobals::GetViewportManager()->GetChildAttributeObject("WebXR"))->SetIsXR(false);
+                CGlobals::GetViewportManager()->SetLayout(VIEW_LAYOUT_DEFAULT);
+                webxr_resize();
             },
             [](void* userData, int error) {
                 std::cout << "webxr_error_callback_func" << std::endl;
