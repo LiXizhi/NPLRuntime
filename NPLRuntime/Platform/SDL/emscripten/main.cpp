@@ -251,10 +251,9 @@ int main(int argc, char* argv[])
     });
 
     #ifdef EMSCRIPTEN
+        static bool isWebXRinited = false;
         webxr_init(
             [](void* userData, int time, ParaWebXRRigidTransform *headPose, ParaWebXRView views[2], int viewCount) {
-                static bool isWebXRinited = false;
-
                 if (!isWebXRinited)
                 {
                     isWebXRinited = true;
@@ -332,7 +331,14 @@ int main(int argc, char* argv[])
                 std::cout << "webxr_session_callback_func end" << std::endl;
                 ((IParaWebXR *)CGlobals::GetViewportManager()->GetChildAttributeObject("WebXR"))->SetIsXR(false);
                 CGlobals::GetViewportManager()->SetLayout(VIEW_LAYOUT_DEFAULT);
-                webxr_resize();
+
+                isWebXRinited = false;
+                static_cast<EmscriptenApplication*>(userData)->
+                    GetRenderWindowDelegate()->
+                    SetSDLWindowSize(
+                        EM_ASM_INT({ return document.documentElement.clientWidth * window.devicePixelRatio; }),
+                        EM_ASM_INT({ return document.documentElement.clientHeight * window.devicePixelRatio; })
+                    );
             },
             [](void* userData, int error) {
                 std::cout << "webxr_error_callback_func" << std::endl;

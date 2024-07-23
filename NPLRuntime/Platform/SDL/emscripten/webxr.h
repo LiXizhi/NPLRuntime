@@ -167,8 +167,6 @@ Request that the webxr presentation exits VR mode
 */
 extern void webxr_request_exit();
 
-extern void webxr_resize();
-
 /**
 Set projection matrix parameters for the webxr session
 
