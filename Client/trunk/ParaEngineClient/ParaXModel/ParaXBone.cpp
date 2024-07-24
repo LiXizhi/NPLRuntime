@@ -1506,8 +1506,25 @@ Bone* ParaEngine::Bone::FindMatchingBoneInProvider(CBoneAnimProvider* pProvider)
 	}
 	else
 	{
-		if (!GetIdentifier().empty())
-			pCurBone = pProvider->GetBoneByName(GetIdentifier());
+		const auto& sIdentifier = GetIdentifier();
+		if (!sIdentifier.empty()) 
+		{
+			// since we are assigning the bone index to the identifier when identifier is empty, we will skip the digit identifier.
+			bool isDigitIdentifier = true;
+			for (size_t i = 0; i < sIdentifier.size(); i++)
+			{
+				if (!isdigit(sIdentifier[i]))
+				{
+					isDigitIdentifier = false;
+					break;
+				}
+			}
+			if (!isDigitIdentifier)
+			{
+				pCurBone = pProvider->GetBoneByName(sIdentifier);
+			}
+		}
+		
 		if (pCurBone == 0)
 		{
 			// if the bone is one of the unknown biped bones, both locally and externally. we will try to use external animation by matching bone index. 
