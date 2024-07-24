@@ -860,6 +860,13 @@ void ParaEngine::Bone::AutoSetBoneInfoFromName()
 	if (m_sIdentifer.empty() || GetBoneID() > 0)
 		return;
 	std::string sName = m_sIdentifer;
+	// remove the tag from the name
+	auto nFromPos = sName.find_first_of('{');
+	if (nFromPos != string::npos)
+	{
+		sName = sName.substr(0, nFromPos);
+	}
+
 	StringHelper::make_lower(sName);
 
 	// check special meaning ending names
@@ -1499,8 +1506,25 @@ Bone* ParaEngine::Bone::FindMatchingBoneInProvider(CBoneAnimProvider* pProvider)
 	}
 	else
 	{
-		if (!GetIdentifier().empty())
-			pCurBone = pProvider->GetBoneByName(GetIdentifier());
+		const auto& sIdentifier = GetIdentifier();
+		if (!sIdentifier.empty())
+		{
+			// since we are assigning the bone index to the identifier when identifier is empty, we will skip the digit identifier.
+			bool isDigitIdentifier = true;
+			for (size_t i = 0; i < sIdentifier.size(); i++)
+			{
+				if (!isdigit(sIdentifier[i]))
+				{
+					isDigitIdentifier = false;
+					break;
+				}
+			}
+			if (!isDigitIdentifier)
+			{
+				pCurBone = pProvider->GetBoneByName(sIdentifier);
+			}
+		}
+
 		if (pCurBone == 0)
 		{
 			// if the bone is one of the unknown biped bones, both locally and externally. we will try to use external animation by matching bone index. 
