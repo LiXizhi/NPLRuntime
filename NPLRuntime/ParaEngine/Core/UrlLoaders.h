@@ -476,6 +476,7 @@ namespace ParaEngine
 		std::function<void()> m_async_callback;
 		std::string m_fetch_response_data;
 		std::string m_fetch_response_header;
+		bool m_fetch_finish;
 #endif 
 	};
 }
