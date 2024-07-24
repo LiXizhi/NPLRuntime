@@ -440,7 +440,21 @@ namespace ParaEngine
 					m_KeyState[(uint32_t)key] = state;
 				OnKey(key, state);
 				char c = GetKeyChar(msgKey);
-				if (c >= 0) OnChar(c);
+
+				if (JS::GetOperatingSystem() == "mac")
+				{
+					SDL_version version;
+					SDL_GetVersion(&version);
+
+					if (version.major >= 2 && version.minor >= 28)
+					{
+						if (c >= 0) OnChar(c);
+					}
+				}
+				else
+				{
+					if (c >= 0) OnChar(c);
+				}
 			}
 			else if (sdl_event.type == SDL_KEYUP)
 			{
