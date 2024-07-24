@@ -532,9 +532,17 @@ namespace ParaScripting
 
 		// we need to download from the web server.
 		const char* url = NULL;
+		bool needResume = false;
+		bool needDataStreaming = false;
 		if (type(urlParams) == LUA_TTABLE)
 		{
 			url = object_cast<const char*>(urlParams["url"]);
+			if (urlParams["needResume"]) {
+				needResume = object_cast<bool>(urlParams["needResume"]);
+			}
+			if (urlParams["dataStreaming"]) {
+				needDataStreaming = object_cast<bool>(urlParams["dataStreaming"]);
+			}
 		}
 		else if (type(urlParams) == LUA_TSTRING)
 		{
@@ -552,6 +560,8 @@ namespace ParaScripting
 		pProcessor->SetUrl(url);
 		pProcessor->SetScriptCallback(callbackScript);
 		pProcessor->SetSaveToFile(destFolder);
+
+		pProcessor->SetEnableDataStreaming(needDataStreaming);
 
 		// add headers
 		if (type(urlParams) == LUA_TTABLE)
@@ -640,10 +650,14 @@ namespace ParaScripting
 	bool CNPL::AppendURLRequest1(const object& urlParams, const char* sCallback, const object& sForm_, const char* sPoolName)
 	{
 		bool bSyncMode = sPoolName && strcmp(sPoolName, "self") == 0;
+		bool needDataStreaming = false;
 		const char* url = NULL;
 		if (type(urlParams) == LUA_TTABLE)
 		{
 			url = object_cast<const char*>(urlParams["url"]);
+			if (urlParams["dataStreaming"]) {
+				needDataStreaming = object_cast<bool>(urlParams["dataStreaming"]);
+			}
 		}
 		else if (type(urlParams) == LUA_TSTRING)
 		{
@@ -671,6 +685,7 @@ namespace ParaScripting
 
 		// do not enable progress, if we are just downloading a simple url in plain text, use DownloadFile for large file based request. 
 		pProcessor->SetEnableProgressUpdate(false);
+		pProcessor->SetEnableDataStreaming(needDataStreaming);
 
 		ParaEngine::CUrlBuilder urlBuilder;
 		urlBuilder.SetBaseURL(url);
@@ -896,7 +911,7 @@ namespace ParaScripting
 			// sync mode in current thread. 
 			if (SUCCEEDED(pLoader->Load()) &&
 				SUCCEEDED(pLoader->Decompress(NULL, NULL)) &&
-				SUCCEEDED(pProcessor->Process(NULL, 0)) &&
+				SUCCEEDED(pProcessor->Process(NULL, NULL)) &&
 				SUCCEEDED(pProcessor->LockDeviceObject()) &&
 				SUCCEEDED(pProcessor->CopyToResource()) &&
 				SUCCEEDED(pProcessor->UnLockDeviceObject()))
@@ -1273,7 +1288,7 @@ namespace ParaScripting
 		{
 			// ERROR: unknown type...
 		}
-		}
+	}
 #endif
 	bool CNPL::FromJson(const char* sJson, const object& output)
 	{
@@ -1322,9 +1337,9 @@ namespace ParaScripting
 		{
 			OUTPUT_LOG("error parsing json string. NPL::FromJson throws an exception. \n");
 			return false;
-			}
-		return true;
 		}
+		return true;
+	}
 
 
 	const string& CNPL::ToJson2(const object& input, bool bUseEmptyArray)
@@ -1563,10 +1578,11 @@ namespace ParaScripting
 		{
 			lua_State* L = pRuntimeState->GetLuaState();
 			LUA_INTEGER v = (LUA_INTEGER)L;
-			output["value"] = v;
+			output["value_str"] = std::to_string(v);
+			/*output["value"] = v;
 
 			output["high"] = (LUA_INTEGER)(((uint64_t)L & 0xFFFFFFFF00000000LL) >> 32);
-			output["low"] = (LUA_INTEGER)((uint64_t)L & 0xFFFFFFFFLL);
+			output["low"] = (LUA_INTEGER)((uint64_t)L & 0xFFFFFFFFLL);*/
 
 		}
 		return output;
@@ -2103,4 +2119,4 @@ namespace ParaScripting
 	}
 
 #pragma endregion NPL Runtime State
-	}// namespace ParaScripting
+}// namespace ParaScripting

@@ -379,6 +379,10 @@ namespace ParaEngine
 
 		void SetEnableProgressUpdate(bool val);
 
+		/* whether to enable data streaming, once enabled, we will also include actual data received in progress update callback */
+		bool IsEnableDataStreaming() const;
+		void SetEnableDataStreaming(bool val);
+
 		const char* CopyRequestData(const char* pData, int nLength);
 
 		/** get options as NPL table object. */
@@ -440,6 +444,8 @@ namespace ParaEngine
 		bool m_bForbidReuse;
 		/** whether to send progress update via callback */
 		bool m_bEnableProgressUpdate;
+		/** whether to enable data streaming, once enabled, we will also include actual data received in progress update callback */
+		bool m_bEnableDataStreaming;
 		/** we will invoke callback immediately using NPL.call instead of NPL.activate. This is only enabled in sync-mode api. */
 		bool m_bIsSyncCallbackMode;
 		

@@ -102,7 +102,7 @@ ParaEngine::CUrlProcessor::CUrlProcessor()
 	:m_nTimeOutTime(DEFAULT_TIME_OUT), m_nStartTime(0), m_responseCode(0), m_nLastProgressTime(0),
 	m_pUserData(0), m_returnCode(CURLE_OK), m_type(URL_REQUEST_HTTP_AUTO),
 	m_nPriority(0), m_nStatus(URL_REQUEST_UNSTARTED), m_pfuncCallBack(0), m_nBytesReceived(0), m_pUploadContext(NULL),
-	m_nTotalBytes(0), m_nUserDataType(0), m_pFile(NULL), m_pThreadLocalData(NULL), m_bForbidReuse(false), m_bEnableProgressUpdate(true), m_bIsSyncCallbackMode(false)
+	m_nTotalBytes(0), m_nUserDataType(0), m_pFile(NULL), m_pThreadLocalData(NULL), m_bForbidReuse(false), m_bEnableProgressUpdate(true), m_bIsSyncCallbackMode(false), m_bEnableDataStreaming(false)
 {
 #ifndef EMSCRIPTEN
 	m_pHttpHeaders = 0;
@@ -115,7 +115,7 @@ ParaEngine::CUrlProcessor::CUrlProcessor(const string& url, const string& npl_ca
 	:m_nTimeOutTime(DEFAULT_TIME_OUT), m_nStartTime(0), m_responseCode(0), m_nLastProgressTime(0),
 	m_pUserData(0), m_returnCode(CURLE_OK), m_type(URL_REQUEST_HTTP_AUTO),
 	m_nPriority(0), m_nStatus(URL_REQUEST_UNSTARTED), m_pfuncCallBack(0), m_nBytesReceived(0), m_pUploadContext(NULL),
-	m_nTotalBytes(0), m_nUserDataType(0), m_pFile(NULL), m_pThreadLocalData(NULL), m_bEnableProgressUpdate(true), m_bIsSyncCallbackMode(false)
+	m_nTotalBytes(0), m_nUserDataType(0), m_pFile(NULL), m_pThreadLocalData(NULL), m_bEnableProgressUpdate(true), m_bIsSyncCallbackMode(false), m_bEnableDataStreaming(false)
 {
 #ifndef EMSCRIPTEN
 	m_pHttpHeaders = 0;
@@ -696,6 +696,32 @@ size_t ParaEngine::CUrlProcessor::write_data_callback(void *buffer, size_t size,
 			}
 			m_pFile->write((const char*)buffer, (int)nByteCount);
 		}
+		if (IsEnableDataStreaming())
+		{
+			if (!m_sNPLCallback.empty())
+			{
+				NPL::CNPLWriter writer;
+				writer.WriteName("msg");
+				writer.BeginTable();
+
+				if (!m_header.empty() && m_data.size() == nByteCount)
+				{
+					// include http response headers ONLY for the first callback.
+					writer.WriteName("header");
+					writer.WriteValue((const char*)(&(m_header[0])), (int)m_header.size());
+				}
+
+				writer.WriteName("data");
+				writer.WriteValue((const char*)(buffer), (int)nByteCount, true);
+
+				writer.WriteName("type");
+				writer.WriteValue("stream");
+				writer.EndTable();
+				writer.WriteParamDelimiter();
+				writer.Append(m_sNPLCallback.c_str());
+				InvokeCallbackScript(writer.ToString().c_str(), (int)(writer.ToString().size()));
+			}
+		}
 		// just for testing: remove this, dump to debug. 
 		// ParaEngine::CLogger::GetSingleton().Write((const char*)buffer, (int)nByteCount);
 	}
@@ -814,7 +840,16 @@ void ParaEngine::CUrlProcessor::CompleteTask()
 		writer.WriteName("msg");
 		writer.BeginTable();
 
-		if (!m_header.empty())
+		if (IsEnableDataStreaming())
+		{
+			// indicate end of stream
+			writer.WriteName("data");
+			writer.WriteValue("");
+
+			writer.WriteName("type");
+			writer.WriteValue("stream");
+		}
+		else if (!m_data.empty())
 		{
 			writer.WriteName("header");
 			writer.WriteValue((const char*)(&(m_header[0])), (int)m_header.size());
@@ -976,6 +1011,16 @@ bool ParaEngine::CUrlProcessor::IsEnableProgressUpdate() const
 void ParaEngine::CUrlProcessor::SetEnableProgressUpdate(bool val)
 {
 	m_bEnableProgressUpdate = val;
+}
+
+bool ParaEngine::CUrlProcessor::IsEnableDataStreaming() const
+{
+	return m_bEnableDataStreaming;
+}
+
+void ParaEngine::CUrlProcessor::SetEnableDataStreaming(bool val)
+{
+	m_bEnableDataStreaming = val;
 }
 
 const char* ParaEngine::CUrlProcessor::CopyRequestData(const char* pData, int nLength)
