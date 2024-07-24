@@ -860,6 +860,13 @@ void ParaEngine::Bone::AutoSetBoneInfoFromName()
 	if (m_sIdentifer.empty() || GetBoneID() > 0)
 		return;
 	std::string sName = m_sIdentifer;
+	// remove the tag from the name
+	auto nFromPos = sName.find_first_of('{');
+	if (nFromPos != string::npos)
+	{
+		sName = sName.substr(0, nFromPos);
+	}
+
 	StringHelper::make_lower(sName);
 
 	// check special meaning ending names
