@@ -112,12 +112,12 @@ namespace ParaScripting
 	// NPL 
 	//
 	//////////////////////////////////////////////////////////////////////////
-	int CNPL::activate_(const char * strNPLFileName, const char* sCode, int channel, int priority, int reliability)
+	int CNPL::activate_(const char* strNPLFileName, const char* sCode, int channel, int priority, int reliability)
 	{
 		return NPL::CNPLRuntime::GetInstance()->NPL_Activate(NPL::CNPLRuntime::GetInstance()->GetMainRuntimeState(), strNPLFileName, sCode, 0, channel, priority, reliability);
 	}
 
-	int CNPL::activate2_(const char * strNPLFileName, const char* sCode)
+	int CNPL::activate2_(const char* strNPLFileName, const char* sCode)
 	{
 		int channel = NPL::CNPLRuntime::GetInstance()->NPL_GetDefaultChannel();
 		int priority = NPL::MEDIUM_PRIORITY;
@@ -131,20 +131,20 @@ namespace ParaScripting
 		int priority = NPL::MEDIUM_PRIORITY;
 		int reliability = NPL::RELIABLE_ORDERED;
 		NPL::CNPLRuntime::GetInstance()->NPL_GetChannelProperty(channel, &priority, &reliability);
-		return activate5(strNPLFileName,input,channel,priority, reliability);
+		return activate5(strNPLFileName, input, channel, priority, reliability);
 	}
 
 	int CNPL::activate1(const object& strNPLFileName)
 	{
-		const char* sNPLFileName=NULL;
+		const char* sNPLFileName = NULL;
 
 		int nType = type(strNPLFileName);
-		if(nType == LUA_TSTRING)
+		if (nType == LUA_TSTRING)
 		{
 			// arbitrary code is allowed in sCode
 			sNPLFileName = object_cast<const char*>(strNPLFileName);
 		}
-		return NPL::CNPLRuntime::GetInstance()->NPL_Activate(NPL::CNPLRuntimeState::GetRuntimeStateFromLuaObject(strNPLFileName), 
+		return NPL::CNPLRuntime::GetInstance()->NPL_Activate(NPL::CNPLRuntimeState::GetRuntimeStateFromLuaObject(strNPLFileName),
 			sNPLFileName);
 	}
 
@@ -153,23 +153,23 @@ namespace ParaScripting
 		int priority = NPL::MEDIUM_PRIORITY;
 		int reliability = NPL::RELIABLE_ORDERED;
 		NPL::CNPLRuntime::GetInstance()->NPL_GetChannelProperty(channel, &priority, &reliability);
-		return activate5(strNPLFileName,input,channel,priority, reliability);
+		return activate5(strNPLFileName, input, channel, priority, reliability);
 	}
 	int CNPL::activate5(const object& strNPLFileName, const object& input, int channel, int priority, int reliability)
 	{
 		// when sending a message, no serious validation(security) is performed. It is generally considered the receiver's job.
 		StringBuilder sCode;
-		const char* sNPLFileName=NULL;
+		const char* sNPLFileName = NULL;
 
 		int nType = type(strNPLFileName);
-		if(nType == LUA_TSTRING)
+		if (nType == LUA_TSTRING)
 		{
 			// arbitrary code is allowed in sCode
 			sNPLFileName = object_cast<const char*>(strNPLFileName);
 		}
 
 		nType = type(input);
-		if(nType == LUA_TSTRING)
+		if (nType == LUA_TSTRING)
 		{
 			// arbitrary code is allowed in sCode
 			int nSize = 0;
@@ -186,24 +186,24 @@ namespace ParaScripting
 			NPL::NPLHelper::SerializeToSCode("msg", input, sCode);
 		}
 
-		return NPL::CNPLRuntime::GetInstance()->NPL_Activate(NPL::CNPLRuntimeState::GetRuntimeStateFromLuaObject(strNPLFileName), 
+		return NPL::CNPLRuntime::GetInstance()->NPL_Activate(NPL::CNPLRuntimeState::GetRuntimeStateFromLuaObject(strNPLFileName),
 			sNPLFileName, sCode.c_str(), (int)sCode.size(), channel, priority, reliability);
 	}
 
-	void CNPL::call(const object& strNPLFileName, const object& input )
+	void CNPL::call(const object& strNPLFileName, const object& input)
 	{
 		string sCode;
-		const char* sNPLFileName=NULL;
+		const char* sNPLFileName = NULL;
 
 		int nType = type(strNPLFileName);
-		if(nType == LUA_TSTRING)
+		if (nType == LUA_TSTRING)
 		{
 			// arbitrary code is allowed in sCode
 			sNPLFileName = object_cast<const char*>(strNPLFileName);
 		}
 
 		nType = type(input);
-		if(nType == LUA_TSTRING)
+		if (nType == LUA_TSTRING)
 		{
 			// arbitrary code is allowed in sCode
 			sCode = object_cast<const char*>(input);
@@ -218,16 +218,16 @@ namespace ParaScripting
 		}
 
 		NPL::NPLRuntimeState_ptr runtime_state = NPL::CNPLRuntimeState::GetRuntimeStateFromLuaObject(strNPLFileName);
-		if(runtime_state.get() != 0)
+		if (runtime_state.get() != 0)
 		{
 			NPL::NPLFileName filename(sNPLFileName);
-			
+
 			runtime_state->LoadFile_any(filename.sRelativePath, false, strNPLFileName.interpreter(), true);
 			runtime_state->ActivateFile_any(filename.sRelativePath, sCode.c_str(), (int)sCode.size());
 		}
 	}
 
-	void CNPL::call_(const char * strNPLFileName, const char* sCode)
+	void CNPL::call_(const char* strNPLFileName, const char* sCode)
 	{
 		NPL::NPLFileName filename(strNPLFileName);
 		NPL::CNPLRuntime::GetInstance()->GetMainRuntimeState()->ActivateFile_any(filename.sRelativePath, sCode);
@@ -261,7 +261,7 @@ namespace ParaScripting
 					if (type(key) == LUA_TSTRING)
 					{
 						std::string sKey = object_cast<std::string>(key);
-							
+
 						if (type(input) == LUA_TNUMBER)
 						{
 							int value = object_cast<int>(input);
@@ -292,7 +292,7 @@ namespace ParaScripting
 				auto pFileState = runtime_state->GetNeuronFileState(filename);
 				if (pFileState)
 				{
-					if(nPreemptiveCount>0)
+					if (nPreemptiveCount > 0)
 						pFileState->SetPreemptiveInstructionCount(nPreemptiveCount);
 					if (nMsgQueueSize > 0)
 						pFileState->SetMaxQueueSize(nMsgQueueSize);
@@ -312,10 +312,10 @@ namespace ParaScripting
 	void CNPL::load(const object& filePath, bool bReload)
 	{
 		NPL::NPLRuntimeState_ptr runtime_state = NPL::CNPLRuntimeState::GetRuntimeStateFromLuaObject(filePath);
-		if(runtime_state.get() != 0)
+		if (runtime_state.get() != 0)
 		{
 			int nType = type(filePath);
-			if(nType == LUA_TSTRING)
+			if (nType == LUA_TSTRING)
 			{
 				NPL::NPLFileName filename(object_cast<const char*>(filePath));
 				runtime_state->LoadFile_any(filename.sRelativePath, bReload, filePath.interpreter());
@@ -358,7 +358,7 @@ namespace ParaScripting
 		NPL::CNPLRuntime::GetInstance()->NPL_EnableNetwork(bEnable, CenterName, password);
 	}
 
-	void CNPL::AddDNSRecord(const char * sDNSName, const char* sAddress)
+	void CNPL::AddDNSRecord(const char* sDNSName, const char* sAddress)
 	{
 		NPL::CNPLRuntime::GetInstance()->NPL_AddDNSRecord(sDNSName, sAddress);
 	}
@@ -371,13 +371,13 @@ namespace ParaScripting
 	bool CNPL::SetTimer(const object& nIDEvent, float fElapse, const object& strNPLFileName)
 	{
 		NPL::NPLRuntimeState_ptr runtime_state = NPL::CNPLRuntimeState::GetRuntimeStateFromLuaObject(nIDEvent);
-		if(runtime_state.get() != 0)
+		if (runtime_state.get() != 0)
 		{
 			int nID = 0;
-			if(type(nIDEvent) == LUA_TNUMBER)
+			if (type(nIDEvent) == LUA_TNUMBER)
 				nID = object_cast<int>(nIDEvent);
 
-			if(type(strNPLFileName) == LUA_TSTRING)
+			if (type(strNPLFileName) == LUA_TSTRING)
 			{
 				return NPL::CNPLRuntime::GetInstance()->NPL_SetTimer(runtime_state, nID, fElapse, object_cast<const char*>(strNPLFileName));
 			}
@@ -385,15 +385,15 @@ namespace ParaScripting
 		return false;
 	}
 
-	bool CNPL::ChangeTimer( const object& nIDEvent, int dueTime, int period )
+	bool CNPL::ChangeTimer(const object& nIDEvent, int dueTime, int period)
 	{
 		NPL::NPLRuntimeState_ptr runtime_state = NPL::CNPLRuntimeState::GetRuntimeStateFromLuaObject(nIDEvent);
-		if(runtime_state.get() != 0)
+		if (runtime_state.get() != 0)
 		{
 			int nID = 0;
-			if(type(nIDEvent) == LUA_TNUMBER)
+			if (type(nIDEvent) == LUA_TNUMBER)
 				nID = object_cast<int>(nIDEvent);
-			return NPL::CNPLRuntime::GetInstance()->NPL_ChangeTimer(runtime_state,nID, dueTime, period);
+			return NPL::CNPLRuntime::GetInstance()->NPL_ChangeTimer(runtime_state, nID, dueTime, period);
 		}
 		return false;
 	}
@@ -401,28 +401,28 @@ namespace ParaScripting
 	bool CNPL::KillTimer(const object& nIDEvent)
 	{
 		NPL::NPLRuntimeState_ptr runtime_state = NPL::CNPLRuntimeState::GetRuntimeStateFromLuaObject(nIDEvent);
-		if(runtime_state.get() != 0)
+		if (runtime_state.get() != 0)
 		{
 			int nID = 0;
-			if(type(nIDEvent) == LUA_TNUMBER)
+			if (type(nIDEvent) == LUA_TNUMBER)
 				nID = object_cast<int>(nIDEvent);
 			return NPL::CNPLRuntime::GetInstance()->NPL_KillTimer(runtime_state, nID);
 		}
 		return false;
 	}
 
-	void CNPL::DoString(const object&  sCode)
+	void CNPL::DoString(const object& sCode)
 	{
 		DoString2(sCode, NULL);
 	}
 
-	void CNPL::DoString2( const object& sCode, const char* sFilename )
+	void CNPL::DoString2(const object& sCode, const char* sFilename)
 	{
 		NPL::NPLRuntimeState_ptr runtime_state = NPL::CNPLRuntimeState::GetRuntimeStateFromLuaObject(sCode);
-		if(runtime_state.get() != 0)
+		if (runtime_state.get() != 0)
 		{
 			int nType = type(sCode);
-			if(nType == LUA_TSTRING)
+			if (nType == LUA_TSTRING)
 			{
 				// arbitrary code is allowed in sCode, make sure DoString is called from authenticated code.
 				int nSize = 0;
@@ -459,17 +459,17 @@ namespace ParaScripting
 		return SerializeToSCode2(sStorageVar, input, false);
 	}
 
-	bool CNPL::IsSCodePureData( const char* sCode )
+	bool CNPL::IsSCodePureData(const char* sCode)
 	{
 		return NPL::NPLHelper::IsSCodePureData(sCode);
 	}
 
-	bool CNPL::IsPureData( const char* sCode )
+	bool CNPL::IsPureData(const char* sCode)
 	{
 		return NPL::NPLHelper::IsPureData(sCode);
 	}
 
-	bool CNPL::IsPureTable( const char* sCode )
+	bool CNPL::IsPureTable(const char* sCode)
 	{
 		return NPL::NPLHelper::IsPureTable(sCode);
 	}
@@ -479,12 +479,12 @@ namespace ParaScripting
 		return NPL::CNPLRuntime::GetInstance()->NPL_GetSourceName().c_str();
 	}
 
-	void CNPL::SetSourceName( const char* sName )
+	void CNPL::SetSourceName(const char* sName)
 	{
 		NPL::CNPLRuntime::GetInstance()->NPL_SetSourceName(sName);
 	}
 
-	void CNPL::SetDefaultChannel( int channel_ID )
+	void CNPL::SetDefaultChannel(int channel_ID)
 	{
 		NPL::CNPLRuntime::GetInstance()->NPL_SetDefaultChannel(channel_ID);
 	}
@@ -494,7 +494,7 @@ namespace ParaScripting
 		return NPL::CNPLRuntime::GetInstance()->NPL_GetDefaultChannel();
 	}
 
-	void CNPL::SetChannelProperty( int channel_ID, int priority, int reliability )
+	void CNPL::SetChannelProperty(int channel_ID, int priority, int reliability)
 	{
 		NPL::CNPLRuntime::GetInstance()->NPL_SetChannelProperty(channel_ID, priority, reliability);
 	}
@@ -505,17 +505,17 @@ namespace ParaScripting
 
 	}
 
-	void CNPL::GetChannelProperty( int channel_ID, int* priority, int* reliability )
+	void CNPL::GetChannelProperty(int channel_ID, int* priority, int* reliability)
 	{
 		NPL::CNPLRuntime::GetInstance()->NPL_GetChannelProperty(channel_ID, priority, reliability);
 	}
 
-	void CNPL::RegisterWSCallBack( const char * sWebServiceFile, const char * sCode )
+	void CNPL::RegisterWSCallBack(const char* sWebServiceFile, const char* sCode)
 	{
 		NPL::CNPLRuntime::GetInstance()->NPL_RegisterWSCallBack(sWebServiceFile, sCode);
 	}
 
-	void CNPL::UnregisterWSCallBack( const char * sWebServiceFile )
+	void CNPL::UnregisterWSCallBack(const char* sWebServiceFile)
 	{
 		NPL::CNPLRuntime::GetInstance()->NPL_UnregisterWSCallBack(sWebServiceFile);
 	}
@@ -536,7 +536,7 @@ namespace ParaScripting
 		{
 			url = object_cast<const char*>(urlParams["url"]);
 		}
-		else if(type(urlParams) == LUA_TSTRING)
+		else if (type(urlParams) == LUA_TSTRING)
 		{
 			url = object_cast<const char*>(urlParams);
 		}
@@ -562,7 +562,7 @@ namespace ParaScripting
 				double value = object_cast<double>(request_timeout);
 				pProcessor->SetTimeOut((int)value);
 			}
-			
+
 			auto headers = urlParams["headers"];
 			if (type(headers) == LUA_TTABLE)
 			{
@@ -577,17 +577,17 @@ namespace ParaScripting
 						if (type(input) == LUA_TSTRING)
 						{
 							std::string sValue = object_cast<std::string>(input);
-							if (sValue.empty()){
+							if (sValue.empty()) {
 								// remove the curl header 
 								sValue = sKey + ":";
 							}
-							else{
+							else {
 								sValue = sKey + ": " + sValue;
 							}
 							pProcessor->AppendHTTPHeader(sValue.c_str());
 						}
 					}
-					else if(type(key) == LUA_TNUMBER)
+					else if (type(key) == LUA_TNUMBER)
 					{
 						if (type(input) == LUA_TSTRING)
 						{
@@ -599,29 +599,29 @@ namespace ParaScripting
 			}
 		}
 
-		if(pAsyncLoader->AddWorkItem( pLoader, pProcessor, NULL, NULL,ResourceRequestID_Asset) != S_OK)
+		if (pAsyncLoader->AddWorkItem(pLoader, pProcessor, NULL, NULL, ResourceRequestID_Asset) != S_OK)
 		{
 			string sTmp = string("NPL.AsyncDownload Failed:") + string(url) + "\n";
 			pAsyncLoader->log(sTmp);
 		}
 	}
 
-	void CNPL::CancelDownload( const char* DownloaderName )
+	void CNPL::CancelDownload(const char* DownloaderName)
 	{
 		NPL::CNPLRuntime::GetInstance()->CancelDownload(DownloaderName);
 	}
 
-	int CNPL::Download( const char* url, const char* destFolder, const char* callbackScript, const char* DownloaderName )
+	int CNPL::Download(const char* url, const char* destFolder, const char* callbackScript, const char* DownloaderName)
 	{
 		return NPL::CNPLRuntime::GetInstance()->Download(url, destFolder, callbackScript, DownloaderName);
 	}
 
-	void CNPL::Compile( const char* arguments )
+	void CNPL::Compile(const char* arguments)
 	{
 #ifdef USE_NPLCompiler
 		string cmdLine = "\"script/bin/luac5.1.exe\" ";
 		cmdLine += arguments;
-		if(NPL::CNPLCompiler::Compile(cmdLine.c_str()) !=S_OK)
+		if (NPL::CNPLCompiler::Compile(cmdLine.c_str()) != S_OK)
 		{
 			OUTPUT_LOG("\nerror: Failed to compile with %s \n\n", arguments);
 		}
@@ -632,12 +632,12 @@ namespace ParaScripting
 		//ParaEngine::CEditorHelper::ShellExecute("open", "script/bin/luac5.1.exe", arguments, NULL, 1);
 	}
 
-	bool CNPL::ChangeRequestPoolSize( const char* sPoolName, int nCount )
+	bool CNPL::ChangeRequestPoolSize(const char* sPoolName, int nCount)
 	{
 		return NPL::CNPLRuntime::GetInstance()->ChangeRequestPoolSize(sPoolName, nCount);
 	}
 
-	bool CNPL::AppendURLRequest1(const object&  urlParams, const char* sCallback, const object& sForm_, const char* sPoolName)
+	bool CNPL::AppendURLRequest1(const object& urlParams, const char* sCallback, const object& sForm_, const char* sPoolName)
 	{
 		bool bSyncMode = sPoolName && strcmp(sPoolName, "self") == 0;
 		const char* url = NULL;
@@ -645,12 +645,12 @@ namespace ParaScripting
 		{
 			url = object_cast<const char*>(urlParams["url"]);
 		}
-		else if(type(urlParams) == LUA_TSTRING)
+		else if (type(urlParams) == LUA_TSTRING)
 		{
 			url = object_cast<const char*>(urlParams);
 		}
 
-		if (url==NULL || sCallback == NULL)
+		if (url == NULL || sCallback == NULL)
 			return false;
 
 		CAsyncLoader* pAsyncLoader = &(CAsyncLoader::GetSingleton());
@@ -671,7 +671,7 @@ namespace ParaScripting
 
 		// do not enable progress, if we are just downloading a simple url in plain text, use DownloadFile for large file based request. 
 		pProcessor->SetEnableProgressUpdate(false);
-		
+
 		ParaEngine::CUrlBuilder urlBuilder;
 		urlBuilder.SetBaseURL(url);
 
@@ -692,17 +692,17 @@ namespace ParaScripting
 						if (type(input) == LUA_TSTRING)
 						{
 							std::string sValue = object_cast<std::string>(input);
-							if (sValue.empty()){
+							if (sValue.empty()) {
 								// remove the curl header 
 								sValue = sKey + ":";
 							}
-							else{
+							else {
 								sValue = sKey + ": " + sValue;
 							}
 							pProcessor->AppendHTTPHeader(sValue.c_str());
 						}
 					}
-					else if(type(key) == LUA_TNUMBER)
+					else if (type(key) == LUA_TNUMBER)
 					{
 						if (type(input) == LUA_TSTRING)
 						{
@@ -733,159 +733,159 @@ namespace ParaScripting
 			}
 		}
 
-		if(type(sForm) == LUA_TTABLE)
+		if (type(sForm) == LUA_TTABLE)
 		{
-			for (luabind::iterator itCur(sForm), itEnd;itCur!=itEnd;++itCur)
+			for (luabind::iterator itCur(sForm), itEnd; itCur != itEnd; ++itCur)
 			{
 				// we only serialize item with a string key
 				const object& key = itCur.key();
-				if(type(key) == LUA_TSTRING)
+				if (type(key) == LUA_TSTRING)
 				{
 					const char* sKey = object_cast<const char*>(key);
 					const object& input = *itCur;
-					switch(type(input))
+					switch (type(input))
 					{
 					case LUA_TNUMBER:
-						{
-							double value = object_cast<double>(input);
+					{
+						double value = object_cast<double>(input);
 
-							if(strcmp(sKey, "request_timeout") ==0)
-							{
-								pProcessor->SetTimeOut((int)value);
-							}
-							else
-							{
-								char buff[40];
-								// similar to "%.5f" but without trailing zeros. 
-								ParaEngine::StringHelper::fast_dtoa(value, buff, 40, 5);
-								pProcessor->AppendFormParam(sKey, buff);
-							}
-							break;
+						if (strcmp(sKey, "request_timeout") == 0)
+						{
+							pProcessor->SetTimeOut((int)value);
 						}
+						else
+						{
+							char buff[40];
+							// similar to "%.5f" but without trailing zeros. 
+							ParaEngine::StringHelper::fast_dtoa(value, buff, 40, 5);
+							pProcessor->AppendFormParam(sKey, buff);
+						}
+						break;
+					}
 					case LUA_TBOOLEAN:
+					{
+						bool bValue = object_cast<bool>(input);
+						if (strcmp(sKey, "forbid_reuse") == 0)
 						{
-							bool bValue = object_cast<bool>(input);
-							if(strcmp(sKey, "forbid_reuse") ==0)
-							{
-								pProcessor->SetForbidReuse(bValue);
-							}
-							else
-							{
-								pProcessor->AppendFormParam(sKey, bValue ? "true" : "false");
-							}
-							break;
+							pProcessor->SetForbidReuse(bValue);
 						}
+						else
+						{
+							pProcessor->AppendFormParam(sKey, bValue ? "true" : "false");
+						}
+						break;
+					}
 					case LUA_TSTRING:
-						{
-							pProcessor->AppendFormParam(sKey, object_cast<const char*>(input));
-							break;
-						}
+					{
+						pProcessor->AppendFormParam(sKey, object_cast<const char*>(input));
+						break;
+					}
 					case LUA_TUSERDATA:
+					{
+						// this must be a CParaFile object. this is currently the only object supported. 
+						try
 						{
-							// this must be a CParaFile object. this is currently the only object supported. 
-							try
+							ParaScripting::ParaFileObject file = object_cast<ParaScripting::ParaFileObject>(input);
+							const char* pStr = file.GetBase64String();
+							if (pStr)
 							{
-								ParaScripting::ParaFileObject file = object_cast<ParaScripting::ParaFileObject>(input);
-								const char* pStr = file.GetBase64String();
-								if(pStr)
-								{
-									pProcessor->AppendFormParam(sKey, pStr);
-								}
-								// TODO: LXZ: figure out a way to check user data type, instead of throwing exceptions
-								// the following two may be possible ways, but I have not figured out how.
-
-								//ParaScripting::ParaFileObject* pFile = (ParaScripting::ParaFileObject*)luaL_checkudata(input.interpreter(), 0, "ParaIO.ParaFileObject");
-
-								//ParaScripting::ParaFileObject * pFile = object_cast<ParaScripting::ParaFileObject*>(input);
-								//if(pFile)
-								//{
-								//	//OUTPUT_LOG("file name:%s\n", pFile->readline());
-								//}
+								pProcessor->AppendFormParam(sKey, pStr);
 							}
-							catch (...)
-							{
-								OUTPUT_LOG("warning: only ParaFileObject user type is supported in msg input. \n");
-							}
-							break;
+							// TODO: LXZ: figure out a way to check user data type, instead of throwing exceptions
+							// the following two may be possible ways, but I have not figured out how.
+
+							//ParaScripting::ParaFileObject* pFile = (ParaScripting::ParaFileObject*)luaL_checkudata(input.interpreter(), 0, "ParaIO.ParaFileObject");
+
+							//ParaScripting::ParaFileObject * pFile = object_cast<ParaScripting::ParaFileObject*>(input);
+							//if(pFile)
+							//{
+							//	//OUTPUT_LOG("file name:%s\n", pFile->readline());
+							//}
 						}
+						catch (...)
+						{
+							OUTPUT_LOG("warning: only ParaFileObject user type is supported in msg input. \n");
+						}
+						break;
+					}
 					case LUA_TTABLE:
+					{
+						/* for file.
+						{name = {file="/tmp/test.txt",	type="text/plain"}}
+						{name = {file="dummy.html",	data="<html><bold>bold</bold></html>", type="text/html"}}
+						*/
+						const char* file = NULL;
+						const char* type_ = NULL;
+						std::string data;
+						for (luabind::iterator itCur1(input), itEnd1; itCur1 != itEnd1; ++itCur1)
 						{
-							/* for file. 
-							{name = {file="/tmp/test.txt",	type="text/plain"}}
-							{name = {file="dummy.html",	data="<html><bold>bold</bold></html>", type="text/html"}}
-							*/
-							const char* file = NULL;
-							const char* type_ = NULL;
-							std::string data;
-							for (luabind::iterator itCur1(input), itEnd1;itCur1!=itEnd1;++itCur1)
+							const object& key = itCur1.key();
+							if (type(key) == LUA_TSTRING)
 							{
-								const object& key = itCur1.key();
-								if(type(key) == LUA_TSTRING)
+								const char* sKeyName = object_cast<const char*>(key);
+								if (strcmp(sKeyName, "file") == 0)
 								{
-									const char* sKeyName = object_cast<const char*>(key);
-									if(strcmp(sKeyName, "file") ==0)
-									{
-										file = object_cast<const char*>(*itCur1);
-									}
-									else if(strcmp(sKeyName,"data") ==0)
-									{
-										data = object_cast<std::string>(*itCur1);
-									}
-									else if(strcmp(sKeyName,"type") ==0)
-									{
-										type_ = object_cast<const char*>(*itCur1);
-									}
+									file = object_cast<const char*>(*itCur1);
+								}
+								else if (strcmp(sKeyName, "data") == 0)
+								{
+									data = object_cast<std::string>(*itCur1);
+								}
+								else if (strcmp(sKeyName, "type") == 0)
+								{
+									type_ = object_cast<const char*>(*itCur1);
 								}
 							}
-							pProcessor->AppendFormParam(sKey, type_, file, data.c_str(), (int)data.size(), true);
-							break;
 						}
+						pProcessor->AppendFormParam(sKey, type_, file, data.c_str(), (int)data.size(), true);
+						break;
+					}
 					}
 				}
-				else if(type(key) == LUA_TNUMBER)
+				else if (type(key) == LUA_TNUMBER)
 				{
 					int nKey = object_cast<int>(key);
 
 					const object& input = *itCur;
 					const char* sCode = NULL;
-					switch(type(input))
+					switch (type(input))
 					{
 					case LUA_TNUMBER:
-						{
-							double value = object_cast<double>(input);
-							char buff[40];
-							ParaEngine::StringHelper::fast_dtoa(value, buff, 40, 5); // similar to "%.5f" but without trailing zeros. 
-							sCode = buff;
-							if((nKey%2) == 1)
-								urlBuilder.InsertParam(nKey/2, sCode, NULL);
-							else
-								urlBuilder.InsertParam(nKey/2-1, NULL, sCode);
-							break;
-						}
+					{
+						double value = object_cast<double>(input);
+						char buff[40];
+						ParaEngine::StringHelper::fast_dtoa(value, buff, 40, 5); // similar to "%.5f" but without trailing zeros. 
+						sCode = buff;
+						if ((nKey % 2) == 1)
+							urlBuilder.InsertParam(nKey / 2, sCode, NULL);
+						else
+							urlBuilder.InsertParam(nKey / 2 - 1, NULL, sCode);
+						break;
+					}
 					case LUA_TBOOLEAN:
-						{
-							bool bValue = object_cast<bool>(input);
-							sCode = bValue ? "true" : "false";
-							if((nKey%2) == 1)
-								urlBuilder.InsertParam(nKey/2, sCode, NULL);
-							else
-								urlBuilder.InsertParam(nKey/2-1, NULL, sCode);
-							break;
-						}
+					{
+						bool bValue = object_cast<bool>(input);
+						sCode = bValue ? "true" : "false";
+						if ((nKey % 2) == 1)
+							urlBuilder.InsertParam(nKey / 2, sCode, NULL);
+						else
+							urlBuilder.InsertParam(nKey / 2 - 1, NULL, sCode);
+						break;
+					}
 					case LUA_TSTRING:
-						{
-							sCode = object_cast<const char*>(input);
-							if((nKey%2) == 1)
-								urlBuilder.InsertParam(nKey/2, sCode, NULL);
-							else
-								urlBuilder.InsertParam(nKey/2-1, NULL, sCode);
-							break;
-						}
+					{
+						sCode = object_cast<const char*>(input);
+						if ((nKey % 2) == 1)
+							urlBuilder.InsertParam(nKey / 2, sCode, NULL);
+						else
+							urlBuilder.InsertParam(nKey / 2 - 1, NULL, sCode);
+						break;
+					}
 					}
 				}
 			}
 		}
-		
+
 		pLoader->SetUrl(urlBuilder.ToString().c_str());
 		pProcessor->SetUrl(urlBuilder.ToString().c_str());
 		pProcessor->SetScriptCallback(sCallback);
@@ -920,57 +920,57 @@ namespace ParaScripting
 		}
 	}
 
-	string CNPL::EncodeURLQuery( const char * baseUrl, const object& sParams )
+	string CNPL::EncodeURLQuery(const char* baseUrl, const object& sParams)
 	{
 		ParaEngine::CUrlBuilder urlBuilder;
 
-		if(baseUrl)
+		if (baseUrl)
 			urlBuilder.SetBaseURL(baseUrl);
 
-		if(type(sParams) == LUA_TTABLE)
+		if (type(sParams) == LUA_TTABLE)
 		{
-			for (luabind::iterator itCur(sParams), itEnd;itCur!=itEnd;++itCur)
+			for (luabind::iterator itCur(sParams), itEnd; itCur != itEnd; ++itCur)
 			{
 				// we only serialize item with a string key
 				const object& key = itCur.key();
 				const object& input = *itCur;
-				if(type(key) == LUA_TNUMBER)
+				if (type(key) == LUA_TNUMBER)
 				{
 					int nKey = object_cast<int>(key);
 					const char* sCode = NULL;
-					switch(type(input))
+					switch (type(input))
 					{
 					case LUA_TNUMBER:
-						{
-							double value = object_cast<double>(input);
-							char buff[40];
-							ParaEngine::StringHelper::fast_dtoa(value, buff, 40, 5); // similar to "%.5f" but without trailing zeros. 
-							sCode = buff;
-							if((nKey%2) == 1)
-								urlBuilder.InsertParam(nKey/2, sCode, NULL);
-							else
-								urlBuilder.InsertParam(nKey/2-1, NULL, sCode);
-							break;
-						}
+					{
+						double value = object_cast<double>(input);
+						char buff[40];
+						ParaEngine::StringHelper::fast_dtoa(value, buff, 40, 5); // similar to "%.5f" but without trailing zeros. 
+						sCode = buff;
+						if ((nKey % 2) == 1)
+							urlBuilder.InsertParam(nKey / 2, sCode, NULL);
+						else
+							urlBuilder.InsertParam(nKey / 2 - 1, NULL, sCode);
+						break;
+					}
 					case LUA_TBOOLEAN:
-						{
-							bool bValue = object_cast<bool>(input);
-							sCode = bValue ? "true" : "false";
-							if((nKey%2) == 1)
-								urlBuilder.InsertParam(nKey/2, sCode, NULL);
-							else
-								urlBuilder.InsertParam(nKey/2-1, NULL, sCode);
-							break;
-						}
+					{
+						bool bValue = object_cast<bool>(input);
+						sCode = bValue ? "true" : "false";
+						if ((nKey % 2) == 1)
+							urlBuilder.InsertParam(nKey / 2, sCode, NULL);
+						else
+							urlBuilder.InsertParam(nKey / 2 - 1, NULL, sCode);
+						break;
+					}
 					case LUA_TSTRING:
-						{
-							sCode = object_cast<const char*>(input);
-							if((nKey%2) == 1)
-								urlBuilder.InsertParam(nKey/2, sCode, NULL);
-							else
-								urlBuilder.InsertParam(nKey/2-1, NULL, sCode);
-							break;
-						}
+					{
+						sCode = object_cast<const char*>(input);
+						if ((nKey % 2) == 1)
+							urlBuilder.InsertParam(nKey / 2, sCode, NULL);
+						else
+							urlBuilder.InsertParam(nKey / 2 - 1, NULL, sCode);
+						break;
+					}
 					}
 				}
 				else if (type(key) == LUA_TSTRING)
@@ -1009,49 +1009,49 @@ namespace ParaScripting
 	}
 #ifdef USE_TINY_JSON
 	template <class T>
-	void traverse(json::grammar<char>::variant const & var, const object& outTable, const T& sKey, bool bFirstTable=false)
+	void traverse(json::grammar<char>::variant const& var, const object& outTable, const T& sKey, bool bFirstTable = false)
 	{
-		if(var->empty())
+		if (var->empty())
 		{
 			// variant is empty => it's a "null" value
 		}
-		else if(var->type() == typeid(bool))
+		else if (var->type() == typeid(bool))
 		{
 			// variant is of type "bool"...
-			bool bValue = boost::any_cast< bool >(*var);
+			bool bValue = boost::any_cast<bool>(*var);
 			outTable[sKey] = bValue;
 		}
-		else if(var->type() == typeid(int))
+		else if (var->type() == typeid(int))
 		{
 			// variant is of type "int"...
-			int iValue = boost::any_cast< int >(*var);
+			int iValue = boost::any_cast<int>(*var);
 			outTable[sKey] = iValue;
 		}
-		else if(var->type() == typeid(double))
+		else if (var->type() == typeid(double))
 		{
 			// variant is of type "double"...
-			double dValue = boost::any_cast< double >(*var);
+			double dValue = boost::any_cast<double>(*var);
 			outTable[sKey] = dValue;
 
 		}
-		else if(var->type() == typeid(std::string))
+		else if (var->type() == typeid(std::string))
 		{
 			// variant is a string...
-			std::string strValue = boost::any_cast< std::string >(*var);
+			std::string strValue = boost::any_cast<std::string>(*var);
 			outTable[sKey] = strValue;
 		}
-		else if(var->type() == typeid(json::grammar<char>::array))
+		else if (var->type() == typeid(json::grammar<char>::array))
 		{
-			if(!bFirstTable)
+			if (!bFirstTable)
 			{
 				object table = newtable(outTable.interpreter());
 				outTable[sKey] = table;
 
 				// variant is an array => use recursion
-				json::grammar<char>::array const & a = boost::any_cast< json::grammar<char>::array >(*var);
+				json::grammar<char>::array const& a = boost::any_cast<json::grammar<char>::array>(*var);
 
 				int i = 0;
-				for(json::grammar<char>::array::const_iterator it = a.begin(); it != a.end(); ++it)
+				for (json::grammar<char>::array::const_iterator it = a.begin(); it != a.end(); ++it)
 				{
 					traverse(*it, table, ++i);
 				}
@@ -1059,27 +1059,27 @@ namespace ParaScripting
 			else
 			{
 				// variant is an array => use recursion
-				json::grammar<char>::array const & a = boost::any_cast< json::grammar<char>::array >(*var);
+				json::grammar<char>::array const& a = boost::any_cast<json::grammar<char>::array>(*var);
 
 				int i = 0;
-				for(json::grammar<char>::array::const_iterator it = a.begin(); it != a.end(); ++it)
+				for (json::grammar<char>::array::const_iterator it = a.begin(); it != a.end(); ++it)
 				{
 					traverse(*it, outTable, ++i);
 				}
 			}
 
 		}
-		else if(var->type() == typeid(json::grammar<char>::object))
+		else if (var->type() == typeid(json::grammar<char>::object))
 		{
-			if(!bFirstTable)
+			if (!bFirstTable)
 			{
 				object table = newtable(outTable.interpreter());
 				outTable[sKey] = table;
 
 				// variant is an object => use recursion
-				json::grammar<char>::object const & o = boost::any_cast< json::grammar<char>::object >(*var);
+				json::grammar<char>::object const& o = boost::any_cast<json::grammar<char>::object>(*var);
 
-				for(json::grammar<char>::object::const_iterator it = o.begin(); it != o.end(); ++it)
+				for (json::grammar<char>::object::const_iterator it = o.begin(); it != o.end(); ++it)
 				{
 					std::string strName = (*it).first;
 					traverse((*it).second, table, strName);
@@ -1088,9 +1088,9 @@ namespace ParaScripting
 			else
 			{
 				// variant is an object => use recursion
-				json::grammar<char>::object const & o = boost::any_cast< json::grammar<char>::object >(*var);
+				json::grammar<char>::object const& o = boost::any_cast<json::grammar<char>::object>(*var);
 
-				for(json::grammar<char>::object::const_iterator it = o.begin(); it != o.end(); ++it)
+				for (json::grammar<char>::object::const_iterator it = o.begin(); it != o.end(); ++it)
 				{
 					std::string strName = (*it).first;
 					traverse((*it).second, outTable, strName);
@@ -1103,100 +1103,100 @@ namespace ParaScripting
 		}
 	}
 #elif defined USE_RAPID_JSON
-    template <class T>
-    void traverse(const rapidjson::Value & var, const object& outTable, const T& sKey, bool bFirstTable=false)
-    {
-        if(var.IsNull())
-        {
-            // variant is empty => it's a "null" value
-        }
-        else if(var.IsBool())
-        {
-            // variant is of type "bool"...
-            outTable[sKey] = var.GetBool();
-        }
-        //else if(var.isIntegral())
-        //{
-        //	// variant is of type "int"...
-        //	outTable[sKey] = var.asInt();
-        //}
-        //else if(var.isDouble())
-        else if(var.IsNumber())
-        {
-            // variant is of type "double"...
-            outTable[sKey] = var.GetDouble();
-            
-        }
-        else if(var.IsString())
-        {
-            // variant is a string...
-            outTable[sKey] = var.GetString();
-        }
-        else if(var.IsArray())
-        {
-            if(!bFirstTable)
-            {
-                object table = newtable(outTable.interpreter());
-                outTable[sKey] = table;
-                
-                // variant is an array => use recursion
-                int nSize = var.Size();
-                for(int i=0;i<nSize; ++i)
-                {
-                    traverse(var[i], table, i+1); // since NPL use 1 based index
-                }
-            }
-            else
-            {
-                // variant is an array => use recursion
-                int nSize = var.Size();
-                for(int i=0;i<nSize; ++i)
-                {
-                    traverse(var[i], outTable, i+1); // since NPL use 1 based index
-                }
-            }
-            
-        }
-        else if(var.IsObject())
-        {
-            if(!bFirstTable)
-            {
-                object table = newtable(outTable.interpreter());
-                outTable[sKey] = table;
-                
-                // variant is an object => use recursion
-                rapidjson::Value::ConstMemberIterator itEnd = var.MemberonEnd();
-                for(rapidjson::Value::ConstMemberIterator it = var.MemberonBegin(); it != itEnd; ++it)
-                {
-                    std::string strName = it->name.GetString();
-                    traverse(it->value, table, strName);
-                }
-            }
-            else
-            {
-                // variant is an object => use recursion
-                rapidjson::Value::ConstMemberIterator itEnd = var.MemberonEnd();
-                for(rapidjson::Value::ConstMemberIterator it = var.MemberonBegin(); it != itEnd; ++it)
-                {
-                    std::string strName = it->name.GetString();
-                    traverse(it->value, outTable, strName);
-                }
-            }
-        }
-        else
-        {
-            // ERROR: unknown type...
-        }
-    }
-#else
 	template <class T>
-	void traverse(const Json::Value & var, const object& outTable, const T& sKey, bool bFirstTable=false)
+	void traverse(const rapidjson::Value& var, const object& outTable, const T& sKey, bool bFirstTable = false)
 	{
-		if(!var)
+		if (var.IsNull())
 		{
 			// variant is empty => it's a "null" value
 		}
-		else if(var.isBool())
+		else if (var.IsBool())
+		{
+			// variant is of type "bool"...
+			outTable[sKey] = var.GetBool();
+		}
+		//else if(var.isIntegral())
+		//{
+		//	// variant is of type "int"...
+		//	outTable[sKey] = var.asInt();
+		//}
+		//else if(var.isDouble())
+		else if (var.IsNumber())
+		{
+			// variant is of type "double"...
+			outTable[sKey] = var.GetDouble();
+
+		}
+		else if (var.IsString())
+		{
+			// variant is a string...
+			outTable[sKey] = var.GetString();
+		}
+		else if (var.IsArray())
+		{
+			if (!bFirstTable)
+			{
+				object table = newtable(outTable.interpreter());
+				outTable[sKey] = table;
+
+				// variant is an array => use recursion
+				int nSize = var.Size();
+				for (int i = 0; i < nSize; ++i)
+				{
+					traverse(var[i], table, i + 1); // since NPL use 1 based index
+				}
+			}
+			else
+			{
+				// variant is an array => use recursion
+				int nSize = var.Size();
+				for (int i = 0; i < nSize; ++i)
+				{
+					traverse(var[i], outTable, i + 1); // since NPL use 1 based index
+				}
+			}
+
+		}
+		else if (var.IsObject())
+		{
+			if (!bFirstTable)
+			{
+				object table = newtable(outTable.interpreter());
+				outTable[sKey] = table;
+
+				// variant is an object => use recursion
+				rapidjson::Value::ConstMemberIterator itEnd = var.MemberonEnd();
+				for (rapidjson::Value::ConstMemberIterator it = var.MemberonBegin(); it != itEnd; ++it)
+				{
+					std::string strName = it->name.GetString();
+					traverse(it->value, table, strName);
+				}
+			}
+			else
+			{
+				// variant is an object => use recursion
+				rapidjson::Value::ConstMemberIterator itEnd = var.MemberonEnd();
+				for (rapidjson::Value::ConstMemberIterator it = var.MemberonBegin(); it != itEnd; ++it)
+				{
+					std::string strName = it->name.GetString();
+					traverse(it->value, outTable, strName);
+				}
+			}
+		}
+		else
+		{
+			// ERROR: unknown type...
+		}
+	}
+#else
+	template <class T>
+	void traverse(const Json::Value& var, const object& outTable, const T& sKey, bool bFirstTable = false)
+	{
+		if (!var)
+		{
+			// variant is empty => it's a "null" value
+		}
+		else if (var.isBool())
 		{
 			// variant is of type "bool"...
 			outTable[sKey] = var.asBool();
@@ -1207,52 +1207,52 @@ namespace ParaScripting
 		//	outTable[sKey] = var.asInt();
 		//}
 		//else if(var.isDouble())
-		else if(var.isNumeric())
+		else if (var.isNumeric())
 		{
 			// variant is of type "double"...
 			outTable[sKey] = var.asDouble();
 
 		}
-		else if(var.isString())
+		else if (var.isString())
 		{
 			// variant is a string...
 			outTable[sKey] = var.asString();
 		}
-		else if(var.isArray())
+		else if (var.isArray())
 		{
-			if(!bFirstTable)
+			if (!bFirstTable)
 			{
 				object table = newtable(outTable.interpreter());
 				outTable[sKey] = table;
 
 				// variant is an array => use recursion
 				int nSize = var.size();
-				for(int i=0;i<nSize; ++i)
+				for (int i = 0; i < nSize; ++i)
 				{
-					traverse(var[i], table, i+1); // since NPL use 1 based index
+					traverse(var[i], table, i + 1); // since NPL use 1 based index
 				}
 			}
 			else
 			{
 				// variant is an array => use recursion
 				int nSize = var.size();
-				for(int i=0;i<nSize; ++i)
+				for (int i = 0; i < nSize; ++i)
 				{
-					traverse(var[i], outTable, i+1); // since NPL use 1 based index
+					traverse(var[i], outTable, i + 1); // since NPL use 1 based index
 				}
 			}
 
 		}
-		else if(var.isObject())
+		else if (var.isObject())
 		{
-			if(!bFirstTable)
+			if (!bFirstTable)
 			{
 				object table = newtable(outTable.interpreter());
 				outTable[sKey] = table;
 
 				// variant is an object => use recursion
 				Json::Value::const_iterator itEnd = var.end();
-				for(Json::Value::const_iterator it = var.begin(); it != itEnd; ++it)
+				for (Json::Value::const_iterator it = var.begin(); it != itEnd; ++it)
 				{
 					std::string strName = it.memberName();
 					traverse(*it, table, strName);
@@ -1262,7 +1262,7 @@ namespace ParaScripting
 			{
 				// variant is an object => use recursion
 				Json::Value::const_iterator itEnd = var.end();
-				for(Json::Value::const_iterator it = var.begin(); it != itEnd; ++it)
+				for (Json::Value::const_iterator it = var.begin(); it != itEnd; ++it)
 				{
 					std::string strName = it.memberName();
 					traverse(*it, outTable, strName);
@@ -1273,19 +1273,19 @@ namespace ParaScripting
 		{
 			// ERROR: unknown type...
 		}
-	}
+		}
 #endif
-	bool CNPL::FromJson( const char* sJson, const object& output )
+	bool CNPL::FromJson(const char* sJson, const object& output)
 	{
 		if (sJson == NULL || sJson[0] == '\0' || type(output) != LUA_TTABLE)
 			return false;
 		try
 		{
 #ifdef USE_TINY_JSON
-			std::string json = sJson; 
-			json::grammar<char>::variant var = json::parse(json.begin(), json.end()); 
+			std::string json = sJson;
+			json::grammar<char>::variant var = json::parse(json.begin(), json.end());
 
-			if(var->type() != typeid(json::grammar<char>::object))
+			if (var->type() != typeid(json::grammar<char>::object))
 			{
 				// ERROR: parsing failed (bad format)
 				return false;
@@ -1294,22 +1294,22 @@ namespace ParaScripting
 			// further processing of the JSON object model
 			traverse(var, output, 0, true);
 #elif defined USE_RAPID_JSON
-            rapidjson::Document doc;
-            doc.Parse<0>(sJson);
-            if(doc.HasParseError())
-            {
-                // report to the user the failure and their locations in the document.
-                OUTPUT_LOG("warning: NPL.FromJson cannot parse input string. error message is %s\n", doc.GetParseError());
-                return false;
-            }
-            traverse(doc, output, 0, true);
+			rapidjson::Document doc;
+			doc.Parse<0>(sJson);
+			if (doc.HasParseError())
+			{
+				// report to the user the failure and their locations in the document.
+				OUTPUT_LOG("warning: NPL.FromJson cannot parse input string. error message is %s\n", doc.GetParseError());
+				return false;
+			}
+			traverse(doc, output, 0, true);
 #else
 			Json::Value var;   // will contains the root value after parsing.
 			// strict mode: no comments are allowed, root must be array or object, and string must be in utf8
 			Json::Reader reader(Json::Features().strictMode());
 
-			bool parsingSuccessful = reader.parse( sJson, sJson + strlen(sJson), var, false);
-			if ( !parsingSuccessful )
+			bool parsingSuccessful = reader.parse(sJson, sJson + strlen(sJson), var, false);
+			if (!parsingSuccessful)
 			{
 				// report to the user the failure and their locations in the document.
 				OUTPUT_LOG("warning: NPL.FromJson cannot parse input string. error message is %s\n", reader.getFormatedErrorMessages().c_str());
@@ -1322,9 +1322,9 @@ namespace ParaScripting
 		{
 			OUTPUT_LOG("error parsing json string. NPL::FromJson throws an exception. \n");
 			return false;
-		}
+			}
 		return true;
-	}
+		}
 
 
 	const string& CNPL::ToJson2(const object& input, bool bUseEmptyArray)
@@ -1366,7 +1366,7 @@ namespace ParaScripting
 			{
 				compressionlevel = object_cast<int>(output["level"]);
 			}
-			
+
 
 			if (content.empty())
 				return false;
@@ -1555,7 +1555,7 @@ namespace ParaScripting
 		}
 		return false;
 	}
-	
+
 	luabind::object CNPL::GetLuaState(const string& name, const object& output)
 	{
 		auto pRuntimeState = NPL::CNPLRuntime::GetInstance()->GetRuntimeState(name);
@@ -1574,7 +1574,7 @@ namespace ParaScripting
 
 	luabind::object CNPL::LoadTableFromString(const object& input)
 	{
-		if(type(input) == LUA_TSTRING) 
+		if (type(input) == LUA_TSTRING)
 		{
 			luabind::object out;
 			int nSize = 0;
@@ -1598,29 +1598,29 @@ namespace ParaScripting
 		return luabind::object();
 	}
 
-	ParaScripting::ParaNPLRuntimeState CNPL::CreateRuntimeState( const string& name, int type_ )
+	ParaScripting::ParaNPLRuntimeState CNPL::CreateRuntimeState(const string& name, int type_)
 	{
 		return ParaScripting::ParaNPLRuntimeState(NPL::CNPLRuntime::GetInstance()->CreateRuntimeState(name, (NPL::NPLRuntimeStateType)type_));
 	}
 
-	ParaScripting::ParaNPLRuntimeState CNPL::GetRuntimeState( const string& name )
+	ParaScripting::ParaNPLRuntimeState CNPL::GetRuntimeState(const string& name)
 	{
 		return ParaScripting::ParaNPLRuntimeState(NPL::CNPLRuntime::GetInstance()->GetRuntimeState(name));
 	}
 
-	ParaScripting::ParaNPLRuntimeState CNPL::CreateGetRuntimeState( const string& name, int type_ )
+	ParaScripting::ParaNPLRuntimeState CNPL::CreateGetRuntimeState(const string& name, int type_)
 	{
 		return ParaScripting::ParaNPLRuntimeState(NPL::CNPLRuntime::GetInstance()->CreateGetRuntimeState(name, (NPL::NPLRuntimeStateType)type_));
 	}
 
-	bool CNPL::DeleteRuntimeState( ParaNPLRuntimeState runtime_state )
+	bool CNPL::DeleteRuntimeState(ParaNPLRuntimeState runtime_state)
 	{
-		if(runtime_state.m_rts!=0)
+		if (runtime_state.m_rts != 0)
 			return NPL::CNPLRuntime::GetInstance()->DeleteRuntimeState(runtime_state.m_rts->shared_from_this());
 		return true;
 	}
 
-	void CNPL::StartNetServer( const object& server, const object& port)
+	void CNPL::StartNetServer(const object& server, const object& port)
 	{
 		NPL::CNPLRuntime::GetInstance()->NPL_StartNetServer(NPL::NPLHelper::LuaObjectToString(server), NPL::NPLHelper::LuaObjectToString(port));
 	}
@@ -1645,7 +1645,7 @@ namespace ParaScripting
 		NPL::CNPLRuntime::GetInstance()->NPL_StopNetUDPServer();
 	}
 
-	void CNPL::AddPublicFile( const string& filename, int nID )
+	void CNPL::AddPublicFile(const string& filename, int nID)
 	{
 		NPL::CNPLRuntime::GetInstance()->NPL_AddPublicFile(filename, nID);
 	}
@@ -1655,21 +1655,21 @@ namespace ParaScripting
 		NPL::CNPLRuntime::GetInstance()->NPL_ClearPublicFiles();
 	}
 
-	bool CNPL::AddNPLRuntimeAddress( const object& npl_address )
+	bool CNPL::AddNPLRuntimeAddress(const object& npl_address)
 	{
 		int nType = type(npl_address);
-		if(nType == LUA_TTABLE)
+		if (nType == LUA_TTABLE)
 		{
 			const char* host = 0;
-			if(type(npl_address["host"]) == LUA_TSTRING){
+			if (type(npl_address["host"]) == LUA_TSTRING) {
 				host = object_cast<const char*>(npl_address["host"]);
 			}
 			const char* port = 0;
-			if(type(npl_address["port"]) == LUA_TSTRING){
+			if (type(npl_address["port"]) == LUA_TSTRING) {
 				port = object_cast<const char*>(npl_address["port"]);
 			}
 			const char* nid = 0;
-			if(type(npl_address["nid"]) == LUA_TSTRING){
+			if (type(npl_address["nid"]) == LUA_TSTRING) {
 				nid = object_cast<const char*>(npl_address["nid"]);
 			}
 
@@ -1678,11 +1678,11 @@ namespace ParaScripting
 				isUDP = object_cast<bool>(npl_address["isUDP"]);
 			}
 
-			if(host == 0)
+			if (host == 0)
 				host = "127.0.0.1";
-			if(port == 0)
+			if (port == 0)
 				port = "60001";
-			if(nid == 0)
+			if (nid == 0)
 				nid = "localhost";
 
 			if (isUDP)
@@ -1695,7 +1695,7 @@ namespace ParaScripting
 				NPL::NPLRuntimeAddress_ptr address(new NPL::NPLRuntimeAddress(host, port, nid));
 				return NPL::CNPLRuntime::GetInstance()->GetNetServer()->GetDispatcher().AddNPLRuntimeAddress(address);
 			}
-			
+
 		}
 		return false;
 	}
@@ -1709,16 +1709,16 @@ namespace ParaScripting
 	{
 		// input: a table, such as { key = "", size = 100, UsePlainTextEncoding = 1}
 		int nType = type(input);
-		if(nType == LUA_TTABLE)
+		if (nType == LUA_TTABLE)
 		{
 			const char* sKey = object_cast<const char*>(input["key"]);
 			int nSize = 0;
-			if(type(input["size"]) == LUA_TNUMBER)
+			if (type(input["size"]) == LUA_TNUMBER)
 			{
 				nSize = object_cast<int>(input["size"]);
 			}
 			int nUsePlainTextEncoding = 0;
-			if(type(input["UsePlainTextEncoding"]) == LUA_TNUMBER)
+			if (type(input["UsePlainTextEncoding"]) == LUA_TNUMBER)
 			{
 				nUsePlainTextEncoding = object_cast<int>(input["UsePlainTextEncoding"]);
 			}
@@ -1733,8 +1733,8 @@ namespace ParaScripting
 
 	void CNPL::accept(const object& tid, const object& nid)
 	{
-		const char * sTID = NPL::NPLHelper::LuaObjectToString(tid);
-		const char * sNID = NPL::NPLHelper::LuaObjectToString(nid);
+		const char* sTID = NPL::NPLHelper::LuaObjectToString(tid);
+		const char* sNID = NPL::NPLHelper::LuaObjectToString(nid);
 		NPL::CNPLRuntime::GetInstance()->NPL_accept(sTID, sNID);
 	}
 	void CNPL::accept_(const char* tid, const char* nid)
@@ -1750,12 +1750,12 @@ namespace ParaScripting
 
 	void CNPL::reject(const object& nid)
 	{
-		const char * sNID = NULL;
+		const char* sNID = NULL;
 		int nReason = 0;
-		if(type(nid) == LUA_TTABLE)
+		if (type(nid) == LUA_TTABLE)
 		{
 			sNID = NPL::NPLHelper::LuaObjectToString(nid["nid"]);
-			if(type(nid["reason"]) == LUA_TNUMBER)
+			if (type(nid["reason"]) == LUA_TNUMBER)
 			{
 				nReason = object_cast<int>(nid["reason"]);
 			}
@@ -1775,18 +1775,18 @@ namespace ParaScripting
 	void CNPL::RegisterEvent(int nType, const char* sID, const char* sScript)
 	{
 		std::string strID = "_n";
-		if(nType == 0)
+		if (nType == 0)
 		{
 			strID = "_n";
 			strID += sID;
-			CGlobals::GetEventsCenter()->RegisterEvent(strID, sScript);	
+			CGlobals::GetEventsCenter()->RegisterEvent(strID, sScript);
 		}
 	}
 
 	void CNPL::UnregisterEvent(int nType, const char* sID)
 	{
 		std::string strID = "_n";
-		if(nType == 0)
+		if (nType == 0)
 		{
 			strID = "_n";
 			strID += sID;
@@ -1813,7 +1813,7 @@ namespace ParaScripting
 
 	int ParaNPLRuntimeState::Start()
 	{
-		if(m_rts!=0)
+		if (m_rts != 0)
 		{
 			m_rts->Run_Async();
 		}
@@ -1825,7 +1825,7 @@ namespace ParaScripting
 		return true;
 	}
 
-	luabind::object ParaNPLRuntimeState::GetStats( const object& input )
+	luabind::object ParaNPLRuntimeState::GetStats(const object& input)
 	{
 		int nType = type(input);
 		luabind::object output = luabind::newtable(input.interpreter());
@@ -1860,7 +1860,7 @@ namespace ParaScripting
 					else if (sFieldName == "loadedfiles")
 					{
 						luabind::object files_map = luabind::newtable(input.interpreter());
-						for(auto item : m_rts->GetLoadedFiles())
+						for (auto item : m_rts->GetLoadedFiles())
 						{
 							files_map[item.first] = item.second;
 						}
@@ -1878,7 +1878,7 @@ namespace ParaScripting
 
 	}
 
-	ParaNPLRuntimeState::ParaNPLRuntimeState( NPL::CNPLRuntimeState* rts_ )
+	ParaNPLRuntimeState::ParaNPLRuntimeState(NPL::CNPLRuntimeState* rts_)
 		: m_rts(rts_)
 	{
 
@@ -1891,12 +1891,12 @@ namespace ParaScripting
 
 	bool ParaNPLRuntimeState::IsValid()
 	{
-		return (m_rts!=0);
+		return (m_rts != 0);
 	}
 
 	const char* ParaNPLRuntimeState::GetName() const
 	{
-		if(m_rts!=0)
+		if (m_rts != 0)
 		{
 			return m_rts->GetName().c_str();
 		}
@@ -1917,14 +1917,14 @@ namespace ParaScripting
 
 	void ParaNPLRuntimeState::Reset()
 	{
-		if(m_rts!=0)
+		if (m_rts != 0)
 		{
 			return m_rts->Reset();
 		}
 	}
 	void ParaNPLRuntimeState::Reset1(const char* onResetScode)
 	{
-		if(m_rts!=0)
+		if (m_rts != 0)
 		{
 			return m_rts->Reset(onResetScode);
 		}
@@ -1932,7 +1932,7 @@ namespace ParaScripting
 
 	int ParaNPLRuntimeState::GetCurrentQueueSize()
 	{
-		if(m_rts!=0)
+		if (m_rts != 0)
 		{
 			return m_rts->GetCurrentQueueSize();
 		}
@@ -1941,7 +1941,7 @@ namespace ParaScripting
 
 	int ParaNPLRuntimeState::GetProcessedMsgCount()
 	{
-		if(m_rts!=0)
+		if (m_rts != 0)
 		{
 			return m_rts->GetProcessedMsgCount();
 		}
@@ -1950,16 +1950,16 @@ namespace ParaScripting
 
 	int ParaNPLRuntimeState::GetMsgQueueSize()
 	{
-		if(m_rts!=0)
+		if (m_rts != 0)
 		{
 			return m_rts->GetMsgQueueSize();
 		}
 		return 0;
 	}
 
-	void ParaNPLRuntimeState::SetMsgQueueSize( int nSize /*= 500*/ )
+	void ParaNPLRuntimeState::SetMsgQueueSize(int nSize /*= 500*/)
 	{
-		if(m_rts!=0)
+		if (m_rts != 0)
 		{
 			m_rts->SetMsgQueueSize(nSize);
 		}
@@ -2103,4 +2103,4 @@ namespace ParaScripting
 	}
 
 #pragma endregion NPL Runtime State
-}// namespace ParaScripting
+	}// namespace ParaScripting
