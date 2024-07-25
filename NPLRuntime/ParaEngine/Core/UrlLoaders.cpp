@@ -897,6 +897,12 @@ void ParaEngine::CUrlProcessor::CompleteTask()
 		writer.WriteName("msg");
 		writer.BeginTable();
 
+		if (!m_header.empty())
+		{
+			writer.WriteName("header");
+			writer.WriteValue((const char*)(&(m_header[0])), (int)m_header.size());
+		}
+		
 		if (IsEnableDataStreaming())
 		{
 			// indicate end of stream
@@ -906,19 +912,10 @@ void ParaEngine::CUrlProcessor::CompleteTask()
 			writer.WriteName("type");
 			writer.WriteValue("stream");
 		}
-		else 
+		else if (!m_data.empty())
 		{
-			if (!m_header.empty())
-			{
-				writer.WriteName("header");
-				writer.WriteValue((const char*)(&(m_header[0])), (int)m_header.size());
-			}
-
-			if (!m_data.empty())
-			{
-				writer.WriteName("data");
-				writer.WriteValue((const char*)(&(m_data[0])), (int)m_data.size());
-			}
+			writer.WriteName("data");
+			writer.WriteValue((const char*)(&(m_data[0])), (int)m_data.size());
 		}
 
 		if (!m_sSaveToFileName.empty())
