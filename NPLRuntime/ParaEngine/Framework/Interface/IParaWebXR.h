@@ -40,13 +40,13 @@ namespace ParaEngine {
         ATTRIBUTE_METHOD1(IParaWebXR, isPressLeftHandKey4_s, bool*) { *p1 = cls->IsPressLeftHandKey(4); return S_OK; }
         ATTRIBUTE_METHOD1(IParaWebXR, isPressLeftHandKey5_s, bool*) { *p1 = cls->IsPressLeftHandKey(5); return S_OK; }
         ATTRIBUTE_METHOD1(IParaWebXR, isPressLeftHandKey6_s, bool*) { *p1 = cls->IsPressLeftHandKey(6); return S_OK; }
-        ATTRIBUTE_METHOD1(IParaWebXR, isPressRightHandkey0_s, bool*) { *p1 = cls->IsPressRightHandKey(0); return S_OK; }
-        ATTRIBUTE_METHOD1(IParaWebXR, isPressRightHandkey1_s, bool*) { *p1 = cls->IsPressRightHandKey(1); return S_OK; }
-        ATTRIBUTE_METHOD1(IParaWebXR, isPressRightHandkey2_s, bool*) { *p1 = cls->IsPressRightHandKey(2); return S_OK; }
-        ATTRIBUTE_METHOD1(IParaWebXR, isPressRightHandkey3_s, bool*) { *p1 = cls->IsPressRightHandKey(3); return S_OK; }
-        ATTRIBUTE_METHOD1(IParaWebXR, isPressRightHandkey4_s, bool*) { *p1 = cls->IsPressRightHandKey(4); return S_OK; }
-        ATTRIBUTE_METHOD1(IParaWebXR, isPressRightHandkey5_s, bool*) { *p1 = cls->IsPressRightHandKey(5); return S_OK; }
-        ATTRIBUTE_METHOD1(IParaWebXR, isPressRightHandkey6_s, bool*) { *p1 = cls->IsPressRightHandKey(6); return S_OK; }
+        ATTRIBUTE_METHOD1(IParaWebXR, isPressRightHandKey0_s, bool*) { *p1 = cls->IsPressRightHandKey(0); return S_OK; }
+        ATTRIBUTE_METHOD1(IParaWebXR, isPressRightHandKey1_s, bool*) { *p1 = cls->IsPressRightHandKey(1); return S_OK; }
+        ATTRIBUTE_METHOD1(IParaWebXR, isPressRightHandKey2_s, bool*) { *p1 = cls->IsPressRightHandKey(2); return S_OK; }
+        ATTRIBUTE_METHOD1(IParaWebXR, isPressRightHandKey3_s, bool*) { *p1 = cls->IsPressRightHandKey(3); return S_OK; }
+        ATTRIBUTE_METHOD1(IParaWebXR, isPressRightHandKey4_s, bool*) { *p1 = cls->IsPressRightHandKey(4); return S_OK; }
+        ATTRIBUTE_METHOD1(IParaWebXR, isPressRightHandKey5_s, bool*) { *p1 = cls->IsPressRightHandKey(5); return S_OK; }
+        ATTRIBUTE_METHOD1(IParaWebXR, isPressRightHandKey6_s, bool*) { *p1 = cls->IsPressRightHandKey(6); return S_OK; }
         ATTRIBUTE_METHOD1(IParaWebXR, GetWebXRLeftAxes_s, Vector4*) { *p1 = cls->m_webXRLeftAxes; return S_OK; }
         ATTRIBUTE_METHOD1(IParaWebXR, GetWebXRRightAxes_s, Vector4*) { *p1 = cls->m_webXRRightAxes; return S_OK; }
 
@@ -72,13 +72,13 @@ namespace ParaEngine {
             pClass->AddField("leftHandKey4", FieldType_Bool, NULL, (void*)isPressLeftHandKey4_s, NULL, NULL, bOverride);
             pClass->AddField("leftHandKey5", FieldType_Bool, NULL, (void*)isPressLeftHandKey5_s, NULL, NULL, bOverride);
             pClass->AddField("leftHandKey6", FieldType_Bool, NULL, (void*)isPressLeftHandKey6_s, NULL, NULL, bOverride);
-            pClass->AddField("rightHandkey0", FieldType_Bool, NULL, (void*)isPressRightHandkey0_s, NULL, NULL, bOverride);
-            pClass->AddField("rightHandkey1", FieldType_Bool, NULL, (void*)isPressRightHandkey1_s, NULL, NULL, bOverride);
-            pClass->AddField("rightHandkey2", FieldType_Bool, NULL, (void*)isPressRightHandkey2_s, NULL, NULL, bOverride);
-            pClass->AddField("rightHandkey3", FieldType_Bool, NULL, (void*)isPressRightHandkey3_s, NULL, NULL, bOverride);
-            pClass->AddField("rightHandkey4", FieldType_Bool, NULL, (void*)isPressRightHandkey4_s, NULL, NULL, bOverride);
-            pClass->AddField("rightHandkey5", FieldType_Bool, NULL, (void*)isPressRightHandkey5_s, NULL, NULL, bOverride);
-            pClass->AddField("rightHandkey6", FieldType_Bool, NULL, (void*)isPressRightHandkey6_s, NULL, NULL, bOverride);
+            pClass->AddField("rightHandKey0", FieldType_Bool, NULL, (void*)isPressRightHandKey0_s, NULL, NULL, bOverride);
+            pClass->AddField("rightHandKey1", FieldType_Bool, NULL, (void*)isPressRightHandKey1_s, NULL, NULL, bOverride);
+            pClass->AddField("rightHandKey2", FieldType_Bool, NULL, (void*)isPressRightHandKey2_s, NULL, NULL, bOverride);
+            pClass->AddField("rightHandKey3", FieldType_Bool, NULL, (void*)isPressRightHandKey3_s, NULL, NULL, bOverride);
+            pClass->AddField("rightHandKey4", FieldType_Bool, NULL, (void*)isPressRightHandKey4_s, NULL, NULL, bOverride);
+            pClass->AddField("rightHandKey5", FieldType_Bool, NULL, (void*)isPressRightHandKey5_s, NULL, NULL, bOverride);
+            pClass->AddField("rightHandKey6", FieldType_Bool, NULL, (void*)isPressRightHandKey6_s, NULL, NULL, bOverride);
             pClass->AddField("webXRLeftAxes", FieldType_Vector4, NULL, (void*)GetWebXRLeftAxes_s, NULL, NULL, bOverride);
             pClass->AddField("webXRRightAxes", FieldType_Vector4, NULL, (void*)GetWebXRRightAxes_s, NULL, NULL, bOverride);
             return S_OK;
