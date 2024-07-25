@@ -334,6 +334,11 @@ bool ParaEngine::CUrlProcessor::AsyncProcess(std::function<void()> callback)
 		self->m_fetch_response_data.resize(fetch->totalBytes);
 		emscripten_fetch_get_response_headers(fetch, (char*)(self->m_fetch_response_header.data()), headersLengthBytes);
 		memcpy((void*)(self->m_fetch_response_data.data()), fetch->data, fetch->totalBytes);
+
+		if (self->IsEnableDataStreaming() && self->m_fetch_response_data.size() > 0) {
+			self->write_data_callback(self->m_fetch_response_data.data(), self->m_fetch_response_data.size(), 1);
+		}
+
 		self->m_nStatus = CUrlProcessor::URL_REQUEST_COMPLETED;		
 		self->m_async_callback();
 		self->m_async_callback = nullptr;
@@ -902,7 +907,7 @@ void ParaEngine::CUrlProcessor::CompleteTask()
 			writer.WriteName("header");
 			writer.WriteValue((const char*)(&(m_header[0])), (int)m_header.size());
 		}
-		
+
 		if (IsEnableDataStreaming())
 		{
 			// indicate end of stream
