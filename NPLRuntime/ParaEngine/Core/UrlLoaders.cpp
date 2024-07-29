@@ -268,7 +268,7 @@ void ParaEngine::CUrlProcessor::EmscriptenFetch2()
 	};
 
 	if (IsEnableDataStreaming()) {
-		attr.attributes = attr.attributes | EMSCRIPTEN_FETCH_STREAM_DATA;
+		attr.attributes = attr.attributes | EMSCRIPTEN_FETCH_APPEND | EMSCRIPTEN_FETCH_STREAM_DATA;
 		attr.onprogress = [](emscripten_fetch_t *fetch) {
 			void* userdata = fetch->userData; 
 			auto self = (ParaEngine::CUrlProcessor*)userdata;
@@ -376,7 +376,7 @@ bool ParaEngine::CUrlProcessor::AsyncProcess(std::function<void()> callback)
 	attr.onsuccess = fetch_finished_callback;
 	attr.onerror = fetch_finished_callback;
 	if (IsEnableDataStreaming()) {
-		attr.attributes = attr.attributes | EMSCRIPTEN_FETCH_STREAM_DATA;
+		attr.attributes = attr.attributes | EMSCRIPTEN_FETCH_APPEND | EMSCRIPTEN_FETCH_STREAM_DATA;
 		attr.onprogress = fetch_onprogress_callback;
 	} 
 
