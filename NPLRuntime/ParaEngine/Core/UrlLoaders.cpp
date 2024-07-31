@@ -407,15 +407,6 @@ void ParaEngine::CUrlProcessor::EmscriptenFetch2()
 	while (!m_fetch_finish) emscripten_sleep(100);
 	m_responseCode = fetch->status;
 
-	if (!IsEnableDataStreaming()) {
-		std::vector<char> response_header;
-		size_t headersLengthBytes = emscripten_fetch_get_response_headers_length(fetch) + 1;
-		response_header.resize(headersLengthBytes);
-		emscripten_fetch_get_response_headers(fetch, response_header.data(), headersLengthBytes);
-		write_header_callback(response_header.data(), response_header.size(), 1);
-		write_data_callback((void*)(fetch->data), fetch->totalBytes, 1);
-	}
-
   	emscripten_fetch_close(fetch); // Also free data on failure.
 	// m_nStatus = CUrlProcessor::URL_REQUEST_COMPLETED;
 	// {
