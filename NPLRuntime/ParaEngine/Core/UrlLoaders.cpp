@@ -16,6 +16,9 @@
 #ifdef EMSCRIPTEN
 #include <emscripten.h>
 #include <emscripten/fetch.h>
+#include <emscripten/val.h>
+#include <emscripten/html5.h>
+#include <emscripten/bind.h>
 #endif
 #ifdef PARAENGINE_CLIENT
 #include "memdebug.h"
@@ -190,6 +193,132 @@ HRESULT ParaEngine::CUrlProcessor::Destroy()
 	return S_OK;
 }
 
+#ifdef EMSCRIPTEN
+static emscripten::val JSFetch(ParaEngine::CUrlProcessor* self, std::function<void()> callback) {
+	emscripten::val fetch = emscripten::val::global("jsfetch");
+	// 创建请求配置对象
+    emscripten::val options = emscripten::val::object();
+	// 设置请求头部信息
+    emscripten::val headers = emscripten::val::object();
+	for (int i = 0; i < self->m_request_headers.size(); i+=2) 
+	{
+		auto& key = self->m_request_headers[i];
+		auto& value = self->m_request_headers[i+1];
+		headers.set(emscripten::val(key), emscripten::val(value));
+	}	
+	options.set(emscripten::val("headers"), headers);
+	// 设置请求方法
+	std::string method = "GET";
+	if (self->m_options && self->m_options->GetField("CURLOPT_CUSTOMREQUEST")->isString()) method = self->m_options->GetField("CURLOPT_CUSTOMREQUEST").c_str();
+	else if (!self->m_sRequestData.empty()) method = "POST";
+	else method = "GET";
+	options.set(emscripten::val("method"), emscripten::val(method));
+	// 设置请求数据
+	options.set(emscripten::val("body"), emscripten::val(self->m_sRequestData));
+
+	// 发送请求
+	emscripten::val response = co_await fetch(emscripten::val(self->m_url), options);
+	self->m_responseCode = response["status"].as<int>();
+
+	// 响应头
+    self->m_fetch_response_header = response["headers"].as<std::string>();
+	self->write_header_callback(self->m_fetch_response_header.data(), self->m_fetch_response_header.size(), 1);
+
+	// 响应体
+    bool is_stream = response["stream"].as<bool>();
+    emscripten::val response_body = response["body"];
+    while (is_stream)
+    {
+        emscripten::val response_body_value = co_await response_body();
+        if (response_body_value["done"].as<bool>()) break;
+        self->m_fetch_response_data = response_body_value["value"].as<std::string>();
+		self->write_data_callback(self->m_fetch_response_data.data(), self->m_fetch_response_data.size(), 1);
+        std::cout << "body: " << self->m_fetch_response_data << std::endl;
+    }
+	
+	self->m_fetch_response_data = "";
+	callback();
+}
+
+bool ParaEngine::CUrlProcessor::AsyncProcess(std::function<void()> callback)
+{
+	if (IsEnableDataStreaming()) {
+		JSFetch(this, callback);
+		return true;
+	}
+
+	std::vector<const char*> request_headers;
+	int request_headers_size = m_request_headers.size();
+	for (int i = 0; i < request_headers_size; i++) request_headers.push_back(m_request_headers[i].c_str());
+	request_headers.push_back(0);
+
+	m_async_callback = callback;
+	auto fetch_finished_callback = [](emscripten_fetch_t *fetch) {
+		auto self = (ParaEngine::CUrlProcessor*)(fetch->userData);
+		if (self->m_async_callback == nullptr) return;
+		self->m_responseCode = fetch->status;
+		size_t headersLengthBytes = emscripten_fetch_get_response_headers_length(fetch);
+		self->m_fetch_response_header.resize(headersLengthBytes);
+		self->m_fetch_response_data.resize(fetch->totalBytes);
+		emscripten_fetch_get_response_headers(fetch, (char*)(self->m_fetch_response_header.data()), headersLengthBytes);
+		memcpy((void*)(self->m_fetch_response_data.data()), fetch->data, fetch->totalBytes);
+
+		if (self->IsEnableDataStreaming() && self->m_fetch_response_data.size() > 0) {
+			self->write_data_callback(self->m_fetch_response_data.data(), self->m_fetch_response_data.size(), 1);
+		}
+
+		self->m_nStatus = CUrlProcessor::URL_REQUEST_COMPLETED;		
+		self->m_async_callback();
+		self->m_async_callback = nullptr;
+		// emscripten_fetch_close(fetch); // Also free data on failure.
+	};
+	
+	auto fetch_onprogress_callback = [](emscripten_fetch_t *fetch) {
+		auto self = (ParaEngine::CUrlProcessor*)(fetch->userData);
+		if (self->m_fetch_response_header.empty() && fetch->readyState >= 2) {
+			size_t headersLengthBytes = emscripten_fetch_get_response_headers_length(fetch);
+			self->m_fetch_response_header.resize(headersLengthBytes);
+			emscripten_fetch_get_response_headers(fetch, self->m_fetch_response_header.data(), headersLengthBytes);
+			self->write_header_callback(self->m_fetch_response_header.data(), self->m_fetch_response_header.size(), 1);
+		}
+		std::cout << "data offset = " << fetch->dataOffset << std::endl;
+		std::cout << "data size = " << fetch->numBytes << std::endl;
+		std::cout << "data total = " << fetch->totalBytes << std::endl;
+		if (fetch->numBytes > 0) {
+			// self->m_fetch_response_data.resize(fetch->numBytes);
+			// memcpy(self->m_fetch_response_data.data(), fetch->data, fetch->numBytes);
+			// self->write_data_callback(self->m_fetch_response_data.data(), fetch->numBytes, 1);
+			self->m_fetch_response_data.insert(self->m_fetch_response_data.end(), fetch->data + fetch->dataOffset, fetch->data + fetch->dataOffset + fetch->numBytes);
+			std:cout << "part => " << (char*)(fetch->data + fetch->dataOffset) << std::endl;
+		} else {
+			std::cout << "all => " << (char*)(fetch->data) << std::endl;
+		}
+	};
+
+    emscripten_fetch_attr_t attr;
+    emscripten_fetch_attr_init(&attr);
+	std::string method = "GET";
+	if (m_options && m_options->GetField("CURLOPT_CUSTOMREQUEST")->isString()) method = m_options->GetField("CURLOPT_CUSTOMREQUEST").c_str();
+	else if (!m_sRequestData.empty()) method = "POST";
+	else method = "GET";
+    strcpy(attr.requestMethod, method.c_str());
+    attr.userData = this;
+    attr.attributes = EMSCRIPTEN_FETCH_LOAD_TO_MEMORY;
+	attr.requestData = m_sRequestData.c_str();
+	attr.requestDataSize = m_sRequestData.size();
+	attr.requestHeaders = request_headers.data();
+	attr.onsuccess = fetch_finished_callback;
+	attr.onerror = fetch_finished_callback;
+	if (IsEnableDataStreaming()) {
+		attr.attributes = attr.attributes | EMSCRIPTEN_FETCH_STREAM_DATA;
+		attr.onprogress = fetch_onprogress_callback;
+	} 
+
+	emscripten_fetch(&attr, m_url.c_str()); // Blocks here until the operation is complete.
+	return true;
+}
+#endif
+
 void ParaEngine::CUrlProcessor::EmscriptenFetch()
 {
 #ifdef EMSCRIPTEN
@@ -238,12 +367,20 @@ void ParaEngine::CUrlProcessor::EmscriptenFetch()
 void ParaEngine::CUrlProcessor::EmscriptenFetch2()
 {
 #ifdef EMSCRIPTEN
+    m_fetch_finish = false;
+	if (IsEnableDataStreaming()) {
+		JSFetch(this, [this](){
+			this->m_fetch_finish = true;
+		});
+		while (!m_fetch_finish) emscripten_sleep(100);
+		return;
+	}
+
 	std::vector<const char*> request_headers;
 	int request_headers_size = m_request_headers.size();
 	for (int i = 0; i < request_headers_size; i++) request_headers.push_back(m_request_headers[i].c_str());
 	request_headers.push_back(0);
 
-    m_fetch_finish = false;
     emscripten_fetch_attr_t attr;
     emscripten_fetch_attr_init(&attr);
 	std::string method = "GET";
@@ -266,40 +403,9 @@ void ParaEngine::CUrlProcessor::EmscriptenFetch2()
 		auto self = (ParaEngine::CUrlProcessor*)userdata;
 		self->m_fetch_finish = true; 
 	};
-
-	if (IsEnableDataStreaming()) {
-		attr.attributes = attr.attributes | EMSCRIPTEN_FETCH_APPEND | EMSCRIPTEN_FETCH_STREAM_DATA;
-		attr.onprogress = [](emscripten_fetch_t *fetch) {
-			void* userdata = fetch->userData; 
-			auto self = (ParaEngine::CUrlProcessor*)userdata;
-
-			if (self->m_fetch_response_header.empty() && fetch->readyState >= 2) {
-				size_t headersLengthBytes = emscripten_fetch_get_response_headers_length(fetch) + 1;
-				self->m_fetch_response_header.resize(headersLengthBytes);
-				emscripten_fetch_get_response_headers(fetch, self->m_fetch_response_header.data(), headersLengthBytes);
-				self->write_header_callback(self->m_fetch_response_header.data(), self->m_fetch_response_header.size(), 1);
-			}
-
-			if (fetch->numBytes > 0) {
-				self->m_fetch_response_data.resize(fetch->numBytes);
-				memcpy(self->m_fetch_response_data.data(), fetch->data, fetch->numBytes);
-				self->write_data_callback(self->m_fetch_response_data.data(), fetch->numBytes, 1);
-			}
-		};
-	}
-
 	emscripten_fetch_t *fetch = emscripten_fetch(&attr, m_url.c_str()); // Blocks here until the operation is complete.
 	while (!m_fetch_finish) emscripten_sleep(100);
 	m_responseCode = fetch->status;
-
-	if (!IsEnableDataStreaming()) {
-		std::vector<char> response_header;
-		size_t headersLengthBytes = emscripten_fetch_get_response_headers_length(fetch) + 1;
-		response_header.resize(headersLengthBytes);
-		emscripten_fetch_get_response_headers(fetch, response_header.data(), headersLengthBytes);
-		write_header_callback(response_header.data(), response_header.size(), 1);
-		write_data_callback((void*)(fetch->data), fetch->totalBytes, 1);
-	}
 
   	emscripten_fetch_close(fetch); // Also free data on failure.
 	// m_nStatus = CUrlProcessor::URL_REQUEST_COMPLETED;
@@ -316,74 +422,6 @@ void ParaEngine::CUrlProcessor::EmscriptenFetch2()
 	// return S_OK;
 }
 
-#ifdef EMSCRIPTEN
-bool ParaEngine::CUrlProcessor::AsyncProcess(std::function<void()> callback)
-{
-	std::vector<const char*> request_headers;
-	int request_headers_size = m_request_headers.size();
-	for (int i = 0; i < request_headers_size; i++) request_headers.push_back(m_request_headers[i].c_str());
-	request_headers.push_back(0);
-
-	m_async_callback = callback;
-	auto fetch_finished_callback = [](emscripten_fetch_t *fetch) {
-		auto self = (ParaEngine::CUrlProcessor*)(fetch->userData);
-		if (self->m_async_callback == nullptr) return;
-		self->m_responseCode = fetch->status;
-		size_t headersLengthBytes = emscripten_fetch_get_response_headers_length(fetch);
-		self->m_fetch_response_header.resize(headersLengthBytes);
-		self->m_fetch_response_data.resize(fetch->totalBytes);
-		emscripten_fetch_get_response_headers(fetch, (char*)(self->m_fetch_response_header.data()), headersLengthBytes);
-		memcpy((void*)(self->m_fetch_response_data.data()), fetch->data, fetch->totalBytes);
-
-		if (self->IsEnableDataStreaming() && self->m_fetch_response_data.size() > 0) {
-			self->write_data_callback(self->m_fetch_response_data.data(), self->m_fetch_response_data.size(), 1);
-		}
-
-		self->m_nStatus = CUrlProcessor::URL_REQUEST_COMPLETED;		
-		self->m_async_callback();
-		self->m_async_callback = nullptr;
-		// emscripten_fetch_close(fetch); // Also free data on failure.
-	};
-	
-	auto fetch_onprogress_callback = [](emscripten_fetch_t *fetch) {
-		auto self = (ParaEngine::CUrlProcessor*)(fetch->userData);
-		if (self->m_fetch_response_header.empty() && fetch->readyState >= 2) {
-			size_t headersLengthBytes = emscripten_fetch_get_response_headers_length(fetch);
-			self->m_fetch_response_header.resize(headersLengthBytes);
-			emscripten_fetch_get_response_headers(fetch, self->m_fetch_response_header.data(), headersLengthBytes);
-			self->write_header_callback(self->m_fetch_response_header.data(), self->m_fetch_response_header.size(), 1);
-		}
-
-		if (fetch->numBytes > 0) {
-			self->m_fetch_response_data.resize(fetch->numBytes);
-			memcpy(self->m_fetch_response_data.data(), fetch->data, fetch->numBytes);
-			self->write_data_callback(self->m_fetch_response_data.data(), fetch->numBytes, 1);
-		}
-	};
-
-    emscripten_fetch_attr_t attr;
-    emscripten_fetch_attr_init(&attr);
-	std::string method = "GET";
-	if (m_options && m_options->GetField("CURLOPT_CUSTOMREQUEST")->isString()) method = m_options->GetField("CURLOPT_CUSTOMREQUEST").c_str();
-	else if (!m_sRequestData.empty()) method = "POST";
-	else method = "GET";
-    strcpy(attr.requestMethod, method.c_str());
-    attr.userData = this;
-    attr.attributes = EMSCRIPTEN_FETCH_LOAD_TO_MEMORY;
-	attr.requestData = m_sRequestData.c_str();
-	attr.requestDataSize = m_sRequestData.size();
-	attr.requestHeaders = request_headers.data();
-	attr.onsuccess = fetch_finished_callback;
-	attr.onerror = fetch_finished_callback;
-	if (IsEnableDataStreaming()) {
-		attr.attributes = attr.attributes | EMSCRIPTEN_FETCH_APPEND | EMSCRIPTEN_FETCH_STREAM_DATA;
-		attr.onprogress = fetch_onprogress_callback;
-	} 
-
-	emscripten_fetch(&attr, m_url.c_str()); // Blocks here until the operation is complete.
-	return true;
-}
-#endif
 
 HRESULT ParaEngine::CUrlProcessor::Process(void* pData, int cBytes)
 {
