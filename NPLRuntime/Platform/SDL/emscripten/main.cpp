@@ -329,6 +329,8 @@ int main(int argc, char* argv[])
             },
             [](void* userData, int mode) {
                 std::cout << "webxr_session_callback_func end" << std::endl;
+                // Rebind frame buffer 0.
+                glBindFramebuffer(GL_FRAMEBUFFER, 0);
                 ((IParaWebXR *)CGlobals::GetViewportManager()->GetChildAttributeObject("WebXR"))->SetIsXR(false);
                 CGlobals::GetViewportManager()->SetLayout(VIEW_LAYOUT_DEFAULT);
 
