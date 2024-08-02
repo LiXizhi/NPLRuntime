@@ -131,7 +131,10 @@ void mainloop(void* arg)
         });
     }
     if (app->m_paused) return;
-    app->RunLoopOnce();
+    if (!((IParaWebXR *)CGlobals::GetViewportManager()->GetChildAttributeObject("WebXR"))->GetIsXR()) {
+        app->RunLoopOnce();
+    }
+
     // auto end_time = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now().time_since_epoch()).count();
     // std::cout << "==========time:" << (end_time - begin_time) << std::endl;
 }
@@ -254,6 +257,7 @@ int main(int argc, char* argv[])
         static bool isWebXRinited = false;
         webxr_init(
             [](void* userData, int time, ParaWebXRRigidTransform *headPose, ParaWebXRView views[2], int viewCount) {
+                std::out << "webxr_init" << std::endl;
                 if (!isWebXRinited)
                 {
                     isWebXRinited = true;
