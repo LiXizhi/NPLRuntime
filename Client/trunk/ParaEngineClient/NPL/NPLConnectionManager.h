@@ -1,7 +1,7 @@
 #pragma once
 #include "util/mutex.h"
 #include <set>
-#include <boost/noncopyable.hpp>
+#include <boost/core/noncopyable.hpp>
 #include "NPLConnection.h"
 
 namespace NPL

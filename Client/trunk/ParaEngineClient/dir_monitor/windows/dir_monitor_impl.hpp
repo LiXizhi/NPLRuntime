@@ -6,7 +6,7 @@
 //
 #pragma once
 
-#include <boost/noncopyable.hpp>
+#include <boost/core/noncopyable.hpp>
 #include <boost/ptr_container/ptr_unordered_map.hpp>
 #include <boost/thread.hpp>
 #include <string>

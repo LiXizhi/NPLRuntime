@@ -1,6 +1,6 @@
 #pragma once
 
-#include <boost/noncopyable.hpp>
+#include <boost/core/noncopyable.hpp>
 #include <boost/thread/mutex.hpp>
 // Note: if one wants to use nested mutex, use this one. However, it is slightly heavier than traditional mutex. On windows, mutex can be nested by default. 
 // #include <boost/thread/recursive_mutex.hpp>

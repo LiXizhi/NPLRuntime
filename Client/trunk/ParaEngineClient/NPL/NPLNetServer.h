@@ -1,7 +1,7 @@
 #pragma once
 #include <boost/thread.hpp>
 #include <boost/asio.hpp>
-#include <boost/noncopyable.hpp>
+#include <boost/core/noncopyable.hpp>
 #include <boost/scoped_ptr.hpp>
 #include <boost/asio/steady_timer.hpp>
 #include "NPLConnectionManager.h"

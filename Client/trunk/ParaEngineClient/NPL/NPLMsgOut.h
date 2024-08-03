@@ -6,7 +6,7 @@
 #include "util/StringBuilder.h"
 
 #include <boost/asio.hpp>
-#include <boost/noncopyable.hpp>
+#include <boost/core/noncopyable.hpp>
 #include <boost/enable_shared_from_this.hpp>
 
 
