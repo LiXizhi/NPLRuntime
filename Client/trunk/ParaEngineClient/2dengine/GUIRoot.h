@@ -113,6 +113,12 @@ namespace ParaEngine
 
 		ATTRIBUTE_METHOD1(CGUIRoot, GetGUIToEyeDist_s, float*) { *p1 = cls->GetGUIToEyeDist(); return S_OK; }
 		ATTRIBUTE_METHOD1(CGUIRoot, SetGUIToEyeDist_s, float) { cls->SetGUIToEyeDist(p1); return S_OK; }
+
+		ATTRIBUTE_METHOD1(CGUIRoot, Set3DGUIMode_s, bool) { cls->Set3DGUIMode(p1); return S_OK; }
+		ATTRIBUTE_METHOD1(CGUIRoot, Is3DGUIMode_s, bool*) { *p1 = cls->Is3DGUIMode(); return S_OK; }
+
+		ATTRIBUTE_METHOD1(CGUIRoot, GetGUI3DModeScaling_s, float*) { *p1 = cls->GetGUI3DModeScaling(); return S_OK; }
+		ATTRIBUTE_METHOD1(CGUIRoot, SetGUI3DModeScaling_s, float) { cls->SetGUI3DModeScaling(p1); return S_OK; }
 	public:
 		ParaEngine::GUIState& GetGUIState() { return m_stateGUI; }
 		CDirectMouse* GetMouse() { return m_pMouse; }
@@ -473,6 +479,13 @@ namespace ParaEngine
 		float GetGUIToEyeDist() const;
 		void SetGUIToEyeDist(float val);
 		bool Is3DGUIMode() const;
+		/** this will actually set SetGUIToEyeDist to 10 if enabled. */
+		void Set3DGUIMode(bool bEnable);
+
+		/** get the scaling factor when rendering in 3d space. */
+		float GetGUI3DModeScaling() const;
+		/** set the scaling factor when rendering in 3d space. */
+		void SetGUI3DModeScaling(float val);
 	public:
 		virtual ~CGUIRoot(void);
 
@@ -572,6 +585,9 @@ namespace ParaEngine
 		
 		/** if positive, we will render root GUI in front of the eye position in 3d space.*/
 		float m_fGUIToEyeDist;
+		/** default to 1.0f when rendering in 3d space*/
+		float m_fGUI3DModeScaling;
+
 		float m_fUIScalingX;
 		float m_fUIScalingY;
 

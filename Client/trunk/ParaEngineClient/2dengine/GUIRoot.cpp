@@ -127,7 +127,8 @@ CGUIRoot::CGUIRoot(void)
 	m_fUIScalingX(1.f), m_fUIScalingY(1.0f), m_fViewportLeft(0.f), m_fViewportTop(0.f), m_fViewportWidth(0.f), m_fViewportHeight(0.f),
 	m_bMouseInClient(true), m_nLastTouchX(-1000), m_nLastTouchY(-1000), m_bIsNonClient(false), m_bSwapTouchButton(false),
 	m_fMinScreenWidth(400.f), m_fMinScreenHeight(300.f), m_fMaxScreenWidth(4096.f), m_fMaxScreenHeight(2160.f), m_bHasIMEFocus(false), m_bIsCursorClipped(false),
-	m_nFingerSizePixels(60), m_nFingerStepSizePixels(10), m_pActiveWindow(NULL), m_pLastMouseDownObject(NULL), m_bMouseCaptured(false), m_nCtrlBottom(0), m_fGUIToEyeDist(0.f)
+	m_nFingerSizePixels(60), m_nFingerStepSizePixels(10), m_pActiveWindow(NULL), m_pLastMouseDownObject(NULL), m_bMouseCaptured(false), m_nCtrlBottom(0), 
+	m_fGUIToEyeDist(0.f), m_fGUI3DModeScaling(1.f)
 {
 	if (!m_type){
 		m_type = IType::GetType("guiroot");
@@ -733,7 +734,7 @@ void	CGUIRoot::AdvanceGUI(float fElapsedTime)
 		float screenWidth = GetWidth();
 		float screenHeight = GetHeight();
 		float fAspectRatio = CGlobals::GetScene()->GetCurrentCamera()->GetFieldOfView();
-		float fScaling = std::tanf(fAspectRatio * 0.5f) * fGUIToEyeDist / (screenHeight * 0.5f);
+		float fScaling = std::tanf(fAspectRatio * 0.5f) * fGUIToEyeDist / (screenHeight * 0.5f) * GetGUI3DModeScaling();
 		Matrix4 mat(Matrix4::IDENTITY);
 		auto vEye = CGlobals::GetScene()->GetCurrentCamera()->GetEyePosition();
 		auto vLookat = CGlobals::GetScene()->GetCurrentCamera()->GetLookAtPosition();
@@ -3036,6 +3037,29 @@ bool ParaEngine::CGUIRoot::Is3DGUIMode() const
 	return m_fGUIToEyeDist > 0.f;
 }
 
+void ParaEngine::CGUIRoot::Set3DGUIMode(bool bEnable)
+{
+	if (bEnable && !Is3DGUIMode())
+	{
+		SetGUIToEyeDist(10.f);
+	}
+	else if(Is3DGUIMode())
+	{
+		SetGUIToEyeDist(0.f);
+	}
+}
+
+float ParaEngine::CGUIRoot::GetGUI3DModeScaling() const
+{
+	return m_fGUI3DModeScaling;
+}
+
+void ParaEngine::CGUIRoot::SetGUI3DModeScaling(float val)
+{
+	m_fGUI3DModeScaling = val;
+}
+
+
 int ParaEngine::CGUIRoot::InstallFields(CAttributeClass* pClass, bool bOverride)
 {
 	// install parent fields if there are any. Please replace __super with your parent class name.
@@ -3067,5 +3091,7 @@ int ParaEngine::CGUIRoot::InstallFields(CAttributeClass* pClass, bool bOverride)
 	pClass->AddField("MinimumScreenSize", FieldType_Vector2, (void*)SetMinimumScreenSize_s, NULL, NULL, NULL, bOverride);
 
 	pClass->AddField("GUIToEyeDist", FieldType_Float, (void*)SetGUIToEyeDist_s, (void*)GetGUIToEyeDist_s, NULL, NULL, bOverride);
+	pClass->AddField("3DGUIMode", FieldType_Bool, (void*)Set3DGUIMode_s, (void*)Is3DGUIMode_s, NULL, NULL, bOverride);
+	pClass->AddField("GUI3DModeScaling", FieldType_Float, (void*)SetGUI3DModeScaling_s, (void*)GetGUI3DModeScaling_s, NULL, NULL, bOverride);
 	return S_OK;
 }
