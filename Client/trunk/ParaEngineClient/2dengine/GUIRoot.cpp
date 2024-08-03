@@ -127,7 +127,7 @@ CGUIRoot::CGUIRoot(void)
 	m_fUIScalingX(1.f), m_fUIScalingY(1.0f), m_fViewportLeft(0.f), m_fViewportTop(0.f), m_fViewportWidth(0.f), m_fViewportHeight(0.f),
 	m_bMouseInClient(true), m_nLastTouchX(-1000), m_nLastTouchY(-1000), m_bIsNonClient(false), m_bSwapTouchButton(false),
 	m_fMinScreenWidth(400.f), m_fMinScreenHeight(300.f), m_fMaxScreenWidth(4096.f), m_fMaxScreenHeight(2160.f), m_bHasIMEFocus(false), m_bIsCursorClipped(false),
-	m_nFingerSizePixels(60), m_nFingerStepSizePixels(10), m_pActiveWindow(NULL), m_pLastMouseDownObject(NULL), m_bMouseCaptured(false), m_nCtrlBottom(0)
+	m_nFingerSizePixels(60), m_nFingerStepSizePixels(10), m_pActiveWindow(NULL), m_pLastMouseDownObject(NULL), m_bMouseCaptured(false), m_nCtrlBottom(0), m_fGUIToEyeDist(0.f)
 {
 	if (!m_type){
 		m_type = IType::GetType("guiroot");
@@ -710,15 +710,57 @@ void	CGUIRoot::AdvanceGUI(float fElapsedTime)
 	GUIState* pGUIState = &m_stateGUI;
 	/// clean up GUI state
 	pGUIState->CleanupGUIState();
-	RenderDevicePtr pd3dDevice = CGlobals::GetRenderDevice();
-	pGUIState->pd3dDevice = pd3dDevice;
+	RenderDevicePtr pRenderDevice = CGlobals::GetRenderDevice();
+	pGUIState->pd3dDevice = pRenderDevice;
 
 	auto painter = GetPainter();
 	pGUIState->painter = painter;
 	if (painter->isActive())
 		painter->end();
 
+	bool bIsRelativeTo3D = Is3DGUIMode();
+	if (bIsRelativeTo3D) 
+	{
+		painter->SetUse3DTransform(true);
+	}
+
 	painter->begin(this);
+	if (bIsRelativeTo3D && painter->isActive()) {
+		painter->SetSpriteUseWorldMatrix(true);
+		painter->PushMatrix();
+		// render GUI in front of the eye position while facing towards it.
+		float fGUIToEyeDist = GetGUIToEyeDist();
+		float screenWidth = GetWidth();
+		float screenHeight = GetHeight();
+		float fAspectRatio = CGlobals::GetScene()->GetCurrentCamera()->GetFieldOfView();
+		float fScaling = std::tanf(fAspectRatio * 0.5f) * fGUIToEyeDist / (screenHeight * 0.5f);
+		Matrix4 mat(Matrix4::IDENTITY);
+		auto vEye = CGlobals::GetScene()->GetCurrentCamera()->GetEyePosition();
+		auto vLookat = CGlobals::GetScene()->GetCurrentCamera()->GetLookAtPosition();
+		Vector3 vDir = (vLookat - vEye);
+		vDir.normalise();
+		float yaw = - std::atan2(vDir.z, vDir.x) + Math::PI * 0.5f;
+		float pitch =  - std::asin(vDir.y);
+		Quaternion qPitch(Radian(pitch), Vector3::UNIT_X);
+		Quaternion qYaw(Radian(yaw), Vector3::UNIT_Y);
+		Quaternion q = qYaw * qPitch;
+		q.ToRotationMatrix(mat, Vector3::ZERO);
+		// offset by center of screenWidth, screenHeight
+		
+		Matrix4 matTrans;
+		matTrans.makeTrans(Vector3(-screenWidth * 0.5f, screenHeight * 0.5f, 0.f));
+		mat = matTrans * mat;
+		Matrix4 matScale;
+		matScale.makeScale(Vector3(fScaling, fScaling, fScaling));
+		mat = mat * matScale;
+		vLookat = vEye + vDir * fGUIToEyeDist;
+		vLookat += CGlobals::GetScene()->GetRenderOffset();
+		matTrans.makeTrans(vLookat);
+		mat = mat * matTrans;
+		painter->LoadMatrix(mat);
+		pRenderDevice->SetRenderState(D3DRS_ZENABLE, FALSE);
+		pRenderDevice->SetRenderState(D3DRS_ZWRITEENABLE, FALSE);
+	}
 
 	// update which 3d object are visible.
 	Update3DObject(fElapsedTime);
@@ -763,16 +805,16 @@ void	CGUIRoot::AdvanceGUI(float fElapsedTime)
 		}
 
 		// default to UV wrapping, instead of UV clamp for UI. 
-		// pd3dDevice->SetSamplerState( 0, D3DSAMP_ADDRESSU,  D3DTADDRESS_WRAP);
-		// pd3dDevice->SetSamplerState( 0, D3DSAMP_ADDRESSV,  D3DTADDRESS_WRAP );
+		// pRenderDevice->SetSamplerState( 0, D3DSAMP_ADDRESSU,  D3DTADDRESS_WRAP);
+		// pRenderDevice->SetSamplerState( 0, D3DSAMP_ADDRESSV,  D3DTADDRESS_WRAP );
 
 		GUIBase_List_Type::iterator iter;
 
 		//////////////////////////////////////////////////////////////////////////
 		// breadth first transversing the 2D scene
-		//pd3dDevice->SetRenderState(D3DRS_STENCILENABLE,TRUE);
-		//pd3dDevice->SetRenderState(D3DRS_STENCILFUNC,D3DCMP_EQUAL);
-		//pd3dDevice->SetRenderState(D3DRS_STENCILREF,0);
+		//pRenderDevice->SetRenderState(D3DRS_STENCILENABLE,TRUE);
+		//pRenderDevice->SetRenderState(D3DRS_STENCILFUNC,D3DCMP_EQUAL);
+		//pRenderDevice->SetRenderState(D3DRS_STENCILREF,0);
 		for( iter = this->GetChildren()->begin(); iter != this->GetChildren()->end();iter++ )
 		{
 			CGUIBase* pObjChild = * iter;  
@@ -794,13 +836,13 @@ void	CGUIRoot::AdvanceGUI(float fElapsedTime)
 
 		//////////////////////////////////////////////////////////////////////////
 		//render the dragging object if exist
-		pd3dDevice->SetRenderState(D3DRS_STENCILENABLE,FALSE);
+		pRenderDevice->SetRenderState(D3DRS_STENCILENABLE,FALSE);
 		if (pdrag->pDragging!=NULL && ! pdrag->m_bIsCandicateOnly) {
 			((CGUIBase*)pdrag->pDragging)->DoRender(pGUIState, fElapsedTime);
 		}
 		//////////////////////////////////////////////////////////////////////////
 		//render the IME candidate window
-		pd3dDevice->SetRenderState(D3DRS_STENCILENABLE,FALSE);
+		pRenderDevice->SetRenderState(D3DRS_STENCILENABLE,FALSE);
 		//if (GetIMEFocus()) {
 		//	GetIMEFocus()->PostRender(pGUIState, fElapsedTime);
 		//}
@@ -823,6 +865,13 @@ void	CGUIRoot::AdvanceGUI(float fElapsedTime)
 	CGUIWebBrowser::GlobalFrameMove();
 #endif
 #endif
+
+	if (bIsRelativeTo3D && painter->isActive()) {
+		painter->PopMatrix();
+		painter->SetSpriteUseWorldMatrix(false);
+		pRenderDevice->SetRenderState(D3DRS_ZENABLE, TRUE);
+		pRenderDevice->SetRenderState(D3DRS_ZWRITEENABLE, TRUE);
+	}
 
 	if (!pGUIState->listPostRenderingObjects.empty())
 	{
@@ -2972,6 +3021,21 @@ void ParaEngine::CGUIRoot::SetActiveWindow(CGUIBase* val, int nState)
 	}
 }
 
+float ParaEngine::CGUIRoot::GetGUIToEyeDist() const
+{
+	return m_fGUIToEyeDist;
+}
+
+void ParaEngine::CGUIRoot::SetGUIToEyeDist(float val)
+{
+	m_fGUIToEyeDist = val;
+}
+
+bool ParaEngine::CGUIRoot::Is3DGUIMode() const
+{
+	return m_fGUIToEyeDist > 0.f;
+}
+
 int ParaEngine::CGUIRoot::InstallFields(CAttributeClass* pClass, bool bOverride)
 {
 	// install parent fields if there are any. Please replace __super with your parent class name.
@@ -3001,5 +3065,7 @@ int ParaEngine::CGUIRoot::InstallFields(CAttributeClass* pClass, bool bOverride)
 	pClass->AddField("FingerSizePixels", FieldType_Int, (void*)SetFingerSizePixels_s, (void*)GetFingerSizePixels_s, NULL, NULL, bOverride);
 	pClass->AddField("FingerStepSizePixels", FieldType_Int, (void*)SetFingerStepSizePixels_s, (void*)GetFingerStepSizePixels_s, NULL, NULL, bOverride);
 	pClass->AddField("MinimumScreenSize", FieldType_Vector2, (void*)SetMinimumScreenSize_s, NULL, NULL, NULL, bOverride);
+
+	pClass->AddField("GUIToEyeDist", FieldType_Float, (void*)SetGUIToEyeDist_s, (void*)GetGUIToEyeDist_s, NULL, NULL, bOverride);
 	return S_OK;
 }
