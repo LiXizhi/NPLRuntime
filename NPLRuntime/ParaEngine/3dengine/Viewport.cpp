@@ -337,7 +337,19 @@ HRESULT ParaEngine::CViewport::Render(double dTimeDelta, int nPipelineOrder)
 		if (GetGUIRoot())
 		{
 			SetActive();
-			// SetViewport(0, 0, m_pViewportManager->GetWidth(), m_pViewportManager->GetHeight());
+			if (GetGUIRoot()->Is3DGUIMode())
+			{
+				CAutoCamera* pCamera = GetCamera();
+				if (!pCamera)
+					pCamera = ((CAutoCamera*)CGlobals::GetScene()->GetCurrentCamera());
+				if (pCamera)
+				{
+					ApplyCamera(pCamera);
+					CGlobals::GetViewMatrixStack().push(*(pCamera->GetViewMatrix()));
+					pCamera->UpdateViewProjMatrix();
+				}
+			}
+
 			ApplyViewport();
 			GetGUIRoot()->UpdateViewport(GetLeft(), GetTop(), GetWidth(), GetHeight());
 			GetGUIRoot()->AdvanceGUI((float)dTimeDelta);
