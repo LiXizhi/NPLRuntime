@@ -120,7 +120,8 @@ namespace ParaEngine
 		ATTRIBUTE_METHOD1(CGUIRoot, GetKeyFocusObjectId_s, int*) { *p1 = cls->GetKeyFocusObjectId(); return S_OK; }
 		ATTRIBUTE_METHOD1(CGUIRoot, GetMouseFocusObjectId_s, int*) { *p1 = cls->GetMouseFocusObjectId(); return S_OK; }
 
-		
+		ATTRIBUTE_METHOD1(CGUIRoot, GetGUIToEyeDist_s, float*) { *p1 = cls->GetGUIToEyeDist(); return S_OK; }
+		ATTRIBUTE_METHOD1(CGUIRoot, SetGUIToEyeDist_s, float) { cls->SetGUIToEyeDist(p1); return S_OK; }
 	public:
 		ParaEngine::GUIState& GetGUIState() { return m_stateGUI; }
 		CGUIMouseVirtual* GetMouse() { return m_pMouse; }
@@ -489,6 +490,11 @@ namespace ParaEngine
 		*  - 2  The window is being activated through some method other than a mouse click.
 		*/
 		void SetActiveWindow(CGUIBase* val, int nState = 1);
+
+		/** if positive, we will render root GUI in front of the eye position in 3d space.*/
+		float GetGUIToEyeDist() const;
+		void SetGUIToEyeDist(float val);
+		bool Is3DGUIMode() const;
 	public:
 		virtual ~CGUIRoot(void);
 
@@ -587,6 +593,8 @@ namespace ParaEngine
 		// delete queue id
 		vector<int> m_deleteQueue;
 
+		/** if positive, we will render root GUI in front of the eye position in 3d space.*/
+		float m_fGUIToEyeDist;
 		float m_fUIScalingX;
 		float m_fUIScalingY;
 

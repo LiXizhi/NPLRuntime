@@ -122,7 +122,7 @@ CGUIRoot::CGUIRoot(void)
 	m_fUIScalingX(1.f), m_fUIScalingY(1.0f), m_fViewportLeft(0.f), m_fViewportTop(0.f), m_fViewportWidth(0.f), m_fViewportHeight(0.f),
 	m_bMouseInClient(true), m_nLastTouchX(-1000), m_nLastTouchY(-1000), m_bIsNonClient(false), m_bSwapTouchButton(false),
 	m_fMinScreenWidth(400.f), m_fMinScreenHeight(300.f), m_bHasIMEFocus(false), m_bIsCursorClipped(false), m_nFingerSizePixels(60), m_nFingerStepSizePixels(10), m_pActiveWindow(NULL), m_pLastMouseDownObject(NULL), m_bMouseCaptured(false), m_bMouseOverScrollableUI(false),
-	m_fMaxScreenWidth(4096.f), m_fMaxScreenHeight(2160.f)
+	m_fMaxScreenWidth(4096.f), m_fMaxScreenHeight(2160.f), m_fGUIToEyeDist(0.f)
 // #ifdef PARAENGINE_MOBILE
 #if defined(PARAENGINE_MOBILE) || defined(EMSCRIPTEN)
 	, m_nCtrlBottom(0)
@@ -669,7 +669,49 @@ void	CGUIRoot::AdvanceGUI(float fElapsedTime)
 	if (painter->isActive())
 		painter->end();
 
+	bool bIsRelativeTo3D = Is3DGUIMode();
+	if (bIsRelativeTo3D)
+	{
+		painter->SetUse3DTransform(true);
+	}
+
 	painter->begin(this);
+	if (bIsRelativeTo3D && painter->isActive()) {
+		painter->SetSpriteUseWorldMatrix(true);
+		painter->PushMatrix();
+		// render GUI in front of the eye position while facing towards it.
+		float fGUIToEyeDist = GetGUIToEyeDist();
+		float screenWidth = GetWidth();
+		float screenHeight = GetHeight();
+		float fAspectRatio = CGlobals::GetScene()->GetCurrentCamera()->GetFieldOfView();
+		float fScaling = std::tanf(fAspectRatio * 0.5f) * fGUIToEyeDist / (screenHeight * 0.5f);
+		Matrix4 mat(Matrix4::IDENTITY);
+		auto vEye = CGlobals::GetScene()->GetCurrentCamera()->GetEyePosition();
+		auto vLookat = CGlobals::GetScene()->GetCurrentCamera()->GetLookAtPosition();
+		Vector3 vDir = (vLookat - vEye);
+		vDir.normalise();
+		float yaw = -std::atan2(vDir.z, vDir.x) + Math::PI * 0.5f;
+		float pitch = -std::asin(vDir.y);
+		Quaternion qPitch(Radian(pitch), Vector3::UNIT_X);
+		Quaternion qYaw(Radian(yaw), Vector3::UNIT_Y);
+		Quaternion q = qYaw * qPitch;
+		q.ToRotationMatrix(mat, Vector3::ZERO);
+		// offset by center of screenWidth, screenHeight
+
+		Matrix4 matTrans;
+		matTrans.makeTrans(Vector3(-screenWidth * 0.5f, screenHeight * 0.5f, 0.f));
+		mat = matTrans * mat;
+		Matrix4 matScale;
+		matScale.makeScale(Vector3(fScaling, fScaling, fScaling));
+		mat = mat * matScale;
+		vLookat = vEye + vDir * fGUIToEyeDist;
+		vLookat += CGlobals::GetScene()->GetRenderOffset();
+		matTrans.makeTrans(vLookat);
+		mat = mat * matTrans;
+		painter->LoadMatrix(mat);
+		pRenderDevice->SetRenderState(ERenderState::ZENABLE, FALSE);
+		pRenderDevice->SetRenderState(ERenderState::ZWRITEENABLE, FALSE);
+	}
 
 	// update which 3d object are visible.
 	Update3DObject(fElapsedTime);
@@ -702,7 +744,12 @@ void	CGUIRoot::AdvanceGUI(float fElapsedTime)
 		painter->end();
 	}
 
-
+	if (bIsRelativeTo3D && painter->isActive()) {
+		painter->PopMatrix();
+		painter->SetSpriteUseWorldMatrix(false);
+		pRenderDevice->SetRenderState(ERenderState::ZENABLE, TRUE);
+		pRenderDevice->SetRenderState(ERenderState::ZWRITEENABLE, TRUE);
+	}
 
 	if (!pGUIState->listPostRenderingObjects.empty())
 	{
@@ -2566,6 +2613,21 @@ void ParaEngine::CGUIRoot::SetActiveWindow(CGUIBase* val, int nState)
 	}
 }
 
+float ParaEngine::CGUIRoot::GetGUIToEyeDist() const
+{
+	return m_fGUIToEyeDist;
+}
+
+void ParaEngine::CGUIRoot::SetGUIToEyeDist(float val)
+{
+	m_fGUIToEyeDist = val;
+}
+
+bool ParaEngine::CGUIRoot::Is3DGUIMode() const
+{
+	return m_fGUIToEyeDist > 0.f;
+}
+
 int ParaEngine::CGUIRoot::InstallFields(CAttributeClass* pClass, bool bOverride)
 {
 	// install parent fields if there are any. Please replace __super with your parent class name.
@@ -2600,5 +2662,7 @@ int ParaEngine::CGUIRoot::InstallFields(CAttributeClass* pClass, bool bOverride)
 	pClass->AddField("FingerSizePixels", FieldType_Int, (void*)SetFingerSizePixels_s, (void*)GetFingerSizePixels_s, NULL, NULL, bOverride);
 	pClass->AddField("FingerStepSizePixels", FieldType_Int, (void*)SetFingerStepSizePixels_s, (void*)GetFingerStepSizePixels_s, NULL, NULL, bOverride);
 	pClass->AddField("MinimumScreenSize", FieldType_Vector2, (void*)SetMinimumScreenSize_s, NULL, NULL, NULL, bOverride);
+
+	pClass->AddField("GUIToEyeDist", FieldType_Float, (void*)SetGUIToEyeDist_s, (void*)GetGUIToEyeDist_s, NULL, NULL, bOverride);
 	return S_OK;
 }
