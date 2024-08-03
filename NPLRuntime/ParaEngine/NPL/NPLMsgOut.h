@@ -7,7 +7,7 @@
 #ifndef EMSCRIPTEN_SINGLE_THREAD
 #include <boost/asio.hpp>
 #endif
-#include <boost/noncopyable.hpp>
+#include <boost/core/noncopyable.hpp>
 #include <boost/enable_shared_from_this.hpp>
 
 

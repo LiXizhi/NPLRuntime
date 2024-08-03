@@ -1,6 +1,6 @@
 #pragma once
 #include "NPLMessageQueue.h"
-#include <boost/noncopyable.hpp>
+#include <boost/core/noncopyable.hpp>
 
 namespace ParaEngine
 {

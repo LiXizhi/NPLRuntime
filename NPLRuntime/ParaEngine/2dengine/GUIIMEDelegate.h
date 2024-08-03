@@ -4,7 +4,7 @@
 #if defined(PARAENGINE_MOBILE) || defined(EMSCRIPTEN)
 
 #include "Globals.h"
-#include <boost/noncopyable.hpp>
+#include <boost/core/noncopyable.hpp>
 
 namespace ParaEngine {
 

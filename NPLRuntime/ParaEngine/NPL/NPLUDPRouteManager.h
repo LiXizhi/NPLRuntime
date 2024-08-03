@@ -2,7 +2,7 @@
 #include "util/mutex.h"
 #include <set>
 #include <unordered_map>
-#include <boost/noncopyable.hpp>
+#include <boost/core/noncopyable.hpp>
 #include "NPLUDPRoute.h"
 
 namespace NPL
