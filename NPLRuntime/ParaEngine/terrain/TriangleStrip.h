@@ -6,7 +6,6 @@
 
 namespace ParaTerrain
 {
-#ifndef EMSCRIPTEN_SINGLE_THREAD
 	class TriangleStrip
 	{
 	public:
@@ -34,5 +33,4 @@ namespace ParaTerrain
 		friend class Terrain;
 		friend class TerrainBuffer;
 	};
-#endif
 }
