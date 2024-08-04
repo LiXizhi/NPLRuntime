@@ -336,13 +336,13 @@ namespace ParaTerrain
 #include "TextureGenerator.h"
 #include "TerrainBlock.h"
 #include "TriangleFan.h"
+#include "TriangleStrip.h"
 #include "TerrainLattice.h"
 #include "TerrainVertex.h"
 #include "DetailTextureFactory.h"
 #include "IAttributeFields.h"
 #include <vector>
 #include <set>
-#include "TriangleStrip.h"
 
 namespace ParaEngine
 {
@@ -1253,24 +1253,10 @@ namespace ParaTerrain
 			v.z = vec.y;
 		}
 
-		inline TriangleStrip* GetTriStrip(int nIndex){return (TriangleStrip*)&(m_pTriangleStrips[nIndex]);}
-		inline TriangleStrip* GetSafeTriStrip(int nIndex){
-			if(nIndex< (int)m_pTriangleStrips.size())
-				return (TriangleStrip*)&(m_pTriangleStrips[nIndex]);
-			else{
-				m_pTriangleStrips.resize(nIndex+100);
-				return (TriangleStrip*)&(m_pTriangleStrips[nIndex]);
-			}
-		}
-		inline TriangleFan* GetTriFan(int nIndex){return &(m_pTriangleFans[nIndex]);}
-		inline TriangleFan* GetSafeTriFan(int nIndex){
-			if(nIndex< (int)m_pTriangleFans.size())
-				return &(m_pTriangleFans[nIndex]);
-			else{
-				m_pTriangleFans.resize(nIndex+100);
-				return &(m_pTriangleFans[nIndex]);
-			}
-		}
+		inline TriangleStrip* GetTriStrip(int nIndex);
+		inline TriangleStrip* GetSafeTriStrip(int nIndex);
+		inline TriangleFan* GetTriFan(int nIndex);
+		inline TriangleFan* GetSafeTriFan(int nIndex);
 	public:
 		
 		/** get texture ID by point.

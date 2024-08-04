@@ -3996,3 +3996,26 @@ void Terrain::SetEditorMode(bool enable)
 	m_pEditorMeshVB.ReleaseBuffer();
 
 }
+
+inline TriangleStrip* Terrain::GetTriStrip(int nIndex) { 
+	return (TriangleStrip*)&(m_pTriangleStrips[nIndex]); 
+}
+inline TriangleStrip* Terrain::GetSafeTriStrip(int nIndex) {
+	if (nIndex < (int)m_pTriangleStrips.size())
+		return (TriangleStrip*)&(m_pTriangleStrips[nIndex]);
+	else {
+		m_pTriangleStrips.resize(nIndex + 100);
+		return (TriangleStrip*)&(m_pTriangleStrips[nIndex]);
+	}
+}
+inline TriangleFan* Terrain::GetTriFan(int nIndex) { 
+	return &(m_pTriangleFans[nIndex]); 
+}
+inline TriangleFan* Terrain::GetSafeTriFan(int nIndex) {
+	if (nIndex < (int)m_pTriangleFans.size())
+		return &(m_pTriangleFans[nIndex]);
+	else {
+		m_pTriangleFans.resize(nIndex + 100);
+		return &(m_pTriangleFans[nIndex]);
+	}
+}
