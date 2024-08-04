@@ -3059,6 +3059,20 @@ void ParaEngine::CGUIRoot::SetGUI3DModeScaling(float val)
 	m_fGUI3DModeScaling = val;
 }
 
+void ParaEngine::CGUIRoot::SendMouseButtonEvent(float x, float y, EMouseButton button, EKeyState state, bool bSimulated)
+{
+	GetMouse()->PushMouseEvent(DeviceMouseEventPtr(new DeviceMouseButtonEvent(button, state, (int)x, (int)y, bSimulated)));
+}
+
+void ParaEngine::CGUIRoot::SendMouseMoveEvent(float x, float y)
+{
+	GetMouse()->PushMouseEvent(DeviceMouseEventPtr(new DeviceMouseMoveEvent((int)x, (int)y)));
+}
+
+void ParaEngine::CGUIRoot::SendMouseWheelEvent(int delta)
+{
+	GetMouse()->PushMouseEvent(DeviceMouseEventPtr(new DeviceMouseWheelEvent(delta)));
+}
 
 int ParaEngine::CGUIRoot::InstallFields(CAttributeClass* pClass, bool bOverride)
 {
@@ -3082,6 +3096,10 @@ int ParaEngine::CGUIRoot::InstallFields(CAttributeClass* pClass, bool bOverride)
 	pClass->AddField("SendKeyDownEvent", FieldType_Int, (void*)SendKeyDownEvent_s, (void*)0, NULL, NULL, bOverride);
 	pClass->AddField("SendKeyUpEvent", FieldType_Int, (void*)SendKeyUpEvent_s, (void*)0, NULL, NULL, bOverride);
 	pClass->AddField("SendInputMethodEvent", FieldType_String, (void*)SendInputMethodEvent_s, (void*)0, NULL, NULL, bOverride);
+	pClass->AddField("SendMouseButtonEvent", FieldType_Vector4, (void*)SendMouseButtonEvent_s, (void*)0, NULL, NULL, bOverride);
+	pClass->AddField("SendMouseMoveEvent", FieldType_Vector2, (void*)SendMouseMoveEvent_s, (void*)0, NULL, NULL, bOverride);
+	pClass->AddField("SendMouseWheelEvent", FieldType_Float, (void*)SendMouseWheelEvent_s, (void*)0, NULL, NULL, bOverride);
+
 	pClass->AddField("MouseButtonSwapped", FieldType_Bool, (void*)SetMouseButtonSwapped_s, (void*)IsMouseButtonSwapped_s, NULL, NULL, bOverride);
 	pClass->AddField("TouchButtonSwapped", FieldType_Bool, (void*)SetTouchButtonSwapped_s, (void*)IsTouchButtonSwapped_s, NULL, NULL, bOverride);
 
