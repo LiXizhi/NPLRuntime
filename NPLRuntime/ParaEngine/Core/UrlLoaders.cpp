@@ -195,6 +195,7 @@ HRESULT ParaEngine::CUrlProcessor::Destroy()
 
 #ifdef EMSCRIPTEN
 static emscripten::val JSFetch(ParaEngine::CUrlProcessor* self, std::function<void()> callback) {
+#ifdef EMSCRIPTEN_SINGLE_THREAD
 	emscripten::val fetch = emscripten::val::global("jsfetch");
 	// 创建请求配置对象
     emscripten::val options = emscripten::val::object();
@@ -238,15 +239,17 @@ static emscripten::val JSFetch(ParaEngine::CUrlProcessor* self, std::function<vo
 	
 	self->m_fetch_response_data = "";
 	callback();
+#endif
 }
 
 bool ParaEngine::CUrlProcessor::AsyncProcess(std::function<void()> callback)
 {
+#ifdef EMSCRIPTEN_SINGLE_THREAD
 	if (IsEnableDataStreaming()) {
 		JSFetch(this, callback);
 		return true;
 	}
-
+#endif
 	std::vector<const char*> request_headers;
 	int request_headers_size = m_request_headers.size();
 	for (int i = 0; i < request_headers_size; i++) request_headers.push_back(m_request_headers[i].c_str());
@@ -322,7 +325,6 @@ bool ParaEngine::CUrlProcessor::AsyncProcess(std::function<void()> callback)
 void ParaEngine::CUrlProcessor::EmscriptenFetch()
 {
 #ifdef EMSCRIPTEN
-#ifdef EMSCRIPTEN_SINGLE_THREAD
 	std::vector<const char*> request_headers;
 	int request_headers_size = m_request_headers.size();
 	for (int i = 0; i < request_headers_size; i++) request_headers.push_back(m_request_headers[i].c_str());
@@ -361,7 +363,6 @@ void ParaEngine::CUrlProcessor::EmscriptenFetch()
 	// 	std::cout << "thread id: " << std::this_thread::get_id() << std::endl;
 	// 	// std::cout << "response header:" << response_header << std::endl;
 	// }
-#endif
 #endif
 	// return S_OK;
 }
