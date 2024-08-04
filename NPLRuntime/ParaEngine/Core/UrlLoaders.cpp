@@ -322,6 +322,7 @@ bool ParaEngine::CUrlProcessor::AsyncProcess(std::function<void()> callback)
 void ParaEngine::CUrlProcessor::EmscriptenFetch()
 {
 #ifdef EMSCRIPTEN
+#ifdef EMSCRIPTEN_SINGLE_THREAD
 	std::vector<const char*> request_headers;
 	int request_headers_size = m_request_headers.size();
 	for (int i = 0; i < request_headers_size; i++) request_headers.push_back(m_request_headers[i].c_str());
@@ -361,6 +362,7 @@ void ParaEngine::CUrlProcessor::EmscriptenFetch()
 	// 	// std::cout << "response header:" << response_header << std::endl;
 	// }
 #endif
+#endif
 	// return S_OK;
 }
 
@@ -368,6 +370,7 @@ void ParaEngine::CUrlProcessor::EmscriptenFetch2()
 {
 #ifdef EMSCRIPTEN
     m_fetch_finish = false;
+#ifdef EMSCRIPTEN_SINGLE_THREAD
 	if (IsEnableDataStreaming()) {
 		JSFetch(this, [this](){
 			this->m_fetch_finish = true;
@@ -375,7 +378,7 @@ void ParaEngine::CUrlProcessor::EmscriptenFetch2()
 		while (!m_fetch_finish) emscripten_sleep(100);
 		return;
 	}
-
+#endif
 	std::vector<const char*> request_headers;
 	int request_headers_size = m_request_headers.size();
 	for (int i = 0; i < request_headers_size; i++) request_headers.push_back(m_request_headers[i].c_str());
