@@ -9,29 +9,29 @@
 *
 * The Global Landscape Terrain engine used in ParaEngine.
 * The core ROAM algorithm of the terrain engine is based on code from the Demeter Terrain Visualization Library by Clay Fowler, 2002.
-* I have ported from its original OpenGl implementation to DirectX. The terrain engine uses ROAM or Real-time Optimally Adapting Meshes algorithm. 
+* I have ported from its original OpenGl implementation to DirectX. The terrain engine uses ROAM or Real-time Optimally Adapting Meshes algorithm.
 
-* A global terrain can either be single or latticed. The latter will load terrain as tiles 
+* A global terrain can either be single or latticed. The latter will load terrain as tiles
 * automatically when they are potentially visible.
 * a global terrain's world coordinate (x,y) is defined as below:
-* x>=0, y>=0. A single terrain usually has less than 512*512 vertices and is suitable for terrain size 
+* x>=0, y>=0. A single terrain usually has less than 512*512 vertices and is suitable for terrain size
 * smaller than 2000*2000meters. A latticed terrain has no theoretical upper limit of terrain size. In a latticed terrain,
-* each terrain tile may be 500*500meters(possibly containing 128*128 elevation vertices) and there may be any number of such tiles in the latticed terrain. 
+* each terrain tile may be 500*500meters(possibly containing 128*128 elevation vertices) and there may be any number of such tiles in the latticed terrain.
 * For example, if 64*64 tiles are available on hard disk, then the total terrain size will be 32000*32000 meters.
 * Internally, terrain tile is dynamically loaded into a sorted map. So there finally is an upper limit as for the total
 * number of tiles loaded concurrently. But in most cases, only the 9 tiles around the camera position need to be
 * loaded for rendering. One can specify how many tiles to be cached in memory. By default it is set to 18.
 
 * For each single terrain tile, main or base texture is automatically broken in to texture tiles (each of size 256*256).
-* A common texture is repeatedly(tiling) rendered on another layer on top of base texture. 
+* A common texture is repeatedly(tiling) rendered on another layer on top of base texture.
 * However, the main or base texture does not has enough resolution and, in most cases, is used for rendering terrain in the far side.
 * A matrix of high-resolution textures are used to rendering terrain surface near the camera position. For a 500*500 meter terrain.
-* there is usually 16*16 number of high-resolution images covering the entire terrain. If the high-resolution texture is absent, the base texture 
+* there is usually 16*16 number of high-resolution images covering the entire terrain. If the high-resolution texture is absent, the base texture
 * and the common texture is used instead.
 
 The main game engine communicates with the terrain engine through the CGlobalTerrain Class. Global Terrain is loaded
 from text based configuration files. There are two kinds of configuration files. See below
-- Configuration file for a single terrain. 
+- Configuration file for a single terrain.
 - Configuration file for a lattice based terrain.
 
 *
@@ -72,9 +72,9 @@ texture/data/detail1.jpg\n
 texture/data/detail2.jpg\n
 texture/data/detail3.jpg\n
 -- Format: (matrix.x, matrix.y)={nLayer0}[{nLayer1}][{nLayer2}][{nLayer3}] \n
--- nLayer{i} is the index into the detail texture list for the i th layer 
+-- nLayer{i} is the index into the detail texture list for the i th layer
 -- this section is optional and has been to mask file. see mask file section.\n
-(0,0) = {1}{2}\n 
+(0,0) = {1}{2}\n
 (2,4) = {1}\n
 (3,5) = {2}\n
 (3,15) = {0}{1}{2}\n
@@ -147,7 +147,7 @@ DWORD nCellCount; // number of cells , usually 8x8=64\n
 * @section format_tiledconfig File Format: Latticed Terrain Configuration
 *
 Lattice Terrain Specification. (pay attention to spaces between characters).
-It consists of the size of a terrain tile and a mapping from tile position to 
+It consists of the size of a terrain tile and a mapping from tile position to
 their single terrain configuration file. Please note the first line "type = lattice" is mandatory, otherwise
 it will be mistreated as a single terrain configuration.
 if there are multiple single configuration files for the same tile position, the first one will be used.
@@ -165,13 +165,13 @@ TileSize = 533.333\n
 *
 The file name must end with ".raw", for example. in the single terrain configuration file:
 Heightmapfile = terrain/data/LlanoElev.raw\n
-the engine will assume that the elevation file is of RAW terrain elevation, otherwise it is treated as 
-a gray scale image. In a gray scale image RGB(0.5,0.5,0.5) is of height 0. However, gray scale image has 
-only 8-bits levels, which is insufficient for most application. That is why I implemented the RAW terrain 
+the engine will assume that the elevation file is of RAW terrain elevation, otherwise it is treated as
+a gray scale image. In a gray scale image RGB(0.5,0.5,0.5) is of height 0. However, gray scale image has
+only 8-bits levels, which is insufficient for most application. That is why I implemented the RAW terrain
 Elevation file.
 \n
-The content of RAW elevation file is just a buffer of "float[nSize][nSize]", 
-please note that nSize must be power of 2 or power of 2 plus 1. i.e. 
+The content of RAW elevation file is just a buffer of "float[nSize][nSize]",
+please note that nSize must be power of 2 or power of 2 plus 1. i.e.
 nSize = (2*...*2) | (2*...*2+1);
 * \n
 * @section change_log Changes
@@ -179,16 +179,16 @@ nSize = (2*...*2) | (2*...*2+1);
 The following things are changed in ParaEngine during porting:
 (1) The latticed terrain engine is fully implemented.
 (2) RAW elevation file of (2*2*...*2+1) quad sized height map is supported.
-(3) Latticed configuration file is implemented. 
+(3) Latticed configuration file is implemented.
 (4) Single terrain configuration file is implemented.
 (5) HAPI CreateWorld is added. Quad tree depth is now automatically calculated.
 (6) Blank Terrain now defaults to a plane at y=0.
 (7) WoW terrain exporter implemented.
 (8) Global Report class support string value now and it internally uses map instead of list for all reporting items.
 (9) Latticed terrain rendering is now reported.
-(10) A detailed (none tessellation radius) is added. 
-(11) Tiled (or latticed)terrain objects are dynamically loaded into memory and automatically cached. 
-(12) No cracks between terrain tiles. 
+(10) A detailed (none tessellation radius) is added.
+(11) Tiled (or latticed)terrain objects are dynamically loaded into memory and automatically cached.
+(12) No cracks between terrain tiles.
 (13) detail texture logic has been moved to the tessellation process.
 (14) The latticed terrain cache uses an indexed map, which hashes (x,y) to an integer. x,y can be any integer(negative is OK)
 (15) Gray scale image is still supported. RGB(0.5,0.5,0.5) is regarded as 0 height.
@@ -196,45 +196,45 @@ The following things are changed in ParaEngine during porting:
 (17) The biped object is only normalized to terrain surface along the facing direction.
 (18) TODO:there is a bug with the free-mode camera
 - high-res texture tile is implemented. High res texture will be be dynamically loaded and deleted due to the camera view location.
-high-res texture usually has 16 or 32 times resolution than the low-res texture. The low-res texture is always persistent in 
-system memory;whereas high resolution textures are dynamically loaded and deleted from the system memory(also video memory). 
-A system cache for high-res textures is maintained. A hit count/miss is recorded with each cached texture. The total number of 
-cached high-res textures in memory is a constant, such as 40. Old textures are unloaded according to its hit count in the last 
-32 render frames, when the cache is full. There is a mechanism to prevent current used textures to be unloaded (in case that 
-all cached textures are being used simultaneously). 
+high-res texture usually has 16 or 32 times resolution than the low-res texture. The low-res texture is always persistent in
+system memory;whereas high resolution textures are dynamically loaded and deleted from the system memory(also video memory).
+A system cache for high-res textures is maintained. A hit count/miss is recorded with each cached texture. The total number of
+cached high-res textures in memory is a constant, such as 40. Old textures are unloaded according to its hit count in the last
+32 render frames, when the cache is full. There is a mechanism to prevent current used textures to be unloaded (in case that
+all cached textures are being used simultaneously).
 - it is important that high-res textures are also tilable, otherwise there will be noticeable seams between tiles.
 - texture coordinates are no longer generated, but computed at runtime.
 - chopped texture are no longer flipped, because I use texture coordinates larger than 1 for tiling.
-- Internally file system uses "boost 1.32.0". Currently, there are two boost version used in ParaEngine. 
+- Internally file system uses "boost 1.32.0". Currently, there are two boost version used in ParaEngine.
 the file system is linked as static library. It automatically select the release or debug version to link.
-The boost build system takes quite sometime to build. and I have put the boost 1.32.0 install directory to the boost folders. 
-- TODO: I want to use bump mapping for high-res textures. But it seems lots of work for the artists. 
+The boost build system takes quite sometime to build. and I have put the boost 1.32.0 install directory to the boost folders.
+- TODO: I want to use bump mapping for high-res textures. But it seems lots of work for the artists.
 Please refer to the terrain document 1.14. Emboss bump mapping may be used. But a more general UV bump mapping (bump/light maps)
 with reflective surfaces may be supported in future version.
-- A terrain buffer is used which is only rebuilt when the camera view is changed. 
+- A terrain buffer is used which is only rebuilt when the camera view is changed.
 - The terrain rendering has been further optimized by using a sorted set for texture grouping.
 
-- A sort by texture group is performed before rendering each texture cell. As a 
-result, we have to use triangular lists instead of triangular strips or fans. 
+- A sort by texture group is performed before rendering each texture cell. As a
+result, we have to use triangular lists instead of triangular strips or fans.
 - Texture and elevation file loader now uses D3DX texture functions.
 - Multi-texture is used when rendering the terrain with common and detailed textures.
 - Norm rendering with light can be enabled by defining _USE_NORMAL_ in config file.
 the terrain can also look very good when rendering with fog even if norm is not enabled.
 Norm consume much memory, so it is disabled by default.
-- see the config file for MAX_NUM_VISIBLE_TERRAIN_TRIANGLES. i.e. the maximum number 
+- see the config file for MAX_NUM_VISIBLE_TERRAIN_TRIANGLES. i.e. the maximum number
 of triangles to be rendered each frame. there will be cracks on the terrain if the number
 of needed terrain triangles exceed this number. typically you can set this value to a very
 large value.
-- See the render() function for more information. 
+- See the render() function for more information.
 - use the default render state and the following for better effect
 m_pd3dDevice->SetSamplerState( 0, D3DSAMP_MINFILTER, D3DTEXF_LINEAR );
 m_pd3dDevice->SetSamplerState( 0, D3DSAMP_MAGFILTER, D3DTEXF_LINEAR );
 m_pd3dDevice->SetSamplerState( 1, D3DSAMP_MINFILTER, D3DTEXF_LINEAR );
 m_pd3dDevice->SetSamplerState( 1, D3DSAMP_MAGFILTER, D3DTEXF_LINEAR );
 -  When loading the terrain the elevation scale means the distance between the highest terrain
-position and the lowest. the lowest is always 0. 
+position and the lowest. the lowest is always 0.
 - enable WIRED_TERRAIN in config to render terrain in wires
--  Ray tracing has been completely changed so that it is computed at runtime, no memory 
+-  Ray tracing has been completely changed so that it is computed at runtime, no memory
 consumption is needed. It might be a little slower than the original Demeter implementation,
 but is sufficiently fast for several times per frame calling rate.
 -  Original Demeter uses the z axis as the height, yet the para engine uses y axis. When doing
@@ -302,13 +302,13 @@ namespace ParaTerrain
 		// detailed terrain texture(with mask) has been modified.
 		MODIFIED_TEXTURE = 0x1,
 		// height map has modified
-		MODIFIED_HEIGHTMAP = 0x1<<1,
+		MODIFIED_HEIGHTMAP = 0x1 << 1,
 		// configuration such as base texture, common file, holes, etc has been modified.
-		MODIFIED_CONFIGURATION = 0x1<<2,
+		MODIFIED_CONFIGURATION = 0x1 << 2,
 		// holes have been changed. this should mean the same thing as MODIFIED_CONFIGURATION
-		MODIFIED_HOLES = 0x1<<3,
+		MODIFIED_HOLES = 0x1 << 3,
 		// if static objects have been modified, so that we will need to update the on load script
-		MODIFIED_ON_LOAD_SCRIPT = 0x1<<4,
+		MODIFIED_ON_LOAD_SCRIPT = 0x1 << 4,
 
 		MODIFIED_ALL = 0xffff
 	};
@@ -356,14 +356,14 @@ namespace ParaTerrain
 	using namespace ParaEngine;
 	class Terrain;
 	class CDetailTextureFactory;
-	
+
 	/** terrain mask file callback data */
 	class CTerrainMaskFileCallbackData : public boost::signals2::trackable
 	{
 	public:
-		CTerrainMaskFileCallbackData(Terrain *pTerrain) : m_pTerrain(pTerrain){}
+		CTerrainMaskFileCallbackData(Terrain* pTerrain) : m_pTerrain(pTerrain) {}
 
-		Terrain * m_pTerrain;
+		Terrain* m_pTerrain;
 
 		void OnMaskFileDownloaded(int nResult, AssetFileEntry* pAssetFileEntry);
 		// void operator()(int nResult, AssetFileEntry* pAssetFileEntry);
@@ -420,7 +420,7 @@ namespace ParaTerrain
 		/// The higher this number, the more memory the Terrain will use for tessellation.
 		/// \param offsetX Horizontal translation of this Terrain in world units. See Terrain::SetOffserX().
 		/// \param offsetY Vertical translation of this Terrain in world units. See Terrain::SetOffserY().
-		Terrain(const float *pElevations, int elevWidth, int elevHeight, const uint8 * pTextureImage, int textureWidth, int textureHeight, const uint8 * pDetailTextureImage, int detailWidth, int detailHeight, float vertexSpacing, float elevationScale, int maxNumTriangles, float offsetX = 0.0f, float offsetY = 0.0f);
+		Terrain(const float* pElevations, int elevWidth, int elevHeight, const uint8* pTextureImage, int textureWidth, int textureHeight, const uint8* pDetailTextureImage, int detailWidth, int detailHeight, float vertexSpacing, float elevationScale, int maxNumTriangles, float offsetX = 0.0f, float offsetY = 0.0f);
 
 		/// By using this constructor, you are specifying the layout of all of the vertices in the Terrain's mesh. This version
 		/// of the constructor creates a Terrain that is a flat plane with elevations of zero at all vertices. Otherwise, it is identical
@@ -436,7 +436,7 @@ namespace ParaTerrain
 		/// if your terrain is typical then a value of 40000 works well, but if you know your Terrain contains numerous canyons and
 		/// sharp cliffs that will tessellate to lots of triangles, you might need to raise this value to something on the order of 60000.
 		/// The higher this number, the more memory the Terrain will use for tessellation.
-		  Terrain(int widthVertices, int heightVertices, float vertexSpacing, int maxNumTriangles);
+		Terrain(int widthVertices, int heightVertices, float vertexSpacing, int maxNumTriangles);
 		/// \brief Constructs a (mostly) empty terrain suitable for use by an ElevationLoader.
 		/// \param maxNumTriangles The maximum number of triangles that the Terrain is allowed to tessellate to when rendering.
 		/// This number should be relatively high and is chosen based on what you know about the geometry of your terrain. For example,
@@ -445,66 +445,66 @@ namespace ParaTerrain
 		/// The higher this number, the more memory the Terrain will use for tessellation.
 		/// \param offsetX Horizontal translation of this Terrain in world units. See Terrain::SetOffserX().
 		/// \param offsetY Vertical translation of this Terrain in world units. See Terrain::SetOffserY().
-		  Terrain(int maxNumTriangles, float offsetX, float offsetY);
-		 ~Terrain();
+		Terrain(int maxNumTriangles, float offsetX, float offsetY);
+		~Terrain();
 	public:
-		 //////////////////////////////////////////////////////////////////////////
-		 // implementation of IAttributeFields
+		//////////////////////////////////////////////////////////////////////////
+		// implementation of IAttributeFields
 
-		 /** attribute class ID should be identical, unless one knows how overriding rules work.*/
-		 virtual int GetAttributeClassID(){return ATTRIBUTE_CLASSID_CTerrainObject;}
-		 /** a static string, describing the attribute class object's name */
-		 virtual const char* GetAttributeClassName(){static const char name[] = "CTerrain"; return name;}
-		 /** a static string, describing the attribute class object */
-		 virtual const char* GetAttributeClassDescription(){static const char desc[] = ""; return desc;}
-		 /** this class should be implemented if one wants to add new attribute. This function is always called internally.*/
-		 virtual int InstallFields(CAttributeClass* pClass, bool bOverride);
-		 /**
-		 * Invoke an (external) editor for a given field. This is usually for NPL script field
-		 * @param nFieldID : field ID
-		 * @param sParameters : the parameter passed to the editor
-		 * @return true if editor is invoked, false if failed or field has no editor. 
-		 */
-		 virtual bool InvokeEditor(int nFieldID, const string& sParameters);
-		 
-		 ATTRIBUTE_METHOD1(Terrain, IsModified_s, bool*)		{*p1 = cls->IsModified(); return S_OK;}
-		 ATTRIBUTE_METHOD1(Terrain, SetModified_s, bool)		{cls->SetModified(p1); return S_OK;}
+		/** attribute class ID should be identical, unless one knows how overriding rules work.*/
+		virtual int GetAttributeClassID() { return ATTRIBUTE_CLASSID_CTerrainObject; }
+		/** a static string, describing the attribute class object's name */
+		virtual const char* GetAttributeClassName() { static const char name[] = "CTerrain"; return name; }
+		/** a static string, describing the attribute class object */
+		virtual const char* GetAttributeClassDescription() { static const char desc[] = ""; return desc; }
+		/** this class should be implemented if one wants to add new attribute. This function is always called internally.*/
+		virtual int InstallFields(CAttributeClass* pClass, bool bOverride);
+		/**
+		* Invoke an (external) editor for a given field. This is usually for NPL script field
+		* @param nFieldID : field ID
+		* @param sParameters : the parameter passed to the editor
+		* @return true if editor is invoked, false if failed or field has no editor.
+		*/
+		virtual bool InvokeEditor(int nFieldID, const string& sParameters);
 
-		 ATTRIBUTE_METHOD1(Terrain, IsEmpty_s, bool*)		{*p1 = cls->IsEmpty(); return S_OK;}
+		ATTRIBUTE_METHOD1(Terrain, IsModified_s, bool*) { *p1 = cls->IsModified(); return S_OK; }
+		ATTRIBUTE_METHOD1(Terrain, SetModified_s, bool) { cls->SetModified(p1); return S_OK; }
 
-		 ATTRIBUTE_METHOD1(Terrain, GetSize_s, float*)		{*p1 = cls->GetWidth(); return S_OK;}
+		ATTRIBUTE_METHOD1(Terrain, IsEmpty_s, bool*) { *p1 = cls->IsEmpty(); return S_OK; }
 
-		 ATTRIBUTE_METHOD1(Terrain, GetOnloadScript_s, const char**)		{*p1 = cls->GetOnloadScript().c_str(); return S_OK;}
+		ATTRIBUTE_METHOD1(Terrain, GetSize_s, float*) { *p1 = cls->GetWidth(); return S_OK; }
 
-		 ATTRIBUTE_METHOD1(Terrain, GetTerrainElevFile_s, const char**)		{*p1 = cls->GetTerrainElevFile().c_str(); return S_OK;}
+		ATTRIBUTE_METHOD1(Terrain, GetOnloadScript_s, const char**) { *p1 = cls->GetOnloadScript().c_str(); return S_OK; }
 
-		 ATTRIBUTE_METHOD1(Terrain, GetTerrainConfigFile_s, const char**)		{*p1 = cls->GetTerrainConfigFile().c_str(); return S_OK;}
+		ATTRIBUTE_METHOD1(Terrain, GetTerrainElevFile_s, const char**) { *p1 = cls->GetTerrainElevFile().c_str(); return S_OK; }
 
-		 ATTRIBUTE_METHOD1(Terrain, GetTerrainBaseTextureFile_s, const char**)		{*p1 = cls->GetTerrainBaseTextureFile().c_str(); return S_OK;}
-		 ATTRIBUTE_METHOD1(Terrain, SetTerrainBaseTextureFile_s, const char*)	{cls->SetTerrainBaseTextureFile(p1); return S_OK;}
+		ATTRIBUTE_METHOD1(Terrain, GetTerrainConfigFile_s, const char**) { *p1 = cls->GetTerrainConfigFile().c_str(); return S_OK; }
 
-		 ATTRIBUTE_METHOD1(Terrain, GetTerrainCommonTextureFile_s, const char**)		{*p1 = cls->GetTerrainCommonTextureFile().c_str(); return S_OK;}
-		 ATTRIBUTE_METHOD1(Terrain, SetTerrainCommonTextureFile_s, const char*)	{cls->SetTerrainCommonTextureFile(p1); return S_OK;}
+		ATTRIBUTE_METHOD1(Terrain, GetTerrainBaseTextureFile_s, const char**) { *p1 = cls->GetTerrainBaseTextureFile().c_str(); return S_OK; }
+		ATTRIBUTE_METHOD1(Terrain, SetTerrainBaseTextureFile_s, const char*) { cls->SetTerrainBaseTextureFile(p1); return S_OK; }
 
-		 ATTRIBUTE_METHOD1(Terrain, GetNumOfRegions_s, int*)		{*p1 = cls->GetNumOfRegions(); return S_OK;}
+		ATTRIBUTE_METHOD1(Terrain, GetTerrainCommonTextureFile_s, const char**) { *p1 = cls->GetTerrainCommonTextureFile().c_str(); return S_OK; }
+		ATTRIBUTE_METHOD1(Terrain, SetTerrainCommonTextureFile_s, const char*) { cls->SetTerrainCommonTextureFile(p1); return S_OK; }
 
-		 ATTRIBUTE_METHOD1(Terrain, GetCurrentRegionIndex_s, int*)		{*p1 = cls->GetCurrentRegionIndex(); return S_OK;}
-		 ATTRIBUTE_METHOD1(Terrain, SetCurrentRegionIndex_s, int)		{cls->SetCurrentRegionIndex(p1); return S_OK;}
+		ATTRIBUTE_METHOD1(Terrain, GetNumOfRegions_s, int*) { *p1 = cls->GetNumOfRegions(); return S_OK; }
 
-		 ATTRIBUTE_METHOD1(Terrain, GetCurrentRegionName_s, const char**)		{*p1 = cls->GetCurrentRegionName().c_str(); return S_OK;}
-		 ATTRIBUTE_METHOD1(Terrain, SetCurrentRegionName_s, const char*)	{cls->SetCurrentRegionName(p1); return S_OK;}
+		ATTRIBUTE_METHOD1(Terrain, GetCurrentRegionIndex_s, int*) { *p1 = cls->GetCurrentRegionIndex(); return S_OK; }
+		ATTRIBUTE_METHOD1(Terrain, SetCurrentRegionIndex_s, int) { cls->SetCurrentRegionIndex(p1); return S_OK; }
 
-		 ATTRIBUTE_METHOD1(Terrain, GetCurrentRegionFilepath_s, const char**)		{*p1 = cls->GetCurrentRegionFilepath().c_str(); return S_OK;}
-		 ATTRIBUTE_METHOD1(Terrain, SetCurrentRegionFilepath_s, const char*)	{cls->SetCurrentRegionFilepath(p1); return S_OK;}
+		ATTRIBUTE_METHOD1(Terrain, GetCurrentRegionName_s, const char**) { *p1 = cls->GetCurrentRegionName().c_str(); return S_OK; }
+		ATTRIBUTE_METHOD1(Terrain, SetCurrentRegionName_s, const char*) { cls->SetCurrentRegionName(p1); return S_OK; }
 
-		 /**
-		 * clean up all 
-		 */
-		 void Cleanup();
+		ATTRIBUTE_METHOD1(Terrain, GetCurrentRegionFilepath_s, const char**) { *p1 = cls->GetCurrentRegionFilepath().c_str(); return S_OK; }
+		ATTRIBUTE_METHOD1(Terrain, SetCurrentRegionFilepath_s, const char*) { cls->SetCurrentRegionFilepath(p1); return S_OK; }
+
+		/**
+		* clean up all
+		*/
+		void Cleanup();
 
 		/** whether the terrain geometry, texture has been modified. If any of them has been modified, this function will return true. */
 		bool IsModified();
-		/** return true if any part specified in dwModifiedBits has been modified. see TERRAIN_MODIFIED_BITS. 
+		/** return true if any part specified in dwModifiedBits has been modified. see TERRAIN_MODIFIED_BITS.
 		* @param dwModifiedBits: this is any combination of TERRAIN_MODIFIED_BITS. */
 		bool IsModified(DWORD dwModifiedBits);
 		/** Turn on/off the specified flag indicating whether the terrain has been modified or not.
@@ -527,9 +527,9 @@ namespace ParaTerrain
 
 		/**
 		* Breaks the Terrain down into triangles strips.
-		* Based on the current viewing parameters, this method breaks the terrain down into a 
-		* visually optimum set of triangles that can be rendered. Normally, an application will never 
-		* call this method directly, but will instead call the method ModelViewMatrixChanged() to allow 
+		* Based on the current viewing parameters, this method breaks the terrain down into a
+		* visually optimum set of triangles that can be rendered. Normally, an application will never
+		* call this method directly, but will instead call the method ModelViewMatrixChanged() to allow
 		* Demeter to take care of this automatically.
 		*/
 		int Tessellate();
@@ -537,7 +537,7 @@ namespace ParaTerrain
 		* repair cracks during tessellation.
 		* the triangle strips built from Tessellate() will has cracks between neighboring triangles of different size.
 		* in these cases, the bigger triangle strips are replaced with triangle fans, so that there will be no cracks.
-		* Here "cracks" means that the surface is not a continuous surface. 
+		* Here "cracks" means that the surface is not a continuous surface.
 		* @see Tessellate()
 		*/
 		void RepairCracks();
@@ -548,8 +548,8 @@ namespace ParaTerrain
 		*/
 		void RebuildRenderBuffer();
 		/**
-		* Render the terrain from Render Buffer. 
-		* Applications should always call ModelViewMatrixChanged() at least once prior to calling 
+		* Render the terrain from Render Buffer.
+		* Applications should always call ModelViewMatrixChanged() at least once prior to calling
 		* Render(), so that Demeter will have a chance to tessellate the terrain.
 		* @see RebuildRenderBuffer()
 		*/
@@ -598,13 +598,13 @@ namespace ParaTerrain
 		/// \param y The y location of the point on the Terrain's surface in world units.
 		float GetElevationW(float x, float y) const;
 
-		/** get value of a given terrain region layer 
+		/** get value of a given terrain region layer
 		* @param x The x location of the point on the Terrain's surface in local units.
 		* @param y The y location of the point on the Terrain's surface in local units.
 		*/
 		DWORD GetRegionValue(const string& sLayerName, float x, float y);
 
-		/** get value of a given terrain region layer 
+		/** get value of a given terrain region layer
 		* @param x The x location of the point on the Terrain's surface in world units.
 		* @param y The y location of the point on the Terrain's surface in world units.
 		*/
@@ -620,14 +620,14 @@ namespace ParaTerrain
 		/// \param normalX Gets filled with the surface normal x component
 		/// \param normalY Gets filled with the surface normal y component
 		/// \param normalZ Gets filled with the surface normal z component
-		void GetNormal(float x, float y, float &normalX, float &normalY, float &normalZ) const;
+		void GetNormal(float x, float y, float& normalX, float& normalY, float& normalZ) const;
 		/// \brief Returns the surface normal of the terrain at the specified point.
 		/// \param x The x location of the point on the Terrain's surface in world units.
 		/// \param y The y location of the point on the Terrain's surface in world units.
 		/// \param normalX Gets filled with the surface normal x component
 		/// \param normalY Gets filled with the surface normal y component
 		/// \param normalZ Gets filled with the surface normal z component
-		void GetNormalW(float x, float y, float &normalX, float &normalY, float &normalZ) const;
+		void GetNormalW(float x, float y, float& normalX, float& normalY, float& normalZ) const;
 		/// \brief Returns the elevation (z-coordinate) in real units of the highest point on the terrain.
 		float GetMaxElevation() const;
 		/// \brief Returns the index of the vertex closest to the specified point.
@@ -651,7 +651,7 @@ namespace ParaTerrain
 		/// \param y The y location of the point on the Terrain's surface in local units.
 		/// \param newElevation The new z-value (elevation) of the vertex to be set.
 		void SetVertexElevation(float x, float y, float newElevation);
-		
+
 		/// set a new terrain hole at the specified location.
 		/// Currently, we will allow user to dynamically dig holes in terrain. After calling this function,
 		/// the user must manually Call UpdateHoles() to inform that the holes in the terrain has been updated.
@@ -692,7 +692,7 @@ namespace ParaTerrain
 		/// create hole map from terrain hole map.
 		/// @param pHoleData: if this value is NULL, a blank hole map without any holes will be created.
 		/// Otherwise, it is interpreted as an array of X*X BYTE values. If the BYTE value is 1, it is interpreted as a hole, otherwise it is false. 
-		void CreateHoleMap(BYTE* pHoleData=NULL, int nLength = 0);
+		void CreateHoleMap(BYTE* pHoleData = NULL, int nLength = 0);
 
 		/// \brief Recalculates bounding box for the quad spanning from vertex 1 to vertex 2
 		/// \param index1 The index of the top-left vertex
@@ -717,7 +717,7 @@ namespace ParaTerrain
 		/// vertexSpacing parameter, then the resulting Terrain will be 10240 x 10240 world units in size.
 		/// \param elevationScale A scaling factor that is applied to all of the values in the pElevations array. Most
 		/// applications will pass a 1.0 for this value since presumably pElevations was built by the application.
-		void SetAllElevations(const float *pElevations, int elevWidth, int elevHeight, float fTerrainSize, float elevationScale = 1.0f);
+		void SetAllElevations(const float* pElevations, int elevWidth, int elevHeight, float fTerrainSize, float elevationScale = 1.0f);
 		/// \brief Returns the total number of vertices in the terrain's mesh.
 		int GetNumberOfVertices() const;
 		/// \brief Returns the width (in vertices) of the terrain's texture cells. See the TextureCell class.
@@ -740,14 +740,14 @@ namespace ParaTerrain
 		/// this array should be 9,437,184 bytes in size. You can pass NULL for this parameter to build a Terrain with no texture.
 		/// \param width The width of the texture image in pixels.
 		/// \param height The height of the texture image in pixels.
-		bool SetTexture(const uint8 * pTextureImage, int width, int height);
+		bool SetTexture(const uint8* pTextureImage, int width, int height);
 		/**
 		* Set the base texture to texture cells. The base texture will be chopped according to the texture cell configuration.
 		* e.g. if the texture cell is 8x8, then the base texture is chopped to 64 small textures and set to each texture cell.
 		* @param numTextureCellsX: The number of cells in the X direction of this Terrain's grid of TextureCells.
 		* @param numTextureCellsY: The number of cells in the Y direction of this Terrain's grid of TextureCells.
 		*/
-		bool SetBaseTexture(const string& filename, int numTextureCellsX=8, int numTextureCellsY=8);
+		bool SetBaseTexture(const string& filename, int numTextureCellsX = 8, int numTextureCellsY = 8);
 		/// \brief Uses the specified graphics image to apply a "common" texture to the entire surface of 
 		/// the terrain. 
 
@@ -761,14 +761,14 @@ namespace ParaTerrain
 		/// this array should be 9,437,184 bytes in size. You can pass NULL for this parameter to build a Terrain with no texture.
 		/// \param width The width of the texture image in pixels.
 		/// \param height The height of the texture image in pixels.
-		bool SetCommonTexture(const uint8 * pImage, int width, int height);
+		bool SetCommonTexture(const uint8* pImage, int width, int height);
 		/// \brief Uses the specified Texture to apply a "common" texture to the entire surface of 
 		/// the terrain. 
 
 		/**
-		* A common texture is repeated across the entire terrain and is blended with the 
-		* terrain's overall texture (if blending is supported by the user's hardware.) 
-		* This is used to provide a texture to give the ground some definition when the camera is 
+		* A common texture is repeated across the entire terrain and is blended with the
+		* terrain's overall texture (if blending is supported by the user's hardware.)
+		* This is used to provide a texture to give the ground some definition when the camera is
 		* close to the ground, but is an inferior to alternative to the use of specific DetailTexture instances.
 		*/
 		void SetCommonTexture(const char* fileName);
@@ -778,10 +778,10 @@ namespace ParaTerrain
 		/// This is used to provide a texture to give the ground some definition when the camera is 
 		/// close to the ground, but is an inferior to alternative to the use of specific DetailTexture instances.
 		/// \param pTexture A Texture object to use as the common texture.
-		void SetCommonTexture(Texture * pTexture);
+		void SetCommonTexture(Texture* pTexture);
 		/// \brief Returns the Texture object representing the common texture that has been applied to the Terrain, if any.
-		Texture *GetCommonTexture() const;
-		
+		Texture* GetCommonTexture() const;
+
 		/// \brief Notifies Demeter that OpenGL's modelview matrix has been modified, allowing Demeter 
 		/// to tessellate the terrain based on the new modelview matrix. 
 		/// It is IMPERATIVE that his method be called every time the modelview matrix is changed, even 
@@ -790,29 +790,29 @@ namespace ParaTerrain
 		/// be rendered.
 		int ModelViewMatrixChanged();
 
-		/** Indicates whether or not the specified cuboid is inside of the viewing frustum 
+		/** Indicates whether or not the specified cuboid is inside of the viewing frustum
 		* (as defined at the previous call to ModelViewMatrixChanged().)
-		* @param cuboid : The box to test. make sure this is in local terrain coordinate system. 
-		* @return: 
+		* @param cuboid : The box to test. make sure this is in local terrain coordinate system.
+		* @return:
 		* 2 requires more testing(meaning either intersecting)
 		* 1 is fast accept(meaning the box is fully inside the frustum)
-		* 0 is fast reject, 
+		* 0 is fast reject,
 		*/
-		int CuboidInFrustum(const CShapeBox & cuboid) const;
+		int CuboidInFrustum(const CShapeBox& cuboid) const;
 		/**
 		* return true if the cuboid intersect with the Fog End radius
-		* @param cuboid: make sure this is in local terrain coordinate system. 
+		* @param cuboid: make sure this is in local terrain coordinate system.
 		*/
-		bool CuboidInFogRadius(const CShapeBox & cuboid) const;
+		bool CuboidInFogRadius(const CShapeBox& cuboid) const;
 
 		/** return which side the cuboid is on */
-		Plane::Side GetCuboidFogSide(const CShapeBox & cuboid) const;
+		Plane::Side GetCuboidFogSide(const CShapeBox& cuboid) const;
 
 		/** convert the box to render coordinate system */
-		void BoxToRenderCoordinate(CShapeBox & cuboid) const;
+		void BoxToRenderCoordinate(CShapeBox& cuboid) const;
 
 		/** get a length matrics from the box to the current eye position. */
-		float GetBoxToEyeMatrics(const CShapeBox & cuboid) const;
+		float GetBoxToEyeMatrics(const CShapeBox& cuboid) const;
 
 		/// \brief Casts a ray from the specified point, in the specified direction, and calculates the ray's point of intersection with the terrain. 
 		/// This method makes use of the terrain's quad tree to optimize the ray-tracing.
@@ -828,7 +828,7 @@ namespace ParaTerrain
 		/// \param intersectX Filled with the intersection point of this ray with the Terrain surface.
 		/// \param intersectY Filled with the intersection point of this ray with the Terrain surface.
 		/// \param intersectZ Filled with the intersection point of this ray with the Terrain surface.
-		float IntersectRayW(float startX, float startY, float startZ, float dirX, float dirY, float dirZ, float &intersectX, float &intersectY, float &intersectZ, float fMaxDistance = INFINITY);
+		float IntersectRayW(float startX, float startY, float startZ, float dirX, float dirY, float dirZ, float& intersectX, float& intersectY, float& intersectZ, float fMaxDistance = INFINITY);
 
 		/// \brief Casts a ray from the specified point, in the specified direction, and calculates the ray's point of intersection with the terrain. 
 		/// This method makes use of the terrain's quad tree to optimize the ray-tracing.
@@ -844,7 +844,7 @@ namespace ParaTerrain
 		/// \param intersectX Filled with the intersection point of this ray with the Terrain surface.
 		/// \param intersectY Filled with the intersection point of this ray with the Terrain surface.
 		/// \param intersectZ Filled with the intersection point of this ray with the Terrain surface.
-		float IntersectRay(float startX, float startY, float startZ, float dirX, float dirY, float dirZ, float &intersectX, float &intersectY, float &intersectZ, float fMaxDistance = INFINITY);
+		float IntersectRay(float startX, float startY, float startZ, float dirX, float dirY, float dirZ, float& intersectX, float& intersectY, float& intersectZ, float fMaxDistance = INFINITY);
 		/// \brief An overload of IntersectRay that also provides information about the texture coordinates of the intersected point in addition the position of the point.
 		/// if the ray intersect with holes in the terrain, a negative value will be returned as well.
 		/// IMPORTANT: it is assumed that the ray is specified in local coordinate system
@@ -862,7 +862,7 @@ namespace ParaTerrain
 		/// \param textureCellY Filled with the Y position of the intersected TextureCell object in the Terrain's grid of TextureCells.
 		/// \param texU Filled with the coordinate within the TextureCell where the intersection point is (range from 0.0 to 1.0.)
 		/// \param texV Filled with the coordinate within the TextureCell where the intersection point is (range from 0.0 to 1.0.)
-		float IntersectRay(float startX, float startY, float startZ, float dirX, float dirY, float dirZ, float &intersectX, float &intersectY, float &intersectZ, int &textureCellX, int &textureCellY, float &texU, float &texV, float fMaxDistance = INFINITY);
+		float IntersectRay(float startX, float startY, float startZ, float dirX, float dirY, float dirZ, float& intersectX, float& intersectY, float& intersectZ, int& textureCellX, int& textureCellY, float& texU, float& texV, float fMaxDistance = INFINITY);
 		/// \brief Quickly find the 3D point on the terrain where a given point on the screen is (for example, for mouse picking.) 
 
 		/// This is cheaper and faster than using the ray tracing methods, but far less accurate.
@@ -875,7 +875,7 @@ namespace ParaTerrain
 		/// \param pickedY Filled with the picked point on Terrain surface.
 		/// \param pickedZ Filled with the picked point on Terrain surface.
 		/// \return Returns false is the picked point is not on the Terrain.
-		bool Pick(int screenX, int screenY, float &pickedX, float &pickedY, float &pickedZ) const;
+		bool Pick(int screenX, int screenY, float& pickedX, float& pickedY, float& pickedZ) const;
 		/// \brief Quickly find the 3D point on the terrain where a given point on the screen is (for example, for mouse picking.) 
 
 		/// This is cheaper and faster than using the ray tracing methods, but far less accurate.
@@ -892,7 +892,7 @@ namespace ParaTerrain
 		/// \param texU Filled with the coordinate within the TextureCell where the intersection point is (range from 0.0 to 1.0.)
 		/// \param texV Filled with the coordinate within the TextureCell where the intersection point is (range from 0.0 to 1.0.)
 		/// \return Returns false is the picked point is not on the Terrain.
-		bool Pick(int screenX, int screenY, float &pickedX, float &pickedY, float &pickedZ, int &textureCellX, int &textureCellY, float &texU, float &texV) const;
+		bool Pick(int screenX, int screenY, float& pickedX, float& pickedY, float& pickedZ, int& textureCellX, int& textureCellY, float& texU, float& texV) const;
 		/// \brief Returns the texture coordinates of a given point on the terrain in world coordinates.
 		/// \param x The x location of the point on the Terrain's surface in world units.
 		/// \param y The y location of the point on the Terrain's surface in world units.
@@ -900,7 +900,7 @@ namespace ParaTerrain
 		/// \param textureCellY Filled with the Y position of the intersected TextureCell object in the Terrain's grid of TextureCells.
 		/// \param texU Filled with the coordinate within the TextureCell where the intersection point is (range from 0.0 to 1.0.)
 		/// \param texV Filled with the coordinate within the TextureCell where the intersection point is (range from 0.0 to 1.0.)
-		void GetTextureCoordinates(float x, float y, int &textureCellX, int &textureCellY, float &texU, float &texV) const;
+		void GetTextureCoordinates(float x, float y, int& textureCellX, int& textureCellY, float& texU, float& texV) const;
 		/// \brief Paints a "splat" of the specified shared texture at the specified position on the terrain in world coordinates.
 
 		/// See the TextureSet class for details on how to get a detailTextureIndex for painting.
@@ -922,47 +922,47 @@ namespace ParaTerrain
 		/// \brief Gets this Terrain object's location within a lattice of Terrains that are being managed by a TerrainLattice object.
 		/// \param x Filled with the position within a TerrainLattice object's grid of Terrains that this object fills.
 		/// \param y Filled with the position within a TerrainLattice object's grid of Terrains that this object fills.
-		void GetLatticePosition(int &x, int &y);
+		void GetLatticePosition(int& x, int& y);
 		/// \brief Installs an application-provided TextureFactory, disabling the default one supplied by 
 		/// Demeter. This allows applications to manage textures for themselves.
 		/// \param pFactory A pointer to your TextureFactory object that will serve textures to this instance of Terrain.
-		void SetTextureFactory(TextureFactory * pFactory);
+		void SetTextureFactory(TextureFactory* pFactory);
 		/// \brief Gets the TextureCell at the specified position within this Terrain's grid of cells.
 		/// \param index The index of the TextureCell within this Terrain's grid of TextureCells.
-		TextureCell * GetTextureCell(int index);
+		TextureCell* GetTextureCell(int index);
 		/**
-		* Get the texture cell by world coordinate position. 
+		* Get the texture cell by world coordinate position.
 		*/
-		TextureCell * GetTextureCellW(float x, float y);
+		TextureCell* GetTextureCellW(float x, float y);
 		/// \brief Gets the TextureCell at the specified position within this Terrain's grid of cells.                                  
 		/// \param textureCellX The x position of the TextureCell within this Terrain's grid of TextureCells.
 		/// \param textureCellY The y position of the TextureCell within this Terrain's grid of TextureCells.
-		TextureCell * GetTextureCell(int textureCellX, int textureCellY);
+		TextureCell* GetTextureCell(int textureCellX, int textureCellY);
 		/// \brief Writes a binary "surface" file for fine-grained detail textures. 
 		/// \deprecated This file format has been replaced by the Demeter Texture Editor XML format.
 		/// \param szFilename A filename to write to. The media path will be prepended to this file. See Settings::SetMediaPath().
-		void Write(char *szFilename);
+		void Write(char* szFilename);
 		/// \brief Reads a binary "surface" file for fine-grained detail textures. NOTE: the format of this file will be changed soon.
 		/// \deprecated This file format has been replaced by the Demeter Texture Editor XML format.
 		/// \param szFilename A filename to read from. The media path will be prepended to this file. See Settings::SetMediaPath().
-		void Read(char *szFilename);
+		void Read(char* szFilename);
 		/// \brief Gets the TextureSet that represents this Terrain object's pool of shared Textures.
-		TextureSet *GetTextureSet();
+		TextureSet* GetTextureSet();
 		/// \brief Sets the TextureSet that represents this Terrain object's pool of shared Textures.
 		/// replacing the default one that was created automatically.
 		/// \param pTextureSet The new TextureSet, presumably one that was created by your application.
-		void SetTextureSet(TextureSet * pTextureSet);
+		void SetTextureSet(TextureSet* pTextureSet);
 		/// \brief Installs a new TextureCell at the specified position within this Terrain's grid of
 		/// TextureCells.
 		/// \param index The index of the TextureCell within this Terrain's grid of TextureCells.
 		/// \param pCell The new TextureCell to install, presumably one that was created by your application.
-		void SetTextureCell(int index, TextureCell * pCell);
+		void SetTextureCell(int index, TextureCell* pCell);
 		/// \brief Write all of this Terrain's textures to raw binary files.
 		/// \param szTerrainName A filename to write to. The media path will be prepended to this file. See Settings::SetMediaPath().
-		void WriteRawTextures(const char *szTerrainName);
+		void WriteRawTextures(const char* szTerrainName);
 		/// \brief Write all of this Terrain's vertices to a raw binary file.
 		/// \param szFilename A filename to write to. The media path will be prepended to this file. See Settings::SetMediaPath().
-		void WriteRawElevations(const char *szFilename);
+		void WriteRawElevations(const char* szFilename);
 		/// \brief Sets the size of this Terrain's grid of TextureCell objects. 
 
 		/// You must specify a number of cells such that the following equation evalues to integral values for
@@ -981,18 +981,18 @@ namespace ParaTerrain
 		/// \param numTextureCellsY The number of cells in the Y direction of this Terrain's grid of TextureCells.
 		void AllocateTextureCells(int numTextureCellsX, int numTextureCellsY);
 		/// \brief \deprecated Formerly used by TerrainLattice for procedural textures.
-		void GenerateTexture(int widthTexels, int heightTexels, const char *szGeneratorName);
+		void GenerateTexture(int widthTexels, int heightTexels, const char* szGeneratorName);
 		/// \brief \deprecated Formerly used by TerrainLattice for procedural textures.
-		void GenerateTexture(int widthTexels, int heightTexels, TextureGenerator * pGenerator);
+		void GenerateTexture(int widthTexels, int heightTexels, TextureGenerator* pGenerator);
 		/// \brief \deprecated Formerly used by TerrainLattice for procedural textures.
-		static void RegisterTextureGenerator(std::string name, TextureGenerator * pGenerator);
+		static void RegisterTextureGenerator(std::string name, TextureGenerator* pGenerator);
 		/// \brief \deprecated Formerly used by TerrainLattice for procedural textures.
 		static void RegisterDefaultGenerators();
 		/// \brief Returns the width of the overall terrain texture in pixels.
 		int GetBaseTextureWidth();
 		/// \brief Returns the height of the overall terrain texture in pixels.
 		int GetBaseTextureHeight();
-		
+
 		/// \brief Increment the reference count by one, indicating that this object has another pointer which is referencing it.
 
 		/// This method is provided for use of Demeter with the Open Scene Graph.
@@ -1012,24 +1012,24 @@ namespace ParaTerrain
 				delete this;
 		}
 		/// \brief Gets the raw bits of the alpha mask of the specified detail texture within the specified TextureCell.
-		uint8 *GetMaskBits(int textureCellX, int textureCellY, int detailIndex, int &maskWidth, int &maskHeight);
+		uint8* GetMaskBits(int textureCellX, int textureCellY, int detailIndex, int& maskWidth, int& maskHeight);
 		/// \brief Unbinds and rebinds the alpha mask of the specified TextureCell so that changes to the mask become visible when rendering.
 		void ReloadMask(int textureCellX, int textureCellY, int detailIndex);
 
-		/** load the terrain mask file from disk once again. This function only works when terrain is not editable. 
-		* otherwise there is no need to load mask file manually here. This function is called when device is lost. 
-		* @param bForceReload: if true, it will reload mask file from disk. 
+		/** load the terrain mask file from disk once again. This function only works when terrain is not editable.
+		* otherwise there is no need to load mask file manually here. This function is called when device is lost.
+		* @param bForceReload: if true, it will reload mask file from disk.
 		*/
 		void LoadMaskFromDisk(bool bForceReload = false);
 
-		/** normalize the given texture mask layer, so that the alpha of the specified layer is unchanged and 
-		* the sum of all alpha values of all mask layers at all pixels in the cell is 1. 
-		* it is good practice to keep every pixel mask normalized, so that we do not get overly lighted terrain surface. 
+		/** normalize the given texture mask layer, so that the alpha of the specified layer is unchanged and
+		* the sum of all alpha values of all mask layers at all pixels in the cell is 1.
+		* it is good practice to keep every pixel mask normalized, so that we do not get overly lighted terrain surface.
 		* @param detailIndex: if this is -1, the base layer is used
 		* @param bReload: if true, it will reload all mask layers
-		* @return: the number of layers affected. 
+		* @return: the number of layers affected.
 		*/
-		int NormalizeMask(int textureCellX, int textureCellY, int detailIndex, bool bReload=true);
+		int NormalizeMask(int textureCellX, int textureCellY, int detailIndex, bool bReload = true);
 
 		/// \brief Set this Terrain object's origin.
 		/// This is used by the TerrainLattice class when a grid of Terrains is being managed, but can also be used as a simple way to apply translation to a Terrain.
@@ -1042,26 +1042,26 @@ namespace ParaTerrain
 
 		/// This is used by the TerrainLattice class when a grid of Terrains is being managed, but can also be used as a simple way to apply translation to a Terrain.
 		float GetOffsetY() const;
-		
+
 		void DigCrater(float centerX, float centerY, float radius, int textureId = -1);
 
-		void GetVertices(float centerX, float centerY, float radius, std::vector < TerrainVertex > &vertices);
+		void GetVertices(float centerX, float centerY, float radius, std::vector < TerrainVertex >& vertices);
 
 		/** get the on load script which created all objects on this terrain.*/
 		const string& GetOnloadScript();
-		
+
 		/** get the terrain elevation file */
 		const string& GetTerrainElevFile();
-		
+
 		/** get the terrain elevation file */
-		const string& GetTerrainConfigFile() {return m_sConfigFile;};
-		
+		const string& GetTerrainConfigFile() { return m_sConfigFile; };
+
 		/** get the terrain base texture file */
-		const string& GetTerrainBaseTextureFile(){return m_sBaseTextureFile; };
+		const string& GetTerrainBaseTextureFile() { return m_sBaseTextureFile; };
 		void SetTerrainBaseTextureFile(const string& str);
 
 		/** get the terrain common texture file */
-		const string& GetTerrainCommonTextureFile(){return m_sCommonTextureFile; };
+		const string& GetTerrainCommonTextureFile() { return m_sCommonTextureFile; };
 		void SetTerrainCommonTextureFile(const string& str);
 
 
@@ -1070,14 +1070,14 @@ namespace ParaTerrain
 
 		/**
 		* Get the bounding boxes for a given view frustum. The returned boxes are always in world coordinate with render origin applied  and transform by modelView
-		* @param boxes [in|out] 
-		* @param modelView: if not null, all returned boxes will be transformed by it, before testing with the frustum 
+		* @param boxes [in|out]
+		* @param modelView: if not null, all returned boxes will be transformed by it, before testing with the frustum
 		* @param frustum: the view frustum to test against.
 		* @param nMaxBoxesNum: maximum number of boxes returned. Since it internally uses a breadth first traversal of the terrain quad tree,
 		*	larger boxes will return when there are more boxes in the frustum than nMaxBoxesNum
-		* @param nSmallestBoxStride what is the stride size of the smallest boxes returned. 
+		* @param nSmallestBoxStride what is the stride size of the smallest boxes returned.
 		*/
-		void GetBoundingBoxes(vector<CShapeAABB>& boxes, const Matrix4* modelView, const CShapeFrustum& frustum, int nMaxBoxesNum=1024, int nSmallestBoxStride=4);
+		void GetBoundingBoxes(vector<CShapeAABB>& boxes, const Matrix4* modelView, const CShapeFrustum& frustum, int nMaxBoxesNum = 1024, int nSmallestBoxStride = 4);
 
 		/** get the default base layer mask. All bits are 0xFF. */
 		DetailTexture* GetDefaultBaseLayerMask();
@@ -1090,19 +1090,19 @@ namespace ParaTerrain
 		/** get number terrain regions */
 		int GetNumOfRegions();
 
-		/** set terrain region index, so that we can later call GetCurrentRegionName() and GetCurrentRegionFilepath(), to access region properties. 
+		/** set terrain region index, so that we can later call GetCurrentRegionName() and GetCurrentRegionFilepath(), to access region properties.
 		*/
 		void SetCurrentRegionIndex(int nRegion);
-		/** Get terrain region index, so that we can later call GetCurrentRegionName() and GetCurrentRegionFilepath(), to access region properties. 
-		* -1 if nothing is selected. 
+		/** Get terrain region index, so that we can later call GetCurrentRegionName() and GetCurrentRegionFilepath(), to access region properties.
+		* -1 if nothing is selected.
 		*/
 		int GetCurrentRegionIndex();
 
-		/** set the currently selected region name.  The current region Index is changed to the current selected one or -1 if invalid. 
-		* please note that: this does not create the region layer 
+		/** set the currently selected region name.  The current region Index is changed to the current selected one or -1 if invalid.
+		* please note that: this does not create the region layer
 		*/
 		void SetCurrentRegionName(const string& name);
-		
+
 		/** get the currently selected region name. */
 		const string& GetCurrentRegionName();
 
@@ -1113,7 +1113,7 @@ namespace ParaTerrain
 		const string& GetCurrentRegionFilepath();
 
 	private:
-		
+
 		// the terrain configuration file.
 		string m_sConfigFile;
 		// the base terrain texture file.
@@ -1137,7 +1137,7 @@ namespace ParaTerrain
 		float m_DetailThreshold;
 		float m_VertexSpacing;
 		/// this is the main structure for ROAM algorithm
-		TerrainBlock *m_pRootBlock;
+		TerrainBlock* m_pRootBlock;
 		byte* m_pVertexStatus;
 		/** the terrain regions. maybe NULL if no region is defined. */
 		CTerrainRegions* m_pRegions;
@@ -1146,7 +1146,7 @@ namespace ParaTerrain
 		/// a bitwise map of holes in the terrain. Objects may go through holes 
 		/// (into interior areas of the game world, such as an underground maze or cave)
 		/// if the map contains no holes, this array will be null.
-		bool*	m_pHolemap;
+		bool* m_pHolemap;
 		/// this value can only be a power of 2, such as 2, 4, 8, etc. default value is 2 or 4. 
 		/// it denotes how many successive vertex in the height map represent a hole
 		/// the larger the value is the larger the hole is.
@@ -1154,16 +1154,16 @@ namespace ParaTerrain
 		/// number of vertices in the map
 		int m_NumberOfVertices;
 		/// vertex array in the entire terrain.
-		Vector3 *m_pVertices;
+		Vector3* m_pVertices;
 		/// collection of chopped textures, each is 256*256 bits.
-		std::vector < TextureCell * >m_TextureCells;
+		std::vector < TextureCell* >m_TextureCells;
 		float m_TextureTileWidth, m_TextureTileHeight;
 		uint32 m_NumberOfTextureTilesWidth;
 		uint32 m_NumberOfTextureTilesHeight;
 		int m_TileSize;
-		uint8 **m_pTiles;
+		uint8** m_pTiles;
 		uint32 m_NumberOfTextureTiles;
-		Texture *m_pCommonTexture;
+		Texture* m_pCommonTexture;
 		float m_FogColorRed, m_FogColorGreen, m_FogColorBlue, m_FogColorAlpha;
 		int m_MaximumVisibleBlockSize;
 		vector<TriangleStrip> m_pTriangleStrips;
@@ -1175,16 +1175,16 @@ namespace ParaTerrain
 		float m_OffsetX, m_OffsetY;
 		int m_LatticePositionX, m_LatticePositionY;
 		float m_fTerrainSize;
-		TextureSet *m_pTextureSet;
-		float *m_pTextureMain;
-		float *m_pTextureDetail;
-		Vector3 *m_pNormals;
+		TextureSet* m_pTextureSet;
+		float* m_pTextureMain;
+		float* m_pTextureDetail;
+		Vector3* m_pNormals;
 		mutable int m_refCount;
 		CTerrainMaskFileCallbackData* m_pMaskFileCallbackData;
-	    
-		static std::map < std::string, TextureGenerator * >m_TextureGenerators;
+
+		static std::map < std::string, TextureGenerator* >m_TextureGenerators;
 		int m_BaseTextureWidth, m_BaseTextureHeight;
-		std::map < std::string, ReloadMaskRequest * >m_ReloadMaskRequests;
+		std::map < std::string, ReloadMaskRequest* >m_ReloadMaskRequests;
 		/// the height of the lowest visible terrain point. This may be used to render the ocean.
 		float m_fLowestVisibleHeight;
 		DWORD m_dwModified;
@@ -1193,7 +1193,7 @@ namespace ParaTerrain
 		bool m_bFogEnabled;
 		bool m_bMaskFileInited;
 
-		
+
 		/// intermediate date for rendering
 		TerrainBuffer m_TerrainBuffer;
 		/// Current Eye position in the terrain's local unit systems, we will use detail texture near the eye position.
@@ -1204,7 +1204,7 @@ namespace ParaTerrain
 		/// it just switch m_vRenderOffset_internal.xyz = m_vRenderOffset.xzy
 		Vector3 m_vRenderOffset_internal;
 
-		/** set the render offset 
+		/** set the render offset
 		@param vOffset: this is the ParaEngine's default coordinate, where y is world up. However, in terrain engine, z is world up. */
 		inline void SetRenderOffset(const Vector3& vOffset)
 		{
@@ -1213,19 +1213,19 @@ namespace ParaTerrain
 			m_vRenderOffset_internal.y = vOffset.z;
 			m_vRenderOffset_internal.z = vOffset.y;
 		}
-		/** set the eye position for the terrain. 
+		/** set the eye position for the terrain.
 		* @param vEye: this is in world coordinates. */
 		void SetEyePosition(const Vector3& vEye);
 
 		void Init(int maxNumPrims, float offX, float offY);
-		void Init(const uint8 * pTextureImage, int textureWidth, int textureHeight, const uint8 * pDetailTextureImage, int detailWidth, int detailHeight, float offsetX = 0.0f, float offsetY = 0.0f);
-		void UpdateNeighbor(Terrain * pTerrain, DIRECTION direction);
+		void Init(const uint8* pTextureImage, int textureWidth, int textureHeight, const uint8* pDetailTextureImage, int detailWidth, int detailHeight, float offsetX = 0.0f, float offsetY = 0.0f);
+		void UpdateNeighbor(Terrain* pTerrain, DIRECTION direction);
 
-		inline void SetVertexStatus(int index, byte status){if(m_pVertexStatus != NULL)	m_pVertexStatus[index] = status;};
-		inline byte GetVertexStatus(int index){return m_pVertexStatus[index];};
+		inline void SetVertexStatus(int index, byte status) { if (m_pVertexStatus != NULL)	m_pVertexStatus[index] = status; };
+		inline byte GetVertexStatus(int index) { return m_pVertexStatus[index]; };
 
 		void BuildBlocks();
-		void ChopTexture(const uint8 * pImage, int width, int height, int tileSize);
+		void ChopTexture(const uint8* pImage, int width, int height, int tileSize);
 		void PreloadTextures();
 		void BuildVertices(int widthVertices, int heightVertices, float vertexSpacing);
 		/** get a vertex by its index. No boundary checking is performed.
@@ -1233,11 +1233,11 @@ namespace ParaTerrain
 		* @param nIndex: the index of the vertex
 		* @param v: [out]the vertex which will be filled with the data.
 		*/
-		inline void GetRenderVertex(int nIndex, Vector3& v){
+		inline void GetRenderVertex(int nIndex, Vector3& v) {
 			Vector3& vec = m_pVertices[nIndex];
-			v.x = vec.x+m_vRenderOffset.x;
-			v.y = vec.z+m_vRenderOffset.y;
-			v.z = vec.y+m_vRenderOffset.z;
+			v.x = vec.x + m_vRenderOffset.x;
+			v.y = vec.z + m_vRenderOffset.y;
+			v.z = vec.y + m_vRenderOffset.z;
 		}
 		/** get a normal by its index. No boundary checking is performed.
 		* @param nIndex: the index of the vertex
@@ -1245,55 +1245,41 @@ namespace ParaTerrain
 		*/
 		void GetRenderNorm(int nIndex, Vector3& v)
 		{
-			Vector3& vec= m_pNormals[nIndex];
+			Vector3& vec = m_pNormals[nIndex];
 			v.x = vec.x;
 			v.y = vec.z;
 			v.z = vec.y;
 		}
 
-		inline TriangleStrip* GetTriStrip(int nIndex){return &(m_pTriangleStrips[nIndex]);}
-		inline TriangleStrip* GetSafeTriStrip(int nIndex){
-			if(nIndex< (int)m_pTriangleStrips.size())
-				return &(m_pTriangleStrips[nIndex]);
-			else{
-				m_pTriangleStrips.resize(nIndex+100);
-				return &(m_pTriangleStrips[nIndex]);
-			}
-		}
-		inline TriangleFan* GetTriFan(int nIndex){return &(m_pTriangleFans[nIndex]);}
-		inline TriangleFan* GetSafeTriFan(int nIndex){
-			if(nIndex< (int)m_pTriangleFans.size())
-				return &(m_pTriangleFans[nIndex]);
-			else{
-				m_pTriangleFans.resize(nIndex+100);
-				return &(m_pTriangleFans[nIndex]);
-			}
-		}
+		TriangleStrip* GetTriStrip(int nIndex);
+		TriangleStrip* GetSafeTriStrip(int nIndex);
+		TriangleFan* GetTriFan(int nIndex);
+		TriangleFan* GetSafeTriFan(int nIndex);
 	public:
-		
+
 		/** get texture ID by point.
 		* texture ID is the index of low-res textures in range [0, 8*8)
 		* @param x: in local coordinate
-		* @param y: in local coordinate 
+		* @param y: in local coordinate
 		* @ return: the texture ID returned. may be negative */
 		int GetTextureIDbyPoint(float x, float y, float& tileX, float& tileY);
-		
+
 		/** load detailed (high-res) textures, which is usually a large collection of files */
 		//void LoadDetailedTextures(const char * filename);
 		/** Get the low-res texture coordinate at a specified vertex index */
-		inline void GetLowResTexCord(int nIndex, float& u, float& v){
+		inline void GetLowResTexCord(int nIndex, float& u, float& v) {
 			const Vector2& uv = s_LowResTexCords[nIndex];
 			u = uv.x;
 			v = uv.y;
 		}
 		/** Get the high-res texture coordinate at a specified vertex index */
-		inline void GetHighResTexCord(int nIndex, float& u, float& v){
+		inline void GetHighResTexCord(int nIndex, float& u, float& v) {
 			const Vector2& uv = s_HighResTexCords[nIndex];
 			u = uv.x;
 			v = uv.y;
 		}
 		/** get both low resolution and detailed texture coordinates */
-		inline void GetTexCord(int nIndex, float& lowU, float& lowV, float& detailU, float& detailV){
+		inline void GetTexCord(int nIndex, float& lowU, float& lowV, float& detailU, float& detailV) {
 			const Vector2& uv = s_LowResTexCords[nIndex];
 			lowU = uv.x;
 			lowV = uv.y;
@@ -1301,7 +1287,7 @@ namespace ParaTerrain
 			detailU = uv2.x;
 			detailV = uv2.y;
 		}
-		
+
 		/** array of low resolution texture coordinates. array size is m_WidthVertices*m_WidthVertices */
 		static Vector2* s_LowResTexCords;
 		/** array of high resolution texture coordinates. array size is m_WidthVertices*m_WidthVertices */
@@ -1313,7 +1299,7 @@ namespace ParaTerrain
 		/** this is a dummy object that to ensure static objects are destroyed properly*/
 		struct DestroyStaticObject_
 		{
-			DestroyStaticObject_(){}
+			DestroyStaticObject_() {}
 			~DestroyStaticObject_()
 			{
 				SAFE_DELETE_ARRAY(Terrain::s_LowResTexCords);
@@ -1356,33 +1342,33 @@ namespace ParaTerrain
 		*/
 		bool SaveDetailTexture(const string& filePath);
 
-		/** Load from Configuration file. Modified bits are cleared. Please note that the on_load script is not called. 
+		/** Load from Configuration file. Modified bits are cleared. Please note that the on_load script is not called.
 		* one must manually call OnLoad() to load scene objects in this terrain.
 		* @param fSize: if fSize is not 0, it will override the size read from the configuration file
 		* @param relativePath: if sFileName is not found, it will try appending relativePath before sFileName.
 		*  relativePath is trimmed to the last slash character. i.e. "terrain/abc.txt" and "terrain/" are the same relative path.
 		* @return : return true if succeeded
 		*/
-		bool LoadFromConfigFile(const char* sFileName, float fSize=0, const char* relativePath=NULL);
+		bool LoadFromConfigFile(const char* sFileName, float fSize = 0, const char* relativePath = NULL);
 
-		/** this function is automatically called after the terrain has been loaded. 
-		* it usually does the following things in the given order: 
-			- call the terrain tile's on load script;  
+		/** this function is automatically called after the terrain has been loaded.
+		* it usually does the following things in the given order:
+			- call the terrain tile's on load script;
 			- load all NPC from database in this terrain tile.
 		Please note that the on load script might in turn create new terrain objects.*/
 		void OnLoad();
 
 		/**
 		* Save Terrain to file according to the modified bits.
-		* @param filename: file name of the terrain config file. All related files, such as elevation file and alpha mask files 
-		*   will be saved in the save directory of the terrain config file.If this is NULL, the load config file will be used. 
+		* @param filename: file name of the terrain config file. All related files, such as elevation file and alpha mask files
+		*   will be saved in the save directory of the terrain config file.If this is NULL, the load config file will be used.
 		*   and will be overridden.
 		* @param fSize: if fSize is not 0, it will override the size of this terrain tile by the value supplied.
 		* @param relativePath: if sFileName is not found, it will try appending relativePath before sFileName.
 		*	relativePath is trimmed to the last slash character. i.e. "terrain/abc.txt" and "terrain/" are the same relative path.
 		* @return : return true if succeeded
 		*/
-		bool SaveToFile(const char* filename=NULL);
+		bool SaveToFile(const char* filename = NULL);
 
 		/** read mask file */
 		bool ReadMaskFile(CParaFile& fileMask);
@@ -1395,10 +1381,10 @@ namespace ParaTerrain
 	protected:
 		/**
 		*generate terrain normal for rendering with light on. This function will only generate normal when the m_pNormal is NULL.
-		* @param bForceRegenerate true to regenerate any way. 
-		* @return 
+		* @param bForceRegenerate true to regenerate any way.
+		* @return
 		*/
-		bool GenerateTerrainNormal(bool bForceRegenerate=false);
+		bool GenerateTerrainNormal(bool bForceRegenerate = false);
 
 		friend class Triangle;
 		friend class TriangleStrip;
@@ -1410,65 +1396,65 @@ namespace ParaTerrain
 		friend class TextureSet;
 
 
-		private:
-			GeoMipmapIndicesGroup* m_pGeoMipmapIndicesGroup;
-			TerrainBlock* m_pBlocks;
-		private:
-			ParaIndexBuffer m_pIndexBuffer;
-			ParaVertexBuffer m_pCollisionBuffer;
-			ParaVertexBuffer m_pEditorMeshVB;
-		public:
-			void SetSharedIB(ParaIndexBuffer ib){ m_pIndexBuffer = ib; }
-			void SwitchLodStyle(bool useGeoMipmap, ParaIndexBuffer pSharedIndices, GeoMipmapIndicesGroup* geoMipmapIndicesGroup);
-			
-		public:
-			bool m_useGeoMipmap;
-			void SetSharedIndexInfoGroup(GeoMipmapIndicesGroup* geoMipmapIndicesGroup){m_pGeoMipmapIndicesGroup = geoMipmapIndicesGroup;}
-			void BuildGeoMipmapBuffer();
-			void RenderGeoMipmap();
-			void TessellateGeoMipmap();
-			void BuildGeoMipmapBlocks();
-			void SetBlockLod(int indexX,int indexY,int level,GeoMipmapChunkType chunkType);
+	private:
+		GeoMipmapIndicesGroup* m_pGeoMipmapIndicesGroup;
+		TerrainBlock* m_pBlocks;
+	private:
+		ParaIndexBuffer m_pIndexBuffer;
+		ParaVertexBuffer m_pCollisionBuffer;
+		ParaVertexBuffer m_pEditorMeshVB;
+	public:
+		void SetSharedIB(ParaIndexBuffer ib) { m_pIndexBuffer = ib; }
+		void SwitchLodStyle(bool useGeoMipmap, ParaIndexBuffer pSharedIndices, GeoMipmapIndicesGroup* geoMipmapIndicesGroup);
 
-			bool IsWalkable(float x,float y) const;
-			bool IsWalkableW(float x,float y) const;
+	public:
+		bool m_useGeoMipmap;
+		void SetSharedIndexInfoGroup(GeoMipmapIndicesGroup* geoMipmapIndicesGroup) { m_pGeoMipmapIndicesGroup = geoMipmapIndicesGroup; }
+		void BuildGeoMipmapBuffer();
+		void RenderGeoMipmap();
+		void TessellateGeoMipmap();
+		void BuildGeoMipmapBlocks();
+		void SetBlockLod(int indexX, int indexY, int level, GeoMipmapChunkType chunkType);
+
+		bool IsWalkable(float x, float y) const;
+		bool IsWalkableW(float x, float y) const;
 
 		//terrain editor code  --clayman
-		private:
-			bool m_isEditorMode;
-			bool m_enableTerrainCollision;
-			/** whether to chop the base texture in to 8*8 smaller textures, or just use it as a single large texture. */
-			bool m_bChopBaseTexture;
-			string m_terrInfoFile;
+	private:
+		bool m_isEditorMode;
+		bool m_enableTerrainCollision;
+		/** whether to chop the base texture in to 8*8 smaller textures, or just use it as a single large texture. */
+		bool m_bChopBaseTexture;
+		string m_terrInfoFile;
 
-				
 
-			uint32* m_pTerrainInfoData;
 
-			void BuildHelperMeshBuffer();
-			void SaveInfoData(const string& filePath);
-			void CreateTerrainInfoData();
+		uint32* m_pTerrainInfoData;
 
-			int m_visibleEditorMeshFlag;
-			uint32 m_visibleDataMask;
-			uint8 m_visibleDataBitOffset;
+		void BuildHelperMeshBuffer();
+		void SaveInfoData(const string& filePath);
+		void CreateTerrainInfoData();
 
-		public:
-			void SetTerrainInfoData(const uint32* pInfoData,int width);
-			void SetVertexInfo(int idx,uint32 data,uint32 bitMask,uint32 bitOffset);
-			uint32 GetVertexInfo(int idx,uint32 bitMask,uint8 bitOffset);
-			void RefreshTerrainInfo();
-			bool IsWalkable(float x, float y,Vector3& oNormal) const;
-			void SetVisibleDataMask(uint32 mask,uint8 bitOffset);
-			void SetEditorMode(bool enable);
+		int m_visibleEditorMeshFlag;
+		uint32 m_visibleDataMask;
+		uint8 m_visibleDataBitOffset;
+
+	public:
+		void SetTerrainInfoData(const uint32* pInfoData, int width);
+		void SetVertexInfo(int idx, uint32 data, uint32 bitMask, uint32 bitOffset);
+		uint32 GetVertexInfo(int idx, uint32 bitMask, uint8 bitOffset);
+		void RefreshTerrainInfo();
+		bool IsWalkable(float x, float y, Vector3& oNormal) const;
+		void SetVisibleDataMask(uint32 mask, uint8 bitOffset);
+		void SetEditorMode(bool enable);
 	};
 
-	 
+
 	class ReloadMaskRequest
 	{
-	      public:
+	public:
 		ReloadMaskRequest(int textureCellX, int textureCellY, int detailIndex);
-		 ~ReloadMaskRequest();
+		~ReloadMaskRequest();
 		int m_TextureCellX, m_TextureCellY, m_DetailIndex;
 	};
 }
