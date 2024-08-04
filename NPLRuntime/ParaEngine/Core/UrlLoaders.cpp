@@ -267,7 +267,7 @@ bool ParaEngine::CUrlProcessor::AsyncProcess(std::function<void()> callback)
 		memcpy((void*)(self->m_fetch_response_data.data()), fetch->data, fetch->totalBytes);
 
 		if (self->IsEnableDataStreaming() && self->m_fetch_response_data.size() > 0) {
-			self->write_data_callback(self->m_fetch_response_data.data(), self->m_fetch_response_data.size(), 1);
+			self->write_data_callback((void*)self->m_fetch_response_data.data(), self->m_fetch_response_data.size(), 1);
 		}
 
 		self->m_nStatus = CUrlProcessor::URL_REQUEST_COMPLETED;		
@@ -281,8 +281,8 @@ bool ParaEngine::CUrlProcessor::AsyncProcess(std::function<void()> callback)
 		if (self->m_fetch_response_header.empty() && fetch->readyState >= 2) {
 			size_t headersLengthBytes = emscripten_fetch_get_response_headers_length(fetch);
 			self->m_fetch_response_header.resize(headersLengthBytes);
-			emscripten_fetch_get_response_headers(fetch, self->m_fetch_response_header.data(), headersLengthBytes);
-			self->write_header_callback(self->m_fetch_response_header.data(), self->m_fetch_response_header.size(), 1);
+			emscripten_fetch_get_response_headers(fetch, (char*)self->m_fetch_response_header.data(), headersLengthBytes);
+			self->write_header_callback((void*)self->m_fetch_response_header.data(), self->m_fetch_response_header.size(), 1);
 		}
 		std::cout << "data offset = " << fetch->dataOffset << std::endl;
 		std::cout << "data size = " << fetch->numBytes << std::endl;
