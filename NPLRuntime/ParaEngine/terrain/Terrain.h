@@ -1253,10 +1253,10 @@ namespace ParaTerrain
 			v.z = vec.y;
 		}
 
-		inline TriangleStrip* GetTriStrip(int nIndex);
-		inline TriangleStrip* GetSafeTriStrip(int nIndex);
-		inline TriangleFan* GetTriFan(int nIndex);
-		inline TriangleFan* GetSafeTriFan(int nIndex);
+		TriangleStrip* GetTriStrip(int nIndex);
+		TriangleStrip* GetSafeTriStrip(int nIndex);
+		TriangleFan* GetTriFan(int nIndex);
+		TriangleFan* GetSafeTriFan(int nIndex);
 	public:
 		
 		/** get texture ID by point.

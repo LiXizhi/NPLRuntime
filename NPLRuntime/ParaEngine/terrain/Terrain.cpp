@@ -3997,10 +3997,10 @@ void Terrain::SetEditorMode(bool enable)
 
 }
 
-inline TriangleStrip* Terrain::GetTriStrip(int nIndex) { 
+TriangleStrip* Terrain::GetTriStrip(int nIndex) { 
 	return (TriangleStrip*)&(m_pTriangleStrips[nIndex]); 
 }
-inline TriangleStrip* Terrain::GetSafeTriStrip(int nIndex) {
+TriangleStrip* Terrain::GetSafeTriStrip(int nIndex) {
 	if (nIndex < (int)m_pTriangleStrips.size())
 		return (TriangleStrip*)&(m_pTriangleStrips[nIndex]);
 	else {
@@ -4008,10 +4008,10 @@ inline TriangleStrip* Terrain::GetSafeTriStrip(int nIndex) {
 		return (TriangleStrip*)&(m_pTriangleStrips[nIndex]);
 	}
 }
-inline TriangleFan* Terrain::GetTriFan(int nIndex) { 
+TriangleFan* Terrain::GetTriFan(int nIndex) { 
 	return &(m_pTriangleFans[nIndex]); 
 }
-inline TriangleFan* Terrain::GetSafeTriFan(int nIndex) {
+TriangleFan* Terrain::GetSafeTriFan(int nIndex) {
 	if (nIndex < (int)m_pTriangleFans.size())
 		return &(m_pTriangleFans[nIndex]);
 	else {
