@@ -96,7 +96,7 @@ namespace ParaEngine
 		ATTRIBUTE_METHOD1(CGUIRoot, SendInputMethodEvent_s, const char*) { cls->SendInputMethodEvent(p1); return S_OK; }
 
 		ATTRIBUTE_METHOD1(CGUIRoot, SendMouseButtonEvent_s, Vector4) { cls->SendMouseButtonEvent(p1.x, p1.y, (EMouseButton)p1.z, (EKeyState)p1.w); return S_OK; }
-		ATTRIBUTE_METHOD1(CGUIRoot, SendMouseMoveEvent_s, Vector2) { cls->SendMouseMoveEvent((int)p1.x, (int)p1.y); return S_OK; }
+		ATTRIBUTE_METHOD1(CGUIRoot, SendMouseMoveEvent_s, Vector2) { cls->SendMouseMoveEvent(p1.x, p1.y); return S_OK; }
 		ATTRIBUTE_METHOD1(CGUIRoot, SendMouseWheelEvent_s, float) { cls->SendMouseWheelEvent((int)p1); return S_OK; }
 
 		ATTRIBUTE_METHOD1(CGUIRoot, IsTouchButtonSwapped_s, bool*) { *p1 = cls->IsTouchButtonSwapped(); return S_OK; }

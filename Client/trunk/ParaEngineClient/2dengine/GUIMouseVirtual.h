@@ -9,6 +9,15 @@
 
 namespace ParaEngine
 {
+	struct MouseEventDeviceObject {
+		DWORD       dwOfs;
+		DWORD       dwData;
+		DWORD       dwTimeStamp;
+		DWORD       dwSequence;
+		float x;
+		float y;
+	};
+
 	/** base class for GUI mouse
 	*/
 	class CGUIMouseVirtual
@@ -87,7 +96,7 @@ namespace ParaEngine
 		bool	m_bSwapMouseButton;
 		bool m_bLastMouseReset;
 	public:
-		DIDEVICEOBJECTDATA	m_didod[SAMPLE_BUFFER_SIZE];  // Receives buffered data 
+		MouseEventDeviceObject	m_didod[SAMPLE_BUFFER_SIZE];  // Receives buffered data 
 		DWORD				m_dwElements;
 		DIMOUSESTATE2		m_dims2;   // DirectInput Mouse state buffer 
 		DIMOUSESTATE2		m_lastMouseState; 

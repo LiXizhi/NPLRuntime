@@ -208,7 +208,9 @@ HRESULT ParaEngine::CGUIMouseVirtual::ReadBufferedData()
 	for (int a = 0; a<m_buffered_mouse_msgs_count; m_dwElements++, a++) {
 		int mouse_x = GET_X_LPARAM(m_buffered_mouse_msgs[a].lParam);
 		int mouse_y = GET_Y_LPARAM(m_buffered_mouse_msgs[a].lParam);
-
+		
+		m_didod[m_dwElements].x = (float)mouse_x;
+		m_didod[m_dwElements].y = (float)mouse_y;
 		switch (m_buffered_mouse_msgs[a].message) {
 		case WM_MOUSEMOVE:
 			m_didod[m_dwElements].dwData = mouse_x - x;
@@ -217,6 +219,8 @@ HRESULT ParaEngine::CGUIMouseVirtual::ReadBufferedData()
 			m_dwElements++;
 			m_didod[m_dwElements].dwData = mouse_y - y;
 			m_didod[m_dwElements].dwOfs = DIMOFS_Y;
+			m_didod[m_dwElements].x = (float)mouse_x;
+			m_didod[m_dwElements].y = (float)mouse_y;
 			x = mouse_x;
 			y = mouse_y;
 			m_curMouseState.lX = mouse_x; m_curMouseState.lY = mouse_y;
