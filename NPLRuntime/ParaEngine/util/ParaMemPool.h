@@ -113,14 +113,9 @@ namespace ParaEngine
 			return std::numeric_limits<size_type>::max() / sizeof(T);
 		}
 
-		//    memory allocation
-// #ifdef EMSCRIPTEN_SINGLE_THREAD
-#ifdef EMSCRIPTEN
-		inline pointer allocate(size_type cnt, const void* _ = 0) 
-#else
-		inline pointer allocate(size_type cnt, typename std::allocator<void>::const_pointer = 0) 
-#endif
-		{ 
+		// memory allocation
+        inline pointer allocate(size_type cnt, const void* _ = 0)
+		{
 			return reinterpret_cast<pointer>(user_allocator::malloc(cnt * sizeof (T))); 
 		}
 		inline void deallocate(pointer p, size_type) 
@@ -234,13 +229,8 @@ namespace ParaEngine
 			return std::numeric_limits<size_type>::max() / sizeof(T);
 		}
 
-		//    memory allocation
-// #ifdef EMSCRIPTEN_SINGLE_THREAD
-#ifdef EMSCRIPTEN
-		inline pointer allocate(size_type cnt, const void* _ = 0) 
-#else
-		inline pointer allocate(size_type cnt, typename std::allocator<void>::const_pointer = 0) 
-#endif
+		// memory allocation
+        inline pointer allocate(size_type cnt, const void* _ = 0)
 		{
 			int n = (int)(cnt * sizeof (T));
 			int nIndex = Math::log2_ceil(n) - char_pool_init_size;

@@ -257,7 +257,6 @@ int main(int argc, char* argv[])
         static bool isWebXRinited = false;
         webxr_init(
             [](void* userData, int time, ParaWebXRRigidTransform *headPose, ParaWebXRView views[2], int viewCount) {
-                std::cout << "webxr_init" << std::endl;
                 if (!isWebXRinited)
                 {
                     isWebXRinited = true;
