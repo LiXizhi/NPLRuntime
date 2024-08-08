@@ -2521,17 +2521,11 @@ HRESULT CSceneObject::AdvanceScene(double dTimeDelta, int nPipelineOrder)
 	if (m_bShowPortalSystem)
 		RenderSelection(RENDER_PORTAL_SYSTEM);
 
+	// just in case, root GUI is rendered in 3d scene like in webxr applications. 
+	CGlobals::GetGUI()->AdvanceGUI(dTimeDelta, 1);
+
 	// draw overlays
 	RenderHeadOnDisplay(1);
-
-	//////////////////////////////////////////////////////////////////////////
-	// TODO: draw dummy objects
-
-	//////////////////////////////////////////////////////////////////////////
-	// TODO: draw debugging objects
-
-	//////////////////////////////////////////////////////////////////////////
-	// Now begins the GUI
 
 	RemoveDeadObjects();
 

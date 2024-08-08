@@ -361,9 +361,9 @@ namespace ParaEngine
 		void Initialize();
 		/**
 		* Render all the contorls
+		* @param nPipelineOrder: 0 for normal rendering, 1 for rendering in 3D scene.
 		*/
-		void	AdvanceGUI(float fElapsedTime);
-
+		void AdvanceGUI(float fElapsedTime, int nPipelineOrder = 0);
 
 		void	AddScript();
 
