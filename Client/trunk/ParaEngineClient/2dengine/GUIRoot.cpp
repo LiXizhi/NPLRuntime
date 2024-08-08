@@ -702,11 +702,17 @@ void CGUIRoot::Update3DObject(float fElapsedTime)
 /// [Note]: m_stateGUI struct must be filled carefully before calling this class
 //-----------------------------------------------------------------------------
 //no need refactoring
-void	CGUIRoot::AdvanceGUI(float fElapsedTime)
+void	CGUIRoot::AdvanceGUI(float fElapsedTime, int nPipelineOrder)
 {
 	if (!m_bIsVisible)
 		return;
-	STRUCT_DRAG_AND_DROP *pdrag = &IObjectDrag::DraggingObject;
+	bool bIsRelativeTo3D = Is3DGUIMode();
+	if ((nPipelineOrder == 1 && !bIsRelativeTo3D))
+	{
+		return;
+	}
+
+	STRUCT_DRAG_AND_DROP* pdrag = &IObjectDrag::DraggingObject;
 
 	GUIState* pGUIState = &m_stateGUI;
 	/// clean up GUI state
@@ -719,162 +725,164 @@ void	CGUIRoot::AdvanceGUI(float fElapsedTime)
 	if (painter->isActive())
 		painter->end();
 
-	bool bIsRelativeTo3D = Is3DGUIMode();
-	if (bIsRelativeTo3D) 
+	if ((nPipelineOrder == 0 && !bIsRelativeTo3D) || (nPipelineOrder == 1 && bIsRelativeTo3D))
 	{
-		painter->SetUse3DTransform(true);
-	}
-
-	painter->begin(this);
-	if (bIsRelativeTo3D && painter->isActive()) {
-		painter->SetSpriteUseWorldMatrix(true);
-		painter->PushMatrix();
-		// render GUI in front of the eye position while facing towards it.
-		float fGUIToEyeDist = GetGUIToEyeDist();
-		float screenWidth = GetWidth();
-		float screenHeight = GetHeight();
-		float fAspectRatio = CGlobals::GetScene()->GetCurrentCamera()->GetFieldOfView();
-		float fScaling = std::tanf(fAspectRatio * 0.5f) * fGUIToEyeDist / (screenHeight * 0.5f) * GetGUI3DModeScaling();
-		Matrix4 mat(Matrix4::IDENTITY);
-		auto vEye = CGlobals::GetScene()->GetCurrentCamera()->GetEyePosition();
-		auto vLookat = CGlobals::GetScene()->GetCurrentCamera()->GetLookAtPosition();
-		Vector3 vDir = (vLookat - vEye);
-		vDir.normalise();
-		float yaw = - std::atan2(vDir.z, vDir.x) + Math::PI * 0.5f;
-		float pitch =  - std::asin(vDir.y);
-		Quaternion qPitch(Radian(pitch), Vector3::UNIT_X);
-		Quaternion qYaw(Radian(yaw), Vector3::UNIT_Y);
-		Quaternion q = qYaw * qPitch;
-		q.ToRotationMatrix(mat, Vector3::ZERO);
-		// offset by center of screenWidth, screenHeight
-		
-		Matrix4 matTrans;
-		matTrans.makeTrans(Vector3(-screenWidth * 0.5f, screenHeight * 0.5f, 0.f));
-		mat = matTrans * mat;
-		Matrix4 matScale;
-		matScale.makeScale(Vector3(fScaling, fScaling, fScaling));
-		mat = mat * matScale;
-		vLookat = vEye + vDir * fGUIToEyeDist;
-		vLookat += CGlobals::GetScene()->GetRenderOffset();
-		matTrans.makeTrans(vLookat);
-		mat = mat * matTrans;
-		painter->LoadMatrix(mat);
-		pRenderDevice->SetRenderState(D3DRS_ZENABLE, FALSE);
-		pRenderDevice->SetRenderState(D3DRS_ZWRITEENABLE, FALSE);
-	}
-
-	// update which 3d object are visible.
-	Update3DObject(fElapsedTime);
-#ifdef USE_OPENGL_RENDERER
-	if (painter->isActive())
-	{
-		for (auto iter = GetChildren()->begin(); iter != GetChildren()->end(); iter++)
+		if (bIsRelativeTo3D)
 		{
-			CGUIBase* pObjChild = *iter;
-			/// skip any node that is not visible
-			if (!(pObjChild->m_bIsVisible))
-				continue;
-			pObjChild->DoRender(pGUIState, fElapsedTime);
+			painter->SetUse3DTransform(true);
 		}
-		painter->Flush();
 
-		//////////////////////////////////////////////////////////////////////////
-		// render highlighting markers
-		CGUIHighlightManager* gm = &CSingleton<CGUIHighlightManager>::Instance();
-		gm->Render(pGUIState, fElapsedTime, true);
+		painter->begin(this);
+		if (bIsRelativeTo3D && painter->isActive()) {
+			painter->SetSpriteUseWorldMatrix(true);
+			painter->PushMatrix();
+			// render GUI in front of the eye position while facing towards it.
+			float fGUIToEyeDist = GetGUIToEyeDist();
+			float screenWidth = GetWidth();
+			float screenHeight = GetHeight();
+			float fAspectRatio = CGlobals::GetScene()->GetCurrentCamera()->GetFieldOfView();
+			float fScaling = std::tanf(fAspectRatio * 0.5f) * fGUIToEyeDist / (screenHeight * 0.5f) * GetGUI3DModeScaling();
+			Matrix4 mat(Matrix4::IDENTITY);
+			auto vEye = CGlobals::GetScene()->GetCurrentCamera()->GetEyePosition();
+			auto vLookat = CGlobals::GetScene()->GetCurrentCamera()->GetLookAtPosition();
+			Vector3 vDir = (vLookat - vEye);
+			vDir.normalise();
+			float yaw = -std::atan2(vDir.z, vDir.x) + Math::PI * 0.5f;
+			float pitch = -std::asin(vDir.y);
+			Quaternion qPitch(Radian(pitch), Vector3::UNIT_X);
+			Quaternion qYaw(Radian(yaw), Vector3::UNIT_Y);
+			Quaternion q = qYaw * qPitch;
+			q.ToRotationMatrix(mat, Vector3::ZERO);
+			// offset by center of screenWidth, screenHeight
 
-		//////////////////////////////////////////////////////////////////////////
-		// render tooltips
-		m_tooltip->Render(pGUIState, fElapsedTime);
-
-		//////////////////////////////////////////////////////////////////////////
-		//render the dragging object if exist
-		if (pdrag->pDragging != NULL && !pdrag->m_bIsCandicateOnly) {
-			((CGUIBase*)pdrag->pDragging)->DoRender(pGUIState, fElapsedTime);
+			Matrix4 matTrans;
+			matTrans.makeTrans(Vector3(-screenWidth * 0.5f, screenHeight * 0.5f, 0.f));
+			mat = matTrans * mat;
+			Matrix4 matScale;
+			matScale.makeScale(Vector3(fScaling, fScaling, fScaling));
+			mat = mat * matScale;
+			vLookat = vEye + vDir * fGUIToEyeDist;
+			vLookat += CGlobals::GetScene()->GetRenderOffset();
+			matTrans.makeTrans(vLookat);
+			mat = mat * matTrans;
+			painter->LoadMatrix(mat);
+			pRenderDevice->SetRenderState(D3DRS_ZENABLE, FALSE);
+			pRenderDevice->SetRenderState(D3DRS_ZWRITEENABLE, FALSE);
 		}
-		painter->end();
+
+		// update which 3d object are visible.
+		Update3DObject(fElapsedTime);
+#ifdef USE_OPENGL_RENDERER
+		if (painter->isActive())
+		{
+			for (auto iter = GetChildren()->begin(); iter != GetChildren()->end(); iter++)
+			{
+				CGUIBase* pObjChild = *iter;
+				/// skip any node that is not visible
+				if (!(pObjChild->m_bIsVisible))
+					continue;
+				pObjChild->DoRender(pGUIState, fElapsedTime);
+			}
+			painter->Flush();
+
+			//////////////////////////////////////////////////////////////////////////
+			// render highlighting markers
+			CGUIHighlightManager* gm = &CSingleton<CGUIHighlightManager>::Instance();
+			gm->Render(pGUIState, fElapsedTime, true);
+
+			//////////////////////////////////////////////////////////////////////////
+			// render tooltips
+			m_tooltip->Render(pGUIState, fElapsedTime);
+
+			//////////////////////////////////////////////////////////////////////////
+			//render the dragging object if exist
+			if (pdrag->pDragging != NULL && !pdrag->m_bIsCandicateOnly) {
+				((CGUIBase*)pdrag->pDragging)->DoRender(pGUIState, fElapsedTime);
+			}
+			painter->end();
 	}
 #endif
 
 #ifdef USE_DIRECTX_RENDERER
-	if (painter->isActive())
-	{
-		if(GetUsePointTextureFiltering())
+		if (painter->isActive())
 		{
-			CGlobals::GetEffectManager()->SetSamplerState( 0, D3DSAMP_MINFILTER,  D3DTEXF_POINT, true);
-			CGlobals::GetEffectManager()->SetSamplerState( 0, D3DSAMP_MAGFILTER,  D3DTEXF_POINT, true);
+			if (GetUsePointTextureFiltering())
+			{
+				CGlobals::GetEffectManager()->SetSamplerState(0, D3DSAMP_MINFILTER, D3DTEXF_POINT, true);
+				CGlobals::GetEffectManager()->SetSamplerState(0, D3DSAMP_MAGFILTER, D3DTEXF_POINT, true);
+			}
+
+			// default to UV wrapping, instead of UV clamp for UI. 
+			// pRenderDevice->SetSamplerState( 0, D3DSAMP_ADDRESSU,  D3DTADDRESS_WRAP);
+			// pRenderDevice->SetSamplerState( 0, D3DSAMP_ADDRESSV,  D3DTADDRESS_WRAP );
+
+			GUIBase_List_Type::iterator iter;
+
+			//////////////////////////////////////////////////////////////////////////
+			// breadth first transversing the 2D scene
+			//pRenderDevice->SetRenderState(D3DRS_STENCILENABLE,TRUE);
+			//pRenderDevice->SetRenderState(D3DRS_STENCILFUNC,D3DCMP_EQUAL);
+			//pRenderDevice->SetRenderState(D3DRS_STENCILREF,0);
+			for (iter = this->GetChildren()->begin(); iter != this->GetChildren()->end(); iter++)
+			{
+				CGUIBase* pObjChild = *iter;
+				/// skip any node that is not visible
+				if (!(pObjChild->m_bIsVisible))
+					continue;
+				pObjChild->DoRender(pGUIState, fElapsedTime);
+			}
+			painter->Flush();
+
+			//////////////////////////////////////////////////////////////////////////
+			// render highlighting markers
+			CGUIHighlightManager* gm = &CSingleton<CGUIHighlightManager>::Instance();
+			gm->Render(pGUIState, fElapsedTime, true);
+
+			//////////////////////////////////////////////////////////////////////////
+			// render tooltips
+			m_tooltip->Render(pGUIState, fElapsedTime);
+
+			//////////////////////////////////////////////////////////////////////////
+			//render the dragging object if exist
+			pRenderDevice->SetRenderState(D3DRS_STENCILENABLE, FALSE);
+			if (pdrag->pDragging != NULL && !pdrag->m_bIsCandicateOnly) {
+				((CGUIBase*)pdrag->pDragging)->DoRender(pGUIState, fElapsedTime);
+			}
+			//////////////////////////////////////////////////////////////////////////
+			//render the IME candidate window
+			pRenderDevice->SetRenderState(D3DRS_STENCILENABLE, FALSE);
+			//if (GetIMEFocus()) {
+			//	GetIMEFocus()->PostRender(pGUIState, fElapsedTime);
+			//}
+			//draw user defined cursor here
+			//LXZ: draw user defined image cursor here, this is only used for movie capturing
+			if (m_bRenderImageCursor)
+				m_pMouse->RenderCursor(pGUIState, fElapsedTime);
+
+			painter->end();
 		}
 
-		// default to UV wrapping, instead of UV clamp for UI. 
-		// pRenderDevice->SetSamplerState( 0, D3DSAMP_ADDRESSU,  D3DTADDRESS_WRAP);
-		// pRenderDevice->SetSamplerState( 0, D3DSAMP_ADDRESSV,  D3DTADDRESS_WRAP );
-
-		GUIBase_List_Type::iterator iter;
-
-		//////////////////////////////////////////////////////////////////////////
-		// breadth first transversing the 2D scene
-		//pRenderDevice->SetRenderState(D3DRS_STENCILENABLE,TRUE);
-		//pRenderDevice->SetRenderState(D3DRS_STENCILFUNC,D3DCMP_EQUAL);
-		//pRenderDevice->SetRenderState(D3DRS_STENCILREF,0);
-		for( iter = this->GetChildren()->begin(); iter != this->GetChildren()->end();iter++ )
+		if (GetUsePointTextureFiltering())
 		{
-			CGUIBase* pObjChild = * iter;  
-			/// skip any node that is not visible
-			if(!(pObjChild->m_bIsVisible))
-				continue; 
-			pObjChild->DoRender(pGUIState, fElapsedTime);
+			CGlobals::GetEffectManager()->SetSamplerState(0, D3DSAMP_MINFILTER, D3DTEXF_LINEAR);
+			CGlobals::GetEffectManager()->SetSamplerState(0, D3DSAMP_MAGFILTER, D3DTEXF_LINEAR);
 		}
-		painter->Flush();
-
-		//////////////////////////////////////////////////////////////////////////
-		// render highlighting markers
-		CGUIHighlightManager* gm=&CSingleton<CGUIHighlightManager>::Instance();
-		gm->Render(pGUIState, fElapsedTime,true);
-
-		//////////////////////////////////////////////////////////////////////////
-		// render tooltips
-		m_tooltip->Render(pGUIState, fElapsedTime);
-
-		//////////////////////////////////////////////////////////////////////////
-		//render the dragging object if exist
-		pRenderDevice->SetRenderState(D3DRS_STENCILENABLE,FALSE);
-		if (pdrag->pDragging!=NULL && ! pdrag->m_bIsCandicateOnly) {
-			((CGUIBase*)pdrag->pDragging)->DoRender(pGUIState, fElapsedTime);
-		}
-		//////////////////////////////////////////////////////////////////////////
-		//render the IME candidate window
-		pRenderDevice->SetRenderState(D3DRS_STENCILENABLE,FALSE);
-		//if (GetIMEFocus()) {
-		//	GetIMEFocus()->PostRender(pGUIState, fElapsedTime);
-		//}
-		//draw user defined cursor here
-		//LXZ: draw user defined image cursor here, this is only used for movie capturing
-		if(m_bRenderImageCursor)
-			m_pMouse->RenderCursor(pGUIState,fElapsedTime);
-
-		painter->end();
-	}
-
-	if(GetUsePointTextureFiltering())
-	{
-		CGlobals::GetEffectManager()->SetSamplerState( 0, D3DSAMP_MINFILTER,  D3DTEXF_LINEAR);
-		CGlobals::GetEffectManager()->SetSamplerState( 0, D3DSAMP_MAGFILTER,  D3DTEXF_LINEAR);
-	}
 
 #if !defined(NPLRUNTIME)
-	/** global frame move */
-	CGUIWebBrowser::GlobalFrameMove();
+		/** global frame move */
+		CGUIWebBrowser::GlobalFrameMove();
 #endif
 #endif
 
-	if (bIsRelativeTo3D && painter->isActive()) {
-		painter->PopMatrix();
-		painter->SetSpriteUseWorldMatrix(false);
-		pRenderDevice->SetRenderState(D3DRS_ZENABLE, TRUE);
-		pRenderDevice->SetRenderState(D3DRS_ZWRITEENABLE, TRUE);
+		if (bIsRelativeTo3D && painter->isActive()) {
+			painter->PopMatrix();
+			painter->SetSpriteUseWorldMatrix(false);
+			pRenderDevice->SetRenderState(D3DRS_ZENABLE, TRUE);
+			pRenderDevice->SetRenderState(D3DRS_ZWRITEENABLE, TRUE);
+		}
 	}
 
-	if (!pGUIState->listPostRenderingObjects.empty())
+	if (nPipelineOrder == 0 && !pGUIState->listPostRenderingObjects.empty())
 	{
 		for (WeakPtr& obj : pGUIState->listPostRenderingObjects)
 		{
