@@ -43,6 +43,7 @@ void CGUIMouseVirtual::PushMouseEvent(const DeviceMouseEventPtr& e)
 			m_buffered_mouse_msgs[m_buffered_mouse_msgs_count].lParam = 0;
 			m_buffered_mouse_msgs[m_buffered_mouse_msgs_count].wParam = MAKEWPARAM(0, pEvent->GetWheel());
 			m_buffered_mouse_msgs[m_buffered_mouse_msgs_count].message = WM_MOUSEWHEEL;
+			m_buffered_mouse_msgs[m_buffered_mouse_msgs_count].time = GetTickCount();
 			++m_buffered_mouse_msgs_count;
 		}
 		else if (e->GetEventType() == EMouseEventType::Button)
@@ -52,6 +53,7 @@ void CGUIMouseVirtual::PushMouseEvent(const DeviceMouseEventPtr& e)
 			m_buffered_mouse_msgs[m_buffered_mouse_msgs_count].wParam = 0;
 			m_buffered_mouse_msgs[m_buffered_mouse_msgs_count].message = (pEvent->GetButton() == EMouseButton::LEFT) ? (pEvent->GetKeyState() == EKeyState::PRESS ? WM_LBUTTONDOWN : WM_LBUTTONUP) : 
 				((pEvent->GetButton() == EMouseButton::RIGHT) ? (pEvent->GetKeyState() == EKeyState::PRESS ? WM_RBUTTONDOWN : WM_RBUTTONUP) : (WM_MOUSEMOVE));
+			m_buffered_mouse_msgs[m_buffered_mouse_msgs_count].time = GetTickCount();
 			++m_buffered_mouse_msgs_count;
 		}
 		else if (e->GetEventType() == EMouseEventType::Move)
@@ -60,6 +62,7 @@ void CGUIMouseVirtual::PushMouseEvent(const DeviceMouseEventPtr& e)
 			m_buffered_mouse_msgs[m_buffered_mouse_msgs_count].lParam = MAKELPARAM(pEvent->GetX(), pEvent->GetY());
 			m_buffered_mouse_msgs[m_buffered_mouse_msgs_count].wParam = 0;
 			m_buffered_mouse_msgs[m_buffered_mouse_msgs_count].message = WM_MOUSEMOVE;
+			m_buffered_mouse_msgs[m_buffered_mouse_msgs_count].time = GetTickCount();
 			++m_buffered_mouse_msgs_count;
 		}
 	}
@@ -76,6 +79,7 @@ void CGUIMouseVirtual::PushMouseEvent(UINT uMsg, WPARAM wParam, LPARAM lParam)
 		m_buffered_mouse_msgs[m_buffered_mouse_msgs_count].lParam = lParam;
 		m_buffered_mouse_msgs[m_buffered_mouse_msgs_count].wParam = wParam;
 		m_buffered_mouse_msgs[m_buffered_mouse_msgs_count].message = uMsg;
+		m_buffered_mouse_msgs[m_buffered_mouse_msgs_count].time = GetTickCount();
 	}
 	++m_buffered_mouse_msgs_count;
 }

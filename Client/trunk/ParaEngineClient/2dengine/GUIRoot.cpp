@@ -1383,6 +1383,10 @@ int CGUIRoot::HandleUserInput()
 			newMsg.time = m_pMouse->m_didod[i].dwTimeStamp;
 			newMsg.hwnd = CGlobals::GetAppHWND();
 			newMsg.message = EM_NONE;
+
+			if(!bHasMouseCapture)
+				pMouseTarget = GetUIObject(m_pMouse->m_didod[i].x, m_pMouse->m_didod[i].y);
+
 			switch (m_pMouse->m_didod[i].dwOfs)
 			{
 			case DIMOFS_BUTTON0:
@@ -1395,7 +1399,6 @@ int CGUIRoot::HandleUserInput()
 						// this fixed a bug, when a button GUI may fail to release capture for a number of tricky reasons. 
 						// Any left click will automatically release any old captured button
 						bHasMouseCapture = false;
-						pMouseTarget = GetUIObject(m_pMouse->m_x, m_pMouse->m_y);
 					}
 				}
 				else{
@@ -1467,8 +1470,8 @@ int CGUIRoot::HandleUserInput()
 					bCollapseMouseMove = true;
 				}
 			}
-			newMsg.pt.x = m_pMouse->m_x;
-			newMsg.pt.y = m_pMouse->m_y;
+			newMsg.pt.x = m_pMouse->m_didod[i].x;
+			newMsg.pt.y = m_pMouse->m_didod[i].y;
 			bool isAnyButtonDown = newMsg.message == EM_MOUSE_LEFTDOWN || newMsg.message == EM_MOUSE_RIGHTDOWN || newMsg.message == EM_MOUSE_MIDDLEDOWN;
 		
 			if (!CGlobals::GetScene()->IsPickingObject() 
