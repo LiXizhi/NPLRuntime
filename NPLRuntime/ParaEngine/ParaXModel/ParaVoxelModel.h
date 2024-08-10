@@ -159,7 +159,7 @@ namespace ParaEngine
 			if (nLastSize < MAX_VOXEL_CHUNK_SIZE)
 			{
 				resize(MAX_VOXEL_CHUNK_SIZE);
-				for (int i = nLastSize; i < MAX_VOXEL_CHUNK_SIZE; i++) {
+				for (int i = (int)nLastSize; i < MAX_VOXEL_CHUNK_SIZE; i++) {
 					(*this)[i].MarkDeleted();
 				}
 			}

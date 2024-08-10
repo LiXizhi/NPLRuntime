@@ -1051,6 +1051,16 @@ void ParaEngine::CGUIRoot::ProcessIMEText()
 	}
 }
 
+bool ParaEngine::CGUIRoot::IsMouseButtonSwapped()
+{
+	return GetMouse()->IsMouseButtonSwapped();
+}
+
+void ParaEngine::CGUIRoot::SetMouseButtonSwapped(bool bSwapped)
+{
+	GetMouse()->SetMouseButtonSwapped(bSwapped);
+}
+
 bool ParaEngine::CGUIRoot::IsTouchButtonSwapped()
 {
 	return m_bSwapTouchButton;
@@ -1186,6 +1196,8 @@ int CGUIRoot::HandleUserInput()
 			newMsg.time = e->GetTimestamp();
 			newMsg.hwnd = CGlobals::GetAppHWND();
 			newMsg.message = EM_NONE;
+			newMsg.pt.x = m_pMouse->m_x;
+			newMsg.pt.y = m_pMouse->m_y;
 			
 			switch (e->GetEventType())
 			{
@@ -1198,6 +1210,8 @@ int CGUIRoot::HandleUserInput()
 			case EMouseEventType::Button:
 			{
 				const DeviceMouseButtonEvent* buttonEvent = static_cast<const DeviceMouseButtonEvent*>(e.get());
+				if (!bHasMouseCapture)
+					pMouseTarget = GetUIObject(buttonEvent->GetX(), buttonEvent->GetY());
 				switch (buttonEvent->GetButton())
 				{
 					case EMouseButton::LEFT:
@@ -1227,6 +1241,8 @@ int CGUIRoot::HandleUserInput()
 					default:
 						break;
 				}
+				newMsg.pt.x = buttonEvent->GetX();
+				newMsg.pt.y = buttonEvent->GetY();
 			}break;
 			case EMouseEventType::Move:
 			{
@@ -1253,8 +1269,7 @@ int CGUIRoot::HandleUserInput()
 					bCollapseMouseMove = true;
 				}
 			}
-			newMsg.pt.x = m_pMouse->m_x;
-			newMsg.pt.y = m_pMouse->m_y;
+			
 			bool isAnyButtonDown = newMsg.message == EM_MOUSE_LEFTDOWN || newMsg.message == EM_MOUSE_RIGHTDOWN || newMsg.message == EM_MOUSE_MIDDLEDOWN;
 		
 			if (!CGlobals::GetScene()->IsPickingObject() 
@@ -2657,6 +2672,21 @@ void ParaEngine::CGUIRoot::SetGUI3DModeScaling(float val)
 	m_fGUI3DModeScaling = val;
 }
 
+void ParaEngine::CGUIRoot::SendMouseButtonEvent(float x, float y, EMouseButton button, EKeyState state, bool bSimulated)
+{
+	GetMouse()->PushMouseEvent(DeviceMouseEventPtr(new DeviceMouseButtonEvent(button, state, (int)x, (int)y, bSimulated)));
+}
+
+void ParaEngine::CGUIRoot::SendMouseMoveEvent(float x, float y)
+{
+	GetMouse()->PushMouseEvent(DeviceMouseEventPtr(new DeviceMouseMoveEvent((int)x, (int)y)));
+}
+
+void ParaEngine::CGUIRoot::SendMouseWheelEvent(int delta)
+{
+	GetMouse()->PushMouseEvent(DeviceMouseEventPtr(new DeviceMouseWheelEvent(delta)));
+}
+
 int ParaEngine::CGUIRoot::InstallFields(CAttributeClass* pClass, bool bOverride)
 {
 	// install parent fields if there are any. Please replace __super with your parent class name.
@@ -2685,6 +2715,10 @@ int ParaEngine::CGUIRoot::InstallFields(CAttributeClass* pClass, bool bOverride)
 	pClass->AddField("SendKeyDownEvent", FieldType_Int, (void*)SendKeyDownEvent_s, (void*)0, NULL, NULL, bOverride);
 	pClass->AddField("SendKeyUpEvent", FieldType_Int, (void*)SendKeyUpEvent_s, (void*)0, NULL, NULL, bOverride);
 	pClass->AddField("SendInputMethodEvent", FieldType_String, (void*)SendInputMethodEvent_s, (void*)0, NULL, NULL, bOverride);
+	pClass->AddField("SendMouseButtonEvent", FieldType_Vector4, (void*)SendMouseButtonEvent_s, (void*)0, NULL, NULL, bOverride);
+	pClass->AddField("SendMouseMoveEvent", FieldType_Vector2, (void*)SendMouseMoveEvent_s, (void*)0, NULL, NULL, bOverride);
+	pClass->AddField("SendMouseWheelEvent", FieldType_Float, (void*)SendMouseWheelEvent_s, (void*)0, NULL, NULL, bOverride);
+	pClass->AddField("MouseButtonSwapped", FieldType_Bool, (void*)SetMouseButtonSwapped_s, (void*)IsMouseButtonSwapped_s, NULL, NULL, bOverride);
 	pClass->AddField("TouchButtonSwapped", FieldType_Bool, (void*)SetTouchButtonSwapped_s, (void*)IsTouchButtonSwapped_s, NULL, NULL, bOverride);
 
 	pClass->AddField("IsNonClient", FieldType_Bool, (void*)SetIsNonClient_s, (void*)IsNonClient_s, NULL, NULL, bOverride);

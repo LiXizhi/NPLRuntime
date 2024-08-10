@@ -2522,7 +2522,7 @@ HRESULT CSceneObject::AdvanceScene(double dTimeDelta, int nPipelineOrder)
 		RenderSelection(RENDER_PORTAL_SYSTEM);
 
 	// just in case, root GUI is rendered in 3d scene like in webxr applications. 
-	CGlobals::GetGUI()->AdvanceGUI(dTimeDelta, 1);
+	CGlobals::GetGUI()->AdvanceGUI((float)dTimeDelta, 1);
 
 	// draw overlays
 	RenderHeadOnDisplay(1);
@@ -3187,9 +3187,11 @@ bool CSceneObject::HandleUserInput()
 	// user registered custom mouse events are handled here: in the order mouse down, move, up, click
 
 	// call mouse down event handlers
-	if (mouse_down_event.m_nEventType >= 0)
+	if (mouse_down_event.m_nEventType >= 0) {
+		CGlobals::GetGUI()->SetMousePosition(mouse_down_event.m_x, mouse_down_event.m_y);
 		CGlobals::GetEventsCenter()->FireEvent(mouse_down_event);
-	// call mouse click event handlers
+	}
+	// call mouse move event handlers
 	if (mouse_move_event.m_nEventType >= 0) {
 		CGlobals::GetEventsCenter()->FireEvent(mouse_move_event);
 	}
@@ -3207,11 +3209,15 @@ bool CSceneObject::HandleUserInput()
 		}
 	}
 	// call mouse up event handlers
-	if (mouse_up_event.m_nEventType >= 0)
+	if (mouse_up_event.m_nEventType >= 0) {
+		CGlobals::GetGUI()->SetMousePosition(mouse_up_event.m_x, mouse_up_event.m_y);
 		CGlobals::GetEventsCenter()->FireEvent(mouse_up_event);
+	}
 	// call mouse click event handlers
-	if (mouse_click_event.m_nEventType >= 0)
+	if (mouse_click_event.m_nEventType >= 0) {
+		CGlobals::GetGUI()->SetMousePosition(mouse_click_event.m_x, mouse_click_event.m_y);
 		CGlobals::GetEventsCenter()->FireEvent(mouse_click_event);
+	}
 	if (mouse_wheel_event.m_nEventType >= 0)
 		CGlobals::GetEventsCenter()->FireEvent(mouse_wheel_event);
 	//if(bHasKeyEvent)

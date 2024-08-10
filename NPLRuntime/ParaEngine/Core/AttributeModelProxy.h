@@ -27,7 +27,7 @@ namespace ParaEngine
 		}
 
 		virtual int GetChildAttributeObjectCount(int nColumnIndex = 0) {
-			return (m_pArray != nullptr) ? m_pArray->size() : 0;
+			return (m_pArray != nullptr) ? (int)m_pArray->size() : 0;
 		};
 		virtual IAttributeFields* GetChildAttributeObject(int nRowIndex, int nColumnIndex=0){
 			if (m_pArray){
@@ -61,7 +61,7 @@ namespace ParaEngine
 		ATTRIBUTE_DEFINE_CLASS(CMapAttributeProxy);
 
 		virtual int GetChildAttributeObjectCount() {
-			return (m_pArray != nullptr) ? m_pArray->size() : 0;
+			return (m_pArray != nullptr) ? (int)m_pArray->size() : 0;
 		};
 		virtual IAttributeFields* GetChildAttributeObject(int nIndex){
 			if (m_pArray){

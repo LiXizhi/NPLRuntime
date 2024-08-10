@@ -25,7 +25,7 @@ namespace ParaEngine
 
 		ATTRIBUTE_METHOD1(ParaVertexBufferPool, GetActiveBufferCount_s, int*)		{ *p1 = cls->GetActiveBufferCount(); return S_OK; }
 		ATTRIBUTE_METHOD1(ParaVertexBufferPool, GetTotalBufferCount_s, int*)		{ *p1 = cls->GetTotalBufferCount(); return S_OK; }
-		ATTRIBUTE_METHOD1(ParaVertexBufferPool, GetTotalBufferBytes_s, int*)		{ *p1 = cls->GetTotalBufferBytes(); return S_OK; }
+		ATTRIBUTE_METHOD1(ParaVertexBufferPool, GetTotalBufferBytes_s, int*)		{ *p1 = (int)cls->GetTotalBufferBytes(); return S_OK; }
 
 	public:
 

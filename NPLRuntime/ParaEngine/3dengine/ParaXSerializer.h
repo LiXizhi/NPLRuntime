@@ -120,7 +120,7 @@ namespace ParaEngine
 			return nOffset;
 		};
 		unsigned int AddRawData(const std::string& str) {
-			return AddRawData(str.c_str(), str.size() + 1);
+			return AddRawData(str.c_str(), (int)str.size() + 1);
 		};
 	};
 #ifdef USE_DIRECTX_RENDERER
