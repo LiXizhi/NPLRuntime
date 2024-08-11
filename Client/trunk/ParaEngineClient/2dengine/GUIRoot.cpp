@@ -3154,7 +3154,7 @@ bool ParaEngine::CGUIRoot::TransformMousePos(int& inout_x, int& inout_y, const M
 			float t = -vPickRayOrig.z / vPickRayDir.z;
 			Vector3 vIntersection = vPickRayOrig + vPickRayDir * t;
 			vIntersection.y = -vIntersection.y;
-			if(vIntersection.x >= 0 && vIntersection.x < nWidth && vIntersection.y >= 0 && vIntersection.y < nHeight)
+			if(vIntersection.x >= 0 && vIntersection.x < (nWidth / fScaleX) && vIntersection.y >= 0 && vIntersection.y < (nHeight / fScaleY))
 			{
 				inout_x = (int)vIntersection.x;
 				inout_y = (int)vIntersection.y;
