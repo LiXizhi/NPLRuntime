@@ -685,35 +685,8 @@ void	CGUIRoot::AdvanceGUI(float fElapsedTime, int nPipelineOrder)
 		if (bIsRelativeTo3D && painter->isActive()) {
 			painter->SetSpriteUseWorldMatrix(true);
 			painter->PushMatrix();
-			// render GUI in front of the eye position while facing towards it.
-			float fGUIToEyeDist = GetGUIToEyeDist();
-			float screenWidth = GetWidth();
-			float screenHeight = GetHeight();
-			float fAspectRatio = CGlobals::GetScene()->GetCurrentCamera()->GetFieldOfView();
-			float fScaling = std::tanf(fAspectRatio * 0.5f) * fGUIToEyeDist / (screenHeight * 0.5f) * GetGUI3DModeScaling();
 			Matrix4 mat(Matrix4::IDENTITY);
-			auto vEye = CGlobals::GetScene()->GetCurrentCamera()->GetEyePosition();
-			auto vLookat = CGlobals::GetScene()->GetCurrentCamera()->GetLookAtPosition();
-			Vector3 vDir = (vLookat - vEye);
-			vDir.normalise();
-			float yaw = -std::atan2(vDir.z, vDir.x) + Math::PI * 0.5f;
-			float pitch = -std::asin(vDir.y);
-			Quaternion qPitch(Radian(pitch), Vector3::UNIT_X);
-			Quaternion qYaw(Radian(yaw), Vector3::UNIT_Y);
-			Quaternion q = qYaw * qPitch;
-			q.ToRotationMatrix(mat, Vector3::ZERO);
-			// offset by center of screenWidth, screenHeight
-
-			Matrix4 matTrans;
-			matTrans.makeTrans(Vector3(-screenWidth * 0.5f, screenHeight * 0.5f, 0.f));
-			mat = matTrans * mat;
-			Matrix4 matScale;
-			matScale.makeScale(Vector3(fScaling, fScaling, fScaling));
-			mat = mat * matScale;
-			vLookat = vEye + vDir * fGUIToEyeDist;
-			vLookat += CGlobals::GetScene()->GetRenderOffset();
-			matTrans.makeTrans(vLookat);
-			mat = mat * matTrans;
+			GetWorldTransform(mat);
 			painter->LoadMatrix(mat);
 			pRenderDevice->SetRenderState(ERenderState::ZENABLE, FALSE);
 			pRenderDevice->SetRenderState(ERenderState::ZWRITEENABLE, FALSE);
@@ -1142,6 +1115,15 @@ int CGUIRoot::HandleUserInput()
 	bool bKeyHandled = false;
 	bool bMouseHandled = false;
 	STRUCT_DRAG_AND_DROP *pdrag = &IObjectDrag::DraggingObject;
+	
+	bool bIsRelativeTo3D = Is3DGUIMode();
+	Matrix4 matWorld;
+	bool bSkipGUIEvent = false;
+	if (bIsRelativeTo3D)
+	{
+		GetWorldTransform(matWorld);
+	}
+
 	{
 		m_events.clear();
 		{
@@ -1179,8 +1161,10 @@ int CGUIRoot::HandleUserInput()
 		CGUIBase* pMouseTarget = m_pMouse->GetCapture();
 		bool bHasMouseCapture = false;
 		// Fixed 2010.10.27: the mouse target is always the currently captured mouse object. Scrollbar will function correctly. 
-		if (pMouseTarget == NULL)
-			pMouseTarget = GetUIObject(m_pMouse->m_x, m_pMouse->m_y);
+		if (pMouseTarget == NULL) {
+			if (!bIsRelativeTo3D)
+				pMouseTarget = GetUIObject(m_pMouse->m_x, m_pMouse->m_y);
+		}
 		else
 			bHasMouseCapture = true;
 
@@ -1196,9 +1180,38 @@ int CGUIRoot::HandleUserInput()
 			newMsg.time = e->GetTimestamp();
 			newMsg.hwnd = CGlobals::GetAppHWND();
 			newMsg.message = EM_NONE;
-			newMsg.pt.x = m_pMouse->m_x;
-			newMsg.pt.y = m_pMouse->m_y;
-			
+			int mouseX = e->GetX();
+			int mouseY = e->GetY();
+			if (mouseX > -999) 
+			{
+				// if not mouse wheel, translate the mouse position to the GUI coordinate system
+				TranslateMousePos(mouseX, mouseY);
+			}
+			else
+			{
+				mouseX = m_pMouse->m_x;
+				mouseY = m_pMouse->m_y;
+			}
+			int nOriginalX = mouseX;
+			int nOriginalY = mouseY;
+			newMsg.pt.x = mouseX;
+			newMsg.pt.y = mouseY;
+
+			if (bIsRelativeTo3D && mouseX > -999)
+			{
+				if (TransformMousePos(mouseX, mouseY, &matWorld))
+				{
+					newMsg.pt.x = mouseX;
+					newMsg.pt.y = mouseY;
+				}
+				else
+				{
+					// if the mouse is outside the 3d gui, we should not process it.
+					m_events.push_back(newMsg);
+					continue;
+				}
+			}
+
 			switch (e->GetEventType())
 			{
 			default:
@@ -1210,9 +1223,6 @@ int CGUIRoot::HandleUserInput()
 			case EMouseEventType::Button:
 			{
 				const DeviceMouseButtonEvent* buttonEvent = static_cast<const DeviceMouseButtonEvent*>(e.get());
-				int mouseX = buttonEvent->GetX();
-				int mouseY = buttonEvent->GetY();
-				TranslateMousePos(mouseX, mouseY);
 				if (!bHasMouseCapture)
 					pMouseTarget = GetUIObject(mouseX, mouseY);
 				switch (buttonEvent->GetButton())
@@ -1400,6 +1410,11 @@ int CGUIRoot::HandleUserInput()
 			}
 			else if (!bMouseHandled || m_pLastMouseDownObject == CGlobals::GetScene()) 
 			{
+				if (bIsRelativeTo3D)
+				{
+					newMsg.pt.x = nOriginalX;
+					newMsg.pt.y = nOriginalY;
+				}
 				m_events.push_back(newMsg);
 			}
 
@@ -2687,6 +2702,80 @@ void ParaEngine::CGUIRoot::SendMouseMoveEvent(float x, float y)
 void ParaEngine::CGUIRoot::SendMouseWheelEvent(int delta)
 {
 	GetMouse()->PushMouseEvent(DeviceMouseEventPtr(new DeviceMouseWheelEvent(delta)));
+}
+
+bool ParaEngine::CGUIRoot::GetWorldTransform(Matrix4& matWorld)
+{
+	if (!Is3DGUIMode())
+	{
+		return false;
+	}
+	// render GUI in front of the eye position while facing towards it.
+	float fGUIToEyeDist = GetGUIToEyeDist();
+	float screenWidth = GetWidth();
+	float screenHeight = GetHeight();
+	float fAspectRatio = CGlobals::GetScene()->GetCurrentCamera()->GetFieldOfView();
+	float fScaling = std::tanf(fAspectRatio * 0.5f) * fGUIToEyeDist / (screenHeight * 0.5f) * GetGUI3DModeScaling();
+	Matrix4 mat(Matrix4::IDENTITY);
+	auto vEye = CGlobals::GetScene()->GetCurrentCamera()->GetEyePosition();
+	auto vLookat = CGlobals::GetScene()->GetCurrentCamera()->GetLookAtPosition();
+	Vector3 vDir = (vLookat - vEye);
+	vDir.normalise();
+	float yaw = -std::atan2(vDir.z, vDir.x) + Math::PI * 0.5f;
+	float pitch = -std::asin(vDir.y);
+	Quaternion qPitch(Radian(pitch), Vector3::UNIT_X);
+	Quaternion qYaw(Radian(yaw), Vector3::UNIT_Y);
+	Quaternion q = qYaw * qPitch;
+	q.ToRotationMatrix(mat, Vector3::ZERO);
+	// offset by center of screenWidth, screenHeight
+	Matrix4 matTrans;
+	matTrans.makeTrans(Vector3(-screenWidth * 0.5f, screenHeight * 0.5f, 0.f));
+	mat = matTrans * mat;
+	Matrix4 matScale;
+	matScale.makeScale(Vector3(fScaling, fScaling, fScaling));
+	mat = mat * matScale;
+	vLookat = vEye + vDir * fGUIToEyeDist;
+	vLookat += CGlobals::GetScene()->GetRenderOffset();
+	matTrans.makeTrans(vLookat);
+	mat = mat * matTrans;
+
+	matWorld = mat;
+	return true;
+}
+
+bool ParaEngine::CGUIRoot::TransformMousePos(int& inout_x, int& inout_y, const Matrix4* pMatWorld)
+{
+	if (pMatWorld)
+	{
+		Vector3 vPickRayOrig, vPickRayDir;
+		int x = inout_x;
+		int y = inout_y;
+		float fScaleX = 1.f, fScaleY = 1.f;
+		GetUIScale(&fScaleX, &fScaleY);
+		x = (fScaleX == 1.f) ? x : (int)(x * fScaleX);
+		y = (fScaleY == 1.f) ? y : (int)(y * fScaleY);
+
+		int nWidth, nHeight;
+		POINT ptCursor;
+		ptCursor.x = x;
+		ptCursor.y = y;
+		CGlobals::GetViewportManager()->GetPointOnViewport(x, y, &nWidth, &nHeight);
+		CGlobals::GetScene()->GetCurrentCamera()->GetMouseRay(vPickRayOrig, vPickRayDir, ptCursor, nWidth, nHeight, pMatWorld);
+		if (vPickRayOrig.z < 0.f && vPickRayDir.z > 0.f)
+		{
+			// get the intersection point with the plane at z = 0
+			float t = -vPickRayOrig.z / vPickRayDir.z;
+			Vector3 vIntersection = vPickRayOrig + vPickRayDir * t;
+			vIntersection.y = -vIntersection.y;
+			if (vIntersection.x >= 0 && vIntersection.x < nWidth && vIntersection.y >= 0 && vIntersection.y < nHeight)
+			{
+				inout_x = (int)vIntersection.x;
+				inout_y = (int)vIntersection.y;
+				return true;
+			}
+		}
+	}
+	return false;
 }
 
 int ParaEngine::CGUIRoot::InstallFields(CAttributeClass* pClass, bool bOverride)

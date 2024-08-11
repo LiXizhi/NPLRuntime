@@ -218,7 +218,8 @@ namespace ParaEngine
 		}
 
 		virtual EMouseEventType GetEventType() const { return EMouseEventType::Unknown; }
-
+		virtual int GetX() const { return -10000; };
+		virtual int GetY() const { return -10000; };
         uint32_t GetTimestamp() const { return m_timestamp; }
         
 		virtual std::string ToString();
@@ -233,8 +234,8 @@ namespace ParaEngine
 
 	public:
 		DeviceMouseMoveEvent(int x,int y):m_x(x),m_y(y) {};
-		inline int GetX() const { return m_x; };
-		inline int GetY() const { return m_y; };
+		virtual int GetX() const { return m_x; };
+		virtual int GetY() const { return m_y; };
 		virtual EMouseEventType GetEventType()const override { return EMouseEventType::Move; };
 
 		virtual std::string ToString();
@@ -256,8 +257,8 @@ namespace ParaEngine
 		void SetButton(EMouseButton btn) { m_button = btn; }
 		inline EKeyState GetKeyState() const { return m_state; };
 
-		inline int GetX() const { return m_x; };
-		inline int GetY() const { return m_y; };
+		virtual int GetX() const { return m_x; };
+		virtual int GetY() const { return m_y; };
 
 		virtual EMouseEventType GetEventType() const { return EMouseEventType::Button; };
 		inline bool IsFromTouchInput() const { return m_bFromTouchInput; };
