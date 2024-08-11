@@ -1210,8 +1210,11 @@ int CGUIRoot::HandleUserInput()
 			case EMouseEventType::Button:
 			{
 				const DeviceMouseButtonEvent* buttonEvent = static_cast<const DeviceMouseButtonEvent*>(e.get());
+				int mouseX = buttonEvent->GetX();
+				int mouseY = buttonEvent->GetY();
+				TranslateMousePos(mouseX, mouseY);
 				if (!bHasMouseCapture)
-					pMouseTarget = GetUIObject(buttonEvent->GetX(), buttonEvent->GetY());
+					pMouseTarget = GetUIObject(mouseX, mouseY);
 				switch (buttonEvent->GetButton())
 				{
 					case EMouseButton::LEFT:
@@ -1223,7 +1226,6 @@ int CGUIRoot::HandleUserInput()
 							// this fixed a bug, when a button GUI may fail to release capture for a number of tricky reasons. 
 							// Any left click will automatically release any old captured button
 							bHasMouseCapture = false;
-							pMouseTarget = GetUIObject(m_pMouse->m_x, m_pMouse->m_y);
 						}
 					}break;
 					case EMouseButton::RIGHT:
@@ -1241,8 +1243,8 @@ int CGUIRoot::HandleUserInput()
 					default:
 						break;
 				}
-				newMsg.pt.x = buttonEvent->GetX();
-				newMsg.pt.y = buttonEvent->GetY();
+				newMsg.pt.x = mouseX;
+				newMsg.pt.y = mouseY;
 			}break;
 			case EMouseEventType::Move:
 			{
