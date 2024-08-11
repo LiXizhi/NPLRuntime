@@ -1383,9 +1383,11 @@ int CGUIRoot::HandleUserInput()
 			newMsg.time = m_pMouse->m_didod[i].dwTimeStamp;
 			newMsg.hwnd = CGlobals::GetAppHWND();
 			newMsg.message = EM_NONE;
-
+			int mouseX = m_pMouse->m_didod[i].x;
+			int mouseY = m_pMouse->m_didod[i].y;
+			TranslateMousePos(mouseX, mouseY);
 			if(!bHasMouseCapture)
-				pMouseTarget = GetUIObject(m_pMouse->m_didod[i].x, m_pMouse->m_didod[i].y);
+				pMouseTarget = GetUIObject(mouseX, mouseY);
 
 			switch (m_pMouse->m_didod[i].dwOfs)
 			{
@@ -1470,8 +1472,8 @@ int CGUIRoot::HandleUserInput()
 					bCollapseMouseMove = true;
 				}
 			}
-			newMsg.pt.x = m_pMouse->m_didod[i].x;
-			newMsg.pt.y = m_pMouse->m_didod[i].y;
+			newMsg.pt.x = mouseX;
+			newMsg.pt.y = mouseY;
 			bool isAnyButtonDown = newMsg.message == EM_MOUSE_LEFTDOWN || newMsg.message == EM_MOUSE_RIGHTDOWN || newMsg.message == EM_MOUSE_MIDDLEDOWN;
 		
 			if (!CGlobals::GetScene()->IsPickingObject() 
