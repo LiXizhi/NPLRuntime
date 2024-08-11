@@ -496,6 +496,11 @@ namespace ParaEngine
 		void SendMouseButtonEvent(float x, float y, EMouseButton button, EKeyState state, bool bSimulated = false);
 		void SendMouseMoveEvent(float x, float y);
 		void SendMouseWheelEvent(int delta);
+
+		/** get world transform if GUI is rendered on 3d surface. */
+		bool GetWorldTransform(Matrix4& matWorld);
+		/** transform mouse position from 2d view space to 3d space using the given pMatWorld*/
+		bool TransformMousePos(int &inout_x, int &inout_y, const Matrix4* pMatWorld);
 	public:
 		virtual ~CGUIRoot(void);
 
