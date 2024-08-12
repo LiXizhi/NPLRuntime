@@ -33,7 +33,9 @@ namespace ParaEngine
             int leftHandKey[7], int rightHandKey[7], Vector4 leftAxes, Vector4 rightAxes) override;
 
         // Emulate WebXR.
-        ATTRIBUTE_METHOD1(IParaWebXR, SetWebXRTimeEmulate_s, string) { cls->m_webXRTime = atoi(p1.c_str()); return S_OK; }
+        ATTRIBUTE_METHOD1(IParaWebXR, SetWebXRTimeEmulate_s, int) { cls->m_webXRTime = p1; return S_OK; }
+        ATTRIBUTE_METHOD1(IParaWebXR, SetWebXRLeftPositionEmulate_s, Vector3) { cls->m_webXRLeftPosition = p1; return S_OK; }
+        ATTRIBUTE_METHOD1(IParaWebXR, SetWebXRRightPositionEmulate_s, Vector3) { cls->m_webXRRightPosition = p1; return S_OK; }
         ATTRIBUTE_METHOD1(IParaWebXR, SetWebXRLeftOrientationEmulate_s, Vector4) { cls->m_webXRLeftOrientation = p1; return S_OK; }
         ATTRIBUTE_METHOD1(IParaWebXR, SetWebXRRightOrientationEmulate_s, Vector4) { cls->m_webXRRightOrientation = p1; return S_OK; }
         ATTRIBUTE_METHOD1(IParaWebXR, SetWebXRLeftHandPositionEmulate_s, Vector3) { cls->m_webXRLeftHandPosition = p1; return S_OK; }
@@ -64,10 +66,13 @@ namespace ParaEngine
             pClass->AddField("webXRTimeEmulate", FieldType_Int, (void*)SetWebXRTimeEmulate_s, NULL, NULL, NULL, bOverride);
 
             pClass->AddField("webXRLeftView", FieldType_Vector4, NULL, (void*)GetWebXRLeftView_s, NULL, NULL, bOverride);
-            pClass->AddField("webXRLeftPosition", FieldType_Vector3, NULL, (void*)GetWebXRLeftPosition_s, NULL, NULL, bOverride);
             pClass->AddField("webXRRightView", FieldType_Vector4, NULL, (void*)GetWebXRRightView_s, NULL, NULL, bOverride);
-            pClass->AddField("webXRRightPosition", FieldType_Vector3, NULL, (void*)GetWebXRRightPosition_s, NULL, NULL, bOverride);
             pClass->AddField("webXRViewsCount", FieldType_Int, NULL, (void*)GetWebXRViewsCount_s, NULL, NULL, bOverride);
+            
+            pClass->AddField("webXRLeftPosition", FieldType_Vector3, NULL, (void*)GetWebXRLeftPosition_s, NULL, NULL, bOverride);
+            pClass->AddField("webXRLeftPositionEmulate", FieldType_Vector3, (void*)SetWebXRLeftPositionEmulate_s, NULL, NULL, NULL, bOverride);
+            pClass->AddField("webXRRightPosition", FieldType_Vector3, NULL, (void*)GetWebXRRightPosition_s, NULL, NULL, bOverride);
+            pClass->AddField("webXRRightPositionEmulate", FieldType_Vector3, (void*)SetWebXRRightPositionEmulate_s, NULL, NULL, NULL, bOverride);
 
             pClass->AddField("webXRLeftOrientation", FieldType_Vector4, NULL, (void*)GetWebXRLeftOrientation_s, NULL, NULL, bOverride);
             pClass->AddField("webXRLeftOrientationEmulate", FieldType_Vector4, (void*)SetWebXRLeftOrientationEmulate_s, NULL, NULL, NULL, bOverride);
