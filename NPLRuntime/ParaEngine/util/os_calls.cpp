@@ -431,7 +431,17 @@ PE_CORE_DECL std::string ParaEngine::GetExecutablePath()
 #if (PARA_TARGET_PLATFORM == PARA_PLATFORM_ANDROID) || defined(ANDROID)
 	return std::string();
 #elif (PARA_TARGET_PLATFORM == PARA_PLATFORM_LINUX) || (PARA_TARGET_PLATFORM == PARA_PLATFORM_MAC) || defined(WIN32)
-	return boost::log::aux::get_process_name();
+	#if BOOST_VERSION >= 108600
+		char path[MAX_PATH];
+		if (GetModuleFileName(NULL, path, MAX_PATH)) {
+			std::string full_path(path);
+			// Return only the file name.
+			return full_path.substr(full_path.find_last_of("\\/") + 1);
+		}
+		return std::string();
+	#else
+		return boost::log::aux::get_process_name();
+	#endif
 #else
 	return std::string();
 #endif

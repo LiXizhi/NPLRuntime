@@ -11,6 +11,6 @@ if [ ! -d ./boost_1_78_0 ]; then
 fi
 cd boost_1_78_0
 ./bootstrap.sh --with-libraries="thread,date_time,filesystem,system,chrono,serialization,iostreams,regex,log,locale"
-./b2 link=static threading=multi variant=release
+./b2 runtime-link=static threading=multi variant=release
 ./b2 install
 popd
