@@ -32,12 +32,18 @@ bool ParaEngine::CParaWebXR::GetIsXR()
 
 bool ParaEngine::CParaWebXR::IsPressLeftHandKey(int keyCode)
 {
-    return false;
+    if (m_webXRLeftHandKey[keyCode] == 1)
+        return true;
+    else
+        return false;
 }
 
 bool ParaEngine::CParaWebXR::IsPressRightHandKey(int keyCode)
 {
-    return false;
+    if (m_webXRRightHandKey[keyCode] == 1)
+        return true;
+    else
+        return false;
 }
 
 void ParaEngine::CParaWebXR::UpdateWebXRView(
@@ -49,6 +55,6 @@ void ParaEngine::CParaWebXR::UpdateWebXRView(
     Vector4 leftHandOrientation, Vector4 rightHandOrientation,
     int leftHandKey[7], int rightHandKey[7], Vector4 leftAxes, Vector4 rightAxes)
 {
-    // TOOD...
+    // disabled.
 }
 

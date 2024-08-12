@@ -1185,7 +1185,11 @@ const char* ParaEngine::ParaEngineSettings::GetProcessName()
 #ifdef WIN32
 	if (g_processName.empty())
 	{
+	#if BOOST_VERSION >= 108600
+		g_processName = GetModuleFileName();
+	#else
 		g_processName = boost::log::aux::get_process_name();
+	#endif
 	}
 #endif
 	return g_processName.c_str();
