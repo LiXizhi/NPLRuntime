@@ -34,6 +34,8 @@ namespace ParaEngine
 
         // Emulate WebXR.
         ATTRIBUTE_METHOD1(IParaWebXR, SetWebXRTimeEmulate_s, string) { cls->m_webXRTime = atoi(p1.c_str()); return S_OK; }
+        ATTRIBUTE_METHOD1(IParaWebXR, SetWebXRLeftOrientationEmulate_s, Vector4) { cls->m_webXRLeftOrientation = p1; return S_OK; }
+        ATTRIBUTE_METHOD1(IParaWebXR, SetWebXRRightOrientationEmulate_s, Vector4) { cls->m_webXRRightOrientation = p1; return S_OK; }
         ATTRIBUTE_METHOD1(IParaWebXR, SetWebXRLeftHandPositionEmulate_s, Vector3) { cls->m_webXRLeftHandPosition = p1; return S_OK; }
         ATTRIBUTE_METHOD1(IParaWebXR, SetWebXRRightHandPositionEmulate_s, Vector3) { cls->m_webXRRightHandPosition = p1; return S_OK; }
         ATTRIBUTE_METHOD1(IParaWebXR, SetWebXRLeftHandOrientationEmulate_s, Vector4) { cls->m_webXRLeftHandOrientation = p1; return S_OK; }
@@ -68,7 +70,9 @@ namespace ParaEngine
             pClass->AddField("webXRViewsCount", FieldType_Int, NULL, (void*)GetWebXRViewsCount_s, NULL, NULL, bOverride);
 
             pClass->AddField("webXRLeftOrientation", FieldType_Vector4, NULL, (void*)GetWebXRLeftOrientation_s, NULL, NULL, bOverride);
+            pClass->AddField("webXRLeftOrientationEmulate", FieldType_Vector4, (void*)SetWebXRLeftOrientationEmulate_s, NULL, NULL, NULL, bOverride);
             pClass->AddField("webXRRightOrientation", FieldType_Vector4, NULL, (void*)GetWebXRRightOrientation_s, NULL, NULL, bOverride);
+            pClass->AddField("webXRRightOrientationEmulate", FieldType_Vector4, (void*)SetWebXRRightOrientationEmulate_s, NULL, NULL, NULL, bOverride);
 
             pClass->AddField("webXRLeftHandPosition", FieldType_Vector3, NULL, (void*)GetWebXRLeftHandPosition_s, NULL, NULL, bOverride);
             pClass->AddField("webXRLeftHandPositionEmulate", FieldType_Vector3, (void*)SetWebXRLeftHandPositionEmulate_s, NULL, NULL, NULL, bOverride);
