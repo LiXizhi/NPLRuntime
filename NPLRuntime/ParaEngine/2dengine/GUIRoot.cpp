@@ -1253,8 +1253,6 @@ int CGUIRoot::HandleUserInput()
 					default:
 						break;
 				}
-				newMsg.pt.x = mouseX;
-				newMsg.pt.y = mouseY;
 			}break;
 			case EMouseEventType::Move:
 			{
