@@ -1368,7 +1368,7 @@ int CGUIRoot::HandleUserInput()
 			int mouseX = m_pMouse->m_didod[i].x;
 			int mouseY = m_pMouse->m_didod[i].y;
 			auto dwOfs = m_pMouse->m_didod[i].dwOfs;
-			if (dwOfs == DIMOFS_X || dwOfs == DIMOFS_Y || dwOfs == DIMOFS_Z)
+			if (dwOfs == DIMOFS_Z)
 			{
 				// for mouse wheel do not use x, y in m_didod[i]
 				mouseX = m_pMouse->m_x;
