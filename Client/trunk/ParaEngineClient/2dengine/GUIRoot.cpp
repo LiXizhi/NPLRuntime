@@ -1367,7 +1367,15 @@ int CGUIRoot::HandleUserInput()
 			newMsg.message = EM_NONE;
 			int mouseX = m_pMouse->m_didod[i].x;
 			int mouseY = m_pMouse->m_didod[i].y;
-			TranslateMousePos(mouseX, mouseY);
+			auto dwOfs = m_pMouse->m_didod[i].dwOfs;
+			if (dwOfs == DIMOFS_X || dwOfs == DIMOFS_Y || dwOfs == DIMOFS_Z)
+			{
+				// for mouse wheel do not use x, y in m_didod[i]
+				mouseX = m_pMouse->m_x;
+				mouseY = m_pMouse->m_y;
+			}
+			else
+				TranslateMousePos(mouseX, mouseY);
 			newMsg.pt.x = mouseX;
 			newMsg.pt.y = mouseY;
 			int nOriginalX = mouseX;
