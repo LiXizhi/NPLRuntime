@@ -2676,7 +2676,7 @@ void ParaEngine::CGUIRoot::TranslateTouchEvent(const TouchEvent &touch)
 					{
 						// fixed a mouse wheeling invalid error.
 						// update the position of mouse to find ui object correctly in CGUIRoot::HandleUserInput()
-						// added by leio 2020/11/27
+						m_pMouse->SetDeviceCursorPos(mouse_x, mouse_y);
 						m_pMouse->SetMousePosition(ui_mouse_x, ui_mouse_y);
 
 						// OUTPUT_LOG("touch wheel: %d %d (drag:%d)\n", ui_mouse_x, ui_mouse_y, pTouchSession->GetMaxDragDistance());
