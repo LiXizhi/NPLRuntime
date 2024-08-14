@@ -23,6 +23,8 @@ void ParaEngine::CParaWebXR::SetIsXR(bool isXR)
     {
         CGlobals::GetViewportManager()->SetLayout(VIEW_LAYOUT_DEFAULT);
     }
+
+    m_isXR = isXR;
 }
 
 bool ParaEngine::CParaWebXR::GetIsXR()
