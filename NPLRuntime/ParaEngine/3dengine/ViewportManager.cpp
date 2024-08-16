@@ -14,6 +14,7 @@
 #include "MoviePlatform.h"
 #include "3dengine/RenderTarget.h"
 #include "2dengine/GUIRoot.h"
+#include "util/CSingleton.h"
 #include "IParaWebXR.h"
 
 #if defined(EMSCRIPTEN) || defined(WIN32)
@@ -917,6 +918,7 @@ int ParaEngine::CViewportManager::GetChildAttributeObjectCount(int nColumnIndex)
 		return (int)m_viewportList.size();
 	else if (nColumnIndex == 1)
 		return 1;
+	return 0;
 }
 
 IAttributeFields* ParaEngine::CViewportManager::GetChildAttributeObject(const char* sName)
@@ -942,6 +944,7 @@ IAttributeFields* ParaEngine::CViewportManager::GetChildAttributeObject(int nRow
 		if (nRowIndex == 0)
 			return CParaWebXRFactory::GetInstance();
 	}
+	return NULL;
 }
 
 int ParaEngine::CViewportManager::InstallFields(CAttributeClass* pClass, bool bOverride)
@@ -960,10 +963,8 @@ int ParaEngine::CViewportManager::InstallFields(CAttributeClass* pClass, bool bO
 IParaWebXR* CParaWebXRFactory::GetInstance()
 {
 #if defined(EMSCRIPTEN) || defined(WIN32)
-	static CParaWebXR s_instance;
-	return & s_instance;
+	return CAppSingleton<CParaWebXR>::GetInstance();
 #else
-	static IParaWebXR s_instance;
-	return & s_instance;
+	return CAppSingleton<IParaWebXR>::GetInstance();
 #endif
 }

@@ -1196,7 +1196,7 @@ int CGUIRoot::HandleUserInput()
 			int nOriginalY = mouseY;
 			newMsg.pt.x = mouseX;
 			newMsg.pt.y = mouseY;
-
+			bool bForceAddToSceneEvent = false;
 			if (bIsRelativeTo3D && mouseX > -999)
 			{
 				if (TransformMousePos(mouseX, mouseY, &matWorld))
@@ -1207,8 +1207,7 @@ int CGUIRoot::HandleUserInput()
 				else
 				{
 					// if the mouse is outside the 3d gui, we should not process it.
-					m_events.push_back(newMsg);
-					continue;
+					bForceAddToSceneEvent = true;
 				}
 			}
 
@@ -1223,7 +1222,7 @@ int CGUIRoot::HandleUserInput()
 			case EMouseEventType::Button:
 			{
 				const DeviceMouseButtonEvent* buttonEvent = static_cast<const DeviceMouseButtonEvent*>(e.get());
-				if (!bHasMouseCapture)
+				if (!bHasMouseCapture && !bForceAddToSceneEvent)
 					pMouseTarget = GetUIObject(mouseX, mouseY);
 				switch (buttonEvent->GetButton())
 				{
@@ -1282,7 +1281,7 @@ int CGUIRoot::HandleUserInput()
 			
 			bool isAnyButtonDown = newMsg.message == EM_MOUSE_LEFTDOWN || newMsg.message == EM_MOUSE_RIGHTDOWN || newMsg.message == EM_MOUSE_MIDDLEDOWN;
 		
-			if (!CGlobals::GetScene()->IsPickingObject() 
+			if (!bForceAddToSceneEvent && !CGlobals::GetScene()->IsPickingObject()
 				// we should not let GUI to receive any event when scene is capturing the mouse.
 				&& !(IsMouseCaptured() && m_pLastMouseDownObject == CGlobals::GetScene()))
 			{
@@ -1406,7 +1405,7 @@ int CGUIRoot::HandleUserInput()
 				// this prevent any mouse messages to be sent to 3D when there is a top level control. 
 				bMouseHandled = true;
 			}
-			else if (!bMouseHandled || m_pLastMouseDownObject == CGlobals::GetScene()) 
+			else if (bForceAddToSceneEvent || !bMouseHandled || m_pLastMouseDownObject == CGlobals::GetScene())
 			{
 				if (bIsRelativeTo3D)
 				{
@@ -2532,16 +2531,16 @@ void ParaEngine::CGUIRoot::SetIMEFocus(CGUIBase* val)
 void ParaEngine::CGUIRoot::TranslateMousePos(int &inout_x, int &inout_y)
 {
 	CViewport* pViewport = CGlobals::GetViewportManager()->GetViewportByPoint(inout_x, inout_y);
-	int nLeft = (int)m_fViewportLeft;
-	int nTop = (int)m_fViewportTop;
+	int nLeft = Is3DGUIMode() ? 0 : (int)m_fViewportLeft;
+	int nTop = Is3DGUIMode() ? 0 : (int)m_fViewportTop;
 	if (pViewport)
 	{
 		nLeft = pViewport->GetLeft();
 		nTop = pViewport->GetTop();
 	}
-	if (m_fViewportLeft != 0)
+	if (nLeft != 0)
 		inout_x -= nLeft;
-	if (m_fViewportTop != 0)
+	if (nTop != 0)
 		inout_y -= nTop;
 	if (m_fUIScalingX != 1.f)
 		inout_x = (int)((float)inout_x / m_fUIScalingX);
