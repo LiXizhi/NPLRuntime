@@ -236,7 +236,7 @@ ERenderState D3DMapping::toRenderState(D3DRENDERSTATETYPE format)
 	{
 		return it->second;
 	}
-	return ERenderState::Unkonwn;
+	return ERenderState::Unknown;
 }
 
 
@@ -244,7 +244,7 @@ D3DFORMAT D3DMapping::toD3DFromat(PixelFormat format)
 {
 	switch (format)
 	{
-	case PixelFormat::Unkonwn:
+	case PixelFormat::Unknown:
 		return D3DFMT_UNKNOWN;
 	case PixelFormat::R8G8B8:
 		return D3DFMT_R8G8B8;
