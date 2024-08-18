@@ -90,12 +90,20 @@ namespace ParaEngine
 		/** \return Name of the default playback device. */
 		virtual const char* getDefaultDeviceName();
 
-		/** save current captured audio to a file, currently only ogg file format are supported.
+		/** save current captured audio to a file, currently only ogg/wav file format are supported.
 		* @param filename: writable full path, like "temp/capture.ogg"
 		* @param baseQuality: value in range [0.1, 1].   0.1 is lowest quality, 1 is best quality.  0.4 is usual
 		* @return the number of bytes written
 		*/
 		virtual unsigned int saveToFile(const char* filename, float baseQuality = 0.1f);
+
+		/** save raw audio buffer to a file, currently only ogg/wav file format are supported.
+		* @param filename: writable full path, like "temp/capture.ogg"
+		* @param pBuffer: 
+		* @param baseQuality: value in range [0.1, 1].   0.1 is lowest quality, 1 is best quality.  0.4 is usual
+		* @return the number of bytes written
+		*/
+		virtual unsigned int saveToFile(const char* filename, const char* pBuffer, int nSize, float baseQuality);
 	private:
 		IAudioCapture * m_pAudioCapture;
 		IAudioDeviceList* m_deviceList;

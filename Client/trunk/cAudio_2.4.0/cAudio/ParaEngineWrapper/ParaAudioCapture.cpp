@@ -226,19 +226,19 @@ const char* ParaEngine::CParaAudioCapture::getDefaultDeviceName()
 
 static void fwrite16le(int32 val, FILE* f)
 {
-	byte data[2];
-	data[0] = (byte)(val & 0xff);
-	data[1] = (byte)(val >> 8);
+	unsigned char data[2];
+	data[0] = (unsigned char)(val & 0xff);
+	data[1] = (unsigned char)(val >> 8);
 	fwrite(data, 1, 2, f);
 }
 
 static void fwrite32le(int32 val, FILE* f)
 {
-	byte data[4];
-	data[0] = (byte)(val & 0xff);
-	data[1] = (byte)((val >> 8) & 0xff);
-	data[2] = (byte)((val >> 16) & 0xff);
-	data[3] = (byte)(val >> 24);
+	unsigned char data[4];
+	data[0] = (unsigned char)(val & 0xff);
+	data[1] = (unsigned char)((val >> 8) & 0xff);
+	data[2] = (unsigned char)((val >> 16) & 0xff);
+	data[3] = (unsigned char)(val >> 24);
 	fwrite(data, 1, 4, f);
 }
 
@@ -261,6 +261,12 @@ unsigned int ParaEngine::CParaAudioCapture::saveToFile(const char* filename, flo
 		}
 	}
 	std::unique_ptr<ParaAudioCaptureBuffer> pBuffer(getCapturedAudioBuffer());
+	
+	return saveToFile(filename, pBuffer->getReadBuffer(), pBuffer->getLength(), baseQuality);
+}
+
+unsigned int ParaEngine::CParaAudioCapture::saveToFile(const char* filename, const char* pBuffer, int nSize, float baseQuality)
+{
 	auto format = getFormat();
 	int nFrequency = getFrequency();
 	int nChannels = ((format == EAF_8BIT_MONO) || (format == EAF_16BIT_MONO)) ? 1 : 2;
@@ -307,10 +313,10 @@ unsigned int ParaEngine::CParaAudioCapture::saveToFile(const char* filename, flo
 		fwrite16le(mBits, pFile);
 
 		fputs("data", pFile);
-		const char* pData = pBuffer->getReadBuffer();
-		int nDataLength = pBuffer->getLength();
+		const char* pData = pBuffer;
+		int nDataLength = nSize;
 
-		fwrite32le(nDataLength, pFile); 
+		fwrite32le(nDataLength, pFile);
 		fwrite(pData, 1, nDataLength, pFile);
 
 		nFileSize = ftell(pFile);
@@ -432,8 +438,8 @@ unsigned int ParaEngine::CParaAudioCapture::saveToFile(const char* filename, flo
 			}
 
 		}
-		const char* remainingBuffer = pBuffer->getReadBuffer();
-		long remainingBytes = pBuffer->getLength();
+		const char* remainingBuffer = pBuffer;
+		long remainingBytes = nSize;
 		const long READ = 1024;
 
 		while (!eos) {
@@ -529,7 +535,6 @@ unsigned int ParaEngine::CParaAudioCapture::saveToFile(const char* filename, flo
 	{
 		getLogger()->logError("CParaAudioCapture", "unknown file extension: %s", filename);
 	}
-	
 	return nFileSize;
 }
 

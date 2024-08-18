@@ -342,6 +342,7 @@ namespace ParaScripting
 		static void StopRecording();
 
 		static bool SaveRecording(const char* szWavePath);
+		static bool SaveRecording2(const char* szWavePath, const char* pBuffer, int nSize);
 
 
 

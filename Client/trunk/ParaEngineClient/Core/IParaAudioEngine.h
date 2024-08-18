@@ -414,6 +414,14 @@ namespace ParaEngine
 		* @return the number of bytes written
 		*/
 		virtual unsigned int saveToFile(const char* filename, float baseQuality = 0.1f) { return 0; };
+
+		/** save raw audio buffer to a file, currently only ogg/wav file format are supported.
+		* @param filename: writable full path, like "temp/capture.ogg"
+		* @param pBuffer:
+		* @param baseQuality: value in range [0.1, 1].   0.1 is lowest quality, 1 is best quality.  0.4 is usual
+		* @return the number of bytes written
+		*/
+		virtual unsigned int saveToFile(const char* filename, const char* pBuffer, int nSize, float baseQuality) { return 0; };
 	};
 
 	/** ParaAudioEngine core interface. 
@@ -558,6 +566,6 @@ namespace ParaEngine
 		*/
 		virtual IParaAudioCapture* CreateGetAudioCapture(bool initializeDefault = true) { return NULL; };
 
-		virtual void registerLogReceiver(std::function<void(const char * msg)> receiver) = 0;
+		virtual void registerLogReceiver(std::function<void(const char* msg)> receiver) = 0;
 	};
 }
