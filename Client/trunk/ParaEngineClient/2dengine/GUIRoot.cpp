@@ -3210,5 +3210,10 @@ int ParaEngine::CGUIRoot::InstallFields(CAttributeClass* pClass, bool bOverride)
 	pClass->AddField("GUIToEyeDist", FieldType_Float, (void*)SetGUIToEyeDist_s, (void*)GetGUIToEyeDist_s, NULL, NULL, bOverride);
 	pClass->AddField("3DGUIMode", FieldType_Bool, (void*)Set3DGUIMode_s, (void*)Is3DGUIMode_s, NULL, NULL, bOverride);
 	pClass->AddField("GUI3DModeScaling", FieldType_Float, (void*)SetGUI3DModeScaling_s, (void*)GetGUI3DModeScaling_s, NULL, NULL, bOverride);
+	
+	pClass->AddField("IsMouseProcessed", FieldType_Bool, (void*)NULL, (void*)IsMouseProcessed_s, NULL, NULL, bOverride);
+	pClass->AddField("IsMouseOverScrollableUI", FieldType_Bool, (void*)NULL, (void*)IsMouseOverScrollableUI_s, NULL, NULL, bOverride);
+	pClass->AddField("IsKeyboardProcessed", FieldType_Bool, (void*)NULL, (void*)IsKeyboardProcessed_s, NULL, NULL, bOverride);
+
 	return S_OK;
 }

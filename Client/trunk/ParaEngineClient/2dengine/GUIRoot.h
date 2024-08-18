@@ -123,6 +123,11 @@ namespace ParaEngine
 
 		ATTRIBUTE_METHOD1(CGUIRoot, GetGUI3DModeScaling_s, float*) { *p1 = cls->GetGUI3DModeScaling(); return S_OK; }
 		ATTRIBUTE_METHOD1(CGUIRoot, SetGUI3DModeScaling_s, float) { cls->SetGUI3DModeScaling(p1); return S_OK; }
+
+		ATTRIBUTE_METHOD1(CGUIRoot, IsMouseOverScrollableUI_s, bool*) { *p1 = cls->IsMouseOverScrollableUI(); return S_OK; }
+		ATTRIBUTE_METHOD1(CGUIRoot, IsMouseProcessed_s, bool*) { *p1 = cls->IsMouseProcessed(); return S_OK; }
+		ATTRIBUTE_METHOD1(CGUIRoot, IsKeyboardProcessed_s, bool*) { *p1 = cls->IsKeyboardProcessed(); return S_OK; }
+
 	public:
 		ParaEngine::GUIState& GetGUIState() { return m_stateGUI; }
 		CDirectMouse* GetMouse() { return m_pMouse; }
