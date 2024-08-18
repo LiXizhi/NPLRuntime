@@ -197,6 +197,20 @@ bool ParaScripting::ParaAudio::SaveRecording(const char* szWavePath)
 	return false;
 }
 
+bool ParaScripting::ParaAudio::SaveRecording2(const char* szWavePath, const char* pBuffer, int nSize)
+{
+	auto pAutoCapture = CAudioEngine2::GetInstance()->CreateGetAudioCapture();
+	if (pAutoCapture && szWavePath)
+	{
+		auto sFileExtension = CParaFile::GetFileExtension(szWavePath);
+		if (sFileExtension == "ogg" || sFileExtension == "wav")
+		{
+			return pAutoCapture->saveToFile(szWavePath, pBuffer, nSize, CAudioEngine2::GetInstance()->GetCaptureAudioQuality()) != 0;
+		}
+	}
+	return false;
+}
+
 /////////////////////////////////////////////////////////////////////////
 //
 // Audio Source Functions
