@@ -81,11 +81,10 @@ void ParaEngine::CAudioEngine2::Update()
 				setDirection(reinterpret_cast<const PARAVECTOR3&>(v));
 			}
 		}
-		
+
 		if (m_pAudioEngine)
 			m_pAudioEngine->update();
 	}
-
 }
 
 HRESULT ParaEngine::CAudioEngine2::InitAudioEngine(IParaAudioEngine* pInteface)
@@ -167,7 +166,45 @@ HRESULT ParaEngine::CAudioEngine2::InitAudioEngine(IParaAudioEngine* pInteface)
 	return (m_pAudioEngine != 0) ? S_OK : E_FAIL;
 }
 
-void ParaEngine::CAudioEngine2::ResetAudioDevice(const string& deviceName)
+const char* ParaEngine::CAudioEngine2::GetAudioDeviceNames()
+{
+	static std::string g_audioDeviceName;
+	g_audioDeviceName.clear();
+	unsigned int count = CAudioEngine2::GetInstance()->GetDeviceCount();
+	for (unsigned int i = 0; i < count; i++)
+	{
+		std::string name = CAudioEngine2::GetInstance()->GetDeviceName(i);
+		if (!name.empty())
+		{
+			g_audioDeviceName.append(name);
+			g_audioDeviceName.append(";");
+		}
+	}
+	return g_audioDeviceName.c_str();
+}
+
+const char* ParaEngine::CAudioEngine2::GetAudioRecordDeviceNames()
+{
+	static std::string g_audioRecordDeviceName;
+	g_audioRecordDeviceName.clear();
+	auto pAutoCapture = CreateGetAudioCapture();
+	if (pAutoCapture)
+	{
+		unsigned int count = pAutoCapture->getAvailableDeviceCount();
+		for (unsigned int i = 0; i < count; i++)
+		{
+			std::string name = pAutoCapture->getAvailableDeviceName(i);
+			if (!name.empty())
+			{
+				g_audioRecordDeviceName.append(name);
+				g_audioRecordDeviceName.append(";");
+			}
+		}
+	}
+	return g_audioRecordDeviceName.c_str();
+}
+
+void ParaEngine::CAudioEngine2::ResetAudioDevice(const char* deviceName)
 {
 	if (m_pAudioEngine == nullptr)
 	{
@@ -177,7 +214,7 @@ void ParaEngine::CAudioEngine2::ResetAudioDevice(const string& deviceName)
 
 	m_pAudioEngine->shutDown();
 
-	if (deviceName.empty())
+	if (deviceName == NULL || deviceName[0] == '\0')
 	{
 		unsigned int deviceSelection = 0;
 #ifdef WIN32
@@ -196,11 +233,33 @@ void ParaEngine::CAudioEngine2::ResetAudioDevice(const string& deviceName)
 	}
 	else
 	{
-		if (!m_pAudioEngine->initialize(deviceName.c_str()))
+		if (!m_pAudioEngine->initialize(deviceName))
 		{
-			OUTPUT_LOG("error: failed initialize audio device %s\n", deviceName.c_str());
+			OUTPUT_LOG("error: failed initialize audio device %s\n", deviceName);
 		}
 	}
+}
+
+void ParaEngine::CAudioEngine2::ResetAudioRecordDevice(const char* deviceName)
+{
+	if (deviceName != NULL && deviceName[0] != '\0')
+	{
+		auto pAutoCapture = CreateGetAudioCapture();
+		if (pAutoCapture)
+		{
+			pAutoCapture->setDevice(deviceName);
+		}
+	}
+}
+
+const char* ParaEngine::CAudioEngine2::GetRecordDeviceName(unsigned int index)
+{
+	auto pAutoCapture = CreateGetAudioCapture();
+	if (pAutoCapture)
+	{
+		return pAutoCapture->getAvailableDeviceName(index);
+	}
+	return "";
 }
 
 unsigned int ParaEngine::CAudioEngine2::GetDeviceCount()
@@ -1176,6 +1235,9 @@ int ParaEngine::CAudioEngine2::InstallFields(CAttributeClass* pClass, bool bOver
 	pClass->AddField("CaptureAudioQuality", FieldType_Float, (void*)SetCaptureAudioQuality_s, (void*)GetCaptureAudioQuality_s, NULL, "[0.1, 1]", bOverride);
 	pClass->AddField("CaptureFrequency", FieldType_Int, (void*)SetCaptureFrequency_s, (void*)GetCaptureFrequency_s, NULL, "16000", bOverride);
 
+	pClass->AddField("RecordDeviceName", FieldType_String, (void*)SetRecordDeviceName_s, (void*)GetRecordDeviceName_s, NULL, NULL, bOverride);
+	pClass->AddField("AudioDeviceNames", FieldType_String, (void*)NULL, (void*)GetAudioDeviceNames_s, NULL, NULL, bOverride);
+	pClass->AddField("AudioRecordDeviceNames", FieldType_String, (void*)NULL, (void*)GetAudioRecordDeviceNames_s, NULL, NULL, bOverride);
 	return S_OK;
 }
 

@@ -185,12 +185,24 @@ namespace ParaEngine
 		ATTRIBUTE_METHOD1(CAudioEngine2, GetCaptureFrequency_s, int*) { *p1 = cls->GetCaptureFrequency(); return S_OK; }
 		ATTRIBUTE_METHOD1(CAudioEngine2, SetCaptureFrequency_s, int) { cls->SetCaptureFrequency(p1); return S_OK; }
 
+		ATTRIBUTE_METHOD1(CAudioEngine2, GetRecordDeviceName_s, const char**) { *p1 = cls->GetRecordDeviceName(0); return S_OK; }
+		ATTRIBUTE_METHOD1(CAudioEngine2, SetRecordDeviceName_s, const char*) { cls->ResetAudioRecordDevice(p1); return S_OK; }
+
+		ATTRIBUTE_METHOD1(CAudioEngine2, GetAudioDeviceNames_s, const char**) { *p1 = cls->GetAudioDeviceNames(); return S_OK; }
+		ATTRIBUTE_METHOD1(CAudioEngine2, GetAudioRecordDeviceNames_s, const char**) { *p1 = cls->GetAudioRecordDeviceNames(); return S_OK; }
+
 	public:
 
 		/** check load the plugin dll if any */
 		HRESULT InitAudioEngine(IParaAudioEngine* pInteface = NULL);
 
-		void ResetAudioDevice(const string& deviceName);
+		const char* GetAudioDeviceNames();
+		const char* GetAudioRecordDeviceNames();
+
+		void ResetAudioDevice(const char* deviceName);
+		void ResetAudioRecordDevice(const char* deviceName);
+		const char* GetRecordDeviceName(unsigned int index);
+
 		unsigned int GetDeviceCount();
 		const char* GetDeviceName(unsigned int index);
 
