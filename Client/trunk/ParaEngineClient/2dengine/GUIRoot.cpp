@@ -991,6 +991,11 @@ bool ParaEngine::CGUIRoot::IsMouseProcessed()
 	return m_bMouseProcessed;
 }
 
+bool ParaEngine::CGUIRoot::IsMouseOverScrollableUI() const
+{
+	return m_bMouseOverScrollableUI;
+}
+
 bool ParaEngine::CGUIRoot::IsNonClient() const
 {
 	return m_bIsNonClient;

@@ -400,6 +400,8 @@ namespace ParaEngine
 
 		bool IsKeyboardProcessed();
 		bool IsMouseProcessed();
+		/** thread safe: if mouse is over scrollable ui in the most recent mouse position */
+		bool IsMouseOverScrollableUI() const;
 
 		/** whether the mouse is in non-client area, we will allow the user to drag the window if this is true.
 		* CGUIContainer:SetNonClientArea(true) can be used to specify a non-client area.
@@ -590,6 +592,7 @@ namespace ParaEngine
 		bool m_bMouseProcessed;
 		bool m_bKeyboardProcessed;
 		bool m_bMouseCaptured;
+		bool m_bMouseOverScrollableUI;
 		/** please note this can be the 3d scene object. */
 		IAttributeFields* m_pLastMouseDownObject;
 #ifdef USE_DIRECTX_RENDERER
