@@ -45,6 +45,8 @@ if (PARAENGINE_COMPILE_LIB)
 	add_library(WindowsApplication ${NPLRUNTIME_LIB_MODE} ${src_platform} ${src_render_context} ${src_framework})
 else()
 	add_executable(WindowsApplication ${src_platform} ${src_render_context} ${src_framework})
+    set_property(TARGET WindowsApplication PROPERTY VS_DPI_AWARE "PerMonitor")
+
 	if(WIN32)
 		set_target_properties(WindowsApplication PROPERTIES DEBUG_OUTPUT_NAME "ParaEngineClient_d")
 		set_target_properties(WindowsApplication PROPERTIES RELEASE_OUTPUT_NAME "ParaEngineClient")
