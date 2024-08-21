@@ -56,6 +56,7 @@ namespace ParaEngine
 
 	void CBlockLightGridClient::OnEnterWorld()
 	{
+		CBlockLightGridBase::OnEnterWorld();
 		std::lock_guard<std::recursive_mutex> Lock_(m_mutex);
 		m_minChunkIdX_ws = -1000;
 		m_minChunkIdZ_ws = -1000;
@@ -222,7 +223,7 @@ namespace ParaEngine
 					nBlockLight = pLightData->GetBrightness(false);
 				if (nLightType != 0)
 				{
-					if (blockIndex.m_pChunk->CanBlockSeeTheSkyWS(curBlockId_ws.x, curBlockId_ws.y, curBlockId_ws.z)) 
+					if (curBlockId_ws.y >= m_nSkyHeight || blockIndex.m_pChunk->CanBlockSeeTheSkyWS(curBlockId_ws.x, curBlockId_ws.y, curBlockId_ws.z))
 					{
 						if (pLightData->GetBrightness(true) != 15)
 							pLightData->SetBrightness(15, true);
@@ -387,7 +388,11 @@ namespace ParaEngine
 		}
 	}
 
+#ifdef EMSCRIPTEN_SINGLE_THREAD
+	CoroutineThread::Coroutine CBlockLightGridClient::LightThreadProc(CoroutineThread* co_thread)
+#else
 	void CBlockLightGridClient::LightThreadProc()
+#endif
 	{
 		Scoped_ReadLock<BlockReadWriteLock> lock_(m_pBlockWorld->GetReadWriteLock());
 
@@ -796,7 +801,7 @@ exit_function:
 	{
 		ChunkMaxHeight* pHeight = m_pBlockWorld->GetHighestBlock(x, z);
 		if (pHeight)
-			return pHeight->GetMaxSolidHeight() < y;
+			return y >= m_nSkyHeight || pHeight->GetMaxSolidHeight() < y;
 		else
 			return true;
 	}
@@ -813,7 +818,7 @@ exit_function:
 				auto lightData = GetLightData(blockIndex);
 				if (isSunLight)
 				{
-					if (blockIndex.m_pChunk->CanBlockSeeTheSkyWS(curBlockId_ws.x, curBlockId_ws.y, curBlockId_ws.z)) 
+					if (curBlockId_ws.y >= m_nSkyHeight || blockIndex.m_pChunk->CanBlockSeeTheSkyWS(curBlockId_ws.x, curBlockId_ws.y, curBlockId_ws.z))
 					{
 						if (lightData->GetBrightness(true) != 15)
 							lightData->SetBrightness(15, true);

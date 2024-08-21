@@ -2773,6 +2773,7 @@ int ParaEngine::CBlockWorld::InstallFields(CAttributeClass* pClass, bool bOverri
 	pClass->AddField("SuspendLightUpdate", FieldType_void, (void*)SuspendLightUpdate_s, NULL, NULL, "", bOverride);
 
 	pClass->AddField("ResetAllLight", FieldType_void, (void*)ResetAllLight_s, NULL, NULL, "", bOverride);
+	pClass->AddField("ClearBlockRenderCache", FieldType_void, (void*)ClearBlockRenderCache_s, NULL, NULL, "", bOverride);
 
 	pClass->AddField("LockWorld", FieldType_void, (void*)LockWorld_s, NULL, NULL, "", bOverride);
 	pClass->AddField("UnlockWorld", FieldType_void, (void*)UnlockWorld_s, NULL, NULL, "", bOverride);

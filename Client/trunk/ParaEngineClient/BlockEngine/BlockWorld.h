@@ -62,6 +62,7 @@ namespace ParaEngine
 		ATTRIBUTE_METHOD(CBlockWorld, SuspendLightUpdate_s)	{ cls->SuspendLightUpdate(); return S_OK; }
 
 		ATTRIBUTE_METHOD(CBlockWorld, ResetAllLight_s) { cls->ResetAllLight(); return S_OK; }
+		ATTRIBUTE_METHOD(CBlockWorld, ClearBlockRenderCache_s) { cls->ClearBlockRenderCache(); return S_OK; }
 
 		ATTRIBUTE_METHOD(CBlockWorld, LockWorld_s)	{ cls->LockWorld(); return S_OK; }
 		ATTRIBUTE_METHOD(CBlockWorld, UnlockWorld_s)	{ cls->UnlockWorld(); return S_OK; }

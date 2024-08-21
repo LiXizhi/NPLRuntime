@@ -239,13 +239,13 @@ namespace ParaEngine
 		int GetChunksCount();
 
 		/** 0 means not available, 1 means loaded before*/
-		std::vector<byte> m_chunkTimestamp;
+		std::vector<unsigned char> m_chunkTimestamp;
 
 		/** 512*512 biomes values*/
-		std::vector<byte> m_biomes;
+		std::vector<unsigned char> m_biomes;
 
 		//store the highest block 
-		//first is highest block,second is highest soiled block
+		//first is highest block,second is highest solid block
 		std::vector<ChunkMaxHeight> m_blockHeightMap;
 
 		/** total number of bytes that this region occupies */
