@@ -1,4 +1,4 @@
-﻿//-----------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
 // Class:	Block World Provider
 // Authors:	LiXizhi
 // Emails:	LiXizhi@yeah.net
@@ -840,7 +840,7 @@ void CBlockWorld::LoadBlockTemplateData()
 										pTemplate->SetNormalMap(normalMap);
 								}
 							}
-						}
+}
 					}
 				}
 			}
@@ -1862,7 +1862,7 @@ void CBlockWorld::SetTemplateTexture(uint16_t id, const char* textureName)
 				pTemplate->SetAttribute(BlockTemplate::batt_fourSideTex, false);
 				pTemplate->GetBlockModel().LoadModelByTexture(0);
 				ClearBlockRenderCache();
-			}
+}
 		}
 #endif
 		pTemplate->SetTexture0(textureName);
@@ -2749,6 +2749,7 @@ void ParaEngine::CBlockWorld::SetAutoPhysics(bool bValue)
 	m_bAutoPhysics = bValue;
 }
 
+
 bool ParaEngine::CBlockWorld::IsAsyncLightCalculation()
 {
 	return m_pLightGrid->IsAsyncLightCalculation();
@@ -2772,6 +2773,7 @@ int ParaEngine::CBlockWorld::InstallFields(CAttributeClass* pClass, bool bOverri
 	pClass->AddField("SuspendLightUpdate", FieldType_void, (void*)SuspendLightUpdate_s, NULL, NULL, "", bOverride);
 
 	pClass->AddField("ResetAllLight", FieldType_void, (void*)ResetAllLight_s, NULL, NULL, "", bOverride);
+	pClass->AddField("ClearBlockRenderCache", FieldType_void, (void*)ClearBlockRenderCache_s, NULL, NULL, "", bOverride);
 
 	pClass->AddField("LockWorld", FieldType_void, (void*)LockWorld_s, NULL, NULL, "", bOverride);
 	pClass->AddField("UnlockWorld", FieldType_void, (void*)UnlockWorld_s, NULL, NULL, "", bOverride);

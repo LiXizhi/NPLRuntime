@@ -62,6 +62,7 @@ namespace ParaEngine
 		ATTRIBUTE_METHOD(CBlockWorld, SuspendLightUpdate_s)	{ cls->SuspendLightUpdate(); return S_OK; }
 
 		ATTRIBUTE_METHOD(CBlockWorld, ResetAllLight_s) { cls->ResetAllLight(); return S_OK; }
+		ATTRIBUTE_METHOD(CBlockWorld, ClearBlockRenderCache_s) { cls->ClearBlockRenderCache(); return S_OK; }
 
 		ATTRIBUTE_METHOD(CBlockWorld, LockWorld_s)	{ cls->LockWorld(); return S_OK; }
 		ATTRIBUTE_METHOD(CBlockWorld, UnlockWorld_s)	{ cls->UnlockWorld(); return S_OK; }
@@ -121,9 +122,9 @@ namespace ParaEngine
 		ATTRIBUTE_METHOD1(CBlockWorld, GetTotalRenderableChunksInMemory_s, int*)		{ *p1 = RenderableChunk::GetTotalRenderableChunks(); return S_OK; }
 
 		ATTRIBUTE_METHOD1(CBlockWorld, UseLinearTorchBrightness_s, bool)	{ cls->GenerateLightBrightnessTable(p1); return S_OK; }
-
 		ATTRIBUTE_METHOD1(CBlockWorld, IsAutoPhysics_s, bool*)		{ *p1 = cls->IsAutoPhysics(); return S_OK; }
 		ATTRIBUTE_METHOD1(CBlockWorld, SetAutoPhysics_s, bool)	{ cls->SetAutoPhysics(p1); return S_OK; }
+		
 	public:
 		/** script call back type */
 		enum CallBackType{
@@ -153,7 +154,6 @@ namespace ParaEngine
 	public:
 		bool IsAutoPhysics();
 		void SetAutoPhysics(bool bValue);
-
 		/** get light grid */
 		CBlockLightGridBase& GetLightGrid();
 
@@ -269,10 +269,9 @@ namespace ParaEngine
 		void SaveBlockTemplateData();
 
 		void LoadBlockTemplateData();
-		
+
 		void SaveBlockMaterialData();
 		void LoadBlockMaterialData();
-
 		void SaveToFile(bool saveToTemp);
 
 		/** return world info*/
@@ -292,7 +291,7 @@ namespace ParaEngine
 		uint32_t GetBlockId(uint16_t x, uint16_t y, uint16_t z);
 		uint32_t SetBlockData(uint16_t x, uint16_t y, uint16_t z, uint32_t nBlockData);
 		uint32_t GetBlockData(uint16_t x, uint16_t y, uint16_t z);
-		
+
 		/** Remove a given block material from a block face.
 		* @param nFaceIndex: if -1, we will remove all materials from the block
 		* @param nMaterialID: global unique material id in CBlockMaterialManager
@@ -493,10 +492,10 @@ namespace ParaEngine
 		void ResumeLightUpdate();
 
 		bool IsLightUpdateSuspended();
-
+		
 		bool IsAsyncLightCalculation();
 		void SetAsyncLightCalculation(bool val);
-		
+
 		/** @param brightness: must be in the range of [0,15] */
 		float GetLightBrightnessFloat(uint8_t brightness);
 
@@ -600,10 +599,8 @@ namespace ParaEngine
 		int32_t m_activeChunkDim;
 		int32_t m_activeChunkDimY;
 		static float g_verticalOffset;
-
 		// 自动物理地形
 		bool m_bAutoPhysics;
-
 		/** whether this world is active */
 		bool m_isInWorld;
 

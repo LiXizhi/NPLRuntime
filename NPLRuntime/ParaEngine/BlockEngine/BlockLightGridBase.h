@@ -71,6 +71,11 @@ namespace ParaEngine
 
 		ATTRIBUTE_METHOD1(CBlockLightGridBase, GetLightCalculationStep_s, int*)		{ *p1 = cls->GetLightCalculationStep(); return S_OK; }
 		ATTRIBUTE_METHOD1(CBlockLightGridBase, SetLightCalculationStep_s, int)		{ cls->SetLightCalculationStep(p1); return S_OK; }
+		
+		ATTRIBUTE_METHOD1(CBlockLightGridBase, GetSkyHeight_s, int*) { *p1 = cls->GetSkyHeight(); return S_OK; }
+		ATTRIBUTE_METHOD1(CBlockLightGridBase, SetSkyHeight_s, int)		{ cls->SetSkyHeight(p1); return S_OK; }
+		
+
 
 	public:
 		virtual void OnEnterWorld();
@@ -137,9 +142,13 @@ namespace ParaEngine
 		void ResumeLightUpdate();
 
 		bool IsLightUpdateSuspended();
-
+	
+		/** whether to calculate light in a separate thread. */
 		bool IsAsyncLightCalculation() const;
 		void SetAsyncLightCalculation(bool val);
+		
+		void SetSkyHeight(int nHeight);
+		int GetSkyHeight() const;
 	protected:
 		BlockIndex  CalcLightDataIndex(const Uint16x3& blockId, bool bCreateIfNotExist = true);
 		LightData* GetLightData(const BlockIndex& index);
@@ -151,6 +160,7 @@ namespace ParaEngine
 		CBlockWorld* m_pBlockWorld;
 		int32 m_nLightGridChunkSize;
 		uint32 m_nLightCalculationStep;
+		int32 m_nSkyHeight;
 
 		/** whether to calculate light in a separate thread. */
 		bool m_bIsAsyncLightCalculation;

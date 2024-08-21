@@ -12,7 +12,7 @@
 namespace ParaEngine
 {
 	CBlockLightGridBase::CBlockLightGridBase(CBlockWorld* pBlockWorld)
-		: m_nLightGridChunkSize(0), m_pBlockWorld(pBlockWorld), m_suspendLightUpdate(false), m_nLightCalculationStep(0), m_bIsAsyncLightCalculation(true)
+		: m_nLightGridChunkSize(0), m_pBlockWorld(pBlockWorld), m_suspendLightUpdate(false), m_nLightCalculationStep(0), m_bIsAsyncLightCalculation(true), m_nSkyHeight(255)
 	{
 	}
 
@@ -22,6 +22,7 @@ namespace ParaEngine
 
 	void CBlockLightGridBase::OnEnterWorld()
 	{
+		m_nSkyHeight = 255;
 	}
 
 	void CBlockLightGridBase::OnLeaveWorld()
@@ -154,6 +155,17 @@ namespace ParaEngine
 	{
 		m_bIsAsyncLightCalculation = val;
 	}
+	void CBlockLightGridBase::SetSkyHeight(int nHeight)
+	{
+		if (m_nSkyHeight != nHeight) {
+			m_nSkyHeight = nHeight;
+			m_pBlockWorld->ClearBlockRenderCache();
+		}
+	}
+	int CBlockLightGridBase::GetSkyHeight() const
+	{
+		return m_nSkyHeight;
+	}
 
 	int CBlockLightGridBase::InstallFields(CAttributeClass* pClass, bool bOverride)
 	{
@@ -162,6 +174,7 @@ namespace ParaEngine
 		pClass->AddField("DirtyBlockCount", FieldType_Int, (void*)0, (void*)GetDirtyBlockCount_s, NULL, NULL, bOverride);
 		pClass->AddField("LightGridSize", FieldType_Int, (void*)0, (void*)GetLightGridSize_s, NULL, NULL, bOverride);
 		pClass->AddField("LightCalculationStep", FieldType_Int, (void*)SetLightCalculationStep_s, (void*)GetLightCalculationStep_s, NULL, NULL, bOverride);
+		pClass->AddField("SkyHeight", FieldType_Int, (void*)SetSkyHeight_s, (void*)GetSkyHeight_s, NULL, NULL, bOverride);
 
 		return S_OK;
 	}
