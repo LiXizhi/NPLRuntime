@@ -1533,22 +1533,6 @@ namespace ParaEngine
 
 	void BMaxParser::CalculateBoneWeightForBlock(BMaxFrameNode* pBoneNode, BMaxNode* node, bool bMustBeSameColor)
 	{
-#if 0
-		if (node && !node->HasBoneWeight())
-		{
-			if (node->template_id != BoneBlockId)
-			{
-				if (!bMustBeSameColor || (node->GetColor() == pBoneNode->GetColor()))
-				{
-					node->SetBoneIndex(pBoneNode->GetBoneIndex());
-					for (int i = 0; i < 6; i++)
-					{
-						CalculateBoneWeightForBlock(pBoneNode, node->GetNeighbour((BlockDirection::Side)i), bMustBeSameColor);
-					}
-				}
-			}
-		}
-#else
 		std::stack<BMaxNode*> nodeStack;
 		if (node)
 			nodeStack.push(node);
@@ -1569,11 +1553,8 @@ namespace ParaEngine
 					if (neighbour)
 						nodeStack.push(neighbour);
 				}
-
 			}
-
 		}
-#endif
 	}
 
 	void BMaxParser::CalculateBoneSkin(BMaxFrameNode* pBoneNode)
