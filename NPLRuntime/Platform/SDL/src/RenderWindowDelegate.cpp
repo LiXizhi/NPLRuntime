@@ -68,6 +68,8 @@ namespace ParaEngine
 
 	void RenderWindowDelegate::OnKey(EVirtualKey key, EKeyState state)
 	{
+		static std::unordered_map<EVirtualKey, uint64_t> s_keydown_map;
+		uint64_t timestamp = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now().time_since_epoch()).count();;		
 		if (CGlobals::GetApp()->GetAppState() != PEAppState_Ready)
 		{
 			return;
@@ -76,10 +78,25 @@ namespace ParaEngine
 		if (pressed)
 		{
 			CGUIRoot::GetInstance()->SendKeyDownEvent(key);
+			s_keydown_map.insert_or_assign(key, timestamp);
 		}
 		else
 		{
 			CGUIRoot::GetInstance()->SendKeyUpEvent(key);
+			s_keydown_map.erase(key);
+		}
+
+		for (auto it = s_keydown_map.begin(); it != s_keydown_map.end(); )
+		{
+			if ((it->second + 2000) < timestamp)
+			{
+				CGUIRoot::GetInstance()->SendKeyUpEvent(it->first);
+				it = s_keydown_map.erase(it);
+			}
+			else
+			{
+				it++;
+			}
 		}
 	}
 
