@@ -226,19 +226,19 @@ const char* ParaEngine::CParaAudioCapture::getDefaultDeviceName()
 
 static void fwrite16le(int32 val, FILE* f)
 {
-	byte data[2];
-	data[0] = (byte)(val & 0xff);
-	data[1] = (byte)(val >> 8);
+	unsigned char data[2];
+	data[0] = (unsigned char)(val & 0xff);
+	data[1] = (unsigned char)(val >> 8);
 	fwrite(data, 1, 2, f);
 }
 
 static void fwrite32le(int32 val, FILE* f)
 {
-	byte data[4];
-	data[0] = (byte)(val & 0xff);
-	data[1] = (byte)((val >> 8) & 0xff);
-	data[2] = (byte)((val >> 16) & 0xff);
-	data[3] = (byte)(val >> 24);
+	unsigned char data[4];
+	data[0] = (unsigned char)(val & 0xff);
+	data[1] = (unsigned char)((val >> 8) & 0xff);
+	data[2] = (unsigned char)((val >> 16) & 0xff);
+	data[3] = (unsigned char)(val >> 24);
 	fwrite(data, 1, 4, f);
 }
 
