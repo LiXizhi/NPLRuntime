@@ -1,6 +1,8 @@
-﻿#pragma once
+#pragma once
 #include <stdint.h>
 #include <vector>
+#include <luabind/luabind.hpp>
+#include <luabind/object.hpp>
 #include <thread>
 #include "BlockReadWriteLock.h"
 #include "BlockConfig.h"
@@ -8,8 +10,7 @@
 #include "BlockChunk.h"
 #include "IAttributeFields.h"
 #include "ChunkMaxHeight.h"
-#include <luabind/luabind.hpp>
-#include <luabind/object.hpp>
+
 namespace ParaEngine
 {
 	class VerticalChunkIterator;
@@ -81,6 +82,7 @@ namespace ParaEngine
 		void SetBlockUserDataByIndex(int16_t x, int16_t y, int16_t z, uint32_t data);
 
 		uint32_t GetBlockUserDataByIndex(int16_t x, int16_t y, int16_t z);
+
 		/** Remove a given block material from a block face.
 		* @param nFaceIndex: if -1, we will remove all materials from the block
 		* @param nMaterialID: global unique material id in CBlockMaterialManager
@@ -92,7 +94,7 @@ namespace ParaEngine
 		* @return -1 if not found
 		*/
 		int32_t GetBlockMaterial(uint16_t x, uint16_t y, uint16_t z, int16_t nFaceId);
-		
+
 		/** set chunk column time stamp. usually 0 for non-generated. 1 for generated.
 		this is usually called by world generators, so that we will not generate again next time we load the world. */
 		void SetChunkColumnTimeStamp(uint16_t x_rs, uint16_t z_rs, uint16_t nTimeStamp);
@@ -243,7 +245,7 @@ namespace ParaEngine
 		std::vector<unsigned char> m_biomes;
 
 		//store the highest block 
-		//first is highest block,second is highest soiled block
+		//first is highest block,second is highest solid block
 		std::vector<ChunkMaxHeight> m_blockHeightMap;
 
 		/** total number of bytes that this region occupies */

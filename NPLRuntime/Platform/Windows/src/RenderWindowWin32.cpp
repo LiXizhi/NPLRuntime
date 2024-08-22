@@ -44,7 +44,7 @@ namespace ParaEngine {
 			s_keymap['G'] = EVirtualKey::KEY_G;
 			s_keymap['H'] = EVirtualKey::KEY_H;
 			s_keymap['I'] = EVirtualKey::KEY_I;
-			s_keymap['G'] = EVirtualKey::KEY_J;
+			s_keymap['J'] = EVirtualKey::KEY_J;
 			s_keymap['K'] = EVirtualKey::KEY_K;
 			s_keymap['L'] = EVirtualKey::KEY_L;
 			s_keymap['M'] = EVirtualKey::KEY_M;

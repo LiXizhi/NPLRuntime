@@ -20,6 +20,8 @@
 #include "BlockReadWriteLock.h"
 #include "BlockLightGridBase.h"
 
+
+
 namespace ParaEngine
 {
 	/** block grid on client side. it will only cache around a radius around the current camera eye position to keep memory low. */
@@ -27,7 +29,7 @@ namespace ParaEngine
 	{
 	public:
 		typedef FixedSizedAllocator< std::pair<const uint64_t, Light> >	DL_Allocator_BlockLight;
-		
+
 		CBlockLightGridClient(int32_t chunkCacheDim, CBlockWorld* pBlockWorld);
 		virtual ~CBlockLightGridClient();
 
@@ -44,7 +46,7 @@ namespace ParaEngine
 		// @return : true if exist.  false if there is no block at the position. 
 		virtual bool GetBrightness(Uint16x3& blockId, uint8_t* brightness, int nSize = 27, int nLightType = -1);
 
-		/** only call this function from main thread when you have a write lock on block world to ensure thread safety. 
+		/** only call this function from main thread when you have a write lock on block world to ensure thread safety.
 		* @param nUpdateMethod: 0 means normal refresh, 1 means force update neighbor within 1 blocks.  -1 to disable
 		*/
 		virtual void SetLightDirty(Uint16x3& blockId_ws, bool isSunLight, int8 nUpdateRange = 0);
@@ -54,7 +56,7 @@ namespace ParaEngine
 
 		/** thread safe: update all blocks in the given chunk column. A chunk column is all chunks with same x,z*/
 		virtual void AddDirtyColumn(uint16_t chunkX_ws, uint16_t chunkZ_ws);
-		
+
 		/** thread safe: get the number of remaining dirty column*/
 		virtual int GetDirtyColumnCount();
 
@@ -63,7 +65,7 @@ namespace ParaEngine
 
 		/** thread safe: set the given column loaded. this function is called, if light data is pre-calculated when loading the world*/
 		virtual void SetColumnPreloaded(uint16_t chunkX_ws, uint16_t chunkZ_ws);
-	
+
 		/** this is called when chunk column is loaded possibly due to region unload. */
 		virtual void SetColumnUnloaded(uint16_t chunkX_ws, uint16_t chunkZ_ws);
 
@@ -75,7 +77,7 @@ namespace ParaEngine
 		* this function is not used during real time rendering.
 		* @param nChunkWX, nChunkWZ: world chunk position.
 		* @return 0 if chunk is loaded. -1 if nearby chunks are not loaded, and we can not do the calculations.
-		* return 2 if chunk is still being computed in lighting thread. 
+		* return 2 if chunk is still being computed in lighting thread.
 		*/
 		virtual int ForceAddChunkColumn(int nChunkWX, int nChunkWZ);
 
@@ -85,29 +87,25 @@ namespace ParaEngine
 		/** thread safe: */
 		virtual bool IsChunkColumnLoaded(int nChunkX, int nChunkZ);
 	public:
-		/** whether to calculate light in a separate thread. */
-		bool IsAsyncLightCalculation() const;
-		void SetAsyncLightCalculation(bool val);
-
 		/** thread safe: check to see if the block pos's light is already or being calculated. */
 		bool IsChunkColumnLoadedWorldPos(int nWorldX, int nWorldY, int nWorldZ);
-		
+
 		/* whether this light block is marked dirty. please note only call this functionin light thread, since there is no lock on this function. */
 		bool IsLightDirty(Uint16x3& blockId_ws);
-		
+
 	private:
 		/*
-		* @param nUpdateRange: currently only 0 and 1 are supported. 
-		* @return false if block world is exiting. 
+		* @param nUpdateRange: currently only 0 and 1 are supported.
+		* @return false if block world is exiting.
 		*/
-		bool RefreshLight(const Uint16x3& blockId, bool isSunLight, int32 nUpdateRange = 0, Scoped_ReadLock<BlockReadWriteLock>* Lock_= NULL, int* pnCpuYieldCount = NULL);
+		bool RefreshLight(const Uint16x3& blockId, bool isSunLight, int32 nUpdateRange = 0, Scoped_ReadLock<BlockReadWriteLock>* Lock_ = NULL, int* pnCpuYieldCount = NULL);
 
-		void AddPointToAABB(const Uint16x3 &curBlockPos, Int32x3 &minDirtyBlockId_ws, Int32x3 &maxDirtyBlockId_ws);
+		void AddPointToAABB(const Uint16x3& curBlockPos, Int32x3& minDirtyBlockId_ws, Int32x3& maxDirtyBlockId_ws);
 
-		void SetChunksDirtyInAABB(Int32x3 & minDirtyBlockId_ws, Int32x3 & maxDirtyBlockId_ws);
+		void SetChunksDirtyInAABB(Int32x3& minDirtyBlockId_ws, Int32x3& maxDirtyBlockId_ws);
 
 		/** only used during load time */
-		void EmitSunLight(uint16_t blockIdX_ws,uint16_t blockIdZ_ws, bool bInitialSet=false);
+		void EmitSunLight(uint16_t blockIdX_ws, uint16_t blockIdZ_ws, bool bInitialSet = false);
 
 		/** light thread proc */
 #ifdef EMSCRIPTEN_SINGLE_THREAD
@@ -120,16 +118,16 @@ namespace ParaEngine
 
 		void RemoveDirtyColumn(const ChunkLocation& curChunkId_ws);
 
-		/** start the light thread. only call this function, when there is something to calculate. 
-		* the light thread will automatically exit when there is no work to do or the parent block world is not entered. 
+		/** start the light thread. only call this function, when there is something to calculate.
+		* the light thread will automatically exit when there is no work to do or the parent block world is not entered.
 		*/
 		void StartLightThread();
 
-		/** quick update sunlight according to height map here(without emitting sunlight) */ 
+		/** quick update sunlight according to height map here(without emitting sunlight) */
 		void DoQuickSunLightValues(int chunkX, int chunkZ);
 		/** only do when it has not been done */
 		void CheckDoQuickSunLightValues(int chunkX, int chunkZ);
-		
+
 		/* compute light value according to the nearby 6 blocks. */
 		int32 ComputeLightValue(uint16 x, uint16 y, uint16 z, bool isSunLight = false);
 		/* Returns whether a block above this one can reach to the sky (by checking the height map) */
@@ -139,7 +137,7 @@ namespace ParaEngine
 		/** get opacity of the given block. */
 		int32 GetBlockOpacity(int32 x, int32 y, int32 z);
 		void SetLightValue(uint16_t x, uint16_t y, uint16_t z, int nLightValue, bool isSunLight);
-		
+
 	public:
 		/** max number of cells(blocks) to calculate per frame. Smaller value gives better frame rate during frame load time. */
 		int m_max_cells_per_frame;
@@ -190,7 +188,6 @@ namespace ParaEngine
 #else
 		std::thread m_light_thread;
 #endif
-
 
 		std::recursive_mutex m_mutex;
 	};

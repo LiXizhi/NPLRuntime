@@ -15,14 +15,14 @@
 
 void ParaEngine::CParaWebXR::SetIsXR(bool isXR)
 {
-    if (isXR)
-    {
-        CGlobals::GetViewportManager()->SetLayout(VIEW_LAYOUT_STEREO_LEFT_RIGHT);
-    }
-    else
-    {
-        CGlobals::GetViewportManager()->SetLayout(VIEW_LAYOUT_DEFAULT);
-    }
+    // if (isXR)
+    // {
+    //     CGlobals::GetViewportManager()->SetLayout(VIEW_LAYOUT_STEREO_LEFT_RIGHT);
+    // }
+    // else
+    // {
+    //     CGlobals::GetViewportManager()->SetLayout(VIEW_LAYOUT_DEFAULT);
+    // }
 
     m_isXR = isXR;
 }
