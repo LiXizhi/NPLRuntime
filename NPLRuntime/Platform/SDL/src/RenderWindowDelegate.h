@@ -15,6 +15,7 @@ namespace ParaEngine
 
 		virtual void OnMouseWheel(float x, float y, float delta) override;
 
+		void PollEvents();
 
 		virtual void OnKey(EVirtualKey key, EKeyState state) override;
 
