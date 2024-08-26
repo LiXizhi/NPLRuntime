@@ -269,6 +269,18 @@ namespace ParaEngine
 		CGUIBase* GetUIObject(int x, int y);
 
 		/**
+		* Get the first GUI object at the given coordinates in 3d world space.
+		* This function is mostly used in WebXR mode where GUI root is displayed in a fixed 3d plane in world space.
+		* in 2d mode, GUI root is supposed to be in the near plane of the camera. and rayX, rayY, rayZ is supposed to be the camera eye position in world space.
+		* @param rayX, rayY, rayZ: the start position of the ray in world space.
+		* @param dirX, dirY, dirZ: the direction of the ray in world space.
+		* @param fMaxDistance: the maximum distance to search for the object.
+		* @param sFilterFunc: the filter function to filter the object. if NULL, all objects are considered.
+		* @param fHitDist: the distance from the ray start position to the hit object. if NULL, it is not returned.
+		*/
+		CGUIBase* Pick(float rayX, float rayY, float rayZ, float dirX, float dirY, float dirZ, float fMaxDistance, const char* sFilterFunc, float* fHitDist);
+
+		/**
 		* get the default template object from which all sub-sequent controls of the same type are cloned(created).
 		* if the default template object does not exist, it will be deleted.
 		* one can modify the template object at runtime to change of the theme of all controls created subsequently.

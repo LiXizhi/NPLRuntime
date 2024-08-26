@@ -612,6 +612,13 @@ CGUIBase* CGUIRoot::GetUIObject(int x, int y)
 	return pDest;
 }
 
+CGUIBase* ParaEngine::CGUIRoot::Pick(float rayX, float rayY, float rayZ, float dirX, float dirY, float dirZ, float fMaxDistance, const char* sFilterFunc, float* fHitDist)
+{
+	CGUIBase* pDest = NULL;
+
+	return pDest;
+}
+
 //----------------------------------------------------------------------------
 /// desc: destroy object and all its decedents from the GUI.
 //----------------------------------------------------------------------------
