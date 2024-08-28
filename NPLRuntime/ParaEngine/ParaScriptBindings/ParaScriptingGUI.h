@@ -889,7 +889,7 @@ namespace ParaScripting
 		* Get the first GUI object at the given coordinates in 3d world space.
 		* This function is mostly used in WebXR mode where GUI root is displayed in a fixed 3d plane in world space.
 		* in 2d mode, GUI root is supposed to be in the near plane of the camera. and rayX, rayY, rayZ is supposed to be the camera eye position in world space.
-		* @param params: {rayX, rayY, rayZ, dirX, dirY, dirZ, fMaxDistance, sFilterFunc, hitDist = output}
+		* @param params: {rayX, rayY, rayZ, dirX, dirY, dirZ, maxDistance, filterFunc, hitDist = output}
 		*/
 		static ParaUIObject Pick(const object& params);
 
