@@ -73,6 +73,7 @@ The GUIRoot object contains the top level mouse focus object.
 #include "TouchSessions.h"
 #include "TouchGesturePinch.h"
 #include "StringHelper.h"
+#include "ParaRay.h"
 #include "GUIRoot.h"
 #include "memdebug.h"
 #include <boost/regex.hpp>
