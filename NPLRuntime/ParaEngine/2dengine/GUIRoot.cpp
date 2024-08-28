@@ -566,6 +566,42 @@ CGUIBase* ParaEngine::CGUIRoot::Pick(float rayX, float rayY, float rayZ, float d
 {
 	CGUIBase* pDest = NULL;
 
+	if (!Is3DGUIMode())
+		return pDest;
+
+	Matrix4 matWorld(Matrix4::IDENTITY);
+	GetWorldTransform(matWorld);
+	Matrix4 mat = matWorld.inverse();
+
+	Vector3 rayOrigin(rayX, rayY, rayZ);
+	rayOrigin += CGlobals::GetScene()->GetRenderOffset();
+	Vector3 rayDir(dirX, dirY, dirZ);
+	rayDir.normalise();
+
+	Vector3 rayDirUI;
+	Vector3 rayOriginUI;
+	rayDirUI = (rayOrigin + rayDir) * mat;
+	rayOriginUI = rayOrigin * mat;
+	rayDirUI -= rayOriginUI;
+	rayDirUI.normalise();
+	Plane planeUI(Vector3::UNIT_Z, Vector3::ZERO); // in UI space
+
+	// get ray plane intersection
+	float fDist = 0.f;
+	Ray ray(rayOriginUI, rayDirUI);
+	auto result = ray.intersects(planeUI);
+	if (result.first)
+	{
+		Vector3 vHitPoint = ray.getPoint(result.second);
+		vHitPoint.y = -vHitPoint.y;
+		fDist = result.second * matWorld.GetScaleByAxis(0);
+		if (fDist <= fMaxDistance)
+		{
+			pDest = GetUIObject((int)vHitPoint.x, (int)vHitPoint.y);
+			if (fHitDist)
+				*fHitDist = fDist;
+		}
+	}
 	return pDest;
 }
 
