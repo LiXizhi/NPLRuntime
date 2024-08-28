@@ -81,6 +81,7 @@ The GUIRoot object contains the top level mouse focus object.
 #include "TouchSessions.h"
 #include "TouchGesturePinch.h"
 #include "StringHelper.h"
+#include "ParaRay.h"
 #include "GUIRoot.h"
 #include "memdebug.h"
 
@@ -616,6 +617,37 @@ CGUIBase* ParaEngine::CGUIRoot::Pick(float rayX, float rayY, float rayZ, float d
 {
 	CGUIBase* pDest = NULL;
 
+	if(!Is3DGUIMode())
+		return pDest;
+
+	Matrix4 mat(Matrix4::IDENTITY);
+	GetWorldTransform(mat);
+
+	Vector3 rayOrigin(rayX, rayY, rayZ);
+	rayOrigin += CGlobals::GetScene()->GetRenderOffset();
+	Vector3 rayDir(dirX, dirY, dirZ);
+	rayDir.normalise();
+
+	Vector3 planeNormal(0, 0, 1.f);
+	Vector3 planePoint(0, 0, 0);
+	planeNormal = planeNormal * mat;
+	planePoint = planePoint * mat;
+	planeNormal -= planePoint;
+	planeNormal.normalise();
+	Plane planeUI(planeNormal, planePoint); // in world space
+
+	// get ray plane intersection
+	float fDist = 0.f;
+	Ray ray(rayOrigin, rayDir);
+	auto result = ray.intersects(planeUI);
+	if(result.first && result.second <= fMaxDistance)
+	{
+		Vector3 vHitPoint = ray.getPoint(fDist);
+		vHitPoint = vHitPoint * mat.inverse();
+		pDest = GetUIObject((int)vHitPoint.x, (int)vHitPoint.y);
+		if(fHitDist)
+			*fHitDist = fDist;
+	}
 	return pDest;
 }
 
