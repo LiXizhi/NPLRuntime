@@ -99,7 +99,7 @@ static UBits barg(lua_State *L, int idx)
 }
 
 /* Return bit type. */
-#define BRET(b)  lua_pushnumber(L, (lua_Number)(SBits)(b)); return 1;
+#define BRET(b)  lua_pushnumber(L, (lua_Number)(UBits)(b)); return 1;
 
 static int bit_tobit(lua_State *L) { BRET(barg(L, 1)) }
 static int bit_bnot(lua_State *L) { BRET(~barg(L, 1)) }
