@@ -205,3 +205,13 @@ std::string ParaEngine::AccelerometerEvent::ToScriptCode() const
 		return sCode;
 	}
 }
+
+ParaEngine::MouseMoveEvent::MouseMoveEvent(int x, int y, int dx, int dy, int nEventType)
+	:MouseEvent(0, x, y, nEventType), m_dx(dx), m_dy(dy)
+{
+}
+
+std::string MouseMoveEvent::ToScriptCode()const
+{
+	return GenerateOnMouseScript(m_MouseState, m_dx, m_dy);
+};

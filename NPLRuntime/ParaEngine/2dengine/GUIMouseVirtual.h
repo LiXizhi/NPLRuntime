@@ -64,7 +64,11 @@ namespace ParaEngine
 		virtual void SetMousePosition(int x, int y);
 
 		/** check if there is any unprocessed buffered window mouse message. we call this function before Update() to check if there is any mouse event*/
-		virtual int GetBufferedMessageCount();;
+		virtual int GetBufferedMessageCount();
+
+		bool HasSimulatedMouseEvent() const;
+
+		void SetHasSimulatedMouseEvent(bool value);
 	protected:
 		bool m_bLock;
 		/** whether to use window message for buffered mouse event. default to true, if false, directInput will be used. */
@@ -72,6 +76,7 @@ namespace ParaEngine
 		/** swap left/right button.*/
 		bool m_bSwapMouseButton;
 		bool m_bLastMouseReset;
+		bool m_bHasSimulatedMouseEvent;
 	public:
 		DeviceMouseEventPtr m_didod[SAMPLE_BUFFER_SIZE];  // Receives buffered data
 		uint32_t m_dwElements;

@@ -171,7 +171,7 @@ half4 MaterialMainPS(MaterialBlockVSOut input) :COLOR
 		albedoColor.xyz = lerp(albedoColor.xyz, emissiveColor.rgb, emissiveColor.a);
 	}
 
-	half4 oColor = half4(lerp(albedoColor.xyz, g_fogColor.xyz, input.color.w), albedoColor.a);
+    half4 oColor = half4(lerp(albedoColor.xyz, g_fogColor.xyz, input.color.w), albedoColor.a * g_opacity);
 	return half4(oColor);
 }
 
