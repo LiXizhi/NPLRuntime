@@ -1397,8 +1397,13 @@ int CGUIRoot::HandleUserInput()
 		bool bHasMouseCapture = false;
 		// Fixed 2010.10.27: the mouse target is always the currently captured mouse object. Scrollbar will function correctly. 
 		if (pMouseTarget == NULL) {
-			if(!bIsRelativeTo3D)
-				pMouseTarget = GetUIObject(m_pMouse->m_x, m_pMouse->m_y);
+			int x = m_pMouse->m_x;
+			int y = m_pMouse->m_y;
+			if (bIsRelativeTo3D)
+			{
+				CGlobals::GetGUI()->TransformMousePos(x, y, &matWorld);
+			}
+			pMouseTarget = GetUIObject(x, y);
 		}
 		else
 			bHasMouseCapture = true;
