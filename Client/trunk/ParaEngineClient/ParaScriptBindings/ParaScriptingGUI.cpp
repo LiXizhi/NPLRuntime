@@ -2687,6 +2687,7 @@ namespace ParaScripting
 
 	ParaUIObject ParaUI::GetUIObjectAtPoint(int x, int y)
 	{
+		CGlobals::GetGUI()->TransformMousePos(x, y);
 		CGUIBase* pObj = CGlobals::GetGUI()->GetUIObject(x, y);
 		return ParaUIObject(pObj);
 	}

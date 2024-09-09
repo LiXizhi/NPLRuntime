@@ -3063,7 +3063,7 @@ bool CSceneObject::HandleUserInput()
 
 	MouseEvent mouse_down_event(0, 0, 0, -1);
 	MouseEvent mouse_up_event(0, 0, 0, -1);
-	MouseEvent mouse_move_event(0, 0, 0, -1);
+	MouseMoveEvent mouse_move_event(0, 0, 0, 0, -1);
 	MouseEvent mouse_click_event(0, 0, 0, -1);
 	MouseEvent mouse_wheel_event(0, 0, 0, -1);
 	KeyEvent key_event(0, 0);
@@ -3103,10 +3103,10 @@ bool CSceneObject::HandleUserInput()
 				{
 					mouse_move_event.m_MouseState = pMsg->message;
 
-					// please note: mouse move is delta value. 
-					mouse_move_event.m_x = pMouse->GetMouseXDeltaSteps();
-					mouse_move_event.m_y = pMouse->GetMouseYDeltaSteps();
-
+					mouse_move_event.m_x = pMsg->pt.x;
+					mouse_move_event.m_y = pMsg->pt.y;
+					mouse_move_event.m_dx = pMouse->GetMouseXDeltaSteps();
+					mouse_move_event.m_dy = pMouse->GetMouseYDeltaSteps();
 					mouse_move_event.m_nEventType = EVENT_MOUSE_MOVE;
 					//OUTPUT_LOG("MouseMove %d %d \n", mouse_move_event.m_x, mouse_move_event.m_y);
 				}
@@ -3200,6 +3200,7 @@ bool CSceneObject::HandleUserInput()
 	}
 	// call mouse move event handlers
 	if (mouse_move_event.m_nEventType >= 0) {
+		CGlobals::GetGUI()->SetMousePosition(mouse_move_event.m_x, mouse_move_event.m_y);
 		CGlobals::GetEventsCenter()->FireEvent(mouse_move_event);
 	}
 	else {
@@ -3207,10 +3208,9 @@ bool CSceneObject::HandleUserInput()
 		{
 			mouse_move_event.m_MouseState = 0;
 
-			// please note: mouse move is delta value. 
-			mouse_move_event.m_x = pMouse->GetMouseXDeltaSteps();
-			mouse_move_event.m_y = pMouse->GetMouseYDeltaSteps();
-
+			CGlobals::GetGUI()->GetMousePosition(&mouse_move_event.m_x, &mouse_move_event.m_y);
+			mouse_move_event.m_dx = pMouse->GetMouseXDeltaSteps();
+			mouse_move_event.m_dy = pMouse->GetMouseYDeltaSteps();
 			mouse_move_event.m_nEventType = EVENT_MOUSE_MOVE;
 			CGlobals::GetEventsCenter()->FireEvent(mouse_move_event);
 		}

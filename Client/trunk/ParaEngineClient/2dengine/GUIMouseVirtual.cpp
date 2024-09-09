@@ -14,7 +14,7 @@
 using namespace ParaEngine;
 
 ParaEngine::CGUIMouseVirtual::CGUIMouseVirtual()
-	:m_bLock(false), m_bUseWindowMessage(true), m_isTouchInputting(false), m_bLastMouseReset(false), m_buffered_mouse_msgs_count(0), m_bSwapMouseButton(false), m_x(0), m_y(0), m_objCaptured(NULL)
+	:m_bLock(false), m_bUseWindowMessage(true), m_isTouchInputting(false), m_bLastMouseReset(false), m_buffered_mouse_msgs_count(0), m_bSwapMouseButton(false), m_x(0), m_y(0), m_objCaptured(NULL), m_bHasSimulatedMouseEvent(false)
 {
 	Reset();
 }
@@ -326,12 +326,12 @@ void ParaEngine::CGUIMouseVirtual::SetDeviceCursorPos(int x, int y)
 void ParaEngine::CGUIMouseVirtual::SetMousePosition(int x, int y)
 {
 	// m_curMouseState needs to be translated from UI space to device space
-	// float fScaleX = 1.f, fScaleY = 1.f;
-	// CGlobals::GetGUI()->GetUIScale(&fScaleX, &fScaleY);
-	// if (x>-500)
-	// 	m_curMouseState.lX = (fScaleX == 1.f) ? x : (uint32)(x*fScaleX);
-	// if (y>-500)
-	// 	m_curMouseState.lY = (fScaleY == 1.f) ? y : (uint32)(y*fScaleY);
+	 float fScaleX = 1.f, fScaleY = 1.f;
+	 CGlobals::GetGUI()->GetUIScale(&fScaleX, &fScaleY);
+	 if (x>-500)
+	 	m_curMouseState.lX = (fScaleX == 1.f) ? x : (uint32)(x*fScaleX);
+	 if (y>-500)
+	 	m_curMouseState.lY = (fScaleY == 1.f) ? y : (uint32)(y*fScaleY);
 
 	m_x = x;
 	m_y = y;
@@ -340,6 +340,15 @@ void ParaEngine::CGUIMouseVirtual::SetMousePosition(int x, int y)
 int ParaEngine::CGUIMouseVirtual::GetBufferedMessageCount()
 {
 	return m_buffered_mouse_msgs_count;
+}
+
+bool CGUIMouseVirtual::HasSimulatedMouseEvent() const {
+	return m_bHasSimulatedMouseEvent;
+}
+
+void CGUIMouseVirtual::SetHasSimulatedMouseEvent(bool value) 
+{
+	m_bHasSimulatedMouseEvent = value;
 }
 
 void ParaEngine::CGUIMouseVirtual::ResetLastMouseState()
