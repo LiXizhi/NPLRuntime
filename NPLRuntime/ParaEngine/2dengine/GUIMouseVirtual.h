@@ -34,7 +34,7 @@ namespace ParaEngine
 
 		virtual bool IsLocked();
 		/** true to lock the mouse at its current location*/
-		virtual void SetLock(bool bLock);;
+		virtual void SetLock(bool bLock);
 
 		/** push a standard windows mouse event to the buffer for processing in the next frame move. */
 		virtual void PushMouseEvent(const DeviceMouseEventPtr &msg);
@@ -45,7 +45,7 @@ namespace ParaEngine
 		virtual void ReleaseCapture();
 
 		/** true to show the cursor. only show if previous call is hide and vice versa. */
-		virtual void ShowCursor(bool bShowCursor){};
+		virtual void ShowCursor(bool bShowCursor);
 
 		/** Force the device to show its cursor. this is different from ShowCursor in that it always calls the device API to set the cursor. */
 		virtual void ForceShowCursor(bool bShow){};

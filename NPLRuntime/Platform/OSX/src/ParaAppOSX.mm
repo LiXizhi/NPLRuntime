@@ -34,8 +34,11 @@ void ParaEngine::CParaEngineAppOSX::SetRefreshTimer(float fTimeInterval, int nFr
 
 bool ParaEngine::CParaEngineAppOSX::AppHasFocus()
 {
-    //throw std::logic_error("The method or operation is not implemented.");
-    return true;
+    if ([NSApp isActive]) {
+        return true;
+    } else {
+        return false;
+    }
 }
 
 void ParaEngine::CParaEngineAppOSX::GetStats(string& output, DWORD dwFields)

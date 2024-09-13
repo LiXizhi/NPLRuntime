@@ -260,17 +260,17 @@ void ParaEngine::CGUIMouseVirtual::SetDeviceCursorPos(int x, int y)
 
 void ParaEngine::CGUIMouseVirtual::SetMousePosition(int x, int y)
 {
-	if(HasSimulatedMouseEvent())
-	{
-		// m_curMouseState needs to be translated from UI space to device space
-		float fScaleX = 1.f, fScaleY = 1.f;
-		CGlobals::GetGUI()->GetUIScale(&fScaleX, &fScaleY);
+	// if(HasSimulatedMouseEvent())
+	// {
+	// 	// m_curMouseState needs to be translated from UI space to device space
+	// 	float fScaleX = 1.f, fScaleY = 1.f;
+	// 	CGlobals::GetGUI()->GetUIScale(&fScaleX, &fScaleY);
 
-		if (x > -500)
-			m_curMouseState.x = (fScaleX == 1.f) ? x : (int32)(x * fScaleX);
-		if (y > -500)
-			m_curMouseState.y = (fScaleY == 1.f) ? y : (int32)(y * fScaleY);
-	}
+	// 	if (x > -500)
+	// 		m_curMouseState.x = (fScaleX == 1.f) ? x : (int32)(x * fScaleX);
+	// 	if (y > -500)
+	// 		m_curMouseState.y = (fScaleY == 1.f) ? y : (int32)(y * fScaleY);
+	// }
 	
 	m_x = x;
 	m_y = y;
@@ -294,3 +294,12 @@ void ParaEngine::CGUIMouseVirtual::ResetLastMouseState()
 {
 	m_bLastMouseReset = true;
 }
+
+#if not defined(PLATFORM_MAC)
+
+void ParaEngine::CGUIMouseVirtual::ShowCursor(bool bShowCursor)
+{
+	// do nothing
+}
+
+#endif
