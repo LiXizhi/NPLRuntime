@@ -295,7 +295,7 @@ void ParaEngine::CGUIMouseVirtual::ResetLastMouseState()
 	m_bLastMouseReset = true;
 }
 
-#if not defined(PLATFORM_MAC)
+#ifndef PLATFORM_MAC
 
 void ParaEngine::CGUIMouseVirtual::ShowCursor(bool bShowCursor)
 {
