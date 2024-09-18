@@ -1322,7 +1322,8 @@ bool CGUIBase::MsgProc(MSG *event)
 				}
 			}else{
 				if (m_parent!=NULL) {
-					m_parent->SetKeyFocus(NULL);	
+					if(pRoot != m_parent)
+						m_parent->SetKeyFocus(NULL);	
 				}else{
 					pRoot->SetKeyFocus(NULL);
 				}
