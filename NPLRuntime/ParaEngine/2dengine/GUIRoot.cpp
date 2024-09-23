@@ -62,6 +62,11 @@ The GUIRoot object contains the top level mouse focus object.
 #include "GUIHighlight.h"
 #include "GUIEdit.h"
 #include "GUIIMEEditBox.h"
+
+// #ifdef PLATFORM_MAC
+// #include "2dengine/GUIDirectInput.h"
+// #endif
+
 #include "EventBinding.h"
 #include "EventHandler.h"
 #include "ObjectManager.h"
@@ -1782,13 +1787,23 @@ void CGUIRoot::SetRenderImageCursor(bool bEnable)
 HRESULT CGUIRoot::OneTimeGUIInit()
 {
 	CGUIEvent::StaticInit();
-
-    if (m_pKeyboard == 0)
+	if (m_pKeyboard == 0)
 		m_pKeyboard = new CGUIKeyboardVirtual();
 
     if (m_pMouse == 0)
 		m_pMouse = new CGUIMouseVirtual();
+// #ifndef PLATFORM_MAC
+//     if (m_pKeyboard == 0)
+// 		m_pKeyboard = new CGUIKeyboardVirtual();
 
+//     if (m_pMouse == 0)
+// 		m_pMouse = new CGUIMouseVirtual();
+// #else
+// 	if (m_pKeyboard == 0)
+// 		m_pKeyboard = new CDirectKeyboard();
+// 	if (m_pMouse == 0)
+// 		m_pMouse = new CDirectMouse();
+// #endif
 	if (CGlobals::GetAssetManager()->GetFont("sys") == NULL)
 	{
 		// if sys font is not specified, create it
