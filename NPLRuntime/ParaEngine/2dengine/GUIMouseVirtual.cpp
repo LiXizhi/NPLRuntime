@@ -88,12 +88,12 @@ bool ParaEngine::CGUIMouseVirtual::IsButtonDown(const EMouseButton button)
 
 int ParaEngine::CGUIMouseVirtual::GetMouseYDeltaSteps()
 {
-	return (int)(m_dims2.y);
+    return (int)(m_dims2.y);
 }
 
 int ParaEngine::CGUIMouseVirtual::GetMouseXDeltaSteps()
 {
-	return (int)(m_dims2.x);
+    return (int)(m_dims2.x);
 }
 
 int ParaEngine::CGUIMouseVirtual::GetMouseWheelDeltaSteps()
@@ -204,7 +204,7 @@ bool ParaEngine::CGUIMouseVirtual::ReadBufferedData()
 			}
 		}
 
-		if (e->GetEventType() == EMouseEventType::Move && nFirstMouseMoveIndex>=0 && nFirstMouseMoveIndex != m_dwElements) {
+		if (e->GetEventType() == EMouseEventType::Move && nFirstMouseMoveIndex >= 0 && nFirstMouseMoveIndex != m_dwElements) {
 			// merge with previous mouse move event
 			m_didod[nFirstMouseMoveIndex] = e;
 		} else {
@@ -295,11 +295,7 @@ void ParaEngine::CGUIMouseVirtual::ResetLastMouseState()
 	m_bLastMouseReset = true;
 }
 
-#ifndef PLATFORM_MAC
-
 void ParaEngine::CGUIMouseVirtual::ShowCursor(bool bShowCursor)
 {
 	// do nothing
 }
-
-#endif
