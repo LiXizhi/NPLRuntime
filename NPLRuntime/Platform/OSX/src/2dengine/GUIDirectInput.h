@@ -49,14 +49,14 @@ namespace ParaEngine
 		// void Free();
 
 		virtual bool ReadBufferedData( );
-//		virtual bool ReadImmediateData();
+		virtual bool ReadImmediateData();
 		virtual void Update();
 
 		/** true to lock the mouse at its current location*/
 		virtual void SetLock(bool bLock);
 
 		/** true to show the cursor. only show if previous call is hide and vice versa. */
-//		virtual void ShowCursor(bool bShowCursor);
+		virtual void ShowCursor(bool bShowCursor);
 
 		/** Force the device to show its cursor. this is different from ShowCursor in that it always calls the device API to set the cursor. */
 //		virtual void ForceShowCursor(bool bShow);
@@ -111,7 +111,7 @@ namespace ParaEngine
 		// int m_XHotSpot, m_YHotSpot; // mouse hot spot.
 		// LPDIRECTINPUT8			m_pDI; // The DirectInput object         
 		// LPDIRECTINPUTDEVICE8	m_pMouse; // The Mouse device 
-		// bool					m_bShowCursor;
+		bool m_bShowCursor;
 
 	protected:
 		 bool m_bUseDirectInput;

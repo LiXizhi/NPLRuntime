@@ -9,6 +9,8 @@
 // Refer to reference for further information.
 //-----------------------------------------------------------------------
 #import <Cocoa/Cocoa.h>
+#import <CoreServices/CoreServices.h>
+#import "RenderWindowOSX.h"
 #include "ParaEngine.h"
 
 //#include <strsafe.h>
@@ -245,12 +247,12 @@ CDirectKeyboard::CDirectKeyboard()
 //////////////////////////////////////////////////////////////////////////
 
 CDirectMouse::CDirectMouse()
-	: m_bUseDirectInput(false)
+    : m_bUseDirectInput(false)
 {
 //	m_pDI=NULL;
 //	m_pMouse=NULL; 
 //	CreateDevice(hDlg);
-//	m_bShowCursor=true;
+	m_bShowCursor = true;
 //	m_XHotSpot=0;
 //	m_YHotSpot = 0;
 //	m_szCursorName = ""; //":IDR_DEFAULT_CURSOR";
@@ -259,9 +261,9 @@ CDirectMouse::CDirectMouse()
 
 CDirectMouse::~CDirectMouse()
 {
-	//m_bExitMouseProcess=true;
-	//if (m_bLock)
-	//	::ReleaseCapture();
+    //m_bExitMouseProcess=true;
+    //if (m_bLock)
+    //	::ReleaseCapture();
 
 
 //	Free();
@@ -269,13 +271,13 @@ CDirectMouse::~CDirectMouse()
 
 void CDirectMouse::Reset()
 {
-	CGUIMouseVirtual::Reset();
+    CGUIMouseVirtual::Reset();
 
-	//if (m_bLock)
-	//{
-	//	m_bLock = false;
-	//	::ReleaseCapture();
-	//}
+    if (m_bLock)
+    {
+    	m_bLock = false;
+    	// ::ReleaseCapture();
+    }
 }
 
 //HRESULT CDirectMouse::CreateDevice( HWND hDlg )
@@ -383,18 +385,15 @@ void CDirectMouse::Reset()
 
 void CDirectMouse::Update()
 {
-	ReadBufferedData();
+    ReadImmediateData();
+    ReadBufferedData();
 
-	if (m_bLastMouseReset)
-	{
-        OUTPUT_LOG("update reset!!!!!");
-		m_lastMouseState.x = m_curMouseState.x;
-		m_lastMouseState.y = m_curMouseState.y;
-        OUTPUT_LOG("last x: %d, last y: %d, cur x: %d, cur y: %d\n", m_lastMouseState.x, m_lastMouseState.y, m_curMouseState.x, m_curMouseState.y);
-		m_dims2.x = m_dims2.y = 0;
+    if (m_bLastMouseReset)
+    {
         m_bLastMouseReset = false;
-    } else {
-        ReadImmediateData();
+        m_lastMouseState.x = m_curMouseState.x;
+        m_lastMouseState.y = m_curMouseState.y;
+        m_dims2.x = m_dims2.y = 0;
     }
 }
 
@@ -402,108 +401,114 @@ void CDirectMouse::SetMousePosition(int x, int y)
 {
     CGUIMouseVirtual::SetMousePosition(x, y);
 
-	if (this->IsLocked() && !m_bUseDirectInput)
-	{
-		ResetCursorPosition();
+    if (this->IsLocked() && !m_bUseDirectInput)
+    {
+        ResetCursorPosition();
     }
 }
 
-//HRESULT CDirectMouse::ReadImmediateData( )
-//{
-//	if (m_isTouchInputting)
-//	{
-//		CGUIMouseVirtual::ReadImmediateData();
-//		return S_OK;
-//	}
-//
-//	HRESULT       hr;
-//
-//	if (!m_bUseDirectInput)
-//	{
-//		/** Fix: in teamviewer, vmware, parallel desktop, remote desktop, etc. DirectInput does not give correct mouse cursor position.
-//		* so we will use disable direct input by default, unless for full screen mode maybe.
-//		*/
-//		bool bNeedReset = false;
-//
-//		POINT pt;
-//		if (::GetCursorPos(&pt))
-//		{
-//			if (this->IsLocked())
-//			{
-//				RECT rc;
-//				::GetWindowRect(m_hwnd, &rc);
-//				auto width = rc.right - rc.left;
-//				auto height = rc.bottom - rc.top;
-//
-//				rc.left += width / 8;
-//				rc.right -= width / 8;
-//				rc.top += height / 8;
-//				rc.bottom -= height / 8;
-//
-//				bNeedReset = !::PtInRect(&rc, pt);
-//			}
-//
-//
-//			m_curMouseState.lX = pt.x;
-//			m_curMouseState.lY = pt.y;
-//		}
-//
-//		CGUIMouseVirtual::ReadImmediateData();
-//		//OUTPUT_LOG("%d %d dx:%d dy:%d\n", m_curMouseState.lX, m_curMouseState.lY, m_dims2.lX, m_dims2.lY);
-//
-//		m_dims2.rgbButtons[0] = (::GetAsyncKeyState(VK_LBUTTON) & 0x8000) ? 0x80 : 0;
-//		m_dims2.rgbButtons[1] = (::GetAsyncKeyState(VK_RBUTTON) & 0x8000) ? 0x80 : 0;
-//		m_dims2.rgbButtons[2] = (::GetAsyncKeyState(VK_MBUTTON) & 0x8000) ? 0x80 : 0;
-//
-//		if (bNeedReset)
-//		{
-//			ResetCursorPosition();
-//		}
-//
-//		return S_OK;
-//	}
-//
-//
-//	if( NULL == m_pMouse ) 
-//		return S_OK;
-//	memcpy(&m_lastMouseState, &m_curMouseState, sizeof(m_curMouseState));
-//	// Get the input's device state, and put the state in dims
-//	ZeroMemory( &m_dims2, sizeof(m_dims2) );
-//	hr = m_pMouse->GetDeviceState( sizeof(DIMOUSESTATE2), &m_dims2 );
-//
-////	{
-////#ifdef WIN32
-////		const float x_radio = 26.0f;
-////		const float y_radio = 45.0f;
-////
-////
-////		if (GetSystemMetrics(SM_REMOTESESSION) != 0) //Is Remote Session
-////		{
-////			m_dims2.lX /= x_radio;
-////			m_dims2.lY /= y_radio;
-////		}
-////#endif
-////	}
-//
-//	if( FAILED(hr) ) 
-//	{
-//		// DirectInput may be telling us that the input stream has been
-//		// interrupted.  We aren't tracking any state between polls, so
-//		// we don't have any special reset that needs to be done.
-//		// We just re-acquire and try again.
-//
-//		// If input is lost then acquire and keep trying 
-//		hr = m_pMouse->Acquire();
-//		while( hr == DIERR_INPUTLOST ) 
-//			hr = m_pMouse->Acquire();
-//
-//		// hr may be DIERR_OTHERAPPHASPRIO or other errors.  This
-//		// may occur when the app is minimized or in the process of 
-//		// switching, so just try again later 
-//		return S_OK; 
-//	}
-//	return S_OK;
-//}
+bool CDirectMouse::ReadImmediateData()
+{
+    if (!m_bUseDirectInput)
+    {
+        /** Fix: in teamviewer, vmware, parallel desktop, remote desktop, etc. DirectInput does not give correct mouse cursor position.
+        * so we will use disable direct input by default, unless for full screen mode maybe.
+        */
+        bool bNeedReset = false;
+
+        // get mouse position.
+        CGEventRef event = CGEventCreate(NULL);
+        CGPoint pt = CGEventGetLocation(event);
+        CFRelease(event);
+
+        if (pt.x != 0 || pt.y != 0)
+        {
+            if (this->IsLocked())
+            {
+                NSWindow *mainWindow = [NSApp mainWindow];
+
+                if (mainWindow) {
+                    NSRect windowFrame = [mainWindow frame];
+
+                    CGFloat windowX = windowFrame.origin.x;
+                    CGFloat windowY = windowFrame.origin.y;
+
+                    NSRect contentFrame = [mainWindow contentLayoutRect];
+
+                    CGFloat contentWidth = contentFrame.size.width;
+                    CGFloat contentHeight = contentFrame.size.height;
+
+                    windowX = windowX - contentWidth / 8;
+                    windowY = windowY - contentHeight / 8;
+                    contentWidth = contentWidth + contentWidth / 8;
+                    contentHeight = contentHeight + contentHeight / 8;
+
+                    NSRect rect = NSMakeRect(windowX, windowY, contentWidth, contentHeight);
+
+                    bNeedReset = !NSPointInRect(pt, rect);
+                }
+            }
+
+            NSWindow *mainWindow = [NSApp mainWindow];
+
+            if (mainWindow) {
+                NSRect windowFrame = [mainWindow frame];
+
+                CGFloat windowX = windowFrame.origin.x;
+                CGFloat windowY = windowFrame.origin.y;
+
+                NSRect contentFrame = [mainWindow contentLayoutRect];
+
+                CGFloat contentWidth = contentFrame.size.width;
+                CGFloat contentHeight = contentFrame.size.height;
+
+                NSArray *screens = [NSScreen screens];
+                CGFloat screenWidth;
+                CGFloat screenHeight;
+
+                if ([screens count] > 0) {
+                    // Get the parameters of the first display.
+                    NSScreen *firstScreen = screens[0];
+                    NSRect frame = [firstScreen frame];
+                    screenWidth = frame.size.width;
+                    screenHeight = frame.size.height;
+                }
+
+                CGFloat topHeight = screenHeight - (windowY + contentHeight);
+                CGFloat y = pt.y - topHeight;
+                CGFloat x = pt.x - windowX;
+
+                double scaleX, scaleY;
+                RenderWindowOSX *pRender = (RenderWindowOSX *)CGlobals::GetApp()->GetRenderWindow();
+                pRender->GetScaleFactor(scaleX, scaleY);
+
+                m_curMouseState.x = x * scaleX;
+                m_curMouseState.y = y * scaleY;
+            }
+        }
+
+        CGUIMouseVirtual::ReadImmediateData();
+        // OUTPUT_LOG("%d %d dx:%d dy:%d\n", m_curMouseState.x, m_curMouseState.y, m_dims2.x, m_dims2.y);
+
+        m_dims2.buttons[0] = ([NSEvent pressedMouseButtons] & (1 << 0)) ? EKeyState::PRESS : EKeyState::RELEASE;
+        m_dims2.buttons[1] = ([NSEvent pressedMouseButtons] & (1 << 1)) ? EKeyState::PRESS : EKeyState::RELEASE;
+        m_dims2.buttons[2] = ([NSEvent pressedMouseButtons] & (1 << 2)) ? EKeyState::PRESS : EKeyState::RELEASE;
+
+        if (bNeedReset)
+        {
+            ResetCursorPosition();
+        }
+
+        return S_OK;
+    }
+
+    memcpy(&m_lastMouseState, &m_curMouseState, sizeof(m_curMouseState));
+
+    // Get the input's device state, and put the state in dims
+    ZeroMemory(&m_dims2, sizeof(m_dims2));
+
+    return S_OK;
+}
 
 
 //-----------------------------------------------------------------------------
@@ -512,76 +517,77 @@ void CDirectMouse::SetMousePosition(int x, int y)
 //-----------------------------------------------------------------------------
 bool CDirectMouse::ReadBufferedData()
 {
-	///** we do not use Read Buffered Data, instead, mouse events are translated from windows messages.
-	//Only immediate button data are read from direct input. */
-	// bool bHasMouseMove = false;
-	m_dwElements = 0;
-	int nFirstMouseMoveIndex = -1;
-	// int lastX = m_curMouseState.x, lastY = m_curMouseState.y;
+    NSWindow *mainWindow = [NSApp mainWindow];
+
+    // Get the coordinates and size of the window (the frame of the window)
+    NSRect windowFrame = [mainWindow frame];
+
+    // Window position (bottom left corner coordinates).
+    CGFloat windowX = windowFrame.origin.x;
+    CGFloat windowY = windowFrame.origin.y;
+
+    ///** we do not use Read Buffered Data, instead, mouse events are translated from windows messages.
+    //Only immediate button data are read from direct input. */
+    // bool bHasMouseMove = false;
+    m_dwElements = 0;
+    int nFirstMouseMoveIndex = -1;
 
     //translating windows message into DirectMouse-like events, in order to maintain consistency of the interface
-	for (int a = 0; a < m_buffered_mouse_msgs_count; a++)
-	{
-		auto &e = m_buffered_mouse_msgs[a];
+    for (int a = 0; a < m_buffered_mouse_msgs_count; a++)
+    {
+        auto &e = m_buffered_mouse_msgs[a];
 
         switch (e->GetEventType())
-		{
-			case EMouseEventType::Button:
-			{
-				DeviceMouseButtonEvent* buttonEvent = (DeviceMouseButtonEvent*)(e.get());
-				m_curMouseState.buttons[(int)buttonEvent->GetButton()] = buttonEvent->GetKeyState();
-				m_curMouseState.x = buttonEvent->GetX(); m_curMouseState.y = buttonEvent->GetY();
-				ResetLastMouseState();
+        {
+            case EMouseEventType::Button:
+            {
+                DeviceMouseButtonEvent* buttonEvent = (DeviceMouseButtonEvent*)(e.get());
+                m_curMouseState.buttons[(int)buttonEvent->GetButton()] = buttonEvent->GetKeyState();
+                m_curMouseState.x = buttonEvent->GetX(); m_curMouseState.y = buttonEvent->GetY();
+                ResetLastMouseState();
 
                 if (nFirstMouseMoveIndex > 0) {
-					// this will disable merging mouse move event, if there is any button event in the middle.
-					nFirstMouseMoveIndex = -1;
-				}
-				break;
-			}
-			case EMouseEventType::Move:
-			{
-				const DeviceMouseMoveEvent* moveEvent = (DeviceMouseMoveEvent*)(e.get());
-                if (!m_bLastMouseReset) {
-                    m_curMouseState.x = moveEvent->GetX();
-                    m_curMouseState.y = moveEvent->GetY();
+                    // this will disable merging mouse move event, if there is any button event in the middle.
+                    nFirstMouseMoveIndex = -1;
                 }
-                
-                OUTPUT_LOG("1111 cur x: %d, cur y: %d\n", m_curMouseState.x, m_curMouseState.y);
-                
-//				 m_dims2.x = m_curMouseState.x - lastX;
-//				 m_dims2.y = m_curMouseState.y - lastY;
-				if (nFirstMouseMoveIndex < 0)
-					nFirstMouseMoveIndex = m_dwElements;
-			
-				// bHasMouseMove = true;
-				break;
-			}
-			case EMouseEventType::Wheel:
-			{
-				const DeviceMouseWheelEvent* wheelEvent = (DeviceMouseWheelEvent*)(e.get());
-				m_curMouseState.z = wheelEvent->GetWheel();
-				break;
-			}
-			case EMouseEventType::Unknown:
-			default:
-			{
-				assert(false);
-				break;
-			}
-		}
+                break;
+            }
+            case EMouseEventType::Move:
+            {
+                const DeviceMouseMoveEvent* moveEvent = (DeviceMouseMoveEvent*)(e.get());
+                m_curMouseState.x = moveEvent->GetX();
+                m_curMouseState.y = moveEvent->GetY();
+                if (nFirstMouseMoveIndex < 0)
+                    nFirstMouseMoveIndex = m_dwElements;
+            
+                // bHasMouseMove = true;
+                break;
+            }
+            case EMouseEventType::Wheel:
+            {
+                const DeviceMouseWheelEvent* wheelEvent = (DeviceMouseWheelEvent*)(e.get());
+                m_curMouseState.z = wheelEvent->GetWheel();
+                break;
+            }
+            case EMouseEventType::Unknown:
+            default:
+            {
+                assert(false);
+                break;
+            }
+        }
 
-		if (e->GetEventType() == EMouseEventType::Move && nFirstMouseMoveIndex>=0 && nFirstMouseMoveIndex != m_dwElements) {
-			// merge with previous mouse move event
-			m_didod[nFirstMouseMoveIndex] = e;
-		} else {
-			m_didod[m_dwElements] = e;
-			m_dwElements++;
-		}
-	}
+        if (e->GetEventType() == EMouseEventType::Move && nFirstMouseMoveIndex>=0 && nFirstMouseMoveIndex != m_dwElements) {
+            // merge with previous mouse move event
+            m_didod[nFirstMouseMoveIndex] = e;
+        } else {
+            m_didod[m_dwElements] = e;
+            m_dwElements++;
+        }
+    }
 
-	m_buffered_mouse_msgs_count = 0;
-	return S_OK;
+    m_buffered_mouse_msgs_count = 0;
+    return S_OK;
 }
 
 
@@ -765,45 +771,27 @@ bool CDirectMouse::ReadBufferedData()
 //}
 
 /** true to show the cursor */
-//void CDirectMouse::ShowCursor(bool bShowCursor)
-//{
-//	if(!CGlobals::GetGUI()->GetUseSystemCursor())
-//	{
-//		if (m_bShowCursor != bShowCursor) {
-//			ForceShowCursor(bShowCursor);
-//		}
-//		m_bShowCursor = bShowCursor;
-//	}
-//}
-
-//void CDirectMouse::ForceShowCursor(bool bShow)
-//{
-//	CGlobals::GetApp()->PostWinThreadMessage(PE_WM_SHOWCURSOR, bShow ? 1 : 0, 0);
-//}
-
+void CDirectMouse::ShowCursor(bool bShowCursor)
+{
+    if(!CGlobals::GetGUI()->GetUseSystemCursor())
+    {
+        if (m_bShowCursor != bShowCursor) {
+            if (bShowCursor) {
+                [NSCursor unhide];
+            } else {
+                [NSCursor hide];
+            }
+        }
+        m_bShowCursor = bShowCursor;
+    }
+}
 
 void CDirectMouse::ResetCursorPosition()
 {
-    NSLog(@"from reset cursor position!!!!");
-    Vector2 contentResolutionOut;
-    CGlobals::GetApp()->GetScreenResolution(&contentResolutionOut);
-    
-    int contentWidth = contentResolutionOut.x;
-    int contentHeight = contentResolutionOut.y;
-    
-    NSLog(@"contentWidth: %d, contentHeight: %d", contentWidth, contentHeight);
-    
-//    m_dims2.y = 0;
-//    m_dims2.x = 0;
-//    m_curMouseState.x = contentWidth / 2;
-//    m_curMouseState.y = contentWidth / 2;
-//    m_lastMouseState.x = contentWidth / 2;
-//    m_lastMouseState.y = contentWidth / 2;
-//    m_x = contentWidth / 2;
-//    m_y = contentHeight / 2;
-    
-
-    m_bLastMouseReset = true;
+    int realContentWidth = CGlobals::GetApp()->GetRenderWindow()->GetWidth();
+    int realContentHeight = CGlobals::GetApp()->GetRenderWindow()->GetHeight();
+    m_lastMouseState.x = realContentWidth / 2;
+    m_lastMouseState.y = realContentHeight / 2;
 
     // Get the main window of the current application.
     NSWindow *mainWindow = [NSApp mainWindow];
@@ -816,74 +804,56 @@ void CDirectMouse::ResetCursorPosition()
         CGFloat windowX = windowFrame.origin.x;
         CGFloat windowY = windowFrame.origin.y;
 
-        NSLog(@"windowX: %f, windowsY: %f", windowX, windowY);
+        NSRect contentFrame = [mainWindow contentLayoutRect];
+        CGFloat contentWidth = contentFrame.size.width;
+        CGFloat contentHeight = contentFrame.size.height;
 
-        // 获取内容视图的frame（不包括标题栏）
-//        NSRect contentFrame = [mainWindow contentLayoutRect];
-//        CGFloat contentHeight = contentFrame.size.height;
+        NSArray *screens = [NSScreen screens];
+        CGFloat screenWidth;
+        CGFloat screenHeight;
 
-        NSScreen *screen = [mainWindow screen];
-        CGFloat screenHeight = [screen frame].size.height;
-        CGFloat screenWidth = [screen frame].size.width;
-        
-        NSLog(@"screenHeight: %f, screenWidth: %f", screenHeight, screenWidth);
+        if ([screens count] > 0) {
+            // Get the parameters of the first display.
+            NSScreen *firstScreen = screens[0];
+            NSRect frame = [firstScreen frame];
+            screenWidth = frame.size.width;
+            screenHeight = frame.size.height;
+        }
 
         int y = screenHeight - (windowY + contentHeight) + (contentHeight / 2);
         int x = windowX + (contentWidth / 2);
 
-        NSLog(@"x: %d, y: %d", x, y);
-
         CGPoint newPosition = CGPointMake(x, y);
 
-        // 使用 CGWarpMouseCursorPosition 设置鼠标位置
-        // CGAssociateMouseAndMouseCursorPosition(false);
+        // Use CGWarpMouseCursorPosition to set the mouse position.
+        CGAssociateMouseAndMouseCursorPosition(false);
         CGWarpMouseCursorPosition(newPosition);
-        // CGAssociateMouseAndMouseCursorPosition(true);
-
-//        // 可选：生成一个鼠标移动事件（在某些应用场景下可能需要）
-//        CGEventRef moveEvent = CGEventCreateMouseEvent(NULL, kCGEventMouseMoved, newPosition, kCGMouseButtonLeft);
-//        CGEventPost(kCGHIDEventTap, moveEvent);
-//        CFRelease(moveEvent);
-    } else {
-        NSLog(@"No main window found.");
+        CGAssociateMouseAndMouseCursorPosition(true);
     }
-
-//    m_dims2.y = 0;
-//    m_dims2.x = 0;
-    int realContentWidth = CGlobals::GetApp()->GetRenderWindow()->GetWidth();
-    int realContentHeight = CGlobals::GetApp()->GetRenderWindow()->GetHeight();
-    m_curMouseState.x = realContentWidth / 2;
-    m_curMouseState.y = realContentHeight / 2;
-//    m_lastMouseState.x = contentWidth / 2;
-//    m_lastMouseState.y = contentWidth / 2;
-//    m_x = contentWidth / 2;
-//    m_y = contentHeight / 2;
-//    
-
-    //m_bLastMouseReset = false;
 }
 
 void CDirectMouse::SetLock(bool bLock)
 {
-//	static POINT s_last_lock_pos = {0, 0};
+	static CGPoint s_last_lock_pos = {0, 0};
 
-	if (bLock && !m_bLock) {
-		// CGlobals::GetApp()->PostWinThreadMessage(PE_WM_SETCAPTURE, 0, 0);
-		ShowCursor(false);
-//		::GetCursorPos(&s_last_lock_pos);
-		ResetCursorPosition();
+    if (bLock && !m_bLock) {
+        ShowCursor(false);
+        CGEventRef event = CGEventCreate(NULL);
+        CGPoint pt = CGEventGetLocation(event);
+        CFRelease(event);
+        s_last_lock_pos = pt;
+        ResetCursorPosition();
 
 //		RECT rc;
 //		::GetWindowRect(m_hwnd, &rc);
 //		::ClipCursor(&rc);
-	}
+    }
 
-	if (!bLock && m_bLock) {
-		// CGlobals::GetApp()->PostWinThreadMessage(PE_WM_RELEASECAPTURE, 0, 0);
-		ShowCursor(true);
+    if (!bLock && m_bLock) {
+        ShowCursor(true);
 //		::ClipCursor(NULL);
-//		::SetCursorPos(s_last_lock_pos.x, s_last_lock_pos.y);
-	}
+        CGWarpMouseCursorPosition(s_last_lock_pos);
+    }
 
-	m_bLock = bLock;
+    m_bLock = bLock;
 }
