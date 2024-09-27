@@ -1571,7 +1571,7 @@ bool CBlockWorld::IsCubeModePicking()
 	return m_bCubeModePicking;
 }
 
-bool CBlockWorld::Pick(const Vector3& rayOrig, const Vector3& dir, float length, PickResult& result, uint32_t filter)
+bool CBlockWorld::Pick(const Vector3& rayOrig, const Vector3& dir, float length, PickResult& result, uint32_t filter, CBlockWorld::BlockFilterCallback* pCallback)
 {
 	if (!m_isInWorld)
 		return false;
@@ -1722,7 +1722,8 @@ bool CBlockWorld::Pick(const Vector3& rayOrig, const Vector3& dir, float length,
 
 		Block* pBlock = curRegion->GetBlock(curBlockIdX & 0x1ff, curBlockIdY & 0xff, curBlockIdZ & 0x1ff);
 		BlockTemplate* pBlockTemplate = NULL;
-		if (pBlock != 0 && (pBlockTemplate = pBlock->GetTemplate()) != 0 && ((pBlockTemplate->GetAttFlag() & filter) > 0))
+		if (pBlock != 0 && (pBlockTemplate = pBlock->GetTemplate()) != 0 && ((pBlockTemplate->GetAttFlag() & filter) > 0) 
+			&& (pCallback == NULL || (*pCallback)(curBlockIdX, curBlockIdY, curBlockIdZ, pBlockTemplate)))
 		{
 			const double blockSize = BlockConfig::g_blockSize;
 			float rayLength = -1;

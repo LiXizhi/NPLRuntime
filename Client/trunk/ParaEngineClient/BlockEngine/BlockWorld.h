@@ -423,8 +423,10 @@ namespace ParaEngine
 		bool IsCubeModePicking();
 		void SetCubeModePicking(bool bIsCubeModePicking);
 
+		typedef bool (*BlockFilterCallback)(uint32 bx, uint32 by, uint32 bz, BlockTemplate* pBlock);
+
 		/** picking in block world */
-		bool Pick(const Vector3& rayOrig, const Vector3& dir, float length, PickResult& result, uint32_t filter = 0xffffffff);
+		bool Pick(const Vector3& rayOrig, const Vector3& dir, float length, PickResult& result, uint32_t filter = 0xffffffff, BlockFilterCallback* pCallback = NULL);
 
 		/** find a block in the side direction that matched filter from block(x,y,z)
 		* this function can be used to check for free space upward or download
