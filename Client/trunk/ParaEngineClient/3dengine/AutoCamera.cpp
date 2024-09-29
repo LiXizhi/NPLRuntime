@@ -20,6 +20,7 @@
 #include "2dengine/GUIRoot.h"
 #include "BlockEngine/BlockWorldClient.h"
 #include "BlockEngine/BlockCommon.h"
+#include "BlockEngine/BlockDirection.h"
 #include "IParaEngineApp.h"
 #include "KeyFrame.h"
 
@@ -1324,60 +1325,58 @@ VOID CAutoCamera::FrameMove(FLOAT fElapsedTime)
 			BlockWorldClient* pBlockWorldClient = BlockWorldClient::GetInstance();
 			if (IsEnableBlockCollision() && pBlockWorldClient && pBlockWorldClient->IsInBlockWorld())
 			{
-				//Vector3 vReverseLineOfSight = vEye-vLookAt;
-				//float fDesiredLineOfSightLen = D3DXVec3Length(&vReverseLineOfSight);
-				//float fMinLineOfSightLen = m_fNearPlane;
-				//if(fDesiredLineOfSightLen < fMinLineOfSightLen )
-				//	fDesiredLineOfSightLen = fMinLineOfSightLen;
-
-				//ParaVec3Normalize(&vReverseLineOfSight, &vReverseLineOfSight);
-
 				PickResult result;
 				pBlockWorldClient->SetCubeModePicking(true);
+
 				if (pBlockWorldClient->Pick(vLookAt, vReverseLineOfSight, fDesiredLineOfSightLen, result, BlockTemplate::batt_solid | BlockTemplate::batt_blockcamera)
 					&& result.Distance <= fDesiredLineOfSightLen)
 				{
 					const float camera_box_size = BlockConfig::g_blockSize * 0.15f;
-
-					/*
-					if(result.Distance > BlockConfig::g_blockSize && (result.Side != 4 && result.Side != 5) )
-					{
-						// tricky: this makes the camera away from the vertical block surface.
-						if(result.Distance > BlockConfig::g_blockSize*1.25f)
-							result.Distance -= BlockConfig::g_blockSize *0.25f;
-						else
-							result.Distance = BlockConfig::g_blockSize;
-					}
-					*/
 					bool bIgnoreCollision = false;
-					if (/*vLookAt.y < vEye.y && */!m_bFirstPerson && IsIgnoreEyeBlockCollisionInSunlight())
+					if (!m_bFirstPerson && IsIgnoreEyeBlockCollisionInSunlight())
 					{
-						// if eye is above look at point and both eye and look at points are in almost full sunlight, we will ignore collision. 
+						// we will ignore collision for floating blocks (4 faces that are exposed to air). 
 						Uint16x3  block_eye;
 						BlockCommon::ConvertToBlockIndex((float)vEye.x, (float)vEye.y, (float)vEye.z, block_eye.x, block_eye.y, block_eye.z);
-
 						BlockTemplate* pEyeBlock = pBlockWorldClient->GetBlockTemplate(block_eye);
-						if (!pEyeBlock || !(pEyeBlock->IsMatchAttribute(BlockTemplate::batt_solid | BlockTemplate::batt_blockcamera)))
+						bool bIsEyeBlocked = (pEyeBlock && (pEyeBlock->IsMatchAttribute(BlockTemplate::batt_solid | BlockTemplate::batt_blockcamera)) && !pEyeBlock->IsMatchAttribute(BlockTemplate::batt_transparent));
+						if (!bIsEyeBlocked)
 						{
-							uint8 eye_sunlight = 0;
-
-							Uint16x3  block_lookat;
-							BlockCommon::ConvertToBlockIndex((float)vLookAt.x, (float)vLookAt.y, (float)vLookAt.z, block_lookat.x, block_lookat.y, block_lookat.z);
-							uint8 lookat_sunlight = 0;
-
-							if (pBlockWorldClient->GetBlockBrightness(block_eye, &eye_sunlight, 1, 1) && eye_sunlight >= (BlockConfig::g_sunLightValue - 2) &&
-								pBlockWorldClient->GetBlockBrightness(block_lookat, &lookat_sunlight, 1, 1) && lookat_sunlight >= (BlockConfig::g_sunLightValue))
-							{
-								PickResult resultEye;
-								if (pBlockWorldClient->Pick(vEye, -vReverseLineOfSight, fDesiredLineOfSightLen, resultEye, BlockTemplate::batt_solid | BlockTemplate::batt_blockcamera))
+							auto blockFilterCallback = [pBlockWorldClient](uint32 bx, uint32 by, uint32 bz, const BlockTemplate* pBlock) -> bool {
+								const DWORD dwSolidBlockAttrs = (BlockTemplate::batt_solid | BlockTemplate::batt_blockcamera);
+								if ((pBlock->GetAttFlag() & dwSolidBlockAttrs) && !(pBlock->IsMatchAttribute(BlockTemplate::batt_transparent)))
 								{
-									if (resultEye.Distance > camera_box_size)
+									// check if the block's 6 faces has 4 faces that are all exposed to air or the top side and two others are exposed to air.
+									bool neighbourBlocks[6] = { false, false, false, false, false, false };
+									int nSolidFaces = 0;
+									for (int i = 0; i < 6; i++)
 									{
-										// ignore collision
-										bIgnoreCollision = true;
-										fMinCameraObjectDistance = fDesiredLineOfSightLen - resultEye.Distance + camera_box_size;
+										auto side = BlockDirection::GetBlockSide(i);
+										Int32x3 vOffset = BlockDirection::GetOffsetBySide(side);
+										auto pBlockNeighbor = pBlockWorldClient->GetBlockTemplate((uint16_t)(bx + vOffset.x), (uint16_t)(by + vOffset.y), (uint16_t)(bz + vOffset.z));
+										if (pBlockNeighbor && (pBlockNeighbor->GetAttFlag() & dwSolidBlockAttrs) && !(pBlockNeighbor->IsMatchAttribute(BlockTemplate::batt_transparent)))
+										{
+											nSolidFaces++;
+											neighbourBlocks[i] = true;
+										}
 									}
+
+									return !((nSolidFaces <= 2) || (nSolidFaces == 3 && !neighbourBlocks[5]));
 								}
+								return false;
+							};
+
+							result.Distance = fDesiredLineOfSightLen;
+							// pick again allow floating blocks to be ignored.
+							if (pBlockWorldClient->Pick(vLookAt, vReverseLineOfSight, fDesiredLineOfSightLen, result, 0xffffffff, blockFilterCallback)
+								&& result.Distance <= fDesiredLineOfSightLen)
+							{
+								// we hit some non-floating blocks in the middle that can not be ignored.
+							}
+							else
+							{
+								// we hit nothing important, so ignore collision
+								bIgnoreCollision = true;
 							}
 						}
 					}
@@ -1491,7 +1490,7 @@ VOID CAutoCamera::FrameMove(FLOAT fElapsedTime)
 									{
 										BlockTemplate* temp = pBlockWorldClient->GetBlockTemplate(templateId);
 										// camera only collide with solid or blockcamera blocks rather than obstruction block. 
-										if (temp && (temp->GetAttFlag() & (BlockTemplate::batt_solid | BlockTemplate::batt_blockcamera)) != 0)
+										if (temp && (temp->IsMatchAttribute(BlockTemplate::batt_solid | BlockTemplate::batt_blockcamera)) && !temp->IsMatchAttribute(BlockTemplate::batt_transparent))
 										{
 											obstruction_matrix[i][k][j] = true;
 											bUseMinMaxBox = true;

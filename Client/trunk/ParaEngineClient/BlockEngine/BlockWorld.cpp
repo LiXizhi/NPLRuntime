@@ -840,7 +840,7 @@ void CBlockWorld::LoadBlockTemplateData()
 										pTemplate->SetNormalMap(normalMap);
 								}
 							}
-}
+						}
 					}
 				}
 			}
@@ -1571,7 +1571,7 @@ bool CBlockWorld::IsCubeModePicking()
 	return m_bCubeModePicking;
 }
 
-bool CBlockWorld::Pick(const Vector3& rayOrig, const Vector3& dir, float length, PickResult& result, uint32_t filter, CBlockWorld::BlockFilterCallback* pCallback)
+bool CBlockWorld::Pick(const Vector3& rayOrig, const Vector3& dir, float length, PickResult& result, uint32_t filter, const std::function<bool(uint32 bx, uint32 by, uint32 bz, const BlockTemplate* pBlock)>& blockFilterCallback)
 {
 	if (!m_isInWorld)
 		return false;
@@ -1722,8 +1722,8 @@ bool CBlockWorld::Pick(const Vector3& rayOrig, const Vector3& dir, float length,
 
 		Block* pBlock = curRegion->GetBlock(curBlockIdX & 0x1ff, curBlockIdY & 0xff, curBlockIdZ & 0x1ff);
 		BlockTemplate* pBlockTemplate = NULL;
-		if (pBlock != 0 && (pBlockTemplate = pBlock->GetTemplate()) != 0 && ((pBlockTemplate->GetAttFlag() & filter) > 0) 
-			&& (pCallback == NULL || (*pCallback)(curBlockIdX, curBlockIdY, curBlockIdZ, pBlockTemplate)))
+		if (pBlock != 0 && (pBlockTemplate = pBlock->GetTemplate()) != 0 && ((pBlockTemplate->GetAttFlag() & filter) > 0)
+			&& (!blockFilterCallback || blockFilterCallback(curBlockIdX, curBlockIdY, curBlockIdZ, pBlockTemplate)))
 		{
 			const double blockSize = BlockConfig::g_blockSize;
 			float rayLength = -1;
@@ -1863,7 +1863,7 @@ void CBlockWorld::SetTemplateTexture(uint16_t id, const char* textureName)
 				pTemplate->SetAttribute(BlockTemplate::batt_fourSideTex, false);
 				pTemplate->GetBlockModel().LoadModelByTexture(0);
 				ClearBlockRenderCache();
-}
+			}
 		}
 #endif
 		pTemplate->SetTexture0(textureName);
@@ -2802,7 +2802,7 @@ int ParaEngine::CBlockWorld::InstallFields(CAttributeClass* pClass, bool bOverri
 
 	pClass->AddField("LightCalculationStep", FieldType_Int, (void*)SetLightCalculationStep_s, (void*)GetLightCalculationStep_s, NULL, NULL, bOverride);
 	pClass->AddField("IsAsyncLightCalculation", FieldType_Bool, (void*)SetAsyncLightCalculation_s, (void*)IsAsyncLightCalculation_s, NULL, NULL, bOverride);
-	
+
 	pClass->AddField("RenderBlocks", FieldType_Bool, (void*)SetRenderBlocks_s, (void*)IsRenderBlocks_s, NULL, NULL, bOverride);
 	pClass->AddField("NumOfLockedBlockRegion", FieldType_Int, (void*)NULL, (void*)GetNumOfLockedBlockRegion_s, NULL, NULL, bOverride);
 	pClass->AddField("NumOfBlockRegion", FieldType_Int, (void*)NULL, (void*)GetNumOfBlockRegion_s, NULL, NULL, bOverride);

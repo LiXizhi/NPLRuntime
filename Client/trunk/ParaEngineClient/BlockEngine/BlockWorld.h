@@ -37,97 +37,97 @@ namespace ParaEngine
 	public:
 		CBlockWorld();
 		virtual ~CBlockWorld();
-	
+
 		/** attribute class ID should be identical, unless one knows how overriding rules work.*/
-		virtual int GetAttributeClassID(){ return ATTRIBUTE_CLASSID_BlockWorld; }
+		virtual int GetAttributeClassID() { return ATTRIBUTE_CLASSID_BlockWorld; }
 		/** a static string, describing the attribute class object's name */
-		virtual const char* GetAttributeClassName(){ static const char name[] = "BlockWorld"; return name; }
+		virtual const char* GetAttributeClassName() { static const char name[] = "BlockWorld"; return name; }
 		/** a static string, describing the attribute class object */
-		virtual const char* GetAttributeClassDescription(){ static const char desc[] = ""; return desc; }
+		virtual const char* GetAttributeClassDescription() { static const char desc[] = ""; return desc; }
 		/** this class should be implemented if one wants to add new attribute. This function is always called internally.*/
 		virtual int InstallFields(CAttributeClass* pClass, bool bOverride);
 
 		/** get attribute by child object. used to iterate across the attribute field hierarchy. */
-		virtual IAttributeFields* GetChildAttributeObject(const char * sName);;
+		virtual IAttributeFields* GetChildAttributeObject(const char* sName);;
 		/** get the number of child objects (row count) in the given column. please note different columns can have different row count. */
 		virtual int GetChildAttributeObjectCount(int nColumnIndex = 0);;
 		/** we support multi-dimensional child object. by default objects have only one column. */
 		virtual int GetChildAttributeColumnCount() { return 1; };
 		virtual IAttributeFields* GetChildAttributeObject(int nRowIndex, int nColumnIndex = 0);
 
-		ATTRIBUTE_METHOD1(CBlockWorld, GetBlockRenderMethod_s, int*)		{ *p1 = cls->GetBlockRenderMethod(); return S_OK; }
-		ATTRIBUTE_METHOD1(CBlockWorld, SetBlockRenderMethod_s, int)	{ cls->SetBlockRenderMethod((BlockRenderMethod)p1); return S_OK; }
+		ATTRIBUTE_METHOD1(CBlockWorld, GetBlockRenderMethod_s, int*) { *p1 = cls->GetBlockRenderMethod(); return S_OK; }
+		ATTRIBUTE_METHOD1(CBlockWorld, SetBlockRenderMethod_s, int) { cls->SetBlockRenderMethod((BlockRenderMethod)p1); return S_OK; }
 
-		ATTRIBUTE_METHOD(CBlockWorld, ResumeLightUpdate_s)	{ cls->ResumeLightUpdate(); return S_OK; }
-		ATTRIBUTE_METHOD(CBlockWorld, SuspendLightUpdate_s)	{ cls->SuspendLightUpdate(); return S_OK; }
+		ATTRIBUTE_METHOD(CBlockWorld, ResumeLightUpdate_s) { cls->ResumeLightUpdate(); return S_OK; }
+		ATTRIBUTE_METHOD(CBlockWorld, SuspendLightUpdate_s) { cls->SuspendLightUpdate(); return S_OK; }
 
 		ATTRIBUTE_METHOD(CBlockWorld, ResetAllLight_s) { cls->ResetAllLight(); return S_OK; }
 		ATTRIBUTE_METHOD(CBlockWorld, ClearBlockRenderCache_s) { cls->ClearBlockRenderCache(); return S_OK; }
 
-		ATTRIBUTE_METHOD(CBlockWorld, LockWorld_s)	{ cls->LockWorld(); return S_OK; }
-		ATTRIBUTE_METHOD(CBlockWorld, UnlockWorld_s)	{ cls->UnlockWorld(); return S_OK; }
+		ATTRIBUTE_METHOD(CBlockWorld, LockWorld_s) { cls->LockWorld(); return S_OK; }
+		ATTRIBUTE_METHOD(CBlockWorld, UnlockWorld_s) { cls->UnlockWorld(); return S_OK; }
 
-		ATTRIBUTE_METHOD1(CBlockWorld, IsLightUpdateSuspended_s, bool*)		{ *p1 = cls->IsLightUpdateSuspended(); return S_OK; }
+		ATTRIBUTE_METHOD1(CBlockWorld, IsLightUpdateSuspended_s, bool*) { *p1 = cls->IsLightUpdateSuspended(); return S_OK; }
 
 		ATTRIBUTE_METHOD3(CBlockWorld, SetChunkColumnTimeStamp_s, float) { cls->SetChunkColumnTimeStamp((uint16_t)p1, (uint16_t)p2, (uint16_t)p3); return S_OK; }
 
-		ATTRIBUTE_METHOD1(CBlockWorld, GetRenderDist_s, int*)		{ *p1 = cls->GetRenderDist(); return S_OK; }
-		ATTRIBUTE_METHOD1(CBlockWorld, SetRenderDist_s, int)	{ cls->SetRenderDist(p1); return S_OK; }
+		ATTRIBUTE_METHOD1(CBlockWorld, GetRenderDist_s, int*) { *p1 = cls->GetRenderDist(); return S_OK; }
+		ATTRIBUTE_METHOD1(CBlockWorld, SetRenderDist_s, int) { cls->SetRenderDist(p1); return S_OK; }
 
-		ATTRIBUTE_METHOD1(CBlockWorld, GetDirtyColumnCount_s, int*)		{ *p1 = cls->GetDirtyColumnCount(); return S_OK; }
-		ATTRIBUTE_METHOD1(CBlockWorld, GetDirtyBlockCount_s, int*)		{ *p1 = cls->GetDirtyBlockCount(); return S_OK; }
+		ATTRIBUTE_METHOD1(CBlockWorld, GetDirtyColumnCount_s, int*) { *p1 = cls->GetDirtyColumnCount(); return S_OK; }
+		ATTRIBUTE_METHOD1(CBlockWorld, GetDirtyBlockCount_s, int*) { *p1 = cls->GetDirtyBlockCount(); return S_OK; }
 
-		ATTRIBUTE_METHOD1(CBlockWorld, IsReadOnly_s, bool*)		{ *p1 = cls->IsReadOnly(); return S_OK; }
-		ATTRIBUTE_METHOD1(CBlockWorld, SetReadOnly_s, bool)	{ cls->SetReadOnly(p1); return S_OK; }
+		ATTRIBUTE_METHOD1(CBlockWorld, IsReadOnly_s, bool*) { *p1 = cls->IsReadOnly(); return S_OK; }
+		ATTRIBUTE_METHOD1(CBlockWorld, SetReadOnly_s, bool) { cls->SetReadOnly(p1); return S_OK; }
 
-		ATTRIBUTE_METHOD1(CBlockWorld, IsRemote_s, bool*)		{ *p1 = cls->IsRemote(); return S_OK; }
-		ATTRIBUTE_METHOD1(CBlockWorld, SetIsRemote_s, bool)	{ cls->SetIsRemote(p1); return S_OK; }
+		ATTRIBUTE_METHOD1(CBlockWorld, IsRemote_s, bool*) { *p1 = cls->IsRemote(); return S_OK; }
+		ATTRIBUTE_METHOD1(CBlockWorld, SetIsRemote_s, bool) { cls->SetIsRemote(p1); return S_OK; }
 
-		ATTRIBUTE_METHOD1(CBlockWorld, IsServerWorld_s, bool*)		{ *p1 = cls->IsServerWorld(); return S_OK; }
-		ATTRIBUTE_METHOD1(CBlockWorld, SetIsServerWorld_s, bool)	{ cls->SetIsServerWorld(p1); return S_OK; }
+		ATTRIBUTE_METHOD1(CBlockWorld, IsServerWorld_s, bool*) { *p1 = cls->IsServerWorld(); return S_OK; }
+		ATTRIBUTE_METHOD1(CBlockWorld, SetIsServerWorld_s, bool) { cls->SetIsServerWorld(p1); return S_OK; }
 
-		ATTRIBUTE_METHOD1(CBlockWorld, IsSaveLightMap_s, bool*)		{ *p1 = cls->IsSaveLightMap(); return S_OK; }
-		ATTRIBUTE_METHOD1(CBlockWorld, SetSaveLightMap_s, bool)	{ cls->SaveLightMap(p1); return S_OK; }
+		ATTRIBUTE_METHOD1(CBlockWorld, IsSaveLightMap_s, bool*) { *p1 = cls->IsSaveLightMap(); return S_OK; }
+		ATTRIBUTE_METHOD1(CBlockWorld, SetSaveLightMap_s, bool) { cls->SaveLightMap(p1); return S_OK; }
 
-		ATTRIBUTE_METHOD1(CBlockWorld, IsUseAsyncLoadWorld_s, bool*)		{ *p1 = cls->IsUseAsyncLoadWorld(); return S_OK; }
-		ATTRIBUTE_METHOD1(CBlockWorld, SetUseAsyncLoadWorld_s, bool)	{ cls->SetUseAsyncLoadWorld(p1); return S_OK; }
+		ATTRIBUTE_METHOD1(CBlockWorld, IsUseAsyncLoadWorld_s, bool*) { *p1 = cls->IsUseAsyncLoadWorld(); return S_OK; }
+		ATTRIBUTE_METHOD1(CBlockWorld, SetUseAsyncLoadWorld_s, bool) { cls->SetUseAsyncLoadWorld(p1); return S_OK; }
 
-		ATTRIBUTE_METHOD1(CBlockWorld, GetLightCalculationStep_s, int*)		{ *p1 = cls->GetLightCalculationStep(); return S_OK; }
-		ATTRIBUTE_METHOD1(CBlockWorld, SetLightCalculationStep_s, int)	{ cls->SetLightCalculationStep(p1); return S_OK; }
+		ATTRIBUTE_METHOD1(CBlockWorld, GetLightCalculationStep_s, int*) { *p1 = cls->GetLightCalculationStep(); return S_OK; }
+		ATTRIBUTE_METHOD1(CBlockWorld, SetLightCalculationStep_s, int) { cls->SetLightCalculationStep(p1); return S_OK; }
 
-		ATTRIBUTE_METHOD1(CBlockWorld, IsAsyncLightCalculation_s, bool*)		{ *p1 = cls->IsAsyncLightCalculation(); return S_OK; }
-		ATTRIBUTE_METHOD1(CBlockWorld, SetAsyncLightCalculation_s, bool)	{ cls->SetAsyncLightCalculation(p1); return S_OK; }
+		ATTRIBUTE_METHOD1(CBlockWorld, IsAsyncLightCalculation_s, bool*) { *p1 = cls->IsAsyncLightCalculation(); return S_OK; }
+		ATTRIBUTE_METHOD1(CBlockWorld, SetAsyncLightCalculation_s, bool) { cls->SetAsyncLightCalculation(p1); return S_OK; }
 
-		ATTRIBUTE_METHOD1(CBlockWorld, GetMaxCacheRegionCount_s, int*)		{ *p1 = cls->GetMaxCacheRegionCount(); return S_OK; }
-		ATTRIBUTE_METHOD1(CBlockWorld, SetMaxCacheRegionCount_s, int)	{ cls->SetMaxCacheRegionCount(p1); return S_OK; }
+		ATTRIBUTE_METHOD1(CBlockWorld, GetMaxCacheRegionCount_s, int*) { *p1 = cls->GetMaxCacheRegionCount(); return S_OK; }
+		ATTRIBUTE_METHOD1(CBlockWorld, SetMaxCacheRegionCount_s, int) { cls->SetMaxCacheRegionCount(p1); return S_OK; }
 
-		ATTRIBUTE_METHOD1(CBlockWorld, GetNumOfLockedBlockRegion_s, int*)		{ *p1 = cls->GetNumOfLockedBlockRegion(); return S_OK; }
-		ATTRIBUTE_METHOD1(CBlockWorld, GetNumOfBlockRegion_s, int*)		{ *p1 = cls->GetNumOfBlockRegion(); return S_OK; }
-		ATTRIBUTE_METHOD1(CBlockWorld, GetTotalNumOfLoadedChunksInLockedBlockRegion_s, int*)		{ *p1 = cls->GetTotalNumOfLoadedChunksInLockedBlockRegion(); return S_OK; }
+		ATTRIBUTE_METHOD1(CBlockWorld, GetNumOfLockedBlockRegion_s, int*) { *p1 = cls->GetNumOfLockedBlockRegion(); return S_OK; }
+		ATTRIBUTE_METHOD1(CBlockWorld, GetNumOfBlockRegion_s, int*) { *p1 = cls->GetNumOfBlockRegion(); return S_OK; }
+		ATTRIBUTE_METHOD1(CBlockWorld, GetTotalNumOfLoadedChunksInLockedBlockRegion_s, int*) { *p1 = cls->GetTotalNumOfLoadedChunksInLockedBlockRegion(); return S_OK; }
 
-		ATTRIBUTE_METHOD1(CBlockWorld, IsRenderBlocks_s, bool*)		{ *p1 = cls->IsRenderBlocks(); return S_OK; }
-		ATTRIBUTE_METHOD1(CBlockWorld, SetRenderBlocks_s, bool)	{ cls->SetRenderBlocks(p1); return S_OK; }
+		ATTRIBUTE_METHOD1(CBlockWorld, IsRenderBlocks_s, bool*) { *p1 = cls->IsRenderBlocks(); return S_OK; }
+		ATTRIBUTE_METHOD1(CBlockWorld, SetRenderBlocks_s, bool) { cls->SetRenderBlocks(p1); return S_OK; }
 
-		ATTRIBUTE_METHOD1(CBlockWorld, GetSunIntensity_s, float*)		{ *p1 = cls->GetSunIntensity(); return S_OK; }
-		ATTRIBUTE_METHOD1(CBlockWorld, SetSunIntensity_s, float)	{ cls->SetSunIntensity(p1); return S_OK; }
+		ATTRIBUTE_METHOD1(CBlockWorld, GetSunIntensity_s, float*) { *p1 = cls->GetSunIntensity(); return S_OK; }
+		ATTRIBUTE_METHOD1(CBlockWorld, SetSunIntensity_s, float) { cls->SetSunIntensity(p1); return S_OK; }
 
-		ATTRIBUTE_METHOD1(CBlockWorld, GetMinWorldPos_s, Vector3*)		{ *p1 = Vector3((float)(cls->GetMinWorldPos().x), (float)(cls->GetMinWorldPos().y), (float)(cls->GetMinWorldPos().z)); return S_OK; }
-		ATTRIBUTE_METHOD1(CBlockWorld, SetMinWorldPos_s, Vector3)	{ Int32x3 v((int32)p1.x, (int32)p1.y, (int32)p1.z); cls->SetMinWorldPos(v); return S_OK; }
+		ATTRIBUTE_METHOD1(CBlockWorld, GetMinWorldPos_s, Vector3*) { *p1 = Vector3((float)(cls->GetMinWorldPos().x), (float)(cls->GetMinWorldPos().y), (float)(cls->GetMinWorldPos().z)); return S_OK; }
+		ATTRIBUTE_METHOD1(CBlockWorld, SetMinWorldPos_s, Vector3) { Int32x3 v((int32)p1.x, (int32)p1.y, (int32)p1.z); cls->SetMinWorldPos(v); return S_OK; }
 
-		ATTRIBUTE_METHOD1(CBlockWorld, GetMaxWorldPos_s, Vector3*)	{ *p1 = Vector3((float)(cls->GetMaxWorldPos().x), (float)(cls->GetMaxWorldPos().y), (float)(cls->GetMaxWorldPos().z)); return S_OK; }
-		ATTRIBUTE_METHOD1(CBlockWorld, SetMaxWorldPos_s, Vector3)	{ Int32x3 v((int32)p1.x, (int32)p1.y, (int32)p1.z); cls->SetMaxWorldPos(v); return S_OK; }
+		ATTRIBUTE_METHOD1(CBlockWorld, GetMaxWorldPos_s, Vector3*) { *p1 = Vector3((float)(cls->GetMaxWorldPos().x), (float)(cls->GetMaxWorldPos().y), (float)(cls->GetMaxWorldPos().z)); return S_OK; }
+		ATTRIBUTE_METHOD1(CBlockWorld, SetMaxWorldPos_s, Vector3) { Int32x3 v((int32)p1.x, (int32)p1.y, (int32)p1.z); cls->SetMaxWorldPos(v); return S_OK; }
 
 
-		ATTRIBUTE_METHOD1(CBlockWorld, GetTotalChunksInMemory_s, int*)		{ *p1 = BlockChunk::GetTotalChunksInMemory(); return S_OK; }
-		ATTRIBUTE_METHOD1(CBlockWorld, GetTotalRenderableChunksInMemory_s, int*)		{ *p1 = RenderableChunk::GetTotalRenderableChunks(); return S_OK; }
+		ATTRIBUTE_METHOD1(CBlockWorld, GetTotalChunksInMemory_s, int*) { *p1 = BlockChunk::GetTotalChunksInMemory(); return S_OK; }
+		ATTRIBUTE_METHOD1(CBlockWorld, GetTotalRenderableChunksInMemory_s, int*) { *p1 = RenderableChunk::GetTotalRenderableChunks(); return S_OK; }
 
-		ATTRIBUTE_METHOD1(CBlockWorld, UseLinearTorchBrightness_s, bool)	{ cls->GenerateLightBrightnessTable(p1); return S_OK; }
-		ATTRIBUTE_METHOD1(CBlockWorld, IsAutoPhysics_s, bool*)		{ *p1 = cls->IsAutoPhysics(); return S_OK; }
-		ATTRIBUTE_METHOD1(CBlockWorld, SetAutoPhysics_s, bool)	{ cls->SetAutoPhysics(p1); return S_OK; }
-		
+		ATTRIBUTE_METHOD1(CBlockWorld, UseLinearTorchBrightness_s, bool) { cls->GenerateLightBrightnessTable(p1); return S_OK; }
+		ATTRIBUTE_METHOD1(CBlockWorld, IsAutoPhysics_s, bool*) { *p1 = cls->IsAutoPhysics(); return S_OK; }
+		ATTRIBUTE_METHOD1(CBlockWorld, SetAutoPhysics_s, bool) { cls->SetAutoPhysics(p1); return S_OK; }
+
 	public:
 		/** script call back type */
-		enum CallBackType{
+		enum CallBackType {
 			Type_LoadBlockRegion = 0,
 			Type_UnLoadBlockRegion,
 			Type_GeneratorScript,
@@ -403,13 +403,13 @@ namespace ParaEngine
 		*/
 		bool ChunkColumnExists(uint16_t chunkX, uint16_t chunkZ);
 
-		/** whether the chunk at the given world position is locked. a locked chunk is not loaded or being loaded or saved. 
-		* when chunk is locked, all block set/get calls will take no effect. 
+		/** whether the chunk at the given world position is locked. a locked chunk is not loaded or being loaded or saved.
+		* when chunk is locked, all block set/get calls will take no effect.
 		*/
 		bool IsChunkLocked(uint32 worldX, uint32 worldZ);
 
 		/**
-		* @param verticalSectionFilter: if not 0, we will ignore y value in startChunk_ws and endChunk_ws, but use this as a bitwise filter to y 
+		* @param verticalSectionFilter: if not 0, we will ignore y value in startChunk_ws and endChunk_ws, but use this as a bitwise filter to y
 		*/
 		int32_t GetBlocksInRegion(Uint16x3& startChunk_ws, Uint16x3& endChunk_ws, uint32_t matchType, const luabind::adl::object& result, uint32_t verticalSectionFilter = 0);
 
@@ -423,10 +423,8 @@ namespace ParaEngine
 		bool IsCubeModePicking();
 		void SetCubeModePicking(bool bIsCubeModePicking);
 
-		typedef bool (*BlockFilterCallback)(uint32 bx, uint32 by, uint32 bz, BlockTemplate* pBlock);
-
 		/** picking in block world */
-		bool Pick(const Vector3& rayOrig, const Vector3& dir, float length, PickResult& result, uint32_t filter = 0xffffffff, BlockFilterCallback* pCallback = NULL);
+		bool Pick(const Vector3& rayOrig, const Vector3& dir, float length, PickResult& result, uint32_t filter = 0xffffffff, const std::function<bool(uint32 bx, uint32 by, uint32 bz, const BlockTemplate* pBlock)>& blockFilterCallback = nullptr);
 
 		/** find a block in the side direction that matched filter from block(x,y,z)
 		* this function can be used to check for free space upward or download
@@ -494,7 +492,7 @@ namespace ParaEngine
 		void ResumeLightUpdate();
 
 		bool IsLightUpdateSuspended();
-		
+
 		bool IsAsyncLightCalculation();
 		void SetAsyncLightCalculation(bool val);
 
@@ -561,12 +559,12 @@ namespace ParaEngine
 		// called each frame
 		virtual void OnFrameMove();
 
-		/* it will only return a valid chunk if input chunkPos is within current active chunk range usually around the current view center. 
-		* only call this function from the main rendering thread. 
-		* @return NULL is chunkPos does not exist in the current active range. or the chunk is currently dirty and can not be used. 
+		/* it will only return a valid chunk if input chunkPos is within current active chunk range usually around the current view center.
+		* only call this function from the main rendering thread.
+		* @return NULL is chunkPos does not exist in the current active range. or the chunk is currently dirty and can not be used.
 		*/
 		RenderableChunk* GetRenderableChunk(const Int16x3& chunkPos);
-		
+
 		/** unload region from memory. return true if unloaded.*/
 		bool UnloadRegion(uint16_t block_x, uint16_t block_y, uint16_t block_z, bool bAutoSave = true);
 
