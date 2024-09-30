@@ -1,12 +1,13 @@
-﻿#ifndef __ATTENTION_LAYER_H__
-#define __ATTENTION_LAYER_H__
+﻿#ifndef __DARKNET_ATTENTION_LAYER_H__
+#define __DARKNET_ATTENTION_LAYER_H__
 
 #include "Layer.h"
-
-class AttentionLayer : public Layer
+namespace darknet
 {
-public:
-    AttentionLayer(Net *net, Layer *prev_layer, Options *options);
-};
-
+    class AttentionLayer : public Layer
+    {
+    public:
+        AttentionLayer(Net *net, Layer *prev_layer, std::shared_ptr<Options> options);
+    };
+}
 #endif

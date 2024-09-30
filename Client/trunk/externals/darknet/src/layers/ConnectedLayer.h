@@ -1,22 +1,25 @@
-﻿#ifndef __CONNECTED_LAYER_H__
-#define __CONNECTED_LAYER_H__
+﻿#ifndef __DARKNET_CONNECTED_LAYER_H__
+#define __DARKNET_CONNECTED_LAYER_H__
 
 #include "Layer.h"
-
-class ConnectedLayer : public Layer
+namespace darknet
 {
-public:
-    ConnectedLayer(Net *net, Layer *prev_layer, Options *options);
+    class ConnectedLayer : public Layer
+    {
+    public:
+        ConnectedLayer(Net *net, Layer *prev_layer, std::shared_ptr<Options> options);
 
-    virtual void Forward();
-    virtual void Backward();
-    virtual float Loss();
-    virtual void PrintPredicts(std::ostream* os);
-protected:
-    virtual void DebugBackward();
-    virtual void DebugUpdate();
+        virtual void Forward();
+        virtual void Backward();
+        virtual float Loss();
+        virtual void PrintPredicts(std::ostream *os);
 
-protected:
-    int m_activation;
-};
+    protected:
+        virtual void DebugBackward();
+        virtual void DebugUpdate();
+
+    protected:
+        int m_activation;
+    };
+}
 #endif
