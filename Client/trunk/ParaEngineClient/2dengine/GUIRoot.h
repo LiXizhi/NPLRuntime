@@ -518,8 +518,10 @@ namespace ParaEngine
 
 		/** get world transform if GUI is rendered on 3d surface. */
 		bool GetWorldTransform(Matrix4& matWorld);
-		/** transform mouse position from 2d view space to 3d space using the given pMatWorld*/
-		bool TransformMousePos(int &inout_x, int &inout_y, const Matrix4* pMatWorld);
+		/** transform mouse position from 2d view space to 3d space using the given pMatWorld
+		* @param pMatWorld: if NULL, we will calculate the world matrix if it is 3d GUI mode.
+		*/
+		bool TransformMousePos(int &inout_x, int &inout_y, const Matrix4* pMatWorld = NULL);
 	public:
 		virtual ~CGUIRoot(void);
 

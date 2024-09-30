@@ -350,35 +350,40 @@ HRESULT CDirectMouse::ReadImmediateData()
 	*/
 	bool bNeedReset = false;
 
-	POINT pt;
-	if (::GetCursorPos(&pt))
+	if (!HasSimulatedMouseEvent())
 	{
-		if (this->IsLocked())
+		POINT pt;
+		if (::GetCursorPos(&pt))
 		{
-			RECT rc;
-			::GetWindowRect(m_hwnd, &rc);
-			auto width = rc.right - rc.left;
-			auto height = rc.bottom - rc.top;
+			if (this->IsLocked())
+			{
+				RECT rc;
+				::GetWindowRect(m_hwnd, &rc);
+				auto width = rc.right - rc.left;
+				auto height = rc.bottom - rc.top;
 
-			rc.left += width / 8;
-			rc.right -= width / 8;
-			rc.top += height / 8;
-			rc.bottom -= height / 8;
+				rc.left += width / 8;
+				rc.right -= width / 8;
+				rc.top += height / 8;
+				rc.bottom -= height / 8;
 
-			bNeedReset = !::PtInRect(&rc, pt);
+				bNeedReset = !::PtInRect(&rc, pt);
+			}
+
+			m_curMouseState.lX = pt.x;
+			m_curMouseState.lY = pt.y;
 		}
-
-
-		m_curMouseState.lX = pt.x;
-		m_curMouseState.lY = pt.y;
 	}
 
 	CGUIMouseVirtual::ReadImmediateData();
 	//OUTPUT_LOG("%d %d dx:%d dy:%d\n", m_curMouseState.lX, m_curMouseState.lY, m_dims2.lX, m_dims2.lY);
 
-	m_dims2.rgbButtons[0] = (::GetAsyncKeyState(VK_LBUTTON) & 0x8000) ? 0x80 : 0;
-	m_dims2.rgbButtons[1] = (::GetAsyncKeyState(VK_RBUTTON) & 0x8000) ? 0x80 : 0;
-	m_dims2.rgbButtons[2] = (::GetAsyncKeyState(VK_MBUTTON) & 0x8000) ? 0x80 : 0;
+	if(!HasSimulatedMouseEvent())
+	{
+		m_dims2.rgbButtons[0] = (::GetAsyncKeyState(VK_LBUTTON) & 0x8000) ? 0x80 : 0;
+		m_dims2.rgbButtons[1] = (::GetAsyncKeyState(VK_RBUTTON) & 0x8000) ? 0x80 : 0;
+		m_dims2.rgbButtons[2] = (::GetAsyncKeyState(VK_MBUTTON) & 0x8000) ? 0x80 : 0;
+	}
 
 	if (bNeedReset)
 	{

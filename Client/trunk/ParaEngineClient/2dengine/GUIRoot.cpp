@@ -1397,8 +1397,13 @@ int CGUIRoot::HandleUserInput()
 		bool bHasMouseCapture = false;
 		// Fixed 2010.10.27: the mouse target is always the currently captured mouse object. Scrollbar will function correctly. 
 		if (pMouseTarget == NULL) {
-			if(!bIsRelativeTo3D)
-				pMouseTarget = GetUIObject(m_pMouse->m_x, m_pMouse->m_y);
+			int x = m_pMouse->m_x;
+			int y = m_pMouse->m_y;
+			if (bIsRelativeTo3D)
+			{
+				CGlobals::GetGUI()->TransformMousePos(x, y, &matWorld);
+			}
+			pMouseTarget = GetUIObject(x, y);
 		}
 		else
 			bHasMouseCapture = true;
@@ -3135,6 +3140,7 @@ void ParaEngine::CGUIRoot::SetGUI3DModeScaling(float val)
 
 void ParaEngine::CGUIRoot::SendMouseButtonEvent(float x, float y, EMouseButton button, EKeyState state, bool bSimulated)
 {
+	GetMouse()->SetHasSimulatedMouseEvent(state == EKeyState::PRESS);
 	GetMouse()->PushMouseEvent(DeviceMouseEventPtr(new DeviceMouseButtonEvent(button, state, (int)x, (int)y, bSimulated)));
 }
 
@@ -3189,6 +3195,12 @@ bool ParaEngine::CGUIRoot::GetWorldTransform(Matrix4& matWorld)
 
 bool ParaEngine::CGUIRoot::TransformMousePos(int& inout_x, int& inout_y, const Matrix4* pMatWorld)
 {
+	if (pMatWorld == 0 && Is3DGUIMode())
+	{
+		static Matrix4 matWorld;
+		GetWorldTransform(matWorld);
+		pMatWorld = &matWorld;
+	}
 	if (pMatWorld)
 	{
 		Vector3 vPickRayOrig, vPickRayDir;

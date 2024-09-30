@@ -37,7 +37,16 @@ namespace ParaEngine
 		MouseEvent(DWORD MouseState, int x, int y, int nEventType);
 		/** get event type */
 		virtual int GetEventType()  const { return m_nEventType; }
-		string ToScriptCode()const;
+		virtual string ToScriptCode()const;
+	};
+
+	/** simple mouse event struct*/
+	struct MouseMoveEvent : public MouseEvent
+	{
+		int m_dx;
+		int m_dy;
+		MouseMoveEvent(int x, int y, int dx = 0, int dy=0, int nEventType = -1);
+		virtual string ToScriptCode()const;
 	};
 
 	/** simple key events struct*/
