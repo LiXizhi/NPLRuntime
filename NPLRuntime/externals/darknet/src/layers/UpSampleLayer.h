@@ -1,19 +1,21 @@
-﻿#ifndef __UP_SAMPLE_LAYER_H__
-#define __UP_SAMPLE_LAYER_H__
+﻿#ifndef __DARKNET_UP_SAMPLE_LAYER_H__
+#define __DARKNET_UP_SAMPLE_LAYER_H__
 
 #include "Layer.h"
-
-class UpSampleLayer : public Layer
+namespace darknet
 {
-public:
-    UpSampleLayer(Net *net, Layer *prev_layer, Options *options);
+    class UpSampleLayer : public Layer
+    {
+    public:
+        UpSampleLayer(Net *net, Layer *prev_layer, std::shared_ptr<Options> options);
 
-    virtual void Forward();
-    virtual void Backward();
+        virtual void Forward();
+        virtual void Backward();
 
-protected:
-    int m_stride;
-    float m_scale;
-    bool m_reverse;
-};
+    protected:
+        int m_stride;
+        float m_scale;
+        bool m_reverse;
+    };
+}
 #endif

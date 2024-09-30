@@ -14,8 +14,23 @@
 #endif
 
 // 初始化并打开库
-extern "C" int luaopen_LuaDarkNet(lua_State *L)
+extern "C" EXPORT_API int luaopen_LuaDarkNet(lua_State *L)
 {
     LuaDarkNet::Register(L);
     return 0;
+}
+
+namespace LuaDarkNet
+{
+    void Register(lua_State *L)
+    {
+        luabridge::getGlobalNamespace(L)
+            .beginNamespace("LuaDarkNet")
+            .beginClass<LuaWakeWordModel>("LuaWakeWordModel")
+            .addConstructor<void (*)(void)>()
+            .addFunction("LoadModelFromFile", &LuaWakeWordModel::LoadModelFromFile)
+            .addFunction("Predict", &LuaWakeWordModel::Predict)
+            .endClass()
+            .endNamespace();
+    }
 }
