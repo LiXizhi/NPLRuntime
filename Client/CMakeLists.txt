@@ -29,7 +29,7 @@ if(WIN32)
 	option(NPLRUNTIME_CAUDIOENGINE "include audioengine plugin" OFF)
 	option(NPLRUNTIME_HAQI_LAUNCHER "haqi launcher" OFF)
 	option(NPLRUNTIME_WEBVIEW "microsoft edge webview2 support" OFF)
-	option(NPLRUNTIME_DARKNET "darknet support" OFF)
+	option(NPLRUNTIME_DARKNET "darknet support" ON)
 endif()
 # OSX Default Option
 if(APPLE)
