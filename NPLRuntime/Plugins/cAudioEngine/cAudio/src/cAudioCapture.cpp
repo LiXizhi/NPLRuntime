@@ -1,4 +1,4 @@
-// Copyright (c) 2008-2011 Raynaldo (Wildicv) Rivera, Joshua (Dark_Kilauea) Jones, Murat (wolfmanfx) Sari
+﻿// Copyright (c) 2008-2011 Raynaldo (Wildicv) Rivera, Joshua (Dark_Kilauea) Jones, Murat (wolfmanfx) Sari
 // This file is part of the "cAudio Engine"
 // For conditions of distribution and use, see copyright notice in cAudio.h
 
@@ -11,7 +11,7 @@
 #include "cPluginManager.h"
 
 #include <string.h>
-
+#include <iostream>
 namespace cAudio
 {
 	cAudioCapture::cAudioCapture() : Frequency(22050), Format(EAF_16BIT_MONO), InternalBufferSize(8192),
@@ -119,8 +119,13 @@ namespace cAudio
 	bool cAudioCapture::beginCapture()
 	{
 		cAudioMutexBasicLock lock(Mutex);
+	
 		if(!Capturing)
 		{
+#ifdef __EMSCRIPTEN__
+			shutdownOpenALDevice();
+			initOpenALDevice();
+#endif
 			CaptureBuffer.clear();
 			if(CaptureDevice && Ready)
 			{
