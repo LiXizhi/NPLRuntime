@@ -1,147 +1,149 @@
 ﻿
 #include "activations.h"
-
-static int s_activation_type_max = 0;
-static const int s_leaky         = s_activation_type_max++;
-static const int s_linear        = s_activation_type_max++;
-static const int s_logistic      = s_activation_type_max++;
-static const int s_relu          = s_activation_type_max++;
-static const int s_relu6         = s_activation_type_max++;
-static const int s_elu           = s_activation_type_max++;
-static const int s_selu          = s_activation_type_max++;
-
-int get_activation_by_name(const std::string &activation_name)
+namespace darknet
 {
-    if (activation_name == "leaky")
-        return s_leaky;
-    else if (activation_name == "linear")
-        return s_linear;
-    else if (activation_name == "logistic")
-        return s_logistic;
-    else if (activation_name == "relu")
-        return s_relu;
-    else
-        return s_linear;
-}
+    static int s_activation_type_max = 0;
+    static const int s_leaky         = s_activation_type_max++;
+    static const int s_linear        = s_activation_type_max++;
+    static const int s_logistic      = s_activation_type_max++;
+    static const int s_relu          = s_activation_type_max++;
+    static const int s_relu6         = s_activation_type_max++;
+    static const int s_elu           = s_activation_type_max++;
+    static const int s_selu          = s_activation_type_max++;
 
-void LeakyActivateArray(float *datas, int size)
-{
-    // static inline float leaky_activate(float x) { return (x > 0) ? x : .1f * x; }
-    for (int i = 0; i < size; i++)
+    int get_activation_by_name(const std::string &activation_name)
     {
-        datas[i] = datas[i] * (datas[i] > 0 ? 1 : 0.1f);
+        if (activation_name == "leaky")
+            return s_leaky;
+        else if (activation_name == "linear")
+            return s_linear;
+        else if (activation_name == "logistic")
+            return s_logistic;
+        else if (activation_name == "relu")
+            return s_relu;
+        else
+            return s_linear;
     }
-}
 
-void LinearActivateArray(float *datas, int size)
-{
-    // static inline float linear_activate(float x) { return x; }
-}
+    void LeakyActivateArray(float *datas, int size)
+    {
+        // static inline float leaky_activate(float x) { return (x > 0) ? x : .1f * x; }
+        for (int i = 0; i < size; i++)
+        {
+            datas[i] = datas[i] * (datas[i] > 0 ? 1 : 0.1f);
+        }
+    }
 
-// (-FLT_MAX, FLT_MAX() => (0, 1)
-void LogisticActivateArray(float *datas, int size)
-{
-    // static inline float logistic_activate(float x) { return 1.f / (1.f + expf(-x)); }
-    for (int i = 0; i < size; i++)
+    void LinearActivateArray(float *datas, int size)
     {
-        datas[i] = 1.0f / (1.0f + std::exp(-datas[i]));
+        // static inline float linear_activate(float x) { return x; }
     }
-}
 
-void ReluActivateArray(float *datas, int size)
-{
-    // static inline float relu_activate(float x) { return x * (x > 0); }
-    for (int i = 0; i < size; i++)
+    // (-FLT_MAX, FLT_MAX() => (0, 1)
+    void LogisticActivateArray(float *datas, int size)
     {
-        datas[i] = datas[i] > 0 ? datas[i] : 0;
+        // static inline float logistic_activate(float x) { return 1.f / (1.f + expf(-x)); }
+        for (int i = 0; i < size; i++)
+        {
+            datas[i] = 1.0f / (1.0f + std::exp(-datas[i]));
+        }
     }
-}
 
-void activate_array(float *datas, int size, int active_type)
-{
-    if (active_type == s_leaky)
+    void ReluActivateArray(float *datas, int size)
     {
-        LeakyActivateArray(datas, size);
+        // static inline float relu_activate(float x) { return x * (x > 0); }
+        for (int i = 0; i < size; i++)
+        {
+            datas[i] = datas[i] > 0 ? datas[i] : 0;
+        }
     }
-    else if (active_type == s_linear)
-    {
-        LinearActivateArray(datas, size);
-    }
-    else if (active_type == s_logistic)
-    {
-        LogisticActivateArray(datas, size);
-    }
-    else if (active_type == s_relu)
-    {
-        ReluActivateArray(datas, size);
-    }
-    else
-    {
-        // auto active_function = s_activate_functions[active_type];
-        // for (int i = 0; i < size; i++)
-        // {
-        //     datas[i] = active_function(datas[i]);
-        // }
-    }
-}
 
-void LeakyGradientArray(float *datas, int size, float *deltas)
-{
-    // static inline float leaky_gradient(float x) { return (x > 0) ? 1 : .1f; }
-    for (int i = 0; i < size; i++)
+    void activate_array(float *datas, int size, int active_type)
     {
-        deltas[i] = deltas[i] * (datas[i] > 0 ? 1 : 0.1f);
+        if (active_type == s_leaky)
+        {
+            LeakyActivateArray(datas, size);
+        }
+        else if (active_type == s_linear)
+        {
+            LinearActivateArray(datas, size);
+        }
+        else if (active_type == s_logistic)
+        {
+            LogisticActivateArray(datas, size);
+        }
+        else if (active_type == s_relu)
+        {
+            ReluActivateArray(datas, size);
+        }
+        else
+        {
+            // auto active_function = s_activate_functions[active_type];
+            // for (int i = 0; i < size; i++)
+            // {
+            //     datas[i] = active_function(datas[i]);
+            // }
+        }
     }
-}
 
-void LinearGradientArray(float *datas, int size, float *deltas)
-{
-    // static inline float linear_gradient(float x) { return 1; }
-}
+    void LeakyGradientArray(float *datas, int size, float *deltas)
+    {
+        // static inline float leaky_gradient(float x) { return (x > 0) ? 1 : .1f; }
+        for (int i = 0; i < size; i++)
+        {
+            deltas[i] = deltas[i] * (datas[i] > 0 ? 1 : 0.1f);
+        }
+    }
 
-void LogisticGradientArray(float *datas, int size, float *deltas)
-{
-    // static inline float logistic_gradient(float x) { return (1 - x) * x; }
-    for (int i = 0; i < size; i++)
+    void LinearGradientArray(float *datas, int size, float *deltas)
     {
-        deltas[i] = deltas[i] * datas[i] * (1 - datas[i]);
+        // static inline float linear_gradient(float x) { return 1; }
     }
-}
 
-void ReluGradientArray(float *datas, int size, float *deltas)
-{
-    // static inline float relu_gradient(float x) { return (x > 0); }
-    for (int i = 0; i < size; i++)
+    void LogisticGradientArray(float *datas, int size, float *deltas)
     {
-        deltas[i] = datas[i] > 0 ? deltas[i] : 0;
+        // static inline float logistic_gradient(float x) { return (1 - x) * x; }
+        for (int i = 0; i < size; i++)
+        {
+            deltas[i] = deltas[i] * datas[i] * (1 - datas[i]);
+        }
     }
-}
 
-void gradient_array(float *datas, int size, int active_type, float *deltas)
-{
-    if (active_type == s_leaky)
+    void ReluGradientArray(float *datas, int size, float *deltas)
     {
-        LeakyGradientArray(datas, size, deltas);
+        // static inline float relu_gradient(float x) { return (x > 0); }
+        for (int i = 0; i < size; i++)
+        {
+            deltas[i] = datas[i] > 0 ? deltas[i] : 0;
+        }
     }
-    else if (active_type == s_linear)
+
+    void gradient_array(float *datas, int size, int active_type, float *deltas)
     {
-        LinearGradientArray(datas, size, deltas);
-    }
-    else if (active_type == s_logistic)
-    {
-        LogisticGradientArray(datas, size, deltas);
-    }
-    else if (active_type == s_relu)
-    {
-        ReluGradientArray(datas, size, deltas);
-    }
-    else
-    {
-        // auto gradient_function = s_gradient_functions[active_type];
-        // for (int i = 0; i < size; i++)
-        // {
-        //     deltas[i] = deltas[i] * gradient_function(datas[i]);
-        // }
+        if (active_type == s_leaky)
+        {
+            LeakyGradientArray(datas, size, deltas);
+        }
+        else if (active_type == s_linear)
+        {
+            LinearGradientArray(datas, size, deltas);
+        }
+        else if (active_type == s_logistic)
+        {
+            LogisticGradientArray(datas, size, deltas);
+        }
+        else if (active_type == s_relu)
+        {
+            ReluGradientArray(datas, size, deltas);
+        }
+        else
+        {
+            // auto gradient_function = s_gradient_functions[active_type];
+            // for (int i = 0; i < size; i++)
+            // {
+            //     deltas[i] = deltas[i] * gradient_function(datas[i]);
+            // }
+        }
     }
 }
 

@@ -1,25 +1,26 @@
-﻿#ifndef __SOFTMAX_LAYER_H__
-#define __SOFTMAX_LAYER_H__
+﻿#ifndef __DARKNET_SOFTMAX_LAYER_H__
+#define __DARKNET_SOFTMAX_LAYER_H__
 
 #include "Layer.h"
-
-class SoftMaxLayer : public Layer
+namespace darknet
 {
-public:
-    SoftMaxLayer(Net* net, Layer* prev_layer, Options *options);
+    class SoftMaxLayer : public Layer
+    {
+    public:
+        SoftMaxLayer(Net *net, Layer *prev_layer, std::shared_ptr<Options> options);
 
-    virtual void Resize();
-    virtual void Forward();
-    virtual void Backward();
-    virtual float Loss();
+        virtual void Resize();
+        virtual void Forward();
+        virtual void Backward();
+        virtual float Loss();
 
-    virtual void PrintPredicts(std::ostream* ofs);
+        virtual void PrintPredicts(std::ostream *ofs);
 
-protected:
-    virtual void DebugBackward();
+    protected:
+        virtual void DebugBackward();
 
-protected:
-    float m_temperature; // 温度 越大结果越平均
-};
-
+    protected:
+        float m_temperature; // 温度 越大结果越平均
+    };
+}
 #endif
