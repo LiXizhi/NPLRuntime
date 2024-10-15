@@ -315,6 +315,10 @@ HRESULT ParaEngine::CViewport::Render(double dTimeDelta, int nPipelineOrder)
 				// Light direction is same as camera front (reversed)
 				pCamera->UpdateViewProjMatrix();
 				
+				// Just in case, we need to render IHeadOn3D::BeginPaint in 3d scene. 
+				if (nPipelineOrder == PIPELINE_3D_SCENE)
+					CGlobals::GetGUI()->UpdateViewport3D(GetLeft(), GetTop(), GetWidth(), GetHeight());
+
 				// Draw next scene
 				if (pRootScene->IsScenePaused())
 					pRootScene->AdvanceScene(0);
