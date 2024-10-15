@@ -166,7 +166,7 @@ void ParaEngine::CViewport::ApplyCamera(CAutoCamera* pCamera)
 					int i = 0;
 				}
 				Quaternion q_roll(Radian(m_stereoODSparam.moreRotZ), up);
-				float oldYaw = pCamera->GetCameraRotY();
+				float oldYaw = (float)pCamera->GetCameraRotY();
 				up = Vector3(mRotPitch * up);
 				up.normalise();
 
@@ -309,6 +309,10 @@ HRESULT ParaEngine::CViewport::Render(double dTimeDelta, int nPipelineOrder)
 				//-- set up effects parameters
 				// Light direction is same as camera front (reversed)
 				pCamera->UpdateViewProjMatrix();
+
+				// Just in case, we need to render IHeadOn3D::BeginPaint in 3d scene. 
+				if (nPipelineOrder == PIPELINE_3D_SCENE)
+					CGlobals::GetGUI()->UpdateViewport3D(GetLeft(), GetTop(), GetWidth(), GetHeight());
 
 				// Draw next scene
 				if (pRootScene->IsScenePaused())

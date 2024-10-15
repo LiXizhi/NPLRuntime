@@ -194,6 +194,9 @@ namespace ParaEngine
 		*/
 		bool UpdateViewport(int nLeft, int nTop, int nWidth, int nHeight, bool bForceUpdate = false);
 
+		/** update viewport just for rendering 3d GUI objects, so there is no need to fire on size event, etc. */
+		bool UpdateViewport3D(int nLeft, int nTop, int nWidth, int nHeight);
+
 		/**
 		* make the given control the current top level control. if the given control is already a top level control but it not on  level 0, it is moved to level 0.
 		* set top level control

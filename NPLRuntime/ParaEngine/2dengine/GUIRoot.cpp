@@ -1943,6 +1943,30 @@ bool CGUIRoot::UpdateViewport(int nLeft, int nTop, int nWidth, int nHeight, bool
 	return bSizeChanged;
 }
 
+bool ParaEngine::CGUIRoot::UpdateViewport3D(int nLeft, int nTop, int nWidth, int nHeight)
+{
+	GUIState* pGUIState = &m_stateGUI;
+	m_fViewportLeft = (float)nLeft;
+	m_fViewportTop = (float)nTop;
+	m_fViewportWidth = (float)nWidth;
+	m_fViewportHeight = (float)nHeight;
+
+	float fScaleX = 1.f;
+	float fScaleY = 1.f;
+	GetUIScale(&fScaleX, &fScaleY);
+	if (fScaleX != 1.f)
+	{
+		nWidth = (int)((float)(nWidth) / fScaleX + 0.9f);
+	}
+
+	if (fScaleY != 1.f)
+	{
+		nHeight = (int)((float)(nHeight) / fScaleY + 0.9f);
+	}
+	bool bSizeChanged = (pGUIState->nBkbufWidth != nWidth || pGUIState->nBkbufHeight != nHeight);
+	return false;
+}
+
 void ParaEngine::CGUIRoot::SetUIScale(float fScalingX, float fScalingY, bool bEnsureMinimumScreenSize, bool bEnsureMaximumScreenSize, bool bNotifySizeChange)
 {
 	if (fScalingX > 0.f)
