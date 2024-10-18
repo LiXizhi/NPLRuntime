@@ -105,6 +105,14 @@ namespace ParaEngine
 			else
 				return E_FAIL;
 		};
+		template <class datatype1, class datatype2>
+		inline HRESULT Set(void* obj, datatype1 p1, datatype2 p2)
+		{
+			if (m_offsetSetFunc.ptr_fun != 0)
+				return ((HRESULT(*)(void* obj, datatype1 p1, datatype2 p2))m_offsetSetFunc.ptr_fun)(obj, p1, p2);
+			else
+				return E_FAIL;
+		};
 		template <class datatype>
 		inline HRESULT Set(void* obj, datatype p1, datatype p2, datatype p3)
 		{
@@ -134,6 +142,14 @@ namespace ParaEngine
 		{
 			if (m_offsetGetFunc.ptr_fun != 0)
 				return ((HRESULT(*)(void* obj, datatype* p1, datatype* p2))m_offsetGetFunc.ptr_fun)(obj, p1, p2);
+			else
+				return E_FAIL;
+		};
+		template <class datatype1, class datatype2>
+		inline HRESULT Get(void* obj, datatype1* p1, datatype2* p2)
+		{
+			if (m_offsetGetFunc.ptr_fun != 0)
+				return ((HRESULT(*)(void* obj, datatype1* p1, datatype2* p2))m_offsetGetFunc.ptr_fun)(obj, p1, p2);
 			else
 				return E_FAIL;
 		};

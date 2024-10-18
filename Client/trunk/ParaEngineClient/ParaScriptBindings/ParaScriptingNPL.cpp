@@ -536,6 +536,8 @@ namespace ParaScripting
 		const char* url = NULL;
 		bool needResume = false;
 		bool needDataStreaming = false;
+		std::string signalVariable;
+
 		if (type(urlParams) == LUA_TTABLE)
 		{
 			url = object_cast<const char*>(urlParams["url"]);
@@ -544,6 +546,9 @@ namespace ParaScripting
 			}
 			if (urlParams["dataStreaming"]) {
 				needDataStreaming = object_cast<bool>(urlParams["dataStreaming"]);
+			}
+			if (urlParams["signalVariable"]) {
+				signalVariable = object_cast<const char*>(urlParams["signalVariable"]);
 			}
 		}
 		else if (type(urlParams) == LUA_TSTRING)
@@ -610,6 +615,19 @@ namespace ParaScripting
 					}
 				}
 			}
+		}
+
+		if (!signalVariable.empty() && pProcessor)
+		{
+			auto signal = std::make_shared<AbortController>();
+			pProcessor->SetAbortController(signal);
+			// create a std::timer to check the global signal variable every 0.3 second, 
+			// if the global signal variable in scripting environment is true, 
+			// we will also signal the AbortController to terminate download. 
+
+			// now create an anonymous timer to check the global signal variable every 0.3 second
+
+		
 		}
 
 		if (pAsyncLoader->AddWorkItem(pLoader, pProcessor, NULL, NULL, ResourceRequestID_Asset) != S_OK)

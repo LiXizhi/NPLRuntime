@@ -6,7 +6,7 @@
 // Date:	2009.8.6
 // Desc: for async asset streaming. It uses architecture proposed by the content streaming sample in DirectX 9&10
 //-----------------------------------------------------------------------------
-/** Design 
+/** Design
 
 ---++ File Format
 
@@ -32,9 +32,9 @@ Examples:
 ---+++ Asset manifest
 output assets to "Assets_manifest.txt"
 
-format is [relative path],md5,fileSize 
+format is [relative path],md5,fileSize
 if the name ends with .z, it is zipped. This could be 4MB uncompressed in size
-md5 is checksum code of the file. fileSize is the compressed file size. 
+md5 is checksum code of the file. fileSize is the compressed file size.
 
 character/v3/elf/female/elffemale.x.z,67829385df2e30076044b59aff13c257,398976
 character/v3/elf/hair01_01.dds.z,c16e596c3cdac944d1eaa2a26124448a,22328
@@ -95,25 +95,25 @@ using namespace ParaEngine;
 ///////////////////////////////////////////////////////
 
 CAsyncLoader::ProcessorWorkerThread::ProcessorWorkerThread()
-:m_nQueueID(0), m_curl(0),m_nBytesProcessed(0)
+	:m_nQueueID(0), m_curl(0), m_nBytesProcessed(0)
 {
 }
 
 CAsyncLoader::ProcessorWorkerThread::ProcessorWorkerThread(int nQueueID)
-:m_nQueueID(nQueueID), m_curl(0),m_nBytesProcessed(0)
+	:m_nQueueID(nQueueID), m_curl(0), m_nBytesProcessed(0)
 {
 }
 
 CAsyncLoader::ProcessorWorkerThread::~ProcessorWorkerThread()
 {
-	if(m_curl)
+	if (m_curl)
 	{
 		curl_easy_cleanup(m_curl);
 		m_curl = NULL;
 	}
 }
 
-void ParaEngine::CAsyncLoader::ProcessorWorkerThread::AddBytesProcessed( int nBytesProcessed )
+void ParaEngine::CAsyncLoader::ProcessorWorkerThread::AddBytesProcessed(int nBytesProcessed)
 {
 	m_nBytesProcessed += nBytesProcessed;
 }
@@ -126,7 +126,7 @@ int ParaEngine::CAsyncLoader::ProcessorWorkerThread::GetBytesProcessed()
 
 void* CAsyncLoader::ProcessorWorkerThread::GetCurlInterface(int nID)
 {
-	if(m_curl)
+	if (m_curl)
 	{
 		return m_curl;
 	}
@@ -140,7 +140,7 @@ void* CAsyncLoader::ProcessorWorkerThread::GetCurlInterface(int nID)
 
 void* CAsyncLoader::DefaultWorkerThreadData::GetCurlInterface(int nID)
 {
-	if(m_curl)
+	if (m_curl)
 	{
 		return m_curl;
 	}
@@ -156,9 +156,9 @@ void* CAsyncLoader::DefaultWorkerThreadData::GetCurlInterface(int nID)
 
 bool CAsyncLoader::ProcessorWorkerThread::timed_join(int nSeconds)
 {
-	if(m_thread.get()) 
+	if (m_thread.get())
 	{
-		return m_thread->timed_join(boost::posix_time::millisec(nSeconds*1000));
+		return m_thread->timed_join(boost::posix_time::millisec(nSeconds * 1000));
 	}
 	return true;
 }
@@ -206,11 +206,11 @@ CResourceRequestQueue::BufferStatus CResourceRequestQueue::try_push(ResourceRequ
 ///////////////////////////////////////////////////////
 
 CAsyncLoader::CAsyncLoader()
-:m_NumOutstandingResources(0), m_nRemainingBytes(0),
+	:m_NumOutstandingResources(0), m_nRemainingBytes(0),
 #ifdef PARAENGINE_CLIENT
-m_pXFileParser(NULL), m_pEngine(NULL), m_pGDIEngine(NULL),
+	m_pXFileParser(NULL), m_pEngine(NULL), m_pGDIEngine(NULL),
 #endif
-m_bDone(false), m_bProcessThreadDone(false), m_bIOThreadDone(false), m_bInterruptSignal(false), m_default_processor_worker_data(NULL), m_nLogLevel(CAsyncLoader::Log_Warn)
+	m_bDone(false), m_bProcessThreadDone(false), m_bIOThreadDone(false), m_bInterruptSignal(false), m_default_processor_worker_data(NULL), m_nLogLevel(CAsyncLoader::Log_Warn)
 {
 #ifdef _DEBUG
 	// SetLogLevel(Log_All);
@@ -231,12 +231,12 @@ CAsyncLoader::~CAsyncLoader()
 
 void ParaEngine::CAsyncLoader::CleanUp()
 {
-	if(m_default_processor_worker_data == 0)
+	if (m_default_processor_worker_data == 0)
 		return;
 
 	Stop();
 
-	for(int i=0; i<(int)(m_workers.size()); ++i)
+	for (int i = 0; i < (int)(m_workers.size()); ++i)
 	{
 		SAFE_DELETE(m_workers[i]);
 	}
@@ -250,7 +250,7 @@ CAsyncLoader& ParaEngine::CAsyncLoader::GetSingleton()
 	return *(CAppSingleton<CAsyncLoader>::GetInstance());
 }
 
-void ParaEngine::CAsyncLoader::Interrupt() 
+void ParaEngine::CAsyncLoader::Interrupt()
 {
 	m_bInterruptSignal = true;
 };
@@ -273,17 +273,17 @@ bool ParaEngine::CAsyncLoader::CreateWorkerThreads(int nProcessorQueueID, int nM
 	int nCount = 0;
 	int nWorkerCount = (int)(m_workers.size());
 	int i;
-	for(i=0; i<nWorkerCount; ++i)
+	for (i = 0; i < nWorkerCount; ++i)
 	{
-		if(m_workers[i]->GetProcessorQueueID() == nProcessorQueueID)
+		if (m_workers[i]->GetProcessorQueueID() == nProcessorQueueID)
 		{
 			nCount++;
 		}
 	}
 	int nNewlyCreated = 0;
-	for(i=nCount; i<nMaxCount; ++i, ++nNewlyCreated)
+	for (i = nCount; i < nMaxCount; ++i, ++nNewlyCreated)
 	{
-		ProcessorWorkerThread* worker_thread= new ProcessorWorkerThread(nProcessorQueueID);
+		ProcessorWorkerThread* worker_thread = new ProcessorWorkerThread(nProcessorQueueID);
 		worker_thread->reset(new boost::thread(boost::bind(&CAsyncLoader::ProcessingThreadProc, this, worker_thread)));
 		m_workers.push_back(worker_thread);
 	}
@@ -302,7 +302,7 @@ bool ParaEngine::CAsyncLoader::CreateWorkerThreads(int nProcessorQueueID, int nM
 		OUTPUT_LOG("CAsyncLoader QueueID:%d(%s) has %d worker threads\n", nProcessorQueueID, sName.c_str(), nMaxCount);
 	}
 	return true;
-}
+	}
 
 int ParaEngine::CAsyncLoader::GetWorkerThreadsCount(int nProcessorQueueID)
 {
@@ -340,18 +340,18 @@ int ParaEngine::CAsyncLoader::GetEstimatedSizeInBytes()
 
 int ParaEngine::CAsyncLoader::GetItemsLeft(int nItemType)
 {
-	if(nItemType == -1)
+	if (nItemType == -1)
 	{
 		ParaEngine::Lock lock_(m_request_stats);
 		// total requests in the queue
 		return m_NumOutstandingResources;
 	}
-	else if (nItemType>=ResourceRequestID_Local && nItemType<=ResourceRequestID_Asset_BigFile)
+	else if (nItemType >= ResourceRequestID_Local && nItemType <= ResourceRequestID_Asset_BigFile)
 	{
 		// only remote requests in the queue. 
 		return (int)(m_ProcessQueues[nItemType].size());
 	}
-	else if(nItemType == -2)
+	else if (nItemType == -2)
 	{
 		return GetItemsLeft(ResourceRequestID_Asset_BigFile) + GetItemsLeft(ResourceRequestID_Asset);
 	}
@@ -359,33 +359,33 @@ int ParaEngine::CAsyncLoader::GetItemsLeft(int nItemType)
 }
 
 
-int ParaEngine::CAsyncLoader::GetBytesProcessed( int nItemType /*= -1*/ )
+int ParaEngine::CAsyncLoader::GetBytesProcessed(int nItemType /*= -1*/)
 {
 	int nBytesProcessed = 0;
-	if(nItemType == -1)
+	if (nItemType == -1)
 	{
 		// total requests in the queue
 		int nWorkerCount = (int)(m_workers.size());
-		for(int i=0; i<nWorkerCount; ++i)
+		for (int i = 0; i < nWorkerCount; ++i)
 		{
 			nBytesProcessed += m_workers[i]->GetBytesProcessed();
 		}
 		return nBytesProcessed;
 	}
-	else if (nItemType>=ResourceRequestID_Local && nItemType<=ResourceRequestID_Asset_BigFile)
+	else if (nItemType >= ResourceRequestID_Local && nItemType <= ResourceRequestID_Asset_BigFile)
 	{
 		// only remote requests in the queue. 
 		int nWorkerCount = (int)(m_workers.size());
-		for(int i=0; i<nWorkerCount; ++i)
+		for (int i = 0; i < nWorkerCount; ++i)
 		{
-			if(m_workers[i]->GetProcessorQueueID() == nItemType)
+			if (m_workers[i]->GetProcessorQueueID() == nItemType)
 			{
 				nBytesProcessed += m_workers[i]->GetBytesProcessed();
 			}
 		}
 		return nBytesProcessed;
 	}
-	else if(nItemType == -2)
+	else if (nItemType == -2)
 	{
 		return GetBytesProcessed(ResourceRequestID_Asset_BigFile) + GetBytesProcessed(ResourceRequestID_Asset);
 	}
@@ -395,23 +395,23 @@ int ParaEngine::CAsyncLoader::GetBytesProcessed( int nItemType /*= -1*/ )
 
 void ParaEngine::CAsyncLoader::WaitForAllItems()
 {
-	if(GetItemsLeft()> 0)
+	if (GetItemsLeft() > 0)
 	{
 		OUTPUT_LOG("CAsyncLoader waiting for %d pending resources. \n", GetItemsLeft());
-		ProcessDeviceWorkItems( 100000, false );
+		ProcessDeviceWorkItems(100000, false);
 
 		// let us wait only limited time. 30*100 = 3000ms 
-		for(int i=0; i<30; ++i)
+		for (int i = 0; i < 30; ++i)
 		{
 			// Only exit when all resources are loaded
-			if( 0 == GetItemsLeft())
+			if (0 == GetItemsLeft())
 				return;
 
 			// Service Queues
-			ProcessDeviceWorkItems( 100000, false );
-			SLEEP( 100);
+			ProcessDeviceWorkItems(100000, false);
+			SLEEP(100);
 		}
-		if(GetItemsLeft() != 0)
+		if (GetItemsLeft() != 0)
 		{
 			OUTPUT_LOG("warning: CAsyncLoader still have %d pending resources, but we will not wait for their completion. \n", GetItemsLeft());
 		}
@@ -426,7 +426,7 @@ int CAsyncLoader::Stop()
 	int nWorkerCount = (int)(m_workers.size());
 
 	int i;
-	for(i=0; i<nWorkerCount; ++i)
+	for (i = 0; i < nWorkerCount; ++i)
 	{
 		ResourceRequest_ptr msg(new ResourceRequest(ResourceRequestType_Quit));
 		m_ProcessQueues[m_workers[i]->GetProcessorQueueID()].push(msg);
@@ -436,9 +436,9 @@ int CAsyncLoader::Stop()
 	Interrupt();
 
 	int nSecondLeft = 1;
-	for(i=0; i<nWorkerCount; ++i)
+	for (i = 0; i < nWorkerCount; ++i)
 	{
-		if(!(m_workers[i]->timed_join(nSecondLeft)))
+		if (!(m_workers[i]->timed_join(nSecondLeft)))
 		{
 			OUTPUT_LOG("warning: CAsyncLoader worker thread %d of %d does not exit after %d seconds. we shall terminate the hard way. \n", i, nWorkerCount, nSecondLeft);
 			// TODO: find a way to terminate thread the hard way. 
@@ -450,7 +450,7 @@ int CAsyncLoader::Stop()
 	}
 	m_workers.clear();
 
-	if(m_io_thread.get()!=0)
+	if (m_io_thread.get() != 0)
 	{
 		ResourceRequest_ptr msg(new ResourceRequest(ResourceRequestType_Quit));
 		m_IOQueue.push(msg);
@@ -463,19 +463,19 @@ int CAsyncLoader::Stop()
 	// clear all queued messages,  since we already called WaitForAllItems(). the following should never be needed. 
 	// however, for safety we just empty all queued items. 
 	ResourceRequest_ptr req;
-	for(i=0; i<MAX_PROCESS_QUEUE; ++i)
+	for (i = 0; i < MAX_PROCESS_QUEUE; ++i)
 	{
-		while(m_ProcessQueues[i].try_pop(req))
+		while (m_ProcessQueues[i].try_pop(req))
 		{
 			OUTPUT_LOG("warning: process queue %d still has pending item %s \n", i, req->m_pDataLoader->GetFileName());
 		}
 	}
 
-	while(m_IOQueue.try_pop(req))
+	while (m_IOQueue.try_pop(req))
 	{
 		OUTPUT_LOG("warning: IO queue still has pending item %s \n", req->m_pDataLoader->GetFileName());
 	}
-	while(m_RenderThreadQueue.try_pop(req))
+	while (m_RenderThreadQueue.try_pop(req))
 	{
 		OUTPUT_LOG("warning: render queue still has pending item %s \n", req->m_pDataLoader->GetFileName());
 	}
@@ -483,13 +483,13 @@ int CAsyncLoader::Stop()
 #ifdef PARAENGINE_CLIENT
 	SAFE_RELEASE(m_pXFileParser);
 
-	if(m_pEngine)
+	if (m_pEngine)
 	{
 		m_pEngine->Destroy();
 		SAFE_DELETE(m_pEngine);
 	}
 
-	if(m_pGDIEngine)
+	if (m_pGDIEngine)
 	{
 		m_pGDIEngine->Destroy();
 		SAFE_DELETE(m_pGDIEngine);
@@ -500,7 +500,7 @@ int CAsyncLoader::Stop()
 
 int CAsyncLoader::Start(int nWorkerCount)
 {
-	if((int)(m_workers.size()) != 0 || nWorkerCount <= 0)
+	if ((int)(m_workers.size()) != 0 || nWorkerCount <= 0)
 	{
 		return 0;
 	}
@@ -513,7 +513,7 @@ int CAsyncLoader::Start(int nWorkerCount)
 	m_io_thread.reset(new boost::thread(boost::bind(&CAsyncLoader::FileIOThreadProc, this)));
 
 	// queue[0] is for local CPU intensive tasks like unzip. (only one thread process it)
-	CreateWorkerThreads(ResourceRequestID_Local, DEFAULT_LOCAL_THREAD_COUNT); 
+	CreateWorkerThreads(ResourceRequestID_Local, DEFAULT_LOCAL_THREAD_COUNT);
 	// queue[1] is for remote background asset loading. (2 threads process it)
 	CreateWorkerThreads(ResourceRequestType_Asset, DEFAULT_ASSETS_THREAD_COUNT);
 	// queue[2] is for remote REST URL request. (1 threads process it)
@@ -522,16 +522,16 @@ int CAsyncLoader::Start(int nWorkerCount)
 	CreateWorkerThreads(ResourceRequestID_Asset_BigFile, DEFAULT_BIGFILE_THREAD_COUNT);
 	// queue[4] is for remote background asset loading (Big file only). (1 threads process it)
 	CreateWorkerThreads(ResourceRequestID_AudioFile, DEFAULT_AUDIOFILE_THREAD_COUNT);
-	
+
 
 	OUTPUT_LOG("CAsyncLoader is started with 1 IO thread and %d worker threads\n", (int)m_workers.size());
 
 	return 0;
 }
 #ifdef PARAENGINE_CLIENT
-CDirectXEngine* CAsyncLoader::GetEngine() 
+CDirectXEngine* CAsyncLoader::GetEngine()
 {
-	if(m_pEngine == 0)
+	if (m_pEngine == 0)
 	{
 		m_pEngine = new CDirectXEngine();
 		m_pEngine->Create();
@@ -541,7 +541,7 @@ CDirectXEngine* CAsyncLoader::GetEngine()
 
 CGDIEngine* CAsyncLoader::GetGDIEngine()
 {
-	if(m_pGDIEngine == 0)
+	if (m_pGDIEngine == 0)
 	{
 		m_pGDIEngine = new CGDIEngine();
 		m_pGDIEngine->Create();
@@ -566,10 +566,10 @@ int CAsyncLoader::FileIOThreadProc_HandleRequest(ResourceRequest_ptr& ResourceRe
 
 			if (FAILED(hr))
 			{
-				const char * keyname = ResourceRequest->m_pDataLoader->GetKeyName();
+				const char* keyname = ResourceRequest->m_pDataLoader->GetKeyName();
 				if (keyname == 0)
 					keyname = "key not set";
-				const char * filename = ResourceRequest->m_pDataLoader->GetFileName();
+				const char* filename = ResourceRequest->m_pDataLoader->GetFileName();
 				if (filename == 0)
 					filename = "unknown file";
 				if (hr != E_PENDING)
@@ -614,7 +614,7 @@ int CAsyncLoader::FileIOThreadProc_HandleRequest(ResourceRequest_ptr& ResourceRe
 				if (ResourceRequest->m_pHR)
 					*ResourceRequest->m_pHR = hr;
 			}
-		}
+			}
 		else
 		{
 			ResourceRequest->m_pDataProcessor->SetResourceError();
@@ -633,7 +633,7 @@ int CAsyncLoader::FileIOThreadProc_HandleRequest(ResourceRequest_ptr& ResourceRe
 		{
 			ProcessDeviceWorkItemImp(ResourceRequest);
 		}
-	}
+		}
 	return hr;
 }
 
@@ -645,10 +645,10 @@ int CAsyncLoader::FileIOThreadProc()
 	ASSETS_LOG(Log_All, "CAsyncLoader IO Thread started");
 
 	int nRes = 0;
-	while(nRes != -1)
+	while (nRes != -1)
 	{
 		m_IOQueue.wait_and_pop(ResourceRequest);
-		if(ResourceRequest->m_nType == ResourceRequestType_Quit)
+		if (ResourceRequest->m_nType == ResourceRequestType_Quit)
 		{
 			break;
 		}
@@ -662,7 +662,7 @@ int CAsyncLoader::ProcessingThreadProc(ProcessorWorkerThread* pThreadData)
 	ResourceRequest_ptr ResourceRequest;
 	HRESULT hr = S_OK;
 
-	if(pThreadData == 0)
+	if (pThreadData == 0)
 		return E_FAIL;
 
 	int nQueueID = pThreadData->GetProcessorQueueID();
@@ -670,7 +670,7 @@ int CAsyncLoader::ProcessingThreadProc(ProcessorWorkerThread* pThreadData)
 	{
 		// print thread info to log
 		const char* ThreadType = "";
-		switch(nQueueID)
+		switch (nQueueID)
 		{
 		case ResourceRequestType_Web:
 			ThreadType = "Web";
@@ -692,10 +692,10 @@ int CAsyncLoader::ProcessingThreadProc(ProcessorWorkerThread* pThreadData)
 	}
 
 	int nRes = 0;
-	while(nRes != -1)
+	while (nRes != -1)
 	{
 		m_ProcessQueues[nQueueID].wait_and_pop(ResourceRequest);
-		if(ResourceRequest->m_nType == ResourceRequestType_Quit)
+		if (ResourceRequest->m_nType == ResourceRequestType_Quit)
 		{
 			break;
 		}
@@ -703,32 +703,32 @@ int CAsyncLoader::ProcessingThreadProc(ProcessorWorkerThread* pThreadData)
 		// Sleep(300);
 
 		// ASSETS_LOG(Log_All, "DEBUG: process msg %s\n", ResourceRequest->m_pDataLoader->GetFileName());
-		
+
 		// Decompress the data
-		if( !ResourceRequest->m_bError )
+		if (!ResourceRequest->m_bError)
 		{
 			void* pData = NULL;
 			int cDataSize = 0;
-			hr = ResourceRequest->m_pDataLoader->Decompress( &pData, &cDataSize );
-			if( SUCCEEDED( hr ) )
+			hr = ResourceRequest->m_pDataLoader->Decompress(&pData, &cDataSize);
+			if (SUCCEEDED(hr))
 			{
 				// Process the data
 				ResourceRequest->m_pDataProcessor->SetProcessorWorkerData(pThreadData);
-				hr = ResourceRequest->m_pDataProcessor->Process( pData, cDataSize );
+				hr = ResourceRequest->m_pDataProcessor->Process(pData, cDataSize);
 			}
 		}
 
-		if( FAILED( hr ) )
+		if (FAILED(hr))
 		{
-			OUTPUT_LOG( "Processing Thread Error: hr = %x\n", hr );
-			
+			OUTPUT_LOG("Processing Thread Error: hr = %x\n", hr);
+
 			ResourceRequest->m_bError = true;
 			ResourceRequest->m_last_error_code = hr;
-			if( ResourceRequest->m_pHR )
+			if (ResourceRequest->m_pHR)
 				*ResourceRequest->m_pHR = hr;
 		}
 
-		
+
 		ResourceRequest->m_bLock = true;
 		if (ResourceRequest->m_pDataProcessor->IsDeviceObject())
 		{
@@ -746,9 +746,9 @@ int CAsyncLoader::ProcessingThreadProc(ProcessorWorkerThread* pThreadData)
 	return 0;
 }
 
-HRESULT ParaEngine::CAsyncLoader::RunWorkItem( IDataLoader* pLoader, IDataProcessor* pProcessor, HRESULT* pHResult, void** ppDeviceObject)
+HRESULT ParaEngine::CAsyncLoader::RunWorkItem(IDataLoader* pLoader, IDataProcessor* pProcessor, HRESULT* pHResult, void** ppDeviceObject)
 {
-	if( !pLoader || !pProcessor )
+	if (!pLoader || !pProcessor)
 		return E_INVALIDARG;
 
 	HRESULT res = S_OK;
@@ -758,16 +758,16 @@ HRESULT ParaEngine::CAsyncLoader::RunWorkItem( IDataLoader* pLoader, IDataProces
 	ParaEngine::Lock lock_(m_default_processor_mutex);
 	pProcessor->SetProcessorWorkerData(m_default_processor_worker_data);
 
-	if( SUCCEEDED(res=pLoader->Load()) && 
-		SUCCEEDED(res=pLoader->Decompress( &pLocalData, &Bytes )) && 
-		SUCCEEDED(res=pProcessor->Process( pLocalData, Bytes )) && 
-		SUCCEEDED(res=pProcessor->LockDeviceObject()) && 
-		SUCCEEDED(res=pProcessor->CopyToResource()) && 
-		SUCCEEDED(res=pProcessor->UnLockDeviceObject()) )
+	if (SUCCEEDED(res = pLoader->Load()) &&
+		SUCCEEDED(res = pLoader->Decompress(&pLocalData, &Bytes)) &&
+		SUCCEEDED(res = pProcessor->Process(pLocalData, Bytes)) &&
+		SUCCEEDED(res = pProcessor->LockDeviceObject()) &&
+		SUCCEEDED(res = pProcessor->CopyToResource()) &&
+		SUCCEEDED(res = pProcessor->UnLockDeviceObject()))
 	{
 	}
-	
-	if(FAILED(res))
+
+	if (FAILED(res))
 	{
 		pProcessor->SetResourceError();
 	}
@@ -777,15 +777,15 @@ HRESULT ParaEngine::CAsyncLoader::RunWorkItem( IDataLoader* pLoader, IDataProces
 	return res;
 }
 
-HRESULT ParaEngine::CAsyncLoader::RunWorkItem( ResourceRequest_ptr& request )
+HRESULT ParaEngine::CAsyncLoader::RunWorkItem(ResourceRequest_ptr& request)
 {
 	OUTPUT_LOG("warning: TODO: RunWorkItem(ResourceRequest_ptr) is not supported yet\n");
 	return S_OK;
 }
 
-int ParaEngine::CAsyncLoader::AddWorkItem( IDataLoader* pDataLoader, IDataProcessor* pDataProcessor, HRESULT* pHResult, void** ppDeviceObject , int nProcessorThreadID)
+int ParaEngine::CAsyncLoader::AddWorkItem(IDataLoader* pDataLoader, IDataProcessor* pDataProcessor, HRESULT* pHResult, void** ppDeviceObject, int nProcessorThreadID)
 {
-	if( !pDataLoader || !pDataProcessor )
+	if (!pDataLoader || !pDataProcessor)
 		return E_INVALIDARG;
 
 	ResourceRequest_ptr msg(new ResourceRequest(ResourceRequestType_Local));
@@ -797,21 +797,21 @@ int ParaEngine::CAsyncLoader::AddWorkItem( IDataLoader* pDataLoader, IDataProces
 	msg->m_bCopy = false;
 	msg->m_bLock = false;
 	msg->m_bError = false;
-	
-	if( ppDeviceObject)
+
+	if (ppDeviceObject)
 		*ppDeviceObject = NULL;
 
 	AddWorkItem(msg);
 	return S_OK;
 }
 
-int ParaEngine::CAsyncLoader::AddWorkItem( ResourceRequest_ptr& msg)
+int ParaEngine::CAsyncLoader::AddWorkItem(ResourceRequest_ptr& msg)
 {
 	const char* name = msg->m_pDataLoader->GetFileName();
-	if(name == 0)
+	if (name == 0)
 		name = "unknown";
 
-	if(msg->m_nProcessorQueueID == ResourceRequestID_Local)
+	if (msg->m_nProcessorQueueID == ResourceRequestID_Local)
 	{
 		ASSETS_LOG(Log_All, "AssetRequested %s\n", name);
 	}
@@ -821,11 +821,11 @@ int ParaEngine::CAsyncLoader::AddWorkItem( ResourceRequest_ptr& msg)
 	}
 	int nSizeBytes = msg->m_pDataLoader->GetEstimatedSizeInBytes();
 
-	if(m_IOQueue.try_push(msg) != m_IOQueue.BufferOverFlow)
+	if (m_IOQueue.try_push(msg) != m_IOQueue.BufferOverFlow)
 	{
 		ParaEngine::Lock lock_(m_request_stats);
 		m_nRemainingBytes += nSizeBytes;
-		m_NumOutstandingResources ++;
+		m_NumOutstandingResources++;
 	}
 	else
 	{
@@ -851,7 +851,7 @@ void ParaEngine::CAsyncLoader::ProcessDeviceWorkItemImp(ResourceRequest_ptr& Res
 
 				// move on to the next guy
 				return;
-			}
+}
 			else if (FAILED(hr))
 			{
 				ResourceRequest->m_bError = true;
@@ -859,7 +859,7 @@ void ParaEngine::CAsyncLoader::ProcessDeviceWorkItemImp(ResourceRequest_ptr& Res
 				if (ResourceRequest->m_pHR)
 					*ResourceRequest->m_pHR = hr;
 			}
-		}
+}
 
 		ResourceRequest->m_bCopy = true;
 		if (ResourceRequest->m_pDataProcessor->IsDeviceObject())
@@ -924,34 +924,34 @@ void ParaEngine::CAsyncLoader::ProcessDeviceWorkItemImp(ResourceRequest_ptr& Res
 	}
 }
 
-void ParaEngine::CAsyncLoader::ProcessDeviceWorkItems( int CurrentNumResourcesToService, bool bRetryLoads )
+void ParaEngine::CAsyncLoader::ProcessDeviceWorkItems(int CurrentNumResourcesToService, bool bRetryLoads)
 {
 	HRESULT hr = S_OK;
 	ResourceRequest_ptr ResourceRequest;
 
-	for( int i = 0; (i<CurrentNumResourcesToService) && m_RenderThreadQueue.try_pop(ResourceRequest); i++ )
+	for (int i = 0; (i < CurrentNumResourcesToService) && m_RenderThreadQueue.try_pop(ResourceRequest); i++)
 	{
 		ProcessDeviceWorkItemImp(ResourceRequest, bRetryLoads);
 	}
 }
 
-void ParaEngine::CAsyncLoader::AddPendingRequest( const char* sURL )
+void ParaEngine::CAsyncLoader::AddPendingRequest(const char* sURL)
 {
-	if(sURL)
+	if (sURL)
 	{
 		ParaEngine::Lock lock_(m_pending_request_mutex);
 
 		m_pending_requests.insert(sURL);
-		if((int)(m_pending_requests.size())>500)
+		if ((int)(m_pending_requests.size()) > 500)
 		{
 			OUTPUT_LOG("warning: too many (>500) pending URL request found \n");
 		}
 	}
 }
 
-void ParaEngine::CAsyncLoader::RemovePendingRequest( const char* sURL )
+void ParaEngine::CAsyncLoader::RemovePendingRequest(const char* sURL)
 {
-	if(sURL)
+	if (sURL)
 	{
 		ParaEngine::Lock lock_(m_pending_request_mutex);
 		m_pending_requests.erase(sURL);
@@ -974,9 +974,9 @@ void ParaEngine::CAsyncLoader::SetLogLevel(int val)
 	m_nLogLevel = (ParaEngine::CAsyncLoader::AssetLogLevelEnum)val;
 }
 
-bool ParaEngine::CAsyncLoader::HasPendingRequest( const char* sURL )
+bool ParaEngine::CAsyncLoader::HasPendingRequest(const char* sURL)
 {
-	if(sURL)
+	if (sURL)
 	{
 		ParaEngine::Lock lock_(m_pending_request_mutex);
 		return m_pending_requests.find(sURL) != m_pending_requests.end();
@@ -985,7 +985,7 @@ bool ParaEngine::CAsyncLoader::HasPendingRequest( const char* sURL )
 		return false;
 }
 
-int ParaEngine::CAsyncLoader::InstallFields(CAttributeClass * pClass, bool bOverride)
+int ParaEngine::CAsyncLoader::InstallFields(CAttributeClass* pClass, bool bOverride)
 {
 	IAttributeFields::InstallFields(pClass, bOverride);
 	pClass->AddField("EstimatedSizeInBytes", FieldType_Int, (void*)0, (void*)GetEstimatedSizeInBytes_s, NULL, "", bOverride);

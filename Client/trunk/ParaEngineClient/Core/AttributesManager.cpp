@@ -302,6 +302,30 @@ void CAttributesManager::PrintField(CParaFile& file, CAttributeField* pField, vo
 			}
 			break;
 		}
+	case FieldType_String_Float:
+		{
+			file.WriteFormated("%-10s\t", "string,float");
+			if(pObj!=NULL)
+			{
+				const char* value1;
+				float value2;
+				pField->Get(pObj, &value1, &value2);
+				file.WriteFormated("%s,%f", value1, value2);
+			}
+			break;
+		}
+	case FieldType_String_String:
+		{
+			file.WriteFormated("%-10s\t", "string,string");
+			if(pObj!=NULL)
+			{
+				const char* value1;
+				const char* value2;
+				pField->Get(pObj, &value1, &value2);
+				file.WriteFormated("%s,%s", value1, value2);
+			}
+			break;
+		}
 	case FieldType_Deprecated:
 		{
 			file.WriteFormated("deprecated");

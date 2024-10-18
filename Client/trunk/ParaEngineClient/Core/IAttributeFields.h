@@ -23,6 +23,7 @@
 #define ATTRIBUTE_METHOD2(clsName, name, dataType) static HRESULT name(clsName* cls, dataType p1,dataType p2)
 #define ATTRIBUTE_METHOD3(clsName, name, dataType) static HRESULT name(clsName* cls, dataType p1,dataType p2,dataType p3)
 #define ATTRIBUTE_METHOD4(clsName, name, dataType) static HRESULT name(clsName* cls, dataType p1,dataType p2,dataType p3,dataType p4)
+#define ATTRIBUTE_METHOD1_1(clsName, name, dataType1, dataType2) static HRESULT name(clsName* cls, dataType1 p1,dataType2 p2)
 
 /** @def define this to support factory object instantiation from attribute class. By default CAttributeClass::Create() does not support instantiation.
 ATTRIBUTE_SUPPORT_CREATE_FACTORY(classname)
