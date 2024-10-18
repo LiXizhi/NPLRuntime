@@ -3,6 +3,8 @@
 #include <vector>
 /* curl specific */
 #include "util/mutex.h"
+#include <atomic>
+#include <memory>
 // #ifndef EMSCRIPTEN_SINGLE_THREAD
 #ifndef EMSCRIPTEN
 #include <curl/curl.h>
@@ -159,6 +161,26 @@ namespace ParaEngine
 	class CUrlProcessor;
 	class IProcessorWorkerData;
 
+	class AbortController : public std::enable_shared_from_this<AbortController> {
+	public:
+		AbortController() : m_aborted(false) {}
+
+		void abort() {
+			m_aborted.store(true);
+		}
+
+		bool isAborted() const {
+			return m_aborted.load();
+		}
+
+		std::shared_ptr<AbortController> getPtr() {
+			return shared_from_this();
+		}
+
+	private:
+		std::atomic<bool> m_aborted;
+	};
+
 	/**
 	* CTextureLoader implementation of IDataLoader
 	* it will first search locally. If not found or version expired (as indicated in the assets_manifest file), 
@@ -279,6 +301,9 @@ namespace ParaEngine
 		};
 
 	public:
+		void SetAbortController(std::shared_ptr<AbortController> controller);
+		bool IsAborted() const;
+			
 		/** set the url to download */
 		void SetUrl(const char* url);
 
@@ -477,6 +502,7 @@ namespace ParaEngine
 		std::string m_fetch_response_data;
 		std::string m_fetch_response_header;
 		bool m_fetch_finish;
-#endif 
+#endif
+		std::shared_ptr<AbortController> m_abortController;
 	};
 }
