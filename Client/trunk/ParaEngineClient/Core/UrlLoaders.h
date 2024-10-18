@@ -3,6 +3,8 @@
 #include <vector>
 /* curl specific */
 #include <curl/curl.h>
+#include <atomic>
+#include <memory>
 #include "util/mutex.h"
 
 namespace NPL
@@ -14,6 +16,26 @@ namespace ParaEngine
 {
 	class CUrlProcessor;
 	class IProcessorWorkerData;
+
+	class AbortController : public std::enable_shared_from_this<AbortController> {
+	public:
+		AbortController() : m_aborted(false) {}
+
+		void abort() {
+			m_aborted.store(true);
+		}
+
+		bool isAborted() const {
+			return m_aborted.load();
+		}
+
+		std::shared_ptr<AbortController> getPtr() {
+			return shared_from_this();
+		}
+
+	private:
+		std::atomic<bool> m_aborted;
+	};
 
 	/**
 	* CTextureLoader implementation of IDataLoader
@@ -126,6 +148,9 @@ namespace ParaEngine
 		};
 
 	public:
+		void SetAbortController(std::shared_ptr<AbortController> controller);
+		bool IsAborted() const;
+
 		/** set the url to download */
 		void SetUrl(const char* url);
 
@@ -238,7 +263,6 @@ namespace ParaEngine
 		bool IsSyncCallbackMode() const;
 		void SetSyncCallbackMode(bool val);
 
-		/*是否需要断点续传*/
 		void SetNeedResumeDownload(bool needResume);
 	private:
 		int InvokeCallbackScript(const char* sCode, int nLength);
@@ -319,7 +343,8 @@ namespace ParaEngine
 		/** this mutex is only used for determine the state. */
 		//ParaEngine::mutex m_mutex;
 
-		bool m_needResumeDownload;//是否断点续传
-		long m_lastDownloadSize;//上次下载了多少
+		bool m_needResumeDownload;
+		long m_lastDownloadSize;
+		std::shared_ptr<AbortController> m_abortController;
 	};
 }

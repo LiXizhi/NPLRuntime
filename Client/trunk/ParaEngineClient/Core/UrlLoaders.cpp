@@ -118,6 +118,8 @@ ParaEngine::CUrlProcessor::CUrlProcessor(const string& url, const string& npl_ca
 ParaEngine::CUrlProcessor::~CUrlProcessor()
 {
 	CleanUp();
+	if(m_abortController)
+		m_abortController->abort();
 }
 
 void ParaEngine::CUrlProcessor::CleanUp()
@@ -591,7 +593,7 @@ size_t ParaEngine::CUrlProcessor::write_data_callback(void *buffer, size_t size,
 		// ParaEngine::CLogger::GetSingleton().Write((const char*)buffer, (int)nByteCount);
 	}
 	// SLEEP(200);
-	if (CAsyncLoader::GetSingleton().interruption_requested())
+	if (IsAborted())
 		return 0;
 	return nByteCount;
 }
@@ -678,7 +680,7 @@ size_t ParaEngine::CUrlProcessor::write_header_callback(void *buffer, size_t siz
 		m_header.resize(nOldSize + nByteCount);
 		memcpy(&(m_header[nOldSize]), buffer, nByteCount);
 	}
-	if (CAsyncLoader::GetSingleton().interruption_requested())
+	if (IsAborted())
 		return -1;
 	return nByteCount;
 }
@@ -934,4 +936,16 @@ int ParaEngine::CUrlProcessor::InvokeCallbackScript(const char* sCode, int nLeng
 		}
 	}
 	return S_OK;
+}
+
+void ParaEngine::CUrlProcessor::SetAbortController(std::shared_ptr<AbortController> controller)
+{
+	m_abortController = controller;
+}
+
+bool ParaEngine::CUrlProcessor::IsAborted() const
+{
+	if ((m_abortController && m_abortController->isAborted()) || CAsyncLoader::GetSingleton().interruption_requested())
+		return true;
+	return false;
 }
