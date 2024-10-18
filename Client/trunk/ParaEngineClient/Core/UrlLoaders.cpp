@@ -28,7 +28,24 @@ ParaEngine::upload_context::upload_context(const char* data, int nDataSize /*= 0
 		m_nDataSize = strlen(m_pData);
 	}
 }
+AbortController::AbortController(const char* name) : m_aborted(false), m_sRequestName(name) 
+{
+	if (!m_sRequestName.empty()) {
+		CAsyncLoader::GetSingleton().AddAbortableRequest(m_sRequestName.c_str());
+	}
 
+}
+
+AbortController::~AbortController() 
+{
+	if (!m_sRequestName.empty()) {
+		CAsyncLoader::GetSingleton().RemoveAbortableRequest(m_sRequestName.c_str());
+	}
+}
+
+bool AbortController::isAborted() const {
+	return m_aborted.load() || (!m_sRequestName.empty() && CAsyncLoader::GetSingleton().IsRequestAborted(m_sRequestName.c_str()));
+}
 
 //////////////////////////////////////////////////////////////////////////
 //

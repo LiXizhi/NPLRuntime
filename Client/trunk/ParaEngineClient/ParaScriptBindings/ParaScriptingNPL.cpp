@@ -619,15 +619,8 @@ namespace ParaScripting
 
 		if (!signalVariable.empty() && pProcessor)
 		{
-			auto signal = std::make_shared<AbortController>();
+			auto signal = std::make_shared<AbortController>(signalVariable.c_str());
 			pProcessor->SetAbortController(signal);
-			// create a std::timer to check the global signal variable every 0.3 second, 
-			// if the global signal variable in scripting environment is true, 
-			// we will also signal the AbortController to terminate download. 
-
-			// now create an anonymous timer to check the global signal variable every 0.3 second
-
-		
 		}
 
 		if (pAsyncLoader->AddWorkItem(pLoader, pProcessor, NULL, NULL, ResourceRequestID_Asset) != S_OK)
@@ -673,11 +666,16 @@ namespace ParaScripting
 		bool bSyncMode = sPoolName && strcmp(sPoolName, "self") == 0;
 		bool needDataStreaming = false;
 		const char* url = NULL;
+		std::string signalVariable;
+
 		if (type(urlParams) == LUA_TTABLE)
 		{
 			url = object_cast<const char*>(urlParams["url"]);
 			if (urlParams["dataStreaming"]) {
 				needDataStreaming = object_cast<bool>(urlParams["dataStreaming"]);
+			}
+			if (urlParams["signalVariable"]) {
+				signalVariable = object_cast<const char*>(urlParams["signalVariable"]);
 			}
 		}
 		else if (type(urlParams) == LUA_TSTRING)
@@ -925,6 +923,11 @@ namespace ParaScripting
 		pLoader->SetUrl(urlBuilder.ToString().c_str());
 		pProcessor->SetUrl(urlBuilder.ToString().c_str());
 		pProcessor->SetScriptCallback(sCallback);
+		if (!signalVariable.empty())
+		{
+			auto signal = std::make_shared<AbortController>(signalVariable.c_str());
+			pProcessor->SetAbortController(signal);
+		}
 
 		if (bSyncMode)
 		{

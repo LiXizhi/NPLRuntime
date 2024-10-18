@@ -95,6 +95,7 @@ namespace ParaEngine
 		ATTRIBUTE_METHOD1(CAsyncLoader, log_s, const char*) { cls->log(p1); return S_OK; }
 		ATTRIBUTE_METHOD(CAsyncLoader, WaitForAllItems_s) { cls->WaitForAllItems(); return S_OK; }
 		
+		ATTRIBUTE_METHOD1(CAsyncLoader, AbortRequest_s, const char*) { cls->AbortRequest(p1); return S_OK; }
 	private:
 		struct ProcessorWorkerThread;
 	public:
@@ -240,6 +241,11 @@ namespace ParaEngine
 		*/
 		int GetBytesProcessed(int nItemType = -1);
 
+		void AddAbortableRequest(const char* sName);
+		void AbortRequest(const char* sName);
+		void RemoveAbortableRequest(const char* sName);
+		bool IsRequestAborted(const char* sName);
+
 	protected:
 
 		/** 
@@ -383,5 +389,9 @@ namespace ParaEngine
 
 		// all pending url, this could prevent the same url to be request multiple times. 
 		std::set <std::string> m_pending_requests;
+
+		// named set of abortable requests.
+		std::map<std::string, float> m_abortableRequests;
+		ParaEngine::mutex m_abortableRequestsMutex;
 	};
 }

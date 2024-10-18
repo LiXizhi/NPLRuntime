@@ -243,6 +243,11 @@ void ParaEngine::CAsyncLoader::CleanUp()
 	m_workers.clear();
 
 	SAFE_DELETE(m_default_processor_worker_data);
+
+	{
+		ParaEngine::Lock lock_(m_abortableRequestsMutex);
+		m_abortableRequests.clear();
+	}
 }
 
 CAsyncLoader& ParaEngine::CAsyncLoader::GetSingleton()
@@ -985,6 +990,41 @@ bool ParaEngine::CAsyncLoader::HasPendingRequest(const char* sURL)
 		return false;
 }
 
+
+void ParaEngine::CAsyncLoader::AddAbortableRequest(const char* sName)
+{
+	ParaEngine::Lock lock_(m_abortableRequestsMutex);
+	m_abortableRequests[sName] = 0.f;
+}
+
+void ParaEngine::CAsyncLoader::AbortRequest(const char* sName)
+{
+	ParaEngine::Lock lock_(m_abortableRequestsMutex);
+
+	auto it = m_abortableRequests.find(sName);
+	if (it != m_abortableRequests.end())
+	{
+		it->second = 1.f;
+	}
+}
+
+void ParaEngine::CAsyncLoader::RemoveAbortableRequest(const char* sName)
+{
+	ParaEngine::Lock lock_(m_abortableRequestsMutex);
+	m_abortableRequests.erase(sName);
+}
+
+bool ParaEngine::CAsyncLoader::IsRequestAborted(const char* sName)
+{
+	ParaEngine::Lock lock_(m_abortableRequestsMutex);
+	auto it = m_abortableRequests.find(sName);
+	if (it != m_abortableRequests.end())
+	{
+		return it->second == 1.f;
+	}
+	return false;
+}
+
 int ParaEngine::CAsyncLoader::InstallFields(CAttributeClass* pClass, bool bOverride)
 {
 	IAttributeFields::InstallFields(pClass, bOverride);
@@ -997,7 +1037,7 @@ int ParaEngine::CAsyncLoader::InstallFields(CAttributeClass* pClass, bool bOverr
 	pClass->AddField("LogLevel", FieldType_Int, (void*)SetLogLevel_s, (void*)GetLogLevel_s, NULL, "", bOverride);
 	pClass->AddField("log", FieldType_String, (void*)log_s, (void*)0, NULL, "", bOverride);
 	pClass->AddField("WaitForAllItems", FieldType_void, (void*)WaitForAllItems_s, (void*)0, NULL, "", bOverride);
-	return S_OK;
+	pClass->AddField("AbortRequest", FieldType_String, (void*)AbortRequest_s, (void*)0, NULL, "", bOverride);
 	return 0;
 }
 
