@@ -164,14 +164,14 @@ namespace ParaEngine
 	class AbortController : public std::enable_shared_from_this<AbortController> {
 	public:
 		AbortController() : m_aborted(false) {}
+		AbortController(const char* name);
+		~AbortController();
 
 		void abort() {
 			m_aborted.store(true);
 		}
 
-		bool isAborted() const {
-			return m_aborted.load();
-		}
+		bool isAborted() const;
 
 		std::shared_ptr<AbortController> getPtr() {
 			return shared_from_this();
@@ -179,6 +179,8 @@ namespace ParaEngine
 
 	private:
 		std::atomic<bool> m_aborted;
+		// this is used by scripting interface to terminate the request
+		std::string m_sRequestName;
 	};
 
 	/**

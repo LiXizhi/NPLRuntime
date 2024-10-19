@@ -534,6 +534,8 @@ namespace ParaScripting
 		const char* url = NULL;
 		bool needResume = false;
 		bool needDataStreaming = false;
+		std::string signalVariable;
+
 		if (type(urlParams) == LUA_TTABLE)
 		{
 			url = object_cast<const char*>(urlParams["url"]);
@@ -542,6 +544,9 @@ namespace ParaScripting
 			}
 			if (urlParams["dataStreaming"]) {
 				needDataStreaming = object_cast<bool>(urlParams["dataStreaming"]);
+			}
+			if (urlParams["signalVariable"]) {
+				signalVariable = object_cast<const char*>(urlParams["signalVariable"]);
 			}
 		}
 		else if (type(urlParams) == LUA_TSTRING)
@@ -561,6 +566,7 @@ namespace ParaScripting
 		pProcessor->SetScriptCallback(callbackScript);
 		pProcessor->SetSaveToFile(destFolder);
 
+		//pProcessor->SetNeedResumeDownload(needResume);
 		pProcessor->SetEnableDataStreaming(needDataStreaming);
 
 		// add headers
@@ -609,6 +615,12 @@ namespace ParaScripting
 			}
 		}
 
+		if (!signalVariable.empty() && pProcessor)
+		{
+			auto signal = std::make_shared<AbortController>(signalVariable.c_str());
+			pProcessor->SetAbortController(signal);
+		}
+
 		if (pAsyncLoader->AddWorkItem(pLoader, pProcessor, NULL, NULL, ResourceRequestID_Asset) != S_OK)
 		{
 			string sTmp = string("NPL.AsyncDownload Failed:") + string(url) + "\n";
@@ -652,11 +664,16 @@ namespace ParaScripting
 		bool bSyncMode = sPoolName && strcmp(sPoolName, "self") == 0;
 		bool needDataStreaming = false;
 		const char* url = NULL;
+		std::string signalVariable;
+
 		if (type(urlParams) == LUA_TTABLE)
 		{
 			url = object_cast<const char*>(urlParams["url"]);
 			if (urlParams["dataStreaming"]) {
 				needDataStreaming = object_cast<bool>(urlParams["dataStreaming"]);
+			}
+			if (urlParams["signalVariable"]) {
+				signalVariable = object_cast<const char*>(urlParams["signalVariable"]);
 			}
 		}
 		else if (type(urlParams) == LUA_TSTRING)
@@ -904,6 +921,11 @@ namespace ParaScripting
 		pLoader->SetUrl(urlBuilder.ToString().c_str());
 		pProcessor->SetUrl(urlBuilder.ToString().c_str());
 		pProcessor->SetScriptCallback(sCallback);
+		if (!signalVariable.empty())
+		{
+			auto signal = std::make_shared<AbortController>(signalVariable.c_str());
+			pProcessor->SetAbortController(signal);
+		}
 
 		if (bSyncMode)
 		{
