@@ -252,8 +252,14 @@ static emscripten::val JSFetch(ParaEngine::CUrlProcessor* self, std::function<vo
         emscripten::val response_body_value = co_await response_body();
         if (response_body_value["done"].as<bool>()) break;
         self->m_fetch_response_data = response_body_value["value"].as<std::string>();
-		self->write_data_callback(self->m_fetch_response_data.data(), self->m_fetch_response_data.size(), 1);
-        std::cout << "body: " << self->m_fetch_response_data << std::endl;
+		int nSize = self->m_fetch_response_data.size();
+		auto nDataRead = self->write_data_callback(self->m_fetch_response_data.data(), nSize, 1);
+		if (nDataRead < nSize) {
+			// stop streaming,abort connection
+			// TODO: one needs to options.set(emscripten::val("signal"), ... ) and abort the fetch here
+			break;
+		}
+        // std::cout << "body: " << self->m_fetch_response_data << std::endl;
     }
 	
 	self->m_fetch_response_data = "";
