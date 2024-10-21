@@ -257,7 +257,6 @@ static emscripten::val JSFetch(ParaEngine::CUrlProcessor* self, std::function<vo
 			response["abort"]();
 			break;
 		}
-        // std::cout << "body: " << self->m_fetch_response_data << std::endl;
     }
 	
 	self->m_fetch_response_data = "";
