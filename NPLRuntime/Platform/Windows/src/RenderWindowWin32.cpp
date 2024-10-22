@@ -120,12 +120,11 @@ namespace ParaEngine {
 			s_keymap[VK_LCONTROL] = EVirtualKey::KEY_LCONTROL;
 			s_keymap[VK_RSHIFT] = EVirtualKey::KEY_RSHIFT;
 			s_keymap[VK_RCONTROL] = EVirtualKey::KEY_RCONTROL;
-			s_keymap[VK_LMENU] = EVirtualKey::KEY_LMENU;
-			s_keymap[VK_RMENU] = EVirtualKey::KEY_RMENU;
-
 			s_keymap[VK_SHIFT] = EVirtualKey::KEY_SHIFT;
 			s_keymap[VK_CONTROL] = EVirtualKey::KEY_CONTROL;
-			s_keymap[VK_MENU] = EVirtualKey::KEY_ALT;
+			s_keymap[VK_MENU] = EVirtualKey::KEY_LMENU;
+			// s_keymap[VK_MENU] = EVirtualKey::KEY_RMENU;
+			// s_keymap[VK_MENU] = EVirtualKey::KEY_ALT;
 		}
 	}
 

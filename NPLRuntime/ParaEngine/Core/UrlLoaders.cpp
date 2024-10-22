@@ -1,4 +1,4 @@
-//-----------------------------------------------------------------------------
+﻿//-----------------------------------------------------------------------------
 // Class:	Url loaders
 // Authors:	LiXizhi
 // Emails:	LiXizhi@yeah.net
@@ -255,11 +255,9 @@ static emscripten::val JSFetch(ParaEngine::CUrlProcessor* self, std::function<vo
 		int nSize = self->m_fetch_response_data.size();
 		auto nDataRead = self->write_data_callback(self->m_fetch_response_data.data(), nSize, 1);
 		if (nDataRead < nSize) {
-			// stop streaming,abort connection
-			// TODO: one needs to options.set(emscripten::val("signal"), ... ) and abort the fetch here
+			response["abort"]();
 			break;
 		}
-        // std::cout << "body: " << self->m_fetch_response_data << std::endl;
     }
 	
 	self->m_fetch_response_data = "";

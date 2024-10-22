@@ -82,7 +82,7 @@ if (EMSCRIPTEN)
 
 	# 指定HTML根目录 也是输出目录
 	if (NOT HTML_ROOT)
-		set(HTML_ROOT /mnt/d/workspace/npl/webparacraft/)
+		set(HTML_ROOT /mnt/d/workspace/npl/webparacraft/auto_generate_files/)
 	endif()
 
 	# 拷贝js到html根目录
@@ -97,30 +97,31 @@ if (EMSCRIPTEN)
 			download_main150727_pkg ALL
 			COMMAND curl http://10.28.18.3/main_dev.pkg -o main150727.pkg
 			COMMENT "下载  main150727.pkg"
-			OUTPUT_DIRECTORY ${APP_ROOT}
-			WORKING_DIRECTORY ${APP_ROOT}
+			OUTPUT_DIRECTORY ${APP_ROOT}_script
+			WORKING_DIRECTORY ${APP_ROOT}_script
 		)
 
 		add_custom_target(
 			download_assets_manifest_txt ALL
 			COMMAND curl http://10.28.18.3/assets_manifest.txt._P_E_0 -o assets_manifest.txt
 			COMMENT "下载 assets_manifest.txt"
-			OUTPUT_DIRECTORY ${APP_ROOT}
-			WORKING_DIRECTORY ${APP_ROOT}
+			OUTPUT_DIRECTORY ${APP_ROOT}_script
+			WORKING_DIRECTORY ${APP_ROOT}_script
 		)
 
 		add_custom_target(
 			download_ParacraftBuildinMod_zip ALL
 			COMMAND curl http://10.28.18.3/ParacraftBuildinMod.zip -o npl_packages/ParacraftBuildinMod.zip
 			COMMENT "下载  ParacraftBuildinMod.zip"
-			OUTPUT_DIRECTORY ${APP_ROOT}
-			WORKING_DIRECTORY ${APP_ROOT}
+			OUTPUT_DIRECTORY ${APP_ROOT}_script
+			WORKING_DIRECTORY ${APP_ROOT}_script
 		)
 	endif()
 	
 	# 拷贝文件系统到根目录
 	add_custom_target(
-		paracraft_asset ALL
+		paracraft_asset
+		# paracraft_asset ALL
 		COMMAND $ENV{EMSDK}/upstream/emscripten/tools/file_packager paracraft_asset.data --preload "${APP_ROOT}@/" --js-output=paracraft_asset.js
 		# COMMAND $ENV{EMSDK}/upstream/emscripten/tools/file_packager paracraft_asset.data --embed "${APP_ROOT}@/" --js-output=paracraft_asset.js
 		COMMENT "打包资源文件"
@@ -128,14 +129,15 @@ if (EMSCRIPTEN)
 		WORKING_DIRECTORY ${HTML_ROOT}
 	)
 
-	# # script
-	# add_custom_target(
-	# 	paracraft_script
-	# 	COMMAND $ENV{EMSDK}/upstream/emscripten/tools/file_packager paracraft_script.data --preload "/mnt/d/workspace/npl/paracraft_script/Mod@/Mod" --js-output=paracraft_script.js
-	# 	COMMENT "打包资源文件"
-	# 	OUTPUT_DIRECTORY ${HTML_ROOT}
-	# 	WORKING_DIRECTORY ${HTML_ROOT}
-	# )
+	# script
+	add_custom_target(
+		# paracraft_asset_script
+		paracraft_asset_script ALL
+		COMMAND $ENV{EMSDK}/upstream/emscripten/tools/file_packager paracraft_asset_script.data --preload "${APP_ROOT}_script@/" --js-output=paracraft_asset_script.js
+		COMMENT "打包脚本资源文件"
+		OUTPUT_DIRECTORY ${HTML_ROOT}
+		WORKING_DIRECTORY ${HTML_ROOT}
+	)
 
 	# 拷贝缓存文件系统到根目录
 	add_custom_target(
