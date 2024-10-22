@@ -82,7 +82,7 @@ if (EMSCRIPTEN)
 
 	# 指定HTML根目录 也是输出目录
 	if (NOT HTML_ROOT)
-		set(HTML_ROOT /mnt/d/workspace/npl/webparacraft/)
+		set(HTML_ROOT /mnt/d/workspace/npl/webparacraft/auto_generate_files/)
 	endif()
 
 	# 拷贝js到html根目录
