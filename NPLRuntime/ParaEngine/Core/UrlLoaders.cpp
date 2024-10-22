@@ -1,4 +1,4 @@
-//-----------------------------------------------------------------------------
+﻿//-----------------------------------------------------------------------------
 // Class:	Url loaders
 // Authors:	LiXizhi
 // Emails:	LiXizhi@yeah.net
@@ -252,8 +252,9 @@ static emscripten::val JSFetch(ParaEngine::CUrlProcessor* self, std::function<vo
         emscripten::val response_body_value = co_await response_body();
         if (response_body_value["done"].as<bool>()) break;
         self->m_fetch_response_data = response_body_value["value"].as<std::string>();
-		self->write_data_callback(self->m_fetch_response_data.data(), self->m_fetch_response_data.size(), 1);
-		if (self->IsAborted()) {
+		int nSize = self->m_fetch_response_data.size();
+		auto nDataRead = self->write_data_callback(self->m_fetch_response_data.data(), nSize, 1);
+		if (nDataRead < nSize) {
 			response["abort"]();
 			break;
 		}
