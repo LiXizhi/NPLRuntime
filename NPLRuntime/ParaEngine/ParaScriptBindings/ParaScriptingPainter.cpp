@@ -549,3 +549,313 @@ extern "C" {
 		ParaScripting::ParaPainter::SetPenInt(color);
 	}
 };
+
+void ParaScripting::ParaPainter::FlushCmdList(const std::string &cmds)
+{
+	if (m_pPainter == nullptr) return;
+	auto decode_cmd_arg = [](std::string& str) -> std::string
+	{
+		std::ostringstream decoded;
+        auto str_size = str.length();
+        for (size_t i = 0; i < str_size; ++i)
+        {
+            if (str[i] == '%')
+            {
+                if ((i + 2) >= str_size)
+                {
+					std::cerr << "Invalid percent encoding: " << str << std::endl;
+					return "";
+                }
+                std::string hexStr = str.substr(i + 1, 2);
+                char decodedChar   = static_cast<char>(std::stoi(hexStr, nullptr, 16));
+                decoded << decodedChar;
+                i += 2; 
+            }
+            else
+            {
+                decoded << str[i];
+            }
+        }
+        return decoded.str();
+	};
+	auto load_matrix = [](std::istringstream &iss) -> Matrix4
+	{
+		float value;
+		std::vector<float> values;
+		while (iss.good()) {
+			iss >> value;
+			values.push_back(value);
+		}
+		if (values.size() == 16) {
+			return Matrix4(values[0], values[1], values[2], values[3],
+				values[4], values[5], values[6], values[7],
+				values[8], values[9], values[10], values[11],
+				values[12], values[13], values[14], values[15]);
+		}
+		else if (values.size() == 12) {
+			return Matrix4(
+					values[0], values[1], values[2], 0,
+					values[3], values[4], values[5], 0,
+					values[6], values[7], values[8], 0,
+					values[9], values[10], values[11], 1.f);
+		}
+		else {
+			return Matrix4::IDENTITY;
+		}
+	};
+	std::istringstream iss(cmds);
+	std::string cmd_line;
+	std::string cmd_name;
+	while (iss.good() && std::getline(iss, cmd_line))
+	{
+		std::istringstream cmd_iss(cmd_line);
+		cmd_iss >> cmd_name;
+		if (cmd_name == "Translate") {
+			float dx = 0, dy = 0;
+			cmd_iss >> dx >> dy;
+			m_pPainter->translate(dx, dy);
+		}
+		else if (cmd_name == "Scale") {
+			float sx = 0, sy = 0;
+			cmd_iss >> sx >> sy;
+			m_pPainter->scale(sx, sy);
+		}
+		else if (cmd_name == "Rotate") {
+			float angle = 0;
+			cmd_iss >> angle;
+			m_pPainter->rotate(angle);
+		}
+		else if (cmd_name == "Shear") {
+			float sh = 0, sv = 0;
+			cmd_iss >> sh >> sv;
+			m_pPainter->shear(sh, sv);
+		}
+		else if (cmd_name == "Flush") {
+			m_pPainter->Flush();
+		}
+		else if (cmd_name == "Save") {
+			m_pPainter->save();
+		}
+		else if (cmd_name == "Restore") {
+			m_pPainter->restore();
+		}
+		else if (cmd_name == "SetCompositionMode") {
+			int mode = 0;
+			cmd_iss >> mode;
+			m_pPainter->setCompositionMode((CPainter::CompositionMode)mode);
+		}
+		else if (cmd_name == "SetFont") {
+			std::string temp;
+			string fontname, fontsize, isbold;
+			std::getline(cmd_iss, temp);
+			int size = 11;
+			bool bold = true;
+			ParaEngine::StringHelper::DevideString(temp, fontname, fontsize);
+			temp = fontsize;
+			ParaEngine::StringHelper::DevideString(temp, fontsize, isbold);
+			if (sscanf(fontsize.c_str(), "%d", &size) != 1)
+				size = 11;
+			bold = (isbold.find("bold") != string::npos);
+			QFont font_(fontname, size, bold ? QFont::Bold : QFont::Normal);
+			m_pPainter->setFont(font_);
+		}
+		else if (cmd_name == "SetPen") {
+			std::string color, width, texture;
+			cmd_iss >> color >> width >> texture;
+			color = decode_cmd_arg(color);
+			if (color.find("#") != std::string::npos || color.find(" ") != std::string::npos) {
+				m_pPainter->setPen(Color::FromString(color.c_str()));
+			} else {
+				m_pPainter->setPen(std::strtol(color.c_str(), nullptr, 10));
+			}
+			if (!width.empty() && width != "0") {
+				QPen pen = m_pPainter->pen();
+				pen.setWidthF(std::strtof(width.c_str(), nullptr));
+				m_pPainter->setPen(pen);
+			} 
+		}
+		else if (cmd_name == "SetBrush") {
+			std::string color, texture;
+			cmd_iss >> color >> texture;
+			color = decode_cmd_arg(color);
+
+			auto sColor = Color::FromString(color.c_str());
+			if (texture.empty()) {
+				m_pPainter->setPen(sColor);
+			} else {
+				texture = decode_cmd_arg(texture);
+				TextureEntity* pTexture = CGlobals::GetAssetManager()->LoadTexture("", texture);
+				if (pTexture != nullptr && (DWORD)sColor != 0) {
+					QBrush brush(sColor, pTexture);
+					m_pPainter->setBrush(brush);
+				}
+			}
+		}
+		else if (cmd_name == "SetBrushOrigin") {
+			int x = 0, y = 0;
+			cmd_iss >> x >> y;
+			m_pPainter->setBrushOrigin(x, y);
+		}
+		else if (cmd_name == "SetBackground") {
+			std::string color, texture;
+			cmd_iss >> color >> texture;
+			color = decode_cmd_arg(color);
+
+			auto sColor = Color::FromString(color.c_str());
+			if (texture.empty()) {
+				m_pPainter->setPen(sColor);
+			} else {
+				texture = decode_cmd_arg(texture);
+				TextureEntity* pTexture = CGlobals::GetAssetManager()->LoadTexture("", texture);
+				if (pTexture != nullptr && (DWORD)sColor != 0) {
+					QBrush brush(sColor, pTexture);
+					m_pPainter->setBrush(brush);
+				}
+			}
+		}
+		else if (cmd_name == "SetOpacity") {
+			float opacity = 0;
+			cmd_iss >> opacity;
+			m_pPainter->setOpacity(opacity);
+		}
+		else if (cmd_name == "SetClipRegion") {
+			int x = 0, y = 0, w = 0, h = 0;
+			cmd_iss >> x >> y >> w >> h;
+			m_pPainter->setClipRegion(QRect(x, y, w, h));
+		}
+		else if (cmd_name == "SetClipping") {
+			bool enable;
+			cmd_iss >> enable;
+			m_pPainter->setClipping(enable);
+		}
+		else if (cmd_name == "DrawPoint") {
+			float x = 0, y = 0;
+			cmd_iss >> x >> y;
+			m_pPainter->drawPoint(QPointF(x, y));
+		}
+		else if (cmd_name == "DrawLine") {
+			float x1 = 0, y1 = 0, x2 = 0, y2 = 0;
+			cmd_iss >> x1 >> y1 >> x2 >> y2;
+			m_pPainter->drawLine(QLineF(x1, y1, x2, y2));
+		}
+		else if (cmd_name == "DrawTriangleList") {
+			int nTriangleCount = 0, nIndexOffset = 0;
+			float x = 0, y = 0, z = 0;
+			cmd_iss >> nTriangleCount >> nIndexOffset;
+			static std::vector<Vector3> triangles;
+			int nVerticesCount = nTriangleCount * 3;
+			triangles.resize(nVerticesCount);
+			for (int i = 0; i < nIndexOffset; ++i) {
+				cmd_iss >> x >> y >> z;
+			}
+			for (int i = 0; i < nVerticesCount; ++i) {
+				cmd_iss >> x >> y >> z;
+				triangles[i] = Vector3(x, y, z);
+			}
+			m_pPainter->drawTriangles(&(triangles[0]), nTriangleCount);
+			triangles.clear();
+		}
+		else if (cmd_name == "DrawLineList") {
+			int nLineCount = 0, nIndexOffset = 0;
+			float x = 0, y = 0, z = 0;
+			cmd_iss >> nLineCount >> nIndexOffset;
+			static std::vector<Vector3> vertices;
+			int nVerticesCount = nLineCount * 2;
+			vertices.resize(nVerticesCount);
+			for (int i = 0; i < nIndexOffset; ++i) {
+				cmd_iss >> x >> y >> z;
+			}
+			for (int i = 0; i < nVerticesCount; ++i) {
+				cmd_iss >> x >> y >> z;
+				vertices[i] = Vector3(x, y, z);
+			}
+			m_pPainter->drawLines(&(vertices[0]), nLineCount);
+			vertices.clear();
+		}
+		else if (cmd_name == "DrawRect") {
+			float x = 0, y = 0, w = 0, h = 0;
+			cmd_iss >> x >> y >> w >> h;
+			m_pPainter->drawRect(QRectF(x, y, w, h));
+		}
+		else if (cmd_name == "DrawTexture") {
+			int x = 0, y = 0, w = 0, h = 0;
+			int sx = 0, sy = 0, sw = 0, sh = 0;
+			std::string texture;
+			cmd_iss >> x >> y >> w >> h >> texture >> sx >> sy >> sw >> sh;
+			texture = decode_cmd_arg(texture);
+			if (sx == 0 && sy == 0 && sw == 0 && sh == 0) {
+				TextureParams texParams(texture.c_str());
+				texParams.drawTexture(m_pPainter, x, y, w, h);
+			} else {
+				TextureEntity* pTexture = CGlobals::GetAssetManager()->LoadTexture("", texture);
+				m_pPainter->drawTexture(x, y, w, h, pTexture, sx, sy, sw, sh);
+			}
+		}
+		else if (cmd_name == "DrawText") {
+			float x = 0, y = 0, w = 0, h = 0;
+			int text_option = 0;
+			std::string text;
+			cmd_iss >> x >> y >> w >> h >> text >> text_option;
+			text = decode_cmd_arg(text);
+			if (h < 0) {
+				m_pPainter->drawText(QPointF(x, y), text);
+			} else {
+				m_pPainter->drawText(QRectF(x, y, w, h), text, QTextOption(text_option));
+			}
+		}
+		else if (cmd_name == "SetUseWorldMatrix") {
+			bool enable = false;
+			cmd_iss >> enable;
+			m_pPainter->SetSpriteUseWorldMatrix(enable);
+		}
+		else if (cmd_name == "SetMatrixMode") {
+			int mode = 0;
+			cmd_iss >> mode;
+			m_pPainter->SetMatrixMode(mode);
+		}
+		else if (cmd_name == "PushMatrix") {
+			m_pPainter->PushMatrix();
+		}
+		else if (cmd_name == "PopMatrix") {
+			m_pPainter->PopMatrix();
+		}
+		else if (cmd_name == "LoadCurrentMatrix") {
+			m_pPainter->LoadCurrentMatrix();
+		}
+		else if (cmd_name == "LoadIdentityMatrix") {
+			m_pPainter->LoadIdentityMatrix();
+		}
+		else if (cmd_name == "LoadBillboardMatrix") {
+			m_pPainter->LoadBillboardMatrix();
+		}
+		else if (cmd_name == "LoadMatrix") {
+			m_pPainter->LoadMatrix(load_matrix(cmd_iss));
+		}
+		else if (cmd_name == "MultiplyMatrix") {
+			m_pPainter->MultiplyMatrix(load_matrix(cmd_iss));
+		}
+		else if (cmd_name == "TranslateMatrix") {
+			float x = 0, y = 0, z = 0;
+			cmd_iss >> x >> y >> z;
+			m_pPainter->TranslateMatrix(x, y, z);
+		}
+		else if (cmd_name == "RotateMatrix") {
+			float angle = 0, x = 0, y = 0, z = 0;
+			cmd_iss >> angle >> x >> y >> z;
+			m_pPainter->RotateMatrix(angle, x, y, z);
+		}
+		else if (cmd_name == "ScaleMatrix") {
+			float x = 1, y = 1, z = 1;
+			cmd_iss >> x >> y >> z;
+			m_pPainter->ScaleMatrix(x, y, z);
+		}
+		else if (cmd_name == "AutoLineWidth") {
+			bool enable = false;
+			cmd_iss >> enable;
+			m_pPainter->EnableAutoLineWidth(enable);
+		}
+		else {
+			std::cerr << "unknown command: " << cmd_name << std::endl;
+		}
+	}
+}

@@ -226,6 +226,7 @@ void CNPLScriptingState::LoadHAPI_UI()
 						def("DrawText", &ParaPainter::DrawText),
 						def("DrawText", &ParaPainter::DrawText2),
 						def("DrawSceneObject", &ParaPainter::DrawSceneObject),
+						def("FlushCmdList", &ParaPainter::FlushCmdList),
 						def("End", &ParaPainter::End)
 				]
 		];

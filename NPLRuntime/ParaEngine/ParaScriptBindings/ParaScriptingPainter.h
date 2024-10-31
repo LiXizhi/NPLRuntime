@@ -124,6 +124,7 @@ namespace ParaScripting
 		*/
 		static void DrawSceneObject(ParaObject& obj, int nOption);
 
+		static void FlushCmdList(const std::string &cmds);
 	public:
 		// do not call from scripting interface
 		static CPainter* GetPainter() { return m_pPainter; }
