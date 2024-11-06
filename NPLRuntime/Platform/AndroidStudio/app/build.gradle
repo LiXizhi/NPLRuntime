@@ -231,6 +231,7 @@ android {
             resValue "string", "app_name", "帕帕奇遇记"
             resValue "drawable", "app_icon", "@drawable/icon_papa"
             resValue "drawable", "app_splash", "@drawable/splash_papa"
+            resValue "string", "app_scheme","papa"
             dimension "company"
         }
 
@@ -341,6 +342,115 @@ android {
             resValue "drawable", "app_icon", "@drawable/icon_papa"
             resValue "drawable", "app_splash", "@drawable/splash_papa"
             resValue "string", "app_scheme","papa"
+            dimension "company"
+        }
+
+        /* 431智慧教育版 */
+        eduPalaka {
+            applicationId "cn.palaka.edu"
+            manifestPlaceholders = [CHANNEL_VALUE: "palaka"]
+            resValue "string", "app_name", "智慧教育云平台"
+            resValue "drawable", "app_icon", "@drawable/icon_edu"
+            resValue "drawable", "app_splash", "@drawable/splash_edu"
+            resValue "string", "app_scheme","palakaedu"
+            dimension "company"
+        }
+
+        eduTatfook {
+            applicationId "cn.palaka.edu"
+            manifestPlaceholders = [CHANNEL_VALUE: "tatfook"]
+            resValue "string", "app_name", "智慧教育云平台"
+            resValue "drawable", "app_icon", "@drawable/icon_edu"
+            resValue "drawable", "app_splash", "@drawable/splash_edu"
+            resValue "string", "app_scheme","palakaedu"
+            dimension "company"
+        }
+
+        //应用宝
+        eduYingyongbao {
+            applicationId "cn.palaka.edu"
+            manifestPlaceholders = [CHANNEL_VALUE: "yingyongbao"]
+            resValue "string", "app_name", "智慧教育云平台"
+            resValue "drawable", "app_icon", "@drawable/icon_edu"
+            resValue "drawable", "app_splash", "@drawable/splash_edu"
+            resValue "string", "app_scheme","palakaedu"
+            dimension "company"
+        }
+
+        //小米
+        eduXiaomi {
+            applicationId "cn.palaka.edu"
+            manifestPlaceholders = [CHANNEL_VALUE: "xiaomi"]
+            resValue "string", "app_name", "智慧教育云平台"
+            resValue "drawable", "app_icon", "@drawable/icon_edu"
+            resValue "drawable", "app_splash", "@drawable/splash_edu"
+            resValue "string", "app_scheme","palakaedu"
+            dimension "company"
+        }
+
+        //华为
+        eduHuawei {
+            applicationId "cn.palaka.edu"
+            manifestPlaceholders = [CHANNEL_VALUE: "huawei"]
+            resValue "string", "app_name", "智慧教育云平台"
+            resValue "drawable", "app_icon", "@drawable/icon_edu"
+            resValue "drawable", "app_splash", "@drawable/splash_edu"
+            resValue "string", "app_scheme","palakaedu"
+            dimension "company"
+        }
+
+        //OPPO
+        eduOppo {
+            applicationId "cn.palaka.edu"
+            manifestPlaceholders = [CHANNEL_VALUE: "oppo"]
+            resValue "string", "app_name", "智慧教育云平台"
+            resValue "drawable", "app_icon", "@drawable/icon_edu"
+            resValue "drawable", "app_splash", "@drawable/splash_edu"
+            resValue "string", "app_scheme","palakaedu"
+            dimension "company"
+        }
+
+        //vivo
+        eduVivo {
+            applicationId "cn.palaka.edu"
+            manifestPlaceholders = [CHANNEL_VALUE: "vivo"]
+            resValue "string", "app_name", "智慧教育云平台"
+            resValue "drawable", "app_icon", "@drawable/icon_edu"
+            resValue "drawable", "app_splash", "@drawable/splash_edu"
+            resValue "string", "app_scheme","palakaedu"
+            dimension "company"
+        }
+
+        //360
+        eduQihu360 {
+            applicationId "cn.palaka.edu"
+            manifestPlaceholders = [CHANNEL_VALUE: "qihu360"]
+            resValue "string", "app_name", "智慧教育云平台"
+            resValue "drawable", "app_icon", "@drawable/icon_edu"
+            resValue "drawable", "app_splash", "@drawable/splash_edu"
+            resValue "string", "app_scheme","palakaedu"
+            dimension "company"
+        }
+
+        //百度
+        eduBaidu {
+            applicationId "cn.palaka.edu"
+            manifestPlaceholders = [CHANNEL_VALUE: "baidu"]
+            resValue "string", "app_name", "智慧教育云平台"
+            resValue "drawable", "app_icon", "@drawable/icon_edu"
+            resValue "drawable", "app_splash", "@drawable/splash_edu"
+            resValue "string", "app_scheme","palakaedu"
+            dimension "company"
+        }
+
+        //荣耀
+        eduHonor {
+            applicationId "cn.palaka.edu"
+            manifestPlaceholders = [CHANNEL_VALUE: "honor"]
+            resValue "string", "app_name", "智慧教育云平台"
+            resValue "drawable", "app_icon", "@drawable/icon_edu"
+            resValue "drawable", "app_splash", "@drawable/splash_edu"
+            resValue "string", "app_scheme","palakaedu"
             dimension "company"
         }
 
