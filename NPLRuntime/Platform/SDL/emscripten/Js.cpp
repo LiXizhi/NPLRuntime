@@ -90,6 +90,22 @@ namespace JS
         return js_language;
     }
 
+    int IsWpsOfficeApp()
+    {
+        // clang-format off
+        int is_wps_office_app = EM_ASM_INT({
+            if (/WpsOfficeApp/i.test(navigator.userAgent))
+            {
+                return 1;
+            }
+            else
+            {
+                return 0;
+            }
+        });
+        // clang-format oon
+        return is_wps_office_app;
+    }
     int IsTouchDevice()
     {
         // clang-format off
@@ -132,6 +148,16 @@ namespace JS
         stringToUTF8(os, stringOnWasmHeap, lengthBytes);
         return stringOnWasmHeap;
     });
+
+    EM_JS(void, SetKeyCodeName_JS, (int key_code, const char* name), {
+        window.paracraft_keycode_name_map = window.paracraft_keycode_name_map || {};
+        window.paracraft_keycode_name_map[key_code] = UTF8ToString(name);
+    });
+
+    void SetKeyCodeName(int key_code, const std::string name)
+    {
+        SetKeyCodeName_JS(key_code, name.c_str());
+    }
 
     std::string GetOperatingSystem()
     {
