@@ -130,6 +130,14 @@ namespace ParaEngine
 			s_keymap[SDLK_EQUALS] = EVirtualKey::KEY_EQUALS;
 			s_keymap[SDLK_KP_EQUALS] = EVirtualKey::KEY_NUMPADEQUALS;
 			s_keymap[SDLK_QUOTE] = EVirtualKey::KEY_APOSTROPHE;
+
+			// SDL_GetKeyName
+			// SDL_GetKeyFromName
+			for (auto it = s_keymap.begin(); it != s_keymap.end(); it++) {
+				auto key = it->first;
+				JS::SetKeyCodeName(int(it->second), SDL_GetKeyName(key));
+			}
+			std::cout << "===============SetKeyCodeName Done=======================" << std::endl;
 		}
 	}
 
@@ -230,6 +238,7 @@ namespace ParaEngine
 		: m_sdl2_window(nullptr), m_gl_context(nullptr), m_mouse_x(0), m_mouse_y(0), m_IsQuit(false), m_bLostFocus(false)
 	{
 		InitInput();
+		InitVirtualKeyMap();
 		m_paused = false;
 		m_isNumLockEnabled = 2;
 
@@ -333,6 +342,7 @@ namespace ParaEngine
 	void RenderWindowSDL2::PollEvents()
 	{
 		SDL_Event sdl_event;
+		static bool is_wps_office_app = JS::IsWpsOfficeApp() == 1;
 		while (SDL_PollEvent(&sdl_event))
 		{
 			if (sdl_event.type == SDL_QUIT)
@@ -431,7 +441,7 @@ namespace ParaEngine
 			{
 				OnMouseWheel(m_mouse_x, m_mouse_y, sdl_event.wheel.preciseY * 120);
 			}
-			else if (sdl_event.type == SDL_KEYDOWN)
+			else if (sdl_event.type == SDL_KEYDOWN && !is_wps_office_app)
 			{
 				EKeyState state = EKeyState::PRESS;
 				DWORD msgKey = (DWORD)sdl_event.key.keysym.sym;
@@ -456,7 +466,7 @@ namespace ParaEngine
 					if (c >= 0) OnChar(c);
 				}
 			}
-			else if (sdl_event.type == SDL_KEYUP)
+			else if (sdl_event.type == SDL_KEYUP && !is_wps_office_app)
 			{
 #ifdef EMSCRIPTEN
 				if (sdl_event.key.keysym.sym == SDLK_NUMLOCKCLEAR || m_isNumLockEnabled == 2)

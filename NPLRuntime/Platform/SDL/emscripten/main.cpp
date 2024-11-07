@@ -46,8 +46,9 @@ public:
         m_inited = false;
         m_fs_inited = false;
         m_paused = false;
+        SetWpsOfficeApp(JS::IsWpsOfficeApp() == 1);
     }
-
+	
     virtual void RunLoopOnce()
     {
         auto pWindow = (RenderWindowDelegate*)m_pRenderWindow;
@@ -83,12 +84,12 @@ public:
 
     virtual void OnKeyDown(int keycode)
     {
-        m_renderWindow.OnKey(m_renderWindow.SDL2VirtualKeyToParaVK(keycode), EKeyState::PRESS);
+        m_renderWindow.OnKey((EVirtualKey)(keycode), EKeyState::PRESS);
     }
 
     virtual void OnKeyUp(int keycode)
     {
-        m_renderWindow.OnKey(m_renderWindow.SDL2VirtualKeyToParaVK(keycode), EKeyState::RELEASE);
+        m_renderWindow.OnKey((EVirtualKey)(keycode), EKeyState::RELEASE);
     }
     void SetPaused(bool paused)
     {

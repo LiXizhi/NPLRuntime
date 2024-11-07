@@ -177,6 +177,7 @@ namespace ParaEngine
 		SDL_SetHint(SDL_HINT_TOUCH_MOUSE_EVENTS, "0");
 		
 		m_exit = false;
+		m_is_wps_office_app = false;
 	}
 
 	CSDL2Application::~CSDL2Application()

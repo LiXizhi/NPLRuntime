@@ -98,8 +98,12 @@ namespace ParaEngine
 		virtual void SetLandscapeMode(std::string landscapeMode);
 		virtual std::string GetLandscapeMode();
 		virtual bool IsRotateScreen();
-
 		bool IsInputing();
+
+	public:
+		inline bool IsWpsOfficeApp() { return m_is_wps_office_app; }
+		inline void SetWpsOfficeApp(bool is_wps_office_app) { m_is_wps_office_app = is_wps_office_app; }
+		
 	protected:
 		void LoadAndApplySettings();
 		bool UpdateScreenDevice();
@@ -114,5 +118,6 @@ namespace ParaEngine
 		RenderWindowDelegate m_renderWindow;
 		bool m_exit;
 		std::string m_title;
+    	bool m_is_wps_office_app;
 	};
 }
