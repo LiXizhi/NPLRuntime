@@ -78,6 +78,9 @@ else()
     set(product_name "Paracraft")
 endif()
 
+set(CMAKE_C_FLAGS_RELEASE "-O0" CACHE STRING "Release build optimization level" FORCE)
+set(CMAKE_CXX_FLAGS_RELEASE "-O0" CACHE STRING "Release build optimization level" FORCE)
+
 set_target_properties(Paracraft PROPERTIES 
     MACOSX_BUNDLE TRUE
     MACOSX_BUNDLE_INFO_PLIST ${INFO_FILE}
@@ -94,6 +97,7 @@ set_target_properties(Paracraft PROPERTIES
     INSTALL_RPATH "@executable_path/../Frameworks/"
     XCODE_ATTRIBUTE_CODE_SIGN_ENTITLEMENTS ${entitlements}
     BUILD_WITH_INSTALL_RPATH TRUE
+    XCODE_ATTRIBUTE_ARCHS "arm64;x86_64"
 )
 
 target_include_directories(Paracraft PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
