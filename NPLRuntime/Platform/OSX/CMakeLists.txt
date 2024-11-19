@@ -97,7 +97,7 @@ set_target_properties(Paracraft PROPERTIES
     INSTALL_RPATH "@executable_path/../Frameworks/"
     XCODE_ATTRIBUTE_CODE_SIGN_ENTITLEMENTS ${entitlements}
     BUILD_WITH_INSTALL_RPATH TRUE
-    XCODE_ATTRIBUTE_ARCHS "arm64;x86_64"
+    XCODE_ATTRIBUTE_ARCHS "arm64 x86_64"
 )
 
 target_include_directories(Paracraft PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
