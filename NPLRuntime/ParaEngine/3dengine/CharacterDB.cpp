@@ -25,7 +25,7 @@ bool ParaEngine::CCharacterDB::CheckLoad()
 {
 	if (!m_pDataBase && m_bIsValid)
 	{
-		m_pDataBase = CDBManager::OpenDBEntity("Database/characters.db");
+		m_pDataBase = CDBManager::OpenDBEntity("database/characters.db");
 		m_bIsValid = m_pDataBase->IsValid();
 	}
 	return m_bIsValid;
