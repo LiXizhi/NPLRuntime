@@ -555,12 +555,13 @@ const char* ParaScripting::CNPLScriptingState::GetCurrentFileName(lua_State* L)
 		if (L == 0)
 			L = m_pState;
 
-		lua_Debug ar;
-		if (lua_getstack(L, 1, &ar))
+		// tricky: since LUA_IDSIZE may be 120 in lib but 60 in main exe, we just make lua_Debug big enough to hold the LUA_IDSIZE name.
+		lua_Debug ar[2]; 
+		if (lua_getstack(L, 1, ar))
 		{
 			/* check function at level */
-			if (lua_getinfo(L, "S", &ar) != 0)
-				return ar.source;
+			if (lua_getinfo(L, "S", ar) != 0)
+				return ar[0].source;
 		}
 		return NULL;
 	}
