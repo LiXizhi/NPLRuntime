@@ -31,7 +31,7 @@ CartoonFace::CartoonFace()
 CartoonFace::CartoonFace(FaceComponent* _components)
 	: m_bNeedUpdateCache(false)
 {
-	memcpy(components, _components, sizeof(FaceComponent)*CFS_TOTAL_NUM);
+	memcpy(components, _components, sizeof(FaceComponent) * CFS_TOTAL_NUM);
 }
 
 void CartoonFace::Reset()
@@ -47,7 +47,7 @@ void CartoonFace::Reset()
 }
 
 
-std::string CartoonFace::makeComponentTexture(int region, const char *name)
+std::string CartoonFace::makeComponentTexture(int region, const char* name)
 {
 	// just return an empty filename
 	if (name == 0 || name[0] == '\0')
@@ -58,7 +58,7 @@ std::string CartoonFace::makeComponentTexture(int region, const char *name)
 	if (sName.find_last_of('/') == std::string::npos)
 	{
 		// if it does not contain a parent path, region is used
-		std::string fullname = CCharCustomizeSysSetting::GetRegionPath(region);
+		std::string fullname = CCharCustomizeSysSetting::GetSingleton().GetRegionPath(region);
 		fullname += sName;
 		if (CParaFile::GetFileExtension(sName) == "")
 		{
@@ -182,7 +182,7 @@ void FaceComponent::SetScaling(float scaling)
 
 float FaceComponent::GetRotation() const
 {
-	float s = ((float)(((int)SRT[1]) - 0x7f))*(3.14f) / 0x7f;
+	float s = ((float)(((int)SRT[1]) - 0x7f)) * (3.14f) / 0x7f;
 	return s;
 }
 
@@ -246,7 +246,7 @@ bool ParaEngine::FaceTextureComponent::CheckLoad()
 		{
 			if (!(m_texture->GetTexture()) || !m_texture->IsLoaded())
 			{
-				if (!m_texture->IsValid()){
+				if (!m_texture->IsValid()) {
 					// skip invalid textures
 					m_texture.reset();
 					name.clear();

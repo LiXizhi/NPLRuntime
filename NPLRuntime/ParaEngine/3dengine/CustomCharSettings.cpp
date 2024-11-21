@@ -130,6 +130,65 @@ namespace ParaEngine
 		"character/v3/Item/ObjectComponents/GemBuffEffect/",	// aries gem buff effect
 	};
 
+	const char* CCharCustomizeSysSetting::regionTeenPaths[NUM_REGION_PATHS] =
+	{
+		// body texture paths
+		"",
+		"character/v3/Item/TextureComponents/ArmUpperTexture/",
+		"character/v3/Item/TextureComponents/ArmLowerTexture/",
+		"character/v3/Item/TextureComponents/HandTexture/",
+		"",
+		"",
+		"character/v3/Item/TextureComponents/TorsoUpperTexture/",
+		"character/v3/Item/TextureComponents/TorsoLowerTexture/",
+		"character/v3/Item/TextureComponents/LegUpperTexture/",
+		"character/v3/Item/TextureComponents/LegLowerTexture/",
+		"character/v3/Item/TextureComponents/FootTexture/",
+		"character/v3/Item/TextureComponents/WingTexture/",
+
+		// face texture paths
+		"character/v3/CartoonFace/face/",	// face base
+		"character/v3/CartoonFace/faceDeco/",// wrinkle
+		"character/v3/CartoonFace/eye/",	// eye right
+		"character/v3/CartoonFace/eyebrow/",// eye bow right
+		"character/v3/CartoonFace/mouth/",	// mouth
+		"character/v3/CartoonFace/nose/",	// nose
+		"character/v3/CartoonFace/mark/",	// mark
+
+		// aries character skin paths
+		"character/v6/Item/ShirtTexture/",	// aries char shirt
+		"character/v6/Item/ShirtTexture/",	// aries char shirt over layer
+		"character/v3/Item/TextureComponents/AriesCharPantTexture/",	// aries char pant
+		"character/v3/Item/TextureComponents/AriesCharHandTexture/",	// aries char hand
+		"character/v6/Item/FootTexture/",	// aries char foot
+		"character/v3/Item/TextureComponents/AriesCharGlassTexture/",	// aries char glass
+
+		// aries pet skin paths
+		"character/v3/Item/TextureComponents/AriesPetHeadTexture/",	// aries pet head
+		"character/v3/Item/TextureComponents/AriesPetBodyTexture/",	// aries pet body
+		"character/v3/Item/TextureComponents/AriesPetTailTexture/",	// aries pet tail
+		"character/v3/Item/TextureComponents/AriesPetWingTexture/",	// aries pet wing
+
+		// aries teen character skin paths
+		"character/v6/Item/ShirtTexture/",	// aries char shirt teen
+
+		"",
+		// object paths
+		"character/v3/Item/ObjectComponents/Cape/",
+		"character/v6/Item/Head/",
+		"character/v3/Item/ObjectComponents/Shoulder/",
+		"character/v6/Item/Weapon/",
+		"character/v3/Item/ObjectComponents/Shield/", // added by andy -- 2009.5.10
+		"character/v3/Item/ObjectComponents/Skirt/",
+		"character/v3/Item/ObjectComponents/FaceAddon/", // added by andy -- 2009.5.10
+
+		// aries character object paths
+		"character/v6/Item/WingTexture/",	// aries char wing
+		"character/v6/Item/Back/",	// aries char back
+		"character/v3/Item/ObjectComponents/GroundEffect/",	// aries character ground effect
+		"character/v3/Item/ObjectComponents/GemBuffEffect/",	// aries gem buff effect
+	};
+
 	const char* CCharCustomizeSysSetting::DefaultCartoonFaceTexture[CFS_TOTAL_NUM] =
 	{
 		"character/v3/CartoonFace/face/face_00.dds",
@@ -230,6 +289,15 @@ namespace ParaEngine
 
 const char* CCharCustomizeSysSetting::GetRegionPath(int i)
 {
+	return regionPaths[i];
+}
+
+const char* ParaEngine::CCharCustomizeSysSetting::GetRegionPathByMainAsset(int i, const std::string& sAssetFilename)
+{
+	if (sAssetFilename.find("Teen") != std::string::npos)
+	{
+		return regionTeenPaths[i];
+	}
 	return regionPaths[i];
 }
 

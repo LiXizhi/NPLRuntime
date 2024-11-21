@@ -34,18 +34,22 @@ namespace ParaEngine
 		* @param xpos, ypos, xsize, ysize: see struct CharRegionCoords. defines a rect region within the skin or face texture.
 		*/
 		void SetCharRegionCoordinates(int nRegionIndex, int xpos, int ypos, int xsize, int ysize);
-	public:
+
 		/** get region path
 		* @param i: CharRegions
 		*/
-		static const char* GetRegionPath(int i);
-		static int GetSlotOrder(int nSlotIndex, bool hadRobe);
-		
+		const char* GetRegionPath(int i);
+		const char* GetRegionPathByMainAsset(int i, const std::string& sAssetFilename);
+		int GetSlotOrder(int nSlotIndex, bool hadRobe);
+
+	public:
+
 		static int CharTexSize;
 		static int FaceTexSize;
 		static CharRegionCoords regions[];
 		static const char* DefaultCartoonFaceTexture[];
 		static const char* regionPaths[];
+		static const char* regionTeenPaths[];
 		static const int slotOrder[];
 		static const int slotOrderWithRobe[];
 		static const float shoulderscales[10][2];
