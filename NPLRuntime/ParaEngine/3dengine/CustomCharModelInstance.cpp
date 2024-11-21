@@ -572,32 +572,6 @@ void CharModelInstance::Draw(SceneState * sceneState, CParameterBlock* materialP
 	if (m_pModelCanvas)
 		m_pModelCanvas->Draw(sceneState, materialParams);
 }
-//
-//DatabaseEntity* CharModelInstance::GetCharDB()
-//{
-//	if(m_pDbCharacters == NULL)
-//	{
-//		LoadCharacterDatabase();
-//		if(m_pDbCharacters == NULL)
-//		{
-//			// TODO: load the default one. maybe the simplest model.
-//			return NULL;
-//		}
-//	}
-//	return m_pDbCharacters;
-//}
-//
-//void CharModelInstance::LoadCharacterDatabase()
-//{
-//	if(m_pDbCharacters == NULL)
-//	{
-//		m_pDbCharacters = CGlobals::GetAssetManager()->GetDatabase("cs");
-//		if(m_pDbCharacters == NULL)
-//		{
-//			m_pDbCharacters = CGlobals::GetAssetManager()->LoadDatabase("cs", "database/characters.db");
-//		}
-//	}
-//}
 
 void CharModelInstance::SetModifiedModel()
 {
