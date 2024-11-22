@@ -1359,7 +1359,7 @@ std::string CharModelInstance::makeItemTexture(int region, const char* name)
 	if (sName.find_last_of('/') == std::string::npos)
 	{
 		// if it does not contain a parent path, region is used
-		std::string fullname = CCharCustomizeSysSetting::GetSingleton().GetRegionPathByMainAsset(region, GetBaseModel()->GetFileName());
+		std::string fullname = CCharCustomizeSysSetting::GetSingleton().GetRegionPathByMainAsset(region, GetBaseModel()->GetKey());
 		fullname += sName;
 		if (CParaFile::GetFileExtension(sName) == "")
 		{
@@ -1421,7 +1421,7 @@ std::string CharModelInstance::makeItemModel(int region, const char* name)
 	if (sName.find_last_of('/') == std::string::npos)
 	{
 		// if it does not contain a parent path, region is used
-		std::string fullname = CCharCustomizeSysSetting::GetSingleton().GetRegionPathByMainAsset(region, GetBaseModel()->GetFileName());
+		std::string fullname = CCharCustomizeSysSetting::GetSingleton().GetRegionPathByMainAsset(region, GetBaseModel()->GetKey());
 		fullname += sName;
 		if (CParaFile::GetFileExtension(sName) == "")
 		{
