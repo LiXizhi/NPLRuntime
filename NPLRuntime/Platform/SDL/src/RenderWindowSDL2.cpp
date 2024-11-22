@@ -131,6 +131,7 @@ namespace ParaEngine
 			s_keymap[SDLK_KP_EQUALS] = EVirtualKey::KEY_NUMPADEQUALS;
 			s_keymap[SDLK_QUOTE] = EVirtualKey::KEY_APOSTROPHE;
 
+#ifdef __EMSCRIPTEN__
 			// SDL_GetKeyName
 			// SDL_GetKeyFromName
 			for (auto it = s_keymap.begin(); it != s_keymap.end(); it++) {
@@ -138,6 +139,7 @@ namespace ParaEngine
 				JS::SetKeyCodeName(int(it->second), SDL_GetKeyName(key));
 			}
 			std::cout << "===============SetKeyCodeName Done=======================" << std::endl;
+#endif
 		}
 	}
 
@@ -342,7 +344,11 @@ namespace ParaEngine
 	void RenderWindowSDL2::PollEvents()
 	{
 		SDL_Event sdl_event;
+#ifdef __EMSCRIPTEN__
 		static bool is_wps_office_app = JS::IsWpsOfficeApp() == 1;
+#else 
+		static bool is_wps_office_app = false;
+#endif
 		while (SDL_PollEvent(&sdl_event))
 		{
 			if (sdl_event.type == SDL_QUIT)
@@ -450,7 +456,7 @@ namespace ParaEngine
 					m_KeyState[(uint32_t)key] = state;
 				OnKey(key, state);
 				char c = GetKeyChar(msgKey);
-
+#ifdef __EMSCRIPTEN__
 				if (JS::GetOperatingSystem() == "mac")
 				{
 					SDL_version version;
@@ -465,6 +471,7 @@ namespace ParaEngine
 				{
 					if (c >= 0) OnChar(c);
 				}
+#endif
 			}
 			else if (sdl_event.type == SDL_KEYUP && !is_wps_office_app)
 			{

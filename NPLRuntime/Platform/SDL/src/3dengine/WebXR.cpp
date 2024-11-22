@@ -11,12 +11,15 @@
 #include "NPLRuntime.h"
 #include "ViewportManager.h"
 #include "Globals.h"
+#ifdef __EMSCRIPTEN__
 #include "../../emscripten/webxr.h"
+#endif
 #include "WebXR.h"
 #include <iostream>
 
 void ParaEngine::CParaWebXR::SetIsXR(bool isXR)
 {
+#ifdef __EMSCRIPTEN__
     if (isXR)
     {
         webxr_request_session(
@@ -30,7 +33,7 @@ void ParaEngine::CParaWebXR::SetIsXR(bool isXR)
     {
         webxr_request_exit();
     }
-
+#endif
     m_isXR = isXR;
 }
 

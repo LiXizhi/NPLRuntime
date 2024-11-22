@@ -251,6 +251,7 @@ int main(int argc, char* argv[])
         FS.syncfs(true, function(err) {
             console.log("加载IDBFS!!!");
             Module._emscripten_filesystem_inited();
+            Module.ParaCraftFileSystemInited();
         });
         setTimeout(function(){ FS.syncfs(false, function(err) { if (err) { console.log("FS.syncfs",err); } });}, 180000);  // 3分钟后同步到idbfs
         setInterval(function(){ FS.syncfs(false, function(err) { if (err) { console.log("FS.syncfs",err); } });}, 600000);  // 10分钟后同步到idbfs
