@@ -394,7 +394,7 @@ bool Bone::calcMatrix(Bone* allbones, const AnimIndex& CurrentAnim, const AnimIn
 					Vector3 currentValue;
 					Vector3 blendValue;
 
-					if (pCurBone != NULL)
+					if (pCurBone != NULL && pCurBone->trans.used)
 					{
 						currentValue = pCurBone->trans.getValue(pCurProvider->GetSubAnimID(), current_anim.nCurrentFrame);
 						if (nBoneID == Bone_Root)
@@ -413,7 +413,7 @@ bool Bone::calcMatrix(Bone* allbones, const AnimIndex& CurrentAnim, const AnimIn
 
 					if (current_blending_factor != 0.f)
 					{
-						if (pBlendBone != NULL)
+						if (pBlendBone != NULL && pBlendBone->trans.used)
 						{
 							blendValue = pBlendBone->trans.getValue(pBlendingProvider->GetSubAnimID(), current_blending_anim.nCurrentFrame);
 							if (nBoneID == Bone_Root)
