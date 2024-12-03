@@ -413,7 +413,7 @@ bool Bone::calcMatrix(Bone* allbones, const AnimIndex& CurrentAnim, const AnimIn
 
 					if (current_blending_factor != 0.f)
 					{
-						if (pBlendBone != NULL)
+						if (pBlendBone != NULL && pBlendBone->trans.used)
 						{
 							blendValue = pBlendBone->trans.getValue(pBlendingProvider->GetSubAnimID(), current_blending_anim.nCurrentFrame);
 							if (nBoneID == Bone_Root)
@@ -1507,7 +1507,7 @@ Bone* ParaEngine::Bone::FindMatchingBoneInProvider(CBoneAnimProvider* pProvider)
 	else
 	{
 		const auto& sIdentifier = GetIdentifier();
-		if (!sIdentifier.empty()) 
+		if (!sIdentifier.empty())
 		{
 			// since we are assigning the bone index to the identifier when identifier is empty, we will skip the digit identifier.
 			bool isDigitIdentifier = true;
@@ -1524,7 +1524,7 @@ Bone* ParaEngine::Bone::FindMatchingBoneInProvider(CBoneAnimProvider* pProvider)
 				pCurBone = pProvider->GetBoneByName(sIdentifier);
 			}
 		}
-		
+
 		if (pCurBone == 0)
 		{
 			// if the bone is one of the unknown biped bones, both locally and externally. we will try to use external animation by matching bone index. 
