@@ -188,7 +188,7 @@ CParaXModel *FBXParser::ParseParaXModel(const char *buffer, int nSize, const cha
 		// MakeAxisY_UP();
 #endif
 
-#define COLLAPSE_GROUP_BONE_TRANSFORM_NODE false
+#define COLLAPSE_GROUP_BONE_TRANSFORM_NODE true
 		if (COLLAPSE_GROUP_BONE_TRANSFORM_NODE)
 		{
 			MergeBoneNodesRST();
@@ -474,10 +474,7 @@ ParaEngine::Bone *FBXParser::MergeBoneNodesRST(std::vector<ParaEngine::Bone *> &
 		merge_bone->scale = scales;
 		merge_bone->scale.used = true;
 		merge_bone->calc = true;
-		// 这些如何处理??
-		// merge_bone->flags |= ParaEngine::Bone::BONE_OFFSET_MATRIX;
-		// bone.flags &= ~ParaEngine::Bone::BONE_TRANSFORMATION_NODE;
-		// bone.pivot = Vector3(0, 0, 0) * bone.matOffset.inverse();
+		merge_bone->flags = ParaEngine::Bone::BONE_OFFSET_MATRIX;
 	}
 
 	return merge_bone;
