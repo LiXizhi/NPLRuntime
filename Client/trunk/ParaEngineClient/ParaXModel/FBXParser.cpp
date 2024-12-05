@@ -69,7 +69,7 @@ XFile::Scene *ParaEngine::FBXParser::ParseFBXFile(const char *buffer, int nSize)
 {
 	Assimp::Importer importer;
 	Reset();
-	const aiScene* pFbxScene = importer.ReadFileFromMemory(buffer, nSize, aiProcess_Triangulate | aiProcess_GenSmoothNormals | aiProcess_FlipUVs, "fbx");
+	const aiScene *pFbxScene = importer.ReadFileFromMemory(buffer, nSize, aiProcess_Triangulate | aiProcess_GenSmoothNormals | aiProcess_FlipUVs, "fbx");
 	if (pFbxScene)
 	{
 		if (pFbxScene->HasMeshes())
@@ -130,7 +130,7 @@ CParaXModel *FBXParser::ParseParaXModel(const char *buffer, int nSize, const cha
 	Reset();
 	SetAnimSplitterFilename();
 	// this is not needed: aiProcess_MakeLeftHanded |
-	const aiScene* pFbxScene = importer.ReadFileFromMemory(buffer, nSize, aiProcess_Triangulate | aiProcess_GenSmoothNormals | aiProcess_FlipUVs, pHint);
+	const aiScene *pFbxScene = importer.ReadFileFromMemory(buffer, nSize, aiProcess_Triangulate | aiProcess_GenSmoothNormals | aiProcess_FlipUVs, pHint);
 	if (pFbxScene)
 	{
 		ParaXHeaderDef m_xheader;
@@ -192,6 +192,7 @@ CParaXModel *FBXParser::ParseParaXModel(const char *buffer, int nSize, const cha
 		if (COLLAPSE_GROUP_BONE_TRANSFORM_NODE)
 		{
 			MergeBoneNodesRST();
+			LoadAnimations(pFbxScene);
 		}
 
 		FillParaXModelData(pMesh, pFbxScene);
@@ -359,39 +360,126 @@ void FBXParser::MergeBoneNodesRST()
 ParaEngine::Bone *FBXParser::MergeBoneNodesRST(std::vector<ParaEngine::Bone *> &groups, ParaEngine::Bone *base_bone)
 {
 	auto merge_bone = base_bone;
-	// for (auto bone : groups)
-	// {
-	// 	if (bone == base_bone)
-	// 		continue;
+	auto groups_size = groups.size();
+	std::vector<AnimatedVariable<Vector3>> groups_trans(groups_size);
+	std::vector<AnimatedVariable<Quaternion>> groups_rots(groups_size);
+	std::vector<AnimatedVariable<Vector3>> groups_scales(groups_size);
 
-	// 	auto transform = bone->matTransform;
-	// 	Vector3 scale;
-	// 	Quaternion rotation;
-	// 	Vector3 translation;
-	// 	ParaMatrixDecompose(&scale, &rotation, &translation, &transform);
+	std::set<int> times; // 关键帧时刻
+	for (int i = 0; i < groups_size; i++)
+	{
+		auto bone = groups[i];
+		if (bone->trans.used)
+		{
+			auto &trans = groups_trans[i];
+			auto size = bone->trans.times.size();
+			for (int j = 0; j < size; j++)
+			{
+				auto time = bone->trans.times[j];
+				auto value = bone->trans.data[j];
+				times.insert(time);
+				auto index = trans.AddKey(time, nullptr);
+				trans.SetValue(index, value);
+			}
+		}
+		if (bone->rot.used)
+		{
+			auto &rots = groups_rots[i];
+			auto size = bone->rot.times.size();
+			for (int j = 0; j < size; j++)
+			{
+				auto time = bone->rot.times[j];
+				auto value = bone->rot.data[j];
+				times.insert(time);
+				auto index = rots.AddKey(time, nullptr);
+				rots.SetValue(index, value);
+			}
+		}
+		if (bone->scale.used)
+		{
+			auto &scales = groups_scales[i];
+			auto size = bone->scale.times.size();
+			for (int j = 0; j < size; j++)
+			{
+				auto time = bone->scale.times[j];
+				auto value = bone->scale.data[j];
+				times.insert(time);
+				auto index = scales.AddKey(time, nullptr);
+				scales.SetValue(index, value);
+			}
+		}
+	}
+	if (times.empty())
+	{
+		Matrix4 parent_transform = Matrix4::IDENTITY;
+		for (auto it = groups.rbegin(); it != groups.rend(); it++)
+		{
+			auto bone = *it;
+			parent_transform = parent_transform * bone->matTransform;
+		}
+		merge_bone->matTransform = parent_transform;
+	}
+	else
+	{
+		Animated<Vector3> trans;
+		Animated<Quaternion> rots;
+		Animated<Vector3> scales;
+		Matrix4 parent_transform;
+		for (auto time : times)
+		{
+			parent_transform.identity();
+			for (int i = groups_size - 1; i >= 0; i--)
+			{
+				auto bone = groups[i];
+				auto transform = bone->matTransform;
+				auto &group_trans = groups_trans[i];
+				auto &group_rots = groups_rots[i];
+				auto &group_scales = groups_scales[i];
+				if (bone->trans.used || bone->rot.used || bone->scale.used)
+				{
+					Vector3 T = Vector3::ZERO;
+					Quaternion R = Quaternion::IDENTITY;
+					Vector3 S = Vector3::UNIT_SCALE;
+					if (bone->trans.used)
+						group_trans.GetValueByTime(time, T);
+					if (bone->rot.used)
+						group_rots.GetValueByTime(time, R);
+					if (bone->scale.used)
+						group_scales.GetValueByTime(time, S);
+					transform.makeTransform(T, S, R);
+					parent_transform = parent_transform * transform;
+				}
+				else
+				{
+					parent_transform = parent_transform * transform;
+				}
+			}
+			Vector3 scale;
+			Quaternion rotation;
+			Vector3 translation;
+			ParaMatrixDecompose(&scale, &rotation, &translation, &parent_transform);
+			Matrix4 tmp;
+			tmp.makeTransform(translation, scale, rotation);
+			trans.times.push_back(time);
+			trans.data.push_back(translation);
+			rots.times.push_back(time);
+			rots.data.push_back(rotation);
+			scales.times.push_back(time);
+			scales.data.push_back(scale);
+		}
+		merge_bone->trans = trans;
+		merge_bone->trans.used = true;
+		merge_bone->rot = rots;
+		merge_bone->rot.used = true;
+		merge_bone->scale = scales;
+		merge_bone->scale.used = true;
+		merge_bone->calc = true;
+		// 这些如何处理??
+		// merge_bone->flags |= ParaEngine::Bone::BONE_OFFSET_MATRIX;
+		// bone.flags &= ~ParaEngine::Bone::BONE_TRANSFORMATION_NODE;
+		// bone.pivot = Vector3(0, 0, 0) * bone.matOffset.inverse();
+	}
 
-	// 	auto merge_scale = merge_bone->scale;
-	// 	auto merge_rotation = merge_bone->rot;
-	// 	auto merge_translation = merge_bone->trans;
-
-	// 	auto scale_size = merge_scale.data.size();
-	// 	for (int i = 0; i < scale_size; i++)
-	// 	{
-	// 		merge_scale.data[i] *= scale[i];
-	// 	}
-
-	// 	auto rotation_size = merge_rotation.data.size();
-	// 	for (int i = 0; i < rotation_size; i++)
-	// 	{
-	// 		merge_rotation.data[i] = merge_rotation.data[i] * rotation[i];
-	// 	}
-
-	// 	auto translation_size = merge_translation.data.size();
-	// 	for (int i = 0; i < translation_size; i++)
-	// 	{
-	// 		merge_translation.data[i] += translation[i];
-	// 	}
-	// }
 	return merge_bone;
 }
 
@@ -3172,29 +3260,72 @@ void FBXParser::ProcessFBXAnimation(const aiScene *pFbxScene, unsigned int nInde
 		}
 	}
 
-	if (m_modelInfo.LoadFromFile(m_sAnimSplitterFilename))
+	// LoadAnimations(pFbxAnim);
+	// 以下代码移至 LoadAnimations() 中实现, 方便对骨骼数据进行处理
+	if (COLLAPSE_GROUP_BONE_TRANSFORM_NODE)
 	{
-		int animsCount = m_modelInfo.GetAnimCount();
-		for (int i = 0; i < animsCount; i++)
-		{
-			ParaEngine::AnimInfo &animinfo = m_modelInfo.m_Anims[i];
-			ModelAnimation anim = CreateModelAnimation(pFbxAnim, &animinfo, (int)m_anims.size(), i == animsCount - 1);
-			m_anims.push_back(anim);
-		}
+		// 延迟处理
 	}
 	else
 	{
-		uint32 time = (uint32)((1000.f / pFbxAnim->mTicksPerSecond) * pFbxAnim->mDuration);
-		int animsCount = (int)floor(time / 10000) + 1;
-		for (int i = 0; i < animsCount; i++)
+		aiAnimation *pFbxAnim = pFbxScene->mAnimations[nIndex];
+		if (m_modelInfo.LoadFromFile(m_sAnimSplitterFilename))
 		{
-			ParaEngine::AnimInfo animinfo;
-			animinfo.id = i;
-			animinfo.startTick = (int)(i * 10 * pFbxAnim->mTicksPerSecond);
-			animinfo.endTick = (int)((i + 1) * 10 * pFbxAnim->mTicksPerSecond - 1);
-			animinfo.loopType = 0;
-			ModelAnimation anim = CreateModelAnimation(pFbxAnim, &animinfo, (int)m_anims.size(), i == animsCount - 1);
-			m_anims.push_back(anim);
+			int animsCount = m_modelInfo.GetAnimCount();
+			for (int i = 0; i < animsCount; i++)
+			{
+				ParaEngine::AnimInfo &animinfo = m_modelInfo.m_Anims[i];
+				ModelAnimation anim = CreateModelAnimation(pFbxAnim, &animinfo, (int)m_anims.size(), i == animsCount - 1);
+				m_anims.push_back(anim);
+			}
+		}
+		else
+		{
+			uint32 time = (uint32)((1000.f / pFbxAnim->mTicksPerSecond) * pFbxAnim->mDuration);
+			int animsCount = (int)floor(time / 10000) + 1;
+			for (int i = 0; i < animsCount; i++)
+			{
+				ParaEngine::AnimInfo animinfo;
+				animinfo.id = i;
+				animinfo.startTick = (int)(i * 10 * pFbxAnim->mTicksPerSecond);
+				animinfo.endTick = (int)((i + 1) * 10 * pFbxAnim->mTicksPerSecond - 1);
+				animinfo.loopType = 0;
+				ModelAnimation anim = CreateModelAnimation(pFbxAnim, &animinfo, (int)m_anims.size(), i == animsCount - 1);
+				m_anims.push_back(anim);
+			}
+		}
+	}
+}
+
+void FBXParser::LoadAnimations(const aiScene *pFbxScene)
+{
+	for (auto nIndex = 0; nIndex < pFbxScene->mNumAnimations; nIndex++)
+	{
+		aiAnimation *pFbxAnim = pFbxScene->mAnimations[nIndex];
+		if (m_modelInfo.LoadFromFile(m_sAnimSplitterFilename))
+		{
+			int animsCount = m_modelInfo.GetAnimCount();
+			for (int i = 0; i < animsCount; i++)
+			{
+				ParaEngine::AnimInfo &animinfo = m_modelInfo.m_Anims[i];
+				ModelAnimation anim = CreateModelAnimation(pFbxAnim, &animinfo, (int)m_anims.size(), i == animsCount - 1);
+				m_anims.push_back(anim);
+			}
+		}
+		else
+		{
+			uint32 time = (uint32)((1000.f / pFbxAnim->mTicksPerSecond) * pFbxAnim->mDuration);
+			int animsCount = (int)floor(time / 10000) + 1;
+			for (int i = 0; i < animsCount; i++)
+			{
+				ParaEngine::AnimInfo animinfo;
+				animinfo.id = i;
+				animinfo.startTick = (int)(i * 10 * pFbxAnim->mTicksPerSecond);
+				animinfo.endTick = (int)((i + 1) * 10 * pFbxAnim->mTicksPerSecond - 1);
+				animinfo.loopType = 0;
+				ModelAnimation anim = CreateModelAnimation(pFbxAnim, &animinfo, (int)m_anims.size(), i == animsCount - 1);
+				m_anims.push_back(anim);
+			}
 		}
 	}
 }

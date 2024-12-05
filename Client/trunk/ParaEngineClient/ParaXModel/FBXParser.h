@@ -102,7 +102,7 @@ namespace ParaEngine
 		void CalculateScale(CParaXModel* pMesh);
 		void MergeBoneNodesRST();
 		ParaEngine::Bone* MergeBoneNodesRST(std::vector<ParaEngine::Bone*>& groups, ParaEngine::Bone* base_bone);
-
+		void LoadAnimations(const aiScene *pFbxScene);
 	private:
 		std::string m_sFilename;
 
