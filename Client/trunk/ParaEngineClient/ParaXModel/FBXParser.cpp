@@ -360,23 +360,27 @@ void FBXParser::MergeBoneNodesRST()
 ParaEngine::Bone *FBXParser::MergeBoneNodesRST(std::vector<ParaEngine::Bone *> &groups, ParaEngine::Bone *base_bone)
 {
 	auto merge_bone = base_bone;
-	auto groups_size = groups.size();
+	int groups_size = groups.size();
 	std::vector<AnimatedVariable<Vector3>> groups_trans(groups_size);
 	std::vector<AnimatedVariable<Quaternion>> groups_rots(groups_size);
 	std::vector<AnimatedVariable<Vector3>> groups_scales(groups_size);
 
 	std::set<int> times; // 关键帧时刻
+	std::set<int> trans_times;
+	std::set<int> rot_times;
+	std::set<int> scale_times;
 	for (int i = 0; i < groups_size; i++)
 	{
 		auto bone = groups[i];
 		if (bone->trans.used)
 		{
 			auto &trans = groups_trans[i];
-			auto size = bone->trans.times.size();
+			int size = bone->trans.times.size();
 			for (int j = 0; j < size; j++)
 			{
 				auto time = bone->trans.times[j];
 				auto value = bone->trans.data[j];
+				trans_times.insert(time);
 				times.insert(time);
 				auto index = trans.AddKey(time, nullptr);
 				trans.SetValue(index, value);
@@ -385,11 +389,12 @@ ParaEngine::Bone *FBXParser::MergeBoneNodesRST(std::vector<ParaEngine::Bone *> &
 		if (bone->rot.used)
 		{
 			auto &rots = groups_rots[i];
-			auto size = bone->rot.times.size();
+			int size = bone->rot.times.size();
 			for (int j = 0; j < size; j++)
 			{
 				auto time = bone->rot.times[j];
 				auto value = bone->rot.data[j];
+				rot_times.insert(time);
 				times.insert(time);
 				auto index = rots.AddKey(time, nullptr);
 				rots.SetValue(index, value);
@@ -398,11 +403,12 @@ ParaEngine::Bone *FBXParser::MergeBoneNodesRST(std::vector<ParaEngine::Bone *> &
 		if (bone->scale.used)
 		{
 			auto &scales = groups_scales[i];
-			auto size = bone->scale.times.size();
+			int size = bone->scale.times.size();
 			for (int j = 0; j < size; j++)
 			{
 				auto time = bone->scale.times[j];
 				auto value = bone->scale.data[j];
+				scale_times.insert(time);
 				times.insert(time);
 				auto index = scales.AddKey(time, nullptr);
 				scales.SetValue(index, value);
@@ -458,14 +464,21 @@ ParaEngine::Bone *FBXParser::MergeBoneNodesRST(std::vector<ParaEngine::Bone *> &
 			Quaternion rotation;
 			Vector3 translation;
 			ParaMatrixDecompose(&scale, &rotation, &translation, &parent_transform);
-			Matrix4 tmp;
-			tmp.makeTransform(translation, scale, rotation);
-			trans.times.push_back(time);
-			trans.data.push_back(translation);
-			rots.times.push_back(time);
-			rots.data.push_back(rotation);
-			scales.times.push_back(time);
-			scales.data.push_back(scale);
+			if (trans_times.find(time) != trans_times.end())
+			{
+				trans.times.push_back(time);
+				trans.data.push_back(translation);
+			}
+			if (rot_times.find(time) != rot_times.end())
+			{
+				rots.times.push_back(time);
+				rots.data.push_back(rotation);
+			}
+			if (scale_times.find(time) != scale_times.end())
+			{
+				scales.times.push_back(time);
+				scales.data.push_back(scale);
+			}
 		}
 		merge_bone->trans = trans;
 		merge_bone->trans.used = true;
@@ -3296,7 +3309,7 @@ void FBXParser::ProcessFBXAnimation(const aiScene *pFbxScene, unsigned int nInde
 
 void FBXParser::LoadAnimations(const aiScene *pFbxScene)
 {
-	for (auto nIndex = 0; nIndex < pFbxScene->mNumAnimations; nIndex++)
+	for (unsigned int nIndex = 0; nIndex < pFbxScene->mNumAnimations; nIndex++)
 	{
 		aiAnimation *pFbxAnim = pFbxScene->mAnimations[nIndex];
 		if (m_modelInfo.LoadFromFile(m_sAnimSplitterFilename))
