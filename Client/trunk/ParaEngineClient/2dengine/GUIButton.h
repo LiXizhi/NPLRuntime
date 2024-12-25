@@ -133,6 +133,9 @@ namespace ParaEngine
 		/** set on render script */
 		void SetOnRenderScript(const char* sScript);
 
+		void SetPressed(bool bPressed);
+		bool IsPressed() const { return m_bPressed; }
+
 	protected:
 		static const IType* m_type;
 		bool				m_bPressed;

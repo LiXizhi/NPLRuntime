@@ -203,6 +203,7 @@ namespace ParaEngine
 
 		ATTRIBUTE_METHOD1(CGUIBase, IsSelfPaintEnabled_s, bool*)	{ *p1 = cls->IsSelfPaintEnabled(); return S_OK; }
 		ATTRIBUTE_METHOD1(CGUIBase, EnableSelfPaint_s, bool)	{ cls->EnableSelfPaint(p1); return S_OK; }
+		ATTRIBUTE_METHOD1(CGUIBase, IsSelfPaintInParent_s, bool*) { *p1 = cls->IsSelfPaintInParent(); return S_OK; }
 
 		ATTRIBUTE_METHOD1(CGUIBase, IsAutoClearBackground_s, bool*)	{ *p1 = cls->IsAutoClearBackground(); return S_OK; }
 		ATTRIBUTE_METHOD1(CGUIBase, SetAutoClearBackground_s, bool)	{ cls->SetAutoClearBackground(p1); return S_OK; }
@@ -848,6 +849,7 @@ namespace ParaEngine
 		* @param fDeltaTime: time elapsed since last frame move.
 		*/
 		virtual bool		OnFrameMove(float fDeltaTime);
+		bool		OnFrameMoveRecursive(float fDeltaTime);
 
 		/**
 		* Default OnClick event handler. It activates corresponding scripts.
@@ -953,6 +955,8 @@ namespace ParaEngine
 		/** if any child is also dirty. */
 		bool IsDirtyRecursive();
 		void SetDirty(bool val);
+		void SetDirtyRecursive(bool val);
+
 
 		/**
 		* return true if it is scrollable.
@@ -981,6 +985,8 @@ namespace ParaEngine
 		*/
 		void EnableSelfPaint(bool bEnable);
 		bool IsSelfPaintEnabled();
+		/** whether this object will paint on its parent's render target. by default this false. */
+		bool IsSelfPaintInParent();
 
 		/** whether to automatically clear the background to fully transparent when doing self paint on its own render target. */
 		bool IsAutoClearBackground() const;
@@ -1029,6 +1035,9 @@ namespace ParaEngine
 		{
 			return ((m_touchTranslateAttFlag & attFlags) == attFlags);
 		}
+
+		void SetMouseOver(bool bMouseOver);
+		bool IsMouseOver()const{ return m_bMouseOver; }
 
 	protected:
 		/**

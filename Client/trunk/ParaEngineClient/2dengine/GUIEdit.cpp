@@ -528,6 +528,7 @@ void CGUIEditBox::PlaceCaret(int nCP)
 	}
 
 	m_nCaret = nCP;
+	SetDirty(true);
 	if (m_parent == 0)
 	{
 		// By LiXizhi, 2007.9.25
@@ -1612,7 +1613,8 @@ HRESULT CGUIEditBox::Render(GUIState* pGUIState, float fElapsedTime)
 	//
 	if ((GetTickCount() / 1000.f) - m_dfLastBlink >= m_dfBlink)
 	{
-		m_bCaretOn = !m_bCaretOn;
+		// do not blink the caret if the control is self-painted in parent
+		m_bCaretOn = IsSelfPaintInParent() ? true : (!m_bCaretOn);
 		m_dfLastBlink = (GetTickCount() / 1000.f);
 	}
 
