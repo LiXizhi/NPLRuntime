@@ -110,7 +110,7 @@ namespace JS
     {
         // clang-format off
         int is_touch_device = EM_ASM_INT({
-            if (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent))
+            if (/OpenHarmony|Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent))
             {
                 return 1;
             }
