@@ -35,14 +35,9 @@
 #include "ParaWorldAsset.h"
 #include "RenderTarget.h"
 #include "EffectManager.h"
-#include "GUIIME.h"
 #include "ViewportManager.h"
+#include "GUIIME.h"
 #include "memdebug.h"
-
-#if USE_DIRECTX_RENDERER
-#include "RenderDeviceD3D9.h"
-#endif
-
 using namespace ParaEngine;
 
 namespace ParaEngine
@@ -539,6 +534,7 @@ void CGUIBase::GetAbsolutePosition(CGUIPosition* pOut, const CGUIPosition* pIn)
 		viewport.Width = pViewportScene->GetWidth();
 		viewport.Height = pViewportScene->GetHeight();
 
+
 		ParaVec3Project(&vOut, &vIn, &viewport, CGUIRoot::GetInstance()->Get3DViewProjMatrix(), NULL, NULL);
 
 		int nWidth = pIn->rect.right - pIn->rect.left;
@@ -621,8 +617,11 @@ void CGUIBase::SetLocationI(int x, int y)
 
 void CGUIBase::SetLocation(int x, int y)
 {
-	SetLocationI(x, y);
-	UpdateParentRect();
+	if (GetX() != x || GetY() != y)
+	{
+		SetLocationI(x, y);
+		UpdateParentRect();
+	}
 }
 void CGUIBase::SetSizeI(int width, int height)
 {
@@ -686,6 +685,7 @@ void CGUIBase::SetVisible(bool visible)
 	//if the control is on the edge of the parent, need to recalculate childrect
 	if (m_bNeedUpdate)
 	{
+		SetDirty(true);
 		if (m_parent)
 		{
 			m_parent->SetDirty(true);
@@ -928,6 +928,16 @@ bool CGUIBase::OnMouseEnter()
 	int nHotSpotX = -1;
 	int nHotSpotY = -1;
 	const std::string& sCursorFile = GetCursor(&nHotSpotX, &nHotSpotY);
+	if (!sCursorFile.empty())
+	{
+#ifdef USE_DIRECTX_RENDERER
+		CDirectMouse* pMouse = CGUIRoot::GetInstance()->m_pMouse;
+		if (pMouse)
+		{
+			pMouse->SetCursorFromFile(sCursorFile.c_str(), nHotSpotX, nHotSpotY);
+		}
+#endif
+	}
 	// Only set mouse over to true, if all parent and this control is enabled. 
 	// m_bMouseOver=true;
 	{
@@ -938,7 +948,7 @@ bool CGUIBase::OnMouseEnter()
 			bIsEnabled = pObj->GetEnabled();
 			pObj = pObj->GetParent();
 		}
-		m_bMouseOver = bIsEnabled;
+		SetMouseOver(bIsEnabled);
 	}
 	if (!HasEvent(EM_MOUSE_ENTER))
 		return false;
@@ -948,7 +958,7 @@ bool CGUIBase::OnMouseEnter()
 
 bool CGUIBase::OnMouseLeave()
 {
-	m_bMouseOver = false;
+	SetMouseOver(false);
 	if (!HasEvent(EM_MOUSE_LEAVE))
 		return false;
 	return ActivateScript("", EM_MOUSE_LEAVE);
@@ -1156,6 +1166,25 @@ bool CGUIBase::OnFrameMove(float fDeltaTime)
 	return true;
 }
 
+bool ParaEngine::CGUIBase::OnFrameMoveRecursive(float fDeltaTime)
+{
+	if (fDeltaTime > 0.001f)
+	{
+		bool bResult = OnFrameMove(fDeltaTime);
+		auto pChildren = GetChildren();
+		if (pChildren)
+		{
+			for (auto& child : *pChildren)
+			{
+				if (child->GetVisible())
+					child->OnFrameMoveRecursive(fDeltaTime);
+			}
+		}
+		return bResult;
+	}
+	return true;
+}
+
 bool CGUIBase::OnChange(const char* code)
 {
 	if (!HasEvent(EM_CTRL_CHANGE))
@@ -1264,8 +1293,8 @@ bool CGUIBase::MsgProc(MSG* event)
 		return false;
 	bool bHandled = false;
 	CGUIRoot* pRoot = CGUIRoot::GetInstance();
-	CGUIMouseVirtual* pMouse = pRoot->m_pMouse;
-	CGUIKeyboardVirtual* pKeyboard = pRoot->m_pKeyboard;
+	auto pMouse = pRoot->m_pMouse;
+	auto pKeyboard = pRoot->m_pKeyboard;
 	STRUCT_DRAG_AND_DROP* pdrag = &IObjectDrag::DraggingObject;
 	MSG newMsg;
 	if (event != NULL && !m_event->InterpretMessage(event)) {
@@ -1313,9 +1342,11 @@ bool CGUIBase::MsgProc(MSG* event)
 			bHandled = OnSelect();
 		}
 		else if (m_event->IsMapTo(nEvent, EM_CTRL_CHANGE)) {
+			SetDirty(true);
 			bHandled = OnChange();
 		}
 		else if (m_event->IsMapTo(nEvent, EM_CTRL_MODIFY)) {
+			SetDirty(true);
 			bHandled = OnModify();
 		}
 		else if (m_event->IsMapTo(nEvent, EM_MOUSE_WHEEL)) {
@@ -1497,14 +1528,13 @@ bool CGUIBase::ActivateScript(const string& code, int etype)
 {
 	CGUIRoot* root = CGUIRoot::GetInstance();
 	const SimpleScript* tempScript = GetEventScript(etype);
-
 	if (tempScript) {
 		root->m_scripts.AddScript(tempScript->szFile, etype, code + tempScript->szCode, this);
 		return true;
 	}
-
 	return false;
 }
+
 
 bool CGUIBase::ActivateScript(const string& precode, const string& postcode, int etype)
 {
@@ -1549,7 +1579,7 @@ void CGUIBase::Begin(GUIState* pGUIState, float fElapsedTime)
 	if (m_bNeedUpdate) {
 		UpdateRects();
 	}
-	CGUIMouseVirtual* pMouse = CGUIRoot::GetInstance()->m_pMouse;
+	auto pMouse = CGUIRoot::GetInstance()->m_pMouse;
 	POINT pt;
 	pt.x = pMouse->m_x;
 	pt.y = pMouse->m_y;
@@ -1635,19 +1665,25 @@ BOOL CGUIBase::IsPointInControl(int x, int y)
 	return ((pos.rect.left <= x && pos.rect.top <= y && pos.rect.right >= x && pos.rect.bottom >= y));
 }
 
-float	CGUIBase::GetRotation()
+float CGUIBase::GetRotation()
 {
 	return m_fRotation;
 }
-void	CGUIBase::SetRotation(float fRot)
+void CGUIBase::SetRotation(float fRot)
 {
-	m_fRotation = fRot;
-	SetDirty(true);
+	if (fRot != m_fRotation)
+	{
+		m_fRotation = fRot;
+		SetDirty(true);
+	}
 }
 void CGUIBase::SetRotOriginOffset(const Vector2& in)
 {
-	m_vRotOriginOffset = in;
-	SetDirty(true);
+	if (m_vRotOriginOffset != in)
+	{
+		m_vRotOriginOffset = in;
+		SetDirty(true);
+	}
 }
 
 void CGUIBase::GetRotOriginOffset(Vector2* pOut)
@@ -1657,8 +1693,11 @@ void CGUIBase::GetRotOriginOffset(Vector2* pOut)
 }
 void ParaEngine::CGUIBase::SetScaling(const Vector2& in)
 {
-	m_vScaling = in;
-	SetDirty(true);
+	if (m_vScaling != in)
+	{
+		m_vScaling = in;
+		SetDirty(true);
+	}
 }
 
 void ParaEngine::CGUIBase::GetScaling(Vector2* pOut)
@@ -1669,8 +1708,11 @@ void ParaEngine::CGUIBase::GetScaling(Vector2* pOut)
 
 void ParaEngine::CGUIBase::SetTranslation(const Vector2& in)
 {
-	m_vTranslation = in;
-	SetDirty(true);
+	if (m_vTranslation != in)
+	{
+		m_vTranslation = in;
+		SetDirty(true);
+	}
 }
 
 void ParaEngine::CGUIBase::GetTranslation(Vector2* pOut)
@@ -1681,8 +1723,11 @@ void ParaEngine::CGUIBase::GetTranslation(Vector2* pOut)
 
 void ParaEngine::CGUIBase::SetColorMask(DWORD dwColor)
 {
-	m_dwColorMask = dwColor;
-	SetDirty(true);
+	if (m_dwColorMask != dwColor)
+	{
+		m_dwColorMask = dwColor;
+		SetDirty(true);
+	}
 }
 
 DWORD ParaEngine::CGUIBase::GetColorMask()
@@ -1737,6 +1782,14 @@ HRESULT ParaEngine::CGUIBase::DrawRect(Color color, RECT* prcDest, RECT* prcWind
 		}
 	}
 	return E_FAIL;
+}
+
+void ParaEngine::CGUIBase::SetMouseOver(bool bMouseOver)
+{
+	if (m_bMouseOver != bMouseOver) {
+		m_bMouseOver = bMouseOver;
+		SetDirty(true);
+	}
 }
 
 HRESULT CGUIBase::DrawElement(GUITextureElement* pElement, RECT* prcDest, RECT* prcWindow, GUIState* pGUIState/* = NULL*/)
@@ -2402,7 +2455,7 @@ HRESULT ParaEngine::CGUIBase::DoRender(GUIState* pGUIState, float fElapsedTime)
 				}
 				else
 				{
-					OnFrameMove(fElapsedTime);
+					OnFrameMoveRecursive(fElapsedTime);
 				}
 				// copy render target to back buffer. 
 				{
@@ -2445,7 +2498,6 @@ HRESULT ParaEngine::CGUIBase::DoSelfPaint(GUIState* pGUIState, float fElapsedTim
 		{
 			if (pRenderTarget->IsDirty() || IsDirtyRecursive())
 			{
-				SetDirty(false);
 				pRenderTarget->SetDirty(false);
 
 				if (pRenderTarget->GetPrimaryAsset())
@@ -2476,14 +2528,15 @@ HRESULT ParaEngine::CGUIBase::DoSelfPaint(GUIState* pGUIState, float fElapsedTim
 									pDevice->SetRenderState(ERenderState::SRCBLENDALPHA, D3DBLEND_ONE);
 									pDevice->SetRenderState(ERenderState::DESTBLENDALPHA, D3DBLEND_ONE);
 
-								pDevice->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_SRCALPHA);
-								pDevice->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
+									pDevice->SetRenderState(ERenderState::SRCBLEND, D3DBLEND_SRCALPHA);
+									pDevice->SetRenderState(ERenderState::DESTBLEND, D3DBLEND_INVSRCALPHA);
 									// do the actual rendering on the clipped area. 
 									DoRender(pGUIState, fElapsedTime);
 									pDevice->SetRenderState(ERenderState::SEPARATEALPHABLENDENABLE, FALSE);
 								}
 							}
 
+							SetDirtyRecursive(false);
 							if (painter.GetPendingAssetCount() > 0)
 							{
 								SetDirty(true);
@@ -2587,6 +2640,20 @@ void ParaEngine::CGUIBase::SetDirty(bool val)
 	if (m_bDirty != val)
 	{
 		m_bDirty = val;
+	}
+}
+
+void ParaEngine::CGUIBase::SetDirtyRecursive(bool val)
+{
+	SetDirty(val);
+	auto pChildren = GetChildren();
+	if (pChildren)
+	{
+		for (auto& child : *pChildren)
+		{
+			if (child->GetVisible())
+				child->SetDirtyRecursive(val);
+		}
 	}
 }
 
@@ -2694,6 +2761,7 @@ bool ParaEngine::CGUIBase::IsMouseCaptured()
 {
 	return CGUIRoot::GetInstance()->GetMouse()->GetCapture() == this;
 }
+
 
 int ParaEngine::CGUIBase::OnHandleWinMsgChars(const std::wstring& sChars)
 {

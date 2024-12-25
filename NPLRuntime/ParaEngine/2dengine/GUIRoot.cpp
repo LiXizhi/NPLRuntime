@@ -373,7 +373,9 @@ void CGUIRoot::AttachGUIElement(CGUIBase* pParent, CGUIBase* pChild)
 		parent->UpdateClientRect(*childPos);
 
 		pChild->m_parent = (CGUIContainer*)pParent;
+		pChild->m_parent->SetDirty(true);
 		pChild->m_bNeedUpdate = true;
+		pChild->SetDirty(true);
 		pChild->UpdateRects();
 	}
 }
@@ -399,7 +401,9 @@ void CGUIRoot::DetachGUIElement(CGUIBase* pChild)
 			}
 		}
 		pChild->m_parent->m_bNeedUpdate = true;
+		pChild->m_parent->SetDirty(true);
 		pChild->m_bNeedUpdate = true;
+		pChild->SetDirty(true);
 		pChild->m_parent = NULL;
 	}
 }

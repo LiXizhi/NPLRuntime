@@ -543,8 +543,9 @@ void CGUIEditBox::PlaceCaret(int nCP)
 		OUTPUT_LOG("warn: place caret out of range: nCP: %d\n", nCP);
 		return;
 	}
-
+	
 	m_nCaret = nCP;
+	SetDirty(true);
 	if (m_parent == 0)
 	{
 		// By LiXizhi, 2007.9.25

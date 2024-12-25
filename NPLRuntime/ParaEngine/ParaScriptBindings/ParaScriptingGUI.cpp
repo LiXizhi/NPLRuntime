@@ -791,6 +791,7 @@ namespace ParaScripting
 				m_pObj->m_objResource->SetElement(&TexElement, textureOffset + 8);
 
 				m_pObj->SetNeedUpdate();
+				m_pObj->SetDirty(true);
 				break;
 			}
 			default:
