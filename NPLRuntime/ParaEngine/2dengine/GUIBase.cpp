@@ -2596,6 +2596,21 @@ bool ParaEngine::CGUIBase::IsSelfPaintEnabled()
 	return (m_pForcedPaintDevice == this);
 }
 
+bool ParaEngine::CGUIBase::IsSelfPaintInParent()
+{
+	if (IsSelfPaintEnabled())
+		return true;
+	auto pParent = GetParent();
+	// recursively check if any parent has self paint enabled.
+	while (pParent)
+	{
+		if (pParent->IsSelfPaintEnabled())
+			return true;
+		pParent = pParent->GetParent();
+	}
+	return false;
+}
+
 bool ParaEngine::CGUIBase::IsAutoClearBackground() const
 {
 	return m_bAutoClearBackground;
@@ -2881,6 +2896,7 @@ int ParaEngine::CGUIBase::InstallFields(CAttributeClass* pClass, bool bOverride)
 	pClass->AddField("OwnerDraw", FieldType_Bool, (void*)SetOwnerDraw_s, (void*)IsOwnerDraw_s, NULL, NULL, bOverride);
 	pClass->AddField("IsDirty", FieldType_Bool, (void*)SetDirty_s, (void*)IsDirty_s, NULL, NULL, bOverride);
 	pClass->AddField("SelfPaint", FieldType_Bool, (void*)EnableSelfPaint_s, (void*)IsSelfPaintEnabled_s, NULL, NULL, bOverride);
+	pClass->AddField("SelfPaintInParent", FieldType_Bool, NULL, (void*)IsSelfPaintInParent_s, NULL, NULL, bOverride);
 	pClass->AddField("HasKeyFocus", FieldType_Bool, NULL, (void*)HasKeyFocus_s, NULL, NULL, bOverride);
 	pClass->AddField("CanHaveFocus", FieldType_Bool, (void*)SetCanHaveFocus_s, (void*)CanHaveFocus_s, NULL, NULL, bOverride);
 	pClass->AddField("ApplyColorMask", FieldType_void, (void*)ApplyColorMask_s, NULL, NULL, NULL, bOverride);

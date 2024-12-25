@@ -203,6 +203,7 @@ namespace ParaEngine
 
 		ATTRIBUTE_METHOD1(CGUIBase, IsSelfPaintEnabled_s, bool*) { *p1 = cls->IsSelfPaintEnabled(); return S_OK; }
 		ATTRIBUTE_METHOD1(CGUIBase, EnableSelfPaint_s, bool) { cls->EnableSelfPaint(p1); return S_OK; }
+		ATTRIBUTE_METHOD1(CGUIBase, IsSelfPaintInParent_s, bool*) { *p1 = cls->IsSelfPaintInParent(); return S_OK; }
 
 		ATTRIBUTE_METHOD1(CGUIBase, IsAutoClearBackground_s, bool*) { *p1 = cls->IsAutoClearBackground(); return S_OK; }
 		ATTRIBUTE_METHOD1(CGUIBase, SetAutoClearBackground_s, bool) { cls->SetAutoClearBackground(p1); return S_OK; }
@@ -984,6 +985,8 @@ namespace ParaEngine
 		*/
 		void EnableSelfPaint(bool bEnable);
 		bool IsSelfPaintEnabled();
+		/** whether this object will paint on its parent's render target. by default this false. */
+		bool IsSelfPaintInParent();
 
 		/** whether to automatically clear the background to fully transparent when doing self paint on its own render target. */
 		bool IsAutoClearBackground() const;
