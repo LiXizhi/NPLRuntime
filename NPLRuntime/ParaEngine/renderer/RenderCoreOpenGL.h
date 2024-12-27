@@ -13,7 +13,7 @@ namespace ParaEngine
 		uint32    lY;
 		uint32    lZ;
 		BYTE    rgbButtons[4];
-	} DIMOUSESTATE, *LPDIMOUSESTATE;
+	} DIMOUSESTATE, * LPDIMOUSESTATE;
 
 	// emulate direct mouse
 	typedef struct _DIMOUSESTATE2 {
@@ -21,7 +21,7 @@ namespace ParaEngine
 		uint32    lY;
 		uint32    lZ;
 		BYTE    rgbButtons[8];
-	} DIMOUSESTATE2, *LPDIMOUSESTATE2;
+	} DIMOUSESTATE2, * LPDIMOUSESTATE2;
 
 	enum DIMOFS_ENUM
 	{
@@ -41,7 +41,7 @@ namespace ParaEngine
 		DWORD       dwTimeStamp;
 		DWORD       dwSequence;
 		DWORD		uAppData;
-	} DIDEVICEOBJECTDATA, *LPDIDEVICEOBJECTDATA;
+	} DIDEVICEOBJECTDATA, * LPDIDEVICEOBJECTDATA;
 
 
 
@@ -133,8 +133,8 @@ namespace ParaEngine
 		D3DTEXF_ANISOTROPIC = 3,    // anisotropic
 		D3DTEXF_PYRAMIDALQUAD = 6,    // 4-sample tent
 		D3DTEXF_GAUSSIANQUAD = 7,    // 4-sample gaussian
-									 /* -- D3D9Ex only */
-									 D3DTEXF_FORCE_DWORD = 0x7fffffff,   // force 32-bit size enum
+		/* -- D3D9Ex only */
+		D3DTEXF_FORCE_DWORD = 0x7fffffff,   // force 32-bit size enum
 	} D3DTEXTUREFILTERTYPE;
 
 	typedef struct _D3DVIEWPORT9 {
@@ -215,51 +215,51 @@ namespace ParaEngine
 		D3DTOP_MODULATE2X = 5,      // multiply and  1 bit
 		D3DTOP_MODULATE4X = 6,      // multiply and  2 bits
 
-			// Add
-			D3DTOP_ADD = 7,   // add arguments together
-			D3DTOP_ADDSIGNED = 8,   // add with -0.5 bias
-			D3DTOP_ADDSIGNED2X = 9,   // as above but left  1 bit
-			D3DTOP_SUBTRACT = 10,   // Arg1 - Arg2, with no saturation
-			D3DTOP_ADDSMOOTH = 11,   // add 2 args, subtract product
-									 // Arg1 + Arg2 - Arg1*Arg2
-									 // = Arg1 + (1-Arg1)*Arg2
+		// Add
+		D3DTOP_ADD = 7,   // add arguments together
+		D3DTOP_ADDSIGNED = 8,   // add with -0.5 bias
+		D3DTOP_ADDSIGNED2X = 9,   // as above but left  1 bit
+		D3DTOP_SUBTRACT = 10,   // Arg1 - Arg2, with no saturation
+		D3DTOP_ADDSMOOTH = 11,   // add 2 args, subtract product
+		// Arg1 + Arg2 - Arg1*Arg2
+		// = Arg1 + (1-Arg1)*Arg2
 
-									 // Linear alpha blend: Arg1*(Alpha) + Arg2*(1-Alpha)
-									 D3DTOP_BLENDDIFFUSEALPHA = 12, // iterated alpha
-									 D3DTOP_BLENDTEXTUREALPHA = 13, // texture alpha
-									 D3DTOP_BLENDFACTORALPHA = 14, // alpha from D3DRS_TEXTUREFACTOR
+		// Linear alpha blend: Arg1*(Alpha) + Arg2*(1-Alpha)
+		D3DTOP_BLENDDIFFUSEALPHA = 12, // iterated alpha
+		D3DTOP_BLENDTEXTUREALPHA = 13, // texture alpha
+		D3DTOP_BLENDFACTORALPHA = 14, // alpha from D3DRS_TEXTUREFACTOR
 
-																   // Linear alpha blend with pre-multiplied arg1 input: Arg1 + Arg2*(1-Alpha)
-																   D3DTOP_BLENDTEXTUREALPHAPM = 15, // texture alpha
-																   D3DTOP_BLENDCURRENTALPHA = 16, // by alpha of current color
+		// Linear alpha blend with pre-multiplied arg1 input: Arg1 + Arg2*(1-Alpha)
+		D3DTOP_BLENDTEXTUREALPHAPM = 15, // texture alpha
+		D3DTOP_BLENDCURRENTALPHA = 16, // by alpha of current color
 
-																								  // Specular mapping
-																								  D3DTOP_PREMODULATE = 17,     // modulate with next texture before use
-																								  D3DTOP_MODULATEALPHA_ADDCOLOR = 18,     // Arg1.RGB + Arg1.A*Arg2.RGB
-																																		  // COLOROP only
-																																		  D3DTOP_MODULATECOLOR_ADDALPHA = 19,     // Arg1.RGB*Arg2.RGB + Arg1.A
-																																												  // COLOROP only
-																																												  D3DTOP_MODULATEINVALPHA_ADDCOLOR = 20,  // (1-Arg1.A)*Arg2.RGB + Arg1.RGB
-																																																						  // COLOROP only
-																																																						  D3DTOP_MODULATEINVCOLOR_ADDALPHA = 21,  // (1-Arg1.RGB)*Arg2.RGB + Arg1.A
-																																																																  // COLOROP only
+		// Specular mapping
+		D3DTOP_PREMODULATE = 17,     // modulate with next texture before use
+		D3DTOP_MODULATEALPHA_ADDCOLOR = 18,     // Arg1.RGB + Arg1.A*Arg2.RGB
+		// COLOROP only
+		D3DTOP_MODULATECOLOR_ADDALPHA = 19,     // Arg1.RGB*Arg2.RGB + Arg1.A
+		// COLOROP only
+		D3DTOP_MODULATEINVALPHA_ADDCOLOR = 20,  // (1-Arg1.A)*Arg2.RGB + Arg1.RGB
+		// COLOROP only
+		D3DTOP_MODULATEINVCOLOR_ADDALPHA = 21,  // (1-Arg1.RGB)*Arg2.RGB + Arg1.A
+		// COLOROP only
 
-																																																																  // Bump mapping
-																																																																  D3DTOP_BUMPENVMAP = 22, // per pixel env map perturbation
-																																																																  D3DTOP_BUMPENVMAPLUMINANCE = 23, // with luminance channel
+		// Bump mapping
+		D3DTOP_BUMPENVMAP = 22, // per pixel env map perturbation
+		D3DTOP_BUMPENVMAPLUMINANCE = 23, // with luminance channel
 
-																																																																								   // This can do either diffuse or specular bump mapping with correct input.
-																																																																								   // Performs the function (Arg1.R*Arg2.R + Arg1.G*Arg2.G + Arg1.B*Arg2.B)
-																																																																								   // where each component has been scaled and offset to make it signed.
-																																																																								   // The result is replicated into all four (including alpha) channels.
-																																																																								   // This is a valid COLOROP only.
-																																																																								   D3DTOP_DOTPRODUCT3 = 24,
+		// This can do either diffuse or specular bump mapping with correct input.
+		// Performs the function (Arg1.R*Arg2.R + Arg1.G*Arg2.G + Arg1.B*Arg2.B)
+		// where each component has been scaled and offset to make it signed.
+		// The result is replicated into all four (including alpha) channels.
+		// This is a valid COLOROP only.
+		D3DTOP_DOTPRODUCT3 = 24,
 
-																																																																								   // Triadic ops
-																																																																								   D3DTOP_MULTIPLYADD = 25, // Arg0 + Arg1*Arg2
-																																																																								   D3DTOP_LERP = 26, // (Arg0)*Arg1 + (1-Arg0)*Arg2
+		// Triadic ops
+		D3DTOP_MULTIPLYADD = 25, // Arg0 + Arg1*Arg2
+		D3DTOP_LERP = 26, // (Arg0)*Arg1 + (1-Arg0)*Arg2
 
-																																																																								   D3DTOP_FORCE_DWORD = 0x7fffffff,
+		D3DTOP_FORCE_DWORD = 0x7fffffff,
 	} D3DTEXTUREOP;
 
 	typedef enum _D3DTRANSFORMSTATETYPE {
@@ -283,24 +283,24 @@ namespace ParaEngine
 		D3DDECLTYPE_FLOAT3 = 2,  // 3D float expanded to (value, value, value, 1.)
 		D3DDECLTYPE_FLOAT4 = 3,  // 4D float
 		D3DDECLTYPE_D3DCOLOR = 4,  // 4D packed unsigned bytes mapped to 0. to 1. range
-								   // Input is in D3DCOLOR format (ARGB) expanded to (R, G, B, A)
-								   D3DDECLTYPE_UBYTE4 = 5,  // 4D unsigned byte
-								   D3DDECLTYPE_SHORT2 = 6,  // 2D signed short expanded to (value, value, 0., 1.)
-								   D3DDECLTYPE_SHORT4 = 7,  // 4D signed short
+		// Input is in D3DCOLOR format (ARGB) expanded to (R, G, B, A)
+		D3DDECLTYPE_UBYTE4 = 5,  // 4D unsigned byte
+		D3DDECLTYPE_SHORT2 = 6,  // 2D signed short expanded to (value, value, 0., 1.)
+		D3DDECLTYPE_SHORT4 = 7,  // 4D signed short
 
-															// The following types are valid only with vertex shaders >= 2.0
+		// The following types are valid only with vertex shaders >= 2.0
 
 
-															D3DDECLTYPE_UBYTE4N = 8,  // Each of 4 bytes is normalized by dividing to 255.0
-															D3DDECLTYPE_SHORT2N = 9,  // 2D signed short normalized (v[0]/32767.0,v[1]/32767.0,0,1)
-															D3DDECLTYPE_SHORT4N = 10,  // 4D signed short normalized (v[0]/32767.0,v[1]/32767.0,v[2]/32767.0,v[3]/32767.0)
-															D3DDECLTYPE_USHORT2N = 11,  // 2D unsigned short normalized (v[0]/65535.0,v[1]/65535.0,0,1)
-															D3DDECLTYPE_USHORT4N = 12,  // 4D unsigned short normalized (v[0]/65535.0,v[1]/65535.0,v[2]/65535.0,v[3]/65535.0)
-															D3DDECLTYPE_UDEC3 = 13,  // 3D unsigned 10 10 10 format expanded to (value, value, value, 1)
-															D3DDECLTYPE_DEC3N = 14,  // 3D signed 10 10 10 format normalized and expanded to (v[0]/511.0, v[1]/511.0, v[2]/511.0, 1)
-															D3DDECLTYPE_FLOAT16_2 = 15,  // Two 16-bit floating point values, expanded to (value, value, 0, 1)
-															D3DDECLTYPE_FLOAT16_4 = 16,  // Four 16-bit floating point values
-															D3DDECLTYPE_UNUSED = 17,  // When the type field in a decl is unused.
+		D3DDECLTYPE_UBYTE4N = 8,  // Each of 4 bytes is normalized by dividing to 255.0
+		D3DDECLTYPE_SHORT2N = 9,  // 2D signed short normalized (v[0]/32767.0,v[1]/32767.0,0,1)
+		D3DDECLTYPE_SHORT4N = 10,  // 4D signed short normalized (v[0]/32767.0,v[1]/32767.0,v[2]/32767.0,v[3]/32767.0)
+		D3DDECLTYPE_USHORT2N = 11,  // 2D unsigned short normalized (v[0]/65535.0,v[1]/65535.0,0,1)
+		D3DDECLTYPE_USHORT4N = 12,  // 4D unsigned short normalized (v[0]/65535.0,v[1]/65535.0,v[2]/65535.0,v[3]/65535.0)
+		D3DDECLTYPE_UDEC3 = 13,  // 3D unsigned 10 10 10 format expanded to (value, value, value, 1)
+		D3DDECLTYPE_DEC3N = 14,  // 3D signed 10 10 10 format normalized and expanded to (v[0]/511.0, v[1]/511.0, v[2]/511.0, 1)
+		D3DDECLTYPE_FLOAT16_2 = 15,  // Two 16-bit floating point values, expanded to (value, value, 0, 1)
+		D3DDECLTYPE_FLOAT16_4 = 16,  // Four 16-bit floating point values
+		D3DDECLTYPE_UNUSED = 17,  // When the type field in a decl is unused.
 	} D3DDECLTYPE;
 
 	typedef enum _D3DDECLUSAGE
@@ -337,9 +337,18 @@ namespace ParaEngine
 		D3DBLEND_BOTHINVSRCALPHA = 13,
 		D3DBLEND_BLENDFACTOR = 14, /* Only supported if D3DPBLENDCAPS_BLENDFACTOR is on */
 		D3DBLEND_INVBLENDFACTOR = 15, /* Only supported if D3DPBLENDCAPS_BLENDFACTOR is on */
-									  /* -- D3D9Ex only */
-									  D3DBLEND_FORCE_DWORD = 0x7fffffff, /* force 32-bit size enum */
+		/* -- D3D9Ex only */
+		D3DBLEND_FORCE_DWORD = 0x7fffffff, /* force 32-bit size enum */
 	} D3DBLEND;
+
+	typedef enum _D3DBLENDOP {
+		D3DBLENDOP_ADD = 1,
+		D3DBLENDOP_SUBTRACT = 2,
+		D3DBLENDOP_REVSUBTRACT = 3,
+		D3DBLENDOP_MIN = 4,
+		D3DBLENDOP_MAX = 5,
+		D3DBLENDOP_FORCE_DWORD = 0x7fffffff, /* force 32-bit size enum */
+	} D3DBLENDOP;
 
 	struct VertexElement;
 

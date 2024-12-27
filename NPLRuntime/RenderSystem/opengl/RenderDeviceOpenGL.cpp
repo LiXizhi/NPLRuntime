@@ -387,6 +387,32 @@ bool ParaEngine::RenderDeviceOpenGL::SetRenderState(const ERenderState State, co
 		glColorMask((Value & 0x1) ? GL_TRUE : GL_FALSE, (Value & 0x2) ? GL_TRUE : GL_FALSE, (Value & 0x4) ? GL_TRUE : GL_FALSE, (Value & 0x8) ? GL_TRUE : GL_FALSE);
 		break;
 	}
+	case ERenderState::BLENDOP:
+	case ERenderState::BLENDOPALPHA:
+	{
+		uint32_t glValue = GL_FUNC_ADD;
+		if(Value == D3DBLENDOP_ADD)
+			glValue = GL_FUNC_ADD;
+		else if (Value == D3DBLENDOP_SUBTRACT)
+			glValue = GL_FUNC_SUBTRACT;
+		else if (Value == D3DBLENDOP_REVSUBTRACT)
+			glValue = GL_FUNC_REVERSE_SUBTRACT;
+		else if (Value == D3DBLENDOP_MIN)
+			glValue = GL_MIN;
+		else if (Value == D3DBLENDOP_MAX)
+			glValue = GL_MAX;
+		
+		if (State == ERenderState::BLENDOP)
+		{
+			glBlendEquation(glValue);
+		}
+		else
+		{
+			// TODO: here we assume the color blend function is GL_FUNC_ADD
+			glBlendEquationSeparate(GL_FUNC_ADD, glValue);
+		}
+		break;
+	}
 	default:
 		//assert(false,"Unknow render state.");
 		break;
