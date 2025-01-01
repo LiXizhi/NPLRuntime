@@ -1788,7 +1788,8 @@ void ParaEngine::CGUIBase::SetMouseOver(bool bMouseOver)
 {
 	if (m_bMouseOver != bMouseOver) {
 		m_bMouseOver = bMouseOver;
-		SetDirty(true);
+		if (!IsSelfPaintEnabled())
+			SetDirty(true);
 	}
 }
 
