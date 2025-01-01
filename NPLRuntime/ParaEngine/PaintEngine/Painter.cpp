@@ -41,7 +41,7 @@ inline int RectWidth(const RECT &rc) { return ((rc).right - (rc).left); }
 inline int RectHeight(const RECT &rc) { return ((rc).bottom - (rc).top); }
 
 ParaEngine::CPainter::CPainter()
-	:state(0), m_device(0), original_device(0), helper_device(0), engine(0), m_bUse3DTransform(false), m_nMatrixMode(0), m_bAutoLineWidth(true)
+	:state(0), m_device(0), original_device(0), helper_device(0), engine(0), m_bUse3DTransform(false), m_nMatrixMode(0), m_bAutoLineWidth(true), m_nPendingAssetCount(0)
 {
 }
 
@@ -90,7 +90,7 @@ bool ParaEngine::CPainter::begin(CPaintDevice * pd)
 	states.push_back(state);
 
 	state->m_brushOrigin = QPointF();
-	state->m_nPendingAssetCount = 0;
+	m_nPendingAssetCount = 0;
 
 	// Slip a painter state into the engine before we do any other operations
 	engine->setState(state);
@@ -436,7 +436,7 @@ HRESULT CPainter::DrawSprite(GUITextureElement* pElement, RECT *prcDest, float d
 		else
 		{
 			if (pTexture->IsPending() && state)
-				state->AddPendingAsset(1);
+				AddPendingAsset(1);
 		}
 	}
 
@@ -520,7 +520,7 @@ HRESULT CPainter::DrawSprite(GUITextureElement* pElement, RECT *prcDest, const V
 		else
 		{
 			if (pTexture->IsPending() && state)
-				state->AddPendingAsset(1);
+				AddPendingAsset(1);
 		}
 	}
 	return hr;
@@ -572,7 +572,7 @@ HRESULT CPainter::DrawSprite(GUITextureElement* pElement, RECT *prcDest, Matrix4
 	else
 	{
 		if (pTexture->IsPending() && state)
-			state->AddPendingAsset(1);
+			AddPendingAsset(1);
 	}
 	return S_OK;
 }
@@ -650,7 +650,7 @@ HRESULT CPainter::DrawSprite(GUITextureElement* pElement, RECT *prcDest, int n, 
 	else
 	{
 		if (pTexture->IsPending() && state)
-			state->AddPendingAsset(1);
+			AddPendingAsset(1);
 	}
 	return S_OK;
 }
@@ -831,13 +831,13 @@ HRESULT CPainter::DrawText(const char16_t* strText, GUIFontElement* pElement, RE
 				}
 				QRect clipRect(finalRect);
 				engine->clip(clipRect, ClipOperation::IntersectClip);
-			}
+	}
 			else
 			{
 				QRect clipRect(rcScreen);
 				engine->clip(clipRect, ClipOperation::ReplaceClip);
 			}
-		}
+}
 #endif
 
 
@@ -961,7 +961,7 @@ HRESULT CPainter::CalcTextRect(const char16_t* strText, GUIFontElement* pElement
 
 	if (pFontNode == NULL || strText == NULL)
 		return E_FAIL;
-	if(strText[0] == 0)
+	if (strText[0] == 0)
 	{
 		prcDest->left = prcDest->top = prcDest->right = prcDest->bottom = 0;
 		return S_OK;
@@ -1110,7 +1110,7 @@ void ParaEngine::CPainter::drawTexture(const QRectF &targetRect, TextureEntity* 
 	else
 	{
 		if (pTexture->IsPending() && state)
-			state->AddPendingAsset(1);
+			AddPendingAsset(1);
 	}
 }
 
@@ -1132,7 +1132,7 @@ void ParaEngine::CPainter::drawTexture(const QPointF &p, TextureEntity* pTexture
 	else
 	{
 		if (pTexture->IsPending() && state)
-			state->AddPendingAsset(1);
+			AddPendingAsset(1);
 	}
 }
 
@@ -1538,7 +1538,12 @@ ParaEngine::CPainter::CompositionMode ParaEngine::CPainter::compositionMode() co
 
 int ParaEngine::CPainter::GetPendingAssetCount()
 {
-	return state ? state->m_nPendingAssetCount : 0;
+	return m_nPendingAssetCount;
+}
+
+void ParaEngine::CPainter::AddPendingAsset(int nCount /*= 1*/)
+{
+	m_nPendingAssetCount += nCount;
 }
 
 bool ParaEngine::CPainter::IsAutoLineWidth() const

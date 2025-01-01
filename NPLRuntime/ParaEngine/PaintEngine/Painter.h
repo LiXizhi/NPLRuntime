@@ -420,6 +420,11 @@ namespace ParaEngine
 		const ParaEngine::Matrix4& GetCurMatrix() const;
 		/** get the current world matrix's scaling.  */
 		Vector3 GetScaling();
+
+		/** number of texture that is being loaded, but not available at the time of drawing.
+		* we generally make the paint device dirty if there is painted with at least one pending asset.
+		*/
+		void AddPendingAsset(int nCount = 1);
 	private:
 
 		void updateStateImpl(CPainterState* state);
@@ -442,6 +447,10 @@ namespace ParaEngine
 		CPaintEngine* engine;
 		CPainterState* state;
 		std::vector<CPainterState*> states;
+		/** number of texture that is being loaded, but not available at the time of drawing.
+		* we generally make the paint device dirty if there is painted with at least one pending asset.
+		*/
+		int m_nPendingAssetCount;
 		bool m_bUse3DTransform;
 		/** 0 is world, 1 is view, 2 is projection. default to 0. */
 		int m_nMatrixMode;
