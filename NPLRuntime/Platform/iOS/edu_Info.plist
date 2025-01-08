@@ -24,7 +24,7 @@
 			<key>CFBundleTypeRole</key>
 			<string>Editor</string>
 			<key>CFBundleURLName</key>
-			<string>cn.palaka.edu-ios</string>
+			<string>cn.palaka.edu</string>
 			<key>CFBundleURLSchemes</key>
 			<array>
 				<string>palakaedu</string>
