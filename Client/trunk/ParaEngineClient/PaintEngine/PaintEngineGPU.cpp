@@ -762,7 +762,7 @@ void ParaEngine::CPaintEngineGPU::updateClipScissorTest()
 		{
 			RECT clipRect = state->rectangleClip;
 
-			if (CGlobals::GetApp()->IsRotateScreen())
+			if (CGlobals::GetApp()->IsRotateScreen() && CGlobals::GetViewportManager()->GetActiveViewPort()->GetRenderTarget() == NULL)
 			{
 				RECT clipRect2 = clipRect;
 				clipRect.left = clipRect2.top;

@@ -68,7 +68,7 @@ m_bNeedCalClientRect(false)
 	// Fixed.2010.10.27: the container will not capture mouse, so it will leak messages to 3D
 	m_bCanCaptureMouse = false;
 
-	if (!m_type){
+	if (!m_type) {
 		m_type = IType::GetType("guicontainer");
 	}
 
@@ -79,7 +79,7 @@ CGUIContainer::~CGUIContainer()
 {
 	SAFE_RELEASE(m_VScroll);
 	SAFE_RELEASE(m_HScroll);
-	if (m_bIsTop){
+	if (m_bIsTop) {
 		SetTopLevel(false);
 	}
 	if (m_renderTarget)
@@ -88,6 +88,7 @@ CGUIContainer::~CGUIContainer()
 		((CRenderTarget*)m_renderTarget.get())->SetLifeTime(0);
 	}
 }
+
 /**
  * This is not a complete clone. The m_children, m_pKeyFocus, m_pMouseFocus, m_oldRect are not cloned.
  **/
@@ -108,19 +109,19 @@ void CGUIContainer::Clone(IObject* pobj)const
 	pContainer->m_bFastRender = m_bFastRender;
 	ZeroMemory(&pContainer->m_clientRect, sizeof(m_clientRect));
 
-	if (m_VScroll){
+	if (m_VScroll) {
 		pContainer->m_VScroll = (CGUIScrollBar*)m_VScroll->Clone();
 		pContainer->m_VScroll->SetLinkedObject(pContainer);
 		pContainer->m_VScroll->m_parent = pContainer;
 		pContainer->m_VScroll->m_sIdentifer = m_VScroll->m_sIdentifer;
 	}
-	if (m_HScroll){
+	if (m_HScroll) {
 		pContainer->m_HScroll = (CGUIScrollBar*)m_HScroll->Clone();
 		pContainer->m_HScroll->SetLinkedObject(pContainer);
 		pContainer->m_HScroll->m_parent = pContainer;
 		pContainer->m_HScroll->m_sIdentifer = m_HScroll->m_sIdentifer;
 	}
-    
+
 }
 
 IObject* CGUIContainer::Clone()const
@@ -130,19 +131,19 @@ IObject* CGUIContainer::Clone()const
 	return pContainter;
 }
 
-CGUIScrollBar*	CGUIContainer::GetScrollBar(int nVerticalHorizontal)
+CGUIScrollBar* CGUIContainer::GetScrollBar(int nVerticalHorizontal)
 {
 	return nVerticalHorizontal == 0 ? m_VScroll : m_HScroll;
 }
 
 void CGUIContainer::StaticInit()
 {
-	CObjectManager *pOm = &CSingleton<CObjectManager>::Instance();
+	CObjectManager* pOm = &CSingleton<CObjectManager>::Instance();
 	if (!pOm->IsExist("default_CGUIBase")) {
 		CGUIBase::StaticInit();
 	}
 	//load the default CGUIBase object and copy all its value to the new button
-	CGUIContainer *pContainer = new CGUIContainer();
+	CGUIContainer* pContainer = new CGUIContainer();
 	pContainer->m_bFastRender = true;
 	pContainer->m_bScrollable = false;
 	pContainer->m_nMargin = DEFAULT_CONTAINER_MARGIN_SIZE;
@@ -183,7 +184,7 @@ void CGUIContainer::StaticInit()
 
 	//TODO: we could add default texture or text here, load from config
 	using namespace ParaInfoCenter;
-	CICConfigManager *cm = CGlobals::GetICConfigManager();
+	CICConfigManager* cm = CGlobals::GetICConfigManager();
 	string value0, value1;
 	int event0, event1, a;
 	DWORD b;
@@ -192,7 +193,7 @@ void CGUIContainer::StaticInit()
 	if (hr == E_INVALIDARG || hr == E_ACCESSDENIED) {
 		//error
 	}
-	else{
+	else {
 		for (a = 0; a < (int)b; a += 2) {
 			hr = cm->GetTextValue("GUI_container_control_mapping", value0, a);
 			if (FAILED(hr)) {
@@ -269,7 +270,7 @@ void CGUIContainer::StaticInit()
 	pContainer->m_objResource->SetActiveLayer();
 	pContainer->m_objResource->SetCurrentState();
 	pContainer->m_objResource->SetLayerType(GUILAYER::ONE_ELEMENT);
-	RECT *prect = NULL;
+	RECT* prect = NULL;
 	RECT rect;
 	SpriteFontEntity* pFont;
 	TextureEntity* pTexture = NULL;
@@ -451,13 +452,13 @@ On another case, when we want to set R.m_pKeyFocus=C, C.m_pKeyFocus=NULL;
 */
 void CGUIContainer::SetKeyFocus(CGUIBase* control)
 {
-	CGUIContainer* temp = this, *cp;
+	CGUIContainer* temp = this, * cp;
 	CGUIContainer* route[MAX_GUI_HIERARCHY_LEVEL];
 	int routecount = 0;
 	if (!control) {
 		cp = this;
 	}
-	else if (this->m_pKeyFocus == control){//if it's the same control clean all this descendant focus
+	else if (this->m_pKeyFocus == control) {//if it's the same control clean all this descendant focus
 		if (((CGUIType*)control->GetType())->IsContainer()) {
 			route[routecount++] = (CGUIContainer*)control;
 			route[routecount] = temp;
@@ -466,11 +467,11 @@ void CGUIContainer::SetKeyFocus(CGUIBase* control)
 		else
 			return;
 	}
-	else{
+	else {
 		//step 1
 		//route[0]=control,route[1]=this....route[routecount]=cp;
 		route[routecount++] = (CGUIContainer*)control;
-		while (temp->m_pKeyFocus == NULL&&temp->m_parent != NULL) {
+		while (temp->m_pKeyFocus == NULL && temp->m_parent != NULL) {
 			route[routecount++] = temp;
 			temp = (CGUIContainer*)temp->m_parent;
 		}
@@ -520,15 +521,15 @@ void CGUIContainer::SetMouseFocus(CGUIBase* control)
 	m_pMouseFocus = control;
 	return;
 
-	CDirectMouse *pMouse = CGUIRoot::GetInstance()->m_pMouse;
-	CGUIContainer* temp = this, *cp;
+	auto pMouse = CGUIRoot::GetInstance()->m_pMouse;
+	CGUIContainer* temp = this, * cp;
 	CGUIContainer* route[MAX_GUI_HIERARCHY_LEVEL];
-	STRUCT_DRAG_AND_DROP *pdrag = &IObjectDrag::DraggingObject;
+	STRUCT_DRAG_AND_DROP* pdrag = &IObjectDrag::DraggingObject;
 	int routecount = 0;
 	if (!control) {
 		cp = this;
 	}
-	else if (this->m_pMouseFocus == control){//if it's the same control clean all this descendant focus
+	else if (this->m_pMouseFocus == control) {//if it's the same control clean all this descendant focus
 		if (((CGUIType*)control->GetType())->IsContainer()) {
 			route[routecount++] = (CGUIContainer*)control;
 			route[routecount] = temp;
@@ -537,11 +538,11 @@ void CGUIContainer::SetMouseFocus(CGUIBase* control)
 		else
 			return;
 	}
-	else{
+	else {
 		//step 1
 		//route[0]=control,route[1]=this....route[routecount]=cp;
 		route[routecount++] = (CGUIContainer*)control;
-		while (temp->m_pMouseFocus == NULL&&temp->m_parent != NULL) {
+		while (temp->m_pMouseFocus == NULL && temp->m_parent != NULL) {
 			route[routecount++] = temp;
 			temp = (CGUIContainer*)temp->m_parent;
 		}
@@ -629,8 +630,8 @@ void CGUIContainer::BringToFront(CGUIBase* obj)
 	// if(m_children.size() > 1 && (*(m_children.rbegin())) != obj)
 	{
 		GUIBase_List_Type::iterator iter, iterend = m_children.end();
-		for (iter = m_children.begin(); iter != iterend; iter++){
-			if ((*iter) == obj){
+		for (iter = m_children.begin(); iter != iterend; iter++) {
+			if ((*iter) == obj) {
 				m_children.erase(iter);
 				m_children.insert(m_children.end(), obj);
 				SortChildrenByZOrder();
@@ -645,8 +646,8 @@ void CGUIContainer::SendToBack(CGUIBase* obj)
 	// if(m_children.size() > 1 && (*(m_children.begin())) != obj)
 	{
 		GUIBase_List_Type::iterator iter, iterend = m_children.end();
-		for (iter = m_children.begin(); iter != iterend; iter++){
-			if ((*iter) == obj){
+		for (iter = m_children.begin(); iter != iterend; iter++) {
+			if ((*iter) == obj) {
 				m_children.erase(iter);
 				m_children.insert(m_children.begin(), obj);
 				SortChildrenByZOrder();
@@ -658,19 +659,19 @@ void CGUIContainer::SendToBack(CGUIBase* obj)
 
 void CGUIContainer::SetTopLevel(bool value)
 {
-	if (!m_bIsVisible || m_bCandrag){
+	if (!m_bIsVisible || m_bCandrag) {
 		return;
 	}
-	if (!m_parent || m_parent->GetType()->GetTypeValue() == Type_GUIRoot){
-		if (m_bIsTop){
-			if (!value){
+	if (!m_parent || m_parent->GetType()->GetTypeValue() == Type_GUIRoot) {
+		if (m_bIsTop) {
+			if (!value) {
 				m_bIsTop = false;
 				CGlobals::GetGUI()->RemoveTopLevelControl(this);
 			}
 
 		}
-		else{
-			if (value){
+		else {
+			if (value) {
 				m_bIsTop = true;
 				CGlobals::GetGUI()->PushTopLevelControl(this);
 			}
@@ -680,11 +681,11 @@ void CGUIContainer::SetTopLevel(bool value)
 
 void CGUIContainer::SetPopUp(int popup)
 {
-	if (!m_parent){
+	if (!m_parent) {
 		OUTPUT_LOG("Must Attach the object to another object or Root before setting popup property\n");
 		return;
 	}
-	if (popup != Popup_None&&m_nPopupStyle == Popup_None){
+	if (popup != Popup_None && m_nPopupStyle == Popup_None) {
 		m_bCandrag = false;
 		Focus();
 	}
@@ -693,7 +694,7 @@ void CGUIContainer::SetPopUp(int popup)
 
 bool CGUIContainer::OnFocusOut()
 {
-	switch (m_nPopupStyle){
+	switch (m_nPopupStyle) {
 	case Popup_Autodelete:
 		CGUIRoot::PostDeleteGUIObject(this);
 		break;
@@ -710,22 +711,22 @@ bool CGUIContainer::OnFocusOut()
  * If scrollbar does not handle the message, let the container handle it.
  * Container only handle EM_MOUSE_WHEEL, other events are sent further to CGUIBase::MsgProc
  **/
-bool CGUIContainer::MsgProc(MSG *event)
+bool CGUIContainer::MsgProc(MSG* event)
 {
 	//one call to this function will trigger at most one event
 	if (!m_bIsEnabled || m_event == 0)
 		return false;
 	bool bHandled = false;
-	CDirectMouse *pMouse = CGUIRoot::GetInstance()->m_pMouse;
-	CDirectKeyboard *pKeyboard = CGUIRoot::GetInstance()->m_pKeyboard;
-	if (m_bScrollable&&m_bIsVisible) {
+	auto pMouse = CGUIRoot::GetInstance()->m_pMouse;
+	auto pKeyboard = CGUIRoot::GetInstance()->m_pKeyboard;
+	if (m_bScrollable && m_bIsVisible) {
 		CGUIPosition pos;
-		if (m_ScrollType&VSCROLL) {
+		if (m_ScrollType & VSCROLL) {
 			if (m_event->IsMapTo(event->message, EM_MOUSE)) {
 				m_VScroll->GetAbsolutePosition(&pos, m_VScroll->GetPosition());
 
 				if (pos.rect.left <= event->pt.x && pos.rect.top <= event->pt.y &&
-					pos.rect.right >= event->pt.x && pos.rect.bottom >= event->pt.y&&
+					pos.rect.right >= event->pt.x && pos.rect.bottom >= event->pt.y &&
 					!(m_event->IsMapTo(event->message, EM_MOUSE_DRAGEND) || m_event->IsMapTo(event->message, EM_MOUSE_DRAGOVER)))
 				{
 					/// object should at least has a life count greater than 1, and isEnabled
@@ -736,12 +737,12 @@ bool CGUIContainer::MsgProc(MSG *event)
 				}
 			}
 		}
-		if (m_ScrollType&HSCROLL) {
+		if (m_ScrollType & HSCROLL) {
 			if (m_event->IsMapTo(event->message, EM_MOUSE)) {
 				m_HScroll->GetAbsolutePosition(&pos, m_HScroll->GetPosition());
 
 				if (pos.rect.left <= event->pt.x && pos.rect.top <= event->pt.y &&
-					pos.rect.right >= event->pt.x && pos.rect.bottom >= event->pt.y&&
+					pos.rect.right >= event->pt.x && pos.rect.bottom >= event->pt.y &&
 					!(m_event->IsMapTo(event->message, EM_MOUSE_DRAGEND) || m_event->IsMapTo(event->message, EM_MOUSE_DRAGOVER)))
 				{
 					/// object should at least has a life count greater than 1, and isEnabled
@@ -756,25 +757,25 @@ bool CGUIContainer::MsgProc(MSG *event)
 			return true;
 		}
 	}
-	if (event != NULL&&!m_event->InterpretMessage(event)) {
+	if (event != NULL && !m_event->InterpretMessage(event)) {
 		return false;
 	}
 	POINT pt;
 	pt.x = m_event->m_mouse.x;
 	pt.y = m_event->m_mouse.y;
 	int nEvent = m_event->GetTriggerEvent();
-	if (m_bIsVisible){
+	if (m_bIsVisible) {
 		if (nEvent == EM_NONE) {
 			return false;
 		}
 		if (m_event->IsMapTo(nEvent, EM_MOUSE_WHEEL)) {
-			if (m_bScrollable && (m_ScrollType&VSCROLL)) {
+			if (m_bScrollable && (m_ScrollType & VSCROLL)) {
 				MSG msg = m_event->GenerateMessage();
 				bHandled |= m_VScroll->MsgProc(&msg);
 			}
 			// bHandled=true; let container receiver handle the message
 		}
-		else if (m_event->IsMapTo(nEvent, EM_SB_SCROLL)){
+		else if (m_event->IsMapTo(nEvent, EM_SB_SCROLL)) {
 			GUIBase_List_Type::iterator iter;
 			OffsetRect(&m_clientRect, (int)event->lParam, (int)event->wParam);
 			//scrolls all its children, updating their position and drawing rectangles
@@ -809,15 +810,15 @@ bool CGUIContainer::MsgProc(MSG *event)
 
 void CGUIContainer::Begin(GUIState* pGUIState, float fElapsedTime)
 {
-	if (m_bNeedUpdate&&!m_bBatching) {
+	if (m_bNeedUpdate && !m_bBatching) {
 		UpdateRects();
 	}
 	if (m_bScrollable) {
 		//draw scroll bars
-		if (m_ScrollType&VSCROLL) {
+		if (m_ScrollType & VSCROLL) {
 			m_VScroll->DoRender(pGUIState, fElapsedTime);
 		}
-		if (m_ScrollType&HSCROLL) {
+		if (m_ScrollType & HSCROLL) {
 			m_HScroll->DoRender(pGUIState, fElapsedTime);
 		}
 	}
@@ -923,7 +924,7 @@ HRESULT CGUIContainer::Render(GUIState* pGUIState, float fElapsedTime)
 				if (pObjChild->m_bNeedUpdate)
 					pObjChild->UpdateRects();
 				rcChild = pObjChild->m_objResource->GetDrawingRects(0);
-				if (GetFastRender() || RectIntersect(rcChild, rcScreen)){
+				if (GetFastRender() || RectIntersect(rcChild, rcScreen)) {
 					bRender = true;
 				}
 				else
@@ -979,10 +980,10 @@ bool CGUIContainer::InvalidateRect(const RECT* lpRect)
 			UpdateRects();
 		}
 		if (m_bScrollable) {
-			if (m_ScrollType&HSCROLL){
+			if (m_ScrollType & HSCROLL) {
 				m_HScroll->Scroll(-1000);
 			}
-			if (m_ScrollType&VSCROLL){
+			if (m_ScrollType & VSCROLL) {
 				m_VScroll->Scroll(-1000);
 			}
 		}
@@ -1060,7 +1061,7 @@ void CGUIContainer::UpdateRects()
 
 	GUIBase_List_Type::iterator iter, iterend;
 	// by LiXizhi, 2007.9.20: postpone UpdateClientRect if container is not scrollable, sicne client rect has nothing to do with rendering a fixed container. 
-	if (m_bScrollable && m_bNeedCalClientRect){
+	if (m_bScrollable && m_bNeedCalClientRect) {
 		// SetRect(&m_clientRect,0,0,0,0);
 		m_clientRect.right = 0;
 		m_clientRect.bottom = 0;
@@ -1088,10 +1089,10 @@ void CGUIContainer::UpdateRects()
 			continue;
 		pObjChild->UpdateRects();
 	}
-	if (m_ScrollType&HSCROLL){
+	if (m_ScrollType & HSCROLL) {
 		m_HScroll->UpdateRects();
 	}
-	if (m_ScrollType&VSCROLL){
+	if (m_ScrollType & VSCROLL) {
 		m_VScroll->UpdateRects();
 	}
 
@@ -1116,36 +1117,36 @@ void CGUIContainer::UpdateScrollSize()
 	int nClientHeight = m_clientRect.bottom - m_clientRect.top;
 
 	// add horizontal scroll bar, and decrease the client area
-	if ((nClientWidth > width)){
-		if ((GetScrollType()&HSCROLL) == 0){
+	if ((nClientWidth > width)) {
+		if ((GetScrollType() & HSCROLL) == 0) {
 			bSetH = true;
 			SetScrollType(GetScrollType() | HSCROLL);
 		}
 	}
-	else{
-		if ((GetScrollType()&HSCROLL) != 0){
+	else {
+		if ((GetScrollType() & HSCROLL) != 0) {
 			bSetH = true;
 			SetScrollType(GetScrollType() ^ HSCROLL);
 		}
 	}
-	if ((GetScrollType()&HSCROLL) != 0){
+	if ((GetScrollType() & HSCROLL) != 0) {
 		height -= (m_nSBWidth - m_nBorder);
 	}
 
 	// add vertical scroll bar, and decrease the client area
-	if ((nClientHeight > height)){
-		if ((GetScrollType()&VSCROLL) == 0){
+	if ((nClientHeight > height)) {
+		if ((GetScrollType() & VSCROLL) == 0) {
 			bSetV = true;
 			SetScrollType(GetScrollType() | VSCROLL);
 		}
 	}
-	else{
-		if ((GetScrollType()&VSCROLL) != 0){
+	else {
+		if ((GetScrollType() & VSCROLL) != 0) {
 			bSetV = true;
 			SetScrollType(GetScrollType() ^ VSCROLL);
 		}
 	}
-	if ((GetScrollType()&VSCROLL) != 0){
+	if ((GetScrollType() & VSCROLL) != 0) {
 		width -= (m_nSBWidth - m_nBorder);
 	}
 
@@ -1163,11 +1164,11 @@ void CGUIContainer::UpdateScrollSize()
 
 	m_HScroll->SetTrackRange(0, nClientWidth);
 	m_VScroll->SetTrackRange(0, nClientHeight);
-	if (bSetH){
+	if (bSetH) {
 		m_HScroll->SetPageSize(width);
 		m_HScroll->SetSize(width, m_nSBWidth);
 	}
-	if (bSetV){
+	if (bSetV) {
 		m_VScroll->SetPageSize(height);
 		m_VScroll->SetSize(m_nSBWidth, height);
 	}
@@ -1182,14 +1183,14 @@ void CGUIContainer::UpdateScrollSize()
 }
 
 //should only update reference coordinate
-void CGUIContainer::UpdateClientRect(const CGUIPosition &pIn, bool unupdate/*=false*/)
+void CGUIContainer::UpdateClientRect(const CGUIPosition& pIn, bool unupdate/*=false*/)
 {
 	/** disable update client if it is not scrollable*/
-	if (!m_bScrollable || GetType()->GetTypeValue() == Type_GUIRoot){
+	if (!m_bScrollable || GetType()->GetTypeValue() == Type_GUIRoot) {
 		return;
 	}
 
-	GUIState *pGUIState = &CGUIRoot::GetInstance()->GetGUIState();
+	GUIState* pGUIState = &CGUIRoot::GetInstance()->GetGUIState();
 	RECT rc = pIn.rect;
 
 	if (pIn.IsRelativeToScreen())
@@ -1204,7 +1205,7 @@ void CGUIContainer::UpdateClientRect(const CGUIPosition &pIn, bool unupdate/*=fa
 		OffsetRect(&rc, -parent.left, -parent.top);
 	}
 
-	if (unupdate && (rc.right == m_clientRect.right || rc.bottom == m_clientRect.bottom)){
+	if (unupdate && (rc.right == m_clientRect.right || rc.bottom == m_clientRect.bottom)) {
 		m_bNeedCalClientRect = true;
 	}
 	//update the client area
@@ -1228,7 +1229,7 @@ void CGUIContainer::UpdateScroll(int nXDelta, int nYDelta)
 }
 void CGUIContainer::NextKeyFocus()
 {
-	CGUIBase *keyfocus = GetKeyFocus();
+	CGUIBase* keyfocus = GetKeyFocus();
 	if (keyfocus == 0)
 		return;
 
@@ -1296,7 +1297,7 @@ bool CGUIContainer::ActivateNextEdit(CGUIEditBox* curCtrl)
 CGUIEditBox* CGUIContainer::GetNextEdit(CGUIEditBox* curCtrl)
 {
 	GUIBase_List_Type::iterator it;
-    
+
 	if (curCtrl)
 	{
 		it = std::find(m_children.begin(), m_children.end(), (CGUIBase*)curCtrl);
@@ -1310,7 +1311,7 @@ CGUIEditBox* CGUIContainer::GetNextEdit(CGUIEditBox* curCtrl)
 				break;
 			}
 		}
-		
+
 		if (nextIt == m_children.end())
 		{
 			bool bFind = false;
@@ -1354,7 +1355,7 @@ CGUIEditBox* CGUIContainer::GetNextEdit(CGUIEditBox* curCtrl)
 
 void CGUIContainer::SetVisible(bool visible)
 {
-	if (!visible&&m_bIsTop){
+	if (!visible && m_bIsTop) {
 		SetTopLevel(false);
 	}
 	CGUIBase::SetVisible(visible);
@@ -1362,14 +1363,14 @@ void CGUIContainer::SetVisible(bool visible)
 
 void CGUIContainer::SetCandrag(bool bCandrag)
 {
-	if (bCandrag&&m_bIsTop){
+	if (bCandrag && m_bIsTop) {
 		SetTopLevel(false);
 	}
 	CGUIBase::SetCandrag(bCandrag);
 }
-void CGUIContainer::InitObject(const char * strObjectName, const char * alignment, int x, int y, int width, int height)
+void CGUIContainer::InitObject(const char* strObjectName, const char* alignment, int x, int y, int width, int height)
 {
-	CObjectManager *pOm = &CSingleton<CObjectManager>::Instance();
+	CObjectManager* pOm = &CSingleton<CObjectManager>::Instance();
 	if (!pOm->IsExist("default_CGUIContainer")) {
 		CGUIContainer::StaticInit();
 	}
@@ -1467,7 +1468,7 @@ CGUIBase* CGUIContainer::GetObjectAtPointRecursive(int x, int y)
 }
 
 
-GUITextureElement* CGUIContainer::GetTextureElement(const char *texturename)
+GUITextureElement* CGUIContainer::GetTextureElement(const char* texturename)
 {
 	if (strcmp(texturename, "vscrollbar.track") == 0) {
 		return m_VScroll->m_objResource->GetTextureElement(0);
@@ -1576,13 +1577,23 @@ void ParaEngine::CGUIContainer::EnableNonClientTest(bool val)
 	m_bEnableNonClientTest = val;
 }
 
+void ParaEngine::CGUIContainer::SetSelfPaintRenderTargetName(const char* name)
+{
+	m_strSelfPaintRenderTargetName = name;
+}
+
+const std::string& ParaEngine::CGUIContainer::GetSelfPaintRenderTargetName()
+{
+	return m_strSelfPaintRenderTargetName.empty() ? GetIdentifier() : m_strSelfPaintRenderTargetName;
+}
+
 CRenderTarget* ParaEngine::CGUIContainer::CreateGetRenderTarget(bool bCreateIfNotExist)
 {
 	if (m_renderTarget)
 		return (CRenderTarget*)(m_renderTarget.get());
 	else if (bCreateIfNotExist)
 	{
-		CRenderTarget* pRenderTarget = static_cast<CRenderTarget*>(CGlobals::GetScene()->FindObjectByNameAndType(GetIdentifier(), "CRenderTarget"));
+		CRenderTarget* pRenderTarget = static_cast<CRenderTarget*>(CGlobals::GetScene()->FindObjectByNameAndType(GetSelfPaintRenderTargetName(), "CRenderTarget"));
 		if (pRenderTarget)
 		{
 			pRenderTarget->SetLifeTime(-1);
@@ -1593,7 +1604,7 @@ CRenderTarget* ParaEngine::CGUIContainer::CreateGetRenderTarget(bool bCreateIfNo
 		{
 			// create one if not exist. 
 			CRenderTarget* pRenderTarget = new CRenderTarget();
-			pRenderTarget->SetIdentifier(GetIdentifier());
+			pRenderTarget->SetIdentifier(GetSelfPaintRenderTargetName());
 			pRenderTarget->SetRenderTargetSize(Vector2(128, 128));
 			CGlobals::GetScene()->AttachObject(pRenderTarget);
 			pRenderTarget->SetDirty(false);
@@ -1711,4 +1722,14 @@ void ParaEngine::CGUIScrollBar::UpdateThumbRectNineElement()
 
 		m_objResource->SetCurrentState(StateRes);
 	}
+}
+
+int ParaEngine::CGUIContainer::InstallFields(CAttributeClass* pClass, bool bOverride)
+{
+	// install parent fields if there are any. Please replace __super with your parent class name.
+	CGUIBase::InstallFields(pClass, bOverride);
+	PE_ASSERT(pClass != NULL);
+
+	pClass->AddField("SelfPaintRenderTargetName", FieldType_String, (void*)SetSelfPaintRenderTargetName_s, (void*)GetSelfPaintRenderTargetName_s, NULL, NULL, bOverride);
+	return S_OK;
 }

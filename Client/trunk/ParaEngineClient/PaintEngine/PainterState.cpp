@@ -14,7 +14,7 @@ ParaEngine::CPainterState::CPainterState()
 	m_viewportX(0), m_viewportY(0), m_viewportWidth(0), m_viewportHeight(0), 
 	m_fViewportLeft(0), m_fViewportTop(0), m_fUIScalingX(1.f), m_fUIScalingY(1.f),
 	m_opacity(1.f), WxF(false), VxF(false), m_clipEnabled(false),
-	m_painter(0), m_nPendingAssetCount(0), matComplete(Matrix4::IDENTITY),
+	m_painter(0), matComplete(Matrix4::IDENTITY),
 	m_composition_mode(CPainter::CompositionMode_SourceBlend), changeFlags(0), m_fDepth2D(0.f)
 {
 	dirtyFlags = 0;
@@ -27,7 +27,7 @@ ParaEngine::CPainterState::CPainterState(const CPainterState *s)
 	m_opacity(s->m_opacity), WxF(s->WxF), VxF(s->VxF),
 	worldMatrix(s->worldMatrix), m_matrix(s->m_matrix), 
 	m_clipEnabled(s->m_clipEnabled), m_painter(s->m_painter),
-	m_composition_mode(s->m_composition_mode), m_nPendingAssetCount(s->m_nPendingAssetCount),
+	m_composition_mode(s->m_composition_mode), 
 	m_clipInfo(s->m_clipInfo), matComplete(s->matComplete), m_fDepth2D(s->m_fDepth2D),
 	changeFlags(0)
 {
@@ -111,11 +111,6 @@ ParaEngine::QPainterPath ParaEngine::CPainterState::clipPath() const
 bool ParaEngine::CPainterState::isClipEnabled() const
 {
 	return m_clipEnabled;
-}
-
-void ParaEngine::CPainterState::AddPendingAsset(int nCount /*= 1*/)
-{
-	m_nPendingAssetCount += nCount;
 }
 
 void ParaEngine::CPainterState::CalculateDeviceMatrix(Matrix4* pOut, const Matrix4* pIn)

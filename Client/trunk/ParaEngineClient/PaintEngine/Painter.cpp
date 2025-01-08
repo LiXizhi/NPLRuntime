@@ -24,7 +24,7 @@ using namespace ParaEngine;
 /** text shadow color threshold */
 const float g_ColorThreshold = 0.5f;
 /** text shadow alpha*/
-const byte g_ShadowAlpha = 160;
+const unsigned char g_ShadowAlpha = 160;
 
 //--------------------------------------------------------------------------------------
 
@@ -33,7 +33,7 @@ the shadow color is automatically decided according to text color. if text color
 */
 Color ComputeTextShadowColor(const LinearColor& color)
 {
-	byte shadowColor = ((color.r > g_ColorThreshold) || (color.g > g_ColorThreshold) || (color.b > g_ColorThreshold)) ? 0 : 255;
+	unsigned char shadowColor = ((color.r > g_ColorThreshold) || (color.g > g_ColorThreshold) || (color.b > g_ColorThreshold)) ? 0 : 255;
 	return COLOR_ARGB(uint8(color.a * g_ShadowAlpha), shadowColor, shadowColor, shadowColor);
 }
 
@@ -41,7 +41,7 @@ inline int RectWidth(const RECT &rc) { return ((rc).right - (rc).left); }
 inline int RectHeight(const RECT &rc) { return ((rc).bottom - (rc).top); }
 
 ParaEngine::CPainter::CPainter()
-	:state(0), m_device(0), original_device(0), helper_device(0), engine(0), m_bUse3DTransform(false), m_nMatrixMode(0), m_bAutoLineWidth(true)
+	:state(0), m_device(0), original_device(0), helper_device(0), engine(0), m_bUse3DTransform(false), m_nMatrixMode(0), m_bAutoLineWidth(true), m_nPendingAssetCount(0)
 {
 }
 
@@ -90,7 +90,7 @@ bool ParaEngine::CPainter::begin(CPaintDevice * pd)
 	states.push_back(state);
 
 	state->m_brushOrigin = QPointF();
-	state->m_nPendingAssetCount = 0;
+	m_nPendingAssetCount = 0;
 
 	// Slip a painter state into the engine before we do any other operations
 	engine->setState(state);
@@ -436,7 +436,7 @@ HRESULT CPainter::DrawSprite(GUITextureElement* pElement, RECT *prcDest, float d
 		else
 		{
 			if (pTexture->IsPending() && state)
-				state->AddPendingAsset(1);
+				AddPendingAsset(1);
 		}
 	}
 
@@ -520,7 +520,7 @@ HRESULT CPainter::DrawSprite(GUITextureElement* pElement, RECT *prcDest, const V
 		else
 		{
 			if (pTexture->IsPending() && state)
-				state->AddPendingAsset(1);
+				AddPendingAsset(1);
 		}
 	}
 	return hr;
@@ -572,7 +572,7 @@ HRESULT CPainter::DrawSprite(GUITextureElement* pElement, RECT *prcDest, Matrix4
 	else
 	{
 		if (pTexture->IsPending() && state)
-			state->AddPendingAsset(1);
+			AddPendingAsset(1);
 	}
 	return S_OK;
 }
@@ -650,7 +650,7 @@ HRESULT CPainter::DrawSprite(GUITextureElement* pElement, RECT *prcDest, int n, 
 	else
 	{
 		if (pTexture->IsPending() && state)
-			state->AddPendingAsset(1);
+			AddPendingAsset(1);
 	}
 	return S_OK;
 }
@@ -1110,7 +1110,7 @@ void ParaEngine::CPainter::drawTexture(const QRectF &targetRect, TextureEntity* 
 	else
 	{
 		if (pTexture->IsPending() && state)
-			state->AddPendingAsset(1);
+			AddPendingAsset(1);
 	}
 }
 
@@ -1132,7 +1132,7 @@ void ParaEngine::CPainter::drawTexture(const QPointF &p, TextureEntity* pTexture
 	else
 	{
 		if (pTexture->IsPending() && state)
-			state->AddPendingAsset(1);
+			AddPendingAsset(1);
 	}
 }
 
@@ -1538,7 +1538,12 @@ ParaEngine::CPainter::CompositionMode ParaEngine::CPainter::compositionMode() co
 
 int ParaEngine::CPainter::GetPendingAssetCount()
 {
-	return state ? state->m_nPendingAssetCount : 0;
+	return m_nPendingAssetCount;
+}
+
+void ParaEngine::CPainter::AddPendingAsset(int nCount /*= 1*/)
+{
+	m_nPendingAssetCount += nCount;
 }
 
 bool ParaEngine::CPainter::IsAutoLineWidth() const

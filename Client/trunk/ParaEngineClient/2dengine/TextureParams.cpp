@@ -164,5 +164,9 @@ void ParaEngine::TextureParams::drawTexture(CPainter* painter, int x, int y, int
 		{
 			DrawNineTileTexture(painter, x, y, w, h, rcTextures);
 		}
+		else if(m_pTexture && m_pTexture->IsPending())
+		{
+			painter->AddPendingAsset(1);
+		}
 	}
 }

@@ -55,11 +55,6 @@ namespace ParaEngine
 		CPainter::CompositionMode compositionMode() const;
 		float opacity() const;
 
-		/** number of texture that is being loaded, but not available at the time of drawing.
-		* we generally make the paint device dirty if there is painted with at least one pending asset.
-		*/
-		void AddPendingAsset(int nCount = 1);
-
 		/** calculate device matrix based on given matrix
 		* @param pIn: if NULL, it will be current transform.
 		*/
@@ -92,10 +87,6 @@ namespace ParaEngine
 		bool WxF : 1;                 // World transformation
 		bool VxF : 1;                 // View transformation
 		bool m_clipEnabled : 1;
-		/** number of texture that is being loaded, but not available at the time of drawing. 
-		* we generally make the paint device dirty if there is painted with at least one pending asset.
-		*/
-		int m_nPendingAssetCount;
 		CPainter *m_painter;
 		CPainter::CompositionMode m_composition_mode;
 		uint32 changeFlags;
