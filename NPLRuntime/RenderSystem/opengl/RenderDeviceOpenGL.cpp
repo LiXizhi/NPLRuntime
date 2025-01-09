@@ -397,11 +397,17 @@ bool ParaEngine::RenderDeviceOpenGL::SetRenderState(const ERenderState State, co
 			glValue = GL_FUNC_SUBTRACT;
 		else if (Value == D3DBLENDOP_REVSUBTRACT)
 			glValue = GL_FUNC_REVERSE_SUBTRACT;
+#ifdef IOS
+		else if (Value == D3DBLENDOP_MIN)
+			glValue = GL_MIN_EXT;
+		else if (Value == D3DBLENDOP_MAX)
+			glValue = GL_MAX_EXT;
+#else
 		else if (Value == D3DBLENDOP_MIN)
 			glValue = GL_MIN;
 		else if (Value == D3DBLENDOP_MAX)
 			glValue = GL_MAX;
-		
+#endif
 		if (State == ERenderState::BLENDOP)
 		{
 			glBlendEquation(glValue);
