@@ -22,6 +22,14 @@ using namespace ParaEngine;
 #define USE_USER_POINTER_VBO
 #endif
 
+#ifndef GL_MIN
+#define GL_MIN GL_MIN_EXT
+#endif
+
+#ifndef GL_MAX
+#define GL_MAX GL_MAX_EXT
+#endif
+
 namespace ParaEngine
 {
 	/** for managing opengl vertex and index buffer object. */
@@ -397,17 +405,10 @@ bool ParaEngine::RenderDeviceOpenGL::SetRenderState(const ERenderState State, co
 			glValue = GL_FUNC_SUBTRACT;
 		else if (Value == D3DBLENDOP_REVSUBTRACT)
 			glValue = GL_FUNC_REVERSE_SUBTRACT;
-#ifdef IOS
-		else if (Value == D3DBLENDOP_MIN)
-			glValue = GL_MIN_EXT;
-		else if (Value == D3DBLENDOP_MAX)
-			glValue = GL_MAX_EXT;
-#else
 		else if (Value == D3DBLENDOP_MIN)
 			glValue = GL_MIN;
 		else if (Value == D3DBLENDOP_MAX)
 			glValue = GL_MAX;
-#endif
 		if (State == ERenderState::BLENDOP)
 		{
 			glBlendEquation(glValue);
