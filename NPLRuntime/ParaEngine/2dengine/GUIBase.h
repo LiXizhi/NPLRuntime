@@ -292,7 +292,7 @@ namespace ParaEngine
 		* All its inheritances should have a StaticInit() for each kind of class.
 		*/
 		static void			StaticInit();
-#ifdef IOS
+#if defined(IOS) || defined(ANDROID)
 		virtual int GetCaretPosition(){ return 0; };
         virtual void SetCaretPosition(int nCharacterPos){};
 #endif
