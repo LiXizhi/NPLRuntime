@@ -13,6 +13,7 @@
 #include <sstream>
 #include <string>
 #include <unordered_map>
+#include <cctype>
 
 #define DEBUG
 
@@ -820,6 +821,12 @@ public:
     }
 
 private:
+    static bool IsSpace(char ch)
+    {
+        static std::locale loc;
+        return std::isspace(ch, loc);
+    }
+
     std::string GetText(antlr4::ParserRuleContext *ctx)
     {
         return ctx == nullptr ? NullString() : std::any_cast<std::string>(ctx->accept(this));
