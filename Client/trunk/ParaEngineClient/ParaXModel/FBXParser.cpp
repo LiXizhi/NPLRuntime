@@ -1,7 +1,7 @@
 ﻿//-----------------------------------------------------------------------------
 // Class:	FBX importer
 // Authors:	LiPeng, LiXizhi
-// Emails:	
+// Emails:
 // Company: ParaEngine
 // Date:	2015.6
 //-----------------------------------------------------------------------------
@@ -33,43 +33,28 @@ extern "C"
 using namespace ParaEngine;
 using namespace ParaEngine::XFile;
 
-static const char* g_sDefaultTexture = "Texture/whitedot.png";
+static const char *g_sDefaultTexture = "Texture/whitedot.png";
 
 namespace ParaEngine
 {
-	inline Vector3 ConvertFBXVector3D(const aiVector3D& fbxVector3D)
+	inline Vector3 ConvertFBXVector3D(const aiVector3D &fbxVector3D)
 	{
 		return Vector3(fbxVector3D.x, fbxVector3D.y, fbxVector3D.z);
 	}
 
-	inline Quaternion ConvertFBXQuaternion(const aiQuaternion& fbxQuaternion)
+	inline Quaternion ConvertFBXQuaternion(const aiQuaternion &fbxQuaternion)
 	{
 		return Quaternion(-fbxQuaternion.x, -fbxQuaternion.y, -fbxQuaternion.z, fbxQuaternion.w);
 	}
 }
 
 FBXParser::FBXParser()
-	: m_pScene(NULL)
-	, m_nMaterialIndex(0)
-	, m_nRootNodeIndex(0)
-	, m_bUsedVertexColor(true)
-	, m_bHasSkinnedMesh(false)
-	, m_unique_id(0)
-	, m_bHasAABBMesh(false)
-	, m_pLuaState(nullptr)
+	: m_pScene(NULL), m_nMaterialIndex(0), m_nRootNodeIndex(0), m_bUsedVertexColor(true), m_bHasSkinnedMesh(false), m_unique_id(0), m_bHasAABBMesh(false), m_pLuaState(nullptr)
 {
 }
 
-FBXParser::FBXParser(const string& filename)
-	: m_sFilename(filename)
-	, m_pScene(NULL)
-	, m_nMaterialIndex(0)
-	, m_nRootNodeIndex(0)
-	, m_bUsedVertexColor(true)
-	, m_bHasSkinnedMesh(false)
-	, m_unique_id(0)
-	, m_bHasAABBMesh(false)
-	, m_pLuaState(nullptr)
+FBXParser::FBXParser(const string &filename)
+	: m_sFilename(filename), m_pScene(NULL), m_nMaterialIndex(0), m_nRootNodeIndex(0), m_bUsedVertexColor(true), m_bHasSkinnedMesh(false), m_unique_id(0), m_bHasAABBMesh(false), m_pLuaState(nullptr)
 {
 	m_texAnims.reserve(10);
 }
@@ -80,20 +65,21 @@ FBXParser::~FBXParser()
 		lua_close(m_pLuaState);
 }
 
-XFile::Scene* ParaEngine::FBXParser::ParseFBXFile(const char* buffer, int nSize)
+XFile::Scene *ParaEngine::FBXParser::ParseFBXFile(const char *buffer, int nSize)
 {
 	Assimp::Importer importer;
 	Reset();
-	const aiScene* pFbxScene = importer.ReadFileFromMemory(buffer, nSize, aiProcess_Triangulate | aiProcess_GenSmoothNormals | aiProcess_FlipUVs, "fbx");
-	if (pFbxScene) {
+	const aiScene *pFbxScene = importer.ReadFileFromMemory(buffer, nSize, aiProcess_Triangulate | aiProcess_GenSmoothNormals | aiProcess_FlipUVs, "fbx");
+	if (pFbxScene)
+	{
 		if (pFbxScene->HasMeshes())
 		{
 			m_pScene = new Scene;
 			int numMeshes = pFbxScene->mNumMeshes;
 			for (int i = 0; i < numMeshes; i++)
 			{
-				Mesh* mesh = new Mesh;
-				aiMesh* test = pFbxScene->mMeshes[i];
+				Mesh *mesh = new Mesh;
+				aiMesh *test = pFbxScene->mMeshes[i];
 				int numVertices = (pFbxScene->mMeshes[i])->mNumVertices;
 				ProcessStaticFBXMesh(pFbxScene->mMeshes[i], mesh);
 				m_pScene->mGlobalMeshes.push_back(mesh);
@@ -101,7 +87,7 @@ XFile::Scene* ParaEngine::FBXParser::ParseFBXFile(const char* buffer, int nSize)
 				if (i == 0)
 				{
 					Vector3 vMin, vMax;
-					ParaComputeBoundingBox((Vector3*)(&mesh->mPositions[0]), mesh->mPositions.size(), sizeof(Vector3), &vMin, &vMax);
+					ParaComputeBoundingBox((Vector3 *)(&mesh->mPositions[0]), mesh->mPositions.size(), sizeof(Vector3), &vMin, &vMax);
 					m_pScene->m_header.minExtent = vMin;
 					m_pScene->m_header.maxExtent = vMax;
 				}
@@ -117,7 +103,8 @@ XFile::Scene* ParaEngine::FBXParser::ParseFBXFile(const char* buffer, int nSize)
 			}
 		}
 	}
-	else {
+	else
+	{
 		OUTPUT_LOG("Error parsing '%s': '%s'\n", m_sFilename.c_str(), importer.GetErrorString());
 	}
 	return m_pScene;
@@ -136,15 +123,16 @@ void ParaEngine::FBXParser::SetAnimSplitterFilename()
 	m_sAnimSplitterFilename = std::string(m_sFilename.c_str(), m_sFilename.size() - 3) + "xml";
 }
 
-CParaXModel* FBXParser::ParseParaXModel(const char* buffer, int nSize, const char* pHint)
+CParaXModel *FBXParser::ParseParaXModel(const char *buffer, int nSize, const char *pHint)
 {
-	CParaXModel* pMesh = NULL;
+	CParaXModel *pMesh = NULL;
 	Assimp::Importer importer;
 	Reset();
 	SetAnimSplitterFilename();
-	// this is not needed: aiProcess_MakeLeftHanded | 
-	const aiScene* pFbxScene = importer.ReadFileFromMemory(buffer, nSize, aiProcess_Triangulate | aiProcess_GenSmoothNormals | aiProcess_FlipUVs, pHint);
-	if (pFbxScene) {
+	// this is not needed: aiProcess_MakeLeftHanded |
+	const aiScene *pFbxScene = importer.ReadFileFromMemory(buffer, nSize, aiProcess_Triangulate | aiProcess_GenSmoothNormals | aiProcess_FlipUVs, pHint);
+	if (pFbxScene)
+	{
 		ParaXHeaderDef m_xheader;
 		m_xheader.IsAnimated = pFbxScene->HasAnimations() ? 1 : 0;
 
@@ -166,16 +154,16 @@ CParaXModel* FBXParser::ParseParaXModel(const char* buffer, int nSize, const cha
 		}
 
 		// get root node
-		//m_nRootNodeIndex = CreateGetBoneIndex(pFbxScene->mRootNode->mName.C_Str());
+		// m_nRootNodeIndex = CreateGetBoneIndex(pFbxScene->mRootNode->mName.C_Str());
 
 		// must be called before ProcessFBXBoneNodes
 		decltype(m_bones) raf_bones;
 		decltype(m_boneMapping) raf_bonemapping;
 		if (m_sFilename.find("_RAF(") != std::string::npos)
 		{
-			auto ref_file_start=m_sFilename.find("_RAF(")+strlen("_RAF(");
-			auto ref_file_end=m_sFilename.find(')',ref_file_start)-1;
-			std::string anim_file_name = m_sFilename.substr(ref_file_start,ref_file_end-ref_file_start+1)+".fbx";
+			auto ref_file_start = m_sFilename.find("_RAF(") + strlen("_RAF(");
+			auto ref_file_end = m_sFilename.find(')', ref_file_start) - 1;
+			std::string anim_file_name = m_sFilename.substr(ref_file_start, ref_file_end - ref_file_start + 1) + ".fbx";
 			anim_file_name = m_sFilename.substr(0, m_sFilename.find_last_of("/") + 1) + anim_file_name;
 			FBXParser anim_parser(anim_file_name);
 			anim_parser.ParseParaXModel();
@@ -199,45 +187,338 @@ CParaXModel* FBXParser::ParseParaXModel(const char* buffer, int nSize, const cha
 #ifdef ASSIMP5
 		// MakeAxisY_UP();
 #endif
+
+#define COLLAPSE_GROUP_BONE_TRANSFORM_NODE true
+		if (COLLAPSE_GROUP_BONE_TRANSFORM_NODE)
+		{
+			MergeBoneNodesRST();
+			LoadAnimations(pFbxScene);
+		}
+
 		FillParaXModelData(pMesh, pFbxScene);
 
 		CalculateScale(pMesh);
 
 		PostProcessParaXModelData(pMesh);
+
 #ifdef _DEBUG
-		//PrintDebug(pFbxScene);
+		// PrintDebug(pFbxScene);
 #endif
 	}
-	else {
+	else
+	{
 		OUTPUT_LOG("Error parsing '%s': '%s'\n", m_sFilename.c_str(), importer.GetErrorString());
 	}
 	return pMesh;
 }
 
-void FBXParser::CalculateScale(CParaXModel* pMesh)
+void FBXParser::MergeBoneNodesRST()
+{
+	auto bones = m_bones.data();
+	int bones_size = m_bones.size();
+	std::vector<int> flags;
+	flags.assign(bones_size, 0);
+	// 查找叶子节点
+	for (int i = 0; i < bones_size; i++)
+	{
+		auto bone = bones + i;
+		if (bone->parent < 0)
+			continue;
+		flags[bone->parent] = 1; // 标记为1 表示有子节点
+	}
+
+	// 未被标记的表明为叶子节点
+	std::vector<ParaEngine::Bone *> leaf_bones;
+	for (int i = 0; i < bones_size; i++)
+	{
+		if (flags[i] == 0)
+		{
+			auto bone = bones + i;
+			// 单个孤立节点不需要
+			if (bone->parent < 0)
+				continue;
+			leaf_bones.push_back(bone);
+		}
+	}
+
+	flags.assign(bones_size, 0); // 标记删除
+	std::string suffix_flag = "_$AssimpFbx$_";
+	for (auto leaf_bone : leaf_bones)
+	{
+		ParaEngine::Bone *bone = leaf_bone;
+		while (bone->parent >= 0)
+		{
+			auto parent_bone = bones + bone->parent;
+			auto bone_name = bone->m_sIdentifer;
+			auto parent_bone_name = parent_bone->m_sIdentifer;
+			auto base_bone_name = parent_bone_name.substr(0, parent_bone_name.find(suffix_flag));
+			auto base_parent_bone_name = bone_name.substr(0, bone_name.find(suffix_flag));
+			if (base_bone_name != base_parent_bone_name)
+			{
+				bone = parent_bone; // 不相同则不为一组节点
+			}
+			else
+			{
+				std::vector<ParaEngine::Bone *> groups;
+				groups.push_back(bone);
+				groups.push_back(parent_bone);
+				auto base_bone = base_bone_name == bone_name ? bone : nullptr;
+				base_bone = base_parent_bone_name == parent_bone_name ? parent_bone : base_bone;
+				// 继续往上找同组节点
+				while (parent_bone->parent >= 0)
+				{
+					parent_bone = bones + parent_bone->parent;
+					parent_bone_name = parent_bone->m_sIdentifer;
+					base_parent_bone_name = parent_bone_name.substr(0, parent_bone_name.find(suffix_flag));
+					if (base_bone_name != base_parent_bone_name)
+						break;
+					base_bone = base_parent_bone_name == parent_bone_name ? parent_bone : base_bone;
+					groups.push_back(parent_bone);
+				}
+				// 找到一组节点进行合并
+				auto merge_bone = MergeBoneNodesRST(groups, base_bone);
+				if (merge_bone != nullptr)
+				{
+					auto start_bone = groups.front();
+					auto end_bone = groups.back();
+					// 合并节点的父节点指向未节点的父节点
+					merge_bone->parent = end_bone->parent;
+					// 所有指向首节点的字节点改为指向合并节点
+					for (int i = 0; i < bones_size; i++)
+					{
+						auto child_bone = bones + i;
+						if (child_bone->parent == start_bone->nIndex)
+						{
+							child_bone->parent = merge_bone->nIndex;
+						}
+					}
+					// 标记合并点删除
+					for (auto group : groups)
+					{
+						flags[group->nIndex] = group == merge_bone ? 0 : 1;
+					}
+				}
+				bone = parent_bone;
+			}
+		}
+	}
+	// 重新构建骨骼列表 删除标记节点
+	std::vector<int> bone_indexs; // 新骨骼索引列表 new_bone_index => old_bone_index   flags 为 old_bone_index => new_bone_index
+	for (int i = 0; i < bones_size; i++)
+	{
+		if (flags[i] == 1)
+		{
+			flags[i] = -1; // 新索引
+			continue;
+		}
+		auto bone = bones + i;
+		auto bone_index = bone_indexs.size();
+		flags[i] = bone_index;
+		bone->nIndex = bone_index;
+		bone_indexs.push_back(i);
+	}
+	// 更新新节点父索引并移动节点
+	int bone_indexs_size = bone_indexs.size();
+	for (auto i = 0; i < bone_indexs_size; i++)
+	{
+		auto bone_index = bone_indexs[i];
+		auto bone = bones + bone_index;
+		bone->parent = bone->parent < 0 ? -1 : flags[bone->parent];
+
+		if (i <= bone_index)
+		{
+			bones[i] = bones[bone_index];
+		}
+		else
+		{
+			// asset(i <= bone_index);  // i 为新索引 bone_index 为旧索引
+			std::cout << "exist logic error !!!" << std::endl;
+		}
+	}
+	m_bones.resize(bone_indexs_size);
+
+	// 更新顶点骨骼索引
+	auto vertices = m_vertices.data();
+	int vertices_size = m_vertices.size();
+	for (int i = 0; i < vertices_size; i++)
+	{
+		auto vertex = vertices + i;
+		for (int j = 0; j < ParaEngine::Bone::s_MaxBonesPerVertex; j++)
+		{
+			auto bone_index = vertex->bones[j];
+			if (bone_index >= 0 && bone_index < bones_size)
+			{
+				vertex->bones[j] = flags[bone_index];
+			}
+		}
+	}
+}
+
+// groups 为同组节点
+// base_bone 为基准节点
+// 返回合并后的节点
+ParaEngine::Bone *FBXParser::MergeBoneNodesRST(std::vector<ParaEngine::Bone *> &groups, ParaEngine::Bone *base_bone)
+{
+	auto merge_bone = base_bone;
+	int groups_size = groups.size();
+	std::vector<AnimatedVariable<Vector3>> groups_trans(groups_size);
+	std::vector<AnimatedVariable<Quaternion>> groups_rots(groups_size);
+	std::vector<AnimatedVariable<Vector3>> groups_scales(groups_size);
+
+	std::set<int> times; // 关键帧时刻
+	std::set<int> trans_times;
+	std::set<int> rot_times;
+	std::set<int> scale_times;
+	for (int i = 0; i < groups_size; i++)
+	{
+		auto bone = groups[i];
+		if (bone->trans.used)
+		{
+			auto &trans = groups_trans[i];
+			int size = bone->trans.times.size();
+			for (int j = 0; j < size; j++)
+			{
+				auto time = bone->trans.times[j];
+				auto value = bone->trans.data[j];
+				trans_times.insert(time);
+				times.insert(time);
+				auto index = trans.AddKey(time, nullptr);
+				trans.SetValue(index, value);
+			}
+		}
+		if (bone->rot.used)
+		{
+			auto &rots = groups_rots[i];
+			int size = bone->rot.times.size();
+			for (int j = 0; j < size; j++)
+			{
+				auto time = bone->rot.times[j];
+				auto value = bone->rot.data[j];
+				rot_times.insert(time);
+				times.insert(time);
+				auto index = rots.AddKey(time, nullptr);
+				rots.SetValue(index, value);
+			}
+		}
+		if (bone->scale.used)
+		{
+			auto &scales = groups_scales[i];
+			int size = bone->scale.times.size();
+			for (int j = 0; j < size; j++)
+			{
+				auto time = bone->scale.times[j];
+				auto value = bone->scale.data[j];
+				scale_times.insert(time);
+				times.insert(time);
+				auto index = scales.AddKey(time, nullptr);
+				scales.SetValue(index, value);
+			}
+		}
+	}
+	if (times.empty())
+	{
+		Matrix4 parent_transform = Matrix4::IDENTITY;
+		for (auto it = groups.rbegin(); it != groups.rend(); it++)
+		{
+			auto bone = *it;
+			parent_transform = parent_transform * bone->matTransform;
+		}
+		merge_bone->matTransform = parent_transform;
+	}
+	else
+	{
+		Animated<Vector3> trans;
+		Animated<Quaternion> rots;
+		Animated<Vector3> scales;
+		Matrix4 parent_transform;
+		for (auto time : times)
+		{
+			parent_transform.identity();
+			for (int i = groups_size - 1; i >= 0; i--)
+			{
+				auto bone = groups[i];
+				auto transform = bone->matTransform;
+				auto &group_trans = groups_trans[i];
+				auto &group_rots = groups_rots[i];
+				auto &group_scales = groups_scales[i];
+				if (bone->trans.used || bone->rot.used || bone->scale.used)
+				{
+					Vector3 T = Vector3::ZERO;
+					Quaternion R = Quaternion::IDENTITY;
+					Vector3 S = Vector3::UNIT_SCALE;
+					if (bone->trans.used)
+						group_trans.GetValueByTime(time, T);
+					if (bone->rot.used)
+						group_rots.GetValueByTime(time, R);
+					if (bone->scale.used)
+						group_scales.GetValueByTime(time, S);
+					transform.makeTransform(T, S, R);
+					parent_transform = parent_transform * transform;
+				}
+				else
+				{
+					parent_transform = parent_transform * transform;
+				}
+			}
+			Vector3 scale;
+			Quaternion rotation;
+			Vector3 translation;
+			ParaMatrixDecompose(&scale, &rotation, &translation, &parent_transform);
+			if (trans_times.find(time) != trans_times.end())
+			{
+				trans.times.push_back(time);
+				trans.data.push_back(translation);
+			}
+			if (rot_times.find(time) != rot_times.end())
+			{
+				rots.times.push_back(time);
+				rots.data.push_back(rotation);
+			}
+			if (scale_times.find(time) != scale_times.end())
+			{
+				scales.times.push_back(time);
+				scales.data.push_back(scale);
+			}
+		}
+		merge_bone->trans = trans;
+		merge_bone->trans.used = true;
+		merge_bone->rot = rots;
+		merge_bone->rot.used = true;
+		merge_bone->scale = scales;
+		merge_bone->scale.used = true;
+		merge_bone->calc = true;
+		merge_bone->flags = ParaEngine::Bone::BONE_OFFSET_MATRIX;
+	}
+
+	return merge_bone;
+}
+
+void FBXParser::CalculateScale(CParaXModel *pMesh)
 {
 	float scale = 1.0f;
 	auto extend = m_maxExtent - m_minExtent;
-    // float maxSize = 10.f;  // 模型最大大小, 超过此值进行缩小
-    // while (extend.x * scale > maxSize || extend.y * scale > maxSize || extend.z * scale > maxSize) scale /= 10;
-	if (extend.x > 50 || extend.y > 50 || extend.z > 50) scale = 0.01f;
+	// float maxSize = 10.f;  // 模型最大大小, 超过此值进行缩小
+	// while (extend.x * scale > maxSize || extend.y * scale > maxSize || extend.z * scale > maxSize) scale /= 10;
+	if (extend.x > 50 || extend.y > 50 || extend.z > 50)
+		scale = 0.01f;
 	pMesh->m_header.minExtent = scale;
 	pMesh->m_header.maxExtent = scale;
 	int bones_size = pMesh->m_objNum.nBones;
-	if (bones_size == 0) return;
+	if (bones_size == 0)
+		return;
 
 	int root_bone_index = -1;
-	for (int i = 0; i< bones_size; i++)
+	for (int i = 0; i < bones_size; i++)
 	{
-		ParaEngine::Bone& bone = pMesh->bones[i];
-		if (bone.parent < 0) 
+		ParaEngine::Bone &bone = pMesh->bones[i];
+		if (bone.parent < 0)
 		{
 			root_bone_index = i;
 			break;
 		}
 	}
 
-	ParaEngine::Bone& rootBone = pMesh->bones[root_bone_index];
+	ParaEngine::Bone &rootBone = pMesh->bones[root_bone_index];
 
 	// 动画缩放
 	int size = rootBone.scale.data.size();
@@ -294,8 +575,6 @@ void FBXParser::AddColors(CParaXModel *pMesh)
 			pMesh->colors[i] = m_colors[i];
 		}
 	}
-
-
 }
 
 void FBXParser::AddTransparency(CParaXModel *pMesh)
@@ -330,12 +609,11 @@ void FBXParser::AddTransparency(CParaXModel *pMesh)
 			pMesh->transparency[i] = m_transparencys[i];
 		}
 	}
-
 }
 
 void FBXParser::PostProcessParaXModelData(CParaXModel *pMesh)
 {
-	// we need to collapse all bone transform. 
+	// we need to collapse all bone transform.
 	if (pMesh->m_objNum.nBones > 0)
 	{
 		AnimIndex blendingAnim;
@@ -343,14 +621,14 @@ void FBXParser::PostProcessParaXModelData(CParaXModel *pMesh)
 		pMesh->calcBones(NULL, curAnim, blendingAnim, 0.f, curAnim, blendingAnim, 0.f);
 
 		ModelVertex *ov = pMesh->m_origVertices;
-		ParaEngine::Bone* bones = pMesh->bones;
+		ParaEngine::Bone *bones = pMesh->bones;
 		int nVertexCount = pMesh->m_objNum.nVertices;
 		if (m_bHasAABBMesh)
 		{
 			int nBoneIndex = CreateGetBoneIndex("aabb");
 			if (nBoneIndex >= 0)
 			{
-				Bone& bone = bones[nBoneIndex];
+				Bone &bone = bones[nBoneIndex];
 				auto v1 = m_minExtent * bone.mat;
 				auto v2 = m_maxExtent * bone.mat;
 				m_bHasAABBMesh = false;
@@ -364,12 +642,12 @@ void FBXParser::PostProcessParaXModelData(CParaXModel *pMesh)
 		{
 			ResetAABB();
 		}
-			
+
 		if (!pMesh->animated)
 		{
 			for (int i = 0; i < nVertexCount; ++i, ++ov)
 			{
-				Bone& bone = bones[ov->bones[0]];
+				Bone &bone = bones[ov->bones[0]];
 				ov->pos = ov->pos * bone.mat;
 				ov->normal = ov->normal.TransformNormal(bone.mrot);
 				CalculateMinMax(ov->pos);
@@ -379,12 +657,13 @@ void FBXParser::PostProcessParaXModelData(CParaXModel *pMesh)
 		{
 			for (int i = 0; i < nVertexCount; ++i, ++ov)
 			{
-				Bone& bone = bones[ov->bones[0]];
+				Bone &bone = bones[ov->bones[0]];
 				float weight = ov->weights[0] * (1 / 255.0f);
-				Vector3 v = (ov->pos * bone.mat)*weight;
-				for (int b = 1; b < 4 && ov->weights[b]>0; b++) {
+				Vector3 v = (ov->pos * bone.mat) * weight;
+				for (int b = 1; b < 4 && ov->weights[b] > 0; b++)
+				{
 					weight = ov->weights[b] * (1 / 255.0f);
-					Bone& bone = bones[ov->bones[b]];
+					Bone &bone = bones[ov->bones[b]];
 					v += (ov->pos * bone.mat) * weight;
 				}
 				CalculateMinMax(v);
@@ -395,24 +674,25 @@ void FBXParser::PostProcessParaXModelData(CParaXModel *pMesh)
 
 		for (uint32 i = 0; i < pMesh->m_objNum.nBones; ++i)
 		{
-			Bone& bone = bones[i];
+			Bone &bone = bones[i];
 			if (bone.IsTransformationNode() && !bone.CheckHasAnimation())
 			{
 				bone.SetStaticTransform(bone.matTransform);
 			}
 		}
+
 #define COLLAPSE_STATIC_TRANSFORM_NODE false
-		if (COLLAPSE_STATIC_TRANSFORM_NODE) 
+		if (COLLAPSE_STATIC_TRANSFORM_NODE)
 		{
 			for (uint32 i = 0; i < pMesh->m_objNum.nBones; ++i)
 			{
-				Bone& bone = bones[i];
+				Bone &bone = bones[i];
 				if (bone.IsStaticTransform() && bone.IsTransformationNode())
 				{
-					// try to collapse multiple transform node into one to save computation. 
+					// try to collapse multiple transform node into one to save computation.
 					while (bone.parent >= 0)
 					{
-						Bone& parent = bones[bone.parent];
+						Bone &parent = bones[bone.parent];
 						if (parent.IsStaticTransform() && parent.IsTransformationNode())
 						{
 							bone.matTransform *= parent.matTransform;
@@ -424,7 +704,6 @@ void FBXParser::PostProcessParaXModelData(CParaXModel *pMesh)
 				}
 			}
 		}
-
 	}
 
 	std::stable_sort(pMesh->passes.begin(), pMesh->passes.end());
@@ -441,11 +720,10 @@ void FBXParser::FillParaXModelData(CParaXModel *pMesh, const aiScene *pFbxScene)
 	pMesh->m_vNeckYawAxis = m_modelInfo.m_vNeckYawAxis;
 	pMesh->m_vNeckPitchAxis = m_modelInfo.m_vNeckPitchAxis;
 
-
 	auto nTexAnims = this->m_texAnims.size();
 	if (nTexAnims > 0)
 	{
-		//pMesh->animated = true;
+		// pMesh->animated = true;
 		pMesh->animTextures = true;
 
 		pMesh->texanims = new TextureAnim[nTexAnims];
@@ -485,10 +763,10 @@ void FBXParser::FillParaXModelData(CParaXModel *pMesh, const aiScene *pFbxScene)
 			int index = 0;
 			for (auto it = m_particleSystem.begin(); it != m_particleSystem.end(); it++)
 			{
-				ParticleSystem& ps = it->second;
+				ParticleSystem &ps = it->second;
 				auto offset = (size_t)ps.parent;
 				ps.parent = pMesh->bones + offset;
-				auto& curPs = pMesh->particleSystems[index++];
+				auto &curPs = pMesh->particleSystems[index++];
 				curPs = ps;
 				ps.emitter = nullptr;
 
@@ -496,7 +774,6 @@ void FBXParser::FillParaXModelData(CParaXModel *pMesh, const aiScene *pFbxScene)
 					curPs.emitter = new SphereParticleEmitter(&curPs);
 				else
 					curPs.emitter = new PlaneParticleEmitter(&curPs);
-
 			}
 
 			m_particleSystem.clear();
@@ -506,7 +783,7 @@ void FBXParser::FillParaXModelData(CParaXModel *pMesh, const aiScene *pFbxScene)
 	if ((m_bHasSkinnedMesh && pMesh->animated && m_anims.size() == 0) || nTexAnims > 0 || psSize > 0)
 	{
 		// static animation 0, just in case there are skinned mesh without any animation
-		// we need to animate bones just in case external animations are used outside. 
+		// we need to animate bones just in case external animations are used outside.
 		ModelAnimation anim;
 		memset(&anim, 0, sizeof(ModelAnimation));
 		anim.timeStart = 0;
@@ -518,7 +795,7 @@ void FBXParser::FillParaXModelData(CParaXModel *pMesh, const aiScene *pFbxScene)
 	if (m_anims.size() > 0 && m_bones.size() > 0)
 	{
 		pMesh->anims = new ModelAnimation[m_anims.size()];
-		memcpy(pMesh->anims, &(m_anims[0]), sizeof(ModelAnimation)*m_anims.size());
+		memcpy(pMesh->anims, &(m_anims[0]), sizeof(ModelAnimation) * m_anims.size());
 		pMesh->animBones = true;
 		pMesh->animated = true;
 	}
@@ -539,11 +816,11 @@ void FBXParser::FillParaXModelData(CParaXModel *pMesh, const aiScene *pFbxScene)
 				int nSize = m_textureContentMapping[m_textures[i]].size();
 				if (nSize > 0)
 				{
-					TextureEntity* texEntity = CGlobals::GetAssetManager()->GetTextureManager().GetEntity(m_textures[i]);
-					if ( !texEntity )
+					TextureEntity *texEntity = CGlobals::GetAssetManager()->GetTextureManager().GetEntity(m_textures[i]);
+					if (!texEntity)
 					{
 						texEntity = CGlobals::GetAssetManager()->GetTextureManager().NewEntity(m_textures[i]);
-						char* bufferCpy = new char[nSize];
+						char *bufferCpy = new char[nSize];
 						auto src = m_textureContentMapping[m_textures[i]].c_str();
 						memcpy(bufferCpy, src, nSize);
 						texEntity->SetRawData(bufferCpy, nSize);
@@ -564,9 +841,8 @@ void FBXParser::FillParaXModelData(CParaXModel *pMesh, const aiScene *pFbxScene)
 		}
 	}
 
-	//pMesh->m_RenderMethod = pMesh->HasAnimation() ? CParaXModel::SOFT_ANIM : CParaXModel::NO_ANIM;
+	// pMesh->m_RenderMethod = pMesh->HasAnimation() ? CParaXModel::SOFT_ANIM : CParaXModel::NO_ANIM;
 	pMesh->SetRenderMethod(pMesh->HasAnimation() ? CParaXModel::SOFT_ANIM : CParaXModel::NO_ANIM);
-
 
 	// only enable bmax model, if there are vertex color channel.
 	if (m_bUsedVertexColor)
@@ -588,7 +864,7 @@ void FBXParser::FillParaXModelData(CParaXModel *pMesh, const aiScene *pFbxScene)
 	AddTransparency(pMesh);
 }
 
-XFile::Scene* FBXParser::ParseFBXFile()
+XFile::Scene *FBXParser::ParseFBXFile()
 {
 	CParaFile myFile(m_sFilename.c_str());
 	if (!myFile.isEof())
@@ -602,7 +878,7 @@ XFile::Scene* FBXParser::ParseFBXFile()
 	}
 }
 
-CParaXModel* FBXParser::ParseParaXModel()
+CParaXModel *FBXParser::ParseParaXModel()
 {
 	CParaFile myFile(m_sFilename.c_str());
 	if (!myFile.isEof())
@@ -621,21 +897,21 @@ LinearColor FBXParser::GetRGBA(int colorTag)
 	LinearColor color;
 	switch (colorTag)
 	{
-		//1:diffuse
+		// 1:diffuse
 	case 1:
 		color.r = 0.588f;
 		color.g = 0.588f;
 		color.b = 0.588f;
 		color.a = 1.f;
 		break;
-		//2:specular
+		// 2:specular
 	case 2:
 		color.r = 0.9f;
 		color.g = 0.9f;
 		color.b = 0.9f;
 		color.a = 0.f;
 		break;
-		//3��emissive
+		// 3��emissive
 	case 3:
 		color.r = 1.f;
 		color.g = 0.f;
@@ -695,12 +971,11 @@ Vector2 FBXParser::GetTextureCoords()
 
 void FBXParser::FillTextureCoords(aiMesh *pFbxMesh, XFile::Mesh *pMesh)
 {
-	std::vector<Vector2>& coords = pMesh->mTexCoords[pMesh->mNumTextures++];
+	std::vector<Vector2> &coords = pMesh->mTexCoords[pMesh->mNumTextures++];
 	coords.resize(pFbxMesh->mNumVertices);
 	int numTextureCoords = pFbxMesh->mNumVertices;
 	for (int a = 0; a < numTextureCoords; a++)
 		coords[a] = GetTextureCoords();
-
 }
 
 std::string FBXParser::GetTexturePath(string textpath)
@@ -709,9 +984,9 @@ std::string FBXParser::GetTexturePath(string textpath)
 	return textname;
 }
 
-void FBXParser::ProcessStaticFBXMaterial(const aiScene* pFbxScene, unsigned int iIndex)
+void FBXParser::ProcessStaticFBXMaterial(const aiScene *pFbxScene, unsigned int iIndex)
 {
-	aiMaterial* pfbxMaterial = pFbxScene->mMaterials[iIndex];
+	aiMaterial *pfbxMaterial = pFbxScene->mMaterials[iIndex];
 	unsigned int iMesh = 0;
 	for (unsigned int i = 0; i < pFbxScene->mNumMaterials; ++i)
 	{
@@ -732,16 +1007,16 @@ void FBXParser::ProcessStaticFBXMaterial(const aiScene* pFbxScene, unsigned int 
 	float fBlend;
 	aiTextureOp eOp;
 	aiString szPath;
-	char* content_begin = NULL;
+	char *content_begin = NULL;
 	int content_len = -1;
 	int16 opacity = -1;
 
 #ifdef ASSIMP5
 	aiGetMaterialTexture(pfbxMaterial, (aiTextureType)aiTextureType_DIFFUSE, 0,
-		&szPath, NULL, &iUV, &fBlend, &eOp, NULL, NULL);
+						 &szPath, NULL, &iUV, &fBlend, &eOp, NULL, NULL);
 #else
 	aiGetMaterialTexture(pfbxMaterial, (aiTextureType)aiTextureType_DIFFUSE, 0,
-		&szPath, NULL, &iUV, &fBlend, &eOp, NULL, NULL, &content_begin, &content_len);
+						 &szPath, NULL, &iUV, &fBlend, &eOp, NULL, NULL, &content_begin, &content_len);
 #endif
 
 	std::string diffuseTexName(szPath.C_Str());
@@ -750,13 +1025,13 @@ void FBXParser::ProcessStaticFBXMaterial(const aiScene* pFbxScene, unsigned int 
 		diffuseTexName = GetTexturePath(diffuseTexName);
 
 #ifdef ASSIMP5
-		if (auto texture = pFbxScene->GetEmbeddedTexture(diffuseTexName.c_str())) 
+		if (auto texture = pFbxScene->GetEmbeddedTexture(diffuseTexName.c_str()))
 		{
 			// If mHeight = 0, pcData is a pointer to a memory  buffer of size mWidth containing the compressed texture data.
 			if (texture->mHeight == 0)
 			{
 				content_len = (int)(texture->mWidth);
-				content_begin = (char*)(texture->pcData);
+				content_begin = (char *)(texture->pcData);
 			}
 		}
 #endif
@@ -765,12 +1040,12 @@ void FBXParser::ProcessStaticFBXMaterial(const aiScene* pFbxScene, unsigned int 
 			std::string sFileName = CParaFile::GetFileName(m_sFilename);
 			diffuseTexName = CParaFile::GetParentDirectoryFromPath(diffuseTexName) + sFileName + "/" + CParaFile::GetFileName(diffuseTexName);
 
-			//m_textureContentMapping.insert(std::make_pair(diffuseTexName, std::string(content_begin, content_len)));
+			// m_textureContentMapping.insert(std::make_pair(diffuseTexName, std::string(content_begin, content_len)));
 			TextureEntity *texEntity = CGlobals::GetAssetManager()->GetTextureManager().GetEntity(diffuseTexName);
 			if (!texEntity)
 			{
 				texEntity = CGlobals::GetAssetManager()->GetTextureManager().NewEntity(diffuseTexName);
-				char* bufferCpy = new char[content_len];
+				char *bufferCpy = new char[content_len];
 				memcpy(bufferCpy, content_begin, content_len);
 				texEntity->SetRawData(bufferCpy, content_len);
 				texEntity->SetEmbeddedTexture(true);
@@ -785,7 +1060,6 @@ void FBXParser::ProcessStaticFBXMaterial(const aiScene* pFbxScene, unsigned int 
 			diffuseTexName = "";
 		}
 	}
-
 
 	if (diffuseTexName.empty())
 	{
@@ -802,7 +1076,7 @@ void FBXParser::ProcessStaticFBXMaterial(const aiScene* pFbxScene, unsigned int 
 	material.mTextures.push_back(TexEntry(diffuseTexName, true));
 	m_pScene->mGlobalMeshes[iMesh]->mMaterials.push_back(material);
 
-	//ASSIMP_API aiReturn aiGetMaterialTexture(const C_STRUCT aiMaterial* mat,
+	// ASSIMP_API aiReturn aiGetMaterialTexture(const C_STRUCT aiMaterial* mat,
 	//	aiTextureType type,
 	//	unsigned int  index,
 	//	aiString* path,
@@ -812,7 +1086,6 @@ void FBXParser::ProcessStaticFBXMaterial(const aiScene* pFbxScene, unsigned int 
 	//	aiTextureOp* op = NULL,
 	//	aiTextureMapMode* mapmode = NULL,
 	//	unsigned int* flags = NULL);
-
 
 	/*
 	bool bNoOpacity = true;
@@ -851,7 +1124,7 @@ void FBXParser::ProcessStaticFBXMaterial(const aiScene* pFbxScene, unsigned int 
 	*/
 }
 
-void ParaEngine::FBXParser::ParseMaterialByName(const std::string& sMatName, FBXMaterial* out)
+void ParaEngine::FBXParser::ParseMaterialByName(const std::string &sMatName, FBXMaterial *out)
 {
 	int nMarkIndex = sMatName.size() - 1;
 	for (; nMarkIndex >= 0; nMarkIndex -= 2)
@@ -887,24 +1160,24 @@ void ParaEngine::FBXParser::ParseMaterialByName(const std::string& sMatName, FBX
 			case 'b':
 			{
 				// if the material name ends with "_b", alpha testing will be disabled. this is usually the case for fully blended textures with alpha channels, such as fire and effects, etc.
-				// 2006.12.21 LXZ: for textures without alpha testing. 
+				// 2006.12.21 LXZ: for textures without alpha testing.
 				out->fAlphaTestingRef = 0.f;
 				break;
 			}
 			case 't':
 			{
 				// if the material name ends with "_t", z buffer write will be disabled. this is usually the case for particle meshes, etc.
-				// 2006.12.29 LXZ: for textures without z buffer disabled. 
+				// 2006.12.29 LXZ: for textures without z buffer disabled.
 				out->bDisableZWrite = true;
 				break;
 			}
 			case 'l':
 			{
-				// if the material name ends with "_l", z buffer write will be disabled. However, the material will be rendered with the mesh even it is transparent. 
-				// 2006.12.29 LXZ: for textures without z buffer disabled. 
+				// if the material name ends with "_l", z buffer write will be disabled. However, the material will be rendered with the mesh even it is transparent.
+				// 2006.12.29 LXZ: for textures without z buffer disabled.
 				out->bForceLocalTranparency = true;
 
-				// layer order. 
+				// layer order.
 				if (nID > 0)
 					out->m_nOrder = nID;
 				break;
@@ -917,13 +1190,13 @@ void ParaEngine::FBXParser::ParseMaterialByName(const std::string& sMatName, FBX
 			}
 			case 'p':
 			{
-				// added  2016.9.8 LXZ: if the material name ends with "_p", physics will be enabled. 
+				// added  2016.9.8 LXZ: if the material name ends with "_p", physics will be enabled.
 				out->bForcePhysics = true;
 				break;
 			}
 			case 'u':
 			{
-				// added  2007.11.5 LXZ: if the material name ends with "_u", it will be unlit, which means no lighting is applied to surface. 
+				// added  2007.11.5 LXZ: if the material name ends with "_u", it will be unlit, which means no lighting is applied to surface.
 				out->bUnlit = true;
 				break;
 			}
@@ -937,7 +1210,7 @@ void ParaEngine::FBXParser::ParseMaterialByName(const std::string& sMatName, FBX
 			{
 				if (nID < 0)
 				{
-					// added  2008.12.4 LXZ: if the material name ends with "_c", it will face the camera.Note, it only works with static mesh. 
+					// added  2008.12.4 LXZ: if the material name ends with "_c", it will face the camera.Note, it only works with static mesh.
 					// For animated model, use "_b" bone names.  Also note that the engine will use the center of the sub mesh as pivot point. If u have several billboarded faces in a single mesh, please name their materials differently, such as mat0_c, mat1_c, mat2_c.
 					out->bBillboard = true;
 					out->nForceUnique = ++m_unique_id;
@@ -950,7 +1223,7 @@ void ParaEngine::FBXParser::ParseMaterialByName(const std::string& sMatName, FBX
 			}
 			case 'y':
 			{
-				// added  2008.12.4 LXZ: if the material name ends with "_y", it will face the camera but UP axis aligned. Note, it only works with static mesh. 
+				// added  2008.12.4 LXZ: if the material name ends with "_y", it will face the camera but UP axis aligned. Note, it only works with static mesh.
 				// For animated model, use "_u" bone names.  Also note that the engine will use the center of the sub mesh as pivot point. If u have several billboarded faces in a single mesh, please name their materials differently, such as mat0_c, mat1_c, mat2_c.
 				out->bAABillboard = true;
 				out->nForceUnique = ++m_unique_id;
@@ -971,9 +1244,9 @@ void ParaEngine::FBXParser::ParseMaterialByName(const std::string& sMatName, FBX
 	}
 }
 
-void FBXParser::ProcessFBXMaterial(const aiScene* pFbxScene, unsigned int iIndex, CParaXModel *pMesh)
+void FBXParser::ProcessFBXMaterial(const aiScene *pFbxScene, unsigned int iIndex, CParaXModel *pMesh)
 {
-	aiMaterial* pfbxMaterial = pFbxScene->mMaterials[iIndex];
+	aiMaterial *pfbxMaterial = pFbxScene->mMaterials[iIndex];
 	aiTextureType textureTypeList[2] = {aiTextureType_DIFFUSE, aiTextureType_NORMALS};
 	pMesh->passes.resize(pMesh->passes.size() + 1);
 
@@ -984,23 +1257,25 @@ void FBXParser::ProcessFBXMaterial(const aiScene* pFbxScene, unsigned int iIndex
 		float fBlend;
 		aiTextureOp eOp;
 		aiString szPath;
-		char* content_begin = NULL;
+		char *content_begin = NULL;
 		int content_len = -1;
 		int16 opacity = -1;
 
-		if (textureType != aiTextureType_DIFFUSE && pfbxMaterial->GetTextureCount(textureType) == 0) continue;
+		if (textureType != aiTextureType_DIFFUSE && pfbxMaterial->GetTextureCount(textureType) == 0)
+			continue;
 
 		std::string sMatName;
 		{
 			aiString sMaterialName;
-			if (AI_SUCCESS == aiGetMaterialString(pfbxMaterial, AI_MATKEY_NAME, &sMaterialName)) sMatName = sMaterialName.C_Str();
+			if (AI_SUCCESS == aiGetMaterialString(pfbxMaterial, AI_MATKEY_NAME, &sMaterialName))
+				sMatName = sMaterialName.C_Str();
 		}
 
-	#ifdef ASSIMP5
+#ifdef ASSIMP5
 		aiGetMaterialTexture(pfbxMaterial, textureType, 0, &szPath, NULL, &iUV, &fBlend, &eOp, NULL, NULL);
-	#else
+#else
 		aiGetMaterialTexture(pfbxMaterial, textureType, 0, &szPath, NULL, &iUV, &fBlend, &eOp, NULL, NULL, &content_begin, &content_len);
-	#endif
+#endif
 
 		std::string diffuseTexName(szPath.C_Str());
 		if (diffuseTexName != "")
@@ -1009,17 +1284,17 @@ void FBXParser::ProcessFBXMaterial(const aiScene* pFbxScene, unsigned int iIndex
 			CParaFile::ToCanonicalFilePath(sOriginalPath, diffuseTexName, false);
 			diffuseTexName = GetTexturePath(diffuseTexName);
 
-	#ifdef ASSIMP5
+#ifdef ASSIMP5
 			if (auto texture = pFbxScene->GetEmbeddedTexture(szPath.C_Str()))
 			{
 				// If mHeight = 0, pcData is a pointer to a memory  buffer of size mWidth containing the compressed texture data.
 				if (texture->mHeight == 0)
 				{
 					content_len = (int)(texture->mWidth);
-					content_begin = (char*)(texture->pcData);
+					content_begin = (char *)(texture->pcData);
 				}
 			}
-	#endif
+#endif
 
 			if (content_begin)
 			{
@@ -1034,7 +1309,7 @@ void FBXParser::ProcessFBXMaterial(const aiScene* pFbxScene, unsigned int iIndex
 				bool bFound = false;
 				if (CParaFile::IsAbsolutePath(sOriginalPath) || sOriginalPath[0] == '.')
 				{
-					// in case it is ../../Texture/abc.png, we will use relative path 
+					// in case it is ../../Texture/abc.png, we will use relative path
 					if (sOriginalPath[1] == '.' && sOriginalPath[2] == '/')
 					{
 						// such as ../../
@@ -1054,14 +1329,15 @@ void FBXParser::ProcessFBXMaterial(const aiScene* pFbxScene, unsigned int iIndex
 					}
 					if (!bFound)
 					{
-						// search all parent directories for a possible global texture path. 
+						// search all parent directories for a possible global texture path.
 						auto nPos = sOriginalPath.find_first_of('/');
 						int nCount = 0;
 						while (nPos != std::string::npos)
 						{
 							if (nPos == 2 && sOriginalPath[0] == '.')
 							{
-								while (nPos == 2 && sOriginalPath[0] == '.') {
+								while (nPos == 2 && sOriginalPath[0] == '.')
+								{
 									sOriginalPath = sOriginalPath.substr(nPos + 1);
 									nPos = sOriginalPath.find_first_of('/');
 									++nCount;
@@ -1098,7 +1374,7 @@ void FBXParser::ProcessFBXMaterial(const aiScene* pFbxScene, unsigned int iIndex
 			if (!content_begin && !diffuseTexName.empty() && CParaFile::IsAbsolutePath(diffuseTexName))
 			{
 				// try making it relative to project root
-				const std::string & curDir = CParaFile::GetCurDirectory(0);
+				const std::string &curDir = CParaFile::GetCurDirectory(0);
 				if (curDir.size() < diffuseTexName.size() && diffuseTexName.compare(0, curDir.size(), curDir) == 0)
 				{
 					diffuseTexName = diffuseTexName.substr(curDir.size());
@@ -1122,7 +1398,8 @@ void FBXParser::ProcessFBXMaterial(const aiScene* pFbxScene, unsigned int iIndex
 						blendmode = BM_TRANSPARENT;
 				}
 			}
-			if (fbxMat.bAddictive) blendmode = BM_ADDITIVE;
+			if (fbxMat.bAddictive)
+				blendmode = BM_ADDITIVE;
 			{
 				float opacityValue;
 				if (AI_SUCCESS == aiGetMaterialFloat(pfbxMaterial, AI_MATKEY_OPACITY, &opacityValue) && fabs(opacityValue - 1.0f) > FLT_EPSILON)
@@ -1130,7 +1407,7 @@ void FBXParser::ProcessFBXMaterial(const aiScene* pFbxScene, unsigned int iIndex
 					auto size = m_transparencys.size();
 					opacity = (int16)size;
 					m_transparencys.resize(size + 1);
-					auto& tran = m_transparencys[size];
+					auto &tran = m_transparencys[size];
 					tran.trans.used = false;
 					tran.trans.type = 0;
 					tran.trans.seq = -1;
@@ -1156,7 +1433,6 @@ void FBXParser::ProcessFBXMaterial(const aiScene* pFbxScene, unsigned int iIndex
 					texture_index = i;
 					break;
 				}
-
 			}
 			if (texture_index < 0)
 			{
@@ -1175,7 +1451,7 @@ void FBXParser::ProcessFBXMaterial(const aiScene* pFbxScene, unsigned int iIndex
 				}
 			}
 
-			ModelRenderPass& pass = pMesh->passes[pMesh->passes.size() - 1];
+			ModelRenderPass &pass = pMesh->passes[pMesh->passes.size() - 1];
 			pass.tex = texture_index;
 			pass.SetCategoryId(fbxMat.GetCategoryID());
 			pass.texanim = -1;
@@ -1190,14 +1466,14 @@ void FBXParser::ProcessFBXMaterial(const aiScene* pFbxScene, unsigned int iIndex
 			pass.cull = blendmode == BM_OPAQUE ? true : false;
 			pass.order = fbxMat.m_nOrder;
 			pass.geoset = -1; // make its geoset uninitialized
-							//*(((DWORD*)&(pass.geoset)) + 1) = parser.ReadInt();
+							  //*(((DWORD*)&(pass.geoset)) + 1) = parser.ReadInt();
 
 			ParseUVAnimation(pass, pfbxMaterial, pMesh);
 			ParseParticleEmitter(pass, pfbxMaterial, pMesh, sMatName, texture_index);
 		}
 		if (aiTextureType_NORMALS == textureType)
 		{
-			ModelRenderPass& pass = pMesh->passes[pMesh->passes.size() - 1];
+			ModelRenderPass &pass = pMesh->passes[pMesh->passes.size() - 1];
 			FBXMaterial fbxMat;
 			ParseMaterialByName(sMatName, &fbxMat);
 			fbxMat.m_filename = diffuseTexName;
@@ -1220,7 +1496,7 @@ void FBXParser::ProcessFBXMaterial(const aiScene* pFbxScene, unsigned int iIndex
 	}
 }
 
-lua_State* FBXParser::ParseScriptString(const char* str)
+lua_State *FBXParser::ParseScriptString(const char *str)
 {
 	if (!str)
 		return nullptr;
@@ -1243,7 +1519,7 @@ lua_State* FBXParser::ParseScriptString(const char* str)
 	}
 }
 
-void FBXParser::ParseParticleEmitter(ModelRenderPass& pass, aiMaterial* pfbxMaterial, CParaXModel *pMesh, const std::string& sMatName, int texture_index)
+void FBXParser::ParseParticleEmitter(ModelRenderPass &pass, aiMaterial *pfbxMaterial, CParaXModel *pMesh, const std::string &sMatName, int texture_index)
 {
 #ifdef ASSIMP5
 	aiString value;
@@ -1256,7 +1532,6 @@ void FBXParser::ParseParticleEmitter(ModelRenderPass& pass, aiMaterial* pfbxMate
 		paramString = "return {" + paramString;
 		paramString += "}";
 
-
 		auto L = ParseScriptString(paramString.c_str());
 		if (!L)
 			return;
@@ -1264,7 +1539,7 @@ void FBXParser::ParseParticleEmitter(ModelRenderPass& pass, aiMaterial* pfbxMate
 		PE_ASSERT(m_particleSystem.find(sMatName) == m_particleSystem.end());
 
 		m_particleSystem.insert(std::pair<std::string, ParticleSystem>(sMatName, ParticleSystem()));
-		ParticleSystem& ps = m_particleSystem[sMatName];
+		ParticleSystem &ps = m_particleSystem[sMatName];
 
 		ParseParticleParam(ps, L);
 		lua_pop(L, 1); // remove return value from stack
@@ -1284,15 +1559,15 @@ void FBXParser::ParseParticleEmitter(ModelRenderPass& pass, aiMaterial* pfbxMate
 
 	for (unsigned int i = 0; i < metaData->mNumProperties; i++)
 	{
-		auto& key = metaData->mKeys[i];
-		auto& value = metaData->mValues[i];
+		auto &key = metaData->mKeys[i];
+		auto &value = metaData->mValues[i];
 
 		if (strcmp(key.C_Str(), "ps_param") != 0)
 			continue;
 
 		PE_ASSERT(value.mType == AI_AISTRING);
 
-		auto aiParam = static_cast<aiString*>(value.mData);
+		auto aiParam = static_cast<aiString *>(value.mData);
 
 		if (!aiParam || aiParam->length == 0)
 			continue;
@@ -1301,7 +1576,6 @@ void FBXParser::ParseParticleEmitter(ModelRenderPass& pass, aiMaterial* pfbxMate
 		paramString = "return {" + paramString;
 		paramString += "}";
 
-
 		auto L = ParseScriptString(paramString.c_str());
 		if (!L)
 			continue;
@@ -1309,7 +1583,7 @@ void FBXParser::ParseParticleEmitter(ModelRenderPass& pass, aiMaterial* pfbxMate
 		PE_ASSERT(m_particleSystem.find(sMatName) == m_particleSystem.end());
 
 		m_particleSystem.insert(std::pair<std::string, ParticleSystem>(sMatName, ParticleSystem()));
-		ParticleSystem& ps = m_particleSystem[sMatName];
+		ParticleSystem &ps = m_particleSystem[sMatName];
 
 		ParseParticleParam(ps, L);
 		lua_pop(L, 1); // remove return value from stack
@@ -1327,7 +1601,7 @@ void FBXParser::ParseParticleEmitter(ModelRenderPass& pass, aiMaterial* pfbxMate
 #endif
 }
 
-void FBXParser::ParseParticleParam(ParticleSystem& ps, lua_State* L)
+void FBXParser::ParseParticleParam(ParticleSystem &ps, lua_State *L)
 {
 	const float ticksPerSample = 1000.f / 30.f; // 30fps
 	const float fEpsilon = 0.01f;
@@ -1352,7 +1626,7 @@ void FBXParser::ParseParticleParam(ParticleSystem& ps, lua_State* L)
 
 			for (size_t i = 0; i < len; i++)
 			{
-				auto& color = ps.colors[i];
+				auto &color = ps.colors[i];
 				lua_pushnumber(L, i + 1);
 				lua_gettable(L, -2);
 				if (lua_istable(L, -1))
@@ -1381,7 +1655,6 @@ void FBXParser::ParseParticleParam(ParticleSystem& ps, lua_State* L)
 		}
 		else if (lua_isnil(L, -1))
 		{
-
 		}
 		else
 		{
@@ -1400,18 +1673,16 @@ void FBXParser::ParseParticleParam(ParticleSystem& ps, lua_State* L)
 			PE_ASSERT(len <= 3);
 			for (size_t i = 0; i < len; i++)
 			{
-				auto& alpha = ps.colors[i].w;
+				auto &alpha = ps.colors[i].w;
 
 				lua_pushnumber(L, i + 1);
 				lua_gettable(L, -2);
 				alpha = lua_isnil(L, -1) ? 0 : (float)lua_tonumber(L, -1);
 				lua_pop(L, 1);
 			}
-
 		}
 		else if (lua_isnil(L, -1))
 		{
-
 		}
 		else
 		{
@@ -1430,7 +1701,7 @@ void FBXParser::ParseParticleParam(ParticleSystem& ps, lua_State* L)
 			PE_ASSERT(len <= 3);
 			for (size_t i = 0; i < len; i++)
 			{
-				auto& size = ps.sizes[i];
+				auto &size = ps.sizes[i];
 
 				lua_pushnumber(L, i + 1);
 				lua_gettable(L, -2);
@@ -1440,7 +1711,6 @@ void FBXParser::ParseParticleParam(ParticleSystem& ps, lua_State* L)
 		}
 		else if (lua_isnil(L, -1))
 		{
-
 		}
 		else
 		{
@@ -1449,7 +1719,7 @@ void FBXParser::ParseParticleParam(ParticleSystem& ps, lua_State* L)
 		lua_pop(L, 1);
 	}
 
-	// read rate 
+	// read rate
 	{
 		lua_pushstring(L, "rate");
 		lua_gettable(L, -2);
@@ -1463,20 +1733,18 @@ void FBXParser::ParseParticleParam(ParticleSystem& ps, lua_State* L)
 				auto key = lua_isnil(L, -2) ? 0 : (int)lua_tointeger(L, -2);
 				auto value = lua_isnil(L, -1) ? 0 : (float)lua_tonumber(L, -1);
 
-				values.push_back(std::pair<const int&, const float&>(key, value));
+				values.push_back(std::pair<const int &, const float &>(key, value));
 
 				lua_pop(L, 1);
 			}
 
-			std::sort(values.begin(), values.end(), [](const std::pair<int, float>& a, const std::pair<int, float>& b)
-			{
-				return a.first < b.first;
-			});
+			std::sort(values.begin(), values.end(), [](const std::pair<int, float> &a, const std::pair<int, float> &b)
+					  { return a.first < b.first; });
 
 			auto size = values.size();
 			for (size_t i = 0; i < size; i++)
 			{
-				auto& one = values[i];
+				auto &one = values[i];
 				ps.rate.AppendKey((int)(one.first * ticksPerSample), one.second);
 			}
 
@@ -1491,12 +1759,9 @@ void FBXParser::ParseParticleParam(ParticleSystem& ps, lua_State* L)
 			{
 				ps.rate.SetRangeByAnimIndex(0, AnimRange(0, 0));
 			}
-
-
 		}
 		else if (lua_isnil(L, -1))
 		{
-
 		}
 		else
 		{
@@ -1519,20 +1784,18 @@ void FBXParser::ParseParticleParam(ParticleSystem& ps, lua_State* L)
 				auto key = lua_isnil(L, -2) ? 0 : (int)lua_tointeger(L, -2);
 				auto value = lua_isnil(L, -1) ? 0 : (float)lua_tonumber(L, -1);
 
-				values.push_back(std::pair<const int&, const float&>(key, value));
+				values.push_back(std::pair<const int &, const float &>(key, value));
 
 				lua_pop(L, 1);
 			}
 
-			std::sort(values.begin(), values.end(), [](const std::pair<int, float>& a, const std::pair<int, float>& b)
-			{
-				return a.first < b.first;
-			});
+			std::sort(values.begin(), values.end(), [](const std::pair<int, float> &a, const std::pair<int, float> &b)
+					  { return a.first < b.first; });
 
 			auto size = values.size();
 			for (size_t i = 0; i < size; i++)
 			{
-				auto& one = values[i];
+				auto &one = values[i];
 				ps.speed.AppendKey((int)(one.first * ticksPerSample), one.second);
 			}
 
@@ -1547,12 +1810,9 @@ void FBXParser::ParseParticleParam(ParticleSystem& ps, lua_State* L)
 			{
 				ps.speed.SetRangeByAnimIndex(0, AnimRange(0, 0));
 			}
-
-
 		}
 		else if (lua_isnil(L, -1))
 		{
-
 		}
 		else
 		{
@@ -1575,20 +1835,18 @@ void FBXParser::ParseParticleParam(ParticleSystem& ps, lua_State* L)
 				auto key = lua_isnil(L, -2) ? 0 : (int)lua_tointeger(L, -2);
 				auto value = lua_isnil(L, -1) ? 0 : (float)lua_tonumber(L, -1);
 
-				values.push_back(std::pair<const int&, const float&>(key, value));
+				values.push_back(std::pair<const int &, const float &>(key, value));
 
 				lua_pop(L, 1);
 			}
 
-			std::sort(values.begin(), values.end(), [](const std::pair<int, float>& a, const std::pair<int, float>& b)
-			{
-				return a.first < b.first;
-			});
+			std::sort(values.begin(), values.end(), [](const std::pair<int, float> &a, const std::pair<int, float> &b)
+					  { return a.first < b.first; });
 
 			auto size = values.size();
 			for (size_t i = 0; i < size; i++)
 			{
-				auto& one = values[i];
+				auto &one = values[i];
 				ps.variation.AppendKey((int)(one.first * ticksPerSample), one.second);
 			}
 
@@ -1603,12 +1861,9 @@ void FBXParser::ParseParticleParam(ParticleSystem& ps, lua_State* L)
 			{
 				ps.variation.SetRangeByAnimIndex(0, AnimRange(0, 0));
 			}
-
-
 		}
 		else if (lua_isnil(L, -1))
 		{
-
 		}
 		else
 		{
@@ -1616,7 +1871,6 @@ void FBXParser::ParseParticleParam(ParticleSystem& ps, lua_State* L)
 		}
 		lua_pop(L, 1);
 	}
-
 
 	// read lifeTime
 	{
@@ -1632,20 +1886,18 @@ void FBXParser::ParseParticleParam(ParticleSystem& ps, lua_State* L)
 				auto key = lua_isnil(L, -2) ? 0 : (int)lua_tointeger(L, -2);
 				auto value = lua_isnil(L, -1) ? 0 : (float)lua_tonumber(L, -1);
 
-				values.push_back(std::pair<const int&, const float&>(key, value));
+				values.push_back(std::pair<const int &, const float &>(key, value));
 
 				lua_pop(L, 1);
 			}
 
-			std::sort(values.begin(), values.end(), [](const std::pair<int, float>& a, const std::pair<int, float>& b)
-			{
-				return a.first < b.first;
-			});
+			std::sort(values.begin(), values.end(), [](const std::pair<int, float> &a, const std::pair<int, float> &b)
+					  { return a.first < b.first; });
 
 			auto size = values.size();
 			for (size_t i = 0; i < size; i++)
 			{
-				auto& one = values[i];
+				auto &one = values[i];
 				ps.lifespan.AppendKey((int)(one.first * ticksPerSample), one.second);
 			}
 
@@ -1660,12 +1912,9 @@ void FBXParser::ParseParticleParam(ParticleSystem& ps, lua_State* L)
 			{
 				ps.lifespan.SetRangeByAnimIndex(0, AnimRange(0, 0));
 			}
-
-
 		}
 		else if (lua_isnil(L, -1))
 		{
-
 		}
 		else
 		{
@@ -1688,20 +1937,18 @@ void FBXParser::ParseParticleParam(ParticleSystem& ps, lua_State* L)
 				auto key = lua_isnil(L, -2) ? 0 : (int)lua_tointeger(L, -2);
 				auto value = lua_isnil(L, -1) ? 0 : (float)lua_tonumber(L, -1);
 
-				values.push_back(std::pair<const int&, const float&>(key, value));
+				values.push_back(std::pair<const int &, const float &>(key, value));
 
 				lua_pop(L, 1);
 			}
 
-			std::sort(values.begin(), values.end(), [](const std::pair<int, float>& a, const std::pair<int, float>& b)
-			{
-				return a.first < b.first;
-			});
+			std::sort(values.begin(), values.end(), [](const std::pair<int, float> &a, const std::pair<int, float> &b)
+					  { return a.first < b.first; });
 
 			auto size = values.size();
 			for (size_t i = 0; i < size; i++)
 			{
-				auto& one = values[i];
+				auto &one = values[i];
 				ps.areaw.AppendKey((int)(one.first * ticksPerSample), one.second);
 			}
 
@@ -1719,7 +1966,6 @@ void FBXParser::ParseParticleParam(ParticleSystem& ps, lua_State* L)
 		}
 		else if (lua_isnil(L, -1))
 		{
-
 		}
 		else
 		{
@@ -1742,20 +1988,18 @@ void FBXParser::ParseParticleParam(ParticleSystem& ps, lua_State* L)
 				auto key = lua_isnil(L, -2) ? 0 : (int)lua_tointeger(L, -2);
 				auto value = lua_isnil(L, -1) ? 0 : (float)lua_tonumber(L, -1);
 
-				values.push_back(std::pair<const int&, const float&>(key, value));
+				values.push_back(std::pair<const int &, const float &>(key, value));
 
 				lua_pop(L, 1);
 			}
 
-			std::sort(values.begin(), values.end(), [](const std::pair<int, float>& a, const std::pair<int, float>& b)
-			{
-				return a.first < b.first;
-			});
+			std::sort(values.begin(), values.end(), [](const std::pair<int, float> &a, const std::pair<int, float> &b)
+					  { return a.first < b.first; });
 
 			auto size = values.size();
 			for (size_t i = 0; i < size; i++)
 			{
-				auto& one = values[i];
+				auto &one = values[i];
 				ps.areal.AppendKey((int)(one.first * ticksPerSample), one.second);
 			}
 
@@ -1773,7 +2017,6 @@ void FBXParser::ParseParticleParam(ParticleSystem& ps, lua_State* L)
 		}
 		else if (lua_isnil(L, -1))
 		{
-
 		}
 		else
 		{
@@ -1845,7 +2088,7 @@ void FBXParser::ParseParticleParam(ParticleSystem& ps, lua_State* L)
 		ps.SetTextureRowsCols(ps.rows, ps.cols);
 	}
 
-	// read displayType 
+	// read displayType
 	{
 		lua_pushstring(L, "displayType");
 		lua_gettable(L, -2);
@@ -1853,7 +2096,7 @@ void FBXParser::ParseParticleParam(ParticleSystem& ps, lua_State* L)
 		lua_pop(L, 1);
 	}
 
-	// read emitterType 
+	// read emitterType
 	{
 		lua_pushstring(L, "emitterType");
 		lua_gettable(L, -2);
@@ -1861,21 +2104,21 @@ void FBXParser::ParseParticleParam(ParticleSystem& ps, lua_State* L)
 
 		if (strcmp(typeString, "sphere") == 0)
 		{
-			//ps.type = (int)ParticleEmitter::TYPE_SPHERE_PARTICLE_EMITTER;
-			//ps.emitter = new SphereParticleEmitter(&ps);
-			ps.emitter = (ParticleEmitter*)ParticleEmitter::TYPE_SPHERE_PARTICLE_EMITTER;
+			// ps.type = (int)ParticleEmitter::TYPE_SPHERE_PARTICLE_EMITTER;
+			// ps.emitter = new SphereParticleEmitter(&ps);
+			ps.emitter = (ParticleEmitter *)ParticleEmitter::TYPE_SPHERE_PARTICLE_EMITTER;
 		}
 		else
 		{
-			//ps.type = (int)ParticleEmitter::TYPE_PLANE_PARTICLE_EMITTER;
-			//ps.emitter = new PlaneParticleEmitter(&ps);
-			ps.emitter = (ParticleEmitter*)ParticleEmitter::TYPE_PLANE_PARTICLE_EMITTER;
+			// ps.type = (int)ParticleEmitter::TYPE_PLANE_PARTICLE_EMITTER;
+			// ps.emitter = new PlaneParticleEmitter(&ps);
+			ps.emitter = (ParticleEmitter *)ParticleEmitter::TYPE_PLANE_PARTICLE_EMITTER;
 		}
 
 		lua_pop(L, 1);
 	}
 
-	// read gravity 
+	// read gravity
 	{
 		lua_pushstring(L, "gravity");
 		lua_gettable(L, -2);
@@ -1930,7 +2173,7 @@ void FBXParser::ParseParticleParam(ParticleSystem& ps, lua_State* L)
 		lua_pop(L, 1);
 	}
 
-	// read blend 
+	// read blend
 	{
 		lua_pushstring(L, "blend");
 		lua_gettable(L, -2);
@@ -1938,7 +2181,7 @@ void FBXParser::ParseParticleParam(ParticleSystem& ps, lua_State* L)
 		lua_pop(L, 1);
 	}
 
-	// read rotation 
+	// read rotation
 	{
 		lua_pushstring(L, "rotation");
 		lua_gettable(L, -2);
@@ -1946,7 +2189,7 @@ void FBXParser::ParseParticleParam(ParticleSystem& ps, lua_State* L)
 		lua_pop(L, 1);
 	}
 
-	// read rotate2SpeedDirection 
+	// read rotate2SpeedDirection
 	{
 		lua_pushstring(L, "rotate2SpeedDirection");
 		lua_gettable(L, -2);
@@ -1955,7 +2198,7 @@ void FBXParser::ParseParticleParam(ParticleSystem& ps, lua_State* L)
 	}
 }
 
-void FBXParser::ParseUVAnimation(ModelRenderPass& pass, aiMaterial* pfbxMaterial, CParaXModel *pMesh)
+void FBXParser::ParseUVAnimation(ModelRenderPass &pass, aiMaterial *pfbxMaterial, CParaXModel *pMesh)
 {
 #ifdef ASSIMP5
 	if (pfbxMaterial->mNumProperties == 0)
@@ -1975,7 +2218,7 @@ void FBXParser::ParseUVAnimation(ModelRenderPass& pass, aiMaterial* pfbxMaterial
 	{
 		auto property = pfbxMaterial->mProperties[i];
 
-		auto& key = property->mKey;
+		auto &key = property->mKey;
 		auto value = property->mData;
 
 		auto keyFrame = strstr(key.C_Str(), "TexAnims_key");
@@ -1992,7 +2235,7 @@ void FBXParser::ParseUVAnimation(ModelRenderPass& pass, aiMaterial* pfbxMaterial
 		PE_ASSERT(type == 't' || type == 'r' || type == 's');
 		PE_ASSERT(sizeof(aiVector3D) == property->mDataLength);
 
-		auto aiVec3 = reinterpret_cast<aiVector3D*>(value);
+		auto aiVec3 = reinterpret_cast<aiVector3D *>(value);
 
 		switch (type)
 		{
@@ -2005,9 +2248,7 @@ void FBXParser::ParseUVAnimation(ModelRenderPass& pass, aiMaterial* pfbxMaterial
 		case 'r':
 		{
 			// rotation
-			rots.push_back(std::pair<int, Vector3>(keyIndex, Vector3(aiVec3->x * 3.1415926f / 180
-				, aiVec3->y
-				, aiVec3->z)));
+			rots.push_back(std::pair<int, Vector3>(keyIndex, Vector3(aiVec3->x * 3.1415926f / 180, aiVec3->y, aiVec3->z)));
 			break;
 		}
 		case 's':
@@ -2019,7 +2260,6 @@ void FBXParser::ParseUVAnimation(ModelRenderPass& pass, aiMaterial* pfbxMaterial
 		default:
 			break;
 		}
-
 	}
 
 	if (trans.size() == 0 && rots.size() == 0 && scales.size() == 0)
@@ -2027,12 +2267,12 @@ void FBXParser::ParseUVAnimation(ModelRenderPass& pass, aiMaterial* pfbxMaterial
 
 	auto index = m_texAnims.size();
 	m_texAnims.resize(index + 1);
-	TextureAnim& anim = m_texAnims[index];
+	TextureAnim &anim = m_texAnims[index];
 	pass.texanim = (int16)index;
 
 	anim.rot.globals = anim.scale.globals = anim.trans.globals = pMesh->globalSequences;
 
-	auto sortFunc = [](const std::pair<int, Vector3>& a, const std::pair<int, Vector3>& b)
+	auto sortFunc = [](const std::pair<int, Vector3> &a, const std::pair<int, Vector3> &b)
 	{
 		return a.first < b.first;
 	};
@@ -2041,14 +2281,14 @@ void FBXParser::ParseUVAnimation(ModelRenderPass& pass, aiMaterial* pfbxMaterial
 	std::sort(rots.begin(), rots.end(), sortFunc);
 	std::sort(scales.begin(), scales.end(), sortFunc);
 
-	std::vector<std::pair<int, Vector3>>* pVec[3] = { &trans, &rots, &scales };
-	Animated<Vector3>* pAnimated[3] = { &anim.trans, &anim.rot, &anim.scale };
-	float errorValues[3] = { error_trans , error_rot, error_scale };
+	std::vector<std::pair<int, Vector3>> *pVec[3] = {&trans, &rots, &scales};
+	Animated<Vector3> *pAnimated[3] = {&anim.trans, &anim.rot, &anim.scale};
+	float errorValues[3] = {error_trans, error_rot, error_scale};
 	for (int times = 0; times < 3; times++)
 	{
-		auto& vec = *pVec[times];
-		auto& animated = *pAnimated[times];
-		auto& errorValue = errorValues[times];
+		auto &vec = *pVec[times];
+		auto &animated = *pAnimated[times];
+		auto &errorValue = errorValues[times];
 
 		if (vec.size() > 0)
 		{
@@ -2069,7 +2309,7 @@ void FBXParser::ParseUVAnimation(ModelRenderPass& pass, aiMaterial* pfbxMaterial
 
 			for (i = 1; i < nKeyCount; i++)
 			{
-				auto& rotationKey = vec[i].second;
+				auto &rotationKey = vec[i].second;
 				auto predicatedKey = lastRotKey * 2 - lastlastRotKey;
 				auto delta = rotationKey - predicatedKey;
 
@@ -2092,7 +2332,6 @@ void FBXParser::ParseUVAnimation(ModelRenderPass& pass, aiMaterial* pfbxMaterial
 						{
 							animated.AppendKey(nTime, lastRotKey);
 						}
-
 					}
 
 					animated.AppendKey(time, rotationKey);
@@ -2131,8 +2370,8 @@ void FBXParser::ParseUVAnimation(ModelRenderPass& pass, aiMaterial* pfbxMaterial
 
 	for (unsigned int i = 0; i < metaData->mNumProperties; i++)
 	{
-		auto& key = metaData->mKeys[i];
-		auto& value = metaData->mValues[i];
+		auto &key = metaData->mKeys[i];
+		auto &value = metaData->mValues[i];
 
 		auto keyFrame = strstr(key.C_Str(), "TexAnims_key");
 		if (!keyFrame)
@@ -2147,8 +2386,8 @@ void FBXParser::ParseUVAnimation(ModelRenderPass& pass, aiMaterial* pfbxMaterial
 		char type = keyFrame[4];
 		PE_ASSERT(type == 't' || type == 'r' || type == 's');
 
-		auto aiVec3 = static_cast<aiVector3D*>(value.mData);
-		//auto time = ticksPerSample * keyIndex;
+		auto aiVec3 = static_cast<aiVector3D *>(value.mData);
+		// auto time = ticksPerSample * keyIndex;
 
 		switch (type)
 		{
@@ -2161,9 +2400,7 @@ void FBXParser::ParseUVAnimation(ModelRenderPass& pass, aiMaterial* pfbxMaterial
 		case 'r':
 		{
 			// rotation
-			rots.push_back(std::pair<int, Vector3>(keyIndex, Vector3(aiVec3->x * 3.1415926f / 180
-				, aiVec3->y
-				, aiVec3->z)));
+			rots.push_back(std::pair<int, Vector3>(keyIndex, Vector3(aiVec3->x * 3.1415926f / 180, aiVec3->y, aiVec3->z)));
 			break;
 		}
 		case 's':
@@ -2182,12 +2419,12 @@ void FBXParser::ParseUVAnimation(ModelRenderPass& pass, aiMaterial* pfbxMaterial
 
 	auto index = m_texAnims.size();
 	m_texAnims.resize(index + 1);
-	TextureAnim& anim = m_texAnims[index];
+	TextureAnim &anim = m_texAnims[index];
 	pass.texanim = (int16)index;
 
 	anim.rot.globals = anim.scale.globals = anim.trans.globals = pMesh->globalSequences;
 
-	auto sortFunc = [](const std::pair<int, Vector3>& a, const std::pair<int, Vector3>& b)
+	auto sortFunc = [](const std::pair<int, Vector3> &a, const std::pair<int, Vector3> &b)
 	{
 		return a.first < b.first;
 	};
@@ -2196,14 +2433,14 @@ void FBXParser::ParseUVAnimation(ModelRenderPass& pass, aiMaterial* pfbxMaterial
 	std::sort(rots.begin(), rots.end(), sortFunc);
 	std::sort(scales.begin(), scales.end(), sortFunc);
 
-	std::vector<std::pair<int, Vector3>> *pVec[3] = { &trans, &rots, &scales };
-	Animated<Vector3> *pAnimated[3] = { &anim.trans, &anim.rot, &anim.scale };
-	float errorValues[3] = { error_trans , error_rot, error_scale };
+	std::vector<std::pair<int, Vector3>> *pVec[3] = {&trans, &rots, &scales};
+	Animated<Vector3> *pAnimated[3] = {&anim.trans, &anim.rot, &anim.scale};
+	float errorValues[3] = {error_trans, error_rot, error_scale};
 	for (int times = 0; times < 3; times++)
 	{
-		auto& vec = *pVec[times];
-		auto& animated = *pAnimated[times];
-		auto& errorValue = errorValues[times];
+		auto &vec = *pVec[times];
+		auto &animated = *pAnimated[times];
+		auto &errorValue = errorValues[times];
 
 		if (vec.size() > 0)
 		{
@@ -2224,7 +2461,7 @@ void FBXParser::ParseUVAnimation(ModelRenderPass& pass, aiMaterial* pfbxMaterial
 
 			for (i = 1; i < nKeyCount; i++)
 			{
-				auto& rotationKey = vec[i].second;
+				auto &rotationKey = vec[i].second;
 				auto predicatedKey = lastRotKey * 2 - lastlastRotKey;
 				auto delta = rotationKey - predicatedKey;
 
@@ -2247,7 +2484,6 @@ void FBXParser::ParseUVAnimation(ModelRenderPass& pass, aiMaterial* pfbxMaterial
 						{
 							animated.AppendKey(nTime, lastRotKey);
 						}
-
 					}
 
 					animated.AppendKey(time, rotationKey);
@@ -2277,11 +2513,11 @@ void FBXParser::ProcessStaticFBXMesh(aiMesh *pFbxMesh, XFile::Mesh *pMesh)
 	int numVertices = pFbxMesh->mNumVertices;
 	pMesh->mPositions.resize(numVertices);
 	pMesh->mNormals.resize(numVertices);
-	std::vector<Vector2>& coords = pMesh->mTexCoords[pMesh->mNumTextures++];
+	std::vector<Vector2> &coords = pMesh->mTexCoords[pMesh->mNumTextures++];
 	coords.resize(numVertices);
-	//pMesh->mTexCoords.resize(numVertices);
+	// pMesh->mTexCoords.resize(numVertices);
 
-	aiVector3D* uvs = nullptr;
+	aiVector3D *uvs = nullptr;
 	if (pFbxMesh->HasTextureCoords(0))
 		uvs = pFbxMesh->mTextureCoords[0];
 
@@ -2303,12 +2539,12 @@ void FBXParser::ProcessStaticFBXMesh(aiMesh *pFbxMesh, XFile::Mesh *pMesh)
 	{
 		unsigned int *faceIndices = pFbxMesh->mFaces[i].mIndices;
 
-		Face& face = pMesh->mPosFaces[i];
+		Face &face = pMesh->mPosFaces[i];
 		face.mIndices[0] = faceIndices[0];
 		face.mIndices[1] = faceIndices[1];
 		face.mIndices[2] = faceIndices[2];
 
-		Face& nface = pMesh->mNormFaces[i];
+		Face &nface = pMesh->mNormFaces[i];
 		nface.mIndices[0] = faceIndices[0];
 		nface.mIndices[1] = faceIndices[1];
 		nface.mIndices[2] = faceIndices[2];
@@ -2316,11 +2552,11 @@ void FBXParser::ProcessStaticFBXMesh(aiMesh *pFbxMesh, XFile::Mesh *pMesh)
 		pMesh->mFaceMaterials.push_back(0);
 	}
 
-	//FillMaterialList(pFbxMesh, pMesh);
-	//FillTextureCoords(pFbxMesh, pMesh);
+	// FillMaterialList(pFbxMesh, pMesh);
+	// FillTextureCoords(pFbxMesh, pMesh);
 }
 
-void FBXParser::ConvertFBXBone(ParaEngine::Bone& bone, const aiBone *pfbxBone)
+void FBXParser::ConvertFBXBone(ParaEngine::Bone &bone, const aiBone *pfbxBone)
 {
 	/*auto invertOffsetMat = pfbxBone->mOffsetMatrix;
 	invertOffsetMat.Inverse();
@@ -2346,22 +2582,27 @@ void FBXParser::ConvertFBXBone(ParaEngine::Bone& bone, const aiBone *pfbxBone)
 	*/
 }
 
-void FBXParser::CalculateMinMax(const Vector3& v)
+void FBXParser::CalculateMinMax(const Vector3 &v)
 {
 	if (!m_bHasAABBMesh)
 	{
-		if (v.x > m_maxExtent.x) m_maxExtent.x = v.x;
-		if (v.y > m_maxExtent.y) m_maxExtent.y = v.y;
-		if (v.z > m_maxExtent.z) m_maxExtent.z = v.z;
+		if (v.x > m_maxExtent.x)
+			m_maxExtent.x = v.x;
+		if (v.y > m_maxExtent.y)
+			m_maxExtent.y = v.y;
+		if (v.z > m_maxExtent.z)
+			m_maxExtent.z = v.z;
 
-		if (v.x < m_minExtent.x) m_minExtent.x = v.x;
-		if (v.y < m_minExtent.y) m_minExtent.y = v.y;
-		if (v.z < m_minExtent.z) m_minExtent.z = v.z;
+		if (v.x < m_minExtent.x)
+			m_minExtent.x = v.x;
+		if (v.y < m_minExtent.y)
+			m_minExtent.y = v.y;
+		if (v.z < m_minExtent.z)
+			m_minExtent.z = v.z;
 	}
 }
 
-
-int ParaEngine::FBXParser::CreateGetBoneIndex(const char* pNodeName)
+int ParaEngine::FBXParser::CreateGetBoneIndex(const char *pNodeName)
 {
 	int nBoneIndex = -1;
 	auto it = m_boneMapping.find(pNodeName);
@@ -2374,12 +2615,12 @@ int ParaEngine::FBXParser::CreateGetBoneIndex(const char* pNodeName)
 		nBoneIndex = m_bones.size();
 		m_bones.resize(nBoneIndex + 1);
 
-		ParaEngine::Bone& bone = m_bones.back();
+		ParaEngine::Bone &bone = m_bones.back();
 		bone.nIndex = nBoneIndex;
 		bone.bUsePivot = false;
 		bone.SetName(pNodeName);
 		bone.AutoSetBoneInfoFromName();
-		// if bone already has an ID, it is always a non-transform node. 
+		// if bone already has an ID, it is always a non-transform node.
 		if (bone.GetBoneID() <= 0)
 			bone.flags = ParaEngine::Bone::BONE_TRANSFORMATION_NODE;
 		m_boneMapping[pNodeName] = bone.nIndex;
@@ -2391,7 +2632,7 @@ int ParaEngine::FBXParser::CreateGetBoneIndex(const char* pNodeName)
 Each geoset has an id of format "ccdd", where "cc" is the geoset category CharModelInstance::CharGeosets
 and "dd" is individual geoset style starting from 1 of the given category.
 if id == 0, it means an always displayed mesh. There can be at most one geoset in the same category to show at the same time.
-For example, either 501 or 502 can be shown at the same time. Please note, multiple geosets can share the same id. 
+For example, either 501 or 502 can be shown at the same time. Please note, multiple geosets can share the same id.
 
 read geoset id from the mesh name, the name is of format [name|number]_[number], such as
 "Hair_01" = "00_01" = "1",
@@ -2401,10 +2642,10 @@ read geoset id from the mesh name, the name is of format [name|number]_[number],
 "Unknown name" = "0",
 
 name: can be a number or a string, string is interpreted to a number cc. by the following mapping (case insensitive)
-"hair" = 0, 
-"facialhair" = 1, 
-"eyeaddon" = 2, 
-"head" = 3, 
+"hair" = 0,
+"facialhair" = 1,
+"eyeaddon" = 2,
+"head" = 3,
 "hand" = "gloves" = 4,
 "boots" = 5,
 "ears" = 7,
@@ -2416,7 +2657,7 @@ name: can be a number or a string, string is interpreted to a number cc. by the 
 "skirt" = 14,
 "cape" = 15,
 */
-int GetGeosetIdFromMeshName(const char* meshname)
+int GetGeosetIdFromMeshName(const char *meshname)
 {
 	int geosetID = 0;
 	if (meshname)
@@ -2485,7 +2726,8 @@ int GetGeosetIdFromMeshName(const char* meshname)
 			}
 			prename[j] = '\0';
 
-			enum CharGeosets {
+			enum CharGeosets
+			{
 				CSET_HAIR = 0,
 				CSET_FACIAL_HAIR1 = 1,
 				CSET_FACIAL_HAIR2 = 2,
@@ -2584,14 +2826,14 @@ int GetGeosetIdFromMeshName(const char* meshname)
 	return geosetID;
 }
 
-void FBXParser::ProcessFBXMesh(const aiScene* pFbxScene, aiMesh *pFbxMesh, aiNode* pFbxNode, CParaXModel *pMesh)
+void FBXParser::ProcessFBXMesh(const aiScene *pFbxScene, aiMesh *pFbxMesh, aiNode *pFbxNode, CParaXModel *pMesh)
 {
 	int index_start = m_indices.size();
 	int vertex_start = m_vertices.size();
 	int numFaces = pFbxMesh->mNumFaces;
 	int numVertices = pFbxMesh->mNumVertices;
 
-	aiVector3D* uvs = NULL;
+	aiVector3D *uvs = NULL;
 	if (pFbxMesh->HasTextureCoords(0))
 		uvs = pFbxMesh->mTextureCoords[0];
 	std::string nodeName(pFbxNode->mName.C_Str());
@@ -2616,12 +2858,12 @@ void FBXParser::ProcessFBXMesh(const aiScene* pFbxScene, aiMesh *pFbxMesh, aiNod
 			int numBones = pFbxMesh->mNumBones;
 			for (int i = 0; i < numBones; i++)
 			{
-				const aiBone * fbxBone = pFbxMesh->mBones[i];
+				const aiBone *fbxBone = pFbxMesh->mBones[i];
 				int nBoneIndex = CreateGetBoneIndex(fbxBone->mName.C_Str());
 				if (nBoneIndex >= 0)
 				{
-					ParaEngine::Bone& bone = m_bones[nBoneIndex];
-					const Matrix4& offsetMat = reinterpret_cast<const Matrix4&>(fbxBone->mOffsetMatrix);
+					ParaEngine::Bone &bone = m_bones[nBoneIndex];
+					const Matrix4 &offsetMat = reinterpret_cast<const Matrix4 &>(fbxBone->mOffsetMatrix);
 					bone.matOffset = offsetMat.transpose();
 					bone.flags |= ParaEngine::Bone::BONE_OFFSET_MATRIX;
 					bone.flags &= ~ParaEngine::Bone::BONE_TRANSFORMATION_NODE;
@@ -2638,19 +2880,19 @@ void FBXParser::ProcessFBXMesh(const aiScene* pFbxScene, aiMesh *pFbxMesh, aiNod
 
 	// check diffuse color
 	DWORD dwDiffuseColor = Color::White;
-	aiMaterial* useMaterial = pFbxScene->mMaterials[pFbxMesh->mMaterialIndex];
+	aiMaterial *useMaterial = pFbxScene->mMaterials[pFbxMesh->mMaterialIndex];
 	aiTextureOp eOp;
 	aiString szPath;
 	unsigned int iUV;
 	float fBlend;
 #ifdef ASSIMP5
 	aiGetMaterialTexture(useMaterial, (aiTextureType)aiTextureType_DIFFUSE, 0,
-		&szPath, NULL, &iUV, &fBlend, &eOp, NULL, NULL);
+						 &szPath, NULL, &iUV, &fBlend, &eOp, NULL, NULL);
 #else
-	char* content_begin = NULL;
+	char *content_begin = NULL;
 	int content_len = -1;
 	aiGetMaterialTexture(useMaterial, (aiTextureType)aiTextureType_DIFFUSE, 0,
-		&szPath, NULL, &iUV, &fBlend, &eOp, NULL, NULL, &content_begin, &content_len);
+						 &szPath, NULL, &iUV, &fBlend, &eOp, NULL, NULL, &content_begin, &content_len);
 #endif
 	std::string diffuseTexName(szPath.C_Str());
 	if (diffuseTexName == "")
@@ -2681,12 +2923,12 @@ void FBXParser::ProcessFBXMesh(const aiScene* pFbxScene, aiMesh *pFbxMesh, aiNod
 	}
 	if (pFbxMesh->GetNumColorChannels() >= 2)
 	{
-		aiColor4D* colors0 = pFbxMesh->mColors[0];
-		aiColor4D* colors1 = pFbxMesh->mColors[1];
+		aiColor4D *colors0 = pFbxMesh->mColors[0];
+		aiColor4D *colors1 = pFbxMesh->mColors[1];
 
 		for (int i = 0; i < numVertices; i++)
 		{
-			ModelVertex& vertex = m_vertices[vertex_start + i];
+			ModelVertex &vertex = m_vertices[vertex_start + i];
 			LinearColor color0(colors0[i].r, colors0[i].g, colors0[i].b, colors0[i].a);
 			vertex.color0 = color0;
 			LinearColor color1(colors1[i].r, colors1[i].g, colors1[i].b, colors1[i].a);
@@ -2695,16 +2937,15 @@ void FBXParser::ProcessFBXMesh(const aiScene* pFbxScene, aiMesh *pFbxMesh, aiNod
 	}
 	else if (pFbxMesh->GetNumColorChannels() >= 1)
 	{
-		aiColor4D* colors0 = pFbxMesh->mColors[0];
+		aiColor4D *colors0 = pFbxMesh->mColors[0];
 
 		for (int i = 0; i < numVertices; i++)
 		{
-			ModelVertex& vertex = m_vertices[vertex_start + i];
+			ModelVertex &vertex = m_vertices[vertex_start + i];
 			LinearColor color(colors0[i].r, colors0[i].g, colors0[i].b, colors0[i].a);
 			vertex.color0 = color;
 		}
 	}
-
 
 	// add geoset (faces & indices)
 	{
@@ -2727,7 +2968,7 @@ void FBXParser::ProcessFBXMesh(const aiScene* pFbxScene, aiMesh *pFbxMesh, aiNod
 				unsigned int nMaxIndex = 0;
 				for (int i = 0; i < nFaceCount; i++)
 				{
-					const aiFace& fbxFace = pFbxMesh->mFaces[i + nFaceStart];
+					const aiFace &fbxFace = pFbxMesh->mFaces[i + nFaceStart];
 					assert(fbxFace.mNumIndices == 3);
 					for (int j = 0; j < 3; j++)
 					{
@@ -2749,7 +2990,7 @@ void FBXParser::ProcessFBXMesh(const aiScene* pFbxScene, aiMesh *pFbxMesh, aiNod
 
 			if (nFaceCount == 0)
 			{
-				// warning: skip this face, if we can not easily split large mesh without reordering index. 
+				// warning: skip this face, if we can not easily split large mesh without reordering index.
 				numFaces -= 1;
 				nFaceStart += 1;
 				continue;
@@ -2758,7 +2999,7 @@ void FBXParser::ProcessFBXMesh(const aiScene* pFbxScene, aiMesh *pFbxMesh, aiNod
 			int nIndexOffset = nVertexOffset - vertex_start;
 			for (int i = 0; i < nFaceCount; i++)
 			{
-				const aiFace& fbxFace = pFbxMesh->mFaces[i + nFaceStart];
+				const aiFace &fbxFace = pFbxMesh->mFaces[i + nFaceStart];
 				assert(fbxFace.mNumIndices == 3);
 				for (int j = 0; j < 3; j++)
 				{
@@ -2775,8 +3016,9 @@ void FBXParser::ProcessFBXMesh(const aiScene* pFbxScene, aiMesh *pFbxMesh, aiNod
 
 			pMesh->geosets.push_back(geoset);
 
-			ModelRenderPass* pPass = &(pMesh->passes[pFbxMesh->mMaterialIndex]);
-			if (pPass->geoset >= 0) {
+			ModelRenderPass *pPass = &(pMesh->passes[pFbxMesh->mMaterialIndex]);
+			if (pPass->geoset >= 0)
+			{
 				// if there is already a render pass due to mesh split, create a new render pass that inherit the unsplited pass.
 				pMesh->passes.push_back(*pPass);
 				pPass = &(pMesh->passes[pMesh->passes.size() - 1]);
@@ -2807,13 +3049,13 @@ void FBXParser::ProcessFBXMesh(const aiScene* pFbxScene, aiMesh *pFbxMesh, aiNod
 
 		for (int i = 0; i < numBones; i++)
 		{
-			const aiBone * fbxBone = pFbxMesh->mBones[i];
+			const aiBone *fbxBone = pFbxMesh->mBones[i];
 			int nBoneIndex = CreateGetBoneIndex(fbxBone->mName.C_Str());
 
 			if (nBoneIndex >= 0)
 			{
-				ParaEngine::Bone& bone = m_bones[nBoneIndex];
-				const Matrix4& offsetMat = reinterpret_cast<const Matrix4&>(fbxBone->mOffsetMatrix);
+				ParaEngine::Bone &bone = m_bones[nBoneIndex];
+				const Matrix4 &offsetMat = reinterpret_cast<const Matrix4 &>(fbxBone->mOffsetMatrix);
 				bone.matOffset = offsetMat.transpose();
 				bone.flags |= ParaEngine::Bone::BONE_OFFSET_MATRIX;
 				bone.flags &= ~ParaEngine::Bone::BONE_TRANSFORMATION_NODE;
@@ -2822,19 +3064,19 @@ void FBXParser::ProcessFBXMesh(const aiScene* pFbxScene, aiMesh *pFbxMesh, aiNod
 
 			for (int j = 0; j < (int)fbxBone->mNumWeights; j++)
 			{
-				aiVertexWeight& vertexWeight = fbxBone->mWeights[j];
+				aiVertexWeight &vertexWeight = fbxBone->mWeights[j];
 				int vertex_id = vertexWeight.mVertexId + vertex_start;
 				uint8 vertex_weight = (uint8)(vertexWeight.mWeight * 255);
 				int nTotalWeight = 0;
 				int bone_index = 0;
-				ModelVertex & vertex = m_vertices[vertex_id];
+				ModelVertex &vertex = m_vertices[vertex_id];
 				for (; bone_index < ParaEngine::Bone::s_MaxBonesPerVertex; bone_index++)
 				{
 					uint8 cur_vertex_weight = vertex.weights[bone_index];
 					nTotalWeight += cur_vertex_weight;
 					if (cur_vertex_weight == 0)
 					{
-						//if (nTotalWeight > 255)
+						// if (nTotalWeight > 255)
 						//	vertex_weight -= nTotalWeight - 255;
 						if (nTotalWeight == 254)
 							vertex_weight += 1;
@@ -2862,8 +3104,7 @@ void FBXParser::ProcessFBXMesh(const aiScene* pFbxScene, aiMesh *pFbxMesh, aiNod
 	}
 }
 
-
-ModelAnimation FBXParser::CreateModelAnimation(aiAnimation* pFbxAnim, ParaEngine::AnimInfo* pAnimInfo, int AnimIndex, bool beEndAnim)
+ModelAnimation FBXParser::CreateModelAnimation(aiAnimation *pFbxAnim, ParaEngine::AnimInfo *pAnimInfo, int AnimIndex, bool beEndAnim)
 {
 	float fTimeScale = (float)(1000.f / pFbxAnim->mTicksPerSecond);
 	int animID, tickStart, tickEnd;
@@ -2901,7 +3142,7 @@ ModelAnimation FBXParser::CreateModelAnimation(aiAnimation* pFbxAnim, ParaEngine
 	anim.loopType = loopType;
 	anim.moveSpeed = fMoveSpeed;
 
-	for (ParaEngine::Bone & bone : m_bones)
+	for (ParaEngine::Bone &bone : m_bones)
 	{
 		// support multiple animations
 		int nAnimId = AnimIndex;
@@ -2914,7 +3155,8 @@ ModelAnimation FBXParser::CreateModelAnimation(aiAnimation* pFbxAnim, ParaEngine
 			for (int i = 0; i < nCount; ++i)
 			{
 				uint32 time = (uint32)bone.scale.times[i];
-				if (time <= timeStart) {
+				if (time <= timeStart)
+				{
 					range.first = i;
 				}
 				else if (time >= timeEnd)
@@ -2934,7 +3176,8 @@ ModelAnimation FBXParser::CreateModelAnimation(aiAnimation* pFbxAnim, ParaEngine
 			for (int i = 0; i < nCount; ++i)
 			{
 				uint32 time = (uint32)bone.trans.times[i];
-				if (time <= timeStart) {
+				if (time <= timeStart)
+				{
 					range.first = i;
 				}
 				else if (time >= timeEnd)
@@ -2954,7 +3197,8 @@ ModelAnimation FBXParser::CreateModelAnimation(aiAnimation* pFbxAnim, ParaEngine
 			for (int i = 0; i < nCount; ++i)
 			{
 				uint32 time = (uint32)bone.rot.times[i];
-				if (time <= timeStart) {
+				if (time <= timeStart)
+				{
 					range.first = i;
 				}
 				else if (time >= timeEnd)
@@ -2969,9 +3213,9 @@ ModelAnimation FBXParser::CreateModelAnimation(aiAnimation* pFbxAnim, ParaEngine
 	return anim;
 }
 
-void FBXParser::ProcessFBXAnimation(const aiScene* pFbxScene, unsigned int nIndex, CParaXModel *pMesh)
+void FBXParser::ProcessFBXAnimation(const aiScene *pFbxScene, unsigned int nIndex, CParaXModel *pMesh)
 {
-	aiAnimation* pFbxAnim = pFbxScene->mAnimations[nIndex];
+	aiAnimation *pFbxAnim = pFbxScene->mAnimations[nIndex];
 
 	float fTimeScale = (float)(1000.f / pFbxAnim->mTicksPerSecond);
 
@@ -2983,9 +3227,9 @@ void FBXParser::ProcessFBXAnimation(const aiScene* pFbxScene, unsigned int nInde
 		int bone_index = CreateGetBoneIndex(nodeChannel->mNodeName.C_Str());
 		if (bone_index >= 0)
 		{
-			ParaEngine::Bone & bone = m_bones[bone_index];
+			ParaEngine::Bone &bone = m_bones[bone_index];
 			bone.flags |= ParaEngine::Bone::BONE_OFFSET_MATRIX;
-			// bone.calc is true, if there is bone animation. 
+			// bone.calc is true, if there is bone animation.
 			bone.calc = true;
 
 			bone.scale.used = (nodeChannel->mNumScalingKeys > 0);
@@ -3026,57 +3270,100 @@ void FBXParser::ProcessFBXAnimation(const aiScene* pFbxScene, unsigned int nInde
 		}
 	}
 
-	if (m_modelInfo.LoadFromFile(m_sAnimSplitterFilename))
+	// LoadAnimations(pFbxAnim);
+	// 以下代码移至 LoadAnimations() 中实现, 方便对骨骼数据进行处理
+	if (COLLAPSE_GROUP_BONE_TRANSFORM_NODE)
 	{
-		int animsCount = m_modelInfo.GetAnimCount();
-		for (int i = 0; i < animsCount; i++)
-		{
-			ParaEngine::AnimInfo &animinfo = m_modelInfo.m_Anims[i];
-			ModelAnimation anim = CreateModelAnimation(pFbxAnim, &animinfo, (int)m_anims.size(), i == animsCount - 1);
-			m_anims.push_back(anim);
-		}
+		// 延迟处理
 	}
 	else
 	{
-		uint32 time = (uint32)((1000.f / pFbxAnim->mTicksPerSecond) * pFbxAnim->mDuration);
-		int animsCount = (int)floor(time / 10000) + 1;
-		for (int i = 0; i < animsCount; i++)
+		aiAnimation *pFbxAnim = pFbxScene->mAnimations[nIndex];
+		if (m_modelInfo.LoadFromFile(m_sAnimSplitterFilename))
 		{
-			ParaEngine::AnimInfo animinfo;
-			animinfo.id = i;
-			animinfo.startTick = (int)(i * 10 * pFbxAnim->mTicksPerSecond);
-			animinfo.endTick = (int)((i + 1) * 10 * pFbxAnim->mTicksPerSecond - 1);
-			animinfo.loopType = 0;
-			ModelAnimation anim = CreateModelAnimation(pFbxAnim, &animinfo, (int)m_anims.size(), i == animsCount - 1);
-			m_anims.push_back(anim);
+			int animsCount = m_modelInfo.GetAnimCount();
+			for (int i = 0; i < animsCount; i++)
+			{
+				ParaEngine::AnimInfo &animinfo = m_modelInfo.m_Anims[i];
+				ModelAnimation anim = CreateModelAnimation(pFbxAnim, &animinfo, (int)m_anims.size(), i == animsCount - 1);
+				m_anims.push_back(anim);
+			}
+		}
+		else
+		{
+			uint32 time = (uint32)((1000.f / pFbxAnim->mTicksPerSecond) * pFbxAnim->mDuration);
+			int animsCount = (int)floor(time / 10000) + 1;
+			for (int i = 0; i < animsCount; i++)
+			{
+				ParaEngine::AnimInfo animinfo;
+				animinfo.id = i;
+				animinfo.startTick = (int)(i * 10 * pFbxAnim->mTicksPerSecond);
+				animinfo.endTick = (int)((i + 1) * 10 * pFbxAnim->mTicksPerSecond - 1);
+				animinfo.loopType = 0;
+				ModelAnimation anim = CreateModelAnimation(pFbxAnim, &animinfo, (int)m_anims.size(), i == animsCount - 1);
+				m_anims.push_back(anim);
+			}
 		}
 	}
 }
 
-void FBXParser::ProcessFBXBoneNodes(const aiScene* pFbxScene, aiNode* pFbxNode, int parentBoneIndex, CParaXModel* pMesh)
+void FBXParser::LoadAnimations(const aiScene *pFbxScene)
+{
+	for (unsigned int nIndex = 0; nIndex < pFbxScene->mNumAnimations; nIndex++)
+	{
+		aiAnimation *pFbxAnim = pFbxScene->mAnimations[nIndex];
+		if (m_modelInfo.LoadFromFile(m_sAnimSplitterFilename))
+		{
+			int animsCount = m_modelInfo.GetAnimCount();
+			for (int i = 0; i < animsCount; i++)
+			{
+				ParaEngine::AnimInfo &animinfo = m_modelInfo.m_Anims[i];
+				ModelAnimation anim = CreateModelAnimation(pFbxAnim, &animinfo, (int)m_anims.size(), i == animsCount - 1);
+				m_anims.push_back(anim);
+			}
+		}
+		else
+		{
+			uint32 time = (uint32)((1000.f / pFbxAnim->mTicksPerSecond) * pFbxAnim->mDuration);
+			int animsCount = (int)floor(time / 10000) + 1;
+			for (int i = 0; i < animsCount; i++)
+			{
+				ParaEngine::AnimInfo animinfo;
+				animinfo.id = i;
+				animinfo.startTick = (int)(i * 10 * pFbxAnim->mTicksPerSecond);
+				animinfo.endTick = (int)((i + 1) * 10 * pFbxAnim->mTicksPerSecond - 1);
+				animinfo.loopType = 0;
+				ModelAnimation anim = CreateModelAnimation(pFbxAnim, &animinfo, (int)m_anims.size(), i == animsCount - 1);
+				m_anims.push_back(anim);
+			}
+		}
+	}
+}
+
+void FBXParser::ProcessFBXBoneNodes(const aiScene *pFbxScene, aiNode *pFbxNode, int parentBoneIndex, CParaXModel *pMesh)
 {
 	const std::string nodeName(pFbxNode->mName.C_Str());
 
-	// this will force create a bone for every node. Bones without weights are just treated as ordinary nodes, 
+	// this will force create a bone for every node. Bones without weights are just treated as ordinary nodes,
 	// so it is important to add them here
 
 	int bone_index = CreateGetBoneIndex(pFbxNode->mName.C_Str());
 	if (bone_index >= 0)
 	{
-		ParaEngine::Bone& bone = m_bones[bone_index];
+		ParaEngine::Bone &bone = m_bones[bone_index];
 		// use static transform for non-animated bones
-		Matrix4 matTrans = reinterpret_cast<const Matrix4&>(pFbxNode->mTransformation);
+		Matrix4 matTrans = reinterpret_cast<const Matrix4 &>(pFbxNode->mTransformation);
 		bone.matTransform = matTrans.transpose();
-		// bone.calc is true, if there is bone animation. 
+		// bone.calc is true, if there is bone animation.
 		if (!bone.IsAnimated())
 		{
 			bone.flags |= ParaEngine::Bone::BONE_STATIC_TRANSFORM;
 		}
 
-		//if (pFbxNode->mIsComplex)
+		// if (pFbxNode->mIsComplex)
 		//{
 		//	bone.flags |= ParaEngine::Bone::BONE_TRANSFORMATION_NODE;
-		//}
+		// }
 	}
 	m_bones[bone_index].parent = parentBoneIndex;
 
@@ -3086,29 +3373,29 @@ void FBXParser::ProcessFBXBoneNodes(const aiScene* pFbxScene, aiNode* pFbxNode, 
 	{
 		for (unsigned int i = 0; i < metaData->mNumProperties; i++)
 		{
-			auto& key = metaData->mKeys[i];
-			auto& value = metaData->mValues[i];
-			const char* pKeyStr = key.C_Str();
+			auto &key = metaData->mKeys[i];
+			auto &value = metaData->mValues[i];
+			const char *pKeyStr = key.C_Str();
 			if (strcmp(pKeyStr, "Show") == 0)
 			{
 				PE_ASSERT(value.mType == AI_BOOL);
-				bVisible = *static_cast<bool*>(value.mData);
+				bVisible = *static_cast<bool *>(value.mData);
 				continue;
 			}
 
-			//ps_material
+			// ps_material
 			if (strstr(pKeyStr, "ps_material") == nullptr)
 				continue;
 
 			PE_ASSERT(value.mType == AI_AISTRING);
 
-			auto matName = static_cast<aiString*>(value.mData)->C_Str();
+			auto matName = static_cast<aiString *>(value.mData)->C_Str();
 			auto it = m_particleSystem.find(matName);
 			if (it == m_particleSystem.end())
 				continue;
 
-			ParticleSystem& ps = it->second;
-			ps.parent = (Bone*)&(m_bones[bone_index]);
+			ParticleSystem &ps = it->second;
+			ps.parent = (Bone *)&(m_bones[bone_index]);
 		}
 	}
 
@@ -3122,17 +3409,16 @@ void FBXParser::ProcessFBXBoneNodes(const aiScene* pFbxScene, aiNode* pFbxNode, 
 		}
 	}
 
-
-	// for children 
+	// for children
 	for (int i = 0; i < (int)pFbxNode->mNumChildren; i++)
 	{
 		ProcessFBXBoneNodes(pFbxScene, pFbxNode->mChildren[i], bone_index, pMesh);
 	}
 }
 
-void PrintBone(int nIndex, ParaEngine::Bone* bones)
+void PrintBone(int nIndex, ParaEngine::Bone *bones)
 {
-	ParaEngine::Bone& bone = bones[nIndex];
+	ParaEngine::Bone &bone = bones[nIndex];
 	if (!bone.calc)
 	{
 		bone.calc = true;
@@ -3140,16 +3426,19 @@ void PrintBone(int nIndex, ParaEngine::Bone* bones)
 			PrintBone(bone.parent, bones);
 
 		OUTPUT_LOG("Bone %s %d (parent: %d) %s (flag:%d) pivot: %.4f %.4f %.4f\n", bone.GetName().c_str(), bone.nIndex, bone.parent,
-			bone.IsAnimated() ? "animated" : "", bone.flags, bone.pivot.x, bone.pivot.y, bone.pivot.z);
-		if (bone.rot.used) {
+				   bone.IsAnimated() ? "animated" : "", bone.flags, bone.pivot.x, bone.pivot.y, bone.pivot.z);
+		if (bone.rot.used)
+		{
 			Quaternion rot = bone.rot.data[0];
 			OUTPUT_LOG("\t\t quat(%d): %.4f %.4f %.4f %.4f\n", (int)bone.rot.data.size(), rot.x, rot.y, rot.z, rot.w);
 		}
-		if (bone.trans.used) {
+		if (bone.trans.used)
+		{
 			Vector3 v = bone.trans.data[0];
 			OUTPUT_LOG("\t\t trans(%d): %.4f %.4f %.4f\n", (int)bone.trans.data.size(), v.x, v.y, v.z);
 		}
-		if (bone.scale.used) {
+		if (bone.scale.used)
+		{
 			Vector3 v = bone.scale.data[0];
 			OUTPUT_LOG("\t\t scale(%d): %.4f %.4f %.4f\n", (int)bone.scale.data.size(), v.x, v.y, v.z);
 		}
@@ -3159,7 +3448,7 @@ void PrintBone(int nIndex, ParaEngine::Bone* bones)
 	}
 }
 
-void ParaEngine::FBXParser::PrintDebug(const aiScene* pFbxScene)
+void ParaEngine::FBXParser::PrintDebug(const aiScene *pFbxScene)
 {
 	for (int i = 0; i < (int)m_bones.size(); ++i)
 	{
@@ -3174,7 +3463,7 @@ void ParaEngine::FBXParser::PrintDebug(const aiScene* pFbxScene)
 	for (int i = 0; i < (int)m_vertices.size(); ++i)
 	{
 		OUTPUT_LOG("\t Vertex%d: %.4f %.4f %.4f: Bone:%d %d\n", i, m_vertices[i].pos.x, m_vertices[i].pos.y, m_vertices[i].pos.z,
-			m_vertices[i].bones[0], m_vertices[i].bones[1]);
+				   m_vertices[i].bones[0], m_vertices[i].bones[1]);
 	}
 }
 
@@ -3183,7 +3472,7 @@ bool ParaEngine::FBXParser::HasAnimations()
 	return m_anims.size() > 0;
 }
 
-// not used, the exporter is required to do it. 
+// not used, the exporter is required to do it.
 void ParaEngine::FBXParser::MakeAxisY_UP()
 {
 	int nBoneCount = (int)m_bones.size();
@@ -3196,7 +3485,7 @@ void ParaEngine::FBXParser::MakeAxisY_UP()
 
 		for (int i = 0; i < nBoneCount; ++i)
 		{
-			Bone& bone = m_bones[i];
+			Bone &bone = m_bones[i];
 			if (bone.parent < 0)
 			{
 				if (bone.IsOffsetMatrixBone())
@@ -3218,12 +3507,12 @@ void ParaEngine::FBXParser::MakeAxisY_UP()
 	}
 }
 
-const std::string& ParaEngine::FBXParser::GetFilename() const
+const std::string &ParaEngine::FBXParser::GetFilename() const
 {
 	return m_sFilename;
 }
 
-void ParaEngine::FBXParser::SetFilename(const std::string& val)
+void ParaEngine::FBXParser::SetFilename(const std::string &val)
 {
 	m_sFilename = val;
 }

@@ -250,6 +250,7 @@ void CNPLScriptingState::LoadHAPI_ResourceManager()
 				def("CloseArchive", &ParaAsset::CloseArchive),
 				def("GeneratePkgFile", &ParaAsset::GeneratePkgFile),
 				def("GeneratePkgFile", &ParaAsset::GeneratePkgFile_),
+				def("ConvertGLB", &ParaAsset::ConvertGLB),
 				def("Init", &ParaAsset::Init),
 				def("Unload", &ParaAsset::Unload),
 				def("UnloadAll", &ParaAsset::UnloadAll),

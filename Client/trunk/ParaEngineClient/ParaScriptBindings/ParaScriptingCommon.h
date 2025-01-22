@@ -565,5 +565,8 @@ namespace ParaScripting
 		* if found, it will call the Refresh() method on the asset entity and return true, or return false. 
 		*/
 		static bool Refresh(const char* filename);
+
+
+		static void ConvertGLB(const char* cmds);
 	};
 }
