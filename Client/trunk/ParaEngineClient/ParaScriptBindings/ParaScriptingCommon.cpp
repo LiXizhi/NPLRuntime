@@ -29,6 +29,15 @@ extern "C"
 #include <luabind/luabind.hpp>
 #include <luabind/object.hpp>
 
+#include <fstream>
+#include <sstream>
+#include <iostream>
+
+#include "assimp/Exporter.hpp"
+#include "assimp/Importer.hpp"
+#include "assimp/postprocess.h"
+#include "assimp/scene.h"
+
 using namespace ParaEngine;
 using namespace ParaScripting;
 using namespace luabind;
@@ -939,6 +948,50 @@ void ParaAsset::SetAssetServerUrl( const char* path )
 bool ParaAsset::Refresh( const char* filename )
 {
 	return CGlobals::GetAssetManager()->RefreshAsset(filename);
+}
+	
+void ParaAsset::ConvertGLB(const char* cmds)
+{
+	std::istringstream iss(cmds);
+	float position_x = 0.0f;
+    float position_y = 0.0f;
+    float position_z = 0.0f;
+    float rotation_x = 0.0f;
+    float rotation_y = 0.0f;
+    float rotation_z = 0.0f;
+    float scale      = 1.0f;
+	std::string input_filepath;
+	std::getline(iss, input_filepath, ',');
+	if (input_filepath.empty() || input_filepath.find("output_") == 0) return;
+	auto pos = input_filepath.find_last_of("/\\");
+	auto output_filepath = pos == std::string::npos ? ("output_" + input_filepath) : (input_filepath.substr(0, pos + 1) + "output_" + input_filepath.substr(pos + 1));
+	iss >> position_x >> position_y >> position_z >> rotation_x >> rotation_y >> rotation_z >> scale;
+    auto identify    = aiMatrix4x4();
+	auto matrix = aiMatrix4x4::Scaling(aiVector3D(scale, scale, scale), identify);
+	matrix      = aiMatrix4x4::RotationY(rotation_y, identify) * matrix;
+	matrix      = aiMatrix4x4::Translation(aiVector3D(position_x, position_y, position_z), identify) * matrix;
+
+    Assimp::Importer importer;
+    const aiScene *scene = importer.ReadFile(input_filepath, aiProcess_Triangulate | aiProcess_GenSmoothNormals | aiProcess_FlipUVs);
+
+    if (!scene)
+    {
+        std::cerr << "Failed to load scene: " << importer.GetErrorString() << std::endl;
+        return;
+    }
+
+    auto root_node             = scene->mRootNode;
+    root_node->mTransformation = matrix * root_node->mTransformation;
+
+    Assimp::Exporter exporter;
+    if (exporter.Export(scene, "glb2", output_filepath.c_str()) != AI_SUCCESS)
+    {
+        std::cerr << "Failed to export scene: " << exporter.GetErrorString() << std::endl;
+    }
+    else
+    {
+        std::cout << "Scene saved successfully to " << output_filepath << std::endl;
+    }
 }
 
 #pragma endregion ParaAssets

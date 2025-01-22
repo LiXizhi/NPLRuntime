@@ -56,7 +56,7 @@ OPTION( ASSIMP_ANDROID_JNIIOSYSTEM
 )
 OPTION( ASSIMP_NO_EXPORT
   "Disable Assimp's export functionality."
-  ON
+  OFF
 )
 OPTION( ASSIMP_BUILD_ZLIB
   "Build your own zlib"
