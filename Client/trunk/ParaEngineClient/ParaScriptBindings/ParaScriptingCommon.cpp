@@ -961,15 +961,29 @@ void ParaAsset::ConvertGLB(const char* cmds)
     float rotation_z = 0.0f;
     float scale      = 1.0f;
 	std::string input_filepath;
+	std::string transform_matrix;
+	std::string output_filepath;
 	std::getline(iss, input_filepath, ',');
-	if (input_filepath.empty() || input_filepath.find("output_") == 0) return;
-	auto pos = input_filepath.find_last_of("/\\");
-	auto output_filepath = pos == std::string::npos ? ("output_" + input_filepath) : (input_filepath.substr(0, pos + 1) + "output_" + input_filepath.substr(pos + 1));
-	iss >> position_x >> position_y >> position_z >> rotation_x >> rotation_y >> rotation_z >> scale;
-    auto identify    = aiMatrix4x4();
-	auto matrix = aiMatrix4x4::Scaling(aiVector3D(scale, scale, scale), identify);
-	matrix      = aiMatrix4x4::RotationY(rotation_y, identify) * matrix;
-	matrix      = aiMatrix4x4::Translation(aiVector3D(position_x, position_y, position_z), identify) * matrix;
+	std::getline(iss, transform_matrix, ',');
+	std::getline(iss, output_filepath, ',');
+	if (input_filepath.empty() || transform_matrix.empty()) return;
+	if (output_filepath.empty()) 
+	{
+		auto pos = input_filepath.find_last_of("/\\");
+		if (pos == std::string::npos)
+		{
+			output_filepath = "output/" + input_filepath;
+		}
+		else 
+		{
+			output_filepath = input_filepath.substr(0, pos + 1) + "output" + input_filepath[pos] + input_filepath.substr(pos + 1);
+		}
+	}
+	std::istringstream(transform_matrix) >> position_x >> position_y >> position_z >> rotation_x >> rotation_y >> rotation_z >> scale;
+    auto identify = aiMatrix4x4();
+	auto matrix   = aiMatrix4x4::Scaling(aiVector3D(scale, scale, scale), identify);
+	matrix        = aiMatrix4x4::RotationY(rotation_y, identify) * matrix;
+	matrix        = aiMatrix4x4::Translation(aiVector3D(position_x, position_y, position_z), identify) * matrix;
 
     Assimp::Importer importer;
     const aiScene *scene = importer.ReadFile(input_filepath, aiProcess_Triangulate | aiProcess_GenSmoothNormals | aiProcess_FlipUVs);
