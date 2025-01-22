@@ -965,7 +965,7 @@ void ParaAsset::ConvertGLB(const char* cmds)
 	std::string output_filepath;
 	std::getline(iss, input_filepath, ',');
 	std::getline(iss, transform_matrix, ',');
-	std::getline(iss, output_filepath, ',');
+	std::getline(iss, output_filepath);
 	if (input_filepath.empty() || transform_matrix.empty()) return;
 	if (output_filepath.empty()) 
 	{
