@@ -34,9 +34,8 @@ install:
 #----------------------------#
 # manually install boost     #
 #----------------------------#
-
+# appveyor DownloadFile https://gitee.com/paracraft/cdnlibs/raw/master/boost_1_77_0.7z -FileName "C:\projects\nplruntime\Server\trunk\boost.7z"
 - cmd: >-
-    # appveyor DownloadFile https://gitee.com/paracraft/cdnlibs/raw/master/boost_1_77_0.7z -FileName "C:\projects\nplruntime\Server\trunk\boost.7z"
     git clone https://github.com/tatfook/cdnlibs.git C:\projects\nplruntime\Server\trunk\cdnlibs
     copy C:\projects\nplruntime\Server\trunk\cdnlibs\boost_1_77_0.7z C:\projects\nplruntime\Server\trunk\boost.7z
 
