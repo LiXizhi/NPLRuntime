@@ -13,6 +13,7 @@
 #include <sstream>
 #include <string>
 #include <unordered_map>
+#include <cctype>
 
 #define DEBUG
 

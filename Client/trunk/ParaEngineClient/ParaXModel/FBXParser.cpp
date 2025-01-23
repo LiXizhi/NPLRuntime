@@ -188,7 +188,7 @@ CParaXModel *FBXParser::ParseParaXModel(const char *buffer, int nSize, const cha
 		// MakeAxisY_UP();
 #endif
 
-#define COLLAPSE_GROUP_BONE_TRANSFORM_NODE true
+#define COLLAPSE_GROUP_BONE_TRANSFORM_NODE false
 		if (COLLAPSE_GROUP_BONE_TRANSFORM_NODE)
 		{
 			MergeBoneNodesRST();

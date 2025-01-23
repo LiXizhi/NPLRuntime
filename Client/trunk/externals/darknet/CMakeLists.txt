@@ -1,5 +1,5 @@
 
-cmake_minimum_required(VERSION 3.20.0)
+cmake_minimum_required(VERSION 3.16.0)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED TRUE)
@@ -43,3 +43,6 @@ list(APPEND Source_File_List ${Source_Apps_File_List})
 include_directories("${lua_SOURCE_DIR}/src/")
 add_library(${PROJECT_NAME} STATIC ${Source_File_List} LuaDarkNet.cpp)
 target_include_directories(${PROJECT_NAME} PUBLIC include src src/include)
+if (APPVEYOR)
+	target_compile_definitions(${PROJECT_NAME} PUBLIC __APPVEYOR__)
+endif()

@@ -34,10 +34,12 @@ install:
 #----------------------------#
 # manually install boost     #
 #----------------------------#
-
+# appveyor DownloadFile https://gitee.com/paracraft/cdnlibs/raw/master/boost_1_77_0.7z -FileName "C:\projects\nplruntime\Server\trunk\boost.7z"
 - cmd: >-
-    appveyor DownloadFile https://boostorg.jfrog.io/artifactory/main/release/1.77.0/source/boost_1_77_0.7z -FileName "C:\projects\nplruntime\Server\trunk\boost.7z"
-    
+    git clone https://github.com/tatfook/cdnlibs.git C:\projects\nplruntime\Server\trunk\cdnlibs
+
+    copy C:\projects\nplruntime\Server\trunk\cdnlibs\boost_1_77_0.7z C:\projects\nplruntime\Server\trunk\boost.7z
+
     7z x C:\projects\nplruntime\Server\trunk\boost.7z -oC:\Libraries\
 
     git submodule init
@@ -66,7 +68,7 @@ install:
 
     cd bin\client
 
-    if "%addresss_mode%" == "64" ( cmake ../../Client -DCMAKE_GENERATOR_PLATFORM=x64 ) else ( cmake ../../Client )
+    if "%addresss_mode%" == "64" ( cmake ../../Client -DCMAKE_GENERATOR_PLATFORM=x64 -DAPPVEYOR=TRUE ) else ( cmake ../../Client -DAPPVEYOR=TRUE )
     
 build_script:
 - cmd: >-

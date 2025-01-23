@@ -24,6 +24,7 @@ namespace LuaDarkNet
 {
     void Register(lua_State *L)
     {
+#ifndef __APPVEYOR__
         luabridge::getGlobalNamespace(L)
             .beginNamespace("LuaDarkNet")
             .beginClass<LuaWakeWordModel>("LuaWakeWordModel")
@@ -32,5 +33,6 @@ namespace LuaDarkNet
             .addFunction("Predict", &LuaWakeWordModel::Predict)
             .endClass()
             .endNamespace();
+#endif
     }
 }
