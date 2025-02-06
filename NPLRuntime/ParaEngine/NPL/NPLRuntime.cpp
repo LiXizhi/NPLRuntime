@@ -127,7 +127,6 @@ void CNPLRuntime::Cleanup()
 		m_pWebServiceClient = NULL;
 	}
 
-// #ifndef EMSCRIPTEN_SINGLE_THREAD
 #ifndef EMSCRIPTEN
 	ParaEngine::CNPLNetClient::ReleaseInstance();
 #endif
@@ -545,7 +544,6 @@ bool CNPLRuntime::LoadWebServicePlugin()
 			}
 		}
 #else
-// #ifndef EMSCRIPTEN_SINGLE_THREAD
 #ifndef EMSCRIPTEN
 		m_pWebServiceClient = ParaEngine::CNPLNetClient::GetInstance();
 #endif
@@ -579,43 +577,16 @@ void CNPLRuntime::AsyncDownload( const char* url, const char* destFolder, const 
 		string sTmp = string("NPL.AsyncDownload Failed:") + string(url) + "\n";
 		pAsyncLoader->log(sTmp);
 	}
-
-	// obsoleted: we used UrlLoader now
-	/*if(m_pWebServiceClient==0)
-	{
-		if(!LoadWebServicePlugin())
-		{
-			return;
-		}
-	}
-	m_pWebServiceClient->AsyncDownload(url, destFolder, callbackScript, DownloaderName);*/
 }
 
 void CNPLRuntime::CancelDownload( const char* DownloaderName )
 {
 	OUTPUT_LOG("obsoleted call to NPL.CancelDownload: we used UrlLoader now\n");
-	// obsoleted: we used UrlLoader now
-	/*if(m_pWebServiceClient==0)
-	{
-		if(!LoadWebServicePlugin())
-		{
-			return;
-		}
-	}
-	m_pWebServiceClient->CancelDownload(DownloaderName);*/
 }
 
 int CNPLRuntime::Download( const char* url, const char* destFolder, const char* callbackScript, const char* DownloaderName )
 {
 	OUTPUT_LOG("obsoleted call to NPL.lDownload: we used UrlLoader now\n");
-	//if(m_pWebServiceClient==0)
-	//{
-	//	if(!LoadWebServicePlugin())
-	//	{
-	//		return 0;
-	//	}
-	//}
-	//return m_pWebServiceClient->Download(url, destFolder, callbackScript, DownloaderName);
 	return 1;
 }
 

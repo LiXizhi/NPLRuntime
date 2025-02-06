@@ -1,5 +1,4 @@
 #pragma once
-
 #include "NPLMessage.h"
 #include "NPLCommon.h"
 #include "NPLMsgIn.h"
@@ -17,7 +16,6 @@
 #include <boost/enable_shared_from_this.hpp>
 
 #ifndef EMSCRIPTEN_SINGLE_THREAD
-
 namespace NPL
 {
 	class CNPLDispatcher;
@@ -49,7 +47,7 @@ namespace NPL
 		~CNPLConnection();
 		
 		/// Construct a connection with the given io_service.
-		explicit CNPLConnection(boost::asio::io_service& io_service,
+		explicit CNPLConnection(boost::asio::io_context& io_service,
 			CNPLConnectionManager& manager, CNPLDispatcher& msg_dispatcher);
 
 		/// Get the socket associated with the connection.
@@ -285,10 +283,10 @@ namespace NPL
 		void handle_stop();
 
 		/// handle resolving host name to tcp endpoint
-		void handle_resolve(const boost::system::error_code& err, boost::asio::ip::tcp::resolver::iterator endpoint_iterator);
+		void handle_resolve(const boost::system::error_code& err, boost::asio::ip::tcp::resolver::results_type results);
 
 		/// handle connection init. This is only used for active connection to server. 
-		void handle_connect(const boost::system::error_code& error, boost::asio::ip::tcp::resolver::iterator endpoint_iterator);
+		void handle_connect(const boost::system::error_code& error, boost::asio::ip::tcp::resolver::results_type::iterator endpoint_iterator);
 
 		/// Socket for the connection.
 		boost::asio::ip::tcp::socket m_socket;
