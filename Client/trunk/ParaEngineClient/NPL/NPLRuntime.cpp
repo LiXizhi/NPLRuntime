@@ -21,7 +21,9 @@
 #include "NPLNetUDPServer.h"
 
 #include "NPLCodec.h"
+#ifndef EMSCRIPTEN_SINGLE_THREAD
 #include "FileSystemWatcher.h"
+#endif
 #include <time.h>
 
 #include "AsyncLoader.h"
@@ -41,7 +43,7 @@
 
 namespace NPL
 {
-/* list of files */
+	/* list of files */
 #define FILE_SHARE							0
 #define FILE_NPLWEBSERVICECLIENT			1
 	const char* NPLBaseFiles[] =
@@ -80,19 +82,23 @@ CNPLRuntime::CNPLRuntime(void)
 	, m_bHostMainStatesInFrameMove(true)
 	, m_nLogLevel(1)
 {
+#ifndef EMSCRIPTEN
 	curl_global_init(CURL_GLOBAL_ALL);
+#endif
 	Init();
 }
 
 CNPLRuntime::~CNPLRuntime(void)
 {
 	Cleanup();
+#ifndef EMSCRIPTEN
 	curl_global_cleanup();
+#endif
 }
 
 void CNPLRuntime::Init()
 {
-	if(m_runtime_state_main.get() == 0)
+	if (m_runtime_state_main.get() == 0)
 	{
 		// SetCompressionKey(NULL, 0, 1);
 		// the default "main" runtime state
@@ -107,35 +113,37 @@ void CNPLRuntime::Cleanup()
 		OUTPUT_LOG("shutdown network server.\n");
 		m_net_server->stop();
 	}
-	
+
 	if (m_net_udp_server) {
 		OUTPUT_LOG("shutdown udp server.\n");
 		m_net_udp_server->stop();
 	}
 
 	// web service clients shall be cleaned up prior to the NPL runtime states.
-	if(m_pWebServiceClient)
+	if (m_pWebServiceClient)
 	{
 		OUTPUT_LOG("shutdown web service client.\n");
 		m_pWebServiceClient->DeleteThis();
 		m_pWebServiceClient = NULL;
 	}
 
+#ifndef EMSCRIPTEN
 	ParaEngine::CNPLNetClient::ReleaseInstance();
+#endif
 
-	while(true)
+	while (true)
 	{
 		NPLRuntimeState_ptr rts;
 		{
 			ParaEngine::Lock lock_(m_mutex);
 			NPLRuntime_Pool_Type::iterator iter = m_runtime_states.begin();
-			if(iter != m_runtime_states.end())
+			if (iter != m_runtime_states.end())
 			{
 				rts = (*iter);
 				m_runtime_states.erase(iter);
 			}
 		}
-		if(rts.get() != 0)
+		if (rts.get() != 0)
 		{
 			rts->Stop();
 		}
@@ -165,7 +173,7 @@ CNPLRuntime* CNPLRuntime::GetInstance()
 }
 
 
-int CNPLRuntime::ActivateLocalNow(const char * sNeuronFile, const char * code /*= NULL*/, int nLength /*= 0*/)
+int CNPLRuntime::ActivateLocalNow(const char* sNeuronFile, const char* code /*= NULL*/, int nLength /*= 0*/)
 {
 	NPLFileName FullName(sNeuronFile);
 	if (FullName.sNID.empty())
@@ -199,9 +207,9 @@ int CNPLRuntime::ActivateLocalNow(const char * sNeuronFile, const char * code /*
 }
 
 
-int CNPLRuntime::Activate( INPLRuntimeState* pRuntimeState, const char * sNeuronFile, const char * code /*= NULL*/,int nLength/*=0*/, int channel/*=0*/, int priority/*=2*/, int reliability/*=3*/ )
+int CNPLRuntime::Activate(INPLRuntimeState* pRuntimeState, const char* sNeuronFile, const char* code /*= NULL*/, int nLength/*=0*/, int channel/*=0*/, int priority/*=2*/, int reliability/*=3*/)
 {
-	if(sNeuronFile == NULL)
+	if (sNeuronFile == NULL)
 	{
 		sNeuronFile = "";
 	}
@@ -211,20 +219,20 @@ int CNPLRuntime::Activate( INPLRuntimeState* pRuntimeState, const char * sNeuron
 	NPLFileName FullName(sNeuronFile);
 
 	// use Dispatcher to dispatch to a proper local runtime state or a remote one.
-	if(pRuntimeState == 0)
+	if (pRuntimeState == 0)
 	{
 		// default to main state.
 		return m_runtime_state_main->Activate_async(FullName.sRelativePath, code, nLength, priority);
 	}
 	else
 	{
-		if(FullName.sNID.empty())
+		if (FullName.sNID.empty())
 		{
 			// local activation between local npl runtime state.
-			if(!FullName.sRuntimeStateName.empty())
+			if (!FullName.sRuntimeStateName.empty())
 			{
 				NPLRuntimeState_ptr rts = GetRuntimeState(FullName.sRuntimeStateName);
-				if(rts.get() != 0)
+				if (rts.get() != 0)
 				{
 					return rts->Activate_async(FullName.sRelativePath, code, nLength, priority);
 				}
@@ -296,14 +304,14 @@ int CNPLRuntime::TranslatePriorityValue(int priority)
 	return (priority >= NPL::MEDIUM_PRIORITY) ? 0 : 1;
 }
 
-int CNPLRuntime::NPL_Activate(NPLRuntimeState_ptr runtime_state, const char * sNeuronFile, const char * code, int nLength, int channel, int priority, int reliability)
+int CNPLRuntime::NPL_Activate(NPLRuntimeState_ptr runtime_state, const char* sNeuronFile, const char* code, int nLength, int channel, int priority, int reliability)
 {
 	if (sNeuronFile == NULL)
 	{
 		sNeuronFile = "";
 	}
 
-	if(sNeuronFile[0] == 'h' && sNeuronFile[1] == 't' && sNeuronFile[2] == 't' && sNeuronFile[3] == 'p')
+	if (sNeuronFile[0] == 'h' && sNeuronFile[1] == 't' && sNeuronFile[2] == 't' && sNeuronFile[3] == 'p')
 	{
 		//////////////////////////////////////////////////////////////////////////
 		// for SOAP web service files. NPL may support XML-RPC in future
@@ -318,20 +326,20 @@ int CNPLRuntime::NPL_Activate(NPLRuntimeState_ptr runtime_state, const char * sN
 
 
 	// use Dispatcher to dispatch to a proper local runtime state or a remote one.
-	if(runtime_state.get() == 0)
+	if (runtime_state.get() == 0)
 	{
 		// default to main state.
 		return m_runtime_state_main->Activate_async(FullName.sRelativePath, code, nLength, priority);
 	}
 	else
 	{
-		if(FullName.sNID.empty())
+		if (FullName.sNID.empty())
 		{
 			// local activation between local npl runtime state.
-			if(!FullName.sRuntimeStateName.empty())
+			if (!FullName.sRuntimeStateName.empty())
 			{
 				NPLRuntimeState_ptr rts = GetRuntimeState(FullName.sRuntimeStateName);
-				if(rts.get() != 0)
+				if (rts.get() != 0)
 				{
 					return rts->Activate_async(FullName.sRelativePath, code, nLength, priority);
 				}
@@ -401,7 +409,7 @@ int CNPLRuntime::NPL_Activate(NPLRuntimeState_ptr runtime_state, const char * sN
 void CNPLRuntime::NPL_LoadFile(NPLRuntimeState_ptr runtime_state, const char* filePath, bool bReload)
 {
 	NPLFileName FullName(filePath);
-	if(runtime_state.get() == 0)
+	if (runtime_state.get() == 0)
 		m_runtime_state_main->LoadFile_any(FullName.sRelativePath, bReload);
 	else
 		runtime_state->LoadFile_any(FullName.sRelativePath, bReload);
@@ -437,7 +445,7 @@ int CNPLRuntime::NPL_Ping(const char* host, const char* port, unsigned int waitT
 		return CNPLNetUDPServer::Ping(host, port, waitTime);
 }
 
-void CNPLRuntime::NPL_AddPublicFile( const string& filename, int nID )
+void CNPLRuntime::NPL_AddPublicFile(const string& filename, int nID)
 {
 	m_net_server->GetDispatcher().AddPublicFile(filename, nID);
 }
@@ -454,13 +462,13 @@ const string& CNPLRuntime::NPL_GetSourceName()
 	return ParaEngine::CGlobals::GetString(0);
 }
 
-void CNPLRuntime::NPL_SetSourceName( const char* sName )
+void CNPLRuntime::NPL_SetSourceName(const char* sName)
 {
 	// TODO
 }
 
 
-void CNPLRuntime::StartNetServer( const char* server/*=NULL*/, const char* port/*=NULL*/ )
+void CNPLRuntime::StartNetServer(const char* server/*=NULL*/, const char* port/*=NULL*/)
 {
 	NPL_StartNetServer(server, port);
 }
@@ -470,7 +478,7 @@ void CNPLRuntime::StopNetServer()
 	NPL_StopNetServer();
 }
 
-void CNPLRuntime::AddPublicFile( const string& filename, int nID )
+void CNPLRuntime::AddPublicFile(const string& filename, int nID)
 {
 	AddPublicFile(filename, nID);
 }
@@ -480,21 +488,21 @@ void CNPLRuntime::ClearPublicFiles()
 	return ClearPublicFiles();
 }
 
-void CNPLRuntime::GetIP( const char* nid, char* pOutput )
+void CNPLRuntime::GetIP(const char* nid, char* pOutput)
 {
 	string sIP = NPL_GetIP(nid);
-	if(pOutput && sIP.size()<256)
+	if (pOutput && sIP.size() < 256)
 	{
 		strcpy(pOutput, sIP.c_str());
 	}
 }
 
-void CNPLRuntime::accept( const char* tid, const char* nid /*= NULL*/ )
+void CNPLRuntime::accept(const char* tid, const char* nid /*= NULL*/)
 {
 	NPL_accept(tid, nid);
 }
 
-void CNPLRuntime::reject( const char* nid, int nReason )
+void CNPLRuntime::reject(const char* nid, int nReason)
 {
 	NPL_reject(nid, nReason);
 }
@@ -506,50 +514,52 @@ INPLStimulationPipe* CNPLRuntime::GetNetworkLayerPipe()
 
 bool CNPLRuntime::LoadWebServicePlugin()
 {
-	if(m_pWebServiceClient==0)
+	if (m_pWebServiceClient == 0)
 	{
 #ifdef USE_DOTNET_CLIENT
 		using namespace ParaEngine;
 		//////////////////////////////////////////////////////////////////////////
 		// load from plug-in
 		//////////////////////////////////////////////////////////////////////////
-		const char * sFileName = NPLBaseFiles[FILE_NPLWEBSERVICECLIENT];
+		const char* sFileName = NPLBaseFiles[FILE_NPLWEBSERVICECLIENT];
 		DLLPlugInEntity* pPluginEntity = CGlobals::GetPluginManager()->GetPluginEntity(sFileName);
-		if(pPluginEntity==0)
+		if (pPluginEntity == 0)
 		{
 			// load the plug-in if it has never been loaded before.
-			pPluginEntity = CGlobals::GetPluginManager()->LoadDLL("",sFileName);
+			pPluginEntity = CGlobals::GetPluginManager()->LoadDLL("", sFileName);
 		}
-		if(pPluginEntity!=0)
+		if (pPluginEntity != 0)
 		{
 			// the plug-in must contain at least one implementation
-			if(pPluginEntity->GetNumberOfClasses()>0)
+			if (pPluginEntity->GetNumberOfClasses() > 0)
 			{
 				// assume it is the first class
 				ClassDescriptor* pDesc = pPluginEntity->GetClassDescriptor(0);
 
 				// the super class must be of type WEBSERVICECLIENT_CLASS_ID, so that we can safely cast.
-				if(pDesc && pDesc->SuperClassID() == WEBSERVICECLIENT_CLASS_ID)
+				if (pDesc && pDesc->SuperClassID() == WEBSERVICECLIENT_CLASS_ID)
 				{
 					m_pWebServiceClient = (INPLWebServiceClient*)pDesc->Create();
 				}
 			}
 		}
 #else
+#ifndef EMSCRIPTEN
 		m_pWebServiceClient = ParaEngine::CNPLNetClient::GetInstance();
 #endif
+#endif
 	}
-	if(m_pWebServiceClient==0)
+	if (m_pWebServiceClient == 0)
 	{
 		OUTPUT_LOG("error: unable to load web service plug-in. .Net framework must be installed in order to use web service plug-in.\r\n");
 	}
-	return m_pWebServiceClient!=0;
+	return m_pWebServiceClient != 0;
 }
 
-void CNPLRuntime::AsyncDownload( const char* url, const char* destFolder, const char* callbackScript, const char* DownloaderName )
+void CNPLRuntime::AsyncDownload(const char* url, const char* destFolder, const char* callbackScript, const char* DownloaderName)
 {
 	// we need to download from the web server.
-	if(url == 0)
+	if (url == 0)
 		return;
 	using namespace ParaEngine;
 	CAsyncLoader* pAsyncLoader = &(CAsyncLoader::GetSingleton());
@@ -562,30 +572,30 @@ void CNPLRuntime::AsyncDownload( const char* url, const char* destFolder, const 
 	pProcessor->SetUrl(url);
 	pProcessor->SetScriptCallback(callbackScript);
 	pProcessor->SetSaveToFile(destFolder);
-	if(pAsyncLoader->AddWorkItem( pLoader, pProcessor, NULL, NULL,ResourceRequestID_Asset) != S_OK)
+	if (pAsyncLoader->AddWorkItem(pLoader, pProcessor, NULL, NULL, ResourceRequestID_Asset) != S_OK)
 	{
 		string sTmp = string("NPL.AsyncDownload Failed:") + string(url) + "\n";
 		pAsyncLoader->log(sTmp);
 	}
 }
 
-void CNPLRuntime::CancelDownload( const char* DownloaderName )
+void CNPLRuntime::CancelDownload(const char* DownloaderName)
 {
 	OUTPUT_LOG("obsoleted call to NPL.CancelDownload: we used UrlLoader now\n");
 }
 
-int CNPLRuntime::Download( const char* url, const char* destFolder, const char* callbackScript, const char* DownloaderName )
+int CNPLRuntime::Download(const char* url, const char* destFolder, const char* callbackScript, const char* DownloaderName)
 {
 	OUTPUT_LOG("obsoleted call to NPL.lDownload: we used UrlLoader now\n");
 	return 1;
 }
 
 
-ParaEngine::INPLJabberClient* CNPLRuntime::GetJabberClient( const char* sJID )
+ParaEngine::INPLJabberClient* CNPLRuntime::GetJabberClient(const char* sJID)
 {
-	if(m_pWebServiceClient==0)
+	if (m_pWebServiceClient == 0)
 	{
-		if(!LoadWebServicePlugin())
+		if (!LoadWebServicePlugin())
 		{
 			return NULL;
 		}
@@ -593,20 +603,20 @@ ParaEngine::INPLJabberClient* CNPLRuntime::GetJabberClient( const char* sJID )
 	return m_pWebServiceClient->GetJabberClient(sJID);
 }
 
-ParaEngine::INPLJabberClient* CNPLRuntime::CreateJabberClient( const char* sJID )
+ParaEngine::INPLJabberClient* CNPLRuntime::CreateJabberClient(const char* sJID)
 {
 	ParaEngine::INPLJabberClient* jc = GetJabberClient(sJID);
-	if(jc != 0)
+	if (jc != 0)
 		return jc;
 	else
 		return m_pWebServiceClient->CreateJabberClient(sJID);
 }
 
-bool CNPLRuntime::CloseJabberClient( const char* sJID )
+bool CNPLRuntime::CloseJabberClient(const char* sJID)
 {
-	if(m_pWebServiceClient==0)
+	if (m_pWebServiceClient == 0)
 	{
-		if(!LoadWebServicePlugin())
+		if (!LoadWebServicePlugin())
 		{
 			return false;
 		}
@@ -614,11 +624,11 @@ bool CNPLRuntime::CloseJabberClient( const char* sJID )
 	return m_pWebServiceClient->CloseJabberClient(sJID);
 }
 
-void CNPLRuntime::STI_DoWebServiceFile( const char* sWebserviceFile, const char * code )
+void CNPLRuntime::STI_DoWebServiceFile(const char* sWebserviceFile, const char* code)
 {
-	if(m_pWebServiceClient==0)
+	if (m_pWebServiceClient == 0)
 	{
-		if(!LoadWebServicePlugin())
+		if (!LoadWebServicePlugin())
 		{
 			return;
 		}
@@ -626,17 +636,17 @@ void CNPLRuntime::STI_DoWebServiceFile( const char* sWebserviceFile, const char 
 	// get the current call back script code
 	const char* sCallBackScript = NULL;
 	map<string, string>::iterator iter = m_mapWebServiceCallBacks.find(sWebserviceFile);
-	if(iter!=m_mapWebServiceCallBacks.end())
+	if (iter != m_mapWebServiceCallBacks.end())
 	{
 		sCallBackScript = iter->second.c_str();
 	}
 
 	using namespace ParaEngine;
 	INPLWebService* pProxy = m_pWebServiceClient->GetWebService(sWebserviceFile);
-	if(pProxy==0)
+	if (pProxy == 0)
 	{
 		pProxy = m_pWebServiceClient->OpenWebService(sWebserviceFile, NULL, NULL, NULL);
-		if(pProxy == 0)
+		if (pProxy == 0)
 		{
 			OUTPUT_LOG("error: unable to activate web service file, because following web service file can not be opened: %s\r\n", sWebserviceFile);
 			// output error to the scripting interface's default runtime state
@@ -656,7 +666,7 @@ void CNPLRuntime::STI_DoWebServiceFile( const char* sWebserviceFile, const char 
 }
 
 
-void CNPLRuntime::NPL_AddDNSRecord(const char * sDNSName, const char* sAddress)
+void CNPLRuntime::NPL_AddDNSRecord(const char* sDNSName, const char* sAddress)
 {
 	/**
 	* TODO: add security: we cannot allow every one to change this as they wish. The user must be informed before this can be changed.
@@ -668,7 +678,7 @@ void CNPLRuntime::NPL_EnableNetwork(bool bEnable, const char* CenterName, const 
 	//
 }
 
-void CNPLRuntime::NPL_SetDefaultChannel( int channel_ID )
+void CNPLRuntime::NPL_SetDefaultChannel(int channel_ID)
 {
 	m_nDefaultChannel = channel_ID;
 }
@@ -700,45 +710,45 @@ void CNPLRuntime::NPL_ResetChannelProperties()
 	m_channelProperties[15].Set(NPL::MEDIUM_PRIORITY, NPL::RELIABLE_SEQUENCED);
 }
 
-void CNPLRuntime::NPL_SetChannelProperty( int channel_ID, int priority, int reliability )
+void CNPLRuntime::NPL_SetChannelProperty(int channel_ID, int priority, int reliability)
 {
-	if((int)m_channelProperties.size()>channel_ID)
+	if ((int)m_channelProperties.size() > channel_ID)
 	{
 		m_channelProperties[channel_ID].m_nPriority = priority;
 		m_channelProperties[channel_ID].m_nReliability = reliability;
 	}
 }
 
-void CNPLRuntime::NPL_GetChannelProperty( int channel_ID, int* priority, int* reliability )
+void CNPLRuntime::NPL_GetChannelProperty(int channel_ID, int* priority, int* reliability)
 {
-	if((int)m_channelProperties.size()>channel_ID)
+	if ((int)m_channelProperties.size() > channel_ID)
 	{
-		if(priority)
+		if (priority)
 		{
 			*priority = m_channelProperties[channel_ID].m_nPriority;
 		}
-		if(reliability)
+		if (reliability)
 		{
 			*reliability = m_channelProperties[channel_ID].m_nReliability;
 		}
 	}
 }
 
-void CNPLRuntime::NPL_RegisterWSCallBack( const char * sWebServiceFile, const char * sCode )
+void CNPLRuntime::NPL_RegisterWSCallBack(const char* sWebServiceFile, const char* sCode)
 {
 	m_mapWebServiceCallBacks[sWebServiceFile] = sCode;
 }
 
-void CNPLRuntime::NPL_UnregisterWSCallBack(const char * sWebServiceFile)
+void CNPLRuntime::NPL_UnregisterWSCallBack(const char* sWebServiceFile)
 {
-	if(sWebServiceFile== NULL || sWebServiceFile[0] == '\0')
+	if (sWebServiceFile == NULL || sWebServiceFile[0] == '\0')
 	{
 		m_mapWebServiceCallBacks.clear();
 	}
 	else
 	{
 		map<string, string>::iterator iter = m_mapWebServiceCallBacks.find(sWebServiceFile);
-		if(iter!=m_mapWebServiceCallBacks.end())
+		if (iter != m_mapWebServiceCallBacks.end())
 		{
 			m_mapWebServiceCallBacks.erase(iter);
 		}
@@ -755,7 +765,7 @@ bool CNPLRuntime::NPL_SetTimer(NPLRuntimeState_ptr runtime_state, int nIDEvent, 
 	{
 		ParaEngine::Lock lock(m_mutex);
 		NPLRuntime_Pool_Type::iterator iter = m_runtime_states_with_timers.find(runtime_state);
-		if(iter == m_runtime_states_with_timers.end())
+		if (iter == m_runtime_states_with_timers.end())
 		{
 			m_runtime_states_with_timers.insert(runtime_state);
 		}
@@ -763,7 +773,7 @@ bool CNPLRuntime::NPL_SetTimer(NPLRuntimeState_ptr runtime_state, int nIDEvent, 
 	return runtime_state->SetTimer(nIDEvent, fElapse, sNeuronFile);
 }
 
-bool CNPLRuntime::NPL_ChangeTimer(NPLRuntimeState_ptr runtime_state, int nIDEvent, int dueTime, int period )
+bool CNPLRuntime::NPL_ChangeTimer(NPLRuntimeState_ptr runtime_state, int nIDEvent, int dueTime, int period)
 {
 	return runtime_state->ChangeTimer(nIDEvent, dueTime, period);
 }
@@ -771,7 +781,7 @@ bool CNPLRuntime::NPL_ChangeTimer(NPLRuntimeState_ptr runtime_state, int nIDEven
 string CNPLRuntime::NPL_GetIP(const char* nid)
 {
 	NPLConnection_ptr pConnection = NPL::CNPLRuntime::GetInstance()->GetNetServer()->GetDispatcher().GetNPLConnectionByNID(nid);
-	if(pConnection)
+	if (pConnection)
 	{
 		return pConnection->GetIP();
 	}
@@ -786,7 +796,7 @@ void CNPLRuntime::NPL_SetProtocol(const char* nid, int protocolType /*= 0*/)
 
 void CNPLRuntime::NPL_accept(const char* sTID, const char* sNID)
 {
-	if(sTID!=0)
+	if (sTID != 0)
 	{
 		/* old method
 		NPLConnection_ptr pConnection = NPL::CNPLRuntime::GetInstance()->GetNetServer()->GetDispatcher().GetNPLConnectionByNID(sTID);
@@ -807,21 +817,21 @@ void CNPLRuntime::NPL_accept(const char* sTID, const char* sNID)
 
 void CNPLRuntime::NPL_reject(const char* sNID, int nReason)
 {
-	if(sNID!=0)
+	if (sNID != 0)
 	{
 		NPLConnection_ptr pConnection = NPL::CNPLRuntime::GetInstance()->GetNetServer()->GetDispatcher().GetNPLConnectionByNID(sNID);
-		if(pConnection)
+		if (pConnection)
 		{
 			NPL::CNPLRuntime::GetInstance()->GetNetServer()->GetConnectionManager().stop(pConnection, nReason);
 		}
 	}
 }
 
-bool CNPLRuntime::AppendURLRequest( ParaEngine::CURLRequestTask* pUrlTask, const char* sPoolName /*= NULL*/ )
+bool CNPLRuntime::AppendURLRequest(ParaEngine::CURLRequestTask* pUrlTask, const char* sPoolName /*= NULL*/)
 {
-	if(m_pWebServiceClient==0)
+	if (m_pWebServiceClient == 0)
 	{
-		if(!LoadWebServicePlugin())
+		if (!LoadWebServicePlugin())
 		{
 			return false;
 		}
@@ -829,11 +839,11 @@ bool CNPLRuntime::AppendURLRequest( ParaEngine::CURLRequestTask* pUrlTask, const
 	return m_pWebServiceClient->AppendURLRequest(pUrlTask, sPoolName);
 }
 
-bool CNPLRuntime::ChangeRequestPoolSize( const char* sPoolName, int nCount )
+bool CNPLRuntime::ChangeRequestPoolSize(const char* sPoolName, int nCount)
 {
-	if(m_pWebServiceClient==0)
+	if (m_pWebServiceClient == 0)
 	{
-		if(!LoadWebServicePlugin())
+		if (!LoadWebServicePlugin())
 		{
 			return false;
 		}
@@ -843,9 +853,9 @@ bool CNPLRuntime::ChangeRequestPoolSize( const char* sPoolName, int nCount )
 
 void CNPLRuntime::SetHostMainStatesInFrameMove(bool bHostMainStatesInFrameMove)
 {
-	if(m_bHostMainStatesInFrameMove != bHostMainStatesInFrameMove)
+	if (m_bHostMainStatesInFrameMove != bHostMainStatesInFrameMove)
 	{
-		if(bHostMainStatesInFrameMove!=false)
+		if (bHostMainStatesInFrameMove != false)
 		{
 			OUTPUT_LOG("warning: SetHostMainStatesInFrameMove can only be called once with false at the moment. \n");
 			return;
@@ -857,12 +867,12 @@ void CNPLRuntime::SetHostMainStatesInFrameMove(bool bHostMainStatesInFrameMove)
 
 		m_bHostMainStatesInFrameMove = bHostMainStatesInFrameMove;
 
-		if(!m_bHostMainStatesInFrameMove)
+		if (!m_bHostMainStatesInFrameMove)
 		{
 			// we need to start all main states in separate threads.
 			ParaEngine::Lock lock_(m_mutex);
 			NPLRuntime_Pool_Type::const_iterator iter, iter_end = m_runtime_states_main_threaded.end();
-			for(iter = m_runtime_states_main_threaded.begin(); iter!=iter_end; ++iter)
+			for (iter = m_runtime_states_main_threaded.begin(); iter != iter_end; ++iter)
 			{
 				(*iter)->Run_Async();
 			}
@@ -873,9 +883,9 @@ void CNPLRuntime::SetHostMainStatesInFrameMove(bool bHostMainStatesInFrameMove)
 void CNPLRuntime::Run(bool bToEnd)
 {
 	/** dispatch events in NPL. */
-	#if !defined(PARAENGINE_MOBILE)
+#if !defined(PARAENGINE_MOBILE) && !defined(EMSCRIPTEN)
 	ParaEngine::CFileSystemWatcherService::GetInstance()->DispatchEvents();
-    #endif
+#endif
 
 	/**
 	* activate all timers
@@ -885,7 +895,7 @@ void CNPLRuntime::Run(bool bToEnd)
 		// in case the structure is modified by other threads or during processing, we will first dump to a temp queue and then process from the queue.
 		ParaEngine::Lock lock_(m_mutex);
 		NPLRuntime_Pool_Type::const_iterator iter, iter_end = m_runtime_states_with_timers.end();
-		for(iter = m_runtime_states_with_timers.begin(); iter!=iter_end; ++iter)
+		for (iter = m_runtime_states_with_timers.begin(); iter != iter_end; ++iter)
 		{
 			m_temp_rts_pool.push_back(*iter);
 		}
@@ -895,7 +905,7 @@ void CNPLRuntime::Run(bool bToEnd)
 		NPLRuntime_Temp_Pool_Type::iterator itCur, itEnd = m_temp_rts_pool.end();
 		for (itCur = m_temp_rts_pool.begin(); itCur != itEnd; ++itCur)
 		{
-			if((*itCur)->TickTimers(TimeTicks) == 0)
+			if ((*itCur)->TickTimers(TimeTicks) == 0)
 			{
 				m_runtime_states_with_timers.erase((*itCur));
 			}
@@ -915,7 +925,7 @@ void CNPLRuntime::Run(bool bToEnd)
 	/**
 	* process results from NPL web service client
 	*/
-	if(m_pWebServiceClient)
+	if (m_pWebServiceClient)
 	{
 		PERF1("NPL_NET_REV");
 		m_pWebServiceClient->ProcessResults();
@@ -925,14 +935,14 @@ void CNPLRuntime::Run(bool bToEnd)
 
 	PERF1("NPL_PROC");
 
-	if(m_bHostMainStatesInFrameMove)
+	if (m_bHostMainStatesInFrameMove)
 	{
 		// the main runtime state is processed in the main game thread.
 		{
 			// in case the structure is modified by other threads or during processing, we will first dump to a temp queue and then process from the queue.
 			ParaEngine::Lock lock_(m_mutex);
 			NPLRuntime_Pool_Type::const_iterator iter, iter_end = m_runtime_states_main_threaded.end();
-			for(iter = m_runtime_states_main_threaded.begin(); iter!=iter_end; ++iter)
+			for (iter = m_runtime_states_main_threaded.begin(); iter != iter_end; ++iter)
 			{
 				m_temp_rts_pool.push_back(*iter);
 			}
@@ -954,7 +964,7 @@ INPLRuntimeState* CNPLRuntime::CreateState(const char* name, NPLRuntimeStateType
 
 INPLRuntimeState* CNPLRuntime::GetState(const char* name)
 {
-	if( name == NULL)
+	if (name == NULL)
 		return m_runtime_state_main.get();
 
 	return GetRuntimeState(name).get();
@@ -967,7 +977,7 @@ INPLRuntimeState* CNPLRuntime::CreateGetState(const char* name, NPLRuntimeStateT
 
 bool CNPLRuntime::DeleteState(INPLRuntimeState* pRuntime_state)
 {
-	if(pRuntime_state)
+	if (pRuntime_state)
 	{
 		return DeleteRuntimeState(((CNPLRuntimeState*)pRuntime_state)->shared_from_this());
 	}
@@ -981,7 +991,7 @@ INPLRuntimeState* CNPLRuntime::GetMainState()
 
 bool CNPLRuntime::AddToMainThread(INPLRuntimeState* pRuntime_state)
 {
-	if(pRuntime_state)
+	if (pRuntime_state)
 	{
 		return AddStateToMainThread(((CNPLRuntimeState*)pRuntime_state)->shared_from_this());
 	}
@@ -993,15 +1003,15 @@ NPL::NPLRuntimeState_ptr CNPLRuntime::GetMainRuntimeState()
 	return m_runtime_state_main;
 }
 
-NPL::NPLRuntimeState_ptr CNPLRuntime::GetRuntimeState( const string& name )
+NPL::NPLRuntimeState_ptr CNPLRuntime::GetRuntimeState(const string& name)
 {
-	if( name.empty() )
+	if (name.empty())
 		return m_runtime_state_main;
 
 	ParaEngine::Lock lock_(m_mutex);
 	ActiveStateMap_Type::iterator iter = m_active_state_map.find(name);
 
-	if( iter != m_active_state_map.end())
+	if (iter != m_active_state_map.end())
 	{
 		return iter->second;
 	}
@@ -1010,11 +1020,11 @@ NPL::NPLRuntimeState_ptr CNPLRuntime::GetRuntimeState( const string& name )
 
 NPL::NPLRuntimeState_ptr CNPLRuntime::CreateGetRuntimeState(const string& name, NPLRuntimeStateType type_)
 {
-	NPLRuntimeState_ptr runtimestate =  GetRuntimeState(name);
-	if(runtimestate.get() == 0)
+	NPLRuntimeState_ptr runtimestate = GetRuntimeState(name);
+	if (runtimestate.get() == 0)
 	{
 		// create the state and run it in the main thread.
-		runtimestate =  CreateRuntimeState(name, type_);
+		runtimestate = CreateRuntimeState(name, type_);
 		AddStateToMainThread(runtimestate);
 	}
 	return runtimestate;
@@ -1023,49 +1033,49 @@ NPL::NPLRuntimeState_ptr CNPLRuntime::CreateGetRuntimeState(const string& name, 
 NPL::NPLRuntimeState_ptr CNPLRuntime::CreateRuntimeState(const string& name, NPLRuntimeStateType type_)
 {
 	NPLRuntimeState_ptr runtimestate = GetRuntimeState(name);
-	if(runtimestate.get() == 0)
+	if (runtimestate.get() == 0)
 	{
 		runtimestate.reset(new CNPLRuntimeState(name, type_));
 		runtimestate->Init();
 		ParaEngine::Lock lock_(m_mutex);
 		m_runtime_states.insert(runtimestate);
 		// PE_ASSERT(m_runtime_states.find(runtimestate)!= m_runtime_states.end());
-		if(!name.empty())
+		if (!name.empty())
 			m_active_state_map[name] = runtimestate;
 	}
 	return runtimestate;
 }
 
-bool CNPLRuntime::DeleteRuntimeState( NPLRuntimeState_ptr runtime_state)
+bool CNPLRuntime::DeleteRuntimeState(NPLRuntimeState_ptr runtime_state)
 {
-	if(runtime_state.get() == 0)
+	if (runtime_state.get() == 0)
 		return true;
 	ParaEngine::Lock lock_(m_mutex);
 	NPLRuntime_Pool_Type::iterator iter = m_runtime_states.find(runtime_state);
-	if(iter != m_runtime_states.end())
+	if (iter != m_runtime_states.end())
 	{
 		(*iter)->Stop_Async();
 		m_runtime_states.erase(iter);
 		return true;
 	}
 	NPLRuntime_Pool_Type::iterator iter1 = m_runtime_states_main_threaded.find(runtime_state);
-	if(iter1 != m_runtime_states_main_threaded.end())
+	if (iter1 != m_runtime_states_main_threaded.end())
 	{
 		m_runtime_states_main_threaded.erase(iter1);
 	}
-	if( ! runtime_state->GetName().empty() )
+	if (!runtime_state->GetName().empty())
 	{
 		m_active_state_map.erase(runtime_state->GetName());
 	}
 	return false;
 }
 
-bool CNPLRuntime::AddStateToMainThread( NPLRuntimeState_ptr runtime_state )
+bool CNPLRuntime::AddStateToMainThread(NPLRuntimeState_ptr runtime_state)
 {
-	if(runtime_state.get() == 0)
+	if (runtime_state.get() == 0)
 		return true;
 	ParaEngine::Lock lock_(m_mutex);
-	if(m_runtime_states_main_threaded.find(runtime_state) == m_runtime_states_main_threaded.end())
+	if (m_runtime_states_main_threaded.find(runtime_state) == m_runtime_states_main_threaded.end())
 	{
 		runtime_state->Stop_Async();
 		m_runtime_states_main_threaded.insert(runtime_state);
@@ -1073,13 +1083,13 @@ bool CNPLRuntime::AddStateToMainThread( NPLRuntimeState_ptr runtime_state )
 	return true;
 }
 
-bool CNPLRuntime::RemoveStateFromMainThread( NPLRuntimeState_ptr runtime_state )
+bool CNPLRuntime::RemoveStateFromMainThread(NPLRuntimeState_ptr runtime_state)
 {
-	if(runtime_state.get() == 0)
+	if (runtime_state.get() == 0)
 		return true;
 	ParaEngine::Lock lock_(m_mutex);
 	NPLRuntime_Pool_Type::iterator iter = m_runtime_states_main_threaded.find(runtime_state);
-	if(iter != m_runtime_states_main_threaded.end())
+	if (iter != m_runtime_states_main_threaded.end())
 	{
 		m_runtime_states_main_threaded.erase(iter);
 	}
@@ -1097,15 +1107,15 @@ void CNPLRuntime::SetUseCompression(bool bCompressIncoming, bool bCompressOutgoi
 	NPL::CNPLRuntime::GetInstance()->GetNetServer()->GetDispatcher().SetUseCompressionOutgoingConnection(bCompressOutgoing);
 }
 
-void CNPLRuntime::SetCompressionKey(const byte* sKey, int nSize, int nUsePlainTextEncoding)
+void CNPLRuntime::SetCompressionKey(const unsigned char* sKey, int nSize, int nUsePlainTextEncoding)
 {
-	if(sKey != 0)
+	if (sKey != 0)
 	{
 		NPL::NPLCodec::SetGenericKey(sKey, nSize);
 	}
-	if(nUsePlainTextEncoding != 0)
+	if (nUsePlainTextEncoding != 0)
 	{
-		NPL::NPLCodec::UsePlainTextEncoding(nUsePlainTextEncoding  == 1);
+		NPL::NPLCodec::UsePlainTextEncoding(nUsePlainTextEncoding == 1);
 	}
 }
 
@@ -1263,7 +1273,7 @@ bool NPL::CNPLRuntime::IsServerStarted()
 	return NPL::CNPLRuntime::GetInstance()->GetNetServer()->IsServerStarted();
 }
 
-void CNPLRuntime::EnableAnsiMode( bool bEnable )
+void CNPLRuntime::EnableAnsiMode(bool bEnable)
 {
 	NPL::CNPLRuntime::GetInstance()->GetNetServer()->EnableAnsiMode(bEnable);
 }
@@ -1311,17 +1321,17 @@ int CNPLRuntime::InstallFields(ParaEngine::CAttributeClass* pClass, bool bOverri
 	// install parent fields if there are any. Please replace __super with your parent class name.
 	ParaEngine::IAttributeFields::InstallFields(pClass, bOverride);
 
-	PE_ASSERT(pClass!=NULL);
-	pClass->AddField("TCPKeepAlive",FieldType_Bool, (void*)SetTCPKeepAlive_s, (void*)IsTCPKeepAliveEnabled_s, NULL, NULL, bOverride);
+	PE_ASSERT(pClass != NULL);
+	pClass->AddField("TCPKeepAlive", FieldType_Bool, (void*)SetTCPKeepAlive_s, (void*)IsTCPKeepAliveEnabled_s, NULL, NULL, bOverride);
 	pClass->AddField("KeepAlive", FieldType_Bool, (void*)SetKeepAlive_s, (void*)IsKeepAliveEnabled_s, NULL, NULL, bOverride);
-	pClass->AddField("TCPNoDelay",FieldType_Bool, (void*)SetTCPNoDelay_s, (void*)IsTCPNoDelay_s, NULL, NULL, bOverride);
-	pClass->AddField("IdleTimeout",FieldType_Bool, (void*)EnableIdleTimeout_s, (void*)IsIdleTimeoutEnabled_s, NULL, NULL, bOverride);
-	pClass->AddField("IdleTimeoutPeriod",FieldType_Int, (void*)SetIdleTimeoutPeriod_s, (void*)GetIdleTimeoutPeriod_s, NULL, NULL, bOverride);
-	pClass->AddField("CompressionThreshold",FieldType_Int, (void*)SetCompressionThreshold_s, (void*)GetCompressionThreshold_s, NULL, NULL, bOverride);
-	pClass->AddField("CompressionLevel",FieldType_Int, (void*)SetCompressionLevel_s, (void*)GetCompressionLevel_s, NULL, NULL, bOverride);
+	pClass->AddField("TCPNoDelay", FieldType_Bool, (void*)SetTCPNoDelay_s, (void*)IsTCPNoDelay_s, NULL, NULL, bOverride);
+	pClass->AddField("IdleTimeout", FieldType_Bool, (void*)EnableIdleTimeout_s, (void*)IsIdleTimeoutEnabled_s, NULL, NULL, bOverride);
+	pClass->AddField("IdleTimeoutPeriod", FieldType_Int, (void*)SetIdleTimeoutPeriod_s, (void*)GetIdleTimeoutPeriod_s, NULL, NULL, bOverride);
+	pClass->AddField("CompressionThreshold", FieldType_Int, (void*)SetCompressionThreshold_s, (void*)GetCompressionThreshold_s, NULL, NULL, bOverride);
+	pClass->AddField("CompressionLevel", FieldType_Int, (void*)SetCompressionLevel_s, (void*)GetCompressionLevel_s, NULL, NULL, bOverride);
 	pClass->AddField("MaxPendingConnections", FieldType_Int, (void*)SetMaxPendingConnections_s, (void*)GetMaxPendingConnections_s, NULL, NULL, bOverride);
 	pClass->AddField("LogLevel", FieldType_Int, (void*)SetLogLevel_s, (void*)GetLogLevel_s, NULL, NULL, bOverride);
-	pClass->AddField("EnableAnsiMode",FieldType_Bool, (void*)EnableAnsiMode_s, (void*)IsAnsiMode_s, NULL, NULL, bOverride);
+	pClass->AddField("EnableAnsiMode", FieldType_Bool, (void*)EnableAnsiMode_s, (void*)IsAnsiMode_s, NULL, NULL, bOverride);
 	pClass->AddField("IsServerStarted", FieldType_Bool, (void*)0, (void*)IsServerStarted_s, NULL, NULL, bOverride);
 	pClass->AddField("HostIP", FieldType_String, (void*)0, (void*)GetHostIP_s, NULL, NULL, bOverride);
 	pClass->AddField("HostPort", FieldType_String, (void*)0, (void*)GetHostPort_s, NULL, NULL, bOverride);

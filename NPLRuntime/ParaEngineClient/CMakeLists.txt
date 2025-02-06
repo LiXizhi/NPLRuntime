@@ -32,8 +32,8 @@ set(ParaEngineClient_SRCS)
 # SOURCE
 
 ##############################
-file (GLOB_RECURSE ParaEngineClient_DirMonitor_FILES ${ParaEngineClient_SOURCE_DIR}/dir_monitor/*.*)
-SOURCE_GROUP("Externals\\dir_monitor" FILES ${ParaEngineClient_DirMonitor_FILES})
+file (GLOB_RECURSE ParaEngineClient_DirMonitor_FILES ${ParaEngineClient_SOURCE_DIR}/dirmonitor/*.*)
+SOURCE_GROUP("Externals\\dirmonitor" FILES ${ParaEngineClient_DirMonitor_FILES})
 list(APPEND ParaEngineClient_SRCS ${ParaEngineClient_DirMonitor_FILES})
 
 ##############################

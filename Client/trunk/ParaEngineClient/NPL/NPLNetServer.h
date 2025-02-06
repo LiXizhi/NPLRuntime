@@ -1,17 +1,19 @@
 #pragma once
+#include "NPLDispatcher.h"
+#include "NPLConnectionManager.h"
+#ifndef EMSCRIPTEN_SINGLE_THREAD
+
 #include <boost/thread.hpp>
 #include <boost/asio.hpp>
 #include <boost/core/noncopyable.hpp>
 #include <boost/scoped_ptr.hpp>
 #include <boost/asio/steady_timer.hpp>
-#include "NPLConnectionManager.h"
-#include "NPLDispatcher.h"
 
 namespace NPL
 {
 	/**
-	* Current NPL configuration settings. 
-	* it just load from NPL XML config file. 
+	* Current NPL configuration settings.
+	* it just load from NPL XML config file.
 	*/
 	class CNPLNetServer : private boost::noncopyable
 	{
@@ -20,11 +22,11 @@ namespace NPL
 		~CNPLNetServer();
 
 		/**
-		* start the server's io_service loop. This function returns immediately. it will spawn the accept and dispatcher thread.  
+		* start the server's io_service loop. This function returns immediately. it will spawn the accept and dispatcher thread.
 		* @param server: default to "127.0.0.1"
 		* @param port: default to "60001"
 		*/
-		void start(const char* server=NULL, const char* port=NULL);
+		void start(const char* server = NULL, const char* port = NULL);
 
 		/// Stop the server.
 		void stop();
@@ -33,39 +35,39 @@ namespace NPL
 		void Cleanup();
 
 		/**
-		* NPLDispatcher serves as an interface between the low level socket interface and NPL message queues.  
+		* NPLDispatcher serves as an interface between the low level socket interface and NPL message queues.
 		*/
-		CNPLDispatcher& GetDispatcher(){return m_msg_dispatcher;};
+		CNPLDispatcher& GetDispatcher() { return m_msg_dispatcher; };
 
-		/** get the connection object in this server 
+		/** get the connection object in this server
 		*/
-		CNPLConnectionManager& GetConnectionManager(){return m_connection_manager;};
+		CNPLConnectionManager& GetConnectionManager() { return m_connection_manager; };
 
 		/**
-		* Create a new connection with a remote server and immediately connect and start the connection. 
+		* Create a new connection with a remote server and immediately connect and start the connection.
 		* [Thread Safe]
-		* @param pAddress: the target NPL runtime address to connect to. 
+		* @param pAddress: the target NPL runtime address to connect to.
 		* @return The function returns immediately, so the returned connection may not have been connected or authenticated yet.
 		*/
 		NPLConnection_ptr CreateConnection(NPLRuntimeAddress_ptr pAddress);
 
-		/** System level Enable/disable SO_KEEPALIVE. 
-		* one needs set following values in linux procfs or windows registry in order to work as expected. 
-		* - tcp_keepalive_intvl (integer; default: 75) 
-		* 	The number of seconds between TCP keep-alive probes. 
-		* - tcp_keepalive_probes (integer; default: 9) 
-		* 	The maximum number of TCP keep-alive probes to send before giving up and killing the connection if no response is obtained from the other end. 
-		* - tcp_keepalive_time (integer; default: 7200) 
-		* 	The number of seconds a connection needs to be idle before TCP begins sending out keep-alive probes. Keep-alives are only sent when the SO_KEEPALIVE socket option is enabled. The default value is 7200 seconds (2 hours). An idle connection is terminated after approximately an additional 11 minutes (9 probes an interval of 75 seconds apart) when keep-alive is enabled. 
-		* 	Note that underlying connection tracking mechanisms and application timeouts may be much shorter. 
-		* Use the default system level TCP keep alive setting for this socket. 
+		/** System level Enable/disable SO_KEEPALIVE.
+		* one needs set following values in linux procfs or windows registry in order to work as expected.
+		* - tcp_keepalive_intvl (integer; default: 75)
+		* 	The number of seconds between TCP keep-alive probes.
+		* - tcp_keepalive_probes (integer; default: 9)
+		* 	The maximum number of TCP keep-alive probes to send before giving up and killing the connection if no response is obtained from the other end.
+		* - tcp_keepalive_time (integer; default: 7200)
+		* 	The number of seconds a connection needs to be idle before TCP begins sending out keep-alive probes. Keep-alives are only sent when the SO_KEEPALIVE socket option is enabled. The default value is 7200 seconds (2 hours). An idle connection is terminated after approximately an additional 11 minutes (9 probes an interval of 75 seconds apart) when keep-alive is enabled.
+		* 	Note that underlying connection tracking mechanisms and application timeouts may be much shorter.
+		* Use the default system level TCP keep alive setting for this socket.
 		* Please see TCP keep alive for more information. It can be used to solve the "half-open connection".
-		* it is arguable whether to use protocol level keep alive or implement it in the application level. 
-		* @param bEnable: true to enable. 
+		* it is arguable whether to use protocol level keep alive or implement it in the application level.
+		* @param bEnable: true to enable.
 		*/
 		void SetTCPKeepAlive(bool bEnable);
 
-		/** whether SO_KEEPALIVE is enabled. 
+		/** whether SO_KEEPALIVE is enabled.
 		* @return bEnable: true to enable.
 		*/
 		bool IsTCPKeepAliveEnabled();
@@ -76,17 +78,17 @@ namespace NPL
 		bool IsTcpNoDelay();
 
 		/** enable application level keep alive. we will use a global idle timer to detect if a connection has been inactive for GetIdleTimeoutPeriod(),
-		* if so, we may send the keep alive message. 
+		* if so, we may send the keep alive message.
 		* @param bEnable: enable keep alive will automatically enable EnableIdleTimeout()
 		*/
 		void SetKeepAlive(bool bEnable);
 		bool IsKeepAliveEnabled();
 
-		/** Enable idle timeout. This is the application level timeout setting. 
+		/** Enable idle timeout. This is the application level timeout setting.
 		* We will create a global timer which examines all send/receive time of all open connections, if a
-		* connection is inactive (idle for GetIdleTimeoutPeriod()) we will 
-		*	- if IsKeepAliveEnabled() is false, actively close the connection. This is the method used by HTTP, which is the only solution to detect broken connection without sending additional keep alive message. 
-		*   - if IsKeepAliveEnabled() is true, send an empty message to the other end (keep alive messages) to more accurately detect dead connections (see SetKeepAlive). 
+		* connection is inactive (idle for GetIdleTimeoutPeriod()) we will
+		*	- if IsKeepAliveEnabled() is false, actively close the connection. This is the method used by HTTP, which is the only solution to detect broken connection without sending additional keep alive message.
+		*   - if IsKeepAliveEnabled() is true, send an empty message to the other end (keep alive messages) to more accurately detect dead connections (see SetKeepAlive).
 		*/
 		void EnableIdleTimeout(bool bEnable);
 		bool IsIdleTimeoutEnabled();
@@ -95,8 +97,8 @@ namespace NPL
 		void SetIdleTimeoutPeriod(int nMilliseconds);
 		int GetIdleTimeoutPeriod();
 
-		/** whether the first line of the NPL protocol is in ansi code page. 
-		because NPL protocol is compatible with HTTP protocol in ansi mode, some interception web cache servers may cache request even the port number is not 80, 
+		/** whether the first line of the NPL protocol is in ansi code page.
+		because NPL protocol is compatible with HTTP protocol in ansi mode, some interception web cache servers may cache request even the port number is not 80,
 		so client side applications are encouraged to disable ansi mode. */
 		void EnableAnsiMode(bool bEnable);
 		bool IsAnsiMode();
@@ -190,8 +192,60 @@ namespace NPL
 		boost::scoped_ptr<boost::asio::executor_work_guard<boost::asio::io_context::executor_type>> m_work_lifetime;
 
 		/**
-		* this class serves as an interface between the low level socket interface and NPL message queues.  
+		* this class serves as an interface between the low level socket interface and NPL message queues.
 		*/
 		CNPLDispatcher m_msg_dispatcher;
 	};
 }
+
+#else
+namespace NPL
+{
+	class CNPLNetServer
+	{
+	public:
+		CNPLNetServer() :m_connection_manager(), m_msg_dispatcher(this) {}
+		void start(const char* server = NULL, const char* port = NULL) {}
+		void stop() {}
+		CNPLDispatcher& GetDispatcher() { return m_msg_dispatcher; };
+		NPLConnection_ptr CreateConnection(NPLRuntimeAddress_ptr pAddress) {
+			NPLConnection_ptr pConnection(new CNPLConnection());
+			return pConnection;
+		}
+
+		static const std::string& GetExternalIPList()
+		{
+			static std::string s_ip = "";
+			return s_ip;
+		}
+
+		static const std::string& GetBroadcastAddressList()
+		{
+			static std::string s_ips = "";
+			return s_ips;
+		}
+		CNPLConnectionManager& GetConnectionManager() { return m_connection_manager; };
+		static int Ping(const char* host, const char* port, unsigned int waitTime = 1000) { return 0; }
+		void SetTCPKeepAlive(bool bEnable) {}
+		bool IsTCPKeepAliveEnabled() { return false; }
+		void SetTCPNoDelay(bool bEnable) {}
+		bool IsTcpNoDelay() { return false; }
+		void SetKeepAlive(bool bEnable) {}
+		bool IsKeepAliveEnabled() { return false; }
+		void EnableIdleTimeout(bool bEnable) {}
+		bool IsIdleTimeoutEnabled() { return false; }
+		void SetIdleTimeoutPeriod(int nMilliseconds) {}
+		int GetIdleTimeoutPeriod() { return 0; }
+		void EnableAnsiMode(bool bEnable) {}
+		bool IsAnsiMode() { return false; }
+		virtual const std::string& GetHostPort() { static std::string s_port = ""; return s_port; }
+		virtual const std::string& GetHostIP() { static std::string s_ip = ""; return s_ip; }
+		virtual bool IsServerStarted() { return false; }
+		std::string GetExternalIP() { static std::string s_ip = ""; return s_ip; }
+		int GetMaxPendingConnections() const { return 0; }
+		void SetMaxPendingConnections(int val) {}
+		CNPLDispatcher m_msg_dispatcher;
+		CNPLConnectionManager m_connection_manager;
+	};
+}
+#endif

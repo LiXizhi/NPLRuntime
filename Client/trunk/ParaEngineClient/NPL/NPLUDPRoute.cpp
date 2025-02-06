@@ -177,7 +177,7 @@ namespace NPL {
 			if (GetLogLevel() > 0)
 			{
 				OUTPUT_LOG1("Route time out (%s/%d) with id (%s). \n",
-							GetIP().c_str(), GetPort(), GetNID().c_str());
+					GetIP().c_str(), GetPort(), GetNID().c_str());
 			}
 			return 0;
 		}
@@ -191,9 +191,10 @@ namespace NPL {
 
 	void CNPLUDPRoute::start_send(const char* ip, unsigned short port)
 	{
+#ifndef EMSCRIPTEN_SINGLE_THREAD
 		boost::asio::ip::udp::endpoint broadcast_ep(boost::asio::ip::make_address_v4(ip), port);
 		m_address.reset(new NPLUDPAddress(broadcast_ep, "send_to"));
-
+#endif
 		// update the start time and last send/receive time
 		m_nStartTime = GetTickCount();
 		m_nLastActiveTime = m_nStartTime;
@@ -210,9 +211,10 @@ namespace NPL {
 
 	void CNPLUDPRoute::start_broadcast(unsigned short port)
 	{
+#ifndef EMSCRIPTEN_SINGLE_THREAD
 		boost::asio::ip::udp::endpoint broadcast_ep(boost::asio::ip::address_v4::broadcast(), port);
 		m_address.reset(new NPLUDPAddress(broadcast_ep, "broadcast"));
-
+#endif
 		// update the start time and last send/receive time
 		m_nStartTime = GetTickCount();
 		m_nLastActiveTime = m_nStartTime;
@@ -314,7 +316,7 @@ namespace NPL {
 				m_parser.reset();
 				m_input_msg.reset();
 				m_input_msg.method = "B";
-				m_input_msg.m_n_filename = -40; 
+				m_input_msg.m_n_filename = -40;
 				m_input_msg.m_code.resize(bytes_transferred);
 				memcpy((void*)m_input_msg.m_code.c_str(), buff, bytes_transferred);
 				handleMessageIn();
@@ -344,7 +346,7 @@ namespace NPL {
 		}
 		else
 			return 0;
-		
+
 	}
 
 	void CNPLUDPRoute::CloseAfterSend()
@@ -352,6 +354,7 @@ namespace NPL {
 		m_bCloseAfterSend = true;
 	}
 
+#ifndef EMSCRIPTEN_SINGLE_THREAD
 	void CNPLUDPRoute::handle_send(const boost::system::error_code& error, size_t bytes_transferred, const char* buff, size_t buff_size)
 	{
 		if (!error)
@@ -372,6 +375,7 @@ namespace NPL {
 			}
 		}
 	}
+#endif
 
 	void CNPLUDPRoute::stop(bool bRemoveConnection)
 	{
@@ -382,7 +386,9 @@ namespace NPL {
 		else
 		{
 			// Post a call to the stop function so that stop() is safe to call from any thread.
+#ifndef EMSCRIPTEN_SINGLE_THREAD
 			boost::asio::post(m_udp_server.GetIoService(), boost::bind(&CNPLUDPRoute::handle_stop, shared_from_this()));
+#endif	
 		}
 	}
 
@@ -402,7 +408,7 @@ namespace NPL {
 	}
 
 
-	NPLReturnCode CNPLUDPRoute::SendMessage(const NPLFileName& file_name, const char * code /*= nullptr*/, int nLength /*= 0*/, int priority/* = 0*/)
+	NPLReturnCode CNPLUDPRoute::SendMessage(const NPLFileName& file_name, const char* code /*= nullptr*/, int nLength /*= 0*/, int priority/* = 0*/)
 	{
 		NPLMsgOut_ptr msg_out(new NPLMsgOut());
 		CNPLMsgOut_gen writer(*msg_out);
@@ -503,11 +509,12 @@ namespace NPL {
 		if (msg->empty())
 			return NPL_OK;
 
-	
+
 		int nLength = (int)msg->GetBuffer().size();
 		m_nSendCount++;
+#ifndef EMSCRIPTEN_SINGLE_THREAD
 		m_udp_server.SendTo(msg->GetBuffer().c_str(), msg->GetBuffer().size(), shared_from_this());
-
+#endif
 		m_totalBytesOut += nLength;
 		return NPL_OK;
 	}

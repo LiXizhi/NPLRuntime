@@ -7,27 +7,29 @@
 #include "NPLMessageQueue.h"
 #include "WebSocket/WebSocketReader.h"
 #include "WebSocket/WebSocketWriter.h"
-
+#ifndef EMSCRIPTEN_SINGLE_THREAD
 #include <boost/asio.hpp>
+#endif
 #include <boost/array.hpp>
 #include <boost/core/noncopyable.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/enable_shared_from_this.hpp>
 
+#ifndef EMSCRIPTEN_SINGLE_THREAD
 namespace NPL
 {
 	class CNPLDispatcher;
 
 	/**
 	* A incoming or outgoing connection. It does the following things
-	* - with a newly established connection, authenticate it and create the NPLRuntimeAddress_ptr, add the address to the npl dispatcher. 
+	* - with a newly established connection, authenticate it and create the NPLRuntimeAddress_ptr, add the address to the npl dispatcher.
 	* - close the connection, if authentication failed or connection times out, remove its NPL address from the npl dispatcher.
-	* - when receives an NPL message, it calls the NPLDispatcher to put messages to the correct NPL runtime state's input queue and inform the handler thread. 
-	* - When NPL runtime sends an NPL message, the NPLDispatcher will pop the messages from the NPL runtime state's output queue and send it out via the corresponding NPLConnection object. 
-	* 
-	* Please note that the handle_XXX functions are asynchronous callbacks from the dispatcher thread. 
+	* - when receives an NPL message, it calls the NPLDispatcher to put messages to the correct NPL runtime state's input queue and inform the handler thread.
+	* - When NPL runtime sends an NPL message, the NPLDispatcher will pop the messages from the NPL runtime state's output queue and send it out via the corresponding NPLConnection object.
+	*
+	* Please note that the handle_XXX functions are asynchronous callbacks from the dispatcher thread.
 	*/
-	class CNPLConnection : 
+	class CNPLConnection :
 		public boost::enable_shared_from_this<CNPLConnection>,
 		private boost::noncopyable
 	{
@@ -43,7 +45,7 @@ namespace NPL
 		typedef std::map<std::string, int>	StringMap_Type;
 
 		~CNPLConnection();
-		
+
 		/// Construct a connection with the given io_service.
 		explicit CNPLConnection(boost::asio::io_context& io_service,
 			CNPLConnectionManager& manager, CNPLDispatcher& msg_dispatcher);
@@ -51,15 +53,15 @@ namespace NPL
 		/// Get the socket associated with the connection.
 		boost::asio::ip::tcp::socket& socket();
 
-		/** Start the first asynchronous operation for the connection. 
+		/** Start the first asynchronous operation for the connection.
 		*/
 		void start();
 
-		/** Stop all asynchronous operations associated with the connection. 
+		/** Stop all asynchronous operations associated with the connection.
 		* @param bRemoveConnection: if true(default), connection will be immediately removed from CNPLConnectionManager
 		*  if false, one need to manually remove it from the CNPLConnectionManager
-		* @param nReason: 0 is normal disconnect(it will abort pending read/write). 1 is another user with same nid is authenticated. The server should 
-		* send a message to tell the client about this. -1 means close the connection when all pending data has been sent. 
+		* @param nReason: 0 is normal disconnect(it will abort pending read/write). 1 is another user with same nid is authenticated. The server should
+		* send a message to tell the client about this. -1 means close the connection when all pending data has been sent.
 		*/
 		void stop(bool bRemoveConnection = true, int nReason = 0);
 
@@ -71,45 +73,45 @@ namespace NPL
 		void connect();
 
 		/// return the connection manager. 
-		CNPLConnectionManager& GetConnectionManager() {return m_connection_manager;};
+		CNPLConnectionManager& GetConnectionManager() { return m_connection_manager; };
 
 		/**
-		* Send a message via this connection. 
-		* @param file_name: the full qualified remote file name. Only relative path and runtime state name is used, other fields are ignored. 
-		* @param code: it is a chunk of pure data table init code that would be transmitted to the destination file. 
-		* @param nLength: the code length. if this is 0, length is determined from code by finding '\0', 
-		* @param priority: if 0 it is normal priority. if 1 it will be inserted to the front of the message queue. 
+		* Send a message via this connection.
+		* @param file_name: the full qualified remote file name. Only relative path and runtime state name is used, other fields are ignored.
+		* @param code: it is a chunk of pure data table init code that would be transmitted to the destination file.
+		* @param nLength: the code length. if this is 0, length is determined from code by finding '\0',
+		* @param priority: if 0 it is normal priority. if 1 it will be inserted to the front of the message queue.
 		*/
-		NPLReturnCode SendMessage(const NPLFileName& file_name, const char * code = NULL, int nLength=0, int priority=0);
+		NPLReturnCode SendMessage(const NPLFileName& file_name, const char* code = NULL, int nLength = 0, int priority = 0);
 
 		/**
-		* Send a message via this connection. 
+		* Send a message via this connection.
 		* this is usually called for sending a special message.
 		*/
 		NPLReturnCode SendMessage(const NPLMessage& msg);
 
 		/**
-		* Send a message via this connection. 
+		* Send a message via this connection.
 		* this is usually called for sending a simple command message.
 		*/
 		NPLReturnCode SendMessage(const char* sCommandName, const char* sCommandData);
 
 		/**
-		* send a raw NPL output message to the stream. Message will fail if connection is not established, or queue is full. 
+		* send a raw NPL output message to the stream. Message will fail if connection is not established, or queue is full.
 		* otherwise it will be added to the m_queueOutput
-		* @param msg: the msg should be created just before it. 
+		* @param msg: the msg should be created just before it.
 		*/
 		NPLReturnCode SendMessage(NPLMsgOut_ptr& msg);
 
 		/** set the NPL runtime address that this connection connects to. */
 		void SetNPLRuntimeAddress(NPLRuntimeAddress_ptr runtime_address);
-	
+
 	public:
-		/** Get statistics about this connection. 
-		* Function is not thread-safe, it is for debugging anyway. 
+		/** Get statistics about this connection.
+		* Function is not thread-safe, it is for debugging anyway.
 		*/
-		virtual void GetStatistics( int &totalIn, int &totalOut );
-	
+		virtual void GetStatistics(int& totalIn, int& totalOut);
+
 		/**
 		* Returns the current connection state.
 		* Function is not thread-safe
@@ -117,17 +119,17 @@ namespace NPL
 		*/
 		NPLConnectionState GetState() const { return m_state; }
 
-		/** Get the NPL runtime address ID if any. 
+		/** Get the NPL runtime address ID if any.
 		* [thread safe]
 		*/
 		const string& GetNID() const;
 
-		/** Get the TCP IP address if any. 
+		/** Get the TCP IP address if any.
 		* [thread safe]
 		*/
 		string GetIP();
 
-		/** Get the TCP IP port if any. 
+		/** Get the TCP IP port if any.
 		* [thread safe]
 		*/
 		string GetPort();
@@ -140,47 +142,47 @@ namespace NPL
 		void SetAuthenticated(bool bAuthenticated);
 
 		/** whether this connection is authenticated. Usually it is a the job of NPL runtime state to reject or authenticate
-		a connection. The NPL server just accepts any incoming connections and assign a temporary nid. 
-		it is the job of the NPL runtime state to assign an authenticated new nid to this connection. See 
+		a connection. The NPL server just accepts any incoming connections and assign a temporary nid.
+		it is the job of the NPL runtime state to assign an authenticated new nid to this connection. See
 		*/
 		bool IsAuthenticated() const;
 
 		/** whether the connection is established or not. */
 		bool IsConnected() const;
 
-		/** set whether to use compression for this connection. 
-		* this is a candy function for SetCompressionLevel(). 
+		/** set whether to use compression for this connection.
+		* this is a candy function for SetCompressionLevel().
 		*/
 		void SetUseCompression(bool bUseCompression);
 
 		/** get whether to use compression for this connection. */
 		bool IsUseCompression();
 
-		/** default to 0, which means no compression. Compression level, which is an integer in the range of -1 to 9. 
-		* Lower compression levels result in faster execution, but less compression. Higher levels result in greater compression, 
-		* but slower execution. The zlib constant Z_DEFAULT_COMPRESSION, equal to -1, provides a good compromise between compression 
-		* and speed and is equivalent to level 6. Level 0 actually does no compression at all, and in fact expands the data slightly 
-		* to produce the zlib format (it is not a byte-for-byte copy of the input). 
+		/** default to 0, which means no compression. Compression level, which is an integer in the range of -1 to 9.
+		* Lower compression levels result in faster execution, but less compression. Higher levels result in greater compression,
+		* but slower execution. The zlib constant Z_DEFAULT_COMPRESSION, equal to -1, provides a good compromise between compression
+		* and speed and is equivalent to level 6. Level 0 actually does no compression at all, and in fact expands the data slightly
+		* to produce the zlib format (it is not a byte-for-byte copy of the input).
 		*/
 		void SetCompressionLevel(int nLevel);
 		int GetCompressionLevel();
 
-		
-		/** when the message size is bigger than this number of bytes, we will use m_nCompressionLevel for compression. 
-		* For message smaller than the threshold, we will not compress even m_nCompressionLevel is not 0. 
+
+		/** when the message size is bigger than this number of bytes, we will use m_nCompressionLevel for compression.
+		* For message smaller than the threshold, we will not compress even m_nCompressionLevel is not 0.
 		*/
 		void SetCompressionThreshold(int nThreshold);
 		int GetCompressionThreshold();
 
 
-		/** set the TCP protocol level keep alive. default value depends on whether it is listening sockets or not. 
-		* see CNPLNetServer::SetTCPKeepAlive 
-		* @note: it is advised to use application level timeout. see SetKeepAlive(). 
+		/** set the TCP protocol level keep alive. default value depends on whether it is listening sockets or not.
+		* see CNPLNetServer::SetTCPKeepAlive
+		* @note: it is advised to use application level timeout. see SetKeepAlive().
 		*/
 		void SetTCPKeepAlive(bool bEnable);
 
 		/** enable application level keep alive. we will use a global idle timer to detect if a connection has been inactive for GetIdleTimeoutPeriod(),
-		* if so, we may send the keep alive message. 
+		* if so, we may send the keep alive message.
 		* @param bEnable: enable keep alive will automatically enable EnableIdleTimeout()
 		*/
 		void SetKeepAlive(bool bEnable);
@@ -190,11 +192,11 @@ namespace NPL
 		void SetNoDelay(bool bEnable);
 		bool IsNoDelay();
 
-		/** Enable idle timeout. This is the application level timeout setting. 
+		/** Enable idle timeout. This is the application level timeout setting.
 		* We will create a global timer which examines all send/receive time of all open connections, if a
-		* connection is inactive (idle for GetIdleTimeoutPeriod()) we will 
-		*	- if IsKeepAliveEnabled() is false, actively close the connection. This is the method used by HTTP, which is the only solution to detect broken connection without sending additional keep alive message. 
-		*   - if IsKeepAliveEnabled() is true, send an empty message to the other end (keep alive messages) to more accurately detect dead connections (see SetKeepAlive). 
+		* connection is inactive (idle for GetIdleTimeoutPeriod()) we will
+		*	- if IsKeepAliveEnabled() is false, actively close the connection. This is the method used by HTTP, which is the only solution to detect broken connection without sending additional keep alive message.
+		*   - if IsKeepAliveEnabled() is true, send an empty message to the other end (keep alive messages) to more accurately detect dead connections (see SetKeepAlive).
 		*/
 		void EnableIdleTimeout(bool bEnable);
 		bool IsIdleTimeoutEnabled();
@@ -203,24 +205,24 @@ namespace NPL
 		void SetIdleTimeoutPeriod(int nMilliseconds);
 		int GetIdleTimeoutPeriod();
 
-		/** get the last time in milliseconds GetTickCount(), that a send/receive/connect message is transmitted via this connection. 
+		/** get the last time in milliseconds GetTickCount(), that a send/receive/connect message is transmitted via this connection.
 		* [thread safe only in dispatcher thread]
 		*/
 		unsigned int GetLastActiveTime();
 
-		/** update the last send time. Internally, it just set the m_nLastActiveTime to GetTickCount(). 
+		/** update the last send time. Internally, it just set the m_nLastActiveTime to GetTickCount().
 		* [thread safe only in dispatcher thread]
 		*/
 		void TickSend();
 
-		/** update the last receive or connect time. Internally, it just set the m_nLastActiveTime to GetTickCount(). 
+		/** update the last receive or connect time. Internally, it just set the m_nLastActiveTime to GetTickCount().
 		* [thread safe only in dispatcher thread]
 		*/
 		void TickReceive();
 
-		/** if any of the connection should be timed out. If so, send keep alive message or the caller should close it. 
-		* This function is called by a global service timer that periodically does the checking for all active connections. 
-		* @return 1 if not timed out. 0 if timed out,the caller should close the connection. -1 if timed out and keep alive is sent.  
+		/** if any of the connection should be timed out. If so, send keep alive message or the caller should close it.
+		* This function is called by a global service timer that periodically does the checking for all active connections.
+		* @return 1 if not timed out. 0 if timed out,the caller should close the connection. -1 if timed out and keep alive is sent.
 		*/
 		int CheckIdleTimeout(unsigned int nCurTime);
 
@@ -240,8 +242,8 @@ namespace NPL
 		/**
 		* This function is called whenever some data is received from the underlying transport.
 		* the data is always in (m_buffer.data(), m_buffer.data()+bytes_transferred)
-		* @param bytes_transferred The number of bytes received. 
-		* @return true if succeed, and one should continue reading from the socket. and false if connection should be closed.  
+		* @param bytes_transferred The number of bytes received.
+		* @return true if succeed, and one should continue reading from the socket. and false if connection should be closed.
 		*/
 		virtual bool handleReceivedData(int bytes_transferred);
 
@@ -257,8 +259,8 @@ namespace NPL
 		virtual void handleDisconnect(int reason);
 
 		/**
-		* handle m_input_msg. After a complete message is read by the parser object, one should call this function. 
-		* Once the message is handled, m_input_msg will be reset, so that more messages can be handled later on. 
+		* handle m_input_msg. After a complete message is read by the parser object, one should call this function.
+		* Once the message is handled, m_input_msg will be reset, so that more messages can be handled later on.
 		*/
 		virtual bool handleMessageIn();
 
@@ -272,7 +274,7 @@ namespace NPL
 		//
 
 		/// Handle completion of a read operation.
-		void handle_read(const boost::system::error_code& e,std::size_t bytes_transferred);
+		void handle_read(const boost::system::error_code& e, std::size_t bytes_transferred);
 
 		/// Handle completion of a write operation.
 		void handle_write(const boost::system::error_code& e);
@@ -330,20 +332,20 @@ namespace NPL
 		uint32 m_totalBytesIn;
 		/// for statistics, number of bytes sent
 		uint32 m_totalBytesOut;
-		
+
 		/** default to false, if true, it will dump all send and received data to output. */
 		bool m_bDebugConnection;
 
-		/** default to 0, which means no compression. Compression level, which is an integer in the range of -1 to 9. 
-		* Lower compression levels result in faster execution, but less compression. Higher levels result in greater compression, 
-		* but slower execution. The zlib constant Z_DEFAULT_COMPRESSION, equal to -1, provides a good compromise between compression 
-		* and speed and is equivalent to level 6. Level 0 actually does no compression at all, and in fact expands the data slightly 
-		* to produce the zlib format (it is not a byte-for-byte copy of the input). 
+		/** default to 0, which means no compression. Compression level, which is an integer in the range of -1 to 9.
+		* Lower compression levels result in faster execution, but less compression. Higher levels result in greater compression,
+		* but slower execution. The zlib constant Z_DEFAULT_COMPRESSION, equal to -1, provides a good compromise between compression
+		* and speed and is equivalent to level 6. Level 0 actually does no compression at all, and in fact expands the data slightly
+		* to produce the zlib format (it is not a byte-for-byte copy of the input).
 		*/
 		int32 m_nCompressionLevel;
 
-		/** when the message size is bigger than this number of bytes, we will use m_nCompressionLevel for compression. 
-		* For message smaller than the threshold, we will not compress even m_nCompressionLevel is not 0. 
+		/** when the message size is bigger than this number of bytes, we will use m_nCompressionLevel for compression.
+		* For message smaller than the threshold, we will not compress even m_nCompressionLevel is not 0.
 		*/
 		int32 m_nCompressionThreshold;
 
@@ -383,14 +385,49 @@ namespace NPL
 
 		ProtocolType m_protocolType;
 	};
-	
+
 
 	/** a compare class connection ptr */
 	struct NPLConnection_PtrOps
 	{	// functor for operator<
 		bool operator()(const NPLConnection_ptr& _Left, const NPLConnection_ptr& _Right) const
 		{	// apply operator< to operands
-			return (_Left.get()<_Right.get());
+			return (_Left.get() < _Right.get());
 		}
 	};
 }
+
+#else
+namespace NPL
+{
+	class CNPLConnection
+	{
+	public:
+		enum ProtocolType
+		{
+			NPL = 0,
+			WEBSOCKET = 1,
+			TCP_CUSTOM = 2, // any custom protocol, like google protocol buffer
+		};
+		void start() {}
+		void stop(bool bRemoveConnection = true, int nReason = 0) {}
+		bool IsConnected() const { return false; }
+		const string& GetNID() const { static std::string s_str = ""; return s_str; }
+		NPLReturnCode SendMessage(const NPLFileName& file_name, const char* code = NULL, int nLength = 0, int priority = 0) { return NPL_OK; }
+		void SetAuthenticated(bool bAuthenticated) {}
+		bool IsAuthenticated() const { return false; }
+		void SetProtocol(ProtocolType protocolType = ProtocolType::NPL) {}
+		int CheckIdleTimeout(unsigned int nCurTime) { return 0; }
+		string GetIP() { return "0.0.0.0"; }
+		NPLRuntimeAddress_ptr m_address;
+	};
+
+	struct NPLConnection_PtrOps
+	{	// functor for operator<
+		bool operator()(const NPLConnection_ptr& _Left, const NPLConnection_ptr& _Right) const
+		{	// apply operator< to operands
+			return (_Left.get() < _Right.get());
+		}
+	};
+}
+#endif

@@ -29,6 +29,8 @@
 
 using namespace ParaEngine;
 
+#ifndef EMSCRIPTEN
+
 static CNPLNetClient* g_pNPLNetClient;
 
 ParaEngine::CNPLNetClient::CNPLNetClient()
@@ -884,3 +886,5 @@ int ParaEngine::CURLRequestTask::GetTimeOut()
 {
 	return m_nTimeOutTime;
 }
+
+#endif

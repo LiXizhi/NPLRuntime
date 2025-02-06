@@ -1,8 +1,8 @@
 #pragma once
 
-#if !defined(PARAENGINE_MOBILE)
+#if !defined(PARAENGINE_MOBILE) && !defined(EMSCRIPTEN)
 
-#include "dir_monitor/basic_dir_monitor.hpp"
+#include "dirmonitor/basic_dir_monitor.hpp"
 #include <boost/thread.hpp>
 #include <queue>
 
@@ -21,7 +21,7 @@ namespace ParaEngine
 		typedef boost::asio::dir_monitor_event DirMonitorEvent;
 		typedef boost::signals2::signal<void(const DirMonitorEvent&)>  FileSystemEvent_t;
 		typedef boost::signals2::connection FileSystemEvent_Connection_t;
-		
+
 		CFileSystemWatcher(const std::string& filename);
 		CFileSystemWatcher();
 		~CFileSystemWatcher();
@@ -33,10 +33,10 @@ namespace ParaEngine
 		void Destroy();
 
 		/** add a directory to monitor. */
-		bool add_directory(const std::string &dirname);
+		bool add_directory(const std::string& dirname);
 
 		/** remove a directory to monitor. */
-		bool remove_directory(const std::string &dirname);
+		bool remove_directory(const std::string& dirname);
 
 		/** this allows us to process queued messages in main thread's frame move.
 		* this function only works when message are told to be dispatched from the main thread.
@@ -56,7 +56,7 @@ namespace ParaEngine
 		const std::string& GetName() const;
 		void SetName(const std::string& val);
 	private:
-		void FileHandler(const boost::system::error_code &ec, const boost::asio::dir_monitor_event &ev);
+		void FileHandler(const boost::system::error_code& ec, const boost::asio::dir_monitor_event& ev);
 
 		/** get unprocessed event */
 		std::queue < DirMonitorEvent > m_msg_queue;
@@ -109,10 +109,10 @@ namespace ParaEngine
 		int DispatchEvents();
 
 		/** get io service object. */
-		boost::asio::io_context& GetIOService() {return *(m_io_service.get());}
+		boost::asio::io_context& GetIOService() { return *(m_io_service.get()); }
 
 		/** whether it is started. */
-		bool IsStarted() {return m_bIsStarted;}
+		bool IsStarted() { return m_bIsStarted; }
 
 		/** start the io service in a different thread. this function can be called multiple times, where only the first time takes effect.  */
 		bool Start();

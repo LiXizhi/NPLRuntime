@@ -1,4 +1,5 @@
 #include "ParaEngine.h"
+#ifndef EMSCRIPTEN_SINGLE_THREAD
 #include <boost/bind.hpp>
 #include "NPLNetUDPServer.h"
 
@@ -34,6 +35,9 @@ namespace NPL {
 
 	void CNPLNetUDPServer::start(const char* server, unsigned short port)
 	{
+#ifdef EMSCRIPTEN
+		return;
+#endif
 		if (m_dispatcherThread.get() != 0)
 		{
 			// One can only start the server once, unless we are listening to a new port
@@ -141,6 +145,9 @@ namespace NPL {
 
 	void CNPLNetUDPServer::stop()
 	{
+#ifdef EMSCRIPTEN
+		return;
+#endif
 		if (m_dispatcherThread.get() != 0)
 		{
 			m_bIsServerStarted = false;
@@ -333,3 +340,4 @@ namespace NPL {
 	}
 
 } // namespace NPL
+#endif

@@ -13,8 +13,8 @@
  * Distributed under the Boost Software License, Version 1.0.
  * Created on September 7, 2009, 10:46 AM
  */
-
 #include "ParaEngine.h"
+#ifndef EMSCRIPTEN
 #include "NPLRuntime.h"
 #include "NPLTable.h"
 #include "NPLHelper.h"
@@ -34,474 +34,696 @@
 #include <boost/filesystem/fstream.hpp>
 #include <iostream>
 
+#ifdef PLATFORM_MAC
+#import "IOMac/SerialPortMac.h"
+#elif defined(ANDROID)
+#include "util/SerialPortAndroid.h"
+#endif
+
 using namespace std;
 using namespace boost;
 
 namespace ParaEngine
 {
-    class SerialPortImpl : private boost::noncopyable
-    {
-    public:
-        SerialPortImpl() : io(), port(io), backgroundThread(), open(false),
-            error(false) {}
+	class SerialPortImpl : private boost::noncopyable
+	{
+	public:
+		SerialPortImpl() : io(), port(io), backgroundThread(), open(false),
+			error(false) {
+		}
 
-        boost::asio::io_context io; ///< Io service object
-        boost::asio::serial_port port; ///< Serial port object
-        std::thread backgroundThread; ///< Thread that runs read/write operations
-        bool open; ///< True if port open
-        bool error; ///< Error flag
-        mutable std::mutex errorMutex; ///< Mutex for access to error
+		boost::asio::io_context io; ///< Io service object
+		boost::asio::serial_port port; ///< Serial port object
+		std::thread backgroundThread; ///< Thread that runs read/write operations
+		bool open; ///< True if port open
+		bool error; ///< Error flag
+		mutable std::mutex errorMutex; ///< Mutex for access to error
 
-        /// Data are queued here before they go in writeBuffer
-        std::vector<char> writeQueue;
-        boost::shared_array<char> writeBuffer; ///< Data being written
-        size_t writeBufferSize; ///< Size of writeBuffer
-        std::mutex writeQueueMutex; ///< Mutex for access to writeQueue
-        char readBuffer[SerialPort::readBufferSize]; ///< data being read
+		/// Data are queued here before they go in writeBuffer
+		std::vector<char> writeQueue;
+		boost::shared_array<char> writeBuffer; ///< Data being written
+		size_t writeBufferSize; ///< Size of writeBuffer
+		std::mutex writeQueueMutex; ///< Mutex for access to writeQueue
+		char readBuffer[SerialPort::readBufferSize]; ///< data being read
 
-        /// Read complete callback
-        std::function<void(const char*, size_t)> callback;
-        std::string callbackScript;
-        std::string sPortName;
-    };
+		/// Read complete callback
+		std::function<void(const char*, size_t)> callback;
+		std::string callbackScript;
+		std::string sPortName;
+	};
 
-    SerialPort::SerialPort() : pimpl(new SerialPortImpl)
-    {
-    }
+	SerialPort::SerialPort() : pimpl(new SerialPortImpl)
+	{
+	}
 
-    SerialPort::SerialPort(const std::string& devname, unsigned int baud_rate,
-        asio::serial_port_base::parity opt_parity,
-        asio::serial_port_base::character_size opt_csize,
-        asio::serial_port_base::flow_control opt_flow,
-        asio::serial_port_base::stop_bits opt_stop)
-        : pimpl(new SerialPortImpl)
-    {
-        open(devname, baud_rate, opt_parity, opt_csize, opt_flow, opt_stop);
-    }
+	SerialPort::SerialPort(const std::string& devname, unsigned int baud_rate,
+		asio::serial_port_base::parity opt_parity,
+		asio::serial_port_base::character_size opt_csize,
+		asio::serial_port_base::flow_control opt_flow,
+		asio::serial_port_base::stop_bits opt_stop)
+		: pimpl(new SerialPortImpl)
+	{
+		open(devname, baud_rate, opt_parity, opt_csize, opt_flow, opt_stop);
+	}
 
-    void SerialPort::open(const std::string& devname, unsigned int baud_rate,
-        asio::serial_port_base::parity opt_parity,
-        asio::serial_port_base::character_size opt_csize,
-        asio::serial_port_base::flow_control opt_flow,
-        asio::serial_port_base::stop_bits opt_stop)
-    {
-        if (isOpen()) close();
+	void SerialPort::open(const std::string& devname, unsigned int baud_rate,
+		asio::serial_port_base::parity opt_parity,
+		asio::serial_port_base::character_size opt_csize,
+		asio::serial_port_base::flow_control opt_flow,
+		asio::serial_port_base::stop_bits opt_stop)
+	{
+		if (isOpen()) close();
 
-        setErrorStatus(true);//If an exception is thrown, error_ remains true
-        pimpl->sPortName = devname;
-        pimpl->port.open(devname);
-        pimpl->port.set_option(asio::serial_port_base::baud_rate(baud_rate));
-        pimpl->port.set_option(opt_parity);
-        pimpl->port.set_option(opt_csize);
-        pimpl->port.set_option(opt_flow);
-        pimpl->port.set_option(opt_stop);
+		setErrorStatus(true);//If an exception is thrown, error_ remains true
+		pimpl->sPortName = devname;
+		pimpl->port.open(devname);
+		pimpl->port.set_option(asio::serial_port_base::baud_rate(baud_rate));
+		pimpl->port.set_option(opt_parity);
+		pimpl->port.set_option(opt_csize);
+		pimpl->port.set_option(opt_flow);
+		pimpl->port.set_option(opt_stop);
 
-        //This gives some work to the io_service before it is started
-        boost::asio::post(pimpl->io, boost::bind(&SerialPort::doRead, this));
+		//This gives some work to the io_service before it is started
+		boost::asio::post(pimpl->io, boost::bind(&SerialPort::doRead, this));
 
-        std::thread t(boost::bind(&asio::io_context::run, &pimpl->io));
-        pimpl->backgroundThread.swap(t);
-        setErrorStatus(false);//If we get here, no error
-        pimpl->open = true; //Port is now open
-    }
+		std::thread t(boost::bind(&asio::io_context::run, &pimpl->io));
+		pimpl->backgroundThread.swap(t);
+		setErrorStatus(false);//If we get here, no error
+		pimpl->open = true; //Port is now open
+	}
 
-    bool SerialPort::isOpen() const
-    {
-        return pimpl->open;
-    }
+	bool SerialPort::isOpen() const
+	{
+		return pimpl->open;
+	}
 
-    bool SerialPort::errorStatus() const
-    {
-        std::lock_guard<std::mutex> l(pimpl->errorMutex);
-        return pimpl->error;
-    }
+	bool SerialPort::errorStatus() const
+	{
+		std::lock_guard<std::mutex> l(pimpl->errorMutex);
+		return pimpl->error;
+	}
 
-    void SerialPort::close()
-    {
-        if (!isOpen()) return;
+	void SerialPort::close()
+	{
+		if (!isOpen()) return;
 
-        pimpl->open = false;
-        boost::asio::post(pimpl->io, boost::bind(&SerialPort::doClose, this));
-        pimpl->backgroundThread.join();
-        pimpl->io.restart();
-        if (errorStatus())
-        {
-            throw(boost::system::system_error(boost::system::error_code(),
-                "Error while closing the device"));
-        }
-    }
+		pimpl->open = false;
+		boost::asio::post(pimpl->io, boost::bind(&SerialPort::doClose, this));
+		pimpl->backgroundThread.join();
+		pimpl->io.restart();
+		if (errorStatus())
+		{
+			throw(boost::system::system_error(boost::system::error_code(),
+				"Error while closing the device"));
+		}
+	}
 
-    void SerialPort::write(const char* data, size_t size)
-    {
-        {
-            std::lock_guard<std::mutex> l(pimpl->writeQueueMutex);
-            pimpl->writeQueue.insert(pimpl->writeQueue.end(), data, data + size);
-        }
-        boost::asio::post(pimpl->io, boost::bind(&SerialPort::doWrite, this));
-    }
+	void SerialPort::write(const char* data, size_t size)
+	{
+		{
+			std::lock_guard<std::mutex> l(pimpl->writeQueueMutex);
+			pimpl->writeQueue.insert(pimpl->writeQueue.end(), data, data + size);
+		}
+		boost::asio::post(pimpl->io, boost::bind(&SerialPort::doWrite, this));
+	}
 
-    void SerialPort::write(const std::vector<char>& data)
-    {
-        {
-            std::lock_guard<std::mutex> l(pimpl->writeQueueMutex);
-            pimpl->writeQueue.insert(pimpl->writeQueue.end(), data.begin(), data.end());
-        }
-        boost::asio::post(pimpl->io, boost::bind(&SerialPort::doWrite, this));
-    }
+	void SerialPort::write(const std::vector<char>& data)
+	{
+		{
+			std::lock_guard<std::mutex> l(pimpl->writeQueueMutex);
+			pimpl->writeQueue.insert(pimpl->writeQueue.end(), data.begin(), data.end());
+		}
+		boost::asio::post(pimpl->io, boost::bind(&SerialPort::doWrite, this));
+	}
 
-    void SerialPort::writeString(const std::string& s)
-    {
-        {
-            std::lock_guard<std::mutex> l(pimpl->writeQueueMutex);
-            pimpl->writeQueue.insert(pimpl->writeQueue.end(), s.begin(), s.end());
-        }
-        boost::asio::post(pimpl->io, boost::bind(&SerialPort::doWrite, this));
-    }
+	void SerialPort::writeString(const std::string& s)
+	{
+		{
+			std::lock_guard<std::mutex> l(pimpl->writeQueueMutex);
+			pimpl->writeQueue.insert(pimpl->writeQueue.end(), s.begin(), s.end());
+		}
+		boost::asio::post(pimpl->io, boost::bind(&SerialPort::doWrite, this));
+	}
 
-    SerialPort::~SerialPort()
-    {
-        if (isOpen())
-        {
-            try {
-                close();
-            }
-            catch (...)
-            {
-                //Don't throw from a destructor
-            }
-        }
-        clearReadCallback();
-    }
+	SerialPort::~SerialPort()
+	{
+		if (isOpen())
+		{
+			try {
+				close();
+			}
+			catch (...)
+			{
+				//Don't throw from a destructor
+			}
+		}
+		clearReadCallback();
+	}
 
-    void SerialPort::doRead()
-    {
-        pimpl->port.async_read_some(asio::buffer(pimpl->readBuffer, readBufferSize),
-            boost::bind(&SerialPort::readEnd,
-                this,
-                asio::placeholders::error,
-                asio::placeholders::bytes_transferred));
-    }
+	void SerialPort::doRead()
+	{
+		pimpl->port.async_read_some(asio::buffer(pimpl->readBuffer, readBufferSize),
+			boost::bind(&SerialPort::readEnd,
+				this,
+				asio::placeholders::error,
+				asio::placeholders::bytes_transferred));
+	}
 
-    void SerialPort::readEnd(const boost::system::error_code& error,
-        size_t bytes_transferred)
-    {
-        if (error)
-        {
-            //error can be true even because the serial port was closed.
-            //In this case it is not a real error, so ignore
-            if (isOpen())
-            {
-                doClose();
-                setErrorStatus(true);
-            }
-        }
-        else
-        {
-            if (pimpl->callback)
-                pimpl->callback(pimpl->readBuffer, bytes_transferred);
-            if (!pimpl->callbackScript.empty())
-            {
-                NPL::NPLObjectProxy msg;
-                msg["filename"] = pimpl->sPortName;
-                msg["data"] = std::string(pimpl->readBuffer, bytes_transferred);
+	void SerialPort::readEnd(const boost::system::error_code& error,
+		size_t bytes_transferred)
+	{
+		if (error)
+		{
+			//error can be true even because the serial port was closed.
+			//In this case it is not a real error, so ignore
+			if (isOpen())
+			{
+				doClose();
+				setErrorStatus(true);
+			}
+		}
+		else
+		{
+			if (pimpl->callback)
+				pimpl->callback(pimpl->readBuffer, bytes_transferred);
+			if (!pimpl->callbackScript.empty())
+			{
+				NPL::NPLObjectProxy msg;
+				msg["filename"] = pimpl->sPortName;
+				msg["data"] = std::string(pimpl->readBuffer, bytes_transferred);
 
-                std::string sMsg;
-                NPL::NPLHelper::NPLTableToString("msg", msg, sMsg);
-                ParaEngine::CGlobals::GetNPLRuntime()->GetMainRuntimeState()->Activate_async(pimpl->callbackScript, sMsg.c_str(), (int)sMsg.size());
-            }
-            doRead();
-        }
-    }
+				std::string sMsg;
+				NPL::NPLHelper::NPLTableToString("msg", msg, sMsg);
+				ParaEngine::CGlobals::GetNPLRuntime()->GetMainRuntimeState()->Activate_async(pimpl->callbackScript, sMsg.c_str(), (int)sMsg.size());
+			}
+			doRead();
+		}
+	}
 
-    void SerialPort::doWrite()
-    {
-        //If a write operation is already in progress, do nothing
-        if (pimpl->writeBuffer == 0)
-        {
-            std::lock_guard<std::mutex> l(pimpl->writeQueueMutex);
-            pimpl->writeBufferSize = pimpl->writeQueue.size();
-            pimpl->writeBuffer.reset(new char[pimpl->writeQueue.size()]);
-            copy(pimpl->writeQueue.begin(), pimpl->writeQueue.end(),
-                pimpl->writeBuffer.get());
-            pimpl->writeQueue.clear();
-            async_write(pimpl->port, asio::buffer(pimpl->writeBuffer.get(),
-                pimpl->writeBufferSize),
-                boost::bind(&SerialPort::writeEnd, this, asio::placeholders::error));
-        }
-    }
+	void SerialPort::doWrite()
+	{
+		//If a write operation is already in progress, do nothing
+		if (pimpl->writeBuffer == 0)
+		{
+			std::lock_guard<std::mutex> l(pimpl->writeQueueMutex);
+			pimpl->writeBufferSize = pimpl->writeQueue.size();
+			pimpl->writeBuffer.reset(new char[pimpl->writeQueue.size()]);
+			copy(pimpl->writeQueue.begin(), pimpl->writeQueue.end(),
+				pimpl->writeBuffer.get());
+			pimpl->writeQueue.clear();
+			async_write(pimpl->port, asio::buffer(pimpl->writeBuffer.get(),
+				pimpl->writeBufferSize),
+				boost::bind(&SerialPort::writeEnd, this, asio::placeholders::error));
+		}
+	}
 
-    void SerialPort::writeEnd(const boost::system::error_code& error)
-    {
-        if (!error)
-        {
-            std::lock_guard<std::mutex> l(pimpl->writeQueueMutex);
-            if (pimpl->writeQueue.empty())
-            {
-                pimpl->writeBuffer.reset();
-                pimpl->writeBufferSize = 0;
+	void SerialPort::writeEnd(const boost::system::error_code& error)
+	{
+		if (!error)
+		{
+			std::lock_guard<std::mutex> l(pimpl->writeQueueMutex);
+			if (pimpl->writeQueue.empty())
+			{
+				pimpl->writeBuffer.reset();
+				pimpl->writeBufferSize = 0;
 
-                return;
-            }
-            pimpl->writeBufferSize = pimpl->writeQueue.size();
-            pimpl->writeBuffer.reset(new char[pimpl->writeQueue.size()]);
-            copy(pimpl->writeQueue.begin(), pimpl->writeQueue.end(),
-                pimpl->writeBuffer.get());
-            pimpl->writeQueue.clear();
-            async_write(pimpl->port, asio::buffer(pimpl->writeBuffer.get(),
-                pimpl->writeBufferSize),
-                boost::bind(&SerialPort::writeEnd, this, asio::placeholders::error));
-        }
-        else {
-            setErrorStatus(true);
-            doClose();
-        }
-    }
+				return;
+			}
+			pimpl->writeBufferSize = pimpl->writeQueue.size();
+			pimpl->writeBuffer.reset(new char[pimpl->writeQueue.size()]);
+			copy(pimpl->writeQueue.begin(), pimpl->writeQueue.end(),
+				pimpl->writeBuffer.get());
+			pimpl->writeQueue.clear();
+			async_write(pimpl->port, asio::buffer(pimpl->writeBuffer.get(),
+				pimpl->writeBufferSize),
+				boost::bind(&SerialPort::writeEnd, this, asio::placeholders::error));
+		}
+		else {
+			setErrorStatus(true);
+			doClose();
+		}
+	}
 
-    void SerialPort::doClose()
-    {
-        boost::system::error_code ec;
-        pimpl->port.cancel(ec);
-        if (ec) setErrorStatus(true);
-        pimpl->port.close(ec);
-        if (ec) setErrorStatus(true);
-    }
+	void SerialPort::doClose()
+	{
+		boost::system::error_code ec;
+		pimpl->port.cancel(ec);
+		if (ec) setErrorStatus(true);
+		pimpl->port.close(ec);
+		if (ec) setErrorStatus(true);
+	}
 
-    void SerialPort::setErrorStatus(bool e)
-    {
-        std::lock_guard<std::mutex> l(pimpl->errorMutex);
-        pimpl->error = e;
-    }
+	void SerialPort::setErrorStatus(bool e)
+	{
+		std::lock_guard<std::mutex> l(pimpl->errorMutex);
+		pimpl->error = e;
+	}
 
-    void SerialPort::setReadCallback(const std::function<void(const char*, size_t)>& callback)
-    {
-        pimpl->callback = callback;
-    }
+	void SerialPort::setReadCallback(const std::function<void(const char*, size_t)>& callback)
+	{
+		pimpl->callback = callback;
+	}
 
-    void SerialPort::clearReadCallback()
-    {
-        std::function<void(const char*, size_t)> empty;
-        pimpl->callback.swap(empty);
-    }
+	void SerialPort::clearReadCallback()
+	{
+		std::function<void(const char*, size_t)> empty;
+		pimpl->callback.swap(empty);
+	}
 
-    void SerialPort::setCallback(const std::function<void(const char*, size_t)>& callback)
-    {
-        setReadCallback(callback);
-    }
+	void SerialPort::setCallback(const std::function<void(const char*, size_t)>& callback)
+	{
+		setReadCallback(callback);
+	}
 
-    void SerialPort::setCallback(const std::string& callback)
-    {
-        pimpl->callbackScript = callback;
-    }
+	void SerialPort::setCallback(const std::string& callback)
+	{
+		pimpl->callbackScript = callback;
+	}
 
-    void SerialPort::clearCallback()
-    {
-        clearReadCallback();
-    }
+	void SerialPort::clearCallback()
+	{
+		clearReadCallback();
+	}
 
-    /// <summary>
-    /// global singleton for serial class
-    /// </summary>
-    Serial::Serial()
-    {
-    }
+	/// <summary>
+	/// global singleton for serial class
+	/// </summary>
+	Serial::Serial()
+	{
+	}
 
-    Serial::~Serial()
-    {
-        for (auto serialport : m_allSerialPorts)
-        {
-            delete serialport.second;
-        }
-    }
+	Serial::~Serial()
+	{
+		for (auto serialport : m_allSerialPorts)
+		{
+			delete serialport.second;
+		}
+	}
 
-    std::vector<std::string> Serial::GetPortNames()
-    {
-        std::vector<std::string> ports;
-        // get all serial ports using win32
+	std::vector<std::string> Serial::GetPortNames()
+	{
+		std::vector<std::string> ports;
+		// get all serial ports using win32
 #ifdef WIN32
-        char lpTargetPath[5000]; // buffer to store the path of the COMPORTS
+		char lpTargetPath[5000]; // buffer to store the path of the COMPORTS
 
-        for (int i = 0; i < 255; i++) // checking ports from COM0 to COM99 or COM255
-        {
-            std::string str = "COM" + std::to_string(i); // converting to COM0, COM1, COM2
-            DWORD test = QueryDosDevice(str.c_str(), lpTargetPath, 5000);
-            if (test != 0) //QueryDosDevice returns zero if it didn't find an object
-            {
-                ports.push_back(std::string(str + ":" + lpTargetPath));
-            }
+		for (int i = 0; i < 255; i++) // checking ports from COM0 to COM99 or COM255
+		{
+			std::string str = "COM" + std::to_string(i); // converting to COM0, COM1, COM2
+			DWORD test = QueryDosDevice(str.c_str(), lpTargetPath, 5000);
+			if (test != 0) //QueryDosDevice returns zero if it didn't find an object
+			{
+				ports.push_back(std::string(str + ":" + lpTargetPath));
+			}
 
-            if (::GetLastError() == ERROR_INSUFFICIENT_BUFFER)
-            {
-            }
-        }
+			if (::GetLastError() == ERROR_INSUFFICIENT_BUFFER)
+			{
+			}
+		}
+#elif defined(PLATFORM_MAC)
+		static SerialPortMac* serialPortMac;
+		ports = serialPortMac->GetPortNames();
 #else
-        // for linux / MAC, we need to use `ls /dev/tty*` to get all serial ports
-        boost::filesystem::path kdr_path{"/proc/tty/drivers"};
-        if (boost::filesystem::exists(kdr_path))
-        {
-            std::ifstream ifile(kdr_path.generic_string());
-            std::string line;
-            std::vector<std::string> prefixes;
-            while (std::getline(ifile, line))
-            {
-                std::vector<std::string> items;
-                auto it = line.find_first_not_of(' ');
-                while (it != std::string::npos)
-                {
+		// for linux , we need to use `ls /dev/tty*` to get all serial ports
+		boost::filesystem::path kdr_path{ "/proc/tty/drivers" };
+		if (boost::filesystem::exists(kdr_path))
+		{
+			std::ifstream ifile(kdr_path.generic_string());
+			std::string line;
+			std::vector<std::string> prefixes;
+			while (std::getline(ifile, line))
+			{
+				std::vector<std::string> items;
+				auto it = line.find_first_not_of(' ');
+				while (it != std::string::npos)
+				{
 
-                    auto it2 = line.substr(it).find_first_of(' ');
-                    if (it2 == std::string::npos)
-                    {
-                        items.push_back(line.substr(it));
-                        break;
-                    }
-                    it2 += it;
-                    items.push_back(line.substr(it, it2 - it));
-                    it = it2 + line.substr(it2).find_first_not_of(' ');
-                }
-                if (items.size() >= 5)
-                {
-                    if (items[4] == "serial" && items[0].find("serial") != std::string::npos)
-                    {
-                        prefixes.emplace_back(items[1]);
-                    }
-                }
-            }
-            ifile.close();
-            for (auto& p : boost::filesystem::directory_iterator("/dev"))
-            {
-                for (const auto& pf : prefixes)
-                {
-                    auto dev_path = p.path().generic_string();
-                    if (dev_path.size() >= pf.size() && std::equal(dev_path.begin(), dev_path.begin() + pf.size(), pf.begin()))
-                    {
-                        ports.emplace_back(dev_path);
-                    }
-                }
-            }
-        }
+					auto it2 = line.substr(it).find_first_of(' ');
+					if (it2 == std::string::npos)
+					{
+						items.push_back(line.substr(it));
+						break;
+					}
+					it2 += it;
+					items.push_back(line.substr(it, it2 - it));
+					it = it2 + line.substr(it2).find_first_not_of(' ');
+				}
+				if (items.size() >= 5)
+				{
+					if (items[4] == "serial" && items[0].find("serial") != std::string::npos)
+					{
+						prefixes.emplace_back(items[1]);
+					}
+				}
+			}
+			ifile.close();
+			for (auto& p : boost::filesystem::directory_iterator("/dev"))
+			{
+				for (const auto& pf : prefixes)
+				{
+					auto dev_path = p.path().generic_string();
+					if (dev_path.size() >= pf.size() && std::equal(dev_path.begin(), dev_path.begin() + pf.size(), pf.begin()))
+					{
+						ports.emplace_back(dev_path);
+					}
+				}
+			}
+		}
 #endif
-        return ports;
-    }
+		return ports;
+	}
 
-    void Serial::AddSerialPort(const std::string& name, SerialPort* port)
-    {
-        RemoveSerialPort(name);
-        m_allSerialPorts[name] = port;
-    }
+	void Serial::AddSerialPort(const std::string& name, SerialPort* port)
+	{
+		RemoveSerialPort(name);
+		m_allSerialPorts[name] = port;
+	}
 
-    void Serial::RemoveSerialPort(const std::string& name)
-    {
-        if (m_allSerialPorts.find(name) != m_allSerialPorts.end())
-        {
-            delete m_allSerialPorts[name];
-            m_allSerialPorts.erase(name);
-        }
-    }
+	void Serial::RemoveSerialPort(const std::string& name)
+	{
+		if (m_allSerialPorts.find(name) != m_allSerialPorts.end())
+		{
+			delete m_allSerialPorts[name];
+			m_allSerialPorts.erase(name);
+		}
+	}
 
-    SerialPort* Serial::GetSerialPort(const std::string& name)
-    {
-        if (m_allSerialPorts.find(name) != m_allSerialPorts.end())
-        {
-            return m_allSerialPorts[name];
-        }
-        return nullptr;
-    }
+	SerialPort* Serial::GetSerialPort(const std::string& name)
+	{
+		if (m_allSerialPorts.find(name) != m_allSerialPorts.end())
+		{
+			return m_allSerialPorts[name];
+		}
+		return nullptr;
+	}
 
-    Serial* Serial::GetSingleton()
-    {
-        static Serial g_singleton;
-        return &g_singleton;
-    }
+	Serial* Serial::GetSingleton()
+	{
+		static Serial g_singleton;
+		return &g_singleton;
+	}
 }
 
 
 extern "C"
 {
-    /*  NPL.activate("script/serialport.cpp", {cmd="open|close|GetPortNames", filename="COM1", baud_rate=115200})
-    */
-    PE_CORE_DECL NPL::NPLReturnCode NPL_activate_script_serialport_cpp(NPL::INPLRuntimeState* pState)
-    {
-        auto msg = NPL::NPLHelper::MsgStringToNPLTable(pState->GetCurrentMsg(), pState->GetCurrentMsgLength());
+	/*  NPL.activate("script/serialport.cpp", {cmd="open|close|GetPortNames", filename="COM1", baud_rate=115200})
+	*/
+	PE_CORE_DECL NPL::NPLReturnCode NPL_activate_script_serialport_cpp(NPL::INPLRuntimeState* pState)
+	{
+		auto msg = NPL::NPLHelper::MsgStringToNPLTable(pState->GetCurrentMsg(), pState->GetCurrentMsgLength());
 
-        try
-        {
-            std::string cmd = msg["cmd"];
-            if (cmd == "open")
-            {
-                std::string filename = msg["filename"];
-                if (!filename.empty())
-                {
-                    // remove old if any
-                    ParaEngine::Serial::GetSingleton()->RemoveSerialPort(filename);
+		try
+		{
+			std::string cmd = msg["cmd"];
+			if (cmd == "open")
+			{
+#ifdef ANDROID
+				std::string filename = msg["filename"];
+				if (!filename.empty()) {
+					std::string sCallback = msg["callback"];
+					if (!sCallback.empty())
+					{
+						ParaEngine::SerialPortAndroid::GetInstance().open(filename, sCallback);
+					}
+				}
+#else
+				std::string filename = msg["filename"];
+				if (!filename.empty())
+				{
+					// remove old if any
+					ParaEngine::Serial::GetSingleton()->RemoveSerialPort(filename);
 
-                    // start a new one instead. 
-                    auto pSerialPort = new ParaEngine::SerialPort();
-                    ParaEngine::Serial::GetSingleton()->AddSerialPort(filename, pSerialPort);
-                    int baud_rate = (int)(double)msg["baud_rate"];
-                    if (baud_rate == 0) {
-                        baud_rate = 115200;
-                    }
-                    std::string sCallback = msg["callback"];
-                    if (!sCallback.empty())
-                    {
-                        pSerialPort->setCallback(sCallback);
-                    }
-                    pSerialPort->open(filename, baud_rate);
-                }
-            }
-            else if (cmd == "send")
-            {
-                std::string filename = msg["filename"];
-                if (!filename.empty())
-                {
-                    std::string data = msg["data"];
-                    if (!data.empty())
-                    {
-                        auto* pPort = ParaEngine::Serial::GetSingleton()->GetSerialPort(filename);
-                        if (pPort && pPort->isOpen())
-                        {
-                            pPort->writeString(data);
-                        }
-                    }
-                }
-            }
-            else if (cmd == "close")
-            {
-                std::string filename = msg["filename"];
-                if (!filename.empty())
-                {
-                    ParaEngine::Serial::GetSingleton()->RemoveSerialPort(filename);
-                }
-            }
-            else if (cmd == "GetPortNames")
-            {
-                std::string sCallback = msg["callback"];
-                if (!sCallback.empty())
-                {
-                    auto names = ParaEngine::Serial::GetSingleton()->GetPortNames();
-                    std::string sNames = "msg={";
-                    for (auto name : names)
-                    {
-                        std::string sOutput;
-                        NPL::NPLHelper::EncodeStringInQuotation(sOutput, 0, name);
-                        sNames += sOutput + ",";
-                    }
-                    sNames += "}";
-                    ParaEngine::CGlobals::GetNPLRuntime()->GetMainRuntimeState()->ActivateFile(sCallback, sNames.c_str(), (int)sNames.size());
-                }
-            }
-        }
-        catch (...)
-        {
-            std::string sCallback = msg["callback"];
-            if (!sCallback.empty())
-            {
-                msg["error"] = true;
-                std::string callbackMsg;
-                NPL::NPLHelper::NPLTableToString("msg", msg, callbackMsg);
-                ParaEngine::CGlobals::GetNPLRuntime()->GetMainRuntimeState()->ActivateFile(sCallback, callbackMsg.c_str(), (int)callbackMsg.size());
-            }
-        }
-        return NPL::NPL_OK;
-    };
+					// start a new one instead. 
+					auto pSerialPort = new ParaEngine::SerialPort();
+					ParaEngine::Serial::GetSingleton()->AddSerialPort(filename, pSerialPort);
+					int baud_rate = (int)(double)msg["baud_rate"];
+					if (baud_rate == 0) {
+						baud_rate = 115200;
+					}
+					std::string sCallback = msg["callback"];
+					if (!sCallback.empty())
+					{
+						pSerialPort->setCallback(sCallback);
+					}
+					pSerialPort->open(filename, baud_rate);
+				}
+#endif
+			}
+			else if (cmd == "send")
+			{
+#ifdef ANDROID
+				std::string filename = msg["filename"];
+
+				if (!filename.empty())
+				{
+					std::string data = msg["data"];
+					if (!data.empty())
+					{
+						ParaEngine::SerialPortAndroid::GetInstance().send(data);
+					}
+				}
+#else
+				std::string filename = msg["filename"];
+				if (!filename.empty())
+				{
+					std::string data = msg["data"];
+					if (!data.empty())
+					{
+						auto* pPort = ParaEngine::Serial::GetSingleton()->GetSerialPort(filename);
+						if (pPort && pPort->isOpen())
+						{
+							pPort->writeString(data);
+						}
+					}
+				}
+#endif
+			}
+			else if (cmd == "close")
+			{
+#ifdef ANDROID
+				ParaEngine::SerialPortAndroid::GetInstance().close();
+#else
+				std::string filename = msg["filename"];
+				if (!filename.empty())
+				{
+					ParaEngine::Serial::GetSingleton()->RemoveSerialPort(filename);
+				}
+#endif
+			}
+			else if (cmd == "GetPortNames")
+			{
+#ifdef ANDROID
+				std::string portName = ParaEngine::SerialPortAndroid::GetInstance().GetPortNames();
+				std::string sCallback = msg["callback"];
+
+				if (!portName.empty() && !sCallback.empty()) {
+					std::string sNames = "msg={\"" + portName + "\",}";
+					ParaEngine::CGlobals::GetNPLRuntime()->GetMainRuntimeState()->ActivateFile(sCallback, sNames.c_str(), (int)sNames.size());
+				}
+#else
+				std::string sCallback = msg["callback"];
+				if (!sCallback.empty())
+				{
+					auto names = ParaEngine::Serial::GetSingleton()->GetPortNames();
+					std::string sNames = "msg={";
+					for (auto name : names)
+					{
+						std::string sOutput;
+						NPL::NPLHelper::EncodeStringInQuotation(sOutput, 0, name);
+						sNames += sOutput + ",";
+					}
+					sNames += "}";
+					ParaEngine::CGlobals::GetNPLRuntime()->GetMainRuntimeState()->ActivateFile(sCallback, sNames.c_str(), (int)sNames.size());
+				}
+#endif
+			}
+		}
+		catch (...)
+		{
+			std::string sCallback = msg["callback"];
+			if (!sCallback.empty())
+			{
+				msg["error"] = true;
+				std::string callbackMsg;
+				NPL::NPLHelper::NPLTableToString("msg", msg, callbackMsg);
+				ParaEngine::CGlobals::GetNPLRuntime()->GetMainRuntimeState()->ActivateFile(sCallback, callbackMsg.c_str(), (int)callbackMsg.size());
+			}
+		}
+		return NPL::NPL_OK;
+	};
 }
+
+#else
+#include "ParaEngine.h"
+#include "NPLRuntime.h"
+#include "NPLTable.h"
+#include "NPLHelper.h"
+#include "INPLRuntimeState.h"
+
+#include "emscripten.h"
+
+ // 定义函数导出宏
+ // __EMSCRIPTEN__宏用于探测是否是Emscripten环境
+ // __cplusplus用于探测是否C++环境
+ // EMSCRIPTEN_KEEPALIVE是Emscripten特有的宏，用于告知编译器后续函数在优化时必须保留，并且该函数将被导出至JavaScript
+#ifndef EM_PORT_API
+#	if defined(__EMSCRIPTEN__)
+#		include <emscripten.h>
+#		if defined(__cplusplus)
+#			define EM_PORT_API(rettype) extern "C" rettype EMSCRIPTEN_KEEPALIVE
+#		else
+#			define EM_PORT_API(rettype) rettype EMSCRIPTEN_KEEPALIVE
+#		endif
+#	else
+#		if defined(__cplusplus)
+#			define EM_PORT_API(rettype) extern "C" rettype
+#		else
+#			define EM_PORT_API(rettype) rettype
+#		endif
+#	endif
+#endif
+
+static std::string s_callback_script;
+
+EM_PORT_API(void) RecvSerialPortData(const char* js_str)
+{
+	const std::string c_str = js_str;
+	free((void*)js_str);
+
+	if (!s_callback_script.empty())
+	{
+		NPL::NPLObjectProxy msg;
+		msg["data"] = c_str;
+		std::string sMsg;
+		NPL::NPLHelper::NPLTableToString("msg", msg, sMsg);
+		// std::cout << "RecvSerialPortData:" << sMsg << std::endl;
+		ParaEngine::CGlobals::GetNPLRuntime()->GetMainRuntimeState()->Activate_async(s_callback_script, sMsg.c_str(), (int)sMsg.size());
+	}
+}
+
+EM_ASYNC_JS(void, SerialPortOpen_JS, (const char* filename, int baud_rate), {
+	try
+	{
+		filename = UTF8ToString(filename);
+		await SerialPortInstance.Open(filename, baud_rate);
+	}
+	catch (e)
+	{
+		console.log(e);
+	}
+	})
+
+	EM_ASYNC_JS(void, SerialPortSend_JS, (const char* filename, const char* data), {
+		try
+		{
+			filename = UTF8ToString(filename);
+			data = UTF8ToString(data);
+			await SerialPortInstance.Send(filename, data);
+		}
+		catch (e)
+		{
+			console.log(e);
+		}
+		})
+
+	EM_ASYNC_JS(void, SerialPortClose_JS, (const char* filename), {
+		try
+		{
+			filename = UTF8ToString(filename);
+			await SerialPortInstance.Close(filename);
+		}
+		catch (e)
+		{
+			console.log(e);
+				}
+		})
+
+	EM_ASYNC_JS(const char*, SerialPortGetNames_JS, (), {
+		try
+		{
+			const names = await SerialPortInstance.GetGetSerialPortNames();
+			return window.JsStringToCString(names);
+			}
+		catch (e)
+		{
+			console.log(e);
+			return "";
+		}
+		});
+
+extern "C"
+{
+	/*  NPL.activate("script/serialport.cpp", {cmd="open|close|GetPortNames", filename="COM1", baud_rate=115200})
+	*/
+	PE_CORE_DECL NPL::NPLReturnCode NPL_activate_script_serialport_cpp(NPL::INPLRuntimeState* pState)
+	{
+		auto msg = NPL::NPLHelper::MsgStringToNPLTable(pState->GetCurrentMsg(), pState->GetCurrentMsgLength());
+
+		try
+		{
+			std::string cmd = msg["cmd"];
+			if (cmd == "open")
+			{
+				std::string filename = msg["filename"];
+				if (!filename.empty())
+				{
+					int baud_rate = (int)(double)msg["baud_rate"];
+					if (baud_rate == 0) {
+						baud_rate = 115200;
+					}
+					std::string sCallback = msg["callback"];
+					s_callback_script = sCallback;
+					SerialPortOpen_JS(filename.c_str(), baud_rate);
+				}
+			}
+			else if (cmd == "send")
+			{
+				std::string filename = msg["filename"];
+				if (!filename.empty())
+				{
+					std::string data = msg["data"];
+					if (!data.empty())
+					{
+						SerialPortSend_JS(filename.c_str(), data.c_str());
+					}
+				}
+			}
+			else if (cmd == "close")
+			{
+				std::string filename = msg["filename"];
+				if (!filename.empty())
+				{
+					SerialPortClose_JS(filename.c_str());
+				}
+			}
+			else if (cmd == "GetPortNames")
+			{
+				const char* js_str = SerialPortGetNames_JS();
+				const std::string c_str = js_str;
+				free((void*)js_str);
+
+				std::string sCallback = msg["callback"];
+				if (!sCallback.empty())
+				{
+					std::string sNames = "msg={" + c_str + "}";
+					std::cout << "=========GetPortNames==========" << sNames << std::endl;
+					ParaEngine::CGlobals::GetNPLRuntime()->GetMainRuntimeState()->ActivateFile(sCallback, sNames.c_str(), (int)sNames.size());
+				}
+			}
+		}
+		catch (...)
+		{
+			std::string sCallback = msg["callback"];
+			if (!sCallback.empty())
+			{
+				msg["error"] = true;
+				std::string callbackMsg;
+				NPL::NPLHelper::NPLTableToString("msg", msg, callbackMsg);
+				ParaEngine::CGlobals::GetNPLRuntime()->GetMainRuntimeState()->ActivateFile(sCallback, callbackMsg.c_str(), (int)callbackMsg.size());
+			}
+		}
+		return NPL::NPL_OK;
+	};
+}
+#endif
