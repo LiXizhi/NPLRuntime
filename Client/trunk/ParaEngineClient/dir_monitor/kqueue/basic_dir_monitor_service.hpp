@@ -33,15 +33,15 @@ namespace asio {
 
 template <typename DirMonitorImplementation = dir_monitor_impl>
 class basic_dir_monitor_service
-    : public boost::asio::io_service::service
+    : public boost::asio::io_context::service
 {
 public:
-    static boost::asio::io_service::id id;
+    static boost::asio::io_context::id id;
 
-    explicit basic_dir_monitor_service(boost::asio::io_service &io_service)
-        : boost::asio::io_service::service(io_service),
-        async_monitor_work_(new boost::asio::io_service::work(async_monitor_io_service_)),
-        async_monitor_thread_(boost::bind(&boost::asio::io_service::run, &async_monitor_io_service_))
+    explicit basic_dir_monitor_service(boost::asio::io_context &io_service)
+        : boost::asio::io_context::service(io_service),
+        async_monitor_work_(new boost::asio::executor_work_guard<boost::asio::io_context::executor_type>(async_monitor_io_service_)),
+        async_monitor_thread_(boost::bind(&boost::asio::io_context::run, &async_monitor_io_service_))
     {
     }
 
@@ -110,7 +110,7 @@ public:
     class monitor_operation
     {
     public:
-        monitor_operation(implementation_type &impl, boost::asio::io_service &io_service, Handler handler)
+        monitor_operation(implementation_type &impl, boost::asio::io_context &io_service, Handler handler)
             : impl_(impl),
             io_service_(io_service),
             work_(io_service),
@@ -125,18 +125,18 @@ public:
             {
                 boost::system::error_code ec;
                 dir_monitor_event ev = impl->popfront_event(ec);
-                this->io_service_.post(boost::asio::detail::bind_handler(handler_, ec, ev));
+				boost::asio::post(this->io_service_, boost::asio::detail::bind_handler(handler_, ec, ev));
             }
             else
             {
-                this->io_service_.post(boost::asio::detail::bind_handler(handler_, boost::asio::error::operation_aborted, dir_monitor_event()));
+                boost::asio::post(this->io_service_, boost::asio::detail::bind_handler(handler_, boost::asio::error::operation_aborted, dir_monitor_event()));
             }
         }
 
     private:
         boost::weak_ptr<DirMonitorImplementation> impl_;
-        boost::asio::io_service &io_service_;
-        boost::asio::io_service::work work_;
+        boost::asio::io_context &io_service_;
+        boost::asio::executor_work_guard<boost::asio::io_context::executor_type> work_;
         Handler handler_;
     };
 
@@ -146,7 +146,7 @@ public:
     template <typename Handler>
     void async_monitor(implementation_type &impl, Handler handler)
     {
-        this->async_monitor_io_service_.post(monitor_operation<Handler>(impl, this->get_io_context(), handler));
+        boost::asio::post(this->async_monitor_io_service_, monitor_operation<Handler>(impl, this->get_io_context(), handler));
     }
 
 private:
@@ -154,13 +154,13 @@ private:
     {
     }
 
-    boost::asio::io_service async_monitor_io_service_;
-    boost::scoped_ptr<boost::asio::io_service::work> async_monitor_work_;
+    boost::asio::io_context async_monitor_io_service_;
+    boost::scoped_ptr<boost::asio::executor_work_guard<boost::asio::io_context::executor_type>> async_monitor_work_;
     boost::thread async_monitor_thread_;
 };
 
 template <typename DirMonitorImplementation>
-boost::asio::io_service::id basic_dir_monitor_service<DirMonitorImplementation>::id;
+boost::asio::io_context::id basic_dir_monitor_service<DirMonitorImplementation>::id;
 
 } // asio namespace
 } // boost namespace

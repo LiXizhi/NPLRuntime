@@ -9,7 +9,7 @@ namespace NPL {
 	const std::string NPL_DEFAULT_UDP_SERVER = "0.0.0.0";
 	/// @def default NPL server version
 	const std::string NPL_UDP_SERVER_VERSION = "0.1";
-	
+
 
 
 	CNPLNetUDPServer::CNPLNetUDPServer()
@@ -85,11 +85,11 @@ namespace NPL {
 			m_udp.set_option(boost::asio::socket_base::reuse_address(true));
 			m_udp.set_option(boost::asio::socket_base::broadcast(true));
 
-			m_idle_timer.expires_from_now(boost::chrono::milliseconds(GetIdleTimeoutPeriod()));
+			m_idle_timer.expires_after(boost::chrono::milliseconds(GetIdleTimeoutPeriod()));
 			m_idle_timer.async_wait(boost::bind(&CNPLNetUDPServer::handle_idle_timeout, this, boost::asio::placeholders::error));
 
-			m_work_lifetime.reset(new boost::asio::io_service::work(m_io_service_dispatcher));
-			m_dispatcherThread.reset(new boost::thread(boost::bind(&boost::asio::io_service::run, &m_io_service_dispatcher)));
+			m_work_lifetime.reset(new boost::asio::executor_work_guard<boost::asio::io_context::executor_type>(m_io_service_dispatcher.get_executor()));
+			m_dispatcherThread.reset(new boost::thread(boost::bind(&boost::asio::io_context::run, &m_io_service_dispatcher)));
 
 			m_bIsServerStarted = true;
 
@@ -97,13 +97,13 @@ namespace NPL {
 				boost::asio::placeholders::error,
 				boost::asio::placeholders::bytes_transferred));
 		}
-		catch (std::exception & e)
+		catch (std::exception& e)
 		{
 			m_udp.close();
 			stop();
 			OUTPUT_LOG("NPL UDP server error : %s\n", e.what());
 		}
-	
+
 
 	}
 
@@ -150,7 +150,7 @@ namespace NPL {
 
 			// Post a call to the stop function so that server::stop() is safe to call
 			// from any thread.
-			m_io_service_dispatcher.post(boost::bind(&CNPLNetUDPServer::handle_stop, this));
+			boost::asio::post(m_io_service_dispatcher, boost::bind(&CNPLNetUDPServer::handle_stop, this));
 
 			// stop the work on dispatcher. 
 			m_work_lifetime.reset();
@@ -161,7 +161,7 @@ namespace NPL {
 			m_dispatcherThread.reset();
 
 			Cleanup();
-			m_io_service_dispatcher.reset();
+			m_io_service_dispatcher.restart();
 		}
 	}
 
@@ -193,7 +193,7 @@ namespace NPL {
 
 	void CNPLNetUDPServer::handle_receive(const boost::system::error_code& error, std::size_t bytes_transferred)
 	{
-		
+
 		auto route = m_route_manager.GetRoute(m_remote_endpoint);
 
 		if (!route.get())
@@ -212,7 +212,7 @@ namespace NPL {
 			m_msg_dispatcher.AddNPLUDPAddress(pAddress);
 			m_route_manager.start(route);
 		}
-	
+
 		auto bRes = route->handleReceivedData(m_receive_buffer.data(), bytes_transferred);
 
 		if (!bRes)
@@ -287,7 +287,7 @@ namespace NPL {
 			}
 
 			// continue with next activation. 
-			m_idle_timer.expires_from_now(boost::chrono::milliseconds(IDLE_TIMEOUT_TIMER_INTERVAL)); // GetIdleTimeoutPeriod()
+			m_idle_timer.expires_after(boost::chrono::milliseconds(IDLE_TIMEOUT_TIMER_INTERVAL)); // GetIdleTimeoutPeriod()
 			m_idle_timer.async_wait(boost::bind(&CNPLNetUDPServer::handle_idle_timeout, this, boost::asio::placeholders::error));
 		}
 	}

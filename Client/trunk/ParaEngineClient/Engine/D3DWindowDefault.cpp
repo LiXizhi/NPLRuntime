@@ -316,7 +316,7 @@ void CD3DWindowDefault::handle_mainloop_timer(const boost::system::error_code& e
 			}
 		}
 			
-		m_main_timer.expires_from_now(std::chrono::milliseconds((int)(fNextInterval*1000)));
+		m_main_timer.expires_after(std::chrono::milliseconds((int)(fNextInterval*1000)));
 		m_main_timer.async_wait(boost::bind(&CD3DWindowDefault::handle_mainloop_timer, this, boost::asio::placeholders::error));
 	}
 }
@@ -340,7 +340,7 @@ int CD3DWindowDefault::Run(HINSTANCE hInstance)
 	StartWindowThread(hInstance);
 	
 	// start the main loop timer. 
-	m_main_timer.expires_from_now(std::chrono::milliseconds(50));
+	m_main_timer.expires_after(std::chrono::milliseconds(50));
 	m_main_timer.async_wait(boost::bind(&CD3DWindowDefault::handle_mainloop_timer, this, boost::asio::placeholders::error));
 	
 	// start the main loop now

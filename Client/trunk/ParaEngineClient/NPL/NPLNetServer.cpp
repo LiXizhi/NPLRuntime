@@ -128,7 +128,7 @@ void NPL::CNPLNetServer::handle_idle_timeout(const boost::system::error_code& er
 		}
 
 		// continue with next activation. 
-		m_idle_timer.expires_from_now(boost::chrono::milliseconds(IDLE_TIMEOUT_TIMER_INTERVAL)); // GetIdleTimeoutPeriod()
+		m_idle_timer.expires_after(boost::chrono::milliseconds(IDLE_TIMEOUT_TIMER_INTERVAL)); // GetIdleTimeoutPeriod()
 		m_idle_timer.async_wait(boost::bind(&NPL::CNPLNetServer::handle_idle_timeout, this, boost::asio::placeholders::error));
 	}
 }
@@ -174,11 +174,10 @@ void NPL::CNPLNetServer::start(const char* server/*=NULL*/, const char* port/*=N
 			{
 				m_strPort = port;
 				OUTPUT_LOG("NPL server %s is listening on %s:%s\n", NPL_SERVER_VERSION, m_strServer.c_str(), m_strPort.c_str());
-				boost::asio::ip::tcp::resolver::query query(m_strServer, m_strPort);
-				m_resolver.async_resolve(query,
+				m_resolver.async_resolve(m_strServer, m_strPort,
 					boost::bind(&CNPLNetServer::handle_resolve_local, this,
 						boost::asio::placeholders::error,
-						boost::asio::placeholders::iterator));
+						boost::asio::placeholders::results));
 			}
 		}
 		return;
@@ -204,11 +203,10 @@ void NPL::CNPLNetServer::start(const char* server/*=NULL*/, const char* port/*=N
 	{
 		OUTPUT_LOG("NPL server %s is listening on %s:%s\n", NPL_SERVER_VERSION, m_strServer.c_str(), m_strPort.c_str());
 
-		boost::asio::ip::tcp::resolver::query query(m_strServer, m_strPort);
-		m_resolver.async_resolve(query,
+		m_resolver.async_resolve(m_strServer, m_strPort,
 			boost::bind(&CNPLNetServer::handle_resolve_local, this,
 				boost::asio::placeholders::error,
-				boost::asio::placeholders::iterator));
+				boost::asio::placeholders::results));
 	}
 
 	OUTPUT_LOG("TCPKeepAlive: %s\n", IsTCPKeepAliveEnabled() ? "true" : "false");
@@ -221,12 +219,12 @@ void NPL::CNPLNetServer::start(const char* server/*=NULL*/, const char* port/*=N
 	OUTPUT_LOG("CompressionLevel: %d\n", GetDispatcher().GetCompressionLevel());
 	OUTPUT_LOG("CompressionThreshold: %d\n", GetDispatcher().GetCompressionThreshold());
 
-	m_idle_timer.expires_from_now(boost::chrono::milliseconds(GetIdleTimeoutPeriod()));
+	m_idle_timer.expires_after(boost::chrono::milliseconds(GetIdleTimeoutPeriod()));
 	m_idle_timer.async_wait(boost::bind(&NPL::CNPLNetServer::handle_idle_timeout, this, boost::asio::placeholders::error));
 
-	m_work_lifetime.reset(new boost::asio::io_service::work(m_io_service_dispatcher));
+	m_work_lifetime.reset(new boost::asio::executor_work_guard<boost::asio::io_context::executor_type>(m_io_service_dispatcher.get_executor()));
 
-	m_dispatcherThread.reset(new boost::thread(boost::bind(&boost::asio::io_service::run, &m_io_service_dispatcher)));
+	m_dispatcherThread.reset(new boost::thread(boost::bind(&boost::asio::io_context::run, &m_io_service_dispatcher)));
 }
 
 void NPL::CNPLNetServer::stop()
@@ -242,7 +240,7 @@ void NPL::CNPLNetServer::stop()
 			m_resolver.cancel();
 
 			// stop incomming connections
-			if(m_acceptor.is_open())
+			if (m_acceptor.is_open())
 				m_acceptor.cancel();
 		}
 		catch (const std::exception& e)
@@ -251,7 +249,7 @@ void NPL::CNPLNetServer::stop()
 		}
 
 		// Post a call to the stop function so that server::stop() is safe to call from any thread.
-		m_io_service_dispatcher.post(boost::bind(&CNPLNetServer::handle_stop, this));
+		boost::asio::post(m_io_service_dispatcher, boost::bind(&CNPLNetServer::handle_stop, this));
 
 		// stop the work on dispatcher. 
 		m_work_lifetime.reset();
@@ -263,16 +261,16 @@ void NPL::CNPLNetServer::stop()
 		m_io_service_dispatcher.stop();
 		m_dispatcherThread->join();
 		m_dispatcherThread.reset();
-		
+
 		Cleanup();
-		m_io_service_dispatcher.reset();
+		m_io_service_dispatcher.restart();
 		m_new_connection.reset();
 		m_bIsServerStarted = false;
 	}
 }
 
 
-void NPL::CNPLNetServer::handle_resolve_local(const boost::system::error_code& err, boost::asio::ip::tcp::resolver::iterator endpoint_iterator)
+void NPL::CNPLNetServer::handle_resolve_local(const boost::system::error_code& err, boost::asio::ip::tcp::resolver::results_type results)
 {
 	if (!err)
 	{
@@ -280,7 +278,7 @@ void NPL::CNPLNetServer::handle_resolve_local(const boost::system::error_code& e
 		{
 			// Attempt a connection to the first endpoint in the list. Each endpoint
 			// will be tried until we successfully establish a connection.
-			boost::asio::ip::tcp::endpoint endpoint = *endpoint_iterator;
+			boost::asio::ip::tcp::endpoint endpoint = *results.begin();
 			m_acceptor.open(endpoint.protocol());
 			m_acceptor.set_option(boost::asio::ip::tcp::acceptor::reuse_address(true));
 
@@ -406,15 +404,14 @@ std::string NPL::CNPLNetServer::GetBroadcastAddressList()
 	std::string firstIP;
 	try
 	{
-		boost::asio::io_service io_service;
+		boost::asio::io_context io_service;
 
 		tcp::resolver resolver(io_service);
-		tcp::resolver::query query(boost::asio::ip::host_name(), "");
-		tcp::resolver::iterator it = resolver.resolve(query);
+		auto results = resolver.resolve(boost::asio::ip::host_name(), "");
 
-		while (it != tcp::resolver::iterator())
+		for (auto it = results.begin(); it != results.end(); it++)
 		{
-			boost::asio::ip::address addr = (it++)->endpoint().address();
+			boost::asio::ip::address addr = it->endpoint().address();
 			if (addr.is_v4())
 			{
 				auto bytes = addr.to_v4().to_bytes();
@@ -451,15 +448,14 @@ std::string NPL::CNPLNetServer::GetExternalIPList()
 	std::string firstIP;
 	try
 	{
-		boost::asio::io_service io_service;
+		boost::asio::io_context io_service;
 
 		tcp::resolver resolver(io_service);
-		tcp::resolver::query query(boost::asio::ip::host_name(), "");
-		tcp::resolver::iterator it = resolver.resolve(query);
+		auto results = resolver.resolve(boost::asio::ip::host_name(), "");
 
-		while (it != tcp::resolver::iterator())
+		for (auto it = results.begin(); it != results.end(); it++)
 		{
-			boost::asio::ip::address addr = (it++)->endpoint().address();
+			boost::asio::ip::address addr = it->endpoint().address();
 			if (addr.is_v4())
 			{
 				if (firstIP.empty())
@@ -483,15 +479,14 @@ std::string NPL::CNPLNetServer::GetExternalIP()
 	std::string firstIP;
 	try
 	{
-		boost::asio::io_service io_service;
+		boost::asio::io_context io_service;
 
 		tcp::resolver resolver(io_service);
-		tcp::resolver::query query(boost::asio::ip::host_name(), "");
-		tcp::resolver::iterator it = resolver.resolve(query);
+		auto results = resolver.resolve(boost::asio::ip::host_name(), "");
 
-		while (it != tcp::resolver::iterator())
+		for (auto it = results.begin(); it != results.end(); it++)
 		{
-			boost::asio::ip::address addr = (it++)->endpoint().address();
+			boost::asio::ip::address addr = it->endpoint().address();
 			if (firstIP.empty() && addr.is_v4())
 			{
 				firstIP = addr.to_string().c_str();

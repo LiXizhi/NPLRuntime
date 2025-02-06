@@ -45,7 +45,7 @@ namespace ParaEngine
         SerialPortImpl() : io(), port(io), backgroundThread(), open(false),
             error(false) {}
 
-        boost::asio::io_service io; ///< Io service object
+        boost::asio::io_context io; ///< Io service object
         boost::asio::serial_port port; ///< Serial port object
         std::thread backgroundThread; ///< Thread that runs read/write operations
         bool open; ///< True if port open
@@ -97,9 +97,9 @@ namespace ParaEngine
         pimpl->port.set_option(opt_stop);
 
         //This gives some work to the io_service before it is started
-        pimpl->io.post(boost::bind(&SerialPort::doRead, this));
+        boost::asio::post(pimpl->io, boost::bind(&SerialPort::doRead, this));
 
-        std::thread t(boost::bind(&asio::io_service::run, &pimpl->io));
+        std::thread t(boost::bind(&asio::io_context::run, &pimpl->io));
         pimpl->backgroundThread.swap(t);
         setErrorStatus(false);//If we get here, no error
         pimpl->open = true; //Port is now open
@@ -121,9 +121,9 @@ namespace ParaEngine
         if (!isOpen()) return;
 
         pimpl->open = false;
-        pimpl->io.post(boost::bind(&SerialPort::doClose, this));
+        boost::asio::post(pimpl->io, boost::bind(&SerialPort::doClose, this));
         pimpl->backgroundThread.join();
-        pimpl->io.reset();
+        pimpl->io.restart();
         if (errorStatus())
         {
             throw(boost::system::system_error(boost::system::error_code(),
@@ -137,7 +137,7 @@ namespace ParaEngine
             std::lock_guard<std::mutex> l(pimpl->writeQueueMutex);
             pimpl->writeQueue.insert(pimpl->writeQueue.end(), data, data + size);
         }
-        pimpl->io.post(boost::bind(&SerialPort::doWrite, this));
+        boost::asio::post(pimpl->io, boost::bind(&SerialPort::doWrite, this));
     }
 
     void SerialPort::write(const std::vector<char>& data)
@@ -146,7 +146,7 @@ namespace ParaEngine
             std::lock_guard<std::mutex> l(pimpl->writeQueueMutex);
             pimpl->writeQueue.insert(pimpl->writeQueue.end(), data.begin(), data.end());
         }
-        pimpl->io.post(boost::bind(&SerialPort::doWrite, this));
+        boost::asio::post(pimpl->io, boost::bind(&SerialPort::doWrite, this));
     }
 
     void SerialPort::writeString(const std::string& s)
@@ -155,7 +155,7 @@ namespace ParaEngine
             std::lock_guard<std::mutex> l(pimpl->writeQueueMutex);
             pimpl->writeQueue.insert(pimpl->writeQueue.end(), s.begin(), s.end());
         }
-        pimpl->io.post(boost::bind(&SerialPort::doWrite, this));
+        boost::asio::post(pimpl->io, boost::bind(&SerialPort::doWrite, this));
     }
 
     SerialPort::~SerialPort()

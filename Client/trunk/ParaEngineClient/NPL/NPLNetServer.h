@@ -125,7 +125,7 @@ namespace NPL
 		virtual bool IsServerStarted();
 	private:
 		/// handle resolve the current server address. 
-		void handle_resolve_local(const boost::system::error_code& err, boost::asio::ip::tcp::resolver::iterator endpoint_iterator);
+		void handle_resolve_local(const boost::system::error_code& err, boost::asio::ip::tcp::resolver::results_type results);
 
 		/// Handle completion of an asynchronous accept operation.
 		void handle_accept(const boost::system::error_code& e);
@@ -137,7 +137,7 @@ namespace NPL
 		void handle_idle_timeout(const boost::system::error_code& err);
 
 		/// The io_service for dispatching (send/receive) messages from TCP stack to NPL runtime states' message queues.
-		boost::asio::io_service m_io_service_dispatcher;
+		boost::asio::io_context m_io_service_dispatcher;
 
 		/** Thread used for running the m_io_service_dispatcher 's run loop for dispatching messages for all NPL Jabber Clients */
 		boost::scoped_ptr<boost::thread> m_dispatcherThread;
@@ -187,7 +187,7 @@ namespace NPL
 
 		/** Work for the private m_io_service_dispatcher to perform. If we do not give the
 		io_service some work to do then the io_service::run() function will exit immediately.*/
-		boost::scoped_ptr<boost::asio::io_service::work> m_work_lifetime;
+		boost::scoped_ptr<boost::asio::executor_work_guard<boost::asio::io_context::executor_type>> m_work_lifetime;
 
 		/**
 		* this class serves as an interface between the low level socket interface and NPL message queues.  

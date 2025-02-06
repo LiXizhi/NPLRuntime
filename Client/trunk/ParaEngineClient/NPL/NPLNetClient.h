@@ -401,13 +401,13 @@ namespace ParaEngine
 		std::set <std::string> m_pending_requests;
 
 		/** for accepting and dispatching messages for all NPL Jabber Clients. Only one m_DispatcherThread is used to run it. */
-		boost::asio::io_service m_dispatcher_io_service;
+		boost::asio::io_context m_dispatcher_io_service;
 
 		/** Thread used for running the m_dispatcher_io_service 's run loop for accepting and dispatching messages for all NPL Jabber Clients */
 		boost::scoped_ptr<boost::thread> m_dispatcherThread;
 
 		/** Work for the private m_dispatcher_io_service to perform. If we do not give the
 		io_service some work to do then the io_service::run() function will exit immediately.*/
-		boost::scoped_ptr<boost::asio::io_service::work> m_work_lifetime;
+		boost::scoped_ptr<boost::asio::executor_work_guard<boost::asio::io_context::executor_type>> m_work_lifetime;
 	};
 }

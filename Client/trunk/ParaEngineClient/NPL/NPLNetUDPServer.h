@@ -124,7 +124,7 @@ namespace NPL
 
 		/** Work for the private m_io_service_dispatcher to perform. If we do not give the
 		io_service some work to do then the io_service::run() function will exit immediately.*/
-		boost::scoped_ptr<boost::asio::io_service::work> m_work_lifetime;
+		boost::scoped_ptr<boost::asio::executor_work_guard<boost::asio::io_context::executor_type>> m_work_lifetime;
 
 		/** how many milliseconds to assume time out, default to 2 mins. */
 		int m_nIdleTimeoutMS;

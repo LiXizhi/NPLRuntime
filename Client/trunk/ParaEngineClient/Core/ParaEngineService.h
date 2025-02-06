@@ -50,11 +50,11 @@ namespace ParaEngine
 
 	protected:
 		/** the main loop */
-		boost::asio::io_service m_main_io_service;
+		boost::asio::io_context m_main_io_service;
 
 		/** Work for the private m_io_service_dispatcher to perform. If we do not give the
 		io_service some work to do then the io_service::run() function will exit immediately.*/
-		boost::scoped_ptr<boost::asio::io_service::work> m_work_lifetime;
+		boost::scoped_ptr<boost::asio::executor_work_guard<boost::asio::io_context::executor_type>> m_work_lifetime;
 
 		/** the main timer that ticks 30 times a second*/
 		typedef basic_waitable_timer<boost::chrono::steady_clock> timer_type;

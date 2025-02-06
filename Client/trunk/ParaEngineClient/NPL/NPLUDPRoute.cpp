@@ -382,7 +382,7 @@ namespace NPL {
 		else
 		{
 			// Post a call to the stop function so that stop() is safe to call from any thread.
-			m_udp_server.GetIoService().post(boost::bind(&CNPLUDPRoute::handle_stop, shared_from_this()));
+			boost::asio::post(m_udp_server.GetIoService(), boost::bind(&CNPLUDPRoute::handle_stop, shared_from_this()));
 		}
 	}
 

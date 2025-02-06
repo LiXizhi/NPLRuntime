@@ -27,7 +27,9 @@ using namespace ParaEngine;
 //////////////////////////////////////////////////////////////////////////
 
 ParaEngine::CFileSystemWatcherService::CFileSystemWatcherService()
- : m_io_service(new boost::asio::io_service()), m_io_service_work(new boost::asio::io_service::work(*m_io_service)), m_bIsStarted(false)
+ : m_io_service(new boost::asio::io_context()), 
+   m_io_service_work(new boost::asio::executor_work_guard<boost::asio::io_context::executor_type>(m_io_service->get_executor())), 
+   m_bIsStarted(false)
 {
 
 }
@@ -144,7 +146,7 @@ bool ParaEngine::CFileSystemWatcherService::Start()
 		m_bIsStarted = true;
 		if(!m_work_thread)
 		{
-			// m_work_thread.reset(new boost::thread(boost::bind(&boost::asio::io_service::run, m_io_service.get())));
+			// m_work_thread.reset(new boost::thread(boost::bind(&boost::asio::io_context::run, m_io_service.get())));
 			m_work_thread.reset(new boost::thread(boost::bind(&CFileSystemWatcherService::fileWatcherThreadMain, this)));
 		}
 	}

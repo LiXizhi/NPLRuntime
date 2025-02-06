@@ -1,13 +1,15 @@
 # -*- cmake -*-
 
 if (WIN32)
+  get_filename_component(PROGRAMFILES_X86 "[HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion;ProgramFilesDir (x86)]" ABSOLUTE)
+  
   find_path(DIRECTX_INCLUDE_DIR dxdiag.h
             "$ENV{DXSDK_DIR}/Include"
-            "$ENV{PROGRAMFILES}/Microsoft DirectX SDK (June 2010)/Include"
-            "$ENV{PROGRAMFILES}/Microsoft DirectX SDK (April 2007)/Include"
+            "${PROGRAMFILES_X86}/Microsoft DirectX SDK (June 2010)/Include"
+            "${PROGRAMFILES_X86}/Microsoft DirectX SDK (April 2007)/Include"
             "C:/DX90SDK/Include"
             "E:/DX90SDK/Include"
-            "$ENV{PROGRAMFILES}/DX90SDK/Include"
+            "${PROGRAMFILES_X86}/DX90SDK/Include"
             NO_DEFAULT_PATH
             NO_CMAKE_PATH
             NO_CMAKE_ENVIRONMENT_PATH
@@ -21,23 +23,23 @@ if (WIN32)
     set(DIRECTX_FOUND true)
   else (DIRECTX_INCLUDE_DIR)
     message(WARNING "Could not find DirectX SDK Include")
-	set(DIRECTX_FOUND false)
+    set(DIRECTX_FOUND false)
   endif (DIRECTX_INCLUDE_DIR)
 
 if( CMAKE_SIZEOF_VOID_P EQUAL 8 )
-	find_path(DIRECTX_LIBRARY_DIR dxguid.lib
+    find_path(DIRECTX_LIBRARY_DIR dxguid.lib
             "$ENV{DXSDK_DIR}/Lib/x64"
-            "$ENV{PROGRAMFILES}/Microsoft DirectX SDK (June 2010)/Lib/x64"
-            "$ENV{PROGRAMFILES}/Microsoft DirectX SDK (April 2007)/Lib/x64"
-			"C:/DX90SDK/Lib/x64"
+            "${PROGRAMFILES_X86}/Microsoft DirectX SDK (June 2010)/Lib/x64"
+            "${PROGRAMFILES_X86}/Microsoft DirectX SDK (April 2007)/Lib/x64"
+            "C:/DX90SDK/Lib/x64"
             "E:/DX90SDK/Lib/x64"
             )
 else()
-	find_path(DIRECTX_LIBRARY_DIR dxguid.lib
+    find_path(DIRECTX_LIBRARY_DIR dxguid.lib
             "$ENV{DXSDK_DIR}/Lib/x86"
-            "$ENV{PROGRAMFILES}/Microsoft DirectX SDK (June 2010)/Lib/x86"
-            "$ENV{PROGRAMFILES}/Microsoft DirectX SDK (April 2007)/Lib/x86"
-			"C:/DX90SDK/Lib/x86"
+            "${PROGRAMFILES_X86}/Microsoft DirectX SDK (June 2010)/Lib/x86"
+            "${PROGRAMFILES_X86}/Microsoft DirectX SDK (April 2007)/Lib/x86"
+            "C:/DX90SDK/Lib/x86"
             "E:/DX90SDK/Lib/x86"
             )
 endif()

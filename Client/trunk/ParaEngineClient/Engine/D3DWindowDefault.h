@@ -61,7 +61,7 @@ namespace ParaEngine
 		bool m_bMainLoopExited;
 
 		/** the main game loop */
-		boost::asio::io_service m_main_io_service;
+		boost::asio::io_context m_main_io_service;
 		/** the main timer that ticks 30 times a second*/
 		boost::asio::steady_timer m_main_timer;
 		// main render window hWnd. 
