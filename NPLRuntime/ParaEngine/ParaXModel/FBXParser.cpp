@@ -84,7 +84,7 @@ XFile::Scene* ParaEngine::FBXParser::ParseFBXFile(const char* buffer, int nSize)
 {
 	Assimp::Importer importer;
 	Reset();
-	const aiScene* pFbxScene = importer.ReadFileFromMemory(buffer, nSize, aiProcess_Triangulate | aiProcess_GenSmoothNormals | aiProcess_FlipUVs, "fbx");
+	const aiScene* pFbxScene = importer.ReadFileFromMemory(buffer, nSize, aiProcess_Triangulate | aiProcess_GenSmoothNormals | aiProcess_FlipUVs | aiProcess_LimitBoneWeights, "fbx");
 	if (pFbxScene) {
 		if (pFbxScene->HasMeshes())
 		{
@@ -143,7 +143,7 @@ CParaXModel* FBXParser::ParseParaXModel(const char* buffer, int nSize, const cha
 	Reset();
 	SetAnimSplitterFilename();
 	// this is not needed: aiProcess_MakeLeftHanded | 
-	const aiScene* pFbxScene = importer.ReadFileFromMemory(buffer, nSize, aiProcess_Triangulate | aiProcess_GenSmoothNormals | aiProcess_FlipUVs, pHint);
+	const aiScene* pFbxScene = importer.ReadFileFromMemory(buffer, nSize, aiProcess_Triangulate | aiProcess_GenSmoothNormals | aiProcess_FlipUVs | aiProcess_LimitBoneWeights, pHint);
 	if (pFbxScene) {
 		ParaXHeaderDef m_xheader;
 		m_xheader.IsAnimated = pFbxScene->HasAnimations() ? 1 : 0;
@@ -2857,6 +2857,20 @@ void FBXParser::ProcessFBXMesh(const aiScene* pFbxScene, aiMesh* pFbxMesh, aiNod
 					vertex.bones[nSmallestIndex] = nBoneIndex;
 					vertex.weights[nSmallestIndex] = vertex_weight;
 				}
+			}
+		}
+		auto vertex_size = m_vertices.size();
+		for (auto i = 0; i < vertex_size; i++)
+		{
+			auto& vertex = m_vertices[i];
+			auto total_weight = 0;
+			for (auto j = 0; j < ParaEngine::Bone::s_MaxBonesPerVertex; j++)
+			{
+				total_weight += vertex.weights[j];
+			}
+			for (auto j = 0; j < ParaEngine::Bone::s_MaxBonesPerVertex; j++)
+			{
+				vertex.weights[j] = vertex.weights[j] * (255.f / total_weight);
 			}
 		}
 	}
