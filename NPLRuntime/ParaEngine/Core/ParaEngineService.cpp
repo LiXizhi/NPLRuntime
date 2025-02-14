@@ -110,7 +110,7 @@ void CParaEngineService::handle_timeout(const boost::system::error_code& err)
 		ParaEngine::CGlobals::GetNPLRuntime()->GetMainState()->activate("ParaEngineService.cpp", "");
 
 		// continue with next activation. 
-		m_main_timer.expires_from_now(boost::chrono::milliseconds(MAIN_TIMER_DURATION));
+		m_main_timer.expires_after(boost::chrono::milliseconds(MAIN_TIMER_DURATION));
 		m_main_timer.async_wait(boost::bind(&CParaEngineService::handle_timeout, this, boost::asio::placeholders::error));
 	}
 	else
@@ -249,8 +249,8 @@ int CParaEngineService::Run(const char* pCommandLine, IParaEngineApp* pApp)
 	auto main_loop_file = new CNPLFile_ServerMainLoop(m_pParaEngineApp);
 	ParaEngine::CGlobals::GetNPLRuntime()->GetMainState()->RegisterFile("ParaEngineService.cpp", main_loop_file);
 
-	m_work_lifetime.reset(new boost::asio::io_service::work(m_main_io_service));
-	m_main_timer.expires_from_now(boost::chrono::milliseconds(50));
+	m_work_lifetime.reset(new boost::asio::executor_work_guard<boost::asio::io_context::executor_type>(m_main_io_service.get_executor()));
+	m_main_timer.expires_after(boost::chrono::milliseconds(50));
 	m_main_timer.async_wait(boost::bind(&CParaEngineService::handle_timeout, this, boost::asio::placeholders::error));
 
 	// start the service now

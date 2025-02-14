@@ -42,7 +42,7 @@
 #ifdef SUPPORT_SHELL_EXECUTE
 #include <boost/process.hpp>
 #if defined(WIN32)
-#include <boost/process/windows.hpp>
+#include <boost/process/v1/windows.hpp>
 #endif
 #endif
 
@@ -343,7 +343,7 @@ bool ParaGlobal::IsPortAvailable(const std::string& ip, const int port, lua_Stat
 	using namespace boost::asio;
 	using ip::tcp;
 
-	io_service svc;
+	io_context svc;
 	tcp::acceptor a(svc);
 	boost::system::error_code ec;
 
@@ -352,7 +352,7 @@ bool ParaGlobal::IsPortAvailable(const std::string& ip, const int port, lua_Stat
 	socket_base::reuse_address option(false);
 	a.set_option(option);
 
-	a.bind(tcp::endpoint(ip::address::from_string(ip), port), ec);
+	a.bind(tcp::endpoint(ip::make_address(ip), port), ec);
 	a.close();
 
 	return !(ec == boost::asio::error::address_in_use);

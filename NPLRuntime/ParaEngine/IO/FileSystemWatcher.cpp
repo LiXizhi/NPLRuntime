@@ -28,7 +28,9 @@ using namespace ParaEngine;
 //////////////////////////////////////////////////////////////////////////
 
 ParaEngine::CFileSystemWatcherService::CFileSystemWatcherService()
- : m_io_service(new boost::asio::io_service()), m_io_service_work(new boost::asio::io_service::work(*m_io_service)), m_bIsStarted(false)
+	: m_io_service(new boost::asio::io_context()),
+	m_io_service_work(new boost::asio::executor_work_guard<boost::asio::io_context::executor_type>(m_io_service->get_executor())),
+	m_bIsStarted(false)
 {
 
 }
@@ -43,10 +45,10 @@ CFileSystemWatcherService* ParaEngine::CFileSystemWatcherService::GetInstance()
 	return CAppSingleton<CFileSystemWatcherService>::GetInstance();
 }
 
-CFileSystemWatcherPtr ParaEngine::CFileSystemWatcherService::GetDirWatcher( const std::string& name )
+CFileSystemWatcherPtr ParaEngine::CFileSystemWatcherService::GetDirWatcher(const std::string& name)
 {
-	file_watcher_map_t::iterator itCur =  m_file_watchers.find(name);
-	if(itCur != m_file_watchers.end())
+	file_watcher_map_t::iterator itCur = m_file_watchers.find(name);
+	if (itCur != m_file_watchers.end())
 	{
 		return itCur->second;
 	}
@@ -61,7 +63,7 @@ CFileSystemWatcherPtr ParaEngine::CFileSystemWatcherService::GetDirWatcher( cons
 int ParaEngine::CFileSystemWatcherService::DispatchEvents()
 {
 	int nCount = 0;
-	if(IsStarted())
+	if (IsStarted())
 	{
 		file_watcher_map_t::iterator itCur, itEnd = m_file_watchers.end();
 		for (itCur = m_file_watchers.begin(); itCur != itEnd; ++itCur)
@@ -72,12 +74,12 @@ int ParaEngine::CFileSystemWatcherService::DispatchEvents()
 	return nCount;
 }
 
-void ParaEngine::CFileSystemWatcherService::DeleteDirWatcher( const std::string& name )
+void ParaEngine::CFileSystemWatcherService::DeleteDirWatcher(const std::string& name)
 {
-	file_watcher_map_t::iterator itCur =  m_file_watchers.find(name);
-	if(itCur != m_file_watchers.end())
+	file_watcher_map_t::iterator itCur = m_file_watchers.find(name);
+	if (itCur != m_file_watchers.end())
 	{
-		if(itCur->second.use_count() == 1)
+		if (itCur->second.use_count() == 1)
 		{
 			itCur->second->Destroy();
 			// sleep some time for watcher to exit.
@@ -96,7 +98,7 @@ void ParaEngine::CFileSystemWatcherService::Clear()
 {
 	try
 	{
-		if(m_io_service_work)
+		if (m_io_service_work)
 		{
 			for (auto& watcher : m_file_watchers)
 			{
@@ -108,7 +110,7 @@ void ParaEngine::CFileSystemWatcherService::Clear()
 			}
 			m_io_service_work.reset();
 
-			if(m_work_thread)
+			if (m_work_thread)
 			{
 				m_work_thread->join();
 			}
@@ -140,12 +142,11 @@ int ParaEngine::CFileSystemWatcherService::fileWatcherThreadMain()
 
 bool ParaEngine::CFileSystemWatcherService::Start()
 {
-	if(!IsStarted())
+	if (!IsStarted())
 	{
 		m_bIsStarted = true;
-		if(!m_work_thread)
+		if (!m_work_thread)
 		{
-			// m_work_thread.reset(new boost::thread(boost::bind(&boost::asio::io_service::run, m_io_service.get())));
 			m_work_thread.reset(new boost::thread(boost::bind(&CFileSystemWatcherService::fileWatcherThreadMain, this)));
 		}
 	}
@@ -179,30 +180,23 @@ ParaEngine::CFileSystemWatcher::~CFileSystemWatcher()
 	OUTPUT_LOG("FileSystemWatcher removed\n");
 }
 
-void ParaEngine::CFileSystemWatcher::FileHandler( const boost::system::error_code &ec, const boost::asio::dir_monitor_event &ev )
+void ParaEngine::CFileSystemWatcher::FileHandler(const boost::system::error_code& ec, const boost::asio::dir_monitor_event& ev)
 {
-	if(!ec)
+	if (!ec)
 	{
-		if(IsDispatchInMainThread())
+		if (IsDispatchInMainThread())
 		{
 			m_file_event(ev);
-            {
-                ParaEngine::Lock lock_(m_mutex);
-                if (m_monitor_imp)
-                    // continuously polling
-                    ((boost::asio::dir_monitor*)m_monitor_imp)->async_monitor(boost::bind(&ParaEngine::CFileSystemWatcher::FileHandler, this, _1, _2));
-            }
 		}
 		else
 		{
 			ParaEngine::Lock lock_(m_mutex);
 			m_msg_queue.push(ev);
-            
-            if (m_monitor_imp)
-                // continuously polling
-                ((boost::asio::dir_monitor*)m_monitor_imp)->async_monitor(boost::bind(&ParaEngine::CFileSystemWatcher::FileHandler, this, _1, _2));
 		}
-		
+		// continuously polling
+		if (m_monitor_imp) {
+			((boost::asio::dir_monitor*)m_monitor_imp)->async_monitor(boost::bind(&ParaEngine::CFileSystemWatcher::FileHandler, this, _1, _2));
+		}
 	}
 	else
 	{
@@ -211,7 +205,7 @@ void ParaEngine::CFileSystemWatcher::FileHandler( const boost::system::error_cod
 	}
 }
 
-void ParaEngine::CFileSystemWatcher::SetDispatchInMainThread( bool bMainThread )
+void ParaEngine::CFileSystemWatcher::SetDispatchInMainThread(bool bMainThread)
 {
 	m_bDispatchInMainThread = bMainThread;
 }
@@ -225,31 +219,31 @@ int ParaEngine::CFileSystemWatcher::DispatchEvents()
 {
 	int nCount = 0;
 
-	if(IsDispatchInMainThread())
+	if (IsDispatchInMainThread())
 	{
 		ParaEngine::Lock lock_(m_mutex);
 		while (!m_msg_queue.empty())
 		{
 			m_file_event(m_msg_queue.front());
 			m_msg_queue.pop();
-			nCount ++;
+			nCount++;
 		}
 	}
 	else
 	{
-		while (!m_msg_queue.empty()){
+		while (!m_msg_queue.empty()) {
 			m_msg_queue.pop();
 		}
 	}
 	return nCount;
 }
 
-CFileSystemWatcher::FileSystemEvent_Connection_t ParaEngine::CFileSystemWatcher::AddEventCallback( FileSystemEvent_t::slot_type callback )
+CFileSystemWatcher::FileSystemEvent_Connection_t ParaEngine::CFileSystemWatcher::AddEventCallback(FileSystemEvent_t::slot_type callback)
 {
 	return m_file_event.connect(callback);
 }
 
-bool ParaEngine::CFileSystemWatcher::add_directory( const std::string &dirname )
+bool ParaEngine::CFileSystemWatcher::add_directory(const std::string& dirname)
 {
 	bool bRes = true;
 	try
@@ -265,7 +259,7 @@ bool ParaEngine::CFileSystemWatcher::add_directory( const std::string &dirname )
 	return bRes;
 }
 
-bool ParaEngine::CFileSystemWatcher::remove_directory( const std::string &dirname )
+bool ParaEngine::CFileSystemWatcher::remove_directory(const std::string& dirname)
 {
 	bool bRes = true;
 	try
@@ -293,12 +287,11 @@ void ParaEngine::CFileSystemWatcher::SetName(const std::string& val)
 
 void ParaEngine::CFileSystemWatcher::Destroy()
 {
-    ParaEngine::Lock lock_(m_mutex);
+	ParaEngine::Lock lock_(m_mutex);
 	boost::asio::dir_monitor* pObj = (boost::asio::dir_monitor*)m_monitor_imp;
 	SAFE_DELETE(pObj);
 	m_monitor_imp = NULL;
 }
 
 #endif
-
 #endif

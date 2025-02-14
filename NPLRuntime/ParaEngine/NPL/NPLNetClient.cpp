@@ -29,17 +29,17 @@
 
 using namespace ParaEngine;
 
-// #ifndef EMSCRIPTEN_SINGLE_THREAD
 #ifndef EMSCRIPTEN
 
 static CNPLNetClient* g_pNPLNetClient;
 
 ParaEngine::CNPLNetClient::CNPLNetClient()
-: m_dispatcher_io_service()
+	: m_dispatcher_io_service()
 {
 	g_pNPLNetClient = this;
-	m_work_lifetime.reset(new boost::asio::io_service::work(m_dispatcher_io_service));
-	m_dispatcherThread.reset(new boost::thread(boost::bind(&boost::asio::io_service::run, &m_dispatcher_io_service)));
+	m_work_lifetime.reset(new boost::asio::executor_work_guard<boost::asio::io_context::executor_type>(
+		boost::asio::make_work_guard(m_dispatcher_io_service.get_executor())));
+	m_dispatcherThread.reset(new boost::thread(boost::bind(&boost::asio::io_context::run, &m_dispatcher_io_service)));
 }
 
 ParaEngine::CNPLNetClient::~CNPLNetClient()
@@ -62,13 +62,13 @@ void ParaEngine::CNPLNetClient::Cleanup()
 	{
 		// try closing everything gracefully by sending the close message to server. 
 		std::map <std::string, CNPLJabberClient*>::iterator itCur, itEnd = m_jabberClients.end();
-		for(itCur = m_jabberClients.begin();itCur!=itEnd; ++itCur)
+		for (itCur = m_jabberClients.begin(); itCur != itEnd; ++itCur)
 		{
 			itCur->second->Close();
 		}
 	}
 #endif
-	if(m_dispatcherThread.get() != 0)
+	if (m_dispatcherThread.get() != 0)
 	{
 		m_dispatcherThread->timed_join(boost::posix_time::millisec(10000));
 		//m_dispatcherThread->join();
@@ -76,7 +76,7 @@ void ParaEngine::CNPLNetClient::Cleanup()
 #ifdef HAS_JABBER_CLIENT
 	{
 		std::map <std::string, CNPLJabberClient*>::iterator itCur, itEnd = m_jabberClients.end();
-		for(itCur = m_jabberClients.begin();itCur!=itEnd; ++itCur)
+		for (itCur = m_jabberClients.begin(); itCur != itEnd; ++itCur)
 		{
 			delete (itCur->second);
 		}
@@ -86,7 +86,7 @@ void ParaEngine::CNPLNetClient::Cleanup()
 	// delete all pools
 	{
 		std::map <std::string, CRequestTaskPool*>::iterator itCur, itEnd = m_request_pools.end();
-		for(itCur = m_request_pools.begin();itCur!=itEnd; ++itCur)
+		for (itCur = m_request_pools.begin(); itCur != itEnd; ++itCur)
 		{
 			delete (itCur->second);
 		}
@@ -94,28 +94,28 @@ void ParaEngine::CNPLNetClient::Cleanup()
 	}
 }
 
-INPLWebService* ParaEngine::CNPLNetClient::GetWebService( const char* sURL )
+INPLWebService* ParaEngine::CNPLNetClient::GetWebService(const char* sURL)
 {
 	return NULL;
 }
 
-INPLWebService* ParaEngine::CNPLNetClient::OpenWebService( const char* sURL, const char* sUserName, const char* sPassword, const char* sDomain )
+INPLWebService* ParaEngine::CNPLNetClient::OpenWebService(const char* sURL, const char* sUserName, const char* sPassword, const char* sDomain)
 {
 	return NULL;
 }
 
-bool ParaEngine::CNPLNetClient::CloseWebService( const char* sURL )
+bool ParaEngine::CNPLNetClient::CloseWebService(const char* sURL)
 {
 	return false;
 }
 
-INPLJabberClient* ParaEngine::CNPLNetClient::GetJabberClient( const char* sJID )
+INPLJabberClient* ParaEngine::CNPLNetClient::GetJabberClient(const char* sJID)
 {
 #ifdef HAS_JABBER_CLIENT
-	if(sJID == NULL)
+	if (sJID == NULL)
 		return NULL;
 	std::map <std::string, CNPLJabberClient*>::iterator iter = m_jabberClients.find(sJID);
-	if(iter!=m_jabberClients.end())
+	if (iter != m_jabberClients.end())
 	{
 		return (INPLJabberClient*)(iter->second);
 	}
@@ -123,14 +123,14 @@ INPLJabberClient* ParaEngine::CNPLNetClient::GetJabberClient( const char* sJID )
 	return NULL;
 }
 
-INPLJabberClient* ParaEngine::CNPLNetClient::CreateJabberClient( const char* sJID )
+INPLJabberClient* ParaEngine::CNPLNetClient::CreateJabberClient(const char* sJID)
 {
 #ifdef HAS_JABBER_CLIENT
-	if(sJID == NULL)
+	if (sJID == NULL)
 		return NULL;
 
 	INPLJabberClient* jc = NULL;
-	if((jc=GetJabberClient(sJID))!=NULL)
+	if ((jc = GetJabberClient(sJID)) != NULL)
 		return jc;
 	try
 	{
@@ -150,16 +150,16 @@ INPLJabberClient* ParaEngine::CNPLNetClient::CreateJabberClient( const char* sJI
 #endif
 }
 
-bool ParaEngine::CNPLNetClient::CloseJabberClient( const char* sJID )
+bool ParaEngine::CNPLNetClient::CloseJabberClient(const char* sJID)
 {
 #ifdef HAS_JABBER_CLIENT
-	if(sJID)
+	if (sJID)
 	{
-		if(sJID[0] != '\0')
+		if (sJID[0] != '\0')
 		{
 			// close the given client
 			std::map <std::string, CNPLJabberClient*>::iterator iter = m_jabberClients.find(sJID);
-			if(iter!=m_jabberClients.end())
+			if (iter != m_jabberClients.end())
 			{
 				delete iter->second;
 				m_jabberClients.erase(iter);
@@ -169,7 +169,7 @@ bool ParaEngine::CNPLNetClient::CloseJabberClient( const char* sJID )
 		{
 			// close all client
 			std::map <std::string, CNPLJabberClient*>::iterator itCur, itEnd = m_jabberClients.end();
-			for(itCur = m_jabberClients.begin();itCur!=itEnd; ++itCur)
+			for (itCur = m_jabberClients.begin(); itCur != itEnd; ++itCur)
 			{
 				itCur->second->ResetAllEventListeners();
 				delete (itCur->second);
@@ -181,17 +181,17 @@ bool ParaEngine::CNPLNetClient::CloseJabberClient( const char* sJID )
 	return true;
 }
 
-void ParaEngine::CNPLNetClient::AsyncDownload( const char* url, const char* destFolder, const char* callbackScript, const char* DownloaderName )
+void ParaEngine::CNPLNetClient::AsyncDownload(const char* url, const char* destFolder, const char* callbackScript, const char* DownloaderName)
 {
 
 }
 
-void ParaEngine::CNPLNetClient::CancelDownload( const char* DownloaderName )
+void ParaEngine::CNPLNetClient::CancelDownload(const char* DownloaderName)
 {
 	OUTPUT_LOG("warning: NPL.CancelDownload() is not implemented yet\n");
 }
 
-int ParaEngine::CNPLNetClient::Download( const char* url, const char* destFolder, const char* callbackScript, const char* DownloaderName )
+int ParaEngine::CNPLNetClient::Download(const char* url, const char* destFolder, const char* callbackScript, const char* DownloaderName)
 {
 	OUTPUT_LOG("warning: NPL.Download() is not implemented yet. Use NPL.AsyncDownload() instead\n");
 	return 0;
@@ -202,7 +202,7 @@ int ParaEngine::CNPLNetClient::ProcessResults()
 #ifdef HAS_JABBER_CLIENT
 	{
 		std::map <std::string, CNPLJabberClient*>::iterator itCur, itEnd = m_jabberClients.end();
-		for(itCur = m_jabberClients.begin();itCur!=itEnd; ++itCur)
+		for (itCur = m_jabberClients.begin(); itCur != itEnd; ++itCur)
 		{
 			(itCur->second)->ProcessMessage();
 		}
@@ -216,32 +216,32 @@ int ParaEngine::CNPLNetClient::ProcessDownloaderResults()
 	return 0;
 }
 
-CRequestTaskPool* ParaEngine::CNPLNetClient::CreateGetRequestTaskPool( const char* sPoolName /*= NULL*/ )
+CRequestTaskPool* ParaEngine::CNPLNetClient::CreateGetRequestTaskPool(const char* sPoolName /*= NULL*/)
 {
 	string strPoolName;
-	if(sPoolName)
+	if (sPoolName)
 	{
 		strPoolName = sPoolName;
 	}
 	std::map <std::string, CRequestTaskPool*>::iterator iter = m_request_pools.find(strPoolName);
 	CRequestTaskPool* pTaskPool = NULL;
-	if(iter == m_request_pools.end())
+	if (iter == m_request_pools.end())
 	{
-		if(m_request_pools.size() > 20)
+		if (m_request_pools.size() > 20)
 		{
 			OUTPUT_LOG("warning: max number of pool numbers reached. %s is not created. AppendURLRequest ignored. \n", strPoolName.c_str());
 			return NULL;
 		}
 		pTaskPool = new CRequestTaskPool();
-		if(strPoolName == "d")
+		if (strPoolName == "d")
 		{
 			pTaskPool->SetMaxTaskSlotsCount(DEFAULT_DOWNLOAD_POOL_SIZE);
 		}
-		else if(strPoolName == "r")
+		else if (strPoolName == "r")
 		{
 			pTaskPool->SetMaxTaskSlotsCount(DEFAULT_REST_POOL_SIZE);
 		}
-		else if(strPoolName == "w")
+		else if (strPoolName == "w")
 		{
 			pTaskPool->SetMaxTaskSlotsCount(DEFAULT_WEB_POOL_SIZE);
 		}
@@ -254,20 +254,20 @@ CRequestTaskPool* ParaEngine::CNPLNetClient::CreateGetRequestTaskPool( const cha
 	return pTaskPool;
 }
 
-bool ParaEngine::CNPLNetClient::AppendURLRequest( CURLRequestTask* pUrlTask, const char* sPoolName )
+bool ParaEngine::CNPLNetClient::AppendURLRequest(CURLRequestTask* pUrlTask, const char* sPoolName)
 {
-	CRequestTaskPool* pTaskPool =CreateGetRequestTaskPool(sPoolName);
-	if(pTaskPool)
+	CRequestTaskPool* pTaskPool = CreateGetRequestTaskPool(sPoolName);
+	if (pTaskPool)
 	{
 		return pTaskPool->AppendURLRequest(pUrlTask);
 	}
 	return false;
 }
 
-bool ParaEngine::CNPLNetClient::ChangeRequestPoolSize( const char* sPoolName, int nCount )
+bool ParaEngine::CNPLNetClient::ChangeRequestPoolSize(const char* sPoolName, int nCount)
 {
-	CRequestTaskPool* pTaskPool =CreateGetRequestTaskPool(sPoolName);
-	if(pTaskPool)
+	CRequestTaskPool* pTaskPool = CreateGetRequestTaskPool(sPoolName);
+	if (pTaskPool)
 	{
 		pTaskPool->SetMaxTaskSlotsCount(nCount);
 		return true;
@@ -278,9 +278,9 @@ int ParaEngine::CNPLNetClient::ProcessUrlRequests()
 {
 	int nCount = 0;
 	std::map <std::string, CRequestTaskPool*>::iterator itCur, itEnd = m_request_pools.end();
-	for(itCur = m_request_pools.begin();itCur!=itEnd; ++itCur)
+	for (itCur = m_request_pools.begin(); itCur != itEnd; ++itCur)
 	{
-		if(itCur->second)
+		if (itCur->second)
 		{
 			nCount += itCur->second->DoProcess();
 		}
@@ -288,21 +288,21 @@ int ParaEngine::CNPLNetClient::ProcessUrlRequests()
 	return nCount;
 }
 
-void ParaEngine::CNPLNetClient::AddPendingRequest( const char* sURL )
+void ParaEngine::CNPLNetClient::AddPendingRequest(const char* sURL)
 {
-	if(sURL)
+	if (sURL)
 	{
 		m_pending_requests.insert(sURL);
-		if((int)(m_pending_requests.size())>500)
+		if ((int)(m_pending_requests.size()) > 500)
 		{
 			OUTPUT_LOG("warning: too many (>500) pending URL request found \n");
 		}
 	}
 }
 
-void ParaEngine::CNPLNetClient::RemovePendingRequest( const char* sURL )
+void ParaEngine::CNPLNetClient::RemovePendingRequest(const char* sURL)
 {
-	if(sURL)
+	if (sURL)
 		m_pending_requests.erase(sURL);
 }
 
@@ -311,27 +311,27 @@ void ParaEngine::CNPLNetClient::ClearAllPendingRequests()
 	m_pending_requests.clear();
 }
 
-bool ParaEngine::CNPLNetClient::HasPendingRequest( const char* sURL )
+bool ParaEngine::CNPLNetClient::HasPendingRequest(const char* sURL)
 {
-	if(sURL)
+	if (sURL)
 		return m_pending_requests.find(sURL) != m_pending_requests.end();
 	else
 		return false;
 }
 
-const string g_cache_root="temp/cache/";
+const string g_cache_root = "temp/cache/";
 
-string ParaEngine::CNPLNetClient::GetCachePath( const char* sFileUrl )
+string ParaEngine::CNPLNetClient::GetCachePath(const char* sFileUrl)
 {
-	if(sFileUrl)
-		return g_cache_root+CHttpUtility::HashStringMD5(sFileUrl);
+	if (sFileUrl)
+		return g_cache_root + CHttpUtility::HashStringMD5(sFileUrl);
 	else
 		return "";
 }
 
 CNPLNetClient* ParaEngine::CNPLNetClient::GetInstance()
 {
-	if(g_pNPLNetClient != 0)
+	if (g_pNPLNetClient != 0)
 	{
 		return g_pNPLNetClient;
 	}
@@ -347,11 +347,11 @@ void ParaEngine::CNPLNetClient::ReleaseInstance()
 	SAFE_DELETE(g_pNPLNetClient);
 }
 
-bool ParaEngine::CRequestTaskPool::AppendURLRequest( CURLRequestTask* pUrlTask )
+bool ParaEngine::CRequestTaskPool::AppendURLRequest(CURLRequestTask* pUrlTask)
 {
-	if(pUrlTask==NULL)
+	if (pUrlTask == NULL)
 		return false;
-	if((int)(m_task_pool.size()) >= m_nMaxQueuedTask)
+	if ((int)(m_task_pool.size()) >= m_nMaxQueuedTask)
 	{
 		OUTPUT_LOG("warning: max number of queued tasks reached.URLrequest ignored. \n");
 		return false;
@@ -364,27 +364,25 @@ bool ParaEngine::CRequestTaskPool::AppendURLRequest( CURLRequestTask* pUrlTask )
 
 ParaEngine::CRequestTaskPool::~CRequestTaskPool()
 {
-	if( ! m_task_pool.empty() )
+	if (!m_task_pool.empty())
 	{
 		std::list <CURLRequestTask*>::iterator itCur, itEnd = m_task_pool.end();
-		for(itCur = m_task_pool.begin();itCur!=itEnd; ++itCur)
+		for (itCur = m_task_pool.begin(); itCur != itEnd; ++itCur)
 		{
 			delete (*itCur);
 		}
 		m_task_pool.clear();
 	}
-// #ifndef EMSCRIPTEN_SINGLE_THREAD
-#ifndef EMSCRIPTEN
 	// free multi
-	if(m_multi_handle)
+	if (m_multi_handle)
 		curl_multi_cleanup(m_multi_handle);
-#endif
+
 	// free the CURL handles
 	{
 		std::list <CUrlWorkerState>::iterator itCur, itEnd = m_easy_handles.end();
-		for(itCur = m_easy_handles.begin();itCur!=itEnd; ++itCur)
+		for (itCur = m_easy_handles.begin(); itCur != itEnd; ++itCur)
 		{
-			if(itCur->m_easy_handle != NULL)
+			if (itCur->m_easy_handle != NULL)
 				curl_easy_cleanup(itCur->m_easy_handle);
 		}
 		m_easy_handles.clear();
@@ -393,37 +391,35 @@ ParaEngine::CRequestTaskPool::~CRequestTaskPool()
 
 int ParaEngine::CRequestTaskPool::DoProcess()
 {
-// #ifndef EMSCRIPTEN_SINGLE_THREAD
-#ifndef EMSCRIPTEN
-	if(m_task_pool.size() == 0)
+	if (m_task_pool.size() == 0)
 		return 0;
 	int nCount = 0;
 	bool bStillNeedPerform = false;
 	// all running tasks are performed using the curl multi interface. The result of each finished request is saved to CURLRequestTask struct. 
 	int nFinishedCount = CURL_MultiPerform();
-	do 
+	do
 	{
 		bStillNeedPerform = false;
 
 		// the pool of CURLRequestTask is traversed  during which finished CURLRequestTask is removed from the the queue and the callback is called. 
-		if(nFinishedCount>0)
+		if (nFinishedCount > 0)
 		{
 			nFinishedCount = 0;
 			// process finished
 			std::list <CURLRequestTask*>::iterator itCur, itEnd = m_task_pool.end();
-			for(itCur = m_task_pool.begin();itCur!=itEnd; )
+			for (itCur = m_task_pool.begin(); itCur != itEnd; )
 			{
 				CURLRequestTask* pTask = (*itCur);
-				if(pTask && pTask->m_nStatus == CURLRequestTask::URL_REQUEST_COMPLETED)
+				if (pTask && pTask->m_nStatus == CURLRequestTask::URL_REQUEST_COMPLETED)
 				{
 					//ParaEngine::Lock lock_(pTask->GetMutex());
-					if(pTask->m_nStatus == CURLRequestTask::URL_REQUEST_COMPLETED)
+					if (pTask->m_nStatus == CURLRequestTask::URL_REQUEST_COMPLETED)
 					{
 						//
 						// remove from worker slot
 						//
-						m_nRunningTaskCount --;
-						nCount ++;
+						m_nRunningTaskCount--;
+						nCount++;
 						// complete the task. 
 						pTask->CompleteTask();
 						// delete the task
@@ -437,21 +433,21 @@ int ParaEngine::CRequestTaskPool::DoProcess()
 			}
 		}
 		// new tasks are added to the available task slots for further processing. 
-		if(m_nRunningTaskCount < m_nMaxWorkerThreads)
+		if (m_nRunningTaskCount < m_nMaxWorkerThreads)
 		{
 			std::list <CURLRequestTask*>::iterator itCur, itEnd = m_task_pool.end();
-			for(itCur = m_task_pool.begin();itCur!=itEnd; itCur++)
+			for (itCur = m_task_pool.begin(); itCur != itEnd; itCur++)
 			{
 				CURLRequestTask* pTask = (*itCur);
-				if(pTask && pTask->m_nStatus == CURLRequestTask::URL_REQUEST_UNSTARTED)
+				if (pTask && pTask->m_nStatus == CURLRequestTask::URL_REQUEST_UNSTARTED)
 				{
 					CUrlWorkerState* pWorker = GetFreeWorkerSlot();
-					if(pWorker && pWorker->m_easy_handle)
+					if (pWorker && pWorker->m_easy_handle)
 					{
 						//
 						// Add to worker slot: assign task to worker slot and make the handle busy. 
 						//
-						m_nRunningTaskCount ++;
+						m_nRunningTaskCount++;
 						pWorker->m_bIsCompleted = false;
 						pWorker->m_pCurrentTask = pTask;
 						pTask->UpdateTime();
@@ -467,52 +463,47 @@ int ParaEngine::CRequestTaskPool::DoProcess()
 				}
 			}
 		}
-		if(bStillNeedPerform)
+		if (bStillNeedPerform)
 		{
 			// immediately do some processing if there are new tasks added. 
 			nFinishedCount = CURL_MultiPerform();
-			bStillNeedPerform = (nFinishedCount>0);
+			bStillNeedPerform = (nFinishedCount > 0);
 		}
 	} while (bStillNeedPerform); // the above three steps are repeated until there is no queued task to be added to any available slots. 
 	return nCount;
-#else
-	return 0;
-#endif
 }
 
 ParaEngine::CRequestTaskPool::CUrlWorkerState* ParaEngine::CRequestTaskPool::GetFreeWorkerSlot()
 {
-// #ifndef EMSCRIPTEN_SINGLE_THREAD
-#ifndef EMSCRIPTEN
-	if(m_nRunningTaskCount >= m_nMaxWorkerThreads)
+	if (m_nRunningTaskCount >= m_nMaxWorkerThreads)
 		return NULL;
-	if(m_multi_handle == NULL)
+	if (m_multi_handle == NULL)
 		m_multi_handle = curl_multi_init();
-	if(m_multi_handle == NULL)
+	if (m_multi_handle == NULL)
 		return NULL;
 	int nCount = 0;
 	std::list <CUrlWorkerState>::iterator itCur, itEnd = m_easy_handles.end();
-	for(itCur = m_easy_handles.begin();itCur!=itEnd; ++itCur, ++nCount)
+	for (itCur = m_easy_handles.begin(); itCur != itEnd; ++itCur, ++nCount)
 	{
-		if(itCur->m_bIsCompleted)
+		if (itCur->m_bIsCompleted)
 		{
 			return &(*itCur);
 		}
 	}
-	if(nCount < m_nMaxWorkerThreads)
+	if (nCount < m_nMaxWorkerThreads)
 	{
 		// create a new one
 		m_easy_handles.push_back(CUrlWorkerState());
 
 		CUrlWorkerState* pWorker = &(m_easy_handles.back());
-		if(pWorker->m_easy_handle == NULL)
+		if (pWorker->m_easy_handle == NULL)
 		{
 			pWorker->m_easy_handle = curl_easy_init();
 			// The official doc says if multi-threaded use, this one should be set to 1. 
-			curl_easy_setopt(pWorker->m_easy_handle, CURLOPT_NOSIGNAL , 1);
+			curl_easy_setopt(pWorker->m_easy_handle, CURLOPT_NOSIGNAL, 1);
 			/**
-			Pass a long. It should contain the maximum time in seconds that you allow the connection to the server to take. 
-			This only limits the connection phase, once it has connected, this option is of no more use. Set to zero to disable 
+			Pass a long. It should contain the maximum time in seconds that you allow the connection to the server to take.
+			This only limits the connection phase, once it has connected, this option is of no more use. Set to zero to disable
 			connection timeout (it will then only timeout on the system's internal timeouts). See also the CURLOPT_TIMEOUT option
 			*/
 			// curl_easy_setopt(pWorker->m_easy_handle, CURLOPT_CONNECTTIMEOUT, 10);
@@ -525,54 +516,51 @@ ParaEngine::CRequestTaskPool::CUrlWorkerState* ParaEngine::CRequestTaskPool::Get
 		}
 		return pWorker;
 	}
-#endif
 	return NULL;
 }
 
 int ParaEngine::CRequestTaskPool::CURL_MultiPerform()
 {
-// #ifndef EMSCRIPTEN_SINGLE_THREAD
-#ifndef EMSCRIPTEN
-	if(m_multi_handle == NULL)
+	if (m_multi_handle == NULL)
 		return 0;
 
 	int still_running = 0; /* keep number of running handles */
 
 	/* we start some action by calling perform right away */
-	while(CURLM_CALL_MULTI_PERFORM ==
+	while (CURLM_CALL_MULTI_PERFORM ==
 		curl_multi_perform(m_multi_handle, &still_running));
 
 	int nCount = 0;
 
-	if(m_nRunningTaskCount > still_running)
+	if (m_nRunningTaskCount > still_running)
 	{
 		int nProcessed = m_nRunningTaskCount - still_running;
 
 		// for picking up messages with the transfer status
-		CURLMsg *msg; 
+		CURLMsg* msg;
 		// how many messages are left
-		int msgs_left; 
+		int msgs_left;
 		/* See how the transfers went */
-		while ((msg = curl_multi_info_read(m_multi_handle, &msgs_left))) 
+		while ((msg = curl_multi_info_read(m_multi_handle, &msgs_left)))
 		{
-			if (msg->msg == CURLMSG_DONE) 
+			if (msg->msg == CURLMSG_DONE)
 			{
 				/* Find out which handle this message is about */
 				std::list <CUrlWorkerState>::iterator itCur, itEnd = m_easy_handles.end();
-				for(itCur = m_easy_handles.begin();itCur!=itEnd; ++itCur)
+				for (itCur = m_easy_handles.begin(); itCur != itEnd; ++itCur)
 				{
-					if(itCur->m_easy_handle == msg->easy_handle)
+					if (itCur->m_easy_handle == msg->easy_handle)
 					{
 						// get return code. 
 						itCur->m_returnCode = msg->data.result;
 						itCur->m_bIsCompleted = true;
 						// remove the easy handle to be reused later. 
-						if(m_multi_handle)
+						if (m_multi_handle)
 							curl_multi_remove_handle(m_multi_handle, itCur->m_easy_handle);
 
-						if(itCur->m_pCurrentTask)
+						if (itCur->m_pCurrentTask)
 						{
-							curl_easy_getinfo (itCur->m_easy_handle, CURLINFO_RESPONSE_CODE, &(itCur->m_pCurrentTask->m_responseCode));
+							curl_easy_getinfo(itCur->m_easy_handle, CURLINFO_RESPONSE_CODE, &(itCur->m_pCurrentTask->m_responseCode));
 							itCur->m_pCurrentTask->m_nStatus = CURLRequestTask::URL_REQUEST_COMPLETED;
 							itCur->m_pCurrentTask->m_returnCode = itCur->m_returnCode;
 						}
@@ -598,18 +586,18 @@ int ParaEngine::CRequestTaskPool::CURL_MultiPerform()
 		// I believe it is a bug in windows vista, where DNS look up timeout is never reported using the multi interface. 
 		// so, let us do a manually time out check here. 
 		std::list <CUrlWorkerState>::iterator itCur, itEnd = m_easy_handles.end();
-		for(itCur = m_easy_handles.begin();itCur!=itEnd; ++itCur)
+		for (itCur = m_easy_handles.begin(); itCur != itEnd; ++itCur)
 		{
-			if( ! itCur->m_bIsCompleted && itCur->m_pCurrentTask && itCur->m_pCurrentTask->IsTimedOut(timeNow))
+			if (!itCur->m_bIsCompleted && itCur->m_pCurrentTask && itCur->m_pCurrentTask->IsTimedOut(timeNow))
 			{
 				// get return code. 
 				itCur->m_returnCode = CURLE_OPERATION_TIMEDOUT;
 				itCur->m_bIsCompleted = true;
 				// remove the easy handle to be reused later. 
-				if(m_multi_handle)
+				if (m_multi_handle)
 					curl_multi_remove_handle(m_multi_handle, itCur->m_easy_handle);
 
-				if(itCur->m_pCurrentTask)  
+				if (itCur->m_pCurrentTask)
 				{
 					curl_easy_reset(itCur->m_easy_handle);
 
@@ -625,18 +613,13 @@ int ParaEngine::CRequestTaskPool::CURL_MultiPerform()
 	}
 
 	return nCount;
-#else
-	return 0;
-#endif
 }
 
 void ParaEngine::CRequestTaskPool::SetMaxTaskSlotsCount(int nCount)
 {
 	m_nMaxWorkerThreads = nCount;
 }
-// #ifndef EMSCRIPTEN_SINGLE_THREAD
-#ifndef EMSCRIPTEN
-void ParaEngine::CURLRequestTask::SetCurlEasyOpt( CURL* handle )
+void ParaEngine::CURLRequestTask::SetCurlEasyOpt(CURL* handle)
 {
 	// reset data 
 	m_data.clear();
@@ -652,7 +635,7 @@ void ParaEngine::CURLRequestTask::SetCurlEasyOpt( CURL* handle )
 	curl_easy_setopt(handle, CURLOPT_HEADERDATA, this);
 
 	// form if any. 
-	if(m_pFormPost)
+	if (m_pFormPost)
 	{
 		curl_easy_setopt(handle, CURLOPT_HTTPPOST, m_pFormPost);
 	}
@@ -661,18 +644,18 @@ void ParaEngine::CURLRequestTask::SetCurlEasyOpt( CURL* handle )
 		curl_easy_setopt(handle, CURLOPT_HTTPGET, 1);
 	}
 }
-#endif
-size_t ParaEngine::CURLRequestTask::CUrl_write_data_callback( void *buffer, size_t size, size_t nmemb, void *stream )
+
+size_t ParaEngine::CURLRequestTask::CUrl_write_data_callback(void* buffer, size_t size, size_t nmemb, void* stream)
 {
-	CURLRequestTask * pTask=(CURLRequestTask *) stream;
-	if(pTask) 
+	CURLRequestTask* pTask = (CURLRequestTask*)stream;
+	if (pTask)
 	{
 		pTask->UpdateTime();
-		int nByteCount = (int)size*(int)nmemb;
-		if(nByteCount>0)
+		int nByteCount = (int)size * (int)nmemb;
+		if (nByteCount > 0)
 		{
 			int nOldSize = (int)pTask->m_data.size();
-			pTask->m_data.resize(nOldSize+nByteCount);
+			pTask->m_data.resize(nOldSize + nByteCount);
 			memcpy(&(pTask->m_data[nOldSize]), buffer, nByteCount);
 
 			// just for testing: remove this, dump to debug. 
@@ -683,17 +666,17 @@ size_t ParaEngine::CURLRequestTask::CUrl_write_data_callback( void *buffer, size
 	return 0;
 }
 
-size_t ParaEngine::CURLRequestTask::CUrl_write_header_callback( void *buffer, size_t size, size_t nmemb, void *stream )
+size_t ParaEngine::CURLRequestTask::CUrl_write_header_callback(void* buffer, size_t size, size_t nmemb, void* stream)
 {
-	CURLRequestTask * pTask=(CURLRequestTask *) stream;
-	if(pTask) 
+	CURLRequestTask* pTask = (CURLRequestTask*)stream;
+	if (pTask)
 	{
 		pTask->UpdateTime();
-		int nByteCount = (int)size*(int)nmemb;
-		if(nByteCount>0)
+		int nByteCount = (int)size * (int)nmemb;
+		if (nByteCount > 0)
 		{
 			int nOldSize = (int)pTask->m_header.size();
-			pTask->m_header.resize(nOldSize+nByteCount);
+			pTask->m_header.resize(nOldSize + nByteCount);
 			memcpy(&(pTask->m_header[nOldSize]), buffer, nByteCount);
 
 		}
@@ -709,19 +692,19 @@ void ParaEngine::CURLRequestTask::CompleteTask()
 #endif
 	CNPLNetClient::GetInstance()->RemovePendingRequest(m_url.c_str());
 
-	if(!m_sNPLCallback.empty())
+	if (!m_sNPLCallback.empty())
 	{
 		NPL::CNPLWriter writer;
 		writer.WriteName("msg");
 		writer.BeginTable();
 
-		if(!m_header.empty())
+		if (!m_header.empty())
 		{
 			writer.WriteName("header");
 			writer.WriteValue((const char*)(&(m_header[0])), (int)m_header.size());
 		}
 
-		if(!m_data.empty())
+		if (!m_data.empty())
 		{
 			writer.WriteName("data");
 			writer.WriteValue((const char*)(&(m_data[0])), (int)m_data.size());
@@ -738,7 +721,7 @@ void ParaEngine::CURLRequestTask::CompleteTask()
 		CGlobals::GetAISim()->NPLDoString(writer.ToString().c_str(), (int)(writer.ToString().size()));
 
 	}
-	if(m_pfuncCallBack)
+	if (m_pfuncCallBack)
 	{
 		m_pfuncCallBack(m_returnCode, this, this->m_pUserData);
 	}
@@ -746,7 +729,7 @@ void ParaEngine::CURLRequestTask::CompleteTask()
 
 ParaEngine::CURLRequestTask::~CURLRequestTask()
 {
-	if(m_pFormPost)
+	if (m_pFormPost)
 	{
 		/* then cleanup the form post chain */
 		curl_formfree(m_pFormPost);
@@ -754,44 +737,44 @@ ParaEngine::CURLRequestTask::~CURLRequestTask()
 	SafeDeleteUserData();
 }
 
-CURLFORMcode ParaEngine::CURLRequestTask::AppendFormParam( const char* name, const char* value )
+CURLFORMcode ParaEngine::CURLRequestTask::AppendFormParam(const char* name, const char* value)
 {
 	return curl_formadd(&m_pFormPost, &m_pFormLast, CURLFORM_COPYNAME, name, CURLFORM_COPYCONTENTS, value, CURLFORM_END);
 }
 
-CURLFORMcode ParaEngine::CURLRequestTask::AppendFormParam( const char* name, const char* type, const char* file, const char* data, int datalen )
+CURLFORMcode ParaEngine::CURLRequestTask::AppendFormParam(const char* name, const char* type, const char* file, const char* data, int datalen)
 {
 	CURLFORMcode rc = CURL_FORMADD_OK;
 	/* file upload */
-	if ((file != NULL) && (data == NULL)) 
+	if ((file != NULL) && (data == NULL))
 	{
-		rc = (type == NULL)?
-			curl_formadd(&m_pFormPost, &m_pFormLast, CURLFORM_COPYNAME, name, 
-			CURLFORM_FILE, file, CURLFORM_END): 
-		curl_formadd(&m_pFormPost, &m_pFormLast, CURLFORM_COPYNAME, name, 
-			CURLFORM_FILE, file, 
-			CURLFORM_CONTENTTYPE, type, CURLFORM_END); 
+		rc = (type == NULL) ?
+			curl_formadd(&m_pFormPost, &m_pFormLast, CURLFORM_COPYNAME, name,
+				CURLFORM_FILE, file, CURLFORM_END) :
+			curl_formadd(&m_pFormPost, &m_pFormLast, CURLFORM_COPYNAME, name,
+				CURLFORM_FILE, file,
+				CURLFORM_CONTENTTYPE, type, CURLFORM_END);
 	}
 	/* data field */
-	else if ((file != NULL) && (data != NULL)) 
+	else if ((file != NULL) && (data != NULL))
 	{
 		/* Add a buffer to upload */
-		rc = (type != NULL)? 
+		rc = (type != NULL) ?
 			curl_formadd(&m_pFormPost, &m_pFormLast,
-			CURLFORM_COPYNAME, name,
-			CURLFORM_BUFFER, file, CURLFORM_BUFFERPTR, data, CURLFORM_BUFFERLENGTH, datalen,
-			CURLFORM_CONTENTTYPE, type, 
-			CURLFORM_END):
-		curl_formadd(&m_pFormPost, &m_pFormLast,
-			CURLFORM_COPYNAME, name,
-			CURLFORM_BUFFER, file, CURLFORM_BUFFERPTR, data, CURLFORM_BUFFERLENGTH, datalen,
-			CURLFORM_END);
+				CURLFORM_COPYNAME, name,
+				CURLFORM_BUFFER, file, CURLFORM_BUFFERPTR, data, CURLFORM_BUFFERLENGTH, datalen,
+				CURLFORM_CONTENTTYPE, type,
+				CURLFORM_END) :
+			curl_formadd(&m_pFormPost, &m_pFormLast,
+				CURLFORM_COPYNAME, name,
+				CURLFORM_BUFFER, file, CURLFORM_BUFFERPTR, data, CURLFORM_BUFFERLENGTH, datalen,
+				CURLFORM_END);
 	}
-	else 
+	else
 	{
 		OUTPUT_LOG("warning: Mandatory: \"file\" \n");
 	}
-	if (rc != CURL_FORMADD_OK) 
+	if (rc != CURL_FORMADD_OK)
 	{
 		OUTPUT_LOG("warning:  cannot add form: %d \n", rc);
 	}
@@ -800,24 +783,24 @@ CURLFORMcode ParaEngine::CURLRequestTask::AppendFormParam( const char* name, con
 
 void ParaEngine::CURLRequestTask::SafeDeleteUserData()
 {
-	if(m_nUserDataType>0)
+	if (m_nUserDataType > 0)
 	{
-		if(m_nUserDataType==1)
+		if (m_nUserDataType == 1)
 		{
 			SAFE_DELETE(m_pAssetData);
 		}
 	}
 }
 
-void ParaEngine::CURLRequestTask::SetAssetRequestOpt( CAssetRequestData* pRequestData, URL_REQUEST_TASK_CALLBACK pFuncCallback/*=NULL*/ )
+void ParaEngine::CURLRequestTask::SetAssetRequestOpt(CAssetRequestData* pRequestData, URL_REQUEST_TASK_CALLBACK pFuncCallback/*=NULL*/)
 {
 	SafeDeleteUserData();
-	m_nUserDataType=1;
+	m_nUserDataType = 1;
 	m_pAssetData = pRequestData;
-	if(pFuncCallback == 0)
+	if (pFuncCallback == 0)
 	{
 		// if none is specified, it will pick a default one to use according to pRequestData->m_nAssetType;
-		if(m_pAssetData)
+		if (m_pAssetData)
 		{
 			m_pfuncCallBack = Asset_HTTP_request_callback;
 		}
@@ -828,33 +811,33 @@ void ParaEngine::CURLRequestTask::SetAssetRequestOpt( CAssetRequestData* pReques
 	}
 }
 
-DWORD ParaEngine::CURLRequestTask::Asset_HTTP_request_callback( int nResult, CURLRequestTask* pRequest, LPVOID lpUserData )
+DWORD ParaEngine::CURLRequestTask::Asset_HTTP_request_callback(int nResult, CURLRequestTask* pRequest, LPVOID lpUserData)
 {
 #ifdef PARAENGINE_CLIENT
-	CAssetRequestData* pRequestData = (CAssetRequestData*) lpUserData;
-	if(pRequestData == 0)
+	CAssetRequestData* pRequestData = (CAssetRequestData*)lpUserData;
+	if (pRequestData == 0)
 		return E_FAIL;
 	AssetEntity* pAssetEntity = NULL;
-	if(pRequestData->m_nAssetType == AssetEntity::texture)
+	if (pRequestData->m_nAssetType == AssetEntity::texture)
 		pAssetEntity = (CGlobals::GetAssetManager()->GetTextureManager().get(pRequestData->m_sAssetKey.c_str()));
-	else if(pRequestData->m_nAssetType == AssetEntity::mesh)
+	else if (pRequestData->m_nAssetType == AssetEntity::mesh)
 		pAssetEntity = (CGlobals::GetAssetManager()->GetMeshManager().get(pRequestData->m_sAssetKey.c_str()));
-	else if(pRequestData->m_nAssetType == AssetEntity::parax)
+	else if (pRequestData->m_nAssetType == AssetEntity::parax)
 		pAssetEntity = (CGlobals::GetAssetManager()->GetParaXManager().get(pRequestData->m_sAssetKey.c_str()));
-	if(!pAssetEntity)
+	if (!pAssetEntity)
 		return E_FAIL;
 
 	// the HTTP status code must be 200 in order to proceed. 
-	if(nResult == CURLE_OK && (pRequest->m_responseCode==200) && (int)(pRequest->m_data.size())>0)
+	if (nResult == CURLE_OK && (pRequest->m_responseCode == 200) && (int)(pRequest->m_data.size()) > 0)
 	{
-		if( !(pRequestData->m_sAssetKey.empty()) )
+		if (!(pRequestData->m_sAssetKey.empty()))
 		{
 			// encode the m_sAssetKey
 			string sCachedFileName = CNPLNetClient::GetInstance()->GetCachePath(pRequestData->m_sAssetKey.c_str());
 			{
 				CParaFile file;
 
-				if(file.CreateNewFile(sCachedFileName.c_str()))
+				if (file.CreateNewFile(sCachedFileName.c_str()))
 				{
 					file.write(&(pRequest->m_data[0]), (int)(pRequest->m_data.size()));
 					file.close();
@@ -877,15 +860,15 @@ DWORD ParaEngine::CURLRequestTask::Asset_HTTP_request_callback( int nResult, CUR
 #endif
 }
 
-ParaEngine::CAssetRequestData::CAssetRequestData( AssetEntity& asset )
+ParaEngine::CAssetRequestData::CAssetRequestData(AssetEntity& asset)
 {
 	m_nAssetType = asset.GetType();
 	m_sAssetKey = asset.GetKey();
 }
 
-bool ParaEngine::CURLRequestTask::IsTimedOut( DWORD nCurrentTime )
+bool ParaEngine::CURLRequestTask::IsTimedOut(DWORD nCurrentTime)
 {
-	return ( ( m_nStartTime+m_nTimeOutTime) < nCurrentTime);
+	return ((m_nStartTime + m_nTimeOutTime) < nCurrentTime);
 }
 
 DWORD ParaEngine::CURLRequestTask::UpdateTime()
@@ -894,7 +877,7 @@ DWORD ParaEngine::CURLRequestTask::UpdateTime()
 	return m_nStartTime;
 }
 
-void ParaEngine::CURLRequestTask::SetTimeOut( int nMilliSeconds )
+void ParaEngine::CURLRequestTask::SetTimeOut(int nMilliSeconds)
 {
 	m_nTimeOutTime = nMilliSeconds;
 }

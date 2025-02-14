@@ -109,7 +109,7 @@ namespace ParaEngine
 		int DispatchEvents();
 
 		/** get io service object. */
-		boost::asio::io_service& GetIOService() {return *(m_io_service.get());}
+		boost::asio::io_context& GetIOService() {return *(m_io_service.get());}
 
 		/** whether it is started. */
 		bool IsStarted() {return m_bIsStarted;}
@@ -121,8 +121,8 @@ namespace ParaEngine
 	private:
 		file_watcher_map_t m_file_watchers;
 
-		boost::shared_ptr<boost::asio::io_service> m_io_service;
-		boost::scoped_ptr<boost::asio::io_service::work> m_io_service_work;
+		boost::shared_ptr<boost::asio::io_context> m_io_service;
+		boost::scoped_ptr<boost::asio::executor_work_guard<boost::asio::io_context::executor_type>> m_io_service_work;
 		boost::shared_ptr< boost::thread > m_work_thread;
 		bool m_bIsStarted;
 	};

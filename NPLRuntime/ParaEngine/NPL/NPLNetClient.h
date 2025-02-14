@@ -3,18 +3,14 @@
 #include <string>
 #include <map>
 #include <set>
-// #ifndef EMSCRIPTEN_SINGLE_THREAD
+#include <boost/scoped_ptr.hpp>
 #ifndef EMSCRIPTEN
 #include <boost/asio.hpp>
 #include <boost/thread.hpp>
-/* curl specific */
 #include <curl/curl.h>
 #else 
 #include "UrlLoaders.h"
 #endif
-#include <boost/scoped_ptr.hpp>
-
-
 
 
 namespace ParaEngine
@@ -30,7 +26,7 @@ namespace ParaEngine
 	class CAssetRequestData
 	{
 	public:
-		CAssetRequestData():m_nAssetType(-1), m_bLazyLoading(false){};
+		CAssetRequestData() :m_nAssetType(-1), m_bLazyLoading(false) {};
 		CAssetRequestData(AssetEntity& asset);
 	public:
 		/** it is of AssetEntity::AssetType */
@@ -42,11 +38,11 @@ namespace ParaEngine
 	};
 
 	class CURLRequestTask;
-	typedef DWORD (*URL_REQUEST_TASK_CALLBACK)(int nResult, CURLRequestTask* pRequest, LPVOID lpUserData);
+	typedef DWORD(*URL_REQUEST_TASK_CALLBACK)(int nResult, CURLRequestTask* pRequest, LPVOID lpUserData);
 
-	/** URL request can be a HTTP get/post request etc. 
-	* note: Only create an instance of this class using the new operator. 
-	* CURLRequest can be inserted to a task pool for processing. 
+	/** URL request can be a HTTP get/post request etc.
+	* note: Only create an instance of this class using the new operator.
+	* CURLRequest can be inserted to a task pool for processing.
 	*/
 	class CURLRequestTask
 	{
@@ -71,11 +67,10 @@ namespace ParaEngine
 		// default time out in milliseconds
 		static const DWORD DEFAULT_TIME_OUT = 15000;
 
-// #ifndef EMSCRIPTEN_SINGLE_THREAD
 #ifndef EMSCRIPTEN
-		CURLRequestTask():m_pFormPost(0), m_nTimeOutTime(DEFAULT_TIME_OUT), m_nStartTime(0),m_responseCode(0), m_pFormLast(0), m_pUserData(0), m_returnCode(CURLE_OK), m_type(URL_REQUEST_HTTP_AUTO), m_nPriority(0), m_nStatus(URL_REQUEST_UNSTARTED), m_pfuncCallBack(0), m_nBytesReceived(0), m_nTotalBytes(0), m_nUserDataType(0) {};
+		CURLRequestTask() :m_pFormPost(0), m_nTimeOutTime(DEFAULT_TIME_OUT), m_nStartTime(0), m_responseCode(0), m_pFormLast(0), m_pUserData(0), m_returnCode(CURLE_OK), m_type(URL_REQUEST_HTTP_AUTO), m_nPriority(0), m_nStatus(URL_REQUEST_UNSTARTED), m_pfuncCallBack(0), m_nBytesReceived(0), m_nTotalBytes(0), m_nUserDataType(0) {};
 #else
-		CURLRequestTask():m_nTimeOutTime(DEFAULT_TIME_OUT), m_nStartTime(0),m_responseCode(0), m_pUserData(0), m_returnCode(CURLE_OK), m_type(URL_REQUEST_HTTP_AUTO), m_nPriority(0), m_nStatus(URL_REQUEST_UNSTARTED), m_pfuncCallBack(0), m_nBytesReceived(0), m_nTotalBytes(0), m_nUserDataType(0) {};
+		CURLRequestTask() :m_nTimeOutTime(DEFAULT_TIME_OUT), m_nStartTime(0), m_responseCode(0), m_pUserData(0), m_returnCode(CURLE_OK), m_type(URL_REQUEST_HTTP_AUTO), m_nPriority(0), m_nStatus(URL_REQUEST_UNSTARTED), m_pfuncCallBack(0), m_nBytesReceived(0), m_nTotalBytes(0), m_nUserDataType(0) {};
 #endif
 		~CURLRequestTask();
 
@@ -83,14 +78,13 @@ namespace ParaEngine
 		/** append form parameters */
 		CURLFORMcode AppendFormParam(const char* name, const char* value);
 
-		/** append a file, such as 
+		/** append a file, such as
 		{name = {file="/tmp/test.txt",	type="text/plain"}}
 		{name = {file="dummy.html",	data="<html><bold>bold</bold></html>, type="text/html"}}
-		input can be NULL if not available. 
+		input can be NULL if not available.
 		*/
 		CURLFORMcode AppendFormParam(const char* name, const char* type, const char* file, const char* data, int datalen);
 
-// #ifndef EMSCRIPTEN_SINGLE_THREAD
 #ifndef EMSCRIPTEN
 		/** init the easy handle according to the settings. It will also prepare the task for the curl interface by clearing data, etc. */
 		void SetCurlEasyOpt(CURL* handle);
@@ -99,19 +93,19 @@ namespace ParaEngine
 		void CompleteTask();
 
 		/** curl call back. */
-		static size_t CUrl_write_data_callback(void *buffer, size_t size, size_t nmemb, void *stream);
-		static size_t CUrl_write_header_callback(void *buffer, size_t size, size_t nmemb, void *stream);
+		static size_t CUrl_write_data_callback(void* buffer, size_t size, size_t nmemb, void* stream);
+		static size_t CUrl_write_header_callback(void* buffer, size_t size, size_t nmemb, void* stream);
 
 		/** set the time out of the request. default is 15000 milliseconds. */
 		void SetTimeOut(int nMilliSeconds);
 		/** Get the time out of the request. default is 15000 milliseconds. */
 		int GetTimeOut();
 
-		/** set the options for asset request. 
-		* @param pRequestData: it must be created using new operator. The ownership of this object is transfered to the request. and the caller should never call the delete. 
+		/** set the options for asset request.
+		* @param pRequestData: it must be created using new operator. The ownership of this object is transfered to the request. and the caller should never call the delete.
 		* @param pFuncCallback: the call back function to use. if none is specified, it will pick a default one to use according to pRequestData->m_nAssetType;
 		*/
-		void SetAssetRequestOpt(CAssetRequestData* pRequestData, URL_REQUEST_TASK_CALLBACK pFuncCallback=NULL);
+		void SetAssetRequestOpt(CAssetRequestData* pRequestData, URL_REQUEST_TASK_CALLBACK pFuncCallback = NULL);
 
 		/** this function can be used for HTTP texture callback. see SetAssetRequestOpt.
 		* @param lpUserData is expected to be CAssetRequestData
@@ -126,8 +120,8 @@ namespace ParaEngine
 		*/
 		bool IsTimedOut(DWORD nCurrentTime);
 
-		/** this is to set the timer to current time. it is used to check for TimedOut() 
-		* @return : return the current time. 
+		/** this is to set the timer to current time. it is used to check for TimedOut()
+		* @return : return the current time.
 		*/
 		DWORD UpdateTime();
 
@@ -135,7 +129,6 @@ namespace ParaEngine
 		/** CURLOPT_URL*/
 		string m_url;
 		/** CURLOPT_HTTPPOST */
-// #ifndef EMSCRIPTEN_SINGLE_THREAD
 #ifndef EMSCRIPTEN
 		struct curl_httppost* m_pFormPost;
 		struct curl_httppost* m_pFormLast;
@@ -168,7 +161,7 @@ namespace ParaEngine
 
 		/** The time that this request is started or received any response. in milliseconds */
 		DWORD m_nStartTime;
-		/** for how long the request is considered timed out. If a request was not responding, either because of DNS resolving timeout or connection timed out. 
+		/** for how long the request is considered timed out. If a request was not responding, either because of DNS resolving timeout or connection timed out.
 		* we will manually remove the request and free the slot for next request. This is usually not needed. However, in windows vista, DNS time out is not working as expected, in windows XP
 		* the libcurl can detect time out by itself. */
 		DWORD m_nTimeOutTime;
@@ -180,60 +173,58 @@ namespace ParaEngine
 		string m_sResponseData;
 		string m_sResponseHeader;
 		// curl return code
-		CURLcode m_returnCode;   
+		CURLcode m_returnCode;
 		// the last received HTTP or FTP code. We will expect 200 for successful HTTP response
-		long m_responseCode;   
+		long m_responseCode;
 
 	};
 
-	/** a task pool is a collection of requests of which only a specified limited number of worker threads are allowed to process. 
-	* for example, we can create a task pool for each type of URL requests, and assign the max number of processors allowed. 
+	/** a task pool is a collection of requests of which only a specified limited number of worker threads are allowed to process.
+	* for example, we can create a task pool for each type of URL requests, and assign the max number of processors allowed.
 
 	Implementation Details:
 
-	The main game (scripting) thread pushes any number of URL request to a pool of CURLRequestTask and returns immediately. 
+	The main game (scripting) thread pushes any number of URL request to a pool of CURLRequestTask and returns immediately.
 
 	On each frame move
-	- all running tasks are performed using the curl multi interface. The result of each finished request is saved to CURLRequestTask struct. 
-	- the pool of CURLRequestTask is traversed  during which finished CURLRequestTask is removed from the the queue and the callback is called. 
-	- new tasks are added to the available task slots for further processing. 
-	- the above three steps are repeated until there is no queued task to be added to any available slots. 
+	- all running tasks are performed using the curl multi interface. The result of each finished request is saved to CURLRequestTask struct.
+	- the pool of CURLRequestTask is traversed  during which finished CURLRequestTask is removed from the the queue and the callback is called.
+	- new tasks are added to the available task slots for further processing.
+	- the above three steps are repeated until there is no queued task to be added to any available slots.
 
 	*/
-	class CRequestTaskPool 
+	class CRequestTaskPool
 	{
 	public:
 		/** url worker state. */
 		class CUrlWorkerState
 		{
 		public:
-// #ifndef EMSCRIPTEN_SINGLE_THREAD
 #ifndef EMSCRIPTEN
-			CUrlWorkerState(): m_easy_handle(NULL), m_pCurrentTask(NULL), m_returnCode(CURLE_OK), m_bIsCompleted(true) {};
+			CUrlWorkerState() : m_easy_handle(NULL), m_pCurrentTask(NULL), m_returnCode(CURLE_OK), m_bIsCompleted(true) {};
 			CURL* m_easy_handle;
 			/* return code for last transfer */
-			CURLcode m_returnCode;   
+			CURLcode m_returnCode;
 #endif
 			/** what this message means */
-			bool m_bIsCompleted;   
+			bool m_bIsCompleted;
 			CURLRequestTask* m_pCurrentTask;
 		};
 
-// #ifndef EMSCRIPTEN_SINGLE_THREAD
 #ifndef EMSCRIPTEN
-		CRequestTaskPool():m_nRunningTaskCount(0), m_nMaxWorkerThreads(1), m_nMaxQueuedTask(65535), m_multi_handle(NULL){}
+		CRequestTaskPool() :m_nRunningTaskCount(0), m_nMaxWorkerThreads(1), m_nMaxQueuedTask(65535), m_multi_handle(NULL) {}
 #else
-		CRequestTaskPool():m_nRunningTaskCount(0), m_nMaxWorkerThreads(1), m_nMaxQueuedTask(65535) {}
+		CRequestTaskPool() : m_nRunningTaskCount(0), m_nMaxWorkerThreads(1), m_nMaxQueuedTask(65535) {}
 #endif
 		~CRequestTaskPool();
 	public:
-		/** Append URL request to a pool. 
-		* @param pUrlTask: must be new CURLRequestTask(), the ownership of the task is transfered to the manager. so the caller should never delete the pointer. 
+		/** Append URL request to a pool.
+		* @param pUrlTask: must be new CURLRequestTask(), the ownership of the task is transfered to the manager. so the caller should never delete the pointer.
 		*/
 		bool AppendURLRequest(CURLRequestTask* pUrlTask);
 
-		/** process queued tasks and if any has result, call the callback procedure. 
-		* return the number of processed result. 
+		/** process queued tasks and if any has result, call the callback procedure.
+		* return the number of processed result.
 		*/
 		int DoProcess();
 
@@ -244,9 +235,9 @@ namespace ParaEngine
 		* @param: return NULL, if no worker slot is available. */
 		CUrlWorkerState* GetFreeWorkerSlot();
 
-		/** do the multi interface. 
-		* This function should be called regularly to process the result using the multi interface. 
-		* @return :the number of slots finished during this perform. 
+		/** do the multi interface.
+		* This function should be called regularly to process the result using the multi interface.
+		* @return :the number of slots finished during this perform.
 		*/
 		int CURL_MultiPerform();
 
@@ -263,15 +254,13 @@ namespace ParaEngine
 		/** the max number of queued tasks. Default to 65535 */
 		int m_nMaxQueuedTask;
 		/** the multi handle. */
-// #ifndef EMSCRIPTEN_SINGLE_THREAD
 #ifndef EMSCRIPTEN
-		CURLM * m_multi_handle;
+		CURLM* m_multi_handle;
 #endif
 		/** the number of still running tasks. */
 		int m_nRunningTaskCount;
 	};
 
-// #ifndef EMSCRIPTEN_SINGLE_THREAD
 #ifndef EMSCRIPTEN
 
 	/// <summary>
@@ -290,8 +279,8 @@ namespace ParaEngine
 	public:
 
 		/**
-		* get the web service interface by its URL, if the web service does not exists it will return NULL, in which case 
-		* one needs to call OpenWebService() 
+		* get the web service interface by its URL, if the web service does not exists it will return NULL, in which case
+		* one needs to call OpenWebService()
 		*/
 		virtual INPLWebService* GetWebService(const char* sURL);
 		/**
@@ -304,7 +293,7 @@ namespace ParaEngine
 		virtual INPLWebService* OpenWebService(const char* sURL, const char* sUserName, const char* sPassword, const char* sDomain);
 
 		/**
-		* close a given web service. Basically, there is no need to close a web service, 
+		* close a given web service. Basically, there is no need to close a web service,
 		* unless one wants to reopen it with different credentials
 		*/
 		virtual bool CloseWebService(const char* sURL);
@@ -322,7 +311,7 @@ namespace ParaEngine
 		virtual INPLJabberClient* CreateJabberClient(const char* sJID);
 
 		/**
-		* close a given jabber client instance. Basically, there is no need to close a web service, 
+		* close a given jabber client instance. Basically, there is no need to close a web service,
 		* unless one wants to reopen it with different credentials
 		* @param sJID: such as "lixizhi@paraweb3d.com"
 		*/
@@ -343,19 +332,19 @@ namespace ParaEngine
 		virtual void CancelDownload(const char* DownloaderName);
 
 		/**
-		* Synchronous call of the function AsyncDownload(). This function will not return until download is complete or an error occurs. 
-		* this function is rarely used. AsyncDownload() is used. 
+		* Synchronous call of the function AsyncDownload(). This function will not return until download is complete or an error occurs.
+		* this function is rarely used. AsyncDownload() is used.
 		* @return:1 if succeed, 0 if fail
 		*/
 		virtual int Download(const char* url, const char* destFolder, const char* callbackScript, const char* DownloaderName);
 
-		/** this function is called once on each frame to polling all results and calling the callbacks in scripting interface 
+		/** this function is called once on each frame to polling all results and calling the callbacks in scripting interface
 		* @note: this function must be called from the main NPL runtime thread,since it will execute NPL code internally.
 		* @return the number of asynchronous messages processed are returned.
 		*/
 		virtual int ProcessResults();
 
-		/** this function is called once on each frame to polling all results and calling the callbacks in scripting interface 
+		/** this function is called once on each frame to polling all results and calling the callbacks in scripting interface
 		* @note: this function must be called from the main NPL runtime thread,since it will execute NPL code internally.
 		* @return the number of asynchronous download processed are returned.
 		*/
@@ -370,36 +359,36 @@ namespace ParaEngine
 		//
 		///////////////////////////////////////////////////////////////////////////
 
-		/** Append URL request to a pool. connections in the same pool are reused as much as possible. 
-		* There is generally no limit to the number of requests sent. However, each pool has a specified maximum number of concurrent worker slots. 
-		*  the default number is 1. One can change this number with ChangeRequestPoolSize. 
-		* @param pUrlTask: must be new CURLRequestTask(), the ownership of the task is transfered to the manager. so the caller should never delete the pointer. 
-		* @param sPoolName: the request pool name. If the pool does not exist, it will be created. If null, the default pool is used. 
-		*  there are some reserved pool names used by ParaEngine. They are: 
-		*    - "d": download pool. default size is 2, for downloading files. 
+		/** Append URL request to a pool. connections in the same pool are reused as much as possible.
+		* There is generally no limit to the number of requests sent. However, each pool has a specified maximum number of concurrent worker slots.
+		*  the default number is 1. One can change this number with ChangeRequestPoolSize.
+		* @param pUrlTask: must be new CURLRequestTask(), the ownership of the task is transfered to the manager. so the caller should never delete the pointer.
+		* @param sPoolName: the request pool name. If the pool does not exist, it will be created. If null, the default pool is used.
+		*  there are some reserved pool names used by ParaEngine. They are:
+		*    - "d": download pool. default size is 2, for downloading files.
 		*    - "r": rest pool. default size is 5, for REST like HTTP get/post calls.
 		*    - "w": web pool. default size is 5, for web based requests.
 		*/
 		virtual bool AppendURLRequest(CURLRequestTask* pUrlTask, const char* sPoolName = NULL);
 
 		/**
-		* There is generally no limit to the number of requests sent. However, each pool has a specified maximum number of concurrent worker slots. 
-		*  the default number is 1. One can change this number with this function. 
+		* There is generally no limit to the number of requests sent. However, each pool has a specified maximum number of concurrent worker slots.
+		*  the default number is 1. One can change this number with this function.
 		*/
 		virtual bool ChangeRequestPoolSize(const char* sPoolName, int nCount);
 
-		/** this function is called once on each frame to polling all results and calling the callbacks in scripting interface 
+		/** this function is called once on each frame to polling all results and calling the callbacks in scripting interface
 		* @note: this function must be called from the main NPL runtime thread,since it will execute NPL code internally.
 		* @return the number of asynchronous messages processed are returned.
 		*/
 		virtual int ProcessUrlRequests();
 
-		/** add a string url to a set. this is used for tracking in processing requests. 
-		* this function is called automatically when AppendURLRequest is called. 
+		/** add a string url to a set. this is used for tracking in processing requests.
+		* this function is called automatically when AppendURLRequest is called.
 		*/
 		void AddPendingRequest(const char* sURL);
 
-		/** whether the given request is already in the pending set. 
+		/** whether the given request is already in the pending set.
 		* one can use this function to check whether there is a pending request due to previous call of AppendURLRequest
 		*/
 		bool HasPendingRequest(const char* sURL);
@@ -429,14 +418,14 @@ namespace ParaEngine
 		std::set <std::string> m_pending_requests;
 
 		/** for accepting and dispatching messages for all NPL Jabber Clients. Only one m_DispatcherThread is used to run it. */
-		boost::asio::io_service m_dispatcher_io_service;
+		boost::asio::io_context m_dispatcher_io_service;
 
 		/** Thread used for running the m_dispatcher_io_service 's run loop for accepting and dispatching messages for all NPL Jabber Clients */
 		boost::scoped_ptr<boost::thread> m_dispatcherThread;
 
 		/** Work for the private m_dispatcher_io_service to perform. If we do not give the
 		io_service some work to do then the io_service::run() function will exit immediately.*/
-		boost::scoped_ptr<boost::asio::io_service::work> m_work_lifetime;
+		boost::scoped_ptr<boost::asio::executor_work_guard<boost::asio::io_context::executor_type>> m_work_lifetime;
 	};
 #endif
 }

@@ -21,7 +21,7 @@ namespace NPL
 		static const unsigned int IDLE_TIMEOUT_TIMER_INTERVAL = 120000;
 		// 
 		static const size_t RECEIVE_BUFF_SIZE = 4096 * 2;
-		
+
 	public:
 		CNPLNetUDPServer();
 		~CNPLNetUDPServer();
@@ -103,7 +103,7 @@ namespace NPL
 
 		/// The io_service for dispatching (send)to/receive_from) messages from udp stack to NPL runtime states' message queues.
 		boost::asio::io_context m_io_service_dispatcher;
-		
+
 		///
 		boost::asio::ip::udp::socket m_udp;
 
@@ -125,7 +125,7 @@ namespace NPL
 
 		/** Work for the private m_io_service_dispatcher to perform. If we do not give the
 		io_service some work to do then the io_service::run() function will exit immediately.*/
-		boost::scoped_ptr<boost::asio::io_service::work> m_work_lifetime;
+		boost::scoped_ptr<boost::asio::executor_work_guard<boost::asio::io_context::executor_type>> m_work_lifetime;
 
 		/** how many milliseconds to assume time out, default to 2 mins. */
 		int m_nIdleTimeoutMS;
@@ -151,7 +151,7 @@ namespace NPL
 #else 
 namespace NPL
 {
-	class CNPLNetUDPServer 
+	class CNPLNetUDPServer
 	{
 	public:
 
@@ -164,19 +164,19 @@ namespace NPL
 		// 
 		static const size_t RECEIVE_BUFF_SIZE = 4096 * 2;
 
-		CNPLNetUDPServer():m_route_manager(), m_msg_dispatcher(*this, m_route_manager) {}
+		CNPLNetUDPServer() :m_route_manager(), m_msg_dispatcher(*this, m_route_manager) {}
 		void start(const char* server = nullptr, unsigned short port = NPL_DEFAULT_UDP_PORT) {}
 		void stop() {}
 		static int Ping(const char* host, const char* port, unsigned int waitTime = 1000) { return 0; }
-		unsigned short GetHostPort(){ return 0;}
+		unsigned short GetHostPort() { return 0; }
 		CNPLUDPDispatcher& GetDispatcher() { return m_msg_dispatcher; };
 
 		void EnableIdleTimeout(bool bEnable) {}
-		bool IsIdleTimeoutEnabled() { return false;}
-		void SetIdleTimeoutPeriod(int nMilliseconds){}
-		int GetIdleTimeoutPeriod(){ return 0;}
+		bool IsIdleTimeoutEnabled() { return false; }
+		void SetIdleTimeoutPeriod(int nMilliseconds) {}
+		int GetIdleTimeoutPeriod() { return 0; }
 		const std::string& GetHostIP() { static std::string s_ip = ""; return s_ip; }
-		bool IsServerStarted() { return false;}
+		bool IsServerStarted() { return false; }
 		NPLUDPRoute_ptr CreateRoute(NPLUDPAddress_ptr pAddress)
 		{
 			NPLUDPRoute_ptr pRoute(new CNPLUDPRoute(*this, m_route_manager, m_msg_dispatcher));

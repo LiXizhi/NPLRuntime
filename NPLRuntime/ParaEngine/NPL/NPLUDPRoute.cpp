@@ -177,7 +177,7 @@ namespace NPL {
 			if (GetLogLevel() > 0)
 			{
 				OUTPUT_LOG1("Route time out (%s/%d) with id (%s). \n",
-							GetIP().c_str(), GetPort(), GetNID().c_str());
+					GetIP().c_str(), GetPort(), GetNID().c_str());
 			}
 			return 0;
 		}
@@ -316,7 +316,7 @@ namespace NPL {
 				m_parser.reset();
 				m_input_msg.reset();
 				m_input_msg.method = "B";
-				m_input_msg.m_n_filename = -40; 
+				m_input_msg.m_n_filename = -40;
 				m_input_msg.m_code.resize(bytes_transferred);
 				memcpy((void*)m_input_msg.m_code.c_str(), buff, bytes_transferred);
 				handleMessageIn();
@@ -346,7 +346,7 @@ namespace NPL {
 		}
 		else
 			return 0;
-		
+
 	}
 
 	void CNPLUDPRoute::CloseAfterSend()
@@ -387,7 +387,7 @@ namespace NPL {
 		{
 			// Post a call to the stop function so that stop() is safe to call from any thread.
 #ifndef EMSCRIPTEN_SINGLE_THREAD
-			m_udp_server.GetIoService().post(boost::bind(&CNPLUDPRoute::handle_stop, shared_from_this()));
+			boost::asio::post(m_udp_server.GetIoService(), boost::bind(&CNPLUDPRoute::handle_stop, shared_from_this()));
 #endif	
 		}
 	}
@@ -408,7 +408,7 @@ namespace NPL {
 	}
 
 
-	NPLReturnCode CNPLUDPRoute::SendMessage(const NPLFileName& file_name, const char * code /*= nullptr*/, int nLength /*= 0*/, int priority/* = 0*/)
+	NPLReturnCode CNPLUDPRoute::SendMessage(const NPLFileName& file_name, const char* code /*= nullptr*/, int nLength /*= 0*/, int priority/* = 0*/)
 	{
 		NPLMsgOut_ptr msg_out(new NPLMsgOut());
 		CNPLMsgOut_gen writer(*msg_out);
@@ -477,7 +477,6 @@ namespace NPL {
 			}
 		}
 
-
 		return SendMessage(msg_out);
 	}
 
@@ -510,7 +509,7 @@ namespace NPL {
 		if (msg->empty())
 			return NPL_OK;
 
-	
+
 		int nLength = (int)msg->GetBuffer().size();
 		m_nSendCount++;
 #ifndef EMSCRIPTEN_SINGLE_THREAD

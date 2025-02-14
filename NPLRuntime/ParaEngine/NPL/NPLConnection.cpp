@@ -37,7 +37,7 @@ Default value is 200KB */
 /** whether to enable tcp level keep alive. Keep alive is a system socket feature*/
 // #define NPL_INCOMING_KEEPALIVE
 
-NPL::CNPLConnection::CNPLConnection(boost::asio::io_service& io_service, CNPLConnectionManager& manager, CNPLDispatcher& msg_dispatcher)
+NPL::CNPLConnection::CNPLConnection(boost::asio::io_context& io_service, CNPLConnectionManager& manager, CNPLDispatcher& msg_dispatcher)
 	: m_socket(io_service), m_connection_manager(manager), m_msg_dispatcher(msg_dispatcher), m_totalBytesIn(0), m_totalBytesOut(0),
 	m_queueOutput(DEFAULT_NPL_OUTPUT_QUEUE_SIZE), m_state(ConnectionDisconnected),
 	m_bDebugConnection(false), m_nCompressionLevel(0), m_nCompressionThreshold(NPL_AUTO_COMPRESSION_THRESHOLD),
@@ -320,9 +320,9 @@ void NPL::CNPLConnection::start()
 
 	// begin reading
 	m_socket.async_read_some(boost::asio::buffer(m_buffer),
-		boost::bind(&CNPLConnection::handle_read, shared_from_this(),
-			boost::asio::placeholders::error,
-			boost::asio::placeholders::bytes_transferred));
+		[this, self = shared_from_this()](const boost::system::error_code& error, std::size_t bytes_transferred) {
+		handle_read(error, bytes_transferred);
+	});
 }
 
 void NPL::CNPLConnection::CloseAfterSend()
@@ -358,7 +358,9 @@ void NPL::CNPLConnection::stop(bool bRemoveConnection, int nReason)
 			SendMessage("connect_overriden", "");
 		}
 		// Post a call to the stop function so that stop() is safe to call from any thread.
-		boost::asio::post(m_socket.get_executor(), boost::bind(&CNPLConnection::handle_stop, shared_from_this()));
+		boost::asio::post(m_socket.get_executor(), [this, self = shared_from_this()]() {
+			handle_stop();
+		});
 	}
 }
 
@@ -430,9 +432,9 @@ void NPL::CNPLConnection::handle_read(const boost::system::error_code& e, std::s
 		{
 			// Read some from the server.
 			m_socket.async_read_some(boost::asio::buffer(m_buffer),
-				boost::bind(&CNPLConnection::handle_read, shared_from_this(),
-					boost::asio::placeholders::error,
-					boost::asio::placeholders::bytes_transferred));
+				[this, self = shared_from_this()](const boost::system::error_code& error, std::size_t bytes_transferred) {
+				handle_read(error, bytes_transferred);
+			});
 		}
 		else
 		{
@@ -486,10 +488,10 @@ void NPL::CNPLConnection::handle_write(const boost::system::error_code& e)
 		NPLMsgOut_ptr* msg = NULL;
 		if (m_queueOutput.try_next(&msg) && msg != NULL)
 		{
-			boost::asio::async_write(m_socket,
-				boost::asio::buffer((*msg)->GetBuffer().c_str(), (*msg)->GetBuffer().size()),
-				boost::bind(&CNPLConnection::handle_write, shared_from_this(),
-					boost::asio::placeholders::error));
+			boost::asio::async_write(m_socket, boost::asio::buffer((*msg)->GetBuffer().c_str(), (*msg)->GetBuffer().size()),
+				[this, self = shared_from_this()](const boost::system::error_code& error, std::size_t) {
+				handle_write(error);
+			});
 		}
 		else
 		{
@@ -520,16 +522,17 @@ void NPL::CNPLConnection::handle_write(const boost::system::error_code& e)
 	}
 }
 
-void NPL::CNPLConnection::handle_resolve(const boost::system::error_code& err, boost::asio::ip::tcp::resolver::iterator endpoint_iterator)
+void NPL::CNPLConnection::handle_resolve(const boost::system::error_code& err, boost::asio::ip::tcp::resolver::results_type results)
 {
 	if (!err)
 	{
 		// Attempt a connection to the first endpoint in the list. Each endpoint
 		// will be tried until we successfully establish a connection.
-		boost::asio::ip::tcp::endpoint endpoint = *endpoint_iterator;
-		m_socket.async_connect(endpoint,
-			boost::bind(&CNPLConnection::handle_connect, shared_from_this(),
-				boost::asio::placeholders::error, endpoint_iterator));
+		boost::asio::ip::tcp::resolver::results_type::iterator endpoint_iterator = results.begin();
+		m_socket.async_connect(*endpoint_iterator,
+			[this, self = shared_from_this(), endpoint_iterator](const boost::system::error_code& error) {
+			handle_connect(error, endpoint_iterator);
+		});
 	}
 	else
 	{
@@ -541,7 +544,7 @@ void NPL::CNPLConnection::handle_resolve(const boost::system::error_code& err, b
 }
 
 void NPL::CNPLConnection::handle_connect(const boost::system::error_code& err,
-	boost::asio::ip::tcp::resolver::iterator endpoint_iterator)
+	boost::asio::ip::tcp::resolver::results_type::iterator endpoint_iterator)
 {
 	if (!err)
 	{
@@ -555,8 +558,8 @@ void NPL::CNPLConnection::handle_connect(const boost::system::error_code& err,
 		m_resolved_address = endpoint.address().to_string();
 
 	}
-	else if ((endpoint_iterator) != boost::asio::ip::tcp::resolver::iterator() &&
-		(++endpoint_iterator) != boost::asio::ip::tcp::resolver::iterator())
+	else if ((endpoint_iterator) != boost::asio::ip::tcp::resolver::results_type::iterator() &&
+		(++endpoint_iterator) != boost::asio::ip::tcp::resolver::results_type::iterator())
 	{
 		// That endpoint didn't work, try the next one.
 		boost::system::error_code ec;
@@ -568,8 +571,9 @@ void NPL::CNPLConnection::handle_connect(const boost::system::error_code& err,
 		}
 		boost::asio::ip::tcp::endpoint endpoint = *endpoint_iterator;
 		m_socket.async_connect(endpoint,
-			boost::bind(&CNPLConnection::handle_connect, shared_from_this(),
-				boost::asio::placeholders::error, endpoint_iterator));
+			[this, self = shared_from_this(), endpoint_iterator](const boost::system::error_code& error) {
+			handle_connect(error, endpoint_iterator);
+		});
 	}
 	else
 	{
@@ -592,12 +596,10 @@ void NPL::CNPLConnection::connect()
 	if (!m_resolver)
 		m_resolver.reset(new boost::asio::ip::tcp::resolver(m_socket.get_executor()));
 
-	boost::asio::ip::tcp::resolver::query query(m_address->GetHost(), m_address->GetPort());
-
-	m_resolver->async_resolve(query,
-		boost::bind(&CNPLConnection::handle_resolve, shared_from_this(),
-			boost::asio::placeholders::error,
-			boost::asio::placeholders::iterator));
+	m_resolver->async_resolve(m_address->GetHost(), m_address->GetPort(),
+		[this, self = shared_from_this()](const boost::system::error_code& error, boost::asio::ip::tcp::resolver::results_type results) {
+		handle_resolve(error, results);
+	});
 }
 
 void NPL::CNPLConnection::GetStatistics(int& totalIn, int& totalOut)
@@ -724,10 +726,10 @@ NPL::NPLReturnCode NPL::CNPLConnection::SendMessage(NPLMsgOut_ptr& msg)
 		// LXZ: very tricky code to ensure thread-safety to the buffer.
 		// only start the sending task when the buffer is empty, otherwise we will wait for previous send task. 
 		// i.e. inside handle_write handler. 
-		boost::asio::async_write(m_socket,
-			boost::asio::buffer((*pFront)->GetBuffer().c_str(), (*pFront)->GetBuffer().size()),
-			boost::bind(&CNPLConnection::handle_write, shared_from_this(),
-				boost::asio::placeholders::error));
+		boost::asio::async_write(m_socket, boost::asio::buffer((*pFront)->GetBuffer().c_str(), (*pFront)->GetBuffer().size()),
+			[this, self = shared_from_this()](const boost::system::error_code& error, std::size_t) {
+			handle_write(error);
+		});
 	}
 	else if (bufStatus == RingBuffer_Type::BufferOverFlow)
 	{
