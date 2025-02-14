@@ -69,7 +69,7 @@ XFile::Scene *ParaEngine::FBXParser::ParseFBXFile(const char *buffer, int nSize)
 {
 	Assimp::Importer importer;
 	Reset();
-	const aiScene *pFbxScene = importer.ReadFileFromMemory(buffer, nSize, aiProcess_Triangulate | aiProcess_GenSmoothNormals | aiProcess_FlipUVs, "fbx");
+	const aiScene *pFbxScene = importer.ReadFileFromMemory(buffer, nSize, aiProcess_Triangulate | aiProcess_GenSmoothNormals | aiProcess_FlipUVs | aiProcess_LimitBoneWeights, "fbx");
 	if (pFbxScene)
 	{
 		if (pFbxScene->HasMeshes())
@@ -130,7 +130,8 @@ CParaXModel *FBXParser::ParseParaXModel(const char *buffer, int nSize, const cha
 	Reset();
 	SetAnimSplitterFilename();
 	// this is not needed: aiProcess_MakeLeftHanded |
-	const aiScene *pFbxScene = importer.ReadFileFromMemory(buffer, nSize, aiProcess_Triangulate | aiProcess_GenSmoothNormals | aiProcess_FlipUVs, pHint);
+	// const aiScene *pFbxScene = importer.ReadFileFromMemory(buffer, nSize, aiProcess_Triangulate | aiProcess_GenSmoothNormals | aiProcess_FlipUVs, pHint);
+	const aiScene *pFbxScene = importer.ReadFileFromMemory(buffer, nSize, aiProcess_Triangulate | aiProcess_GenSmoothNormals | aiProcess_FlipUVs | aiProcess_LimitBoneWeights, pHint);
 	if (pFbxScene)
 	{
 		ParaXHeaderDef m_xheader;
@@ -3065,6 +3066,8 @@ void FBXParser::ProcessFBXMesh(const aiScene *pFbxScene, aiMesh *pFbxMesh, aiNod
 			for (int j = 0; j < (int)fbxBone->mNumWeights; j++)
 			{
 				aiVertexWeight &vertexWeight = fbxBone->mWeights[j];
+				// 权重太小直接忽略
+				if (vertexWeight.mWeight <= 0.0001) continue;
 				int vertex_id = vertexWeight.mVertexId + vertex_start;
 				uint8 vertex_weight = (uint8)(vertexWeight.mWeight * 255);
 				int nTotalWeight = 0;
@@ -3077,15 +3080,14 @@ void FBXParser::ProcessFBXMesh(const aiScene *pFbxScene, aiMesh *pFbxMesh, aiNod
 					if (cur_vertex_weight == 0)
 					{
 						// if (nTotalWeight > 255)
-						//	vertex_weight -= nTotalWeight - 255;
-						if (nTotalWeight == 254)
-							vertex_weight += 1;
+						// 	vertex_weight -= nTotalWeight - 255;
+						// if (nTotalWeight == 254)
+						// 	vertex_weight += 1;
 						vertex.bones[bone_index] = nBoneIndex;
 						vertex.weights[bone_index] = vertex_weight;
 						break;
 					}
 				}
-
 				if (bone_index >= ParaEngine::Bone::s_MaxBonesPerVertex)
 				{
 					OUTPUT_LOG("warn: %s vertex %d has more than 4 bones affecting it. overwrite the smallest one\n", m_modelInfo.m_sFilename.c_str(), vertex_id);
@@ -3099,6 +3101,20 @@ void FBXParser::ProcessFBXMesh(const aiScene *pFbxScene, aiMesh *pFbxMesh, aiNod
 					vertex.bones[nSmallestIndex] = nBoneIndex;
 					vertex.weights[nSmallestIndex] = vertex_weight;
 				}
+			}
+		}
+		auto vertex_size = m_vertices.size();
+		for (auto i = 0; i < vertex_size; i++)
+		{
+			auto& vertex = m_vertices[i];
+			auto total_weight = 0;
+			for (auto j = 0; j < ParaEngine::Bone::s_MaxBonesPerVertex; j++)
+			{
+				total_weight += vertex.weights[j];
+			}
+			for (auto j = 0; j < ParaEngine::Bone::s_MaxBonesPerVertex; j++)
+			{
+				vertex.weights[j] = vertex.weights[j] * (255.f / total_weight);
 			}
 		}
 	}
