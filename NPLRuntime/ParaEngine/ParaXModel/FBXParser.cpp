@@ -18,6 +18,7 @@
 #include "particle.h"
 #include "StringHelper.h"
 #include <math.h>
+#include <numeric>
 
 #include "assimp/scene.h"
 /** define this use use assimp version 5, default to use ver 4 interface*/
@@ -2825,19 +2826,13 @@ void FBXParser::ProcessFBXMesh(const aiScene* pFbxScene, aiMesh* pFbxMesh, aiNod
 				aiVertexWeight& vertexWeight = fbxBone->mWeights[j];
 				int vertex_id = vertexWeight.mVertexId + vertex_start;
 				uint8 vertex_weight = (uint8)(vertexWeight.mWeight * 255);
-				int nTotalWeight = 0;
 				int bone_index = 0;
 				ModelVertex& vertex = m_vertices[vertex_id];
 				for (; bone_index < ParaEngine::Bone::s_MaxBonesPerVertex; bone_index++)
 				{
 					uint8 cur_vertex_weight = vertex.weights[bone_index];
-					nTotalWeight += cur_vertex_weight;
 					if (cur_vertex_weight == 0)
 					{
-						//if (nTotalWeight > 255)
-						//	vertex_weight -= nTotalWeight - 255;
-						if (nTotalWeight == 254)
-							vertex_weight += 1;
 						vertex.bones[bone_index] = nBoneIndex;
 						vertex.weights[bone_index] = vertex_weight;
 						break;
@@ -2859,18 +2854,20 @@ void FBXParser::ProcessFBXMesh(const aiScene* pFbxScene, aiMesh* pFbxMesh, aiNod
 				}
 			}
 		}
-		auto vertex_size = m_vertices.size();
-		for (auto i = 0; i < vertex_size; i++)
+		for (auto& vertex : m_vertices)
 		{
-			auto& vertex = m_vertices[i];
-			auto total_weight = 0;
-			for (auto j = 0; j < ParaEngine::Bone::s_MaxBonesPerVertex; j++)
+			int total_weight = std::accumulate(std::begin(vertex.weights), std::end(vertex.weights), 0);
+			// we will ignore for close to 1 sum weight like 255, 254, 253, 252. this is usually 254 - 4/2 = 252, due to round off error, 4 is max bone count.
+			if (total_weight > 0 && total_weight < 252)
 			{
-				total_weight += vertex.weights[j];
-			}
-			for (auto j = 0; j < ParaEngine::Bone::s_MaxBonesPerVertex; j++)
-			{
-				vertex.weights[j] = vertex.weights[j] * (255.f / total_weight);
+				float fScale = 255.0f / total_weight;
+				for (auto& weight : vertex.weights)
+				{
+					if (weight > 0)
+						weight = static_cast<uint8>(weight * fScale);
+					else
+						break;
+				}
 			}
 		}
 	}
