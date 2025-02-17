@@ -52,13 +52,11 @@ install:
 
     rmdir "C:/Program Files/PostgreSQL" /s /q
     
-    cd C:\Libraries
+    cd C:\Libraries\boost_1.87.0\
 
-    dir 
+    dir
     
-    cd C:\Libraries\boost_1_87_0\
-
-    set BOOST_ROOT=C:\Libraries\boost_1_87_0
+    set BOOST_ROOT=C:\Libraries\boost-1.87.0
 
     bootstrap.bat
 
