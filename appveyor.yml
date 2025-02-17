@@ -39,7 +39,7 @@ install:
 # copy C:\projects\nplruntime\Server\trunk\cdnlibs\boost_1_77_0.7z C:\projects\nplruntime\Server\trunk\boost.7z
 - cmd: >-
     appveyor DownloadFile https://github.com/boostorg/boost/releases/download/boost-1.87.0/boost-1.87.0-b2-nodocs.7z -FileName "C:\projects\nplruntime\Server\trunk\boost.7z"
-    
+
     7z x C:\projects\nplruntime\Server\trunk\boost.7z -oC:\Libraries\
 
     git submodule init
@@ -52,9 +52,13 @@ install:
 
     rmdir "C:/Program Files/PostgreSQL" /s /q
     
-    cd C:\Libraries\boost_1_77_0\
+    cd C:\Libraries
 
-    set BOOST_ROOT=C:\Libraries\boost_1_77_0
+    dir 
+    
+    cd C:\Libraries\boost_1_87_0\
+
+    set BOOST_ROOT=C:\Libraries\boost_1_87_0
 
     bootstrap.bat
 
