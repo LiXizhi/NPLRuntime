@@ -54,8 +54,6 @@ install:
     
     cd C:\Libraries\boost-1.87.0\
 
-    dir
-
     set BOOST_ROOT=C:\Libraries\boost-1.87.0
 
     bootstrap.bat
