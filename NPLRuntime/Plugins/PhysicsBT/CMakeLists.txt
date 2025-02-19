@@ -74,7 +74,7 @@ endif()
 add_library(PhysicsBT ${PHYSICS_LIB_MODE} ${PhysicsBT_SRCS})
 
 
-target_link_libraries(PhysicsBT BulletDynamics BulletCollision LinearMath BulletSoftBody)
+target_link_libraries(BulletDynamics BulletCollision LinearMath BulletSoftBody)
 
 if(MSVC)
 	get_target_property(DEBUG_EXE_PATH PhysicsBT DEBUG_LOCATION)
