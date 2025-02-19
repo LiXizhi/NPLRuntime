@@ -57,11 +57,10 @@ ENDIF(MSVC)
 
 SET(CMAKE_DEBUG_POSTFIX "_d")
 
-link_libraries(PhysicsBT  BulletDynamics BulletCollision LinearMath BulletSoftBody)
+link_libraries(BulletDynamics BulletCollision LinearMath BulletSoftBody)
 
 # add the executable
 add_library(PhysicsBT SHARED ${PhysicsBT_SRCS})
-
 if(MSVC)
 	get_target_property(DEBUG_EXE_PATH PhysicsBT DEBUG_LOCATION)
 	STRING(REGEX REPLACE "^.*[/\\]([^/\\]+)$" "\\1" DEBUG_EXE_NAME "${DEBUG_EXE_PATH}" )
