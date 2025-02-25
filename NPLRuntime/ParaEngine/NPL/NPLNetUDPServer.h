@@ -160,7 +160,7 @@ namespace NPL
 		/** how many milliseconds to assume connection time out, default to 2 mins. */
 		static const unsigned int DEFAULT_IDLE_TIMEOUT_MS = 120000;
 		/** @def the number of milliseconds that checks all connections in the system about timeout. */
-		static const unsigned int IDLE_TIMEOUT_TIMER_INTERVAL = 120000;
+		static constexpr unsigned int IDLE_TIMEOUT_TIMER_INTERVAL = 120000;
 		// 
 		static const size_t RECEIVE_BUFF_SIZE = 4096 * 2;
 
