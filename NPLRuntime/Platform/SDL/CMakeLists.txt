@@ -67,7 +67,9 @@ endif()
 target_compile_definitions(${TARGET_NAME} PUBLIC PLATFORM_LINUX)
 target_compile_definitions(${TARGET_NAME} PUBLIC LINUX)
 target_compile_definitions(${TARGET_NAME} PUBLIC PLATFORM_SDL2)
-
+if (HAQI1 OR HAQI2)
+	target_compile_definitions(${TARGET_NAME} PUBLIC HAQI)
+endif()
 ADD_CUSTOM_COMMAND(
 	TARGET ${TARGET_NAME}
 	POST_BUILD
@@ -83,6 +85,10 @@ if (EMSCRIPTEN)
 		else()
 			set(APP_ROOT D:/workspace/npl/paracraft_root)
 		endif()
+	endif()
+
+	if (NOT HAQI2_APP_ROOT)
+		set(HAQI2_APP_ROOT /mnt/d/workspace/npl/paracraft_haqi2_root)
 	endif()
 
 	# 指定HTML根目录 也是输出目录
@@ -134,6 +140,16 @@ if (EMSCRIPTEN)
 		WORKING_DIRECTORY ${HTML_ROOT}
 	)
 
+	# 拷贝哈奇2文件系统到根目录
+	add_custom_target(
+		haqi2_paracraft_asset
+		# paracraft_asset ALL
+		COMMAND $ENV{EMSDK}/upstream/emscripten/tools/file_packager haqi2_paracraft_asset.data --preload "${HAQI2_APP_ROOT}@/" --js-output=haqi2_paracraft_asset.js
+		COMMENT "打包资源文件"
+		OUTPUT_DIRECTORY ${HTML_ROOT}
+		WORKING_DIRECTORY ${HTML_ROOT}
+	)
+
 	# script
 	add_custom_target(
 		# paracraft_asset_script
@@ -162,6 +178,7 @@ endif()
 # emcmake cmake -S NPLRuntime_EmscriptenSingleThread/NPLRuntime -B build/emscripten_single_thread -DEMSCRIPTEN=ON -DEMSCRIPTEN_SINGLE_THREAD=ON -DCMAKE_BUILD_TYPE=RELEASE -DLOCAL_DEBUG=TRUE -DNPLRUNTIME_SUPPORT_FBX=ON
 
 # 多线程
-# emcmake cmake -S NPLRuntime_EmscriptenSingleThread/NPLRuntime -B build/emscripten -DEMSCRIPTEN=ON -DCMAKE_BUILD_TYPE=RELEASE -DBOOST_ROOT=/mnt/d/workspace/emscripten/boost-1.85.0
+# emcmake cmake -S NPLRuntime_EmscriptenSingleThread/NPLRuntime -B build/emscripten -DEMSCRIPTEN=ON -DCMAKE_BUILD_TYPE=RELEASE -DBOOST_ROOT=/mnt/d/workspace/emscripten/boost_1_85_0
+# emcmake cmake -S NPLRuntime_EmscriptenSingleThread/NPLRuntime -B build/emscripten_haqi2 -DEMSCRIPTEN=ON -DCMAKE_BUILD_TYPE=RELEASE -DHAQI2=ON -DBOOST_ROOT=/mnt/d/workspace/emscripten/boost_1_85_0
 # 单线程
-# emcmake cmake -S NPLRuntime_EmscriptenSingleThread/NPLRuntime -B build/emscripten_single_thread -DEMSCRIPTEN=ON -DEMSCRIPTEN_SINGLE_THREAD=ON -DCMAKE_BUILD_TYPE=RELEASE -DBOOST_ROOT=/mnt/d/workspace/emscripten/boost-1.85.0
+# emcmake cmake -S NPLRuntime_EmscriptenSingleThread/NPLRuntime -B build/emscripten_single_thread -DEMSCRIPTEN=ON -DEMSCRIPTEN_SINGLE_THREAD=ON -DCMAKE_BUILD_TYPE=RELEASE -DBOOST_ROOT=/mnt/d/workspace/emscripten/boost_1_85_0

@@ -532,7 +532,9 @@ void ParaEngine::CParaEngineAppBase::Render()
 	float fElapsedTime = (float)(CGlobals::GetFrameRateController(FRC_RENDER)->FrameMove(fTime));
 	m_fElapsedTime = fElapsedTime;
 
+#ifndef USE_NULL_RENDERER
 	RenderDevice::ClearAllPerfCount();
+#endif
 
 	m_pRenderDevice->BeginScene();
 	{

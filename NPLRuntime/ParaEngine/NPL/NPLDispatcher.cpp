@@ -12,7 +12,15 @@
 #include "NPLRuntime.h"
 #include "NPLNetServer.h"
 #include "NPLHelper.h"
+#include "StringHelper.h"
 #include "EventsCenter.h"
+
+#ifdef __EMSCRIPTEN__
+#include "EmscriptenWebSocket.h"
+#endif
+
+#include <unordered_map>
+
 
 NPL::CNPLDispatcher::CNPLDispatcher(CNPLNetServer* pServer)
 	: m_pServer(pServer), m_bUseCompressionIncomingConnection(false), m_bUseCompressionOutgoingConnection(false),
@@ -308,6 +316,57 @@ NPL::NPLReturnCode NPL::CNPLDispatcher::Activate_Async(const NPLFileName& file_n
 	}
 	else
 	{
+#ifdef __EMSCRIPTEN__
+		auto websocket = EmscriptenWebSocket::CreateGetWebSocket(file_name.sNID);
+		if (websocket->IsConnected())
+		{
+			NPLMsgOut_ptr msg_out(new NPLMsgOut());
+			CNPLMsgOut_gen writer(*msg_out);
+			int file_id = GetIDByPubFileName(file_name.sRelativePath);
+			if (nLength < 0) nLength = strlen(code);
+			writer.AddFirstLine(file_name, file_id);
+			writer.AddMsgBody(code, nLength, (nLength <= m_nCompressionThreshold ? 0 : m_nCompressionLevel));
+			return websocket->SendText(msg_out->GetBuffer().ToString()) ? NPL_OK : NPL_Error;
+		}
+		else
+		{
+			auto it = m_server_address_map.find(file_name.sNID);
+			if (it != m_server_address_map.end())
+			{
+				auto ip = it->second->GetHost();
+				auto port = it->second->GetPort();
+				websocket->Connect("ws://" + ip + ":" + port + "/nplwebsocket");
+				if (websocket->GetConnection() == nullptr)
+				{
+					auto connection = std::make_shared<CNPLConnection>();
+					connection->SetNID(file_name.sNID.c_str());
+					websocket->SetConnection(connection);
+				} 
+			}
+
+			static thread_local NPLMsgIn s_input_msg;
+			static thread_local NPLMsgIn_parser s_parser;
+			auto on_msg = [this, websocket](const std::string & msg) {
+				boost::tribool result = true;
+				auto curIt = msg.data();
+				auto curEnd = curIt + msg.size();
+				s_parser.reset();
+				s_input_msg.reset();
+				boost::tie(result, curIt) = s_parser.parse(s_input_msg, curIt, curEnd);
+				if (result)
+				{
+					s_input_msg.m_pConnection = websocket->GetConnection();
+					this->DispatchMsg(s_input_msg);
+					s_input_msg.m_pConnection = nullptr;
+				}
+				else
+				{
+					OUTPUT_LOG("parse nplwebsocket message failed!!!");
+				}
+			};
+			websocket->SetOnReceive(on_msg);
+		}
+#else 
 		// this is a remote activation
 		NPLConnection_ptr pConnection = CreateGetNPLConnectionByNID(file_name.sNID);
 		if (pConnection)
@@ -315,6 +374,7 @@ NPL::NPLReturnCode NPL::CNPLDispatcher::Activate_Async(const NPLFileName& file_n
 			// send via the connection. 
 			return pConnection->SendMessage(file_name, code, nLength, priority);
 		}
+#endif
 	}
 	return NPL_Error;
 }
@@ -412,6 +472,35 @@ NPL::NPLReturnCode NPL::CNPLDispatcher::DispatchMsg(NPLMsgIn& msg)
 		}
 		else
 		{
+			// handle  websocket connection
+			if (msg.m_n_filename == 0 && msg.m_filename == "/nplwebsocket")
+			{
+				std::unordered_map<std::string, std::string> headers;
+				auto size = msg.headers.size();
+				for (int i = 0; i < size; ++i)
+				{
+					headers.insert_or_assign(msg.headers[i].name, msg.headers[i].value);
+				}
+				if (headers["Connection"] == "Upgrade" && headers["Upgrade"] == "websocket" && headers["Sec-WebSocket-Version"] == "13" && headers["Sec-WebSocket-Key"] != "")
+				{
+					auto sec_websocket_key = headers["Sec-WebSocket-Key"];
+					auto src_websocket_accept = sec_websocket_key + "258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
+					src_websocket_accept = ParaEngine::StringHelper::base64(ParaEngine::StringHelper::sha1(src_websocket_accept, true));
+					std::ostringstream oss;
+					oss << "HTTP/1.1 101 Switching Protocols\r\n";
+					oss << "Upgrade: websocket\r\n";
+					oss << "Connection: Upgrade\r\n";
+					oss << "Sec-WebSocket-Accept: " << src_websocket_accept << "\r\n";
+					oss << "\r\n";
+					auto text = oss.str();
+					NPL_SetProtocol(msg.m_pConnection->GetNID().c_str(), CNPLConnection::ProtocolType::WEBSOCKET);
+					// NPL_accept(msg.m_pConnection->GetNID().c_str(), "nplwebsocket");
+					msg.m_pConnection->SendMessage(NPLFileName((msg.m_pConnection->GetNID() + ":http").c_str()), text.c_str(), text.size());
+					msg.m_pConnection->SetNplWebSocket(true);
+					return NPL_OK;
+				}                                                    
+			}
+
 			// http message
 			std::string filename;
 			int nHTTPCode = -10;

@@ -4,6 +4,7 @@
 #elif defined(USE_OPENGL_RENDERER)
 #include "RenderDeviceOpenGL.h"
 #else
+#include "RenderDeviceNull.h"
 #include "PEtypes.h"
 
 #if (PARA_TARGET_PLATFORM == PARA_PLATFORM_MAC)

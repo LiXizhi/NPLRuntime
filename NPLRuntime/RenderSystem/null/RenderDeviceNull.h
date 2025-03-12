@@ -1,4 +1,5 @@
 #pragma once
+#include "RenderDevice.h"
 #include "Framework/Interface/Render/IRenderDevice.h"
 
 namespace ParaEngine
@@ -99,5 +100,16 @@ namespace ParaEngine
 		virtual void Flush() override;
 	protected:
 		ParaViewport m_ViewPort;
+	};
+
+	class RenderDevice : public RenderDeviceBase
+	{
+	public:
+		static RenderDevice* GetInstance() { return nullptr; }
+
+		static HRESULT DrawPrimitive(IRenderDevice* pRenderDevice, int nStatisticsType, EPrimitiveType PrimitiveType, uint32_t StartVertex, uint32_t PrimitiveCount) { return 0; }
+		static HRESULT DrawPrimitiveUP(IRenderDevice* pRenderDevice, int nStatisticsType, EPrimitiveType PrimitiveType, uint32_t PrimitiveCount, const void* pVertexStreamZeroData, uint32_t VertexStreamZeroStride) { return 0; }
+		static HRESULT DrawIndexedPrimitive(IRenderDevice* pRenderDevice, int nStatisticsType, EPrimitiveType Type, int32_t BaseVertexIndex, uint32_t MinIndex, uint32_t NumVertices, uint32_t indexStart, uint32_t PrimitiveCount) { return 0; }
+		static HRESULT DrawIndexedPrimitiveUP(IRenderDevice* pRenderDevice, int nStatisticsType, EPrimitiveType PrimitiveType, uint32_t MinVertexIndex, uint32_t NumVertices, uint32_t PrimitiveCount, const void* pIndexData, PixelFormat IndexDataFormat, const void* pVertexStreamZeroData, uint32_t VertexStreamZeroStride) { return 0; }
 	};
 }

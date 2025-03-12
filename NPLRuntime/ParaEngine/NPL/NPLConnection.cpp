@@ -50,6 +50,7 @@ NPL::CNPLConnection::CNPLConnection(boost::asio::io_context& io_service, CNPLCon
 	m_input_msg.npl_version_major = NPL_VERSION_MAJOR;
 	m_input_msg.npl_version_minor = NPL_VERSION_MINOR;
 	m_input_msg.m_pConnection = this;
+	m_nplwebsocket = false;
 }
 
 NPL::CNPLConnection::~CNPLConnection()
@@ -611,7 +612,6 @@ void NPL::CNPLConnection::GetStatistics(int& totalIn, int& totalOut)
 
 NPL::NPLReturnCode NPL::CNPLConnection::SendMessage(const NPLFileName& file_name, const char* code /*= NULL*/, int nLength/*=0*/, int priority/*=0*/)
 {
-
 	NPLMsgOut_ptr msg_out(new NPLMsgOut());
 	CNPLMsgOut_gen writer(*msg_out);
 
@@ -653,6 +653,19 @@ NPL::NPLReturnCode NPL::CNPLConnection::SendMessage(const NPLFileName& file_name
 			OUTPUT_LOG("NPL can't send websocket message with a wrong protocol,The connection nid is %s, current protocol is %d. \n", GetNID().c_str(), m_protocolType);
 			return NPL_WrongProtocol;
 		}
+	}
+	else if (IsNplWebSocket())
+	{
+		NPLMsgOut_ptr websocket_msg_out(new NPLMsgOut());
+		CNPLMsgOut_gen websocket_writer(*websocket_msg_out);
+		m_websocket_out_data.clear();
+		// 如何构造websocket帧数据 这里估计在脚本层实现的....
+		websocket_writer.AddFirstLine(file_name, file_id);
+		if (nLength < 0) nLength = strlen(code);
+		websocket_writer.AddMsgBody(code, nLength, (nLength <= m_nCompressionThreshold ? 0 : m_nCompressionLevel));
+		auto text = websocket_msg_out->GetBuffer().ToString();
+		m_websocket_writer.generate(text.c_str(), text.size(), m_websocket_out_data);
+		writer.Append((char*)&m_websocket_out_data[0], m_websocket_out_data.size());
 	}
 	else
 	{
@@ -795,12 +808,30 @@ bool NPL::CNPLConnection::handle_websocket_data(int bytes_transferred)
 		case NPL::WebSocket::TEXT:
 		{
 			SetKeepAlive(true);
-			int server_id = -20;
-			m_input_msg.method = "A";
-			m_input_msg.m_n_filename = server_id;
-			NPL::NPLHelper::EncodeStringInQuotation(m_input_msg.m_code, 0, (const char*)(&m_websocket_input_data[0]), (int)m_websocket_input_data.size());
-
-			return handleMessageIn();
+			if (IsNplWebSocket())
+			{
+				boost::tribool result = true;
+				auto curIt = (const char*)(&m_websocket_input_data[0]);
+				auto curEnd = curIt + m_websocket_input_data.size();
+				boost::tie(result, curIt) = m_parser.parse(m_input_msg, curIt, curEnd);
+				if (result)
+				{
+					return handleMessageIn();
+				}
+				else
+				{
+					OUTPUT_LOG("warning: nplwebsocket npl message parsing failed when received data. nid %s \n", GetNID().c_str());
+					return true;
+				}
+			}
+			else
+			{
+				int server_id = -20;
+				m_input_msg.method = "A";
+				m_input_msg.m_n_filename = server_id;
+				NPL::NPLHelper::EncodeStringInQuotation(m_input_msg.m_code, 0, (const char*)(&m_websocket_input_data[0]), (int)m_websocket_input_data.size());
+				return handleMessageIn();
+			}
 		}
 		case NPL::WebSocket::CLOSE:
 			stop();
