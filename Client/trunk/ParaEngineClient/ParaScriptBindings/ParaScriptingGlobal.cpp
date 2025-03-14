@@ -378,11 +378,11 @@ void ParaGlobal::Execute(const std::string& exe, const luabind::object& param, l
 bool ParaGlobal::ShellExecute(const char* lpOperation, const char* lpFile, const char* lpParameters, const char* lpDirectory, int nShowCmd)
 {
 #ifdef PARAENGINE_CLIENT
-	if (std::string(lpOperation) == "popen") {//�޴���ִ������������
-#ifndef USE_DIRECTX_RENDERER //����windows
+	if (std::string(lpOperation) == "popen") {//无窗口执行批处理命令
+#ifndef USE_DIRECTX_RENDERER //不是windows
 		return false;
 #endif
-		std::string cmd = lpFile;//����
+		std::string cmd = lpFile;//命令
 		bool isAsync = std::string(lpParameters) == "isAsync";
 		std::string callbackFile = lpDirectory;
 		int callbackIdx = nShowCmd;
@@ -415,14 +415,14 @@ bool ParaGlobal::ShellExecute(const char* lpOperation, const char* lpFile, const
 }
 
 std::string ParaGlobal::GetCmdReturn(std::string cmd) {
-#ifdef USE_DIRECTX_RENDERER //����windows
-	//����һ������̨���ڣ�ʹ����֮����popen����shell���ڵ�ʱ�򣬲���ʾ�ڴ��ڣ����߱���ڴ���һ�����������
+#ifdef USE_DIRECTX_RENDERER 
+	//隐藏一个控制台窗口，使得在之后用popen来启shell窗口的时候，不显示黑窗口，或者避免黑窗口一闪而过的情况
 	HWND hwnd = GetConsoleWindow();
 	if (hwnd == NULL) {
-		AllocConsole();    //Ϊ���ý��̷���һ���µĿ���̨
+		AllocConsole();    //为调用进程分配一个新的控制台
 		hwnd = GetConsoleWindow();
 	}
-	ShowWindow(hwnd, SW_HIDE);    //�����Լ������Ŀ���̨
+	ShowWindow(hwnd, SW_HIDE);    //隐藏自己创建的控制台
 	FILE *file;
 	char ptr[1024] = { 0 };
 	char tmp[1024] = { 0 };
@@ -2031,7 +2031,7 @@ bool ParaScripting::ParaGlobal::OpenFileDialog(const object& inout)
 	ofn.lpstrInitialDir = NULL;
 	ofn.Flags = OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST;
 	ofn.nMaxFile = MAX_LINE;
-	ofn.hwndOwner = CGlobals::GetAppHWND();//��֤��ģ̬�Ի����
+	ofn.hwndOwner = CGlobals::GetAppHWND();//?????????????
 	std::wstring initialdir, strFilter, strTitle;
 	
 
@@ -2165,18 +2165,18 @@ BOOL ParaScripting::ParaGlobal::ExecWmicCmd1(string &out, string wmicCmd, string
 {
 #ifdef PARAENGINE_CLIENT
 	//diskdrive
-	const long MAX_COMMAND_SIZE = 10000; // ��������������С     
+	const long MAX_COMMAND_SIZE = 10000; // 命令行输出缓冲大小     
 	string strEnSearch = searchItem.c_str();
 
 
 	BOOL   bret = FALSE;
-	HANDLE hReadPipe = NULL; //��ȡ�ܵ�  
-	HANDLE hWritePipe = NULL; //д��ܵ�      
-	PROCESS_INFORMATION pi;   //������Ϣ      
-	STARTUPINFO         si;   //���������д�����Ϣ  
-	SECURITY_ATTRIBUTES sa;   //��ȫ����  
+	HANDLE hReadPipe = NULL; //读取管道  
+	HANDLE hWritePipe = NULL; //写入管道
+	PROCESS_INFORMATION pi;   //进程信息    
+	STARTUPINFO         si;   //控制命令行窗口信息  
+	SECURITY_ATTRIBUTES sa;   //安全属性  
 
-	char            szBuffer[MAX_COMMAND_SIZE + 1] = { 0 }; // ���������н�������������  
+	char            szBuffer[MAX_COMMAND_SIZE + 1] = { 0 }; //放置命令行结果的输出缓冲区  
 	string          strBuffer;
 	unsigned long   count = 0;
 	long            ipos = 0;
@@ -2195,28 +2195,28 @@ BOOL ParaScripting::ParaGlobal::ExecWmicCmd1(string &out, string wmicCmd, string
 	do {
 
 
-		//1.0 �����ܵ�  
+		//1.0 创建管道  
 		bret = CreatePipe(&hReadPipe, &hWritePipe, &sa, 0);
 		if (!bret)
 		{
 			break;
 		}
 
-		//2.0 ���������д��ڵ���ϢΪָ���Ķ�д�ܵ�  
+		//2.0 设置命令行窗口的信息为指定的读写管道  
 		GetStartupInfo(&si);
 		si.hStdError = hWritePipe;
 		si.hStdOutput = hWritePipe;
-		si.wShowWindow = SW_HIDE; //���������д���  
+		si.wShowWindow = SW_HIDE; ///隐藏命令行窗口  
 		si.dwFlags = STARTF_USESHOWWINDOW | STARTF_USESTDHANDLES;
 
-		//3.0 ������ȡ�����еĽ���  
+		//3.0 创建获取命令行的进程  
 		bret = ::CreateProcess(NULL, const_cast<char *>(wmicCmd.c_str()), NULL, NULL, TRUE, 0, NULL, NULL, &si, &pi);
 		if (!bret)
 		{
 			break;
 		}
 
-		//4.0 ��ȡ���ص�����  
+		//4.0  读取返回的数据  
 		WaitForSingleObject(pi.hProcess, 500/*INFINITE*/);
 		bret = ReadFile(hReadPipe, szBuffer, MAX_COMMAND_SIZE, &count, 0);
 		if (!bret)
@@ -2224,7 +2224,7 @@ BOOL ParaScripting::ParaGlobal::ExecWmicCmd1(string &out, string wmicCmd, string
 			break;
 		}
 
-		//5.0 ����
+		//5.0 查找
 		bret = FALSE;
 		strBuffer = szBuffer;
 		
@@ -2233,7 +2233,7 @@ BOOL ParaScripting::ParaGlobal::ExecWmicCmd1(string &out, string wmicCmd, string
 		std::transform(strEnSearch.begin(), strEnSearch.end(), strEnSearch.begin(), [](unsigned char c) { return std::tolower(c); });
 		ipos = tempBuf.find(strEnSearch);
 
-		if (ipos < 0) // û���ҵ�  
+		if (ipos < 0) // 没有找到  
 		{
 			break;
 		}
@@ -2246,7 +2246,7 @@ BOOL ParaScripting::ParaGlobal::ExecWmicCmd1(string &out, string wmicCmd, string
 		strcpy_s(szBuffer, strBuffer.c_str());
 
 		//modify here
-		//ȥ���м�Ŀո� \r \n     
+		//去掉中间的空格 \r \n  
 		char temp[512];
 		memset(temp, 0, sizeof(temp));
 
@@ -2264,7 +2264,7 @@ BOOL ParaScripting::ParaGlobal::ExecWmicCmd1(string &out, string wmicCmd, string
 		bret = TRUE;
 	} while (false);
 
-	//�ر����еľ��  
+	//关闭所有的句柄  
 	CloseHandle(hWritePipe);
 	CloseHandle(hReadPipe);
 	CloseHandle(pi.hProcess);
