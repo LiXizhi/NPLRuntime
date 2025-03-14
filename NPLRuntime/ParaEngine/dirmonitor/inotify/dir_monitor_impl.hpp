@@ -33,8 +33,8 @@ public:
     dir_monitor_impl()
         : fd_(init_fd()),
         run_(true),
-        inotify_work_(new boost::asio::io_service::work(inotify_io_service_)),
-        inotify_work_thread_(boost::bind(&boost::asio::io_service::run, &inotify_io_service_)),
+        inotify_work_(new boost::asio::executor_work_guard<boost::asio::io_context::executor_type>(inotify_io_service_.get_executor())),
+        inotify_work_thread_(boost::bind(&boost::asio::io_context::run, &inotify_io_service_)),
         stream_descriptor_(new boost::asio::posix::stream_descriptor(inotify_io_service_, fd_))
     {
     }
@@ -191,8 +191,8 @@ private:
 
     int fd_;
     bool run_;
-    boost::asio::io_service inotify_io_service_;
-    std::unique_ptr<boost::asio::io_service::work> inotify_work_;
+    boost::asio::io_context inotify_io_service_;
+    std::unique_ptr<boost::asio::executor_work_guard<boost::asio::io_context::executor_type>> inotify_work_;
     std::thread inotify_work_thread_;
     
     std::unique_ptr<boost::asio::posix::stream_descriptor> stream_descriptor_;

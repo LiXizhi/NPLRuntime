@@ -326,7 +326,7 @@ NPL::NPLReturnCode NPL::CNPLDispatcher::Activate_Async(const NPLFileName& file_n
 			if (nLength < 0) nLength = strlen(code);
 			writer.AddFirstLine(file_name, file_id);
 			writer.AddMsgBody(code, nLength, (nLength <= m_nCompressionThreshold ? 0 : m_nCompressionLevel));
-			return websocket->SendText(msg_out->GetBuffer().ToString()) ? NPL_OK : NPL_Error;
+			return websocket->Send(msg_out->GetBuffer().ToString()) ? NPL_OK : NPL_Error;
 		}
 		else
 		{
