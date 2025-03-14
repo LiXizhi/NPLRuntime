@@ -73,7 +73,7 @@ namespace ParaEngine
 
 		bool SetBoolean(int nIndex, bool value);
 
-		bool begin(bool bApplyParam = true, DWORD flag = 0);
+		bool begin(bool bApplyParam = true, DWORD flag = 0, bool bForceBegin = false);
 		bool BeginPass(int pass, bool bForceBegin = false);
 		void CommitChanges();
 		void EndPass(bool bForceEnd = false);

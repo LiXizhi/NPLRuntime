@@ -155,10 +155,11 @@ void NPL::WebSocket::WebSocketWriter::generateWholeFrame(WebSocketFrame& frame, 
 	}
 }
 
-void NPL::WebSocket::WebSocketWriter::generate(const char * code, int nLength,vector<byte>& outData)
+void NPL::WebSocket::WebSocketWriter::generate(const char * code, int nLength,vector<byte>& outData, byte op)
 {
 	reset();
-	frame.setOpCode(WebSocket::OpCode::TEXT);
+	// frame.setOpCode(WebSocket::OpCode::TEXT);
+	frame.setOpCode(op);
 	for (int i = 0; i < nLength; i++)
 	{
 		input_buff.putChar(code[i]);

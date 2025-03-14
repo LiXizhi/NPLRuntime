@@ -2905,29 +2905,35 @@ namespace ParaScripting
 
 	void ParaUI::ShowCursor(bool bShow)
 	{
+#ifdef USE_DIRECTX_RENDERER
 		auto pMouse = CGlobals::GetGUI()->m_pMouse;
 		if (pMouse)
 		{
 			pMouse->ShowCursor(bShow);
 		}
+#endif
 	}
 
 	void ParaUI::LockMouse(bool bLock)
 	{
+#ifdef USE_DIRECTX_RENDERER
 		auto pMouse = CGlobals::GetGUI()->m_pMouse;
 		if (pMouse)
 		{
 			CGlobals::GetGUI()->m_pMouse->SetLock(bLock);
 		}
+#endif
 	}
 
 	bool ParaUI::IsMouseLocked()
 	{
+#ifdef USE_DIRECTX_RENDERER
 		auto pMouse = CGlobals::GetGUI()->m_pMouse;
 		if (pMouse)
 		{
 			return CGlobals::GetGUI()->m_pMouse->IsLocked();
 		}
+#endif
 		return false;
 	}
 
@@ -2994,21 +3000,25 @@ namespace ParaScripting
 
 	bool ParaUI::IsKeyPressed(int nDikScanCode)
 	{
+#ifdef USE_DIRECTX_RENDERER
 		auto pKeyboard = CGlobals::GetGUI()->m_pKeyboard;
 		if (pKeyboard)
 		{
 			return pKeyboard->IsKeyPressed((EVirtualKey)nDikScanCode);
 		}
+#endif
 		return false;
 	}
 
 	bool ParaUI::IsMousePressed(int nButton)
 	{
+#ifdef USE_DIRECTX_RENDERER
 		auto pMouse = CGlobals::GetGUI()->m_pMouse;
 		if (pMouse)
 		{
 			return pMouse->IsButtonDown((EMouseButton)nButton);
 		}
+#endif
 		return false;
 	}
 
