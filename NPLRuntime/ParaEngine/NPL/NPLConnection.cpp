@@ -664,7 +664,7 @@ NPL::NPLReturnCode NPL::CNPLConnection::SendMessage(const NPLFileName& file_name
 		if (nLength < 0) nLength = strlen(code);
 		websocket_writer.AddMsgBody(code, nLength, (nLength <= m_nCompressionThreshold ? 0 : m_nCompressionLevel));
 		auto text = websocket_msg_out->GetBuffer().ToString();
-		m_websocket_writer.generate(text.c_str(), text.size(), m_websocket_out_data);
+		m_websocket_writer.generate(text.c_str(), text.size(), m_websocket_out_data, WebSocket::OpCode::BINARY);
 		writer.Append((char*)&m_websocket_out_data[0], m_websocket_out_data.size());
 	}
 	else

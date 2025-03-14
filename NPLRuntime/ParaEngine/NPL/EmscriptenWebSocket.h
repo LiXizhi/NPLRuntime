@@ -149,7 +149,7 @@ public:
 
     static EM_BOOL WebSocketError(int eventType, const EmscriptenWebSocketErrorEvent *e, void *userData)
     {
-        // std::cout << "WebSocketError => Close EmscriptenWebSocket" << std::endl;
+        std::cout << "WebSocketError => Close EmscriptenWebSocket" << std::endl;
         EmscriptenWebSocket *socket = (EmscriptenWebSocket *)userData;
         socket->Close();
         return 0;
