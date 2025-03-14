@@ -764,7 +764,7 @@ void ParaEngine::CEffectFileOpenGL::applyGlobalLightingData(CSunLight& sunlight)
 	}
 }
 
-bool ParaEngine::CEffectFileOpenGL::begin(bool bApplyParam /*= true*/, DWORD flag /*= 0*/)
+bool ParaEngine::CEffectFileOpenGL::begin(bool bApplyParam /*= true*/, DWORD flag /*= 0*/, bool bForceBegin/* = false*/)
 {
 	IScene* pScene = CGlobals::GetEffectManager()->GetScene();
 	auto program = GetGLProgram(mTechniqueIndex, m_nActivePassIndex);

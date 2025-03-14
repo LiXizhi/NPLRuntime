@@ -234,6 +234,9 @@ namespace NPL
 
 		/** set transmission protocol, default value is 0. */
 		void SetProtocol(ProtocolType protocolType = ProtocolType::NPL);
+
+		void SetNplWebSocket(bool nplwebsocket) { m_nplwebsocket = nplwebsocket;}
+		bool IsNplWebSocket() { return m_nplwebsocket;}
 	public:
 		//
 		// In case, one wants to use a different connection data handler,  the following interface are provided. 
@@ -333,6 +336,7 @@ namespace NPL
 		/// for statistics, number of bytes sent
 		uint32 m_totalBytesOut;
 
+		bool m_nplwebsocket;
 		/** default to false, if true, it will dump all send and received data to output. */
 		bool m_bDebugConnection;
 

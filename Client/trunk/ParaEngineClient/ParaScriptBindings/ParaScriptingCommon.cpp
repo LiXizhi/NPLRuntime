@@ -33,10 +33,12 @@ extern "C"
 #include <sstream>
 #include <iostream>
 
+#ifdef PARAENGINE_CLIENT
 #include "assimp/Exporter.hpp"
 #include "assimp/Importer.hpp"
 #include "assimp/postprocess.h"
 #include "assimp/scene.h"
+#endif
 
 using namespace ParaEngine;
 using namespace ParaScripting;
@@ -952,6 +954,7 @@ bool ParaAsset::Refresh( const char* filename )
 	
 void ParaAsset::ConvertGLB(const char* cmds)
 {
+#ifdef PARAENGINE_CLIENT
 	std::istringstream iss(cmds);
 	float position_x = 0.0f;
     float position_y = 0.0f;
@@ -1006,6 +1009,7 @@ void ParaAsset::ConvertGLB(const char* cmds)
     {
         std::cout << "Scene saved successfully to " << output_filepath << std::endl;
     }
+#endif
 }
 
 #pragma endregion ParaAssets

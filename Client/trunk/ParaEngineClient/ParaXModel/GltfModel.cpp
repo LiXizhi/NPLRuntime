@@ -488,7 +488,7 @@ namespace ParaEngine
 
 #if defined(USE_DIRECTX_RENDERER)
                 texture->SaveToFile(filename.c_str(), D3DFORMAT::D3DFMT_DXT3, 0, 0);
-#else
+#elif defined(USE_OPENGL_RENDERER)
                 texture->SaveToFile(filename.c_str(), PixelFormat::DXT3, 0, 0);
 #endif
             }

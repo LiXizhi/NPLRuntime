@@ -3194,7 +3194,11 @@ bool ParaEngine::CGUIRoot::GetWorldTransform(Matrix4& matWorld)
 	float screenWidth = GetWidth();
 	float screenHeight = GetHeight();
 	float fAspectRatio = CGlobals::GetScene()->GetCurrentCamera()->GetFieldOfView();
+#ifdef USE_NULL_RENDERER
+	float fScaling = tanf(fAspectRatio * 0.5f) * fGUIToEyeDist / (screenHeight * 0.5f) * GetGUI3DModeScaling();
+#else
 	float fScaling = std::tanf(fAspectRatio * 0.5f) * fGUIToEyeDist / (screenHeight * 0.5f) * GetGUI3DModeScaling();
+#endif
 	Matrix4 mat(Matrix4::IDENTITY);
 	auto vEye = CGlobals::GetScene()->GetCurrentCamera()->GetEyePosition();
 	auto vLookat = CGlobals::GetScene()->GetCurrentCamera()->GetLookAtPosition();

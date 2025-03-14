@@ -31,7 +31,7 @@ public:
 
     explicit basic_dir_monitor_service(boost::asio::io_context &io_service)
         : boost::asio::io_context::service(io_service),
-        async_monitor_work_(new boost::asio::executor_work_guard<boost::asio::io_context::executor_type>(async_monitor_io_service_)),
+        async_monitor_work_(new boost::asio::executor_work_guard<boost::asio::io_context::executor_type>(async_monitor_io_service_.get_executor())),
         async_monitor_thread_(boost::bind(&boost::asio::io_context::run, &async_monitor_io_service_))
     {
     }
@@ -78,7 +78,7 @@ public:
         monitor_operation(implementation_type &impl, boost::asio::io_context &io_service, Handler handler)
             : impl_(impl),
             io_service_(io_service),
-            work_(io_service),
+            work_(io_service.get_executor()),
             handler_(handler)
         {
         }
@@ -128,7 +128,7 @@ public:
     }
 
 private:
-    virtual void shutdown_service() override
+    virtual void shutdown_service()
     {
         // The async_monitor thread will finish when async_monitor_work_ is reset as all asynchronous
         // operations have been aborted and were discarded before (in destroy).

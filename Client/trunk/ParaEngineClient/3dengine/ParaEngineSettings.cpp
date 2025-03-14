@@ -40,7 +40,9 @@
 
 #ifdef PARAENGINE_CLIENT
 #include "util/CommonFileDialog.h"
+#include "ParaAntlr4.h"
 #endif
+
 #ifdef WIN32
 #include "util/EnumProcess.hpp"
 #endif
@@ -48,7 +50,6 @@
 #include <boost/thread/tss.hpp>
 #include <time.h>
 
-#include "ParaAntlr4.h"
 
 using namespace ParaEngine;
 using namespace luabind;
@@ -1282,13 +1283,18 @@ void ParaEngine::ParaEngineSettings::SetWorldDirectory(const char* sWorldDirecto
 
 void ParaEngine::ParaEngineSettings::SetPythonToLua(const char* python_code)
 {
+#ifdef PARAENGINE_CLIENT
 	*GetPythonToLua() = ParaPythonToLua(python_code);
+#endif
 }
 
 void ParaEngine::ParaEngineSettings::SetCppToLua(const char* cpp_code)
 {
+#ifdef PARAENGINE_CLIENT
 	*GetCppToLua() = ParaCppToLua(cpp_code);
+#endif
 }
+
 void ParaEngine::ParaEngineSettings::LoadNameIndex()
 {
 	m_name_to_index.clear();

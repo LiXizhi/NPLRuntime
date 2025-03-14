@@ -33,12 +33,12 @@ public:
     dir_monitor_impl()
         : fd_(init_fd()),
         run_(true),
-        inotify_work_(new boost::asio::executor_work_guard<boost::asio::io_context::executor_type>(inotify_io_service_)),
+        inotify_work_(new boost::asio::executor_work_guard<boost::asio::io_context::executor_type>(inotify_io_service_.get_executor())),
         inotify_work_thread_(boost::bind(&boost::asio::io_context::run, &inotify_io_service_)),
         stream_descriptor_(new boost::asio::posix::stream_descriptor(inotify_io_service_, fd_))
     {
     }
-
+    
     void add_directory(const std::string &dirname)
     {
         int wd = inotify_add_watch(fd_, dirname.c_str(), IN_CREATE | IN_DELETE | IN_MODIFY | IN_MOVED_FROM | IN_MOVED_TO);

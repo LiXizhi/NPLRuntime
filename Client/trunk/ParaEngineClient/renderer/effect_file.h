@@ -255,7 +255,7 @@ namespace ParaEngine
 
 		bool SetBoolean(int nIndex, bool value) { return false; };
 
-		bool begin(bool bApplyParam = true, DWORD flag = 0) { return false; };
+		bool begin(bool bApplyParam = true, DWORD flag = 0, bool bForceBegin = false) { return false; };
 		bool BeginPass(int pass, bool bForceBegin = false) { return false; };
 		void CommitChanges() {};
 		void EndPass(bool bForceEnd = false) {};

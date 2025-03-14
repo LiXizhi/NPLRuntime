@@ -378,11 +378,11 @@ void ParaGlobal::Execute(const std::string& exe, const luabind::object& param, l
 bool ParaGlobal::ShellExecute(const char* lpOperation, const char* lpFile, const char* lpParameters, const char* lpDirectory, int nShowCmd)
 {
 #ifdef PARAENGINE_CLIENT
-	if (std::string(lpOperation) == "popen") {//ÎÞ´°¿ÚÖ´ÐÐÅú´¦ÀíÃüÁî
-#ifndef USE_DIRECTX_RENDERER //²»ÊÇwindows
+	if (std::string(lpOperation) == "popen") {//ï¿½Þ´ï¿½ï¿½ï¿½Ö´ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+#ifndef USE_DIRECTX_RENDERER //ï¿½ï¿½ï¿½ï¿½windows
 		return false;
 #endif
-		std::string cmd = lpFile;//ÃüÁî
+		std::string cmd = lpFile;//ï¿½ï¿½ï¿½ï¿½
 		bool isAsync = std::string(lpParameters) == "isAsync";
 		std::string callbackFile = lpDirectory;
 		int callbackIdx = nShowCmd;
@@ -415,16 +415,14 @@ bool ParaGlobal::ShellExecute(const char* lpOperation, const char* lpFile, const
 }
 
 std::string ParaGlobal::GetCmdReturn(std::string cmd) {
-#ifndef USE_DIRECTX_RENDERER //²»ÊÇwindows
-	return "";
-#endif
-	//Òþ²ØÒ»¸ö¿ØÖÆÌ¨´°¿Ú£¬Ê¹µÃÔÚÖ®ºóÓÃpopenÀ´Æôshell´°¿ÚµÄÊ±ºò£¬²»ÏÔÊ¾ºÚ´°¿Ú£¬»òÕß±ÜÃâºÚ´°¿ÚÒ»ÉÁ¶ø¹ýµÄÇé¿ö
+#ifdef USE_DIRECTX_RENDERER //ï¿½ï¿½ï¿½ï¿½windows
+	//ï¿½ï¿½ï¿½ï¿½Ò»ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ì¨ï¿½ï¿½ï¿½Ú£ï¿½Ê¹ï¿½ï¿½ï¿½ï¿½Ö®ï¿½ï¿½ï¿½ï¿½popenï¿½ï¿½ï¿½ï¿½shellï¿½ï¿½ï¿½Úµï¿½Ê±ï¿½ò£¬²ï¿½ï¿½ï¿½Ê¾ï¿½Ú´ï¿½ï¿½Ú£ï¿½ï¿½ï¿½ï¿½ß±ï¿½ï¿½ï¿½Ú´ï¿½ï¿½ï¿½Ò»ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 	HWND hwnd = GetConsoleWindow();
 	if (hwnd == NULL) {
-		AllocConsole();    //Îªµ÷ÓÃ½ø³Ì·ÖÅäÒ»¸öÐÂµÄ¿ØÖÆÌ¨
+		AllocConsole();    //Îªï¿½ï¿½ï¿½Ã½ï¿½ï¿½Ì·ï¿½ï¿½ï¿½Ò»ï¿½ï¿½ï¿½ÂµÄ¿ï¿½ï¿½ï¿½Ì¨
 		hwnd = GetConsoleWindow();
 	}
-	ShowWindow(hwnd, SW_HIDE);    //Òþ²Ø×Ô¼º´´½¨µÄ¿ØÖÆÌ¨
+	ShowWindow(hwnd, SW_HIDE);    //ï¿½ï¿½ï¿½ï¿½ï¿½Ô¼ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ä¿ï¿½ï¿½ï¿½Ì¨
 	FILE *file;
 	char ptr[1024] = { 0 };
 	char tmp[1024] = { 0 };
@@ -438,6 +436,9 @@ std::string ParaGlobal::GetCmdReturn(std::string cmd) {
 		_pclose(file);
 	}
 	return result;
+#else
+	return "";
+#endif
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -2030,7 +2031,7 @@ bool ParaScripting::ParaGlobal::OpenFileDialog(const object& inout)
 	ofn.lpstrInitialDir = NULL;
 	ofn.Flags = OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST;
 	ofn.nMaxFile = MAX_LINE;
-	ofn.hwndOwner = CGlobals::GetAppHWND();//±£Ö¤ÒÔÄ£Ì¬¶Ô»°¿ò´ò¿ª
+	ofn.hwndOwner = CGlobals::GetAppHWND();//ï¿½ï¿½Ö¤ï¿½ï¿½Ä£Ì¬ï¿½Ô»ï¿½ï¿½ï¿½ï¿½
 	std::wstring initialdir, strFilter, strTitle;
 	
 
@@ -2162,19 +2163,20 @@ BOOL ParaScripting::ParaGlobal::ExecWmicCmd(string wmicCmd, string searchItem, c
 
 BOOL ParaScripting::ParaGlobal::ExecWmicCmd1(string &out, string wmicCmd, string searchItem)
 {
+#ifdef PARAENGINE_CLIENT
 	//diskdrive
-	const long MAX_COMMAND_SIZE = 10000; // ÃüÁîÐÐÊä³ö»º³å´óÐ¡     
+	const long MAX_COMMAND_SIZE = 10000; // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ð¡     
 	string strEnSearch = searchItem.c_str();
 
 
 	BOOL   bret = FALSE;
-	HANDLE hReadPipe = NULL; //¶ÁÈ¡¹ÜµÀ  
-	HANDLE hWritePipe = NULL; //Ð´Èë¹ÜµÀ      
-	PROCESS_INFORMATION pi;   //½ø³ÌÐÅÏ¢      
-	STARTUPINFO         si;   //¿ØÖÆÃüÁîÐÐ´°¿ÚÐÅÏ¢  
-	SECURITY_ATTRIBUTES sa;   //°²È«ÊôÐÔ  
+	HANDLE hReadPipe = NULL; //ï¿½ï¿½È¡ï¿½Üµï¿½  
+	HANDLE hWritePipe = NULL; //Ð´ï¿½ï¿½Üµï¿½      
+	PROCESS_INFORMATION pi;   //ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ï¢      
+	STARTUPINFO         si;   //ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ð´ï¿½ï¿½ï¿½ï¿½ï¿½Ï¢  
+	SECURITY_ATTRIBUTES sa;   //ï¿½ï¿½È«ï¿½ï¿½ï¿½ï¿½  
 
-	char            szBuffer[MAX_COMMAND_SIZE + 1] = { 0 }; // ·ÅÖÃÃüÁîÐÐ½á¹ûµÄÊä³ö»º³åÇø  
+	char            szBuffer[MAX_COMMAND_SIZE + 1] = { 0 }; // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ð½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½  
 	string          strBuffer;
 	unsigned long   count = 0;
 	long            ipos = 0;
@@ -2193,28 +2195,28 @@ BOOL ParaScripting::ParaGlobal::ExecWmicCmd1(string &out, string wmicCmd, string
 	do {
 
 
-		//1.0 ´´½¨¹ÜµÀ  
+		//1.0 ï¿½ï¿½ï¿½ï¿½ï¿½Üµï¿½  
 		bret = CreatePipe(&hReadPipe, &hWritePipe, &sa, 0);
 		if (!bret)
 		{
 			break;
 		}
 
-		//2.0 ÉèÖÃÃüÁîÐÐ´°¿ÚµÄÐÅÏ¢ÎªÖ¸¶¨µÄ¶ÁÐ´¹ÜµÀ  
+		//2.0 ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ð´ï¿½ï¿½Úµï¿½ï¿½ï¿½Ï¢ÎªÖ¸ï¿½ï¿½ï¿½Ä¶ï¿½Ð´ï¿½Üµï¿½  
 		GetStartupInfo(&si);
 		si.hStdError = hWritePipe;
 		si.hStdOutput = hWritePipe;
-		si.wShowWindow = SW_HIDE; //Òþ²ØÃüÁîÐÐ´°¿Ú  
+		si.wShowWindow = SW_HIDE; //ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ð´ï¿½ï¿½ï¿½  
 		si.dwFlags = STARTF_USESHOWWINDOW | STARTF_USESTDHANDLES;
 
-		//3.0 ´´½¨»ñÈ¡ÃüÁîÐÐµÄ½ø³Ì  
+		//3.0 ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½È¡ï¿½ï¿½ï¿½ï¿½ï¿½ÐµÄ½ï¿½ï¿½ï¿½  
 		bret = ::CreateProcess(NULL, const_cast<char *>(wmicCmd.c_str()), NULL, NULL, TRUE, 0, NULL, NULL, &si, &pi);
 		if (!bret)
 		{
 			break;
 		}
 
-		//4.0 ¶ÁÈ¡·µ»ØµÄÊý¾Ý  
+		//4.0 ï¿½ï¿½È¡ï¿½ï¿½ï¿½Øµï¿½ï¿½ï¿½ï¿½ï¿½  
 		WaitForSingleObject(pi.hProcess, 500/*INFINITE*/);
 		bret = ReadFile(hReadPipe, szBuffer, MAX_COMMAND_SIZE, &count, 0);
 		if (!bret)
@@ -2222,7 +2224,7 @@ BOOL ParaScripting::ParaGlobal::ExecWmicCmd1(string &out, string wmicCmd, string
 			break;
 		}
 
-		//5.0 ²éÕÒ
+		//5.0 ï¿½ï¿½ï¿½ï¿½
 		bret = FALSE;
 		strBuffer = szBuffer;
 		
@@ -2231,7 +2233,7 @@ BOOL ParaScripting::ParaGlobal::ExecWmicCmd1(string &out, string wmicCmd, string
 		std::transform(strEnSearch.begin(), strEnSearch.end(), strEnSearch.begin(), [](unsigned char c) { return std::tolower(c); });
 		ipos = tempBuf.find(strEnSearch);
 
-		if (ipos < 0) // Ã»ÓÐÕÒµ½  
+		if (ipos < 0) // Ã»ï¿½ï¿½ï¿½Òµï¿½  
 		{
 			break;
 		}
@@ -2244,7 +2246,7 @@ BOOL ParaScripting::ParaGlobal::ExecWmicCmd1(string &out, string wmicCmd, string
 		strcpy_s(szBuffer, strBuffer.c_str());
 
 		//modify here
-		//È¥µôÖÐ¼äµÄ¿Õ¸ñ \r \n     
+		//È¥ï¿½ï¿½ï¿½Ð¼ï¿½Ä¿Õ¸ï¿½ \r \n     
 		char temp[512];
 		memset(temp, 0, sizeof(temp));
 
@@ -2262,13 +2264,16 @@ BOOL ParaScripting::ParaGlobal::ExecWmicCmd1(string &out, string wmicCmd, string
 		bret = TRUE;
 	} while (false);
 
-	//¹Ø±ÕËùÓÐµÄ¾ä±ú  
+	//ï¿½Ø±ï¿½ï¿½ï¿½ï¿½ÐµÄ¾ï¿½ï¿½  
 	CloseHandle(hWritePipe);
 	CloseHandle(hReadPipe);
 	CloseHandle(pi.hProcess);
 	CloseHandle(pi.hThread);
 
 	return(bret);
+#else
+	return false;
+#endif
 }
 
 bool ParaScripting::ParaBootStrapper::LoadFromFile(const char* sXMLfile)
