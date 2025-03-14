@@ -24,15 +24,15 @@ namespace asio {
 
 template <typename DirMonitorImplementation = dir_monitor_impl>
 class basic_dir_monitor_service
-    : public boost::asio::io_service::service
+    : public boost::asio::io_context::service
 {
 public:
-    static boost::asio::io_service::id id;
+    static boost::asio::io_context::id id;
 
-    explicit basic_dir_monitor_service(boost::asio::io_service &io_service)
-        : boost::asio::io_service::service(io_service),
-        async_monitor_work_(new boost::asio::io_service::work(async_monitor_io_service_)),
-        async_monitor_thread_(boost::bind(&boost::asio::io_service::run, &async_monitor_io_service_))
+    explicit basic_dir_monitor_service(boost::asio::io_context &io_service)
+        : boost::asio::io_context::service(io_service),
+        async_monitor_work_(new boost::asio::executor_work_guard<boost::asio::io_context::executor_type>(async_monitor_io_service_.get_executor())),
+        async_monitor_thread_(boost::bind(&boost::asio::io_context::run, &async_monitor_io_service_))
     {
     }
 
@@ -75,10 +75,10 @@ public:
     class monitor_operation
     {
     public:
-        monitor_operation(implementation_type &impl, boost::asio::io_service &io_service, Handler handler)
+        monitor_operation(implementation_type &impl, boost::asio::io_context &io_service, Handler handler)
             : impl_(impl),
             io_service_(io_service),
-            work_(io_service),
+            work_(io_service.get_executor()),
             handler_(handler)
         {
         }
@@ -100,7 +100,7 @@ public:
             std::condition_variable post_condition_variable;
             bool post_cancel = false;
 
-            this->io_service_.post(
+            boost::asio::post(this->io_service_,
                 [&]
                 {
                     handler_(ec, ev);
@@ -116,19 +116,19 @@ public:
 
     private:
         std::weak_ptr<DirMonitorImplementation> impl_;
-        boost::asio::io_service &io_service_;
-        boost::asio::io_service::work work_;
+        boost::asio::io_context &io_service_;
+        boost::asio::executor_work_guard<boost::asio::io_context::executor_type> work_;
         Handler handler_;
     };
 
     template <typename Handler>
     void async_monitor(implementation_type &impl, Handler handler)
     {
-        this->async_monitor_io_service_.post(monitor_operation<Handler>(impl, this->get_io_context(), handler));
+        boost::asio::post(this->async_monitor_io_service_, monitor_operation<Handler>(impl, this->get_io_context(), handler));
     }
 
 private:
-    virtual void shutdown_service() override
+    virtual void shutdown_service()
     {
         // The async_monitor thread will finish when async_monitor_work_ is reset as all asynchronous
         // operations have been aborted and were discarded before (in destroy).
@@ -145,13 +145,13 @@ private:
         std::cout << "shutdown complete" << std::endl;
     }
 
-    boost::asio::io_service async_monitor_io_service_;
-    std::unique_ptr<boost::asio::io_service::work> async_monitor_work_;
+    boost::asio::io_context async_monitor_io_service_;
+    std::unique_ptr<boost::asio::executor_work_guard<boost::asio::io_context::executor_type>> async_monitor_work_;
     std::thread async_monitor_thread_;
 };
 
 template <typename DirMonitorImplementation>
-boost::asio::io_service::id basic_dir_monitor_service<DirMonitorImplementation>::id;
+boost::asio::io_context::id basic_dir_monitor_service<DirMonitorImplementation>::id;
 
 }
 }

@@ -315,7 +315,9 @@ bool ParaScripting::ParaAssetObject::Begin()
 				pd3dDevice->SetRenderState(ERenderState::CULLMODE, RSV_CULL_NONE);
 			}
 #endif
+#ifndef USE_NULL_RENDERER
 			return pEffect->begin(true, 0, true);
+#endif
 		}
 	}
 	return false;
