@@ -556,7 +556,7 @@ void RenderWindowOSX::PollEvents()
                 currentBackingScaleFactor = x;
                 // Fixed display issues with WebView at different resolutions.
                 std::string scaleStr = std::to_string(currentBackingScaleFactor);
-                ParaEngine::LuaObjcBridge::nplActivate("System.options.default_ui_scaling = { " + scaleStr + " , " + scaleStr + " };", "");
+                ParaEngine::LuaObjcBridge::nplActivate("if System then System.options.default_ui_scaling = { " + scaleStr + " , " + scaleStr + " }; end", "");
                 CGUIRoot::GetInstance()->SetUIScale(x, y, true, true, false);
             }
         }
