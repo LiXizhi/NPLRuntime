@@ -1,8 +1,14 @@
+/* Copyright (c) 2012-2017 The ANTLR Project. All rights reserved.
+ * Use of this file is governed by the BSD 3-clause license that
+ * can be found in the LICENSE.txt file in the project root.
+ */
+
 #include "atn/PredicateEvalInfo.h"
 #include "atn/LookaheadEventInfo.h"
 #include "Parser.h"
 #include "atn/ATNConfigSet.h"
 #include "support/CPPUtils.h"
+
 #include "atn/ProfilingATNSimulator.h"
 #include <chrono>
 
@@ -30,10 +36,10 @@ size_t ProfilingATNSimulator::adaptivePredict(TokenStream* input, size_t decisio
     _sllStopIndex = -1;
     _llStopIndex = -1;
     _currentDecision = decision;
-    high_resolution_clock::time_point start = high_resolution_clock::now();
+    std::chrono::high_resolution_clock::time_point start = std::chrono::high_resolution_clock::now();
     size_t alt = ParserATNSimulator::adaptivePredict(input, decision, outerContext);
-    high_resolution_clock::time_point stop = high_resolution_clock::now();
-    _decisions[decision].timeInPrediction += duration_cast<nanoseconds>(stop - start).count();
+    std::chrono::high_resolution_clock::time_point stop = std::chrono::high_resolution_clock::now();
+    _decisions[decision].timeInPrediction += std::chrono::duration_cast<std::chrono::nanoseconds>(stop - start).count();
     _decisions[decision].invocations++;
 
     long long SLL_k = _sllStopIndex - _startIndex + 1;
