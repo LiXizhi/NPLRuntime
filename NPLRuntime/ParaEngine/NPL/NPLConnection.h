@@ -413,14 +413,15 @@ namespace NPL
 			WEBSOCKET = 1,
 			TCP_CUSTOM = 2, // any custom protocol, like google protocol buffer
 		};
-		void start() {}
+		
+		void start() { SetAuthenticated(true); /* this is active outgoing connection, we will assume that it is authenticated once connection is established. */ }
 		void stop(bool bRemoveConnection = true, int nReason = 0) {}
 		bool IsConnected() const { return false;}
 		bool SetNID(const char* sNID) { m_nid = sNID; return true; }
 		const string& GetNID() const { return m_nid;}
 		NPLReturnCode SendMessage(const NPLFileName& file_name, const char * code = NULL, int nLength=0, int priority=0) { return NPL_OK; }
-		void SetAuthenticated(bool bAuthenticated) {}
-		bool IsAuthenticated() const { return false; }
+		void SetAuthenticated(bool bAuthenticated) { m_authenticated = bAuthenticated;}
+		bool IsAuthenticated() const { return true; } 
 		void SetNplWebSocket(bool nplwebsocket) { }
 		bool IsNplWebSocket() { return false;}
 		void SetProtocol(ProtocolType protocolType = ProtocolType::NPL) {}

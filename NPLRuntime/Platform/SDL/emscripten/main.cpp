@@ -188,68 +188,56 @@ int main(int argc, char* argv[])
         return window.__HAQI1__ ? 1 : (window.__HAQI2__ ? 2 : 0); 
     });
 
-    std::cout << "=================111============haqi: " << haqi << std::endl;
-    if (haqi == 0)
-    {
-        std::string sCmdLine = R"(noupdate="true" noclientupdate="true" debug="main" bootstrapper="script/apps/Aries/main_loop.lua")";
-        // std::string sCmdLine = R"(noupdate="true" debug="main" bootstrapper="script/apps/Aries/main_loop.lua" noclientupdate="true")";
-        // std::string sCmdLine = R"(noupdate="true" debug="main" mc="true" bootstrapper="script/apps/Aries/main_loop.lua" noclientupdate="true" channelId="tutorial" isDevMode="true")";
-        sCmdLine += JS::IsTouchDevice() ? R"( IsTouchDevice="true")" : "";
-        sCmdLine += R"( webOS=")" + JS::GetOperatingSystem() + R"(")";
+    std::string sCmdLine = R"(noupdate="true" noclientupdate="true" debug="main" bootstrapper="script/apps/Aries/main_loop.lua")";
+    sCmdLine += JS::IsTouchDevice() ? R"( IsTouchDevice="true")" : "";
+    sCmdLine += R"( webOS=")" + JS::GetOperatingSystem() + R"(")";
 
-        for (int i = 1; i < argc; ++i)
+    for (int i = 1; i < argc; ++i)
+    {
+        if (argv[i])
         {
-            if (argv[i])
+            if (sCmdLine.empty())
+                sCmdLine = argv[i];
+            else
             {
-                if (sCmdLine.empty())
-                    sCmdLine = argv[i];
-                else
-                {
-                    sCmdLine += " ";
-                    sCmdLine += argv[i];
-                }
+                sCmdLine += " ";
+                sCmdLine += argv[i];
             }
         }
-        std::string username = JS::GetQueryStringArg("username");
-        std::string http_env = JS::GetQueryStringArg("http_env");
-        std::string token = JS::GetQueryStringArg("token");
-        std::string channelId = JS::GetQueryStringArg("channelId");
-        std::string world = JS::GetQueryStringArg("world");
-        std::string cmdline = JS::GetQueryStringArg("cmdline");
-        std::string worldcmd = JS::GetQueryStringArg("cmd");
-        std::string mc = JS::GetQueryStringArg("mc");
-        std::string version = JS::GetQueryStringArg("version");
+    }
+    std::string username = JS::GetQueryStringArg("username");
+    std::string http_env = JS::GetQueryStringArg("http_env");
+    std::string token = JS::GetQueryStringArg("token");
+    std::string channelId = JS::GetQueryStringArg("channelId");
+    std::string world = JS::GetQueryStringArg("world");
+    std::string cmdline = JS::GetQueryStringArg("cmdline");
+    std::string worldcmd = JS::GetQueryStringArg("cmd");
+    std::string mc = JS::GetQueryStringArg("mc");
+    std::string version = JS::GetQueryStringArg("version");
 
-        mc = mc.empty() ? "true" : mc;
-        sCmdLine = sCmdLine + " mc=\"" + mc + "\"";
+    mc = mc.empty() ? (haqi == 0 ? "true" : "false") : mc;
+    sCmdLine = sCmdLine + " mc=\"" + mc + "\"";
 
-        if (!version.empty()) sCmdLine = sCmdLine + " version=\"" + version + "\"";
-        if (!username.empty()) sCmdLine = sCmdLine + " username=\"" + username + "\"";
-        if (!http_env.empty()) sCmdLine = sCmdLine + " http_env=\"" + http_env + "\"";
-        if (!channelId.empty()) sCmdLine = sCmdLine + " channelId=\"" + channelId + "\"";
-        if (!world.empty()) sCmdLine = sCmdLine + " world=\"" + world + "\"";
-        std::string pid = JS::GetQueryStringArg("pid");
-        std::string worldfile = JS::GetQueryStringArg("worldfile", false);
-        if (pid.empty())
-        {
-            if (!worldfile.empty()) sCmdLine += " paracraft://cmd/loadworld/" + worldfile;
-        }
-        else
-        {
-            sCmdLine += " paracraft://cmd/loadworld/" + pid;
-        }
-        if (!token.empty()) sCmdLine = sCmdLine + " paracraft://usertoken=\"" + token + "\"";
-        if (!worldcmd.empty()) sCmdLine = sCmdLine + " world/cmd(" + worldcmd + ")";
-        sCmdLine = sCmdLine + " " + cmdline;
-        std::cout << "cmdline: " << sCmdLine << std::endl;
-        GetApp()->m_cmdline = sCmdLine;
+    if (!version.empty()) sCmdLine = sCmdLine + " version=\"" + version + "\"";
+    if (!username.empty()) sCmdLine = sCmdLine + " username=\"" + username + "\"";
+    if (!http_env.empty()) sCmdLine = sCmdLine + " http_env=\"" + http_env + "\"";
+    if (!channelId.empty()) sCmdLine = sCmdLine + " channelId=\"" + channelId + "\"";
+    if (!world.empty()) sCmdLine = sCmdLine + " world=\"" + world + "\"";
+    std::string pid = JS::GetQueryStringArg("pid");
+    std::string worldfile = JS::GetQueryStringArg("worldfile", false);
+    if (pid.empty())
+    {
+        if (!worldfile.empty()) sCmdLine += " paracraft://cmd/loadworld/" + worldfile;
     }
     else
     {
-        std::string sCmdLine = R"(noupdate="true" noclientupdate="true" mc="false" bootstrapper="script/apps/Aries/main_loop.lua")";
-        std::cout << "cmdline: " << sCmdLine << std::endl;
-        GetApp()->m_cmdline = sCmdLine;
+        sCmdLine += " paracraft://cmd/loadworld/" + pid;
     }
+    if (!token.empty()) sCmdLine = sCmdLine + " paracraft://usertoken=\"" + token + "\"";
+    if (!worldcmd.empty()) sCmdLine = sCmdLine + " world/cmd(" + worldcmd + ")";
+    sCmdLine = sCmdLine + " " + cmdline;
+    std::cout << "cmdline: " << sCmdLine << std::endl;
+    GetApp()->m_cmdline = sCmdLine;
 
     EM_ASM({
         FS.mkdir('/apps');

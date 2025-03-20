@@ -87,6 +87,10 @@ if (EMSCRIPTEN)
 		endif()
 	endif()
 
+	if (NOT HAQI1_APP_ROOT)
+		set(HAQI1_APP_ROOT /mnt/d/workspace/npl/paracraft_haqi1_root)
+	endif()
+
 	if (NOT HAQI2_APP_ROOT)
 		set(HAQI2_APP_ROOT /mnt/d/workspace/npl/paracraft_haqi2_root)
 	endif()
@@ -135,6 +139,16 @@ if (EMSCRIPTEN)
 		# paracraft_asset ALL
 		COMMAND $ENV{EMSDK}/upstream/emscripten/tools/file_packager paracraft_asset.data --preload "${APP_ROOT}@/" --js-output=paracraft_asset.js
 		# COMMAND $ENV{EMSDK}/upstream/emscripten/tools/file_packager paracraft_asset.data --embed "${APP_ROOT}@/" --js-output=paracraft_asset.js
+		COMMENT "打包资源文件"
+		OUTPUT_DIRECTORY ${HTML_ROOT}
+		WORKING_DIRECTORY ${HTML_ROOT}
+	)
+
+	# 拷贝哈奇1文件系统到根目录
+	add_custom_target(
+		haqi1_paracraft_asset
+		# paracraft_asset ALL
+		COMMAND $ENV{EMSDK}/upstream/emscripten/tools/file_packager haqi1_paracraft_asset.data --preload "${HAQI1_APP_ROOT}@/" --js-output=haqi1_paracraft_asset.js
 		COMMENT "打包资源文件"
 		OUTPUT_DIRECTORY ${HTML_ROOT}
 		WORKING_DIRECTORY ${HTML_ROOT}
