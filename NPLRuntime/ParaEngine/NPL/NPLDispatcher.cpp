@@ -355,6 +355,10 @@ NPL::NPLReturnCode NPL::CNPLDispatcher::Activate_Async(const NPLFileName& file_n
 				boost::tie(result, curIt) = s_parser.parse(s_input_msg, curIt, curEnd);
 				if (result)
 				{
+					// std::cout << "receive nplwebsocket message: " << std::endl;
+					// std::cout << s_input_msg.m_filename << std::endl;
+					// std::cout << s_input_msg.m_n_filename << std::endl;
+					// std::cout << s_input_msg.m_code << std::endl;
 					s_input_msg.m_pConnection = websocket->GetConnection();
 					this->DispatchMsg(s_input_msg);
 					s_input_msg.m_pConnection = nullptr;
