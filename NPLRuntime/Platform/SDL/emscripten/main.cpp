@@ -184,9 +184,11 @@ int main(int argc, char* argv[])
     ParaEngineSettings& settings = ParaEngineSettings::GetSingleton();
     settings.SetCurrentLanguage(js_language == JS::JS_LANGUAGE_ZH ? LanguageType::CHINESE : LanguageType::ENGLISH);
 
-    // std::string sCmdLine = R"(noupdate="true" debug="main" mc="true" bootstrapper="script/apps/Aries/main_loop.lua")";
-    std::string sCmdLine = R"(noupdate="true" debug="main" bootstrapper="script/apps/Aries/main_loop.lua" noclientupdate="true")";
-    // std::string sCmdLine = R"(noupdate="true" debug="main" mc="true" bootstrapper="script/apps/Aries/main_loop.lua" noclientupdate="true" channelId="tutorial" isDevMode="true")";
+    int haqi = EM_ASM_INT({
+        return window.__HAQI1__ ? 1 : (window.__HAQI2__ ? 2 : 0); 
+    });
+
+    std::string sCmdLine = R"(noupdate="true" noclientupdate="true" debug="main" bootstrapper="script/apps/Aries/main_loop.lua")";
     sCmdLine += JS::IsTouchDevice() ? R"( IsTouchDevice="true")" : "";
     sCmdLine += R"( webOS=")" + JS::GetOperatingSystem() + R"(")";
 
@@ -212,14 +214,10 @@ int main(int argc, char* argv[])
     std::string worldcmd = JS::GetQueryStringArg("cmd");
     std::string mc = JS::GetQueryStringArg("mc");
     std::string version = JS::GetQueryStringArg("version");
-    if (mc.empty()) 
-    {
-        sCmdLine = sCmdLine + " mc=\"true\" noclientupdate=\"true\" noupdate=\"true\"" ;
-    }
-    else
-    {
-        sCmdLine = sCmdLine + " mc=\"" + mc + "\" noclientupdate=\"false\" noupdate=\"false\"";
-    }
+
+    mc = mc.empty() ? (haqi == 0 ? "true" : "false") : mc;
+    sCmdLine = sCmdLine + " mc=\"" + mc + "\"";
+
     if (!version.empty()) sCmdLine = sCmdLine + " version=\"" + version + "\"";
     if (!username.empty()) sCmdLine = sCmdLine + " username=\"" + username + "\"";
     if (!http_env.empty()) sCmdLine = sCmdLine + " http_env=\"" + http_env + "\"";
