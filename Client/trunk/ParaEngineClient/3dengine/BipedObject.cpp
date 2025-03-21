@@ -4763,7 +4763,7 @@ const char* ParaEngine::CBipedObject::GetPhysicsProperty()
 {
 	if (m_dynamicPhysicsActor)
 	{
-		CGlobals::GetPhysicsWorld()->GetActorPhysicsProperty(m_dynamicPhysicsActor);
+		return CGlobals::GetPhysicsWorld()->GetActorPhysicsProperty(m_dynamicPhysicsActor);
 	}
 	return "";
 }

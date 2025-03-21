@@ -116,6 +116,9 @@ namespace ParaEngine
 	*/
 	void TimetToFileTime(const std::time_t& t, FILETIME* pft)
 	{
+#ifndef Int32x32To64
+#define Int32x32To64(a, b)  ((int64_t)(((int64_t)((long)(a))) * ((long)(b))))
+#endif
 		// Microseconds between 1601-01-01 00:00:00 UTC and 1970-01-01 00:00:00 UTC
 		int64_t ll = Int32x32To64(t, 10000000) + 116444736000000000;
 		pft->dwLowDateTime = (DWORD)ll;

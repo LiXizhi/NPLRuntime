@@ -11,7 +11,6 @@
 
 #if !defined(PARAENGINE_MOBILE)
 
-
 #include "CSingleton.h"
 #include "FileSystemWatcher.h"
 // define this to enable recursive directory watch by default, default to false under windows.

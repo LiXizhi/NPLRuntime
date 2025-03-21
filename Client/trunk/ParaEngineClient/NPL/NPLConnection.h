@@ -234,6 +234,9 @@ namespace NPL
 
 		/** set transmission protocol, default value is 0. */
 		void SetProtocol(ProtocolType protocolType = ProtocolType::NPL);
+
+		void SetNplWebSocket(bool nplwebsocket) { m_nplwebsocket = nplwebsocket;}
+		bool IsNplWebSocket() { return m_nplwebsocket;}
 	public:
 		//
 		// In case, one wants to use a different connection data handler,  the following interface are provided. 
@@ -333,6 +336,7 @@ namespace NPL
 		/// for statistics, number of bytes sent
 		uint32 m_totalBytesOut;
 
+		bool m_nplwebsocket;
 		/** default to false, if true, it will dump all send and received data to output. */
 		bool m_bDebugConnection;
 
@@ -400,7 +404,7 @@ namespace NPL
 #else
 namespace NPL
 {
-	class CNPLConnection
+	class CNPLConnection 
 	{
 	public:
 		enum ProtocolType
@@ -409,24 +413,33 @@ namespace NPL
 			WEBSOCKET = 1,
 			TCP_CUSTOM = 2, // any custom protocol, like google protocol buffer
 		};
-		void start() {}
+		
+		void start() { SetAuthenticated(true); /* this is active outgoing connection, we will assume that it is authenticated once connection is established. */ }
 		void stop(bool bRemoveConnection = true, int nReason = 0) {}
-		bool IsConnected() const { return false; }
-		const string& GetNID() const { static std::string s_str = ""; return s_str; }
-		NPLReturnCode SendMessage(const NPLFileName& file_name, const char* code = NULL, int nLength = 0, int priority = 0) { return NPL_OK; }
-		void SetAuthenticated(bool bAuthenticated) {}
-		bool IsAuthenticated() const { return false; }
+		bool IsConnected() const { return false;}
+		bool SetNID(const char* sNID) { m_nid = sNID; return true; }
+		const string& GetNID() const { return m_nid;}
+		NPLReturnCode SendMessage(const NPLFileName& file_name, const char * code = NULL, int nLength=0, int priority=0) { return NPL_OK; }
+		void SetAuthenticated(bool bAuthenticated) { m_authenticated = bAuthenticated;}
+		bool IsAuthenticated() const { return true; } 
+		void SetNplWebSocket(bool nplwebsocket) { }
+		bool IsNplWebSocket() { return false;}
 		void SetProtocol(ProtocolType protocolType = ProtocolType::NPL) {}
 		int CheckIdleTimeout(unsigned int nCurTime) { return 0; }
 		string GetIP() { return "0.0.0.0"; }
 		NPLRuntimeAddress_ptr m_address;
+
+		CNPLConnection(): m_authenticated(false) {}
+	protected:
+		std::string m_nid;
+		bool m_authenticated;
 	};
 
 	struct NPLConnection_PtrOps
 	{	// functor for operator<
 		bool operator()(const NPLConnection_ptr& _Left, const NPLConnection_ptr& _Right) const
 		{	// apply operator< to operands
-			return (_Left.get() < _Right.get());
+			return (_Left.get()<_Right.get());
 		}
 	};
 }

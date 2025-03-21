@@ -51,7 +51,9 @@
 #include "ParaTime.h"
 #endif
 
+#ifdef USE_DIRECTX_RENDERER
 ID3DXMesh* g_pSphereObject = NULL;
+#endif
 
 namespace ParaEngine
 {

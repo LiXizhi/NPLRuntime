@@ -62,6 +62,11 @@ SOURCE_GROUP("Framework" FILES ${ParaEngineServer_Framework_FILES})
 list(APPEND ParaEngineServer_SRCS ${ParaEngineServer_Framework_FILES})
 
 ##############################
+file (GLOB_RECURSE ParaEngineServer_Framework_FILES ${CLIENT_SOURCE_DIR}/Framework/Common/*.*)
+SOURCE_GROUP("Framework" FILES ${ParaEngineServer_Framework_FILES})
+list(APPEND ParaEngineServer_SRCS ${ParaEngineServer_Framework_FILES})
+
+##############################
 file (GLOB ParaEngineServer_pb_FILES ${CLIENT_SOURCE_DIR}/protocol/*.h ${CLIENT_SOURCE_DIR}/protocol/*.cpp)
 SOURCE_GROUP("protocol" FILES ${ParaEngineServer_pb_FILES})
 list(APPEND ParaEngineServer_SRCS ${ParaEngineServer_pb_FILES}) 

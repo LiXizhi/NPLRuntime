@@ -100,4 +100,4 @@ add_subdirectory (ParaEngineServer ${NPLRuntime_BINARY_DIR}/ParaEngineServer)
 # following are plugins that should be build after main runtime
 add_subdirectory (${SERVER_SOURCE_DIR}NPLMono/NPLMono2  ${NPLRuntime_BINARY_DIR}/NPLMono/NPLMono2)
 add_subdirectory (${SERVER_SOURCE_DIR}/NPLRouter  ${NPLRuntime_BINARY_DIR}/NPLRouter)
-add_subdirectory (${SERVER_SOURCE_DIR}/TMInterface  ${NPLRuntime_BINARY_DIR}/TMInterface)
+# add_subdirectory (${SERVER_SOURCE_DIR}/TMInterface  ${NPLRuntime_BINARY_DIR}/TMInterface)

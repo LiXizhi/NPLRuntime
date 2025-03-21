@@ -12,13 +12,14 @@
 #include "NPLHelper.h"
 #include "INPLRuntimeState.h"
 
+#ifdef WIN32
+
 #include <windows.devices.bluetooth.h>
 #include <windows.devices.bluetooth.advertisement.h>
 #include <windows.foundation.h>
 
 #include "BlueTooth.h"
 
-#ifdef WIN32
 
 namespace ParaEngine
 {

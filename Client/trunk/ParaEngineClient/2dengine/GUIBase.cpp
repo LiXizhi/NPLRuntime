@@ -2534,9 +2534,9 @@ HRESULT ParaEngine::CGUIBase::DoSelfPaint(GUIState* pGUIState, float fElapsedTim
 								pDevice->SetRenderState(D3DRS_SEPARATEALPHABLENDENABLE, TRUE);
 								pDevice->SetRenderState(D3DRS_SRCBLENDALPHA, D3DBLEND_ONE);
 								pDevice->SetRenderState(D3DRS_DESTBLENDALPHA, D3DBLEND_ONE);
+#ifdef USE_DIRECTX_RENDERER
 								pDevice->SetRenderState(D3DRS_BLENDOPALPHA, D3DBLENDOP_MAX);
 
-#ifdef USE_DIRECTX_RENDERER
 								// tricky: we should always use clipping, otherwise alpha channel blending is not working (directX bug? opengl is fine).
 								bool bIsFastRender = ((CGUIType*)GetType())->IsContainer() && ((CGUIContainer*)this)->GetFastRender();
 								if (bIsFastRender)
@@ -2554,7 +2554,9 @@ HRESULT ParaEngine::CGUIBase::DoSelfPaint(GUIState* pGUIState, float fElapsedTim
 									painter.setClipRect(QRect(), NoClip);
 #endif
 								pDevice->SetRenderState(D3DRS_SEPARATEALPHABLENDENABLE, FALSE);
+#ifdef USE_DIRECTX_RENDERER
 								pDevice->SetRenderState(D3DRS_BLENDOPALPHA, D3DBLENDOP_ADD);
+#endif
 							}
 
 							SetDirtyRecursive(false);
