@@ -426,6 +426,11 @@ void ParaEngine::CUrlProcessor::SetCurlEasyOpt(CURL* handle)
 				curl_easy_setopt(handle, CURLOPT_CONNECTTIMEOUT, iter->second.toInt());
 				bAllowSlowRequest = true;
 			}
+			else if (sKey == "CURLOPT_TIMEOUT")
+			{
+				curl_easy_setopt(handle, CURLOPT_TIMEOUT, iter->second.toInt());
+				bAllowSlowRequest = true;
+			}
 			else if (sKey == "CURLOPT_LOW_SPEED_TIME")
 			{
 				curl_easy_setopt(handle, CURLOPT_LOW_SPEED_TIME, iter->second.toInt());
