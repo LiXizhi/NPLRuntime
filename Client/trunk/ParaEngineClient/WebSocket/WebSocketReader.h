@@ -48,7 +48,7 @@ namespace NPL
 			* </pre>
 			*/
 			byte flagsInUse;
-			WebSocketFrame* frame;
+			WebSocketFrame m_frame;
 
 			ComingMsgState frameState;
 		};
