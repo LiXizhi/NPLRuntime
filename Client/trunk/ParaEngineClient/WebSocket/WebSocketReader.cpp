@@ -21,12 +21,10 @@ WebSocketReader::WebSocketReader()
 	, flagsInUse(0x00)
 	, frameState(ComingMsgState::EMPTY)
 {
-	frame = new WebSocketFrame();
 }
 
 WebSocketReader::~WebSocketReader()
 {
-	delete frame;
 }
 
 ByteBuffer WebSocketReader::load(Buffer_Type* buffer, int bytes_transferred)
@@ -60,6 +58,7 @@ bool WebSocketReader::parse(ByteBuffer& buffer)
 }
 bool WebSocketReader::parseFrame(ByteBuffer& buffer)
 {
+	auto frame = getFrame();
 	int len = buffer.bytesRemaining();
 	while ( len > 0)
 	{
@@ -262,6 +261,7 @@ bool WebSocketReader::append(ByteBuffer& buffer)
 	{
 		return true;
 	}
+	auto frame = getFrame();
 	const int len = buffer.bytesRemaining();
 	int needed_len = payloadLength;
 	payloadLength -= len;
@@ -279,7 +279,7 @@ bool WebSocketReader::append(ByteBuffer& buffer)
 
 WebSocketFrame* WebSocketReader::getFrame()
 {
-	return frame;
+	return &m_frame;
 }
 void WebSocketReader::reset() 
 {
