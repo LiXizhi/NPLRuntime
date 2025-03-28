@@ -13,9 +13,30 @@
 #include "ImageEntity.h"
 #include "PaintEngine/Painter.h"
 #include "CustomCharRenderTarget.h"
+#include "PaintEngine/PaintEngineGPU.h"
 
 using namespace ParaEngine;
 
+#include <functional>
+class ScopeGuard
+{
+public:
+	ScopeGuard(std::function<void()> at_init, std::function<void()> at_exit)
+	{
+		m_init = at_init;
+		m_exit = at_exit;
+
+		if (m_init != nullptr) m_init();
+	}
+
+	~ScopeGuard()
+	{
+		if (m_exit != nullptr) m_exit();
+	}
+private:
+	std::function<void()> m_init;
+	std::function<void()> m_exit;
+};
 //
 // CSkinLayers
 //
@@ -34,6 +55,8 @@ ParaEngine::CSkinLayers::~CSkinLayers()
 void ParaEngine::CSkinLayers::DoPaint(CPaintDevice* pd)
 {
 	// DO the texture composition here
+	ScopeGuard scope_guard([]() { CPaintEngineGPU::GetInstance()->GetSprite()->SetIgnoreScreenRotate(true); }, []() { CPaintEngineGPU::GetInstance()->GetSprite()->SetIgnoreScreenRotate(false); });
+	// CPaintEngineGPU::GetInstance()->GetSprite()->SetIgnoreScreenRotate(true); 
 	CPainter painter(pd);
 
 	int nSize = (int)m_layers.size();
@@ -64,6 +87,7 @@ void ParaEngine::CSkinLayers::DoPaint(CPaintDevice* pd)
 			painter.drawTexture(rect, pTextureEntity);
 		}
 	}
+	// CPaintEngineGPU::GetInstance()->GetSprite()->SetIgnoreScreenRotate(false); 
 }
 
 bool ParaEngine::CSkinLayers::IsAssetAllLoaded()
@@ -129,6 +153,9 @@ bool ParaEngine::CFaceLayers::IsAssetAllLoaded()
 void ParaEngine::CFaceLayers::DoPaint(CPaintDevice* pd)
 {
 	// DO the texture composition here
+	ScopeGuard scope_guard([]() { CPaintEngineGPU::GetInstance()->GetSprite()->SetIgnoreScreenRotate(true); }, []() { CPaintEngineGPU::GetInstance()->GetSprite()->SetIgnoreScreenRotate(false); });
+	// CPaintEngineGPU::GetInstance()->GetSprite()->SetIgnoreScreenRotate(true); 
+
 	CPainter painter(pd);
 	for (int i = 0; i<CFS_TOTAL_NUM; ++i)
 	{
@@ -190,6 +217,7 @@ void ParaEngine::CFaceLayers::DoPaint(CPaintDevice* pd)
 			}
 		}
 	}
+	// CPaintEngineGPU::GetInstance()->GetSprite()->SetIgnoreScreenRotate(false); 
 }
 
 void ParaEngine::CFaceLayers::OnTaskCompleted()

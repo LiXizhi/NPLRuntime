@@ -111,7 +111,11 @@ namespace ParaEngine
 		drawn in screen space coordinates.
 		*/
 		bool IsUseObjectSpaceTransform();
-
+	
+	public:
+		inline void SetIgnoreScreenRotate(bool ignore_screen_rotate) { m_ignore_screen_rotate = ignore_screen_rotate; }
+		inline bool IsIgnoreScreenRotate() { return m_ignore_screen_rotate; }
+	
 	protected:
 		DWORD m_flags;
 		Matrix4 m_transform;
@@ -130,5 +134,7 @@ namespace ParaEngine
 
 		// number of triangles to be drawn
 		int m_triangles_count;
+
+		bool m_ignore_screen_rotate;
 	};
 }
