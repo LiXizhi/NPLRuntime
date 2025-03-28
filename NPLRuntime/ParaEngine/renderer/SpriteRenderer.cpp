@@ -32,7 +32,7 @@ CSpriteRenderer* ParaEngine::CSpriteRenderer::Create()
 }
 
 ParaEngine::CSpriteRenderer::CSpriteRenderer()
-	: m_transform(Matrix4::IDENTITY), m_thickline_count(0), m_triangles_count(0), m_flags(0)
+	: m_transform(Matrix4::IDENTITY), m_thickline_count(0), m_triangles_count(0), m_flags(0), m_ignore_screen_rotate(false)
 {
 }
 
