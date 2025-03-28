@@ -21,7 +21,7 @@ android {
         externalNativeBuild {
             cmake {
                 arguments "-DCMAKE_FIND_ROOT_PATH=", "-DANDROID_STL=c++_shared", "-DANDROID_TOOLCHAIN=clang", "-DANDROID_ARM_NEON=TRUE", "-DANDROID_STUDIO=TRUE", "-DNPLRUNTIME_OCE=TRUE", "-DHB_HAVE_FREETYPE=ON"
-                cppFlags "-frtti -fexceptions -fsigned-char -std=c++11"
+                cppFlags "-frtti -fexceptions -fsigned-char -std=c++17"
             }
         }
 
