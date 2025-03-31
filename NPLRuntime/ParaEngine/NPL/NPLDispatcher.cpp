@@ -317,6 +317,7 @@ NPL::NPLReturnCode NPL::CNPLDispatcher::Activate_Async(const NPLFileName& file_n
 	else
 	{
 #ifdef __EMSCRIPTEN__
+		auto nid = file_name.sNID;
 		auto websocket = EmscriptenWebSocket::CreateGetWebSocket(file_name.sNID);
 		if (websocket->IsConnected())
 		{
@@ -346,30 +347,47 @@ NPL::NPLReturnCode NPL::CNPLDispatcher::Activate_Async(const NPLFileName& file_n
 
 			static thread_local NPLMsgIn s_input_msg;
 			static thread_local NPLMsgIn_parser s_parser;
-			auto on_msg = [this, websocket](const std::string & msg) {
+			static thread_local std::unordered_map<std::string, std::string> s_last_msg;
+			auto on_msg = [this, websocket, nid](const std::string & msg) {
+				auto& last_msg = s_last_msg[nid];
+				auto last_msg_size = last_msg.size();
+				last_msg.resize(last_msg.size() + msg.size());
+				memcpy(last_msg.data() + last_msg_size, msg.data(), msg.size());
+
 				boost::tribool result = true;
-				auto curIt = msg.data();
-				auto curEnd = curIt + msg.size();
+				auto curIt = last_msg.data();
+				auto curEnd = curIt + last_msg.size();
 				s_parser.reset();
 				s_input_msg.reset();
-				boost::tie(result, curIt) = s_parser.parse(s_input_msg, curIt, curEnd);
-				if (result)
+				while (curIt != curEnd)
 				{
-					// std::cout << "receive nplwebsocket message: " << std::endl;
-					// std::cout << s_input_msg.m_filename << std::endl;
-					// std::cout << s_input_msg.m_n_filename << std::endl;
-					// std::cout << s_input_msg.m_code << std::endl;
-					s_input_msg.m_pConnection = websocket->GetConnection();
-					this->DispatchMsg(s_input_msg);
-					s_input_msg.m_pConnection = nullptr;
-				}
-				else
-				{
-					OUTPUT_LOG("parse nplwebsocket message failed!!!");
+					boost::tie(result, curIt) = s_parser.parse(s_input_msg, curIt, curEnd);
+					if (result)
+					{
+						// std::cout << "receive nplwebsocket message: " << std::endl;
+						// std::cout << s_input_msg.m_filename << std::endl;
+						// std::cout << s_input_msg.m_n_filename << std::endl;
+						// std::cout << s_input_msg.m_code << std::endl;
+						s_input_msg.m_pConnection = websocket->GetConnection();
+						this->DispatchMsg(s_input_msg);
+						s_input_msg.m_pConnection = nullptr;
+						last_msg.clear();
+					}
+					else
+					{
+						OUTPUT_LOG("parse nplwebsocket message failed!!!");
+						static std::string s_temp;
+						s_temp.resize(curEnd - curIt);
+						memcpy(s_temp.data(), curIt, s_temp.size());
+						last_msg.resize(s_temp.size());
+						memcpy(last_msg.data(), s_temp.data(), s_temp.size());
+						break;
+					}
 				}
 			};
 
-			auto on_close = [this, websocket] () {
+			auto on_close = [this, websocket, nid] () {
+				s_last_msg[nid].clear();
 				PostNetworkEvent(NPL_ConnectionDisconnected, websocket->GetConnection()->GetNID().c_str(), "websocket close");
 			};
 			websocket->SetOnReceive(on_msg);
