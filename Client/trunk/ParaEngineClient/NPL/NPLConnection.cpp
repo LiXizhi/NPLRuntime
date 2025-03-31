@@ -811,19 +811,32 @@ bool NPL::CNPLConnection::handle_websocket_data(int bytes_transferred)
 			SetKeepAlive(true);
 			if (IsNplWebSocket())
 			{
+				auto old_size = m_websocket_input_data_buffer.size();
+				m_websocket_input_data_buffer.resize(m_websocket_input_data_buffer.size() + m_websocket_input_data.size());
+				memcpy(m_websocket_input_data_buffer.data() + old_size, m_websocket_input_data.data(), m_websocket_input_data.size());
 				boost::tribool result = true;
-				auto curIt = (const char*)(&m_websocket_input_data[0]);
-				auto curEnd = curIt + m_websocket_input_data.size();
-				boost::tie(result, curIt) = m_parser.parse(m_input_msg, curIt, curEnd);
-				if (result)
+				auto curIt = (const char*)(&m_websocket_input_data_buffer[0]);
+				auto curEnd = curIt + m_websocket_input_data_buffer.size();
+				while (curIt != curEnd)
 				{
-					return handleMessageIn();
+					boost::tie(result, curIt) = m_parser.parse(m_input_msg, curIt, curEnd);
+					if (result)
+					{
+						handleMessageIn();
+						m_websocket_input_data_buffer.clear();
+					}
+					else
+					{
+						OUTPUT_LOG("warning: nplwebsocket npl message parsing failed when received data. nid %s \n", GetNID().c_str());
+						static std::vector<byte> s_temp;
+						s_temp.resize(curEnd - curIt);
+						memcpy(s_temp.data(), curIt, s_temp.size());
+						m_websocket_input_data_buffer.resize(s_temp.size());
+						memcpy(m_websocket_input_data_buffer.data(), s_temp.data(), s_temp.size());
+						break;
+					}
 				}
-				else
-				{
-					OUTPUT_LOG("warning: nplwebsocket npl message parsing failed when received data. nid %s \n", GetNID().c_str());
-					return true;
-				}
+				return true;
 			}
 			else
 			{
