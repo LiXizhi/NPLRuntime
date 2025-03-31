@@ -95,7 +95,6 @@ public:
 
     virtual void OnReceive(const std::string &data)
     {
-        std::cout << "WebSocketMessage:" << (m_on_receive == nullptr) << std::endl;
         if (m_on_receive != nullptr)
             m_on_receive(data);
     }
