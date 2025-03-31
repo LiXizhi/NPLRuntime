@@ -802,8 +802,8 @@ bool NPL::CNPLConnection::handle_websocket_data(int bytes_transferred)
 			m_websocket_input_data.clear();
 			frame->loadData(m_websocket_input_data);
 			m_websocket_reader.reset();
-			m_websocket_reader.parseFrame(b);
 			NPL::WebSocket::OpCode opcode = (NPL::WebSocket::OpCode)frame->getOpCode();
+			m_websocket_reader.parseFrame(b);
 			switch (opcode)
 			{
 			case NPL::WebSocket::BINARY:
