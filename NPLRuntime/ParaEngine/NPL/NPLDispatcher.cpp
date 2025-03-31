@@ -335,7 +335,7 @@ NPL::NPLReturnCode NPL::CNPLDispatcher::Activate_Async(const NPLFileName& file_n
 			{
 				auto ip = it->second->GetHost();
 				auto port = it->second->GetPort();
-				websocket->Connect("ws://" + ip + ":" + port + "/nplwebsocket");
+				websocket->Connect("wss://" + ip + ":" + port + "/nplwebsocket");
 				if (websocket->GetConnection() == nullptr)
 				{
 					auto connection = std::make_shared<CNPLConnection>();
@@ -368,7 +368,12 @@ NPL::NPLReturnCode NPL::CNPLDispatcher::Activate_Async(const NPLFileName& file_n
 					OUTPUT_LOG("parse nplwebsocket message failed!!!");
 				}
 			};
+
+			auto on_close = [this, websocket] () {
+				PostNetworkEvent(NPL_ConnectionDisconnected, websocket->GetConnection()->GetNID().c_str(), "websocket close");
+			};
 			websocket->SetOnReceive(on_msg);
+			websocket->SetOnClose(on_close);
 		}
 #else 
 		// this is a remote activation
