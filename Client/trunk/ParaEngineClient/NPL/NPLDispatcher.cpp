@@ -363,6 +363,8 @@ NPL::NPLReturnCode NPL::CNPLDispatcher::Activate_Async( const NPLFileName& file_
 					else
 					{
 						OUTPUT_LOG("parse nplwebsocket message failed!!!");
+						input_msg->reset();
+						parser->reset();
 						break;
 					}
 				}
