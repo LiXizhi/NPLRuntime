@@ -251,7 +251,7 @@ bool WebSocketReader::parseFrame(ByteBuffer& buffer)
 		}
 		}
 	}
-	return true;
+	return false;
 }
 
 bool WebSocketReader::append(ByteBuffer& buffer)
