@@ -386,7 +386,6 @@ namespace NPL
 		WebSocket::WebSocketWriter m_websocket_writer;
 		std::vector<byte> m_websocket_input_data;
 		std::vector<byte> m_websocket_out_data;
-		std::vector<byte> m_websocket_input_data_buffer;
 
 		ProtocolType m_protocolType;
 	};
@@ -430,8 +429,12 @@ namespace NPL
 		string GetIP() { return "0.0.0.0"; }
 		NPLRuntimeAddress_ptr m_address;
 
-		CNPLConnection(): m_authenticated(false) {}
+		CNPLConnection(): m_authenticated(false) { m_input_msg.m_pConnection = this; }
+		inline NPLMsgIn* GetMsgIn() { return &m_input_msg; }
+		inline NPLMsgIn_parser* GetMsgInParser() { return &m_parser; }
 	protected:
+		NPLMsgIn m_input_msg;
+		NPLMsgIn_parser m_parser;
 		std::string m_nid;
 		bool m_authenticated;
 	};
