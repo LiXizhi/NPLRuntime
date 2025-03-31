@@ -839,6 +839,7 @@ bool NPL::CNPLConnection::handle_websocket_data(int bytes_transferred)
 					NPL::NPLHelper::EncodeStringInQuotation(m_input_msg.m_code, 0, (const char*)(&m_websocket_input_data[0]), (int)m_websocket_input_data.size());
 					handleMessageIn();
 				}
+				break;
 			}
 			case NPL::WebSocket::CLOSE:
 				stop();
