@@ -59,8 +59,7 @@ bool WebSocketReader::parse(ByteBuffer& buffer)
 bool WebSocketReader::parseFrame(ByteBuffer& buffer)
 {
 	auto frame = getFrame();
-	int len = buffer.bytesRemaining();
-	while ( len > 0)
+	while ( buffer.bytesRemaining() > 0)
 	{
 		switch (state)
 		{
@@ -252,7 +251,7 @@ bool WebSocketReader::parseFrame(ByteBuffer& buffer)
 		}
 		}
 	}
-	return true;
+	return false;
 }
 
 bool WebSocketReader::append(ByteBuffer& buffer)
