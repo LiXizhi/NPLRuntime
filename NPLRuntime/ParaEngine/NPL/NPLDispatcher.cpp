@@ -317,7 +317,6 @@ NPL::NPLReturnCode NPL::CNPLDispatcher::Activate_Async(const NPLFileName& file_n
 	else
 	{
 #ifdef __EMSCRIPTEN__
-		auto nid = file_name.sNID;
 		auto websocket = EmscriptenWebSocket::CreateGetWebSocket(file_name.sNID);
 		if (websocket->IsConnected())
 		{
@@ -345,7 +344,7 @@ NPL::NPLReturnCode NPL::CNPLDispatcher::Activate_Async(const NPLFileName& file_n
 				} 
 			}
 
-			auto on_msg = [this, websocket, nid](const std::string & msg) {
+			auto on_msg = [this, websocket](const std::string & msg) {
 				boost::tribool result = true;
 				auto curIt = msg.data();
 				auto curEnd = curIt + msg.size();
@@ -372,7 +371,7 @@ NPL::NPLReturnCode NPL::CNPLDispatcher::Activate_Async(const NPLFileName& file_n
 				}
 			};
 
-			auto on_close = [this, websocket, nid] () {
+			auto on_close = [this, websocket] () {
 				PostNetworkEvent(NPL_ConnectionDisconnected, websocket->GetConnection()->GetNID().c_str(), "websocket close");
 			};
 			websocket->SetOnReceive(on_msg);
