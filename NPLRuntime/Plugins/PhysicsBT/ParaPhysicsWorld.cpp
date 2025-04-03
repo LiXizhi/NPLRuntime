@@ -66,6 +66,7 @@ void ParaEngine::BulletPhysicsActor::SetWorldTransform(const PARAMATRIX* pMatrix
 	static btTransform transform;
 	transform.setFromOpenGLMatrix((float*)pMatrix);
 	m_pActor->getMotionState()->setWorldTransform(transform);
+	if (IsKinematicObject()) m_pActor->setCenterOfMassTransform(transform);
 #else
 	m_pActor->getWorldTransform().setFromOpenGLMatrix((float*)pMatrix);
 #endif
