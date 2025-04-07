@@ -241,6 +241,7 @@ namespace ParaEngine
 
 		ATTRIBUTE_METHOD1(ParaEngineSettings, GetLandscapeMode_s, const char**) { *p1 = cls->GetLandscapeMode().c_str(); return S_OK; }
 		ATTRIBUTE_METHOD1(ParaEngineSettings, SetLandscapeMode_s, const char*) { cls->SetLandscapeMode(p1); return S_OK; }
+        ATTRIBUTE_METHOD1(ParaEngineSettings, IsScreenRotated_s, bool*) { *p1 = cls->IsScreenRotated(); return S_OK; }
 
 		ATTRIBUTE_METHOD1(ParaEngineSettings, GetRendererName_s, const char**) { *p1 = cls->GetRendererName(); return S_OK; }
 
@@ -746,6 +747,7 @@ namespace ParaEngine
 
 		const std::string& GetLandscapeMode();
         void SetLandscapeMode(const char* mode);
+        bool IsScreenRotated();
 
 		/** @return "OpenGL" or "DirectX" */
 		const char* GetRendererName();
