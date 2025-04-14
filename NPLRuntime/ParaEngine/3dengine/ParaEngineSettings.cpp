@@ -1491,6 +1491,11 @@ void ParaEngine::ParaEngineSettings::SetLandscapeMode(const char* mode)
 	CGlobals::GetApp()->SetLandscapeMode(mode);
 }
 
+bool ParaEngine::ParaEngineSettings::IsScreenRotated()
+{
+	return CGlobals::GetApp()->IsRotateScreen();
+}
+
 const char* ParaEngine::ParaEngineSettings::GetRendererName()
 {
 #ifdef USE_DIRECTX_RENDERER
@@ -1617,6 +1622,7 @@ int ParaEngineSettings::InstallFields(CAttributeClass* pClass, bool bOverride)
 	pClass->AddField("PythonToLua", FieldType_String, (void*)SetPythonToLua_s, (void*)GetPythonToLua_s, NULL, NULL, bOverride);
 	pClass->AddField("CppToLua", FieldType_String, (void*)SetCppToLua_s, (void*)GetCppToLua_s, NULL, NULL, bOverride);
 	pClass->AddField("LandscapeMode", FieldType_String, (void*)SetLandscapeMode_s, (void*)GetLandscapeMode_s, NULL, NULL, bOverride);
+	pClass->AddField("IsScreenRotated", FieldType_Bool, NULL, (void*)IsScreenRotated_s, NULL, NULL, bOverride);
 
 	pClass->AddField("RendererName", FieldType_String, NULL, (void*)GetRendererName_s, NULL, NULL, bOverride);
 	
