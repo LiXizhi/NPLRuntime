@@ -7,7 +7,7 @@
 #include "NPLMessageQueue.h"
 #include "WebSocket/WebSocketReader.h"
 #include "WebSocket/WebSocketWriter.h"
-#ifndef EMSCRIPTEN_SINGLE_THREAD
+#ifndef __EMSCRIPTEN__
 #include <boost/asio.hpp>
 #endif
 #include <boost/array.hpp>
@@ -15,7 +15,7 @@
 #include <boost/shared_ptr.hpp>
 #include <boost/enable_shared_from_this.hpp>
 
-#ifndef EMSCRIPTEN_SINGLE_THREAD
+#ifndef __EMSCRIPTEN__
 namespace NPL
 {
 	class CNPLDispatcher;
