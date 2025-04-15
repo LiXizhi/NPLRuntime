@@ -8,7 +8,7 @@
 //-----------------------------------------------------------------------------
 #include "ParaEngine.h"
 
-#ifndef EMSCRIPTEN_SINGLE_THREAD
+#ifndef __EMSCRIPTEN__
 #include <boost/bind.hpp>
 #include "NPLNetServer.h"
 
