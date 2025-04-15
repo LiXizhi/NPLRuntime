@@ -128,7 +128,7 @@ CGUIRoot::CGUIRoot(void)
 	m_fUIScalingX(1.f), m_fUIScalingY(1.0f), m_fViewportLeft(0.f), m_fViewportTop(0.f), m_fViewportWidth(0.f), m_fViewportHeight(0.f),
 	m_bMouseInClient(true), m_nLastTouchX(-1000), m_nLastTouchY(-1000), m_bIsNonClient(false), m_bSwapTouchButton(false),
 	m_fMinScreenWidth(400.f), m_fMinScreenHeight(300.f), m_bHasIMEFocus(false), m_bIsCursorClipped(false), m_nFingerSizePixels(60), m_nFingerStepSizePixels(10), m_pActiveWindow(NULL), m_pLastMouseDownObject(NULL), m_bMouseCaptured(false), m_bMouseOverScrollableUI(false),
-	m_fMaxScreenWidth(4096.f), m_fMaxScreenHeight(2160.f), m_fGUIToEyeDist(0.f), m_fGUI3DModeScaling(1.f)
+	m_fMaxScreenWidth(-1.f), m_fMaxScreenHeight(-1.f), m_fGUIToEyeDist(0.f), m_fGUI3DModeScaling(1.f)
 // #ifdef PARAENGINE_MOBILE
 #if defined(PARAENGINE_MOBILE) || defined(EMSCRIPTEN)
 	, m_nCtrlBottom(0)
