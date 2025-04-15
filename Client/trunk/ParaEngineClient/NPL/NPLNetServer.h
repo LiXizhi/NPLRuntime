@@ -1,7 +1,7 @@
 #pragma once
 #include "NPLDispatcher.h"
 #include "NPLConnectionManager.h"
-#ifndef EMSCRIPTEN_SINGLE_THREAD
+#ifndef __EMSCRIPTEN__
 
 #include <boost/thread.hpp>
 #include <boost/asio.hpp>
