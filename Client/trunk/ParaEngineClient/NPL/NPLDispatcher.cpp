@@ -334,7 +334,7 @@ NPL::NPLReturnCode NPL::CNPLDispatcher::Activate_Async( const NPLFileName& file_
 			{
 				auto ip = it->second->GetHost();
 				auto port = it->second->GetPort();
-				websocket->Connect("ws://" + ip + ":" + port + "/nplwebsocket");
+				websocket->Connect("wss://" + ip + ":" + port + "/nplwebsocket");
 				if (websocket->GetConnection() == nullptr)
 				{
 					auto connection = std::make_shared<CNPLConnection>();
@@ -343,27 +343,38 @@ NPL::NPLReturnCode NPL::CNPLDispatcher::Activate_Async( const NPLFileName& file_
 				} 
 			}
 
-			static thread_local NPLMsgIn s_input_msg;
-			static thread_local NPLMsgIn_parser s_parser;
 			auto on_msg = [this, websocket](const std::string & msg) {
 				boost::tribool result = true;
-				auto curIt = msg.data();
-				auto curEnd = curIt + msg.size();
-				s_parser.reset();
-				s_input_msg.reset();
-				boost::tie(result, curIt) = s_parser.parse(s_input_msg, curIt, curEnd);
-				if (result)
+				auto curIt = last_msg.data();
+				auto curEnd = curIt + last_msg.size();
+				auto input_msg = websocket->GetConnection()->GetMsgIn();
+				auto parser = websocket->GetConnection()->GetMsgInParser();
+				while (curIt != curEnd)
 				{
-					s_input_msg.m_pConnection = websocket->GetConnection();
-					this->DispatchMsg(s_input_msg);
-					s_input_msg.m_pConnection = nullptr;
-				}
-				else
-				{
-					OUTPUT_LOG("parse nplwebsocket message failed!!!");
+					boost::tie(result, curIt) = parser->parse(*input_msg, curIt, curEnd);
+					if (result)
+					{
+						// std::cout << "receive nplwebsocket message: " << std::endl;
+						// std::cout << s_input_msg.m_filename << std::endl;
+						// std::cout << s_input_msg.m_n_filename << std::endl;
+						// std::cout << s_input_msg.m_code << std::endl;
+						this->DispatchMsg(*input_msg);
+					}
+					else
+					{
+						OUTPUT_LOG("parse nplwebsocket message failed!!!");
+						input_msg->reset();
+						parser->reset();
+						break;
+					}
 				}
 			};
+
+			auto on_close = [this, websocket] () {
+				PostNetworkEvent(NPL_ConnectionDisconnected, websocket->GetConnection()->GetNID().c_str(), "websocket close");
+			};
 			websocket->SetOnReceive(on_msg);
+			websocket->SetOnClose(on_close);
 		}
 #else 
 		// this is a remote activation
