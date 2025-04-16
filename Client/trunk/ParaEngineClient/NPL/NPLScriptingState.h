@@ -1,5 +1,6 @@
 #pragma once
 #include <map>
+#include <list>
 #include "NPLCommon.h"
 
 namespace NPL
@@ -291,6 +292,7 @@ namespace ParaScripting
 
 		/** a stack of files being loaded. */
 		std::stack <std::string> m_stack_current_file;
+		std::list <std::string> m_pending_loadfiles;
 
 		/* currently only a single search path is supported. */
 		static std::string m_searchpath;
