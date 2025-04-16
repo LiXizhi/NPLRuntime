@@ -578,9 +578,8 @@ bool ParaScripting::CNPLScriptingState::LoadFile(const string& filePath, bool bR
 	bool bLoadedBefore = nFileStatus != NPL_FILE_MODULE_NOT_LOADED;
 
 	// define this to prevent recursive calls of NPL.load, which may exceed stack size limit on js/emscripten.
-// #define BREADTH_FIRST_LOADFILE
+#define BREADTH_FIRST_LOADFILE
 #ifdef BREADTH_FIRST_LOADFILE
-	bool bIsRoot  = m_pending_loadfiles.size() == 0;
 	if (!bLoadedBefore || bReload)
 	{
 		// if the file is not loaded or reload it true, try loading the glia file first.
@@ -616,13 +615,16 @@ bool ParaScripting::CNPLScriptingState::LoadFile(const string& filePath, bool bR
 			PopFileModule(filePath, L);
 		}
 	}
-	if (bIsRoot) 
+	// @def this to prevent recursive calls of NPL.load, which may exceed stack size limit on js/emscripten.
+#define MAX_NPL_LOAD_RECURSION_DEPTH  5
+	if (m_stack_current_file.size() <= MAX_NPL_LOAD_RECURSION_DEPTH)
 	{
 		bool bLastNoReturn = bNoReturn;
 		while (m_pending_loadfiles.size() > 0)
 		{
 			string sFilePath = m_pending_loadfiles.front();
-			
+			m_pending_loadfiles.pop_front();
+
 			string sFileName;
 			uint32 dwFound = GetScriptDiskPath(sFilePath, sFileName);
 
@@ -741,7 +743,6 @@ bool ParaScripting::CNPLScriptingState::LoadFile(const string& filePath, bool bR
 				SetFileLoadStatus(filePath, NPL_FILE_MODULE_NOT_FOUND);
 			}
 			bNoReturn = false; // this parameter does not take effect after the first file is loaded.
-			m_pending_loadfiles.pop_front();
 		}
 		bNoReturn = bLastNoReturn;
 	}
