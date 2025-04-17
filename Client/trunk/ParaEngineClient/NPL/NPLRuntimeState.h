@@ -64,7 +64,11 @@ namespace NPL
 		ATTRIBUTE_METHOD1(CNPLRuntimeState, GetFileName_s, const char**) { *p1 = cls->GetCurrentFileName(); return S_OK; }
 		ATTRIBUTE_METHOD1(CNPLRuntimeState, GetDebugTraceLevel_s, int*) { *p1 = cls->GetDebugTraceLevel(); return S_OK; }
 		ATTRIBUTE_METHOD1(CNPLRuntimeState, SetDebugTraceLevel_s, int) { cls->SetDebugTraceLevel(p1); return S_OK; }
-
+		ATTRIBUTE_METHOD1(CNPLRuntimeState, IsRecursiveLoadFile_s, bool*) { *p1 = cls->IsRecursiveLoadFile(); return S_OK; }
+		ATTRIBUTE_METHOD1(CNPLRuntimeState, SetRecursiveLoadFile_s, bool) { cls->SetRecursiveLoadFile(p1); return S_OK; }
+		ATTRIBUTE_METHOD1(CNPLRuntimeState, GetMaxLoadFileRecursionDepth_s, int*) { *p1 = cls->GetMaxLoadFileRecursionDepth(); return S_OK; }
+		ATTRIBUTE_METHOD1(CNPLRuntimeState, SetMaxLoadFileRecursionDepth_s, int) { cls->SetMaxLoadFileRecursionDepth(p1); return S_OK; }
+		ATTRIBUTE_METHOD1(CNPLRuntimeState, DumpCurrentStackFiles_s, const char**) { *p1 = cls->DumpCurrentStackFiles().c_str(); return S_OK; }
 
 		/** call this function before calling anything else. It will load all NPL modules into the runtime state. */
 		void Init();

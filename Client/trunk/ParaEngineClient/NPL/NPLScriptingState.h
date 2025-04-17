@@ -230,6 +230,14 @@ namespace ParaScripting
 		/** lua_pcall with default trace back */
 		int Lua_ProtectedCall(lua_State *L, int nargs, int nresults);
 
+		/* whether NPL.load will recursively load the file. default to true. */
+		bool IsRecursiveLoadFile() const;
+		void SetRecursiveLoadFile(bool bRecursiveLoadFile);
+
+		int GetMaxLoadFileRecursionDepth() const;
+		void SetMaxLoadFileRecursionDepth(int nMaxLoadFileRecursionDepth);
+		
+		const std::string& DumpCurrentStackFiles();
 	private:
 		/** construct this to ensure matching calls to push and pop file name. */
 		class CFileNameStack
@@ -261,6 +269,11 @@ namespace ParaScripting
 		lua_State* m_pState;
 		/* whether we own the luastate. true by default. false if luastate is set externally.*/
 		bool m_bOwnLuaState;
+		/* whether NPL.load will recursively load the file. default to true. */
+		bool m_bRecursiveLoadFile;
+		// when m_bRecursiveLoadFile is false, we only go breadth first NPL.load when load file depth exceed this value. 
+		// this to prevent recursive calls of NPL.load, which may exceed stack size limit on js/emscripten.
+		int m_nMaxLoadFileRecursionDepth;
 		/* how many debug trace level to print when there is a runtime error in lua_pcall*/
 		int m_nDebugTraceLevel;
 
