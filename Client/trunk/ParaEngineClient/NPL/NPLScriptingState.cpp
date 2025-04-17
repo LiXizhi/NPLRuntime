@@ -385,6 +385,7 @@ void ParaScripting::CNPLScriptingState::SetMaxLoadFileRecursionDepth(int nMaxLoa
 const std::string& ParaScripting::CNPLScriptingState::DumpCurrentStackFiles()
 {
 	thread_local static std::string output;
+	output.clear();
 	for (std::stack <std::string> tmp = m_stack_current_file; !tmp.empty(); tmp.pop())
 	{
 		output += tmp.top();
@@ -615,6 +616,7 @@ bool ParaScripting::CNPLScriptingState::LoadFile(const string& filePath, bool bR
 
 	if (true)
 	{
+		int nStartPendingFileIndex = -1;
 		// define this to prevent recursive calls of NPL.load, which may exceed stack size limit on js/emscripten.
 		if (!bLoadedBefore || bReload)
 		{
@@ -628,11 +630,8 @@ bool ParaScripting::CNPLScriptingState::LoadFile(const string& filePath, bool bR
 			{
 				SetFileLoadStatus(filePath, NPL_FILE_MODULE_START_LOADING);
 
-				if ((IsRecursiveLoadFile() && (int)m_stack_current_file.size() <= m_nMaxLoadFileRecursionDepth))
-					// TODO: check depth, may append if pending_loadfiles has higher depth than current one. 
-					m_pending_loadfiles.push_front(filePath); // process immediately for recursive load. 
-				else
-					m_pending_loadfiles.push_back(filePath);
+				nStartPendingFileIndex = (int)m_pending_loadfiles.size();
+				m_pending_loadfiles.push_back(filePath);
 			}
 			else
 			{
@@ -657,13 +656,14 @@ bool ParaScripting::CNPLScriptingState::LoadFile(const string& filePath, bool bR
 			}
 		}
 		
-		if ((IsRecursiveLoadFile() && (int)m_stack_current_file.size() <= m_nMaxLoadFileRecursionDepth) || (!IsRecursiveLoadFile() && m_stack_current_file.size() == 0))
+		if ((nStartPendingFileIndex >= 0 && !m_pending_loadfiles.empty() && m_stack_current_file.size() <= m_nMaxLoadFileRecursionDepth) && ((IsRecursiveLoadFile()) || (m_stack_current_file.size() == 0)))
 		{
 			bool bLastNoReturn = bNoReturn;
-			while (m_pending_loadfiles.size() > 0)
+			auto it = std::next(m_pending_loadfiles.begin(), nStartPendingFileIndex);
+			while (it != m_pending_loadfiles.end())
 			{
-				string sFilePath = m_pending_loadfiles.front();
-				m_pending_loadfiles.pop_front();
+				string sFilePath = *it;
+				m_pending_loadfiles.erase(it); // Erase the current file and move to the next
 
 				string sFileName;
   				uint32 dwFound = GetScriptDiskPath(sFilePath, sFileName);
@@ -783,12 +783,8 @@ bool ParaScripting::CNPLScriptingState::LoadFile(const string& filePath, bool bR
 					SetFileLoadStatus(filePath, NPL_FILE_MODULE_NOT_FOUND);
 				}
 				bNoReturn = false; // this parameter does not take effect after the first file is loaded.
-
-				if (IsRecursiveLoadFile() && sFilePath == filePath && (int)m_stack_current_file.size() > 0)
-				{
-					// break when input file is loaded in recursive mode
-					break;
-				}
+				
+				it = std::next(m_pending_loadfiles.begin(), nStartPendingFileIndex);
 			}
 			bNoReturn = bLastNoReturn;
 		}
