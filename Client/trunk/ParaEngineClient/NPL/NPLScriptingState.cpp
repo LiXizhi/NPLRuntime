@@ -26,6 +26,10 @@
 /** @def this file is loaded before compiling */
 #define NPL_META_COMPILER_SRC  "script/ide/System/Compiler/nplc.lua"
 
+#define NPL_FILE_MODULE_START_LOADING_EXPORTED  -1
+#define NPL_FILE_MODULE_PENDING_EXPORTED  -1002
+/** @def file module is added to pending list but not really loading. */
+#define NPL_FILE_MODULE_PENDING  -1001
 /** @def file module is just started being loaded to prevent cyclic reference. */
 #define NPL_FILE_MODULE_START_LOADING  -1000
 /** @def the given file module is not loaded. */
@@ -611,8 +615,7 @@ bool ParaScripting::CNPLScriptingState::LoadFile(const string& filePath, bool bR
 	if (filePath.empty())
 		return true;
 	int nFileStatus = GetFileLoadStatus(filePath);
-	bool bLoadedBefore = nFileStatus != NPL_FILE_MODULE_NOT_LOADED;
-
+	bool bLoadedBefore = nFileStatus != NPL_FILE_MODULE_NOT_LOADED && nFileStatus != NPL_FILE_MODULE_PENDING && nFileStatus != NPL_FILE_MODULE_PENDING_EXPORTED;
 
 	if (true)
 	{
@@ -620,34 +623,9 @@ bool ParaScripting::CNPLScriptingState::LoadFile(const string& filePath, bool bR
 		// define this to prevent recursive calls of NPL.load, which may exceed stack size limit on js/emscripten.
 		if (!bLoadedBefore || bReload)
 		{
-			// if the file is not loaded or reload it true, try loading the glia file first.
-			// only find in local files using ParaFile interface
-			string sFileName;
-			uint32 dwFound = GetScriptDiskPath(filePath, sFileName);
-
-			ParaEngine::CParaFile file;
-			if (dwFound && file.OpenFile(sFileName.c_str(), true, NULL, false, dwFound))
-			{
-				SetFileLoadStatus(filePath, NPL_FILE_MODULE_START_LOADING);
-
-				nStartPendingFileIndex = (int)m_pending_loadfiles.size();
-				m_pending_loadfiles.push_back(filePath);
-			}
-			else
-			{
-				std::string sExt = CParaFile::GetFileExtension(sFileName);
-				if (sExt == "npl" || sExt == "lua")
-				{
-					if (!dwFound) {
-						OUTPUT_LOG("warning: script file %s not found\n", sFileName.c_str());
-					}
-					else {
-						OUTPUT_LOG("warning: script file %s found but can not be opened\n", sFileName.c_str());
-					}
-				}
-				SetFileLoadStatus(filePath, NPL_FILE_MODULE_NOT_FOUND);
-				nFileStatus = NPL_FILE_MODULE_NOT_FOUND;
-			}
+			SetFileLoadStatus(filePath, nFileStatus == NPL_FILE_MODULE_PENDING_EXPORTED ? nFileStatus : NPL_FILE_MODULE_PENDING);
+			nStartPendingFileIndex = (int)m_pending_loadfiles.size();
+			m_pending_loadfiles.push_back(filePath);
 		}
 		else
 		{
@@ -663,7 +641,16 @@ bool ParaScripting::CNPLScriptingState::LoadFile(const string& filePath, bool bR
 			while (it != m_pending_loadfiles.end())
 			{
 				string sFilePath = *it;
-				m_pending_loadfiles.erase(it); // Erase the current file and move to the next
+				it = m_pending_loadfiles.erase(it); // Erase the current file and move to the next
+
+				int nFileStatus = GetFileLoadStatus(sFilePath);
+				// check if already loaded
+				if (nFileStatus != NPL_FILE_MODULE_PENDING && nFileStatus != NPL_FILE_MODULE_PENDING_EXPORTED)
+				{
+					continue;
+				}
+				// do not generate result on stack if it is not the current file being loaded. 
+				bNoReturn = sFilePath != filePath; 
 
 				string sFileName;
   				uint32 dwFound = GetScriptDiskPath(sFilePath, sFileName);
@@ -678,6 +665,8 @@ bool ParaScripting::CNPLScriptingState::LoadFile(const string& filePath, bool bR
 					if (codesize > 0)
 					{
 						CFileNameStack pushStack(this, sFilePath);
+						SetFileLoadStatus(sFilePath, (nFileStatus == NPL_FILE_MODULE_PENDING_EXPORTED) ? NPL_FILE_MODULE_START_LOADING_EXPORTED : NPL_FILE_MODULE_START_LOADING);
+
 						int nSize = (int)sFileName.size();
 						if (nSize > 5 && sFileName[nSize - 4] == '.' && sFileName[nSize - 3] == 'n' && sFileName[nSize - 2] == 'p' && sFileName[nSize - 1] == 'l')
 						{
@@ -767,6 +756,10 @@ bool ParaScripting::CNPLScriptingState::LoadFile(const string& filePath, bool bR
 							ProcessResult(nResult, L);
 						}
 					}
+					else
+					{
+						SetFileLoadStatus(sFilePath, NPL_FILE_MODULE_NOT_FOUND);
+					}
 				}
 				else
 				{
@@ -782,12 +775,19 @@ bool ParaScripting::CNPLScriptingState::LoadFile(const string& filePath, bool bR
 					}
 					SetFileLoadStatus(filePath, NPL_FILE_MODULE_NOT_FOUND);
 				}
-				bNoReturn = false; // this parameter does not take effect after the first file is loaded.
-				
 				it = std::next(m_pending_loadfiles.begin(), nStartPendingFileIndex);
 			}
 			bNoReturn = bLastNoReturn;
 		}
+		
+		nFileStatus = GetFileLoadStatus(filePath);
+		if(nFileStatus == NPL_FILE_MODULE_PENDING || nFileStatus == NPL_FILE_MODULE_PENDING_EXPORTED)
+		{
+			if (!bNoReturn) {
+				PopFileModule(filePath, L);
+			}
+		}
+
 		if (nFileStatus == NPL_FILE_MODULE_NOT_FOUND)
 		{
 			if (!bNoReturn)
@@ -957,13 +957,13 @@ bool ParaScripting::CNPLScriptingState::LoadFile(const string& filePath, bool bR
 int ParaScripting::CNPLScriptingState::CacheFileModule(const std::string& filename, int nResult, lua_State* L)
 {
 	int nFileStatus = GetFileLoadStatus(filename);
-	if (nResult == 0 && (nFileStatus > 0 || nFileStatus == -1))
+	if (nResult == 0 && (nFileStatus > 0 || nFileStatus == NPL_FILE_MODULE_PENDING_EXPORTED || nFileStatus == NPL_FILE_MODULE_START_LOADING_EXPORTED))
 	{
 		// this could happen when user used NPL.export() instead of return for file module.
 		return PopFileModule(filename, L);
 	}
 	SetFileLoadStatus(filename, nResult);
-	if (nResult > 0 || nResult == -1)
+	if (nResult > 0 || nResult == NPL_FILE_MODULE_PENDING_EXPORTED || nResult == NPL_FILE_MODULE_START_LOADING_EXPORTED)
 	{
 		if (L == 0)
 			L = m_pState;
@@ -994,7 +994,7 @@ int ParaScripting::CNPLScriptingState::CacheFileModule(const std::string& filena
 				lua_pushvalue(L, nLastResultIndex);
 				lua_rawset(L, -3);
 			}
-			else if (nResult == -1)
+			else if (nResult == NPL_FILE_MODULE_PENDING_EXPORTED || nResult == NPL_FILE_MODULE_START_LOADING_EXPORTED)
 			{
 				// to resolve cyclic dependency, we will create an empty table 
 				lua_pushlstring(L, filename.c_str(), nFilenameLength);
@@ -1020,13 +1020,13 @@ int ParaScripting::CNPLScriptingState::PopFileModule(const std::string& filename
 	if (nFileStatus != NPL_FILE_MODULE_NOT_LOADED && nFileStatus != NPL_FILE_MODULE_NOT_FOUND)
 	{
 		int nResultNum = nFileStatus;
-		if (nResultNum == NPL_FILE_MODULE_START_LOADING)
+		if (nFileStatus == NPL_FILE_MODULE_START_LOADING || nFileStatus == NPL_FILE_MODULE_PENDING)
 		{
 			// if cyclic dependency is detected, we will cache an empty table instead. 
-			CacheFileModule(filename, -1, L);
+			CacheFileModule(filename, (nFileStatus == NPL_FILE_MODULE_START_LOADING) ? NPL_FILE_MODULE_START_LOADING_EXPORTED : NPL_FILE_MODULE_PENDING_EXPORTED, L);
 			nResultNum = 1;
 		}
-		else if (nResultNum == -1)
+		else if (nFileStatus == NPL_FILE_MODULE_START_LOADING_EXPORTED || nFileStatus == NPL_FILE_MODULE_PENDING_EXPORTED)
 		{
 			nResultNum = 1;
 		}
