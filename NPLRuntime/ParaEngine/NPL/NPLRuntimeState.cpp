@@ -19,6 +19,7 @@
 #include "util/ScopedLock.h"
 #include <boost/bind.hpp>
 #include "NPLRuntimeState.h"
+
 /**
 for luabind, The main drawback of this approach is that the compilation time will increase for the file
 that does the registration, it is therefore recommended that you register everything in the same cpp-file.
@@ -284,28 +285,7 @@ int NPL::CNPLRuntimeState::Run_Async()
 {
 	if (m_thread.get() == 0)
 	{
-#ifndef EMSCRIPTEN_SINGLE_THREAD
 		m_thread.reset(new boost::thread(boost::bind(&NPL::CNPLRuntimeState::Run, shared_from_this())));
-#else
-		m_thread.reset(CoroutineThread::StartCoroutineThread([this](CoroutineThread* t)->CO_ASYNC{
-			NPLMessage_ptr msg;
-			int nRes = 0;
-			while (nRes != -1)
-			{
-				if (m_input_queue.try_pop(msg))
-				{
-					nRes = ProcessMsg(msg);
-				}
-				else
-				{
-					CO_AWAIT(t->Sleep(100));
-				}
-			}
-			// this is necessary, because we must finalize mono state before the thread is terminated. 
-			// Otherwise there will a exception when application exit via the main thread. 
-			SAFE_RELEASE(m_pMonoScriptingState);
-		}, nullptr));
-#endif
 	}
 	return 0;
 }
@@ -1147,6 +1127,9 @@ int NPL::CNPLRuntimeState::InstallFields(ParaEngine::CAttributeClass* pClass, bo
 	pClass->AddField("PauseAllPreemptiveFunction", FieldType_Bool, (void*)PauseAllPreemptiveFunction_s, (void*)IsAllPreemptiveFunctionPaused_s, NULL, NULL, bOverride);
 	pClass->AddField("filename", FieldType_String, (void*)0, (void*)GetFileName_s, NULL, NULL, bOverride);
 	pClass->AddField("DebugTraceLevel", FieldType_Int, (void*)SetDebugTraceLevel_s, (void*)GetDebugTraceLevel_s, NULL, NULL, bOverride);
+	pClass->AddField("IsRecursiveLoadFile", FieldType_Bool, (void*)SetRecursiveLoadFile_s, (void*)IsRecursiveLoadFile_s, NULL, NULL, bOverride);
+	pClass->AddField("MaxLoadFileRecursionDepth", FieldType_Int, (void*)SetMaxLoadFileRecursionDepth_s, (void*)GetMaxLoadFileRecursionDepth_s, NULL, NULL, bOverride);
+	pClass->AddField("CurrentStackFiles", FieldType_String, (void*)0, (void*)DumpCurrentStackFiles_s, NULL, NULL, bOverride);
 	return S_OK;
 }
 
