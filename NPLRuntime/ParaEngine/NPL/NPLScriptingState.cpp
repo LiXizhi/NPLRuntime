@@ -38,7 +38,7 @@
 #define NPL_FILE_MODULE_NOT_FOUND  -998
 
 // @def this to prevent recursive calls of NPL.load, which may exceed stack size limit on js/emscripten.
-#define MAX_NPL_LOAD_RECURSION_DEPTH  5
+#define MAX_NPL_LOAD_RECURSION_DEPTH  15
 
 /** global npl table to cache all file modules */
 const char _file_mod_[] = "_file_mod_";
