@@ -63,12 +63,12 @@ const char* NPL_MONO_DLL_FILE_PATH = "NPLMono.dll";
 /** helper class to mark processing */
 class CMarkProcessing {
 public:
-	CMarkProcessing(bool * pValueBool) :m_pValueBool(pValueBool) { if (m_pValueBool) { *m_pValueBool = true; } }
+	CMarkProcessing(bool* pValueBool) :m_pValueBool(pValueBool) { if (m_pValueBool) { *m_pValueBool = true; } }
 	~CMarkProcessing() { if (m_pValueBool) { *m_pValueBool = false; } }
-	bool * m_pValueBool;
+	bool* m_pValueBool;
 };
 
-NPL::CNPLRuntimeState::CNPLRuntimeState(const string & name, NPLRuntimeStateType type_)
+NPL::CNPLRuntimeState::CNPLRuntimeState(const string& name, NPLRuntimeStateType type_)
 	: m_bUseMessageEvent(false), m_name(name), m_type(type_), m_nFrameMoveCount(0), m_bIsPreemptive(false), m_bPauseAllPreemptiveFunction(false),
 	m_current_msg(NULL), m_current_msg_length(0), m_pMonoScriptingState(NULL), m_processed_msg_count(0), m_bIsProcessing(false),
 	ParaScripting::CNPLScriptingState(type_ != NPLRuntimeStateType_DLL && type_ != NPLRuntimeStateType_NPL_ExternalLuaState)
@@ -180,7 +180,7 @@ NPL::IMonoScriptingState* NPL::CNPLRuntimeState::GetMonoState()
 
 			if (pClassDesc && pClassDesc->ClassID() == NPL_Mono_CLASS_ID)
 			{
-				m_pMonoScriptingState = (NPL::IMonoScriptingState*) pClassDesc->Create();
+				m_pMonoScriptingState = (NPL::IMonoScriptingState*)pClassDesc->Create();
 			}
 		}
 		if (m_pMonoScriptingState == 0)
@@ -285,7 +285,28 @@ int NPL::CNPLRuntimeState::Run_Async()
 {
 	if (m_thread.get() == 0)
 	{
+#ifndef EMSCRIPTEN_SINGLE_THREAD
 		m_thread.reset(new boost::thread(boost::bind(&NPL::CNPLRuntimeState::Run, shared_from_this())));
+#else
+		m_thread.reset(CoroutineThread::StartCoroutineThread([this](CoroutineThread* t)->CO_ASYNC {
+			NPLMessage_ptr msg;
+			int nRes = 0;
+			while (nRes != -1)
+			{
+				if (m_input_queue.try_pop(msg))
+				{
+					nRes = ProcessMsg(msg);
+				}
+				else
+				{
+					CO_AWAIT(t->Sleep(100));
+				}
+			}
+			// this is necessary, because we must finalize mono state before the thread is terminated. 
+			// Otherwise there will a exception when application exit via the main thread. 
+			SAFE_RELEASE(m_pMonoScriptingState);
+		}, nullptr));
+#endif
 	}
 	return 0;
 }
@@ -412,7 +433,7 @@ int NPL::CNPLRuntimeState::FrameMoveTick()
 			{
 				pFileState->SetProcessing(false);
 				// stop last coroutine
-				lua_State * L = GetLuaState();
+				lua_State* L = GetLuaState();
 				lua_pushstring(L, COROUTINE_NAME);
 				lua_rawget(L, LUA_REGISTRYINDEX);
 				if (lua_istable(L, -1))
@@ -430,7 +451,7 @@ int NPL::CNPLRuntimeState::FrameMoveTick()
 			if (pFileState->IsPreemptive())
 			{
 				// resume last coroutine task 
-				lua_State * L = GetLuaState();
+				lua_State* L = GetLuaState();
 
 				// create coroutine object such that _G["__co"][GetFileName()] = coroutine.create();
 				lua_pushstring(L, COROUTINE_NAME);
@@ -440,7 +461,7 @@ int NPL::CNPLRuntimeState::FrameMoveTick()
 					lua_getfield(L, -1, pFileState->GetFilename().c_str());
 					if (lua_isthread(L, -1))
 					{
-						lua_State * th = lua_tothread(L, -1);
+						lua_State* th = lua_tothread(L, -1);
 						int status = lua_status(th);
 						if (status == LUA_YIELD)
 						{
@@ -517,7 +538,7 @@ int NPL::CNPLRuntimeState::FrameMoveTick()
 				if (pFileState->IsPreemptive())
 				{
 					DoString(msg->m_code.c_str(), (int)msg->m_code.size());
-					lua_State * L = GetLuaState();
+					lua_State* L = GetLuaState();
 					// use coroutine with hooks to simulate preemptive multi-tasking. 
 					lua_State* th = lua_newthread(L);
 					{
@@ -634,14 +655,14 @@ int NPL::CNPLRuntimeState::GetProcessedMsgCount()
 }
 
 template <typename StringType>
-bool NPL::CNPLRuntimeState::LoadFile_any(const StringType & filepath, bool bReload, lua_State* L, bool bNoReturn)
+bool NPL::CNPLRuntimeState::LoadFile_any(const StringType& filepath, bool bReload, lua_State* L, bool bNoReturn)
 {
 	if (filepath.empty())
 		return true;
 	int nSize = (int)filepath.size();
 	bool bHasScriptFileExtension = nSize > 5 && filepath[nSize - 4] == '.' &&
 		((filepath[nSize - 3] == 'l' && filepath[nSize - 2] == 'u' && filepath[nSize - 1] == 'a') ||
-		(filepath[nSize - 3] == 'n' && filepath[nSize - 2] == 'p' && filepath[nSize - 1] == 'l'));
+			(filepath[nSize - 3] == 'n' && filepath[nSize - 2] == 'p' && filepath[nSize - 1] == 'l'));
 
 	if (nSize > 2 && filepath[nSize - 1] == '/')
 	{
@@ -771,7 +792,7 @@ bool NPL::CNPLRuntimeState::LoadFile_any(const StringType & filepath, bool bRelo
 }
 
 template <typename StringType>
-NPL::NPLReturnCode NPL::CNPLRuntimeState::ActivateFile_any(const StringType& filepath, const char * code /*= NULL*/, int nLength/*=0*/)
+NPL::NPLReturnCode NPL::CNPLRuntimeState::ActivateFile_any(const StringType& filepath, const char* code /*= NULL*/, int nLength/*=0*/)
 {
 	CMarkProcessing is_processing_(&m_bIsProcessing);
 
@@ -835,7 +856,7 @@ NPL::NPLReturnCode NPL::CNPLRuntimeState::ActivateFile_any(const StringType& fil
 	return ActivateFile(filepath, code, nLength);
 }
 
-NPL::NPLReturnCode NPL::CNPLRuntimeState::Activate_async(const string & filepath, const char * code /*= NULL*/, int nLength/*=0*/, int priority/*=0*/)
+NPL::NPLReturnCode NPL::CNPLRuntimeState::Activate_async(const string& filepath, const char* code /*= NULL*/, int nLength/*=0*/, int priority/*=0*/)
 {
 	NPLMessage_ptr msg(new NPLMessage());
 	msg->m_filename = filepath;
@@ -855,7 +876,7 @@ NPL::NPLReturnCode NPL::CNPLRuntimeState::Activate_async(const string & filepath
 	return Activate_async(msg, priority);
 }
 
-NPL::NPLReturnCode NPL::CNPLRuntimeState::Loadfile_async(const string & filepath, int priority /*= 0*/)
+NPL::NPLReturnCode NPL::CNPLRuntimeState::Loadfile_async(const string& filepath, int priority /*= 0*/)
 {
 	NPLMessage_ptr msg(new NPLMessage());
 	msg->m_filename = filepath;
@@ -864,7 +885,7 @@ NPL::NPLReturnCode NPL::CNPLRuntimeState::Loadfile_async(const string & filepath
 	return Activate_async(msg, priority);
 }
 
-NPL::NPLReturnCode NPL::CNPLRuntimeState::ActivateLocal(const char* filepath, const char * code /*= NULL*/, int nLength/*=0*/, int priority/*=0*/)
+NPL::NPLReturnCode NPL::CNPLRuntimeState::ActivateLocal(const char* filepath, const char* code /*= NULL*/, int nLength/*=0*/, int priority/*=0*/)
 {
 	NPLMessage_ptr msg(new NPLMessage());
 	if (filepath != 0) {
@@ -893,7 +914,7 @@ NPL::NPLReturnCode NPL::CNPLRuntimeState::Activate_async(NPLMessage_ptr& msg, in
 	return SendMessage(msg, priority);
 }
 
-int NPL::CNPLRuntimeState::activate(const char * sNPLFilename, const char* sCode, int nCodeLength, int priority, int reliability)
+int NPL::CNPLRuntimeState::activate(const char* sNPLFilename, const char* sCode, int nCodeLength, int priority, int reliability)
 {
 	return NPL::CNPLRuntime::GetInstance()->Activate(this, sNPLFilename, sCode, nCodeLength, priority, reliability);
 }
@@ -1090,7 +1111,7 @@ const std::string& NPL::CNPLRuntimeState::GetIdentifier()
 	return m_name;
 }
 
-void NPL::CNPLRuntimeState::call(const char * sNPLFilename, const char* sCode, int nCodeLength /*= 0*/)
+void NPL::CNPLRuntimeState::call(const char* sNPLFilename, const char* sCode, int nCodeLength /*= 0*/)
 {
 	NPL::NPLFileName filename(sNPLFilename);
 	LoadFile_any(filename.sRelativePath, false, 0, true);
