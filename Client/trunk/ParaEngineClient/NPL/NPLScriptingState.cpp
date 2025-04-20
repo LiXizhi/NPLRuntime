@@ -255,9 +255,9 @@ class PointerWrapper
 {
 public:
 	PointerWrapper() {};
-	PointerWrapper(void * pointer) :m_pointer(pointer) {};
+	PointerWrapper(void* pointer) :m_pointer(pointer) {};
 	~PointerWrapper() {};
-	void * m_pointer;
+	void* m_pointer;
 };
 
 void ParaScripting::CNPLScriptingState::LoadLuabind()
@@ -312,7 +312,7 @@ void ParaScripting::CNPLScriptingState::LoadParaLib()
 #endif
 }
 
-int ParaScripting::CNPLScriptingState::Traceback(lua_State *L)
+int ParaScripting::CNPLScriptingState::Traceback(lua_State* L)
 {
 	if (!lua_isstring(L, 1)) { /* Non-string error object? Try metamethod. */
 		if (lua_isnoneornil(L, 1) ||
@@ -346,7 +346,7 @@ int ParaScripting::CNPLScriptingState::Traceback(lua_State *L)
 	return 1;
 }
 
-int ParaScripting::CNPLScriptingState::Lua_ProtectedCall(lua_State *L, int nargs, int nresults)
+int ParaScripting::CNPLScriptingState::Lua_ProtectedCall(lua_State* L, int nargs, int nresults)
 {
 	if (GetDebugTraceLevel() > 0)
 	{
@@ -466,13 +466,13 @@ int ParaScripting::CNPLScriptingState::GetNPLCodeFromFile(ParaEngine::CParaFile*
 
 		if (nSize >= 2)
 		{
-			if ((((byte)buf[0]) == 0xEF) && (((byte)buf[1]) == 0xBB) && (((byte)buf[2]) == 0xBF))
+			if ((((unsigned char)buf[0]) == 0xEF) && (((unsigned char)buf[1]) == 0xBB) && (((unsigned char)buf[2]) == 0xBF))
 			{
 				buf += 3;
 				nSize -= 3;
 				nEncodingCode = CP_UTF8;
 			}
-			else if (((((byte)buf[0]) == 0xFF) && (((byte)buf[1]) == 0xFE)) || ((((byte)buf[0]) == 0xFE) && (((byte)buf[1]) == 0xFF)))
+			else if (((((unsigned char)buf[0]) == 0xFF) && (((unsigned char)buf[1]) == 0xFE)) || ((((unsigned char)buf[0]) == 0xFE) && (((unsigned char)buf[1]) == 0xFF)))
 			{
 				buf += 2;
 				nSize -= 2;
@@ -637,7 +637,7 @@ bool ParaScripting::CNPLScriptingState::LoadFile(const string& filePath, bool bR
 				PopFileModule(filePath, L);
 			}
 		}
-		
+
 		if ((nStartPendingFileIndex >= 0 && !m_pending_loadfiles.empty() && m_stack_current_file.size() <= m_nMaxLoadFileRecursionDepth) && ((IsRecursiveLoadFile()) || (m_stack_current_file.size() == 0)))
 		{
 			bool bLastNoReturn = bNoReturn;
@@ -654,10 +654,10 @@ bool ParaScripting::CNPLScriptingState::LoadFile(const string& filePath, bool bR
 					continue;
 				}
 				// do not generate result on stack if it is not the current file being loaded. 
-				bNoReturn = sFilePath != filePath; 
+				bNoReturn = sFilePath != filePath;
 
 				string sFileName;
-  				uint32 dwFound = GetScriptDiskPath(sFilePath, sFileName);
+				uint32 dwFound = GetScriptDiskPath(sFilePath, sFileName);
 
 				ParaEngine::CParaFile file;
 				if (dwFound && file.OpenFile(sFileName.c_str(), true, NULL, false, dwFound))
@@ -783,9 +783,9 @@ bool ParaScripting::CNPLScriptingState::LoadFile(const string& filePath, bool bR
 			}
 			bNoReturn = bLastNoReturn;
 		}
-		
+
 		nFileStatus = GetFileLoadStatus(filePath);
-		if(nFileStatus == NPL_FILE_MODULE_PENDING || nFileStatus == NPL_FILE_MODULE_PENDING_EXPORTED)
+		if (nFileStatus == NPL_FILE_MODULE_PENDING || nFileStatus == NPL_FILE_MODULE_PENDING_EXPORTED)
 		{
 			if (!bNoReturn) {
 				PopFileModule(filePath, L);
@@ -1246,7 +1246,7 @@ int ParaScripting::CNPLScriptingState::DoString(const char* sCall, int nLength, 
 	return nReturnValue;
 }
 
-NPL::NPLReturnCode ParaScripting::CNPLScriptingState::ActivateFile(const string& filepath, const char * code /*= NULL*/, int nLength/*=0*/)
+NPL::NPLReturnCode ParaScripting::CNPLScriptingState::ActivateFile(const string& filepath, const char* code /*= NULL*/, int nLength/*=0*/)
 {
 	if (m_pState == NULL)
 		return NPL::NPL_RuntimeState_NotReady;
@@ -1370,7 +1370,7 @@ bool ParaScripting::CNPLScriptingState::BindFileActivateFunc(const luabind::obje
 NPL::NPLRuntimeState_ptr ParaScripting::CNPLScriptingState::GetRuntimeStateFromLuaObject(const luabind::object& obj)
 {
 	// read from registry
-	lua_State * L = obj.interpreter();
+	lua_State* L = obj.interpreter();
 	const char rts_name[] = "__rts__";
 	lua_pushlstring(L, rts_name, sizeof(rts_name) - 1);
 	lua_rawget(L, LUA_REGISTRYINDEX);
