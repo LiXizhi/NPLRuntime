@@ -87,8 +87,9 @@ namespace ParaScripting
 		void LoadHAPI_NPL();
 		/// load jabber related functions
 		void LoadHAPI_Jabber();
-#if (PARA_TARGET_PLATFORM == PARA_PLATFORM_MAC)
+#ifdef CROSS_PLATFORM
 		void LoadHAPI_WebView();
+		void LoadHAPI_Platform();
 #endif
 	public:
 		/** get the NPL code buffer and size according to a given file. Please note that BOM is read from the beginning of the file.
@@ -145,7 +146,7 @@ namespace ParaScripting
 		* @param filepath: pointer to the file path.
 		* @return: NPLReturnCode
 		*/
-		NPL::NPLReturnCode ActivateFile(const string& filepath, const char * code = NULL, int nLength = 0);
+		NPL::NPLReturnCode ActivateFile(const string& filepath, const char* code = NULL, int nLength = 0);
 
 		/**
 		* bind the activation function. Usually, it is for the script function NPL.this(funcActivate).
@@ -225,10 +226,10 @@ namespace ParaScripting
 		void SetFileLoadStatus(const string& filepath, int nStatus);
 
 		/** error function trace back. */
-		static int Traceback(lua_State *L);
+		static int Traceback(lua_State* L);
 
 		/** lua_pcall with default trace back */
-		int Lua_ProtectedCall(lua_State *L, int nargs, int nresults);
+		int Lua_ProtectedCall(lua_State* L, int nargs, int nresults);
 
 		/* whether NPL.load will recursively load the file. default to true. */
 		bool IsRecursiveLoadFile() const;
@@ -236,7 +237,7 @@ namespace ParaScripting
 
 		int GetMaxLoadFileRecursionDepth() const;
 		void SetMaxLoadFileRecursionDepth(int nMaxLoadFileRecursionDepth);
-		
+
 		const std::string& DumpCurrentStackFiles();
 	private:
 		/** construct this to ensure matching calls to push and pop file name. */
