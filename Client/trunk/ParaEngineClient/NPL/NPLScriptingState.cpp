@@ -617,7 +617,11 @@ bool ParaScripting::CNPLScriptingState::LoadFile(const string& filePath, bool bR
 	int nFileStatus = GetFileLoadStatus(filePath);
 	bool bLoadedBefore = nFileStatus != NPL_FILE_MODULE_NOT_LOADED && nFileStatus != NPL_FILE_MODULE_PENDING && nFileStatus != NPL_FILE_MODULE_PENDING_EXPORTED;
 
+#ifdef __EMSCRIPTEN__
 	if (true)
+#else
+	if (false)
+#endif
 	{
 		int nStartPendingFileIndex = -1;
 		// define this to prevent recursive calls of NPL.load, which may exceed stack size limit on js/emscripten.
