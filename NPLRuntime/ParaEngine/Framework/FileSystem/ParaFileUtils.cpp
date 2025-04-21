@@ -32,7 +32,12 @@ ParaEngine::FileData CParaFileUtils::GetDataFromFile(const std::string& filename
 	if (file.is_open())
 	{
 		size_t nSize = (size_t)file.tellg();
-		char* pBuffer = new char[nSize + 1];
+		char* pBuffer = new (std::nothrow) char[nSize + 1];
+if (!pBuffer)
+		{
+			file.close();
+			return data; // Return empty data on allocation failure
+		}
 		pBuffer[nSize] = '\0'; // always add an ending '\0' for ease for text parsing. 
 		file.seekg(0, ios::beg);
 		file.read(pBuffer, nSize);
@@ -72,8 +77,16 @@ const std::string& ParaEngine::CParaFileUtils::GetWritablePath()
 
 const std::string& ParaEngine::CParaFileUtils::GetInitialDirectory()
 {
-	fs::path workingDir = fs::initial_path();
-	static std::string ret = workingDir.string();
+	static std::string ret;
+	try
+    {
+        fs::path workingDir = fs::initial_path();
+        ret = workingDir.string();
+    }
+    catch (...)
+    {
+        OUTPUT_LOG("error: Unknown exception in GetInitialDirectory\n");
+    }
 	return ret;
 }
 
