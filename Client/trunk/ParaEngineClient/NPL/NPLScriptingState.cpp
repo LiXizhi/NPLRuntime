@@ -638,7 +638,7 @@ bool ParaScripting::CNPLScriptingState::LoadFile(const string& filePath, bool bR
 			}
 		}
 
-		if ((nStartPendingFileIndex >= 0 && !m_pending_loadfiles.empty() && m_stack_current_file.size() <= m_nMaxLoadFileRecursionDepth))
+		if ((nStartPendingFileIndex >= 0 && !m_pending_loadfiles.empty() && m_stack_current_file.size() <= m_nMaxLoadFileRecursionDepth) && (IsRecursiveLoadFile() || m_stack_current_file.size() == 0))
 		{
 			bool bLastNoReturn = bNoReturn;
 			auto it = std::next(m_pending_loadfiles.begin(), nStartPendingFileIndex);
