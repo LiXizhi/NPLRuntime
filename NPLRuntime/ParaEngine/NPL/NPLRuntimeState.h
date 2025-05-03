@@ -58,7 +58,7 @@ namespace NPL
 		typedef boost::signals2::signal<void(CNPLRuntimeState* pRuntimeState)>  Signal_StateLoaded_t;
 
 		/** a type must be provided. it defaults to NPL runtime state. */
-		CNPLRuntimeState(const string & name, NPLRuntimeStateType type_ = NPLRuntimeStateType_NPL);
+		CNPLRuntimeState(const string& name, NPLRuntimeStateType type_ = NPLRuntimeStateType_NPL);
 		virtual ~CNPLRuntimeState();
 
 		ATTRIBUTE_DEFINE_CLASS(CNPLRuntimeState);
@@ -83,6 +83,11 @@ namespace NPL
 		ATTRIBUTE_METHOD1(CNPLRuntimeState, GetMaxLoadFileRecursionDepth_s, int*) { *p1 = cls->GetMaxLoadFileRecursionDepth(); return S_OK; }
 		ATTRIBUTE_METHOD1(CNPLRuntimeState, SetMaxLoadFileRecursionDepth_s, int) { cls->SetMaxLoadFileRecursionDepth(p1); return S_OK; }
 		ATTRIBUTE_METHOD1(CNPLRuntimeState, DumpCurrentStackFiles_s, const char**) { *p1 = cls->DumpCurrentStackFiles().c_str(); return S_OK; }
+		ATTRIBUTE_METHOD1(CNPLRuntimeState, PushFilename_s, const char*) { cls->PushFileName(p1); return S_OK; }
+		ATTRIBUTE_METHOD1(CNPLRuntimeState, PopFilename_s, bool) { cls->PopFileName(); return S_OK; }
+		ATTRIBUTE_METHOD1(CNPLRuntimeState, SetFileLoadStatus_s, int) { cls->SetFileLoadStatus(cls->GetFileName(), p1); return S_OK; }
+		ATTRIBUTE_METHOD1(CNPLRuntimeState, SetLoadFileInScript_s, bool) { cls->SetLoadFileInScript(p1); return S_OK; }
+		ATTRIBUTE_METHOD1(CNPLRuntimeState, IsLoadFileInScript_s, bool*) { *p1 = cls->IsLoadFileInScript(); return S_OK; }
 
 		/** call this function before calling anything else. It will load all NPL modules into the runtime state. */
 		void Init();
@@ -172,7 +177,7 @@ namespace NPL
 		virtual const std::string& GetIdentifier();
 
 		/** activate any runtime local or remote file. This function is usually called by dll interface. */
-		virtual int activate(const char * sNPLFilename, const char* sCode, int nCodeLength = 0, int priority = 2, int reliability = 4);
+		virtual int activate(const char* sNPLFilename, const char* sCode, int nCodeLength = 0, int priority = 2, int reliability = 4);
 
 		/**
 		* load a file without running it in this runtime state.
@@ -187,14 +192,14 @@ namespace NPL
 		* @return: return true if file is loaded.
 		*/
 		template <typename StringType>
-		bool LoadFile_any(const StringType & filepath, bool bReload = false, lua_State* L = 0, bool bNoReturn = false);
+		bool LoadFile_any(const StringType& filepath, bool bReload = false, lua_State* L = 0, bool bNoReturn = false);
 		/**
 		* Activate a file(script or dll) in this runtime state. The file should be loaded already.
 		* @param filepath: pointer to the file path. it can be StringBuilder or std::string.
 		* @return: NPLReturnCode
 		*/
 		template <typename StringType>
-		NPLReturnCode ActivateFile_any(const StringType& filepath, const char * code = NULL, int nLength = 0);
+		NPLReturnCode ActivateFile_any(const StringType& filepath, const char* code = NULL, int nLength = 0);
 
 		/**
 		* activate the specified file in this runtime state. the file can be script or DLL. The function will just insert the message into the message queue and return immediately.
@@ -204,8 +209,8 @@ namespace NPL
 		* @param priority: bigger is higher. 0 is the default. if 1, it will be inserted to the front of the queue.
 		* @return: NPLReturnCode
 		*/
-		virtual NPLReturnCode Activate_async(const string & filepath, const char * code = NULL, int nLength = 0, int priority = 0);
-		virtual NPLReturnCode Loadfile_async(const string & filepath, int priority = 0);
+		virtual NPLReturnCode Activate_async(const string& filepath, const char* code = NULL, int nLength = 0, int priority = 0);
+		virtual NPLReturnCode Loadfile_async(const string& filepath, int priority = 0);
 
 		/** same as Activate_async. except that input are read from NPLMesage.
 		* e.g.
@@ -216,7 +221,7 @@ namespace NPL
 		virtual NPLReturnCode Activate_async(NPLMessage_ptr& msg, int priority = 0);
 
 		/** same as Activate_async, except that it is a short cut name. and may be used by external dlls to activate a file on this local state asynchrounously. */
-		virtual NPLReturnCode ActivateLocal(const char* filepath, const char * code = NULL, int nLength = 0, int priority = 0);
+		virtual NPLReturnCode ActivateLocal(const char* filepath, const char* code = NULL, int nLength = 0, int priority = 0);
 
 		/**
 		* send a message to the current message queue. This function is rarely needed to call directly, use Activate_async instead.
@@ -297,7 +302,7 @@ namespace NPL
 		virtual void RegisterFile(const char* sFilename, INPLActivationFile* pFileHandler = NULL);
 
 		/** synchronous function call */
-		virtual void call(const char * sNPLFilename, const char* sCode, int nCodeLength = 0);;
+		virtual void call(const char* sNPLFilename, const char* sCode, int nCodeLength = 0);;
 
 		/** get string buffer by index. Internally it is an array of std::strings. */
 		std::string& GetStringBuffer(int nIndex = 0);
@@ -450,7 +455,7 @@ namespace NPL
 	/** compare functions for runtime state ptr */
 	struct NPLRuntimeState_PtrOps
 	{
-		bool operator()(const NPLRuntimeState_ptr & a, const NPLRuntimeState_ptr & b) const
+		bool operator()(const NPLRuntimeState_ptr& a, const NPLRuntimeState_ptr& b) const
 		{
 			return a.get() < b.get();
 		}
