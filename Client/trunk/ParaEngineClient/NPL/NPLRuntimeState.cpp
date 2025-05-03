@@ -1151,6 +1151,11 @@ int NPL::CNPLRuntimeState::InstallFields(ParaEngine::CAttributeClass* pClass, bo
 	pClass->AddField("IsRecursiveLoadFile", FieldType_Bool, (void*)SetRecursiveLoadFile_s, (void*)IsRecursiveLoadFile_s, NULL, NULL, bOverride);
 	pClass->AddField("MaxLoadFileRecursionDepth", FieldType_Int, (void*)SetMaxLoadFileRecursionDepth_s, (void*)GetMaxLoadFileRecursionDepth_s, NULL, NULL, bOverride);
 	pClass->AddField("CurrentStackFiles", FieldType_String, (void*)0, (void*)DumpCurrentStackFiles_s, NULL, NULL, bOverride);
+	pClass->AddField("PushFilename", FieldType_String, (void*)PushFilename_s, (void*)0, NULL, NULL, bOverride);
+	pClass->AddField("PopFilename", FieldType_Bool, (void*)PopFilename_s, (void*)0, NULL, NULL, bOverride);
+	pClass->AddField("SetFileLoadStatus", FieldType_Int, (void*)SetFileLoadStatus_s, (void*)0, NULL, NULL, bOverride);
+	pClass->AddField("IsLoadFileInScript", FieldType_Bool, (void*)SetLoadFileInScript_s, (void*)IsLoadFileInScript_s, NULL, NULL, bOverride);
+	
 	return S_OK;
 }
 

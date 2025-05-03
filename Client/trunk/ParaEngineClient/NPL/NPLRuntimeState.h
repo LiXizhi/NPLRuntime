@@ -83,6 +83,11 @@ namespace NPL
 		ATTRIBUTE_METHOD1(CNPLRuntimeState, GetMaxLoadFileRecursionDepth_s, int*) { *p1 = cls->GetMaxLoadFileRecursionDepth(); return S_OK; }
 		ATTRIBUTE_METHOD1(CNPLRuntimeState, SetMaxLoadFileRecursionDepth_s, int) { cls->SetMaxLoadFileRecursionDepth(p1); return S_OK; }
 		ATTRIBUTE_METHOD1(CNPLRuntimeState, DumpCurrentStackFiles_s, const char**) { *p1 = cls->DumpCurrentStackFiles().c_str(); return S_OK; }
+		ATTRIBUTE_METHOD1(CNPLRuntimeState, PushFilename_s, const char*) { cls->PushFileName(p1); return S_OK; }
+		ATTRIBUTE_METHOD1(CNPLRuntimeState, PopFilename_s, bool) { cls->PopFileName(); return S_OK; }
+		ATTRIBUTE_METHOD1(CNPLRuntimeState, SetFileLoadStatus_s, int) { cls->SetFileLoadStatus(cls->GetFileName(), p1); return S_OK; }
+		ATTRIBUTE_METHOD1(CNPLRuntimeState, SetLoadFileInScript_s, bool) { cls->SetLoadFileInScript(p1); return S_OK; }
+		ATTRIBUTE_METHOD1(CNPLRuntimeState, IsLoadFileInScript_s, bool*) { *p1 = cls->IsLoadFileInScript(); return S_OK; }
 
 		/** call this function before calling anything else. It will load all NPL modules into the runtime state. */
 		void Init();

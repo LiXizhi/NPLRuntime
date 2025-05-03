@@ -109,7 +109,7 @@ module(L) [ x ];
 */
 
 ParaScripting::CNPLScriptingState::CNPLScriptingState(bool bCreateState)
-	:m_nStackSize(-1), m_pState(NULL), m_bOwnLuaState(bCreateState), m_nLastReturnValue(0), m_nDebugTraceLevel(0), m_bRecursiveLoadFile(true), m_nMaxLoadFileRecursionDepth(MAX_NPL_LOAD_RECURSION_DEPTH),
+	:m_nStackSize(-1), m_pState(NULL), m_bOwnLuaState(bCreateState), m_nLastReturnValue(0), m_nDebugTraceLevel(0), m_bRecursiveLoadFile(true), m_nMaxLoadFileRecursionDepth(MAX_NPL_LOAD_RECURSION_DEPTH), m_bLoadFileInScript(false),
 #ifdef WIN32
 	m_nMemAllocatorType(MEM_ALLOC_TYPE_DL_MALLOC),
 #else
@@ -580,6 +580,16 @@ void ParaScripting::CNPLScriptingState::PopFileName()
 	m_stack_current_file.pop();
 }
 
+void ParaScripting::CNPLScriptingState::SetLoadFileInScript(bool bLoadFileInScript)
+{
+	m_bLoadFileInScript = bLoadFileInScript;
+}
+
+bool ParaScripting::CNPLScriptingState::IsLoadFileInScript() const
+{
+	return m_bLoadFileInScript;
+}
+
 const string& ParaScripting::CNPLScriptingState::GetFileName()
 {
 	return !m_stack_current_file.empty() ? m_stack_current_file.top() : CGlobals::GetString(0);
@@ -617,11 +627,7 @@ bool ParaScripting::CNPLScriptingState::LoadFile(const string& filePath, bool bR
 	int nFileStatus = GetFileLoadStatus(filePath);
 	bool bLoadedBefore = nFileStatus != NPL_FILE_MODULE_NOT_LOADED && nFileStatus != NPL_FILE_MODULE_PENDING && nFileStatus != NPL_FILE_MODULE_PENDING_EXPORTED;
 
-#ifdef __EMSCRIPTEN__
-	if (true)
-#else
 	if (false)
-#endif
 	{
 		int nStartPendingFileIndex = -1;
 		// define this to prevent recursive calls of NPL.load, which may exceed stack size limit on js/emscripten.
@@ -903,15 +909,30 @@ bool ParaScripting::CNPLScriptingState::LoadFile(const string& filePath, bool bR
 							L = m_pState;
 						int nResult = luaL_loadbuffer(L, codebuf, codesize, filePath.c_str());
 						if (nResult == 0) {
-							int top = lua_gettop(L);
-							nResult = Lua_ProtectedCall(L, 0, LUA_MULTRET);
-							int num_results = lua_gettop(L) - top + 1;
-							if (nResult == 0)
+							if (IsLoadFileInScript())
 							{
-								CacheFileModule(filePath, num_results, L);
-								num_results = lua_gettop(L) - top + 1;
-								if (bNoReturn && num_results > 0) {
-									lua_pop(L, num_results);
+								// save the loaded function to a global lua variable _npl_load_function
+								lua_pushlstring(L, "_npl_load_function", sizeof("_npl_load_function") - 1);
+								lua_pushvalue(L, -2);
+								lua_rawset(L, LUA_GLOBALSINDEX);
+
+								// save filePath.c_str() to a global lua variable _npl_load_filename
+								lua_pushlstring(L, "_npl_load_filename", sizeof("_npl_load_filename") - 1);
+								lua_pushlstring(L, filePath.c_str(), filePath.size());
+								lua_rawset(L, LUA_GLOBALSINDEX);
+							}
+							else
+							{
+								int top = lua_gettop(L);
+								nResult = Lua_ProtectedCall(L, 0, LUA_MULTRET);
+								int num_results = lua_gettop(L) - top + 1;
+								if (nResult == 0)
+								{
+									CacheFileModule(filePath, num_results, L);
+									num_results = lua_gettop(L) - top + 1;
+									if (bNoReturn && num_results > 0) {
+										lua_pop(L, num_results);
+									}
 								}
 							}
 						}
@@ -975,17 +996,17 @@ int ParaScripting::CNPLScriptingState::CacheFileModule(const std::string& filena
 		int nLastResultIndex = lua_gettop(L);
 		// create the _file_mod_ table if not. 
 		lua_pushlstring(L, _file_mod_, sizeof(_file_mod_) - 1);
-		lua_rawget(L, LUA_REGISTRYINDEX);
+		lua_rawget(L, LUA_GLOBALSINDEX);
 
 		if (lua_isnil(L, -1))
 		{
 			lua_pop(L, 1);
 			lua_pushlstring(L, _file_mod_, sizeof(_file_mod_) - 1);
 			lua_newtable(L);
-			lua_rawset(L, LUA_REGISTRYINDEX);
+			lua_rawset(L, LUA_GLOBALSINDEX);
 
 			lua_pushlstring(L, _file_mod_, sizeof(_file_mod_) - 1);
-			lua_rawget(L, LUA_REGISTRYINDEX);
+			lua_rawget(L, LUA_GLOBALSINDEX);
 		}
 		if (lua_istable(L, -1))
 		{
@@ -1043,7 +1064,7 @@ int ParaScripting::CNPLScriptingState::PopFileModule(const std::string& filename
 
 			// get from the _file_mod_ table
 			lua_pushlstring(L, _file_mod_, sizeof(_file_mod_) - 1);
-			lua_rawget(L, LUA_REGISTRYINDEX);
+			lua_rawget(L, LUA_GLOBALSINDEX);
 			if (lua_istable(L, -1))
 			{
 				lua_pushlstring(L, filename.c_str(), nFilenameLength);
@@ -1158,7 +1179,7 @@ int ParaScripting::CNPLScriptingState::NPL_export(lua_State* L)
 		int nResultNum = GetFileLoadStatus(filename);
 		if (nResultNum == 0)
 		{
-			CacheFileModule(filename, -1, L);
+			CacheFileModule(filename, NPL_FILE_MODULE_START_LOADING_EXPORTED, L);
 		}
 
 		// create or get the file module
