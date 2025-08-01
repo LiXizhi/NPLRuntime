@@ -173,7 +173,7 @@ public class ParaEngineWebViewHelper {
                 layoutParams.topMargin = h / 2 - 40;
                 closeBtn.setLayoutParams(layoutParams);
 
-                closeBtn.setBackgroundResource(R.drawable.webview_close_btn);
+                closeBtn.setBackgroundResource(sActivity.getResources().getIdentifier("webview_close_btn", "drawable", sActivity.getPackageName()));
                 closeBtn.setOnClickListener(new View.OnClickListener() {
                     @Override
                     public void onClick(View view) {

@@ -166,19 +166,19 @@ public class ParaEngineEditBoxActivity extends Activity {
         private void setConfirmType(final String confirmType) {
             if (confirmType.contentEquals("done")) {
                 this.setImeOptions(EditorInfo.IME_ACTION_DONE | EditorInfo.IME_FLAG_NO_EXTRACT_UI);
-                mButtonTitle = getResources().getString(R.string.done);
+                mButtonTitle = getResources().getString(getResources().getIdentifier("done", "string", getContext().getPackageName()));
             } else if (confirmType.contentEquals("next")) {
                 this.setImeOptions(EditorInfo.IME_ACTION_NEXT | EditorInfo.IME_FLAG_NO_EXTRACT_UI);
-                mButtonTitle = getResources().getString(R.string.next);
+                mButtonTitle = getResources().getString(getResources().getIdentifier("next", "string", getContext().getPackageName()));
             } else if (confirmType.contentEquals("search")) {
                 this.setImeOptions(EditorInfo.IME_ACTION_SEARCH | EditorInfo.IME_FLAG_NO_EXTRACT_UI);
-                mButtonTitle = getResources().getString(R.string.search);
+                mButtonTitle = getResources().getString(getResources().getIdentifier("search", "string", getContext().getPackageName()));
             } else if (confirmType.contentEquals("go")) {
                 this.setImeOptions(EditorInfo.IME_ACTION_GO | EditorInfo.IME_FLAG_NO_EXTRACT_UI);
-                mButtonTitle = getResources().getString(R.string.go);
+                mButtonTitle = getResources().getString(getResources().getIdentifier("go", "string", getContext().getPackageName()));
             } else if (confirmType.contentEquals("send")) {
                 this.setImeOptions(EditorInfo.IME_ACTION_SEND | EditorInfo.IME_FLAG_NO_EXTRACT_UI);
-                mButtonTitle = getResources().getString(R.string.send);
+                mButtonTitle = getResources().getString(getResources().getIdentifier("send", "string", getContext().getPackageName()));
             } else{
                 mButtonTitle = null;
                 Log.e(TAG, "unknown confirm type " + confirmType);

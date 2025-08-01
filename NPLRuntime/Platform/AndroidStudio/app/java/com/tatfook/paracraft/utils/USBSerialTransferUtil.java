@@ -17,7 +17,6 @@ import com.hoho.android.usbserial.driver.UsbSerialDriver;
 import com.hoho.android.usbserial.driver.UsbSerialPort;
 import com.hoho.android.usbserial.driver.UsbSerialProber;
 import com.hoho.android.usbserial.util.SerialInputOutputManager;
-import com.tatfook.paracraft.BuildConfig;
 import com.tatfook.paracraft.ParaEngineActivity;
 
 import java.io.IOException;
@@ -40,7 +39,7 @@ public class USBSerialTransferUtil {
     private boolean isConnectUSBSerial = false;
     private static final int WRITE_WAIT_MILLIS = 2000;
     private static final int READ_WAIT_MILLIS = 2000;
-    private static final String INTENT_ACTION_GRANT_USB = BuildConfig.APPLICATION_ID + ".GRANT_USB"; // usb permission request identification.
+    private static final String INTENT_ACTION_GRANT_USB = "com.tatfook.paracraft.GRANT_USB"; // usb permission request identification.
 
     private static USBSerialTransferUtil usbSerialTransferUtil;
     private static native void nativeRead(String data);

@@ -14,8 +14,6 @@ import android.content.ContextWrapper;
 import android.os.SystemClock;
 import android.text.format.DateUtils;
 
-import com.tatfook.paracraft.R;
-
 //import static com.tatfook.paracraft.screenrecorder.ScreenRecorder.ACTION_STOP;
 
 public class Notifications extends ContextWrapper {
@@ -78,7 +76,7 @@ public class Notifications extends ContextWrapper {
                 .setOnlyAlertOnce(true)
                 .addAction(stopAction())
                 .setWhen(System.currentTimeMillis())
-                .setSmallIcon(R.drawable.ic_launcher);
+                .setSmallIcon(getResources().getIdentifier("ic_launcher", "drawable", getPackageName()));
 
             builder.setChannelId(CHANNEL_ID).setUsesChronometer(true);
 

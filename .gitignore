@@ -39,6 +39,7 @@ Tests/
 !NPLRuntime/tests
 WanDeploy/
 WebAPI/
+.cxx/
 
 !Server/
 Server/*

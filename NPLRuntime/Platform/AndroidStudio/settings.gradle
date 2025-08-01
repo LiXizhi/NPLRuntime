@@ -1,2 +1,4 @@
 include ':Paracraft'
 project(':Paracraft').projectDir = new File(settingsDir, 'app')
+
+include ':paracraft-core'
