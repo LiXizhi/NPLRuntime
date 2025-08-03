@@ -14,6 +14,16 @@
 
     <application>
         <!-- 这里可以声明核心库的组件，但不包含Application类 -->
+        <!-- Paracraft Engine Activity -->
+        <activity
+            android:name="com.tatfook.paracraft.ParaEngineActivity"
+            android:exported="false"
+            android:screenOrientation="landscape"
+            android:configChanges="orientation|screenSize|keyboardHidden|smallestScreenSize|screenLayout|layoutDirection|uiMode"
+            android:windowSoftInputMode="stateHidden|adjustResize">
+            <!-- Tell NativeActivity the name of our .so -->
+            <meta-data android:name="android.app.lib_name" android:value="Paracraft" />
+        </activity>
     </application>
 
 </manifest>
