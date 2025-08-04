@@ -1,0 +1,32 @@
+# HarmonyOS项目gitignore文件
+
+# 构建输出
+build/
+.hvigor/
+node_modules/
+oh_modules/
+
+# IDE文件
+.idea/
+*.iml
+.vscode/
+
+# 系统文件
+.DS_Store
+Thumbs.db
+
+# 日志文件
+*.log
+
+# 临时文件
+tmp/
+temp/
+
+# 签名文件 (开发时可能需要)
+*.p12
+*.p7b
+!debug.p12
+!debug.p7b
+
+# 本地配置
+local.properties

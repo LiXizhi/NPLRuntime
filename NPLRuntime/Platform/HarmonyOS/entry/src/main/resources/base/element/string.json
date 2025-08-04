@@ -1,0 +1,84 @@
+{
+  "string": [
+    {
+      "name": "entry_desc",
+      "value": "帕拉卡3D虚拟社区学习软件主模块"
+    },
+    {
+      "name": "EntryAbility_desc",
+      "value": "description"
+    },
+    {
+      "name": "EntryAbility_label",
+      "value": "帕拉卡3D虚拟社区学习软件"
+    },
+    {
+      "name": "app_name",
+      "value": "帕拉卡3D虚拟社区学习软件"
+    },
+    {
+      "name": "app_scheme",
+      "value": "paracraft"
+    },
+    {
+      "name": "papa_app_name",
+      "value": "帕帕奇遇记"
+    },
+    {
+      "name": "papa_app_scheme",
+      "value": "papa"
+    },
+    {
+      "name": "edu_app_name",
+      "value": "智慧教育云平台"
+    },
+    {
+      "name": "edu_app_scheme",
+      "value": "palakaedu"
+    },
+    {
+      "name": "ScreenRecorderService_desc",
+      "value": "Screen recording service"
+    },
+    {
+      "name": "camera_reason",
+      "value": "用于拍照和录制视频功能"
+    },
+    {
+      "name": "microphone_reason",
+      "value": "用于录制音频和语音交互功能"
+    },
+    {
+      "name": "location_reason",
+      "value": "用于获取位置信息和地理定位功能"
+    },
+    {
+      "name": "screen_capture_reason",
+      "value": "用于屏幕录制和截图功能"
+    },
+    {
+      "name": "media_location_reason",
+      "value": "用于访问媒体文件的位置信息"
+    },
+    {
+      "name": "read_media_reason",
+      "value": "用于读取媒体文件和资源"
+    },
+    {
+      "name": "write_media_reason",
+      "value": "用于保存和写入媒体文件"
+    },
+    {
+      "name": "bluetooth_reason",
+      "value": "用于蓝牙设备连接和数据传输功能"
+    },
+    {
+      "name": "bundle_info_reason",
+      "value": "用于获取应用包信息和系统信息"
+    },
+    {
+      "name": "file_access_reason",
+      "value": "用于访问和管理文件系统"
+    }
+  ]
+}

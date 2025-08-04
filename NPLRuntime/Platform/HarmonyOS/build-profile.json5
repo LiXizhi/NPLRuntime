@@ -1,0 +1,117 @@
+{
+  "app": {
+    "signingConfigs": [
+      {
+        "name": "default",
+        "type": "HarmonyOS",
+        "material": {
+          "certpath": "/Users/chenliao/.ohos/config/default_HarmonyOS_Z8TtcTm6pc_2c3a7cO4Ln36BsB32x9RyroHI5v0bmI4=.cer",
+          "keyAlias": "debugKey",
+          "keyPassword": "0000001B2C1D69EA4DC1F7263E9FCB9EF73404BADECBB33A129D0496B7676138F087D37A9ABFF803138FB7",
+          "profile": "/Users/chenliao/.ohos/config/default_HarmonyOS_Z8TtcTm6pc_2c3a7cO4Ln36BsB32x9RyroHI5v0bmI4=.p7b",
+          "signAlg": "SHA256withECDSA",
+          "storeFile": "/Users/chenliao/.ohos/config/default_HarmonyOS_Z8TtcTm6pc_2c3a7cO4Ln36BsB32x9RyroHI5v0bmI4=.p12",
+          "storePassword": "0000001B5BE794A4435ED12311C8BA63F5069DE2F3717A148B2333FF4D9ADFAF5629991B577CC0138936C2"
+        }
+      }
+    ],
+    "products": [
+      {
+        "name": "default",
+        "signingConfig": "default",
+        "targetSdkVersion": "5.0.5(17)",
+        "compatibleSdkVersion": "5.0.5(17)",
+        "runtimeOS": "HarmonyOS",
+        "buildOption": {
+          "strictMode": {
+            "caseSensitiveCheck": true,
+            "useNormalizedOHMUrl": true
+          }
+        }
+      },
+      {
+        "name": "tatfook",
+        "targetSdkVersion": "5.0.5(17)",
+        "compatibleSdkVersion": "5.0.5(17)",
+        "runtimeOS": "HarmonyOS",
+        "buildOption": {
+          "strictMode": {
+            "caseSensitiveCheck": true,
+            "useNormalizedOHMUrl": true
+          }
+        }
+      },
+      {
+        "name": "palaka",
+        "targetSdkVersion": "5.0.5(17)",
+        "compatibleSdkVersion": "5.0.5(17)",
+        "runtimeOS": "HarmonyOS",
+        "buildOption": {
+          "strictMode": {
+            "caseSensitiveCheck": true,
+            "useNormalizedOHMUrl": true
+          }
+        }
+      },
+      {
+        "name": "papa",
+        "targetSdkVersion": "5.0.5(17)",
+        "compatibleSdkVersion": "5.0.5(17)",
+        "runtimeOS": "HarmonyOS",
+        "buildOption": {
+          "strictMode": {
+            "caseSensitiveCheck": true,
+            "useNormalizedOHMUrl": true
+          }
+        }
+      },
+      {
+        "name": "edu",
+        "targetSdkVersion": "5.0.5(17)",
+        "compatibleSdkVersion": "5.0.5(17)",
+        "runtimeOS": "HarmonyOS",
+        "buildOption": {
+          "strictMode": {
+            "caseSensitiveCheck": true,
+            "useNormalizedOHMUrl": true
+          }
+        }
+      }
+    ],
+    "buildModeSet": [
+      {
+        "name": "debug"
+      },
+      {
+        "name": "release"
+      }
+    ]
+  },
+  "modules": [
+    {
+      "name": "entry",
+      "srcPath": "./entry",
+      "targets": [
+        {
+          "name": "default",
+          "applyToProducts": [
+            "default",
+            "tatfook",
+            "palaka",
+            "papa",
+            "edu"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "paracraftcore",
+      "srcPath": "./paracraft_core",
+      "targets": [
+        {
+          "name": "default"
+        }
+      ]
+    }
+  ]
+}

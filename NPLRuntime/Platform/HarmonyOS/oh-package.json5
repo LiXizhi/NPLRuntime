@@ -1,0 +1,10 @@
+{
+  "modelVersion": "5.0.5",
+  "name": "paracraftharmonyos",
+  "version": "1.4.0",
+  "description": "ParaCraft 3D Virtual Community Learning Software for HarmonyOS",
+  "author": "Tatfook Technology",
+  "license": "Apache-2.0",
+  "devDependencies": {},
+  "dependencies": {}
+}

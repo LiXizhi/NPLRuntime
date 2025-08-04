@@ -1,0 +1,40 @@
+#!/bin/bash
+
+# HarmonyOS hvigor wrapper script
+# 优先使用DevEco Studio内置的hvigor
+
+# 优先尝试使用DevEco Studio内置的hvigor
+DEVECO_HVIGOR="/Volumes/APPLE_DATA/DevEco-Studio.app/Contents/tools/hvigor/bin/hvigorw"
+if [ -f "$DEVECO_HVIGOR" ]; then
+    HVIGOR_BIN="$DEVECO_HVIGOR"
+else
+    # 检查HARMONYOS_SDK_HOME环境变量
+    if [ -z "$HARMONYOS_SDK_HOME" ]; then
+        # 尝试从local.properties读取SDK路径
+        if [ -f "local.properties" ]; then
+            SDK_PATH=$(grep "harmonyos.sdk.path" local.properties | cut -d'=' -f2 | tr -d ' ')
+            if [ -n "$SDK_PATH" ]; then
+                export HARMONYOS_SDK_HOME="$SDK_PATH"
+            fi
+        fi
+    fi
+
+    # 如果仍然没有找到SDK路径，使用默认路径
+    if [ -z "$HARMONYOS_SDK_HOME" ]; then
+        export HARMONYOS_SDK_HOME="$HOME/HarmonyOS"
+    fi
+
+    # hvigor工具路径
+    HVIGOR_BIN="$HARMONYOS_SDK_HOME/hvigor/bin/hvigor"
+fi
+
+# 如果找不到hvigor，报错
+if [ ! -f "$HVIGOR_BIN" ]; then
+    echo "Error: hvigor not found. Please check your HarmonyOS SDK installation."
+    echo "SDK path: $HARMONYOS_SDK_HOME"
+    echo "DevEco path: /Volumes/APPLE_DATA/DevEco-Studio.app"
+    exit 1
+fi
+
+# 执行hvigor命令
+exec "$HVIGOR_BIN" "$@"

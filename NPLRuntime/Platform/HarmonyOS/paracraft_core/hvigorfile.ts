@@ -1,0 +1,1 @@
+export { hspTasks } from '@ohos/hvigor-ohos-plugin';

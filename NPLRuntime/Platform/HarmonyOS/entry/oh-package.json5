@@ -1,0 +1,11 @@
+{
+  "name": "entry",
+  "version": "1.0.0",
+  "description": "ParaCraft Entry Module for HarmonyOS",
+  "main": "./ets/entryability/EntryAbility.ets",
+  "author": "Tatfook Technology",
+  "license": "Apache-2.0",
+  "dependencies": {
+    "@ohos/hypium": "^1.0.6"
+  }
+}

@@ -1,0 +1,9 @@
+{
+  "projectType": "HarmonyOS",
+  "language": "ArkTS",
+  "compatibleSdkVersion": "5.0.0(12)",
+  "compileSdkVersion": "5.0.0(12)",
+  "bundleName": "com.tatfook.paracraft",
+  "productName": "ParaCraft HarmonyOS",
+  "runtimeOS": "HarmonyOS"
+}
