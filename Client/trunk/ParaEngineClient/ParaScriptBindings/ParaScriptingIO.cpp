@@ -2071,16 +2071,20 @@ namespace ParaScripting
 	void ParaFileSystemWatcher::AddDirectory(const char* filename)
 	{
 #if !defined(PARAENGINE_MOBILE) && !defined(EMSCRIPTEN)
-		if (m_watcher)
-			m_watcher->add_directory(filename);
+		if (m_watcher) {
+			std::string sFilename = ParaIO::ConvertPathFromUTF8ToAnsci(filename);
+			m_watcher->add_directory(sFilename.c_str());
+		}
 #endif
 	}
 
 	void ParaFileSystemWatcher::RemoveDirectory(const char* filename)
 	{
 #if !defined(PARAENGINE_MOBILE) && !defined(EMSCRIPTEN)
-		if (m_watcher)
-			m_watcher->remove_directory(filename);
+		if (m_watcher) {
+			std::string sFilename = ParaIO::ConvertPathFromUTF8ToAnsci(filename);
+			m_watcher->remove_directory(sFilename.c_str());
+		}
 #endif
 	}
 #if !defined(PARAENGINE_MOBILE) && !defined(EMSCRIPTEN)
@@ -2099,9 +2103,11 @@ namespace ParaScripting
 			writer.WriteName("type");
 			writer.WriteValue((int)event.type);
 			writer.WriteName("dirname");
-			writer.WriteValue(event.path.parent_path().generic_string() + "/");
+
+			auto sParentDir = event.path.parent_path().generic_string() + "/";
+			writer.WriteValue(ParaEngine::StringHelper::WideCharToMultiByte(ParaEngine::StringHelper::AnsiToWideChar(sParentDir.c_str()), DEFAULT_FILE_ENCODING));
 			writer.WriteName("filename");
-			writer.WriteValue(event.path.filename().generic_string());
+			writer.WriteValue(ParaEngine::StringHelper::WideCharToMultiByte(ParaEngine::StringHelper::AnsiToWideChar(event.path.filename().generic_string().c_str()), DEFAULT_FILE_ENCODING));
 
 			writer.EndTable();
 			writer.WriteParamDelimiter();
