@@ -114,6 +114,89 @@ endif()
 
 #set(CMAKE_EXE_LINKER_FLAGS "-pagezero_size 10000 -image_base 100000000 ${CMAKE_EXE_LINKER_FLAGS}")
 
+# Framework generation option
+option(BUILD_FRAMEWORK "Build as Framework" OFF)
+
+if (BUILD_FRAMEWORK)
+    # Create Framework target
+    add_library(ParacraftFramework SHARED
+        ${app_src}
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/ParacraftFramework.mm
+    )
+    
+    target_link_libraries(ParacraftFramework PUBLIC
+        ${UIKit}
+        ${OpenGLES}
+        ${QuartzCore}
+        ${CoreBluetooth}
+        ${WebKit}
+        ${Security}
+        ${CoreGraphics}
+        ${ReplayKit}
+        ${AVKit}
+        ${Photos}
+        ${AudioToolbox}
+        ${AVFoundation}
+        ${CoreTelephony}
+        ${AdSupport}
+        ${AppTrackingTransparency}
+        RenderSystemOpenGL
+        ParaEngine
+    )
+    
+    # Set Framework properties
+    set_target_properties(ParacraftFramework PROPERTIES
+        FRAMEWORK TRUE
+        FRAMEWORK_VERSION A
+        MACOSX_FRAMEWORK_IDENTIFIER com.tatfook.paracraft.framework
+        MACOSX_FRAMEWORK_INFO_PLIST ${CMAKE_CURRENT_SOURCE_DIR}/Framework-Info.plist
+        MACOSX_FRAMEWORK_BUNDLE_VERSION "2.0.22"
+        MACOSX_FRAMEWORK_SHORT_VERSION_STRING "62"
+        XCODE_ATTRIBUTE_CODE_SIGN_IDENTITY "iPhone Developer"
+        XCODE_ATTRIBUTE_CODE_SIGN_STYLE "Automatic"
+        XCODE_ATTRIBUTE_DEVELOPMENT_TEAM ${development_team}
+        XCODE_ATTRIBUTE_ENABLE_BITCODE "No"
+        XCODE_ATTRIBUTE_TARGETED_DEVICE_FAMILY "1,2"
+        XCODE_ATTRIBUTE_SKIP_INSTALL "No"
+        XCODE_ATTRIBUTE_INSTALL_PATH "@rpath"
+        XCODE_ATTRIBUTE_DEFINES_MODULE "YES"
+        XCODE_ATTRIBUTE_MODULEMAP_FILE "${CMAKE_CURRENT_SOURCE_DIR}/module.modulemap"
+        XCODE_ATTRIBUTE_CLANG_ENABLE_MODULES "YES"
+        PUBLIC_HEADER "${CMAKE_CURRENT_SOURCE_DIR}/src/ParacraftFramework.h"
+        VERSION ${CMAKE_PROJECT_VERSION}
+        SOVERSION 1
+    )
+    
+    # Include directories for Framework
+    target_include_directories(ParacraftFramework PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
+    target_include_directories(ParacraftFramework PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../../Plugins/cAudioEngine/DependenciesSource/libogg-1.3.2/include)
+    target_include_directories(ParacraftFramework PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../../Plugins/cAudioEngine/DependenciesSource/libvorbis-1.3.2/include)
+    
+    # Add Framework-specific compile definitions
+    if (NPLRUNTIME_OCE)
+        target_compile_definitions(ParacraftFramework PRIVATE NPLRUNTIME_OCE)
+    endif()
+    
+    # Set Framework headers
+    file(GLOB_RECURSE FRAMEWORK_HEADERS "${CMAKE_CURRENT_SOURCE_DIR}/src/*.h")
+    set_target_properties(ParacraftFramework PROPERTIES
+        PUBLIC_HEADER "${FRAMEWORK_HEADERS}"
+    )
+    
+    # Copy resources to Framework
+    set_source_files_properties(${RESOURCE_FILES} PROPERTIES MACOSX_PACKAGE_LOCATION Resources/res)
+    set_source_files_properties(${ASSETS_FILES} PROPERTIES MACOSX_PACKAGE_LOCATION Resources/assets)
+    set_source_files_properties(${IMAGES_FILE} PROPERTIES MACOSX_PACKAGE_LOCATION Resources)
+    set_source_files_properties(${CMAKE_CURRENT_SOURCE_DIR}/module.modulemap PROPERTIES MACOSX_PACKAGE_LOCATION Modules)
+    
+    target_sources(ParacraftFramework PRIVATE
+        ${IMAGES_FILE}
+        ${RESOURCE_FILES}
+        ${ASSETS_FILES}
+        ${CMAKE_CURRENT_SOURCE_DIR}/module.modulemap
+    )
+endif()
+
 set(APP_PATH "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/$<CONFIGURATION>/Paracraft.app")
 set(DYLIB_PATH "${CMAKE_ARCHIVE_OUTPUT_DIRECTORY}/$<CONFIGURATION>")
 set(DEST_FRAMEWORK_PATH "${APP_PATH}/Frameworks/")

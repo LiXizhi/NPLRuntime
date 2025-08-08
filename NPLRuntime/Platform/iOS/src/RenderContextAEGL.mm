@@ -16,7 +16,14 @@ ParaEngine::IRenderContext* ParaEngine::IRenderContext::Create()
 IRenderDevice* RenderContextAEGL::CreateDevice(const RenderConfiguration & cfg)
 {
     RenderWindowiOS* renderWindow = static_cast<RenderWindowiOS*>(cfg.renderWindow);
+    if (!renderWindow) {
+        return nullptr;
+    }
+    
     UIView* view = renderWindow->GetView();
+    if (!view) {
+        return nullptr;
+    }
 
     CAEAGLLayer* glLayer = (CAEAGLLayer*)view.layer;
     glLayer.opaque = YES;

@@ -1,0 +1,23 @@
+framework module ParacraftFramework {
+    umbrella header "ParacraftFramework.h"
+    
+    export *
+    module * { export * }
+    
+    link "c++"
+    link framework "UIKit"
+    link framework "OpenGLES"
+    link framework "QuartzCore"
+    link framework "CoreBluetooth"
+    link framework "WebKit"
+    link framework "Security"
+    link framework "CoreGraphics"
+    link framework "ReplayKit"
+    link framework "AVKit"
+    link framework "Photos"
+    link framework "AudioToolbox"
+    link framework "AVFoundation"
+    link framework "CoreTelephony"
+    link framework "AdSupport"
+    link framework "AppTrackingTransparency"
+}
