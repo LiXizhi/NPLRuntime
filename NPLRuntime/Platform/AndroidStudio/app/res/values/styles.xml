@@ -6,4 +6,28 @@
         <item name="android:windowContentOverlay">@null</item>
         <item name="android:windowBackground">@drawable/app_splash</item>
     </style>
+    <style name="AarTheme" parent="Theme.Material3.DayNight.NoActionBar">
+        <!-- 禁用窗口内容过渡动画，加快启动速度 -->
+        <item name="android:windowContentTransitions">false</item>
+        <item name="android:windowAllowEnterTransitionOverlap">false</item>
+        <item name="android:windowAllowReturnTransitionOverlap">false</item>
+        <!-- 优化窗口显示 -->
+        <item name="android:windowDisablePreview">false</item>
+        <item name="android:windowFullscreen">true</item>
+        <item name="android:windowContentOverlay">@null</item>
+        <item name="android:windowNoTitle">true</item>
+        <item name="android:windowActionBar">false</item>
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+        <item name="android:windowDrawsSystemBarBackgrounds">true</item>
+        <!-- <item name="android:windowLayoutInDisplayCutoutMode" tools:targetApi="p">shortEdges</item> -->
+        <!-- 启用硬件加速 -->
+        <item name="android:hardwareAccelerated">true</item>
+        <!-- 优化窗口动画 -->
+        <item name="android:windowAnimationStyle">@null</item>
+        <!-- 确保内容延伸到系统栏区域 - 修复顶部细线问题 -->
+        <item name="android:windowTranslucentStatus">false</item>
+        <item name="android:windowTranslucentNavigation">false</item>
+        <item name="android:fitsSystemWindows">false</item>
+    </style>
 </resources>

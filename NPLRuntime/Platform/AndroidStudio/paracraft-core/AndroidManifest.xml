@@ -1,6 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="com.palaka.paracraft">
+    <!-- This is the platform API where NativeActivity was introduced. -->
+    <uses-feature android:glEsVersion="0x00020000" android:required="true" />
+    <uses-feature android:name="android.hardware.bluetooth_le" android:required="true" />
+    <uses-feature android:name="android.hardware.camera" />
 
     <!-- 核心库权限声明 -->
     <uses-permission android:name="android.permission.INTERNET" />
@@ -12,18 +16,31 @@
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
     <uses-permission android:name="android.permission.VIBRATE" />
 
-    <application>
+    <application
+        android:usesCleartextTraffic="true"
+        android:extractNativeLibs="true"
+        android:resizeableActivity="true"
+        android:requestLegacyExternalStorage="true">
         <!-- 这里可以声明核心库的组件，但不包含Application类 -->
+        <meta-data android:name="notch.config"
+                   android:value="portrait|landscape" />
         <!-- Paracraft Engine Activity -->
         <activity
             android:name="com.tatfook.paracraft.ParaEngineActivity"
-            android:exported="false"
+            android:exported="true"
+            android:launchMode="singleInstance"
             android:screenOrientation="landscape"
-            android:configChanges="orientation|screenSize|keyboardHidden|smallestScreenSize|screenLayout|layoutDirection|uiMode"
-            android:windowSoftInputMode="stateHidden|adjustResize">
+            android:configChanges="orientation|keyboardHidden|screenSize"
+            android:windowSoftInputMode="stateHidden|adjustResize"
+            android:theme="@style/AarTheme">
             <!-- Tell NativeActivity the name of our .so -->
             <meta-data android:name="android.app.lib_name" android:value="Paracraft" />
+            <meta-data android:name="android.notch_support" android:value="true"/>
         </activity>
+        <activity
+            android:name="com.tatfook.paracraft.ParaEngineEditBoxActivity"
+            android:configChanges="orientation|keyboardHidden|screenSize|screenLayout"
+            android:screenOrientation="behind"
+            android:theme="@android:style/Theme.Translucent.NoTitleBar.Fullscreen" />
     </application>
-
 </manifest>

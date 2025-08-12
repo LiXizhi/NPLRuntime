@@ -2,7 +2,7 @@
 // ParaEngineActivity.java
 // Authors: LanZhihong, big
 // CreateDate: 2019.7.16
-// ModifyDate: 2022.11.2
+// ModifyDate: 2025.8.12
 //-----------------------------------------------------------------------------
 
 package com.tatfook.paracraft;
@@ -20,11 +20,13 @@ import android.net.Uri;
 import android.os.Build;
 import android.os.CountDownTimer;
 import android.os.Environment;
+import android.os.Handler;
 import android.os.PowerManager;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.ActivityInfo;
 import android.content.pm.PackageManager;
+import android.content.res.TypedArray;
 import android.opengl.GLSurfaceView;
 import android.os.Bundle;
 
@@ -47,6 +49,8 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.view.WindowManager;
 import android.widget.ImageView;
+import android.widget.TextView;
+import android.widget.ProgressBar;
 
 import com.smarx.notchlib.NotchScreenManager;
 import com.tatfook.paracraft.screenrecorder.ScreenRecorder;
@@ -83,6 +87,9 @@ public class ParaEngineActivity extends AppCompatActivity {
     private boolean hasFocus = false;
     private Bundle mSavedInstanceState;
     private ActivityResultLauncher<String> mOpenFileDialogLuancher;
+    private View mLoadingView = null;
+    private TextView mLoadingTextView = null;
+    private Handler mLoadingHandler = new Handler();
 
     public static ParaEngineActivity getContext() {
         return sContext;
@@ -134,6 +141,105 @@ public class ParaEngineActivity extends AppCompatActivity {
 
     public static boolean getUsbMode() {
         return sContext.mUsbMode;
+    }
+
+    private boolean isAarLaunchMode() {
+        try {
+            TypedArray a = this.getTheme().obtainStyledAttributes(new int[0]);
+            a.recycle();
+            ActivityInfo activityInfo = this.getPackageManager().getActivityInfo(this.getComponentName(), 128);
+            int themeResId = activityInfo.getThemeResource();
+            String themeName = this.getResources().getResourceEntryName(themeResId);
+            Log.d("ParaEngineActivity", "Current theme: " + themeName);
+            return "AarTheme".equals(themeName);
+        }
+        catch (Exception e) {
+            Log.e("ParaEngineActivity", "Error checking AAR launch mode", e);
+            return false;
+        }
+    }
+
+    private void createAndSetupGLSurfaceView(ParaEngineEditBox edittext) {
+        Log.d("ParaEngineActivity", "Creating GLSurfaceView");
+        this.mGLSurfaceView = this.onCreateView();
+        this.mFrameLayout.addView(this.mGLSurfaceView);
+        if (sRenderer == null) {
+            sRenderer = new ParaEngineRenderer();
+            this.mGLSurfaceView.setParaEngineRenderer(sRenderer);
+        } else {
+            sRenderer.termWindow();
+            this.mGLSurfaceView.setParaEngineRenderer(sRenderer);
+        }
+        final ParaEngineEditBox finalEdittext = edittext;
+        this.runOnGLThread(new Runnable(){
+            @Override
+            public void run() {
+                ParaEngineActivity.this.runOnUiThread(new Runnable(){
+
+                    @Override
+                    public void run() {
+                        ParaEngineActivity.this.mFrameLayout.addView(finalEdittext);
+                        ParaEngineActivity.this.mGLSurfaceView.setParaEditText(finalEdittext);
+                        ParaEngineActivity.this.mGLSurfaceView.bringToFront();
+                        
+                        // 隐藏loading动画
+                        ParaEngineActivity.this.hideLoadingAnimation();
+                        
+                        Log.d("ParaEngineActivity", "EditText added and configured after GL rendering");
+                    }
+                });
+            }
+        });
+        Log.d("ParaEngineActivity", "GLSurfaceView created and configured");
+    }
+
+    private void startLoadingAnimation() {
+        Log.d("ParaEngineActivity", "Starting loading animation for AAR mode");
+        
+        // 创建loading界面
+        int layoutId = getResources().getIdentifier("loading_layout", "layout", getPackageName());
+        mLoadingView = getLayoutInflater().inflate(layoutId, null);
+        int textViewId = getResources().getIdentifier("loading_text", "id", getPackageName());
+        mLoadingTextView = mLoadingView.findViewById(textViewId);
+        
+        // 添加到主布局
+        mFrameLayout.addView(mLoadingView);
+        
+        // 启动文本切换动画
+        startLoadingTextAnimation();
+    }
+    
+    private void startLoadingTextAnimation() {
+        final String[] loadingTexts = {
+            "正在初始化引擎...",
+            "正在加载3D资源...",
+            "正在准备渲染环境...",
+            "正在启动ParaEngine..."
+        };
+        
+        final int[] currentIndex = {0};
+        
+        Runnable textSwitcher = new Runnable() {
+            @Override
+            public void run() {
+                if (mLoadingTextView != null) {
+                    currentIndex[0] = (currentIndex[0] + 1) % loadingTexts.length;
+                    mLoadingTextView.setText(loadingTexts[currentIndex[0]]);
+                    mLoadingHandler.postDelayed(this, 1000);
+                }
+            }
+        };
+        
+        mLoadingHandler.postDelayed(textSwitcher, 1000);
+    }
+    
+    private void hideLoadingAnimation() {
+        if (mLoadingView != null && mFrameLayout != null) {
+            mFrameLayout.removeView(mLoadingView);
+            mLoadingView = null;
+            mLoadingTextView = null;
+        }
+        mLoadingHandler.removeCallbacksAndMessages(null);
     }
 
     public static void onExit(){
@@ -385,71 +491,50 @@ public class ParaEngineActivity extends AppCompatActivity {
     }
 
     protected void initLayout() {
-        // FrameLayout
-        ViewGroup.LayoutParams framelayout_params =
-            new ViewGroup.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT,
-                ViewGroup.LayoutParams.MATCH_PARENT
-            );
-
-        mFrameLayout = new ResizeLayout(this);
-        mFrameLayout.setLayoutParams(framelayout_params);
-
-        // ParaEngineEditBox layout
-        ViewGroup.LayoutParams edittext_layout_params =
-            new ViewGroup.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT,
-                ViewGroup.LayoutParams.WRAP_CONTENT
-            );
-
-        ParaEngineEditBox edittext = new ParaEngineEditBox(this);
+        ViewGroup.LayoutParams framelayout_params = new ViewGroup.LayoutParams(-1, -1);
+        this.mFrameLayout = new ResizeLayout(this);
+        this.mFrameLayout.setLayoutParams(framelayout_params);
+        ViewGroup.LayoutParams edittext_layout_params = new ViewGroup.LayoutParams(-1, -2);
+        final ParaEngineEditBox edittext = new ParaEngineEditBox(this);
         edittext.setLayoutParams(edittext_layout_params);
         edittext.setMultilineEnabled(false);
         edittext.setReturnType(0);
         edittext.setInputMode(6);
         edittext.setEnabled(false);
+        edittext.setBackground(null);
+        boolean isAarMode = this.isAarLaunchMode();
+        if (isAarMode) {
+            Log.d("ParaEngineActivity", "AAR launch mode detected, delaying GLSurfaceView creation by 3 seconds");
+            this.startLoadingAnimation();
+            new Handler().postDelayed(new Runnable(){
 
-        mFrameLayout.addView(edittext);
-
-        // GLSurfaceView
-        mGLSurfaceView = this.onCreateView();
-        mFrameLayout.addView(mGLSurfaceView);
-
-        if (sRenderer == null) {
-            sRenderer = new ParaEngineRenderer();
-            mGLSurfaceView.setParaEngineRenderer(sRenderer);
+                @Override
+                public void run() {
+                    ParaEngineActivity.this.createAndSetupGLSurfaceView(edittext);
+                }
+            }, 3000L);
         } else {
-            sRenderer.termWindow();
-            mGLSurfaceView.setParaEngineRenderer(sRenderer);
+            Log.d("ParaEngineActivity", "Normal launch mode, creating GLSurfaceView immediately");
+            this.createAndSetupGLSurfaceView(edittext);
         }
+        if (!this.isAarLaunchMode()) {
+            final ImageView imageView = new ImageView(this);
+            imageView.setLayoutParams(new ViewGroup.LayoutParams(-1, -1));
+            imageView.setScaleType(ImageView.ScaleType.FIT_XY);
+            imageView.setImageResource(this.getResources().getIdentifier("app_splash", "drawable", this.getPackageName()));
+            this.mFrameLayout.addView(imageView);
+            CountDownTimer countDownTimer = new CountDownTimer(3000L, 1000L){
 
-        mGLSurfaceView.setParaEditText(edittext);
+                public void onTick(long millisUntilFinished) {
+                }
 
-        final ImageView imageView = new ImageView(this);
-        imageView.setLayoutParams(
-            new ViewGroup.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT,
-                ViewGroup.LayoutParams.MATCH_PARENT
-            )
-        );
-        imageView.setScaleType(ImageView.ScaleType.FIT_XY);
-        imageView.setImageResource(getResources().getIdentifier("app_splash", "drawable", getPackageName()));
-        mFrameLayout.addView(imageView);
-
-        CountDownTimer countDownTimer = new CountDownTimer(3000, 1000) {
-            @Override
-            public void onTick(long millisUntilFinished) {}
-
-            @Override
-            public void onFinish() {
-                mFrameLayout.removeView(imageView);
-            }
-        };
-
-        countDownTimer.start();
-
-        // Set frame layout as the content view
-        setContentView(mFrameLayout);
+                public void onFinish() {
+                    ParaEngineActivity.this.mFrameLayout.removeView(imageView);
+                }
+            };
+            countDownTimer.start();
+        }
+        this.setContentView(this.mFrameLayout);
     }
 
     protected void _init(Bundle savedInstanceState, boolean bGranted) {
