@@ -30,16 +30,15 @@ import androidx.annotation.Keep;
 
 import com.tatfook.paracraft.luabridge.PlatformBridge;
 
-class JsToAndroid extends Object {
-    private native void receive(String filename, String msg);
-
-    @JavascriptInterface
-    public void nplActivate(String filename, String msg) {
-        this.receive(filename, msg);
-    }
-}
-
 public class ParaEngineWebViewHelper {
+    public static class JsToAndroid extends Object {
+        private native void receive(String filename, String msg);
+
+        @JavascriptInterface
+        public void nplActivate(String filename, String msg) {
+            this.receive(filename, msg);
+        }
+    }
 	private static ParaEngineActivity sActivity;
 	private static Handler sHandler;
 	private static FrameLayout sLayout;

@@ -181,9 +181,15 @@ public class ParaEngineActivity extends AppCompatActivity {
                         ParaEngineActivity.this.mFrameLayout.addView(finalEdittext);
                         ParaEngineActivity.this.mGLSurfaceView.setParaEditText(finalEdittext);
                         ParaEngineActivity.this.mGLSurfaceView.bringToFront();
+                        ParaEngineActivity.this.mLoadingView.bringToFront();
                         
-                        // 隐藏loading动画
-                        ParaEngineActivity.this.hideLoadingAnimation();
+                        // 隐藏loading动画 - 延迟8秒执行
+                        ParaEngineActivity.this.mLoadingHandler.postDelayed(new Runnable() {
+                            @Override
+                            public void run() {
+                                ParaEngineActivity.this.hideLoadingAnimation();
+                            }
+                        }, 8000);
                         
                         Log.d("ParaEngineActivity", "EditText added and configured after GL rendering");
                     }
@@ -357,6 +363,10 @@ public class ParaEngineActivity extends AppCompatActivity {
             this._init(savedInstanceState, true);
         }
 
+        if (isAarLaunchMode()) {
+            handleIntent(getIntent());
+        }
+
         NotchScreenManager.getInstance().setDisplayInNotch(this);
     }
 
@@ -507,7 +517,6 @@ public class ParaEngineActivity extends AppCompatActivity {
             Log.d("ParaEngineActivity", "AAR launch mode detected, delaying GLSurfaceView creation by 3 seconds");
             this.startLoadingAnimation();
             new Handler().postDelayed(new Runnable(){
-
                 @Override
                 public void run() {
                     ParaEngineActivity.this.createAndSetupGLSurfaceView(edittext);

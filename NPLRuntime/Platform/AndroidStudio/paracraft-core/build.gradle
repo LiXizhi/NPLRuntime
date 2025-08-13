@@ -17,6 +17,7 @@ android {
         versionName VERSION_NAME
 
         resValue "drawable", "app_splash", "@drawable/splash"
+        resValue "string", "app_scheme","paracraft"
         
         externalNativeBuild {
             cmake {

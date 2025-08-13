@@ -251,7 +251,7 @@ extern "C" {
 		AppDelegate::getInstance().onCmdLine(cmd);
 	}
 
-	JNIEXPORT void JNICALL Java_com_tatfook_paracraft_JsToAndroid_receive(JNIEnv *env, jobject clazz, jstring filename, jstring msg)
+	JNIEXPORT void JNICALL Java_com_tatfook_paracraft_ParaEngineWebViewHelper_00024JsToAndroid_receive(JNIEnv *env, jobject clazz, jstring filename, jstring msg)
 	{
 		std::string cpp_filename = JniHelper::jstring2string(filename);
 		std::string cpp_msg = JniHelper::jstring2string(msg);
