@@ -50,5 +50,8 @@
             android:configChanges="orientation|keyboardHidden|screenSize|screenLayout"
             android:screenOrientation="behind"
             android:theme="@android:style/Theme.Translucent.NoTitleBar.Fullscreen" />
+        <meta-data
+            android:name="CHANNEL_ID"
+            android:value="${CHANNEL_VALUE}" />
     </application>
 </manifest>

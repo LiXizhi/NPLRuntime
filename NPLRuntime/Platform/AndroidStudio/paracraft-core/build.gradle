@@ -18,6 +18,7 @@ android {
 
         resValue "drawable", "app_splash", "@drawable/splash"
         resValue "string", "app_scheme","paracraft"
+        manifestPlaceholders = [CHANNEL_VALUE: "palaka"]
         
         externalNativeBuild {
             cmake {
