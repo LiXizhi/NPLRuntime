@@ -155,22 +155,28 @@ public class ParaEngineActivity extends AppCompatActivity {
             // 检查是否是customLoader消息
             if (jsonObject.has("msgname") && "customLoader".equals(jsonObject.getString("msgname"))) {
                 JSONObject msgdata = jsonObject.getJSONObject("msgdata");
-                
-                // 获取进度值
-                if (msgdata.has("progress")) {
+                Log.d("ParaEngineActivity", "msgdata: " + msgdata.toString());
+
+                // 获取name和progress值
+                if (msgdata.has("name") && msgdata.has("progress")) {
+                    String name = msgdata.getString("name");
                     int progress = msgdata.getInt("progress");
-                    Log.d("ParaEngineActivity", "Loading progress: " + progress + "%");
+                    
+                    // 根据name类型计算实际显示的进度
+                    int displayProgress = calculateDisplayProgress(name, progress);
+                    
+                    Log.d("ParaEngineActivity", "Loading type: " + name + ", progress: " + progress + "%, display: " + displayProgress + "%");
                     
                     // 在UI线程中更新进度条
                     if (sContext != null) {
                         sContext.runOnUiThread(new Runnable() {
                             @Override
                             public void run() {
-                                sContext.updateLoadingProgress(progress);
+                                sContext.updateLoadingProgress(displayProgress, name);
                                 
-                                // 检查进度是否为100，隐藏loading动画
-                                if (progress >= 100) {
-                                    Log.d("ParaEngineActivity", "Loading completed, hiding loading animation");
+                                // 检查是否为gameLoading的100%，隐藏loading动画
+                                if ("gameLoading".equals(name) && progress >= 100) {
+                                    Log.d("ParaEngineActivity", "Game loading completed, hiding loading animation");
                                     sContext.hideLoadingAnimation();
                                 }
                             }
@@ -180,6 +186,24 @@ public class ParaEngineActivity extends AppCompatActivity {
             }
         } catch (JSONException e) {
             Log.e("ParaEngineActivity", "Error parsing JSON message: " + e.getMessage());
+        }
+    }
+    
+    private static int calculateDisplayProgress(String name, int progress) {
+        // 限制progress在0-100范围内
+        progress = Math.max(0, Math.min(100, progress));
+        
+        if ("hotUpdate".equals(name)) {
+            // hotUpdate占总进度的10-30%，即20%的范围
+            // progress 0-100 映射到 10-30
+            return 10 + (progress * 20 / 100);
+        } else if ("gameLoading".equals(name)) {
+            // gameLoading占总进度的30-100%，即70%的范围
+            // progress 0-100 映射到 30-100
+            return 30 + (progress * 70 / 100);
+        } else {
+            // 默认情况，直接使用原始progress
+            return progress;
         }
     }
 
@@ -251,7 +275,7 @@ public class ParaEngineActivity extends AppCompatActivity {
         if (mLoadingProgressBar != null) {
             mLoadingProgressBar.setIndeterminate(false);
             mLoadingProgressBar.setMax(100);
-            mLoadingProgressBar.setProgress(0);
+            mLoadingProgressBar.setProgress(10);
         }
         
         // 添加到主布局
@@ -259,33 +283,57 @@ public class ParaEngineActivity extends AppCompatActivity {
         
         // 设置初始文本
         if (mLoadingTextView != null) {
-            mLoadingTextView.setText("正在初始化引擎... 0%");
+            mLoadingTextView.setText("正在初始化引擎... 10%");
         }
     }
     
     private void updateLoadingProgress(int progress) {
+        updateLoadingProgress(progress, "default");
+    }
+    
+    private void updateLoadingProgress(int progress, String loadingType) {
         if (mLoadingProgressBar != null) {
-            // 确保进度值在0-100范围内
-            progress = Math.max(0, Math.min(100, progress));
+            // 确保进度值在10-100范围内
+            progress = Math.max(10, Math.min(100, progress));
             mLoadingProgressBar.setProgress(progress);
             
-            Log.d("ParaEngineActivity", "Progress bar updated to: " + progress + "%");
+            Log.d("ParaEngineActivity", "Progress bar updated to: " + progress + "% (type: " + loadingType + ")");
             
-            // 根据进度更新加载文本
+            // 根据loading类型和进度更新加载文本
             if (mLoadingTextView != null) {
-                String loadingText;
-                if (progress < 25) {
-                    loadingText = "正在初始化引擎... " + progress + "%";
-                } else if (progress < 50) {
-                    loadingText = "正在加载3D资源... " + progress + "%";
-                } else if (progress < 75) {
-                    loadingText = "正在准备渲染环境... " + progress + "%";
-                } else if (progress < 100) {
-                    loadingText = "正在启动ParaEngine... " + progress + "%";
-                } else {
-                    loadingText = "加载完成！";
-                }
+                String loadingText = getLoadingText(loadingType, progress);
                 mLoadingTextView.setText(loadingText);
+            }
+        }
+    }
+    
+    private String getLoadingText(String loadingType, int progress) {
+        if ("hotUpdate".equals(loadingType)) {
+            // hotUpdate阶段 (10-30%)
+            return "正在检查更新... " + progress + "%";
+        } else if ("gameLoading".equals(loadingType)) {
+            // gameLoading阶段 (30-100%)
+            if (progress < 50) {
+                return "正在加载游戏资源... " + progress + "%";
+            } else if (progress < 75) {
+                return "正在初始化游戏引擎... " + progress + "%";
+            } else if (progress < 100) {
+                return "正在启动游戏... " + progress + "%";
+            } else {
+                return "加载完成！";
+            }
+        } else {
+            // 默认情况或向后兼容
+            if (progress < 25) {
+                return "正在初始化引擎... " + progress + "%";
+            } else if (progress < 50) {
+                return "正在加载3D资源... " + progress + "%";
+            } else if (progress < 75) {
+                return "正在准备渲染环境... " + progress + "%";
+            } else if (progress < 100) {
+                return "正在启动ParaEngine... " + progress + "%";
+            } else {
+                return "加载完成！";
             }
         }
     }
