@@ -1613,6 +1613,7 @@ int ParaEngineSettings::InstallFields(CAttributeClass* pClass, bool bOverride)
 	pClass->AddField("WebViewVersion", FieldType_Int, NULL, (void*)GetWebViewVersion_s, NULL, NULL, bOverride);
 #ifdef ANDROID
 	pClass->AddField("GetUsbMode", FieldType_Bool, NULL, (void*)GetUsbMode_s, NULL, NULL, bOverride);
+	pClass->AddField("SendMsgToJava", FieldType_String, (void*)SendMsgToJava_s, NULL, NULL, NULL, bOverride);
 #endif
 
 #if defined(ANDROID) || defined(IOS)

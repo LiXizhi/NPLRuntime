@@ -89,6 +89,7 @@ public class ParaEngineActivity extends AppCompatActivity {
     private ActivityResultLauncher<String> mOpenFileDialogLuancher;
     private View mLoadingView = null;
     private TextView mLoadingTextView = null;
+    private ProgressBar mLoadingProgressBar = null;
     private Handler mLoadingHandler = new Handler();
 
     public static ParaEngineActivity getContext() {
@@ -143,6 +144,45 @@ public class ParaEngineActivity extends AppCompatActivity {
         return sContext.mUsbMode;
     }
 
+    public static void sendMsgToJava(String msg) {
+        if (!sContext.isAarLaunchMode()) {
+            return;
+        }
+
+        try {
+            JSONObject jsonObject = new JSONObject(msg);
+            
+            // 检查是否是customLoader消息
+            if (jsonObject.has("msgname") && "customLoader".equals(jsonObject.getString("msgname"))) {
+                JSONObject msgdata = jsonObject.getJSONObject("msgdata");
+                
+                // 获取进度值
+                if (msgdata.has("progress")) {
+                    int progress = msgdata.getInt("progress");
+                    Log.d("ParaEngineActivity", "Loading progress: " + progress + "%");
+                    
+                    // 在UI线程中更新进度条
+                    if (sContext != null) {
+                        sContext.runOnUiThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                sContext.updateLoadingProgress(progress);
+                                
+                                // 检查进度是否为100，隐藏loading动画
+                                if (progress >= 100) {
+                                    Log.d("ParaEngineActivity", "Loading completed, hiding loading animation");
+                                    sContext.hideLoadingAnimation();
+                                }
+                            }
+                        });
+                    }
+                }
+            }
+        } catch (JSONException e) {
+            Log.e("ParaEngineActivity", "Error parsing JSON message: " + e.getMessage());
+        }
+    }
+
     private boolean isAarLaunchMode() {
         try {
             TypedArray a = this.getTheme().obtainStyledAttributes(new int[0]);
@@ -181,15 +221,10 @@ public class ParaEngineActivity extends AppCompatActivity {
                         ParaEngineActivity.this.mFrameLayout.addView(finalEdittext);
                         ParaEngineActivity.this.mGLSurfaceView.setParaEditText(finalEdittext);
                         ParaEngineActivity.this.mGLSurfaceView.bringToFront();
-                        ParaEngineActivity.this.mLoadingView.bringToFront();
-                        
-                        // 隐藏loading动画 - 延迟8秒执行
-                        ParaEngineActivity.this.mLoadingHandler.postDelayed(new Runnable() {
-                            @Override
-                            public void run() {
-                                ParaEngineActivity.this.hideLoadingAnimation();
-                            }
-                        }, 8000);
+
+                        if (ParaEngineActivity.this.isAarLaunchMode()) {
+                            ParaEngineActivity.this.mLoadingView.bringToFront();
+                        }
                         
                         Log.d("ParaEngineActivity", "EditText added and configured after GL rendering");
                     }
@@ -208,35 +243,51 @@ public class ParaEngineActivity extends AppCompatActivity {
         int textViewId = getResources().getIdentifier("loading_text", "id", getPackageName());
         mLoadingTextView = mLoadingView.findViewById(textViewId);
         
+        // 获取进度条引用
+        int progressBarId = getResources().getIdentifier("loading_progress", "id", getPackageName());
+        mLoadingProgressBar = mLoadingView.findViewById(progressBarId);
+        
+        // 初始化进度条
+        if (mLoadingProgressBar != null) {
+            mLoadingProgressBar.setIndeterminate(false);
+            mLoadingProgressBar.setMax(100);
+            mLoadingProgressBar.setProgress(0);
+        }
+        
         // 添加到主布局
         mFrameLayout.addView(mLoadingView);
         
-        // 启动文本切换动画
-        startLoadingTextAnimation();
+        // 设置初始文本
+        if (mLoadingTextView != null) {
+            mLoadingTextView.setText("正在初始化引擎... 0%");
+        }
     }
     
-    private void startLoadingTextAnimation() {
-        final String[] loadingTexts = {
-            "正在初始化引擎...",
-            "正在加载3D资源...",
-            "正在准备渲染环境...",
-            "正在启动ParaEngine..."
-        };
-        
-        final int[] currentIndex = {0};
-        
-        Runnable textSwitcher = new Runnable() {
-            @Override
-            public void run() {
-                if (mLoadingTextView != null) {
-                    currentIndex[0] = (currentIndex[0] + 1) % loadingTexts.length;
-                    mLoadingTextView.setText(loadingTexts[currentIndex[0]]);
-                    mLoadingHandler.postDelayed(this, 1000);
+    private void updateLoadingProgress(int progress) {
+        if (mLoadingProgressBar != null) {
+            // 确保进度值在0-100范围内
+            progress = Math.max(0, Math.min(100, progress));
+            mLoadingProgressBar.setProgress(progress);
+            
+            Log.d("ParaEngineActivity", "Progress bar updated to: " + progress + "%");
+            
+            // 根据进度更新加载文本
+            if (mLoadingTextView != null) {
+                String loadingText;
+                if (progress < 25) {
+                    loadingText = "正在初始化引擎... " + progress + "%";
+                } else if (progress < 50) {
+                    loadingText = "正在加载3D资源... " + progress + "%";
+                } else if (progress < 75) {
+                    loadingText = "正在准备渲染环境... " + progress + "%";
+                } else if (progress < 100) {
+                    loadingText = "正在启动ParaEngine... " + progress + "%";
+                } else {
+                    loadingText = "加载完成！";
                 }
+                mLoadingTextView.setText(loadingText);
             }
-        };
-        
-        mLoadingHandler.postDelayed(textSwitcher, 1000);
+        }
     }
     
     private void hideLoadingAnimation() {
@@ -244,6 +295,7 @@ public class ParaEngineActivity extends AppCompatActivity {
             mFrameLayout.removeView(mLoadingView);
             mLoadingView = null;
             mLoadingTextView = null;
+            mLoadingProgressBar = null;
         }
         mLoadingHandler.removeCallbacksAndMessages(null);
     }

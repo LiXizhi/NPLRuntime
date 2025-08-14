@@ -29,6 +29,14 @@ namespace ParaEngine {
         return JniHelper::callStaticBooleanMethod("com/tatfook/paracraft/ParaEngineActivity", "getUsbMode");
     }
 
+    void ParaEngineSettings::SendMsgToJava(const std::string& msg)
+    {
+        if (msg.empty())
+            return;
+
+        JniHelper::callStaticVoidMethod("com/tatfook/paracraft/ParaEngineActivity", "sendMsgToJava", msg.c_str());
+    }
+
     void ParaEngineSettings::SaveImageToGallery(const char* imageData)
     {
         if (imageData){

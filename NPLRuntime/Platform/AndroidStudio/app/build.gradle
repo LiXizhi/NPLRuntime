@@ -93,7 +93,7 @@ android {
                 }
             }
 
-            manifestPlaceholders  = [ "libname" : "Paracraftd" ]
+            manifestPlaceholders  = [ "libname" : "Paracraftd", CHANNEL_VALUE: "palaka" ]
         }
     }
 

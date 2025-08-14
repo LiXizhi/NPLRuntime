@@ -248,6 +248,7 @@ namespace ParaEngine
 
 #ifdef ANDROID
         ATTRIBUTE_METHOD1(ParaEngineSettings, GetUsbMode_s, bool*) { *p1 = cls->GetUsbMode(); return S_OK; }
+        ATTRIBUTE_METHOD1(ParaEngineSettings, SendMsgToJava_s, const char*) { cls->SendMsgToJava(p1); return S_OK; }
 #endif
 
 #if defined(ANDROID) || defined(IOS)
@@ -754,6 +755,7 @@ namespace ParaEngine
 #ifdef ANDROID
         /** Determine if usb mouse and keyboard are used. */
         bool GetUsbMode();
+        void SendMsgToJava(const std::string& msg);
 #endif
 
 #if defined(ANDROID) || defined(IOS)
