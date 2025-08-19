@@ -25,6 +25,33 @@ static NSString *curEditText;
 static NSString *lastText = @"";
 static int selStart;
 static int selEnd;
+static UIView *mContainerView = nil; // Store container view for embedded mode
+
+// 辅助方法：安全获取宿主应用的主视图控制器
++ (UIViewController *)getHostAppRootViewController {
+    id hostAppDelegate = [UIApplication sharedApplication].delegate;
+    
+    if (hostAppDelegate && [hostAppDelegate respondsToSelector:@selector(viewController)]) {
+        UIViewController *viewController = [hostAppDelegate performSelector:@selector(viewController)];
+        return viewController;
+    }
+    
+    // 如果AppDelegate没有viewController属性，尝试通过window获取
+    if (hostAppDelegate && [hostAppDelegate respondsToSelector:@selector(window)]) {
+        UIWindow *window = [hostAppDelegate performSelector:@selector(window)];
+        if (window && window.rootViewController) {
+            return window.rootViewController;
+        }
+    }
+    
+    // 最后的fallback：通过keyWindow获取
+    UIWindow *keyWindow = [UIApplication sharedApplication].keyWindow;
+    if (keyWindow && keyWindow.rootViewController) {
+        return keyWindow.rootViewController;
+    }
+    
+    return nil;
+}
 
 + (void)InitLanguage
 {
@@ -85,16 +112,52 @@ static int selEnd;
         return;
     }
 
-    instance = [KeyboardiOSController alloc];
-    instance.appDelegate = appDelegate;
+    UIView *targetView = nil;
+    if (appDelegate && appDelegate.viewController) {
+        targetView = appDelegate.viewController.view;
+    }
+    [self keyboardInitCommon:targetView];
+    instance.appDelegate = appDelegate; // keep for legacy code requiring delegate based layout adjustments
+}
 
-    mTextField = [[ParaTextField alloc] initWithFrame:CGRectMake(0, 0, -10, -10)];
++ (void)keyboardInitWithView:(UIView *)containerView
+{
+    if (instance != nil) {
+        return;
+    }
+    [self keyboardInitCommon:containerView];
+}
+
++ (void)keyboardInitCommon:(UIView *)targetView
+{
+    if (instance != nil) {
+        return;
+    }
+
+    instance = [KeyboardiOSController alloc];
+    mContainerView = targetView; // Store container view reference
+
+    // Use a minimal 1x1 transparent text field. A hidden view (hidden=YES) will NOT become first responder,
+    // which prevents the keyboard from appearing in some host apps.
+    mTextField = [[ParaTextField alloc] initWithFrame:CGRectMake(0, 0, 1, 1)];
+    mTextField.backgroundColor = [UIColor clearColor];
+    mTextField.textColor = [UIColor clearColor];
+    mTextField.tintColor = [UIColor clearColor];
     mTextField.delegate = instance;
     mTextField.keyboardType = UIKeyboardTypeDefault;
     mTextField.returnKeyType = UIReturnKeyDefault;
     mTextField.userInteractionEnabled = NO;
+    mTextField.autocorrectionType = UITextAutocorrectionTypeNo;
+    mTextField.spellCheckingType = UITextSpellCheckingTypeNo;
 
-    [appDelegate.viewController.view addSubview:mTextField];
+    if (targetView) {
+        // ensure on main thread (host may call from non-main thread during startup)
+        dispatch_async(dispatch_get_main_queue(), ^{
+            [targetView addSubview:mTextField];
+        });
+    } else {
+        NSLog(@"[KeyboardiOS] Warning: targetView is nil. Keyboard input will not work until keyboardInitWithView: is called again with a valid view.");
+    }
 
     [[NSNotificationCenter defaultCenter]
         addObserver:instance
@@ -105,8 +168,7 @@ static int selEnd;
         addObserver:instance
         selector:@selector(keyBoardWillShow:)
         name:UIKeyboardWillShowNotification
-        object:nil
-    ];
+        object:nil];
 
     [[NSNotificationCenter defaultCenter]
         addObserver:instance
@@ -200,6 +262,8 @@ static int selEnd;
 
 - (void)keyBoardWillShow:(NSNotification*)notification
 {
+    NSLog(@"[KeyboardiOS] Keyboard will show - view adjustment disabled");
+
     if (mUpdateViewSizeWhenKeyboardChange)
     {
         NSDictionary *userInfo = [notification userInfo];
@@ -208,26 +272,49 @@ static int selEnd;
         UIInterfaceOrientation ori = [UIApplication sharedApplication].statusBarOrientation;
         CGFloat keyboardHeight = UIInterfaceOrientationIsLandscape(ori) ? keyboardSize.height : keyboardSize.width;
 
-        CGRect currentFrame = _appDelegate.viewController.view.frame;
+        CGRect currentFrame = mContainerView.frame; // _appDelegate.viewController.view.frame;
 
         _isKeyboardOpened = true;
         _keyboardHeight = keyboardHeight;
 
         if ((currentFrame.size.height - mCtrlBottom) < keyboardHeight) {
             CGFloat glViewOffset = keyboardHeight - (currentFrame.size.height - mCtrlBottom);
-            _appDelegate.viewController.view.frame = CGRectMake(0, -glViewOffset, currentFrame.size.width, currentFrame.size.height);
+            
+            // 使用更安全的方式获取根视图控制器
+            UIViewController *rootViewController = [KeyboardiOSController getHostAppRootViewController];
+            if (rootViewController && rootViewController.view) {
+                // 调整宿主应用视图框架
+                rootViewController.view.frame = CGRectMake(0, -glViewOffset, currentFrame.size.width, currentFrame.size.height);
+                NSLog(@"[KeyboardiOS] Adjusted host app view frame by offset: %.1f", glViewOffset);
+            } else {
+                NSLog(@"[KeyboardiOS] Unable to find host app root view controller");
+            }
         }
     }
+    
+    // NSLog(@"[KeyboardiOS] Keyboard height: %.1f", keyboardHeight);
 }
 
 - (void)keyBoardWillHide:(NSNotification*)notification
 {
+    NSLog(@"[KeyboardiOS] Keyboard will hide - view adjustment disabled");
+    
     mTextField.text = @"";
+    // _isKeyboardOpened = false;
 
     if (mUpdateViewSizeWhenKeyboardChange)
     {
-        CGRect currentFrame = _appDelegate.viewController.view.frame;
-        _appDelegate.viewController.view.frame = CGRectMake(0, 0, currentFrame.size.width, currentFrame.size.height);
+        CGRect currentFrame = mContainerView.frame;
+        
+        // 使用更安全的方式获取根视图控制器
+        UIViewController *rootViewController = [KeyboardiOSController getHostAppRootViewController];
+        if (rootViewController && rootViewController.view) {
+            // 恢复宿主应用视图框架
+            rootViewController.view.frame = CGRectMake(0, 0, currentFrame.size.width, currentFrame.size.height);
+            NSLog(@"[KeyboardiOS] Restored host app view frame");
+        } else {
+            NSLog(@"[KeyboardiOS] Unable to find host app root view controller");
+        }
     }
 }
 
@@ -247,12 +334,22 @@ static int selEnd;
         mTextField.text = @"";
         lastText = @"";
 
+        // View adjustment logic removed - keyboard will show without view movement
+        NSLog(@"[KeyboardiOS] Keyboard input ready - view adjustment disabled");
         if (self.isKeyboardOpened) {
-            CGRect currentFrame = _appDelegate.viewController.view.frame;
-
-            if ((currentFrame.size.height - mCtrlBottom) < self.keyboardHeight) {
-                CGFloat glViewOffset = self.keyboardHeight - (currentFrame.size.height - mCtrlBottom);
-                _appDelegate.viewController.view.frame = CGRectMake(0, -glViewOffset, currentFrame.size.width, currentFrame.size.height);
+            // 使用更安全的方式获取根视图控制器
+            UIViewController *rootViewController = [KeyboardiOSController getHostAppRootViewController];
+            if (rootViewController && rootViewController.view) {
+                CGRect currentFrame = rootViewController.view.frame;
+                
+                if ((currentFrame.size.height - mCtrlBottom) < self.keyboardHeight) {
+                    CGFloat glViewOffset = self.keyboardHeight - (currentFrame.size.height - mCtrlBottom);
+                    // 调整宿主应用视图框架
+                    rootViewController.view.frame = CGRectMake(0, -glViewOffset, currentFrame.size.width, currentFrame.size.height);
+                    NSLog(@"[KeyboardiOS] Adjusted host app view frame by offset: %.1f", glViewOffset);
+                }
+            } else {
+                NSLog(@"[KeyboardiOS] Unable to find host app root view controller");
             }
         }
     } else {

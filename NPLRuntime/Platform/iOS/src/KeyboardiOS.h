@@ -8,6 +8,8 @@
 #import <Foundation/Foundation.h>
 #import <UIKit/UIKit.h>
 #import <UIKit/UITextField.h>
+// AppDelegate was previously required for keyboard init. Keep optional to avoid breaking
+// existing internal code, but new embedding API can initialize with a container UIView directly.
 #import "AppDelegate.h"
 #import "ParaTextField.h"
 
@@ -42,6 +44,11 @@ namespace ParaEngine
 + (void)InitLanguage;
 
 + (void)keyboardInit:(AppDelegate *)appDelegate;
+
+// New: initialize keyboard handling with a container view instead of AppDelegate
+// Use this when embedding framework into an external host app whose AppDelegate
+// does not expose the original viewController API.
++ (void)keyboardInitWithView:(UIView *)containerView;
 
 + (BOOL)getIsGuiEdit;
 

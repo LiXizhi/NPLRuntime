@@ -22,6 +22,7 @@ namespace ParaEngine {
 @property(strong, nonatomic) CADisplayLink *displayLink;
 @property(nonatomic) __block BOOL isNoNetToNet;
 @property(strong, nonatomic) GLView *view;
+@property(strong, nonatomic) NSString *pendingCmdLine;
 
 @end
 

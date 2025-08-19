@@ -22,15 +22,15 @@ using namespace ParaEngine;
 @implementation AppDelegate
 
 - (BOOL)application:(UIApplication *)application didFinishLaunchingWithOptions:(NSDictionary *)launchOptions {
-    const char* cmdline = "";
-
+    // Store the command line for later use after engine initialization
     if (launchOptions)
     {
         NSURL *url = [launchOptions objectForKey:UIApplicationLaunchOptionsURLKey];
 
         if (url)
         {
-            cmdline = [[url relativeString] UTF8String];
+            self.pendingCmdLine = [url relativeString];
+            NSLog(@"Pending command line: %@", self.pendingCmdLine);
         }
     }
     
@@ -146,9 +146,16 @@ using namespace ParaEngine;
 
     [KeyboardiOSController InitLanguage];
 
+    // Prepare command line for engine initialization
+    const char* cmdline = "";
+    if (self.pendingCmdLine && [self.pendingCmdLine length] > 0)
+    {
+        cmdline = [self.pendingCmdLine UTF8String];
+    }
+
     // Init app
     self.app = new CParaEngineAppiOS();
-    self.app->InitApp(renderWindow, "");
+    self.app->InitApp(renderWindow, cmdline);
 
     self.displayLink = [CADisplayLink displayLinkWithTarget:self selector:@selector(update)];
     self.displayLink.paused = NO;
@@ -157,6 +164,12 @@ using namespace ParaEngine;
     [KeyboardiOSController keyboardInit:self];
 
     CGUIRoot::GetInstance()->SetUIScale(renderWindow->GetScaleX(), renderWindow->GetScaleY(), true, true, false);
+    
+    // Clear pending command line since it's been processed
+    if (self.pendingCmdLine)
+    {
+        self.pendingCmdLine = nil;
+    }
 }
 
 - (void)update
@@ -170,6 +183,7 @@ using namespace ParaEngine;
     
     if (self.app)
     {
+        // Engine is initialized, process command line immediately
         const char* cmdline = [[url relativeString] UTF8String];
         self.app->onCmdLine(cmdline);
         
@@ -177,7 +191,9 @@ using namespace ParaEngine;
     }
     else
     {
-        return NO;
+        // Engine not initialized yet, store for later processing
+        self.pendingCmdLine = [url relativeString];
+        return YES;
     }
 
 }
