@@ -39,11 +39,25 @@ namespace ParaScripting
             return IDFAStr;
         }
 
-        if ([ASIdentifierManager sharedManager].advertisingTrackingEnabled) {
-            NSUUID *advertisingTracking = [ASIdentifierManager sharedManager].advertisingIdentifier;
-            NSString *idfaString = [advertisingTracking UUIDString];
-
-            IDFAStr = [idfaString UTF8String];
+        // Check if tracking is authorized before accessing IDFA
+        if (@available(iOS 14, *)) {
+            ATTrackingManagerAuthorizationStatus status = [ATTrackingManager trackingAuthorizationStatus];
+            if (status == ATTrackingManagerAuthorizationStatusAuthorized) {
+                NSUUID *advertisingTracking = [ASIdentifierManager sharedManager].advertisingIdentifier;
+                NSString *idfaString = [advertisingTracking UUIDString];
+                IDFAStr = [idfaString UTF8String];
+            } else {
+                // Not authorized, return empty string or default value
+                NSLog(@"Not authorized for tracking, cannot access IDFA");
+                IDFAStr = "";
+            }
+        } else {
+            // iOS 13 and below - check the old way
+            if ([ASIdentifierManager sharedManager].advertisingTrackingEnabled) {
+                NSUUID *advertisingTracking = [ASIdentifierManager sharedManager].advertisingIdentifier;
+                NSString *idfaString = [advertisingTracking UUIDString];
+                IDFAStr = [idfaString UTF8String];
+            }
         }
         
         return IDFAStr;

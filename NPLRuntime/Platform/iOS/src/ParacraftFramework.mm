@@ -6,13 +6,13 @@
 //
 
 #import "ParacraftFramework.h"
-#import "AppDelegate.h"
 #import "ParaAppiOS.h"
 #import "GLView.h"
 #import "RenderWindowiOS.h"
 #import "KeyboardiOS.h"
 #import <UIKit/UIKit.h>
 #import <objc/runtime.h>
+#include <string>
 
 // Include necessary ParaEngine headers
 #include "2dengine/GUIRoot.h"
@@ -33,6 +33,7 @@
 
 // Framework global variables
 ParaEngine::CParaEngineAppiOS* g_pParaApp = nullptr;
+static std::string g_cmdlineString = "";
 
 // Framework version
 double ParacraftFrameworkVersionNumber = 2.022;
@@ -41,7 +42,9 @@ const unsigned char ParacraftFrameworkVersionString[] = "2.0.22";
 static bool g_bFrameworkInitialized = false;
 static UIWindow* g_pFrameworkWindow = nullptr;
 static GLView* g_pFrameworkView = nullptr;
-static AppDelegate* g_pFrameworkAppDelegate = nullptr; // Keep reference to our AppDelegate instance
+// Message callback for external applications
+static ParacraftFramework_MessageCallback g_messageCallback = nullptr;
+// Removed internal AppDelegate reference; external application's AppDelegate will be used.
 
 int ParacraftFramework_Initialize(void) {
     if (g_bFrameworkInitialized) {
@@ -126,8 +129,8 @@ int ParacraftFramework_Start(void) {
             g_pFrameworkView.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
             g_pFrameworkView.backgroundColor = [UIColor blackColor];
             
-            // Add GLView to container
-            [containerView addSubview:g_pFrameworkView];
+            // Add GLView to container at the bottom layer (index 0)
+            [containerView insertSubview:g_pFrameworkView atIndex:0];
             
             // Keep reference to the window
             g_pFrameworkWindow = mainWindow;
@@ -137,12 +140,14 @@ int ParacraftFramework_Start(void) {
             
             // Initialize render window and engine
             ParaEngine::RenderWindowiOS *renderWindow = new ParaEngine::RenderWindowiOS(g_pFrameworkView);
-            
+
             [KeyboardiOSController InitLanguage];
+            // Initialize hidden textfield keyboard handler with container view instead of internal AppDelegate
+            [KeyboardiOSController keyboardInitWithView:containerView];
             
             // Create engine instance
             g_pParaApp = new ParaEngine::CParaEngineAppiOS();
-            g_pParaApp->InitApp(renderWindow, "");
+            g_pParaApp->InitApp(renderWindow, g_cmdlineString.c_str());
             
             // Create and start display link
             static SimpleDisplayLinkHandler* s_handler = nil;
@@ -172,6 +177,14 @@ int ParacraftFramework_Start(void) {
     }
 }
 
+int ParacraftFramework_StartWithCommandLine(const char* cmdline) {
+    // Set command line first
+    ParacraftFramework_SetCommandLine(cmdline);
+    
+    // Then start the framework
+    return ParacraftFramework_Start();
+}
+
 int ParacraftFramework_StartWhenReady(int maxRetries, double retryInterval) {
     NSLog(@"ParacraftFramework: Starting with retry mechanism, maxRetries=%d, interval=%.1f", maxRetries, retryInterval);
     
@@ -194,6 +207,14 @@ int ParacraftFramework_StartWhenReady(int maxRetries, double retryInterval) {
     return -1;
 }
 
+int ParacraftFramework_StartWhenReadyWithCommandLine(const char* cmdline, int maxRetries, double retryInterval) {
+    // Set command line first
+    ParacraftFramework_SetCommandLine(cmdline);
+    
+    // Then start with retry mechanism
+    return ParacraftFramework_StartWhenReady(maxRetries, retryInterval);
+}
+
 void ParacraftFramework_Stop(void) {
     if (!g_bFrameworkInitialized) {
         return;
@@ -213,7 +234,7 @@ void ParacraftFramework_Cleanup(void) {
     // Clear our references to Framework components
     g_pFrameworkWindow = nil;
     g_pFrameworkView = nil;
-    g_pFrameworkAppDelegate = nil; // This will release our AppDelegate instance
+    // Internal AppDelegate reference removed.
     
     // Clear our reference to the engine (it's owned by AppDelegate)
     g_pParaApp = nullptr;
@@ -227,6 +248,16 @@ UIView* ParacraftFramework_GetView(void) {
 
 UIWindow* ParacraftFramework_GetWindow(void) {
     return g_pFrameworkWindow;
+}
+
+void ParacraftFramework_SetCommandLine(const char* cmdline) {
+    if (cmdline) {
+        g_cmdlineString = std::string(cmdline);
+        NSLog(@"ParacraftFramework: Command line set to: %s", cmdline);
+    } else {
+        g_cmdlineString = "";
+        NSLog(@"ParacraftFramework: Command line cleared");
+    }
 }
 
 void ParacraftFramework_DiagnoseAppState(void) {
@@ -249,7 +280,7 @@ void ParacraftFramework_DiagnoseAppState(void) {
     
     // Check framework components
     NSLog(@"Framework initialized: %@", g_bFrameworkInitialized ? @"✓ Yes" : @"✗ No");
-    NSLog(@"Framework AppDelegate: %@", g_pFrameworkAppDelegate ? @"✓ Available" : @"✗ Not available");
+    // Internal Framework AppDelegate removed; relying on host application's AppDelegate.
     NSLog(@"Framework window: %@", g_pFrameworkWindow ? @"✓ Available" : @"✗ Not available");
     NSLog(@"Framework view: %@", g_pFrameworkView ? @"✓ Available" : @"✗ Not available");
     NSLog(@"Framework engine: %@", g_pParaApp ? @"✓ Available" : @"✗ Not available");
@@ -266,4 +297,29 @@ void ParacraftFramework_DiagnoseAppState(void) {
     }
     
     NSLog(@"=== Diagnosis Complete ===");
+}
+
+void ParacraftFramework_SetMessageCallback(ParacraftFramework_MessageCallback callback) {
+    g_messageCallback = callback;
+    if (callback) {
+        NSLog(@"ParacraftFramework: Message callback set");
+    } else {
+        NSLog(@"ParacraftFramework: Message callback cleared");
+    }
+}
+
+void ParacraftFramework_HandleMessage(const char* message) {
+    if (!message) {
+        NSLog(@"ParacraftFramework: Received null message");
+        return;
+    }
+    
+    // NSLog(@"ParacraftFramework: Received message: %s", message);
+    
+    // Call the external app's callback if set
+    if (g_messageCallback) {
+        g_messageCallback(message);
+    } else {
+        NSLog(@"ParacraftFramework: No message callback set, message ignored");
+    }
 }

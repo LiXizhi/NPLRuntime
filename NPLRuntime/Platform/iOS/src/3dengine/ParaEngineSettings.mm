@@ -11,6 +11,15 @@
 #include "ParaEngine.h"
 #include "ParaEngineSettings.h"
 
+// Forward declaration of ParacraftFramework function
+#ifdef __cplusplus
+extern "C" {
+#endif
+void ParacraftFramework_HandleMessage(const char* message);
+#ifdef __cplusplus
+}
+#endif
+
 @interface KeyChainHelper :NSObject
 
 + (void) saveString:(NSString*)stringValue service:(NSString*)service;
@@ -117,5 +126,14 @@ namespace ParaEngine {
         NSData *imageData = [[NSData alloc] initWithBase64EncodedString:base64 options:0];
         UIImage *image = [UIImage imageWithData:imageData];
         UIImageWriteToSavedPhotosAlbum(image, nil, nil, nil);
+    }
+
+    void ParaEngineSettings::SendMsgToObjectiveC(const std::string& msg)
+    {
+        if (msg.empty())
+            return;
+        
+        // Send message to ParacraftFramework for external app subscription
+        ParacraftFramework_HandleMessage(msg.c_str());
     }
 } // namespace ParaEngine
