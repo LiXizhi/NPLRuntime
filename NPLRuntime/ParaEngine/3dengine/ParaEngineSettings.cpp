@@ -1616,6 +1616,10 @@ int ParaEngineSettings::InstallFields(CAttributeClass* pClass, bool bOverride)
 	pClass->AddField("SendMsgToJava", FieldType_String, (void*)SendMsgToJava_s, NULL, NULL, NULL, bOverride);
 #endif
 
+#ifdef IOS
+	pClass->AddField("SendMsgToObjectiveC", FieldType_String, (void*)SendMsgToObjectiveC_s, NULL, NULL, NULL, bOverride);
+#endif
+
 #if defined(ANDROID) || defined(IOS)
     pClass->AddField("SaveImageToGallery", FieldType_String, (void*)SaveImageToGallery_s, NULL, NULL, NULL, bOverride);
 #endif

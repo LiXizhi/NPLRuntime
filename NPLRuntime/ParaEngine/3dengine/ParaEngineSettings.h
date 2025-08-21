@@ -251,6 +251,10 @@ namespace ParaEngine
         ATTRIBUTE_METHOD1(ParaEngineSettings, SendMsgToJava_s, const char*) { cls->SendMsgToJava(p1); return S_OK; }
 #endif
 
+#ifdef IOS
+        ATTRIBUTE_METHOD1(ParaEngineSettings, SendMsgToObjectiveC_s, const char*) { cls->SendMsgToObjectiveC(p1); return S_OK; }
+#endif
+
 #if defined(ANDROID) || defined(IOS)
         ATTRIBUTE_METHOD1(ParaEngineSettings, SaveImageToGallery_s, const char*) { cls->SaveImageToGallery(p1); return S_OK; }
 #endif
@@ -756,6 +760,10 @@ namespace ParaEngine
         /** Determine if usb mouse and keyboard are used. */
         bool GetUsbMode();
         void SendMsgToJava(const std::string& msg);
+#endif
+
+#ifdef IOS
+        void SendMsgToObjectiveC(const std::string& msg);
 #endif
 
 #if defined(ANDROID) || defined(IOS)
