@@ -51,6 +51,9 @@ import android.view.WindowManager;
 import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.ProgressBar;
+import android.webkit.WebView;
+import android.webkit.WebViewClient;
+import android.webkit.WebSettings;
 
 import com.smarx.notchlib.NotchScreenManager;
 import com.tatfook.paracraft.screenrecorder.ScreenRecorder;
@@ -87,9 +90,7 @@ public class ParaEngineActivity extends AppCompatActivity {
     private boolean hasFocus = false;
     private Bundle mSavedInstanceState;
     private ActivityResultLauncher<String> mOpenFileDialogLuancher;
-    private View mLoadingView = null;
-    private TextView mLoadingTextView = null;
-    private ProgressBar mLoadingProgressBar = null;
+    private WebView mLoadingWebView = null;
     private Handler mLoadingHandler = new Handler();
 
     public static ParaEngineActivity getContext() {
@@ -162,25 +163,19 @@ public class ParaEngineActivity extends AppCompatActivity {
                     String name = msgdata.getString("name");
                     int progress = msgdata.getInt("progress");
                     
-                    // 根据name类型计算实际显示的进度
-                    int displayProgress = calculateDisplayProgress(name, progress);
+                    Log.d("ParaEngineActivity", "Loading type: " + name + ", progress: " + progress + "%");
                     
-                    Log.d("ParaEngineActivity", "Loading type: " + name + ", progress: " + progress + "%, display: " + displayProgress + "%");
-                    
-                    // 在UI线程中更新进度条
-                    if (sContext != null) {
-                        sContext.runOnUiThread(new Runnable() {
-                            @Override
-                            public void run() {
-                                sContext.updateLoadingProgress(displayProgress, name);
-                                
-                                // 检查是否为gameLoading的100%，隐藏loading动画
-                                if ("gameLoading".equals(name) && progress >= 100) {
+                    // 检查是否为gameLoading的100%，隐藏loading动画
+                    if ("gameLoading".equals(name) && progress >= 100) {
+                        if (sContext != null) {
+                            sContext.runOnUiThread(new Runnable() {
+                                @Override
+                                public void run() {
                                     Log.d("ParaEngineActivity", "Game loading completed, hiding loading animation");
                                     sContext.hideLoadingAnimation();
                                 }
-                            }
-                        });
+                            });
+                        }
                     }
                 }
             }
@@ -188,24 +183,7 @@ public class ParaEngineActivity extends AppCompatActivity {
             Log.e("ParaEngineActivity", "Error parsing JSON message: " + e.getMessage());
         }
     }
-    
-    private static int calculateDisplayProgress(String name, int progress) {
-        // 限制progress在0-100范围内
-        progress = Math.max(0, Math.min(100, progress));
-        
-        if ("hotUpdate".equals(name)) {
-            // hotUpdate占总进度的10-30%，即20%的范围
-            // progress 0-100 映射到 10-30
-            return 10 + (progress * 20 / 100);
-        } else if ("gameLoading".equals(name)) {
-            // gameLoading占总进度的30-100%，即70%的范围
-            // progress 0-100 映射到 30-100
-            return 30 + (progress * 70 / 100);
-        } else {
-            // 默认情况，直接使用原始progress
-            return progress;
-        }
-    }
+
 
     private boolean isAarLaunchMode() {
         try {
@@ -247,7 +225,7 @@ public class ParaEngineActivity extends AppCompatActivity {
                         ParaEngineActivity.this.mGLSurfaceView.bringToFront();
 
                         if (ParaEngineActivity.this.isAarLaunchMode()) {
-                            ParaEngineActivity.this.mLoadingView.bringToFront();
+                            ParaEngineActivity.this.mLoadingWebView.bringToFront();
                         }
                         
                         Log.d("ParaEngineActivity", "EditText added and configured after GL rendering");
@@ -259,91 +237,60 @@ public class ParaEngineActivity extends AppCompatActivity {
     }
 
     private void startLoadingAnimation() {
-        Log.d("ParaEngineActivity", "Starting loading animation for AAR mode");
+        Log.d("ParaEngineActivity", "Starting loading animation with WebView for AAR mode");
         
-        // 创建loading界面
-        int layoutId = getResources().getIdentifier("loading_layout", "layout", getPackageName());
-        mLoadingView = getLayoutInflater().inflate(layoutId, null);
-        int textViewId = getResources().getIdentifier("loading_text", "id", getPackageName());
-        mLoadingTextView = mLoadingView.findViewById(textViewId);
+        // 创建WebView
+        mLoadingWebView = new WebView(this);
         
-        // 获取进度条引用
-        int progressBarId = getResources().getIdentifier("loading_progress", "id", getPackageName());
-        mLoadingProgressBar = mLoadingView.findViewById(progressBarId);
+        // 配置WebView设置
+        WebSettings webSettings = mLoadingWebView.getSettings();
+        webSettings.setJavaScriptEnabled(true);
+        webSettings.setDomStorageEnabled(true);
+        webSettings.setLoadWithOverviewMode(true);
+        webSettings.setUseWideViewPort(true);
+        webSettings.setBuiltInZoomControls(false);
+        webSettings.setDisplayZoomControls(false);
+        webSettings.setSupportZoom(false);
+        webSettings.setDefaultTextEncodingName("utf-8");
         
-        // 初始化进度条
-        if (mLoadingProgressBar != null) {
-            mLoadingProgressBar.setIndeterminate(false);
-            mLoadingProgressBar.setMax(100);
-            mLoadingProgressBar.setProgress(10);
-        }
+        // 设置WebViewClient
+        mLoadingWebView.setWebViewClient(new WebViewClient() {
+            @Override
+            public void onPageFinished(WebView view, String url) {
+                super.onPageFinished(view, url);
+                Log.d("ParaEngineActivity", "Loading page finished: " + url);
+            }
+            
+            @Override
+            public void onReceivedError(WebView view, int errorCode, String description, String failingUrl) {
+                super.onReceivedError(view, errorCode, description, failingUrl);
+                Log.e("ParaEngineActivity", "WebView error: " + description);
+            }
+        });
+        
+        // 设置WebView为全屏
+        ViewGroup.LayoutParams layoutParams = new ViewGroup.LayoutParams(
+            ViewGroup.LayoutParams.MATCH_PARENT, 
+            ViewGroup.LayoutParams.MATCH_PARENT
+        );
+        mLoadingWebView.setLayoutParams(layoutParams);
         
         // 添加到主布局
-        mFrameLayout.addView(mLoadingView);
+        mFrameLayout.addView(mLoadingWebView);
         
-        // 设置初始文本
-        if (mLoadingTextView != null) {
-            mLoadingTextView.setText("正在初始化引擎... 10%");
-        }
+        // 加载指定的URL
+        String loadingUrl = "https://keepwork.com/api/raw/maisi/maisi/webgames/data/custom_loader1?isLoading=true";
+        mLoadingWebView.loadUrl(loadingUrl);
+        
+        Log.d("ParaEngineActivity", "Loading WebView with URL: " + loadingUrl);
     }
-    
-    private void updateLoadingProgress(int progress) {
-        updateLoadingProgress(progress, "default");
-    }
-    
-    private void updateLoadingProgress(int progress, String loadingType) {
-        if (mLoadingProgressBar != null) {
-            // 确保进度值在10-100范围内
-            progress = Math.max(10, Math.min(100, progress));
-            mLoadingProgressBar.setProgress(progress);
-            
-            Log.d("ParaEngineActivity", "Progress bar updated to: " + progress + "% (type: " + loadingType + ")");
-            
-            // 根据loading类型和进度更新加载文本
-            if (mLoadingTextView != null) {
-                String loadingText = getLoadingText(loadingType, progress);
-                mLoadingTextView.setText(loadingText);
-            }
-        }
-    }
-    
-    private String getLoadingText(String loadingType, int progress) {
-        if ("hotUpdate".equals(loadingType)) {
-            // hotUpdate阶段 (10-30%)
-            return "正在检查更新... " + progress + "%";
-        } else if ("gameLoading".equals(loadingType)) {
-            // gameLoading阶段 (30-100%)
-            if (progress < 50) {
-                return "正在加载游戏资源... " + progress + "%";
-            } else if (progress < 75) {
-                return "正在初始化游戏引擎... " + progress + "%";
-            } else if (progress < 100) {
-                return "正在启动游戏... " + progress + "%";
-            } else {
-                return "加载完成！";
-            }
-        } else {
-            // 默认情况或向后兼容
-            if (progress < 25) {
-                return "正在初始化引擎... " + progress + "%";
-            } else if (progress < 50) {
-                return "正在加载3D资源... " + progress + "%";
-            } else if (progress < 75) {
-                return "正在准备渲染环境... " + progress + "%";
-            } else if (progress < 100) {
-                return "正在启动ParaEngine... " + progress + "%";
-            } else {
-                return "加载完成！";
-            }
-        }
-    }
+
     
     private void hideLoadingAnimation() {
-        if (mLoadingView != null && mFrameLayout != null) {
-            mFrameLayout.removeView(mLoadingView);
-            mLoadingView = null;
-            mLoadingTextView = null;
-            mLoadingProgressBar = null;
+        if (mLoadingWebView != null && mFrameLayout != null) {
+            mFrameLayout.removeView(mLoadingWebView);
+            mLoadingWebView.destroy();
+            mLoadingWebView = null;
         }
         mLoadingHandler.removeCallbacksAndMessages(null);
     }
