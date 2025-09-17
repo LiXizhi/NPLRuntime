@@ -4,6 +4,7 @@ import java.util.regex.Pattern
 apply plugin: 'com.android.application'
 
 android {
+    namespace 'com.palaka.paracraft'
     compileSdkVersion PROP_COMPILE_SDK_VERSION.toInteger()
 
     aaptOptions {

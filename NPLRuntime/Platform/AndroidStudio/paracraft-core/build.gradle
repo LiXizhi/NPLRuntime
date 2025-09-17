@@ -4,6 +4,7 @@ import java.util.regex.Pattern
 apply plugin: 'com.android.library'
 
 android {
+    namespace 'com.palaka.paracraft'
     compileSdkVersion PROP_COMPILE_SDK_VERSION.toInteger()
 
     aaptOptions {
@@ -29,6 +30,11 @@ android {
     }
 
     ndkVersion='23.1.7779620'
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
 
     sourceSets.main {
         java.srcDir "../app/java"

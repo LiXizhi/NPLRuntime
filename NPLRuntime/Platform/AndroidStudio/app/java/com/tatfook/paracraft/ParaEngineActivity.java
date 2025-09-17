@@ -162,8 +162,23 @@ public class ParaEngineActivity extends AppCompatActivity {
                 if (msgdata.has("name") && msgdata.has("progress")) {
                     String name = msgdata.getString("name");
                     int progress = msgdata.getInt("progress");
+                    String message = msgdata.optString("message", null);
                     
                     Log.d("ParaEngineActivity", "Loading type: " + name + ", progress: " + progress + "%");
+                    
+                    // 更新WebView中的进度条
+                    if (sContext != null) {
+                        // 根据加载类型映射到对应的进度条
+                        String progressType = "loadingProgress1"; // 默认使用第一个进度条
+                        if ("gameLoading".equals(name)) {
+                            progressType = "loadingProgress1";
+                        } else if ("assetLoading".equals(name)) {
+                            progressType = "loadingProgress2";
+                        }
+                        
+                        // 更新进度条
+                        sContext.updateLoadingProgress(progressType, progress, message);
+                    }
                     
                     // 检查是否为gameLoading的100%，隐藏loading动画
                     if ("gameLoading".equals(name) && progress >= 100) {
@@ -172,7 +187,13 @@ public class ParaEngineActivity extends AppCompatActivity {
                                 @Override
                                 public void run() {
                                     Log.d("ParaEngineActivity", "Game loading completed, hiding loading animation");
-                                    sContext.hideLoadingAnimation();
+                                    // 延迟一点时间再隐藏，确保用户能看到100%的进度
+                                    sContext.mLoadingHandler.postDelayed(new Runnable() {
+                                        @Override
+                                        public void run() {
+                                            sContext.hideLoadingAnimation();
+                                        }
+                                    }, 500); // 延迟500ms
                                 }
                             });
                         }
@@ -259,6 +280,9 @@ public class ParaEngineActivity extends AppCompatActivity {
             public void onPageFinished(WebView view, String url) {
                 super.onPageFinished(view, url);
                 Log.d("ParaEngineActivity", "Loading page finished: " + url);
+                
+                // 注入JavaScript代码
+                injectProgressJavaScript(view);
             }
             
             @Override
@@ -293,6 +317,134 @@ public class ParaEngineActivity extends AppCompatActivity {
             mLoadingWebView = null;
         }
         mLoadingHandler.removeCallbacksAndMessages(null);
+    }
+    
+    /**
+     * 注入JavaScript代码到WebView中
+     */
+    private void injectProgressJavaScript(WebView webView) {
+        String jsCode = """
+            // 在页面中添加错误处理和回调
+            window.setLoadingProgress = function(type, progress, message) {
+                try {
+                    // 参数验证
+                    if (typeof progress !== 'number' || progress < 0 || progress > 100) {
+                        console.warn('Invalid progress value:', progress);
+                        return false;
+                    }
+                    
+                    // 更新进度
+                    if (type === 'loadingProgress1') {
+                        if (typeof loadingProgress1 !== 'undefined') {
+                            loadingProgress1 = progress;
+                        }
+                    } else if (type === 'loadingProgress2') {
+                        if (typeof loadingProgress2 !== 'undefined') {
+                            loadingProgress2 = progress;
+                        }
+                    } else {
+                        // 默认更新主进度
+                        if (typeof loadingProgress1 !== 'undefined') {
+                            loadingProgress1 = progress;
+                        }
+                        if (typeof loadingProgress2 !== 'undefined') {
+                            loadingProgress2 = 0;
+                        }
+                    }
+                    
+                    // 调用更新进度函数（如果存在）
+                    if (typeof updateProgress === 'function') {
+                        updateProgress();
+                    }
+                    
+                    // 更新加载文本（如果存在）
+                    if (message) {
+                        var loadingTextElement = document.getElementById('loadingText');
+                        if (loadingTextElement) {
+                            loadingTextElement.textContent = message;
+                        }
+                    }
+                    
+                    // 通知原生端更新成功
+                    if (window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.progressCallback) {
+                        window.webkit.messageHandlers.progressCallback.postMessage({
+                            type: 'progressUpdated',
+                            progress: progress
+                        });
+                    }
+                    
+                    console.log('Progress updated:', type, progress, message);
+                    return true;
+                } catch (error) {
+                    console.error('设置进度失败:', error);
+                    return false;
+                }
+            }""";
+        
+        webView.evaluateJavascript(jsCode, null);
+        Log.d("ParaEngineActivity", "JavaScript progress function injected successfully");
+    }
+    
+    /**
+     * 从Java代码更新WebView中的加载进度
+     * @param type 进度类型 ("loadingProgress1", "loadingProgress2", 或其他)
+     * @param progress 进度值 (0-100)
+     * @param message 可选的消息文本
+     */
+    public void updateLoadingProgress(String type, int progress, String message) {
+        if (mLoadingWebView != null) {
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    String jsCall = String.format(
+                        "if (typeof window.setLoadingProgress === 'function') { " +
+                        "window.setLoadingProgress('%s', %d, %s); }",
+                        type,
+                        progress,
+                        message != null ? "'" + message.replace("'", "\\'") + "'" : "null"
+                    );
+                    
+                    mLoadingWebView.evaluateJavascript(jsCall, null);
+                    Log.d("ParaEngineActivity", "Called setLoadingProgress: " + type + ", " + progress + "%, " + message);
+                }
+            });
+        } else {
+            Log.w("ParaEngineActivity", "Cannot update progress: mLoadingWebView is null");
+        }
+    }
+    
+    /**
+     * 从Java代码更新WebView中的加载进度（无消息）
+     * @param type 进度类型
+     * @param progress 进度值 (0-100)
+     */
+    public void updateLoadingProgress(String type, int progress) {
+        updateLoadingProgress(type, progress, null);
+    }
+    
+    /**
+     * 静态方法：更新加载进度
+     * @param type 进度类型 ("loadingProgress1", "loadingProgress2", 或其他)
+     * @param progress 进度值 (0-100)
+     * @param message 可选的消息文本
+     */
+    @Keep
+    public static void setLoadingProgress(String type, int progress, String message) {
+        if (sContext != null) {
+            sContext.updateLoadingProgress(type, progress, message);
+        } else {
+            Log.w("ParaEngineActivity", "Cannot update progress: sContext is null");
+        }
+    }
+    
+    /**
+     * 静态方法：更新加载进度（无消息）
+     * @param type 进度类型
+     * @param progress 进度值 (0-100)
+     */
+    @Keep
+    public static void setLoadingProgress(String type, int progress) {
+        setLoadingProgress(type, progress, null);
     }
 
     public static void onExit(){
