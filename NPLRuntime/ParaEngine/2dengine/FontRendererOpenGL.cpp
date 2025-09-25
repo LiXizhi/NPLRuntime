@@ -103,9 +103,9 @@ CFontRendererOpenGL* ParaEngine::CFontRendererOpenGL::create(const std::string& 
 		}
 	}
 
-	// TODO: force size to be 50. font-rendering crashes on android with big font.
+	// force size to be 50. font-rendering crashes on android with big font.
 	pFontRenderer->m_nFontSize = nFontSize;
-#if defined(EMSCRIPTEN) || defined(WIN32)
+#if defined(WIN32)
 	if (pFontRenderer->m_nFontSize <= 12)
 	{
 		pFontRenderer->m_nRealFontSize = 12;
@@ -131,17 +131,10 @@ CFontRendererOpenGL* ParaEngine::CFontRendererOpenGL::create(const std::string& 
 		pFontRenderer->m_nRealFontSize = 50;
 	}
 #else
-	if (pFontRenderer->m_nFontSize <= 14)
+	// on mobile platform, we only support 28 and 50 font size, so that smaller fonts are still very clear.
+	if (pFontRenderer->m_nFontSize <= 25)
 	{
 		pFontRenderer->m_nRealFontSize = 28;
-	}
-	else if (pFontRenderer->m_nFontSize <= 28)
-	{
-		pFontRenderer->m_nRealFontSize = 50;
-	}
-	else if (pFontRenderer->m_nFontSize <= 50)
-	{
-		pFontRenderer->m_nRealFontSize = 50;
 	}
 	else
 	{
@@ -239,7 +232,7 @@ bool ParaEngine::CFontRendererOpenGL::DrawTextW(CSpriteRenderer* pSprite, const 
 	{
 		if (vAlignment_ == TextVAlignment::CENTER)
 		{
-			setPosition(rect.left, rect.top - (_commonLineHeight - nScaledHeight) / 2);
+			setPosition(rect.left, rect.top - (_commonLineHeight - nScaledHeight) / 2 * GetFontScaling());
 		}
 		nScaledHeight = _commonLineHeight;
 	}

@@ -18,10 +18,12 @@
 #include <boost/interprocess/exceptions.hpp>
 #include <boost/detail/no_exceptions_support.hpp>
 #include <boost/interprocess/detail/type_traits.hpp>
+#include <boost/date_time/posix_time/posix_time_types.hpp>
 
 #include <algorithm> //std::lower_bound
 #include <cstddef>   //std::size_t
 #include <cstring>   //memcpy
+#include <type_traits> //std::alignment_of
 
 
 //!\file
@@ -282,8 +284,8 @@ namespace ParaEngine{  namespace interprocess{
 				(std::size_t max_msg_size, std::size_t max_num_msg)
 			{
 				const std::size_t 
-					msg_hdr_align  = boost::alignment_of<detail::msg_hdr_t>::value,
-					index_align    = boost::alignment_of<msg_hdr_ptr_t>::value,
+					msg_hdr_align  = std::alignment_of<detail::msg_hdr_t>::value,
+					index_align    = std::alignment_of<msg_hdr_ptr_t>::value,
 					r_hdr_size     = ipcdetail::ct_rounded_size<sizeof(mq_hdr_t), index_align>::value,
 					r_index_size   = ipcdetail::get_rounded_size(sizeof(msg_hdr_ptr_t)*max_num_msg, msg_hdr_align),
 					r_max_msg_size = ipcdetail::get_rounded_size(max_msg_size, msg_hdr_align) + sizeof(detail::msg_hdr_t);
@@ -295,8 +297,8 @@ namespace ParaEngine{  namespace interprocess{
 			void initialize_memory()
 			{
 				const std::size_t 
-					msg_hdr_align  = boost::alignment_of<detail::msg_hdr_t>::value,
-					index_align    = boost::alignment_of<msg_hdr_ptr_t>::value,
+					msg_hdr_align  = std::alignment_of<detail::msg_hdr_t>::value,
+					index_align    = std::alignment_of<msg_hdr_ptr_t>::value,
 					r_hdr_size     = ipcdetail::ct_rounded_size<sizeof(mq_hdr_t), index_align>::value,
 					r_index_size   = ipcdetail::get_rounded_size(sizeof(msg_hdr_ptr_t)*m_max_num_msg, msg_hdr_align),
 					r_max_msg_size = ipcdetail::get_rounded_size(m_max_msg_size, msg_hdr_align) + sizeof(detail::msg_hdr_t);

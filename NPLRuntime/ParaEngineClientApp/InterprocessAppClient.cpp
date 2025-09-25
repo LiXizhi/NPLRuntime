@@ -199,7 +199,7 @@ int ParaEngine::CInterprocessAppClient::Run( HINSTANCE hInst, const char* sCmdLi
 	m_hInst = hInst;
 
 	// start the main loop timer. 
-	m_main_timer.expires_from_now(std::chrono::seconds(0));
+	m_main_timer.expires_after(std::chrono::seconds(0));
 	m_main_timer.async_wait(boost::bind(&CInterprocessAppClient::handle_mainloop_timer, this, boost::asio::placeholders::error));
 
 	// start the main loop now
@@ -457,7 +457,7 @@ void ParaEngine::CInterprocessAppClient::handle_mainloop_timer( const boost::sys
 			s_next_time = s_next_time + fIdealInterval;
 		}
 
-		m_main_timer.expires_from_now(std::chrono::milliseconds((int)(fNextInterval*1000)));
+		m_main_timer.expires_after(std::chrono::milliseconds((int)(fNextInterval*1000)));
 		m_main_timer.async_wait(boost::bind(&CInterprocessAppClient::handle_mainloop_timer, this, boost::asio::placeholders::error));
 	}
 }
@@ -644,7 +644,7 @@ void ParaEngine::CInterprocessAppClient::DefaultWinThreadProc()
 		::Sleep(100);
 	}
 	// it seems that the main loop is blocked somewhere, this can be blocking request such as curl or IPC.
-	// if(::MessageBoxW(NULL, L"µã»÷È·¶¨Ç¿ÖÆ¹Ø±Õ³ÌÐò", L"ÇëÈ·ÈÏ", MB_OK) == IDOK)
+	// if(::MessageBoxW(NULL, L"ï¿½ï¿½ï¿½È·ï¿½ï¿½Ç¿ï¿½Æ¹Ø±Õ³ï¿½ï¿½ï¿½", L"ï¿½ï¿½È·ï¿½ï¿½", MB_OK) == IDOK)
 	{
 		CFindKillProcess   findKillProcess;
 		DWORD dwCurrentPID = GetCurrentProcessId();

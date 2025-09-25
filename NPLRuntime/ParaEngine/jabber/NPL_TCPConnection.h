@@ -37,7 +37,7 @@ namespace ParaEngine
 		* registerConnectionDataHandler(). This is not necessary if this object is
 		* part of a 'connection chain', e.g. with ConnectionHTTPProxy.
 		*/
-		CNPLTCPConnection( boost::asio::io_service& io_service, const LogSink& logInstance, const std::string& server, int port = -1 );
+		CNPLTCPConnection( boost::asio::io_context& io_service, const LogSink& logInstance, const std::string& server, int port = -1 );
 
 		/**
 		* Constructs a new ConnectionTCPBase object.
@@ -47,7 +47,7 @@ namespace ParaEngine
 		* @param port The port to connect to. The default of -1 means that SRV records will be used
 		* to find out about the actual host:port.
 		*/
-		CNPLTCPConnection( boost::asio::io_service& io_service, ConnectionDataHandler *cdh, const LogSink& logInstance,
+		CNPLTCPConnection( boost::asio::io_context& io_service, ConnectionDataHandler *cdh, const LogSink& logInstance,
 			const std::string& server, int port = -1 );
 
 		/**
