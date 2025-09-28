@@ -92,9 +92,94 @@ public class ParaEngineActivity extends AppCompatActivity {
     private ActivityResultLauncher<String> mOpenFileDialogLuancher;
     private WebView mLoadingWebView = null;
     private Handler mLoadingHandler = new Handler();
+    
+    // 加载方式配置：0=Java UI, 1=WebView
+    private static final int LOADING_MODE_JAVA = 0;
+    private static final int LOADING_MODE_WEBVIEW = 1;
+    private static int sDefaultLoadingMode = LOADING_MODE_WEBVIEW; // 静态默认加载模式
+    private int mLoadingMode = sDefaultLoadingMode; // 实例加载模式，默认使用静态设置
+    
+    // Java UI 加载相关变量
+    private View mJavaLoadingView = null;
+    private TextView mLoadingText = null;
+    private ProgressBar mLoadingProgress = null;
+    private TextView mStatusText = null;
 
     public static ParaEngineActivity getContext() {
         return sContext;
+    }
+    
+    /**
+     * 设置加载模式
+     * @param mode 0=Java UI, 1=WebView
+     */
+    @Keep
+    public static void setLoadingMode(int mode) {
+        if (sContext != null) {
+            sContext.mLoadingMode = mode;
+            Log.d("ParaEngineActivity", "Loading mode set to: " + (mode == LOADING_MODE_JAVA ? "Java UI" : "WebView"));
+        } else {
+            // 如果context还没有初始化，设置默认值
+            sDefaultLoadingMode = mode;
+            Log.d("ParaEngineActivity", "Default loading mode set to: " + (mode == LOADING_MODE_JAVA ? "Java UI" : "WebView"));
+        }
+    }
+    
+    /**
+     * 获取当前加载模式
+     * @return 0=Java UI, 1=WebView
+     */
+    @Keep
+    public static int getLoadingMode() {
+        if (sContext != null) {
+            return sContext.mLoadingMode;
+        } else {
+            return sDefaultLoadingMode;
+        }
+    }
+    
+    /**
+     * 设置默认加载模式（在Activity创建之前调用）
+     * @param mode 0=Java UI, 1=WebView
+     */
+    @Keep
+    public static void setDefaultLoadingMode(int mode) {
+        sDefaultLoadingMode = mode;
+        Log.d("ParaEngineActivity", "Default loading mode set to: " + (mode == LOADING_MODE_JAVA ? "Java UI" : "WebView"));
+        
+        // 如果Activity已经存在，也同时更新实例
+        if (sContext != null) {
+            sContext.mLoadingMode = mode;
+            Log.d("ParaEngineActivity", "Also updated current instance loading mode");
+        }
+    }
+    
+    /**
+     * 获取默认加载模式
+     * @return 0=Java UI, 1=WebView
+     */
+    @Keep
+    public static int getDefaultLoadingMode() {
+        return sDefaultLoadingMode;
+    }
+    
+    /**
+     * 设置实例的加载模式（实例方法）
+     * @param mode 0=Java UI, 1=WebView
+     */
+    @Keep
+    public void setInstanceLoadingMode(int mode) {
+        this.mLoadingMode = mode;
+        Log.d("ParaEngineActivity", "Instance loading mode set to: " + (mode == LOADING_MODE_JAVA ? "Java UI" : "WebView"));
+    }
+    
+    /**
+     * 获取实例的加载模式（实例方法）
+     * @return 0=Java UI, 1=WebView
+     */
+    @Keep
+    public int getInstanceLoadingMode() {
+        return this.mLoadingMode;
     }
 
     @Keep
@@ -166,18 +251,22 @@ public class ParaEngineActivity extends AppCompatActivity {
                     
                     Log.d("ParaEngineActivity", "Loading type: " + name + ", progress: " + progress + "%");
                     
-                    // 更新WebView中的进度条
+                    // 根据加载方式更新进度条
                     if (sContext != null) {
-                        // 根据加载类型映射到对应的进度条
-                        String progressType = "loadingProgress1"; // 默认使用第一个进度条
-                        if ("gameLoading".equals(name)) {
-                            progressType = "loadingProgress1";
-                        } else if ("assetLoading".equals(name)) {
-                            progressType = "loadingProgress2";
+                        if (sContext.mLoadingMode == LOADING_MODE_WEBVIEW) {
+                            // WebView模式：根据加载类型映射到对应的进度条
+                            String progressType = "loadingProgress1"; // 默认使用第一个进度条
+                            if ("gameLoading".equals(name)) {
+                                progressType = "loadingProgress1";
+                            } else if ("assetLoading".equals(name)) {
+                                progressType = "loadingProgress2";
+                            }
+                            // 更新WebView进度条
+                            sContext.updateLoadingProgress(progressType, progress, message);
+                        } else if (sContext.mLoadingMode == LOADING_MODE_JAVA) {
+                            // Java UI模式：更新原生Java UI
+                            sContext.updateJavaLoadingProgress(name, progress, message);
                         }
-                        
-                        // 更新进度条
-                        sContext.updateLoadingProgress(progressType, progress, message);
                     }
                     
                     // 检查是否为gameLoading的100%，隐藏loading动画
@@ -191,7 +280,11 @@ public class ParaEngineActivity extends AppCompatActivity {
                                     sContext.mLoadingHandler.postDelayed(new Runnable() {
                                         @Override
                                         public void run() {
-                                            sContext.hideLoadingAnimation();
+                                            if (sContext.mLoadingMode == LOADING_MODE_WEBVIEW) {
+                                                sContext.hideLoadingAnimation();
+                                            } else if (sContext.mLoadingMode == LOADING_MODE_JAVA) {
+                                                sContext.hideJavaLoadingAnimation();
+                                            }
                                         }
                                     }, 500); // 延迟500ms
                                 }
@@ -246,7 +339,11 @@ public class ParaEngineActivity extends AppCompatActivity {
                         ParaEngineActivity.this.mGLSurfaceView.bringToFront();
 
                         if (ParaEngineActivity.this.isAarLaunchMode()) {
-                            ParaEngineActivity.this.mLoadingWebView.bringToFront();
+                            if (ParaEngineActivity.this.mLoadingMode == LOADING_MODE_WEBVIEW && ParaEngineActivity.this.mLoadingWebView != null) {
+                                ParaEngineActivity.this.mLoadingWebView.bringToFront();
+                            } else if (ParaEngineActivity.this.mLoadingMode == LOADING_MODE_JAVA && ParaEngineActivity.this.mJavaLoadingView != null) {
+                                ParaEngineActivity.this.mJavaLoadingView.bringToFront();
+                            }
                         }
                         
                         Log.d("ParaEngineActivity", "EditText added and configured after GL rendering");
@@ -302,10 +399,17 @@ public class ParaEngineActivity extends AppCompatActivity {
         // 添加到主布局
         mFrameLayout.addView(mLoadingWebView);
         
-        // 加载指定的URL
-        String loadingUrl = "https://keepwork.com/api/raw/maisi/maisi/webgames/data/custom_loader1?isLoading=true";
-        mLoadingWebView.loadUrl(loadingUrl);
+        // 加载配置的URL，如果ParaEngineConfig不可用则使用默认URL
+        String loadingUrl;
+        try {
+            loadingUrl = ParaEngineConfig.getWebViewLoadingUrl();
+        } catch (Exception e) {
+            // 如果ParaEngineConfig类不可用，使用默认URL
+            loadingUrl = "https://keepwork.com/api/raw/maisi/maisi/webgames/data/custom_loader1?isLoading=true";
+            Log.w("ParaEngineActivity", "ParaEngineConfig not available, using default URL", e);
+        }
         
+        mLoadingWebView.loadUrl(loadingUrl);
         Log.d("ParaEngineActivity", "Loading WebView with URL: " + loadingUrl);
     }
 
@@ -446,6 +550,217 @@ public class ParaEngineActivity extends AppCompatActivity {
     public static void setLoadingProgress(String type, int progress) {
         setLoadingProgress(type, progress, null);
     }
+    
+    /**
+     * 启动Java UI加载动画
+     */
+    private void startJavaLoadingAnimation() {
+        Log.d("ParaEngineActivity", "Starting Java UI loading animation");
+        
+        try {
+            // 尝试加载布局文件
+            int layoutId = getResources().getIdentifier("loading_layout", "layout", getPackageName());
+            if (layoutId != 0) {
+                mJavaLoadingView = getLayoutInflater().inflate(layoutId, null);
+                
+                // 获取控件引用
+                int loadingTextId = getResources().getIdentifier("loading_text", "id", getPackageName());
+                int loadingProgressId = getResources().getIdentifier("loading_progress", "id", getPackageName());
+                int statusTextId = getResources().getIdentifier("status_text", "id", getPackageName());
+                
+                if (loadingTextId != 0) {
+                    mLoadingText = mJavaLoadingView.findViewById(loadingTextId);
+                }
+                if (loadingProgressId != 0) {
+                    mLoadingProgress = mJavaLoadingView.findViewById(loadingProgressId);
+                }
+                if (statusTextId != 0) {
+                    mStatusText = mJavaLoadingView.findViewById(statusTextId);
+                }
+            } else {
+                // 如果布局文件不存在，创建简单的备用UI
+                createFallbackLoadingView();
+            }
+        } catch (Exception e) {
+            Log.e("ParaEngineActivity", "Error loading Java UI layout, using fallback", e);
+            createFallbackLoadingView();
+        }
+        
+        // 初始设置
+        mLoadingProgress.setMax(100);
+        mLoadingProgress.setProgress(0);
+        mLoadingProgress.setIndeterminate(false); // 关闭无限循环模式，使用确定进度
+        
+        // 设置为全屏
+        ViewGroup.LayoutParams layoutParams = new ViewGroup.LayoutParams(
+            ViewGroup.LayoutParams.MATCH_PARENT, 
+            ViewGroup.LayoutParams.MATCH_PARENT
+        );
+        mJavaLoadingView.setLayoutParams(layoutParams);
+        
+        // 添加到主布局
+        mFrameLayout.addView(mJavaLoadingView);
+        
+        Log.d("ParaEngineActivity", "Java UI loading animation started");
+    }
+    
+    /**
+     * 创建备用的Java UI加载界面
+     */
+    private void createFallbackLoadingView() {
+        Log.d("ParaEngineActivity", "Creating fallback Java UI loading view");
+        
+        // 创建主容器
+        android.widget.LinearLayout container = new android.widget.LinearLayout(this);
+        container.setOrientation(android.widget.LinearLayout.VERTICAL);
+        container.setGravity(android.view.Gravity.CENTER);
+        container.setBackgroundColor(0xFF667EEA); // 设置渐变背景色
+        
+        // 创建标题
+        TextView titleText = new TextView(this);
+        titleText.setText("麦思星球");
+        titleText.setTextSize(32);
+        titleText.setTextColor(0xFFFFFFFF);
+        titleText.setTypeface(null, android.graphics.Typeface.BOLD);
+        android.widget.LinearLayout.LayoutParams titleParams = new android.widget.LinearLayout.LayoutParams(
+            android.widget.LinearLayout.LayoutParams.WRAP_CONTENT,
+            android.widget.LinearLayout.LayoutParams.WRAP_CONTENT
+        );
+        titleParams.setMargins(0, 0, 0, 80);
+        titleText.setLayoutParams(titleParams);
+        container.addView(titleText);
+        
+        // 创建旋转进度条
+        ProgressBar spinner = new ProgressBar(this);
+        android.widget.LinearLayout.LayoutParams spinnerParams = new android.widget.LinearLayout.LayoutParams(
+            200, 200
+        );
+        spinnerParams.setMargins(0, 0, 0, 80);
+        spinner.setLayoutParams(spinnerParams);
+        container.addView(spinner);
+        
+        // 创建加载文本
+        mLoadingText = new TextView(this);
+        mLoadingText.setText("正在初始化引擎...");
+        mLoadingText.setTextSize(20);
+        mLoadingText.setTextColor(0xE6FFFFFF);
+        android.widget.LinearLayout.LayoutParams loadingTextParams = new android.widget.LinearLayout.LayoutParams(
+            android.widget.LinearLayout.LayoutParams.WRAP_CONTENT,
+            android.widget.LinearLayout.LayoutParams.WRAP_CONTENT
+        );
+        loadingTextParams.setMargins(0, 0, 0, 50);
+        mLoadingText.setLayoutParams(loadingTextParams);
+        container.addView(mLoadingText);
+        
+        // 创建进度条
+        mLoadingProgress = new ProgressBar(this, null, android.R.attr.progressBarStyleHorizontal);
+        mLoadingProgress.setMax(100);
+        mLoadingProgress.setProgress(0);
+        android.widget.LinearLayout.LayoutParams progressParams = new android.widget.LinearLayout.LayoutParams(
+            800, 15
+        );
+        progressParams.setMargins(0, 0, 0, 50);
+        mLoadingProgress.setLayoutParams(progressParams);
+        container.addView(mLoadingProgress);
+        
+        // 创建状态文本
+        mStatusText = new TextView(this);
+        mStatusText.setText("请稍候，正在为您准备3D世界");
+        mStatusText.setTextSize(16);
+        mStatusText.setTextColor(0xCCFFFFFF);
+        mStatusText.setTypeface(null, android.graphics.Typeface.ITALIC);
+        container.addView(mStatusText);
+        
+        mJavaLoadingView = container;
+    }
+    
+    /**
+     * 隐藏Java UI加载动画
+     */
+    private void hideJavaLoadingAnimation() {
+        if (mJavaLoadingView != null && mFrameLayout != null) {
+            mFrameLayout.removeView(mJavaLoadingView);
+            mJavaLoadingView = null;
+            mLoadingText = null;
+            mLoadingProgress = null;
+            mStatusText = null;
+        }
+        mLoadingHandler.removeCallbacksAndMessages(null);
+        Log.d("ParaEngineActivity", "Java UI loading animation hidden");
+    }
+    
+    /**
+     * 更新Java UI加载进度
+     * @param name 加载类型名称
+     * @param progress 进度值 (0-100)
+     * @param message 可选的消息文本
+     */
+    public void updateJavaLoadingProgress(String name, int progress, String message) {
+        if (mJavaLoadingView == null || mLoadingProgress == null) {
+            Log.w("ParaEngineActivity", "Cannot update Java UI progress: views are null");
+            return;
+        }
+        
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                // 更新进度条
+                mLoadingProgress.setProgress(progress);
+                
+                // 更新加载文本
+                if (mLoadingText != null) {
+                    String displayText = "正在加载...";
+                    if ("gameLoading".equals(name)) {
+                        displayText = "正在启动游戏引擎...";
+                    } else if ("assetLoading".equals(name)) {
+                        displayText = "正在加载游戏资源...";
+                    }
+                    
+                    if (message != null && !message.isEmpty()) {
+                        displayText = message;
+                    }
+                    
+                    mLoadingText.setText(displayText);
+                }
+                
+                // 更新状态文本
+                if (mStatusText != null) {
+                    String statusText = "正在为您准备3D世界 (" + progress + "%)"; 
+                    if (progress >= 100) {
+                        statusText = "加载完成，即将进入游戏";
+                    }
+                    mStatusText.setText(statusText);
+                }
+                
+                Log.d("ParaEngineActivity", "Java UI progress updated: " + name + ", " + progress + "%, " + message);
+            }
+        });
+    }
+    
+    /**
+     * 静态方法：设置Java UI加载进度
+     * @param name 加载类型名称
+     * @param progress 进度值 (0-100)
+     * @param message 可选的消息文本
+     */
+    @Keep
+    public static void setJavaLoadingProgress(String name, int progress, String message) {
+        if (sContext != null) {
+            sContext.updateJavaLoadingProgress(name, progress, message);
+        } else {
+            Log.w("ParaEngineActivity", "Cannot update Java UI progress: sContext is null");
+        }
+    }
+    
+    /**
+     * 静态方法：设置Java UI加载进度（无消息）
+     * @param name 加载类型名称
+     * @param progress 进度值 (0-100)
+     */
+    @Keep
+    public static void setJavaLoadingProgress(String name, int progress) {
+        setJavaLoadingProgress(name, progress, null);
+    }
 
     public static void onExit(){
         sContext.finish();
@@ -548,6 +863,11 @@ public class ParaEngineActivity extends AppCompatActivity {
     protected void onCreate(final Bundle savedInstanceState) {
         sContext = this;
         GlobalObject.setActivity(this);
+        
+        // 应用静态设置的默认加载模式
+        this.mLoadingMode = sDefaultLoadingMode;
+        Log.d("ParaEngineActivity", "Applied default loading mode: " + (mLoadingMode == LOADING_MODE_JAVA ? "Java UI" : "WebView"));
+        
         super.onCreate(savedInstanceState);
 
         RegisterActivityResultLauncher();
@@ -714,7 +1034,14 @@ public class ParaEngineActivity extends AppCompatActivity {
         boolean isAarMode = this.isAarLaunchMode();
         if (isAarMode) {
             Log.d("ParaEngineActivity", "AAR launch mode detected, delaying GLSurfaceView creation by 3 seconds");
-            this.startLoadingAnimation();
+            // 根据配置的加载模式启动对应的动画
+            if (this.mLoadingMode == LOADING_MODE_WEBVIEW) {
+                Log.d("ParaEngineActivity", "Starting WebView loading animation");
+                this.startLoadingAnimation();
+            } else if (this.mLoadingMode == LOADING_MODE_JAVA) {
+                Log.d("ParaEngineActivity", "Starting Java UI loading animation");
+                this.startJavaLoadingAnimation();
+            }
             new Handler().postDelayed(new Runnable(){
                 @Override
                 public void run() {
