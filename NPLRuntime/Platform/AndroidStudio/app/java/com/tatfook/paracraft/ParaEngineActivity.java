@@ -104,6 +104,7 @@ public class ParaEngineActivity extends AppCompatActivity {
     private TextView mLoadingText = null;
     private ProgressBar mLoadingProgress = null;
     private TextView mStatusText = null;
+    private int mJavaMaxProgress = 0; // Java UI最大进度值，用于防倒退
 
     public static ParaEngineActivity getContext() {
         return sContext;
@@ -256,9 +257,9 @@ public class ParaEngineActivity extends AppCompatActivity {
                         if (sContext.mLoadingMode == LOADING_MODE_WEBVIEW) {
                             // WebView模式：根据加载类型映射到对应的进度条
                             String progressType = "loadingProgress1"; // 默认使用第一个进度条
-                            if ("gameLoading".equals(name)) {
+                            if ("hotUpdate".equals(name)) {
                                 progressType = "loadingProgress1";
-                            } else if ("assetLoading".equals(name)) {
+                            } else if ("gameLoading".equals(name)) {
                                 progressType = "loadingProgress2";
                             }
                             // 更新WebView进度条
@@ -436,48 +437,47 @@ public class ParaEngineActivity extends AppCompatActivity {
                         console.warn('Invalid progress value:', progress);
                         return false;
                     }
-                    
-                    // 更新进度
-                    if (type === 'loadingProgress1') {
-                        if (typeof loadingProgress1 !== 'undefined') {
-                            loadingProgress1 = progress;
-                        }
-                    } else if (type === 'loadingProgress2') {
-                        if (typeof loadingProgress2 !== 'undefined') {
-                            loadingProgress2 = progress;
-                        }
-                    } else {
-                        // 默认更新主进度
-                        if (typeof loadingProgress1 !== 'undefined') {
-                            loadingProgress1 = progress;
-                        }
-                        if (typeof loadingProgress2 !== 'undefined') {
-                            loadingProgress2 = 0;
-                        }
+
+                    // 初始化最大进度值记录（防倒退）
+                    if (typeof window.maxProgress === 'undefined') {
+                        window.maxProgress = 0;
                     }
                     
-                    // 调用更新进度函数（如果存在）
+                    // 防止进度倒退
+                    if (progress < window.maxProgress) {
+                        console.warn('Progress rollback detected: current=' + progress + ', max=' + window.maxProgress + '. Ignoring.');
+                        return false;
+                    }
+                    
+                    // 更新最大进度值
+                    window.maxProgress = progress;
+                    
+                    // 分阶段进度更新：
+                    // progress 0-30: loadingProgress1 从 0% 到 100%，loadingProgress2 保持 0%
+                    // progress 31-100: loadingProgress1 保持 100%，loadingProgress2 从 0% 到 100%
+                    
+                    if (progress <= 30) {
+                        // 0-30 范围内，将进度映射到 0-100%
+                        var progress1 = Math.round((progress / 30) * 100);
+                        loadingProgress1 = progress1;
+                        loadingProgress2 = 0;
+                    } else {
+                        // 31-100 范围内，loadingProgress1 保持 100%，更新 loadingProgress2
+                        loadingProgress1 = 100;
+                        var progress2 = Math.round(((progress - 30) / 70) * 100);
+                        loadingProgress2 = progress2;
+                    }
+                    
+                    // 调用更新进度函数
                     if (typeof updateProgress === 'function') {
                         updateProgress();
                     }
                     
-                    // 更新加载文本（如果存在）
-                    if (message) {
-                        var loadingTextElement = document.getElementById('loadingText');
-                        if (loadingTextElement) {
-                            loadingTextElement.textContent = message;
-                        }
-                    }
+                    console.log('Progress updated: type=' + type + ', progress=' + progress + 
+                               ', loadingProgress1=' + loadingProgress1 + 
+                               ', loadingProgress2=' + loadingProgress2 + 
+                               ', maxProgress=' + window.maxProgress);
                     
-                    // 通知原生端更新成功
-                    if (window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.progressCallback) {
-                        window.webkit.messageHandlers.progressCallback.postMessage({
-                            type: 'progressUpdated',
-                            progress: progress
-                        });
-                    }
-                    
-                    console.log('Progress updated:', type, progress, message);
                     return true;
                 } catch (error) {
                     console.error('设置进度失败:', error);
@@ -591,6 +591,9 @@ public class ParaEngineActivity extends AppCompatActivity {
         mLoadingProgress.setProgress(0);
         mLoadingProgress.setIndeterminate(false); // 关闭无限循环模式，使用确定进度
         
+        // 重置最大进度值（防倒退）
+        mJavaMaxProgress = 0;
+        
         // 设置为全屏
         ViewGroup.LayoutParams layoutParams = new ViewGroup.LayoutParams(
             ViewGroup.LayoutParams.MATCH_PARENT, 
@@ -701,6 +704,15 @@ public class ParaEngineActivity extends AppCompatActivity {
             return;
         }
         
+        // 防止进度倒退
+        if (progress < mJavaMaxProgress) {
+            Log.w("ParaEngineActivity", "Java UI progress rollback detected: current=" + progress + ", max=" + mJavaMaxProgress + ". Ignoring.");
+            return;
+        }
+        
+        // 更新最大进度值
+        mJavaMaxProgress = progress;
+        
         runOnUiThread(new Runnable() {
             @Override
             public void run() {
@@ -732,7 +744,10 @@ public class ParaEngineActivity extends AppCompatActivity {
                     mStatusText.setText(statusText);
                 }
                 
-                Log.d("ParaEngineActivity", "Java UI progress updated: " + name + ", " + progress + "%, " + message);
+                Log.d("ParaEngineActivity", "Java UI progress updated: name=" + name + 
+                     ", progress=" + progress + 
+                     ", maxProgress=" + mJavaMaxProgress + 
+                     ", message=" + message);
             }
         });
     }
