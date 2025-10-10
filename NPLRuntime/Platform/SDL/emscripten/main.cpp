@@ -246,8 +246,9 @@ int main(int argc, char* argv[])
         FS.mount(IDBFS, { root: '/worlds' }, '/worlds');
         FS.mkdir('/Database');
         FS.mount(IDBFS, { root: '/Database' }, '/Database');
-        FS.mkdir('/temp');
-        FS.mount(IDBFS, { root: '/temp' }, '/temp');
+        // the temp folder can not be persistent for some reason. 
+        //FS.mkdir('/temp');
+        //FS.mount(IDBFS, { root: '/temp' }, '/temp');
         FS.syncfs(true, function(err) {
             console.log("加载IDBFS!!!");
             Module._emscripten_filesystem_inited();
