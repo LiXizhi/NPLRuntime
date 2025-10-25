@@ -150,6 +150,10 @@ namespace ParaEngine {
 		NPL::NPLRuntimeState_ptr rsptr = NPL::CNPLRuntime::GetInstance()->GetRuntimeState(s_activate_file);
 		NPL::CNPLRuntime::GetInstance()->NPL_Activate(rsptr, s_activate_file.c_str(), ss.str().c_str());
 	}
+
+	void ParaEngineHelper::intentToMainActivity() {
+		JniHelper::callStaticVoidMethod(classname, "intentToMainActivity");
+	}
 }
 
 extern "C" {

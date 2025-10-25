@@ -279,6 +279,13 @@ public class ParaEngineHelper {
 		OpenFileDialogNativeCallback(filepath);
 	}
 
+	public static void intentToMainActivity() {
+		ParaEngineActivity context = ParaEngineActivity.getContext();
+		if (context != null) {
+			context.intentToMainActivity();
+		}
+	}
+
 
 
 	/**

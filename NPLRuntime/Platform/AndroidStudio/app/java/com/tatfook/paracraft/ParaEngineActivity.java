@@ -81,6 +81,7 @@ public class ParaEngineActivity extends AppCompatActivity {
     // Optional meta-that can be in the manifest for this component,
     // specifying the name of the native shared library to load. If not specified, "main" is used.
     public static final String META_DATA_LIB_NAME = "android.app.lib_name";
+    public static final String ACTION_ENGINE_ACTIVITY_DESTROYED = "com.tatfook.paracraft.ACTION_ENGINE_ACTIVITY_DESTROYED";
 
     private ResizeLayout mFrameLayout = null ;
     private ParaEngineGLSurfaceView mGLSurfaceView = null;
@@ -852,6 +853,27 @@ public class ParaEngineActivity extends AppCompatActivity {
         mOpenFileDialogLuancher.launch(filter);
     }
 
+    /**
+     * Intent to the outer MainActivity
+     * This method is mainly provided for AAR usage
+     */
+    public void intentToMainActivity() {
+        try {
+            // Get the package name of the host application
+            String packageName = getPackageName();
+            
+            // Create intent to MainActivity
+            Intent intent = new Intent();
+            intent.setClassName(packageName, packageName + ".MainActivity");
+            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            
+            // Start the MainActivity
+            startActivity(intent);
+        } catch (Exception e) {
+            Log.e("ParaEngineActivity", "Failed to intent to MainActivity: " + e.getMessage());
+        }
+    }
+
     protected void RegisterActivityResultLauncher() {
         mOpenFileDialogLuancher = registerForActivityResult(
             new ActivityResultContract<String, Uri>() {
@@ -959,6 +981,16 @@ public class ParaEngineActivity extends AppCompatActivity {
     protected void onDestroy() {
         super.onDestroy();
         ParaEnginePluginWrapper.onDestroy();
+
+        Log.d("ParaEngineActivity", "ParaEngineActivity onDestroy");
+
+        if (isAarLaunchMode()) {
+            Intent destroyIntent = new Intent(ACTION_ENGINE_ACTIVITY_DESTROYED);
+            destroyIntent.putExtra("activityClass", getClass().getName());
+            destroyIntent.putExtra("timestamp", System.currentTimeMillis());
+            destroyIntent.setPackage(getPackageName());
+            sendBroadcast(destroyIntent);
+        }
     }
 
     @Override

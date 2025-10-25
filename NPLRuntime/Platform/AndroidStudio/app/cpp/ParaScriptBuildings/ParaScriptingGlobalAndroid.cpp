@@ -11,6 +11,7 @@
 #include "NPL/NPLScriptingState.h"
 #include "ParaScriptingScreenRecorder.h"
 #include "ParaScriptingRequestAndroidPermission.h"
+#include "ParaScriptingHelper.h"
 #include "jni/ParaEngineHelper.h"
 #include <luabind/object.hpp>
 #include <luabind/luabind.hpp>
@@ -22,6 +23,7 @@ void ParaScripting::CNPLScriptingState::LoadHAPI_Platform()
 
     ParaScripting::ParaScriptingScreenRecorder::LuabindRegisterScreenRecorderGlobalFunctions(L);
     ParaScripting::ParaScriptingRequestAndroidPermission::LuabindRegisterRequestAndroidPermissionFunctions(L);
+    ParaScripting::ParaScriptingHelper::LuabindRegisterHelperFunctions(L);
 }
 
 bool ParaScripting::ParaGlobal::OpenFileDialog(const object& inout)

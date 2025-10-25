@@ -6,9 +6,14 @@
 include(CheckSymbolExists)
 include(${PROJECT_SOURCE_DIR}/cmake/ucm.cmake)
 
+set(CMAKE_ANDROID_PAGE_SIZE 16384)
+
 project(Paracraft)
 
 ucm_add_dirs(cpp TO app_src RECURSIVE)
+
+# Explicitly add ParaScriptingHelper.cpp to ensure it's included
+list(APPEND app_src cpp/ParaScriptBuildings/ParaScriptingHelper.cpp)
 
 # set(CMAKE_DEBUG_POSTFIX "")
 
