@@ -783,6 +783,31 @@ public class ParaEngineActivity extends AppCompatActivity {
         System.exit(0);
     }
 
+    /**
+     * 重启应用程序
+     */
+    private void restartApp() {
+        try {
+            // 获取应用的启动Intent
+            Intent intent = getPackageManager().getLaunchIntentForPackage(getPackageName());
+            if (intent != null) {
+                intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_NEW_TASK);
+                intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK);
+                
+                // 启动应用
+                startActivity(intent);
+                
+                // 结束当前进程
+                android.os.Process.killProcess(android.os.Process.myPid());
+                System.exit(0);
+            }
+        } catch (Exception e) {
+            Log.e("ParaEngineActivity", "Failed to restart app: " + e.getMessage());
+            // 如果重启失败，直接退出
+            android.os.Process.killProcess(android.os.Process.myPid());
+        }
+    }
+
     public static boolean HasPermission(String strPermission){
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) {
             return true;
@@ -985,11 +1010,15 @@ public class ParaEngineActivity extends AppCompatActivity {
         Log.d("ParaEngineActivity", "ParaEngineActivity onDestroy");
 
         if (isAarLaunchMode()) {
-            Intent destroyIntent = new Intent(ACTION_ENGINE_ACTIVITY_DESTROYED);
-            destroyIntent.putExtra("activityClass", getClass().getName());
-            destroyIntent.putExtra("timestamp", System.currentTimeMillis());
-            destroyIntent.setPackage(getPackageName());
-            sendBroadcast(destroyIntent);
+            // Intent destroyIntent = new Intent(ACTION_ENGINE_ACTIVITY_DESTROYED);
+            // destroyIntent.putExtra("activityClass", getClass().getName());
+            // destroyIntent.putExtra("timestamp", System.currentTimeMillis());
+            // destroyIntent.setPackage(getPackageName());
+            // sendBroadcast(destroyIntent);
+
+            // 在AAR模式下重启应用
+            Log.d("ParaEngineActivity", "AAR mode detected, restarting app from onDestroy");
+            restartApp();
         }
     }
 
