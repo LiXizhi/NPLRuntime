@@ -94,9 +94,10 @@ public class ParaEngineActivity extends AppCompatActivity {
     private WebView mLoadingWebView = null;
     private Handler mLoadingHandler = new Handler();
     
-    // 加载方式配置：0=Java UI, 1=WebView
+    // 加载方式配置：0=Java UI, 1=WebView, 2=无动画(调试用)
     private static final int LOADING_MODE_JAVA = 0;
     private static final int LOADING_MODE_WEBVIEW = 1;
+    private static final int LOADING_MODE_NONE = 2; // 不显示任何加载动画，用于调试
     private static int sDefaultLoadingMode = LOADING_MODE_WEBVIEW; // 静态默认加载模式
     private int mLoadingMode = sDefaultLoadingMode; // 实例加载模式，默认使用静态设置
     
@@ -113,23 +114,27 @@ public class ParaEngineActivity extends AppCompatActivity {
     
     /**
      * 设置加载模式
-     * @param mode 0=Java UI, 1=WebView
+     * @param mode 0=Java UI, 1=WebView, 2=无动画(调试用)
      */
     @Keep
     public static void setLoadingMode(int mode) {
         if (sContext != null) {
             sContext.mLoadingMode = mode;
-            Log.d("ParaEngineActivity", "Loading mode set to: " + (mode == LOADING_MODE_JAVA ? "Java UI" : "WebView"));
+            String modeName = mode == LOADING_MODE_JAVA ? "Java UI" : 
+                            (mode == LOADING_MODE_WEBVIEW ? "WebView" : "None (Debug)");
+            Log.d("ParaEngineActivity", "Loading mode set to: " + modeName);
         } else {
             // 如果context还没有初始化，设置默认值
             sDefaultLoadingMode = mode;
-            Log.d("ParaEngineActivity", "Default loading mode set to: " + (mode == LOADING_MODE_JAVA ? "Java UI" : "WebView"));
+            String modeName = mode == LOADING_MODE_JAVA ? "Java UI" : 
+                            (mode == LOADING_MODE_WEBVIEW ? "WebView" : "None (Debug)");
+            Log.d("ParaEngineActivity", "Default loading mode set to: " + modeName);
         }
     }
     
     /**
      * 获取当前加载模式
-     * @return 0=Java UI, 1=WebView
+     * @return 0=Java UI, 1=WebView, 2=无动画(调试用)
      */
     @Keep
     public static int getLoadingMode() {
@@ -142,12 +147,14 @@ public class ParaEngineActivity extends AppCompatActivity {
     
     /**
      * 设置默认加载模式（在Activity创建之前调用）
-     * @param mode 0=Java UI, 1=WebView
+     * @param mode 0=Java UI, 1=WebView, 2=无动画(调试用)
      */
     @Keep
     public static void setDefaultLoadingMode(int mode) {
         sDefaultLoadingMode = mode;
-        Log.d("ParaEngineActivity", "Default loading mode set to: " + (mode == LOADING_MODE_JAVA ? "Java UI" : "WebView"));
+        String modeName = mode == LOADING_MODE_JAVA ? "Java UI" : 
+                        (mode == LOADING_MODE_WEBVIEW ? "WebView" : "None (Debug)");
+        Log.d("ParaEngineActivity", "Default loading mode set to: " + modeName);
         
         // 如果Activity已经存在，也同时更新实例
         if (sContext != null) {
@@ -158,7 +165,7 @@ public class ParaEngineActivity extends AppCompatActivity {
     
     /**
      * 获取默认加载模式
-     * @return 0=Java UI, 1=WebView
+     * @return 0=Java UI, 1=WebView, 2=无动画(调试用)
      */
     @Keep
     public static int getDefaultLoadingMode() {
@@ -167,17 +174,19 @@ public class ParaEngineActivity extends AppCompatActivity {
     
     /**
      * 设置实例的加载模式（实例方法）
-     * @param mode 0=Java UI, 1=WebView
+     * @param mode 0=Java UI, 1=WebView, 2=无动画(调试用)
      */
     @Keep
     public void setInstanceLoadingMode(int mode) {
         this.mLoadingMode = mode;
-        Log.d("ParaEngineActivity", "Instance loading mode set to: " + (mode == LOADING_MODE_JAVA ? "Java UI" : "WebView"));
+        String modeName = mode == LOADING_MODE_JAVA ? "Java UI" : 
+                        (mode == LOADING_MODE_WEBVIEW ? "WebView" : "None (Debug)");
+        Log.d("ParaEngineActivity", "Instance loading mode set to: " + modeName);
     }
     
     /**
      * 获取实例的加载模式（实例方法）
-     * @return 0=Java UI, 1=WebView
+     * @return 0=Java UI, 1=WebView, 2=无动画(调试用)
      */
     @Keep
     public int getInstanceLoadingMode() {
@@ -268,6 +277,9 @@ public class ParaEngineActivity extends AppCompatActivity {
                         } else if (sContext.mLoadingMode == LOADING_MODE_JAVA) {
                             // Java UI模式：更新原生Java UI
                             sContext.updateJavaLoadingProgress(name, progress, message);
+                        } else if (sContext.mLoadingMode == LOADING_MODE_NONE) {
+                            // 无动画模式：只记录日志，不更新UI
+                            Log.d("ParaEngineActivity", "Loading progress (no animation): " + name + " = " + progress + "%");
                         }
                     }
                     
@@ -287,6 +299,7 @@ public class ParaEngineActivity extends AppCompatActivity {
                                             } else if (sContext.mLoadingMode == LOADING_MODE_JAVA) {
                                                 sContext.hideJavaLoadingAnimation();
                                             }
+                                            // LOADING_MODE_NONE 模式不需要隐藏动画，因为从没显示过
                                         }
                                     }, 500); // 延迟500ms
                                 }
@@ -346,6 +359,7 @@ public class ParaEngineActivity extends AppCompatActivity {
                             } else if (ParaEngineActivity.this.mLoadingMode == LOADING_MODE_JAVA && ParaEngineActivity.this.mJavaLoadingView != null) {
                                 ParaEngineActivity.this.mJavaLoadingView.bringToFront();
                             }
+                            // LOADING_MODE_NONE 模式不需要把任何动画层放到前面
                         }
                         
                         Log.d("ParaEngineActivity", "EditText added and configured after GL rendering");
@@ -1117,6 +1131,8 @@ public class ParaEngineActivity extends AppCompatActivity {
             } else if (this.mLoadingMode == LOADING_MODE_JAVA) {
                 Log.d("ParaEngineActivity", "Starting Java UI loading animation");
                 this.startJavaLoadingAnimation();
+            } else if (this.mLoadingMode == LOADING_MODE_NONE) {
+                Log.d("ParaEngineActivity", "Loading mode is NONE (Debug), no animation will be shown");
             }
             new Handler().postDelayed(new Runnable(){
                 @Override
