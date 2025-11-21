@@ -1,8 +1,7 @@
 //-----------------------------------------------------------------------------
 // napi_main.cpp - HarmonyOS NAPI Version
-// Authors: LanZhiHong, big
-// CreateDate: 2019.7.16
-// ModifyDate: 2025.8.4 (Migrated to HarmonyOS NAPI)
+// Authors: big
+// CreateDate: 2025.8.4 (Migrated to HarmonyOS NAPI)
 //-----------------------------------------------------------------------------
 
 #include "NAPIHelper.h"

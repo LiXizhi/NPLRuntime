@@ -1,6 +1,6 @@
 
 
-if(ANDROID)
+if(ANDROID OR HARMONY_OS)
 	add_library(libcurl INTERFACE)
     target_include_directories(libcurl INTERFACE include/android)
     target_link_libraries(libcurl INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/prebuilt/android/${CMAKE_ANDROID_ARCH_ABI}/libcurl.a para_libssl para_libcrypto)

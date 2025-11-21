@@ -22,7 +22,7 @@
 #ifdef WIN32
 #define ecvt _ecvt
 #endif // WIN32
-#ifdef PLATFORM_ANDROID
+#if defined(PLATFORM_ANDROID) || defined(HARMONY_OS)
 #include <math.h>
 #include <stdlib.h>
 

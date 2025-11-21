@@ -100,7 +100,7 @@ if (NPLRUNTIME_DARKNET)
 	add_subdirectory(darknet)
 endif()
 
-if (ANDROID)
+if (ANDROID OR HARMONY_OS)
 else ()
     #set(SERVER_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../../Server/trunk/)
 

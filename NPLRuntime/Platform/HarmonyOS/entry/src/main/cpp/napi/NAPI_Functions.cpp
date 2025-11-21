@@ -6,7 +6,12 @@
 #include "NAPI_Functions.h"
 #include "NAPIHelper.h"
 #include "ParaEngineHelper.h"
+#include <EGL/egl.h>
+#include <GLES3/gl3.h>
+#include "ParaEngine/Core/ParaEngine.h"
+#include "ParaEngineSettings.h"
 #include "LuaNapiBridge.h"
+#include "../AppDelegate.h"
 #include <hilog/log.h>
 #include <rawfile/raw_file_manager.h>
 #include <native_window/external_window.h>
@@ -55,10 +60,31 @@ napi_value NAPI_SetAssetManager(napi_env env, napi_callback_info info) {
 napi_value NAPI_InitParaEngine(napi_env env, napi_callback_info info) {
     OH_LOG_INFO(LOG_APP, "NAPI_InitParaEngine called");
     
-    // TODO: 初始化ParaEngine
-    // ParaEngineHelper::initParaEngine();
-    
-    return NAPIHelper::createUndefined(env);
+    try {
+        // 1. 初始化ParaEngineHelper
+        ParaEngineHelper* helper = ParaEngineHelper::getInstance();
+        if (!helper->init(env, nullptr)) {
+            OH_LOG_ERROR(LOG_APP, "Failed to initialize ParaEngineHelper");
+            return NAPIHelper::createUndefined(env);
+        }
+        
+        // 2. 获取AppDelegate实例并初始化
+        AppDelegate* appDelegate = AppDelegate::getInstance();
+        if (!appDelegate->applicationDidFinishLaunching()) {
+            OH_LOG_ERROR(LOG_APP, "Failed to initialize AppDelegate");
+            return NAPIHelper::createUndefined(env);
+        }
+        
+        OH_LOG_INFO(LOG_APP, "ParaEngine initialized successfully");
+        return NAPIHelper::createUndefined(env);
+        
+    } catch (const std::exception& e) {
+        OH_LOG_ERROR(LOG_APP, "Exception during ParaEngine initialization: %s", e.what());
+        return NAPIHelper::createUndefined(env);
+    } catch (...) {
+        OH_LOG_ERROR(LOG_APP, "Unknown exception during ParaEngine initialization");
+        return NAPIHelper::createUndefined(env);
+    }
 }
 
 napi_value NAPI_CleanupParaEngine(napi_env env, napi_callback_info info) {
@@ -191,14 +217,60 @@ napi_value NAPI_CallLuaFunction(napi_env env, napi_callback_info info) {
 napi_value NAPI_RegisterArkTSCallback(napi_env env, napi_callback_info info) {
     size_t argc = 1;
     napi_value args[1];
-    
+
     napi_status status = napi_get_cb_info(env, info, &argc, args, nullptr, nullptr);
-    if (status != napi_ok) {
+    if (status != napi_ok || argc < 1) {
         return NAPIHelper::createUndefined(env);
     }
-    
-    // TODO: 注册ArkTS回调
-    
+
+    ParaEngineHelper* helper = ParaEngineHelper::getInstance();
+    helper->init(env, args[0]);
+
+    std::string languageName = helper->getCurrentLanguage();
+
+    ParaEngine::LanguageType ret = ParaEngine::LanguageType::ENGLISH;
+    if (languageName == "zh") {
+        ret = ParaEngine::LanguageType::CHINESE;
+    } else if (languageName == "en") {
+        ret = ParaEngine::LanguageType::ENGLISH;
+    } else if (languageName == "fr") {
+        ret = ParaEngine::LanguageType::FRENCH;
+    } else if (languageName == "it") {
+        ret = ParaEngine::LanguageType::ITALIAN;
+    } else if (languageName == "de") {
+        ret = ParaEngine::LanguageType::GERMAN;
+    } else if (languageName == "es") {
+        ret = ParaEngine::LanguageType::SPANISH;
+    } else if (languageName == "ru") {
+        ret = ParaEngine::LanguageType::RUSSIAN;
+    } else if (languageName == "nl") {
+        ret = ParaEngine::LanguageType::DUTCH;
+    } else if (languageName == "ko") {
+        ret = ParaEngine::LanguageType::KOREAN;
+    } else if (languageName == "ja") {
+        ret = ParaEngine::LanguageType::JAPANESE;
+    } else if (languageName == "hu") {
+        ret = ParaEngine::LanguageType::HUNGARIAN;
+    } else if (languageName == "pt") {
+        ret = ParaEngine::LanguageType::PORTUGUESE;
+    } else if (languageName == "ar") {
+        ret = ParaEngine::LanguageType::ARABIC;
+    } else if (languageName == "nb") {
+        ret = ParaEngine::LanguageType::NORWEGIAN;
+    } else if (languageName == "pl") {
+        ret = ParaEngine::LanguageType::POLISH;
+    } else if (languageName == "tr") {
+        ret = ParaEngine::LanguageType::TURKISH;
+    } else if (languageName == "uk") {
+        ret = ParaEngine::LanguageType::UKRAINIAN;
+    } else if (languageName == "ro") {
+        ret = ParaEngine::LanguageType::ROMANIAN;
+    } else if (languageName == "bg") {
+        ret = ParaEngine::LanguageType::BULGARIAN;
+    }
+
+    ParaEngineSettings::GetSingleton().SetCurrentLanguage(ret);
+
     return NAPIHelper::createUndefined(env);
 }
 

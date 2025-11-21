@@ -5,6 +5,8 @@ extern "C" {
 
 #ifdef ANDROID
 #include "gl_android_spec.h"
+#elif defined(HARMONY_OS)
+#include "gl_harmonyos_spec.h"
 #elif EMSCRIPTEN
 #define GL_GLEXT_PROTOTYPES
 #include "SDL2/SDL_opengl.h"

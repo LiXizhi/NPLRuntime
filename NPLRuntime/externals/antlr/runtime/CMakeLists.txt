@@ -122,6 +122,9 @@ elseif(MSVC_VERSION GREATER 1800 OR MSVC_VERSION EQUAL 1800)
   # Visual Studio 2012+ supports C++17 features
 elseif(CMAKE_SYSTEM_NAME MATCHES "Emscripten")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17 -stdlib=libc++")
+elseif(HARMONY_OS OR DEFINED ENV{OHOS_SDK_NATIVE})
+    # HarmonyOS/OpenHarmony support with Clang
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17 -stdlib=libc++")
 else()
     message(FATAL_ERROR "Your C++ compiler does not support C++17.")
 endif()

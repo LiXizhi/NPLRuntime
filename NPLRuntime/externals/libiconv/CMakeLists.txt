@@ -37,7 +37,7 @@ if(MSVC)
 	target_compile_definitions(libiconv PRIVATE _CRT_SECURE_NO_DEPRECATE _CRT_NONSTDC_NO_DEPRECATE)
 endif()
 
-IF(ANDROID)
+IF(ANDROID OR HARMONY_OS)
 	set_target_properties(libiconv PROPERTIES ANDROID_STL_TYPE none)
 ENDIF()
 
@@ -52,7 +52,7 @@ IF(MSVC)
 ENDIF()
 
 if (APPLE)
-	target_compile_definitions(libiconv PRIVATE LIBDIR='\"c\"')
+	target_compile_definitions(libiconv PRIVATE LIBDIR=\"c\")
 elseif(UNIX)
-	target_compile_definitions(libiconv PRIVATE LIBDIR='\"c\"')
+	target_compile_definitions(libiconv PRIVATE LIBDIR=\"c\")
 endif()

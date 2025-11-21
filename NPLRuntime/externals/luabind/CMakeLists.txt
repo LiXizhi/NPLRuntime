@@ -43,6 +43,7 @@ else()
 	PUBLIC 	${PROJECT_SOURCE_DIR}
 	PUBLIC 	${PROJECT_SOURCE_DIR}/luabind
 	PRIVATE ${PROJECT_SOURCE_DIR}/src
+	# PUBLIC 	${BOOST_ROOT}/include # boost 1.75.0 does not work with luabind.
 	PUBLIC 	${Boost_INCLUDE_DIR}
 	)
 endif()
