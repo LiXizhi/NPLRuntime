@@ -49,6 +49,9 @@ public class ParaEngineHelper {
 	public static native void setKeyState(int keyCode, int keyState) ;
 
 	public static native void onCmdProtocol(String strProtocol);
+	public static native void onPause();
+	public static native void onStop();
+	public static native void onDestroy();
 	private static boolean mCanReadPhoneState = false;
 	public static void setCanReadPhoneState(boolean bool) {
 		mCanReadPhoneState = bool;

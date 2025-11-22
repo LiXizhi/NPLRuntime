@@ -190,4 +190,16 @@ extern "C" {
         env->DeleteLocalRef(str_protocol);
         AppDelegate::getInstance().onCmdLine(cmd);
     }
+
+	JNIEXPORT void JNICALL Java_com_tatfook_paracraft_ParaEngineHelper_onPause(JNIEnv *env, jclass clazz) {
+		AppDelegate::getInstance().OnPause();
+	}
+
+	JNIEXPORT void JNICALL Java_com_tatfook_paracraft_ParaEngineHelper_onStop(JNIEnv *env, jclass clazz) {
+		AppDelegate::getInstance().OnStop();
+	}
+
+	JNIEXPORT void JNICALL Java_com_tatfook_paracraft_ParaEngineHelper_onDestroy(JNIEnv *env, jclass clazz) {
+		AppDelegate::getInstance().OnDestroy();
+	}
 }

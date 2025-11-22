@@ -292,6 +292,9 @@ namespace ParaEngine {
 
     void AppDelegate::OnStop()
     {
+        if (m_ParaEngineApp) {
+            m_ParaEngineApp->OnStop();
+        }
         // TODO: kill app, this is temporary measures since we have not fixed the texture lost issue when app stopped.
         // exit(0);
     }
@@ -478,6 +481,9 @@ namespace ParaEngine {
     }
 
     void AppDelegate::OnDestroy() {
+        if (m_ParaEngineApp) {
+            m_ParaEngineApp->OnDestroy();
+        }
     }
 
     void AppDelegate::OnInitWindow() {

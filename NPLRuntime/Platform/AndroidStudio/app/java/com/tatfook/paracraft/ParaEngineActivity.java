@@ -572,6 +572,11 @@ public class ParaEngineActivity extends AppCompatActivity {
     private void startJavaLoadingAnimation() {
         Log.d("ParaEngineActivity", "Starting Java UI loading animation");
         
+        // 检测系统语言
+        String language = getResources().getConfiguration().locale.getLanguage();
+        boolean isChineseSystem = language.equals("zh");
+        Log.d("ParaEngineActivity", "System language: " + language + ", isChineseSystem: " + isChineseSystem);
+        
         try {
             // 尝试加载布局文件
             int layoutId = getResources().getIdentifier("loading_layout", "layout", getPackageName());
@@ -591,6 +596,11 @@ public class ParaEngineActivity extends AppCompatActivity {
                 }
                 if (statusTextId != 0) {
                     mStatusText = mJavaLoadingView.findViewById(statusTextId);
+                }
+                
+                // 如果加载了布局文件，在其上方添加健康游戏忠告（仅中文系统）
+                if (isChineseSystem && mJavaLoadingView instanceof ViewGroup) {
+                    addHealthAdvisoryToView((ViewGroup) mJavaLoadingView);
                 }
             } else {
                 // 如果布局文件不存在，创建简单的备用UI
@@ -623,16 +633,54 @@ public class ParaEngineActivity extends AppCompatActivity {
     }
     
     /**
+     * 添加健康游戏忠告到指定视图
+     */
+    private void addHealthAdvisoryToView(ViewGroup parentView) {
+        Log.d("ParaEngineActivity", "Adding health advisory to loading view");
+        
+        // 创建忠告文本视图，使用3行简洁排版
+        TextView healthAdvisory = new TextView(this);
+        healthAdvisory.setText("健康游戏忠告\n" +
+                              "抵制不良游戏，拒绝盗版游戏。注意自我保护，谨防受骗上当。\n" +
+                              "适度游戏益脑，沉迷游戏伤身。合理安排时间，享受健康生活。");
+        healthAdvisory.setTextSize(13);
+        healthAdvisory.setTextColor(0xCCFFFFFF); // 80%透明度白色
+        healthAdvisory.setGravity(android.view.Gravity.CENTER);
+        healthAdvisory.setLineSpacing(6, 1.0f);
+        
+        android.widget.LinearLayout.LayoutParams advisoryParams = new android.widget.LinearLayout.LayoutParams(
+            android.widget.LinearLayout.LayoutParams.MATCH_PARENT,
+            android.widget.LinearLayout.LayoutParams.WRAP_CONTENT
+        );
+        advisoryParams.setMargins(40, 50, 40, 40);
+        healthAdvisory.setLayoutParams(advisoryParams);
+        
+        // 将忠告添加到视图底部
+        parentView.addView(healthAdvisory);
+    }
+    
+    /**
      * 创建备用的Java UI加载界面
      */
     private void createFallbackLoadingView() {
         Log.d("ParaEngineActivity", "Creating fallback Java UI loading view");
         
+        // 检测系统语言
+        String language = getResources().getConfiguration().locale.getLanguage();
+        boolean isChineseSystem = language.equals("zh");
+        Log.d("ParaEngineActivity", "System language: " + language + ", isChineseSystem: " + isChineseSystem);
+        
         // 创建主容器
         android.widget.LinearLayout container = new android.widget.LinearLayout(this);
         container.setOrientation(android.widget.LinearLayout.VERTICAL);
         container.setGravity(android.view.Gravity.CENTER);
-        container.setBackgroundColor(0xFF667EEA); // 设置渐变背景色
+        
+        // 创建渐变背景
+        android.graphics.drawable.GradientDrawable gradientDrawable = new android.graphics.drawable.GradientDrawable(
+            android.graphics.drawable.GradientDrawable.Orientation.TOP_BOTTOM,
+            new int[]{0xFF667EEA, 0xFF764BA2} // 紫色渐变
+        );
+        container.setBackground(gradientDrawable);
         
         // 创建标题
         TextView titleText = new TextView(this);
@@ -688,6 +736,25 @@ public class ParaEngineActivity extends AppCompatActivity {
         mStatusText.setTextColor(0xCCFFFFFF);
         mStatusText.setTypeface(null, android.graphics.Typeface.ITALIC);
         container.addView(mStatusText);
+        
+        // 在底部添加健康游戏忠告（仅中文系统）
+        if (isChineseSystem) {
+            TextView healthAdvisory = new TextView(this);
+            healthAdvisory.setText("健康游戏忠告\n" +
+                                  "抵制不良游戏，拒绝盗版游戏。注意自我保护，谨防受骗上当。\n" +
+                                  "适度游戏益脑，沉迷游戏伤身。合理安排时间，享受健康生活。");
+            healthAdvisory.setTextSize(13);
+            healthAdvisory.setTextColor(0xCCFFFFFF); // 80%透明度白色
+            healthAdvisory.setGravity(android.view.Gravity.CENTER);
+            healthAdvisory.setLineSpacing(6, 1.0f);
+            android.widget.LinearLayout.LayoutParams advisoryParams = new android.widget.LinearLayout.LayoutParams(
+                android.widget.LinearLayout.LayoutParams.MATCH_PARENT,
+                android.widget.LinearLayout.LayoutParams.WRAP_CONTENT
+            );
+            advisoryParams.setMargins(40, 50, 40, 40);
+            healthAdvisory.setLayoutParams(advisoryParams);
+            container.addView(healthAdvisory);
+        }
         
         mJavaLoadingView = container;
     }
@@ -1020,6 +1087,7 @@ public class ParaEngineActivity extends AppCompatActivity {
     protected void onDestroy() {
         super.onDestroy();
         ParaEnginePluginWrapper.onDestroy();
+        ParaEngineHelper.onDestroy();
 
         Log.d("ParaEngineActivity", "ParaEngineActivity onDestroy");
 
@@ -1040,6 +1108,7 @@ public class ParaEngineActivity extends AppCompatActivity {
     protected void onPause() {
         super.onPause();
         ParaEnginePluginWrapper.onPause();
+        ParaEngineHelper.onPause();
 
 //        if (mGLSurfaceView != null)
 //            mGLSurfaceView.onPause();
@@ -1077,6 +1146,7 @@ public class ParaEngineActivity extends AppCompatActivity {
     protected void onStop() {
         super.onStop();
         ParaEnginePluginWrapper.onStop();
+        ParaEngineHelper.onStop();
         if (mGLSurfaceView != null)
             mGLSurfaceView.setVisibility(View.INVISIBLE);
     }
