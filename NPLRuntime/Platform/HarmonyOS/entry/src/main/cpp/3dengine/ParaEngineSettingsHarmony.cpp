@@ -3,9 +3,10 @@
 
 namespace ParaEngine
 {
-    std::string ParaEngineSettings::GetMachineID()
+    const std::string& ParaEngineSettings::GetMachineID()
     {
         // TODO: Get unique machine ID for HarmonyOS
-        return "harmonyos-device-id";
+        static std::string machineID = "harmonyos-device-id";
+        return machineID;
     }
 }

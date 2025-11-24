@@ -8,15 +8,17 @@ namespace ParaEngine
         // TODO: Initialize network adapter for HarmonyOS
     }
 
-    std::string NetworkAdapter::GetMaxMacAddress()
+    const std::string& NetworkAdapter::GetMaxMacAddress()
     {
         // TODO: Get MAC address for HarmonyOS
-        return "00:00:00:00:00:00";
+        static std::string macAddress = "00:00:00:00:00:00";
+        return macAddress;
     }
 
-    std::string NetworkAdapter::GetMaxIPAddress()
+    const std::string& NetworkAdapter::GetMaxIPAddress()
     {
         // TODO: Get IP address for HarmonyOS  
-        return "127.0.0.1";
+        static std::string ipAddress = "127.0.0.1";
+        return ipAddress;
     }
 }

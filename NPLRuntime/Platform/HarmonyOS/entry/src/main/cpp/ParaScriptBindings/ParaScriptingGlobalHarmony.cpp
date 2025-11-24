@@ -6,9 +6,9 @@ namespace ParaScripting
 {
     using namespace luabind;
 
-    object ParaGlobal::OpenFileDialog(const object& inout)
+    bool ParaGlobal::OpenFileDialog(const object& inout)
     {
         // TODO: Implement file dialog for HarmonyOS
-        return object();
+        return false;
     }
 }

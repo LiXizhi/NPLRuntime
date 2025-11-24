@@ -1,5 +1,5 @@
 #include "RenderContextEGL.h"
-#include "RenderDeviceOpenGL.h"
+#include "RenderDeviceHarmony.h"
 #include "RenderSystem/opengl/OpenGL.h"
 
 namespace ParaEngine
@@ -23,7 +23,7 @@ namespace ParaEngine
         {
             // LOG: Unable to load GL extensions
         }
-        return new RenderDeviceOpenGL();
+        return new RenderDeviceHarmony();
     }
 
     bool RenderContextEGL::ResetDevice(IRenderDevice* device, const RenderConfiguration& cfg)
