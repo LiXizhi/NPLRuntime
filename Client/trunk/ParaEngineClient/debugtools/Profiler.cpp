@@ -189,7 +189,12 @@ void CProfiler::ReportAll_S()
 	if (_performance_data.empty())
 		return;
 	FILE *file;
-	if (NULL==(file=fopen("perf.txt","w+"))) {
+#if WIN32 && defined(DEFAULT_FILE_ENCODING)
+	file = _wfopen(L"perf.txt", L"w+");
+#else
+	file = fopen("perf.txt", "w+");
+#endif
+	if (NULL==file) {
 		return;
 	}
 	map<string,_performance_struct>::iterator iter=_performance_data.begin();
@@ -202,9 +207,9 @@ void CProfiler::ReportAll_S()
 		if (pProfile->m_counting) {
 			Stop_S(pProfile->m_name.c_str());
 		}
-#define FRE_TO_TIME(x) (((double)(x))/fre)
+#define FRE_TO_TIME(x) (x)
 		fprintf(file,"\n<%s>",pProfile->m_name.c_str());
-		fprintf(file,"\nAvg: %.9f    Dev: %.9f    Max: %.9f    Min: %.9f    Total Frames: %d\n",
+		fprintf(file,"\nAvg: %d    Dev: %d   Max: %d    Min: %d    Total Frames: %d\n",
 			FRE_TO_TIME(pProfile->m_avg),FRE_TO_TIME(pProfile->m_deviation),FRE_TO_TIME(pProfile->m_max),FRE_TO_TIME(pProfile->m_min),pProfile->m_nFrameCounter);
 		int nItemSize = (int)pProfile->items.size();
 		if(nItemSize>0)
@@ -213,7 +218,7 @@ void CProfiler::ReportAll_S()
 			for (int i=0;i<nItemSize;++i)
 			{
 				const _performance_item & item = pProfile->items[i];
-				fprintf(file,"%d %f\n",i+1,FRE_TO_TIME(item.finish-item.start));
+				fprintf(file,"%d %d\n",i+1,FRE_TO_TIME(item.finish-item.start));
 			}
 		}
 	}
