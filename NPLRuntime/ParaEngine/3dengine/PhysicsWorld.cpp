@@ -429,7 +429,9 @@ void CPhysicsWorld::StepSimulation(double dTime)
 				}
 				else
 				{
-					obj->GetAABB(&aabb); // 已经包含中心点
+					// Always load physics blocks for dynamic actors (even sleeping ones)
+					// to prevent unload/reload cycles that would wake them up
+					obj->GetAABB(&aabb); 
 					LoadPhysicsBlock(&aabb, s_block_frame_id);
 				}
 			}
@@ -447,24 +449,33 @@ void CPhysicsWorld::StepSimulation(double dTime)
 			CBaseObject* obj = (CBaseObject*)(actor->GetUserData());
 			if (!actor->IsStaticOrKinematicObject())
 			{
-				actor->GetWorldTransform((PARAMATRIX*)&matrix);
-				Vector3 pos = matrix.getTrans();
-				float fCenterHeight = obj->GetAssetHeight() * 0.5f;
+				// Only copy transform if actor is active (not sleeping)
+				// ACTIVE_TAG (1) = actively moving
+				// WANTS_DEACTIVATION (3) = just came to rest
+				// DISABLE_DEACTIVATION (4) = never sleeps
+				// ISLAND_SLEEPING (2) = sleeping, skip to save CPU
+				int activationState = actor->GetActivationState();
+				if (activationState != 2)
+				{
+					actor->GetWorldTransform((PARAMATRIX*)&matrix);
+					Vector3 pos = matrix.getTrans();
+					float fCenterHeight = obj->GetAssetHeight() * 0.5f;
 
-				// make this rotation matrix
-				matrix.setTrans(Vector3(0, 0, 0));
-				obj->SetPosition(DVector3(pos.x, pos.y - fCenterHeight, pos.z));
+					// make this rotation matrix
+					matrix.setTrans(Vector3(0, 0, 0));
+					obj->SetPosition(DVector3(pos.x, pos.y - fCenterHeight, pos.z));
 
-				Matrix4 matOffset;
-				fCenterHeight = fCenterHeight / obj->GetScaling();
-				matOffset.makeTrans(Vector3(0, -fCenterHeight, 0));
-				matOffset = matOffset * matrix;
-				matOffset.offsetTrans(Vector3(0, fCenterHeight, 0));
+					Matrix4 matOffset;
+					fCenterHeight = fCenterHeight / obj->GetScaling();
+					matOffset.makeTrans(Vector3(0, -fCenterHeight, 0));
+					matOffset = matOffset * matrix;
+					matOffset.offsetTrans(Vector3(0, fCenterHeight, 0));
 
-				obj->SetLocalTransform(matOffset);
-				obj->SetYaw(0);
-				obj->SetRoll(0);
-				obj->SetPitch(0);
+					obj->SetLocalTransform(matOffset);
+					obj->SetYaw(0);
+					obj->SetRoll(0);
+					obj->SetPitch(0);
+				}
 			}
 		}
 
