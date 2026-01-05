@@ -160,7 +160,7 @@ CBipedObject::CBipedObject() :
 	m_pLocalTransfrom(NULL),
 	m_fSpeedScale(1.0f), m_bIsAlwaysAboveTerrain(true), m_bPauseAnimation(false),
 	m_gravity(9.18f), m_ignoreSlopeCollision(false), m_readyToLanding(false), m_canFly(false), m_isAlwaysFlying(false), m_bAutoWalkupBlock(true), m_bIsControlledExternally(false),
-	m_isFlying(false), m_flyingDir(1, 0, 0), m_fLastBlockLight(0.f), m_dwLastBlockHash(0), m_fAccelerationDist(0), m_fLastSpeed(0.f)
+	m_isFlying(false), m_flyingDir(1, 0, 0), m_fLastBlockLight(0.f), m_dwLastBlockHash(0), m_fAccelerationDist(0), m_fLastSpeed(0.f), m_bKinematic(false)
 {
 	SetMyType(_Biped);
 	ForceStop();		// default action is loiter 
@@ -982,6 +982,9 @@ void CBipedObject::Animate(double dTimeDelta, int nRenderNumber)
 			}
 		}
 	}
+	
+	// Update kinematic physics actor position if kinematic is enabled
+	UpdateKinematicPhysicsActor();
 }
 
 bool ParaEngine::CBipedObject::HasAttachmentPoint(int nAttachmentID)
@@ -1948,6 +1951,7 @@ bool ParaEngine::CBipedObject::MoveTowards_Linear(double dTimeDelta, const DVect
 bool CBipedObject::MoveTowards(double dTimeDelta, const DVector3& vPosTarget, float fStopDistance, bool* pIsSlidingWall)
 {
 	UnloadPhysics();
+	
 	if (m_nMovementStyle == MOVESTYLE_OPC)
 	{
 		m_fLastSpeed = 0;
@@ -4808,6 +4812,66 @@ void ParaEngine::CBipedObject::UnloadDynamicPhysics()
 	}
 }
 
+void ParaEngine::CBipedObject::LoadKinematicPhysics()
+{
+	if (m_dynamicPhysicsActor == NULL && !IsDynamicPhysicsEnabled())
+	{
+		m_dynamicPhysicsActor = CGlobals::GetPhysicsWorld()->CreateDynamicMesh(this);
+		if (m_dynamicPhysicsActor)
+		{
+			// Set as kinematic: CollisionFlags=2 marks it as kinematic object, ActivationState=4 keeps it always active
+			// Mass=0 with kinematic flag allows it to push but not be pushed by dynamic objects
+			CGlobals::GetPhysicsWorld()->SetActorPhysicsProperty(m_dynamicPhysicsActor, "{Mass=0,CollisionFlags=2,ActivationState=4}");
+		}
+	}
+}
+
+void ParaEngine::CBipedObject::UnloadKinematicPhysics()
+{
+	if (m_dynamicPhysicsActor != NULL && !IsDynamicPhysicsEnabled())
+	{
+		CGlobals::GetPhysicsWorld()->ReleaseActor(m_dynamicPhysicsActor);
+		m_dynamicPhysicsActor = NULL;
+	}
+}
+
+void ParaEngine::CBipedObject::UpdateKinematicPhysicsActor()
+{
+	if (m_dynamicPhysicsActor != NULL && m_bKinematic)
+	{
+		// Get the biped's current position and orientation
+		Matrix4 mxWorld;
+		GetWorldTransform(mxWorld);
+		
+		PARAMATRIX paraMatrix;
+		memcpy(&paraMatrix, &mxWorld, sizeof(PARAMATRIX));
+		m_dynamicPhysicsActor->SetWorldTransform(&paraMatrix);
+		
+		// Set linear velocity to match biped's movement speed
+		// This allows Bullet to use the velocity in collision response to push dynamic objects
+		Vector3 vMovementDir;
+		GetSpeedDirection(&vMovementDir);
+		float fSpeed = GetSpeed();
+		
+		if (fSpeed != 0.f && vMovementDir.squaredLength() > 0.001f)
+		{
+			vMovementDir.normalise();
+			Vector3 vVelocity = vMovementDir * fSpeed;
+			
+			// Include vertical velocity
+			vVelocity.y = GetVerticalSpeed();
+			
+			PARAVECTOR3 velocity(vVelocity.x, vVelocity.y, vVelocity.z);
+			m_dynamicPhysicsActor->SetLinearVelocity(velocity);
+		}
+		else
+		{
+			// Stop velocity when not moving
+			m_dynamicPhysicsActor->SetLinearVelocity(PARAVECTOR3(0, 0, 0));
+		}
+	}
+}
+
 void ParaEngine::CBipedObject::ApplyCentralImpulse(const Vector3& impulse)
 {
 	if (m_dynamicPhysicsActor != NULL)
@@ -5690,6 +5754,7 @@ int CBipedObject::InstallFields(CAttributeClass* pClass, bool bOverride)
 	pClass->AddField("IsFlying", FieldType_Bool, NULL, (void*)GetIsFlying_s, NULL, "", bOverride);
 	pClass->AddField("AutoWalkupBlock", FieldType_Bool, (void*)SetAutoWalkupBlock_s, (void*)IsAutoWalkupBlock_s, NULL, "", bOverride);
 	pClass->AddField("IsControlledExternally", FieldType_Bool, (void*)SetIsControlledExternally_s, (void*)IsControlledExternally_s, NULL, "", bOverride);
+	pClass->AddField("Kinematic", FieldType_Bool, (void*)SetKinematic_s, (void*)IsKinematic_s, NULL, "if true, biped can push dynamic objects", bOverride);
 	pClass->AddField("BlendingFactor", FieldType_Float, (void*)SetBlendingFactor_s, NULL, NULL, "", bOverride);
 
 	return S_OK;
@@ -5698,4 +5763,30 @@ int CBipedObject::InstallFields(CAttributeClass* pClass, bool bOverride)
 void CBipedObject::EnableAutoAnimation(bool enable)
 {
 	m_bAutoAnimation = enable;
+}
+
+bool CBipedObject::IsKinematic() const
+{
+	return m_bKinematic;
+}
+
+void CBipedObject::SetKinematic(bool val)
+{
+	if (m_bKinematic != val)
+	{
+		m_bKinematic = val;
+		if (val)
+		{
+			m_nPhysicsGroup = IParaPhysicsGroup::KINEMATIC;
+			// Exclude KINEMATIC group from collision mask so kinematic characters don't collide with each other
+			m_dwPhysicsGroupMask = 0xffffffff ^ (1 << IParaPhysicsGroup::KINEMATIC);
+			LoadKinematicPhysics();
+		}
+		else
+		{
+			m_nPhysicsGroup = 0;
+			m_dwPhysicsGroupMask = DEFAULT_PHYSICS_GROUP_MASK;
+			UnloadKinematicPhysics();
+		}
+	}
 }

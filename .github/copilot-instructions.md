@@ -1,197 +1,254 @@
-# ParaEngine - AI Coding Agent Instructions
+# ParaEngine/NPLRuntime Development Guide
 
 ## Project Overview
+**ParaEngine** is a cross-platform 3D game engine with integrated **NPLRuntime** (Neural Parallel Language Runtime) - a high-performance Lua-based scripting environment. The engine supports Windows/Linux/macOS/iOS/Android/Emscripten/HarmonyOS and can build as both client (3D/2D GUI) and headless server applications.
 
-**ParaEngine** is a high-performance, cross-platform 3D game engine with NPL (Neural Parallel Language) scripting support. The engine is written in C++ and provides a complete 3D/2D game development framework with an embedded Lua-compatible scripting runtime.
+**Key Facts:**
+- C++11/17/20 codebase (~2005-present, mature production engine)
+- Lua 5.1 compatible scripting (LuaJIT 2.0/2.1 or vanilla Lua 5.1)
+- Multi-threaded NPL runtime with message-passing concurrency
+- DirectX9 or OpenGL rendering backends (or null renderer for server)
 
-- **ParaEngine**: The 3D game engine (C++ core in `NPLRuntime/ParaEngine/` folder)
-- **NPL**: Neural Parallel Language - 100% Lua-compatible scripting with message-passing concurrency
-- **Platforms**: Windows, Linux, Android, iOS, Emscripten (WebAssembly)
-- **Builds**: Client (full 3D/2D GUI) and Server (headless) variants
+## Architecture Overview
 
-**Architecture**: Monolithic C++ engine organized into subsystems (rendering, physics, terrain, GUI, networking, asset management) with Lua scripting bindings exposed via NPL API.
+### Component Structure (all under [NPLRuntime/](NPLRuntime/))
 
-## Critical Build Workflows
+**[ParaEngine/](NPLRuntime/ParaEngine/)** - Core engine (organized by subsystem, not src/include split):
+- **NPL/** - Neural Parallel Language runtime, networking (`NPL::CNPLRuntime`, message queue, activation system)
+- **3dengine/** - Scene graph, game objects (`CSceneObject`, `CBipedObject`, cameras, lighting, particle systems)
+- **2dengine/** - GUI system (`GUIRoot`, Canvas, paint engine inspired by Qt)
+- **IO/** - Async file loader, virtual filesystem, zip archives
+- **BlockEngine/** - Voxel/block world system (Minecraft-like)
+- **BMaxModel/** - Block max model format (voxel models)
+- **ParaXModel/** - Proprietary ParaX animated model format (.x-inspired)
+- **terrain/** - Tile-based terrain with LOD (quad-tree, geo-mipmapping)
+- **ParaScriptBindings/** - Lua API bindings (luabind-based)
+- **Engine/** - Platform-agnostic app lifecycle (`CParaEngineApp` base class)
+- **Core/** - Asset management (`CParaWorldAsset` singleton), globals
 
-### Platform-Specific Builds
+**[RenderSystem/](NPLRuntime/RenderSystem/)** - Renderer abstraction:
+- `d3d9/` - DirectX9 implementation
+- `opengl/` - OpenGL 3.3+ implementation
+- `null/` - Headless renderer for server builds
 
-**Linux Server Build**:
-```bash
-./build_linux.sh [jobs]  # e.g., ./build_linux.sh 6 for parallel build
-# Output: ParaWorld/bin64/ParaEngineServer
-# Installs to: /usr/local/bin/npl (symlink)
+**[Platform/](NPLRuntime/Platform/)** - Entry points per platform:
+- `Windows/`, `Linux/`, `iOS/`, `AndroidStudio/`, `HarmonyOS/`, `SDL/`, etc.
+- Each contains `main()` or equivalent platform bootstrap code
+
+**[externals/](NPLRuntime/externals/)** - Vendored dependencies (see External Dependencies section)
+
+**[Plugins/](NPLRuntime/Plugins/)** - Optional modules (audio, SQLite, physics)
+
+### Key Design Patterns
+
+**Asset Management** (see [ParaEngine/Core/ParaWorldAsset.h](NPLRuntime/ParaEngine/Core/ParaWorldAsset.h)):
+- Centralized singleton: `CGlobals::GetAssetManager()` or `CParaWorldAsset::GetInstance()`
+- Asset types: `TextureEntity`, `MeshEntity`, `ParaXEntity`, `SpriteFontEntity`, etc.
+- Reference counted via `asset_ptr<T>` (intrusive pointer wrapper)
+- Assets keyed by file path; lazy-loaded on first access
+- Garbage collection: `UnloadAsset()`, `GarbageCollectAll()`
+
+**Smart Pointers** (see [ParaEngine/util/intrusive_ptr.h](NPLRuntime/ParaEngine/util/intrusive_ptr.h)):
+- `asset_ptr<T>` - Alias for `boost::intrusive_ptr<T>` (assets, reference counted objects)
+- `ref_ptr<T>` - Similar intrusive pointer for general use
+- Base classes: `intrusive_ptr_thread_safe_base`, `intrusive_ptr_single_thread_base`
+- Prefer intrusive pointers over `shared_ptr` for performance/footprint
+
+**Terrain System** (see [ParaEngine/terrain/](NPLRuntime/ParaEngine/terrain/)):
+- `CGlobalTerrain` - Singleton manager ([GlobalTerrain.h](NPLRuntime/ParaEngine/terrain/GlobalTerrain.h))
+- `TerrainLattice` - Tiled terrain grid (dynamic loading/unloading)
+- `CDynamicTerrainLoader` - Loads terrain tiles on-demand
+- `TerrainBlock` - Quad-tree LOD node
+- Supports height maps, multi-texturing, holes, region values
+
+**Scene Graph** (see [ParaEngine/3dengine/SceneObject.cpp](NPLRuntime/ParaEngine/3dengine/SceneObject.cpp)):
+- `CSceneObject` - Root scene manager (singleton via `CGlobals::GetScene()`)
+- Game objects inherit from `CBaseObject` → `IGameObject`
+- Quad-tree spatial partitioning for culling
+- Update/Render phases: `Animate()`, `Draw()`, `FrameMove()`
+
+## NPL Scripting System
+
+### Message Passing Model
+NPL scripts use **activation** for inter-thread/inter-process communication:
+
+```lua
+-- Activate a script file with message data
+NPL.activate("(gl)script.npl", {data="hello", count=42})
+
+-- Every .npl file has an implicit message handler
+this(msg) {
+   if msg then
+      print(msg.data, msg.count)
+   end
+}
 ```
 
-**Windows Client Build**:
-```bat
-# Run from Visual Studio Developer Command Prompt
-build_win32.bat
-# Creates: build/win32/ directory with cmake files
-```
+**Activation Prefixes:**
+- `(gl)` - Global/main thread
+- `(worker1)` - Named worker thread
+- `(ip:port)` - Remote NPL process (network activation)
+- No prefix - Same runtime state as caller
 
-**Emscripten (WebAssembly)**:
-```bash
-# Boost must be pre-compiled for emscripten
-emcmake cmake -S NPLRuntime -B build/emscripten -DEMSCRIPTEN=ON -DCURL_ENABLE_SSL=OFF -DBOOST_ROOT="path/to/boost"
-cd build/emscripten && emmake make
-```
+See [ParaEngine/ParaScriptBindings/ParaScriptingNPL.h](NPLRuntime/ParaEngine/ParaScriptBindings/ParaScriptingNPL.h#L182) for full API.
 
-### Key CMake Options
+### Adding Lua Bindings
+1. Implement C++ function in `ParaEngine/ParaScriptBindings/ParaScripting*.{h,cpp}`
+2. Bind using luabind in appropriate `LoadHAPI_*()` function:
+   ```cpp
+   module(L)[
+       class_<MyClass>("MyClass")
+           .def("method", &MyClass::method)
+   ];
+   ```
+3. Export to NPL global table in `ParaScriptingGlobal.cpp`
+4. Document in header (NPL API functions have Doxygen-style comments)
 
-All builds use `NPLRuntime/CMakeLists.txt` as entry point. Critical options:
 
-- `NPLRUNTIME_SERVER=ON` - Server build (no DirectX/GUI)
-- `NPLRUNTIME_RENDERER` - DIRECTX/OPENGL/NULL (auto-selected by platform)
-- `NPLRUNTIME_STATIC_LIB` - Static vs shared library linking
-- `NPLRUNTIME_LUAJIT21/LUAJIT20/LUA51` - Lua runtime version (platform-specific defaults)
-- `NPLRUNTIME_SUPPORT_FBX` - Assimp 3D model loading
-- `NPLRUNTIME_PHYSICS` - Bullet physics integration
+## Coding Conventions
 
-**Server default**: LuaJIT 2.1 with GC64, minimal features  
-**Client default**: LuaJIT 2.0.4 (Win32), full features
+### File Organization
+- **No src/include split** - `.h` and `.cpp` files colocate in feature directories
+- **Precompiled header:** `ParaEngine.h` included first in all `.cpp` files
+- **Asset files:** Store in `ParaWorld/` directory structure
 
-## Code Organization & Patterns
+### Naming Conventions
+- Classes: `CMyClass` (C prefix for classes, I prefix for interfaces)
+- Singletons: `GetInstance()` or accessed via `CGlobals::Get*()`
+- Assets: `*Entity` suffix (e.g., `TextureEntity`, `MeshEntity`)
+- Managers: `*Manager` suffix (e.g., `TextureAssetManager`)
 
-### Directory Structure
-
-**Most engine code is in `NPLRuntime/ParaEngine/`** - this is the ParaEngine 3D game engine core:
-
-- `NPLRuntime/ParaEngine/` - **ParaEngine 3D game engine** (all subsystems below)
-  - `3dengine/` - Scene management, objects (BaseObject, BipedObject)
-  - `2dengine/` - GUI system (GUIRoot, GUIBase hierarchy)
-  - `Engine/` - Core app lifecycle (ParaEngineCore, DirectXEngine)
-  - `NPL/` - NPL runtime and networking (NPLRuntime, NPLNetServer)
-  - `terrain/` - Terrain system (Terrain, GlobalTerrain, TerrainBlock)
-  - `BlockEngine/` - Voxel/block world (Minecraft-style)
-  - `BMaxModel/` - BMax 3D modeling format
-  - `IO/` - File system, archives, async loading
-  - `ParaScriptBindings/` - Lua API bindings
-  - `Core/` - Globals, singletons (CGlobals, ParaEngineCore)
-  - `renderer/` - Rendering abstraction (DirectX/OpenGL)
-- `NPLRuntime/externals/` - Third-party libs (boost, bullet, assimp, FreeImage, etc.)
-- `NPLRuntime/tests/` - Runtime tests (helloworld.lua)
-
-### Namespace Conventions
-
-**All engine code lives in `namespace ParaEngine`**. Standard pattern:
+### Platform Macros
+Use guards for platform-specific code:
 ```cpp
-using namespace ParaEngine;  // At file scope in .cpp files
+#ifdef USE_DIRECTX_RENDERER
+    // DirectX9-specific code
+#endif
+
+#ifdef EMSCRIPTEN
+    // Emscripten/WebAssembly specific
+#endif
+
+#ifdef PARAENGINE_MOBILE
+    // iOS/Android common code
+#endif
+
+#ifndef EMSCRIPTEN_SINGLE_THREAD
+    // Multi-threaded code (Boost.Thread)
+#endif
 ```
 
-**NPL runtime uses `namespace NPL`** for networking/scripting components.
-
-### Singleton Access Pattern
-
-**CGlobals is the central singleton accessor**. All major subsystems accessed via static methods:
-```cpp
-CGlobals::GetAssetManager()    // Asset loading (textures, models, etc.)
-CGlobals::GetScene()            // Current scene object
-CGlobals::GetGUI()              // 2D GUI root
-CGlobals::GetNPLRuntime()       // NPL script runtime
-CGlobals::GetGlobalTerrain()    // Terrain system
-CGlobals::GetPhysicsWorld()     // Bullet physics
-```
-
-### Asset Management
-
-Uses **AssetManager template pattern**:
-```cpp
-TextureEntity* pTex = CGlobals::GetAssetManager()->LoadTexture("", filename, TextureEntity::StaticTexture);
-ParaXEntity* pModel = CGlobals::GetAssetManager()->LoadParaX("", filename);
-```
-
-Manager classes inherit from `AssetManager<T>`:
-- `CBlockMaterialManager : AssetManager<CBlockMaterial>`
-- `BufferPickingManager : AssetManager<CBufferPicking>`
-
-### Attribute System
-
-Many engine classes implement `IAttributeFields` for reflection/serialization:
-```cpp
-class Terrain : public IAttributeFields { ... }
-```
-
-Common pattern:
-- `GetChildAttributeObject()` for hierarchical access
-- `InstallFields()` for attribute registration
-- Used by scripting layer for property access
-
-## Platform-Specific Considerations
-
-### Preprocessor Macros
-
-- `WIN32` - Windows builds
-- `LINUX` - Linux builds (includes SDL builds on Win32)
-- `ANDROID` - Android builds
-- `IOS` - iOS builds
-- `EMSCRIPTEN` - WebAssembly builds
-- `EMSCRIPTEN_SINGLE_THREAD` / `SDL_SINGLE_THREAD` - Single-threaded variants
-- `NPLRUNTIME_SERVER` - Server build (no rendering)
-- `PARAENGINE_CLIENT` - Client build (default)
+### Memory Management
+- Assets are reference counted (see Smart Pointers above)
+- Use `SAFE_DELETE(ptr)` and `SAFE_RELEASE(comptr)` macros
+- Pool allocators for frequent small objects (see `util/ParaMemPool.h`)
+- Avoid `new`/`delete` in hot paths; prefer object pooling
 
 ### Threading
-
-Uses Boost threading primitives (`boost::thread`, `boost::shared_mutex`), **disabled in single-threaded builds** (Emscripten/SDL variants).
-
-## NPL Language Patterns
-
-NPL scripts are Lua with special activation mechanism:
-```lua
--- Activate a neuron file (message passing)
-NPL.activate("(gl)helloworld.npl", {data="hello world!"})
-
--- Neuron entry point
-this(msg)
-   if(msg) then
-      print(msg.data or "");
-   end
-end
-```
-
-Activation format: `"(neuron_name)filename.npl"` where `(gl)` = global thread.
+- Main thread runs render loop in `CParaEngineApp::FrameMove()`
+- NPL worker threads managed by `NPL::CNPLRuntime`
+- Use `#ifndef EMSCRIPTEN_SINGLE_THREAD` to guard Boost.Thread code
+- Emscripten can build single or multi-threaded (pthread pool)
 
 ## Common Workflows
 
-### Adding New 3D Object Types
-1. Inherit from `CBaseObject` (in `3dengine/BaseObject.h`)
-2. Implement in `3dengine/` subdirectory
-3. Register with scene manager via `CGlobals::GetScene()`
-4. Add script bindings in `ParaScriptBindings/`
-
-### Adding GUI Components
-1. Inherit from `CGUIBase` hierarchy (in `2dengine/`)
-2. Implement rendering in platform-specific renderer (`GUIDirectX` or `GUIOpenGL`)
-3. Register with `CGUIRoot` via `CGlobals::GetGUI()`
-
-### Debugging
-- Use `OUTPUT_LOG()` for engine logging (from `FileLogger.h`)
-- NPL scripts: `print()` or `log()` functions
-- Test with minimal script: `npl NPLRuntime/tests/helloworld.lua`
+### Cross-Platform File Access
+- **Never hard-code paths** - Use `CFileUtils` or `CPathReplaceables`
+- Writable directory: `CFileUtils::GetWritablePath()`
+- Asset loading: `CParaFile::OpenAssetFile()` (handles zip archives)
+- Example: `"model/character.x"` resolves via asset search paths
 
 ## External Dependencies
 
-**Boost**: Required (v1.55+). Build subset with: `thread, date_time, filesystem, system, chrono, serialization, iostreams, regex`
+All vendored in [externals/](NPLRuntime/externals/), configured in [externals/CMakeLists.txt](NPLRuntime/externals/CMakeLists.txt):
 
-**Critical externals** (in `NPLRuntime/externals/`):
-- LuaJIT 2.0/2.1 or Lua 5.1 (depending on build config)
-- Bullet 2.75/3.x (physics)
-- Assimp 3.1/4.0/5.0 (3D model loading)
-- FreeImage (texture loading)
-- OpenSSL/curl (networking)
-- SDL2 (cross-platform windowing, optional)
+**Core Libraries:**
+- **Boost** (1.55-1.85) - Required: `thread`, `filesystem`, `system`, `chrono`, `serialization`, `iostreams`, `locale`
+  - ⚠️ Emscripten builds need Boost compiled with `toolset=emscripten` (see [README](README.md#Emscripten))
+- **Lua/LuaJIT** - Three options: LuaJIT 2.0.4, LuaJIT 2.1, or Lua 5.1.5 (build-time selection)
+- **luabind** - C++/Lua binding generator (modified for NPL)
 
-## Rendering Abstraction
+**Networking:**
+- **cURL** - HTTP/HTTPS requests
+- Custom NPL networking (RakNet-inspired, in `ParaEngine/NPL/`)
 
-Engine supports **DirectX 9 (Windows)** or **OpenGL 3.0+ (cross-platform)** via abstraction layer:
-- `renderer/effect_file.h` - Shader abstraction
-- `OpenGLWrapper/` - OpenGL implementation
-- `d3dcommon/` - DirectX implementation
+**Graphics:**
+- **Assimp** (3.1.1, 4.0.0, 5.0.1) - FBX/COLLADA/OBJ model loading
+- **FreeImage** (3.17.0, 3.18.0) - Texture loading (PNG, JPEG, DDS, etc.)
+- **glad** - OpenGL loader
+- **freetype** (2.8.1) - Font rendering
 
-Renderer selected at CMake configure time via `NPLRUNTIME_RENDERER` option.
+**Physics:**
+- **Bullet** (2.75 or 3.x) - Collision detection, rigid body dynamics
+- **Pinocchio** - Character rigging
 
-## Do Not
+**Other:**
+- **jsoncpp** - JSON parsing
+- **tinyxml/tinyxpath** - XML parsing
+- **zlib** - Compression
 
-- **Never** use `&&` in PowerShell commands (use `;` or separate calls)
-- **Never** mix Lua runtime versions in same build
-- **Never** call `GetAssetManager()` before engine initialization
-- **Avoid** modifying external dependency sources (use cmake overrides)
+## Important Gotchas
+
+### Boost and Emscripten
+Emscripten builds **require** Boost libraries compiled with Emscripten's `emcc`:
+```bash
+./bootstrap.sh
+./b2 toolset=emscripten runtime-link=static \
+  --with-thread --with-filesystem --with-system \
+  --with-chrono --with-serialization --with-iostreams
+```
+Then convert `.bc` files to `.a`: `emar -q libname.a libname.bc`
+
+### Lua 5.1 Compatibility
+- NPL strictly targets Lua 5.1 semantics (even with LuaJIT)
+- No `goto`, no `__gc` metamethod differences
+- `_ENV` not available (Lua 5.2+ feature)
+- Use `getfenv`/`setfenv` for environment manipulation
+
+### C++ Standard Variations
+- Windows/Android: C++17
+- macOS/Linux/iOS: C++20
+- Emscripten: C++20 (configurable)
+- Never use C++14+ features without CMake checks for compatibility
+
+### DirectX9 Limitations
+- Fixed-function pipeline still used in some legacy code
+- Shader Model 3.0 maximum
+- Consider OpenGL path for modern rendering features
+
+### Threading Caveats
+- NPL messages are serialized (tables → strings), not shared memory
+- Emscripten's pthread has limitations (stack size, SharedArrayBuffer)
+- Use `EMSCRIPTEN_SINGLE_THREAD` build option for simpler debugging
+
+## Critical Files Reference
+
+- [NPLRuntime/CMakeLists.txt](NPLRuntime/CMakeLists.txt) - Root build configuration
+- [NPLRuntime/ParaEngine/NPL/NPLRuntime.h](NPLRuntime/ParaEngine/NPL/NPLRuntime.h) - NPL runtime singleton
+- [NPLRuntime/ParaEngine/Core/ParaWorldAsset.h](NPLRuntime/ParaEngine/Core/ParaWorldAsset.h) - Asset manager singleton
+- [NPLRuntime/ParaEngine/Engine/ParaEngineApp.h](NPLRuntime/ParaEngine/Engine/ParaEngineApp.h) - Main application loop
+- [NPLRuntime/Platform/Windows/src/ParaEngineApp.cpp](NPLRuntime/Platform/Windows/src/ParaEngineApp.cpp) - Windows entry point
+- [NPLRuntime/ParaEngine/ParaScriptBindings/ParaScriptingGlobal.cpp](NPLRuntime/ParaEngine/ParaScriptBindings/ParaScriptingGlobal.cpp) - Lua global exports
+- [README.md](README.md) - Build instructions, examples
+
+## Anti-Patterns
+
+❌ **Avoid:**
+- Adding `using namespace std;` in headers
+- Breaking Lua 5.1 compatibility (no `goto`, careful with metatables)
+- Hard-coded file paths (use `CFileUtils` abstraction)
+- Direct D3D/OpenGL calls outside RenderSystem (use `CGlobals::GetRenderDevice()`)
+- Introducing C++14+ without platform checks
+- `new`/`delete` in performance-critical code (prefer pooling)
+- Blocking operations in NPL message handlers (blocks worker thread)
+
+✅ **Do:**
+- Use `asset_ptr<T>` for all asset references
+- Call device lifecycle methods: `InitDeviceObjects()`, `RestoreDeviceObjects()`, `InvalidateDeviceObjects()`, `DeleteDeviceObjects()`
+- Check `CGlobals::GetAssetManager()` for existing asset before creating new
+- Prefer composition over inheritance for game objects
+- Document Lua APIs with Doxygen comments
+- Test on multiple platforms (Windows, Linux minimum)
+
+## Additional Resources
+- **Wiki:** https://github.com/LiXizhi/NPLRuntime/wiki/

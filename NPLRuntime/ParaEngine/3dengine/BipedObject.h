@@ -216,6 +216,9 @@ namespace ParaEngine
 		ATTRIBUTE_METHOD1(CBipedObject, IsControlledExternally_s, bool*) { *p1 = cls->IsControlledExternally(); return S_OK; }
 		ATTRIBUTE_METHOD1(CBipedObject, SetIsControlledExternally_s, bool) { cls->SetIsControlledExternally(p1); return S_OK; }
 
+		ATTRIBUTE_METHOD1(CBipedObject, IsKinematic_s, bool*) { *p1 = cls->IsKinematic(); return S_OK; }
+		ATTRIBUTE_METHOD1(CBipedObject, SetKinematic_s, bool) { cls->SetKinematic(p1); return S_OK; }
+
 	protected:
 		/** Move the biped in the physical scene.move the biped towards the target using its current speed and facing
 		* the biped may slide along a wall or be stopped.
@@ -597,6 +600,11 @@ namespace ParaEngine
 		bool IsControlledExternally() const;
 		void SetIsControlledExternally(bool val);
 
+		/** if true, the biped can push dynamic physical objects. Default to false. When enabled, 
+		 * forces will be applied to dynamic objects based on biped mass, speed and shape (capsule by default). */
+		bool IsKinematic() const;
+		void SetKinematic(bool val);
+
 		/** if the biped is in air, it will fall down. In case a biped is put to stop and the terrain below it changes.
 		* one should manually call this function to let the biped fall down. Internally it just set the vertical speed to
 		* a small value*/
@@ -790,6 +798,11 @@ namespace ParaEngine
 		// 加载动态物理模型
 		virtual void LoadDynamicPhysics();
 		virtual void UnloadDynamicPhysics();
+		// 加载运动学物理模型（0质量，用于推动其他物体）
+		virtual void LoadKinematicPhysics();
+		virtual void UnloadKinematicPhysics();
+		/** update kinematic physics actor position/rotation to match biped */
+		virtual void UpdateKinematicPhysicsActor();
 		// 设置物理速度
 		virtual void ApplyCentralImpulse(const Vector3& impulse);
 
@@ -1002,6 +1015,8 @@ namespace ParaEngine
 		bool m_bIsControlledExternally : 1;
 		bool m_bCanAnimOpacity : 1;
 		bool m_bAutoAnimation : 1;
+		/** if true, the biped can push dynamic physical objects by applying forces based on mass, speed and shape */
+		bool m_bKinematic : 1;
 	};
 
 }
