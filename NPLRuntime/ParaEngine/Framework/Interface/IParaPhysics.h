@@ -71,11 +71,13 @@ namespace ParaEngine
 	// 物理模型分组
 	enum IParaPhysicsGroup
 	{
-		// 默认, 动态物理组
-		DEFAULT = 0,  // 1 << 0
-		// 静态物理组
+		// default dynamic objects
+		DEFAULT = 0,
+		// like static mesh
 		STATIC = 1,
-		// 地块组
+		// usually the main biped player character
+		KINEMATIC = 2,
+		// the global block  engine
 		BLOCK = 15,
 	};
 

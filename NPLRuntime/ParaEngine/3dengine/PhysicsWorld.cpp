@@ -263,10 +263,10 @@ CPhysicsWorld::~CPhysicsWorld(void)
 
 void CPhysicsWorld::SetActorPhysicsProperty(IParaPhysicsActor* actor, const char* property)
 {
-	if (actor == nullptr) return ;
+	if (actor == nullptr) return;
 
 	NPL::NPLObjectProxy msg = NPL::NPLHelper::StringToNPLTable(property, (int)strlen(property));
-	if (msg.GetType() == NPL::NPLObjectBase::NPLObjectType_Table) 
+	if (msg.GetType() == NPL::NPLObjectBase::NPLObjectType_Table)
 	{
 		if (msg["Mass"].GetType() == NPL::NPLObjectBase::NPLObjectType_Number) actor->SetMass((float)(double)msg["Mass"]);
 		if (msg["LocalInertiaX"].GetType() == NPL::NPLObjectBase::NPLObjectType_Number) actor->SetLocalInertia(PARAVECTOR3((float)(double)msg["LocalInertiaX"], (float)(double)msg["LocalInertiaY"], (float)(double)msg["LocalInertiaZ"]));
@@ -391,11 +391,7 @@ void CPhysicsWorld::ResetPhysics()
 
 void CPhysicsWorld::StepSimulation(double dTime)
 {
-#ifdef WIN32
-    Matrix4 matrix;
-#else
-    alignas(16) Matrix4 matrix;
-#endif
+	alignas(16) Matrix4 matrix;
 	CShapeAABB aabb;
 	static int16_t s_block_frame_id = 0;
 	s_block_frame_id++;
@@ -404,7 +400,7 @@ void CPhysicsWorld::StepSimulation(double dTime)
 		IParaPhysicsActor_Map_Type::iterator itCurCP = m_mapDynamicActors.begin();
 		IParaPhysicsActor_Map_Type::iterator itEndCP = m_mapDynamicActors.end();
 
-		// 加载地形
+		// check load terrain physics blocks near all dynamic actors
 		BlockWorldClient* pWorld = BlockWorldClient::GetInstance();
 		bool isAutoPhysicsBlock = pWorld->IsAutoPhysics();
 		if (isAutoPhysicsBlock)
@@ -413,12 +409,10 @@ void CPhysicsWorld::StepSimulation(double dTime)
 			{
 				IParaPhysicsActor* actor = *itCurCP;
 				CBaseObject* obj = (CBaseObject*)(actor->GetUserData());
-				obj->GetAABB(&aabb); // 已经包含中心点
-				LoadPhysicsBlock(&aabb, s_block_frame_id);
-
 				if (actor->IsStaticOrKinematicObject())
 				{
-					// 属性设置为 CollisionFlags=2, ActivationState=4 可右玩家控制位置同步至物理世界 
+					/* the following is done in CBipedObject::UpdateKinematicPhysicsActor()
+					// 属性设置为 CollisionFlags=2, ActivationState=4 可右玩家控制位置同步至物理世界
 					auto pAsset = obj->GetPrimaryAsset();
 					CParaXModel* pModel = ((ParaXEntity*)pAsset)->GetModel();
 					float halfHeight = pModel->GetHeader().maxExtent.y * 0.5f;
@@ -431,6 +425,12 @@ void CPhysicsWorld::StepSimulation(double dTime)
 					ParaMatrixDecompose(&vScale, &quat, &vTrans, &matrix);
 					quat.ToRotationMatrix(matrix, vPos);
 					actor->SetWorldTransform((PARAMATRIX*)&matrix);
+					*/
+				}
+				else
+				{
+					obj->GetAABB(&aabb); // 已经包含中心点
+					LoadPhysicsBlock(&aabb, s_block_frame_id);
 				}
 			}
 		}
@@ -441,7 +441,6 @@ void CPhysicsWorld::StepSimulation(double dTime)
 			m_pPhysicsWorld->StepSimulation((float)dTime);
 		}
 
-		// TODO 多线程是否需要加锁
 		for (itCurCP = m_mapDynamicActors.begin(); itCurCP != itEndCP; itCurCP++)
 		{
 			IParaPhysicsActor* actor = *itCurCP;
@@ -510,7 +509,7 @@ IParaPhysicsActor* ParaEngine::CPhysicsWorld::CreateDynamicMesh(CBaseObject* obj
 		return NULL; // model is not ready, such as not loaded from disk. 
 
 	IParaPhysicsShape* pShape = m_pPhysicsWorld->CreateSimpleShape(desc);
-	if(!pShape)
+	if (!pShape)
 		return NULL;
 	ParaPhysicsActorDesc ActorDesc;
 	ActorDesc.m_group = obj->GetPhysicsGroup();
@@ -533,7 +532,7 @@ IParaPhysicsActor* ParaEngine::CPhysicsWorld::CreateDynamicMesh(CBaseObject* obj
 	quat.ToRotationMatrix((Matrix3&)ActorDesc.m_rotation);
 
 	IParaPhysicsActor* pActor = m_pPhysicsWorld->CreateActor(ActorDesc);
-	if(!pActor)
+	if (!pActor)
 		return NULL;
 	pActor->SetUserData(obj);
 	m_mapDynamicActors.insert(pActor);
@@ -597,7 +596,7 @@ std::shared_ptr<CPhysicsBlock> ParaEngine::CPhysicsWorld::LoadPhysicsBlock(uint1
 		if (pBlock->GetKey() == key)
 		{
 			// 不存在加载失败情况, 可以屏蔽此行
-			if (!pBlock->IsLoaded()) 
+			if (!pBlock->IsLoaded())
 			{
 				pBlock->Load(model, m_pPhysicsWorld);
 				SetActorPhysicsProperty(pBlock->GetActor(), pTemplate->GetPhysicsProperty().c_str());
@@ -940,7 +939,7 @@ void CPhysicsWorld::ReleaseActor(IParaPhysicsActor* pActor)
 		{
 			CGlobals::GetReport()->SetValue("physics counts", CGlobals::GetReport()->GetValue("physics counts") - 1);
 		}
-}
+	}
 }
 
 // iOS does not support dynamically loaded dll, hence we will use statically linked plugin. 

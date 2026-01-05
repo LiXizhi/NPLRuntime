@@ -248,14 +248,6 @@ namespace ParaEngine
 		*/
 		bool CheckBlockWorld(DVector3& vMovePos, Vector3& vMinPos, Vector3& vMaxPos, bool& bUseGlobalTerrainNorm, bool& bReachPos, Vector3& vBipedFacing, float fDeltaTime);
 
-		/** Apply kinematic forces to nearby dynamic physical objects.
-		* This is called when m_bKinematic is true and the biped is moving.
-		* @param dTimeDelta: time delta in seconds
-		* @param vMovementDir: movement direction vector (normalized)
-		* @param fSpeed: current movement speed
-		*/
-		void ApplyKinematicForces(double dTimeDelta, const Vector3& vMovementDir, float fSpeed);
-
 		bool FacingTowards(double dTimeDelta, float fTargetFacing);
 		/** this function is only called by the AnimateBiped() to update states for active bipeds. */
 		void UpdateState(float fTimeDelta);

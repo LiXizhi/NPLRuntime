@@ -1952,18 +1952,6 @@ bool CBipedObject::MoveTowards(double dTimeDelta, const DVector3& vPosTarget, fl
 {
 	UnloadPhysics();
 	
-	// Apply kinematic forces to nearby dynamic objects if enabled
-	if (m_bKinematic && GetSpeed() != 0.f)
-	{
-		Vector3 vMovementDir;
-		GetSpeedDirection(&vMovementDir);
-		if (vMovementDir.squaredLength() > 0.001f)
-		{
-			vMovementDir.normalise();
-			ApplyKinematicForces(dTimeDelta, vMovementDir, fabs(GetSpeed()));
-		}
-	}
-	
 	if (m_nMovementStyle == MOVESTYLE_OPC)
 	{
 		m_fLastSpeed = 0;
@@ -4831,8 +4819,9 @@ void ParaEngine::CBipedObject::LoadKinematicPhysics()
 		m_dynamicPhysicsActor = CGlobals::GetPhysicsWorld()->CreateDynamicMesh(this);
 		if (m_dynamicPhysicsActor)
 		{
-			// Set mass to 0 to make it kinematic (can push but not be pushed)
-			CGlobals::GetPhysicsWorld()->SetActorPhysicsProperty(m_dynamicPhysicsActor, "{Mass=0}");
+			// Set as kinematic: CollisionFlags=2 marks it as kinematic object, ActivationState=4 keeps it always active
+			// Mass=0 with kinematic flag allows it to push but not be pushed by dynamic objects
+			CGlobals::GetPhysicsWorld()->SetActorPhysicsProperty(m_dynamicPhysicsActor, "{Mass=0,CollisionFlags=2,ActivationState=4}");
 		}
 	}
 }
@@ -4857,6 +4846,29 @@ void ParaEngine::CBipedObject::UpdateKinematicPhysicsActor()
 		PARAMATRIX paraMatrix;
 		memcpy(&paraMatrix, &mxWorld, sizeof(PARAMATRIX));
 		m_dynamicPhysicsActor->SetWorldTransform(&paraMatrix);
+		
+		// Set linear velocity to match biped's movement speed
+		// This allows Bullet to use the velocity in collision response to push dynamic objects
+		Vector3 vMovementDir;
+		GetSpeedDirection(&vMovementDir);
+		float fSpeed = GetSpeed();
+		
+		if (fSpeed != 0.f && vMovementDir.squaredLength() > 0.001f)
+		{
+			vMovementDir.normalise();
+			Vector3 vVelocity = vMovementDir * fSpeed;
+			
+			// Include vertical velocity
+			vVelocity.y = GetVerticalSpeed();
+			
+			PARAVECTOR3 velocity(vVelocity.x, vVelocity.y, vVelocity.z);
+			m_dynamicPhysicsActor->SetLinearVelocity(velocity);
+		}
+		else
+		{
+			// Stop velocity when not moving
+			m_dynamicPhysicsActor->SetLinearVelocity(PARAVECTOR3(0, 0, 0));
+		}
 	}
 }
 
@@ -5692,170 +5704,6 @@ bool CBipedObject::MountOn(CBaseObject* pTarget, int nMountID)
 	return true;
 }
 
-void CBipedObject::ApplyKinematicForces(double dTimeDelta, const Vector3& vMovementDir, float fSpeed)
-{
-	if (!m_bKinematic || fSpeed <= 0.f)
-		return;
-
-	CPhysicsWorld* pPhysicsWorld = CGlobals::GetPhysicsWorld();
-	if (!pPhysicsWorld)
-		return;
-
-	IParaPhysics* pPhysicsInterface = pPhysicsWorld->GetPhysicsInterface();
-	if (!pPhysicsInterface)
-		return;
-
-	// Get biped properties for force calculation
-	float fPhysicsRadius = GetPhysicsRadius();
-	float fPhysicsHeight = GetPhysicsHeight();
-	float fMass = m_fDensity * fPhysicsRadius * fPhysicsRadius * fPhysicsHeight; // approximate mass
-
-	// Scan range ahead of biped
-	float fScanRange = fPhysicsRadius * 2.0f + fSpeed * (float)dTimeDelta;
-
-	// Define vertical scanning layers: below, center, above
-	const int nNumLayers = 5;
-	const int nNumHorizontalRays = 5;
-	const float fAngleSpread = 0.5f; // radians spread
-
-	// Scan at multiple height levels
-	for (int layer = 0; layer < nNumLayers; layer++)
-	{
-		// Calculate origin height for this layer
-		Vector3 vOrigin = m_vPos;
-		float fLayerOffset = 0.f;
-		
-		if (layer == 0)
-			fLayerOffset = 0.f; // feet level
-		else if (layer == 1)
-			fLayerOffset = fPhysicsHeight * 0.25f; // lower body
-		else if (layer == 2)
-			fLayerOffset = fPhysicsHeight * 0.5f; // center
-		else if (layer == 3)
-			fLayerOffset = fPhysicsHeight * 0.75f; // upper body
-		else if (layer == 4)
-			fLayerOffset = fPhysicsHeight; // head level
-			
-		vOrigin.y += fLayerOffset;
-
-		// Cast horizontal rays at this height
-		for (int i = 0; i < nNumHorizontalRays; i++)
-		{
-			Vector3 vRayDir = vMovementDir;
-			
-			// Adjust ray direction for cone spread
-			if (i > 0)
-			{
-				float fAngle = fAngleSpread * (i % 2 == 0 ? 1.0f : -1.0f) * ((i + 1) / 2);
-				Matrix4 rotMat;
-				ParaMatrixRotationY(&rotMat, fAngle);
-				vRayDir = vRayDir * rotMat;
-			}
-
-			RayCastHitResult hit;
-			PARAVECTOR3 origin(vOrigin.x, vOrigin.y, vOrigin.z);
-			PARAVECTOR3 direction(vRayDir.x, vRayDir.y, vRayDir.z);
-
-			// Raycast against dynamic objects (group mask excludes static)
-			IParaPhysicsActor* pHitActor = pPhysicsInterface->RaycastClosestShape(
-				origin, direction, 0xFFFFFFFF, hit, 
-				(1 << IParaPhysicsGroup::DEFAULT), // Only collide with dynamic objects
-				fScanRange);
-
-			if (pHitActor && !pHitActor->IsStaticOrKinematicObject())
-			{
-				// Calculate force based on biped mass and velocity
-				// F = m * v / t, impulse approximation
-				float fForce = fMass * fSpeed / (float)dTimeDelta;
-				
-				// Scale force by distance (closer = stronger push)
-				float fDistanceFactor = 1.0f - (hit.m_fDistance / fScanRange);
-				fDistanceFactor = Math::Clamp(fDistanceFactor, 0.1f, 1.0f);
-				fForce *= fDistanceFactor;
-
-				// Apply impulse in movement direction
-				Vector3 vImpulse = vRayDir * fForce * (float)dTimeDelta;
-				
-				// Limit maximum impulse to prevent excessive forces
-				float fMaxImpulse = fMass * 10.0f; // 10x mass limit
-				float fImpulseMag = vImpulse.length();
-				if (fImpulseMag > fMaxImpulse)
-				{
-					vImpulse = vImpulse.normalisedCopy() * fMaxImpulse;
-				}
-
-				PARAVECTOR3 impulse(vImpulse.x, vImpulse.y, vImpulse.z);
-				pHitActor->ApplyCentralImpulse(impulse);
-				
-				// Activate the actor to ensure it responds
-				pHitActor->Activate();
-			}
-		}
-		
-		// Also cast vertical rays at this layer (upward and downward)
-		if (layer == 2) // Only from center layer
-		{
-			// Upward ray
-			Vector3 vUpDir(0.f, 1.f, 0.f);
-			RayCastHitResult hitUp;
-			PARAVECTOR3 originUp(vOrigin.x, vOrigin.y, vOrigin.z);
-			PARAVECTOR3 directionUp(vUpDir.x, vUpDir.y, vUpDir.z);
-			
-			IParaPhysicsActor* pHitActorUp = pPhysicsInterface->RaycastClosestShape(
-				originUp, directionUp, 0xFFFFFFFF, hitUp, 
-				(1 << IParaPhysicsGroup::DEFAULT),
-				fPhysicsHeight);
-				
-			if (pHitActorUp && !pHitActorUp->IsStaticOrKinematicObject())
-			{
-				float fForce = fMass * fSpeed * 0.5f / (float)dTimeDelta; // Half force for vertical
-				float fDistanceFactor = 1.0f - (hitUp.m_fDistance / fPhysicsHeight);
-				fDistanceFactor = Math::Clamp(fDistanceFactor, 0.1f, 1.0f);
-				fForce *= fDistanceFactor;
-				
-				// Push upward with some forward component
-				Vector3 vImpulse = (vUpDir * 0.7f + vMovementDir * 0.3f) * fForce * (float)dTimeDelta;
-				float fMaxImpulse = fMass * 10.0f;
-				if (vImpulse.length() > fMaxImpulse)
-					vImpulse = vImpulse.normalisedCopy() * fMaxImpulse;
-					
-				PARAVECTOR3 impulse(vImpulse.x, vImpulse.y, vImpulse.z);
-				pHitActorUp->ApplyCentralImpulse(impulse);
-				pHitActorUp->Activate();
-			}
-			
-			// Downward ray
-			Vector3 vDownDir(0.f, -1.f, 0.f);
-			RayCastHitResult hitDown;
-			PARAVECTOR3 originDown(vOrigin.x, vOrigin.y, vOrigin.z);
-			PARAVECTOR3 directionDown(vDownDir.x, vDownDir.y, vDownDir.z);
-			
-			IParaPhysicsActor* pHitActorDown = pPhysicsInterface->RaycastClosestShape(
-				originDown, directionDown, 0xFFFFFFFF, hitDown, 
-				(1 << IParaPhysicsGroup::DEFAULT),
-				fPhysicsHeight);
-				
-			if (pHitActorDown && !pHitActorDown->IsStaticOrKinematicObject())
-			{
-				float fForce = fMass * fSpeed * 0.5f / (float)dTimeDelta; // Half force for vertical
-				float fDistanceFactor = 1.0f - (hitDown.m_fDistance / fPhysicsHeight);
-				fDistanceFactor = Math::Clamp(fDistanceFactor, 0.1f, 1.0f);
-				fForce *= fDistanceFactor;
-				
-				// Push downward with forward component
-				Vector3 vImpulse = (vDownDir * 0.7f + vMovementDir * 0.3f) * fForce * (float)dTimeDelta;
-				float fMaxImpulse = fMass * 10.0f;
-				if (vImpulse.length() > fMaxImpulse)
-					vImpulse = vImpulse.normalisedCopy() * fMaxImpulse;
-					
-				PARAVECTOR3 impulse(vImpulse.x, vImpulse.y, vImpulse.z);
-				pHitActorDown->ApplyCentralImpulse(impulse);
-				pHitActorDown->Activate();
-			}
-		}
-	}
-}
-
 int CBipedObject::InstallFields(CAttributeClass* pClass, bool bOverride)
 {
 	IGameObject::InstallFields(pClass, bOverride);
@@ -5929,10 +5777,15 @@ void CBipedObject::SetKinematic(bool val)
 		m_bKinematic = val;
 		if (val)
 		{
+			m_nPhysicsGroup = IParaPhysicsGroup::KINEMATIC;
+			// Exclude KINEMATIC group from collision mask so kinematic characters don't collide with each other
+			m_dwPhysicsGroupMask = 0xffffffff ^ (1 << IParaPhysicsGroup::KINEMATIC);
 			LoadKinematicPhysics();
 		}
 		else
 		{
+			m_nPhysicsGroup = 0;
+			m_dwPhysicsGroupMask = DEFAULT_PHYSICS_GROUP_MASK;
 			UnloadKinematicPhysics();
 		}
 	}
