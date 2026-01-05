@@ -6,26 +6,26 @@
 // Date:	2005.7 revised 2010.2.25(PhysX is replaced by bullet)
 // Note: serialization functions for ParaX model.
 //-----------------------------------------------------------------------------
-/** 
+/**
 current PhysX version is 2.8.1
 Ageia now uses a free licence for commercial use of its physics engine since version 2.6.2 in Nov,2006. Below are SDK installation guide and application release notes.
 - copy [AgeiaDir]/SDKs/XXX.* to [paraengine]/Physics/ : One can skip ./Docs directory.
 - copy [AgeiaDir]/Bin/Win32/PhysXLoader.dll to [paraengine]/
-- Some helper cooking files at [paraengine]/Physics/XXX.cpp(h) 
+- Some helper cooking files at [paraengine]/Physics/XXX.cpp(h)
 - [NX_SUPPORT_MESH_SCALE is not working. This step is skipped] in Nxp.h at the ageia include folder, uncomment a line to define NX_SUPPORT_MESH_SCALE
 Release:
 - During End User installation. Run the [AgeiaDir]/Redistributable/ in slient mode to install all necessary DLLs to the user's computer.
-	since 2.7.0, it has a much smaller installer which can be downloaded at SDK site. 
+	since 2.7.0, it has a much smaller installer which can be downloaded at SDK site.
 - Add (NVidia)Ageia Copyright Text to about of ParaEngine.
-- Send a copy of the commercial product to Ageia. 
+- Send a copy of the commercial product to Ageia.
 */
 
-/** 
-Currently ParaEngine only supports Ageia/Novodex Physics Engine 2.X ( free license). ODE support is in plan. 
+/**
+Currently ParaEngine only supports Ageia/Novodex Physics Engine 2.X ( free license). ODE support is in plan.
 Below are the matching concept between these two simulation system.
 Novodex				<-> ODE
 nxScene				<-> quad-tree based space: space = dQuadTreeSpaceCreate();...;  dSpaceDestroy(space);
-TriangleMeshShape	<-> dTriMeshDataID Data = dGeomTriMeshDataCreate(); 
+TriangleMeshShape	<-> dTriMeshDataID Data = dGeomTriMeshDataCreate();
 						dGeomTriMeshDataBuildSimple(Data, (dReal*)Vertices, VertexCount, Indices, IndexCount);
 						// another difference is that in ODE, the user needs to keep the memory of Vertices valid; whereas in Novodex it is not.
 static actor		<-> TriMesh = dCreateTriMesh(space, Data, 0, 0, 0); // triangle mesh geometry in a space is similar to static actor in a novodex scene
@@ -46,19 +46,33 @@ ray collision		<-> dSpaceCollide2(...);
 #include "IParaEngineApp.h"
 #include "memdebug.h"
 
+#include "BaseObject.h"
+#include "ShapeAABB.h"
+
 #include "BlockEngine/BlockChunk.h"
 #include "BlockEngine/BlockRegion.h"
 #include "BlockEngine/BlockWorldClient.h"
 #include "util/StringHelper.h"
 #include "NPL/NPLHelper.h"
+
 using namespace ParaEngine;
 
 /** the bullet physics engine plugin dll file path */
-#ifdef _DEBUG
-const char* PHYSICS_DLL_FILE_PATH = "PhysicsBT_d.dll";
+#if defined(WIN32)
+#define DLL_FILE_EXT  "dll"
+#elif defined(PLATFORM_MAC)
+#define DLL_FILE_EXT "dylib"
 #else
-const char* PHYSICS_DLL_FILE_PATH = "PhysicsBT.dll";
+#define DLL_FILE_EXT "so"
 #endif
+
+
+#if defined(_DEBUG) && defined(WIN32)
+const char* PHYSICS_DLL_FILE_PATH = ("PhysicsBT_d." DLL_FILE_EXT);
+#else
+const char* PHYSICS_DLL_FILE_PATH = ("PhysicsBT." DLL_FILE_EXT);
+#endif
+
 
 std::shared_ptr<CPhysicsBlockShape> CPhysicsBlock::GetShape(BlockModel& model, IParaPhysics* world)
 {
@@ -71,7 +85,7 @@ std::shared_ptr<CPhysicsBlockShape> CPhysicsBlock::GetShape(BlockModel& model, I
 
 	int pointCount = model.GetVerticesCount();
 	int faceCount = model.GetFaceCount();
-	int triangleCount = faceCount* 2;
+	int triangleCount = faceCount * 2;
 	int pointStrideBytes = sizeof(Vector3);
 	BlockVertexCompressed* vertices = model.GetVertices();
 	std::string source(pointCount * pointStrideBytes, '\0');
@@ -94,18 +108,18 @@ std::shared_ptr<CPhysicsBlockShape> CPhysicsBlock::GetShape(BlockModel& model, I
 
 	uint16_t index = 0;
 	uint16_t* pIndices = new uint16_t[triangleCount * 3];
-	bool stdCubeFaces[6] = {false, false, false, false, false, false}; // x 0, 1, y 0, 1 z 0, 1
+	bool stdCubeFaces[6] = { false, false, false, false, false, false }; // x 0, 1, y 0, 1 z 0, 1
 	bool isStdCubeShape = faceCount == 6;
 	for (int i = 0; i < faceCount; i++)
 	{
 		uint16_t indexOfs = 4 * i;
-		Vector3 pts[4] = {pVertices[indexOfs + 0], pVertices[indexOfs + 1], pVertices[indexOfs + 2], pVertices[indexOfs + 3]};
+		Vector3 pts[4] = { pVertices[indexOfs + 0], pVertices[indexOfs + 1], pVertices[indexOfs + 2], pVertices[indexOfs + 3] };
 		if (pts[0] != pts[1] && pts[0] != pts[3] && pts[1] != pts[3])
 		{
 			pIndices[index++] = indexOfs + 0;
 			pIndices[index++] = indexOfs + 1;
 			pIndices[index++] = indexOfs + 3;
-		} 
+		}
 		if (pts[1] != pts[2] && pts[1] != pts[3] && pts[2] != pts[3])
 		{
 			pIndices[index++] = indexOfs + 1;
@@ -113,7 +127,7 @@ std::shared_ptr<CPhysicsBlockShape> CPhysicsBlock::GetShape(BlockModel& model, I
 			pIndices[index++] = indexOfs + 3;
 		}
 		// TODO 识别正方体模型
-		if (isStdCubeShape) 
+		if (isStdCubeShape)
 		{
 			// 一个面四个顶点两两不等
 			isStdCubeShape = (pts[0] != pts[1]) && (pts[0] != pts[2]) && (pts[0] != pts[3]) && (pts[1] != pts[2]) && (pts[1] != pts[3]) && (pts[2] != pts[3]);
@@ -129,21 +143,21 @@ std::shared_ptr<CPhysicsBlockShape> CPhysicsBlock::GetShape(BlockModel& model, I
 			{
 				if (tmpStdCubeFaces[i])
 				{
-					if (stdCubeFace < 0) 
+					if (stdCubeFace < 0)
 					{
 						stdCubeFace = i;
 					}
-					else 
+					else
 					{
 						isStdCubeShape = false;
 					}
 				}
 			}
-			if (isStdCubeShape && stdCubeFace >= 0) 
+			if (isStdCubeShape && stdCubeFace >= 0)
 			{
 				stdCubeFaces[stdCubeFace] = true;
 			}
-			else 
+			else
 			{
 				isStdCubeShape = false;
 			}
@@ -157,14 +171,14 @@ std::shared_ptr<CPhysicsBlockShape> CPhysicsBlock::GetShape(BlockModel& model, I
 
 	// hash 是否已被缓存
 	pShape->m_hash = isStdCubeShape ? CPhysicsBlockShape::GetStdCubeHash() : StringHelper::md5(source);
-	for (int i = 0; i < (int)shapeList->size(); i++)
+	for (int i = 0; i < shapeList->size(); i++)
 	{
-		if ((*shapeList)[i]->m_hash == pShape->m_hash) 
+		if ((*shapeList)[i]->m_hash == pShape->m_hash)
 		{
 			shapeIndexMap->insert(std::make_pair(key, i));
-			delete [] pVertices;
-			delete [] pIndices;
-			return (*shapeList)[i];				
+			delete[] pVertices;
+			delete[] pIndices;
+			return (*shapeList)[i];
 		}
 	}
 	// 新建shape
@@ -177,37 +191,37 @@ std::shared_ptr<CPhysicsBlockShape> CPhysicsBlock::GetShape(BlockModel& model, I
 		desc.m_halfLength = BlockConfig::g_half_blockSize;
 		pShape->m_shape = world->CreateSimpleShape(desc);
 	}
-	else 
+	else
 	{
 		ParaPhysicsTriangleMeshDesc trimeshDesc;
-		trimeshDesc.m_numVertices		= pointCount;
-		trimeshDesc.m_numTriangles		= triangleCount;
-		trimeshDesc.m_pointStrideBytes	= pointStrideBytes;
+		trimeshDesc.m_numVertices = pointCount;
+		trimeshDesc.m_numTriangles = triangleCount;
+		trimeshDesc.m_pointStrideBytes = pointStrideBytes;
 		trimeshDesc.m_triangleStrideBytes = 3 * sizeof(uint16_t);
-		trimeshDesc.m_points			= pVertices;
-		trimeshDesc.m_triangles			= pIndices;
-		trimeshDesc.m_flags				= 0;
+		trimeshDesc.m_points = pVertices;
+		trimeshDesc.m_triangles = pIndices;
+		trimeshDesc.m_flags = 0;
 		pShape->m_shape = world->CreateTriangleMeshShape(trimeshDesc);
 	}
 	shapeIndexMap->insert(std::make_pair(key, (uint16_t)shapeList->size()));
 	shapeList->push_back(pShape);
-	delete [] pIndices;
-	delete [] pVertices;
-	return pShape;  
+	delete[] pIndices;
+	delete[] pVertices;
+	return pShape;
 }
 
 void CPhysicsBlock::Load(BlockModel& model, IParaPhysics* world)
 {
 	if (m_actor) return;
 	auto pShape = GetShape(model, world);
-	if (!pShape->m_shape) return ;
+	if (!pShape->m_shape) return;
 
 	ParaPhysicsActorDesc ActorDesc;
 	ActorDesc.m_group = IParaPhysicsGroup::BLOCK;              // 2 字节 地块占用最高为分组
 	ActorDesc.m_mask = -1 ^ (1 << ActorDesc.m_group);
 	ActorDesc.m_mass = 0.0f;
 	ActorDesc.m_pShape = pShape->m_shape;
-	
+
 	uint16_t bx, by, bz;
 	float offset_y = BlockWorldClient::GetInstance()->GetVerticalOffset();
 	UnPackID(GetID(), bx, by, bz);
@@ -215,7 +229,7 @@ void CPhysicsBlock::Load(BlockModel& model, IParaPhysics* world)
 	{
 		ActorDesc.m_origin = PARAVECTOR3((bx + 0.5f) * BlockConfig::g_dBlockSize, (by + 0.5f) * BlockConfig::g_dBlockSize + offset_y, (bz + 0.5f) * BlockConfig::g_dBlockSize);
 	}
-	else 
+	else
 	{
 		ActorDesc.m_origin = PARAVECTOR3(bx * BlockConfig::g_dBlockSize, by * BlockConfig::g_dBlockSize + offset_y, bz * BlockConfig::g_dBlockSize);
 	}
@@ -236,7 +250,7 @@ void CPhysicsBlock::Unload()
 }
 
 CPhysicsWorld::CPhysicsWorld()
-: m_pPhysicsWorld(NULL), m_bRunDynamicSimulation(true)
+	: m_pPhysicsWorld(NULL), m_bRunDynamicSimulation(true)
 {
 }
 
@@ -249,10 +263,10 @@ CPhysicsWorld::~CPhysicsWorld(void)
 
 void CPhysicsWorld::SetActorPhysicsProperty(IParaPhysicsActor* actor, const char* property)
 {
-	if (actor == nullptr) return ;
+	if (actor == nullptr) return;
 
 	NPL::NPLObjectProxy msg = NPL::NPLHelper::StringToNPLTable(property, (int)strlen(property));
-	if (msg.GetType() == NPL::NPLObjectBase::NPLObjectType_Table) 
+	if (msg.GetType() == NPL::NPLObjectBase::NPLObjectType_Table)
 	{
 		if (msg["Mass"].GetType() == NPL::NPLObjectBase::NPLObjectType_Number) actor->SetMass((float)(double)msg["Mass"]);
 		if (msg["LocalInertiaX"].GetType() == NPL::NPLObjectBase::NPLObjectType_Number) actor->SetLocalInertia(PARAVECTOR3((float)(double)msg["LocalInertiaX"], (float)(double)msg["LocalInertiaY"], (float)(double)msg["LocalInertiaZ"]));
@@ -337,7 +351,7 @@ const char* CPhysicsWorld::GetActorPhysicsProperty(IParaPhysicsActor* actor)
 void CPhysicsWorld::InitPhysics()
 {
 	IParaPhysics* pPhysics = GetPhysicsInterface();
-	if(pPhysics == 0)
+	if (pPhysics == 0)
 	{
 		OUTPUT_LOG("error: failed loading physics lib at %s \n", PHYSICS_DLL_FILE_PATH);
 		return;
@@ -349,17 +363,17 @@ void CPhysicsWorld::InitPhysics()
 
 void CPhysicsWorld::ExitPhysics()
 {
-	if (m_pPhysicsWorld) 
+	if (m_pPhysicsWorld)
 	{
 		m_pPhysicsWorld->ExitPhysics();
 	}
-	
+
 	// clear all shapes
 	TriangleMeshShape_Map_Type::iterator itCurCP, itEndCP = m_listMeshShapes.end();
 
-	for( itCurCP = m_listMeshShapes.begin(); itCurCP != itEndCP; ++ itCurCP)
+	for (itCurCP = m_listMeshShapes.begin(); itCurCP != itEndCP; ++itCurCP)
 	{
-		delete * itCurCP;
+		delete* itCurCP;
 	}
 	m_listMeshShapes.clear();
 	m_mapDynamicActors.clear();
@@ -381,26 +395,24 @@ void CPhysicsWorld::StepSimulation(double dTime)
 	CShapeAABB aabb;
 	static int16_t s_block_frame_id = 0;
 	s_block_frame_id++;
-	if(IsDynamicsSimulationEnabled())
+	if (IsDynamicsSimulationEnabled())
 	{
-		IParaPhysicsActor_Map_Type::iterator itCurCP = m_mapDynamicActors.begin(); 
+		IParaPhysicsActor_Map_Type::iterator itCurCP = m_mapDynamicActors.begin();
 		IParaPhysicsActor_Map_Type::iterator itEndCP = m_mapDynamicActors.end();
 
-		// 加载地形
+		// check load terrain physics blocks near all dynamic actors
 		BlockWorldClient* pWorld = BlockWorldClient::GetInstance();
 		bool isAutoPhysicsBlock = pWorld->IsAutoPhysics();
-		if (isAutoPhysicsBlock) 
+		if (isAutoPhysicsBlock)
 		{
 			for (itCurCP = m_mapDynamicActors.begin(); itCurCP != itEndCP; itCurCP++)
 			{
 				IParaPhysicsActor* actor = *itCurCP;
-				CBaseObject* obj = (CBaseObject*)(actor->GetUserData());	
-				obj->GetAABB(&aabb); // 已经包含中心点
-				LoadPhysicsBlock(&aabb, s_block_frame_id);
-
-				if (actor->IsStaticOrKinematicObject()) 
+				CBaseObject* obj = (CBaseObject*)(actor->GetUserData());
+				if (actor->IsStaticOrKinematicObject())
 				{
-					// 属性设置为 CollisionFlags=2, ActivationState=4 可右玩家控制位置同步至物理世界 
+					/* the following is done in CBipedObject::UpdateKinematicPhysicsActor()
+					// 属性设置为 CollisionFlags=2, ActivationState=4 可右玩家控制位置同步至物理世界
 					auto pAsset = obj->GetPrimaryAsset();
 					CParaXModel* pModel = ((ParaXEntity*)pAsset)->GetModel();
 					float halfHeight = pModel->GetHeader().maxExtent.y * 0.5f;
@@ -413,22 +425,27 @@ void CPhysicsWorld::StepSimulation(double dTime)
 					ParaMatrixDecompose(&vScale, &quat, &vTrans, &matrix);
 					quat.ToRotationMatrix(matrix, vPos);
 					actor->SetWorldTransform((PARAMATRIX*)&matrix);
+					*/
+				}
+				else
+				{
+					obj->GetAABB(&aabb); // 已经包含中心点
+					LoadPhysicsBlock(&aabb, s_block_frame_id);
 				}
 			}
 		}
 
-		if(m_pPhysicsWorld)
+		if (m_pPhysicsWorld)
 		{
 			PERF1("Dynamic Physics");
 			m_pPhysicsWorld->StepSimulation((float)dTime);
 		}
 
-		// TODO 多线程是否需要加锁
 		for (itCurCP = m_mapDynamicActors.begin(); itCurCP != itEndCP; itCurCP++)
 		{
 			IParaPhysicsActor* actor = *itCurCP;
 			CBaseObject* obj = (CBaseObject*)(actor->GetUserData());
-			if (!actor->IsStaticOrKinematicObject()) 
+			if (!actor->IsStaticOrKinematicObject())
 			{
 				actor->GetWorldTransform((PARAMATRIX*)&matrix);
 				Vector3 pos = matrix.getTrans();
@@ -452,7 +469,7 @@ void CPhysicsWorld::StepSimulation(double dTime)
 		}
 
 		// 移除无效方块
-		if (isAutoPhysicsBlock) 
+		if (isAutoPhysicsBlock)
 		{
 			auto it = m_mapPhysicsBlocks.begin();
 			while (it != m_mapPhysicsBlocks.end())
@@ -494,7 +511,6 @@ IParaPhysicsActor* ParaEngine::CPhysicsWorld::CreateDynamicMesh(CBaseObject* obj
 	IParaPhysicsShape* pShape = m_pPhysicsWorld->CreateSimpleShape(desc);
 	if (!pShape)
 		return NULL;
-
 	ParaPhysicsActorDesc ActorDesc;
 	ActorDesc.m_group = obj->GetPhysicsGroup();
 	ActorDesc.m_mask = -1;
@@ -538,8 +554,8 @@ void ParaEngine::CPhysicsWorld::LoadPhysicsBlock(CShapeAABB* aabb, int16_t frame
 	int16_t max_x = (int16_t)std::floor(max.x / BlockConfig::g_dBlockSize);
 	int16_t max_y = (int16_t)std::floor((max.y - offset_y) / BlockConfig::g_dBlockSize);
 	int16_t max_z = (int16_t)std::floor(max.z / BlockConfig::g_dBlockSize);
-	if (min_x < 0 || min_y < 0 || min_z < 0) return ;
-	
+	if (min_x < 0 || min_y < 0 || min_z < 0) return;
+
 	for (int16_t bx = min_x; bx <= max_x; bx++)
 	{
 		for (int16_t by = min_y; by <= max_y; by++)
@@ -566,21 +582,21 @@ std::shared_ptr<CPhysicsBlock> ParaEngine::CPhysicsWorld::LoadPhysicsBlock(uint1
 	{
 		m_mapPhysicsBlocks.erase(id);
 		return nullptr;
-	} 
-	
+	}
+
 	uint16_t blockData = pBlock->GetUserData();
 	uint16_t tplId = pTemplate->GetID();
 	uint32_t key = (blockData << 16) + tplId;
 	BlockModel& model = pTemplate->GetBlockModel(pWorld, bx, by, bz, blockData);
 
 	auto it = m_mapPhysicsBlocks.find(id);
-	if (it != m_mapPhysicsBlocks.end()) 
+	if (it != m_mapPhysicsBlocks.end())
 	{
 		std::shared_ptr<CPhysicsBlock> pBlock = it->second;
-		if (pBlock->GetKey() == key) 
+		if (pBlock->GetKey() == key)
 		{
 			// 不存在加载失败情况, 可以屏蔽此行
-			if (!pBlock->IsLoaded()) 
+			if (!pBlock->IsLoaded())
 			{
 				pBlock->Load(model, m_pPhysicsWorld);
 				SetActorPhysicsProperty(pBlock->GetActor(), pTemplate->GetPhysicsProperty().c_str());
@@ -592,29 +608,29 @@ std::shared_ptr<CPhysicsBlock> ParaEngine::CPhysicsWorld::LoadPhysicsBlock(uint1
 	}
 
 	// 非实体方块不做物理映射
-	if (!pWorld->IsObstructionBlock(bx, by, bz)) 
+	if (!pWorld->IsObstructionBlock(bx, by, bz))
 	{
 		return nullptr;
 	}
-	
+
 	// 加载physics block
 	std::shared_ptr<CPhysicsBlock> newBlock = std::make_shared<CPhysicsBlock>(id, key);
 	newBlock->Load(model, m_pPhysicsWorld);
 	SetActorPhysicsProperty(newBlock->GetActor(), pTemplate->GetPhysicsProperty().c_str());
 	m_mapPhysicsBlocks.insert(std::make_pair(id, newBlock));
+
 	return newBlock;
 }
 
-
 /**
-* please note that multiple mesh actor may be created. 
+* please note that multiple mesh actor may be created.
 */
-IParaPhysicsActor* ParaEngine::CPhysicsWorld::CreateStaticMesh( MeshEntity* ppMesh, const Matrix4& globalMat, uint32 nShapeGroup /*= 0*/, vector<IParaPhysicsActor*>* pOutputPhysicsActor /*= NULL*/, void* pUserData/*=NULL*/ )
+IParaPhysicsActor* ParaEngine::CPhysicsWorld::CreateStaticMesh(MeshEntity* ppMesh, const Matrix4& globalMat, uint32 nShapeGroup /*= 0*/, vector<IParaPhysicsActor*>* pOutputPhysicsActor /*= NULL*/, void* pUserData/*=NULL*/)
 {
-	if(!ppMesh->IsValid() || ppMesh->GetMesh() == 0 || m_pPhysicsWorld==0)
+	if (!ppMesh->IsValid() || ppMesh->GetMesh() == 0 || m_pPhysicsWorld == 0)
 		return NULL;
-	TriangleMeshShape * MeshShape = NULL;
-	
+	TriangleMeshShape* MeshShape = NULL;
+
 	/** Get the scaling factor from globalMat.
 	* since we need to create separate physics mesh with different scaling factors even for the same mesh model.
 	* it is assumed that components of globalMat satisfies the following equation:
@@ -622,66 +638,66 @@ IParaPhysicsActor* ParaEngine::CPhysicsWorld::CreateStaticMesh( MeshEntity* ppMe
 	* |(globalMat._21, globalMat._22, globalMat._23)| = 1;
 	* |(globalMat._31, globalMat._32, globalMat._33)| = 1;
 	*/
-	float fScalingX,fScalingY,fScalingZ;
-	Math::GetMatrixScaling(globalMat, &fScalingX,&fScalingY,&fScalingZ);
-	
+	float fScalingX, fScalingY, fScalingZ;
+	Math::GetMatrixScaling(globalMat, &fScalingX, &fScalingY, &fScalingZ);
+
 	// TODO: use a sorted set to store the shape list. it is more efficient
 	TriangleMeshShape_Map_Type::iterator itCurCP, itEndCP = m_listMeshShapes.end();
 
-	for( itCurCP = m_listMeshShapes.begin(); itCurCP != itEndCP; ++ itCurCP)
+	for (itCurCP = m_listMeshShapes.begin(); itCurCP != itEndCP; ++itCurCP)
 	{
-		if((*itCurCP)->m_pMeshEntity == ppMesh)
+		if ((*itCurCP)->m_pMeshEntity == ppMesh)
 		{
 			// keep mesh for every scale level
 			Vector3 vScale = (*itCurCP)->m_vScale;
-			if(Vector3(vScale.x-fScalingX,vScale.y-fScalingY,vScale.z-fScalingZ).squaredLength() < FLT_TOLERANCE)
+			if (Vector3(vScale.x - fScalingX, vScale.y - fScalingY, vScale.z - fScalingZ).squaredLength() < FLT_TOLERANCE)
 			{
 				MeshShape = (*itCurCP);
 				break;
-			}			
+			}
 		}
 	}
 
-	if(MeshShape == NULL)
+	if (MeshShape == NULL)
 	{
 		// get physics mesh data to pSysMesh with only vertex position vector
-		DWORD dwNumVx=0;
-		Vector3 * verts = NULL;
+		DWORD dwNumVx = 0;
+		Vector3* verts = NULL;
 		DWORD dwNumFaces = 0;
 		WORD* indices = NULL;
-		if(ppMesh->GetMesh() == 0)
+		if (ppMesh->GetMesh() == 0)
 			return NULL;
 		int nMeshGroup = -1;
-		
-		while( (nMeshGroup = ppMesh->GetMesh()->GetNextPhysicsGroupID(nMeshGroup)) >=0 )
+
+		while ((nMeshGroup = ppMesh->GetMesh()->GetNextPhysicsGroupID(nMeshGroup)) >= 0)
 		{
 			SAFE_DELETE_ARRAY(indices);
-			if(!SUCCEEDED(ppMesh->GetMesh()->ClonePhysicsMesh((verts==NULL)? &dwNumVx : NULL,(verts==NULL)? (&verts) : NULL,&dwNumFaces,&indices, &nMeshGroup)) 
-				|| dwNumFaces==0 )
+			if (!SUCCEEDED(ppMesh->GetMesh()->ClonePhysicsMesh((verts == NULL) ? &dwNumVx : NULL, (verts == NULL) ? (&verts) : NULL, &dwNumFaces, &indices, &nMeshGroup))
+				|| dwNumFaces == 0)
 			{
-				if(MeshShape == NULL)
+				if (MeshShape == NULL)
 				{
 					SAFE_DELETE_ARRAY(verts);
 					SAFE_DELETE_ARRAY(indices);
 					// physics mesh can not be loaded either because of an internal error or the mesh does not contain any physics faces.
-					return NULL; 
+					return NULL;
 				}
 				else
 					continue;
 			}
 
 			/// if the shape has not been created from MeshEntity, we will create it, and add to the shape list for reuse later
-			if(MeshShape == NULL)
+			if (MeshShape == NULL)
 			{
 				MeshShape = new TriangleMeshShape();
-				MeshShape->m_pMeshEntity  = ppMesh;
+				MeshShape->m_pMeshEntity = ppMesh;
 				MeshShape->m_vScale = Vector3(fScalingX, fScalingY, fScalingZ);
 				m_listMeshShapes.push_back(MeshShape);
 
 				// scale the vertex if necessary
-				if(Vector3(fScalingX-1.0f,fScalingY-1.0f,fScalingZ-1.0f).squaredLength() > FLT_TOLERANCE)
+				if (Vector3(fScalingX - 1.0f, fScalingY - 1.0f, fScalingZ - 1.0f).squaredLength() > FLT_TOLERANCE)
 				{
-					for( DWORD i = 0; i < dwNumVx; ++ i )
+					for (DWORD i = 0; i < dwNumVx; ++i)
 					{
 						// scale each vertex before hand
 						verts[i].x *= fScalingX;
@@ -693,13 +709,13 @@ IParaPhysicsActor* ParaEngine::CPhysicsWorld::CreateStaticMesh( MeshEntity* ppMe
 
 			// Create descriptor for triangle mesh
 			ParaPhysicsTriangleMeshDesc trimeshDesc;
-			trimeshDesc.m_numVertices		= dwNumVx;
-			trimeshDesc.m_numTriangles		= dwNumFaces;
-			trimeshDesc.m_pointStrideBytes	= sizeof(PARAVECTOR3);
+			trimeshDesc.m_numVertices = dwNumVx;
+			trimeshDesc.m_numTriangles = dwNumFaces;
+			trimeshDesc.m_pointStrideBytes = sizeof(PARAVECTOR3);
 			trimeshDesc.m_triangleStrideBytes = 3 * sizeof(int16);
-			trimeshDesc.m_points			= verts;
-			trimeshDesc.m_triangles			= indices;
-			trimeshDesc.m_flags				= 0;
+			trimeshDesc.m_points = verts;
+			trimeshDesc.m_triangles = indices;
+			trimeshDesc.m_flags = 0;
 
 			// Cooking from memory
 
@@ -709,47 +725,47 @@ IParaPhysicsActor* ParaEngine::CPhysicsWorld::CreateStaticMesh( MeshEntity* ppMe
 		SAFE_DELETE_ARRAY(indices);
 	}
 	/// Create the static actor
-	if(MeshShape != NULL && !(MeshShape->m_pShapes.empty()))
+	if (MeshShape != NULL && !(MeshShape->m_pShapes.empty()))
 	{
 		// Generate report
-		if(CGlobals::WillGenReport())
+		if (CGlobals::WillGenReport())
 		{
-			CGlobals::GetReport()->SetValue("physics counts",CGlobals::GetReport()->GetValue("physics counts")+1);
+			CGlobals::GetReport()->SetValue("physics counts", CGlobals::GetReport()->GetValue("physics counts") + 1);
 		}
 		IParaPhysicsActor* pFirstActor = NULL;
 		int nMeshCount = (int)MeshShape->m_pShapes.size();
-		for(int i=0; i<nMeshCount; ++i)
+		for (int i = 0; i < nMeshCount; ++i)
 		{
 			ParaPhysicsActorDesc ActorDesc;
 			int nPhysicsGroup = MeshShape->m_pShapes[i].m_nPhysicsGroup;
-			ActorDesc.m_group = (int16)((nPhysicsGroup==0) ? (nShapeGroup) : nPhysicsGroup);
+			ActorDesc.m_group = (int16)((nPhysicsGroup == 0) ? (nShapeGroup) : nPhysicsGroup);
 			ActorDesc.m_mask = -1;
 			// this ensures a static object. 
 			ActorDesc.m_mass = 0.f;
 			ActorDesc.m_pShape = MeshShape->m_pShapes[i].m_pShape;
 			// set global world position
-			ActorDesc.m_origin = PARAVECTOR3(globalMat._41, globalMat._42,globalMat._43);
+			ActorDesc.m_origin = PARAVECTOR3(globalMat._41, globalMat._42, globalMat._43);
 
 			// remove the scaling factor from the rotation matrix
-			for (int i=0;i<3;++i)
+			for (int i = 0; i < 3; ++i)
 			{
-				ActorDesc.m_rotation.m[0][i] = globalMat.m[0][i]/fScalingX;
-				ActorDesc.m_rotation.m[1][i] = globalMat.m[1][i]/fScalingY;
-				ActorDesc.m_rotation.m[2][i] = globalMat.m[2][i]/fScalingZ;
+				ActorDesc.m_rotation.m[0][i] = globalMat.m[0][i] / fScalingX;
+				ActorDesc.m_rotation.m[1][i] = globalMat.m[1][i] / fScalingY;
+				ActorDesc.m_rotation.m[2][i] = globalMat.m[2][i] / fScalingZ;
 			}
 
 			IParaPhysicsActor* pActor = m_pPhysicsWorld->CreateActor(ActorDesc);
-			if(pActor!=0)
+			if (pActor != 0)
 			{
-				if(pUserData!=NULL)
+				if (pUserData != NULL)
 				{
 					pActor->SetUserData(pUserData);
 				}
-				if(pOutputPhysicsActor!=NULL)
+				if (pOutputPhysicsActor != NULL)
 				{
 					pOutputPhysicsActor->push_back(pActor);
 				}
-				if(pFirstActor == NULL)
+				if (pFirstActor == NULL)
 				{
 					pFirstActor = pActor;
 				}
@@ -765,7 +781,7 @@ IParaPhysicsActor* ParaEngine::CPhysicsWorld::CreateStaticMesh(ParaXEntity* ppMe
 {
 	if (!ppMesh->IsValid() || ppMesh->GetModel() == 0 || m_pPhysicsWorld == 0)
 		return NULL;
-	TriangleMeshShape * MeshShape = NULL;
+	TriangleMeshShape* MeshShape = NULL;
 
 	/** Get the scaling factor from globalMat.
 	* since we need to create separate physics mesh with different scaling factors even for the same mesh model.
@@ -798,7 +814,7 @@ IParaPhysicsActor* ParaEngine::CPhysicsWorld::CreateStaticMesh(ParaXEntity* ppMe
 	{
 		// get physics mesh data to pSysMesh with only vertex position vector
 		DWORD dwNumVx = 0;
-		Vector3 * verts = NULL;
+		Vector3* verts = NULL;
 		DWORD dwNumFaces = 0;
 		DWORD* indices = NULL;
 		if (ppMesh->GetModel() == 0)
@@ -870,7 +886,7 @@ IParaPhysicsActor* ParaEngine::CPhysicsWorld::CreateStaticMesh(ParaXEntity* ppMe
 		}
 		IParaPhysicsActor* pFirstActor = NULL;
 		int nMeshCount = (int)MeshShape->m_pShapes.size();
-		for (int i = 0; i<nMeshCount; ++i)
+		for (int i = 0; i < nMeshCount; ++i)
 		{
 			ParaPhysicsActorDesc ActorDesc;
 			int nPhysicsGroup = MeshShape->m_pShapes[i].m_nPhysicsGroup;
@@ -883,7 +899,7 @@ IParaPhysicsActor* ParaEngine::CPhysicsWorld::CreateStaticMesh(ParaXEntity* ppMe
 			ActorDesc.m_origin = PARAVECTOR3(globalMat._41, globalMat._42, globalMat._43);
 
 			// remove the scaling factor from the rotation matrix
-			for (int i = 0; i<3; ++i)
+			for (int i = 0; i < 3; ++i)
 			{
 				ActorDesc.m_rotation.m[0][i] = globalMat.m[0][i] / fScalingX;
 				ActorDesc.m_rotation.m[1][i] = globalMat.m[1][i] / fScalingY;
@@ -915,28 +931,28 @@ IParaPhysicsActor* ParaEngine::CPhysicsWorld::CreateStaticMesh(ParaXEntity* ppMe
 
 void CPhysicsWorld::ReleaseActor(IParaPhysicsActor* pActor)
 {
-	if(m_pPhysicsWorld)
+	if (m_pPhysicsWorld)
 	{
 		m_mapDynamicActors.erase(pActor);
 		m_pPhysicsWorld->ReleaseActor(pActor);
-		if(CGlobals::WillGenReport())
+		if (CGlobals::WillGenReport())
 		{
-			CGlobals::GetReport()->SetValue("physics counts",CGlobals::GetReport()->GetValue("physics counts")-1);
+			CGlobals::GetReport()->SetValue("physics counts", CGlobals::GetReport()->GetValue("physics counts") - 1);
 		}
 	}
 }
 
 // iOS does not support dynamically loaded dll, hence we will use statically linked plugin. 
-#if defined(STATIC_PLUGIN_PHYSICS_BT)
+#if defined(PHYSICS_STATICLIB)
 extern ClassDescriptor* PhysicsBT_GetClassDesc();
 #endif
 
 IParaPhysics* CPhysicsWorld::GetPhysicsInterface()
 {
-	if(m_pPhysicsWorld)
+	if (m_pPhysicsWorld)
 		return m_pPhysicsWorld;
 
-#ifdef STATIC_PLUGIN_PHYSICS_BT
+#ifdef PHYSICS_STATICLIB
 	ClassDescriptor* pClassDesc = PhysicsBT_GetClassDesc();
 	if (pClassDesc && (strcmp(pClassDesc->ClassName(), "IParaPhysics") == 0))
 	{
@@ -945,21 +961,21 @@ IParaPhysics* CPhysicsWorld::GetPhysicsInterface()
 	}
 #else
 	DLLPlugInEntity* pPluginEntity = CGlobals::GetPluginManager()->GetPluginEntity(PHYSICS_DLL_FILE_PATH);
-	if(pPluginEntity==0)
+	if (pPluginEntity == 0)
 	{
 		// load the plug-in if it has never been loaded before. 
 		pPluginEntity = ParaEngine::CGlobals::GetPluginManager()->LoadDLL("", PHYSICS_DLL_FILE_PATH);
 	}
 
-	if(pPluginEntity!=0)
+	if (pPluginEntity != 0)
 	{
-		for (int i=0; i < pPluginEntity->GetNumberOfClasses(); ++i)
+		for (int i = 0; i < pPluginEntity->GetNumberOfClasses(); ++i)
 		{
 			ClassDescriptor* pClassDesc = pPluginEntity->GetClassDescriptor(i);
 
-			if(pClassDesc && (strcmp(pClassDesc->ClassName(), "IParaPhysics") == 0))
+			if (pClassDesc && (strcmp(pClassDesc->ClassName(), "IParaPhysics") == 0))
 			{
-				m_pPhysicsWorld = (IParaPhysics*) pClassDesc->Create();
+				m_pPhysicsWorld = (IParaPhysics*)pClassDesc->Create();
 			}
 		}
 	}
@@ -972,7 +988,7 @@ IParaPhysics* CPhysicsWorld::GetPhysicsInterface()
 	return m_pPhysicsWorld;
 }
 
-void ParaEngine::CPhysicsWorld::SetDynamicsSimulationEnabled( bool bEnable )
+void ParaEngine::CPhysicsWorld::SetDynamicsSimulationEnabled(bool bEnable)
 {
 	m_bRunDynamicSimulation = bEnable;
 }

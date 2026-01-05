@@ -69,6 +69,9 @@ if(NPLRUNTIME_STATIC_LIB)
 	set(CURL_STATICLIB TRUE)
 	set(LUA_STATICLIB TRUE)
 	set(SQLITE_STATICLIB TRUE)
+	if (NPLRUNTIME_PHYSICS)
+		set(PHYSICS_STATICLIB TRUE)
+	endif()
 endif()
 
 # This is the directory to keep all binary

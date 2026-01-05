@@ -63,7 +63,7 @@ namespace ParaEngine
 		typedef ParaEngine::weak_ptr<IObject, CBipedObject> WeakPtr_type;
 
 		virtual std::string ToString(DWORD nMethod);
-		virtual CBaseObject::_SceneObjectType GetType(){ return CBaseObject::BipedObject; };
+		virtual CBaseObject::_SceneObjectType GetType() { return CBaseObject::BipedObject; };
 
 		typedef std::list<BipedWayPoint> WayPointList_type;
 
@@ -103,7 +103,7 @@ namespace ParaEngine
 		static const float SPEED_WALK;
 		/**@def default biped normal turning speed. */
 		static const float SPEED_NORM_TURN;
-		
+
 	public:
 		CBipedObject(void);
 		virtual ~CBipedObject(void);
@@ -113,108 +113,111 @@ namespace ParaEngine
 		// implementation of IAttributeFields
 
 		/** attribute class ID should be identical, unless one knows how overriding rules work.*/
-		virtual int GetAttributeClassID(){ return ATTRIBUTE_CLASSID_CBipedObject; }
+		virtual int GetAttributeClassID() { return ATTRIBUTE_CLASSID_CBipedObject; }
 		/** a static string, describing the attribute class object's name */
-		virtual const char* GetAttributeClassName(){ static const char name[] = "CBipedObject"; return name; }
+		virtual const char* GetAttributeClassName() { static const char name[] = "CBipedObject"; return name; }
 		/** a static string, describing the attribute class object */
-		virtual const char* GetAttributeClassDescription(){ static const char desc[] = ""; return desc; }
+		virtual const char* GetAttributeClassDescription() { static const char desc[] = ""; return desc; }
 		/** this class should be implemented if one wants to add new attribute. This function is always called internally.*/
 		virtual int InstallFields(CAttributeClass* pClass, bool bOverride);
 
 		/** get attribute by child object. used to iterate across the attribute field hierarchy. */
-		virtual IAttributeFields* GetChildAttributeObject(const char * sName);
+		virtual IAttributeFields* GetChildAttributeObject(const char* sName);
 		/** get the number of child objects (row count) in the given column. please note different columns can have different row count. */
 		virtual int GetChildAttributeObjectCount(int nColumnIndex = 0);
 		/** we support multi-dimensional child object. by default objects have only one column. */
 		virtual int GetChildAttributeColumnCount();
 		virtual IAttributeFields* GetChildAttributeObject(int nRowIndex, int nColumnIndex = 0);
 
-		ATTRIBUTE_METHOD1(CBipedObject, GetPhysicsRadius_s, float*)		{ *p1 = cls->GetPhysicsRadius(); return S_OK; }
-		ATTRIBUTE_METHOD1(CBipedObject, SetPhysicsRadius_s, float)		{ cls->SetPhysicsRadius(p1); return S_OK; }
+		ATTRIBUTE_METHOD1(CBipedObject, GetPhysicsRadius_s, float*) { *p1 = cls->GetPhysicsRadius(); return S_OK; }
+		ATTRIBUTE_METHOD1(CBipedObject, SetPhysicsRadius_s, float) { cls->SetPhysicsRadius(p1); return S_OK; }
 
-		ATTRIBUTE_METHOD1(CBipedObject, GetPhysicsHeight_s, float*)		{ *p1 = cls->GetPhysicsHeight(); return S_OK; }
-		ATTRIBUTE_METHOD1(CBipedObject, SetPhysicsHeight_s, float)		{ cls->SetPhysicsHeight(p1); return S_OK; }
+		ATTRIBUTE_METHOD1(CBipedObject, GetPhysicsHeight_s, float*) { *p1 = cls->GetPhysicsHeight(); return S_OK; }
+		ATTRIBUTE_METHOD1(CBipedObject, SetPhysicsHeight_s, float) { cls->SetPhysicsHeight(p1); return S_OK; }
 
-		ATTRIBUTE_METHOD1(CBipedObject, GetSizeScale_s, float*)		{ *p1 = cls->GetSizeScale(); return S_OK; }
-		ATTRIBUTE_METHOD1(CBipedObject, SetSizeScale_s, float)		{ cls->SetSizeScale(p1); return S_OK; }
+		ATTRIBUTE_METHOD1(CBipedObject, GetSizeScale_s, float*) { *p1 = cls->GetSizeScale(); return S_OK; }
+		ATTRIBUTE_METHOD1(CBipedObject, SetSizeScale_s, float) { cls->SetSizeScale(p1); return S_OK; }
 
-		ATTRIBUTE_METHOD1(CBipedObject, GetDensity_s, float*)		{ *p1 = cls->GetDensity(); return S_OK; }
-		ATTRIBUTE_METHOD1(CBipedObject, SetDensity_s, float)		{ cls->SetDensity(p1); return S_OK; }
+		ATTRIBUTE_METHOD1(CBipedObject, GetDensity_s, float*) { *p1 = cls->GetDensity(); return S_OK; }
+		ATTRIBUTE_METHOD1(CBipedObject, SetDensity_s, float) { cls->SetDensity(p1); return S_OK; }
 
-		ATTRIBUTE_METHOD1(CBipedObject, GetSpeedScale_s, float*)		{ *p1 = cls->GetSpeedScale(); return S_OK; }
-		ATTRIBUTE_METHOD1(CBipedObject, SetSpeedScale_s, float)		{ cls->SetSpeedScale(p1); return S_OK; }
+		ATTRIBUTE_METHOD1(CBipedObject, GetSpeedScale_s, float*) { *p1 = cls->GetSpeedScale(); return S_OK; }
+		ATTRIBUTE_METHOD1(CBipedObject, SetSpeedScale_s, float) { cls->SetSpeedScale(p1); return S_OK; }
 
-		ATTRIBUTE_METHOD1(CBipedObject, GetCurrentAnimation_s, int*)		{ *p1 = cls->GetCurrentAnimation(); return S_OK; }
-		ATTRIBUTE_METHOD1(CBipedObject, PlayAnimation_s, int)		{ cls->PlayAnimation(p1); return S_OK; }
-		ATTRIBUTE_METHOD(CBipedObject, DumpBVHAnimations_s)		{ cls->DumpBVHAnimations(); return S_OK; }
+		ATTRIBUTE_METHOD1(CBipedObject, GetCurrentAnimation_s, int*) { *p1 = cls->GetCurrentAnimation(); return S_OK; }
+		ATTRIBUTE_METHOD1(CBipedObject, PlayAnimation_s, int) { cls->PlayAnimation(p1); return S_OK; }
+		ATTRIBUTE_METHOD(CBipedObject, DumpBVHAnimations_s) { cls->DumpBVHAnimations(); return S_OK; }
 
-		ATTRIBUTE_METHOD1(CBipedObject, GetHeadTurningAngle_s, float*)		{ *p1 = cls->GetHeadTurningAngle(); return S_OK; }
-		ATTRIBUTE_METHOD1(CBipedObject, SetHeadTurningAngle_s, float)		{ cls->SetHeadTurningAngle(p1); return S_OK; }
+		ATTRIBUTE_METHOD1(CBipedObject, GetHeadTurningAngle_s, float*) { *p1 = cls->GetHeadTurningAngle(); return S_OK; }
+		ATTRIBUTE_METHOD1(CBipedObject, SetHeadTurningAngle_s, float) { cls->SetHeadTurningAngle(p1); return S_OK; }
 
-		ATTRIBUTE_METHOD1(CBipedObject, GetHeadUpdownAngle_s, float*)		{ *p1 = cls->GetHeadUpdownAngle(); return S_OK; }
-		ATTRIBUTE_METHOD1(CBipedObject, SetHeadUpdownAngle_s, float)		{ cls->SetHeadUpdownAngle(p1); return S_OK; }
+		ATTRIBUTE_METHOD1(CBipedObject, GetHeadUpdownAngle_s, float*) { *p1 = cls->GetHeadUpdownAngle(); return S_OK; }
+		ATTRIBUTE_METHOD1(CBipedObject, SetHeadUpdownAngle_s, float) { cls->SetHeadUpdownAngle(p1); return S_OK; }
 
-		ATTRIBUTE_METHOD1(CBipedObject, GetBootHeight_s, float*)		{ *p1 = cls->GetBootHeight(); return S_OK; }
-		ATTRIBUTE_METHOD1(CBipedObject, SetBootHeight_s, float)		{ cls->SetBootHeight(p1); return S_OK; }
+		ATTRIBUTE_METHOD1(CBipedObject, GetBootHeight_s, float*) { *p1 = cls->GetBootHeight(); return S_OK; }
+		ATTRIBUTE_METHOD1(CBipedObject, SetBootHeight_s, float) { cls->SetBootHeight(p1); return S_OK; }
 
-		ATTRIBUTE_METHOD1(CBipedObject, GetMovementStyle_s, int*)		{ *p1 = cls->GetMovementStyle(); return S_OK; }
-		ATTRIBUTE_METHOD1(CBipedObject, SetMovementStyle_s, int)		{ cls->SetMovementStyle((PhysicsMoveStyle)p1); return S_OK; }
+		ATTRIBUTE_METHOD1(CBipedObject, GetMovementStyle_s, int*) { *p1 = cls->GetMovementStyle(); return S_OK; }
+		ATTRIBUTE_METHOD1(CBipedObject, SetMovementStyle_s, int) { cls->SetMovementStyle((PhysicsMoveStyle)p1); return S_OK; }
 
-		ATTRIBUTE_METHOD1(CBipedObject, GetSpeed_s, float*)		{ *p1 = cls->GetSpeed(); return S_OK; }
-		ATTRIBUTE_METHOD1(CBipedObject, SetSpeed_s, float)		{ cls->SetSpeed(p1); return S_OK; }
+		ATTRIBUTE_METHOD1(CBipedObject, GetSpeed_s, float*) { *p1 = cls->GetSpeed(); return S_OK; }
+		ATTRIBUTE_METHOD1(CBipedObject, SetSpeed_s, float) { cls->SetSpeed(p1); return S_OK; }
 
-		ATTRIBUTE_METHOD1(CBipedObject, GetLastSpeed_s, float*)		{ *p1 = cls->GetLastSpeed(); return S_OK; }
-		ATTRIBUTE_METHOD1(CBipedObject, SetLastSpeed_s, float)		{ cls->SetLastSpeed(p1); return S_OK; }
+		ATTRIBUTE_METHOD1(CBipedObject, GetLastSpeed_s, float*) { *p1 = cls->GetLastSpeed(); return S_OK; }
+		ATTRIBUTE_METHOD1(CBipedObject, SetLastSpeed_s, float) { cls->SetLastSpeed(p1); return S_OK; }
 
-		ATTRIBUTE_METHOD1(CBipedObject, GetAccelerationDist_s, float*)		{ *p1 = cls->GetAccelerationDist(); return S_OK; }
-		ATTRIBUTE_METHOD1(CBipedObject, SetAccelerationDist_s, float)		{ cls->SetAccelerationDist(p1); return S_OK; }
+		ATTRIBUTE_METHOD1(CBipedObject, GetAccelerationDist_s, float*) { *p1 = cls->GetAccelerationDist(); return S_OK; }
+		ATTRIBUTE_METHOD1(CBipedObject, SetAccelerationDist_s, float) { cls->SetAccelerationDist(p1); return S_OK; }
 
-		ATTRIBUTE_METHOD1(CBipedObject, GetVerticalSpeed_s, float*)		{ *p1 = cls->GetVerticalSpeed(); return S_OK; }
-		ATTRIBUTE_METHOD1(CBipedObject, SetVerticalSpeed_s, float)		{ cls->SetVerticalSpeed(p1); return S_OK; }
+		ATTRIBUTE_METHOD1(CBipedObject, GetVerticalSpeed_s, float*) { *p1 = cls->GetVerticalSpeed(); return S_OK; }
+		ATTRIBUTE_METHOD1(CBipedObject, SetVerticalSpeed_s, float) { cls->SetVerticalSpeed(p1); return S_OK; }
 
-		ATTRIBUTE_METHOD1(CBipedObject, GetPhysicsGroupSensorMask_s, DWORD*)		{ *p1 = cls->GetPhysicsGroupMask(); return S_OK; }
-		ATTRIBUTE_METHOD1(CBipedObject, SetPhysicsGroupSensorMask_s, DWORD)		{ cls->SetPhysicsGroupMask(p1); return S_OK; }
+		ATTRIBUTE_METHOD1(CBipedObject, GetPhysicsGroupSensorMask_s, DWORD*) { *p1 = cls->GetPhysicsGroupMask(); return S_OK; }
+		ATTRIBUTE_METHOD1(CBipedObject, SetPhysicsGroupSensorMask_s, DWORD) { cls->SetPhysicsGroupMask(p1); return S_OK; }
 
-		ATTRIBUTE_METHOD1(CBipedObject, GetMaxSpeed_s, float*)		{ *p1 = cls->GetMaxSpeed(); return S_OK; }
+		ATTRIBUTE_METHOD1(CBipedObject, GetMaxSpeed_s, float*) { *p1 = cls->GetMaxSpeed(); return S_OK; }
 
-		ATTRIBUTE_METHOD(CBipedObject, ForceStop_s)	{ cls->ForceStop(); return S_OK; }
+		ATTRIBUTE_METHOD(CBipedObject, ForceStop_s) { cls->ForceStop(); return S_OK; }
 
-		ATTRIBUTE_METHOD(CBipedObject, ForceMove_s)	{ cls->ForceMove(); return S_OK; }
+		ATTRIBUTE_METHOD(CBipedObject, ForceMove_s) { cls->ForceMove(); return S_OK; }
 
-		ATTRIBUTE_METHOD1(CBipedObject, GetIsAlwaysAboveTerrain_s, bool*)		{ *p1 = cls->GetIsAlwaysAboveTerrain(); return S_OK; }
-		ATTRIBUTE_METHOD1(CBipedObject, SetIsAlwaysAboveTerrain_s, bool)		{ cls->SetIsAlwaysAboveTerrain(p1); return S_OK; }
+		ATTRIBUTE_METHOD1(CBipedObject, GetIsAlwaysAboveTerrain_s, bool*) { *p1 = cls->GetIsAlwaysAboveTerrain(); return S_OK; }
+		ATTRIBUTE_METHOD1(CBipedObject, SetIsAlwaysAboveTerrain_s, bool) { cls->SetIsAlwaysAboveTerrain(p1); return S_OK; }
 
-		ATTRIBUTE_METHOD1(CBipedObject, GetIsAnimPaused_s, bool*)		{ *p1 = cls->GetIsAnimPaused(); return S_OK; }
-		ATTRIBUTE_METHOD1(CBipedObject, SetIsAnimPaused_s, bool)		{ cls->SetIsAnimPaused(p1); return S_OK; }
+		ATTRIBUTE_METHOD1(CBipedObject, GetIsAnimPaused_s, bool*) { *p1 = cls->GetIsAnimPaused(); return S_OK; }
+		ATTRIBUTE_METHOD1(CBipedObject, SetIsAnimPaused_s, bool) { cls->SetIsAnimPaused(p1); return S_OK; }
 
-		ATTRIBUTE_METHOD1(CBipedObject, SetBlendingFactor_s, float)		{ cls->SetBlendingFactor(p1); return S_OK; }
+		ATTRIBUTE_METHOD1(CBipedObject, SetBlendingFactor_s, float) { cls->SetBlendingFactor(p1); return S_OK; }
 
 
-		ATTRIBUTE_METHOD1(CBipedObject, GetLastWayPointType_s, int*)		{ *p1 = cls->GetLastWayPoint().GetPointType(); return S_OK; }
-		ATTRIBUTE_METHOD1(CBipedObject, GetLastWayPointPos_s, Vector3*)		{ *p1 = cls->GetLastWayPoint().GetPosition(); return S_OK; }
+		ATTRIBUTE_METHOD1(CBipedObject, GetLastWayPointType_s, int*) { *p1 = cls->GetLastWayPoint().GetPointType(); return S_OK; }
+		ATTRIBUTE_METHOD1(CBipedObject, GetLastWayPointPos_s, Vector3*) { *p1 = cls->GetLastWayPoint().GetPosition(); return S_OK; }
 
-		ATTRIBUTE_METHOD1(CBipedObject, GetGravity_s, float*)		{ *p1 = cls->GetGravity(); return S_OK; }
-		ATTRIBUTE_METHOD1(CBipedObject, SetGravity_s, float)		{ cls->SetGravity(p1); return S_OK; }
+		ATTRIBUTE_METHOD1(CBipedObject, GetGravity_s, float*) { *p1 = cls->GetGravity(); return S_OK; }
+		ATTRIBUTE_METHOD1(CBipedObject, SetGravity_s, float) { cls->SetGravity(p1); return S_OK; }
 
-		ATTRIBUTE_METHOD1(CBipedObject, GetIgnoreSlopeCollision_s, bool*)		{ *p1 = cls->GetIgnoreSlopeCollision(); return S_OK; }
-		ATTRIBUTE_METHOD1(CBipedObject, SetIgnoreSlopeCollision_s, bool)		{ cls->SetIgnoreSlopeCollision(p1); return S_OK; }
+		ATTRIBUTE_METHOD1(CBipedObject, GetIgnoreSlopeCollision_s, bool*) { *p1 = cls->GetIgnoreSlopeCollision(); return S_OK; }
+		ATTRIBUTE_METHOD1(CBipedObject, SetIgnoreSlopeCollision_s, bool) { cls->SetIgnoreSlopeCollision(p1); return S_OK; }
 
-		ATTRIBUTE_METHOD1(CBipedObject, GetCanFly_s, bool*)		{ *p1 = cls->GetCanFly(); return S_OK; }
-		ATTRIBUTE_METHOD1(CBipedObject, SetCanFly_s, bool)		{ cls->SetCanFly(p1); return S_OK; }
+		ATTRIBUTE_METHOD1(CBipedObject, GetCanFly_s, bool*) { *p1 = cls->GetCanFly(); return S_OK; }
+		ATTRIBUTE_METHOD1(CBipedObject, SetCanFly_s, bool) { cls->SetCanFly(p1); return S_OK; }
 
-		ATTRIBUTE_METHOD1(CBipedObject, GetAlwaysFlying_s, bool*)		{ *p1 = cls->GetAlwaysFlying(); return S_OK; }
-		ATTRIBUTE_METHOD1(CBipedObject, SetAlwaysFlying_s, bool)		{ cls->SetAlwaysFlying(p1); return S_OK; }
+		ATTRIBUTE_METHOD1(CBipedObject, GetAlwaysFlying_s, bool*) { *p1 = cls->GetAlwaysFlying(); return S_OK; }
+		ATTRIBUTE_METHOD1(CBipedObject, SetAlwaysFlying_s, bool) { cls->SetAlwaysFlying(p1); return S_OK; }
 
-		ATTRIBUTE_METHOD1(CBipedObject, GetIsFlying_s, bool*)		{ *p1 = cls->GetIsFlying(); return S_OK; }
+		ATTRIBUTE_METHOD1(CBipedObject, GetIsFlying_s, bool*) { *p1 = cls->GetIsFlying(); return S_OK; }
 
-		ATTRIBUTE_METHOD1(CBipedObject, GetFlyUsingCameraDir_s, bool*)		{ *p1 = cls->GetFlyUsingCameraDir(); return S_OK; }
-		ATTRIBUTE_METHOD1(CBipedObject, SetFlyUsingCameraDir_s, bool)		{ cls->SetFlyUsingCameraDir(p1); return S_OK; }
+		ATTRIBUTE_METHOD1(CBipedObject, GetFlyUsingCameraDir_s, bool*) { *p1 = cls->GetFlyUsingCameraDir(); return S_OK; }
+		ATTRIBUTE_METHOD1(CBipedObject, SetFlyUsingCameraDir_s, bool) { cls->SetFlyUsingCameraDir(p1); return S_OK; }
 
-		ATTRIBUTE_METHOD1(CBipedObject, IsAutoWalkupBlock_s, bool*)		{ *p1 = cls->IsAutoWalkupBlock(); return S_OK; }
-		ATTRIBUTE_METHOD1(CBipedObject, SetAutoWalkupBlock_s, bool)		{ cls->SetAutoWalkupBlock(p1); return S_OK; }
+		ATTRIBUTE_METHOD1(CBipedObject, IsAutoWalkupBlock_s, bool*) { *p1 = cls->IsAutoWalkupBlock(); return S_OK; }
+		ATTRIBUTE_METHOD1(CBipedObject, SetAutoWalkupBlock_s, bool) { cls->SetAutoWalkupBlock(p1); return S_OK; }
 
-		ATTRIBUTE_METHOD1(CBipedObject, IsControlledExternally_s, bool*)		{ *p1 = cls->IsControlledExternally(); return S_OK; }
-		ATTRIBUTE_METHOD1(CBipedObject, SetIsControlledExternally_s, bool)		{ cls->SetIsControlledExternally(p1); return S_OK; }
+		ATTRIBUTE_METHOD1(CBipedObject, IsControlledExternally_s, bool*) { *p1 = cls->IsControlledExternally(); return S_OK; }
+		ATTRIBUTE_METHOD1(CBipedObject, SetIsControlledExternally_s, bool) { cls->SetIsControlledExternally(p1); return S_OK; }
+
+		ATTRIBUTE_METHOD1(CBipedObject, IsKinematic_s, bool*) { *p1 = cls->IsKinematic(); return S_OK; }
+		ATTRIBUTE_METHOD1(CBipedObject, SetKinematic_s, bool) { cls->SetKinematic(p1); return S_OK; }
 
 	protected:
 		/** Move the biped in the physical scene.move the biped towards the target using its current speed and facing
@@ -224,7 +227,7 @@ namespace ParaEngine
 		* @params fStopDistance: if the character is within this distance to the target, then it is stopped
 		* @params pIsSlidingWall: [out] whether the object is sliding along a wall
 		* @return: return true if the biped already reached the destination. */
-		bool MoveTowards(double dTimeDelta, const DVector3& vPosTarget, float fStopDistance, bool * pIsSlidingWall = NULL);
+		bool MoveTowards(double dTimeDelta, const DVector3& vPosTarget, float fStopDistance, bool* pIsSlidingWall = NULL);
 
 		/** move as an OPC. see PhysicsMoveStyle::MOVESTYLE_OPC
 		* @param fQuickMoveDistance: if destination is longer than this value, we will how many meters to quick move
@@ -267,13 +270,13 @@ namespace ParaEngine
 		*/
 		void SetBlendingFactor(float fBlendingFactor);
 
-		bool FlyTowards(double dTimeDelta, const DVector3& vPosTarget, float fStopDistance, bool * pIsSlidingWall);
+		bool FlyTowards(double dTimeDelta, const DVector3& vPosTarget, float fStopDistance, bool* pIsSlidingWall);
 	public:
 		/** how the character reacts to physics in the MoveTowards() functions*/
-		void SetMovementStyle(PhysicsMoveStyle nValue){ m_nMovementStyle = nValue; };
+		void SetMovementStyle(PhysicsMoveStyle nValue) { m_nMovementStyle = nValue; };
 
 		/** how the character reacts to physics in the MoveTowards() functions*/
-		PhysicsMoveStyle  GetMovementStyle(){ return m_nMovementStyle; };
+		PhysicsMoveStyle  GetMovementStyle() { return m_nMovementStyle; };
 
 		bool CanAnimOpacity() const;
 
@@ -339,14 +342,14 @@ namespace ParaEngine
 		CBaseObject* GetPhysicsBBObj();
 
 		//-- virtual function from baseObject
-		virtual HRESULT Draw(SceneState * sceneState);
+		virtual HRESULT Draw(SceneState* sceneState);
 		virtual void Animate(double dTimeDelta, int nRenderNumber = 0);
-		
+
 
 		/// used as KEY for batch rendering
 		virtual AssetEntity* GetPrimaryAsset();
 
-		virtual void SetNormal(const Vector3 & pNorm);
+		virtual void SetNormal(const Vector3& pNorm);
 		virtual Vector3 GetNormal();
 
 		/** set the scale of the object. This function takes effects on both character object and mesh object.
@@ -448,14 +451,14 @@ namespace ParaEngine
 
 
 		virtual void SetUserControl();
-		virtual void ChooseNewLocation(Vector3 *pV);
+		virtual void ChooseNewLocation(Vector3* pV);
 
 		/* Low level events(LLE) replacement to low level command*/
 
 		/** replace the current AI module with a new one.*/
 		void ReplaceAIModule(CAIBase* pNew);
 		/** Get the AI module that is dynamically associated with this object */
-		virtual CAIBase*		 GetAIModule();
+		virtual CAIBase* GetAIModule();
 		/** use a specified AI object.
 		* @param sAIType: valid AI object is:
 		*  "NPC"|""|"NULL"
@@ -468,7 +471,7 @@ namespace ParaEngine
 		/// facing the target immediately.
 		void FacingTargetImmediately();
 		/// facing the target right away provided that the biped is not moving
-		void FacingTarget(const Vector3 *pV);
+		void FacingTarget(const Vector3* pV);
 		/// facing the target right away provided that the biped is not moving
 		void FacingTarget(float fTargetFacing);
 
@@ -488,7 +491,7 @@ namespace ParaEngine
 
 		/** update the local transform from size, roll, pitch, yaw, etc. */
 		virtual void UpdateGeometry();
-		
+
 		/** set the facing of model's head. It is relative to the model facing.
 		* Please note that if the head facing is not in the range [-Pi/2,Pi/2],
 		* the head facing will be set to its edge value. */
@@ -513,7 +516,7 @@ namespace ParaEngine
 		* in other words, this direction is always the direction where the biped should progress.
 		* it is used for physics calculation.
 		*/
-		void GetSpeedDirection(Vector3 *pV);
+		void GetSpeedDirection(Vector3* pV);
 		/** set the current speed angle.
 		* @param fSpeedAngle: the new speed direction of the biped. It will be immediately used for physics.
 		* @param bSmoothRender: whether the biped will smoothly turn to that direction during rendering.
@@ -586,7 +589,7 @@ namespace ParaEngine
 
 		bool GetIsFlying();
 
-		void SetFlyingDirection(const Vector3 *dir);
+		void SetFlyingDirection(const Vector3* dir);
 
 		/**whether automatically walk up block that is 1 block high in front of us. */
 		void SetAutoWalkupBlock(bool bAutoWalkup);
@@ -596,6 +599,11 @@ namespace ParaEngine
 		/** we will not simulate or changing the character's animation, etc, since the biped is controlled externally, such as a movie actor in the script*/
 		bool IsControlledExternally() const;
 		void SetIsControlledExternally(bool val);
+
+		/** if true, the biped can push dynamic physical objects. Default to false. When enabled,
+		 * forces will be applied to dynamic objects based on biped mass, speed and shape (capsule by default). */
+		bool IsKinematic() const;
+		void SetKinematic(bool val);
 
 		/** if the biped is in air, it will fall down. In case a biped is put to stop and the terrain below it changes.
 		* one should manually call this function to let the biped fall down. Internally it just set the vertical speed to
@@ -618,7 +626,7 @@ namespace ParaEngine
 		* @param bCreateOnDemand if true, we will attempt to create the manager if it is not created before.
 		* @return it may return NULL if bCreateOnDemand is false.
 		*/
-		virtual CBipedStateManager*  GetBipedStateManager(bool bCreateOnDemand = true);
+		virtual CBipedStateManager* GetBipedStateManager(bool bCreateOnDemand = true);
 
 		/** set the callback scipt whenever the primary asset is successfully loaded. */
 		virtual void SetOnAssetLoaded(const char* sCallbackScript);
@@ -722,7 +730,7 @@ namespace ParaEngine
 
 		void PlayDeathDecayAnim();
 
-		void SetNextTargetPosition(const DVector3 &pV, bool bIgnoreHeight = true);
+		void SetNextTargetPosition(const DVector3& pV, bool bIgnoreHeight = true);
 		/**
 		* force the biped to walk to a position. The action is carried out immediately.
 		* the biped might still be blocked after calling this function. In some cases,
@@ -759,10 +767,10 @@ namespace ParaEngine
 		/** the biped is modeled as a cylinder or sphere during rough physics calculation.
 		* this function sets the height of the cylinder or sphere.*/
 		void		SetPhysicsHeight(float fH);
-		/** get asset height with scaling applied. */
+		/** get asset height. */
 		virtual float GetAssetHeight();
 
-		void ResetBipedPosition(const Vector3 *pV, bool bIgnoreHeight = true);
+		void ResetBipedPosition(const Vector3* pV, bool bIgnoreHeight = true);
 
 		virtual void Rotate(float x, float y, float z);
 
@@ -790,6 +798,11 @@ namespace ParaEngine
 		// 加载动态物理模型
 		virtual void LoadDynamicPhysics();
 		virtual void UnloadDynamicPhysics();
+		// 加载运动学物理模型（0质量，用于推动其他物体）
+		virtual void LoadKinematicPhysics();
+		virtual void UnloadKinematicPhysics();
+		/** update kinematic physics actor position/rotation to match biped */
+		virtual void UpdateKinematicPhysicsActor();
 		// 设置物理速度
 		virtual void ApplyCentralImpulse(const Vector3& impulse);
 
@@ -818,9 +831,9 @@ namespace ParaEngine
 		void LoadStoredModel(int nModelSetID);
 
 	public:
-		virtual bool IsShadowEnabled(){ return m_bIsShadowEnabled; };
-		virtual void BuildShadowVolume(SceneState * sceneState, ShadowVolume * pShadowVolume, LightParams* pLight);
-		
+		virtual bool IsShadowEnabled() { return m_bIsShadowEnabled; };
+		virtual void BuildShadowVolume(SceneState* sceneState, ShadowVolume* pShadowVolume, LightParams* pLight);
+
 		/** this may return NULL, if the object does not implement the IGameObject interface. */
 		virtual IGameObject* QueryIGameObject();
 
@@ -895,10 +908,10 @@ namespace ParaEngine
 		IParaPhysicsActor* m_dynamicPhysicsActor;
 
 		// the biped state manager
-		CBipedStateManager*  m_pBipedStateManager;
+		CBipedStateManager* m_pBipedStateManager;
 
 		/// the AI module that is dynamically associated with this object
-		CAIBase*		 m_pAIModule;
+		CAIBase* m_pAIModule;
 
 		/** character's movement speed -- in units/second */
 		float		m_fSpeed;
@@ -1002,6 +1015,8 @@ namespace ParaEngine
 		bool m_bIsControlledExternally : 1;
 		bool m_bCanAnimOpacity : 1;
 		bool m_bAutoAnimation : 1;
+		/** if true, the biped can push dynamic physical objects by applying forces based on mass, speed and shape */
+		bool m_bKinematic : 1;
 	};
 
 }
