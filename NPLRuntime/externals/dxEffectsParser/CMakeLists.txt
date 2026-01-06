@@ -1,5 +1,3 @@
-cmake_minimum_required(VERSION 3.1)
-
 project(DxEffectsParser)
 
 option(DXEFFECTSPARSER_GenerateScannerAndParserCode "Generate scanner and parser code " OFF)

@@ -14,7 +14,6 @@
 # NOTE: This build is currently only supporting x86 targets, for other targets use the original makefile. Please do not submit bugs to the LuaJIT author in case this build fails, instead use http://github.com/LuaDist/luajit
 
 project ( luajit C ASM)
-cmake_minimum_required ( VERSION 2.8 )
 
 ## CONFIGURATION
 # Default configuration (we assume POSIX by default)
@@ -303,15 +302,9 @@ ${LJLIB_C}
 )
 
 IF(MSVC)
-	# statically link MSVC to reduce dependancies
-	foreach(flag_var CMAKE_C_FLAGS CMAKE_C_FLAGS_DEBUG CMAKE_C_FLAGS_RELEASE CMAKE_C_FLAGS_MINSIZEREL CMAKE_C_FLAGS_RELWITHDEBINFO)
-	 	if(${flag_var} MATCHES "/MD")
-			string(REGEX REPLACE "/MD" "/MT" ${flag_var} "${${flag_var}}")
-	 	endif(${flag_var} MATCHES "/MD")
-	 	if(${flag_var} MATCHES "/MDd")
-	 		string(REGEX REPLACE "/MDd" "/MTd" ${flag_var} "${${flag_var}}")
-		endif(${flag_var} MATCHES "/MDd")
-	endforeach(flag_var)
+	# Statically link MSVC runtime for all configurations 
+	# Debug: /MTd (MultiThreadedDebug), Release: /MT (MultiThreaded)
+	set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
 
 	SET(CMAKE_DEBUG_POSTFIX "_d")
 ENDIF()

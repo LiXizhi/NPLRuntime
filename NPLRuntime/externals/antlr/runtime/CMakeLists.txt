@@ -1,8 +1,3 @@
-# -*- mode:cmake -*-
-cmake_minimum_required (VERSION 3.15)
-# 3.14 needed because of FetchContent
-# 3.15 needed to avid spew of warnings related to overriding cl command line flags
-
 set(CMAKE_MACOSX_RPATH OFF)
 
 enable_testing()
@@ -29,12 +24,11 @@ option(WITH_STATIC_CRT "(Visual C++) Enable to statically link CRT, which avoids
  To disable with: -DWITH_STATIC_CRT=Off" On)
 option(DISABLE_WARNINGS "Suppress compiler warnings for all built ANTLR targets" OFF)
  
-cmake_policy(SET CMP0091 NEW) # Enable use of CMAKE_MSVC_RUNTIME_LIBRARY
-if(WITH_STATIC_CRT)
-  set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
-else()
-  set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>DLL")
-endif(WITH_STATIC_CRT)
+IF(MSVC)
+# Statically link MSVC runtime for all configurations 
+# Debug: /MTd (MultiThreadedDebug), Release: /MT (MultiThreaded)
+set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
+ENDIF()
 
 project(LIBANTLR4)
 

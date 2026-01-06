@@ -398,7 +398,9 @@ endif()
 target_compile_definitions(ParaEngine PUBLIC ${PARAENGINE_DEF_LIST})
 
 if (MSVC)
-    ucm_set_runtime(STATIC)
+    # Statically link MSVC runtime for all configurations 
+	# Debug: /MTd (MultiThreadedDebug), Release: /MT (MultiThreaded)
+	set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
 
     # enable multiprocessor build option /MP, this will greatly increase compile speed
     set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /MP")

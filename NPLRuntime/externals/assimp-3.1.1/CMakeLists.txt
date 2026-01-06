@@ -1,7 +1,6 @@
 # Note: Modified by LiXizhi to build only required libs for NPLRuntime
 # Date: 2016.10.16
 
-cmake_minimum_required( VERSION 2.6 )
 PROJECT( Assimp )
 
 

@@ -2,10 +2,8 @@
 # Author(s): lixizhi, kkvskkkk, big
 # CreateDate: 2016.02.25
 # ModifyDate: 2021.10.28
-
+cmake_minimum_required(VERSION 3.15)
 include(cmake/ucm.cmake)
-
-cmake_minimum_required(VERSION 3.14)
 
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_C_STANDARD 11)
@@ -286,7 +284,9 @@ if (NPLRUNTIME_SERVER)
 endif ()
 
 if (MSVC)
-    ucm_set_runtime(STATIC)
+    # Statically link MSVC runtime for all configurations 
+	# Debug: /MTd (MultiThreadedDebug), Release: /MT (MultiThreaded)
+	set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
 endif ()
 
 add_subdirectory(externals)

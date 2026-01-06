@@ -36,8 +36,6 @@
 #----------------------------------------------------------------------
 SET(CMAKE_POLICY_DEFAULT_CMP0074 NEW)
 
-CMAKE_MINIMUM_REQUIRED( VERSION 3.0 )
-
 # Toggles the use of the hunter package manager
 option(HUNTER_ENABLED "Enable Hunter package manager support" OFF)
 

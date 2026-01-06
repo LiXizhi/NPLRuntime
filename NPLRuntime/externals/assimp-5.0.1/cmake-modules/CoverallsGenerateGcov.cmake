@@ -39,8 +39,6 @@
 #         -DCOVERAGE_SRCS="catcierge_rfid.c;catcierge_timer.c"
 #         -P ../cmake/CoverallsGcovUpload.cmake
 #
-CMAKE_MINIMUM_REQUIRED(VERSION 2.8)
-
 
 #
 # Make sure we have the needed arguments.

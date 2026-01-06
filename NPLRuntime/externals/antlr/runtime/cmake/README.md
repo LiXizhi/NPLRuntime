@@ -11,8 +11,6 @@ Here is how you can use this external project to create the antlr4cpp demo to st
 3. From the buildfolder, run `cmake ~/srcfolder; make`
 
 ```cmake
-# minimum required CMAKE version
-CMAKE_MINIMUM_REQUIRED(VERSION 3.7 FATAL_ERROR)
 
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 

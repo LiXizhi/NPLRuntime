@@ -10,8 +10,6 @@
 # The documentation can be found at the library's page:
 # https://github.com/onqtam/ucm
 
-cmake_minimum_required(VERSION 2.8.12)
-
 include(CMakeParseArguments)
 
 # optionally include cotire - the git submodule might not be inited (or the user might have already included it)

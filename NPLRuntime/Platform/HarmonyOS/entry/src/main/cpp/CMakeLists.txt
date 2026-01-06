@@ -1,7 +1,5 @@
 # HarmonyOS Native C++ Configuration
 # 对应Android项目的CMakeLists.txt
-
-cmake_minimum_required(VERSION 3.4.1)
 project(ParaCraftNative)
 
 # 设置C++标准

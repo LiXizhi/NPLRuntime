@@ -5,7 +5,10 @@ target_link_libraries(glad_ext_wgl PUBLIC glad_core)
 
 
 if(MSVC)
-    ucm_set_runtime(STATIC)
+    # Statically link MSVC runtime for all configurations 
+	# Debug: /MTd (MultiThreadedDebug), Release: /MT (MultiThreaded)
+	set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
+    
     # enable multiprocessor build option /MP, this will greatly increase compile speed
     SET(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /MP")
     SET(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} /MP")
