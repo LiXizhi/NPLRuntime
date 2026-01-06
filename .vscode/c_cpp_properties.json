@@ -59,45 +59,36 @@
         {
             "name": "Win32",
             "includePath": [
-                "e:/Program Files/x86/Microsoft Visual Studio/2017/Community/VC/Tools/MSVC/14.12.25827/include/*",
-                "e:/Program Files/x86/Microsoft Visual Studio/2017/Community/VC/Tools/MSVC/14.12.25827/atlmfc/include/*",
-                "C:/Program Files (x86)/Windows Kits/10/Include/10.0.16299.0/um",
-                "C:/Program Files (x86)/Windows Kits/10/Include/10.0.16299.0/ucrt",
-                "C:/Program Files (x86)/Windows Kits/10/Include/10.0.16299.0/shared",
-                "C:/Program Files (x86)/Windows Kits/10/Include/10.0.16299.0/winrt",
-                "${workspaceRoot}",
-                "${workspaceRoot}/NPLRuntime/ParaEngine/Core",
-                "${workspaceRoot}/NPLRuntime/ParaEngine",
-                "${workspaceRoot}/NPLRuntime/ParaEngine/math",
-                "${workspaceRoot}/NPLRuntime/ParaEngine/renderer",
-                "${workspaceRoot}/NPLRuntime/ParaEngine/3dengine",
-                "${workspaceRoot}/NPLRuntime/ParaEngine/IO",
-                "${workspaceRoot}/NPLRuntime/ParaEngine/util",
-                "${workspaceRoot}/NPLRuntime/ParaEngine/ParaScriptBindings",
-                "${workspaceRoot}/NPLRuntime/ParaEngine/NPL",
-                "${workspaceRoot}/NPLRuntime/ParaEngine/Framework/Interface",
-                "${workspaceRoot}/NPLRuntime/ParaEngine/Engine"
+                "${workspaceFolder}/**",
+                "${workspaceFolder}/NPLRuntime/ParaEngine",
+                "${workspaceFolder}/NPLRuntime/ParaEngine/Core",
+                "${workspaceFolder}/NPLRuntime/ParaEngine/math",
+                "${workspaceFolder}/NPLRuntime/ParaEngine/renderer",
+                "${workspaceFolder}/NPLRuntime/ParaEngine/3dengine",
+                "${workspaceFolder}/NPLRuntime/ParaEngine/IO",
+                "${workspaceFolder}/NPLRuntime/ParaEngine/util",
+                "${workspaceFolder}/NPLRuntime/ParaEngine/ParaScriptBindings",
+                "${workspaceFolder}/NPLRuntime/ParaEngine/NPL",
+                "${workspaceFolder}/NPLRuntime/ParaEngine/Framework/Interface",
+                "${workspaceFolder}/NPLRuntime/ParaEngine/Engine",
+                "${workspaceFolder}/NPLRuntime/externals",
+                "${workspaceFolder}/bin/ClientOpenGLx64/include/**"
             ],
             "defines": [
                 "_DEBUG",
-                "UNICODE"
+                "UNICODE",
+                "_UNICODE",
+                "WIN32",
+                "_WINDOWS",
+                "USE_OPENGL_RENDERER",
+                "PLATFORM_WINDOWS"
             ],
-            "intelliSenseMode": "msvc-x64",
-            "browse": {
-                "path": [
-                    "e:/Program Files/x86/Microsoft Visual Studio/2017/Community/VC/Tools/MSVC/14.12.25827/include/*",
-                    "e:/Program Files/x86/Microsoft Visual Studio/2017/Community/VC/Tools/MSVC/14.12.25827/atlmfc/include/*",
-                    "C:/Program Files (x86)/Windows Kits/10/Include/10.0.16299.0/um",
-                    "C:/Program Files (x86)/Windows Kits/10/Include/10.0.16299.0/ucrt",
-                    "C:/Program Files (x86)/Windows Kits/10/Include/10.0.16299.0/shared",
-                    "C:/Program Files (x86)/Windows Kits/10/Include/10.0.16299.0/winrt",
-                    "${workspaceRoot}"
-                ],
-                "limitSymbolsToIncludedHeaders": true,
-                "databaseFilename": ""
-            },
-            "cStandard": "c11",
-            "cppStandard": "c++17"
+            "windowsSdkVersion": "10.0.22621.0",
+            "compilerPath": "C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Tools/MSVC/14.41.34120/bin/Hostx64/x64/cl.exe",
+            "cStandard": "c17",
+            "cppStandard": "c++17",
+            "intelliSenseMode": "windows-msvc-x64",
+            "compileCommands": "${workspaceFolder}/bin/ClientOpenGLx64/compile_commands.json"
         }
     ],
     "version": 4

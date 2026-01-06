@@ -1,0 +1,46 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Debug ParaEngineClient",
+            "type": "cppvsdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/bin/ClientOpenGLx64/bin/ParaEngineClient_d.exe",
+            "args": ["debug=true", "single=false", "mc=true", "world=worlds/DesignHouse/_user/lixizhi/TestLiveModel"],
+            "stopAtEntry": false,
+            "cwd": "C:\\lxzsrc\\ParaEngine\\ParaWorld\\",
+            "environment": [],
+            "console": "externalTerminal",
+            "preLaunchTask": "Build ParaEngineClient (Debug)"
+        },
+        {
+            "name": "Debug ParaEngineClient (No Build)",
+            "type": "cppvsdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/bin/ClientOpenGLx64/bin/ParaEngineClient_d.exe",
+            "args": ["debug=true", "single=false", "mc=true", "world=worlds/DesignHouse/_user/lixizhi/TestLiveModel"],
+            "stopAtEntry": false,
+            "cwd": "C:\\lxzsrc\\ParaEngine\\ParaWorld\\",
+            "environment": [],
+            "console": "externalTerminal"
+        },
+        {
+            "name": "Release ParaEngineClient",
+            "type": "cppvsdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/bin/ClientOpenGLx64/bin/ParaEngineClient.exe",
+            "args": ["debug=true", "single=false", "mc=true", "world=worlds/DesignHouse/_user/lixizhi/TestLiveModel"],
+            "stopAtEntry": false,
+            "cwd": "C:\\lxzsrc\\ParaEngine\\ParaWorld\\",
+            "environment": [],
+            "console": "externalTerminal",
+            "preLaunchTask": "Build ParaEngineClient (Release)"
+        },
+        {
+            "name": "Attach to Process",
+            "type": "cppvsdbg",
+            "request": "attach",
+            "processId": "${command:pickProcess}"
+        }
+    ]
+}
