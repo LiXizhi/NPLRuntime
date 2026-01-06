@@ -4845,6 +4845,8 @@ void ParaEngine::CBipedObject::UpdateKinematicPhysicsActor()
 		
 		PARAMATRIX paraMatrix;
 		memcpy(&paraMatrix, &mxWorld, sizeof(PARAMATRIX));
+		// Translate kinematic actor to be centered at physics height (middle of character)
+		paraMatrix._42 += GetPhysicsHeight() * 0.5f;
 		m_dynamicPhysicsActor->SetWorldTransform(&paraMatrix);
 		
 		// Set linear velocity to match biped's movement speed

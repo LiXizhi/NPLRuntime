@@ -277,6 +277,10 @@ float CBaseObject::GetPhysicsRadius()
 {
 	return GetRadius();
 }
+float CBaseObject::GetPhysicsHeight()
+{
+	return GetHeight();
+}
 float CBaseObject::GetHeight()
 {
 	return GetRadius() * 2.f;

@@ -1110,6 +1110,9 @@ namespace ParaEngine
 		/** get the radius for physics simulation. */
 		virtual float GetPhysicsRadius();
 
+		/** get the height for physics simulation. */
+		virtual float GetPhysicsHeight();
+
 		/** reset the object to its default settings.*/
 		virtual void Reset() {};
 

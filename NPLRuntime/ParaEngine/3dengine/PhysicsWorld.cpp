@@ -552,9 +552,9 @@ IParaPhysicsActor* ParaEngine::CPhysicsWorld::CreateDynamicShape(CBaseObject* ob
 		return NULL; // invalid dimensions
 	
 	float fScale = obj->GetScaling();
-	desc.m_halfWidth = fRadius * fScale;
-	desc.m_halfHeight = fHeight * 0.5f * fScale;
-	desc.m_halfLength = fRadius * fScale;
+	desc.m_halfWidth = fRadius; // without scaling
+	desc.m_halfHeight = fHeight * 0.5f;
+	desc.m_halfLength = fRadius;
 
 	IParaPhysicsShape* pShape = m_pPhysicsWorld->CreateSimpleShape(desc);
 	if (!pShape)
