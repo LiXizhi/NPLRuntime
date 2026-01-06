@@ -175,6 +175,7 @@ namespace ParaEngine
 		IParaPhysicsActor* CreateStaticMesh(ParaXEntity* ppMesh, const Matrix4& globalMat, uint32 nShapeGroup = 0, vector<IParaPhysicsActor*>* pOutputPhysicsActor = NULL, void* pUserData = NULL);
 
 		IParaPhysicsActor* CreateDynamicMesh(CBaseObject* obj);
+		IParaPhysicsActor* CreateDynamicShape(CBaseObject* obj);
 		
 		std::shared_ptr<CPhysicsBlock> LoadPhysicsBlock(uint16_t bx, uint16_t by, uint16_t bz);
 		void LoadPhysicsBlock(CShapeAABB* aabb, int16_t frameId = 0, float extend = 0.5f);

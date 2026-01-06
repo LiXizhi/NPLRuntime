@@ -540,6 +540,54 @@ IParaPhysicsActor* ParaEngine::CPhysicsWorld::CreateDynamicMesh(CBaseObject* obj
 	return pActor;
 }
 
+IParaPhysicsActor* ParaEngine::CPhysicsWorld::CreateDynamicShape(CBaseObject* obj)
+{
+	ParaPhysicsSimpleShapeDesc desc;
+	desc.m_shape = obj->GetPhysicsShape();
+
+	float fRadius = obj->GetPhysicsRadius();
+	float fHeight = obj->GetPhysicsHeight();
+	
+	if (fRadius <= 0.f || fHeight <= 0.f)
+		return NULL; // invalid dimensions
+	
+	float fScale = obj->GetScaling();
+	desc.m_halfWidth = fRadius * fScale;
+	desc.m_halfHeight = fHeight * 0.5f * fScale;
+	desc.m_halfLength = fRadius * fScale;
+
+	IParaPhysicsShape* pShape = m_pPhysicsWorld->CreateSimpleShape(desc);
+	if (!pShape)
+		return NULL;
+	
+	ParaPhysicsActorDesc ActorDesc;
+	ActorDesc.m_group = obj->GetPhysicsGroup();
+	ActorDesc.m_mask = -1;
+	ActorDesc.m_mass = 1.0f;
+	ActorDesc.m_pShape = pShape;
+
+	// set world position
+	Matrix4 localMat;
+	Vector3 vCenter(0, desc.m_halfHeight / obj->GetScaling(), 0);
+	obj->GetLocalTransform(&localMat);
+	vCenter = vCenter * localMat;
+	auto vPos = obj->GetPosition();
+	ActorDesc.m_origin = PARAVECTOR3((float)(vPos.x + vCenter.x), (float)(vPos.y + vCenter.y), (float)(vPos.z + vCenter.z));
+
+	// set world local rotation matrix
+	Vector3 vScale, vTrans;
+	Quaternion quat;
+	ParaMatrixDecompose(&vScale, &quat, &vTrans, &localMat);
+	quat.ToRotationMatrix((Matrix3&)ActorDesc.m_rotation);
+
+	IParaPhysicsActor* pActor = m_pPhysicsWorld->CreateActor(ActorDesc);
+	if (!pActor)
+		return NULL;
+	pActor->SetUserData(obj);
+	m_mapDynamicActors.insert(pActor);
+	return pActor;
+}
+
 void ParaEngine::CPhysicsWorld::LoadPhysicsBlock(CShapeAABB* aabb, int16_t frameId, float extend)
 {
 	Vector3 min, max;

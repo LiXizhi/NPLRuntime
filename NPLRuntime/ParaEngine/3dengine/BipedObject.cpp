@@ -4816,7 +4816,7 @@ void ParaEngine::CBipedObject::LoadKinematicPhysics()
 {
 	if (m_dynamicPhysicsActor == NULL && !IsDynamicPhysicsEnabled())
 	{
-		m_dynamicPhysicsActor = CGlobals::GetPhysicsWorld()->CreateDynamicMesh(this);
+		m_dynamicPhysicsActor = CGlobals::GetPhysicsWorld()->CreateDynamicShape(this);
 		if (m_dynamicPhysicsActor)
 		{
 			// Set as kinematic: CollisionFlags=2 marks it as kinematic object, ActivationState=4 keeps it always active
