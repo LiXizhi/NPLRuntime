@@ -26,15 +26,9 @@ install_all_targets(Ogg)
 
 
 IF(MSVC)
-	# statically link MSVC to reduce dependancies
-	foreach(flag_var CMAKE_CXX_FLAGS CMAKE_CXX_FLAGS_DEBUG CMAKE_CXX_FLAGS_RELEASE CMAKE_CXX_FLAGS_MINSIZEREL CMAKE_CXX_FLAGS_RELWITHDEBINFO CMAKE_C_FLAGS CMAKE_C_FLAGS_DEBUG CMAKE_C_FLAGS_RELEASE CMAKE_C_FLAGS_MINSIZEREL CMAKE_C_FLAGS_RELWITHDEBINFO)
-	 	if(${flag_var} MATCHES "/MD")
-			string(REGEX REPLACE "/MD" "/MT" ${flag_var} "${${flag_var}}")
-	 	endif(${flag_var} MATCHES "/MD")
-	 	if(${flag_var} MATCHES "/MDd")
-	 		string(REGEX REPLACE "/MDd" "/MTd" ${flag_var} "${${flag_var}}")
-		endif(${flag_var} MATCHES "/MDd")
-	endforeach(flag_var)
+	# Statically link MSVC runtime for all configurations 
+	# Debug: /MTd (MultiThreadedDebug), Release: /MT (MultiThreaded)
+	set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
 			
 	# /GR- Remove RTTI to miminize the executable size
 	SET(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /GR-")

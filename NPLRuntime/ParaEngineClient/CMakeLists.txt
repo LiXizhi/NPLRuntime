@@ -712,7 +712,11 @@ if(NPLRUNTIME_RENDERER STREQUAL "OPENGL")
 elseif(NPLRUNTIME_RENDERER STREQUAL "DIRECTX")
 
 
-	ADD_DEFINITIONS(-D_WIN32_WINNT=0x0501)
+	# Change from:
+	# ADD_DEFINITIONS(-D_WIN32_WINNT=0x0501)  # Windows XP
+	# To:
+	ADD_DEFINITIONS(-D_WIN32_WINNT=0x0600)  # Windows Vista or later
+
 	ADD_DEFINITIONS(-DPARAENGINE_CLIENT)
 	ADD_DEFINITIONS(-DUSE_DIRECTX_RENDERER)
 
@@ -753,15 +757,9 @@ if(WIN32)
 
 
 	IF(MSVC)
-	# statically link MSVC to reduce dependancies
-	foreach(flag_var CMAKE_CXX_FLAGS CMAKE_CXX_FLAGS_DEBUG CMAKE_CXX_FLAGS_RELEASE CMAKE_CXX_FLAGS_MINSIZEREL CMAKE_CXX_FLAGS_RELWITHDEBINFO CMAKE_C_FLAGS CMAKE_C_FLAGS_DEBUG CMAKE_C_FLAGS_RELEASE CMAKE_C_FLAGS_MINSIZEREL CMAKE_C_FLAGS_RELWITHDEBINFO)
-		if(${flag_var} MATCHES "/MD")
-			string(REGEX REPLACE "/MD" "/MT" ${flag_var} "${${flag_var}}")
-		endif(${flag_var} MATCHES "/MD")
-		if(${flag_var} MATCHES "/MDd")
-			string(REGEX REPLACE "/MDd" "/MTd" ${flag_var} "${${flag_var}}")
-		endif(${flag_var} MATCHES "/MDd")
-	endforeach(flag_var)
+	# Statically link MSVC runtime for all configurations 
+	# Debug: /MTd (MultiThreadedDebug), Release: /MT (MultiThreaded)
+	set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
 
 	# enable multiprocessor build option /MP, this will greatly increase compile speed
 	SET(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /MP")
@@ -796,6 +794,10 @@ if(WIN32)
 		SET(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /Zi")
 		SET(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} /Zi")
 		
+		# Force exclusion of dynamic CRT libraries to prevent __except_handler4_common linker errors
+		# Use linker flags that work with all configurations
+		add_link_options(/NODEFAULTLIB:MSVCRT /NODEFAULTLIB:MSVCRTD)
+
 		if (PARAENGINE_COMPILE_LIB)
 			# To turn size optimisations on again
 			SET(CMAKE_SHARED_LINKER_FLAGS_RELEASE "${CMAKE_SHARED_LINKER_FLAGS_RELEASE} /opt:ref /LARGEADDRESSAWARE")

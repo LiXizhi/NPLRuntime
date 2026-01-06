@@ -5,8 +5,11 @@
 #License:    ZLib
 #            
 #\**********************************************************/
-cmake_minimum_required(VERSION 2.8)
-
+IF(MSVC)
+# Statically link MSVC runtime for all configurations 
+# Debug: /MTd (MultiThreadedDebug), Release: /MT (MultiThreaded)
+set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
+ENDIF()
 project(cAudio)
 
 # Include necessary submodules

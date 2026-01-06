@@ -13,8 +13,13 @@
 
 # NOTE: This build is currently only supporting x86 targets, for other targets use the original makefile. Please do not submit bugs to the LuaJIT author in case this build fails, instead use http://github.com/LuaDist/luajit
 
+IF(MSVC)
+# Statically link MSVC runtime for all configurations 
+# Debug: /MTd (MultiThreadedDebug), Release: /MT (MultiThreaded)
+set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
+ENDIF()
+
 project ( luajit C ASM)
-cmake_minimum_required ( VERSION 2.8 )
 
 ## CONFIGURATION
 # Default configuration (we assume POSIX by default)

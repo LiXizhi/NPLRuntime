@@ -43,7 +43,6 @@
 # 3) Add libassimp using the file lists (eliminates duplication of file names between
 #    source groups and library command)
 #
-cmake_minimum_required( VERSION 3.0 )
 SET( HEADER_PATH ../include/assimp )
 
 if(NOT ANDROID AND ASSIMP_ANDROID_JNIIOSYSTEM)
@@ -57,6 +56,13 @@ SET( COMPILER_HEADERS
   ${HEADER_PATH}/Compiler/pstdint.h
 )
 SOURCE_GROUP( Compiler FILES ${COMPILER_HEADERS})
+
+IF(MSVC)
+# Statically link MSVC runtime for all configurations 
+# Debug: /MTd (MultiThreadedDebug), Release: /MT (MultiThreaded)
+set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
+ENDIF()
+
 
 SET( PUBLIC_HEADERS
   ${HEADER_PATH}/anim.h

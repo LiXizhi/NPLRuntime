@@ -19,7 +19,6 @@ include_directories(
   ${PROJECT_SOURCE_DIR}/runtime/src/tree/xpath
 )
 
-
 file(GLOB libantlrcpp_SRC
   "${PROJECT_SOURCE_DIR}/runtime/src/*.cpp"
   "${PROJECT_SOURCE_DIR}/runtime/src/atn/*.cpp"
@@ -34,6 +33,7 @@ file(GLOB libantlrcpp_SRC
 
 if (ANTLR_BUILD_SHARED)
   add_library(antlr4_shared SHARED ${libantlrcpp_SRC})
+  
 endif()
 if (ANTLR_BUILD_STATIC)
   add_library(antlr4_static STATIC ${libantlrcpp_SRC})

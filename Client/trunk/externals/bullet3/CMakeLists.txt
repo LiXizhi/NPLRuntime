@@ -1,8 +1,13 @@
-cmake_minimum_required(VERSION 2.4.3)
 set(CMAKE_ALLOW_LOOSE_LOOP_CONSTRUCTS true)
 
 #this line has to appear before 'PROJECT' in order to be able to disable incremental linking
 SET(MSVC_INCREMENTAL_DEFAULT ON)
+
+IF(MSVC)
+# Statically link MSVC runtime for all configurations 
+# Debug: /MTd (MultiThreadedDebug), Release: /MT (MultiThreaded)
+set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
+ENDIF()
 
 PROJECT(BULLET_PHYSICS)
 FILE (STRINGS "VERSION" BULLET_VERSION)
@@ -47,6 +52,11 @@ ENDIF (CMAKE_SYSTEM_NAME STREQUAL WindowsPhone OR CMAKE_SYSTEM_NAME STREQUAL Win
 
 
 IF(MSVC)
+	# Statically link MSVC runtime for all configurations 
+	# Debug: /MTd (MultiThreadedDebug), Release: /MT (MultiThreaded)
+	set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
+
+	
 	IF (NOT USE_MSVC_INCREMENTAL_LINKING)
 		#MESSAGE("MSVC_INCREMENTAL_DEFAULT"+${MSVC_INCREMENTAL_DEFAULT})
 		SET( MSVC_INCREMENTAL_YES_FLAG "/INCREMENTAL:NO")
@@ -70,15 +80,10 @@ IF(MSVC)
 	ENDIF (NOT USE_MSVC_INCREMENTAL_LINKING)
 
 	IF (NOT USE_MSVC_RUNTIME_LIBRARY_DLL)
-		#We statically link to reduce dependancies
-		FOREACH(flag_var CMAKE_CXX_FLAGS CMAKE_CXX_FLAGS_DEBUG CMAKE_CXX_FLAGS_RELEASE CMAKE_CXX_FLAGS_MINSIZEREL CMAKE_CXX_FLAGS_RELWITHDEBINFO CMAKE_C_FLAGS CMAKE_C_FLAGS_DEBUG CMAKE_C_FLAGS_RELEASE CMAKE_C_FLAGS_MINSIZEREL CMAKE_C_FLAGS_RELWITHDEBINFO )
-			IF(${flag_var} MATCHES "/MD")
-				STRING(REGEX REPLACE "/MD" "/MT" ${flag_var} "${${flag_var}}")
-			ENDIF(${flag_var} MATCHES "/MD")
-			IF(${flag_var} MATCHES "/MDd")
-				STRING(REGEX REPLACE "/MDd" "/MTd" ${flag_var} "${${flag_var}}")
-			ENDIF(${flag_var} MATCHES "/MDd")
-		ENDFOREACH(flag_var)
+		# Statically link MSVC runtime for all configurations 
+		# Debug: /MTd (MultiThreadedDebug), Release: /MT (MultiThreaded)
+		set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
+
 	ENDIF (NOT USE_MSVC_RUNTIME_LIBRARY_DLL)
 
 	IF (CMAKE_CL_64)

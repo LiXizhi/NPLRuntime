@@ -9,8 +9,6 @@
 #	- MP3 and Preset plugins are compiled to core dll instead of dynamic dll. 
 #	- cAudioDefines.h removed CAUDIO_COMPILE_WITH_DYNAMIC_PLUGIN_SUPPORT, CAUDIO_COMPILE_WITH_FILE_LOG_RECEIVER, CAUDIO_COMPILE_WITH_CONSOLE_LOG_RECEIVER
 
-cmake_minimum_required(VERSION 2.6)
-
 project (cAudioEngine)
 
 SET(cAudioEngine_SRCS
@@ -64,15 +62,9 @@ link_libraries(cAudioEngine vorbis_static.lib vorbisfile_static.lib ogg_static.l
 add_library(cAudioEngine SHARED ${cAudioEngine_SRCS})
 
 IF(MSVC)
-	# statically link MSVC to reduce dependancies
-	foreach(flag_var CMAKE_CXX_FLAGS CMAKE_CXX_FLAGS_DEBUG CMAKE_CXX_FLAGS_RELEASE CMAKE_CXX_FLAGS_MINSIZEREL CMAKE_CXX_FLAGS_RELWITHDEBINFO CMAKE_C_FLAGS CMAKE_C_FLAGS_DEBUG CMAKE_C_FLAGS_RELEASE CMAKE_C_FLAGS_MINSIZEREL CMAKE_C_FLAGS_RELWITHDEBINFO)
-	 	if(${flag_var} MATCHES "/MD")
-			string(REGEX REPLACE "/MD" "/MT" ${flag_var} "${${flag_var}}")
-	 	endif(${flag_var} MATCHES "/MD")
-	 	if(${flag_var} MATCHES "/MDd")
-	 		string(REGEX REPLACE "/MDd" "/MTd" ${flag_var} "${${flag_var}}")
-		endif(${flag_var} MATCHES "/MDd")
-	endforeach(flag_var)
+	# Statically link MSVC runtime for all configurations 
+	# Debug: /MTd (MultiThreadedDebug), Release: /MT (MultiThreaded)
+	set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
 			
 	# /GR- Remove RTTI to miminize the executable size
 	SET(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /GR-")

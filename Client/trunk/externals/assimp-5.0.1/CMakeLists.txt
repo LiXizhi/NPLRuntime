@@ -36,8 +36,6 @@
 #----------------------------------------------------------------------
 SET(CMAKE_POLICY_DEFAULT_CMP0074 NEW)
 
-CMAKE_MINIMUM_REQUIRED( VERSION 3.0 )
-
 # Toggles the use of the hunter package manager
 option(HUNTER_ENABLED "Enable Hunter package manager support" OFF)
 
@@ -50,6 +48,12 @@ HunterGate(
 IF(HUNTER_ENABLED)
   add_definitions(-DASSIMP_USE_HUNTER)
 ENDIF(HUNTER_ENABLED)
+
+IF(MSVC)
+# Statically link MSVC runtime for all configurations 
+# Debug: /MTd (MultiThreadedDebug), Release: /MT (MultiThreaded)
+set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
+ENDIF()
 
 PROJECT( Assimp VERSION 5.0.0 )
 

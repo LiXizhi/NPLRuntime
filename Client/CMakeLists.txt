@@ -3,7 +3,14 @@
 # Date: 2016.4.30
 # Note: see NPLRuntime/cmakelist.txt
 
-cmake_minimum_required (VERSION 3.3)
+cmake_minimum_required (VERSION 3.15)
+
+IF(MSVC)
+# Statically link MSVC runtime for all configurations 
+# Debug: /MTd (MultiThreadedDebug), Release: /MT (MultiThreaded)
+set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
+ENDIF()
+
 set(NPLRUNTIME_PROJECT_NAME "CLIENT" CACHE STRING "Custom Project Name")
 project(${NPLRUNTIME_PROJECT_NAME})
 
