@@ -1,6 +1,7 @@
 {
     "version": "0.2.0",
     "configurations": [
+
         {
             "name": "Debug ParaEngineClient",
             "type": "cppvsdbg",
@@ -38,6 +39,32 @@
             "type": "cppvsdbg",
             "request": "attach",
             "processId": "${command:pickProcess}"
+        },
+        {
+            "name": "Emscripten: Launch in Browser (Single Thread)",
+            "type": "chrome",
+            "request": "launch",
+            "url": "http://localhost:8080/ParaCraft.html",
+            "webRoot": "${workspaceFolder}",
+            "preLaunchTask": "Emscripten: Serve (Single Thread)",
+            "serverReadyAction": {
+                "pattern": "Serving .* at http://localhost:([0-9]+)",
+                "uriFormat": "http://localhost:%s/ParaCraft.html",
+                "action": "openExternally"
+            }
+        },
+        {
+            "name": "Emscripten: Rebuild & Launch (Single Thread)",
+            "type": "chrome",
+            "request": "launch",
+            "url": "http://localhost:8080/ParaCraft.html",
+            "webRoot": "${workspaceFolder}",
+            "preLaunchTask": "Emscripten: Serve (Rebuild & Single Thread)",
+            "serverReadyAction": {
+                "pattern": "Serving .* at http://localhost:([0-9]+)",
+                "uriFormat": "http://localhost:%s/ParaCraft.html",
+                "action": "openExternally"
+            }
         }
     ]
 }

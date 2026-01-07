@@ -106,6 +106,133 @@
                     ]
                 }
             }
+        },
+        {
+            "label": "Emscripten: Configure (Single Thread)",
+            "type": "shell",
+            "command": "wsl",
+            "args": [
+                "bash",
+                "-c",
+                "cd /mnt/c/lxzsrc/NPLRuntimeCpOld && source ~/emsdk/emsdk/emsdk_env.sh && rm -rf ./build/emscripten_single_thread && mkdir -p ./build/emscripten_single_thread && emcmake cmake -S ./NPLRuntime -B ./build/emscripten_single_thread -DBUILD_TESTING=OFF -DEMSCRIPTEN=ON -DEMSCRIPTEN_SINGLE_THREAD=ON -DCMAKE_BUILD_TYPE=RELEASE -DBOOST_ROOT=$HOME/boost_1_85_0 -DAPP_ROOT=$HOME/paracraft -DHTML_ROOT=$HOME/webparacraft"
+            ],
+            "problemMatcher": [],
+            "presentation": {
+                "reveal": "always",
+                "panel": "shared"
+            }
+        },
+        {
+            "label": "Emscripten: Build (Single Thread)",
+            "type": "shell",
+            "command": "wsl",
+            "args": [
+                "bash",
+                "-c",
+                "cd /mnt/c/lxzsrc/NPLRuntimeCpOld/build/emscripten_single_thread && source ~/emsdk/emsdk/emsdk_env.sh && emmake make -j4"
+            ],
+            "problemMatcher": [],
+            "presentation": {
+                "reveal": "always",
+                "panel": "shared"
+            },
+            /*"dependsOn": ["Emscripten: Configure (Single Thread)"]*/
+        },
+        {
+            "label": "Emscripten: Rebuild (Single Thread)",
+            "type": "shell",
+            "command": "wsl",
+            "args": [
+                "bash",
+                "-c",
+                "cd /mnt/c/lxzsrc/NPLRuntimeCpOld && source ~/emsdk/emsdk/emsdk_env.sh && rm -rf ./build/emscripten_single_thread && mkdir -p ./build/emscripten_single_thread && emcmake cmake -S ./NPLRuntime -B ./build/emscripten_single_thread -DBUILD_TESTING=OFF -DEMSCRIPTEN=ON -DEMSCRIPTEN_SINGLE_THREAD=ON -DCMAKE_BUILD_TYPE=RELEASE -DBOOST_ROOT=$HOME/boost_1_85_0 -DAPP_ROOT=$HOME/paracraft -DHTML_ROOT=$HOME/webparacraft && cd ./build/emscripten_single_thread && emmake make -j4"
+            ],
+            "problemMatcher": [],
+            "presentation": {
+                "reveal": "always",
+                "panel": "shared"
+            }
+        },
+        {
+            "label": "Emscripten: Configure (Multi Thread)",
+            "type": "shell",
+            "command": "wsl",
+            "args": [
+                "bash",
+                "-c",
+                "cd /mnt/c/lxzsrc/NPLRuntimeCpOld && source ~/emsdk/emsdk/emsdk_env.sh && rm -rf ./build/emscripten_multi_thread && mkdir -p ./build/emscripten_multi_thread && emcmake cmake -S ./NPLRuntime -B ./build/emscripten_multi_thread -DBUILD_TESTING=OFF -DEMSCRIPTEN=ON -DEMSCRIPTEN_SINGLE_THREAD=OFF -DCMAKE_BUILD_TYPE=RELEASE -DBOOST_ROOT=$HOME/boost_1_85_0 -DAPP_ROOT=$HOME/paracraft -DHTML_ROOT=$HOME/webparacraft"
+            ],
+            "problemMatcher": [],
+            "presentation": {
+                "reveal": "always",
+                "panel": "shared"
+            }
+        },
+        {
+            "label": "Emscripten: Build (Multi Thread)",
+            "type": "shell",
+            "command": "wsl",
+            "args": [
+                "bash",
+                "-c",
+                "cd /mnt/c/lxzsrc/NPLRuntimeCpOld/build/emscripten_multi_thread && source ~/emsdk/emsdk/emsdk_env.sh && emmake make -j4"
+            ],
+            "problemMatcher": [],
+            "presentation": {
+                "reveal": "always",
+                "panel": "shared"
+            },
+            /*"dependsOn": ["Emscripten: Configure (Multi Thread)"]*/
+        },
+        {
+            "label": "Emscripten: Clean (Single Thread)",
+            "type": "shell",
+            "command": "wsl",
+            "args": [
+                "bash",
+                "-c",
+                "cd /mnt/c/lxzsrc/NPLRuntimeCpOld && rm -rf ./build/emscripten_single_thread"
+            ],
+            "problemMatcher": []
+        },
+        {
+            "label": "Emscripten: Serve (Single Thread)",
+            "type": "shell",
+            "command": "wsl",
+            "isBackground": true,
+            "args": [
+                "bash",
+                "-c",
+                "python3 /mnt/c/lxzsrc/NPLRuntimeCpOld/scripts/serve.py"
+            ],
+            "problemMatcher": {
+                "pattern": {
+                    "regexp": "^Serving .* at http://localhost:([0-9]+)$",
+                    "file": 1,
+                    "location": 2,
+                    "message": 3
+                },
+                "background": {
+                    "activeOnStart": true,
+                    "beginsPattern": "Serving .*",
+                    "endsPattern": "Serving .*"
+                }
+            },
+            "presentation": {
+                "reveal": "always",
+                "panel": "shared"
+            }
+        },
+        {
+            "label": "Emscripten: Clean (Multi Thread)",
+            "type": "shell",
+            "command": "wsl",
+            "args": [
+                "bash",
+                "-c",
+                "cd /mnt/c/lxzsrc/NPLRuntimeCpOld && rm -rf ./build/emscripten_multi_thread"
+            ],
+            "problemMatcher": []
         }
     ]
 }

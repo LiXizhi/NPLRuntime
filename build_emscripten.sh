@@ -13,14 +13,21 @@ BUILD_DIR=./build/emscripten_single_thread
 BOOST_DIR=$HOME/boost_1_85_0
 ## the paracraft root folder (all assets like pkg, world, etc. are in this folder)
 PARACRAFT_APP_DIR=$HOME/paracraft
+## the paracraft script folder
+PARACRAFT_SCRIPT_DIR=$HOME/paracraft_script
 ## the output html folder for deploying web paracraft
 OUTPUT_HTML_DIR=$HOME/webparacraft
 
 if [ ! -d $OUTPUT_HTML_DIR ]; then
-    mkdir -p $OUTPUT_HTML_DIR
+    echo "cloning webparacraft to $OUTPUT_HTML_DIR"
+    git clone http://code.kp-para.cn/paracraft/webparacraft.git $OUTPUT_HTML_DIR
 fi
 if [ ! -d $PARACRAFT_APP_DIR ]; then
     mkdir -p $PARACRAFT_APP_DIR
+fi
+if [ ! -d $PARACRAFT_SCRIPT_DIR ]; then
+    echo "cloning paracraft_script to $PARACRAFT_SCRIPT_DIR"
+    git clone http://code.kp-para.cn/paracraft/paracraft_script.git $PARACRAFT_SCRIPT_DIR
 fi
 
 ## check cmake version is above 3.28. 
@@ -39,11 +46,12 @@ if [ ! -d ${EMSDK_DIR} ]; then
     git clone https://github.com/emscripten-core/emsdk.git
     cd emsdk
     ./emsdk install latest
-    ./emsdk activate latestcd ..
+    ./emsdk activate latest
+    cd ..
     popd
 fi
 
-pushd ${EMSDK_DIR}
+pushd ${EMSDK_DIR}/emsdk
 source ./emsdk_env.sh
 popd
 
@@ -51,8 +59,16 @@ popd
 if [ -d $BOOST_DIR ]; then
     if [ ! -d $BOOST_DIR/stage/lib ]; then
         # build boost with emscripten toolset
+        pushd $BOOST_DIR
+        echo "WARNING: see INSTALL.md for more details on building boost with emscripten with cmake and special C++ exception flags"
         ./bootstrap.sh
-        ./b2 toolset=emscripten runtime-link=static
+        ./b2 -a toolset=emscripten runtime-link=static \
+            cxxflags='-fexceptions -fdeclspec -sNO_DISABLE_EXCEPTION_CATCHING -pthread' \
+            cflags='-fexceptions -fdeclspec -sNO_DISABLE_EXCEPTION_CATCHING -pthread' \
+            linkflags='-fexceptions -fdeclspec -sNO_DISABLE_EXCEPTION_CATCHING -pthread' \
+            --with-thread --with-filesystem --with-system --with-chrono --with-serialization --with-iostreams --with-locale --with-date_time -j4
+        #./b2 toolset=emscripten runtime-link=static cxxflags='-fwasm-exceptions' cflags='-fwasm-exceptions' linkflags='-fwasm-exceptions' exception-handling=on --with-atomic --with-chrono --with-date_time --with-filesystem --with-iostreams --with-locale --with-serialization --with-system --with-thread -j4
+        popd
     fi
 else
     echo "boost is not installed in $BOOST_DIR, please install it first"

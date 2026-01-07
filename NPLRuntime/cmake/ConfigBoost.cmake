@@ -40,6 +40,11 @@ elseif(ANDROID)
 	
 	set(Boost_INCLUDE_DIR ${BOOST_ROOT})
 	set(Boost_LIBRARY_DIR ${BOOST_LIBRARYDIR})
+elseif(EMSCRIPTEN)
+	set(BOOST_LIBRARYDIR ${BOOST_ROOT}/stage/lib)
+	
+	set(Boost_INCLUDE_DIR ${BOOST_ROOT})
+	set(Boost_LIBRARY_DIR ${BOOST_LIBRARYDIR})
 else()
 	message(STATUS "BOOST_ROOT  is at: ${BOOST_ROOT}")
 endif()
@@ -67,6 +72,12 @@ elseif(APPLE)
 		Boost 1.74.0 REQUIRED 
 		COMPONENTS thread date_time filesystem system chrono regex serialization iostreams log
 	)
+elseif(EMSCRIPTEN)
+	# For Emscripten, we only need headers, not libraries, so skip find_package
+	# Just ensure Boost_INCLUDE_DIR is set above
+	if (NOT Boost_INCLUDE_DIR)
+		message(FATAL_ERROR "BOOST_ROOT must be defined for Emscripten builds")
+	endif()
 else()
 	find_package(
 		Boost 1.74.0 REQUIRED 

@@ -4,9 +4,7 @@
 # Note: download sqlite src, and then use cmake to compile
 # we will build as dll in win32 and static linked lib under linux. 
 # Note: add #include "paraengine_sqlite3.h" at the very beginning of sqlite3.h and sqlite3.c to automatically define SQLITE_API according to ParaEngine usage macro. 
-if (NOT EMSCRIPTEN)
-	include(${PROJECT_SOURCE_DIR}/cmake/ConfigBoost.cmake)
-endif()
+include(${PROJECT_SOURCE_DIR}/cmake/ConfigBoost.cmake)
 PROJECT(ParaSqlite)
 
 
@@ -30,8 +28,10 @@ SET(sqlite_SRCS
 	paraengine_sqlite3.h
 )
 
-if (NOT EMSCRIPTEN)
+if(Boost_INCLUDE_DIRS)
 	include_directories("${Boost_INCLUDE_DIRS}")
+elseif(Boost_INCLUDE_DIR)
+	include_directories("${Boost_INCLUDE_DIR}")
 endif()
 
 IF(MSVC)
