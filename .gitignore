@@ -15,7 +15,6 @@ assets.log
 *.ffs_gui
 */obj/
 .vs/
-.vscode/
 .DS_Store
 redist/
 published/

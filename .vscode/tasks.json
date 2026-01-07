@@ -1,0 +1,109 @@
+{
+    "version": "2.0.0",
+    "options": {
+        "shell": {
+            "executable": "cmd.exe",
+            "args": [
+                "/c",
+                "\"C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\Common7\\Tools\\VsDevCmd.bat\"",
+                "&&"
+            ]
+        }
+    },
+    "tasks": [
+        {
+            "label": "Build Client (Debug)",
+            "type": "shell",
+            "command": "msbuild",
+            "args": [
+                "${workspaceFolder}\\bin\\win32\\CLIENT.sln",
+                "/p:Configuration=Debug",
+                "/p:Platform=Win32",
+                "/m",
+                "/v:minimal"
+            ],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "problemMatcher": "$msCompile",
+            "presentation": {
+                "reveal": "always",
+                "panel": "shared"
+            }
+        },
+        {
+            "label": "Build Client (Release)",
+            "type": "shell",
+            "command": "msbuild",
+            "args": [
+                "${workspaceFolder}\\bin\\win32\\CLIENT.sln",
+                "/p:Configuration=Release",
+                "/p:Platform=Win32",
+                "/m",
+                "/v:minimal"
+            ],
+            "group": "build",
+            "problemMatcher": "$msCompile",
+            "presentation": {
+                "reveal": "always",
+                "panel": "shared"
+            }
+        },
+        {
+            "label": "Build ParaEngineClient (Debug)",
+            "type": "shell",
+            "command": "msbuild",
+            "args": [
+                "${workspaceFolder}\\bin\\win32\\ParaEngineClient\\ParaEngineClient.vcxproj",
+                "/p:Configuration=Debug",
+                "/p:Platform=Win32",
+                "/m",
+                "/v:minimal"
+            ],
+            "group": "build",
+            "problemMatcher": "$msCompile"
+        },
+        {
+            "label": "Build ParaEngineClientApp (Debug)",
+            "type": "shell",
+            "command": "msbuild",
+            "args": [
+                "${workspaceFolder}\\bin\\win32\\ParaEngineClientApp\\ParaEngineClientApp.vcxproj",
+                "/p:Configuration=Debug",
+                "/p:Platform=Win32",
+                "/m",
+                "/v:minimal"
+            ],
+            "group": "build",
+            "problemMatcher": "$msCompile"
+        },
+        {
+            "label": "Clean Client",
+            "type": "shell",
+            "command": "msbuild",
+            "args": [
+                "${workspaceFolder}\\bin\\win32\\CLIENT.sln",
+                "/t:Clean",
+                "/p:Configuration=Debug",
+                "/p:Platform=Win32"
+            ],
+            "problemMatcher": []
+        },
+        {
+            "label": "Rebuild Client (Debug)",
+            "type": "shell",
+            "command": "msbuild",
+            "args": [
+                "${workspaceFolder}\\bin\\win32\\CLIENT.sln",
+                "/t:Rebuild",
+                "/p:Configuration=Debug",
+                "/p:Platform=Win32",
+                "/m",
+                "/v:minimal"
+            ],
+            "group": "build",
+            "problemMatcher": "$msCompile"
+        }
+    ]
+}

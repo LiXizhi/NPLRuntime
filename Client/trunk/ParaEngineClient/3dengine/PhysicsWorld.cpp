@@ -81,6 +81,7 @@ std::shared_ptr<CPhysicsBlockShape> CPhysicsBlock::GetShape(BlockModel& model, I
 	auto shapeList = GetShapeList();
 	auto it = shapeIndexMap->find(key);
 	if (it != shapeIndexMap->end()) return (*shapeList)[it->second];
+	
 	std::shared_ptr<CPhysicsBlockShape> pShape = std::make_shared<CPhysicsBlockShape>();
 
 	int pointCount = model.GetVerticesCount();
@@ -88,7 +89,6 @@ std::shared_ptr<CPhysicsBlockShape> CPhysicsBlock::GetShape(BlockModel& model, I
 	int triangleCount = faceCount * 2;
 	int pointStrideBytes = sizeof(Vector3);
 	BlockVertexCompressed* vertices = model.GetVertices();
-	std::string source(pointCount * pointStrideBytes, '\0');
 
 	Vector3* pVertices = new Vector3[pointCount];
 	for (int i = 0; i < pointCount; i++)
@@ -96,81 +96,87 @@ std::shared_ptr<CPhysicsBlockShape> CPhysicsBlock::GetShape(BlockModel& model, I
 		pVertices[i].x = vertices[i].position[0];
 		pVertices[i].y = vertices[i].position[1];
 		pVertices[i].z = vertices[i].position[2];
-		// 顶点字符串化
-		const char* srcStr = (const char*)(&(pVertices[i]));
-		const int startStrIndex = i * pointStrideBytes;
-		for (int j = 0; j < pointStrideBytes; j++)
-		{
-			source[startStrIndex + j] = *srcStr;
-			srcStr++;
-		}
 	}
 
 	uint16_t index = 0;
 	uint16_t* pIndices = new uint16_t[triangleCount * 3];
 	bool stdCubeFaces[6] = { false, false, false, false, false, false }; // x 0, 1, y 0, 1 z 0, 1
 	bool isStdCubeShape = faceCount == 6;
+	
 	for (int i = 0; i < faceCount; i++)
 	{
 		uint16_t indexOfs = 4 * i;
-		Vector3 pts[4] = { pVertices[indexOfs + 0], pVertices[indexOfs + 1], pVertices[indexOfs + 2], pVertices[indexOfs + 3] };
-		if (pts[0] != pts[1] && pts[0] != pts[3] && pts[1] != pts[3])
+		const Vector3& pt0 = pVertices[indexOfs + 0];
+		const Vector3& pt1 = pVertices[indexOfs + 1];
+		const Vector3& pt2 = pVertices[indexOfs + 2];
+		const Vector3& pt3 = pVertices[indexOfs + 3];
+		
+		if (pt0 != pt1 && pt0 != pt3 && pt1 != pt3)
 		{
 			pIndices[index++] = indexOfs + 0;
 			pIndices[index++] = indexOfs + 1;
 			pIndices[index++] = indexOfs + 3;
 		}
-		if (pts[1] != pts[2] && pts[1] != pts[3] && pts[2] != pts[3])
+		if (pt1 != pt2 && pt1 != pt3 && pt2 != pt3)
 		{
 			pIndices[index++] = indexOfs + 1;
 			pIndices[index++] = indexOfs + 2;
 			pIndices[index++] = indexOfs + 3;
 		}
-		// TODO 识别正方体模型
+		
+		// Check for standard cube shape
 		if (isStdCubeShape)
 		{
-			// 一个面四个顶点两两不等
-			isStdCubeShape = (pts[0] != pts[1]) && (pts[0] != pts[2]) && (pts[0] != pts[3]) && (pts[1] != pts[2]) && (pts[1] != pts[3]) && (pts[2] != pts[3]);
-			bool tmpStdCubeFaces[6];
-			tmpStdCubeFaces[0] = (pts[0].x == 0) && (pts[1].x == 0) && (pts[2].x == 0) && (pts[3].x == 0);
-			tmpStdCubeFaces[1] = (pts[0].x == 1) && (pts[1].x == 1) && (pts[2].x == 1) && (pts[3].x == 1);
-			tmpStdCubeFaces[2] = (pts[0].y == 0) && (pts[1].y == 0) && (pts[2].y == 0) && (pts[3].y == 0);
-			tmpStdCubeFaces[3] = (pts[0].y == 1) && (pts[1].y == 1) && (pts[2].y == 1) && (pts[3].y == 1);
-			tmpStdCubeFaces[4] = (pts[0].z == 0) && (pts[1].z == 0) && (pts[2].z == 0) && (pts[3].z == 0);
-			tmpStdCubeFaces[5] = (pts[0].z == 1) && (pts[1].z == 1) && (pts[2].z == 1) && (pts[3].z == 1);
-			int stdCubeFace = -1;
-			for (int i = 0; i < 6 && isStdCubeShape; i++)
+			// Verify all four vertices are unique
+			isStdCubeShape = (pt0 != pt1) && (pt0 != pt2) && (pt0 != pt3) && 
+			                 (pt1 != pt2) && (pt1 != pt3) && (pt2 != pt3);
+			
+			if (isStdCubeShape)
 			{
-				if (tmpStdCubeFaces[i])
+				// Check which cube face this represents (optimized with early exit)
+				int stdCubeFace = -1;
+				if (pt0.x == 0 && pt1.x == 0 && pt2.x == 0 && pt3.x == 0) stdCubeFace = 0;
+				else if (pt0.x == 1 && pt1.x == 1 && pt2.x == 1 && pt3.x == 1) stdCubeFace = 1;
+				else if (pt0.y == 0 && pt1.y == 0 && pt2.y == 0 && pt3.y == 0) stdCubeFace = 2;
+				else if (pt0.y == 1 && pt1.y == 1 && pt2.y == 1 && pt3.y == 1) stdCubeFace = 3;
+				else if (pt0.z == 0 && pt1.z == 0 && pt2.z == 0 && pt3.z == 0) stdCubeFace = 4;
+				else if (pt0.z == 1 && pt1.z == 1 && pt2.z == 1 && pt3.z == 1) stdCubeFace = 5;
+				
+				if (stdCubeFace >= 0 && !stdCubeFaces[stdCubeFace])
 				{
-					if (stdCubeFace < 0)
-					{
-						stdCubeFace = i;
-					}
-					else
-					{
-						isStdCubeShape = false;
-					}
+					stdCubeFaces[stdCubeFace] = true;
 				}
-			}
-			if (isStdCubeShape && stdCubeFace >= 0)
-			{
-				stdCubeFaces[stdCubeFace] = true;
-			}
-			else
-			{
-				isStdCubeShape = false;
+				else
+				{
+					isStdCubeShape = false;
+				}
 			}
 		}
 	}
+	
+	// Verify all 6 faces present for standard cube
 	for (int i = 0; i < 6 && isStdCubeShape; i++)
 	{
 		if (!stdCubeFaces[i]) isStdCubeShape = false;
 	}
 	triangleCount = index / 3;
 
-	// hash 是否已被缓存
-	pShape->m_hash = isStdCubeShape ? CPhysicsBlockShape::GetStdCubeHash() : StringHelper::md5(source);
+	// Compute hash efficiently
+	if (isStdCubeShape)
+	{
+		pShape->m_hash = CPhysicsBlockShape::GetStdCubeHash();
+	}
+	else
+	{
+		// Build string for hash only if needed
+		std::string source;
+		source.reserve(pointCount * pointStrideBytes);
+		const char* vertexData = reinterpret_cast<const char*>(pVertices);
+		source.assign(vertexData, pointCount * pointStrideBytes);
+		pShape->m_hash = StringHelper::md5(source);
+	}
+	
+	// Check for existing shape with same hash
 	for (int i = 0; i < shapeList->size(); i++)
 	{
 		if ((*shapeList)[i]->m_hash == pShape->m_hash)
@@ -181,7 +187,8 @@ std::shared_ptr<CPhysicsBlockShape> CPhysicsBlock::GetShape(BlockModel& model, I
 			return (*shapeList)[i];
 		}
 	}
-	// 新建shape
+	
+	// Create new shape
 	if (isStdCubeShape)
 	{
 		ParaPhysicsSimpleShapeDesc desc;
@@ -203,6 +210,7 @@ std::shared_ptr<CPhysicsBlockShape> CPhysicsBlock::GetShape(BlockModel& model, I
 		trimeshDesc.m_flags = 0;
 		pShape->m_shape = world->CreateTriangleMeshShape(trimeshDesc);
 	}
+	
 	shapeIndexMap->insert(std::make_pair(key, (uint16_t)shapeList->size()));
 	shapeList->push_back(pShape);
 	delete[] pIndices;
@@ -392,9 +400,9 @@ void CPhysicsWorld::ResetPhysics()
 void CPhysicsWorld::StepSimulation(double dTime)
 {
 	alignas(16) Matrix4 matrix;
-	CShapeAABB aabb;
 	static int16_t s_block_frame_id = 0;
 	s_block_frame_id++;
+	
 	if (IsDynamicsSimulationEnabled())
 	{
 		IParaPhysicsActor_Map_Type::iterator itCurCP = m_mapDynamicActors.begin();
@@ -403,35 +411,18 @@ void CPhysicsWorld::StepSimulation(double dTime)
 		// check load terrain physics blocks near all dynamic actors
 		BlockWorldClient* pWorld = BlockWorldClient::GetInstance();
 		bool isAutoPhysicsBlock = pWorld->IsAutoPhysics();
+		
 		if (isAutoPhysicsBlock)
 		{
+			CShapeAABB aabb;
 			for (itCurCP = m_mapDynamicActors.begin(); itCurCP != itEndCP; itCurCP++)
 			{
 				IParaPhysicsActor* actor = *itCurCP;
 				CBaseObject* obj = (CBaseObject*)(actor->GetUserData());
-				if (actor->IsStaticOrKinematicObject())
+				
+				if (!actor->IsStaticOrKinematicObject())
 				{
-					/* the following is done in CBipedObject::UpdateKinematicPhysicsActor()
-					// 属性设置为 CollisionFlags=2, ActivationState=4 可右玩家控制位置同步至物理世界
-					auto pAsset = obj->GetPrimaryAsset();
-					CParaXModel* pModel = ((ParaXEntity*)pAsset)->GetModel();
-					float halfHeight = pModel->GetHeader().maxExtent.y * 0.5f;
-					Vector3 vCenter(0, halfHeight, 0);
-					obj->GetLocalTransform(&matrix);
-					vCenter = vCenter * matrix;
-					Vector3 vPos = ((Vector3)(obj->GetPosition())) + vCenter;
-					Vector3 vScale, vTrans;
-					Quaternion quat;
-					ParaMatrixDecompose(&vScale, &quat, &vTrans, &matrix);
-					quat.ToRotationMatrix(matrix, vPos);
-					actor->SetWorldTransform((PARAMATRIX*)&matrix);
-					*/
-				}
-				else
-				{
-					// Always load physics blocks for dynamic actors (even sleeping ones)
-					// to prevent unload/reload cycles that would wake them up
-					obj->GetAABB(&aabb);
+					obj->GetAABB(&aabb); 
 					LoadPhysicsBlock(&aabb, s_block_frame_id);
 				}
 			}
@@ -443,25 +434,21 @@ void CPhysicsWorld::StepSimulation(double dTime)
 			m_pPhysicsWorld->StepSimulation((float)dTime);
 		}
 
+		// Update transforms for active dynamic actors only
 		for (itCurCP = m_mapDynamicActors.begin(); itCurCP != itEndCP; itCurCP++)
 		{
 			IParaPhysicsActor* actor = *itCurCP;
-			CBaseObject* obj = (CBaseObject*)(actor->GetUserData());
+			
 			if (!actor->IsStaticOrKinematicObject())
 			{
-				// Only copy transform if actor is active (not sleeping)
-				// ACTIVE_TAG (1) = actively moving
-				// WANTS_DEACTIVATION (3) = just came to rest
-				// DISABLE_DEACTIVATION (4) = never sleeps
-				// ISLAND_SLEEPING (2) = sleeping, skip to save CPU
 				int activationState = actor->GetActivationState();
-				if (activationState != 2)
+				if (activationState != 2) // Skip ISLAND_SLEEPING actors
 				{
+					CBaseObject* obj = (CBaseObject*)(actor->GetUserData());
 					actor->GetWorldTransform((PARAMATRIX*)&matrix);
 					Vector3 pos = matrix.getTrans();
 					float fCenterHeight = obj->GetAssetHeight() * 0.5f;
 
-					// make this rotation matrix
 					matrix.setTrans(Vector3(0, 0, 0));
 					obj->SetPosition(DVector3(pos.x, pos.y - fCenterHeight, pos.z));
 
@@ -479,16 +466,19 @@ void CPhysicsWorld::StepSimulation(double dTime)
 			}
 		}
 
-		// 移除无效方块
+		// Remove stale physics blocks
 		if (isAutoPhysicsBlock)
 		{
 			auto it = m_mapPhysicsBlocks.begin();
 			while (it != m_mapPhysicsBlocks.end())
 			{
-				auto curIt = it++;
-				if (std::abs(s_block_frame_id - curIt->second->GetFrameId()) > 2)
+				if (std::abs(s_block_frame_id - it->second->GetFrameId()) > 2)
 				{
-					m_mapPhysicsBlocks.erase(curIt);
+					it = m_mapPhysicsBlocks.erase(it);
+				}
+				else
+				{
+					++it;
 				}
 			}
 		}
@@ -550,21 +540,73 @@ IParaPhysicsActor* ParaEngine::CPhysicsWorld::CreateDynamicMesh(CBaseObject* obj
 	return pActor;
 }
 
+IParaPhysicsActor* ParaEngine::CPhysicsWorld::CreateDynamicShape(CBaseObject* obj)
+{
+	ParaPhysicsSimpleShapeDesc desc;
+	desc.m_shape = obj->GetPhysicsShape();
+
+	float fRadius = obj->GetPhysicsRadius();
+	float fHeight = obj->GetPhysicsHeight();
+	
+	if (fRadius <= 0.f || fHeight <= 0.f)
+		return NULL; // invalid dimensions
+	
+	float fScale = obj->GetScaling();
+	desc.m_halfWidth = fRadius; // without scaling
+	desc.m_halfHeight = fHeight * 0.5f;
+	desc.m_halfLength = fRadius;
+
+	IParaPhysicsShape* pShape = m_pPhysicsWorld->CreateSimpleShape(desc);
+	if (!pShape)
+		return NULL;
+	
+	ParaPhysicsActorDesc ActorDesc;
+	ActorDesc.m_group = obj->GetPhysicsGroup();
+	ActorDesc.m_mask = -1;
+	ActorDesc.m_mass = 1.0f;
+	ActorDesc.m_pShape = pShape;
+
+	// set world position
+	Matrix4 localMat;
+	Vector3 vCenter(0, desc.m_halfHeight / obj->GetScaling(), 0);
+	obj->GetLocalTransform(&localMat);
+	vCenter = vCenter * localMat;
+	auto vPos = obj->GetPosition();
+	ActorDesc.m_origin = PARAVECTOR3((float)(vPos.x + vCenter.x), (float)(vPos.y + vCenter.y), (float)(vPos.z + vCenter.z));
+
+	// set world local rotation matrix
+	Vector3 vScale, vTrans;
+	Quaternion quat;
+	ParaMatrixDecompose(&vScale, &quat, &vTrans, &localMat);
+	quat.ToRotationMatrix((Matrix3&)ActorDesc.m_rotation);
+
+	IParaPhysicsActor* pActor = m_pPhysicsWorld->CreateActor(ActorDesc);
+	if (!pActor)
+		return NULL;
+	pActor->SetUserData(obj);
+	m_mapDynamicActors.insert(pActor);
+	return pActor;
+}
+
 void ParaEngine::CPhysicsWorld::LoadPhysicsBlock(CShapeAABB* aabb, int16_t frameId, float extend)
 {
 	Vector3 min, max;
 	aabb->GetMin(min);
 	aabb->GetMax(max);
-	min -= extend;  // extend 为下一帧可能的距离
+	min -= extend;  // extend for next frame's possible distance
 	max += extend;
+	
 	float offset_y = BlockWorldClient::GetInstance()->GetVerticalOffset();
-	// min, max 为世界坐标使用  BlockConfig::g_dBlockSize 局部坐标使用 BlockConfig::g_blockSize
-	int16_t min_x = (int16_t)std::floor(min.x / BlockConfig::g_dBlockSize);
-	int16_t min_y = (int16_t)std::floor((min.y - offset_y) / BlockConfig::g_dBlockSize);
-	int16_t min_z = (int16_t)std::floor(min.z / BlockConfig::g_dBlockSize);
-	int16_t max_x = (int16_t)std::floor(max.x / BlockConfig::g_dBlockSize);
-	int16_t max_y = (int16_t)std::floor((max.y - offset_y) / BlockConfig::g_dBlockSize);
-	int16_t max_z = (int16_t)std::floor(max.z / BlockConfig::g_dBlockSize);
+	float inv_blockSize = (float) BlockConfig::g_dBlockSizeInverse;
+	
+	// Use inverse multiplication instead of division for better performance
+	int16_t min_x = (int16_t)std::floor(min.x * inv_blockSize);
+	int16_t min_y = (int16_t)std::floor((min.y - offset_y) * inv_blockSize);
+	int16_t min_z = (int16_t)std::floor(min.z * inv_blockSize);
+	int16_t max_x = (int16_t)std::floor(max.x * inv_blockSize);
+	int16_t max_y = (int16_t)std::floor((max.y - offset_y) * inv_blockSize);
+	int16_t max_z = (int16_t)std::floor(max.z * inv_blockSize);
+	
 	if (min_x < 0 || min_y < 0 || min_z < 0) return;
 
 	for (int16_t bx = min_x; bx <= max_x; bx++)
@@ -586,45 +628,50 @@ void ParaEngine::CPhysicsWorld::LoadPhysicsBlock(CShapeAABB* aabb, int16_t frame
 std::shared_ptr<CPhysicsBlock> ParaEngine::CPhysicsWorld::LoadPhysicsBlock(uint16_t bx, uint16_t by, uint16_t bz)
 {
 	CBlockWorld* pWorld = BlockWorldClient::GetInstance();
-	BlockTemplate* pTemplate = pWorld->GetBlockTemplate(bx, by, bz);
+	
 	Block* pBlock = pWorld->GetBlock(bx, by, bz);
-	uint64_t id = CPhysicsBlock::PackID(bx, by, bz);
-	if (!pTemplate || !pBlock)
+	
+	if (!pBlock)
 	{
+		uint64_t id = CPhysicsBlock::PackID(bx, by, bz);
 		m_mapPhysicsBlocks.erase(id);
 		return nullptr;
 	}
+	BlockTemplate* pTemplate = pBlock->GetTemplate();
+
+	// Early rejection: check if block template allows physics before expensive lookups
+	if (!pTemplate || !pTemplate->IsMatchAttribute(BlockTemplate::batt_obstruction))
+	{
+		return nullptr;
+	}
+	
 
 	uint16_t blockData = pBlock->GetUserData();
 	uint16_t tplId = pTemplate->GetID();
 	uint32_t key = (blockData << 16) + tplId;
-	BlockModel& model = pTemplate->GetBlockModel(pWorld, bx, by, bz, blockData);
+	uint64_t id = CPhysicsBlock::PackID(bx, by, bz);
 
 	auto it = m_mapPhysicsBlocks.find(id);
 	if (it != m_mapPhysicsBlocks.end())
 	{
-		std::shared_ptr<CPhysicsBlock> pBlock = it->second;
+		std::shared_ptr<CPhysicsBlock>& pBlock = it->second;
 		if (pBlock->GetKey() == key)
 		{
-			// 不存在加载失败情况, 可以屏蔽此行
+			// Block exists and hasn't changed
 			if (!pBlock->IsLoaded())
 			{
+				BlockModel& model = pTemplate->GetBlockModel(pWorld, bx, by, bz, blockData);
 				pBlock->Load(model, m_pPhysicsWorld);
 				SetActorPhysicsProperty(pBlock->GetActor(), pTemplate->GetPhysicsProperty().c_str());
 			}
 			return pBlock;
 		}
-		// 发生改变删除
+		// Block changed, remove old one
 		m_mapPhysicsBlocks.erase(it);
 	}
 
-	// 非实体方块不做物理映射
-	if (!pWorld->IsObstructionBlock(bx, by, bz))
-	{
-		return nullptr;
-	}
-
-	// 加载physics block
+	// Create new physics block
+	BlockModel& model = pTemplate->GetBlockModel(pWorld, bx, by, bz, blockData);
 	std::shared_ptr<CPhysicsBlock> newBlock = std::make_shared<CPhysicsBlock>(id, key);
 	newBlock->Load(model, m_pPhysicsWorld);
 	SetActorPhysicsProperty(newBlock->GetActor(), pTemplate->GetPhysicsProperty().c_str());

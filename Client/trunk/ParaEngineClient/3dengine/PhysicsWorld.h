@@ -1,8 +1,10 @@
 ﻿#pragma once
 #include "IParaPhysics.h"
+
 #include <list>
 #include <unordered_map>
 #include <string>
+
 /** different physics engine has different winding order. */
 // #define INVERT_PHYSICS_FACE_WINDING
 
@@ -10,6 +12,7 @@ namespace ParaEngine
 {
 	struct MeshEntity;
 	struct ParaXEntity;
+	class CShapeAABB;
 	class BlockModel;
 
 	class CPhysicsBlockShape
@@ -36,7 +39,7 @@ namespace ParaEngine
 			m_actor = nullptr;
 			m_world = nullptr;
 		}
-
+		
 		~CPhysicsBlock() 
 		{
 			Unload();
@@ -74,8 +77,10 @@ namespace ParaEngine
 			static std::vector<std::shared_ptr<CPhysicsBlockShape>> s_physics_block_shape_list;
 			return &s_physics_block_shape_list;
 		}
+
 		bool IsLoaded() { return m_actor != nullptr; }
 		IParaPhysicsActor* GetActor() { return m_actor; }
+
 		void Load(BlockModel& model, IParaPhysics* world);
 		void Unload();
 	private:
@@ -85,6 +90,7 @@ namespace ParaEngine
 		IParaPhysics* m_world;
 		int16_t m_frameId;
 	};
+
 	/**
 	* The global physics scene (NxScene) and physics SDK is encapsulated in a member object of scene manager. 
 	* It is called CPhysicsWorld. The environment simulator can retrieve the physics scene from this object. 
@@ -169,7 +175,8 @@ namespace ParaEngine
 		IParaPhysicsActor* CreateStaticMesh(ParaXEntity* ppMesh, const Matrix4& globalMat, uint32 nShapeGroup = 0, vector<IParaPhysicsActor*>* pOutputPhysicsActor = NULL, void* pUserData = NULL);
 
 		IParaPhysicsActor* CreateDynamicMesh(CBaseObject* obj);
-
+		IParaPhysicsActor* CreateDynamicShape(CBaseObject* obj);
+		
 		std::shared_ptr<CPhysicsBlock> LoadPhysicsBlock(uint16_t bx, uint16_t by, uint16_t bz);
 		void LoadPhysicsBlock(CShapeAABB* aabb, int16_t frameId = 0, float extend = 0.5f);
 
@@ -193,7 +200,7 @@ namespace ParaEngine
 		TriangleMeshShape_Map_Type  m_listMeshShapes;
 		IParaPhysicsActor_Map_Type m_mapDynamicActors;
 		std::unordered_map<uint64_t, std::shared_ptr<CPhysicsBlock>> m_mapPhysicsBlocks;
-		
+
 		/// whether to do dynamic simulation. It is turned off by default, which only provide basic collision detection. 
 		bool m_bRunDynamicSimulation;
 	};

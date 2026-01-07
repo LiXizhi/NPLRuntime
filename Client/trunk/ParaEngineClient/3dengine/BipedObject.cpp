@@ -982,7 +982,7 @@ void CBipedObject::Animate(double dTimeDelta, int nRenderNumber)
 			}
 		}
 	}
-
+	
 	// Update kinematic physics actor position if kinematic is enabled
 	UpdateKinematicPhysicsActor();
 }
@@ -1951,7 +1951,7 @@ bool ParaEngine::CBipedObject::MoveTowards_Linear(double dTimeDelta, const DVect
 bool CBipedObject::MoveTowards(double dTimeDelta, const DVector3& vPosTarget, float fStopDistance, bool* pIsSlidingWall)
 {
 	UnloadPhysics();
-
+	
 	if (m_nMovementStyle == MOVESTYLE_OPC)
 	{
 		m_fLastSpeed = 0;
@@ -4316,7 +4316,7 @@ void ParaEngine::CBipedObject::UpdateGeometry()
 				{
 					Vector3 vMin = pModel->GetHeader().minExtent;
 					Vector3 vMax = pModel->GetHeader().maxExtent;
-
+					
 					m_fAssetHeight = vMax.y * fScale;
 					Matrix4 mat;
 					GetLocalWorldTransform(mat);
@@ -4756,7 +4756,7 @@ const char* ParaEngine::CBipedObject::GetPhysicsShape()
 
 void ParaEngine::CBipedObject::SetPhysicsProperty(const char* property)
 {
-	if (!m_dynamicPhysicsActor)
+	if (!m_dynamicPhysicsActor) 
 	{
 		OUTPUT_LOG("warning: SetPhysicsProperty when actor does not exist.\n");
 		return;
@@ -4778,12 +4778,12 @@ void ParaEngine::CBipedObject::EnableDynamicPhysics(bool bEnable)
 {
 	if (IsPhysicsEnabled()) return;
 
-	if (bEnable)
+	if (bEnable) 
 	{
 		m_dwPhysicsMethod |= PHYSICS_FORCE_DYNAMIC;
 		LoadDynamicPhysics();
 	}
-	else
+	else 
 	{
 		m_dwPhysicsMethod &= (~PHYSICS_FORCE_DYNAMIC);
 		UnloadDynamicPhysics();
@@ -4816,7 +4816,7 @@ void ParaEngine::CBipedObject::LoadKinematicPhysics()
 {
 	if (m_dynamicPhysicsActor == NULL && !IsDynamicPhysicsEnabled())
 	{
-		m_dynamicPhysicsActor = CGlobals::GetPhysicsWorld()->CreateDynamicMesh(this);
+		m_dynamicPhysicsActor = CGlobals::GetPhysicsWorld()->CreateDynamicShape(this);
 		if (m_dynamicPhysicsActor)
 		{
 			// Set as kinematic: CollisionFlags=2 marks it as kinematic object, ActivationState=4 keeps it always active
@@ -4842,25 +4842,27 @@ void ParaEngine::CBipedObject::UpdateKinematicPhysicsActor()
 		// Get the biped's current position and orientation
 		Matrix4 mxWorld;
 		GetWorldTransform(mxWorld);
-
+		
 		PARAMATRIX paraMatrix;
 		memcpy(&paraMatrix, &mxWorld, sizeof(PARAMATRIX));
+		// Translate kinematic actor to be centered at physics height (middle of character)
+		paraMatrix._42 += GetPhysicsHeight() * 0.5f;
 		m_dynamicPhysicsActor->SetWorldTransform(&paraMatrix);
-
+		
 		// Set linear velocity to match biped's movement speed
 		// This allows Bullet to use the velocity in collision response to push dynamic objects
 		Vector3 vMovementDir;
 		GetSpeedDirection(&vMovementDir);
 		float fSpeed = GetSpeed();
-
+		
 		if (fSpeed != 0.f && vMovementDir.squaredLength() > 0.001f)
 		{
 			vMovementDir.normalise();
 			Vector3 vVelocity = vMovementDir * fSpeed;
-
+			
 			// Include vertical velocity
 			vVelocity.y = GetVerticalSpeed();
-
+			
 			PARAVECTOR3 velocity(vVelocity.x, vVelocity.y, vVelocity.z);
 			m_dynamicPhysicsActor->SetLinearVelocity(velocity);
 		}
@@ -4945,8 +4947,8 @@ int ParaEngine::CBipedObject::GetPhysicsGroup()
 
 void ParaEngine::CBipedObject::EnablePhysics(bool bEnable)
 {
-	if (IsDynamicPhysicsEnabled()) return;
-
+	if (IsDynamicPhysicsEnabled()) return ;
+	
 	if (!bEnable) {
 		UnloadPhysics();
 		m_dwPhysicsMethod |= PHYSICS_FORCE_NO_PHYSICS;
@@ -4961,7 +4963,7 @@ void ParaEngine::CBipedObject::EnablePhysics(bool bEnable)
 
 bool ParaEngine::CBipedObject::IsPhysicsEnabled()
 {
-	return !((m_dwPhysicsMethod & PHYSICS_FORCE_NO_PHYSICS) > 0);
+	 return !((m_dwPhysicsMethod & PHYSICS_FORCE_NO_PHYSICS) > 0);
 }
 
 int ParaEngine::CBipedObject::GetStaticActorCount()
@@ -5140,7 +5142,7 @@ bool ParaEngine::CBipedObject::CanAnimOpacity() const
 	return m_bCanAnimOpacity;
 }
 
-IAttributeFields* ParaEngine::CBipedObject::GetChildAttributeObject(const char* sName)
+IAttributeFields* ParaEngine::CBipedObject::GetChildAttributeObject(const char * sName)
 {
 	return CBaseObject::GetChildAttributeObject(sName);
 }

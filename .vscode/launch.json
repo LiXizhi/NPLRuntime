@@ -1,0 +1,57 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Debug ParaEngineClient",
+            "type": "cppvsdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/ParaWorld/bin32/ParaEngineClient_d.exe",
+            "args": ["debug=true", "single=false", "mc=true", "world=worlds/DesignHouse/_user/lixizhi/TestLiveModel"],
+            "stopAtEntry": false,
+            "cwd": "C:\\lxzsrc\\ParaEngine\\ParaWorld\\",
+            "environment": [],
+            "console": "integratedTerminal",
+            "preLaunchTask": "Build Client (Debug)"
+        },
+        {
+            "name": "Debug ParaEngineClient (No Build)",
+            "type": "cppvsdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/ParaWorld/bin32/ParaEngineClient_d.exe",
+            "args": ["debug=true", "single=false", "mc=true", "world=worlds/DesignHouse/_user/lixizhi/TestLiveModel"],
+            "stopAtEntry": false,
+            "cwd": "C:\\lxzsrc\\ParaEngine\\ParaWorld\\",
+            "environment": [],
+            "console": "integratedTerminal"
+        },
+        {
+            "name": "Release ParaEngineClient",
+            "type": "cppvsdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/ParaWorld/bin32/ParaEngineClient.exe",
+            "args": ["debug=true", "single=false", "mc=true", "world=worlds/DesignHouse/_user/lixizhi/TestLiveModel"],
+            "stopAtEntry": false,
+            "cwd": "C:\\lxzsrc\\ParaEngine\\ParaWorld\\",
+            "environment": [],
+            "console": "integratedTerminal",
+            "preLaunchTask": "Build Client (Release)"
+        },
+        {
+            "name": "Release ParaEngineClient (No Build)",
+            "type": "cppvsdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/ParaWorld/bin32/ParaEngineClient.exe",
+            "args": ["debug=true", "single=false", "mc=true", "world=worlds/DesignHouse/_user/lixizhi/TestLiveModel"],
+            "stopAtEntry": false,
+            "cwd": "C:\\lxzsrc\\ParaEngine\\ParaWorld\\",
+            "environment": [],
+            "console": "integratedTerminal"
+        },
+        {
+            "name": "Attach to Process",
+            "type": "cppvsdbg",
+            "request": "attach",
+            "processId": "${command:pickProcess}"
+        }
+    ]
+}
