@@ -5,6 +5,7 @@
 
 
 void RedirectIOToConsole();
+void FreeDebugConsole();
 
 
 

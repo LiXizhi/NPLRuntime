@@ -4,8 +4,11 @@
 #include "Winuser.h"
 #include "2dengine/GUIRoot.h"
 #include <shellapi.h>
+#include <Imm.h>
 
 #include <unordered_map>
+
+#pragma comment(lib, "Imm32.lib")
 
 
 namespace ParaEngine {
@@ -241,6 +244,8 @@ namespace ParaEngine {
 		case WM_KILLFOCUS:
 
 			window->m_bLostFocus = true;
+			// Clear all key states when losing focus to prevent stuck keys (e.g., Alt+Tab)
+			window->ClearInputStates();
 
 			break;
 
@@ -285,6 +290,13 @@ namespace ParaEngine {
 			PostQuitMessage(0);
 			window->m_IsQuit = true;
 			break;
+		
+		case WM_SYSKEYDOWN:
+		case WM_SYSKEYUP:
+			// Handle Alt key and other system keys ourselves to prevent menu activation
+			// The actual key processing happens in ProcessInput()
+			return 0;
+		
 		default:
 			break;
 		}
@@ -429,6 +441,9 @@ namespace ParaEngine {
 			, NULL);
 
 		g_WindowMap[m_hWnd] = this;
+
+		// Disable IME input method to track key char events properly
+		ImmAssociateContext(m_hWnd, NULL);
 
 		// Load keyboard accelerators
 		m_hAccel = LoadAcceleratorsW(hInstance, MAKEINTRESOURCEW(IDR_MAIN_ACCEL));
@@ -592,6 +607,30 @@ namespace ParaEngine {
 		for (uint32_t i = 0; i < (uint32_t)EVirtualKey::COUNT; i++)
 		{
 			m_KeyState[i] = EKeyState::RELEASE;
+		}
+	}
+
+	void RenderWindowWin32::ClearInputStates()
+	{
+		// Clear all mouse button states and send release events for any pressed buttons
+		for (uint32_t i = 0; i < (uint32_t)EMouseButton::COUNT; i++)
+		{
+			if (m_MouseState[i] == EKeyState::PRESS)
+			{
+				m_MouseState[i] = EKeyState::RELEASE;
+				// Send mouse release event for any buttons that were pressed
+				OnMouseButton((EMouseButton)i, EKeyState::RELEASE, (int)m_MousePos.x, (int)m_MousePos.y);
+			}
+		}
+		// Clear all key states and send release events for any pressed keys
+		for (uint32_t i = 0; i < (uint32_t)EVirtualKey::COUNT; i++)
+		{
+			if (m_KeyState[i] == EKeyState::PRESS)
+			{
+				m_KeyState[i] = EKeyState::RELEASE;
+				// Send key release event for any keys that were pressed
+				OnKey((EVirtualKey)i, EKeyState::RELEASE);
+			}
 		}
 	}
 

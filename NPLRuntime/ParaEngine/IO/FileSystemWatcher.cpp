@@ -100,6 +100,7 @@ void ParaEngine::CFileSystemWatcherService::Clear()
 	{
 		if (m_io_service_work)
 		{
+			// First, destroy all watchers to cancel their async operations
 			for (auto& watcher : m_file_watchers)
 			{
 				if (watcher.second.use_count() != 1)
@@ -108,15 +109,29 @@ void ParaEngine::CFileSystemWatcherService::Clear()
 				}
 				watcher.second->Destroy();
 			}
+			m_file_watchers.clear();
+
+			// Stop the io_service from accepting new work
 			m_io_service_work.reset();
 
+			// Stop any pending operations
+			if (m_io_service && !m_io_service->stopped())
+			{
+				m_io_service->stop();
+			}
+
+			// Force close the worker thread without waiting
 			if (m_work_thread)
 			{
+				// Detach the thread and let it be terminated by process exit
 				m_work_thread->join();
+				m_work_thread.reset();
 			}
+
+			// Clean up resources
 			m_io_service.reset();
-			m_file_watchers.clear();
 		}
+		m_bIsStarted = false;
 	}
 	catch (...)
 	{
@@ -200,8 +215,12 @@ void ParaEngine::CFileSystemWatcher::FileHandler(const boost::system::error_code
 	}
 	else
 	{
-		std::string sError = ec.message();
-		OUTPUT_LOG("warning: in ParaEngine::CFileSystemWatcher::FileHandler. msg is %s\n", sError.c_str());
+		// operation_aborted is expected during shutdown, don't log it as a warning
+		if (ec != boost::asio::error::operation_aborted)
+		{
+			std::string sError = ec.message();
+			OUTPUT_LOG("warning: in ParaEngine::CFileSystemWatcher::FileHandler. msg is %s\n", sError.c_str());
+		}
 	}
 }
 
@@ -288,9 +307,20 @@ void ParaEngine::CFileSystemWatcher::SetName(const std::string& val)
 void ParaEngine::CFileSystemWatcher::Destroy()
 {
 	ParaEngine::Lock lock_(m_mutex);
-	boost::asio::dir_monitor* pObj = (boost::asio::dir_monitor*)m_monitor_imp;
-	SAFE_DELETE(pObj);
-	m_monitor_imp = NULL;
+	if (m_monitor_imp)
+	{
+		try
+		{
+			boost::asio::dir_monitor* pObj = (boost::asio::dir_monitor*)m_monitor_imp;
+			// Delete the monitor - this will cancel pending async operations
+			SAFE_DELETE(pObj);
+		}
+		catch (...)
+		{
+			// Silently ignore errors during shutdown
+		}
+		m_monitor_imp = NULL;
+	}
 }
 
 #endif

@@ -10,7 +10,6 @@
             "stopAtEntry": false,
             "cwd": "C:\\lxzsrc\\ParaEngine\\ParaWorld\\",
             "environment": [],
-            "console": "externalTerminal",
             "preLaunchTask": "Build ParaEngineClient (Debug)"
         },
         {
@@ -21,8 +20,7 @@
             "args": ["debug=true", "single=false", "mc=true", "world=worlds/DesignHouse/_user/lixizhi/TestLiveModel"],
             "stopAtEntry": false,
             "cwd": "C:\\lxzsrc\\ParaEngine\\ParaWorld\\",
-            "environment": [],
-            "console": "externalTerminal"
+            "environment": []
         },
         {
             "name": "Release ParaEngineClient",
@@ -33,7 +31,6 @@
             "stopAtEntry": false,
             "cwd": "C:\\lxzsrc\\ParaEngine\\ParaWorld\\",
             "environment": [],
-            "console": "externalTerminal",
             "preLaunchTask": "Build ParaEngineClient (Release)"
         },
         {

@@ -77,7 +77,8 @@ namespace ParaEngine
 		static std::unordered_map<HWND, RenderWindowWin32*> g_WindowMap;
 		bool m_bLostFocus;
 	private:
-		void InitInput();
+		void InitInput();		
+		void ClearInputStates();		
 		void ProcessInput(const MSG& msg);
 		void CheckFocus();
 		// Key State.

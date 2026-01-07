@@ -44,5 +44,9 @@ INT WINAPI WinMain( HINSTANCE hInst, HINSTANCE, LPSTR lpCmdLine, INT )
 	app.InitApp(&renderWindow, lpCmdLine);
 	app.Run(hInst);
 
+#if defined(_DEBUG)
+	FreeDebugConsole();
+#endif
+
 	return 0;
 }

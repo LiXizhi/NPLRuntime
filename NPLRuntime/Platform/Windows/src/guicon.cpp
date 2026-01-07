@@ -128,6 +128,10 @@ void RedirectIOToConsole()
 
 }
 
+void FreeDebugConsole()
+{
+	FreeConsole();
+}
 
 
 //End of File
