@@ -6,6 +6,8 @@
 namespace ParaEngine
 {
 	struct IParaPhysicsActor;
+	struct IParaPhysicsConstraint;
+	struct IParaPhysicsVehicle;
 
 	/**
 	*		It can be used to represent biped object(like human, re spawning monsters)
@@ -218,6 +220,25 @@ namespace ParaEngine
 
 		ATTRIBUTE_METHOD1(CBipedObject, IsKinematic_s, bool*) { *p1 = cls->IsKinematic(); return S_OK; }
 		ATTRIBUTE_METHOD1(CBipedObject, SetKinematic_s, bool) { cls->SetKinematic(p1); return S_OK; }
+
+		// Joint/Constraint attribute methods
+		ATTRIBUTE_METHOD1(CBipedObject, GetJointCount_s, int*) { *p1 = cls->GetJointCount(); return S_OK; }
+		ATTRIBUTE_METHOD1(CBipedObject, CreateJointStr_s, const char*) { cls->CreateJointStr(p1); return S_OK; }
+		ATTRIBUTE_METHOD1(CBipedObject, SetJointPropertyByIndex_s, const char*) { cls->SetJointPropertyByIndex(p1); return S_OK; }
+		ATTRIBUTE_METHOD1(CBipedObject, GetJointPropertyByIndex_s, const char**) { *p1 = cls->GetJointPropertyByIndex(); return S_OK; }
+		ATTRIBUTE_METHOD1(CBipedObject, ReleaseJointByIndex_s, int) { cls->ReleaseJointByIndex(p1); return S_OK; }
+		ATTRIBUTE_METHOD(CBipedObject, ReleaseAllJoints_s) { cls->ReleaseAllJoints(); return S_OK; }
+
+		// Vehicle attribute methods
+		ATTRIBUTE_METHOD1(CBipedObject, HasVehicle_s, bool*) { *p1 = cls->HasVehicle(); return S_OK; }
+		ATTRIBUTE_METHOD1(CBipedObject, CreateVehicle_s, bool*) { *p1 = cls->CreateVehicle(); return S_OK; }
+		ATTRIBUTE_METHOD(CBipedObject, ReleaseVehicle_s) { cls->ReleaseVehicle(); return S_OK; }
+		ATTRIBUTE_METHOD1(CBipedObject, AddWheelStr_s, const char*) { cls->AddWheel(p1); return S_OK; }
+		ATTRIBUTE_METHOD1(CBipedObject, GetWheelCount_s, int*) { *p1 = cls->GetWheelCount(); return S_OK; }
+		ATTRIBUTE_METHOD1(CBipedObject, GetVehicleSpeed_s, float*) { *p1 = cls->GetVehicleSpeed(); return S_OK; }
+		ATTRIBUTE_METHOD1(CBipedObject, SetVehicleControlStr_s, const char*) { cls->SetVehicleControlStr(p1); return S_OK; }
+		ATTRIBUTE_METHOD1(CBipedObject, GetVehicleState_s, const char**) { *p1 = cls->GetVehicleState(); return S_OK; }
+		ATTRIBUTE_METHOD(CBipedObject, ResetVehicleSuspension_s) { cls->ResetVehicleSuspension(); return S_OK; }
 
 	protected:
 		/** Move the biped in the physical scene.move the biped towards the target using its current speed and facing
@@ -877,6 +898,128 @@ namespace ParaEngine
 		/** get the number of physics actors. If physics is not loaded, the returned value is 0. */
 		int GetStaticActorCount();
 		void EnableAutoAnimation(bool enable);
+
+		//////////////////////////////////////////////////////////////////////////
+		// Joint/Constraint APIs
+		//////////////////////////////////////////////////////////////////////////
+
+		/** Create a joint/constraint between this biped and another object (or world)
+		* @param constraintType: type of constraint (0=P2P, 1=Hinge, 2=Slider, 3=ConeTwist, 4=6DoF, 5=Fixed)
+		* @param pOtherObject: the other biped to connect to, or nullptr for world constraint
+		* @param pivotInA: pivot point in local space of this biped
+		* @param pivotInB: pivot point in local space of other biped (or world position if pOtherObject is nullptr)
+		* @param axisInA: axis in local space of this biped (for hinge/slider joints)
+		* @param axisInB: axis in local space of other biped (for hinge/slider joints)
+		* @return: pointer to the created constraint, or nullptr on failure
+		*/
+		IParaPhysicsConstraint* CreateJoint(int constraintType, CBipedObject* pOtherObject,
+			const Vector3& pivotInA, const Vector3& pivotInB,
+			const Vector3& axisInA = Vector3(0, 1, 0), const Vector3& axisInB = Vector3(0, 1, 0));
+
+		/** Release a joint previously created by this biped */
+		void ReleaseJoint(IParaPhysicsConstraint* pConstraint);
+
+		/** Release all joints created by this biped */
+		void ReleaseAllJoints();
+
+		/** Set joint properties from NPL table string (e.g., motor settings, limits) */
+		void SetJointProperty(IParaPhysicsConstraint* pConstraint, const char* property);
+
+		/** Get joint properties as NPL table string */
+		const char* GetJointProperty(IParaPhysicsConstraint* pConstraint);
+
+		/** Get the number of joints created by this biped */
+		int GetJointCount();
+
+		/** Get joint by index */
+		IParaPhysicsConstraint* GetJoint(int index);
+
+		//////////////////////////////////////////////////////////////////////////
+		// Vehicle/Wheel APIs
+		//////////////////////////////////////////////////////////////////////////
+
+		/** Create a vehicle using this biped as the chassis
+		* The biped must have dynamic physics enabled first (EnableDynamicPhysics(true))
+		* @return: true if vehicle was created successfully
+		*/
+		bool CreateVehicle();
+
+		/** Release the vehicle attached to this biped */
+		void ReleaseVehicle();
+
+		/** Check if this biped has a vehicle */
+		bool HasVehicle();
+
+		/** Add a wheel to the vehicle
+		* @param wheelConfig: NPL table string with wheel configuration
+		* @return: wheel index, or -1 on failure
+		*/
+		int AddWheel(const char* wheelConfig);
+
+		/** Get the number of wheels */
+		int GetWheelCount();
+
+		/** Set steering angle for a wheel
+		* @param wheelIndex: index of the wheel
+		* @param steering: steering angle in radians
+		*/
+		void SetWheelSteering(int wheelIndex, float steering);
+
+		/** Apply engine force to a wheel
+		* @param wheelIndex: index of the wheel
+		* @param force: engine force to apply
+		*/
+		void SetWheelEngineForce(int wheelIndex, float force);
+
+		/** Set brake force on a wheel
+		* @param wheelIndex: index of the wheel
+		* @param brake: brake force
+		*/
+		void SetWheelBrake(int wheelIndex, float brake);
+
+		/** Get the current speed in km/h */
+		float GetVehicleSpeed();
+
+		/** Get wheel world transform matrix */
+		Matrix4* GetWheelTransform(int wheelIndex, Matrix4& outMatrix);
+
+		/** Reset vehicle suspension */
+		void ResetVehicleSuspension();
+
+		//////////////////////////////////////////////////////////////////////////
+		// String-based Attribute Methods (for IAttributeFields)
+		//////////////////////////////////////////////////////////////////////////
+
+		/** Create a joint from NPL table config string
+		* Config: {Type=1, OtherObject="name", PivotAX=0, PivotAY=0.5, PivotAZ=0, PivotBX=0, PivotBY=0.5, PivotBZ=0, 
+		*          AxisAX=0, AxisAY=1, AxisAZ=0, AxisBX=0, AxisBY=1, AxisBZ=0, ...property}
+		*/
+		void CreateJointStr(const char* config);
+
+		/** Set joint property by index. Config: {Index=0, ...property} */
+		void SetJointPropertyByIndex(const char* config);
+
+		/** Get joint property by index (set m_nSelectedJointIndex first, or use Index in last SetJointPropertyByIndex) */
+		const char* GetJointPropertyByIndex();
+
+		/** Release joint by index */
+		void ReleaseJointByIndex(int index);
+
+		/** Set vehicle controls from NPL table config string
+		* Config: {Steering0=0.3, Steering1=0.3, EngineForce2=1000, EngineForce3=1000, Brake0=0, Brake1=0, ...}
+		* Or: {SteeringAll=0.3, EngineForceRear=1000, BrakeAll=100}
+		*/
+		void SetVehicleControlStr(const char* config);
+
+		/** Get vehicle state as NPL table string
+		* Returns: {Speed=50.5, WheelCount=4, HasVehicle=true}
+		*/
+		const char* GetVehicleState();
+
+	protected:
+		/// Selected joint index for GetJointPropertyByIndex
+		int m_nSelectedJointIndex;
+
 	protected:
 		void AnimateIdle(double dTimeDelta);
 		void AnimateMoving(double dTimeDelta, bool bSharpTurning = false);

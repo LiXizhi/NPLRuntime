@@ -194,6 +194,144 @@ namespace ParaEngine
 		PARAVECTOR3 m_vHitNormalWorld;
 	};
 
+	/** Constraint/Joint types supported by the physics engine */
+	enum ParaPhysicsConstraintType
+	{
+		ConstraintType_PointToPoint = 0,  // Ball-and-socket joint
+		ConstraintType_Hinge = 1,          // Hinge joint (rotating door)
+		ConstraintType_Slider = 2,         // Slider joint (linear motion)
+		ConstraintType_ConeTwist = 3,      // Cone twist (ragdoll joints)
+		ConstraintType_Generic6Dof = 4,    // 6 degrees of freedom
+		ConstraintType_Fixed = 5,          // Fixed joint (welding)
+	};
+
+	/** Descriptor for creating physics constraints/joints */
+	struct ParaPhysicsConstraintDesc
+	{
+		ParaPhysicsConstraintDesc() : m_type(ConstraintType_Hinge), m_pActorA(nullptr), m_pActorB(nullptr),
+			m_disableCollisionsBetweenBodies(true), m_breakingThreshold(-1.0f),
+			m_lowLimit(0.0f), m_highLimit(0.0f), m_softness(0.9f), m_biasFactor(0.3f), m_relaxationFactor(1.0f),
+			m_enableMotor(false), m_motorTargetVelocity(0.0f), m_maxMotorImpulse(0.0f) {}
+
+		ParaPhysicsConstraintType m_type;
+		IParaPhysicsActor* m_pActorA;       // First body (required)
+		IParaPhysicsActor* m_pActorB;       // Second body (optional, nullptr for world constraint)
+		
+		// Pivot point and axis in local space of body A
+		PARAVECTOR3 m_pivotInA;
+		PARAVECTOR3 m_axisInA;
+		
+		// Pivot point and axis in local space of body B (or world space if B is nullptr)
+		PARAVECTOR3 m_pivotInB;
+		PARAVECTOR3 m_axisInB;
+
+		bool m_disableCollisionsBetweenBodies;
+		float m_breakingThreshold;  // -1 means unbreakable
+
+		// For hinge/slider joints
+		float m_lowLimit;           // Lower angular/linear limit
+		float m_highLimit;          // Upper angular/linear limit
+		float m_softness;
+		float m_biasFactor;
+		float m_relaxationFactor;
+
+		// Motor settings
+		bool m_enableMotor;
+		float m_motorTargetVelocity;
+		float m_maxMotorImpulse;
+	};
+
+	/** Interface for physics constraints/joints */
+	struct IParaPhysicsConstraint
+	{
+		IParaPhysicsConstraint() : m_pUserData(nullptr) {}
+		virtual ~IParaPhysicsConstraint() {}
+
+		virtual void* GetUserData() { return m_pUserData; }
+		virtual void SetUserData(void* pData) { m_pUserData = pData; }
+
+		virtual void* get() = 0;
+		virtual void Release() = 0;
+
+		virtual ParaPhysicsConstraintType GetType() = 0;
+		virtual bool IsEnabled() = 0;
+		virtual void SetEnabled(bool enabled) = 0;
+		virtual float GetBreakingThreshold() = 0;
+		virtual void SetBreakingThreshold(float threshold) = 0;
+
+		// Get the actors connected by this constraint
+		virtual IParaPhysicsActor* GetActorA() = 0;
+		virtual IParaPhysicsActor* GetActorB() = 0;
+
+		// Hinge-specific methods
+		virtual float GetHingeAngle() { return 0.0f; }
+		virtual void SetHingeLimit(float low, float high, float softness = 0.9f, float biasFactor = 0.3f, float relaxationFactor = 1.0f) {}
+		virtual void EnableHingeMotor(bool enable, float targetVelocity, float maxImpulse) {}
+
+		// Slider-specific methods
+		virtual float GetSliderPosition() { return 0.0f; }
+		virtual void SetSliderLimit(float lowerLimit, float upperLimit) {}
+		virtual void EnableSliderMotor(bool enable, float targetVelocity, float maxForce) {}
+
+		void* m_pUserData;
+	};
+
+	/** Descriptor for vehicle wheel */
+	struct ParaPhysicsWheelDesc
+	{
+		ParaPhysicsWheelDesc() : m_wheelRadius(0.5f), m_wheelWidth(0.2f), m_suspensionRestLength(0.3f),
+			m_suspensionStiffness(20.0f), m_wheelsDampingCompression(4.4f), m_wheelsDampingRelaxation(2.3f),
+			m_frictionSlip(1000.0f), m_rollInfluence(0.1f), m_isFrontWheel(false) {}
+
+		PARAVECTOR3 m_connectionPoint;      // Where the wheel connects to chassis in local space
+		PARAVECTOR3 m_wheelDirection;       // Usually (0, -1, 0)
+		PARAVECTOR3 m_wheelAxle;            // Usually (-1, 0, 0) or (1, 0, 0)
+
+		float m_wheelRadius;
+		float m_wheelWidth;
+		float m_suspensionRestLength;
+		float m_suspensionStiffness;
+		float m_wheelsDampingCompression;
+		float m_wheelsDampingRelaxation;
+		float m_frictionSlip;
+		float m_rollInfluence;
+		bool m_isFrontWheel;
+	};
+
+	/** Interface for ray cast vehicle */
+	struct IParaPhysicsVehicle
+	{
+		IParaPhysicsVehicle() : m_pUserData(nullptr) {}
+		virtual ~IParaPhysicsVehicle() {}
+
+		virtual void* GetUserData() { return m_pUserData; }
+		virtual void SetUserData(void* pData) { m_pUserData = pData; }
+
+		virtual void* get() = 0;
+		virtual void Release() = 0;
+
+		// Get the chassis actor this vehicle is attached to
+		virtual IParaPhysicsActor* GetChassisActor() = 0;
+
+		virtual int AddWheel(const ParaPhysicsWheelDesc& wheelDesc) = 0;
+		virtual int GetNumWheels() = 0;
+
+		virtual void SetSteeringValue(float steering, int wheelIndex) = 0;
+		virtual float GetSteeringValue(int wheelIndex) = 0;
+		virtual void ApplyEngineForce(float force, int wheelIndex) = 0;
+		virtual void SetBrake(float brake, int wheelIndex) = 0;
+
+		virtual PARAMATRIX* GetWheelTransform(int wheelIndex, PARAMATRIX* pOut) = 0;
+		virtual void UpdateWheelTransform(int wheelIndex, bool interpolatedTransform = true) = 0;
+		
+		virtual float GetCurrentSpeedKmHour() = 0;
+		virtual PARAVECTOR3 GetForwardVector() = 0;
+		
+		virtual void ResetSuspension() = 0;
+
+		void* m_pUserData;
+	};
+
 	/** ParaPhysics core interface. 
 	*/
 	class IParaPhysics
@@ -234,6 +372,26 @@ namespace ParaEngine
 		/** ray cast a given group. */
 		virtual IParaPhysicsActor* RaycastClosestShape(const PARAVECTOR3& vOrigin, const PARAVECTOR3& vDirection, DWORD dwType, RayCastHitResult& hit, short dwGroupMask, float fSensorRange) = 0;
 
+		//////////////////////////////////////////////////////////////////////////
+		// Constraint/Joint APIs
+		//////////////////////////////////////////////////////////////////////////
+
+		/** Create a constraint/joint between two actors */
+		virtual IParaPhysicsConstraint* CreateConstraint(const ParaPhysicsConstraintDesc& constraintDesc) { return nullptr; }
+
+		/** Release a constraint */
+		virtual void ReleaseConstraint(IParaPhysicsConstraint* pConstraint) {}
+
+		//////////////////////////////////////////////////////////////////////////
+		// Vehicle APIs  
+		//////////////////////////////////////////////////////////////////////////
+
+		/** Create a ray cast vehicle attached to a chassis rigid body */
+		virtual IParaPhysicsVehicle* CreateVehicle(IParaPhysicsActor* pChassisActor) { return nullptr; }
+
+		/** Release a vehicle */
+		virtual void ReleaseVehicle(IParaPhysicsVehicle* pVehicle) {}
+
 		/** set the debug draw object for debugging physics world. */
 		virtual void	SetDebugDrawer(IParaDebugDraw*	debugDrawer) = 0;
 		
@@ -255,4 +413,6 @@ namespace ParaEngine
 
 	typedef std::set<IParaPhysicsActor*> IParaPhysicsActor_Map_Type;
 	typedef std::set<IParaPhysicsShape*> IParaPhysicsShape_Array_Type;
+	typedef std::set<IParaPhysicsConstraint*> IParaPhysicsConstraint_Set_Type;
+	typedef std::set<IParaPhysicsVehicle*> IParaPhysicsVehicle_Set_Type;
 }

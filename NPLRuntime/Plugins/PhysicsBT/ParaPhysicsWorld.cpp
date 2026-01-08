@@ -306,6 +306,227 @@ void BulletPhysicsActor::SetCcdMotionThreshold(float threshold)
 	m_pActor->setCcdMotionThreshold(threshold);
 }
 
+//////////////////////////////////////////////////////////////////////////
+// BulletPhysicsConstraint Implementation
+//////////////////////////////////////////////////////////////////////////
+
+BulletPhysicsConstraint::BulletPhysicsConstraint(btTypedConstraint* pConstraint, ParaPhysicsConstraintType type,
+	IParaPhysicsActor* pActorA, IParaPhysicsActor* pActorB)
+	: m_pConstraint(pConstraint), m_type(type), m_pActorA(pActorA), m_pActorB(pActorB)
+{
+}
+
+BulletPhysicsConstraint::~BulletPhysicsConstraint()
+{
+	SAFE_DELETE(m_pConstraint);
+}
+
+void BulletPhysicsConstraint::Release()
+{
+	delete this;
+}
+
+bool BulletPhysicsConstraint::IsEnabled()
+{
+	return m_pConstraint ? m_pConstraint->isEnabled() : false;
+}
+
+void BulletPhysicsConstraint::SetEnabled(bool enabled)
+{
+	if (m_pConstraint)
+		m_pConstraint->setEnabled(enabled);
+}
+
+float BulletPhysicsConstraint::GetBreakingThreshold()
+{
+	return m_pConstraint ? m_pConstraint->getBreakingImpulseThreshold() : 0.0f;
+}
+
+void BulletPhysicsConstraint::SetBreakingThreshold(float threshold)
+{
+	if (m_pConstraint)
+		m_pConstraint->setBreakingImpulseThreshold(threshold);
+}
+
+float BulletPhysicsConstraint::GetHingeAngle()
+{
+	if (m_type == ConstraintType_Hinge && m_pConstraint)
+	{
+		btHingeConstraint* hinge = static_cast<btHingeConstraint*>(m_pConstraint);
+		return hinge->getHingeAngle();
+	}
+	return 0.0f;
+}
+
+void BulletPhysicsConstraint::SetHingeLimit(float low, float high, float softness, float biasFactor, float relaxationFactor)
+{
+	if (m_type == ConstraintType_Hinge && m_pConstraint)
+	{
+		btHingeConstraint* hinge = static_cast<btHingeConstraint*>(m_pConstraint);
+		hinge->setLimit(low, high, softness, biasFactor, relaxationFactor);
+	}
+}
+
+void BulletPhysicsConstraint::EnableHingeMotor(bool enable, float targetVelocity, float maxImpulse)
+{
+	if (m_type == ConstraintType_Hinge && m_pConstraint)
+	{
+		btHingeConstraint* hinge = static_cast<btHingeConstraint*>(m_pConstraint);
+		hinge->enableAngularMotor(enable, targetVelocity, maxImpulse);
+	}
+}
+
+float BulletPhysicsConstraint::GetSliderPosition()
+{
+	if (m_type == ConstraintType_Slider && m_pConstraint)
+	{
+		btSliderConstraint* slider = static_cast<btSliderConstraint*>(m_pConstraint);
+		return slider->getLinearPos();
+	}
+	return 0.0f;
+}
+
+void BulletPhysicsConstraint::SetSliderLimit(float lowerLimit, float upperLimit)
+{
+	if (m_type == ConstraintType_Slider && m_pConstraint)
+	{
+		btSliderConstraint* slider = static_cast<btSliderConstraint*>(m_pConstraint);
+		slider->setLowerLinLimit(lowerLimit);
+		slider->setUpperLinLimit(upperLimit);
+	}
+}
+
+void BulletPhysicsConstraint::EnableSliderMotor(bool enable, float targetVelocity, float maxForce)
+{
+	if (m_type == ConstraintType_Slider && m_pConstraint)
+	{
+		btSliderConstraint* slider = static_cast<btSliderConstraint*>(m_pConstraint);
+		slider->setPoweredLinMotor(enable);
+		slider->setTargetLinMotorVelocity(targetVelocity);
+		slider->setMaxLinMotorForce(maxForce);
+	}
+}
+
+//////////////////////////////////////////////////////////////////////////
+// BulletPhysicsVehicle Implementation
+//////////////////////////////////////////////////////////////////////////
+
+BulletPhysicsVehicle::BulletPhysicsVehicle(btRaycastVehicle* pVehicle, btVehicleRaycaster* pRaycaster, IParaPhysicsActor* pChassisActor)
+	: m_pVehicle(pVehicle), m_pRaycaster(pRaycaster), m_pChassisActor(pChassisActor)
+{
+}
+
+BulletPhysicsVehicle::~BulletPhysicsVehicle()
+{
+	SAFE_DELETE(m_pVehicle);
+	SAFE_DELETE(m_pRaycaster);
+}
+
+void BulletPhysicsVehicle::Release()
+{
+	delete this;
+}
+
+int BulletPhysicsVehicle::AddWheel(const ParaPhysicsWheelDesc& wheelDesc)
+{
+	if (!m_pVehicle)
+		return -1;
+
+	btVector3 connectionPoint(wheelDesc.m_connectionPoint.x, wheelDesc.m_connectionPoint.y, wheelDesc.m_connectionPoint.z);
+	btVector3 wheelDirection(wheelDesc.m_wheelDirection.x, wheelDesc.m_wheelDirection.y, wheelDesc.m_wheelDirection.z);
+	btVector3 wheelAxle(wheelDesc.m_wheelAxle.x, wheelDesc.m_wheelAxle.y, wheelDesc.m_wheelAxle.z);
+
+	btWheelInfo& wheel = m_pVehicle->addWheel(
+		connectionPoint,
+		wheelDirection,
+		wheelAxle,
+		wheelDesc.m_suspensionRestLength,
+		wheelDesc.m_wheelRadius,
+		m_tuning,
+		wheelDesc.m_isFrontWheel
+	);
+
+	wheel.m_suspensionStiffness = wheelDesc.m_suspensionStiffness;
+	wheel.m_wheelsDampingCompression = wheelDesc.m_wheelsDampingCompression;
+	wheel.m_wheelsDampingRelaxation = wheelDesc.m_wheelsDampingRelaxation;
+	wheel.m_frictionSlip = wheelDesc.m_frictionSlip;
+	wheel.m_rollInfluence = wheelDesc.m_rollInfluence;
+
+	return m_pVehicle->getNumWheels() - 1;
+}
+
+int BulletPhysicsVehicle::GetNumWheels()
+{
+	return m_pVehicle ? m_pVehicle->getNumWheels() : 0;
+}
+
+void BulletPhysicsVehicle::SetSteeringValue(float steering, int wheelIndex)
+{
+	if (m_pVehicle && wheelIndex >= 0 && wheelIndex < m_pVehicle->getNumWheels())
+		m_pVehicle->setSteeringValue(steering, wheelIndex);
+}
+
+float BulletPhysicsVehicle::GetSteeringValue(int wheelIndex)
+{
+	if (m_pVehicle && wheelIndex >= 0 && wheelIndex < m_pVehicle->getNumWheels())
+		return m_pVehicle->getSteeringValue(wheelIndex);
+	return 0.0f;
+}
+
+void BulletPhysicsVehicle::ApplyEngineForce(float force, int wheelIndex)
+{
+	if (m_pVehicle && wheelIndex >= 0 && wheelIndex < m_pVehicle->getNumWheels())
+		m_pVehicle->applyEngineForce(force, wheelIndex);
+}
+
+void BulletPhysicsVehicle::SetBrake(float brake, int wheelIndex)
+{
+	if (m_pVehicle && wheelIndex >= 0 && wheelIndex < m_pVehicle->getNumWheels())
+		m_pVehicle->setBrake(brake, wheelIndex);
+}
+
+PARAMATRIX* BulletPhysicsVehicle::GetWheelTransform(int wheelIndex, PARAMATRIX* pOut)
+{
+	static PARAMATRIX s_OutputMatrix;
+	if (pOut == NULL)
+		pOut = &s_OutputMatrix;
+	
+	if (m_pVehicle && wheelIndex >= 0 && wheelIndex < m_pVehicle->getNumWheels())
+	{
+		m_pVehicle->updateWheelTransform(wheelIndex, true);
+		const btTransform& transform = m_pVehicle->getWheelTransformWS(wheelIndex);
+		transform.getOpenGLMatrix((float*)pOut);
+	}
+	return pOut;
+}
+
+void BulletPhysicsVehicle::UpdateWheelTransform(int wheelIndex, bool interpolatedTransform)
+{
+	if (m_pVehicle && wheelIndex >= 0 && wheelIndex < m_pVehicle->getNumWheels())
+		m_pVehicle->updateWheelTransform(wheelIndex, interpolatedTransform);
+}
+
+float BulletPhysicsVehicle::GetCurrentSpeedKmHour()
+{
+	return m_pVehicle ? m_pVehicle->getCurrentSpeedKmHour() : 0.0f;
+}
+
+PARAVECTOR3 BulletPhysicsVehicle::GetForwardVector()
+{
+	if (m_pVehicle)
+	{
+		const btVector3& fwd = m_pVehicle->getForwardVector();
+		return PARAVECTOR3(fwd.x(), fwd.y(), fwd.z());
+	}
+	return PARAVECTOR3(0, 0, 1);
+}
+
+void BulletPhysicsVehicle::ResetSuspension()
+{
+	if (m_pVehicle)
+		m_pVehicle->resetSuspension();
+}
+
 
 //
 // Physics World
@@ -366,6 +587,16 @@ bool CParaPhysicsWorld::ExitPhysics()
 		return true;
 
 	//cleanup in the reverse order of creation/initialization
+	while (!m_vehicles.empty())
+	{
+		ReleaseVehicle(*(m_vehicles.begin()));
+	}
+
+	while (!m_constraints.empty())
+	{
+		ReleaseConstraint(*(m_constraints.begin()));
+	}
+
 	while (!m_actors.empty())
 	{
 		ReleaseActor(*(m_actors.begin()));
@@ -666,4 +897,228 @@ void ParaEngine::CParaPhysicsWorld::SetDebugDrawMode(int debugMode)
 int ParaEngine::CParaPhysicsWorld::GetDebugDrawMode()
 {
 	return m_physics_debug_draw.getDebugMode();
+}
+
+//////////////////////////////////////////////////////////////////////////
+// Constraint/Joint Implementation
+//////////////////////////////////////////////////////////////////////////
+
+IParaPhysicsConstraint* CParaPhysicsWorld::CreateConstraint(const ParaPhysicsConstraintDesc& constraintDesc)
+{
+	if (!m_dynamicsWorld || !constraintDesc.m_pActorA)
+		return nullptr;
+
+	btRigidBody* bodyA = static_cast<btRigidBody*>(constraintDesc.m_pActorA->get());
+	btRigidBody* bodyB = constraintDesc.m_pActorB ? static_cast<btRigidBody*>(constraintDesc.m_pActorB->get()) : nullptr;
+
+	if (!bodyA)
+		return nullptr;
+
+	btTypedConstraint* constraint = nullptr;
+
+	btVector3 pivotA(constraintDesc.m_pivotInA.x, constraintDesc.m_pivotInA.y, constraintDesc.m_pivotInA.z);
+	btVector3 axisA(constraintDesc.m_axisInA.x, constraintDesc.m_axisInA.y, constraintDesc.m_axisInA.z);
+	btVector3 pivotB(constraintDesc.m_pivotInB.x, constraintDesc.m_pivotInB.y, constraintDesc.m_pivotInB.z);
+	btVector3 axisB(constraintDesc.m_axisInB.x, constraintDesc.m_axisInB.y, constraintDesc.m_axisInB.z);
+
+	switch (constraintDesc.m_type)
+	{
+	case ConstraintType_PointToPoint:
+	{
+		if (bodyB)
+		{
+			constraint = new btPoint2PointConstraint(*bodyA, *bodyB, pivotA, pivotB);
+		}
+		else
+		{
+			constraint = new btPoint2PointConstraint(*bodyA, pivotA);
+		}
+		break;
+	}
+	case ConstraintType_Hinge:
+	{
+		if (bodyB)
+		{
+			constraint = new btHingeConstraint(*bodyA, *bodyB, pivotA, pivotB, axisA, axisB);
+		}
+		else
+		{
+			constraint = new btHingeConstraint(*bodyA, pivotA, axisA);
+		}
+		btHingeConstraint* hinge = static_cast<btHingeConstraint*>(constraint);
+		if (constraintDesc.m_lowLimit != 0.0f || constraintDesc.m_highLimit != 0.0f)
+		{
+			hinge->setLimit(constraintDesc.m_lowLimit, constraintDesc.m_highLimit, 
+				constraintDesc.m_softness, constraintDesc.m_biasFactor, constraintDesc.m_relaxationFactor);
+		}
+		if (constraintDesc.m_enableMotor)
+		{
+			hinge->enableAngularMotor(true, constraintDesc.m_motorTargetVelocity, constraintDesc.m_maxMotorImpulse);
+		}
+		break;
+	}
+	case ConstraintType_Slider:
+	{
+		btTransform frameA, frameB;
+		frameA.setIdentity();
+		frameA.setOrigin(pivotA);
+		frameB.setIdentity();
+		frameB.setOrigin(pivotB);
+
+		if (bodyB)
+		{
+			constraint = new btSliderConstraint(*bodyA, *bodyB, frameA, frameB, true);
+		}
+		else
+		{
+			constraint = new btSliderConstraint(*bodyA, frameA, true);
+		}
+		btSliderConstraint* slider = static_cast<btSliderConstraint*>(constraint);
+		slider->setLowerLinLimit(constraintDesc.m_lowLimit);
+		slider->setUpperLinLimit(constraintDesc.m_highLimit);
+		if (constraintDesc.m_enableMotor)
+		{
+			slider->setPoweredLinMotor(true);
+			slider->setTargetLinMotorVelocity(constraintDesc.m_motorTargetVelocity);
+			slider->setMaxLinMotorForce(constraintDesc.m_maxMotorImpulse);
+		}
+		break;
+	}
+	case ConstraintType_ConeTwist:
+	{
+		btTransform frameA, frameB;
+		frameA.setIdentity();
+		frameA.setOrigin(pivotA);
+		frameB.setIdentity();
+		frameB.setOrigin(pivotB);
+
+		if (bodyB)
+		{
+			constraint = new btConeTwistConstraint(*bodyA, *bodyB, frameA, frameB);
+		}
+		else
+		{
+			constraint = new btConeTwistConstraint(*bodyA, frameA);
+		}
+		break;
+	}
+	case ConstraintType_Generic6Dof:
+	{
+		btTransform frameA, frameB;
+		frameA.setIdentity();
+		frameA.setOrigin(pivotA);
+		frameB.setIdentity();
+		frameB.setOrigin(pivotB);
+
+		if (bodyB)
+		{
+			constraint = new btGeneric6DofConstraint(*bodyA, *bodyB, frameA, frameB, true);
+		}
+		else
+		{
+			constraint = new btGeneric6DofConstraint(*bodyA, frameA, true);
+		}
+		break;
+	}
+	case ConstraintType_Fixed:
+	{
+		btTransform frameA, frameB;
+		frameA.setIdentity();
+		frameA.setOrigin(pivotA);
+		frameB.setIdentity();
+		frameB.setOrigin(pivotB);
+
+		if (bodyB)
+		{
+			constraint = new btFixedConstraint(*bodyA, *bodyB, frameA, frameB);
+		}
+		break;
+	}
+	default:
+		return nullptr;
+	}
+
+	if (!constraint)
+		return nullptr;
+
+	if (constraintDesc.m_breakingThreshold > 0)
+	{
+		constraint->setBreakingImpulseThreshold(constraintDesc.m_breakingThreshold);
+	}
+
+	m_dynamicsWorld->addConstraint(constraint, constraintDesc.m_disableCollisionsBetweenBodies);
+
+	BulletPhysicsConstraint* pConstraint = new BulletPhysicsConstraint(constraint, constraintDesc.m_type,
+		constraintDesc.m_pActorA, constraintDesc.m_pActorB);
+	constraint->setUserConstraintPtr(pConstraint);
+	m_constraints.insert(pConstraint);
+
+	return pConstraint;
+}
+
+void CParaPhysicsWorld::ReleaseConstraint(IParaPhysicsConstraint* pConstraint)
+{
+	if (!pConstraint)
+		return;
+
+	auto it = m_constraints.find(pConstraint);
+	if (it != m_constraints.end())
+	{
+		btTypedConstraint* btConstraint = static_cast<btTypedConstraint*>(pConstraint->get());
+		if (btConstraint && m_dynamicsWorld)
+		{
+			m_dynamicsWorld->removeConstraint(btConstraint);
+		}
+		m_constraints.erase(it);
+		pConstraint->Release();
+	}
+}
+
+//////////////////////////////////////////////////////////////////////////
+// Vehicle Implementation
+//////////////////////////////////////////////////////////////////////////
+
+IParaPhysicsVehicle* CParaPhysicsWorld::CreateVehicle(IParaPhysicsActor* pChassisActor)
+{
+	if (!m_dynamicsWorld || !pChassisActor)
+		return nullptr;
+
+	btRigidBody* chassis = static_cast<btRigidBody*>(pChassisActor->get());
+	if (!chassis)
+		return nullptr;
+
+	// Deactivate chassis deactivation so the vehicle stays active
+	chassis->setActivationState(DISABLE_DEACTIVATION);
+
+	btRaycastVehicle::btVehicleTuning tuning;
+	btVehicleRaycaster* raycaster = new btDefaultVehicleRaycaster(m_dynamicsWorld);
+	btRaycastVehicle* vehicle = new btRaycastVehicle(tuning, chassis, raycaster);
+
+	// Never deactivate the vehicle
+	vehicle->setCoordinateSystem(0, 1, 2);
+
+	m_dynamicsWorld->addVehicle(vehicle);
+
+	BulletPhysicsVehicle* pVehicle = new BulletPhysicsVehicle(vehicle, raycaster, pChassisActor);
+	m_vehicles.insert(pVehicle);
+
+	return pVehicle;
+}
+
+void CParaPhysicsWorld::ReleaseVehicle(IParaPhysicsVehicle* pVehicle)
+{
+	if (!pVehicle)
+		return;
+
+	auto it = m_vehicles.find(pVehicle);
+	if (it != m_vehicles.end())
+	{
+		btRaycastVehicle* btVehicle = static_cast<btRaycastVehicle*>(pVehicle->get());
+		if (btVehicle && m_dynamicsWorld)
+		{
+			m_dynamicsWorld->removeVehicle(btVehicle);
+		}
+		m_vehicles.erase(it);
+		pVehicle->Release();
+	}
 }
