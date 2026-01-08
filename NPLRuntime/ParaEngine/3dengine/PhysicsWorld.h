@@ -14,6 +14,7 @@ namespace ParaEngine
 	struct ParaXEntity;
 	class CShapeAABB;
 	class BlockModel;
+	class CBipedObject;
 
 	class CPhysicsBlockShape
 	{
@@ -264,6 +265,95 @@ namespace ParaEngine
 		*/
 		void SetDynamicsSimulationEnabled(bool bEnable);
 		bool IsDynamicsSimulationEnabled();
+
+		//////////////////////////////////////////////////////////////////////////
+		// Biped-oriented Constraint/Vehicle APIs (string-based, high-level)
+		// These methods work with biped objects directly
+		//////////////////////////////////////////////////////////////////////////
+
+		/** Create a joint between a biped and another biped (or world)
+		* @param pBiped: the biped creating the joint (its dynamic physics actor will be used)
+		* @param constraintType: type of constraint (0=P2P, 1=Hinge, 2=Slider, 3=ConeTwist, 4=6DoF, 5=Fixed)
+		* @param pOtherBiped: the other biped to connect to, or nullptr for world constraint
+		* @param pivotInA: pivot point in local space of this biped
+		* @param pivotInB: pivot point in local space of other biped (or world position if pOtherBiped is nullptr)
+		* @param axisInA: axis in local space of this biped (for hinge/slider joints)
+		* @param axisInB: axis in local space of other biped (for hinge/slider joints)
+		* @return: pointer to the created constraint, or nullptr on failure
+		*/
+		IParaPhysicsConstraint* CreateJointForBiped(CBipedObject* pBiped, int constraintType, CBipedObject* pOtherBiped,
+			const Vector3& pivotInA, const Vector3& pivotInB,
+			const Vector3& axisInA = Vector3(0, 1, 0), const Vector3& axisInB = Vector3(0, 1, 0));
+
+		/** Create a joint from NPL table config string for a biped
+		* Config: {Type=1, OtherObject="name", PivotAX=0, PivotAY=0.5, PivotAZ=0, PivotBX=0, PivotBY=0.5, PivotBZ=0, 
+		*          AxisAX=0, AxisAY=1, AxisAZ=0, AxisBX=0, AxisBY=1, AxisBZ=0, ...property}
+		* @param pBiped: the biped creating the joint
+		* @param config: NPL table string with joint configuration
+		*/
+		void CreateJointForBipedStr(CBipedObject* pBiped, const char* config);
+
+		/** Set joint property by index for a biped
+		* @param pBiped: the biped that owns the joint
+		* @param config: NPL table string: {Index=0, ...property}
+		*/
+		void SetJointPropertyByIndexForBiped(CBipedObject* pBiped, const char* config);
+
+		/** Get joint property by index for a biped
+		* @param pBiped: the biped that owns the joint
+		* @param nSelectedIndex: the joint index to query
+		* @return: NPL table string with joint properties
+		*/
+		const char* GetJointPropertyByIndexForBiped(CBipedObject* pBiped, int nSelectedIndex);
+
+		/** Create a vehicle for a biped (using biped as chassis)
+		* @param pBiped: the biped to create vehicle for
+		* @return: true if vehicle was created successfully
+		*/
+		bool CreateVehicleForBiped(CBipedObject* pBiped);
+
+		/** Set vehicle controls for a biped from NPL table config string
+		* Config: {Steering0=0.3, Steering1=0.3, EngineForce2=1000, EngineForce3=1000, Brake0=0, Brake1=0, ...}
+		* Or: {SteeringAll=0.3, EngineForceRear=1000, BrakeAll=100}
+		* @param pBiped: the biped that owns the vehicle
+		* @param config: NPL table string with vehicle controls
+		*/
+		void SetVehicleControlForBipedStr(CBipedObject* pBiped, const char* config);
+
+		/** Get vehicle state for a biped as NPL table string
+		* Returns: {Speed=50.5, WheelCount=4, HasVehicle=true, ForwardX=..., ForwardY=..., ForwardZ=...}
+		* @param pBiped: the biped that owns the vehicle
+		* @return: NPL table string with vehicle state
+		*/
+		const char* GetVehicleStateForBiped(CBipedObject* pBiped);
+
+		/** Set constraint property for a biped (creates or modifies joint)
+		* @param pBiped: the biped
+		* @param property: NPL table string with constraint configuration
+		*/
+		void SetConstraintPropertyForBiped(CBipedObject* pBiped, const char* property);
+
+		/** Get constraint property for a biped
+		* @param pBiped: the biped
+		* @param nIndex: the constraint index
+		* @return: NPL table string with constraint properties
+		*/
+		const char* GetConstraintPropertyForBiped(CBipedObject* pBiped, int nIndex);
+
+		/** Check if biped has a vehicle */
+		bool HasVehicleForBiped(CBipedObject* pBiped);
+
+		/** Add wheel to vehicle for a biped */
+		int AddWheelForBiped(CBipedObject* pBiped, const char* wheelConfig);
+
+		/** Get wheel count for a biped */
+		int GetWheelCountForBiped(CBipedObject* pBiped);
+
+		/** Get vehicle speed for a biped */
+		float GetVehicleSpeedForBiped(CBipedObject* pBiped);
+
+		/** Reset vehicle suspension for a biped */
+		void ResetVehicleSuspensionForBiped(CBipedObject* pBiped);
 
 	public:
 		/** get the physics interface. create one if one does not exist. */
