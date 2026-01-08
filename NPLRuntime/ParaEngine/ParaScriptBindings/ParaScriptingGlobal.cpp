@@ -40,7 +40,8 @@
 #endif
 
 #ifdef SUPPORT_SHELL_EXECUTE
-#include <boost/process.hpp>
+#include <boost/process/v1/child.hpp>
+#include <boost/process/v1/environment.hpp>
 #if defined(WIN32)
 #include <boost/process/v1/windows.hpp>
 #endif
@@ -364,7 +365,7 @@ bool ParaGlobal::IsPortAvailable(const std::string& ip, const int port, lua_Stat
 void ParaGlobal::Execute(const std::string& exe, const luabind::object& param, lua_State* L)
 {
 #ifdef SUPPORT_SHELL_EXECUTE
-	namespace bp = boost::process;
+	namespace bp = boost::process::v1;
 
 	std::vector<std::string> args;
 
@@ -382,16 +383,16 @@ void ParaGlobal::Execute(const std::string& exe, const luabind::object& param, l
 	}
 
 #if defined(WIN32)
-	bp::environment env = boost::this_process::environment();
+	// bp::environment env = boost::this_process::environment();
 #ifdef DEFAULT_FILE_ENCODING
 	std::wstring exe_path_unicode = StringHelper::MultiByteToWideChar(exe.c_str(), DEFAULT_FILE_ENCODING);
-	bp::child c(exe_path_unicode, bp::args(args), env, bp::windows::hide);
+	bp::child c(exe_path_unicode, (args), bp::windows::hide);
 #else
-	bp::child c(exe, bp::args(args), env, bp::windows::hide);
+	bp::child c(exe, (args), bp::windows::hide);
 #endif
 
 #else
-	bp::child c(exe, bp::args(args));
+	bp::child c(exe, (args));
 #endif
 
 	c.detach();

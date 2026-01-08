@@ -65,12 +65,12 @@ endif()
 if(IOS)
 	find_host_package(
 		Boost 1.74.0 REQUIRED
-		COMPONENTS thread date_time filesystem system chrono regex serialization iostreams log 
+		COMPONENTS thread date_time filesystem chrono regex serialization iostreams log 
 	)
 elseif(APPLE)
 	find_package(
 		Boost 1.74.0 REQUIRED 
-		COMPONENTS thread date_time filesystem system chrono regex serialization iostreams log
+		COMPONENTS thread date_time filesystem chrono regex serialization iostreams log
 	)
 elseif(EMSCRIPTEN)
 	# For Emscripten, we only need headers, not libraries, so skip find_package
@@ -81,7 +81,7 @@ elseif(EMSCRIPTEN)
 else()
 	find_package(
 		Boost 1.74.0 REQUIRED 
-		COMPONENTS thread date_time filesystem system chrono regex serialization iostreams log locale
+		COMPONENTS thread date_time filesystem chrono regex serialization iostreams log locale
 	) 
 endif()
 
