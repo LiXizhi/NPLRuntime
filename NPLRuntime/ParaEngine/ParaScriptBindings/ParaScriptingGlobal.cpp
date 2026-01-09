@@ -1326,7 +1326,7 @@ object ParaAttributeObject::GetField(const char *sFieldname, const object &outpu
 	}
 	case FieldType_String:
 	{
-		const char* value;
+		const char* value = (type(output) == LUA_TSTRING) ? object_cast<const char*>(output) : NULL;
 		pField->Get(m_pAttribute.get(), &value);
 		return object(output.interpreter(), value);
 		break;
@@ -1397,6 +1397,53 @@ object ParaAttributeObject::GetField(const char *sFieldname, const object &outpu
 		}
 		return out;
 		break;
+	}
+	case FieldType_String_Float:
+	{
+		const char* value1 = NULL;
+		float value2 = 0.f;
+		for (luabind::iterator itCur(output), itEnd; itCur != itEnd; ++itCur)
+		{
+			const object& item = *itCur;
+			if (type(item) == LUA_TSTRING)
+			{
+				value1 = object_cast<const char*>(item);
+			}
+			else if (type(item) == LUA_TNUMBER)
+			{
+				value2 = object_cast<float>(item);
+			}
+		}
+		pField->Get(m_pAttribute.get(), &value1, &value2);
+		object out(output);
+		out[1] = value1;
+		out[2] = value2;
+		return out;
+	}
+	case FieldType_String_String:
+	{
+		const char* value1 = NULL;
+		const char* value2 = NULL;
+		for (luabind::iterator itCur(output), itEnd; itCur != itEnd; ++itCur)
+		{
+			const object& item = *itCur;
+			if (type(item) == LUA_TSTRING)
+			{
+				if (value1 == NULL)
+				{
+					value1 = object_cast<const char*>(item);
+				}
+				else
+				{
+					value2 = object_cast<const char*>(item);
+				}
+			}
+		}
+		pField->Get(m_pAttribute.get(), &value1, &value2);
+		object out(output);
+		out[1] = value1;
+		out[2] = value2;
+		return out;
 	}
 	default:
 		break;
@@ -1569,6 +1616,45 @@ void ParaAttributeObject::SetField(const char*  sFieldname, const object& input)
 			{
 				pField->Set(m_pAttribute.get(), Matrix4::IDENTITY);
 			}
+		}
+		case FieldType_String_Float:
+		{
+			const char* value1 = NULL;
+			float value2 = 0.f;
+			for (luabind::iterator itCur(input), itEnd; itCur != itEnd && nNum < 16; ++itCur)
+			{
+				const object& item = *itCur;
+				if (type(item) == LUA_TSTRING)
+				{
+					value1 = object_cast<const char*>(item);
+				}
+				else if (type(item) == LUA_TNUMBER)		
+				{
+					value2 = object_cast<float>(item);
+				}
+			}
+			pField->Set(m_pAttribute.get(), value1, value2);
+		}
+		case FieldType_String_String:
+		{
+			const char* value1 = NULL;
+			const char* value2 = NULL;
+			for (luabind::iterator itCur(input), itEnd; itCur != itEnd && nNum < 16; ++itCur)
+			{
+				const object& item = *itCur;
+				if (type(item) == LUA_TSTRING)
+				{
+					if (value1 == NULL)
+					{
+						value1 = object_cast<const char*>(item);
+					}
+					else
+					{
+						value2 = object_cast<const char*>(item);
+					}
+				}
+			}
+			pField->Set(m_pAttribute.get(), value1, value2);
 		}
 		default:
 			break;

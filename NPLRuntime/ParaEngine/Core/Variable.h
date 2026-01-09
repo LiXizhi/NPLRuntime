@@ -64,6 +64,10 @@ namespace ParaEngine
 
 		// this is for custom void pointer
 		FieldType_void_pointer,
+		// get(const char**,float*) set(const char*, float)
+		FieldType_String_Float,
+		// get(const char**,const char**) set(const char*, const char*)
+		FieldType_String_String,
 		FieldType_Deprecated = 0xffffffff
 	};
 

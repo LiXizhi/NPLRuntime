@@ -143,6 +143,12 @@ const char* ParaEngine::CVariable::GetTypeAsString(DWORD dwType)
 	case FieldType_DWORD:
 		return "DWORD";
 		break;
+	case FieldType_String_String:
+		return "string_string";
+		break;
+	case FieldType_String_Float:
+		return "string_float";
+		break;
 	case FieldType_Deprecated:
 		return "deprecated";
 		break;
