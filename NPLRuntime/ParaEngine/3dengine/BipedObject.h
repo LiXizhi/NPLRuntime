@@ -222,22 +222,6 @@ namespace ParaEngine
 		ATTRIBUTE_METHOD1(CBipedObject, IsKinematic_s, bool*) { *p1 = cls->IsKinematic(); return S_OK; }
 		ATTRIBUTE_METHOD1(CBipedObject, SetKinematic_s, bool) { cls->SetKinematic(p1); return S_OK; }
 
-		// Joint/Constraint attribute methods (delegates to PhysicsWorld)
-		ATTRIBUTE_METHOD1(CBipedObject, GetJointCount_s, int*) { *p1 = CGlobals::GetPhysicsWorld()->GetConstraintCountByActor(cls->GetDynamicPhysicsActor()); return S_OK; }
-		ATTRIBUTE_METHOD1(CBipedObject, SetConstraintProperty_s, const char*) { CGlobals::GetPhysicsWorld()->SetConstraintPropertyForBiped(cls, p1); return S_OK; }
-		ATTRIBUTE_METHOD1(CBipedObject, GetConstraintProperty_s, const char**) { *p1 = CGlobals::GetPhysicsWorld()->GetConstraintPropertyForBiped(cls, 0); return S_OK; }
-		ATTRIBUTE_METHOD(CBipedObject, ReleaseAllJoints_s) { CGlobals::GetPhysicsWorld()->ReleaseConstraintsByActor(cls->GetDynamicPhysicsActor()); return S_OK; }
-
-		// Vehicle attribute methods (delegates to PhysicsWorld)
-		ATTRIBUTE_METHOD1(CBipedObject, HasVehicle_s, bool*) { *p1 = CGlobals::GetPhysicsWorld()->HasVehicleForBiped(cls); return S_OK; }
-		ATTRIBUTE_METHOD1(CBipedObject, CreateVehicle_s, bool*) { *p1 = CGlobals::GetPhysicsWorld()->CreateVehicleForBiped(cls); return S_OK; }
-		ATTRIBUTE_METHOD1(CBipedObject, AddWheelStr_s, const char*) { CGlobals::GetPhysicsWorld()->AddWheelForBiped(cls, p1); return S_OK; }
-		ATTRIBUTE_METHOD1(CBipedObject, GetWheelCount_s, int*) { *p1 = CGlobals::GetPhysicsWorld()->GetWheelCountForBiped(cls); return S_OK; }
-		ATTRIBUTE_METHOD1(CBipedObject, GetVehicleSpeed_s, float*) { *p1 = CGlobals::GetPhysicsWorld()->GetVehicleSpeedForBiped(cls); return S_OK; }
-		ATTRIBUTE_METHOD1(CBipedObject, SetVehicleControlStr_s, const char*) { CGlobals::GetPhysicsWorld()->SetVehicleControlForBipedStr(cls, p1); return S_OK; }
-		ATTRIBUTE_METHOD1(CBipedObject, GetVehicleState_s, const char**) { *p1 = CGlobals::GetPhysicsWorld()->GetVehicleStateForBiped(cls); return S_OK; }
-		ATTRIBUTE_METHOD(CBipedObject, ResetVehicleSuspension_s) { CGlobals::GetPhysicsWorld()->ResetVehicleSuspensionForBiped(cls); return S_OK; }
-
 	protected:
 		/** Move the biped in the physical scene.move the biped towards the target using its current speed and facing
 		* the biped may slide along a wall or be stopped.
@@ -810,7 +794,7 @@ namespace ParaEngine
 		virtual const char* GetPhysicsShape();
 		// 设置获取物理属性
 		virtual void SetPhysicsProperty(const char* property);
-		virtual const char* GetPhysicsProperty();
+		virtual const char* GetPhysicsProperty(const char* inputTable = nullptr);
 		// 是否启用动态物理
 		virtual void EnableDynamicPhysics(bool bEnable);
 		virtual bool IsDynamicPhysicsEnabled();

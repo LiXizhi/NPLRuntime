@@ -131,8 +131,29 @@ namespace ParaEngine
 		};
 
 	public:
+		/** set actor physics property from a NPL table string.
+		* @param actor: the physics actor
+		* @param property: NPL table string. 
+		* Support setting single property: {Mass=1.0, LinearDamping=0.1, ...}
+		* Support calling methods: 
+		*   {method="AddWheel", ConnectionPointX=1, ...}
+		*   {method="CreateVehicle"}
+		*   {method="ResetSuspension"}
+		*   {method="SetVehicleControl", Steering0=0.1, ...}
+		*   {method="ConstraintProperty", Type=1, Index=0, ...} (Create or Set Joint)
+		*   {method="ReleaseAllJoints"}
+		*/
 		void SetActorPhysicsProperty(IParaPhysicsActor* actor, const char* property);
-		const char* GetActorPhysicsProperty(IParaPhysicsActor* actor);
+
+		/** get actor physics property. 
+		* @param actor: the physics actor
+		* @param inputTable: (optional) NPL table string {method="", index=...}
+		* if inputTable is NULL or empty, it returns all standard properties.
+		* if inputTable contains:
+		*   {method="ConstraintProperty", Index=0}: returns property of the constraint at index
+		*   {method="VehicleState"}: returns vehicle state
+		*/
+		const char* GetActorPhysicsProperty(IParaPhysicsActor* actor, const char* inputTable = nullptr);
 
 	public:
 		CPhysicsWorld(void);

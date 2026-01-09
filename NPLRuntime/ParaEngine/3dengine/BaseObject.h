@@ -12,6 +12,7 @@
 
 namespace ParaEngine
 {
+	struct IParaPhysicsActor;
 	class IParaDebugDraw;
 
 	/** object volume bit fields
@@ -743,10 +744,11 @@ namespace ParaEngine
 		virtual void SetPhysicsShape(const char* shape) {}
 		virtual const char* GetPhysicsShape() { return "box"; }
 		virtual void SetPhysicsProperty(const char* property) {}
-		virtual const char* GetPhysicsProperty() { return "{}"; }
+		virtual const char* GetPhysicsProperty(const char* inputTable = NULL) { return "{}"; }
 		// 是否启用动态物理
 		virtual void EnableDynamicPhysics(bool bEnable) {}
 		virtual bool IsDynamicPhysicsEnabled() { return false; }
+		virtual IParaPhysicsActor* GetDynamicPhysicsActor() { return nullptr; }
 		// 设置物理速度
 		virtual void ApplyCentralImpulse(const Vector3& impulse) {}
 

@@ -4765,11 +4765,11 @@ void ParaEngine::CBipedObject::SetPhysicsProperty(const char* property)
 	CGlobals::GetPhysicsWorld()->SetActorPhysicsProperty(m_dynamicPhysicsActor, property);
 }
 
-const char* ParaEngine::CBipedObject::GetPhysicsProperty()
+const char* ParaEngine::CBipedObject::GetPhysicsProperty(const char* inputTable)
 {
 	if (m_dynamicPhysicsActor)
 	{
-		return CGlobals::GetPhysicsWorld()->GetActorPhysicsProperty(m_dynamicPhysicsActor);
+		return CGlobals::GetPhysicsWorld()->GetActorPhysicsProperty(m_dynamicPhysicsActor, inputTable);
 	}
 	return "";
 }
@@ -5758,20 +5758,6 @@ int CBipedObject::InstallFields(CAttributeClass* pClass, bool bOverride)
 	pClass->AddField("IsControlledExternally", FieldType_Bool, (void*)SetIsControlledExternally_s, (void*)IsControlledExternally_s, NULL, "", bOverride);
 	pClass->AddField("Kinematic", FieldType_Bool, (void*)SetKinematic_s, (void*)IsKinematic_s, NULL, "if true, biped can push dynamic objects", bOverride);
 	pClass->AddField("BlendingFactor", FieldType_Float, (void*)SetBlendingFactor_s, NULL, NULL, "", bOverride);
-
-	// Joint/Constraint attribute fields (delegates to PhysicsWorld)
-	pClass->AddField("JointCount", FieldType_Int, NULL, (void*)GetJointCount_s, NULL, "number of joints created by this biped", bOverride);
-	pClass->AddField("ConstraintProperty", FieldType_String, (void*)SetConstraintProperty_s, (void*)GetConstraintProperty_s, NULL, "create joint or set/get joint property: {Type=1,Index=0,...}", bOverride);
-	pClass->AddField("ReleaseAllJoints", FieldType_void, (void*)ReleaseAllJoints_s, NULL, NULL, "release all joints", bOverride);
-
-	// Vehicle attribute fields (delegates to PhysicsWorld)
-	pClass->AddField("HasVehicle", FieldType_Bool, NULL, (void*)HasVehicle_s, NULL, "whether this biped has a vehicle", bOverride);
-	pClass->AddField("CreateVehicle", FieldType_Bool, (void*)CreateVehicle_s, (void*)HasVehicle_s, NULL, "create a vehicle using this biped as chassis", bOverride);
-	pClass->AddField("AddWheel", FieldType_String, (void*)AddWheelStr_s, NULL, NULL, "add wheel from config: {ConnectionPointX=1,ConnectionPointY=0,ConnectionPointZ=1.5,WheelRadius=0.4,...}", bOverride);
-	pClass->AddField("WheelCount", FieldType_Int, NULL, (void*)GetWheelCount_s, NULL, "number of wheels", bOverride);
-	pClass->AddField("VehicleSpeed", FieldType_Float, NULL, (void*)GetVehicleSpeed_s, NULL, "current vehicle speed in km/h", bOverride);
-	pClass->AddField("VehicleControl", FieldType_String, (void*)SetVehicleControlStr_s, (void*)GetVehicleState_s, NULL, "set vehicle controls: {Steering0=0.3,EngineForce2=1000,Brake0=0,...}", bOverride);
-	pClass->AddField("ResetSuspension", FieldType_void, (void*)ResetVehicleSuspension_s, NULL, NULL, "reset vehicle suspension", bOverride);
 
 	return S_OK;
 }
