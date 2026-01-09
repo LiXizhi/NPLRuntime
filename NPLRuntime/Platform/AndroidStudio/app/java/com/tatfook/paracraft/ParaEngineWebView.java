@@ -10,6 +10,7 @@
 package com.tatfook.paracraft;
 
 import android.annotation.SuppressLint;
+import android.content.ClipData;
 import android.content.Context;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
@@ -497,53 +498,140 @@ public class ParaEngineWebView extends WebView {
 
     // 启动相机
     private void startCamera() {
-        Intent takePictureIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
-        if (takePictureIntent.resolveActivity(getContext().getPackageManager()) != null) {
-            File photoFile = null;
-            try {
-                photoFile = createImageFile();
-            } catch (Exception ex) {
-                Log.e(TAG, "Unable to create Image File", ex);
+        post(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    startCameraInternal();
+                } catch (Exception e) {
+                    Log.e(TAG, "Critical error in startCamera", e);
+                    if (mFilePathCallback != null) {
+                        mFilePathCallback.onReceiveValue(null);
+                        mFilePathCallback = null;
+                    }
+                }
             }
+        });
+    }
 
-            if (photoFile != null) {
+    private void startCameraInternal() {
+        Log.d(TAG, "startCameraInternal called");
+        Intent takePictureIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
+        
+        // 尝试创建文件
+        File photoFile = null;
+        try {
+            photoFile = createImageFile();
+        } catch (Exception ex) {
+            Log.e(TAG, "Unable to create Image File", ex);
+        }
+
+        if (photoFile != null) {
+            try {
                 mCapturedImageUri = FileProvider.getUriForFile(getContext(),
                         getContext().getPackageName() + ".fileprovider",
                         photoFile);
-                takePictureIntent.putExtra(MediaStore.EXTRA_OUTPUT, mCapturedImageUri);
-                
-                ParaEngineActivity activity = (ParaEngineActivity)getContext();
+                Log.d(TAG, "Created file URI: " + mCapturedImageUri.toString());
+            } catch (Exception e) {
+                Log.e(TAG, "Failed to get URI for file", e);
+            }
+        }
+
+        if (mCapturedImageUri != null) {
+            takePictureIntent.putExtra(MediaStore.EXTRA_OUTPUT, mCapturedImageUri);
+            
+            // 使用ClipData传递权限，这在Android 10+上更可靠
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN) {
+                takePictureIntent.setClipData(ClipData.newRawUri("", mCapturedImageUri));
+            }
+            
+            takePictureIntent.addFlags(Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
+            takePictureIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+        } else {
+            Log.w(TAG, "mCapturedImageUri is null, camera will not save high-res image");
+        }
+
+        ParaEngineActivity activity = (ParaEngineActivity)getContext();
+        
+        // 尝试检查是否有相机应用
+        if (takePictureIntent.resolveActivity(getContext().getPackageManager()) != null) {
+            try {
                 activity.startActivityForResult(takePictureIntent, RequestAndroidPermission.FILE_CHOOSER_REQUEST_CODE);
+                Log.d(TAG, "Camera intent started successfully");
+                return;
+            } catch (Exception ex) {
+                Log.e(TAG, "Failed to start camera intent with resolveActivity check", ex);
             }
         } else {
-            // 如果没有相机应用，返回空结果
-            if (mFilePathCallback != null) {
-                mFilePathCallback.onReceiveValue(null);
-                mFilePathCallback = null;
+            Log.w(TAG, "resolveActivity returned null");
+        }
+        
+        // Fallback: 强制启动
+        try {
+            Log.d(TAG, "Attempting fallback start");
+            activity.startActivityForResult(takePictureIntent, RequestAndroidPermission.FILE_CHOOSER_REQUEST_CODE);
+            Log.d(TAG, "Fallback camera intent started successfully");
+            return;
+        } catch (Exception ex) {
+            Log.e(TAG, "Fallback camera start failed", ex);
+        }
+
+        // 如果带URI启动完全失败，尝试不带URI启动（仅作为最后的保底，防止无响应）
+        if (mCapturedImageUri != null) {
+            Log.w(TAG, "Attempting start without URI as last resort");
+            try {
+                Intent simpleIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
+                activity.startActivityForResult(simpleIntent, RequestAndroidPermission.FILE_CHOOSER_REQUEST_CODE);
+                Log.d(TAG, "Simple camera intent started");
+                // 注意：这种情况下 onActivityResult 可能拿不到 mCapturedImageUri 的内容，
+                // 但至少用户能看到相机启动。我们需要在 onActivityResult 里处理 data 返回的缩略图。
+                return;
+            } catch (Exception e) {
+                Log.e(TAG, "Last resort start failed", e);
             }
+        }
+
+        // 所有尝试都失败
+        Log.e(TAG, "All camera start attempts failed");
+        if (mFilePathCallback != null) {
+            mFilePathCallback.onReceiveValue(null);
+            mFilePathCallback = null;
         }
     }
 
     // 处理文件选择结果
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
         if (requestCode == RequestAndroidPermission.FILE_CHOOSER_REQUEST_CODE) {
+            Log.d(TAG, "onActivityResult - requestCode: " + requestCode + ", resultCode: " + resultCode);
             Uri[] results = null;
 
             if (resultCode == android.app.Activity.RESULT_OK) {
                 if (data == null) {
+                    Log.d(TAG, "Data is null, using captured image URI");
                     if (mCapturedImageUri != null) {
                         results = new Uri[]{mCapturedImageUri};
+                        Log.d(TAG, "Using captured image URI: " + mCapturedImageUri.toString());
+                    } else {
+                        Log.e(TAG, "Both data and captured image URI are null");
                     }
                 } else {
                     String dataString = data.getDataString();
+                    Log.d(TAG, "Data is not null, dataString: " + dataString);
                     if (dataString != null) {
                         results = new Uri[]{Uri.parse(dataString)};
                     }
                 }
+            } else {
+                Log.d(TAG, "Result code is not OK: " + resultCode);
             }
 
-            mFilePathCallback.onReceiveValue(results);
-            mFilePathCallback = null;
+            if (mFilePathCallback != null) {
+                mFilePathCallback.onReceiveValue(results);
+                mFilePathCallback = null;
+                Log.d(TAG, "File path callback executed with " + (results != null ? results.length : 0) + " results");
+            } else {
+                Log.e(TAG, "File path callback is null!");
+            }
             mCapturedImageUri = null;
         }
     }

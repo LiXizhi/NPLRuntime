@@ -41,6 +41,7 @@ import androidx.core.content.ContextCompat;
 
 import android.provider.MediaStore;
 import android.util.Base64;
+import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.InputDevice;
 import android.view.KeyEvent;
@@ -753,9 +754,38 @@ public class ParaEngineActivity extends AppCompatActivity {
         // 在底部添加健康游戏忠告（仅中文系统且开关打开）
         if (isChineseSystem && sShowHealthAdvisory) {
             TextView healthAdvisory = new TextView(this);
-            healthAdvisory.setText("健康游戏忠告\n" +
-                                  "抵制不良游戏，拒绝盗版游戏。注意自我保护，谨防受骗上当。\n" +
-                                  "适度游戏益脑，沉迷游戏伤身。合理安排时间，享受健康生活。");
+            
+            // 获取屏幕高度，根据高度决定显示一行还是多行
+            DisplayMetrics displayMetrics = new DisplayMetrics();
+            getWindowManager().getDefaultDisplay().getMetrics(displayMetrics);
+            int screenHeight = displayMetrics.heightPixels;
+
+            // 估算内容高度，如果高度不够，则使用单行显示
+            float scaledDensity = displayMetrics.scaledDensity;
+            // Title: 32sp * 1.5 + 80px
+            int h1 = (int)(32 * scaledDensity * 1.5f) + 80;
+            // Spinner: 200px + 80px
+            int h2 = 200 + 80;
+            // LoadingText: 20sp * 1.5 + 50px
+            int h3 = (int)(20 * scaledDensity * 1.5f) + 50;
+            // Progress: 15px + 50px
+            int h4 = 15 + 50;
+            // StatusText: 16sp * 1.5
+            int h5 = (int)(16 * scaledDensity * 1.5f);
+            // Advisory(Multilines): 13sp * 1.5 * 3lines + 90px(margins)
+            int h6 = (int)(13 * scaledDensity * 1.5f * 3) + 50 + 40;
+            
+            int totalHeight = h1 + h2 + h3 + h4 + h5 + h6;
+            
+            // 屏幕高度小于1200像素 或者 内容高度大于屏幕高度 时将所有内容显示在一行
+            if (screenHeight < 1200 || totalHeight > screenHeight) {
+                healthAdvisory.setText("健康游戏忠告：抵制不良游戏，拒绝盗版游戏。注意自我保护，谨防受骗上当。适度游戏益脑，沉迷游戏伤身。合理安排时间，享受健康生活。");
+            } else {
+                healthAdvisory.setText("健康游戏忠告\n" +
+                                      "抵制不良游戏，拒绝盗版游戏。注意自我保护，谨防受骗上当。\n" +
+                                      "适度游戏益脑，沉迷游戏伤身。合理安排时间，享受健康生活。");
+            }
+            
             healthAdvisory.setTextSize(13);
             healthAdvisory.setTextColor(0xCCFFFFFF); // 80%透明度白色
             healthAdvisory.setGravity(android.view.Gravity.CENTER);
