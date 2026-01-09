@@ -18,6 +18,7 @@ public class RequestAndroidPermission {
     static public final int COARSE_LOCATION_PERMISSION_CODE = 5;
     static public final int BLUETOOTH_CONNECT_PERMISSION_REQUEST_CODE = 6;
     static public final int CAMERA_PERMISSION_REQUEST_CODE = 7;
+    static public final int FILE_CHOOSER_REQUEST_CODE = 1001;
 
     public interface RequestPermissionCallback {
         void Callback(Boolean succeeded);
@@ -89,7 +90,8 @@ public class RequestAndroidPermission {
         }
     }
 
-    static public boolean RequestCamera() {
+    static public boolean RequestCamera(RequestPermissionCallback callback) {
+        curCallback = callback;
         int permission = mParaEngineActivity.checkSelfPermission(Manifest.permission.CAMERA);
 
         if (permission != PackageManager.PERMISSION_GRANTED) {
@@ -99,8 +101,15 @@ public class RequestAndroidPermission {
             );
             return false;
         } else {
+            if (callback != null) {
+                callback.Callback(true);
+            }
             return true;
         }
+    }
+
+    static public boolean RequestCamera() {
+        return RequestCamera(null);
     }
 
     static public boolean HasPermission(int permissionCode) {
@@ -198,7 +207,17 @@ public class RequestAndroidPermission {
                 curCallback.Callback(true);
             }
         } else if (requestCode == CAMERA_PERMISSION_REQUEST_CODE) {
+            int permission = mParaEngineActivity.checkSelfPermission(Manifest.permission.CAMERA);
 
+            if (permission != PackageManager.PERMISSION_GRANTED) {
+                if (curCallback != null) {
+                    curCallback.Callback(false);
+                }
+            } else {
+                if (curCallback != null) {
+                    curCallback.Callback(true);
+                }
+            }
         }
     }
 }

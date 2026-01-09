@@ -107,6 +107,9 @@ public class ParaEngineActivity extends AppCompatActivity {
     private ProgressBar mLoadingProgress = null;
     private TextView mStatusText = null;
     private int mJavaMaxProgress = 0; // Java UI最大进度值，用于防倒退
+    
+    // 健康游戏忠告控制
+    private static boolean sShowHealthAdvisory = true; // 默认显示健康游戏忠告
 
     public static ParaEngineActivity getContext() {
         return sContext;
@@ -191,6 +194,16 @@ public class ParaEngineActivity extends AppCompatActivity {
     @Keep
     public int getInstanceLoadingMode() {
         return this.mLoadingMode;
+    }
+    
+    /**
+     * 设置是否显示健康游戏忠告
+     * @param show true=显示，false=不显示
+     */
+    @Keep
+    public static void setShowHealthAdvisory(boolean show) {
+        sShowHealthAdvisory = show;
+        Log.d("ParaEngineActivity", "Health advisory display set to: " + show);
     }
 
     @Keep
@@ -598,8 +611,8 @@ public class ParaEngineActivity extends AppCompatActivity {
                     mStatusText = mJavaLoadingView.findViewById(statusTextId);
                 }
                 
-                // 如果加载了布局文件，在其上方添加健康游戏忠告（仅中文系统）
-                if (isChineseSystem && mJavaLoadingView instanceof ViewGroup) {
+                // 如果加载了布局文件，在其上方添加健康游戏忠告（仅中文系统且开关打开）
+                if (isChineseSystem && sShowHealthAdvisory && mJavaLoadingView instanceof ViewGroup) {
                     addHealthAdvisoryToView((ViewGroup) mJavaLoadingView);
                 }
             } else {
@@ -737,8 +750,8 @@ public class ParaEngineActivity extends AppCompatActivity {
         mStatusText.setTypeface(null, android.graphics.Typeface.ITALIC);
         container.addView(mStatusText);
         
-        // 在底部添加健康游戏忠告（仅中文系统）
-        if (isChineseSystem) {
+        // 在底部添加健康游戏忠告（仅中文系统且开关打开）
+        if (isChineseSystem && sShowHealthAdvisory) {
             TextView healthAdvisory = new TextView(this);
             healthAdvisory.setText("健康游戏忠告\n" +
                                   "抵制不良游戏，拒绝盗版游戏。注意自我保护，谨防受骗上当。\n" +
@@ -1126,6 +1139,14 @@ public class ParaEngineActivity extends AppCompatActivity {
         super.onActivityResult(requestCode, resultCode, data);
         ParaEnginePluginWrapper.onActivityResult(requestCode, resultCode, data);
         ScreenRecorder.onActivityResult(requestCode, resultCode, data);
+        
+        // 处理WebView的文件选择结果
+        if (mWebViewHelper != null) {
+            ParaEngineWebView webView = mWebViewHelper.getCurrentWebView();
+            if (webView != null) {
+                webView.onActivityResult(requestCode, resultCode, data);
+            }
+        }
     }
 
     @Override

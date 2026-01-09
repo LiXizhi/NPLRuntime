@@ -18,6 +18,7 @@ import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.ViewGroup;
 import android.webkit.PermissionRequest;
+import android.webkit.ValueCallback;
 import android.webkit.WebChromeClient;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
@@ -31,8 +32,13 @@ import android.os.Build;
 
 import android.net.Uri;
 import android.widget.RelativeLayout;
+import android.content.Intent;
+import android.provider.MediaStore;
+import android.os.Environment;
+import androidx.core.content.FileProvider;
 
 import java.util.concurrent.CountDownLatch;
+import java.io.File;
 
 class ShouldStartLoadingWorker implements Runnable {
     private CountDownLatch mLatch;
@@ -65,6 +71,8 @@ public class ParaEngineWebView extends WebView {
     public int defaultHeight = 0;
     private String mOriginalUrl = "";
     private boolean mIsShowingErrorPage = false;
+    private android.webkit.ValueCallback<Uri[]> mFilePathCallback;
+    private Uri mCapturedImageUri;
 
     public ParaEngineWebView(Context context) {
         this(context, -1);
@@ -171,6 +179,33 @@ public class ParaEngineWebView extends WebView {
                         request.grant(request.getResources());
                     }
                 }
+            }
+
+            @Override
+            public boolean onShowFileChooser(WebView webView, ValueCallback<Uri[]> filePathCallback, FileChooserParams fileChooserParams) {
+                if (mFilePathCallback != null) {
+                    mFilePathCallback.onReceiveValue(null);
+                }
+                mFilePathCallback = filePathCallback;
+
+                // 检查并请求相机权限
+                RequestAndroidPermission.RequestCamera(new RequestAndroidPermission.RequestPermissionCallback() {
+                    @Override
+                    public void Callback(Boolean succeeded) {
+                        if (succeeded) {
+                            // 权限授予成功，启动相机
+                            startCamera();
+                        } else {
+                            // 权限被拒绝
+                            if (mFilePathCallback != null) {
+                                mFilePathCallback.onReceiveValue(null);
+                                mFilePathCallback = null;
+                            }
+                        }
+                    }
+                });
+
+                return true;
             }
         });
 
@@ -449,6 +484,67 @@ public class ParaEngineWebView extends WebView {
             return activeNetworkInfo != null && activeNetworkInfo.isConnected();
         } catch (Exception e) {
             return false;
+        }
+    }
+
+    // 创建临时图片文件
+    private File createImageFile() throws Exception {
+        String timeStamp = new java.text.SimpleDateFormat("yyyyMMdd_HHmmss").format(new java.util.Date());
+        String imageFileName = "JPEG_" + timeStamp + "_";
+        File storageDir = getContext().getExternalFilesDir(Environment.DIRECTORY_PICTURES);
+        return File.createTempFile(imageFileName, ".jpg", storageDir);
+    }
+
+    // 启动相机
+    private void startCamera() {
+        Intent takePictureIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
+        if (takePictureIntent.resolveActivity(getContext().getPackageManager()) != null) {
+            File photoFile = null;
+            try {
+                photoFile = createImageFile();
+            } catch (Exception ex) {
+                Log.e(TAG, "Unable to create Image File", ex);
+            }
+
+            if (photoFile != null) {
+                mCapturedImageUri = FileProvider.getUriForFile(getContext(),
+                        getContext().getPackageName() + ".fileprovider",
+                        photoFile);
+                takePictureIntent.putExtra(MediaStore.EXTRA_OUTPUT, mCapturedImageUri);
+                
+                ParaEngineActivity activity = (ParaEngineActivity)getContext();
+                activity.startActivityForResult(takePictureIntent, RequestAndroidPermission.FILE_CHOOSER_REQUEST_CODE);
+            }
+        } else {
+            // 如果没有相机应用，返回空结果
+            if (mFilePathCallback != null) {
+                mFilePathCallback.onReceiveValue(null);
+                mFilePathCallback = null;
+            }
+        }
+    }
+
+    // 处理文件选择结果
+    public void onActivityResult(int requestCode, int resultCode, Intent data) {
+        if (requestCode == RequestAndroidPermission.FILE_CHOOSER_REQUEST_CODE) {
+            Uri[] results = null;
+
+            if (resultCode == android.app.Activity.RESULT_OK) {
+                if (data == null) {
+                    if (mCapturedImageUri != null) {
+                        results = new Uri[]{mCapturedImageUri};
+                    }
+                } else {
+                    String dataString = data.getDataString();
+                    if (dataString != null) {
+                        results = new Uri[]{Uri.parse(dataString)};
+                    }
+                }
+            }
+
+            mFilePathCallback.onReceiveValue(results);
+            mFilePathCallback = null;
+            mCapturedImageUri = null;
         }
     }
 }
