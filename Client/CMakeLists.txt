@@ -23,7 +23,7 @@ set(SERVER_SOURCE_DIR   ${PROJECT_SOURCE_DIR}/../Server/trunk/)
 
 # Options
 ################################
-option(PARAENGINE_CLIENT_DLL "Generate Dll Or Exe" OFF)
+option(PARAENGINE_CLIENT_DLL "Generate Dll Or Exe" ON)
 option(NPLRUNTIME_STATIC_LIB "static lib or not" OFF)
 
 # Win32 Default Option
@@ -37,6 +37,7 @@ if(WIN32)
 	option(NPLRUNTIME_HAQI_LAUNCHER "haqi launcher" OFF)
 	option(NPLRUNTIME_WEBVIEW "microsoft edge webview2 support" OFF)
 	option(NPLRUNTIME_DARKNET "darknet support" ON)
+	option(NPLRUNTIME_LUASQL "build example luasql plugin" OFF)
 endif()
 # OSX Default Option
 if(APPLE)
@@ -125,7 +126,8 @@ else()
 endif()
 
 # Add more boost components here
-find_package(Boost 1.61 REQUIRED COMPONENTS thread date_time filesystem system chrono regex serialization iostreams) 
+# Note: 'system' is header-only since Boost 1.69, no longer needs to be listed as a component
+find_package(Boost 1.85 REQUIRED COMPONENTS thread date_time filesystem chrono regex serialization iostreams) 
 
 # End of boost
 
@@ -180,7 +182,9 @@ if (NPLRUNTIME_DARKNET)
 endif()
 
 if(NOT NPLRUNTIME_STATIC_LIB) 
-	add_subdirectory (${SERVER_SOURCE_DIR}luasql ${PROJECT_BINARY_DIR}/luasql)
+	if(NPLRUNTIME_LUASQL)
+		add_subdirectory (${SERVER_SOURCE_DIR}luasql ${PROJECT_BINARY_DIR}/luasql)
+	endif()
 endif()
 
 if(NPLRUNTIME_SUPPORT_FBX) 

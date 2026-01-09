@@ -54,7 +54,8 @@ else()
 endif()
 
 # Add more boost components here
-find_package( Boost 1.55 REQUIRED COMPONENTS thread date_time filesystem system chrono serialization iostreams regex) 
+# Note: 'system' is header-only since Boost 1.69, no longer needs to be listed as a component
+find_package( Boost 1.55 REQUIRED COMPONENTS thread date_time filesystem chrono serialization iostreams regex) 
 
 if (WIN32)
 	option(BUILD_CURL_EXE OFF)

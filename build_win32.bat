@@ -1,8 +1,9 @@
 rem author: lixizhi@yeah.net
 rem date: 2016.2.26
-rem desc: Run this file in developer command prompt x86 visual studio 2017 (search in desktop search box)
-rem Install dependencies: (if DirectX9 SDK is not found, opengl is used)
-rem guide: optionally one can add `BOOST_ROOT` to environment variable, such as 'D:\lxzsrc\NPLRuntime\Server\trunk\boost_1_60_0', 
+rem updated: 2026.1.9 - use latest cmake/boost, auto-install DirectX SDK
+rem desc: Run this file in developer command prompt x86 visual studio 2022 (search in desktop search box)
+rem Install dependencies: (if DirectX9 SDK is not found, it will be auto-installed)
+rem guide: optionally one can add `BOOST_ROOT` to environment variable, such as 'D:\lxzsrc\NPLRuntime\bin\boost_1_87_0', 
 rem        make sure to prebuilt your boost library like below
 rem You can choose to build two versions: Client or Server. Only client build requires DirectX SDK or opengl installed. When building Client, there are CMAKE options to specify whether to build NPL runtime as dll or executable, whether to use static linking in one big executable or using several dlls, etc. 
 rem - To build server version: open `NPLRuntime/cmakelist.txt` with cmake-gui
@@ -10,43 +11,120 @@ rem - To build client version: open `Client/cmakelist.txt` with cmake-gui or sim
 
 pushd .
 
-rem Install cmake
-if NOT EXIST "bin\cmake" (
-	pushd bin
-	powershell -Command "Invoke-WebRequest https://cmake.org/files/v3.10/cmake-3.10.0-win64-x64.zip -OutFile cmake.zip"
-	7z x cmake.zip -obin > nul
-	move bin\cmake-* cmake
-	cmake\bin\cmake.exe --version
-	popd
+rem ============================================================
+rem Install DirectX SDK (June 2010) if not found
+rem ============================================================
+if DEFINED DXSDK_DIR (
+	echo DXSDK_DIR already defined: %DXSDK_DIR%
+	goto :skip_dxsdk
 )
+if EXIST "C:\Program Files (x86)\Microsoft DirectX SDK (June 2010)\Include\d3d9.h" (
+	set "DXSDK_DIR=C:\Program Files (x86)\Microsoft DirectX SDK (June 2010)\"
+	goto :skip_dxsdk
+)
+echo DirectX SDK not found. Downloading and installing...
+if NOT EXIST "bin" mkdir bin
+pushd bin
+if NOT EXIST "DXSDK_Jun10.exe" (
+	echo Downloading DirectX SDK June 2010 - this is about 572MB...
+	powershell -Command "Invoke-WebRequest -Uri 'https://download.microsoft.com/download/A/E/7/AE743F1F-632B-4809-87A9-AA1BB3458E31/DXSDK_Jun10.exe' -OutFile 'DXSDK_Jun10.exe'"
+)
+echo Installing DirectX SDK - this may take a few minutes...
+echo NOTE: If installation fails with S1023 error, uninstall Visual C++ 2010 Redistributable first.
+start /wait DXSDK_Jun10.exe /U
+popd
+rem Refresh environment variable
+for /f "tokens=2*" %%a in ('reg query "HKLM\SOFTWARE\Microsoft\DirectX" /v SDKDir 2^>nul') do set "DXSDK_DIR=%%b"
+:skip_dxsdk
+echo DXSDK_DIR=%DXSDK_DIR%
 
-rem Install Boost
-if NOT EXIST "bin\boost" (
-	pushd bin
-	powershell -Command "Invoke-WebRequest http://dl.bintray.com/boostorg/release/1.64.0/source/boost_1_64_0.7z -OutFile boost.7z"
-	7z x boost.7z -obin > nul
-	move bin\boost_* boost
-	cd boost
-	bootstrap.bat
-	b2 address-model=32 runtime-link=static threading=multi variant=release --with-thread --with-date_time --with-filesystem --with-system --with-chrono --with-serialization --with-iostreams --with-regex stage
-	popd
+rem ============================================================
+rem Install cmake (latest version) - skip if cmake is in PATH
+rem ============================================================
+where cmake >nul 2>nul
+if %ERRORLEVEL% EQU 0 (
+	echo CMake already installed in PATH:
+	cmake --version
+	echo Skipping CMake installation.
+	goto :skip_cmake
 )
+if EXIST "bin\cmake\bin\cmake.exe" (
+	echo Using local CMake in bin\cmake
+	goto :skip_cmake
+)
+if NOT EXIST "bin" mkdir bin
+pushd bin
+echo Downloading CMake 3.31.2...
+powershell -Command "Invoke-WebRequest 'https://github.com/Kitware/CMake/releases/download/v3.31.2/cmake-3.31.2-windows-x86_64.zip' -OutFile 'cmake.zip'"
+echo Extracting CMake...
+powershell -Command "Expand-Archive -Path 'cmake.zip' -DestinationPath '.' -Force"
+move cmake-3.31.2-windows-x86_64 cmake
+del cmake.zip
+cmake\bin\cmake.exe --version
+popd
+:skip_cmake
+
+rem ============================================================
+rem Install Boost (latest version) - skip if BOOST_ROOT is set
+rem ============================================================
+if DEFINED BOOST_ROOT (
+	echo BOOST_ROOT already defined: %BOOST_ROOT%
+	echo Skipping Boost installation.
+	goto :skip_boost
+)
+if EXIST "bin\boost\stage\lib" (
+	echo Using local Boost in bin\boost
+	set BOOST_ROOT=%~dp0bin\boost
+	goto :skip_boost
+)
+if NOT EXIST "bin" mkdir bin
+pushd bin
+echo Downloading Boost 1.87.0...
+powershell -Command "Invoke-WebRequest 'https://archives.boost.io/release/1.87.0/source/boost_1_87_0.zip' -OutFile 'boost.zip'"
+echo Extracting Boost - this may take a while...
+powershell -Command "Expand-Archive -Path 'boost.zip' -DestinationPath '.' -Force"
+move boost_1_87_0 boost
+del boost.zip
+cd boost
+echo Building Boost libraries...
+call bootstrap.bat
+b2 runtime-link=static
+popd
 set BOOST_ROOT=%~dp0bin\boost
+:skip_boost
 
+rem ============================================================
 rem Build main executable
-mkdir bin\client_win32
-cd bin\client_win32
+rem ============================================================
+if NOT EXIST "bin\win32" mkdir bin\win32
+cd bin\win32
 
-call "..\cmake\bin\cmake.exe" ../../Client/
-msbuild  %~dp0\bin\client_win32\CLIENT.sln /verbosity:minimal /property:Configuration=Release
+rem Use system cmake if available, otherwise use local cmake
+rem Force Visual Studio 2022 with Win32 (x86) architecture
+where cmake >nul 2>nul
+if %ERRORLEVEL% EQU 0 (
+	cmake -G "Visual Studio 17 2022" -A Win32 ../../Client/
+) else (
+	call "..\cmake\bin\cmake.exe" -G "Visual Studio 17 2022" -A Win32 ../../Client/
+)
+msbuild %~dp0bin\win32\CLIENT.sln /verbosity:minimal /property:Configuration=Release
 
 popd
 
-pushd ParaWorld\bin32\
-	if NOT EXIST "npl.exe" ( mklink npl.exe ParaEngineClient.exe )
-	if NOT EXIST "nplc.bat" ( copy ..\..\npl_packages\main\script\ide\System\nplcmd\nplc.bat  nplc.bat )
+rem ============================================================
+rem Create symlinks and copy files
+rem ============================================================
+if EXIST "ParaWorld\bin32\" (
+	pushd ParaWorld\bin32\
+	if NOT EXIST "npl.exe" mklink npl.exe ParaEngineClient.exe
+	if NOT EXIST "nplc.bat" copy ..\..\npl_packages\main\script\ide\System\nplcmd\nplc.bat nplc.bat
 	dir
-popd
+	popd
+) else (
+	echo ParaWorld\bin32\ not found, skipping symlink creation.
+)
+
+echo Build complete.
 
 
 
