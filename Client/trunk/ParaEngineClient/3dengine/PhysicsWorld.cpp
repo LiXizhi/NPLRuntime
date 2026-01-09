@@ -1,4 +1,4 @@
-﻿//-----------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
 // Class:	CPhysicsWorld
 // Authors:	Li, Xizhi
 // Emails:	LiXizhi@yeah.net
@@ -42,6 +42,7 @@ ray collision		<-> dSpaceCollide2(...);
 #include "ParaWorldAsset.h"
 #include "ParaPhysics.h"
 #include "PhysicsWorld.h"
+#include "BipedObject.h"
 
 #include "IParaEngineApp.h"
 #include "memdebug.h"
@@ -276,6 +277,110 @@ void CPhysicsWorld::SetActorPhysicsProperty(IParaPhysicsActor* actor, const char
 	NPL::NPLObjectProxy msg = NPL::NPLHelper::StringToNPLTable(property, (int)strlen(property));
 	if (msg.GetType() == NPL::NPLObjectBase::NPLObjectType_Table)
 	{
+		// Check for method calls (high-level API)
+		if (msg["method"].GetType() == NPL::NPLObjectBase::NPLObjectType_String)
+		{
+			std::string method = msg["method"];
+			if (method == "AddWheel")
+			{
+				IParaPhysicsVehicle* pVehicle = GetVehicleByActor(actor);
+				if (pVehicle) AddWheelToVehicle(pVehicle, property);
+			}
+			else if (method == "CreateVehicle")
+			{
+				CreateVehicle(actor);
+			}
+			else if (method == "ResetSuspension")
+			{
+				IParaPhysicsVehicle* pVehicle = GetVehicleByActor(actor);
+				if (pVehicle) pVehicle->ResetSuspension();
+			}
+			else if (method == "SetVehicleControl")
+			{
+				IParaPhysicsVehicle* pVehicle = GetVehicleByActor(actor);
+				if (pVehicle)
+				{
+					int wheelCount = pVehicle->GetNumWheels();
+
+					// Process individual wheel controls
+					for (int i = 0; i < wheelCount; ++i)
+					{
+						char keyBuf[32];
+						snprintf(keyBuf, sizeof(keyBuf), "Steering%d", i);
+						if (msg[(const char*)keyBuf].GetType() == NPL::NPLObjectBase::NPLObjectType_Number)
+							pVehicle->SetSteeringValue((float)(double)msg[(const char*)keyBuf], i);
+
+						snprintf(keyBuf, sizeof(keyBuf), "EngineForce%d", i);
+						if (msg[(const char*)keyBuf].GetType() == NPL::NPLObjectBase::NPLObjectType_Number)
+							pVehicle->ApplyEngineForce((float)(double)msg[(const char*)keyBuf], i);
+
+						snprintf(keyBuf, sizeof(keyBuf), "Brake%d", i);
+						if (msg[(const char*)keyBuf].GetType() == NPL::NPLObjectBase::NPLObjectType_Number)
+							pVehicle->SetBrake((float)(double)msg[(const char*)keyBuf], i);
+					}
+					// Process shorthand controls
+					if (msg["SteeringAll"].GetType() == NPL::NPLObjectBase::NPLObjectType_Number)
+					{
+						float val = (float)(double)msg["SteeringAll"];
+						for (int i = 0; i < wheelCount; ++i) pVehicle->SetSteeringValue(val, i);
+					}
+					if (msg["SteeringFront"].GetType() == NPL::NPLObjectBase::NPLObjectType_Number)
+					{
+						float val = (float)(double)msg["SteeringFront"];
+						int frontCount = wheelCount / 2;
+						for (int i = 0; i < frontCount; ++i) pVehicle->SetSteeringValue(val, i);
+					}
+				}
+			}
+			else if (method == "ConstraintProperty")
+			{
+				// Delegate to existing logic via a temporary biped wrapper or reimplement
+				// Since we have the actor, we can try to find the biped or work on actor directly
+				// Reimplementing logic from SetConstraintPropertyForBiped/CreateJointForBipedStr to work with actor
+				
+				if (msg["Type"].GetType() == NPL::NPLObjectBase::NPLObjectType_Number)
+				{
+					// Create Joint
+					int constraintType = (int)(double)msg["Type"];
+					IParaPhysicsActor* pOtherActor = nullptr;
+					
+					if (msg["OtherObject"].GetType() == NPL::NPLObjectBase::NPLObjectType_String)
+					{
+						const std::string& sName = msg["OtherObject"];
+						CBaseObject* pObj = CGlobals::GetScene()->GetGlobalObject(sName);
+						if (pObj) pOtherActor = pObj->GetDynamicPhysicsActor();
+					}
+
+					Vector3 pivotA((float)(double)msg["PivotAX"], (float)(double)msg["PivotAY"], (float)(double)msg["PivotAZ"]);
+					Vector3 pivotB((float)(double)msg["PivotBX"], (float)(double)msg["PivotBY"], (float)(double)msg["PivotBZ"]);
+					Vector3 axisA((float)(double)msg["AxisAX"], (float)(double)msg["AxisAY"], (float)(double)msg["AxisAZ"]);
+					Vector3 axisB((float)(double)msg["AxisBX"], (float)(double)msg["AxisBY"], (float)(double)msg["AxisBZ"]);
+
+					// Defaults
+					if (msg["AxisAY"].GetType() != NPL::NPLObjectBase::NPLObjectType_Number) axisA = Vector3(0, 1, 0);
+					if (msg["AxisBY"].GetType() != NPL::NPLObjectBase::NPLObjectType_Number) axisB = Vector3(0, 1, 0);
+
+					CreateConstraint(constraintType, actor, pOtherActor, pivotA, axisA, pivotB, axisB);
+				}
+				else if (msg["Index"].GetType() == NPL::NPLObjectBase::NPLObjectType_Number)
+				{
+					// Set Property
+					int index = (int)(double)msg["Index"];
+					IParaPhysicsConstraint* pConstraint = GetConstraintByActor(actor, index);
+					if (pConstraint)
+					{
+						SetConstraintProperty(pConstraint, property);
+					}
+				}
+			}
+			else if (method == "ReleaseAllJoints")
+			{
+				ReleaseConstraintsByActor(actor);
+			}
+			return; // Handled method
+		}
+
+		// Existing property handling
 		if (msg["Mass"].GetType() == NPL::NPLObjectBase::NPLObjectType_Number) actor->SetMass((float)(double)msg["Mass"]);
 		if (msg["LocalInertiaX"].GetType() == NPL::NPLObjectBase::NPLObjectType_Number) actor->SetLocalInertia(PARAVECTOR3((float)(double)msg["LocalInertiaX"], (float)(double)msg["LocalInertiaY"], (float)(double)msg["LocalInertiaZ"]));
 		if (msg["GravityX"].GetType() == NPL::NPLObjectBase::NPLObjectType_Number) actor->SetGravity(PARAVECTOR3((float)(double)msg["GravityX"], (float)(double)msg["GravityY"], (float)(double)msg["GravityZ"]));
@@ -303,12 +408,50 @@ void CPhysicsWorld::SetActorPhysicsProperty(IParaPhysicsActor* actor, const char
 	}
 }
 
-const char* CPhysicsWorld::GetActorPhysicsProperty(IParaPhysicsActor* actor)
+const char* CPhysicsWorld::GetActorPhysicsProperty(IParaPhysicsActor* actor, const char* inputTable)
 {
 	if (actor == nullptr) return "";
 
 	static std::string sCode;
 	NPL::NPLObjectProxy msg;
+
+	if (inputTable && inputTable[0])
+	{
+		NPL::NPLObjectProxy inputMsg = NPL::NPLHelper::StringToNPLTable(inputTable, (int)strlen(inputTable));
+		if (inputMsg.GetType() == NPL::NPLObjectBase::NPLObjectType_Table)
+		{
+			if (inputMsg["method"].GetType() == NPL::NPLObjectBase::NPLObjectType_String)
+			{
+				std::string method = inputMsg["method"];
+				if (method == "ConstraintProperty")
+				{
+					if (inputMsg["Index"].GetType() == NPL::NPLObjectBase::NPLObjectType_Number)
+					{
+						int index = (int)(double)inputMsg["Index"];
+						IParaPhysicsConstraint* pConstraint = GetConstraintByActor(actor, index);
+						if (pConstraint) return GetConstraintProperty(pConstraint);
+					}
+				}
+				else if (method == "VehicleState")
+				{
+					IParaPhysicsVehicle* pVehicle = GetVehicleByActor(actor);
+					msg["HasVehicle"] = (pVehicle != nullptr);
+					msg["WheelCount"] = (double)(pVehicle ? pVehicle->GetNumWheels() : 0);
+					msg["Speed"] = (double)(pVehicle ? pVehicle->GetCurrentSpeedKmHour() : 0.0f);
+					if (pVehicle)
+					{
+						PARAVECTOR3 fwd = pVehicle->GetForwardVector();
+						msg["ForwardX"] = (double)fwd.x;
+						msg["ForwardY"] = (double)fwd.y;
+						msg["ForwardZ"] = (double)fwd.z;
+					}
+					NPL::NPLHelper::NPLTableToString(NULL, msg, sCode);
+					return sCode.c_str();
+				}
+			}
+		}
+	}
+
 	PARAVECTOR3 vec3;
 	msg["Mass"] = actor->GetMass();
 	vec3 = actor->GetLocalInertia();
@@ -373,6 +516,12 @@ void CPhysicsWorld::ExitPhysics()
 {
 	if (m_pPhysicsWorld)
 	{
+		// Release vehicles first (they depend on actors)
+		m_vehicles.clear();
+		
+		// Release constraints (they depend on actors)
+		m_constraints.clear();
+
 		m_pPhysicsWorld->ExitPhysics();
 	}
 
@@ -991,6 +1140,8 @@ void CPhysicsWorld::ReleaseActor(IParaPhysicsActor* pActor)
 {
 	if (m_pPhysicsWorld)
 	{
+		ReleaseConstraintsByActor(pActor);
+		ReleaseVehicleByActor(pActor);
 		m_mapDynamicActors.erase(pActor);
 		m_pPhysicsWorld->ReleaseActor(pActor);
 		if (CGlobals::WillGenReport())
@@ -1054,4 +1205,716 @@ void ParaEngine::CPhysicsWorld::SetDynamicsSimulationEnabled(bool bEnable)
 bool ParaEngine::CPhysicsWorld::IsDynamicsSimulationEnabled()
 {
 	return m_bRunDynamicSimulation;
+}
+
+//////////////////////////////////////////////////////////////////////////
+// Constraint/Joint Implementation
+//////////////////////////////////////////////////////////////////////////
+
+IParaPhysicsConstraint* ParaEngine::CPhysicsWorld::CreateConstraint(int constraintType, IParaPhysicsActor* pActorA, IParaPhysicsActor* pActorB,
+	const Vector3& pivotInA, const Vector3& axisInA, const Vector3& pivotInB, const Vector3& axisInB, bool disableCollision)
+{
+	IParaPhysics* pPhysics = GetPhysicsInterface();
+	if (!pPhysics || !pActorA)
+		return nullptr;
+
+	ParaPhysicsConstraintDesc desc;
+	desc.m_type = (ParaPhysicsConstraintType)constraintType;
+	desc.m_pActorA = pActorA;
+	desc.m_pActorB = pActorB;
+	desc.m_pivotInA = PARAVECTOR3(pivotInA.x, pivotInA.y, pivotInA.z);
+	desc.m_axisInA = PARAVECTOR3(axisInA.x, axisInA.y, axisInA.z);
+	desc.m_pivotInB = PARAVECTOR3(pivotInB.x, pivotInB.y, pivotInB.z);
+	desc.m_axisInB = PARAVECTOR3(axisInB.x, axisInB.y, axisInB.z);
+	desc.m_disableCollisionsBetweenBodies = disableCollision;
+
+	IParaPhysicsConstraint* pConstraint = pPhysics->CreateConstraint(desc);
+	if (pConstraint)
+	{
+		m_constraints.insert(pConstraint);
+	}
+	return pConstraint;
+}
+
+void ParaEngine::CPhysicsWorld::ReleaseConstraint(IParaPhysicsConstraint* pConstraint)
+{
+	if (!pConstraint)
+		return;
+
+	auto it = m_constraints.find(pConstraint);
+	if (it != m_constraints.end())
+	{
+		m_constraints.erase(it);
+		if (m_pPhysicsWorld)
+		{
+			m_pPhysicsWorld->ReleaseConstraint(pConstraint);
+		}
+	}
+}
+
+void ParaEngine::CPhysicsWorld::SetConstraintProperty(IParaPhysicsConstraint* pConstraint, const char* property)
+{
+	if (!pConstraint || !property)
+		return;
+
+	NPL::NPLObjectProxy msg = NPL::NPLHelper::StringToNPLTable(property, (int)strlen(property));
+	if (msg.GetType() != NPL::NPLObjectBase::NPLObjectType_Table)
+		return;
+
+	if (msg["Enabled"].GetType() == NPL::NPLObjectBase::NPLObjectType_Bool)
+		pConstraint->SetEnabled((bool)msg["Enabled"]);
+	if (msg["BreakingThreshold"].GetType() == NPL::NPLObjectBase::NPLObjectType_Number)
+		pConstraint->SetBreakingThreshold((float)(double)msg["BreakingThreshold"]);
+
+	// Hinge-specific properties
+	if (pConstraint->GetType() == ConstraintType_Hinge)
+	{
+		if (msg["LowLimit"].GetType() == NPL::NPLObjectBase::NPLObjectType_Number)
+		{
+			float low = (float)(double)msg["LowLimit"];
+			float high = msg["HighLimit"].GetType() == NPL::NPLObjectBase::NPLObjectType_Number ? (float)(double)msg["HighLimit"] : low;
+			float softness = msg["Softness"].GetType() == NPL::NPLObjectBase::NPLObjectType_Number ? (float)(double)msg["Softness"] : 0.9f;
+			float biasFactor = msg["BiasFactor"].GetType() == NPL::NPLObjectBase::NPLObjectType_Number ? (float)(double)msg["BiasFactor"] : 0.3f;
+			float relaxationFactor = msg["RelaxationFactor"].GetType() == NPL::NPLObjectBase::NPLObjectType_Number ? (float)(double)msg["RelaxationFactor"] : 1.0f;
+			pConstraint->SetHingeLimit(low, high, softness, biasFactor, relaxationFactor);
+		}
+		if (msg["EnableMotor"].GetType() == NPL::NPLObjectBase::NPLObjectType_Bool)
+		{
+			bool enable = (bool)msg["EnableMotor"];
+			float targetVelocity = msg["MotorTargetVelocity"].GetType() == NPL::NPLObjectBase::NPLObjectType_Number ? (float)(double)msg["MotorTargetVelocity"] : 0.0f;
+			float maxImpulse = msg["MaxMotorImpulse"].GetType() == NPL::NPLObjectBase::NPLObjectType_Number ? (float)(double)msg["MaxMotorImpulse"] : 1.0f;
+			pConstraint->EnableHingeMotor(enable, targetVelocity, maxImpulse);
+		}
+	}
+
+	// Slider-specific properties
+	if (pConstraint->GetType() == ConstraintType_Slider)
+	{
+		if (msg["LowerLinLimit"].GetType() == NPL::NPLObjectBase::NPLObjectType_Number)
+		{
+			float lower = (float)(double)msg["LowerLinLimit"];
+			float upper = msg["UpperLinLimit"].GetType() == NPL::NPLObjectBase::NPLObjectType_Number ? (float)(double)msg["UpperLinLimit"] : lower;
+			pConstraint->SetSliderLimit(lower, upper);
+		}
+		if (msg["EnableLinMotor"].GetType() == NPL::NPLObjectBase::NPLObjectType_Bool)
+		{
+			bool enable = (bool)msg["EnableLinMotor"];
+			float targetVelocity = msg["TargetLinMotorVelocity"].GetType() == NPL::NPLObjectBase::NPLObjectType_Number ? (float)(double)msg["TargetLinMotorVelocity"] : 0.0f;
+			float maxForce = msg["MaxLinMotorForce"].GetType() == NPL::NPLObjectBase::NPLObjectType_Number ? (float)(double)msg["MaxLinMotorForce"] : 1.0f;
+			pConstraint->EnableSliderMotor(enable, targetVelocity, maxForce);
+		}
+	}
+}
+
+const char* ParaEngine::CPhysicsWorld::GetConstraintProperty(IParaPhysicsConstraint* pConstraint)
+{
+	if (!pConstraint)
+		return "";
+
+	static std::string sCode;
+	NPL::NPLObjectProxy msg;
+	msg["Type"] = (double)pConstraint->GetType();
+	msg["Enabled"] = pConstraint->IsEnabled();
+	msg["BreakingThreshold"] = (double)pConstraint->GetBreakingThreshold();
+
+	if (pConstraint->GetType() == ConstraintType_Hinge)
+	{
+		msg["HingeAngle"] = (double)pConstraint->GetHingeAngle();
+	}
+	else if (pConstraint->GetType() == ConstraintType_Slider)
+	{
+		msg["SliderPosition"] = (double)pConstraint->GetSliderPosition();
+	}
+
+	NPL::NPLHelper::NPLTableToString(NULL, msg, sCode);
+	return sCode.c_str();
+}
+
+//////////////////////////////////////////////////////////////////////////
+// Vehicle/Wheel Implementation
+//////////////////////////////////////////////////////////////////////////
+
+IParaPhysicsVehicle* ParaEngine::CPhysicsWorld::CreateVehicle(IParaPhysicsActor* pChassisActor)
+{
+	IParaPhysics* pPhysics = GetPhysicsInterface();
+	if (!pPhysics || !pChassisActor)
+		return nullptr;
+
+	IParaPhysicsVehicle* pVehicle = pPhysics->CreateVehicle(pChassisActor);
+	if (pVehicle)
+	{
+		m_vehicles.insert(pVehicle);
+	}
+	return pVehicle;
+}
+
+void ParaEngine::CPhysicsWorld::ReleaseVehicle(IParaPhysicsVehicle* pVehicle)
+{
+	if (!pVehicle)
+		return;
+
+	auto it = m_vehicles.find(pVehicle);
+	if (it != m_vehicles.end())
+	{
+		m_vehicles.erase(it);
+		if (m_pPhysicsWorld)
+		{
+			m_pPhysicsWorld->ReleaseVehicle(pVehicle);
+		}
+	}
+}
+
+int ParaEngine::CPhysicsWorld::AddWheelToVehicle(IParaPhysicsVehicle* pVehicle, const char* wheelConfig)
+{
+	if (!pVehicle || !wheelConfig)
+		return -1;
+
+	NPL::NPLObjectProxy msg = NPL::NPLHelper::StringToNPLTable(wheelConfig, (int)strlen(wheelConfig));
+	if (msg.GetType() != NPL::NPLObjectBase::NPLObjectType_Table)
+		return -1;
+
+	ParaPhysicsWheelDesc desc;
+
+	// Connection point
+	if (msg["ConnectionPointX"].GetType() == NPL::NPLObjectBase::NPLObjectType_Number)
+	{
+		desc.m_connectionPoint.x = (float)(double)msg["ConnectionPointX"];
+		desc.m_connectionPoint.y = (float)(double)msg["ConnectionPointY"];
+		desc.m_connectionPoint.z = (float)(double)msg["ConnectionPointZ"];
+	}
+
+	// Wheel direction (usually down)
+	if (msg["WheelDirectionX"].GetType() == NPL::NPLObjectBase::NPLObjectType_Number)
+	{
+		desc.m_wheelDirection.x = (float)(double)msg["WheelDirectionX"];
+		desc.m_wheelDirection.y = (float)(double)msg["WheelDirectionY"];
+		desc.m_wheelDirection.z = (float)(double)msg["WheelDirectionZ"];
+	}
+	else
+	{
+		desc.m_wheelDirection = PARAVECTOR3(0, -1, 0); // Default down
+	}
+
+	// Wheel axle (usually left or right)
+	if (msg["WheelAxleX"].GetType() == NPL::NPLObjectBase::NPLObjectType_Number)
+	{
+		desc.m_wheelAxle.x = (float)(double)msg["WheelAxleX"];
+		desc.m_wheelAxle.y = (float)(double)msg["WheelAxleY"];
+		desc.m_wheelAxle.z = (float)(double)msg["WheelAxleZ"];
+	}
+	else
+	{
+		desc.m_wheelAxle = PARAVECTOR3(-1, 0, 0); // Default left
+	}
+
+	// Other properties with defaults
+	if (msg["WheelRadius"].GetType() == NPL::NPLObjectBase::NPLObjectType_Number)
+		desc.m_wheelRadius = (float)(double)msg["WheelRadius"];
+	if (msg["WheelWidth"].GetType() == NPL::NPLObjectBase::NPLObjectType_Number)
+		desc.m_wheelWidth = (float)(double)msg["WheelWidth"];
+	if (msg["SuspensionRestLength"].GetType() == NPL::NPLObjectBase::NPLObjectType_Number)
+		desc.m_suspensionRestLength = (float)(double)msg["SuspensionRestLength"];
+	if (msg["SuspensionStiffness"].GetType() == NPL::NPLObjectBase::NPLObjectType_Number)
+		desc.m_suspensionStiffness = (float)(double)msg["SuspensionStiffness"];
+	if (msg["WheelsDampingCompression"].GetType() == NPL::NPLObjectBase::NPLObjectType_Number)
+		desc.m_wheelsDampingCompression = (float)(double)msg["WheelsDampingCompression"];
+	if (msg["WheelsDampingRelaxation"].GetType() == NPL::NPLObjectBase::NPLObjectType_Number)
+		desc.m_wheelsDampingRelaxation = (float)(double)msg["WheelsDampingRelaxation"];
+	if (msg["FrictionSlip"].GetType() == NPL::NPLObjectBase::NPLObjectType_Number)
+		desc.m_frictionSlip = (float)(double)msg["FrictionSlip"];
+	if (msg["RollInfluence"].GetType() == NPL::NPLObjectBase::NPLObjectType_Number)
+		desc.m_rollInfluence = (float)(double)msg["RollInfluence"];
+	if (msg["IsFrontWheel"].GetType() == NPL::NPLObjectBase::NPLObjectType_Bool)
+		desc.m_isFrontWheel = (bool)msg["IsFrontWheel"];
+
+	return pVehicle->AddWheel(desc);
+}
+
+//////////////////////////////////////////////////////////////////////////
+// Actor-based Lookup Implementation
+//////////////////////////////////////////////////////////////////////////
+
+int ParaEngine::CPhysicsWorld::GetConstraintsByActor(IParaPhysicsActor* pActor, std::vector<IParaPhysicsConstraint*>& outConstraints)
+{
+	outConstraints.clear();
+	if (!pActor)
+		return 0;
+
+	for (auto pConstraint : m_constraints)
+	{
+		if (pConstraint->GetActorA() == pActor || pConstraint->GetActorB() == pActor)
+		{
+			outConstraints.push_back(pConstraint);
+		}
+	}
+	return (int)outConstraints.size();
+}
+
+IParaPhysicsConstraint* ParaEngine::CPhysicsWorld::GetConstraintByActor(IParaPhysicsActor* pActor, int index)
+{
+	if (!pActor || index < 0)
+		return nullptr;
+
+	int count = 0;
+	for (auto pConstraint : m_constraints)
+	{
+		if (pConstraint->GetActorA() == pActor || pConstraint->GetActorB() == pActor)
+		{
+			if (count == index)
+				return pConstraint;
+			++count;
+		}
+	}
+	return nullptr;
+}
+
+int ParaEngine::CPhysicsWorld::GetConstraintCountByActor(IParaPhysicsActor* pActor)
+{
+	if (!pActor)
+		return 0;
+
+	int count = 0;
+	for (auto pConstraint : m_constraints)
+	{
+		if (pConstraint->GetActorA() == pActor || pConstraint->GetActorB() == pActor)
+		{
+			++count;
+		}
+	}
+	return count;
+}
+
+void ParaEngine::CPhysicsWorld::ReleaseConstraintsByActor(IParaPhysicsActor* pActor)
+{
+	if (!pActor)
+		return;
+
+	// Collect constraints to remove (can't modify set while iterating)
+	std::vector<IParaPhysicsConstraint*> toRemove;
+	for (auto pConstraint : m_constraints)
+	{
+		if (pConstraint->GetActorA() == pActor || pConstraint->GetActorB() == pActor)
+		{
+			toRemove.push_back(pConstraint);
+		}
+	}
+
+	// Release collected constraints
+	for (auto pConstraint : toRemove)
+	{
+		m_constraints.erase(pConstraint);
+		if (m_pPhysicsWorld)
+		{
+			m_pPhysicsWorld->ReleaseConstraint(pConstraint);
+		}
+	}
+}
+
+IParaPhysicsVehicle* ParaEngine::CPhysicsWorld::GetVehicleByActor(IParaPhysicsActor* pChassisActor)
+{
+	if (!pChassisActor)
+		return nullptr;
+
+	for (auto pVehicle : m_vehicles)
+	{
+		if (pVehicle->GetChassisActor() == pChassisActor)
+		{
+			return pVehicle;
+		}
+	}
+	return nullptr;
+}
+
+void ParaEngine::CPhysicsWorld::ReleaseVehicleByActor(IParaPhysicsActor* pChassisActor)
+{
+	if (!pChassisActor)
+		return;
+
+	IParaPhysicsVehicle* pVehicle = GetVehicleByActor(pChassisActor);
+	if (pVehicle)
+	{
+		ReleaseVehicle(pVehicle);
+	}
+}
+//////////////////////////////////////////////////////////////////////////
+// Biped-oriented Constraint/Vehicle Implementation
+//////////////////////////////////////////////////////////////////////////
+
+IParaPhysicsConstraint* ParaEngine::CPhysicsWorld::CreateJointForBiped(CBipedObject* pBiped, int constraintType, CBipedObject* pOtherBiped,
+	const Vector3& pivotInA, const Vector3& pivotInB,
+	const Vector3& axisInA, const Vector3& axisInB)
+{
+	if (!pBiped)
+		return nullptr;
+
+	// Ensure this biped has a dynamic physics actor
+	IParaPhysicsActor* pActorA = pBiped->GetDynamicPhysicsActor();
+	if (!pActorA)
+	{
+		pBiped->LoadDynamicPhysics();
+		pActorA = pBiped->GetDynamicPhysicsActor();
+		if (!pActorA)
+			return nullptr;
+	}
+
+	// Get the other actor if specified
+	IParaPhysicsActor* pActorB = nullptr;
+	if (pOtherBiped)
+	{
+		pActorB = pOtherBiped->GetDynamicPhysicsActor();
+		if (!pActorB)
+		{
+			pOtherBiped->LoadDynamicPhysics();
+			pActorB = pOtherBiped->GetDynamicPhysicsActor();
+		}
+	}
+
+	IParaPhysicsConstraint* pConstraint = CreateConstraint(
+		constraintType, pActorA, pActorB,
+		pivotInA, axisInA, pivotInB, axisInB, true);
+
+	if (pConstraint)
+	{
+		pConstraint->SetUserData(pBiped);
+	}
+
+	return pConstraint;
+}
+
+void ParaEngine::CPhysicsWorld::CreateJointForBipedStr(CBipedObject* pBiped, const char* config)
+{
+	if (!pBiped || !config)
+		return;
+
+	NPL::NPLObjectProxy msg = NPL::NPLHelper::StringToNPLTable(config, (int)strlen(config));
+	if (msg.GetType() != NPL::NPLObjectBase::NPLObjectType_Table)
+		return;
+
+	int constraintType = 1; // Default to hinge
+	if (msg["Type"].GetType() == NPL::NPLObjectBase::NPLObjectType_Number)
+		constraintType = (int)(double)msg["Type"];
+
+	Vector3 pivotInA(0, 0, 0), pivotInB(0, 0, 0);
+	Vector3 axisInA(0, 1, 0), axisInB(0, 1, 0);
+
+	if (msg["PivotAX"].GetType() == NPL::NPLObjectBase::NPLObjectType_Number)
+	{
+		pivotInA.x = (float)(double)msg["PivotAX"];
+		pivotInA.y = (float)(double)msg["PivotAY"];
+		pivotInA.z = (float)(double)msg["PivotAZ"];
+	}
+	if (msg["PivotBX"].GetType() == NPL::NPLObjectBase::NPLObjectType_Number)
+	{
+		pivotInB.x = (float)(double)msg["PivotBX"];
+		pivotInB.y = (float)(double)msg["PivotBY"];
+		pivotInB.z = (float)(double)msg["PivotBZ"];
+	}
+	if (msg["AxisAX"].GetType() == NPL::NPLObjectBase::NPLObjectType_Number)
+	{
+		axisInA.x = (float)(double)msg["AxisAX"];
+		axisInA.y = (float)(double)msg["AxisAY"];
+		axisInA.z = (float)(double)msg["AxisAZ"];
+	}
+	if (msg["AxisBX"].GetType() == NPL::NPLObjectBase::NPLObjectType_Number)
+	{
+		axisInB.x = (float)(double)msg["AxisBX"];
+		axisInB.y = (float)(double)msg["AxisBY"];
+		axisInB.z = (float)(double)msg["AxisBZ"];
+	}
+
+	// Find other object by name if specified
+	CBipedObject* pOtherBiped = nullptr;
+	if (msg["OtherObject"].GetType() == NPL::NPLObjectBase::NPLObjectType_String)
+	{
+		std::string otherName = (const std::string&)msg["OtherObject"];
+		if (!otherName.empty())
+		{
+			CBaseObject* pObj = CGlobals::GetScene()->GetGlobalObject(otherName);
+			if (pObj && pObj->GetType() == CBaseObject::BipedObject)
+			{
+				pOtherBiped = static_cast<CBipedObject*>(pObj);
+			}
+		}
+	}
+
+	IParaPhysicsConstraint* pConstraint = CreateJointForBiped(pBiped, constraintType, pOtherBiped, pivotInA, pivotInB, axisInA, axisInB);
+	
+	// Apply additional properties from the same config
+	if (pConstraint)
+	{
+		SetConstraintProperty(pConstraint, config);
+	}
+}
+
+void ParaEngine::CPhysicsWorld::SetJointPropertyByIndexForBiped(CBipedObject* pBiped, const char* config)
+{
+	if (!pBiped || !config)
+		return;
+
+	IParaPhysicsActor* pActor = pBiped->GetDynamicPhysicsActor();
+	if (!pActor)
+		return;
+
+	NPL::NPLObjectProxy msg = NPL::NPLHelper::StringToNPLTable(config, (int)strlen(config));
+	if (msg.GetType() != NPL::NPLObjectBase::NPLObjectType_Table)
+		return;
+
+	int index = 0;
+	if (msg["Index"].GetType() == NPL::NPLObjectBase::NPLObjectType_Number)
+		index = (int)(double)msg["Index"];
+
+	IParaPhysicsConstraint* pConstraint = GetConstraintByActor(pActor, index);
+	if (pConstraint)
+	{
+		SetConstraintProperty(pConstraint, config);
+	}
+}
+
+const char* ParaEngine::CPhysicsWorld::GetJointPropertyByIndexForBiped(CBipedObject* pBiped, int nSelectedIndex)
+{
+	if (!pBiped)
+		return "";
+
+	IParaPhysicsActor* pActor = pBiped->GetDynamicPhysicsActor();
+	if (!pActor)
+		return "";
+
+	IParaPhysicsConstraint* pConstraint = GetConstraintByActor(pActor, nSelectedIndex);
+	if (pConstraint)
+	{
+		return GetConstraintProperty(pConstraint);
+	}
+	return "";
+}
+
+bool ParaEngine::CPhysicsWorld::CreateVehicleForBiped(CBipedObject* pBiped)
+{
+	if (!pBiped)
+		return false;
+
+	// Check if we already have a vehicle
+	IParaPhysicsActor* pActor = pBiped->GetDynamicPhysicsActor();
+	if (pActor && GetVehicleByActor(pActor))
+		return true;
+
+	// Ensure this biped has a dynamic physics actor
+	if (!pActor)
+	{
+		pBiped->LoadDynamicPhysics();
+		pActor = pBiped->GetDynamicPhysicsActor();
+		if (!pActor)
+			return false;
+	}
+
+	IParaPhysicsVehicle* pVehicle = CreateVehicle(pActor);
+	if (pVehicle)
+	{
+		pVehicle->SetUserData(pBiped);
+	}
+	return pVehicle != nullptr;
+}
+
+void ParaEngine::CPhysicsWorld::SetVehicleControlForBipedStr(CBipedObject* pBiped, const char* config)
+{
+	if (!pBiped || !config)
+		return;
+
+	IParaPhysicsActor* pActor = pBiped->GetDynamicPhysicsActor();
+	IParaPhysicsVehicle* pVehicle = pActor ? GetVehicleByActor(pActor) : nullptr;
+	if (!pVehicle)
+		return;
+
+	NPL::NPLObjectProxy msg = NPL::NPLHelper::StringToNPLTable(config, (int)strlen(config));
+	if (msg.GetType() != NPL::NPLObjectBase::NPLObjectType_Table)
+		return;
+
+	int wheelCount = pVehicle->GetNumWheels();
+
+	// Process individual wheel controls: Steering0, Steering1, EngineForce0, Brake0, etc.
+	for (int i = 0; i < wheelCount; ++i)
+	{
+		char keyBuf[32];
+
+		snprintf(keyBuf, sizeof(keyBuf), "Steering%d", i);
+		if (msg[(const char*)keyBuf].GetType() == NPL::NPLObjectBase::NPLObjectType_Number)
+			pVehicle->SetSteeringValue((float)(double)msg[(const char*)keyBuf], i);
+
+		snprintf(keyBuf, sizeof(keyBuf), "EngineForce%d", i);
+		if (msg[(const char*)keyBuf].GetType() == NPL::NPLObjectBase::NPLObjectType_Number)
+			pVehicle->ApplyEngineForce((float)(double)msg[(const char*)keyBuf], i);
+
+		snprintf(keyBuf, sizeof(keyBuf), "Brake%d", i);
+		if (msg[(const char*)keyBuf].GetType() == NPL::NPLObjectBase::NPLObjectType_Number)
+			pVehicle->SetBrake((float)(double)msg[(const char*)keyBuf], i);
+	}
+
+	// Process shorthand controls: SteeringFront, SteeringAll, EngineForceRear, etc.
+	if (msg["SteeringAll"].GetType() == NPL::NPLObjectBase::NPLObjectType_Number)
+	{
+		float val = (float)(double)msg["SteeringAll"];
+		for (int i = 0; i < wheelCount; ++i)
+			pVehicle->SetSteeringValue(val, i);
+	}
+	if (msg["SteeringFront"].GetType() == NPL::NPLObjectBase::NPLObjectType_Number)
+	{
+		float val = (float)(double)msg["SteeringFront"];
+		// Assume first half are front wheels
+		int frontCount = wheelCount / 2;
+		for (int i = 0; i < frontCount; ++i)
+			pVehicle->SetSteeringValue(val, i);
+	}
+
+	if (msg["EngineForceAll"].GetType() == NPL::NPLObjectBase::NPLObjectType_Number)
+	{
+		float val = (float)(double)msg["EngineForceAll"];
+		for (int i = 0; i < wheelCount; ++i)
+			pVehicle->ApplyEngineForce(val, i);
+	}
+	if (msg["EngineForceRear"].GetType() == NPL::NPLObjectBase::NPLObjectType_Number)
+	{
+		float val = (float)(double)msg["EngineForceRear"];
+		// Assume last half are rear wheels
+		int frontCount = wheelCount / 2;
+		for (int i = frontCount; i < wheelCount; ++i)
+			pVehicle->ApplyEngineForce(val, i);
+	}
+	if (msg["EngineForceFront"].GetType() == NPL::NPLObjectBase::NPLObjectType_Number)
+	{
+		float val = (float)(double)msg["EngineForceFront"];
+		int frontCount = wheelCount / 2;
+		for (int i = 0; i < frontCount; ++i)
+			pVehicle->ApplyEngineForce(val, i);
+	}
+
+	if (msg["BrakeAll"].GetType() == NPL::NPLObjectBase::NPLObjectType_Number)
+	{
+		float val = (float)(double)msg["BrakeAll"];
+		for (int i = 0; i < wheelCount; ++i)
+			pVehicle->SetBrake(val, i);
+	}
+	if (msg["BrakeRear"].GetType() == NPL::NPLObjectBase::NPLObjectType_Number)
+	{
+		float val = (float)(double)msg["BrakeRear"];
+		int frontCount = wheelCount / 2;
+		for (int i = frontCount; i < wheelCount; ++i)
+			pVehicle->SetBrake(val, i);
+	}
+	if (msg["BrakeFront"].GetType() == NPL::NPLObjectBase::NPLObjectType_Number)
+	{
+		float val = (float)(double)msg["BrakeFront"];
+		int frontCount = wheelCount / 2;
+		for (int i = 0; i < frontCount; ++i)
+			pVehicle->SetBrake(val, i);
+	}
+}
+
+const char* ParaEngine::CPhysicsWorld::GetVehicleStateForBiped(CBipedObject* pBiped)
+{
+	static std::string sCode;
+	NPL::NPLObjectProxy msg;
+
+	if (!pBiped)
+	{
+		msg["HasVehicle"] = false;
+		msg["WheelCount"] = 0.0;
+		msg["Speed"] = 0.0;
+		NPL::NPLHelper::NPLTableToString(NULL, msg, sCode);
+		return sCode.c_str();
+	}
+
+	IParaPhysicsActor* pActor = pBiped->GetDynamicPhysicsActor();
+	IParaPhysicsVehicle* pVehicle = pActor ? GetVehicleByActor(pActor) : nullptr;
+	
+	msg["HasVehicle"] = (pVehicle != nullptr);
+	msg["WheelCount"] = (double)(pVehicle ? pVehicle->GetNumWheels() : 0);
+	msg["Speed"] = (double)(pVehicle ? pVehicle->GetCurrentSpeedKmHour() : 0.0f);
+
+	if (pVehicle)
+	{
+		PARAVECTOR3 fwd = pVehicle->GetForwardVector();
+		msg["ForwardX"] = (double)fwd.x;
+		msg["ForwardY"] = (double)fwd.y;
+		msg["ForwardZ"] = (double)fwd.z;
+	}
+
+	NPL::NPLHelper::NPLTableToString(NULL, msg, sCode);
+	return sCode.c_str();
+}
+
+void ParaEngine::CPhysicsWorld::SetConstraintPropertyForBiped(CBipedObject* pBiped, const char* property)
+{
+	if (!pBiped || !property)
+		return;
+	
+	// Parse to check if this is a joint creation or property modification
+	NPL::NPLObjectProxy msg = NPL::NPLHelper::StringToNPLTable(property, (int)strlen(property));
+	if (msg.GetType() != NPL::NPLObjectBase::NPLObjectType_Table)
+		return;
+
+	// If Type is specified, this is a joint creation request
+	if (msg["Type"].GetType() == NPL::NPLObjectBase::NPLObjectType_Number)
+	{
+		CreateJointForBipedStr(pBiped, property);
+	}
+	else
+	{
+		// Otherwise it's a property modification
+		SetJointPropertyByIndexForBiped(pBiped, property);
+	}
+}
+
+const char* ParaEngine::CPhysicsWorld::GetConstraintPropertyForBiped(CBipedObject* pBiped, int nIndex)
+{
+	if (!pBiped)
+		return "";
+	return GetJointPropertyByIndexForBiped(pBiped, nIndex);
+}
+
+bool ParaEngine::CPhysicsWorld::HasVehicleForBiped(CBipedObject* pBiped)
+{
+	if (!pBiped)
+		return false;
+	IParaPhysicsActor* pActor = pBiped->GetDynamicPhysicsActor();
+	return pActor && GetVehicleByActor(pActor) != nullptr;
+}
+
+int ParaEngine::CPhysicsWorld::AddWheelForBiped(CBipedObject* pBiped, const char* wheelConfig)
+{
+	if (!pBiped || !wheelConfig)
+		return -1;
+	IParaPhysicsActor* pActor = pBiped->GetDynamicPhysicsActor();
+	IParaPhysicsVehicle* pVehicle = pActor ? GetVehicleByActor(pActor) : nullptr;
+	if (!pVehicle)
+		return -1;
+	return AddWheelToVehicle(pVehicle, wheelConfig);
+}
+
+int ParaEngine::CPhysicsWorld::GetWheelCountForBiped(CBipedObject* pBiped)
+{
+	if (!pBiped)
+		return 0;
+	IParaPhysicsActor* pActor = pBiped->GetDynamicPhysicsActor();
+	IParaPhysicsVehicle* pVehicle = pActor ? GetVehicleByActor(pActor) : nullptr;
+	return pVehicle ? pVehicle->GetNumWheels() : 0;
+}
+
+float ParaEngine::CPhysicsWorld::GetVehicleSpeedForBiped(CBipedObject* pBiped)
+{
+	if (!pBiped)
+		return 0.0f;
+	IParaPhysicsActor* pActor = pBiped->GetDynamicPhysicsActor();
+	IParaPhysicsVehicle* pVehicle = pActor ? GetVehicleByActor(pActor) : nullptr;
+	return pVehicle ? pVehicle->GetCurrentSpeedKmHour() : 0.0f;
+}
+
+void ParaEngine::CPhysicsWorld::ResetVehicleSuspensionForBiped(CBipedObject* pBiped)
+{
+	if (!pBiped)
+		return;
+	IParaPhysicsActor* pActor = pBiped->GetDynamicPhysicsActor();
+	IParaPhysicsVehicle* pVehicle = pActor ? GetVehicleByActor(pActor) : nullptr;
+	if (pVehicle)
+	{
+		pVehicle->ResetSuspension();
+	}
 }

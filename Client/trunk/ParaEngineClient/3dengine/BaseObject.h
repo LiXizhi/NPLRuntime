@@ -12,6 +12,7 @@
 
 namespace ParaEngine
 {
+	struct IParaPhysicsActor;
 	class IParaDebugDraw;
 
 	/** object volume bit fields
@@ -544,7 +545,7 @@ namespace ParaEngine
 		ATTRIBUTE_METHOD1(CBaseObject, GetPhysicsShape_s, const char**) { *p1 = cls->GetPhysicsShape(); return S_OK; }
 		ATTRIBUTE_METHOD1(CBaseObject, SetPhysicsShape_s, const char*) { cls->SetPhysicsShape(p1); return S_OK; }
 
-		ATTRIBUTE_METHOD1(CBaseObject, GetPhysicsProperty_s, const char**) { *p1 = cls->GetPhysicsProperty(); return S_OK; }
+		ATTRIBUTE_METHOD1(CBaseObject, GetPhysicsProperty_s, const char**) { *p1 = cls->GetPhysicsProperty(*p1); return S_OK; }
 		ATTRIBUTE_METHOD1(CBaseObject, SetPhysicsProperty_s, const char*) { cls->SetPhysicsProperty(p1); return S_OK; }
 
 		ATTRIBUTE_METHOD1(CBaseObject, ApplyCentralImpulse_s, Vector3) { cls->ApplyCentralImpulse(p1); return S_OK; }
@@ -743,10 +744,11 @@ namespace ParaEngine
 		virtual void SetPhysicsShape(const char* shape) {}
 		virtual const char* GetPhysicsShape() { return "box"; }
 		virtual void SetPhysicsProperty(const char* property) {}
-		virtual const char* GetPhysicsProperty() { return "{}"; }
+		virtual const char* GetPhysicsProperty(const char* inputTable = NULL) { return "{}"; }
 		// 是否启用动态物理
 		virtual void EnableDynamicPhysics(bool bEnable) {}
 		virtual bool IsDynamicPhysicsEnabled() { return false; }
+		virtual IParaPhysicsActor* GetDynamicPhysicsActor() { return nullptr; }
 		// 设置物理速度
 		virtual void ApplyCentralImpulse(const Vector3& impulse) {}
 

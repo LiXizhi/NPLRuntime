@@ -14,6 +14,7 @@ namespace ParaEngine
 	struct ParaXEntity;
 	class CShapeAABB;
 	class BlockModel;
+	class CBipedObject;
 
 	class CPhysicsBlockShape
 	{
@@ -130,8 +131,29 @@ namespace ParaEngine
 		};
 
 	public:
+		/** set actor physics property from a NPL table string.
+		* @param actor: the physics actor
+		* @param property: NPL table string. 
+		* Support setting single property: {Mass=1.0, LinearDamping=0.1, ...}
+		* Support calling methods: 
+		*   {method="AddWheel", ConnectionPointX=1, ...}
+		*   {method="CreateVehicle"}
+		*   {method="ResetSuspension"}
+		*   {method="SetVehicleControl", Steering0=0.1, ...}
+		*   {method="ConstraintProperty", Type=1, Index=0, ...} (Create or Set Joint)
+		*   {method="ReleaseAllJoints"}
+		*/
 		void SetActorPhysicsProperty(IParaPhysicsActor* actor, const char* property);
-		const char* GetActorPhysicsProperty(IParaPhysicsActor* actor);
+
+		/** get actor physics property. 
+		* @param actor: the physics actor
+		* @param inputTable: (optional) NPL table string {method="", index=...}
+		* if inputTable is NULL or empty, it returns all standard properties.
+		* if inputTable contains:
+		*   {method="ConstraintProperty", Index=0}: returns property of the constraint at index
+		*   {method="VehicleState"}: returns vehicle state
+		*/
+		const char* GetActorPhysicsProperty(IParaPhysicsActor* actor, const char* inputTable = nullptr);
 
 	public:
 		CPhysicsWorld(void);
@@ -183,10 +205,176 @@ namespace ParaEngine
 		/** release an actor by calling this function. */
 		void ReleaseActor(IParaPhysicsActor* pActor);
 
+		//////////////////////////////////////////////////////////////////////////
+		// Constraint/Joint APIs
+		//////////////////////////////////////////////////////////////////////////
+
+		/** Create a constraint/joint between two physics actors
+		* @param constraintType: type of constraint (see ParaPhysicsConstraintType)
+		* @param pActorA: first rigid body (required)
+		* @param pActorB: second rigid body (optional, nullptr for world constraint)
+		* @param pivotInA: pivot point in local space of body A
+		* @param axisInA: axis in local space of body A (for hinge/slider)
+		* @param pivotInB: pivot point in local space of body B
+		* @param axisInB: axis in local space of body B (for hinge/slider)
+		* @param disableCollision: whether to disable collision between connected bodies
+		* @return: pointer to the created constraint, or nullptr on failure
+		*/
+		IParaPhysicsConstraint* CreateConstraint(int constraintType, IParaPhysicsActor* pActorA, IParaPhysicsActor* pActorB,
+			const Vector3& pivotInA, const Vector3& axisInA, const Vector3& pivotInB, const Vector3& axisInB,
+			bool disableCollision = true);
+
+		/** Release a constraint */
+		void ReleaseConstraint(IParaPhysicsConstraint* pConstraint);
+
+		/** Set constraint properties from a Lua table string */
+		void SetConstraintProperty(IParaPhysicsConstraint* pConstraint, const char* property);
+
+		/** Get constraint properties as a Lua table string */
+		const char* GetConstraintProperty(IParaPhysicsConstraint* pConstraint);
+
+		//////////////////////////////////////////////////////////////////////////
+		// Vehicle/Wheel APIs
+		//////////////////////////////////////////////////////////////////////////
+
+		/** Create a ray cast vehicle attached to a dynamic physics actor
+		* @param pChassisActor: the rigid body to use as chassis (must be dynamic)
+		* @return: pointer to the created vehicle, or nullptr on failure
+		*/
+		IParaPhysicsVehicle* CreateVehicle(IParaPhysicsActor* pChassisActor);
+
+		/** Release a vehicle */
+		void ReleaseVehicle(IParaPhysicsVehicle* pVehicle);
+
+		/** Add a wheel to a vehicle from a Lua table string configuration */
+		int AddWheelToVehicle(IParaPhysicsVehicle* pVehicle, const char* wheelConfig);
+
+		//////////////////////////////////////////////////////////////////////////
+		// Actor-based Lookup APIs (for game objects to query their physics)
+		//////////////////////////////////////////////////////////////////////////
+
+		/** Get all constraints associated with a given actor
+		* @param pActor: the physics actor to query
+		* @param outConstraints: output vector to receive constraint pointers
+		* @return: number of constraints found
+		*/
+		int GetConstraintsByActor(IParaPhysicsActor* pActor, std::vector<IParaPhysicsConstraint*>& outConstraints);
+
+		/** Get constraint by actor and index
+		* @param pActor: the physics actor
+		* @param index: index among constraints associated with this actor
+		* @return: constraint pointer or nullptr
+		*/
+		IParaPhysicsConstraint* GetConstraintByActor(IParaPhysicsActor* pActor, int index);
+
+		/** Get number of constraints associated with an actor */
+		int GetConstraintCountByActor(IParaPhysicsActor* pActor);
+
+		/** Release all constraints associated with an actor */
+		void ReleaseConstraintsByActor(IParaPhysicsActor* pActor);
+
+		/** Get vehicle associated with an actor (actor is the chassis)
+		* @param pChassisActor: the chassis rigid body
+		* @return: vehicle pointer or nullptr
+		*/
+		IParaPhysicsVehicle* GetVehicleByActor(IParaPhysicsActor* pChassisActor);
+
+		/** Release vehicle by chassis actor */
+		void ReleaseVehicleByActor(IParaPhysicsActor* pChassisActor);
+
 		/**	whether to do dynamic simulation. It is turned off by default, which only provide basic collision detection. 
 		*/
 		void SetDynamicsSimulationEnabled(bool bEnable);
 		bool IsDynamicsSimulationEnabled();
+
+		//////////////////////////////////////////////////////////////////////////
+		// Biped-oriented Constraint/Vehicle APIs (string-based, high-level)
+		// These methods work with biped objects directly
+		//////////////////////////////////////////////////////////////////////////
+
+		/** Create a joint between a biped and another biped (or world)
+		* @param pBiped: the biped creating the joint (its dynamic physics actor will be used)
+		* @param constraintType: type of constraint (0=P2P, 1=Hinge, 2=Slider, 3=ConeTwist, 4=6DoF, 5=Fixed)
+		* @param pOtherBiped: the other biped to connect to, or nullptr for world constraint
+		* @param pivotInA: pivot point in local space of this biped
+		* @param pivotInB: pivot point in local space of other biped (or world position if pOtherBiped is nullptr)
+		* @param axisInA: axis in local space of this biped (for hinge/slider joints)
+		* @param axisInB: axis in local space of other biped (for hinge/slider joints)
+		* @return: pointer to the created constraint, or nullptr on failure
+		*/
+		IParaPhysicsConstraint* CreateJointForBiped(CBipedObject* pBiped, int constraintType, CBipedObject* pOtherBiped,
+			const Vector3& pivotInA, const Vector3& pivotInB,
+			const Vector3& axisInA = Vector3(0, 1, 0), const Vector3& axisInB = Vector3(0, 1, 0));
+
+		/** Create a joint from NPL table config string for a biped
+		* Config: {Type=1, OtherObject="name", PivotAX=0, PivotAY=0.5, PivotAZ=0, PivotBX=0, PivotBY=0.5, PivotBZ=0, 
+		*          AxisAX=0, AxisAY=1, AxisAZ=0, AxisBX=0, AxisBY=1, AxisBZ=0, ...property}
+		* @param pBiped: the biped creating the joint
+		* @param config: NPL table string with joint configuration
+		*/
+		void CreateJointForBipedStr(CBipedObject* pBiped, const char* config);
+
+		/** Set joint property by index for a biped
+		* @param pBiped: the biped that owns the joint
+		* @param config: NPL table string: {Index=0, ...property}
+		*/
+		void SetJointPropertyByIndexForBiped(CBipedObject* pBiped, const char* config);
+
+		/** Get joint property by index for a biped
+		* @param pBiped: the biped that owns the joint
+		* @param nSelectedIndex: the joint index to query
+		* @return: NPL table string with joint properties
+		*/
+		const char* GetJointPropertyByIndexForBiped(CBipedObject* pBiped, int nSelectedIndex);
+
+		/** Create a vehicle for a biped (using biped as chassis)
+		* @param pBiped: the biped to create vehicle for
+		* @return: true if vehicle was created successfully
+		*/
+		bool CreateVehicleForBiped(CBipedObject* pBiped);
+
+		/** Set vehicle controls for a biped from NPL table config string
+		* Config: {Steering0=0.3, Steering1=0.3, EngineForce2=1000, EngineForce3=1000, Brake0=0, Brake1=0, ...}
+		* Or: {SteeringAll=0.3, EngineForceRear=1000, BrakeAll=100}
+		* @param pBiped: the biped that owns the vehicle
+		* @param config: NPL table string with vehicle controls
+		*/
+		void SetVehicleControlForBipedStr(CBipedObject* pBiped, const char* config);
+
+		/** Get vehicle state for a biped as NPL table string
+		* Returns: {Speed=50.5, WheelCount=4, HasVehicle=true, ForwardX=..., ForwardY=..., ForwardZ=...}
+		* @param pBiped: the biped that owns the vehicle
+		* @return: NPL table string with vehicle state
+		*/
+		const char* GetVehicleStateForBiped(CBipedObject* pBiped);
+
+		/** Set constraint property for a biped (creates or modifies joint)
+		* @param pBiped: the biped
+		* @param property: NPL table string with constraint configuration
+		*/
+		void SetConstraintPropertyForBiped(CBipedObject* pBiped, const char* property);
+
+		/** Get constraint property for a biped
+		* @param pBiped: the biped
+		* @param nIndex: the constraint index
+		* @return: NPL table string with constraint properties
+		*/
+		const char* GetConstraintPropertyForBiped(CBipedObject* pBiped, int nIndex);
+
+		/** Check if biped has a vehicle */
+		bool HasVehicleForBiped(CBipedObject* pBiped);
+
+		/** Add wheel to vehicle for a biped */
+		int AddWheelForBiped(CBipedObject* pBiped, const char* wheelConfig);
+
+		/** Get wheel count for a biped */
+		int GetWheelCountForBiped(CBipedObject* pBiped);
+
+		/** Get vehicle speed for a biped */
+		float GetVehicleSpeedForBiped(CBipedObject* pBiped);
+
+		/** Reset vehicle suspension for a biped */
+		void ResetVehicleSuspensionForBiped(CBipedObject* pBiped);
 
 	public:
 		/** get the physics interface. create one if one does not exist. */
@@ -200,6 +388,12 @@ namespace ParaEngine
 		TriangleMeshShape_Map_Type  m_listMeshShapes;
 		IParaPhysicsActor_Map_Type m_mapDynamicActors;
 		std::unordered_map<uint64_t, std::shared_ptr<CPhysicsBlock>> m_mapPhysicsBlocks;
+
+		/// all constraints/joints created in the physics world
+		IParaPhysicsConstraint_Set_Type m_constraints;
+
+		/// all vehicles created in the physics world
+		IParaPhysicsVehicle_Set_Type m_vehicles;
 
 		/// whether to do dynamic simulation. It is turned off by default, which only provide basic collision detection. 
 		bool m_bRunDynamicSimulation;

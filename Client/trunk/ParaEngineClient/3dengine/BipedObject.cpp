@@ -4765,11 +4765,11 @@ void ParaEngine::CBipedObject::SetPhysicsProperty(const char* property)
 	CGlobals::GetPhysicsWorld()->SetActorPhysicsProperty(m_dynamicPhysicsActor, property);
 }
 
-const char* ParaEngine::CBipedObject::GetPhysicsProperty()
+const char* ParaEngine::CBipedObject::GetPhysicsProperty(const char* inputTable)
 {
 	if (m_dynamicPhysicsActor)
 	{
-		return CGlobals::GetPhysicsWorld()->GetActorPhysicsProperty(m_dynamicPhysicsActor);
+		return CGlobals::GetPhysicsWorld()->GetActorPhysicsProperty(m_dynamicPhysicsActor, inputTable);
 	}
 	return "";
 }

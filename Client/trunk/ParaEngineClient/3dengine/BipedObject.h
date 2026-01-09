@@ -2,10 +2,13 @@
 #include "IGameObject.h"
 #include "ShadowVolume.h"
 #include "BipedWayPoint.h"
+#include "PhysicsWorld.h"
 
 namespace ParaEngine
 {
 	struct IParaPhysicsActor;
+	struct IParaPhysicsConstraint;
+	struct IParaPhysicsVehicle;
 
 	/**
 	*		It can be used to represent biped object(like human, re spawning monsters)
@@ -122,7 +125,7 @@ namespace ParaEngine
 		virtual int InstallFields(CAttributeClass* pClass, bool bOverride);
 
 		/** get attribute by child object. used to iterate across the attribute field hierarchy. */
-		virtual IAttributeFields* GetChildAttributeObject(const char* sName);
+		virtual IAttributeFields* GetChildAttributeObject(const char * sName);
 		/** get the number of child objects (row count) in the given column. please note different columns can have different row count. */
 		virtual int GetChildAttributeObjectCount(int nColumnIndex = 0);
 		/** we support multi-dimensional child object. by default objects have only one column. */
@@ -600,7 +603,7 @@ namespace ParaEngine
 		bool IsControlledExternally() const;
 		void SetIsControlledExternally(bool val);
 
-		/** if true, the biped can push dynamic physical objects. Default to false. When enabled,
+		/** if true, the biped can push dynamic physical objects. Default to false. When enabled, 
 		 * forces will be applied to dynamic objects based on biped mass, speed and shape (capsule by default). */
 		bool IsKinematic() const;
 		void SetKinematic(bool val);
@@ -791,7 +794,7 @@ namespace ParaEngine
 		virtual const char* GetPhysicsShape();
 		// 设置获取物理属性
 		virtual void SetPhysicsProperty(const char* property);
-		virtual const char* GetPhysicsProperty();
+		virtual const char* GetPhysicsProperty(const char* inputTable = nullptr);
 		// 是否启用动态物理
 		virtual void EnableDynamicPhysics(bool bEnable);
 		virtual bool IsDynamicPhysicsEnabled();
@@ -877,6 +880,14 @@ namespace ParaEngine
 		/** get the number of physics actors. If physics is not loaded, the returned value is 0. */
 		int GetStaticActorCount();
 		void EnableAutoAnimation(bool enable);
+
+		//////////////////////////////////////////////////////////////////////////
+		// Physics accessor for PhysicsWorld
+		//////////////////////////////////////////////////////////////////////////
+
+		/** Get the dynamic physics actor for this biped (used by PhysicsWorld) */
+		IParaPhysicsActor* GetDynamicPhysicsActor() { return m_dynamicPhysicsActor; }
+
 	protected:
 		void AnimateIdle(double dTimeDelta);
 		void AnimateMoving(double dTimeDelta, bool bSharpTurning = false);

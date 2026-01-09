@@ -1350,7 +1350,7 @@ object  ParaAttributeObject::GetField(const char*  sFieldname, const object& out
 	}
 	case FieldType_String:
 	{
-		const char* value;
+		const char* value = (type(output) == LUA_TSTRING) ? object_cast<const char*>(output) : NULL;
 		pField->Get(m_pAttribute.get(), &value);
 		return object(output.interpreter(), value);
 		break;

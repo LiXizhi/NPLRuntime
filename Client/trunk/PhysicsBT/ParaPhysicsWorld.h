@@ -1,6 +1,8 @@
 ﻿#pragma once
 
+#include "btBulletCollisionCommon.h"
 #include "btBulletDynamicsCommon.h"
+#include "BulletDynamics/Vehicle/btRaycastVehicle.h"
 #include "IParaPhysics.h"
 #include "PhysicsDebugDraw.h"
 
@@ -48,17 +50,17 @@ namespace ParaEngine
 	};
 
 	/** it is represent a shape that can be used to create various actors in the scene. */
-	struct BulletPhysicsActor :IParaPhysicsActor
+	struct BulletPhysicsActor : public IParaPhysicsActor
 	{
 		BulletPhysicsActor(btRigidBody* pActor);
 		~BulletPhysicsActor();
 
-		virtual void* get() {return m_pActor;};
-		virtual void Release();
-
 		// 设置获取物理矩阵  float[16]
 		virtual PARAMATRIX* GetWorldTransform(PARAMATRIX* pOut);
 		virtual void SetWorldTransform(const PARAMATRIX* pMatrix);
+
+		virtual void* get() {return m_pActor;};
+		virtual void Release();
 		virtual void ApplyCentralImpulse(const PARAVECTOR3& impulse);
 		virtual PARAVECTOR3 GetOrigin();
 
@@ -67,6 +69,7 @@ namespace ParaEngine
 		virtual bool IsStaticObject();
 		virtual bool IsKinematicObject();
 		virtual bool IsStaticOrKinematicObject();
+		
 		virtual float GetMass();
 		virtual void SetMass(float mass);
 		virtual PARAVECTOR3 GetLocalInertia();
@@ -119,11 +122,83 @@ namespace ParaEngine
 		btRigidBody* m_pActor;
 	};
 
+	/** Bullet physics constraint wrapper */
+	struct BulletPhysicsConstraint : public IParaPhysicsConstraint
+	{
+		BulletPhysicsConstraint(btTypedConstraint* pConstraint, ParaPhysicsConstraintType type, 
+			IParaPhysicsActor* pActorA, IParaPhysicsActor* pActorB);
+		~BulletPhysicsConstraint();
+
+		virtual void* get() override { return m_pConstraint; }
+		virtual void Release() override;
+
+		virtual ParaPhysicsConstraintType GetType() override { return m_type; }
+		virtual bool IsEnabled() override;
+		virtual void SetEnabled(bool enabled) override;
+		virtual float GetBreakingThreshold() override;
+		virtual void SetBreakingThreshold(float threshold) override;
+
+		// Get connected actors
+		virtual IParaPhysicsActor* GetActorA() override { return m_pActorA; }
+		virtual IParaPhysicsActor* GetActorB() override { return m_pActorB; }
+
+		// Hinge-specific
+		virtual float GetHingeAngle() override;
+		virtual void SetHingeLimit(float low, float high, float softness = 0.9f, float biasFactor = 0.3f, float relaxationFactor = 1.0f) override;
+		virtual void EnableHingeMotor(bool enable, float targetVelocity, float maxImpulse) override;
+
+		// Slider-specific  
+		virtual float GetSliderPosition() override;
+		virtual void SetSliderLimit(float lowerLimit, float upperLimit) override;
+		virtual void EnableSliderMotor(bool enable, float targetVelocity, float maxForce) override;
+
+		btTypedConstraint* m_pConstraint;
+		ParaPhysicsConstraintType m_type;
+		IParaPhysicsActor* m_pActorA;
+		IParaPhysicsActor* m_pActorB;
+	};
+
+	/** Bullet raycast vehicle wrapper */
+	struct BulletPhysicsVehicle : public IParaPhysicsVehicle
+	{
+		BulletPhysicsVehicle(btRaycastVehicle* pVehicle, btVehicleRaycaster* pRaycaster, IParaPhysicsActor* pChassisActor);
+		~BulletPhysicsVehicle();
+
+		virtual void* get() override { return m_pVehicle; }
+		virtual void Release() override;
+
+		// Get chassis actor
+		virtual IParaPhysicsActor* GetChassisActor() override { return m_pChassisActor; }
+
+		virtual int AddWheel(const ParaPhysicsWheelDesc& wheelDesc) override;
+		virtual int GetNumWheels() override;
+
+		virtual void SetSteeringValue(float steering, int wheelIndex) override;
+		virtual float GetSteeringValue(int wheelIndex) override;
+		virtual void ApplyEngineForce(float force, int wheelIndex) override;
+		virtual void SetBrake(float brake, int wheelIndex) override;
+
+		virtual PARAMATRIX* GetWheelTransform(int wheelIndex, PARAMATRIX* pOut) override;
+		virtual void UpdateWheelTransform(int wheelIndex, bool interpolatedTransform = true) override;
+
+		virtual float GetCurrentSpeedKmHour() override;
+		virtual PARAVECTOR3 GetForwardVector() override;
+
+		virtual void ResetSuspension() override;
+
+		btRaycastVehicle* m_pVehicle;
+		btVehicleRaycaster* m_pRaycaster;
+		btRaycastVehicle::btVehicleTuning m_tuning;
+		IParaPhysicsActor* m_pChassisActor;
+	};
+
 	using namespace std;
 
 	class CParaPhysicsWorld :public IParaPhysics
 	{
 	public:
+		// typedef std::set<BulletPhysicsActor*> BulletPhysicsActor_Map_Type;
+		// typedef std::set<BulletPhysicsShape*> BulletPhysicsShape_Array_Type;
 		CParaPhysicsWorld();
 		virtual ~CParaPhysicsWorld();
 
@@ -162,6 +237,26 @@ namespace ParaEngine
 		/** ray cast a given group. */
 		virtual IParaPhysicsActor* RaycastClosestShape(const PARAVECTOR3& vOrigin, const PARAVECTOR3& vDirection, DWORD dwType, RayCastHitResult& hit, short dwGroupMask, float fSensorRange);
 
+		//////////////////////////////////////////////////////////////////////////
+		// Constraint/Joint APIs
+		//////////////////////////////////////////////////////////////////////////
+
+		/** Create a constraint/joint between two actors */
+		virtual IParaPhysicsConstraint* CreateConstraint(const ParaPhysicsConstraintDesc& constraintDesc) override;
+
+		/** Release a constraint */
+		virtual void ReleaseConstraint(IParaPhysicsConstraint* pConstraint) override;
+
+		//////////////////////////////////////////////////////////////////////////
+		// Vehicle APIs
+		//////////////////////////////////////////////////////////////////////////
+
+		/** Create a ray cast vehicle attached to a chassis rigid body */
+		virtual IParaPhysicsVehicle* CreateVehicle(IParaPhysicsActor* pChassisActor) override;
+
+		/** Release a vehicle */
+		virtual void ReleaseVehicle(IParaPhysicsVehicle* pVehicle) override;
+
 		/** set the debug draw object for debugging physics world. */
 		virtual void	SetDebugDrawer(IParaDebugDraw*	debugDrawer);
 
@@ -179,6 +274,7 @@ namespace ParaEngine
 
 		/** bitwise of PhysicsDebugDrawModes */
 		virtual int		GetDebugDrawMode();
+
 	public:
 		/** get a pointer to physics scene object */
 		virtual btDynamicsWorld* GetScene()
@@ -201,11 +297,17 @@ namespace ParaEngine
 		// keep all actors
 		IParaPhysicsActor_Map_Type m_actors;
 
+		// keep all constraints
+		IParaPhysicsConstraint_Set_Type m_constraints;
+
+		// keep all vehicles
+		IParaPhysicsVehicle_Set_Type m_vehicles;
+
 		CPhysicsDebugDraw m_physics_debug_draw;
 		bool m_bInvertFaceWinding;
 		bool m_exit;
 	};
-	
+
 	class CParaContactResultCallback: public btCollisionWorld::ContactResultCallback
 	{
 	public:
