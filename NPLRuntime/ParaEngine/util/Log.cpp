@@ -436,6 +436,10 @@ namespace ParaEngine
 		FILE * pFile = GetLogFileHandle();
 		if(pFile)
 		{
+#if defined(HARMONY_OS)
+			// HarmonyOS: use ftell instead of fgetpos
+			return static_cast<int>(ftell(pFile));
+#else
 			fpos_t pos;
 			fgetpos(pFile, &pos);
 #ifdef WIN32
@@ -450,6 +454,7 @@ namespace ParaEngine
 			// return static_cast<int>(pos);
 #else
 			return static_cast<int>(pos.__pos);
+#endif
 #endif
 		}
 		return 0;

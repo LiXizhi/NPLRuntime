@@ -48,6 +48,8 @@
 #include "terrain/Terrain.h"
 #include "ViewportManager.h"
 #include "MoviePlatform.h"
+#include "ParaEngineAppBase.h"
+#include <rawfile/raw_file_manager.h>
 
 namespace ParaEngine {
 
@@ -55,10 +57,10 @@ namespace ParaEngine {
      * ParaEngine应用程序类 - HarmonyOS版本
      * 负责管理ParaEngine的核心功能和生命周期
      */
-    class CParaAppHarmony {
+    class CParaEngineAppHarmony : public CParaEngineAppBase {
     public:
-        CParaAppHarmony();
-        virtual ~CParaAppHarmony();
+        CParaEngineAppHarmony();
+        virtual ~CParaEngineAppHarmony();
 
         // 应用程序生命周期
         bool StartApp();

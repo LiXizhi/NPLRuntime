@@ -34,6 +34,8 @@ namespace ParaEngine
 		virtual bool FrameMove(double fTime) override;
 		virtual void OnPause(); // device lost
 		virtual void OnResume();
+		virtual void OnStop();
+		virtual void OnDestroy();
 		virtual void OnRendererRecreated(IRenderWindow* renderWindow);
 		virtual void OnRendererDestroyed();
 

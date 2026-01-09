@@ -666,7 +666,7 @@ void ParaEngine::CParaEngineAppBase::OnPause()
 	ActivateApp(false);
     setRenderEnabled(false);
 
-	SystemEvent e(SystemEvent::SYS_PAUSE, "");
+	SystemEvent e(SystemEvent::SYS_APP_PAUSE, "");
 	CGlobals::GetEventsCenter()->FireEvent(e);
 }
 
@@ -675,7 +675,19 @@ void ParaEngine::CParaEngineAppBase::OnResume()
 	ActivateApp(true);
     setRenderEnabled(true);
 
-	SystemEvent e(SystemEvent::SYS_RESUME, "");
+	SystemEvent e(SystemEvent::SYS_APP_RESUME, "");
+	CGlobals::GetEventsCenter()->FireEvent(e);
+}
+
+void ParaEngine::CParaEngineAppBase::OnStop()
+{
+	SystemEvent e(SystemEvent::SYS_APP_STOP, "");
+	CGlobals::GetEventsCenter()->FireEvent(e);
+}
+
+void ParaEngine::CParaEngineAppBase::OnDestroy()
+{
+	SystemEvent e(SystemEvent::SYS_APP_DESTROY, "");
 	CGlobals::GetEventsCenter()->FireEvent(e);
 }
 

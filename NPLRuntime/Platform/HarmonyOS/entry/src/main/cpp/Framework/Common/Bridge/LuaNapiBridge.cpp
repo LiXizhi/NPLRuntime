@@ -6,6 +6,7 @@
 //-----------------------------------------------------------------------------
 
 #include "LuaNapiBridge.h"
+#include "../../../napi/ParaEngineHelper.h"
 #include <hilog/log.h>
 #include <fstream>
 #include <filesystem>
@@ -375,7 +376,7 @@ namespace ParaEngine {
 
     std::string LuaNapiBridge::readAssetFile(const std::string& fileName) {
         // 使用ResourceManager读取资源文件
-        std::string content = NAPIHelper::readAssetFile(fileName);
+        std::string content = ParaEngineHelper::getInstance()->readAssetFile(fileName);
         return content;
     }
 

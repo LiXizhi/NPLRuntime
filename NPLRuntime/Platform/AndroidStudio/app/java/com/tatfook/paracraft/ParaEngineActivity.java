@@ -81,6 +81,7 @@ public class ParaEngineActivity extends AppCompatActivity {
     // Optional meta-that can be in the manifest for this component,
     // specifying the name of the native shared library to load. If not specified, "main" is used.
     public static final String META_DATA_LIB_NAME = "android.app.lib_name";
+    public static final String ACTION_ENGINE_ACTIVITY_DESTROYED = "com.tatfook.paracraft.ACTION_ENGINE_ACTIVITY_DESTROYED";
 
     private ResizeLayout mFrameLayout = null ;
     private ParaEngineGLSurfaceView mGLSurfaceView = null;
@@ -93,9 +94,10 @@ public class ParaEngineActivity extends AppCompatActivity {
     private WebView mLoadingWebView = null;
     private Handler mLoadingHandler = new Handler();
     
-    // 加载方式配置：0=Java UI, 1=WebView
+    // 加载方式配置：0=Java UI, 1=WebView, 2=无动画(调试用)
     private static final int LOADING_MODE_JAVA = 0;
     private static final int LOADING_MODE_WEBVIEW = 1;
+    private static final int LOADING_MODE_NONE = 2; // 不显示任何加载动画，用于调试
     private static int sDefaultLoadingMode = LOADING_MODE_WEBVIEW; // 静态默认加载模式
     private int mLoadingMode = sDefaultLoadingMode; // 实例加载模式，默认使用静态设置
     
@@ -105,6 +107,9 @@ public class ParaEngineActivity extends AppCompatActivity {
     private ProgressBar mLoadingProgress = null;
     private TextView mStatusText = null;
     private int mJavaMaxProgress = 0; // Java UI最大进度值，用于防倒退
+    
+    // 健康游戏忠告控制
+    private static boolean sShowHealthAdvisory = true; // 默认显示健康游戏忠告
 
     public static ParaEngineActivity getContext() {
         return sContext;
@@ -112,23 +117,27 @@ public class ParaEngineActivity extends AppCompatActivity {
     
     /**
      * 设置加载模式
-     * @param mode 0=Java UI, 1=WebView
+     * @param mode 0=Java UI, 1=WebView, 2=无动画(调试用)
      */
     @Keep
     public static void setLoadingMode(int mode) {
         if (sContext != null) {
             sContext.mLoadingMode = mode;
-            Log.d("ParaEngineActivity", "Loading mode set to: " + (mode == LOADING_MODE_JAVA ? "Java UI" : "WebView"));
+            String modeName = mode == LOADING_MODE_JAVA ? "Java UI" : 
+                            (mode == LOADING_MODE_WEBVIEW ? "WebView" : "None (Debug)");
+            Log.d("ParaEngineActivity", "Loading mode set to: " + modeName);
         } else {
             // 如果context还没有初始化，设置默认值
             sDefaultLoadingMode = mode;
-            Log.d("ParaEngineActivity", "Default loading mode set to: " + (mode == LOADING_MODE_JAVA ? "Java UI" : "WebView"));
+            String modeName = mode == LOADING_MODE_JAVA ? "Java UI" : 
+                            (mode == LOADING_MODE_WEBVIEW ? "WebView" : "None (Debug)");
+            Log.d("ParaEngineActivity", "Default loading mode set to: " + modeName);
         }
     }
     
     /**
      * 获取当前加载模式
-     * @return 0=Java UI, 1=WebView
+     * @return 0=Java UI, 1=WebView, 2=无动画(调试用)
      */
     @Keep
     public static int getLoadingMode() {
@@ -141,12 +150,14 @@ public class ParaEngineActivity extends AppCompatActivity {
     
     /**
      * 设置默认加载模式（在Activity创建之前调用）
-     * @param mode 0=Java UI, 1=WebView
+     * @param mode 0=Java UI, 1=WebView, 2=无动画(调试用)
      */
     @Keep
     public static void setDefaultLoadingMode(int mode) {
         sDefaultLoadingMode = mode;
-        Log.d("ParaEngineActivity", "Default loading mode set to: " + (mode == LOADING_MODE_JAVA ? "Java UI" : "WebView"));
+        String modeName = mode == LOADING_MODE_JAVA ? "Java UI" : 
+                        (mode == LOADING_MODE_WEBVIEW ? "WebView" : "None (Debug)");
+        Log.d("ParaEngineActivity", "Default loading mode set to: " + modeName);
         
         // 如果Activity已经存在，也同时更新实例
         if (sContext != null) {
@@ -157,7 +168,7 @@ public class ParaEngineActivity extends AppCompatActivity {
     
     /**
      * 获取默认加载模式
-     * @return 0=Java UI, 1=WebView
+     * @return 0=Java UI, 1=WebView, 2=无动画(调试用)
      */
     @Keep
     public static int getDefaultLoadingMode() {
@@ -166,21 +177,33 @@ public class ParaEngineActivity extends AppCompatActivity {
     
     /**
      * 设置实例的加载模式（实例方法）
-     * @param mode 0=Java UI, 1=WebView
+     * @param mode 0=Java UI, 1=WebView, 2=无动画(调试用)
      */
     @Keep
     public void setInstanceLoadingMode(int mode) {
         this.mLoadingMode = mode;
-        Log.d("ParaEngineActivity", "Instance loading mode set to: " + (mode == LOADING_MODE_JAVA ? "Java UI" : "WebView"));
+        String modeName = mode == LOADING_MODE_JAVA ? "Java UI" : 
+                        (mode == LOADING_MODE_WEBVIEW ? "WebView" : "None (Debug)");
+        Log.d("ParaEngineActivity", "Instance loading mode set to: " + modeName);
     }
     
     /**
      * 获取实例的加载模式（实例方法）
-     * @return 0=Java UI, 1=WebView
+     * @return 0=Java UI, 1=WebView, 2=无动画(调试用)
      */
     @Keep
     public int getInstanceLoadingMode() {
         return this.mLoadingMode;
+    }
+    
+    /**
+     * 设置是否显示健康游戏忠告
+     * @param show true=显示，false=不显示
+     */
+    @Keep
+    public static void setShowHealthAdvisory(boolean show) {
+        sShowHealthAdvisory = show;
+        Log.d("ParaEngineActivity", "Health advisory display set to: " + show);
     }
 
     @Keep
@@ -267,6 +290,9 @@ public class ParaEngineActivity extends AppCompatActivity {
                         } else if (sContext.mLoadingMode == LOADING_MODE_JAVA) {
                             // Java UI模式：更新原生Java UI
                             sContext.updateJavaLoadingProgress(name, progress, message);
+                        } else if (sContext.mLoadingMode == LOADING_MODE_NONE) {
+                            // 无动画模式：只记录日志，不更新UI
+                            Log.d("ParaEngineActivity", "Loading progress (no animation): " + name + " = " + progress + "%");
                         }
                     }
                     
@@ -286,6 +312,7 @@ public class ParaEngineActivity extends AppCompatActivity {
                                             } else if (sContext.mLoadingMode == LOADING_MODE_JAVA) {
                                                 sContext.hideJavaLoadingAnimation();
                                             }
+                                            // LOADING_MODE_NONE 模式不需要隐藏动画，因为从没显示过
                                         }
                                     }, 500); // 延迟500ms
                                 }
@@ -345,6 +372,7 @@ public class ParaEngineActivity extends AppCompatActivity {
                             } else if (ParaEngineActivity.this.mLoadingMode == LOADING_MODE_JAVA && ParaEngineActivity.this.mJavaLoadingView != null) {
                                 ParaEngineActivity.this.mJavaLoadingView.bringToFront();
                             }
+                            // LOADING_MODE_NONE 模式不需要把任何动画层放到前面
                         }
                         
                         Log.d("ParaEngineActivity", "EditText added and configured after GL rendering");
@@ -557,6 +585,11 @@ public class ParaEngineActivity extends AppCompatActivity {
     private void startJavaLoadingAnimation() {
         Log.d("ParaEngineActivity", "Starting Java UI loading animation");
         
+        // 检测系统语言
+        String language = getResources().getConfiguration().locale.getLanguage();
+        boolean isChineseSystem = language.equals("zh");
+        Log.d("ParaEngineActivity", "System language: " + language + ", isChineseSystem: " + isChineseSystem);
+        
         try {
             // 尝试加载布局文件
             int layoutId = getResources().getIdentifier("loading_layout", "layout", getPackageName());
@@ -576,6 +609,11 @@ public class ParaEngineActivity extends AppCompatActivity {
                 }
                 if (statusTextId != 0) {
                     mStatusText = mJavaLoadingView.findViewById(statusTextId);
+                }
+                
+                // 如果加载了布局文件，在其上方添加健康游戏忠告（仅中文系统且开关打开）
+                if (isChineseSystem && sShowHealthAdvisory && mJavaLoadingView instanceof ViewGroup) {
+                    addHealthAdvisoryToView((ViewGroup) mJavaLoadingView);
                 }
             } else {
                 // 如果布局文件不存在，创建简单的备用UI
@@ -608,16 +646,54 @@ public class ParaEngineActivity extends AppCompatActivity {
     }
     
     /**
+     * 添加健康游戏忠告到指定视图
+     */
+    private void addHealthAdvisoryToView(ViewGroup parentView) {
+        Log.d("ParaEngineActivity", "Adding health advisory to loading view");
+        
+        // 创建忠告文本视图，使用3行简洁排版
+        TextView healthAdvisory = new TextView(this);
+        healthAdvisory.setText("健康游戏忠告\n" +
+                              "抵制不良游戏，拒绝盗版游戏。注意自我保护，谨防受骗上当。\n" +
+                              "适度游戏益脑，沉迷游戏伤身。合理安排时间，享受健康生活。");
+        healthAdvisory.setTextSize(13);
+        healthAdvisory.setTextColor(0xCCFFFFFF); // 80%透明度白色
+        healthAdvisory.setGravity(android.view.Gravity.CENTER);
+        healthAdvisory.setLineSpacing(6, 1.0f);
+        
+        android.widget.LinearLayout.LayoutParams advisoryParams = new android.widget.LinearLayout.LayoutParams(
+            android.widget.LinearLayout.LayoutParams.MATCH_PARENT,
+            android.widget.LinearLayout.LayoutParams.WRAP_CONTENT
+        );
+        advisoryParams.setMargins(40, 50, 40, 40);
+        healthAdvisory.setLayoutParams(advisoryParams);
+        
+        // 将忠告添加到视图底部
+        parentView.addView(healthAdvisory);
+    }
+    
+    /**
      * 创建备用的Java UI加载界面
      */
     private void createFallbackLoadingView() {
         Log.d("ParaEngineActivity", "Creating fallback Java UI loading view");
         
+        // 检测系统语言
+        String language = getResources().getConfiguration().locale.getLanguage();
+        boolean isChineseSystem = language.equals("zh");
+        Log.d("ParaEngineActivity", "System language: " + language + ", isChineseSystem: " + isChineseSystem);
+        
         // 创建主容器
         android.widget.LinearLayout container = new android.widget.LinearLayout(this);
         container.setOrientation(android.widget.LinearLayout.VERTICAL);
         container.setGravity(android.view.Gravity.CENTER);
-        container.setBackgroundColor(0xFF667EEA); // 设置渐变背景色
+        
+        // 创建渐变背景
+        android.graphics.drawable.GradientDrawable gradientDrawable = new android.graphics.drawable.GradientDrawable(
+            android.graphics.drawable.GradientDrawable.Orientation.TOP_BOTTOM,
+            new int[]{0xFF667EEA, 0xFF764BA2} // 紫色渐变
+        );
+        container.setBackground(gradientDrawable);
         
         // 创建标题
         TextView titleText = new TextView(this);
@@ -673,6 +749,25 @@ public class ParaEngineActivity extends AppCompatActivity {
         mStatusText.setTextColor(0xCCFFFFFF);
         mStatusText.setTypeface(null, android.graphics.Typeface.ITALIC);
         container.addView(mStatusText);
+        
+        // 在底部添加健康游戏忠告（仅中文系统且开关打开）
+        if (isChineseSystem && sShowHealthAdvisory) {
+            TextView healthAdvisory = new TextView(this);
+            healthAdvisory.setText("健康游戏忠告\n" +
+                                  "抵制不良游戏，拒绝盗版游戏。注意自我保护，谨防受骗上当。\n" +
+                                  "适度游戏益脑，沉迷游戏伤身。合理安排时间，享受健康生活。");
+            healthAdvisory.setTextSize(13);
+            healthAdvisory.setTextColor(0xCCFFFFFF); // 80%透明度白色
+            healthAdvisory.setGravity(android.view.Gravity.CENTER);
+            healthAdvisory.setLineSpacing(6, 1.0f);
+            android.widget.LinearLayout.LayoutParams advisoryParams = new android.widget.LinearLayout.LayoutParams(
+                android.widget.LinearLayout.LayoutParams.MATCH_PARENT,
+                android.widget.LinearLayout.LayoutParams.WRAP_CONTENT
+            );
+            advisoryParams.setMargins(40, 50, 40, 40);
+            healthAdvisory.setLayoutParams(advisoryParams);
+            container.addView(healthAdvisory);
+        }
         
         mJavaLoadingView = container;
     }
@@ -782,6 +877,31 @@ public class ParaEngineActivity extends AppCompatActivity {
         System.exit(0);
     }
 
+    /**
+     * 重启应用程序
+     */
+    private void restartApp() {
+        try {
+            // 获取应用的启动Intent
+            Intent intent = getPackageManager().getLaunchIntentForPackage(getPackageName());
+            if (intent != null) {
+                intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_NEW_TASK);
+                intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK);
+                
+                // 启动应用
+                startActivity(intent);
+                
+                // 结束当前进程
+                android.os.Process.killProcess(android.os.Process.myPid());
+                System.exit(0);
+            }
+        } catch (Exception e) {
+            Log.e("ParaEngineActivity", "Failed to restart app: " + e.getMessage());
+            // 如果重启失败，直接退出
+            android.os.Process.killProcess(android.os.Process.myPid());
+        }
+    }
+
     public static boolean HasPermission(String strPermission){
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) {
             return true;
@@ -850,6 +970,27 @@ public class ParaEngineActivity extends AppCompatActivity {
 
     public void OpenFileDialog(String filter) {
         mOpenFileDialogLuancher.launch(filter);
+    }
+
+    /**
+     * Intent to the outer MainActivity
+     * This method is mainly provided for AAR usage
+     */
+    public void intentToMainActivity() {
+        try {
+            // Get the package name of the host application
+            String packageName = getPackageName();
+            
+            // Create intent to MainActivity
+            Intent intent = new Intent();
+            intent.setClassName(packageName, packageName + ".MainActivity");
+            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            
+            // Start the MainActivity
+            startActivity(intent);
+        } catch (Exception e) {
+            Log.e("ParaEngineActivity", "Failed to intent to MainActivity: " + e.getMessage());
+        }
     }
 
     protected void RegisterActivityResultLauncher() {
@@ -959,12 +1100,28 @@ public class ParaEngineActivity extends AppCompatActivity {
     protected void onDestroy() {
         super.onDestroy();
         ParaEnginePluginWrapper.onDestroy();
+        ParaEngineHelper.onDestroy();
+
+        Log.d("ParaEngineActivity", "ParaEngineActivity onDestroy");
+
+        if (isAarLaunchMode()) {
+            // Intent destroyIntent = new Intent(ACTION_ENGINE_ACTIVITY_DESTROYED);
+            // destroyIntent.putExtra("activityClass", getClass().getName());
+            // destroyIntent.putExtra("timestamp", System.currentTimeMillis());
+            // destroyIntent.setPackage(getPackageName());
+            // sendBroadcast(destroyIntent);
+
+            // 在AAR模式下重启应用
+            Log.d("ParaEngineActivity", "AAR mode detected, restarting app from onDestroy");
+            restartApp();
+        }
     }
 
     @Override
     protected void onPause() {
         super.onPause();
         ParaEnginePluginWrapper.onPause();
+        ParaEngineHelper.onPause();
 
 //        if (mGLSurfaceView != null)
 //            mGLSurfaceView.onPause();
@@ -982,6 +1139,14 @@ public class ParaEngineActivity extends AppCompatActivity {
         super.onActivityResult(requestCode, resultCode, data);
         ParaEnginePluginWrapper.onActivityResult(requestCode, resultCode, data);
         ScreenRecorder.onActivityResult(requestCode, resultCode, data);
+        
+        // 处理WebView的文件选择结果
+        if (mWebViewHelper != null) {
+            ParaEngineWebView webView = mWebViewHelper.getCurrentWebView();
+            if (webView != null) {
+                webView.onActivityResult(requestCode, resultCode, data);
+            }
+        }
     }
 
     @Override
@@ -1002,6 +1167,7 @@ public class ParaEngineActivity extends AppCompatActivity {
     protected void onStop() {
         super.onStop();
         ParaEnginePluginWrapper.onStop();
+        ParaEngineHelper.onStop();
         if (mGLSurfaceView != null)
             mGLSurfaceView.setVisibility(View.INVISIBLE);
     }
@@ -1056,6 +1222,8 @@ public class ParaEngineActivity extends AppCompatActivity {
             } else if (this.mLoadingMode == LOADING_MODE_JAVA) {
                 Log.d("ParaEngineActivity", "Starting Java UI loading animation");
                 this.startJavaLoadingAnimation();
+            } else if (this.mLoadingMode == LOADING_MODE_NONE) {
+                Log.d("ParaEngineActivity", "Loading mode is NONE (Debug), no animation will be shown");
             }
             new Handler().postDelayed(new Runnable(){
                 @Override

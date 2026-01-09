@@ -87,10 +87,15 @@ namespace ParaEngine
 			SYS_WM_SETTINGCHANGE = 4,
 			// 
 			SYS_RENDERER_RECREATED = 5,
-			//
-			SYS_PAUSE = 6,
-			//
-			SYS_RESUME = 7,
+			// App life cycle events (Android/iOS/Mobile)
+			// Android: onPause, iOS: applicationWillResignActive
+			SYS_APP_PAUSE = 6,
+			// Android: onResume, iOS: applicationDidBecomeActive
+			SYS_APP_RESUME = 7,
+			// Android: onStop, iOS: applicationDidEnterBackground
+			SYS_APP_STOP = 8,
+			// Android: onDestroy, iOS: applicationWillTerminate
+			SYS_APP_DESTROY = 9,
 		};
 	public:
 		SystemEvent(int nType, const string& sCode) :m_nType(nType), m_sCode(sCode), m_bIsAsyncMode(true){};

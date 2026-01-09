@@ -23,13 +23,14 @@ android {
         
         externalNativeBuild {
             cmake {
-                arguments "-DCMAKE_FIND_ROOT_PATH=", "-DANDROID_STL=c++_shared", "-DANDROID_TOOLCHAIN=clang", "-DANDROID_ARM_NEON=TRUE", "-DANDROID_STUDIO=TRUE", "-DNPLRUNTIME_OCE=TRUE", "-DHB_HAVE_FREETYPE=ON"
-                cppFlags "-frtti -fexceptions -fsigned-char -std=c++17"
+                arguments "-DCMAKE_FIND_ROOT_PATH=", "-DANDROID_STL=c++_shared", "-DANDROID_TOOLCHAIN=clang", "-DANDROID_ARM_NEON=TRUE", "-DANDROID_STUDIO=TRUE", "-DNPLRUNTIME_OCE=TRUE", "-DHB_HAVE_FREETYPE=ON", "-DCMAKE_ANDROID_PAGE_SIZE=16384"
+                cppFlags "-frtti -fexceptions -fsigned-char -std=c++17", "-Wl,-z,max-page-size=16384"
+                cFlags "-Wl,-z,max-page-size=16384", "-Wno-implicit-function-declaration", "-D_GNU_SOURCE", "-D_POSIX_C_SOURCE=200809L"
             }
         }
     }
 
-    ndkVersion='23.1.7779620'
+    ndkVersion='27.3.13750724'
 
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_17

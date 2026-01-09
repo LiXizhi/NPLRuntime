@@ -1,8 +1,7 @@
 //-----------------------------------------------------------------------------
 // ParaEngineHelper.h - HarmonyOS NAPI Version
-// Authors: LanZhiHong, big
+// Authors: big
 // CreateDate: 2025.8.4
-// ModifyDate: 2025.8.4
 //-----------------------------------------------------------------------------
 
 #pragma once
@@ -70,6 +69,9 @@ namespace ParaEngine {
         // 网络状态
         bool isNetworkAvailable();
         std::string getNetworkType();
+
+        // 语言相关
+        std::string getCurrentLanguage();
         
         // 从ArkTS回调到Native的方法
         static void onEditBoxResult(const std::string& callbackId, const std::string& result);

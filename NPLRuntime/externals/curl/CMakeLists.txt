@@ -1,6 +1,13 @@
 
 
-if(ANDROID)
+if(HARMONY_OS)
+	# HarmonyOS: Create a stub library for now
+	# TODO: Build curl specifically for HarmonyOS or use HarmonyOS native networking APIs
+	add_library(libcurl INTERFACE)
+    target_include_directories(libcurl INTERFACE include/android)
+    # Don't link the Android prebuilt libcurl.a for HarmonyOS
+    target_link_libraries(libcurl INTERFACE para_libssl para_libcrypto)
+elseif(ANDROID)
 	add_library(libcurl INTERFACE)
     target_include_directories(libcurl INTERFACE include/android)
     target_link_libraries(libcurl INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/prebuilt/android/${CMAKE_ANDROID_ARCH_ABI}/libcurl.a para_libssl para_libcrypto)

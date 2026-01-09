@@ -490,4 +490,14 @@ public class ParaEngineWebViewHelper {
             }
         });
     }
+
+    public static ParaEngineWebView getCurrentWebView() {
+        if (isOpenUrlLoaded) {
+            return webViews.get(openUrlViewTag);
+        }
+        if (webViews.size() > 0) {
+            return webViews.valueAt(webViews.size() - 1);
+        }
+        return null;
+    }
 }

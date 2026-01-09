@@ -3,7 +3,7 @@
 # CreateDate: 2018.11.02
 # ModifyDate: 2021.10.28
 
-if (ANDROID)
+if (ANDROID OR HARMONY_OS)
 	add_library(luajit21 INTERFACE)
 	target_include_directories(luajit21 INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/include)
     target_link_libraries(luajit21 INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/prebuilt/android/${CMAKE_ANDROID_ARCH_ABI}/libluajit.a)

@@ -1,6 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-          package="com.tatfook.paracraft"
           android:versionCode="4"
           android:versionName="1.4">
     <!-- This is the platform API where NativeActivity was introduced. -->
@@ -75,6 +74,15 @@
         <service android:name="com.tatfook.plugin.bluetooth.BluetoothLeService"
                  android:enabled="true"
                  android:exported="false" />
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.fileprovider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_paths" />
+        </provider>
         <meta-data android:name="PlguinWrapper"
                    android:value="@string/PluginInfo"/>
         <!--要记得在build.gradle里添加manifestPlaceholders-->

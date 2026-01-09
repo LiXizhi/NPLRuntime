@@ -11,3 +11,5 @@ Diagnostics:
 
   UnusedIncludes: Strict
   UnusedFunctions: Check
+Hover:
+  ShowNewHover: Yes

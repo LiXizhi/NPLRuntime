@@ -1,8 +1,7 @@
 //-----------------------------------------------------------------------------
 // NAPIHelper.h - HarmonyOS NAPI Helper
-// Authors: LanZhiHong, big
+// Authors: big
 // CreateDate: 2025.8.4
-// ModifyDate: 2025.8.4
 //-----------------------------------------------------------------------------
 
 #pragma once

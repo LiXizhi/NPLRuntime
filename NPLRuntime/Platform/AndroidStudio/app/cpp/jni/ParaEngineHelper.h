@@ -25,6 +25,8 @@ namespace ParaEngine {
 
 		static void OpenFileDialog(const char* filter, const char* activate_file, int callback_id);
 		static void OpenFileDialogCallback(std::string filepath);
+		
+		static void intentToMainActivity();
 	private:
 		static const std::string classname;
 	};

@@ -150,6 +150,10 @@ namespace ParaEngine {
 		NPL::NPLRuntimeState_ptr rsptr = NPL::CNPLRuntime::GetInstance()->GetRuntimeState(s_activate_file);
 		NPL::CNPLRuntime::GetInstance()->NPL_Activate(rsptr, s_activate_file.c_str(), ss.str().c_str());
 	}
+
+	void ParaEngineHelper::intentToMainActivity() {
+		JniHelper::callStaticVoidMethod(classname, "intentToMainActivity");
+	}
 }
 
 extern "C" {
@@ -186,4 +190,16 @@ extern "C" {
         env->DeleteLocalRef(str_protocol);
         AppDelegate::getInstance().onCmdLine(cmd);
     }
+
+	JNIEXPORT void JNICALL Java_com_tatfook_paracraft_ParaEngineHelper_onPause(JNIEnv *env, jclass clazz) {
+		AppDelegate::getInstance().OnPause();
+	}
+
+	JNIEXPORT void JNICALL Java_com_tatfook_paracraft_ParaEngineHelper_onStop(JNIEnv *env, jclass clazz) {
+		AppDelegate::getInstance().OnStop();
+	}
+
+	JNIEXPORT void JNICALL Java_com_tatfook_paracraft_ParaEngineHelper_onDestroy(JNIEnv *env, jclass clazz) {
+		AppDelegate::getInstance().OnDestroy();
+	}
 }

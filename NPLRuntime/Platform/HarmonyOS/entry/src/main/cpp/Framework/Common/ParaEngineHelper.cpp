@@ -242,6 +242,10 @@ namespace ParaEngine {
         return callArkTSMethodWithStringResult("getNetworkType", {});
     }
 
+    std::string ParaEngineHelper::getCurrentLanguage() {
+        return callArkTSMethodWithStringResult("getCurrentLanguage", {});
+    }
+
     // Static callback methods
     void ParaEngineHelper::onEditBoxResult(const std::string& callbackId, const std::string& result) {
         OH_LOG_INFO(LOG_APP, "onEditBoxResult: %s = %s", callbackId.c_str(), result.c_str());

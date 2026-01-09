@@ -1,7 +1,7 @@
 add_library(para_libssl INTERFACE)
 add_library(para_libcrypto INTERFACE)
 
-if(ANDROID)
+if(ANDROID OR HARMONY_OS)
     target_include_directories(para_libssl INTERFACE include/android)
     target_link_libraries(para_libssl INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/prebuilt/android/${CMAKE_ANDROID_ARCH_ABI}/libssl.a)
     target_include_directories(para_libcrypto INTERFACE include/android)
