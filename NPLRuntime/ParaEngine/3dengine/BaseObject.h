@@ -545,7 +545,7 @@ namespace ParaEngine
 		ATTRIBUTE_METHOD1(CBaseObject, GetPhysicsShape_s, const char**) { *p1 = cls->GetPhysicsShape(); return S_OK; }
 		ATTRIBUTE_METHOD1(CBaseObject, SetPhysicsShape_s, const char*) { cls->SetPhysicsShape(p1); return S_OK; }
 
-		ATTRIBUTE_METHOD1(CBaseObject, GetPhysicsProperty_s, const char**) { *p1 = cls->GetPhysicsProperty(); return S_OK; }
+		ATTRIBUTE_METHOD1(CBaseObject, GetPhysicsProperty_s, const char**) { *p1 = cls->GetPhysicsProperty(*p1); return S_OK; }
 		ATTRIBUTE_METHOD1(CBaseObject, SetPhysicsProperty_s, const char*) { cls->SetPhysicsProperty(p1); return S_OK; }
 
 		ATTRIBUTE_METHOD1(CBaseObject, ApplyCentralImpulse_s, Vector3) { cls->ApplyCentralImpulse(p1); return S_OK; }
