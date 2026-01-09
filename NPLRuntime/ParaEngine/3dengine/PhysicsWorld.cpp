@@ -1,4 +1,4 @@
-﻿//-----------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
 // Class:	CPhysicsWorld
 // Authors:	Li, Xizhi
 // Emails:	LiXizhi@yeah.net
@@ -307,16 +307,16 @@ void CPhysicsWorld::SetActorPhysicsProperty(IParaPhysicsActor* actor, const char
 					{
 						char keyBuf[32];
 						snprintf(keyBuf, sizeof(keyBuf), "Steering%d", i);
-						if (msg[keyBuf].GetType() == NPL::NPLObjectBase::NPLObjectType_Number)
-							pVehicle->SetSteeringValue((float)(double)msg[keyBuf], i);
+						if (msg[(const char*)keyBuf].GetType() == NPL::NPLObjectBase::NPLObjectType_Number)
+							pVehicle->SetSteeringValue((float)(double)msg[(const char*)keyBuf], i);
 
 						snprintf(keyBuf, sizeof(keyBuf), "EngineForce%d", i);
-						if (msg[keyBuf].GetType() == NPL::NPLObjectBase::NPLObjectType_Number)
-							pVehicle->ApplyEngineForce((float)(double)msg[keyBuf], i);
+						if (msg[(const char*)keyBuf].GetType() == NPL::NPLObjectBase::NPLObjectType_Number)
+							pVehicle->ApplyEngineForce((float)(double)msg[(const char*)keyBuf], i);
 
 						snprintf(keyBuf, sizeof(keyBuf), "Brake%d", i);
-						if (msg[keyBuf].GetType() == NPL::NPLObjectBase::NPLObjectType_Number)
-							pVehicle->SetBrake((float)(double)msg[keyBuf], i);
+						if (msg[(const char*)keyBuf].GetType() == NPL::NPLObjectBase::NPLObjectType_Number)
+							pVehicle->SetBrake((float)(double)msg[(const char*)keyBuf], i);
 					}
 					// Process shorthand controls
 					if (msg["SteeringAll"].GetType() == NPL::NPLObjectBase::NPLObjectType_Number)
@@ -1736,16 +1736,16 @@ void ParaEngine::CPhysicsWorld::SetVehicleControlForBipedStr(CBipedObject* pBipe
 		char keyBuf[32];
 
 		snprintf(keyBuf, sizeof(keyBuf), "Steering%d", i);
-		if (msg[keyBuf].GetType() == NPL::NPLObjectBase::NPLObjectType_Number)
-			pVehicle->SetSteeringValue((float)(double)msg[keyBuf], i);
+		if (msg[(const char*)keyBuf].GetType() == NPL::NPLObjectBase::NPLObjectType_Number)
+			pVehicle->SetSteeringValue((float)(double)msg[(const char*)keyBuf], i);
 
 		snprintf(keyBuf, sizeof(keyBuf), "EngineForce%d", i);
-		if (msg[keyBuf].GetType() == NPL::NPLObjectBase::NPLObjectType_Number)
-			pVehicle->ApplyEngineForce((float)(double)msg[keyBuf], i);
+		if (msg[(const char*)keyBuf].GetType() == NPL::NPLObjectBase::NPLObjectType_Number)
+			pVehicle->ApplyEngineForce((float)(double)msg[(const char*)keyBuf], i);
 
 		snprintf(keyBuf, sizeof(keyBuf), "Brake%d", i);
-		if (msg[keyBuf].GetType() == NPL::NPLObjectBase::NPLObjectType_Number)
-			pVehicle->SetBrake((float)(double)msg[keyBuf], i);
+		if (msg[(const char*)keyBuf].GetType() == NPL::NPLObjectBase::NPLObjectType_Number)
+			pVehicle->SetBrake((float)(double)msg[(const char*)keyBuf], i);
 	}
 
 	// Process shorthand controls: SteeringFront, SteeringAll, EngineForceRear, etc.
