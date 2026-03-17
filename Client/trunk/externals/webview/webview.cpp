@@ -378,7 +378,6 @@ void WebView::Open(const std::wstring& url)
 		return;
 	auto ok = m_webview->Navigate(url.c_str());
 	assert(ok == S_OK);
-	InitUrlEnv();
 }
 
 void WebView::SendOpenMessage(const std::wstring& url)
@@ -487,6 +486,10 @@ bool WebView::CreateWebView(HWND hWnd)
 
 			// better use a mutex
 			m_nWndState = WEBVIEW_STATE_INITIALIZED;
+
+			// Register message listener script once, before any navigation.
+			// AddScriptToExecuteOnDocumentCreated runs on every future document creation.
+			InitUrlEnv();
 
 			// open last opened url
 			if (!m_url.empty())
