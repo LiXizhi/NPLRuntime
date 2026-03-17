@@ -1,7 +1,7 @@
 rem author: lixizhi@yeah.net
 rem date: 2016.2.26
-rem updated: 2026.1.9 - use latest cmake/boost, auto-install DirectX SDK
-rem desc: Run this file in developer command prompt x86 visual studio 2022 (search in desktop search box)
+rem updated: 2026.3.17 - auto-detect VS version (supports VS2022/VS2026), latest cmake/boost, auto-install DirectX SDK
+rem desc: Run this file in developer command prompt x86 visual studio (search in desktop search box)
 rem Install dependencies: (if DirectX9 SDK is not found, it will be auto-installed)
 rem guide: optionally one can add `BOOST_ROOT` to environment variable, such as 'D:\lxzsrc\NPLRuntime\bin\boost_1_87_0', 
 rem        make sure to prebuilt your boost library like below
@@ -54,13 +54,13 @@ if EXIST "bin\cmake\bin\cmake.exe" (
 )
 if NOT EXIST "bin" mkdir bin
 pushd bin
-echo Downloading CMake 3.31.2...
-powershell -Command "Invoke-WebRequest 'https://github.com/Kitware/CMake/releases/download/v3.31.2/cmake-3.31.2-windows-x86_64.zip' -OutFile 'cmake.zip'"
+echo Downloading CMake 3.32.3...
+powershell -Command "Invoke-WebRequest 'https://github.com/Kitware/CMake/releases/download/v3.32.3/cmake-3.32.3-windows-x86_64.zip' -OutFile 'cmake.zip'"
 echo Extracting CMake...
 powershell -Command "Expand-Archive -Path 'cmake.zip' -DestinationPath '.' -Force"
-move cmake-3.31.2-windows-x86_64 cmake
-del cmake.zip
+if EXIST cmake-3.32.3-windows-x86_64 move cmake-3.32.3-windows-x86_64 cmake
 cmake\bin\cmake.exe --version
+del cmake.zip
 popd
 :skip_cmake
 
@@ -87,8 +87,9 @@ move boost_1_87_0 boost
 del boost.zip
 cd boost
 echo Building Boost libraries...
-call bootstrap.bat
-b2 runtime-link=static
+rem Use vc143 toolset for compatibility (Boost 1.87 doesn't recognize vc145/VS2026 yet)
+call bootstrap.bat vc143
+b2 toolset=msvc-14.3 runtime-link=static address-model=32
 popd
 set BOOST_ROOT=%~dp0bin\boost
 :skip_boost
@@ -99,15 +100,36 @@ rem ============================================================
 if NOT EXIST "bin\win32" mkdir bin\win32
 cd bin\win32
 
-rem Use system cmake if available, otherwise use local cmake
-rem Force Visual Studio 2022 with Win32 (x86) architecture
+rem Auto-detect Visual Studio version using vswhere
+set VS_GENERATOR="Visual Studio 17 2022"
+for /f "tokens=*" %%v in ('"%ProgramFiles(x86)%\Microsoft Visual Studio\Installer\vswhere.exe" -latest -property catalog_productLineVersion 2^>nul') do (
+	if "%%v"=="18" set VS_GENERATOR="Visual Studio 18 2026"
+	if "%%v"=="17" set VS_GENERATOR="Visual Studio 17 2022"
+)
+echo Using CMake generator: %VS_GENERATOR%
+
+rem Use system cmake if available, then local cmake, then VS-bundled cmake
+set CMAKE_CMD=
 where cmake >nul 2>nul
 if %ERRORLEVEL% EQU 0 (
-	cmake -G "Visual Studio 17 2022" -A Win32 ../../Client/
+	set CMAKE_CMD=cmake
+) else if EXIST "..\cmake\bin\cmake.exe" (
+	set CMAKE_CMD=..\cmake\bin\cmake.exe
 ) else (
-	call "..\cmake\bin\cmake.exe" -G "Visual Studio 17 2022" -A Win32 ../../Client/
+	rem Fall back to VS-bundled cmake
+	for /f "tokens=*" %%p in ('"%ProgramFiles(x86)%\Microsoft Visual Studio\Installer\vswhere.exe" -latest -property installationPath 2^>nul') do (
+		if EXIST "%%p\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin\cmake.exe" (
+			set CMAKE_CMD=%%p\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin\cmake.exe
+		)
+	)
 )
-msbuild %~dp0bin\win32\CLIENT.sln /verbosity:minimal /property:Configuration=Release
+if "%CMAKE_CMD%"=="" (
+	echo ERROR: CMake not found. Install CMake or use Visual Studio with CMake component.
+	goto :eof
+)
+echo Using CMake: %CMAKE_CMD%
+call "%CMAKE_CMD%" -G %VS_GENERATOR% -A Win32 -T v143 ../../Client/
+msbuild %~dp0bin\win32\CLIENT.sln /p:Configuration=Release /p:Platform=Win32 /m /v:minimal
 
 popd
 
@@ -116,7 +138,9 @@ rem Create symlinks and copy files
 rem ============================================================
 if EXIST "ParaWorld\bin32\" (
 	pushd ParaWorld\bin32\
-	if NOT EXIST "npl.exe" mklink npl.exe ParaEngineClient.exe
+	if NOT EXIST "npl.exe" (
+		mklink npl.exe ParaEngineClient.exe 2>nul || copy ParaEngineClient.exe npl.exe
+	)
 	if NOT EXIST "nplc.bat" copy ..\..\npl_packages\main\script\ide\System\nplcmd\nplc.bat nplc.bat
 	dir
 	popd
