@@ -133,6 +133,7 @@ struct WebViewParams
 	bool visible = true;
 	bool resize = true;
 	bool enabled = true;
+	bool transparent = false;
 	double zoom = 0.0;
 	std::string message_content;
 	std::string message_to;
@@ -312,6 +313,7 @@ CORE_EXPORT_DECL void LibActivate(int nType, void* pVoid)
 		params.resize = tabMsg["resize"];
 		params.visible = tabMsg["visible"];
 		params.enabled = tabMsg["enabled"];
+		params.transparent = tabMsg["transparent"];
 		params.x = (int)(double)tabMsg["x"];
 		params.y = (int)(double)tabMsg["y"];
 		params.width = (int)(double)tabMsg["width"];
@@ -388,6 +390,8 @@ CORE_EXPORT_DECL void LibActivate(int nType, void* pVoid)
 		if (cmd == "Start")
 		{
 			auto webview = GetWebViewByID(id, true);
+			if (params.transparent)
+				webview->SetTransparentFlag(true);
 			if (!params.url.empty())
 				webview->SendOpenMessage(StringToWString(params.url));
 			

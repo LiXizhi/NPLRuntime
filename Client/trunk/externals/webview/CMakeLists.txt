@@ -52,7 +52,16 @@ ADD_CUSTOM_COMMAND(
 ################################
 project(ParaWebView)
 
-set(BoostRoot_DIR "$ENV{BOOST_ROOT}")
+IF(MSVC)
+# Statically link MSVC runtime: Debug /MTd, Release /MT
+set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
+ENDIF()
+
+if ("$ENV{BOOST_ROOT}" STREQUAL "")
+	set(BoostRoot_DIR "${BOOST_ROOT}")
+else()
+	set(BoostRoot_DIR "$ENV{BOOST_ROOT}")
+endif()
 	
 ####################################################
 # ParaEngine related 
@@ -113,7 +122,7 @@ add_library(${LibName} SHARED ${Lib_Src_list})
 target_include_directories(${LibName} PUBLIC ${BoostRoot_DIR})
 target_include_directories(${LibName} PUBLIC ${JSONCPP_ROOT}/include)
 target_include_directories(${LibName} PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/${webview_arch}/include")
-target_link_libraries(${LibName} PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/${webview_arch}/lib/WebView2LoaderStatic.lib")
+target_link_libraries(${LibName} PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/${webview_arch}/lib/WebView2LoaderStatic.lib" dcomp.lib)
 ADD_CUSTOM_COMMAND(
 	TARGET ${LibName}
 	POST_BUILD

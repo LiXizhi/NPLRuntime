@@ -12,9 +12,11 @@
 #include <wrl.h>
 #include <wil/com.h>
 #include <Urlmon.h>
+#include <dcomp.h>
 #include "WebView2.h"
 #include "WebView2EnvironmentOptions.h"
 #pragma comment(lib, "urlmon.lib")
+#pragma comment(lib, "dcomp.lib")
 
 using namespace Microsoft::WRL;
 
@@ -67,7 +69,12 @@ public:
 
     bool SetWnd(HWND hWnd);
     HWND GetWnd() { return m_hWnd; }
+    HWND GetParentWnd() { return m_hParentWnd; }
     const std::string& GetID() { return m_id; }
+    int GetX() const { return m_x; }
+    int GetY() const { return m_y; }
+    int GetWidth() const { return m_width; }
+    int GetHeight() const { return m_height; }
 public:
     /** thread-safe */
     void SendOpenMessage(const std::wstring& url);
@@ -81,6 +88,8 @@ public:
     void SendHide();
     /** thread-safe */
     void SendDebug(bool debug);
+    /** Set transparent flag before Create(). Transparency cannot be changed after creation. */
+    void SetTransparentFlag(bool transparent) { m_bTransparent = transparent; }
     /** thread-safe: return true if window is created.  */
     bool IsInitialized();
     /** thread-safe */
@@ -109,13 +118,18 @@ public:
 public:
     bool IsSupportWebView() { return m_webview != nullptr; }
     bool IsDebug() { return m_bDebug; }
+    bool IsCompositionMode() { return m_composition_controller != nullptr; }
+    ICoreWebView2CompositionController* GetCompositionController() { return m_composition_controller.get(); }
     bool CreateWebView(HWND hWnd);
+    bool CreateCompositionWebView(HWND hWnd);
+    void SetupWebViewAfterCreation(HWND hWnd);
     void ParseProtoUrl(const std::wstring url);
     void InitUrlEnv();
     
     std::wstring GetCacheDirectory();
 protected:
     HWND m_hWnd;
+    HWND m_hParentWnd;
     std::string m_id;
     int m_x;
     int m_y;
@@ -123,11 +137,16 @@ protected:
     int m_height;
     bool m_bShow;
     bool m_bDebug;
+    bool m_bTransparent;
     WEBVIEW_STATE m_nWndState;
     std::wstring m_url;
     std::wstring m_user_data_folder;
     wil::com_ptr<ICoreWebView2Controller> m_webview_controller;
     wil::com_ptr<ICoreWebView2> m_webview;
+    wil::com_ptr<ICoreWebView2CompositionController> m_composition_controller;
+    wil::com_ptr<IDCompositionDevice> m_dcomp_device;
+    wil::com_ptr<IDCompositionTarget> m_dcomp_target;
+    wil::com_ptr<IDCompositionVisual> m_dcomp_visual;
 
     std::function<void()> m_on_created_callback;
     std::function<void(const std::wstring&)> m_on_message_callback;
