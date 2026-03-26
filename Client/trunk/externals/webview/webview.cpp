@@ -5,11 +5,165 @@
 // Desc: 
 //-----------------------------------------------------------------------------
 #include <Windows.h>
+#include <windowsx.h>
 #include <VersionHelpers.h>
 #include "WebView.h"
 
 extern void WriteLog(const char* sFormat, ...);
 extern std::string WStringToString(std::wstring wstr);
+
+// Map HWND to WebView instance for mouse forwarding in composition mode
+#include <unordered_map>
+#include <vector>
+#include <algorithm>
+static std::unordered_map<HWND, WebView*> s_hwndToWebView;
+
+// Subclass map: parent HWND -> original WndProc, for tracking parent movement
+static std::unordered_map<HWND, WNDPROC> s_parentOrigProc;
+// Parent HWND -> list of popup WebView HWNDs that need to follow
+static std::unordered_map<HWND, std::vector<WebView*>> s_parentToPopups;
+
+static void RepositionPopupsForParent(HWND hParentWnd)
+{
+	auto it = s_parentToPopups.find(hParentWnd);
+	if (it == s_parentToPopups.end()) return;
+	for (auto* wv : it->second)
+	{
+		if (wv->GetWnd() && wv->IsCompositionMode())
+		{
+			// Reposition using the stored parent-client coords
+			wv->SetPosition(wv->GetX(), wv->GetY(), wv->GetWidth(), wv->GetHeight());
+		}
+	}
+}
+
+// Check if an HWND is one of our WebView popup windows or a child/descendant of one
+static bool IsWebViewRelatedWindow(HWND hWnd)
+{
+	if (!hWnd) return false;
+	if (s_hwndToWebView.count(hWnd)) return true;
+	// Check if it's a descendant of one of our popup windows
+	HWND hRoot = GetAncestor(hWnd, GA_ROOT);
+	if (hRoot && s_hwndToWebView.count(hRoot)) return true;
+	return false;
+}
+
+// Flag to suppress parent deactivation messages when focus goes to our WebView
+static bool s_suppressingWebViewFocus = false;
+
+static LRESULT CALLBACK ParentSubclassProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
+{
+	auto it = s_parentOrigProc.find(hWnd);
+	if (it == s_parentOrigProc.end())
+		return DefWindowProc(hWnd, message, wParam, lParam);
+
+	switch (message)
+	{
+	case WM_MOVE:
+	case WM_MOVING:
+	case WM_WINDOWPOSCHANGED:
+		{
+			LRESULT result = CallWindowProc(it->second, hWnd, message, wParam, lParam);
+			RepositionPopupsForParent(hWnd);
+			return result;
+		}
+	case WM_ACTIVATE:
+	{
+		WORD fActive = LOWORD(wParam);
+		HWND hOther = (HWND)lParam;
+		if (fActive == WA_INACTIVE)
+		{
+			bool webViewRelated = IsWebViewRelatedWindow(hOther);
+			if (!webViewRelated && hOther == NULL)
+			{
+				HWND hFG = GetForegroundWindow();
+				webViewRelated = s_suppressingWebViewFocus || IsWebViewRelatedWindow(hFG);
+			}
+			if (webViewRelated)
+			{
+				s_suppressingWebViewFocus = true;
+				return 0;
+			}
+			s_suppressingWebViewFocus = false;
+		}
+		else
+		{
+			s_suppressingWebViewFocus = false;
+		}
+		break;
+	}
+	case WM_ACTIVATEAPP:
+	{
+		if (wParam == FALSE)
+		{
+			if (s_suppressingWebViewFocus)
+				return 0;
+			HWND hFG = GetForegroundWindow();
+			if (IsWebViewRelatedWindow(hFG))
+			{
+				s_suppressingWebViewFocus = true;
+				return 0;
+			}
+		}
+		break;
+	}
+	case WM_KILLFOCUS:
+	{
+		HWND hNewFocus = (HWND)wParam;
+		if (s_suppressingWebViewFocus || IsWebViewRelatedWindow(hNewFocus))
+			return 0;
+		break;
+	}
+	case WM_NCACTIVATE:
+	{
+		if (wParam == FALSE && s_suppressingWebViewFocus)
+			return CallWindowProc(it->second, hWnd, message, TRUE, lParam);
+		break;
+	}
+	case WM_DESTROY:
+		{
+			WNDPROC origProc = it->second;
+			s_parentOrigProc.erase(hWnd);
+			s_parentToPopups.erase(hWnd);
+			SetWindowLongPtr(hWnd, GWLP_WNDPROC, (LONG_PTR)origProc);
+			return CallWindowProc(origProc, hWnd, message, wParam, lParam);
+		}
+	}
+	return CallWindowProc(it->second, hWnd, message, wParam, lParam);
+}
+
+static void SubclassParentWindow(HWND hParentWnd, WebView* popup)
+{
+	if (s_parentOrigProc.find(hParentWnd) == s_parentOrigProc.end())
+	{
+		WNDPROC origProc = (WNDPROC)SetWindowLongPtr(hParentWnd, GWLP_WNDPROC, (LONG_PTR)ParentSubclassProc);
+		s_parentOrigProc[hParentWnd] = origProc;
+	}
+	auto& popups = s_parentToPopups[hParentWnd];
+	if (std::find(popups.begin(), popups.end(), popup) == popups.end())
+		popups.push_back(popup);
+}
+
+static void UnsubclassParentWindow(HWND hParentWnd, WebView* popup)
+{
+	auto it = s_parentToPopups.find(hParentWnd);
+	if (it != s_parentToPopups.end())
+	{
+		auto& v = it->second;
+		v.erase(std::remove(v.begin(), v.end(), popup), v.end());
+		if (v.empty())
+		{
+			s_parentToPopups.erase(hParentWnd);
+			auto origIt = s_parentOrigProc.find(hParentWnd);
+			if (origIt != s_parentOrigProc.end())
+			{
+				if (IsWindow(hParentWnd))
+					SetWindowLongPtr(hParentWnd, GWLP_WNDPROC, (LONG_PTR)origIt->second);
+				s_parentOrigProc.erase(origIt);
+			}
+		}
+	}
+}
 
 static std::string ReadRegStr(HKEY root_key, std::string sub_key, std::string name)
 {
@@ -32,8 +186,10 @@ WebView::WebView(const std::string& id)
 {
 	m_id = id;
 	m_hWnd = NULL;
+	m_hParentWnd = NULL;
 	m_bShow = true;
     m_bDebug = false;
+    m_bTransparent = false;
 	m_x = 0;
 	m_y = 0;
 	m_width = 0;
@@ -65,11 +221,43 @@ bool WebView::SetWnd(HWND hWnd)
 	return CreateWebView(m_hWnd);
 }
 
+static COREWEBVIEW2_MOUSE_EVENT_VIRTUAL_KEYS GetVirtualKeys()
+{
+	UINT vkeys = COREWEBVIEW2_MOUSE_EVENT_VIRTUAL_KEYS_NONE;
+	if (GetKeyState(VK_LBUTTON) & 0x8000) vkeys |= COREWEBVIEW2_MOUSE_EVENT_VIRTUAL_KEYS_LEFT_BUTTON;
+	if (GetKeyState(VK_RBUTTON) & 0x8000) vkeys |= COREWEBVIEW2_MOUSE_EVENT_VIRTUAL_KEYS_RIGHT_BUTTON;
+	if (GetKeyState(VK_SHIFT) & 0x8000)   vkeys |= COREWEBVIEW2_MOUSE_EVENT_VIRTUAL_KEYS_SHIFT;
+	if (GetKeyState(VK_CONTROL) & 0x8000) vkeys |= COREWEBVIEW2_MOUSE_EVENT_VIRTUAL_KEYS_CONTROL;
+	if (GetKeyState(VK_MBUTTON) & 0x8000) vkeys |= COREWEBVIEW2_MOUSE_EVENT_VIRTUAL_KEYS_MIDDLE_BUTTON;
+	return (COREWEBVIEW2_MOUSE_EVENT_VIRTUAL_KEYS)vkeys;
+}
+
 LRESULT CALLBACK WebViewWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
 	WebViewMessage* msg = nullptr;
 	switch (message)
 	{
+	case WM_MOUSEACTIVATE:
+	{
+		auto it = s_hwndToWebView.find(hWnd);
+		if (it != s_hwndToWebView.end() && it->second->IsCompositionMode())
+			return MA_NOACTIVATE;
+		return DefWindowProc(hWnd, message, wParam, lParam);
+	}
+	case WM_ACTIVATE:
+	{
+		auto it = s_hwndToWebView.find(hWnd);
+		if (it != s_hwndToWebView.end() && it->second->IsCompositionMode())
+			return 0;
+		return DefWindowProc(hWnd, message, wParam, lParam);
+	}
+	case WM_SETFOCUS:
+	{
+		auto it = s_hwndToWebView.find(hWnd);
+		if (it != s_hwndToWebView.end() && it->second->IsCompositionMode())
+			return 0;
+		return DefWindowProc(hWnd, message, wParam, lParam);
+	}
 	case WM_WEBVIEW_MESSAGE:
 		msg = (WebViewMessage*)lParam;
 		if (msg->m_cmd == "Open")
@@ -100,8 +288,51 @@ LRESULT CALLBACK WebViewWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM l
 		}
 		break;
 	default:
+	{
+		// Forward mouse events to composition controller for transparent mode
+		auto it = s_hwndToWebView.find(hWnd);
+		if (it != s_hwndToWebView.end() && it->second->IsCompositionMode())
+		{
+			COREWEBVIEW2_MOUSE_EVENT_KIND eventKind = (COREWEBVIEW2_MOUSE_EVENT_KIND)0;
+			UINT32 mouseData = 0;
+			bool isMouseMsg = true;
+			switch (message)
+			{
+			case WM_MOUSEMOVE:    eventKind = COREWEBVIEW2_MOUSE_EVENT_KIND_MOVE; break;
+			case WM_LBUTTONDOWN:  eventKind = COREWEBVIEW2_MOUSE_EVENT_KIND_LEFT_BUTTON_DOWN; break;
+			case WM_LBUTTONUP:    eventKind = COREWEBVIEW2_MOUSE_EVENT_KIND_LEFT_BUTTON_UP; break;
+			case WM_LBUTTONDBLCLK: eventKind = COREWEBVIEW2_MOUSE_EVENT_KIND_LEFT_BUTTON_DOUBLE_CLICK; break;
+			case WM_RBUTTONDOWN:  eventKind = COREWEBVIEW2_MOUSE_EVENT_KIND_RIGHT_BUTTON_DOWN; break;
+			case WM_RBUTTONUP:    eventKind = COREWEBVIEW2_MOUSE_EVENT_KIND_RIGHT_BUTTON_UP; break;
+			case WM_RBUTTONDBLCLK: eventKind = COREWEBVIEW2_MOUSE_EVENT_KIND_RIGHT_BUTTON_DOUBLE_CLICK; break;
+			case WM_MBUTTONDOWN:  eventKind = COREWEBVIEW2_MOUSE_EVENT_KIND_MIDDLE_BUTTON_DOWN; break;
+			case WM_MBUTTONUP:    eventKind = COREWEBVIEW2_MOUSE_EVENT_KIND_MIDDLE_BUTTON_UP; break;
+			case WM_MBUTTONDBLCLK: eventKind = COREWEBVIEW2_MOUSE_EVENT_KIND_MIDDLE_BUTTON_DOUBLE_CLICK; break;
+			case WM_MOUSEWHEEL:
+				eventKind = COREWEBVIEW2_MOUSE_EVENT_KIND_WHEEL;
+				mouseData = GET_WHEEL_DELTA_WPARAM(wParam);
+				break;
+			case WM_MOUSEHWHEEL:
+				eventKind = COREWEBVIEW2_MOUSE_EVENT_KIND_HORIZONTAL_WHEEL;
+				mouseData = GET_WHEEL_DELTA_WPARAM(wParam);
+				break;
+			case WM_MOUSELEAVE:   eventKind = COREWEBVIEW2_MOUSE_EVENT_KIND_LEAVE; break;
+			default: isMouseMsg = false; break;
+			}
+			if (isMouseMsg)
+			{
+				POINT pt = { GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam) };
+				if (message == WM_MOUSEWHEEL || message == WM_MOUSEHWHEEL)
+				{
+					// Wheel messages have screen coordinates, convert to client
+					ScreenToClient(hWnd, &pt);
+				}
+				it->second->GetCompositionController()->SendMouseInput(eventKind, GetVirtualKeys(), mouseData, pt);
+				return 0;
+			}
+		}
 		return DefWindowProc(hWnd, message, wParam, lParam);
-		break;
+	}
 	}
 
 	return 0;
@@ -137,7 +368,7 @@ bool WebView::Create(HINSTANCE hInstance, HWND hParentWnd)
 		wcex.hInstance = hInstance;
 		wcex.hIcon = LoadIcon(hInstance, IDI_APPLICATION);
 		wcex.hCursor = LoadCursor(NULL, IDC_ARROW);
-		wcex.hbrBackground = (HBRUSH)(COLOR_WINDOW + 1);
+		wcex.hbrBackground = m_bTransparent ? (HBRUSH)GetStockObject(NULL_BRUSH) : (HBRUSH)(COLOR_WINDOW + 1);
 		wcex.lpszMenuName = NULL;
 		std::string sClassName = std::string(s_szWindowClass) + GetID();
 		wcex.lpszClassName = sClassName.c_str();
@@ -152,9 +383,20 @@ bool WebView::Create(HINSTANCE hInstance, HWND hParentWnd)
 		}
 
 		DWORD dwStyle;
-		if (hParentWnd)
+		DWORD dwExStyle = 0;
+		int createX = m_x, createY = m_y;
+		if (hParentWnd && m_bTransparent)
 		{
-			// dwStyle = WS_CHILD | WS_VISIBLE | WS_CLIPCHILDREN;
+			dwStyle = WS_POPUP | WS_CLIPCHILDREN;
+			dwExStyle = WS_EX_NOREDIRECTIONBITMAP | WS_EX_NOACTIVATE;
+			m_hParentWnd = hParentWnd;
+			POINT pt = { m_x, m_y };
+			ClientToScreen(hParentWnd, &pt);
+			createX = pt.x;
+			createY = pt.y;
+		}
+		else if (hParentWnd)
+		{
 			dwStyle = WS_CHILD | WS_CLIPCHILDREN;
 			SetWindowLong(hParentWnd, GWL_STYLE, GetWindowLong(hParentWnd, GWL_STYLE) | WS_CLIPCHILDREN);
 		}
@@ -163,11 +405,11 @@ bool WebView::Create(HINSTANCE hInstance, HWND hParentWnd)
 		}
 
 		m_hWnd = CreateWindowEx(
-			0,
+			dwExStyle,
 			wcex.lpszClassName,
 			s_szTitle,
 			dwStyle,
-			m_x, m_y, m_width, m_height,
+			createX, createY, m_width, m_height,
 			hParentWnd,
 			NULL,
 			hInstance,
@@ -206,6 +448,10 @@ bool WebView::Create(HINSTANCE hInstance, HWND hParentWnd)
 				m_on_created_callback();
 			return false;
 		}
+
+		// Subclass parent to track its movement (for popup repositioning)
+		if (m_bTransparent && hParentWnd)
+			SubclassParentWindow(hParentWnd, this);
 
 		MSG msg;
 		while (GetMessage(&msg, NULL, 0, 0))
@@ -302,6 +548,8 @@ void WebView::Debug(bool enable)
     }
 }
 
+
+
 void WebView::SendSetPositionMessage(int x, int y, int w, int h)
 {
     m_x = x; m_y = y; m_width = w; m_height = h;
@@ -332,7 +580,16 @@ void WebView::SetPosition(int x, int y, int w, int h, bool bUpdateWndPosition)
 
 	if (bUpdateWndPosition) 
 	{
-		if (!SetWindowPos(m_hWnd, NULL, x, y, w, h, (m_bShow ? SWP_SHOWWINDOW : SWP_HIDEWINDOW) | SWP_NOACTIVATE))
+		int posX = x, posY = y;
+		// For popup windows in transparent mode, convert parent-client to screen coords
+		if (m_bTransparent && m_hParentWnd)
+		{
+			POINT pt = { x, y };
+			ClientToScreen(m_hParentWnd, &pt);
+			posX = pt.x;
+			posY = pt.y;
+		}
+		if (!SetWindowPos(m_hWnd, NULL, posX, posY, w, h, (m_bShow ? SWP_SHOWWINDOW : SWP_HIDEWINDOW) | SWP_NOACTIVATE))
 		{
 			WriteLog("Error: ParaWebView failed to set position!\n");
 		}
@@ -348,6 +605,10 @@ void WebView::SetPosition(int x, int y, int w, int h, bool bUpdateWndPosition)
 	{
 		m_webview_controller->put_Bounds(bounds);
 	}
+	if (m_dcomp_device)
+	{
+		m_dcomp_device->Commit();
+	}
 }
 
 void WebView::SetOnCreateCallback(std::function<void()> callback)
@@ -359,13 +620,25 @@ void WebView::Destroy()
 {
 	if (m_hWnd == NULL) return;
 
+	// Unregister from parent subclass tracking
+	if (m_hParentWnd)
+	{
+		UnsubclassParentWindow(m_hParentWnd, this);
+	}
+
+	s_hwndToWebView.erase(m_hWnd);
 	DestroyWindow(m_hWnd);
 	m_hWnd = NULL;
+	m_hParentWnd = NULL;
 	if (m_webview_controller)
 	{
 		m_webview_controller->Close();
 		m_webview_controller = nullptr;
 	}
+	m_composition_controller = nullptr;
+	m_dcomp_visual = nullptr;
+	m_dcomp_target = nullptr;
+	m_dcomp_device = nullptr;
 	m_webview = nullptr;
 	m_bShow = false;
 	m_nWndState = WEBVIEW_STATE_DESTROYED;
@@ -401,9 +674,12 @@ bool WebView::IsShow()
 
 bool WebView::CreateWebView(HWND hWnd)
 {
+	if (m_bTransparent){
+		return CreateCompositionWebView(hWnd);
+	}
 	std::wstring user_data_folder = m_user_data_folder.empty() ? GetCacheDirectory() : m_user_data_folder;
 	auto options = Microsoft::WRL::Make<CoreWebView2EnvironmentOptions>();
-	options->put_AdditionalBrowserArguments(L"--enable-features=AllowAutoplay --autoplay-policy=no-user-gesture-required");  // 视屏自动播放开启
+	options->put_AdditionalBrowserArguments(L"--enable-features=AllowAutoplay --autoplay-policy=no-user-gesture-required");
 	HRESULT ok = CreateCoreWebView2EnvironmentWithOptions(nullptr, user_data_folder.c_str(), options.Get(), Callback<ICoreWebView2CreateCoreWebView2EnvironmentCompletedHandler>([hWnd, this](HRESULT result, ICoreWebView2Environment* env) -> HRESULT {
 		if (FAILED(result)) {
 			WriteLog("error: ParaWebView failed to call CreateCoreWebView2EnvironmentWithOptions\n");
@@ -412,7 +688,6 @@ bool WebView::CreateWebView(HWND hWnd)
 			return result;
 		}
 
-		// Create a CoreWebView2Controller and get the associated CoreWebView2 whose parent is the main window hWnd
 		HRESULT ok = env->CreateCoreWebView2Controller(hWnd, Callback<ICoreWebView2CreateCoreWebView2ControllerCompletedHandler>([hWnd, this](HRESULT result, ICoreWebView2Controller* controller) -> HRESULT {
 			if (controller == nullptr) {
 				WriteLog("error: ParaWebView failed to CreateCoreWebView2Controller\n");
@@ -423,94 +698,201 @@ bool WebView::CreateWebView(HWND hWnd)
 
 			m_webview_controller = controller;
 			m_webview_controller->get_CoreWebView2(&(m_webview));
-
-			// Add a few settings for the webview
-			// The demo step is redundant since the values are the default settings
-			wil::com_ptr<ICoreWebView2Settings> settings;
-			m_webview->get_Settings(&settings);
-			settings->put_IsScriptEnabled(TRUE);
-			settings->put_AreDefaultScriptDialogsEnabled(TRUE);
-			settings->put_IsWebMessageEnabled(TRUE);
-			wil::com_ptr<ICoreWebView2Settings3> settings3 = settings.try_query<ICoreWebView2Settings3>();
-			if(settings3)
-				settings3->put_AreBrowserAcceleratorKeysEnabled(IsDebug() ? TRUE : FALSE);
-			settings->put_AreDevToolsEnabled(IsDebug() ? TRUE : FALSE);  // 调试工具禁用
-
-			// Resize WebView to fit the bounds of the parent window
-			RECT bounds;
-			GetClientRect(hWnd, &bounds);
-			m_webview_controller->put_Bounds(bounds);
-
-			// <NavigationEvents>
-			// Step 4 - Navigation events
-			// register an ICoreWebView2NavigationStartingEventHandler to cancel any non-https navigation
-			EventRegistrationToken token;
-			m_webview->add_NavigationStarting(Callback<ICoreWebView2NavigationStartingEventHandler>(
-				[this](ICoreWebView2* webview, ICoreWebView2NavigationStartingEventArgs* args) -> HRESULT {
-				wil::unique_cotaskmem_string uri_mem;
-				args->get_Uri(&uri_mem);
-				std::wstring uri(uri_mem.get());
-				std::wcout << L"URL:" << uri << std::endl;
-				auto pos = uri.find_first_of(L"paracraft://");
-				if (pos == 0)
-				{
-					args->put_Cancel(true);
-					ParseProtoUrl(uri);
-				}
-				return S_OK;
-			}).Get(), &token);
-			// </NavigationEvents>
-
-            // 默认允许使用相机
-            m_webview->add_PermissionRequested(Callback<ICoreWebView2PermissionRequestedEventHandler>(
-                [](ICoreWebView2* sender, ICoreWebView2PermissionRequestedEventArgs* args) -> HRESULT {
-                    COREWEBVIEW2_PERMISSION_KIND permissionType;
-                    args->get_PermissionKind(&permissionType);
-                    if (permissionType == COREWEBVIEW2_PERMISSION_KIND_CAMERA) {
-                        args->put_State(COREWEBVIEW2_PERMISSION_STATE_ALLOW);                                        
-                    }
-                    return S_OK;
-                }).Get(), &token);
-
-			// <CommunicationHostWeb>
-			// Step 6 - Communication between host and web content
-			// Set an event handler for the host to return received message back to the web content
-			m_webview->add_WebMessageReceived(Callback<ICoreWebView2WebMessageReceivedEventHandler>(
-				[this](ICoreWebView2* webview, ICoreWebView2WebMessageReceivedEventArgs* args) -> HRESULT {
-				wil::unique_cotaskmem_string message;
-				args->TryGetWebMessageAsString(&message);
-				if (m_on_message_callback != nullptr) m_on_message_callback(message.get());
-				webview->PostWebMessageAsString(message.get());
-				return S_OK;
-			}).Get(), &token);
-
-			// better use a mutex
-			m_nWndState = WEBVIEW_STATE_INITIALIZED;
-
-			// Register message listener script once, before any navigation.
-			// AddScriptToExecuteOnDocumentCreated runs on every future document creation.
-			InitUrlEnv();
-
-			// open last opened url
-			if (!m_url.empty())
-				Open(m_url);
-			// m_webview->OpenDevToolsWindow();
-
-			if (IsShow())
-				Show();
-			else
-				Hide();
-
-			if (m_on_created_callback != nullptr)
-				m_on_created_callback();
-
-
+			SetupWebViewAfterCreation(hWnd);
 			return S_OK;
 		}).Get());
 		return ok == S_OK;
 	}).Get());
 
 	return ok == S_OK;
+}
+
+bool WebView::CreateCompositionWebView(HWND hWnd)
+{
+	// Initialize DirectComposition
+	HRESULT hr = DCompositionCreateDevice(nullptr, IID_PPV_ARGS(&m_dcomp_device));
+	if (FAILED(hr))
+	{
+		WriteLog("error: WebView DCompositionCreateDevice FAILED\n");
+		if (m_on_created_callback != nullptr)
+			m_on_created_callback();
+		return false;
+	}
+
+	hr = m_dcomp_device->CreateTargetForHwnd(hWnd, TRUE, &m_dcomp_target);
+	if (FAILED(hr))
+	{
+		WriteLog("error: WebView CreateTargetForHwnd FAILED\n");
+		if (m_on_created_callback != nullptr)
+			m_on_created_callback();
+		return false;
+	}
+
+	hr = m_dcomp_device->CreateVisual(&m_dcomp_visual);
+	if (FAILED(hr))
+	{
+		WriteLog("error: WebView CreateVisual FAILED\n");
+		if (m_on_created_callback != nullptr)
+			m_on_created_callback();
+		return false;
+	}
+
+	hr = m_dcomp_target->SetRoot(m_dcomp_visual.get());
+
+	std::wstring user_data_folder = m_user_data_folder.empty() ? GetCacheDirectory() : m_user_data_folder;
+	auto options = Microsoft::WRL::Make<CoreWebView2EnvironmentOptions>();
+	options->put_AdditionalBrowserArguments(L"--enable-features=AllowAutoplay --autoplay-policy=no-user-gesture-required");
+	hr = CreateCoreWebView2EnvironmentWithOptions(nullptr, user_data_folder.c_str(), options.Get(), Callback<ICoreWebView2CreateCoreWebView2EnvironmentCompletedHandler>([hWnd, this](HRESULT result, ICoreWebView2Environment* env) -> HRESULT {
+		if (FAILED(result)) {
+			WriteLog("error: ParaWebView failed to call CreateCoreWebView2EnvironmentWithOptions\n");
+			if (m_on_created_callback != nullptr)
+				m_on_created_callback();
+			return result;
+		}
+
+		// Get ICoreWebView2Environment3 for CreateCoreWebView2CompositionController
+		wil::com_ptr<ICoreWebView2Environment3> env3;
+		HRESULT hr = env->QueryInterface(IID_PPV_ARGS(&env3));
+		if (FAILED(hr) || !env3)
+		{
+			WriteLog("error: WebView QueryInterface ICoreWebView2Environment3 failed hr=0x%08X, falling back to windowed controller\n", (unsigned)hr);
+			// Fallback to regular controller
+			hr = env->CreateCoreWebView2Controller(hWnd, Callback<ICoreWebView2CreateCoreWebView2ControllerCompletedHandler>([hWnd, this](HRESULT result, ICoreWebView2Controller* controller) -> HRESULT {
+				if (controller == nullptr) {
+					WriteLog("error: ParaWebView fallback CreateCoreWebView2Controller failed\n");
+					if (m_on_created_callback != nullptr)
+						m_on_created_callback();
+					return E_FAIL;
+				}
+				m_webview_controller = controller;
+				m_webview_controller->get_CoreWebView2(&(m_webview));
+				SetupWebViewAfterCreation(hWnd);
+				return S_OK;
+			}).Get());
+			return hr;
+		}
+
+		hr = env3->CreateCoreWebView2CompositionController(hWnd, Callback<ICoreWebView2CreateCoreWebView2CompositionControllerCompletedHandler>([hWnd, this](HRESULT result, ICoreWebView2CompositionController* compositionController) -> HRESULT {
+			if (compositionController == nullptr) {
+				WriteLog("error: WebView CreateCoreWebView2CompositionController FAILED\n");
+				if (m_on_created_callback != nullptr)
+					m_on_created_callback();
+				return E_FAIL;
+			}
+
+			m_composition_controller = compositionController;
+
+			HRESULT hr = m_composition_controller->put_RootVisualTarget(m_dcomp_visual.get());
+
+			hr = m_composition_controller->QueryInterface(IID_PPV_ARGS(&m_webview_controller));
+			m_webview_controller->get_CoreWebView2(&(m_webview));
+
+			// Set transparent background
+			wil::com_ptr<ICoreWebView2Controller2> controller2;
+			hr = m_webview_controller->QueryInterface(IID_PPV_ARGS(&controller2));
+			if (SUCCEEDED(hr) && controller2)
+			{
+				COREWEBVIEW2_COLOR bgColor = { 0, 0, 0, 0 };
+				controller2->put_DefaultBackgroundColor(bgColor);
+			}
+
+			m_dcomp_device->Commit();
+
+			// Register HWND mapping for mouse forwarding
+			s_hwndToWebView[hWnd] = this;
+
+			// Setup cursor change handler
+			EventRegistrationToken cursorToken;
+			m_composition_controller->add_CursorChanged(Callback<ICoreWebView2CursorChangedEventHandler>(
+				[hWnd, this](ICoreWebView2CompositionController* sender, IUnknown* args) -> HRESULT {
+				HCURSOR cursor;
+				if (SUCCEEDED(sender->get_Cursor(&cursor)))
+					SetClassLongPtr(hWnd, GCLP_HCURSOR, (LONG_PTR)cursor);
+				return S_OK;
+			}).Get(), &cursorToken);
+
+			SetupWebViewAfterCreation(hWnd);
+			return S_OK;
+		}).Get());
+		return hr;
+	}).Get());
+
+	return SUCCEEDED(hr);
+}
+
+void WebView::SetupWebViewAfterCreation(HWND hWnd)
+{
+	// Settings
+	wil::com_ptr<ICoreWebView2Settings> settings;
+	m_webview->get_Settings(&settings);
+	settings->put_IsScriptEnabled(TRUE);
+	settings->put_AreDefaultScriptDialogsEnabled(TRUE);
+	settings->put_IsWebMessageEnabled(TRUE);
+	wil::com_ptr<ICoreWebView2Settings3> settings3 = settings.try_query<ICoreWebView2Settings3>();
+	if (settings3)
+		settings3->put_AreBrowserAcceleratorKeysEnabled(IsDebug() ? TRUE : FALSE);
+	settings->put_AreDevToolsEnabled(IsDebug() ? TRUE : FALSE);
+
+	// Resize WebView to fit the bounds of the parent window
+	RECT bounds;
+	GetClientRect(hWnd, &bounds);
+	m_webview_controller->put_Bounds(bounds);
+
+	// Navigation events
+	EventRegistrationToken token;
+	m_webview->add_NavigationStarting(Callback<ICoreWebView2NavigationStartingEventHandler>(
+		[this](ICoreWebView2* webview, ICoreWebView2NavigationStartingEventArgs* args) -> HRESULT {
+		wil::unique_cotaskmem_string uri_mem;
+		args->get_Uri(&uri_mem);
+		std::wstring uri(uri_mem.get());
+		std::wcout << L"URL:" << uri << std::endl;
+		auto pos = uri.find_first_of(L"paracraft://");
+		if (pos == 0)
+		{
+			args->put_Cancel(true);
+			ParseProtoUrl(uri);
+		}
+		return S_OK;
+	}).Get(), &token);
+
+	// Allow camera permission
+	m_webview->add_PermissionRequested(Callback<ICoreWebView2PermissionRequestedEventHandler>(
+		[](ICoreWebView2* sender, ICoreWebView2PermissionRequestedEventArgs* args) -> HRESULT {
+			COREWEBVIEW2_PERMISSION_KIND permissionType;
+			args->get_PermissionKind(&permissionType);
+			if (permissionType == COREWEBVIEW2_PERMISSION_KIND_CAMERA) {
+				args->put_State(COREWEBVIEW2_PERMISSION_STATE_ALLOW);
+			}
+			return S_OK;
+		}).Get(), &token);
+
+	// Web message handler
+	m_webview->add_WebMessageReceived(Callback<ICoreWebView2WebMessageReceivedEventHandler>(
+		[this](ICoreWebView2* webview, ICoreWebView2WebMessageReceivedEventArgs* args) -> HRESULT {
+		wil::unique_cotaskmem_string message;
+		args->TryGetWebMessageAsString(&message);
+		if (m_on_message_callback != nullptr) m_on_message_callback(message.get());
+		webview->PostWebMessageAsString(message.get());
+		return S_OK;
+	}).Get(), &token);
+
+	// better use a mutex
+	m_nWndState = WEBVIEW_STATE_INITIALIZED;
+
+	// Register message listener script once, before any navigation.
+	InitUrlEnv();
+
+	// open last opened url
+	if (!m_url.empty())
+		Open(m_url);
+
+	if (IsShow())
+		Show();
+	else
+		Hide();
+
+	if (m_on_created_callback != nullptr)
+		m_on_created_callback();
 }
 
 void WebView::OnWebMessage(std::function<void(const std::wstring&)> callback)
