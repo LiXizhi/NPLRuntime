@@ -28,6 +28,7 @@ namespace ParaEngine {
 		virtual void loadUrl(const std::string &url, bool cleanCachedData = false) override;
 		virtual void setAlpha(float a) override;
 		virtual void setVisible(bool bVisible) override;
+		virtual void setTransparent(bool bTransparent) override;
 		virtual void SetHideViewWhenClickBack(bool b) override;
 		virtual void SetIgnoreCloseWhenClickBack(bool b) override;
         virtual void SetCloseWhenClickBackground(bool b) override;

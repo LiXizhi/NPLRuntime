@@ -19,6 +19,7 @@ namespace ParaEngine {
 		pClass->AddField("Url", FieldType_String, (void*)loadUrl_s, (void*)nullptr, nullptr, nullptr, bOverride);
 		pClass->AddField("Alpha", FieldType_Float, (void*)setAlpha_s, (void*)nullptr, nullptr, nullptr, bOverride);
 		pClass->AddField("Visible", FieldType_Bool, (void*)setVisible_s, (void*)nullptr, nullptr, nullptr, bOverride);
+		pClass->AddField("Transparent", FieldType_Bool, (void*)setTransparent_s, (void*)nullptr, nullptr, nullptr, bOverride);
 		pClass->AddField("HideViewWhenClickBack", FieldType_Bool, (void*)SetHideViewWhenClickBack_s, (void*)nullptr, nullptr, nullptr, bOverride);
 		pClass->AddField("IgnoreCloseWhenClickBack", FieldType_Bool, (void*)SetIgnoreCloseWhenClickBack_s, (void*)nullptr, nullptr, nullptr, bOverride);
         pClass->AddField("CloseWhenClickBackground", FieldType_Bool, (void*)SetCloseWhenClickBackground_s, (void*)nullptr, nullptr, nullptr, bOverride);

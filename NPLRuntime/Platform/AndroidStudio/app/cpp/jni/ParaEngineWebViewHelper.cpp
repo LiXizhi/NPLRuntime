@@ -153,6 +153,11 @@ namespace ParaEngine {
 		JniHelper::callStaticVoidMethod(classname, "setVisible", m_handle, bVisible);
 	}
 
+	void ParaEngineWebView::setTransparent(bool bTransparent)
+	{
+		JniHelper::callStaticVoidMethod(classname, "setTransparent", m_handle, bTransparent);
+	}
+
 
 	void ParaEngineWebView::SetHideViewWhenClickBack(bool b)
 	{
