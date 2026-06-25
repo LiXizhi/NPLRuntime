@@ -14,7 +14,6 @@ import android.os.Looper;
 import android.util.SparseArray;
 import android.view.View;
 import android.webkit.JavascriptInterface;
-import android.widget.Button;
 import android.widget.FrameLayout;
 import android.webkit.WebView;
 import android.util.Log;
@@ -23,6 +22,11 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.FutureTask;
 
+import android.graphics.Canvas;
+import android.graphics.Color;
+import android.graphics.Paint;
+import android.view.MotionEvent;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.RelativeLayout;
 import android.widget.Toast;
@@ -141,6 +145,31 @@ public class ParaEngineWebViewHelper {
         }
     }
 
+    /**
+     * Create a Bitmap with a close (X) icon: dark circle background + white X.
+     */
+    private static android.graphics.Bitmap createCloseButtonBitmap(int size) {
+        android.graphics.Bitmap bitmap = android.graphics.Bitmap.createBitmap(size, size, android.graphics.Bitmap.Config.ARGB_8888);
+        Canvas canvas = new Canvas(bitmap);
+
+        // Draw circle background
+        Paint bgPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        bgPaint.setColor(Color.parseColor("#CC333333"));
+        float radius = size / 2f;
+        canvas.drawCircle(radius, radius, radius, bgPaint);
+
+        // Draw X mark
+        Paint xPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        xPaint.setColor(Color.WHITE);
+        xPaint.setStrokeWidth(size * 0.12f);
+        xPaint.setStrokeCap(Paint.Cap.ROUND);
+        float padding = size * 0.28f;
+        canvas.drawLine(padding, padding, size - padding, size - padding, xPaint);
+        canvas.drawLine(size - padding, padding, padding, size - padding, xPaint);
+
+        return bitmap;
+    }
+
     @Keep
     public static void openWebView(final int x, final int y, final int w, final int h, final String url) {
         sActivity.runOnUiThread(new Runnable() {
@@ -166,17 +195,76 @@ public class ParaEngineWebViewHelper {
                 webView.setAlpha(0.95f);
                 webView.loadUrl(url);
 
-                Button closeBtn = new Button(sActivity);
-                LinearLayout.LayoutParams layoutParams = new LinearLayout.LayoutParams(80, 80);
-                layoutParams.leftMargin = 40;
-                layoutParams.topMargin = h / 2 - 40;
-                closeBtn.setLayoutParams(layoutParams);
+                // Create a close button with circle background and X icon
+                final ImageView closeBtn = new ImageView(sActivity);
+                int btnSize = (int) (48 * sActivity.getResources().getDisplayMetrics().density + 0.5f);
+                int margin = (int) (8 * sActivity.getResources().getDisplayMetrics().density + 0.5f);
+                RelativeLayout.LayoutParams closeBtnParams = new RelativeLayout.LayoutParams(btnSize, btnSize);
+                closeBtnParams.addRule(RelativeLayout.ALIGN_PARENT_TOP);
+                closeBtnParams.addRule(RelativeLayout.ALIGN_PARENT_RIGHT);
+                closeBtnParams.topMargin = margin;
+                closeBtnParams.rightMargin = margin;
+                closeBtn.setLayoutParams(closeBtnParams);
 
-                closeBtn.setBackgroundResource(sActivity.getResources().getIdentifier("webview_close_btn", "drawable", sActivity.getPackageName()));
+                // Draw a close (X) icon programmatically
+                closeBtn.setImageBitmap(createCloseButtonBitmap(btnSize));
+                closeBtn.setPadding(0, 0, 0, 0);
+
                 closeBtn.setOnClickListener(new View.OnClickListener() {
                     @Override
                     public void onClick(View view) {
                         closeWebViewByIndex(index);
+                    }
+                });
+
+                // Make the close button draggable
+                closeBtn.setOnTouchListener(new View.OnTouchListener() {
+                    private int initialX, initialY;
+                    private float initialTouchX, initialTouchY;
+                    private boolean isDragging = false;
+                    private static final int DRAG_THRESHOLD = 10;
+
+                    @Override
+                    public boolean onTouch(View view, MotionEvent event) {
+                        switch (event.getAction()) {
+                            case MotionEvent.ACTION_DOWN:
+                                initialX = view.getLeft();
+                                initialY = view.getTop();
+                                initialTouchX = event.getRawX();
+                                initialTouchY = event.getRawY();
+                                isDragging = false;
+                                return true;
+                            case MotionEvent.ACTION_MOVE:
+                                float dx = event.getRawX() - initialTouchX;
+                                float dy = event.getRawY() - initialTouchY;
+                                if (!isDragging && (Math.abs(dx) > DRAG_THRESHOLD || Math.abs(dy) > DRAG_THRESHOLD)) {
+                                    isDragging = true;
+                                }
+                                if (isDragging) {
+                                    RelativeLayout parent = (RelativeLayout) view.getParent();
+                                    int newLeft = initialX + (int) dx;
+                                    int newTop = initialY + (int) dy;
+                                    // Clamp within parent bounds
+                                    newLeft = Math.max(0, Math.min(newLeft, parent.getWidth() - view.getWidth()));
+                                    newTop = Math.max(0, Math.min(newTop, parent.getHeight() - view.getHeight()));
+                                    RelativeLayout.LayoutParams params = (RelativeLayout.LayoutParams) view.getLayoutParams();
+                                    // Clear alignment rules so manual positioning works
+                                    params.removeRule(RelativeLayout.ALIGN_PARENT_TOP);
+                                    params.removeRule(RelativeLayout.ALIGN_PARENT_RIGHT);
+                                    params.removeRule(RelativeLayout.ALIGN_PARENT_BOTTOM);
+                                    params.removeRule(RelativeLayout.ALIGN_PARENT_LEFT);
+                                    params.leftMargin = newLeft;
+                                    params.topMargin = newTop;
+                                    view.setLayoutParams(params);
+                                }
+                                return true;
+                            case MotionEvent.ACTION_UP:
+                                if (!isDragging) {
+                                    view.performClick();
+                                }
+                                return true;
+                        }
+                        return false;
                     }
                 });
 

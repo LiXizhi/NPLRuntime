@@ -460,6 +460,17 @@ android {
             dimension "company"
         }
 
+        /* 魔法哈奇 */
+        haqi {
+            applicationId "com.palaka.haqi"
+            manifestPlaceholders = [CHANNEL_VALUE: "palaka"]
+            resValue "string", "app_name", "魔法哈奇"
+            resValue "drawable", "app_icon", "@drawable/icon_haqi"
+            resValue "drawable", "app_splash", "@drawable/splash"
+            resValue "string", "app_scheme","haqi"
+            dimension "company"
+        }
+
         /* ABI */
         abiDefault {
             ndk {
