@@ -2,6 +2,35 @@
 
 Guidance for AI assistants working in this repository.
 
+## Active Work: dev → cp-old Merge
+
+This repo (`cp-old` branch) is being merged with the `dev` branch located at
+`C:\lxzsrc\NPLRuntime` (same GitHub repo: https://github.com/LiXizhi/NPLRuntime).
+
+**Branch roles:**
+- **dev** (`C:\lxzsrc\NPLRuntime`) — Windows/DirectX-only codebase; engine source in
+  `Client/trunk/ParaEngineClient/` (1 559 files).
+- **cp-old** (`C:\lxzsrc\NPLRuntimeCPOld`) — Cross-platform port; engine source in
+  `NPLRuntime/ParaEngine/` (1 392 files).  Supports Windows, Linux, macOS, iOS,
+  Android, Emscripten, HarmonyOS.
+
+**Goal:** make cp-old the single authoritative repo by verifying that every feature/fix
+in dev has been ported to cp-old.
+
+**Progress tracking:** [`docs/cross-platform-progress.md`](docs/cross-platform-progress.md)
+contains a file-by-file comparison (Section 1 = missing, Section 2 = diverged,
+Section 3 = identical, Section 4 = cp-old-only new code).
+
+**Key numbers (as of 2026-06-30):**
+
+| Category | Count |
+|----------|------:|
+| Identical (fully ported) | 55 |
+| CRLF-only diff (effectively identical) | 749 |
+| Real content differences | 442 |
+| Only in dev (not yet in cp-old) | 312 |
+| Only in cp-old (new platform code) | 145 |
+
 ## What This Project Is
 
 **NPLRuntime** is the C++ runtime for **NPL (Neural Parallel Language)** — a high-performance scripting language with **100% Lua 5.1 syntax compatibility**. It powers **ParaEngine**, a cross-platform 3D/2D game engine used by [Paracraft](http://www.paracraft.cn) and related applications.
@@ -19,19 +48,23 @@ Guidance for AI assistants working in this repository.
 ```
 NPLRuntimeCPOld/
 ├── NPLRuntime/          # Main CMake project (start here)
-│   ├── ParaEngine/      # Core engine static library
+│   ├── ParaEngine/      # Engine core (= legacy Client/trunk/ParaEngineClient/ParaEngine/)
 │   ├── RenderSystem/    # OpenGL / D3D9 / Null render backends
 │   ├── Platform/        # OS entry points (WinMain, main, JNI, NAPI, etc.)
 │   ├── Plugins/         # Physics, audio, SQLite, Mono, OCE
+│   ├── ParaEngineClientApp/  # Thin EXE loading engine as DLL (web plugin / IPC)
 │   ├── externals/       # Vendored third-party deps (avoid editing)
 │   └── cmake/           # CMake helpers
 ├── Server/trunk/        # Legacy standalone server tree (prefer NPLRuntime + NPLRUNTIME_SERVER)
+├── bin/ClientOpenGL/    # Legacy in-tree VS build artifacts (not source)
 ├── ParaWorld/           # Build output (bin32 / bin64) — created at build time
 ├── docs/                # Architecture and component documentation
 ├── build_*.bat / .sh    # Platform build wrappers
 ├── README.md            # User-facing overview
 └── INSTALL.md           # Install and build guide
 ```
+
+> **`Client/trunk/ParaEngineClient/` does not exist in this repo.** It was re-rooted to `NPLRuntime/`. Internal `ParaEngine/` subfolder names are unchanged. See [docs/paraengine-client.md](docs/paraengine-client.md).
 
 ## Architecture at a Glance
 
@@ -61,6 +94,8 @@ Platform entry (WinMain / main / JNI)
 | `NPLRuntime/ParaEngine/CMakeLists.txt` | ParaEngine library composition |
 
 Full documentation: [docs/README.md](docs/README.md)
+
+**Deep client reference:** [docs/paraengine-client.md](docs/paraengine-client.md) — legacy `Client/trunk/ParaEngineClient` mapped to `NPLRuntime/ParaEngine/`, module-by-module with class tables and startup flow.
 
 ## Build Commands
 

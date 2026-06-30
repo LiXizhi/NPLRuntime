@@ -6,6 +6,8 @@ Internal architecture and component reference for the NPLRuntime / ParaEngine co
 
 | Document | Description |
 |----------|-------------|
+| [paraengine-client.md](paraengine-client.md) | **Deep dive:** legacy `Client/trunk/ParaEngineClient` → modern `NPLRuntime/ParaEngine`, every module, startup flow |
+| [npl-ecosystem.md](npl-ecosystem.md) | NPL language, packages, Paracraft scripts, Code Wiki, wiki-derived context |
 | [architecture.md](architecture.md) | High-level system design, data flow, client vs server |
 | [build-system.md](build-system.md) | CMake options, targets, build scripts, output paths |
 | [npl-runtime.md](npl-runtime.md) | NPL language runtime: activation, threading, networking |
@@ -39,14 +41,16 @@ Internal architecture and component reference for the NPLRuntime / ParaEngine co
 ### Source Tree (non-externals)
 
 ```
-NPLRuntime/
-├── ParaEngine/       # Core engine (static lib)
-├── RenderSystem/     # GPU backend implementations
-├── Platform/         # OS-specific mains and window glue
-├── Plugins/          # Optional subsystems
-├── ParaEngineClientApp/  # DLL test harness
-└── cmake/            # Build helpers
+NPLRuntime/                          # modern root (was Client/trunk/ParaEngineClient/)
+├── ParaEngine/                      # engine core (was .../ParaEngineClient/ParaEngine/)
+├── RenderSystem/                    # GPU backends
+├── Platform/Windows/                # WinMain → ParaEngineClient.exe
+├── Plugins/                         # physics, audio, sqlite
+├── ParaEngineClientApp/             # DLL loader + IPC harness
+└── cmake/                           # build helpers
 ```
+
+> Legacy path `Client/trunk/ParaEngineClient/ParaEngine/` maps 1:1 to `NPLRuntime/ParaEngine/`. See [paraengine-client.md](paraengine-client.md).
 
 ## Related Files at Repository Root
 
