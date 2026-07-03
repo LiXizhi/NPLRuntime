@@ -75,21 +75,23 @@ void CGUIMouseVirtual::PushMouseEvent(const DeviceMouseEventPtr& e)
 
 void CGUIMouseVirtual::PushMouseEvent(UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
+	// when the buffer is full, drop the event; the count must never exceed the array size,
+	// otherwise ReadBufferedData will read/write out of bounds.
 	if (m_buffered_mouse_msgs_count < SAMPLE_BUFFER_SIZE / 2) {
 		m_buffered_mouse_msgs[m_buffered_mouse_msgs_count].lParam = lParam;
 		m_buffered_mouse_msgs[m_buffered_mouse_msgs_count].wParam = wParam;
 		m_buffered_mouse_msgs[m_buffered_mouse_msgs_count].message = uMsg;
 		m_buffered_mouse_msgs[m_buffered_mouse_msgs_count].time = GetTickCount();
+		++m_buffered_mouse_msgs_count;
 	}
-	++m_buffered_mouse_msgs_count;
 }
 
 void CGUIMouseVirtual::PushMouseEvent(const MSG &msg)
 {
 	if (m_buffered_mouse_msgs_count < SAMPLE_BUFFER_SIZE / 2) {
 		m_buffered_mouse_msgs[m_buffered_mouse_msgs_count] = msg;
+		++m_buffered_mouse_msgs_count;
 	}
-	++m_buffered_mouse_msgs_count;
 }
 
 bool ParaEngine::CGUIMouseVirtual::IsUseWindowsMessage()
@@ -209,7 +211,12 @@ HRESULT ParaEngine::CGUIMouseVirtual::ReadBufferedData()
 	m_dwElements = 0;
 	int x = m_curMouseState.lX, y = m_curMouseState.lY;
 	//translating windows message into DirextMouse-like events, in order to maintain consistency of the interface
-	for (int a = 0; a<m_buffered_mouse_msgs_count; m_dwElements++, a++) {
+	// defensive clamp: never trust the count beyond the actual buffer capacity, and never let
+	// m_dwElements overflow m_didod (WM_MOUSEMOVE emits two elements per message).
+	int nMsgCount = m_buffered_mouse_msgs_count;
+	if (nMsgCount > SAMPLE_BUFFER_SIZE / 2)
+		nMsgCount = SAMPLE_BUFFER_SIZE / 2;
+	for (int a = 0; a<nMsgCount && m_dwElements < SAMPLE_BUFFER_SIZE - 1; m_dwElements++, a++) {
 		int mouse_x = GET_X_LPARAM(m_buffered_mouse_msgs[a].lParam);
 		int mouse_y = GET_Y_LPARAM(m_buffered_mouse_msgs[a].lParam);
 		

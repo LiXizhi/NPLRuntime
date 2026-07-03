@@ -54,21 +54,23 @@ void CGUIKeyboardVirtual::Reset()
 
 void CGUIKeyboardVirtual::PushKeyEvent(UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
+	// when the buffer is full, drop the event; the count must never exceed the array size,
+	// otherwise ReadBufferedData will read/write out of bounds.
 	if (m_buffered_key_msgs_count < SAMPLE_BUFFER_SIZE / 2) {
 		m_buffered_key_msgs[m_buffered_key_msgs_count].lParam = lParam;
 		m_buffered_key_msgs[m_buffered_key_msgs_count].wParam = wParam;
 		m_buffered_key_msgs[m_buffered_key_msgs_count].time = GetTickCount();
 		m_buffered_key_msgs[m_buffered_key_msgs_count].message = uMsg;
+		++m_buffered_key_msgs_count;
 	}
-	++m_buffered_key_msgs_count;
 }
 
 void CGUIKeyboardVirtual::PushKeyEvent(const MSG &msg)
 {
 	if (m_buffered_key_msgs_count < SAMPLE_BUFFER_SIZE / 2) {
 		m_buffered_key_msgs[m_buffered_key_msgs_count] = msg;
+		++m_buffered_key_msgs_count;
 	}
-	++m_buffered_key_msgs_count;
 }
 
 CGUIBase* ParaEngine::CGUIKeyboardVirtual::GetCapture()
@@ -84,7 +86,11 @@ HRESULT ParaEngine::CGUIKeyboardVirtual::ReadBufferedData()
 		Only immediate button data are read from direct input. */
 		m_dwElements = 0;
 		//translating windows message into DirextMouse-like events, in order to maintain consistency of the interface
-		for (int a = 0; a<m_buffered_key_msgs_count; a++) {
+		// defensive clamp: never trust the count beyond the actual buffer capacity.
+		int nMsgCount = m_buffered_key_msgs_count;
+		if (nMsgCount > SAMPLE_BUFFER_SIZE / 2)
+			nMsgCount = SAMPLE_BUFFER_SIZE / 2;
+		for (int a = 0; a<nMsgCount && m_dwElements < SAMPLE_BUFFER_SIZE; a++) {
 			m_didod[m_dwElements].dwOfs = 0;
 			switch (m_buffered_key_msgs[a].message) {
 			case WM_KEYDOWN:
