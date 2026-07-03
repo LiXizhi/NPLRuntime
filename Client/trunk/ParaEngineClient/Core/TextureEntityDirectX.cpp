@@ -64,6 +64,10 @@ TextureEntityDirectX::~TextureEntityDirectX()
 	{
 		UnloadAsset();
 	}
+	// Free the texture-sequence array only here (at entity destruction). Any pending
+	// async load holds an asset_ptr to this entity, so reaching the destructor
+	// guarantees no loader still references &m_pTextureSequence[i]. See DeleteDeviceObjects().
+	SAFE_DELETE_ARRAY(m_pTextureSequence);
 }
 
 D3DFORMAT TextureEntityDirectX::GetD3DFormat()
@@ -822,9 +826,19 @@ HRESULT TextureEntityDirectX::DeleteDeviceObjects()
 			{
 				for (int i=1;i<=nTotalTextureSequence;++i)
 				{
-					SAFE_RELEASE(m_pTextureSequence[i-1]);
+					SAFE_RELEASE(m_pTextureSequence[i-1]);   // release and null each frame slot
 				}
-				SAFE_DELETE_ARRAY(m_pTextureSequence);
+				// Do NOT SAFE_DELETE_ARRAY(m_pTextureSequence) here.
+				// This function is also called on device reset / manual unload while the
+				// entity is still alive, and pending async loads (CTextureLoader/
+				// CTextureProcessor) may still be queued in CAsyncLoader holding
+				// &m_pTextureSequence[i] as their write-back target. Freeing the array
+				// here would leave them with a dangling pointer -> use-after-free crash
+				// when they later run SAFE_RELEASE(*ppTexture). The array lives for the
+				// entity's whole lifetime and is freed in the destructor instead (by then
+				// the asset_ptr held by any loader guarantees no async work remains).
+				// Slots are nulled above, so a late completion just Release(NULL)s and
+				// stores the new texture. See ~TextureEntityDirectX().
 			}
 			break;
 		}
