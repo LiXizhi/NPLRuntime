@@ -542,6 +542,20 @@ public class ParaEngineWebViewHelper {
     }
 
     @Keep
+    public static void setTransparent(final int index, final boolean transparent) {
+        sActivity.runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                ParaEngineWebView webView = webViews.get(index);
+
+                if (webView != null) {
+                    webView.setTransparentBackground(transparent);
+                }
+            }
+        });
+    }
+
+    @Keep
     public static void move(final int index, final int x, final int y) {
         sActivity.runOnUiThread(new Runnable() {
             @Override
