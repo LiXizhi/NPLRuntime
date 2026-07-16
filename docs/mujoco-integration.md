@@ -10,6 +10,8 @@ MuJoCo is built from `Server/trunk/mujoco-3.10.0`. The integration does not use 
 
 The legacy ParaEngine targets remain on their existing C++ standard. Only the wrapper library that includes MuJoCo headers is compiled as C++20. The MuJoCo DLL is copied to the ParaWorld output directory after the client target is built.
 
+The Client enables Assimp's STL importer for robot visual asset preparation. Embedded MuJoCo builds disable `tinyxml2_INSTALL_PKGCONFIG` because tinyxml2's pkg-config generation writes one output from every Visual Studio configuration and otherwise breaks multi-config CMake generation.
+
 ## Lua API
 
 The first integration milestone exposes a handle-based `ParaMuJoCo` namespace:
@@ -69,7 +71,28 @@ For testing in `D:/Paracraft_dev`, deploy `ParaEngineClient_d.exe`, `ParaEngineC
 
 ## Paracraft runtime tests
 
-`MuJoCoQuickTest.lua` advances the selected model by 5000 steps immediately and logs model dimensions, contacts, and raw/converted pelvis poses. `MuJoCoLiveTest.lua` uses a real-time accumulator with a 2 ms fixed simulation step and a bounded catch-up count. It creates a temporary pelvis proxy next to the player and continuously updates its ParaEngine position. The timer, proxy, and model handle are released when the world unloads.
+`MuJoCoQuickTest.lua` advances the selected model by 5000 steps immediately and logs model dimensions, contacts, and raw/converted pelvis poses. `MuJoCoLiveTest.lua` remains the 28-body handless static-FBX pose synchronization test. `MuJoCoParaXPrototype.lua` is now the primary complete-visual test: it loads one rigid-skinned ParaX character containing the body, both articulated hands, fingers, head shell, and front/rear logo geometry.
+
+### Visual asset preparation
+
+MuJoCo's H1_2 visual sources are STL files. Run the preparation script once after deploying a Client built with STL importer support:
+
+```powershell
+D:/Paracraft_dev/start_mujoco_world.bat `
+	"worlds/DesignHouse/_user/zhanglei/test_mujoco" `
+	"script/apps/Aries/Creator/Game/Robot/MuJoCoPrepareVisualAssets.lua" `
+	"D:/Paracraft_dev/mujoco-models/h1_2_description/h1_2.xml"
+```
+
+The shared `MuJoCoH1VisualConfig.lua` map contains 28 body entries and 27 unique meshes because both wrist-yaw bodies use `wrist_yaw_link.STL`. The preparation script writes those 27 static FBX files under `h1_2_description/visual/`. `ParaAsset.ConvertGLB` remains backward compatible with its original seven-value TRS input and additionally accepts a 12-value 3x4 row-major matrix. Robot mesh preparation uses this matrix:
+
+```text
+0 -1 0 0
+0  0 1 0
+1  0 0 0
+```
+
+It applies the same `(x,y,z) -> (-y,z,x)` basis to mesh vertices that `RobotCoordinateConverter` applies to body positions. FBX is used instead of GLB at runtime because `LoadStaticMesh(.fbx)` creates a mesh object whose full quaternion can be updated; `CreateCharacter` does not preserve arbitrary rigid-body pitch and roll.
 
 Select either script through the existing launcher without changing the Aries main loop:
 
@@ -80,8 +103,50 @@ D:/Paracraft_dev/start_mujoco_world.bat `
 	"D:/Paracraft_dev/mujoco-models/h1_2_description/h1_2.xml"
 ```
 
-The live proxy currently validates fixed stepping and position synchronization only. Full body mesh/bone mapping and scene-object quaternion application remain separate visualization work.
+Pass `mujoco_live_simulate="true"` as an extra command-line argument to enable the 2 ms fixed-step simulation. Without a controller the H1_2 model will fall under gravity, so frozen mode is the default visualization check. `mujoco_visual_distance` changes the default three-meter player-relative placement.
+
+The 28 real mesh objects validate handless body-object position and quaternion synchronization. A successful visibility log includes `visuals=28`, `fallbacks=0`, and a nonzero pelvis AABB. This path is retained as a lower-level diagnostic; it is no longer the target visual representation.
+
+### Complete H1 ParaX asset
+
+The reproducible Blender 4.2 LTS builder is maintained in the `para-robot` repository:
+
+```text
+unitree/tools/blender/build_h1_parax_prototype.py
+```
+
+Full mode reads the H1_2 URDF, creates one rigid bone per visual link, binds each link with weight `1.0`, embeds dark-body and unlit-white-logo materials, and exports one GLB. The current verified asset contains:
+
+- 55 URDF visual links, including both hands, fingers, and `logo_link`;
+- 74 mesh chunks and 130 imported ParaX nodes/bones;
+- 788,274 triangles with no missing vertex weights;
+- 75 render passes and 74 geosets;
+- AABB size approximately `0.592 x 1.788 x 0.511` metres.
+
+ParaX render passes use 16-bit local indices. Assimp expands the original GLB to more than two million vertices, and the old importer skipped faces whose local index span exceeded 65,535. The builder therefore pre-splits every link into deterministic chunks of at most 20,000 triangles, remapping each chunk to contiguous local vertices while retaining its original rigid bone. This restored all 788,274 triangles; the unchunked asset retained only 684,811.
+
+The body and logo materials include embedded 2x2 diffuse textures because `ModelRenderPass::init_FX()` rejects passes without a loaded diffuse texture. Imported STL material slots are cleared, every polygon uses material slot zero, and the geometric front/rear logo is offset 2 mm away from the torso to prevent z-fighting at large world coordinates. The logo material name ends in `_u`, selecting ParaX unlit rendering.
+
+GLB/glTF is right-handed while ParaEngine is left-handed. The ParaX Assimp path now applies `aiProcess_MakeLeftHanded | aiProcess_FlipWindingOrder` only for `.glb/.gltf`; the GLB asset itself remains standards-compliant instead of containing viewer-specific mirrored geometry. The latest build is deployed, but front/rear logo readability should receive one final visual confirmation in both Windows 3D Viewer and Paracraft.
+
+Run the complete model test without changing `main_loop.lua`:
+
+```powershell
+Set-Location D:/Paracraft_dev
+./ParaEngineClient_d.exe `
+	'bootstrapper="script/apps/Aries/Creator/Game/Robot/MuJoCoBootstrapper.lua"' `
+	'dev="D:/gits/paracraft/paracraft_script"' `
+	'world="worlds/DesignHouse/_user/zhanglei/test_mujoco"' `
+	'mujoco_test_script="script/apps/Aries/Creator/Game/Robot/MuJoCoParaXPrototype.lua"' `
+	'mujoco_model="D:/Paracraft_dev/mujoco-models/h1_2_description/h1_2.xml"' `
+	'mujoco_parax_model="D:/Paracraft_dev/mujoco-models/h1_2_description/parax/h1_2_full.glb"' `
+	'mujoco_parax_test_pose="false"' `
+	'mc="true"' 'isDevEnv="true"' 'isDevMode="true"' 'noclientupdate="true"' `
+	'logfile="mujoco-world.log"'
+```
+
+The ParaX character must be created as a global visitor. Local objects are attached to the finite terrain quadtree, which does not cover worlds using coordinates near `(20000, 20000)`; such an object loads correctly but never reaches `PrepareRenderObject()`.
 
 ## Phase-one status
 
-This milestone establishes the build, runtime ownership, fixed-step, state, control, coordinate conversion, and Lua foundations. The remaining phase-one work includes the canonical robot contract, H1/G1 asset mapping, ParaX pose driving, local static terrain mirroring, Bullet backend parity, observations and contact details, ONNX policy deployment, diagnostics, and complete acceptance tests.
+This milestone establishes the build, runtime ownership, fixed-step, state/control API, coordinate conversion, handless multi-object pose test, and complete H1 ParaX visual asset. The next priority is real-time MuJoCo-to-ParaX pose driving: map MuJoCo bodies/joints to the 55 link bones, compute local bone transforms from MuJoCo world poses and bind transforms, and update all bones through one animation instance. After that, phase one still needs the canonical robot contract, reset/control demo, detailed observations and contacts, local terrain mirroring, diagnostics, and complete acceptance tests. Bullet backend parity and ONNX policy deployment remain later work.
