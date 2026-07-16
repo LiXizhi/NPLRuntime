@@ -122,6 +122,7 @@ list(APPEND ParaEngineClient_SRCS ${ParaEngineClient_NPL_FILES})
 
 ##############################
 file (GLOB ParaEngineClient_Scripting_FILES ${ParaEngineClient_SOURCE_DIR}/ParaScriptBindings/*.cpp ${ParaEngineClient_SOURCE_DIR}/ParaScriptBindings/*.h)
+list(REMOVE_ITEM ParaEngineClient_Scripting_FILES ${ParaEngineClient_SOURCE_DIR}/ParaScriptBindings/MuJoCoSimulation.cpp)
 SOURCE_GROUP("ParaScriptBindings" FILES ${ParaEngineClient_Scripting_FILES})
 list(APPEND ParaEngineClient_SRCS ${ParaEngineClient_Scripting_FILES})
 
@@ -918,6 +919,11 @@ if (NPLRUNTIME_DARKNET)
 	list(APPEND ParaEngineClient_LIBS darknet)
 endif()
 
+if(NPLRUNTIME_MUJOCO)
+	target_compile_definitions(ParaEngineClient PRIVATE USE_MUJOCO)
+	list(APPEND ParaEngineClient_LIBS NPLMuJoCoSimulation)
+endif()
+
 target_link_libraries(ParaEngineClient ${ParaEngineClient_LIBS})
 
 ADD_CUSTOM_COMMAND(
@@ -926,6 +932,14 @@ ADD_CUSTOM_COMMAND(
 	COMMAND ${CMAKE_COMMAND} -E make_directory ${OUTPUT_BIN_DIR}
 	COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:ParaEngineClient> ${OUTPUT_BIN_DIR}
  )
+
+if(NPLRUNTIME_MUJOCO)
+	ADD_CUSTOM_COMMAND(
+		TARGET ParaEngineClient
+		POST_BUILD
+		COMMAND ${CMAKE_COMMAND} -E copy_if_different $<TARGET_FILE:mujoco> ${OUTPUT_BIN_DIR}
+	)
+endif()
 
 
 set(NPLRUNTIME_LINK_LIBRARIES ParaEngineClient ${NPLRUNTIME_LINK_LIBRARIES} ${ParaEngineClient_LIBS})

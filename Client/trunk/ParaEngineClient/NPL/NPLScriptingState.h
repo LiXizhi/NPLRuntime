@@ -83,6 +83,10 @@ namespace ParaScripting
 		void LoadHAPI_Network();
 		/// load functions for AI
 		void LoadHAPI_AI();
+#ifdef USE_MUJOCO
+		/// load MuJoCo robot simulation functions
+		void LoadHAPI_MuJoCo();
+#endif
 		/// load functions for neural parallel language
 		void LoadHAPI_NPL();
 		/// load jabber related functions

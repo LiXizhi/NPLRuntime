@@ -25,6 +25,15 @@ set(SERVER_SOURCE_DIR   ${PROJECT_SOURCE_DIR}/../Server/trunk/)
 ################################
 option(PARAENGINE_CLIENT_DLL "Generate Dll Or Exe" ON)
 option(NPLRUNTIME_STATIC_LIB "static lib or not" OFF)
+if(CMAKE_SIZEOF_VOID_P EQUAL 8)
+	option(NPLRUNTIME_MUJOCO "include MuJoCo robot simulation" ON)
+else()
+	option(NPLRUNTIME_MUJOCO "include MuJoCo robot simulation (64-bit only)" OFF)
+endif()
+
+if(NPLRUNTIME_MUJOCO AND NOT CMAKE_SIZEOF_VOID_P EQUAL 8)
+	message(FATAL_ERROR "MuJoCo 3.10.0 integration requires a 64-bit build")
+endif()
 
 # Win32 Default Option
 if(WIN32)
@@ -174,6 +183,48 @@ add_subdirectory (${SERVER_SOURCE_DIR}tinyxpath_1_3_1  ${PROJECT_BINARY_DIR}/tin
 add_subdirectory (${SERVER_SOURCE_DIR}/pcl/common ${PROJECT_BINARY_DIR}/common)
 add_subdirectory (${SERVER_SOURCE_DIR}/pcl/features ${PROJECT_BINARY_DIR}/features)
 add_subdirectory (${SERVER_SOURCE_DIR}/Pinocchio ${PROJECT_BINARY_DIR}/Pinocchio)
+
+if(NPLRUNTIME_MUJOCO)
+	set(MUJOCO_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
+	set(MUJOCO_BUILD_SIMULATE OFF CACHE BOOL "" FORCE)
+	set(MUJOCO_BUILD_TESTS OFF CACHE BOOL "" FORCE)
+	set(MUJOCO_TEST_PYTHON_UTIL OFF CACHE BOOL "" FORCE)
+	set(_NPL_CMAKE_CXX_STANDARD ${CMAKE_CXX_STANDARD})
+	set(_NPL_CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})
+	set(_NPL_CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_LIBRARY_OUTPUT_DIRECTORY})
+	set(_NPL_CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_ARCHIVE_OUTPUT_DIRECTORY})
+	if(DEFINED BUILD_SHARED_LIBS)
+		set(_NPL_BUILD_SHARED_LIBS_DEFINED TRUE)
+		set(_NPL_BUILD_SHARED_LIBS ${BUILD_SHARED_LIBS})
+	else()
+		set(_NPL_BUILD_SHARED_LIBS_DEFINED FALSE)
+	endif()
+	add_subdirectory (${SERVER_SOURCE_DIR}/mujoco-3.10.0 ${PROJECT_BINARY_DIR}/mujoco-3.10.0)
+	add_library(NPLMuJoCoSimulation STATIC
+		${PROJECT_SOURCE_DIR}/trunk/ParaEngineClient/ParaScriptBindings/MuJoCoSimulation.cpp
+		${PROJECT_SOURCE_DIR}/trunk/ParaEngineClient/robotics/RobotCoordinateConverter.cpp
+	)
+	target_compile_definitions(NPLMuJoCoSimulation PRIVATE USE_MUJOCO)
+	target_include_directories(NPLMuJoCoSimulation PUBLIC
+		${PROJECT_SOURCE_DIR}/trunk/ParaEngineClient/ParaScriptBindings
+		${PROJECT_SOURCE_DIR}/trunk/ParaEngineClient/robotics
+	)
+	target_link_libraries(NPLMuJoCoSimulation PUBLIC mujoco::mujoco)
+	target_compile_features(NPLMuJoCoSimulation PRIVATE cxx_std_20)
+	if(MSVC)
+		set_property(TARGET NPLMuJoCoSimulation PROPERTY MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
+	endif()
+	set(CMAKE_CXX_STANDARD ${_NPL_CMAKE_CXX_STANDARD})
+	set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${_NPL_CMAKE_RUNTIME_OUTPUT_DIRECTORY})
+	set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${_NPL_CMAKE_LIBRARY_OUTPUT_DIRECTORY})
+	set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${_NPL_CMAKE_ARCHIVE_OUTPUT_DIRECTORY})
+	if(_NPL_BUILD_SHARED_LIBS_DEFINED)
+		set(BUILD_SHARED_LIBS ${_NPL_BUILD_SHARED_LIBS} CACHE BOOL "Build shared libraries" FORCE)
+	else()
+		unset(BUILD_SHARED_LIBS CACHE)
+		unset(BUILD_SHARED_LIBS)
+	endif()
+endif()
 
 add_subdirectory (${PROJECT_SOURCE_DIR}/trunk/externals/antlr ${PROJECT_BINARY_DIR}/antlr)
 

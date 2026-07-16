@@ -306,6 +306,9 @@ void ParaScripting::CNPLScriptingState::LoadParaLib()
 	LoadHAPI_Audio();
 	LoadHAPI_Network();
 	LoadHAPI_AI();
+#ifdef USE_MUJOCO
+	LoadHAPI_MuJoCo();
+#endif
 #ifdef CROSS_PLATFORM
 	LoadHAPI_WebView();
 	LoadHAPI_Platform();
