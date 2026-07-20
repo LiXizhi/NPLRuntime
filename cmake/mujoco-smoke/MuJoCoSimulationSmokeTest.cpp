@@ -1,8 +1,11 @@
 #include "ParaScriptingMuJoCo.h"
 #include "RobotCoordinateConverter.h"
+#include "IRobotSimulation.h"
+#include "MujocoRobotSimulation.h"
 
 #include <cmath>
 #include <iostream>
+#include <string>
 
 namespace
 {
@@ -34,6 +37,10 @@ namespace
 		if (!Near(xAxis.z, 1.0) || !Near(yAxis.x, -1.0) || !Near(zAxis.y, 1.0))
 			return false;
 
+		ParaEngine::RobotVector3 roundTrip = RobotCoordinateConverter::ParaEnginePositionToMuJoCo(xAxis.x, xAxis.y, xAxis.z);
+		if (!Near(roundTrip.x, 1.0) || !Near(roundTrip.y, 0.0) || !Near(roundTrip.z, 0.0))
+			return false;
+
 		ParaEngine::RobotQuaternion identity = RobotCoordinateConverter::MuJoCoQuaternionToParaEngine(1.0, 0.0, 0.0, 0.0);
 		if (!Near(identity.x, 0.0) || !Near(identity.y, 0.0) || !Near(identity.z, 0.0) || !Near(identity.w, 1.0))
 			return false;
@@ -54,6 +61,9 @@ int main(int argc, char** argv)
 	}
 	if (!TestCoordinateConversion())
 		return 9;
+
+	if (std::string(ParaEngine::Robotics::kRobotContractVersion).empty())
+		return 14;
 
 	ParaScripting::MuJoCoSimulation simulation;
 	if (!simulation.Load(argv[1]))
@@ -80,9 +90,54 @@ int main(int argc, char** argv)
 	if (!std::isfinite(simulation.GetQPos(0)) || !std::isfinite(simulation.GetQVel(0)) || simulation.GetTime() <= 0.0)
 		return 5;
 
+	const int jointId = simulation.FindJoint("hinge");
+	if (jointId < 0 || simulation.GetJointQPosAdr(jointId) != 0 || simulation.GetJointDofAdr(jointId) != 0)
+		return 11;
+	if (!std::isfinite(simulation.GetBodyLinearVelocity(bodyId, 0)) ||
+		!std::isfinite(simulation.GetBodyAngularVelocity(bodyId, 0)) ||
+		!std::isfinite(simulation.GetBodyParaLinearVelocity(bodyId, 0)))
+		return 12;
+	if (simulation.GetContactCount() > 0)
+	{
+		if (!std::isfinite(simulation.GetContactDist(0)) ||
+			!std::isfinite(simulation.GetContactForce(0, 2)) ||
+			!std::isfinite(simulation.GetContactParaForce(0, 1)))
+			return 13;
+	}
+
 	simulation.Reset();
 	if (simulation.GetTime() != 0.0 || !std::isfinite(simulation.GetQPos(0)))
 		return 6;
+
+	ParaEngine::Robotics::MujocoRobotSimulation robot;
+	ParaEngine::Robotics::RobotModelSource source;
+	source.path = argv[1];
+	source.robotId = "smoke_hinge";
+	if (!robot.LoadModel(source))
+		return 15;
+	if (robot.GetModelInfo().nu != 1 ||
+		robot.GetModelInfo().observationDim != ParaEngine::Robotics::MujocoRobotSimulation::ComputeObservationDim(1) ||
+		robot.GetModelInfo().observationDim != 28)
+		return 16;
+
+	ParaEngine::Robotics::RobotAction action;
+	action.mode = ParaEngine::Robotics::RobotActionMode::JointTorque;
+	action.values.push_back(0.2);
+	if (!robot.Step(0.01, action))
+		return 17;
+
+	ParaEngine::Robotics::RobotObservation observation;
+	if (!robot.GetObservation(observation) ||
+		static_cast<int>(observation.packed.size()) != 28 ||
+		!std::isfinite(observation.simTime) ||
+		observation.simTime <= 0.0)
+		return 18;
+
+	ParaEngine::Robotics::RobotLinkTransforms transforms;
+	if (!robot.GetLinkTransforms(transforms) || transforms.links.empty())
+		return 19;
+	if (transforms.links[0].name != "link")
+		return 20;
 
 	std::cout << "MuJoCo smoke test passed" << std::endl;
 	return 0;

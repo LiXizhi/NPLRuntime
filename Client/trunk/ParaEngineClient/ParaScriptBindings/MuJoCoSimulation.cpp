@@ -142,6 +142,20 @@ int ParaScripting::MuJoCoSimulation::FindActuator(const std::string& name) const
 	return NameToId(mjOBJ_ACTUATOR, name);
 }
 
+int ParaScripting::MuJoCoSimulation::GetJointQPosAdr(int jointId) const
+{
+	if (!IsValid() || jointId < 0 || jointId >= m_impl->model->njnt)
+		return -1;
+	return static_cast<int>(m_impl->model->jnt_qposadr[jointId]);
+}
+
+int ParaScripting::MuJoCoSimulation::GetJointDofAdr(int jointId) const
+{
+	if (!IsValid() || jointId < 0 || jointId >= m_impl->model->njnt)
+		return -1;
+	return static_cast<int>(m_impl->model->jnt_dofadr[jointId]);
+}
+
 double ParaScripting::MuJoCoSimulation::GetBodyPosition(int bodyId, int component) const
 {
 	if (!IsValid() || bodyId < 0 || bodyId >= m_impl->model->nbody || component < 0 || component >= 3)
@@ -174,6 +188,272 @@ double ParaScripting::MuJoCoSimulation::GetBodyParaQuaternion(int bodyId, int co
 	ParaEngine::RobotQuaternion converted = ParaEngine::RobotCoordinateConverter::MuJoCoQuaternionToParaEngine(quaternion[0], quaternion[1], quaternion[2], quaternion[3]);
 	const double values[] = { converted.x, converted.y, converted.z, converted.w };
 	return values[component];
+}
+
+double ParaScripting::MuJoCoSimulation::GetBodyLinearVelocity(int bodyId, int component) const
+{
+	// cvel layout: [wx, wy, wz, vx, vy, vz] per body (world frame about COM).
+	if (!IsValid() || bodyId < 0 || bodyId >= m_impl->model->nbody || component < 0 || component >= 3)
+		return 0.0;
+	return m_impl->data->cvel[6 * bodyId + 3 + component];
+}
+
+double ParaScripting::MuJoCoSimulation::GetBodyAngularVelocity(int bodyId, int component) const
+{
+	if (!IsValid() || bodyId < 0 || bodyId >= m_impl->model->nbody || component < 0 || component >= 3)
+		return 0.0;
+	return m_impl->data->cvel[6 * bodyId + component];
+}
+
+double ParaScripting::MuJoCoSimulation::GetBodyParaLinearVelocity(int bodyId, int component) const
+{
+	if (!IsValid() || bodyId < 0 || bodyId >= m_impl->model->nbody || component < 0 || component >= 3)
+		return 0.0;
+	const mjtNum* velocity = m_impl->data->cvel + 6 * bodyId + 3;
+	ParaEngine::RobotVector3 converted = ParaEngine::RobotCoordinateConverter::MuJoCoPositionToParaEngine(velocity[0], velocity[1], velocity[2]);
+	const double values[] = { converted.x, converted.y, converted.z };
+	return values[component];
+}
+
+double ParaScripting::MuJoCoSimulation::GetBodyParaAngularVelocity(int bodyId, int component) const
+{
+	if (!IsValid() || bodyId < 0 || bodyId >= m_impl->model->nbody || component < 0 || component >= 3)
+		return 0.0;
+	const mjtNum* velocity = m_impl->data->cvel + 6 * bodyId;
+	ParaEngine::RobotVector3 converted = ParaEngine::RobotCoordinateConverter::MuJoCoPositionToParaEngine(velocity[0], velocity[1], velocity[2]);
+	const double values[] = { converted.x, converted.y, converted.z };
+	return values[component];
+}
+
+int ParaScripting::MuJoCoSimulation::GetContactGeom1(int contactIndex) const
+{
+	if (!IsValid() || contactIndex < 0 || contactIndex >= m_impl->data->ncon)
+		return -1;
+	return m_impl->data->contact[contactIndex].geom1;
+}
+
+int ParaScripting::MuJoCoSimulation::GetContactGeom2(int contactIndex) const
+{
+	if (!IsValid() || contactIndex < 0 || contactIndex >= m_impl->data->ncon)
+		return -1;
+	return m_impl->data->contact[contactIndex].geom2;
+}
+
+int ParaScripting::MuJoCoSimulation::GetContactBody1(int contactIndex) const
+{
+	int geomId = GetContactGeom1(contactIndex);
+	if (!IsValid() || geomId < 0 || geomId >= m_impl->model->ngeom)
+		return -1;
+	return m_impl->model->geom_bodyid[geomId];
+}
+
+int ParaScripting::MuJoCoSimulation::GetContactBody2(int contactIndex) const
+{
+	int geomId = GetContactGeom2(contactIndex);
+	if (!IsValid() || geomId < 0 || geomId >= m_impl->model->ngeom)
+		return -1;
+	return m_impl->model->geom_bodyid[geomId];
+}
+
+double ParaScripting::MuJoCoSimulation::GetContactDist(int contactIndex) const
+{
+	if (!IsValid() || contactIndex < 0 || contactIndex >= m_impl->data->ncon)
+		return 0.0;
+	return m_impl->data->contact[contactIndex].dist;
+}
+
+double ParaScripting::MuJoCoSimulation::GetContactPosition(int contactIndex, int component) const
+{
+	if (!IsValid() || contactIndex < 0 || contactIndex >= m_impl->data->ncon || component < 0 || component >= 3)
+		return 0.0;
+	return m_impl->data->contact[contactIndex].pos[component];
+}
+
+double ParaScripting::MuJoCoSimulation::GetContactNormal(int contactIndex, int component) const
+{
+	if (!IsValid() || contactIndex < 0 || contactIndex >= m_impl->data->ncon || component < 0 || component >= 3)
+		return 0.0;
+	return m_impl->data->contact[contactIndex].frame[component];
+}
+
+double ParaScripting::MuJoCoSimulation::GetContactParaPosition(int contactIndex, int component) const
+{
+	if (!IsValid() || contactIndex < 0 || contactIndex >= m_impl->data->ncon || component < 0 || component >= 3)
+		return 0.0;
+	const mjtNum* position = m_impl->data->contact[contactIndex].pos;
+	ParaEngine::RobotVector3 converted = ParaEngine::RobotCoordinateConverter::MuJoCoPositionToParaEngine(position[0], position[1], position[2]);
+	const double values[] = { converted.x, converted.y, converted.z };
+	return values[component];
+}
+
+double ParaScripting::MuJoCoSimulation::GetContactParaNormal(int contactIndex, int component) const
+{
+	if (!IsValid() || contactIndex < 0 || contactIndex >= m_impl->data->ncon || component < 0 || component >= 3)
+		return 0.0;
+	const mjtNum* normal = m_impl->data->contact[contactIndex].frame;
+	ParaEngine::RobotVector3 converted = ParaEngine::RobotCoordinateConverter::MuJoCoPositionToParaEngine(normal[0], normal[1], normal[2]);
+	const double values[] = { converted.x, converted.y, converted.z };
+	return values[component];
+}
+
+double ParaScripting::MuJoCoSimulation::GetContactForce(int contactIndex, int component) const
+{
+	if (!IsValid() || contactIndex < 0 || contactIndex >= m_impl->data->ncon || component < 0 || component >= 3)
+		return 0.0;
+	mjtNum force[6] = { 0 };
+	mj_contactForce(m_impl->model, m_impl->data, contactIndex, force);
+	// Contact frame is row-major; first row is the normal. Rotate contact-frame force into world.
+	const mjtNum* frame = m_impl->data->contact[contactIndex].frame;
+	const double worldForce[3] = {
+		frame[0] * force[0] + frame[3] * force[1] + frame[6] * force[2],
+		frame[1] * force[0] + frame[4] * force[1] + frame[7] * force[2],
+		frame[2] * force[0] + frame[5] * force[1] + frame[8] * force[2]
+	};
+	return worldForce[component];
+}
+
+double ParaScripting::MuJoCoSimulation::GetContactParaForce(int contactIndex, int component) const
+{
+	if (!IsValid() || contactIndex < 0 || contactIndex >= m_impl->data->ncon || component < 0 || component >= 3)
+		return 0.0;
+	const double forceX = GetContactForce(contactIndex, 0);
+	const double forceY = GetContactForce(contactIndex, 1);
+	const double forceZ = GetContactForce(contactIndex, 2);
+	ParaEngine::RobotVector3 converted = ParaEngine::RobotCoordinateConverter::MuJoCoPositionToParaEngine(forceX, forceY, forceZ);
+	const double values[] = { converted.x, converted.y, converted.z };
+	return values[component];
+}
+
+int ParaScripting::MuJoCoSimulation::FindHField(const std::string& name) const
+{
+	return NameToId(mjOBJ_HFIELD, name);
+}
+
+int ParaScripting::MuJoCoSimulation::FindGeom(const std::string& name) const
+{
+	return NameToId(mjOBJ_GEOM, name);
+}
+
+int ParaScripting::MuJoCoSimulation::GetHFieldCount() const
+{
+	return IsValid() ? static_cast<int>(m_impl->model->nhfield) : 0;
+}
+
+int ParaScripting::MuJoCoSimulation::GetHFieldNRow(int hfieldId) const
+{
+	if (!IsValid() || hfieldId < 0 || hfieldId >= m_impl->model->nhfield)
+		return 0;
+	return m_impl->model->hfield_nrow[hfieldId];
+}
+
+int ParaScripting::MuJoCoSimulation::GetHFieldNCol(int hfieldId) const
+{
+	if (!IsValid() || hfieldId < 0 || hfieldId >= m_impl->model->nhfield)
+		return 0;
+	return m_impl->model->hfield_ncol[hfieldId];
+}
+
+double ParaScripting::MuJoCoSimulation::GetHFieldSize(int hfieldId, int component) const
+{
+	if (!IsValid() || hfieldId < 0 || hfieldId >= m_impl->model->nhfield || component < 0 || component >= 4)
+		return 0.0;
+	return m_impl->model->hfield_size[4 * hfieldId + component];
+}
+
+double ParaScripting::MuJoCoSimulation::GetHFieldElevation(int hfieldId, int row, int col) const
+{
+	if (!IsValid() || hfieldId < 0 || hfieldId >= m_impl->model->nhfield)
+		return 0.0;
+	const int nrow = m_impl->model->hfield_nrow[hfieldId];
+	const int ncol = m_impl->model->hfield_ncol[hfieldId];
+	if (row < 0 || row >= nrow || col < 0 || col >= ncol)
+		return 0.0;
+	return m_impl->model->hfield_data[m_impl->model->hfield_adr[hfieldId] + row * ncol + col];
+}
+
+bool ParaScripting::MuJoCoSimulation::SetHFieldElevation(int hfieldId, int row, int col, double value)
+{
+	if (!IsValid() || hfieldId < 0 || hfieldId >= m_impl->model->nhfield)
+		return false;
+	const int nrow = m_impl->model->hfield_nrow[hfieldId];
+	const int ncol = m_impl->model->hfield_ncol[hfieldId];
+	if (row < 0 || row >= nrow || col < 0 || col >= ncol)
+		return false;
+	if (value < 0.0)
+		value = 0.0;
+	if (value > 1.0)
+		value = 1.0;
+	m_impl->model->hfield_data[m_impl->model->hfield_adr[hfieldId] + row * ncol + col] = static_cast<float>(value);
+	return true;
+}
+
+bool ParaScripting::MuJoCoSimulation::FillHFieldElevation(int hfieldId, double value)
+{
+	if (!IsValid() || hfieldId < 0 || hfieldId >= m_impl->model->nhfield)
+		return false;
+	if (value < 0.0)
+		value = 0.0;
+	if (value > 1.0)
+		value = 1.0;
+	const int nrow = m_impl->model->hfield_nrow[hfieldId];
+	const int ncol = m_impl->model->hfield_ncol[hfieldId];
+	float* data = m_impl->model->hfield_data + m_impl->model->hfield_adr[hfieldId];
+	const float filled = static_cast<float>(value);
+	for (int index = 0; index < nrow * ncol; ++index)
+		data[index] = filled;
+	return true;
+}
+
+double ParaScripting::MuJoCoSimulation::GetGeomPosition(int geomId, int component) const
+{
+	if (!IsValid() || geomId < 0 || geomId >= m_impl->model->ngeom || component < 0 || component >= 3)
+		return 0.0;
+	return m_impl->model->geom_pos[3 * geomId + component];
+}
+
+bool ParaScripting::MuJoCoSimulation::SetGeomPosition(int geomId, int component, double value)
+{
+	if (!IsValid() || geomId < 0 || geomId >= m_impl->model->ngeom || component < 0 || component >= 3)
+		return false;
+	m_impl->model->geom_pos[3 * geomId + component] = value;
+	return true;
+}
+
+double ParaScripting::MuJoCoSimulation::GetGeomParaPosition(int geomId, int component) const
+{
+	if (!IsValid() || geomId < 0 || geomId >= m_impl->model->ngeom || component < 0 || component >= 3)
+		return 0.0;
+	const mjtNum* position = m_impl->model->geom_pos + 3 * geomId;
+	ParaEngine::RobotVector3 converted = ParaEngine::RobotCoordinateConverter::MuJoCoPositionToParaEngine(position[0], position[1], position[2]);
+	const double values[] = { converted.x, converted.y, converted.z };
+	return values[component];
+}
+
+bool ParaScripting::MuJoCoSimulation::SetGeomParaPosition(int geomId, double x, double y, double z)
+{
+	if (!IsValid() || geomId < 0 || geomId >= m_impl->model->ngeom)
+		return false;
+	ParaEngine::RobotVector3 converted = ParaEngine::RobotCoordinateConverter::ParaEnginePositionToMuJoCo(x, y, z);
+	m_impl->model->geom_pos[3 * geomId + 0] = converted.x;
+	m_impl->model->geom_pos[3 * geomId + 1] = converted.y;
+	m_impl->model->geom_pos[3 * geomId + 2] = converted.z;
+	return true;
+}
+
+std::string ParaScripting::MuJoCoSimulation::GetBodyName(int bodyId) const
+{
+	if (!IsValid() || bodyId < 0 || bodyId >= m_impl->model->nbody)
+		return std::string();
+	const char* name = mj_id2name(m_impl->model, mjOBJ_BODY, bodyId);
+	return name ? std::string(name) : std::string();
+}
+
+std::string ParaScripting::MuJoCoSimulation::GetJointName(int jointId) const
+{
+	if (!IsValid() || jointId < 0 || jointId >= m_impl->model->njnt)
+		return std::string();
+	const char* name = mj_id2name(m_impl->model, mjOBJ_JOINT, jointId);
+	return name ? std::string(name) : std::string();
 }
 
 #endif

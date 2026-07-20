@@ -24,10 +24,15 @@ The first integration milestone exposes a handle-based `ParaMuJoCo` namespace:
 - `GetTime(handle)` and `NameToId(handle, objectType, name)`
 - `GetBodyCount`, `GetJointCount`, `GetActuatorCount`, and `GetContactCount`
 - `FindBody`, `FindJoint`, and `FindActuator`
+- `GetJointQPosAdr` / `GetJointDofAdr` for hinge joint `qpos` / `qvel` addresses
 - `GetBodyPosition` and `GetBodyQuaternion` for raw MuJoCo world poses
 - `GetBodyParaPosition` and `GetBodyParaQuaternion` for converted ParaEngine world poses
+- `GetBodyLinearVelocity` / `GetBodyAngularVelocity` and `GetBodyParaLinearVelocity` / `GetBodyParaAngularVelocity` for COM twist (`cvel`)
+- Contact details: `GetContactGeom*`, `GetContactBody*`, `GetContactDist`, `GetContactPosition` / `GetContactNormal`, `GetContactForce` (world), and matching `GetContactPara*` helpers
+- Heightfield / geom: `FindHField`, `GetHFieldNRow/NCol/Size`, `Get/Set/FillHFieldElevation`, `FindGeom`, `Get/SetGeomPosition`, `SetGeomParaPosition`
+- `RobotCoordinateConverter::ParaEnginePositionToMuJoCo` for sampling Paracraft terrain into MuJoCo
 
-Array indices use MuJoCo's zero-based indexing. `GetLastError(0)` returns the most recent model loading error when `LoadModel` returns zero.
+Array indices use MuJoCo's zero-based indexing. `GetLastError(0)` returns the most recent model loading error when `LoadModel` returns zero. Lua helpers: `MuJoCoObservation.lua`, `MuJoCoLocalTerrain.lua`. Local terrain model: `h1_2_paracraft.xml` (`local_terrain` 41×41 hfield).
 
 ## Coordinate conversion
 
@@ -149,4 +154,4 @@ The ParaX character must be created as a global visitor. Local objects are attac
 
 ## Phase-one status
 
-This milestone establishes the build, runtime ownership, fixed-step, state/control API, coordinate conversion, handless multi-object pose test, and complete H1 ParaX visual asset. The next priority is real-time MuJoCo-to-ParaX pose driving: map MuJoCo bodies/joints to the 55 link bones, compute local bone transforms from MuJoCo world poses and bind transforms, and update all bones through one animation instance. After that, phase one still needs the canonical robot contract, reset/control demo, detailed observations and contacts, local terrain mirroring, diagnostics, and complete acceptance tests. Bullet backend parity and ONNX policy deployment remain later work.
+Lua-side phase one is largely complete: fixed-step driver, ParaX bone drive, control demo, observation/contact, local heightfield, `MuJoCoRobotSimulation`, and frozen **RobotContractManifest v1.0** (obsDim=178, actionDim=51, hash logged). C++ exposes matching `RobotTypes.h` / `IRobotSimulation.h`; a concrete `MujocoRobotSimulation` implementation, optional merged-box stairs, diagnostics, and ONNX policy loading remain next.

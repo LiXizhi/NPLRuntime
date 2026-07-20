@@ -204,6 +204,7 @@ if(NPLRUNTIME_MUJOCO)
 	add_library(NPLMuJoCoSimulation STATIC
 		${PROJECT_SOURCE_DIR}/trunk/ParaEngineClient/ParaScriptBindings/MuJoCoSimulation.cpp
 		${PROJECT_SOURCE_DIR}/trunk/ParaEngineClient/robotics/RobotCoordinateConverter.cpp
+		${PROJECT_SOURCE_DIR}/trunk/ParaEngineClient/robotics/MujocoRobotSimulation.cpp
 	)
 	target_compile_definitions(NPLMuJoCoSimulation PRIVATE USE_MUJOCO)
 	target_include_directories(NPLMuJoCoSimulation PUBLIC

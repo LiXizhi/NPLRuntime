@@ -16,6 +16,7 @@ add_executable(MuJoCoSimulationSmokeTest
 	MuJoCoSimulationSmokeTest.cpp
 	../../Client/trunk/ParaEngineClient/ParaScriptBindings/MuJoCoSimulation.cpp
 	../../Client/trunk/ParaEngineClient/robotics/RobotCoordinateConverter.cpp
+	../../Client/trunk/ParaEngineClient/robotics/MujocoRobotSimulation.cpp
 )
 target_compile_definitions(MuJoCoSimulationSmokeTest PRIVATE USE_MUJOCO)
 target_include_directories(MuJoCoSimulationSmokeTest PRIVATE
