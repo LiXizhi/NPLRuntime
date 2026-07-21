@@ -70,9 +70,14 @@ cmake -S Client -B bin/client-x64-mujoco-boost187 -G "Visual Studio 17 2022" -A 
 	-DNPLRUNTIME_MUJOCO=ON
 cmake --build bin/client-x64-mujoco-boost187 --config Debug --target ParaEngineClient --parallel 4
 cmake --build bin/client-x64-mujoco-boost187 --config Debug --target ParaEngineClientApp --parallel 4
+cmake --build bin/client-x64-mujoco-boost187 --config Release --target ParaEngineClient ParaEngineClientApp --parallel 4
 ```
 
-For testing in `D:/Paracraft_dev`, deploy `ParaEngineClient_d.exe`, `ParaEngineClient_d.dll`, `mujoco_Debug.dll`, `lua_d.dll`, `sqlite_d.dll`, and `libcurl_d.dll`. The verified client reached the normal Paracraft main loop without MuJoCo or core DLL loading errors.
+For testing in `D:/Paracraft_dev`, deploy `ParaEngineClient_d.exe`, `ParaEngineClient_d.dll`, `mujoco_d.dll`, `lua_d.dll`, `sqlite_d.dll`, and `libcurl_d.dll`. The verified client reached the normal Paracraft main loop without MuJoCo or core DLL loading errors.
+
+Release deploys `ParaEngineClient.exe`, `ParaEngineClient.dll`, `mujoco.dll`, `lua.dll`, `sqlite.dll`, and `libcurl.dll`. Both verified executables are x64 (`PE Machine 0x8664`) and have run the H1_2 RL preset with MuJoCo loaded.
+
+The `para-robot/paracraft-dev-cli/build-paracraft-client.js` helper wraps configuration, Debug/Release compilation, client shutdown, and deployment. From that repository use `npm run build:debug`, `npm run build:release`, or `npm run build:all`.
 
 ## Paracraft runtime tests
 

@@ -201,6 +201,7 @@ if(NPLRUNTIME_MUJOCO)
 		set(_NPL_BUILD_SHARED_LIBS_DEFINED FALSE)
 	endif()
 	add_subdirectory (${SERVER_SOURCE_DIR}/mujoco-3.10.0 ${PROJECT_BINARY_DIR}/mujoco-3.10.0)
+	set_target_properties(mujoco PROPERTIES DEBUG_POSTFIX "_d")
 	add_library(NPLMuJoCoSimulation STATIC
 		${PROJECT_SOURCE_DIR}/trunk/ParaEngineClient/ParaScriptBindings/MuJoCoSimulation.cpp
 		${PROJECT_SOURCE_DIR}/trunk/ParaEngineClient/robotics/RobotCoordinateConverter.cpp
