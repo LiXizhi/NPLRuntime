@@ -123,6 +123,7 @@ list(APPEND ParaEngineClient_SRCS ${ParaEngineClient_NPL_FILES})
 ##############################
 file (GLOB ParaEngineClient_Scripting_FILES ${ParaEngineClient_SOURCE_DIR}/ParaScriptBindings/*.cpp ${ParaEngineClient_SOURCE_DIR}/ParaScriptBindings/*.h)
 list(REMOVE_ITEM ParaEngineClient_Scripting_FILES ${ParaEngineClient_SOURCE_DIR}/ParaScriptBindings/MuJoCoSimulation.cpp)
+list(REMOVE_ITEM ParaEngineClient_Scripting_FILES ${ParaEngineClient_SOURCE_DIR}/ParaScriptBindings/ONNXPolicySession.cpp)
 SOURCE_GROUP("ParaScriptBindings" FILES ${ParaEngineClient_Scripting_FILES})
 list(APPEND ParaEngineClient_SRCS ${ParaEngineClient_Scripting_FILES})
 
@@ -924,6 +925,11 @@ if(NPLRUNTIME_MUJOCO)
 	list(APPEND ParaEngineClient_LIBS NPLMuJoCoSimulation)
 endif()
 
+if(NPLRUNTIME_ONNXRUNTIME)
+	target_compile_definitions(ParaEngineClient PRIVATE USE_ONNXRUNTIME)
+	list(APPEND ParaEngineClient_LIBS NPLONNXPolicy)
+endif()
+
 target_link_libraries(ParaEngineClient ${ParaEngineClient_LIBS})
 
 ADD_CUSTOM_COMMAND(
@@ -938,6 +944,14 @@ if(NPLRUNTIME_MUJOCO)
 		TARGET ParaEngineClient
 		POST_BUILD
 		COMMAND ${CMAKE_COMMAND} -E copy_if_different $<TARGET_FILE:mujoco> ${OUTPUT_BIN_DIR}
+	)
+endif()
+
+if(NPLRUNTIME_ONNXRUNTIME)
+	ADD_CUSTOM_COMMAND(
+		TARGET ParaEngineClient
+		POST_BUILD
+		COMMAND ${CMAKE_COMMAND} -E copy_if_different $<TARGET_FILE:onnxruntime::onnxruntime> ${OUTPUT_BIN_DIR}
 	)
 endif()
 

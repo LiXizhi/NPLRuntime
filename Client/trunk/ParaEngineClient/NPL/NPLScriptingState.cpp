@@ -309,6 +309,9 @@ void ParaScripting::CNPLScriptingState::LoadParaLib()
 #ifdef USE_MUJOCO
 	LoadHAPI_MuJoCo();
 #endif
+#ifdef USE_ONNXRUNTIME
+	LoadHAPI_ONNXPolicy();
+#endif
 #ifdef CROSS_PLATFORM
 	LoadHAPI_WebView();
 	LoadHAPI_Platform();
