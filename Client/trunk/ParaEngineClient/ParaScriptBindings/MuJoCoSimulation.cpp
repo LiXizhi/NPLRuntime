@@ -205,6 +205,17 @@ double ParaScripting::MuJoCoSimulation::GetBodyAngularVelocity(int bodyId, int c
 	return m_impl->data->cvel[6 * bodyId + component];
 }
 
+double ParaScripting::MuJoCoSimulation::RaycastDown(double x, double y, double z) const
+{
+	if (!IsValid())
+		return -1.0;
+	const mjtNum origin[] = { x, y, z };
+	const mjtNum direction[] = { 0.0, 0.0, -1.0 };
+	const mjtByte geomGroup[] = { 1, 0, 0, 0, 0, 0 };
+	int geomId = -1;
+	return mj_ray(m_impl->model, m_impl->data, origin, direction, geomGroup, 1, -1, &geomId, NULL);
+}
+
 double ParaScripting::MuJoCoSimulation::GetBodyParaLinearVelocity(int bodyId, int component) const
 {
 	if (!IsValid() || bodyId < 0 || bodyId >= m_impl->model->nbody || component < 0 || component >= 3)

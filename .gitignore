@@ -67,6 +67,7 @@ Client/trunk/externals/*
 Server/*
 !Server/trunk/
 Server/trunk/*
+!Server/trunk/README.md
 !Server/trunk/lua-5.1.4/
 !Server/trunk/luabind-0.9/
 !Server/trunk/sqlite-3.6.23.1/
@@ -80,6 +81,19 @@ Server/trunk/*
 !Server/trunk/curl-7.47.1/
 !Server/trunk/NPLRouter/
 !Server/trunk/TMInterface/
+!Server/trunk/mujoco-3.10.0/
+!Server/trunk/onnxruntime-1.27.1/
+!Server/trunk/mujoco-3.10.0/python/mujoco/sysid/tests/
+!Server/trunk/mujoco-3.10.0/python/mujoco/sysid/tests/**
+!Server/trunk/mujoco-3.10.0/python/mujoco/testdata/*.zip
+!Server/trunk/mujoco-3.10.0/unity/Tests/
+!Server/trunk/mujoco-3.10.0/unity/Tests/**
+!Server/trunk/mujoco-3.10.0/wasm/codegen/tests/
+!Server/trunk/mujoco-3.10.0/wasm/codegen/tests/**
+!Server/trunk/mujoco-3.10.0/wasm/tests/
+!Server/trunk/mujoco-3.10.0/wasm/tests/**
+!Server/trunk/onnxruntime-1.27.1/rust/onnxruntime/tests/
+!Server/trunk/onnxruntime-1.27.1/rust/onnxruntime/tests/**
 
 build/
 buildvm_arch.h

@@ -47,6 +47,7 @@ namespace ParaScripting
 		double GetBodyAngularVelocity(int bodyId, int component) const;
 		double GetBodyParaLinearVelocity(int bodyId, int component) const;
 		double GetBodyParaAngularVelocity(int bodyId, int component) const;
+		double RaycastDown(double x, double y, double z) const;
 		int GetContactGeom1(int contactIndex) const;
 		int GetContactGeom2(int contactIndex) const;
 		int GetContactBody1(int contactIndex) const;
@@ -117,6 +118,7 @@ namespace ParaScripting
 		static double GetBodyAngularVelocity(int handle, int bodyId, int component);
 		static double GetBodyParaLinearVelocity(int handle, int bodyId, int component);
 		static double GetBodyParaAngularVelocity(int handle, int bodyId, int component);
+		static double RaycastDown(int handle, double x, double y, double z);
 		static int GetContactGeom1(int handle, int contactIndex);
 		static int GetContactGeom2(int handle, int contactIndex);
 		static int GetContactBody1(int handle, int contactIndex);

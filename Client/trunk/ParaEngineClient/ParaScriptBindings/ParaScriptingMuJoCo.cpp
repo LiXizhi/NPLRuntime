@@ -95,6 +95,7 @@ double ParaScripting::ParaMuJoCo::GetBodyLinearVelocity(int handle, int bodyId, 
 double ParaScripting::ParaMuJoCo::GetBodyAngularVelocity(int handle, int bodyId, int component) { std::shared_ptr<MuJoCoSimulation> simulation = GetSimulation(handle); return simulation ? simulation->GetBodyAngularVelocity(bodyId, component) : 0.0; }
 double ParaScripting::ParaMuJoCo::GetBodyParaLinearVelocity(int handle, int bodyId, int component) { std::shared_ptr<MuJoCoSimulation> simulation = GetSimulation(handle); return simulation ? simulation->GetBodyParaLinearVelocity(bodyId, component) : 0.0; }
 double ParaScripting::ParaMuJoCo::GetBodyParaAngularVelocity(int handle, int bodyId, int component) { std::shared_ptr<MuJoCoSimulation> simulation = GetSimulation(handle); return simulation ? simulation->GetBodyParaAngularVelocity(bodyId, component) : 0.0; }
+double ParaScripting::ParaMuJoCo::RaycastDown(int handle, double x, double y, double z) { std::shared_ptr<MuJoCoSimulation> simulation = GetSimulation(handle); return simulation ? simulation->RaycastDown(x, y, z) : -1.0; }
 int ParaScripting::ParaMuJoCo::GetContactGeom1(int handle, int contactIndex) { std::shared_ptr<MuJoCoSimulation> simulation = GetSimulation(handle); return simulation ? simulation->GetContactGeom1(contactIndex) : -1; }
 int ParaScripting::ParaMuJoCo::GetContactGeom2(int handle, int contactIndex) { std::shared_ptr<MuJoCoSimulation> simulation = GetSimulation(handle); return simulation ? simulation->GetContactGeom2(contactIndex) : -1; }
 int ParaScripting::ParaMuJoCo::GetContactBody1(int handle, int contactIndex) { std::shared_ptr<MuJoCoSimulation> simulation = GetSimulation(handle); return simulation ? simulation->GetContactBody1(contactIndex) : -1; }
@@ -162,6 +163,7 @@ void ParaScripting::CNPLScriptingState::LoadHAPI_MuJoCo()
 			def("GetBodyAngularVelocity", &ParaMuJoCo::GetBodyAngularVelocity),
 			def("GetBodyParaLinearVelocity", &ParaMuJoCo::GetBodyParaLinearVelocity),
 			def("GetBodyParaAngularVelocity", &ParaMuJoCo::GetBodyParaAngularVelocity),
+			def("RaycastDown", &ParaMuJoCo::RaycastDown),
 			def("GetContactGeom1", &ParaMuJoCo::GetContactGeom1),
 			def("GetContactGeom2", &ParaMuJoCo::GetContactGeom2),
 			def("GetContactBody1", &ParaMuJoCo::GetContactBody1),
