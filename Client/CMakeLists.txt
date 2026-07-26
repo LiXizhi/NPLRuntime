@@ -34,7 +34,6 @@ else()
 endif()
 
 set(ONNXRUNTIME_SOURCE_ROOT "${SERVER_SOURCE_DIR}/onnxruntime-1.27.1" CACHE PATH "ONNX Runtime source root")
-set(ONNXRUNTIME_BUILD_ROOT "${PROJECT_SOURCE_DIR}/../bin/onnxruntime-1.27.1-win-x64/Release/Release" CACHE PATH "ONNX Runtime Release build output")
 
 if(NPLRUNTIME_MUJOCO AND NOT CMAKE_SIZEOF_VOID_P EQUAL 8)
 	message(FATAL_ERROR "MuJoCo 3.10.0 integration requires a 64-bit build")
@@ -239,21 +238,11 @@ if(NPLRUNTIME_MUJOCO)
 endif()
 
 if(NPLRUNTIME_ONNXRUNTIME)
-	if(NOT EXISTS "${ONNXRUNTIME_SOURCE_ROOT}/include/onnxruntime/core/session/onnxruntime_cxx_api.h")
-		message(FATAL_ERROR "ONNX Runtime headers not found at ${ONNXRUNTIME_SOURCE_ROOT}")
-	endif()
-	if(NOT EXISTS "${ONNXRUNTIME_BUILD_ROOT}/onnxruntime.lib" OR NOT EXISTS "${ONNXRUNTIME_BUILD_ROOT}/onnxruntime.dll")
-		message(FATAL_ERROR "ONNX Runtime shared library not found at ${ONNXRUNTIME_BUILD_ROOT}; build onnxruntime-1.27.1 first")
-	endif()
-	add_library(onnxruntime::onnxruntime SHARED IMPORTED GLOBAL)
-	set_target_properties(onnxruntime::onnxruntime PROPERTIES
-		IMPORTED_IMPLIB "${ONNXRUNTIME_BUILD_ROOT}/onnxruntime.lib"
-		IMPORTED_LOCATION "${ONNXRUNTIME_BUILD_ROOT}/onnxruntime.dll"
-		INTERFACE_INCLUDE_DIRECTORIES "${ONNXRUNTIME_SOURCE_ROOT}/include/onnxruntime/core/session"
-	)
+	include(${PROJECT_SOURCE_DIR}/cmake/ONNXRuntime.cmake)
 	add_library(NPLONNXPolicy STATIC
 		${PROJECT_SOURCE_DIR}/trunk/ParaEngineClient/ParaScriptBindings/ONNXPolicySession.cpp
 	)
+	add_dependencies(NPLONNXPolicy onnxruntime_external)
 	target_compile_definitions(NPLONNXPolicy PRIVATE USE_ONNXRUNTIME)
 	target_include_directories(NPLONNXPolicy PUBLIC ${PROJECT_SOURCE_DIR}/trunk/ParaEngineClient/ParaScriptBindings)
 	target_link_libraries(NPLONNXPolicy PUBLIC onnxruntime::onnxruntime)

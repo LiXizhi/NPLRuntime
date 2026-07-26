@@ -42,6 +42,8 @@ WebAPI/
 !Client/
 Client/*
 !Client/CMakeLists.txt
+!Client/cmake/
+!Client/cmake/ONNXRuntime.cmake
 !Client/trunk/
 Client/trunk/*
 !Client/trunk/ParaEngineClient/
