@@ -156,6 +156,33 @@ int ParaScripting::MuJoCoSimulation::GetJointDofAdr(int jointId) const
 	return static_cast<int>(m_impl->model->jnt_dofadr[jointId]);
 }
 
+double ParaScripting::MuJoCoSimulation::GetJointAxis(int jointId, int component) const
+{
+	if (!IsValid() || jointId < 0 || jointId >= m_impl->model->njnt || component < 0 || component >= 3)
+		return 0.0;
+	return m_impl->model->jnt_axis[3 * jointId + component];
+}
+
+double ParaScripting::MuJoCoSimulation::GetJointParaAxis(int jointId, int component) const
+{
+	if (!IsValid() || jointId < 0 || jointId >= m_impl->model->njnt || component < 0 || component >= 3)
+		return 0.0;
+	const mjtNum* axis = m_impl->data->xaxis + 3 * jointId;
+	ParaEngine::RobotVector3 converted = ParaEngine::RobotCoordinateConverter::MuJoCoPositionToParaEngine(axis[0], axis[1], axis[2]);
+	const double values[] = { converted.x, converted.y, converted.z };
+	return values[component];
+}
+
+double ParaScripting::MuJoCoSimulation::GetJointParaAnchor(int jointId, int component) const
+{
+	if (!IsValid() || jointId < 0 || jointId >= m_impl->model->njnt || component < 0 || component >= 3)
+		return 0.0;
+	const mjtNum* anchor = m_impl->data->xanchor + 3 * jointId;
+	ParaEngine::RobotVector3 converted = ParaEngine::RobotCoordinateConverter::MuJoCoPositionToParaEngine(anchor[0], anchor[1], anchor[2]);
+	const double values[] = { converted.x, converted.y, converted.z };
+	return values[component];
+}
+
 double ParaScripting::MuJoCoSimulation::GetBodyPosition(int bodyId, int component) const
 {
 	if (!IsValid() || bodyId < 0 || bodyId >= m_impl->model->nbody || component < 0 || component >= 3)

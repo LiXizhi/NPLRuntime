@@ -39,6 +39,9 @@ namespace ParaScripting
 		int FindActuator(const std::string& name) const;
 		int GetJointQPosAdr(int jointId) const;
 		int GetJointDofAdr(int jointId) const;
+		double GetJointAxis(int jointId, int component) const;
+		double GetJointParaAxis(int jointId, int component) const;
+		double GetJointParaAnchor(int jointId, int component) const;
 		double GetBodyPosition(int bodyId, int component) const;
 		double GetBodyQuaternion(int bodyId, int component) const;
 		double GetBodyParaPosition(int bodyId, int component) const;
@@ -110,6 +113,9 @@ namespace ParaScripting
 		static int FindActuator(int handle, const std::string& name);
 		static int GetJointQPosAdr(int handle, int jointId);
 		static int GetJointDofAdr(int handle, int jointId);
+		static double GetJointAxis(int handle, int jointId, int component);
+		static double GetJointParaAxis(int handle, int jointId, int component);
+		static double GetJointParaAnchor(int handle, int jointId, int component);
 		static double GetBodyPosition(int handle, int bodyId, int component);
 		static double GetBodyQuaternion(int handle, int bodyId, int component);
 		static double GetBodyParaPosition(int handle, int bodyId, int component);

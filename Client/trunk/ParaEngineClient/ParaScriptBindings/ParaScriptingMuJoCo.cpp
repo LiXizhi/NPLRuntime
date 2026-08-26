@@ -87,6 +87,9 @@ int ParaScripting::ParaMuJoCo::FindJoint(int handle, const std::string& name) { 
 int ParaScripting::ParaMuJoCo::FindActuator(int handle, const std::string& name) { std::shared_ptr<MuJoCoSimulation> simulation = GetSimulation(handle); return simulation ? simulation->FindActuator(name) : -1; }
 int ParaScripting::ParaMuJoCo::GetJointQPosAdr(int handle, int jointId) { std::shared_ptr<MuJoCoSimulation> simulation = GetSimulation(handle); return simulation ? simulation->GetJointQPosAdr(jointId) : -1; }
 int ParaScripting::ParaMuJoCo::GetJointDofAdr(int handle, int jointId) { std::shared_ptr<MuJoCoSimulation> simulation = GetSimulation(handle); return simulation ? simulation->GetJointDofAdr(jointId) : -1; }
+double ParaScripting::ParaMuJoCo::GetJointAxis(int handle, int jointId, int component) { std::shared_ptr<MuJoCoSimulation> simulation = GetSimulation(handle); return simulation ? simulation->GetJointAxis(jointId, component) : 0.0; }
+double ParaScripting::ParaMuJoCo::GetJointParaAxis(int handle, int jointId, int component) { std::shared_ptr<MuJoCoSimulation> simulation = GetSimulation(handle); return simulation ? simulation->GetJointParaAxis(jointId, component) : 0.0; }
+double ParaScripting::ParaMuJoCo::GetJointParaAnchor(int handle, int jointId, int component) { std::shared_ptr<MuJoCoSimulation> simulation = GetSimulation(handle); return simulation ? simulation->GetJointParaAnchor(jointId, component) : 0.0; }
 double ParaScripting::ParaMuJoCo::GetBodyPosition(int handle, int bodyId, int component) { std::shared_ptr<MuJoCoSimulation> simulation = GetSimulation(handle); return simulation ? simulation->GetBodyPosition(bodyId, component) : 0.0; }
 double ParaScripting::ParaMuJoCo::GetBodyQuaternion(int handle, int bodyId, int component) { std::shared_ptr<MuJoCoSimulation> simulation = GetSimulation(handle); return simulation ? simulation->GetBodyQuaternion(bodyId, component) : 0.0; }
 double ParaScripting::ParaMuJoCo::GetBodyParaPosition(int handle, int bodyId, int component) { std::shared_ptr<MuJoCoSimulation> simulation = GetSimulation(handle); return simulation ? simulation->GetBodyParaPosition(bodyId, component) : 0.0; }
@@ -155,6 +158,9 @@ void ParaScripting::CNPLScriptingState::LoadHAPI_MuJoCo()
 			def("FindActuator", &ParaMuJoCo::FindActuator),
 			def("GetJointQPosAdr", &ParaMuJoCo::GetJointQPosAdr),
 			def("GetJointDofAdr", &ParaMuJoCo::GetJointDofAdr),
+			def("GetJointAxis", &ParaMuJoCo::GetJointAxis),
+			def("GetJointParaAxis", &ParaMuJoCo::GetJointParaAxis),
+			def("GetJointParaAnchor", &ParaMuJoCo::GetJointParaAnchor),
 			def("GetBodyPosition", &ParaMuJoCo::GetBodyPosition),
 			def("GetBodyQuaternion", &ParaMuJoCo::GetBodyQuaternion),
 			def("GetBodyParaPosition", &ParaMuJoCo::GetBodyParaPosition),
