@@ -85,6 +85,9 @@ int ParaScripting::ParaMuJoCo::NameToId(int handle, int objectType, const std::s
 int ParaScripting::ParaMuJoCo::FindBody(int handle, const std::string& name) { std::shared_ptr<MuJoCoSimulation> simulation = GetSimulation(handle); return simulation ? simulation->FindBody(name) : -1; }
 int ParaScripting::ParaMuJoCo::FindJoint(int handle, const std::string& name) { std::shared_ptr<MuJoCoSimulation> simulation = GetSimulation(handle); return simulation ? simulation->FindJoint(name) : -1; }
 int ParaScripting::ParaMuJoCo::FindActuator(int handle, const std::string& name) { std::shared_ptr<MuJoCoSimulation> simulation = GetSimulation(handle); return simulation ? simulation->FindActuator(name) : -1; }
+int ParaScripting::ParaMuJoCo::FindSensor(int handle, const std::string& name) { std::shared_ptr<MuJoCoSimulation> simulation = GetSimulation(handle); return simulation ? simulation->FindSensor(name) : -1; }
+int ParaScripting::ParaMuJoCo::GetSensorDim(int handle, int sensorId) { std::shared_ptr<MuJoCoSimulation> simulation = GetSimulation(handle); return simulation ? simulation->GetSensorDim(sensorId) : 0; }
+double ParaScripting::ParaMuJoCo::GetSensorData(int handle, int sensorId, int component) { std::shared_ptr<MuJoCoSimulation> simulation = GetSimulation(handle); return simulation ? simulation->GetSensorData(sensorId, component) : 0.0; }
 int ParaScripting::ParaMuJoCo::GetJointQPosAdr(int handle, int jointId) { std::shared_ptr<MuJoCoSimulation> simulation = GetSimulation(handle); return simulation ? simulation->GetJointQPosAdr(jointId) : -1; }
 int ParaScripting::ParaMuJoCo::GetJointDofAdr(int handle, int jointId) { std::shared_ptr<MuJoCoSimulation> simulation = GetSimulation(handle); return simulation ? simulation->GetJointDofAdr(jointId) : -1; }
 double ParaScripting::ParaMuJoCo::GetJointAxis(int handle, int jointId, int component) { std::shared_ptr<MuJoCoSimulation> simulation = GetSimulation(handle); return simulation ? simulation->GetJointAxis(jointId, component) : 0.0; }
@@ -156,6 +159,9 @@ void ParaScripting::CNPLScriptingState::LoadHAPI_MuJoCo()
 			def("FindBody", &ParaMuJoCo::FindBody),
 			def("FindJoint", &ParaMuJoCo::FindJoint),
 			def("FindActuator", &ParaMuJoCo::FindActuator),
+			def("FindSensor", &ParaMuJoCo::FindSensor),
+			def("GetSensorDim", &ParaMuJoCo::GetSensorDim),
+			def("GetSensorData", &ParaMuJoCo::GetSensorData),
 			def("GetJointQPosAdr", &ParaMuJoCo::GetJointQPosAdr),
 			def("GetJointDofAdr", &ParaMuJoCo::GetJointDofAdr),
 			def("GetJointAxis", &ParaMuJoCo::GetJointAxis),

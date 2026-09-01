@@ -76,16 +76,25 @@ int main(int argc, char** argv)
 	int bodyId = simulation.FindBody("link");
 	if (simulation.GetBodyCount() != 2 || simulation.GetJointCount() != 1 || simulation.GetActuatorCount() != 1 || bodyId < 0)
 		return 7;
+	const int sensorId = simulation.FindSensor("imu_ang_vel");
+	if (sensorId < 0 || simulation.GetSensorDim(sensorId) != 3 ||
+		simulation.FindSensor("missing_sensor") != -1 || simulation.GetSensorDim(-1) != 0 ||
+		simulation.GetSensorData(sensorId, -1) != 0.0 || simulation.GetSensorData(sensorId, 3) != 0.0)
+		return 21;
 	if (!std::isfinite(simulation.GetBodyPosition(bodyId, 2)) || !std::isfinite(simulation.GetBodyQuaternion(bodyId, 0)))
 		return 8;
 	if (!Near(simulation.GetBodyParaPosition(bodyId, 0), -simulation.GetBodyPosition(bodyId, 1)) ||
 		!Near(simulation.GetBodyParaPosition(bodyId, 1), simulation.GetBodyPosition(bodyId, 2)) ||
 		!Near(simulation.GetBodyParaPosition(bodyId, 2), simulation.GetBodyPosition(bodyId, 0)))
 		return 10;
-	if (!simulation.SetQPos(0, 0.1) || !simulation.SetControl(0, 0.2))
+	if (!simulation.SetQPos(0, 0.1) || !simulation.SetQVel(0, 0.35) || !simulation.SetControl(0, 0.2))
 		return 4;
 
 	simulation.Forward();
+	if (!Near(simulation.GetSensorData(sensorId, 0), 0.0) ||
+		!Near(simulation.GetSensorData(sensorId, 1), 0.35) ||
+		!Near(simulation.GetSensorData(sensorId, 2), 0.0))
+		return 22;
 	simulation.Step(5000);
 	if (!std::isfinite(simulation.GetQPos(0)) || !std::isfinite(simulation.GetQVel(0)) || simulation.GetTime() <= 0.0)
 		return 5;

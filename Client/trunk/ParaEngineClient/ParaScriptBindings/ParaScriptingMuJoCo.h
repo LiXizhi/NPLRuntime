@@ -37,6 +37,9 @@ namespace ParaScripting
 		int FindBody(const std::string& name) const;
 		int FindJoint(const std::string& name) const;
 		int FindActuator(const std::string& name) const;
+		int FindSensor(const std::string& name) const;
+		int GetSensorDim(int sensorId) const;
+		double GetSensorData(int sensorId, int component) const;
 		int GetJointQPosAdr(int jointId) const;
 		int GetJointDofAdr(int jointId) const;
 		double GetJointAxis(int jointId, int component) const;
@@ -111,6 +114,9 @@ namespace ParaScripting
 		static int FindBody(int handle, const std::string& name);
 		static int FindJoint(int handle, const std::string& name);
 		static int FindActuator(int handle, const std::string& name);
+		static int FindSensor(int handle, const std::string& name);
+		static int GetSensorDim(int handle, int sensorId);
+		static double GetSensorData(int handle, int sensorId, int component);
 		static int GetJointQPosAdr(int handle, int jointId);
 		static int GetJointDofAdr(int handle, int jointId);
 		static double GetJointAxis(int handle, int jointId, int component);

@@ -4,9 +4,13 @@
     <body name="link" pos="0 0 1">
       <joint name="hinge" type="hinge" axis="0 1 0" damping="0.1"/>
       <geom type="capsule" size="0.05 0.25" mass="1"/>
+      <site name="imu" pos="0 0 0" quat="1 0 0 0"/>
     </body>
   </worldbody>
   <actuator>
     <motor name="hinge_motor" joint="hinge" gear="1"/>
   </actuator>
+  <sensor>
+    <gyro name="imu_ang_vel" site="imu"/>
+  </sensor>
 </mujoco>

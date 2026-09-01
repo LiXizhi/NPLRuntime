@@ -142,6 +142,26 @@ int ParaScripting::MuJoCoSimulation::FindActuator(const std::string& name) const
 	return NameToId(mjOBJ_ACTUATOR, name);
 }
 
+int ParaScripting::MuJoCoSimulation::FindSensor(const std::string& name) const
+{
+	return NameToId(mjOBJ_SENSOR, name);
+}
+
+int ParaScripting::MuJoCoSimulation::GetSensorDim(int sensorId) const
+{
+	if (!IsValid() || sensorId < 0 || sensorId >= m_impl->model->nsensor)
+		return 0;
+	return static_cast<int>(m_impl->model->sensor_dim[sensorId]);
+}
+
+double ParaScripting::MuJoCoSimulation::GetSensorData(int sensorId, int component) const
+{
+	const int dimension = GetSensorDim(sensorId);
+	if (component < 0 || component >= dimension)
+		return 0.0;
+	return m_impl->data->sensordata[m_impl->model->sensor_adr[sensorId] + component];
+}
+
 int ParaScripting::MuJoCoSimulation::GetJointQPosAdr(int jointId) const
 {
 	if (!IsValid() || jointId < 0 || jointId >= m_impl->model->njnt)
