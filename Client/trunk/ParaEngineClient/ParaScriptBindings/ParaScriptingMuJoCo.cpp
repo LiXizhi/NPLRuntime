@@ -63,6 +63,12 @@ int ParaScripting::ParaMuJoCo::LoadModel(const std::string& filename)
 
 bool ParaScripting::ParaMuJoCo::DeleteModel(int handle) { std::lock_guard<std::mutex> lock(GetSimulationsMutex()); return GetSimulations().erase(handle) != 0; }
 bool ParaScripting::ParaMuJoCo::IsValid(int handle) { std::shared_ptr<MuJoCoSimulation> simulation = GetSimulation(handle); return simulation && simulation->IsValid(); }
+bool ParaScripting::ParaMuJoCo::UpdateBlockCollision(int handle, const std::string& boxes, double friction, double rollingFriction) { auto s = GetSimulation(handle); return s && s->UpdateBlockCollision(boxes, friction, rollingFriction); }
+bool ParaScripting::ParaMuJoCo::InitializeBlockCollisionPool(int handle, int capacity) { auto s = GetSimulation(handle); return s && s->InitializeBlockCollisionPool(capacity); }
+bool ParaScripting::ParaMuJoCo::UpdateBlockCollisionPool(int handle, const std::string& boxes, double friction, double rolling) { auto s = GetSimulation(handle); return s && s->UpdateBlockCollisionPool(boxes, friction, rolling); }
+int ParaScripting::ParaMuJoCo::GetGeomCount(int handle) { auto s = GetSimulation(handle); return s ? s->GetGeomCount() : 0; }
+int ParaScripting::ParaMuJoCo::GetContactDimension(int handle, int index) { auto s = GetSimulation(handle); return s ? s->GetContactDimension(index) : 0; }
+double ParaScripting::ParaMuJoCo::GetContactFriction(int handle, int index, int component) { auto s = GetSimulation(handle); return s ? s->GetContactFriction(index, component) : 0; }
 void ParaScripting::ParaMuJoCo::Reset(int handle) { std::shared_ptr<MuJoCoSimulation> simulation = GetSimulation(handle); if (simulation) simulation->Reset(); }
 void ParaScripting::ParaMuJoCo::Forward(int handle) { std::shared_ptr<MuJoCoSimulation> simulation = GetSimulation(handle); if (simulation) simulation->Forward(); }
 void ParaScripting::ParaMuJoCo::Step(int handle, int count) { std::shared_ptr<MuJoCoSimulation> simulation = GetSimulation(handle); if (simulation) simulation->Step(count); }
@@ -135,6 +141,12 @@ void ParaScripting::CNPLScriptingState::LoadHAPI_MuJoCo()
 		namespace_("ParaMuJoCo")
 		[
 			def("LoadModel", &ParaMuJoCo::LoadModel),
+			def("UpdateBlockCollision", &ParaMuJoCo::UpdateBlockCollision),
+			def("InitializeBlockCollisionPool", &ParaMuJoCo::InitializeBlockCollisionPool),
+			def("UpdateBlockCollisionPool", &ParaMuJoCo::UpdateBlockCollisionPool),
+			def("GetGeomCount", &ParaMuJoCo::GetGeomCount),
+			def("GetContactDimension", &ParaMuJoCo::GetContactDimension),
+			def("GetContactFriction", &ParaMuJoCo::GetContactFriction),
 			def("DeleteModel", &ParaMuJoCo::DeleteModel),
 			def("IsValid", &ParaMuJoCo::IsValid),
 			def("Reset", &ParaMuJoCo::Reset),

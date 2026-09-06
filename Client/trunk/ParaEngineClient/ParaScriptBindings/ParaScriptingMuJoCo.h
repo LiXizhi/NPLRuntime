@@ -14,6 +14,13 @@ namespace ParaScripting
 		~MuJoCoSimulation();
 
 		bool Load(const std::string& filename);
+		// Replace only world block geometry, preserving the live integration state.
+		bool UpdateBlockCollision(const std::string& boxes, double friction, double rollingFriction);
+		bool InitializeBlockCollisionPool(int capacity);
+		bool UpdateBlockCollisionPool(const std::string& boxes, double friction, double rollingFriction);
+		int GetGeomCount() const;
+		int GetContactDimension(int contactIndex) const;
+		double GetContactFriction(int contactIndex, int component) const;
 		void Reset();
 		void Forward();
 		void Step(int count);
@@ -90,6 +97,12 @@ namespace ParaScripting
 	{
 	public:
 		static int LoadModel(const std::string& filename);
+		static bool UpdateBlockCollision(int handle, const std::string& boxes, double friction, double rollingFriction);
+		static bool InitializeBlockCollisionPool(int handle, int capacity);
+		static bool UpdateBlockCollisionPool(int handle, const std::string& boxes, double friction, double rollingFriction);
+		static int GetGeomCount(int handle);
+		static int GetContactDimension(int handle, int contactIndex);
+		static double GetContactFriction(int handle, int contactIndex, int component);
 		static bool DeleteModel(int handle);
 		static bool IsValid(int handle);
 		static void Reset(int handle);
