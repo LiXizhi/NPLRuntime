@@ -144,7 +144,10 @@ CParaXModel* FBXParser::ParseParaXModel(const char* buffer, int nSize, const cha
 	Reset();
 	SetAnimSplitterFilename();
 	// this is not needed: aiProcess_MakeLeftHanded | 
-	const aiScene* pFbxScene = importer.ReadFileFromMemory(buffer, nSize, aiProcess_Triangulate | aiProcess_GenSmoothNormals | aiProcess_FlipUVs | aiProcess_LimitBoneWeights, pHint);
+	unsigned int postProcessFlags = aiProcess_Triangulate | aiProcess_GenSmoothNormals | aiProcess_FlipUVs | aiProcess_LimitBoneWeights;
+	if (strcmp(pHint, "glb") == 0 || strcmp(pHint, "gltf") == 0)
+		postProcessFlags |= aiProcess_MakeLeftHanded | aiProcess_FlipWindingOrder;
+	const aiScene* pFbxScene = importer.ReadFileFromMemory(buffer, nSize, postProcessFlags, pHint);
 	if (pFbxScene) {
 		ParaXHeaderDef m_xheader;
 		m_xheader.IsAnimated = pFbxScene->HasAnimations() ? 1 : 0;

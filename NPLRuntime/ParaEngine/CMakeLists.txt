@@ -167,6 +167,14 @@ endif()
 ###################################################################
 ## Target
 add_library(ParaEngine ${sources_commmon} ${sources_rendersystem})
+if(NPLRUNTIME_WEB_ROBOT)
+    target_sources(ParaEngine PRIVATE robotics/RobotCoordinateConverter.cpp robotics/MujocoRobotSimulation.cpp)
+    target_include_directories(ParaEngine PRIVATE robotics)
+    target_compile_definitions(ParaEngine PUBLIC USE_MUJOCO USE_ONNXRUNTIME)
+    target_link_options(ParaEngine INTERFACE -msimd128)
+    # Preserve constructor-based mesh decoder registration in MuJoCo.
+    target_link_libraries(ParaEngine PUBLIC "$<LINK_LIBRARY:WHOLE_ARCHIVE,mujoco>" onnxruntime_web)
+endif()
 
 set(include_dirs
     ${CMAKE_CURRENT_SOURCE_DIR}
@@ -319,6 +327,9 @@ if (EMSCRIPTEN)
     #     list(APPEND NPLRUNTIME_LIBS libcurl)
     # endif()
     
+    if(NOT BOOST_LIBRARYDIR)
+        set(BOOST_LIBRARYDIR "${BOOST_ROOT}/stage/lib")
+    endif()
     target_link_libraries(ParaEngine PUBLIC 
     ${RenderSystem}
     ${NPLRUNTIME_LIBS}
@@ -331,14 +342,14 @@ if (EMSCRIPTEN)
     #Pinocchio
     ParaAntlr4
     ${ICONV_LIB_NAME}
-    "${BOOST_ROOT}/stage/lib/libboost_atomic.a"
-    "${BOOST_ROOT}/stage/lib/libboost_chrono.a"
-    "${BOOST_ROOT}/stage/lib/libboost_date_time.a"
-    "${BOOST_ROOT}/stage/lib/libboost_filesystem.a"
-    "${BOOST_ROOT}/stage/lib/libboost_serialization.a"
+    "${BOOST_LIBRARYDIR}/libboost_atomic.a"
+    "${BOOST_LIBRARYDIR}/libboost_chrono.a"
+    "${BOOST_LIBRARYDIR}/libboost_date_time.a"
+    "${BOOST_LIBRARYDIR}/libboost_filesystem.a"
+    "${BOOST_LIBRARYDIR}/libboost_serialization.a"
     #"${BOOST_ROOT}/stage/lib/libboost_system.a"
-    "${BOOST_ROOT}/stage/lib/libboost_thread.a"
-    "${BOOST_ROOT}/stage/lib/libboost_wserialization.a"
+    "${BOOST_LIBRARYDIR}/libboost_thread.a"
+    "${BOOST_LIBRARYDIR}/libboost_wserialization.a"
     )
 else()
     target_link_libraries(ParaEngine PUBLIC 

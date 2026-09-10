@@ -1,0 +1,13 @@
+node_modules/
+/build/
+/bin/
+/dist/
+/types/
+
+/lib/**/*.js
+/script/**/*.js
+!/script/install.js
+!/script/install-metadata-versions.js
+!/script/install-metadata.js
+!/script/install-utils.js
+/test/**/*.js
