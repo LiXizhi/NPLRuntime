@@ -3,6 +3,7 @@
 #ifdef USE_ONNXRUNTIME
 
 #include <onnxruntime_cxx_api.h>
+#include "RobotResourcePath.h"
 
 #include <cmath>
 #include <cstdint>
@@ -40,7 +41,7 @@ namespace ParaScripting
 			options.SetIntraOpNumThreads(1);
 			options.SetInterOpNumThreads(1);
 			options.SetGraphOptimizationLevel(GraphOptimizationLevel::ORT_ENABLE_ALL);
-			std::wstring wideFilename(filename.begin(), filename.end());
+			const std::wstring wideFilename = RobotWidePath(filename);
 			m_impl->session.reset(new Ort::Session(m_impl->env, wideFilename.c_str(), options));
 
 			const size_t modelInputCount = m_impl->session->GetInputCount();
