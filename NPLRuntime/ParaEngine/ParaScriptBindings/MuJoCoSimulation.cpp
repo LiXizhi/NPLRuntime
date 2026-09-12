@@ -4,6 +4,7 @@
 #ifdef USE_MUJOCO
 
 #include <mujoco/mujoco.h>
+#include "RobotResourcePath.h"
 #include <cmath>
 #include <sstream>
 #include <vector>
@@ -75,8 +76,11 @@ ParaScripting::MuJoCoSimulation::~MuJoCoSimulation() {}
 bool ParaScripting::MuJoCoSimulation::Load(const std::string& filename)
 {
 	char error[1024] = { 0 };
+	std::string resourcePath;
+	try { resourcePath = MuJoCoResourcePath(filename); }
+	catch (const std::exception& exception) { m_impl->lastError = exception.what(); return false; }
 	std::unique_ptr<mjSpec, decltype(&mj_deleteSpec)> source(
-		mj_parseXML(filename.c_str(), NULL, error, sizeof(error)), mj_deleteSpec);
+		mj_parseXML(resourcePath.c_str(), NULL, error, sizeof(error)), mj_deleteSpec);
 	mjModel* model = source ? mj_compile(source.get(), NULL) : NULL;
 	if (!model)
 	{

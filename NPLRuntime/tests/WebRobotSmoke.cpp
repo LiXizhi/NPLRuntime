@@ -13,11 +13,13 @@ static void check(bool condition, const std::string& message) {
 int main() {
     try {
         using namespace ParaScripting;
+        const std::string root = "/robot-\xe4\xb8\xad\xe6\x96\x87";
+        check(std::rename("/microduck", root.c_str()) == 0, "cannot relocate resource fixture");
         ONNXPolicySession policy;
         std::vector<float> observation(61, 0), action;
         observation[5] = -1;
         for (const char* name : {"walking", "stand", "sitstand", "ground-pick", "kick-left", "kick-right", "roulade"}) {
-            check(policy.Load(std::string("/microduck/models/") + name + ".onnx", 61, 14), policy.GetLastError());
+            check(policy.Load(root + "/models/" + name + ".onnx", 61, 14), policy.GetLastError());
             check(policy.Infer(observation, action), policy.GetLastError());
             check(action.size() == 14, "wrong action size");
             std::printf("POLICY %s first_action=%.9g\n", name, action[0]);
@@ -29,9 +31,9 @@ int main() {
             policy.Unload(); policy.Unload();
         }
         check(!policy.Load("/missing.onnx", 61, 14), "missing policy was accepted");
-        check(policy.Load("/microduck/models/stand.onnx", 61, 14), policy.GetLastError());
+        check(policy.Load(root + "/models/stand.onnx", 61, 14), policy.GetLastError());
         MuJoCoSimulation sim;
-        check(sim.Load("/microduck/mujoco/scene_ball.xml"), sim.GetLastError());
+        check(sim.Load(root + "/mujoco/scene_ball.xml"), sim.GetLastError());
         const char* joints[] = {"left_hip_yaw", "left_hip_roll", "left_hip_pitch", "left_knee", "left_ankle", "neck_pitch", "head_pitch", "head_yaw", "head_roll", "right_hip_yaw", "right_hip_roll", "right_hip_pitch", "right_knee", "right_ankle"};
         const double rest[] = {0, -0.08726646259971647, -0.457924, -0.00494, 0.452984, 0.3490658503988659, 0.3490658503988659, 0, 0, 0, 0.08726646259971647, 0.457924, 0.00494, -0.452984};
         int qpos[14], dof[14], ctrl[14];
