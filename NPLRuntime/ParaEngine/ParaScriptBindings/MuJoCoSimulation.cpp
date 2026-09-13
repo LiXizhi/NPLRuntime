@@ -111,9 +111,20 @@ bool ParaScripting::MuJoCoSimulation::Load(const std::string& filename)
 
 bool ParaScripting::MuJoCoSimulation::UpdateBlockCollision(const std::string& boxes, double friction, double rollingFriction)
 {
+	auto candidate = BuildBlockCollision(boxes, friction, rollingFriction);
+	if (!candidate) return false;
+	// Preserve the immutable source, not the compiled candidate's added geometry.
+	candidate->source = m_impl->source; m_impl->source = nullptr;
+	m_impl = std::move(candidate);
+	return true;
+}
+
+std::unique_ptr<ParaScripting::MuJoCoSimulation::Impl>
+ParaScripting::MuJoCoSimulation::BuildBlockCollision(const std::string& boxes, double friction, double rollingFriction)
+{
 	if (!IsValid() || !m_impl->source)
-		return false;
-	auto fail = [&](const std::string& reason) { m_impl->lastError = reason; return false; };
+		return nullptr;
+	auto fail = [&](const std::string& reason) -> std::unique_ptr<Impl> { m_impl->lastError = reason; return nullptr; };
 	if (!std::isfinite(friction) || friction < 0 || friction > 2 ||
 		!std::isfinite(rollingFriction) || rollingFriction < 0 || rollingFriction > 0.01 || boxes.size() > 1024 * 1024)
 		return fail("invalid block collision parameters");
@@ -207,10 +218,10 @@ bool ParaScripting::MuJoCoSimulation::UpdateBlockCollision(const std::string& bo
 	}
 	// Forward recomputes contacts/derived state but may alter warm start; restore integration state exactly.
 	mj_setState(model.get(), data.get(), state.data(), sig);
-	mj_deleteData(m_impl->data); mj_deleteModel(m_impl->model);
-	m_impl->model = model.release(); m_impl->data = data.release(); m_impl->lastError.clear();
-	m_impl->poolGeoms.clear(); m_impl->poolPairs.clear(); m_impl->poolBoxes.clear(); m_impl->scratch.reset();
-	return true;
+	std::unique_ptr<Impl> built(new Impl());
+	built->model = model.release(); built->data = data.release();
+	built->originalPairs = m_impl->originalPairs;
+	return built;
 }
 
 void ParaScripting::MuJoCoSimulation::Impl::ApplyPool(const std::vector<BlockBox>& boxes, double friction, double rolling) {
@@ -256,49 +267,40 @@ bool ParaScripting::MuJoCoSimulation::InitializeBlockCollisionPool(int capacity)
 	if(!IsValid() || capacity<1 || capacity>2048 || m_impl->originalPairs!=0 || mj_version()!=3010000 || (m_impl->model->opt.enableflags & mjENBL_OVERRIDE)) {
 		m_impl->lastError="pool requires MuJoCo 3.10.0, 1..2048 slots and a source with no explicit pairs"; return false;
 	}
-	// Initialization is also transactional: retain the complete old model/pool
-	// until every slot, pair and scratch allocation has been validated.
-	std::unique_ptr<Impl> candidate(new Impl());
-	candidate->model=mj_copyModel(NULL,m_impl->model);
-	candidate->source=mj_copySpec(m_impl->source);
-	if(candidate->model) candidate->data=mj_makeData(candidate->model);
-	if(!candidate->model || !candidate->source || !candidate->data) {
-		m_impl->lastError="cannot allocate pool initialization candidate";return false;
-	}
-	mj_copyData(candidate->data,candidate->model,m_impl->data);
-	candidate->originalPairs=m_impl->originalPairs;
-	struct Rollback {
-		std::unique_ptr<Impl>& current; std::unique_ptr<Impl> previous; bool committed=false;
-		~Rollback() { if(!committed) { previous->lastError=current->lastError;current=std::move(previous); } }
-	} rollback{m_impl,std::move(m_impl)};
-	m_impl=std::move(candidate);
+	// Build directly from the source, keeping the live model/pool untouched.
+	// A complete intermediate model/data here would be a redundant peak allocation.
 	std::ostringstream boxes;
 	for(int i=0;i<capacity;++i) boxes<<"10000 0 0 0.001 0.001 0.001 1 0 0 0 1 0 ";
-	if(!UpdateBlockCollision(boxes.str(),1.2,0.0003)) return false;
+	auto candidate=BuildBlockCollision(boxes.str(),1.2,0.0003);
+	if(!candidate) return false;
 	for(int i=0;i<capacity;++i) {
-		const int geom=FindGeom("microduck_local_block_"+std::to_string(i+1));
+		const int geom=mj_name2id(candidate->model,mjOBJ_GEOM,("microduck_local_block_"+std::to_string(i+1)).c_str());
 		if(geom<0) { m_impl->lastError="pool geom not found"; return false; }
-		m_impl->poolGeoms.push_back(geom);
+		candidate->poolGeoms.push_back(geom);
 	}
-	m_impl->poolPairs.clear();
-	const int ball=FindGeom("ball_geom");
+	const int ball=mj_name2id(candidate->model,mjOBJ_GEOM,"ball_geom");
 	if(ball>=0) {
-		if(m_impl->model->geom_type[ball]!=mjGEOM_SPHERE) { m_impl->lastError="pool ball must be a sphere"; return false; }
-		for(int geom:m_impl->poolGeoms) {
+		if(candidate->model->geom_type[ball]!=mjGEOM_SPHERE) { m_impl->lastError="pool ball must be a sphere"; return false; }
+		for(int geom:candidate->poolGeoms) {
 			int found=-1;
-			for(int i=0;i<m_impl->model->npair;++i)
-				if((m_impl->model->pair_geom1[i]==ball && m_impl->model->pair_geom2[i]==geom) || (m_impl->model->pair_geom2[i]==ball && m_impl->model->pair_geom1[i]==geom)) { found=i;break; }
+			for(int i=0;i<candidate->model->npair;++i)
+				if((candidate->model->pair_geom1[i]==ball && candidate->model->pair_geom2[i]==geom) || (candidate->model->pair_geom2[i]==ball && candidate->model->pair_geom1[i]==geom)) { found=i;break; }
 			if(found<0) { m_impl->lastError="pool ball pair not found";return false; }
-			m_impl->poolPairs.push_back(found);
+			candidate->poolPairs.push_back(found);
 		}
 	}
-	m_impl->scratch.reset(mj_makeData(m_impl->model));
-	if(!m_impl->scratch) { m_impl->lastError="cannot allocate pool scratch data"; return false; }
-	std::vector<mjtNum> state(mj_stateSize(m_impl->model,mjSTATE_INTEGRATION));
-	mj_getState(m_impl->model,m_impl->data,state.data(),mjSTATE_INTEGRATION);
-	m_impl->ApplyPool({},1.2,0.0003); m_impl->poolBoxes.clear(); Forward();
-	mj_setState(m_impl->model,m_impl->data,state.data(),mjSTATE_INTEGRATION);
-	rollback.committed=true;
+	candidate->scratch.reset(mj_makeData(candidate->model));
+	if(!candidate->scratch) { m_impl->lastError="cannot allocate pool scratch data"; return false; }
+	std::vector<mjtNum> state(mj_stateSize(candidate->model,mjSTATE_INTEGRATION));
+	mj_getState(candidate->model,candidate->data,state.data(),mjSTATE_INTEGRATION);
+	candidate->ApplyPool({},1.2,0.0003);
+	mj_forward(candidate->model,candidate->data);
+	mj_setState(candidate->model,candidate->data,state.data(),mjSTATE_INTEGRATION);
+	// A source-only copy also drops the original spec's compiled asset buffers,
+	// matching the previous pool's steady-state ownership without copying model/data.
+	candidate->source=mj_copySpec(m_impl->source);
+	if(!candidate->source) { m_impl->lastError="cannot copy pool source specification"; return false; }
+	m_impl=std::move(candidate);
 	return true;
 }
 
