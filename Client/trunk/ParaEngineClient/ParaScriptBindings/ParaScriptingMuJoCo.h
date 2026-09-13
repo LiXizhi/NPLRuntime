@@ -90,6 +90,7 @@ namespace ParaScripting
 
 	private:
 		struct Impl;
+		std::unique_ptr<Impl> BuildBlockCollision(const std::string& boxes, double friction, double rollingFriction);
 		std::unique_ptr<Impl> m_impl;
 	};
 
