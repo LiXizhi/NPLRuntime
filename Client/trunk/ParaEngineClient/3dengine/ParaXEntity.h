@@ -30,7 +30,6 @@ namespace ParaEngine
 
 	public:
 		friend class CParaXProcessor;
-		friend class CParaWorldAsset;
 
 		virtual void Cleanup();
 		virtual AssetEntity::AssetType GetType(){ return AssetEntity::parax; };
@@ -148,8 +147,6 @@ namespace ParaEngine
 		*/
 		virtual HRESULT RendererRecreated();
 	private:
-		// Fixed before initialization; converted and legacy assets have distinct cache keys.
-		bool m_bConvertGltfToLeftHanded = false;
 		/// mesh objects in LOD list. each mesh may contain materials and textures, but you can simply 
 		/// ignore them. The default setting is rendering with materials. See CParaXStaticMesh for more details
 		std::vector<MeshLOD> m_MeshLODs;

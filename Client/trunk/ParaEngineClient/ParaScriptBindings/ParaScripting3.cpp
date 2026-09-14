@@ -263,7 +263,6 @@ void CNPLScriptingState::LoadHAPI_ResourceManager()
 				def("CreateGetBlockMaterial", &ParaAsset::CreateGetBlockMaterial),
 				def("DeleteBlockMaterial", &ParaAsset::DeleteBlockMaterial),
 				def("LoadParaX", &ParaAsset::LoadParaX),
-				def("LoadParaXWithGltfConversion", &ParaAsset::LoadParaXWithGltfConversion),
 				def("LoadDatabase", &ParaAsset::LoadDatabase),
 				def("LoadStaticMesh", &ParaAsset::LoadStaticMesh),
 				def("LoadTexture", &ParaAsset::LoadTexture),

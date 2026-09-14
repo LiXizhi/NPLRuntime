@@ -945,27 +945,13 @@ SequenceEntity* CParaWorldAsset::LoadSequence(const string& sName)
 	return res.first;
 }
 
-ParaXEntity* CParaWorldAsset::LoadParaX(const string& sIdentifier, const string& fileName)
+ParaXEntity* CParaWorldAsset::LoadParaX(const string&  sIdentifier, const string&  fileName)
 {
 	string sFileName;
-	// The explicit scheme preserves the import option in serialized asset keys.
-	// LocalFileName remains the real path for ZIP/manifest and async loading.
-	const string conversionPrefix = "gltf-lh:";
-	const bool convertGltf = fileName.compare(0, conversionPrefix.size(), conversionPrefix) == 0;
-	const string sourceFileName = convertGltf ? fileName.substr(conversionPrefix.size()) : fileName;
-	CParaFile::ToCanonicalFilePath(sFileName, sourceFileName, false);
-	if (convertGltf)
-	{
-		const string ext = CParaFile::GetFileExtension(sFileName);
-		if ((ext != "gltf" && ext != "glb") || sourceFileName.find("://") != string::npos)
-		{
-			OUTPUT_LOG("gltf-lh requires a local or mounted glTF/GLB asset\n");
-			return NULL;
-		}
-	}
+	CParaFile::ToCanonicalFilePath(sFileName, fileName, false);
 	if (m_bUseAssetSearch)
 		DoAssetSearch(sFileName, CParaFile::GetCurDirectory(CParaFile::APP_CHARACTER_DIR).c_str());
-	pair<ParaXEntity*, bool> res = GetParaXManager().CreateEntity(sIdentifier, convertGltf ? conversionPrefix + sFileName : sFileName);
+	pair<ParaXEntity*, bool> res = GetParaXManager().CreateEntity(sIdentifier, sFileName);
 	if (res.second == true)
 	{
 		bool bIsRemoteFile = false;
@@ -977,7 +963,6 @@ ParaXEntity* CParaWorldAsset::LoadParaX(const string& sIdentifier, const string&
 				(fileName[0] == 'f' && fileName[1] == 't' && fileName[2] == 'p' && fileName[3] == ':'));
 		}
 		ParaXEntity* pNewEntity = res.first;
-		pNewEntity->m_bConvertGltfToLeftHanded = convertGltf;
 
 		if (bIsRemoteFile)
 		{
