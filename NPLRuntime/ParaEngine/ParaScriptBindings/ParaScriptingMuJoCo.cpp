@@ -4,6 +4,7 @@
 
 #include "ParaScriptingMuJoCo.h"
 #include "NPLScriptingState.h"
+#include "../robotics/RobotRenderAsset.h"
 
 #include <luabind/luabind.hpp>
 #include <map>
@@ -141,6 +142,7 @@ void ParaScripting::CNPLScriptingState::LoadHAPI_MuJoCo()
 		namespace_("ParaMuJoCo")
 		[
 			def("LoadModel", &ParaMuJoCo::LoadModel),
+			def("PrepareRenderAsset", &ParaEngine::PrepareRobotRenderAsset),
 			def("UpdateBlockCollision", &ParaMuJoCo::UpdateBlockCollision),
 			def("InitializeBlockCollisionPool", &ParaMuJoCo::InitializeBlockCollisionPool),
 			def("UpdateBlockCollisionPool", &ParaMuJoCo::UpdateBlockCollisionPool),

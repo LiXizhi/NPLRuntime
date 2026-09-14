@@ -1,8 +1,8 @@
 #include "ParaScriptingMuJoCo.h"
-#include "RobotCoordinateConverter.h"
 
 #ifdef USE_MUJOCO
 
+#include "RobotCoordinateConverter.h"
 #include <mujoco/mujoco.h>
 #include "RobotResourcePath.h"
 #include <cmath>
