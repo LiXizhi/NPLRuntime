@@ -124,14 +124,15 @@ void ParaEngine::FBXParser::SetAnimSplitterFilename()
 	m_sAnimSplitterFilename = std::string(m_sFilename.c_str(), m_sFilename.size() - 3) + "xml";
 }
 
-CParaXModel* FBXParser::ParseParaXModel(const char* buffer, int nSize, const char* pHint)
+CParaXModel* FBXParser::ParseParaXModel(const char* buffer, int nSize, const char* pHint, bool convertGltfToLeftHanded)
 {
 	CParaXModel* pMesh = NULL;
 	Assimp::Importer importer;
 	Reset();
 	SetAnimSplitterFilename();
 	unsigned int postProcessFlags = aiProcess_Triangulate | aiProcess_GenSmoothNormals | aiProcess_FlipUVs | aiProcess_LimitBoneWeights;
-	if (strcmp(pHint, "glb") == 0 || strcmp(pHint, "gltf") == 0)
+	// Preserve legacy import coordinates unless this asset explicitly opts in.
+	if (convertGltfToLeftHanded && (strcmp(pHint, "glb") == 0 || strcmp(pHint, "gltf") == 0))
 		postProcessFlags |= aiProcess_MakeLeftHanded | aiProcess_FlipWindingOrder;
 	const aiScene* pFbxScene = importer.ReadFileFromMemory(buffer, nSize, postProcessFlags, pHint);
 	if (pFbxScene)
