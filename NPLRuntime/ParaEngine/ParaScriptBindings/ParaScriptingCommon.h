@@ -433,6 +433,9 @@ namespace ParaScripting
 		* creating ParaX file based multianimation asset. 
 		*/
 		static ParaAssetObject LoadParaX(const char* strAssetName, const char* strFilePath);
+		/** Explicit glTF/GLB handedness conversion for local or mounted world assets.
+		 * Uses a separate cache entry; ordinary LoadParaX keeps legacy coordinates. */
+		static ParaAssetObject LoadParaXWithGltfConversion(const char* strAssetName, const char* strFilePath);
 
 		/**
 		* Load Database asset. it must be sqlite database at the moment. 

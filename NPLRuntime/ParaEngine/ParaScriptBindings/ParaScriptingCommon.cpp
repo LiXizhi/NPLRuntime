@@ -745,6 +745,15 @@ ParaAssetObject ParaAsset::LoadParaX(const char* strAssetName, const char* strFi
 	}
 }
 
+ParaAssetObject ParaAsset::LoadParaXWithGltfConversion(const char* strAssetName, const char* strFilePath)
+{
+	if (!strAssetName || !strFilePath)
+		return ParaAssetObject();
+	const string prefix = "gltf-lh:";
+	const string path = strFilePath;
+	return LoadParaX(strAssetName, (path.compare(0, prefix.size(), prefix) == 0 ? path : prefix + path).c_str());
+}
+
 ParaAssetObject ParaAsset::LoadStaticMesh(const char* strAssetName, const char* strFilePath)
 {
 	if(strAssetName!=0 && strFilePath!=0)

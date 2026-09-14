@@ -43,7 +43,7 @@ namespace ParaEngine
 		/* Note the caller is responsible for deletion of the returned object.
 		* parse as animated model
 		*/
-		CParaXModel* ParseParaXModel(const char* buffer, int nSize, const char* pHint = "fbx");
+		CParaXModel* ParseParaXModel(const char* buffer, int nSize, const char* pHint = "fbx", bool convertGltfToLeftHanded = false);
 		/** use current filename if any. */
 		CParaXModel* ParseParaXModel();
 
