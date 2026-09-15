@@ -236,6 +236,11 @@ int main(int argc, char* argv[])
     if (!token.empty()) sCmdLine = sCmdLine + " paracraft://usertoken=\"" + token + "\"";
     if (!worldcmd.empty()) sCmdLine = sCmdLine + " world/cmd(" + worldcmd + ")";
     sCmdLine = sCmdLine + " " + cmdline;
+#ifdef USE_MUJOCO
+    char* robotCommandLine = (char*)EM_ASM_PTR({ return stringToNewUTF8(Module.robotCommandLine || ""); });
+    sCmdLine += std::string(" ") + robotCommandLine;
+    free(robotCommandLine);
+#endif
     std::cout << "cmdline: " << sCmdLine << std::endl;
     GetApp()->m_cmdline = sCmdLine;
 

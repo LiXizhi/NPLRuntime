@@ -31,10 +31,14 @@ add_subdirectory(tinyxml)
 
 if (NOT EMSCRIPTEN)
 	add_subdirectory(zlib)
+	set(ZLIB_FOUND 1)
+	set(ZLIB_INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/zlib)
+	set(ZLIB_INCLUDE_DIR ${ZLIB_INCLUDE_DIRS})
+else()
+	# Match the SDK's -sUSE_ZLIB port, including FreeType's gzip support.
+	# The embedded FreeType zlib lacks the DEBUG tracing definitions.
+	find_package(ZLIB REQUIRED)
 endif()
-set(ZLIB_FOUND 1)
-set(ZLIB_INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/zlib)
-set(ZLIB_INCLUDE_DIR ${ZLIB_INCLUDE_DIRS})
 
 add_subdirectory(tinyxpath)
 add_subdirectory(curl)
