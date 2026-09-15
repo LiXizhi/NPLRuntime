@@ -12,6 +12,7 @@ else()
         message(FATAL_ERROR "Configure Web with emcmake so ONNX can reuse the Emscripten toolchain")
     endif()
     include(ExternalProject)
+    include(${CMAKE_CURRENT_LIST_DIR}/WebRobotProtoc.cmake)
     set(NPLRUNTIME_WEB_ROBOT_BUILD_JOBS 4 CACHE STRING "Parallel jobs for the automatic ONNX WASM build")
     if(NOT NPLRUNTIME_WEB_ROBOT_BUILD_JOBS MATCHES "^[1-9][0-9]*$")
         message(FATAL_ERROR "NPLRUNTIME_WEB_ROBOT_BUILD_JOBS must be a positive integer")
@@ -25,6 +26,7 @@ else()
         DOWNLOAD_COMMAND ""
         UPDATE_COMMAND ""
         CMAKE_ARGS
+            "-DONNX_CUSTOM_PROTOC_EXECUTABLE:FILEPATH=${_robot_protoc}"
             "-DCMAKE_TOOLCHAIN_FILE:FILEPATH=${CMAKE_TOOLCHAIN_FILE}"
             "-DCMAKE_MAKE_PROGRAM:FILEPATH=${CMAKE_MAKE_PROGRAM}"
             "-DCMAKE_BUILD_TYPE:STRING=${CMAKE_BUILD_TYPE}"
