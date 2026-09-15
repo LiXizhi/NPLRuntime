@@ -290,7 +290,7 @@ if (MSVC)
 endif ()
 
 add_subdirectory(externals)
-option(NPLRUNTIME_WEB_ROBOT "Build synchronous MuJoCo and ONNX robot APIs for Web" OFF)
+include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/WebRobotDefaults.cmake)
 if(NPLRUNTIME_WEB_ROBOT)
     include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/WebRobot.cmake)
 endif()
