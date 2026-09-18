@@ -14,6 +14,23 @@ Technical documentation for the NPLRuntime / ParaEngine codebase. These docs are
 | [Build & Deploy](build-and-deploy.md) | CMake, platforms, CI, output layout |
 | [Components](components.md) | Full directory map of `ParaEngineClient/` |
 
+## ParaEngineClient Deep Dive
+
+Detailed subsystem documentation for `Client/trunk/ParaEngineClient/` (~1,500 source files), synthesized from source code and the [GitHub Wiki](https://github.com/LiXizhi/NPLRuntime/wiki):
+
+| Document | Subsystem |
+|----------|-----------|
+| [**ParaEngineClient Index**](paraengine-client/README.md) | Master index for deep-dive docs |
+| [Overview & Frame Loop](paraengine-client/overview.md) | Architecture layers, main loop, embedding |
+| [Core](paraengine-client/core.md) | App lifecycle, assets, attributes, events, plugins |
+| [3D Engine](paraengine-client/3dengine.md) | Scene graph, volume attributes, all 102 headers |
+| [2D GUI](paraengine-client/2dengine-gui.md) | Widgets, input, IME, touch, sensor model |
+| [Rendering Pipeline](paraengine-client/rendering-pipeline.md) | AdvanceScene stages, shader system |
+| [Block Engine](paraengine-client/block-engine.md) | 32000³ voxel world, regions, chunks, lighting |
+| [ParaX & Assets](paraengine-client/parax-model-and-assets.md) | Model format, loaders, async asset pipeline |
+| [IO & Filesystem](paraengine-client/io-and-filesystem.md) | Virtual FS, zip, async loading |
+| [Engine Layer](paraengine-client/engine-layer.md) | Client entry, DB providers, post-effects |
+
 ## External Resources
 
 - [Project README](../README.md) — install and quick start

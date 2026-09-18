@@ -173,6 +173,7 @@ Unified interface: `renderer/RenderDevice.h`. See [`docs/renderer.md`](docs/rend
 | [`docs/script-bindings.md`](docs/script-bindings.md) | Lua API reference |
 | [`docs/build-and-deploy.md`](docs/build-and-deploy.md) | Build system, CI, deployment |
 | [`docs/components.md`](docs/components.md) | Full component directory map |
+| [`docs/paraengine-client/`](docs/paraengine-client/README.md) | **Deep dive: Core, 3dengine, GUI, BlockEngine, assets, IO, render pipeline** |
 
 ## When in Doubt
 
