@@ -1,0 +1,339 @@
+// Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT License.
+
+#include "contrib_ops/cpu/bert/group_query_attention.h"
+#include "contrib_ops/cpu/bert/group_query_attention_helper.h"
+#include "contrib_ops/cpu/bert/rotary_helper.h"
+#include "contrib_ops/cpu/bert/attention_utils.h"
+#include "contrib_ops/cpu/bert/rotary_embedding.h"
+#include "contrib_ops/cpu/bert/rotary_embedding_helper.h"
+
+#include "core/framework/tensorprotoutils.h"
+#include "core/graph/onnx_protobuf.h"
+#include "core/common/safeint.h"
+#include "core/platform/threadpool.h"
+
+#include <unsupported/Eigen/SpecialFunctions>
+#include <vector>
+
+using onnxruntime::concurrency::ThreadPool;
+
+namespace onnxruntime {
+namespace contrib {
+
+// These ops are internal-only, so register outside of onnx
+#define REGISTER_KERNEL_TYPED(T)                                              \
+  ONNX_OPERATOR_TYPED_KERNEL_EX(                                              \
+      GroupQueryAttention,                                                    \
+      kMSDomain,                                                              \
+      1,                                                                      \
+      T,                                                                      \
+      kCpuExecutionProvider,                                                  \
+      KernelDefBuilder()                                                      \
+          .TypeConstraint("T", DataTypeImpl::GetTensorType<T>())              \
+          .TypeConstraint("T_CACHE", {DataTypeImpl::GetTensorType<T>(),       \
+                                      DataTypeImpl::GetTensorType<uint8_t>(), \
+                                      DataTypeImpl::GetTensorType<int8_t>()}) \
+          .TypeConstraint("T_KV_SCALE", DataTypeImpl::GetTensorType<float>()) \
+          .TypeConstraint("M", DataTypeImpl::GetTensorType<int32_t>()),       \
+      GroupQueryAttention<T>);
+
+REGISTER_KERNEL_TYPED(float)
+REGISTER_KERNEL_TYPED(MLFloat16)
+
+template <typename T>
+GroupQueryAttention<T>::GroupQueryAttention(const OpKernelInfo& info)
+    : OpKernel(info), GQAAttentionBase(info, true) {}
+
+template <typename T>
+Status GroupQueryAttention<T>::Compute(OpKernelContext* context) const {
+  const Tensor* query = context->Input<Tensor>(0);
+  const Tensor* key = context->Input<Tensor>(1);
+  const Tensor* value = context->Input<Tensor>(2);
+  const Tensor* past_key = context->Input<Tensor>(3);
+  const Tensor* past_value = context->Input<Tensor>(4);
+  const Tensor* seqlens_k = context->Input<Tensor>(5);
+  const Tensor* total_seqlen_tensor = context->Input<Tensor>(6);
+  const Tensor* cos_cache = context->Input<Tensor>(7);
+  const Tensor* sin_cache = context->Input<Tensor>(8);
+  const Tensor* position_ids = context->Input<Tensor>(9);
+  const Tensor* attention_bias = context->Input<Tensor>(10);
+  const Tensor* head_sink = context->Input<Tensor>(11);
+  const Tensor* k_scale = context->Input<Tensor>(12);
+  const Tensor* v_scale = context->Input<Tensor>(13);
+
+  // Validate quantization configuration.
+  if (kv_quant_enabled_) {
+    ORT_RETURN_IF(k_quant_type_ != v_quant_type_,
+                  "CPU GroupQueryAttention requires k_quant_type == v_quant_type, got different types");
+    ORT_RETURN_IF(kv_cache_bit_width_ != 4 && kv_cache_bit_width_ != 8,
+                  "kv_cache_bit_width must be 4 or 8 when quantization is enabled, got ", kv_cache_bit_width_);
+    constexpr bool is_float = std::is_same_v<T, float>;
+    ORT_RETURN_IF(!is_float,
+                  "CPU GroupQueryAttention only supports float Q dtype with quantized KV cache");
+    ORT_RETURN_IF(k_scale == nullptr,
+                  "k_scale must be provided when k_quant_type is not NONE");
+    ORT_RETURN_IF(v_scale == nullptr,
+                  "v_scale must be provided when v_quant_type is not NONE");
+    ORT_RETURN_IF(k_scale->DataType() != DataTypeImpl::GetType<float>(),
+                  "k_scale must be float tensor");
+    ORT_RETURN_IF(v_scale->DataType() != DataTypeImpl::GetType<float>(),
+                  "v_scale must be float tensor");
+  } else {
+    ORT_RETURN_IF(kv_cache_bit_width_ != 0,
+                  "kv_cache_bit_width must be 0 when quantization is disabled, got ", kv_cache_bit_width_);
+  }
+
+  GroupQueryAttentionParameters parameters = {};
+  ORT_RETURN_IF_ERROR(group_query_attention_helper::CheckInputs(query,
+                                                                key,
+                                                                value,
+                                                                past_key,
+                                                                past_value,
+                                                                cos_cache,
+                                                                sin_cache,
+                                                                &parameters,
+                                                                num_heads_,
+                                                                kv_num_heads_,
+                                                                seqlens_k,
+                                                                total_seqlen_tensor,
+                                                                scale_,
+                                                                softcap_,
+                                                                kv_cache_bit_width_));
+
+  ORT_RETURN_IF_ERROR(group_query_attention_helper::CheckCustomAttentionInputs(position_ids,
+                                                                               attention_bias,
+                                                                               head_sink,
+                                                                               parameters));
+
+  // Populate quantization fields in parameters.
+  parameters.k_quant_type = k_quant_type_;
+  parameters.v_quant_type = v_quant_type_;
+  parameters.kv_cache_bit_width = kv_cache_bit_width_;
+
+  const int batch_size = parameters.batch_size;
+  const int sequence_length = parameters.sequence_length;
+  const int present_kv_seqlen = parameters.seqlen_present_kv_cache;
+  int head_size = parameters.head_size;
+
+  // Validate scale tensor shapes after CheckInputs (which validates query rank).
+  if (kv_quant_enabled_) {
+    const bool per_channel = (k_quant_type_ == KVQuantizationType::PER_CHANNEL);
+    const int64_t expected_scale_size = per_channel
+                                            ? static_cast<int64_t>(kv_num_heads_) * head_size
+                                            : 1;
+    ORT_RETURN_IF(k_scale->Shape().Size() != expected_scale_size,
+                  "k_scale shape mismatch: expected ", expected_scale_size,
+                  " elements, got ", k_scale->Shape().Size());
+    ORT_RETURN_IF(v_scale->Shape().Size() != expected_scale_size,
+                  "v_scale shape mismatch: expected ", expected_scale_size,
+                  " elements, got ", v_scale->Shape().Size());
+  }
+
+  // Validate seqlens_k values before they are used as GEMM dimensions to prevent OOB access.
+  {
+    const int32_t* seqlens_k_data = seqlens_k->Data<int32_t>();
+    for (int b = 0; b < batch_size; b++) {
+      if (seqlens_k_data[b] < 0 || seqlens_k_data[b] >= present_kv_seqlen) {
+        return ORT_MAKE_STATUS(ONNXRUNTIME, INVALID_ARGUMENT,
+                               "seqlens_k[", b, "] = ", seqlens_k_data[b],
+                               " is out of range [0, ", present_kv_seqlen, ")");
+      }
+      if (!parameters.is_first_prompt && static_cast<int64_t>(seqlens_k_data[b]) + 1 < sequence_length) {
+        return ORT_MAKE_STATUS(ONNXRUNTIME, INVALID_ARGUMENT,
+                               "seqlens_k[", b, "] = ", seqlens_k_data[b],
+                               " is too small for sequence_length ", sequence_length);
+      }
+    }
+  }
+  int q_hidden_size = parameters.hidden_size;
+  const bool packed_qkv = parameters.is_packed_qkv;
+
+  std::vector<int64_t> output_shape(3);
+  output_shape[0] = static_cast<int64_t>(batch_size);
+  output_shape[1] = static_cast<int64_t>(sequence_length);
+  output_shape[2] = static_cast<int64_t>(q_hidden_size);
+  Tensor* output = context->Output(0, output_shape);
+
+  const int packed_head_size = (kv_cache_bit_width_ == 4) ? ((head_size + 1) / 2) : head_size;
+  std::vector<int64_t> present_k_shape({static_cast<int64_t>(batch_size), static_cast<int64_t>(kv_num_heads_), static_cast<int64_t>(present_kv_seqlen), static_cast<int64_t>(packed_head_size)});
+  std::vector<int64_t> present_v_shape({static_cast<int64_t>(batch_size), static_cast<int64_t>(kv_num_heads_), static_cast<int64_t>(present_kv_seqlen), static_cast<int64_t>(packed_head_size)});
+  Tensor* present_k = context->Output(1, present_k_shape);
+  Tensor* present_v = context->Output(2, present_v_shape);
+
+  std::vector<int64_t> output_qk_shape{static_cast<int64_t>(batch_size), static_cast<int64_t>(num_heads_), static_cast<int64_t>(parameters.sequence_length), static_cast<int64_t>(parameters.total_sequence_length)};
+  Tensor* output_qk = context->Output(3, output_qk_shape);
+
+  ORT_RETURN_IF_ERROR(group_query_attention_helper::CheckOutputs(output_qk, qk_output_));
+
+  AllocatorPtr allocator;
+  ORT_RETURN_IF_ERROR(context->GetTempSpaceAllocator(&allocator));
+
+  auto element_type = DataTypeImpl::GetType<T>();
+  OrtValue Q;
+  OrtValue K;
+  OrtValue V;
+  const int kv_sequence_length = parameters.kv_sequence_length;
+  if (packed_qkv) {
+    ORT_RETURN_IF_ERROR(MaybeTransposeToBNSH<T>(
+        allocator, batch_size, num_heads_ + 2 * kv_num_heads_, sequence_length, head_size, query, Q));
+  } else {
+    ORT_RETURN_IF_ERROR(MaybeTransposeToBNSH<T>(
+        allocator, batch_size, num_heads_, sequence_length, head_size, query, Q));
+    ORT_RETURN_IF_ERROR(MaybeTransposeToBNSH<T>(
+        allocator, batch_size, kv_num_heads_, kv_sequence_length, head_size, key, K));
+    ORT_RETURN_IF_ERROR(MaybeTransposeToBNSH<T>(
+        allocator, batch_size, kv_num_heads_, kv_sequence_length, head_size, value, V));
+  }
+
+  OrtValue RotaryQKV;
+  OrtValue RotaryQ;
+  OrtValue RotaryK;
+  T* q_rotary = Q.GetMutable<Tensor>()->MutableData<T>();
+  T* k_rotary = packed_qkv ? nullptr : K.GetMutable<Tensor>()->MutableData<T>();
+  if (do_rotary_) {
+    // When kv_sequence_length == 0 (shared KV), only Q needs RoPE — K is skipped below.
+    ORT_ENFORCE(cos_cache != nullptr && sin_cache != nullptr, "cos_cache and sin_cache must be provided when do_rotary is true");
+    // Validation of seqlens_k against rotary cache size is performed in CheckInputs()
+    // when seqlens_k is on CPU. GPU EPs where seqlens_k resides on device rely on
+    // RunRotaryEmbedding's position_ids validation for OOB protection.
+
+    // Initialize rotary parameters
+    rotary_embedding_helper::RotaryParameters rotary_params = {};
+    rotary_params.batch_size = batch_size;
+    rotary_params.sequence_length = sequence_length;
+    rotary_params.hidden_size = q_hidden_size;
+    rotary_params.head_size = head_size;
+    rotary_params.rotary_embedding_dim = parameters.rotary_dim;
+    rotary_params.num_heads = num_heads_;
+    rotary_params.max_sequence_length = static_cast<int>(cos_cache->Shape().GetDims()[0]);
+    rotary_params.seq_stride = head_size;
+    rotary_params.head_stride = sequence_length * rotary_params.seq_stride;
+    rotary_params.batch_stride = (packed_qkv ? (num_heads_ + 2 * kv_num_heads_) : num_heads_) * rotary_params.head_stride;
+    rotary_params.position_ids_format = !parameters.is_first_prompt ? 1 : 0;
+    rotary_params.transposed = true;
+    auto* tp = context->GetOperatorThreadPool();
+    // Generate position ids
+    const int pos_ids_size = parameters.is_first_prompt ? 1 : batch_size * sequence_length;
+    std::vector<int64_t> default_pos_ids(pos_ids_size);
+    const int64_t* pos_ids_data = default_pos_ids.data();
+
+    if (position_ids != nullptr) {
+      pos_ids_data = position_ids->Data<int64_t>();
+    } else if (parameters.is_first_prompt) {
+      default_pos_ids[0] = static_cast<int64_t>(0);
+    } else {
+      // Note: As of now, continuous decoding supports only batch size 1 and token generation supports only sequence length 1.
+      for (int b = 0; b < batch_size; b++) {
+        const int total_seqlen = seqlens_k->Data<int32_t>()[b] + 1;
+        const int past_seqlen = total_seqlen - sequence_length;
+        for (int s = 0; s < sequence_length; s++) {
+          if (past_seqlen + s < total_seqlen) {
+            default_pos_ids[b * sequence_length + s] = static_cast<int64_t>(past_seqlen) + s;
+          } else {
+            default_pos_ids[b * sequence_length + s] = static_cast<int64_t>(1);
+          }
+        }
+      }
+    }
+
+    // Initialize separate buffers for rotary embeddings
+    const T* q_input;
+    const T* k_input;
+    if (packed_qkv) {
+      Tensor::InitOrtValue(element_type, TensorShape({batch_size, num_heads_ + 2 * kv_num_heads_, sequence_length, head_size}), allocator, RotaryQKV);
+      q_input = Q.Get<Tensor>().Data<T>();
+      k_input = q_input + num_heads_ * sequence_length * head_size;
+      q_rotary = RotaryQKV.GetMutable<Tensor>()->MutableData<T>();
+      k_rotary = q_rotary + num_heads_ * sequence_length * head_size;
+    } else {
+      Tensor::InitOrtValue(element_type, TensorShape({batch_size, num_heads_, sequence_length, head_size}), allocator, RotaryQ);
+      Tensor::InitOrtValue(element_type, TensorShape({batch_size, kv_num_heads_, sequence_length, head_size}), allocator, RotaryK);
+      q_input = Q.Get<Tensor>().Data<T>();
+      k_input = K.Get<Tensor>().Data<T>();
+      q_rotary = RotaryQ.GetMutable<Tensor>()->MutableData<T>();
+      k_rotary = RotaryK.GetMutable<Tensor>()->MutableData<T>();
+    }
+    // Run rotary embedding for Q
+    ORT_RETURN_IF_ERROR(RunRotaryEmbedding<T>(tp, rotary_params, q_input,
+                                              pos_ids_data, cos_cache->Data<T>(),
+                                              sin_cache->Data<T>(), q_rotary, rotary_interleaved_));
+
+    // Run rotary embedding for K (skip when kv_sequence_length == 0, i.e. shared KV with no new tokens)
+    if (kv_sequence_length > 0) {
+      rotary_params.num_heads = kv_num_heads_;
+      rotary_params.hidden_size = parameters.kv_hidden_size;
+      if (!packed_qkv) {
+        rotary_params.batch_stride = kv_num_heads_ * rotary_params.head_stride;
+      }
+      ORT_RETURN_IF_ERROR(RunRotaryEmbedding<T>(tp, rotary_params, k_input,
+                                                pos_ids_data, cos_cache->Data<T>(),
+                                                sin_cache->Data<T>(), k_rotary, rotary_interleaved_));
+    }
+    // Pack V into rotary QKV buffer
+    if (packed_qkv) {
+      const T* v_input = k_input + kv_num_heads_ * sequence_length * head_size;
+      T* v_rotary = k_rotary + kv_num_heads_ * sequence_length * head_size;
+      ORT_RETURN_IF_ERROR(rotary_helper::PackVIntoRotaryQKV<T>(tp,
+                                                               parameters.batch_size,
+                                                               parameters.sequence_length,
+                                                               parameters.num_heads,
+                                                               parameters.kv_num_heads,
+                                                               parameters.head_size,
+                                                               v_input,
+                                                               v_rotary));
+    }
+  }
+
+  ORT_RETURN_IF_ERROR(context->GetTempSpaceAllocator(&allocator));
+
+  const T* head_sink_data = (head_sink != nullptr) ? head_sink->Data<T>() : nullptr;
+
+  // Quantized KV cache path: quantize-on-write + MlasQKGemm / MlasSVGemm.
+  if (kv_quant_enabled_) {
+    if constexpr (std::is_same_v<T, float>) {
+      const float* k_data_q = packed_qkv ? nullptr : k_rotary;
+      const float* v_data_q = packed_qkv ? nullptr : V.Get<Tensor>().Data<float>();
+      auto mlas_quant_type = ToMlasKVQuantType(k_quant_type_, kv_cache_bit_width_);
+
+      // Use flash attention path when:
+      // 1. Total sequence length is long enough to benefit from tiling
+      // 2. No features that flash path doesn't support (softcap, smooth softmax, output_qk)
+      const bool use_flash = !disable_gqa_flash_ &&
+                             parameters.total_sequence_length > 1 &&
+                             softcap_ == 0.0f &&
+                             !use_smooth_softmax_ &&
+                             head_sink_data == nullptr &&
+                             output_qk == nullptr;
+
+      if (use_flash) {
+        return ApplyAttentionQuantizedFlash(
+            q_rotary, k_data_q, v_data_q,
+            attention_bias,
+            past_key, past_value,
+            output, present_k, present_v, seqlens_k,
+            k_scale->Data<float>(), v_scale->Data<float>(),
+            mlas_quant_type, parameters, allocator, context);
+      }
+
+      return ApplyAttentionQuantized(
+          q_rotary, k_data_q, v_data_q, head_sink_data,
+          attention_bias, past_key, past_value,
+          output, present_k, present_v, output_qk, seqlens_k,
+          k_scale->Data<float>(), v_scale->Data<float>(),
+          mlas_quant_type, parameters, allocator, context);
+    } else {
+      return ORT_MAKE_STATUS(ONNXRUNTIME, INVALID_ARGUMENT,
+                             "Quantized KV cache requires float Q dtype");
+    }
+  }
+
+  // Compute the attention score and apply the score to V
+  const T* k_data = packed_qkv ? nullptr : k_rotary;
+  const T* v_data = packed_qkv ? nullptr : V.Get<Tensor>().Data<T>();
+  return ApplyAttention(q_rotary, k_data, v_data,
+                        head_sink_data, attention_bias, past_key, past_value, output, present_k, present_v,
+                        output_qk, seqlens_k, parameters, allocator, context);
+}
+}  // namespace contrib
+}  // namespace onnxruntime
