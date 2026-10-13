@@ -28,6 +28,7 @@ import android.webkit.WebResourceError;
 import android.webkit.WebResourceRequest;
 import android.webkit.JavascriptInterface;
 import android.graphics.Bitmap;
+import android.graphics.Color;
 import android.view.KeyEvent;
 import android.os.Build;
 
@@ -89,6 +90,18 @@ public class ParaEngineWebView extends WebView {
 
     public void SetIgnoreCloseWhenClickBack(boolean b) {
         m_bIgnoreCloseWhenClickBack = b;
+    }
+
+    public void setTransparentBackground(boolean transparent) {
+        if (transparent) {
+            this.setBackgroundColor(Color.TRANSPARENT);
+            ViewGroup parent = (ViewGroup) this.getParent();
+            if (parent != null) {
+                parent.setBackgroundColor(Color.TRANSPARENT);
+            }
+        } else {
+            this.setBackgroundColor(Color.WHITE);
+        }
     }
 
     @Override
