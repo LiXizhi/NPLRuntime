@@ -6,6 +6,7 @@
 ```bash
 scripts/dev_web.sh all      # 重新构建 C++ + 打包脚本 + 刷新缓存哈希
 scripts/dev_web.sh serve    # 启动本地服务器，打开 http://127.0.0.1:8088/npl/webparacraft/index.html
+scripts/dev_web.sh serve --https   # HTTPS（测试 WebXR），打开 https://127.0.0.1:8088/npl/webparacraft/index.html
 ```
 
 ---
@@ -111,7 +112,7 @@ scripts/dev_web.sh setup
 | `scripts/dev_web.sh cpp` | 只增量编译 C++，复制 `.js/.wasm`，刷新哈希 |
 | `scripts/dev_web.sh script` | 只重新打包脚本，刷新哈希（不用编译 C++，几秒钟） |
 | `scripts/dev_web.sh script --all` | 把整个 `script/ config/ Mod/` 都覆盖上去（约 100 MB，见 §5） |
-| `scripts/dev_web.sh serve` | 启动本地服务器，端口 8088（`PORT=xxxx` 可改） |
+| `scripts/dev_web.sh serve` | 启动服务器，端口 8088，本机和局域网都可访问（见 §3.4）。`PORT=xxxx` 改端口，`HOST=127.0.0.1` 只允许本机，`--https` 自动生成证书并启用 HTTPS，或用 `CERT=... KEY=...` 指定证书 |
 | `scripts/dev_web.sh status` | 查看哪些产物已替换成本地构建、哪些脚本会被覆盖 |
 | `scripts/dev_web.sh restore` | 把 `auto_generate_files/` 还原成 Jenkins 版本 |
 
@@ -149,7 +150,37 @@ scripts/dev_web.sh setup
 在页面上通过按钮触发 `isXR = true`（必须在用户点击之后）。详见
 [webxr-emscripten.md](webxr-emscripten.md)。
 
-Quest 真机：`adb reverse tcp:8088 tcp:8088`，然后在 Quest 浏览器中打开同一个地址。
+Quest 真机：`adb reverse tcp:8088 tcp:8088`，然后在 Quest 浏览器中打开 `http://localhost:8088/npl/webparacraft/index.html`。
+
+### 3.4 局域网访问
+
+```bash
+scripts/dev_web.sh serve              # 默认监听 0.0.0.0，启动时同时打印本机和局域网地址
+```
+
+在其它设备上打开 `http://<本机IP>:8088/index.html`（注意**没有** `/npl/webparacraft/`：非 localhost 时
+页面从根路径 `/` 加载资源，服务器同时支持两种布局）。
+
+局域网 IP 上的 `http://` **不是安全上下文**，浏览器会禁用 Service Worker、`SharedArrayBuffer` 和
+**`navigator.xr`（WebXR）**。单线程版本身可以运行，但不能测试 WebXR。需要安全上下文时，三选一：
+
+1. **Chrome 标志（最简单，适合局域网内其它电脑）**：在访问端打开
+   `chrome://flags/#unsafely-treat-insecure-origin-as-secure`，填入 `http://<本机IP>:8088`，重启浏览器。
+2. **HTTPS**：
+   ```bash
+   brew install mkcert                    # 推荐；只需一次
+   scripts/dev_web.sh serve --https       # 打开 https://127.0.0.1:8088/npl/webparacraft/index.html
+   ```
+   `--https` 在 `build/web_cert/` 下生成覆盖 `localhost`、`127.0.0.1` 和本机局域网 IP 的证书，之后重复使用
+   （局域网 IP 变化时重新生成）。也可以用 `CERT=... KEY=...` 指定已有证书。
+   - 装了 mkcert：首次运行会执行 `mkcert -install`（需要输入一次系统密码），本机浏览器直接信任该证书。
+     其它设备需要导入 `mkcert -CAROOT` 目录下的 `rootCA.pem` 才会信任。
+   - 没装 mkcert：改用 openssl 生成自签名证书。浏览器会显示证书警告，点 *继续前往* 可以打开页面，
+     但 **Chrome 不会在证书错误的页面上注册 Service Worker**，而本项目依赖 Service Worker，所以建议装 mkcert。
+3. **Quest 用 USB**：`adb reverse` 后访问 `localhost`，天然是安全上下文（见上文）。
+
+如果其它设备仍然连不上：检查 macOS 防火墙是否允许 Python 接收传入连接；如果访问端配置了 HTTP 代理，
+需要把局域网地址加入代理的绕过列表。
 
 ---
 
@@ -208,6 +239,8 @@ webparacraft 自带的 `calculate_md5.sh`。
 | `502` / `NPL WebServer request timeout` | 旧的 Service Worker 接管了该 origin，执行 Clear site data |
 | 改动不生效 | 没勾选 “Bypass for network”，或手动复制文件后没有刷新哈希 |
 | 一直加载 / `SharedArrayBuffer is not defined` | 服务器没有 COOP/COEP 头，用 `dev_web.sh serve` |
+| 局域网 `ERR_CONNECTION_REFUSED` | 服务器只监听 127.0.0.1（设置了 `HOST=127.0.0.1`），去掉该变量重启 `serve` |
+| 局域网能打开但 WebXR 不可用 | 非安全上下文，见 §3.4 |
 
 ---
 
@@ -225,4 +258,7 @@ webparacraft 自带的 `calculate_md5.sh`。
 | `SCRIPT_SRC` | `~/CODE/paracraft_script` |
 | `APP_ROOT` | `~/paracraft`（只传给 CMake） |
 | `PORT` | `8088` |
+| `HOST` | `0.0.0.0`（本机 + 局域网）；`127.0.0.1` 只允许本机 |
+| `CERT` / `KEY` | 未设置；设置后用 HTTPS 提供服务（`serve --https` 时自动生成） |
+| `CERT_DIR` | `<repo>/build/web_cert`（`serve --https` 生成的证书） |
 | `JOBS` | CPU 核数 |

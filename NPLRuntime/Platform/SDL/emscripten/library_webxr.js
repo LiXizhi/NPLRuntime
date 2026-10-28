@@ -195,6 +195,9 @@ webxr_init: function(frameCallback, startSessionCallback, endSessionCallback, er
             // Create the base layer
             const layer = Module['webxr_baseLayer'] = new window.XRWebGLLayer(session, Module.ctx, {
                 framebufferScaleFactor: Module['webxr_framebuffer_scale_factor'],
+                /* the engine clears with alpha 0 (CSceneObject::GetClearColor) and the sky dome only writes RGB,
+                 * so with an alpha framebuffer the XR compositor treats the sky as transparent (black). */
+                alpha: false,
             });
             session.updateRenderState({ baseLayer: layer });
 

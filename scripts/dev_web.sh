@@ -8,6 +8,8 @@
 #
 # usage: scripts/dev_web.sh [setup|cpp|script|all|serve|status|restore]   (default: all)
 #        scripts/dev_web.sh script --all     overlay the whole script/ config/ Mod/ tree
+#        HOST=127.0.0.1 scripts/dev_web.sh serve   this machine only (default: also LAN)
+#        scripts/dev_web.sh serve --https    https with a generated certificate (or CERT=... KEY=...)
 
 set -e
 
@@ -24,7 +26,11 @@ SCRIPT_SRC=${SCRIPT_SRC:-$HOME/CODE/paracraft_script}
 ## paracraft asset root; only passed to cmake, the asset package is not rebuilt here
 APP_ROOT=${APP_ROOT:-$HOME/paracraft}
 PORT=${PORT:-8088}
+## 0.0.0.0 also serves the LAN; 127.0.0.1 for this machine only
+HOST=${HOST:-0.0.0.0}
 JOBS=${JOBS:-$(getconf _NPROCESSORS_ONLN)}
+## certificates made by 'serve --https'
+CERT_DIR=${CERT_DIR:-$REPO_DIR/build/web_cert}
 
 TARGET=ParaCraftSingleThread
 OUT_DIR=$WEB_DIR/auto_generate_files
@@ -182,9 +188,37 @@ cmd_restore() {
     log "auto_generate_files restored to webparacraft HEAD"
 }
 
+## make a certificate for localhost, 127.0.0.1 and the LAN ip; regenerated when the LAN ip changes.
+## mkcert certificates are trusted by this machine (and by other devices that import `mkcert -CAROOT`/rootCA.pem);
+## the openssl fallback is self-signed: the browser shows a warning and refuses to register the service worker
+make_cert() {
+    local ip=$(python3 -c 'import socket; s=socket.socket(socket.AF_INET, socket.SOCK_DGRAM); s.connect(("10.255.255.255", 1)); print(s.getsockname()[0])' 2>/dev/null)
+    local names="localhost 127.0.0.1 ::1 $ip"
+    local tag=$( (command -v mkcert >/dev/null && echo mkcert || echo selfsigned) )
+    CERT=$CERT_DIR/$tag-${ip:-noip}.pem
+    KEY=$CERT_DIR/$tag-${ip:-noip}-key.pem
+    [ -f "$CERT" ] && [ -f "$KEY" ] && return
+    mkdir -p "$CERT_DIR"
+    if [ "$tag" = mkcert ]; then
+        mkcert -install
+        mkcert -cert-file "$CERT" -key-file "$KEY" $names
+    else
+        log "mkcert not found (brew install mkcert); making a self-signed certificate with openssl"
+        local san=$(for n in $names; do case $n in (*[a-z]*) printf 'DNS:%s,' $n ;; (*) printf 'IP:%s,' $n ;; esac; done)
+        openssl req -x509 -newkey rsa:2048 -nodes -days 825 -subj "/CN=webparacraft dev" \
+            -addext "subjectAltName=${san%,}" -addext "extendedKeyUsage=serverAuth" \
+            -keyout "$KEY" -out "$CERT" 2>/dev/null || die "openssl failed to make $CERT"
+    fi
+    log "certificate: $CERT ($names)"
+}
+
+## set CERT and KEY (PEM files) or pass --https to serve https
 cmd_serve() {
     check_web_dir
-    exec python3 "$REPO_DIR/scripts/serve_webparacraft.py" --root "$WEB_DIR" --port "$PORT"
+    [ "$1" = "--https" ] && [ -z "$CERT" ] && make_cert
+    local args="--root $WEB_DIR --port $PORT --host $HOST"
+    [ -n "$CERT" ] && args="$args --cert $CERT --key $KEY"
+    exec python3 -u "$REPO_DIR/scripts/serve_webparacraft.py" $args
 }
 
 case "${1:-all}" in
@@ -192,7 +226,7 @@ case "${1:-all}" in
     cpp)     cmd_cpp; update_md5 ;;
     script)  cmd_script "$2"; update_md5 ;;
     all)     cmd_cpp; cmd_script "$2"; update_md5 ;;
-    serve)   cmd_serve ;;
+    serve)   cmd_serve "$2" ;;
     status)  cmd_status ;;
     restore) cmd_restore ;;
     *) sed -n '2,12p' "$0"; exit 1 ;;
