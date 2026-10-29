@@ -37,6 +37,9 @@
 -keep public class com.oppo.oiface.engine.** { *; }
 -dontwarn com.oppo.oiface.engine.**
 
+# R8: ijkplayer's legacy demo player references ExoPlayer v1, which is not a dependency of this build
+-dontwarn com.google.android.exoplayer.**
+
 # Proguard Apache HTTP for release
 -keep class org.apache.http.** { *; }
 -dontwarn org.apache.http.**

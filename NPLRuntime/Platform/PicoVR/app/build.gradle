@@ -111,7 +111,12 @@ android {
 
     applicationVariants.all { variant ->
         variant.outputs.all {
-            outputFileName = "paracraft-pico-${variant.buildType.name}-${VERSION_NAME}.apk"
+            def buildDate = new Date().format("yyyyMMdd")
+            if (variant.buildType.name == "release") {
+                outputFileName = "paracraftvr-relese-${VERSION_NAME}-${buildDate}.apk"
+            } else {
+                outputFileName = "paracraft-pico-${variant.buildType.name}-${VERSION_NAME}.apk"
+            }
         }
     }
 }
