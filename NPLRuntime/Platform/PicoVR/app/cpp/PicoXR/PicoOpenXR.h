@@ -32,6 +32,11 @@ namespace ParaEngine
 		int handKey[2][7];
 		// touchpad x, y, thumbstick x, y. y is positive downward like WebXR gamepads.
 		float handAxes[2][4];
+		// controller ray on the UI panel (see SetUIPanelMode), in render window pixels of the left eye half.
+		bool pointerValid;
+		bool pointerPressed;
+		float pointerX;
+		float pointerY;
 	};
 
 	class CPicoOpenXR
@@ -57,6 +62,11 @@ namespace ParaEngine
 		int GetRenderWidth() const { return m_eyeWidth * 2; }
 		int GetRenderHeight() const { return m_eyeHeight; }
 
+		/** in UI panel mode the left eye half is shown as a quad fixed in space in front of the user, instead of
+		* a head locked stereo view. Used for the 2D GUI before WebXRCamera takes over in a world. */
+		void SetUIPanelMode(bool bEnable) { m_uiPanelMode = bEnable; }
+		bool IsUIPanelMode() const { return m_uiPanelMode; }
+
 		/** poll XR events and tick the engine once through renderFunc.
 		* returns true if a frame was submitted to the headset. */
 		bool Frame(const RenderCallback& renderFunc);
@@ -70,6 +80,9 @@ namespace ParaEngine
 		void PollEvents();
 		bool RenderViews(XrTime displayTime, const RenderCallback& renderFunc, void* projectionViews);
 		void UpdateControllers(XrTime displayTime, PicoXRFrameData& data);
+		void UpdateUIPointer(PicoXRFrameData& data);
+		void DrawUIPointer(const PicoXRFrameData& data);
+		float GetUIPanelHeight() const;
 
 	private:
 		XrInstance m_instance;
@@ -89,6 +102,10 @@ namespace ParaEngine
 		std::vector<uint32_t> m_swapchainTextures;
 		std::vector<uint32_t> m_framebuffers;
 		uint32_t m_depthBuffer;
+
+		bool m_uiPanelMode;
+		int m_pointerHand; // hand of the UI pointer: the one whose trigger was pressed last
+		bool m_lastTrigger[2];
 
 		XrActionSet m_actionSet;
 		XrAction m_aimPoseAction;

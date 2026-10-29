@@ -40,6 +40,7 @@ Tests/
 WanDeploy/
 WebAPI/
 .cxx/
+.workbuddy/
 
 !Server/
 Server/*

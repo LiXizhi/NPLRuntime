@@ -37,6 +37,22 @@
 
 namespace ParaEngine
 {
+	// UI panel: facing the user at the start pose of the LOCAL space, at eye height.
+	static const float s_uiPanelDistance = 1.5f;
+	static const float s_uiPanelWidth = 1.6f;
+	static const int s_cursorSize = 12;
+
+	/** rotate v by the unit quaternion q (x, y, z, w) */
+	static void RotateVector(const float* q, const float* v, float* out)
+	{
+		float tx = 2.f * (q[1] * v[2] - q[2] * v[1]);
+		float ty = 2.f * (q[2] * v[0] - q[0] * v[2]);
+		float tz = 2.f * (q[0] * v[1] - q[1] * v[0]);
+		out[0] = v[0] + q[3] * tx + (q[1] * tz - q[2] * ty);
+		out[1] = v[1] + q[3] * ty + (q[2] * tx - q[0] * tz);
+		out[2] = v[2] + q[3] * tz + (q[0] * ty - q[1] * tx);
+	}
+
 	static bool XrCheck(XrInstance instance, XrResult result, const char* what)
 	{
 		if (XR_SUCCEEDED(result))
@@ -133,6 +149,8 @@ namespace ParaEngine
 		, m_swapchainFormat(0)
 		, m_disableSRGBWrite(false)
 		, m_depthBuffer(0)
+		, m_uiPanelMode(false)
+		, m_pointerHand(1)
 		, m_actionSet(XR_NULL_HANDLE)
 		, m_aimPoseAction(XR_NULL_HANDLE)
 		, m_triggerAction(XR_NULL_HANDLE)
@@ -145,6 +163,7 @@ namespace ParaEngine
 	{
 		m_handPath[0] = m_handPath[1] = XR_NULL_PATH;
 		m_handSpace[0] = m_handSpace[1] = XR_NULL_HANDLE;
+		m_lastTrigger[0] = m_lastTrigger[1] = false;
 	}
 
 	CPicoOpenXR::~CPicoOpenXR()
@@ -611,6 +630,7 @@ namespace ParaEngine
 
 		XrCompositionLayerProjectionView projectionViews[2];
 		XrCompositionLayerProjection layer = { XR_TYPE_COMPOSITION_LAYER_PROJECTION };
+		XrCompositionLayerQuad quadLayer = { XR_TYPE_COMPOSITION_LAYER_QUAD };
 		const XrCompositionLayerBaseHeader* layers[1] = { (const XrCompositionLayerBaseHeader*)&layer };
 		uint32_t layerCount = 0;
 
@@ -618,9 +638,24 @@ namespace ParaEngine
 		{
 			if (RenderViews(frameState.predictedDisplayTime, renderFunc, projectionViews))
 			{
-				layer.space = m_appSpace;
-				layer.viewCount = 2;
-				layer.views = projectionViews;
+				// renderFunc may have switched the mode, check it after rendering
+				if (m_uiPanelMode)
+				{
+					quadLayer.space = m_appSpace;
+					quadLayer.eyeVisibility = XR_EYE_VISIBILITY_BOTH;
+					quadLayer.subImage = projectionViews[0].subImage;
+					quadLayer.pose.orientation.w = 1.f;
+					quadLayer.pose.position.z = -s_uiPanelDistance;
+					quadLayer.size.width = s_uiPanelWidth;
+					quadLayer.size.height = GetUIPanelHeight();
+					layers[0] = (const XrCompositionLayerBaseHeader*)&quadLayer;
+				}
+				else
+				{
+					layer.space = m_appSpace;
+					layer.viewCount = 2;
+					layer.views = projectionViews;
+				}
 				layerCount = 1;
 			}
 		}
@@ -680,6 +715,7 @@ namespace ParaEngine
 			data.eyeFov[eye][3] = views[eye].fov.angleDown;
 		}
 		UpdateControllers(displayTime, data);
+		UpdateUIPointer(data);
 
 		uint32_t imageIndex = 0;
 		XrSwapchainImageAcquireInfo acquireInfo = { XR_TYPE_SWAPCHAIN_IMAGE_ACQUIRE_INFO };
@@ -701,6 +737,8 @@ namespace ParaEngine
 		bool rendered = renderFunc(&data);
 
 		glBindFramebuffer(GL_FRAMEBUFFER, m_framebuffers[imageIndex]);
+		if (m_uiPanelMode)
+			DrawUIPointer(data);
 		DumpFrameIfRequested(GetRenderWidth(), GetRenderHeight());
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);
 		XrSwapchainImageReleaseInfo releaseInfo = { XR_TYPE_SWAPCHAIN_IMAGE_RELEASE_INFO };
@@ -786,5 +824,83 @@ namespace ParaEngine
 				data.handAxes[hand][3] = -stick.currentState.y;
 			}
 		}
+	}
+
+	float CPicoOpenXR::GetUIPanelHeight() const
+	{
+		return (m_eyeWidth > 0) ? s_uiPanelWidth * m_eyeHeight / m_eyeWidth : s_uiPanelWidth;
+	}
+
+	void CPicoOpenXR::UpdateUIPointer(PicoXRFrameData& data)
+	{
+		// the pointer follows the hand whose trigger was pressed last
+		for (int hand = 0; hand < 2; ++hand)
+		{
+			bool trigger = data.handKey[hand][0] != 0;
+			if (trigger && !m_lastTrigger[hand] && data.handActive[hand])
+				m_pointerHand = hand;
+			m_lastTrigger[hand] = trigger;
+		}
+		int hand = m_pointerHand;
+		if (!data.handActive[hand])
+			hand = 1 - hand;
+		if (!data.handActive[hand])
+			return;
+
+		// intersect the aim ray with the panel plane z = -distance
+		const float forward[3] = { 0.f, 0.f, -1.f };
+		float dir[3];
+		RotateVector(data.handOrientation[hand], forward, dir);
+		const float* origin = data.handPosition[hand];
+		if (dir[2] > -0.0001f)
+			return;
+		float t = (-s_uiPanelDistance - origin[2]) / dir[2];
+		if (t <= 0.f)
+			return;
+		float u = (origin[0] + dir[0] * t) / s_uiPanelWidth + 0.5f;
+		float v = 0.5f - (origin[1] + dir[1] * t) / GetUIPanelHeight();
+		if (u < 0.f || u > 1.f || v < 0.f || v > 1.f)
+			return;
+
+		data.pointerValid = true;
+		data.pointerPressed = data.handKey[hand][0] != 0;
+		data.pointerX = u * m_eyeWidth;
+		data.pointerY = v * m_eyeHeight;
+	}
+
+	void CPicoOpenXR::DrawUIPointer(const PicoXRFrameData& data)
+	{
+		if (!data.pointerValid)
+			return;
+
+		// the engine caches GL states, so put back everything we touch
+		GLboolean scissorEnabled = glIsEnabled(GL_SCISSOR_TEST);
+		GLint scissorBox[4];
+		GLboolean colorMask[4];
+		GLfloat clearColor[4];
+		glGetIntegerv(GL_SCISSOR_BOX, scissorBox);
+		glGetBooleanv(GL_COLOR_WRITEMASK, colorMask);
+		glGetFloatv(GL_COLOR_CLEAR_VALUE, clearColor);
+
+		// GL window coordinates are bottom up, the pointer is top down
+		int x = (int)data.pointerX;
+		int y = m_eyeHeight - (int)data.pointerY;
+		glEnable(GL_SCISSOR_TEST);
+		glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+		glScissor(x - s_cursorSize / 2 - 2, y - s_cursorSize / 2 - 2, s_cursorSize + 4, s_cursorSize + 4);
+		glClearColor(0.f, 0.f, 0.f, 1.f);
+		glClear(GL_COLOR_BUFFER_BIT);
+		glScissor(x - s_cursorSize / 2, y - s_cursorSize / 2, s_cursorSize, s_cursorSize);
+		if (data.pointerPressed)
+			glClearColor(1.f, 0.8f, 0.f, 1.f);
+		else
+			glClearColor(1.f, 1.f, 1.f, 1.f);
+		glClear(GL_COLOR_BUFFER_BIT);
+
+		glClearColor(clearColor[0], clearColor[1], clearColor[2], clearColor[3]);
+		glColorMask(colorMask[0], colorMask[1], colorMask[2], colorMask[3]);
+		glScissor(scissorBox[0], scissorBox[1], scissorBox[2], scissorBox[3]);
+		if (!scissorEnabled)
+			glDisable(GL_SCISSOR_TEST);
 	}
 }

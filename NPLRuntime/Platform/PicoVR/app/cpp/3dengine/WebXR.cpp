@@ -15,9 +15,10 @@
 namespace ParaEngine
 {
     // Same entry as "/stereo -s webxr" of the WebXR build. WebXRCamera does head tracking, controller rays,
-    // mouse emulation and 3D GUI, and calls SetIsXR(true). It needs GameLogic, which is loaded after startup.
+    // mouse emulation and 3D GUI, and calls SetIsXR(true). It needs a loaded world: its 3D GUI is placed in front of
+    // the scene camera, so on the login screen nothing is drawn but the clear color. Until then the 2D GUI is drawn per eye.
     static const char* s_activateWebXRCamera =
-        "if(GameLogic and GameLogic.options and GameLogic.options.SetStereoConvergenceOffset) then "
+        "if(GameLogic and GameLogic.IsStarted and GameLogic.world and GameLogic.options and GameLogic.options.SetStereoConvergenceOffset) then "
         "NPL.load(\"(gl)script/ide/System/Scene/Cameras/WebXRCamera.lua\"); "
         "local WebXRCamera = commonlib.gettable(\"System.Scene.Cameras.WebXRCamera\"); "
         "if(WebXRCamera.activate) then WebXRCamera:activate(); end "

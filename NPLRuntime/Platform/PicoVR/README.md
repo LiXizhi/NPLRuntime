@@ -52,6 +52,6 @@ GLSurfaceView GL thread (ES3 context)
 
 - **Projection:** the projection matrix still comes from the scene camera fov. The headset's asymmetric per-eye fov is exposed (`webXR*Fov`) but not applied yet, so scale and stereo may feel slightly off.
 - **Head tracking:** the Lua side must apply head tracking to the camera, as in the WebXR build. Check that the VR camera code runs when `isXR` is already true at startup.
-- **UI input:** the 2D UI is drawn per eye. There is no controller ray pointer for the UI yet.
+- **UI before a world is loaded:** WebXRCamera only starts in a world. Until then the 2D GUI (login, world list) is shown on a quad layer fixed 1.5 m in front of the start pose. The controller ray drives the mouse with a square cursor, and the trigger is the left button. Inside a world WebXRCamera draws a 3D GUI and handles the controllers.
 - **Lifecycle:** when the GL surface is destroyed, the OpenXR session is destroyed and created again on the next surface.
 - **Performance:** there is no multiview or foveation yet. Turn off shadows and post processing for a stable 72/90 Hz.
