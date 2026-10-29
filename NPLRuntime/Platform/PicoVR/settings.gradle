@@ -1,0 +1,2 @@
+include ':PicoVR'
+project(':PicoVR').projectDir = new File(settingsDir, 'app')

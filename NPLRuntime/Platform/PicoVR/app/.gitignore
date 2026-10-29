@@ -1,0 +1,6 @@
+/build
+/.externalNativeBuild
+/.cxx
+/release
+.DS_Store
+assets/

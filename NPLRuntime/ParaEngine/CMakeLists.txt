@@ -190,13 +190,15 @@ set(include_dirs
     ${CMAKE_CURRENT_SOURCE_DIR}/NPL
     ${CMAKE_CURRENT_SOURCE_DIR}/Framework/Interface
     ${CMAKE_CURRENT_SOURCE_DIR}/AutoRigger
-    ${Boost_INCLUDE_DIRS}
     ${NPLRUNTIME_INCLUDES}
 )
 
 if (APPLE AND NOT IOS)
     list(APPEND include_dirs ${CMAKE_CURRENT_SOURCE_DIR}/../Platform/OSX/src)
 elseif (ANDROID)
+    if (PICO_VR)
+        list(APPEND include_dirs ${CMAKE_CURRENT_SOURCE_DIR}/../Platform/PicoVR/app/cpp)
+    endif()
     list(APPEND include_dirs ${CMAKE_CURRENT_SOURCE_DIR}/../Platform/AndroidStudio/app/cpp)
 elseif (HARMONY_OS)
     list(APPEND include_dirs ${CMAKE_CURRENT_SOURCE_DIR}/../Platform/HarmonyOS/entry/src/main/cpp)
@@ -208,8 +210,18 @@ endif()
 
 target_include_directories(ParaEngine PUBLIC ${include_dirs})
 
+# boost 头只以系统头方式引入（-isystem）：避免 IDE 的 C++ 引擎把上万个第三方 boost 头
+# 当作工程源码做符号索引，导致 "Analyzing project to enable smart features" 长时间卡住。
+# 注意：-isystem 目录排在 -I 之后，不改变头文件查找优先级，仅影响编译诊断与 IDE 归类。
+if (Boost_INCLUDE_DIRS)
+    target_include_directories(ParaEngine SYSTEM PUBLIC ${Boost_INCLUDE_DIRS})
+endif()
+
 if (ANDROID)
     set(PLATROM_SPEC_DEFINITIONS PARAENGINE_MOBILE ANDROID PLATFORM_ANDROID AUTOUPDATE_PARAENGINE)
+    if (PICO_VR)
+        list(APPEND PLATROM_SPEC_DEFINITIONS PICO_VR)
+    endif()
 elseif (HARMONY_OS)
     set(PLATROM_SPEC_DEFINITIONS PARAENGINE_MOBILE HARMONY_OS PLATFORM_HARMONY AUTOUPDATE_PARAENGINE)
 elseif (WIN32)

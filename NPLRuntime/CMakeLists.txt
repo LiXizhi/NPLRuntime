@@ -14,6 +14,7 @@ option(PARAENGINE_CLIENT_DLL "Generate Dll Or Exe" OFF)
 option(NPLRUNTIME_ICONV "include iconv" ON)
 option(NPLRUNTIME_SERVER "Generate server ver" OFF)
 option(ANDROID_STUDIO "Generate AndroidStudio ver" OFF)
+option(PICO_VR "Generate PICO VR (OpenXR) ver, see Platform/PicoVR" OFF)
 option(NPLRUNTIME_OCE "include NplOce" OFF)
 option(NPLRUNTIME_DARKNET "darknet support" OFF)
 
@@ -62,7 +63,7 @@ elseif (EMSCRIPTEN)
 		endif()
 	endif()
 
-	include_directories(${BOOST_ROOT})
+	include_directories(SYSTEM ${BOOST_ROOT})
 	# -sUSE_SQLITE3=1
 elseif (ANDROID) 
 	if (ANDROID_STUDIO)
