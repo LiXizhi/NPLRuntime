@@ -24,7 +24,7 @@ IF(MSVC)
 	endforeach(flag_var)
 ENDIF()
 
-add_executable(ParaApplyWaiter main.cpp)
+add_executable(ParaApplyWaiter main.cpp version.rc)
 
 # no console window
 set_target_properties(ParaApplyWaiter PROPERTIES WIN32_EXECUTABLE true)
