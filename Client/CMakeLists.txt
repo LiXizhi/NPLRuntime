@@ -301,8 +301,11 @@ endif()
 if(WIN32)
 	if (NPLRUNTIME_HAQI_LAUNCHER) 
 		add_subdirectory (${PROJECT_SOURCE_DIR}/trunk/HaqiLauncher ${PROJECT_BINARY_DIR}/HaqiLauncher)
-		add_subdirectory (${SERVER_SOURCE_DIR}/AutoUpdater ${PROJECT_BINARY_DIR}/AutoUpdater)
+		#add_subdirectory (${SERVER_SOURCE_DIR}/AutoUpdater ${PROJECT_BINARY_DIR}/AutoUpdater))
 	endif()
+	# tiny native helper that waits for the game process to exit before the
+	# launcher applies 430/431 updates (replaces the PowerShell waiter script)
+	add_subdirectory (${PROJECT_SOURCE_DIR}/trunk/ParaApplyWaiter ${PROJECT_BINARY_DIR}/ParaApplyWaiter)
 endif()	
 
 # following are plugins that should be build after main runtime	
