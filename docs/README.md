@@ -38,3 +38,7 @@ Older documentation lives under `Client/trunk/ParaEngineClient/doc/`:
 ## For AI Agents
 
 See [`CLAUDE.md`](../CLAUDE.md) at the repository root for a concise agent-oriented guide with conventions, constraints, and common task patterns.
+
+## AI education handbook — 2026-09-17
+
+[AI education runtime dependency handbook](ai-education-handbook.md)
