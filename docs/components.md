@@ -2,6 +2,8 @@
 
 Complete directory map of `Client/trunk/ParaEngineClient/` — the primary C++ source tree shared by client and server builds.
 
+For detailed subsystem documentation (class-level reference, render pipeline, block world dimensions, etc.), see **[paraengine-client/](paraengine-client/README.md)**.
+
 ## Top-Level Layout
 
 ```

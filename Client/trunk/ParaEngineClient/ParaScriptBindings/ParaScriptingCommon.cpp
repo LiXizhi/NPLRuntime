@@ -36,6 +36,7 @@ extern "C"
 #ifdef PARAENGINE_CLIENT
 #include "assimp/Exporter.hpp"
 #include "assimp/Importer.hpp"
+#include "assimp/config.h"
 #include "assimp/postprocess.h"
 #include "assimp/scene.h"
 #endif
@@ -982,13 +983,31 @@ void ParaAsset::ConvertGLB(const char* cmds)
 			output_filepath = input_filepath.substr(0, pos + 1) + "output" + input_filepath[pos] + input_filepath.substr(pos + 1);
 		}
 	}
-	std::istringstream(transform_matrix) >> position_x >> position_y >> position_z >> rotation_x >> rotation_y >> rotation_z >> scale;
-    auto identify = aiMatrix4x4();
-	auto matrix   = aiMatrix4x4::Scaling(aiVector3D(scale, scale, scale), identify);
-	matrix        = aiMatrix4x4::RotationY(rotation_y, identify) * matrix;
-	matrix        = aiMatrix4x4::Translation(aiVector3D(position_x, position_y, position_z), identify) * matrix;
+	std::vector<float> transform_values;
+	float transform_value = 0.0f;
+	std::istringstream transform_stream(transform_matrix);
+	while (transform_stream >> transform_value)
+		transform_values.push_back(transform_value);
+	aiMatrix4x4 matrix;
+	if (transform_values.size() == 12)
+	{
+		matrix = aiMatrix4x4(
+			transform_values[0], transform_values[1], transform_values[2], transform_values[3],
+			transform_values[4], transform_values[5], transform_values[6], transform_values[7],
+			transform_values[8], transform_values[9], transform_values[10], transform_values[11],
+			0.0f, 0.0f, 0.0f, 1.0f);
+	}
+	else
+	{
+		std::istringstream(transform_matrix) >> position_x >> position_y >> position_z >> rotation_x >> rotation_y >> rotation_z >> scale;
+		auto identity = aiMatrix4x4();
+		matrix = aiMatrix4x4::Scaling(aiVector3D(scale, scale, scale), identity);
+		matrix = aiMatrix4x4::RotationY(rotation_y, identity) * matrix;
+		matrix = aiMatrix4x4::Translation(aiVector3D(position_x, position_y, position_z), identity) * matrix;
+	}
 
     Assimp::Importer importer;
+	importer.SetPropertyInteger(AI_CONFIG_PP_SLM_VERTEX_LIMIT, 60000);
     const aiScene *scene = importer.ReadFile(input_filepath, aiProcess_Triangulate | aiProcess_GenSmoothNormals | aiProcess_FlipUVs);
 
     if (!scene)
@@ -999,9 +1018,21 @@ void ParaAsset::ConvertGLB(const char* cmds)
 
     auto root_node             = scene->mRootNode;
     root_node->mTransformation = matrix * root_node->mTransformation;
+	scene = importer.ApplyPostProcessing(aiProcess_PreTransformVertices | aiProcess_FlipWindingOrder | aiProcess_SplitLargeMeshes);
+	if (!scene)
+	{
+		std::cerr << "Failed to bake scene transform: " << importer.GetErrorString() << std::endl;
+		return;
+	}
 
     Assimp::Exporter exporter;
-    if (exporter.Export(scene, "glb2", output_filepath.c_str()) != AI_SUCCESS)
+	std::string output_extension;
+	auto extension_position = output_filepath.find_last_of('.');
+	if (extension_position != std::string::npos)
+		output_extension = output_filepath.substr(extension_position + 1);
+	std::transform(output_extension.begin(), output_extension.end(), output_extension.begin(), ::tolower);
+	const char* export_format = output_extension == "fbx" ? "fbx" : "glb2";
+    if (exporter.Export(scene, export_format, output_filepath.c_str()) != AI_SUCCESS)
     {
         std::cerr << "Failed to export scene: " << exporter.GetErrorString() << std::endl;
     }
