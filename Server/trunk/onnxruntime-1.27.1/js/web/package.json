@@ -58,7 +58,7 @@
     "karma-mocha-reporter": "^2.2.5",
     "karma-safari-applescript-launcher": "^0.1.1",
     "karma-sourcemap-loader": "^0.4.0",
-    "minimatch": "^7.4.2",
+    "minimatch": "^11.0.1",
     "minimist": "^1.2.8",
     "numpy-parser": "^1.2.3",
     "source-map": "^0.7.4",
