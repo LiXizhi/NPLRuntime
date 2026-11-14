@@ -537,6 +537,10 @@ void ParaEngine::CViewport::DisableDeltaTime(bool bDisabled)
 
 bool ParaEngine::CViewport::DrawQuad()
 {
+	auto* pDev = CGlobals::GetRenderDevice();
+	if (!pDev)
+		return false;
+
 	float fWidth = (float)m_pViewportManager->GetWidth();
 	float fHeight = (float)m_pViewportManager->GetHeight();
 
@@ -546,6 +550,21 @@ bool ParaEngine::CViewport::DrawQuad()
 	float fY = m_rect.top / fHeight;
 	float fRight = m_rect.right / fWidth;
 	float fBottom = m_rect.bottom / fHeight;
+
+	const RHIDeviceCaps& caps = pDev->GetCaps();
+	if (!caps.needsHalfPixelOffset && fWidth > 0.0f && fHeight > 0.0f)
+	{
+		// Legacy D3D9 post-processing shaders add +0.5/screenParam in their vertex shaders
+		// to shift D3D9 integer pixel origins onto texel centers. On modern APIs whose
+		// rasterizer pixel centers are already at (x+0.5, y+0.5), pre-subtract half a texel
+		// so texCoord + 0.5/screenParam lands on exact texel centers instead of 4-texel corners.
+		const float halfTexelX = 0.5f / fWidth;
+		const float halfTexelY = 0.5f / fHeight;
+		fX -= halfTexelX;
+		fRight -= halfTexelX;
+		fY -= halfTexelY;
+		fBottom -= halfTexelY;
+	}
 
 	/*mesh_vertex_plain quadVertices[4] = {
 		{ Vector3(fX*2-1, -fBottom*2+1, 0), Vector2(fX, fBottom) },
@@ -560,11 +579,7 @@ bool ParaEngine::CViewport::DrawQuad()
 		{ Vector3(1, 1, 0), Vector2(fRight, fY) },
 	};
 
-	auto* pDev = CGlobals::GetRenderDevice();
-	if (!pDev)
-		return false;
-
-	if (!pDev->GetCaps().topLeftScreenOrigin)
+	if (!caps.topLeftScreenOrigin)
 	{
 		// in OpenGL FBOs, Y position is inverted.
 		for (int i = 0; i < 4; ++i)
