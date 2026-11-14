@@ -10,10 +10,6 @@
 #include "Render/IRenderDevice.h"
 #include "ParaVertexBuffer.h"
 
-#if USE_DIRECTX_RENDERER
-#include "RenderDeviceD3D9.h"
-#include "D3DMapping.h"
-#endif
 using namespace ParaEngine;
 
 
@@ -53,40 +49,41 @@ void ParaEngine::ParaVertexBuffer::RendererRecreated()
 
 bool ParaEngine::ParaVertexBuffer::CreateBuffer(uint32 nBufferSize, DWORD dwFormat /*= 0*/, DWORD dwUsage /*= 0*/, EPoolType dwPool)
 {
+	(void)dwFormat;
+	(void)dwPool;
 	ReleaseBuffer();
 	m_bufferType = BufferType_VertexBuffer;
 	m_nBufferSize = nBufferSize;
 	auto pd3dDevice = CGlobals::GetRenderDevice();
-#ifdef USE_DIRECTX_RENDERER
-
-	return SUCCEEDED(GETD3D(CGlobals::GetRenderDevice())->CreateVertexBuffer(nBufferSize, dwUsage, dwFormat, D3DMapping::toD3DPool(dwPool), &m_vertexBuffer, NULL));
-#elif defined(USE_OPENGL_RENDERER)
-	glGenBuffers(1, &m_vertexBuffer);
-	return true;
-#else
-	return false;
-#endif
+	if (!pd3dDevice || nBufferSize == 0)
+		return false;
+	ERHIBufferUsage usage = ERHIBufferUsage::Static;
+	if (dwUsage & D3DUSAGE_DYNAMIC)
+		usage |= ERHIBufferUsage::Dynamic;
+	if (dwUsage & D3DUSAGE_WRITEONLY)
+		usage |= ERHIBufferUsage::WriteOnly;
+	m_vertexBuffer = pd3dDevice->CreateBuffer(nBufferSize, false, usage, nullptr);
+	return m_vertexBuffer != nullptr;
 }
 
 
 bool ParaEngine::ParaVertexBuffer::CreateIndexBuffer(uint32 nBufferSize, DWORD dwFormat /*= 0*/, DWORD dwUsage /*= 0*/)
 {
+	(void)dwFormat;
 	ReleaseBuffer();
 
 	m_bufferType = BufferType_IndexBuffer;
 	m_nBufferSize = nBufferSize;
 	auto pd3dDevice = CGlobals::GetRenderDevice();
-#ifdef USE_DIRECTX_RENDERER
-	auto ret = SUCCEEDED(GETD3D(CGlobals::GetRenderDevice())->CreateIndexBuffer(nBufferSize, 0, (D3DFORMAT)dwFormat, D3DPOOL_MANAGED, &m_indexBuffer, NULL));
-
-	return ret;
-#elif defined(USE_OPENGL_RENDERER)
-	glGenBuffers(1, &m_vertexBuffer);
-	
-	return true;
-#else
-	return false;
-#endif
+	if (!pd3dDevice || nBufferSize == 0)
+		return false;
+	ERHIBufferUsage usage = ERHIBufferUsage::Static;
+	if (dwUsage & D3DUSAGE_DYNAMIC)
+		usage |= ERHIBufferUsage::Dynamic;
+	if (dwUsage & D3DUSAGE_WRITEONLY)
+		usage |= ERHIBufferUsage::WriteOnly;
+	m_indexBuffer = pd3dDevice->CreateBuffer(nBufferSize, true, usage, nullptr);
+	return m_indexBuffer != nullptr;
 }
 
 
@@ -104,21 +101,9 @@ void ParaEngine::ParaVertexBuffer::ReleaseBuffer()
 {
 	if (m_vertexBuffer != 0)
 	{
-#ifdef USE_DIRECTX_RENDERER
-		if (m_bufferType == BufferType_VertexBuffer){
-			SAFE_RELEASE(m_vertexBuffer);
-		}
-		else{
-			SAFE_RELEASE(m_indexBuffer);
-		}
-#elif defined(USE_OPENGL_RENDERER)
 		SAFE_DELETE_ARRAY(m_buffer);
-		if (glIsBuffer(m_vertexBuffer))
-		{
-			glDeleteBuffers(1, &m_vertexBuffer);
-			m_vertexBuffer = 0;
-		}
-#endif
+		m_vertexBuffer->ReleaseRHIResource();
+		m_vertexBuffer = nullptr;
 	}
 	else if (m_bufferType == BufferType_MemoryBuffer)
 	{
@@ -128,23 +113,25 @@ void ParaEngine::ParaVertexBuffer::ReleaseBuffer()
 
 bool ParaEngine::ParaVertexBuffer::Lock(void** ppData, uint32 offsetToLock /*= 0*/, uint32 sizeToLock /*= 0*/, DWORD dwFlag)
 {
-	if (m_vertexBuffer != 0 && m_nBufferSize>0)
+	if (!ppData)
+		return false;
+	if (m_vertexBuffer != 0 && m_nBufferSize > 0)
 	{
-#ifdef USE_DIRECTX_RENDERER
-		if (m_bufferType == BufferType_VertexBuffer)
-			m_vertexBuffer->Lock(offsetToLock, sizeToLock, ppData, dwFlag);
-		else
-			m_indexBuffer->Lock(offsetToLock, sizeToLock, ppData, dwFlag);
-#elif defined(USE_OPENGL_RENDERER)
-		SAFE_DELETE_ARRAY(m_buffer);
-		m_buffer = new char[m_nBufferSize];
-		*ppData = (void*)m_buffer;
-#endif
-		return true;
+		ERHIMapMode mode = ERHIMapMode::Write;
+		if (dwFlag & D3DLOCK_READONLY)
+			mode = ERHIMapMode::Read;
+		else if (dwFlag & D3DLOCK_DISCARD)
+			mode = ERHIMapMode::WriteDiscard;
+		else if (dwFlag & D3DLOCK_NOOVERWRITE)
+			mode = ERHIMapMode::WriteNoOverwrite;
+		uint32_t lockBytes = (sizeToLock > 0) ? sizeToLock : (m_nBufferSize > offsetToLock ? (m_nBufferSize - offsetToLock) : 0);
+		*ppData = m_vertexBuffer->Map(offsetToLock, lockBytes, mode);
+		return *ppData != nullptr;
 	}
-	else if (m_bufferType == BufferType_MemoryBuffer)
+	else if (m_bufferType == BufferType_MemoryBuffer && m_buffer != nullptr)
 	{
-		*ppData = (void*)m_buffer;
+		*ppData = (void*)(m_buffer + offsetToLock);
+		return true;
 	}
 	return false;
 }
@@ -153,37 +140,10 @@ void ParaEngine::ParaVertexBuffer::Unlock()
 {
 	if (m_bufferType == BufferType_MemoryBuffer)
 		return;
-#ifdef USE_DIRECTX_RENDERER
-	if (m_vertexBuffer != 0)
+	if (m_vertexBuffer != nullptr)
 	{
-		if (m_bufferType == BufferType_VertexBuffer)
-			m_vertexBuffer->Unlock();
-		else
-			m_indexBuffer->Unlock();
+		m_vertexBuffer->Unmap();
 	}
-#elif defined(USE_OPENGL_RENDERER)
-	if (m_buffer != 0)
-	{
-		if (m_bufferType == BufferType_VertexBuffer)
-		{
-			glBindBuffer(GL_ARRAY_BUFFER, m_vertexBuffer);
-			glBufferData(GL_ARRAY_BUFFER, m_nBufferSize, m_buffer, GL_STATIC_DRAW);
-			glBindBuffer(GL_ARRAY_BUFFER, 0);
-
-			PE_CHECK_GL_ERROR_DEBUG();
-		}
-		else if (m_bufferType == BufferType_IndexBuffer)
-		{
-			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_vertexBuffer);
-			glBufferData(GL_ELEMENT_ARRAY_BUFFER, m_nBufferSize, m_buffer, GL_STATIC_DRAW);
-			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-
-			PE_CHECK_GL_ERROR_DEBUG();
-		}
-		
-		SAFE_DELETE_ARRAY(m_buffer);
-	}
-#endif
 }
 
 bool ParaEngine::ParaVertexBuffer::IsValid() const
@@ -199,32 +159,17 @@ char* ParaEngine::ParaVertexBuffer::GetMemoryPointer()
 void ParaEngine::ParaVertexBuffer::UploadMemoryBuffer(const char* pBuffer, int32 nBufSize)
 {
 	nBufSize = nBufSize > 0 ? nBufSize : GetBufferSize();
-#ifdef USE_OPENGL_RENDERER
-	if (m_bufferType == BufferType_VertexBuffer)
+	if (m_bufferType != BufferType_MemoryBuffer && m_vertexBuffer != nullptr && pBuffer != nullptr && nBufSize > 0)
 	{
-		glBindBuffer(GL_ARRAY_BUFFER, m_vertexBuffer);
-		glBufferData(GL_ARRAY_BUFFER, nBufSize, pBuffer, GL_STATIC_DRAW);
-		glBindBuffer(GL_ARRAY_BUFFER, 0);
-
-		PE_CHECK_GL_ERROR_DEBUG();
+		m_vertexBuffer->UpdateData(0, static_cast<uint32_t>(nBufSize), pBuffer);
+		return;
 	}
-	else if (m_bufferType == BufferType_IndexBuffer)
-	{
-		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_vertexBuffer);
-		glBufferData(GL_ELEMENT_ARRAY_BUFFER, nBufSize, pBuffer, GL_STATIC_DRAW);
-		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-
-		PE_CHECK_GL_ERROR_DEBUG();
-	}
-	
-#else
 	char * pData = NULL;
 	if(Lock((void**)&pData, 0, 0))
 	{
 		memcpy(pData, pBuffer, nBufSize);
 		Unlock();
 	}
-#endif
 }
 
 ParaEngine::IndexBufferDevicePtr_type ParaEngine::ParaIndexBuffer::GetDevicePointer()

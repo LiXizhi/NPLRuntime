@@ -111,7 +111,18 @@ namespace ParaEngine
 		ATC_EXPLICIT_ALPHA,
 		//! ATITC-compressed texture: ATC_INTERPOLATED_ALPHA
 		ATC_INTERPOLATED_ALPHA,
-		//! Default texture format: AUTO
+
+		// Floating-point & modern compressed formats for ParaRHI
+		R16F,
+		R32F,
+		G16R16F,
+		G32R32F,
+		A16B16G16R16F,
+		A32B32G32R32F,
+		BC7,
+		ASTC_4x4,
+		ETC2_RGB8,
+		ETC2_RGBA8,
 
 		COUNT
 	};
@@ -271,6 +282,13 @@ namespace ParaEngine
 		RSV_CULL_NONE,
 		RSV_CULL_CW,
 		RSV_CULL_CCW
+	};
+
+	enum ERSVFILLMODE
+	{
+		RSV_FILL_POINT = 1,
+		RSV_FILL_WIREFRAME = 2,
+		RSV_FILL_SOLID = 3,
 	};
 
 	enum ERSVCMP

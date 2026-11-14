@@ -7,8 +7,7 @@
 // https://github.com/wine-mirror/wine/blob/master/dlls/d3dx9_36/sprite.c
 //-----------------------------------------------------------------------
 #include "ParaEngine.h"
-#ifdef USE_OPENGL_RENDERER
-#include "RenderDeviceOpenGL.h"
+#ifndef USE_NULL_RENDERER
 #include "TextureEntity.h"
 #include "OpenGLWrapper/GLProgram.h"
 #include "OpenGLWrapper/GLTexture2D.h"
@@ -100,6 +99,8 @@ void ParaEngine::CSpriteRendererOpenGL::UpdateShader(bool bForceUpdate)
 		if (m_pEffectFile && m_pEffectFile->begin())
 		{
 			m_pEffectFile->BeginPass(0);
+			m_pEffectFile->SetBool("k_bBoolean0", !m_bIsTextMode);
+			m_bIsTextModeDevice = m_bIsTextMode;
 		}
 	}
 }
@@ -305,20 +306,7 @@ void ParaEngine::CSpriteRendererOpenGL::FlushQuads()
 
 void ParaEngine::CSpriteRendererOpenGL::DrawTriangles(const sprite_vertex* pVertices, int nTriangleCount)
 {
-#define USE_USER_POINTER_VBO
-#ifdef USE_USER_POINTER_VBO
 	CGlobals::GetRenderDevice()->DrawPrimitiveUP(EPrimitiveType::TRIANGLELIST, nTriangleCount, pVertices, sizeof(sprite_vertex));
-#else
-#define kQuadSize sizeof(sprite_vertex)
-	// vertices
-	glVertexAttribPointer(GLProgram::VERTEX_ATTRIB_POSITION, 3, GL_FLOAT, GL_FALSE, kQuadSize, (GLvoid*)&(pVertices->pos));
-	// colors
-	glVertexAttribPointer(GLProgram::VERTEX_ATTRIB_COLOR, 4, GL_UNSIGNED_BYTE, GL_TRUE, kQuadSize, (GLvoid*)&(pVertices->col));
-	// tex coords
-	glVertexAttribPointer(GLProgram::VERTEX_ATTRIB_TEX_COORD, 2, GL_FLOAT, GL_FALSE, kQuadSize, (GLvoid*)&(pVertices->tex));
-
-	CGlobals::GetRenderDevice()->DrawPrimitive(EPrimitiveType::TRIANGLELIST, 0, nTriangleCount);
-#endif
 }
 
 void ParaEngine::CSpriteRendererOpenGL::SetTextMode(bool bIsTextMode /*= true*/)
@@ -331,14 +319,19 @@ void ParaEngine::CSpriteRendererOpenGL::SetTextMode(bool bIsTextMode /*= true*/)
 
 void ParaEngine::CSpriteRendererOpenGL::PrepareDraw()
 {
+	if (!m_pEffectFile)
+		return;
+
 	if (m_bIsTextMode != m_bIsTextModeDevice)
 	{
 		Flush();
-		m_pEffectFile->SetBool("k_bBoolean0", !m_bIsTextMode);
+		if (m_pEffectFile)
+			m_pEffectFile->SetBool("k_bBoolean0", !m_bIsTextMode);
 		m_bIsTextModeDevice = m_bIsTextMode;
 	}
 
-	m_pEffectFile->CommitChanges();
+	if (m_pEffectFile)
+		m_pEffectFile->CommitChanges();
 }
 
 

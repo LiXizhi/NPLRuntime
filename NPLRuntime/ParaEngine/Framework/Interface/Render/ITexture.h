@@ -4,18 +4,7 @@ namespace ParaEngine
 	class ITexture
 	{
 	public:
-		ITexture();
-		~ITexture();
-
-	private:
-
+		ITexture() = default;
+		virtual ~ITexture() = default;
 	};
-
-	ITexture::ITexture()
-	{
-	}
-
-	ITexture::~ITexture()
-	{
-	}
 }

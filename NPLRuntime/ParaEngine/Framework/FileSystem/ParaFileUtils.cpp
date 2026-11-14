@@ -16,7 +16,7 @@ namespace fs = boost::filesystem;
 #define BOOST_FILESYSTEM_NO_DEPRECATED
 using namespace ParaEngine;
 
-#if (PARA_TARGET_PLATFORM == PARA_PLATFORM_LINUX) || defined(MAC_SERVER) || defined(EMSCRIPTEN)
+#if (PARA_TARGET_PLATFORM == PARA_PLATFORM_LINUX) || defined(MAC_SERVER) || defined(EMSCRIPTEN) || defined(NPLRUNTIME_SERVER)
 CParaFileUtils* CParaFileUtils::GetInstance()
 {
 	static CParaFileUtils defaultImpl;
@@ -189,10 +189,10 @@ bool ParaEngine::CParaFileUtils::MakeDirectoryFromFilePath(const std::string fil
 #endif
 		fs::path filePath(filename16);
 		fs::path fileDir = filePath.parent_path();
-		if (!fs::exists(fileDir))
-			return fs::create_directories(fileDir);
-		else
+		if (fileDir.empty() || fs::exists(fileDir))
 			return true;
+		else
+			return fs::create_directories(fileDir);
 	}
 	catch (...) {}
 	return false;

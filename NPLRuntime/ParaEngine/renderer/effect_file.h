@@ -228,6 +228,21 @@ namespace ParaEngine
 		void applyWorldMatrices() {};
 		void applyFogParameters(bool bEnableFog, const Vector4* fogParam, const LinearColor* fogColor) {};
 		void applyGlobalLightingData(CSunLight& sunlight) {};
+		void applyLocalLightingData(const LightList* lights, int nLightNum) {};
+		void applyLayersNum(int nLayers) {};
+		void applyTexWorldViewProj(const Matrix4* mat) {};
+
+		void EnableShareMode(bool bEnable) {};
+		bool IsInShareMode() const { return false; };
+		bool BeginSharePassMode(bool bApplyParam = true, DWORD flag = 0, bool bForceBegin = true) { return false; };
+		void EndSharePassMode() {};
+
+		void OnSwitchInShader() {};
+		void OnSwitchOutShader() {};
+
+		void SetShadowMapSize(int nsize) {};
+		void SetShadowRadius(float fRadius) {};
+		void EnableShadowmap(int nShadowMethod) {};
 
 		bool setParameter(eParameterHandles index, const void* data, int32 size = D3DX_DEFAULT) { return false; };
 		bool setParameter(eParameterHandles index, const Vector2* data)  { return false; };
@@ -327,15 +342,14 @@ namespace ParaEngine
 	};
 }
 
-#ifdef USE_DIRECTX_RENDERER
-#include "effect_file_DirectX.h"
-#elif defined(USE_OPENGL_RENDERER)
-#include "effect_file_OpenGL.h"
+#ifndef NPLRUNTIME_SERVER
+#include "effect_file_RHI.h"
 #else
 namespace ParaEngine{
 	class CEffectFile : public CEffectFileBase {
 	public:
-		CEffectFile(const AssetKey& key){};
+		CEffectFile(const char* filename){};
+		CEffectFile(const AssetKey& key) : CEffectFileBase(key){};
 	};
 }
 #endif

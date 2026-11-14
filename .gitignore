@@ -73,6 +73,7 @@ Server/trunk/*
 !Server/trunk/onnxruntime-1.27.1/rust/onnxruntime/tests/**
 
 build/
+build-*/
 build_emscripten/
 build_emscripten_release/
 build_emscripten_single_thread/

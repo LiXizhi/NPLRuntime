@@ -9,11 +9,7 @@
 #include "SpriteRenderer.h"
 #include "TextureEntity.h"
 
-#ifdef USE_DIRECTX_RENDERER
-#include "SpriteRendererDirectX.h"
-#include "RenderDeviceD3D9.h"
-#endif
-#ifdef USE_OPENGL_RENDERER
+#ifndef USE_NULL_RENDERER
 #include "SpriteRendererOpenGL.h"
 #endif
 
@@ -22,9 +18,7 @@ using namespace ParaEngine;
 
 CSpriteRenderer* ParaEngine::CSpriteRenderer::Create()
 {
-#ifdef USE_DIRECTX_RENDERER
-	return new CSpriteRendererDirectX();
-#elif defined USE_OPENGL_RENDERER
+#ifndef USE_NULL_RENDERER
 	return new CSpriteRendererOpenGL();
 #else
 	return new CSpriteRenderer();

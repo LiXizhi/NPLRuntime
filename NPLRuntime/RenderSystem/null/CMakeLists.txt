@@ -4,8 +4,13 @@ add_library(RenderSystemNull
     RenderDeviceNull.cpp
     RenderDeviceNull.h
 )
+
 target_include_directories(RenderSystemNull PUBLIC 
     ${PROJECT_SOURCE_DIR}/ParaEngine/renderer
     ${PROJECT_SOURCE_DIR}/ParaEngine/
     ${CMAKE_CURRENT_SOURCE_DIR}
+)
+
+target_link_libraries(RenderSystemNull PUBLIC
+    RenderSystemRHICore
 )

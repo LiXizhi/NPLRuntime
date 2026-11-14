@@ -8,7 +8,7 @@ elseif(HARMONY_OS)
     set(PLATFORM_SRC gl_harmonyos_spec.c gl_harmonyos_spec.h)
 elseif(IOS)
     find_library(OPENGL_LIBRARY OpenGLES)
-    set(LIBGL ${OpenGL})
+    set(LIBGL ${OPENGL_LIBRARY})
     set(PLATFORM_SRC gl_ios_spec.c gl_ios_spec.h)
 elseif(EMSCRIPTEN)
     set(PLATFORM_SRC gl_glad_spec.c)
@@ -17,30 +17,31 @@ elseif(WIN32 OR LINUX)
     set(PLATFORM_SRC gl_glad_spec.c)
 elseif(APPLE)
     find_library(OPENGL_LIBRARY OpenGL)
-    set(LIBGL ${OpenGL})
+    set(LIBGL ${OPENGL_LIBRARY})
     set(PLATFORM_SRC gl_osx_spec.c gl_osx_spec.h)
 endif()
 
-add_library(RenderSystemOpenGL 
+add_library(RenderSystemOpenGL
     RenderDeviceOpenGL.cpp
     RenderDeviceOpenGL.h
     OpenGL.h
     ${PLATFORM_SRC}
 )
 
-
-target_include_directories(RenderSystemOpenGL PUBLIC 
-    ${PROJECT_SOURCE_DIR}/ParaEngineClient/ParaEngine/
+target_include_directories(RenderSystemOpenGL PUBLIC
+    ${PROJECT_SOURCE_DIR}/ParaEngine/
+    ${PROJECT_SOURCE_DIR}/ParaEngine/renderer/
     ${PROJECT_SOURCE_DIR}/externals/freetype-2.8.1/include/
     ${CMAKE_CURRENT_SOURCE_DIR}
 )
 
-
-target_link_libraries(RenderSystemOpenGL PUBLIC 
+target_link_libraries(RenderSystemOpenGL PUBLIC
+    RenderSystemRHICore
     ${LIBGL}
     ParaEngine
     freetype
     GLSLCodeGen
     fxParser
 )
-target_compile_definitions(RenderSystemOpenGL PUBLIC USE_OPENGL_RENDERER)
+
+target_compile_definitions(RenderSystemOpenGL PUBLIC PARA_ENABLE_OPENGL)

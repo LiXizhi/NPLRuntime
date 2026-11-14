@@ -1,5 +1,6 @@
 #pragma once
 #undef ShellExecute
+#undef CreateProcess
 #include <string>
 namespace ParaEngine
 {

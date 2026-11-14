@@ -1,16 +1,27 @@
+add_subdirectory(rhi_core)
+add_subdirectory(null)
 
-if(NPLRUNTIME_RENDERER STREQUAL "OPENGL")
-#{
-    add_subdirectory(opengl)
-#}
-elseif(NPLRUNTIME_RENDERER STREQUAL "DIRECTX")
-#{
-    add_subdirectory(d3d9)
-#}
-elseif(NPLRUNTIME_RENDERER STREQUAL "NULL")
-#{
-    add_subdirectory(null)
-#}
+if (NOT NPLRUNTIME_SERVER)
+    if (NPLRUNTIME_ENABLE_OPENGL OR NPLRUNTIME_RENDERER STREQUAL "OPENGL")
+        add_subdirectory(opengl)
+    endif()
+    if (NPLRUNTIME_ENABLE_D3D11 AND EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/d3d11/CMakeLists.txt")
+        add_subdirectory(d3d11)
+    endif()
+    if (NPLRUNTIME_ENABLE_D3D12 AND EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/d3d12/CMakeLists.txt")
+        add_subdirectory(d3d12)
+    endif()
+    if (NPLRUNTIME_ENABLE_VULKAN AND EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/vulkan/CMakeLists.txt")
+        add_subdirectory(vulkan)
+    endif()
+    if (NPLRUNTIME_ENABLE_METAL AND EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/metal/CMakeLists.txt")
+        add_subdirectory(metal)
+    endif()
+    if (NPLRUNTIME_ENABLE_WEBGPU AND EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/webgpu/CMakeLists.txt")
+        add_subdirectory(webgpu)
+    endif()
+    if (EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/shader_compiler/CMakeLists.txt")
+        add_subdirectory(shader_compiler)
+    endif()
 endif()
-
 

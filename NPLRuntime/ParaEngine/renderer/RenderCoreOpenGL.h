@@ -65,11 +65,18 @@ namespace ParaEngine
 	} D3DLIGHTTYPE;
 
 	typedef enum _D3DCULL {
-		D3DCULL_NONE = 1,
-		D3DCULL_CW = 2,
-		D3DCULL_CCW = 3,
+		D3DCULL_NONE = 0,
+		D3DCULL_CW = 1,
+		D3DCULL_CCW = 2,
 		D3DCULL_FORCE_DWORD = 0x7fffffff, /* force 32-bit size enum */
 	} D3DCULL;
+
+	typedef enum _D3DFILLMODE {
+		D3DFILL_POINT = 1,
+		D3DFILL_WIREFRAME = 2,
+		D3DFILL_SOLID = 3,
+		D3DFILL_FORCE_DWORD = 0x7fffffff, /* force 32-bit size enum */
+	} D3DFILLMODE;
 
 
 

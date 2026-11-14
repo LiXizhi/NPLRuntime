@@ -92,5 +92,7 @@ namespace ParaEngine
 		*/
 		virtual MOVIE_CAPTURE_MODE GetStereoCaptureMode() = 0;
 
+		/** End recording for the current file. */
+		virtual int EndCapture2(const char* audioMap = NULL) = 0;
 	};
 }

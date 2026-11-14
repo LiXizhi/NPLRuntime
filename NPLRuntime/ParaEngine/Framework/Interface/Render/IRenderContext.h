@@ -12,7 +12,9 @@ namespace ParaEngine
 	{
 	public: 
 		static IRenderContext* Create();
+		static IRenderContext* Create(ERHIBackend backend);
 		virtual ~IRenderContext() = default;
+		virtual ERHIBackend GetBackendType() const { return ERHIBackend::Auto; }
 		virtual IRenderDevice* CreateDevice(const RenderConfiguration& cfg) = 0;
 		virtual bool ResetDevice(IRenderDevice* device, const RenderConfiguration& cfg) = 0;
 	protected:

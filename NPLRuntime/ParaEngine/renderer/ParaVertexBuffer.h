@@ -1,7 +1,5 @@
 #pragma once
-#if USE_OPENGL_RENDERER
-#include "RenderDeviceOpenGL.h"
-#endif
+#include "Framework/Interface/Render/IRenderDevice.h"
 namespace ParaEngine
 {
 	/** cross platform vertex/index buffer. 

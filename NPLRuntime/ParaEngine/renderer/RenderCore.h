@@ -1,19 +1,5 @@
 #pragma once
-#ifdef USE_DIRECTX_RENDERER
-#include "d3dcommon/dxstdafx.h"
-#elif defined(USE_OPENGL_RENDERER)
-#include "RenderDeviceOpenGL.h"
-#else
-#include "RenderDeviceNull.h"
 #include "PEtypes.h"
-
-#if (PARA_TARGET_PLATFORM == PARA_PLATFORM_MAC)
-	//#include <OpenGL/gl.h>
-#else
-	//#include <GL/gl.h>
-#endif
-
-#endif
 
 #ifdef WIN32
 #	ifndef _CRT_SECURE_NO_WARNINGS
@@ -21,15 +7,11 @@
 #	endif
 #endif
 
-#include "PEtypes.h"
-
 #include "math/ParaMathUtility.h"
-#ifndef USE_DIRECTX_RENDERER
 #include "RenderCoreOpenGL.h"
-#endif
 #include "Framework/Interface/Render/IRenderDevice.h"
 
-//  defining structures as if DirectX exist to be used with OpengGL or Null renderer.
+//  defining structures as if DirectX exist to be used with ParaRHI backends.
 
 namespace ParaEngine
 {
@@ -60,21 +42,11 @@ namespace ParaEngine
 
 namespace ParaEngine
 {
-#ifdef USE_DIRECTX_RENDERER
-	/** Get the texture for rendering */
-	typedef IDirect3DTexture9* DeviceTexturePtr_type;
+	typedef IRHITexture* DeviceTexturePtr_type;
+	class RenderDevice;
 	typedef IRenderDevice* RenderDevicePtr;
-	typedef LPDIRECT3DVERTEXDECLARATION9 VertexDeclarationPtr;
-#elif defined(USE_OPENGL_RENDERER)
-	class GLTexture2D;
-	typedef GLTexture2D* DeviceTexturePtr_type;
-	class RenderDevice; typedef IRenderDevice* RenderDevicePtr;
-	class CVertexDeclaration; typedef CVertexDeclaration* VertexDeclarationPtr;
-#else
-	typedef uint32_t DeviceTexturePtr_type;
-	class RenderDevice; typedef IRenderDevice* RenderDevicePtr;
-	class CVertexDeclaration; typedef CVertexDeclaration* VertexDeclarationPtr;
-#endif
+	class CVertexDeclaration;
+	typedef CVertexDeclaration* VertexDeclarationPtr;
 }
 
 #include "math/ParaViewport.h"

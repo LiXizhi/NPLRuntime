@@ -444,10 +444,7 @@ namespace ParaEngine
 		VertexDeclarationPtr m_pVertexDeclarations[MAX_DECLARATIONS_NUM];
 		int m_pVertexDeclarations_status[MAX_DECLARATIONS_NUM];
 
-//#ifdef USE_DIRECTX_RENDERER
 		CShadowMap* m_pShadowMap;
-#ifdef USE_DIRECTX_RENDERER
 		CGlowEffect* m_pGlowEffect;
-#endif
 	};
 }

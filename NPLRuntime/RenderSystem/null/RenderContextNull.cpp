@@ -1,22 +1,34 @@
 #include "RenderContextNull.h"
 #include "RenderDeviceNull.h"
+
 using namespace ParaEngine;
 
-
-IRenderContext* ParaEngine::IRenderContext::Create()
+namespace ParaEngine
 {
-	IRenderContext* context = new RenderContextNull();
-	return context;
+	IRenderContext* CreateRenderContextNull()
+	{
+		return new RenderContextNull();
+	}
+
+#ifndef PARA_RHI_MULTI_BACKEND
+	IRenderContext* IRenderContext::Create()
+	{
+		return CreateRenderContextNull();
+	}
+
+	IRenderContext* IRenderContext::Create(ERHIBackend)
+	{
+		return CreateRenderContextNull();
+	}
+#endif
 }
 
 ParaEngine::IRenderDevice* ParaEngine::RenderContextNull::CreateDevice(const RenderConfiguration& cfg)
 {
-	IRenderDevice* device = new RenderDeviceNull();
-	return device;
+	return new RenderDeviceNull();
 }
 
 bool ParaEngine::RenderContextNull::ResetDevice(IRenderDevice* device, const RenderConfiguration& cfg)
 {
 	return true;
 }
-
