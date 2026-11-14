@@ -18,14 +18,10 @@
 //  in order to enable this function, one needs to create an empty file at "temp/assetmap.txt". Check the log file for information at runtime. "temp/assetmap.txt" will be read and written at at loading and exiting time.
 //-----------------------------------------------------------------------------
 #include "ParaEngine.h"
-#ifdef USE_DIRECTX_RENDERER
-#include "resource.h"
-#include <rmxftmpl.h>	// for DirectX file
-#include "OcclusionQueryBank.h"
-#include "RenderDeviceD3D9.h"
+#include "Engine/OcclusionQueryBank.h"
+#include "VertexFVF.h"
 #ifdef USE_XACT_AUDIO_ENGINE
 	#include "AudioEngine.h"
-#endif
 #endif
 #include "MoviePlatform.h"
 #include "SceneState.h"
@@ -100,17 +96,9 @@ CParaWorldAsset::CParaWorldAsset(void)
 		}
 #endif
 	}
-#ifdef USE_DIRECTX_RENDERER
-	m_pDXFile = NULL;
-	m_pOcclusionQuery = NULL;
-	m_pShadowSquareVB = NULL;
+	m_pOcclusionQuery = nullptr;
+	m_pShadowSquareVB = nullptr;
 
-	// create XFile object and register templates, if we have not done so.
-	if(m_pDXFile == NULL)
-	{
-		CreateXFileParser(&m_pDXFile);
-	}
-#endif
 #ifdef PARAENGINE_MOBILE
 	CAsyncLoader::GetSingleton().Start(1);
 #else
@@ -129,7 +117,6 @@ CParaWorldAsset::~CParaWorldAsset(void)
 
 void ParaEngine::CParaWorldAsset::SaveAssetFileMapping()
 {
-#ifdef USE_DIRECTX_RENDERER
 	if (m_bUseAssetSearch)
 	{
 		CParaFile file;
@@ -147,12 +134,10 @@ void ParaEngine::CParaWorldAsset::SaveAssetFileMapping()
 			}
 		}
 	}
-#endif
 }
 
 void ParaEngine::CParaWorldAsset::DeleteTempDiskTextures()
 {
-#ifdef USE_DIRECTX_RENDERER
 	int nFileCount = 0;
 	{
 		CSearchResult* result = NULL;
@@ -165,7 +150,7 @@ void ParaEngine::CParaWorldAsset::DeleteTempDiskTextures()
 				const CFileFindData* pFileDesc = result->GetItemData(i);
 				if (pFileDesc)
 				{
-					::DeleteFile((result->GetRootPath() + result->GetItem(i)).c_str());
+					CParaFile::DeleteFile(result->GetRootPath() + result->GetItem(i), false);
 				}
 			}
 			nFileCount += nCount;
@@ -179,7 +164,7 @@ void ParaEngine::CParaWorldAsset::DeleteTempDiskTextures()
 				const CFileFindData* pFileDesc = result->GetItemData(i);
 				if (pFileDesc)
 				{
-					::DeleteFile((result->GetRootPath() + result->GetItem(i)).c_str());
+					CParaFile::DeleteFile(result->GetRootPath() + result->GetItem(i), false);
 				}
 			}
 			nFileCount += nCount;
@@ -193,7 +178,7 @@ void ParaEngine::CParaWorldAsset::DeleteTempDiskTextures()
 				const CFileFindData* pFileDesc = result->GetItemData(i);
 				if (pFileDesc)
 				{
-					::DeleteFile((result->GetRootPath() + result->GetItem(i)).c_str());
+					CParaFile::DeleteFile(result->GetRootPath() + result->GetItem(i), false);
 				}
 			}
 			nFileCount += nCount;
@@ -203,7 +188,6 @@ void ParaEngine::CParaWorldAsset::DeleteTempDiskTextures()
 	{
 		OUTPUT_LOG("%d temp texture file found and deleted.\n", nFileCount);
 	}
-#endif
 }
 
 void ParaEngine::CParaWorldAsset::CreateAttributeModel()
@@ -241,10 +225,8 @@ void ParaEngine::CParaWorldAsset::CreateAttributeModel()
 
 	m_attribute_models.push_back(&CAssetManifest::GetSingleton());
 
-#ifdef USE_DIRECTX_RENDERER
 	GetVoxelTerrainManager().SetIdentifier("VoxelTerrainManager");
 	m_attribute_models.push_back(&GetVoxelTerrainManager());
-#endif
 }
 
 
@@ -463,9 +445,7 @@ bool CParaWorldAsset::RefreshAsset(const char* filename)
 	return (GetTextureManager().CheckRefresh(sFileName))
 		|| (GetMeshManager().CheckRefresh(sFileName))
 		|| (GetParaXManager().CheckRefresh(sFileName))
-#ifdef USE_DIRECTX_RENDERER
 		|| (m_CadModelManager.CheckRefresh(sFileName))
-#endif
 		;
 }
 
@@ -562,13 +542,7 @@ SpriteFontEntity* CParaWorldAsset::LoadGDIFont(const string&  sIdentifier, const
 	if (res.second == true)
 	{
 		SpriteFontEntity* pNewEntity = res.first;
-#ifdef USE_DIRECTX_RENDERER
-		((SpriteFontEntityDirectX*)pNewEntity)->TextureType = SpriteFontEntityDirectX::sprite_font_GDI;
-		pNewEntity->m_nWeight = bIsBold ? FW_BOLD : FW_NORMAL;
-#endif
-#ifdef USE_OPENGL_RENDERER
-
-#endif
+		pNewEntity->m_nWeight = bIsBold ? 700 : 400;
 		pNewEntity->m_nFontSize = dwSize;
 		pNewEntity->m_sFontName = pstrFont;
 		OUTPUT_LOG("font %s is created \n", keyStr);
@@ -583,33 +557,19 @@ SpriteFontEntity* CParaWorldAsset::LoadGDIFont(const string&  sIdentifier, const
 //-----------------------------------------------------------------------------
 HRESULT CParaWorldAsset::InitDeviceObjects()
 {
-	//GetMeshManager().InitDeviceObjects(); // all lazy init
-	//GetParaXManager().InitDeviceObjects(); // all lazy init
-
-#ifdef USE_DIRECTX_RENDERER
-	//GetTextureManager().InitDeviceObjects(); // all lazy init
-#ifdef USE_FLASH_MANAGER
-	m_FlashManager.InitDeviceObjects();
-#endif
-	m_HTMLBrowserManager.InitDeviceObjects();
 	m_VoxelTerrainManager.InitDeviceObjects();
+#ifndef USE_NULL_RENDERER
 	m_D3DXSpriteManager.InitDeviceObjects();
-	// m_SoundsManager.InitDeviceObjects(); // all lazy init
+#endif
 	m_EffectsManager.InitDeviceObjects();
 
 	{
-		if(m_pShadowSquareVB == NULL)
+		auto pRenderDevice = CGlobals::GetRenderDevice();
+		if (m_pShadowSquareVB == nullptr && pRenderDevice != nullptr)
 		{
-			auto pRenderDevice = GETD3D(CGlobals::GetRenderDevice());
-			
-			// Create a shadow square for rendering the stencil buffer contents
-			if( FAILED(pRenderDevice->CreateVertexBuffer( 4*sizeof(SHADOWVERTEX),
-											D3DUSAGE_WRITEONLY, SHADOWVERTEX::FVF,
-											D3DPOOL_MANAGED, &m_pShadowSquareVB, NULL ) ) )
-				return E_FAIL;
+			m_pShadowSquareVB = pRenderDevice->CreateBuffer(4 * sizeof(SHADOWVERTEX), false, ERHIBufferUsage::Dynamic);
 		}
 	}
-#endif
 	GetFontManager().InitDeviceObjects();
 
 	// signal
@@ -625,24 +585,18 @@ HRESULT CParaWorldAsset::RestoreDeviceObjects()
 {
 	GetFontManager().RestoreDeviceObjects();
 	m_DynamicVBManager.RestoreDeviceObjects();
-#ifdef USE_DIRECTX_RENDERER
 	auto pRenderDevice = CGlobals::GetRenderDevice();
 	
 	m_EffectsManager.RestoreDeviceObjects();
-#ifdef USE_FLASH_MANAGER
-	m_FlashManager.RestoreDeviceObjects();
-#endif
-	m_HTMLBrowserManager.RestoreDeviceObjects();
 	m_VoxelTerrainManager.RestoreDeviceObjects();
 	CGlobals::GetMoviePlatform()->RestoreDeviceObjects();
+	if (pRenderDevice != nullptr && m_pShadowSquareVB != nullptr)
 	{
-		D3DVIEWPORT9 ViewPort;
-		GETD3D(CGlobals::GetRenderDevice())->GetViewport(&ViewPort);
-		 // Set the size of the big square shadow
-		SHADOWVERTEX* v;
+		ParaViewport ViewPort = pRenderDevice->GetViewport();
+		// Set the size of the big square shadow
+		SHADOWVERTEX v[4];
 		FLOAT sx = (FLOAT)ViewPort.Width;
 		FLOAT sy = (FLOAT)ViewPort.Height;
-		m_pShadowSquareVB->Lock( 0, 0, (void**)&v, 0 );
 		v[0].p = Vector4(  0, sy, 0.0f, 1.0f );
 		v[1].p = Vector4(  0,  0, 0.0f, 1.0f );
 		v[2].p = Vector4( sx, sy, 0.0f, 1.0f );
@@ -651,26 +605,25 @@ HRESULT CParaWorldAsset::RestoreDeviceObjects()
 		v[1].color = 0x7f000000;
 		v[2].color = 0x7f000000;
 		v[3].color = 0x7f000000;
-		m_pShadowSquareVB->Unlock();
+		m_pShadowSquareVB->UpdateData(0, sizeof(v), v);
 	}
 
-	// Check to see if device supports visibility query
-	if( D3DERR_NOTAVAILABLE == GETD3D(CGlobals::GetRenderDevice())->CreateQuery( D3DQUERYTYPE_OCCLUSION, NULL ) )
+	ReleaseRHIResource(m_pOcclusionQuery);
+	if (pRenderDevice != nullptr && pRenderDevice->GetCaps().supportsOcclusionQuery)
 	{
-		m_pOcclusionQuery = NULL;
-	}
-	else
-	{
-		GETD3D(CGlobals::GetRenderDevice())->CreateQuery( D3DQUERYTYPE_OCCLUSION, &m_pOcclusionQuery );
-		for(int i=0;i<(int)(m_pOcclusionQueryBanks.size());++i)
+		m_pOcclusionQuery = pRenderDevice->CreateOcclusionQuery();
+		if (m_pOcclusionQuery != nullptr)
 		{
-			LatentOcclusionQueryBank* pOcclusionQueryBank = new LatentOcclusionQueryBank(pRenderDevice);
-			if(!pOcclusionQueryBank->IsValid())
-				SAFE_DELETE(pOcclusionQueryBank);
-			m_pOcclusionQueryBanks[i] = pOcclusionQueryBank;
+			for (int i = 0; i < (int)(m_pOcclusionQueryBanks.size()); ++i)
+			{
+				SAFE_DELETE(m_pOcclusionQueryBanks[i]);
+				LatentOcclusionQueryBank* pOcclusionQueryBank = new LatentOcclusionQueryBank(pRenderDevice);
+				if (!pOcclusionQueryBank->IsValid())
+					SAFE_DELETE(pOcclusionQueryBank);
+				m_pOcclusionQueryBanks[i] = pOcclusionQueryBank;
+			}
 		}
 	}
-#endif
 	// signal
 	OnRestoreDeviceObjects();
 	return S_OK;
@@ -687,22 +640,14 @@ HRESULT CParaWorldAsset::InvalidateDeviceObjects()
 	GetMeshManager().InvalidateDeviceObjects();
 	m_EffectsManager.InvalidateDeviceObjects();
 	m_DynamicVBManager.InvalidateDeviceObjects();
-#ifdef USE_DIRECTX_RENDERER
-	
-#ifdef USE_FLASH_MANAGER
-	m_FlashManager.InvalidateDeviceObjects();
-#endif
-	m_HTMLBrowserManager.InvalidateDeviceObjects();
 	m_VoxelTerrainManager.InvalidateDeviceObjects();
-	
-	m_CadModelManager.InitDeviceObjects();
+	m_CadModelManager.InvalidateDeviceObjects();
 	CGlobals::GetMoviePlatform()->InvalidateDeviceObjects();
-	SAFE_RELEASE( m_pOcclusionQuery );
-	for(int i=0;i<(int)(m_pOcclusionQueryBanks.size());++i)
+	ReleaseRHIResource(m_pOcclusionQuery);
+	for (int i = 0; i < (int)(m_pOcclusionQueryBanks.size()); ++i)
 	{
 		SAFE_DELETE(m_pOcclusionQueryBanks[i]);
 	}
-#endif
 	// signal
 	OnInvalidateDeviceObjects();
 	return S_OK;
@@ -724,17 +669,12 @@ HRESULT CParaWorldAsset::DeleteDeviceObjects()
 
 	m_EffectsManager.DeleteDeviceObjects();
 	CGlobals::GetSceneState()->DeleteDeviceObjects();
-#ifdef USE_DIRECTX_RENDERER
-#ifdef USE_FLASH_MANAGER
-	m_FlashManager.DeleteDeviceObjects();
-#endif
-	m_HTMLBrowserManager.DeleteDeviceObjects();
 	m_VoxelTerrainManager.DeleteDeviceObjects();
+#ifndef USE_NULL_RENDERER
 	m_D3DXSpriteManager.DeleteDeviceObjects();
-	
-	m_CadModelManager.DeleteDeviceObjects();
-	SAFE_RELEASE( m_pShadowSquareVB );
 #endif
+	m_CadModelManager.DeleteDeviceObjects();
+	ReleaseRHIResource(m_pShadowSquareVB);
 	GetVertexBufferPoolManager().DeleteDeviceObjects();
 	// signal
 	OnDeleteDeviceObjects();
@@ -769,16 +709,18 @@ void CParaWorldAsset::Cleanup()
 	GetMeshManager().Cleanup();
 	CGlobals::GetOceanManager()->Cleanup();
 	m_SequenceManager.Cleanup();
-#ifdef USE_DIRECTX_RENDERER
+#ifndef USE_NULL_RENDERER
 	m_D3DXSpriteManager.Cleanup();
-#ifdef USE_FLASH_MANAGER
-	m_FlashManager.Cleanup();
 #endif
-	m_HTMLBrowserManager.Cleanup();
 	m_VoxelTerrainManager.Cleanup();
 	m_CadModelManager.Cleanup();
-	SAFE_RELEASE(m_pDXFile); // delete X file object
-#endif
+	ReleaseRHIResource(m_pOcclusionQuery);
+	for (int i = 0; i < (int)(m_pOcclusionQueryBanks.size()); ++i)
+	{
+		SAFE_DELETE(m_pOcclusionQueryBanks[i]);
+	}
+	m_pOcclusionQueryBanks.clear();
+	ReleaseRHIResource(m_pShadowSquareVB);
 	m_EffectsManager.Cleanup();
 	GetFontManager().Cleanup();
 	GetBufferPickingManager().Cleanup();
@@ -805,29 +747,19 @@ void CParaWorldAsset::LoadAsset()
 	GetMeshManager().LoadAsset();
 	GetParaXManager().LoadAsset();
 	m_EffectsManager.LoadAsset();
-#ifdef USE_DIRECTX_RENDERER
+#ifndef USE_NULL_RENDERER
 	m_D3DXSpriteManager.LoadAsset();
-#ifdef USE_FLASH_MANAGER
-	m_FlashManager.LoadAsset();
 #endif
-	m_HTMLBrowserManager.LoadAsset();
 	m_VoxelTerrainManager.LoadAsset();
 	m_CadModelManager.LoadAsset();
-#endif
 }
 void CParaWorldAsset::UnloadAsset()
 {
 	GetMeshManager().UnloadAsset();
 	GetParaXManager().UnloadAsset();
 	m_EffectsManager.UnloadAsset();
-#ifdef USE_DIRECTX_RENDERER
-#ifdef USE_FLASH_MANAGER
-	m_FlashManager.UnloadAsset();
-#endif
-	m_HTMLBrowserManager.UnloadAsset();
 	m_VoxelTerrainManager.UnloadAsset();
 	m_CadModelManager.UnloadAsset();
-#endif
 	GetFontManager().UnloadAsset();
 	GetDatabaseManager().UnloadAsset();
 	GetBufferPickingManager().UnloadAsset();
@@ -838,13 +770,12 @@ void CParaWorldAsset::GarbageCollectAll()
 	GetMeshManager().GarbageCollectAll();
 	GetParaXManager().GarbageCollectAll();
 	m_EffectsManager.GarbageCollectAll();
-#ifdef USE_DIRECTX_RENDERER
+#ifndef USE_NULL_RENDERER
 	m_D3DXSpriteManager.GarbageCollectAll();
+#endif
 	m_SequenceManager.GarbageCollectAll();
-	m_HTMLBrowserManager.GarbageCollectAll();
 	m_VoxelTerrainManager.GarbageCollectAll();
 	m_CadModelManager.GarbageCollectAll();
-#endif
 	GetFontManager().GarbageCollectAll();
 	GetDatabaseManager().GarbageCollectAll();
 	GetBufferPickingManager().GarbageCollectAll();
@@ -888,7 +819,6 @@ bool CParaWorldAsset::UnloadAssetByKeyName(const string& keyname)
 			}
 		}
 	}
-#ifdef USE_DIRECTX_RENDERER
 	else if(sFileExt == "iges")
 	{
 		CadModel* pCadModel = (CadModel*) m_CadModelManager.get(keyname);
@@ -899,7 +829,6 @@ bool CParaWorldAsset::UnloadAssetByKeyName(const string& keyname)
 			return true;
 		}
 	}
-#endif
 	return false;
 }
 
@@ -1088,8 +1017,6 @@ void ParaEngine::CParaWorldAsset::SetUseLocalFileFirst(bool val)
 	CAssetManifest::GetSingleton().SetUseLocalFileFirst(val);
 }
 
-#ifdef USE_DIRECTX_RENDERER
-
 LatentOcclusionQueryBank* CParaWorldAsset::GetOcclusionQueryBank(int nID)
 {
 	LatentOcclusionQueryBank* pOcclusionQueryBank = NULL;
@@ -1100,13 +1027,13 @@ LatentOcclusionQueryBank* CParaWorldAsset::GetOcclusionQueryBank(int nID)
 
 	if(pOcclusionQueryBank == NULL)
 	{
-		if(m_pOcclusionQuery != NULL )
+		auto pRenderDevice = CGlobals::GetRenderDevice();
+		if(m_pOcclusionQuery != nullptr && pRenderDevice != nullptr && pRenderDevice->GetCaps().supportsOcclusionQuery)
 		{
 			if(nID>=0 && nID<100)
 			{
 				if(nID>=(int)m_pOcclusionQueryBanks.size())
 					m_pOcclusionQueryBanks.resize(nID+1, 0);
-				auto pRenderDevice = CGlobals::GetRenderDevice();
 				
 				pOcclusionQueryBank = new LatentOcclusionQueryBank(pRenderDevice);
 				if(!pOcclusionQueryBank->IsValid())
@@ -1123,57 +1050,6 @@ LatentOcclusionQueryBank* CParaWorldAsset::GetOcclusionQueryBank(int nID)
 		}
 	}
 	return pOcclusionQueryBank;
-}
-
-
-LPD3DXFILE CParaWorldAsset::GetParaXFileParser()
-{
-	return m_pDXFile;
-}
-
-void CParaWorldAsset::CreateXFileParser(LPD3DXFILE* ppParser)
-{
-	LPD3DXFILE pParser = NULL;
-	try
-	{
-		// Create the .X file object
-		if (FAILED(D3DXFileCreate(&pParser)))
-			throw "error loading .X";
-
-		/// Register the templates in use
-		// register the standard retained mode templates from Direct3D
-		if (FAILED(pParser->RegisterTemplates((LPVOID)D3DRM_XTEMPLATES, D3DRM_XTEMPLATE_BYTES)))
-		{
-			pParser->Release();
-			throw "error register directx template";
-		}
-#ifdef PARAXTEMPLATE_XSKINEXP
-		if (FAILED(pParser->RegisterTemplates((void*)XSKINEXP_TEMPLATES, strlen(XSKINEXP_TEMPLATES))))
-		{
-			pParser->Release();
-			throw "error register directx template";
-		}
-#endif 		
-
-		CParaFile file(":IDR_PARAXTEMPLATE");
-		if (!file.isEof())
-		{
-			// register the ParaEngine X file templates 
-			if (FAILED(pParser->RegisterTemplates((LPVOID)file.getBuffer(), file.getSize())))
-			{
-				pParser->Release();
-				throw "error register paraengine x file template";
-			}
-		}
-	}
-	catch (char * err)
-	{
-		OUTPUT_LOG("%s\n", err);
-	}
-	if (ppParser)
-	{
-		*ppParser = pParser;
-	}
 }
 
 
@@ -1195,16 +1071,6 @@ int CParaWorldAsset::PrintToFile(CParaFile* pOutputFile, DWORD dwSelection/*=0xf
 	return i;
 }
 
-
-//--------------------------------------------------------------------
-// Desc: Get Mesh Object by its identifier
-// Params: 
-//--------------------------------------------------------------------
-D3DXSpriteEntity* CParaWorldAsset::GetD3DXSprite(const string& sIdentifier)
-{
-	return m_D3DXSpriteManager.GetByName(sIdentifier);
-}
-
 CadModel* CParaWorldAsset::LoadCadModel(const string& sIdentifier, const string& fileName)
 {
 	string sFileName;
@@ -1219,6 +1085,16 @@ CadModel* CParaWorldAsset::LoadCadModel(const string& sIdentifier, const string&
 		pNewEntity->Init();
 	}
 	return res.first;
+}
+
+#ifndef USE_NULL_RENDERER
+//--------------------------------------------------------------------
+// Desc: Get Mesh Object by its identifier
+// Params: 
+//--------------------------------------------------------------------
+D3DXSpriteEntity* CParaWorldAsset::GetD3DXSprite(const string& sIdentifier)
+{
+	return m_D3DXSpriteManager.GetByName(sIdentifier);
 }
 
 //--------------------------------------------------------------------
@@ -1243,7 +1119,6 @@ D3DXSpriteEntity* CParaWorldAsset::LoadD3DXSprite(const string&  sIdentifier, in
 	}
 	return res.first;
 }
-
 #endif
 
 int ParaEngine::CParaWorldAsset::InstallFields(CAttributeClass* pClass, bool bOverride)

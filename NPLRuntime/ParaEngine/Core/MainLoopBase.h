@@ -25,6 +25,7 @@ namespace ParaEngine
 #endif
 
 		void MainLoopRun();
+		void MainLoopStop();
 
 	private:
 #ifndef EMSCRIPTEN_SINGLE_THREAD

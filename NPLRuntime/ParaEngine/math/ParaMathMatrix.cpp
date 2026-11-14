@@ -245,32 +245,50 @@ void ParaEngine::ParaMatrixRotationRollPitchYaw(Matrix4* Result, float roll, flo
 void ParaEngine::ParaMatrixPerspectiveFovLH(Matrix4* pout, float fovy, float aspect, float zn, float zf)
 {
 	*pout = Matrix4::IDENTITY;
-#ifdef USE_DIRECTX_RENDERER
-	// directX, z axis is in range 0,1
-	pout->m[0][0] = 1.0f / (aspect * tanf(fovy / 2.0f));
-	pout->m[1][1] = 1.0f / tanf(fovy / 2.0f);
-	pout->m[2][2] = zf / (zf - zn);
+	const auto* pDevice = CGlobals::GetRenderDevice();
+	const bool zeroToOne = pDevice ? pDevice->GetCaps().clipSpaceZeroToOne : true;
+	const float yScale = 1.0f / tanf(fovy / 2.0f);
+	const float xScale = yScale / (aspect != 0.0f ? aspect : 1.0f);
+	pout->m[0][0] = xScale;
+	pout->m[1][1] = yScale;
 	pout->m[2][3] = 1.0f;
-	pout->m[3][2] = (zf * zn) / (zn - zf);
 	pout->m[3][3] = 0.0f;
-#elif defined(USE_OPENGL_RENDERER)
-	// opengl, z axis is in range -1,1
-	/*float factor = 1.0f / tanf(fovy / 2.0f);
-	float f_n = 1.0f / (zf - zn);
-	pout->m[0][0] = (1.0f / aspect) * factor;
-	pout->m[1][1] = factor;
-	pout->m[2][2] = (-(zf + zn)) * f_n;
-	pout->m[2][3] = -1.0f;
-	pout->m[3][2] = -2.0f * zf * zn * f_n;
-	pout->m[3][3] = 0.0f;*/
+	if (zeroToOne)
+	{
+		pout->m[2][2] = zf / (zf - zn);
+		pout->m[3][2] = (zf * zn) / (zn - zf);
+	}
+	else
+	{
+		pout->m[2][2] = (zf + zn) / (zf - zn);
+		pout->m[3][2] = 2.0f * (zf * zn) / (zn - zf);
+	}
+}
 
-	pout->m[0][0] = 1.0f / (aspect * tanf(fovy / 2.0f));
-	pout->m[1][1] = 1.0f / tanf(fovy / 2.0f);
-	pout->m[2][2] = (zf + zn) / (zf - zn);
+Matrix4* ParaEngine::ParaMatrixPerspectiveOffCenterLH(Matrix4* pout, float l, float r, float b, float t, float zn, float zf)
+{
+	*pout = Matrix4::IDENTITY;
+	const auto* pDevice = CGlobals::GetRenderDevice();
+	const bool zeroToOne = pDevice ? pDevice->GetCaps().clipSpaceZeroToOne : true;
+	const float invW = (r != l) ? (1.0f / (r - l)) : 1.0f;
+	const float invH = (t != b) ? (1.0f / (t - b)) : 1.0f;
+	pout->m[0][0] = 2.0f * zn * invW;
+	pout->m[1][1] = 2.0f * zn * invH;
+	pout->m[2][0] = -(l + r) * invW;
+	pout->m[2][1] = -(b + t) * invH;
 	pout->m[2][3] = 1.0f;
-	pout->m[3][2] = 2.f * (zf * zn) / (zn - zf);
 	pout->m[3][3] = 0.0f;
-#endif
+	if (zeroToOne)
+	{
+		pout->m[2][2] = zf / (zf - zn);
+		pout->m[3][2] = (zn * zf) / (zn - zf);
+	}
+	else
+	{
+		pout->m[2][2] = (zf + zn) / (zf - zn);
+		pout->m[3][2] = 2.0f * (zn * zf) / (zn - zf);
+	}
+	return pout;
 }
 
 Matrix4* ParaEngine::ParaMatrixScaling(Matrix4* pMat, float ScaleX, float ScaleY, float ScaleZ)

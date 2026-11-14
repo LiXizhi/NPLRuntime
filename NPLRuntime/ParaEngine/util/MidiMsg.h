@@ -1,6 +1,9 @@
 #pragma once
 
 #include "IMediaPlayer.h"
+#if defined(WIN32) && !defined(PARAENGINE_MOBILE) && !defined(NPLRUNTIME_SERVER)
+#include <mmsystem.h>
+#endif
 
 namespace ParaEngine
 {
@@ -39,7 +42,7 @@ namespace ParaEngine
 		void SetMediaPlayer(ParaEngine::IMediaPlayer* mediaPlayer);
 		ParaEngine::IMediaPlayer* GetMediaPlayer() { return m_mediaPlayer; }
 	private:
-#ifdef PARAENGINE_CLIENT
+#if defined(WIN32) && !defined(PARAENGINE_MOBILE) && !defined(NPLRUNTIME_SERVER)
 		HMIDIOUT m_deviceMidiOut;
 #endif
 		bool m_bIsValid;

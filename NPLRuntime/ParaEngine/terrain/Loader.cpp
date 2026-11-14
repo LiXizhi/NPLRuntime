@@ -5,11 +5,10 @@
 
 #include "ParaEngine.h"
 #include "ParaWorldAsset.h"
+#include "ParaImage.h"
+#include "TextureEntity.h"
 #include "Loader.h"
 #include "memdebug.h"
-#ifdef USE_DIRECTX_RENDERER
-#include "RenderDeviceD3D9.h"
-#endif
 using namespace ParaEngine;
 
 using namespace ParaTerrain;
@@ -69,86 +68,65 @@ HRESULT Loader::LoadElevations( float **ppImageData, int* nSize, const char * sz
 	}
 	else
 	{
-#ifdef USE_DIRECTX_RENDERER
-		D3DSURFACE_DESC desc;
-		IDirect3DTexture9* pTexture = NULL;
-		HRESULT hr;
-		auto pd3dDevice = CGlobals::GetRenderDevice();
-		/// Create a D3DFMT_X8R8G8B8 texture -- use D3DPOOL_SCRATCH to 
-		// ensure that this will succeeded independent of the device
-	
-		hr = D3DXCreateTextureFromFileInMemoryEx(GETD3D(CGlobals::GetRenderDevice()),cFile.getBuffer(), (int)cFile.getSize(),
-			0, 0, 1, 0, 
-			D3DFMT_X8R8G8B8, D3DPOOL_SCRATCH, 
-			D3DX_FILTER_NONE, D3DX_FILTER_NONE,
-			0, NULL, NULL, &pTexture );
-		if( FAILED(hr) )
-			return hr;
-
-		pTexture->GetLevelDesc( 0, &desc ); 
-
-		elevWidth = desc.Width;
-		elevHeight = desc.Height;
-
-		// create an array of floats to store the values of the bmp
-		pImageData = new float[elevWidth * elevHeight];
-
-		if( pImageData == NULL )
+		unsigned char* pPixels = nullptr;
+		int bytesPerPixel = 0;
+		if (!TextureEntity::LoadImageOfFormat(szFilename, cFile.getBuffer(), (int)cFile.getSize(), elevWidth, elevHeight, &pPixels, &bytesPerPixel, -1) || !pPixels)
 		{
-			SAFE_RELEASE( pTexture );
-			return E_OUTOFMEMORY;
-		}
+			ParaImage img;
+			if (!img.initWithImageData(reinterpret_cast<const unsigned char*>(cFile.getBuffer()), cFile.getSize()))
+				return E_FAIL;
+			elevWidth = img.getWidth();
+			elevHeight = img.getHeight();
+			if (elevWidth <= 0 || elevHeight <= 0)
+				return E_FAIL;
+			pImageData = new (std::nothrow) float[elevWidth * elevHeight];
+			if (!pImageData)
+				return E_OUTOFMEMORY;
 
-		//ZeroMemory( pImageData, elevWidth * elevHeight * sizeof(FLOAT) );
-
-		D3DLOCKED_RECT lockedRect;
-
-		hr = pTexture->LockRect( 0, &lockedRect, NULL, D3DLOCK_READONLY );
-		float fMin=1.0f,fMax=-1.0f;
-		if( SUCCEEDED(hr) )
-		{
-			DWORD* pBuffer = (DWORD*) lockedRect.pBits;
-			for( DWORD iY=0; iY<desc.Height; iY++ )
+			unsigned char* rgba = nullptr;
+			size_t rgbaLen = 0;
+			if (ParaImage::convertDataToFormat(img.getData(), img.getDataLen(), img.getRenderFormat(), PixelFormat::A8R8G8B8, &rgba, &rgbaLen) != PixelFormat::A8R8G8B8 || !rgba)
 			{
-				pBuffer = (DWORD*)((BYTE*)lockedRect.pBits + lockedRect.Pitch * iY);
-
-				for( DWORD iX=0; iX<desc.Width; iX++ )
+				delete[] pImageData;
+				return E_FAIL;
+			}
+			for (int iY = 0; iY < elevHeight; ++iY)
+			{
+				for (int iX = 0; iX < elevWidth; ++iX)
 				{
-					LinearColor color((DWORD)(*pBuffer));
-					float fValue = (color.r+color.g+color.b)/3.0f-0.5f;
-					if (fValue<fMin)
-						fMin = fValue;
-					if (fValue>fMax)
-						fMax = fValue;
-
-					if (swapVertical)
-					{
-						// Invert Y, so it appears the same as the bmp
-						pImageData[ (desc.Height-1-iY)*elevWidth + iX] = fValue;
-					}
-					else
-					{
-						pImageData[ iY*elevWidth + iX] = fValue;
-					}
-					pBuffer++;
+					const unsigned char* px = rgba + (static_cast<size_t>(iY) * elevWidth + iX) * 4u;
+					const float r = px[0] / 255.0f;
+					const float g = px[1] / 255.0f;
+					const float b = px[2] / 255.0f;
+					const float fValue = (r + g + b) / 3.0f - 0.5f;
+					const int dstY = swapVertical ? (elevHeight - 1 - iY) : iY;
+					pImageData[dstY * elevWidth + iX] = fValue;
 				}
 			}
-			pTexture->UnlockRect( 0 );
-
-			/// Normalize all values between 0.0f and 1.0f
-			/*float fHeight = (fMax-fMin);
-			for( DWORD iY=0; iY<desc.Height; iY++ )
-			{
-			for( DWORD iX=0; iX<desc.Width; iX++ )
-			{
-			pImageData[ iY*elevWidth + iX] = (pImageData[ iY*elevWidth + iX]-fMin)/fHeight;
-			}
-			}*/
+			if (rgba != img.getData())
+				delete[] rgba;
 		}
-		SAFE_RELEASE( pTexture );
-#else 
-		return E_FAIL;
-#endif
+		else
+		{
+			pImageData = new (std::nothrow) float[elevWidth * elevHeight];
+			if (!pImageData)
+			{
+				delete[] pPixels;
+				return E_OUTOFMEMORY;
+			}
+			const DWORD* pBuffer = reinterpret_cast<const DWORD*>(pPixels);
+			for (int iY = 0; iY < elevHeight; ++iY)
+			{
+				for (int iX = 0; iX < elevWidth; ++iX)
+				{
+					LinearColor color(*pBuffer++);
+					const float fValue = (color.r + color.g + color.b) / 3.0f - 0.5f;
+					const int dstY = swapVertical ? (elevHeight - 1 - iY) : iY;
+					pImageData[dstY * elevWidth + iX] = fValue;
+				}
+			}
+			delete[] pPixels;
+		}
 	}
 	// TODO: re-enable this when you are ready. 
 	const bool FORCE_256_mesh = false;
@@ -288,61 +266,10 @@ void Loader::ApplyTexture(Terrain * pTerrain, const char *szFilename, bool isBas
 
 void LoadImage(char *buf, int sizeBuf, int &width, int &height, uint8 ** ppBuffer, bool bAlpha)
 {
-	auto pd3dDevice = CGlobals::GetRenderDevice();
-#ifdef USE_DIRECTX_RENDERER
-	HRESULT hr;
-	D3DSURFACE_DESC desc;
-	IDirect3DTexture9* pTexture = NULL;
-
-	D3DFORMAT d3dFormat;
-	if (bAlpha)
-		d3dFormat = D3DFMT_A8R8G8B8;
-	else
-		d3dFormat = D3DFMT_R8G8B8;
-	
-	// read from file
-	hr = D3DXCreateTextureFromFileInMemoryEx(GETD3D(CGlobals::GetRenderDevice()),buf, sizeBuf,
-		0, 0, 1, 0, 
-		d3dFormat, D3DPOOL_SCRATCH, 
-		D3DX_FILTER_NONE, D3DX_FILTER_NONE,
-		0, NULL, NULL, &pTexture );
-	if( FAILED(hr) )
-		return;
-
-	pTexture->GetLevelDesc( 0, &desc ); 
-
-	// set size
-	width = desc.Width;
-	height = desc.Height;
-
-	uint8 *pBufferTemp;
-	int nSize;
-	if (bAlpha)
-		nSize = width * height * 4;
-	else
-		nSize = width * height * 3;
-	pBufferTemp = new uint8[nSize];
-
-	D3DLOCKED_RECT lockedRect;
-
-	hr = pTexture->LockRect( 0, &lockedRect, NULL, D3DLOCK_READONLY );
-	if( SUCCEEDED(hr) )
-	{
-		uint8 *pImagePixels = (uint8 *) lockedRect.pBits;
-		memcpy(pBufferTemp, pImagePixels, nSize);
-		//
-		*ppBuffer = pBufferTemp;
-		pTexture->UnlockRect( 0 );
-	}
-	else
-	{
-		width = 0;
-		height = 0;
-		*ppBuffer = NULL;
-	}
-
-	SAFE_RELEASE( pTexture );
-#endif
+	width = 0;
+	height = 0;
+	*ppBuffer = NULL;
+	TextureEntity::LoadImage(buf, sizeBuf, width, height, ppBuffer, bAlpha);
 }
 
 

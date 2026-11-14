@@ -27,8 +27,17 @@ static const int MAX_ACTIVE_TEXTURE = 16;
 
 static uint32_t s_attributeFlags = 0;  // 32 attributes max
 
+static inline bool IsOpenGLBackendActive()
+{
+	auto* dev = CGlobals::GetRenderDevice();
+	return dev && dev->GetBackendType() == ERHIBackend::OpenGL;
+}
+
 void  GL::deleteProgram(GLuint program)
 {
+#ifdef PARA_ENABLE_OPENGL
+	if (!IsOpenGLBackendActive())
+		return;
 #if NPLRUNTIME_ENABLE_GL_STATE_CACHE
 	if (program == s_currentShaderProgram)
 	{
@@ -37,10 +46,16 @@ void  GL::deleteProgram(GLuint program)
 #endif // NPLRUNTIME_ENABLE_GL_STATE_CACHE
 
 	glDeleteProgram(program);
+#else
+	(void)program;
+#endif
 }
 
 void GL::useProgram(GLuint program)
 {
+#ifdef PARA_ENABLE_OPENGL
+	if (!IsOpenGLBackendActive())
+		return;
 #if NPLRUNTIME_ENABLE_GL_STATE_CACHE
 	if (program != s_currentShaderProgram) {
 		s_currentShaderProgram = program;
@@ -49,10 +64,16 @@ void GL::useProgram(GLuint program)
 #else
 	glUseProgram(program);
 #endif // NPLRUNTIME_ENABLE_GL_STATE_CACHE
+#else
+	(void)program;
+#endif
 }
 
 void GL::deleteTexture(GLuint textureId)
 {
+#ifdef PARA_ENABLE_OPENGL
+	if (!IsOpenGLBackendActive())
+		return;
 #if NPLRUNTIME_ENABLE_GL_STATE_CACHE
 	for (size_t i = 0; i < MAX_ACTIVE_TEXTURE; ++i)
 	{
@@ -64,6 +85,9 @@ void GL::deleteTexture(GLuint textureId)
 #endif // NPLRUNTIME_ENABLE_GL_STATE_CACHE
 
 	glDeleteTextures(1, &textureId);
+#else
+	(void)textureId;
+#endif
 }
 
 
@@ -75,6 +99,9 @@ void GL::bindTexture2D(GLuint textureId)
 static int s_lastActiveTexture = -1;
 void GL::bindTexture2DN(GLuint textureUnit, GLuint textureId)
 {
+#ifdef PARA_ENABLE_OPENGL
+	if (!IsOpenGLBackendActive())
+		return;
 #if NPLRUNTIME_ENABLE_GL_STATE_CACHE
 	CCASSERT(textureUnit < MAX_ACTIVE_TEXTURE, "textureUnit is too big");
 	if (s_currentBoundTexture[textureUnit] != textureId)
@@ -99,11 +126,18 @@ void GL::bindTexture2DN(GLuint textureUnit, GLuint textureId)
 
 	glBindTexture(GL_TEXTURE_2D, textureId);
 #endif
+#else
+	(void)textureUnit;
+	(void)textureId;
+#endif
 }
 
 
 void GL::bindVAO(GLuint vaoId)
 {
+#ifdef PARA_ENABLE_OPENGL
+	if (!IsOpenGLBackendActive())
+		return;
     //if (Configuration::getInstance()->supportsShareableVAO())
 	if ( false ) //TODO: wangepng
 	{
@@ -118,11 +152,17 @@ void GL::bindVAO(GLuint vaoId)
 #endif // NPLRUNTIME_ENABLE_GL_STATE_CACHE
 
     }
+#else
+	(void)vaoId;
+#endif
 }
 
 // GL Vertex Attrib functions
 void GL::enableVertexAttribs(uint32_t flags)
 {
+#ifdef PARA_ENABLE_OPENGL
+	if (!IsOpenGLBackendActive())
+		return;
     bindVAO(0);
 
     // hardcoded!
@@ -140,6 +180,9 @@ void GL::enableVertexAttribs(uint32_t flags)
         }
     }
     s_attributeFlags = flags;
+#else
+	(void)flags;
+#endif
 }
 
 void GL::ClearCache()

@@ -5,13 +5,14 @@
 // desc: 
 //-----------------------------------------------------------------------
 #include "ParaEngine.h"
-#if defined (USE_OPENGL_RENDERER)
+#if !defined(USE_NULL_RENDERER)
 #include "DynamicVertexBufferEntityOpenGL.h"
 
 using namespace ParaEngine;
 
 DynamicVertexBufferEntityOpenGL::DynamicVertexBufferEntityOpenGL()
-	: m_dwBase(0),
+	: m_dwDataFormat(0),
+	m_dwBase(0),
 	m_dwNextBase(0),
 	// better be contains a factor of 3*4=12
 	// 24000=800KB, Please note that this number must be a multiple of 3
@@ -22,7 +23,12 @@ DynamicVertexBufferEntityOpenGL::DynamicVertexBufferEntityOpenGL()
 	m_nUnitSize(sizeof(my_vertex))
 {
 
-};
+}
+
+DynamicVertexBufferEntityOpenGL::~DynamicVertexBufferEntityOpenGL()
+{
+	InvalidateDeviceObjects();
+}
 
 HRESULT DynamicVertexBufferEntityOpenGL::RestoreDeviceObjects()
 {
@@ -30,6 +36,19 @@ HRESULT DynamicVertexBufferEntityOpenGL::RestoreDeviceObjects()
 		return S_OK;
 	m_bIsInitialized = true;
 	m_lpVB.resize(m_dwDiscard*m_nUnitSize);
+	if (m_dwDataFormat == DVB_MATRIX)
+	{
+		if (m_gpuBuffer)
+		{
+			m_gpuBuffer->ReleaseRHIResource();
+			m_gpuBuffer = nullptr;
+		}
+		auto* pDev = CGlobals::GetRenderDevice();
+		if (pDev && m_dwDiscard * m_nUnitSize > 0)
+		{
+			m_gpuBuffer = pDev->CreateBuffer(m_dwDiscard * m_nUnitSize, false, ERHIBufferUsage::Dynamic | ERHIBufferUsage::WriteOnly, nullptr);
+		}
+	}
 	return S_OK;
 }
 
@@ -37,6 +56,12 @@ HRESULT DynamicVertexBufferEntityOpenGL::RestoreDeviceObjects()
 HRESULT DynamicVertexBufferEntityOpenGL::InvalidateDeviceObjects()
 {
 	m_bIsInitialized = false;
+	if (m_gpuBuffer)
+	{
+		m_gpuBuffer->ReleaseRHIResource();
+		m_gpuBuffer = nullptr;
+	}
+	m_lockedCount = 0;
 	m_lpVB.clear();
 	return S_OK;
 }
@@ -68,16 +93,27 @@ uint32 DynamicVertexBufferEntityOpenGL::Lock(uint32 nSize, void** pVertices)
 	// Advance to the next position in the vertex buffer.
 	m_dwBase = m_dwNextBase;
 	m_dwNextBase += nSize;
+	m_lockedCount = nSize;
 	return nSize;
 }
 
 void DynamicVertexBufferEntityOpenGL::Unlock()
 {
+	if (m_gpuBuffer != nullptr && m_lockedCount > 0 && !m_lpVB.empty())
+	{
+		uint32_t offsetBytes = m_dwBase * m_nUnitSize;
+		uint32_t sizeBytes = m_lockedCount * m_nUnitSize;
+		if (offsetBytes + sizeBytes <= m_lpVB.size())
+		{
+			m_gpuBuffer->UpdateData(offsetBytes, sizeBytes, (&(m_lpVB[0])) + offsetBytes);
+		}
+	}
+	m_lockedCount = 0;
 }
 
-GLuint ParaEngine::DynamicVertexBufferEntityOpenGL::GetBuffer()
+VertexBufferDevicePtr_type ParaEngine::DynamicVertexBufferEntityOpenGL::GetBuffer()
 {
-	return 0;
+	return m_gpuBuffer;
 }
 
 void* ParaEngine::DynamicVertexBufferEntityOpenGL::GetBaseVertexPointer()
@@ -87,7 +123,7 @@ void* ParaEngine::DynamicVertexBufferEntityOpenGL::GetBaseVertexPointer()
 
 bool ParaEngine::DynamicVertexBufferEntityOpenGL::IsMemoryBuffer()
 {
-	return true;
+	return m_gpuBuffer == nullptr;
 }
 
 DWORD ParaEngine::DynamicVertexBufferEntityOpenGL::GetBaseVertex()

@@ -8,28 +8,28 @@
 //-----------------------------------------------------------------------------
 #include "ParaEngine.h"
 #include "OcclusionQueryBank.h"
-#if USE_DIRECTX_RENDERER
-#include "RenderDeviceD3D9.h"
-#endif
 
 using namespace ParaEngine;
 
-/**@def Max of 30 queries in flight at once */ 
+/**@def Max of 30 queries in flight at once */
 #define MAX_QUERIES 30
 
-
-LatentOcclusionQueryBank::LatentOcclusionQueryBank( IRenderDevice *  pD3DDev)
-:m_bIsValid(true), m_nFirstUnusedIndex(0), m_nFirstQueryIndex(0)
+LatentOcclusionQueryBank::LatentOcclusionQueryBank(IRenderDevice* pD3DDev)
+	: m_bIsValid(false), m_head(0), m_nFirstUnusedIndex(0), m_nFirstQueryIndex(0)
 {
-	//m_Queries.reserve(MAX_QUERIES);
+	if (!pD3DDev)
+		pD3DDev = CGlobals::GetRenderDevice();
+
+	if (!pD3DDev || !pD3DDev->GetCaps().supportsOcclusionQuery)
+		return;
+
 	m_Queries.resize(MAX_QUERIES);
 
-	for(int i=0;i<MAX_QUERIES;i++)
+	for (int i = 0; i < MAX_QUERIES; i++)
 	{
-		LPDIRECT3DQUERY9 query = NULL;
-		if(FAILED(GETD3D(CGlobals::GetRenderDevice())->CreateQuery(D3DQUERYTYPE_OCCLUSION, &query)))
+		IRHIOcclusionQuery* query = pD3DDev->CreateOcclusionQuery();
+		if (!query)
 		{
-			m_bIsValid = false;
 			Cleanup();
 			return;
 		}
@@ -37,9 +37,9 @@ LatentOcclusionQueryBank::LatentOcclusionQueryBank( IRenderDevice *  pD3DDev)
 		m_Queries[i].state = LatentQueryElement::UNUSED;
 	}
 
-	// init our head pointer to the first element.  head is always the oldest query in use
-	m_head = 0;
+	m_bIsValid = true;
 }
+
 LatentOcclusionQueryBank::~LatentOcclusionQueryBank()
 {
 	Cleanup();
@@ -49,9 +49,9 @@ void LatentOcclusionQueryBank::Cleanup()
 {
 	m_bIsValid = false;
 	int nSize = (int)m_Queries.size();
-	for(int i=0;i<nSize;i++)
+	for (int i = 0; i < nSize; i++)
 	{
-		SAFE_RELEASE(m_Queries[i].query);
+		ReleaseRHIResource(m_Queries[i].query);
 	}
 	m_Queries.clear();
 }
@@ -61,96 +61,89 @@ bool LatentOcclusionQueryBank::IsValid()
 	return m_bIsValid;
 }
 
-//////////////////////////////////////////////////////////////////////////
-// Returns the most recent results of outstanding queries.  Once results have
-// been encountered the query becomes unused again.  If multiple queries
-// finished since the last call, then only the most recent results will be returned.
-HRESULT LatentOcclusionQueryBank::GetLatestResults(DWORD *count)
+HRESULT LatentOcclusionQueryBank::GetLatestResults(DWORD* count)
 {
-	// loop from head to end, and then from beginning to head
+	if (!m_bIsValid || m_Queries.empty())
+		return E_FAIL;
+
 	int i = m_head;
 	HRESULT rhr = S_FALSE;
-	do 
+	do
 	{
-		// only go till we haven't issued yet or we've wrapped around to the head
-		if(    m_Queries[i].state != LatentQueryElement::ISSUEDEND || 
-			(i!=m_head && (i%MAX_QUERIES) == m_head))
+		int idx = i % MAX_QUERIES;
+		if (m_Queries[idx].state != LatentQueryElement::ISSUEDEND ||
+			(i != m_head && idx == m_head))
 			break;
 
-		// Test the oldest queries first
-		DWORD tempCount = 0;
-		HRESULT hr = m_Queries[i].query->GetData(&tempCount,sizeof(DWORD),0);
-
-		// if we have a result, then record it and keep testing
-		if(hr == S_OK)
+		uint64_t samples = 0;
+		if (m_Queries[idx].query->GetResult(samples, false))
 		{
-			*count = tempCount;
+			if (count)
+				*count = (DWORD)samples;
 			rhr = S_OK;
-			m_Queries[i].state = LatentQueryElement::UNUSED;
+			m_Queries[idx].state = LatentQueryElement::UNUSED;
 		}
 		else
 			break;
 
 		i++;
-	} while(1);
+	} while (1);
 
 	return rhr;
 }
 
-//////////////////////////////////////////////////////////////////////////
-// Issue a new begin occlusion query into the pushbuffer.
 HRESULT LatentOcclusionQueryBank::BeginNextQuery()
 {
+	if (!m_bIsValid || m_Queries.empty())
+		return E_FAIL;
+
 	int i = m_head;
-	do 
+	do
 	{
-		// only go till we've wrapped around to the head
-		if(    (i!=m_head && (i%MAX_QUERIES) == m_head))
+		int idx = i % MAX_QUERIES;
+		if (i != m_head && idx == m_head)
 			break;
 
-		// first unused query gets begin'd
-		if(m_Queries[i].state == LatentQueryElement::UNUSED)
+		if (m_Queries[idx].state == LatentQueryElement::UNUSED)
 		{
-			m_Queries[i].state = LatentQueryElement::ISSUEDBEGIN;
-			m_Queries[i].query->Issue(D3DISSUE_BEGIN);
+			m_Queries[idx].state = LatentQueryElement::ISSUEDBEGIN;
+			m_Queries[idx].query->Begin();
 			return S_OK;
 		}
 		i++;
-	}
-	while(1);
+	} while (1);
 	return S_FALSE;
 }
 
-//////////////////////////////////////////////////////////////////////////
-// Issue a new end occlusion query into the pushbuffer
 HRESULT LatentOcclusionQueryBank::EndNextQuery()
 {
+	if (!m_bIsValid || m_Queries.empty())
+		return E_FAIL;
+
 	int i = m_head;
-	do 
+	do
 	{
-		// only go till we've wrapped around to the head
-		if(    (i!=m_head && (i%MAX_QUERIES) == m_head))
+		int idx = i % MAX_QUERIES;
+		if (i != m_head && idx == m_head)
 			break;
 
-		// first begin'd query gets end'd
-		if(m_Queries[i].state == LatentQueryElement::ISSUEDBEGIN)
+		if (m_Queries[idx].state == LatentQueryElement::ISSUEDBEGIN)
 		{
-			m_Queries[i].state = LatentQueryElement::ISSUEDEND;
-			m_Queries[i].query->Issue(D3DISSUE_END);
+			m_Queries[idx].state = LatentQueryElement::ISSUEDEND;
+			m_Queries[idx].query->End();
 			return S_OK;
 		}
 		i++;
-	}
-	while(1);
+	} while (1);
 	return S_FALSE;
 }
 
 uint32 LatentOcclusionQueryBank::GetNumActiveQueries()
 {
 	uint32 count = 0;
-	for(uint32 i=0;i<m_Queries.size();i++)
+	for (uint32 i = 0; i < m_Queries.size(); i++)
 	{
-		if(m_Queries[i].state != LatentQueryElement::UNUSED)
+		if (m_Queries[i].state != LatentQueryElement::UNUSED)
 			++count;
 	}
 	return count;
@@ -158,17 +151,22 @@ uint32 LatentOcclusionQueryBank::GetNumActiveQueries()
 
 bool LatentOcclusionQueryBank::HasUnusedQuery()
 {
+	if (!m_bIsValid || m_Queries.empty())
+		return false;
 	return (m_Queries[m_nFirstUnusedIndex].state == LatentQueryElement::UNUSED);
 }
 
-HRESULT LatentOcclusionQueryBank::BeginNewQuery(void* pUserData /*= NULL*/ )
+HRESULT LatentOcclusionQueryBank::BeginNewQuery(void* pUserData /*= NULL*/)
 {
+	if (!m_bIsValid || m_Queries.empty())
+		return E_FAIL;
+
 	int i = m_nFirstUnusedIndex;
-	if(m_Queries[i].state == LatentQueryElement::UNUSED)
+	if (m_Queries[i].state == LatentQueryElement::UNUSED)
 	{
 		m_Queries[i].state = LatentQueryElement::ISSUEDBEGIN;
 		m_Queries[i].pUserData = pUserData;
-		m_Queries[i].query->Issue(D3DISSUE_BEGIN);
+		m_Queries[i].query->Begin();
 		return S_OK;
 	}
 	return S_FALSE;
@@ -176,67 +174,71 @@ HRESULT LatentOcclusionQueryBank::BeginNewQuery(void* pUserData /*= NULL*/ )
 
 HRESULT LatentOcclusionQueryBank::EndNewQuery()
 {
+	if (!m_bIsValid || m_Queries.empty())
+		return E_FAIL;
+
 	int i = m_nFirstUnusedIndex;
-	if(m_Queries[i].state == LatentQueryElement::ISSUEDBEGIN)
+	if (m_Queries[i].state == LatentQueryElement::ISSUEDBEGIN)
 	{
 		m_Queries[i].state = LatentQueryElement::ISSUEDEND;
-		m_Queries[i].query->Issue(D3DISSUE_END);
-		m_nFirstUnusedIndex = (i+1)%MAX_QUERIES;
+		m_Queries[i].query->End();
+		m_nFirstUnusedIndex = (i + 1) % MAX_QUERIES;
 		return S_OK;
 	}
 	return S_FALSE;
 }
 
-HRESULT LatentOcclusionQueryBank::WaitForFirstResult(DWORD *count, void** pUserData)
+HRESULT LatentOcclusionQueryBank::WaitForFirstResult(DWORD* count, void** pUserData)
 {
-	// the oldest query
+	if (!m_bIsValid || m_Queries.empty())
+		return E_FAIL;
+
 	int i = m_nFirstUnusedIndex;
-	HRESULT hr = S_FALSE;
-	for (int k=0;k<MAX_QUERIES;++k)
+	for (int k = 0; k < MAX_QUERIES; ++k)
 	{
-		if( m_Queries[i].state == LatentQueryElement::ISSUEDEND)
+		if (m_Queries[i].state == LatentQueryElement::ISSUEDEND)
 		{
-			DWORD tempCount = 0;
-			while((hr = m_Queries[i].query->GetData(&tempCount,sizeof(DWORD),D3DGETDATA_FLUSH)) == S_FALSE) 
-				;
-			m_Queries[i].state = LatentQueryElement::UNUSED;
-			if(hr == S_OK)
+			uint64_t samples = 0;
+			while (!m_Queries[i].query->GetResult(samples, true))
 			{
-				*count = tempCount;
-				if(pUserData!=0)
-					*pUserData = m_Queries[i].pUserData;
 			}
+			m_Queries[i].state = LatentQueryElement::UNUSED;
+			if (count)
+				*count = (DWORD)samples;
+			if (pUserData != 0)
+				*pUserData = m_Queries[i].pUserData;
 			m_Queries[i].pUserData = NULL;
-			return hr;
+			return S_OK;
 		}
-		i = (i+1)%MAX_QUERIES;
+		i = (i + 1) % MAX_QUERIES;
 	}
-	return hr;
+	return S_FALSE;
 }
 
-HRESULT LatentOcclusionQueryBank::CheckForFirstResult(DWORD *count, void** pUserData)
+HRESULT LatentOcclusionQueryBank::CheckForFirstResult(DWORD* count, void** pUserData)
 {
-	// the oldest query
+	if (!m_bIsValid || m_Queries.empty())
+		return E_FAIL;
+
 	int i = m_nFirstUnusedIndex;
-	HRESULT hr = S_FALSE;
-	for (int k=0;k<MAX_QUERIES;++k)
+	for (int k = 0; k < MAX_QUERIES; ++k)
 	{
-		if( m_Queries[i].state == LatentQueryElement::ISSUEDEND)
+		if (m_Queries[i].state == LatentQueryElement::ISSUEDEND)
 		{
-			DWORD tempCount = 0;
-			HRESULT hr = m_Queries[i].query->GetData(&tempCount,sizeof(DWORD), 0); 
-			if(hr == S_OK)
+			uint64_t samples = 0;
+			if (m_Queries[i].query->GetResult(samples, false))
 			{
-				*count = tempCount;
-				if(pUserData!=0)
+				if (count)
+					*count = (DWORD)samples;
+				if (pUserData != 0)
 					*pUserData = m_Queries[i].pUserData;
 				m_Queries[i].state = LatentQueryElement::UNUSED;
 				m_Queries[i].pUserData = NULL;
+				return S_OK;
 			}
-			return hr;
+			return S_FALSE;
 		}
-		i = (i+1)%MAX_QUERIES;
+		i = (i + 1) % MAX_QUERIES;
 	}
-	return hr;
+	return S_FALSE;
 }
-

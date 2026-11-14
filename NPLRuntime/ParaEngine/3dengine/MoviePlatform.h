@@ -6,6 +6,7 @@
 namespace ParaEngine
 {
 	using namespace std;
+	class IRHIRenderTarget;
 
 	enum MOVIE_RECORDING_STATE
 	{
@@ -92,6 +93,13 @@ namespace ParaEngine
 
 		/** get preferred codec */
 		virtual int GetCodec();
+
+		enum {
+			CODEC_XVID = 0,
+			CODEC_WMV = 1,
+		};
+		int GetEncodeCodec() const { return m_nEncodeCodec; }
+		void SetEncodeCodec(int nCodec) { m_nEncodeCodec = nCodec; }
 	public:
 		typedef std::function<void(bool, std::vector<BYTE>& base64)>			screenshot_callback;
 
@@ -298,6 +306,7 @@ namespace ParaEngine
 
 	private:
 		IMovieCodec* m_pMovieCodec;
+		int m_nMovieCodecVersion;
 		string m_sMovieName;
 		string m_beginningStr;
 		string m_endingStr;
@@ -305,16 +314,10 @@ namespace ParaEngine
 
 		std::vector<std::function<void()>> m_functionsToPerform;
 		std::mutex m_performMutex;
-		
-#ifdef USE_DIRECTX_RENDERER
-		LPDIRECT3DTEXTURE9 m_pCaptureTexture;
-		LPDIRECT3DSURFACE9 m_pCaptureSurface;
-		LPDIRECT3DSURFACE9 m_pBackBufferSurface;
-		LPDIRECT3DSURFACE9 m_pOldDepthStencilSurface, m_pDepthStencilSurface; 
-		LPDIRECT3DSURFACE9 m_pOffScreenSurface;
-		HDC m_CompatibleHDC;
-		HBITMAP m_BitmapHandle;
-#endif
+
+		IRHIRenderTarget* m_pCaptureRT;
+		std::vector<uint8_t> m_captureBuffer;
+		int m_nEncodeCodec;
 
 		bool m_bUseGDI;
 		/** current recorder state */

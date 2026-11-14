@@ -1,5 +1,6 @@
 #pragma once
 #include "AssetEntity.h"
+#include "Framework/Interface/Render/IRenderDevice.h"
 #include "DynamicVertexBufferEntity.h"
 
 namespace ParaEngine
@@ -12,6 +13,8 @@ namespace ParaEngine
 	{
 	private:
 		std::vector<char> m_lpVB;
+		VertexBufferDevicePtr_type m_gpuBuffer = nullptr;
+		uint32 m_lockedCount = 0;
 
 	public:
 		/// @see DynamicVBAssetType
@@ -31,8 +34,8 @@ namespace ParaEngine
 		uint32 Lock(uint32 nSize, void** pVertices);
 		void Unlock();
 
-		/** always return 0, since we will disable VBO and use vertex array instead. */
-		GLuint GetBuffer();
+		/** returns GPU vertex buffer when backed by RHI (e.g. DVB_MATRIX instancing), or nullptr when using client memory array. */
+		VertexBufferDevicePtr_type GetBuffer();
 
 		DWORD GetBaseVertex();
 		/** whether we are using system memory as dynamic vertex buffer. */
@@ -40,7 +43,7 @@ namespace ParaEngine
 		void* GetBaseVertexPointer();
 
 		DynamicVertexBufferEntityOpenGL();
-		virtual ~DynamicVertexBufferEntityOpenGL(){};
+		virtual ~DynamicVertexBufferEntityOpenGL();
 
 		virtual HRESULT RestoreDeviceObjects();
 		virtual HRESULT InvalidateDeviceObjects();

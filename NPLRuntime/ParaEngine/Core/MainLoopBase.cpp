@@ -24,4 +24,12 @@ namespace ParaEngine
 		m_main_io_service.run();
 #endif
 	}
+
+	void MainLoopBase::MainLoopStop()
+	{
+#ifndef EMSCRIPTEN_SINGLE_THREAD
+		m_main_timer.cancel();
+		m_main_io_service.stop();
+#endif
+	}
 }

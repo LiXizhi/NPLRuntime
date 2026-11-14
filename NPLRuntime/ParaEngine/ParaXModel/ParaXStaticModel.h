@@ -1,7 +1,4 @@
 #pragma once
-#ifdef USE_DIRECTX_RENDERER
-#include "StaticMesh.h"
-#endif
 #include "ParaXStaticBase.h"
 #include "ParaXStaticModelRenderPass.h"
 
@@ -57,9 +54,6 @@ namespace ParaEngine
 		* 2008.1.25 by LXZ: this is a tricky workaround of D3DXLoadMeshFromXOf can only load a simple mesh from data node. If the mesh contains frames or second UV sets, the function will not work. So in such cases, I fall back to use the original D3DXLoadMeshFromXInMemory, which can handle frames and second UV sets.
 		*/
 		virtual HRESULT Create(RenderDevicePtr pd3dDevice, void* buffer, DWORD nFileSize, bool bCheckSecondUV = false);
-#ifdef USE_DIRECTX_RENDERER
-		virtual HRESULT Create(RenderDevicePtr pd3dDevice, LPD3DXFILEDATA pFileData) { return S_FALSE;  };
-#endif
 		virtual HRESULT Create(RenderDevicePtr pd3dDevice, XFile::Scene* pFileData);
 
 		virtual HRESULT Destroy();
@@ -86,15 +80,8 @@ namespace ParaEngine
 
 		/** get the mesh header. and compute if not valid.  one needs to check MeshHeader.m_bIsValid before using it.
 		because if async loading is used, the mesh itself may not be ready when this function is called. */
-#ifdef USE_DIRECTX_RENDERER
-		virtual MeshHeader& GetMeshHeader(LPD3DXFILE pFileParser = nullptr) { return GetMeshHeader((XFileParser*)nullptr);  };
-#endif
 		virtual MeshHeader& GetMeshHeader(XFileParser* pFileParser = nullptr);
 
-#ifdef USE_DIRECTX_RENDERER
-		/** Get mesh header from file. */
-		virtual bool GetMeshHeaderFromFile(CParaFile& myFile, LPD3DXFILE pFileParser) { return false;  };
-#endif
 		virtual bool GetMeshHeaderFromFile(CParaFile& myFile, XFileParser* pFileParser);
 
 		// Rendering
@@ -127,6 +114,7 @@ namespace ParaEngine
 
 		// system buffers
 		std::vector<mesh_vertex_normal> m_vertices;
+		std::vector<mesh_vertex_normal_tex2> m_verticesTex2;
 
 		std::vector<int16> m_indices;
 		// device buffers
@@ -135,8 +123,6 @@ namespace ParaEngine
 		ParaIndexBuffer m_indexBuffer;
 	};
 
-#ifndef USE_DIRECTX_RENDERER
 	typedef ref_ptr<CParaXStaticModel> CParaXStaticModelPtr;
 	typedef CParaXStaticModel* CParaXStaticModelRawPtr;
-#endif
 }

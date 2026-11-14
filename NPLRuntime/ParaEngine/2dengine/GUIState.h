@@ -30,12 +30,6 @@ namespace ParaEngine
 	public:
 		/// rendering device pointer
 		RenderDevicePtr pRenderDevice;
-#ifdef USE_DIRECTX_RENDERER
-		/** back buffer */
-		LPDIRECT3DSURFACE9 pBackSurface;
-		/// back buffer format
-		D3DFORMAT		d3dBackbufferFormat;
-#endif
 		/// back buffer width
 		UINT			nBkbufWidth;
 		/// back buffer height

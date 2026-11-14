@@ -14,10 +14,6 @@
 #include "PaintEngine/Painter.h"
 #include "BufferPicking.h"
 
-#if USE_DIRECTX_RENDERER
-#include "RenderDeviceD3D9.h"
-#endif
-
 using namespace ParaEngine;
 
 ParaEngine::CBufferPicking::CBufferPicking(const AssetKey& key)
@@ -189,19 +185,33 @@ int ParaEngine::CBufferPicking::Pick(const QRect& region_, int nViewportId /*= -
 			OUTPUT_LOG("error: frame buffer not complete because GL_FRAMEBUFFER_INCOMPLETE_DIMENSIONS!\n");
 		}*/
 
-		if (!CGlobals::GetRenderDevice()->ReadPixels(region.left(), region.top(), nWidth, nHeight, (void*)(&(m_pickingResult[0]))))
-			m_pickingResult.clear();
-#ifdef USE_OPENGL_RENDERER
-		for (auto & result : m_pickingResult)
+		if (!pRenderDevice || !pRenderDevice->ReadPixels(region.left(), region.top(), nWidth, nHeight, (void*)(&(m_pickingResult[0]))))
 		{
-			unsigned char * byte_ptr = reinterpret_cast<unsigned char*>(&result);
-			unsigned char red = *byte_ptr++;
-			unsigned char green = *byte_ptr++;
-			unsigned char blue = *byte_ptr++;
-			unsigned char alpha = *byte_ptr;
-			result = (alpha << 24) | (red << 16) | (green << 8) | (blue);
+			m_pickingResult.clear();
 		}
-#endif
+		else
+		{
+			for (auto& result : m_pickingResult)
+			{
+				unsigned char* byte_ptr = reinterpret_cast<unsigned char*>(&result);
+				unsigned char red = byte_ptr[0];
+				unsigned char green = byte_ptr[1];
+				unsigned char blue = byte_ptr[2];
+				unsigned char alpha = byte_ptr[3];
+				result = (static_cast<DWORD>(alpha) << 24) | (static_cast<DWORD>(red) << 16) | (static_cast<DWORD>(green) << 8) | static_cast<DWORD>(blue);
+			}
+			if (nHeight > 1 && !pRenderDevice->GetCaps().topLeftScreenOrigin)
+			{
+				for (int y = 0; y < nHeight / 2; ++y)
+				{
+					int oppositeY = nHeight - 1 - y;
+					for (int x = 0; x < nWidth; ++x)
+					{
+						std::swap(m_pickingResult[y * nWidth + x], m_pickingResult[oppositeY * nWidth + x]);
+					}
+				}
+			}
+		}
 		EndBuffer();
 	}
 	return m_pickingResult.size();

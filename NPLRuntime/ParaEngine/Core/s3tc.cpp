@@ -38,6 +38,8 @@
 static void s3tc_decode_block(uint8_t** blockData,
 	uint32_t* decodeBlockData,
 	unsigned int stride,
+	int maxX,
+	int maxY,
 	bool oneBitAlphaFlag,
 	uint64_t alpha,
 	S3TCDecodeFlag decodeFlag)
@@ -123,12 +125,16 @@ static void s3tc_decode_block(uint8_t** blockData,
 		{
 			for (int x = 0; x < 4; ++x)
 			{
-				// LiXizhi: fixed dxt5 alpha mast of 3 bits, it should be 7 instead of 5. 
-				decodeBlockData[x] = (alphaArray[alpha & 7] << 24) + colors[pixelsIndex & 3];
+				if (x < maxX && y < maxY)
+				{
+					// LiXizhi: fixed dxt5 alpha mask of 3 bits, it should be 7 instead of 5.
+					decodeBlockData[x] = (alphaArray[alpha & 7] << 24) + colors[pixelsIndex & 3];
+				}
 				pixelsIndex >>= 2;
 				alpha >>= 3;
 			}
-			decodeBlockData += stride;
+			if (y < maxY)
+				decodeBlockData += stride;
 		}
 	} //if (dxt5 == comFlag)
 	else
@@ -139,11 +145,15 @@ static void s3tc_decode_block(uint8_t** blockData,
 			{
 				initAlpha = (static_cast<int>(alpha) & 0x0f) << 28;
 				initAlpha += initAlpha >> 4;
-				decodeBlockData[x] = initAlpha + colors[pixelsIndex & 3];
+				if (x < maxX && y < maxY)
+				{
+					decodeBlockData[x] = initAlpha + colors[pixelsIndex & 3];
+				}
 				pixelsIndex >>= 2;
 				alpha >>= 4;
 			}
-			decodeBlockData += stride;
+			if (y < maxY)
+				decodeBlockData += stride;
 		}
 	}
 }
@@ -156,39 +166,40 @@ void s3tc_decode(uint8_t* encodeData,             //in_data
 	S3TCDecodeFlag decodeFlag)
 {
 	uint32_t* decodeBlockData = (uint32_t*)decodeData;
-	// by LiXizhi: fixed a bug for loading mipmap image smaller than 4*4
+	// Clamp sub-4x4 mipmap blocks so 1x1 and 2x2 mipmaps never write out of bounds
 	for (int y = 0; y < pixelsHeight; y += 4)
 	{
+		const int maxY = (pixelsHeight - y < 4) ? (pixelsHeight - y) : 4;
+		uint32_t* rowPtr = decodeBlockData + y * pixelsWidth;
 		for (int x = 0; x < pixelsWidth; x += 4)
 		{
+			const int maxX = (pixelsWidth - x < 4) ? (pixelsWidth - x) : 4;
 			uint64_t blockAlpha = 0;
 
 			switch (decodeFlag)
 			{
 			case S3TCDecodeFlag::DXT1:
 			{
-				s3tc_decode_block(&encodeData, decodeBlockData, pixelsWidth, 0, 0LL, S3TCDecodeFlag::DXT1);
+				s3tc_decode_block(&encodeData, rowPtr + x, pixelsWidth, maxX, maxY, 0, 0LL, S3TCDecodeFlag::DXT1);
 			}
 			break;
 			case S3TCDecodeFlag::DXT3:
 			{
 				memcpy((void*)&blockAlpha, encodeData, 8);
 				encodeData += 8;
-				s3tc_decode_block(&encodeData, decodeBlockData, pixelsWidth, 1, blockAlpha, S3TCDecodeFlag::DXT3);
+				s3tc_decode_block(&encodeData, rowPtr + x, pixelsWidth, maxX, maxY, 1, blockAlpha, S3TCDecodeFlag::DXT3);
 			}
 			break;
 			case S3TCDecodeFlag::DXT5:
 			{
 				memcpy((void*)&blockAlpha, encodeData, 8);
 				encodeData += 8;
-				s3tc_decode_block(&encodeData, decodeBlockData, pixelsWidth, 1, blockAlpha, S3TCDecodeFlag::DXT5);
+				s3tc_decode_block(&encodeData, rowPtr + x, pixelsWidth, maxX, maxY, 1, blockAlpha, S3TCDecodeFlag::DXT5);
 			}
 			break;
 			default:
 				break;
 			}
-			decodeBlockData += 4;
 		}
-		decodeBlockData += 3 * pixelsWidth;
 	}
 }

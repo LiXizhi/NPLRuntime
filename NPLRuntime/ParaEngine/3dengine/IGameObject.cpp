@@ -8,9 +8,7 @@
 #include "SceneObject.h"
 #include "WorldInfo.h"
 #include "EventsCenter.h"
-#ifdef USE_DIRECTX_RENDERER
 #include "Framework/Common/Helper/EditorHelper.h"
-#endif
 #include "terrain/GlobalTerrain.h"
 #include "ShapeAABB.h"
 #include "NPLHelper.h"
@@ -410,14 +408,12 @@ bool IGameObject::ResetField(int nFieldID)
 			string sValue(tmp);
 			pField->Set(this, sValue.c_str());
 
-#ifdef USE_DIRECTX_RENDERER
 			// create the script file if not exists
 			string sScriptFile;
 			if(CEditorHelper::SearchFileNameInScript(sScriptFile, sValue.c_str(),true))
 			{
 				CEditorHelper::CreateEmptyCharacterEventFile(sScriptFile.c_str(), GetIdentifier().c_str());
 			}
-#endif
 		}
 		else if(pField->GetFieldname() == "OnLoadScript")
 		{
@@ -433,14 +429,12 @@ bool IGameObject::ResetField(int nFieldID)
 			snprintf(tmp, MAX_FIELD_LENGTH, ";NPL.load(\"(gl)%s\");_character.%s.On_Load();", sFileName.c_str(), GetIdentifier().c_str());
 			string sValue(tmp);
 			pField->Set(this, sValue.c_str());
-#ifdef USE_DIRECTX_RENDERER
 			// create the script file if not exists
 			string sScriptFile;
 			if(CEditorHelper::SearchFileNameInScript(sScriptFile, sValue.c_str(),true))
 			{
 				CEditorHelper::CreateEmptyCharacterEventFile(sScriptFile.c_str(), GetIdentifier().c_str());
 			}
-#endif
 		}
 		else
 			bFound = false;
@@ -500,7 +494,6 @@ bool IGameObject::InvokeEditor(int nFieldID, const string& sParameters)
 		{
 			///////////////////////////////////////////////////////////////////////////
 			// get the script file name from the field value
-#ifdef USE_DIRECTX_RENDERER
 			string sScriptFile;
 			const char* sValue = NULL;
 			pField->Get(this, &sValue);
@@ -511,10 +504,7 @@ bool IGameObject::InvokeEditor(int nFieldID, const string& sParameters)
 			}
 			else
 				return false;
-			return OpenWithDefaultEditor(sScriptFile.c_str(), false);
-#else
-			return false;
-#endif
+			return CEditorHelper::OpenWithDefaultEditor(sScriptFile.c_str(), false);
 		}
 		else
 			bFound = false;

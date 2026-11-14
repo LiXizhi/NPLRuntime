@@ -1,6 +1,6 @@
-#ifdef USE_OPENGL_RENDERER
-
 #include "ParaEngine.h"
+#ifndef USE_NULL_RENDERER
+
 #include "util/StringHelper.h"
 #include "GUIUniBufferOpenGL.h"
 #include "GUIResource.h"

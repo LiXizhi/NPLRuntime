@@ -2,9 +2,6 @@
 
 namespace ParaEngine
 {
-#ifdef USE_DIRECTX_RENDERER
-	#include "shaders/d3d9_spec/light_scattering_constants.h"
-#else
 	//
 	// Define a structure used by both C++ and HLSL
 	//
@@ -22,7 +19,6 @@ namespace ParaEngine
 		Vector4 vTermMultipliers;
 		Vector4 vSoilReflectivity;
 	};
-#endif
 	class CLightScatteringData
 	{
 	public:

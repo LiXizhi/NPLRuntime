@@ -7,26 +7,15 @@
 // Revised: 2006.7.22
 //-----------------------------------------------------------------------------
 #include "ParaEngine.h"
-#if USE_DIRECTX_RENDERER
-#include "RenderDeviceD3D9.h"
-#endif
-#ifdef USE_DIRECTX_RENDERER
-#include "DirectXEngine.h"
 #include "SpriteObject.h"
 #include "ShadowMap.h"
 #include "GlowEffect.h"
-#include "DataProviderManager.h"
-#include "NpcDatabase.h"
 #include "LightObject.h"
 #include "MirrorSurface.h"
-#include "RpgCharacter.h"
-#include "BVHSerializer.h"
 #include "DropShadowRenderer.h"
 #include "OcclusionQueryBank.h"
 #include "WaveEffect.h"
-#elif defined(USE_OPENGL_RENDERER)
-#include "ShadowMap.h"
-#endif
+#include "ParaImage.h"
 #include "PaintEngine/Painter.h"
 #include "ContainerObject.h"
 #include "AttributeModelProxy.h"
@@ -133,9 +122,7 @@ CSceneObject::CSceneObject()
 	m_bModified(false), m_bShowLocalLightMesh(false), m_bShowHeadOnDisplay(false),
 	m_fMaxHeadOnDisplayDistance(50.f), m_bEnablePostProcessing(false), m_bEnablePortalZone(true), m_bUseWireFrame(false),
 	m_bShowPortalSystem(false), m_fShadowRadius(DEFAULT_SHADOW_RADIUS), m_bIsPersistent(true), m_bBlockInput(false), m_nCursorHotSpotX(-1), m_nCursorHotSpotY(-1),
-#ifdef USE_DIRECTX_RENDERER
 	m_dropShadowRenderer(new DropShadowRenderer()),
-#endif
 	m_globalTerrain(new ParaTerrain::CGlobalTerrain()),
 	m_sceneState(new ParaTerrain::SceneState()),
 	m_dwPhysicsGroupMask(DEFAULT_PHYSICS_GROUP_MASK), m_renderDropShadow(false), m_bShowMainPlayer(true), m_bCanShowMainPlayer(true), m_fPostRenderQueueOrder(100.f)
@@ -265,11 +252,7 @@ void CSceneObject::CreateAttributeModels()
 	m_attribute_models.push_back(new CMapAttributeProxy< map <string, CPortalNode*> >(&m_portals, "portals"));
 	m_attribute_models.push_back(new CMapAttributeProxy< map <string, CManagedLoader*> >(&m_managedloader, "managedloader"));
 	m_attribute_models.push_back(new CArrayAttributeProxy< MissileObjectPool_Type >(&m_missiles, "missiles"));
-
-#ifdef PARAENGINE_CLIENT
 	m_attribute_models.push_back(new CArrayAttributeProxy< MirrorSufacePool_Type >(&m_mirrorSurfaces, "mirrorSurfaces"));
-#endif
-
 }
 
 
@@ -298,14 +281,12 @@ void CSceneObject::ResetScene()
 		// restore the aspect ratio of camera and reset fog parameters.
 		ResetCameraAndFog();
 	}
-#ifdef PARAENGINE_CLIENT
 	// two reserved mirrors at a time
 	if (m_mirrorSurfaces.size() < 2)
 	{
 		m_mirrorSurfaces.push_back(NULL);
 		m_mirrorSurfaces.push_back(NULL);
 	}
-#endif
 	m_bShowMainPlayer = true;
 	// unregister all events
 	// CGlobals::GetEventsCenter()->UnregisterAllEvent();
@@ -455,7 +436,8 @@ bool CSceneObject::IsPortalSystemShown()
 
 CMirrorSurface* CSceneObject::GetMirrorSurface(int nIndex)
 {
-#ifdef USE_DIRECTX_RENDERER
+	if (nIndex < 0)
+		return NULL;
 	if (nIndex >= (int)m_mirrorSurfaces.size())
 	{
 		if (nIndex > MAX_MIRRORSURFACES_NUM)
@@ -467,9 +449,6 @@ CMirrorSurface* CSceneObject::GetMirrorSurface(int nIndex)
 		m_mirrorSurfaces[nIndex] = new CMirrorSurface();
 	}
 	return m_mirrorSurfaces[nIndex];
-#else
-	return NULL;
-#endif
 }
 
 bool CSceneObject::IsShowMainPlayer()
@@ -513,18 +492,12 @@ void CSceneObject::EnableLight(bool bEnable)
 
 void CSceneObject::SetMaxLocalLightsNum(int nNum)
 {
-#ifdef USE_DIRECTX_RENDERER
 	CGlobals::GetEffectManager()->SetMaxLocalLightsNum(nNum);
-#endif
 }
 
 int CSceneObject::GetMaxLocalLightsNum()
 {
-#ifdef USE_DIRECTX_RENDERER
 	return CGlobals::GetEffectManager()->GetMaxLocalLightsNum();
-#else
-	return 0;
-#endif
 }
 
 bool CSceneObject::IsShowLocalLightMesh()
@@ -847,7 +820,6 @@ HRESULT CSceneObject::InitDeviceObjects()
 			(*itCurCP)->InitDeviceObjects();
 		}
 	}
-#ifdef USE_DIRECTX_RENDERER
 	for (int i = 0; i < (int)m_mirrorSurfaces.size(); ++i)
 	{
 		if (m_mirrorSurfaces[i] != 0)
@@ -861,7 +833,6 @@ HRESULT CSceneObject::InitDeviceObjects()
 			(*itCur)->InitDeviceObjects();
 		}
 	}
-#endif
 
 	return hr;
 }
@@ -869,13 +840,11 @@ HRESULT CSceneObject::InitDeviceObjects()
 HRESULT CSceneObject::RestoreDeviceObjects()
 {
 	CBaseObject::RestoreDeviceObjects();
-#ifdef USE_DIRECTX_RENDERER
-	g_bShaderVersion3 = CGlobals::GetDirectXEngine().m_d3dCaps.VertexShaderVersion >= D3DVS_VERSION(3, 0);
-#endif
+	auto* pRenderDevice = CGlobals::GetRenderDevice();
+	g_bShaderVersion3 = pRenderDevice && (pRenderDevice->GetCaps().GetShaderModelMajor() >= 3);
 	ResetCameraAndFog();
 
 	CGlobals::GetOceanManager()->RestoreDeviceObjects();
-#ifdef USE_DIRECTX_RENDERER
 	for (int i = 0; i < (int)m_mirrorSurfaces.size(); ++i)
 	{
 		if (m_mirrorSurfaces[i] != 0)
@@ -889,7 +858,6 @@ HRESULT CSceneObject::RestoreDeviceObjects()
 			(*itCur)->RestoreDeviceObjects();
 		}
 	}
-#endif
 	m_globalTerrain->RestoreDeviceObjects();
 	m_pBlockWorldClient->RestoreDeviceObjects();
 	m_bInitialized = true;
@@ -904,13 +872,11 @@ HRESULT CSceneObject::InvalidateDeviceObjects()
 	CGlobals::GetOceanManager()->InvalidateDeviceObjects();
 
 	m_pBlockWorldClient->InvalidateDeviceObjects();
-#ifdef USE_DIRECTX_RENDERER
 	for (int i = 0; i < (int)m_mirrorSurfaces.size(); ++i)
 	{
 		if (m_mirrorSurfaces[i] != 0)
 			m_mirrorSurfaces[i]->InvalidateDeviceObjects();
 	}
-#endif
 
 	{
 		MiniSceneGraphPool_type::iterator itCur, itEnd = m_miniSceneGraphs.end();
@@ -956,8 +922,8 @@ HRESULT CSceneObject::DeleteDeviceObjects()
 			(*itCurCP)->DeleteDeviceObjects();
 		}
 	}
-#ifdef USE_DIRECTX_RENDERER
-	m_dropShadowRenderer->DeleteDeviceObjects();
+	if (m_dropShadowRenderer)
+		m_dropShadowRenderer->DeleteDeviceObjects();
 	CGlobals::GetOceanManager()->DeleteDeviceObjects();
 
 	for (int i = 0; i < (int)m_mirrorSurfaces.size(); ++i)
@@ -965,7 +931,6 @@ HRESULT CSceneObject::DeleteDeviceObjects()
 		if (m_mirrorSurfaces[i] != 0)
 			m_mirrorSurfaces[i]->DeleteDeviceObjects();
 	}
-#endif
 	{
 		MiniSceneGraphPool_type::iterator itCur, itEnd = m_miniSceneGraphs.end();
 		for (itCur = m_miniSceneGraphs.begin(); itCur != itEnd; ++itCur)
@@ -1106,9 +1071,8 @@ void CSceneObject::Cleanup()
 	CGlobals::GetSelectionManager()->ClearGroup(-1);
 
 	m_scripts.ClearAll();
-#ifdef USE_DIRECTX_RENDERER
-	m_dropShadowRenderer->Cleanup();
-#endif
+	if (m_dropShadowRenderer)
+		m_dropShadowRenderer->Cleanup();
 	m_globalTerrain->Cleanup();
 
 	/*if(m_pEnvironmentSim)
@@ -1166,7 +1130,6 @@ void CSceneObject::Cleanup()
 	/// reset physics environment
 	if (m_pPhysicsWorld)
 		m_pPhysicsWorld->ExitPhysics();
-#ifdef USE_DIRECTX_RENDERER
 	for (int i = 0; i < (int)m_mirrorSurfaces.size(); ++i)
 	{
 		if (m_mirrorSurfaces[i] != 0)
@@ -1177,7 +1140,6 @@ void CSceneObject::Cleanup()
 			SAFE_DELETE(m_mirrorSurfaces[i]);
 		}
 	}
-#endif
 }
 
 void CSceneObject::AutoGenPlayerRipple(float fTimeDelta)
@@ -1511,11 +1473,8 @@ void CSceneObject::PrepareTileObjects(CBaseCamera* pCamera, SceneState& sceneSta
 	// fNewViewRadius = (fR>0.2f) ? m_fCoefK*fR : m_fCoefN;
 	m_fCoefF = m_fFogEnd;
 	m_fCoefN = m_fFogStart;
-#ifdef USE_DIRECTX_RENDERER
-	uint32 nViewHeight = CGlobals::GetDirectXEngine().GetBackBufferHeight();
-#else
-	uint32 nViewHeight = 560;
-#endif
+	auto* pRenderDev = CGlobals::GetRenderDevice();
+	uint32 nViewHeight = (pRenderDev && pRenderDev->GetBackBufferHeight() > 0) ? pRenderDev->GetBackBufferHeight() : 560u;
 	m_fCoefK = 1 / tanf(m_fCullingPixelsHeight / nViewHeight * (pCamera->GetFieldOfView() / pCamera->GetAspectRatio()));
 
 	// set rough testing view's center
@@ -1708,7 +1667,6 @@ void CSceneObject::PrepareMissileObjects(CBaseCamera* pCamera, SceneState& scene
 
 void CSceneObject::PreparePortalsAndZones(CBaseCamera* pCamera, SceneState& sceneState)
 {
-#ifdef USE_DIRECTX_RENDERER
 	if (!sceneState.listZones.empty() && IsPortalZoneEnabled())
 	{
 		// we will further remove potentially visible objects according to portals and zones
@@ -1768,7 +1726,6 @@ void CSceneObject::PreparePortalsAndZones(CBaseCamera* pCamera, SceneState& scen
 		PE_ASSERT(CGlobals::GetViewMatrixStack().size() == 1);
 		PE_ASSERT(CGlobals::GetProjectionMatrixStack().size() == 1);
 	}
-#endif
 }
 
 void CSceneObject::PrepareCameraState(CBaseCamera* pCamera, SceneState& sceneState)
@@ -1871,9 +1828,7 @@ int CSceneObject::PrepareRender(CBaseCamera* pCamera, SceneState* pSceneState)
 	}
 
 
-#ifdef USE_DIRECTX_RENDERER
 	CGlobals::GetEffectManager()->UpdateD3DPipelineTransform(true, true, true);
-#endif
 	PrepareCameraState(pCamera, sceneState);
 
 	// always clean up local lights, because all local lights will be rebuilt when rebuilding the scene states.
@@ -1910,10 +1865,8 @@ int CSceneObject::PrepareRender(CBaseCamera* pCamera, SceneState* pSceneState)
 	std::sort(sceneState.listHeadonDisplayObject.begin(), sceneState.listHeadonDisplayObject.end(), GreaterPostRenderObj<PostRenderObjectWeakPtr>());
 	/** for transparent objects */
 	std::sort(sceneState.listPRTransparentObject.begin(), sceneState.listPRTransparentObject.end(), GreaterPostRenderObj<AlphaPostRenderObject>());
-#ifdef USE_DIRECTX_RENDERER
 	/** sort by the primary asset : in this case it's texture */
 	std::sort(sceneState.listPRSprite.begin(), sceneState.listPRSprite.end(), CmpBaseObjectAsset<CSpriteObject*>());
-#endif
 	/** sort by the camera to object distance asset : from front to back. this allows us to skip some if triangle count is too big */
 	//std::sort(sceneState.listPRBiped.begin(), sceneState.listPRBiped.end(), LessPostRenderObj_NoTechBatch<PostRenderObject>());
 	// Note: use following one will sort by render importance as well. 
@@ -2104,11 +2057,12 @@ HRESULT CSceneObject::AdvanceScene(double dTimeDelta, int nPipelineOrder)
 	sceneState.SetCurrentRenderPipeline(nPipelineOrder);
 	auto pd3dDevice = CGlobals::GetRenderDevice();
 
-#ifdef USE_DIRECTX_RENDERER
-	GETD3D(CGlobals::GetRenderDevice())->SetRenderTarget(1, NULL);
-	GETD3D(CGlobals::GetRenderDevice())->SetRenderTarget(2, NULL);
-	GETD3D(CGlobals::GetRenderDevice())->SetRenderTarget(3, NULL);
-#endif
+	if (pd3dDevice)
+	{
+		pd3dDevice->SetRenderTarget(1, nullptr);
+		pd3dDevice->SetRenderTarget(2, nullptr);
+		pd3dDevice->SetRenderTarget(3, nullptr);
+	}
 	if (nPipelineOrder == PIPELINE_POST_UI_3D_SCENE)
 	{
 		//////////////////////////////////////////////////////////////////////////
@@ -2194,19 +2148,12 @@ HRESULT CSceneObject::AdvanceScene(double dTimeDelta, int nPipelineOrder)
 
 	CGlobals::GetEffectManager()->EnableFog(IsFogEnabled());
 	CGlobals::GetEffectManager()->SetD3DFogState();
-#ifdef USE_DIRECTX_RENDERER
-	GETD3D(CGlobals::GetRenderDevice())->SetMaterial((D3DMATERIAL9*)&(sceneState.GetGlobalMaterial()));
 
+	if (pd3dDevice)
+	{
+		pd3dDevice->SetRenderState(ERenderState::FILLMODE, IsUseWireFrame() ? RSV_FILL_WIREFRAME : RSV_FILL_SOLID);
+	}
 
-	if (IsUseWireFrame())
-	{
-		CGlobals::GetRenderDevice()->SetRenderState(ERenderState::FILLMODE, D3DFILL_WIREFRAME);
-	}
-	else
-	{
-		CGlobals::GetRenderDevice()->SetRenderState(ERenderState::FILLMODE, D3DFILL_SOLID);
-	}
-#endif
 	/////////////////////////////////////////////////////////////////
 	// still renderings
 
@@ -2228,7 +2175,6 @@ HRESULT CSceneObject::AdvanceScene(double dTimeDelta, int nPipelineOrder)
 	float defaultFogStart = GetFogStart();
 	float defaultFogEnd = GetFogEnd();
 
-#ifdef USE_DIRECTX_RENDERER
 	//////////////////////////////////////////////////////////////////////////
 	// render ocean reflection image to texture
 	COceanManager* pOcean = CGlobals::GetOceanManager();
@@ -2252,7 +2198,6 @@ HRESULT CSceneObject::AdvanceScene(double dTimeDelta, int nPipelineOrder)
 			}
 		}
 	}
-#endif	
 	// terrain tessellation goes here. This is CPU time consuming.
 	if (!(sceneState.m_bSkipTerrain) && m_globalTerrain->TerrainRenderingEnabled())
 		m_globalTerrain->Update();
@@ -2328,21 +2273,12 @@ HRESULT CSceneObject::AdvanceScene(double dTimeDelta, int nPipelineOrder)
 			nMeshRendered = RenderSelection(RENDER_MESH_BACK_TO_FRONT);
 		}
 	}
-#ifdef USE_DIRECTX_RENDERER
 	//////////////////////////////////////////////////////////////////////////
 	/// Sprite post-rendering list
 	if (!sceneState.listPRSprite.empty())
 	{
 		RenderSelection(RENDER_SPRITES);
 	}
-
-	//////////////////////////////////////////////////////////////////////////
-	/// animate the local animation of the biped object
-
-	//////////////////////////////////////////////////////////////////////////
-	/// render shadow volumes
-	// RenderShadows();
-#endif
 
 	//////////////////////////////////////////////////////////////////////////
 	/// Draw queued bipeds
@@ -2411,7 +2347,6 @@ HRESULT CSceneObject::AdvanceScene(double dTimeDelta, int nPipelineOrder)
 		CGlobals::GetReport()->SetString("meshes", sMeshReport);
 	}
 
-#ifdef USE_DIRECTX_RENDERER
 	//////////////////////////////////////////////////////////////////////////
 	/// draw ocean if any
 	if (bSimulateOcean) {
@@ -2421,7 +2356,6 @@ HRESULT CSceneObject::AdvanceScene(double dTimeDelta, int nPipelineOrder)
 		if (CGlobals::WillGenReport())
 			CGlobals::GetReport()->SetValue("ocean tile", 0);
 	}
-#endif
 
 	sceneState.m_bEnableTranslucentFaceSorting = false;
 
@@ -2462,8 +2396,6 @@ HRESULT CSceneObject::AdvanceScene(double dTimeDelta, int nPipelineOrder)
 		}
 	}
 
-
-#ifdef USE_DIRECTX_RENDERER
 	//////////////////////////////////////////////////////////////////////////
 	// call the post processor if any. 
 	if (IsPostProcessingEnabled())
@@ -2503,7 +2435,6 @@ HRESULT CSceneObject::AdvanceScene(double dTimeDelta, int nPipelineOrder)
 		SetFogStart(defaultFogStart);
 		SetFogEnd(defaultFogEnd);
 	}
-#endif
 	/////////////////////////////////////////////////////////////////////////
 	// render the physics debug mode
 	if (GetPhysicsDebugDrawMode() != 0)
@@ -2745,16 +2676,15 @@ CSunLight& CSceneObject::GetSunLight()
 	//--------------------------------------------------------------------------
 void CSceneObject::RenderShadows()
 {
-#ifdef USE_DIRECTX_RENDERER
+#ifndef USE_NULL_RENDERER
 	SceneState& sceneState = *(m_sceneState.get());
 	CAutoCamera* pCamera = (CAutoCamera*)GetCurrentCamera();
 	auto pd3dDevice = CGlobals::GetRenderDevice();
+	if (!pd3dDevice)
+		return;
 
 	if (m_bRenderMeshShadow)
-	{// for each light, we cast shadows
-		//LPDIRECT3DSTATEBLOCK9 pStateBlock;
-		//pd3dDevice->CreateStateBlock( D3DSBT_ALL, &pStateBlock );
-		//pStateBlock->Capture();
+	{
 		ShadowVolume* pShadowVolume = NULL;
 		if (m_ShadowVolumes.empty())
 		{
@@ -2763,25 +2693,20 @@ void CSceneObject::RenderShadows()
 		pShadowVolume = m_ShadowVolumes.front();
 		pShadowVolume->Reset();
 
-		GETD3D(CGlobals::GetRenderDevice())->SetVertexShader(NULL);
-		GETD3D(CGlobals::GetRenderDevice())->SetPixelShader(NULL);
-		GETD3D(CGlobals::GetRenderDevice())->SetTexture(0, NULL);
+		pd3dDevice->BindShaderProgram(nullptr);
+		pd3dDevice->SetTexture(0, nullptr);
 
 		/** update the shadow volume global information, which is shared by all shadow volumes in the current frame */
 		{
-			Matrix4 matModelview;
-			Matrix4 matProjection;
-			ParaViewport  viewport;
-			GETD3D(CGlobals::GetRenderDevice())->GetTransform(D3DTS_PROJECTION, matProjection.GetConstPointer());
-			GETD3D(CGlobals::GetRenderDevice())->GetTransform(D3DTS_VIEW, matModelview.GetConstPointer());
-			GETD3D(CGlobals::GetRenderDevice())->GetViewport(reinterpret_cast<D3DVIEWPORT9*> (&viewport));
+			Matrix4 matModelview = CGlobals::GetViewMatrixStack().SafeGetTop();
+			Matrix4 matProjection = CGlobals::GetProjectionMatrixStack().SafeGetTop();
+			ParaViewport viewport = pd3dDevice->GetViewport();
 
 			pShadowVolume->UpdateProjectionInfo(&viewport, &matProjection, &matModelview);
 		}
 
 		/** for each light source that cast shadows */
 		{
-			// currently, we only have one light, i.e. the Sun
 			LightParams vShadowLight;
 			Para3DLight* pLight = GetSunLight().GetD3DLight();
 			vShadowLight.Position = pLight->Position;
@@ -2790,39 +2715,29 @@ void CSceneObject::RenderShadows()
 			vShadowLight.Range = pLight->Range;
 			vShadowLight.bIsDirectional = true;
 
-			/// update shadow volume information for this light
 			pShadowVolume->SetLightParams(&vShadowLight);
 			pShadowVolume->ReCalculateOcclusionPyramid(pCamera);
 
 			// set world transform as identity, since all volume shadows are in world coordinates
-			GETD3D(CGlobals::GetRenderDevice())->SetTransform(D3DTS_WORLD, Matrix4::IDENTITY.GetConstPointer());
+			pd3dDevice->SetTransform(ETransformsStateType::WORLD, Matrix4::IDENTITY.GetConstPointer());
 
 			/// clear stencil buffer
-			GETD3D(CGlobals::GetRenderDevice())->Clear(0L, NULL, D3DCLEAR_STENCIL, 0, 0, 0L);
+			pd3dDevice->SetClearStencil(0);
+			pd3dDevice->Clear(false, false, true);
 
-			/** set up render states */
-			// Disable z-buffer writes (note: z-testing still occurs), and enable the
-			// stencil-buffer
 			pd3dDevice->SetRenderState(ERenderState::ZWRITEENABLE, FALSE);
 			pd3dDevice->SetRenderState(ERenderState::STENCILENABLE, TRUE);
 
-			// Make sure that no pixels get drawn to the frame buffer
 			pd3dDevice->SetRenderState(ERenderState::ALPHABLENDENABLE, TRUE);
 			pd3dDevice->SetRenderState(ERenderState::ALPHATESTENABLE, FALSE);
-			pd3dDevice->SetRenderState(ERenderState::SRCBLEND, D3DBLEND_ZERO);
-			pd3dDevice->SetRenderState(ERenderState::DESTBLEND, D3DBLEND_ONE);
+			pd3dDevice->SetRenderState(ERenderState::SRCBLEND, RSV_BLEND_ZERO);
+			pd3dDevice->SetRenderState(ERenderState::DESTBLEND, RSV_BLEND_ONE);
 
-			// Do not bother with interpolating color
-			//pd3dDevice->SetRenderState( ERenderState::SHADEMODE,     D3DSHADE_FLAT );
-
-			// Set up stencil compare function, reference value, and masks.
-			// Stencil test passes if ((ref & mask) cmpfn (stencil & mask)) is true.
-			pd3dDevice->SetRenderState(ERenderState::STENCILFUNC, D3DCMP_ALWAYS);
-			pd3dDevice->SetRenderState(ERenderState::STENCILREF, 0x1);			// 0x0
+			pd3dDevice->SetRenderState(ERenderState::STENCILFUNC, RSV_CMP_ALWAYS);
+			pd3dDevice->SetRenderState(ERenderState::STENCILREF, 0x1);
 			pd3dDevice->SetRenderState(ERenderState::STENCILMASK, 0xffffffff);
 			pd3dDevice->SetRenderState(ERenderState::STENCILWRITEMASK, 0xffffffff);
 
-			/// Build and render shadow volume for these bipeds
 			if (!sceneState.listShadowCasters.empty())
 			{
 				SceneState::List_PostRenderObject_Type::iterator itCurCP, itEndCP = sceneState.listShadowCasters.end();
@@ -2831,121 +2746,93 @@ void CSceneObject::RenderShadows()
 				{
 					if ((*itCurCP).m_pRenderObject->IsBiped())
 					{
-						// use shadow volume for biped shadow casters
 						CBipedObject* pBiped = (CBipedObject*)((*itCurCP).m_pRenderObject);
-						// clear shadow volume
 						pShadowVolume->Reset();
-						// build shadow volume
 						pBiped->BuildShadowVolume(&sceneState, pShadowVolume, &vShadowLight);
-						// render shadow volume
 						if (pShadowVolume->m_nNumVertices > 0)
 						{
 							if (pShadowVolume->m_shadowMethod == ShadowVolume::SHADOW_Z_PASS)
 							{
-								/// Z-Pass 
-								if ((CGlobals::GetDirectXEngine().m_d3dCaps.StencilCaps & D3DSTENCILCAPS_TWOSIDED) != 0)
+								if (pd3dDevice->GetCaps().supportsTwoSidedStencil)
 								{
-									// With 2-sided stencil, we can avoid rendering twice:
-									pd3dDevice->SetRenderState(ERenderState::STENCILFAIL, D3DSTENCILOP_KEEP);
-									pd3dDevice->SetRenderState(ERenderState::STENCILZFAIL, D3DSTENCILOP_KEEP);
-									pd3dDevice->SetRenderState(ERenderState::STENCILPASS, D3DSTENCILOP_INCR);
+									pd3dDevice->SetRenderState(ERenderState::STENCILFAIL, RSV_STENCILOP_KEEP);
+									pd3dDevice->SetRenderState(ERenderState::STENCILZFAIL, RSV_STENCILOP_KEEP);
+									pd3dDevice->SetRenderState(ERenderState::STENCILPASS, RSV_STENCILOP_INCR);
 
 									pd3dDevice->SetRenderState(ERenderState::TWOSIDEDSTENCILMODE, TRUE);
-									pd3dDevice->SetRenderState(ERenderState::CCW_STENCILFUNC, D3DCMP_ALWAYS);
-									pd3dDevice->SetRenderState(ERenderState::CCW_STENCILZFAIL, D3DSTENCILOP_KEEP);
-									pd3dDevice->SetRenderState(ERenderState::CCW_STENCILFAIL, D3DSTENCILOP_KEEP);
-									pd3dDevice->SetRenderState(ERenderState::CCW_STENCILPASS, D3DSTENCILOP_DECR);
+									pd3dDevice->SetRenderState(ERenderState::CCW_STENCILFUNC, RSV_CMP_ALWAYS);
+									pd3dDevice->SetRenderState(ERenderState::CCW_STENCILZFAIL, RSV_STENCILOP_KEEP);
+									pd3dDevice->SetRenderState(ERenderState::CCW_STENCILFAIL, RSV_STENCILOP_KEEP);
+									pd3dDevice->SetRenderState(ERenderState::CCW_STENCILPASS, RSV_STENCILOP_DECR);
 
 									pd3dDevice->SetRenderState(ERenderState::CULLMODE, RSV_CULL_NONE);
 
-									// Draw both sides of shadow volume in stencil/z only
 									pShadowVolume->Render(&sceneState);
 
 									pd3dDevice->SetRenderState(ERenderState::TWOSIDEDSTENCILMODE, FALSE);
 								}
 								else
 								{
-									// render front faces on z pass
 									pd3dDevice->SetRenderState(ERenderState::CULLMODE, RSV_CULL_CCW);
-									pd3dDevice->SetRenderState(ERenderState::STENCILFAIL, D3DSTENCILOP_KEEP);
-									pd3dDevice->SetRenderState(ERenderState::STENCILZFAIL, D3DSTENCILOP_KEEP);
-									pd3dDevice->SetRenderState(ERenderState::STENCILPASS, D3DSTENCILOP_INCR);
+									pd3dDevice->SetRenderState(ERenderState::STENCILFAIL, RSV_STENCILOP_KEEP);
+									pd3dDevice->SetRenderState(ERenderState::STENCILZFAIL, RSV_STENCILOP_KEEP);
+									pd3dDevice->SetRenderState(ERenderState::STENCILPASS, RSV_STENCILOP_INCR);
 
-									// Draw front-side of shadow volume in stencil/z only
 									pShadowVolume->Render(&sceneState);
 
-									// Now reverse cull order so back sides of shadow volume are written.
 									pd3dDevice->SetRenderState(ERenderState::CULLMODE, RSV_CULL_CW);
-									pd3dDevice->SetRenderState(ERenderState::STENCILPASS, D3DSTENCILOP_DECR);
+									pd3dDevice->SetRenderState(ERenderState::STENCILPASS, RSV_STENCILOP_DECR);
 
-									// Draw back-side of shadow volume in stencil/z only
 									pShadowVolume->Render(&sceneState);
 								}
 							}
 							else if (pShadowVolume->m_shadowMethod == ShadowVolume::SHADOW_Z_FAIL)
 							{
-								/// Z-Fail
-								{
-									// render front faces on z pass
-									pd3dDevice->SetRenderState(ERenderState::CULLMODE, RSV_CULL_CW);
-									pd3dDevice->SetRenderState(ERenderState::STENCILFAIL, D3DSTENCILOP_KEEP);
-									pd3dDevice->SetRenderState(ERenderState::STENCILZFAIL, D3DSTENCILOP_INCR);
-									pd3dDevice->SetRenderState(ERenderState::STENCILPASS, D3DSTENCILOP_KEEP);
+								pd3dDevice->SetRenderState(ERenderState::CULLMODE, RSV_CULL_CW);
+								pd3dDevice->SetRenderState(ERenderState::STENCILFAIL, RSV_STENCILOP_KEEP);
+								pd3dDevice->SetRenderState(ERenderState::STENCILZFAIL, RSV_STENCILOP_INCR);
+								pd3dDevice->SetRenderState(ERenderState::STENCILPASS, RSV_STENCILOP_KEEP);
 
-									// Draw front-side of shadow volume in stencil/z only
-									pShadowVolume->Render(&sceneState);
+								pShadowVolume->Render(&sceneState);
 
-									// Now reverse cull order so back sides of shadow volume are written.
-									pd3dDevice->SetRenderState(ERenderState::CULLMODE, RSV_CULL_CCW);
-									pd3dDevice->SetRenderState(ERenderState::STENCILZFAIL, D3DSTENCILOP_DECR);
+								pd3dDevice->SetRenderState(ERenderState::CULLMODE, RSV_CULL_CCW);
+								pd3dDevice->SetRenderState(ERenderState::STENCILZFAIL, RSV_STENCILOP_DECR);
 
-									// Draw back-side of shadow volume in stencil/z only
-									pShadowVolume->Render(&sceneState);
-								}
+								pShadowVolume->Render(&sceneState);
 							}
 						}
 					}
-
 				}
 			}
-			/** Draw the big square as shadow.
-			*/
-			// Set render states (disable z-buffering, enable stencil, disable fog, and
-			// turn on alpha blending)
+
 			pd3dDevice->SetRenderState(ERenderState::ZENABLE, FALSE);
 			pd3dDevice->SetRenderState(ERenderState::STENCILENABLE, TRUE);
 			pd3dDevice->SetRenderState(ERenderState::FOGENABLE, FALSE);
 			pd3dDevice->SetRenderState(ERenderState::ALPHABLENDENABLE, TRUE);
-			pd3dDevice->SetRenderState(ERenderState::SRCBLEND, D3DBLEND_SRCALPHA);
-			pd3dDevice->SetRenderState(ERenderState::DESTBLEND, D3DBLEND_INVSRCALPHA);
-			//pd3dDevice->SetRenderState( ERenderState::SHADEMODE, D3DSHADE_GOURAUD );
+			pd3dDevice->SetRenderState(ERenderState::SRCBLEND, RSV_BLEND_SRCALPHA);
+			pd3dDevice->SetRenderState(ERenderState::DESTBLEND, RSV_BLEND_INVSRCALPHA);
 			pd3dDevice->SetRenderState(ERenderState::CULLMODE, RSV_CULL_CCW);
 
+			pd3dDevice->SetRenderState(ERenderState::STENCILWRITEMASK, 0x0);
+			pd3dDevice->SetRenderState(ERenderState::STENCILFUNC, RSV_CMP_LESSEQUAL);
+			pd3dDevice->SetRenderState(ERenderState::STENCILREF, 0x1);
+			pd3dDevice->SetRenderState(ERenderState::STENCILPASS, RSV_STENCILOP_KEEP);
+			pd3dDevice->SetRenderState(ERenderState::STENCILFAIL, RSV_STENCILOP_KEEP);
+			pd3dDevice->SetRenderState(ERenderState::STENCILZFAIL, RSV_STENCILOP_KEEP);
 
-			// Only write where stencil val >= 1 (count indicates # of shadows that
-			// overlap that pixel)
-			pd3dDevice->SetRenderState(ERenderState::STENCILWRITEMASK, 0x0);// do not write to stencil buffer
-			pd3dDevice->SetRenderState(ERenderState::STENCILFUNC, D3DCMP_LESSEQUAL); // D3DCMP_EQUAL
-			pd3dDevice->SetRenderState(ERenderState::STENCILREF, 0x1);	// 0x0
-			pd3dDevice->SetRenderState(ERenderState::STENCILPASS, D3DSTENCILOP_KEEP);
-			pd3dDevice->SetRenderState(ERenderState::STENCILFAIL, D3DSTENCILOP_KEEP);
-			pd3dDevice->SetRenderState(ERenderState::STENCILZFAIL, D3DSTENCILOP_KEEP);
+			if (sceneState.pAssetManager && sceneState.pAssetManager->GetShadowSquareVB())
+			{
+				pd3dDevice->SetFVF(SHADOWVERTEX::FVF);
+				pd3dDevice->SetStreamSource(0, sceneState.pAssetManager->GetShadowSquareVB(), 0, sizeof(SHADOWVERTEX));
+				pd3dDevice->DrawPrimitive(EPrimitiveType::TRIANGLESTRIP, 0, 2);
+			}
 
-			// Draw a big, gray square
-			GETD3D(CGlobals::GetRenderDevice())->SetFVF(SHADOWVERTEX::FVF);
-			GETD3D(CGlobals::GetRenderDevice())->SetMaterial((D3DMATERIAL9*)&(sceneState.GetGlobalMaterial()));
-			GETD3D(CGlobals::GetRenderDevice())->SetStreamSource(0, sceneState.pAssetManager->GetShadowSquareVB(), 0, sizeof(SHADOWVERTEX));
-			CGlobals::GetRenderDevice()->DrawPrimitive(EPrimitiveType::TRIANGLESTRIP, 0, 2);
-
-			// Restore render states
 			pd3dDevice->SetRenderState(ERenderState::ZENABLE, TRUE);
 			pd3dDevice->SetRenderState(ERenderState::STENCILENABLE, FALSE);
 			pd3dDevice->SetRenderState(ERenderState::FOGENABLE, TRUE);
 			pd3dDevice->SetRenderState(ERenderState::ALPHABLENDENABLE, FALSE);
-		}//for each light 
-		//pStateBlock->Apply();
-		//SAFE_RELEASE(pStateBlock);
-	}//if(m_bRenderMeshShadow)
+		}
+	}
 #endif
 }
 
@@ -3236,19 +3123,14 @@ int CSceneObject::RenderCharacters(SceneState& sceneState, SceneState::List_Post
 	if (!listPRBiped.empty())
 	{
 		CBaseObject* pPlayer = GetCurrentPlayer();
-#ifdef USE_DIRECTX_RENDERER
 		//render drop shadow
-		if (!IsShadowMapEnabled() && !m_bRenderMeshShadow && m_renderDropShadow && !sceneState.IsShadowPass())
+		if (m_dropShadowRenderer && !IsShadowMapEnabled() && !m_bRenderMeshShadow && m_renderDropShadow && !sceneState.IsShadowPass())
 		{
 			m_dropShadowRenderer->BeginFrame();
 
 			SceneState::List_PostRenderObject_Type::iterator itCurCP, itEndCP = listPRBiped.end();
 			for (itCurCP = listPRBiped.begin(); itCurCP != itEndCP; ++itCurCP)
 			{
-				//Add drop shadow for each character instance,however,biped objects may contain special effect
-				//which don't cast shadow. IsShadowCaster is true by default for all biped, so we use GetMaxSpeed()
-				//as a reference for a temporary solution. If biped doesn't have "walk" animation,then we consider it
-				//as special effect.
 				if (itCurCP->m_pRenderObject != 0 && !((*itCurCP).IsOccluded())
 					&& sceneState.CheckAddRenderCount((*itCurCP).m_pRenderObject->GetRenderImportance())
 					&& itCurCP->m_pRenderObject->IsShadowCaster())
@@ -3281,7 +3163,6 @@ int CSceneObject::RenderCharacters(SceneState& sceneState, SceneState::List_Post
 			}
 			m_dropShadowRenderer->Render();
 		}
-#endif
 		// run the occlusion test pass, if there are more than 8 small objects to render. 
 		// PerformOcclusionTest(sceneState.listPRBiped, sceneState, 8);
 		int nStartCharCount = 0;
@@ -3332,7 +3213,6 @@ int CSceneObject::RenderSelection(DWORD dwSelection, double dTimeDelta)
 			++nObjCount;
 		}
 	}
-#ifdef USE_DIRECTX_RENDERER
 	if (CHECK_SELECTION(RENDER_GEN_SM_TERRAIN) && m_globalTerrain->TerrainRenderingEnabled())
 	{
 		if (m_globalTerrain->IsTerrainEngineEnabled() && m_globalTerrain->TerrainRenderingEnabled())
@@ -3349,7 +3229,6 @@ int CSceneObject::RenderSelection(DWORD dwSelection, double dTimeDelta)
 			}
 		}
 	}
-#endif 
 	if (CHECK_SELECTION(RENDER_MESH_FRONT_TO_BACK))
 	{
 		/// draw solid object rendering list from front to back.
@@ -3439,18 +3318,18 @@ int CSceneObject::RenderSelection(DWORD dwSelection, double dTimeDelta)
 			}
 		}
 	}
-#ifdef USE_DIRECTX_RENDERER
+#ifndef USE_NULL_RENDERER
 	if (CHECK_SELECTION(RENDER_SPRITES))
 	{
 		/// -- Sprite post-rendering list
 		auto pd3dDevice = CGlobals::GetRenderDevice();
-		if (!sceneState.listPRSprite.empty())
+		if (pd3dDevice && !sceneState.listPRSprite.empty())
 		{
-			GETD3D(CGlobals::GetRenderDevice())->SetVertexShader(NULL);			// always set this
-			GETD3D(CGlobals::GetRenderDevice())->SetFVF(SPRITEVERTEX::FVF);
+			pd3dDevice->BindShaderProgram(nullptr);
+			pd3dDevice->SetFVF(SPRITEVERTEX::FVF);
 
 			AssetEntity* pLastAsset = NULL;
-			CSpriteObject* pObj;
+			CSpriteObject* pObj = NULL;
 
 			SceneState::List_CSpriteObjectPtr_Type::iterator itCurCP, itEndCP = sceneState.listPRSprite.end();
 			for (itCurCP = sceneState.listPRSprite.begin(); itCurCP != itEndCP; ++itCurCP)
@@ -3462,26 +3341,27 @@ int CSceneObject::RenderSelection(DWORD dwSelection, double dTimeDelta)
 					pLastAsset = pObj->GetPrimaryAsset();
 
 					/* set vertex buffer, texture once and for all object in the bunch*/
-					GETD3D(CGlobals::GetRenderDevice())->SetStreamSource(0, pObj->m_pSprite->GetVB(), 0, sizeof(SPRITEVERTEX));
+					if (pObj->m_pSprite)
+						pd3dDevice->SetStreamSource(0, pObj->m_pSprite->GetVB(), 0, sizeof(SPRITEVERTEX));
 					if (pObj->m_ppTexture)
-						GETD3D(CGlobals::GetRenderDevice())->SetTexture(0, pObj->m_ppTexture->GetTexture());
+						pd3dDevice->SetTexture(0, pObj->m_ppTexture->GetTexture());
 					pObj->SetRenderState(pd3dDevice);
 				}
 
 				pObj->Draw(&sceneState);
 				++nObjCount;
 			}
-			pObj->RestoreRenderState(pd3dDevice); /* use a universal restore*/
-
+			if (pObj)
+				pObj->RestoreRenderState(pd3dDevice); /* use a universal restore*/
 		}
 	}
+#endif
 	if (CHECK_SELECTION(RENDER_PORTAL_SYSTEM))
 	{
 		// Turn off effect: TODO: this should be removed
 		if (!sceneState.listZones.empty() || !sceneState.listPortals.empty())
 		{
 			CGlobals::GetEffectManager()->BeginEffect(TECH_NONE, &(sceneState.m_pCurrentEffect));
-			auto pd3dDevice = CGlobals::GetRenderDevice();
 
 			// draw zones
 			{
@@ -3506,7 +3386,6 @@ int CSceneObject::RenderSelection(DWORD dwSelection, double dTimeDelta)
 			}
 		}
 	}
-#endif
 	if (CHECK_SELECTION(RENDER_MISSILES))
 	{
 		/// -- Draw all characters including the player itself.
@@ -3780,7 +3659,6 @@ void CSceneObject::SetCurrentPlayer(CBipedObject* pPlayer)
 }
 void CSceneObject::SetShadowMapTexelSizeLevel(int nLevel)
 {
-#if defined(USE_DIRECTX_RENDERER)||defined(USE_OPENGL_RENDERER)
 	if (CGlobals::GetRenderDevice())
 	{
 		CShadowMap* pShadowMap = CGlobals::GetEffectManager()->GetShadowMap();
@@ -3793,25 +3671,22 @@ void CSceneObject::SetShadowMapTexelSizeLevel(int nLevel)
 	{
 		CShadowMap::SetDefaultShadowMapTexelSizeLevel(nLevel);
 	}
-#endif
 }
 
 void CSceneObject::SetShadowMapTexelSize(int nWidth, int nHeight)
 {
-#if defined(USE_DIRECTX_RENDERER)||defined(USE_OPENGL_RENDERER)
 	CShadowMap* pShadowMap = CGlobals::GetEffectManager()->GetShadowMap();
 	if (pShadowMap != 0)
 	{
 		pShadowMap->SetShadowMapTexelSize(nWidth, nHeight);
 	}
-#endif
 }
 
 /// call this function turn on/off shadow rendering once for all
 void CSceneObject::SetShadow(bool bRenderShadow)
 {
 	m_bRenderMeshShadow = bRenderShadow;
-#if defined(USE_DIRECTX_RENDERER)||defined(USE_OPENGL_RENDERER)
+#ifndef USE_NULL_RENDERER
 	if (bRenderShadow)
 	{
 		// never allow shadow rendering, if the shader version is below 20. 
@@ -3840,7 +3715,7 @@ bool CSceneObject::IsShadowMapEnabled()
 }
 void CSceneObject::RenderShadowMap()
 {
-#if defined(USE_DIRECTX_RENDERER)||defined(USE_OPENGL_RENDERER)
+#ifndef USE_NULL_RENDERER
 	// render a blank image even if sceneState.listShadowCasters.empty() 
 
 	SceneState& sceneState = *(m_sceneState.get());
@@ -3893,161 +3768,22 @@ void CSceneObject::SetPersistent(bool bPersistent)
 
 int CSceneObject::RemoveCharacterFromDB(IGameObject* pObj)
 {
-#ifdef USE_DIRECTX_RENDERER
-	CNpcDatabase* pDB = CGlobals::GetDataProviderManager()->GetNpcDB();
-	if (pObj != NULL && pObj->GetType() == CBaseObject::RPGBiped)
-	{
-		// only save persistent RPG character. 
-		CRpgCharacter* pChar = (CRpgCharacter*)(pObj);
-
-		if (!pChar->IsPersistent() && pChar->GetCharacterID() > 0)
-		{
-			if (pDB->DeleteNPCByID(pChar->GetCharacterID()))
-			{
-				return S_OK;
-			}
-			else
-			{
-				OUTPUT_LOG("error removing character from db\r\n");
-			}
-		}
-	}
-#endif
 	return E_FAIL;
 }
 
 int CSceneObject::SaveCharacterToDB(IGameObject* pObj)
 {
-#ifdef USE_DIRECTX_RENDERER
-	CNpcDatabase* pDB = CGlobals::GetDataProviderManager()->GetNpcDB();
-	if (pObj != NULL && pObj->GetType() == CBaseObject::RPGBiped)
-	{
-		// only save persistent RPG character. 
-		CRpgCharacter* pChar = (CRpgCharacter*)(pObj);
-		if (/*pChar->IsModified() &&*/ pChar->IsPersistent())
-		{
-			CNpcDbItem npc;
-			if (pChar->ToNpcDbItem(npc))
-			{
-				if (npc.m_nID > 0)
-				{
-					// update
-					if (pDB->UpdateNPC(npc, CNpcDbItem::ALL_ATTRIBUTES))
-					{
-
-					}
-					else
-					{
-						OUTPUT_LOG("error saving character\r\n");
-					}
-				}
-				else
-				{
-					// insert
-					if (pDB->InsertNPC(npc))
-					{
-						pChar->SetCharacterID(npc.m_nID);
-					}
-					else
-					{
-						OUTPUT_LOG("error saving character\r\n");
-					}
-				}
-			}
-			pChar->SetModified(false);
-			return S_OK;
-		}
-	}
-#endif
 	return E_FAIL;
 }
 
 int CSceneObject::SaveAllCharacters()
 {
-#ifdef USE_DIRECTX_RENDERER
-	CNpcDatabase* pDB = CGlobals::GetDataProviderManager()->GetNpcDB();
-	// use transactions to speed up. 
-	if (pDB->GetDBEntity())
-		pDB->GetDBEntity()->ExecuteSqlScript("BEGIN");
-
-	int nCount = 0;
-	int nErrorCount = 0;
-	for (auto& pObject : m_pTileRoot->m_listSolidObj)
-	{
-		if (pObject->GetType() == CBaseObject::RPGBiped)
-		{
-			// only save persistent RPG character. 
-			CRpgCharacter* pChar = (CRpgCharacter*)pObject;
-			if (pChar->IsPersistent())
-			{
-				if (SaveCharacterToDB(pChar->QueryIGameObject()) == S_OK)
-				{
-					nCount++;
-				}
-			}
-		}
-	}
-	if (pDB->GetDBEntity())
-		pDB->GetDBEntity()->ExecuteSqlScript("END");
-	return nCount;
-#else
 	return 0;
-#endif
 }
 
 int CSceneObject::SaveLocalCharacters()
 {
-	if (IsModified() == false)
-		return 0;
-#ifdef USE_DIRECTX_RENDERER
-	CNpcDatabase* pDB = CGlobals::GetDataProviderManager()->GetNpcDB();
-	int nCount = 0;
-	int nErrorCount = 0;
-	for (auto& pObject : m_pTileRoot->m_listSolidObj)
-	{
-		if (pObject->GetType() == CBaseObject::RPGBiped)
-		{
-			// only save persistent RPG character. 
-			CRpgCharacter* pChar = (CRpgCharacter*)pObject;
-			if (pChar->IsModified() && pChar->IsPersistent())
-			{
-				CNpcDbItem npc;
-				if (pChar->ToNpcDbItem(npc))
-				{
-					if (npc.m_nID > 0)
-					{
-						// update
-						if (pDB->UpdateNPC(npc, CNpcDbItem::ALL_ATTRIBUTES))
-						{
-							++nCount;
-						}
-						else
-						{
-							++nErrorCount;
-						}
-					}
-					else
-					{
-						// insert
-						if (pDB->InsertNPC(npc))
-						{
-							++nCount;
-							pChar->SetCharacterID(npc.m_nID);
-						}
-						else
-						{
-							++nErrorCount;
-						}
-					}
-				}
-				pChar->SetModified(false);
-			}
-		}
-	}
-	return nCount;
-#else
 	return 0;
-#endif
 }
 
 void CSceneObject::SetModified(bool bModified)
@@ -4063,130 +3799,31 @@ bool CSceneObject::IsModified()
 
 bool CSceneObject::DB_LoadNPCByID(int nNPCID, CRpgCharacter** pOut, bool bReload)
 {
-#ifdef USE_DIRECTX_RENDERER
-	CNpcDatabase* pDB = CGlobals::GetDataProviderManager()->GetNpcDB();
-	CNpcDbItem npc;
-	if (pDB->SelectNPCByID(nNPCID, npc))
-	{
-		return LoadNPCByNPCDbItem(npc, pOut, bReload);
-	}
-#endif
 	return false;
 }
 bool CSceneObject::DB_LoadNPCByName(const string& sName, CRpgCharacter** pOut, bool bReload)
 {
-#ifdef USE_DIRECTX_RENDERER
-	CNpcDatabase* pDB = CGlobals::GetDataProviderManager()->GetNpcDB();
-	CNpcDbItem npc;
-	if (pDB->SelectNPCByName(sName, npc))
-	{
-		return LoadNPCByNPCDbItem(npc, pOut, bReload);
-	}
-#endif
 	return false;
 }
 int CSceneObject::DB_LoadNPCsByRegion(const Vector3& vMin, const Vector3& vMax, bool bReload)
 {
-	int nCount = 0;
-#ifdef USE_DIRECTX_RENDERER
-	CNpcDatabase* pDB = CGlobals::GetDataProviderManager()->GetNpcDB();
-	NPCDBItemList listNpc;
-	if (pDB->SelectNPCListByRegion(&listNpc, vMin, vMax))
-	{
-		NPCDBItemList::iterator itCur, itEnd = listNpc.end();
-		for (itCur = listNpc.begin(); itCur != itEnd; ++itCur)
-		{
-			CRpgCharacter* pChar = NULL;
-			if (LoadNPCByNPCDbItem(*itCur, &pChar, bReload))
-			{
-				++nCount;
-			}
-		}
-
-	}
-#endif
-	return nCount;
+	return 0;
 }
 
 
 bool CSceneObject::LoadNPCByNPCDbItem(CNpcDbItem& npc, CRpgCharacter** pOut, bool bReload)
 {
-#ifdef USE_DIRECTX_RENDERER
-	CRpgCharacter* pObj = NULL;
-	CBaseObject* OldObj = NULL;
-	if ((OldObj = GetObject(npc.m_sName, npc.m_vPos, npc.m_bIsGlobal)) == NULL)
-	{
-		if (CGlobals::WillGenReport())
-		{
-			/// check for invalid objects
-			AssetEntity* pMAE = NULL;
-			if (!npc.m_sAssetName.empty())
-			{
-				pMAE = CGlobals::GetAssetManager()->LoadParaX("", npc.m_sAssetName);
-				if (pMAE)
-				{
-					if (!pMAE->IsValid())
-						pMAE = NULL;
-				}
-			}
-			if (pMAE == NULL)
-			{
-				OUTPUT_LOG("error: model asset not found for %s. character not created.\r\n", npc.m_sName.c_str());
-				return false;
-			}
-		}
-
-		pObj = new CRpgCharacter();
-		if (pObj == NULL)
-			return false;
-	}
-	else
-	{
-		if (bReload)
-		{
-			if (OldObj->GetType() == CBaseObject::RPGBiped)
-			{
-				pObj = (CRpgCharacter*)OldObj;
-				// TODO: reset base model if they are different.
-				// pObj->ResetBaseModel(pMAE);
-				DetachObject(pObj);
-			}
-			else
-			{
-				OUTPUT_LOG("warning: biped type does not match, NPC %s can not be reloaded. \r\n", npc.m_sName.c_str());
-				return false;
-			}
-		}
-		else
-			return false;
-	}
-
-	pObj->UpdateFromNPCDbItem(npc, CNpcDbItem::ALL_ATTRIBUTES);
-
-	// make it unmodified, since it is just loaded
-	pObj->SetModified(false);
-	// make it persistent, since it is loaded from a persistent database.
-	pObj->SetPersistent(true);
-
-	AttachObject(pObj);
-#endif
-	return true;
+	return false;
 }
 
 bool CSceneObject::IsUsingFullScreenGlow()
 {
-#ifdef USE_DIRECTX_RENDERER
 	return CGlobals::GetEffectManager()->IsUsingFullScreenGlow();
-#else
-	return false;
-#endif
 }
 
 void CSceneObject::EnableFullScreenGlow(bool bEnable)
 {
-#ifdef USE_DIRECTX_RENDERER
 	CGlobals::GetEffectManager()->EnableFullScreenGlow(bEnable);
-#endif 
 }
 
 void CSceneObject::SetFullscreenGlowIntensity(float fGlowIntensity)
@@ -4209,23 +3846,16 @@ float CSceneObject::GetFullscreenGlowBlendingFactor()
 
 void CSceneObject::SetGlowness(const Vector4& Glowness)
 {
-#ifdef USE_DIRECTX_RENDERER
 	CGlobals::GetEffectManager()->SetGlowness(Glowness);
-#endif
 }
 
 const Vector4& CSceneObject::GetGlowness()
 {
-#ifdef USE_DIRECTX_RENDERER
 	return CGlobals::GetEffectManager()->GetGlowness();
-#else
-	return Vector4::ZERO;
-#endif
 }
 
 void CSceneObject::RenderFullScreenGlowEffect()
 {
-#ifdef USE_DIRECTX_RENDERER
 	// render a blank image even if sceneState.listShadowCasters.empty() 
 	if (!IsUsingFullScreenGlow())
 		return;
@@ -4237,31 +3867,23 @@ void CSceneObject::RenderFullScreenGlowEffect()
 		else
 			pGlowEffect->Render(m_fFullscreenGlowIntensity, m_fFullscreenGlowBlendingFactor);
 	}
-#endif
 }
 
 bool CSceneObject::IsUsingScreenWaveEffect()
 {
-#ifdef USE_DIRECTX_RENDERER
 	return CGlobals::GetEffectManager()->IsUsingScreenWaveEffect();
-#else
-	return 0;
-#endif
 }
 
 void CSceneObject::EnableScreenWaveEffect(bool value)
 {
-#ifdef USE_DIRECTX_RENDERER
 	COceanManager* pOcean = CGlobals::GetOceanManager();
 	if (pOcean != NULL)
 		pOcean->EnableScreenSpaceFog(!value);
-	return CGlobals::GetEffectManager()->EnableScreenWaveEffect(value);
-#endif
+	CGlobals::GetEffectManager()->EnableScreenWaveEffect(value);
 }
 
 void CSceneObject::RenderScreenWaveEffect()
 {
-#ifdef USE_DIRECTX_RENDERER
 	if (!IsUsingScreenWaveEffect())
 		return;
 
@@ -4270,12 +3892,10 @@ void CSceneObject::RenderScreenWaveEffect()
 	{
 		pWaveEffect->Render();
 	}
-#endif
 }
 
 void CSceneObject::ApplyWaterFogParam()
 {
-#ifdef USE_DIRECTX_RENDERER
 	LinearColor waterAmb(0, 0.749f, 0.902f, 0);
 	GetSunLight().SetSunAmbient(waterAmb);
 
@@ -4284,7 +3904,6 @@ void CSceneObject::ApplyWaterFogParam()
 	SetFogStart(60);
 	SetFogEnd(210);
 	SetFogDensity(0.65f);
-#endif
 }
 
 void CSceneObject::RestoreSceneFogParam()
@@ -4297,45 +3916,56 @@ void CSceneObject::RestoreSceneFogParam()
 
 bool CSceneObject::ScreenShotReflection()
 {
-#ifdef USE_DIRECTX_RENDERER
-	// render the ocean's X flipped reflection map.
+	auto* pRenderDevice = CGlobals::GetRenderDevice();
+	IRHITexture* pReflTex = CGlobals::GetOceanManager() ? CGlobals::GetOceanManager()->GetReflectionTexture() : nullptr;
+	if (!pRenderDevice || !pReflTex)
+		return false;
+
+	uint32_t w = pReflTex->GetWidth();
+	uint32_t h = pReflTex->GetHeight();
+	if (w == 0 || h == 0)
+		return false;
+
 	static unsigned short i = 0;
 	string filename = "Screen Shots\\reflectionmap0.jpg";
-	filename[filename.size() - 5] = '0' + (char)(++i);
-	D3DXSaveTextureToFile(filename.c_str(), D3DXIFF_JPG, CGlobals::GetOceanManager()->m_waveReflectionTexture, NULL);
-#endif
-	return true;
+	filename[filename.size() - 5] = '0' + (char)((++i) % 10);
+	if (!CParaFile::CreateDirectory(filename.c_str()))
+		return false;
+
+	std::vector<uint32_t> pixels(static_cast<size_t>(w) * static_cast<size_t>(h), 0u);
+	if (!pRenderDevice->ReadTexturePixels(pReflTex, pixels.data()))
+		return false;
+
+	ParaImage img;
+	if (!img.initWithRawData(reinterpret_cast<const unsigned char*>(pixels.data()), pixels.size() * sizeof(uint32_t), static_cast<int>(w), static_cast<int>(h), 32))
+		return false;
+	return img.saveToFile(filename);
 }
 
 bool CSceneObject::ScreenShotShadowMap()
 {
-#ifdef USE_DIRECTX_RENDERER
 	CShadowMap* pShadowMap = CGlobals::GetEffectManager()->GetShadowMap();
 	if (pShadowMap != 0)
 	{
 		static unsigned short i = 0;
 		string filename = "Screen Shots\\shadowmap0.jpg";
-		filename[filename.size() - 5] = '0' + (char)(++i);
+		filename[filename.size() - 5] = '0' + (char)((++i) % 10);
 		return pShadowMap->SaveShadowMapToFile(filename);
 	}
-#endif
 	return false;
 }
 
 bool CSceneObject::ScreenShotGlowMap()
 {
-#ifdef USE_DIRECTX_RENDERER
-	// out glow textures
 	CGlowEffect* pGlowEffect = CGlobals::GetEffectManager()->GetGlowEffect();
 	if (pGlowEffect != 0)
 	{
 		static unsigned short i = 0;
 		string filename = "Screen Shots\\glowmap0.jpg";
-		filename[filename.size() - 5] = '0' + (char)(++i);
+		filename[filename.size() - 5] = '0' + (char)((++i) % 10);
 		pGlowEffect->SaveGlowTexturesToFile(filename);
 		return true;
 	}
-#endif
 	return false;
 }
 

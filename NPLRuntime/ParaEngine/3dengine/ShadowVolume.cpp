@@ -11,10 +11,8 @@
 #include "BaseObject.h"
 #include "ShadowVolume.h"
 #include "SceneState.h"
+#include "EffectManager.h"
 #include "memdebug.h"
-#if USE_DIRECTX_RENDERER
-#include "RenderDeviceD3D9.h"
-#endif
 using namespace ParaEngine;
 
 
@@ -63,13 +61,31 @@ void ShadowVolume::CommitBlock(int nSize)
 
 HRESULT ShadowVolume::Render( SceneState * sceneState )
 {
-#ifdef USE_DIRECTX_RENDERER
-	GETD3D(CGlobals::GetRenderDevice())->SetFVF( D3DFVF_XYZ );
-	
-    return CGlobals::GetRenderDevice()->DrawPrimitiveUP(EPrimitiveType::TRIANGLELIST, m_nNumVertices/3, m_pVertices, sizeof(Vector3) );
-#else
-	return E_FAIL;
-#endif
+	auto* pDev = CGlobals::GetRenderDevice();
+	if (!pDev || m_nNumVertices <= 0 || !m_pVertices)
+		return E_FAIL;
+
+	CEffectFile* pEffect = nullptr;
+	CGlobals::GetEffectManager()->BeginEffect(TECH_OCCLUSION_TEST, &pEffect);
+	if (pEffect && pEffect->begin())
+	{
+		bool ok = false;
+		if (pEffect->BeginPass(0))
+		{
+			CGlobals::GetWorldMatrixStack().push(*CGlobals::GetIdentityMatrix());
+			pEffect->applyWorldMatrices();
+			CGlobals::GetWorldMatrixStack().pop();
+			pEffect->CommitChanges();
+			pDev->SetFVF(D3DFVF_XYZ);
+			ok = pDev->DrawPrimitiveUP(EPrimitiveType::TRIANGLELIST, m_nNumVertices / 3, m_pVertices, sizeof(Vector3));
+			pEffect->EndPass();
+		}
+		pEffect->end();
+		return ok ? S_OK : E_FAIL;
+	}
+
+	pDev->SetFVF(D3DFVF_XYZ);
+	return pDev->DrawPrimitiveUP(EPrimitiveType::TRIANGLELIST, m_nNumVertices / 3, m_pVertices, sizeof(Vector3)) ? S_OK : E_FAIL;
 }
 /// render to stencil with Z Pass
 HRESULT ShadowVolume::RenderZPassShadow( SceneState * sceneState )

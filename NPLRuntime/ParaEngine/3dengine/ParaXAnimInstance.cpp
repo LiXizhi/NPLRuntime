@@ -799,8 +799,8 @@ void CParaXAnimInstance::AdvanceTime(double dTimeDelta)
 
 void CParaXAnimInstance::BuildShadowVolume(SceneState* sceneState, ShadowVolume* pShadowVolume, LightParams* pLight, Matrix4* mxWorld)
 {
-#ifdef USE_DIRECTX_RENDERER
-	LPDIRECT3DDEVICE9  pd3dDevice = CGlobals::GetRenderDevice();
+	if (!m_pCharModel || !mxWorld)
+		return;
 
 	// scale the model
 	Matrix4 mat, matScale;
@@ -814,7 +814,6 @@ void CParaXAnimInstance::BuildShadowVolume(SceneState* sceneState, ShadowVolume*
 
 	// pop matrix
 	CGlobals::GetWorldMatrixStack().pop();
-#endif
 }
 
 void CParaXAnimInstance::Animate(double dTimeDelta, int nRenderNumber/*=0 */)

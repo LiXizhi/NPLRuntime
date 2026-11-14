@@ -1394,11 +1394,10 @@ void TerrainLattice::SwitchLodStyle(bool useGeoMipmap)
 {
 	if(m_useGeoMipmap == useGeoMipmap)
 		return;
-#ifdef USE_OPENGL_RENDERER
+#ifdef USE_NULL_RENDERER
 	if (useGeoMipmap)
 	{
 		m_useGeoMipmap = false;
-		OUTPUT_LOG("warning: GeoMipmap rendering is disabled for opengl\n");
 		return;
 	}
 #endif

@@ -234,10 +234,9 @@ HRESULT XRefAnimInstance::Draw( SceneState * sceneState )
 	CAnimInstanceBase* pAI =  GetAnimInstance();
 	if(pAI)
 	{
-#ifdef USE_DIRECTX_RENDERER
 		// use the lighting of the parent.
 		CGlobals::GetEffectManager()->applyObjectLocalLighting(m_pParent);
-#endif
+
 		// draw the model
 		Matrix4 mxWorld;
 		pAI->Draw(sceneState, GetRenderMatrix(mxWorld, NULL, sceneState->GetRenderFrameCount()));
@@ -448,24 +447,7 @@ HRESULT ParaEngine::XRefMeshObject::DrawInner( SceneState * sceneState, const Ma
 	/// set whether to use the material(texture) in the mesh file
 	pMesh->UseMeshMaterials(true);
 	CEffectFile* pEffectFile = CGlobals::GetEffectManager()->GetCurrentEffectFile();
-	if ( pEffectFile == 0)
-	{
-#ifdef USE_DIRECTX_RENDERER
-		//////////////////////////////////////////////////////////////////////////
-		// fixed programming pipeline
-		CGlobals::GetWorldMatrixStack().push(mxWorld);
-
-		// render by default as non-transparent.
-		pRenderDevice->SetRenderState(ERenderState::ALPHABLENDENABLE, FALSE);
-		CGlobals::GetEffectManager()->EnableZWrite(true);
-		CGlobals::GetEffectManager()->SetCullingMode(true);
-
-		// Draw with mesh materials
-		pMesh->Render(sceneState, pRenderDevice, true, true,sceneState->fAlphaFactor);
-		CGlobals::GetWorldMatrixStack().pop();
-#endif
-	}
-	else
+	if (pEffectFile != 0)
 	{
 		// apply per mesh asset effect parameters
 		if(((MeshEntity*)m_pModelEntity.get())->GetParamBlock())

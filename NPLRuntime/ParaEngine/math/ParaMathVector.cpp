@@ -81,3 +81,28 @@ bool ParaEngine::ParaComputeBoundingBox(const Vector3 * pfirstposition, uint32 n
 
 	return true;
 }
+
+bool ParaEngine::ParaComputeBoundingSphere(const Vector3* pfirstposition, uint32 numvertices, uint32 dwstride, Vector3* pcenter, float* pradius)
+{
+	if (!pfirstposition || numvertices == 0 || !pcenter || !pradius)
+		return false;
+
+	Vector3 vmin, vmax;
+	if (!ParaComputeBoundingBox(pfirstposition, numvertices, dwstride, &vmin, &vmax))
+		return false;
+
+	const Vector3 center = (vmin + vmax) * 0.5f;
+	float maxDistSq = 0.0f;
+	for (uint32 i = 0; i < numvertices; ++i)
+	{
+		const Vector3& vec = *((const Vector3*)((const char*)pfirstposition + dwstride * i));
+		const Vector3 diff = vec - center;
+		const float distSq = diff.x * diff.x + diff.y * diff.y + diff.z * diff.z;
+		if (distSq > maxDistSq)
+			maxDistSq = distSq;
+	}
+
+	*pcenter = center;
+	*pradius = sqrtf(maxDistSq);
+	return true;
+}

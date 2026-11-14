@@ -7,18 +7,12 @@
 // Desc: I have referred to QT framework's qpaintengine.h, but greatly simplified. 
 //-----------------------------------------------------------------------------
 #include "ParaEngine.h"
-#ifdef USE_DIRECTX_RENDERER
-#include "DirectXEngine.h"
-#endif
 #include "Painter.h"
 #include "qvectorpath.h"
 #include "ParaWorldAsset.h"
 #include "ViewportManager.h"
 #include "PaintEngineGPUState.h"
 #include "PaintEngineGPU.h"
-#if USE_DIRECTX_RENDERER
-#include "RenderDeviceD3D9.h"
-#endif
 
 using namespace ParaEngine;
 using namespace boost;
@@ -29,9 +23,6 @@ bool ParaEngine::CPaintEngineGPU::s_IsScissorRectSupported = false;
 ParaEngine::CPaintEngineGPU::CPaintEngineGPU()
 	:m_bInitialized(false), m_bUse3DTransform(false), m_matrixDirty(false), m_worldViewProjectMatDirty(true), m_worldViewMatDirty(true), m_compositionModeDirty(false)
 {
-#ifdef USE_DIRECTX_RENDERER
-	m_pStateBlock = NULL;
-#endif
 	m_pSprite = CSpriteRenderer::Create();
 	auto pAssetManaget = CGlobals::GetAssetManager();
 	pAssetManaget->OnCleanup.connect(bind(&CPaintEngineGPU::Cleanup, this));
@@ -89,34 +80,21 @@ void ParaEngine::CPaintEngineGPU::Cleanup()
 
 void ParaEngine::CPaintEngineGPU::InitDeviceObjects()
 {
-#ifdef USE_DIRECTX_RENDERER
-	//initialize the device capabilities
-	CPaintEngineGPU::s_IsScissorRectSupported = (CGlobals::GetDirectXEngine().m_d3dCaps.RasterCaps&D3DPRASTERCAPS_SCISSORTEST) != 0;
-	CPaintEngineGPU::s_IsStencilSupported = (CGlobals::GetDirectXEngine().m_d3dCaps.StencilCaps&(D3DSTENCILCAPS_KEEP | D3DSTENCILCAPS_ZERO | D3DSTENCILCAPS_REPLACE)) == (D3DSTENCILCAPS_KEEP | D3DSTENCILCAPS_ZERO | D3DSTENCILCAPS_REPLACE);
-#elif defined(USE_OPENGL_RENDERER)
-	CPaintEngineGPU::s_IsScissorRectSupported = true;
-	CPaintEngineGPU::s_IsStencilSupported = GETGL(CGlobals::GetRenderDevice())->GetStencilBits() > 0;
-#endif
+	auto* pDev = CGlobals::GetRenderDevice();
+	CPaintEngineGPU::s_IsScissorRectSupported = (pDev != nullptr);
+	CPaintEngineGPU::s_IsStencilSupported = pDev && pDev->GetStencilBits() > 0;
 	m_pSprite->InitDeviceObjects();
 }
 
 void ParaEngine::CPaintEngineGPU::RestoreDeviceObjects()
 {
 	m_pSprite->RestoreDeviceObjects();
-	// create new state block
-#ifdef USE_DIRECTX_RENDERER
-	GETD3D(CGlobals::GetRenderDevice())->CreateStateBlock(D3DSBT_ALL, &m_pStateBlock);
-#endif
 	m_bInitialized = true;
 }
 
 void ParaEngine::CPaintEngineGPU::InvalidateDeviceObjects()
 {
 	m_pSprite->InvalidateDeviceObjects();
-#ifdef USE_DIRECTX_RENDERER
-	SAFE_RELEASE(m_pStateBlock);
-#endif
-
 	m_bInitialized = false;
 }
 
@@ -129,57 +107,31 @@ bool ParaEngine::CPaintEngineGPU::begin(CPaintDevice *pdev)
 {
 	Init();
 	RenderDevicePtr pd3dDevice = CGlobals::GetRenderDevice();
+	if (!pd3dDevice)
+		return false;
 
-#ifdef USE_OPENGL_RENDERER
 	CGlobals::GetEffectManager()->EndEffect();
-	if (SUCCEEDED(GetSprite()->Begin(IsUse3DTransform() ? D3DXSPRITE_OBJECTSPACE : 0)))
-	{
-		return true;
-	}
-#elif defined(USE_DIRECTX_RENDERER)
-	CGlobals::GetEffectManager()->EndEffect();
-	m_pStateBlock->Capture();
-
 	if (!IsUse3DTransform())
 	{
-		if (CPaintEngineGPU::s_IsStencilSupported && !CPaintEngineGPU::s_IsScissorRectSupported){
-			GETD3D(CGlobals::GetRenderDevice())->Clear(0L, NULL, D3DCLEAR_STENCIL, 0, 0, 0L);
+		if (CPaintEngineGPU::s_IsStencilSupported && !CPaintEngineGPU::s_IsScissorRectSupported)
+		{
+			pd3dDevice->SetClearStencil(0);
+			pd3dDevice->Clear(false, false, true);
 			pd3dDevice->SetRenderState(ERenderState::STENCILENABLE, TRUE);
 			pd3dDevice->SetRenderState(ERenderState::STENCILFUNC, D3DCMP_ALWAYS);
 			pd3dDevice->SetRenderState(ERenderState::STENCILWRITEMASK, 0xFFFFFFFF);
 		}
 	}
-	
-	pd3dDevice->SetRenderState(ERenderState::SRCBLEND, D3DBLEND_SRCALPHA);
-	pd3dDevice->SetRenderState(ERenderState::DESTBLEND, D3DBLEND_INVSRCALPHA);
-	pd3dDevice->SetRenderState(ERenderState::ALPHATESTENABLE, FALSE);
-	pd3dDevice->SetRenderState(ERenderState::ALPHABLENDENABLE, TRUE);
-
-	pd3dDevice->SetRenderState(ERenderState::ZENABLE, FALSE);
-
-	pd3dDevice->SetRenderState(ERenderState::CULLMODE, RSV_CULL_NONE);
-
-
-
-	GETD3D(CGlobals::GetRenderDevice())->SetVertexShader(NULL);
-	GETD3D(CGlobals::GetRenderDevice())->SetPixelShader(NULL);
-
-	// D3DXSPRITE_SORT_DEPTH_BACKTOFRONT | D3DXSPRITE_OBJECTSPACE
-	if (SUCCEEDED(GetSprite()->Begin(D3DXSPRITE_DONOTSAVESTATE | D3DXSPRITE_DO_NOT_ADDREF_TEXTURE | (IsUse3DTransform() ? D3DXSPRITE_OBJECTSPACE : 0))))
+	if (SUCCEEDED(GetSprite()->Begin(IsUse3DTransform() ? D3DXSPRITE_OBJECTSPACE : 0)))
 	{
 		return true;
 	}
-#endif
 	return false;
 }
 
 bool ParaEngine::CPaintEngineGPU::end()
 {
 	GetSprite()->End();
-#ifdef USE_DIRECTX_RENDERER
-	/* restore state*/
-	m_pStateBlock->Apply();
-#endif
 	return true;
 }
 
@@ -635,58 +587,29 @@ void CPaintEngineGPU::RenderMask(const RECT& rcWindow)
 	{
 		state->m_nStencilValue++;
 		RenderDevicePtr pd3dDevice = CGlobals::GetRenderDevice();
-#ifdef USE_DIRECTX_RENDERER
-		// use alpha blending with src=zero and dest=one to prevent writes to color buffer
-		pd3dDevice->SetRenderState(ERenderState::STENCILENABLE, TRUE);
-		pd3dDevice->SetRenderState(ERenderState::ALPHABLENDENABLE, TRUE);
-		pd3dDevice->SetRenderState(ERenderState::SRCBLEND, D3DBLEND_ZERO);
-		pd3dDevice->SetRenderState(ERenderState::DESTBLEND, D3DBLEND_ONE);
+		if (!pd3dDevice)
+			return;
 
-
-		// set up stencil function to increment stencil of pixels that pass alpha testing
-		pd3dDevice->SetRenderState(ERenderState::STENCILPASS, D3DSTENCILOP_REPLACE);
-		pd3dDevice->SetRenderState(ERenderState::STENCILREF, state->m_nStencilValue);
-		pd3dDevice->SetRenderState(ERenderState::STENCILFUNC, D3DCMP_ALWAYS);
-
-		// draw mask
-		DrawRect(&clipRect, Color::White, 0.f);
-		Flush();
-
-		// disable alpha blending and testing
-		pd3dDevice->SetRenderState(ERenderState::ALPHATESTENABLE, FALSE);
-		pd3dDevice->SetRenderState(ERenderState::SRCBLEND, D3DBLEND_SRCALPHA);
-		pd3dDevice->SetRenderState(ERenderState::DESTBLEND, D3DBLEND_INVSRCALPHA);
-		state->compositionModeChanged = true;
-
-#elif defined(USE_OPENGL_RENDERER)
 		pd3dDevice->SetRenderState(ERenderState::STENCILENABLE, TRUE);
 		if (state->m_nStencilValue == 1)
 		{
-			// clear stencil buffer to 0 on first stencil layer
-			CGlobals::GetRenderDevice()->SetClearStencil(0);
-			CGlobals::GetRenderDevice()->Clear(false,false,true);
-			pd3dDevice->SetRenderState(ERenderState::STENCILWRITEMASK, 0xFF);
+			pd3dDevice->SetClearStencil(0);
+			pd3dDevice->Clear(false, false, true);
 		}
-		// disable color write
-		glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
-		glDepthMask(GL_FALSE);
-		// draw m_nStencilValue to the stencil buffer
-		/*glStencilFunc(GL_NEVER, pGUIState->m_nStencilValue, 0xFF);
-		glStencilOp(GL_REPLACE, GL_KEEP, GL_KEEP);*/
+		pd3dDevice->SetRenderState(ERenderState::COLORWRITEENABLE, 0);
+		pd3dDevice->SetRenderState(ERenderState::ZWRITEENABLE, FALSE);
 		pd3dDevice->SetRenderState(ERenderState::STENCILREF, state->m_nStencilValue);
-		pd3dDevice->SetRenderState(ERenderState::STENCILFUNC, D3DCMP_NEVER);
+		pd3dDevice->SetRenderState(ERenderState::STENCILFUNC, D3DCMP_ALWAYS);
 		pd3dDevice->SetRenderState(ERenderState::STENCILPASS, D3DSTENCILOP_REPLACE);
 		pd3dDevice->SetRenderState(ERenderState::STENCILWRITEMASK, 0xFF);
 
-		// this will automatically apply all the scaling, rotation, etc.
-		// draw mask
 		DrawRect(&clipRect, Color::White, 0.f);
 		Flush();
 
-		glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
-		glDepthMask(GL_TRUE);
-		glStencilMask(0x00);
-#endif
+		pd3dDevice->SetRenderState(ERenderState::COLORWRITEENABLE, 0x0F);
+		pd3dDevice->SetRenderState(ERenderState::ZWRITEENABLE, TRUE);
+		pd3dDevice->SetRenderState(ERenderState::STENCILWRITEMASK, 0x00);
+		state->compositionModeChanged = true;
 	}
 }
 
@@ -791,9 +714,7 @@ void ParaEngine::CPaintEngineGPU::updateClipScissorTest()
 		else
 		{
 			CGlobals::GetRenderDevice()->SetRenderState(ERenderState::STENCILFUNC, D3DCMP_ALWAYS);
-#ifdef USE_OPENGL_RENDERER
 			CGlobals::GetRenderDevice()->SetRenderState(ERenderState::STENCILENABLE, FALSE);
-#endif
 		}
 	}
 }

@@ -50,6 +50,7 @@ namespace ParaEngine
 
 	/** perspective matrix */
 	void ParaMatrixPerspectiveFovLH(Matrix4* Result, float FovAngleY, float AspectHByW, float NearZ, float FarZ);
+	Matrix4* ParaMatrixPerspectiveOffCenterLH(Matrix4* Result, float l, float r, float b, float t, float zn, float zf);
 
 	/** decompose matrix*/
 	bool ParaMatrixDecompose(Vector3 *poutscale, Quaternion *poutrotation, Vector3 *pouttranslation, const Matrix4 *pm);

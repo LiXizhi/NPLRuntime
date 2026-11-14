@@ -12,10 +12,8 @@
 #include "ParaWorldAsset.h"
 #include "SceneObject.h"
 #include "effect_file.h"
-#ifdef USE_DIRECTX_RENDERER
 #include "ShadowVolume.h"
 #include "EdgeBuilder.h"
-#endif
 #include "SortedFaceGroups.h"
 #include "CustomCharCommon.h"
 #include "particle.h"
@@ -959,24 +957,7 @@ void CParaXModel::RenderNoAnim(SceneState* pSceneState)
 	pd3dDevice->SetIndices(m_pIndexBuffer.GetDevicePointer());
 
 	CEffectFile* pEffect = CGlobals::GetEffectManager()->GetCurrentEffectFile();
-	if (pEffect == 0)
-	{
-#ifdef USE_DIRECTX_RENDERER
-		///////////////////////////////////////////////////////////////////////////
-		// fixed function pipeline
-		for (int i = 0; i < nPasses; i++)
-		{
-			ModelRenderPass& p = passes[i];
-			if (p.init(this, pSceneState))
-			{
-				// we don't want to render completely transparent parts
-				RenderDevice::DrawIndexedPrimitive(pd3dDevice, RenderDevice::DRAW_PERF_TRIANGLES_CHARACTER, EPrimitiveType::TRIANGLELIST, 0, 0, m_objNum.nVertices, p.m_nIndexStart, p.indexCount / 3);
-				p.deinit();
-			}
-		}
-#endif
-	}
-	else
+	if (pEffect != 0)
 	{
 		//////////////////////////////////////////////////////////////////////////
 		// programmable pipeline
@@ -1219,29 +1200,7 @@ void CParaXModel::RenderBMaxModel(SceneState* pSceneState, CParameterBlock* pMat
 
 	CEffectFile* pEffect = CGlobals::GetEffectManager()->GetCurrentEffectFile();
 	size_t startVB = 0;
-	if (pEffect == 0)
-	{
-#ifdef USE_DIRECTX_RENDERER
-		///////////////////////////////////////////////////////////////////////////
-		// fixed function pipeline
-		for (int nPass = 0; nPass < nPasses; nPass++)
-		{
-			ModelRenderPass& p = passes[nPass];
-			if (p.geoset >= 0 && showGeosets[p.geoset])
-			{
-				if (p.init_bmax_FX(this, pSceneState))
-				{
-					//DrawPass_BMax(p);
-					DrawPass_BMax_VB(p, startVB);
-					p.deinit_bmax_FX(pSceneState);
-				}
-
-				startVB += p.indexCount;
-			}
-		}
-#endif
-	}
-	else
+	if (pEffect != 0)
 	{
 		//////////////////////////////////////////////////////////////////////////
 		// programmable pipeline
@@ -1300,65 +1259,7 @@ void CParaXModel::RenderSoftAnim(SceneState* pSceneState, CParameterBlock* pMate
 	pd3dDevice->SetStreamSource(0, pBufEntity->GetBuffer(), 0, sizeof(mesh_vertex_normal));
 
 	CEffectFile* pEffect = CGlobals::GetEffectManager()->GetCurrentEffectFile();
-	if (pEffect == 0)
-	{
-#ifdef USE_DIRECTX_RENDERER
-		///////////////////////////////////////////////////////////////////////////
-		// fixed function pipeline
-		for (int nPass = 0; nPass < nPasses; nPass++)
-		{
-			ModelRenderPass& p = passes[nPass];
-
-			if (p.geoset >= 0 && showGeosets[p.geoset])
-			{
-				// skip and build for translucent pass
-				if (pSceneState->m_bEnableTranslucentFaceSorting &&
-					((int)m_TranslucentPassIndice.size()) > nPass && m_TranslucentPassIndice[nPass] >= 0)
-				{
-					if (!pSceneState->IsIgnoreTransparent())
-					{
-						Matrix4 mat = CGlobals::GetWorldMatrixStack().top();
-
-						const ModelVertex& ov = m_origVertices[m_indices[p.m_nIndexStart]];
-						// use the four bone matrix. 
-						if (ov.weights[0] > 0)
-						{
-							Matrix4 matLocal = bones[ov.bones[0]].mat * ((float)ov.weights[0] * (1 / 255.0f));
-							for (int b = 1; b < 4 && ov.weights[b]>0; b++) {
-								matLocal += bones[ov.bones[b]].mat * ((float)ov.weights[b] * (1 / 255.0f));
-							}
-							mat = matLocal * mat;
-						}
-						CFaceGroupInstance faceGroup(&mat, m_faceGroups[m_TranslucentPassIndice[nPass]]);
-						if (p.texanim != -1) {
-							const TextureAnim& texAnim = texanims[p.texanim];
-							faceGroup.m_vUVOffset.x = texAnim.tval.x;
-							faceGroup.m_vUVOffset.y = texAnim.tval.y;
-
-							faceGroup.m_vUVRotate = texAnim.rval;
-
-							if (texAnim.scale.used)
-							{
-								faceGroup.m_vUVScale.x = texAnim.sval.x;
-								faceGroup.m_vUVScale.y = texAnim.sval.y;
-							}
-						}
-						pSceneState->GetFaceGroups()->AddFaceGroup(faceGroup);
-					}
-
-					continue;
-				}
-
-				if (p.init(this, pSceneState))
-				{
-					DrawPass(p);
-					p.deinit();
-				}
-			}
-		}
-#endif
-	}
-	else
+	if (pEffect != 0)
 	{
 		//////////////////////////////////////////////////////////////////////////
 		// programmable pipeline
@@ -1854,7 +1755,6 @@ void CParaXModel::BuildShadowVolume(ShadowVolume* pShadowVolume, LightParams* pL
 	{
 		return;
 	}
-#ifdef USE_DIRECTX_RENDERER
 #ifdef SHADOW_ZFAIL_WITHOUTCAPS
 	pShadowVolume->m_shadowMethod = ShadowVolume::SHADOW_Z_PASS;
 	//geosets.BuildShadowVolume(this,currentAnimInfo, pShadowVolume, pLight, mxWorld);
@@ -2023,7 +1923,6 @@ void CParaXModel::BuildShadowVolume(ShadowVolume* pShadowVolume, LightParams* pL
 			}
 		}
 	}
-#endif
 #endif
 }
 

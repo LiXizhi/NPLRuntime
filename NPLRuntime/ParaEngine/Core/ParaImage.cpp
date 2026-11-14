@@ -940,6 +940,76 @@ namespace ParaEngine
 	}
 
 
+	namespace
+	{
+		bool SaveRawImageToBMPFile(const std::string& filePath, const unsigned char* data, int width, int height, PixelFormat fmt)
+		{
+			if (!data || width <= 0 || height <= 0)
+				return false;
+			if (fmt != PixelFormat::A8R8G8B8 && fmt != PixelFormat::R8G8B8)
+				return false;
+
+			FILE* fp = nullptr;
+#if WIN32 && defined(DEFAULT_FILE_ENCODING)
+			std::wstring filePath16 = StringHelper::MultiByteToWideChar(filePath.c_str(), DEFAULT_FILE_ENCODING);
+			fp = _wfopen(filePath16.c_str(), L"wb");
+#else
+			fp = fopen(filePath.c_str(), "wb");
+#endif
+			if (!fp)
+				return false;
+
+			const uint32_t rowStride = ((static_cast<uint32_t>(width) * 3u + 3u) & ~3u);
+			const uint32_t imgBytes = rowStride * static_cast<uint32_t>(height);
+			const uint32_t fileBytes = 54u + imgBytes;
+
+			uint8_t header[54] = {};
+			header[0] = 'B';
+			header[1] = 'M';
+			std::memcpy(&header[2], &fileBytes, 4);
+			const uint32_t pixelOffset = 54u;
+			std::memcpy(&header[10], &pixelOffset, 4);
+			const uint32_t dibSize = 40u;
+			std::memcpy(&header[14], &dibSize, 4);
+			const int32_t bmpW = width;
+			const int32_t bmpH = height; // bottom-up standard DIB
+			std::memcpy(&header[18], &bmpW, 4);
+			std::memcpy(&header[22], &bmpH, 4);
+			const uint16_t planes = 1u;
+			const uint16_t bpp = 24u;
+			std::memcpy(&header[26], &planes, 2);
+			std::memcpy(&header[28], &bpp, 2);
+			std::memcpy(&header[34], &imgBytes, 4);
+
+			if (fwrite(header, 1, 54, fp) != 54)
+			{
+				fclose(fp);
+				return false;
+			}
+
+			const int srcStep = (fmt == PixelFormat::A8R8G8B8) ? 4 : 3;
+			std::vector<uint8_t> rowBuf(rowStride, 0u);
+			for (int y = height - 1; y >= 0; --y)
+			{
+				const unsigned char* srcRow = data + static_cast<size_t>(y) * static_cast<size_t>(width) * srcStep;
+				for (int x = 0; x < width; ++x)
+				{
+					rowBuf[static_cast<size_t>(x) * 3u + 0u] = srcRow[x * srcStep + 2]; // B
+					rowBuf[static_cast<size_t>(x) * 3u + 1u] = srcRow[x * srcStep + 1]; // G
+					rowBuf[static_cast<size_t>(x) * 3u + 2u] = srcRow[x * srcStep + 0]; // R
+				}
+				if (fwrite(rowBuf.data(), 1, rowStride, fp) != rowStride)
+				{
+					fclose(fp);
+					return false;
+				}
+			}
+
+			fclose(fp);
+			return true;
+		}
+	}
+
 	bool ParaImage::saveToFile(const std::string &filename_, bool isToRGB)
 	{
 		std::string filename = filename_;
@@ -947,21 +1017,34 @@ namespace ParaEngine
 			filename = CParaFile::GetWritablePath() + filename;
 		}
 
-        std::string fileExtension = filename.substr(filename.find_last_of('.'));
-        
-        if (fileExtension == ".png")
-        {
-			bool toRGB =  isToRGB;
+		size_t dotPos = filename.find_last_of('.');
+		if (dotPos == std::string::npos)
+			return false;
+
+		std::string fileExtension = filename.substr(dotPos);
+		for (char& c : fileExtension)
+		{
+			if (c >= 'A' && c <= 'Z')
+				c = static_cast<char>(c - 'A' + 'a');
+		}
+
+		if (fileExtension == ".png")
+		{
+			bool toRGB = isToRGB;
 			if (_renderFormat == PixelFormat::A8R8G8B8)
 			{
 				toRGB = false; //if true will ignore the value of alpha
 			}
-            return saveImageToPNG(filename, toRGB);
-        }
-        else if (fileExtension == ".jpg")
-        {
-            return saveImageToJPG(filename);
-        }
+			return saveImageToPNG(filename, toRGB);
+		}
+		else if (fileExtension == ".jpg" || fileExtension == ".jpeg")
+		{
+			return saveImageToJPG(filename);
+		}
+		else if (fileExtension == ".bmp")
+		{
+			return SaveRawImageToBMPFile(filename, _data, static_cast<int>(_width), static_cast<int>(_height), _renderFormat);
+		}
 
 		return false;
 	}

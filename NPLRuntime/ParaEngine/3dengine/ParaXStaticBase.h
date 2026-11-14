@@ -98,9 +98,6 @@ namespace ParaEngine
 		HRESULT Create(RenderDevicePtr pRenderDevice, const char* strFilename, bool bCheckSecondUV = false);
 
 		virtual HRESULT Create(RenderDevicePtr pRenderDevice, void* buffer, DWORD nFileSize, bool bCheckSecondUV = false)			= 0;
-#ifdef USE_DIRECTX_RENDERER
-		virtual HRESULT Create(RenderDevicePtr pRenderDevice, LPD3DXFILEDATA pFileData)											= 0;
-#endif
 		virtual HRESULT Create(RenderDevicePtr pRenderDevice, XFile::Scene* pFileData)												= 0;
 
 		virtual HRESULT Destroy();
@@ -128,15 +125,8 @@ namespace ParaEngine
 
 		/** get the mesh header. and compute if not valid.  one needs to check MeshHeader.m_bIsValid before using it.
 		because if async loading is used, the mesh itself may not be ready when this function is called. */
-#ifdef USE_DIRECTX_RENDERER
-		virtual MeshHeader& GetMeshHeader(LPD3DXFILE pFileParser = nullptr) = 0;
-#endif
 		virtual MeshHeader& GetMeshHeader(XFileParser* pFileParser = nullptr) = 0;
 
-#ifdef USE_DIRECTX_RENDERER
-		/** Get mesh header from file. */
-		virtual bool GetMeshHeaderFromFile(CParaFile& myFile, LPD3DXFILE pFileParser) = 0;
-#endif
 		virtual bool GetMeshHeaderFromFile(CParaFile& myFile, XFileParser* pFileParser) = 0;
 
 		// Rendering

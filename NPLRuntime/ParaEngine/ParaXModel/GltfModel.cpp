@@ -485,12 +485,7 @@ namespace ParaEngine
 			}
             else
             {
-
-#if defined(USE_DIRECTX_RENDERER)
-                texture->SaveToFile(filename.c_str(), D3DFORMAT::D3DFMT_DXT3, 0, 0);
-#else
                 texture->SaveToFile(filename.c_str(), PixelFormat::DXT3, 0, 0);
-#endif
             }
 
             if (m_isEmbedTexture)

@@ -466,14 +466,12 @@ CBipedStateManager::BipedState CBipedStateManager::AddAction(ActionSymbols nAct,
 					int nAnimID = actionKey->ToAnimID();
 					pBiped->PlayAnimation(nAnimID);
 				}
-#ifdef USE_DIRECTX_RENDERER
 				if(IsRecording())
 				{
 					// record the state
 					ParaScripting::ParaMovieCtrler movieCtler = (ParaScripting::ParaCharacter(pBiped)).GetMovieController();
 					movieCtler.RecordNewAction(actionKey->ToString());
 				}
-#endif
 			}
 			break;
 		case S_MOUNT:

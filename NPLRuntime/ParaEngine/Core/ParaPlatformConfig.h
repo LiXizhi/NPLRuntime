@@ -79,17 +79,9 @@
 #error  "Cannot recognize the target platform; are you targeting an unsupported platform?"
 #endif
 
-// choose renderer
-#if !defined(USE_DIRECTX_RENDERER) && !defined(USE_OPENGL_RENDERER) && !defined(USE_NULL_RENDERER)
-#if defined(PARAENGINE_MOBILE)
-#define USE_OPENGL_RENDERER
-#elif (PARA_TARGET_PLATFORM == PARA_PLATFORM_WIN32) && defined(PARAENGINE_CLIENT)
-#define USE_DIRECTX_RENDERER
-#elif (PARA_TARGET_PLATFORM == PARA_PLATFORM_MAC) && defined(MAC_CLIENT)
-#define USE_OPENGL_RENDERER
-#else
+// Headless server builds use Null renderer stubs; all client builds use runtime-selectable ParaRHI
+#if defined(NPLRUNTIME_SERVER) && !defined(USE_NULL_RENDERER)
 #define USE_NULL_RENDERER
-#endif
 #endif
 
 #if !defined(WIN32) &&  PARA_TARGET_PLATFORM != PARA_PLATFORM_ANDROID

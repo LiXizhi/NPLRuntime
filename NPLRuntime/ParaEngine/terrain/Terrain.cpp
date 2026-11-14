@@ -19,9 +19,8 @@
 #include "NPLRuntime.h"
 #include "SceneWriter.h"
 #include "OceanManager.h"
-#ifdef USE_DIRECTX_RENDERER
+#ifndef USE_NULL_RENDERER
 #include "ShadowMap.h"
-#include "RenderDeviceD3D9.h"
 #endif
 #include "Terrain.h"
 #include "Brush.h"
@@ -1280,19 +1279,19 @@ bool Terrain::SetBaseTexture(const string& filename, int numTextureCellsX, int n
 			OUTPUT_LOG("default terrain base texture file %s is used instead\n", sBaseTextureFileName);
 		}
 	}
-#ifdef USE_OPENGL_RENDERER
-	/** in opengl, we will not chop texture. */
+#ifdef USE_NULL_RENDERER
 	m_bChopBaseTexture = false;
 #endif
+	int texWidth = 0, texHeight = 0;
+	uint8 *pTextureImage = NULL;
 	if (m_bChopBaseTexture)
 	{
-		// Load the texture data.
-		int texWidth, texHeight;
-		uint8 *pTextureImage = NULL;
 		TextureEntity::LoadImage(cFile.getBuffer(), (int)cFile.getSize(), texWidth, texHeight, &pTextureImage, false);
-		if(pTextureImage == NULL)
-			return false;
-		
+		if (pTextureImage == NULL)
+			m_bChopBaseTexture = false;
+	}
+	if (m_bChopBaseTexture)
+	{
 		bool bFlipImages = true;
 		if(bFlipImages)
 		{
@@ -1659,82 +1658,7 @@ void Terrain::Render()
 	CEffectFile* pEffectFile = CGlobals::GetEffectManager()->GetCurrentEffectFile();
 	if ( pEffectFile == 0)
 	{
-#ifdef USE_DIRECTX_RENDERER
-		//////////////////////////////////////////////////////////////////////////
-		// render using fixed function pipeline
-		/** 
-		* render the terrain by texture groups
-		*/
-		int nTextureGroupCount = (int)(textureGroups.size()) - 1;
-		for(int nTextureID =0;nTextureID<nTextureGroupCount;++nTextureID)
-		{
-			/** 
-			* for each texture group, we will use multi-texture stage to render blended textures at the same time 
-			*/
-			TextureGroup& texGroup = textureGroups[nTextureID];
-			if(texGroup.nNumTriangles>0)
-			{
-				/**
-				* Pass 1: base texture:
-				* 		texture stage0 - main low-res texture
-				* 		texture stage1 - overall detail (dirt) texture
-				*/
-				TextureCell *pCell = m_TextureCells[nTextureID]; // TODO: deal with i th group
-
-				if(pCell == NULL)
-					continue;
-
-				if (Settings::GetInstance()->IsBaseTextureEnabled())
-				{		
-					DeviceTexturePtr_type texId = pCell->BindTexture();
-					GETD3D(CGlobals::GetRenderDevice())->SetTexture(0, texId );
-
-					if (m_pCommonTexture != NULL)
-					{
-						if (Settings::GetInstance()->IsBaseTextureEnabled())
-						{
-							DeviceTexturePtr_type cTexId = m_pCommonTexture->UploadTexture();
-							GETD3D(CGlobals::GetRenderDevice())->SetTexture(1, cTexId );
-						}
-					}
-					// render triangles for the current texture group 
-					CGlobals::GetRenderDevice()->DrawPrimitive(EPrimitiveType::TRIANGLELIST, texGroup.nStartIndex*3, texGroup.nNumTriangles);
-				}
-
-				/**
-				* Pass 2: render detail textures with alpha blending:
-				*	for each detailed texture layer
-				* 		texture stage0 - alpha mask 
-				* 		texture stage1 - detail texture
-				*/
-				if (pCell->GetNumberOfDetails() > 0)
-				{
-					pRenderDevice->SetRenderState( ERenderState::ZWRITEENABLE, FALSE );
-					pRenderDevice->SetRenderState(ERenderState::ALPHABLENDENABLE, TRUE);
-
-					for (int k = 0; k < pCell->GetNumberOfDetails(); k++)
-					{
-						GETD3D(CGlobals::GetRenderDevice())->SetTexture(0, pCell->BindMask(k) );
-						GETD3D(CGlobals::GetRenderDevice())->SetTexture(1, pCell->BindDetail(k) );
-
-						// render triangles for the current texture group 
-						CGlobals::GetRenderDevice()->DrawPrimitive(EPrimitiveType::TRIANGLELIST, texGroup.nStartIndex*3, texGroup.nNumTriangles);
-					}
-					// restore states
-					pRenderDevice->SetRenderState( ERenderState::ZWRITEENABLE, TRUE );
-					pRenderDevice->SetRenderState(ERenderState::ALPHABLENDENABLE, FALSE);
-				}
-			}
-		}//for( itCurCP = 
-
-		TextureGroup& texGroup = textureGroups[textureGroups.size() - 1];
-		if(texGroup.nNumTriangles>0)
-		{
-			// render all terrain in the distance fog using the simple fog color.
-			// TODO: do this with fixed function pipeline. 
-			// DirectXPerf::DrawPrimitive( pRenderDevice, DirectXPerf::DRAW_PERF_TRIANGLES_TERRAIN,  EPrimitiveType::TRIANGLELIST, texGroup.nStartIndex*3, texGroup.nNumTriangles);
-		}
-#endif
+		return;
 	}
 	else
 	{
@@ -1787,7 +1711,7 @@ void Terrain::Render()
 				
 				if(pEffectFile->BeginPass(bUseNormal ? 0 : 2))
 				{
-#ifdef USE_DIRECTX_RENDERER
+#ifndef USE_NULL_RENDERER
 					// bind shadow map on tex2
 					if(CGlobals::GetScene()->IsShadowMapEnabled())
 					{
@@ -1850,10 +1774,7 @@ void Terrain::Render()
 							if (bBaseEnabled)
 							{	
 								// the seventh texture is for non-repeatable base layer
-								int nBaseIndex = 7;
-#ifdef USE_OPENGL_RENDERER
-								nBaseIndex = 2;
-#endif
+								const int nBaseIndex = 7;
 								auto pTexture = pCell->GetDetailBase()->BindTexture();
 								if (pTexture == 0){
 									pTexture = CGlobals::GetAssetManager()->GetDefaultTexture(0)->GetTexture();
@@ -1987,22 +1908,24 @@ void Terrain::RenderGeoMipmap()
 {
 	if(m_pVertices == NULL)
 		return;
-#ifdef USE_DIRECTX_RENDERER
+#ifndef USE_NULL_RENDERER
 	// just for hit count
 	m_pDetailedTextureFactory->AdvanceFrame();
 	RenderDevicePtr pRenderDevice = CGlobals::GetRenderDevice();
+	if (!pRenderDevice)
+		return;
 	bool bUseNormal = Settings::GetInstance()->UseNormals();
 
 	if(!bUseNormal)
-		GETD3D(CGlobals::GetRenderDevice())->SetStreamSource(0, m_TerrainBuffer.GetVertexBufferDevicePtr(), 0, sizeof(terrain_vertex));
+		pRenderDevice->SetStreamSource(0, m_TerrainBuffer.GetVertexBufferDevicePtr(), 0, sizeof(terrain_vertex));
 	else
-		GETD3D(CGlobals::GetRenderDevice())->SetStreamSource(0, m_TerrainBuffer.GetVertexBufferDevicePtr(), 0, sizeof(terrain_vertex_normal));
+		pRenderDevice->SetStreamSource(0, m_TerrainBuffer.GetVertexBufferDevicePtr(), 0, sizeof(terrain_vertex_normal));
 
-	GETD3D(CGlobals::GetRenderDevice())->SetIndices(m_pIndexBuffer.GetDevicePointer());
+	pRenderDevice->SetIndices(m_pIndexBuffer.GetDevicePointer());
 
 	//The order of triangle index is different from the order of vertex,
 	//so we have to change cull mode here -.-        --clayman 2012.2.21
-	CGlobals::GetRenderDevice()->SetRenderState(ERenderState::CULLMODE, RSV_CULL_CW);
+	pRenderDevice->SetRenderState(ERenderState::CULLMODE, RSV_CULL_CW);
 
 	CEffectFile* pEffectFile = CGlobals::GetEffectManager()->GetCurrentEffectFile();
 
@@ -2013,9 +1936,9 @@ void Terrain::RenderGeoMipmap()
 
 		CGlobals::GetGlobalTerrain()->SetGeoMipmapTerrain(false);
 		
-		GETD3D(CGlobals::GetRenderDevice())->SetStreamSource(0,NULL,0,0);
-		GETD3D(CGlobals::GetRenderDevice())->SetIndices(NULL);
-		CGlobals::GetRenderDevice()->SetRenderState(ERenderState::CULLMODE, RSV_CULL_CCW);
+		pRenderDevice->SetStreamSource(0,NULL,0,0);
+		pRenderDevice->SetIndices(NULL);
+		pRenderDevice->SetRenderState(ERenderState::CULLMODE, RSV_CULL_CCW);
 
 		return;
 		/*
@@ -2312,9 +2235,9 @@ void Terrain::RenderGeoMipmap()
 					
 					pRenderDevice->SetRenderState(ERenderState::SRCBLEND,D3DBLEND_SRCALPHA);
 					pRenderDevice->SetRenderState(ERenderState::DESTBLEND,D3DBLEND_INVSRCALPHA);
-					GETD3D(CGlobals::GetRenderDevice())->SetFVF(LINEVERTEX::FVF);
+					pRenderDevice->SetFVF(LINEVERTEX::FVF);
 
-					GETD3D(CGlobals::GetRenderDevice())->SetStreamSource(0, m_pEditorMeshVB.GetDevicePointer(), 0, sizeof(LINEVERTEX));
+					pRenderDevice->SetStreamSource(0, m_pEditorMeshVB.GetDevicePointer(), 0, sizeof(LINEVERTEX));
 					if(pEffectFile->BeginPass(3))
 					{
 						for(int i=0;i<blockCount;i++)
@@ -2355,9 +2278,9 @@ void Terrain::RenderGeoMipmap()
 					pRenderDevice->SetRenderState(ERenderState::SRCBLEND,D3DBLEND_ONE);
 					pRenderDevice->SetRenderState(ERenderState::DESTBLEND,D3DBLEND_ONE);
 					if(!CGlobals::GetGlobalTerrain()->GetSettings()->UseNormals())
-						GETD3D(CGlobals::GetRenderDevice())->SetFVF(terrain_vertex::FVF);
+						pRenderDevice->SetFVF(terrain_vertex::FVF);
 					else
-						GETD3D(CGlobals::GetRenderDevice())->SetFVF(terrain_vertex_normal::FVF);
+						pRenderDevice->SetFVF(terrain_vertex_normal::FVF);
 
 					CGlobals::GetEffectManager()->EnableD3DAlphaBlending(false);
 				}
@@ -2502,11 +2425,10 @@ void Terrain::SwitchLodStyle(bool useGeoMipmap,ParaIndexBuffer pSharedIndices, G
 {
 	if(m_useGeoMipmap == useGeoMipmap)
 		return;
-#ifdef USE_OPENGL_RENDERER
+#ifdef USE_NULL_RENDERER
 	if (useGeoMipmap)
 	{
 		m_useGeoMipmap = false;
-		OUTPUT_LOG("warning: GeoMipmap rendering is disabled for opengl\n");
 		return;
 	}
 #endif
@@ -2857,27 +2779,24 @@ bool Terrain::Pick(int mouseX, int mouseY, float &pickedX, float &pickedY, float
 #ifdef DIRECTX_PICK
 
 	float depth[1];
-	GLdouble modelm[16], projm[16], pos[3];
-	int view[4];
+	RenderDevicePtr pRenderDevice = CGlobals::GetRenderDevice();
+	if (!pRenderDevice)
+		return false;
 
-	//D3DMATRIX modelm;
-	//D3DMATRIX projm;
-	//D3DVIEWPORT9  view;
-	//Settings::GetInstance()->GettD3DDevice()->GetTransform(D3DTS_PROJECTION, &projm);
-	//Settings::GetInstance()->GettD3DDevice()->GetTransform(D3DTS_VIEW, &modelm);
-	//Settings::GetInstance()->GettD3DDevice()->GetViewport(&view);
+	float zDepth = 1.0f;
+	if (!pRenderDevice->ReadDepthPixel(mouseX, mouseY, zDepth))
+		return false;
 
-	glGetDoublev(GL_MODELVIEW_MATRIX, modelm);
-	glGetDoublev(GL_PROJECTION_MATRIX, projm);
-	glGetIntegerv(GL_VIEWPORT, (GLint *) view);
+	ParaViewport vp = pRenderDevice->GetViewport();
+	Vector3 screenPt(static_cast<float>(mouseX), static_cast<float>(mouseY), zDepth);
+	Vector3 worldPos = Vector3::ZERO;
+	Matrix4 matView = CGlobals::GetViewMatrixStack().SafeGetTop();
+	Matrix4 matProj = CGlobals::GetProjectionMatrixStack().SafeGetTop();
+	ParaVec3Unproject(&worldPos, &screenPt, &vp, &matProj, &matView, CGlobals::GetIdentityMatrix());
 
-	glReadPixels(mouseX, mouseY, 1, 1, GL_DEPTH_COMPONENT, GL_FLOAT, depth);
-
-	gluUnProject(mouseX, mouseY, depth[0], modelm, projm, view, &pos[0], &pos[1], &pos[2]);
-
-	pickedX = (float)pos[0];
-	pickedY = (float)pos[1];
-	pickedZ = (float)pos[2];
+	pickedX = worldPos.x;
+	pickedY = worldPos.y;
+	pickedZ = worldPos.z;
 
 	float elev = GetElevation(pickedX, pickedY);
 	bPickedTerrain = Settings::GetInstance()->GetPickThreshold() < 0.0f || (pickedZ - elev < Settings::GetInstance()->GetPickThreshold());	// Look for a "fudge factor" difference between the unprojected point and the actual terrain elevation to see if some application object was picked instead of the terrain

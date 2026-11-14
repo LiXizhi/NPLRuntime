@@ -20,9 +20,7 @@
 #include "BlockEngine/BlockWorldClient.h"
 #include "BlockEngine/BlockCommon.h"
 #include "OceanManager.h"
-#ifdef USE_DIRECTX_RENDERER
 #include "BVHSerializer.h"
-#endif
 #include "ParaXModel/ParaXModel.h"
 #include "ParaXModel/BoneAnimProvider.h"
 #include "CustomCharModelInstance.h"
@@ -1374,7 +1372,6 @@ HRESULT CBipedObject::Draw(SceneState* sceneState)
 
 		if (GetPrimaryTechniqueHandle() == 1102 && !sceneState->IsShadowPass())
 		{
-#ifdef USE_DIRECTX_RENDERER
 			CEffectFile* pEffectFile = pEffectManager->GetCurrentEffectFile();
 			if (pEffectFile != NULL)
 			{
@@ -1388,7 +1385,6 @@ HRESULT CBipedObject::Draw(SceneState* sceneState)
 
 				return S_OK;
 			}
-#endif
 		}
 
 		if (GetSelectGroupIndex() >= 0 && !sceneState->IsShadowPass())
@@ -1399,7 +1395,6 @@ HRESULT CBipedObject::Draw(SceneState* sceneState)
 				// selection render pass is usually called after opache meshes are rendered. 
 				return S_OK;
 			}
-#ifdef USE_DIRECTX_RENDERER
 			// for selection render effect
 			CEffectFile* pEffectFile = pEffectManager->GetCurrentEffectFile();
 			if (pEffectFile != 0)
@@ -1425,7 +1420,7 @@ HRESULT CBipedObject::Draw(SceneState* sceneState)
 							for (int y = -1; y <= 1; y += 2)
 							{
 								Vector3 vOffsets(x * border_width, y * border_width, 0.f);
-								pEffectFile->GetDXEffect()->SetRawValue("g_offsets", &vOffsets, 0, sizeof(Vector3));
+								pEffectFile->SetRawValue("g_offsets", &vOffsets, 0, sizeof(Vector3));
 								pAI->Draw(sceneState, mat);
 							}
 						}
@@ -1444,7 +1439,7 @@ HRESULT CBipedObject::Draw(SceneState* sceneState)
 					if (pEffectFile != 0)
 					{
 						Vector3 vColorAdd(0.2f, 0.2f, 0.2f);
-						pEffectFile->GetDXEffect()->SetRawValue("g_color_add", &vColorAdd, 0, sizeof(Vector3));
+						pEffectFile->SetRawValue("g_color_add", &vColorAdd, 0, sizeof(Vector3));
 
 						pAI->Draw(sceneState, mat);
 						bIsRendered = true;
@@ -1457,12 +1452,9 @@ HRESULT CBipedObject::Draw(SceneState* sceneState)
 			}
 			else
 			{
-				// TODO: find a way to render a single color with offsets with fixed function. 
-
 				// change back to primary technique
 				pEffectManager->BeginEffect(GetPrimaryTechniqueHandle(), &(sceneState->m_pCurrentEffect));
 			}
-#endif
 		}
 
 		bool bUsePointTextureFilter = false;
@@ -1566,7 +1558,6 @@ HRESULT CBipedObject::Draw(SceneState* sceneState)
 
 void CBipedObject::BuildShadowVolume(SceneState* sceneState, ShadowVolume* pShadowVolume, LightParams* pLight)
 {
-#ifdef USE_DIRECTX_RENDERER
 	if (!IsShadowEnabled())
 		return;
 	CAnimInstanceBase* pAI = GetAnimInstance();
@@ -1577,7 +1568,6 @@ void CBipedObject::BuildShadowVolume(SceneState* sceneState, ShadowVolume* pShad
 
 		pAI->BuildShadowVolume(sceneState, pShadowVolume, pLight, GetRenderMatrix(mxWorld, sceneState->GetRenderFrameCount()));
 	}
-#endif
 }
 
 //-----------------------------------------------------------------------------
@@ -5550,7 +5540,6 @@ int CBipedObject::On_Net_Receive(DWORD dwNetType, DWORD dwParam1, DWORD dwParam2
 
 bool CBipedObject::DumpBVHAnimations()
 {
-#ifdef USE_DIRECTX_RENDERER
 	CharModelInstance* pChar = GetCharModelInstance();
 	if (pChar != 0)
 	{
@@ -5572,7 +5561,6 @@ bool CBipedObject::DumpBVHAnimations()
 			}
 		}
 	}
-#endif
 	return false;
 }
 

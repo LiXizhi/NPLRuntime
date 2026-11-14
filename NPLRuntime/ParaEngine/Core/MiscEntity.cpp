@@ -8,9 +8,8 @@
 //-----------------------------------------------------------------------------
 #include "ParaEngine.h"
 
-#ifdef USE_DIRECTX_RENDERER
+#ifndef USE_NULL_RENDERER
 #include "MiscEntity.h"
-#include "RenderDeviceD3D9.h"
 using namespace ParaEngine;
 
 HRESULT D3DXSpriteEntity::InitDeviceObjects()
@@ -19,49 +18,40 @@ HRESULT D3DXSpriteEntity::InitDeviceObjects()
 		return S_OK;
 	m_bIsInitialized = true;
 
-	HRESULT hr;
-	auto pRenderDevice = GETD3D(CGlobals::GetRenderDevice());
-	// Create a quad for rendering each tree
-	if (FAILED(hr = pRenderDevice->CreateVertexBuffer(m_nFrames * 4 * sizeof(SPRITEVERTEX),
-		D3DUSAGE_WRITEONLY, SPRITEVERTEX::FVF,
-		D3DPOOL_MANAGED, &(m_pSpriteVB), NULL)))
-	{
-		OUTPUT_LOG("error: D3DXSpriteEntity::InitDeviceObjects CreateVertexBuffer failed\n");
-		return hr;
-	}
+	auto* pRenderDevice = CGlobals::GetRenderDevice();
+	if (!pRenderDevice || m_nFrames <= 0 || m_nCol <= 0 || m_nRow <= 0)
+		return E_FAIL;
 
-	// Copy quad mesh data into vertex buffer
-	SPRITEVERTEX* v;
-	m_pSpriteVB->Lock(0, 0, (void**)&v, 0);
+	std::vector<SPRITEVERTEX> verts(static_cast<size_t>(m_nFrames) * 4u);
+	SPRITEVERTEX* v = verts.data();
 
 	FLOAT width = 1.0f / m_nCol;
 	FLOAT height = 1.0f / m_nRow;
 
 	int nLeft = 0, nTop = 0;
-	for (int i = 0; i<m_nFrames; i++)
+	for (int i = 0; i < m_nFrames; i++)
 	{
 		int idx = i * 4 + 0;
 		v[idx].p = Vector3(-0.5f, -0.5f, 0.0f);
-		v[idx].tu = nLeft *width;
-		v[idx].tv = (nTop + 1) *height;
+		v[idx].tu = nLeft * width;
+		v[idx].tv = (nTop + 1) * height;
 
 		idx++;
 		v[idx].p = Vector3(0.5f, -0.5f, 0.0f);
-		v[idx].tu = width*(nLeft + 1);
-		v[idx].tv = (nTop + 1) *height;
+		v[idx].tu = width * (nLeft + 1);
+		v[idx].tv = (nTop + 1) * height;
 
 		idx++;
 		v[idx].p = Vector3(-0.5f, 0.5f, 0.0f);
-		v[idx].tu = width*nLeft;
-		v[idx].tv = nTop *height;
-
+		v[idx].tu = width * nLeft;
+		v[idx].tv = nTop * height;
 
 		idx++;
 		v[idx].p = Vector3(0.5f, 0.5f, 0.0f);
-		v[idx].tu = width*(nLeft + 1);
-		v[idx].tv = nTop *height;
+		v[idx].tu = width * (nLeft + 1);
+		v[idx].tv = nTop * height;
 
-		for (int j = 0; j<4; j++)
+		for (int j = 0; j < 4; j++)
 		{
 			v[i * 4 + j].color = 0xffffffff;
 		}
@@ -73,7 +63,21 @@ HRESULT D3DXSpriteEntity::InitDeviceObjects()
 		}
 	}
 
-	m_pSpriteVB->Unlock();
+	if (m_pSpriteVB)
+	{
+		m_pSpriteVB->ReleaseRHIResource();
+		m_pSpriteVB = nullptr;
+	}
+	m_pSpriteVB = pRenderDevice->CreateBuffer(
+		static_cast<uint32_t>(verts.size() * sizeof(SPRITEVERTEX)),
+		false,
+		ERHIBufferUsage::Static | ERHIBufferUsage::WriteOnly,
+		verts.data());
+	if (!m_pSpriteVB)
+	{
+		OUTPUT_LOG("error: D3DXSpriteEntity::InitDeviceObjects CreateBuffer failed\n");
+		return E_FAIL;
+	}
 	return S_OK;
 }
 
@@ -82,7 +86,11 @@ HRESULT D3DXSpriteEntity::DeleteDeviceObjects()
 {
 	m_bIsInitialized = false;
 
-	SAFE_RELEASE(m_pSpriteVB);
+	if (m_pSpriteVB)
+	{
+		m_pSpriteVB->ReleaseRHIResource();
+		m_pSpriteVB = nullptr;
+	}
 	return S_OK;
 }
 

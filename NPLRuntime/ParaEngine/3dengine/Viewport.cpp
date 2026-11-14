@@ -17,10 +17,6 @@
 #include "RenderTarget.h"
 #include "Viewport.h"
 
-#ifdef USE_DIRECTX_RENDERER
-#include "DirectXEngine.h"
-#endif
-
 using namespace ParaEngine;
 
 CViewport::CViewport(CViewportManager* pViewportManager)
@@ -179,11 +175,16 @@ void ParaEngine::CViewport::ApplyCamera(CAutoCamera* pCamera)
 
 		}
 		else {
+			if (m_stereoODSparam.useAsymmetricFov)
+			{
+				pCamera->SetAsymmetricFovTan(m_stereoODSparam.tanLeft, m_stereoODSparam.tanRight, m_stereoODSparam.tanUp, m_stereoODSparam.tanDown);
+			}
 			pCamera->UpdateViewMatrix();
 		}
 	}
 	else
 	{
+		pCamera->ClearAsymmetricFov();
 		pCamera->EnableStereoVision(false);
 		pCamera->SetStereoEyeShiftDistance(0.f);
 	}
@@ -273,12 +274,16 @@ HRESULT ParaEngine::CViewport::Render(double dTimeDelta, int nPipelineOrder)
 			UpdateRect();
 			if (m_pRenderTarget)
 			{
-#ifdef USE_DIRECTX_RENDERER
-				// for multiple render targets (/shader 2 of fancy block rendering) to work, the render target must be the same size of the back buffer. 
-				m_pRenderTarget->SetRenderTargetSize(Vector2((float)(CGlobals::GetDirectXEngine().GetBackBufferWidth()), (float)(CGlobals::GetDirectXEngine().GetBackBufferHeight())));
-#else
-				m_pRenderTarget->SetRenderTargetSize(Vector2((float)GetWidth(), (float)GetHeight()));
-#endif
+				auto* pDev = CGlobals::GetRenderDevice();
+				if (pDev && pDev->GetBackBufferWidth() > 0 && pDev->GetBackBufferHeight() > 0)
+				{
+					// for multiple render targets (/shader 2 of fancy block rendering) and sub-rect viewport quads to work, size to back buffer.
+					m_pRenderTarget->SetRenderTargetSize(Vector2((float)pDev->GetBackBufferWidth(), (float)pDev->GetBackBufferHeight()));
+				}
+				else
+				{
+					m_pRenderTarget->SetRenderTargetSize(Vector2((float)GetWidth(), (float)GetHeight()));
+				}
 
 				m_pRenderTarget->GetPrimaryAsset(); // touch asset
 			}
@@ -555,51 +560,51 @@ bool ParaEngine::CViewport::DrawQuad()
 		{ Vector3(1, 1, 0), Vector2(fRight, fY) },
 	};
 
-#if defined(USE_OPENGL_RENDERER)
-	// in openGL, Y position is inverted. 
-	for (int i = 0; i < 4; ++i)
+	auto* pDev = CGlobals::GetRenderDevice();
+	if (!pDev)
+		return false;
+
+	if (!pDev->GetCaps().topLeftScreenOrigin)
 	{
-		quadVertices[i].p.y = -quadVertices[i].p.y;
+		// in OpenGL FBOs, Y position is inverted.
+		for (int i = 0; i < 4; ++i)
+		{
+			quadVertices[i].p.y = -quadVertices[i].p.y;
+		}
 	}
-#endif
 
-	// this is done in shader code
-	//
-	// offset the texture coordinate by half texel in order to match texel to pixel. 
-	// This takes me hours to figure out. :-(
-	// float fhalfTexelWidth = 0.5f/m_glowtextureWidth;
-	// float fhalfTexelHeight = 0.5f/m_glowtextureHeight;
-
-	bool bSucceed = CGlobals::GetRenderDevice()->DrawPrimitiveUP(EPrimitiveType::TRIANGLESTRIP, 2, quadVertices, sizeof(mesh_vertex_plain));
+	bool bSucceed = pDev->DrawPrimitiveUP(EPrimitiveType::TRIANGLESTRIP, 2, quadVertices, sizeof(mesh_vertex_plain));
 	return bSucceed;
 }
 
 bool ParaEngine::CViewport::DrawQuad2()
 {
-	bool bSucceed = false;
-#ifdef USE_DIRECTX_RENDERER
-	D3DVIEWPORT9 old_vp;
-	CGlobals::GetRenderDevice()->GetViewport(&old_vp);
-	IDirect3DSurface9* rt = nullptr;
-	CGlobals::GetRenderDevice()->GetRenderTarget(0, &rt);
-	D3DSURFACE_DESC desc;
-	rt->GetDesc(&desc);
-	SAFE_RELEASE(rt);
-	D3DVIEWPORT9 vp = { 0 };
-	vp.Height = desc.Height;
-	vp.Width = desc.Width;
+	auto* pDev = CGlobals::GetRenderDevice();
+	if (!pDev)
+		return false;
+
+	ParaViewport old_vp = pDev->GetViewport();
+	ParaViewport vp = {};
+	vp.X = 0;
+	vp.Y = 0;
+	vp.Width = m_pViewportManager ? m_pViewportManager->GetWidth() : pDev->GetBackBufferWidth();
+	vp.Height = m_pViewportManager ? m_pViewportManager->GetHeight() : pDev->GetBackBufferHeight();
+	vp.MinZ = 0.0f;
 	vp.MaxZ = 1.0f;
-	CGlobals::GetRenderDevice()->SetViewport(&vp);
+	pDev->SetViewport(vp);
+
+	const bool topLeft = pDev->GetCaps().topLeftScreenOrigin;
+	const float vBottom = topLeft ? 1.0f : 0.0f;
+	const float vTop = topLeft ? 0.0f : 1.0f;
 	mesh_vertex_plain quadVertices[4] = {
-		{ Vector3(-1, -1, 0), Vector2(0, 1) },
-		{ Vector3(1, -1, 0), Vector2(1, 1) },
-		{ Vector3(-1, 1, 0), Vector2(0, 0) },
-		{ Vector3(1, 1, 0), Vector2(1, 0) },
+		{ Vector3(-1, -1, 0), Vector2(0, vBottom) },
+		{ Vector3(1, -1, 0), Vector2(1, vBottom) },
+		{ Vector3(-1, 1, 0), Vector2(0, vTop) },
+		{ Vector3(1, 1, 0), Vector2(1, vTop) },
 	};
 
-	bSucceed = SUCCEEDED(RenderDevice::DrawPrimitiveUP(CGlobals::GetRenderDevice(), RenderDevice::DRAW_PERF_TRIANGLES_UNKNOWN, D3DPT_TRIANGLESTRIP, 2, quadVertices, sizeof(mesh_vertex_plain)));
-	CGlobals::GetRenderDevice()->SetViewport(&old_vp);
-#endif      
+	bool bSucceed = pDev->DrawPrimitiveUP(EPrimitiveType::TRIANGLESTRIP, 2, quadVertices, sizeof(mesh_vertex_plain));
+	pDev->SetViewport(old_vp);
 	return bSucceed;
 }
 

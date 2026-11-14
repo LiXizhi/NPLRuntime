@@ -404,10 +404,6 @@ HRESULT CPainter::DrawSprite(GUITextureElement* pElement, RECT *prcDest, float d
 
 	if (pTexture->SurfaceType == TextureEntity::SysMemoryTexture)
 	{
-		//#ifdef USE_DIRECTX_RENDERER
-		//		POINT pt = { rcScreen.left, rcScreen.top };
-		//		hr = CGlobals::GetRenderDevice()->UpdateSurface(((TextureEntityDirectX*)pTexture)->GetSurface(), &rcTexture, guiroot->GetGUIState().pBackSurface, &pt);
-		//#endif
 	}
 	else
 	{
@@ -461,10 +457,6 @@ HRESULT CPainter::DrawSprite(GUITextureElement* pElement, RECT *prcDest, const V
 
 	if (pTexture->SurfaceType == TextureEntity::SysMemoryTexture)
 	{
-		//#ifdef USE_DIRECTX_RENDERER
-		//		POINT pt = { rcScreen.left, rcScreen.top };
-		//		hr = guiroot->m_stateGUI.pRenderDevice->UpdateSurface(((TextureEntityDirectX*)pTexture)->GetSurface(), &rcTexture, guiroot->GetGUIState().pBackSurface, &pt);
-		//#endif
 	}
 	else
 	{
@@ -700,7 +692,7 @@ HRESULT CPainter::DrawText(const char16_t* strText, GUIFontElement* pElement, RE
 
 	if (pFontNode != NULL)
 	{
-#ifdef USE_OPENGL_RENDERER
+#ifndef USE_NULL_RENDERER
 		// CompositionModeStack blendModeStack(this, CPainter::CompositionMode_PlusSourceBlend);
 
 		if (!(pElement->dwTextFormat & DT_NOCLIP))
@@ -775,7 +767,7 @@ HRESULT CPainter::DrawText(const char16_t* strText, GUIFontElement* pElement, RE
 
 		} while (false);
 
-#ifdef USE_OPENGL_RENDERER
+#ifndef USE_NULL_RENDERER
 		if (!(pElement->dwTextFormat & DT_NOCLIP))
 		{
 			if (state->m_clipOperation != ClipOperation::NoClip && !(state->m_clipInfo.empty()))
@@ -816,7 +808,7 @@ HRESULT CPainter::DrawText(const char16_t* strText, GUIFontElement* pElement, RE
 
 	if (pFontNode != NULL)
 	{
-#ifdef USE_OPENGL_RENDERER
+#ifndef USE_NULL_RENDERER
 		// CompositionModeStack blendModeStack(this, CPainter::CompositionMode_PlusSourceBlend);
 
 		if (!(pElement->dwTextFormat & DT_NOCLIP))
@@ -896,7 +888,7 @@ HRESULT CPainter::DrawText(const char16_t* strText, GUIFontElement* pElement, RE
 
 		} while (false);
 
-#ifdef USE_OPENGL_RENDERER
+#ifndef USE_NULL_RENDERER
 		if (!(pElement->dwTextFormat & DT_NOCLIP))
 		{
 			if (state->m_clipOperation != ClipOperation::NoClip && !(state->m_clipInfo.empty()))

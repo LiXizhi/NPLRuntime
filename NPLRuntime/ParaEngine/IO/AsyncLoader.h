@@ -38,7 +38,6 @@ typedef boost::thread npl_boost_thread;
 
 namespace ParaEngine
 {
-	class CDirectXEngine;
 	class CGDIEngine;
 	//--------------------------------------------------------------------------------------
 	// Structures
@@ -185,12 +184,6 @@ namespace ParaEngine
 		void WaitForAllItems();
 
 #ifdef PARAENGINE_CLIENT
-		/** get the file parser used by the IO thread. */
-		inline LPD3DXFILE GetFileParser() { return m_pXFileParser; };
-
-		/** get directX device used in the IO thread for background texture composition.*/
-		CDirectXEngine* GetEngine();
-
 		/** get GDI device used in the IO thread for background texture composition.*/
 		CGDIEngine* GetGDIEngine();
 #endif
@@ -398,12 +391,6 @@ namespace ParaEngine
 		AssetLogLevelEnum m_nLogLevel;
 
 #ifdef PARAENGINE_CLIENT
-		/** another parax file parser used in the IO thread */
-		LPD3DXFILE m_pXFileParser;
-
-		/** another directX device used in the IO thread for background texture composition.*/
-		CDirectXEngine* m_pEngine;
-
 		/** another GDI+ device used in the IO thread for background texture composition.*/
 		CGDIEngine* m_pGDIEngine;
 #endif

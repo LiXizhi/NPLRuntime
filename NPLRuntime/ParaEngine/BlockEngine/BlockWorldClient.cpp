@@ -11,10 +11,6 @@
 #include "OceanManager.h"
 #include "ParaVertexBufferPool.h"
 #include "ShadowMap.h"
-#ifdef USE_DIRECTX_RENDERER
-#include "RenderDeviceD3D9.h"
-#include "DirectXEngine.h"
-#endif
 #include "SunLight.h"
 #include "BaseCamera.h"
 #include "ParaWorldAsset.h"
@@ -95,9 +91,7 @@ namespace ParaEngine
 		m_nMaxVisibleVertexBufferBytes(100 * 1024 * 1024),
 		m_nAlwaysInVertexBufferChunkRadius(2),
 		m_pMultiFrameRenderer(NULL),
-#ifdef USE_DIRECTX_RENDERER
-		m_pDepthStencilSurface(NULL), m_render_target_block_info_surface(NULL), m_render_target_depth_tex_surface(NULL), m_render_target_normal_surface(NULL), m_pOldRenderTarget(NULL), m_pOldZBuffer(NULL),
-#endif
+		m_bAutoBoundColorRT0(false),
 		m_bUseSunlightShadowMap(true), m_bUseWaterReflection(true), m_bMovieOutputMode(false), m_bAsyncChunkMode(true)
 	{
 		g_pInstance = this;
@@ -269,7 +263,6 @@ namespace ParaEngine
 
 	void BlockWorldClient::RenderShadowMap()
 	{
-#ifdef USE_DIRECTX_RENDERER
 		// only render shadow map for fancy shader mode.
 		if ((GetBlockRenderMethod() != BLOCK_RENDER_FANCY_SHADER) ||
 			!GetUseSunlightShadowMap())
@@ -300,6 +293,8 @@ namespace ParaEngine
 
 		EffectManager* pEffectManager = CGlobals::GetEffectManager();
 		auto pRenderDevice = CGlobals::GetRenderDevice();
+		if (!pRenderDevice)
+			return;
 
 		IScene* pScene = CGlobals::GetEffectManager()->GetScene();
 		CBaseCamera* pCamera = pScene->GetCurrentCamera();
@@ -316,50 +311,48 @@ namespace ParaEngine
 		if (pEffect != 0 && pEffect->begin(false))
 		{
 			VertexDeclarationPtr pVertexLayout = GetVertexLayout();
-			GETD3D(CGlobals::GetRenderDevice())->SetVertexDeclaration(pVertexLayout);
+			pRenderDevice->SetVertexDeclaration(pVertexLayout);
 
 			// turn off alpha blending to enable early-Z on modern graphic cards.
-			pRenderDevice->SetRenderState(ERenderState::SRCBLEND, D3DBLEND_ONE);
-			pRenderDevice->SetRenderState(ERenderState::DESTBLEND, D3DBLEND_ZERO);
+			pRenderDevice->SetRenderState(ERenderState::SRCBLEND, RSV_BLEND_ONE);
+			pRenderDevice->SetRenderState(ERenderState::DESTBLEND, RSV_BLEND_ZERO);
 			pRenderDevice->SetRenderState(ERenderState::ALPHABLENDENABLE, FALSE);
 
 			//////////////////////////////////////////////////////////////////////////
 			// set the wave time parameter
 			double time = CGlobals::GetGameTime();
-			// in case it loses accuracy, we will subtract integer number of 2*PI from time
-			// time -= ((int)(time / (2*MATH_PI)))*(2*MATH_PI);
 			time = (int)(time * 1000) % 1000000;
 			pEffect->setParameter(CEffectFile::k_ConstVector1, Vector4((float)time, 0.f, 0.f, 0.f).ptr());
 
-			IDirect3DIndexBuffer9* pIndexBuffer = GetIndexBuffer();
-			GETD3D(CGlobals::GetRenderDevice())->SetIndices(pIndexBuffer);
-			auto pDevice = CGlobals::GetRenderDevice();
+			IndexBufferDevicePtr_type pIndexBuffer = GetIndexBuffer();
+			pRenderDevice->SetIndices(pIndexBuffer);
 
 			for (int nRenderPass = 0; nRenderPass <= BlockRenderPass_AlphaBlended; nRenderPass++)
 			{
 				std::vector<BlockRenderTask*>* pCurRenderQueue = GetRenderQueueByPass((BlockRenderPass)nRenderPass);
 
-				IDirect3DVertexBuffer9* pCurVB = NULL;
+				VertexBufferDevicePtr_type pCurVB = nullptr;
 				uint16_t curTemplateId = 0;
 				int32_t curPass = -1;
 				ERSVCULL culling = RSV_CULL_CCW;
-				IDirect3DTexture9* pCurTex0 = NULL;
+				DeviceTexturePtr_type pCurTex0 = nullptr;
 
 				if (pCurRenderQueue->size() > 0)
 				{
 					for (uint32_t i = 0; i < pCurRenderQueue->size(); i++)
 					{
 						BlockRenderTask* pRenderTask = (*pCurRenderQueue)[i];
-						IDirect3DVertexBuffer9* pVB = pRenderTask->GetVertexBuffer();
+						VertexBufferDevicePtr_type pVB = pRenderTask->GetVertexBuffer();
 
 						if (pVB != pCurVB)
 						{
-							pDevice->SetStreamSource(0, pVB, 0, sizeof(BlockVertexCompressed));
+							pRenderDevice->SetStreamSource(0, pVB, 0, sizeof(BlockVertexCompressed));
 							pCurVB = pVB;
 						}
 						int32_t passId = 0;
 						if (curTemplateId != pRenderTask->GetTemplateId())
 						{
+							curTemplateId = pRenderTask->GetTemplateId();
 							BlockTemplate* pTempate = pRenderTask->GetTemplate();
 
 							if (pTempate->IsShadowCaster())
@@ -387,7 +380,7 @@ namespace ParaEngine
 							if (pTexEntity && pTexEntity->GetTexture() != pCurTex0)
 							{
 								pCurTex0 = pTexEntity->GetTexture();
-								GETD3D(CGlobals::GetRenderDevice())->SetTexture(0, pCurTex0);
+								pRenderDevice->SetTexture(0, pCurTex0);
 							}
 
 							// culling mode
@@ -430,7 +423,7 @@ namespace ParaEngine
 
 						pEffect->CommitChanges();
 
-						CGlobals::GetRenderDevice()->DrawIndexedPrimitive(EPrimitiveType::TRIANGLELIST, 0, pRenderTask->GetVertexOfs(),
+						pRenderDevice->DrawIndexedPrimitive(EPrimitiveType::TRIANGLELIST, 0, pRenderTask->GetVertexOfs(),
 							pRenderTask->GetVertexCount(), pRenderTask->GetIndexOfs(), pRenderTask->GetPrimitiveCount());
 					}
 				}
@@ -441,11 +434,10 @@ namespace ParaEngine
 			}
 			// turn blending on again
 			pRenderDevice->SetRenderState(ERenderState::ALPHABLENDENABLE, TRUE);
-			pRenderDevice->SetRenderState(ERenderState::SRCBLEND, D3DBLEND_SRCALPHA);
-			pRenderDevice->SetRenderState(ERenderState::DESTBLEND, D3DBLEND_INVSRCALPHA);
+			pRenderDevice->SetRenderState(ERenderState::SRCBLEND, RSV_BLEND_SRCALPHA);
+			pRenderDevice->SetRenderState(ERenderState::DESTBLEND, RSV_BLEND_INVSRCALPHA);
 			pEffect->end();
 		}
-#endif
 	}
 
 	void BlockWorldClient::Render(BlockRenderPass nRenderPass, std::vector<BlockRenderTask*>* pCurRenderQueue, int nRenderMethod)
@@ -531,138 +523,7 @@ namespace ParaEngine
 
 			if (pEffect == 0)
 			{
-#ifdef USE_DIRECTX_RENDERER
-				if (dwRenderMethod != BLOCK_RENDER_FIXED_FUNCTION)
-				{
-					SetBlockRenderMethod(BLOCK_RENDER_FIXED_FUNCTION);
-					return;
-				}
-				//////////////////////////////////////////////////////////////////////////
-				// render using fixed function pipeline
-
-				GETD3D(CGlobals::GetRenderDevice())->SetFVF(block_vertex::FVF);
-
-				IDirect3DIndexBuffer9* pIndexBuffer = GetIndexBuffer();
-				GETD3D(CGlobals::GetRenderDevice())->SetIndices(pIndexBuffer);
-
-				IDirect3DVertexBuffer9* pCurVB = NULL;
-				uint16_t curTemplateId = 0;
-				int32_t curPass = -1;
-				ERSVCULL culling = RSV_CULL_CCW;
-				IDirect3DTexture9* pCurTex0 = NULL;
-				IDirect3DTexture9* pCurTex1 = NULL;
-				IDirect3DTexture9* pCurTex2 = NULL;
-
-				for (uint32_t i = 0; i < pCurRenderQueue->size(); i++)
-				{
-					BlockRenderTask* pRenderTask = (*pCurRenderQueue)[i];
-					IDirect3DVertexBuffer9* pVB = pRenderTask->GetVertexBuffer();
-					if (pVB != pCurVB)
-					{
-						GETD3D(CGlobals::GetRenderDevice())->SetStreamSource(0, pVB, 0, sizeof(BlockVertexCompressed));
-						pCurVB = pVB;
-					}
-					int32_t passId;
-					BlockTemplate* pTempate = pRenderTask->GetTemplate();
-					if (curTemplateId != pRenderTask->GetTemplateId())
-					{
-						if (pTempate->IsMatchAttribute(BlockTemplate::batt_twoTexture))
-							passId = g_twoTexPass;
-						else if (pTempate->IsMatchAttribute(BlockTemplate::batt_transparent))
-							passId = g_transparentBlockPass;
-						else
-							passId = g_TexPass;
-
-						if (curPass != passId)
-						{
-							curPass = passId;
-							if (passId == 0)
-							{
-								pDevice->SetRenderState(ERenderState::ALPHATESTENABLE, FALSE);
-							}
-							else if (passId == 1)
-							{
-								pDevice->SetRenderState(ERenderState::ALPHATESTENABLE, TRUE);
-							}
-							else if (passId == 2)
-							{
-								pDevice->SetRenderState(ERenderState::ALPHATESTENABLE, TRUE);
-							}
-							else if (passId == 3)
-							{
-								pDevice->SetRenderState(ERenderState::ALPHATESTENABLE, TRUE);
-							}
-							else
-							{
-								curPass = -1;
-								continue;
-							}
-						}
-						// culling mode
-						if (pTempate->GetBlockModel().IsDisableFaceCulling())
-						{
-							if (culling != RSV_CULL_NONE)
-							{
-								pDevice->SetRenderState(ERenderState::CULLMODE, RSV_CULL_NONE);
-								culling = RSV_CULL_NONE;
-							}
-						}
-						else if (nRenderPass != BlockRenderPass_Opaque && m_isUnderLiquid && pRenderTask->GetTemplate()->IsMatchAttribute(BlockTemplate::batt_liquid))
-						{
-							if (culling != RSV_CULL_CW)
-							{
-								pDevice->SetRenderState(ERenderState::CULLMODE, RSV_CULL_CW);
-								culling = RSV_CULL_CW;
-							}
-						}
-						else
-						{
-							if (culling != RSV_CULL_CCW)
-							{
-								pDevice->SetRenderState(ERenderState::CULLMODE, RSV_CULL_CCW);
-								culling = RSV_CULL_CCW;
-							}
-						}
-					}
-
-					TextureEntity* pTexEntity = pTemplate->GetTexture0(pRenderTask->GetUserData());
-					if (pTexEntity && pTexEntity->GetTexture() != pCurTex0)
-					{
-						pCurTex0 = pTexEntity->GetTexture();
-						pDevice->SetTexture(0, pCurTex0);
-					}
-
-					pTexEntity = pTemplate->GetTexture1();
-					if (pTexEntity && pTexEntity->GetTexture() != pCurTex1)
-					{
-						pCurTex1 = pTexEntity->GetTexture();
-						pDevice->SetTexture(1, pCurTex1);
-					}
-
-					/* fixed function never use normal map
-					pTexEntity = pTemplate->GetNormalMap();
-					if(pTexEntity && pTexEntity->GetTexture()!=pCurTex2)
-					{
-						pCurTex2 = pTexEntity->GetTexture();
-						pDevice->SetTexture(2,pCurTex2);
-					}*/
-					
-					Matrix4 vWorldMatrix(Matrix4::IDENTITY);
-
-					Uint16x3& vMinPos = pRenderTask->GetMinBlockPos();
-					vWorldMatrix._11 = vWorldMatrix._22 = vWorldMatrix._33 = fBlockSize;
-					vWorldMatrix._41 = (vMinPos.x - renderBlockOfs.x) * fBlockSize - renderBlockOfs_remain.x;
-					vWorldMatrix._42 = vMinPos.y * fBlockSize - renderOfs.y + verticalOffset;
-					vWorldMatrix._43 = (vMinPos.z - renderBlockOfs.z) * fBlockSize - renderBlockOfs_remain.z;
-
-					GETD3D(CGlobals::GetRenderDevice())->SetTransform(D3DTS_WORLD, vWorldMatrix.GetPointer());
-
-					CGlobals::GetRenderDevice()->DrawIndexedPrimitive(EPrimitiveType::TRIANGLELIST, 0, pRenderTask->GetVertexOfs(),
-						pRenderTask->GetVertexCount(), pRenderTask->GetIndexOfs(), pRenderTask->GetPrimitiveCount());
-				}
-
-				pDevice->SetRenderState(ERenderState::CULLMODE, RSV_CULL_CCW);
-#endif
+				// All ParaRHI backends render through programmable shaders (TECH_BLOCK).
 			}
 			else if (pEffect != 0 && pEffect->begin(false))
 			{
@@ -1165,75 +1026,7 @@ namespace ParaEngine
 
 		if (pEffect == 0)
 		{
-#ifdef USE_DIRECTX_RENDERER
-			// fixed function pipeline
-			GETD3D(CGlobals::GetRenderDevice())->SetTexture(0, highLightTexture->GetTexture());
-
-			pDevice->SetRenderState(ERenderState::ALPHABLENDENABLE, TRUE);
-			pDevice->SetRenderState(ERenderState::ALPHATESTENABLE, FALSE);
-			pDevice->SetRenderState(ERenderState::SRCBLEND, D3DBLEND_ONE);
-			pDevice->SetRenderState(ERenderState::DESTBLEND, D3DBLEND_ONE);
-			pDevice->SetRenderState(ERenderState::ZWRITEENABLE, FALSE);
-
-			GETD3D(CGlobals::GetRenderDevice())->SetFVF(mesh_vertex_plain::FVF);
-
-			uint32_t time = CGlobals::GetSceneState()->GetGlobalTime();
-			uint8 lightScaler = (bColorAnimate) ? (uint8)(abs(sin(time * 0.0015f)) * 0.4f * 255) : 0xff;
-			DWORD lightIntensity = COLOR_ARGB(255, lightScaler, lightScaler, lightScaler);
-
-			Matrix4 vWorldMatrix(Matrix4::IDENTITY);
-			vWorldMatrix._41 = -renderBlockOfs_remain.x - (fScaledBlockSize - fBlockSize) * 0.5f;
-			vWorldMatrix._42 = -renderBlockOfs_remain.y - (fScaledBlockSize - fBlockSize) * 0.5f;
-			vWorldMatrix._43 = -renderBlockOfs_remain.z - (fScaledBlockSize - fBlockSize) * 0.5f;
-
-			GETD3D(CGlobals::GetRenderDevice())->SetTransform(D3DTS_WORLD, vWorldMatrix.GetPointer());
-
-			int nMaxFaceCount = (m_maxSelectBlockPerBatch - 1) * 6;
-
-			auto itEnd = selectedBlockMap.end();
-
-			for (auto itCur = selectedBlockMap.begin(); itCur != itEnd; itCur++)
-			{
-				uint16_t x, y, z;
-				FromBlockSparseIndex((*itCur).first, x, y, z);
-				uint16_t nNearbyValue = (*itCur).second;
-
-				if (curInstCount >= nMaxFaceCount)
-				{
-					CGlobals::GetRenderDevice()->DrawIndexedPrimitiveUP(EPrimitiveType::TRIANGLELIST, 0, curInstCount * 4, curInstCount * 2, &(m_select_block_indices[0]), PixelFormat::INDEX16, &(m_select_block_vertices[0]), sizeof(SelectBlockVertex));
-					curInstCount = 0;
-					instFloatCount = 0;
-				}
-
-				int nCount = 0;
-				if (selectedBlocks.m_bOnlyRenderClickableArea)
-				{
-					Vector3 vOffset((x - renderBlockOfs_x) * fBlockSize, (y - renderBlockOfs_y) * fBlockSize + verticalOffset, (z - renderBlockOfs_z) * fBlockSize);
-					nCount = FillSelectBlockInvert(nNearbyValue, x, y, z, &(m_select_block_vertices[instFloatCount * 4]), vOffset, fScaledBlockSize);
-				}
-				else if (nNearbyValue > 0)
-				{
-					Vector3 vOffset((x - renderBlockOfs_x) * fBlockSize, (y - renderBlockOfs_y) * fBlockSize + verticalOffset, (z - renderBlockOfs_z) * fBlockSize);
-					nCount = FillSelectBlockVertice(nNearbyValue, x, y, z, &(m_select_block_vertices[instFloatCount * 4]), vOffset, fScaledBlockSize);
-				}
-
-				instFloatCount += nCount;
-				curInstCount += nCount;
-			}
-
-			if (curInstCount > 0)
-			{
-				CGlobals::GetRenderDevice()->DrawIndexedPrimitiveUP(EPrimitiveType::TRIANGLELIST, 0, curInstCount * 4, curInstCount * 2, &(m_select_block_indices[0]), PixelFormat::INDEX16, &(m_select_block_vertices[0]), sizeof(SelectBlockVertex));
-			}
-
-			pDevice->SetRenderState(ERenderState::ALPHATESTENABLE, TRUE);
-			pDevice->SetRenderState(ERenderState::ALPHABLENDENABLE, FALSE);
-			pDevice->SetRenderState(ERenderState::SRCBLEND, D3DBLEND_SRCALPHA);
-			pDevice->SetRenderState(ERenderState::DESTBLEND, D3DBLEND_INVSRCALPHA);
-			pDevice->SetRenderState(ERenderState::ZWRITEENABLE, TRUE);
-			pDevice->SetRenderState(ERenderState::DEPTHBIAS, 0);
-
-#endif
+			// All ParaRHI backends render through programmable shaders (TECH_BLOCK).
 		}
 		else if (pEffect != 0 && pEffect->begin(false))
 		{
@@ -1338,8 +1131,9 @@ namespace ParaEngine
 	{
 		if (m_damageDegree <= 0)
 			return;
-#ifdef USE_DIRECTX_RENDERER
 		RenderDevicePtr pDevice = CGlobals::GetRenderDevice();
+		if (!pDevice)
+			return;
 		float blockSize = BlockConfig::g_blockSize;
 
 		if (!m_damageTexture)
@@ -1378,7 +1172,7 @@ namespace ParaEngine
 
 		if (pEffect != 0 && pEffect->begin(false))
 		{
-			CGlobals::GetRenderDevice()->SetVertexDeclaration(GetSelectBlockVertexLayout());
+			pDevice->SetVertexDeclaration(GetSelectBlockVertexLayout());
 
 			if (pEffect->BeginPass(2))
 			{
@@ -1392,7 +1186,7 @@ namespace ParaEngine
 					matViewProj = (pView) * (pProj);
 				}
 
-				CGlobals::GetRenderDevice()->SetTexture(0, m_damageTexture->GetTexture());
+				pDevice->SetTexture(0, m_damageTexture->GetTexture());
 
 				pDevice->SetRenderState(ERenderState::ALPHABLENDENABLE, TRUE);
 				pDevice->SetRenderState(ERenderState::ZWRITEENABLE, FALSE);
@@ -1417,15 +1211,14 @@ namespace ParaEngine
 					instFloatCount++;
 					curInstCount++;
 				}
-				CGlobals::GetRenderDevice()->DrawIndexedPrimitiveUP(EPrimitiveType::TRIANGLELIST, 0, curInstCount * 24, curInstCount * 12, &(m_select_block_indices[0]), PixelFormat::INDEX16, &(m_select_block_vertices[0]), sizeof(SelectBlockVertex));
-				
+				pDevice->DrawIndexedPrimitiveUP(EPrimitiveType::TRIANGLELIST, 0, curInstCount * 24, curInstCount * 12, &(m_select_block_indices[0]), PixelFormat::INDEX16, &(m_select_block_vertices[0]), sizeof(SelectBlockVertex));
+
 				pEffect->EndPass();
 				pDevice->SetRenderState(ERenderState::ALPHABLENDENABLE, FALSE);
 				pDevice->SetRenderState(ERenderState::ZWRITEENABLE, TRUE);
 			}
 			pEffect->end();
 		}
-#endif 
 	}
 
 	int BlockWorldClient::FillSelectBlockInvert(uint16_t nNearbyValue, uint16_t x, uint16_t y, uint16_t z, SelectBlockVertex* blockModel, const Vector3& vOffset, const float blockSize, float fUV_Y_Offset /*= 0.f*/, float fUV_Y_Size/*=1.f*/)
@@ -2034,27 +1827,13 @@ namespace ParaEngine
 					return true;
 				}
 			}
-#ifdef USE_DIRECTX_RENDERER
-			return CGlobals::GetOceanManager()->IsPointUnderWater(vPos);
-#else
-			return false;
-#endif
 		}
-		else
-		{
-#ifdef USE_DIRECTX_RENDERER
-			return CGlobals::GetOceanManager()->IsPointUnderWater(vPos);
-#else
-			return false;
-#endif
-		}
+		return CGlobals::GetOceanManager() ? CGlobals::GetOceanManager()->IsPointUnderWater(vPos) : false;
 	}
 
 	float BlockWorldClient::GetWaterLevel(float x, float y, float z, int nRayLength)
 	{
-
 		float fWaterLevel = -1000.f;
-#ifdef USE_DIRECTX_RENDERER
 		if (m_isInWorld)
 		{
 			Uint16x3 blockIdx;
@@ -2078,20 +1857,18 @@ namespace ParaEngine
 				}
 			}
 
-			if (CGlobals::GetOceanManager()->OceanEnabled())
+			if (CGlobals::GetOceanManager() && CGlobals::GetOceanManager()->OceanEnabled())
 			{
 				float fLevel = CGlobals::GetOceanManager()->GetWaterLevel();
 				if (fLevel > fWaterLevel)
 					fWaterLevel = fLevel;
 			}
 		}
-#endif
 		return fWaterLevel;
 	}
 
 	void BlockWorldClient::SetBlockRenderMethod(BlockRenderMethod method)
 	{
-#ifdef USE_DIRECTX_RENDERER
 		if (m_dwBlockRenderMethod != method)
 		{
 			if (method == BLOCK_RENDER_FANCY_SHADER)
@@ -2101,15 +1878,13 @@ namespace ParaEngine
 					OUTPUT_LOG("BLOCK_RENDER_FANCY_SHADER can not be set with AA\n");
 					return;
 				}
-				// check for device compatibilities
+				// check for device capabilities via ParaRHI
 				if (CanUseAdvancedShading())
 				{
-					// just ensure that game effect set is not too low.
 					if (CGlobals::GetSettings().GetGameEffectSet() >= 1024)
 					{
 						CGlobals::GetSettings().LoadGameEffectSet(0);
 					}
-					// disable glow effect since we are using our own.
 					CGlobals::GetScene()->EnableFullScreenGlow(false);
 				}
 				else
@@ -2121,10 +1896,7 @@ namespace ParaEngine
 				CShadowMap* pShadowMap = CGlobals::GetEffectManager()->GetShadowMap();
 				if (pShadowMap != NULL)
 				{
-					if (GetUseSunlightShadowMap())
-						CGlobals::GetScene()->SetShadow(true);
-					else
-						CGlobals::GetScene()->SetShadow(false);
+					CGlobals::GetScene()->SetShadow(GetUseSunlightShadowMap());
 				}
 				// always disable instancing
 				CGlobals::GetScene()->EnableInstancing(false);
@@ -2152,28 +1924,28 @@ namespace ParaEngine
 
 			if (m_dwBlockRenderMethod == BLOCK_RENDER_FANCY_SHADER)
 			{
-				// if switching from fancy shader to plain shader
-				// remove all surfaces
-				SAFE_RELEASE(m_render_target_block_info_surface);
-				SAFE_RELEASE(m_render_target_depth_tex_surface);
-				SAFE_RELEASE(m_render_target_normal_surface);
-				SAFE_RELEASE(m_pDepthStencilSurface);
+				auto* pDevice = CGlobals::GetRenderDevice();
+				if (pDevice)
+				{
+					pDevice->SetRenderTarget(1, nullptr);
+					pDevice->SetRenderTarget(2, nullptr);
+					pDevice->SetRenderTarget(3, nullptr);
+					if (m_bAutoBoundColorRT0)
+					{
+						pDevice->SetRenderTarget(0, nullptr);
+						m_bAutoBoundColorRT0 = false;
+					}
+				}
 				m_render_target_color_hdr.reset();
 				m_render_target_color.reset();
 				m_render_target_block_info.reset();
 				m_render_target_depth_tex.reset();
 				m_render_target_normal.reset();
-				GETD3D(CGlobals::GetRenderDevice())->SetRenderTarget(1, NULL);
-				GETD3D(CGlobals::GetRenderDevice())->SetRenderTarget(2, NULL);
-				GETD3D(CGlobals::GetRenderDevice())->SetRenderTarget(3, NULL);
 			}
 			m_dwBlockRenderMethod = method;
 
 			ClearBlockRenderCache();
 		}
-#elif defined(USE_OPENGL_RENDERER)
-		CGlobals::GetSettings().LoadGameEffectSet(0);
-#endif
 	}
 
 	void BlockWorldClient::ClearBlockRenderCache()
@@ -2235,18 +2007,12 @@ namespace ParaEngine
 
 	void BlockWorldClient::InvalidateDeviceObjects()
 	{
-#ifdef USE_DIRECTX_RENDERER
-		SAFE_RELEASE(m_render_target_block_info_surface);
-		SAFE_RELEASE(m_render_target_depth_tex_surface);
-		SAFE_RELEASE(m_render_target_normal_surface);
-		SAFE_RELEASE(m_pDepthStencilSurface);
-
+		m_bAutoBoundColorRT0 = false;
 		m_render_target_color_hdr.reset();
 		m_render_target_color.reset();
 		m_render_target_block_info.reset();
 		m_render_target_depth_tex.reset();
 		m_render_target_normal.reset();
-#endif
 	}
 
 	void BlockWorldClient::RestoreNormalShader()
@@ -2272,7 +2038,6 @@ namespace ParaEngine
 
 	void BlockWorldClient::DoPostRenderingProcessing(BlockRenderPass nRenderPass)
 	{
-#ifdef USE_DIRECTX_RENDERER
 		if (IsInBlockWorld() && GetBlockRenderMethod() == BLOCK_RENDER_FANCY_SHADER)
 		{
 			if (nRenderPass == BlockRenderPass_Opaque)
@@ -2281,6 +2046,26 @@ namespace ParaEngine
 					CGlobals::GetNPLRuntime()->GetMainRuntimeState()->DoString(m_sPostProcessorCallbackScript.c_str(), (int)m_sPostProcessorCallbackScript.size());
 				RenderDynamicBlocks();
 				RestoreNormalShader();
+
+				if (m_bAutoBoundColorRT0)
+				{
+					auto* pDevice = CGlobals::GetRenderDevice();
+					if (pDevice)
+					{
+						pDevice->SetRenderTarget(1, nullptr);
+						pDevice->SetRenderTarget(2, nullptr);
+						pDevice->SetRenderTarget(3, nullptr);
+						IRHIRenderTarget* colorRT = m_render_target_color ? m_render_target_color->GetRHIRenderTarget() : nullptr;
+						if (colorRT && pDevice->GetCurrentRenderTargetBinding().targets[0] == colorRT)
+						{
+							pDevice->BlitRenderTarget(colorRT, nullptr, nullptr, nullptr, false);
+							pDevice->SetRenderTarget(0, nullptr);
+							if (CGlobals::GetViewportManager() && CGlobals::GetViewportManager()->GetActiveViewPort())
+								CGlobals::GetViewportManager()->GetActiveViewPort()->ApplyViewport();
+						}
+					}
+					m_bAutoBoundColorRT0 = false;
+				}
 			}
 			else if (nRenderPass == BlockRenderPass_AlphaBlended)
 			{
@@ -2288,15 +2073,15 @@ namespace ParaEngine
 					CGlobals::GetNPLRuntime()->GetMainRuntimeState()->DoString(m_sPostProcessorAlphaCallbackScript.c_str(), (int)m_sPostProcessorAlphaCallbackScript.size());
 			}
 		}
-#endif
 	}
 
 	bool BlockWorldClient::PrepareAllRenderTargets(bool bSetRenderTarget /*= true*/)
 	{
-#ifdef USE_DIRECTX_RENDERER
 		if (GetBlockRenderMethod() == BLOCK_RENDER_FANCY_SHADER)
 		{
 			RenderDevicePtr pDevice = CGlobals::GetRenderDevice();
+			if (!pDevice || !CanUseAdvancedShading())
+				return false;
 
 			if (m_block_effect_fancy == 0)
 			{
@@ -2304,13 +2089,11 @@ namespace ParaEngine
 				m_block_effect_fancy->LoadAsset();
 				if (!m_block_effect_fancy->IsValid())
 				{
-					// try a lower shader other than fancy
 					return false;
 				}
 			}
 			else if (!m_block_effect_fancy->IsValid())
 			{
-				// try a lower shader other than fancy
 				return false;
 			}
 
@@ -2324,38 +2107,20 @@ namespace ParaEngine
 			{
 				m_render_target_block_info = CGlobals::GetAssetManager()->LoadTexture("_BlockInfoRT", "_BlockInfoRT", TextureEntity::RenderTarget);
 				m_render_target_block_info->LoadAsset();
-				SAFE_RELEASE(m_render_target_block_info_surface);
-				m_render_target_block_info->GetTexture()->GetSurfaceLevel(0, &m_render_target_block_info_surface);
 			}
 
 			if (m_render_target_depth_tex == 0)
 			{
 				m_render_target_depth_tex = CGlobals::GetAssetManager()->LoadTexture("_DepthTexRT_R32F", "_DepthTexRT_R32F", TextureEntity::RenderTarget);
 				m_render_target_depth_tex->LoadAsset();
-				SAFE_RELEASE(m_render_target_depth_tex_surface);
-				m_render_target_depth_tex->GetTexture()->GetSurfaceLevel(0, &m_render_target_depth_tex_surface);
 			}
 			if (m_render_target_normal == 0)
 			{
 				m_render_target_normal = CGlobals::GetAssetManager()->LoadTexture("_NormalRT", "_NormalRT", TextureEntity::RenderTarget);
 				m_render_target_normal->LoadAsset();
-				SAFE_RELEASE(m_render_target_normal_surface);
-				m_render_target_normal->GetTexture()->GetSurfaceLevel(0, &m_render_target_normal_surface);
 			}
 
 			CGlobals::GetEffectManager()->MapHandleToEffect(TECH_BLOCK_FANCY, m_block_effect_fancy.get());
-			/*if (m_normal_mesh_effect_fancy == 0)
-			{
-				m_normal_mesh_effect_fancy = CGlobals::GetAssetManager()->LoadEffectFile("mesh_normal_fancy", "script/apps/Aries/Creator/Game/Shaders/mrt_mesh_normal.fxo");
-				m_normal_mesh_effect_fancy->LoadAsset();
-				if (!m_normal_mesh_effect_fancy->IsValid())
-				{
-					// try a lower shader other than fancy
-					return false;
-				}
-			}
-			CGlobals::GetEffectManager()->MapHandleToEffect(TECH_SIMPLE_MESH_NORMAL, m_normal_mesh_effect_fancy.get());
-			CGlobals::GetEffectManager()->MapHandleToEffect(TECH_CHARACTER, m_normal_mesh_effect_fancy.get());*/
 
 			if (m_bmax_model_effect_fancy == 0)
 			{
@@ -2363,7 +2128,6 @@ namespace ParaEngine
 				m_bmax_model_effect_fancy->LoadAsset();
 				if (!m_bmax_model_effect_fancy->IsValid())
 				{
-					// try a lower shader other than fancy
 					return false;
 				}
 			}
@@ -2375,7 +2139,6 @@ namespace ParaEngine
 				m_terrain_fancy->LoadAsset();
 				if (!m_terrain_fancy->IsValid())
 				{
-					// try a lower shader other than fancy
 					return false;
 				}
 			}
@@ -2383,34 +2146,57 @@ namespace ParaEngine
 
 			if (bSetRenderTarget)
 			{
-				if (FAILED(GETD3D(CGlobals::GetRenderDevice())->SetRenderTarget(1, m_render_target_depth_tex_surface)) ||
-					FAILED(GETD3D(CGlobals::GetRenderDevice())->SetRenderTarget(2, m_render_target_block_info_surface)) ||
-					FAILED(GETD3D(CGlobals::GetRenderDevice())->SetRenderTarget(3, m_render_target_normal_surface)))
-				{
+				IRHIRenderTarget* depthRT = m_render_target_depth_tex ? m_render_target_depth_tex->GetRHIRenderTarget() : nullptr;
+				IRHIRenderTarget* blockInfoRT = m_render_target_block_info ? m_render_target_block_info->GetRHIRenderTarget() : nullptr;
+				IRHIRenderTarget* normalRT = m_render_target_normal ? m_render_target_normal->GetRHIRenderTarget() : nullptr;
+				if (!depthRT || !blockInfoRT || !normalRT)
 					return false;
+
+				static int nLastFrameCount = 0;
+				const int curFrameCount = CGlobals::GetSceneState()->GetRenderFrameCount();
+				const bool bIsNewFrame = (nLastFrameCount != curFrameCount);
+				if (bIsNewFrame)
+				{
+					nLastFrameCount = curFrameCount;
+					pDevice->PushRenderTarget(normalRT);
+					pDevice->SetClearColor(Color4f(0.f, 0.f, 0.f, 0.f));
+					pDevice->Clear(true, false, false);
+					pDevice->PopRenderTarget();
 				}
+
+				IRHIRenderTarget* rt0 = pDevice->GetCurrentRenderTargetBinding().targets[0];
+				if (rt0 == nullptr && pDevice->GetBackendType() != ERHIBackend::D3D11)
+				{
+					if (m_render_target_color == 0)
+					{
+						m_render_target_color = CGlobals::GetAssetManager()->LoadTexture("_ColorRT", "_ColorRT", TextureEntity::RenderTarget);
+					}
+					m_render_target_color->LoadAsset();
+					rt0 = m_render_target_color->GetRHIRenderTarget();
+					if (!rt0)
+						return false;
+					if (bIsNewFrame)
+					{
+						pDevice->PushRenderTarget(rt0);
+						pDevice->SetClearColor(Color4f(0.f, 0.f, 0.f, 0.f));
+						pDevice->SetClearDepth(1.0f);
+						pDevice->SetClearStencil(0);
+						pDevice->Clear(true, true, true);
+						pDevice->PopRenderTarget();
+					}
+					m_bAutoBoundColorRT0 = true;
+				}
+
+				IRHIRenderTarget* mrtTargets[4] = { rt0, depthRT, blockInfoRT, normalRT };
+				IRHIRenderTarget* depthStencilRT = rt0 ? rt0 : pDevice->GetCurrentRenderTargetBinding().depthStencilOverride;
+				if (!pDevice->SetRenderTargets(4, mrtTargets, depthStencilRT))
+					return false;
 
 				CGlobals::GetSceneState()->SetDeferredShading(true);
-
-				// clear all other render targets to zero.
-				{
-					static int nLastFrameCount = 0;
-					if (nLastFrameCount != CGlobals::GetSceneState()->GetRenderFrameCount())
-					{
-						nLastFrameCount = CGlobals::GetSceneState()->GetRenderFrameCount();
-						LPDIRECT3DSURFACE9 pOldRenderTarget = NULL;
-						pOldRenderTarget = CGlobals::GetDirectXEngine().GetRenderTarget();
-						GETD3D(CGlobals::GetRenderDevice())->SetRenderTarget(3, NULL);
-						GETD3D(CGlobals::GetRenderDevice())->SetRenderTarget(0, m_render_target_normal_surface);
-						GETD3D(CGlobals::GetRenderDevice())->Clear(0L, NULL, D3DCLEAR_TARGET, 0, 1.0f, 0L);
-						GETD3D(CGlobals::GetRenderDevice())->SetRenderTarget(0, pOldRenderTarget);
-						GETD3D(CGlobals::GetRenderDevice())->SetRenderTarget(3, m_render_target_normal_surface);
-					}
+				if (CGlobals::GetViewportManager() && CGlobals::GetViewportManager()->GetActiveViewPort())
 					CGlobals::GetViewportManager()->GetActiveViewPort()->ApplyViewport();
-				}
 			}
 		}
-#endif
 		return true;
 	}
 
@@ -2433,21 +2219,16 @@ namespace ParaEngine
 
 	bool BlockWorldClient::CanUseAdvancedShading()
 	{
-#ifdef USE_DIRECTX_RENDERER
-		if (CGlobals::GetDirectXEngine().GetVertexShaderVersion() >= 3 &&
-			CGlobals::GetDirectXEngine().GetPixelShaderVersion() >= 3 &&
-			CGlobals::GetDirectXEngine().m_d3dCaps.NumSimultaneousRTs >= 3)
-		{
-			return true;
-		}
-#endif
-		return false;
+		auto* pDevice = CGlobals::GetRenderDevice();
+		if (!pDevice || pDevice->GetBackendType() == ERHIBackend::Null)
+			return false;
+		const RHIDeviceCaps& caps = pDevice->GetCaps();
+		return caps.GetShaderModelMajor() >= 3 && caps.maxSimultaneousRTs >= 4 && caps.supportsFloatRenderTargets;
 	}
 
 	void BlockWorldClient::SetUseSunlightShadowMap(bool bEnable)
 	{
 		m_bUseSunlightShadowMap = bEnable;
-#ifdef USE_DIRECTX_RENDERER
 		if (GetBlockRenderMethod() == BLOCK_RENDER_FANCY_SHADER)
 		{
 			CShadowMap* pShadowMap = CGlobals::GetEffectManager()->GetShadowMap();
@@ -2456,7 +2237,6 @@ namespace ParaEngine
 				CGlobals::GetScene()->SetShadow(m_bUseSunlightShadowMap);
 			}
 		}
-#endif
 	}
 
 	bool BlockWorldClient::HasSunlightShadowMap()
@@ -2481,8 +2261,7 @@ namespace ParaEngine
 
 	void BlockWorldClient::PrepareShadowCasters(CShadowMap* pShadowMap)
 	{
-#ifdef USE_DIRECTX_RENDERER
-		if (GetBlockRenderMethod() == BLOCK_RENDER_FANCY_SHADER && GetUseSunlightShadowMap())
+		if (pShadowMap && GetBlockRenderMethod() == BLOCK_RENDER_FANCY_SHADER && GetUseSunlightShadowMap())
 		{
 			// TODO: add all shadow caster chunks within shadow radius.
 			CShapeAABB aabb;
@@ -2494,7 +2273,6 @@ namespace ParaEngine
 			aabb.SetCenterExtents(vCenter, vExtent);
 			pShadowMap->AddShadowCasterPoint(aabb);
 		}
-#endif
 	}
 
 	void BlockWorldClient::RenderDynamicBlocks()
@@ -2599,17 +2377,16 @@ namespace ParaEngine
 
 		if (bIsShadowPass)
 		{
-#ifdef USE_DIRECTX_RENDERER
+			CShadowMap* pShadowMap = CGlobals::GetEffectManager() ? CGlobals::GetEffectManager()->GetShadowMap() : nullptr;
+			if (!pShadowMap)
+				return;
 			frustum = &caster_frustum;
 			Vector3 vCenter = camWorldPos - renderOrig;
 			float fRadius = min(CGlobals::GetScene()->GetShadowRadius(), 50.f);
 
-			frustum->UpdateFrustum(CGlobals::GetEffectManager()->GetShadowMap()->GetViewProjMatrix());
+			frustum->UpdateFrustum(pShadowMap->GetViewProjMatrix());
 			camMin = Vector3(vCenter.x - fRadius, vCenter.y - fRadius, vCenter.z - fRadius);
 			camMax = Vector3(vCenter.x + fRadius, vCenter.y + fRadius, vCenter.z + fRadius);
-#else
-			return;
-#endif
 		}
 		else
 		{
@@ -3187,11 +2964,51 @@ namespace ParaEngine
 		return m_pMultiFrameRenderer->DrawToSkybox();
 	}
 
+	namespace
+	{
+		void BuildUnitSphereMesh(int slices, int stacks, std::vector<Vector3>& outVerts, std::vector<uint16_t>& outIndices)
+		{
+			outVerts.clear();
+			outIndices.clear();
+			outVerts.reserve(static_cast<size_t>((stacks + 1) * (slices + 1)));
+			outIndices.reserve(static_cast<size_t>(stacks * slices * 6));
+			const float kPi = 3.14159265358979323846f;
+			for (int i = 0; i <= stacks; ++i)
+			{
+				const float phi = kPi * static_cast<float>(i) / static_cast<float>(stacks);
+				const float sinPhi = sinf(phi);
+				const float cosPhi = cosf(phi);
+				for (int j = 0; j <= slices; ++j)
+				{
+					const float theta = 2.0f * kPi * static_cast<float>(j) / static_cast<float>(slices);
+					outVerts.emplace_back(sinPhi * cosf(theta), cosPhi, sinPhi * sinf(theta));
+				}
+			}
+			const int ringStride = slices + 1;
+			for (int i = 0; i < stacks; ++i)
+			{
+				for (int j = 0; j < slices; ++j)
+				{
+					const uint16_t i0 = static_cast<uint16_t>(i * ringStride + j);
+					const uint16_t i1 = static_cast<uint16_t>((i + 1) * ringStride + j);
+					const uint16_t i2 = static_cast<uint16_t>((i + 1) * ringStride + j + 1);
+					const uint16_t i3 = static_cast<uint16_t>(i * ringStride + j + 1);
+					outIndices.push_back(i0);
+					outIndices.push_back(i1);
+					outIndices.push_back(i2);
+					outIndices.push_back(i0);
+					outIndices.push_back(i2);
+					outIndices.push_back(i3);
+				}
+			}
+		}
+	}
+
 	void BlockWorldClient::RenderDeferredLightsMesh()
 	{
-#ifdef USE_DIRECTX_RENDERER
 		SceneState* sceneState = CGlobals::GetSceneState();
-		if (!sceneState->IsDeferredShading() || sceneState->listDeferredLightObjects.empty())
+		auto* pDevice = CGlobals::GetRenderDevice();
+		if (!pDevice || !sceneState->IsDeferredShading() || sceneState->listDeferredLightObjects.empty())
 			return;
 
 		// sort by light type
@@ -3226,16 +3043,16 @@ namespace ParaEngine
 		{
 			if (lightObject->GetLightType() != nLastType)
 			{
+				nLastType = lightObject->GetLightType();
 				if (pEffectFile)
 				{
 					pEffectFile->end();
 				}
 				else
 				{
-					// first time, we will switch to declaration
 					auto pDecl = CGlobals::GetEffectManager()->GetVertexDeclaration(EffectManager::S0_POS);
 					if (pDecl)
-						GETD3D(CGlobals::GetRenderDevice())->SetVertexDeclaration(pDecl);
+						pDevice->SetVertexDeclaration(pDecl);
 				}
 				pEffectFile = m_lightgeometry_effects[lightObject->GetLightType() - 1].get();
 				pEffectFile->begin();
@@ -3246,34 +3063,38 @@ namespace ParaEngine
 		{
 			pEffectFile->end();
 		}
-#endif
 	}
 
 	void BlockWorldClient::RenderDeferredLighting()
 	{
-#ifdef USE_DIRECTX_RENDERER
 		SceneState* sceneState = CGlobals::GetSceneState();
 		if (!sceneState->IsDeferredShading() || sceneState->listDeferredLightObjects.empty())
 			return;
 
-		CGlobals::GetEffectManager()->EndEffect();
-
 		auto pDevice = sceneState->GetRenderDevice();
-		auto pD3DDevice = GETD3D(pDevice);
+		if (!pDevice)
+			return;
+
+		CGlobals::GetEffectManager()->EndEffect();
 
 		ParaScripting::ParaAsset::LoadEffectFile("deferred_point_lighting", "script/apps/Aries/Creator/Game/Shaders/DeferredShadingPointLighting.fxo");
 		ParaScripting::ParaAsset::LoadEffectFile("deferred_spot_lighting", "script/apps/Aries/Creator/Game/Shaders/DeferredShadingSpotLighting.fxo");
 		ParaScripting::ParaAsset::LoadEffectFile("deferred_directional_lighting", "script/apps/Aries/Creator/Game/Shaders/DeferredShadingDirectionalLighting.fxo");
 
-		ParaScripting::ParaAssetObject effect = NULL;
+		static std::vector<Vector3> s_unitSphereVerts;
+		static std::vector<uint16_t> s_sphereIndices;
+		if (s_unitSphereVerts.empty())
+		{
+			BuildUnitSphereMesh(32, 24, s_unitSphereVerts, s_sphereIndices);
+		}
+		std::vector<Vector3> scaledSphereVerts(s_unitSphereVerts.size());
 
+		ParaScripting::ParaAssetObject effect = NULL;
 		VertexDeclarationPtr pDecl = NULL;
 
-		ID3DXMesh* pObject = NULL;
 		for (CLightObject* lightObject : sceneState->listDeferredLightObjects)
 		{
 			auto light_param = lightObject->GetLightParams();
-
 			auto light_type = light_param->Type;
 
 			auto light_diffuse = light_param->Diffuse;
@@ -3293,23 +3114,14 @@ namespace ParaEngine
 			auto light_theta = light_param->Theta;
 			auto light_phi = light_param->Phi;
 
-			// how complicated the mesh is
-			int mesh_slice_num = 50;
-
 			switch (light_type)
 			{
 			case ELightType::Point:
 				effect = ParaScripting::ParaAsset::GetEffectFile("deferred_point_lighting");
-				D3DXCreateSphere(pD3DDevice, light_range, mesh_slice_num, mesh_slice_num, &pObject, 0);
-
 				pDecl = CGlobals::GetEffectManager()->GetVertexDeclaration(EffectManager::S0_POS);
 				break;
 			case ELightType::Spot:
 				effect = ParaScripting::ParaAsset::GetEffectFile("deferred_spot_lighting");
-				// FIXME: how to draw a spherical cone but a normal cone
-				//D3DXCreateCylinder(pDevice, 0.0f, 2.0f, 5.0f, 100, 100, &pObject, 0);
-				D3DXCreateSphere(pD3DDevice, light_range, mesh_slice_num, mesh_slice_num, &pObject, 0);
-
 				pDecl = CGlobals::GetEffectManager()->GetVertexDeclaration(EffectManager::S0_POS);
 				break;
 			case ELightType::Directional:
@@ -3321,7 +3133,8 @@ namespace ParaEngine
 			if (pDecl)
 				pDevice->SetVertexDeclaration(pDecl);
 
-			effect.Begin();
+			if (!effect.Begin())
+				continue;
 
 			auto params = effect.GetParamBlock();
 			params.SetParam("ViewAspect", "floatViewAspect");
@@ -3354,32 +3167,40 @@ namespace ParaEngine
 			params.SetFloat("light_theta", light_theta);
 			params.SetFloat("light_phi", light_phi);
 
-			auto _ColorRT = ParaScripting::ParaAsset::LoadTexture("_ColorRT", "_ColorRT", 0);
+			auto _ColorRT = ParaScripting::ParaAsset::LoadTexture("_ColorRT", "_ColorRT", 1);
 			auto originRT = ParaScripting::CParaEngine::GetRenderTarget();
 			ParaScripting::CParaEngine::StretchRect(originRT, _ColorRT);
 			ParaScripting::CParaEngine::SetRenderTarget(originRT);
 			params.SetTextureObj(0, _ColorRT);
-			params.SetTextureObj(2, ParaScripting::ParaAsset::LoadTexture("_DepthTexRT_R32F", "_DepthTexRT_R32F", 0));
-			params.SetTextureObj(3, ParaScripting::ParaAsset::LoadTexture("_NormalRT", "_NormalRT", 0));
+			params.SetTextureObj(2, ParaScripting::ParaAsset::LoadTexture("_DepthTexRT_R32F", "_DepthTexRT_R32F", 1));
+			params.SetTextureObj(3, ParaScripting::ParaAsset::LoadTexture("_NormalRT", "_NormalRT", 1));
 
 			effect.CommitChanges();
 
-			GETD3D(pDevice)->Clear(0, 0, D3DCLEAR_STENCIL, 0, 1.0f, 0);
+			pDevice->SetClearStencil(0);
+			pDevice->Clear(false, false, true);
 
 			switch (light_type)
 			{
 			case ELightType::Point:
 			case ELightType::Spot:
+			{
+				for (size_t v = 0; v < s_unitSphereVerts.size(); ++v)
+				{
+					scaledSphereVerts[v] = s_unitSphereVerts[v] * light_range;
+				}
+				const uint32_t numVerts = static_cast<uint32_t>(scaledSphereVerts.size());
+				const uint32_t primCount = static_cast<uint32_t>(s_sphereIndices.size() / 3);
 				for (int pass = 0; pass < 2; pass++)
 				{
 					if (effect.BeginPass(pass))
 					{
-						pObject->DrawSubset(0);
+						pDevice->DrawIndexedPrimitiveUP(EPrimitiveType::TRIANGLELIST, 0, numVerts, primCount, s_sphereIndices.data(), PixelFormat::INDEX16, scaledSphereVerts.data(), sizeof(Vector3));
 						effect.EndPass();
 					}
 				}
-				pObject->Release();
 				break;
+			}
 			case ELightType::Directional:
 				if (effect.BeginPass(0))
 				{
@@ -3390,7 +3211,6 @@ namespace ParaEngine
 			}
 			effect.End();
 		}
-#endif
 	}
 
 	int BlockWorldClient::InstallFields(CAttributeClass* pClass, bool bOverride)

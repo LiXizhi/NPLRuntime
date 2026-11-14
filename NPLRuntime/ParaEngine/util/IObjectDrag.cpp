@@ -51,9 +51,8 @@ bool IObjectDrag::CancelDrag(STRUCT_DRAG_AND_DROP* pdrag)
 				pdrag->pCleanUp();
 			}
 			pdrag->init();
-#ifdef USE_DIRECTX_RENDERER
-			root->m_pMouse->Update();
-#endif
+			if (root->m_pMouse)
+				root->m_pMouse->Update();
 		}
 	}
 	return bDraggingCanceled;	

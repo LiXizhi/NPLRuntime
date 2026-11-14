@@ -411,7 +411,6 @@ int ParaEngine::CLightObject::PrepareRender(CBaseCamera* pCamera, SceneState * s
 {
 	if (sceneState->GetScene()->PrepareRenderObject(this, pCamera, *sceneState))
 	{
-#ifdef USE_DIRECTX_RENDERER
 		if (IsDeferredLightOnly())
 		{
 			sceneState->AddToDeferredLightPool(this);
@@ -420,7 +419,6 @@ int ParaEngine::CLightObject::PrepareRender(CBaseCamera* pCamera, SceneState * s
 		{
 			CGlobals::GetLightManager()->RegisterLight(GetLightParams());
 		}
-#endif
 	}
 	return 0;
 }
@@ -489,7 +487,10 @@ void ParaEngine::CLightObject::RenderDeferredLightMesh(SceneState * sceneState)
 	if (sceneState->IsShadowPass())
 		return;
 
-#ifdef USE_DIRECTX_RENDERER
+	auto pDevice = sceneState->GetRenderDevice();
+	if (!pDevice)
+		return;
+
 	sceneState->SetCurrentSceneObject(this);
 	SetFrameNumber(sceneState->m_nRenderCount);
 
@@ -521,12 +522,11 @@ void ParaEngine::CLightObject::RenderDeferredLightMesh(SceneState * sceneState)
 
 	DynamicVertexBufferEntity* pBufEntity = CGlobals::GetAssetManager()->GetDynamicBuffer(DVB_XYZ_NORM_DIF);
 
-	auto pDevice = sceneState->GetRenderDevice();
 	pDevice->SetStreamSource(0, pBufEntity->GetBuffer(), 0, sizeof(LightVertex));
 
 	int nNumLockedVertice;
 	int nNumFinishedVertice = 0;
-	int indexCount = (int)m_Vertices.size();
+	int indexCount = 6;
 	do
 	{
 		if ((nNumLockedVertice = pBufEntity->Lock(indexCount - nNumFinishedVertice, (void**)(&vb_vertices))) > 0)
@@ -551,12 +551,9 @@ void ParaEngine::CLightObject::RenderDeferredLightMesh(SceneState * sceneState)
 			pBufEntity->Unlock();
 
 			if (pBufEntity->IsMemoryBuffer())
-				//RenderDevice::DrawPrimitiveUP(pDevice, RenderDevice::DRAW_PERF_TRIANGLES_CHARACTER, D3DPT_TRIANGLELIST, nLockedNum, pBufEntity->GetBaseVertexPointer(), pBufEntity->m_nUnitSize);
-				CGlobals::GetRenderDevice()->DrawPrimitiveUP(EPrimitiveType::TRIANGLELIST, nLockedNum, pBufEntity->GetBaseVertexPointer(), pBufEntity->m_nUnitSize);
-
+				pDevice->DrawPrimitiveUP(EPrimitiveType::TRIANGLELIST, nLockedNum, pBufEntity->GetBaseVertexPointer(), pBufEntity->m_nUnitSize);
 			else
-				//RenderDevice::DrawPrimitive(pDevice, RenderDevice::DRAW_PERF_TRIANGLES_CHARACTER, D3DPT_TRIANGLELIST, pBufEntity->GetBaseVertex(), nLockedNum);
-				CGlobals::GetRenderDevice()->DrawPrimitive(EPrimitiveType::TRIANGLELIST, pBufEntity->GetBaseVertex(), nLockedNum);
+				pDevice->DrawPrimitive(EPrimitiveType::TRIANGLELIST, pBufEntity->GetBaseVertex(), nLockedNum);
 		}
 		if ((indexCount - nNumFinishedVertice) > nNumLockedVertice)
 		{
@@ -569,7 +566,6 @@ void ParaEngine::CLightObject::RenderDeferredLightMesh(SceneState * sceneState)
 
 
 	CGlobals::GetWorldMatrixStack().pop();
-#endif
 }
 
 

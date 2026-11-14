@@ -1,7 +1,7 @@
 #pragma once
 #include "GUIEdit.h"
 
-#ifdef USE_DIRECTX_RENDERER
+#ifdef PARA_ENABLE_WIN32_IME
 #include "GrowableArray.h"
 #include "GUIIME.h"
 

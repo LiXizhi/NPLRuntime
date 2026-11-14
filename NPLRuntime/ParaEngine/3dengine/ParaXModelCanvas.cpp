@@ -331,7 +331,6 @@ bool CanvasAttachment::animate(SceneState * sceneState, CharacterPose* pPose, bo
 // child models are not rendered.
 void CanvasAttachment::BuildShadowVolume(SceneState * sceneState, ShadowVolume * pShadowVolume, LightParams* pLight, Matrix4* mxWorld)
 {
-#ifdef USE_DIRECTX_RENDERER
 	if (!model)
 		return;
 
@@ -365,16 +364,10 @@ void CanvasAttachment::BuildShadowVolume(SceneState * sceneState, ShadowVolume *
 		pModel->BuildShadowVolume(pShadowVolume, pLight, &mat);
 	}
 
-	// TODO: draw its children
-	//for (size_t i=0; i<children.size(); i++) {
-	//	children[i]->BuildShadowVolume(pShadowVolume, pLight, &mat);
-	//}
-
 	// pop matrix
 	CGlobals::GetWorldMatrixStack().pop();
 	if (bNeedPop)
 		CGlobals::GetWorldMatrixStack().pop();
-#endif
 }
 
 CParameterBlock * CanvasAttachment::GetParamBlock(bool bCreateIfNotExist)

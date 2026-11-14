@@ -9,10 +9,8 @@
 #include "ParaEngine.h"
 #include "ParaWorldAsset.h"
 #include "SceneState.h"
+#include "EffectManager.h"
 #include "SpriteObject.h"
-#if USE_DIRECTX_RENDERER
-#include "RenderDeviceD3D9.h"
-#endif
 using namespace ParaEngine;
 
 CSpriteObject::CSpriteObject(void):
@@ -95,12 +93,11 @@ HRESULT CSpriteObject::Draw( SceneState * sceneState)
 		mx._43 = vPos.z;
 	}
 	
-	GETD3D(CGlobals::GetRenderDevice())->SetTransform( D3DTS_WORLD, mx.GetConstPointer() );
+	pRenderDevice->SetTransform(ETransformsStateType::WORLD, mx.GetConstPointer());
 
-	
 	//-- Render the billboard
-	CGlobals::GetRenderDevice()->DrawPrimitive(EPrimitiveType::TRIANGLESTRIP, (m_nStartFrame+m_nCurrentFrameOffset)*4, 2 );
-	
+	pRenderDevice->DrawPrimitive(EPrimitiveType::TRIANGLESTRIP, (m_nStartFrame + m_nCurrentFrameOffset) * 4, 2);
+
 	return S_OK;
 }
 
@@ -108,25 +105,18 @@ void ParaEngine::CSpriteObject::SetRenderState(IRenderDevice* pRenderDevice)
 {
 	//TODO: render state is kind of chaos: Use sceneState::StateManager in future versions
 	CGlobals::GetEffectManager()->SetCullingMode(false);
-	pRenderDevice->SetRenderState( ERenderState::ZWRITEENABLE, TRUE );
-	
-	//if(! CheckSpriteStyleField(SPRITE_RENDER_ZBUFFER))
-	//	pRenderDevice->SetRenderState( ERenderState::ZENABLE,      FALSE );
+	pRenderDevice->SetRenderState(ERenderState::ZWRITEENABLE, TRUE);
 
-	if(CheckSpriteStyleField(SPRITE_RENDER_ALPHA))
+	if (CheckSpriteStyleField(SPRITE_RENDER_ALPHA))
 	{
 		//-- enable alpha and reference color for billboard
-		pRenderDevice->SetRenderState( ERenderState::ALPHABLENDENABLE,   TRUE );
-		pRenderDevice->SetRenderState( ERenderState::SRCBLEND,  D3DBLEND_SRCALPHA );
-		pRenderDevice->SetRenderState( ERenderState::DESTBLEND, D3DBLEND_INVSRCALPHA );
-
-		//pRenderDevice->SetRenderState( ERenderState::ALPHATESTENABLE, TRUE );
-		//pRenderDevice->SetRenderState( ERenderState::ALPHAREF,        0x08 );
-		//pRenderDevice->SetRenderState( ERenderState::ALPHAFUNC, D3DCMP_GREATEREQUAL );
+		pRenderDevice->SetRenderState(ERenderState::ALPHABLENDENABLE, TRUE);
+		pRenderDevice->SetRenderState(ERenderState::SRCBLEND, RSV_BLEND_SRCALPHA);
+		pRenderDevice->SetRenderState(ERenderState::DESTBLEND, RSV_BLEND_INVSRCALPHA);
 	}
 	else
 	{
-		pRenderDevice->SetRenderState( ERenderState::ALPHABLENDENABLE,   FALSE );
+		pRenderDevice->SetRenderState(ERenderState::ALPHABLENDENABLE, FALSE);
 	}
 }
 

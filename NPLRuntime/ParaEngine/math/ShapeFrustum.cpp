@@ -7,6 +7,7 @@
 // Note: 
 //-----------------------------------------------------------------------------
 #include "ParaEngine.h"
+#include "Globals.h"
 #include "ShapeAABB.h"
 #include "ShapeSphere.h"
 
@@ -31,10 +32,11 @@ void CShapeFrustum::UpdateFrustum( const Matrix4* matViewProj, bool bInversedMat
 	}else{
 		mat = matViewProj->inverse();
 	}
-#ifdef USE_OPENGL_RENDERER
-	// opengl, z axis is in range -1,1
-	fNearPlane = fNearPlane * 2.f - 1.f;
-#endif
+	if (CGlobals::GetRenderDevice() && !CGlobals::GetRenderDevice()->GetCaps().clipSpaceZeroToOne)
+	{
+		// clip-space z in [-1, 1] (OpenGL without clip-control)
+		fNearPlane = fNearPlane * 2.f - 1.f;
+	}
 	vecFrustum[0] = Vector3(-1.0f, -1.0f,  fNearPlane); // xyz
 	vecFrustum[1] = Vector3( 1.0f, -1.0f,  fNearPlane); // Xyz
 	vecFrustum[2] = Vector3(-1.0f,  1.0f,  fNearPlane); // xYz

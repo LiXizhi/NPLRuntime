@@ -14,7 +14,7 @@
 // @changes LiXizhi 2009.11.7: Information on IME: http://msdn.microsoft.com/en-us/library/ee419002(VS.85).aspx 
 //-----------------------------------------------------------------------
 #include "ParaEngine.h"
-#if defined(USE_DIRECTX_RENDERER) || 0
+#ifdef PARA_ENABLE_WIN32_IME
 #include "GUIRoot.h"
 #include "GUIBase.h"
 #include <strsafe.h>
@@ -558,9 +558,10 @@ void CGUIIME::FinalizeString( bool bSend )
 		LONG lLength = lstrlenW( (const WCHAR*)s_CompString.GetBuffer() );
 		// In case of CHT IME, don't send the trailing double byte space, if it exists.
 		if( GetLanguage() == LANG_CHT
+			&& lLength > 0
 			&& s_CompString[lLength - 1] == 0x3000 )
 		{
-			s_CompString[lLength - 1] = 0;
+			s_CompString.RemoveChar(lLength - 1);
 		}
 		SendCompString();
 		s_CandList.HoriCand.SetText((const char16_t*)L"");
@@ -830,9 +831,12 @@ void CGUIIME::GetPrivateReadingString()
 bool CGUIIME::OnFocusIn()
 {
 	s_bIMEHasFocus = true;
-	return false;
-	//TODO
-	//return CGlobals::GetApp()->PostWinThreadMessage(PE_IME_SETFOCUS, 0, 1);
+	HWND hWnd = CGlobals::GetAppHWND();
+	if (!hWnd)
+		return false;
+	if (::GetWindowThreadProcessId(hWnd, NULL) == ::GetCurrentThreadId())
+		return OnFocusIn_imp();
+	return CGlobals::GetApp()->PostWinThreadMessage(PE_IME_SETFOCUS, 0, 1);
 }
 bool CGUIIME::OnFocusIn_imp()
 {
@@ -867,9 +871,12 @@ bool CGUIIME::OnFocusIn_imp()
 bool CGUIIME::OnFocusOut()
 {
 	s_bIMEHasFocus = false;
-	return false;
-	// TODO
-	//return CGlobals::GetApp()->PostWinThreadMessage(PE_IME_SETFOCUS, 0, 0);
+	HWND hWnd = CGlobals::GetAppHWND();
+	if (!hWnd)
+		return false;
+	if (::GetWindowThreadProcessId(hWnd, NULL) == ::GetCurrentThreadId())
+		return OnFocusOut_imp();
+	return CGlobals::GetApp()->PostWinThreadMessage(PE_IME_SETFOCUS, 0, 0);
 }
 
 bool CGUIIME::OnFocusOut_imp()
@@ -972,8 +979,15 @@ bool CGUIIME::SwitchOut()
 
 bool CGUIIME::GetIMEOpenStatus()
 {
-	HIMC hImc = _ImmGetContext(  CGlobals::GetAppHWND() );
-	return _ImmGetOpenStatus(hImc) ? true : false;
+	HWND hWnd = CGlobals::GetAppHWND();
+	if (!hWnd)
+		return false;
+	HIMC hImc = _ImmGetContext(hWnd);
+	if (!hImc)
+		return false;
+	bool bOpen = _ImmGetOpenStatus(hImc) ? true : false;
+	_ImmReleaseContext(hWnd, hImc);
+	return bOpen;
 }
 
 void CGUIIME::SetIMEOpenStatus(bool bOpen, bool bForce)
@@ -982,8 +996,13 @@ void CGUIIME::SetIMEOpenStatus(bool bOpen, bool bForce)
 	s_sLastCompString.clear();
 	if( bForce || (!bOpen && s_bIMETrap) )
 	{
-		//TODO
-		//CGlobals::GetApp()->PostWinThreadMessage(PE_IME_SETOPENSTATUS, 0, bOpen ? 1 : 0);
+		HWND hWnd = CGlobals::GetAppHWND();
+		if (!hWnd)
+			return;
+		if (::GetWindowThreadProcessId(hWnd, NULL) == ::GetCurrentThreadId())
+			SetIMEOpenStatus_imp(bOpen);
+		else
+			CGlobals::GetApp()->PostWinThreadMessage(PE_IME_SETOPENSTATUS, 0, bOpen ? 1 : 0);
 	}
 }
 void CGUIIME::SetIMEOpenStatus_imp(bool bOpen)

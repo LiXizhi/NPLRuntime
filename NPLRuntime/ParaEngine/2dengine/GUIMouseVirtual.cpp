@@ -9,6 +9,8 @@
 #include "EventBinding.h"
 #include "IParaEngineApp.h"
 #include "GUIRoot.h"
+#include "ParaImage.h"
+#include "util/StringHelper.h"
 #include "GUIMouseVirtual.h"
 
 using namespace ParaEngine;
@@ -31,7 +33,17 @@ ParaEngine::CGUIMouseVirtual::CGUIMouseVirtual()
 
 ParaEngine::CGUIMouseVirtual::~CGUIMouseVirtual()
 {
-
+#if defined(WIN32) && !defined(NPLRUNTIME_SERVER)
+	for (auto& kv : m_cursorCache)
+	{
+		if (kv.second.first && kv.second.second)
+		{
+			::DestroyCursor(kv.second.first);
+		}
+	}
+	m_cursorCache.clear();
+	m_hCurrentCursor = NULL;
+#endif
 }
 
 void CGUIMouseVirtual::PushMouseEvent(const DeviceMouseEventPtr &e)
@@ -69,6 +81,35 @@ bool ParaEngine::CGUIMouseVirtual::IsLocked()
 
 void ParaEngine::CGUIMouseVirtual::SetLock(bool bLock)
 {
+#if defined(WIN32) && !defined(NPLRUNTIME_SERVER)
+	static POINT s_last_lock_pos = { 0, 0 };
+	HWND hWnd = CGlobals::GetAppHWND();
+	if (hWnd && ::IsWindow(hWnd))
+	{
+		if (bLock && !m_bLock)
+		{
+			ShowCursor(false);
+			::GetCursorPos(&s_last_lock_pos);
+			RECT rc = { 0, 0, 0, 0 };
+			if (::GetClientRect(hWnd, &rc))
+			{
+				POINT ptTL = { rc.left, rc.top };
+				POINT ptBR = { rc.right, rc.bottom };
+				::ClientToScreen(hWnd, &ptTL);
+				::ClientToScreen(hWnd, &ptBR);
+				RECT rcScreen = { ptTL.x, ptTL.y, ptBR.x, ptBR.y };
+				::SetCursorPos(ptTL.x + (ptBR.x - ptTL.x) / 2, ptTL.y + (ptBR.y - ptTL.y) / 2);
+				::ClipCursor(&rcScreen);
+			}
+		}
+		else if (!bLock && m_bLock)
+		{
+			ShowCursor(true);
+			::ClipCursor(NULL);
+			::SetCursorPos(s_last_lock_pos.x, s_last_lock_pos.y);
+		}
+	}
+#endif
 	m_bLock = bLock;
 }
 
@@ -297,5 +338,206 @@ void ParaEngine::CGUIMouseVirtual::ResetLastMouseState()
 
 void ParaEngine::CGUIMouseVirtual::ShowCursor(bool bShowCursor)
 {
-	// do nothing
+	if (!CGlobals::GetGUI()->GetUseSystemCursor())
+	{
+		if (m_bShowCursor != bShowCursor)
+		{
+			m_bShowCursor = bShowCursor;
+			ForceShowCursor(bShowCursor);
+		}
+	}
+	else
+	{
+		m_bShowCursor = bShowCursor;
+	}
 }
+
+void ParaEngine::CGUIMouseVirtual::ForceShowCursor(bool bShow)
+{
+	m_bShowCursor = bShow;
+#if defined(WIN32) && !defined(NPLRUNTIME_SERVER)
+	HWND hWnd = CGlobals::GetAppHWND();
+	if (hWnd && ::IsWindow(hWnd) && ::GetWindowThreadProcessId(hWnd, NULL) != ::GetCurrentThreadId())
+	{
+		CGlobals::GetApp()->PostWinThreadMessage(PE_WM_SHOWCURSOR, bShow ? 1 : 0, 0);
+		return;
+	}
+	ApplySystemCursor();
+#endif
+}
+
+void ParaEngine::CGUIMouseVirtual::SetCursorFromFile(const char* szCursor, int XHotSpot, int YHotSpot, bool force)
+{
+	if (szCursor == NULL || szCursor[0] == '\0')
+	{
+		if (m_szCursorName.empty())
+			return;
+		szCursor = m_szCursorName.c_str();
+	}
+	else
+	{
+		if (m_szCursorName == szCursor
+			&& (XHotSpot < 0 || m_XHotSpot == XHotSpot)
+			&& (YHotSpot < 0 || m_YHotSpot == YHotSpot)
+			&& !force)
+		{
+			return;
+		}
+		if (XHotSpot >= 0) m_XHotSpot = XHotSpot;
+		if (YHotSpot >= 0) m_YHotSpot = YHotSpot;
+	}
+
+	std::string cursorPath = szCursor;
+	m_szCursorName = cursorPath;
+
+#if defined(WIN32) && !defined(NPLRUNTIME_SERVER)
+	char keyBuf[512];
+	snprintf(keyBuf, sizeof(keyBuf), "%s|%d|%d", cursorPath.c_str(), m_XHotSpot, m_YHotSpot);
+	std::string cacheKey = keyBuf;
+
+	if (!force)
+	{
+		auto it = m_cursorCache.find(cacheKey);
+		if (it != m_cursorCache.end())
+		{
+			m_hCurrentCursor = it->second.first;
+			if (m_bShowCursor)
+				ApplySystemCursor();
+			return;
+		}
+	}
+	else
+	{
+		auto it = m_cursorCache.find(cacheKey);
+		if (it != m_cursorCache.end())
+		{
+			if (it->second.first && it->second.second)
+				::DestroyCursor(it->second.first);
+			m_cursorCache.erase(it);
+		}
+	}
+
+	HCURSOR hLoaded = NULL;
+	bool bOwned = false;
+
+	// 1. Native .cur / .ani on disk
+	std::string ext = CParaFile::GetFileExtension(cursorPath);
+	StringHelper::make_lower(ext);
+	if ((ext == "cur" || ext == "ani") && CParaFile::DoesFileExist2(cursorPath.c_str(), FILE_ON_DISK))
+	{
+		std::wstring wPath = StringHelper::MultiByteToWideChar(cursorPath.c_str(), DEFAULT_FILE_ENCODING);
+		hLoaded = ::LoadCursorFromFileW(wPath.c_str());
+	}
+
+	// 2. Decode image via CParaFile + ParaImage (supports .tga, .png, .dds, .jpg in disk/pkg/embedded)
+	if (!hLoaded)
+	{
+		CParaFile file(cursorPath.c_str());
+		if (!file.isEof() && file.getSize() > 0)
+		{
+			ParaImage img;
+			if (img.initWithImageData(reinterpret_cast<const unsigned char*>(file.getBuffer()), static_cast<size_t>(file.getSize())))
+			{
+				int w = static_cast<int>(img.getWidth());
+				int h = static_cast<int>(img.getHeight());
+				if (w > 0 && h > 0)
+				{
+					unsigned char* rgbaData = nullptr;
+					size_t rgbaLen = 0;
+					const unsigned char* srcPixels = img.getData();
+					bool freeRgba = false;
+					if (img.getRenderFormat() != PixelFormat::A8R8G8B8)
+					{
+						ParaImage::convertDataToFormat(img.getData(), static_cast<size_t>(img.getDataLen()), img.getRenderFormat(), PixelFormat::A8R8G8B8, &rgbaData, &rgbaLen);
+						srcPixels = rgbaData;
+						freeRgba = (rgbaData != nullptr);
+					}
+
+					if (srcPixels)
+					{
+						BITMAPV5HEADER bi = {};
+						bi.bV5Size = sizeof(BITMAPV5HEADER);
+						bi.bV5Width = w;
+						bi.bV5Height = -h; // top-down
+						bi.bV5Planes = 1;
+						bi.bV5BitCount = 32;
+						bi.bV5Compression = BI_BITFIELDS;
+						bi.bV5RedMask = 0x00FF0000;
+						bi.bV5GreenMask = 0x0000FF00;
+						bi.bV5BlueMask = 0x000000FF;
+						bi.bV5AlphaMask = 0xFF000000;
+
+						void* lpBits = nullptr;
+						HDC hdc = ::GetDC(NULL);
+						HBITMAP hColorBmp = ::CreateDIBSection(hdc, reinterpret_cast<BITMAPINFO*>(&bi), DIB_RGB_COLORS, &lpBits, NULL, 0);
+						::ReleaseDC(NULL, hdc);
+
+						if (hColorBmp && lpBits)
+						{
+							uint8_t* dst = static_cast<uint8_t*>(lpBits);
+							const size_t pixelCount = static_cast<size_t>(w) * static_cast<size_t>(h);
+							for (size_t i = 0; i < pixelCount; ++i)
+							{
+								dst[i * 4 + 0] = srcPixels[i * 4 + 2]; // B
+								dst[i * 4 + 1] = srcPixels[i * 4 + 1]; // G
+								dst[i * 4 + 2] = srcPixels[i * 4 + 0]; // R
+								dst[i * 4 + 3] = srcPixels[i * 4 + 3]; // A
+							}
+
+							HBITMAP hMaskBmp = ::CreateBitmap(w, h, 1, 1, NULL);
+							ICONINFO ii = {};
+							ii.fIcon = FALSE;
+							ii.xHotspot = static_cast<DWORD>(m_XHotSpot >= 0 ? m_XHotSpot : 0);
+							ii.yHotspot = static_cast<DWORD>(m_YHotSpot >= 0 ? m_YHotSpot : 0);
+							ii.hbmMask = hMaskBmp;
+							ii.hbmColor = hColorBmp;
+							hLoaded = reinterpret_cast<HCURSOR>(::CreateIconIndirect(&ii));
+							if (hLoaded)
+								bOwned = true;
+							if (hMaskBmp)
+								::DeleteObject(hMaskBmp);
+						}
+						if (hColorBmp)
+							::DeleteObject(hColorBmp);
+					}
+
+					if (freeRgba)
+						free(rgbaData);
+				}
+			}
+		}
+	}
+
+	if (!hLoaded)
+	{
+		hLoaded = ::LoadCursor(NULL, IDC_ARROW);
+		bOwned = false;
+	}
+
+	m_cursorCache[cacheKey] = std::make_pair(hLoaded, bOwned);
+	m_hCurrentCursor = hLoaded;
+	if (m_bShowCursor)
+		ApplySystemCursor();
+#endif
+}
+
+#if defined(WIN32) && !defined(NPLRUNTIME_SERVER)
+bool ParaEngine::CGUIMouseVirtual::ApplySystemCursor()
+{
+	if (!m_bShowCursor)
+	{
+		::SetCursor(NULL);
+		return true;
+	}
+	if (CGlobals::GetGUI() && CGlobals::GetGUI()->GetUseSystemCursor())
+	{
+		return false;
+	}
+	if (m_hCurrentCursor)
+	{
+		::SetCursor(m_hCurrentCursor);
+		return true;
+	}
+	return false;
+}
+#endif

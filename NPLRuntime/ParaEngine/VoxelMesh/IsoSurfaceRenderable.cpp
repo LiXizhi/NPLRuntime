@@ -11,9 +11,6 @@
 #include "ParaWorldAsset.h"
 #include "IsoSurfaceBuilder.h"
 #include "IsoSurfaceRenderable.h"
-#if USE_DIRECTX_RENDERER
-#include "RenderDeviceD3D9.h"
-#endif
 
 using namespace ParaEngine;
 
@@ -137,62 +134,63 @@ void IsoSurfaceRenderable::deleteGeometry()
 }
 
 
-HRESULT ParaEngine::IsoSurfaceRenderable::Render( SceneState * pSceneState, IRenderDevice* pRenderDevice )
+HRESULT ParaEngine::IsoSurfaceRenderable::Render(SceneState* pSceneState, IRenderDevice* pRenderDevice)
 {
-	GETD3D(CGlobals::GetRenderDevice())->SetTransform(D3DTS_WORLD, CGlobals::GetWorldMatrixStack().SafeGetTop().GetConstPointer());
+	pRenderDevice->SetTransform(ETransformsStateType::WORLD, CGlobals::GetWorldMatrixStack().SafeGetTop().GetConstPointer());
 
-	DynamicVertexBufferEntity* pBufEntity =  CGlobals::GetAssetManager()->GetDynamicBuffer(DVB_XYZ_TEX1_NORM);
-	GETD3D(CGlobals::GetRenderDevice())->SetStreamSource( 0, pBufEntity->GetBuffer(), 0, sizeof(mesh_vertex_normal) );
+	DynamicVertexBufferEntity* pBufEntity = CGlobals::GetAssetManager()->GetDynamicBuffer(DVB_XYZ_TEX1_NORM);
+	if (!pBufEntity->IsMemoryBuffer())
+		pRenderDevice->SetStreamSource(0, pBufEntity->GetBuffer(), 0, sizeof(mesh_vertex_normal));
 
-	if(m_texture != 0)
-		GETD3D(CGlobals::GetRenderDevice())->SetTexture(0, m_texture->GetTexture());
+	if (m_texture != 0)
+		pRenderDevice->SetTexture(0, m_texture->GetTexture());
 
 	// render
-	DrawIndexedPrimitive(D3DPT_TRIANGLELIST, 0,0, m_nVertexBufSize, 0, m_nIndexBufSize/3);
-
+	DrawIndexedPrimitive(EPrimitiveType::TRIANGLELIST, 0, 0, m_nVertexBufSize, 0, m_nIndexBufSize / 3);
 
 	return S_OK;
 }
 
-HRESULT ParaEngine::IsoSurfaceRenderable::Render( SceneState * pSceneState, CEffectFile *pEffect )
+HRESULT ParaEngine::IsoSurfaceRenderable::Render(SceneState* pSceneState, CEffectFile* pEffect)
 {
 	auto pRenderDevice = CGlobals::GetRenderDevice();
 
 	/// apply surface materials
 	bool bEnableLight = pSceneState->GetScene()->IsLightEnabled();
-	if(bEnableLight)
+	if (bEnableLight)
 	{
 		ParaMaterial mat = pSceneState->GetGlobalMaterial();
-		mat.Diffuse = LinearColor(1.f,1.f,1.f,1.f);
+		mat.Diffuse = LinearColor(1.f, 1.f, 1.f, 1.f);
 		pEffect->applySurfaceMaterial(&mat);
 	}
 	else
 	{
 		ParaMaterial mat = pSceneState->GetGlobalMaterial();
-		mat.Ambient = LinearColor(0.6f,0.6f,0.6f,1.f ); // shall we use ambient to simulate lighting, when lighting is disabled.
-		mat.Diffuse = LinearColor(1.f,1.f,1.f,1.f);
+		mat.Ambient = LinearColor(0.6f, 0.6f, 0.6f, 1.f); // shall we use ambient to simulate lighting, when lighting is disabled.
+		mat.Diffuse = LinearColor(1.f, 1.f, 1.f, 1.f);
 		pEffect->applySurfaceMaterial(&mat);
 	}
 
-	DynamicVertexBufferEntity* pBufEntity =  CGlobals::GetAssetManager()->GetDynamicBuffer(DVB_XYZ_TEX1_NORM);
-	GETD3D(CGlobals::GetRenderDevice())->SetStreamSource( 0, pBufEntity->GetBuffer(), 0, sizeof(mesh_vertex_normal) );
+	DynamicVertexBufferEntity* pBufEntity = CGlobals::GetAssetManager()->GetDynamicBuffer(DVB_XYZ_TEX1_NORM);
+	if (!pBufEntity->IsMemoryBuffer())
+		pRenderDevice->SetStreamSource(0, pBufEntity->GetBuffer(), 0, sizeof(mesh_vertex_normal));
 
 	//////////////////////////////////////////////////////////////////////////
 	// programmable pipeline
-	if(pEffect->begin())
+	if (pEffect->begin())
 	{
-		if(pEffect->BeginPass(0))
+		if (pEffect->BeginPass(0))
 		{
-			if(m_texture != 0)
+			if (m_texture != 0)
 				pEffect->setTexture(0, m_texture->GetTexture());
 
 			pEffect->CommitChanges();
 			// render
-			DrawIndexedPrimitive(D3DPT_TRIANGLELIST, 0,0, m_nVertexBufSize, 0, m_nIndexBufSize/3);
+			DrawIndexedPrimitive(EPrimitiveType::TRIANGLELIST, 0, 0, m_nVertexBufSize, 0, m_nIndexBufSize / 3);
 
 			pEffect->EndPass(0);
 		}
-		pEffect->end();	
+		pEffect->end();
 	}
 	return S_OK;
 }

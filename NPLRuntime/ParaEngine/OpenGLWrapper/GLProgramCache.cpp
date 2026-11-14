@@ -3,13 +3,19 @@
 #include "GLProgramCache.h"
 #include "GLProgram.h"
 
+#ifdef PARA_ENABLE_OPENGL
 #define CHECK_GL_ERROR_DEBUG() \
 do { \
+if (CGlobals::GetRenderDevice() && CGlobals::GetRenderDevice()->GetBackendType() == ERHIBackend::OpenGL) { \
 GLenum __error = glGetError(); \
 if(__error) { \
 OUTPUT_LOG("OpenGL error 0x%04X in %s %s %d\n", __error, __FILE__, __FUNCTION__, __LINE__); \
 } \
+} \
 } while (false)
+#else
+#define CHECK_GL_ERROR_DEBUG() ((void)0)
+#endif
 
 using namespace ParaEngine;
 

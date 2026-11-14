@@ -337,47 +337,7 @@ void ParticleSystem::drawInstance(ParticleList* instancePS)
 	CEffectFile* pEffect = CGlobals::GetEffectManager()->GetCurrentEffectFile();
 
 	// setup blend mode
-	if (pEffect == 0)
-	{
-#ifdef USE_DIRECTX_RENDERER
-
-		switch (blend) {
-		case 0://OPAQUE
-			pd3dDevice->SetRenderState(ERenderState::ALPHABLENDENABLE, FALSE);
-			pd3dDevice->SetRenderState(ERenderState::ALPHATESTENABLE, FALSE);
-			break;
-		case 1://ADDITIVE BLEND
-			pd3dDevice->SetRenderState(ERenderState::ALPHATESTENABLE, FALSE);
-			pd3dDevice->SetRenderState(ERenderState::ALPHABLENDENABLE, TRUE);
-			pd3dDevice->SetRenderState(ERenderState::SRCBLEND, D3DBLEND_ONE);
-			pd3dDevice->SetRenderState(ERenderState::DESTBLEND, D3DBLEND_ONE);
-			break;
-		case 2://ALPHA_BLEND
-			pd3dDevice->SetRenderState(ERenderState::ALPHATESTENABLE, FALSE);
-			pd3dDevice->SetRenderState(ERenderState::ALPHABLENDENABLE, TRUE);
-			pd3dDevice->SetRenderState(ERenderState::SRCBLEND, D3DBLEND_SRCALPHA);
-			pd3dDevice->SetRenderState(ERenderState::DESTBLEND, D3DBLEND_INVSRCALPHA);
-			break;
-		case 3://TRANSPARENT
-			pd3dDevice->SetRenderState(ERenderState::ALPHABLENDENABLE, FALSE);
-			pd3dDevice->SetRenderState(ERenderState::ALPHATESTENABLE, TRUE);
-			//pd3dDevice->SetRenderState( ERenderState::ALPHAREF,         0x18 );
-			//pd3dDevice->SetRenderState( ERenderState::ALPHAFUNC,  D3DCMP_GREATER );
-			break;
-		case 4://ADDITIVE ALPHA
-			pd3dDevice->SetRenderState(ERenderState::ALPHATESTENABLE, FALSE);
-			pd3dDevice->SetRenderState(ERenderState::ALPHABLENDENABLE, TRUE);
-			pd3dDevice->SetRenderState(ERenderState::SRCBLEND, D3DBLEND_SRCALPHA);
-			pd3dDevice->SetRenderState(ERenderState::DESTBLEND, D3DBLEND_ONE);
-			// we want the alpha to be the modulation of the texture and the diffuse color
-			pd3dDevice->SetTextureStageState(0, D3DTSS_ALPHAARG1, D3DTA_TEXTURE);
-			pd3dDevice->SetTextureStageState(0, D3DTSS_ALPHAARG2, D3DTA_DIFFUSE);
-			pd3dDevice->SetTextureStageState(0, D3DTSS_ALPHAOP, D3DTOP_MODULATE);
-			break;
-		}
-#endif
-	}
-	else
+	if (pEffect != 0)
 	{
 		switch (blend) {
 		case 0://OPAQUE
@@ -405,38 +365,12 @@ void ParticleSystem::drawInstance(ParticleList* instancePS)
 			pEffect->EnableAlphaBlending(true);
 			pd3dDevice->SetRenderState(ERenderState::SRCBLEND, D3DBLEND_SRCALPHA);
 			pd3dDevice->SetRenderState(ERenderState::DESTBLEND, D3DBLEND_ONE);
-#if USE_DIRECTX_RENDERER
-			// we want the alpha to be the modulation of the texture and the diffuse color
-			pd3dDevice->SetTextureStageState(0, D3DTSS_ALPHAARG1, D3DTA_TEXTURE);
-			pd3dDevice->SetTextureStageState(0, D3DTSS_ALPHAARG2, D3DTA_DIFFUSE);
-			pd3dDevice->SetTextureStageState(0, D3DTSS_ALPHAOP, D3DTOP_MODULATE);
-#endif
 			break;
 		}
-	}
 
-	if (pEffect == 0)
-	{
-#ifdef USE_DIRECTX_RENDERER
-		///////////////////////////////////////////////////////////////////////////
-		// fixed function pipeline
-		/// Set the texture
-		DeviceTexturePtr_type pTex = GetDeviceTexture();
-		if (pTex)
-		{
-			pd3dDevice->SetTexture(0, pTex);
-			CGlobals::GetEffectManager()->UpdateD3DPipelineTransform(true, false, false);
-			// render all
-			DrawInstanceSub(instancePS);
-		}
-#endif
-	}
-	else
-	{
 		//////////////////////////////////////////////////////////////////////////
 		// programmable pipeline
 		DeviceTexturePtr_type pTex = GetDeviceTexture();
-		// OUTPUT_LOG("texture : %s %d %d \n", texture->GetKey().c_str(), (int)pTex, texture->IsLocked() ? 1 : 0);
 		if (pTex)
 		{
 			if (pEffect->begin())
@@ -455,55 +389,21 @@ void ParticleSystem::drawInstance(ParticleList* instancePS)
 		}
 	}
 
-
 	// restore old transform matrix
 	if (instancePS->m_bUseAbsCord)
 		CGlobals::GetWorldMatrixStack().pop();
 
-	if (pEffect == 0)
+	switch (blend)
 	{
-		switch (blend) {
-		case 0://OPAQUE
-			break;
-		case 2://ALPHA_BLEND
-			break;
-		case 3://TRANSPARENT
-			break;
-		case 4://ADDITIVE ALPHA
-			pd3dDevice->SetRenderState(ERenderState::SRCBLEND, D3DBLEND_SRCALPHA);
-			pd3dDevice->SetRenderState(ERenderState::DESTBLEND, D3DBLEND_INVSRCALPHA);
-#if USE_DIRECTX_RENDERER
-			pd3dDevice->SetTextureStageState(0, D3DTSS_ALPHAOP, D3DTOP_SELECTARG1);
-#endif
-			break;
-		default:
-			pd3dDevice->SetRenderState(ERenderState::SRCBLEND, D3DBLEND_SRCALPHA);
-			pd3dDevice->SetRenderState(ERenderState::DESTBLEND, D3DBLEND_INVSRCALPHA);
-			break;
-		}
-	}
-	else
-	{
-		switch (blend)
-		{
-		case 0://OPAQUE
-			break;
-		case 2://ALPHA_BLEND
-			break;
-		case 3://TRANSPARENT
-			break;
-		case 4://ADDITIVE ALPHA
-			pd3dDevice->SetRenderState(ERenderState::SRCBLEND, D3DBLEND_SRCALPHA);
-			pd3dDevice->SetRenderState(ERenderState::DESTBLEND, D3DBLEND_INVSRCALPHA);
-#if USE_DIRECTX_RENDERER
-			pd3dDevice->SetTextureStageState(0, D3DTSS_ALPHAOP, D3DTOP_SELECTARG1);
-#endif
-			break;
-		default:
-			pd3dDevice->SetRenderState(ERenderState::SRCBLEND, D3DBLEND_SRCALPHA);
-			pd3dDevice->SetRenderState(ERenderState::DESTBLEND, D3DBLEND_INVSRCALPHA);
-			break;
-		}
+	case 0://OPAQUE
+	case 2://ALPHA_BLEND
+	case 3://TRANSPARENT
+		break;
+	case 4://ADDITIVE ALPHA
+	default:
+		pd3dDevice->SetRenderState(ERenderState::SRCBLEND, D3DBLEND_SRCALPHA);
+		pd3dDevice->SetRenderState(ERenderState::DESTBLEND, D3DBLEND_INVSRCALPHA);
+		break;
 	}
 }
 
@@ -1033,13 +933,6 @@ void RibbonEmitter::draw(SceneState* pSceneState)
 	pd3dDevice->SetRenderState(ERenderState::SRCBLEND, D3DBLEND_SRCALPHA);
 	pd3dDevice->SetRenderState(ERenderState::DESTBLEND, D3DBLEND_ONE);
 
-	// we want the alpha to be the modulation of the texture and the diffuse color
-#if USE_DIRECTX_RENDERER
-	pd3dDevice->SetTextureStageState(0, D3DTSS_ALPHAARG1, D3DTA_TEXTURE);
-	pd3dDevice->SetTextureStageState(0, D3DTSS_ALPHAARG2, D3DTA_DIFFUSE);
-	pd3dDevice->SetTextureStageState(0, D3DTSS_ALPHAOP, D3DTOP_MODULATE);
-#endif
-
 	// texture
 	pd3dDevice->SetTexture(0, GetDeviceTexture());
 
@@ -1113,15 +1006,7 @@ void RibbonEmitter::draw(SceneState* pSceneState)
 
 			// TODO: move this out of the unlock and lock pair
 			CEffectFile* pEffect = CGlobals::GetEffectManager()->GetCurrentEffectFile();
-			if (pEffect == 0)
-			{
-#ifdef USE_DIRECTX_RENDERER
-				///////////////////////////////////////////////////////////////////////////
-				// fixed function pipeline
-				RenderDevice::DrawPrimitive(pd3dDevice, RenderDevice::DRAW_PERF_TRIANGLES_CHARACTER, D3DPT_TRIANGLESTRIP, pBufEntity->m_dwBase, nLockedNum / 2);
-#endif
-			}
-			else
+			if (pEffect != 0)
 			{
 				//////////////////////////////////////////////////////////////////////////
 				// programmable pipeline
@@ -1151,11 +1036,6 @@ void RibbonEmitter::draw(SceneState* pSceneState)
 			break;
 	} while (!bFinished);
 
-	pd3dDevice->SetRenderState(ERenderState::SRCBLEND, D3DBLEND_SRCALPHA);
-	pd3dDevice->SetRenderState(ERenderState::DESTBLEND, D3DBLEND_INVSRCALPHA);
-#if USE_DIRECTX_RENDERER
-	pd3dDevice->SetTextureStageState(0, D3DTSS_ALPHAOP, D3DTOP_SELECTARG1);
-#endif
 	pd3dDevice->SetRenderState(ERenderState::SRCBLEND, D3DBLEND_SRCALPHA);
 	pd3dDevice->SetRenderState(ERenderState::DESTBLEND, D3DBLEND_INVSRCALPHA);
 

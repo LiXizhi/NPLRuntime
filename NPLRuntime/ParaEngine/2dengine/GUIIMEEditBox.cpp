@@ -11,7 +11,7 @@
 // @changes LiXizhi 2009.11.7: Information on IME: http://msdn.microsoft.com/en-us/library/ee419002(VS.85).aspx 
 //-----------------------------------------------------------------------
 #include "ParaEngine.h"
-#ifdef USE_DIRECTX_RENDERER
+#ifdef PARA_ENABLE_WIN32_IME
 #pragma region Header
 #include "ParaWorldAsset.h"
 #include "IParaEngineApp.h"
@@ -97,7 +97,7 @@ IObject* CGUIIMEEditBox::Clone()const
 
 void CGUIIMEEditBox::StaticInit()
 {
-	// CGUIIME::Initialize();
+	CGUIIME::Initialize();
 	
 	CObjectManager *pOm=&CSingleton<CObjectManager>::Instance();
 	if (!pOm->IsExist("default_CGUIEditBox")) {

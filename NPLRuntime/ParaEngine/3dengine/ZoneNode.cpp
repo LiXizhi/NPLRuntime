@@ -13,10 +13,8 @@
 #include "BaseCamera.h"
 #include "util/regularexpression.h"
 #include "StringHelper.h"
+#include "EffectManager.h"
 #include "ZoneNode.h"
-#if USE_DIRECTX_RENDERER
-#include "RenderDeviceD3D9.h"
-#endif
 
 using namespace ParaEngine;
 
@@ -162,22 +160,28 @@ HRESULT ParaEngine::CZoneNode::Draw( SceneState * sceneState )
 			vertices[i+1].p = vPos + m_planes[i].normal*(-m_planes[i].d);
 			vertices[i+1].color = color;
 		}
-#ifdef USE_DIRECTX_RENDERER
-		// set render state
 		auto pRenderDevice = CGlobals::GetRenderDevice();
-		if(pRenderDevice)
+		if (pRenderDevice)
 		{
-			pRenderDevice->SetRenderState(ERenderState::ALPHABLENDENABLE, FALSE);
-			GETD3D(CGlobals::GetRenderDevice())->SetMaterial((D3DMATERIAL9*)&(sceneState->GetGlobalMaterial()));
-			GETD3D(CGlobals::GetRenderDevice())->SetTexture(0,NULL);
+			CEffectFile* pEffect = nullptr;
+			CGlobals::GetEffectManager()->BeginEffect(TECH_SINGLE_COLOR, &pEffect);
+			if (pEffect && pEffect->begin())
+			{
+				if (pEffect->BeginPass(0))
+				{
+					pRenderDevice->SetRenderState(ERenderState::ALPHABLENDENABLE, FALSE);
+					pRenderDevice->SetTexture(0, nullptr);
+					pRenderDevice->SetTransform(ETransformsStateType::WORLD, Matrix4::IDENTITY.GetConstPointer());
+					pRenderDevice->SetFVF(LINEVERTEX::FVF);
+					pEffect->CommitChanges();
 
-			GETD3D(CGlobals::GetRenderDevice())->SetTransform(D3DTS_WORLD, Matrix4::IDENTITY.GetConstPointer());
-			GETD3D(CGlobals::GetRenderDevice())->SetFVF(LINEVERTEX::FVF);
-
-			CGlobals::GetRenderDevice()->DrawIndexedPrimitiveUP(EPrimitiveType::TRIANGLELIST,0,
-				nPlaneCount*2, nPlaneCount, &(IndexBuffer[0]), PixelFormat::INDEX16,&(vertices[0]), sizeof(LINEVERTEX));
+					pRenderDevice->DrawIndexedPrimitiveUP(EPrimitiveType::LINELIST, 0,
+						nPlaneCount + 1, nPlaneCount, &(IndexBuffer[0]), PixelFormat::INDEX16, &(vertices[0]), sizeof(LINEVERTEX));
+					pEffect->EndPass();
+				}
+				pEffect->end();
+			}
 		}
-#endif
 	}
 	return S_OK;
 }

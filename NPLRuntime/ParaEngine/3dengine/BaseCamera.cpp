@@ -108,6 +108,11 @@ void ParaEngine::CBaseCamera::CopyCameraParamsFrom(CBaseCamera* pFromCamera)
 	m_mView = pFromCamera->m_mView;
 	m_mProj = pFromCamera->m_mProj;
 	m_bIsPerspectiveView = pFromCamera->m_bIsPerspectiveView;
+	m_bUseAsymmetricFov = pFromCamera->m_bUseAsymmetricFov;
+	m_fTanLeft = pFromCamera->m_fTanLeft;
+	m_fTanRight = pFromCamera->m_fTanRight;
+	m_fTanUp = pFromCamera->m_fTanUp;
+	m_fTanDown = pFromCamera->m_fTanDown;
 }
 
 VOID CBaseCamera::SetInvertPitch(bool bInvertPitch)
@@ -157,7 +162,22 @@ void CBaseCamera::SetProjParams(FLOAT fFOV, FLOAT fAspect, FLOAT fNearPlane,
 
 	if (IsPerspectiveView())
 	{
-		ParaMatrixPerspectiveFovLH(&m_mProj, fFOV, fAspect, fNearPlane, fFarPlane);
+		if (m_bUseAsymmetricFov)
+		{
+			float l = fNearPlane * m_fTanLeft;
+			float r = fNearPlane * m_fTanRight;
+			float b = fNearPlane * m_fTanDown;
+			float t = fNearPlane * m_fTanUp;
+			if (l >= r)
+				l = -fabsf(l);
+			if (b >= t)
+				b = -fabsf(b);
+			ParaMatrixPerspectiveOffCenterLH(&m_mProj, l, r, b, t, fNearPlane, fFarPlane);
+		}
+		else
+		{
+			ParaMatrixPerspectiveFovLH(&m_mProj, fFOV, fAspect, fNearPlane, fFarPlane);
+		}
 	}
 	else
 	{
@@ -215,10 +235,30 @@ void CBaseCamera::SetFieldOfView(float fFov)
 void CBaseCamera::SetFieldOfView(float fov_v, float fov_h)
 {
 	float p_fAspect = tan(fov_h / 2) / tan(fov_v / 2);
-	if (m_fFOV != fov_v || m_fAspect!= p_fAspect)
+	if (m_fFOV != fov_v || m_fAspect!= p_fAspect || m_bUseAsymmetricFov)
 	{
+		m_bUseAsymmetricFov = false;
 		m_fFOV = fov_v;
 		m_fAspect = p_fAspect;
+		UpdateProjParams();
+	}
+}
+
+void CBaseCamera::SetAsymmetricFovTan(float tanLeft, float tanRight, float tanUp, float tanDown)
+{
+	m_bUseAsymmetricFov = true;
+	m_fTanLeft = tanLeft;
+	m_fTanRight = tanRight;
+	m_fTanUp = tanUp;
+	m_fTanDown = tanDown;
+	UpdateProjParams();
+}
+
+void CBaseCamera::ClearAsymmetricFov()
+{
+	if (m_bUseAsymmetricFov)
+	{
+		m_bUseAsymmetricFov = false;
 		UpdateProjParams();
 	}
 }
@@ -243,7 +283,7 @@ void CBaseCamera::SetFarPlane(float fFarPlane)
 //-----------------------------------------------------------------------------
 LRESULT CBaseCamera::HandleMessages(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
-#if defined( USE_DIRECTX_RENDERER)
+#ifdef WIN32
 	UNREFERENCED_PARAMETER(hWnd);
 	UNREFERENCED_PARAMETER(lParam);
 
@@ -344,7 +384,7 @@ void CBaseCamera::UpdateMouseDelta(int nDX, int nDY)
 //-----------------------------------------------------------------------------
 void CBaseCamera::UpdateMouseDelta(float fElapsedTime)
 {
-#ifdef USE_DIRECTX_RENDERER
+#ifdef WIN32
 	UNREFERENCED_PARAMETER(fElapsedTime);
 
 	POINT ptCurMouseDelta;
@@ -484,7 +524,7 @@ void CBaseCamera::ConstrainToBoundary(DVector3* pV)
 //-----------------------------------------------------------------------------
 CharacterAndCameraKeys CBaseCamera::MapKey(UINT nKey)
 {
-#ifdef USE_DIRECTX_RENDERER
+#ifdef WIN32
 	// This could be upgraded to a method that's user-definable but for 
 	// simplicity, we'll use a hard-coded mapping.
 	switch (nKey)
@@ -804,10 +844,11 @@ void CBaseCamera::UpdateFrustum()
 
 	// update portal frustum
 	Vector3 vEyePos(0, 0, 0);
-#ifdef USE_OPENGL_RENDERER
-	// opengl, z axis is in range -1,1
-	vEyePos.z = -1.f;
-#endif
+	if (CGlobals::GetRenderDevice() && !CGlobals::GetRenderDevice()->GetCaps().clipSpaceZeroToOne)
+	{
+		// OpenGL [-1, 1] clip-space z range
+		vEyePos.z = -1.f;
+	}
 	ParaVec3TransformCoord(&vEyePos, &vEyePos, &matViewProj_inverse);
 	m_frustum_portal.setOrigin(vEyePos);
 	m_frustum_portal.RemoveAllExtraCullingPlanes();

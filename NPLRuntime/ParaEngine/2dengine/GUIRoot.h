@@ -454,9 +454,6 @@ namespace ParaEngine
 
 		Matrix4* Get3DViewProjMatrix(){ return &m_matViewProj; };
 		void Set3DViewProjMatrix(const Matrix4& mat){ m_matViewProj = mat; };
-#ifdef USE_DIRECTX_RENDERER
-		DEVMODE *GetDisplayMode(){return &m_displaymode;}
-#endif
 		/** Never call this unless you know why: Add an object to name map */
 		void AddToNameMap(const string& name, CGUIBase* pObj);
 		/** Never call this unless you know why: Add an object to id map */
@@ -636,9 +633,6 @@ namespace ParaEngine
 		bool m_bMouseCaptured;
 		/** please note this can be the 3d scene object. */
 		IAttributeFields* m_pLastMouseDownObject;
-#ifdef USE_DIRECTX_RENDERER
-		DEVMODE m_displaymode;
-#endif
 		Matrix4 m_matViewProj;
 		bool m_bMouseInClient;
 		bool m_bWindowChanging;//when window moved or resize, it is set true;

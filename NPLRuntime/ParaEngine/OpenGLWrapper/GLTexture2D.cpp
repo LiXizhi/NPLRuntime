@@ -5,6 +5,8 @@
 #include "ParaImage.h"
 #include "GLProgram.h"
 #include "GLProgramCache.h"
+#include "RHISoftwareS3TC.h"
+#include <string.h>
 
 #ifdef WIN32
 	#define GL_COMPRESSED_RGB_S3TC_DXT1_EXT 0x83F0
@@ -29,6 +31,14 @@ namespace {
 		PixelFormatInfoMapValue(PixelFormat::A8, GLTexture2D::PixelFormatInfo(GL_ALPHA, GL_ALPHA, GL_UNSIGNED_BYTE, 8, false, false)),
 		PixelFormatInfoMapValue(PixelFormat::L8, GLTexture2D::PixelFormatInfo(GL_LUMINANCE, GL_LUMINANCE, GL_UNSIGNED_BYTE, 8, false, false)),
 		PixelFormatInfoMapValue(PixelFormat::A8L8, GLTexture2D::PixelFormatInfo(GL_LUMINANCE_ALPHA, GL_LUMINANCE_ALPHA, GL_UNSIGNED_BYTE, 16, false, true)),
+		PixelFormatInfoMapValue(PixelFormat::X8R8G8B8, GLTexture2D::PixelFormatInfo(GL_RGBA, GL_RGBA, GL_UNSIGNED_BYTE, 32, false, false)),
+#ifdef GL_R32F
+		PixelFormatInfoMapValue(PixelFormat::R32F, GLTexture2D::PixelFormatInfo(GL_R32F, GL_RED, GL_FLOAT, 32, false, false)),
+		PixelFormatInfoMapValue(PixelFormat::R16F, GLTexture2D::PixelFormatInfo(GL_R16F, GL_RED, GL_HALF_FLOAT, 16, false, false)),
+		PixelFormatInfoMapValue(PixelFormat::G16R16F, GLTexture2D::PixelFormatInfo(GL_RG16F, GL_RG, GL_HALF_FLOAT, 32, false, false)),
+		PixelFormatInfoMapValue(PixelFormat::A16B16G16R16F, GLTexture2D::PixelFormatInfo(GL_RGBA16F, GL_RGBA, GL_HALF_FLOAT, 64, false, true)),
+		PixelFormatInfoMapValue(PixelFormat::A32B32G32R32F, GLTexture2D::PixelFormatInfo(GL_RGBA32F, GL_RGBA, GL_FLOAT, 128, false, true)),
+#endif
 
 #ifdef GL_COMPRESSED_RGB_PVRTC_2BPPV1_IMG
 		PixelFormatInfoMapValue(PixelFormat::PVRTC2, GLTexture2D::PixelFormatInfo(GL_COMPRESSED_RGB_PVRTC_2BPPV1_IMG, 0xFFFFFFFF, 0xFFFFFFFF, 2, true, false)),
@@ -110,6 +120,8 @@ GLTexture2D::GLTexture2D()
 	, _antialiasEnabled(true)
 	, _valid(true)
 	, _alphaTexture(nullptr)
+	, _rhiTexture(nullptr)
+	, _ownsRHITexture(true)
 {
 }
 
@@ -123,9 +135,14 @@ GLTexture2D::~GLTexture2D()
 
 	SAFE_RELEASE(_shaderProgram);
 
-	//CC_SAFE_DELETE(_ninePatchInfo);
+	if (_rhiTexture)
+	{
+		if (_ownsRHITexture)
+			_rhiTexture->ReleaseRHIResource();
+		_rhiTexture = nullptr;
+	}
 
-	if (_name)
+	if (_ownsRHITexture && _name && CGlobals::GetRenderDevice() && CGlobals::GetRenderDevice()->GetBackendType() == ERHIBackend::OpenGL)
 	{
 		GL::deleteTexture(_name);
 	}
@@ -219,6 +236,16 @@ bool GLTexture2D::initWithImage(const ParaImage *image_, PixelFormat format)
 
 bool GLTexture2D::updateWithData(const void *data, int offsetX, int offsetY, int width, int height)
 {
+	IRenderDevice* pDev = CGlobals::GetRenderDevice();
+	if (!pDev)
+		return false;
+	if (pDev->GetBackendType() != ERHIBackend::OpenGL)
+	{
+		if (_rhiTexture)
+			return _rhiTexture->UpdateSubresource(0, 0, offsetX, offsetY, static_cast<uint32_t>(width), static_cast<uint32_t>(height), data, 0);
+		return pDev->GetBackendType() == ERHIBackend::Null;
+	}
+#ifdef PARA_ENABLE_OPENGL
 	if (_name)
 	{
 		GL::bindTexture2D(_name);
@@ -228,6 +255,7 @@ bool GLTexture2D::updateWithData(const void *data, int offsetX, int offsetY, int
 
 		return true;
 	}
+#endif
 	return false;
 }
 
@@ -240,7 +268,8 @@ void GLTexture2D::setAntiAliasTexParameters()
 
 	_antialiasEnabled = true;
 
-	if (_name == 0)
+#ifdef PARA_ENABLE_OPENGL
+	if (_name == 0 || !CGlobals::GetRenderDevice() || CGlobals::GetRenderDevice()->GetBackendType() != ERHIBackend::OpenGL)
 	{
 		return;
 	}
@@ -260,6 +289,7 @@ void GLTexture2D::setAntiAliasTexParameters()
 #if CC_ENABLE_CACHE_TEXTURE_DATA
 	TexParams texParams = { (GLuint)(_hasMipmaps ? GL_LINEAR_MIPMAP_NEAREST : GL_LINEAR),GL_LINEAR,GL_NONE,GL_NONE };
 	VolatileTextureMgr::setTexParameters(this, texParams);
+#endif
 #endif
 }
 
@@ -298,9 +328,101 @@ bool GLTexture2D::initWithData(const void *data, size_t dataLen, PixelFormat pix
 	return initWithMipmaps(&mipmap, 1, pixelFormat, pixelsWide, pixelsHigh);
 }
 
+bool GLTexture2D::initWithRHITexture(IRHITexture* rhiTex, bool takeOwnership)
+{
+	if (_rhiTexture)
+	{
+		if (_ownsRHITexture)
+			_rhiTexture->ReleaseRHIResource();
+		_rhiTexture = nullptr;
+	}
+	if (_ownsRHITexture && _name != 0 && CGlobals::GetRenderDevice() && CGlobals::GetRenderDevice()->GetBackendType() == ERHIBackend::OpenGL)
+	{
+		GL::deleteTexture(_name);
+	}
+	_name = 0;
+
+	if (!rhiTex)
+	{
+		_ownsRHITexture = true;
+		_pixelsWide = 0;
+		_pixelsHigh = 0;
+		_pixelFormat = PixelFormat::Unknown;
+		_contentSize = Size(0.0f, 0.0f);
+		return false;
+	}
+
+	_rhiTexture = rhiTex;
+	_ownsRHITexture = takeOwnership;
+	_pixelsWide = static_cast<int>(rhiTex->GetWidth());
+	_pixelsHigh = static_cast<int>(rhiTex->GetHeight());
+	_pixelFormat = rhiTex->GetFormat();
+	_contentSize = Size(static_cast<float>(_pixelsWide), static_cast<float>(_pixelsHigh));
+	_maxS = 1.0f;
+	_maxT = 1.0f;
+	_hasPremultipliedAlpha = false;
+	_hasMipmaps = rhiTex->GetMipLevels() > 1;
+	if (CGlobals::GetRenderDevice() && CGlobals::GetRenderDevice()->GetBackendType() == ERHIBackend::OpenGL)
+	{
+		_name = static_cast<GLuint>(reinterpret_cast<uintptr_t>(rhiTex->GetNativeHandle()));
+	}
+	return true;
+}
+
+void GLTexture2D::detachRHITexture()
+{
+	if (!_ownsRHITexture)
+	{
+		_rhiTexture = nullptr;
+		_name = 0;
+		_ownsRHITexture = true;
+	}
+}
+
 bool GLTexture2D::initWithMipmaps(const MipmapInfo* mipmaps, int mipmapsNum, PixelFormat pixelFormat, int pixelsWide, int pixelsHigh)
 {
+	IRenderDevice* pDev = CGlobals::GetRenderDevice();
+	if (!pDev || pDev->GetBackendType() != ERHIBackend::OpenGL)
+	{
+		if (_rhiTexture)
+		{
+			if (_ownsRHITexture)
+				_rhiTexture->ReleaseRHIResource();
+			_rhiTexture = nullptr;
+		}
+		_ownsRHITexture = true;
+		_pixelsWide = pixelsWide;
+		_pixelsHigh = pixelsHigh;
+		_pixelFormat = pixelFormat;
+		_contentSize = Size((float)pixelsWide, (float)pixelsHigh);
+		_maxS = 1.0f;
+		_maxT = 1.0f;
+		_hasPremultipliedAlpha = false;
+		_hasMipmaps = mipmapsNum > 1;
 
+		if (pDev && mipmaps && mipmapsNum > 0 && pixelsWide > 0 && pixelsHigh > 0)
+		{
+			std::vector<RHIMipData> rhiMips(static_cast<size_t>(mipmapsNum));
+			for (int i = 0; i < mipmapsNum; ++i)
+			{
+				rhiMips[i].data = mipmaps[i].address;
+				rhiMips[i].dataSize = static_cast<uint32_t>(mipmaps[i].len > 0 ? mipmaps[i].len : 0);
+				rhiMips[i].rowPitch = 0;
+			}
+			_rhiTexture = pDev->CreateTexture(
+				static_cast<uint32_t>(pixelsWide),
+				static_cast<uint32_t>(pixelsHigh),
+				pixelFormat,
+				static_cast<uint32_t>(mipmapsNum),
+				ERHITextureUsage::ShaderResource | ERHITextureUsage::Dynamic,
+				rhiMips.data(),
+				static_cast<uint32_t>(rhiMips.size()));
+			return _rhiTexture != nullptr || pDev->GetBackendType() == ERHIBackend::Null;
+		}
+		return true;
+	}
+
+#ifdef PARA_ENABLE_OPENGL
 	//the pixelFormat must be a certain value
 	PE_ASSERT2(pixelFormat != PixelFormat::COUNT && pixelFormat != PixelFormat::Unknown, "the \"pixelFormat\" param must be a certain value!");
 	PE_ASSERT2(pixelsWide>0 && pixelsHigh>0, "Invalid size");
@@ -347,11 +469,19 @@ bool GLTexture2D::initWithMipmaps(const MipmapInfo* mipmaps, int mipmapsNum, Pix
 		glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
 	}
 
+	if (_rhiTexture)
+	{
+		if (_ownsRHITexture)
+			_rhiTexture->ReleaseRHIResource();
+		_rhiTexture = nullptr;
+	}
 	if (_name != 0)
 	{
-		GL::deleteTexture(_name);
+		if (_ownsRHITexture)
+			GL::deleteTexture(_name);
 		_name = 0;
 	}
+	_ownsRHITexture = true;
 
 	glGenTextures(1, &_name);
 	GL::bindTexture2D(_name);
@@ -401,11 +531,33 @@ bool GLTexture2D::initWithMipmaps(const MipmapInfo* mipmaps, int mipmapsNum, Pix
 
 		if (info.compressed)
 		{
-			// TODO: support decoding dds image from hardware?
-			if (i == 0) {
-				OUTPUT_LOG("Texture2D. WARNING. Compressed Texture found and will render as black");
+			bool hwUploaded = false;
+			const auto* pDev = CGlobals::GetRenderDevice();
+			const bool supportsBC = pDev ? pDev->GetCaps().supportsBCCompression : false;
+			if (!RHISoftwareS3TC::IsS3TCFormat(pixelFormat) || supportsBC)
+			{
+				glCompressedTexImage2D(GL_TEXTURE_2D, i, info.internalFormat, (GLsizei)width, (GLsizei)height, 0, datalen, data);
+				if (glGetError() == GL_NO_ERROR)
+				{
+					hwUploaded = true;
+				}
 			}
-			// glCompressedTexImage2D(GL_TEXTURE_2D, i, info.internalFormat, (GLsizei)width, (GLsizei)height, 0, datalen, data);
+
+			if (!hwUploaded && RHISoftwareS3TC::IsS3TCFormat(pixelFormat))
+			{
+				std::vector<uint8_t> rgbaDecoded;
+				if (RHISoftwareS3TC::DecodeToRGBA8(pixelFormat, data, static_cast<size_t>(datalen), static_cast<uint32_t>(width), static_cast<uint32_t>(height), rgbaDecoded))
+				{
+					glPixelStorei(GL_UNPACK_ALIGNMENT, 4);
+					glTexImage2D(GL_TEXTURE_2D, i, GL_RGBA, (GLsizei)width, (GLsizei)height, 0, GL_RGBA, GL_UNSIGNED_BYTE, rgbaDecoded.data());
+					hwUploaded = true;
+				}
+			}
+
+			if (!hwUploaded && i == 0)
+			{
+				OUTPUT_LOG("Texture2D. WARNING: Compressed texture format %d could not be uploaded or decoded\n", (int)pixelFormat);
+			}
 		}
 		else
 		{
@@ -441,6 +593,9 @@ bool GLTexture2D::initWithMipmaps(const MipmapInfo* mipmaps, int mipmapsNum, Pix
 	// shader
 	setGLProgram(GLProgramCache::getInstance()->getGLProgram(GLProgram::SHADER_NAME_POSITION_TEXTURE));
 	return true;
+#else
+	return false;
+#endif
 }
 
 void GLTexture2D::setGLProgram(GLProgram* shaderProgram)
@@ -459,23 +614,27 @@ GLuint GLTexture2D::getName() const
 
 void GLTexture2D::bind()
 {
-	GL::bindTexture2D(this->_name);
+	if (CGlobals::GetRenderDevice() && CGlobals::GetRenderDevice()->GetBackendType() == ERHIBackend::OpenGL)
+		GL::bindTexture2D(this->_name);
 }
  
 void GLTexture2D::bindN(GLuint textureUnit)
 {
-	GL::bindTexture2DN(textureUnit, this->_name);
+	if (CGlobals::GetRenderDevice() && CGlobals::GetRenderDevice()->GetBackendType() == ERHIBackend::OpenGL)
+		GL::bindTexture2DN(textureUnit, this->_name);
 }
 
 
 void GLTexture2D::bind(GLTexture2D* pTex)
 {
-	GL::bindTexture2D(pTex == nullptr ? 0 : pTex->_name);
+	if (CGlobals::GetRenderDevice() && CGlobals::GetRenderDevice()->GetBackendType() == ERHIBackend::OpenGL)
+		GL::bindTexture2D(pTex == nullptr ? 0 : pTex->_name);
 }
 
 void GLTexture2D::bindN(GLTexture2D* pTex, GLuint textureUnit)
 {
-	GL::bindTexture2DN(textureUnit, pTex == nullptr ? 0 : pTex->_name);
+	if (CGlobals::GetRenderDevice() && CGlobals::GetRenderDevice()->GetBackendType() == ERHIBackend::OpenGL)
+		GL::bindTexture2DN(textureUnit, pTex == nullptr ? 0 : pTex->_name);
 }
 
 GLuint GLTexture2D::getName(const GLTexture2D* pTex)
@@ -485,6 +644,9 @@ GLuint GLTexture2D::getName(const GLTexture2D* pTex)
 
 void GLTexture2D::setTexParameters(const TexParams& texParams)
 {
+#ifdef PARA_ENABLE_OPENGL
+	if (_name == 0 || !CGlobals::GetRenderDevice() || CGlobals::GetRenderDevice()->GetBackendType() != ERHIBackend::OpenGL)
+		return;
 
 	GL::bindTexture2D(_name);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, texParams.minFilter);
@@ -497,6 +659,9 @@ void GLTexture2D::setTexParameters(const TexParams& texParams)
 #if CC_ENABLE_CACHE_TEXTURE_DATA
 	VolatileTextureMgr::setTexParameters(this, texParams);
 #endif
+#else
+	(void)texParams;
+#endif
 }
 
 void GLTexture2D::setAliasTexParameters()
@@ -508,7 +673,8 @@ void GLTexture2D::setAliasTexParameters()
 
 	_antialiasEnabled = false;
 
-	if (_name == 0)
+#ifdef PARA_ENABLE_OPENGL
+	if (_name == 0 || !CGlobals::GetRenderDevice() || CGlobals::GetRenderDevice()->GetBackendType() != ERHIBackend::OpenGL)
 	{
 		return;
 	}
@@ -527,13 +693,21 @@ void GLTexture2D::setAliasTexParameters()
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 
 	PE_CHECK_GL_ERROR_DEBUG();
+#endif
 }
 
 
 
 void GLTexture2D::RendererRecreated()
 {
+	if (_rhiTexture)
+	{
+		if (_ownsRHITexture)
+			_rhiTexture->ReleaseRHIResource();
+		_rhiTexture = nullptr;
+	}
 	_name = 0;
+	_ownsRHITexture = true;
 }
 
 // converter function end

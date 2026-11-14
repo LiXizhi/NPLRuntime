@@ -1,5 +1,6 @@
 #pragma once
 #include "Framework/InputSystem/VirtualKey.h"
+#include <map>
 
 #define L_PRESSED(x) (((x)->m_dims2.rgbButtons[0]&0x80)!=0)
 #define R_PRESSED(x) (((x)->m_dims2.rgbButtons[1]&0x80)!=0)
@@ -9,6 +10,9 @@
 
 namespace ParaEngine
 {
+	struct SpriteFontEntity;
+	struct TextureEntity;
+
 	/** base class for GUI mouse
 	*/
 	class CGUIMouseVirtual
@@ -48,10 +52,28 @@ namespace ParaEngine
 		virtual void ShowCursor(bool bShowCursor);
 
 		/** Force the device to show its cursor. this is different from ShowCursor in that it always calls the device API to set the cursor. */
-		virtual void ForceShowCursor(bool bShow){};
+		virtual void ForceShowCursor(bool bShow);
+
+		bool IsCursorVisible() const { return m_bShowCursor; }
 
 		/** get the cursor size in pixels */
 		virtual int GetCursorSize(){ return 32; };
+
+		virtual void SetCursorFromFile(const char *szCursor, int XHotSpot = -1, int YHotSpot = -1, bool force = false);
+
+#if defined(WIN32) && !defined(NPLRUNTIME_SERVER)
+		/** Apply the active custom/hidden cursor on WM_SETCURSOR (returns true if handled). */
+		bool ApplySystemCursor();
+#endif
+		virtual const char* GetCursorFile(int * pXHotSpot = NULL, int* pYHotSpot = NULL)
+		{
+			if (pXHotSpot) *pXHotSpot = m_XHotSpot;
+			if (pYHotSpot) *pYHotSpot = m_YHotSpot;
+			return m_szCursorName.c_str();
+		}
+		virtual void SetCursorFont(SpriteFontEntity* pFont, Color defaultFontColor, DWORD dwTextFormat = DT_CENTER | DT_VCENTER) {}
+		virtual void SetCursorTextA(const char* strText) {}
+		virtual void SetCursorTexture(TextureEntity* pTexture, RECT* prcTexture, Color defaultTextureColor = 0xffffffff) {}
 
 		/** swap left/right button.*/
 		virtual bool IsMouseButtonSwapped();
@@ -77,6 +99,14 @@ namespace ParaEngine
 		bool m_bSwapMouseButton;
 		bool m_bLastMouseReset;
 		bool m_bHasSimulatedMouseEvent;
+		std::string m_szCursorName;
+		int m_XHotSpot = 0;
+		int m_YHotSpot = 0;
+		bool m_bShowCursor = true;
+#if defined(WIN32) && !defined(NPLRUNTIME_SERVER)
+		HCURSOR m_hCurrentCursor = NULL;
+		std::map<std::string, std::pair<HCURSOR, bool>> m_cursorCache;
+#endif
 	public:
 		DeviceMouseEventPtr m_didod[SAMPLE_BUFFER_SIZE];  // Receives buffered data
 		uint32_t m_dwElements;

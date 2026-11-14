@@ -13,6 +13,9 @@
 #include "ImageEntity.h"
 #include "TextureEntity.h"
 #include "ParaImage.h"
+#ifdef USE_FREEIMAGE
+#include <FreeImage.h>
+#endif
 
 
 using namespace ParaEngine;
@@ -49,6 +52,24 @@ TextureEntity::~TextureEntity()
 	SAFE_DELETE_ARRAY(m_pRawData);
 	SAFE_RELEASE(m_pImage);
 	SAFE_DELETE(m_pTextureInfo);
+}
+
+bool TextureEntity::StretchRect(TextureEntity* pSrcTexture, TextureEntity* pDestTexture)
+{
+	if (!pSrcTexture || !pDestTexture)
+		return false;
+	auto* pDev = CGlobals::GetRenderDevice();
+	if (!pDev)
+		return false;
+	if (pSrcTexture->SurfaceType == RenderTarget)
+		pSrcTexture->LoadAsset();
+	if (pDestTexture->SurfaceType == RenderTarget)
+		pDestTexture->LoadAsset();
+	IRHIRenderTarget* srcRT = pSrcTexture->GetRHIRenderTarget();
+	IRHIRenderTarget* dstRT = pDestTexture->GetRHIRenderTarget();
+	if (srcRT == dstRT)
+		return true;
+	return pDev->BlitRenderTarget(srcRT, dstRT, nullptr, nullptr, true);
 }
 
 void TextureEntity::SetImage(ParaImage* pImage)
@@ -453,18 +474,14 @@ bool TextureEntity::SaveToFile(const char* filename, PixelFormat dwFormat, int w
 
 void TextureEntity::LoadImage(char *sBufMemFile, int sizeBuf, int &width, int &height, unsigned char ** ppBuffer, bool bAlpha)
 {
-#ifdef USE_DIRECTX_RENDERER
-	TextureEntityDirectX::LoadImage(sBufMemFile, sizeBuf, width, height, ppBuffer, bAlpha);
-#elif defined(USE_OPENGL_RENDERER)
+#ifndef USE_NULL_RENDERER
 	TextureEntityOpenGL::LoadImage(sBufMemFile, sizeBuf, width, height, ppBuffer, bAlpha);
 #endif
 }
 
 TextureEntity* TextureEntity::CreateTexture(const uint8 * pTexels, int width, int height, int rowLength, int bytesPerPixel, uint32 nMipLevels /*= 0*/, EPoolType dwCreatePool/*= D3DPOOL_MANAGED*/, DWORD nFormat /*= 0*/)
 {
-#ifdef USE_DIRECTX_RENDERER
-	return TextureEntityDirectX::CreateTexture(pTexels, width, height, rowLength, bytesPerPixel, nMipLevels, dwCreatePool, nFormat);
-#elif defined(USE_OPENGL_RENDERER)
+#ifndef USE_NULL_RENDERER
 	return TextureEntityOpenGL::CreateTexture(pTexels, width, height, rowLength, bytesPerPixel, nMipLevels, dwCreatePool, nFormat);
 #else
 	return NULL;
@@ -473,19 +490,105 @@ TextureEntity* TextureEntity::CreateTexture(const uint8 * pTexels, int width, in
 
 TextureEntity* TextureEntity::CreateTexture(const char* pFileName, uint32 nMipLevels /*= 0*/, EPoolType dwCreatePool /*= D3DPOOL_MANAGED*/)
 {
-#ifdef USE_DIRECTX_RENDERER
-	return TextureEntityDirectX::CreateTexture(pFileName, nMipLevels, dwCreatePool);
-#elif defined(USE_OPENGL_RENDERER)
+#ifndef USE_NULL_RENDERER
 	return TextureEntityOpenGL::CreateTexture(pFileName, nMipLevels, dwCreatePool);
 #else
 	return NULL;
 #endif
 }
 
-bool TextureEntity::LoadImageOfFormatEx(const std::string& sTextureFileName, char *sBufMemFile, int sizeBuf, int &width, int &height, unsigned char ** ppBuffer, int* pBytesPerPixel, int nFormat, ImageExtendInfo *info)
+bool TextureEntity::LoadImageOfFormatEx(const std::string& sTextureFileName, char *sBufMemFile, int sizeBuf, int &width, int &height, unsigned char ** ppBuffer, int* pBytesPerPixel, int nFormat, ImageExtendInfo *exInfo)
 {
-#ifdef USE_DIRECTX_RENDERER
-	return TextureEntityDirectX::LoadImageOfFormatEx(sTextureFileName, sBufMemFile, sizeBuf, width, height, ppBuffer, pBytesPerPixel, nFormat, info);
+	if (!sBufMemFile || sizeBuf <= 0 || !ppBuffer)
+		return false;
+
+#ifndef USE_NULL_RENDERER
+	if (nFormat == -2)
+	{
+		return TextureEntityOpenGL::LoadImageOfFormat(sTextureFileName, sBufMemFile, sizeBuf, width, height, ppBuffer, pBytesPerPixel, nFormat);
+	}
+#endif
+
+#ifdef USE_FREEIMAGE
+	{
+		// GDI+ PixelFormat constants used historically across ParaEngine callers
+		constexpr int kPixelFormat24bppRGB = 0x21808;
+		constexpr int kPixelFormat32bppARGB = 0x26200a;
+		int targetFormat = (nFormat <= 0) ? kPixelFormat32bppARGB : nFormat;
+
+		FIMEMORY* hmem = FreeImage_OpenMemory(reinterpret_cast<BYTE*>(sBufMemFile), static_cast<DWORD>(sizeBuf));
+		if (hmem != nullptr)
+		{
+			int fifInt = GetFormatByFileName(sTextureFileName);
+			FREE_IMAGE_FORMAT fif = (fifInt >= 0) ? static_cast<FREE_IMAGE_FORMAT>(fifInt) : FreeImage_GetFileTypeFromMemory(hmem, 0);
+			if (fif == FIF_UNKNOWN)
+				fif = FreeImage_GetFileTypeFromMemory(hmem, 0);
+
+			FIBITMAP* dib = (fif != FIF_UNKNOWN) ? FreeImage_LoadFromMemory(fif, hmem, 0) : nullptr;
+			if (dib != nullptr)
+			{
+				if (exInfo != nullptr)
+				{
+					FITAG* tag = nullptr;
+					FreeImage_GetMetadata(FIMD_EXIF_EXIF, dib, "FocalLength", &tag);
+					if (tag != nullptr && FreeImage_GetTagType(tag) == FIDT_RATIONAL)
+					{
+						const int32_t* value = static_cast<const int32_t*>(FreeImage_GetTagValue(tag));
+						if (value != nullptr && value[1] != 0)
+							exInfo->FocalLength = static_cast<double>(value[0]) / static_cast<double>(value[1]);
+					}
+				}
+
+				unsigned int bpp = FreeImage_GetBPP(dib);
+				if (((targetFormat == kPixelFormat32bppARGB && bpp != 32) ||
+					(targetFormat == kPixelFormat24bppRGB && bpp != 24) ||
+					bpp < 8) && FreeImage_GetColorType(dib) == FIC_PALETTE)
+				{
+					FIBITMAP* oldDib = dib;
+					dib = (targetFormat == kPixelFormat24bppRGB) ? FreeImage_ConvertTo24Bits(dib) : FreeImage_ConvertTo32Bits(dib);
+					FreeImage_Unload(oldDib);
+				}
+
+				if (dib != nullptr)
+				{
+					width = static_cast<int>(FreeImage_GetWidth(dib));
+					height = static_cast<int>(FreeImage_GetHeight(dib));
+					int nBytesPerPx = static_cast<int>(FreeImage_GetBPP(dib) / 8);
+					unsigned int pitch = FreeImage_GetPitch(dib);
+					BYTE* pPixels = FreeImage_GetBits(dib);
+					if (pPixels != nullptr && width > 0 && height > 0 && nBytesPerPx > 0)
+					{
+						int rowBytes = width * nBytesPerPx;
+						int totalBytes = rowBytes * height;
+						unsigned char* pData = new unsigned char[totalBytes];
+						if (static_cast<int>(pitch) == rowBytes)
+						{
+							memcpy(pData, pPixels, totalBytes);
+						}
+						else
+						{
+							for (int y = 0; y < height; ++y)
+							{
+								memcpy(pData + y * rowBytes, pPixels + y * pitch, rowBytes);
+							}
+						}
+						*ppBuffer = pData;
+						if (pBytesPerPixel)
+							*pBytesPerPixel = nBytesPerPx;
+						FreeImage_Unload(dib);
+						FreeImage_CloseMemory(hmem);
+						return true;
+					}
+					FreeImage_Unload(dib);
+				}
+			}
+			FreeImage_CloseMemory(hmem);
+		}
+	}
+#endif
+
+#ifndef USE_NULL_RENDERER
+	return TextureEntityOpenGL::LoadImageOfFormat(sTextureFileName, sBufMemFile, sizeBuf, width, height, ppBuffer, pBytesPerPixel, nFormat);
 #else
 	return false;
 #endif
@@ -493,13 +596,7 @@ bool TextureEntity::LoadImageOfFormatEx(const std::string& sTextureFileName, cha
 
 bool TextureEntity::LoadImageOfFormat(const std::string& sTextureFileName, char *sBufMemFile, int sizeBuf, int &width, int &height, unsigned char ** ppBuffer, int* pBytesPerPixel, int nFormat)
 {
-#ifdef USE_DIRECTX_RENDERER
-	return TextureEntityDirectX::LoadImageOfFormat(sTextureFileName, sBufMemFile, sizeBuf, width, height, ppBuffer, pBytesPerPixel, nFormat);
-#elif defined(USE_OPENGL_RENDERER)
-	return TextureEntityOpenGL::LoadImageOfFormat(sTextureFileName, sBufMemFile, sizeBuf, width, height, ppBuffer, pBytesPerPixel, nFormat);
-#else
-	return false;
-#endif
+	return LoadImageOfFormatEx(sTextureFileName, sBufMemFile, sizeBuf, width, height, ppBuffer, pBytesPerPixel, nFormat, nullptr);
 }
 
 int TextureEntity::GetFormatByFileName(const std::string& filename)

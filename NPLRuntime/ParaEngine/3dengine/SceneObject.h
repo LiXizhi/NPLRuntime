@@ -26,6 +26,7 @@ namespace ParaEngine
 	class CTerrainTileRoot;
 	class DropShadowRenderer;
 	class CSunLight;
+	class CMirrorSurface;
 	typedef ObjectScriptPool<CBaseObject> CSceneScripts;
 
 	typedef CTerrainTile* CTerrainTilePtr;
@@ -64,9 +65,7 @@ namespace ParaEngine
 		typedef unordered_ref_array <CSkyMesh*> SkyMeshPool_type;
 		typedef std::list <ShadowVolume*> ShadowVolumePool_Type;
 		typedef unordered_ref_array<CMissileObject*> MissileObjectPool_Type;
-#ifdef PARAENGINE_CLIENT
 		typedef std::vector <CMirrorSurface*> MirrorSufacePool_Type;
-#endif
 		CSceneObject();
 		virtual ~CSceneObject(void);
 
@@ -1241,9 +1240,7 @@ namespace ParaEngine
 		*/
 		void CreateAttributeModels();
 
-#ifdef USE_DIRECTX_RENDERER
 		std::unique_ptr<DropShadowRenderer> m_dropShadowRenderer;
-#endif
 		bool m_renderDropShadow;
 
 		LinearColor m_defaultAmbColor;
@@ -1266,10 +1263,8 @@ namespace ParaEngine
 		/** a list of missile objects. Missile objects will always be tested
 		* for rendered on a per-frame basis. */
 		MissileObjectPool_Type	m_missiles;
-#ifdef PARAENGINE_CLIENT
 		/** managed mirror surfaces. */
 		MirrorSufacePool_Type m_mirrorSurfaces;
-#endif
 		/** store all zones in a map from zone name to its pointer */
 		map <string, CZoneNode*> m_zones;
 		/** store all zones in a map from zone name to its pointer */

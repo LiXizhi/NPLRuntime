@@ -8,6 +8,9 @@ namespace ParaEngine
 
 	class TTerrain;
 	struct TextureEntity;
+	class IRHIBuffer;
+	class IRHIRenderTarget;
+	class IRHITexture;
 
 	/**
 	* a ripple
@@ -371,17 +374,10 @@ namespace ParaEngine
 		int                      m_reflectionTextureHeight;
 		int                      m_refractionTextureWidth;
 		int                      m_refractionTextureHeight;
-#ifdef USE_DIRECTX_RENDERER
-		LPDIRECT3DSURFACE9       m_pDepthStencilSurface;
-		LPDIRECT3DTEXTURE9       m_waveReflectionTexture;
-		LPDIRECT3DSURFACE9       m_waveReflectionSurface;
-		LPDIRECT3DTEXTURE9       m_waveRefractionTexture;
-		LPDIRECT3DSURFACE9       m_waveRefractionSurface;
-		LPDIRECT3DTEXTURE9       m_waveReflectionNearTexture;
-		LPDIRECT3DSURFACE9       m_waveReflectionNearSurface;
-		LPDIRECT3DTEXTURE9       m_waveRefractionNearTexture;
-		LPDIRECT3DSURFACE9       m_waveRefractionNearSurface;
-#endif
+		IRHIRenderTarget*        m_waveReflectionRT;
+		IRHIRenderTarget*        m_waveRefractionRT;
+		IRHIRenderTarget*        m_waveReflectionNearRT;
+		IRHIRenderTarget*        m_waveRefractionNearRT;
 		// procedure ripples on the surface. 
 		//LPDIRECT3DVERTEXBUFFER9	 m_lpVBRipples; 
 
@@ -432,16 +428,14 @@ namespace ParaEngine
 		asset_ptr<TextureEntity> m_pCloudTexture;
 		/* only used in FILE_SUNSETGLOW */
 		asset_ptr<TextureEntity> m_pSunsetTexture;
-#ifdef USE_DIRECTX_RENDERER
 		/** based vertex buffer*/
-		LPDIRECT3DVERTEXBUFFER9 m_pBaseBuffer;
+		IRHIBuffer* m_pBaseBuffer;
 		/** index buffer*/
-		LPDIRECT3DINDEXBUFFER9 m_pIndexBuffer;
+		IRHIBuffer* m_pIndexBuffer;
 		
 		/** an array of cached ocean tile buffers */
-		LPDIRECT3DVERTEXBUFFER9 m_pAnimBuffer[k_total_water_meshes];
-		LPDIRECT3DVERTEXBUFFER9 m_pTerrainHeightmapBuffer[k_total_terrain_meshes];
-#endif
+		IRHIBuffer* m_pAnimBuffer[k_total_water_meshes];
+		IRHIBuffer* m_pTerrainHeightmapBuffer[k_total_terrain_meshes];
 		/** number of triangles in the grid */
 		int m_num_triangle;
 
@@ -492,10 +486,8 @@ namespace ParaEngine
 			float fSuppressSmallWavesFactor );
 		/** get the Phillips Spectrum of a certain component*/
 		float phillipsSpectrum( float fKx, float fKy );
-#ifdef USE_DIRECTX_RENDERER
 		/** fill the FFT data to a vertex buffer for rendering */
-		void fillVertexBuffer(LPDIRECT3DVERTEXBUFFER9 pVertexBuffer);
-#endif
+		void fillVertexBuffer(IRHIBuffer* pVertexBuffer);
 		/** create the index buffer for a ocean tile */
 		bool CreateStripGridIndexBuffer(
 			int xVerts,	// width of grid
@@ -571,6 +563,7 @@ namespace ParaEngine
 		void Render(SceneState* pSceneState);
 		/** whether we have reflection texture drawn.  */
 		bool RenderReflectionTexture();
+		IRHITexture* GetReflectionTexture() const;
 		
 		enum OCEAN_RENDER_TECHNIQUE{
 			OCEAN_TECH_QUAD=0,		// requires just software processing

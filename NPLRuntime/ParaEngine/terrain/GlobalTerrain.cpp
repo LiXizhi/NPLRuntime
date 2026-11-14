@@ -1234,11 +1234,10 @@ void CGlobalTerrain::SetGeoMipmapTerrain(bool enable)
 {
 	if (m_useGeoMipmap == enable)
 		return;
-#ifdef USE_OPENGL_RENDERER
+#ifdef USE_NULL_RENDERER
 	if (enable)
 	{
 		m_useGeoMipmap = false;
-		OUTPUT_LOG("warning: GeoMipmap rendering is disabled for opengl\n");
 		return;
 	}
 #endif

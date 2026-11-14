@@ -71,9 +71,7 @@ namespace ParaEngine
 	void SceneState::CleanupSceneState()
 	{
 		listPostRenderingObjects.clear();
-#ifdef USE_DIRECTX_RENDERER
 		listPRSprite.clear();
-#endif
 		listPRMissiles.clear();
 		listPRBiped.clear();
 		listPRTransparentBiped.clear();

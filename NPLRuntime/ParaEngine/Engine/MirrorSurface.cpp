@@ -6,18 +6,14 @@
 // Date:	2006.7.2
 //-----------------------------------------------------------------------------
 #include "ParaEngine.h"
-#include "DirectXEngine.h"
 #include "SceneObject.h"
+#include "EffectManager.h"
 #include "ParaWorldAsset.h"
 #include "SortedFaceGroups.h"
 #include "AutoCamera.h"
 
 #include "MirrorSurface.h"
 #include "memdebug.h"
-
-#if USE_DIRECTX_RENDERER
-#include "RenderDeviceD3D9.h"
-#endif
 
 using namespace ParaEngine;
 
@@ -29,17 +25,18 @@ using namespace ParaEngine;
 /** view angle overdraw for reflection map. 1.0 means the same as the current camera view angle. */
 #define REFLECTION_MAP_OVERDRAW		1.0f
 
-#ifndef CHECK_RETURN_CODE
-#define CHECK_RETURN_CODE(text, hr) if(FAILED((hr))){OUTPUT_LOG(text);return;}
-#endif
-
-
 CMirrorSurface::CMirrorSurface(void)
-:m_vPos(0,0,0),m_reflectionPlane(0,1,0,0), m_reflectionMapOverdraw(REFLECTION_MAP_OVERDRAW),m_bInitialized(false),
-m_reflectionTextureWidth(MAX_REFLECTION_MAP_WIDTH), m_reflectionTextureHeight(MAX_REFLECTION_MAP_HEIGHT),
-m_pDepthStencilSurface(NULL), m_pReflectionTexture(NULL),m_pReflectionSurface(NULL),m_bEnable(false),m_bDisableFogInReflection(false)
+	: m_bEnable(false)
+	, m_bInitialized(false)
+	, m_vPos(0, 0, 0)
+	, m_reflectionPlane(0, 1, 0, 0)
+	, m_reflectionMapOverdraw(REFLECTION_MAP_OVERDRAW)
+	, m_reflectionTextureWidth(MAX_REFLECTION_MAP_WIDTH)
+	, m_reflectionTextureHeight(MAX_REFLECTION_MAP_HEIGHT)
+	, m_rhiReflectionRT(nullptr)
+	, m_reflectViewMatrix(false)
+	, m_bDisableFogInReflection(false)
 {
-
 }
 
 CMirrorSurface::~CMirrorSurface(void)
@@ -47,15 +44,16 @@ CMirrorSurface::~CMirrorSurface(void)
 	Cleanup();
 }
 
-LPDIRECT3DTEXTURE9 CMirrorSurface::GetReflectionTexture()
+DeviceTexturePtr_type CMirrorSurface::GetReflectionTexture()
 {
-	return m_pReflectionTexture;
+	return m_rhiReflectionRT ? m_rhiReflectionRT->GetColorTexture(0) : nullptr;
 }
 
 void CMirrorSurface::Cleanup()
 {
-
+	InvalidateDeviceObjects();
 }
+
 void CMirrorSurface::SetPlane(const Plane& plane)
 {
 	m_reflectionPlane = plane;
@@ -63,53 +61,56 @@ void CMirrorSurface::SetPlane(const Plane& plane)
 
 void CMirrorSurface::InitDeviceObjects()
 {
-
 }
+
 void CMirrorSurface::RestoreDeviceObjects()
 {
-	HRESULT hr;
+	InvalidateDeviceObjects();
 
 	auto pRenderDevice = CGlobals::GetRenderDevice();
+	if (!pRenderDevice)
+		return;
 
-	int deviceWidth = (int)CGlobals::GetDirectXEngine().m_d3dsdBackBuffer.Width;
-	int deviceHeight = (int)CGlobals::GetDirectXEngine().m_d3dsdBackBuffer.Height;
-	int nWidth = min(deviceWidth, m_reflectionTextureWidth);
-	int nHeight = min(deviceHeight, m_reflectionTextureHeight);
-	hr = GETD3D(CGlobals::GetRenderDevice())->CreateTexture(nWidth, 	nHeight,
-		1, D3DUSAGE_RENDERTARGET, 
-		D3DFMT_X8R8G8B8, D3DPOOL_DEFAULT, &m_pReflectionTexture, NULL);
-	CHECK_RETURN_CODE("CreateTexture Reflection Texture", hr);  
+	int deviceWidth = (int)pRenderDevice->GetBackBufferWidth();
+	int deviceHeight = (int)pRenderDevice->GetBackBufferHeight();
+	if (deviceWidth <= 0)
+		deviceWidth = m_reflectionTextureWidth;
+	if (deviceHeight <= 0)
+		deviceHeight = m_reflectionTextureHeight;
 
-	hr = m_pReflectionTexture->GetSurfaceLevel(0, &m_pReflectionSurface);
-	CHECK_RETURN_CODE("GetSurfaceLevel Reflection Surface", hr);
+	int nWidth = (std::min)(deviceWidth, m_reflectionTextureWidth);
+	int nHeight = (std::min)(deviceHeight, m_reflectionTextureHeight);
+	if (nWidth <= 0 || nHeight <= 0)
+		return;
 
-	hr = GETD3D(CGlobals::GetRenderDevice())->CreateDepthStencilSurface(nWidth, nHeight, D3DFMT_D16,
-		D3DMULTISAMPLE_NONE, 0, FALSE, &m_pDepthStencilSurface, NULL);
-	CHECK_RETURN_CODE("failed creating depth stencil buffer", hr);
-	m_bInitialized=true;
+	m_rhiReflectionRT = pRenderDevice->CreateRenderTarget((uint32_t)nWidth, (uint32_t)nHeight, PixelFormat::X8R8G8B8, PixelFormat::D24S8);
+	if (!m_rhiReflectionRT)
+	{
+		OUTPUT_LOG("error: CMirrorSurface failed to create reflection render target (%dx%d)\n", nWidth, nHeight);
+		return;
+	}
+	m_bInitialized = true;
 }
 
 void CMirrorSurface::InvalidateDeviceObjects()
 {
-	m_bInitialized=false;
-	SAFE_RELEASE(m_pDepthStencilSurface);
-	SAFE_RELEASE(m_pReflectionTexture);
-	SAFE_RELEASE(m_pReflectionSurface);
+	m_bInitialized = false;
+	ReleaseRHIResource(m_rhiReflectionRT);
 }
 
 void CMirrorSurface::DeleteDeviceObjects()
 {
-
+	InvalidateDeviceObjects();
 }
 
 void CMirrorSurface::SetPosition(Vector3 vPos, bool bUseCloset)
 {
 	float fEyeY = CGlobals::GetSceneState()->vEye.y;
-	if(vPos.y<fEyeY)
+	if (vPos.y < fEyeY)
 	{
-		if(IsEnabled() && bUseCloset)
+		if (IsEnabled() && bUseCloset)
 		{
-			if(m_vPos.y<fEyeY && m_vPos.y>vPos.y)
+			if (m_vPos.y < fEyeY && m_vPos.y > vPos.y)
 			{
 				// use old position
 			}
@@ -122,49 +123,28 @@ void CMirrorSurface::SetPosition(Vector3 vPos, bool bUseCloset)
 		SetEnabled(true);
 	}
 }
-//-----------------------------------------------------------------------------
-// 
-// Setup up the transforms for fixed function.
-// Setup constants for vertex shaders.        
-//
-//-----------------------------------------------------------------------------
+
 void CMirrorSurface::SetMatrices(bool bPostPushMatrices, bool bPrePopMatrices)
 {
 	// pop matrices
-	if(bPrePopMatrices)
+	if (bPrePopMatrices)
 	{
 		CGlobals::GetViewMatrixStack().pop();
 	}
 
-	auto pRenderDevice = CGlobals::GetRenderDevice();
-	Matrix4 worldViewMatrix;
-	Matrix4 worldInverseTransposeMatrix;
 	Matrix4 viewMatrix;
-	Matrix4 viewProjectionMatrix;
-	Matrix4 worldViewProjectionMatrix;
 
 	// Reflect the view matrix if asked
-	if(m_reflectViewMatrix)
+	if (m_reflectViewMatrix)
 	{
-		/*Matrix4 reflectionMatrix;
-
-		Vector3 vRenderOrig =  CGlobals::GetScene()->GetRenderOrigin();
-
-		D3DXMatrixReflect(&reflectionMatrix, &Plane(0.0f, 1.0f, 0.0f, -(m_fGlobalWaterLevel-vRenderOrig.y)));
-
-		viewMatrix = reflectionMatrix * CGlobals::GetViewMatrixStack().SafeGetTop();*/
-
-		// put the camera at the opposite side of the water plane. 
-		// TODO: currently it only works when the original camera up axis is (0,1,0)
-		// the reflection map should be flipped in x axis in image space.We will do this in shader.
 		CAutoCamera* pCamera = ((CAutoCamera*)(CGlobals::GetScene()->GetCurrentCamera()));
-		Vector3 vUp(0,-1,0);
+		Vector3 vUp(0, -1, 0);
 		DVector3 vEye = pCamera->GetEyePosition();
-		vEye.y = m_vPos.y*2-vEye.y;
+		vEye.y = m_vPos.y * 2 - vEye.y;
 		DVector3 vLookAt = pCamera->GetLookAtPosition();
-		vLookAt.y = m_vPos.y*2-vLookAt.y;
+		vLookAt.y = m_vPos.y * 2 - vLookAt.y;
 
-		pCamera->ComputeViewMatrix( &viewMatrix, &vEye, &vLookAt, &vUp );
+		pCamera->ComputeViewMatrix(&viewMatrix, &vEye, &vLookAt, &vUp);
 	}
 	else
 	{
@@ -172,41 +152,51 @@ void CMirrorSurface::SetMatrices(bool bPostPushMatrices, bool bPrePopMatrices)
 	}
 
 	// push matrices
-	if(bPostPushMatrices)
+	if (bPostPushMatrices)
 	{
 		CGlobals::GetViewMatrixStack().push(viewMatrix);
 	}
 
-	CGlobals::GetEffectManager()->UpdateD3DPipelineTransform(true,true, true);
+	CGlobals::GetEffectManager()->UpdateD3DPipelineTransform(true, true, true);
 }
 
 void CMirrorSurface::RenderReflectionTexture()
 {
-	if(!m_bEnable)
+	if (!m_bEnable)
 		return;
-	if(CGlobals::GetSceneState()->vEye.y >= m_vPos.y)
+	if (CGlobals::GetSceneState()->vEye.y >= m_vPos.y)
 	{
-		if(!m_bInitialized)
+		if (!m_bInitialized)
 		{
 			InitDeviceObjects();
 			RestoreDeviceObjects();
 		}
 		auto pRenderDevice = CGlobals::GetRenderDevice();
+		if (!pRenderDevice || !m_rhiReflectionRT)
+		{
+			SetEnabled(false);
+			return;
+		}
+
 		EffectManager* pEffectManager = CGlobals::GetEffectManager();
 		Plane clipPlane;
 		Plane transformedClipPlane;
-		float     reflectionMapFieldOfView;
+		float reflectionMapFieldOfView;
+
+		ParaViewport oldViewport = pRenderDevice->GetViewport();
+		ParaViewport reflViewport;
+		reflViewport.X = 0;
+		reflViewport.Y = 0;
+		reflViewport.Width = m_rhiReflectionRT->GetWidth();
+		reflViewport.Height = m_rhiReflectionRT->GetHeight();
+		reflViewport.MinZ = 0.0f;
+		reflViewport.MaxZ = 1.0f;
 
 		//////////////////////////////////////////////////////////////////////////
 		// Render to the reflection map
-		LPDIRECT3DSURFACE9 pOldRenderTarget =  CGlobals::GetDirectXEngine().GetRenderTarget();
-		CGlobals::GetDirectXEngine().SetRenderTarget(0, m_pReflectionSurface);
-
-		// set depth surface
-		LPDIRECT3DSURFACE9 pOldZBuffer = NULL;
-		if(FAILED(GETD3D(CGlobals::GetRenderDevice())->GetDepthStencilSurface(&pOldZBuffer)))
-			return;
-		GETD3D(CGlobals::GetRenderDevice())->SetDepthStencilSurface( m_pDepthStencilSurface );
+		pRenderDevice->PushRenderTarget(m_rhiReflectionRT);
+		pRenderDevice->BeginRenderTarget(m_rhiReflectionRT);
+		pRenderDevice->SetViewport(reflViewport);
 
 		// Compute the field of view and use it
 		CAutoCamera* pCamera = ((CAutoCamera*)(CGlobals::GetScene()->GetCurrentCamera()));
@@ -216,58 +206,45 @@ void CMirrorSurface::RenderReflectionTexture()
 		CGlobals::GetProjectionMatrixStack().push(m_reflectionProjectionMatrix);
 		m_reflectViewMatrix = true;
 		SetMatrices(true, false);
-		if(m_bDisableFogInReflection)
+		if (m_bDisableFogInReflection)
 			pEffectManager->EnableFog(false);
 
 		pCamera->UpdateFrustum();
 
-		//TODO:  here I assume the camera is always above mirror.
 		// Set up the clip plane to draw the correct geometry
 		clipPlane = m_reflectionPlane;
-		// correct coordinate system
-		Vector3 vRenderOrig =  CGlobals::GetScene()->GetRenderOrigin();
+		Vector3 vRenderOrig = CGlobals::GetScene()->GetRenderOrigin();
 		clipPlane.d -= (m_vPos.y - vRenderOrig.y);
 
-		// we will render SKYBOX and TERRAIN using fixed function pipeline. So this is always false.
-		// in case we use a programmable pipeline for skybox and terrain, set the transformed clipping plane to clip space.
-		// When the programmable pipeline is used the plane equations are assumed to be in the clipping space 
-		// transform the plane into view space
 		Matrix4 tempMatrix = CGlobals::GetViewMatrixStack().SafeGetTop();
 		tempMatrix *= CGlobals::GetProjectionMatrixStack().SafeGetTop();
 		tempMatrix = tempMatrix.inverse();
 		tempMatrix = tempMatrix.transpose();
 		transformedClipPlane = clipPlane.PlaneTransform(tempMatrix);
-		
+
 		pEffectManager->SetClipPlane(0, (const float*)&clipPlane, false);
 		pEffectManager->SetClipPlane(0, (const float*)&transformedClipPlane, true);
 		pEffectManager->EnableClipPlane(true);
 
-		// D3DCLEAR_ZBUFFER is doomed. Hence, reflection must be rendered before the main thing is rendered. 
-		GETD3D(CGlobals::GetRenderDevice())->Clear(0L, NULL, D3DCLEAR_TARGET | D3DCLEAR_ZBUFFER, COLOR_RGBA(0, 0, 0, 0), 1.0f, 0L);
+		pRenderDevice->SetClearColor(Color4f(0.0f, 0.0f, 0.0f, 0.0f));
+		pRenderDevice->SetClearDepth(1.0f);
+		pRenderDevice->Clear(true, true, false);
 
 		//////////////////////////////////////////////////////////////////////////
-		//
-		// Render the actual scene to reflection texture: 
-		//
+		// Render the actual scene to reflection texture:
 		//////////////////////////////////////////////////////////////////////////
-
 		bool bUseReflection = pEffectManager->IsReflectionRenderingEnabled();
-		if(bUseReflection)
+		if (bUseReflection)
 			pEffectManager->EnableReflectionRendering(false);
-		// reverse cull mode, since we made the reflection. This should be done for both fixed function and programmable pipeline.
-		//CGlobals::GetSceneState()->m_dwD3D_CULLMODE = RSV_CULL_CW; 
-		// TODO: maybe first rendering terrain then rendering sky box will reduce fill rate ?
-		//pRenderDevice->SetRenderState(ERenderState::CLIPPLANEENABLE, 0);
+
 		CGlobals::GetScene()->RenderSelection(RENDER_SKY_BOX);
 		pEffectManager->EnableClipPlane(true);
 		CGlobals::GetScene()->RenderSelection(RENDER_PLAYER);
 		CGlobals::GetScene()->RenderSelection(RENDER_MESH_FRONT_TO_BACK);
-		// TODO: WHY not render smaller mesh ? CGlobals::GetScene()->RenderSelection(CSceneObject::RENDER_MESH_BACK_TO_FRONT);
 		CGlobals::GetScene()->RenderSelection(RENDER_MESH_TRANSPARENT);
 
-		if(!CGlobals::GetSceneState()->GetFaceGroups()->IsEmpty())
+		if (!CGlobals::GetSceneState()->GetFaceGroups()->IsEmpty())
 		{
-			// NOT TESTED: translucent face groups.
 			CGlobals::GetScene()->RenderSelection(RENDER_TRANSLUCENT_FACE_GROUPS);
 			CGlobals::GetSceneState()->GetFaceGroups()->Clear();
 		}
@@ -275,7 +252,7 @@ void CMirrorSurface::RenderReflectionTexture()
 		//////////////////////////////////////////////////////////////////////////
 		// Restore state for the normal pipeline
 		pEffectManager->EnableClipPlane(false);
-		if(m_bDisableFogInReflection)
+		if (m_bDisableFogInReflection)
 			pEffectManager->EnableFog(CGlobals::GetScene()->IsFogEnabled());
 		CGlobals::GetProjectionMatrixStack().pop();
 		m_reflectViewMatrix = false;
@@ -283,19 +260,14 @@ void CMirrorSurface::RenderReflectionTexture()
 		SetMatrices(false, true);
 		pCamera->UpdateFrustum();
 
-		// restore old depth surface
-		GETD3D(CGlobals::GetRenderDevice())->SetDepthStencilSurface( pOldZBuffer);
-		SAFE_RELEASE(pOldZBuffer);
+		pRenderDevice->EndRenderTarget();
+		pRenderDevice->PopRenderTarget();
+		pRenderDevice->SetViewport(oldViewport);
 
-		//////////////////////////////////////////////////////////////////////////
-		// Restore the old render target: i.e. the backbuffer
-		HRESULT hr = CGlobals::GetDirectXEngine().SetRenderTarget(0, pOldRenderTarget);
-		assert(hr == D3D_OK);
-
-		if(bUseReflection)
+		if (bUseReflection)
 			pEffectManager->EnableReflectionRendering(true);
 	}
-	
+
 	// always disable the mirror when the reflection map is updated. call GetReflectionTexture() to enable it.
 	SetEnabled(false);
 }

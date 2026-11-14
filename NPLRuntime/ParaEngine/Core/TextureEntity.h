@@ -202,6 +202,11 @@ namespace ParaEngine
 
 		// make this texture render target. 
 		virtual bool SetRenderTarget(int nIndex = 0) { return false; };
+		virtual IRHIRenderTarget* GetRHIRenderTarget() { return nullptr; };
+		virtual void AttachRHIRenderTarget(IRHIRenderTarget* pRT, bool bOwnRT = false) { (void)pRT; (void)bOwnRT; };
+		virtual void AttachRHITexture(IRHITexture* rhiTex, int width, int height) { (void)rhiTex; (void)width; (void)height; };
+		virtual void SetAliasTexParameters() {};
+		static bool StretchRect(TextureEntity* pSrcTexture, TextureEntity* pDestTexture);
 		
 		/** whether we will use blocky or non-blocky (anti-aliased) texture */
 		virtual void SetSamplerStateBlocky(bool bIsBlocky);
@@ -378,9 +383,7 @@ namespace ParaEngine
 }
 
 // chose an implementation as Texture Manager
-#ifdef USE_DIRECTX_RENDERER
-#include "TextureEntityDirectX.h"
-#elif defined(USE_OPENGL_RENDERER)
+#ifndef USE_NULL_RENDERER
 #include "TextureEntityOpenGL.h"
 #else
 namespace ParaEngine{

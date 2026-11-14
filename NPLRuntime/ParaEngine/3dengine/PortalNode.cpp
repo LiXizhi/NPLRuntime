@@ -67,10 +67,8 @@ LIMITATIONS:
 #include "StringHelper.h"
 #include "util/regularexpression.h"
 #include "ZoneNode.h"
+#include "EffectManager.h"
 #include "PortalNode.h"
-#if USE_DIRECTX_RENDERER
-#include "RenderDeviceD3D9.h"
-#endif
 
 using namespace ParaEngine;
 
@@ -205,23 +203,30 @@ HRESULT ParaEngine::CPortalNode::Draw( SceneState * sceneState )
 		pVertices[5].color = color;
 	}
 
-#ifdef USE_DIRECTX_RENDERER
 	// set render state
 	auto pRenderDevice = CGlobals::GetRenderDevice();
-	if(pRenderDevice)
+	if (pRenderDevice)
 	{
 		DrawBoundingBox(sceneState, color);
-		pRenderDevice->SetRenderState(ERenderState::ALPHABLENDENABLE, FALSE);
-		GETD3D(CGlobals::GetRenderDevice())->SetMaterial((D3DMATERIAL9*)&(sceneState->GetGlobalMaterial()));
-		GETD3D(CGlobals::GetRenderDevice())->SetTexture(0,NULL);
+		CEffectFile* pEffect = nullptr;
+		CGlobals::GetEffectManager()->BeginEffect(TECH_SINGLE_COLOR, &pEffect);
+		if (pEffect && pEffect->begin())
+		{
+			if (pEffect->BeginPass(0))
+			{
+				pRenderDevice->SetRenderState(ERenderState::ALPHABLENDENABLE, FALSE);
+				pRenderDevice->SetTexture(0, nullptr);
+				pRenderDevice->SetTransform(ETransformsStateType::WORLD, CGlobals::GetIdentityMatrix()->GetConstPointer());
+				pRenderDevice->SetFVF(LINEVERTEX::FVF);
+				pEffect->CommitChanges();
 
-		GETD3D(CGlobals::GetRenderDevice())->SetTransform(D3DTS_WORLD, CGlobals::GetIdentityMatrix()->GetConstPointer());
-		GETD3D(CGlobals::GetRenderDevice())->SetFVF(LINEVERTEX::FVF);
-
-		CGlobals::GetRenderDevice()->DrawIndexedPrimitiveUP(EPrimitiveType::TRIANGLELIST,0,
-			nNumVertices, nLenCount, pIndexBuffer, PixelFormat::INDEX16,pVertices, sizeof(LINEVERTEX));
+				pRenderDevice->DrawIndexedPrimitiveUP(EPrimitiveType::LINELIST, 0,
+					nNumVertices, nLenCount, pIndexBuffer, PixelFormat::INDEX16, pVertices, sizeof(LINEVERTEX));
+				pEffect->EndPass();
+			}
+			pEffect->end();
+		}
 	}
-#endif
 	return S_OK;
 }
 

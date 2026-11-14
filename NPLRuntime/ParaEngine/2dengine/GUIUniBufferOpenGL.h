@@ -1,5 +1,5 @@
 #pragma once
-#ifdef USE_OPENGL_RENDERER
+#ifndef USE_NULL_RENDERER
 
 #include "SpriteFontEntity.h"
 #include <vector>
@@ -33,6 +33,7 @@ namespace ParaEngine {
 
 		const char16_t& operator[](size_t n) const { return m_utf16Text[n]; }
 		void Clear();
+		bool SetBufferSize(int nNewSize = -1) { (void)nNewSize; return true; }
 
 		bool InsertChar(int nIndex, char16_t wchar); // Inserts the char at specified index. If nIndex == -1, insert to the end.
 		bool RemoveChar(int nIndex);  // Removes the char at specified index. If nIndex == -1, remove the last char.
@@ -105,6 +106,7 @@ namespace ParaEngine {
 		const std::u16string& GetUtf16Text() const;
 
 		void Clear();
+		bool SetBufferSize(int nNewSize = -1) { (void)nNewSize; return true; }
 
 		bool InsertChar(int nIndex, char16_t wchar); // Inserts the char at specified index. If nIndex == -1, insert to the end.
 		bool RemoveChar(int nIndex);  // Removes the char at specified index. If nIndex == -1, remove the last char.

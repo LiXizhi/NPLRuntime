@@ -114,6 +114,11 @@ namespace ParaEngine
 
 			int ods_group_idx;
 			int ods_group_size;
+			bool useAsymmetricFov = false;
+			float tanLeft = 0.0f;
+			float tanRight = 0.0f;
+			float tanUp = 0.0f;
+			float tanDown = 0.0f;
 			StereoODSparam(){
 				isODS = false;
 				moreRotZ = 0.0f;
@@ -152,6 +157,11 @@ namespace ParaEngine
 				oldPitch = target.oldPitch;
 				oldCameraDistance = target.oldCameraDistance;
 				oldRightDir = target.oldRightDir;
+				useAsymmetricFov = target.useAsymmetricFov;
+				tanLeft = target.tanLeft;
+				tanRight = target.tanRight;
+				tanUp = target.tanUp;
+				tanDown = target.tanDown;
 				return *this;
 			}
 		};

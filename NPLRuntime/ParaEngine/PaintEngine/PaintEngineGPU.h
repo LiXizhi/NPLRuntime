@@ -123,10 +123,6 @@ namespace ParaEngine
 	protected:
 		friend class CPainter;
 
-#ifdef USE_DIRECTX_RENDERER
-		// shared state block
-		IDirect3DStateBlock9*	m_pStateBlock;
-#endif
 		// shared drawing sprite, for drawing all gui elements
 		CSpriteRenderer*			m_pSprite;
 		bool m_bInitialized;

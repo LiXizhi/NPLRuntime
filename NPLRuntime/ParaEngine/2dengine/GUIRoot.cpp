@@ -151,7 +151,7 @@ CGUIRoot::CGUIRoot(void)
 	m_bWindowChanging = false;
 	//m_oldcursor=::GetCursor();
 	CUniBuffer::Initialize();
-	// CGUIIMEEditBox::Initialize();
+	CGUIIMEEditBox::Initialize();
 	if (!m_objResource) {
 		m_objResource = new CGUIResource();
 	}
@@ -1108,7 +1108,34 @@ bool ParaEngine::CGUIRoot::DispatchKeyboardMsg(bool bKeyHandled)
 
 	ProcessIMEText();
 
+#ifdef PARA_ENABLE_WIN32_IME
+	bool bHasImeFocus = GetIMEFocus() && pKeyTarget && GetIMEFocus()->GetVisibleRecursive();
+	SetHasIMEFocus(bHasImeFocus);
+	std::wstring sWinMsgChar = CGUIIME::GetWinMsgChar(true);
+	if (!sWinMsgChar.empty() && pKeyTarget)
+	{
+		pKeyTarget->OnHandleWinMsgChars(sWinMsgChar);
+	}
+	if (bHasImeFocus)
+	{
+		CGUIIME::GetLastCompString(true);
+		GetIMEFocus()->FetchIMEString();
+	}
+#endif
+
 	m_pKeyboard->Update();
+
+#ifdef PARA_ENABLE_WIN32_IME
+	IMESTATE ime_state = CGUIIME::GetImeStateS();
+	if (ime_state == IMEUI_STATE_ON && !bHasImeFocus)
+	{
+		CGUIIME::OnFocusOut();
+	}
+	else if (bHasImeFocus && !CGUIIME::IMEHasFocus())
+	{
+		CGUIIME::OnFocusIn();
+	}
+#endif
 	
 	s_bIMEKeyBoardUpdated = false;
 
@@ -1116,8 +1143,8 @@ bool ParaEngine::CGUIRoot::DispatchKeyboardMsg(bool bKeyHandled)
 		//synchronize the stored key state with the actual state
 		for (int a = 0; a < (int)EVirtualKey::COUNT; a++) {
 			if (CEventBinding::ScancodeToKeyTable[a] != 0) {
-#ifdef PLATFORM_SDL2
-				if (a == (int)EVirtualKey::KEY_NUMLOCK || a == (int)EVirtualKey::KEY_CAPITAL) 
+#if defined(PLATFORM_SDL2) || (defined(WIN32) && !defined(NPLRUNTIME_SERVER))
+				if (a == (int)EVirtualKey::KEY_NUMLOCK || a == (int)EVirtualKey::KEY_CAPITAL || a == (int)EVirtualKey::KEY_SCROLL) 
 				{
 					CGUIEvent::KeyStates[CEventBinding::ScancodeToKeyTable[a]] = m_pKeyboard->GetLastKeyState(a) == EKeyState::PRESS ? 0x01 : 0;
 				}
@@ -2095,12 +2122,20 @@ void ParaEngine::CGUIRoot::SetHasIMEFocus(bool bHasFocus)
 
 bool ParaEngine::CGUIRoot::GetEnableIME()
 {
+#ifdef PARA_ENABLE_WIN32_IME
+	return CGUIIME::IsEnableImeSystem();
+#else
 	return false;
+#endif
 }
 
 void ParaEngine::CGUIRoot::SetEnableIME(bool bEnableIME)
 {
-
+#ifdef PARA_ENABLE_WIN32_IME
+	CGUIIME::EnableImeSystem(bEnableIME);
+#else
+	(void)bEnableIME;
+#endif
 }
 
 // #ifdef PARAENGINE_MOBILE
@@ -2172,6 +2207,29 @@ bool ParaEngine::CGUIRoot::IsCursorClipped()
 
 void ParaEngine::CGUIRoot::EnableClipCursor(bool bEnable)
 {
+	if (m_bIsCursorClipped == bEnable)
+		return;
+	m_bIsCursorClipped = bEnable;
+#if defined(WIN32) && !defined(NPLRUNTIME_SERVER)
+	HWND hWnd = CGlobals::GetAppHWND();
+	if (bEnable && hWnd && ::IsWindow(hWnd))
+	{
+		RECT rcClient = { 0, 0, 0, 0 };
+		if (::GetClientRect(hWnd, &rcClient))
+		{
+			POINT ptTopLeft = { rcClient.left, rcClient.top };
+			POINT ptBottomRight = { rcClient.right, rcClient.bottom };
+			::ClientToScreen(hWnd, &ptTopLeft);
+			::ClientToScreen(hWnd, &ptBottomRight);
+			RECT rcClip = { ptTopLeft.x, ptTopLeft.y, ptBottomRight.x, ptBottomRight.y };
+			::ClipCursor(&rcClip);
+		}
+	}
+	else
+	{
+		::ClipCursor(NULL);
+	}
+#endif
 }
 
 void ParaEngine::CGUIRoot::GetBackBufferSize(float* pWidth, float* pHeight)
@@ -2195,10 +2253,26 @@ float ParaEngine::CGUIRoot::GetViewportTop() const
 void ParaEngine::CGUIRoot::SetCaptureMouse(bool bCapture)
 {
 	m_bMouseCaptured = bCapture;
-	//if (bCapture)
-		//CGlobals::GetApp()->PostWinThreadMessage(PE_WM_SETCAPTURE, 0, 0);
-	//else
-		//CGlobals::GetApp()->PostWinThreadMessage(PE_WM_RELEASECAPTURE, 0, 0);
+#if defined(WIN32) && !defined(NPLRUNTIME_SERVER)
+	HWND hWnd = CGlobals::GetAppHWND();
+	if (hWnd && ::IsWindow(hWnd))
+	{
+		if (bCapture)
+		{
+			if (::GetWindowThreadProcessId(hWnd, NULL) == ::GetCurrentThreadId())
+				::SetCapture(hWnd);
+			else
+				CGlobals::GetApp()->PostWinThreadMessage(PE_WM_SETCAPTURE, 0, 0);
+		}
+		else
+		{
+			if (::GetWindowThreadProcessId(hWnd, NULL) == ::GetCurrentThreadId())
+				::ReleaseCapture();
+			else
+				CGlobals::GetApp()->PostWinThreadMessage(PE_WM_RELEASECAPTURE, 0, 0);
+		}
+	}
+#endif
 }
 
 bool ParaEngine::CGUIRoot::IsMouseCaptured()

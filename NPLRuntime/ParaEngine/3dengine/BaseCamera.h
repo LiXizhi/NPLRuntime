@@ -245,6 +245,10 @@ namespace ParaEngine
 		/** change the field of view . it will internally call UpdateProjParams()*/
 		void SetFieldOfView(float fFieldofview);
 		void SetFieldOfView(float fov_v,float fov_h);
+		/** Asymmetric off-center perspective frustum using OpenXR/WebXR signed tangent half-angles (tanLeft < 0 < tanRight, tanDown < 0 < tanUp). */
+		void SetAsymmetricFovTan(float tanLeft, float tanRight, float tanUp, float tanDown);
+		void ClearAsymmetricFov();
+		inline bool IsAsymmetricFov() const { return m_bUseAsymmetricFov; }
 		/** change the near plane. it will internally call UpdateProjParams()*/
 		void SetNearPlane(float fDist);
 		/** change the far plane. it will internally call UpdateProjParams()*/
@@ -362,6 +366,11 @@ namespace ParaEngine
 		float				  m_fOrthoWidth;		  // width of the orthographic view volumn
 		float				  m_fOrthoHeight;		  // height of the orthographic view volumn
 		bool				  m_bIsPerspectiveView;	  // whether to use perspective view. 
+		bool				  m_bUseAsymmetricFov = false;
+		float				  m_fTanLeft = 0.0f;
+		float				  m_fTanRight = 0.0f;
+		float				  m_fTanUp = 0.0f;
+		float				  m_fTanDown = 0.0f;
 
 		float                 m_fRotationScaler;      // Scaler for rotation
 		float                 m_fMoveScaler;          // Scaler for movement

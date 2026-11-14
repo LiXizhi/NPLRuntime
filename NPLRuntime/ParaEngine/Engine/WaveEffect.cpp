@@ -8,18 +8,15 @@
 #include "WaveEffect.h"
 #include "Globals.h"
 #include "EffectManager.h"
-#include "DirectXEngine.h"
+#include "effect_file.h"
 #include "ParaWorldAsset.h"
-#if USE_DIRECTX_RENDERER
-#include "RenderDeviceD3D9.h"
-#endif
 
 namespace ParaEngine
 {
 	WaveEffect::WaveEffect()
-		:m_pBackbufferCopy(NULL),m_pBackbufferCopySurface(NULL)
+		: m_rhiBackbufferCopy(nullptr), m_rtWidth(0), m_rtHeight(0)
 	{
-		m_waveParam[0] = 0;
+		m_waveParam[0] = 0.0f;
 		m_waveParam[1] = 0.5f;
 		m_waveParam[2] = 0.05f;
 		m_waveParam[3] = 0.05f;
@@ -32,92 +29,122 @@ namespace ParaEngine
 
 	HRESULT WaveEffect::InvalidateDeviceObjects()
 	{
-		SAFE_RELEASE(m_pBackbufferCopySurface);
-		SAFE_RELEASE(m_pBackbufferCopy);
+		ReleaseRHIResource(m_rhiBackbufferCopy);
+		m_rtWidth = 0;
+		m_rtHeight = 0;
 		return S_OK;
+	}
+
+	bool WaveEffect::EnsureRenderTarget(IRenderDevice* pDevice, uint32_t width, uint32_t height)
+	{
+		if (!pDevice || width == 0 || height == 0)
+			return false;
+
+		if (m_rhiBackbufferCopy && m_rtWidth == width && m_rtHeight == height)
+			return true;
+
+		ReleaseRHIResource(m_rhiBackbufferCopy);
+		m_rhiBackbufferCopy = pDevice->CreateRenderTarget(width, height, PixelFormat::A8R8G8B8, PixelFormat::Unknown);
+		if (!m_rhiBackbufferCopy)
+		{
+			m_rtWidth = 0;
+			m_rtHeight = 0;
+			return false;
+		}
+		m_rtWidth = width;
+		m_rtHeight = height;
+
+		const RHIDeviceCaps& caps = pDevice->GetCaps();
+		const float vTop = caps.topLeftScreenOrigin ? 0.0f : 1.0f;
+		const float vBottom = caps.topLeftScreenOrigin ? 1.0f : 0.0f;
+		const float xHalfPixel = caps.needsHalfPixelOffset ? (0.5f / (float)width) : 0.0f;
+		const float yHalfPixel = caps.needsHalfPixelOffset ? (0.5f / (float)height) : 0.0f;
+
+		m_quadVertices[0].p = Vector3(-1.0f, -1.0f, 0.0f);
+		m_quadVertices[0].uv = Vector2(0.0f + xHalfPixel, vBottom + yHalfPixel);
+		m_quadVertices[1].p = Vector3(1.0f, -1.0f, 0.0f);
+		m_quadVertices[1].uv = Vector2(1.0f + xHalfPixel, vBottom + yHalfPixel);
+		m_quadVertices[2].p = Vector3(-1.0f, 1.0f, 0.0f);
+		m_quadVertices[2].uv = Vector2(0.0f + xHalfPixel, vTop + yHalfPixel);
+		m_quadVertices[3].p = Vector3(1.0f, 1.0f, 0.0f);
+		m_quadVertices[3].uv = Vector2(1.0f + xHalfPixel, vTop + yHalfPixel);
+		return true;
 	}
 
 	HRESULT WaveEffect::RestoreDeviceObjects()
 	{
 		auto* pDevice = CGlobals::GetRenderDevice();
-
-		D3DFORMAT surfaceFmt = D3DFMT_A8R8G8B8;
-		D3DVIEWPORT9 viewport;
-		GETD3D(CGlobals::GetRenderDevice())->GetViewport(&viewport);
-
-		HRESULT hr = GETD3D(CGlobals::GetRenderDevice())->CreateTexture(viewport.Width,viewport.Height,1,D3DUSAGE_RENDERTARGET,surfaceFmt,
-			D3DPOOL_DEFAULT,&m_pBackbufferCopy,NULL);
-
-		if(FAILED(hr))
+		if (!pDevice)
 			return E_FAIL;
 
-		hr = m_pBackbufferCopy->GetSurfaceLevel(0,&m_pBackbufferCopySurface);
-		if(FAILED(hr))
+		ParaViewport viewport = pDevice->GetViewport();
+		uint32_t width = viewport.Width > 0 ? viewport.Width : pDevice->GetBackBufferWidth();
+		uint32_t height = viewport.Height > 0 ? viewport.Height : pDevice->GetBackBufferHeight();
+		if (!EnsureRenderTarget(pDevice, width, height))
 			return E_FAIL;
 
-		if(m_pNoiseMap == NULL)
-			m_pNoiseMap = CGlobals::GetAssetManager()->LoadTexture("","Texture/Aries/ShaderResource/waveMap.dds",TextureEntity::StaticTexture);
+		if (!m_pNoiseMap)
+			m_pNoiseMap = CGlobals::GetAssetManager()->LoadTexture("", "Texture/Aries/ShaderResource/waveMap.dds", TextureEntity::StaticTexture);
 
-		m_quadVertices[0].p  = Vector3(-1,-1,0);
-		m_quadVertices[0].uv = Vector2(0,1);
-		m_quadVertices[1].p  = Vector3(1,-1,0);
-		m_quadVertices[1].uv = Vector2(1,1);
-		m_quadVertices[2].p  = Vector3(-1,1,0);
-		m_quadVertices[2].uv = Vector2(0,0);
-		m_quadVertices[3].p  = Vector3(1,1,0);
-		m_quadVertices[3].uv = Vector2(1,0);
-
-		float xHalfPixel = 0.5f/viewport.Width;
-		float yHalfPixel = 0.5f/viewport.Height;
-
-		for (int i=0;i<4;++i)
-		{
-			m_quadVertices[i].uv.x += xHalfPixel;
-			m_quadVertices[i].uv.y += yHalfPixel;
-		}
 		return S_OK;
 	}
 
 	HRESULT WaveEffect::Render()
 	{
 		auto pDevice = CGlobals::GetRenderDevice();
-		
+		if (!pDevice)
+			return E_FAIL;
+
+		auto rtBinding = pDevice->GetCurrentRenderTargetBinding();
+		IRHIRenderTarget* activeRT = (rtBinding.count > 0) ? rtBinding.targets[0] : nullptr;
+		ParaViewport viewport = pDevice->GetViewport();
+		uint32_t width = activeRT ? activeRT->GetWidth() : (viewport.Width > 0 ? viewport.Width : pDevice->GetBackBufferWidth());
+		uint32_t height = activeRT ? activeRT->GetHeight() : (viewport.Height > 0 ? viewport.Height : pDevice->GetBackBufferHeight());
+		if (!EnsureRenderTarget(pDevice, width, height))
+			return E_FAIL;
+
+		if (!m_pNoiseMap)
+			m_pNoiseMap = CGlobals::GetAssetManager()->LoadTexture("", "Texture/Aries/ShaderResource/waveMap.dds", TextureEntity::StaticTexture);
+
 		EffectManager* pEffectManager = CGlobals::GetEffectManager();
 		pEffectManager->BeginEffect(TECH_SCREEN_WAVE);
 		CEffectFile* pEffectFile = pEffectManager->GetCurrentEffectFile();
 
-		if(pEffectFile !=0 && pEffectFile->begin(true,0))
+		if (pEffectFile != 0 && pEffectFile->begin(true, 0))
 		{
-			if(pEffectFile->BeginPass(0))
+			HRESULT hr = S_FALSE;
+			if (pEffectFile->BeginPass(0))
 			{
-				IDirect3DSurface9* pBackBuffer = CGlobals::GetDirectXEngine().GetRenderTarget();
-				HRESULT hr = GETD3D(CGlobals::GetRenderDevice())->StretchRect(pBackBuffer,NULL,m_pBackbufferCopySurface,NULL,D3DTEXF_LINEAR);
-				if(FAILED(hr))
+				if (!pDevice->BlitRenderTarget(activeRT, m_rhiBackbufferCopy, nullptr, nullptr, true))
 				{
-					OUTPUT_LOG("wave effect StretchRect() failed!\r\n");
-					return hr;
+					OUTPUT_LOG("wave effect BlitRenderTarget() failed!\r\n");
+					pEffectFile->EndPass();
+					pEffectFile->end();
+					return E_FAIL;
 				}
-				
-				GETD3D(CGlobals::GetRenderDevice())->SetTexture(0,m_pBackbufferCopy);
-				GETD3D(CGlobals::GetRenderDevice())->SetTexture(1,m_pNoiseMap->GetTexture());
-				
 
-				pDevice->SetRenderState(ERenderState::CULLMODE,RSV_CULL_NONE);
-				pDevice->SetRenderState(ERenderState::ZENABLE,false);
+				pEffectFile->setTexture(0, m_rhiBackbufferCopy->GetColorTexture(0));
+				pEffectFile->setTexture(1, m_pNoiseMap ? m_pNoiseMap->GetTexture() : nullptr);
 
-				m_waveParam[0] = fmodf((float)CGlobals::GetGameTime() * m_waveParam[3],900000.0f);
-				GETD3D(CGlobals::GetRenderDevice())->SetVertexShaderConstantF(0,m_waveParam,1);
+				pDevice->SetRenderState(ERenderState::CULLMODE, RSV_CULL_NONE);
+				pDevice->SetRenderState(ERenderState::ZENABLE, FALSE);
 
-				CGlobals::GetRenderDevice()->DrawPrimitiveUP(EPrimitiveType::TRIANGLESTRIP,2,m_quadVertices,sizeof(mesh_vertex_plain));
-			
-				pDevice->SetRenderState(ERenderState::CULLMODE,RSV_CULL_CCW);
-				pDevice->SetRenderState(ERenderState::ZENABLE,true);
-				//clean up
-				pBackBuffer->Release();
-				GETD3D(CGlobals::GetRenderDevice())->SetTexture(1,NULL);
+				m_waveParam[0] = fmodf((float)CGlobals::GetGameTime() * m_waveParam[3], 900000.0f);
+				pEffectFile->SetVector3("waveParam", Vector3(m_waveParam[0], m_waveParam[1], m_waveParam[2]));
+				pEffectFile->CommitChanges();
+
+				pDevice->DrawPrimitiveUP(EPrimitiveType::TRIANGLESTRIP, 2, m_quadVertices, sizeof(mesh_vertex_plain));
+
+				pDevice->SetRenderState(ERenderState::CULLMODE, RSV_CULL_CCW);
+				pDevice->SetRenderState(ERenderState::ZENABLE, TRUE);
+
+				pEffectFile->setTexture(0, (DeviceTexturePtr_type)nullptr);
+				pEffectFile->setTexture(1, (DeviceTexturePtr_type)nullptr);
 				pEffectFile->EndPass();
-				return S_OK;
+				hr = S_OK;
 			}
+			pEffectFile->end();
+			return hr;
 		}
 		return S_FALSE;
 	}

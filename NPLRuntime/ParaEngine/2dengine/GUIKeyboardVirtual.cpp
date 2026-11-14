@@ -118,6 +118,13 @@ HRESULT ParaEngine::CGUIKeyboardVirtual::ReadImmediateData()
 	m_lastkeystate[(int)EVirtualKey::KEY_NUMLOCK] = (keymod & KMOD_NUM) == 0 ? EKeyState::RELEASE : EKeyState::PRESS;
 	m_lastkeystate[(int)EVirtualKey::KEY_SCROLL] = (keymod & KMOD_SCROLL) == 0 ? EKeyState::RELEASE : EKeyState::PRESS;
 	m_lastkeystate[(int)EVirtualKey::KEY_CAPITAL] = (keymod & KMOD_CAPS) == 0 ? EKeyState::RELEASE : EKeyState::PRESS;
+#elif defined(WIN32) && !defined(NPLRUNTIME_SERVER)
+	m_lastkeystate[(int)EVirtualKey::KEY_NUMLOCK] = (::GetKeyState(VK_NUMLOCK) & 0x0001) != 0 ? EKeyState::PRESS : EKeyState::RELEASE;
+	m_lastkeystate[(int)EVirtualKey::KEY_SCROLL] = (::GetKeyState(VK_SCROLL) & 0x0001) != 0 ? EKeyState::PRESS : EKeyState::RELEASE;
+	m_lastkeystate[(int)EVirtualKey::KEY_CAPITAL] = (::GetKeyState(VK_CAPITAL) & 0x0001) != 0 ? EKeyState::PRESS : EKeyState::RELEASE;
+	m_keystate[(int)EVirtualKey::KEY_NUMLOCK] = m_lastkeystate[(int)EVirtualKey::KEY_NUMLOCK];
+	m_keystate[(int)EVirtualKey::KEY_SCROLL] = m_lastkeystate[(int)EVirtualKey::KEY_SCROLL];
+	m_keystate[(int)EVirtualKey::KEY_CAPITAL] = m_lastkeystate[(int)EVirtualKey::KEY_CAPITAL];
 #endif
 	return S_OK;
 }

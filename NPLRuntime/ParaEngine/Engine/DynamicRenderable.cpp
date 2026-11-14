@@ -11,9 +11,6 @@
 #include "DynamicRenderable.h"
 
 #include "memdebug.h"
-#if USE_DIRECTX_RENDERER
-#include "RenderDeviceD3D9.h"
-#endif
 
 using namespace ParaEngine;
 
@@ -30,22 +27,23 @@ CDynamicRenderable::~CDynamicRenderable(void)
 
 bool ParaEngine::CDynamicRenderable::lock()
 {
-	// TODO: use a mutex, since our program is in single threaded, we need not do it at the moment. 
+	// TODO: use a mutex, since our program is in single threaded, we need not do it at the moment.
 	return true;
 }
 
 bool ParaEngine::CDynamicRenderable::unlock()
 {
-	// TODO: use a mutex, since our program is in single threaded, we need not do it at the moment. 
+	// TODO: use a mutex, since our program is in single threaded, we need not do it at the moment.
 	return true;
 }
 
-void ParaEngine::CDynamicRenderable::PrepareBuffers( int nVertexCount, int nIndexCount )
+void ParaEngine::CDynamicRenderable::PrepareBuffers(int nVertexCount, int nIndexCount)
 {
-	if(m_nFVF == mesh_vertex_normal::FVF)
+	if (m_nFVF == mesh_vertex_normal::FVF)
 	{
 		m_Positions.resize(nVertexCount);
 		m_Normals.resize(nVertexCount);
+		m_Colors.resize(nVertexCount);
 		m_UVs.resize(nVertexCount);
 
 		m_indices.resize(nIndexCount);
@@ -57,6 +55,7 @@ void ParaEngine::CDynamicRenderable::PrepareBuffers( int nVertexCount, int nInde
 	{
 		m_Positions.resize(0);
 		m_Normals.resize(0);
+		m_Colors.resize(0);
 		m_UVs.resize(0);
 		m_indices.resize(0);
 
@@ -66,81 +65,90 @@ void ParaEngine::CDynamicRenderable::PrepareBuffers( int nVertexCount, int nInde
 	}
 }
 
-HRESULT ParaEngine::CDynamicRenderable::DrawPrimitive( D3DPRIMITIVETYPE Type, UINT StartVertex, UINT PrimitiveCount )
+HRESULT ParaEngine::CDynamicRenderable::DrawPrimitive(EPrimitiveType Type, UINT StartVertex, UINT PrimitiveCount)
 {
-	// currently we only support one type and one vertex format. 
-	assert(Type == D3DPT_TRIANGLELIST);
-	assert(m_nFVF == mesh_vertex_normal::FVF);
+	// currently we only support one type and one vertex format.
+	PE_ASSERT(Type == EPrimitiveType::TRIANGLELIST);
+	PE_ASSERT(m_nFVF == mesh_vertex_normal::FVF);
 
 	auto pRenderDevice = CGlobals::GetRenderDevice();
 	mesh_vertex_normal* vb_vertices = NULL;
 
 	int nNumLockedVertice = 0;
 	int nNumFinishedVertice = 0;
-	int indexCount = PrimitiveCount*3;
-	DynamicVertexBufferEntity* pBufEntity =  CGlobals::GetAssetManager()->GetDynamicBuffer(DVB_XYZ_TEX1_NORM);
+	int indexCount = PrimitiveCount * 3;
+	DynamicVertexBufferEntity* pBufEntity = CGlobals::GetAssetManager()->GetDynamicBuffer(DVB_XYZ_TEX1_NORM);
 	do
 	{
-		if( (nNumLockedVertice = pBufEntity->Lock((indexCount - nNumFinishedVertice), 
+		if ((nNumLockedVertice = pBufEntity->Lock((indexCount - nNumFinishedVertice),
 			(void**)(&vb_vertices))) > 0)
 		{
-			int nLockedNum = nNumLockedVertice/3;
+			int nLockedNum = nNumLockedVertice / 3;
 
-			for(int i=0;i<nLockedNum;++i)
+			for (int i = 0; i < nLockedNum; ++i)
 			{
-				for(int k=0; k<3; ++k)
+				for (int k = 0; k < 3; ++k)
 				{
-					int nVB = 3*i+k;
-					vb_vertices[nVB].p = m_Positions[StartVertex+nVB];
-					vb_vertices[nVB].n = m_Normals[StartVertex+nVB];
-					vb_vertices[nVB].uv = m_UVs[StartVertex+nVB];
+					int nVB = 3 * i + k;
+					int srcIdx = StartVertex + nNumFinishedVertice + nVB;
+					vb_vertices[nVB].p = m_Positions[srcIdx];
+					vb_vertices[nVB].n = m_Normals[srcIdx];
+					vb_vertices[nVB].uv = m_UVs[srcIdx];
 				}
 			}
 
 			pBufEntity->Unlock();
 
-			CGlobals::GetRenderDevice()->DrawPrimitive(EPrimitiveType::TRIANGLELIST,pBufEntity->m_dwBase,nLockedNum);
+			if (pBufEntity->IsMemoryBuffer())
+			{
+				pRenderDevice->DrawPrimitiveUP(EPrimitiveType::TRIANGLELIST, nLockedNum, pBufEntity->GetBaseVertexPointer(), pBufEntity->m_nUnitSize);
+			}
+			else
+			{
+				pRenderDevice->SetStreamSource(0, pBufEntity->GetBuffer(), 0, sizeof(mesh_vertex_normal));
+				pRenderDevice->DrawPrimitive(EPrimitiveType::TRIANGLELIST, pBufEntity->m_dwBase, nLockedNum);
+			}
 
-			if((indexCount - nNumFinishedVertice) > nNumLockedVertice)
+			if ((indexCount - nNumFinishedVertice) > nNumLockedVertice)
 			{
 				nNumFinishedVertice += nNumLockedVertice;
 			}
 			else
 				break;
 		}
-		else 
+		else
 			break;
-	}while(1);
+	} while (1);
 
 	return S_OK;
 }
 
-HRESULT ParaEngine::CDynamicRenderable::DrawIndexedPrimitive( D3DPRIMITIVETYPE Type, INT BaseVertexIndex,UINT MinIndex,UINT NumVertices, UINT indexStart,UINT PrimitiveCount )
+HRESULT ParaEngine::CDynamicRenderable::DrawIndexedPrimitive(EPrimitiveType Type, INT BaseVertexIndex, UINT MinIndex, UINT NumVertices, UINT indexStart, UINT PrimitiveCount)
 {
-	// currently we only support one type and one vertex format. 
-	assert(Type == D3DPT_TRIANGLELIST);
-	assert(m_nFVF == mesh_vertex_normal::FVF);
+	// currently we only support one type and one vertex format.
+	PE_ASSERT(Type == EPrimitiveType::TRIANGLELIST);
+	PE_ASSERT(m_nFVF == mesh_vertex_normal::FVF);
 
 	auto pRenderDevice = CGlobals::GetRenderDevice();
 	mesh_vertex_normal* vb_vertices = NULL;
-	
+
 	int nNumLockedVertice = 0;
 	int nNumFinishedVertice = 0;
-	int indexCount = PrimitiveCount*3;
-	DynamicVertexBufferEntity* pBufEntity =  CGlobals::GetAssetManager()->GetDynamicBuffer(DVB_XYZ_TEX1_NORM);
+	int indexCount = PrimitiveCount * 3;
+	DynamicVertexBufferEntity* pBufEntity = CGlobals::GetAssetManager()->GetDynamicBuffer(DVB_XYZ_TEX1_NORM);
 	do
 	{
-		if( (nNumLockedVertice = pBufEntity->Lock((indexCount - nNumFinishedVertice), 
+		if ((nNumLockedVertice = pBufEntity->Lock((indexCount - nNumFinishedVertice),
 			(void**)(&vb_vertices))) > 0)
 		{
-			int nLockedNum = nNumLockedVertice/3;
+			int nLockedNum = nNumLockedVertice / 3;
 
-			for(int i=0;i<nLockedNum;++i)
+			for (int i = 0; i < nLockedNum; ++i)
 			{
-				for(int k=0; k<3; ++k)
+				for (int k = 0; k < 3; ++k)
 				{
-					int nVB = 3*i+k;
-					unsigned short a = m_indices[indexStart + nNumFinishedVertice+nVB];
+					int nVB = 3 * i + k;
+					unsigned short a = m_indices[indexStart + nNumFinishedVertice + nVB];
 
 					vb_vertices[nVB].p = m_Positions[a];
 					vb_vertices[nVB].n = m_Normals[a];
@@ -150,18 +158,26 @@ HRESULT ParaEngine::CDynamicRenderable::DrawIndexedPrimitive( D3DPRIMITIVETYPE T
 
 			pBufEntity->Unlock();
 
-			CGlobals::GetRenderDevice()->DrawPrimitive(EPrimitiveType::TRIANGLELIST,pBufEntity->m_dwBase,nLockedNum);
+			if (pBufEntity->IsMemoryBuffer())
+			{
+				pRenderDevice->DrawPrimitiveUP(EPrimitiveType::TRIANGLELIST, nLockedNum, pBufEntity->GetBaseVertexPointer(), pBufEntity->m_nUnitSize);
+			}
+			else
+			{
+				pRenderDevice->SetStreamSource(0, pBufEntity->GetBuffer(), 0, sizeof(mesh_vertex_normal));
+				pRenderDevice->DrawPrimitive(EPrimitiveType::TRIANGLELIST, pBufEntity->m_dwBase, nLockedNum);
+			}
 
-			if((indexCount - nNumFinishedVertice) > nNumLockedVertice)
+			if ((indexCount - nNumFinishedVertice) > nNumLockedVertice)
 			{
 				nNumFinishedVertice += nNumLockedVertice;
 			}
 			else
 				break;
 		}
-		else 
+		else
 			break;
-	}while(1);
+	} while (1);
 
 	return S_OK;
 }

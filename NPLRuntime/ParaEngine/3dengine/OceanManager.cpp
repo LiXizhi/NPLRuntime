@@ -7,13 +7,7 @@
 // Algorithm: it combines the Nvidia's Vertex Texture Fetch with my own FFT based ocean simulation.
 //-----------------------------------------------------------------------------
 #include "ParaEngine.h"
-#ifdef USE_DIRECTX_RENDERER
-#include "DirectXEngine.h"
 #include "OcclusionQueryBank.h"
-#endif
-#if USE_DIRECTX_RENDERER
-#include "RenderDeviceD3D9.h"
-#endif
 #include "SceneObject.h"
 #include "terrain/GlobalTerrain.h"
 #include "terrain/TTerrain.h"
@@ -257,21 +251,14 @@ namespace ParaEngine
 		m_activeBuffer=0;
 		m_num_triangle = 0;
 		m_bRenderOceanReflection = false;
-#ifdef USE_DIRECTX_RENDERER
-		m_pBaseBuffer = NULL;
-		m_pIndexBuffer = NULL;
-		m_pDepthStencilSurface = NULL;
-		m_waveReflectionTexture=NULL;
-		m_waveReflectionSurface = NULL;
-		m_waveRefractionTexture = NULL;
-		m_waveRefractionSurface = NULL;
-		m_waveReflectionNearTexture = NULL;
-		m_waveReflectionNearSurface = NULL;
-		m_waveRefractionNearTexture = NULL;
-		m_waveRefractionNearSurface = NULL;
-		memset(m_pAnimBuffer, NULL, sizeof(LPDIRECT3DVERTEXBUFFER9)*k_total_water_meshes);
-		memset(m_pTerrainHeightmapBuffer, NULL, sizeof(LPDIRECT3DVERTEXBUFFER9)*k_total_terrain_meshes);
-#endif
+		m_pBaseBuffer = nullptr;
+		m_pIndexBuffer = nullptr;
+		m_waveReflectionRT = nullptr;
+		m_waveRefractionRT = nullptr;
+		m_waveReflectionNearRT = nullptr;
+		m_waveRefractionNearRT = nullptr;
+		memset(m_pAnimBuffer, 0, sizeof(m_pAnimBuffer));
+		memset(m_pTerrainHeightmapBuffer, 0, sizeof(m_pTerrainHeightmapBuffer));
 		m_fLastReflectionTime = MAX_WATER_REFLECTION_INTERVAL;
 
 		m_colH = NULL;
@@ -353,16 +340,14 @@ namespace ParaEngine
 
 	void COceanManager::SetRenderTechnique(DWORD dwTechnique)
 	{
-#ifdef USE_DIRECTX_RENDERER
-		DWORD PixelShaderVersion = CGlobals::GetDirectXEngine().m_d3dCaps.PixelShaderVersion;
-		DWORD VertexShaderVersion = CGlobals::GetDirectXEngine().m_d3dCaps.VertexShaderVersion;
+		int smMajor = CGlobals::GetRenderDevice() ? CGlobals::GetRenderDevice()->GetCaps().GetShaderModelMajor() : 3;
 		if(dwTechnique==OCEAN_TECH_FULL || dwTechnique==OCEAN_TECH_REFLECTION || dwTechnique==OCEAN_TECH_SIMPLE)
 		{
-			if(PixelShaderVersion<D3DPS_VERSION(2,0) || VertexShaderVersion<D3DVS_VERSION(2,0))
+			if(smMajor < 2)
 			{
-				dwTechnique=OCEAN_TECH_FFT;
+				dwTechnique = OCEAN_TECH_FFT;
 			}
-			else if(PixelShaderVersion<D3DPS_VERSION(3,0) || VertexShaderVersion<D3DVS_VERSION(3,0))
+			else if(smMajor < 3)
 			{
 				m_dwTechnique = OCEAN_TECH_SIMPLE;
 				return;
@@ -370,24 +355,26 @@ namespace ParaEngine
 		}
 		if(dwTechnique==OCEAN_TECH_FFT)
 		{
-			if(VertexShaderVersion<D3DVS_VERSION(1,1)){
-				dwTechnique=OCEAN_TECH_QUAD;
+			if(smMajor < 1)
+			{
+				dwTechnique = OCEAN_TECH_QUAD;
 			}
-			else{
+			else
+			{
 				m_dwTechnique = dwTechnique;
 				return;
 			}
 		}
-		if(dwTechnique==OCEAN_TECH_CLOUD)
-		{
-			// if technique is low always disable cloud rendering. 
-		}
 		m_dwTechnique = dwTechnique;
-#endif
 	}
 	DWORD COceanManager::GetRenderTechnique()
 	{
 		return m_dwTechnique;
+	}
+
+	IRHITexture* COceanManager::GetReflectionTexture() const
+	{
+		return m_waveReflectionRT ? m_waveReflectionRT->GetColorTexture(0) : nullptr;
 	}
 
 	void COceanManager::SetFFTGrid(int nSize)
@@ -433,6 +420,7 @@ namespace ParaEngine
 
 	void COceanManager::Cleanup()
 	{
+		DeleteDeviceObjects();
 		CleanupTerrainCache();
 		DeleteGrid();
 		m_pRippleBumpMappingTexture.reset();
@@ -443,6 +431,8 @@ namespace ParaEngine
 
 		m_pSimpleBumpTexture.reset();
 		m_pSimpleReflectionTexture.reset();
+		m_pCloudTexture.reset();
+		m_pSunsetTexture.reset();
 	}
 
 	void COceanManager::CheckLoadOceanTextures( int nTechnique/*=0*/ )
@@ -557,139 +547,121 @@ namespace ParaEngine
 		int stride	// horz vertex count in vbuffer
 		)
 	{
-#ifdef USE_DIRECTX_RENDERER
-		int total_strips = 
-			yVerts-1;
-		int total_indexes_per_strip = 
-			xVerts<<1;
-		
-		// the total number of indice is equal
-		// to the number of strips times the
-		// indice used per strip plus one
-		// degenerate triangle between each strip
-		int total_indexes = 
-			(total_indexes_per_strip * total_strips) 
-			+ (total_strips<<1) - 2;
-		m_num_triangle = total_indexes -2;
-
-		/// create and fill the Direct3D index buffer
-		auto pD3dDevice = CGlobals::GetRenderDevice();
-		HRESULT result= GETD3D(CGlobals::GetRenderDevice())->CreateIndexBuffer(sizeof(unsigned short)*total_indexes,
-			D3DUSAGE_WRITEONLY,
-			D3DFMT_INDEX16,
-			D3DPOOL_MANAGED,
-			&m_pIndexBuffer,
-			0);
-
-		if(FAILED(result))
-		{
+		auto* pD3dDevice = CGlobals::GetRenderDevice();
+		if (!pD3dDevice)
 			return false;
-		}
 
-		unsigned short* pIndexValues =NULL;
-		m_pIndexBuffer->Lock(0,0,(void**)&pIndexValues,0);
-		
-		unsigned short* index = pIndexValues;
+		int total_strips = yVerts - 1;
+		int total_indexes_per_strip = xVerts << 1;
+
+		int total_indexes =
+			(total_indexes_per_strip * total_strips)
+			+ (total_strips << 1) - 2;
+		m_num_triangle = total_indexes - 2;
+
+		std::vector<unsigned short> indexValues(total_indexes);
+		unsigned short* index = indexValues.data();
 		unsigned short start_vert = 0;
-		unsigned short lineStep = yStep*stride;
+		unsigned short lineStep = (unsigned short)(yStep * stride);
 
-		for (int j=0;j<total_strips;++j)
+		for (int j = 0; j < total_strips; ++j)
 		{
-			int k=0;
-			unsigned short vert=start_vert;
-
-			// create a strip for this row
-			for (k=0;k<xVerts;++k)
+			unsigned short vert = start_vert;
+			for (int k = 0; k < xVerts; ++k)
 			{
 				*(index++) = vert;
 				*(index++) = vert + lineStep;
-				vert += xStep;
+				vert += (unsigned short)xStep;
 			}
 			start_vert += lineStep;
 
-			if (j+1<total_strips)
+			if (j + 1 < total_strips)
 			{
-				// add a degenerate to attach to 
-				// the next row
-				*(index++) = (vert-xStep)+lineStep;
+				*(index++) = (vert - (unsigned short)xStep) + lineStep;
 				*(index++) = start_vert;
 			}
 		}
-		m_pIndexBuffer->Unlock();
-#endif
-		return true;
+
+		if (m_pIndexBuffer)
+		{
+			m_pIndexBuffer->ReleaseRHIResource();
+			m_pIndexBuffer = nullptr;
+		}
+		m_pIndexBuffer = pD3dDevice->CreateBuffer(
+			(uint32_t)(sizeof(unsigned short) * total_indexes),
+			true,
+			ERHIBufferUsage::Static,
+			indexValues.data());
+		return m_pIndexBuffer != nullptr;
 	}
 
 	void COceanManager::InitDeviceObjects()
 	{
 		if(!m_bIsCreated)
 			return;
-#ifdef USE_DIRECTX_RENDERER
-		auto pD3dDevice = CGlobals::GetRenderDevice();
+		auto* pD3dDevice = CGlobals::GetRenderDevice();
+		if (!pD3dDevice)
+			return;
 
-		/** 
+		/**
 		* Create the base vertex buffer
 		*/
-		if(m_pBaseBuffer == NULL)
+		if(m_pBaseBuffer == nullptr)
 		{
-			GETD3D(CGlobals::GetRenderDevice())->CreateVertexBuffer(m_grid_size*m_grid_size*sizeof(sBaseVertex), 
-				D3DUSAGE_WRITEONLY, NULL, 
-				D3DPOOL_MANAGED, &(m_pBaseBuffer), NULL);
+			std::vector<sBaseVertex> baseVerts(m_grid_size * m_grid_size);
+			sBaseVertex* pVertices = baseVerts.data();
+			float u = 0.0f;
+			float v = 0.0f;
+			float uvStep = 1.0f / (float)(m_grid_size - 1);
 
-			sBaseVertex* pBaseVerts = NULL;
-			m_pBaseBuffer->Lock(0,0, (void**)&pBaseVerts, 0);
-
-			sBaseVertex* pVertices = pBaseVerts;
-			if (pVertices)
+			for( int y = 0; y < m_grid_size; ++y )
 			{
-				float u = 0.0f;
-				float v = 0.0f;
-				float uvStep = 
-					1.0f/(float) ( m_grid_size - 1 );
-
-				for( int y=0; y<m_grid_size; ++y )
+				for( int x = 0; x < m_grid_size; ++x )
 				{
-					for( int x=0; x<m_grid_size; ++x )
-					{
-						pVertices->vPos.x = u*m_ocean_tile_size;
-						pVertices->vPos.y = v*m_ocean_tile_size;
-
-						++pVertices;
-						u += uvStep;
-					}       
-					v += uvStep;
-					u = 0.0f;
+					pVertices->vPos.x = u * m_ocean_tile_size;
+					pVertices->vPos.y = v * m_ocean_tile_size;
+					++pVertices;
+					u += uvStep;
 				}
+				v += uvStep;
+				u = 0.0f;
 			}
-			m_pBaseBuffer->Unlock();
+
+			m_pBaseBuffer = pD3dDevice->CreateBuffer(
+				(uint32_t)(baseVerts.size() * sizeof(sBaseVertex)),
+				false,
+				ERHIBufferUsage::Static,
+				baseVerts.data());
 		}
-				
-		/** 
+
+		/**
 		* Create the grid strip Index buffer
 		*/
-		if(m_pIndexBuffer == NULL)
+		if(m_pIndexBuffer == nullptr)
 		{
 			CreateStripGridIndexBuffer(
 				m_grid_size,
 				m_grid_size,
-				1,1,
+				1, 1,
 				m_grid_size);
 		}
-		
+
 		/**
 		* build the dynamic vertex buffers
 		*/
-		int i=0;
-		for (i=0; i<k_total_water_meshes; ++i)
+		for (int i = 0; i < k_total_water_meshes; ++i)
 		{
-			if(m_pAnimBuffer[i] == NULL)
+			if(m_pAnimBuffer[i] == nullptr)
 			{
-				if(FAILED(GETD3D(CGlobals::GetRenderDevice())->CreateVertexBuffer(m_grid_size*m_grid_size*sizeof(sAnimVertex), 
-					D3DUSAGE_DYNAMIC | D3DUSAGE_WRITEONLY, NULL, 
-					D3DPOOL_DEFAULT, &(m_pAnimBuffer[i]), NULL)))
+				m_pAnimBuffer[i] = pD3dDevice->CreateBuffer(
+					(uint32_t)(m_grid_size * m_grid_size * sizeof(sAnimVertex)),
+					false,
+					ERHIBufferUsage::Dynamic | ERHIBufferUsage::WriteOnly,
+					nullptr);
+				if (!m_pAnimBuffer[i])
 				{
-					OUTPUT_LOG("ocean animation buffer failed to create");
-					return;	
+					OUTPUT_LOG("ocean animation buffer failed to create\n");
+					return;
 				}
 				fillVertexBuffer(m_pAnimBuffer[i]);
 			}
@@ -697,173 +669,142 @@ namespace ParaEngine
 		/**
 		* build the dynamic vertex buffer for terrain.
 		*/
-		for (i=0; i<k_total_terrain_meshes; ++i)
+		for (int i = 0; i < k_total_terrain_meshes; ++i)
 		{
-			if(m_pTerrainHeightmapBuffer[i] == NULL)
+			if(m_pTerrainHeightmapBuffer[i] == nullptr)
 			{
-				if(FAILED(GETD3D(CGlobals::GetRenderDevice())->CreateVertexBuffer(m_grid_size*m_grid_size*sizeof(float), 
-					D3DUSAGE_DYNAMIC | D3DUSAGE_WRITEONLY, NULL, 
-					D3DPOOL_DEFAULT, &(m_pTerrainHeightmapBuffer[i]), NULL)))
+				m_pTerrainHeightmapBuffer[i] = pD3dDevice->CreateBuffer(
+					(uint32_t)(m_grid_size * m_grid_size * sizeof(float)),
+					false,
+					ERHIBufferUsage::Dynamic | ERHIBufferUsage::WriteOnly,
+					nullptr);
+				if (!m_pTerrainHeightmapBuffer[i])
 				{
-					OUTPUT_LOG("ocean terrain buffer failed to create");
-					return;	
+					OUTPUT_LOG("ocean terrain buffer failed to create\n");
+					return;
 				}
 			}
 		}
-#endif
 	}
-
-#define CHECK_RETURN_CODE(text, hr) if(FAILED((hr))){OUTPUT_LOG(text);return;}
 
 	void COceanManager::RestoreDeviceObjects()
 	{
-#ifdef USE_DIRECTX_RENDERER
-		HRESULT hr;
-		auto pD3dDevice = CGlobals::GetRenderDevice();
-		int i=0;
-		/**
-		* Fill the dynamic vertex buffers, if it has not been filled
-		*/
-		for (i=0; i<k_total_water_meshes; ++i)
+		auto* pD3dDevice = CGlobals::GetRenderDevice();
+		if (!pD3dDevice)
+			return;
+
+		if (!m_pBaseBuffer || !m_pIndexBuffer)
 		{
-			if(m_pAnimBuffer[i] == NULL)
+			InitDeviceObjects();
+		}
+
+		for (int i = 0; i < k_total_water_meshes; ++i)
+		{
+			if(m_pAnimBuffer[i] == nullptr)
 			{
-				if(FAILED(GETD3D(CGlobals::GetRenderDevice())->CreateVertexBuffer(m_grid_size*m_grid_size*sizeof(sAnimVertex), 
-					D3DUSAGE_DYNAMIC | D3DUSAGE_WRITEONLY, NULL, 
-					D3DPOOL_DEFAULT, &(m_pAnimBuffer[i]), NULL)))
+				m_pAnimBuffer[i] = pD3dDevice->CreateBuffer(
+					(uint32_t)(m_grid_size * m_grid_size * sizeof(sAnimVertex)),
+					false,
+					ERHIBufferUsage::Dynamic | ERHIBufferUsage::WriteOnly,
+					nullptr);
+				if (!m_pAnimBuffer[i])
 				{
-					OUTPUT_LOG("ocean animation buffer failed to create");
-					return;	
+					OUTPUT_LOG("ocean animation buffer failed to create\n");
+					return;
 				}
 				fillVertexBuffer(m_pAnimBuffer[i]);
 			}
 		}
 
-		/**
-		* build the dynamic vertex buffer for terrain.
-		*/
-		for (i=0; i<k_total_terrain_meshes; ++i)
+		for (int i = 0; i < k_total_terrain_meshes; ++i)
 		{
-			if(m_pTerrainHeightmapBuffer[i] == NULL)
+			if(m_pTerrainHeightmapBuffer[i] == nullptr)
 			{
-				if(FAILED(GETD3D(CGlobals::GetRenderDevice())->CreateVertexBuffer(m_grid_size*m_grid_size*sizeof(float), 
-					D3DUSAGE_DYNAMIC | D3DUSAGE_WRITEONLY, NULL, 
-					D3DPOOL_DEFAULT, &(m_pTerrainHeightmapBuffer[i]), NULL)))
+				m_pTerrainHeightmapBuffer[i] = pD3dDevice->CreateBuffer(
+					(uint32_t)(m_grid_size * m_grid_size * sizeof(float)),
+					false,
+					ERHIBufferUsage::Dynamic | ERHIBufferUsage::WriteOnly,
+					nullptr);
+				if (!m_pTerrainHeightmapBuffer[i])
 				{
-					OUTPUT_LOG("ocean terrain buffer failed to create");
-					return;	
+					OUTPUT_LOG("ocean terrain buffer failed to create\n");
+					return;
 				}
 			}
 		}
 
-		if(GetRenderTechnique()>=OCEAN_TECH_REFLECTION)
+		if(GetRenderTechnique() >= OCEAN_TECH_REFLECTION && m_waveReflectionRT == nullptr)
 		{
-			int deviceWidth = (int)CGlobals::GetDirectXEngine().m_d3dsdBackBuffer.Width;
-			int deviceHeight = (int)CGlobals::GetDirectXEngine().m_d3dsdBackBuffer.Height;
-			// Create the wave reflection and refraction textures for objects
-			// that do not penetrate the surface of the water.
-			int nWidth = min(deviceWidth, m_reflectionTextureWidth);
-			int nHeight = min(deviceHeight, m_reflectionTextureHeight);
-			hr = GETD3D(CGlobals::GetRenderDevice())->CreateTexture(nWidth, 	nHeight, 
-				1, D3DUSAGE_RENDERTARGET, 
-				D3DFMT_X8R8G8B8, D3DPOOL_DEFAULT, &m_waveReflectionTexture, NULL);
-			CHECK_RETURN_CODE("CreateTexture m_waveReflectionTexture", hr);  
+			int deviceWidth = (int)pD3dDevice->GetBackBufferWidth();
+			int deviceHeight = (int)pD3dDevice->GetBackBufferHeight();
+			int nWidth = (deviceWidth > 0) ? min(deviceWidth, m_reflectionTextureWidth) : m_reflectionTextureWidth;
+			int nHeight = (deviceHeight > 0) ? min(deviceHeight, m_reflectionTextureHeight) : m_reflectionTextureHeight;
 
-			hr = m_waveReflectionTexture->GetSurfaceLevel(0, &m_waveReflectionSurface);
-			CHECK_RETURN_CODE("GetSurfaceLevel m_waveReflectionSurface", hr);
-
-			hr = GETD3D(CGlobals::GetRenderDevice())->CreateDepthStencilSurface(nWidth, nHeight, D3DFMT_D16, 
-				D3DMULTISAMPLE_NONE, 0, FALSE, &m_pDepthStencilSurface, NULL);
-			CHECK_RETURN_CODE("failed creating depth stencil buffer", hr);
-
-#ifdef WATER_RENDER_ENABLE_ALL
-			hr = GETD3D(CGlobals::GetRenderDevice())->CreateTexture(min(deviceWidth, m_refractionTextureWidth), 
-				min(deviceHeight, m_refractionTextureHeight), 
-				1, D3DUSAGE_RENDERTARGET, 
-				D3DFMT_X8R8G8B8, D3DPOOL_DEFAULT, &m_waveRefractionTexture, NULL);
-			CHECK_RETURN_CODE("CreateTexture m_waveRefractionTexture", hr);
-
-			hr = m_waveRefractionTexture->GetSurfaceLevel(0, &m_waveRefractionSurface);
-			CHECK_RETURN_CODE("GetSurfaceLevel m_waveRefractionSurface", hr);
-
-			// Create the second set of refraction and reflection render targets for objects
-			// that are penetrating the surface of the water.
-			hr = GETD3D(CGlobals::GetRenderDevice())->CreateTexture(min(deviceWidth, m_reflectionTextureWidth), 
-				min(deviceHeight, m_reflectionTextureHeight), 
-				1, D3DUSAGE_RENDERTARGET, 
-				D3DFMT_X8R8G8B8, D3DPOOL_DEFAULT, &m_waveReflectionNearTexture, NULL);
-			CHECK_RETURN_CODE("CreateTexture m_waveReflectionNearTexture", hr);  
-
-			hr = m_waveReflectionNearTexture->GetSurfaceLevel(0, &m_waveReflectionNearSurface);
-			CHECK_RETURN_CODE("GetSurfaceLevel m_waveReflectionNearSurface", hr);
-
-			hr = GETD3D(CGlobals::GetRenderDevice())->CreateTexture(min(deviceWidth, m_refractionTextureWidth), 
-				min(deviceHeight, m_refractionTextureHeight), 
-				1, D3DUSAGE_RENDERTARGET, 
-				D3DFMT_X8R8G8B8, D3DPOOL_DEFAULT, &m_waveRefractionNearTexture, NULL);
-			CHECK_RETURN_CODE("CreateTexture m_waveRefractionNearTexture", hr);
-
-			hr = m_waveRefractionNearTexture->GetSurfaceLevel(0, &m_waveRefractionNearSurface);
-			CHECK_RETURN_CODE("GetSurfaceLevel m_waveRefractionNearSurface", hr);
-#endif
+			m_waveReflectionRT = pD3dDevice->CreateRenderTarget(
+				(uint32_t)nWidth,
+				(uint32_t)nHeight,
+				PixelFormat::X8R8G8B8,
+				PixelFormat::D24S8);
+			if (!m_waveReflectionRT)
+			{
+				OUTPUT_LOG("warn: COceanManager failed creating m_waveReflectionRT\n");
+			}
 		}
-#endif
 	}
 
 	void COceanManager::InvalidateDeviceObjects()
 	{
-#ifdef USE_DIRECTX_RENDERER
-		/** invalid animation buffer */
-		if(m_pAnimBuffer)
+		for (int i = 0; i < k_total_water_meshes; ++i)
 		{
-			for (int i=0; i<k_total_water_meshes; ++i)
+			if (m_pAnimBuffer[i])
 			{
-				SAFE_RELEASE(m_pAnimBuffer[i]);
+				m_pAnimBuffer[i]->ReleaseRHIResource();
+				m_pAnimBuffer[i] = nullptr;
 			}
 		}
-		/** invalid animation buffer */
-		if(m_pTerrainHeightmapBuffer)
+		for (int i = 0; i < k_total_terrain_meshes; ++i)
 		{
-			for (int i=0; i<k_total_terrain_meshes; ++i)
+			if (m_pTerrainHeightmapBuffer[i])
 			{
-				SAFE_RELEASE(m_pTerrainHeightmapBuffer[i]);
+				m_pTerrainHeightmapBuffer[i]->ReleaseRHIResource();
+				m_pTerrainHeightmapBuffer[i] = nullptr;
 			}
 		}
-
-		SAFE_RELEASE(m_pDepthStencilSurface);
-		SAFE_RELEASE(m_waveReflectionTexture);
-		SAFE_RELEASE(m_waveRefractionTexture);
-		SAFE_RELEASE(m_waveReflectionSurface);
-		SAFE_RELEASE(m_waveRefractionSurface);
-		SAFE_RELEASE(m_waveReflectionNearTexture);
-		SAFE_RELEASE(m_waveRefractionNearTexture);
-		SAFE_RELEASE(m_waveReflectionNearSurface);
-		SAFE_RELEASE(m_waveRefractionNearSurface);
-#endif
+		if (m_waveReflectionRT)
+		{
+			m_waveReflectionRT->ReleaseRHIResource();
+			m_waveReflectionRT = nullptr;
+		}
+		if (m_waveRefractionRT)
+		{
+			m_waveRefractionRT->ReleaseRHIResource();
+			m_waveRefractionRT = nullptr;
+		}
+		if (m_waveReflectionNearRT)
+		{
+			m_waveReflectionNearRT->ReleaseRHIResource();
+			m_waveReflectionNearRT = nullptr;
+		}
+		if (m_waveRefractionNearRT)
+		{
+			m_waveRefractionNearRT->ReleaseRHIResource();
+			m_waveRefractionNearRT = nullptr;
+		}
 	}
 
 	void COceanManager::DeleteDeviceObjects()
 	{
-#ifdef USE_DIRECTX_RENDERER
-		SAFE_RELEASE(m_pIndexBuffer);
-		SAFE_RELEASE(m_pBaseBuffer);
-	
-		if(m_pAnimBuffer)
+		InvalidateDeviceObjects();
+		if (m_pIndexBuffer)
 		{
-			for (int i=0; i<k_total_water_meshes; ++i)
-			{
-				SAFE_RELEASE(m_pAnimBuffer[i]);
-			}
+			m_pIndexBuffer->ReleaseRHIResource();
+			m_pIndexBuffer = nullptr;
 		}
-
-		if(m_pTerrainHeightmapBuffer)
+		if (m_pBaseBuffer)
 		{
-			for (int i=0; i<k_total_terrain_meshes; ++i)
-			{
-				SAFE_RELEASE(m_pTerrainHeightmapBuffer[i]);
-			}
+			m_pBaseBuffer->ReleaseRHIResource();
+			m_pBaseBuffer = nullptr;
 		}
-#endif
 	}
 
 	float COceanManager::phillipsSpectrum( float fKx, float fKy )
@@ -1103,30 +1044,26 @@ namespace ParaEngine
 			}
 		}
 	}
-#ifdef USE_DIRECTX_RENDERER
-	void COceanManager::fillVertexBuffer(LPDIRECT3DVERTEXBUFFER9 pVertexBuffer)
+	void COceanManager::fillVertexBuffer(IRHIBuffer* pVertexBuffer)
 	{
-		sAnimVertex* pStartVertex;
-		pVertexBuffer->Lock( 0, 0, (void**)&pStartVertex, D3DLOCK_DISCARD );
+		if (!pVertexBuffer)
+			return;
+
+		uint32_t byteSize = (uint32_t)(m_grid_size * m_grid_size * sizeof(sAnimVertex));
+		sAnimVertex* pStartVertex = static_cast<sAnimVertex*>(pVertexBuffer->Map(0, byteSize, ERHIMapMode::WriteDiscard));
 
 		sAnimVertex* pVertices = pStartVertex;
 		if (pVertices)
 		{
-			
 			for( int y=0; y<m_grid_size; ++y )
 			{
 				for( int x=0; x<m_grid_size; ++x )
 				{
 					pVertices->zPos = getOceanHeight(x, y);
-					
 					pVertices->vNormal.x = getOceanNormalX(x, y);
 					pVertices->vNormal.y = getOceanNormalY(x, y);
-					//	pVertices->vNormal.z = 24.0f;
-
-					//	pVertices->vNormal.normalize();
-
 					++pVertices;
-				}       
+				}
 			}
 
 			// make sure all edge data is the same
@@ -1156,15 +1093,15 @@ namespace ParaEngine
 				pRightVert += m_grid_size;
 			}
 
-			pVertexBuffer->Unlock();
+			pVertexBuffer->Unmap();
 		}
 	}
-#endif
+
 	void COceanManager::update(float fTimeDelta)
 	{
 		if(!m_bIsCreated || !m_bDrawGlobalWater)
 			return;
-#ifdef USE_DIRECTX_RENDERER
+
 		m_fBumpTime += fTimeDelta;
 		if(m_fBumpTime>100.f)
 			m_fBumpTime -= 100.f;
@@ -1180,8 +1117,6 @@ namespace ParaEngine
 			switch(m_tickCounter)
 			{
 			case k_animateHeight:
-				// TODO: use FRC controller.
-				// m_fTime += fTimeDelta * k_total_process_stages;
 				m_fTime += 0.033f; 
 				animateHeightTable();
 				break;
@@ -1201,24 +1136,19 @@ namespace ParaEngine
 				horizontalFFT(m_colN );    
 				break;
 			case k_uploadBuffer:
-				fillVertexBuffer(
-					m_pAnimBuffer[m_activeBuffer]);
+				if (m_pAnimBuffer[m_activeBuffer])
+					fillVertexBuffer(m_pAnimBuffer[m_activeBuffer]);
 				break;
 			default:
 				++m_activeBuffer;
-				if (m_activeBuffer 
-					>= k_total_water_meshes)
+				if (m_activeBuffer >= k_total_water_meshes)
 				{
 					m_activeBuffer = 0;
 				}
 				break;
 			};
 
-			// compute the interpolation factor for
-			// the vertices currently in use
-			m_fInterpolation = //0.0f;
-				(float)(m_tickCounter+1)
-				/(float)(k_total_process_stages);
+			m_fInterpolation = (float)(m_tickCounter+1) / (float)(k_total_process_stages);
 
 			++m_tickCounter;
 			if (m_tickCounter == k_total_process_stages)
@@ -1227,7 +1157,6 @@ namespace ParaEngine
 				m_fInterpolation = 0.0f;
 			}
 		}
-#endif
 	}
 
 	bool COceanManager::IsPointUnderWater(const Vector3& vPos)
@@ -1237,9 +1166,10 @@ namespace ParaEngine
 
 	void COceanManager::RenderTechnique_Quad()
 	{
-#ifdef USE_DIRECTX_RENDERER
 		CheckLoadOceanTextures(0);
 		auto pd3dDevice = CGlobals::GetRenderDevice();
+		if (!pd3dDevice)
+			return;
 		static const short pIndexBuffer[] = {
 			0,1,2,0,2,3 
 		};
@@ -1251,8 +1181,7 @@ namespace ParaEngine
 		start_u+=(float)CGlobals::GetSceneState()->dTimeDelta*WAVE_TEXTURE_SPEED;
 		if(start_u>1.0f)
 			start_u -= 1.0f;
-		float repeats = ocean_radius_/5.f; // repeat every 5 meters
-		//TODO: animate start of u, v in the range[0,1] by time.
+		float repeats = ocean_radius_/5.f;
 		vertices[0].p.x = ocean_radius_;
 		vertices[0].p.z = ocean_radius_;
 		vertices[0].tu = start_u + repeats;
@@ -1284,12 +1213,9 @@ namespace ParaEngine
 			vertices[i].p.y = vCenter.y;
 		}
 
-		// set render state
-		GETD3D(CGlobals::GetRenderDevice())->SetTexture(0,m_pWaterColorTexture->GetTexture());
-		
-		CGlobals::GetRenderDevice()->DrawIndexedPrimitiveUP(EPrimitiveType::TRIANGLELIST, 0,
-			4, 2, pIndexBuffer, PixelFormat::INDEX16,vertices, sizeof(SPRITEVERTEX));
-#endif
+		pd3dDevice->SetTexture(0, m_pWaterColorTexture ? m_pWaterColorTexture->GetTexture() : nullptr);
+		pd3dDevice->DrawIndexedPrimitiveUP(EPrimitiveType::TRIANGLELIST, 0,
+			4, 2, pIndexBuffer, PixelFormat::INDEX16, vertices, sizeof(SPRITEVERTEX));
 	}
 
 	void COceanManager::FrameMoveCachedTerrainTiles()
@@ -1374,13 +1300,14 @@ namespace ParaEngine
 	{
 		if(!m_bRenderOceanReflection)
 			return 0;
-#ifdef USE_DIRECTX_RENDERER
+
 		CBaseCamera * pCamera = CGlobals::GetScene()->GetCurrentCamera();
 		auto pd3dDevice = CGlobals::GetRenderDevice();
+		if (!pd3dDevice)
+			return 0;
 		Vector3 vRenderOrig =  CGlobals::GetScene()->GetRenderOrigin();
 		CEffectFile* pEffectFile = NULL;
 		
-		// determine how many ocean tiles to draw to fill the camera view,for debugging only
 		int nOceanTileRendered = 0;
 		CheckLoadOceanTextures(TECH_OCEAN_SIMPLE);
 		
@@ -1399,9 +1326,6 @@ namespace ParaEngine
 		//////////////////////////////////////
 		// set effect params
 		LinearColor OceanColor = CGlobals::GetScene()->GetSunLight().GetSunAmbientHue();
-		//OceanColor.r*=m_colorOcean.r;
-		//OceanColor.g*=m_colorOcean.g;
-		//OceanColor.b*=m_colorOcean.b;
 		OceanColor.r = 0.64f;
 		OceanColor.g = 0.8f;
 		OceanColor.b = 0.96f;
@@ -1413,45 +1337,33 @@ namespace ParaEngine
 		OceanColor.a = 1.0f;
 		pEffectFile->setParameter(CEffectFile::k_ConstVector2, (const float*)OceanColor);
 
-		// direction and speed of the wind. how many U,V per second. Since, time is time % 100; x,y has to be 0.01*n, where n is integer.
 		Vector4 vBumpSpeed(0.f, 0.f, 0.f,0.f);
 		vBumpSpeed.x = ((float)((int)(m_fWindSpeed*m_fWindX/10.f)))*0.01f;
 		vBumpSpeed.y = ((float)((int)(m_fWindSpeed*m_fWindY/10.f)))*0.01f;
 		pEffectFile->setParameter(CEffectFile::k_ConstVector3, vBumpSpeed.ptr());
 
 		pEffectFile->setFloat(CEffectFile::k_time, m_fBumpTime);
-		//pEffectFile->setInt(CEffectFile::k_specularPower, 20);
 		
-		pEffectFile->setParameter(CEffectFile::k_uvScaleOffset, 
-			(const float*)&Vector4((1.0f /  m_reflectionMapOverdraw), 
+		Vector4 uvScaleOffset((1.0f / m_reflectionMapOverdraw),
 			(1.0f / m_reflectionMapOverdraw),
 			.5f * (1.0f - (1.0f / m_reflectionMapOverdraw)),
-			.5f * (1.0f - (1.0f / m_reflectionMapOverdraw))));
+			.5f * (1.0f - (1.0f / m_reflectionMapOverdraw)));
+		pEffectFile->setParameter(CEffectFile::k_uvScaleOffset, (const float*)&uvScaleOffset);
 		
-		/** for under water surface rendering, we will use NONE culling, 
-		* for above water surface rendering, we will use CCW culling. */
 		if(m_underwater)
 			CGlobals::GetEffectManager()->SetCullingMode(false);
 		else
 			CGlobals::GetEffectManager()->SetCullingMode(true);
 
-		//////////////////////////////////////////////////////////////
-		// unlike regular objects, we do not render through the render
-		// queue. Instead, we render on-demand using our internal settings
 		if (pEffectFile->begin(true, 0))
 		{
-			// supply our material to the render method
 			pEffectFile->applySurfaceMaterial(&pSceneState->GetGlobalMaterial());
 
 			{
-				// set the new render origin
 				Vector4 vWorldPos(0,0,0,1.f);
-				/** this is for height shift, using the render origin. */
-				vWorldPos.x = m_fGlobalWaterLevel; // absolute position is in x component
-				vWorldPos.y = m_fGlobalWaterLevel-vRenderOrig.y; // render space position is in y component
-				pEffectFile->setParameter(
-					CEffectFile::k_worldPos,
-					&vWorldPos);
+				vWorldPos.x = m_fGlobalWaterLevel;
+				vWorldPos.y = m_fGlobalWaterLevel-vRenderOrig.y;
+				pEffectFile->setParameter(CEffectFile::k_worldPos, &vWorldPos);
 			}
 			int totalPasses = pEffectFile->totalPasses();
 
@@ -1468,13 +1380,9 @@ namespace ParaEngine
 					{
 						for (float x=x0; x<x1; x=x+1.0f)
 						{
-							/** Cull ocean tiles that are not in the view frustum
-							*/
 							{
-								// use global water level as high as the water level of the current tile.
 								float fWaterLevel = m_fGlobalWaterLevel;
 								int nTileID = (int)(x*1000+y);
-								// only render if occlusion test passed. 
 								if(ocean_tile_occlusion_result.find(nTileID) == ocean_tile_occlusion_result.end() || ocean_tile_occlusion_result[nTileID]>0)
 								{
 									#define PT_COUNT	8
@@ -1490,12 +1398,12 @@ namespace ParaEngine
 									};
 
 									Vector3 pt[PT_COUNT];
-									for (int i=0; i<PT_COUNT;i++)
+									for (int k=0; k<PT_COUNT;k++)
 									{
-										pt[i].x = (cubePT[i].x+ x) * m_ocean_tile_size;
-										pt[i].z = (cubePT[i].z+ y) * m_ocean_tile_size;
-										pt[i].y = fWaterLevel+(cubePT[i].y-0.5f)/* *m_fWaveHeight */;//? why m_fWaveHeight is 387.f?
-										pt[i] -= vRenderOrig; // shift the render origin
+										pt[k].x = (cubePT[k].x+ x) * m_ocean_tile_size;
+										pt[k].z = (cubePT[k].z+ y) * m_ocean_tile_size;
+										pt[k].y = fWaterLevel+(cubePT[k].y-0.5f);
+										pt[k] -= vRenderOrig;
 									}
 									if(pCamera->GetObjectFrustum()->CullPointsWithFrustum(pt, PT_COUNT))
 										nOceanTileRendered ++;
@@ -1506,7 +1414,6 @@ namespace ParaEngine
 									continue;
 							}
 
-							// use global water level as high as the water level of the current tile.
 							float fWaterLevel = m_fGlobalWaterLevel;
 							mesh_vertex_plain v[4] = {
 								{ Vector3(0, 0, 0), Vector2(0, 0) },
@@ -1514,52 +1421,58 @@ namespace ParaEngine
 								{ Vector3(1, 0, 0), Vector2(1, 0) },
 								{ Vector3(1, 0, 1), Vector2(1, 1) },
 							};
-							for (int i=0; i<4;i++)
+							for (int k=0; k<4;k++)
 							{
-								v[i].p.x = (v[i].p.x+ x) * m_ocean_tile_size;
-								v[i].p.z = (v[i].p.z+ y) * m_ocean_tile_size;
-								v[i].p.y = fWaterLevel;
-								v[i].p -= vRenderOrig; // shift the render origin
+								v[k].p.x = (v[k].p.x+ x) * m_ocean_tile_size;
+								v[k].p.z = (v[k].p.z+ y) * m_ocean_tile_size;
+								v[k].p.y = fWaterLevel;
+								v[k].p -= vRenderOrig;
 							}
 
-							pEffectFile->setParameter(CEffectFile::k_texCoordOffset, (const float*)&Vector4((float)(((int)x)%8),(float)(((int)y)%8),0.f,0.f));
+							Vector4 texOffset((float)(((int)x)%8), (float)(((int)y)%8), 0.f, 0.f);
+							pEffectFile->setParameter(CEffectFile::k_texCoordOffset, (const float*)&texOffset);
 
 							pEffectFile->CommitChanges();
 
-							CGlobals::GetRenderDevice()->DrawPrimitiveUP(EPrimitiveType::TRIANGLESTRIP, 2, v, sizeof(mesh_vertex_plain));
+							pd3dDevice->DrawPrimitiveUP(EPrimitiveType::TRIANGLESTRIP, 2, v, sizeof(mesh_vertex_plain));
 						}
 					}
 					pEffectFile->EndPass();
 				}
 			}
 			pEffectFile->end();
-		}//if (pEffectFile->begin())
+		}
 
-		// restore states
 		if(!m_underwater)
 			CGlobals::GetEffectManager()->SetCullingMode(false);
 
 		return nOceanTileRendered;
-#else
-		return 0;
-#endif
 	}
 
 	int COceanManager::RenderTechnique_FFT_HIGH(SceneState* pSceneState, float x0, float y0, float x1, float y1)
 	{
 		if(!m_bRenderOceanReflection)
 			return 0;
-#ifdef USE_DIRECTX_RENDERER
+
 		auto pd3dDevice = CGlobals::GetRenderDevice();
+		if (!pd3dDevice)
+			return 0;
+
+		if (!m_pBaseBuffer || !m_pIndexBuffer || !m_pAnimBuffer[0])
+		{
+			InitDeviceObjects();
+			RestoreDeviceObjects();
+			if (!m_pBaseBuffer || !m_pIndexBuffer || !m_pAnimBuffer[0])
+				return 0;
+		}
+
 		CBaseCamera * pCamera = CGlobals::GetScene()->GetCurrentCamera();
 		Vector3 vRenderOrig =  CGlobals::GetScene()->GetRenderOrigin();
 		CEffectFile* pEffectFile = NULL;
 
-		// update FFT if time ticks.
 		if(pSceneState->dTimeDelta>0)
 			update((float)pSceneState->dTimeDelta);
 
-		// determine how many ocean tiles to draw to fill the camera view,for debugging only
 		int nOceanTileRendered = 0;
 		bool bUseBumpMap = true;
 		CheckLoadOceanTextures(TECH_OCEAN);
@@ -1567,10 +1480,8 @@ namespace ParaEngine
 		pEffectFile = CGlobals::GetEffectManager()->GetCurrentEffectFile();
 		if(pEffectFile==0)
 			return 0;
-		//////////////////////////////////////
-		// set effect params
+
 		bUseBumpMap = m_pRippleBumpMappingTexture!=NULL && m_pRippleBumpMappingTexture->GetTexture()!=NULL;
-		//pEffectFile->SetBoolean(0, bUseBumpMap);
 
 		LinearColor OceanColor = CGlobals::GetScene()->GetSunLight().GetSunAmbientHue();
 		OceanColor.r*=m_colorOcean.r;
@@ -1579,69 +1490,63 @@ namespace ParaEngine
 		OceanColor.a = 1.0f;
 		pEffectFile->setParameter(CEffectFile::k_ConstVector2, (const float*)OceanColor);
 		{
-			// direction and speed of the wind. how many U,V per second. Since, time is time % 100; x,y has to be 0.01*n, where n is integer.
 			Vector4 vBumpSpeed(-0.02f, 0.f, 0.f,0.f);
 			vBumpSpeed.x = ((float)((int)(m_fWindSpeed*m_fWindX/10.f)))*0.01f;
 			vBumpSpeed.y = ((float)((int)(m_fWindSpeed*m_fWindY/10.f)))*0.01f;
 			pEffectFile->setParameter(CEffectFile::k_ConstVector3, vBumpSpeed.ptr());
 		}
 
-		pEffectFile->setParameter(CEffectFile::k_uvScaleOffset, 
-			(const float*)&Vector4((1.0f /  m_reflectionMapOverdraw), 
+		Vector4 uvScaleOffset((1.0f / m_reflectionMapOverdraw),
 			(1.0f / m_reflectionMapOverdraw),
 			.5f * (1.0f - (1.0f / m_reflectionMapOverdraw)),
-			.5f * (1.0f - (1.0f / m_reflectionMapOverdraw))));
+			.5f * (1.0f - (1.0f / m_reflectionMapOverdraw)));
+		pEffectFile->setParameter(CEffectFile::k_uvScaleOffset, (const float*)&uvScaleOffset);
 		if(m_underwater)
 		{
-			pEffectFile->setParameter(CEffectFile::k_ConstVector1, (const float*)&Vector4(-1.0f, m_fBumpTime, 0.0f, 0.0f));
-			pEffectFile->setParameter(CEffectFile::k_fresnelR0, (const float*)&Vector4(0.20f, 0.0f, 0.0f, 0.0f));
-			pEffectFile->setParameter(CEffectFile::k_ConstVector0, (const float*)&Vector4(5.0f, 0.65f, 0.65f, 0.0f));
+			Vector4 cv1(-1.0f, m_fBumpTime, 0.0f, 0.0f);
+			Vector4 fr0(0.20f, 0.0f, 0.0f, 0.0f);
+			Vector4 cv0(5.0f, 0.65f, 0.65f, 0.0f);
+			pEffectFile->setParameter(CEffectFile::k_ConstVector1, (const float*)&cv1);
+			pEffectFile->setParameter(CEffectFile::k_fresnelR0, (const float*)&fr0);
+			pEffectFile->setParameter(CEffectFile::k_ConstVector0, (const float*)&cv0);
 		}
 		else
 		{
-			pEffectFile->setParameter(CEffectFile::k_ConstVector1, (const float*)&Vector4(1.0f, m_fBumpTime, 0.0f, 0.0f));
-			pEffectFile->setParameter(CEffectFile::k_fresnelR0, (const float*)&Vector4(0.0977f, 0.0f, 0.0f, 0.0f));
-			pEffectFile->setParameter(CEffectFile::k_ConstVector0, (const float*)&Vector4(1.0f, 0.0f, 1.0f, 0.0f));
+			Vector4 cv1(1.0f, m_fBumpTime, 0.0f, 0.0f);
+			Vector4 fr0(0.0977f, 0.0f, 0.0f, 0.0f);
+			Vector4 cv0(1.0f, 0.0f, 1.0f, 0.0f);
+			pEffectFile->setParameter(CEffectFile::k_ConstVector1, (const float*)&cv1);
+			pEffectFile->setParameter(CEffectFile::k_fresnelR0, (const float*)&fr0);
+			pEffectFile->setParameter(CEffectFile::k_ConstVector0, (const float*)&cv0);
 		}
 
-		/** for under water surface rendering, we will use NONE culling, 
-		* for above water surface rendering, we will use CCW culling. */
 		if(m_underwater)
 			CGlobals::GetEffectManager()->SetCullingMode(false);
 		else
 			CGlobals::GetEffectManager()->SetCullingMode(true);
 
-		//////////////////////////////////////////////////////////////
-		// unlike regular objects, we do not render through the render
-		// queue. Instead, we render on-demand using our internal settings
 		if (pEffectFile->begin(true, 0))
 		{
-			// supply our material to the render method
 			pEffectFile->applySurfaceMaterial(&pSceneState->GetGlobalMaterial());
 
 			{
-				// set the new render origin
 				Vector4 vWorldPos(0,0,0,1.f);
-				/** this is for height shift, using the render origin. */
-				vWorldPos.x = m_fGlobalWaterLevel; // absolute position is in x component
-				vWorldPos.y = m_fGlobalWaterLevel-vRenderOrig.y; // render space position is in y component
-				pEffectFile->setParameter(
-					CEffectFile::k_worldPos,
-					&vWorldPos);
+				vWorldPos.x = m_fGlobalWaterLevel;
+				vWorldPos.y = m_fGlobalWaterLevel-vRenderOrig.y;
+				pEffectFile->setParameter(CEffectFile::k_worldPos, &vWorldPos);
 			}
 
-			// activate the geometry buffers
-			GETD3D(CGlobals::GetRenderDevice())->SetIndices(m_pIndexBuffer);
-			GETD3D(CGlobals::GetRenderDevice())->SetStreamSource(0, m_pBaseBuffer, 0, sizeof(sBaseVertex));
+			pd3dDevice->SetIndices(m_pIndexBuffer);
+			pd3dDevice->SetStreamSource(0, m_pBaseBuffer, 0, sizeof(sBaseVertex));
 
-			int primary_buffer = m_activeBuffer -2;
-			int secondary_buffer = m_activeBuffer -1;
+			int primary_buffer = m_activeBuffer - 2;
+			int secondary_buffer = m_activeBuffer - 1;
 
-			if (primary_buffer <0) primary_buffer += k_total_water_meshes;
-			if (secondary_buffer <0) secondary_buffer += k_total_water_meshes;
+			if (primary_buffer < 0) primary_buffer += k_total_water_meshes;
+			if (secondary_buffer < 0) secondary_buffer += k_total_water_meshes;
 
-			GETD3D(CGlobals::GetRenderDevice())->SetStreamSource(1, m_pAnimBuffer[primary_buffer], 0, sizeof(sAnimVertex));
-			GETD3D(CGlobals::GetRenderDevice())->SetStreamSource(2, m_pAnimBuffer[secondary_buffer], 0, sizeof(sAnimVertex));
+			pd3dDevice->SetStreamSource(1, m_pAnimBuffer[primary_buffer], 0, sizeof(sAnimVertex));
+			pd3dDevice->SetStreamSource(2, m_pAnimBuffer[secondary_buffer], 0, sizeof(sAnimVertex));
 
 			int totalPasses = pEffectFile->totalPasses();
 
@@ -1649,7 +1554,7 @@ namespace ParaEngine
 			{
 				if(pEffectFile->BeginPass(i))
 				{
-					pEffectFile->setTexture(0, m_waveReflectionTexture);
+					pEffectFile->setTexture(0, GetReflectionTexture());
 					if(bUseBumpMap)
 					{
 						pEffectFile->setTexture(1, m_pRippleBumpMappingTexture.get());
@@ -1660,9 +1565,8 @@ namespace ParaEngine
 					}
 
 #ifdef PSVS_NEW
-					// texture tex1 : TEXTURE; water lookup table
 					pEffectFile->setTexture(1, m_pWaterColorTexture.get());
-#elseif ENABLE_FADING
+#elif defined(ENABLE_FADING)
 					if(m_pWaterFadeTexture)
 						pEffectFile->setTexture(1, m_pWaterFadeTexture.get());
 #endif
@@ -1672,13 +1576,9 @@ namespace ParaEngine
 					{
 						for (float x=x0; x<x1; x=x+1.0f)
 						{
-							/** Cull ocean tiles that are not in the view frustum
-							*/
 							{
-								// use global water level as high as the water level of the current tile.
 								float fWaterLevel = m_fGlobalWaterLevel;
 								int nTileID = (int)(x*1000+y);
-								// only render if occlusion test passed. 
 								if(ocean_tile_occlusion_result.find(nTileID) == ocean_tile_occlusion_result.end() || ocean_tile_occlusion_result[nTileID]>0)
 								{
 #define PT_COUNT	8
@@ -1694,12 +1594,12 @@ namespace ParaEngine
 									};
 
 									Vector3 pt[PT_COUNT];
-									for (int i=0; i<PT_COUNT;i++)
+									for (int k=0; k<PT_COUNT;k++)
 									{
-										pt[i].x = (cubePT[i].x+ x) * m_ocean_tile_size;
-										pt[i].z = (cubePT[i].z+ y) * m_ocean_tile_size;
-										pt[i].y = fWaterLevel+(cubePT[i].y-0.5f)/* *m_fWaveHeight */;//? why m_fWaveHeight is 387.f?
-										pt[i] -= vRenderOrig; // shift the render origin
+										pt[k].x = (cubePT[k].x+ x) * m_ocean_tile_size;
+										pt[k].z = (cubePT[k].z+ y) * m_ocean_tile_size;
+										pt[k].y = fWaterLevel+(cubePT[k].y-0.5f);
+										pt[k] -= vRenderOrig;
 									}
 									if(pCamera->GetObjectFrustum()->CullPointsWithFrustum(pt, PT_COUNT))
 										nOceanTileRendered ++;
@@ -1710,21 +1610,20 @@ namespace ParaEngine
 									continue;
 							}
 
-							// set the stream for height field
 							if(m_bDrawShoreline)
 							{
 								int nID = GetTileIDFromXY(int(x), int(y));
 								TTerrain* pTerrain = GetTerrainHeightField(nID);
-								if(pTerrain!=0)
+								if(pTerrain != 0 && m_pTerrainHeightmapBuffer[0] != nullptr)
 								{
-									// TODO: retrieve from an array to increase parallism between CPU and GPU, here I just use the first one for testing
-									LPDIRECT3DVERTEXBUFFER9 pVB = m_pTerrainHeightmapBuffer[0];
-									float* pHeightField = NULL;
-									if(SUCCEEDED(pVB->Lock( 0, 0, (void**)&pHeightField, D3DLOCK_DISCARD)))
+									IRHIBuffer* pVB = m_pTerrainHeightmapBuffer[0];
+									uint32_t byteSize = (uint32_t)(pTerrain->GetGridSize() * pTerrain->GetGridSize() * sizeof(float));
+									float* pHeightField = static_cast<float*>(pVB->Map(0, byteSize, ERHIMapMode::WriteDiscard));
+									if(pHeightField)
 									{
-										memcpy(pHeightField, pTerrain->heightfield, pTerrain->GetGridSize()*pTerrain->GetGridSize()*sizeof(float));
-										pVB->Unlock();
-										GETD3D(CGlobals::GetRenderDevice())->SetStreamSource(3, pVB, 0, sizeof(float));
+										memcpy(pHeightField, pTerrain->heightfield, byteSize);
+										pVB->Unmap();
+										pd3dDevice->SetStreamSource(3, pVB, 0, sizeof(float));
 									}
 								}
 							}
@@ -1740,14 +1639,13 @@ namespace ParaEngine
 
 							pEffectFile->CommitChanges();
 
-							HRESULT hr = CGlobals::GetRenderDevice()->DrawIndexedPrimitive(  
+							pd3dDevice->DrawIndexedPrimitive(  
 								EPrimitiveType::TRIANGLESTRIP,
 								0,
 								0,
 								m_grid_size*m_grid_size,
 								0,
 								m_num_triangle);
-
 						}
 					}
 					pEffectFile->EndPass();
@@ -1758,16 +1656,12 @@ namespace ParaEngine
 				}
 			}
 			pEffectFile->end();
-		}//if (pEffectFile->begin())
+		}
 
-		// restore states
 		if(!m_underwater)
 			CGlobals::GetEffectManager()->SetCullingMode(false);
 
 		return nOceanTileRendered;
-#else
-		return 0;
-#endif
 	}
 
 
@@ -1775,24 +1669,28 @@ namespace ParaEngine
 	{
 		if(!m_bRenderOceanReflection)
 			return 0;
-#ifdef USE_DIRECTX_RENDERER
+
 		CBaseCamera * pCamera = CGlobals::GetScene()->GetCurrentCamera();
 		auto pd3dDevice = CGlobals::GetRenderDevice();
+		if (!pd3dDevice)
+			return 0;
+		if (!m_pBaseBuffer || !m_pIndexBuffer)
+		{
+			InitDeviceObjects();
+			RestoreDeviceObjects();
+			if (!m_pBaseBuffer || !m_pIndexBuffer)
+				return 0;
+		}
 		Vector3 vRenderOrig =  CGlobals::GetScene()->GetRenderOrigin();
 		CEffectFile* pEffectFile = NULL;
 
-
-		// determine how many ocean tiles to draw to fill the camera view,for debugging only
 		int nOceanTileRendered = 0;
-		bool bUseBumpMap = true;
 		CheckLoadOceanTextures(TECH_OCEAN_CLOUD);
 		CGlobals::GetEffectManager()->BeginEffect(TECH_OCEAN_CLOUD);
 		pEffectFile = CGlobals::GetEffectManager()->GetCurrentEffectFile();
 		if(pEffectFile==0)
 			return 0;
-		//////////////////////////////////////
-		// set effect params
-		
+
 		LinearColor OceanColor = CGlobals::GetScene()->GetSunLight().GetSunAmbientHue();
 		OceanColor.r*=m_colorOcean.r;
 		OceanColor.g*=m_colorOcean.g;
@@ -1800,44 +1698,33 @@ namespace ParaEngine
 		OceanColor.a = 1.0f;
 		pEffectFile->setParameter(CEffectFile::k_ConstVector2, (const float*)OceanColor);
 		{
-			// direction and speed of the wind. how many U,V per second. Since, time is time % 100; x,y has to be 0.01*n, where n is integer.
 			Vector4 vBumpSpeed(-0.02f, 0.f, 0.f,0.f);
 			vBumpSpeed.x = ((float)((int)(m_fWindSpeed*m_fWindX/10.f)))*0.01f;
 			vBumpSpeed.y = ((float)((int)(m_fWindSpeed*m_fWindY/10.f)))*0.01f;
 			pEffectFile->setParameter(CEffectFile::k_ConstVector3, vBumpSpeed.ptr());
 		}
 
-		pEffectFile->setParameter(CEffectFile::k_ConstVector1, Vector4(0.f, m_fBumpTime / 100.f, m_fBumpTime / 100.f, 0.0f).ptr());
+		Vector4 cv1(0.f, m_fBumpTime / 100.f, m_fBumpTime / 100.f, 0.0f);
+		pEffectFile->setParameter(CEffectFile::k_ConstVector1, cv1.ptr());
 		
-		/** for under water surface rendering, we will use NONE culling, 
-		* for above water surface rendering, we will use CCW culling. */
 		if(m_underwater)
 			CGlobals::GetEffectManager()->SetCullingMode(false);
 		else
 			CGlobals::GetEffectManager()->SetCullingMode(true);
 
-		//////////////////////////////////////////////////////////////
-		// unlike regular objects, we do not render through the render
-		// queue. Instead, we render on-demand using our internal settings
 		if (pEffectFile->begin(true, 0))
 		{
-			// supply our material to the render method
 			pEffectFile->applySurfaceMaterial(&pSceneState->GetGlobalMaterial());
 
 			{
-				// set the new render origin
 				Vector4 vWorldPos(0,0,0,1.f);
-				/** this is for height shift, using the render origin. */
-				vWorldPos.x = m_fGlobalWaterLevel; // absolute position is in x component
-				vWorldPos.y = m_fGlobalWaterLevel-vRenderOrig.y; // render space position is in y component
-				pEffectFile->setParameter(
-					CEffectFile::k_worldPos,
-					&vWorldPos);
+				vWorldPos.x = m_fGlobalWaterLevel;
+				vWorldPos.y = m_fGlobalWaterLevel-vRenderOrig.y;
+				pEffectFile->setParameter(CEffectFile::k_worldPos, &vWorldPos);
 			}
 
-			// activate the geometry buffers
-			GETD3D(CGlobals::GetRenderDevice())->SetIndices(m_pIndexBuffer);
-			GETD3D(CGlobals::GetRenderDevice())->SetStreamSource(0, m_pBaseBuffer, 0, sizeof(sBaseVertex));
+			pd3dDevice->SetIndices(m_pIndexBuffer);
+			pd3dDevice->SetStreamSource(0, m_pBaseBuffer, 0, sizeof(sBaseVertex));
 			
 			int totalPasses = pEffectFile->totalPasses();
 
@@ -1854,13 +1741,9 @@ namespace ParaEngine
 					{
 						for (float x=x0; x<x1; x=x+1.0f)
 						{
-							/** Cull ocean tiles that are not in the view frustum
-							*/
 							{
-								// use global water level as high as the water level of the current tile.
 								float fWaterLevel = m_fGlobalWaterLevel;
 								int nTileID = (int)(x*1000+y);
-								// only render if occlusion test passed. 
 								if(ocean_tile_occlusion_result.find(nTileID) == ocean_tile_occlusion_result.end() || ocean_tile_occlusion_result[nTileID]>0)
 								{
 #define PT_COUNT	8
@@ -1876,12 +1759,12 @@ namespace ParaEngine
 									};
 
 									Vector3 pt[PT_COUNT];
-									for (int i=0; i<PT_COUNT;i++)
+									for (int k=0; k<PT_COUNT;k++)
 									{
-										pt[i].x = (cubePT[i].x+ x) * m_ocean_tile_size;
-										pt[i].z = (cubePT[i].z+ y) * m_ocean_tile_size;
-										pt[i].y = fWaterLevel+(cubePT[i].y-0.5f)/* *m_fWaveHeight */;//? why m_fWaveHeight is 387.f?
-										pt[i] -= vRenderOrig; // shift the render origin
+										pt[k].x = (cubePT[k].x+ x) * m_ocean_tile_size;
+										pt[k].z = (cubePT[k].z+ y) * m_ocean_tile_size;
+										pt[k].y = fWaterLevel+(cubePT[k].y-0.5f);
+										pt[k] -= vRenderOrig;
 									}
 									if(pCamera->GetObjectFrustum()->CullPointsWithFrustum(pt, PT_COUNT))
 										nOceanTileRendered ++;
@@ -1892,21 +1775,20 @@ namespace ParaEngine
 									continue;
 							}
 
-							// set the stream for height field
 							if(m_bDrawShoreline)
 							{
 								int nID = GetTileIDFromXY(int(x), int(y));
 								TTerrain* pTerrain = GetTerrainHeightField(nID);
-								if(pTerrain!=0)
+								if(pTerrain != 0 && m_pTerrainHeightmapBuffer[0] != nullptr)
 								{
-									// TODO: retrieve from an array to increase parallism between CPU and GPU, here I just use the first one for testing
-									LPDIRECT3DVERTEXBUFFER9 pVB = m_pTerrainHeightmapBuffer[0];
-									float* pHeightField = NULL;
-									if(SUCCEEDED(pVB->Lock( 0, 0, (void**)&pHeightField, D3DLOCK_DISCARD)))
+									IRHIBuffer* pVB = m_pTerrainHeightmapBuffer[0];
+									uint32_t byteSize = (uint32_t)(pTerrain->GetGridSize() * pTerrain->GetGridSize() * sizeof(float));
+									float* pHeightField = static_cast<float*>(pVB->Map(0, byteSize, ERHIMapMode::WriteDiscard));
+									if(pHeightField)
 									{
-										memcpy(pHeightField, pTerrain->heightfield, pTerrain->GetGridSize()*pTerrain->GetGridSize()*sizeof(float));
-										pVB->Unlock();
-										GETD3D(CGlobals::GetRenderDevice())->SetStreamSource(1, pVB, 0, sizeof(float));
+										memcpy(pHeightField, pTerrain->heightfield, byteSize);
+										pVB->Unmap();
+										pd3dDevice->SetStreamSource(1, pVB, 0, sizeof(float));
 									}
 								}
 							}
@@ -1922,14 +1804,13 @@ namespace ParaEngine
 
 							pEffectFile->CommitChanges();
 
-							HRESULT hr = CGlobals::GetRenderDevice()->DrawIndexedPrimitive( 
+							pd3dDevice->DrawIndexedPrimitive( 
 								EPrimitiveType::TRIANGLESTRIP,
 								0,
 								0,
 								m_grid_size*m_grid_size,
 								0,
 								m_num_triangle);
-
 						}
 					}
 					pEffectFile->EndPass();
@@ -1940,55 +1821,47 @@ namespace ParaEngine
 				}
 			}
 			pEffectFile->end();
-		}//if (pEffectFile->begin())
+		}
 
-		// restore states
 		if(!m_underwater)
 			CGlobals::GetEffectManager()->SetCullingMode(false);
 
 		return nOceanTileRendered;
-#else
-		return 0;
-#endif
 	}
 
 	int COceanManager::RenderTechnique_OccusionTest(SceneState* pSceneState, float x0, float y0, float x1, float y1)
 	{
-#ifdef USE_DIRECTX_RENDERER
+		(void)pSceneState;
 		auto pd3dDevice = CGlobals::GetRenderDevice();
-		Vector3 vRenderOrig =  CGlobals::GetScene()->GetRenderOrigin();
-		CEffectFile* pEffectFile = NULL;
+		if (!pd3dDevice)
+			return S_OK;
+		Vector3 vRenderOrig = CGlobals::GetScene()->GetRenderOrigin();
 
-		/** render occlusion rough plane, and we will use the visibility of the previous frame to draw the current frame detailed ocean tiles. */
-		LatentOcclusionQueryBank* pQueries = CGlobals::GetAssetManager()->GetOcclusionQueryBank(1);
-		if(	pQueries != 0 )
+		LatentOcclusionQueryBank* pQueries = pd3dDevice->GetCaps().supportsOcclusionQuery
+			? CGlobals::GetAssetManager()->GetOcclusionQueryBank(1)
+			: nullptr;
+		if(pQueries != nullptr)
 		{
 			CGlobals::GetEffectManager()->BeginEffect(TECH_OCCLUSION_TEST);
 			CEffectFile* pEffectFile = CGlobals::GetEffectManager()->GetCurrentEffectFile();
-			if ( pEffectFile != 0)
+			if (pEffectFile != nullptr)
 			{
-				// check occlusion query result from the the last render frame. 
 				DWORD pixelsVisible = 0;
-				int tileID = 0;
+				intptr_t tileID = 0;
 				HRESULT hr = E_FAIL;
 
 				while((hr = pQueries->CheckForFirstResult(&pixelsVisible, (void**)(&tileID))) == S_OK)
 				{
-					ocean_tile_occlusion_result[tileID] = pixelsVisible;
+					ocean_tile_occlusion_result[(int)tileID] = pixelsVisible;
 				}
 
-				/*if(pEffectFile->begin(true, 0))
-				{
-				if(pEffectFile->BeginPass(0))
-				{*/
 				for (float y=y0; y<y1; y=y+1.0f)
 				{
 					for (float x=x0; x<x1; x=x+1.0f)
 					{
-						// use global water level as high as the water level of the current tile.
 						float fWaterLevel = m_fGlobalWaterLevel;
 						mesh_vertex_plain v[4] = {
-							{ Vector3(0, 0, 0), Vector2(0,0)}, 
+							{ Vector3(0, 0, 0), Vector2(0, 0) }, 
 							{ Vector3(0, 0, 1), Vector2(0, 0) },
 							{ Vector3(1, 0, 0), Vector2(0, 0) },
 							{ Vector3(1, 0, 1), Vector2(0, 0) },
@@ -1998,34 +1871,26 @@ namespace ParaEngine
 							v[i].p.x = (v[i].p.x+ x) * m_ocean_tile_size;
 							v[i].p.z = (v[i].p.z+ y) * m_ocean_tile_size;
 							v[i].p.y = fWaterLevel;
-							v[i].p -= vRenderOrig; // shift the render origin
+							v[i].p -= vRenderOrig;
 						}
 						int nTileID = (int)(x*1000+y);
-						// wait on the result of the first query, to ensure there is always an unused query in the bank.
-						HRESULT hr = pQueries->BeginNewQuery((void*)nTileID);
+						hr = pQueries->BeginNewQuery((void*)(intptr_t)nTileID);
 
 						if(hr == S_OK)
 						{
-							// render a quad for the ocean tile occlustion testing. 
-							CGlobals::GetRenderDevice()->DrawPrimitiveUP(EPrimitiveType::TRIANGLESTRIP, 2, v, sizeof(mesh_vertex_plain));
+							pd3dDevice->DrawPrimitiveUP(EPrimitiveType::TRIANGLESTRIP, 2, v, sizeof(mesh_vertex_plain));
 							hr = pQueries->EndNewQuery();
 						}
 						else
 							break;
 					}
 				}
-				/*
-				pEffectFile->EndPass();
-				}
-				pEffectFile->end();
-				}*/
 
 				while((hr = pQueries->CheckForFirstResult(&pixelsVisible, (void**)(&tileID))) == S_OK)
 				{
-					ocean_tile_occlusion_result[tileID] = pixelsVisible;
+					ocean_tile_occlusion_result[(int)tileID] = pixelsVisible;
 				}
 
-				// check if none is visible. 
 				bool bRenderOceanReflection_lastframe = m_bRenderOceanReflection;
 				m_bRenderOceanReflection = false;
 				for (float y=y0; y<y1; y=y+1.0f)
@@ -2043,13 +1908,17 @@ namespace ParaEngine
 				if(!bRenderOceanReflection_lastframe && m_bRenderOceanReflection)
 					ForceUpdateOcean();
 			}
+			else
+			{
+				ocean_tile_occlusion_result.clear();
+				m_bRenderOceanReflection = true;
+			}
 		}
 		else
 		{
 			ocean_tile_occlusion_result.clear();
 			m_bRenderOceanReflection = true;
 		}
-#endif
 		return S_OK;
 	}
 
@@ -2074,7 +1943,6 @@ namespace ParaEngine
 			
 			// Set render states (disable z-buffering, enable stencil, disable fog, and turn on alpha blending)
 			painter->setCompositionMode(CPainter::CompositionMode_SourceBlend);
-			//GETD3D(CGlobals::GetRenderDevice())->SetTexture(0, NULL);
 			auto pWhiteTexture = CGlobals::GetAssetManager()->GetDefaultTexture(0);
 			CGlobals::GetRenderDevice()->SetTexture(0, pWhiteTexture->GetTexture());
 
@@ -2169,8 +2037,9 @@ namespace ParaEngine
 	{
 		if(!m_bIsCreated)
 			return;
-//#if defined( USE_DIRECTX_RENDERER)
 		auto pd3dDevice = CGlobals::GetRenderDevice();
+		if (!pd3dDevice)
+			return;
 		PERF1("ocean_render");
 
 		/** check whether the camera eye is under the water surface or not*/
@@ -2329,33 +2198,42 @@ namespace ParaEngine
 		if(!m_bRenderOceanReflection)
 			return false;
 
-#ifdef USE_DIRECTX_RENDERER
 		if( GetRenderTechnique() != OCEAN_TECH_FULL)
 			return false;
+
+		auto pd3dDevice = CGlobals::GetRenderDevice();
+		if (!pd3dDevice)
+			return false;
+
+		if (!m_waveReflectionRT)
+		{
+			RestoreDeviceObjects();
+			if (!m_waveReflectionRT)
+				return false;
+		}
+
 		m_fLastReflectionTime = 0.f;
 		PERF1("render_reflection");
 
-		auto pd3dDevice = CGlobals::GetRenderDevice();
 		EffectManager* pEffectManager = CGlobals::GetEffectManager();
 		CSceneObject* pScene = CGlobals::GetScene();
 
 		Plane clipPlane;
 		Plane transformedClipPlane;
-		float     reflectionMapFieldOfView;
+		float reflectionMapFieldOfView;
 
-		//////////////////////////////////////////////////////////////////////////
-		// Render to the reflection map
-		LPDIRECT3DSURFACE9 pOldRenderTarget =  CGlobals::GetDirectXEngine().GetRenderTarget();
-		CGlobals::GetDirectXEngine().SetRenderTarget(0, m_waveReflectionSurface);
-
-		// set depth surface
-		LPDIRECT3DSURFACE9 pOldZBuffer = NULL;
-		if(FAILED(GETD3D(CGlobals::GetRenderDevice())->GetDepthStencilSurface(&pOldZBuffer)))
-		{
-			OUTPUT_LOG("GetDepthStencilSurface failed\r\n");
+		ParaViewport oldViewport = pd3dDevice->GetViewport();
+		if (!pd3dDevice->PushRenderTarget(m_waveReflectionRT))
 			return false;
-		}
-		GETD3D(CGlobals::GetRenderDevice())->SetDepthStencilSurface( m_pDepthStencilSurface );
+
+		ParaViewport rtViewport;
+		rtViewport.X = 0;
+		rtViewport.Y = 0;
+		rtViewport.Width = m_waveReflectionRT->GetWidth();
+		rtViewport.Height = m_waveReflectionRT->GetHeight();
+		rtViewport.MinZ = 0.0f;
+		rtViewport.MaxZ = 1.0f;
+		pd3dDevice->SetViewport(rtViewport);
 
 		// Compute the field of view and use it
 		CBaseCamera* pCamera = pScene->GetCurrentCamera();
@@ -2374,8 +2252,7 @@ namespace ParaEngine
 		if(m_underwater)
 		{
 			clipPlane = m_reflectionClipPlaneBelowWater;
-			// correct coordinate system
-			Vector3 vRenderOrig =  pScene->GetRenderOrigin();
+			Vector3 vRenderOrig = pScene->GetRenderOrigin();
 			clipPlane.d += (m_fGlobalWaterLevel - vRenderOrig.y);
 
 			if(!m_useScreenSpaceFog)
@@ -2386,46 +2263,25 @@ namespace ParaEngine
 		else
 		{
 			clipPlane = m_reflectionClipPlaneAboveWater;
-			// correct coordinate system
-			Vector3 vRenderOrig =  pScene->GetRenderOrigin();
+			Vector3 vRenderOrig = pScene->GetRenderOrigin();
 			clipPlane.d -= (m_fGlobalWaterLevel - vRenderOrig.y);
 		}
-		
 
-		// we will render SKYBOX and TERRAIN using fixed function pipeline. So this is always false.
-		// in case we use a programmable pipeline for skybox and terrain, set the transformed clipping plane to clip space.
-		// When the programmable pipeline is used the plane equations are assumed to be in the clipping space 
-		// transform the plane into view space
 		Matrix4 tempMatrix = CGlobals::GetViewMatrixStack().SafeGetTop();
 		tempMatrix *= CGlobals::GetProjectionMatrixStack().SafeGetTop();
-		// For some reason, DX requires that the inverse and transpose matrix is used. 
 		tempMatrix = tempMatrix.inverse();
 		tempMatrix = tempMatrix.transpose();
 		transformedClipPlane = clipPlane.PlaneTransform(tempMatrix);
 
-		
 		pEffectManager->SetClipPlane(0, (const float*)&clipPlane, false);
 		pEffectManager->SetClipPlane(0, (const float*)&transformedClipPlane, true);
 		pEffectManager->EnableClipPlane(true);
 
-		// D3DCLEAR_ZBUFFER is doomed. Hence, reflection must be rendered before the main thing is rendered. 
-		GETD3D(CGlobals::GetRenderDevice())->Clear(0L, NULL, D3DCLEAR_TARGET | D3DCLEAR_ZBUFFER, 
-			0x00ffffff&(DWORD)(pScene->IsSceneEnabled()? pScene->GetFogColor(): pScene->GetBackGroundColor()), 1.0f, 0L);
+		LinearColor clearCol = pScene->IsSceneEnabled() ? pScene->GetFogColor() : pScene->GetBackGroundColor();
+		pd3dDevice->SetClearColor(Color4f(clearCol.r, clearCol.g, clearCol.b, 0.0f));
+		pd3dDevice->SetClearDepth(1.0f);
+		pd3dDevice->Clear(true, true, false);
 
-		//////////////////////////////////////////////////////////////////////////
-		//
-		// Render the actual scene: 
-		//
-		//////////////////////////////////////////////////////////////////////////
-
-		/*bool bUseReflection = pEffectManager->IsReflectionRenderingEnabled();
-		if(bUseReflection)
-			pEffectManager->EnableReflectionRendering(false);*/
-
-		// reverse cull mode, since we made the reflection. This should be done for both fixed function and programmable pipeline.
-		//CGlobals::GetSceneState()->m_dwD3D_CULLMODE = RSV_CULL_CW; 
-		// TODO: maybe first rendering terrain then rendering sky box will reduce fill rate ?
-		//pd3dDevice->SetRenderState(ERenderState::CLIPPLANEENABLE, 0);
 		if(m_ReflectionItems[R_SKY_BOX])
 			pScene->RenderSelection(RENDER_SKY_BOX);
 		pEffectManager->EnableClipPlane(true);
@@ -2433,8 +2289,7 @@ namespace ParaEngine
 		{
 			if(CGlobals::GetGlobalTerrain()->TerrainRenderingEnabled())
 			{
-				// since the camera settings is changed, we need to update the terrain buffer before drawing
-				CGlobals::GetGlobalTerrain()->Update(); // quite CPU time consuming.
+				CGlobals::GetGlobalTerrain()->Update();
 				if(pScene->IsShadowMapEnabled())
 				{
 					pScene->SetShadow(false);
@@ -2455,32 +2310,15 @@ namespace ParaEngine
 		else if(m_ReflectionItems[R_CURRENT_PLAYER])
 		{
 			pScene->RenderSelection(RENDER_PLAYER);
-			/** TODO: only render when it is above or below water surface. */
-			/*
-			CBipedObject * pObj = pScene->GetCurrentPlayer();
-			if(pObj)
-			{
-			Vector3 vPos;
-			pObj->GetPosition(&vPos);
-			if( (m_underwater && GetMaxWaterLevel()>(vPos.y-2.0f)) || 
-			(!m_underwater && GetMaxWaterLevel()<vPos.y) )
-			{
-			pScene->RenderSelection(CSceneObject::RENDER_PLAYER);
-			}
-			}
-			*/
 		}
 		
 		if(m_ReflectionItems[R_MESH_FRONT_TO_BACK])
 		{
-			/** TODO: only render when it is above or below water surface. */
 			pScene->RenderSelection(RENDER_MESH_FRONT_TO_BACK);
 		}
 
 		if(m_ReflectionItems[R_MESH_BACK_TO_FRONT])
 		{
-			/** TODO: only render when it is above or below water surface. */
-			// TODO: WHY not render smaller mesh ? pScene->RenderSelection(CSceneObject::RENDER_MESH_BACK_TO_FRONT);
 			pScene->RenderSelection(RENDER_MESH_BACK_TO_FRONT);
 		}
 
@@ -2491,7 +2329,6 @@ namespace ParaEngine
 		
 		if(!CGlobals::GetSceneState()->GetFaceGroups()->IsEmpty())
 		{
-			// NOT TESTED: translucent face groups.
 			if(m_ReflectionItems[R_MESH_TRANSPARENT])
 			{
 				pScene->RenderSelection(RENDER_TRANSLUCENT_FACE_GROUPS);
@@ -2504,26 +2341,15 @@ namespace ParaEngine
 		pEffectManager->EnableClipPlane(false);
 		if(m_bDisableFogInReflection)
 			pEffectManager->EnableFog(pScene->IsFogEnabled());
-		//CGlobals::GetSceneState()->m_dwD3D_CULLMODE = RSV_CULL_CCW;
 		CGlobals::GetProjectionMatrixStack().pop();
 		m_reflectViewMatrix = false;
 
 		SetMatrices(false, true);
 		pCamera->UpdateFrustum();
 
-		// restore old depth surface
-		GETD3D(CGlobals::GetRenderDevice())->SetDepthStencilSurface( pOldZBuffer);
-		SAFE_RELEASE(pOldZBuffer);
-
-		//////////////////////////////////////////////////////////////////////////
-		// Restore the old render target: i.e. the backbuffer
-		HRESULT hr = CGlobals::GetDirectXEngine().SetRenderTarget(0, pOldRenderTarget);
-		/*if(bUseReflection)
-			pEffectManager->EnableReflectionRendering(true);*/
-		PE_ASSERT(hr == D3D_OK);
-#endif
+		pd3dDevice->PopRenderTarget();
+		pd3dDevice->SetViewport(oldViewport);
 		return true;
-
 	}
 	//-----------------------------------------------------------------------------
 	// 
@@ -2533,34 +2359,16 @@ namespace ParaEngine
 	//-----------------------------------------------------------------------------
 	void COceanManager::SetMatrices(bool bPostPushMatrices, bool bPrePopMatrices)
 	{
-#ifdef USE_DIRECTX_RENDERER
-		// pop matrices
 		if(bPrePopMatrices)
 		{
 			CGlobals::GetViewMatrixStack().pop();
 		}
 
-		auto pd3dDevice = CGlobals::GetRenderDevice();
-		Matrix4 worldViewMatrix;
-		Matrix4 worldInverseTransposeMatrix;
 		Matrix4 viewMatrix;
-		Matrix4 viewProjectionMatrix;
-		Matrix4 worldViewProjectionMatrix;
 
 		// Reflect the view matrix if asked
 		if(m_reflectViewMatrix)
 		{
-			/*Matrix4 reflectionMatrix;
-
-			Vector3 vRenderOrig =  CGlobals::GetScene()->GetRenderOrigin();
-
-			D3DXMatrixReflect(&reflectionMatrix, &Plane(0.0f, 1.0f, 0.0f, -(m_fGlobalWaterLevel-vRenderOrig.y)));
-
-			viewMatrix = reflectionMatrix * CGlobals::GetViewMatrixStack().SafeGetTop();*/
-
-			// put the camera at the opposite side of the water plane. 
-			// TODO: currently it only works when the original camera up axis is (0,1,0)
-			// the reflection map should be flipped in x axis in image space.We will do this in shader.
 			CAutoCamera* pCamera = (CAutoCamera*)(CGlobals::GetScene()->GetCurrentCamera());
 			Vector3 vUp(0,-1,0);
 			DVector3 vEye = pCamera->GetEyePosition();
@@ -2581,8 +2389,7 @@ namespace ParaEngine
 			CGlobals::GetViewMatrixStack().push(viewMatrix);
 		}
 
-		CGlobals::GetEffectManager()->UpdateD3DPipelineTransform(true,true, true);
-#endif
+		CGlobals::GetEffectManager()->UpdateD3DPipelineTransform(true, true, true);
 	}
 
 	int COceanManager::GetTileIDFromXY(int x, int y)
@@ -2646,24 +2453,23 @@ namespace ParaEngine
 	}
 	void COceanManager::RenderRipples(float fTimeDelta)
 	{
-#ifdef USE_DIRECTX_RENDERER
 		m_rippleList.FrameMove(fTimeDelta);
 		int nTotalVertices = (int)m_rippleList.m_ripples.size()*6; 
 
-		// TODO: Render ripples
 		if(nTotalVertices==0)
+			return;
+
+		auto pd3dDevice = CGlobals::GetRenderDevice();
+		if (!pd3dDevice)
 			return;
 
 		CGlobals::GetEffectManager()->BeginEffect(TECH_WATER_RIPPLE);
 		CEffectFile* pEffectFile = CGlobals::GetEffectManager()->GetCurrentEffectFile();
 		if(pEffectFile==0)
 			return;
-		
-		auto pd3dDevice = CGlobals::GetRenderDevice();
-		EffectManager* pEffectManager = CGlobals::GetEffectManager();
 
-		DynamicVertexBufferEntity* pBufEntity =  CGlobals::GetAssetManager()->GetDynamicBuffer(DVB_XYZ_TEX1_DIF);
-		GETD3D(CGlobals::GetRenderDevice())->SetStreamSource( 0, pBufEntity->GetBuffer(), 0, pBufEntity->m_nUnitSize );
+		DynamicVertexBufferEntity* pBufEntity = CGlobals::GetAssetManager()->GetDynamicBuffer(DVB_XYZ_TEX1_DIF);
+		pd3dDevice->SetStreamSource(0, pBufEntity->GetBuffer(), 0, pBufEntity->m_nUnitSize);
 		
 		Vector3 vRenderOrigin = CGlobals::GetScene()->GetRenderOrigin();
 
@@ -2672,9 +2478,7 @@ namespace ParaEngine
 		SPRITEVERTEX* vb_vertices;
 		int nNumLockedVertice;
 		int nNumFinishedVertice = 0;
-		// the first triangle is 0, the second is 1.
 		int nTriID = 0;
-		// because we still uses Z-buffer, we will offset the ripple a little bit to avoid intersection with the wave.
 #define WAVE_RIPPLE_OFFSET	0.15f
 		float fHeightOffset = m_underwater ? -WAVE_RIPPLE_OFFSET: WAVE_RIPPLE_OFFSET;
 		while(iterCur!=itEnd)
@@ -2688,15 +2492,13 @@ namespace ParaEngine
 				{
 					const RippleItem& item = *iterCur;
 					float fRadius = item.fCurrentRadius;
-					float fRatio = fRadius/item.fMaxRadius;
 					DWORD nColor = LinearColor(1,1,1,1-pow(fRadius/item.fMaxRadius,2));
 					int nVB = 3*i;
 					Vector3 vPos = item.vPos - vRenderOrigin;
 					vPos.y+=fHeightOffset;
 					
 					if(nTriID==0)
-					{ // first triangle in the quad particle
-
+					{
 						vb_vertices[nVB].p = vPos + Vector3(fRadius,0,fRadius);
 						vb_vertices[nVB].tu = 1.f;
 						vb_vertices[nVB].tv = 1.f;
@@ -2746,8 +2548,7 @@ namespace ParaEngine
 						if(pEffectFile->BeginPass(i))
 						{
 							pEffectFile->setTexture(0, m_pRippleTexture.get());
-
-							CGlobals::GetRenderDevice()->DrawPrimitive(EPrimitiveType::TRIANGLELIST,pBufEntity->m_dwBase,nLockedNum);
+							pd3dDevice->DrawPrimitive(EPrimitiveType::TRIANGLELIST, pBufEntity->m_dwBase, nLockedNum);
 							pEffectFile->EndPass();
 						}
 					}
@@ -2762,7 +2563,6 @@ namespace ParaEngine
 			else 
 				break;
 		}
-#endif
 	}
 
 	float COceanManager::GetWindSpeed()
@@ -2842,7 +2642,6 @@ namespace ParaEngine
 
 	bool COceanManager::UpdateReflectionTexture(SceneState & sceneState)
 	{
-#ifdef USE_DIRECTX_RENDERER
 		bool bSimulateOcean = !(sceneState.m_bSkipOcean) && OceanEnabled() && 
 			(IsPointUnderWater(sceneState.vEye) /* draw if underwater*/ ||  
 			!CGlobals::GetGlobalTerrain()->TerrainRenderingEnabled() || /* draw ocean if terrain is not rendered. */
@@ -2863,7 +2662,6 @@ namespace ParaEngine
 				}
 			}
 		}
-#endif
 		return true;
 	}
 

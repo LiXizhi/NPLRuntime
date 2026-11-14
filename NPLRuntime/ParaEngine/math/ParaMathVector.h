@@ -18,5 +18,6 @@ namespace ParaEngine
 	Vector3 ParaVector3Normalize(const Vector3& v);
 
 	bool ParaComputeBoundingBox(const Vector3 * pfirstposition, uint32 numvertices,	uint32 dwstride,Vector3 *pmin,Vector3 *pmax);
+	bool ParaComputeBoundingSphere(const Vector3* pfirstposition, uint32 numvertices, uint32 dwstride, Vector3* pcenter, float* pradius);
 }
 

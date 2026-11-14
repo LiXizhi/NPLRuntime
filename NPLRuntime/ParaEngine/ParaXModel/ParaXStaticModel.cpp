@@ -12,6 +12,9 @@
 #include "FBXParser.h"
 #include "XFileStaticModelParser.h"
 #include "SceneObject.h"
+#ifndef USE_NULL_RENDERER
+#include "ShadowMap.h"
+#endif
 
 #include "ParaXStaticModel.h"
 
@@ -19,12 +22,25 @@ namespace ParaEngine {
 
 	int CParaXStaticModel::GetPolyCount()
 	{
-		return 0;
+		int nCount = 0;
+		for (const auto& pass : m_passes)
+		{
+			nCount += pass.indexCount / 3;
+		}
+		return nCount;
 	}
 
 	int CParaXStaticModel::GetPhysicsCount()
 	{
-		return 0;
+		int nCount = 0;
+		for (auto& pass : m_passes)
+		{
+			if (pass.m_material.hasPhysics())
+			{
+				nCount += pass.indexCount / 3;
+			}
+		}
+		return nCount;
 	}
 
 	const char* CParaXStaticModel::DumpTextureUsage()
@@ -146,6 +162,8 @@ namespace ParaEngine {
 		m_passes.clear();
 		m_vertices.clear();
 		m_vertices.shrink_to_fit();
+		m_verticesTex2.clear();
+		m_verticesTex2.shrink_to_fit();
 		m_indices.clear();
 		m_indices.shrink_to_fit();
 		m_header = MeshHeader();
@@ -166,29 +184,35 @@ namespace ParaEngine {
 		m_vertexBuffer.ReleaseBuffer();
 		m_indexBuffer.ReleaseBuffer();
 
-		int nVertexCount = (int)m_vertices.size();
-		if (nVertexCount > 0)
+		if (m_header.m_bHasTex2 && !m_verticesTex2.empty())
 		{
-			mesh_vertex_normal* pVert = &(m_vertices[0]);
-			m_vertexBuffer.CreateBuffer(sizeof(mesh_vertex_normal)*nVertexCount);
-			mesh_vertex_normal* pData = NULL;
-			if (m_vertexBuffer.Lock((void**)&pData))
+			int nVertexCount = (int)m_verticesTex2.size();
+			uint32 nBufSize = sizeof(mesh_vertex_normal_tex2) * nVertexCount;
+			if (m_vertexBuffer.CreateBuffer(nBufSize))
 			{
-				memcpy(pData, pVert, sizeof(mesh_vertex_normal)*nVertexCount);
-				m_vertexBuffer.Unlock();
+				m_vertexBuffer.UploadMemoryBuffer(reinterpret_cast<const char*>(m_verticesTex2.data()), nBufSize);
+			}
+		}
+		else
+		{
+			int nVertexCount = (int)m_vertices.size();
+			if (nVertexCount > 0)
+			{
+				uint32 nBufSize = sizeof(mesh_vertex_normal) * nVertexCount;
+				if (m_vertexBuffer.CreateBuffer(nBufSize))
+				{
+					m_vertexBuffer.UploadMemoryBuffer(reinterpret_cast<const char*>(m_vertices.data()), nBufSize);
+				}
 			}
 		}
 
 		int nIndexCount = (int)m_indices.size();
 		if (nIndexCount > 0)
 		{
-			int16 *pIndice = &(m_indices[0]);
-			m_indexBuffer.CreateBuffer(sizeof(uint16)*nIndexCount, D3DFMT_INDEX16, 0);
-			uint16* pIndexData = NULL;
-			if (m_indexBuffer.Lock((void**)&pIndexData))
+			uint32 nBufSize = sizeof(uint16) * nIndexCount;
+			if (m_indexBuffer.CreateBuffer(nBufSize, D3DFMT_INDEX16, 0))
 			{
-				memcpy(pIndexData, pIndice, sizeof(uint16)*nIndexCount);
-				m_indexBuffer.Unlock();
+				m_indexBuffer.UploadMemoryBuffer(reinterpret_cast<const char*>(m_indices.data()), nBufSize);
 			}
 		}
 	}
@@ -200,13 +224,15 @@ namespace ParaEngine {
 		m_header.m_bIsValid = true;
 		m_header.m_vMin = pFileData->m_header.minExtent;
 		m_header.m_vMax = pFileData->m_header.maxExtent;
-		m_header.m_bHasTex2 = false;
+		m_header.m_bHasTex2 = ((pFileData->m_header.nModelFormat & PARAX_FORMAT_USEFORMAT) != 0) &&
+			((pFileData->m_header.nModelFormat & PARAX_FORMAT_UV2) != 0);
 		m_header.m_bHasNormal = true;
 
 		if (pFileData->m_XRefObjects.size() > 0)
 			m_XRefObjects = pFileData->m_XRefObjects;
 
 		m_vertices.clear();
+		m_verticesTex2.clear();
 		m_indices.clear();
 		m_passes.clear();
 
@@ -223,6 +249,10 @@ namespace ParaEngine {
 		{
 			nVertexCount += (int)mesh->mPositions.size();
 			nIndexCount += (int)mesh->mPosFaces.size() * 3;
+			if (!mesh->mPositions.empty() && mesh->mTexCoords[1].size() == mesh->mPositions.size())
+			{
+				m_header.m_bHasTex2 = true;
+			}
 		}
 		if (nIndexCount >= 0xffff)
 		{
@@ -236,32 +266,69 @@ namespace ParaEngine {
 		}
 		// prepare vertex and index buffer
 		m_vertices.resize(nVertexCount);
+		if (m_header.m_bHasTex2)
+		{
+			m_verticesTex2.resize(nVertexCount);
+		}
 		mesh_vertex_normal* pVert = !m_vertices.empty() ? &(m_vertices[0]) : nullptr;
+		mesh_vertex_normal_tex2* pVertTex2 = !m_verticesTex2.empty() ? &(m_verticesTex2[0]) : nullptr;
 		m_indices.resize(nIndexCount);
 		int16 *pIndice = !m_indices.empty() ? &(m_indices[0]) : nullptr;
 
 		mesh_vertex_normal* pCurVert = pVert;
+		mesh_vertex_normal_tex2* pCurVertTex2 = pVertTex2;
 		int16 *pCurIndice = pIndice;
+		uint16 nVertexOffset = 0;
 		for (Mesh* mesh : pFileData->mGlobalMeshes)
 		{
 			int nCount = (int)mesh->mPositions.size();
-			PE_ASSERT(nCount == mesh->mNormals.size());
-			PE_ASSERT(nCount == mesh->mTexCoords[0].size());
+			bool hasNormals = ((int)mesh->mNormals.size() == nCount);
+			bool hasUV0 = ((int)mesh->mTexCoords[0].size() == nCount);
+			bool hasUV1 = ((int)mesh->mTexCoords[1].size() == nCount);
 			// prepare vertex for the sub mesh
 			for (int i = 0; i < nCount; ++i)
 			{
 				mesh_vertex_normal& vert = (*pCurVert);
 				pCurVert++;
 				vert.p = mesh->mPositions[i];
-				vert.n = mesh->mNormals[i];
-				vert.uv = mesh->mTexCoords[0][i];
+				vert.n = hasNormals ? mesh->mNormals[i] : Vector3::UNIT_Y;
+				vert.uv = hasUV0 ? mesh->mTexCoords[0][i] : Vector2::ZERO;
+				if (pCurVertTex2)
+				{
+					mesh_vertex_normal_tex2& v2 = (*pCurVertTex2);
+					pCurVertTex2++;
+					v2.p = vert.p;
+					v2.n = vert.n;
+					v2.uv = vert.uv;
+					v2.uv2 = hasUV1 ? mesh->mTexCoords[1][i] : vert.uv;
+				}
 			}
 			// prepare indices for the sub mesh
-			nCount = (int)mesh->mPosFaces.size();
-			if (nCount>0)
-				memcpy(pCurIndice, &(mesh->mPosFaces[0]), sizeof(Face) * nCount);
+			int nFaceCount = (int)mesh->mPosFaces.size();
+			if (nFaceCount > 0)
+			{
+				if (nVertexOffset == 0)
+				{
+					memcpy(pCurIndice, &(mesh->mPosFaces[0]), sizeof(Face) * nFaceCount);
+				}
+				else
+				{
+					for (int f = 0; f < nFaceCount; ++f)
+					{
+						pCurIndice[f * 3 + 0] = (int16)(mesh->mPosFaces[f].mIndices[0] + nVertexOffset);
+						pCurIndice[f * 3 + 1] = (int16)(mesh->mPosFaces[f].mIndices[1] + nVertexOffset);
+						pCurIndice[f * 3 + 2] = (int16)(mesh->mPosFaces[f].mIndices[2] + nVertexOffset);
+					}
+				}
+			}
 
-			pCurIndice += nCount * 3;
+			pCurIndice += nFaceCount * 3;
+			nVertexOffset = (uint16)(nVertexOffset + nCount);
+		}
+
+		if (m_header.m_vMin == Vector3::ZERO && m_header.m_vMax == Vector3::ZERO && !m_vertices.empty())
+		{
+			ComputeBoundingBox(&m_header.m_vMin, &m_header.m_vMax);
 		}
 
 		int32 nStartIndex = 0;
@@ -510,12 +577,23 @@ namespace ParaEngine {
 
 	FLOAT CParaXStaticModel::ComputeBoundingSphere(Vector3* vObjectCenter, FLOAT* fObjectRadius)
 	{
-		return *fObjectRadius;
+		if (!m_vertices.empty())
+		{
+			if (ParaComputeBoundingSphere((Vector3*)(&m_vertices[0]), (DWORD)m_vertices.size(), sizeof(mesh_vertex_normal), vObjectCenter, fObjectRadius))
+			{
+				return *fObjectRadius;
+			}
+		}
+		if (vObjectCenter)
+			*vObjectCenter = Vector3::ZERO;
+		if (fObjectRadius)
+			*fObjectRadius = 0.f;
+		return 0.f;
 	}
 
 	HRESULT CParaXStaticModel::ComputeBoundingBox(Vector3 *pMin, Vector3 *pMax)
 	{
-		if (ParaComputeBoundingBox((Vector3*)(&m_vertices[0]),
+		if (!m_vertices.empty() && ParaComputeBoundingBox((Vector3*)(&m_vertices[0]),
 			m_vertices.size(),
 			sizeof(mesh_vertex_normal),
 			pMin, pMax))
@@ -637,19 +715,81 @@ namespace ParaEngine {
 
 	MeshHeader& CParaXStaticModel::GetMeshHeader(XFileParser* pFileParser)
 	{
-		// Note: header is always loaded when unlock device. 
+		if (!m_header.m_bIsValid && !m_strName.empty())
+		{
+			CParaFile myFile(m_strName.c_str());
+			if (!myFile.isEof())
+			{
+				GetMeshHeaderFromFile(myFile, pFileParser);
+			}
+		}
 		return m_header;
 	}
 
-	bool CParaXStaticModel::GetMeshHeaderFromFile(CParaFile& myFile, XFileParser* pFileParser)
+	bool CParaXStaticModel::GetMeshHeaderFromFile(CParaFile& myFile, XFileParser* /*pFileParser*/)
 	{
+		if (m_header.m_bIsValid)
+			return true;
+		if (myFile.isEof() || myFile.getSize() == 0)
+			return false;
+		try
+		{
+			auto nFileType = GetFileTypeByFilename(m_strName);
+			if (nFileType == FileType_ParaX)
+			{
+				XFileStaticModelParser parser(myFile.getBuffer(), (int32)myFile.getSize());
+				XFile::Scene* pScene = parser.ParseParaXStaticModel();
+				if (pScene)
+				{
+					m_header.m_bIsValid = true;
+					m_header.m_vMin = pScene->m_header.minExtent;
+					m_header.m_vMax = pScene->m_header.maxExtent;
+					m_header.m_bHasNormal = true;
+					m_header.m_bHasTex2 = ((pScene->m_header.nModelFormat & PARAX_FORMAT_USEFORMAT) != 0) &&
+						((pScene->m_header.nModelFormat & PARAX_FORMAT_UV2) != 0);
+					for (XFile::Mesh* mesh : pScene->mGlobalMeshes)
+					{
+						if (!mesh->mPositions.empty() && mesh->mTexCoords[1].size() == mesh->mPositions.size())
+							m_header.m_bHasTex2 = true;
+					}
+					if (m_header.m_vMin == Vector3::ZERO && m_header.m_vMax == Vector3::ZERO)
+					{
+						bool first = true;
+						for (XFile::Mesh* mesh : pScene->mGlobalMeshes)
+						{
+							for (const Vector3& p : mesh->mPositions)
+							{
+								if (first)
+								{
+									m_header.m_vMin = p;
+									m_header.m_vMax = p;
+									first = false;
+								}
+								else
+								{
+									m_header.m_vMin.makeFloor(p);
+									m_header.m_vMax.makeCeil(p);
+								}
+							}
+						}
+					}
+					SAFE_DELETE(pScene);
+				}
+			}
+		}
+		catch (...)
+		{
+		}
 		return m_header.m_bIsValid;
 	}
 
 	HRESULT CParaXStaticModel::Render(SceneState * pSceneState, CEffectFile *pEffect, bool bDrawOpaqueSubsets, bool bDrawAlphaSubsets, float fAlphaFactor, CParameterBlock* materialParams)
 	{
 		RenderDevicePtr pd3dDevice = CGlobals::GetRenderDevice();
-		pd3dDevice->SetStreamSource(0, m_vertexBuffer.GetDevicePointer(), 0, sizeof(mesh_vertex_normal));
+		const uint32 vertexStride = (m_header.m_bHasTex2 && !m_verticesTex2.empty())
+			? sizeof(mesh_vertex_normal_tex2)
+			: sizeof(mesh_vertex_normal);
+		pd3dDevice->SetStreamSource(0, m_vertexBuffer.GetDevicePointer(), 0, vertexStride);
 		pd3dDevice->SetIndices(m_indexBuffer.GetDevicePointer());
 
 		bool bHasAlphaPass = false;
@@ -665,6 +805,25 @@ namespace ParaEngine {
 				for (int p = 0; p < cPasses; ++p)
 				{
 					pEffect->BeginPass(p);
+
+#ifndef USE_NULL_RENDERER
+					if (CGlobals::GetEffectManager()->IsUsingShadowMap())
+					{
+						CShadowMap* pShadowMap = CGlobals::GetEffectManager()->GetShadowMap();
+						if (pShadowMap != NULL)
+						{
+							if (pShadowMap->SupportsHWShadowMaps())
+								pEffect->EnableShadowmap(1);
+							else
+								pEffect->EnableShadowmap(2);
+
+							if (pShadowMap->UsingBlurredShadowMap())
+								pShadowMap->SetShadowTexture(*pEffect, 2, 1);
+							else
+								pShadowMap->SetShadowTexture(*pEffect, 2);
+						}
+					}
+#endif
 
 					for (int i = 0; i < (int)m_passes.size(); i++)
 					{
@@ -753,7 +912,7 @@ namespace ParaEngine {
 								// normal mapping
 								if (bNormalMap != pMaterial->hasNormalMap())
 								{
-									// TODO: untested normal map
+									pEffect->EnableNormalMap(!bNormalMap);
 									bNormalMap = !bNormalMap;
 								}
 								if (bNormalMap)
@@ -766,7 +925,7 @@ namespace ParaEngine {
 								// light mapping
 								if (bHasLightMap != pMaterial->hasLightMap())
 								{
-									// TODO: untested normal map
+									pEffect->EnableLightMap(!bHasLightMap);
 									bHasLightMap = !bHasLightMap;
 								}
 								if (bHasLightMap)
@@ -1007,6 +1166,10 @@ namespace ParaEngine {
 			pEffect->EnableLightMap(false);
 		if (!bHasLighting)
 			pEffect->EnableSunLight(CGlobals::GetScene()->IsLightEnabled());
+#ifndef USE_NULL_RENDERER
+		if (CGlobals::GetEffectManager()->IsUsingShadowMap())
+			pEffect->EnableShadowmap(0);
+#endif
 
 		if (bAdditive) {
 			pd3dDevice->SetRenderState(ERenderState::SRCBLEND, D3DBLEND_SRCALPHA);
@@ -1019,7 +1182,7 @@ namespace ParaEngine {
 	{
 		RenderDevicePtr pd3dDevice = CGlobals::GetRenderDevice();
 		ParaXStaticModelRenderPass& pass = m_passes[i];
-		pd3dDevice->DrawIndexedPrimitive(EPrimitiveType::TRIANGLELIST, 0, 0, 0, pass.indexStart, pass.indexCount / 3);
+		pd3dDevice->DrawIndexedPrimitive(EPrimitiveType::TRIANGLELIST, 0, 0, (uint32_t)m_vertices.size(), pass.indexStart, pass.indexCount / 3);
 	}
 
 

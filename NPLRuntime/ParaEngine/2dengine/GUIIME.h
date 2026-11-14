@@ -1,8 +1,11 @@
 #pragma once
-#if defined(USE_DIRECTX_RENDERER) || 0
+#ifdef PARA_ENABLE_WIN32_IME
+#include <objbase.h>
+#include <imm.h>
+#include <dimm.h>
 #include "util/mutex.h"
 #include "GrowableArray.h"
-#include "GUIUniBufferDirectX.h"
+#include "GUIUniBuffer.h"
 
 namespace ParaEngine
 {

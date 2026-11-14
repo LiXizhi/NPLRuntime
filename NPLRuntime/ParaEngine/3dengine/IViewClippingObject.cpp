@@ -17,9 +17,6 @@
 
 #include "IViewClippingObject.h"
 #include "memdebug.h"
-#if USE_DIRECTX_RENDERER
-#include "RenderDeviceD3D9.h"
-#endif
 using namespace ParaEngine;
 
 /** #def LINE_OCCLUSION_OBJECT or POINT_OCCLUSION_OBJECT to enable corresponding occlusion testing method */
@@ -75,10 +72,11 @@ void	IViewClippingObject::DrawOcclusionObject(SceneState * sceneState)
 		nLenCount = 4;
 	else if(nNumVertices == 8)
 		nLenCount = 12;
-#ifdef USE_DIRECTX_RENDERER
-	CGlobals::GetRenderDevice()->DrawIndexedPrimitiveUP(EPrimitiveType::LINELIST, 0,
-		nNumVertices, nLenCount, pIndexBuffer, PixelFormat::INDEX16,pVertices, sizeof(OCCLUSION_VERTEX));
-#endif
+	if (pRenderDevice && nLenCount > 0)
+	{
+		pRenderDevice->DrawIndexedPrimitiveUP(EPrimitiveType::LINELIST, 0,
+			nNumVertices, nLenCount, pIndexBuffer, PixelFormat::INDEX16, pVertices, sizeof(OCCLUSION_VERTEX));
+	}
 	
 #else 
 #ifdef POINT_OCCLUSION_OBJECT
@@ -95,10 +93,11 @@ void	IViewClippingObject::DrawOcclusionObject(SceneState * sceneState)
 	int nNumVertices;
 	GetRenderVertices(pVecBounds, &nNumVertices);
 	
-#ifdef USE_DIRECTX_RENDERER
-	pRenderDevice->DrawPrimitiveUP(sceneState->m_pRenderDevice,  D3DPT_POINTLIST, nNumVertices, 
-		pVecBounds, sizeof(OCCLUSION_VERTEX));
-#endif
+	if (auto pRenderDevice = CGlobals::GetRenderDevice())
+	{
+		pRenderDevice->DrawPrimitiveUP(EPrimitiveType::POINTLIST, nNumVertices,
+			pVecBounds, sizeof(OCCLUSION_VERTEX));
+	}
 #endif
 #endif
 }
@@ -624,12 +623,12 @@ bool IViewClippingObject::TestCollisionRay(const Vector3& vPickRayOrig, const Ve
 	Vector3 tmpDiff = vPickRayOrig - vCenter;
 	/**
 	Let:a = Dx2 + Dy2 + Dz2; (for normalized rays, a=1)
-		b = 2[ Dx(x0 ¨Ccx) + Dy(y0 ¨Ccy) + Dz(z0 ¨Ccz)]
-		c = (x0 ¨Ccx)2 +(y0 ¨Ccy)2 +(z0 ¨Ccz)2-r2
-	Then: t = (-b ¡À sqrt(b2 ¨C 4ac))/2a
-		if (b2 ¨C 4ac) < 0, the ray does not intersect the sphere;
-		if (b2 ¨C 4ac) = 0, the ray grazes the sphere;
-		if (b2 ¨C 4ac) > 0, the ray enters and passes through the sphere, exiting on the other side.
+		b = 2[ Dx(x0 â€“cx) + Dy(y0 â€“cy) + Dz(z0 â€“cz)]
+		c = (x0 â€“cx)2 +(y0 â€“cy)2 +(z0 â€“cz)2-r2
+	Then: t = (-b Â± sqrt(b2 â€“ 4ac))/2a
+		if (b2 â€“ 4ac) < 0, the ray does not intersect the sphere;
+		if (b2 â€“ 4ac) = 0, the ray grazes the sphere;
+		if (b2 â€“ 4ac) > 0, the ray enters and passes through the sphere, exiting on the other side.
 	Use the smallest positive t to find the closest visible ray/sphere intersection point x(t), y(t), z(t),
 	*/
 	float a, b, c;

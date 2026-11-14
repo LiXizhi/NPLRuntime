@@ -1,5 +1,57 @@
 #pragma once
 #include <string>
+#ifdef PARA_ENABLE_OPENGL
+#include "OpenGL.h"
+#else
+#include <stdint.h>
+typedef unsigned int GLenum;
+typedef unsigned char GLboolean;
+typedef unsigned int GLbitfield;
+typedef void GLvoid;
+typedef signed char GLbyte;
+typedef short GLshort;
+typedef int GLint;
+typedef unsigned char GLubyte;
+typedef unsigned short GLushort;
+typedef unsigned int GLuint;
+typedef int GLsizei;
+typedef float GLfloat;
+typedef char GLchar;
+#ifndef GL_NO_ERROR
+#define GL_NO_ERROR 0
+#define GL_FALSE 0
+#define GL_TRUE 1
+#define GL_NEAREST 0x2600
+#define GL_LINEAR 0x2601
+#define GL_NEAREST_MIPMAP_NEAREST 0x2700
+#define GL_LINEAR_MIPMAP_NEAREST 0x2701
+#define GL_LINEAR_MIPMAP_LINEAR 0x2703
+#define GL_REPEAT 0x2901
+#define GL_CLAMP_TO_EDGE 0x812F
+#define GL_RGBA 0x1908
+#define GL_RGB 0x1907
+#define GL_BGRA 0x80E1
+#define GL_ALPHA 0x1906
+#define GL_LUMINANCE 0x1909
+#define GL_LUMINANCE_ALPHA 0x190A
+#define GL_UNSIGNED_BYTE 0x1401
+#define GL_UNSIGNED_SHORT_4_4_4_4 0x8033
+#define GL_UNSIGNED_SHORT_5_5_5_1 0x8034
+#define GL_UNSIGNED_SHORT_5_6_5 0x8363
+#define GL_FLOAT 0x1406
+#define GL_INT 0x1404
+#define GL_FLOAT_VEC2 0x8B50
+#define GL_FLOAT_VEC3 0x8B51
+#define GL_FLOAT_VEC4 0x8B52
+#define GL_INT_VEC2 0x8B53
+#define GL_INT_VEC3 0x8B54
+#define GL_INT_VEC4 0x8B55
+#define GL_FLOAT_MAT2 0x8B5A
+#define GL_FLOAT_MAT3 0x8B5B
+#define GL_FLOAT_MAT4 0x8B5C
+#endif
+#define PE_CHECK_GL_ERROR_DEBUG() ((void)0)
+#endif
 #include "PERef.h"
 
 #define GL_CONTENT_SCALE_FACTOR() 1

@@ -10,23 +10,13 @@
 #include "effect_file.h"
 #include "EffectManager.h"
 #include "BlockEngine/BlockMaterialManager.h"
-
-#ifdef USE_DIRECTX_RENDERER
-#include "HTMLBrowserManager.h"
-#ifdef USE_FLASH_MANAGER
-#include "FlashTextureManager.h"
-#endif
 #include "VoxelMesh/VoxelTerrainManager.h"
 #include "CadModel/CadModel.h"
 #include <vector>
-namespace ParaEngine
-{
-	class LatentOcclusionQueryBank;
-}
-#endif
 
 namespace ParaEngine
 {
+	class LatentOcclusionQueryBank;
 	class CVertexBufferPoolManager;
 	class BufferPickingManager;
 	struct CBufferPicking;
@@ -118,29 +108,19 @@ namespace ParaEngine
 		CBufferPicking* GetBufferPick(const string& sIdentifier);
 		CBufferPicking* LoadBufferPick(const string&  sIdentifier);
 
-#ifdef USE_DIRECTX_RENDERER
-		inline CHTMLBrowserManager& GetHTMLBrowserManager(){ return m_HTMLBrowserManager; };
 		inline VoxelTerrainManager& GetVoxelTerrainManager(){ return m_VoxelTerrainManager; };
-#ifdef USE_FLASH_MANAGER
-		inline CFlashTextureManager& GetFlashManager(){ return m_FlashManager; };
-#endif	
-		//-- get resource primitives
-		D3DXSpriteEntity* GetD3DXSprite(const string& sIdentifier);
 		CadModel* LoadCadModel(const string&  sIdentifier, const string&  sMeshFileName);
 
+#ifndef USE_NULL_RENDERER
+		//-- get resource primitives
+		D3DXSpriteEntity* GetD3DXSprite(const string& sIdentifier);
 		D3DXSpriteEntity* LoadD3DXSprite(const string&  sIdentifier, int nFrames, int nRow, int nCol);
+#endif
 
-		/** create an X file parser. One only needs one parser per thread. One needs to manually call SAFE_RELEASE() with the returned object.
-		* for the render thread, use GetParaXFileParser()
-		*/
-		void CreateXFileParser(LPD3DXFILE* ppParser);
-		/** get the x file parser with ParaX file templates registered */
-		LPD3DXFILE GetParaXFileParser();
-
-		LPDIRECT3DVERTEXBUFFER9 GetShadowSquareVB(){ return m_pShadowSquareVB; }
+		IRHIBuffer* GetShadowSquareVB(){ return m_pShadowSquareVB; }
 
 		/** this will return NULL, if the device does not support occlusion query. */
-		LPDIRECT3DQUERY9		GetOcclusionQuery(){ return m_pOcclusionQuery; }
+		IRHIOcclusionQuery* GetOcclusionQuery(){ return m_pOcclusionQuery; }
 		/** this will return NULL, if the device does not support occlusion query.
 		* TODO: currently there is only one query bank, implement multiple banks for different ID.
 		* @param nID:
@@ -156,7 +136,6 @@ namespace ParaEngine
 		* @return: the number of results printed are returned.
 		*/
 		int PrintToFile(CParaFile* pOutputFile, DWORD dwSelection = 0xffffffff);
-#endif
 
 	public:
 		/** refresh asset if it is already loaded. it will search for all refreshable asset type, such as textures and mesh, etc.
@@ -264,23 +243,17 @@ namespace ParaEngine
 		DynamicVertexBufferManager				m_DynamicVBManager;
 		bool m_bAsyncLoading;
 
-#ifdef USE_DIRECTX_RENDERER
-		/// dynamic buffer for MDX
 		/// shadow square, a square that is the same size of the back buffer for shadow rendering
-		LPDIRECT3DVERTEXBUFFER9 m_pShadowSquareVB;
+		IRHIBuffer*								m_pShadowSquareVB;
 		/// for occlusion query
-		LPDIRECT3DQUERY9		m_pOcclusionQuery;
-		vector<LatentOcclusionQueryBank*> m_pOcclusionQueryBanks;
+		IRHIOcclusionQuery*						m_pOcclusionQuery;
+		vector<LatentOcclusionQueryBank*>		m_pOcclusionQueryBanks;
 
+#ifndef USE_NULL_RENDERER
 		AssetManager<D3DXSpriteEntity>			m_D3DXSpriteManager;
-#ifdef USE_FLASH_MANAGER
-		CFlashTextureManager					m_FlashManager;
 #endif
-		CHTMLBrowserManager						m_HTMLBrowserManager;
 		VoxelTerrainManager						m_VoxelTerrainManager;
 		AssetManager<CadModel>					m_CadModelManager;
-		LPD3DXFILE								m_pDXFile;	// for parsing X file
-#endif
 	};
 
 }

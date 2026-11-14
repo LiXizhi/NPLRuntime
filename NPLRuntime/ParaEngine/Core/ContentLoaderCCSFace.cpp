@@ -206,8 +206,7 @@ HRESULT ParaEngine::CCCSFaceProcessor::LockDeviceObject()
 
 RenderDevicePtr ParaEngine::CCCSFaceProcessor::GetRenderDevice()
 {
-	// TODO: use the IO thread's render device. 
-	// TODO: Create device using DirectXEngine.h.
+	// TODO: use the IO thread's render device if available.
 	return (m_pDevice != 0) ? m_pDevice : NULL;
 }
 

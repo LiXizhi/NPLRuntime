@@ -181,7 +181,7 @@ float CGUIText::GetTextScale()
 string CGUIText::ToScript(int option)
 {
 	string script=CGUIBase::ToScript(option);
-	//add "text:SetText("È·¶¨");"like script
+	//add "text:SetText("ç¡®å®š");"like script
 	script+="__this.text=\"";
 	std::string buf;
 	GetTextA(buf);
@@ -275,19 +275,7 @@ void CGUIText::SetTextFormat(DWORD dwFormat)
 
 void CGUIText::GetTextLineSize(int* width, int* height)
 {
-#ifdef USE_DIRECTX_RENDERER
-	CUniLine textline;
-	textline.SetText(m_szText.c_str());
-	
-	textline.SetFontNode(m_objResource->GetFontElement(0));
-	int nX = 0;
-	textline.CPtoX((int)m_szText.size(), FALSE, &nX);
-	int nY = textline.GetTextMetric().tmInternalLeading+textline.GetTextMetric().tmExternalLeading+textline.GetTextMetric().tmHeight;
-	if(width!=0)
-		*width = nX;
-	if(height!=0)
-		*height = nY;
-#elif defined USE_OPENGL_RENDERER
+#ifndef USE_NULL_RENDERER
 	RECT rcText = {0,0,0,0};
 	GetPainter()->CalcTextRect(m_szText.c_str(), m_objResource->GetFontElement(0), &rcText, 0);
 	if (width != 0)
@@ -295,7 +283,6 @@ void CGUIText::GetTextLineSize(int* width, int* height)
 	if (height != 0)
 		*height = rcText.bottom;
 #else
-	
 	if (width != 0)
 		*width = 0;
 	if (height != 0)

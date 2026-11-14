@@ -7,8 +7,8 @@
 // Desc: used by GUIEditbox and GUIIMEEditbox
 //-----------------------------------------------------------------------
 
-#if !defined(USE_DIRECTX_RENDERER) && !defined(USE_OPENGL_RENDERER)
 #include "ParaEngine.h"
+#if defined(USE_NULL_RENDERER)
 #include "util/StringHelper.h"
 #include "GUIUniBuffer.h"
 
@@ -47,7 +47,7 @@ bool ParaEngine::CUniBuffer::InsertChar(int nIndex, char16_t wchar)
 
 		m_utf16Text = start + wchar + end;
 	}
-
+	StringHelper::UTF16ToUTF8(m_utf16Text, m_utf8Text);
 
 	return true;
 }
@@ -67,7 +67,11 @@ bool ParaEngine::CUniBuffer::RemoveChar(int nIndex)
 
 bool ParaEngine::CUniBuffer::ReplaceChar(int nIndex, char16_t wchar)
 {
-
+	if (nIndex < 0 || nIndex >= (int)m_utf16Text.size())
+		return false;
+	m_utf16Text[nIndex] = wchar;
+	StringHelper::UTF16ToUTF8(m_utf16Text, m_utf8Text);
+	return true;
 }
 
 bool ParaEngine::CUniBuffer::InsertString(int nIndex, const char16_t *pStr, int nCount /*= -1*/)
@@ -130,31 +134,31 @@ char16_t& ParaEngine::CUniBuffer::operator[](int n)
 
 HRESULT ParaEngine::CUniBuffer::CPtoXY(int nCP, BOOL bTrail, int *pX, int *pY)
 {
-	if (*pX)
+	if (pX)
 		*pX = 0;
-	if (*pY)
+	if (pY)
 		*pY = 0;
 	return S_OK;
 }
 
 HRESULT ParaEngine::CUniBuffer::XYtoCP(int nX, int nY, int *pCP, int *pnTrail)
 {
-	if (*pCP)
+	if (pCP)
 		*pCP = 0;
-	if (*pnTrail)
+	if (pnTrail)
 		*pnTrail = 0;
 	return S_OK;
 }
 
 void ParaEngine::CUniBuffer::GetPriorItemPos(int nCP, int *pPrior)
 {
-	if (*pPrior)
+	if (pPrior)
 		*pPrior = 0;
 }
 
 void ParaEngine::CUniBuffer::GetNextItemPos(int nCP, int *pPrior)
 {
-	if (*pPrior)
+	if (pPrior)
 		*pPrior = 0;
 }
 

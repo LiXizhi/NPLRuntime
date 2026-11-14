@@ -16,8 +16,9 @@ namespace ParaEngine
 	template <class T>
 		int PerformOcclusionTest(T& renderlist, SceneState& sceneState, int nMinEnableCount = 25, int nPixelsCount = 0)
 	{
-#ifdef USE_DIRECTX_RENDERER
 		auto pRenderDevice = CGlobals::GetRenderDevice();
+		if (!pRenderDevice || !pRenderDevice->GetCaps().supportsOcclusionQuery)
+			return 0;
 		int nObjectNum = (int)renderlist.size();
 
 		// only bother to use hardware occlusion testing if the number of small object is larger than 20.
@@ -95,9 +96,6 @@ namespace ParaEngine
 			}
 		}
 		return nObjectNum;
-#else
-		return 0;
-#endif
 	}
 	/** Render object in the given list, using batch rendering, but not using hardware occlusion testing.
 	e.g. nObjCount += RenderList(sceneState.listPRSmallObject, sceneState);
@@ -108,15 +106,10 @@ namespace ParaEngine
 		int nObjCount = 0;
 		if(renderlist.empty())
 			return nObjCount;
-		// check whether use instancing
-		CEffectFile* pEntity = CGlobals::GetEffectManager()->GetEffectByHandle(TECH_SIMPLE_MESH_NORMAL_INSTANCED); 
-#ifdef USE_DIRECTX_RENDERER
-		bool bUseInstancing = CGlobals::GetScene()->IsInstancingEnabled() && g_bShaderVersion3 && (pEntity!=0) && pEntity->IsValid();
-#else
-		bool bUseInstancing = false;
-#endif
-
 		auto pRenderDevice = CGlobals::GetRenderDevice();
+		// check whether use instancing
+		CEffectFile* pInstEffect = CGlobals::GetEffectManager()->GetEffectByHandle(TECH_SIMPLE_MESH_NORMAL_INSTANCED); 
+		bool bUseInstancing = pRenderDevice && pRenderDevice->GetCaps().supportsInstancing && CGlobals::GetScene()->IsInstancingEnabled() && g_bShaderVersion3 && (pInstEffect!=0) && pInstEffect->IsValid();
 
 		//////////////////////////////////////////////////////////////////////////
 		// render without hardware occlusion testing
@@ -131,7 +124,6 @@ namespace ParaEngine
 
 			int nCurTechHandle = (*itCurCP).m_pRenderObject->GetPrimaryTechniqueHandle();
 			AssetEntity * pEntity = (*itCurCP).m_pRenderObject->GetPrimaryAsset();
-#ifdef USE_DIRECTX_RENDERER
 			if(bUseInstancing && (nNum==0 || nCurTechHandle!=nLastHandle || pLastEntity!=pEntity))
 			{
 				// check to see if we can use instancing to draw the mesh in one draw call. 
@@ -158,7 +150,7 @@ namespace ParaEngine
 							// Update the instance streams with the per instance data.
 							MatrixVertex* pVertices = NULL;
 							DynamicVertexBufferEntity* pBuffer = CGlobals::GetAssetManager()->GetDynamicBuffer(DVB_MATRIX);
-							if(pBuffer!=0 && pBuffer->Lock(nInstanceCount, (VOID**)&pVertices) == nInstanceCount)
+							if(pBuffer!=0 && pBuffer->Lock(nInstanceCount, (VOID**)&pVertices) == nInstanceCount && pBuffer->GetBuffer() != nullptr)
 							{
 								for(int i=0;i<nInstanceCount;i++)
 								{	
@@ -176,13 +168,15 @@ namespace ParaEngine
 								if(CGlobals::GetEffectManager()->BeginEffect(TECH_SIMPLE_MESH_NORMAL_INSTANCED, &(sceneState.m_pCurrentEffect)))
 								{
 									// Set the first stream to be the indexed data and render N instances
-									GETD3D(CGlobals::GetRenderDevice())->SetStreamSourceFreq(0,(D3DSTREAMSOURCE_INDEXEDDATA | nInstanceCount));
+									pRenderDevice->SetStreamSourceFreq(0, (0x40000000u | static_cast<uint32_t>(nInstanceCount)));
 									// Set the second stream to be per instance data and iterate once per instance
-									GETD3D(CGlobals::GetRenderDevice())->SetStreamSourceFreq(1,(D3DSTREAMSOURCE_INSTANCEDATA | 1));
-									GETD3D(CGlobals::GetRenderDevice())->SetStreamSource(1, pBuffer->GetBuffer(), pBuffer->m_dwBase*pBuffer->m_nUnitSize, pBuffer->m_nUnitSize);
+									pRenderDevice->SetStreamSourceFreq(1, (0x80000000u | 1u));
+									pRenderDevice->SetStreamSource(1, pBuffer->GetBuffer(), pBuffer->m_dwBase * pBuffer->m_nUnitSize, pBuffer->m_nUnitSize);
 
 									sceneState.SetCameraToCurObjectDistance((*itCurCP).m_fObjectToCameraDistance);
 									(*itCurCP).m_pRenderObject->Draw(&sceneState);
+									pRenderDevice->SetStreamSourceFreq(0, 1);
+									pRenderDevice->SetStreamSourceFreq(1, 1);
 									nLastHandle = TECH_SIMPLE_MESH_NORMAL_INSTANCED;
 									pLastEntity = pEntity;
 									nObjCount += nInstanceCount;
@@ -193,7 +187,6 @@ namespace ParaEngine
 					}
 				}
 			}
-#endif
 			pLastEntity = pEntity;
 			if(nCurTechHandle!=nLastHandle)
 			{
@@ -218,16 +211,11 @@ namespace ParaEngine
 		int nObjCount = 0;
 		if(renderlist.empty())
 			return nObjCount;
-//#ifdef USE_DIRECTX_RENDERER
 		sceneState.m_nCurRenderGroup = RENDER_SHADOWMAP;
-#ifdef USE_DIRECTX_RENDERER
 		auto pRenderDevice = CGlobals::GetRenderDevice();
-#else
-		auto pRenderDevice = CGlobals::GetRenderDevice();
-#endif
 		// check whether use instancing
-		CEffectFile* pEntity = CGlobals::GetEffectManager()->GetEffectByHandle(TECH_SIMPLE_MESH_NORMAL_INSTANCED); 
-		bool bUseInstancing = CGlobals::GetScene()->IsInstancingEnabled() && g_bShaderVersion3 && (pEntity!=0) && pEntity->IsValid();
+		CEffectFile* pInstEffect = CGlobals::GetEffectManager()->GetEffectByHandle(TECH_SIMPLE_MESH_NORMAL_INSTANCED); 
+		bool bUseInstancing = pRenderDevice && pRenderDevice->GetCaps().supportsInstancing && CGlobals::GetScene()->IsInstancingEnabled() && g_bShaderVersion3 && (pInstEffect!=0) && pInstEffect->IsValid();
 
 		//////////////////////////////////////////////////////////////////////////
 		// render without hardware occlusion testing
@@ -245,14 +233,13 @@ namespace ParaEngine
 			int nCurTechHandle = (*itCurCP).m_pRenderObject->GetPrimaryTechniqueHandle();
 			AssetEntity * pEntity = (*itCurCP).m_pRenderObject->GetPrimaryAsset();
 
-#ifdef USE_DIRECTX_RENDERER
 			if (bUseInstancing && (nNum == 0 || nCurTechHandle != nLastHandle || pLastEntity != pEntity))
 			{
 				// check to see if we can use instancing to draw the mesh in one draw call. 
 				// currently, instancing only works with static mesh with normals. 
 				if(nCurTechHandle == TECH_SIMPLE_MESH_NORMAL)
 				{
-					if(pEntity->GetType() == AssetEntity::mesh)
+					if(pEntity != 0 && pEntity->GetType() == AssetEntity::mesh)
 					{
 						int nInstanceCount=0;
 						for(typename T::const_iterator itCur1 = itCurCP; itCur1!=itEnd; ++itCur1)
@@ -271,7 +258,7 @@ namespace ParaEngine
 							// Update the instance streams with the per instance data.
 							MatrixVertex* pVertices = NULL;
 							DynamicVertexBufferEntity* pBuffer = CGlobals::GetAssetManager()->GetDynamicBuffer(DVB_MATRIX);
-							if(pBuffer!=0 && pBuffer->Lock(nInstanceCount, (VOID**)&pVertices) == nInstanceCount)
+							if(pBuffer!=0 && pBuffer->Lock(nInstanceCount, (VOID**)&pVertices) == nInstanceCount && pBuffer->GetBuffer() != nullptr)
 							{
 								for(int i=0;i<nInstanceCount;i++)
 								{	
@@ -289,13 +276,15 @@ namespace ParaEngine
 								if(CGlobals::GetEffectManager()->BeginEffect(TECH_SIMPLE_MESH_NORMAL_INSTANCED, &(sceneState.m_pCurrentEffect)))
 								{
 									// Set the first stream to be the indexed data and render N instances
-									GETD3D(CGlobals::GetRenderDevice())->SetStreamSourceFreq(0,(D3DSTREAMSOURCE_INDEXEDDATA | nInstanceCount));
+									pRenderDevice->SetStreamSourceFreq(0, (0x40000000u | static_cast<uint32_t>(nInstanceCount)));
 									// Set the second stream to be per instance data and iterate once per instance
-									GETD3D(CGlobals::GetRenderDevice())->SetStreamSourceFreq(1,(D3DSTREAMSOURCE_INSTANCEDATA | 1));
-									GETD3D(CGlobals::GetRenderDevice())->SetStreamSource(1, pBuffer->GetBuffer(), pBuffer->m_dwBase*pBuffer->m_nUnitSize, pBuffer->m_nUnitSize);
+									pRenderDevice->SetStreamSourceFreq(1, (0x80000000u | 1u));
+									pRenderDevice->SetStreamSource(1, pBuffer->GetBuffer(), pBuffer->m_dwBase * pBuffer->m_nUnitSize, pBuffer->m_nUnitSize);
 
 									sceneState.SetCameraToCurObjectDistance((*itCurCP).m_fObjectToCameraDistance);
 									(*itCurCP).m_pRenderObject->Draw(&sceneState);
+									pRenderDevice->SetStreamSourceFreq(0, 1);
+									pRenderDevice->SetStreamSourceFreq(1, 1);
 									nLastHandle = TECH_SIMPLE_MESH_NORMAL_INSTANCED;
 									pLastEntity = pEntity;
 									nObjCount += nInstanceCount;
@@ -306,7 +295,6 @@ namespace ParaEngine
 					}
 				}
 			}
-#endif
 			pLastEntity = pEntity;
 
 			CEffectFile* pEffect = CGlobals::GetEffectManager()->GetEffectByHandle(nCurTechHandle);

@@ -796,9 +796,8 @@ void CGUIBase::EndDrag(int nEvent, int x, int y, int z)
 			pdrag->pCleanUp();
 		}
 		pdrag->init();
-#ifdef USE_DIRECTX_RENDERER
-		root->m_pMouse->Update();
-#endif
+		if (root->m_pMouse)
+			root->m_pMouse->Update();
 
 	}
 }
@@ -930,13 +929,10 @@ bool CGUIBase::OnMouseEnter()
 	const std::string& sCursorFile = GetCursor(&nHotSpotX, &nHotSpotY);
 	if (!sCursorFile.empty())
 	{
-#ifdef USE_DIRECTX_RENDERER
-		CDirectMouse* pMouse = CGUIRoot::GetInstance()->m_pMouse;
-		if (pMouse)
+		if (CGUIRoot::GetInstance()->m_pMouse)
 		{
-			pMouse->SetCursorFromFile(sCursorFile.c_str(), nHotSpotX, nHotSpotY);
+			CGUIRoot::GetInstance()->m_pMouse->SetCursorFromFile(sCursorFile.c_str(), nHotSpotX, nHotSpotY);
 		}
-#endif
 	}
 	// Only set mouse over to true, if all parent and this control is enabled. 
 	// m_bMouseOver=true;
@@ -1844,7 +1840,7 @@ HRESULT CGUIBase::DrawText(const char16_t* strText, GUIFontElement* pElement, RE
 		}
 		BOOL UseScaling = (vScaling != Vector2::UNIT_SCALE);
 
-#ifdef USE_DIRECTX_RENDERER
+#ifndef USE_NULL_RENDERER
 		if (CGUIRoot::GetInstance()->GetUsePointTextureFiltering())
 		{
 			GetPainter(pGUIState)->Flush();
@@ -1908,7 +1904,7 @@ HRESULT CGUIBase::DrawText(const char16_t* strText, GUIFontElement* pElement, RE
 		}
 		if (CGUIRoot::GetInstance()->GetUsePointTextureFiltering())
 		{
-#ifdef USE_DIRECTX_RENDERER
+#ifndef USE_NULL_RENDERER
 			GetPainter(pGUIState)->Flush();
 			CGlobals::GetEffectManager()->SetSamplerState(0, ESamplerStateType::MINFILTER, D3DTEXF_POINT);
 			CGlobals::GetEffectManager()->SetSamplerState(0, ESamplerStateType::MAGFILTER, D3DTEXF_POINT);
@@ -2535,8 +2531,6 @@ HRESULT ParaEngine::CGUIBase::DoSelfPaint(GUIState* pGUIState, float fElapsedTim
 								pDevice->SetRenderState(ERenderState::DESTBLENDALPHA, D3DBLEND_ONE);
 								pDevice->SetRenderState(ERenderState::BLENDOPALPHA, D3DBLENDOP_MAX);
 
-#ifdef USE_DIRECTX_RENDERER
-								// tricky: we should always use clipping, otherwise alpha channel blending is not working (directX bug? opengl is fine).
 								bool bIsFastRender = ((CGUIType*)GetType())->IsContainer() && ((CGUIContainer*)this)->GetFastRender();
 								if (bIsFastRender)
 								{
@@ -2544,14 +2538,12 @@ HRESULT ParaEngine::CGUIBase::DoSelfPaint(GUIState* pGUIState, float fElapsedTim
 									painter.SetSpriteTransform(&Matrix4::IDENTITY);
 									painter.setClipRect(QRect(clipRect), ReplaceClip);
 								}
-#endif
+
 								// do the actual rendering on the clipped area. 
 								DoRender(pGUIState, fElapsedTime);
 
-#ifdef USE_DIRECTX_RENDERER
 								if (bIsFastRender)
 									painter.setClipRect(QRect(), NoClip);
-#endif
 								pDevice->SetRenderState(ERenderState::SEPARATEALPHABLENDENABLE, FALSE);
 								pDevice->SetRenderState(ERenderState::BLENDOPALPHA, D3DBLENDOP_ADD);
 

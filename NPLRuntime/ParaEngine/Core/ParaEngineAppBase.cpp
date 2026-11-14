@@ -42,6 +42,7 @@
 #include "FrameRateController.h"
 #include "FileLogger.h"
 #include "Render/IRenderContext.h"
+#include "RHIBackendRegistry.h"
 #include "InfoCenter/ICDBManager.h"
 #include "InfoCenter/ICConfigManager.h"
 #include "SceneObject.h"
@@ -63,13 +64,6 @@
 #include "AutoRigger.h"
 #include "ScriptParticle.h"
 #include "IParaWebXR.h"
-
-#if USE_DIRECTX_RENDERER
-//#include "Render/context/d3d9/RenderContextD3D9.h"
-#include "RenderDeviceD3D9.h"
-#include "DirectXEngine.h"
-#endif
-
 #include "CoroutineThread.h"
 
 using namespace ParaEngine;
@@ -268,24 +262,64 @@ bool ParaEngine::CParaEngineAppBase::InitApp(IRenderWindow* pWindow, const char*
 
 void ParaEngine::CParaEngineAppBase::InitRenderEnvironment()
 {
+	ERHIBackend preferred = !Is3DRenderingEnabled()
+		? ERHIBackend::Null
+		: RHIBackendRegistry::GetInstance().ResolvePreferredBackend(GetAppCommandLine());
+	RHIBackendRegistry::GetInstance().SetPreferredBackend(preferred);
 
-	/// Create RenderDevice
-	m_pRenderContext = IRenderContext::Create();
 	RenderConfiguration cfg;
 	cfg.renderWindow = m_pRenderWindow;
-	m_pRenderDevice = m_pRenderContext->CreateDevice(cfg);
+	cfg.preferredBackend = preferred;
+	if (m_pRenderWindow && m_pRenderWindow->GetWidth() > 0 && m_pRenderWindow->GetHeight() > 0)
+	{
+		cfg.screenWidth = m_pRenderWindow->GetWidth();
+		cfg.screenHeight = m_pRenderWindow->GetHeight();
+	}
+
+	/// Create RenderDevice (with automatic ParaRHI fallback when preferred backend fails)
+#ifdef PARA_RHI_MULTI_BACKEND
+	m_pRenderContext = IRenderContext::Create(preferred);
+	if (m_pRenderContext)
+	{
+		m_pRenderDevice = m_pRenderContext->CreateDevice(cfg);
+	}
+	if (!m_pRenderDevice)
+	{
+		SAFE_DELETE(m_pRenderContext);
+		m_pRenderContext = IRenderContext::Create(ERHIBackend::Null);
+		if (m_pRenderContext)
+			m_pRenderDevice = m_pRenderContext->CreateDevice(cfg);
+	}
+#else
+	m_pRenderContext = IRenderContext::Create();
+	m_pRenderDevice = m_pRenderContext ? m_pRenderContext->CreateDevice(cfg) : nullptr;
+#endif
 	CGlobals::SetRenderDevice(m_pRenderDevice);
+
+	if (m_pRenderDevice)
+	{
+		const auto& caps = m_pRenderDevice->GetCaps();
+		OUTPUT_LOG("ParaRHI initialized backend: %s (%s), FL=%u, MRT=%u\n",
+			caps.backendName ? caps.backendName : "Unknown",
+			caps.adapterName ? caps.adapterName : "Unknown",
+			caps.featureLevel,
+			caps.maxSimultaneousRTs);
+	}
 
 	ParaViewport vp;
 	vp.X = 0; vp.Y = 0;
-	vp.Width = m_pRenderWindow->GetWidth();
-	vp.Height = m_pRenderWindow->GetHeight();
+	vp.Width = (m_pRenderWindow && m_pRenderWindow->GetWidth() > 0) ? m_pRenderWindow->GetWidth() : cfg.screenWidth;
+	vp.Height = (m_pRenderWindow && m_pRenderWindow->GetHeight() > 0) ? m_pRenderWindow->GetHeight() : cfg.screenHeight;
 	vp.MinZ = 0.0f;
 	vp.MaxZ = 1.0f;
-	m_pRenderDevice->SetViewport(vp);
-	
+	if (m_pRenderDevice)
+		m_pRenderDevice->SetViewport(vp);
+
 	InitDeviceObjects();
 	RestoreDeviceObjects();
+
+	/// Re-apply active effect set once the RHI device capabilities are live
+	CGlobals::GetSettings().LoadGameEffectSet(CGlobals::GetSettings().GetGameEffectSet());
 }
 
 void ParaEngine::CParaEngineAppBase::ResetRenderEnvironment()
@@ -327,11 +361,6 @@ void ParaEngine::CParaEngineAppBase::UpdateFrameStats(double fTime)
 
 HRESULT ParaEngine::CParaEngineAppBase::InitDeviceObjects()
 {
-#if USE_DIRECTX_RENDERER
-	/// stage b.1
-	auto d3d9RenderDevice = static_cast<RenderDeviceD3D9*>(m_pRenderDevice);
-	CGlobals::GetDirectXEngine().InitDeviceObjects(d3d9RenderDevice->GetContext(), d3d9RenderDevice->GetDirect3DDevice9(), NULL);
-#endif
 	/// Asset must be the first to be initialized. Otherwise, the global device object will not be valid
 	m_pParaWorldAsset->InitDeviceObjects();
 	m_pRootScene->InitDeviceObjects();
@@ -345,9 +374,6 @@ HRESULT ParaEngine::CParaEngineAppBase::DeleteDeviceObjects()
 	m_pRootScene->DeleteDeviceObjects();
 	m_pGUIRoot->DeleteDeviceObjects();
 	m_pParaWorldAsset->DeleteDeviceObjects();
-#if USE_DIRECTX_RENDERER
-	CGlobals::GetDirectXEngine().DeleteDeviceObjects();
-#endif
 
 	return S_OK;
 }
@@ -492,8 +518,8 @@ double ParaEngine::CParaEngineAppBase::GetElapsedTime()
 
 HRESULT ParaEngine::CParaEngineAppBase::RestoreDeviceObjects()
 {
-	int width = m_pRenderWindow->GetWidth();
-	int height = m_pRenderWindow->GetHeight();
+	int width = (m_pRenderWindow && m_pRenderWindow->GetWidth() > 0) ? m_pRenderWindow->GetWidth() : 1020;
+	int height = (m_pRenderWindow && m_pRenderWindow->GetHeight() > 0) ? m_pRenderWindow->GetHeight() : 680;
 
 	/// Set up the camera's projection matrix
 	float aspectRatio = width / (float)height;
@@ -503,10 +529,6 @@ HRESULT ParaEngine::CParaEngineAppBase::RestoreDeviceObjects()
 	ParaTerrain::Settings::GetInstance()->SetScreenWidth(width);
 	ParaTerrain::Settings::GetInstance()->SetScreenHeight(height);
 
-#if USE_DIRECTX_RENDERER
-	CGlobals::GetDirectXEngine().RestoreDeviceObjects();
-#endif
-
 	return S_OK;
 }
 
@@ -515,9 +537,6 @@ HRESULT ParaEngine::CParaEngineAppBase::InvalidateDeviceObjects()
 	m_pRootScene->InvalidateDeviceObjects();
 	m_pParaWorldAsset->InvalidateDeviceObjects();
 	m_pGUIRoot->InvalidateDeviceObjects(); /// GUI: 2D engine
-#if USE_DIRECTX_RENDERER
-	CGlobals::GetDirectXEngine().InvalidateDeviceObjects();
-#endif
 
 	return S_OK;
 }
@@ -539,10 +558,6 @@ void ParaEngine::CParaEngineAppBase::Render()
 	m_pRenderDevice->BeginScene();
 	{
 		CGlobals::GetAssetManager()->RenderFrameMove(fElapsedTime);
-#if USE_DIRECTX_RENDERER
-        /// force setting render target to back buffer. and
-		GETD3D(m_pRenderDevice)->SetRenderTarget(0, CGlobals::GetDirectXEngine().GetRenderTarget(0));
-#endif
 		auto color = m_pRootScene->GetClearColor();
 		auto pDevice = CGlobals::GetRenderDevice();
 
@@ -565,7 +580,9 @@ void ParaEngine::CParaEngineAppBase::Render()
 		pDevice->SetClearDepth(1.0f);
 		pDevice->SetClearStencil(0);
 		pDevice->Clear(true, true, true);
-		m_pViewportManager->UpdateViewport(m_pRenderWindow->GetWidth(), m_pRenderWindow->GetHeight());
+		uint32_t vpW = (m_pRenderWindow && m_pRenderWindow->GetWidth() > 0) ? m_pRenderWindow->GetWidth() : pDevice->GetViewport().Width;
+		uint32_t vpH = (m_pRenderWindow && m_pRenderWindow->GetHeight() > 0) ? m_pRenderWindow->GetHeight() : pDevice->GetViewport().Height;
+		m_pViewportManager->UpdateViewport(vpW, vpH);
 		{
 			PERF1("3D Scene Render");
 			m_pViewportManager->Render(fElapsedTime, PIPELINE_3D_SCENE);
@@ -870,10 +887,6 @@ bool ParaEngine::CParaEngineAppBase::ForceRender()
 #else
 	if (pRenderDevice->BeginScene())
 	{
-#if USE_DIRECTX_RENDERER
-		GETD3D(pRenderDevice)->SetRenderTarget(0, CGlobals::GetDirectXEngine().GetRenderTarget(0)); // force setting render target to back buffer. and
-#endif
-
 		auto color = m_pRootScene->GetClearColor();
 
 		// NOTE: on android devices will ignore all gl calls after the last draw call, so we need to restore everything to default settings
@@ -966,7 +979,7 @@ HRESULT ParaEngine::CParaEngineAppBase::DoWork()
 #endif
 
 	m_fTime = m_Timer->GetAppTime();
-	if (m_pRenderWindow == nullptr)
+	if (m_pRenderWindow == nullptr && Is3DRenderingEnabled())
 		return S_FALSE;
 	
 	auto d = m_doWorkFRC.FrameMove(m_fTime);
@@ -974,7 +987,7 @@ HRESULT ParaEngine::CParaEngineAppBase::DoWork()
 	if (d > 0)
 	{
 		FrameMove(m_fTime);
-        if (getRenderEnabled())
+        if (getRenderEnabled() && Is3DRenderingEnabled() && m_pRenderDevice)
         {
 			Render();
 #ifdef EMSCRIPTEN
@@ -1727,7 +1740,8 @@ void ParaEngine::CParaEngineAppBase::BootStrapAndLoadConfig()
 		/// load settings from config/config.txt or config/config.new.txt
 		string sConfigFile = CParaFile::GetCurDirectory(CParaFile::APP_CONFIG_DIR) + "config.new.txt";
 		bool bHasNewConfig = CParaFile::DoesFileExist(sConfigFile.c_str());
-		SetHasNewConfig(bHasNewConfig);
+		if (bHasNewConfig)
+			SetHasNewConfig(true);
 		if (!bHasNewConfig)
 			sConfigFile = (CParaFile::GetCurDirectory(CParaFile::APP_CONFIG_DIR) + "config.txt");
 

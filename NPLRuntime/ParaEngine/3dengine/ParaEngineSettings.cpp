@@ -29,7 +29,7 @@
 #include "AudioEngine2.h"
 #include "StringHelper.h"
 
-#ifdef PARAENGINE_CLIENT
+#if defined(WIN32) && !defined(PARAENGINE_MOBILE) && !defined(NPLRUNTIME_SERVER)
 #include "util/CommonFileDialog.h"
 #if !defined(NPLRUNTIME)
 	#include "util/EnumProcess.hpp"
@@ -91,9 +91,8 @@ ParaEngineSettings::~ParaEngineSettings(void)
 
 void ParaEngineSettings::SetOceanTechnique(DWORD dwTechnique)
 {
-#ifdef USE_DIRECTX_RENDERER
-	CGlobals::GetOceanManager()->SetRenderTechnique(dwTechnique);
-#endif
+	if (CGlobals::GetOceanManager())
+		CGlobals::GetOceanManager()->SetRenderTechnique(dwTechnique);
 }
 
 ParaEngineSettings& ParaEngineSettings::GetSingleton()
@@ -151,63 +150,65 @@ void ParaEngineSettings::SetCtorSpeed(float fSpeed)
 
 int ParaEngineSettings::GetVertexShaderVersion()
 {
-
-#ifdef USE_DIRECTX_RENDERER
-		return CGlobals::GetDirectXEngine().GetVertexShaderVersion();
-#elif defined(USE_OPENGL_RENDERER)
-		return 2;
-#else
-		return 0;
-#endif
+	auto* pDevice = CGlobals::GetRenderDevice();
+	return pDevice ? pDevice->GetCaps().GetShaderModelMajor() : 0;
 }
 
 int ParaEngineSettings::GetPixelShaderVersion()
-{	
-#ifdef USE_DIRECTX_RENDERER
-	return CGlobals::GetDirectXEngine().GetPixelShaderVersion();
-#elif defined(USE_OPENGL_RENDERER)
-	return 2;
-#else
-	return 0;
-#endif
+{
+	auto* pDevice = CGlobals::GetRenderDevice();
+	return pDevice ? pDevice->GetCaps().GetShaderModelMajor() : 0;
 }
 
 const std::string& ParaEngineSettings::GetDispalyMode()
 {
-#ifdef USE_DIRECTX_RENDERER
-	D3DDISPLAYMODE *pDisplayModes = 0;
+#ifdef WIN32
+	DEVMODEW dm = {};
+	dm.dmSize = sizeof(dm);
+	std::stringstream ss;
+	std::string lastEntry;
 	int modeCount = 0;
-	CGlobals::GetDirectXEngine().GetDisplayMode(&pDisplayModes,modeCount);
-	
-	if(modeCount < 1)
-		return CGlobals::GetString(0);
-	else
+	for (DWORD iModeNum = 0; EnumDisplaySettingsW(NULL, iModeNum, &dm) != 0; ++iModeNum)
 	{
-		std::stringstream ss;
-		for (int i = 0;i<modeCount;i++)
-		{
-			if(i>0)
-				ss<<",";
-			ss<<pDisplayModes[i].Width<<" "<<pDisplayModes[i].Height<<" "<<pDisplayModes[i].RefreshRate;
-		}
-
-		if(pDisplayModes!=0)
-			delete[] pDisplayModes;
-		
-		m_displayModes = ss.str();
-		return m_displayModes;
+		if (dm.dmBitsPerPel < 32 || dm.dmPelsWidth == 0 || dm.dmPelsHeight == 0)
+			continue;
+		std::ostringstream item;
+		item << dm.dmPelsWidth << " " << dm.dmPelsHeight << " " << dm.dmDisplayFrequency;
+		std::string cur = item.str();
+		if (cur == lastEntry)
+			continue;
+		if (modeCount > 0)
+			ss << ",";
+		ss << cur;
+		lastEntry = cur;
+		++modeCount;
 	}
+	if (modeCount < 1)
+		return CGlobals::GetString(0);
+	m_displayModes = ss.str();
+	return m_displayModes;
 #else
-	return CGlobals::GetString(0);
+	Vector2 res(0, 0);
+	if (CGlobals::GetApp())
+		CGlobals::GetApp()->GetScreenResolution(&res);
+	if (res.x <= 0 || res.y <= 0)
+		return CGlobals::GetString(0);
+	std::ostringstream ss;
+	ss << (int)res.x << " " << (int)res.y << " 60";
+	m_displayModes = ss.str();
+	return m_displayModes;
 #endif
 }
 
 Vector2 ParaEngineSettings::GetMonitorResolution()
 {
-#ifdef USE_DIRECTX_RENDERER
-	return CGlobals::GetDirectXEngine().GetMonitorResolution();
+#ifdef WIN32
+	return Vector2((float)GetSystemMetrics(SM_CXSCREEN), (float)GetSystemMetrics(SM_CYSCREEN));
 #else
-	return Vector2(0, 0);
+	Vector2 res(0, 0);
+	if (CGlobals::GetApp())
+		CGlobals::GetApp()->GetScreenResolution(&res);
+	return res;
 #endif
 }
 
@@ -219,27 +220,33 @@ int ParaEngineSettings::GetGameEffectSet()
 
 void ParaEngineSettings::LoadGameEffectSet(int nSetID)
 {
-#ifdef USE_DIRECTX_RENDERER
-	int ShaderVersion = min(CGlobals::GetDirectXEngine().GetVertexShaderVersion(), CGlobals::GetDirectXEngine().GetPixelShaderVersion());
-	if(ShaderVersion != 0 && nSetID!=1024)
+	auto* pDevice = CGlobals::GetRenderDevice();
+	if (pDevice && pDevice->GetCaps().backend == ERHIBackend::Null)
 	{
-		if(ShaderVersion < 2 )
+		g_nSetID = nSetID;
+		return;
+	}
+
+	int ShaderVersion = pDevice ? pDevice->GetCaps().GetShaderModelMajor() : 0;
+	if (ShaderVersion != 0 && nSetID != 1024)
+	{
+		if (ShaderVersion < 2)
 		{
 			OUTPUT_LOG("warning: you can not set effect level to %d, because your shader version is too low. Fixed function is used instead. \n", nSetID);
 			nSetID = 1024;
 		}
-		else if(ShaderVersion < 3)
+		else if (ShaderVersion < 3)
 		{
-			if(nSetID > 0)
+			if (nSetID > 0)
 			{
 				OUTPUT_LOG("warning: you can not set effect level to %d, because your shader version is too low. Fixed function is used instead. \n", nSetID);
 				nSetID = 0;
 			}
 		}
 	}
-	
+
 	g_nSetID = nSetID;
-	switch(nSetID)
+	switch (nSetID)
 	{
 	case 1024:
 		CGlobals::GetEffectManager()->SetDefaultEffectMapping(0);
@@ -286,7 +293,6 @@ void ParaEngineSettings::LoadGameEffectSet(int nSetID)
 			CGlobals::GetEffectManager()->SetDefaultEffectMapping(30);
 			ParaScripting::ParaScene::EnableLighting(true);
 			ParaScripting::ParaScene::SetShadowMethod(1);
-			//CGlobals::GetScene()->SetShadowMapTexelSizeLevel(0); // 1024 *1024 shadow map
 			CGlobals::GetScene()->EnableFullScreenGlow(false);
 			COceanManager* pOcean = CGlobals::GetOceanManager();
 			pOcean->EnableReflectionItem(COceanManager::R_SKY_BOX, true);
@@ -303,8 +309,6 @@ void ParaEngineSettings::LoadGameEffectSet(int nSetID)
 			CGlobals::GetEffectManager()->SetDefaultEffectMapping(30);
 			ParaScripting::ParaScene::EnableLighting(true);
 			ParaScripting::ParaScene::SetShadowMethod(1);
-			//CGlobals::GetScene()->SetShadowMapTexelSizeLevel(1); // 1536 * 1536 shadow map
-			//CGlobals::GetScene()->EnableFullScreenGlow(true);
 			COceanManager* pOcean = CGlobals::GetOceanManager();
 			pOcean->EnableReflectionItem(COceanManager::R_SKY_BOX, true);
 			pOcean->EnableReflectionItem(COceanManager::R_GLOBAL_TERRAIN, true);
@@ -319,13 +323,6 @@ void ParaEngineSettings::LoadGameEffectSet(int nSetID)
 		CGlobals::GetEffectManager()->SetDefaultEffectMapping(30);
 		break;
 	}
-#elif defined(USE_OPENGL_RENDERER)
-	//CGlobals::GetEffectManager()->SetDefaultEffectMapping(0);
-	CGlobals::GetEffectManager()->SetDefaultEffectMapping(20);
-	ParaScripting::ParaScene::EnableLighting(true);
-	ParaScripting::ParaScene::SetShadowMethod(0);
-	CGlobals::GetScene()->EnableFullScreenGlow(false);
-#endif
 }
 
 void ParaEngineSettings::SetScriptEditor(const string& sEditorFilePath)
@@ -340,10 +337,11 @@ const string& ParaEngineSettings::GetScriptEditor()
 
 void ParaEngineSettings::GetClientSize(int* width, int* height)
 {
-#ifdef USE_DIRECTX_RENDERER
-	*width=CGlobals::GetDirectXEngine().m_d3dsdBackBuffer.Width;
-	*height=CGlobals::GetDirectXEngine().m_d3dsdBackBuffer.Height;
-#endif
+	auto* pDevice = CGlobals::GetRenderDevice();
+	if (width)
+		*width = pDevice ? static_cast<int>(pDevice->GetBackBufferWidth()) : 0;
+	if (height)
+		*height = pDevice ? static_cast<int>(pDevice->GetBackBufferHeight()) : 0;
 }
 bool ParaEngineSettings::IsDebugging()
 {
@@ -777,7 +775,7 @@ void ParaEngine::ParaEngineSettings::SetLockWindowSize(bool bEnabled)
 	auto app = CGlobals::GetApp();
 	if (app)
 	{
-		//TODO: app->FixWindowSize(bEnabled);
+		app->FixWindowSize(bEnabled);
 	}
 }
 
@@ -902,12 +900,12 @@ int ParaEngine::ParaEngineSettings::GetAsyncLoaderRemainingBytes()
 	return CAsyncLoader::GetSingleton().GetEstimatedSizeInBytes();
 }
 
-#ifdef USE_DIRECTX_RENDERER
+#ifdef WIN32
 #include "GuiConsole.h"
 #endif
 void ParaEngine::ParaEngineSettings::AllocConsole()
 {
-#ifdef USE_DIRECTX_RENDERER
+#ifdef WIN32
 	ParaEngine::RedirectIOToConsole();
 #endif
 }
@@ -945,8 +943,8 @@ void ParaEngine::ParaEngineSettings::SendMsgToJS(const char* msg_json_data)
 
 void ParaEngine::ParaEngineSettings::SetConsoleTextAttribute( int wAttributes )
 {
-#ifdef USE_DIRECTX_RENDERER
-	ParaEngine::SetOutputConsoleTextAttribute(wAttributes);
+#ifdef WIN32
+	ParaEngine::SetOutputConsoleTextAttribute((WORD)wAttributes);
 #endif
 }
 
@@ -967,34 +965,24 @@ const std::string& ParaEngine::ParaEngineSettings::GetSystemInfoString( bool bRe
 
 void ParaEngine::ParaEngineSettings::SetAutoLowerFrameRateWhenNotFocused( bool bEnabled )
 {
-#ifdef USE_DIRECTX_RENDERER
-	CGlobals::GetApp()->SetAutoLowerFrameRateWhenNotFocused(bEnabled);
-#endif
+	if (CGlobals::GetApp())
+		CGlobals::GetApp()->SetAutoLowerFrameRateWhenNotFocused(bEnabled);
 }
 
 bool ParaEngine::ParaEngineSettings::GetAutoLowerFrameRateWhenNotFocused()
 {
-#ifdef USE_DIRECTX_RENDERER
-	return CGlobals::GetApp()->GetAutoLowerFrameRateWhenNotFocused();
-#else
-	return false;
-#endif
+	return CGlobals::GetApp() ? CGlobals::GetApp()->GetAutoLowerFrameRateWhenNotFocused() : false;
 }
 
 void ParaEngine::ParaEngineSettings::SetToggleSoundWhenNotFocused( bool bEnabled )
 {
-#ifdef USE_DIRECTX_RENDERER
-	return CGlobals::GetApp()->SetToggleSoundWhenNotFocused(bEnabled);
-#endif
+	if (CGlobals::GetApp())
+		CGlobals::GetApp()->SetToggleSoundWhenNotFocused(bEnabled);
 }
 
 bool ParaEngine::ParaEngineSettings::GetToggleSoundWhenNotFocused()
 {
-#ifdef USE_DIRECTX_RENDERER
-	return CGlobals::GetApp()->GetToggleSoundWhenNotFocused();
-#else
-	return false;
-#endif
+	return CGlobals::GetApp() ? CGlobals::GetApp()->GetToggleSoundWhenNotFocused() : false;
 }
 
 void ParaEngine::ParaEngineSettings::Enable32bitsTexture( bool bEnable )
@@ -1029,13 +1017,19 @@ bool ParaEngine::ParaEngineSettings::IsMouseCaptured()
 
 Vector2 ParaEngine::ParaEngineSettings::GetWindowResolution()
 {
-#ifdef USE_DIRECTX_RENDERER
-	RECT rect;
-	GetWindowRect(CGlobals::GetAppHWND(), &rect);
-	return Vector2((float)(rect.right - rect.left), (float)(rect.bottom - rect.top));
-#else
-	return Vector2(0, 0);
+#ifdef WIN32
+	HWND hWnd = CGlobals::GetAppHWND();
+	if (hWnd)
+	{
+		RECT rect = {};
+		if (GetWindowRect(hWnd, &rect))
+			return Vector2((float)(rect.right - rect.left), (float)(rect.bottom - rect.top));
+	}
 #endif
+	Vector2 res(0, 0);
+	if (CGlobals::GetApp())
+		CGlobals::GetApp()->GetScreenResolution(&res);
+	return res;
 }
 
 bool ParaEngine::ParaEngineSettings::IsSandboxMode()
@@ -1050,14 +1044,14 @@ void ParaEngine::ParaEngineSettings::SetSandboxMode(bool val)
 
 void ParaEngine::ParaEngineSettings::SetDefaultOpenFileFolder(const char* sDefaultOpenFileFolder)
 {
-#ifdef PARAENGINE_CLIENT
+#if defined(WIN32) && !defined(PARAENGINE_MOBILE) && !defined(NPLRUNTIME_SERVER)
 	CCommonFileDialog::GetSingleton()->SetDefaultOpenFileFolder(sDefaultOpenFileFolder);
 #endif
 }
 
 const char* ParaEngine::ParaEngineSettings::GetOpenFolder()
 {
-#ifdef PARAENGINE_CLIENT
+#if defined(WIN32) && !defined(PARAENGINE_MOBILE) && !defined(NPLRUNTIME_SERVER)
 	return CCommonFileDialog::GetSingleton()->OpenFolder();
 #else
 	return NULL;
@@ -1498,11 +1492,8 @@ bool ParaEngine::ParaEngineSettings::IsScreenRotated()
 
 const char* ParaEngine::ParaEngineSettings::GetRendererName()
 {
-#ifdef USE_DIRECTX_RENDERER
-	return "DirectX";
-#else
-	return "OpenGL";
-#endif
+	auto* pDevice = CGlobals::GetRenderDevice();
+	return pDevice ? pDevice->GetCaps().backendName : "Null";
 }
 
 int ParaEngineSettings::InstallFields(CAttributeClass* pClass, bool bOverride)
@@ -1573,7 +1564,7 @@ int ParaEngineSettings::InstallFields(CAttributeClass* pClass, bool bOverride)
 	pClass->AddField("AppHasFocus", FieldType_Bool, (void*)SetAppHasFocus_s, (void*)GetAppHasFocus_s, NULL, NULL, bOverride);
 
 	pClass->AddField("Is32bitsTextureEnabled", FieldType_Bool, (void*)Enable32bitsTexture_s, (void*)Is32bitsTextureEnabled_s, NULL, NULL, bOverride);
-	pClass->AddField("IsServerMode", FieldType_Bool, (void*)0, (void*)IsServerMode, NULL, NULL, bOverride);
+	pClass->AddField("IsServerMode", FieldType_Bool, (void*)0, (void*)IsServerMode_s, NULL, NULL, bOverride);
 
 	pClass->AddField("MaxMacAddress", FieldType_String, NULL, (void*)GetMaxMacAddress_s, NULL, NULL, bOverride);
 	pClass->AddField("MaxIPAddress", FieldType_String, NULL, (void*)GetMaxIPAddress_s, NULL, NULL, bOverride);

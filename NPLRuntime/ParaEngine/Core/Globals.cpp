@@ -30,8 +30,6 @@
 #include "Globals.h"
 
 #if PLATFORM_WINDOWS
-#include "DirectXEngine.h"
-
 #ifdef USE_XACT_AUDIO_ENGINE
 #include "AudioEngine.h"
 #endif
@@ -302,20 +300,18 @@ void ParaEngine::CGlobals::SetRenderDevice(IRenderDevice * device)
 HWND CGlobals::GetAppHWND()
 {
 #ifdef WIN32
-	auto h = CParaEngineAppBase::GetInstance()->GetRenderWindow()->GetNativeHandle();
-	return (HWND)h;
+	auto* pApp = CParaEngineAppBase::GetInstance();
+	if (!pApp)
+		return 0;
+	if (auto* pWindow = pApp->GetRenderWindow())
+		return (HWND)pWindow->GetNativeHandle();
+	return pApp->GetMainWindow();
 #else
 	return 0;
 #endif
 }
 
-#if defined(PLATFORM_WINDOWS) && defined(USE_DIRECTX_RENDERER)
-
-DirectXEngine& CGlobals::GetDirectXEngine()
-{
-	static DirectXEngine dxengine_;
-	return dxengine_;
-}
+#if defined(PLATFORM_WINDOWS)
 
 CAudioEngine* CGlobals::GetAudioEngine()
 {

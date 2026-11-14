@@ -13,6 +13,12 @@ using namespace ParaEngine;
 
 namespace ParaEngine 
 {
+	static inline bool IsOpenGLActiveForProgram()
+	{
+		auto* dev = CGlobals::GetRenderDevice();
+		return dev && dev->GetBackendType() == ERHIBackend::OpenGL;
+	}
+
 	typedef struct _hashUniformEntry
 	{
 		GLvoid*         value;       // value
@@ -100,22 +106,28 @@ GLProgram::~GLProgram()
 {
 	OUTPUT_LOG("%s %d deallocing GLProgram: %p", __FUNCTION__, __LINE__, this);
 
-	if (_vertShader)
+	if (IsOpenGLActiveForProgram())
 	{
-		glDeleteShader(_vertShader);
-	}
+#ifdef PARA_ENABLE_OPENGL
+		if (_vertShader)
+		{
+			glDeleteShader(_vertShader);
+		}
 
-	if (_fragShader)
-	{
-		glDeleteShader(_fragShader);
+		if (_fragShader)
+		{
+			glDeleteShader(_fragShader);
+		}
+
+		if (_program)
+		{
+			GL::deleteProgram(_program);
+		}
+#endif
 	}
 
 	_vertShader = _fragShader = 0;
-
-	if (_program)
-	{
-		GL::deleteProgram(_program);
-	}
+	_program = 0;
 
 	tHashUniformEntry *current_element, *tmp;
 
@@ -130,6 +142,15 @@ GLProgram::~GLProgram()
 
 bool GLProgram::initWithByteArrays(const GLchar* vShaderByteArray, const GLchar* fShaderByteArray)
 {
+	if (!IsOpenGLActiveForProgram())
+	{
+		_program = 0;
+		_vertShader = _fragShader = 0;
+		_hashForUniforms = nullptr;
+		return true;
+	}
+
+#ifdef PARA_ENABLE_OPENGL
 	_program = glCreateProgram();
 	PE_CHECK_GL_ERROR_DEBUG();
 
@@ -167,6 +188,10 @@ bool GLProgram::initWithByteArrays(const GLchar* vShaderByteArray, const GLchar*
 	_hashForUniforms = nullptr;
 
 	PE_CHECK_GL_ERROR_DEBUG();
+#else
+	(void)vShaderByteArray;
+	(void)fShaderByteArray;
+#endif
 
 	return true;
 }
@@ -182,6 +207,7 @@ bool GLProgram::initWithFilenames(const std::string &vShaderFilename, const std:
 
 void GLProgram::bindPredefinedVertexAttribs()
 {
+#ifdef PARA_ENABLE_OPENGL
 	static const struct {
 		const char *attributeName;
 		int location;
@@ -202,12 +228,13 @@ void GLProgram::bindPredefinedVertexAttribs()
 	for (int i = 0; i<size;i++) {
 		glBindAttribLocation(_program, attribute_locations[i].location, attribute_locations[i].attributeName);
 	}
+#endif
 }
 
 void GLProgram::parseVertexAttribs()
 {
 	_vertexAttribs.clear();
-
+#ifdef PARA_ENABLE_OPENGL
 	// Query and store vertex attribute meta-data from the program.
 	GLint activeAttributes;
 	GLint length;
@@ -234,12 +261,13 @@ void GLProgram::parseVertexAttribs()
 			}
 		}
 	}
+#endif
 }
 
 void GLProgram::parseUniforms()
 {
 	_userUniforms.clear();
-
+#ifdef PARA_ENABLE_OPENGL
 	// Query and store uniforms from the program.
 	GLint activeUniforms;
 	glGetProgramiv(_program, GL_ACTIVE_UNIFORMS, &activeUniforms);
@@ -283,6 +311,7 @@ void GLProgram::parseUniforms()
 			}
 		}
 	}
+#endif
 }
 
 Uniform* GLProgram::getUniform(const std::string &name)
@@ -304,6 +333,7 @@ VertexAttrib* GLProgram::getVertexAttrib(const std::string &name)
 
 bool GLProgram::compileShader(GLuint * shader, GLenum type, const GLchar* source)
 {
+#ifdef PARA_ENABLE_OPENGL
 	GLint status;
 
 	if (!source)
@@ -351,25 +381,53 @@ bool GLProgram::compileShader(GLuint * shader, GLenum type, const GLchar* source
 		return false;;
 	}
 	return (status == GL_TRUE);
+#else
+	(void)shader; (void)type; (void)source;
+	return false;
+#endif
 }
 
 GLint GLProgram::getAttribLocation(const std::string &attributeName) const
 {
+#ifdef PARA_ENABLE_OPENGL
+	if (!IsOpenGLActiveForProgram() || !_program)
+		return -1;
 	return glGetAttribLocation(_program, attributeName.c_str());
+#else
+	(void)attributeName;
+	return -1;
+#endif
 }
 
 GLint GLProgram::getUniformLocation(const std::string &attributeName) const
 {
+#ifdef PARA_ENABLE_OPENGL
+	if (!IsOpenGLActiveForProgram() || !_program)
+		return -1;
 	return glGetUniformLocation(_program, attributeName.c_str());
+#else
+	(void)attributeName;
+	return -1;
+#endif
 }
 
 void GLProgram::bindAttribLocation(const std::string &attributeName, GLuint index) const
 {
+#ifdef PARA_ENABLE_OPENGL
+	if (!IsOpenGLActiveForProgram() || !_program)
+		return;
 	glBindAttribLocation(_program, index, attributeName.c_str());
+#else
+	(void)attributeName; (void)index;
+#endif
 }
 
 void GLProgram::updateUniforms()
 {
+#ifdef PARA_ENABLE_OPENGL
+	if (!IsOpenGLActiveForProgram() || !_program)
+		return;
+
 	_builtInUniforms[UNIFORM_SAMPLER0] = glGetUniformLocation(_program, "tex0Sampler");
 	_builtInUniforms[UNIFORM_SAMPLER1] = glGetUniformLocation(_program, "tex1Sampler");
 	_builtInUniforms[UNIFORM_SAMPLER2] = glGetUniformLocation(_program, "tex2Sampler");
@@ -389,10 +447,15 @@ void GLProgram::updateUniforms()
 
 	// clear any glErrors created by any not found uniforms
 	glGetError();
+#endif
 }
 
 bool GLProgram::link()
 {
+	if (!IsOpenGLActiveForProgram())
+		return true;
+
+#ifdef PARA_ENABLE_OPENGL
 	// Cannot link invalid program
 	PE_ASSERT(_program != 0);
 
@@ -419,6 +482,9 @@ bool GLProgram::link()
 	_vertShader = _fragShader = 0;
 
 	return (status == GL_TRUE);
+#else
+	return true;
+#endif
 }
 
 void GLProgram::use()
@@ -428,6 +494,7 @@ void GLProgram::use()
 
 std::string GLProgram::logForOpenGLObject(GLuint object, GLInfoFunction infoFunc, GLLogFunction logFunc) const
 {
+#ifdef PARA_ENABLE_OPENGL
 	std::string ret;
 	GLint logLength = 0, charsWritten = 0;
 	infoFunc(object, GL_INFO_LOG_LENGTH, &logLength);
@@ -441,28 +508,44 @@ std::string GLProgram::logForOpenGLObject(GLuint object, GLInfoFunction infoFunc
 
 	free(logBytes);
 	return ret;
+#else
+	(void)object; (void)infoFunc; (void)logFunc;
+	return "";
+#endif
 }
 
 std::string GLProgram::getVertexShaderLog() const
 {
+#ifdef PARA_ENABLE_OPENGL
 	return this->logForOpenGLObject(_vertShader, (GLInfoFunction)&glGetShaderiv, (GLLogFunction)&glGetShaderInfoLog);
+#else
+	return "";
+#endif
 }
 
 std::string GLProgram::getFragmentShaderLog() const
 {
+#ifdef PARA_ENABLE_OPENGL
 	return this->logForOpenGLObject(_fragShader, (GLInfoFunction)&glGetShaderiv, (GLLogFunction)&glGetShaderInfoLog);
+#else
+	return "";
+#endif
 }
 
 std::string GLProgram::getProgramLog() const
 {
+#ifdef PARA_ENABLE_OPENGL
 	return this->logForOpenGLObject(_program, (GLInfoFunction)&glGetProgramiv, (GLLogFunction)&glGetProgramInfoLog);
+#else
+	return "";
+#endif
 }
 
 // Uniform cache
 
 bool GLProgram::updateUniformLocation(GLint location, const GLvoid* data, unsigned int bytes, GLenum type, bool direct)
 {
-	if (location < 0)
+	if (location < 0 || !IsOpenGLActiveForProgram() || !_program)
 	{
 		return false;
 	}
@@ -531,6 +614,9 @@ bool GLProgram::updateUniformLocation(GLint location, const GLvoid* data, unsign
 
 GLint GLProgram::getUniformLocationForName(const char* name) const
 {
+	if (!IsOpenGLActiveForProgram() || !_program)
+		return -1;
+#ifdef PARA_ENABLE_OPENGL
 	// Invalid uniform name
 	PE_ASSERT(name != nullptr);
 	// Invalid operation. Cannot get uniform location when program is not initialized
@@ -539,17 +625,25 @@ GLint GLProgram::getUniformLocationForName(const char* name) const
 	auto ret = glGetUniformLocation(_program, name);
 	PE_CHECK_GL_ERROR_DEBUG();
 	return ret;
+#else
+	(void)name;
+	return -1;
+#endif
 }
 
 void GLProgram::setUniformLocationWith1i(GLint location, GLint i1, bool direct)
 {
 	bool updated = updateUniformLocation(location, &i1, sizeof(i1) * 1, GL_INT, direct);
 
+#ifdef PARA_ENABLE_OPENGL
 	if (updated && direct)
 	{
 		glUniform1i((GLint)location, i1);
 		PE_CHECK_GL_ERROR_DEBUG();
 	}
+#else
+	(void)updated;
+#endif
 }
 
 void GLProgram::setUniformLocationWith2i(GLint location, GLint i1, GLint i2, bool direct)
@@ -557,11 +651,15 @@ void GLProgram::setUniformLocationWith2i(GLint location, GLint i1, GLint i2, boo
 	GLint ints[2] = { i1,i2 };
 	bool updated = updateUniformLocation(location, ints, sizeof(ints), GL_INT, direct);
 
+#ifdef PARA_ENABLE_OPENGL
 	if (updated && direct)
 	{
 		glUniform2i((GLint)location, i1, i2);
 		PE_CHECK_GL_ERROR_DEBUG();
 	}
+#else
+	(void)updated;
+#endif
 }
 
 void GLProgram::setUniformLocationWith3i(GLint location, GLint i1, GLint i2, GLint i3, bool direct)
@@ -569,11 +667,15 @@ void GLProgram::setUniformLocationWith3i(GLint location, GLint i1, GLint i2, GLi
 	GLint ints[3] = { i1,i2,i3 };
 	bool updated = updateUniformLocation(location, ints, sizeof(ints), GL_INT, direct);
 
+#ifdef PARA_ENABLE_OPENGL
 	if (updated && direct)
 	{
 		glUniform3i((GLint)location, i1, i2, i3);
 		PE_CHECK_GL_ERROR_DEBUG();
 	}
+#else
+	(void)updated;
+#endif
 }
 
 void GLProgram::setUniformLocationWith4i(GLint location, GLint i1, GLint i2, GLint i3, GLint i4, bool direct)
@@ -581,55 +683,75 @@ void GLProgram::setUniformLocationWith4i(GLint location, GLint i1, GLint i2, GLi
 	GLint ints[4] = { i1,i2,i3,i4 };
 	bool updated = updateUniformLocation(location, ints, sizeof(ints), GL_INT, direct);
 
+#ifdef PARA_ENABLE_OPENGL
 	if (updated && direct)
 	{
 		glUniform4i((GLint)location, i1, i2, i3, i4);
 		PE_CHECK_GL_ERROR_DEBUG();
 	}
+#else
+	(void)updated;
+#endif
 }
 
 void GLProgram::setUniformLocationWith2iv(GLint location, GLint* ints, unsigned int numberOfArrays, bool direct)
 {
 	bool updated = updateUniformLocation(location, ints, sizeof(int) * 2 * numberOfArrays, GL_INT_VEC2, direct);
 
+#ifdef PARA_ENABLE_OPENGL
 	if (updated && direct)
 	{
 		glUniform2iv((GLint)location, (GLsizei)numberOfArrays, ints);
 		PE_CHECK_GL_ERROR_DEBUG();
 	}
+#else
+	(void)updated;
+#endif
 }
 
 void GLProgram::setUniformLocationWith3iv(GLint location, GLint* ints, unsigned int numberOfArrays, bool direct)
 {
 	bool updated = updateUniformLocation(location, ints, sizeof(int) * 3 * numberOfArrays, GL_INT_VEC3, direct);
 
+#ifdef PARA_ENABLE_OPENGL
 	if (updated && direct)
 	{
 		glUniform3iv((GLint)location, (GLsizei)numberOfArrays, ints);
 		PE_CHECK_GL_ERROR_DEBUG();
 	}
+#else
+	(void)updated;
+#endif
 }
 
 void GLProgram::setUniformLocationWith4iv(GLint location, GLint* ints, unsigned int numberOfArrays, bool direct)
 {
 	bool updated = updateUniformLocation(location, ints, sizeof(int) * 4 * numberOfArrays, GL_INT_VEC4, direct);
 
+#ifdef PARA_ENABLE_OPENGL
 	if (updated && direct)
 	{
 		glUniform4iv((GLint)location, (GLsizei)numberOfArrays, ints);
 		PE_CHECK_GL_ERROR_DEBUG();
 	}
+#else
+	(void)updated;
+#endif
 }
 
 void GLProgram::setUniformLocationWith1f(GLint location, GLfloat f1, bool direct)
 {
 	bool updated = updateUniformLocation(location, &f1, sizeof(f1) * 1, GL_FLOAT, direct);
 
+#ifdef PARA_ENABLE_OPENGL
 	if (updated && direct)
 	{
 		glUniform1f((GLint)location, f1);
 		PE_CHECK_GL_ERROR_DEBUG();
 	}
+#else
+	(void)updated;
+#endif
 }
 
 void GLProgram::setUniformLocationWith2f(GLint location, GLfloat f1, GLfloat f2, bool direct)
@@ -637,11 +759,15 @@ void GLProgram::setUniformLocationWith2f(GLint location, GLfloat f1, GLfloat f2,
 	GLfloat floats[2] = { f1,f2 };
 	bool updated = updateUniformLocation(location, floats, sizeof(floats), GL_FLOAT, direct);
 
+#ifdef PARA_ENABLE_OPENGL
 	if (updated && direct)
 	{
 		glUniform2f((GLint)location, f1, f2);
 		PE_CHECK_GL_ERROR_DEBUG();
 	}
+#else
+	(void)updated;
+#endif
 }
 
 void GLProgram::setUniformLocationWith3f(GLint location, GLfloat f1, GLfloat f2, GLfloat f3, bool direct)
@@ -649,11 +775,15 @@ void GLProgram::setUniformLocationWith3f(GLint location, GLfloat f1, GLfloat f2,
 	GLfloat floats[3] = { f1,f2,f3 };
 	bool updated = updateUniformLocation(location, floats, sizeof(floats), GL_FLOAT, direct);
 
+#ifdef PARA_ENABLE_OPENGL
 	if (updated && direct)
 	{
 		glUniform3f((GLint)location, f1, f2, f3);
 		PE_CHECK_GL_ERROR_DEBUG();
 	}
+#else
+	(void)updated;
+#endif
 }
 
 void GLProgram::setUniformLocationWith4f(GLint location, GLfloat f1, GLfloat f2, GLfloat f3, GLfloat f4, bool direct)
@@ -661,64 +791,88 @@ void GLProgram::setUniformLocationWith4f(GLint location, GLfloat f1, GLfloat f2,
 	GLfloat floats[4] = { f1,f2,f3,f4 };
 	bool updated = updateUniformLocation(location, floats, sizeof(floats), GL_FLOAT, direct);
 
+#ifdef PARA_ENABLE_OPENGL
 	if (updated && direct)
 	{
 		glUniform4f((GLint)location, f1, f2, f3, f4);
 		PE_CHECK_GL_ERROR_DEBUG();
 	}
+#else
+	(void)updated;
+#endif
 }
 
 void GLProgram::setUniformLocationWith2fv(GLint location, const GLfloat* floats, unsigned int numberOfArrays, bool direct)
 {
 	bool updated = updateUniformLocation(location, floats, sizeof(float) * 2 * numberOfArrays, GL_FLOAT_VEC2, direct);
 
+#ifdef PARA_ENABLE_OPENGL
 	if (updated && direct)
 	{
 		glUniform2fv((GLint)location, (GLsizei)numberOfArrays, floats);
 		PE_CHECK_GL_ERROR_DEBUG();
 	}
+#else
+	(void)updated;
+#endif
 }
 
 void GLProgram::setUniformLocationWith3fv(GLint location, const GLfloat* floats, unsigned int numberOfArrays, bool direct)
 {
 	bool updated = updateUniformLocation(location, floats, sizeof(float) * 3 * numberOfArrays, GL_FLOAT_VEC3, direct);
 
+#ifdef PARA_ENABLE_OPENGL
 	if (updated && direct)
 	{
 		glUniform3fv((GLint)location, (GLsizei)numberOfArrays, floats);
 		PE_CHECK_GL_ERROR_DEBUG();
 	}
+#else
+	(void)updated;
+#endif
 }
 
 void GLProgram::setUniformLocationWith4fv(GLint location, const GLfloat* floats, unsigned int numberOfArrays, bool direct)
 {
 	bool updated = updateUniformLocation(location, floats, sizeof(float) * 4 * numberOfArrays, GL_FLOAT_VEC4, direct);
 
+#ifdef PARA_ENABLE_OPENGL
 	if (updated && direct)
 	{
 		glUniform4fv((GLint)location, (GLsizei)numberOfArrays, floats);
 		PE_CHECK_GL_ERROR_DEBUG();
 	}
+#else
+	(void)updated;
+#endif
 }
 
 void GLProgram::setUniformLocationWithMatrix2fv(GLint location, const GLfloat* matrixArray, unsigned int numberOfMatrices, bool direct) {
 	bool updated = updateUniformLocation(location, matrixArray, sizeof(float) * 4 * numberOfMatrices, GL_FLOAT_MAT2, direct);
 
+#ifdef PARA_ENABLE_OPENGL
 	if (updated && direct)
 	{
 		glUniformMatrix2fv((GLint)location, (GLsizei)numberOfMatrices, GL_FALSE, matrixArray);
 		PE_CHECK_GL_ERROR_DEBUG(); 
 	}
+#else
+	(void)updated;
+#endif
 }
 
 void GLProgram::setUniformLocationWithMatrix3fv(GLint location, const GLfloat* matrixArray, unsigned int numberOfMatrices, bool direct) {
 	bool updated = updateUniformLocation(location, matrixArray, sizeof(float) * 9 * numberOfMatrices, GL_FLOAT_MAT3, direct);
 
+#ifdef PARA_ENABLE_OPENGL
 	if (updated && direct)
 	{
 		glUniformMatrix3fv((GLint)location, (GLsizei)numberOfMatrices, GL_FALSE, matrixArray);
 		PE_CHECK_GL_ERROR_DEBUG();
 	}
+#else
+	(void)updated;
+#endif
 }
 
 
@@ -726,18 +880,28 @@ void GLProgram::setUniformLocationWithMatrix4fv(GLint location, const GLfloat* m
 {
 	bool updated = updateUniformLocation(location, matrixArray, sizeof(float) * 16 * numberOfMatrices, GL_FLOAT_MAT4, direct);
 
+#ifdef PARA_ENABLE_OPENGL
 	if (updated && direct)
 	{
 		glUniformMatrix4fv((GLint)location, (GLsizei)numberOfMatrices, GL_FALSE, matrixArray);
 		PE_CHECK_GL_ERROR_DEBUG();
 	}
+#else
+	(void)updated;
+#endif
 }
 
 void GLProgram::commit()
 {
 	if (!_dirty)
 		return;
+	if (!IsOpenGLActiveForProgram() || !_program)
+	{
+		_dirty = false;
+		return;
+	}
 
+#ifdef PARA_ENABLE_OPENGL
 	tHashUniformEntry *current_element, *tmp;
 
 	// Purge uniform hash
@@ -814,7 +978,7 @@ void GLProgram::commit()
 				{
 					GLfloat i[4];
 					memcpy(i, current_element->value, sizeof(GLfloat) * 4);
-					glUniform4i(current_element->location, i[0], i[1], i[2], i[3]);
+					glUniform4f(current_element->location, i[0], i[1], i[2], i[3]);
 					PE_CHECK_GL_ERROR_DEBUG();
 				}
 				break;
@@ -898,6 +1062,7 @@ void GLProgram::commit()
 
 		current_element->dirty = false;
 	}
+#endif
 
 	_dirty = false;
 }

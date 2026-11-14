@@ -4,346 +4,323 @@
 // Emails:	LiXizhi@yeah.net
 // Company: ParaEngine
 // Date:	2006.5.31
-// Note: based on the paper Real-Time Glow By Greg James and John O¡¯Rorke on Gamasutra, May 26, 2004
-// remark: pay attention to texel to pixel mapping. there is half texel offset issue with directX. 
+// Note: based on the paper Real-Time Glow By Greg James and John O'Rorke on Gamasutra, May 26, 2004
+// remark: pay attention to texel to pixel mapping. there is half texel offset issue with directX 9.
 //-----------------------------------------------------------------------------
 #include "ParaEngine.h"
-#include "DirectXEngine.h"
 #include "EffectManager.h"
 #include "effect_file.h"
 #include "SceneObject.h"
+#include "ParaImage.h"
 #include "GlowEffect.h"
-#if USE_DIRECTX_RENDERER
-#include "RenderDeviceD3D9.h"
-#endif
 
 using namespace ParaEngine;
 
-/**@def turn on to show the glow and final image intermittently every 30 frames */
-//#define TEST_GLOW
-
 CGlowEffect::CGlowEffect(void)
+	: m_rhiSceneCopyRT(nullptr)
+	, m_rhiGlowSourceRT(nullptr)
+	, m_rhiBlurHorizRT(nullptr)
+	, m_fullWidth(0)
+	, m_fullHeight(0)
+	, m_glowtextureWidth(0.0f)
+	, m_glowtextureHeight(0.0f)
 {
-	m_pRTHalfSizeTexture = NULL;
-	m_pRTGlowSourceTexture = NULL;
-	m_pRTBlurHorizTexture = NULL;
-	m_pRTBlurVertTexture = NULL;
-
-	m_pRTHalfSizeSurface = NULL;
-	m_pRTGlowSourceSurface = NULL;
-	m_pRTBlurHorizSurface = NULL;
-	m_pRTBlurVertSurface = NULL;
-
-	m_pBackBuffer = NULL;
-	m_pZBuffer = NULL;
 }
 
 CGlowEffect::~CGlowEffect(void)
 {
-
+	InvalidateDeviceObjects();
 }
 
 HRESULT CGlowEffect::InvalidateDeviceObjects()
 {
-	SAFE_RELEASE(m_pRTHalfSizeSurface);
-	SAFE_RELEASE(m_pRTGlowSourceSurface);
-	SAFE_RELEASE(m_pRTBlurHorizSurface);
-	SAFE_RELEASE(m_pRTBlurVertSurface);
-
-	SAFE_RELEASE(m_pRTHalfSizeTexture);
-	SAFE_RELEASE(m_pRTGlowSourceTexture);
-	SAFE_RELEASE(m_pRTBlurHorizTexture);
-	SAFE_RELEASE(m_pRTBlurVertTexture);
-
-	//SAFE_RELEASE(m_pZBuffer);
+	ReleaseRHIResource(m_rhiSceneCopyRT);
+	ReleaseRHIResource(m_rhiGlowSourceRT);
+	ReleaseRHIResource(m_rhiBlurHorizRT);
+	m_fullWidth = 0;
+	m_fullHeight = 0;
 	return S_OK;
+}
+
+bool CGlowEffect::EnsureRenderTargets(IRenderDevice* pRenderDevice, uint32_t fullWidth, uint32_t fullHeight)
+{
+	if (!pRenderDevice || fullWidth == 0 || fullHeight == 0)
+		return false;
+
+	if (m_rhiSceneCopyRT && m_rhiGlowSourceRT && m_rhiBlurHorizRT &&
+		m_fullWidth == fullWidth && m_fullHeight == fullHeight)
+	{
+		return true;
+	}
+
+	InvalidateDeviceObjects();
+
+	const uint32_t halfW = (fullWidth / 2) > 0 ? (fullWidth / 2) : 1;
+	const uint32_t halfH = (fullHeight / 2) > 0 ? (fullHeight / 2) : 1;
+	m_glowtextureWidth = (float)halfW;
+	m_glowtextureHeight = (float)halfH;
+
+	m_rhiSceneCopyRT = pRenderDevice->CreateRenderTarget(fullWidth, fullHeight, PixelFormat::A8R8G8B8, PixelFormat::Unknown);
+	m_rhiGlowSourceRT = pRenderDevice->CreateRenderTarget(halfW, halfH, PixelFormat::A8R8G8B8, PixelFormat::Unknown);
+	m_rhiBlurHorizRT = pRenderDevice->CreateRenderTarget(halfW, halfH, PixelFormat::A8R8G8B8, PixelFormat::Unknown);
+
+	if (!m_rhiSceneCopyRT || !m_rhiGlowSourceRT || !m_rhiBlurHorizRT)
+	{
+		InvalidateDeviceObjects();
+		return false;
+	}
+
+	m_fullWidth = fullWidth;
+	m_fullHeight = fullHeight;
+	return true;
 }
 
 HRESULT CGlowEffect::RestoreDeviceObjects()
 {
-	HRESULT hr=S_OK;
-
 	auto pRenderDevice = CGlobals::GetRenderDevice();
-	
-	D3DVIEWPORT9 viewport;
-	GETD3D(CGlobals::GetRenderDevice())->GetViewport( &viewport );
-	m_glowtextureWidth = (float)viewport.Width/2;
-	m_glowtextureHeight = (float)viewport.Height/2;
-
-	D3DFORMAT colorFormat = D3DFMT_A8R8G8B8;
-	if(FAILED(GETD3D(CGlobals::GetRenderDevice())->CreateTexture(viewport.Width, viewport.Height, 1, D3DUSAGE_RENDERTARGET, colorFormat,
-		D3DPOOL_DEFAULT, &m_pRTHalfSizeTexture, NULL)))
-		return E_FAIL;
-	
-	if(FAILED(GETD3D(CGlobals::GetRenderDevice())->CreateTexture((int)m_glowtextureWidth, (int)m_glowtextureHeight, 1, D3DUSAGE_RENDERTARGET, colorFormat,
-		D3DPOOL_DEFAULT, &m_pRTGlowSourceTexture, NULL)))
-		return E_FAIL;
-	if(FAILED(GETD3D(CGlobals::GetRenderDevice())->CreateTexture((int)m_glowtextureWidth, (int)m_glowtextureHeight, 1, D3DUSAGE_RENDERTARGET, colorFormat,
-		D3DPOOL_DEFAULT, &m_pRTBlurHorizTexture, NULL)))
+	if (!pRenderDevice)
 		return E_FAIL;
 
-	// Retrieve top-level surfaces of the above render targets
-	if(FAILED(m_pRTHalfSizeTexture->GetSurfaceLevel(0, &m_pRTHalfSizeSurface)))
-		return E_FAIL;
-	if(FAILED(m_pRTGlowSourceTexture->GetSurfaceLevel(0, &m_pRTGlowSourceSurface)))
-		return E_FAIL;
-	if(FAILED(m_pRTBlurHorizTexture->GetSurfaceLevel(0, &m_pRTBlurHorizSurface)))
-		return E_FAIL;
-	m_pRTBlurVertSurface = m_pRTGlowSourceSurface;
-	m_pRTBlurVertSurface->AddRef();
-	
-	m_pRTBlurVertTexture = m_pRTGlowSourceTexture;
-	m_pRTBlurVertTexture->AddRef();
-	return hr;
+	ParaViewport viewport = pRenderDevice->GetViewport();
+	uint32_t fullW = viewport.Width > 0 ? viewport.Width : pRenderDevice->GetBackBufferWidth();
+	uint32_t fullH = viewport.Height > 0 ? viewport.Height : pRenderDevice->GetBackBufferHeight();
+	return EnsureRenderTargets(pRenderDevice, fullW, fullH) ? S_OK : E_FAIL;
 }
 
 HRESULT CGlowEffect::Render(float fGlowThreshold, float fGlowAmount, bool bUseAlpha)
 {
-//#ifdef _DEBUG
-//	bUseAlpha = true;
-//#endif
-	
-	HRESULT hr=S_OK;
-
 	auto pRenderDevice = CGlobals::GetRenderDevice();
-
-	// get current render target
-	m_pBackBuffer = CGlobals::GetDirectXEngine().GetRenderTarget();
-	if(FAILED(GETD3D(CGlobals::GetRenderDevice())->GetDepthStencilSurface(&m_pZBuffer)))
-		return E_FAIL;
-	if(!m_pBackBuffer || !m_pZBuffer)
+	if (!pRenderDevice)
 		return E_FAIL;
 
-	// Copy scene to lower resolution render target texture
-	if( FAILED(hr = GETD3D(CGlobals::GetRenderDevice())->StretchRect( m_pBackBuffer, NULL, m_pRTHalfSizeSurface, NULL, D3DTEXF_LINEAR )) ) {
-		OUTPUT_LOG("StretchRect() failed!\r\n");
-		return hr;
+	auto rtBinding = pRenderDevice->GetCurrentRenderTargetBinding();
+	IRHIRenderTarget* activeRT = (rtBinding.count > 0) ? rtBinding.targets[0] : nullptr;
+	ParaViewport oldViewport = pRenderDevice->GetViewport();
+
+	uint32_t fullW = activeRT ? activeRT->GetWidth() : (oldViewport.Width > 0 ? oldViewport.Width : pRenderDevice->GetBackBufferWidth());
+	uint32_t fullH = activeRT ? activeRT->GetHeight() : (oldViewport.Height > 0 ? oldViewport.Height : pRenderDevice->GetBackBufferHeight());
+	if (!EnsureRenderTargets(pRenderDevice, fullW, fullH))
+		return E_FAIL;
+
+	// Copy active scene render target to full-resolution scene copy texture
+	if (!pRenderDevice->BlitRenderTarget(activeRT, m_rhiSceneCopyRT, nullptr, nullptr, true))
+	{
+		OUTPUT_LOG("GlowEffect BlitRenderTarget() failed!\r\n");
+		return E_FAIL;
 	}
 
-	EffectManager* pEffectManager =  CGlobals::GetEffectManager();
+	EffectManager* pEffectManager = CGlobals::GetEffectManager();
 	pEffectManager->BeginEffect(TECH_FULL_SCREEN_GLOW);
 	CEffectFile* pEffectFile = pEffectManager->GetCurrentEffectFile();
-	
-	if(pEffectFile != 0 && pEffectFile->begin(true, 0))
+
+	if (pEffectFile != 0 && pEffectFile->begin(true, 0))
 	{
-		// full screen glow effect is completed in four steps.
-		assert(pEffectFile->totalPasses() == 4);
+		PE_ASSERT(pEffectFile->totalPasses() == 4);
+
+		const RHIDeviceCaps& caps = pRenderDevice->GetCaps();
+		const float vTop = caps.topLeftScreenOrigin ? 0.0f : 1.0f;
+		const float vBottom = caps.topLeftScreenOrigin ? 1.0f : 0.0f;
+		const float halfTexelX = caps.needsHalfPixelOffset ? (0.5f / m_glowtextureWidth) : 0.0f;
+		const float halfTexelY = caps.needsHalfPixelOffset ? (0.5f / m_glowtextureHeight) : 0.0f;
+
 		mesh_vertex_plain quadVertices[4] = {
-			{Vector3(-1,-1,0), Vector2(0,1)},
-			{ Vector3(1, -1, 0), Vector2(1, 1) },
-			{ Vector3(-1, 1, 0), Vector2(0, 0) },
-			{ Vector3(1, 1, 0), Vector2(1, 0) },
+			{ Vector3(-1.0f, -1.0f, 0.0f), Vector2(0.0f + halfTexelX, vBottom + halfTexelY) },
+			{ Vector3(1.0f, -1.0f, 0.0f), Vector2(1.0f + halfTexelX, vBottom + halfTexelY) },
+			{ Vector3(-1.0f, 1.0f, 0.0f), Vector2(0.0f + halfTexelX, vTop + halfTexelY) },
+			{ Vector3(1.0f, 1.0f, 0.0f), Vector2(1.0f + halfTexelX, vTop + halfTexelY) },
 		};
-		
-		// offset the texture coordinate by half texel in order to match texel to pixel. 
-		// This takes me hours to figure out. :-(
-		float fhalfTexelWidth = 0.5f/m_glowtextureWidth;
-		float fhalfTexelHeight = 0.5f/m_glowtextureHeight;
 
-		for (int i=0;i<4;++i)
-		{
-			quadVertices[i].uv.x += fhalfTexelWidth;
-			quadVertices[i].uv.y += fhalfTexelHeight;
-		}
+		ParaViewport halfViewport;
+		halfViewport.X = 0;
+		halfViewport.Y = 0;
+		halfViewport.Width = (uint32_t)m_glowtextureWidth;
+		halfViewport.Height = (uint32_t)m_glowtextureHeight;
+		halfViewport.MinZ = 0.0f;
+		halfViewport.MaxZ = 1.0f;
 
-		// shader constants
-		/*
-#ifdef TEST_GLOW
-		static int i=0;
-		++i;
-		if(i>30){
-			fGlowAmount  = 1.0f;
-			fGlowThreshold = 0.f;
-			if(i>60)
-				i=0;
-		}
-		else
-		{
-			fGlowAmount  = 0.f;
-			fGlowThreshold = 1.0f;
-		}
-		
-#endif*/
-		/*
-		pEffectFile->setParameter(CEffectFile::k_ConstVector0, (const float*)&Vector4(1/m_glowtextureWidth, 1/m_glowtextureHeight, 0.0f, 0.0f));
-		LinearColor glowness = pEffectManager->GetGlowness();
-		glowness.a = fGlowThreshold;
-		glowness.r *= fGlowAmount;
-		glowness.g *= fGlowAmount;
-		glowness.b *= fGlowAmount;
-		pEffectFile->setParameter(CEffectFile::k_ConstVector1, (const float*)&glowness);
-		*/
-	
+		pRenderDevice->PushRenderTarget(m_rhiGlowSourceRT);
+
 		bUseAlpha = true;
-		if(bUseAlpha)
+		if (bUseAlpha)
 		{
-			//////////////////////////////////////////////////////////////////////////
-			// make the glow source. Multiply texture alpha * RGB to get the glow sources
-			GETD3D(CGlobals::GetRenderDevice())->SetRenderTarget( 0, m_pRTGlowSourceSurface);
-			GETD3D(CGlobals::GetRenderDevice())->SetDepthStencilSurface( NULL );
+			// Step 1: Extract bright glow source at half resolution
+			pRenderDevice->BeginRenderTarget(m_rhiGlowSourceRT);
+			pRenderDevice->SetViewport(halfViewport);
 
-			if(pEffectFile->BeginPass(0))
+			if (pEffectFile->BeginPass(0))
 			{
-				pEffectFile->setTexture(0, m_pRTHalfSizeTexture);
-				LPD3DXEFFECT fx = pEffectFile->GetDXEffect();
-				fx->SetFloat(fx->GetParameterByName(NULL,"glowThreshold"),fGlowThreshold);
-				
+				pEffectFile->setTexture(0, m_rhiSceneCopyRT->GetColorTexture(0));
+				pEffectFile->SetFloat("glowThreshold", fGlowThreshold);
 				pEffectFile->CommitChanges();
 
-				HRESULT hr = CGlobals::GetRenderDevice()->DrawPrimitiveUP(EPrimitiveType::TRIANGLESTRIP,2,quadVertices,sizeof(mesh_vertex_plain));
-
+				pRenderDevice->DrawPrimitiveUP(EPrimitiveType::TRIANGLESTRIP, 2, quadVertices, sizeof(mesh_vertex_plain));
 				pEffectFile->EndPass();
 			}
+			pEffectFile->setTexture(0, (DeviceTexturePtr_type)nullptr);
+			pRenderDevice->EndRenderTarget();
 		}
-		
-		
-		//////////////////////////////////////////////////////////////////////////
-		// Blur glow sources in the horizontal axis
 
-		GETD3D(CGlobals::GetRenderDevice())->SetRenderTarget( 0, m_pRTBlurHorizSurface );
-		GETD3D(CGlobals::GetRenderDevice())->SetDepthStencilSurface( NULL );
-		// no need to clear alpha channel?
-		// pRenderDevice->Clear( 0, NULL, D3DCLEAR_TARGET, 0x00, 1.0f, 0 ); 
+		// Step 2: Horizontal blur into m_rhiBlurHorizRT
+		pRenderDevice->SetRenderTarget(0, m_rhiBlurHorizRT);
+		pRenderDevice->BeginRenderTarget(m_rhiBlurHorizRT);
+		pRenderDevice->SetViewport(halfViewport);
 
-		if(pEffectFile->BeginPass(1))
+		if (pEffectFile->BeginPass(1))
 		{
-			
-			SetBlurEffectParameters(1.0f / m_glowtextureWidth,0,fGlowAmount,pEffectFile);	
-			pEffectFile->setTexture(0, m_pRTGlowSourceTexture);
+			SetBlurEffectParameters(1.0f / m_glowtextureWidth, 0.0f, fGlowAmount, pEffectFile);
+			pEffectFile->setTexture(0, m_rhiGlowSourceRT->GetColorTexture(0));
 			pEffectFile->CommitChanges();
 
-			HRESULT hr = CGlobals::GetRenderDevice()->DrawPrimitiveUP(EPrimitiveType::TRIANGLESTRIP,2,quadVertices,sizeof(mesh_vertex_plain));
-
+			pRenderDevice->DrawPrimitiveUP(EPrimitiveType::TRIANGLESTRIP, 2, quadVertices, sizeof(mesh_vertex_plain));
 			pEffectFile->EndPass();
 		}
+		pEffectFile->setTexture(0, (DeviceTexturePtr_type)nullptr);
+		pRenderDevice->EndRenderTarget();
 
-		// set texture 0 to NULL so same texture is never simultaneously a source and render target
-		pEffectFile->setTexture( 0, (LPDIRECT3DTEXTURE9)NULL );
+		// Step 3: Vertical blur back into m_rhiGlowSourceRT
+		pRenderDevice->SetRenderTarget(0, m_rhiGlowSourceRT);
+		pRenderDevice->BeginRenderTarget(m_rhiGlowSourceRT);
+		pRenderDevice->SetViewport(halfViewport);
 
-		//////////////////////////////////////////////////////////////////////////
-		// Blur the horizontal blur in the vertical direction
-
-		GETD3D(CGlobals::GetRenderDevice())->SetRenderTarget( 0, m_pRTBlurVertSurface );
-		GETD3D(CGlobals::GetRenderDevice())->SetDepthStencilSurface( NULL );
-		// no need to clear alpha channel?
-		// pRenderDevice->Clear( 0, NULL, D3DCLEAR_TARGET, 0x00, 1.0f, 0 ); 
-
-		//fGlowAmount = 2;
-		if(pEffectFile->BeginPass(1))
+		if (pEffectFile->BeginPass(1))
 		{
-			//pEffectFile->setTexture( 1, m_pRTBlurHorizTexture );
-			SetBlurEffectParameters(0,1.0f / m_glowtextureHeight,fGlowAmount,pEffectFile);	
-			pEffectFile->setTexture(0, m_pRTBlurHorizTexture );  //editor here!!!
+			SetBlurEffectParameters(0.0f, 1.0f / m_glowtextureHeight, fGlowAmount, pEffectFile);
+			pEffectFile->setTexture(0, m_rhiBlurHorizRT->GetColorTexture(0));
 			pEffectFile->CommitChanges();
 
-			HRESULT hr = CGlobals::GetRenderDevice()->DrawPrimitiveUP(EPrimitiveType::TRIANGLESTRIP,2,quadVertices,sizeof(mesh_vertex_plain));
-
+			pRenderDevice->DrawPrimitiveUP(EPrimitiveType::TRIANGLESTRIP, 2, quadVertices, sizeof(mesh_vertex_plain));
 			pEffectFile->EndPass();
 		}
+		pEffectFile->setTexture(0, (DeviceTexturePtr_type)nullptr);
+		pRenderDevice->EndRenderTarget();
 
-		// Set all textures to NULL to prevent RTT being bound as source and destination at the same time,
-		pEffectFile->setTexture( 0,(LPDIRECT3DTEXTURE9)NULL );
+		// Restore original render target and viewport for final composite pass
+		pRenderDevice->PopRenderTarget();
+		pRenderDevice->SetViewport(oldViewport);
 
-		//////////////////////////////////////////////////////////////////////////
-		// Add the final blur image to the back buffer
-
-		GETD3D(CGlobals::GetRenderDevice())->SetRenderTarget( 0, m_pBackBuffer);
-		GETD3D(CGlobals::GetRenderDevice())->SetDepthStencilSurface( NULL );
-		// no need to clear alpha channel?
-		// pRenderDevice->Clear( 0, NULL, D3DCLEAR_TARGET, 0x00, 1.0f, 0 ); 
-
-		for (int i=0;i<4;++i)
+		if (caps.needsHalfPixelOffset)
 		{
-			quadVertices[i].uv.x -= fhalfTexelWidth * 0.5f;
-			quadVertices[i].uv.y -= fhalfTexelHeight * 0.5f;
+			for (int i = 0; i < 4; ++i)
+			{
+				quadVertices[i].uv.x -= halfTexelX * 0.5f;
+				quadVertices[i].uv.y -= halfTexelY * 0.5f;
+			}
 		}
 
-		if(pEffectFile->BeginPass(3))
+		// Step 4: Composite blurred glow + scene copy onto the active render target
+		if (pEffectFile->BeginPass(3))
 		{
-			pEffectFile->setTexture(0, m_pRTHalfSizeTexture );
-			pEffectFile->setTexture(1,m_pRTBlurVertTexture);
+			pEffectFile->setTexture(0, m_rhiSceneCopyRT->GetColorTexture(0));
+			pEffectFile->setTexture(1, m_rhiGlowSourceRT->GetColorTexture(0));
 
 			Vector4 glowParam = pEffectManager->GetGlowness();
-			LPD3DXEFFECT fx = pEffectFile->GetDXEffect();
-			fx->SetVector(fx->GetParameterByName(NULL,"glowParams"), (const DeviceVector4*)&glowParam);
-
+			pEffectFile->SetVector4("glowParams", glowParam);
 			pEffectFile->CommitChanges();
 
-			HRESULT hr = CGlobals::GetRenderDevice()->DrawPrimitiveUP(EPrimitiveType::TRIANGLESTRIP,2,quadVertices,sizeof(mesh_vertex_plain));
+			pRenderDevice->DrawPrimitiveUP(EPrimitiveType::TRIANGLESTRIP, 2, quadVertices, sizeof(mesh_vertex_plain));
 
 			pEffectFile->EndPass();
-			pEffectFile->setTexture( 0, (LPDIRECT3DTEXTURE9)NULL );
-			pEffectFile->setTexture(1,(LPDIRECT3DTEXTURE9)NULL);
+			pEffectFile->setTexture(0, (DeviceTexturePtr_type)nullptr);
+			pEffectFile->setTexture(1, (DeviceTexturePtr_type)nullptr);
 		}
 
-		// restore depth stencil buffer
-		GETD3D(CGlobals::GetRenderDevice())->SetDepthStencilSurface( m_pZBuffer );
 		pEffectFile->end();
 	}
 	else
 	{
 		CGlobals::GetScene()->EnableFullScreenGlow(false);
-		//Glow effect will not be load when graphics setting set to middle
-		//so we just disable this warnning 
-		//OUTPUT_LOG("can not set full screen glow effect error \r\n");
 	}
-	SAFE_RELEASE(m_pZBuffer);
-	return hr;
+	return S_OK;
 }
 
-
-void CGlowEffect::SetBlurEffectParameters(float dx,float dy,float blurAmount,CEffectFile* pEffect)
+void CGlowEffect::SetBlurEffectParameters(float dx, float dy, float blurAmount, CEffectFile* pEffect)
 {
 	const int sampleCount = 9;
 	float sampleWeights[sampleCount];
 	float sampleOffset[sampleCount * 2];
 
-	sampleWeights[0] = ComputeGaussian(0,blurAmount);
-	sampleOffset[0] = 0;
-	sampleOffset[1] = 0;
+	if (blurAmount <= 0.0001f)
+		blurAmount = 0.0001f;
+
+	sampleWeights[0] = ComputeGaussian(0.0f, blurAmount);
+	sampleOffset[0] = 0.0f;
+	sampleOffset[1] = 0.0f;
 
 	float totalWeight = sampleWeights[0];
 
-	for (int i=0;i<sampleCount/2;i++)
+	for (int i = 0; i < sampleCount / 2; i++)
 	{
-		float weight = ComputeGaussian( (float)(i+1),blurAmount);
-		sampleWeights[i*2+1] = weight;
-		sampleWeights[i*2+2] = weight;
+		float weight = ComputeGaussian((float)(i + 1), blurAmount);
+		sampleWeights[i * 2 + 1] = weight;
+		sampleWeights[i * 2 + 2] = weight;
 
-		totalWeight += weight * 2;
+		totalWeight += weight * 2.0f;
 
-		float offset = i * 2 + 1.5f;
+		float offset = i * 2.0f + 1.5f;
 		float offsetX = dx * offset;
 		float offsetY = dy * offset;
 
 		int index = (i * 2) * 2 + 2;
 		sampleOffset[index] = offsetX;
-		sampleOffset[index+1] = offsetY;
-		sampleOffset[index+2] = -offsetX;
-		sampleOffset[index+3] = -offsetY;
+		sampleOffset[index + 1] = offsetY;
+		sampleOffset[index + 2] = -offsetX;
+		sampleOffset[index + 3] = -offsetY;
 	}
 
-	for(int i=0;i<sampleCount;i++)
+	for (int i = 0; i < sampleCount; i++)
 	{
 		sampleWeights[i] /= totalWeight;
 	}
 
-
-	//optimize code here!!!
-	LPD3DXEFFECT fx = pEffect->GetDXEffect();
-	fx->SetFloatArray(fx->GetParameterByName(NULL,"sampleWeight"),sampleWeights,sampleCount);
-	fx->SetFloatArray(fx->GetParameterByName(NULL,"sampleOffset"),sampleOffset,sampleCount * 2);
+	pEffect->SetRawValue("sampleWeight", sampleWeights, 0, sizeof(sampleWeights));
+	pEffect->SetRawValue("sampleOffset", sampleOffset, 0, sizeof(sampleOffset));
 }
 
-float CGlowEffect::ComputeGaussian(float n,float blurAmount)
+float CGlowEffect::ComputeGaussian(float n, float blurAmount)
 {
-	return  (1.0f / sqrtf(2 * 3.141592f * blurAmount)) * expf(-(n * n) / (2 * blurAmount * blurAmount));
+	return (1.0f / sqrtf(2.0f * 3.141592f * blurAmount)) * expf(-(n * n) / (2.0f * blurAmount * blurAmount));
 }
 
-
-void CGlowEffect::SaveGlowTexturesToFile(const string& filename)
+bool CGlowEffect::SaveRenderTargetToFile(IRenderDevice* pRenderDevice, IRHIRenderTarget* pRT, const std::string& filename)
 {
-	D3DXSaveTextureToFile(filename.c_str(),D3DXIFF_JPG, m_pRTGlowSourceTexture, NULL );
-	D3DXSaveTextureToFile((filename+"halfsize.jpg").c_str(),D3DXIFF_JPG, m_pRTHalfSizeTexture, NULL );
-	D3DXSaveTextureToFile((filename+"horiz.jpg").c_str(),D3DXIFF_JPG, m_pRTBlurHorizTexture, NULL );
+	if (!pRenderDevice || !pRT || !pRT->GetColorTexture(0))
+		return false;
+
+	const uint32_t rtWidth = pRT->GetWidth();
+	const uint32_t rtHeight = pRT->GetHeight();
+	if (rtWidth == 0 || rtHeight == 0)
+		return false;
+
+	std::vector<uint8_t> pixels(rtWidth * rtHeight * 4);
+	if (!pRenderDevice->ReadTexturePixels(pRT->GetColorTexture(0), pixels.data()))
+		return false;
+
+	if (!pRenderDevice->GetCaps().topLeftScreenOrigin)
+	{
+		const size_t rowBytes = rtWidth * 4;
+		std::vector<uint8_t> rowBuf(rowBytes);
+		for (uint32_t y = 0; y < rtHeight / 2; ++y)
+		{
+			uint8_t* top = pixels.data() + y * rowBytes;
+			uint8_t* bot = pixels.data() + (rtHeight - 1 - y) * rowBytes;
+			memcpy(rowBuf.data(), top, rowBytes);
+			memcpy(top, bot, rowBytes);
+			memcpy(bot, rowBuf.data(), rowBytes);
+		}
+	}
+
+	ParaImage img;
+	if (!img.initWithRawData(pixels.data(), pixels.size(), (int)rtWidth, (int)rtHeight, 32, false))
+		return false;
+
+	CParaFile::CreateDirectory(filename.c_str());
+	return img.saveToFile(filename, true);
+}
+
+void CGlowEffect::SaveGlowTexturesToFile(const std::string& filename)
+{
+	auto pRenderDevice = CGlobals::GetRenderDevice();
+	SaveRenderTargetToFile(pRenderDevice, m_rhiGlowSourceRT, filename);
+	SaveRenderTargetToFile(pRenderDevice, m_rhiSceneCopyRT, filename + "halfsize.jpg");
+	SaveRenderTargetToFile(pRenderDevice, m_rhiBlurHorizRT, filename + "horiz.jpg");
 }

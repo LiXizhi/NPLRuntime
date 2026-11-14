@@ -7,8 +7,7 @@
 // Revised: 2006.7.12, 2014.8(cross platform)
 //-----------------------------------------------------------------------------
 #include "ParaEngine.h"
-#ifdef USE_OPENGL_RENDERER
-#include "RenderDeviceOpenGL.h"
+#ifndef USE_NULL_RENDERER
 #include "StringHelper.h"
 #include "2dengine/GUIBase.h"
 #include "SpriteFontEntity.h"

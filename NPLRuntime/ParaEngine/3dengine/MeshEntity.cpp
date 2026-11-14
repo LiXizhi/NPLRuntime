@@ -58,13 +58,10 @@ HRESULT MeshEntity::RestoreDeviceObjects()
 		for (iCur = m_MeshLODs.begin(); iCur != iEnd; ++iCur)
 		{
 			MeshLOD& lod = (*iCur);
-#ifdef USE_DIRECTX_RENDERER
-
 			if(lod.m_pStaticMesh)
 			{
 				lod.m_pStaticMesh->InitDeviceObjects();
 			}
-#endif
 		}
 	}
 	return S_OK;
@@ -223,18 +220,9 @@ CParaXStaticBase* MeshEntity::GetMesh(int nLODIndex)
 
 ParaEngine::ref_ptr<CParaXStaticBase> ParaEngine::MeshEntity::CreateMesh(const char* sFilename)
 {
-#ifdef USE_DIRECTX_RENDERER
-	if (CParaXStaticBase::GetFileTypeByFilename(sFilename) == XModelFileType::FileType_FBX)
-		return ref_ptr<CParaXStaticBase>(new CParaXStaticModel(sFilename));
-	else
-		return ref_ptr<CParaXStaticBase>(new CParaXStaticMesh(sFilename));
-
-
-#elif defined(USE_OPENGL_RENDERER)
-	//return CParaXStaticModelPtr(new CParaXStaticModel(sFilename));
+#ifndef USE_NULL_RENDERER
 	return ref_ptr<CParaXStaticBase>(new CParaXStaticModel(sFilename));
 #else
-	//return CParaXStaticModelPtr();
 	return ref_ptr<CParaXStaticBase>();
 #endif
 }

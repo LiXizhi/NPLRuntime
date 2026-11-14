@@ -117,7 +117,7 @@ bool CParaEngineCore::Sleep(float fSeconds)
 
 HWND CParaEngineCore::GetParaEngineHWnd()
 {
-	return 0;
+	return CGlobals::GetAppHWND();
 }
 
 bool CParaEngineCore::ForceRender()

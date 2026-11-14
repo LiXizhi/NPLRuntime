@@ -17,10 +17,6 @@
 #include <iostream>
 using namespace std;
 
-#ifdef USE_DIRECTX_RENDERER
-#include <d3dx9math.h>
-#endif
-
 // Cross-platform type definitions
 #ifdef WIN32
 #ifndef PARAENGINE_CLIENT
@@ -383,25 +379,6 @@ namespace ParaEngine
 	};
 
 	
-#if defined(WIN32) && defined(USE_DIRECTX_RENDERER)
-	typedef D3DXMATRIX   DeviceMatrix;
-	typedef D3DXMATRIX*   DeviceMatrix_ptr;
-	typedef D3DXVECTOR2*  DeviceVector2_ptr;
-	typedef D3DXVECTOR3*  DeviceVector3_ptr;
-	typedef D3DXVECTOR4*  DeviceVector4_ptr;
-	typedef D3DXVECTOR2  DeviceVector2;
-	typedef D3DXVECTOR3  DeviceVector3;
-	typedef D3DXVECTOR4  DeviceVector4;
-
-	//typedef PARAMATRIX  DeviceMatrix;
-	//typedef PARAMATRIX*  DeviceMatrix_ptr;
-	//typedef PARAVECTOR2*  DeviceVector2_ptr;
-	//typedef PARAVECTOR3*  DeviceVector3_ptr;
-	//typedef PARAVECTOR4*  DeviceVector4_ptr;
-	//typedef PARAVECTOR2  DeviceVector2;
-	//typedef PARAVECTOR3  DeviceVector3;
-	//typedef PARAVECTOR4  DeviceVector4;
-#else
 	typedef PARAMATRIX  DeviceMatrix;
 	typedef PARAMATRIX*  DeviceMatrix_ptr;
 	typedef PARAVECTOR2*  DeviceVector2_ptr;
@@ -410,7 +387,6 @@ namespace ParaEngine
 	typedef PARAVECTOR2  DeviceVector2;
 	typedef PARAVECTOR3  DeviceVector3;
 	typedef PARAVECTOR4  DeviceVector4;
-#endif
 
 	enum EnumForceInit
 	{
@@ -480,7 +456,6 @@ namespace ParaEngine
 	class CZoneNode;
 	struct DatabaseEntity;
 	class Degree;
-	class DirectXEngine;
 	class TransformStack;
 	class EffectManager;
 	struct GUILAYER;

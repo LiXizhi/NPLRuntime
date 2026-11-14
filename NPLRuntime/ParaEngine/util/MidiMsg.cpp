@@ -15,7 +15,7 @@
 using namespace ParaEngine;
 
 CMidiMsg::CMidiMsg() : 
-#ifdef PARAENGINE_CLIENT
+#if defined(WIN32) && !defined(PARAENGINE_MOBILE) && !defined(NPLRUNTIME_SERVER)
 m_deviceMidiOut(NULL), 
 #endif
 m_bIsValid(false), m_bIsLoaded(false), m_dwVolume(0xffffffff), m_mediaPlayer(NULL)
@@ -35,7 +35,7 @@ bool ParaEngine::CMidiMsg::CheckLoad()
 	else
 	{
 		m_bIsLoaded = true;
-#ifdef PARAENGINE_CLIENT
+#if defined(WIN32) && !defined(PARAENGINE_MOBILE) && !defined(NPLRUNTIME_SERVER)
 		unsigned int err = midiOutOpen(&m_deviceMidiOut, 0, 0, 0, CALLBACK_NULL);
 		if (err != MMSYSERR_NOERROR)
 		{
@@ -64,7 +64,7 @@ void ParaEngine::CMidiMsg::SetVolume(DWORD val)
 	{
 		m_dwVolume = val;
 
-#ifdef PARAENGINE_CLIENT
+#if defined(WIN32) && !defined(PARAENGINE_MOBILE) && !defined(NPLRUNTIME_SERVER)
 		if (IsLoaded())
 		{
 			midiOutSetVolume(m_deviceMidiOut, m_dwVolume);
@@ -127,7 +127,7 @@ int CMidiMsg::PlayMidiMsg(DWORD dwMsg)
 		
 		return S_OK;
 	}
-#ifdef PARAENGINE_CLIENT
+#if defined(WIN32) && !defined(PARAENGINE_MOBILE) && !defined(NPLRUNTIME_SERVER)
 	if(CheckLoad())
 	{
 		midiOutShortMsg(m_deviceMidiOut, dwMsg);
@@ -139,7 +139,7 @@ int CMidiMsg::PlayMidiMsg(DWORD dwMsg)
 
 void CMidiMsg::SafeRelease()
 {
-#ifdef PARAENGINE_CLIENT
+#if defined(WIN32) && !defined(PARAENGINE_MOBILE) && !defined(NPLRUNTIME_SERVER)
 	if(m_bIsLoaded && m_bIsValid)
 	{
 		midiOutClose(m_deviceMidiOut);
@@ -153,7 +153,7 @@ void CMidiMsg::PlayMidiFile(const std::string& filename, int nLoopCount)
 {
 	if (CMidiMsg::GetSingleton().GetMediaPlayer()) return CMidiMsg::GetSingleton().GetMediaPlayer()->PlayMidiFile(filename);
 
-#ifdef PARAENGINE_CLIENT
+#if defined(WIN32) && !defined(PARAENGINE_MOBILE) && !defined(NPLRUNTIME_SERVER)
 	static std::string g_last_filename;
 	static std::string g_last_cmd;
 	static std::string g_last_disk_filename;

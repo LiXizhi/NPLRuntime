@@ -1,6 +1,5 @@
 #pragma once
 #include "TextureEntity.h"
-#include "RenderDeviceOpenGL.h"
 #include "Framework/RenderSystem/RenderTypes.h"
 #include "OpenGLWrapper/GLTexture2D.h"
 namespace ParaEngine
@@ -50,9 +49,13 @@ namespace ParaEngine
 		*/
 		virtual bool SaveToFile(const char* filename, PixelFormat dwFormat, int width, int height, UINT MipLevels = 1, DWORD Filter = -1, Color ColorKey = 0);
 
-		void SetAliasTexParameters();
+		virtual void SetAliasTexParameters() override;
 	public:
 		void SetInnerTexture(GLTexture2D* texture);
+		virtual void AttachRHITexture(IRHITexture* rhiTex, int width, int height) override;
+		virtual bool SetRenderTarget(int nIndex = 0) override;
+		virtual IRHIRenderTarget* GetRHIRenderTarget() override;
+		virtual void AttachRHIRenderTarget(IRHIRenderTarget* pRT, bool bOwnRT = false) override;
 		virtual DeviceTexturePtr_type GetTexture();
 		virtual const TextureInfo* GetTextureInfo();
 
@@ -96,12 +99,17 @@ namespace ParaEngine
 
 	protected:
 		friend class CRenderTarget;
+		friend class CShadowMap;
 		union{
 			GLTexture2D* m_texture;
 			GLTexture2D** m_pTextureSequence;
 		};
 		/** 0 for anti-aliased, 1 for blocky texture. */
 		uint32 m_nSamplerState;
+		IRHIRenderTarget* m_rhiRenderTarget = nullptr;
+		bool m_bOwnsRHIRenderTarget = false;
+		/** CPU shadow buffer for dynamic texture readback when GPU readback is unavailable (e.g. Null backend). */
+		std::vector<uint8> m_dynamicPixels;
 	};
 
 	// the manager class 

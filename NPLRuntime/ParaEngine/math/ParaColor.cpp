@@ -470,9 +470,9 @@ ParaEngine::LinearColor::operator D3DCOLORVALUE& ()
 	return reinterpret_cast<D3DCOLORVALUE&>(*this);
 }
 
+#endif
+
 ParaEngine::LinearColor::operator const float*() const
 {
 	return reinterpret_cast<const float*>(this);
 }
-
-#endif		

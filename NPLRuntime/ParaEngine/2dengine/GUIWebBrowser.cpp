@@ -5,7 +5,7 @@
 // desc: IE activeX control based web browser. Only this sparingly. 
 //-----------------------------------------------------------------------------
 #include "ParaEngine.h"
-#if defined(USE_DIRECTX_RENDERER) && !defined(NPLRUNTIME)
+#if defined(USE_LEGACY_GUI_WEBBROWSER) && !defined(NPLRUNTIME)
 #include "ParaWorldAsset.h"
 #include "IParaEngineApp.h"
 #include "GUIResource.h"

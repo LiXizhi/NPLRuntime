@@ -13,10 +13,6 @@
 #include "EffectManager.h"
 #include "BatchedElementDraw.h"
 
-#if USE_DIRECTX_RENDERER
-#include "RenderDeviceD3D9.h"
-#endif
-
 using namespace ParaEngine;
 
 
@@ -195,7 +191,6 @@ void ParaEngine::CBatchedElementDraw::DrawBatchedLines(bool bClear)
 	IRenderDevice* pRenderDevice = CGlobals::GetRenderDevice();
 	if (!pRenderDevice)
 		return;
-#ifdef USE_OPENGL_RENDERER
 	EffectManager* pEffectManager = CGlobals::GetEffectManager();
 	CEffectFile* pEffect = NULL;
 	pEffectManager->BeginEffect(TECH_SINGLE_COLOR, &pEffect);
@@ -203,34 +198,28 @@ void ParaEngine::CBatchedElementDraw::DrawBatchedLines(bool bClear)
 	{
 		if (bClear)
 			ClearLines();
+		return;
 	}
 	pRenderDevice->SetRenderState(ERenderState::SRCBLEND, D3DBLEND_SRCALPHA);
 	pRenderDevice->SetRenderState(ERenderState::DESTBLEND, D3DBLEND_INVSRCALPHA);
 	pRenderDevice->SetRenderState(ERenderState::CULLMODE, RSV_CULL_NONE);
-	if(pEffect)
-		pEffect->CommitChanges();
-#elif defined(USE_DIRECTX_RENDERER)
-	EffectManager* pEffectManager = CGlobals::GetEffectManager();
-	pEffectManager->BeginEffect(TECH_NONE, &(CGlobals::GetSceneState()->m_pCurrentEffect));
-#endif
+	pEffect->CommitChanges();
 	// set render state
 	{
 		// pRenderDevice->SetRenderState(ERenderState::ALPHABLENDENABLE, TRUE);
-		CGlobals::GetRenderDevice()->SetTexture(0, 0);
+		pRenderDevice->SetTexture(0, 0);
 
-		CGlobals::GetRenderDevice()->SetTransform(ETransformsStateType::WORLD, CGlobals::GetIdentityMatrix()->GetConstPointer());
-		CGlobals::GetRenderDevice()->SetFVF(LINEVERTEX::FVF);
+		pRenderDevice->SetTransform(ETransformsStateType::WORLD, CGlobals::GetIdentityMatrix()->GetConstPointer());
+		pRenderDevice->SetFVF(LINEVERTEX::FVF);
 
-		CGlobals::GetRenderDevice()->DrawIndexedPrimitiveUP(EPrimitiveType::LINELIST, 0,
+		pRenderDevice->DrawIndexedPrimitiveUP(EPrimitiveType::LINELIST, 0,
 			(int)m_lines_vertex_array.size(), m_nLineCount, &(m_lines_index_array[0]), PixelFormat::INDEX16,
 			&(m_lines_vertex_array[0]), sizeof(LINEVERTEX));
 	}
-#ifdef USE_OPENGL_RENDERER
 	pRenderDevice->SetRenderState(ERenderState::CULLMODE, RSV_CULL_CCW);
 	pRenderDevice->SetRenderState(ERenderState::DEPTHBIAS, 0);
 	pEffect->EndPass();
 	pEffect->end();
-#endif
 	if(bClear)
 		ClearLines();
 }
@@ -241,18 +230,14 @@ void ParaEngine::CBatchedElementDraw::DrawBatchedThickLines(bool bClear /*= true
 	if (m_listThickLines.size() == 0)
 		return;
 	CEffectFile* pEffect = NULL;
-#ifdef USE_OPENGL_RENDERER
 	EffectManager* pEffectManager = CGlobals::GetEffectManager();
 	pEffectManager->BeginEffect(TECH_SINGLE_COLOR, &pEffect);
 	if (pEffect == 0 || !pEffect->begin() || !pEffect->BeginPass(0))
 	{
 		if (bClear)
 			m_listThickLines.clear();
+		return;
 	}
-#elif defined(USE_DIRECTX_RENDERER)
-	EffectManager* pEffectManager = CGlobals::GetEffectManager();
-	pEffectManager->BeginEffect(TECH_NONE, &(CGlobals::GetSceneState()->m_pCurrentEffect));
-#endif
 	// set render state
 	RenderDevicePtr pRenderDevice = CGlobals::GetRenderDevice();
 	if (pRenderDevice)
@@ -398,10 +383,8 @@ void ParaEngine::CBatchedElementDraw::DrawBatchedThickLines(bool bClear /*= true
 		pRenderDevice->SetRenderState(ERenderState::ALPHABLENDENABLE, FALSE);
 		pRenderDevice->SetRenderState(ERenderState::DEPTHBIAS, 0);
 	}
-#ifdef USE_OPENGL_RENDERER
 	pEffect->EndPass();
 	pEffect->end();
-#endif
 
 	if (bClear)
 		m_listThickLines.clear();

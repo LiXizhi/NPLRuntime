@@ -7,12 +7,6 @@
 // Revised: 
 //-----------------------------------------------------------------------------
 #include "ParaEngine.h"
-#ifdef USE_DIRECTX_RENDERER
-#include "DirectXEngine.h"
-#endif
-#if USE_DIRECTX_RENDERER
-#include "RenderDeviceD3D9.h"
-#endif
 #include "SkyMesh.h"
 #include "ParaWorldAsset.h"
 #include "CanvasCamera.h"
@@ -380,16 +374,12 @@ void CMiniSceneGraph::Draw_Internal(float fDeltaTime)
 	SetFogColor(fogColor);
 	pEffectManager->EnableFog(IsFogEnabled());
 	pEffectManager->SetD3DFogState();
-#ifdef USE_DIRECTX_RENDERER
-	GETD3D(CGlobals::GetRenderDevice())->SetMaterial((D3DMATERIAL9*)&(sceneState.GetGlobalMaterial()));
-#elif defined(USE_OPENGL_RENDERER)
 	if (!IsSunLightEnabled())
 	{
 		// sun light can not be disabled in shader, so we will fake it here. Remove this when shader support turn off global sun light. 
 		GetSunLight().SetSunAmbient(LinearColor::White);
 		GetSunLight().SetSunDiffuse(LinearColor::Black);
 	}
-#endif
 	
 	// disable local lights on bipeds
 	if(old_IsLocalLightEnabled)
@@ -488,60 +478,48 @@ void CMiniSceneGraph::Draw_Internal(float fDeltaTime)
 				RenderSelection(RENDER_PORTAL_SYSTEM);
 		}
 	}
-#ifdef USE_DIRECTX_RENDERER
 	auto pd3dDevice = CGlobals::GetRenderDevice();
-	if(m_pMask!=0 && pEffectManager->BeginEffect(TECH_GUI, &(m_sceneState.m_pCurrentEffect)))
+	if (pd3dDevice && m_pMask != 0 && pEffectManager->BeginEffect(TECH_GUI, &(m_sceneState.m_pCurrentEffect)))
 	{
 		/** draw the mask square in front of the screen. */
 		CEffectFile* pEffectFile = CGlobals::GetEffectManager()->GetCurrentEffectFile();
-		if(pEffectFile == 0)
+		if (pEffectFile != 0 && m_pMask->GetTexture() != nullptr && pEffectFile->begin())
 		{
-			//////////////////////////////////////////////////////////////////////////
-			// fixed programming pipeline
-			float sx = (float)m_nTextureWidth,sy = (float)m_nTextureHeight;
-
-			DXUT_SCREEN_VERTEX v[10];
-			v[0].x = 0;  v[0].y = sy; v[0].tu = 0;  v[0].tv = 1.0f;
-			v[1].x = 0;  v[1].y = 0;  v[1].tu = 0;  v[1].tv = 0;
-			v[2].x = sx; v[2].y = sy; v[2].tu = 1.f; v[2].tv = 1.f;
-			v[3].x = sx; v[3].y = 0;  v[3].tu = 1.f; v[3].tv = 0;
-
-			DWORD dwColor = LinearColor(1.f,1.f,1.f,1.f);
-			int i;
-			for(i=0;i<4;i++)
+			if (pEffectFile->BeginPass(0))
 			{
-				v[i].color = dwColor;
-				v[i].z = 0;
-				v[i].h = 1.0f;
+				float sx = (float)m_nTextureWidth, sy = (float)m_nTextureHeight;
+
+				DXUT_SCREEN_VERTEX v[4];
+				v[0].x = 0;  v[0].y = sy; v[0].tu = 0;   v[0].tv = 1.0f;
+				v[1].x = 0;  v[1].y = 0;  v[1].tu = 0;   v[1].tv = 0;
+				v[2].x = sx; v[2].y = sy; v[2].tu = 1.f; v[2].tv = 1.f;
+				v[3].x = sx; v[3].y = 0;  v[3].tu = 1.f; v[3].tv = 0;
+
+				DWORD dwColor = LinearColor(1.f, 1.f, 1.f, 1.f);
+				for (int i = 0; i < 4; i++)
+				{
+					v[i].color = dwColor;
+					v[i].z = 0;
+					v[i].h = 1.0f;
+				}
+
+				pd3dDevice->SetRenderState(ERenderState::COLORWRITEENABLE, 0x00000008);
+				pd3dDevice->SetRenderState(ERenderState::ALPHABLENDENABLE, TRUE);
+				pd3dDevice->SetRenderState(ERenderState::SRCBLEND, D3DBLEND_ZERO);
+				pd3dDevice->SetRenderState(ERenderState::DESTBLEND, D3DBLEND_SRCALPHA);
+
+				pEffectFile->setTexture(0, m_pMask->GetTexture());
+				pEffectFile->CommitChanges();
+				pd3dDevice->DrawPrimitiveUP(EPrimitiveType::TRIANGLESTRIP, 2, v, sizeof(DXUT_SCREEN_VERTEX));
+
+				pd3dDevice->SetRenderState(ERenderState::SRCBLEND, D3DBLEND_SRCALPHA);
+				pd3dDevice->SetRenderState(ERenderState::DESTBLEND, D3DBLEND_INVSRCALPHA);
+				pd3dDevice->SetRenderState(ERenderState::COLORWRITEENABLE, 0x0000000F);
+				pEffectFile->EndPass();
 			}
-			//GETD3D(CGlobals::GetRenderDevice())->SetTextureStageState( 0, D3DTSS_COLOROP,   D3DTOP_SELECTARG1 );		// modulate operation
-			//GETD3D(CGlobals::GetRenderDevice())->SetTextureStageState( 0, D3DTSS_ALPHAOP,   D3DTOP_SELECTARG2 );
-			//
-			//pd3dDevice->SetRenderState( ERenderState::COLORWRITEENABLE,
-			//	D3DCOLORWRITEENABLE_RED  | D3DCOLORWRITEENABLE_GREEN |
-			//	D3DCOLORWRITEENABLE_BLUE | D3DCOLORWRITEENABLE_ALPHA );
-
-			pd3dDevice->SetRenderState( ERenderState::COLORWRITEENABLE, D3DCOLORWRITEENABLE_ALPHA );
-
-			pd3dDevice->SetRenderState(ERenderState::ALPHABLENDENABLE, TRUE);	
-			pd3dDevice->SetRenderState(ERenderState::SRCBLEND, D3DBLEND_ZERO);
-			pd3dDevice->SetRenderState(ERenderState::DESTBLEND, D3DBLEND_SRCALPHA);
-
-	
-
-			GETD3D(CGlobals::GetRenderDevice())->SetTexture(0, m_pMask->GetTexture());
-			CGlobals::GetRenderDevice()->DrawPrimitiveUP( EPrimitiveType::TRIANGLESTRIP, 2, v, sizeof(DXUT_SCREEN_VERTEX) );
-
-
-			pd3dDevice->SetRenderState(ERenderState::SRCBLEND, D3DBLEND_SRCALPHA);
-			pd3dDevice->SetRenderState(ERenderState::DESTBLEND, D3DBLEND_INVSRCALPHA);
-
-			pd3dDevice->SetRenderState( ERenderState::COLORWRITEENABLE,
-					D3DCOLORWRITEENABLE_RED  | D3DCOLORWRITEENABLE_GREEN |
-					D3DCOLORWRITEENABLE_BLUE | D3DCOLORWRITEENABLE_ALPHA );
+			pEffectFile->end();
 		}
 	}
-#endif
 
 	// draw the head on display GUI
 	RenderHeadOnDisplay();

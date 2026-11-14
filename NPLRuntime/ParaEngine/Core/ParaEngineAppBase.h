@@ -25,6 +25,7 @@ namespace ParaEngine
 
 		virtual void Enable3DRendering(bool bEnable) override;
 		virtual bool Is3DRenderingEnabled()override;
+		virtual bool IsServerMode() override { return !m_bEnable3DRendering; }
 		/** whether the last mouse input is from touch or mouse. by default it is mouse mode. */
 		virtual bool IsTouchInputting() override;
 		virtual bool IsSlateMode() override;

@@ -1,8 +1,6 @@
 #pragma once
 
-#if defined(USE_DIRECTX_RENDERER)
-#include "GUIUniBufferDirectX.h"
-#elif defined(USE_OPENGL_RENDERER)
+#if !defined(USE_NULL_RENDERER)
 #include "GUIUniBufferOpenGL.h"
 #else
 
@@ -39,6 +37,7 @@ namespace ParaEngine
 		bool SetTextA(LPCSTR szText);
 		bool SetText(const char16_t* wszText);
 		void Clear();
+		bool SetBufferSize(int nNewSize = -1) { (void)nNewSize; return true; }
 
 		HRESULT CPtoXY(int nCP, BOOL bTrail, int *pX, int *pY);
 		HRESULT XYtoCP(int nX, int nY, int *pCP, int *pnTrail);

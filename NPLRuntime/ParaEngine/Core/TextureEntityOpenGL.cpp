@@ -8,7 +8,7 @@
 //-----------------------------------------------------------------------------
 #include "ParaEngine.h"
 
-#ifdef USE_OPENGL_RENDERER
+#ifndef USE_NULL_RENDERER
 #include "ImageEntity.h"
 #include "TextureEntity.h"
 #include "OpenGLWrapper/GLImage.h"
@@ -202,83 +202,215 @@ void ParaEngine::TextureEntityOpenGL::SetInnerTexture(GLTexture2D* texture)
 	}
 }
 
+void ParaEngine::TextureEntityOpenGL::AttachRHITexture(IRHITexture* rhiTex, int width, int height)
+{
+	if (rhiTex)
+	{
+		if (!m_texture)
+			m_texture = new (std::nothrow) GLTexture2D();
+		if (m_texture)
+			m_texture->initWithRHITexture(rhiTex, false);
+		m_bIsInitialized = true;
+		m_bIsValid = true;
+		SetTextureInfo(TextureInfo(width, height, TextureInfo::FMT_A8R8G8B8, TextureInfo::TYPE_UNKNOWN));
+	}
+	else
+	{
+		if (m_texture)
+		{
+			m_texture->detachRHITexture();
+			SAFE_RELEASE(m_texture);
+		}
+		m_bIsInitialized = false;
+	}
+}
+
+void ParaEngine::TextureEntityOpenGL::AttachRHIRenderTarget(IRHIRenderTarget* pRT, bool bOwnRT)
+{
+	if (m_bOwnsRHIRenderTarget && m_rhiRenderTarget && m_rhiRenderTarget != pRT)
+	{
+		ReleaseRHIResource(m_rhiRenderTarget);
+	}
+	m_rhiRenderTarget = pRT;
+	m_bOwnsRHIRenderTarget = bOwnRT;
+	if (pRT && pRT->GetColorTexture(0))
+	{
+		AttachRHITexture(pRT->GetColorTexture(0), (int)pRT->GetWidth(), (int)pRT->GetHeight());
+	}
+	else if (SurfaceType == TextureSurface)
+	{
+		m_bIsInitialized = true;
+		m_bIsValid = true;
+	}
+}
+
+IRHIRenderTarget* ParaEngine::TextureEntityOpenGL::GetRHIRenderTarget()
+{
+	if (SurfaceType == RenderTarget && !m_bIsInitialized)
+	{
+		LoadAsset();
+	}
+	return m_rhiRenderTarget;
+}
+
+bool ParaEngine::TextureEntityOpenGL::SetRenderTarget(int nIndex)
+{
+	auto* pDev = CGlobals::GetRenderDevice();
+	if (!pDev)
+		return false;
+	if (SurfaceType == RenderTarget)
+	{
+		LoadAsset();
+		if (!m_rhiRenderTarget)
+			return false;
+		return pDev->SetRenderTarget((uint32_t)nIndex, m_rhiRenderTarget);
+	}
+	else if (SurfaceType == TextureSurface)
+	{
+		return pDev->SetRenderTarget((uint32_t)nIndex, m_rhiRenderTarget);
+	}
+	return false;
+}
+
 HRESULT ParaEngine::TextureEntityOpenGL::RestoreDeviceObjects()
 {
 	if (m_bIsInitialized)
 		return S_OK;
 
-	if (SurfaceType == RenderTarget)
+	if (SurfaceType == RenderTarget || SurfaceType == DEPTHSTENCIL)
 	{
 		m_bIsInitialized = true;
 
-		DWORD width, height;
-		// Default: create the render target with alpha. this will allow some mini scene graphs to render alpha pixels. 
-
-		PixelFormat format = PixelFormat::A8R8G8B8;
+		IRenderDevice* pDev = CGlobals::GetRenderDevice();
+		DWORD defaultW = (pDev && pDev->GetBackBufferWidth() > 0) ? pDev->GetBackBufferWidth() : 256;
+		DWORD defaultH = (pDev && pDev->GetBackBufferHeight() > 0) ? pDev->GetBackBufferHeight() : 256;
+		DWORD width = defaultW, height = defaultH;
+		PixelFormat format = (SurfaceType == DEPTHSTENCIL) ? PixelFormat::D24S8 : PixelFormat::A8R8G8B8;
 
 		if (GetTextureInfo() != NULL)
 		{
 			width = GetTextureInfo()->m_width;
 			height = GetTextureInfo()->m_height;
-			if (width == 0 || height == 0)
+			if (width == 0 || height == 0 || (int)width < 0 || (int)height < 0)
 			{
-				width = 256;
-				height = 256;
+				width = defaultW;
+				height = defaultH;
 			}
-			if (GetTextureInfo()->m_format == TextureInfo::FMT_X8R8G8B8)
+			if (SurfaceType == RenderTarget && GetTextureInfo()->m_format == TextureInfo::FMT_X8R8G8B8)
 			{
 				format = PixelFormat::X8R8G8B8;
 			}
 		}
-		else
+
+		if (SurfaceType == RenderTarget && pDev)
 		{
-			width = 256;
-			height = 256;
+			const std::string& sKey = GetKey();
+			const int nSize = static_cast<int>(sKey.size());
+			if (nSize > 5 && sKey[nSize - 5] == '_' && sKey[nSize - 4] == 'R' && sKey[nSize - 3] == '3' && sKey[nSize - 2] == '2' && sKey[nSize - 1] == 'F')
+			{
+				if (pDev->GetCaps().supportsFloatRenderTargets)
+					format = PixelFormat::R32F;
+			}
+			else if (nSize > 4 && sKey[nSize - 4] == '_' && sKey[nSize - 3] == 'H' && sKey[nSize - 2] == 'D' && sKey[nSize - 1] == 'R')
+			{
+				if (pDev->GetCaps().supportsFloatRenderTargets)
+					format = PixelFormat::A16B16G16R16F;
+			}
 		}
+
+		if (m_bOwnsRHIRenderTarget && m_rhiRenderTarget)
+		{
+			ReleaseRHIResource(m_rhiRenderTarget);
+		}
+		m_rhiRenderTarget = nullptr;
+		m_bOwnsRHIRenderTarget = false;
+
+		SAFE_RELEASE(m_texture);
 		m_texture = new (std::nothrow) GLTexture2D();
 		if (m_texture)
 		{
-			void *data = nullptr;
-			auto dataLen = width * height * 4;
-			data = malloc(dataLen);
-			memset(data, 0, dataLen);
-			m_texture->initWithData(data, dataLen, PixelFormat::A8R8G8B8, width, height, Size((float)width, (float)height));
-			free(data);
-
-			GL::bindTexture2D(m_texture->getName());
-			if (m_texture->getPixelsWide() == GLTexture2D::ccNextPOT(m_texture->getPixelsWide()))
+			if (SurfaceType == RenderTarget && pDev)
 			{
-				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-			}
-			else
-			{
-				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+				m_rhiRenderTarget = pDev->CreateRenderTarget(width, height, format, PixelFormat::D24S8);
+				if (m_rhiRenderTarget && m_rhiRenderTarget->GetColorTexture(0))
+				{
+					m_bOwnsRHIRenderTarget = true;
+					m_texture->initWithRHITexture(m_rhiRenderTarget->GetColorTexture(0), false);
+					SetTextureInfo(TextureInfo((int)width, (int)height,
+						format == PixelFormat::X8R8G8B8 ? TextureInfo::FMT_X8R8G8B8 : TextureInfo::FMT_A8R8G8B8,
+						TextureInfo::TYPE_UNKNOWN));
+				}
 			}
 
+			if (!m_rhiRenderTarget)
+			{
+				ERHITextureUsage usage = ERHITextureUsage::ShaderResource |
+					((SurfaceType == DEPTHSTENCIL) ? ERHITextureUsage::DepthStencil : ERHITextureUsage::RenderTarget);
+				IRHITexture* rhiTex = pDev ? pDev->CreateTexture(width, height, format, 1, usage, nullptr, 0) : nullptr;
+				if (rhiTex)
+				{
+					m_texture->initWithRHITexture(rhiTex, true);
+				}
+				else if (SurfaceType == RenderTarget)
+				{
+					auto dataLen = static_cast<size_t>(width) * static_cast<size_t>(height) * 4u;
+					void* data = malloc(dataLen);
+					if (data)
+					{
+						memset(data, 0, dataLen);
+						m_texture->initWithData(data, dataLen, PixelFormat::A8R8G8B8, static_cast<int>(width), static_cast<int>(height), Size((float)width, (float)height));
+						free(data);
+					}
+				}
+			}
 
-			if (m_texture->getPixelsHigh() == GLTexture2D::ccNextPOT(m_texture->getPixelsHigh()))
+#ifdef PARA_ENABLE_OPENGL
+			if (m_texture->getName() != 0 && pDev && pDev->GetBackendType() == ERHIBackend::OpenGL)
 			{
-				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+				GL::bindTexture2D(m_texture->getName());
+				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S,
+					(m_texture->getPixelsWide() == GLTexture2D::ccNextPOT(m_texture->getPixelsWide())) ? GL_REPEAT : GL_CLAMP_TO_EDGE);
+				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T,
+					(m_texture->getPixelsHigh() == GLTexture2D::ccNextPOT(m_texture->getPixelsHigh())) ? GL_REPEAT : GL_CLAMP_TO_EDGE);
 			}
-			else
-			{
-				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-			}
+#endif
 		}
-		else
-			return S_OK;
 	}
 	return S_OK;
 }
 
 HRESULT ParaEngine::TextureEntityOpenGL::InvalidateDeviceObjects()
 {
+	if (SurfaceType == RenderTarget || SurfaceType == DEPTHSTENCIL)
+	{
+		m_bIsInitialized = false;
+		if (m_texture)
+		{
+			m_texture->detachRHITexture();
+			SAFE_RELEASE(m_texture);
+		}
+		if (m_bOwnsRHIRenderTarget && m_rhiRenderTarget)
+		{
+			ReleaseRHIResource(m_rhiRenderTarget);
+		}
+		m_rhiRenderTarget = nullptr;
+		m_bOwnsRHIRenderTarget = false;
+	}
 	return S_OK;
 }
 
 HRESULT ParaEngine::TextureEntityOpenGL::DeleteDeviceObjects()
 {
 	m_bIsInitialized = false;
+	m_dynamicPixels.clear();
+	if (m_bOwnsRHIRenderTarget && m_rhiRenderTarget)
+	{
+		if (m_texture)
+			m_texture->detachRHITexture();
+		ReleaseRHIResource(m_rhiRenderTarget);
+	}
+	m_rhiRenderTarget = nullptr;
+	m_bOwnsRHIRenderTarget = false;
 	switch (SurfaceType)
 	{
 	case TextureSequence:
@@ -468,7 +600,7 @@ TextureEntity* ParaEngine::TextureEntityOpenGL::CreateTexture(const uint8 * pTex
 					pp[index++] = 0xff;
 				}
 			}
-			if (!texture->initWithData(pTexels, dataLen, PixelFormat::A8R8G8B8, width, height, Size((float)width, (float)height)))
+			if (!texture->initWithData(pp, dataLen, PixelFormat::A8R8G8B8, width, height, Size((float)width, (float)height)))
 			{
 				SAFE_DELETE(texture);
 			}
@@ -534,6 +666,7 @@ TextureEntity* TextureEntityOpenGL::LoadUint8Buffer(const uint8 * pTexels, int w
 	int dataLen = width * height * bytesPerPixel;
 	if (bytesPerPixel == 4)
 	{
+		m_dynamicPixels.assign(pTexels, pTexels + dataLen);
 		if (!m_texture)
 		{
 			// for now, we do not generate mipmap.
@@ -561,6 +694,7 @@ TextureEntity* TextureEntityOpenGL::LoadUint8Buffer(const uint8 * pTexels, int w
 				pp[index++] = 0xff;
 			}
 		}
+		m_dynamicPixels.assign(pp, pp + dataLen);
 		pTexels = pp;
 		if (!m_texture)
 		{
@@ -584,11 +718,20 @@ TextureEntity* TextureEntityOpenGL::LoadUint8Buffer(const uint8 * pTexels, int w
 			m_texture = new (std::nothrow) GLTexture2D();
 		}
 
+		int nSize = width * height;
+		m_dynamicPixels.resize(nSize * 4);
+		for (int x = 0; x < nSize; ++x)
+		{
+			m_dynamicPixels[x * 4 + 0] = 255;
+			m_dynamicPixels[x * 4 + 1] = 255;
+			m_dynamicPixels[x * 4 + 2] = 255;
+			m_dynamicPixels[x * 4 + 3] = pTexels[x];
+		}
+
 		if (nSupportA8PixelFormat == 0 || !m_texture->initWithData(pTexels, dataLen, PixelFormat::A8, width, height, Size((float)width, (float)height)))
 		{
 			if (nSupportA8PixelFormat == -1)
 				nSupportA8PixelFormat = 0;
-			int nSize = width * height;
 			DWORD* pData = new DWORD[nSize];
 			for (int x = 0; x < nSize; ++x)
 			{
@@ -616,29 +759,35 @@ TextureEntity* TextureEntityOpenGL::LoadUint8Buffer(const uint8 * pTexels, int w
 
 void ParaEngine::TextureEntityOpenGL::LoadImage(char *sBufMemFile, int sizeBuf, int &width, int &height, unsigned char ** ppBuffer, bool bAlpha)
 {
-	/*
-	GLImage* image = new Image();
+	width = 0;
+	height = 0;
+	if (ppBuffer)
+		*ppBuffer = nullptr;
+	if (!sBufMemFile || sizeBuf <= 0 || !ppBuffer)
+		return;
 
-	if (image)
+	unsigned char* rgba = nullptr;
+	int bpp = 0;
+	if (!LoadImageOfFormat("temp.png", sBufMemFile, sizeBuf, width, height, &rgba, &bpp, -1) || !rgba)
+		return;
+
+	if (bAlpha)
 	{
-		if (image->initWithImageData((const unsigned char*)sBufMemFile, sizeBuf))
-		{
-			width = image->getWidth();
-			height = image->getHeight();
-			unsigned char* pData = image->getData();
-			int nSize = (int)(image->getDataLen());
-			if (image->isCompressed())
-			{
-
-			}
-			else
-			{
-
-			}
-		}
-		CC_SAFE_RELEASE(image);
+		*ppBuffer = rgba;
 	}
-	*/
+	else
+	{
+		int pixelCount = width * height;
+		unsigned char* rgb = new unsigned char[pixelCount * 3];
+		for (int i = 0; i < pixelCount; ++i)
+		{
+			rgb[i * 3 + 0] = rgba[i * 4 + 0];
+			rgb[i * 3 + 1] = rgba[i * 4 + 1];
+			rgb[i * 3 + 2] = rgba[i * 4 + 2];
+		}
+		delete[] rgba;
+		*ppBuffer = rgb;
+	}
 }
 
 bool ParaEngine::TextureEntityOpenGL::LoadImageOfFormat(const std::string& sTextureFileName, char *sBufMemFile, int sizeBuf, int &width, int &height, unsigned char ** ppBuffer, int* pBytesPerPixel /*= NULL*/, int nFormat /*= -1*/)
@@ -706,17 +855,82 @@ bool ParaEngine::TextureEntityOpenGL::LoadImageOfFormat(const std::string& sText
 
 bool ParaEngine::TextureEntityOpenGL::SaveToFile(const char* filename, PixelFormat dwFormat, int width, int height, UINT MipLevels /*= 1*/, DWORD Filter /*= D3DX_DEFAULT*/, Color ColorKey /*= 0*/)
 {
-	void* pTextureImage = NULL;
-	int nSize;
-	int nBytesPerPixel;
-	if (GetImageDataOriginal(&pTextureImage, &nSize, &width, &height, &nBytesPerPixel))
-	{
-		ParaImage img;
-		img.initWithRawData(reinterpret_cast<const unsigned char*>(pTextureImage), nSize, width, height, 32);
-		img.saveToFile(filename);
+	if (!filename || filename[0] == '\0')
+		return false;
 
-		SAFE_DELETE_ARRAY(pTextureImage);
-		return true;
+	if (!IsLoaded())
+	{
+		LoadAsset();
+	}
+
+	const int dstWidth = width;
+	const int dstHeight = height;
+
+	void* pTextureImage = NULL;
+	int nSize = 0;
+	int srcWidth = 0;
+	int srcHeight = 0;
+	int nBytesPerPixel = 0;
+	if (GetImageDataOriginal(&pTextureImage, &nSize, &srcWidth, &srcHeight, &nBytesPerPixel))
+	{
+		const unsigned char* srcBytes = reinterpret_cast<const unsigned char*>(pTextureImage);
+		int finalW = srcWidth;
+		int finalH = srcHeight;
+		std::vector<unsigned char> resized;
+
+		if (dstWidth > 0 && dstHeight > 0 && (dstWidth != srcWidth || dstHeight != srcHeight) && srcWidth > 0 && srcHeight > 0)
+		{
+			finalW = dstWidth;
+			finalH = dstHeight;
+			resized.resize(static_cast<size_t>(finalW) * static_cast<size_t>(finalH) * 4u);
+			for (int y = 0; y < finalH; ++y)
+			{
+				const float gy = ((static_cast<float>(y) + 0.5f) * static_cast<float>(srcHeight) / static_cast<float>(finalH)) - 0.5f;
+				const int y0 = (std::max)(0, (std::min)(srcHeight - 1, static_cast<int>(std::floor(gy))));
+				const int y1 = (std::max)(0, (std::min)(srcHeight - 1, y0 + 1));
+				const float fy = (std::max)(0.0f, (std::min)(1.0f, gy - static_cast<float>(y0)));
+				for (int x = 0; x < finalW; ++x)
+				{
+					const float gx = ((static_cast<float>(x) + 0.5f) * static_cast<float>(srcWidth) / static_cast<float>(finalW)) - 0.5f;
+					const int x0 = (std::max)(0, (std::min)(srcWidth - 1, static_cast<int>(std::floor(gx))));
+					const int x1 = (std::max)(0, (std::min)(srcWidth - 1, x0 + 1));
+					const float fx = (std::max)(0.0f, (std::min)(1.0f, gx - static_cast<float>(x0)));
+
+					const unsigned char* p00 = srcBytes + (static_cast<size_t>(y0) * srcWidth + x0) * 4u;
+					const unsigned char* p10 = srcBytes + (static_cast<size_t>(y0) * srcWidth + x1) * 4u;
+					const unsigned char* p01 = srcBytes + (static_cast<size_t>(y1) * srcWidth + x0) * 4u;
+					const unsigned char* p11 = srcBytes + (static_cast<size_t>(y1) * srcWidth + x1) * 4u;
+
+					unsigned char* dstPx = resized.data() + (static_cast<size_t>(y) * finalW + x) * 4u;
+					for (int c = 0; c < 4; ++c)
+					{
+						const float top = static_cast<float>(p00[c]) * (1.0f - fx) + static_cast<float>(p10[c]) * fx;
+						const float bot = static_cast<float>(p01[c]) * (1.0f - fx) + static_cast<float>(p11[c]) * fx;
+						const float val = top * (1.0f - fy) + bot * fy;
+						dstPx[c] = static_cast<unsigned char>((std::max)(0, (std::min)(255, static_cast<int>(val + 0.5f))));
+					}
+				}
+			}
+		}
+
+		std::string outPath = filename;
+		if (!CParaFile::IsAbsolutePath(outPath))
+		{
+			outPath = CParaFile::GetWritablePath() + outPath;
+		}
+		CParaFile::CreateDirectory(outPath.c_str());
+
+		ParaImage img;
+		const unsigned char* rawPtr = resized.empty() ? srcBytes : resized.data();
+		const size_t rawLen = static_cast<size_t>(finalW) * static_cast<size_t>(finalH) * 4u;
+		bool ok = false;
+		if (img.initWithRawData(rawPtr, rawLen, finalW, finalH, 32))
+		{
+			ok = img.saveToFile(outPath);
+		}
+
+		delete[] static_cast<uint8*>(pTextureImage);
+		return ok;
 	}
 	return false;
 }
@@ -724,6 +938,8 @@ bool ParaEngine::TextureEntityOpenGL::SaveToFile(const char* filename, PixelForm
 bool ParaEngine::TextureEntityOpenGL::LoadFromImage(const ParaImage* pImage, UINT nMipLevels, PixelFormat dwTextureFormat/* = PixelFormat::Unknown*/, void** ppTexture /*= nullptr*/)
 {
 	GLTexture2D* texture = new GLTexture2D();
+#ifdef PARA_ENABLE_OPENGL
+	if (CGlobals::GetRenderDevice() && CGlobals::GetRenderDevice()->GetBackendType() == ERHIBackend::OpenGL)
 	{
 		// tricky: this fixed a cocos bug inside initWithImage() where a previous opengl error will lead to loading empty image. 
 		auto errorCode = glGetError();
@@ -731,6 +947,7 @@ bool ParaEngine::TextureEntityOpenGL::LoadFromImage(const ParaImage* pImage, UIN
 			OUTPUT_LOG("unknown opengl error: 0x%04X before LoadTexture: \n", errorCode);
 		}
 	}
+#endif
 
 	const ParaImage& image = *pImage;
 
@@ -748,24 +965,19 @@ bool ParaEngine::TextureEntityOpenGL::LoadFromImage(const ParaImage* pImage, UIN
 
 	if (texture)
 	{
-		if (texture == NULL || texture->getName() == 0)
+		const bool isBlockTex = (GetKey().find("blocks") != string::npos);
+		SetSamplerStateBlocky(isBlockTex);
+#ifdef PARA_ENABLE_OPENGL
+		if (texture->getName() != 0 && CGlobals::GetRenderDevice() && CGlobals::GetRenderDevice()->GetBackendType() == ERHIBackend::OpenGL)
 		{
-
-		}
-		else
-		{
-			if (GetKey().find("blocks") != string::npos)
+			if (isBlockTex)
 			{
-				// if texture filename contains "blocks" either in folder name or filename, we will force POINT mip mapping
-				//Texture2D::TexParams s_block_texture_params = { GL_NEAREST, GL_NEAREST, GL_CLAMP_TO_EDGE, GL_CLAMP_TO_EDGE };
 				GLTexture2D::TexParams s_block_texture_params = { GL_NEAREST, GL_NEAREST, GL_REPEAT, GL_REPEAT };
 				texture->setTexParameters(s_block_texture_params);
-				SetSamplerStateBlocky(true);
 			}
 			else
 			{
 				GL::bindTexture2D(texture->getName());
-
 				if (texture->getPixelsWide() == GLTexture2D::ccNextPOT(texture->getPixelsWide()) && texture->getPixelsHigh() == GLTexture2D::ccNextPOT(texture->getPixelsHigh()))
 				{
 					glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
@@ -776,10 +988,9 @@ bool ParaEngine::TextureEntityOpenGL::LoadFromImage(const ParaImage* pImage, UIN
 					glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 					glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 				}
-
-				SetSamplerStateBlocky(false);
 			}
 		}
+#endif
 		if (ppTexture != NULL)
 		{
 			if (texture)
@@ -815,6 +1026,8 @@ bool ParaEngine::TextureEntityOpenGL::LoadFromImage(ImageEntity * imageEntity, P
 		{
 			GLTexture2D* texture = new GLTexture2D();
 
+#ifdef PARA_ENABLE_OPENGL
+			if (CGlobals::GetRenderDevice() && CGlobals::GetRenderDevice()->GetBackendType() == ERHIBackend::OpenGL)
 			{
 				// tricky: this fixed a cocos bug inside initWithImage() where a previous opengl error will lead to loading empty image. 
 				auto errorCode = glGetError();
@@ -822,6 +1035,7 @@ bool ParaEngine::TextureEntityOpenGL::LoadFromImage(ImageEntity * imageEntity, P
 					OUTPUT_LOG("unknown opengl error: 0x%04X before LoadTexture: \n", errorCode);
 				}
 			}
+#endif
 			auto format = dwTextureFormat;
 
 			if (texture && texture->initWithImage(&image, format))
@@ -837,24 +1051,19 @@ bool ParaEngine::TextureEntityOpenGL::LoadFromImage(ImageEntity * imageEntity, P
 
 			if (texture)
 			{
-				if (texture == NULL || texture->getName() == 0)
+				const bool isBlockTex = (GetKey().find("blocks") != string::npos);
+				SetSamplerStateBlocky(isBlockTex);
+#ifdef PARA_ENABLE_OPENGL
+				if (texture->getName() != 0 && CGlobals::GetRenderDevice() && CGlobals::GetRenderDevice()->GetBackendType() == ERHIBackend::OpenGL)
 				{
-
-				}
-				else
-				{
-					if (GetKey().find("blocks") != string::npos)
+					if (isBlockTex)
 					{
-						// if texture filename contains "blocks" either in folder name or filename, we will force POINT mip mapping
-						//Texture2D::TexParams s_block_texture_params = { GL_NEAREST, GL_NEAREST, GL_CLAMP_TO_EDGE, GL_CLAMP_TO_EDGE };
 						GLTexture2D::TexParams s_block_texture_params = { GL_NEAREST, GL_NEAREST, GL_REPEAT, GL_REPEAT };
 						texture->setTexParameters(s_block_texture_params);
-						SetSamplerStateBlocky(true);
 					}
 					else
 					{
 						GL::bindTexture2D(texture->getName());
-
 						if (texture->getPixelsWide() == GLTexture2D::ccNextPOT(texture->getPixelsWide()) && texture->getPixelsHigh() == GLTexture2D::ccNextPOT(texture->getPixelsHigh()))
 						{
 							glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
@@ -865,10 +1074,9 @@ bool ParaEngine::TextureEntityOpenGL::LoadFromImage(ImageEntity * imageEntity, P
 							glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 							glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 						}
-
-						SetSamplerStateBlocky(false);
 					}
 				}
+#endif
 				if (ppTexture != NULL)
 				{
 					if (texture)
@@ -905,7 +1113,10 @@ void ParaEngine::TextureEntityOpenGL::SetAliasTexParameters()
 
 bool ParaEngine::TextureEntityOpenGL::IsFlipY()
 {
-	return SurfaceType == RenderTarget;
+	if (SurfaceType != RenderTarget)
+		return false;
+	auto* pDev = CGlobals::GetRenderDevice();
+	return pDev ? !pDev->GetCaps().topLeftScreenOrigin : true;
 }
 
 bool ParaEngine::TextureEntityOpenGL::LoadImageFromString(const char* cmd)
@@ -1039,6 +1250,7 @@ bool ParaEngine::TextureEntityOpenGL::LoadImageFromString(const char* cmd)
 							{
 								m_texture->updateWithData(pDest, 0, 0, nTextureWidth, nTextureHeight);
 							}
+							m_dynamicPixels.assign(reinterpret_cast<const uint8*>(pDest), reinterpret_cast<const uint8*>(pDest) + nTextureWidth * nTextureHeight * 4);
 							SAFE_DELETE_ARRAY(pDest);
 							m_bIsInitialized = true;
 							m_bIsValid = true;
@@ -1110,32 +1322,29 @@ bool ParaEngine::TextureEntityOpenGL::GetImageDataOriginal(void** ppData, int* p
 			return false;
 		int width = pTextureInfo->GetWidth();
 		int height = pTextureInfo->GetHeight();
+		if (width <= 0 || height <= 0)
+			return false;
 		*pWidth = width;
 		*pHeight = height;
 		*pBytesPerPixel = 4;
 		*pSize = width * height * 4;
 		uint8* pData = new uint8[*pSize];
 
-		GL::bindTexture2D(m_texture->getName());
+		auto* pDev = CGlobals::GetRenderDevice();
+		if (pDev && m_texture->getRHITexture() && pDev->ReadTexturePixels(m_texture->getRHITexture(), pData))
+		{
+			*ppData = pData;
+			return true;
+		}
 
-#ifdef USE_OPENGL_GETTEXIMAGE
-		glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_UNSIGNED_BYTE, pData);
-		PE_CHECK_GL_ERROR_DEBUG();
-#else
-		// glGetTexImage is not supported on opengl es 2.0, we need to use FBO to get the data.
-		GLuint fbo;
-		glGenFramebuffers(1, &fbo);
-		glBindFramebuffer(GL_FRAMEBUFFER, fbo);
-		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, m_texture->getName(), 0);
+		if (!m_dynamicPixels.empty() && static_cast<int>(m_dynamicPixels.size()) == *pSize)
+		{
+			memcpy(pData, m_dynamicPixels.data(), *pSize);
+			*ppData = pData;
+			return true;
+		}
 
-		glReadPixels(0, 0, width, height, GL_RGBA, GL_UNSIGNED_BYTE, pData);
-
-		glBindFramebuffer(GL_FRAMEBUFFER, 0);
-		glDeleteFramebuffers(1, &fbo);
-#endif
-
-		*ppData = pData;
-		return true;
+		delete[] pData;
 	}
 	return false;
 }

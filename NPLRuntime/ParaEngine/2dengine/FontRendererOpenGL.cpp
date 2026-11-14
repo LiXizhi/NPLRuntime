@@ -9,8 +9,7 @@
 
 #include "IO/FileUtils.h"
 
-#ifdef USE_OPENGL_RENDERER
-#include "RenderDeviceOpenGL.h"
+#ifndef USE_NULL_RENDERER
 #include "OpenGLWrapper/GLFontAtlas.h"
 #include "OpenGLWrapper/GLFontAtlasCache.h"
 #include "GUIBase.h"
@@ -45,15 +44,15 @@ CFontRendererOpenGL* ParaEngine::CFontRendererOpenGL::create(const std::string& 
 #ifdef WIN32
 		char szPath[MAX_PATH];
 		GetWindowsDirectoryA(szPath, MAX_PATH);
-		fontFile = szPath;
-		fontFile = fontFile + "/fonts/msyh.ttc"; // try Chinese font first
+		std::string winDir = szPath;
+		fontFile = winDir + "/fonts/msyh.ttc"; // try Chinese font first
 		
 		if (!CFileUtils::FileExist(fontFile.c_str()))
 		{
-			fontFile = fontFile + "/fonts/segoeui.ttf"; // this is usually windows default font
+			fontFile = winDir + "/fonts/segoeui.ttf"; // this is usually windows default font
 			if (!CFileUtils::FileExist(fontFile.c_str()))
 			{
-				fontFile = fontFile + "/fonts/arial.ttc"; // try English font
+				fontFile = winDir + "/fonts/arial.ttf"; // try English font
 				if (!CFileUtils::FileExist(fontFile.c_str()))
 				{
 					fontFile = "fonts/DroidSansFallback.ttf"; // use buildin default font

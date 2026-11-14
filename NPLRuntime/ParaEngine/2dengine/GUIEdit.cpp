@@ -28,10 +28,6 @@
 using namespace ParaEngine;
 using namespace std;
 
-#ifdef USE_OPENGL_RENDERER
-#include "RenderDeviceOpenGL.h"
-#endif
-
 const IType* CGUIEditBox::m_type = NULL;
 
 #pragma endregion Header
@@ -108,12 +104,8 @@ void CGUIEditBox::Clone(IObject* pobj)const
 
 	CGUIEditBox* pEditbox = (CGUIEditBox*)pobj;
 	CGUIBase::Clone(pEditbox);
-#ifdef USE_DIRECTX_RENDERER
 	pEditbox->m_Buffer.SetText(m_Buffer.GetBuffer());
 	pEditbox->m_Buffer.SetMultiline(m_Buffer.GetMultiline());
-	//pEditbox->m_Buffer.SetFontNode(m_Buffer.GetFontNode());
-	// Mod by LiXizhi 2007.10.2. Tricky. since font element is reference type. it can not be cloned.
-#endif
 	pEditbox->m_Buffer.SetFontNode(pEditbox->m_objResource->GetFontElement(0));
 
 	pEditbox->m_nBorder = m_nBorder;
@@ -773,9 +765,7 @@ void CGUIEditBox::UpdateRects()
 		break;
 	}
 
-#ifndef USE_DIRECTX_RENDERER
 	m_Buffer.SetRect(m_objResource->GetDrawingRects(9));
-#endif
 
 	m_bNeedUpdate = false;
 }
@@ -799,7 +789,7 @@ bool CGUIEditBox::OnFocusIn()
 
 bool CGUIEditBox::OnFocusOut()
 {
-#ifdef USE_DIRECTX_RENDERER
+#ifdef PARA_ENABLE_WIN32_IME
 	CGUIIME::OnFocusOut();
 #endif
 // #ifdef PARAENGINE_MOBILE
@@ -1342,15 +1332,7 @@ const RECT& CGUIEditBox::GetCaretRect() const
 /** get the text line size in pixels, supposing the current font and text will be rendered in a single line. */
 void CGUIEditBox::GetTextLineSize(int* width, int* height)
 {
-#ifdef USE_DIRECTX_RENDERER
-	int nX = 0;
-	int nY = 0;
-	m_Buffer.CPtoXY(m_Buffer.GetTextSize(), FALSE, &nX, &nY);
-	if (width != 0)
-		*width = nX;
-	if (height != 0)
-		*height = nY;
-#elif defined USE_OPENGL_RENDERER
+#ifndef USE_NULL_RENDERER
 	RECT rcText = { 0, 0, 0, 0 };
 	GetPainter()->CalcTextRect(GetText(), m_objResource->GetFontElement(0), &rcText, 0);
 	if (width != 0)
@@ -1358,7 +1340,6 @@ void CGUIEditBox::GetTextLineSize(int* width, int* height)
 	if (height != 0)
 		*height = rcText.bottom;
 #else
-
 	if (width != 0)
 		*width = 0;
 	if (height != 0)
@@ -1622,11 +1603,9 @@ void CGUIEditBox::SetTextFloatArray(const float *pNumbers, int nCount)
 		strcat(wszBuffer, wszTmp);
 	}
 
-#ifdef USE_DIRECTX_RENDERER
 	// Don't want the last space
-	if (nCount > 0 && _tcslen(wszBuffer) > 0)
-		wszBuffer[_tcslen(wszBuffer) - 1] = 0;
-#endif
+	if (nCount > 0 && strlen(wszBuffer) > 0)
+		wszBuffer[strlen(wszBuffer) - 1] = 0;
 	SetTextA(wszBuffer);
 }
 //--------------------------------------------------------------------------------------

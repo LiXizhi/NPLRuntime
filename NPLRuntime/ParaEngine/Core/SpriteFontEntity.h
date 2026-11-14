@@ -64,13 +64,8 @@ namespace ParaEngine
 	};
 }
 
-// chose an implementation as Texture Manager
-#ifdef USE_DIRECTX_RENDERER
-#include "SpriteFontEntityDirectX.h"
-namespace ParaEngine{
-	typedef AssetManager<SpriteFontEntity, SpriteFontEntityDirectX> SpriteFontAssetManager;
-}
-#elif defined(USE_OPENGL_RENDERER)
+// chose an implementation as Font Asset Manager
+#ifndef USE_NULL_RENDERER
 #include "SpriteFontEntityOpenGL.h"
 namespace ParaEngine{
 	typedef AssetManager<SpriteFontEntity, SpriteFontEntityOpenGL> SpriteFontAssetManager;

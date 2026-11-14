@@ -10,11 +10,11 @@
 #include "AssetManifest.h"
 #include "ParaWorldAsset.h"
 #include "util/HttpUtility.h"
+#ifndef USE_NULL_RENDERER
+#include "ParaImage.h"
+#endif
 #include "CustomCharModelInstance.h"
 #include "CustomCharCommon.h"
-#if USE_DIRECTX_RENDERER
-#include "RenderDeviceD3D9.h"
-#endif
 using namespace ParaEngine;
 
 /************************************************************************/
@@ -28,12 +28,7 @@ CharTextureComponent::CharTextureComponent()
 
 bool CharTextureComponent::GetPixels(unsigned char* pBuffer, int* nWidth, int* nHeight)
 {
-	bool bOK = true;
-#ifdef USE_DIRECTX_RENDERER
-	auto pRenderDevice = GETD3D(CGlobals::GetRenderDevice());
-	
-	D3DXIMAGE_INFO SrcInfo;
-
+#ifndef USE_NULL_RENDERER
 	CParaFile myFile(name.c_str());
 	char* buffer = myFile.getBuffer();
 	DWORD nFileSize = (DWORD)myFile.getSize();
@@ -43,37 +38,50 @@ bool CharTextureComponent::GetPixels(unsigned char* pBuffer, int* nWidth, int* n
 		return false;
 	}
 
-	// load to the specified format
-	LPDIRECT3DTEXTURE9 pTexture = NULL;
-	HRESULT hr = D3DXCreateTextureFromFileInMemoryEx(pRenderDevice,buffer, nFileSize, D3DX_DEFAULT, D3DX_DEFAULT, 1, 0,
-		D3DFMT_A8R8G8B8, D3DPOOL_SCRATCH, D3DX_DEFAULT, D3DX_DEFAULT, 0, &SrcInfo, NULL, &pTexture);
-	if (SUCCEEDED(hr))
-	{
-		// write the image file information.
-		*nWidth = SrcInfo.Width;
-		*nHeight = SrcInfo.Height;
-
-		D3DLOCKED_RECT lr;
-		hr = pTexture->LockRect(0, &lr, NULL, D3DLOCK_READONLY);
-		if (SUCCEEDED(hr))
-		{
-			memcpy(pBuffer, lr.pBits, SrcInfo.Width*SrcInfo.Height * 4);
-			pTexture->UnlockRect(0);
-		}
-		else
-			bOK = false;
-
-		SAFE_RELEASE(pTexture);
-	}
-	else
+	ParaImage img;
+	if (!img.initWithImageData((const unsigned char*)buffer, nFileSize))
 	{
 		OUTPUT_LOG("warning: texture can not be created %s\n", name.c_str());
 		return false;
 	}
+
+	const int w = (int)img.getWidth();
+	const int h = (int)img.getHeight();
+	if (w <= 0 || h <= 0)
+		return false;
+
+	if (nWidth)
+		*nWidth = w;
+	if (nHeight)
+		*nHeight = h;
+	if (!pBuffer)
+		return true;
+
+	unsigned char* rgbaData = nullptr;
+	size_t rgbaLen = 0;
+	PixelFormat outFmt = ParaImage::convertDataToFormat(img.getData(), img.getDataLen(), img.getRenderFormat(), PixelFormat::A8R8G8B8, &rgbaData, &rgbaLen);
+	if (outFmt != PixelFormat::A8R8G8B8 || !rgbaData)
+	{
+		if (rgbaData && rgbaData != img.getData())
+			delete[] rgbaData;
+		return false;
+	}
+
+	// Convert RGBA8888 -> BGRA8888 (D3DFMT_A8R8G8B8)
+	const size_t pixelCount = (size_t)w * (size_t)h;
+	for (size_t i = 0; i < pixelCount; ++i)
+	{
+		pBuffer[i * 4 + 0] = rgbaData[i * 4 + 2];
+		pBuffer[i * 4 + 1] = rgbaData[i * 4 + 1];
+		pBuffer[i * 4 + 2] = rgbaData[i * 4 + 0];
+		pBuffer[i * 4 + 3] = rgbaData[i * 4 + 3];
+	}
+	if (rgbaData != img.getData())
+		delete[] rgbaData;
+	return true;
 #else
-	bOK = false;
+	return false;
 #endif
-	return bOK;
 }
 
 DWORD CharTextureComponent::GetColor() const
@@ -178,7 +186,6 @@ void CharTexture::compose(asset_ptr<TextureEntity>& tex, CharModelInstance* pCha
 			// TODO: this is actually never called, because ref count is always 2. 
 			tex->GarbageCollectMe();
 		}
-		//CGlobals::GetAssetManager()->GetTextureManager().DeleteByName(filename);
 	}
 	// if we only have one texture then don't bother with compositing
 	if (components.size() == 1 && components[0].GetColor() == 0xffffffff)
@@ -186,17 +193,12 @@ void CharTexture::compose(asset_ptr<TextureEntity>& tex, CharModelInstance* pCha
 		tex = CGlobals::GetAssetManager()->LoadTexture("", components[0].name.c_str(), TextureEntity::StaticTexture);
 		return;
 	}
-#ifdef USE_DIRECTX_RENDERER
 	// if we have composed this texture before, use it. 
 	if (CParaFile::DoesFileExist(GetCacheFileName().c_str(), false))
 	{
 		tex = CGlobals::GetAssetManager()->LoadTexture("", GetCacheFileName().c_str(), TextureEntity::StaticTexture);
 		return;
 	}
-#endif
-#ifdef USE_OPENGL_RENDERER
-	// TODO: shall we search in render target?
-#endif
 
 	if (pCharInst)
 		CharModelInstance::AddPendingBodyTexture(pCharInst);

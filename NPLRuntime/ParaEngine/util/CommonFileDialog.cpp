@@ -5,7 +5,7 @@
 // Date: common file dialog
 //-----------------------------------------------------------------------------
 #include "ParaEngine.h"
-#if defined(WIN32) && !defined(PARAENGINE_MOBILE) && 0
+#if defined(WIN32) && !defined(PARAENGINE_MOBILE) && !defined(NPLRUNTIME_SERVER)
 #include <shlobj.h>
 
 #include "CommonFileDialog.h"

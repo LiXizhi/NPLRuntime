@@ -26,7 +26,7 @@ parameters that can be specified when creating them, such as grid size, grid sca
 #include "VoxelMesh/MetaWorldFragment.h"
 #include "VoxelMesh/IsoSurfaceRenderable.h"
 #include "VoxelMesh/MetaBall.h"
-#include ".\voxelmesh.h"
+#include "VoxelMesh.h"
 #include "memdebug.h"
 using namespace ParaEngine;
 
