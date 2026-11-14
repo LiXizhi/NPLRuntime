@@ -204,6 +204,7 @@ namespace ParaEngine
 
 		// Cached D3D11 pipeline state objects
 		std::unordered_map<uint64_t, Microsoft::WRL::ComPtr<ID3D11BlendState>> m_blendStates;
+		uint8_t m_lastAppliedPsOutputMask = 0xFFu;
 		std::unordered_map<uint64_t, Microsoft::WRL::ComPtr<ID3D11RasterizerState>> m_rasterizerStates;
 		std::unordered_map<uint64_t, Microsoft::WRL::ComPtr<ID3D11DepthStencilState>> m_depthStencilStates;
 		std::unordered_map<uint64_t, Microsoft::WRL::ComPtr<ID3D11SamplerState>> m_samplerStates;

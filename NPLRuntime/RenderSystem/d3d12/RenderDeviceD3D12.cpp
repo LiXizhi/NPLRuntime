@@ -1195,6 +1195,7 @@ namespace ParaEngine
 			, m_vsHash(0)
 			, m_psHash(0)
 			, m_usesSVPosition(false)
+			, m_psOutputMask(0xFFu)
 		{
 			if (!desc.vsBytecode || desc.vsBytecodeSize == 0)
 				return;
@@ -1208,6 +1209,11 @@ namespace ParaEngine
 				m_psBytecode.resize(desc.psBytecodeSize);
 				std::memcpy(m_psBytecode.data(), desc.psBytecode, desc.psBytecodeSize);
 				m_psHash = ComputeByteHash64(desc.psBytecode, desc.psBytecodeSize);
+				ReflectPSOutputs();
+			}
+			else
+			{
+				m_psOutputMask = 0;
 			}
 
 			ReflectVSInputs();
@@ -1230,6 +1236,7 @@ namespace ParaEngine
 		uint64_t GetVSHash() const { return m_vsHash; }
 		uint64_t GetPSHash() const { return m_psHash; }
 		bool UsesSVPosition() const { return m_usesSVPosition; }
+		uint8_t GetPSOutputMask() const { return m_psOutputMask; }
 		const std::vector<InputSigParam>& GetInputSignature() const { return m_inputParams; }
 
 	private:
@@ -1346,12 +1353,117 @@ namespace ParaEngine
 			}
 		}
 
+		bool ParseDXBCOutputSignatureChunk(uint8_t& outMask) const
+		{
+			if (m_psBytecode.size() < 36 || std::memcmp(m_psBytecode.data(), "DXBC", 4) != 0)
+				return false;
+
+			uint32_t chunkCount = 0;
+			std::memcpy(&chunkCount, m_psBytecode.data() + 28, sizeof(uint32_t));
+			if (32ULL + static_cast<uint64_t>(chunkCount) * 4ULL > m_psBytecode.size())
+				return false;
+
+			for (uint32_t c = 0; c < chunkCount; ++c)
+			{
+				uint32_t chunkOffset = 0;
+				std::memcpy(&chunkOffset, m_psBytecode.data() + 32 + c * 4, sizeof(uint32_t));
+				if (static_cast<size_t>(chunkOffset) + 16 > m_psBytecode.size())
+					continue;
+
+				const uint8_t* hdr = m_psBytecode.data() + chunkOffset;
+				const bool isOSG1 = (std::memcmp(hdr, "OSG1", 4) == 0 || std::memcmp(hdr, "OSG5", 4) == 0);
+				const bool isOSGN = (std::memcmp(hdr, "OSGN", 4) == 0);
+				if (!isOSG1 && !isOSGN)
+					continue;
+
+				uint32_t chunkSize = 0;
+				std::memcpy(&chunkSize, hdr + 4, sizeof(uint32_t));
+				const uint8_t* data = hdr + 8;
+				if (static_cast<size_t>(chunkOffset) + 8 + chunkSize > m_psBytecode.size() || chunkSize < 8)
+					return false;
+
+				uint32_t elemCount = 0;
+				std::memcpy(&elemCount, data, sizeof(uint32_t));
+				const size_t elemStride = isOSG1 ? 32u : 24u;
+				if (8ULL + static_cast<uint64_t>(elemCount) * elemStride > chunkSize)
+					return false;
+
+				outMask = 0;
+				for (uint32_t i = 0; i < elemCount; ++i)
+				{
+					const uint8_t* e = data + 8 + i * elemStride;
+					uint32_t nameOffset = 0, semIndex = 0, sysValue = 0;
+					if (isOSG1)
+					{
+						std::memcpy(&nameOffset, e + 4, 4);
+						std::memcpy(&semIndex, e + 8, 4);
+						std::memcpy(&sysValue, e + 12, 4);
+					}
+					else
+					{
+						std::memcpy(&nameOffset, e + 0, 4);
+						std::memcpy(&semIndex, e + 4, 4);
+						std::memcpy(&sysValue, e + 8, 4);
+					}
+					if (nameOffset < chunkSize)
+					{
+						const char* semName = reinterpret_cast<const char*>(data + nameOffset);
+						if ((sysValue == D3D_NAME_TARGET ||
+							 _stricmp(semName, "SV_Target") == 0 ||
+							 _stricmp(semName, "COLOR") == 0) &&
+							semIndex < 8)
+						{
+							outMask |= static_cast<uint8_t>(1u << semIndex);
+						}
+					}
+				}
+				return true;
+			}
+			return false;
+		}
+
+		void ReflectPSOutputs()
+		{
+			uint8_t mask = 0;
+			if (ParseDXBCOutputSignatureChunk(mask))
+			{
+				m_psOutputMask = mask;
+				return;
+			}
+
+			ComPtr<ID3D12ShaderReflection> refl12;
+			if (SUCCEEDED(::D3DReflect(m_psBytecode.data(), m_psBytecode.size(), IID_PPV_ARGS(&refl12))) && refl12)
+			{
+				D3D12_SHADER_DESC sd = {};
+				if (SUCCEEDED(refl12->GetDesc(&sd)))
+				{
+					mask = 0;
+					for (UINT i = 0; i < sd.OutputParameters; ++i)
+					{
+						D3D12_SIGNATURE_PARAMETER_DESC pd = {};
+						if (SUCCEEDED(refl12->GetOutputParameterDesc(i, &pd)) && pd.SemanticName)
+						{
+							if ((pd.SystemValueType == D3D_NAME_TARGET ||
+								 _stricmp(pd.SemanticName, "SV_Target") == 0 ||
+								 _stricmp(pd.SemanticName, "COLOR") == 0) &&
+								pd.SemanticIndex < 8)
+							{
+								mask |= static_cast<uint8_t>(1u << pd.SemanticIndex);
+							}
+						}
+					}
+					m_psOutputMask = mask;
+				}
+			}
+		}
+
 	private:
 		RenderDeviceD3D12* m_owner = nullptr;
 		bool m_valid;
 		uint64_t m_vsHash;
 		uint64_t m_psHash;
 		bool m_usesSVPosition;
+		uint8_t m_psOutputMask;
 		std::vector<uint8_t> m_vsBytecode;
 		std::vector<uint8_t> m_psBytecode;
 		std::vector<InputSigParam> m_inputParams;
@@ -3342,7 +3454,8 @@ namespace ParaEngine
 		HashCombineU32(h, alphaBlend | (sepAlpha << 8));
 		HashCombineU32(h, srcBlend | (dstBlend << 8) | (blendOp << 16));
 		HashCombineU32(h, srcBlendA | (dstBlendA << 8) | (blendOpA << 16));
-		HashCombineU32(h, cw0 | (cw1 << 4) | (cw2 << 8) | (cw3 << 12));
+		const uint8_t psOutMask = m_currentProgram->GetPSOutputMask();
+		HashCombineU32(h, cw0 | (cw1 << 4) | (cw2 << 8) | (cw3 << 12) | (static_cast<uint32_t>(psOutMask) << 16));
 		HashCombineU32(h, cullMode | (fillMode << 8) | (msaaEn << 16));
 		HashCombineU32(h, biasBits);
 		HashCombineU32(h, slopeBits);
@@ -3427,8 +3540,10 @@ namespace ParaEngine
 			psoDesc.PS = { m_currentProgram->GetPSBytecode().data(), m_currentProgram->GetPSBytecode().size() };
 		}
 
+		const uint8_t activeTargetMask = (m_activeRTVCount >= 8) ? 0xFFu : static_cast<uint8_t>((1u << m_activeRTVCount) - 1u);
+		const bool hasUnwrittenActiveTarget = ((psOutMask & activeTargetMask) != activeTargetMask);
 		psoDesc.BlendState.AlphaToCoverageEnable = FALSE;
-		psoDesc.BlendState.IndependentBlendEnable = (cw1 != cw0 || cw2 != cw0 || cw3 != cw0 || m_activeNullRtvMask != 0);
+		psoDesc.BlendState.IndependentBlendEnable = (cw1 != cw0 || cw2 != cw0 || cw3 != cw0 || m_activeNullRtvMask != 0 || hasUnwrittenActiveTarget);
 		const uint8_t masks[8] = {
 			static_cast<uint8_t>(cw0), static_cast<uint8_t>(cw1), static_cast<uint8_t>(cw2), static_cast<uint8_t>(cw3),
 			static_cast<uint8_t>(cw0), static_cast<uint8_t>(cw0), static_cast<uint8_t>(cw0), static_cast<uint8_t>(cw0)
@@ -3436,7 +3551,9 @@ namespace ParaEngine
 		for (int i = 0; i < 8; ++i)
 		{
 			const bool isNullSlot = (i < 4) && ((m_activeNullRtvMask & (1u << i)) != 0);
-			psoDesc.BlendState.RenderTarget[i].BlendEnable = (!isNullSlot && alphaBlend) ? TRUE : FALSE;
+			const bool psWritesSlot = !psoDesc.BlendState.IndependentBlendEnable || ((psOutMask & (1u << i)) != 0);
+			const bool disableSlot = isNullSlot || !psWritesSlot;
+			psoDesc.BlendState.RenderTarget[i].BlendEnable = (!disableSlot && alphaBlend) ? TRUE : FALSE;
 			psoDesc.BlendState.RenderTarget[i].LogicOpEnable = FALSE;
 			psoDesc.BlendState.RenderTarget[i].SrcBlend = ToD3D12Blend(srcBlend, false);
 			psoDesc.BlendState.RenderTarget[i].DestBlend = ToD3D12Blend(dstBlend, false);
@@ -3445,7 +3562,7 @@ namespace ParaEngine
 			psoDesc.BlendState.RenderTarget[i].DestBlendAlpha = sepAlpha ? ToD3D12Blend(dstBlendA, true) : ToD3D12Blend(dstBlend, true);
 			psoDesc.BlendState.RenderTarget[i].BlendOpAlpha = sepAlpha ? ToD3D12BlendOp(blendOpA) : ToD3D12BlendOp(blendOp);
 			psoDesc.BlendState.RenderTarget[i].LogicOp = D3D12_LOGIC_OP_NOOP;
-			psoDesc.BlendState.RenderTarget[i].RenderTargetWriteMask = isNullSlot ? 0 : (psoDesc.BlendState.IndependentBlendEnable ? masks[i] : masks[0]);
+			psoDesc.BlendState.RenderTarget[i].RenderTargetWriteMask = disableSlot ? 0 : (psoDesc.BlendState.IndependentBlendEnable ? masks[i] : masks[0]);
 		}
 		psoDesc.SampleMask = UINT_MAX;
 

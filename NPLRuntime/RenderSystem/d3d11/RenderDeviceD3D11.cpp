@@ -823,6 +823,7 @@ namespace ParaEngine
 			, m_valid(false)
 			, m_vsHash(0)
 			, m_usesSVPosition(false)
+			, m_psOutputMask(0x0Fu)
 			, m_debugName(desc.debugName ? desc.debugName : "")
 			, m_psEntry(desc.psEntryPoint ? desc.psEntryPoint : "")
 		{
@@ -889,9 +890,29 @@ namespace ParaEngine
 					D3D11_SHADER_DESC psd = {};
 					if (SUCCEEDED(psRefl->GetDesc(&psd)))
 					{
+						uint8_t outMask = 0;
+						for (UINT i = 0; i < psd.OutputParameters; ++i)
+						{
+							D3D11_SIGNATURE_PARAMETER_DESC opd = {};
+							if (SUCCEEDED(psRefl->GetOutputParameterDesc(i, &opd)) && opd.SemanticName)
+							{
+								if ((opd.SystemValueType == D3D_NAME_TARGET ||
+									 _stricmp(opd.SemanticName, "SV_Target") == 0 ||
+									 _stricmp(opd.SemanticName, "COLOR") == 0) &&
+									opd.SemanticIndex < 8)
+								{
+									outMask |= static_cast<uint8_t>(1u << opd.SemanticIndex);
+								}
+							}
+						}
+						m_psOutputMask = outMask;
 						ReflectTextureSlotMapping(psRefl.Get(), psd.BoundResources, m_psTexSlotToStage);
 					}
 				}
+			}
+			else
+			{
+				m_psOutputMask = 0;
 			}
 
 			m_valid = true;
@@ -911,6 +932,7 @@ namespace ParaEngine
 		const std::vector<uint8_t>& GetVSBytecode() const { return m_vsBytecode; }
 		uint64_t GetVSHash() const { return m_vsHash; }
 		bool UsesSVPosition() const { return m_usesSVPosition; }
+		uint8_t GetPSOutputMask() const { return m_psOutputMask; }
 		const std::vector<InputSigParam>& GetInputSignature() const { return m_inputParams; }
 		uint8_t MapVSTexSlot(uint32_t tSlot) const { return (tSlot < RHIStateTracker::MAX_SAMPLER_STAGES) ? m_vsTexSlotToStage[tSlot] : static_cast<uint8_t>(tSlot); }
 		uint8_t MapPSTexSlot(uint32_t tSlot) const { return (tSlot < RHIStateTracker::MAX_SAMPLER_STAGES) ? m_psTexSlotToStage[tSlot] : static_cast<uint8_t>(tSlot); }
@@ -957,6 +979,7 @@ namespace ParaEngine
 		bool m_valid;
 		uint64_t m_vsHash;
 		bool m_usesSVPosition;
+		uint8_t m_psOutputMask;
 		ComPtr<ID3D11VertexShader> m_vs;
 		ComPtr<ID3D11PixelShader> m_ps;
 		std::vector<uint8_t> m_vsBytecode;
@@ -1822,6 +1845,7 @@ namespace ParaEngine
 			m_context->IASetVertexBuffers(0, 1, &s0vb, &s0Stride, &s0Offset);
 		}
 		m_stateTracker.MarkAllDirty();
+		m_lastAppliedPsOutputMask = 0xFFu;
 		m_srvBindingsDirty = true;
 		SetViewport(m_currentViewport);
 		if (m_currentProgram)
@@ -2359,7 +2383,10 @@ namespace ParaEngine
 			return;
 
 		// 1. Blend state
-		if (m_stateTracker.IsBlendDirty())
+		const uint8_t psOutMask = (m_featureLevel >= D3D_FEATURE_LEVEL_10_0 && m_currentProgram)
+			? (m_currentProgram->GetPSOutputMask() & 0x0Fu)
+			: 0x0Fu;
+		if (m_stateTracker.IsBlendDirty() || psOutMask != m_lastAppliedPsOutputMask)
 		{
 			uint64_t h = 14695981039346656037ULL;
 			const uint32_t alphaBlend = m_stateTracker.GetRenderState(ERenderState::ALPHABLENDENABLE);
@@ -2383,24 +2410,25 @@ namespace ParaEngine
 			HashCombineU32(h, srcBlendA);
 			HashCombineU32(h, dstBlendA);
 			HashCombineU32(h, blendOpA);
-			HashCombineU32(h, cw0 | (cw1 << 4) | (cw2 << 8) | (cw3 << 12));
+			HashCombineU32(h, cw0 | (cw1 << 4) | (cw2 << 8) | (cw3 << 12) | (static_cast<uint32_t>(psOutMask) << 16));
 
 			auto it = m_blendStates.find(h);
 			if (it == m_blendStates.end())
 			{
 				D3D11_BLEND_DESC bd = {};
-				bd.IndependentBlendEnable = (m_featureLevel >= D3D_FEATURE_LEVEL_10_0) && (cw1 != cw0 || cw2 != cw0 || cw3 != cw0);
+				bd.IndependentBlendEnable = (m_featureLevel >= D3D_FEATURE_LEVEL_10_0) && (cw1 != cw0 || cw2 != cw0 || cw3 != cw0 || psOutMask != 0x0Fu);
 				const uint8_t masks[4] = { static_cast<uint8_t>(cw0), static_cast<uint8_t>(cw1), static_cast<uint8_t>(cw2), static_cast<uint8_t>(cw3) };
 				for (int i = 0; i < 4; ++i)
 				{
-					bd.RenderTarget[i].BlendEnable = alphaBlend ? TRUE : FALSE;
+					const bool psWritesSlot = !bd.IndependentBlendEnable || ((psOutMask & (1u << i)) != 0);
+					bd.RenderTarget[i].BlendEnable = (psWritesSlot && alphaBlend) ? TRUE : FALSE;
 					bd.RenderTarget[i].SrcBlend = ToD3D11Blend(srcBlend, false);
 					bd.RenderTarget[i].DestBlend = ToD3D11Blend(dstBlend, false);
 					bd.RenderTarget[i].BlendOp = ToD3D11BlendOp(blendOp);
 					bd.RenderTarget[i].SrcBlendAlpha = sepAlpha ? ToD3D11Blend(srcBlendA, true) : ToD3D11Blend(srcBlend, true);
 					bd.RenderTarget[i].DestBlendAlpha = sepAlpha ? ToD3D11Blend(dstBlendA, true) : ToD3D11Blend(dstBlend, true);
 					bd.RenderTarget[i].BlendOpAlpha = sepAlpha ? ToD3D11BlendOp(blendOpA) : ToD3D11BlendOp(blendOp);
-					bd.RenderTarget[i].RenderTargetWriteMask = bd.IndependentBlendEnable ? masks[i] : masks[0];
+					bd.RenderTarget[i].RenderTargetWriteMask = !psWritesSlot ? 0 : (bd.IndependentBlendEnable ? masks[i] : masks[0]);
 				}
 				ComPtr<ID3D11BlendState> bs;
 				m_device->CreateBlendState(&bd, bs.GetAddressOf());
@@ -2416,6 +2444,7 @@ namespace ParaEngine
 			};
 			m_context->OMSetBlendState(it->second.Get(), blendFactor, 0xFFFFFFFFu);
 			m_stateTracker.ClearBlendDirty();
+			m_lastAppliedPsOutputMask = psOutMask;
 		}
 
 		// 2. Rasterizer state

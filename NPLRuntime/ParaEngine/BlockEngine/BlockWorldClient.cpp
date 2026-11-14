@@ -2202,10 +2202,14 @@ namespace ParaEngine
 				if (bIsNewFrame)
 				{
 					nLastFrameCount = curFrameCount;
-					pDevice->PushRenderTarget(normalRT);
-					pDevice->SetClearColor(Color4f(0.f, 0.f, 0.f, 0.f));
-					pDevice->Clear(true, false, false);
-					pDevice->PopRenderTarget();
+					IRHIRenderTarget* gbufferRTs[3] = { depthRT, blockInfoRT, normalRT };
+					for (IRHIRenderTarget* gbRT : gbufferRTs)
+					{
+						pDevice->PushRenderTarget(gbRT);
+						pDevice->SetClearColor(Color4f(0.f, 0.f, 0.f, 0.f));
+						pDevice->Clear(true, false, false);
+						pDevice->PopRenderTarget();
+					}
 				}
 
 				IRHIRenderTarget* rt0 = pDevice->GetCurrentRenderTargetBinding().targets[0];
