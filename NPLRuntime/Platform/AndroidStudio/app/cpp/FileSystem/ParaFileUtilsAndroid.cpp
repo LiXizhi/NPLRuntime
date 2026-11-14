@@ -188,10 +188,10 @@ bool ParaEngine::CParaFileUtilsAndroid::MakeDirectoryFromFilePath(const std::str
 
 		fs::path filePath(GetFullPathForFilename(filename));
 		fs::path fileDir = filePath.parent_path();
-		if (!fs::exists(fileDir))
-			return fs::create_directories(fileDir);
-		else
+		if (fileDir.empty() || fs::exists(fileDir))
 			return true;
+		else
+			return fs::create_directories(fileDir);
 	}
 	catch (...) {}
 	return false;

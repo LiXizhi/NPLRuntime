@@ -172,7 +172,7 @@ if(TARGET ParaEngine)
         HARMONY_OS=1
         EXCEPTION_POINTERS=void
         LPD3DXFILE=void*
-        USE_OPENGL_RENDERER=1
+        PARA_ENABLE_OPENGL=1
         __int64=int64_t
         MAX_STRING_LENGTH=65535
     )
@@ -203,7 +203,7 @@ target_compile_definitions(paracraft PUBLIC
     -DNPLRUNTIME_OCE=1
     -DHB_HAVE_FREETYPE=ON
     -DUSE_NAPI=1
-    -DUSE_OPENGL_RENDERER=1
+    -DPARA_ENABLE_OPENGL=1
     -DLINUX=1
     EXCEPTION_POINTERS=void
     PARAENGINE_MOBILE

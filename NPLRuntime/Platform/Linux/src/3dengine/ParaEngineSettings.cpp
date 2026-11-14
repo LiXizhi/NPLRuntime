@@ -9,5 +9,6 @@
 
 const std::string& ParaEngine::ParaEngineSettings::GetMachineID()
 {
-	return "";
+	static const std::string s_empty;
+	return s_empty;
 }

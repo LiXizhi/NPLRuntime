@@ -15,6 +15,11 @@
 #include "ParaTime.h"
 #include "NPLRuntime.h"
 #include "jni/ParaEngineHelper.h"
+#ifdef PICO_VR
+#include "ViewportManager.h"
+#include "PicoXR/PicoOpenXR.h"
+#include "3dengine/WebXR.h"
+#endif
 
 #include <boost/bind.hpp>
 #include <android/log.h>
@@ -122,7 +127,7 @@ namespace ParaEngine {
             s_keymap[AKEYCODE_MEDIA_REWIND] = EVirtualKey::KEY_UNKNOWN;
             s_keymap[AKEYCODE_MEDIA_FAST_FORWARD] = EVirtualKey::KEY_UNKNOWN;
             s_keymap[AKEYCODE_MUTE] = EVirtualKey::KEY_UNKNOWN;
-            s_keymap[AKEYCODE_PAGE_UP] = EVirtualKey::KEY_PERIOD;
+            s_keymap[AKEYCODE_PAGE_UP] = EVirtualKey::KEY_PRIOR;
             s_keymap[AKEYCODE_PAGE_DOWN] = EVirtualKey::KEY_NEXT;
             s_keymap[AKEYCODE_PICTSYMBOLS] = EVirtualKey::KEY_UNKNOWN;
             s_keymap[AKEYCODE_SWITCH_CHARSET] = EVirtualKey::KEY_UNKNOWN;
@@ -181,9 +186,9 @@ namespace ParaEngine {
             s_keymap[AKEYCODE_NUMPAD_4] = EVirtualKey::KEY_NUMPAD4;
             s_keymap[AKEYCODE_NUMPAD_5] = EVirtualKey::KEY_NUMPAD5;
             s_keymap[AKEYCODE_NUMPAD_6] = EVirtualKey::KEY_NUMPAD6;
-            s_keymap[AKEYCODE_NUMPAD_7] = EVirtualKey::KEY_NUMPAD0;
-            s_keymap[AKEYCODE_NUMPAD_8] = EVirtualKey::KEY_NUMPAD0;
-            s_keymap[AKEYCODE_NUMPAD_9] = EVirtualKey::KEY_NUMPAD0;
+            s_keymap[AKEYCODE_NUMPAD_7] = EVirtualKey::KEY_NUMPAD7;
+            s_keymap[AKEYCODE_NUMPAD_8] = EVirtualKey::KEY_NUMPAD8;
+            s_keymap[AKEYCODE_NUMPAD_9] = EVirtualKey::KEY_NUMPAD9;
             s_keymap[AKEYCODE_NUMPAD_DIVIDE] = EVirtualKey::KEY_DIVIDE;
             s_keymap[AKEYCODE_NUMPAD_MULTIPLY] = EVirtualKey::KEY_MULTIPLY;
             s_keymap[AKEYCODE_NUMPAD_SUBTRACT] = EVirtualKey::KEY_SUBTRACT;
@@ -276,6 +281,44 @@ namespace ParaEngine {
     void AppDelegate::handle_mainloop()
     {
         if (m_ParaEngineApp && !m_isPaused) {
+#ifdef PICO_VR
+            auto& xr = CPicoOpenXR::GetInstance();
+            if (xr.IsInited()) {
+                static bool s_wasPointerPressed = false;
+                xr.Frame([this, &xr](const PicoXRFrameData* data) -> bool {
+                    if (!data) {
+                        m_ParaEngineApp->DoWork();
+                        return false;
+                    }
+                    auto* webXR = static_cast<CParaWebXR*>(CGlobals::GetViewportManager()->GetChildAttributeObject("WebXR"));
+                    if (webXR) {
+                        webXR->UpdatePicoXRFrame(*data);
+                        xr.SetUIPanelMode(!webXR->GetIsXR());
+                    }
+                    if (xr.IsUIPanelMode() && data->pointerValid) {
+                        int pointerId = 0;
+                        float px = data->pointerX;
+                        float py = data->pointerY;
+                        handle_mouse_move(&pointerId, &px, &py, 1);
+                        if (data->pointerPressed && !s_wasPointerPressed) {
+                            handle_mouse_presses_begin(0, 0, px, py);
+                        } else if (!data->pointerPressed && s_wasPointerPressed) {
+                            handle_mouse_presses_end(0, 0, px, py);
+                        }
+                        s_wasPointerPressed = data->pointerPressed;
+                    } else if (s_wasPointerPressed) {
+                        handle_mouse_presses_end(0, 0, 0.f, 0.f);
+                        s_wasPointerPressed = false;
+                    }
+                    m_ParaEngineApp->DoWork();
+                    if (webXR) {
+                        xr.SetUIPanelMode(!webXR->GetIsXR());
+                    }
+                    return true;
+                });
+                return;
+            }
+#endif
             m_ParaEngineApp->DoWork();
         }
     }
@@ -316,6 +359,17 @@ namespace ParaEngine {
     void AppDelegate::init(int w, int h, const std::string &intentData)
     {
         ParaEngineHelper::init();
+
+#ifdef PICO_VR
+        auto& xr = CPicoOpenXR::GetInstance();
+        if (!xr.IsInited()) {
+            xr.Init(JniHelper::getJavaVM(), JniHelper::getActivity());
+        }
+        if (xr.IsInited()) {
+            w = xr.GetRenderWidth();
+            h = xr.GetRenderHeight();
+        }
+#endif
 
         if (m_ParaEngineApp == nullptr) {
             auto renderWindow = new RenderWindowAndroid(w, h);
@@ -490,6 +544,9 @@ namespace ParaEngine {
     }
 
     void AppDelegate::OnTermWindow() {
+#ifdef PICO_VR
+        CPicoOpenXR::GetInstance().Shutdown();
+#endif
         if (m_ParaEngineApp) {
             m_ParaEngineApp->OnRendererDestroyed();
         }

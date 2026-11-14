@@ -293,33 +293,33 @@ int main(int argc, char* argv[])
                 Vector3 rightHandPosition;
                 Vector4 rightHandOrientation;
 
-                int leftHandKey[7];
-                int rightHandKey[7];
+                int leftHandKey[7] = {};
+                int rightHandKey[7] = {};
                 Vector4 leftAxes = Vector4(0, 0, 0, 0);
                 Vector4 rightAxes = Vector4(0, 0, 0, 0);
 
                 for (int i = 0; i < sourcesCount; ++i) {
-                    static ParaWebXRRigidTransform *_controllerTransformations;
-                    webxr_get_input_pose(&sources[i], _controllerTransformations, WEBXR_INPUT_POSE_TARGET_RAY);
+                    ParaWebXRRigidTransform controllerTransform{};
+                    webxr_get_input_pose(&sources[i], &controllerTransform, WEBXR_INPUT_POSE_TARGET_RAY);
 
                     if (sources[i].handedness == WEBXR_HANDEDNESS_LEFT) {
-                        leftHandPosition = Vector3(_controllerTransformations->position[0], _controllerTransformations->position[1], _controllerTransformations->position[2]);
+                        leftHandPosition = Vector3(controllerTransform.position[0], controllerTransform.position[1], controllerTransform.position[2]);
                         leftHandOrientation = Vector4(
-                            _controllerTransformations->orientation[0],
-                            _controllerTransformations->orientation[1],
-                            _controllerTransformations->orientation[2],
-                            _controllerTransformations->orientation[3]);
+                            controllerTransform.orientation[0],
+                            controllerTransform.orientation[1],
+                            controllerTransform.orientation[2],
+                            controllerTransform.orientation[3]);
 
                         memcpy(leftHandKey, sources[i].gamepad.buttons, sizeof(sources[i].gamepad.buttons));
 
                         leftAxes = Vector4(sources[i].gamepad.axes[0], sources[i].gamepad.axes[1], sources[i].gamepad.axes[2], sources[i].gamepad.axes[3]);
                     } else if (sources[i].handedness == WEBXR_HANDEDNESS_RIGHT) {
-                        rightHandPosition = Vector3(_controllerTransformations->position[0], _controllerTransformations->position[1], _controllerTransformations->position[2]);
+                        rightHandPosition = Vector3(controllerTransform.position[0], controllerTransform.position[1], controllerTransform.position[2]);
                         rightHandOrientation = Vector4(
-                            _controllerTransformations->orientation[0],
-                            _controllerTransformations->orientation[1],
-                            _controllerTransformations->orientation[2],
-                            _controllerTransformations->orientation[3]);
+                            controllerTransform.orientation[0],
+                            controllerTransform.orientation[1],
+                            controllerTransform.orientation[2],
+                            controllerTransform.orientation[3]);
 
                         memcpy(rightHandKey, sources[i].gamepad.buttons, sizeof(sources[i].gamepad.buttons));
                         

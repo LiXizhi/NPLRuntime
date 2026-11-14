@@ -37,6 +37,7 @@ namespace ParaEngine
 		virtual intptr_t GetNativeHandle() const override;
 
 		bool Create(int defaultWdith, int defaultHeight);
+		bool EnsureGLContext();
 		void SetSize(int w, int h);
 		void SetWindowText(std::string title);
 		

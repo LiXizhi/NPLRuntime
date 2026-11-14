@@ -29,7 +29,7 @@ namespace ParaEngine {
 		cmd[MAX_PATH] = '\0';
 
 		// Start the child process. 
-		if (!::CreateProcess(CGlobals::GetSettings().GetScriptEditor().c_str(),   // No module name (use command line). 
+		if (!::CreateProcessA(CGlobals::GetSettings().GetScriptEditor().c_str(),   // No module name (use command line). 
 			cmd, // Command line. 
 			NULL,             // Process handle not inheritable. 
 			NULL,             // Thread handle not inheritable. 
@@ -182,7 +182,7 @@ namespace ParaEngine {
 		cmd[MAX_PATH] = '\0';
 
 		// Start the child process. 
-		if (!::CreateProcess(lpApplicationName,   // No module name (use command line). 
+		if (!::CreateProcessA(lpApplicationName,   // No module name (use command line). 
 			cmd, // Command line. 
 			NULL,             // Process handle not inheritable. 
 			NULL,             // Thread handle not inheritable. 

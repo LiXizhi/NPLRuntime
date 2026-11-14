@@ -2,18 +2,26 @@ include(${PROJECT_SOURCE_DIR}/cmake/ucm.cmake)
 
 
 set(src_render_context)
+set(RenderSystem RenderSystemRHICore RenderSystemNull)
 
-if(NPLRUNTIME_RENDERER STREQUAL "OPENGL")
-#{
-    set(RenderSystem RenderSystemOpenGL)
-    list(APPEND RenderSystem  glad_ext_wgl opengl32.lib)
+if(NPLRUNTIME_ENABLE_OPENGL OR NPLRUNTIME_RENDERER STREQUAL "OPENGL")
+    list(APPEND RenderSystem RenderSystemOpenGL glad_ext_wgl opengl32.lib)
     ucm_add_dirs(src/Render/context/wgl TO src_render_context)
-#}
-elseif(NPLRUNTIME_RENDERER STREQUAL "DIRECTX")
-#{
-    set(RenderSystem RenderSystemD3D9)
-    ucm_add_dirs(src/Render/context/d3d9 TO src_render_context)
-#}
+endif()
+if(NPLRUNTIME_ENABLE_D3D11 AND EXISTS "${PROJECT_SOURCE_DIR}/RenderSystem/d3d11/CMakeLists.txt")
+    list(APPEND RenderSystem RenderSystemD3D11)
+    if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/src/Render/context/d3d11")
+        ucm_add_dirs(src/Render/context/d3d11 TO src_render_context)
+    endif()
+endif()
+if(NPLRUNTIME_ENABLE_D3D12 AND EXISTS "${PROJECT_SOURCE_DIR}/RenderSystem/d3d12/CMakeLists.txt")
+    list(APPEND RenderSystem RenderSystemD3D12)
+endif()
+if(NPLRUNTIME_ENABLE_VULKAN AND EXISTS "${PROJECT_SOURCE_DIR}/RenderSystem/vulkan/CMakeLists.txt")
+    list(APPEND RenderSystem RenderSystemVulkan)
+endif()
+if(NPLRUNTIME_ENABLE_WEBGPU AND EXISTS "${PROJECT_SOURCE_DIR}/RenderSystem/webgpu/CMakeLists.txt")
+    list(APPEND RenderSystem RenderSystemWebGPU)
 endif()
 ucm_add_dirs(src/Framework TO src_framework RECURSIVE)
 ucm_add_dirs(src TO src_platform)
@@ -57,8 +65,14 @@ target_compile_definitions(WindowsApplication PRIVATE
     PLATFORM_WINDOWS
     USE_WINDOWS_SSPI
     WIN32_LEAN_AND_MEAN
-    _WIN32_WINNT=0x0501
+    _WIN32_WINNT=0x0A00
     _WINSOCK_DEPRECATED_NO_WARNINGS
+    PARA_RHI_MULTI_BACKEND
+    $<$<BOOL:${NPLRUNTIME_ENABLE_OPENGL}>:PARA_RHI_HAS_OPENGL>
+    $<$<BOOL:${NPLRUNTIME_ENABLE_D3D11}>:PARA_RHI_HAS_D3D11>
+    $<$<BOOL:${NPLRUNTIME_ENABLE_D3D12}>:PARA_RHI_HAS_D3D12>
+    $<$<BOOL:${NPLRUNTIME_ENABLE_VULKAN}>:PARA_RHI_HAS_VULKAN>
+    $<$<BOOL:${NPLRUNTIME_ENABLE_WEBGPU}>:PARA_RHI_HAS_WEBGPU>
 )
 
 target_link_libraries(WindowsApplication PRIVATE
@@ -106,3 +120,7 @@ ADD_CUSTOM_COMMAND(
    COMMAND ${CMAKE_COMMAND} -E make_directory ${OUTPUT_BIN_DIR}
    COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:WindowsApplication> ${OUTPUT_BIN_DIR}
 )
+
+if(WIN32 AND NOT PARAENGINE_COMPILE_LIB)
+    add_subdirectory(ParaApplyWaiter)
+endif()

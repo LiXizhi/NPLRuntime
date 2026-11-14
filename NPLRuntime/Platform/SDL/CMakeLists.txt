@@ -33,8 +33,17 @@ if (EMSCRIPTEN)
 		"--js-library ${CMAKE_CURRENT_SOURCE_DIR}/emscripten/library_webxr.js")
 endif()
 
+set(SDL_RHI_LIBS RenderSystemRHICore RenderSystemNull RenderSystemOpenGL)
+if(NPLRUNTIME_ENABLE_WEBGPU AND EXISTS "${PROJECT_SOURCE_DIR}/RenderSystem/webgpu/CMakeLists.txt")
+	list(APPEND SDL_RHI_LIBS RenderSystemWebGPU)
+endif()
+
 target_include_directories(${TARGET_NAME} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
-target_link_libraries(${TARGET_NAME} PUBLIC RenderSystemOpenGL ParaEngine)
+target_link_libraries(${TARGET_NAME} PUBLIC ${SDL_RHI_LIBS} ParaEngine)
+target_compile_definitions(${TARGET_NAME} PRIVATE
+	PARA_RHI_MULTI_BACKEND
+	$<$<BOOL:${NPLRUNTIME_ENABLE_WEBGPU}>:PARA_RHI_HAS_WEBGPU>
+)
 
 if (NOT MSVC)
 	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-inconsistent-missing-override")

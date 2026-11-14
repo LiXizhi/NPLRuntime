@@ -5,13 +5,41 @@
 #include "RenderWindowiOS.h"
 #include "RenderDeviceOpenGL.h"
 #include "RenderDeviceAEGL.h"
+#include "RenderSystem/rhi_core/RHIBackendRegistry.h"
+#ifdef PARA_RHI_HAS_METAL
+#include "RenderSystem/metal/RenderContextMetal.h"
+#endif
 
 using namespace ParaEngine;
 
+namespace ParaEngine
+{
+    IRenderContext* CreateRenderContextAEGL()
+    {
+        return new RenderContextAEGL();
+    }
+}
+
+namespace
+{
+    struct IOSBackendAutoRegistrar
+    {
+        IOSBackendAutoRegistrar()
+        {
+#ifdef PARA_RHI_HAS_METAL
+            RHIBackendRegistry::GetInstance().RegisterBackend(ERHIBackend::Metal, "Metal", &CreateRenderContextMetal, 100);
+#endif
+            RHIBackendRegistry::GetInstance().RegisterBackend(ERHIBackend::OpenGL, "OpenGL", &CreateRenderContextAEGL, 50);
+        }
+    } s_iosBackendRegistrar;
+}
+
+#ifndef PARA_RHI_MULTI_BACKEND
 ParaEngine::IRenderContext* ParaEngine::IRenderContext::Create()
 {
-	return new RenderContextAEGL();
+	return CreateRenderContextAEGL();
 }
+#endif
 
 IRenderDevice* RenderContextAEGL::CreateDevice(const RenderConfiguration & cfg)
 {

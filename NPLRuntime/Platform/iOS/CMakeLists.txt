@@ -28,6 +28,7 @@ set(CMAKE_OSX_DEPLOYMENT_TARGET "14.0" CACHE STRING "Deployment target for iOS" 
 
 find_library(UIKit UIKit)
 find_library(OpenGLES OpenGLES)
+find_library(METAL_LIBRARY Metal)
 find_library(QuartzCore QuartzCore)
 find_library(CoreBluetooth CoreBluetooth)
 find_library(WebKit WebKit)
@@ -49,6 +50,12 @@ add_executable(Paracraft
     ${ASSETS_FILES}
 )
 
+set(IOS_RHI_LIBS RenderSystemRHICore RenderSystemNull RenderSystemOpenGL)
+if(NPLRUNTIME_ENABLE_METAL AND TARGET RenderSystemMetal)
+    list(APPEND IOS_RHI_LIBS RenderSystemMetal ${METAL_LIBRARY})
+    target_compile_definitions(Paracraft PRIVATE PARA_RHI_HAS_METAL)
+endif()
+
 target_link_libraries(Paracraft PUBLIC
     ${UIKit}
     ${OpenGLES}
@@ -65,7 +72,7 @@ target_link_libraries(Paracraft PUBLIC
     ${CoreTelephony}
     ${AdSupport}
     ${AppTrackingTransparency}
-    RenderSystemOpenGL
+    ${IOS_RHI_LIBS}
     ParaEngine
 )
 
@@ -140,8 +147,12 @@ if (BUILD_FRAMEWORK)
         ${CoreTelephony}
         ${AdSupport}
         ${AppTrackingTransparency}
-        RenderSystemOpenGL
+        ${IOS_RHI_LIBS}
         ParaEngine
+    )
+    target_compile_definitions(ParacraftFramework PRIVATE
+        PARA_RHI_MULTI_BACKEND
+        $<$<BOOL:${NPLRUNTIME_ENABLE_METAL}>:PARA_RHI_HAS_METAL>
     )
     
     # Set Framework properties

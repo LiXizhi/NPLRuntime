@@ -4,15 +4,41 @@
 #include "RenderWindowOSX.h"
 #include "RenderDeviceAGL.h"
 #include "RenderViewOSX.h"
-
+#include "RenderSystem/rhi_core/RHIBackendRegistry.h"
+#ifdef PARA_RHI_HAS_METAL
+#include "RenderSystem/metal/RenderContextMetal.h"
+#endif
 
 using namespace ParaEngine;
 
+namespace ParaEngine
+{
+    IRenderContext* CreateRenderContextAGL()
+    {
+        return new RenderContxtAGL();
+    }
+}
+
+namespace
+{
+    struct OSXBackendAutoRegistrar
+    {
+        OSXBackendAutoRegistrar()
+        {
+#ifdef PARA_RHI_HAS_METAL
+            RHIBackendRegistry::GetInstance().RegisterBackend(ERHIBackend::Metal, "Metal", &CreateRenderContextMetal, 100);
+#endif
+            RHIBackendRegistry::GetInstance().RegisterBackend(ERHIBackend::OpenGL, "OpenGL", &CreateRenderContextAGL, 50);
+        }
+    } s_osxBackendRegistrar;
+}
+
+#ifndef PARA_RHI_MULTI_BACKEND
 IRenderContext* IRenderContext::Create()
 {
-    auto context = new RenderContxtAGL();
-    return context;
+    return CreateRenderContextAGL();
 }
+#endif
 
 bool RenderContxtAGL::ResetDevice(ParaEngine::IRenderDevice *device, const ParaEngine::RenderConfiguration &cfg)
 {

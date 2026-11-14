@@ -216,22 +216,54 @@ namespace ParaEngine
 
 	bool RenderWindowSDL2::Create(int defaultWdith, int defaultHeight)
 	{
-		m_sdl2_window = SDL_CreateWindow("Paracraft", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, defaultWdith, defaultHeight, SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE);
-		m_gl_context = SDL_GL_CreateContext(m_sdl2_window);
-#ifndef EMSCRIPTEN
-		gladLoadGLLoader((GLADloadproc)SDL_GL_GetProcAddress);
+		Uint32 winFlags = SDL_WINDOW_RESIZABLE;
+#ifndef PARA_RHI_HAS_WEBGPU
+		winFlags |= SDL_WINDOW_OPENGL;
 #endif
-		SDL_GL_SetSwapInterval(1);
-		std::cout << "GL_VERSION=" << glGetString(GL_VERSION) << std::endl;
-		glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
-		glClear(GL_COLOR_BUFFER_BIT);
+		m_sdl2_window = SDL_CreateWindow("Paracraft", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, defaultWdith, defaultHeight, winFlags);
 		g_WindowMap[m_sdl2_window] = this;
 
 		m_window_width = defaultWdith;
 		m_window_height = defaultHeight;
 
 		const Uint8 *keyboardState = SDL_GetKeyboardState(NULL);
+		(void)keyboardState;
 
+#ifndef PARA_RHI_HAS_WEBGPU
+		EnsureGLContext();
+#endif
+		return true;
+	}
+
+	bool RenderWindowSDL2::EnsureGLContext()
+	{
+		if (m_gl_context)
+			return true;
+		if (!m_sdl2_window)
+			return false;
+		m_gl_context = SDL_GL_CreateContext(m_sdl2_window);
+		if (!m_gl_context)
+		{
+			// Recreate SDL window with SDL_WINDOW_OPENGL flag if desktop SDL requires explicit flag
+			g_WindowMap.erase(m_sdl2_window);
+			SDL_DestroyWindow(m_sdl2_window);
+			m_sdl2_window = SDL_CreateWindow("Paracraft", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, m_window_width, m_window_height, SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE);
+			if (!m_sdl2_window)
+				return false;
+			g_WindowMap[m_sdl2_window] = this;
+			m_gl_context = SDL_GL_CreateContext(m_sdl2_window);
+			if (!m_gl_context)
+				return false;
+		}
+#ifndef EMSCRIPTEN
+		gladLoadGLLoader((GLADloadproc)SDL_GL_GetProcAddress);
+#endif
+		SDL_GL_SetSwapInterval(1);
+		const GLubyte* verStr = glGetString(GL_VERSION);
+		if (verStr)
+			std::cout << "GL_VERSION=" << verStr << std::endl;
+		glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
+		glClear(GL_COLOR_BUFFER_BIT);
 		return true;
 	}
 

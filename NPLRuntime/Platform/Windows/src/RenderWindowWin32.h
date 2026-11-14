@@ -38,8 +38,14 @@ namespace ParaEngine
 
 		virtual intptr_t GetNativeHandle() const override;
 
-		bool Create(HINSTANCE hInstance, int defaultWdith, int defaultHeight);
+		bool Create(HINSTANCE hInstance, int defaultWdith, int defaultHeight, HWND hParentWnd = nullptr);
+		bool AttachExternalWindow(HWND hExternalWnd);
 		void SetSize(int w, int h);
+		void SetWindowedFlag(bool bWindowed) { m_Windowed = bWindowed; }
+		bool IsChildWindow() const { return m_bIsChildWindow; }
+		bool HasFocus() const { return !m_bLostFocus; }
+		void ForceQuit();
+		bool IsForceClosing() const { return m_bForceClosing; }
 
 	protected:
 		virtual void OnMouseButton(EMouseButton button, EKeyState state,uint32_t x,uint32_t y) {};
@@ -68,11 +74,16 @@ namespace ParaEngine
     	bool m_screen_rotated;     // 屏幕是否旋转
 	private:
 		HWND m_hWnd;
+		HWND m_hParentWnd;
+		WNDPROC m_pOldWndProc;
 		HACCEL m_hAccel;
 		int m_Width;
 		int m_Height;
 		bool m_Windowed;
 		bool m_IsQuit;
+		bool m_bForceClosing;
+		bool m_bIsChildWindow;
+		bool m_bIsExternalWindow;
 		static LRESULT CALLBACK WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
 		static std::unordered_map<HWND, RenderWindowWin32*> g_WindowMap;
 		bool m_bLostFocus;

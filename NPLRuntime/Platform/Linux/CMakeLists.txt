@@ -22,17 +22,44 @@ IF (MAC_SERVER)
 ENDIF()
 
 target_link_libraries(ParaEngineServer PUBLIC
+    RenderSystemRHICore
     RenderSystemNull
     ParaEngine
 	${EXTRA_LIBRARIES}
 )
 
-target_link_libraries(ParaEngineServer PRIVATE
-	dl
-)
+if (WIN32)
+	target_compile_definitions(ParaEngineServer PRIVATE
+		PLATFORM_WINDOWS
+		USE_WINDOWS_SSPI
+		WIN32_LEAN_AND_MEAN
+		_WIN32_WINNT=0x0A00
+		_WINSOCK_DEPRECATED_NO_WARNINGS
+	)
+	target_link_libraries(ParaEngineServer PRIVATE
+		gdiplus.lib
+		comctl32.lib
+		Dbghelp.lib
+		VFW32.lib
+		SHLWAPI.lib
+		Psapi.lib
+		Ws2_32
+		winmm
+		wsock32
+		Dnsapi
+		Secur32
+		Crypt32
+		Wldap32
+	)
+elseif (UNIX AND NOT APPLE)
+	target_link_libraries(ParaEngineServer PRIVATE
+		dl
+	)
+endif ()
 
 target_compile_definitions(ParaEngineServer PUBLIC 
 	PARAENGINE_SERVER
+	PARA_RHI_MULTI_BACKEND
 )
 
 

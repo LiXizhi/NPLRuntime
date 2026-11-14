@@ -49,6 +49,7 @@
 #include "RenderWindowDelegate.h"
 #include "DynamicAttributeField.h"
 #include "ParaEngineInfo.h"
+#include "RenderSystem/rhi_core/RHIBackendRegistry.h"
 
 #include "SDL2/SDL.h"
 
@@ -194,6 +195,8 @@ namespace ParaEngine
 		assert(pWinDelegate);
 
 		m_cfg.renderWindow = pWinDelegate;
+		m_cfg.preferredBackend = RHIBackendRegistry::GetInstance().ResolvePreferredBackend(sCommandLine);
+		RHIBackendRegistry::GetInstance().SetPreferredBackend(m_cfg.preferredBackend);
 		pWinDelegate->Create(m_cfg.screenWidth, m_cfg.screenHeight);
 
 		return CParaEngineAppBase::InitApp(pWinDelegate, sCommandLine);

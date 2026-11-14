@@ -104,14 +104,22 @@ target_include_directories(Paracraft PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
 
 find_library(COCOA_LIBRARY Cocoa required)
 find_library(OPENGL_LIBRARY OpenGL)
+find_library(METAL_LIBRARY Metal)
+find_library(QUARTZCORE_LIBRARY QuartzCore)
 find_library(WebView WebKit)
 # find_library(AUTHENTICATION_SERVICES AuthenticationServices)
 find_library(AVFAudio AVFAudio)
 find_library(IOKit IOKit)
 find_library(CoreBluetooth CoreBluetooth)
 
+set(OSX_RHI_LIBS RenderSystemRHICore RenderSystemNull RenderSystemOpenGL)
+if(NPLRUNTIME_ENABLE_METAL AND TARGET RenderSystemMetal)
+    list(APPEND OSX_RHI_LIBS RenderSystemMetal ${METAL_LIBRARY} ${QUARTZCORE_LIBRARY})
+    target_compile_definitions(Paracraft PRIVATE PARA_RHI_HAS_METAL)
+endif()
+
 target_link_libraries(Paracraft PUBLIC
-    RenderSystemOpenGL
+    ${OSX_RHI_LIBS}
     ParaEngine
     ${COCOA_LIBRARY}
     ${OPENGL_LIBRARY}

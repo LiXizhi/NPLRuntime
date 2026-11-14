@@ -4,34 +4,65 @@
 #endif
 #include "RenderContextSDL2.h"
 #include "RenderWindowSDL2.h"
+#include "RenderSystem/rhi_core/RHIBackendRegistry.h"
+#ifdef PARA_RHI_HAS_WEBGPU
+#include "RenderSystem/webgpu/RenderContextWebGPU.h"
+#endif
 
-namespace ParaEngine {
-	IRenderContext* IRenderContext::Create()
+namespace ParaEngine
+{
+	IRenderContext* CreateRenderContextSDL2()
 	{
 		return new RenderContextSDL2();
 	}
 
-	IRenderDevice* RenderContextSDL2::CreateDevice(const RenderConfiguration& cfg)
+	namespace
 	{
-		return new RenderDeviceSDL2((SDL_Window*)((RenderWindowSDL2*)(cfg.renderWindow)->GetNativeHandle()));
+		struct SDLBackendAutoRegistrar
+		{
+			SDLBackendAutoRegistrar()
+			{
+#ifdef PARA_RHI_HAS_WEBGPU
+#ifdef EMSCRIPTEN
+				RHIBackendRegistry::GetInstance().RegisterBackend(ERHIBackend::WebGPU, "WebGPU", &CreateRenderContextWebGPU, 100);
+#else
+				RHIBackendRegistry::GetInstance().RegisterBackend(ERHIBackend::WebGPU, "WebGPU", &CreateRenderContextWebGPU, 60);
+#endif
+#endif
+				RHIBackendRegistry::GetInstance().RegisterBackend(ERHIBackend::OpenGL, "OpenGL", &CreateRenderContextSDL2, 50);
+			}
+		} s_sdlBackendRegistrar;
 	}
 
-
-	bool RenderContextSDL2::ResetDevice(IRenderDevice* device, const RenderConfiguration& cfg)
+#ifndef PARA_RHI_MULTI_BACKEND
+	IRenderContext* IRenderContext::Create()
 	{
-		//throw std::logic_error("The method or operation is not implemented.");
+		return CreateRenderContextSDL2();
+	}
+#endif
 
+	IRenderDevice* RenderContextSDL2::CreateDevice(const RenderConfiguration& cfg)
+	{
+		if (!cfg.renderWindow)
+			return nullptr;
+		auto* renderWin = static_cast<RenderWindowSDL2*>(cfg.renderWindow);
+		if (!renderWin->EnsureGLContext())
+			return nullptr;
+		return new RenderDeviceSDL2(reinterpret_cast<SDL_Window*>(renderWin->GetNativeHandle()));
+	}
+
+	bool RenderContextSDL2::ResetDevice(IRenderDevice* /*device*/, const RenderConfiguration& /*cfg*/)
+	{
 		return true;
 	}
 
-	RenderDeviceSDL2::RenderDeviceSDL2(SDL_Window* window) :m_window(window)
+	RenderDeviceSDL2::RenderDeviceSDL2(SDL_Window* window)
+		: m_window(window)
 	{
-
 	}
 
 	RenderDeviceSDL2::~RenderDeviceSDL2()
 	{
-
 	}
 
 	bool RenderDeviceSDL2::Present()
@@ -40,4 +71,3 @@ namespace ParaEngine {
 		return true;
 	}
 }
-

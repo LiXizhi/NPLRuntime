@@ -13,208 +13,259 @@
 
 using namespace ParaEngine;
 
-
-
-LRESULT CALLBACK TempWindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
+namespace
 {
-	return DefWindowProc(hWnd, message, wParam, lParam);
+	LRESULT CALLBACK TempWindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
+	{
+		return DefWindowProcW(hWnd, message, wParam, lParam);
+	}
 }
 
-
-ParaEngine::IRenderContext* ParaEngine::IRenderContext::Create()
+namespace ParaEngine
 {
-
-	HINSTANCE hInstance = GetModuleHandle(NULL);
-
-	// 创建临时窗口
-	WNDCLASSEX wc;
-	ZeroMemory(&wc, sizeof(WNDCLASSEX));
-	wc.cbSize = sizeof(WNDCLASSEX);
-	wc.style = CS_HREDRAW | CS_VREDRAW | CS_OWNDC;
-	wc.hInstance = hInstance;
-	wc.hCursor = LoadCursor(NULL, IDC_ARROW);
-	wc.hbrBackground = (HBRUSH)COLOR_WINDOW;
-	wc.lpszClassName = _T("ParaEngineGL");
-	wc.lpfnWndProc = TempWindowProc;
-	RegisterClassEx(&wc);
-	HWND hWndTemp = CreateWindowExW(0,
-		L"ParaEngineGL",      // name of the window class
-		L"ParaEngineGL-TempWindow",             // title of the window
-		WS_OVERLAPPEDWINDOW,              // window style
-		CW_USEDEFAULT,                    // x-position of the window
-		CW_USEDEFAULT,                    // y-position of the window
-		400,             // width of the window
-		300,            // height of the window
-		NULL,                             // we have no parent window, NULL
-		NULL,                             // we aren't using menus, NULL
-		hInstance,                        // application handle
-		NULL);                            // used with multiple windows, NULL
-
-
-										  ///////////////////////
-										  //// 创建临时上下文
-
-	HDC deviceContext;
-	PIXELFORMATDESCRIPTOR pixelFormat;
-	int error;
-
-	deviceContext = GetDC(hWndTemp);
-	if (!deviceContext)
+	RenderContextWGL::~RenderContextWGL()
 	{
-		DestroyWindow(hWndTemp);
-		hWndTemp = nullptr;
-		return nullptr;
-	}
-	// 设置一个临时的默认像素格式
-	error = SetPixelFormat(deviceContext, 1, &pixelFormat);
-	if (error != 1)
-	{
-		DestroyWindow(hWndTemp);
-		hWndTemp = nullptr;
-		return nullptr;
+		if (mWGLRenderingContext)
+		{
+			wglMakeCurrent(NULL, NULL);
+			wglDeleteContext(mWGLRenderingContext);
+			mWGLRenderingContext = nullptr;
+		}
+		if (m_hDC && m_hWnd)
+		{
+			ReleaseDC(m_hWnd, m_hDC);
+			m_hDC = nullptr;
+		}
 	}
 
-	// 创建一个临时渲染上下文
-	HGLRC tempRenderingContext = wglCreateContext(deviceContext);
-	if (!tempRenderingContext)
+	IRenderContext* CreateRenderContextWGL()
 	{
-		DestroyWindow(hWndTemp);
-		hWndTemp = nullptr;
-		return nullptr;
-	}
+		HINSTANCE hInstance = GetModuleHandleW(NULL);
 
-	// 将刚才创建的临时渲染上下文,设置为这个窗口的当前渲染上下文.
-	error = wglMakeCurrent(deviceContext, tempRenderingContext);
-	if (error != 1)
-	{
+		WNDCLASSEXW wc;
+		ZeroMemory(&wc, sizeof(WNDCLASSEXW));
+		wc.cbSize = sizeof(WNDCLASSEXW);
+		wc.style = CS_HREDRAW | CS_VREDRAW | CS_OWNDC;
+		wc.hInstance = hInstance;
+		wc.hCursor = LoadCursor(NULL, IDC_ARROW);
+		wc.hbrBackground = (HBRUSH)COLOR_WINDOW;
+		wc.lpszClassName = L"ParaEngineGLTemp";
+		wc.lpfnWndProc = TempWindowProc;
+		RegisterClassExW(&wc);
+
+		HWND hWndTemp = CreateWindowExW(
+			0,
+			L"ParaEngineGLTemp",
+			L"ParaEngineGL-TempWindow",
+			WS_OVERLAPPEDWINDOW,
+			CW_USEDEFAULT,
+			CW_USEDEFAULT,
+			64,
+			64,
+			NULL,
+			NULL,
+			hInstance,
+			NULL);
+		if (!hWndTemp)
+		{
+			return nullptr;
+		}
+
+		HDC deviceContext = GetDC(hWndTemp);
+		if (!deviceContext)
+		{
+			DestroyWindow(hWndTemp);
+			return nullptr;
+		}
+
+		PIXELFORMATDESCRIPTOR pfd;
+		ZeroMemory(&pfd, sizeof(PIXELFORMATDESCRIPTOR));
+		pfd.nSize = sizeof(PIXELFORMATDESCRIPTOR);
+		pfd.nVersion = 1;
+		pfd.dwFlags = PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL | PFD_DOUBLEBUFFER;
+		pfd.iPixelType = PFD_TYPE_RGBA;
+		pfd.cColorBits = 32;
+		pfd.cDepthBits = 24;
+		pfd.cStencilBits = 8;
+		pfd.iLayerType = PFD_MAIN_PLANE;
+
+		int tempPf = ChoosePixelFormat(deviceContext, &pfd);
+		if (tempPf == 0)
+			tempPf = 1;
+
+		if (!SetPixelFormat(deviceContext, tempPf, &pfd))
+		{
+			ReleaseDC(hWndTemp, deviceContext);
+			DestroyWindow(hWndTemp);
+			return nullptr;
+		}
+
+		HGLRC tempRenderingContext = wglCreateContext(deviceContext);
+		if (!tempRenderingContext)
+		{
+			ReleaseDC(hWndTemp, deviceContext);
+			DestroyWindow(hWndTemp);
+			return nullptr;
+		}
+
+		if (!wglMakeCurrent(deviceContext, tempRenderingContext))
+		{
+			wglDeleteContext(tempRenderingContext);
+			ReleaseDC(hWndTemp, deviceContext);
+			DestroyWindow(hWndTemp);
+			return nullptr;
+		}
+
+		const int wglLoaded = gladLoadWGL(deviceContext);
+
+		wglMakeCurrent(NULL, NULL);
 		wglDeleteContext(tempRenderingContext);
-		tempRenderingContext = nullptr;
+		ReleaseDC(hWndTemp, deviceContext);
 		DestroyWindow(hWndTemp);
-		hWndTemp = nullptr;
-		return nullptr;
+
+		if (!wglLoaded)
+		{
+			return nullptr;
+		}
+
+		return new RenderContextWGL();
 	}
 
-	///////////////////////
-	// 加载WGL
-	///////////////////////
-
-	if (!gladLoadWGL(deviceContext))
+#ifndef PARA_RHI_MULTI_BACKEND
+	IRenderContext* IRenderContext::Create()
 	{
-		wglDeleteContext(tempRenderingContext);
-		tempRenderingContext = nullptr;
-		DestroyWindow(hWndTemp);
-		hWndTemp = nullptr;
-		return nullptr;
+		return CreateRenderContextWGL();
 	}
-	// 销毁临时窗口
-	DestroyWindow(hWndTemp);
-	hWndTemp = nullptr;
-	return new RenderContextWGL();
-}
+#endif
 
-ParaEngine::IRenderDevice* ParaEngine::RenderContextWGL::CreateDevice(const RenderConfiguration& cfg)
-{
-	assert(cfg.renderWindow);
-	RenderWindowWin32* pWindow = (RenderWindowWin32*)cfg.renderWindow;
-	HWND hWnd = pWindow->GetHandle();
-	HDC deviceContext = GetDC(hWnd);
-	if (!deviceContext) {
-		return nullptr;
-	}
-	int attrib[19];
-	attrib[0] = WGL_SUPPORT_OPENGL_ARB;
-	attrib[1] = TRUE;
-
-	attrib[2] = WGL_DRAW_TO_WINDOW_ARB;
-	attrib[3] = TRUE;
-
-	attrib[4] = WGL_ACCELERATION_ARB;
-	attrib[5] = WGL_FULL_ACCELERATION_ARB;
-
-	// Support for 24bit color.
-	attrib[6] = WGL_COLOR_BITS_ARB;
-	attrib[7] = 24;
-
-	// Support for 24 bit depth buffer.
-	attrib[8] = WGL_DEPTH_BITS_ARB;
-	attrib[9] = 24;
-
-	// Support for double buffer.
-	attrib[10] = WGL_DOUBLE_BUFFER_ARB;
-	attrib[11] = TRUE;
-
-	// Support for swapping front and back buffer.
-	attrib[12] = WGL_SWAP_METHOD_ARB;
-	attrib[13] = WGL_SWAP_EXCHANGE_ARB;
-
-	// Support for the RGBA pixel type.
-	attrib[14] = WGL_PIXEL_TYPE_ARB;
-	attrib[15] = WGL_TYPE_RGBA_ARB;
-
-	// Support for a 8 bit stencil buffer.
-	attrib[16] = WGL_STENCIL_BITS_ARB;
-	attrib[17] = 8;
-
-	// Null terminate the attribute list.
-	attrib[18] = 0;
-
-	int pixelFormat[1];
-	uint32_t formatCount = 0;
-	PIXELFORMATDESCRIPTOR pixelFormatDesc;
-
-	// Query for a pixel format that fits the attributes we want.
-	int result = wglChoosePixelFormatARB(deviceContext, attrib, NULL, 1, pixelFormat, &formatCount);
-	if (!result)
+	IRenderDevice* RenderContextWGL::CreateDevice(const RenderConfiguration& cfg)
 	{
-		ReleaseDC(hWnd, deviceContext);
-		return nullptr;
+		if (!cfg.renderWindow)
+			return nullptr;
+
+		RenderWindowWin32* pWindow = static_cast<RenderWindowWin32*>(cfg.renderWindow);
+		HWND hWnd = pWindow->GetHandle();
+		if (!hWnd)
+			return nullptr;
+
+		HDC deviceContext = GetDC(hWnd);
+		if (!deviceContext)
+			return nullptr;
+
+		PIXELFORMATDESCRIPTOR pixelFormatDesc;
+		ZeroMemory(&pixelFormatDesc, sizeof(PIXELFORMATDESCRIPTOR));
+		pixelFormatDesc.nSize = sizeof(PIXELFORMATDESCRIPTOR);
+		pixelFormatDesc.nVersion = 1;
+		pixelFormatDesc.dwFlags = PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL | PFD_DOUBLEBUFFER;
+		pixelFormatDesc.iPixelType = PFD_TYPE_RGBA;
+		pixelFormatDesc.cColorBits = 32;
+		pixelFormatDesc.cDepthBits = 24;
+		pixelFormatDesc.cStencilBits = 8;
+		pixelFormatDesc.iLayerType = PFD_MAIN_PLANE;
+
+		int chosenFormat = 0;
+		if (GLAD_WGL_ARB_pixel_format && wglChoosePixelFormatARB != nullptr)
+		{
+			const int attrib[] = {
+				WGL_SUPPORT_OPENGL_ARB, TRUE,
+				WGL_DRAW_TO_WINDOW_ARB, TRUE,
+				WGL_ACCELERATION_ARB, WGL_FULL_ACCELERATION_ARB,
+				WGL_COLOR_BITS_ARB, 24,
+				WGL_ALPHA_BITS_ARB, 8,
+				WGL_DEPTH_BITS_ARB, 24,
+				WGL_STENCIL_BITS_ARB, 8,
+				WGL_DOUBLE_BUFFER_ARB, TRUE,
+				WGL_PIXEL_TYPE_ARB, WGL_TYPE_RGBA_ARB,
+				0
+			};
+			int pixelFormat[1] = { 0 };
+			UINT formatCount = 0;
+			if (wglChoosePixelFormatARB(deviceContext, attrib, NULL, 1, pixelFormat, &formatCount) && formatCount > 0)
+			{
+				chosenFormat = pixelFormat[0];
+			}
+		}
+
+		if (chosenFormat == 0)
+		{
+			chosenFormat = ChoosePixelFormat(deviceContext, &pixelFormatDesc);
+		}
+
+		if (chosenFormat == 0 || !SetPixelFormat(deviceContext, chosenFormat, &pixelFormatDesc))
+		{
+			ReleaseDC(hWnd, deviceContext);
+			return nullptr;
+		}
+
+		HGLRC renderingContext = nullptr;
+		if (GLAD_WGL_ARB_create_context && wglCreateContextAttribsARB != nullptr)
+		{
+			// Request OpenGL 3.3 Compatibility Profile first so legacy GLSL 1.10/1.20 shaders
+			// AND modern MRT/Instancing/FBO Blit/OcclusionQuery/Float RTs all work together.
+			const int versions[][2] = { { 3, 3 }, { 3, 0 }, { 2, 1 }, { 2, 0 } };
+			for (const auto& ver : versions)
+			{
+				if (ver[0] >= 3 && GLAD_WGL_ARB_create_context_profile)
+				{
+					const int attribsCompat[] = {
+						WGL_CONTEXT_MAJOR_VERSION_ARB, ver[0],
+						WGL_CONTEXT_MINOR_VERSION_ARB, ver[1],
+						WGL_CONTEXT_PROFILE_MASK_ARB, WGL_CONTEXT_COMPATIBILITY_PROFILE_BIT_ARB,
+						0
+					};
+					renderingContext = wglCreateContextAttribsARB(deviceContext, 0, attribsCompat);
+				}
+				else
+				{
+					const int attribsBasic[] = {
+						WGL_CONTEXT_MAJOR_VERSION_ARB, ver[0],
+						WGL_CONTEXT_MINOR_VERSION_ARB, ver[1],
+						0
+					};
+					renderingContext = wglCreateContextAttribsARB(deviceContext, 0, attribsBasic);
+				}
+				if (renderingContext != nullptr)
+					break;
+			}
+		}
+
+		if (!renderingContext)
+		{
+			renderingContext = wglCreateContext(deviceContext);
+		}
+
+		if (!renderingContext)
+		{
+			ReleaseDC(hWnd, deviceContext);
+			return nullptr;
+		}
+
+		if (!wglMakeCurrent(deviceContext, renderingContext))
+		{
+			wglDeleteContext(renderingContext);
+			ReleaseDC(hWnd, deviceContext);
+			return nullptr;
+		}
+
+		if (!gladLoadGL())
+		{
+			wglMakeCurrent(NULL, NULL);
+			wglDeleteContext(renderingContext);
+			ReleaseDC(hWnd, deviceContext);
+			return nullptr;
+		}
+
+		m_hWnd = hWnd;
+		m_hDC = deviceContext;
+		mWGLRenderingContext = renderingContext;
+
+		auto* pDevice = new RenderDeviceOpenWGL(deviceContext);
+		pDevice->InitCaps();
+		return pDevice;
 	}
-	result = SetPixelFormat(deviceContext, pixelFormat[0], &pixelFormatDesc);
-	if (!result)
+
+	bool RenderContextWGL::ResetDevice(IRenderDevice* /*device*/, const RenderConfiguration& /*cfg*/)
 	{
-		ReleaseDC(hWnd, deviceContext);
-		return nullptr;
+		return true;
 	}
-
-	// Set the 2.0 version of OpenGL in the attribute list.
-	int attributeList[5];
-	attributeList[0] = WGL_CONTEXT_MAJOR_VERSION_ARB;
-	attributeList[1] = 2;
-	attributeList[2] = WGL_CONTEXT_MINOR_VERSION_ARB;
-	attributeList[3] = 0;
-	// Null terminate the attribute list.
-	attributeList[4] = 0;
-
-	// Create a OpenGL 2.0 rendering context.
-	HGLRC renderingContext = wglCreateContextAttribsARB(deviceContext, 0, attributeList);
-	if (!renderingContext) {
-		return nullptr;
-	}
-	result = wglMakeCurrent(deviceContext, renderingContext);
-	if (!result)
-	{
-		ReleaseDC(hWnd, deviceContext);
-		wglDeleteContext(renderingContext);
-		return nullptr;
-	}
-
-	
-	if (!gladLoadGL())
-	{
-		ReleaseDC(hWnd, deviceContext);
-		wglDeleteContext(renderingContext);
-		return nullptr;
-	}
-
-
-	mWGLRenderingContext = renderingContext;
-
-	return new RenderDeviceOpenWGL(deviceContext);
-}
-
-bool ParaEngine::RenderContextWGL::ResetDevice(IRenderDevice* device, const RenderConfiguration& cfg)
-{
-	//throw std::logic_error("The method or operation is not implemented.");
-
-	return true;
 }

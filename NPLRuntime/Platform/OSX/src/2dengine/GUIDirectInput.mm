@@ -21,12 +21,6 @@
 #include "2dengine/GUIRoot.h"
 #include "util/StringHelper.h"
 
-// #ifdef USE_OPENGL_RENDERER
-// 	#include "platform/win32/ParaEngineApp.h"
-// #else
-// 	#include "ParaEngineApp.h"
-// #endif
-
 using namespace ParaEngine;
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -685,7 +679,6 @@ bool CDirectMouse::ReadBufferedData()
 
 //void CDirectMouse::SetCursorFromFile(const char *szCursor, int XHotSpot, int YHotSpot, bool force)
 //{
-//#ifdef USE_DIRECTX_RENDERER
 //	HRESULT hr = E_FAIL;
 //	
 //	//OUTPUT_LOG("SetCursorFromFile: %s\r\n", szCursor==0?"none":szCursor);

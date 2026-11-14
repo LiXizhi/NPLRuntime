@@ -95,7 +95,7 @@ namespace ParaEngine {
 	{
 		auto app = CGlobals::GetApp();
 
-		if (w > 0 && h > 0)
+		if (app && !app->GetIgnoreWindowSizeChange() && w > 0 && h > 0)
 		{
 			app->SetResolution((float)w, (float)h);
 			app->UpdateScreenMode();
