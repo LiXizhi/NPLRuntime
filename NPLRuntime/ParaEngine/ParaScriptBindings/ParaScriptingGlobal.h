@@ -13,6 +13,7 @@
 struct lua_State;
 
 #undef ShellExecute
+#undef CreateProcess
 #pragma region StackObjectPtr
 
 namespace ParaScripting

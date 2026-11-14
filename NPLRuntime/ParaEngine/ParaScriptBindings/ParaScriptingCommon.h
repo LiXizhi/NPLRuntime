@@ -245,6 +245,8 @@ namespace ParaScripting
 		* @param nFPS frames per seconds. default value is 15 FPS
 		*/
 		void SetTextureFPS(float FPS);
+		/** Save this texture asset to a PNG/JPG/BMP image file on disk, optionally resizing to (width, height) if > 0. */
+		void SaveTextureToPNG(const char* sFileName, int width, int height);
 		/**
 		* For animated textures. whether to enable texture animation. this provides a short cut to animated textures
 		* @param bEnable default value is true. Set this to false, if one wants to manually animate the texture, such as controlling from the scripting interface.
@@ -562,5 +564,8 @@ namespace ParaScripting
 		* if found, it will call the Refresh() method on the asset entity and return true, or return false. 
 		*/
 		static bool Refresh(const char* filename);
+
+		/** Convert/bake a 3D scene file into GLB2 or FBX format via Assimp ("input_path,transform_matrix,output_path"). */
+		static void ConvertGLB(const char* cmds);
 	};
 }

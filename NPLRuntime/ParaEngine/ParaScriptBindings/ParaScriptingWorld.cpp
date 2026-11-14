@@ -6,7 +6,7 @@
 // Desc: 
 //-----------------------------------------------------------------------------
 #include "ParaEngine.h"
-#ifdef USE_DIRECTX_RENDERER
+#ifdef PARAENGINE_CLIENT
 #include "KidsDBProvider.h"
 #include "NpcDatabase.h"
 #endif
@@ -37,7 +37,7 @@ using namespace luabind;
 
 #include "memdebug.h"
 
-#ifdef USE_DIRECTX_RENDERER
+#ifdef PARAENGINE_CLIENT
 //////////////////////////////////////////////////////////////////////////
 //
 // ParaKidsDataProvider
@@ -206,7 +206,7 @@ bool ParaKidsDataProvider::DeleteTitleRecordByID(int ID)
 
 bool ParaDataProvider::InsertPuzzleRecordFromString(const char* strRecord)
 {
-#ifdef USE_DIRECTX_RENDERER
+#ifdef PARAENGINE_CLIENT
 	if (IsValid())
 	{
 		return m_pDbKidsProvider->InsertPuzzleRecordFromString(strRecord);
@@ -218,7 +218,7 @@ bool ParaDataProvider::InsertPuzzleRecordFromString(const char* strRecord)
 
 bool ParaDataProvider::DeletePuzzleRecordByID(int ID)
 {
-#ifdef USE_DIRECTX_RENDERER
+#ifdef PARAENGINE_CLIENT
 	if (IsValid())
 	{
 		return m_pDbKidsProvider->DeletePuzzleRecordByID(ID);
@@ -227,7 +227,7 @@ bool ParaDataProvider::DeletePuzzleRecordByID(int ID)
 #endif
 		return false;
 }
-#ifdef USE_DIRECTX_RENDERER
+#ifdef PARAENGINE_CLIENT
 void ParaDataProvider::GetKidsDBProvider(ParaKidsDataProvider* pOut)
 {
 	pOut->m_pObj = CGlobals::GetDataProviderManager()->GetKidsDBProvider();
@@ -236,7 +236,7 @@ void ParaDataProvider::GetKidsDBProvider(ParaKidsDataProvider* pOut)
 
 int ParaDataProvider::GetNPCIDByName(const char* name)
 {
-#ifdef USE_DIRECTX_RENDERER
+#ifdef PARAENGINE_CLIENT
 	if (IsValid())
 	{
 		return m_pDbNPC->GetNPCIDByName(name);
@@ -249,7 +249,7 @@ int ParaDataProvider::GetNPCIDByName(const char* name)
 
 int ParaDataProvider::GetNPCCount()
 {
-#ifdef USE_DIRECTX_RENDERER
+#ifdef PARAENGINE_CLIENT
 	if (IsValid())
 	{
 		return m_pDbNPC->GetNPCCount();
@@ -544,7 +544,7 @@ const char* ParaWorld::NewEmptyWorld_(const char* sWorldName, float fTileSize, i
 
 ParaDataProvider ParaWorld::GetNpcDB()
 {
-#ifdef USE_DIRECTX_RENDERER
+#ifdef PARAENGINE_CLIENT
 	return ParaDataProvider(CGlobals::GetDataProviderManager()->GetNpcDB());
 #else
 	return ParaDataProvider();
@@ -582,7 +582,7 @@ void ParaWorld::SetWorldDB(const char* sConnectionstring)
 
 string ParaWorld::GetStringbyID(int ID)
 {
-#ifdef USE_DIRECTX_RENDERER
+#ifdef PARAENGINE_CLIENT
 	return CGlobals::GetDataProviderManager()->GetKidsDBProvider()->GetStringbyID(ID);
 #else
 	return CGlobals::GetString(0);
@@ -591,7 +591,7 @@ string ParaWorld::GetStringbyID(int ID)
 
 int ParaWorld::InsertString(const char* strEN, const char * strCN)
 {
-#ifdef USE_DIRECTX_RENDERER
+#ifdef PARAENGINE_CLIENT
 	return CGlobals::GetDataProviderManager()->GetKidsDBProvider()->InsertString(strEN, strCN);
 #else
 	return 0;

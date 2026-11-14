@@ -259,6 +259,19 @@ SH_IMPORT_EXPORT int C_DECL Hlsl2Glsl_Parse(
 	Hlsl2Glsl_ParseCallbacks* callbacks,
 	unsigned options);
 
+class TIntermNode;
+typedef bool (C_DECL *Hlsl2Glsl_ASTVisitorFunc)(TIntermNode* treeRoot, EShLanguage language, void* userData);
+
+/// Parse HLSL shader, run sampler/mutability AST passes, and invoke a custom backend visitor on treeRoot.
+SH_IMPORT_EXPORT int C_DECL Hlsl2Glsl_ParseAST(
+	const ShHandle handle,
+	const char* shaderString,
+	ETargetVersion targetVersion,
+	Hlsl2Glsl_ParseCallbacks* callbacks,
+	unsigned options,
+	Hlsl2Glsl_ASTVisitorFunc visitor,
+	void* userData);
+
 
 
 /// After parsing a HLSL shader, do the final translation to GLSL.

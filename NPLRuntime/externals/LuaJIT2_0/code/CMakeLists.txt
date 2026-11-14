@@ -13,7 +13,11 @@
 
 # NOTE: This build is currently only supporting x86 targets, for other targets use the original makefile. Please do not submit bugs to the LuaJIT author in case this build fails, instead use http://github.com/LuaDist/luajit
 
-project ( luajit C ASM)
+if ( WIN32 )
+  project ( luajit C )
+else ()
+  project ( luajit C ASM )
+endif ()
 
 ## CONFIGURATION
 # Default configuration (we assume POSIX by default)

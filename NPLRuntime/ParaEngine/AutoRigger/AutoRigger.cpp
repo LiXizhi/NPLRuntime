@@ -1,3 +1,4 @@
+#include "ParaEngine.h"
 //-----------------------------------------------------------------------------
 // Class:	Auto anims interface class
 // Authors:	Cheng Yuanchu, LiXizhi
@@ -6,11 +7,8 @@
 // Date:	2018.9.10
 //-----------------------------------------------------------------------------
 #ifdef ENABLE_AUTO_RIGGER
-#ifdef EMSCRIPTEN_SINGLE_THREAD
-#define bind2nd(x, y) bind(x, std::placeholders::_1, y)
-#endif
-#include "ParaEngine.h"
 #include "AutoRigger.h"
+#include "Matcher.h"
 #include "ParaWorldAsset.h"
 #include "ParaXModel/ParaXBone.h"
 #include "ParaXModel/ParaXModel.h"
@@ -716,9 +714,11 @@ CAutoRigger::CAutoRigger()
 
 CAutoRigger::~CAutoRigger()
 {
+#ifndef EMSCRIPTEN_SINGLE_THREAD
 	if (m_workerThread.joinable()){
 		m_workerThread.join();
 	}
+#endif
 	m_ModelTemplates->clear();
 	delete m_ModelTemplates;
 }
@@ -761,6 +761,9 @@ void CAutoRigger::AutoRigModel()
 		OUTPUT_LOG("error: Another task is running! \n");
 		On_AddRiggedFile(0, NULL, "Thread busy!");
 	}else {
+#ifdef EMSCRIPTEN_SINGLE_THREAD
+		AutoRigThreadFunc();
+#else
 		try {
 			m_workerThread = std::thread(std::bind(&CAutoRigger::AutoRigThreadFunc, this));
 			m_workerThread.detach();
@@ -768,6 +771,7 @@ void CAutoRigger::AutoRigModel()
 			OUTPUT_LOG("error: AutoRigModel worker thread error %s\n", e.what());
 			On_AddRiggedFile(0, NULL, "unknown thread error");
 		}
+#endif
 	}	
 }
 
@@ -804,6 +808,47 @@ int CAutoRigger::InstallFields(CAttributeClass* pClass, bool bOverride)
 	return S_OK;
 }
 
+CAutoRigger::ModelTemplateMap::iterator CAutoRigger::FindBestMatch(Mesh* targetMesh)
+{
+	Matcher matcher;
+	matcher.SetModelFeatureType(0);
+	const int numVert = static_cast<int>(targetMesh->m_Vertices.size());
+	for (int i = 0; i < numVert; ++i) {
+		PVector3 v = targetMesh->m_Vertices[i].pos;
+		PVector3 n = targetMesh->m_Vertices[i].normal;
+		v = (v - targetMesh->m_ToAdd) / targetMesh->m_Scale;
+		matcher.AddFeature((float)v[0], (float)v[1], (float)v[2], (float)n[0], (float)n[1], (float)n[2]);
+	}
+	matcher.CloseFeature();
+
+	int matchness = (std::numeric_limits<int>::max)();
+	ModelTemplateMap::iterator bestMatch = m_ModelTemplates->end();
+	ModelTemplateMap::iterator iter = m_ModelTemplates->begin();
+	for (; iter != m_ModelTemplates->end(); ++iter) {
+#ifdef EMSCRIPTEN_SINGLE_THREAD
+		if (!iter->second->IsLoaded()) iter->second->LoadAsset();
+#else
+		while (!iter->second->IsLoaded()) std::this_thread::sleep_for(std::chrono::milliseconds(25));
+#endif
+		matcher.SetModelFeatureType(1);
+		CParaXModel* source = iter->second->GetModel();
+		if (!source) continue;
+		const int numVertsSource = (int)source->m_objNum.nVertices;
+		for (int i = 0; i < numVertsSource; ++i) {
+			Vector3& v = source->m_origVertices[i].pos;
+			Vector3& n = source->m_origVertices[i].normal;
+			matcher.AddFeature(v.x, v.y, v.z, n.x, n.y, n.z);
+		}
+		matcher.CloseFeature();
+		int temp = matcher.Match();
+		if (matchness > temp) {
+			matchness = temp;
+			bestMatch = iter;
+		}
+	}
+	return bestMatch;
+}
+
 CAutoRigger::ModelTemplateMap::iterator CAutoRigger::FindBestMatch2(Mesh* targetMesh)
 {
 	// match the most close model template to the target model
@@ -813,9 +858,13 @@ CAutoRigger::ModelTemplateMap::iterator CAutoRigger::FindBestMatch2(Mesh* target
 	ModelTemplateMap::iterator bestMatch = m_ModelTemplates->end();
 	ModelTemplateMap::iterator iter = m_ModelTemplates->begin();
 	for (; iter != m_ModelTemplates->end(); ++iter) {
+#ifdef EMSCRIPTEN_SINGLE_THREAD
+		if (!iter->second->IsLoaded()) iter->second->LoadAsset();
+#else
 		while (!iter->second->IsLoaded()) {
 			std::this_thread::sleep_for(std::chrono::milliseconds(25));
 		}
+#endif
 		// constructing source model feature	
 		CParaXModel* source = iter->second->GetModel();
 		Mesh* srcMesh = RigHelper::ExtractParaXMesh(source, true);
@@ -851,9 +900,13 @@ void CAutoRigger::AutoRigThreadFunc()
 		return;
 	}
 
+#ifdef EMSCRIPTEN_SINGLE_THREAD
+	if (!m_pTargetModel->IsLoaded()) m_pTargetModel->LoadAsset();
+#else
 	while (!m_pTargetModel->IsLoaded()) {
 		std::this_thread::sleep_for(std::chrono::milliseconds(25));
 	}
+#endif
 
 	Mesh* targetMesh = RigHelper::ExtractParaXMesh(m_pTargetModel->GetModel());
 	if (targetMesh == nullptr) {
@@ -1279,12 +1332,17 @@ void CAutoRigger::AutoRigThreadFunc()
 void CAutoRigger::BindTargetModelDefault()
 {
 	std::string defaultModelName = "character/AutoAnims/Q_chong.x";
+#ifdef EMSCRIPTEN_SINGLE_THREAD
+	if (!m_pTargetModel->IsLoaded()) m_pTargetModel->LoadAsset();
+	if (!(*m_ModelTemplates)[defaultModelName]->IsLoaded()) (*m_ModelTemplates)[defaultModelName]->LoadAsset();
+#else
 	while (!m_pTargetModel->IsLoaded()) {
 		std::this_thread::sleep_for(std::chrono::milliseconds(25));
 	}
 	while (!(*m_ModelTemplates)[defaultModelName]->IsLoaded()) {
 		std::this_thread::sleep_for(std::chrono::milliseconds(25));
 	}
+#endif
 	CParaXModel* skeletonModel = (*m_ModelTemplates)[defaultModelName]->GetModel();
 	CParaXModel* targetModel = m_pTargetModel->GetModel();
 

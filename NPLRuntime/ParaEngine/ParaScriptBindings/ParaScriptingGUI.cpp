@@ -16,14 +16,13 @@
 #include "2dengine/GUIIMEEditBox.h"
 #include "2dengine/GUIScript.h"
 #include "2dengine/GUIResource.h"
-#if defined(USE_DIRECTX_RENDERER)
-#include "2dengine/GUIDirectInput.h"
-#endif
+#include "2dengine/GUIMouseVirtual.h"
+#include "2dengine/GUIKeyboardVirtual.h"
 #include "2dengine/GUIListBox.h"
 #include "2dengine/GUIToolTip.h"
 #include "2dengine/GUISlider.h"
 #include "2dengine/GUIScrollBar.h"
-#if defined(USE_DIRECTX_RENDERER) && !defined(NPLRUNTIME)
+#if defined(USE_LEGACY_GUI_WEBBROWSER) && !defined(NPLRUNTIME)
 #include "2dengine/GUIWebBrowser.h"
 #endif
 #include "2dengine/GUIHighlight.h"
@@ -2763,7 +2762,7 @@ namespace ParaScripting
 			pNewObj = new CGUISlider();
 			((CGUISlider*)pNewObj)->InitObject(strObjectName, alignment, x, y, width, height);
 		}
-#if defined(USE_DIRECTX_RENDERER ) && !defined(NPLRUNTIME)
+#if defined(USE_LEGACY_GUI_WEBBROWSER) && !defined(NPLRUNTIME)
 #ifdef USE_GUI_DIRECTSHOW_VIDEO
 		else if (strcmp(strType, "video") == 0)
 		{
@@ -2800,9 +2799,8 @@ namespace ParaScripting
 				OUTPUT_LOG("warning: Font %s does not exist \n", fontname);
 			}
 		}
-#ifdef USE_DIRECTX_RENDERER
-		CGlobals::GetGUI()->m_pMouse->SetCursorFont(CGlobals::GetAssetManager()->GetFont(fontname), color);
-#endif
+		if (CGlobals::GetGUI()->m_pMouse)
+			CGlobals::GetGUI()->m_pMouse->SetCursorFont(CGlobals::GetAssetManager()->GetFont(fontname), color);
 	}
 
 	void ParaUI::SetUseSystemCursor(bool bUseSystem)
@@ -2828,9 +2826,8 @@ namespace ParaScripting
 				OUTPUT_LOG("warning: ParaUI.SetCursorTexture, texture %s does not exist \n", texturename);
 			}
 		}
-#ifdef USE_DIRECTX_RENDERER
-		CGlobals::GetGUI()->m_pMouse->SetCursorTexture(CGlobals::GetAssetManager()->GetTexture(texturename), NULL, color);
-#endif
+		if (CGlobals::GetGUI()->m_pMouse)
+			CGlobals::GetGUI()->m_pMouse->SetCursorTexture(CGlobals::GetAssetManager()->GetTexture(texturename), NULL, color);
 	}
 
 
@@ -2839,34 +2836,25 @@ namespace ParaScripting
 		if (strText == NULL) {
 			OUTPUT_LOG("\nSetCursorText: Input text is nil.");
 		}
-#ifdef USE_DIRECTX_RENDERER
-		CGlobals::GetGUI()->m_pMouse->SetCursorTextA(strText);
-#endif
+		if (CGlobals::GetGUI()->m_pMouse)
+			CGlobals::GetGUI()->m_pMouse->SetCursorTextA(strText);
 	}
 
 	void ParaUI::SetCursorFromFile(const char* szCursor, int XHotSpot, int YHotSpot)
 	{
-#ifdef USE_DIRECTX_RENDERER
-		//CGlobals::GetGUI()->m_pMouse->SetCursorFromFile(szCursor, XHotSpot, YHotSpot);
 		CGlobals::GetScene()->SetCursor(szCursor, XHotSpot, YHotSpot);
-#endif
 	}
 
 	void ParaUI::SetCursorFromFile_(const char* szCursor)
 	{
-#ifdef USE_DIRECTX_RENDERER
-		//SetCursorFromFile(szCursor, 0,0);
 		CGlobals::GetScene()->SetCursor(szCursor, 0, 0);
-#endif
 	}
 
 	const char* ParaUI::GetCursorFile()
 	{
-#ifdef USE_DIRECTX_RENDERER
-		return CGlobals::GetGUI()->m_pMouse->GetCursorFile();
-#else
+		if (CGlobals::GetGUI()->m_pMouse)
+			return CGlobals::GetGUI()->m_pMouse->GetCursorFile();
 		return CGlobals::GetString().c_str();
-#endif
 	}
 
 	string ParaUI::ToScript()
@@ -2953,14 +2941,14 @@ namespace ParaScripting
 
 	void ParaUI::SetIMEOpenStatus(bool bOpen)
 	{
-#ifdef USE_DIRECTX_RENDERER
+#ifdef PARA_ENABLE_WIN32_IME
 		CGUIIMEEditBox::SetIMEOpenStatus(bOpen);
 #endif
 	}
 
 	bool ParaUI::GetIMEOpenStatus()
 	{
-#ifdef USE_DIRECTX_RENDERER
+#ifdef PARA_ENABLE_WIN32_IME
 		return CGUIIMEEditBox::GetIMEOpenStatus();
 #else
 		return false;
@@ -3012,7 +3000,7 @@ namespace ParaScripting
 		return false;
 	}
 
-#if defined (USE_FLASH_MANAGER) && defined(USE_DIRECTX_RENDERER)
+#ifdef USE_FLASH_MANAGER
 	ParaScripting::ParaFlashPlayer ParaUI::GetFlashPlayer(const char* sFileName)
 	{
 		return ParaFlashPlayer(CGlobals::GetAssetManager()->GetFlashManager().GetFlashPlayerIndex(sFileName));

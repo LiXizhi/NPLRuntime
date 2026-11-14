@@ -49,111 +49,92 @@ ucm_add_dirs(
     util
     WebSocket
     terrain
+    VoxelMesh
+    CadModel
 	AutoRigger
     TO sources_commmon RECURSIVE
+)
+
+list(APPEND sources_commmon
+    ${CMAKE_CURRENT_SOURCE_DIR}/Engine/BVHSerializer.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/Engine/DropShadowRenderer.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/Engine/DynamicRenderable.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/Engine/EdgeBuilder.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/Engine/GlowEffect.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/Engine/GuiConsole.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/Engine/MirrorSurface.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/Engine/OcclusionQueryBank.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/Engine/SpriteObject.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/Engine/VoxelMesh.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/Engine/WaveEffect.cpp
 )
 
 if (NOT EMSCRIPTEN)
     ucm_add_dirs(curllua TO sources_commmon RECURSIVE)
 endif()
 
-if (NPLRUNTIME_RENDERER STREQUAL "OPENGL")
-    set(RenderSystem RenderSystemOpenGL)
-
+if (NPLRUNTIME_SERVER)
+    set(RenderSystem RenderSystemRHICore RenderSystemNull)
+    list(APPEND sources_rendersystem ResourceEmbedded.cpp)
+else ()
+    set(RenderSystem RenderSystemRHICore RenderSystemNull RenderSystemShaderCompiler)
     ucm_add_dirs(OpenGLWrapper TO sources_rendersystem RECURSIVE)
+    list(APPEND NPLRUNTIME_INCLUDES ${PROJECT_SOURCE_DIR}/externals/freetype-2.8.1/include)
+    list(APPEND NPLRUNTIME_LIBS freetype)
 
-    # Embedded Resource For *.fx source code
-    file(GLOB SHADER_FILES ${CMAKE_CURRENT_SOURCE_DIR}/shaders/opengl_spec/*.fx)
+    if (NPLRUNTIME_ENABLE_OPENGL OR NPLRUNTIME_RENDERER STREQUAL "OPENGL")
+        list(APPEND RenderSystem RenderSystemOpenGL)
+    endif()
+    if (NPLRUNTIME_ENABLE_D3D11 AND EXISTS "${PROJECT_SOURCE_DIR}/RenderSystem/d3d11/CMakeLists.txt")
+        list(APPEND RenderSystem RenderSystemD3D11)
+    endif()
+    if (NPLRUNTIME_ENABLE_D3D12 AND EXISTS "${PROJECT_SOURCE_DIR}/RenderSystem/d3d12/CMakeLists.txt")
+        list(APPEND RenderSystem RenderSystemD3D12)
+    endif()
+    if (NPLRUNTIME_ENABLE_VULKAN AND EXISTS "${PROJECT_SOURCE_DIR}/RenderSystem/vulkan/CMakeLists.txt")
+        list(APPEND RenderSystem RenderSystemVulkan)
+    endif()
+    if (NPLRUNTIME_ENABLE_METAL AND EXISTS "${PROJECT_SOURCE_DIR}/RenderSystem/metal/CMakeLists.txt")
+        list(APPEND RenderSystem RenderSystemMetal)
+    endif()
+    if (NPLRUNTIME_ENABLE_WEBGPU AND EXISTS "${PROJECT_SOURCE_DIR}/RenderSystem/webgpu/CMakeLists.txt")
+        list(APPEND RenderSystem RenderSystemWebGPU)
+    endif()
 
-    foreach(src_file ${SHADER_FILES})	
-        embed_resources_abs(Resource ${src_file})
-        list(APPEND EmbeddedResource_Files_OPENGL ${Resource})
-    endforeach(src_file ${SHADER_FILES})
-
-    list(APPEND EmbeddedResource_Files_OPENGL ResourceEmbedded.cpp)
-    source_group("ResEmbedded" FILES ${EmbeddedResource_Files_OPENGL})
-    list(APPEND sources_rendersystem ${EmbeddedResource_Files_OPENGL})
-
-	source_group("ShaderFiles" FILES ${SHADER_FILES})
-	set_source_files_properties(${SHADER_FILES} PROPERTIES HEADER_FILE_ONLY TRUE)
-	list(APPEND sources_rendersystem ${SHADER_FILES})
-elseif (NPLRUNTIME_RENDERER STREQUAL "DIRECTX")
-    include(${PROJECT_SOURCE_DIR}/cmake/FindDirectX.cmake)
-
-    set(RenderSystem RenderSystemD3D9)
-
-    ucm_add_dirs(
-        Engine
-        VoxelMesh
-        CadModel
-        d3dcommon
-        TO sources_rendersystem RECURSIVE
+    # Unified Embedded Resources for all ParaRHI client backends
+    file(GLOB SHADER_FX_FILES
+        ${CMAKE_CURRENT_SOURCE_DIR}/shaders/fx/*.fx
+        ${CMAKE_CURRENT_SOURCE_DIR}/shaders/fx/*.h
     )
-
-    # Embedded Resource For Direct3D
-    file(GLOB SHADER_FILES ${CMAKE_CURRENT_SOURCE_DIR}/shaders/d3d9_spec/*.fx)
-
-    foreach(src_file ${SHADER_FILES})
-        get_filename_component(src_filename ${src_file} NAME_WE)
-        set(out_file "${CMAKE_CURRENT_BINARY_DIR}/shaders/${src_filename}.fxo")
-
-        add_custom_command(
-            OUTPUT ${out_file}
-            COMMAND "${DirectX_ROOT_DIR}/Utilities/bin/x86/fxc" /Tfx_2_0 /Gfp /nologo /Fo ${out_file} ${src_file}
-            DEPENDS ${src_file}
-            COMMENT "fxc compile: ${src_file}"
-        )
-
-        embed_resources_abs(Resource ${out_file})
-
-        list(APPEND EmbeddedResource_Files_D3D ${Resource})
-    endforeach(src_file ${SHADER_FILES})
-
-    list(APPEND EmbeddedResource_Files_D3D ResourceEmbedded.cpp)
+    set(EmbeddedResource_Files_RHI)
+    foreach(src_file ${SHADER_FX_FILES})
+        embed_resources_abs(Resource ${src_file})
+        list(APPEND EmbeddedResource_Files_RHI ${Resource})
+    endforeach()
 
     embed_resources_abs(Resource ${CMAKE_CURRENT_SOURCE_DIR}/res/ParaXmodel.templates)
-    list(APPEND EmbeddedResource_Files_D3D ${Resource})	
+    list(APPEND EmbeddedResource_Files_RHI ${Resource})
 
     embed_resources_abs(Resource ${CMAKE_CURRENT_SOURCE_DIR}/res/cursor.tga)
-    list(APPEND EmbeddedResource_Files_D3D ${Resource})
+    list(APPEND EmbeddedResource_Files_RHI ${Resource})
 
-	embed_resources_abs(Resource ${CMAKE_CURRENT_SOURCE_DIR}/res/paraworld.ico)
-    list(APPEND EmbeddedResource_Files_D3D ${Resource})
+    embed_resources_abs(Resource ${CMAKE_CURRENT_SOURCE_DIR}/res/paraworld.ico)
+    list(APPEND EmbeddedResource_Files_RHI ${Resource})
 
-    source_group("ResEmbedded" FILES ${EmbeddedResource_Files_D3D})
+    list(APPEND EmbeddedResource_Files_RHI ResourceEmbedded.cpp)
+    source_group("ResEmbedded" FILES ${EmbeddedResource_Files_RHI})
+    list(APPEND sources_rendersystem ${EmbeddedResource_Files_RHI})
 
-    list(APPEND sources_rendersystem ${EmbeddedResource_Files_D3D})
+    source_group("ShaderFiles" FILES ${SHADER_FX_FILES})
+    set_source_files_properties(${SHADER_FX_FILES} PROPERTIES HEADER_FILE_ONLY TRUE)
+    list(APPEND sources_rendersystem ${SHADER_FX_FILES})
 
-    # FreeImage
-	list(APPEND NPLRUNTIME_LIBS FreeImage)
-
-	if (NPLRUNTIME_RENDERER STREQUAL "DIRECTX")
-		add_definitions(-DUSE_GDI_COMPOSER) # for css skin, etc
-	endif ()
-
-    # if (WIN32)
-    #     option(NPLRUNTIME_FREEIMAGE "include FreeImage" ON)
-
-    #     if (NPLRUNTIME_FREEIMAGE)
-    #         add_definitions(-DUSE_FREEIMAGE) # for reading image files
-    #         if (NPLRUNTIME_RENDERER STREQUAL "DIRECTX")
-    #             add_definitions(-DUSE_GDI_COMPOSER) # for css skin, etc
-    #         endif ()
-    #         if (CMAKE_SIZEOF_VOID_P EQUAL 8)
-    #             SET(FREEIMAGE_DASM_FLAGS "x64")
-    #         else ()
-    #             SET(FREEIMAGE_DASM_FLAGS "x32")
-    #         endif ()
-
-    #         list(APPEND NPLRUNTIME_INCLUDES ${PROJECT_SOURCE_DIR}/externals/FreeImage_3170/Dist/${FREEIMAGE_DASM_FLAGS})
-    #         list(APPEND NPLRUNTIME_LIBS ${PROJECT_SOURCE_DIR}/externals/FreeImage_3170/Dist/${FREEIMAGE_DASM_FLAGS}/FreeImage.lib)
-    #         configure_file("${PROJECT_SOURCE_DIR}/externals/FreeImage_3170/Dist/${FREEIMAGE_DASM_FLAGS}/FreeImage.dll" "${OUTPUT_BIN_DIR}/FreeImage.dll" COPYONLY)
-    #     endif ()
-    # endif ()
-elseif (NPLRUNTIME_RENDERER STREQUAL "NULL")
-    set(RenderSystem RenderSystemNull)
-    list(APPEND sources_rendersystem ResourceEmbedded.cpp)
+    if (NOT LINUX AND NOT EMSCRIPTEN)
+        list(APPEND NPLRUNTIME_LIBS FreeImage)
+    endif()
 endif ()
+
+list(REMOVE_DUPLICATES RenderSystem)
 
 list(APPEND NPLRUNTIME_INCLUDES ${PROJECT_SOURCE_DIR}/externals/Pinocchio/include)
 
@@ -174,9 +155,27 @@ if(NPLRUNTIME_WEB_ROBOT)
     target_link_options(ParaEngine INTERFACE -msimd128)
     # Preserve constructor-based mesh decoder registration in MuJoCo.
     target_link_libraries(ParaEngine PUBLIC "$<LINK_LIBRARY:WHOLE_ARCHIVE,mujoco>" onnxruntime_web)
+elseif(NPL_HAS_DESKTOP_MUJOCO OR NPL_HAS_DESKTOP_ONNXRUNTIME)
+    if(NPL_HAS_DESKTOP_MUJOCO)
+        target_sources(ParaEngine PRIVATE robotics/RobotCoordinateConverter.cpp robotics/MujocoRobotSimulation.cpp)
+        set_source_files_properties(
+            robotics/RobotCoordinateConverter.cpp
+            robotics/MujocoRobotSimulation.cpp
+            ParaScriptBindings/MuJoCoSimulation.cpp
+            PROPERTIES CXX_STANDARD 20 CXX_STANDARD_REQUIRED YES
+        )
+        target_include_directories(ParaEngine PRIVATE robotics)
+        target_compile_definitions(ParaEngine PUBLIC USE_MUJOCO)
+        target_link_libraries(ParaEngine PUBLIC mujoco::mujoco)
+    endif()
+    if(NPL_HAS_DESKTOP_ONNXRUNTIME)
+        target_compile_definitions(ParaEngine PUBLIC USE_ONNXRUNTIME)
+        target_link_libraries(ParaEngine PUBLIC onnxruntime::onnxruntime)
+    endif()
 endif()
 
 set(include_dirs
+    ${PROJECT_SOURCE_DIR}
     ${CMAKE_CURRENT_SOURCE_DIR}
     ${CMAKE_CURRENT_SOURCE_DIR}/Core
     ${CMAKE_CURRENT_SOURCE_DIR}/renderer
@@ -225,7 +224,7 @@ if (ANDROID)
 elseif (HARMONY_OS)
     set(PLATROM_SPEC_DEFINITIONS PARAENGINE_MOBILE HARMONY_OS PLATFORM_HARMONY AUTOUPDATE_PARAENGINE)
 elseif (WIN32)
-    set(PLATROM_SPEC_DEFINITIONS PLATFORM_WINDOWS _WIN32_WINNT=0x0600 _WINSOCK_DEPRECATED_NO_WARNINGS)
+    set(PLATROM_SPEC_DEFINITIONS PLATFORM_WINDOWS _WIN32_WINNT=0x0A00 _WINSOCK_DEPRECATED_NO_WARNINGS)
 elseif (IOS)
     set(PLATROM_SPEC_DEFINITIONS PARAENGINE_MOBILE IOS PLATFORM_IPHONE)
 elseif (MAC_SERVER)
@@ -288,6 +287,10 @@ endif ()
 
 if (NPLRUNTIME_DARKNET)
     list(APPEND NPLRUNTIME_LIBS darknet)
+endif()
+
+if (NPLRUNTIME_AUTO_RIGGER)
+    list(APPEND NPLRUNTIME_LIBS Pinocchio)
 endif()
 
 if (EMSCRIPTEN AND NOT NPLOCE_DEPS_ROOT)
@@ -385,7 +388,13 @@ else()
 endif()
 
 set(PARAENGINE_DEF_LIST)
-list(APPEND PARAENGINE_DEF_LIST USE_FREEIMAGE USE_ICONV TIXML_USE_STL BOOST_SIGNALS_NO_DEPRECATION_WARNING _CRT_SECURE_NO_WARNINGS NPLRUNTIME ${PLATROM_SPEC_DEFINITIONS})
+list(APPEND PARAENGINE_DEF_LIST USE_ICONV TIXML_USE_STL BOOST_SIGNALS_NO_DEPRECATION_WARNING _CRT_SECURE_NO_WARNINGS NPLRUNTIME ${PLATROM_SPEC_DEFINITIONS})
+if (NPLRUNTIME_AUTO_RIGGER)
+    list(APPEND PARAENGINE_DEF_LIST ENABLE_AUTO_RIGGER)
+endif()
+if (NOT NPLRUNTIME_SERVER AND NOT LINUX AND NOT EMSCRIPTEN)
+    list(APPEND PARAENGINE_DEF_LIST USE_FREEIMAGE)
+endif()
 if (SDL OR EMSCRIPTEN)
     list(APPEND PARAENGINE_DEF_LIST PLATFORM_SDL2)
 endif()
@@ -416,6 +425,17 @@ endif ()
 
 if (NPLRUNTIME_SERVER)
 	list(APPEND PARAENGINE_DEF_LIST NPLRUNTIME_SERVER)
+else ()
+	if (WIN32)
+		list(APPEND PARAENGINE_DEF_LIST PARA_ENABLE_WIN32_IME)
+	endif()
+	if (NPLRUNTIME_ENABLE_OPENGL OR NPLRUNTIME_RENDERER STREQUAL "OPENGL")
+		list(APPEND PARAENGINE_DEF_LIST PARA_ENABLE_OPENGL)
+	endif()
+endif ()
+
+if (MSVC)
+	list(APPEND PARAENGINE_DEF_LIST _HAS_STD_BYTE=0)
 endif ()
 
 if (NPLRUNTIME_DARKNET)

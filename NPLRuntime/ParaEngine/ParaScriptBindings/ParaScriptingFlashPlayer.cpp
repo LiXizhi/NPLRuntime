@@ -7,7 +7,7 @@
 // Containing the interface between script and the engine. 
 //----------------------------------------------------------------------
 #include "ParaEngine.h"
-#if defined (USE_FLASH_MANAGER) && defined(USE_DIRECTX_RENDERER)
+#ifdef USE_FLASH_MANAGER
 #include "ParaWorldAsset.h"
 #include "FlashTextureManager.h"
 #include "ParaScriptingFlashPlayer.h"

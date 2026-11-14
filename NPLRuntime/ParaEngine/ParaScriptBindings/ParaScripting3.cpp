@@ -200,6 +200,7 @@ void CNPLScriptingState::LoadHAPI_ResourceManager()
 				.def("SetSize", &ParaAssetObject::SetSize)
 				.def("GetBoundingBox", &ParaAssetObject::GetBoundingBox)
 				.def("SetTextureFPS", &ParaAssetObject::SetTextureFPS)
+				.def("SaveTextureToPNG", &ParaAssetObject::SaveTextureToPNG)
 				.def("EnableTextureAutoAnimation", &ParaAssetObject::EnableTextureAutoAnimation)
 				.def("SetCurrentFrameNumber", &ParaAssetObject::SetCurrentFrameNumber)
 				.def("GetCurrentFrameNumber", &ParaAssetObject::GetCurrentFrameNumber)
@@ -277,7 +278,8 @@ void CNPLScriptingState::LoadHAPI_ResourceManager()
 				def("SetAssetServerUrl", & ParaAsset::SetAssetServerUrl),
 				def("GetAssetServerUrl", & ParaAsset::GetAssetServerUrl),
 				def("Refresh", & ParaAsset::Refresh),
-				def("LoadSound", & ParaAsset::LoadSound)
+				def("LoadSound", & ParaAsset::LoadSound),
+				def("ConvertGLB", & ParaAsset::ConvertGLB)
 			]
 		];
 

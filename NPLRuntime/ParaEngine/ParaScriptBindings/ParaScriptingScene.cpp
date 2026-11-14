@@ -7,17 +7,14 @@
 //-----------------------------------------------------------------------------
 
 #include "ParaEngine.h"
-#if USE_DIRECTX_RENDERER
-#include "RenderDeviceD3D9.h"
-#endif
-#ifdef USE_DIRECTX_RENDERER
 #include "SpriteObject.h"
 #include "VoxelMesh.h"
 #include "LightObject.h"
+#ifdef PARA_ENABLE_LEGACY_DYNAMIC_OBJECT
 #include "DynamicObject.h"
+#endif
 #include "CadModel/CadModel.h"
 #include "CadModel/CadModelNode.h"
-#endif
 #include "ParaWorldAsset.h"
 #include "ViewportManager.h"
 #include "AttributesManager.h"
@@ -1872,7 +1869,6 @@ void ParaScene::DeleteSkyBox(const char* strObjectName)
 ParaScripting::ParaObject ParaScene::CreateVoxelMesh( const char* strObjectName, const char* sGridFileName, const char* sTextureFileName)
 {
 	ParaObject obj;
-#ifdef USE_DIRECTX_RENDERER
 	CVoxelMesh* pObj = new CVoxelMesh();
 	TextureEntity * pBaseTexture = NULL;
 	if(sTextureFileName!=NULL &&  sTextureFileName[0]!='\0')
@@ -1882,7 +1878,6 @@ ParaScripting::ParaObject ParaScene::CreateVoxelMesh( const char* strObjectName,
 	pObj->InitObject(sGridFileName, DVector3(0,0,0), pBaseTexture); 
 	
 	obj.m_pObj = pObj;
-#endif
 	return obj;
 }
 
@@ -1980,7 +1975,6 @@ ParaObject ParaScene::CreateMeshObject(const char* strObjectName, ParaAssetObjec
 ParaObject ParaScene::CreateLightObject(const char* strObjectName, float fPosX, float fPosY, float fPosZ, const char* sLightParams, const char* localMatrix)
 {
 	ParaObject obj;
-#ifdef USE_DIRECTX_RENDERER
 
 	// local transform matrix
 	Matrix4 mat; 
@@ -2008,7 +2002,6 @@ ParaObject ParaScene::CreateLightObject(const char* strObjectName, float fPosX, 
 	
 	pObj->SetIdentifier(strObjectName);
 	obj.m_pObj = pObj;
-#endif
 	return obj;
 }
 
@@ -2051,8 +2044,6 @@ ParaObject ParaScene::CreateMeshPhysicsObject(const char* strObjectName, ParaAss
 			obj.m_pObj = pObj;
 		}
 	}
-#ifdef USE_DIRECTX_RENDERER
-
 	else if(asset.IsValid() && asset.m_pAsset->GetType() == AssetEntity::cadMesh)
 	{
 		CadModel* pCadModel = (CadModel*)asset.m_pAsset;
@@ -2080,7 +2071,6 @@ ParaObject ParaScene::CreateMeshPhysicsObject(const char* strObjectName, ParaAss
 			obj.m_pObj = pObj;
 		}
 	}
-#endif
 	return obj;
 }
 
@@ -2098,8 +2088,7 @@ ParaObject ParaScene::CreateDynamicPhysicsObject(const char* strObjectName, cons
 												 float fOBB_X, float fOBB_Y, float fOBB_Z, bool bRenderMesh)
 {
 	ParaObject obj;
-#ifdef USE_DIRECTX_RENDERER
-
+#ifdef PARA_ENABLE_LEGACY_DYNAMIC_OBJECT
 	// --  query asset resources, if none, create it
 	MeshEntity* pMesh;
 	pMesh =  CGlobals::GetAssetManager()->GetMesh(strMeshAssetName);

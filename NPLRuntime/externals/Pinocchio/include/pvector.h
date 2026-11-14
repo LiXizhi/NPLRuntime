@@ -42,26 +42,26 @@ public:
     const Real &operator[](int n) const { return m[n]; }
 
 //basic recursive functions
-    template<class F> PVector<typename F::result_type, Dim> apply(const F &func) const
+    template<class F> PVector<pinocchio_unary_result_t<F, Real>, Dim> apply(const F &func) const
     { return VO::apply(func, *this); }
 
-    template<class F> PVector<typename F::result_type, Dim> apply(const F &func, const Self &other) const
+    template<class F> PVector<pinocchio_binary_result_t<F, Real, Real>, Dim> apply(const F &func, const Self &other) const
     { return VO::apply(func, *this, other); }
 
     template<class Op, class Accum>
-    typename Accum::result_type accumulate(const Op &op, const Accum &accum) const
+    pinocchio_binary_result_t<Accum, pinocchio_unary_result_t<Op, Real>, pinocchio_unary_result_t<Op, Real>> accumulate(const Op &op, const Accum &accum) const
     { return VO::accumulate(op, accum, *this); }
 
     template<class Op, class Accum>
-    typename Accum::result_type accumulate(const Op &op, const Accum &accum, const Self &other) const
+    pinocchio_binary_result_t<Accum, pinocchio_binary_result_t<Op, Real, Real>, pinocchio_binary_result_t<Op, Real, Real>> accumulate(const Op &op, const Accum &accum, const Self &other) const
     { return VO::accumulate(op, accum, *this, other); }
 
 //operators
     Real operator*(const Self &other) const { return accumulate(multiplies<Real>(), plus<Real>(), other); }
     Self operator+(const Self &other) const { return apply(plus<Real>(), other); }
     Self operator-(const Self &other) const { return apply(minus<Real>(), other); }
-    Self operator*(const Real &scalar) const { return apply(bind2nd(multiplies<Real>(), scalar)); }
-    Self operator/(const Real &scalar) const { return apply(bind2nd(divides<Real>(), scalar)); }
+    Self operator*(const Real &scalar) const { return apply(pinocchio_bind2nd(multiplies<Real>(), scalar)); }
+    Self operator/(const Real &scalar) const { return apply(pinocchio_bind2nd(divides<Real>(), scalar)); }
     Self operator-() const { return apply(negate<Real>()); }
     bool operator==(const Self &other) const { return accumulate(equal_to<Real>(), logical_and<Real>(), other); }
 
@@ -101,16 +101,18 @@ public:
     const Real &operator[](int n) const { if((int)m.size() <= n) const_cast<PVector<Real, -1> *>(this)->m.resize(n + 1); return m[n]; }
 
 //basic recursive functions
-    template<class F> PVector<typename F::result_type, -1> apply(const F &func) const
+    template<class F> PVector<pinocchio_unary_result_t<F, Real>, -1> apply(const F &func) const
     { 
-        vector<typename F::result_type> out(m.size());
+        typedef pinocchio_unary_result_t<F, Real> Res;
+        vector<Res> out(m.size());
         transform(m.begin(), m.end(), out.begin(), func);
-        return PVector<typename F::result_type, -1>(out);
+        return PVector<Res, -1>(out);
     }
 
-    template<class F> PVector<typename F::result_type, -1> apply(const F &func, const Self &other) const
+    template<class F> PVector<pinocchio_binary_result_t<F, Real, Real>, -1> apply(const F &func, const Self &other) const
     {
-        vector<typename F::result_type> out(max(m.size(), other.m.size()));
+        typedef pinocchio_binary_result_t<F, Real, Real> Res;
+        vector<Res> out((std::max)(m.size(), other.m.size()));
         if(m.size() == other.m.size())
             transform(m.begin(), m.end(), other.m.begin(), out.begin(), func);
         else if(m.size() < other.m.size()) {
@@ -120,25 +122,27 @@ public:
             transform(m.begin(), m.begin() + (other.m.end() - other.m.begin()), other.m.begin(), out.begin(), func);
             for(int i = other.m.size(); i < (int)m.size(); ++i) out[i] = func(m[i], Real());
         }
-        return PVector<typename F::result_type, -1>(out);
+        return PVector<Res, -1>(out);
     }
 
     template<class Op, class Accum>
-    typename Accum::result_type accumulate(const Op &op, const Accum &accum) const
+    pinocchio_binary_result_t<Accum, pinocchio_unary_result_t<Op, Real>, pinocchio_unary_result_t<Op, Real>> accumulate(const Op &op, const Accum &accum) const
     {
+        typedef pinocchio_binary_result_t<Accum, pinocchio_unary_result_t<Op, Real>, pinocchio_unary_result_t<Op, Real>> AccRes;
         if(m.empty())
-            return typename Accum::result_type();
-        typename Accum::result_type out = op(m[0]);
+            return AccRes();
+        AccRes out = op(m[0]);
         for(int i = 1; i < (int)m.size(); ++i) out = accum(out, op(m[i]));
         return out;
     }
 
     template<class Op, class Accum>
-    typename Accum::result_type accumulate(const Op &op, const Accum &accum, const Self &other) const
+    pinocchio_binary_result_t<Accum, pinocchio_binary_result_t<Op, Real, Real>, pinocchio_binary_result_t<Op, Real, Real>> accumulate(const Op &op, const Accum &accum, const Self &other) const
     { 
-        typename Accum::result_type out;
+        typedef pinocchio_binary_result_t<Accum, pinocchio_binary_result_t<Op, Real, Real>, pinocchio_binary_result_t<Op, Real, Real>> AccRes;
+        AccRes out;
         if(m.empty() || other.m.empty()) {
-            if(m.empty() && other.m.empty()) return typename Accum::result_type();
+            if(m.empty() && other.m.empty()) return AccRes();
             if(m.empty()) out = op(Real(), other.m[0]);
             else out = op(m[0], Real());
         }
@@ -159,8 +163,8 @@ public:
     Real operator*(const Self &other) const { return accumulate(multiplies<Real>(), plus<Real>(), other); }
     Self operator+(const Self &other) const { return apply(plus<Real>(), other); }
     Self operator-(const Self &other) const { return apply(minus<Real>(), other); }
-    Self operator*(const Real &scalar) const { return apply(bind2nd(multiplies<Real>(), scalar)); }
-    Self operator/(const Real &scalar) const { return apply(bind2nd(divides<Real>(), scalar)); }
+    Self operator*(const Real &scalar) const { return apply(pinocchio_bind2nd(multiplies<Real>(), scalar)); }
+    Self operator/(const Real &scalar) const { return apply(pinocchio_bind2nd(divides<Real>(), scalar)); }
     Self operator-() const { return apply(negate<Real>()); }
 
 #define OPAS(op, typ) Self &operator op##=(const typ &x) { (*this) = (*this) op x; return *this; }
@@ -235,27 +239,27 @@ public:
     static void assign(const R1 &from, VRD &to) { to[last] = from; Next::assign(from, to); }
 
     template<class R, int D, class F>
-    static PVector<typename F::result_type, D> apply(const F &func, const VRD &v)
-    { PVector<typename F::result_type, D> out; _apply(func, v, out); return out; }
+    static PVector<pinocchio_unary_result_t<F, R>, D> apply(const F &func, const VRD &v)
+    { PVector<pinocchio_unary_result_t<F, R>, D> out; _apply(func, v, out); return out; }
 
     template<class R, int D, class F>
-    static PVector<typename F::result_type, D> apply(const F &func, const VRD &v, const VRD &other)
-    { PVector<typename F::result_type, D> out; _apply(func, v, other, out); return out; }
+    static PVector<pinocchio_binary_result_t<F, R, R>, D> apply(const F &func, const VRD &v, const VRD &other)
+    { PVector<pinocchio_binary_result_t<F, R, R>, D> out; _apply(func, v, other, out); return out; }
 
     template<class R, int D, class Op, class Accum>
-    static typename Accum::result_type accumulate(const Op &op, const Accum &accum, const VRD &v)
+    static pinocchio_binary_result_t<Accum, pinocchio_unary_result_t<Op, R>, pinocchio_unary_result_t<Op, R>> accumulate(const Op &op, const Accum &accum, const VRD &v)
     { return accum(op(v[last]), Next::accumulate(op, accum, v)); }
 
     template<class R, int D, class Op, class Accum>
-    static typename Accum::result_type accumulate(const Op &op, const Accum &accum, const VRD &v, const VRD &other)
+    static pinocchio_binary_result_t<Accum, pinocchio_binary_result_t<Op, R, R>, pinocchio_binary_result_t<Op, R, R>> accumulate(const Op &op, const Accum &accum, const VRD &v, const VRD &other)
     { return accum(op(v[last], other[last]), Next::accumulate(op, accum, v, other)); }
 
     template<class R, int D, class F>
-    static void _apply(const F &func, const VRD &v, PVector<typename F::result_type, D> &out)
+    static void _apply(const F &func, const VRD &v, PVector<pinocchio_unary_result_t<F, R>, D> &out)
     { out[last] = func(v[last]); Next::_apply(func, v, out); }
 
     template<class R, int D, class F>
-    static void _apply(const F &func, const VRD &v, const VRD &other, PVector<typename F::result_type, D> &out)
+    static void _apply(const F &func, const VRD &v, const VRD &other, PVector<pinocchio_binary_result_t<F, R, R>, D> &out)
     { out[last] = func(v[last], other[last]); Next::_apply(func, v, other, out); }
 };
 
@@ -270,27 +274,27 @@ public:
     template<class R, class R1, int D> static void assign(const R1 &from, VRD &to) { to[0] = from; }
     
     template<class R, int D, class F>
-    static PVector<typename F::result_type, D> apply(const F &func, const VRD &v)
-    { PVector<typename F::result_type, D> out; _apply(func, v, out); return out; }
+    static PVector<pinocchio_unary_result_t<F, R>, D> apply(const F &func, const VRD &v)
+    { PVector<pinocchio_unary_result_t<F, R>, D> out; _apply(func, v, out); return out; }
 
     template<class R, int D, class F>
-    static PVector<typename F::result_type, D> apply(const F &func, const VRD &v, const VRD &other)
-    { PVector<typename F::result_type, D> out; _apply(func, v, other, out); return out; }
+    static PVector<pinocchio_binary_result_t<F, R, R>, D> apply(const F &func, const VRD &v, const VRD &other)
+    { PVector<pinocchio_binary_result_t<F, R, R>, D> out; _apply(func, v, other, out); return out; }
     
     template<class R, int D, class Op, class Accum>
-    static typename Accum::result_type accumulate(const Op &op, const Accum &, const VRD &v)
+    static pinocchio_binary_result_t<Accum, pinocchio_unary_result_t<Op, R>, pinocchio_unary_result_t<Op, R>> accumulate(const Op &op, const Accum &, const VRD &v)
     { return op(v[0]); }
 
     template<class R, int D, class Op, class Accum>
-    static typename Accum::result_type accumulate(const Op &op, const Accum &, const VRD &v, const VRD &other)
+    static pinocchio_binary_result_t<Accum, pinocchio_binary_result_t<Op, R, R>, pinocchio_binary_result_t<Op, R, R>> accumulate(const Op &op, const Accum &, const VRD &v, const VRD &other)
     { return op(v[0], other[0]); }
 
     template<class R, int D, class F>
-    static void _apply(const F &func, const VRD &v, PVector<typename F::result_type, D> &out)
+    static void _apply(const F &func, const VRD &v, PVector<pinocchio_unary_result_t<F, R>, D> &out)
     { out[0] = func(v[0]); }
 
     template<class R, int D, class F>
-    static void _apply(const F &func, const VRD &v, const VRD &other, PVector<typename F::result_type, D> &out)
+    static void _apply(const F &func, const VRD &v, const VRD &other, PVector<pinocchio_binary_result_t<F, R, R>, D> &out)
     { out[0] = func(v[0], other[0]); }
 };
 } //namespace _VectorPrivate

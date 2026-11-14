@@ -384,6 +384,72 @@ int C_DECL Hlsl2Glsl_Parse(
    return success ? 1 : 0;
 }
 
+int C_DECL Hlsl2Glsl_ParseAST(
+	const ShHandle handle,
+	const char* shaderString,
+	ETargetVersion targetVersion,
+	Hlsl2Glsl_ParseCallbacks* callbacks,
+	unsigned options,
+	Hlsl2Glsl_ASTVisitorFunc visitor,
+	void* userData)
+{
+   if (!InitThread())
+      return 0;
+
+   if (handle == 0 || !shaderString || !visitor)
+      return 0;
+
+   HlslCrossCompiler* compiler = handle;
+
+   GlobalPoolAllocator.push();
+   compiler->infoSink.info.erase();
+   compiler->infoSink.debug.erase();
+
+   TSymbolTable symbolTable(SymbolTables[compiler->getLanguage()]);
+   GenerateBuiltInSymbolTable(compiler->infoSink, &symbolTable, compiler->getLanguage());
+
+   TParseContext parseContext(symbolTable, compiler->getLanguage(), targetVersion, options, compiler->infoSink);
+   GlobalParseContext = &parseContext;
+   setInitialState();
+
+   bool success = true;
+   symbolTable.push();
+   if (!symbolTable.atGlobalLevel())
+      parseContext.infoSink.info.message(EPrefixInternalError, "Wrong symbol table level");
+
+   int ret = PaParseString(const_cast<char*>(shaderString), parseContext, callbacks);
+   if (ret)
+      success = false;
+
+   if (success && parseContext.treeRoot)
+   {
+      TIntermAggregate* aggRoot = parseContext.treeRoot->getAsAggregate();
+      if (aggRoot && aggRoot->getOp() == EOpNull)
+         aggRoot->setOperator(EOpSequence);
+
+      compiler->TransformAST(parseContext.treeRoot);
+      if (!visitor(parseContext.treeRoot, compiler->getLanguage(), userData))
+         success = false;
+   }
+   else
+   {
+      if (parseContext.infoSink.info.IsEmpty())
+      {
+         parseContext.infoSink.info.prefix(EPrefixError);
+         parseContext.infoSink.info << parseContext.numErrors << " compilation errors.  No code generated.\n\n";
+      }
+      success = false;
+   }
+
+   ir_remove_tree(parseContext.treeRoot);
+
+   while (!symbolTable.atSharedBuiltInLevel())
+      symbolTable.pop();
+
+   GlobalPoolAllocator.pop();
+   return success ? 1 : 0;
+}
+
 
 int C_DECL Hlsl2Glsl_Translate(
 	const ShHandle handle,

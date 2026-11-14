@@ -96,7 +96,7 @@ namespace Pinocchio {
 		typedef PVector<double, Dim> Vec;
 		typedef Rect<double, Dim> MyRect;
 
-		DRootNode(MyRect r = MyRect(Vec(), Vec().apply(bind2nd(plus<double>(), 1.)))) : Node(r)
+		DRootNode(MyRect r = MyRect(Vec(), Vec().apply(pinocchio_bind2nd(plus<double>(), 1.)))) : Node(r)
 		{
 			MyIndexer::setRoot(this);
 		}

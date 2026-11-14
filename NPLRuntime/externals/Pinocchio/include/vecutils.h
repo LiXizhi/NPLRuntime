@@ -33,7 +33,7 @@ void getBasis(const PVector<Real, 3> &n, PVector<Real, 3> &v1, PVector<Real, 3> 
 template<class Real, int Dim>
 Real distsqToLine(const PVector<Real, Dim> &v, const PVector<Real, Dim> &p0, const PVector<Real, Dim> &dir)
 {
-  return max(Real(), (v - p0).lengthsq() - SQR((v - p0) * dir) / dir.lengthsq());
+  return (std::max)(Real(), (v - p0).lengthsq() - SQR((v - p0) * dir) / dir.lengthsq());
 }
 
 template<class Real, int Dim>
@@ -59,7 +59,7 @@ Real distsqToSeg(const PVector<Real, Dim> &v, const PVector<Real, Dim> &p1, cons
   if(dot <= Real())
     return difp1.lengthsq();
 
-  return max(Real(), difp1.lengthsq() - SQR(dot) / dir.lengthsq());
+  return (std::max)(Real(), difp1.lengthsq() - SQR(dot) / dir.lengthsq());
 }
 
 template<class Real, int Dim>

@@ -49,3 +49,4 @@ IF(MSVC)
 ENDIF()
 
 ADD_LIBRARY(Pinocchio STATIC ${header_files} ${src_files})
+target_include_directories(Pinocchio PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)

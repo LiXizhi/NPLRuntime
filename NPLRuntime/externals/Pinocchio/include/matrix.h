@@ -33,18 +33,18 @@ public:
     using super::size;
 
     //basic recursive functions
-    template<class F> Vectorn<typename F::result_type> apply(const F &func) const
+    template<class F> Vectorn<pinocchio_unary_result_t<F, Real>> apply(const F &func) const
     {
-        Vectorn<typename F::result_type> out(size());
+        Vectorn<pinocchio_unary_result_t<F, Real>> out(size());
         for(int i = 0; i < (int)size(); ++i)
             out[i] = func((*this)[i]);
         return out;
     }
 
-    template<class F> Vectorn<typename F::result_type> apply(const F &func, const Self &other) const
+    template<class F> Vectorn<pinocchio_binary_result_t<F, Real, Real>> apply(const F &func, const Self &other) const
     {
         assert(size() == other.size());
-        Vectorn<typename F::result_type> out(size());
+        Vectorn<pinocchio_binary_result_t<F, Real, Real>> out(size());
         for(int i = 0; i < (int)size(); ++i)
             out[i] = func((*this)[i], other[i]);
         return out;
@@ -52,23 +52,25 @@ public:
 
 
     template<class Op, class Accum>
-    typename Accum::result_type accumulate(const Op &op, const Accum &accum) const
+    pinocchio_binary_result_t<Accum, pinocchio_unary_result_t<Op, Real>, pinocchio_unary_result_t<Op, Real>> accumulate(const Op &op, const Accum &accum) const
     {
+        typedef pinocchio_binary_result_t<Accum, pinocchio_unary_result_t<Op, Real>, pinocchio_unary_result_t<Op, Real>> AccRes;
         if(size() == 0)
-            return typename Accum::result_type();
-        typename Accum::result_type out(op((*this)[0]));
+            return AccRes();
+        AccRes out(op((*this)[0]));
         for(int i = 1; i < (int)size(); ++i)
             out = accum(out, op((*this)[i]));
         return out;
     }
 
     template<class Op, class Accum>
-    typename Accum::result_type accumulate(const Op &op, const Accum &accum, const Self &other) const
+    pinocchio_binary_result_t<Accum, pinocchio_binary_result_t<Op, Real, Real>, pinocchio_binary_result_t<Op, Real, Real>> accumulate(const Op &op, const Accum &accum, const Self &other) const
     {
+        typedef pinocchio_binary_result_t<Accum, pinocchio_binary_result_t<Op, Real, Real>, pinocchio_binary_result_t<Op, Real, Real>> AccRes;
         if(size() == 0)
-            return typename Accum::result_type();
+            return AccRes();
         assert(size() == other.size());
-        typename Accum::result_type out(op((*this)[0], other[0]));
+        AccRes out(op((*this)[0], other[0]));
         for(int i = 1; i < (int)size(); ++i)
             out = accum(out, op((*this)[i], other[i]));
         return out;
@@ -77,8 +79,8 @@ public:
     Real operator*(const Self &other) const { return accumulate(multiplies<Real>(), plus<Real>(), other); }
     Self operator+(const Self &other) const { return apply(plus<Real>(), other); }
     Self operator-(const Self &other) const { return apply(minus<Real>(), other); }
-    Self operator*(const Real &scalar) const { return apply(bind2nd(multiplies<Real>(), scalar)); }
-    Self operator/(const Real &scalar) const { return apply(bind2nd(divides<Real>(), scalar)); }
+    Self operator*(const Real &scalar) const { return apply(pinocchio_bind2nd(multiplies<Real>(), scalar)); }
+    Self operator/(const Real &scalar) const { return apply(pinocchio_bind2nd(divides<Real>(), scalar)); }
     Self operator-() const { return apply(negate<Real>()); }
     bool operator==(const Self &other) const { return accumulate(equal_to<Real>(), logical_and<Real>(), other); }
 
@@ -149,11 +151,11 @@ public:
 
     Self operator+(const Self &oth) const { return Self(m + oth.m); }
     Self operator-(const Self &oth) const { return Self(m - oth.m); }
-    Self operator*(double oth) const { return Self(m.apply(bind2nd(myMult<Vec, Real, Vec>(), oth))); }
-    Self operator/(double oth) const { return Self(m.apply(bind2nd(myDiv<Vec, Real, Vec>(), oth))); }
+    Self operator*(double oth) const { return Self(m.apply(pinocchio_bind2nd(myMult<Vec, Real, Vec>(), oth))); }
+    Self operator/(double oth) const { return Self(m.apply(pinocchio_bind2nd(myDiv<Vec, Real, Vec>(), oth))); }
     Self operator-() const { return Self(-m); }
 
-    Vec operator*(const Vec &oth) const { return m.apply(bind2nd(myMult<Vec, Vec, Real>(), oth)); }
+    Vec operator*(const Vec &oth) const { return m.apply(pinocchio_bind2nd(myMult<Vec, Vec, Real>(), oth)); }
 
     Self operator*(const Self &oth) const
     {

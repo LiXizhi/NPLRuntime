@@ -454,12 +454,10 @@ void CNPLScriptingState::LoadHAPI_UI()
 						def("ShowCursor", &ParaUI::ShowCursor),
 						def("ResetUI", &ParaUI::ResetUI),
 						def("SetHighlightParam", &ParaUI::SetHighlightParam),
-#ifdef USE_DIRECTX_RENDERER
 #ifdef USE_FLASH_MANAGER
 						def("GetFlashPlayer", &ParaUI::GetFlashPlayer),
 						def("GetFlashPlayer", &ParaUI::GetFlashPlayer1),
 						def("CreateFlashPlayer", &ParaUI::CreateFlashPlayer),
-#endif
 #endif
 						def("IsMouseLocked", &ParaUI::IsMouseLocked),
 						def("GetIMEOpenStatus", &ParaUI::GetIMEOpenStatus),

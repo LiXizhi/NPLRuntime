@@ -17,9 +17,8 @@
 #include "ParaXSerializer.h"
 #include "ParaWorldAsset.h"
 #include "ViewportManager.h"
-
-#if USE_DIRECTX_RENDERER
-#include "RenderDeviceD3D9.h"
+#ifndef USE_NULL_RENDERER
+#include "TextureEntityOpenGL.h"
 #endif
 
 #include "NPLHelper.h"
@@ -36,7 +35,6 @@ extern "C"
 using namespace luabind;
 
 #ifdef PARAENGINE_CLIENT
-#include "DirectXEngine.h"
 #include "EffectManager.h"
 #endif
 
@@ -201,36 +199,36 @@ namespace ParaScripting
 
 	bool CParaEngine::SaveParaXMesh(const char* filename, ParaAssetObject& xmesh, bool bBinaryEncoding)
 	{
-#ifdef USE_DIRECTX_RENDERER
 		if( !xmesh.IsValid() || (xmesh.GetType() != AssetEntity::parax) || (filename==0))
 			return false;
-		CParaXSerializer serializer;
+		CParaXModel* pModel = ((ParaXEntity*)(xmesh.m_pAsset))->GetModel();
+		if (!pModel)
+			return false;
 		string sFileName = filename;
 		if(sFileName.empty())
 		{
 			sFileName = xmesh.GetKeyName();
 			sFileName.append(".x");
 		}
-		if(serializer.SaveParaXMesh(sFileName, * (((ParaXEntity*)(xmesh.m_pAsset))->GetModel()), &SerializerOptions(bBinaryEncoding)) == true)
-		{
-			OUTPUT_LOG("%s is exported successfully from %s\r\n", sFileName.c_str(), xmesh.GetKeyName().c_str());
-			return true;
-		}
-#endif
-		return false;
+		CParaXSerializer::ExportParaXMesh(sFileName, pModel);
+		OUTPUT_LOG("%s is exported successfully from %s\r\n", sFileName.c_str(), xmesh.GetKeyName().c_str());
+		return true;
 	}
 
 	ParaAssetObject CParaEngine::GetRenderTarget()
 	{
-#ifdef USE_DIRECTX_RENDERER
-		static TextureEntityDirectX g_rt;
-		static ParaAssetObject g_rt_wrapper(&g_rt);
-		g_rt.SurfaceType = TextureEntity::TextureSurface;
-		g_rt.SetSurface( CGlobals::GetDirectXEngine().GetRenderTarget() );
-		return g_rt_wrapper;
-#else
-		return ParaAssetObject();
+#ifndef USE_NULL_RENDERER
+		auto* pDev = CGlobals::GetRenderDevice();
+		if (pDev)
+		{
+			static TextureEntityOpenGL g_rt;
+			static ParaAssetObject g_rt_wrapper(&g_rt);
+			g_rt.SurfaceType = TextureEntity::TextureSurface;
+			g_rt.AttachRHIRenderTarget(pDev->GetCurrentRenderTargetBinding().targets[0], false);
+			return g_rt_wrapper;
+		}
 #endif
+		return ParaAssetObject();
 	}
 
 	bool CParaEngine::SetRenderTarget( ParaAssetObject& pSrcRenderTarget )
@@ -246,12 +244,15 @@ namespace ParaScripting
 	{
 		if (!render_targetname || render_targetname[0] == '\0')
 		{
-#ifdef USE_DIRECTX_RENDERER
-			GETD3D(CGlobals::GetRenderDevice())->SetRenderTarget(nIndex, NULL);
-			if (nIndex == 0){
-				CGlobals::GetViewportManager()->GetActiveViewPort()->ApplyViewport();
+			auto* pDev = CGlobals::GetRenderDevice();
+			if (pDev && nIndex >= 0)
+			{
+				pDev->SetRenderTarget(static_cast<uint32_t>(nIndex), nullptr);
+				if (nIndex == 0 && CGlobals::GetViewportManager() && CGlobals::GetViewportManager()->GetActiveViewPort())
+				{
+					CGlobals::GetViewportManager()->GetActiveViewPort()->ApplyViewport();
+				}
 			}
-#endif
 			return true;
 		}
 		else
@@ -269,11 +270,9 @@ namespace ParaScripting
 	{
 		if(pSrcRenderTarget.IsValid() && pDestRenderTarget.IsValid() )
 		{
-#ifdef USE_DIRECTX_RENDERER
-			TextureEntityDirectX * pSrcTexture = (TextureEntityDirectX*)(pSrcRenderTarget.m_pAsset);
-			TextureEntityDirectX * pDestTexture = (TextureEntityDirectX*)(pDestRenderTarget.m_pAsset);
-			return TextureEntityDirectX::StretchRect(pSrcTexture, pDestTexture);
-#endif
+			TextureEntity* pSrcTexture = (TextureEntity*)(pSrcRenderTarget.m_pAsset);
+			TextureEntity* pDestTexture = (TextureEntity*)(pDestRenderTarget.m_pAsset);
+			return TextureEntity::StretchRect(pSrcTexture, pDestTexture);
 		}
 		return false;
 	}

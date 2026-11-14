@@ -54,11 +54,11 @@
 #include "ParaScriptBindings/ParaScriptingNPL.h"
 
 /**@def PARAENGINE_SUPPORT_WRITE_REG: to support writing to registry*/
-#if defined(WIN32) && !defined(PARAENGINE_MOBILE) && defined(PARAENGINE_CLIENT)
+#if defined(WIN32) && !defined(PARAENGINE_MOBILE) && !defined(NPLRUNTIME_SERVER)
 #define PARAENGINE_SUPPORT_WRITE_REG
 #endif
 
-#if defined(WIN32) && defined(PARAENGINE_CLIENT)
+#if defined(WIN32) && !defined(NPLRUNTIME_SERVER)
 #define PARAENGINE_SUPPORT_READ_REG
 #endif 
 
@@ -242,7 +242,7 @@ bool ParaGlobal::WriteToFile(const char* filename, const char* strMessage)
 
 void ParaGlobal::SetGameStatus(const char* strState)
 {
-#ifdef PARAENGINE_CLIENT
+#ifndef NPLRUNTIME_SERVER
 	if (strcmp(strState, "disable") == 0)
 	{
 		CGlobals::GetScene()->DisableGame();
@@ -1879,7 +1879,7 @@ void ParaAttributeObject::SetValueField(const char*  sFieldname, int nIndex, dou
 
 void ParaAttributeObject::PrintObject(const char* file)
 {
-#ifdef PARAENGINE_CLIENT
+#ifndef NPLRUNTIME_SERVER
 	if (IsValid())
 		CGlobals::GetAttributesManager()->PrintObject(file, m_pAttribute);
 #endif

@@ -7,10 +7,10 @@
 #include "ParaScriptingCommon.h"
 #include "ParaScriptingGlobal.h"
 #include "2dengine/GUIBase.h"
-#if defined (USE_FLASH_MANAGER) && defined(USE_DIRECTX_RENDERER)
+#ifdef USE_FLASH_MANAGER
 #include "ParaScriptingFlashPlayer.h"
 #endif
-#ifdef USE_DIRECTX_RENDERER
+#ifdef USE_HTML_BROWSER_MANAGER
 #include "ParaScriptingBrowserManager.h"
 #include "ParaScriptingHTMLBrowser.h"
 #endif
@@ -1094,7 +1094,6 @@ namespace ParaScripting
 		*/
 		static bool SetHighlightParam(const char* szEffectName, const char* szParamName, const char* szParamValue);
 
-#ifdef USE_DIRECTX_RENDERER
 #ifdef USE_FLASH_MANAGER
 		/**
 		* get flash player pointer by name. this function does not create any player if there is no player with the given name.
@@ -1110,7 +1109,6 @@ namespace ParaScripting
 		* get flash player pointer by index. this function does not create any player if there is no player at the given index.
 		*/
 		static ParaFlashPlayer GetFlashPlayer1(int nIndex);
-#endif
 #endif
 	};
 }

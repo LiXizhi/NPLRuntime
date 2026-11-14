@@ -70,6 +70,7 @@ target_link_libraries(FreeImage PUBLIC
 
 
 IF(MSVC)
+	target_compile_definitions(FreeImage PRIVATE _HAS_AUTO_PTR_ETC=1)
 	# Statically link MSVC runtime for all configurations 
 	# Debug: /MTd (MultiThreadedDebug), Release: /MT (MultiThreaded)
 	set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")

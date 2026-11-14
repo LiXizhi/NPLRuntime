@@ -26,7 +26,7 @@ namespace ParaScripting
 	using namespace std;
 	using namespace luabind;
 	using namespace ParaEngine;
-#ifdef USE_DIRECTX_RENDERER
+#ifdef PARAENGINE_CLIENT
 	/**
 	* @ingroup ParaWorld
 	* 
@@ -202,7 +202,7 @@ namespace ParaScripting
 		union{
 			void* m_pDataProvider;
 			AttributeProvider* m_pAttributeProvider;
-#ifdef USE_DIRECTX_RENDERER
+#ifdef PARAENGINE_CLIENT
 			CCharacterDB* m_pDbCharacter;
 			CKidsDBProvider* m_pDbKidsProvider;
 			CNpcDatabase* m_pDbNPC;
@@ -219,7 +219,7 @@ namespace ParaScripting
 		~ParaDataProvider(){};
 	public:
 
-#ifdef USE_DIRECTX_RENDERER
+#ifdef PARAENGINE_CLIENT
 		static void GetKidsDBProvider(ParaKidsDataProvider* pOut);
 #endif
 		//////////////////////////////////////////////////////////////////////////

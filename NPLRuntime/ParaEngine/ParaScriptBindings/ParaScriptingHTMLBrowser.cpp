@@ -7,7 +7,7 @@
 // Containing the interface between script and the engine. 
 //----------------------------------------------------------------------
 #include "ParaEngine.h"
-#ifdef USE_DIRECTX_RENDERER
+#ifdef USE_HTML_BROWSER_MANAGER
 #include "HTMLBrowserManager.h"
 #include "ParaWorldAsset.h"
 #include "ParaScriptingHTMLBrowser.h"

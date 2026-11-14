@@ -17,13 +17,16 @@
 #include "ParaWorldAsset.h"
 #include "BufferPicking.h"
 #include "ParaXModel/BoneAnimProvider.h"
-#if USE_DIRECTX_RENDERER
-#include "RenderDeviceD3D9.h"
+#include "CadModel/CadModel.h"
+#ifdef SUPPORT_FBX_MODEL_FILE
+#include <assimp/Importer.hpp>
+#include <assimp/Exporter.hpp>
+#include <assimp/scene.h>
+#include <assimp/postprocess.h>
 #endif
-
-#ifdef PARAENGINE_CLIENT
-#include "DirectXEngine.h"
-#endif
+#include <algorithm>
+#include <cctype>
+#include <sstream>
 
 extern "C"
 {
@@ -184,6 +187,14 @@ void ParaAssetObject::EnableTextureAutoAnimation(bool bEnable)
 	}
 }
 
+void ParaAssetObject::SaveTextureToPNG(const char* sFileName, int width, int height)
+{
+	if (IsValid() && m_pAsset->GetType() == AssetEntity::texture)
+	{
+		((TextureEntity*)m_pAsset)->SaveToFile(sFileName, PixelFormat::A8R8G8B8, width, height);
+	}
+}
+
 void ParaAssetObject::SetCurrentFrameNumber(int nFrame)
 {
 	if(IsValid() && m_pAsset->GetType()==AssetEntity::texture)
@@ -305,17 +316,18 @@ bool ParaScripting::ParaAssetObject::Begin()
 		pEffect->LoadAsset();
 		if(pEffect->IsValid())
 		{
-#if defined(USE_OPENGL_RENDERER)
-			const AssetKey& sEffectFileName = pEffect->GetFileName();
+#ifndef NPLRUNTIME_SERVER
+			const std::string& sEffectFileName = pEffect->GetFileName();
 			if (sEffectFileName == ":IDR_FX_REDBLUESTEREO")
 			{
 				auto pd3dDevice = CGlobals::GetRenderDevice();
-				pd3dDevice->SetIndices(0);
-				pd3dDevice->SetStreamSource(0, 0, 0, 0);
-				pd3dDevice->SetRenderState(ERenderState::CULLMODE, RSV_CULL_NONE);
+				if (pd3dDevice)
+				{
+					pd3dDevice->SetIndices(0);
+					pd3dDevice->SetStreamSource(0, 0, 0, 0);
+					pd3dDevice->SetRenderState(ERenderState::CULLMODE, RSV_CULL_NONE);
+				}
 			}
-#endif
-#ifndef USE_NULL_RENDERER
 			return pEffect->begin(true, 0, true);
 #endif
 		}
@@ -422,13 +434,16 @@ ParaAssetObject ParaScripting::ParaAssetObject::GetDefaultReplaceableTexture( in
 
 void ParaScripting::ParaAssetObject::SetTexture( int nIndex, const char* filename )
 {
-#ifdef USE_DIRECTX_RENDERER
+#ifndef NPLRUNTIME_SERVER
 	if(IsValid() && m_pAsset->GetType()==AssetEntity::effectfile)
 	{
 		((CEffectFile*)m_pAsset)->UnLockTexture(nIndex);
 
 		if(filename && filename[0]=='\0')
-			GETD3D(CGlobals::GetRenderDevice())->SetTexture(nIndex, NULL);
+		{
+			if (CGlobals::GetRenderDevice())
+				CGlobals::GetRenderDevice()->SetTexture(nIndex, nullptr);
+		}
 		else
 		{
 			TextureEntity* pEntity = CGlobals::GetAssetManager()->LoadTexture("", filename, TextureEntity::StaticTexture);
@@ -749,21 +764,12 @@ ParaAssetObject ParaAsset::LoadStaticMesh(const char* strAssetName, const char* 
 {
 	if(strAssetName!=0 && strFilePath!=0)
 	{
-		int len = (int)strlen(strFilePath);
-#ifdef USE_DIRECTX_RENDERER
-		/*
-		if( (strFilePath[len-4] == 'i' && strFilePath[len-3] == 'g'
-			&& strFilePath[len-2] == 'e' && strFilePath[len-1] == 's')||
-			(strFilePath[len-4] == 's' && strFilePath[len-3] == 't'
-			&& strFilePath[len-2] == 'e' && strFilePath[len-1] == 'p'))
-			*/
 		if(CadModel::IsStepFile(strFilePath) || CadModel::IsIgesFile(strFilePath))
 		{
 			AssetEntity* pAssetEntity = CGlobals::GetAssetManager()->LoadCadModel(strAssetName, strFilePath);
 			return  ParaAssetObject(pAssetEntity);
 		}
 		else
-#endif
 		{
 			AssetEntity* pAssetEntity = CGlobals::GetAssetManager()->LoadMesh(strAssetName, strFilePath);
 			return  ParaAssetObject(pAssetEntity);
@@ -943,6 +949,107 @@ void ParaAsset::SetAssetServerUrl( const char* path )
 bool ParaAsset::Refresh( const char* filename )
 {
 	return CGlobals::GetAssetManager()->RefreshAsset(filename);
+}
+
+void ParaAsset::ConvertGLB(const char* cmds)
+{
+#ifdef SUPPORT_FBX_MODEL_FILE
+	if (!cmds || cmds[0] == '\0')
+		return;
+
+	std::istringstream iss(cmds);
+	float position_x = 0.0f;
+	float position_y = 0.0f;
+	float position_z = 0.0f;
+	float rotation_x = 0.0f;
+	float rotation_y = 0.0f;
+	float rotation_z = 0.0f;
+	float scale = 1.0f;
+	std::string input_filepath;
+	std::string transform_matrix;
+	std::string output_filepath;
+	std::getline(iss, input_filepath, ',');
+	std::getline(iss, transform_matrix, ',');
+	std::getline(iss, output_filepath);
+	if (input_filepath.empty() || transform_matrix.empty())
+		return;
+
+	if (output_filepath.empty())
+	{
+		auto pos = input_filepath.find_last_of("/\\");
+		if (pos == std::string::npos)
+		{
+			output_filepath = "output/" + input_filepath;
+		}
+		else
+		{
+			output_filepath = input_filepath.substr(0, pos + 1) + "output" + input_filepath[pos] + input_filepath.substr(pos + 1);
+		}
+	}
+
+	std::vector<float> transform_values;
+	float transform_value = 0.0f;
+	std::istringstream transform_stream(transform_matrix);
+	while (transform_stream >> transform_value)
+		transform_values.push_back(transform_value);
+
+	aiMatrix4x4 matrix;
+	if (transform_values.size() == 12)
+	{
+		matrix = aiMatrix4x4(
+			transform_values[0], transform_values[1], transform_values[2], transform_values[3],
+			transform_values[4], transform_values[5], transform_values[6], transform_values[7],
+			transform_values[8], transform_values[9], transform_values[10], transform_values[11],
+			0.0f, 0.0f, 0.0f, 1.0f);
+	}
+	else
+	{
+		std::istringstream(transform_matrix) >> position_x >> position_y >> position_z >> rotation_x >> rotation_y >> rotation_z >> scale;
+		auto identity = aiMatrix4x4();
+		matrix = aiMatrix4x4::Scaling(aiVector3D(scale, scale, scale), identity);
+		matrix = aiMatrix4x4::RotationY(rotation_y, identity) * matrix;
+		matrix = aiMatrix4x4::Translation(aiVector3D(position_x, position_y, position_z), identity) * matrix;
+	}
+
+	Assimp::Importer importer;
+	importer.SetPropertyInteger(AI_CONFIG_PP_SLM_VERTEX_LIMIT, 60000);
+	const aiScene* scene = importer.ReadFile(input_filepath, aiProcess_Triangulate | aiProcess_GenSmoothNormals | aiProcess_FlipUVs);
+	if (!scene || !scene->mRootNode)
+	{
+		OUTPUT_LOG("ParaAsset::ConvertGLB: Failed to load scene '%s': %s\n", input_filepath.c_str(), importer.GetErrorString());
+		return;
+	}
+
+	auto root_node = scene->mRootNode;
+	root_node->mTransformation = matrix * root_node->mTransformation;
+	scene = importer.ApplyPostProcessing(aiProcess_PreTransformVertices | aiProcess_FlipWindingOrder | aiProcess_SplitLargeMeshes);
+	if (!scene)
+	{
+		OUTPUT_LOG("ParaAsset::ConvertGLB: Failed to bake scene transform: %s\n", importer.GetErrorString());
+		return;
+	}
+
+	CParaFile::CreateDirectory(output_filepath.c_str());
+
+	Assimp::Exporter exporter;
+	std::string output_extension;
+	auto extension_position = output_filepath.find_last_of('.');
+	if (extension_position != std::string::npos)
+		output_extension = output_filepath.substr(extension_position + 1);
+	std::transform(output_extension.begin(), output_extension.end(), output_extension.begin(),
+		[](unsigned char c) { return static_cast<char>(std::tolower(c)); });
+	const char* export_format = (output_extension == "fbx") ? "fbx" : "glb2";
+	if (exporter.Export(scene, export_format, output_filepath.c_str()) != AI_SUCCESS)
+	{
+		OUTPUT_LOG("ParaAsset::ConvertGLB: Failed to export scene to '%s': %s\n", output_filepath.c_str(), exporter.GetErrorString());
+	}
+	else
+	{
+		OUTPUT_LOG("ParaAsset::ConvertGLB: Scene saved successfully to %s\n", output_filepath.c_str());
+	}
+#else
+	(void)cmds;
+#endif
 }
 
 #pragma endregion ParaAssets

@@ -4,7 +4,10 @@
 
 #ifdef ENABLE_AUTO_RIGGER
 
+#include <atomic>
+#ifndef EMSCRIPTEN_SINGLE_THREAD
 #include <thread>
+#endif
 class Mesh;
 
 namespace ParaEngine
@@ -48,6 +51,7 @@ namespace ParaEngine
 
 	private:
 		typedef std::map<std::string, ParaXEntity*> ModelTemplateMap;
+		ModelTemplateMap::iterator FindBestMatch(Mesh* targetModel);
 		ModelTemplateMap::iterator FindBestMatch2(Mesh* targetModel);
 		void AutoRigThreadFunc();
 		/** bind the target model to the default template which simply has one bone when the system failed to match the target with any given templates. */
@@ -56,7 +60,9 @@ namespace ParaEngine
 		ModelTemplateMap* m_ModelTemplates;
 		ParaXEntity* m_pTargetModel;
 		std::string m_OutputFilePath;
+#ifndef EMSCRIPTEN_SINGLE_THREAD
 		std::thread m_workerThread;
+#endif
 
 		std::atomic_bool m_bIsRunnging;
 	};

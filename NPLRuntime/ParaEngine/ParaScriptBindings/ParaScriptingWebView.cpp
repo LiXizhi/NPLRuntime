@@ -30,10 +30,13 @@ namespace ParaScripting
 	{
 		m_pParaWebView.reset(wv);
 
-		wv->addCloseListener([this]() {
-			this->m_pParaWebView.reset();
-			return true;
-		});
+		if (wv)
+		{
+			wv->addCloseListener([this]() {
+				this->m_pParaWebView.reset();
+				return true;
+			});
+		}
 	}
 
 	ParaAttributeObject ParaWebView::GetAttributeObject()
