@@ -8,6 +8,16 @@
 #include "IMovieCodec.h"
 #ifdef USE_FREEIMAGE
 #include <FreeImage.h>
+namespace
+{
+	void EnsureFreeImageInitialized()
+	{
+		static std::once_flag s_freeImageInitFlag;
+		std::call_once(s_freeImageInitFlag, []() {
+			FreeImage_Initialise();
+		});
+	}
+}
 #endif
 #include "util/CyoEncode.h"
 #ifndef EMSCRIPTEN_SINGLE_THREAD
@@ -373,6 +383,120 @@ bool CMoviePlatform::TakeScreenShot(const string& filename)
 
 void CMoviePlatform::TakeScreenShot_Async(const string& filename, bool bEncode, int width, int height, screenshot_callback callback)
 {
+	if (filename == "<memory>")
+	{
+		std::lock_guard<std::mutex> lock(m_pendingEndFrameMutex);
+		m_pendingEndFrameTasks.emplace_back([=]() {
+			std::vector<BYTE> buffers;
+			bool result = false;
+			auto* pRenderDevice = CGlobals::GetRenderDevice();
+			if (pRenderDevice)
+			{
+				int srcWidth = static_cast<int>(pRenderDevice->GetBackBufferWidth());
+				int srcHeight = static_cast<int>(pRenderDevice->GetBackBufferHeight());
+				if ((srcWidth <= 0 || srcHeight <= 0) && CGlobals::GetApp() && CGlobals::GetApp()->GetRenderWindow())
+				{
+					srcWidth = static_cast<int>(CGlobals::GetApp()->GetRenderWindow()->GetWidth());
+					srcHeight = static_cast<int>(CGlobals::GetApp()->GetRenderWindow()->GetHeight());
+				}
+				int dstWidth = (width <= 0) ? srcWidth : width;
+				int dstHeight = (height <= 0) ? srcHeight : height;
+				if (srcWidth > 0 && srcHeight > 0 && dstWidth > 0 && dstHeight > 0)
+				{
+					std::vector<uint32_t> pixels(static_cast<size_t>(srcWidth) * static_cast<size_t>(srcHeight), 0u);
+					if (pRenderDevice->ReadPixels(0, 0, srcWidth, srcHeight, pixels.data()))
+					{
+						const uint32_t* rawPixels = pixels.data();
+						std::vector<uint32_t> flippedPixels;
+						if (!pRenderDevice->GetCaps().topLeftScreenOrigin && srcHeight > 1)
+						{
+							flippedPixels.resize(pixels.size());
+							for (int row = 0; row < srcHeight; ++row)
+							{
+								memcpy(&flippedPixels[static_cast<size_t>(srcWidth) * row],
+									&pixels[static_cast<size_t>(srcWidth) * (srcHeight - row - 1)],
+									static_cast<size_t>(srcWidth) * sizeof(uint32_t));
+							}
+							rawPixels = flippedPixels.data();
+						}
+
+						ParaImage frame;
+						if (frame.initWithRawData(reinterpret_cast<const unsigned char*>(rawPixels), pixels.size() * sizeof(uint32_t), srcWidth, srcHeight, 32))
+						{
+							bool bSizeOk = (dstWidth == srcWidth && dstHeight == srcHeight) || frame.resize(dstWidth, dstHeight);
+							if (bSizeOk)
+							{
+								if (!bEncode)
+								{
+									result = true;
+								}
+								else
+								{
+#ifdef USE_FREEIMAGE
+									EnsureFreeImageInitialized();
+									FIBITMAP* dib = FreeImage_Allocate(dstWidth, dstHeight, 24);
+									if (dib)
+									{
+										const unsigned char* rgba = frame.getData();
+										const int bppBytes = (frame.getBitsPrePixel() >= 32) ? 4 : 3;
+										for (int y = 0; y < dstHeight; ++y)
+										{
+											BYTE* dstLine = FreeImage_GetScanLine(dib, dstHeight - 1 - y);
+											const unsigned char* srcLine = rgba + static_cast<size_t>(y) * static_cast<size_t>(dstWidth) * bppBytes;
+											for (int x = 0; x < dstWidth; ++x)
+											{
+												dstLine[x * 3 + FI_RGBA_RED] = srcLine[x * bppBytes + 0];
+												dstLine[x * 3 + FI_RGBA_GREEN] = srcLine[x * bppBytes + 1];
+												dstLine[x * 3 + FI_RGBA_BLUE] = srcLine[x * bppBytes + 2];
+											}
+										}
+										FIMEMORY* destMemBuff = FreeImage_OpenMemory();
+										if (destMemBuff && FreeImage_SaveToMemory(FIF_JPEG, dib, destMemBuff, JPEG_QUALITYGOOD))
+										{
+											BYTE* mem_buffer = nullptr;
+											DWORD size_in_bytes = 0;
+											FreeImage_AcquireMemory(destMemBuff, &mem_buffer, &size_in_bytes);
+											if (mem_buffer && size_in_bytes > 0)
+											{
+												size_t nBufferSize = CyoEncode::Base64EncodeGetLength(size_in_bytes);
+												buffers.resize(nBufferSize);
+												CyoEncode::Base64Encode(buffers.data(), mem_buffer, size_in_bytes);
+												result = true;
+											}
+										}
+										if (destMemBuff)
+											FreeImage_CloseMemory(destMemBuff);
+										FreeImage_Unload(dib);
+									}
+#else
+									std::string tmpShot = CParaFile::GetWritablePath() + "temp/_para_mem_shot.jpg";
+									CParaFile::CreateDirectory(tmpShot.c_str());
+									if (frame.saveToFile(tmpShot))
+									{
+										CParaFile savedFile;
+										if (savedFile.OpenFile(tmpShot.c_str()))
+										{
+											size_t nBufferSize = CyoEncode::Base64EncodeGetLength(savedFile.getSize());
+											buffers.resize(nBufferSize);
+											CyoEncode::Base64Encode(buffers.data(), savedFile.getBuffer(), savedFile.getSize());
+											result = true;
+										}
+										CParaFile::DeleteFile(tmpShot);
+									}
+#endif
+								}
+							}
+						}
+					}
+				}
+			}
+			if (callback != nullptr)
+			{
+				callback(result, buffers);
+			}
+		});
+		return;
+	}
 #if defined(WIN32) && !defined(EMSCRIPTEN_SINGLE_THREAD)
 	std::thread worker([=]() {
 		std::vector<BYTE> buffers;
@@ -448,6 +572,7 @@ bool CMoviePlatform::TakeScreenShot_FromGDI(const string& filename, std::vector<
 		return false;
 
 #ifdef USE_FREEIMAGE
+	EnsureFreeImageInitialized();
 	string sExt = CParaFile::GetFileExtension(outFilename);
 	FREE_IMAGE_FORMAT FileFormat = FIF_PNG;
 	if (sExt == "dds")
@@ -1085,6 +1210,18 @@ void CMoviePlatform::EndCaptureFrame()
 	if (IsInCaptureSession() && IsRecording())
 	{
 		SaveCapturedFrame();
+	}
+
+	std::vector<std::function<void()>> tasks;
+	{
+		std::lock_guard<std::mutex> lock(m_pendingEndFrameMutex);
+		if (!m_pendingEndFrameTasks.empty())
+			tasks.swap(m_pendingEndFrameTasks);
+	}
+	for (auto& fn : tasks)
+	{
+		if (fn)
+			fn();
 	}
 }
 

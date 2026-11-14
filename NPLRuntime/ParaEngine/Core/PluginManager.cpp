@@ -184,14 +184,23 @@ void DLLPlugInEntity::Init(const char* sFilename)
 	}
 
 #ifdef WIN32
-	// check for core dll files
-	if (GetKey().find("cAudioEngine") != std::string::npos || GetKey().find("PhysicsBT") != std::string::npos || GetKey().find("sqlite") != std::string::npos || GetKey().find("ParaWebView") != std::string::npos)
+	// check for core dll files (case-insensitive so external working dirs like Paraworld always prefer matching x64 build DLLs)
+	std::string sKeyLower = GetKey();
+	std::transform(sKeyLower.begin(), sKeyLower.end(), sKeyLower.begin(), [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
+	if (sKeyLower.find("caudioengine") != std::string::npos || sKeyLower.find("physicsbt") != std::string::npos || sKeyLower.find("sqlite") != std::string::npos || sKeyLower.find("parawebview") != std::string::npos)
 	{
-		// we will try to find core dll files only in executable directory first, such as in "bin64/..."
-		std::string sFullPath = CGlobals::GetApp()->GetModuleDir();
-		sFullPath += sDLLPath;
+		// we will try to find core dll files only in executable directory first, such as in "bin64/..." or "build-win64/bin/..."
+		std::string sFullPath = std::string(CGlobals::GetApp()->GetModuleDir()) + CParaFile::GetFileName(sDLLPath);
 		if (CParaFile::DoesFileExist2(sFullPath.c_str(), FILE_ON_DISK))
+		{
 			sDLLPath = sFullPath;
+		}
+		else if (sKeyLower.find("sqlite") != std::string::npos)
+		{
+			std::string sParaSqlitePath = std::string(CGlobals::GetApp()->GetModuleDir()) + "ParaSqlite.dll";
+			if (CParaFile::DoesFileExist2(sParaSqlitePath.c_str(), FILE_ON_DISK))
+				sDLLPath = sParaSqlitePath;
+		}
 	}
 #endif
 

@@ -1,5 +1,6 @@
 #pragma once
 #include <vector>
+#include <functional>
 #include "IAttributeFields.h"
 #include "IMovieCodec.h"
 #include <mutex>
@@ -364,6 +365,8 @@ namespace ParaEngine
 		float m_fStereoConvergenceOffset;
 
 		bool m_isLeftEye;
+		std::mutex m_pendingEndFrameMutex;
+		std::vector<std::function<void()>> m_pendingEndFrameTasks;
 	};
 
 }
