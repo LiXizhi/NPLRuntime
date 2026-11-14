@@ -71,7 +71,7 @@ echo   Exe      : "%PARAENGINE_EXE%"
 echo   WorkDir  : "%CD%"
 echo   Renderer : %RHI_FLAG%
 
-start "" "%PARAENGINE_EXE%" %RHI_FLAG% mc="true" isDevEnv="true" noupdate="true" %EXTRA_ARGS% paracraft://cmd/loadworld/%WORLD_PID%
+start "" "%PARAENGINE_EXE%" %RHI_FLAG% mc="true" debug="main" isDevEnv="true" noupdate="true" %EXTRA_ARGS% paracraft://cmd/loadworld/%WORLD_PID%
 
 popd
 endlocal
