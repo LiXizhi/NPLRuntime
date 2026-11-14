@@ -11,6 +11,7 @@
 #ifndef USE_NULL_RENDERER
 #include "ImageEntity.h"
 #include "TextureEntity.h"
+#include "ViewportManager.h"
 #include "OpenGLWrapper/GLImage.h"
 #include "StringHelper.h"
 #include "os_calls.h"
@@ -239,16 +240,56 @@ void ParaEngine::TextureEntityOpenGL::AttachRHIRenderTarget(IRHIRenderTarget* pR
 	}
 	else if (SurfaceType == TextureSurface)
 	{
+		if (m_texture)
+		{
+			m_texture->detachRHITexture();
+			SAFE_RELEASE(m_texture);
+		}
 		m_bIsInitialized = true;
 		m_bIsValid = true;
 	}
 }
 
+void ParaEngine::TextureEntityOpenGL::EnsureScreenSizeRenderTargetUpToDate(bool allowWhileActiveRT)
+{
+	if (SurfaceType != RenderTarget || !m_bIsInitialized || !m_bOwnsRHIRenderTarget || !m_rhiRenderTarget)
+		return;
+	if (!m_pTextureInfo || m_pTextureInfo->m_subtype != TextureInfo::TYPE_SCREENSIZE)
+		return;
+	auto* pDev = CGlobals::GetRenderDevice();
+	if (!pDev)
+		return;
+	const uint32_t bbW = pDev->GetBackBufferWidth();
+	const uint32_t bbH = pDev->GetBackBufferHeight();
+	if (bbW == 0 || bbH == 0)
+		return;
+	if (m_rhiRenderTarget->GetWidth() == bbW && m_rhiRenderTarget->GetHeight() == bbH)
+		return;
+
+	if (!allowWhileActiveRT)
+	{
+		const auto& binding = pDev->GetCurrentRenderTargetBinding();
+		if (binding.depthStencilOverride == m_rhiRenderTarget)
+			return;
+		for (uint32_t i = 0; i < binding.count && i < 4u; ++i)
+		{
+			if (binding.targets[i] == m_rhiRenderTarget)
+				return;
+		}
+	}
+
+	InvalidateDeviceObjects();
+	RestoreDeviceObjects();
+}
+
 IRHIRenderTarget* ParaEngine::TextureEntityOpenGL::GetRHIRenderTarget()
 {
-	if (SurfaceType == RenderTarget && !m_bIsInitialized)
+	if (SurfaceType == RenderTarget)
 	{
-		LoadAsset();
+		if (!m_bIsInitialized)
+			LoadAsset();
+		else
+			EnsureScreenSizeRenderTargetUpToDate(true);
 	}
 	return m_rhiRenderTarget;
 }
@@ -258,18 +299,40 @@ bool ParaEngine::TextureEntityOpenGL::SetRenderTarget(int nIndex)
 	auto* pDev = CGlobals::GetRenderDevice();
 	if (!pDev)
 		return false;
+	bool res = false;
 	if (SurfaceType == RenderTarget)
 	{
 		LoadAsset();
+		EnsureScreenSizeRenderTargetUpToDate(true);
 		if (!m_rhiRenderTarget)
 			return false;
-		return pDev->SetRenderTarget((uint32_t)nIndex, m_rhiRenderTarget);
+		res = pDev->SetRenderTarget((uint32_t)nIndex, m_rhiRenderTarget);
 	}
 	else if (SurfaceType == TextureSurface)
 	{
-		return pDev->SetRenderTarget((uint32_t)nIndex, m_rhiRenderTarget);
+		res = pDev->SetRenderTarget((uint32_t)nIndex, m_rhiRenderTarget);
 	}
-	return false;
+
+	if (res && nIndex == 0)
+	{
+		if (!m_rhiRenderTarget || (m_rhiRenderTarget->GetWidth() == pDev->GetBackBufferWidth() && m_rhiRenderTarget->GetHeight() == pDev->GetBackBufferHeight()))
+		{
+			if (CGlobals::GetViewportManager() && CGlobals::GetViewportManager()->GetActiveViewPort())
+				CGlobals::GetViewportManager()->GetActiveViewPort()->ApplyViewport();
+		}
+		else
+		{
+			ParaViewport vp;
+			vp.X = 0;
+			vp.Y = 0;
+			vp.Width = m_rhiRenderTarget->GetWidth();
+			vp.Height = m_rhiRenderTarget->GetHeight();
+			vp.MinZ = 0.0f;
+			vp.MaxZ = 1.0f;
+			pDev->SetViewport(vp);
+		}
+	}
+	return res;
 }
 
 HRESULT ParaEngine::TextureEntityOpenGL::RestoreDeviceObjects()
@@ -287,16 +350,19 @@ HRESULT ParaEngine::TextureEntityOpenGL::RestoreDeviceObjects()
 		DWORD width = defaultW, height = defaultH;
 		PixelFormat format = (SurfaceType == DEPTHSTENCIL) ? PixelFormat::D24S8 : PixelFormat::A8R8G8B8;
 
-		if (GetTextureInfo() != NULL)
+		const bool isScreenSize = (m_pTextureInfo == nullptr
+			|| m_pTextureInfo->m_subtype == TextureInfo::TYPE_SCREENSIZE
+			|| m_pTextureInfo->m_width <= 0
+			|| m_pTextureInfo->m_height <= 0);
+
+		if (m_pTextureInfo != nullptr)
 		{
-			width = GetTextureInfo()->m_width;
-			height = GetTextureInfo()->m_height;
-			if (width == 0 || height == 0 || (int)width < 0 || (int)height < 0)
+			if (!isScreenSize)
 			{
-				width = defaultW;
-				height = defaultH;
+				width = static_cast<DWORD>(m_pTextureInfo->m_width);
+				height = static_cast<DWORD>(m_pTextureInfo->m_height);
 			}
-			if (SurfaceType == RenderTarget && GetTextureInfo()->m_format == TextureInfo::FMT_X8R8G8B8)
+			if (SurfaceType == RenderTarget && m_pTextureInfo->m_format == TextureInfo::FMT_X8R8G8B8)
 			{
 				format = PixelFormat::X8R8G8B8;
 			}
@@ -305,13 +371,12 @@ HRESULT ParaEngine::TextureEntityOpenGL::RestoreDeviceObjects()
 		if (SurfaceType == RenderTarget && pDev)
 		{
 			const std::string& sKey = GetKey();
-			const int nSize = static_cast<int>(sKey.size());
-			if (nSize > 5 && sKey[nSize - 5] == '_' && sKey[nSize - 4] == 'R' && sKey[nSize - 3] == '3' && sKey[nSize - 2] == '2' && sKey[nSize - 1] == 'F')
+			if (sKey.find("_R32F") != std::string::npos)
 			{
 				if (pDev->GetCaps().supportsFloatRenderTargets)
 					format = PixelFormat::R32F;
 			}
-			else if (nSize > 4 && sKey[nSize - 4] == '_' && sKey[nSize - 3] == 'H' && sKey[nSize - 2] == 'D' && sKey[nSize - 1] == 'R')
+			if (sKey.find("_HDR") != std::string::npos)
 			{
 				if (pDev->GetCaps().supportsFloatRenderTargets)
 					format = PixelFormat::A16B16G16R16F;
@@ -331,14 +396,27 @@ HRESULT ParaEngine::TextureEntityOpenGL::RestoreDeviceObjects()
 		{
 			if (SurfaceType == RenderTarget && pDev)
 			{
-				m_rhiRenderTarget = pDev->CreateRenderTarget(width, height, format, PixelFormat::D24S8);
+				const ERHIBackend backend = pDev->GetBackendType();
+				const bool useSharedDefaultDepth = (backend == ERHIBackend::D3D11 || backend == ERHIBackend::D3D12 || backend == ERHIBackend::Vulkan);
+				const PixelFormat rtDepthFormat = useSharedDefaultDepth ? PixelFormat::Unknown : PixelFormat::D24S8;
+				m_rhiRenderTarget = pDev->CreateRenderTarget(width, height, format, rtDepthFormat);
 				if (m_rhiRenderTarget && m_rhiRenderTarget->GetColorTexture(0))
 				{
 					m_bOwnsRHIRenderTarget = true;
 					m_texture->initWithRHITexture(m_rhiRenderTarget->GetColorTexture(0), false);
-					SetTextureInfo(TextureInfo((int)width, (int)height,
-						format == PixelFormat::X8R8G8B8 ? TextureInfo::FMT_X8R8G8B8 : TextureInfo::FMT_A8R8G8B8,
-						TextureInfo::TYPE_UNKNOWN));
+					const auto texFmt = (format == PixelFormat::X8R8G8B8) ? TextureInfo::FMT_X8R8G8B8 : TextureInfo::FMT_A8R8G8B8;
+					const auto subType = isScreenSize ? TextureInfo::TYPE_SCREENSIZE : TextureInfo::TYPE_UNKNOWN;
+					if (!m_pTextureInfo)
+					{
+						m_pTextureInfo = new TextureInfo((int)width, (int)height, texFmt, subType);
+					}
+					else
+					{
+						m_pTextureInfo->m_width = (int)width;
+						m_pTextureInfo->m_height = (int)height;
+						m_pTextureInfo->m_format = texFmt;
+						m_pTextureInfo->m_subtype = subType;
+					}
 				}
 			}
 
@@ -453,6 +531,10 @@ DeviceTexturePtr_type ParaEngine::TextureEntityOpenGL::GetTexture()
 		return 0;
 	}
 	LoadAsset();
+	if (SurfaceType == RenderTarget)
+	{
+		EnsureScreenSizeRenderTargetUpToDate(false);
+	}
 	switch (SurfaceType)
 	{
 		case TextureSequence:
@@ -511,7 +593,14 @@ int32 ParaEngine::TextureEntityOpenGL::GetHeight()
 
 const TextureEntityOpenGL::TextureInfo* ParaEngine::TextureEntityOpenGL::GetTextureInfo()
 {
-	if (SurfaceType == StaticTexture)
+	if (SurfaceType == RenderTarget || SurfaceType == DEPTHSTENCIL)
+	{
+		if (!m_bIsInitialized)
+			LoadAsset();
+		else
+			EnsureScreenSizeRenderTargetUpToDate(false);
+	}
+	else if (SurfaceType == StaticTexture)
 	{
 		if (!m_pTextureInfo)
 		{

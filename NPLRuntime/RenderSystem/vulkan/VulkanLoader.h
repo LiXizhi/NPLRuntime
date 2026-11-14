@@ -82,6 +82,7 @@ VK_DEFINE_NON_DISPATCHABLE_HANDLE(VkFramebuffer)
 VK_DEFINE_NON_DISPATCHABLE_HANDLE(VkCommandPool)
 VK_DEFINE_NON_DISPATCHABLE_HANDLE(VkSurfaceKHR)
 VK_DEFINE_NON_DISPATCHABLE_HANDLE(VkSwapchainKHR)
+VK_DEFINE_NON_DISPATCHABLE_HANDLE(VkDebugUtilsMessengerEXT)
 
 enum VkResult : int32_t
 {
@@ -153,6 +154,7 @@ enum VkStructureType : int32_t
 	VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR = 1000001000,
 	VK_STRUCTURE_TYPE_PRESENT_INFO_KHR = 1000001001,
 	VK_STRUCTURE_TYPE_WIN32_SURFACE_CREATE_INFO_KHR = 1000009000,
+	VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT = 1000128004,
 };
 
 enum VkFormat : int32_t
@@ -1422,6 +1424,54 @@ struct VkWin32SurfaceCreateInfoKHR
 };
 #endif
 
+enum VkDebugUtilsMessageSeverityFlagBitsEXT : uint32_t
+{
+	VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT = 0x00000001u,
+	VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT    = 0x00000010u,
+	VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT = 0x00000100u,
+	VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT   = 0x00001000u,
+};
+
+enum VkDebugUtilsMessageTypeFlagBitsEXT : uint32_t
+{
+	VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT     = 0x00000001u,
+	VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT  = 0x00000002u,
+	VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT = 0x00000004u,
+};
+
+struct VkDebugUtilsMessengerCallbackDataEXT
+{
+	VkStructureType sType;
+	const void* pNext;
+	VkFlags flags;
+	const char* pMessageIdName;
+	int32_t messageIdNumber;
+	const char* pMessage;
+	uint32_t queueLabelCount;
+	const void* pQueueLabels;
+	uint32_t cmdBufLabelCount;
+	const void* pCmdBufLabels;
+	uint32_t objectCount;
+	const void* pObjects;
+};
+
+typedef VkBool32 (VKAPI_PTR *PFN_vkDebugUtilsMessengerCallbackEXT)(
+	VkFlags messageSeverity,
+	VkFlags messageTypes,
+	const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
+	void* pUserData);
+
+struct VkDebugUtilsMessengerCreateInfoEXT
+{
+	VkStructureType sType;
+	const void* pNext;
+	VkFlags flags;
+	VkFlags messageSeverity;
+	VkFlags messageType;
+	PFN_vkDebugUtilsMessengerCallbackEXT pfnUserCallback;
+	void* pUserData;
+};
+
 typedef void (VKAPI_PTR *PFN_vkVoidFunction)(void);
 typedef PFN_vkVoidFunction (VKAPI_PTR *PFN_vkGetInstanceProcAddr)(VkInstance instance, const char* pName);
 typedef PFN_vkVoidFunction (VKAPI_PTR *PFN_vkGetDeviceProcAddr)(VkDevice device, const char* pName);
@@ -1457,6 +1507,9 @@ namespace ParaEngine
 #if defined(_WIN32)
 		VkResult (VKAPI_PTR *vkCreateWin32SurfaceKHR)(VkInstance, const VkWin32SurfaceCreateInfoKHR*, const void*, VkSurfaceKHR*) = nullptr;
 #endif
+		// Optional VK_EXT_debug_utils functions
+		VkResult (VKAPI_PTR *vkCreateDebugUtilsMessengerEXT)(VkInstance, const VkDebugUtilsMessengerCreateInfoEXT*, const void*, VkDebugUtilsMessengerEXT*) = nullptr;
+		void     (VKAPI_PTR *vkDestroyDebugUtilsMessengerEXT)(VkInstance, VkDebugUtilsMessengerEXT, const void*) = nullptr;
 
 		// Device functions
 		void     (VKAPI_PTR *vkDestroyDevice)(VkDevice, const void*) = nullptr;

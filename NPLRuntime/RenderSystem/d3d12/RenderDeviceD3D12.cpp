@@ -392,6 +392,7 @@ namespace ParaEngine
 		{
 			if (m_owner)
 			{
+				m_owner->NotifyTextureDestroyed(this);
 				if (m_srvSlot != UINT32_MAX)
 				{
 					m_owner->GetSrvAllocator().Free(m_srvSlot);
@@ -634,6 +635,10 @@ namespace ParaEngine
 
 		virtual ~D3D12Buffer() override
 		{
+			if (m_owner)
+			{
+				m_owner->NotifyBufferDestroyed(this);
+			}
 			if (m_resource)
 			{
 				if (m_persistentCpuPtr)
@@ -870,13 +875,20 @@ namespace ParaEngine
 				td.Layout = D3D12_TEXTURE_LAYOUT_UNKNOWN;
 				td.Flags = D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET;
 
+				D3D12_CLEAR_VALUE rtClear = {};
+				rtClear.Format = dxgiColorFmt;
+				rtClear.Color[0] = 0.0f;
+				rtClear.Color[1] = 0.0f;
+				rtClear.Color[2] = 0.0f;
+				rtClear.Color[3] = 0.0f;
+
 				ComPtr<ID3D12Resource> colorRes;
 				if (FAILED(dev->CreateCommittedResource(
 					&defaultHeap,
 					D3D12_HEAP_FLAG_NONE,
 					&td,
 					D3D12_RESOURCE_STATE_RENDER_TARGET,
-					nullptr,
+					&rtClear,
 					IID_PPV_ARGS(&colorRes))) || !colorRes)
 				{
 					return;
@@ -1007,6 +1019,7 @@ namespace ParaEngine
 		{
 			if (m_owner)
 			{
+				m_owner->NotifyRenderTargetDestroyed(this);
 				for (uint32_t i = 0; i < 4; ++i)
 				{
 					if (m_rtvSlots[i] != UINT32_MAX)
@@ -1176,8 +1189,9 @@ namespace ParaEngine
 			D3D_REGISTER_COMPONENT_TYPE componentType = D3D_REGISTER_COMPONENT_FLOAT32;
 		};
 
-		explicit D3D12ShaderProgram(const RHIShaderProgramDesc& desc)
-			: m_valid(false)
+		D3D12ShaderProgram(RenderDeviceD3D12* owner, const RHIShaderProgramDesc& desc)
+			: m_owner(owner)
+			, m_valid(false)
 			, m_vsHash(0)
 			, m_psHash(0)
 			, m_usesSVPosition(false)
@@ -1200,7 +1214,13 @@ namespace ParaEngine
 			m_valid = true;
 		}
 
-		virtual ~D3D12ShaderProgram() override = default;
+		virtual ~D3D12ShaderProgram() override
+		{
+			if (m_owner)
+			{
+				m_owner->NotifyProgramDestroyed(this);
+			}
+		}
 
 		virtual bool IsValid() const override { return m_valid; }
 		virtual void* GetNativeHandle() const override { return static_cast<void*>(const_cast<D3D12ShaderProgram*>(this)); }
@@ -1327,6 +1347,7 @@ namespace ParaEngine
 		}
 
 	private:
+		RenderDeviceD3D12* m_owner = nullptr;
 		bool m_valid;
 		uint64_t m_vsHash;
 		uint64_t m_psHash;
@@ -1359,6 +1380,7 @@ namespace ParaEngine
 
 	RenderDeviceD3D12::~RenderDeviceD3D12()
 	{
+		m_isShuttingDown = true;
 		ExecuteAndSyncGPU();
 
 		if (m_blitProgram)
@@ -1535,14 +1557,26 @@ namespace ParaEngine
 		if (FAILED(m_device->CreateRootSignature(0, sigBlob->GetBufferPointer(), sigBlob->GetBufferSize(), IID_PPV_ARGS(&m_rootSignature))) || !m_rootSignature)
 			return false;
 
-		if (!m_cpuRtvAlloc.Init(m_device.Get(), D3D12_DESCRIPTOR_HEAP_TYPE_RTV, 256))
+		if (!m_cpuRtvAlloc.Init(m_device.Get(), D3D12_DESCRIPTOR_HEAP_TYPE_RTV, 1024))
 			return false;
-		if (!m_cpuDsvAlloc.Init(m_device.Get(), D3D12_DESCRIPTOR_HEAP_TYPE_DSV, 128))
+		if (!m_cpuDsvAlloc.Init(m_device.Get(), D3D12_DESCRIPTOR_HEAP_TYPE_DSV, 512))
 			return false;
 		if (!m_cpuSrvAlloc.Init(m_device.Get(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, 16384))
 			return false;
 		if (!m_cpuSamplerAlloc.Init(m_device.Get(), D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER, 512))
 			return false;
+
+		// Permanent null RTV descriptor for sparse MRT bindings (e.g. SetRenderTarget(1, nullptr) while slots 2..3 remain bound)
+		m_nullRtvSlot = m_cpuRtvAlloc.Allocate();
+		if (m_nullRtvSlot != UINT32_MAX)
+		{
+			D3D12_RENDER_TARGET_VIEW_DESC nullRtvDesc = {};
+			nullRtvDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+			nullRtvDesc.ViewDimension = D3D12_RTV_DIMENSION_TEXTURE2D;
+			nullRtvDesc.Texture2D.MipSlice = 0;
+			nullRtvDesc.Texture2D.PlaneSlice = 0;
+			m_device->CreateRenderTargetView(nullptr, &nullRtvDesc, m_cpuRtvAlloc.GetHandle(m_nullRtvSlot));
+		}
 
 		// Shader-visible GPU SRV heap partitioned across FRAME_COUNT (32768 descriptors per frame = 98304 total)
 		m_gpuSrvCapacity = 32768u * FRAME_COUNT;
@@ -1707,6 +1741,7 @@ namespace ParaEngine
 		m_device->CreateDepthStencilView(m_defaultDepthTex.Get(), nullptr, m_cpuDsvAlloc.GetHandle(m_defaultDsvSlot));
 
 		m_usingBackBufferRTV = true;
+		m_activeNullRtvMask = 0;
 		for (int i = 0; i < 4; ++i)
 		{
 			m_activeColorTexObjs[i] = nullptr;
@@ -1814,12 +1849,106 @@ namespace ParaEngine
 
 	void RenderDeviceD3D12::DeferRelease(IUnknown* obj)
 	{
-		if (!obj)
+		if (!obj || m_isShuttingDown)
 			return;
 		DeferredReleaseEntry e;
 		e.fenceValue = m_nextFenceValue;
 		e.object = obj;
 		m_deferredReleases.push_back(std::move(e));
+	}
+
+	void RenderDeviceD3D12::NotifyTextureDestroyed(D3D12Texture* tex)
+	{
+		if (!tex || m_isShuttingDown)
+			return;
+		for (uint32_t s = 0; s < RHIStateTracker::MAX_SAMPLER_STAGES; ++s)
+		{
+			if (m_boundTextures[s] == tex)
+			{
+				m_boundTextures[s] = nullptr;
+				m_srvTableDirty = true;
+			}
+		}
+		for (uint32_t i = 0; i < 4; ++i)
+		{
+			if (m_activeColorTexObjs[i] == tex)
+			{
+				m_activeColorTexObjs[i] = nullptr;
+				if (m_nullRtvSlot != UINT32_MAX)
+				{
+					m_activeRTVs[i] = m_cpuRtvAlloc.GetHandle(m_nullRtvSlot);
+					m_activeRtvFormats[i] = DXGI_FORMAT_R8G8B8A8_UNORM;
+					m_activeNullRtvMask |= (1u << i);
+				}
+			}
+		}
+		if (m_activeDepthTexObj == tex)
+		{
+			m_activeDepthTexObj = nullptr;
+			if (!m_usingDefaultDSV)
+			{
+				m_hasActiveDSV = false;
+				m_activeDSV = {};
+				m_activeDsvFormat = DXGI_FORMAT_UNKNOWN;
+			}
+		}
+	}
+
+	void RenderDeviceD3D12::NotifyBufferDestroyed(D3D12Buffer* buf)
+	{
+		if (!buf || m_isShuttingDown)
+			return;
+		for (uint32_t s = 0; s < 4; ++s)
+		{
+			if (m_streams[s].buffer == buf)
+				m_streams[s].buffer = nullptr;
+		}
+		if (m_currentIndexBuffer == buf)
+			m_currentIndexBuffer = nullptr;
+	}
+
+	void RenderDeviceD3D12::NotifyProgramDestroyed(D3D12ShaderProgram* prog)
+	{
+		if (!prog || m_isShuttingDown)
+			return;
+		if (m_currentProgram == prog)
+			m_currentProgram = nullptr;
+	}
+
+	void RenderDeviceD3D12::NotifyRenderTargetDestroyed(D3D12RenderTarget* rt)
+	{
+		if (!rt || m_isShuttingDown)
+			return;
+		bool changed = false;
+		IRHIRenderTarget* newTargets[4] = {
+			m_currentRTBinding.targets[0],
+			m_currentRTBinding.targets[1],
+			m_currentRTBinding.targets[2],
+			m_currentRTBinding.targets[3]
+		};
+		for (uint32_t i = 0; i < 4; ++i)
+		{
+			if (newTargets[i] == rt)
+			{
+				newTargets[i] = nullptr;
+				changed = true;
+			}
+		}
+		IRHIRenderTarget* dsOverride = (m_currentRTBinding.depthStencilOverride == rt)
+			? nullptr
+			: m_currentRTBinding.depthStencilOverride;
+		if (dsOverride != m_currentRTBinding.depthStencilOverride)
+			changed = true;
+		if (changed)
+		{
+			uint32_t newCount = 0;
+			for (uint32_t i = 0; i < 4; ++i)
+			{
+				if (newTargets[i] != nullptr)
+					newCount = i + 1;
+			}
+			SetRenderTargets(newCount, newCount > 0 ? newTargets : nullptr, dsOverride);
+		}
 	}
 
 	ID3D12GraphicsCommandList* RenderDeviceD3D12::EnsureRecording()
@@ -2287,14 +2416,12 @@ namespace ParaEngine
 				m_activeRTVs[0] = m_cpuRtvAlloc.GetHandle(m_backBufferRtvSlots[m_backBufferIndex]);
 			}
 		}
-		else
+
+		for (uint32_t i = 0; i < m_activeRTVCount; ++i)
 		{
-			for (uint32_t i = 0; i < m_activeRTVCount; ++i)
+			if (m_activeColorTexObjs[i] && m_activeColorTexObjs[i]->GetResource())
 			{
-				if (m_activeColorTexObjs[i] && m_activeColorTexObjs[i]->GetResource())
-				{
-					TransitionResource(m_activeColorTexObjs[i]->GetResource(), m_activeColorTexObjs[i]->GetStateRef(), D3D12_RESOURCE_STATE_RENDER_TARGET);
-				}
+				TransitionResource(m_activeColorTexObjs[i]->GetResource(), m_activeColorTexObjs[i]->GetStateRef(), D3D12_RESOURCE_STATE_RENDER_TARGET);
 			}
 		}
 
@@ -2323,6 +2450,7 @@ namespace ParaEngine
 
 	bool RenderDeviceD3D12::SetRenderTargets(uint32_t count, IRHIRenderTarget* const* targets, IRHIRenderTarget* depthStencilOverride)
 	{
+		m_activeNullRtvMask = 0;
 		for (int i = 0; i < 4; ++i)
 		{
 			m_activeColorTexObjs[i] = nullptr;
@@ -2330,7 +2458,18 @@ namespace ParaEngine
 			m_activeRtvFormats[i] = DXGI_FORMAT_UNKNOWN;
 		}
 
-		if (count == 0 || !targets || (count == 1 && targets[0] == nullptr))
+		uint32_t effectiveCount = 0;
+		if (targets && count > 0)
+		{
+			const uint32_t clamped = (std::min)(count, 4u);
+			for (uint32_t i = 0; i < clamped; ++i)
+			{
+				if (targets[i] != nullptr)
+					effectiveCount = i + 1u;
+			}
+		}
+
+		if (effectiveCount == 0)
 		{
 			m_usingBackBufferRTV = true;
 			m_activeRTVCount = 1;
@@ -2365,11 +2504,11 @@ namespace ParaEngine
 			return true;
 		}
 
-		m_usingBackBufferRTV = false;
 		auto* primary = static_cast<D3D12RenderTarget*>(targets[0]);
+		m_usingBackBufferRTV = (primary == nullptr);
 		uint32_t rtvCount = 0;
 
-		if (count == 1 && primary && primary->GetColorCount() > 1)
+		if (effectiveCount == 1 && primary && primary->GetColorCount() > 1)
 		{
 			rtvCount = primary->GetColorCount();
 			for (uint32_t i = 0; i < rtvCount; ++i)
@@ -2381,15 +2520,31 @@ namespace ParaEngine
 		}
 		else
 		{
-			rtvCount = (std::min)(count, 4u);
+			rtvCount = effectiveCount;
 			for (uint32_t i = 0; i < rtvCount; ++i)
 			{
-				auto* rt = static_cast<D3D12RenderTarget*>(targets[i]);
-				if (rt)
+				if (i == 0 && targets[0] == nullptr)
 				{
-					m_activeColorTexObjs[i] = rt->GetD3D12ColorTex(0);
-					m_activeRTVs[i] = rt->GetRTV(0);
-					m_activeRtvFormats[i] = rt->GetDxgiColorFormat();
+					m_activeColorTexObjs[0] = nullptr;
+					m_activeRTVs[0] = m_cpuRtvAlloc.GetHandle(m_backBufferRtvSlots[m_backBufferIndex]);
+					m_activeRtvFormats[0] = DXGI_FORMAT_R8G8B8A8_UNORM;
+				}
+				else
+				{
+					auto* rt = static_cast<D3D12RenderTarget*>(targets[i]);
+					if (rt)
+					{
+						m_activeColorTexObjs[i] = rt->GetD3D12ColorTex(0);
+						m_activeRTVs[i] = rt->GetRTV(0);
+						m_activeRtvFormats[i] = rt->GetDxgiColorFormat();
+					}
+					else
+					{
+						m_activeColorTexObjs[i] = nullptr;
+						m_activeRTVs[i] = (m_nullRtvSlot != UINT32_MAX) ? m_cpuRtvAlloc.GetHandle(m_nullRtvSlot) : D3D12_CPU_DESCRIPTOR_HANDLE{};
+						m_activeRtvFormats[i] = DXGI_FORMAT_R8G8B8A8_UNORM;
+						m_activeNullRtvMask |= (1u << i);
+					}
 				}
 			}
 		}
@@ -2397,14 +2552,42 @@ namespace ParaEngine
 		m_activeRTVCount = rtvCount;
 		m_activeSampleCount = primary ? primary->GetSampleCount() : 1u;
 
-		auto* dsSource = depthStencilOverride ? static_cast<D3D12RenderTarget*>(depthStencilOverride) : primary;
-		if (dsSource && dsSource->HasDSV())
+		if (depthStencilOverride)
+		{
+			auto* dsRT = static_cast<D3D12RenderTarget*>(depthStencilOverride);
+			if (dsRT && dsRT->HasDSV())
+			{
+				m_hasActiveDSV = true;
+				m_usingDefaultDSV = false;
+				m_activeDepthTexObj = dsRT->GetD3D12DepthTex();
+				m_activeDSV = dsRT->GetDSV();
+				m_activeDsvFormat = dsRT->GetDxgiDepthFormat();
+			}
+			else
+			{
+				m_hasActiveDSV = false;
+				m_usingDefaultDSV = false;
+				m_activeDepthTexObj = nullptr;
+				m_activeDSV = {};
+				m_activeDsvFormat = DXGI_FORMAT_UNKNOWN;
+			}
+		}
+		else if (primary && primary->HasDSV())
 		{
 			m_hasActiveDSV = true;
 			m_usingDefaultDSV = false;
-			m_activeDepthTexObj = dsSource->GetD3D12DepthTex();
-			m_activeDSV = dsSource->GetDSV();
-			m_activeDsvFormat = dsSource->GetDxgiDepthFormat();
+			m_activeDepthTexObj = primary->GetD3D12DepthTex();
+			m_activeDSV = primary->GetDSV();
+			m_activeDsvFormat = primary->GetDxgiDepthFormat();
+		}
+		else if (!primary || (primary->GetWidth() == m_backBufferWidth && primary->GetHeight() == m_backBufferHeight && primary->GetSampleCount() == 1 && m_defaultDsvSlot != UINT32_MAX))
+		{
+			// Preserve default scene depth-stencil buffer across screen-sized color render targets (matching D3D9 surface semantics)
+			m_hasActiveDSV = true;
+			m_usingDefaultDSV = true;
+			m_activeDepthTexObj = nullptr;
+			m_activeDSV = m_cpuDsvAlloc.GetHandle(m_defaultDsvSlot);
+			m_activeDsvFormat = DXGI_FORMAT_D24_UNORM_S8_UINT;
 		}
 		else
 		{
@@ -2421,7 +2604,7 @@ namespace ParaEngine
 		EnsureRecording();
 		BindActiveRenderTargetsToCmdList();
 		m_srvTableDirty = true;
-		NotifyRenderTargetsBound(count, targets, depthStencilOverride);
+		NotifyRenderTargetsBound(effectiveCount, targets, depthStencilOverride);
 		return true;
 	}
 
@@ -2976,7 +3159,7 @@ namespace ParaEngine
 	{
 		if (!m_device)
 			return nullptr;
-		auto* prog = new D3D12ShaderProgram(desc);
+		auto* prog = new D3D12ShaderProgram(this, desc);
 		if (!prog->IsValid())
 		{
 			prog->ReleaseRHIResource();
@@ -3151,7 +3334,7 @@ namespace ParaEngine
 		for (uint32_t s = 0; s < 4; ++s)
 			HashCombineU32(h, m_streams[s].frequencyDivider);
 		HashCombineU32(h, static_cast<uint32_t>(topoType));
-		HashCombineU32(h, m_activeRTVCount | (m_activeSampleCount << 8));
+		HashCombineU32(h, m_activeRTVCount | (m_activeSampleCount << 8) | (m_activeNullRtvMask << 16));
 		for (uint32_t i = 0; i < 4; ++i)
 			HashCombineU32(h, static_cast<uint32_t>(m_activeRtvFormats[i]));
 		HashCombineU32(h, static_cast<uint32_t>(m_hasActiveDSV ? m_activeDsvFormat : DXGI_FORMAT_UNKNOWN));
@@ -3245,14 +3428,15 @@ namespace ParaEngine
 		}
 
 		psoDesc.BlendState.AlphaToCoverageEnable = FALSE;
-		psoDesc.BlendState.IndependentBlendEnable = (cw1 != cw0 || cw2 != cw0 || cw3 != cw0);
+		psoDesc.BlendState.IndependentBlendEnable = (cw1 != cw0 || cw2 != cw0 || cw3 != cw0 || m_activeNullRtvMask != 0);
 		const uint8_t masks[8] = {
 			static_cast<uint8_t>(cw0), static_cast<uint8_t>(cw1), static_cast<uint8_t>(cw2), static_cast<uint8_t>(cw3),
 			static_cast<uint8_t>(cw0), static_cast<uint8_t>(cw0), static_cast<uint8_t>(cw0), static_cast<uint8_t>(cw0)
 		};
 		for (int i = 0; i < 8; ++i)
 		{
-			psoDesc.BlendState.RenderTarget[i].BlendEnable = alphaBlend ? TRUE : FALSE;
+			const bool isNullSlot = (i < 4) && ((m_activeNullRtvMask & (1u << i)) != 0);
+			psoDesc.BlendState.RenderTarget[i].BlendEnable = (!isNullSlot && alphaBlend) ? TRUE : FALSE;
 			psoDesc.BlendState.RenderTarget[i].LogicOpEnable = FALSE;
 			psoDesc.BlendState.RenderTarget[i].SrcBlend = ToD3D12Blend(srcBlend, false);
 			psoDesc.BlendState.RenderTarget[i].DestBlend = ToD3D12Blend(dstBlend, false);
@@ -3261,7 +3445,7 @@ namespace ParaEngine
 			psoDesc.BlendState.RenderTarget[i].DestBlendAlpha = sepAlpha ? ToD3D12Blend(dstBlendA, true) : ToD3D12Blend(dstBlend, true);
 			psoDesc.BlendState.RenderTarget[i].BlendOpAlpha = sepAlpha ? ToD3D12BlendOp(blendOpA) : ToD3D12BlendOp(blendOp);
 			psoDesc.BlendState.RenderTarget[i].LogicOp = D3D12_LOGIC_OP_NOOP;
-			psoDesc.BlendState.RenderTarget[i].RenderTargetWriteMask = psoDesc.BlendState.IndependentBlendEnable ? masks[i] : masks[0];
+			psoDesc.BlendState.RenderTarget[i].RenderTargetWriteMask = isNullSlot ? 0 : (psoDesc.BlendState.IndependentBlendEnable ? masks[i] : masks[0]);
 		}
 		psoDesc.SampleMask = UINT_MAX;
 
@@ -3995,7 +4179,7 @@ namespace ParaEngine
 			const FLOAT rgba[4] = { c.r, c.g, c.b, c.a };
 			for (uint32_t i = 0; i < m_activeRTVCount && i < 4; ++i)
 			{
-				if (m_activeRTVs[i].ptr != 0)
+				if (m_activeRTVs[i].ptr != 0 && (m_activeNullRtvMask & (1u << i)) == 0)
 					cmd->ClearRenderTargetView(m_activeRTVs[i], rgba, 0, nullptr);
 			}
 		}

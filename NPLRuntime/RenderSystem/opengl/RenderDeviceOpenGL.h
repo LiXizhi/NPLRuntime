@@ -78,6 +78,7 @@ namespace ParaEngine
 	protected:
 		void ApplyBlendingModeChange();
 		void ApplyStencilStateChange();
+		void ApplyDrawBuffersForCurrentProgram();
 		void ApplyGLVertexDeclaration(CVertexDeclaration* pDecl, const void* streamZeroUserPtr, uint32_t streamZeroStrideOverride = 0);
 
 	private:
@@ -125,6 +126,9 @@ namespace ParaEngine
 		uint32_t m_LastRenderTargetWidth = 0;
 		uint32_t m_LastRenderTargetHeight = 0;
 		bool m_isBeginRenderTarget = false;
+		uint32_t m_BoundMrtCount = 0;
+		uint8_t m_ValidMrtMask = 0;
+		uint8_t m_AppliedDrawBufferMask = 0;
 		ParaViewport m_CurrentViewPort;
 	};
 

@@ -157,6 +157,8 @@ namespace ParaEngine
 		bool link();
 		/** it will call glUseProgram() */
 		void use();
+		uint8_t getColorOutputMask() const { return _colorOutputMask; }
+		static uint8_t getCurrentColorOutputMask() { return s_currentColorOutputMask; }
 		/** It will create 4 uniforms:
 		- kUniformPMatrix
 		- kUniformMVMatrix
@@ -289,6 +291,8 @@ namespace ParaEngine
 		struct _hashUniformEntry* _hashForUniforms;
 		bool              _hasShaderCompiler;
 		bool			  _dirty;
+		uint8_t           _colorOutputMask;
+		static uint8_t    s_currentColorOutputMask;
 
 
 		std::unordered_map<std::string, Uniform> _userUniforms;

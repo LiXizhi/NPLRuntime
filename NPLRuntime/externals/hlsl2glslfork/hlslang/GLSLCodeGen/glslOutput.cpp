@@ -1507,7 +1507,64 @@ bool TGlslOutputTraverser::traverseAggregate( bool preVisit, TIntermAggregate *n
       writeFuncCall("xll_constructMat3", node, goit, false, true);
       return false;
 
-   case EOpConstructStruct:  writeFuncCall( node->getTypePointer()->getTypeName(), node, goit); return false;
+   case EOpConstructStruct:
+      {
+         TType* stType = node->getTypePointer();
+         TTypeList* sl = stType ? stType->getStruct() : NULL;
+         TNodeArray& cnodes = node->getNodes();
+         TIntermTyped* arg0 = (cnodes.size() == 1 && cnodes[0]) ? cnodes[0]->getAsTyped() : NULL;
+         const bool isScalarCastToStruct = sl && cnodes.size() == 1 && arg0 && arg0->isScalar() && !arg0->isArray() && arg0->getBasicType() != EbtStruct &&
+            (sl->size() != 1 || (*sl)[0].type->getBasicType() == EbtStruct || (*sl)[0].type->isVector() || (*sl)[0].type->isMatrix() || (*sl)[0].type->isArray() || (*sl)[0].type->getBasicType() != arg0->getBasicType());
+         if (isScalarCastToStruct)
+         {
+            struct ZeroEmitter
+            {
+               static void Emit(std::stringstream& os, TType& t, TGlslOutputTraverser* tr, bool ignoreArr)
+               {
+                  if (!ignoreArr && t.isArray())
+                  {
+                     int arrSz = t.getArraySize() > 0 ? t.getArraySize() : 1;
+                     os << buildArrayConstructorString(t) << "( ";
+                     for (int idx = 0; idx < arrSz; ++idx)
+                     {
+                        if (idx > 0) os << ", ";
+                        Emit(os, t, tr, true);
+                     }
+                     os << ")";
+                     return;
+                  }
+                  if (t.getBasicType() == EbtStruct)
+                  {
+                     GlslStruct* gs = tr->createStructFromType(&t);
+                     os << gs->getName() << "( ";
+                     TTypeList* fl = t.getStruct();
+                     if (fl)
+                     {
+                        for (size_t fi = 0; fi < fl->size(); ++fi)
+                        {
+                           if (fi > 0) os << ", ";
+                           Emit(os, *(*fl)[fi].type, tr, false);
+                        }
+                     }
+                     os << ")";
+                     return;
+                  }
+                  EGlslSymbolType gst = translateType(&t);
+                  if (gst == EgstBool) os << "false";
+                  else if (gst >= EgstBool2 && gst <= EgstBool4) os << getTypeString(gst) << "(false)";
+                  else if (gst == EgstInt) os << "0";
+                  else if (gst >= EgstInt2 && gst <= EgstInt4) os << getTypeString(gst) << "(0)";
+                  else if (gst == EgstFloat) os << "0.0";
+                  else os << getTypeString(gst) << "(0.0)";
+               }
+            };
+            current->beginStatement();
+            ZeroEmitter::Emit(out, *stType, goit, false);
+            return false;
+         }
+         writeFuncCall( node->getTypePointer()->getTypeName(), node, goit);
+         return false;
+      }
    case EOpConstructArray:  writeFuncCall( buildArrayConstructorString(*node->getTypePointer()), node, goit); return false;
 
    case EOpComma:

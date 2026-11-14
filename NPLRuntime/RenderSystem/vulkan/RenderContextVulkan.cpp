@@ -42,6 +42,25 @@ namespace ParaEngine
 			}
 			return false;
 		}
+
+		VkBool32 VKAPI_PTR VulkanDebugUtilsCallback(
+			VkFlags messageSeverity,
+			VkFlags /*messageTypes*/,
+			const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
+			void* /*pUserData*/)
+		{
+			if (!pCallbackData || !pCallbackData->pMessage)
+				return VK_FALSE;
+
+			const char* sev = (messageSeverity & VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT) ? "ERROR" : "WARN";
+			const char* msgId = pCallbackData->pMessageIdName ? pCallbackData->pMessageIdName : "VK";
+			OUTPUT_LOG("VULKAN_VALIDATION [%s] (%s): %s\n", sev, msgId, pCallbackData->pMessage);
+#if defined(_WIN32)
+			std::string dbgLine = std::string("VULKAN_VALIDATION [") + sev + "] (" + msgId + "): " + pCallbackData->pMessage + "\n";
+			::OutputDebugStringA(dbgLine.c_str());
+#endif
+			return VK_FALSE;
+		}
 	}
 
 	IRenderContext* CreateRenderContextVulkan()
@@ -88,6 +107,7 @@ namespace ParaEngine
 #endif
 
 		const bool wantValidation = cfg.debugValidation || HasCmdFlagVk("--rhi-validation");
+		bool hasDebugUtilsExt = false;
 		std::vector<const char*> enabledLayers;
 		if (wantValidation)
 		{
@@ -97,8 +117,27 @@ namespace ParaEngine
 			if (layerCount > 0)
 				vk.vkEnumerateInstanceLayerProperties(&layerCount, layers.data());
 			if (HasLayerName(layers, "VK_LAYER_KHRONOS_validation"))
+			{
 				enabledLayers.push_back("VK_LAYER_KHRONOS_validation");
+				// Also check extensions exposed by VK_LAYER_KHRONOS_validation itself
+				uint32_t layerExtCount = 0;
+				vk.vkEnumerateInstanceExtensionProperties("VK_LAYER_KHRONOS_validation", &layerExtCount, nullptr);
+				std::vector<VkExtensionProperties> layerExts(layerExtCount);
+				if (layerExtCount > 0)
+					vk.vkEnumerateInstanceExtensionProperties("VK_LAYER_KHRONOS_validation", &layerExtCount, layerExts.data());
+				if (HasExtensionName(instExts, "VK_EXT_debug_utils") || HasExtensionName(layerExts, "VK_EXT_debug_utils"))
+				{
+					enabledInstExts.push_back("VK_EXT_debug_utils");
+					hasDebugUtilsExt = true;
+				}
+			}
 		}
+
+		VkDebugUtilsMessengerCreateInfoEXT dbgCreateInfo = {};
+		dbgCreateInfo.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
+		dbgCreateInfo.messageSeverity = VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT;
+		dbgCreateInfo.messageType = VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
+		dbgCreateInfo.pfnUserCallback = &VulkanDebugUtilsCallback;
 
 		VkApplicationInfo appInfo = {};
 		appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
@@ -110,6 +149,7 @@ namespace ParaEngine
 
 		VkInstanceCreateInfo instInfo = {};
 		instInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
+		instInfo.pNext = hasDebugUtilsExt ? &dbgCreateInfo : nullptr;
 		instInfo.pApplicationInfo = &appInfo;
 		instInfo.enabledLayerCount = static_cast<uint32_t>(enabledLayers.size());
 		instInfo.ppEnabledLayerNames = enabledLayers.empty() ? nullptr : enabledLayers.data();
@@ -122,6 +162,11 @@ namespace ParaEngine
 		{
 			// Fallback to Vulkan 1.0 instance if loader is strictly 1.0
 			appInfo.apiVersion = VK_API_VERSION_1_0;
+			instInfo.pNext = nullptr;
+			hasDebugUtilsExt = false;
+			if (!enabledInstExts.empty() && std::strcmp(enabledInstExts.back(), "VK_EXT_debug_utils") == 0)
+				enabledInstExts.pop_back();
+			instInfo.enabledExtensionCount = static_cast<uint32_t>(enabledInstExts.size());
 			instInfo.enabledLayerCount = 0;
 			instInfo.ppEnabledLayerNames = nullptr;
 			res = vk.vkCreateInstance(&instInfo, nullptr, &instance);
@@ -140,13 +185,28 @@ namespace ParaEngine
 			return nullptr;
 		}
 
+		VkDebugUtilsMessengerEXT debugMessenger = VK_NULL_HANDLE;
+		if (hasDebugUtilsExt && vk.vkCreateDebugUtilsMessengerEXT)
+		{
+			vk.vkCreateDebugUtilsMessengerEXT(instance, &dbgCreateInfo, nullptr, &debugMessenger);
+		}
+
 		VkSurfaceKHR surface = VK_NULL_HANDLE;
+		auto cleanupInstance = [&]()
+		{
+			if (surface != VK_NULL_HANDLE && vk.vkDestroySurfaceKHR)
+				vk.vkDestroySurfaceKHR(instance, surface, nullptr);
+			if (debugMessenger != VK_NULL_HANDLE && vk.vkDestroyDebugUtilsMessengerEXT)
+				vk.vkDestroyDebugUtilsMessengerEXT(instance, debugMessenger, nullptr);
+			if (instance != VK_NULL_HANDLE && vk.vkDestroyInstance)
+				vk.vkDestroyInstance(instance, nullptr);
+		};
 #if defined(_WIN32)
 		HWND hWnd = reinterpret_cast<HWND>(cfg.renderWindow->GetNativeHandle());
 		if (!hWnd)
 		{
 			OUTPUT_LOG("ERROR: RenderContextVulkan got null HWND\n");
-			vk.vkDestroyInstance(instance, nullptr);
+			cleanupInstance();
 			return nullptr;
 		}
 		VkWin32SurfaceCreateInfoKHR surfInfo = {};
@@ -157,12 +217,12 @@ namespace ParaEngine
 		if (res != VK_SUCCESS || !surface)
 		{
 			OUTPUT_LOG("ERROR: vkCreateWin32SurfaceKHR failed (VkResult=%d)\n", static_cast<int>(res));
-			vk.vkDestroyInstance(instance, nullptr);
+			cleanupInstance();
 			return nullptr;
 		}
 #else
 		OUTPUT_LOG("ERROR: WSI surface creation not yet configured for this platform in RenderContextVulkan\n");
-		vk.vkDestroyInstance(instance, nullptr);
+		cleanupInstance();
 		return nullptr;
 #endif
 
@@ -171,8 +231,7 @@ namespace ParaEngine
 		if (gpuCount == 0)
 		{
 			OUTPUT_LOG("ERROR: vkEnumeratePhysicalDevices returned 0 GPUs\n");
-			vk.vkDestroySurfaceKHR(instance, surface, nullptr);
-			vk.vkDestroyInstance(instance, nullptr);
+			cleanupInstance();
 			return nullptr;
 		}
 		std::vector<VkPhysicalDevice> gpus(gpuCount);
@@ -245,8 +304,7 @@ namespace ParaEngine
 		if (!bestGpu || bestQueueFamily == UINT32_MAX)
 		{
 			OUTPUT_LOG("ERROR: No suitable Vulkan physical device with graphics+present+swapchain found\n");
-			vk.vkDestroySurfaceKHR(instance, surface, nullptr);
-			vk.vkDestroyInstance(instance, nullptr);
+			cleanupInstance();
 			return nullptr;
 		}
 
@@ -280,8 +338,7 @@ namespace ParaEngine
 		if (res != VK_SUCCESS || !device)
 		{
 			OUTPUT_LOG("ERROR: vkCreateDevice failed (VkResult=%d)\n", static_cast<int>(res));
-			vk.vkDestroySurfaceKHR(instance, surface, nullptr);
-			vk.vkDestroyInstance(instance, nullptr);
+			cleanupInstance();
 			return nullptr;
 		}
 
@@ -290,8 +347,7 @@ namespace ParaEngine
 			OUTPUT_LOG("ERROR: VulkanDispatch::LoadDevice failed\n");
 			if (vk.vkDestroyDevice)
 				vk.vkDestroyDevice(device, nullptr);
-			vk.vkDestroySurfaceKHR(instance, surface, nullptr);
-			vk.vkDestroyInstance(instance, nullptr);
+			cleanupInstance();
 			return nullptr;
 		}
 
@@ -316,6 +372,7 @@ namespace ParaEngine
 		auto* renderDevice = new RenderDeviceVulkan(
 			vk,
 			instance,
+			debugMessenger,
 			surface,
 			bestGpu,
 			device,

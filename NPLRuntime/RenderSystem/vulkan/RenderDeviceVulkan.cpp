@@ -351,6 +351,7 @@ namespace ParaEngine
 		{
 			if (m_owner)
 			{
+				m_owner->NotifyTextureDestroyed(this);
 				if (m_attachmentViewId != 0)
 					m_owner->NotifyViewDestroyed(m_attachmentViewId);
 
@@ -571,6 +572,8 @@ namespace ParaEngine
 
 		virtual ~VulkanBuffer() override
 		{
+			if (m_owner)
+				m_owner->NotifyBufferDestroyed(this);
 			if (m_owner && m_buffer != VK_NULL_HANDLE)
 			{
 				if (m_persistentCpuPtr && m_memory != VK_NULL_HANDLE)
@@ -901,6 +904,8 @@ namespace ParaEngine
 
 		virtual ~VulkanRenderTarget() override
 		{
+			if (m_owner)
+				m_owner->NotifyRenderTargetDestroyed(this);
 			for (uint32_t i = 0; i < 4; ++i)
 			{
 				if (m_colorTextures[i])
@@ -1040,6 +1045,7 @@ namespace ParaEngine
 	public:
 		VulkanShaderProgram(RenderDeviceVulkan* owner, const RHIShaderProgramDesc& desc)
 			: m_owner(owner)
+			, m_debugName(desc.debugName ? desc.debugName : "")
 		{
 			if (!owner || !desc.vsBytecode || desc.vsBytecodeSize < 20 || (desc.vsBytecodeSize % 4) != 0)
 				return;
@@ -1083,6 +1089,7 @@ namespace ParaEngine
 		{
 			if (m_owner)
 			{
+				m_owner->NotifyProgramDestroyed(this);
 				if (m_vsModule != VK_NULL_HANDLE)
 				{
 					VulkanDeferredDelete dd;
@@ -1105,6 +1112,7 @@ namespace ParaEngine
 		VkShaderModule GetPsModule() const { return m_psModule; }
 		const char* GetVsEntry() const { return m_vsEntry.c_str(); }
 		const char* GetPsEntry() const { return m_psEntry.c_str(); }
+		const char* GetDebugName() const { return m_debugName.c_str(); }
 		uint64_t GetCombinedHash() const
 		{
 			uint64_t h = m_vsHash;
@@ -1112,6 +1120,7 @@ namespace ParaEngine
 			return h;
 		}
 		uint32_t GetVsInputLocationMask() const { return m_vsInputLocationMask; }
+		uint32_t GetPsOutputLocationMask() const { return m_psOutputLocationMask; }
 		// 1 = 2D, 2 = 3D, 3 = Cube
 		uint8_t GetExpectedSamplerDim(uint32_t slot) const { return (slot < 16) ? m_samplerSlotDims[slot] : 1; }
 
@@ -1200,6 +1209,18 @@ namespace ParaEngine
 					}
 				}
 			}
+			else
+			{
+				for (uint32_t vid : entryInterfaceVars)
+				{
+					auto sit = varStorage.find(vid);
+					auto lit = varLocation.find(vid);
+					if (sit != varStorage.end() && sit->second == 3u && lit != varLocation.end() && lit->second < 8u)
+					{
+						m_psOutputLocationMask |= (1u << lit->second);
+					}
+				}
+			}
 
 			for (const auto& kv : varBinding)
 			{
@@ -1232,9 +1253,11 @@ namespace ParaEngine
 		VkShaderModule m_psModule = VK_NULL_HANDLE;
 		std::string m_vsEntry = "main";
 		std::string m_psEntry = "main";
+		std::string m_debugName;
 		uint64_t m_vsHash = 0;
 		uint64_t m_psHash = 0;
 		uint32_t m_vsInputLocationMask = 0;
+		uint32_t m_psOutputLocationMask = 0;
 		uint8_t m_samplerSlotDims[16] = { 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1 };
 	};
 
@@ -1245,6 +1268,7 @@ namespace ParaEngine
 	RenderDeviceVulkan::RenderDeviceVulkan(
 		const VulkanDispatch& vk,
 		VkInstance instance,
+		VkDebugUtilsMessengerEXT debugMessenger,
 		VkSurfaceKHR surface,
 		VkPhysicalDevice physicalDevice,
 		VkDevice device,
@@ -1256,6 +1280,7 @@ namespace ParaEngine
 		const std::string& adapterName)
 		: m_vk(vk)
 		, m_instance(instance)
+		, m_debugMessenger(debugMessenger)
 		, m_surface(surface)
 		, m_physicalDevice(physicalDevice)
 		, m_device(device)
@@ -1275,6 +1300,7 @@ namespace ParaEngine
 
 	RenderDeviceVulkan::~RenderDeviceVulkan()
 	{
+		m_isShuttingDown = true;
 		if (m_device != VK_NULL_HANDLE)
 		{
 			if (m_isRecording)
@@ -1363,6 +1389,12 @@ namespace ParaEngine
 		{
 			m_vk.vkDestroySurfaceKHR(m_instance, m_surface, nullptr);
 			m_surface = VK_NULL_HANDLE;
+		}
+
+		if (m_debugMessenger != VK_NULL_HANDLE && m_instance != VK_NULL_HANDLE && m_vk.vkDestroyDebugUtilsMessengerEXT)
+		{
+			m_vk.vkDestroyDebugUtilsMessengerEXT(m_instance, m_debugMessenger, nullptr);
+			m_debugMessenger = VK_NULL_HANDLE;
 		}
 
 		if (m_instance != VK_NULL_HANDLE)
@@ -2124,6 +2156,86 @@ namespace ParaEngine
 		}
 	}
 
+	void RenderDeviceVulkan::NotifyTextureDestroyed(VulkanTexture* tex)
+	{
+		if (!tex || m_isShuttingDown)
+			return;
+		for (uint32_t i = 0; i < RHIStateTracker::MAX_SAMPLER_STAGES; ++i)
+		{
+			if (m_boundTextures[i] == tex)
+			{
+				m_boundTextures[i] = nullptr;
+				m_descriptorsDirty = true;
+			}
+		}
+		bool activeChanged = false;
+		for (uint32_t i = 0; i < 4; ++i)
+		{
+			if (m_activeColorTexObjs[i] == tex)
+			{
+				m_activeColorTexObjs[i] = nullptr;
+				activeChanged = true;
+			}
+		}
+		if (m_activeDepthTexObj == tex)
+		{
+			m_activeDepthTexObj = nullptr;
+			activeChanged = true;
+		}
+		if (activeChanged)
+			EndActiveRenderPass();
+	}
+
+	void RenderDeviceVulkan::NotifyBufferDestroyed(VulkanBuffer* buf)
+	{
+		if (!buf || m_isShuttingDown)
+			return;
+		for (uint32_t i = 0; i < 4; ++i)
+		{
+			if (m_streams[i].buffer == buf)
+			{
+				m_streams[i].buffer = nullptr;
+				m_streams[i].offsetInBytes = 0;
+				m_streams[i].stride = 0;
+			}
+		}
+		if (m_currentIndexBuffer == buf)
+			m_currentIndexBuffer = nullptr;
+	}
+
+	void RenderDeviceVulkan::NotifyProgramDestroyed(VulkanShaderProgram* prog)
+	{
+		if (!prog || m_isShuttingDown)
+			return;
+		if (m_currentProgram == prog)
+			m_currentProgram = nullptr;
+	}
+
+	void RenderDeviceVulkan::NotifyRenderTargetDestroyed(VulkanRenderTarget* rt)
+	{
+		if (!rt || m_isShuttingDown)
+			return;
+		bool activeMatch = (m_currentRTBinding.depthStencilOverride == rt);
+		for (uint32_t i = 0; i < 4; ++i)
+		{
+			if (m_currentRTBinding.targets[i] == rt)
+				activeMatch = true;
+		}
+		if (activeMatch)
+		{
+			IRHIRenderTarget* newTargets[4] = {};
+			uint32_t newCount = 0;
+			for (uint32_t i = 0; i < m_currentRTBinding.count && i < 4; ++i)
+			{
+				newTargets[i] = (m_currentRTBinding.targets[i] == rt) ? nullptr : m_currentRTBinding.targets[i];
+				if (newTargets[i])
+					newCount = i + 1;
+			}
+			IRHIRenderTarget* newDS = (m_currentRTBinding.depthStencilOverride == rt) ? nullptr : m_currentRTBinding.depthStencilOverride;
+			SetRenderTargets(newCount, newCount > 0 ? newTargets : nullptr, newDS);
+		}
+	}
+
 	void RenderDeviceVulkan::BeginFrameSlotIfNeeded(uint32_t frameSlot)
 	{
 		FrameContext& fc = m_frames[frameSlot];
@@ -2605,6 +2717,7 @@ namespace ParaEngine
 		uint64_t attIds[5] = {};
 		uint32_t attCount = 0;
 
+		uint32_t firstTexAttachment = 0;
 		if (m_usingBackBufferRT)
 		{
 			if (!EnsureSwapchainImageAcquired())
@@ -2623,26 +2736,25 @@ namespace ParaEngine
 			attViews[attCount] = m_swapImageViews[m_acquiredImageIndex];
 			attIds[attCount] = m_swapViewIds[m_acquiredImageIndex];
 			++attCount;
+			firstTexAttachment = 1;
 		}
-		else
+
+		for (uint32_t i = firstTexAttachment; i < m_activeColorCount; ++i)
 		{
-			for (uint32_t i = 0; i < m_activeColorCount; ++i)
-			{
-				VulkanTexture* ct = m_activeColorTexObjs[i];
-				if (!ct)
-					return false;
-				TransitionImageLayout(
-					cmd,
-					ct->GetVkImage(),
-					VK_IMAGE_ASPECT_COLOR_BIT,
-					ct->GetMipLevels(),
-					ct->GetLayerCount(),
-					ct->GetLayoutRef(),
-					VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
-				attViews[attCount] = ct->GetAttachmentView();
-				attIds[attCount] = ct->GetAttachmentViewId();
-				++attCount;
-			}
+			VulkanTexture* ct = m_activeColorTexObjs[i];
+			if (!ct)
+				return false;
+			TransitionImageLayout(
+				cmd,
+				ct->GetVkImage(),
+				VK_IMAGE_ASPECT_COLOR_BIT,
+				ct->GetMipLevels(),
+				ct->GetLayerCount(),
+				ct->GetLayoutRef(),
+				VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+			attViews[attCount] = ct->GetAttachmentView();
+			attIds[attCount] = ct->GetAttachmentViewId();
+			++attCount;
 		}
 
 		if (m_hasActiveDepth)
@@ -2683,10 +2795,10 @@ namespace ParaEngine
 			if (!bt)
 				continue;
 			bool conflict = (m_hasActiveDepth && !m_usingDefaultDepth && bt == m_activeDepthTexObj);
-			if (!m_usingBackBufferRT)
+			for (uint32_t c = 0; c < m_activeColorCount; ++c)
 			{
-				for (uint32_t c = 0; c < m_activeColorCount; ++c)
-					if (bt == m_activeColorTexObjs[c]) conflict = true;
+				if (bt == m_activeColorTexObjs[c])
+					conflict = true;
 			}
 			if (!conflict && bt->GetLayout() != VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL)
 			{
@@ -3079,17 +3191,23 @@ namespace ParaEngine
 		}
 
 		VkPipelineColorBlendAttachmentState cbAtts[4] = {};
+		const uint32_t psOutMask = (m_currentProgram && m_currentProgram->GetPsModule() != VK_NULL_HANDLE)
+			? m_currentProgram->GetPsOutputLocationMask()
+			: 0u;
 		for (uint32_t i = 0; i < m_activeColorCount; ++i)
 		{
 			uint32_t maskIdx = (m_enabledFeatures.independentBlend == VK_TRUE) ? i : 0u;
 			uint32_t d3dMask = cw[maskIdx];
 			VkFlags vkMask = 0;
-			if (d3dMask & 0x1u) vkMask |= VK_COLOR_COMPONENT_R_BIT;
-			if (d3dMask & 0x2u) vkMask |= VK_COLOR_COMPONENT_G_BIT;
-			if (d3dMask & 0x4u) vkMask |= VK_COLOR_COMPONENT_B_BIT;
-			if (d3dMask & 0x8u) vkMask |= VK_COLOR_COMPONENT_A_BIT;
+			if ((psOutMask & (1u << i)) != 0u)
+			{
+				if (d3dMask & 0x1u) vkMask |= VK_COLOR_COMPONENT_R_BIT;
+				if (d3dMask & 0x2u) vkMask |= VK_COLOR_COMPONENT_G_BIT;
+				if (d3dMask & 0x4u) vkMask |= VK_COLOR_COMPONENT_B_BIT;
+				if (d3dMask & 0x8u) vkMask |= VK_COLOR_COMPONENT_A_BIT;
+			}
 
-			cbAtts[i].blendEnable = alphaBlend ? VK_TRUE : VK_FALSE;
+			cbAtts[i].blendEnable = (alphaBlend && vkMask != 0) ? VK_TRUE : VK_FALSE;
 			cbAtts[i].srcColorBlendFactor = ToVkBlendFactor(srcBlend, false);
 			cbAtts[i].dstColorBlendFactor = ToVkBlendFactor(dstBlend, false);
 			cbAtts[i].colorBlendOp = ToVkBlendOp(blendOp);
@@ -3155,10 +3273,10 @@ namespace ParaEngine
 			if (!bt)
 				continue;
 			bool conflict = (m_hasActiveDepth && !m_usingDefaultDepth && bt == m_activeDepthTexObj);
-			if (!m_usingBackBufferRT)
+			for (uint32_t c = 0; c < m_activeColorCount; ++c)
 			{
-				for (uint32_t c = 0; c < m_activeColorCount; ++c)
-					if (bt == m_activeColorTexObjs[c]) conflict = true;
+				if (bt == m_activeColorTexObjs[c])
+					conflict = true;
 			}
 			if (!conflict && bt->GetLayout() != VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL)
 			{
@@ -3234,10 +3352,13 @@ namespace ParaEngine
 				uint8_t expectedDim = m_currentProgram->GetExpectedSamplerDim(s);
 				VulkanTexture* bt = m_boundTextures[s];
 				bool conflict = (bt != nullptr) && (m_hasActiveDepth && !m_usingDefaultDepth && bt == m_activeDepthTexObj);
-				if (bt && !m_usingBackBufferRT)
+				if (bt)
 				{
 					for (uint32_t c = 0; c < m_activeColorCount; ++c)
-						if (bt == m_activeColorTexObjs[c]) conflict = true;
+					{
+						if (bt == m_activeColorTexObjs[c])
+							conflict = true;
+					}
 				}
 
 				VkImageView chosenView = m_whiteFallback2D->GetSrvView();
@@ -3634,11 +3755,26 @@ namespace ParaEngine
 	{
 		EndActiveRenderPass();
 
-		if (count == 0 || !targets || !targets[0])
+		uint32_t effectiveCount = 0;
+		if (targets && count > 0)
+		{
+			const uint32_t maxCount = (std::min)(count, 4u);
+			for (uint32_t i = 0; i < maxCount; ++i)
+			{
+				if (targets[i] != nullptr)
+					effectiveCount = i + 1;
+			}
+		}
+
+		for (uint32_t i = 0; i < 4; ++i)
+		{
+			m_activeColorTexObjs[i] = nullptr;
+			m_activeColorFormats[i] = VK_FORMAT_UNDEFINED;
+		}
+
+		if (effectiveCount == 0)
 		{
 			m_usingBackBufferRT = true;
-			for (uint32_t i = 0; i < 4; ++i)
-				m_activeColorTexObjs[i] = nullptr;
 			m_activeColorFormats[0] = m_swapFormat;
 			m_activeColorCount = 1;
 			m_activeSampleCount = 1;
@@ -3672,26 +3808,20 @@ namespace ParaEngine
 		}
 		else
 		{
-			m_usingBackBufferRT = false;
 			auto* rt0 = static_cast<VulkanRenderTarget*>(targets[0]);
-			m_renderTargetWidth = rt0->GetWidth();
-			m_renderTargetHeight = rt0->GetHeight();
-			m_activeSampleCount = rt0->GetSampleCount();
-
 			uint32_t rtvCount = 0;
-			if (count == 1 && rt0->GetColorCount() > 1)
+
+			if (!rt0)
 			{
-				rtvCount = (std::min)(rt0->GetColorCount(), 4u);
-				for (uint32_t i = 0; i < rtvCount; ++i)
-				{
-					m_activeColorTexObjs[i] = rt0->GetVkColorTex(i);
-					m_activeColorFormats[i] = rt0->GetVkColorFormat();
-				}
-			}
-			else
-			{
-				rtvCount = (std::min)(count, 4u);
-				for (uint32_t i = 0; i < rtvCount; ++i)
+				// Swapchain backbuffer at slot 0 + offscreen MRT targets at slots 1..effectiveCount-1
+				m_usingBackBufferRT = true;
+				m_renderTargetWidth = m_backBufferWidth;
+				m_renderTargetHeight = m_backBufferHeight;
+				m_activeSampleCount = 1;
+				m_activeColorTexObjs[0] = nullptr;
+				m_activeColorFormats[0] = m_swapFormat;
+				rtvCount = effectiveCount;
+				for (uint32_t i = 1; i < rtvCount; ++i)
 				{
 					auto* rti = static_cast<VulkanRenderTarget*>(targets[i]);
 					if (rti && rti->GetVkColorTex(0))
@@ -3706,15 +3836,73 @@ namespace ParaEngine
 					}
 				}
 			}
+			else
+			{
+				m_usingBackBufferRT = false;
+				m_renderTargetWidth = rt0->GetWidth();
+				m_renderTargetHeight = rt0->GetHeight();
+				m_activeSampleCount = rt0->GetSampleCount();
+
+				if (effectiveCount == 1 && rt0->GetColorCount() > 1)
+				{
+					rtvCount = (std::min)(rt0->GetColorCount(), 4u);
+					for (uint32_t i = 0; i < rtvCount; ++i)
+					{
+						m_activeColorTexObjs[i] = rt0->GetVkColorTex(i);
+						m_activeColorFormats[i] = rt0->GetVkColorFormat();
+					}
+				}
+				else
+				{
+					rtvCount = effectiveCount;
+					for (uint32_t i = 0; i < rtvCount; ++i)
+					{
+						auto* rti = static_cast<VulkanRenderTarget*>(targets[i]);
+						if (rti && rti->GetVkColorTex(0))
+						{
+							m_activeColorTexObjs[i] = rti->GetVkColorTex(0);
+							m_activeColorFormats[i] = rti->GetVkColorFormat();
+						}
+						else
+						{
+							m_activeColorTexObjs[i] = nullptr;
+							m_activeColorFormats[i] = VK_FORMAT_R8G8B8A8_UNORM;
+						}
+					}
+				}
+			}
 			m_activeColorCount = (std::max)(rtvCount, 1u);
 
-			auto* dsSource = depthStencilOverride ? static_cast<VulkanRenderTarget*>(depthStencilOverride) : rt0;
-			if (dsSource && dsSource->HasDepth())
+			if (depthStencilOverride)
+			{
+				auto* dsRT = static_cast<VulkanRenderTarget*>(depthStencilOverride);
+				if (dsRT && dsRT->HasDepth())
+				{
+					m_hasActiveDepth = true;
+					m_usingDefaultDepth = false;
+					m_activeDepthTexObj = dsRT->GetVkDepthTex();
+					m_activeDepthFormat = dsRT->GetVkDepthFormat();
+				}
+				else
+				{
+					m_hasActiveDepth = false;
+					m_usingDefaultDepth = false;
+					m_activeDepthTexObj = nullptr;
+				}
+			}
+			else if (rt0 && rt0->HasDepth())
 			{
 				m_hasActiveDepth = true;
 				m_usingDefaultDepth = false;
-				m_activeDepthTexObj = dsSource->GetVkDepthTex();
-				m_activeDepthFormat = dsSource->GetVkDepthFormat();
+				m_activeDepthTexObj = rt0->GetVkDepthTex();
+				m_activeDepthFormat = rt0->GetVkDepthFormat();
+			}
+			else if (!rt0 || (rt0->GetWidth() == m_backBufferWidth && rt0->GetHeight() == m_backBufferHeight && rt0->GetSampleCount() == 1))
+			{
+				m_hasActiveDepth = true;
+				m_usingDefaultDepth = true;
+				m_activeDepthTexObj = nullptr;
+				m_activeDepthFormat = m_defaultDepthFormat;
 			}
 			else
 			{
@@ -3734,6 +3922,7 @@ namespace ParaEngine
 		vp.MinZ = 0.0f;
 		vp.MaxZ = 1.0f;
 		SetViewport(vp);
+		NotifyRenderTargetsBound(effectiveCount, effectiveCount > 0 ? targets : nullptr, depthStencilOverride);
 		return true;
 	}
 

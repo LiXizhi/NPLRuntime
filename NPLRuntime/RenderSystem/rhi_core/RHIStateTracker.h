@@ -61,6 +61,13 @@ namespace ParaEngine
 		void ClearDepthStencilDirty() { m_dirtyDepthStencil = false; }
 		void ClearSamplerDirty(uint32_t stage) { if (stage < MAX_SAMPLER_STAGES) m_dirtySamplersMask &= ~(1u << stage); }
 		void ClearAllDirty();
+		void MarkAllDirty()
+		{
+			m_dirtyBlend = true;
+			m_dirtyRasterizer = true;
+			m_dirtyDepthStencil = true;
+			m_dirtySamplersMask = (1u << MAX_SAMPLER_STAGES) - 1u;
+		}
 
 		/**
 		 * Computes a deterministic 64-bit FNV-1a pipeline state key for D3D12 / Vulkan / Metal / WebGPU PSO caches.

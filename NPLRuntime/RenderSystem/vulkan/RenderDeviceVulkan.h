@@ -37,6 +37,7 @@ namespace ParaEngine
 		RenderDeviceVulkan(
 			const VulkanDispatch& vk,
 			VkInstance instance,
+			VkDebugUtilsMessengerEXT debugMessenger,
 			VkSurfaceKHR surface,
 			VkPhysicalDevice physicalDevice,
 			VkDevice device,
@@ -77,6 +78,10 @@ namespace ParaEngine
 		void ExecuteAndSyncGPU();
 		void DeferDelete(const VulkanDeferredDelete& entry);
 		void NotifyViewDestroyed(uint64_t viewUniqueId);
+		void NotifyTextureDestroyed(VulkanTexture* tex);
+		void NotifyBufferDestroyed(VulkanBuffer* buf);
+		void NotifyProgramDestroyed(VulkanShaderProgram* prog);
+		void NotifyRenderTargetDestroyed(VulkanRenderTarget* rt);
 
 		bool AllocateUpload(
 			uint32_t byteSize,
@@ -238,6 +243,7 @@ namespace ParaEngine
 
 		VulkanDispatch m_vk;
 		VkInstance m_instance = VK_NULL_HANDLE;
+		VkDebugUtilsMessengerEXT m_debugMessenger = VK_NULL_HANDLE;
 		VkSurfaceKHR m_surface = VK_NULL_HANDLE;
 		VkPhysicalDevice m_physicalDevice = VK_NULL_HANDLE;
 		VkDevice m_device = VK_NULL_HANDLE;
@@ -348,5 +354,6 @@ namespace ParaEngine
 
 		ParaViewport m_currentViewport = {};
 		bool m_vsyncEnabled = false;
+		bool m_isShuttingDown = false;
 	};
 }

@@ -20,6 +20,8 @@
 
 namespace ParaEngine
 {
+	class D3D11Texture;
+	class D3D11Buffer;
 	class D3D11ShaderProgram;
 	class D3D11RenderTarget;
 
@@ -35,6 +37,10 @@ namespace ParaEngine
 			const std::string& adapterName);
 
 		virtual ~RenderDeviceD3D11() override;
+
+		void NotifyTextureDestroyed(D3D11Texture* tex);
+		void NotifyBufferDestroyed(D3D11Buffer* buf);
+		void NotifyProgramDestroyed(D3D11ShaderProgram* prog);
 
 		bool ResizeSwapChain(uint32_t width, uint32_t height, bool isWindowed);
 
@@ -119,7 +125,7 @@ namespace ParaEngine
 		void ApplyPipelineStatesBeforeDraw();
 		ID3D11InputLayout* GetOrCreateInputLayout(CVertexDeclaration* decl, D3D11ShaderProgram* program);
 		ID3D11Buffer* EnsureDynamicScratchBuffer(Microsoft::WRL::ComPtr<ID3D11Buffer>& buf, uint32_t& currentCap, uint32_t requiredBytes, UINT bindFlags);
-		void UnbindConflictingSRVs(ID3D11RenderTargetView* const* rtvs, uint32_t rtvCount);
+		void UnbindConflictingSRVs(ID3D11RenderTargetView* const* rtvs, uint32_t rtvCount, ID3D11DepthStencilView* dsv = nullptr);
 
 	private:
 		struct StreamBinding
@@ -135,6 +141,7 @@ namespace ParaEngine
 		Microsoft::WRL::ComPtr<IDXGISwapChain> m_swapChain;
 		D3D_FEATURE_LEVEL m_featureLevel;
 		bool m_isWarp;
+		bool m_isShuttingDown = false;
 		std::string m_adapterName;
 		RHIDeviceCaps m_caps;
 		RHIStateTracker m_stateTracker;
@@ -157,8 +164,11 @@ namespace ParaEngine
 		ID3D11Texture2D* m_activeColorTex0 = nullptr;
 		ID3D11Texture2D* m_activeDepthTex = nullptr;
 
-		// Bound SRVs per stage (to auto-unbind before binding a render target as RTV, avoiding D3D11 hazard warnings)
-		ID3D11ShaderResourceView* m_boundSRVs[RHIStateTracker::MAX_SAMPLER_STAGES] = {};
+		// Logical SRVs per engine sampler stage vs hardware-bound PS/VS t-register SRVs
+		ID3D11ShaderResourceView* m_logicalSRVs[RHIStateTracker::MAX_SAMPLER_STAGES] = {};
+		ID3D11ShaderResourceView* m_boundPSSRVs[RHIStateTracker::MAX_SAMPLER_STAGES] = {};
+		ID3D11ShaderResourceView* m_boundVSSRVs[RHIStateTracker::MAX_SAMPLER_STAGES] = {};
+		bool m_srvBindingsDirty = true;
 
 		// Shaders & constant buffers
 		D3D11ShaderProgram* m_currentProgram = nullptr;

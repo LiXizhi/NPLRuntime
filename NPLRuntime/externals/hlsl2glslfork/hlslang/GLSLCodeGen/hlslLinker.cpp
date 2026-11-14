@@ -1093,13 +1093,16 @@ void HlslLinker::emitInputNonStructParam(GlslSymbol* sym, EShLanguage lang, bool
 	}
 	
 	
+	const bool isBgraVertexColor = (m_Options & ETranslateOpBGRAVertexColor) && lang == EShLangVertex &&
+		(attrSem == EAttrSemColor0 || attrSem == EAttrSemColor1 || attrSem == EAttrSemColor2 || attrSem == EAttrSemColor3);
+
 	// In fragment shader, pass zero for POSITION inputs
 	if (lang == EShLangFragment && attrSem == EAttrSemPosition)
 	{
 		call << ctor << "(0.0)";
 		return; // noting more to do
 	}
-	else if ( m_Options &ETranslateOpBGRAVertexColor && lang == EShLangVertex && (attrSem == EAttrSemColor0 || attrSem == EAttrSemColor1 || attrSem == EAttrSemColor2 || attrSem == EAttrSemColor3))
+	else if (isBgraVertexColor)
 	{
 		call << ctor << "(" << name << ".bgra" << ")";
 	}
@@ -1119,7 +1122,7 @@ void HlslLinker::emitInputNonStructParam(GlslSymbol* sym, EShLanguage lang, bool
 	}
 
 	if (!sym->outputSuppressedBy())
-		emitSingleInputVariable (lang, m_Target, name, ctor, sym->getType(), sym->getPrecision(), attrib, varying);
+		emitSingleInputVariable (lang, m_Target, name, ctor, isBgraVertexColor ? EgstFloat4 : sym->getType(), sym->getPrecision(), attrib, varying);
 }
 
 
@@ -1193,13 +1196,16 @@ bool HlslLinker::emitInputStruct(const GlslStruct* str, std::string parentName, 
 			if (isArray)
 				preamble << "[" << idx << "]";
 			
+			const bool isBgraVertexColor = (m_Options & ETranslateOpBGRAVertexColor) && lang == EShLangVertex &&
+				(memberSem == EAttrSemColor0 || memberSem == EAttrSemColor1 || memberSem == EAttrSemColor2 || memberSem == EAttrSemColor3);
+
 			// In fragment shader, pass zero for POSITION inputs
 			if (lang == EShLangFragment && memberSem == EAttrSemPosition)
 			{
 				preamble << " = " << ctor << "(0.0);\n";
 				continue; // nothing more to do
 			}
-			else if (m_Options &ETranslateOpBGRAVertexColor && lang == EShLangVertex && (memberSem == EAttrSemColor0 || memberSem == EAttrSemColor1 || memberSem == EAttrSemColor2 || memberSem == EAttrSemColor3))
+			else if (isBgraVertexColor)
 			{
 				preamble <<" = " <<ctor << "("  <<name <<".bgra" << ");\n";
 			}
@@ -1211,7 +1217,7 @@ bool HlslLinker::emitInputStruct(const GlslStruct* str, std::string parentName, 
 			}
 
 			if (!current.outputSuppressedBy())
-				emitSingleInputVariable (lang, m_Target, name, ctor, current.type, current.precision, attrib, varying);
+				emitSingleInputVariable (lang, m_Target, name, ctor, isBgraVertexColor ? EgstFloat4 : current.type, current.precision, attrib, varying);
 		}
 	}
 	return true;

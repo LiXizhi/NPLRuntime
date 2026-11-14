@@ -271,6 +271,7 @@ namespace ParaEngine
 		PreRender(true);
 		// make sure all shaders are replaced.
 		PrepareAllRenderTargets(false);
+		CGlobals::GetEffectManager()->SetAllEffectsTechnique(EffectManager::EFFECT_GEN_SHADOWMAP);
 
 		if (m_alphaTestRenderTasks.size() == 0 && m_solidRenderTasks.size() == 0 && m_alphaBlendRenderTasks.size() == 0)
 			return;
@@ -1927,9 +1928,9 @@ namespace ParaEngine
 				auto* pDevice = CGlobals::GetRenderDevice();
 				if (pDevice)
 				{
-					pDevice->SetRenderTarget(1, nullptr);
-					pDevice->SetRenderTarget(2, nullptr);
 					pDevice->SetRenderTarget(3, nullptr);
+					pDevice->SetRenderTarget(2, nullptr);
+					pDevice->SetRenderTarget(1, nullptr);
 					if (m_bAutoBoundColorRT0)
 					{
 						pDevice->SetRenderTarget(0, nullptr);
@@ -1938,6 +1939,7 @@ namespace ParaEngine
 				}
 				m_render_target_color_hdr.reset();
 				m_render_target_color.reset();
+				m_render_target_scene_color.reset();
 				m_render_target_block_info.reset();
 				m_render_target_depth_tex.reset();
 				m_render_target_normal.reset();
@@ -2010,9 +2012,32 @@ namespace ParaEngine
 		m_bAutoBoundColorRT0 = false;
 		m_render_target_color_hdr.reset();
 		m_render_target_color.reset();
+		m_render_target_scene_color.reset();
 		m_render_target_block_info.reset();
 		m_render_target_depth_tex.reset();
 		m_render_target_normal.reset();
+	}
+
+	void BlockWorldClient::FinishAutoBoundSceneColorRT()
+	{
+		if (!m_bAutoBoundColorRT0)
+			return;
+		auto* pDevice = CGlobals::GetRenderDevice();
+		if (pDevice)
+		{
+			pDevice->SetRenderTarget(3, nullptr);
+			pDevice->SetRenderTarget(2, nullptr);
+			pDevice->SetRenderTarget(1, nullptr);
+			IRHIRenderTarget* sceneColorRT = m_render_target_scene_color ? m_render_target_scene_color->GetRHIRenderTarget() : nullptr;
+			if (sceneColorRT && pDevice->GetCurrentRenderTargetBinding().targets[0] == sceneColorRT)
+			{
+				pDevice->BlitRenderTarget(sceneColorRT, nullptr, nullptr, nullptr, false);
+				pDevice->SetRenderTarget(0, nullptr);
+				if (CGlobals::GetViewportManager() && CGlobals::GetViewportManager()->GetActiveViewPort())
+					CGlobals::GetViewportManager()->GetActiveViewPort()->ApplyViewport();
+			}
+		}
+		m_bAutoBoundColorRT0 = false;
 	}
 
 	void BlockWorldClient::RestoreNormalShader()
@@ -2042,30 +2067,18 @@ namespace ParaEngine
 		{
 			if (nRenderPass == BlockRenderPass_Opaque)
 			{
+				// Unbind G-buffer MRT slots 3..1 BEFORE running the composite Lua script, which samples them as SRVs.
+				if (auto* pDevice = CGlobals::GetRenderDevice())
+				{
+					pDevice->SetRenderTarget(3, nullptr);
+					pDevice->SetRenderTarget(2, nullptr);
+					pDevice->SetRenderTarget(1, nullptr);
+				}
+
 				if (!m_sPostProcessorCallbackScript.empty())
 					CGlobals::GetNPLRuntime()->GetMainRuntimeState()->DoString(m_sPostProcessorCallbackScript.c_str(), (int)m_sPostProcessorCallbackScript.size());
 				RenderDynamicBlocks();
 				RestoreNormalShader();
-
-				if (m_bAutoBoundColorRT0)
-				{
-					auto* pDevice = CGlobals::GetRenderDevice();
-					if (pDevice)
-					{
-						pDevice->SetRenderTarget(1, nullptr);
-						pDevice->SetRenderTarget(2, nullptr);
-						pDevice->SetRenderTarget(3, nullptr);
-						IRHIRenderTarget* colorRT = m_render_target_color ? m_render_target_color->GetRHIRenderTarget() : nullptr;
-						if (colorRT && pDevice->GetCurrentRenderTargetBinding().targets[0] == colorRT)
-						{
-							pDevice->BlitRenderTarget(colorRT, nullptr, nullptr, nullptr, false);
-							pDevice->SetRenderTarget(0, nullptr);
-							if (CGlobals::GetViewportManager() && CGlobals::GetViewportManager()->GetActiveViewPort())
-								CGlobals::GetViewportManager()->GetActiveViewPort()->ApplyViewport();
-						}
-					}
-					m_bAutoBoundColorRT0 = false;
-				}
 			}
 			else if (nRenderPass == BlockRenderPass_AlphaBlended)
 			{
@@ -2122,6 +2135,37 @@ namespace ParaEngine
 
 			CGlobals::GetEffectManager()->MapHandleToEffect(TECH_BLOCK_FANCY, m_block_effect_fancy.get());
 
+			if (m_normal_mesh_effect_fancy == 0)
+			{
+				m_normal_mesh_effect_fancy = CGlobals::GetAssetManager()->LoadEffectFile("mesh_normal_fancy", "script/apps/Aries/Creator/Game/Shaders/mrt_mesh_normal.fxo");
+				m_normal_mesh_effect_fancy->LoadAsset();
+				if (!m_normal_mesh_effect_fancy->IsValid())
+				{
+					return false;
+				}
+			}
+			CGlobals::GetEffectManager()->MapHandleToEffect(TECH_SIMPLE_MESH_NORMAL, m_normal_mesh_effect_fancy.get());
+			CGlobals::GetEffectManager()->MapHandleToEffect(TECH_CHARACTER, m_normal_mesh_effect_fancy.get());
+
+			if (m_effect_light_point == 0)
+			{
+				m_effect_light_point = CGlobals::GetAssetManager()->LoadEffectFile("m_effect_light_point", "script/apps/Aries/Creator/Game/Shaders/DeferredShadingPointLighting.fxo");
+				m_effect_light_point->LoadAsset();
+			}
+			if (m_effect_light_spot == 0)
+			{
+				m_effect_light_spot = CGlobals::GetAssetManager()->LoadEffectFile("m_effect_light_spot", "script/apps/Aries/Creator/Game/Shaders/DeferredShadingSpotLighting.fxo");
+				m_effect_light_spot->LoadAsset();
+			}
+			if (m_effect_light_directional == 0)
+			{
+				m_effect_light_directional = CGlobals::GetAssetManager()->LoadEffectFile("m_effect_light_directional", "script/apps/Aries/Creator/Game/Shaders/DeferredShadingDirectionalLighting.fxo");
+				m_effect_light_directional->LoadAsset();
+			}
+			CGlobals::GetEffectManager()->MapHandleToEffect(TECH_LIGHT_POINT, m_effect_light_point.get());
+			CGlobals::GetEffectManager()->MapHandleToEffect(TECH_LIGHT_SPOT, m_effect_light_spot.get());
+			CGlobals::GetEffectManager()->MapHandleToEffect(TECH_LIGHT_DIRECTIONAL, m_effect_light_directional.get());
+
 			if (m_bmax_model_effect_fancy == 0)
 			{
 				m_bmax_model_effect_fancy = CGlobals::GetAssetManager()->LoadEffectFile("bmax_model_effect_fancy", "script/apps/Aries/Creator/Game/Shaders/mrt_bmax_model.fxo");
@@ -2165,30 +2209,39 @@ namespace ParaEngine
 				}
 
 				IRHIRenderTarget* rt0 = pDevice->GetCurrentRenderTargetBinding().targets[0];
-				if (rt0 == nullptr && pDevice->GetBackendType() != ERHIBackend::D3D11)
+				const ERHIBackend backend = pDevice->GetBackendType();
+				const bool supportsSwapchainMRT = (backend == ERHIBackend::D3D11 || backend == ERHIBackend::D3D12 || backend == ERHIBackend::Vulkan);
+				if (rt0 == nullptr && !supportsSwapchainMRT)
 				{
-					if (m_render_target_color == 0)
+					// OpenGL/Metal/WebGPU default FBO 0 cannot attach offscreen MRT color attachments:
+					// render into a dedicated screen-sized RT (distinct from _ColorRT used by FancyPostProcessing.lua).
+					if (m_render_target_scene_color == 0)
 					{
-						m_render_target_color = CGlobals::GetAssetManager()->LoadTexture("_ColorRT", "_ColorRT", TextureEntity::RenderTarget);
+						m_render_target_scene_color = CGlobals::GetAssetManager()->LoadTexture("_DeferredSceneColorRT", "_DeferredSceneColorRT", TextureEntity::RenderTarget);
 					}
-					m_render_target_color->LoadAsset();
-					rt0 = m_render_target_color->GetRHIRenderTarget();
+					m_render_target_scene_color->LoadAsset();
+					rt0 = m_render_target_scene_color->GetRHIRenderTarget();
 					if (!rt0)
 						return false;
 					if (bIsNewFrame)
 					{
+						const bool copiedBackbuffer = pDevice->BlitRenderTarget(nullptr, rt0, nullptr, nullptr, false);
 						pDevice->PushRenderTarget(rt0);
-						pDevice->SetClearColor(Color4f(0.f, 0.f, 0.f, 0.f));
+						if (!copiedBackbuffer)
+						{
+							LinearColor bg = CGlobals::GetScene() ? CGlobals::GetScene()->GetFogColor() : LinearColor(0.f, 0.f, 0.f, 0.f);
+							pDevice->SetClearColor(Color4f(bg.r, bg.g, bg.b, bg.a));
+						}
 						pDevice->SetClearDepth(1.0f);
 						pDevice->SetClearStencil(0);
-						pDevice->Clear(true, true, true);
+						pDevice->Clear(!copiedBackbuffer, true, true);
 						pDevice->PopRenderTarget();
 					}
 					m_bAutoBoundColorRT0 = true;
 				}
 
 				IRHIRenderTarget* mrtTargets[4] = { rt0, depthRT, blockInfoRT, normalRT };
-				IRHIRenderTarget* depthStencilRT = rt0 ? rt0 : pDevice->GetCurrentRenderTargetBinding().depthStencilOverride;
+				IRHIRenderTarget* depthStencilRT = (rt0 && rt0->GetDepthTexture()) ? rt0 : pDevice->GetCurrentRenderTargetBinding().depthStencilOverride;
 				if (!pDevice->SetRenderTargets(4, mrtTargets, depthStencilRT))
 					return false;
 
@@ -3069,11 +3122,17 @@ namespace ParaEngine
 	{
 		SceneState* sceneState = CGlobals::GetSceneState();
 		if (!sceneState->IsDeferredShading() || sceneState->listDeferredLightObjects.empty())
+		{
+			FinishAutoBoundSceneColorRT();
 			return;
+		}
 
 		auto pDevice = sceneState->GetRenderDevice();
 		if (!pDevice)
+		{
+			FinishAutoBoundSceneColorRT();
 			return;
+		}
 
 		CGlobals::GetEffectManager()->EndEffect();
 
@@ -3167,13 +3226,13 @@ namespace ParaEngine
 			params.SetFloat("light_theta", light_theta);
 			params.SetFloat("light_phi", light_phi);
 
-			auto _ColorRT = ParaScripting::ParaAsset::LoadTexture("_ColorRT", "_ColorRT", 1);
+			auto _ColorRT = ParaScripting::ParaAsset::LoadTexture("_ColorRT", "_ColorRT", 0);
 			auto originRT = ParaScripting::CParaEngine::GetRenderTarget();
 			ParaScripting::CParaEngine::StretchRect(originRT, _ColorRT);
 			ParaScripting::CParaEngine::SetRenderTarget(originRT);
 			params.SetTextureObj(0, _ColorRT);
-			params.SetTextureObj(2, ParaScripting::ParaAsset::LoadTexture("_DepthTexRT_R32F", "_DepthTexRT_R32F", 1));
-			params.SetTextureObj(3, ParaScripting::ParaAsset::LoadTexture("_NormalRT", "_NormalRT", 1));
+			params.SetTextureObj(2, ParaScripting::ParaAsset::LoadTexture("_DepthTexRT_R32F", "_DepthTexRT_R32F", 0));
+			params.SetTextureObj(3, ParaScripting::ParaAsset::LoadTexture("_NormalRT", "_NormalRT", 0));
 
 			effect.CommitChanges();
 
@@ -3211,6 +3270,8 @@ namespace ParaEngine
 			}
 			effect.End();
 		}
+
+		FinishAutoBoundSceneColorRT();
 	}
 
 	int BlockWorldClient::InstallFields(CAttributeClass* pClass, bool bOverride)

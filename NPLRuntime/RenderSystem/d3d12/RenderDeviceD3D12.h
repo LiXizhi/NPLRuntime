@@ -67,6 +67,10 @@ namespace ParaEngine
 		ID3D12GraphicsCommandList* EnsureRecording();
 		void ExecuteAndSyncGPU();
 		void DeferRelease(IUnknown* obj);
+		void NotifyTextureDestroyed(D3D12Texture* tex);
+		void NotifyBufferDestroyed(D3D12Buffer* buf);
+		void NotifyProgramDestroyed(D3D12ShaderProgram* prog);
+		void NotifyRenderTargetDestroyed(D3D12RenderTarget* rt);
 
 		bool AllocateUpload(
 			uint32_t byteSize,
@@ -261,6 +265,8 @@ namespace ParaEngine
 		std::stack<std::pair<uint32_t, uint32_t>> m_rtSizeStack;
 
 		// Active render targets
+		uint32_t m_nullRtvSlot = UINT32_MAX;
+		uint32_t m_activeNullRtvMask = 0;
 		bool m_usingBackBufferRTV = true;
 		D3D12Texture* m_activeColorTexObjs[4] = {};
 		D3D12_CPU_DESCRIPTOR_HANDLE m_activeRTVs[4] = {};
@@ -307,5 +313,6 @@ namespace ParaEngine
 
 		ParaViewport m_currentViewport = {};
 		bool m_vsyncEnabled = false;
+		bool m_isShuttingDown = false;
 	};
 }

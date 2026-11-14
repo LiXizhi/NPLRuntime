@@ -1546,12 +1546,11 @@ namespace ParaEngine
 		if (static_cast<int>(m_LastTextures.size()) <= index)
 			m_LastTextures.resize(index + 1, nullptr);
 
-		if (m_LastTextures[index] != pTex || pDevice->GetBackendType() == ERHIBackend::OpenGL)
-		{
-			m_LastTextures[index] = pTex;
-			return pDevice->SetTexture(static_cast<uint32_t>(index), pTex);
-		}
-		return true;
+		// Always forward to IRenderDevice::SetTexture because texture binding slots are global
+		// device state shared across effects, direct pDevice->SetTexture calls, and RT-conflict
+		// unbinds (each RHI backend already deduplicates redundant binds in O(1)).
+		m_LastTextures[index] = pTex;
+		return pDevice->SetTexture(static_cast<uint32_t>(index), pTex);
 	}
 
 	bool CEffectFileRHI::SetTextureByName(const char* name, TextureEntity* data)

@@ -98,6 +98,7 @@ namespace ParaEngine
 		bool GetImageDataOriginal(void** ppData, int* pSize, int* pWidth, int* pHeight, int* pBytesPerPixel);
 
 	protected:
+		void EnsureScreenSizeRenderTargetUpToDate(bool allowWhileActiveRT);
 		friend class CRenderTarget;
 		friend class CShadowMap;
 		union{

@@ -301,6 +301,7 @@ namespace ParaEngine
 		int ClearActiveChunksToMemLimit(bool bIsShadowPass = false);
 
 		void ClearVisibleChunksToByteLimit(bool bIsShadowPass);
+		void FinishAutoBoundSceneColorRT();
 
 	private:
 		static BlockWorldClient* g_pInstance;
@@ -339,6 +340,8 @@ namespace ParaEngine
 
 		/** normal render target */
 		asset_ptr<TextureEntity> m_render_target_color;
+		/** dedicated offscreen scene color RT for backends whose swapchain cannot attach MRT (OpenGL/Metal/WebGPU) */
+		asset_ptr<TextureEntity> m_render_target_scene_color;
 		/** HDR render target */
 		asset_ptr<TextureEntity> m_render_target_color_hdr;
 		/** depth, block_id, block_light, sun_light*/
@@ -347,7 +350,7 @@ namespace ParaEngine
 		asset_ptr<TextureEntity> m_render_target_depth_tex;
 		/** normal render target */
 		asset_ptr<TextureEntity> m_render_target_normal;
-		/** true when _ColorRT was automatically bound at MRT slot 0 on non-D3D11 backends */
+		/** true when _DeferredSceneColorRT was automatically bound at MRT slot 0 on OpenGL/Metal/WebGPU */
 		bool m_bAutoBoundColorRT0 = false;
 
 		/** block effect used for rendering fancy effect. */

@@ -108,6 +108,10 @@ namespace ParaEngine
 #if defined(_WIN32)
 		PARA_VK_INST(vkCreateWin32SurfaceKHR);
 #endif
+		vkCreateDebugUtilsMessengerEXT = reinterpret_cast<decltype(vkCreateDebugUtilsMessengerEXT)>(
+			vkGetInstanceProcAddr(instance, "vkCreateDebugUtilsMessengerEXT"));
+		vkDestroyDebugUtilsMessengerEXT = reinterpret_cast<decltype(vkDestroyDebugUtilsMessengerEXT)>(
+			vkGetInstanceProcAddr(instance, "vkDestroyDebugUtilsMessengerEXT"));
 
 		#undef PARA_VK_INST
 		return true;

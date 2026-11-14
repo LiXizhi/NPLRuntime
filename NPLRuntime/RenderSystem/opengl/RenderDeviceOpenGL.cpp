@@ -1022,26 +1022,40 @@ namespace ParaEngine
 			m_RenderTargetWidth = m_BackBufferWidth;
 			m_RenderTargetHeight = m_BackBufferHeight;
 			m_isBeginRenderTarget = false;
+			m_BoundMrtCount = 0;
+			m_ValidMrtMask = 0;
+			m_AppliedDrawBufferMask = 0;
 			NotifyRenderTargetsBound(0, nullptr, depthStencilOverride);
 			return true;
 		}
 
 		auto* primaryRT = static_cast<GLRenderTarget*>(targets[0]);
 		glBindFramebuffer(GL_FRAMEBUFFER, primaryRT->GetFBO());
+		m_BoundMrtCount = 1;
+		m_ValidMrtMask = 0x1u;
+		m_AppliedDrawBufferMask = 0x1u;
 #if !defined(PARAENGINE_MOBILE) && !defined(EMSCRIPTEN)
 		if (count > 1 && glad_glDrawBuffers != nullptr)
 		{
 			uint32_t rtCount = count > 4u ? 4u : count;
 			GLenum drawBufs[4] = { GL_NONE, GL_NONE, GL_NONE, GL_NONE };
+			uint8_t validMask = 0;
 			for (uint32_t i = 0; i < rtCount; ++i)
 			{
 				auto* rt = static_cast<GLRenderTarget*>(targets[i]);
 				IRHITexture* colorTex = rt ? rt->GetColorTexture(0) : nullptr;
 				GLuint texId = colorTex ? static_cast<GLuint>(reinterpret_cast<uintptr_t>(colorTex->GetNativeHandle())) : 0;
 				glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + i, GL_TEXTURE_2D, texId, 0);
-				drawBufs[i] = texId != 0 ? (GL_COLOR_ATTACHMENT0 + i) : GL_NONE;
+				if (texId != 0)
+				{
+					drawBufs[i] = GL_COLOR_ATTACHMENT0 + i;
+					validMask |= static_cast<uint8_t>(1u << i);
+				}
 			}
 			glDrawBuffers(static_cast<GLsizei>(rtCount), drawBufs);
+			m_BoundMrtCount = rtCount;
+			m_ValidMrtMask = validMask;
+			m_AppliedDrawBufferMask = validMask;
 		}
 		else if (count == 1 && primaryRT->GetColorCount() == 1 && glad_glDrawBuffers != nullptr)
 		{
@@ -1150,6 +1164,7 @@ namespace ParaEngine
 
 		ApplyBlendingModeChange();
 		ApplyStencilStateChange();
+		ApplyDrawBuffersForCurrentProgram();
 		if (m_CurrentVertexDeclaration)
 			ApplyGLVertexDeclaration(m_CurrentVertexDeclaration, nullptr);
 
@@ -1580,6 +1595,7 @@ namespace ParaEngine
 
 		ApplyBlendingModeChange();
 		ApplyStencilStateChange();
+		ApplyDrawBuffersForCurrentProgram();
 		glDrawElements(mode, indexCount, glIndexType, pIndexData);
 		PE_CHECK_GL_ERROR_DEBUG();
 		return true;
@@ -1594,6 +1610,7 @@ namespace ParaEngine
 
 		ApplyBlendingModeChange();
 		ApplyStencilStateChange();
+		ApplyDrawBuffersForCurrentProgram();
 		glDrawArrays(mode, static_cast<GLint>(StartVertex), vertCount);
 		PE_CHECK_GL_ERROR_DEBUG();
 		return true;
@@ -1608,6 +1625,7 @@ namespace ParaEngine
 
 		ApplyBlendingModeChange();
 		ApplyStencilStateChange();
+		ApplyDrawBuffersForCurrentProgram();
 		int nOffset = 0;
 #ifdef USE_USER_POINTER_VBO
 		nOffset = g_userPointerVertexBuffer.UploadUserPointerRingBuffer(vertCount, pVertexStreamZeroData, static_cast<int>(VertexStreamZeroStride));
@@ -1791,6 +1809,7 @@ namespace ParaEngine
 
 		ApplyBlendingModeChange();
 		ApplyStencilStateChange();
+		ApplyDrawBuffersForCurrentProgram();
 
 		const void* indexOffset = reinterpret_cast<const void*>(static_cast<uintptr_t>(sizeof(uint16_t) * indexStart));
 #if !defined(PARAENGINE_MOBILE) && !defined(EMSCRIPTEN)
@@ -1867,6 +1886,19 @@ namespace ParaEngine
 
 	bool RenderDeviceOpenGL::Clear(bool color, bool depth, bool stencil)
 	{
+#if !defined(PARAENGINE_MOBILE) && !defined(EMSCRIPTEN)
+		if (color && m_BoundMrtCount > 1 && m_AppliedDrawBufferMask != m_ValidMrtMask && glad_glDrawBuffers != nullptr)
+		{
+			GLenum drawBufs[4] = { GL_NONE, GL_NONE, GL_NONE, GL_NONE };
+			for (uint32_t i = 0; i < m_BoundMrtCount; ++i)
+			{
+				if (m_ValidMrtMask & (1u << i))
+					drawBufs[i] = GL_COLOR_ATTACHMENT0 + i;
+			}
+			glDrawBuffers(static_cast<GLsizei>(m_BoundMrtCount), drawBufs);
+			m_AppliedDrawBufferMask = m_ValidMrtMask;
+		}
+#endif
 		uint32_t fields = 0;
 		if (depth)
 			fields |= GL_DEPTH_BUFFER_BIT;
@@ -1962,5 +1994,24 @@ namespace ParaEngine
 		m_StencilDirty = false;
 		glStencilFunc(ToGLCompareFunc(m_StencilFunc), static_cast<GLint>(m_StencilRefValue), m_StencilMask);
 		glStencilOp(ToGLStencilOp(m_StencilFail), ToGLStencilOp(m_StencilZFail), ToGLStencilOp(m_StencilPass));
+	}
+
+	void RenderDeviceOpenGL::ApplyDrawBuffersForCurrentProgram()
+	{
+#if !defined(PARAENGINE_MOBILE) && !defined(EMSCRIPTEN)
+		if (m_BoundMrtCount <= 1 || glad_glDrawBuffers == nullptr)
+			return;
+		const uint8_t desiredMask = static_cast<uint8_t>(m_ValidMrtMask & GLProgram::getCurrentColorOutputMask());
+		if (desiredMask == m_AppliedDrawBufferMask)
+			return;
+		GLenum drawBufs[4] = { GL_NONE, GL_NONE, GL_NONE, GL_NONE };
+		for (uint32_t i = 0; i < m_BoundMrtCount; ++i)
+		{
+			if (desiredMask & (1u << i))
+				drawBufs[i] = GL_COLOR_ATTACHMENT0 + i;
+		}
+		glDrawBuffers(static_cast<GLsizei>(m_BoundMrtCount), drawBufs);
+		m_AppliedDrawBufferMask = desiredMask;
+#endif
 	}
 }

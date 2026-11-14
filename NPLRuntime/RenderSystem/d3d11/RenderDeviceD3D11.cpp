@@ -291,6 +291,7 @@ namespace ParaEngine
 	{
 	public:
 		D3D11Texture(
+			RenderDeviceD3D11* owner,
 			ID3D11Device* device,
 			ID3D11DeviceContext* context,
 			uint32_t width,
@@ -301,7 +302,8 @@ namespace ParaEngine
 			bool expandedToRGBA8,
 			ID3D11Texture2D* tex,
 			ID3D11ShaderResourceView* srv)
-			: m_device(device)
+			: m_owner(owner)
+			, m_device(device)
 			, m_context(context)
 			, m_width(width)
 			, m_height(height)
@@ -314,7 +316,11 @@ namespace ParaEngine
 		{
 		}
 
-		virtual ~D3D11Texture() override = default;
+		virtual ~D3D11Texture() override
+		{
+			if (m_owner)
+				m_owner->NotifyTextureDestroyed(this);
+		}
 
 		virtual uint32_t GetWidth() const override { return m_width; }
 		virtual uint32_t GetHeight() const override { return m_height; }
@@ -375,6 +381,7 @@ namespace ParaEngine
 		}
 
 	private:
+		RenderDeviceD3D11* m_owner;
 		ID3D11Device* m_device;
 		ID3D11DeviceContext* m_context;
 		uint32_t m_width;
@@ -391,13 +398,15 @@ namespace ParaEngine
 	{
 	public:
 		D3D11Buffer(
+			RenderDeviceD3D11* owner,
 			ID3D11Device* device,
 			ID3D11DeviceContext* context,
 			uint32_t byteSize,
 			bool isIndexBuffer,
 			ERHIBufferUsage usage,
 			const void* initialData)
-			: m_device(device)
+			: m_owner(owner)
+			, m_device(device)
 			, m_context(context)
 			, m_byteSize(byteSize)
 			, m_isIndexBuffer(isIndexBuffer)
@@ -449,7 +458,11 @@ namespace ParaEngine
 			device->CreateBuffer(&desc, pInit, m_buffer.GetAddressOf());
 		}
 
-		virtual ~D3D11Buffer() override = default;
+		virtual ~D3D11Buffer() override
+		{
+			if (m_owner)
+				m_owner->NotifyBufferDestroyed(this);
+		}
 
 		virtual uint32_t GetSize() const override { return m_byteSize; }
 		virtual bool IsIndexBuffer() const override { return m_isIndexBuffer; }
@@ -553,6 +566,7 @@ namespace ParaEngine
 		}
 
 	private:
+		RenderDeviceD3D11* m_owner;
 		ID3D11Device* m_device;
 		ID3D11DeviceContext* m_context;
 		ComPtr<ID3D11Buffer> m_buffer;
@@ -571,6 +585,7 @@ namespace ParaEngine
 	{
 	public:
 		D3D11RenderTarget(
+			RenderDeviceD3D11* owner,
 			ID3D11Device* device,
 			ID3D11DeviceContext* context,
 			D3D_FEATURE_LEVEL fl,
@@ -603,6 +618,7 @@ namespace ParaEngine
 					sampleQuality = levels - 1;
 				}
 			}
+			m_sampleCount = sampleCount;
 
 			for (uint32_t i = 0; i < m_colorCount; ++i)
 			{
@@ -629,7 +645,7 @@ namespace ParaEngine
 				{
 					device->CreateShaderResourceView(colorTex.Get(), nullptr, srv.GetAddressOf());
 				}
-				m_colorTextures[i] = new D3D11Texture(device, context, width, height, colorFormat, dxgiColorFmt, 1, false, colorTex.Get(), srv.Get());
+				m_colorTextures[i] = new D3D11Texture(owner, device, context, width, height, colorFormat, dxgiColorFmt, 1, false, colorTex.Get(), srv.Get());
 			}
 
 			if (depthFormat != PixelFormat::Unknown && IsDepthPixelFormat(depthFormat))
@@ -680,7 +696,7 @@ namespace ParaEngine
 						srvDesc.Texture2D.MipLevels = 1;
 						device->CreateShaderResourceView(depthTex.Get(), &srvDesc, depthSrv.GetAddressOf());
 					}
-					m_depthTexture = new D3D11Texture(device, context, width, height, depthFormat, dsvFmt, 1, false, depthTex.Get(), depthSrv.Get());
+					m_depthTexture = new D3D11Texture(owner, device, context, width, height, depthFormat, dsvFmt, 1, false, depthTex.Get(), depthSrv.Get());
 				}
 			}
 
@@ -713,6 +729,7 @@ namespace ParaEngine
 		virtual void* GetNativeHandle() const override { return static_cast<void*>(m_rtvs[0].Get()); }
 
 		uint32_t GetColorCount() const { return m_colorCount; }
+		uint32_t GetSampleCount() const { return m_sampleCount; }
 		ID3D11RenderTargetView* GetRTV(uint32_t index = 0) const { return (index < m_colorCount) ? m_rtvs[index].Get() : nullptr; }
 		ID3D11DepthStencilView* GetDSV() const { return m_dsv.Get(); }
 		D3D11Texture* GetD3DColorTex(uint32_t index = 0) const { return (index < m_colorCount) ? m_colorTextures[index] : nullptr; }
@@ -723,6 +740,7 @@ namespace ParaEngine
 		uint32_t m_height;
 		PixelFormat m_colorFormat;
 		uint32_t m_colorCount;
+		uint32_t m_sampleCount = 1;
 		bool m_valid;
 		D3D11Texture* m_colorTextures[4] = { nullptr, nullptr, nullptr, nullptr };
 		D3D11Texture* m_depthTexture = nullptr;
@@ -800,11 +818,20 @@ namespace ParaEngine
 			D3D_REGISTER_COMPONENT_TYPE componentType = D3D_REGISTER_COMPONENT_FLOAT32;
 		};
 
-		D3D11ShaderProgram(ID3D11Device* device, const RHIShaderProgramDesc& desc)
-			: m_valid(false)
+		D3D11ShaderProgram(RenderDeviceD3D11* owner, ID3D11Device* device, const RHIShaderProgramDesc& desc)
+			: m_owner(owner)
+			, m_valid(false)
 			, m_vsHash(0)
 			, m_usesSVPosition(false)
+			, m_debugName(desc.debugName ? desc.debugName : "")
+			, m_psEntry(desc.psEntryPoint ? desc.psEntryPoint : "")
 		{
+			for (uint32_t i = 0; i < RHIStateTracker::MAX_SAMPLER_STAGES; ++i)
+			{
+				m_vsTexSlotToStage[i] = static_cast<uint8_t>(i);
+				m_psTexSlotToStage[i] = static_cast<uint8_t>(i);
+			}
+
 			if (!device || !desc.vsBytecode || desc.vsBytecodeSize == 0)
 				return;
 
@@ -849,13 +876,32 @@ namespace ParaEngine
 							m_inputParams.push_back(std::move(sig));
 						}
 					}
+
+					ReflectTextureSlotMapping(refl.Get(), sd.BoundResources, m_vsTexSlotToStage);
+				}
+			}
+
+			if (desc.psBytecode && desc.psBytecodeSize > 0)
+			{
+				ComPtr<ID3D11ShaderReflection> psRefl;
+				if (SUCCEEDED(::D3DReflect(desc.psBytecode, desc.psBytecodeSize, IID_ID3D11ShaderReflection, reinterpret_cast<void**>(psRefl.GetAddressOf()))) && psRefl)
+				{
+					D3D11_SHADER_DESC psd = {};
+					if (SUCCEEDED(psRefl->GetDesc(&psd)))
+					{
+						ReflectTextureSlotMapping(psRefl.Get(), psd.BoundResources, m_psTexSlotToStage);
+					}
 				}
 			}
 
 			m_valid = true;
 		}
 
-		virtual ~D3D11ShaderProgram() override = default;
+		virtual ~D3D11ShaderProgram() override
+		{
+			if (m_owner)
+				m_owner->NotifyProgramDestroyed(this);
+		}
 
 		virtual bool IsValid() const override { return m_valid; }
 		virtual void* GetNativeHandle() const override { return static_cast<void*>(m_vs.Get()); }
@@ -866,8 +912,48 @@ namespace ParaEngine
 		uint64_t GetVSHash() const { return m_vsHash; }
 		bool UsesSVPosition() const { return m_usesSVPosition; }
 		const std::vector<InputSigParam>& GetInputSignature() const { return m_inputParams; }
+		uint8_t MapVSTexSlot(uint32_t tSlot) const { return (tSlot < RHIStateTracker::MAX_SAMPLER_STAGES) ? m_vsTexSlotToStage[tSlot] : static_cast<uint8_t>(tSlot); }
+		uint8_t MapPSTexSlot(uint32_t tSlot) const { return (tSlot < RHIStateTracker::MAX_SAMPLER_STAGES) ? m_psTexSlotToStage[tSlot] : static_cast<uint8_t>(tSlot); }
+		const std::string& GetDebugName() const { return m_debugName; }
+		const std::string& GetPsEntry() const { return m_psEntry; }
 
 	private:
+		// Under D3DCOMPILE_ENABLE_BACKWARDS_COMPATIBILITY, legacy `sampler2D foo : register(sN)` pins the
+		// SamplerState (`D3D_SIT_SAMPLER`) to `sN` while d3dcompiler auto-assigns the paired Texture2D
+		// (`D3D_SIT_TEXTURE`, with matching Name) sequentially to `t0, t1, ...` in lexical order of first use.
+		static void ReflectTextureSlotMapping(ID3D11ShaderReflection* refl, UINT boundResources, uint8_t* outSlotToStage)
+		{
+			std::unordered_map<std::string, uint8_t> samplerNameToStage;
+			for (UINT i = 0; i < boundResources; ++i)
+			{
+				D3D11_SHADER_INPUT_BIND_DESC ibd = {};
+				if (SUCCEEDED(refl->GetResourceBindingDesc(i, &ibd)) && ibd.Name)
+				{
+					if (ibd.Type == D3D_SIT_SAMPLER && ibd.BindPoint < RHIStateTracker::MAX_SAMPLER_STAGES)
+					{
+						samplerNameToStage[ibd.Name] = static_cast<uint8_t>(ibd.BindPoint);
+					}
+				}
+			}
+
+			for (UINT i = 0; i < boundResources; ++i)
+			{
+				D3D11_SHADER_INPUT_BIND_DESC ibd = {};
+				if (SUCCEEDED(refl->GetResourceBindingDesc(i, &ibd)) && ibd.Name)
+				{
+					if (ibd.Type == D3D_SIT_TEXTURE && ibd.BindPoint < RHIStateTracker::MAX_SAMPLER_STAGES)
+					{
+						auto it = samplerNameToStage.find(ibd.Name);
+						if (it != samplerNameToStage.end())
+							outSlotToStage[ibd.BindPoint] = it->second;
+						else
+							outSlotToStage[ibd.BindPoint] = static_cast<uint8_t>(ibd.BindPoint);
+					}
+				}
+			}
+		}
+
+		RenderDeviceD3D11* m_owner;
 		bool m_valid;
 		uint64_t m_vsHash;
 		bool m_usesSVPosition;
@@ -875,6 +961,10 @@ namespace ParaEngine
 		ComPtr<ID3D11PixelShader> m_ps;
 		std::vector<uint8_t> m_vsBytecode;
 		std::vector<InputSigParam> m_inputParams;
+		std::string m_debugName;
+		std::string m_psEntry;
+		uint8_t m_vsTexSlotToStage[RHIStateTracker::MAX_SAMPLER_STAGES] = {};
+		uint8_t m_psTexSlotToStage[RHIStateTracker::MAX_SAMPLER_STAGES] = {};
 	};
 
 	// =========================================================================
@@ -910,6 +1000,7 @@ namespace ParaEngine
 
 	RenderDeviceD3D11::~RenderDeviceD3D11()
 	{
+		m_isShuttingDown = true;
 		for (auto& kv : m_fvfDecls)
 		{
 			if (kv.second)
@@ -920,6 +1011,77 @@ namespace ParaEngine
 		if (m_context)
 		{
 			m_context->ClearState();
+		}
+	}
+
+	void RenderDeviceD3D11::NotifyTextureDestroyed(D3D11Texture* tex)
+	{
+		if (m_isShuttingDown || !tex)
+			return;
+
+		ID3D11ShaderResourceView* srv = tex->GetSRV();
+		ID3D11Texture2D* d3dTex = tex->GetD3DTexture();
+		if (d3dTex)
+		{
+			if (m_activeColorTex0 == d3dTex)
+				m_activeColorTex0 = nullptr;
+			if (m_activeDepthTex == d3dTex)
+				m_activeDepthTex = nullptr;
+		}
+		if (!srv)
+			return;
+
+		for (uint32_t i = 0; i < RHIStateTracker::MAX_SAMPLER_STAGES; ++i)
+		{
+			if (m_logicalSRVs[i] == srv)
+			{
+				m_logicalSRVs[i] = nullptr;
+				m_srvBindingsDirty = true;
+			}
+			if (m_boundPSSRVs[i] == srv)
+			{
+				m_boundPSSRVs[i] = nullptr;
+				if (m_context)
+				{
+					ID3D11ShaderResourceView* nullSrv = nullptr;
+					m_context->PSSetShaderResources(i, 1, &nullSrv);
+				}
+				m_srvBindingsDirty = true;
+			}
+			if (m_boundVSSRVs[i] == srv)
+			{
+				m_boundVSSRVs[i] = nullptr;
+				if (m_context && m_featureLevel >= D3D_FEATURE_LEVEL_10_0)
+				{
+					ID3D11ShaderResourceView* nullSrv = nullptr;
+					m_context->VSSetShaderResources(i, 1, &nullSrv);
+				}
+				m_srvBindingsDirty = true;
+			}
+		}
+	}
+
+	void RenderDeviceD3D11::NotifyBufferDestroyed(D3D11Buffer* buf)
+	{
+		if (m_isShuttingDown || !buf)
+			return;
+		for (uint32_t s = 0; s < 4; ++s)
+		{
+			if (m_streams[s].buffer == buf)
+				m_streams[s].buffer = nullptr;
+		}
+		if (m_currentIndexBuffer == buf)
+			m_currentIndexBuffer = nullptr;
+	}
+
+	void RenderDeviceD3D11::NotifyProgramDestroyed(D3D11ShaderProgram* prog)
+	{
+		if (m_isShuttingDown || !prog)
+			return;
+		if (m_currentProgram == prog)
+		{
+			m_currentProgram = nullptr;
+			m_srvBindingsDirty = true;
 		}
 	}
 
@@ -1024,6 +1186,7 @@ namespace ParaEngine
 		m_activeDepthTex = m_defaultDepthTex.Get();
 
 		m_context->OMSetRenderTargets(1, m_activeRTVs, m_activeDSV);
+		m_srvBindingsDirty = true;
 
 		ParaViewport vp;
 		vp.X = 0;
@@ -1103,7 +1266,7 @@ namespace ParaEngine
 				sd.Texture2D.MipLevels = 1;
 				m_device->CreateShaderResourceView(tex.Get(), &sd, srv.GetAddressOf());
 			}
-			return new D3D11Texture(m_device.Get(), m_context.Get(), width, height, format, texFmt, 1, false, tex.Get(), srv.Get());
+			return new D3D11Texture(this, m_device.Get(), m_context.Get(), width, height, format, texFmt, 1, false, tex.Get(), srv.Get());
 		}
 
 		bool expandedToRGBA8 = RHISoftwareS3TC::NeedsRGBA8Expansion(format, true);
@@ -1247,14 +1410,14 @@ namespace ParaEngine
 		if (FAILED(hr) || !srv)
 			return nullptr;
 
-		return new D3D11Texture(m_device.Get(), m_context.Get(), width, height, format, dxgiFormat, numMips, expandedToRGBA8, tex.Get(), srv.Get());
+		return new D3D11Texture(this, m_device.Get(), m_context.Get(), width, height, format, dxgiFormat, numMips, expandedToRGBA8, tex.Get(), srv.Get());
 	}
 
 	IRHIBuffer* RenderDeviceD3D11::CreateBuffer(uint32_t byteSize, bool isIndexBuffer, ERHIBufferUsage usage, const void* initialData)
 	{
 		if (!m_device || byteSize == 0)
 			return nullptr;
-		auto* buf = new D3D11Buffer(m_device.Get(), m_context.Get(), byteSize, isIndexBuffer, usage, initialData);
+		auto* buf = new D3D11Buffer(this, m_device.Get(), m_context.Get(), byteSize, isIndexBuffer, usage, initialData);
 		if (!buf->GetD3DBuffer())
 		{
 			buf->ReleaseRHIResource();
@@ -1267,7 +1430,7 @@ namespace ParaEngine
 	{
 		if (!m_device || width == 0 || height == 0)
 			return nullptr;
-		auto* rt = new D3D11RenderTarget(m_device.Get(), m_context.Get(), m_featureLevel, width, height, colorFormat, depthFormat, colorTargetCount, msaaSamples);
+		auto* rt = new D3D11RenderTarget(this, m_device.Get(), m_context.Get(), m_featureLevel, width, height, colorFormat, depthFormat, colorTargetCount, msaaSamples);
 		if (!rt->IsValid())
 		{
 			rt->ReleaseRHIResource();
@@ -1283,41 +1446,76 @@ namespace ParaEngine
 		return new D3D11OcclusionQuery(m_device.Get(), m_context.Get());
 	}
 
-	void RenderDeviceD3D11::UnbindConflictingSRVs(ID3D11RenderTargetView* const* rtvs, uint32_t rtvCount)
+	void RenderDeviceD3D11::UnbindConflictingSRVs(ID3D11RenderTargetView* const* rtvs, uint32_t rtvCount, ID3D11DepthStencilView* dsv)
 	{
-		if (!m_context || !rtvs || rtvCount == 0)
+		if (!m_context)
 			return;
 
-		ID3D11Resource* rtResources[4] = {};
-		for (uint32_t i = 0; i < rtvCount && i < 4; ++i)
+		ID3D11Resource* targetResources[5] = {};
+		uint32_t targetCount = 0;
+		if (rtvs)
 		{
-			if (rtvs[i])
-				rtvs[i]->GetResource(&rtResources[i]);
-		}
-
-		for (uint32_t stage = 0; stage < RHIStateTracker::MAX_SAMPLER_STAGES; ++stage)
-		{
-			if (!m_boundSRVs[stage])
-				continue;
-			ComPtr<ID3D11Resource> srvRes;
-			m_boundSRVs[stage]->GetResource(srvRes.GetAddressOf());
 			for (uint32_t i = 0; i < rtvCount && i < 4; ++i)
 			{
-				if (rtResources[i] && srvRes.Get() == rtResources[i])
+				if (rtvs[i])
 				{
-					ID3D11ShaderResourceView* nullSrv = nullptr;
-					m_context->PSSetShaderResources(stage, 1, &nullSrv);
-					m_context->VSSetShaderResources(stage, 1, &nullSrv);
-					m_boundSRVs[stage] = nullptr;
-					break;
+					rtvs[i]->GetResource(&targetResources[targetCount]);
+					if (targetResources[targetCount])
+						++targetCount;
+				}
+			}
+		}
+		if (dsv)
+		{
+			dsv->GetResource(&targetResources[targetCount]);
+			if (targetResources[targetCount])
+				++targetCount;
+		}
+
+		if (targetCount == 0)
+			return;
+
+		for (uint32_t slot = 0; slot < RHIStateTracker::MAX_SAMPLER_STAGES; ++slot)
+		{
+			if (m_boundPSSRVs[slot])
+			{
+				ComPtr<ID3D11Resource> srvRes;
+				m_boundPSSRVs[slot]->GetResource(srvRes.GetAddressOf());
+				for (uint32_t i = 0; i < targetCount; ++i)
+				{
+					if (srvRes.Get() == targetResources[i])
+					{
+						ID3D11ShaderResourceView* nullSrv = nullptr;
+						m_context->PSSetShaderResources(slot, 1, &nullSrv);
+						m_boundPSSRVs[slot] = nullptr;
+						m_srvBindingsDirty = true;
+						break;
+					}
+				}
+			}
+			if (m_boundVSSRVs[slot])
+			{
+				ComPtr<ID3D11Resource> srvRes;
+				m_boundVSSRVs[slot]->GetResource(srvRes.GetAddressOf());
+				for (uint32_t i = 0; i < targetCount; ++i)
+				{
+					if (srvRes.Get() == targetResources[i])
+					{
+						ID3D11ShaderResourceView* nullSrv = nullptr;
+						if (m_featureLevel >= D3D_FEATURE_LEVEL_10_0)
+							m_context->VSSetShaderResources(slot, 1, &nullSrv);
+						m_boundVSSRVs[slot] = nullptr;
+						m_srvBindingsDirty = true;
+						break;
+					}
 				}
 			}
 		}
 
-		for (uint32_t i = 0; i < rtvCount && i < 4; ++i)
+		for (uint32_t i = 0; i < targetCount; ++i)
 		{
-			if (rtResources[i])
-				rtResources[i]->Release();
+			if (targetResources[i])
+				targetResources[i]->Release();
 		}
 	}
 
@@ -1326,20 +1524,18 @@ namespace ParaEngine
 		if (!m_context)
 			return false;
 
-		bool anyNonNull = false;
+		uint32_t effectiveCount = 0;
 		if (targets && count > 0)
 		{
-			for (uint32_t i = 0; i < count && i < 4u; ++i)
+			const uint32_t maxCount = (std::min)(count, 4u);
+			for (uint32_t i = 0; i < maxCount; ++i)
 			{
 				if (targets[i] != nullptr)
-				{
-					anyNonNull = true;
-					break;
-				}
+					effectiveCount = i + 1;
 			}
 		}
 
-		if (!anyNonNull)
+		if (effectiveCount == 0)
 		{
 			m_activeRTVs[0] = m_defaultRTV.Get();
 			m_activeRTVs[1] = nullptr;
@@ -1352,7 +1548,9 @@ namespace ParaEngine
 				? static_cast<D3D11RenderTarget*>(depthStencilOverride)->GetD3DDepthTex()->GetD3DTexture()
 				: m_defaultDepthTex.Get();
 
+			UnbindConflictingSRVs(m_activeRTVs, 1, m_activeDSV);
 			m_context->OMSetRenderTargets(1, m_activeRTVs, m_activeDSV);
+			m_srvBindingsDirty = true;
 			m_renderTargetWidth = m_backBufferWidth;
 			m_renderTargetHeight = m_backBufferHeight;
 			NotifyRenderTargetsBound(0, nullptr, depthStencilOverride);
@@ -1366,7 +1564,7 @@ namespace ParaEngine
 		m_activeRTVs[3] = nullptr;
 
 		uint32_t rtvCount = 0;
-		if (count == 1 && primary && primary->GetColorCount() > 1)
+		if (effectiveCount == 1 && primary && primary->GetColorCount() > 1)
 		{
 			rtvCount = primary->GetColorCount();
 			for (uint32_t i = 0; i < rtvCount; ++i)
@@ -1374,7 +1572,7 @@ namespace ParaEngine
 		}
 		else
 		{
-			rtvCount = (std::min)(count, 4u);
+			rtvCount = effectiveCount;
 			for (uint32_t i = 0; i < rtvCount; ++i)
 			{
 				if (i == 0 && targets[0] == nullptr)
@@ -1389,24 +1587,38 @@ namespace ParaEngine
 			}
 		}
 
-		UnbindConflictingSRVs(m_activeRTVs, rtvCount);
-
 		m_activeRTVCount = rtvCount;
-		m_activeDSV = depthStencilOverride
-			? static_cast<D3D11RenderTarget*>(depthStencilOverride)->GetDSV()
-			: (primary ? primary->GetDSV() : m_defaultDSV.Get());
+		if (depthStencilOverride)
+		{
+			auto* dsOverride = static_cast<D3D11RenderTarget*>(depthStencilOverride);
+			m_activeDSV = dsOverride->GetDSV();
+			m_activeDepthTex = dsOverride->GetD3DDepthTex() ? dsOverride->GetD3DDepthTex()->GetD3DTexture() : nullptr;
+		}
+		else if (primary && primary->GetDSV())
+		{
+			m_activeDSV = primary->GetDSV();
+			m_activeDepthTex = primary->GetD3DDepthTex() ? primary->GetD3DDepthTex()->GetD3DTexture() : nullptr;
+		}
+		else if (!primary || (primary->GetWidth() == m_backBufferWidth && primary->GetHeight() == m_backBufferHeight && primary->GetSampleCount() == 1))
+		{
+			m_activeDSV = m_defaultDSV.Get();
+			m_activeDepthTex = m_defaultDepthTex.Get();
+		}
+		else
+		{
+			m_activeDSV = nullptr;
+			m_activeDepthTex = nullptr;
+		}
 		m_activeColorTex0 = primary
 			? (primary->GetD3DColorTex(0) ? primary->GetD3DColorTex(0)->GetD3DTexture() : nullptr)
 			: m_backBufferTex.Get();
-		auto* depthRT = depthStencilOverride ? static_cast<D3D11RenderTarget*>(depthStencilOverride) : primary;
-		m_activeDepthTex = depthRT
-			? (depthRT->GetD3DDepthTex() ? depthRT->GetD3DDepthTex()->GetD3DTexture() : nullptr)
-			: m_defaultDepthTex.Get();
 
+		UnbindConflictingSRVs(m_activeRTVs, rtvCount, m_activeDSV);
 		m_context->OMSetRenderTargets(rtvCount, m_activeRTVs, m_activeDSV);
+		m_srvBindingsDirty = true;
 		m_renderTargetWidth = primary ? primary->GetWidth() : m_backBufferWidth;
 		m_renderTargetHeight = primary ? primary->GetHeight() : m_backBufferHeight;
-		NotifyRenderTargetsBound(count, targets, depthStencilOverride);
+		NotifyRenderTargetsBound(effectiveCount, targets, depthStencilOverride);
 		return true;
 	}
 
@@ -1597,10 +1809,20 @@ namespace ParaEngine
 
 		ID3D11ShaderResourceView* nullSrv = nullptr;
 		m_context->PSSetShaderResources(0, 1, &nullSrv);
-		m_boundSRVs[0] = nullptr;
+		m_boundPSSRVs[0] = nullptr;
 
-		// Restore active RTs, viewport, and mark state tracker dirty so next draw re-binds states
+		// Restore active RTs, stream 0 VB, viewport, and mark state tracker dirty so next draw re-binds states
+		UnbindConflictingSRVs(m_activeRTVs, m_activeRTVCount, m_activeDSV);
 		m_context->OMSetRenderTargets(m_activeRTVCount, m_activeRTVs, m_activeDSV);
+		if (m_streams[0].buffer)
+		{
+			ID3D11Buffer* s0vb = static_cast<ID3D11Buffer*>(m_streams[0].buffer->GetNativeHandle());
+			UINT s0Stride = m_streams[0].stride;
+			UINT s0Offset = m_streams[0].offsetInBytes;
+			m_context->IASetVertexBuffers(0, 1, &s0vb, &s0Stride, &s0Offset);
+		}
+		m_stateTracker.MarkAllDirty();
+		m_srvBindingsDirty = true;
 		SetViewport(m_currentViewport);
 		if (m_currentProgram)
 			BindShaderProgram(m_currentProgram);
@@ -1626,6 +1848,7 @@ namespace ParaEngine
 		m_activeRTVs[0] = m_defaultRTV.Get();
 		m_activeColorTex0 = extTex;
 		m_context->OMSetRenderTargets(1, m_activeRTVs, m_activeDSV);
+		m_srvBindingsDirty = true;
 		return true;
 	}
 
@@ -1808,7 +2031,7 @@ namespace ParaEngine
 	{
 		if (!m_device)
 			return nullptr;
-		auto* prog = new D3D11ShaderProgram(m_device.Get(), desc);
+		auto* prog = new D3D11ShaderProgram(this, m_device.Get(), desc);
 		if (!prog->IsValid())
 		{
 			prog->ReleaseRHIResource();
@@ -1821,7 +2044,12 @@ namespace ParaEngine
 	{
 		if (!m_context)
 			return false;
-		m_currentProgram = static_cast<D3D11ShaderProgram*>(program);
+		auto* nextProg = static_cast<D3D11ShaderProgram*>(program);
+		if (m_currentProgram != nextProg)
+		{
+			m_currentProgram = nextProg;
+			m_srvBindingsDirty = true;
+		}
 		if (!m_currentProgram)
 		{
 			m_context->VSSetShader(nullptr, nullptr, 0);
@@ -2008,14 +2236,10 @@ namespace ParaEngine
 			return false;
 
 		ID3D11ShaderResourceView* srv = texture ? static_cast<ID3D11ShaderResourceView*>(texture->GetNativeHandle()) : nullptr;
-		if (m_boundSRVs[stage] != srv)
+		if (m_logicalSRVs[stage] != srv)
 		{
-			m_boundSRVs[stage] = srv;
-			m_context->PSSetShaderResources(stage, 1, &srv);
-			if (m_featureLevel >= D3D_FEATURE_LEVEL_10_0 && stage < 4)
-			{
-				m_context->VSSetShaderResources(stage, 1, &srv);
-			}
+			m_logicalSRVs[stage] = srv;
+			m_srvBindingsDirty = true;
 		}
 		return true;
 	}
@@ -2382,7 +2606,7 @@ namespace ParaEngine
 
 				ID3D11SamplerState* ssPtr = it->second.Get();
 				m_context->PSSetSamplers(s, 1, &ssPtr);
-				if (m_featureLevel >= D3D_FEATURE_LEVEL_10_0 && s < 4)
+				if (m_featureLevel >= D3D_FEATURE_LEVEL_10_0)
 				{
 					m_context->VSSetSamplers(s, 1, &ssPtr);
 				}
@@ -2390,7 +2614,76 @@ namespace ParaEngine
 			}
 		}
 
-		// 5. Input layout + fallback default attribute slot 15
+		// 5. Shader resource views (mapped from engine sampler stage sN -> shader t-register slot, filtering RTV/DSV hazards)
+		if (m_srvBindingsDirty && m_currentProgram)
+		{
+			ID3D11Resource* activeTargetRes[5] = {};
+			uint32_t activeTargetCount = 0;
+			for (uint32_t i = 0; i < m_activeRTVCount && i < 4; ++i)
+			{
+				if (m_activeRTVs[i])
+				{
+					m_activeRTVs[i]->GetResource(&activeTargetRes[activeTargetCount]);
+					if (activeTargetRes[activeTargetCount])
+						++activeTargetCount;
+				}
+			}
+			if (m_activeDSV)
+			{
+				m_activeDSV->GetResource(&activeTargetRes[activeTargetCount]);
+				if (activeTargetRes[activeTargetCount])
+					++activeTargetCount;
+			}
+
+			auto filterConflictingSRV = [&](ID3D11ShaderResourceView* candidate) -> ID3D11ShaderResourceView*
+			{
+				if (!candidate || activeTargetCount == 0)
+					return candidate;
+				ComPtr<ID3D11Resource> srvRes;
+				candidate->GetResource(srvRes.GetAddressOf());
+				for (uint32_t i = 0; i < activeTargetCount; ++i)
+				{
+					if (srvRes.Get() == activeTargetRes[i])
+						return nullptr;
+				}
+				return candidate;
+			};
+
+			for (uint32_t t = 0; t < RHIStateTracker::MAX_SAMPLER_STAGES; ++t)
+			{
+				uint8_t psStage = m_currentProgram->MapPSTexSlot(t);
+				ID3D11ShaderResourceView* wantPS = (psStage < RHIStateTracker::MAX_SAMPLER_STAGES)
+					? filterConflictingSRV(m_logicalSRVs[psStage])
+					: nullptr;
+				if (m_boundPSSRVs[t] != wantPS)
+				{
+					m_boundPSSRVs[t] = wantPS;
+					m_context->PSSetShaderResources(t, 1, &wantPS);
+				}
+
+				if (m_featureLevel >= D3D_FEATURE_LEVEL_10_0)
+				{
+					uint8_t vsStage = m_currentProgram->MapVSTexSlot(t);
+					ID3D11ShaderResourceView* wantVS = (vsStage < RHIStateTracker::MAX_SAMPLER_STAGES)
+						? filterConflictingSRV(m_logicalSRVs[vsStage])
+						: nullptr;
+					if (m_boundVSSRVs[t] != wantVS)
+					{
+						m_boundVSSRVs[t] = wantVS;
+						m_context->VSSetShaderResources(t, 1, &wantVS);
+					}
+				}
+			}
+
+			for (uint32_t i = 0; i < activeTargetCount; ++i)
+			{
+				if (activeTargetRes[i])
+					activeTargetRes[i]->Release();
+			}
+			m_srvBindingsDirty = false;
+		}
+
+		// 6. Input layout + fallback default attribute slot 15
 		if (m_currentVertexDecl && m_currentProgram)
 		{
 			ID3D11InputLayout* layout = GetOrCreateInputLayout(m_currentVertexDecl, m_currentProgram);
@@ -2883,7 +3176,9 @@ namespace ParaEngine
 			m_activeDSV = m_defaultDSV.Get();
 			m_activeColorTex0 = m_backBufferTex.Get();
 			m_activeDepthTex = m_defaultDepthTex.Get();
+			UnbindConflictingSRVs(m_activeRTVs, 1, m_activeDSV);
 			m_context->OMSetRenderTargets(1, m_activeRTVs, m_activeDSV);
+			m_srvBindingsDirty = true;
 		}
 		return true;
 	}

@@ -216,6 +216,7 @@ namespace ParaEngine
 				ETexDim dim = ETexDim::Dim2D;
 				std::string texIdent;
 				std::string smpIdent;
+				bool isParamRef = false;
 			};
 			std::unordered_map<int, SamplerResourceInfo> samplerBySymId;
 			std::map<uint32_t, SamplerResourceInfo> samplerBySlot;
@@ -238,10 +239,13 @@ namespace ParaEngine
 				std::string rawName;
 				std::string paramIdent;
 				std::string localIdent;
+				std::string smpParamIdent;
 				std::string semantic;
 				TType astType;
 				TQualifier qualifier = EvqIn;
 				bool passByPtr = false;
+				bool isSampler = false;
+				ETexDim samplerDim = ETexDim::Dim2D;
 			};
 
 			struct FuncRecord
@@ -262,6 +266,7 @@ namespace ParaEngine
 			std::ostringstream fnOut;
 			int indentLevel = 1;
 			std::unordered_map<int, std::pair<std::string, bool>> fnLocals; // symId -> (exprName, isWgslPtrDeref)
+			std::unordered_map<int, SamplerResourceInfo> fnSamplerParams;
 			TType currentFnRetAstType;
 			bool blockTerminated = false;
 
@@ -1107,15 +1112,18 @@ namespace ParaEngine
 			{
 				std::string resTyStr = GetValueTypeStr(resType);
 
-				if (op == EOpVectorTimesScalar || (op == EOpMul && lhsType.isVector() && rhsType.isScalar()))
+				if (op == EOpVectorTimesScalar || (op == EOpMul && (lhsType.isVector() ^ rhsType.isVector()) && (lhsType.isScalar() || rhsType.isScalar())))
 				{
-					std::string s = CoerceVectorOrScalar(rhsExpr, rhsType, lhsType.getBasicType(), 1);
-					return AllocTmp(resTyStr, "(" + lhsExpr + " * " + s + ")");
-				}
-				if (op == EOpMul && lhsType.isScalar() && rhsType.isVector())
-				{
-					std::string s = CoerceVectorOrScalar(lhsExpr, lhsType, rhsType.getBasicType(), 1);
-					return AllocTmp(resTyStr, "(" + s + " * " + rhsExpr + ")");
+					if (lhsType.isVector())
+					{
+						std::string s = CoerceVectorOrScalar(rhsExpr, rhsType, lhsType.getBasicType(), 1);
+						return AllocTmp(resTyStr, "(" + lhsExpr + " * " + s + ")");
+					}
+					else
+					{
+						std::string s = CoerceVectorOrScalar(lhsExpr, lhsType, rhsType.getBasicType(), 1);
+						return AllocTmp(resTyStr, "(" + s + " * " + rhsExpr + ")");
+					}
 				}
 				if (op == EOpMatrixTimesScalar || (op == EOpMul && (lhsType.isMatrix() ^ rhsType.isMatrix()) && (lhsType.isScalar() || rhsType.isScalar())))
 				{
@@ -1256,6 +1264,151 @@ namespace ParaEngine
 				return CoerceToType(cmpVal, cmpAstType, resType);
 			}
 
+			std::string ConstructTypeFromScalar(const std::string& scalarExpr, const TType& scalarType, const TType& ft)
+			{
+				if (ft.isArray())
+				{
+					int n = (std::max)(1, ft.getArraySize());
+					TType elemT = ft;
+					elemT.clearArrayness();
+					std::string elemVal = ConstructTypeFromScalar(scalarExpr, scalarType, elemT);
+					return ConstructComposite(ft, std::vector<std::string>(static_cast<size_t>(n), elemVal), false);
+				}
+				if (ft.getBasicType() == EbtStruct)
+				{
+					const StructInfo& si = RegisterStruct(ft);
+					if (si.fieldTypes.empty())
+						return AllocTmp(GetValueTypeStr(ft), GetZeroExpr(ft));
+					std::vector<std::string> subFields;
+					subFields.reserve(si.fieldTypes.size());
+					for (const TType& sft : si.fieldTypes)
+						subFields.push_back(ConstructTypeFromScalar(scalarExpr, scalarType, sft));
+					return ConstructComposite(ft, subFields, true);
+				}
+				if (ft.isMatrix())
+				{
+					int cols = ft.getColsCount();
+					int rows = ft.getRowsCount();
+					std::string colVal = CoerceVectorOrScalar(scalarExpr, scalarType, EbtFloat, static_cast<uint32_t>(rows));
+					return ConstructComposite(ft, std::vector<std::string>(static_cast<size_t>(cols), colVal), true);
+				}
+				return CoerceVectorOrScalar(scalarExpr, scalarType, ft.getBasicType(), static_cast<uint32_t>((std::max)(1, ft.getRowsCount())));
+			}
+
+			void FlattenValueToScalars(const std::string& valExpr, const TType& t, std::vector<std::pair<std::string, TBasicType>>& outScalars)
+			{
+				if (t.isArray())
+				{
+					int n = (std::max)(1, t.getArraySize());
+					TType elemT = t;
+					elemT.clearArrayness();
+					for (int i = 0; i < n; ++i)
+						FlattenValueToScalars(valExpr + "[" + std::to_string(i) + "]", elemT, outScalars);
+					return;
+				}
+				if (t.getBasicType() == EbtStruct)
+				{
+					const StructInfo& si = RegisterStruct(t);
+					for (size_t i = 0; i < si.fieldTypes.size(); ++i)
+						FlattenValueToScalars(valExpr + "." + si.fieldNames[i], si.fieldTypes[i], outScalars);
+					return;
+				}
+				if (t.isMatrix())
+				{
+					int cols = t.getColsCount();
+					int rows = t.getRowsCount();
+					for (int c = 0; c < cols; ++c)
+					{
+						std::string colExpr = valExpr + "[" + std::to_string(c) + "]";
+						for (int r = 0; r < rows; ++r)
+							outScalars.emplace_back(colExpr + "." + SwizzleChar(static_cast<uint32_t>(r)), EbtFloat);
+					}
+					return;
+				}
+				int rows = (std::max)(1, t.getRowsCount());
+				TBasicType bt = t.getBasicType();
+				if (rows == 1)
+				{
+					outScalars.emplace_back(valExpr, bt);
+					return;
+				}
+				for (int r = 0; r < rows; ++r)
+					outScalars.emplace_back(valExpr + "." + SwizzleChar(static_cast<uint32_t>(r)), bt);
+			}
+
+			std::string ConsumeScalarsForType(const std::vector<std::pair<std::string, TBasicType>>& scalars, size_t& cursor, const TType& ft)
+			{
+				if (cursor >= scalars.size())
+					return AllocTmp(GetValueTypeStr(ft), GetZeroExpr(ft));
+				if (ft.isArray())
+				{
+					int n = (std::max)(1, ft.getArraySize());
+					TType elemT = ft;
+					elemT.clearArrayness();
+					std::vector<std::string> elems;
+					elems.reserve(static_cast<size_t>(n));
+					for (int i = 0; i < n; ++i)
+						elems.push_back(ConsumeScalarsForType(scalars, cursor, elemT));
+					return ConstructComposite(ft, elems, false);
+				}
+				if (ft.getBasicType() == EbtStruct)
+				{
+					const StructInfo& si = RegisterStruct(ft);
+					if (si.fieldTypes.empty())
+						return AllocTmp(GetValueTypeStr(ft), GetZeroExpr(ft));
+					std::vector<std::string> subFields;
+					subFields.reserve(si.fieldTypes.size());
+					for (const TType& sft : si.fieldTypes)
+						subFields.push_back(ConsumeScalarsForType(scalars, cursor, sft));
+					return ConstructComposite(ft, subFields, true);
+				}
+				if (ft.isMatrix())
+				{
+					int cols = ft.getColsCount();
+					int rows = ft.getRowsCount();
+					TType colT(EbtFloat, EbpUndefined, EvqTemporary, 1, rows);
+					std::vector<std::string> colsVec;
+					colsVec.reserve(static_cast<size_t>(cols));
+					for (int c = 0; c < cols; ++c)
+					{
+						std::vector<std::string> comps;
+						for (int r = 0; r < rows; ++r)
+						{
+							if (cursor < scalars.size())
+							{
+								auto sp = scalars[cursor++];
+								comps.push_back(CastScalarExpr(sp.first, sp.second, EbtFloat));
+							}
+							else
+							{
+								comps.push_back(FormatFloatLit(0.0f, lang));
+							}
+						}
+						colsVec.push_back(rows == 1 ? comps[0] : ConstructComposite(colT, comps, true));
+					}
+					return ConstructComposite(ft, colsVec, true);
+				}
+				int rows = (std::max)(1, ft.getRowsCount());
+				TBasicType dstBt = ft.getBasicType();
+				std::vector<std::string> comps;
+				comps.reserve(static_cast<size_t>(rows));
+				for (int r = 0; r < rows; ++r)
+				{
+					if (cursor < scalars.size())
+					{
+						auto sp = scalars[cursor++];
+						comps.push_back(CastScalarExpr(sp.first, sp.second, dstBt));
+					}
+					else
+					{
+						if (dstBt == EbtInt) comps.push_back(FormatIntLit(0, lang));
+						else if (dstBt == EbtBool) comps.push_back("false");
+						else comps.push_back(FormatFloatLit(0.0f, lang));
+					}
+				}
+				return rows == 1 ? comps[0] : ConstructComposite(ft, comps, true);
+			}
+
 			std::string EmitConstructor(TIntermAggregate* agg)
 			{
 				const TType& dstType = agg->getType();
@@ -1264,12 +1417,50 @@ namespace ParaEngine
 				if (agg->getOp() == EOpConstructStruct)
 				{
 					const StructInfo& si = RegisterStruct(dstType);
-					std::vector<std::string> fieldVals;
-					for (size_t i = 0; i < si.fieldTypes.size() && i < args.size(); ++i)
+					if (si.fieldTypes.empty())
+						return AllocTmp(GetValueTypeStr(dstType), GetZeroExpr(dstType));
+
+					if (args.size() == 1)
 					{
-						TIntermTyped* a = args[i]->getAsTyped();
-						std::string v = EmitRValue(a);
-						fieldVals.push_back(CoerceToType(v, a->getType(), si.fieldTypes[i]));
+						TIntermTyped* a0 = args[0]->getAsTyped();
+						if (TIntermConstant* c0 = a0 ? a0->getAsConstant() : nullptr)
+						{
+							if (c0->getCount() <= 1 && c0->toFloat(0) == 0.0f && c0->toInt(0) == 0 && !c0->toBool(0))
+								return AllocTmp(GetValueTypeStr(dstType), GetZeroExpr(dstType));
+						}
+						if (a0 && a0->getType().isScalar() &&
+							(si.fieldTypes.size() != 1 || si.fieldTypes[0].isArray() || si.fieldTypes[0].isMatrix() || si.fieldTypes[0].getBasicType() == EbtStruct))
+						{
+							return ConstructTypeFromScalar(EmitRValue(a0), a0->getType(), dstType);
+						}
+					}
+
+					std::vector<std::string> fieldVals;
+					fieldVals.reserve(si.fieldTypes.size());
+					if (args.size() == si.fieldTypes.size())
+					{
+						for (size_t i = 0; i < si.fieldTypes.size(); ++i)
+						{
+							TIntermTyped* a = args[i]->getAsTyped();
+							const TType& ft = si.fieldTypes[i];
+							std::string v = EmitRValue(a);
+							if (a->getType().isScalar() && (ft.isArray() || ft.isMatrix() || ft.getBasicType() == EbtStruct))
+								fieldVals.push_back(ConstructTypeFromScalar(v, a->getType(), ft));
+							else
+								fieldVals.push_back(CoerceToType(v, a->getType(), ft));
+						}
+					}
+					else
+					{
+						std::vector<std::pair<std::string, TBasicType>> flatScalars;
+						for (size_t i = 0; i < args.size(); ++i)
+						{
+							if (TIntermTyped* a = args[i]->getAsTyped())
+								FlattenValueToScalars(EmitRValue(a), a->getType(), flatScalars);
+						}
+						size_t cursor = 0;
+						for (size_t i = 0; i < si.fieldTypes.size(); ++i)
+							fieldVals.push_back(ConsumeScalarsForType(flatScalars, cursor, si.fieldTypes[i]));
 					}
 					return ConstructComposite(dstType, fieldVals, true);
 				}
@@ -1288,15 +1479,39 @@ namespace ParaEngine
 					return ConstructComposite(dstType, elems, false);
 				}
 
-				if (agg->getOp() == EOpConstructMat2x2FromMat || agg->getOp() == EOpConstructMat3x3FromMat)
+				if (agg->getOp() == EOpConstructMat2x2FromMat || agg->getOp() == EOpConstructMat3x3FromMat ||
+					(dstType.isMatrix() && args.size() == 1 && args[0]->getAsTyped() && args[0]->getAsTyped()->getType().isMatrix()))
 				{
-					int dstCols = (agg->getOp() == EOpConstructMat2x2FromMat) ? 2 : 3;
+					int dstCols = dstType.getColsCount();
+					int dstRows = dstType.getRowsCount();
 					TIntermTyped* srcNode = args[0]->getAsTyped();
 					std::string srcMat = EmitRValue(srcNode);
-					std::string swz = (dstCols == 2) ? ".xy" : ".xyz";
+					int srcCols = srcNode->getType().getColsCount();
+					int srcRows = srcNode->getType().getRowsCount();
+					TType colType(EbtFloat, EbpUndefined, EvqTemporary, 1, dstRows);
 					std::vector<std::string> colsOut;
 					for (int c = 0; c < dstCols; ++c)
-						colsOut.push_back(srcMat + "[" + FormatIntLit(c, lang) + "]" + swz);
+					{
+						if (c < srcCols && dstRows <= srcRows)
+						{
+							std::string swz = ".";
+							for (int r = 0; r < dstRows; ++r)
+								swz += SwizzleChar(static_cast<uint32_t>(r));
+							colsOut.push_back(srcMat + "[" + FormatIntLit(c, lang) + "]" + (dstRows == srcRows ? "" : swz));
+						}
+						else
+						{
+							std::vector<std::string> compExprs;
+							for (int r = 0; r < dstRows; ++r)
+							{
+								if (c < srcCols && r < srcRows)
+									compExprs.push_back(srcMat + "[" + FormatIntLit(c, lang) + "]." + SwizzleChar(static_cast<uint32_t>(r)));
+								else
+									compExprs.push_back(FormatFloatLit((c == r) ? 1.0f : 0.0f, lang));
+							}
+							colsOut.push_back(ConstructComposite(colType, compExprs, false));
+						}
+					}
 					return ConstructComposite(dstType, colsOut, true);
 				}
 
@@ -1339,8 +1554,9 @@ namespace ParaEngine
 				std::string zeroSc = (dstBt == EbtInt) ? FormatIntLit(0, lang) : (dstBt == EbtBool ? "false" : FormatFloatLit(0.0f, lang));
 				if (scalars.empty())
 					scalars.push_back(zeroSc);
+				const bool singleScalarSplat = (scalars.size() == 1);
 				while (static_cast<int>(scalars.size()) < needed)
-					scalars.push_back(scalars.size() == 1 ? scalars[0] : zeroSc);
+					scalars.push_back(singleScalarSplat ? scalars[0] : zeroSc);
 
 				if (dstType.isMatrix())
 				{
@@ -1370,6 +1586,33 @@ namespace ParaEngine
 				return ConstructComposite(dstType, take, true);
 			}
 
+			const SamplerResourceInfo* LookupSamplerSym(int symId) const
+			{
+				auto fit = fnSamplerParams.find(symId);
+				if (fit != fnSamplerParams.end())
+					return &fit->second;
+				auto sit = samplerBySymId.find(symId);
+				if (sit != samplerBySymId.end())
+					return &sit->second;
+				return nullptr;
+			}
+
+			std::string GetTextureParamTypeStr(ETexDim dim) const
+			{
+				if (lang == ETextLang::WGSL_1_0)
+				{
+					if (dim == ETexDim::DimCube) return "texture_cube<f32>";
+					if (dim == ETexDim::Dim3D) return "texture_3d<f32>";
+					return "texture_2d<f32>";
+				}
+				else
+				{
+					if (dim == ETexDim::DimCube) return "texturecube<float>";
+					if (dim == ETexDim::Dim3D) return "texture3d<float>";
+					return "texture2d<float>";
+				}
+			}
+
 			std::string EmitTextureSample(TIntermAggregate* agg)
 			{
 				TNodeArray& args = agg->getNodes();
@@ -1382,13 +1625,13 @@ namespace ParaEngine
 				if (!sampSym)
 					return AllocTmp(v4Str, GetZeroExpr(v4Ast));
 
-				auto sit = samplerBySymId.find(sampSym->getId());
-				if (sit == samplerBySymId.end())
+				const SamplerResourceInfo* psri = LookupSamplerSym(sampSym->getId());
+				if (!psri)
 					return AllocTmp(v4Str, GetZeroExpr(v4Ast));
 
-				const SamplerResourceInfo& sri = sit->second;
-				std::string texRef = (lang == ETextLang::WGSL_1_0) ? sri.texIdent : ("_ctx." + sri.texIdent);
-				std::string smpRef = (lang == ETextLang::WGSL_1_0) ? sri.smpIdent : ("_ctx." + sri.smpIdent);
+				const SamplerResourceInfo& sri = *psri;
+				std::string texRef = (lang == ETextLang::WGSL_1_0 || sri.isParamRef) ? sri.texIdent : ("_ctx." + sri.texIdent);
+				std::string smpRef = (lang == ETextLang::WGSL_1_0 || sri.isParamRef) ? sri.smpIdent : ("_ctx." + sri.smpIdent);
 
 				TIntermTyped* coordNode = args[1]->getAsTyped();
 				std::string coordRaw = EmitRValue(coordNode);
@@ -1711,7 +1954,27 @@ namespace ParaEngine
 					{
 						const ParamSpec& ps = callee.params[i];
 						TIntermTyped* argNode = args[i]->getAsTyped();
-						if (ps.passByPtr)
+						if (ps.isSampler)
+						{
+							TIntermSymbol* argSym = argNode ? argNode->getAsSymbolNode() : nullptr;
+							const SamplerResourceInfo* argSri = argSym ? LookupSamplerSym(argSym->getId()) : nullptr;
+							if (!argSri || argSri->dim != ps.samplerDim)
+							{
+								argSri = nullptr;
+								for (const auto& kv : samplerBySymId)
+								{
+									if (kv.second.dim == ps.samplerDim) { argSri = &kv.second; break; }
+								}
+							}
+							if (argSri)
+							{
+								std::string tArg = (lang == ETextLang::WGSL_1_0 || argSri->isParamRef) ? argSri->texIdent : ("_ctx." + argSri->texIdent);
+								std::string sArg = (lang == ETextLang::WGSL_1_0 || argSri->isParamRef) ? argSri->smpIdent : ("_ctx." + argSri->smpIdent);
+								callArgs.push_back(tArg);
+								callArgs.push_back(sArg);
+							}
+						}
+						else if (ps.passByPtr)
 						{
 							std::string initVal = (ps.qualifier == EvqInOut)
 								? CoerceToType(EmitRValue(argNode), argNode->getType(), ps.astType)
@@ -2494,6 +2757,7 @@ namespace ParaEngine
 				fnOut.str("");
 				fnOut.clear();
 				fnLocals.clear();
+				fnSamplerParams.clear();
 				indentLevel = 0;
 				blockTerminated = false;
 				currentFnRetAstType = fn.returnAstType;
@@ -2508,11 +2772,19 @@ namespace ParaEngine
 					{
 						if (i > 0) fnOut << ", ";
 						const ParamSpec& ps = fn.params[i];
-						std::string pTy = GetValueTypeStr(ps.astType);
-						if (ps.passByPtr)
-							fnOut << ps.paramIdent << " : ptr<function, " << pTy << ">";
+						if (ps.isSampler)
+						{
+							fnOut << ps.paramIdent << " : " << GetTextureParamTypeStr(ps.samplerDim)
+								<< ", " << ps.smpParamIdent << " : sampler";
+						}
 						else
-							fnOut << ps.paramIdent << " : " << pTy;
+						{
+							std::string pTy = GetValueTypeStr(ps.astType);
+							if (ps.passByPtr)
+								fnOut << ps.paramIdent << " : ptr<function, " << pTy << ">";
+							else
+								fnOut << ps.paramIdent << " : " << pTy;
+						}
 					}
 					fnOut << ")";
 					if (!isVoid)
@@ -2525,12 +2797,20 @@ namespace ParaEngine
 					for (size_t i = 0; i < fn.params.size(); ++i)
 					{
 						const ParamSpec& ps = fn.params[i];
-						std::string pTy = GetValueTypeStr(ps.astType);
 						fnOut << ", ";
-						if (ps.passByPtr)
-							fnOut << "thread " << pTy << "& " << ps.paramIdent;
+						if (ps.isSampler)
+						{
+							fnOut << GetTextureParamTypeStr(ps.samplerDim) << " " << ps.paramIdent
+								<< ", sampler " << ps.smpParamIdent;
+						}
 						else
-							fnOut << pTy << " " << ps.paramIdent;
+						{
+							std::string pTy = GetValueTypeStr(ps.astType);
+							if (ps.passByPtr)
+								fnOut << "thread " << pTy << "& " << ps.paramIdent;
+							else
+								fnOut << pTy << " " << ps.paramIdent;
+						}
 					}
 					fnOut << ")\n{\n";
 				}
@@ -2538,7 +2818,11 @@ namespace ParaEngine
 				indentLevel = 1;
 				for (const ParamSpec& ps : fn.params)
 				{
-					if (ps.passByPtr)
+					if (ps.isSampler)
+					{
+						fnSamplerParams[ps.symId] = { ps.symId, ps.rawName, 0u, ps.samplerDim, ps.paramIdent, ps.smpParamIdent, true };
+					}
+					else if (ps.passByPtr)
 					{
 						fnLocals[ps.symId] = { ps.paramIdent, (lang == ETextLang::WGSL_1_0) };
 					}
@@ -2646,7 +2930,18 @@ namespace ParaEngine
 								ps.semantic = psym->getInfo() ? psym->getInfo()->getSemantic().c_str() : "";
 								ps.astType = psym->getType();
 								ps.qualifier = psym->getQualifier();
-								ps.passByPtr = (ps.qualifier == EvqOut || ps.qualifier == EvqInOut);
+								TBasicType pbt = ps.astType.getBasicType();
+								if (IsSampler(pbt))
+								{
+									ps.isSampler = true;
+									ps.passByPtr = false;
+									ps.samplerDim = (pbt == EbtSamplerCube) ? ETexDim::DimCube : ((pbt == EbtSampler3D) ? ETexDim::Dim3D : ETexDim::Dim2D);
+									ps.smpParamIdent = SanitizeIdent(ps.rawName, "psmp_") + "_" + std::to_string(pIdx);
+								}
+								else
+								{
+									ps.passByPtr = (ps.qualifier == EvqOut || ps.qualifier == EvqInOut);
+								}
 								rec.params.push_back(std::move(ps));
 								++pIdx;
 							}
@@ -2955,6 +3250,7 @@ namespace ParaEngine
 				fnOut.str("");
 				fnOut.clear();
 				fnLocals.clear();
+				fnSamplerParams.clear();
 				indentLevel = 1;
 				blockTerminated = false;
 				currentFnRetAstType = TType(EbtVoid, EbpUndefined);

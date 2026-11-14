@@ -92,12 +92,15 @@ GLProgram* GLProgram::createWithFilenames(const std::string& vShaderFilename, co
 	return nullptr;
 }
 
+uint8_t GLProgram::s_currentColorOutputMask = 0x1u;
+
 GLProgram::GLProgram()
 	: _program(0)
 	, _vertShader(0)
 	, _fragShader(0)
 	, _hashForUniforms(nullptr)
 	, _dirty(false)
+	, _colorOutputMask(0x1u)
 {
 	memset(_builtInUniforms, 0, sizeof(_builtInUniforms));
 }
@@ -142,6 +145,17 @@ GLProgram::~GLProgram()
 
 bool GLProgram::initWithByteArrays(const GLchar* vShaderByteArray, const GLchar* fShaderByteArray)
 {
+	_colorOutputMask = 0x1u;
+	if (fShaderByteArray)
+	{
+		if (strstr(fShaderByteArray, "gl_FragData[1]") != nullptr)
+			_colorOutputMask |= 0x2u;
+		if (strstr(fShaderByteArray, "gl_FragData[2]") != nullptr)
+			_colorOutputMask |= 0x4u;
+		if (strstr(fShaderByteArray, "gl_FragData[3]") != nullptr)
+			_colorOutputMask |= 0x8u;
+	}
+
 	if (!IsOpenGLActiveForProgram())
 	{
 		_program = 0;
@@ -342,31 +356,48 @@ bool GLProgram::compileShader(GLuint * shader, GLenum type, const GLchar* source
 	}
     
 
-	const GLchar *sources[] = {
-#if defined(PARAENGINE_MOBILE)
-		"precision highp float;\n"
-#elif defined(EMSCRIPTEN) 
-		"precision highp float;\n"
-		// "# version 300 es\nprecision highp float;\n"
-#endif
-		"//\n",
-		source,
-	};
+	const GLchar* pTrim = source;
+	while (*pTrim == ' ' || *pTrim == '\t' || *pTrim == '\r' || *pTrim == '\n')
+		++pTrim;
+	const bool hasVersionDirective = (strncmp(pTrim, "#version", 8) == 0);
 
 	*shader = glCreateShader(type);
-	glShaderSource(*shader, sizeof(sources) / sizeof(*sources), sources, nullptr);
+	if (hasVersionDirective)
+	{
+#if defined(PARAENGINE_MOBILE) || defined(EMSCRIPTEN)
+		const GLchar* nl = strchr(pTrim, '\n');
+		std::string verHeader = nl ? std::string(pTrim, static_cast<size_t>(nl - pTrim + 1)) : std::string(pTrim) + "\n";
+		const GLchar* rest = nl ? (nl + 1) : "";
+		const GLchar* verSources[] = {
+			verHeader.c_str(),
+			"precision highp float;\n",
+			rest,
+		};
+		glShaderSource(*shader, 3, verSources, nullptr);
+#else
+		glShaderSource(*shader, 1, &pTrim, nullptr);
+#endif
+	}
+	else
+	{
+		const GLchar *sources[] = {
+#if defined(PARAENGINE_MOBILE)
+			"precision highp float;\n"
+#elif defined(EMSCRIPTEN) 
+			"precision highp float;\n"
+#endif
+			"//\n",
+			source,
+		};
+		glShaderSource(*shader, sizeof(sources) / sizeof(*sources), sources, nullptr);
+	}
 	glCompileShader(*shader);
 
 	glGetShaderiv(*shader, GL_COMPILE_STATUS, &status);
 
-	if (status!=GL_TRUE)
+	if (status != GL_TRUE)
 	{
-		GLsizei length;
-		glGetShaderiv(*shader, GL_SHADER_SOURCE_LENGTH, &length);
-		GLchar* src = (GLchar *)malloc(sizeof(GLchar) * length);
-
-		glGetShaderSource(*shader, length, nullptr, src);
-		OUTPUT_LOG("ERROR: Failed to compile shader:\n%s", src);
+		OUTPUT_LOG("ERROR: Failed to compile shader:\n%s", source);
 
 		if (type == GL_VERTEX_SHADER)
 		{
@@ -376,9 +407,8 @@ bool GLProgram::compileShader(GLuint * shader, GLenum type, const GLchar* source
 		{
 			OUTPUT_LOG("FragmentShaderError:\n %s", getFragmentShaderLog().c_str());
 		}
-		free(src);
 
-		return false;;
+		return false;
 	}
 	return (status == GL_TRUE);
 #else
@@ -489,6 +519,7 @@ bool GLProgram::link()
 
 void GLProgram::use()
 {
+	s_currentColorOutputMask = _colorOutputMask;
 	GL::useProgram(_program);
 }
 

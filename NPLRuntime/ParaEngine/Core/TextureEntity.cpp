@@ -216,17 +216,23 @@ void TextureEntity::SetTextureInfo(const TextureEntity::TextureInfo& tInfo)
 {
 	if(SurfaceType!=TextureSequence)
 	{
+		TextureInfo normalizedInfo(tInfo);
+		if ((SurfaceType == RenderTarget || SurfaceType == DEPTHSTENCIL) && (normalizedInfo.m_width <= 0 || normalizedInfo.m_height <= 0))
+		{
+			normalizedInfo.m_subtype = TextureInfo::TYPE_SCREENSIZE;
+		}
 		if(m_pTextureInfo==NULL)
 		{
-			m_pTextureInfo = new TextureInfo(tInfo);
+			m_pTextureInfo = new TextureInfo(normalizedInfo);
 			if(m_pTextureInfo==NULL)
 				OUTPUT_LOG("failed creating texture info for %s\n", GetKey().c_str());
 		}
 		else
 		{
-			if(m_pTextureInfo->m_width != tInfo.m_width || m_pTextureInfo->m_height != tInfo.m_height)
+			const bool bothScreenSize = (m_pTextureInfo->m_subtype == TextureInfo::TYPE_SCREENSIZE && normalizedInfo.m_subtype == TextureInfo::TYPE_SCREENSIZE);
+			if (!bothScreenSize && (m_pTextureInfo->m_width != normalizedInfo.m_width || m_pTextureInfo->m_height != normalizedInfo.m_height || m_pTextureInfo->m_subtype != normalizedInfo.m_subtype))
 			{
-				(*m_pTextureInfo) = tInfo;
+				(*m_pTextureInfo) = normalizedInfo;
 				if(m_bIsInitialized)
 				{
 					// reset the render target to the new size

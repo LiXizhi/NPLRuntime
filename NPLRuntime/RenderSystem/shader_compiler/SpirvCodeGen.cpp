@@ -107,22 +107,22 @@ namespace ParaEngine
 			OpSelect = 169,
 			OpIEqual = 170,
 			OpINotEqual = 171,
+			OpSGreaterThan = 173,
+			OpSGreaterThanEqual = 175,
 			OpSLessThan = 177,
-			OpSGreaterThan = 179,
-			OpSLessThanEqual = 181,
-			OpSGreaterThanEqual = 183,
-			OpFOrdEqual = 184,
-			OpFUnordNotEqual = 189,
-			OpFOrdLessThan = 190,
-			OpFOrdGreaterThan = 192,
-			OpFOrdLessThanEqual = 194,
-			OpFOrdGreaterThanEqual = 196,
-			OpShiftRightArithmetic = 198,
-			OpShiftLeftLogical = 199,
-			OpBitwiseOr = 200,
-			OpBitwiseXor = 201,
-			OpBitwiseAnd = 202,
-			OpNot = 203,
+			OpSLessThanEqual = 179,
+			OpFOrdEqual = 180,
+			OpFUnordNotEqual = 183,
+			OpFOrdLessThan = 184,
+			OpFOrdGreaterThan = 186,
+			OpFOrdLessThanEqual = 188,
+			OpFOrdGreaterThanEqual = 190,
+			OpShiftRightArithmetic = 195,
+			OpShiftLeftLogical = 196,
+			OpBitwiseOr = 197,
+			OpBitwiseXor = 198,
+			OpBitwiseAnd = 199,
+			OpNot = 200,
 			OpDPdx = 207,
 			OpDPdy = 208,
 			OpFwidth = 209,
@@ -424,8 +424,11 @@ namespace ParaEngine
 				TType astType;
 				TQualifier qualifier = EvqIn;
 				bool passByPtr = false;
+				bool isSampler = false;
+				SpvDim samplerDim = Dim_2D;
 				uint32_t valTypeId = 0;
 				uint32_t paramTypeId = 0;
+				uint32_t smpParamTypeId = 0;
 			};
 			struct FuncRecord
 			{
@@ -452,6 +455,8 @@ namespace ParaEngine
 			std::vector<uint32_t> fnLocalVarWords;
 			std::vector<uint32_t> fnBodyWords;
 			std::unordered_map<int, LocalVarInfo> fnLocals;
+			std::unordered_map<int, SamplerResourceInfo> fnSamplerParams;
+			std::map<uint32_t, SamplerResourceInfo> fallbackSamplerByDim;
 			bool blockTerminated = false;
 			std::vector<std::pair<uint32_t, uint32_t>> loopStack; // (mergeLabel, continueLabel)
 			uint32_t currentFnRetTypeId = 0;
@@ -1550,7 +1555,7 @@ namespace ParaEngine
 					EmitInst(fnBodyWords, OpVectorTimesScalar, { GetValueType(resType), id, rhsId, s });
 					return id;
 				}
-				if (op == EOpMatrixTimesScalar || (op == EOpMul && lhsType.isMatrix() && rhsType.isScalar()))
+				if (op == EOpMatrixTimesScalar || (op == EOpMul && (lhsType.isMatrix() ^ rhsType.isMatrix()) && (lhsType.isScalar() || rhsType.isScalar())))
 				{
 					uint32_t m = lhsType.isMatrix() ? lhsId : rhsId;
 					uint32_t s = lhsType.isMatrix() ? rhsId : lhsId;
@@ -1744,6 +1749,216 @@ namespace ParaEngine
 				return CoerceToType(cmpId, cmpAstType, resType);
 			}
 
+			uint32_t ConstructTypeFromScalar(uint32_t scalarVal, const TType& scalarType, const TType& ft)
+			{
+				if (ft.isArray())
+				{
+					int n = (std::max)(1, ft.getArraySize());
+					TType elemT = ft;
+					elemT.clearArrayness();
+					uint32_t elemVal = ConstructTypeFromScalar(scalarVal, scalarType, elemT);
+					uint32_t arrT = GetValueType(ft);
+					uint32_t id = AllocId();
+					std::vector<uint32_t> ops = { arrT, id };
+					ops.insert(ops.end(), static_cast<size_t>(n), elemVal);
+					EmitInst(fnBodyWords, OpCompositeConstruct, ops);
+					return id;
+				}
+				if (ft.getBasicType() == EbtStruct)
+				{
+					uint32_t subT = GetValueType(ft);
+					const TTypeList* sub = ft.getStruct();
+					if (!sub || sub->empty())
+						return GetConstNull(subT);
+					std::vector<uint32_t> subFields;
+					subFields.reserve(sub->size());
+					for (size_t k = 0; k < sub->size(); ++k)
+						subFields.push_back(ConstructTypeFromScalar(scalarVal, scalarType, *(*sub)[k].type));
+					uint32_t id = AllocId();
+					std::vector<uint32_t> ops = { subT, id };
+					ops.insert(ops.end(), subFields.begin(), subFields.end());
+					EmitInst(fnBodyWords, OpCompositeConstruct, ops);
+					return id;
+				}
+				if (ft.isMatrix())
+				{
+					int cols = ft.getColsCount();
+					int rows = ft.getRowsCount();
+					uint32_t colVal = CoerceVectorOrScalar(scalarVal, scalarType, EbtFloat, static_cast<uint32_t>(rows));
+					uint32_t mt = GetValueType(ft);
+					uint32_t id = AllocId();
+					std::vector<uint32_t> ops = { mt, id };
+					ops.insert(ops.end(), static_cast<size_t>(cols), colVal);
+					EmitInst(fnBodyWords, OpCompositeConstruct, ops);
+					return id;
+				}
+				return CoerceVectorOrScalar(scalarVal, scalarType, ft.getBasicType(), static_cast<uint32_t>((std::max)(1, ft.getRowsCount())));
+			}
+
+			void FlattenValueToScalars(uint32_t valId, const TType& t, std::vector<std::pair<uint32_t, TBasicType>>& outScalars)
+			{
+				if (t.isArray())
+				{
+					int n = (std::max)(1, t.getArraySize());
+					TType elemT = t;
+					elemT.clearArrayness();
+					uint32_t elemTypeId = GetValueType(elemT);
+					for (int i = 0; i < n; ++i)
+					{
+						uint32_t ext = AllocId();
+						EmitInst(fnBodyWords, OpCompositeExtract, { elemTypeId, ext, valId, static_cast<uint32_t>(i) });
+						FlattenValueToScalars(ext, elemT, outScalars);
+					}
+					return;
+				}
+				if (t.getBasicType() == EbtStruct)
+				{
+					const TTypeList* sl = t.getStruct();
+					if (sl)
+					{
+						for (size_t i = 0; i < sl->size(); ++i)
+						{
+							const TType& ft = *(*sl)[i].type;
+							uint32_t ftId = GetValueType(ft);
+							uint32_t ext = AllocId();
+							EmitInst(fnBodyWords, OpCompositeExtract, { ftId, ext, valId, static_cast<uint32_t>(i) });
+							FlattenValueToScalars(ext, ft, outScalars);
+						}
+					}
+					return;
+				}
+				if (t.isMatrix())
+				{
+					int cols = t.getColsCount();
+					int rows = t.getRowsCount();
+					uint32_t colT = GetVecType(GetFloatType(), static_cast<uint32_t>(rows));
+					uint32_t fT = GetFloatType();
+					for (int c = 0; c < cols; ++c)
+					{
+						uint32_t colId = AllocId();
+						EmitInst(fnBodyWords, OpCompositeExtract, { colT, colId, valId, static_cast<uint32_t>(c) });
+						for (int r = 0; r < rows; ++r)
+						{
+							uint32_t sc = AllocId();
+							EmitInst(fnBodyWords, OpCompositeExtract, { fT, sc, colId, static_cast<uint32_t>(r) });
+							outScalars.emplace_back(sc, EbtFloat);
+						}
+					}
+					return;
+				}
+				int rows = (std::max)(1, t.getRowsCount());
+				TBasicType bt = t.getBasicType();
+				if (rows == 1)
+				{
+					outScalars.emplace_back(valId, bt);
+					return;
+				}
+				uint32_t compT = (bt == EbtInt) ? GetIntType() : (bt == EbtBool ? GetBoolType() : GetFloatType());
+				for (int r = 0; r < rows; ++r)
+				{
+					uint32_t sc = AllocId();
+					EmitInst(fnBodyWords, OpCompositeExtract, { compT, sc, valId, static_cast<uint32_t>(r) });
+					outScalars.emplace_back(sc, bt);
+				}
+			}
+
+			uint32_t ConsumeScalarsForType(const std::vector<std::pair<uint32_t, TBasicType>>& scalars, size_t& cursor, const TType& ft)
+			{
+				if (cursor >= scalars.size())
+					return GetConstNull(GetValueType(ft));
+				if (ft.isArray())
+				{
+					int n = (std::max)(1, ft.getArraySize());
+					TType elemT = ft;
+					elemT.clearArrayness();
+					std::vector<uint32_t> elems;
+					elems.reserve(static_cast<size_t>(n));
+					for (int i = 0; i < n; ++i)
+						elems.push_back(ConsumeScalarsForType(scalars, cursor, elemT));
+					uint32_t arrT = GetValueType(ft);
+					uint32_t id = AllocId();
+					std::vector<uint32_t> ops = { arrT, id };
+					ops.insert(ops.end(), elems.begin(), elems.end());
+					EmitInst(fnBodyWords, OpCompositeConstruct, ops);
+					return id;
+				}
+				if (ft.getBasicType() == EbtStruct)
+				{
+					uint32_t subT = GetValueType(ft);
+					const TTypeList* sub = ft.getStruct();
+					if (!sub || sub->empty())
+						return GetConstNull(subT);
+					std::vector<uint32_t> subFields;
+					subFields.reserve(sub->size());
+					for (size_t k = 0; k < sub->size(); ++k)
+						subFields.push_back(ConsumeScalarsForType(scalars, cursor, *(*sub)[k].type));
+					uint32_t id = AllocId();
+					std::vector<uint32_t> ops = { subT, id };
+					ops.insert(ops.end(), subFields.begin(), subFields.end());
+					EmitInst(fnBodyWords, OpCompositeConstruct, ops);
+					return id;
+				}
+				if (ft.isMatrix())
+				{
+					int cols = ft.getColsCount();
+					int rows = ft.getRowsCount();
+					uint32_t colVecT = GetVecType(GetFloatType(), static_cast<uint32_t>(rows));
+					std::vector<uint32_t> colsVec;
+					colsVec.reserve(static_cast<size_t>(cols));
+					for (int c = 0; c < cols; ++c)
+					{
+						std::vector<uint32_t> cops = { colVecT, AllocId() };
+						for (int r = 0; r < rows; ++r)
+						{
+							if (cursor < scalars.size())
+							{
+								auto sp = scalars[cursor++];
+								cops.push_back(CastScalar(sp.first, sp.second, EbtFloat));
+							}
+							else
+							{
+								cops.push_back(GetConstFloat(0.0f));
+							}
+						}
+						uint32_t cv = cops[1];
+						EmitInst(fnBodyWords, OpCompositeConstruct, cops);
+						colsVec.push_back(cv);
+					}
+					uint32_t mt = GetValueType(ft);
+					uint32_t mid = AllocId();
+					std::vector<uint32_t> mops = { mt, mid };
+					mops.insert(mops.end(), colsVec.begin(), colsVec.end());
+					EmitInst(fnBodyWords, OpCompositeConstruct, mops);
+					return mid;
+				}
+				int rows = (std::max)(1, ft.getRowsCount());
+				TBasicType dstBt = ft.getBasicType();
+				std::vector<uint32_t> comps;
+				comps.reserve(static_cast<size_t>(rows));
+				for (int r = 0; r < rows; ++r)
+				{
+					if (cursor < scalars.size())
+					{
+						auto sp = scalars[cursor++];
+						comps.push_back(CastScalar(sp.first, sp.second, dstBt));
+					}
+					else
+					{
+						if (dstBt == EbtInt) comps.push_back(GetConstInt(0));
+						else if (dstBt == EbtBool) comps.push_back(GetConstBool(false));
+						else comps.push_back(GetConstFloat(0.0f));
+					}
+				}
+				if (rows == 1)
+					return comps[0];
+				uint32_t vt = GetValueType(ft);
+				uint32_t vid = AllocId();
+				std::vector<uint32_t> vops = { vt, vid };
+				vops.insert(vops.end(), comps.begin(), comps.end());
+				EmitInst(fnBodyWords, OpCompositeConstruct, vops);
+				return vid;
+			}
+
 			uint32_t EmitConstructor(TIntermAggregate* agg)
 			{
 				const TType& dstType = agg->getType();
@@ -1751,18 +1966,54 @@ namespace ParaEngine
 
 				if (agg->getOp() == EOpConstructStruct)
 				{
+					uint32_t stId = GetValueType(dstType);
 					const TTypeList* sl = dstType.getStruct();
-					std::vector<uint32_t> fieldVals;
-					if (sl)
+					if (!sl || sl->empty())
+						return GetConstNull(stId);
+
+					if (args.size() == 1)
 					{
-						for (size_t i = 0; i < sl->size() && i < args.size(); ++i)
+						TIntermTyped* a0 = args[0]->getAsTyped();
+						if (TIntermConstant* c0 = a0 ? a0->getAsConstant() : nullptr)
 						{
-							TIntermTyped* a = args[i]->getAsTyped();
-							uint32_t v = EmitRValue(a);
-							fieldVals.push_back(CoerceToType(v, a->getType(), *(*sl)[i].type));
+							if (c0->getCount() <= 1 && c0->toFloat(0) == 0.0f && c0->toInt(0) == 0 && !c0->toBool(0))
+								return GetConstNull(stId);
+						}
+						if (a0 && a0->getType().isScalar() &&
+							(sl->size() != 1 || (*sl)[0].type->isArray() || (*sl)[0].type->isMatrix() || (*sl)[0].type->getBasicType() == EbtStruct))
+						{
+							return ConstructTypeFromScalar(EmitRValue(a0), a0->getType(), dstType);
 						}
 					}
-					uint32_t stId = GetValueType(dstType);
+
+					std::vector<uint32_t> fieldVals;
+					fieldVals.reserve(sl->size());
+					if (args.size() == sl->size())
+					{
+						for (size_t i = 0; i < sl->size(); ++i)
+						{
+							TIntermTyped* a = args[i]->getAsTyped();
+							const TType& ft = *(*sl)[i].type;
+							uint32_t v = EmitRValue(a);
+							if (a->getType().isScalar() && (ft.isArray() || ft.isMatrix() || ft.getBasicType() == EbtStruct))
+								fieldVals.push_back(ConstructTypeFromScalar(v, a->getType(), ft));
+							else
+								fieldVals.push_back(CoerceToType(v, a->getType(), ft));
+						}
+					}
+					else
+					{
+						std::vector<std::pair<uint32_t, TBasicType>> flatScalars;
+						for (size_t i = 0; i < args.size(); ++i)
+						{
+							if (TIntermTyped* a = args[i]->getAsTyped())
+								FlattenValueToScalars(EmitRValue(a), a->getType(), flatScalars);
+						}
+						size_t cursor = 0;
+						for (size_t i = 0; i < sl->size(); ++i)
+							fieldVals.push_back(ConsumeScalarsForType(flatScalars, cursor, *(*sl)[i].type));
+					}
+
 					uint32_t id = AllocId();
 					std::vector<uint32_t> ops = { stId, id };
 					ops.insert(ops.end(), fieldVals.begin(), fieldVals.end());
@@ -1789,12 +2040,14 @@ namespace ParaEngine
 					return id;
 				}
 
-				if (agg->getOp() == EOpConstructMat2x2FromMat || agg->getOp() == EOpConstructMat3x3FromMat)
+				if (agg->getOp() == EOpConstructMat2x2FromMat || agg->getOp() == EOpConstructMat3x3FromMat ||
+					(dstType.isMatrix() && args.size() == 1 && args[0]->getAsTyped() && args[0]->getAsTyped()->getType().isMatrix()))
 				{
-					int dstCols = (agg->getOp() == EOpConstructMat2x2FromMat) ? 2 : 3;
-					int dstRows = dstCols;
+					int dstCols = dstType.getColsCount();
+					int dstRows = dstType.getRowsCount();
 					TIntermTyped* srcNode = args[0]->getAsTyped();
 					uint32_t srcMat = EmitRValue(srcNode);
+					int srcCols = srcNode->getType().getColsCount();
 					int srcRows = srcNode->getType().getRowsCount();
 					uint32_t srcColT = GetVecType(GetFloatType(), static_cast<uint32_t>(srcRows));
 					uint32_t dstColT = GetVecType(GetFloatType(), static_cast<uint32_t>(dstRows));
@@ -1802,14 +2055,53 @@ namespace ParaEngine
 					std::vector<uint32_t> colsOut;
 					for (int c = 0; c < dstCols; ++c)
 					{
-						uint32_t colVal = AllocId();
-						EmitInst(fnBodyWords, OpCompositeExtract, { srcColT, colVal, srcMat, static_cast<uint32_t>(c) });
-						uint32_t shufCol = AllocId();
-						std::vector<uint32_t> sops = { dstColT, shufCol, colVal, colVal };
-						for (int r = 0; r < dstRows; ++r)
-							sops.push_back(static_cast<uint32_t>(r));
-						EmitInst(fnBodyWords, OpVectorShuffle, sops);
-						colsOut.push_back(shufCol);
+						if (c < srcCols && dstRows <= srcRows)
+						{
+							uint32_t colVal = AllocId();
+							EmitInst(fnBodyWords, OpCompositeExtract, { srcColT, colVal, srcMat, static_cast<uint32_t>(c) });
+							if (dstRows == srcRows)
+							{
+								colsOut.push_back(colVal);
+							}
+							else
+							{
+								uint32_t shufCol = AllocId();
+								std::vector<uint32_t> sops = { dstColT, shufCol, colVal, colVal };
+								for (int r = 0; r < dstRows; ++r)
+									sops.push_back(static_cast<uint32_t>(r));
+								EmitInst(fnBodyWords, OpVectorShuffle, sops);
+								colsOut.push_back(shufCol);
+							}
+						}
+						else
+						{
+							uint32_t colVal = 0;
+							if (c < srcCols)
+							{
+								colVal = AllocId();
+								EmitInst(fnBodyWords, OpCompositeExtract, { srcColT, colVal, srcMat, static_cast<uint32_t>(c) });
+							}
+							std::vector<uint32_t> compIds = { dstColT, 0 };
+							uint32_t zeroId = GetConstFloat(0.0f);
+							uint32_t oneId = GetConstFloat(1.0f);
+							for (int r = 0; r < dstRows; ++r)
+							{
+								if (c < srcCols && r < srcRows)
+								{
+									uint32_t sc = AllocId();
+									EmitInst(fnBodyWords, OpCompositeExtract, { GetFloatType(), sc, colVal, static_cast<uint32_t>(r) });
+									compIds.push_back(sc);
+								}
+								else
+								{
+									compIds.push_back((c == r) ? oneId : zeroId);
+								}
+							}
+							uint32_t newCol = AllocId();
+							compIds[1] = newCol;
+							EmitInst(fnBodyWords, OpCompositeConstruct, compIds);
+							colsOut.push_back(newCol);
+						}
 					}
 					uint32_t matT = GetMatType(static_cast<uint32_t>(dstCols), static_cast<uint32_t>(dstRows));
 					uint32_t resId = AllocId();
@@ -1865,15 +2157,16 @@ namespace ParaEngine
 				}
 
 				int needed = dstType.getInstanceSize();
+				const uint32_t zeroConst = dstBt == EbtInt ? GetConstInt(0) : (dstBt == EbtBool ? GetConstBool(false) : GetConstFloat(0.0f));
 				if (scalars.empty())
 				{
-					scalars.push_back(dstBt == EbtInt ? GetConstInt(0) : (dstBt == EbtBool ? GetConstBool(false) : GetConstFloat(0.0f)));
+					scalars.push_back(zeroConst);
 				}
+				const bool singleScalarSplat = (scalars.size() == 1);
 				while (static_cast<int>(scalars.size()) < needed)
 				{
-					// Single-scalar splat or pad with last/zero
-					scalars.push_back(scalars.size() == 1 ? scalars[0]
-						: (dstBt == EbtInt ? GetConstInt(0) : (dstBt == EbtBool ? GetConstBool(false) : GetConstFloat(0.0f))));
+					// Single-scalar splat or pad with zero
+					scalars.push_back(singleScalarSplat ? scalars[0] : zeroConst);
 				}
 
 				if (dstType.isMatrix())
@@ -1911,6 +2204,52 @@ namespace ParaEngine
 				return vid;
 			}
 
+			const SamplerResourceInfo* LookupSamplerSym(int symId) const
+			{
+				auto fit = fnSamplerParams.find(symId);
+				if (fit != fnSamplerParams.end())
+					return &fit->second;
+				auto sit = samplerBySymId.find(symId);
+				if (sit != samplerBySymId.end())
+					return &sit->second;
+				return nullptr;
+			}
+
+			const SamplerResourceInfo& GetOrCreateFallbackSampler(SpvDim dim)
+			{
+				for (const auto& kv : samplerBySymId)
+				{
+					if (kv.second.dim == dim)
+						return kv.second;
+				}
+				auto it = fallbackSamplerByDim.find(static_cast<uint32_t>(dim));
+				if (it != fallbackSamplerByDim.end())
+					return it->second;
+
+				SamplerResourceInfo sri;
+				sri.symId = -1;
+				sri.name = "_fallback_sampler";
+				sri.slot = (std::min)(nextAutoSamplerSlot++, 15u);
+				sri.dim = dim;
+				sri.imageTypeId = GetImageType(dim);
+				sri.sampledImgTypeId = GetSampledImageType(sri.imageTypeId);
+
+				uint32_t imgPtrT = GetPtrType(SC_UniformConstant, sri.imageTypeId);
+				sri.imageVarId = AllocId();
+				EmitInst(secTypesConstsGlobals, OpVariable, { imgPtrT, sri.imageVarId, SC_UniformConstant });
+				EmitInst(secAnnotations, OpDecorate, { sri.imageVarId, Dec_DescriptorSet, 0u });
+				EmitInst(secAnnotations, OpDecorate, { sri.imageVarId, Dec_Binding, 16u + sri.slot });
+
+				uint32_t smpPtrT = GetPtrType(SC_UniformConstant, GetSamplerType());
+				sri.samplerVarId = AllocId();
+				EmitInst(secTypesConstsGlobals, OpVariable, { smpPtrT, sri.samplerVarId, SC_UniformConstant });
+				EmitInst(secAnnotations, OpDecorate, { sri.samplerVarId, Dec_DescriptorSet, 0u });
+				EmitInst(secAnnotations, OpDecorate, { sri.samplerVarId, Dec_Binding, 32u + sri.slot });
+
+				auto res = fallbackSamplerByDim.emplace(static_cast<uint32_t>(dim), std::move(sri));
+				return res.first->second;
+			}
+
 			uint32_t EmitTextureSample(TIntermAggregate* agg)
 			{
 				TNodeArray& args = agg->getNodes();
@@ -1922,11 +2261,11 @@ namespace ParaEngine
 				if (!sampSym)
 					return GetConstNull(v4f);
 
-				auto sit = samplerBySymId.find(sampSym->getId());
-				if (sit == samplerBySymId.end())
+				const SamplerResourceInfo* psri = LookupSamplerSym(sampSym->getId());
+				if (!psri)
 					return GetConstNull(v4f);
 
-				const SamplerResourceInfo& sri = sit->second;
+				const SamplerResourceInfo& sri = *psri;
 				uint32_t imgVal = AllocId();
 				EmitInst(fnBodyWords, OpLoad, { sri.imageTypeId, imgVal, sri.imageVarId });
 				uint32_t smpVal = AllocId();
@@ -2301,7 +2640,16 @@ namespace ParaEngine
 					{
 						const ParamSpec& ps = callee.params[i];
 						TIntermTyped* argNode = args[i]->getAsTyped();
-						if (ps.passByPtr)
+						if (ps.isSampler)
+						{
+							TIntermSymbol* argSym = argNode ? argNode->getAsSymbolNode() : nullptr;
+							const SamplerResourceInfo* argSri = argSym ? LookupSamplerSym(argSym->getId()) : nullptr;
+							if (!argSri || argSri->dim != ps.samplerDim)
+								argSri = &GetOrCreateFallbackSampler(ps.samplerDim);
+							callArgs.push_back(argSri->imageVarId);
+							callArgs.push_back(argSri->samplerVarId);
+						}
+						else if (ps.passByPtr)
 						{
 							uint32_t tmpVar = AllocLocalVar(ps.valTypeId);
 							if (ps.qualifier == EvqInOut)
@@ -3137,23 +3485,36 @@ namespace ParaEngine
 				fnLocalVarWords.clear();
 				fnBodyWords.clear();
 				fnLocals.clear();
+				fnSamplerParams.clear();
 				loopStack.clear();
 				blockTerminated = false;
 				currentFnRetTypeId = fn.retTypeId;
 				currentFnRetAstType = fn.returnAstType;
 
 				std::vector<uint32_t> paramTypeIds;
-				std::vector<uint32_t> paramIds;
-				for (const ParamSpec& ps : fn.params)
+				std::vector<uint32_t> primaryParamIds(fn.params.size(), 0);
+				std::vector<uint32_t> secondaryParamIds(fn.params.size(), 0);
+				for (size_t i = 0; i < fn.params.size(); ++i)
 				{
+					const ParamSpec& ps = fn.params[i];
 					paramTypeIds.push_back(ps.paramTypeId);
-					paramIds.push_back(AllocId());
+					primaryParamIds[i] = AllocId();
+					if (ps.isSampler)
+					{
+						paramTypeIds.push_back(ps.smpParamTypeId);
+						secondaryParamIds[i] = AllocId();
+					}
 				}
 				uint32_t fnTypeId = GetFunctionType(fn.retTypeId, paramTypeIds);
 
 				EmitInst(secFunctions, OpFunction, { fn.retTypeId, fn.funcId, 0u, fnTypeId });
 				for (size_t i = 0; i < fn.params.size(); ++i)
-					EmitInst(secFunctions, OpFunctionParameter, { fn.params[i].paramTypeId, paramIds[i] });
+				{
+					const ParamSpec& ps = fn.params[i];
+					EmitInst(secFunctions, OpFunctionParameter, { ps.paramTypeId, primaryParamIds[i] });
+					if (ps.isSampler)
+						EmitInst(secFunctions, OpFunctionParameter, { ps.smpParamTypeId, secondaryParamIds[i] });
+				}
 
 				uint32_t entryLabel = AllocId();
 				// Create addressable Function variables for value parameters so HLSL code can mutate `in` params freely
@@ -3161,15 +3522,28 @@ namespace ParaEngine
 				for (size_t i = 0; i < fn.params.size(); ++i)
 				{
 					const ParamSpec& ps = fn.params[i];
-					if (ps.passByPtr)
+					if (ps.isSampler)
 					{
-						fnLocals[ps.symId] = { paramIds[i], ps.valTypeId };
+						SamplerResourceInfo sri;
+						sri.symId = ps.symId;
+						sri.name = ps.name;
+						sri.slot = 0;
+						sri.dim = ps.samplerDim;
+						sri.imageVarId = primaryParamIds[i];
+						sri.samplerVarId = secondaryParamIds[i];
+						sri.imageTypeId = ps.valTypeId;
+						sri.sampledImgTypeId = GetSampledImageType(ps.valTypeId);
+						fnSamplerParams[ps.symId] = std::move(sri);
+					}
+					else if (ps.passByPtr)
+					{
+						fnLocals[ps.symId] = { primaryParamIds[i], ps.valTypeId };
 					}
 					else
 					{
 						uint32_t localPtr = AllocLocalVar(ps.valTypeId);
 						fnLocals[ps.symId] = { localPtr, ps.valTypeId };
-						valueParamInitStores.push_back({ localPtr, paramIds[i] });
+						valueParamInitStores.push_back({ localPtr, primaryParamIds[i] });
 					}
 				}
 
@@ -3265,7 +3639,20 @@ namespace ParaEngine
 								ps.semantic = psym->getInfo() ? psym->getInfo()->getSemantic().c_str() : "";
 								ps.astType = psym->getType();
 								ps.qualifier = psym->getQualifier();
-								ps.passByPtr = (ps.qualifier == EvqOut || ps.qualifier == EvqInOut);
+								TBasicType pbt = ps.astType.getBasicType();
+								if (IsSampler(pbt))
+								{
+									ps.isSampler = true;
+									ps.passByPtr = false;
+									if (pbt == EbtSamplerCube) ps.samplerDim = Dim_Cube;
+									else if (pbt == EbtSampler3D) ps.samplerDim = Dim_3D;
+									else if (pbt == EbtSampler1D || pbt == EbtSampler1DShadow) ps.samplerDim = Dim_1D;
+									else ps.samplerDim = Dim_2D;
+								}
+								else
+								{
+									ps.passByPtr = (ps.qualifier == EvqOut || ps.qualifier == EvqInOut);
+								}
 								rec.params.push_back(std::move(ps));
 							}
 						}
@@ -3614,8 +4001,22 @@ namespace ParaEngine
 					fn.retTypeId = GetValueType(fn.returnAstType);
 					for (ParamSpec& ps : fn.params)
 					{
-						ps.valTypeId = GetValueType(ps.astType);
-						ps.paramTypeId = ps.passByPtr ? GetPtrType(SC_Function, ps.valTypeId) : ps.valTypeId;
+						if (ps.isSampler)
+						{
+							if (ps.samplerDim == Dim_1D && !needSampled1D)
+							{
+								needSampled1D = true;
+								EmitInst(secCapabilities, OpCapability, { 3u });
+							}
+							ps.valTypeId = GetImageType(ps.samplerDim);
+							ps.paramTypeId = GetPtrType(SC_UniformConstant, ps.valTypeId);
+							ps.smpParamTypeId = GetPtrType(SC_UniformConstant, GetSamplerType());
+						}
+						else
+						{
+							ps.valTypeId = GetValueType(ps.astType);
+							ps.paramTypeId = ps.passByPtr ? GetPtrType(SC_Function, ps.valTypeId) : ps.valTypeId;
+						}
 					}
 					EmitInstWithStr(secDebugNames, OpName, { fn.funcId }, fn.plainName);
 				}
@@ -3635,6 +4036,7 @@ namespace ParaEngine
 				fnLocalVarWords.clear();
 				fnBodyWords.clear();
 				fnLocals.clear();
+				fnSamplerParams.clear();
 				loopStack.clear();
 				blockTerminated = false;
 				currentFnRetTypeId = GetVoidType();
@@ -4126,6 +4528,42 @@ namespace ParaEngine
 			return op == OpBranch || op == OpBranchConditional || op == OpKill || op == OpReturn || op == OpReturnValue;
 		};
 
+		auto isKnownOp = [](uint16_t op) -> bool {
+			switch (static_cast<SpvOp>(op))
+			{
+			case OpNop: case OpName: case OpMemberName: case OpExtInstImport: case OpExtInst:
+			case OpMemoryModel: case OpEntryPoint: case OpExecutionMode: case OpCapability:
+			case OpTypeVoid: case OpTypeBool: case OpTypeInt: case OpTypeFloat: case OpTypeVector:
+			case OpTypeMatrix: case OpTypeImage: case OpTypeSampler: case OpTypeSampledImage:
+			case OpTypeArray: case OpTypeStruct: case OpTypePointer: case OpTypeFunction:
+			case OpConstantTrue: case OpConstantFalse: case OpConstant: case OpConstantComposite: case OpConstantNull:
+			case OpFunction: case OpFunctionParameter: case OpFunctionEnd: case OpFunctionCall:
+			case OpVariable: case OpLoad: case OpStore: case OpAccessChain:
+			case OpDecorate: case OpMemberDecorate:
+			case OpVectorShuffle: case OpCompositeConstruct: case OpCompositeExtract: case OpCompositeInsert:
+			case OpTranspose: case OpSampledImage: case OpImageSampleImplicitLod: case OpImageSampleExplicitLod:
+			case OpImageSampleProjImplicitLod: case OpImageSampleProjExplicitLod:
+			case OpConvertFToS: case OpConvertSToF:
+			case OpSNegate: case OpFNegate: case OpIAdd: case OpFAdd: case OpISub: case OpFSub:
+			case OpIMul: case OpFMul: case OpSDiv: case OpFDiv: case OpSMod: case OpFRem: case OpFMod:
+			case OpVectorTimesScalar: case OpMatrixTimesScalar: case OpVectorTimesMatrix:
+			case OpMatrixTimesVector: case OpMatrixTimesMatrix: case OpDot: case OpAny: case OpAll:
+			case OpLogicalEqual: case OpLogicalNotEqual: case OpLogicalOr: case OpLogicalAnd: case OpLogicalNot:
+			case OpSelect: case OpIEqual: case OpINotEqual:
+			case OpSGreaterThan: case OpSGreaterThanEqual: case OpSLessThan: case OpSLessThanEqual:
+			case OpFOrdEqual: case OpFUnordNotEqual: case OpFOrdLessThan: case OpFOrdGreaterThan:
+			case OpFOrdLessThanEqual: case OpFOrdGreaterThanEqual:
+			case OpShiftRightArithmetic: case OpShiftLeftLogical:
+			case OpBitwiseOr: case OpBitwiseXor: case OpBitwiseAnd: case OpNot:
+			case OpDPdx: case OpDPdy: case OpFwidth:
+			case OpLoopMerge: case OpSelectionMerge: case OpLabel:
+			case OpBranch: case OpBranchConditional: case OpKill: case OpReturn: case OpReturnValue:
+				return true;
+			default:
+				return false;
+			}
+		};
+
 		size_t pc = 5;
 		while (pc < wordCount)
 		{
@@ -4135,6 +4573,11 @@ namespace ParaEngine
 			if (wc == 0 || pc + wc > wordCount)
 			{
 				outError = "SPIR-V instruction word count out of bounds";
+				return false;
+			}
+			if (!isKnownOp(op))
+			{
+				outError = "Unknown or unsupported SPIR-V opcode: " + std::to_string(op);
 				return false;
 			}
 

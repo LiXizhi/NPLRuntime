@@ -388,8 +388,8 @@ void CParameterBlock::SetParamByStringValue(const char* sParamName, const char* 
 		{
 			mat = Matrix4::IDENTITY;
 		}
-		// it is column matrix, so transpose it. 
-		mat = mat.transpose();
+		// CEffectFileRHI compiles all RHI shader targets (DXBC/DXIL with -Zpr, GLSL/SPIR-V/MSL/WGSL)
+		// expecting ParaEngine's native row-major Matrix4 layout (matching CEffectFileRHI::setMatrix / SetMatrix).
 		SetParameter(sParamName, mat);
 	}
 	else if (sValue.find("vec3") != string::npos)

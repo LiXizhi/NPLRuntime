@@ -311,6 +311,684 @@ namespace ParaEngine
 				return true;
 			return false;
 		}
+
+		std::string StripUtf8Bom(const std::string& s)
+		{
+			if (s.size() >= 3 &&
+				static_cast<unsigned char>(s[0]) == 0xEF &&
+				static_cast<unsigned char>(s[1]) == 0xBB &&
+				static_cast<unsigned char>(s[2]) == 0xBF)
+			{
+				return s.substr(3);
+			}
+			return s;
+		}
+
+		struct FxMacroDef
+		{
+			bool isFunc = false;
+			std::vector<std::string> params;
+			std::string body;
+		};
+
+		struct FxCondFrame
+		{
+			bool parentActive = true;
+			bool branchTaken = false;
+			bool currentlyActive = true;
+		};
+
+		struct FxPreprocessorState
+		{
+			std::unordered_map<std::string, FxMacroDef> macros;
+			std::vector<FxCondFrame> condStack;
+
+			bool IsActive() const
+			{
+				return condStack.empty() ? true : condStack.back().currentlyActive;
+			}
+		};
+
+		std::string SubstituteMacroParams(
+			const std::string& body,
+			const std::vector<std::string>& params,
+			const std::vector<std::string>& args)
+		{
+			std::string out;
+			out.reserve(body.size() + 32);
+			const size_t n = body.size();
+			size_t i = 0;
+			while (i < n)
+			{
+				if (body[i] == '"' || body[i] == '\'')
+				{
+					char q = body[i++];
+					out.push_back(q);
+					while (i < n)
+					{
+						char c = body[i++];
+						out.push_back(c);
+						if (c == '\\' && i < n)
+							out.push_back(body[i++]);
+						else if (c == q)
+							break;
+					}
+					continue;
+				}
+				if (IsIdentStart(body[i]))
+				{
+					size_t s = i++;
+					while (i < n && IsIdentChar(body[i]))
+						++i;
+					std::string id = body.substr(s, i - s);
+					bool replaced = false;
+					for (size_t k = 0; k < params.size(); ++k)
+					{
+						if (id == params[k])
+						{
+							if (k < args.size())
+								out += TrimStr(args[k]);
+							replaced = true;
+							break;
+						}
+					}
+					if (!replaced)
+						out += id;
+					continue;
+				}
+				// Handle basic ## token pasting whitespace trimming
+				if (body[i] == '#' && i + 1 < n && body[i + 1] == '#')
+				{
+					while (!out.empty() && (out.back() == ' ' || out.back() == '\t'))
+						out.pop_back();
+					i += 2;
+					while (i < n && (body[i] == ' ' || body[i] == '\t'))
+						++i;
+					continue;
+				}
+				out.push_back(body[i++]);
+			}
+			return out;
+		}
+
+		std::string ExpandFxMacros(
+			const std::string& input,
+			const std::unordered_map<std::string, FxMacroDef>& macros,
+			bool preserveDefinedArgs = false,
+			int depth = 0)
+		{
+			if (depth >= 8 || macros.empty() || input.empty())
+				return input;
+
+			std::string out;
+			out.reserve(input.size());
+			const size_t n = input.size();
+			size_t i = 0;
+			bool anyExpanded = false;
+
+			while (i < n)
+			{
+				if (input[i] == '"' || input[i] == '\'')
+				{
+					char q = input[i++];
+					out.push_back(q);
+					while (i < n)
+					{
+						char c = input[i++];
+						out.push_back(c);
+						if (c == '\\' && i < n)
+							out.push_back(input[i++]);
+						else if (c == q)
+							break;
+					}
+					continue;
+				}
+				if (IsIdentStart(input[i]))
+				{
+					size_t s = i++;
+					while (i < n && IsIdentChar(input[i]))
+						++i;
+					std::string id = input.substr(s, i - s);
+
+					if (preserveDefinedArgs && id == "defined")
+					{
+						out += id;
+						while (i < n && std::isspace(static_cast<unsigned char>(input[i])))
+							out.push_back(input[i++]);
+						if (i < n && input[i] == '(')
+						{
+							out.push_back(input[i++]);
+							while (i < n && std::isspace(static_cast<unsigned char>(input[i])))
+								out.push_back(input[i++]);
+							while (i < n && IsIdentChar(input[i]))
+								out.push_back(input[i++]);
+							while (i < n && std::isspace(static_cast<unsigned char>(input[i])))
+								out.push_back(input[i++]);
+							if (i < n && input[i] == ')')
+								out.push_back(input[i++]);
+						}
+						else if (i < n && IsIdentStart(input[i]))
+						{
+							out.push_back(' ');
+							while (i < n && IsIdentChar(input[i]))
+								out.push_back(input[i++]);
+						}
+						continue;
+					}
+
+					auto it = macros.find(id);
+					if (it != macros.end())
+					{
+						const FxMacroDef& m = it->second;
+						if (!m.isFunc)
+						{
+							if (m.body != id)
+							{
+								out += m.body;
+								anyExpanded = true;
+							}
+							else
+							{
+								out += id;
+							}
+							continue;
+						}
+						else
+						{
+							size_t peek = i;
+							while (peek < n && std::isspace(static_cast<unsigned char>(input[peek])))
+								++peek;
+							if (peek < n && input[peek] == '(')
+							{
+								++peek; // consume '('
+								std::vector<std::string> args;
+								std::string curArg;
+								int pDepth = 1;
+								int bDepth = 0;
+								while (peek < n && pDepth > 0)
+								{
+									char c = input[peek++];
+									if (c == '"' || c == '\'')
+									{
+										curArg.push_back(c);
+										while (peek < n)
+										{
+											char sc = input[peek++];
+											curArg.push_back(sc);
+											if (sc == '\\' && peek < n)
+												curArg.push_back(input[peek++]);
+											else if (sc == c)
+												break;
+										}
+										continue;
+									}
+									if (c == '(') { ++pDepth; curArg.push_back(c); }
+									else if (c == ')')
+									{
+										--pDepth;
+										if (pDepth == 0)
+										{
+											if (!m.params.empty() || !TrimStr(curArg).empty())
+												args.push_back(curArg);
+											break;
+										}
+										curArg.push_back(c);
+									}
+									else if (c == '{') { ++bDepth; curArg.push_back(c); }
+									else if (c == '}') { --bDepth; curArg.push_back(c); }
+									else if (c == ',' && pDepth == 1 && bDepth == 0)
+									{
+										args.push_back(curArg);
+										curArg.clear();
+									}
+									else
+									{
+										curArg.push_back(c);
+									}
+								}
+								if (pDepth == 0)
+								{
+									out += SubstituteMacroParams(m.body, m.params, args);
+									i = peek;
+									anyExpanded = true;
+									continue;
+								}
+							}
+						}
+					}
+
+					out += id;
+					continue;
+				}
+				out.push_back(input[i++]);
+			}
+
+			if (anyExpanded)
+				return ExpandFxMacros(out, macros, preserveDefinedArgs, depth + 1);
+			return out;
+		}
+
+		class FxIfExprParser
+		{
+		public:
+			FxIfExprParser(const std::string& expr, const std::unordered_map<std::string, FxMacroDef>& macros)
+				: m_s(expr), m_macros(macros)
+			{}
+
+			long long Parse()
+			{
+				return ParseLogicalOr();
+			}
+
+		private:
+			const std::string& m_s;
+			const std::unordered_map<std::string, FxMacroDef>& m_macros;
+			size_t m_p = 0;
+
+			void SkipWS()
+			{
+				while (m_p < m_s.size() && std::isspace(static_cast<unsigned char>(m_s[m_p])))
+					++m_p;
+			}
+
+			bool Match(const char* tok)
+			{
+				SkipWS();
+				size_t len = std::strlen(tok);
+				if (m_p + len <= m_s.size() && m_s.compare(m_p, len, tok) == 0)
+				{
+					m_p += len;
+					return true;
+				}
+				return false;
+			}
+
+			long long ParseLogicalOr()
+			{
+				long long v = ParseLogicalAnd();
+				while (Match("||"))
+				{
+					long long r = ParseLogicalAnd();
+					v = (v != 0 || r != 0) ? 1 : 0;
+				}
+				return v;
+			}
+
+			long long ParseLogicalAnd()
+			{
+				long long v = ParseBitOr();
+				while (Match("&&"))
+				{
+					long long r = ParseBitOr();
+					v = (v != 0 && r != 0) ? 1 : 0;
+				}
+				return v;
+			}
+
+			long long ParseBitOr()
+			{
+				long long v = ParseBitXor();
+				while (true)
+				{
+					SkipWS();
+					if (m_p < m_s.size() && m_s[m_p] == '|' && (m_p + 1 >= m_s.size() || m_s[m_p + 1] != '|'))
+					{
+						++m_p;
+						v = v | ParseBitXor();
+					}
+					else break;
+				}
+				return v;
+			}
+
+			long long ParseBitXor()
+			{
+				long long v = ParseBitAnd();
+				while (Match("^"))
+					v = v ^ ParseBitAnd();
+				return v;
+			}
+
+			long long ParseBitAnd()
+			{
+				long long v = ParseEquality();
+				while (true)
+				{
+					SkipWS();
+					if (m_p < m_s.size() && m_s[m_p] == '&' && (m_p + 1 >= m_s.size() || m_s[m_p + 1] != '&'))
+					{
+						++m_p;
+						v = v & ParseEquality();
+					}
+					else break;
+				}
+				return v;
+			}
+
+			long long ParseEquality()
+			{
+				long long v = ParseRelational();
+				while (true)
+				{
+					if (Match("==")) v = (v == ParseRelational()) ? 1 : 0;
+					else if (Match("!=")) v = (v != ParseRelational()) ? 1 : 0;
+					else break;
+				}
+				return v;
+			}
+
+			long long ParseRelational()
+			{
+				long long v = ParseShift();
+				while (true)
+				{
+					if (Match("<=")) v = (v <= ParseShift()) ? 1 : 0;
+					else if (Match(">=")) v = (v >= ParseShift()) ? 1 : 0;
+					else
+					{
+						SkipWS();
+						if (m_p < m_s.size() && m_s[m_p] == '<' && (m_p + 1 >= m_s.size() || m_s[m_p + 1] != '<'))
+						{
+							++m_p;
+							v = (v < ParseShift()) ? 1 : 0;
+						}
+						else if (m_p < m_s.size() && m_s[m_p] == '>' && (m_p + 1 >= m_s.size() || m_s[m_p + 1] != '>'))
+						{
+							++m_p;
+							v = (v > ParseShift()) ? 1 : 0;
+						}
+						else break;
+					}
+				}
+				return v;
+			}
+
+			long long ParseShift()
+			{
+				long long v = ParseAdd();
+				while (true)
+				{
+					if (Match("<<")) v = v << ParseAdd();
+					else if (Match(">>")) v = v >> ParseAdd();
+					else break;
+				}
+				return v;
+			}
+
+			long long ParseAdd()
+			{
+				long long v = ParseMul();
+				while (true)
+				{
+					if (Match("+")) v = v + ParseMul();
+					else if (Match("-")) v = v - ParseMul();
+					else break;
+				}
+				return v;
+			}
+
+			long long ParseMul()
+			{
+				long long v = ParseUnary();
+				while (true)
+				{
+					if (Match("*")) v = v * ParseUnary();
+					else if (Match("/")) { long long d = ParseUnary(); v = (d != 0) ? (v / d) : 0; }
+					else if (Match("%")) { long long d = ParseUnary(); v = (d != 0) ? (v % d) : 0; }
+					else break;
+				}
+				return v;
+			}
+
+			long long ParseUnary()
+			{
+				SkipWS();
+				if (m_p < m_s.size() && m_s[m_p] == '!' && (m_p + 1 >= m_s.size() || m_s[m_p + 1] != '='))
+				{
+					++m_p;
+					return (ParseUnary() == 0) ? 1 : 0;
+				}
+				if (Match("~")) return ~ParseUnary();
+				if (Match("+")) return ParseUnary();
+				if (Match("-")) return -ParseUnary();
+				return ParsePrimary();
+			}
+
+			long long ParsePrimary()
+			{
+				SkipWS();
+				if (m_p >= m_s.size())
+					return 0;
+				if (Match("("))
+				{
+					long long v = ParseLogicalOr();
+					Match(")");
+					return v;
+				}
+				if (std::isdigit(static_cast<unsigned char>(m_s[m_p])))
+				{
+					char* endPtr = nullptr;
+					long long val = std::strtoll(m_s.c_str() + m_p, &endPtr, 0);
+					if (endPtr && endPtr > m_s.c_str() + m_p)
+						m_p = static_cast<size_t>(endPtr - m_s.c_str());
+					else
+						++m_p;
+					while (m_p < m_s.size() && (m_s[m_p] == 'u' || m_s[m_p] == 'U' || m_s[m_p] == 'l' || m_s[m_p] == 'L'))
+						++m_p;
+					return val;
+				}
+				if (IsIdentStart(m_s[m_p]))
+				{
+					size_t s = m_p++;
+					while (m_p < m_s.size() && IsIdentChar(m_s[m_p]))
+						++m_p;
+					std::string id = m_s.substr(s, m_p - s);
+					if (id == "defined")
+					{
+						SkipWS();
+						bool hasParen = Match("(");
+						SkipWS();
+						std::string mname;
+						if (m_p < m_s.size() && IsIdentStart(m_s[m_p]))
+						{
+							size_t ms = m_p++;
+							while (m_p < m_s.size() && IsIdentChar(m_s[m_p]))
+								++m_p;
+							mname = m_s.substr(ms, m_p - ms);
+						}
+						if (hasParen)
+							Match(")");
+						return (m_macros.find(mname) != m_macros.end()) ? 1 : 0;
+					}
+					if (id == "true") return 1;
+					if (id == "false") return 0;
+					return 0;
+				}
+				++m_p;
+				return 0;
+			}
+		};
+
+		bool EvalFxIfExpr(const std::string& rawExpr, const std::unordered_map<std::string, FxMacroDef>& macros)
+		{
+			std::string expanded = ExpandFxMacros(rawExpr, macros, true, 0);
+			FxIfExprParser parser(expanded, macros);
+			return parser.Parse() != 0;
+		}
+
+		std::string CollapseLineContinuations(const std::string& text)
+		{
+			std::string out;
+			out.reserve(text.size());
+			const size_t n = text.size();
+			for (size_t i = 0; i < n; ++i)
+			{
+				if (text[i] == '\\' && i + 1 < n && (text[i + 1] == '\r' || text[i + 1] == '\n'))
+				{
+					++i;
+					if (text[i] == '\r' && i + 1 < n && text[i + 1] == '\n')
+						++i;
+					out.push_back(' ');
+					continue;
+				}
+				out.push_back(text[i]);
+			}
+			return out;
+		}
+
+		void ProcessFxDirectiveLine(const std::string& rawDirective, FxPreprocessorState& st)
+		{
+			std::string line = TrimStr(CollapseLineContinuations(rawDirective));
+			if (line.empty() || line[0] != '#')
+				return;
+
+			size_t p = 1;
+			while (p < line.size() && std::isspace(static_cast<unsigned char>(line[p])))
+				++p;
+			size_t kwStart = p;
+			while (p < line.size() && IsIdentChar(line[p]))
+				++p;
+			std::string kw = line.substr(kwStart, p - kwStart);
+			std::string rest = (p < line.size()) ? TrimStr(line.substr(p)) : "";
+
+			if (kw == "ifdef" || kw == "ifndef" || kw == "if")
+			{
+				FxCondFrame frame;
+				frame.parentActive = st.IsActive();
+				if (!frame.parentActive)
+				{
+					frame.branchTaken = true;
+					frame.currentlyActive = false;
+				}
+				else
+				{
+					bool cond = false;
+					if (kw == "ifdef" || kw == "ifndef")
+					{
+						size_t mp = 0;
+						while (mp < rest.size() && IsIdentChar(rest[mp]))
+							++mp;
+						std::string mname = rest.substr(0, mp);
+						bool exists = (st.macros.find(mname) != st.macros.end());
+						cond = (kw == "ifdef") ? exists : !exists;
+					}
+					else
+					{
+						cond = EvalFxIfExpr(rest, st.macros);
+					}
+					frame.branchTaken = cond;
+					frame.currentlyActive = cond;
+				}
+				st.condStack.push_back(frame);
+			}
+			else if (kw == "elif")
+			{
+				if (!st.condStack.empty())
+				{
+					FxCondFrame& f = st.condStack.back();
+					if (!f.parentActive || f.branchTaken)
+					{
+						f.currentlyActive = false;
+					}
+					else
+					{
+						bool cond = EvalFxIfExpr(rest, st.macros);
+						f.currentlyActive = cond;
+						if (cond)
+							f.branchTaken = true;
+					}
+				}
+			}
+			else if (kw == "else")
+			{
+				if (!st.condStack.empty())
+				{
+					FxCondFrame& f = st.condStack.back();
+					f.currentlyActive = f.parentActive && !f.branchTaken;
+					f.branchTaken = true;
+				}
+			}
+			else if (kw == "endif")
+			{
+				if (!st.condStack.empty())
+					st.condStack.pop_back();
+			}
+			else if (kw == "define" && st.IsActive())
+			{
+				size_t mp = 0;
+				while (mp < rest.size() && std::isspace(static_cast<unsigned char>(rest[mp])))
+					++mp;
+				if (mp >= rest.size() || !IsIdentStart(rest[mp]))
+					return;
+				size_t ns = mp++;
+				while (mp < rest.size() && IsIdentChar(rest[mp]))
+					++mp;
+				std::string mname = rest.substr(ns, mp - ns);
+
+				FxMacroDef def;
+				// Function-like macro ONLY if '(' immediately follows macro name with no whitespace
+				if (mp < rest.size() && rest[mp] == '(')
+				{
+					def.isFunc = true;
+					++mp; // skip '('
+					std::string curParam;
+					while (mp < rest.size() && rest[mp] != ')')
+					{
+						if (rest[mp] == ',')
+						{
+							std::string pn = TrimStr(curParam);
+							if (!pn.empty())
+								def.params.push_back(pn);
+							curParam.clear();
+						}
+						else
+						{
+							curParam.push_back(rest[mp]);
+						}
+						++mp;
+					}
+					std::string lastPn = TrimStr(curParam);
+					if (!lastPn.empty())
+						def.params.push_back(lastPn);
+					if (mp < rest.size() && rest[mp] == ')')
+						++mp;
+				}
+				def.body = (mp < rest.size()) ? TrimStr(rest.substr(mp)) : "";
+				st.macros[mname] = std::move(def);
+			}
+			else if (kw == "undef" && st.IsActive())
+			{
+				size_t mp = 0;
+				while (mp < rest.size() && IsIdentChar(rest[mp]))
+					++mp;
+				std::string mname = rest.substr(0, mp);
+				if (!mname.empty())
+					st.macros.erase(mname);
+			}
+		}
+
+		std::string PreprocessTechniqueBody(const std::string& techBody, FxPreprocessorState st)
+		{
+			std::string collapsed = CollapseLineContinuations(techBody);
+			std::istringstream iss(collapsed);
+			std::ostringstream activeLines;
+			std::string line;
+			while (std::getline(iss, line))
+			{
+				std::string trimmed = TrimStr(line);
+				if (!trimmed.empty() && trimmed[0] == '#')
+				{
+					ProcessFxDirectiveLine(trimmed, st);
+					activeLines << "\n";
+					continue;
+				}
+				if (st.IsActive())
+					activeLines << line << "\n";
+				else
+					activeLines << "\n";
+			}
+			return ExpandFxMacros(activeLines.str(), st.macros, false, 0);
+		}
 	}
 
 	std::string CFxParserV2::ResolveIncludes(
@@ -319,10 +997,11 @@ namespace ParaEngine
 		FxIncludeCallback includeResolver,
 		int depth)
 	{
+		std::string cleanRaw = StripUtf8Bom(rawSource);
 		if (depth > 16)
-			return rawSource;
+			return cleanRaw;
 
-		std::istringstream iss(rawSource);
+		std::istringstream iss(cleanRaw);
 		std::ostringstream oss;
 		std::string line;
 		while (std::getline(iss, line))
@@ -420,6 +1099,16 @@ namespace ParaEngine
 		int nextTextureOrder = 0;
 		int nextSamplerRegister = 0;
 
+		FxPreprocessorState ppState;
+		ppState.macros["SCALAR"] = { false, {}, "float" };
+		ppState.macros["SCALAR2"] = { false, {}, "float2" };
+		ppState.macros["SCALAR3"] = { false, {}, "float3" };
+		ppState.macros["SCALAR4"] = { false, {}, "float4" };
+		ppState.macros["SCALAR2x2"] = { false, {}, "float2x2" };
+		ppState.macros["SCALAR3x3"] = { false, {}, "float3x3" };
+		ppState.macros["SCALAR4x4"] = { false, {}, "float4x4" };
+		ppState.macros["dword"] = { false, {}, "uint" };
+
 		const size_t n = clean.size();
 		size_t pos = 0;
 
@@ -491,6 +1180,7 @@ namespace ParaEngine
 					++pos;
 				}
 				std::string ppLine = clean.substr(lineStart, pos - lineStart);
+				ProcessFxDirectiveLine(ppLine, ppState);
 				d3dOut << ppLine;
 				dxcOut << ppLine;
 				glslOut << ppLine;
@@ -524,7 +1214,16 @@ namespace ParaEngine
 				}
 				size_t techOpen = pos;
 				skipBalanced(pos, '{', '}');
-				std::string techBody = clean.substr(techOpen + 1, (pos - techOpen) - 2);
+				std::string rawTechBody = clean.substr(techOpen + 1, (pos - techOpen) - 2);
+				if (!ppState.IsActive())
+				{
+					size_t peekSemiInactive = pos;
+					skipWS(peekSemiInactive);
+					if (peekSemiInactive < n && clean[peekSemiInactive] == ';')
+						pos = peekSemiInactive + 1;
+					continue;
+				}
+				std::string techBody = PreprocessTechniqueBody(rawTechBody, ppState);
 
 				// Parse passes inside techBody
 				size_t tp = 0;

@@ -441,8 +441,7 @@ void ParaScripting::ParaAssetObject::SetTexture( int nIndex, const char* filenam
 
 		if(filename && filename[0]=='\0')
 		{
-			if (CGlobals::GetRenderDevice())
-				CGlobals::GetRenderDevice()->SetTexture(nIndex, nullptr);
+			((CEffectFile*)m_pAsset)->setTexture(nIndex, (DeviceTexturePtr_type)nullptr);
 		}
 		else
 		{
@@ -581,7 +580,6 @@ void ParaScripting::ParaParamBlock::SetMatrix43( const char* sParamName, const c
 		{
 			mat = Matrix4::IDENTITY;
 		}
-		mat = mat.transpose();
 		m_pParamBlock->SetParameter(sParamName, mat);
 	}
 }
