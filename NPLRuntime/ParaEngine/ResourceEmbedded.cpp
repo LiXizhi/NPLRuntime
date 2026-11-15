@@ -27,13 +27,39 @@ CStaticInitRes::CStaticInitRes()
 	ADD_RESOURCE(":IDR_SHADER_INC_LIGHT_SCATTERING_CONSTANTS", light_scattering_constants_h);
 	ADD_RESOURCE(":IDR_SHADER_INC_PATCH_DEFORM", patch_deform_h);
 	ADD_RESOURCE(":IDR_SHADER_INC_SIMPLE_MESH_NORMAL_VEGETATION", simple_mesh_normal_vegetation_h);
+	ADD_RESOURCE(":IDR_SHADER_INC_COMMON_DEFINE", CommonDefine_h);
+	ADD_RESOURCE(":IDR_SHADER_INC_COMMON_FUNCTION", CommonFunction_h);
+	ADD_RESOURCE(":IDR_SHADER_INC_FXAA", FXAA_h);
 
-	// Unified ParaRHI .fx shaders (all 37 shaders)
+	// Unified ParaRHI .fx shaders (core, GPU-skinned, instanced, Fancy MRT & post-processing)
 	ADD_RESOURCE(":IDR_FX_BMAXMODEL", BMaxModel_fx);
+	ADD_RESOURCE(":IDR_FX_BMAX_MODEL_SKINNED", bmax_model_skinned_fx);
+	ADD_RESOURCE(":IDR_FX_CARTOON_EFFECT", CartoonEffect_fx);
+	ADD_RESOURCE(":IDR_FX_CHARACTER_SKINNED", character_skinned_fx);
+	ADD_RESOURCE(":IDR_FX_COLOR_EFFECT", ColorEffect_fx);
+	ADD_RESOURCE(":IDR_FX_COMPOSITE", composite_fx);
+	ADD_RESOURCE(":IDR_FX_COMPOSITE_LITE", compositeLite_fx);
+	ADD_RESOURCE(":IDR_FX_DEFERRED_DIRECTIONAL_LIGHTING", DeferredShadingDirectionalLighting_fx);
+	ADD_RESOURCE(":IDR_FX_DEFERRED_POINT_LIGHTING", DeferredShadingPointLighting_fx);
+	ADD_RESOURCE(":IDR_FX_DEFERRED_SPOT_LIGHTING", DeferredShadingSpotLighting_fx);
+	ADD_RESOURCE(":IDR_FX_FINAL", final_fx);
+	ADD_RESOURCE(":IDR_FX_GREY", Grey_fx);
+	ADD_RESOURCE(":IDR_FX_GREY_BLUR", GreyBlur_fx);
 	ADD_RESOURCE(":IDR_FX_GUI_SIMPLE", GUI_simple_fx);
 	ADD_RESOURCE(":IDR_FX_GUI", GuiEffect_fx);
 	ADD_RESOURCE(":IDR_FX_GUI_TEXT", GuiTextEffect_fx);
+	ADD_RESOURCE(":IDR_FX_MRT_BLOCKS", mrt_blocks_fx);
+	ADD_RESOURCE(":IDR_FX_MRT_BMAX_MODEL", mrt_bmax_model_fx);
+	ADD_RESOURCE(":IDR_FX_MRT_BMAX_MODEL_SKINNED", mrt_bmax_model_skinned_fx);
+	ADD_RESOURCE(":IDR_FX_MRT_CHARACTER_SKINNED", mrt_character_skinned_fx);
+	ADD_RESOURCE(":IDR_FX_MRT_MESH_NORMAL", mrt_mesh_normal_fx);
+	ADD_RESOURCE(":IDR_FX_MRT_MESH_NORMAL_INSTANCED", mrt_mesh_normal_instanced_fx);
+	ADD_RESOURCE(":IDR_FX_MRT_TERRAIN_NORMAL", mrt_terrain_normal_fx);
+	ADD_RESOURCE(":IDR_FX_ODS_STEREO_SINGLE_EYE", ODSStereoSingleEye_fx);
 	ADD_RESOURCE(":IDR_FX_REDBLUESTEREO", RedBlueStereo_fx);
+	ADD_RESOURCE(":IDR_FX_SCENE_EFFECT", SceneEffect_fx);
+	ADD_RESOURCE(":IDR_FX_SUPER_MULTIVIEW_STEREO", SuperMultiviewStereo_fx);
+	ADD_RESOURCE(":IDR_FX_VIGNETTING", Vignetting_fx);
 	ADD_RESOURCE(":IDR_FX_BLOCK", blockEffect_fx);
 	ADD_RESOURCE(":IDR_FX_DROPSHADOW", dropShadow_fx);
 	ADD_RESOURCE(":IDR_FX_FULLSCREEN_GLOW", fullscreen_glow_fx);

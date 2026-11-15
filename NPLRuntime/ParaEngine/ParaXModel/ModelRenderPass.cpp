@@ -79,7 +79,7 @@ void ParaEngine::ModelRenderPass::deinit_bmax_FX(SceneState* pSceneState, CParam
 }
 
 
-bool ModelRenderPass::init_FX(CParaXModel *m, SceneState* pSceneState,CParameterBlock* pMaterialParams)
+bool ModelRenderPass::init_FX(CParaXModel *m, SceneState* pSceneState, CParameterBlock* pMaterialParams, bool bGpuSkinning)
 {
 	if(m->showGeosets[geoset] == false || indexCount == 0)
 		return false;
@@ -253,7 +253,7 @@ bool ModelRenderPass::init_FX(CParaXModel *m, SceneState* pSceneState,CParameter
 	/// Set the texture
 	pEffect->setTexture(0, bindtex);
 
-	if(is_rigid_body)
+	if (is_rigid_body && !bGpuSkinning)
 	{
 		if (m->GetObjectNum().nBones > 0)
 		{
@@ -275,12 +275,12 @@ bool ModelRenderPass::init_FX(CParaXModel *m, SceneState* pSceneState,CParameter
 
 	return true;
 }
-void ModelRenderPass::deinit_FX(SceneState* pSceneState, CParameterBlock* pMaterialParams /*= NULL*/)
+void ModelRenderPass::deinit_FX(SceneState* pSceneState, CParameterBlock* pMaterialParams /*= NULL*/, bool bGpuSkinning /*= false*/)
 {
 	RenderDevicePtr pd3dDevice = CGlobals::GetRenderDevice();
 	CEffectFile* pEffect = CGlobals::GetEffectManager()->GetCurrentEffectFile();
 	PE_ASSERT(pEffect!=0);
-	if(is_rigid_body)
+	if (is_rigid_body && !bGpuSkinning)
 	{
 		CGlobals::GetWorldMatrixStack().pop();
 		pEffect->applyWorldMatrices();

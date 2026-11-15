@@ -1,6 +1,7 @@
 #pragma once
 #include "BlockWorld.h"
 #include "effect_file.h"
+#include "3dengine/SoftwareOcclusionBuffer.h"
 
 namespace ParaEngine
 {
@@ -274,6 +275,10 @@ namespace ParaEngine
 		/** whether to use point texture filtering for all ui images rendered. */
 		bool GetUsePointTextureFiltering();
 		void SetUsePointTextureFiltering(bool bUse);
+
+		/** CPU software Hi-Z occlusion buffer populated by opaque block chunks each frame. */
+		CSoftwareOcclusionBuffer& GetSoftwareOccluder() { return m_softwareOccluder; }
+		const CSoftwareOcclusionBuffer& GetSoftwareOccluder() const { return m_softwareOccluder; }
 	protected:
 		virtual void UpdateActiveChunk();
 
@@ -357,6 +362,9 @@ namespace ParaEngine
 		asset_ptr<CEffectFile> m_block_effect_fancy;
 		asset_ptr<CEffectFile> m_normal_mesh_effect_fancy;
 		asset_ptr<CEffectFile> m_bmax_model_effect_fancy;
+		asset_ptr<CEffectFile> m_character_skinned_fancy;
+		asset_ptr<CEffectFile> m_bmax_skinned_fancy;
+		asset_ptr<CEffectFile> m_mesh_instanced_fancy;
 		asset_ptr<CEffectFile> m_terrain_fancy;
 
 		/** 3 kinds of light geometry shader in deferred shading */
@@ -369,7 +377,26 @@ namespace ParaEngine
 
 		/** deferred light geometry for {D3DLIGHT_POINT, D3DLIGHT_SPOT, D3DLIGHT_DIRECTIONAL} */
 		asset_ptr<CEffectFile> m_lightgeometry_effects[3];
+		ParaVertexBuffer m_lightSphereVB;
+		ParaIndexBuffer m_lightSphereIB;
+		uint32_t m_lightSphereVertCount = 0;
+		uint32_t m_lightSpherePrimCount = 0;
 		CMultiFrameBlockWorldRenderer* m_pMultiFrameRenderer;
+
+		struct BfsChunkNode
+		{
+			int16_t x;
+			int16_t y;
+			int16_t z;
+		};
+		CSoftwareOcclusionBuffer m_softwareOccluder;
+		std::vector<BfsChunkNode> m_bfsQueue;
+		std::vector<uint32_t> m_bfsVisitedGen;
+		std::vector<uint8_t> m_bfsEntryFaces;
+		uint32_t m_bfsGeneration = 0;
+		Matrix4 m_lastMainViewProj;
+		Vector3 m_lastMainEyePos;
+		bool m_bHasLastMainCameraState = false;
 
 		Uint16x3 m_damagedBlockId;
 		asset_ptr<TextureEntity> m_damageTexture;

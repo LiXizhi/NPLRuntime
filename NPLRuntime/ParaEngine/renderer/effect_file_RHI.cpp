@@ -110,13 +110,36 @@ namespace ParaEngine
 				{ "ocean_water_quad", ":IDR_FX_OCEANWATER_QUAD" },
 				{ "ocean_water_cloud", ":IDR_FX_OCEANWATER_CLOUD" },
 				{ "bmaxmodel", ":IDR_FX_BMAXMODEL" },
+				{ "bmax_model_skinned", ":IDR_FX_BMAX_MODEL_SKINNED" },
+				{ "character_skinned", ":IDR_FX_CHARACTER_SKINNED" },
 				{ "singlecoloreffect", ":IDR_FX_SINGLECOLOR" },
 				{ "guieffect", ":IDR_FX_GUI" },
 				{ "guitexteffect", ":IDR_FX_GUI_TEXT" },
 				{ "gui_simple", ":IDR_FX_GUI_SIMPLE" },
 				{ "redbluestereo", ":IDR_FX_REDBLUESTEREO" },
 				{ "simple_vs", ":IDR_FX_SIMPLE_VS" },
-				{ "unlit_texture", ":IDR_FX_UNLIT_TEXTURE" }
+				{ "unlit_texture", ":IDR_FX_UNLIT_TEXTURE" },
+				{ "cartooneffect", ":IDR_FX_CARTOON_EFFECT" },
+				{ "coloreffect", ":IDR_FX_COLOR_EFFECT" },
+				{ "deferredshadingdirectionallighting", ":IDR_FX_DEFERRED_DIRECTIONAL_LIGHTING" },
+				{ "deferredshadingpointlighting", ":IDR_FX_DEFERRED_POINT_LIGHTING" },
+				{ "deferredshadingspotlighting", ":IDR_FX_DEFERRED_SPOT_LIGHTING" },
+				{ "grey", ":IDR_FX_GREY" },
+				{ "greyblur", ":IDR_FX_GREY_BLUR" },
+				{ "odsstereosingleeye", ":IDR_FX_ODS_STEREO_SINGLE_EYE" },
+				{ "sceneeffect", ":IDR_FX_SCENE_EFFECT" },
+				{ "supermultiviewstereo", ":IDR_FX_SUPER_MULTIVIEW_STEREO" },
+				{ "vignetting", ":IDR_FX_VIGNETTING" },
+				{ "composite", ":IDR_FX_COMPOSITE" },
+				{ "compositelite", ":IDR_FX_COMPOSITE_LITE" },
+				{ "final", ":IDR_FX_FINAL" },
+				{ "mrt_blocks", ":IDR_FX_MRT_BLOCKS" },
+				{ "mrt_bmax_model", ":IDR_FX_MRT_BMAX_MODEL" },
+				{ "mrt_bmax_model_skinned", ":IDR_FX_MRT_BMAX_MODEL_SKINNED" },
+				{ "mrt_character_skinned", ":IDR_FX_MRT_CHARACTER_SKINNED" },
+				{ "mrt_mesh_normal", ":IDR_FX_MRT_MESH_NORMAL" },
+				{ "mrt_mesh_normal_instanced", ":IDR_FX_MRT_MESH_NORMAL_INSTANCED" },
+				{ "mrt_terrain_normal", ":IDR_FX_MRT_TERRAIN_NORMAL" }
 			};
 			for (const auto& entry : kMap)
 			{
@@ -156,6 +179,27 @@ namespace ParaEngine
 		{
 			std::string parentDir = ParentDirOf(parentFilePath);
 			return [parentDir](const std::string& includePath, const std::string& /*parentSource*/, std::string& outContent) -> bool {
+				std::string incLower = ToLowerStr(includePath);
+				size_t slash = incLower.find_last_of("/\\");
+				if (slash != std::string::npos)
+					incLower = incLower.substr(slash + 1);
+
+				if (incLower == "commondefine.h" || incLower == "commondefine.fx")
+				{
+					if (TryReadParaFile(":IDR_SHADER_INC_COMMON_DEFINE", outContent))
+						return true;
+				}
+				if (incLower == "commonfunction.h" || incLower == "commonfunction.fx")
+				{
+					if (TryReadParaFile(":IDR_SHADER_INC_COMMON_FUNCTION", outContent))
+						return true;
+				}
+				if (incLower == "fxaa.h" || incLower == "fxaa.hlsl")
+				{
+					if (TryReadParaFile(":IDR_SHADER_INC_FXAA", outContent))
+						return true;
+				}
+
 				if (!parentDir.empty() && TryReadParaFile(parentDir + includePath, outContent))
 					return true;
 				if (TryReadParaFile("shaders/fx/" + includePath, outContent))
@@ -164,11 +208,6 @@ namespace ParaEngine
 					return true;
 				if (TryReadParaFile(includePath, outContent))
 					return true;
-
-				std::string incLower = ToLowerStr(includePath);
-				size_t slash = incLower.find_last_of("/\\");
-				if (slash != std::string::npos)
-					incLower = incLower.substr(slash + 1);
 
 				if (incLower == "common_shader_data.h")
 					return TryReadParaFile(":IDR_SHADER_INC_COMMON_SHADER_DATA", outContent);
@@ -436,10 +475,22 @@ namespace ParaEngine
 
 		std::string fileBytes;
 		std::string resolvedName = m_filename;
-		const std::string lowerFile = ToLowerStr(m_filename);
+		std::string lowerFile = ToLowerStr(m_filename);
+		std::replace(lowerFile.begin(), lowerFile.end(), '\\', '/');
 		const bool endsWithFxo = lowerFile.size() > 4 && lowerFile.substr(lowerFile.size() - 4) == ".fxo";
 
-		if (endsWithFxo)
+		// Transparently replace script/apps/Aries/Creator/Game/Shaders/... with embedded unified runtime shaders
+		// so legacy Paraworld script shaders stay untouched for the old D3D9 client.
+		if (lowerFile.find("script/apps/aries/creator/game/shaders/") != std::string::npos)
+		{
+			const char* builtinRes = BuiltinEmbeddedByStem(BaseStemLower(m_filename));
+			if (builtinRes && TryReadParaFile(builtinRes, fileBytes))
+			{
+				resolvedName = builtinRes;
+			}
+		}
+
+		if (fileBytes.empty() && endsWithFxo)
 		{
 			if (!TryReadParaFile(ReplaceExt(m_filename, ".pfx"), fileBytes))
 			{

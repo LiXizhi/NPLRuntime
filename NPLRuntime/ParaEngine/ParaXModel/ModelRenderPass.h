@@ -43,8 +43,8 @@ namespace ParaEngine
 		void deinit();
 
 		/// for programmable pipeline
-		bool init_FX(CParaXModel* m, SceneState* pSceneState, CParameterBlock* pMaterialParams = NULL);
-		void deinit_FX(SceneState* pSceneState, CParameterBlock* pMaterialParams = NULL);
+		bool init_FX(CParaXModel* m, SceneState* pSceneState, CParameterBlock* pMaterialParams = NULL, bool bGpuSkinning = false);
+		void deinit_FX(SceneState* pSceneState, CParameterBlock* pMaterialParams = NULL, bool bGpuSkinning = false);
 
 		/// for programmable pipeline
 		bool init_bmax_FX(CParaXModel* m, SceneState* pSceneState, CParameterBlock* pMaterialParams = NULL);

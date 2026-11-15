@@ -33,12 +33,15 @@ namespace ParaEngine
 		uint32_t maxTextureStages = 8;           // >= 8 enables 8-stage GeoMipmap terrain splatting
 		uint32_t maxTextureSize = 4096;
 		uint32_t maxAnisotropy = 1;
+		uint32_t maxVertexUniformVectors = 256;  // Max float4 VS constant registers (256 on SM2/FL9_x/GLES2)
 		bool supportsFloatRenderTargets = false; // R32F / RGBA16F (ShadowMaps, Depth MRT, HDR)
 		bool supportsDepthTextures = false;      // Hardware depth-texture shadow comparison
 		bool supportsInstancing = false;         // Hardware mesh & block instancing
 		bool supportsOcclusionQuery = false;     // LatentOcclusionQueryBank GPU occlusion culling
 		bool supportsTwoSidedStencil = false;    // ShadowVolume stencil shadows
 		bool supportsUserClipPlanes = false;     // Planar mirrors & water reflection clip plane
+		bool supports32BitIndices = true;        // false on D3D11 FL 9_1 & unextended GLES 2.0
+		bool isSoftwareAdapter = false;          // WARP / Basic Render Driver / llvmpipe / SwiftShader
 		bool supportsBCCompression = false;      // Native DXT1/3/5/BC7; false triggers CPU S3TC decode
 		bool supportsETC2Compression = false;    // Native ETC1/ETC2
 		bool supportsASTCCompression = false;    // Native ASTC
@@ -70,6 +73,30 @@ namespace ParaEngine
 			default:
 				return 0;
 			}
+		}
+
+		/** True for DirectX 9-class / Shader Model 2 / GLES 2.0 / OpenGL 2.x hardware. */
+		bool IsDX9ClassDevice() const
+		{
+			if (backend == ERHIBackend::Null)
+				return false;
+			return GetShaderModelMajor() < 3 || maxSimultaneousRTs < 4;
+		}
+
+		/** True when advanced GPU techniques (Deferred MRT, ShadowMaps, Reflections, Glow, GPU Queries) should be disabled. */
+		bool IsLowEndDevice() const
+		{
+			if (backend == ERHIBackend::Null)
+				return false;
+			return IsDX9ClassDevice() || isSoftwareAdapter || !supports32BitIndices || maxVertexUniformVectors < 256;
+		}
+
+		/** Maximum bone matrices (3 float4 rows per bone = 174 registers at 58 bones) safe for hardware vertex skinning. */
+		uint32_t GetMaxGpuSkinningBones() const
+		{
+			if (maxVertexUniformVectors < 192)
+				return 0;
+			return 58u;
 		}
 	};
 

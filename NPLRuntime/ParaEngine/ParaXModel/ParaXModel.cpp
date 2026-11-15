@@ -27,6 +27,7 @@
 #include "glTFModelExporter.h"
 #include "ParaVoxelModel.h"
 #include "GltfModel.h"
+#include "ParaEngineSettings.h"
 
 /** def this, if one wants the animation to be very accurate. */
 //#define	ONLY_REMOVE_EQUAL_KEYS
@@ -142,6 +143,10 @@ CParaXModel::~CParaXModel(void)
 
 		m_pIndexBuffer.ReleaseBuffer();
 		m_pVertexBuffer.ReleaseBuffer();
+		m_pGpuSkinIB.ReleaseBuffer();
+		m_pGpuSkinVB.ReleaseBuffer();
+		m_bGpuSkinBufferBuilt = false;
+		m_bGpuSkinBufferFailed = false;
 
 		if (GetObjectNum().nTextures) {
 			for (size_t i = 0; i < GetObjectNum().nTextures; i++) {
@@ -229,6 +234,10 @@ bool CParaXModel::InitDeviceObjects()
 
 bool CParaXModel::DeleteDeviceObjects()
 {
+	m_pGpuSkinIB.ReleaseBuffer();
+	m_pGpuSkinVB.ReleaseBuffer();
+	m_bGpuSkinBufferBuilt = false;
+	m_bGpuSkinBufferFailed = false;
 	return true;
 }
 
@@ -495,6 +504,11 @@ void CParaXModel::initVertices(int nVertices, ModelVertex* pVertices)
 	m_objNum.nVertices = nVertices;
 	SAFE_DELETE_ARRAY(m_origVertices);
 	SAFE_DELETE_ARRAY(m_frame_number_vertices);
+	SAFE_DELETE_ARRAY(m_vertices);
+	SAFE_DELETE_ARRAY(m_normals);
+	m_pGpuSkinVB.ReleaseBuffer();
+	m_bGpuSkinBufferBuilt = false;
+	m_bGpuSkinBufferFailed = false;
 
 	// radius
 	m_radius = (m_header.maxExtent - m_header.minExtent).length() / 2;
@@ -505,18 +519,12 @@ void CParaXModel::initVertices(int nVertices, ModelVertex* pVertices)
 		m_origVertices = new ModelVertex[nVertices];
 		if (m_origVertices != 0)
 			memcpy(m_origVertices, pVertices, nVertices * sizeof(ModelVertex));
-		if (m_RenderMethod != BMAX_MODEL && m_RenderMethod != NO_ANIM)
+		if (m_RenderMethod == SOFT_ANIM || (m_RenderMethod == BMAX_MODEL && animated && animBones))
 		{
 			m_frame_number_vertices = new int[nVertices];
 			memset(m_frame_number_vertices, 0, sizeof(int) * nVertices);
 			m_vertices = new Vector3[nVertices];
 			m_normals = new Vector3[nVertices];
-		}
-		else
-		{
-			SAFE_DELETE_ARRAY(m_frame_number_vertices);
-			SAFE_DELETE_ARRAY(m_vertices);
-			SAFE_DELETE_ARRAY(m_normals);
 		}
 	}
 	else if (m_RenderMethod == SHADER_ANIM)
@@ -569,6 +577,9 @@ void CParaXModel::initIndices(int nIndices, uint16* pIndices)
 	// delete old
 	m_objNum.nIndices = nIndices;
 	SAFE_DELETE_ARRAY(m_indices);
+	m_pGpuSkinIB.ReleaseBuffer();
+	m_bGpuSkinBufferBuilt = false;
+	m_bGpuSkinBufferFailed = false;
 	if (m_RenderMethod == SOFT_ANIM || m_RenderMethod == NO_ANIM || m_RenderMethod == BMAX_MODEL)
 	{
 		m_indices = new uint16[nIndices];
@@ -1487,6 +1498,8 @@ void CParaXModel::DrawPass_BMax(ModelRenderPass& p)
 	int nNumLockedVertice;
 	int nNumFinishedVertice = 0;
 	DynamicVertexBufferEntity* pBufEntity = CGlobals::GetAssetManager()->GetDynamicBuffer(DVB_XYZ_NORM_DIF);
+	const bool bUseVertexSkinCache = (m_frame_number_vertices != NULL && m_vertices != NULL && m_normals != NULL);
+	const uint32 nMaxBoneIdx = (m_objNum.nBones > 0) ? (m_objNum.nBones - 1) : 0;
 	do
 	{
 		if ((nNumLockedVertice = pBufEntity->Lock((p.indexCount - nNumFinishedVertice),
@@ -1494,34 +1507,49 @@ void CParaXModel::DrawPass_BMax(ModelRenderPass& p)
 		{
 			int nLockedNum = nNumLockedVertice / 3;
 
-			bmax_vertex  vertex;
 			int nIndexOffset = p.m_nIndexStart + nNumFinishedVertice;
 			int nVertexOffset = p.GetVertexStart(this);
 			ModelVertex* origVertices = m_origVertices + nVertexOffset;
-			if (HasAnimation())
+			if (HasAnimation() && m_objNum.nBones > 0 && bones != NULL)
 			{
 				for (int i = 0; i < nLockedNum; ++i)
 				{
 					int nVB = 3 * i;
 					for (int k = 0; k < 3; ++k, ++nVB)
 					{
-						int a = m_indices[nIndexOffset + nVB];
+						int localIdx = m_indices[nIndexOffset + nVB];
+						int absIdx = localIdx + nVertexOffset;
 						bmax_vertex& out_vertex = vb_vertices[nVB];
-						// weighted vertex
-						ov = origVertices + a;
+						ov = origVertices + localIdx;
 
-						float weight = ov->weights[0] * (1 / 255.0f);
-						Bone& bone = bones[ov->bones[0]];
-						Vector3 v = (ov->pos * bone.mat) * weight;
-						Vector3 n = ov->normal.TransformNormal(bone.mrot) * weight;
-						for (int b = 1; b < 4 && ov->weights[b]>0; b++) {
-							weight = ov->weights[b] * (1 / 255.0f);
-							Bone& bone = bones[ov->bones[b]];
-							v += (ov->pos * bone.mat) * weight;
-							n += ov->normal.TransformNormal(bone.mrot) * weight;
+						if (bUseVertexSkinCache && m_frame_number_vertices[absIdx] == m_nCurrentFrameNumber)
+						{
+							out_vertex.p = m_vertices[absIdx];
+							out_vertex.n = m_normals[absIdx];
 						}
-						out_vertex.p = v;
-						out_vertex.n = n;
+						else
+						{
+							uint8 b0 = (ov->bones[0] <= nMaxBoneIdx) ? ov->bones[0] : 0;
+							float weight = ov->weights[0] * (1 / 255.0f);
+							Bone& bone = bones[b0];
+							Vector3 v = (ov->pos * bone.mat) * weight;
+							Vector3 n = ov->normal.TransformNormal(bone.mrot) * weight;
+							for (int b = 1; b < 4 && ov->weights[b] > 0; b++) {
+								uint8 bi = (ov->bones[b] <= nMaxBoneIdx) ? ov->bones[b] : 0;
+								weight = ov->weights[b] * (1 / 255.0f);
+								Bone& boneExtra = bones[bi];
+								v += (ov->pos * boneExtra.mat) * weight;
+								n += ov->normal.TransformNormal(boneExtra.mrot) * weight;
+							}
+							out_vertex.p = v;
+							out_vertex.n = n;
+							if (bUseVertexSkinCache)
+							{
+								m_frame_number_vertices[absIdx] = m_nCurrentFrameNumber;
+								m_vertices[absIdx] = v;
+								m_normals[absIdx] = n;
+							}
+						}
 						out_vertex.color = ov->color0;
 					}
 				}
@@ -1667,45 +1695,378 @@ void CParaXModel::DrawPass(ModelRenderPass& p)
 	} while (1);
 }
 
-void CParaXModel::RenderShaderAnim(SceneState* pSceneState)
+bool CParaXModel::CanUseGpuSkinning() const
 {
+	if (m_bGpuSkinBufferFailed)
+		return false;
+	if (!animated || !animBones || animGeometry)
+		return false;
+	if (m_origVertices == NULL || m_indices == NULL || bones == NULL)
+		return false;
+	if (m_objNum.nVertices == 0 || m_objNum.nIndices == 0 || m_objNum.nBones == 0)
+		return false;
+	if (CGlobals::GetSettings().IsLowEndRenderDevice())
+		return false;
+	auto* pDevice = CGlobals::GetRenderDevice();
+	if (!pDevice)
+		return false;
+	const int maxGpuBones = pDevice->GetCaps().GetMaxGpuSkinningBones();
+	return maxGpuBones > 0 && static_cast<int>(m_objNum.nBones) <= maxGpuBones;
+}
 
+bool CParaXModel::EnsureGpuSkinBuffers()
+{
+	if (m_bGpuSkinBufferBuilt && m_pGpuSkinVB.IsValid() && m_pGpuSkinIB.IsValid())
+		return true;
+	if (m_bGpuSkinBufferFailed || m_origVertices == NULL || m_indices == NULL || m_objNum.nVertices == 0 || m_objNum.nIndices == 0 || m_objNum.nBones == 0)
+		return false;
+
+	m_pGpuSkinVB.ReleaseBuffer();
+	m_pGpuSkinIB.ReleaseBuffer();
+
+	const uint32 nVerts = m_objNum.nVertices;
+	const uint32 nIndices = m_objNum.nIndices;
+	const uint8 maxBoneIdx = (m_objNum.nBones - 1 < 255) ? static_cast<uint8>(m_objNum.nBones - 1) : static_cast<uint8>(255);
+
+	if (IsBmaxModel())
+	{
+		if (!m_pGpuSkinVB.CreateBuffer(nVerts * sizeof(bmax_vertex_skinned), 0, D3DUSAGE_WRITEONLY))
+		{
+			m_bGpuSkinBufferFailed = true;
+			return false;
+		}
+		bmax_vertex_skinned* pVerts = NULL;
+		if (!m_pGpuSkinVB.Lock((void**)&pVerts, 0, 0) || !pVerts)
+		{
+			m_pGpuSkinVB.ReleaseBuffer();
+			m_bGpuSkinBufferFailed = true;
+			return false;
+		}
+		for (uint32 i = 0; i < nVerts; ++i)
+		{
+			const ModelVertex& src = m_origVertices[i];
+			bmax_vertex_skinned& dst = pVerts[i];
+			dst.p = src.pos;
+			dst.n = src.normal;
+			dst.color = src.color0;
+			for (int k = 0; k < 4; ++k)
+			{
+				dst.weights[k] = src.weights[k];
+				dst.bones[k] = (src.bones[k] <= maxBoneIdx) ? src.bones[k] : 0;
+			}
+		}
+		m_pGpuSkinVB.Unlock();
+	}
+	else
+	{
+		if (!m_pGpuSkinVB.CreateBuffer(nVerts * sizeof(mesh_vertex_normal_skinned), 0, D3DUSAGE_WRITEONLY))
+		{
+			m_bGpuSkinBufferFailed = true;
+			return false;
+		}
+		mesh_vertex_normal_skinned* pVerts = NULL;
+		if (!m_pGpuSkinVB.Lock((void**)&pVerts, 0, 0) || !pVerts)
+		{
+			m_pGpuSkinVB.ReleaseBuffer();
+			m_bGpuSkinBufferFailed = true;
+			return false;
+		}
+		for (uint32 i = 0; i < nVerts; ++i)
+		{
+			const ModelVertex& src = m_origVertices[i];
+			mesh_vertex_normal_skinned& dst = pVerts[i];
+			dst.p = src.pos;
+			dst.n = src.normal;
+			dst.uv = src.texcoords;
+			for (int k = 0; k < 4; ++k)
+			{
+				dst.weights[k] = src.weights[k];
+				dst.bones[k] = (src.bones[k] <= maxBoneIdx) ? src.bones[k] : 0;
+			}
+		}
+		m_pGpuSkinVB.Unlock();
+	}
+
+	if (!m_pGpuSkinIB.CreateIndexBuffer(sizeof(uint16) * nIndices, D3DFMT_INDEX16, D3DUSAGE_WRITEONLY))
+	{
+		m_pGpuSkinVB.ReleaseBuffer();
+		m_bGpuSkinBufferFailed = true;
+		return false;
+	}
+	uint16* pIndexData = NULL;
+	if (!m_pGpuSkinIB.Lock((void**)&pIndexData, 0, 0) || !pIndexData)
+	{
+		m_pGpuSkinIB.ReleaseBuffer();
+		m_pGpuSkinVB.ReleaseBuffer();
+		m_bGpuSkinBufferFailed = true;
+		return false;
+	}
+	memcpy(pIndexData, m_indices, sizeof(uint16) * nIndices);
+	m_pGpuSkinIB.Unlock();
+
+	m_bGpuSkinBufferBuilt = true;
+	return true;
+}
+
+void CParaXModel::UploadBonePalette(CEffectFile* pEffect) const
+{
+	if (!pEffect || !bones || m_objNum.nBones == 0)
+		return;
+	const uint32 nBones = (m_objNum.nBones < 58) ? static_cast<uint32>(m_objNum.nBones) : static_cast<uint32>(58);
+	Vector4 palette[58 * 3];
+	for (uint32 i = 0; i < nBones; ++i)
+	{
+		const Matrix4& m = bones[i].mat;
+		palette[i * 3 + 0] = Vector4(m._11, m._21, m._31, m._41);
+		palette[i * 3 + 1] = Vector4(m._12, m._22, m._32, m._42);
+		palette[i * 3 + 2] = Vector4(m._13, m._23, m._33, m._43);
+	}
+	pEffect->setVectorArray(CEffectFile::k_worldMatrixArray, palette, nBones * 3);
+}
+
+void CParaXModel::RenderShaderAnim(SceneState* pSceneState, CParameterBlock* pMaterialParams)
+{
+	int nPasses = (int)passes.size();
+	if (nPasses <= 0)
+		return;
+
+	CEffectFile* pEffect = CGlobals::GetEffectManager()->GetCurrentEffectFile();
+	if (pEffect == 0 || !CanUseGpuSkinning() || !EnsureGpuSkinBuffers())
+	{
+		RenderSoftAnim(pSceneState, pMaterialParams);
+		return;
+	}
+
+	RenderDevicePtr pd3dDevice = CGlobals::GetRenderDevice();
+	pd3dDevice->SetStreamSource(0, m_pGpuSkinVB.GetDevicePointer(), 0, sizeof(mesh_vertex_normal_skinned));
+	pd3dDevice->SetIndices(m_pGpuSkinIB.GetDevicePointer());
+
+	UploadBonePalette(pEffect);
+
+	int nEffectPass = GetRenderPass(pMaterialParams);
+	const bool bForcePassSwitch = (nEffectPass != 0);
+	if (pEffect->begin())
+	{
+		if (pEffect->BeginPass(nEffectPass, bForcePassSwitch))
+		{
+			for (int nPass = 0; nPass < nPasses; nPass++)
+			{
+				ModelRenderPass& p = passes[nPass];
+				if (p.geoset >= 0 && showGeosets[p.geoset])
+				{
+					// skip and build for translucent pass
+					if (pSceneState->m_bEnableTranslucentFaceSorting &&
+						((int)m_TranslucentPassIndice.size()) > nPass && m_TranslucentPassIndice[nPass] >= 0)
+					{
+						if (!pSceneState->IsIgnoreTransparent())
+						{
+							float alpha = 1.f;
+							if (p.opacity != -1)
+							{
+								alpha = transparency[p.opacity].trans.getValue(m_CurrentAnim);
+								if (alpha < 0)
+									continue;
+							}
+
+							Matrix4 mat = CGlobals::GetWorldMatrixStack().top();
+							const ModelVertex& ov = m_origVertices[m_indices[p.m_nIndexStart] + p.GetVertexStart(this)];
+							if (ov.weights[0] > 0 && m_faceGroups[m_TranslucentPassIndice[nPass]]->m_bSkinningAni == false)
+							{
+								Matrix4 matLocal = bones[ov.bones[0]].mat * ((float)ov.weights[0] * (1 / 255.0f));
+								for (int b = 1; b < 4 && ov.weights[b] > 0; b++) {
+									matLocal += bones[ov.bones[b]].mat * ((float)ov.weights[b] * (1 / 255.0f));
+								}
+								mat = matLocal * mat;
+							}
+							CFaceGroupInstance faceGroup(&mat, m_faceGroups[m_TranslucentPassIndice[nPass]]);
+							if (p.texanim != -1) {
+								const TextureAnim& texAnim = texanims[p.texanim];
+								faceGroup.m_vUVOffset.x = texAnim.tval.x;
+								faceGroup.m_vUVOffset.y = texAnim.tval.y;
+								faceGroup.m_vUVRotate = texAnim.rval;
+								if (texAnim.scale.used)
+								{
+									faceGroup.m_vUVScale.x = texAnim.sval.x;
+									faceGroup.m_vUVScale.y = texAnim.sval.y;
+								}
+								if (animTexRGB)
+									faceGroup.m_UVRgbAnim = true;
+							}
+							faceGroup.m_fAlpha = alpha;
+							faceGroup.m_bones = bones;
+							pSceneState->GetFaceGroups()->AddFaceGroup(faceGroup);
+						}
+						continue;
+					}
+
+					if (p.init_FX(this, pSceneState, pMaterialParams, true))
+					{
+						if (p.indexCount > 0)
+						{
+							pEffect->onDrawPass(pMaterialParams, nPass);
+							pEffect->CommitChanges();
+							int32 vStart = p.GetVertexStart(this);
+							uint32 numVerts = (m_objNum.nVertices > (uint32)vStart) ? (m_objNum.nVertices - (uint32)vStart) : m_objNum.nVertices;
+							RenderDevice::DrawIndexedPrimitive(pd3dDevice, RenderDevice::DRAW_PERF_TRIANGLES_CHARACTER, EPrimitiveType::TRIANGLELIST, vStart, 0, numVerts, p.m_nIndexStart, p.indexCount / 3);
+						}
+						p.deinit_FX(pSceneState, pMaterialParams, true);
+					}
+				}
+			}
+			pEffect->EndPass(bForcePassSwitch);
+			if (bForcePassSwitch && pEffect->IsInShareMode())
+				pEffect->BeginPass(0, true);
+		}
+		pEffect->end();
+	}
+	pd3dDevice->SetIndices(0);
+}
+
+void CParaXModel::RenderBMaxGpuSkinned(SceneState* pSceneState, CParameterBlock* pMaterialParams)
+{
+	int nPasses = (int)passes.size();
+	if (nPasses <= 0)
+		return;
+
+	CEffectFile* pEffect = CGlobals::GetEffectManager()->GetCurrentEffectFile();
+	if (pEffect == 0)
+		return;
+
+	RenderDevicePtr pd3dDevice = CGlobals::GetRenderDevice();
+	pd3dDevice->SetStreamSource(0, m_pGpuSkinVB.GetDevicePointer(), 0, sizeof(bmax_vertex_skinned));
+	pd3dDevice->SetIndices(m_pGpuSkinIB.GetDevicePointer());
+
+	UploadBonePalette(pEffect);
+
+	int nEffectPass = GetRenderPass(pMaterialParams);
+	const bool bForcePassSwitch = (nEffectPass != 0);
+	if (pEffect->begin())
+	{
+		if (pEffect->BeginPass(nEffectPass, bForcePassSwitch))
+		{
+			for (int nPass = 0; nPass < nPasses; nPass++)
+			{
+				ModelRenderPass& p = passes[nPass];
+				if (p.geoset >= 0 && showGeosets[p.geoset])
+				{
+					if (p.init_bmax_FX(this, pSceneState, pMaterialParams))
+					{
+						if (p.indexCount > 0)
+						{
+							pEffect->CommitChanges();
+							int32 vStart = p.GetVertexStart(this);
+							uint32 numVerts = (m_objNum.nVertices > (uint32)vStart) ? (m_objNum.nVertices - (uint32)vStart) : m_objNum.nVertices;
+							RenderDevice::DrawIndexedPrimitive(pd3dDevice, RenderDevice::DRAW_PERF_TRIANGLES_CHARACTER, EPrimitiveType::TRIANGLELIST, vStart, 0, numVerts, p.m_nIndexStart, p.indexCount / 3);
+						}
+						p.deinit_bmax_FX(pSceneState);
+					}
+				}
+			}
+			pEffect->EndPass(bForcePassSwitch);
+			if (bForcePassSwitch && pEffect->IsInShareMode())
+				pEffect->BeginPass(0, true);
+		}
+		pEffect->end();
+	}
+	pd3dDevice->SetIndices(0);
 }
 
 void CParaXModel::drawModel(SceneState* pSceneState, CParameterBlock* pMaterialParam, int nRenderMethod)
 {
 	if (passes.size() == 0 && m_pVoxelModel == NULL)
 		return;
-	CEffectFile* pEffect = CGlobals::GetEffectManager()->GetCurrentEffectFile();
-	if (pEffect == 0)
-		CGlobals::GetRenderDevice()->SetTransform(ETransformsStateType::WORLD, CGlobals::GetWorldMatrixStack().SafeGetTop().GetConstPointer());
-	else
-	{
-		/// apply surface materials
-		bool bEnableLight = pSceneState->GetScene()->IsLightEnabled();
-		if (bEnableLight)
-		{
-			ParaMaterial mat = pSceneState->GetCurrentMaterial();
-			if (!pSceneState->HasLocalMaterial())
-				mat.Diffuse = LinearColor(1.f, 1.f, 1.f, 1.f);
-			pEffect->applySurfaceMaterial(&mat);
-		}
-		else
-		{
-			ParaMaterial mat = pSceneState->GetCurrentMaterial();
-			if (!pSceneState->HasLocalMaterial())
-			{
-				mat.Ambient = LinearColor(0.6f, 0.6f, 0.6f, 1.f); // shall we use ambient to simulate lighting, when lighting is disabled.
-				mat.Diffuse = LinearColor(1.f, 1.f, 1.f, 1.f);
-			}
-			pEffect->applySurfaceMaterial(&mat);
-		}
-	}
-
-
 
 	if (nRenderMethod < 0)
 		nRenderMethod = m_RenderMethod;
+
+	EffectManager* pEffectMgr = CGlobals::GetEffectManager();
+	const int nPrevTechHandle = pEffectMgr->GetCurrentTechHandle();
+	bool bSwitchedTech = false;
+	bool bUseBMaxGpuSkin = false;
+
+	if (pEffectMgr->GetCurrentEffectFile() != 0 && CanUseGpuSkinning())
+	{
+		if (nRenderMethod == SOFT_ANIM || nRenderMethod == SHADER_ANIM)
+		{
+			if ((nPrevTechHandle == TECH_CHARACTER || nPrevTechHandle == TECH_SIMPLE_MESH_NORMAL || nPrevTechHandle == TECH_CHARACTER_SKINNED) &&
+				EnsureGpuSkinBuffers())
+			{
+				if (nPrevTechHandle != TECH_CHARACTER_SKINNED)
+				{
+					if (pEffectMgr->BeginEffect(TECH_CHARACTER_SKINNED, &(pSceneState->m_pCurrentEffect)) &&
+						pEffectMgr->GetCurrentEffectFile() != 0)
+					{
+						bSwitchedTech = true;
+						pEffectMgr->applyLocalLightingData();
+						nRenderMethod = SHADER_ANIM;
+					}
+					else
+					{
+						pEffectMgr->BeginEffect(nPrevTechHandle, &(pSceneState->m_pCurrentEffect));
+					}
+				}
+				else
+				{
+					nRenderMethod = SHADER_ANIM;
+				}
+			}
+		}
+		else if (nRenderMethod == BMAX_MODEL && !passes.empty())
+		{
+			if ((nPrevTechHandle == TECH_BMAX_MODEL || nPrevTechHandle == TECH_BMAX_SKINNED) &&
+				EnsureGpuSkinBuffers())
+			{
+				if (nPrevTechHandle != TECH_BMAX_SKINNED)
+				{
+					if (pEffectMgr->BeginEffect(TECH_BMAX_SKINNED, &(pSceneState->m_pCurrentEffect)) &&
+						pEffectMgr->GetCurrentEffectFile() != 0)
+					{
+						bSwitchedTech = true;
+						pEffectMgr->applyLocalLightingData();
+						bUseBMaxGpuSkin = true;
+					}
+					else
+					{
+						pEffectMgr->BeginEffect(nPrevTechHandle, &(pSceneState->m_pCurrentEffect));
+					}
+				}
+				else
+				{
+					bUseBMaxGpuSkin = true;
+				}
+			}
+		}
+	}
+
+	auto applySurfaceMaterialToCurrentEffect = [&]()
+	{
+		CEffectFile* pCurEffect = pEffectMgr->GetCurrentEffectFile();
+		if (pCurEffect == 0)
+		{
+			CGlobals::GetRenderDevice()->SetTransform(ETransformsStateType::WORLD, CGlobals::GetWorldMatrixStack().SafeGetTop().GetConstPointer());
+		}
+		else
+		{
+			bool bEnableLight = pSceneState->GetScene()->IsLightEnabled();
+			ParaMaterial mat = pSceneState->GetCurrentMaterial();
+			if (bEnableLight)
+			{
+				if (!pSceneState->HasLocalMaterial())
+					mat.Diffuse = LinearColor(1.f, 1.f, 1.f, 1.f);
+			}
+			else
+			{
+				if (!pSceneState->HasLocalMaterial())
+				{
+					mat.Ambient = LinearColor(0.6f, 0.6f, 0.6f, 1.f); // shall we use ambient to simulate lighting, when lighting is disabled.
+					mat.Diffuse = LinearColor(1.f, 1.f, 1.f, 1.f);
+				}
+			}
+			pCurEffect->applySurfaceMaterial(&mat);
+		}
+	};
+
+	applySurfaceMaterialToCurrentEffect();
 
 	if (m_vbState == NOT_SET)
 	{
@@ -1727,24 +2088,60 @@ void CParaXModel::drawModel(SceneState* pSceneState, CParameterBlock* pMaterialP
 	switch (nRenderMethod)
 	{
 	case SHADER_ANIM:
-		RenderShaderAnim(pSceneState);
+		RenderShaderAnim(pSceneState, pMaterialParam);
 		break;
 	case SOFT_ANIM:
 		RenderSoftAnim(pSceneState, pMaterialParam);
 		break;
 	case NO_ANIM:
-	{
 		RenderSoftNoAnim(pSceneState, pMaterialParam);
-	}
-	break;
+		break;
 	case BMAX_MODEL:
-	{
-		RenderBMaxModel(pSceneState, pMaterialParam);
-	}
-
-	break;
+		if (bUseBMaxGpuSkin)
+		{
+			RenderBMaxGpuSkinned(pSceneState, pMaterialParam);
+			if (m_pVoxelModel)
+			{
+				if (bSwitchedTech)
+				{
+					pEffectMgr->BeginEffect(nPrevTechHandle, &(pSceneState->m_pCurrentEffect));
+					pEffectMgr->applyLocalLightingData();
+					bSwitchedTech = false;
+					applySurfaceMaterialToCurrentEffect();
+				}
+				CEffectFile* pVoxEffect = pEffectMgr->GetCurrentEffectFile();
+				if (pVoxEffect != 0 && pVoxEffect->begin())
+				{
+					int nEffectPass = GetRenderPass(pMaterialParam);
+					const bool bForcePassSwitch = (nEffectPass != 0);
+					if (pVoxEffect->BeginPass(nEffectPass, bForcePassSwitch))
+					{
+						CBaseObject* pBaseObj = pSceneState->GetCurrentSceneObject();
+						if (pBaseObj != NULL) pBaseObj->ApplyMaterial();
+						pVoxEffect->setFloat(CEffectFile::k_opacity, 1.f);
+						pVoxEffect->CommitChanges();
+						m_pVoxelModel->Draw(pSceneState);
+						pVoxEffect->EndPass(bForcePassSwitch);
+						if (bForcePassSwitch && pVoxEffect->IsInShareMode())
+							pVoxEffect->BeginPass(0, true);
+					}
+					pVoxEffect->end();
+				}
+			}
+		}
+		else
+		{
+			RenderBMaxModel(pSceneState, pMaterialParam);
+		}
+		break;
 	default:
 		break;
+	}
+
+	if (bSwitchedTech)
+	{
+		pEffectMgr->BeginEffect(nPrevTechHandle, &(pSceneState->m_pCurrentEffect));
+		pEffectMgr->applyLocalLightingData();
 	}
 }
 
@@ -1856,7 +2253,8 @@ void CParaXModel::BuildShadowVolume(ShadowVolume* pShadowVolume, LightParams* pL
 					int nVB = 3 * i + k;
 					wFace[k] = m_indices[p.m_nIndexStart + nVB];
 					// weighted vertex
-					ParaVec3TransformCoord(&(FaceV[k]), &GetWeightedVertexByIndex(wFace[k]), mxWorld);
+					Vector3 vWeighted = GetWeightedVertexByIndex(wFace[k]);
+					ParaVec3TransformCoord(&(FaceV[k]), &vWeighted, mxWorld);
 				}
 				// Transform vertices or transform light?
 				// we use vertex transform, it may be more accurate to use light transform
@@ -2160,6 +2558,10 @@ HRESULT CParaXModel::RendererRecreated()
 {
 	m_pIndexBuffer.RendererRecreated();
 	m_pVertexBuffer.RendererRecreated();
+	m_pGpuSkinIB.RendererRecreated();
+	m_pGpuSkinVB.RendererRecreated();
+	m_bGpuSkinBufferBuilt = false;
+	m_bGpuSkinBufferFailed = false;
 
 	this->SetVertexBufferDirty();
 

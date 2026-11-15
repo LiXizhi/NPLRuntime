@@ -109,6 +109,8 @@ namespace ParaEngine
 			S0_POS_NORM_COLOR, // all data in stream 0: position, normal, and color
 			S0_POS_NORM_TEX0_COLOR0_COLOR1, // all data in stream 0: position, normal, tex0,color0 and color1
 			S0_POS, // all data in stream 0: position
+			S0_POS_NORM_TEX0_SKINNED, // stream 0: position, normal, tex0, blendweight(ubyte4n), blendindices(ubyte4n)
+			S0_POS_NORM_COLOR_SKINNED, // stream 0: position, normal, color0, blendweight(ubyte4n), blendindices(ubyte4n)
 			MAX_DECLARATIONS_NUM,
 		};
 

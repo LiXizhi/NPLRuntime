@@ -94,12 +94,32 @@ namespace ParaEngine
 		{ 0, 24, D3DDECLTYPE_D3DCOLOR, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_COLOR, 0 },
 		D3DDECL_END()
 	};
+	static VertexElement vertexdesc_bmax_model_skinned[] =
+	{
+		// base data (stream 0)
+		{ 0, 0, D3DDECLTYPE_FLOAT3, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_POSITION, 0 },
+		{ 0, 12, D3DDECLTYPE_FLOAT3, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_NORMAL, 0 },
+		{ 0, 24, D3DDECLTYPE_D3DCOLOR, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_COLOR, 0 },
+		{ 0, 28, D3DDECLTYPE_UBYTE4N, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_BLENDWEIGHT, 0 },
+		{ 0, 32, D3DDECLTYPE_UBYTE4N, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_BLENDINDICES, 0 },
+		D3DDECL_END()
+	};
 	static VertexElement vertexdesc_simple_mesh_normal[]=
 	{
 		// base data (stream 0)
 		{ 0, 0,	D3DDECLTYPE_FLOAT3, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_POSITION, 0 },
 		{ 0,12,	D3DDECLTYPE_FLOAT3, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_NORMAL, 0 },
 		{ 0,24,	D3DDECLTYPE_FLOAT2, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_TEXCOORD, 0 },
+		D3DDECL_END()
+	};
+	static VertexElement vertexdesc_character_skinned[] =
+	{
+		// base data (stream 0)
+		{ 0, 0, D3DDECLTYPE_FLOAT3, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_POSITION, 0 },
+		{ 0, 12, D3DDECLTYPE_FLOAT3, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_NORMAL, 0 },
+		{ 0, 24, D3DDECLTYPE_FLOAT2, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_TEXCOORD, 0 },
+		{ 0, 32, D3DDECLTYPE_UBYTE4N, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_BLENDWEIGHT, 0 },
+		{ 0, 36, D3DDECLTYPE_UBYTE4N, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_BLENDINDICES, 0 },
 		D3DDECL_END()
 	};
 
@@ -829,6 +849,26 @@ VertexDeclarationPtr EffectManager::GetVertexDeclaration(int nIndex)
 			OUTPUT_LOG("error: CreateVertexDeclaration failed for S0_POS_NORM_TEX0_COLOR0_COLOR1\n");
 		}
 		break;
+	case S0_POS_NORM_TEX0_SKINNED:
+		if (pd3dDevice->CreateVertexDeclaration(vertexdesc_character_skinned, &pDecl) && pDecl)
+		{
+			m_pVertexDeclarations[S0_POS_NORM_TEX0_SKINNED] = pDecl;
+		}
+		else
+		{
+			OUTPUT_LOG("error: CreateVertexDeclaration failed for S0_POS_NORM_TEX0_SKINNED\n");
+		}
+		break;
+	case S0_POS_NORM_COLOR_SKINNED:
+		if (pd3dDevice->CreateVertexDeclaration(vertexdesc_bmax_model_skinned, &pDecl) && pDecl)
+		{
+			m_pVertexDeclarations[S0_POS_NORM_COLOR_SKINNED] = pDecl;
+		}
+		else
+		{
+			OUTPUT_LOG("error: CreateVertexDeclaration failed for S0_POS_NORM_COLOR_SKINNED\n");
+		}
+		break;
 	default:
 		break;
 	}
@@ -1035,6 +1075,8 @@ bool EffectManager::BeginEffectFF(int nHandle)
 	case TECH_FULL_SCREEN_GLOW:
 	case TECH_SCREEN_WAVE:
 	case TECH_SIMPLE_MESH_NORMAL_INSTANCED:
+	case TECH_CHARACTER_SKINNED:
+	case TECH_BMAX_SKINNED:
 	case TECH_SHADOWMAP_BLUR:
 		return false;
 	case TECH_OCEAN_UNDERWATER:
@@ -1352,6 +1394,7 @@ bool EffectManager::BeginEffectShader(int nHandle, CEffectFile** pOutEffect)
 	case TECH_SIMPLE_MESH_NORMAL:
 	case TECH_SIMPLE_MESH_NORMAL_UNLIT:
 	case TECH_CHARACTER:
+	case TECH_CHARACTER_SKINNED:
 	case TECH_SIMPLE_MESH_NORMAL_CTOR:
 	case TECH_SIMPLE_MESH_NORMAL_VEGETATION:
 	case TECH_SIMPLE_MESH_NORMAL_SELECTED:
@@ -1366,6 +1409,8 @@ bool EffectManager::BeginEffectShader(int nHandle, CEffectFile** pOutEffect)
 			pDecl = GetVertexDeclaration(S0_POS_NORM_TEX0_TEX1);
 		else if(nHandle == TECH_SIMPLE_MESH_NORMAL_INSTANCED)
 			pDecl = GetVertexDeclaration(S0_POS_NORM_TEX0_INSTANCED);
+		else if(nHandle == TECH_CHARACTER_SKINNED)
+			pDecl = GetVertexDeclaration(S0_POS_NORM_TEX0_SKINNED);
 		else
 			pDecl = GetVertexDeclaration(S0_POS_NORM_TEX0);
 
@@ -1390,7 +1435,7 @@ bool EffectManager::BeginEffectShader(int nHandle, CEffectFile** pOutEffect)
 		pd3dDevice->SetSamplerState(0, ESamplerStateType::MIPFILTER, D3DTEXF_LINEAR);
 		SetSamplerState(0, ESamplerStateType::MINFILTER, D3DTEXF_LINEAR, true);
 		SetSamplerState(0, ESamplerStateType::MAGFILTER, D3DTEXF_LINEAR, true);
-		if(nHandle == TECH_SIMPLE_MESH_NORMAL || nHandle == TECH_CHARACTER || nHandle == TECH_SIMPLE_MESH_NORMAL_VEGETATION || nHandle == TECH_SIMPLE_MESH_NORMAL_SHADOW || nHandle == TECH_SIMPLE_MESH_NORMAL_INSTANCED || nHandle == TECH_SIMPLE_MESH_NORMAL_UNLIT)
+		if(nHandle == TECH_SIMPLE_MESH_NORMAL || nHandle == TECH_CHARACTER || nHandle == TECH_CHARACTER_SKINNED || nHandle == TECH_SIMPLE_MESH_NORMAL_VEGETATION || nHandle == TECH_SIMPLE_MESH_NORMAL_SHADOW || nHandle == TECH_SIMPLE_MESH_NORMAL_INSTANCED || nHandle == TECH_SIMPLE_MESH_NORMAL_UNLIT)
 		{
 			pEffect->EnableNormalMap(false);
 			pEffect->EnableReflectionMapping(false);
@@ -1657,8 +1702,9 @@ bool EffectManager::BeginEffectShader(int nHandle, CEffectFile** pOutEffect)
 		break;
 	}
 	case TECH_BMAX_MODEL:
+	case TECH_BMAX_SKINNED:
 	{
-		pDecl = GetVertexDeclaration(S0_POS_NORM_COLOR);
+		pDecl = GetVertexDeclaration((nHandle == TECH_BMAX_SKINNED) ? S0_POS_NORM_COLOR_SKINNED : S0_POS_NORM_COLOR);
 		if (pDecl == 0)
 			return false;
 		pd3dDevice->SetVertexDeclaration(pDecl);
@@ -1873,6 +1919,7 @@ void EffectManager::EndEffect()
 			EnableLocalLighting(false);
 			break;
 		case TECH_CHARACTER:
+		case TECH_CHARACTER_SKINNED:
 			EnableLocalLighting(false);
 			break;
 		case TECH_SIMPLE_MESH_NORMAL_CTOR:
@@ -2212,6 +2259,15 @@ void EffectManager::SetDefaultEffectMapping(int nLevel)
 		pEffect = GetEffectByName("BMaxModel");
 		MapHandleToEffect(TECH_BMAX_MODEL, pEffect);
 
+		if (!CGlobals::GetSettings().IsLowEndRenderDevice())
+		{
+			pEffect = GetEffectByName("character_skinned");
+			MapHandleToEffect(TECH_CHARACTER_SKINNED, pEffect);
+
+			pEffect = GetEffectByName("bmax_model_skinned");
+			MapHandleToEffect(TECH_BMAX_SKINNED, pEffect);
+		}
+
 		pEffect = GetEffectByName("singleColor");
 		MapHandleToEffect(TECH_SINGLE_COLOR, pEffect);
 
@@ -2416,6 +2472,18 @@ CEffectFile* EffectManager::GetEffectByName( const string& sName )
 		pEffect = GetByName("BMaxModel");
 		if (pEffect == 0)
 			pEffect = CGlobals::GetAssetManager()->LoadEffectFile("BMaxModel", ":IDR_FX_BMAXMODEL");
+	}
+	else if (sName == "character_skinned")
+	{
+		pEffect = GetByName("character_skinned");
+		if (pEffect == 0)
+			pEffect = CGlobals::GetAssetManager()->LoadEffectFile("character_skinned", ":IDR_FX_CHARACTER_SKINNED");
+	}
+	else if (sName == "bmax_model_skinned")
+	{
+		pEffect = GetByName("bmax_model_skinned");
+		if (pEffect == 0)
+			pEffect = CGlobals::GetAssetManager()->LoadEffectFile("bmax_model_skinned", ":IDR_FX_BMAX_MODEL_SKINNED");
 	}
 	else if (sName == "singleColor")
 	{

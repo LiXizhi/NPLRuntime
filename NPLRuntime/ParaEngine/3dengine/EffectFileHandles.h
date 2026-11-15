@@ -82,6 +82,9 @@ namespace ParaEngine
 		TECH_LIGHT_DIRECTIONAL,
 		// deferred lighting
 		TECH_DEFERRED_LIGHTING,
+		// hardware GPU-skinned character and BMax models
+		TECH_CHARACTER_SKINNED,
+		TECH_BMAX_SKINNED,
 		// for external unknown effect. 
 		TECH_UNKNOWN,
 	};

@@ -1192,11 +1192,15 @@ namespace ParaEngine
 		m_caps.backendName = m_isWarp ? "D3D11 (WARP)" : "D3D11";
 		m_caps.adapterName = m_adapterName.c_str();
 		m_caps.featureLevel = static_cast<uint32_t>(m_featureLevel);
-		m_caps.maxSimultaneousRTs = (m_featureLevel >= D3D_FEATURE_LEVEL_10_0) ? 8u : 4u;
+		m_caps.maxSimultaneousRTs = (m_featureLevel >= D3D_FEATURE_LEVEL_10_0) ? 8u
+			: ((m_featureLevel >= D3D_FEATURE_LEVEL_9_3) ? 4u : 1u);
 		m_caps.maxTextureStages = 16u;
 		m_caps.maxTextureSize = (m_featureLevel >= D3D_FEATURE_LEVEL_11_0) ? 16384u
-			: ((m_featureLevel >= D3D_FEATURE_LEVEL_10_0) ? 8192u : 4096u);
-		m_caps.maxAnisotropy = (m_featureLevel >= D3D_FEATURE_LEVEL_10_0) ? 16u : 4u;
+			: ((m_featureLevel >= D3D_FEATURE_LEVEL_10_0) ? 8192u
+				: ((m_featureLevel >= D3D_FEATURE_LEVEL_9_3) ? 4096u : 2048u));
+		m_caps.maxAnisotropy = (m_featureLevel >= D3D_FEATURE_LEVEL_10_0) ? 16u
+			: ((m_featureLevel >= D3D_FEATURE_LEVEL_9_2) ? 4u : 2u);
+		m_caps.maxVertexUniformVectors = (m_featureLevel >= D3D_FEATURE_LEVEL_10_0) ? 4096u : 256u;
 
 		UINT r32fSupport = 0;
 		if (m_device && SUCCEEDED(m_device->CheckFormatSupport(DXGI_FORMAT_R32_FLOAT, &r32fSupport)))
@@ -1208,10 +1212,31 @@ namespace ParaEngine
 			m_caps.supportsFloatRenderTargets = (m_featureLevel >= D3D_FEATURE_LEVEL_10_0);
 		}
 
+		bool isBasicRenderDriver = m_isWarp;
+		if (m_device && !isBasicRenderDriver)
+		{
+			ComPtr<IDXGIDevice> dxgiDev;
+			if (SUCCEEDED(m_device.As(&dxgiDev)))
+			{
+				ComPtr<IDXGIAdapter> dxgiAdapter;
+				if (SUCCEEDED(dxgiDev->GetAdapter(dxgiAdapter.GetAddressOf())) && dxgiAdapter)
+				{
+					DXGI_ADAPTER_DESC ad = {};
+					if (SUCCEEDED(dxgiAdapter->GetDesc(&ad)))
+					{
+						if (ad.VendorId == 0x1414 && ad.DeviceId == 0x008C)
+							isBasicRenderDriver = true;
+					}
+				}
+			}
+		}
+
 		m_caps.supportsDepthTextures = (m_featureLevel >= D3D_FEATURE_LEVEL_10_0);
-		m_caps.supportsInstancing = true;
-		m_caps.supportsOcclusionQuery = true;
-		m_caps.supportsTwoSidedStencil = true;
+		m_caps.supportsInstancing = (m_featureLevel >= D3D_FEATURE_LEVEL_9_3);
+		m_caps.supportsOcclusionQuery = (m_featureLevel >= D3D_FEATURE_LEVEL_9_2);
+		m_caps.supportsTwoSidedStencil = (m_featureLevel >= D3D_FEATURE_LEVEL_9_2);
+		m_caps.supports32BitIndices = (m_featureLevel >= D3D_FEATURE_LEVEL_9_2);
+		m_caps.isSoftwareAdapter = isBasicRenderDriver;
 		m_caps.supportsUserClipPlanes = (m_featureLevel >= D3D_FEATURE_LEVEL_10_0);
 		m_caps.supportsBCCompression = true;
 		m_caps.supportsETC2Compression = false;

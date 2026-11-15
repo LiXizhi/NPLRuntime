@@ -1,6 +1,7 @@
 ﻿#pragma once
 #include "BlockRenderTask.h"
 #include "BlockCommon.h"
+#include "BlockChunk.h"
 #include "ShapeAABB.h"
 #include "BlockReadWriteLock.h"
 
@@ -171,6 +172,13 @@ namespace ParaEngine
 
 		bool IsDirtyByBlockChange() const;
 		void IsDirtyByBlockChange(bool val);
+
+		/** Safely refresh cached 6-face visibility graph and opaque layer mask from BlockChunk when region is unlocked. */
+		void RefreshVisibilityCache(CBlockWorld* pWorld);
+		inline uint16_t GetVisibilityGraph() const { return m_cachedVisGraph; }
+		inline uint16_t GetOpaqueLayerMask() const { return m_cachedOpaqueLayerMask; }
+		/** Return world-space AABB of the longest contiguous 100%-opaque horizontal block layer span, if any. */
+		bool GetOpaqueOccluderBoxWS(Vector3& outMin, Vector3& outMax) const;
 	public:
 		struct InstanceGroup
 		{
@@ -265,6 +273,8 @@ namespace ParaEngine
 		CShapeBox m_pShapeAABB;
 
 		int32 m_totalFaceCount;
+		uint16_t m_cachedVisGraph;
+		uint16_t m_cachedOpaqueLayerMask;
 
 		/** for main renderer (default to true), we will set chuck dirty to false, whenever the buffer is rebuilt. */
 		bool m_bIsMainRenderer : 1;

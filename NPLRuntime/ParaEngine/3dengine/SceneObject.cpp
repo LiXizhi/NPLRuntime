@@ -7,6 +7,7 @@
 // Revised: 2006.7.22
 //-----------------------------------------------------------------------------
 #include "ParaEngine.h"
+#include "ParaEngineSettings.h"
 #include "SpriteObject.h"
 #include "ShadowMap.h"
 #include "GlowEffect.h"
@@ -2187,8 +2188,9 @@ HRESULT CSceneObject::AdvanceScene(double dTimeDelta, int nPipelineOrder)
 	}
 
 	//////////////////////////////////////////////////////////////////////////
-	// render all reflection map in the scene. 
-	if (sceneState.m_bCameraMoved || pOcean->IsRedrawStillReflection())
+	// render all reflection map in the scene (skip on low-end / DX9 devices)
+	const bool bLowEndDevice = CGlobals::GetSettings().IsLowEndRenderDevice();
+	if (!bLowEndDevice && (sceneState.m_bCameraMoved || pOcean->IsRedrawStillReflection()))
 	{
 		for (int i = 0; i < (int)m_mirrorSurfaces.size(); ++i)
 		{
@@ -2232,6 +2234,51 @@ HRESULT CSceneObject::AdvanceScene(double dTimeDelta, int nPipelineOrder)
 	m_pBlockWorldClient->PreRender();
 	m_pBlockWorldClient->Render(BlockRenderPass_Opaque);
 	m_pBlockWorldClient->Render(BlockRenderPass_AlphaTest);
+
+	// Whole-world CPU Software Hi-Z occlusion culling for solid meshes, small objects, and characters
+	// against opaque block chunks (runs after RenderShadowMap so off-camera shadow casters are preserved).
+	if (m_pBlockWorldClient)
+	{
+		CSoftwareOcclusionBuffer& occluder = m_pBlockWorldClient->GetSoftwareOccluder();
+		if (!m_pBlockWorldClient->IsInBlockWorld())
+		{
+			occluder.Reset();
+		}
+		if (occluder.IsEnabled() && occluder.IsFrameValid() && occluder.GetOccluderCount() > 0)
+		{
+			CBipedObject* pMainPlayer = GetCurrentPlayer();
+			auto cullObjectList = [&](auto& renderList, bool bPadForAnimation) {
+				for (auto& item : renderList)
+				{
+					CBaseObject* pObj = item.m_pRenderObject;
+					if (!pObj || item.IsOccluded() || pObj == pMainPlayer || item.m_fObjectToCameraDistance < 4.0f)
+						continue;
+					IViewClippingObject* pViewClip = pObj->GetViewClippingObject();
+					if (!pViewClip)
+						continue;
+					CShapeAABB aabb;
+					pViewClip->GetAABB(&aabb);
+					if (!aabb.IsValid())
+						continue;
+					Vector3 vMin, vMax;
+					aabb.GetMin(vMin);
+					aabb.GetMax(vMax);
+					if (bPadForAnimation)
+					{
+						vMin -= Vector3(0.35f, 0.20f, 0.35f);
+						vMax += Vector3(0.35f, 0.40f, 0.35f);
+					}
+					if (occluder.IsWorldAABBOccluded(vMin, vMax))
+					{
+						item.m_nOccluded = 2; // PostRenderObject::IsOccluded() tests (m_nOccluded > 1)
+					}
+				}
+			};
+			cullObjectList(sceneState.listPRSolidObject, false);
+			cullObjectList(sceneState.listPRSmallObject, false);
+			cullObjectList(sceneState.listPRBiped, true);
+		}
+	}
 	if (m_pBlockWorldClient->GetBlockRenderMethod() == BLOCK_RENDER_FANCY_SHADER)
 	{
 		// we will render sky and fog in post processor. Current sky shader does not render to multiple render target, it will cause glitches. 
@@ -3685,8 +3732,8 @@ void CSceneObject::SetShadow(bool bRenderShadow)
 #ifndef USE_NULL_RENDERER
 	if (bRenderShadow)
 	{
-		// never allow shadow rendering, if the shader version is below 20. 
-		if (CGlobals::GetEffectManager()->GetDefaultEffectMapping() < 20)
+		// never allow shadow rendering if shader version is below 20 or device is low-end / DX9-class
+		if (CGlobals::GetEffectManager()->GetDefaultEffectMapping() < 20 || CGlobals::GetSettings().IsLowEndRenderDevice())
 		{
 			m_bRenderMeshShadow = false;
 		}
@@ -3819,6 +3866,8 @@ bool CSceneObject::IsUsingFullScreenGlow()
 
 void CSceneObject::EnableFullScreenGlow(bool bEnable)
 {
+	if (bEnable && CGlobals::GetSettings().IsLowEndRenderDevice())
+		bEnable = false;
 	CGlobals::GetEffectManager()->EnableFullScreenGlow(bEnable);
 }
 
@@ -3872,6 +3921,8 @@ bool CSceneObject::IsUsingScreenWaveEffect()
 
 void CSceneObject::EnableScreenWaveEffect(bool value)
 {
+	if (value && CGlobals::GetSettings().IsLowEndRenderDevice())
+		value = false;
 	COceanManager* pOcean = CGlobals::GetOceanManager();
 	if (pOcean != NULL)
 		pOcean->EnableScreenSpaceFog(!value);

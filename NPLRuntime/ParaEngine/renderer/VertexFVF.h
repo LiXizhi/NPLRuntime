@@ -82,6 +82,26 @@ namespace ParaEngine
 		static const DWORD FVF;
 	};
 
+	/** Hardware GPU-skinned character / ParaX mesh vertex (40 bytes) */
+	struct mesh_vertex_normal_skinned
+	{
+		Vector3  p;
+		Vector3  n;
+		Vector2  uv;
+		uint8    weights[4];
+		uint8    bones[4];
+	};
+
+	/** Hardware GPU-skinned BMax vertex-colored model vertex (36 bytes) */
+	struct bmax_vertex_skinned
+	{
+		Vector3  p;
+		Vector3  n;
+		DWORD    color;
+		uint8    weights[4];
+		uint8    bones[4];
+	};
+
 	/** for terrain */
 	struct terrain_vertex
 	{

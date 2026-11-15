@@ -1,0 +1,5 @@
+#define SOFT_SHADOW_ENABLE
+
+#ifndef HARDWARE_SHADOW_ENABLE
+#define PCF_SHADOW_ENABLE
+#endif

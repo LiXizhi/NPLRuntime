@@ -17,6 +17,7 @@
 #include "terrain/GlobalTerrain.h"
 #include "WorldInfo.h"
 #include "BlockCommon.h"
+#include "BlockDirection.h"
 #include "BlockRegion.h"
 #include "terrain/Settings.h"
 #include "IBatchedElementDraw.h"
@@ -145,6 +146,15 @@ namespace ParaEngine
 	{
 		if (m_isInWorld)
 			return;
+		if (CGlobals::GetSettings().IsLowEndRenderDevice())
+		{
+			m_nVertexBufferSizeLimit = (std::min)(m_nVertexBufferSizeLimit, 64 * 1024 * 1024);
+			m_nMaxVisibleVertexBufferBytes = (std::min)(m_nMaxVisibleVertexBufferBytes, 32 * 1024 * 1024);
+			m_nMaxBufferRebuildPerTick = (std::min)(m_nMaxBufferRebuildPerTick, 2);
+			m_nMaxBufferRebuildPerTick_FarChunk = 1;
+			m_bUseSunlightShadowMap = false;
+			m_bUseWaterReflection = false;
+		}
 		ChunkVertexBuilderManager::GetInstance().StartChunkBuildThread(this);
 		Scoped_WriteLock<BlockReadWriteLock> lock_(GetReadWriteLock());
 		CBlockWorld::EnterWorld(sWorldDir, x, y, z);
@@ -183,8 +193,11 @@ namespace ParaEngine
 				pEffectMgr->EndEffect();
 				pEffectMgr->MapHandleToEffect(TECH_TERRAIN, nullptr);
 				pEffectMgr->MapHandleToEffect(TECH_SIMPLE_MESH_NORMAL, nullptr);
+				pEffectMgr->MapHandleToEffect(TECH_SIMPLE_MESH_NORMAL_INSTANCED, nullptr);
 				pEffectMgr->MapHandleToEffect(TECH_CHARACTER, nullptr);
+				pEffectMgr->MapHandleToEffect(TECH_CHARACTER_SKINNED, nullptr);
 				pEffectMgr->MapHandleToEffect(TECH_BMAX_MODEL, nullptr);
+				pEffectMgr->MapHandleToEffect(TECH_BMAX_SKINNED, nullptr);
 			}
 		}
 
@@ -204,6 +217,9 @@ namespace ParaEngine
 		m_block_effect_fancy.reset();
 		m_normal_mesh_effect_fancy.reset();
 		m_bmax_model_effect_fancy.reset();
+		m_character_skinned_fancy.reset();
+		m_bmax_skinned_fancy.reset();
+		m_mesh_instanced_fancy.reset();
 		m_terrain_fancy.reset();
 		m_effect_light_point.reset();
 		m_effect_light_spot.reset();
@@ -213,6 +229,8 @@ namespace ParaEngine
 		{
 			m_lightgeometry_effects[i].reset();
 		}
+		m_softwareOccluder.Reset();
+		m_bHasLastMainCameraState = false;
 	}
 
 	void BlockWorldClient::LeaveWorld()
@@ -260,9 +278,24 @@ namespace ParaEngine
 		if (!bIsShadowPass)
 			GetLightGrid().UpdateLighting();
 
+		bool bCameraChanged = !m_bHasLastMainCameraState;
+		if (!bIsShadowPass && m_bHasLastMainCameraState)
+		{
+			if ((camWorldPos - m_lastMainEyePos).squaredLength() > 1e-6f)
+			{
+				bCameraChanged = true;
+			}
+			else if (auto* pEffMgr = CGlobals::GetEffectManager())
+			{
+				const Matrix4 curVP = pEffMgr->GetViewTransform() * pEffMgr->GetProjTransform();
+				if (std::memcmp(&curVP, &m_lastMainViewProj, sizeof(Matrix4)) != 0)
+					bCameraChanged = true;
+			}
+		}
+
 		//perform culling and refresh render buffers if dirty.
 		m_nBufferRebuildCountThisTick = 0;
-		if (m_isVisibleChunkDirty || (GetBlockRenderMethod() == BLOCK_RENDER_FANCY_SHADER && GetUseSunlightShadowMap()))
+		if (bIsShadowPass || m_isVisibleChunkDirty || bCameraChanged || (GetBlockRenderMethod() == BLOCK_RENDER_FANCY_SHADER && GetUseSunlightShadowMap()))
 			UpdateVisibleChunks(bIsShadowPass);
 
 		m_solidRenderTasks.clear();
@@ -393,12 +426,18 @@ namespace ParaEngine
 				int32_t curPass = -1;
 				ERSVCULL culling = RSV_CULL_CCW;
 				DeviceTexturePtr_type pCurTex0 = nullptr;
+				Uint16x3 lastMinPos(0xffff, 0xffff, 0xffff);
+				bool bHasLastMinPos = false;
 
 				if (pCurRenderQueue->size() > 0)
 				{
 					for (uint32_t i = 0; i < pCurRenderQueue->size(); i++)
 					{
 						BlockRenderTask* pRenderTask = (*pCurRenderQueue)[i];
+						BlockTemplate* pTempate = pRenderTask->GetTemplate();
+						if (!pTempate || !pTempate->IsShadowCaster())
+							continue;
+
 						VertexBufferDevicePtr_type pVB = pRenderTask->GetVertexBuffer();
 
 						if (pVB != pCurVB)
@@ -410,12 +449,6 @@ namespace ParaEngine
 						if (curTemplateId != pRenderTask->GetTemplateId())
 						{
 							curTemplateId = pRenderTask->GetTemplateId();
-							BlockTemplate* pTempate = pRenderTask->GetTemplate();
-
-							if (pTempate->IsShadowCaster())
-							{
-								passId = 0;
-							}
 
 							if (curPass != passId)
 							{
@@ -425,6 +458,7 @@ namespace ParaEngine
 								if (pEffect->BeginPass(passId))
 								{
 									curPass = passId;
+									bHasLastMinPos = false;
 								}
 								else
 								{
@@ -449,7 +483,7 @@ namespace ParaEngine
 									culling = RSV_CULL_NONE;
 								}
 							}
-							else if (nRenderPass != BlockRenderPass_Opaque && m_isUnderLiquid && pRenderTask->GetTemplate()->IsMatchAttribute(BlockTemplate::batt_liquid))
+							else if (nRenderPass != BlockRenderPass_Opaque && m_isUnderLiquid && pTempate->IsMatchAttribute(BlockTemplate::batt_liquid))
 							{
 								if (culling != RSV_CULL_CW)
 								{
@@ -467,16 +501,22 @@ namespace ParaEngine
 							}
 						}
 
-						Matrix4 vWorldMatrix(Matrix4::IDENTITY);
 						Uint16x3& vMinPos = pRenderTask->GetMinBlockPos();
-						vWorldMatrix._11 = vWorldMatrix._22 = vWorldMatrix._33 = fBlockSize;
-						vWorldMatrix._41 = (vMinPos.x - renderBlockOfs.x) * fBlockSize - renderBlockOfs_remain.x;
-						vWorldMatrix._42 = vMinPos.y * fBlockSize - renderOfs.y + verticalOffset;
-						vWorldMatrix._43 = (vMinPos.z - renderBlockOfs.z) * fBlockSize - renderBlockOfs_remain.z;
+						if (!bHasLastMinPos || vMinPos.x != lastMinPos.x || vMinPos.y != lastMinPos.y || vMinPos.z != lastMinPos.z)
+						{
+							lastMinPos = vMinPos;
+							bHasLastMinPos = true;
 
-						vWorldMatrix = vWorldMatrix * matViewProj;
+							Matrix4 vWorldMatrix(Matrix4::IDENTITY);
+							vWorldMatrix._11 = vWorldMatrix._22 = vWorldMatrix._33 = fBlockSize;
+							vWorldMatrix._41 = (vMinPos.x - renderBlockOfs.x) * fBlockSize - renderBlockOfs_remain.x;
+							vWorldMatrix._42 = vMinPos.y * fBlockSize - renderOfs.y + verticalOffset;
+							vWorldMatrix._43 = (vMinPos.z - renderBlockOfs.z) * fBlockSize - renderBlockOfs_remain.z;
 
-						pEffect->setMatrix(CEffectFile::k_worldViewProjMatrix, &vWorldMatrix);
+							vWorldMatrix = vWorldMatrix * matViewProj;
+
+							pEffect->setMatrix(CEffectFile::k_worldViewProjMatrix, &vWorldMatrix);
+						}
 
 						pEffect->CommitChanges();
 
@@ -632,13 +672,18 @@ namespace ParaEngine
 				/** block light params and sun intensity*/
 				Vector4 vLightParams(m_vBlockLightColor.r, m_vBlockLightColor.g, m_vBlockLightColor.b, m_sunIntensity);
 				pEffect->setParameter(CEffectFile::k_ConstVector0, (const void*)(&vLightParams));
+				Uint16x3 lastMinPos(0xffff, 0xffff, 0xffff);
+				bool bHasLastMinPos = false;
+				const bool bUsingShadowMap = pEffectManager->IsUsingShadowMap();
+				const Matrix4* pTexViewProj = bUsingShadowMap ? pEffectManager->GetTexViewProjMatrix() : nullptr;
+
 				for (uint32_t i = 0; i < pCurRenderQueue->size(); i++)
 				{
 					BlockRenderTask* pRenderTask = (*pCurRenderQueue)[i];
 					VertexBufferDevicePtr_type pVB = pRenderTask->GetVertexBuffer();
 					if (pVB != pCurVB)
 					{
-						CGlobals::GetRenderDevice()->SetStreamSource(0, pVB, 0, sizeof(BlockVertexCompressed));
+						pDevice->SetStreamSource(0, pVB, 0, sizeof(BlockVertexCompressed));
 						pCurVB = pVB;
 					}
 					int32_t passId;
@@ -686,6 +731,7 @@ namespace ParaEngine
 							if (pEffect->BeginPass(passId))
 							{
 								curPass = passId;
+								bHasLastMinPos = false;
 
 								pCurTex0 = 0;
 								pCurTex1 = 0;
@@ -937,44 +983,43 @@ namespace ParaEngine
 						}
 					}
 
-					//
-					Matrix4 vWorldMatrix(Matrix4::IDENTITY);
 					Uint16x3& vMinPos = pRenderTask->GetMinBlockPos();
-					vWorldMatrix._11 = vWorldMatrix._22 = vWorldMatrix._33 = fBlockSize;
-					vWorldMatrix._41 = (vMinPos.x - renderBlockOfs.x) * fBlockSize - renderBlockOfs_remain.x;
-					vWorldMatrix._42 = vMinPos.y * fBlockSize - renderOfs.y + verticalOffset;
-					vWorldMatrix._43 = (vMinPos.z - renderBlockOfs.z) * fBlockSize - renderBlockOfs_remain.z;
+					if (!bHasLastMinPos || vMinPos.x != lastMinPos.x || vMinPos.y != lastMinPos.y || vMinPos.z != lastMinPos.z)
+					{
+						lastMinPos = vMinPos;
+						bHasLastMinPos = true;
 
-					Matrix4 mWorldViewProj;
-					mWorldViewProj = vWorldMatrix * matViewProj;
+						Matrix4 vWorldMatrix(Matrix4::IDENTITY);
+						vWorldMatrix._11 = vWorldMatrix._22 = vWorldMatrix._33 = fBlockSize;
+						vWorldMatrix._41 = (vMinPos.x - renderBlockOfs.x) * fBlockSize - renderBlockOfs_remain.x;
+						vWorldMatrix._42 = vMinPos.y * fBlockSize - renderOfs.y + verticalOffset;
+						vWorldMatrix._43 = (vMinPos.z - renderBlockOfs.z) * fBlockSize - renderBlockOfs_remain.z;
 
-					pEffect->setMatrix(CEffectFile::k_worldViewProjMatrix, &mWorldViewProj);
-					if (pEffect->isMatrixUsed(CEffectFile::k_worldViewMatrix))
-					{
-						Matrix4 mWorldView;
-						ParaMatrixMultiply(&mWorldView, &vWorldMatrix, &matViewProj);
-						pEffect->setMatrix(CEffectFile::k_worldViewMatrix, &mWorldView);
-					}
-					if (pEffectManager->IsUsingShadowMap() && pEffect->isMatrixUsed(CEffectFile::k_TexWorldViewProjMatrix))
-					{
-						Matrix4 mTex;
-						ParaMatrixMultiply(&mTex, &vWorldMatrix, pEffectManager->GetTexViewProjMatrix());
-						pEffect->setMatrix(CEffectFile::k_TexWorldViewProjMatrix, &mTex);
-					}
-					{
-						// set the new render origin
-						Vector4 vWorldPos(0, 0, 0, 1.f);
-						/** this is for height shift, using the render origin. */
-						Vector3 vRenderOrigin = CGlobals::GetScene()->GetRenderOrigin();
-						vWorldPos.x = vRenderOrigin.x + vWorldMatrix._41;
-						vWorldPos.y = vRenderOrigin.y + vWorldMatrix._42;
-						vWorldPos.z = vRenderOrigin.z + vWorldMatrix._43;
+						Matrix4 mWorldViewProj = vWorldMatrix * matViewProj;
+						pEffect->setMatrix(CEffectFile::k_worldViewProjMatrix, &mWorldViewProj);
+						if (pEffect->isMatrixUsed(CEffectFile::k_worldViewMatrix))
+						{
+							Matrix4 mWorldView;
+							ParaMatrixMultiply(&mWorldView, &vWorldMatrix, &matViewProj);
+							pEffect->setMatrix(CEffectFile::k_worldViewMatrix, &mWorldView);
+						}
+						if (pTexViewProj && pEffect->isMatrixUsed(CEffectFile::k_TexWorldViewProjMatrix))
+						{
+							Matrix4 mTex;
+							ParaMatrixMultiply(&mTex, &vWorldMatrix, pTexViewProj);
+							pEffect->setMatrix(CEffectFile::k_TexWorldViewProjMatrix, &mTex);
+						}
+						Vector4 vWorldPos(
+							renderOfs.x + vWorldMatrix._41,
+							renderOfs.y + vWorldMatrix._42,
+							renderOfs.z + vWorldMatrix._43,
+							1.f);
 						pEffect->setParameter(CEffectFile::k_worldPos, &vWorldPos);
 					}
 
 					pEffect->CommitChanges();
 
-					CGlobals::GetRenderDevice()->DrawIndexedPrimitive(EPrimitiveType::TRIANGLELIST, 0, pRenderTask->GetVertexOfs(),
+					pDevice->DrawIndexedPrimitive(EPrimitiveType::TRIANGLELIST, 0, pRenderTask->GetVertexOfs(),
 						pRenderTask->GetVertexCount(), pRenderTask->GetIndexOfs(), pRenderTask->GetPrimitiveCount());
 				}
 
@@ -1871,6 +1916,8 @@ namespace ParaEngine
 	void BlockWorldClient::DeleteDeviceObjects()
 	{
 		m_sharedIndexBuffer.ReleaseBuffer();
+		m_lightSphereVB.ReleaseBuffer();
+		m_lightSphereIB.ReleaseBuffer();
 		for (uint32_t i = 0; i < m_activeChunks.size(); i++)
 			m_activeChunks[i]->DeleteDeviceObjects();
 		m_pMultiFrameRenderer->DeleteDeviceObjects();
@@ -1883,6 +1930,8 @@ namespace ParaEngine
 	void BlockWorldClient::RendererRecreated()
 	{
 		m_sharedIndexBuffer.RendererRecreated();
+		m_lightSphereVB.RendererRecreated();
+		m_lightSphereIB.RendererRecreated();
 		for (uint32_t i = 0; i < m_activeChunks.size(); i++)
 			m_activeChunks[i]->RendererRecreated();
 		m_pMultiFrameRenderer->RendererRecreated();
@@ -2046,8 +2095,11 @@ namespace ParaEngine
 				{
 					CGlobals::GetScene()->SetShadow(GetUseSunlightShadowMap());
 				}
-				// always disable instancing
-				CGlobals::GetScene()->EnableInstancing(false);
+				auto* pRenderDevice = CGlobals::GetRenderDevice();
+				const bool bCanInstanceFancy = pRenderDevice
+					&& pRenderDevice->GetCaps().supportsInstancing
+					&& !CGlobals::GetSettings().IsLowEndRenderDevice();
+				CGlobals::GetScene()->EnableInstancing(bCanInstanceFancy);
 
 				// replacing shader to support multiple render target.
 				if (m_terrain_fancy)
@@ -2059,9 +2111,20 @@ namespace ParaEngine
 					CGlobals::GetEffectManager()->MapHandleToEffect(TECH_SIMPLE_MESH_NORMAL, m_normal_mesh_effect_fancy.get());
 					CGlobals::GetEffectManager()->MapHandleToEffect(TECH_CHARACTER, m_normal_mesh_effect_fancy.get());
 				}
+				if (m_mesh_instanced_fancy && bCanInstanceFancy)
+				{
+					CGlobals::GetEffectManager()->MapHandleToEffect(TECH_SIMPLE_MESH_NORMAL_INSTANCED, m_mesh_instanced_fancy.get());
+				}
 				if (m_bmax_model_effect_fancy)
 				{
 					CGlobals::GetEffectManager()->MapHandleToEffect(TECH_BMAX_MODEL, m_bmax_model_effect_fancy.get());
+				}
+				if (!CGlobals::GetSettings().IsLowEndRenderDevice() && pRenderDevice && pRenderDevice->GetCaps().GetMaxGpuSkinningBones() > 0)
+				{
+					if (m_character_skinned_fancy)
+						CGlobals::GetEffectManager()->MapHandleToEffect(TECH_CHARACTER_SKINNED, m_character_skinned_fancy.get());
+					if (m_bmax_skinned_fancy)
+						CGlobals::GetEffectManager()->MapHandleToEffect(TECH_BMAX_SKINNED, m_bmax_skinned_fancy.get());
 				}
 			}
 			else
@@ -2205,6 +2268,34 @@ namespace ParaEngine
 			pEffect->LoadAsset();
 			pEffectManager->MapHandleToEffect(TECH_BMAX_MODEL, pEffect);
 		}
+		auto* pDevice = CGlobals::GetRenderDevice();
+		if (!CGlobals::GetSettings().IsLowEndRenderDevice())
+		{
+			if (pDevice && pDevice->GetCaps().supportsInstancing)
+			{
+				pEffect = pEffectManager->GetEffectByName("simple_mesh_normal_instanced");
+				if (pEffect)
+				{
+					pEffect->LoadAsset();
+					pEffectManager->MapHandleToEffect(TECH_SIMPLE_MESH_NORMAL_INSTANCED, pEffect);
+				}
+			}
+			if (!pDevice || pDevice->GetCaps().GetMaxGpuSkinningBones() > 0)
+			{
+				pEffect = pEffectManager->GetEffectByName("character_skinned");
+				if (pEffect)
+				{
+					pEffect->LoadAsset();
+					pEffectManager->MapHandleToEffect(TECH_CHARACTER_SKINNED, pEffect);
+				}
+				pEffect = pEffectManager->GetEffectByName("bmax_model_skinned");
+				if (pEffect)
+				{
+					pEffect->LoadAsset();
+					pEffectManager->MapHandleToEffect(TECH_BMAX_SKINNED, pEffect);
+				}
+			}
+		}
 		CGlobals::GetSceneState()->SetDeferredShading(true);
 	}
 
@@ -2249,7 +2340,7 @@ namespace ParaEngine
 
 			if (m_block_effect_fancy == 0)
 			{
-				m_block_effect_fancy = CGlobals::GetAssetManager()->LoadEffectFile("blockFancy", "script/apps/Aries/Creator/Game/Shaders/mrt_blocks.fxo");
+				m_block_effect_fancy = CGlobals::GetAssetManager()->LoadEffectFile("blockFancy", ":IDR_FX_MRT_BLOCKS");
 				m_block_effect_fancy->LoadAsset();
 				if (!m_block_effect_fancy->IsValid())
 				{
@@ -2288,7 +2379,7 @@ namespace ParaEngine
 
 			if (m_normal_mesh_effect_fancy == 0)
 			{
-				m_normal_mesh_effect_fancy = CGlobals::GetAssetManager()->LoadEffectFile("mesh_normal_fancy", "script/apps/Aries/Creator/Game/Shaders/mrt_mesh_normal.fxo");
+				m_normal_mesh_effect_fancy = CGlobals::GetAssetManager()->LoadEffectFile("mesh_normal_fancy", ":IDR_FX_MRT_MESH_NORMAL");
 				m_normal_mesh_effect_fancy->LoadAsset();
 				if (!m_normal_mesh_effect_fancy->IsValid())
 				{
@@ -2298,19 +2389,32 @@ namespace ParaEngine
 			CGlobals::GetEffectManager()->MapHandleToEffect(TECH_SIMPLE_MESH_NORMAL, m_normal_mesh_effect_fancy.get());
 			CGlobals::GetEffectManager()->MapHandleToEffect(TECH_CHARACTER, m_normal_mesh_effect_fancy.get());
 
+			if (pDevice->GetCaps().supportsInstancing && !CGlobals::GetSettings().IsLowEndRenderDevice())
+			{
+				if (m_mesh_instanced_fancy == 0)
+				{
+					m_mesh_instanced_fancy = CGlobals::GetAssetManager()->LoadEffectFile("mesh_instanced_fancy", ":IDR_FX_MRT_MESH_NORMAL_INSTANCED");
+					m_mesh_instanced_fancy->LoadAsset();
+				}
+				if (m_mesh_instanced_fancy && m_mesh_instanced_fancy->IsValid())
+				{
+					CGlobals::GetEffectManager()->MapHandleToEffect(TECH_SIMPLE_MESH_NORMAL_INSTANCED, m_mesh_instanced_fancy.get());
+				}
+			}
+
 			if (m_effect_light_point == 0)
 			{
-				m_effect_light_point = CGlobals::GetAssetManager()->LoadEffectFile("m_effect_light_point", "script/apps/Aries/Creator/Game/Shaders/DeferredShadingPointLighting.fxo");
+				m_effect_light_point = CGlobals::GetAssetManager()->LoadEffectFile("m_effect_light_point", ":IDR_FX_DEFERRED_POINT_LIGHTING");
 				m_effect_light_point->LoadAsset();
 			}
 			if (m_effect_light_spot == 0)
 			{
-				m_effect_light_spot = CGlobals::GetAssetManager()->LoadEffectFile("m_effect_light_spot", "script/apps/Aries/Creator/Game/Shaders/DeferredShadingSpotLighting.fxo");
+				m_effect_light_spot = CGlobals::GetAssetManager()->LoadEffectFile("m_effect_light_spot", ":IDR_FX_DEFERRED_SPOT_LIGHTING");
 				m_effect_light_spot->LoadAsset();
 			}
 			if (m_effect_light_directional == 0)
 			{
-				m_effect_light_directional = CGlobals::GetAssetManager()->LoadEffectFile("m_effect_light_directional", "script/apps/Aries/Creator/Game/Shaders/DeferredShadingDirectionalLighting.fxo");
+				m_effect_light_directional = CGlobals::GetAssetManager()->LoadEffectFile("m_effect_light_directional", ":IDR_FX_DEFERRED_DIRECTIONAL_LIGHTING");
 				m_effect_light_directional->LoadAsset();
 			}
 			CGlobals::GetEffectManager()->MapHandleToEffect(TECH_LIGHT_POINT, m_effect_light_point.get());
@@ -2319,7 +2423,7 @@ namespace ParaEngine
 
 			if (m_bmax_model_effect_fancy == 0)
 			{
-				m_bmax_model_effect_fancy = CGlobals::GetAssetManager()->LoadEffectFile("bmax_model_effect_fancy", "script/apps/Aries/Creator/Game/Shaders/mrt_bmax_model.fxo");
+				m_bmax_model_effect_fancy = CGlobals::GetAssetManager()->LoadEffectFile("bmax_model_effect_fancy", ":IDR_FX_MRT_BMAX_MODEL");
 				m_bmax_model_effect_fancy->LoadAsset();
 				if (!m_bmax_model_effect_fancy->IsValid())
 				{
@@ -2328,9 +2432,32 @@ namespace ParaEngine
 			}
 			CGlobals::GetEffectManager()->MapHandleToEffect(TECH_BMAX_MODEL, m_bmax_model_effect_fancy.get());
 
+			if (!CGlobals::GetSettings().IsLowEndRenderDevice() && pDevice->GetCaps().GetMaxGpuSkinningBones() > 0)
+			{
+				if (m_character_skinned_fancy == 0)
+				{
+					m_character_skinned_fancy = CGlobals::GetAssetManager()->LoadEffectFile("character_skinned_fancy", ":IDR_FX_MRT_CHARACTER_SKINNED");
+					m_character_skinned_fancy->LoadAsset();
+				}
+				if (m_character_skinned_fancy && m_character_skinned_fancy->IsValid())
+				{
+					CGlobals::GetEffectManager()->MapHandleToEffect(TECH_CHARACTER_SKINNED, m_character_skinned_fancy.get());
+				}
+
+				if (m_bmax_skinned_fancy == 0)
+				{
+					m_bmax_skinned_fancy = CGlobals::GetAssetManager()->LoadEffectFile("bmax_skinned_fancy", ":IDR_FX_MRT_BMAX_MODEL_SKINNED");
+					m_bmax_skinned_fancy->LoadAsset();
+				}
+				if (m_bmax_skinned_fancy && m_bmax_skinned_fancy->IsValid())
+				{
+					CGlobals::GetEffectManager()->MapHandleToEffect(TECH_BMAX_SKINNED, m_bmax_skinned_fancy.get());
+				}
+			}
+
 			if (m_terrain_fancy == 0)
 			{
-				m_terrain_fancy = CGlobals::GetAssetManager()->LoadEffectFile("terrain_normal_fancy", "script/apps/Aries/Creator/Game/Shaders/mrt_terrain_normal.fxo");
+				m_terrain_fancy = CGlobals::GetAssetManager()->LoadEffectFile("terrain_normal_fancy", ":IDR_FX_MRT_TERRAIN_NORMAL");
 				m_terrain_fancy->LoadAsset();
 				if (!m_terrain_fancy->IsValid())
 				{
@@ -2431,11 +2558,15 @@ namespace ParaEngine
 		if (!pDevice || pDevice->GetBackendType() == ERHIBackend::Null)
 			return false;
 		const RHIDeviceCaps& caps = pDevice->GetCaps();
+		if (caps.IsLowEndDevice())
+			return false;
 		return caps.GetShaderModelMajor() >= 3 && caps.maxSimultaneousRTs >= 4 && caps.supportsFloatRenderTargets;
 	}
 
 	void BlockWorldClient::SetUseSunlightShadowMap(bool bEnable)
 	{
+		if (bEnable && CGlobals::GetSettings().IsLowEndRenderDevice())
+			bEnable = false;
 		m_bUseSunlightShadowMap = bEnable;
 		if (GetBlockRenderMethod() == BLOCK_RENDER_FANCY_SHADER)
 		{
@@ -2454,16 +2585,22 @@ namespace ParaEngine
 
 	bool BlockWorldClient::GetUseSunlightShadowMap()
 	{
+		if (CGlobals::GetSettings().IsLowEndRenderDevice())
+			return false;
 		return m_bUseSunlightShadowMap;
 	}
 
 	void BlockWorldClient::SetUseWaterReflection(bool bEnable)
 	{
+		if (bEnable && CGlobals::GetSettings().IsLowEndRenderDevice())
+			bEnable = false;
 		m_bUseWaterReflection = bEnable;
 	}
 
 	bool BlockWorldClient::GetUseWaterReflection()
 	{
+		if (CGlobals::GetSettings().IsLowEndRenderDevice())
+			return false;
 		return m_bUseWaterReflection;
 	}
 
@@ -2512,10 +2649,10 @@ namespace ParaEngine
 	void BlockWorldClient::GetMaxBlockHeightWatchingSky(uint16_t blockX_ws, uint16_t blockZ_ws, ChunkMaxHeight* pResult)
 	{
 		CBlockWorld::GetMaxBlockHeightWatchingSky(blockX_ws, blockZ_ws, pResult);
-#ifdef PARAENGINE_CLIENT
+#ifndef NPLRUNTIME_SERVER
 		ParaTerrain::CGlobalTerrain* pTerrain = CGlobals::GetGlobalTerrain();
 		uint16_t mask = 0;
-		if (pTerrain->TerrainRenderingEnabled())
+		if (pTerrain && pTerrain->TerrainRenderingEnabled())
 		{
 			for (int i = 0; i < 5; i++)
 			{
@@ -2571,13 +2708,14 @@ namespace ParaEngine
 	void BlockWorldClient::UpdateVisibleChunks(bool bIsShadowPass /*= false*/)
 	{
 		m_visibleChunks.clear();
-		// bool is_perspective = CGlobals::GetScene()->GetCurrentCamera()->IsPerspectiveView();
+		if (m_activeChunkDim <= 0 || m_activeChunks.empty())
+			return;
 
 		Vector3 camWorldPos = CGlobals::GetSceneState()->vEye;
 		Vector3 renderOrig = CGlobals::GetScene()->GetRenderOrigin();
 		int nRenderFrameCount = CGlobals::GetSceneState()->GetRenderFrameCount();
 
-		CCameraFrustum* frustum;
+		CCameraFrustum* frustum = nullptr;
 		static CCameraFrustum caster_frustum;
 
 		Vector3 camMin;
@@ -2590,7 +2728,7 @@ namespace ParaEngine
 				return;
 			frustum = &caster_frustum;
 			Vector3 vCenter = camWorldPos - renderOrig;
-			float fRadius = min(CGlobals::GetScene()->GetShadowRadius(), 50.f);
+			float fRadius = (std::min)(CGlobals::GetScene()->GetShadowRadius(), 50.f);
 
 			frustum->UpdateFrustum(pShadowMap->GetViewProjMatrix());
 			camMin = Vector3(vCenter.x - fRadius, vCenter.y - fRadius, vCenter.z - fRadius);
@@ -2598,9 +2736,11 @@ namespace ParaEngine
 		}
 		else
 		{
-			frustum = CGlobals::GetScene()->GetCurrentCamera()->GetFrustum();
+			auto* pCam = CGlobals::GetScene()->GetCurrentCamera();
+			if (!pCam)
+				return;
+			frustum = pCam->GetFrustum();
 
-			// calculate aabb for frustum
 			Vector3* frusCorner = frustum->vecFrustum;
 			camMin = frusCorner[0];
 			camMax = frusCorner[0];
@@ -2608,20 +2748,12 @@ namespace ParaEngine
 			for (int i = 1; i < 8; i++)
 			{
 				Vector3& v = frusCorner[i];
-
-				if (camMin.x > v.x)
-					camMin.x = v.x;
-				if (camMin.y > v.y)
-					camMin.y = v.y;
-				if (camMin.z > v.z)
-					camMin.z = v.z;
-
-				if (camMax.x < v.x)
-					camMax.x = v.x;
-				if (camMax.y < v.y)
-					camMax.y = v.y;
-				if (camMax.z < v.z)
-					camMax.z = v.z;
+				if (camMin.x > v.x) camMin.x = v.x;
+				if (camMin.y > v.y) camMin.y = v.y;
+				if (camMin.z > v.z) camMin.z = v.z;
+				if (camMax.x < v.x) camMax.x = v.x;
+				if (camMax.y < v.y) camMax.y = v.y;
+				if (camMax.z < v.z) camMax.z = v.z;
 			}
 		}
 		camMax += renderOrig;
@@ -2631,56 +2763,263 @@ namespace ParaEngine
 		BlockCommon::ConvertToBlockIndex(camWorldPos.x, camWorldPos.y, camWorldPos.z, camBlockPos.x, camBlockPos.y, camBlockPos.z);
 		SetEyeBlockId(camBlockPos);
 
-		Uint16x3 startIdx, endIdx;
-		BlockCommon::ConvertToBlockIndex(camMin.x, camMin.y, camMin.z, startIdx.x, startIdx.y, startIdx.z);
-		startIdx.x /= 16;
-		startIdx.y /= 16;
-		startIdx.z /= 16;
-		startIdx.x = startIdx.x > 0 ? startIdx.x - 1 : 0;
-		if (m_minActiveChunkId_ws.x > startIdx.x)
-			startIdx.x = m_minActiveChunkId_ws.x;
-		startIdx.y = startIdx.y > 0 ? (startIdx.y <= 15 ? startIdx.y - 1 : 15) : 0;
-		startIdx.z = startIdx.z > 0 ? startIdx.z - 1 : 0;
-		if (m_minActiveChunkId_ws.z > startIdx.z)
-			startIdx.z = m_minActiveChunkId_ws.z;
-		BlockCommon::ConvertToBlockIndex(camMax.x, camMax.y, camMax.z, endIdx.x, endIdx.y, endIdx.z);
-		endIdx.x /= 16;
-		endIdx.y /= 16;
-		endIdx.z /= 16;
-		if ((m_minActiveChunkId_ws.x + m_activeChunkDim) < endIdx.x)
-			endIdx.x = m_minActiveChunkId_ws.x + m_activeChunkDim;
-		endIdx.y = endIdx.y < 15 ? endIdx.y + 1 : 15;
-		if ((m_minActiveChunkId_ws.z + m_activeChunkDim) < endIdx.z)
-			endIdx.z = m_minActiveChunkId_ws.z + m_activeChunkDim;
+		const int32 minActiveX = (std::max<int32>)(0, static_cast<int32>(m_minActiveChunkId_ws.x));
+		const int32 maxActiveX = static_cast<int32>(m_minActiveChunkId_ws.x) + m_activeChunkDim - 1;
+		const int32 minActiveZ = (std::max<int32>)(0, static_cast<int32>(m_minActiveChunkId_ws.z));
+		const int32 maxActiveZ = static_cast<int32>(m_minActiveChunkId_ws.z) + m_activeChunkDim - 1;
+		if (minActiveX > maxActiveX || minActiveZ > maxActiveZ)
+			return;
 
-		//float fRenderDist = (std::max)(GetRenderDist(), 16) * BlockConfig::g_blockSize;
-		float fRenderDist = GetRenderDist() * BlockConfig::g_blockSize;
+		Uint16x3 rawStart, rawEnd;
+		BlockCommon::ConvertToBlockIndex(camMin.x, camMin.y, camMin.z, rawStart.x, rawStart.y, rawStart.z);
+		BlockCommon::ConvertToBlockIndex(camMax.x, camMax.y, camMax.z, rawEnd.x, rawEnd.y, rawEnd.z);
+
+		const int32 startIdxX = (std::max<int32>)(minActiveX, static_cast<int32>(rawStart.x / 16) - 1);
+		const int32 startIdxY = (std::max<int32>)(0, (std::min<int32>)(15, static_cast<int32>(rawStart.y / 16) - 1));
+		const int32 startIdxZ = (std::max<int32>)(minActiveZ, static_cast<int32>(rawStart.z / 16) - 1);
+
+		const int32 endIdxX = (std::min<int32>)(maxActiveX, static_cast<int32>(rawEnd.x / 16) + 1);
+		const int32 endIdxY = (std::min<int32>)(15, static_cast<int32>(rawEnd.y / 16) + 1);
+		const int32 endIdxZ = (std::min<int32>)(maxActiveZ, static_cast<int32>(rawEnd.z / 16) + 1);
+
+		const float fRenderDist = GetRenderDist() * BlockConfig::g_blockSize;
 		CShapeSphere sEyeSphere(camWorldPos, fRenderDist);
+		const Vector3 vChunkSize(BlockConfig::g_chunkSize, BlockConfig::g_chunkSize, BlockConfig::g_chunkSize);
 
-		// cull and update each chunk
-		// we will add using a spiral rectangle path from the center.
-		int32 nIndex = 0;
-		int32 dx = 0;
-		int32 dz = 0;
+		const int32 chunkX = GetEyeChunkId().x;
+		const int32 chunkY = GetEyeChunkId().y;
+		const int32 chunkZ = GetEyeChunkId().z;
 
-		int32 chunkX = GetEyeChunkId().x;
-		int32 chunkY = GetEyeChunkId().y;
-		int32 chunkZ = GetEyeChunkId().z;
-		int32 chunkViewRadius = (std::max)((int)(GetRenderDist() / 16), 1);
-		int32 chunkViewSize = chunkViewRadius * 2;
-
-		Vector3 vChunkSize(BlockConfig::g_chunkSize, BlockConfig::g_chunkSize, BlockConfig::g_chunkSize);
-
-		// OUTPUT_LOG("---------------cx %d, cz %d\n", chunkX, chunkZ);
-
-		for (uint16 y = startIdx.y; y <= endIdx.y; y++)
+		if (!bIsShadowPass)
 		{
-			uint16 x = (uint16)(chunkX);
-			uint16 z = (uint16)(chunkZ);
-			RenderableChunk& chunk = GetActiveChunk(x, y, z);
-			if (x >= startIdx.x && x <= endIdx.x && z >= startIdx.z && z <= endIdx.z && chunk.IsIntersect(sEyeSphere))
+			Matrix4 matViewProj = Matrix4::IDENTITY;
+			if (auto* pEffMgr = CGlobals::GetEffectManager())
 			{
-				Vector3 vMin = BlockCommon::ConvertToRealPosition(x * 16, y * 16, z * 16, 7);
+				matViewProj = pEffMgr->GetViewTransform() * pEffMgr->GetProjTransform();
+			}
+			m_lastMainEyePos = camWorldPos;
+			m_lastMainViewProj = matViewProj;
+			m_bHasLastMainCameraState = true;
+
+			bool clipZeroToOne = true;
+			if (auto* pDev = CGlobals::GetRenderDevice())
+				clipZeroToOne = pDev->GetCaps().clipSpaceZeroToOne;
+			m_softwareOccluder.BeginFrame(matViewProj, camWorldPos, renderOrig, clipZeroToOne);
+
+			if (startIdxX > endIdxX || startIdxZ > endIdxZ)
+			{
+				m_isVisibleChunkDirty = false;
+				return;
+			}
+
+			const double eyeRelY = static_cast<double>(camWorldPos.y) - CBlockWorld::GetVerticalOffset();
+			const int32 rawSeedY = (eyeRelY < 0.0) ? -1 : ((chunkY >= 16) ? 16 : chunkY);
+			const int32 bfsMinY = (rawSeedY < 0) ? -1 : 0;
+			const int32 bfsMaxY = (rawSeedY >= 16) ? 16 : 15;
+
+			const int32 seedX = (std::max)(minActiveX, (std::min)(maxActiveX, chunkX));
+			const int32 seedY = rawSeedY;
+			const int32 seedZ = (std::max)(minActiveZ, (std::min)(maxActiveZ, chunkZ));
+			const bool bSeedClampedXZ = (seedX != chunkX || seedZ != chunkZ);
+
+			const int32 chunkViewRadius = (std::max<int32>)(static_cast<int32>(GetRenderDist() / 16), 1);
+			const int32 chunkViewSize = chunkViewRadius * 2;
+			const int32 viewMinX = (std::max)(minActiveX, chunkX - chunkViewSize);
+			const int32 viewMaxX = (std::min)(maxActiveX, chunkX + chunkViewSize);
+			const int32 viewMinZ = (std::max)(minActiveZ, chunkZ - chunkViewSize);
+			const int32 viewMaxZ = (std::min)(maxActiveZ, chunkZ + chunkViewSize);
+
+			const int32 travMinX = (std::max)(viewMinX, (std::min)(startIdxX, seedX));
+			const int32 travMaxX = (std::min)(viewMaxX, (std::max)(endIdxX, seedX));
+			const int32 travMinZ = (std::max)(viewMinZ, (std::min)(startIdxZ, seedZ));
+			const int32 travMaxZ = (std::min)(viewMaxZ, (std::max)(endIdxZ, seedZ));
+			const int32 travMinY = (std::min)(startIdxY, seedY);
+			const int32 travMaxY = (std::max)(endIdxY, seedY);
+
+			const size_t dim = static_cast<size_t>(m_activeChunkDim);
+			const size_t dimXZ = dim * dim;
+			const size_t totalBfsSlots = dimXZ * 18u; // cy in [-1..16]
+			if (m_bfsVisitedGen.size() < totalBfsSlots)
+			{
+				m_bfsVisitedGen.assign(totalBfsSlots, 0u);
+				m_bfsEntryFaces.assign(totalBfsSlots, 0u);
+			}
+			++m_bfsGeneration;
+			if (m_bfsGeneration == 0u)
+			{
+				std::fill(m_bfsVisitedGen.begin(), m_bfsVisitedGen.end(), 0u);
+				m_bfsGeneration = 1u;
+			}
+			const uint32_t curGen = m_bfsGeneration;
+
+			auto calcBfsIdx = [&](int32 x, int32 y, int32 z) -> size_t {
+				const size_t lx = static_cast<size_t>(x - static_cast<int32>(m_minActiveChunkId_ws.x));
+				const size_t lz = static_cast<size_t>(z - static_cast<int32>(m_minActiveChunkId_ws.z));
+				return static_cast<size_t>(y + 1) * dimXZ + lx * dim + lz;
+			};
+
+			m_bfsQueue.clear();
+			if (m_bfsQueue.capacity() < 4096)
+				m_bfsQueue.reserve(4096);
+
+			const size_t seedSlot = calcBfsIdx(seedX, seedY, seedZ);
+			m_bfsVisitedGen[seedSlot] = curGen;
+			m_bfsEntryFaces[seedSlot] = 0x3Fu;
+			m_bfsQueue.push_back({ static_cast<int16_t>(seedX), static_cast<int16_t>(seedY), static_cast<int16_t>(seedZ) });
+
+			struct StepDir
+			{
+				int8_t dx, dy, dz;
+				uint8_t exitFace;
+				uint8_t neighborEntryFace;
+			};
+			// Matches BlockChunk::UpdateVisibilityGraph boundary face convention:
+			// cx==15 -> left (+X), cx==0 -> right (-X), cy==15 -> top (+Y), cy==0 -> bottom (-Y), cz==15 -> front (+Z), cz==0 -> back (-Z)
+			static const StepDir kStepDirs[6] = {
+				{ +1,  0,  0, static_cast<uint8_t>(BlockDirection::left),   static_cast<uint8_t>(BlockDirection::right)  },
+				{ -1,  0,  0, static_cast<uint8_t>(BlockDirection::right),  static_cast<uint8_t>(BlockDirection::left)   },
+				{  0, +1,  0, static_cast<uint8_t>(BlockDirection::top),    static_cast<uint8_t>(BlockDirection::bottom) },
+				{  0, -1,  0, static_cast<uint8_t>(BlockDirection::bottom), static_cast<uint8_t>(BlockDirection::top)    },
+				{  0,  0, +1, static_cast<uint8_t>(BlockDirection::front),  static_cast<uint8_t>(BlockDirection::back)   },
+				{  0,  0, -1, static_cast<uint8_t>(BlockDirection::back),   static_cast<uint8_t>(BlockDirection::front)  },
+			};
+
+			size_t qHead = 0;
+			while (qHead < m_bfsQueue.size())
+			{
+				const BfsChunkNode cur = m_bfsQueue[qHead++];
+				const int32 cx = cur.x;
+				const int32 cy = cur.y;
+				const int32 cz = cur.z;
+				const size_t curSlot = calcBfsIdx(cx, cy, cz);
+				const uint8_t entryMask = m_bfsEntryFaces[curSlot];
+				const int32 manhattanDist = std::abs(cx - seedX) + std::abs(cy - seedY) + std::abs(cz - seedZ);
+
+				uint16_t visGraph = BlockChunk::kVisGraphAllConnected;
+
+				if (cy >= 0 && cy <= 15)
+				{
+					Vector3 vMin = BlockCommon::ConvertToRealPosition(static_cast<uint16>(cx * 16), static_cast<uint16>(cy * 16), static_cast<uint16>(cz * 16), 7);
+					vMin -= renderOrig;
+					Vector3 vMax = vMin + vChunkSize;
+
+					CShapeAABB box;
+					box.SetMinMax(vMin, vMax);
+					const bool inFrustum = frustum->TestBox(&box) != 0;
+					if (!inFrustum && manhattanDist > 1 && !bSeedClampedXZ)
+						continue;
+
+					if (inFrustum && manhattanDist >= 2 && m_softwareOccluder.IsRenderAABBOccluded(box))
+						continue;
+
+					RenderableChunk& chunk = GetActiveChunk(static_cast<uint16>(cx), static_cast<uint16>(cy), static_cast<uint16>(cz));
+					if (!chunk.IsEmptyChunk())
+					{
+						chunk.RefreshVisibilityCache(this);
+						const bool bChunkDirty = chunk.IsDirty();
+						if (!bChunkDirty)
+						{
+							visGraph = chunk.GetVisibilityGraph();
+						}
+
+						const int32 viewDist = (std::max)((std::max)(std::abs(cx - chunkX), std::abs(cz - chunkZ)), std::abs(cy - chunkY));
+						if (inFrustum
+							&& cx >= startIdxX && cx <= endIdxX
+							&& cy >= startIdxY && cy <= endIdxY
+							&& cz >= startIdxZ && cz <= endIdxZ
+							&& chunk.IsIntersect(sEyeSphere)
+							&& chunk.IsNearbyChunksLoaded())
+						{
+							if (bChunkDirty || chunk.GetTotalFaceCount() > 0 || chunk.ShouldRebuildRenderBuffer(this, false, true))
+							{
+								AddToVisibleChunk(chunk, viewDist, nRenderFrameCount);
+							}
+							if (!bChunkDirty && viewDist <= 8)
+							{
+								Vector3 occMin, occMax;
+								if (chunk.GetOpaqueOccluderBoxWS(occMin, occMax))
+								{
+									m_softwareOccluder.RasterizeOccluderWorldAABB(occMin, occMax);
+								}
+							}
+						}
+					}
+				}
+
+				for (int d = 0; d < 6; ++d)
+				{
+					const StepDir& step = kStepDirs[d];
+					if (step.dx != 0 && (cx - seedX) * step.dx < 0) continue;
+					if (step.dy != 0 && (cy - seedY) * step.dy < 0) continue;
+					if (step.dz != 0 && (cz - seedZ) * step.dz < 0) continue;
+
+					const int32 nx = cx + step.dx;
+					const int32 ny = cy + step.dy;
+					const int32 nz = cz + step.dz;
+					if (nx < travMinX || nx > travMaxX || ny < bfsMinY || ny > bfsMaxY || nz < travMinZ || nz > travMaxZ)
+						continue;
+					if (ny >= 0 && ny <= 15 && (ny < travMinY || ny > travMaxY))
+						continue;
+
+					if (manhattanDist > 0 && visGraph != BlockChunk::kVisGraphAllConnected)
+					{
+						if (visGraph == BlockChunk::kVisGraphFullyOpaque)
+							continue;
+						bool bConnected = false;
+						for (int ef = 0; ef < 6; ++ef)
+						{
+							if ((entryMask & (1u << ef)) != 0 && BlockChunk::CanTraverseVisGraph(visGraph, ef, step.exitFace))
+							{
+								bConnected = true;
+								break;
+							}
+						}
+						if (!bConnected)
+							continue;
+					}
+
+					const size_t nSlot = calcBfsIdx(nx, ny, nz);
+					const uint8_t entryBit = static_cast<uint8_t>(1u << step.neighborEntryFace);
+					if (m_bfsVisitedGen[nSlot] != curGen)
+					{
+						m_bfsVisitedGen[nSlot] = curGen;
+						m_bfsEntryFaces[nSlot] = entryBit;
+						m_bfsQueue.push_back({ static_cast<int16_t>(nx), static_cast<int16_t>(ny), static_cast<int16_t>(nz) });
+					}
+					else
+					{
+						m_bfsEntryFaces[nSlot] |= entryBit;
+					}
+				}
+			}
+
+			m_softwareOccluder.FinalizeHierarchy();
+			m_isVisibleChunkDirty = false;
+			return;
+		}
+
+		if (startIdxX > endIdxX || startIdxZ > endIdxZ)
+			return;
+
+		// Shadow pass: radial spiral walk bounded tightly to the shadow caster AABB, skipping empty / 0-face interior chunks.
+		int32 chunkViewRadius = (std::max<int32>)(static_cast<int32>(GetRenderDist() / 16), 1);
+		int32 maxShadowExtent = (std::max)(
+			(std::max)(std::abs(startIdxX - chunkX), std::abs(endIdxX - chunkX)),
+			(std::max)(std::abs(startIdxZ - chunkZ), std::abs(endIdxZ - chunkZ)));
+		int32 chunkViewSize = (std::min)(chunkViewRadius * 2, maxShadowExtent);
+
+		auto tryAddShadowChunk = [&](int32 cx, int32 cz, int32 dist) {
+			if (cx < startIdxX || cx > endIdxX || cz < startIdxZ || cz > endIdxZ)
+				return;
+			for (int32 cy = startIdxY; cy <= endIdxY; ++cy)
+			{
+				RenderableChunk& chunk = GetActiveChunk(static_cast<uint16>(cx), static_cast<uint16>(cy), static_cast<uint16>(cz));
+				if (!chunk.IsIntersect(sEyeSphere))
+					continue;
+				if (!chunk.IsDirty() && chunk.GetTotalFaceCount() == 0 && !chunk.ShouldRebuildRenderBuffer(this, false, true))
+					continue;
+
+				Vector3 vMin = BlockCommon::ConvertToRealPosition(static_cast<uint16>(cx * 16), static_cast<uint16>(cy * 16), static_cast<uint16>(cz * 16), 7);
 				vMin -= renderOrig;
 				Vector3 vMax = vMin + vChunkSize;
 
@@ -2688,77 +3027,38 @@ namespace ParaEngine
 				box.SetMinMax(vMin, vMax);
 				if (frustum->TestBox(&box) && chunk.IsNearbyChunksLoaded())
 				{
-					AddToVisibleChunk(chunk, 0, nRenderFrameCount);
+					AddToVisibleChunk(chunk, dist, nRenderFrameCount);
 				}
 			}
-		}
+		};
 
+		tryAddShadowChunk(chunkX, chunkZ, 0);
+
+		int32 nIndex = 0;
+		int32 dx = 0;
+		int32 dz = 0;
 		for (int32 length = 1; length <= chunkViewSize; ++length)
 		{
 			for (int32 k = 1; k <= 2; ++k)
 			{
 				int32* dir = &(BlockCommon::g_xzDirectionsConst[(nIndex % 4)][0]);
 				nIndex++;
-
 				for (int32 i = 0; i < length; ++i)
 				{
-					dx = dx + dir[0];
-					dz = dz + dir[1];
-
-					//OUTPUT_LOG("%d, %d\n", dx, dz);
-					for (uint16 y = startIdx.y; y <= endIdx.y; y++)
-					{
-						uint16 x = (uint16)(chunkX + dx);
-						uint16 z = (uint16)(chunkZ + dz);
-						RenderableChunk& chunk = GetActiveChunk(x, y, z);
-						if (x >= startIdx.x && x <= endIdx.x && z >= startIdx.z && z <= endIdx.z && chunk.IsIntersect(sEyeSphere))
-						{
-							Vector3 vMin = BlockCommon::ConvertToRealPosition(x * 16, y * 16, z * 16, 7);
-							vMin -= renderOrig;
-							Vector3 vMax = vMin + vChunkSize;
-
-							CShapeAABB box;
-							box.SetMinMax(vMin, vMax);
-							if (frustum->TestBox(&box) && chunk.IsNearbyChunksLoaded())
-							{
-								AddToVisibleChunk(chunk, length, nRenderFrameCount);
-							}
-						}
-					}
+					dx += dir[0];
+					dz += dir[1];
+					tryAddShadowChunk(chunkX + dx, chunkZ + dz, length);
 				}
 			}
 		}
 
 		nIndex = (nIndex % 4);
-
 		for (int32 i = 1; i <= chunkViewSize; ++i)
 		{
-			dx = dx + BlockCommon::g_xzDirectionsConst[nIndex][0];
-			dz = dz + BlockCommon::g_xzDirectionsConst[nIndex][1];
-
-			for (uint16_t y = startIdx.y; y <= endIdx.y; y++)
-			{
-				uint16 x = (uint16)(chunkX + dx);
-				uint16 z = (uint16)(chunkZ + dz);
-				RenderableChunk& chunk = GetActiveChunk(x, y, z);
-				if (x >= startIdx.x && x <= endIdx.x && z >= startIdx.z && z <= endIdx.z && chunk.IsIntersect(sEyeSphere))
-				{
-					Vector3 vMin = BlockCommon::ConvertToRealPosition(x * 16, y * 16, z * 16, 7);
-					vMin -= renderOrig;
-					Vector3 vMax = vMin + vChunkSize;
-
-					CShapeAABB box;
-					box.SetMinMax(vMin, vMax);
-					if (frustum->TestBox(&box) && chunk.IsNearbyChunksLoaded())
-					{
-						AddToVisibleChunk(chunk, chunkViewSize, nRenderFrameCount);
-					}
-				}
-			}
+			dx += BlockCommon::g_xzDirectionsConst[nIndex][0];
+			dz += BlockCommon::g_xzDirectionsConst[nIndex][1];
+			tryAddShadowChunk(chunkX + dx, chunkZ + dz, chunkViewSize);
 		}
-
-		if (!bIsShadowPass)
-			m_isVisibleChunkDirty = false;
 	}
 
 	void BlockWorldClient::AddToVisibleChunk(RenderableChunk& chunk, int nViewDist, int nRenderFrameCount)
@@ -3244,19 +3544,19 @@ namespace ParaEngine
 
 		if (!m_effect_light_point)
 		{
-			m_effect_light_point = CGlobals::GetAssetManager()->LoadEffectFile("m_effect_light_point", "script/apps/Aries/Creator/Game/Shaders/DeferredShadingPointLighting.fxo");
+			m_effect_light_point = CGlobals::GetAssetManager()->LoadEffectFile("m_effect_light_point", ":IDR_FX_DEFERRED_POINT_LIGHTING");
 			if (m_effect_light_point)
 				m_effect_light_point->LoadAsset();
 		}
 		if (!m_effect_light_spot)
 		{
-			m_effect_light_spot = CGlobals::GetAssetManager()->LoadEffectFile("m_effect_light_spot", "script/apps/Aries/Creator/Game/Shaders/DeferredShadingSpotLighting.fxo");
+			m_effect_light_spot = CGlobals::GetAssetManager()->LoadEffectFile("m_effect_light_spot", ":IDR_FX_DEFERRED_SPOT_LIGHTING");
 			if (m_effect_light_spot)
 				m_effect_light_spot->LoadAsset();
 		}
 		if (!m_effect_light_directional)
 		{
-			m_effect_light_directional = CGlobals::GetAssetManager()->LoadEffectFile("m_effect_light_directional", "script/apps/Aries/Creator/Game/Shaders/DeferredShadingDirectionalLighting.fxo");
+			m_effect_light_directional = CGlobals::GetAssetManager()->LoadEffectFile("m_effect_light_directional", ":IDR_FX_DEFERRED_DIRECTIONAL_LIGHTING");
 			if (m_effect_light_directional)
 				m_effect_light_directional->LoadAsset();
 		}
@@ -3288,10 +3588,44 @@ namespace ParaEngine
 		static std::vector<uint16_t> s_sphereIndices;
 		if (s_unitSphereVerts.empty())
 		{
-			BuildUnitSphereMesh(50, 50, s_unitSphereVerts, s_sphereIndices);
+			BuildUnitSphereMesh(28, 18, s_unitSphereVerts, s_sphereIndices);
+			// Circumscribe slightly so polygonal facets fully enclose the true attenuation sphere.
+			for (Vector3& v : s_unitSphereVerts)
+				v *= 1.025f;
 		}
 		const uint32_t numSphereVerts = static_cast<uint32_t>(s_unitSphereVerts.size());
 		const uint32_t spherePrimCount = static_cast<uint32_t>(s_sphereIndices.size() / 3);
+
+		if (!m_lightSphereVB.IsValid() || !m_lightSphereIB.IsValid())
+		{
+			m_lightSphereVB.ReleaseBuffer();
+			m_lightSphereIB.ReleaseBuffer();
+			const uint32 vbBytes = numSphereVerts * sizeof(Vector3);
+			const uint32 ibBytes = static_cast<uint32>(s_sphereIndices.size() * sizeof(uint16_t));
+			if (m_lightSphereVB.CreateBuffer(vbBytes, 0, D3DUSAGE_WRITEONLY) &&
+				m_lightSphereIB.CreateBuffer(ibBytes, D3DFMT_INDEX16, D3DUSAGE_WRITEONLY))
+			{
+				void* pVBData = nullptr;
+				if (m_lightSphereVB.Lock(&pVBData, 0, vbBytes))
+				{
+					std::memcpy(pVBData, s_unitSphereVerts.data(), vbBytes);
+					m_lightSphereVB.Unlock();
+				}
+				void* pIBData = nullptr;
+				if (m_lightSphereIB.Lock(&pIBData, 0, ibBytes))
+				{
+					std::memcpy(pIBData, s_sphereIndices.data(), ibBytes);
+					m_lightSphereIB.Unlock();
+				}
+				m_lightSphereVertCount = numSphereVerts;
+				m_lightSpherePrimCount = spherePrimCount;
+			}
+		}
+		const bool bUseGpuSphereBuffers = m_lightSphereVB.IsValid() && m_lightSphereIB.IsValid();
+
+		CCameraFrustum* pFrustum = nullptr;
+		if (CGlobals::GetScene() && CGlobals::GetScene()->GetCurrentCamera())
+			pFrustum = CGlobals::GetScene()->GetCurrentCamera()->GetFrustum();
 
 		Vector2 vpScale(1.0f, 1.0f);
 		Vector2 vpOffset(0.0f, 0.0f);
@@ -3341,12 +3675,35 @@ namespace ParaEngine
 				continue;
 
 			const auto light_type = light_param->Type;
+			const auto light_range = light_param->Range;
+
+			Matrix4 mxWorld;
+			lightObject->GetRenderMatrix(mxWorld);
+			if (light_type == ELightType::Point || light_type == ELightType::Spot)
+			{
+				if (light_range <= 0.001f)
+					continue;
+				const Vector3 renderCenter(mxWorld._41, mxWorld._42, mxWorld._43);
+				const float cullRadius = light_range * 1.04f;
+				CShapeAABB lightBox;
+				lightBox.SetMinMax(
+					renderCenter - Vector3(cullRadius, cullRadius, cullRadius),
+					renderCenter + Vector3(cullRadius, cullRadius, cullRadius));
+				if (pFrustum && !pFrustum->TestBox(&lightBox))
+					continue;
+				if (m_softwareOccluder.IsRenderAABBOccluded(lightBox))
+					continue;
+
+				Matrix4 mxScaling;
+				mxScaling.makeScale(Vector3(light_range, light_range, light_range));
+				mxWorld = mxScaling * mxWorld;
+			}
+
 			const auto light_diffuse = light_param->Diffuse;
 			const auto light_specular = light_param->Specular;
 			const auto light_ambient = light_param->Ambient;
 			const auto light_position = light_param->Position;
 			const auto light_direction = lightObject->GetDirection();
-			const auto light_range = light_param->Range;
 			const auto light_falloff = light_param->Falloff;
 			const auto light_attenuation0 = light_param->Attenuation0;
 			const auto light_attenuation1 = light_param->Attenuation1;
@@ -3386,6 +3743,11 @@ namespace ParaEngine
 
 				if (pDecl)
 					pDevice->SetVertexDeclaration(pDecl);
+				if ((light_type == ELightType::Point || light_type == ELightType::Spot) && bUseGpuSphereBuffers)
+				{
+					pDevice->SetStreamSource(0, m_lightSphereVB.GetDevicePointer(), 0, sizeof(Vector3));
+					pDevice->SetIndices(m_lightSphereIB.GetDevicePointer());
+				}
 
 				if (!pEffectFile->begin(false, 0, true))
 				{
@@ -3420,15 +3782,6 @@ namespace ParaEngine
 				continue;
 
 			auto* params = pEffectFile->GetParamBlock();
-
-			Matrix4 mxWorld;
-			lightObject->GetRenderMatrix(mxWorld);
-			if (light_type == ELightType::Point || light_type == ELightType::Spot)
-			{
-				Matrix4 mxScaling;
-				mxScaling.makeScale(Vector3(light_range, light_range, light_range));
-				mxWorld = mxScaling * mxWorld;
-			}
 
 			CGlobals::GetWorldMatrixStack().push(mxWorld);
 			params->SetParamByStringValue("matWorld", "mat4World");
@@ -3474,7 +3827,14 @@ namespace ParaEngine
 							pEffectFile->setTexture(1, m_render_target_depth_tex.get());
 							pEffectFile->setTexture(2, m_render_target_normal.get());
 						}
-						pDevice->DrawIndexedPrimitiveUP(EPrimitiveType::TRIANGLELIST, 0, numSphereVerts, spherePrimCount, s_sphereIndices.data(), PixelFormat::INDEX16, s_unitSphereVerts.data(), sizeof(Vector3));
+						if (bUseGpuSphereBuffers)
+						{
+							pDevice->DrawIndexedPrimitive(EPrimitiveType::TRIANGLELIST, 0, 0, m_lightSphereVertCount, 0, m_lightSpherePrimCount);
+						}
+						else
+						{
+							pDevice->DrawIndexedPrimitiveUP(EPrimitiveType::TRIANGLELIST, 0, numSphereVerts, spherePrimCount, s_sphereIndices.data(), PixelFormat::INDEX16, s_unitSphereVerts.data(), sizeof(Vector3));
+						}
 						pEffectFile->EndPass(true);
 					}
 				}

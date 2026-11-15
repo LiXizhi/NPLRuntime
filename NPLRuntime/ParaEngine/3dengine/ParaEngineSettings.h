@@ -254,6 +254,7 @@ namespace ParaEngine
         ATTRIBUTE_METHOD1(ParaEngineSettings, IsScreenRotated_s, bool*) { *p1 = cls->IsScreenRotated(); return S_OK; }
 
         ATTRIBUTE_METHOD1(ParaEngineSettings, GetRendererName_s, const char**) { *p1 = cls->GetRendererName(); return S_OK; }
+        ATTRIBUTE_METHOD1(ParaEngineSettings, IsLowEndRenderDevice_s, bool*) { *p1 = cls->IsLowEndRenderDevice(); return S_OK; }
 
 
 #ifdef ANDROID
@@ -423,8 +424,10 @@ namespace ParaEngine
         */
         void LoadGameEffectSet(int nSetID);
         int GetGameEffectSet();
+        bool IsLowEndRenderDevice();
         static void LoadGameEffectSetS(int nSetID){ GetSingleton().LoadGameEffectSet(nSetID);};
         static int GetGameEffectSetS(){ return GetSingleton().GetGameEffectSet();};
+        static bool IsLowEndRenderDeviceS(){ return GetSingleton().IsLowEndRenderDevice();};
 
         
         

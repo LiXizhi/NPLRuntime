@@ -1,5 +1,8 @@
 #pragma once
 #include "SceneObject.h"
+#include "ParaEngineSettings.h"
+#include "OcclusionQueryBank.h"
+#include "BlockEngine/BlockWorldClient.h"
 /** @def if there are over this number of mesh objects in a single frame, we will use instancing to draw them in a single draw call. */
 #define AUTO_INSTANCING_THRESHOLD_NUM	10
 
@@ -16,9 +19,16 @@ namespace ParaEngine
 	template <class T>
 		int PerformOcclusionTest(T& renderlist, SceneState& sceneState, int nMinEnableCount = 25, int nPixelsCount = 0)
 	{
+		(void)nPixelsCount;
 		auto pRenderDevice = CGlobals::GetRenderDevice();
-		if (!pRenderDevice || !pRenderDevice->GetCaps().supportsOcclusionQuery)
+		if (!pRenderDevice || !pRenderDevice->GetCaps().supportsOcclusionQuery || CGlobals::GetSettings().IsLowEndRenderDevice())
 			return 0;
+		// Skip synchronous GPU query stalls when CPU software Hi-Z occlusion has already culled this frame's render lists.
+		if (BlockWorldClient* pBWC = BlockWorldClient::GetInstance())
+		{
+			if (pBWC->GetSoftwareOccluder().IsFrameValid() && pBWC->GetSoftwareOccluder().GetOccluderCount() > 0)
+				return 0;
+		}
 		int nObjectNum = (int)renderlist.size();
 
 		// only bother to use hardware occlusion testing if the number of small object is larger than 20.
@@ -28,39 +38,37 @@ namespace ParaEngine
 			LatentOcclusionQueryBank* pQueries = NULL;
 			if(CGlobals::GetScene()->IsOcclusionQueryEnabled() && ((pQueries = CGlobals::GetAssetManager()->GetOcclusionQueryBank())!=0))
 			{
-				//////////////////////////////////////////////////////////////////////////
-				//
-				// Issue multiple occlusion queries in a batch pass: 
-				// 
-				//////////////////////////////////////////////////////////////////////////
-				/* parallelism is given by the following example. More parallelism can be achieve by using the occlusion result from the last render frame.
-				* Suppose there are 34 objects, and 32 query objects. 
-				* Q1-Q32 denotes the 32 parallel query objects. o1-o34 denotes 34 objects
-				* Issue(Q1) for o1,..., Issue(Q32) for o32, retrieve(Q1) for o1, Issue(Q1) for o33, retrieve(Q2) for o2, Issue(Q2) for o34,
-				* retrieve(ALL),
-				* Render(o1-o34)
-				*/
-
-				//////////////////////////////////////////////////////////////////////////
-				// issue multiple queries up to nQueryNum in parallel for all objects
-				// set up query render state: 
 				AlphaPostRenderObject * pObj = NULL;
 				DWORD pixelsVisible = 0;
+				// Drain any available results without blocking first.
+				while (pQueries->CheckForFirstResult(&pixelsVisible, (void**)(&pObj)) == S_OK)
+				{
+					pObj = NULL;
+				}
 				CGlobals::GetEffectManager()->BeginEffect(TECH_OCCLUSION_TEST, &(sceneState.m_pCurrentEffect));
 				typename T::const_iterator itCurCP, itEnd = renderlist.end();
 				for(itCurCP = renderlist.begin(); itCurCP !=itEnd ; ++itCurCP)
 				{
-					// wait on the result of the first query, to ensure there is always an unused query in the bank.
+					if ((*itCurCP).IsOccluded())
+						continue;
+
+					// Drain completed queries non-blockingly first; only wait if the query bank is completely full.
+					pObj = NULL;
+					while (pQueries->CheckForFirstResult(&pixelsVisible, (void**)(&pObj)) == S_OK)
+					{
+						if (pObj != NULL)
+						{
+							pObj->m_nOccluded = (pixelsVisible == 0) ? 2 : -1;
+							pObj = NULL;
+						}
+					}
 					if(! pQueries->HasUnusedQuery())
 					{
 						pObj = NULL;
 						if((pQueries->WaitForFirstResult(&pixelsVisible, (void**)(&pObj)) == S_OK) && pObj!=NULL)
 						{
-							if(pObj!=NULL)
-							{
-								pObj->m_nOccluded = (pixelsVisible == 0) ? 1: -1;
-								pObj = NULL;
-							}
+							pObj->m_nOccluded = (pixelsVisible == 0) ? 2 : -1;
+							pObj = NULL;
 						}
 						else
 							break;
@@ -77,13 +85,13 @@ namespace ParaEngine
 					else
 						break;
 				}
-				// fetch the remaining result
+				// fetch the remaining result so per-frame list pointers never outlive this frame
 				pObj = NULL;
 				while(pQueries->WaitForFirstResult(&pixelsVisible, (void**)(&pObj)) == S_OK)
 				{
 					if(pObj!=0)
 					{
-						pObj->m_nOccluded = (pixelsVisible == 0) ? 1: -1;
+						pObj->m_nOccluded = (pixelsVisible == 0) ? 2 : -1;
 						pObj = NULL;
 					}
 				}
@@ -133,13 +141,15 @@ namespace ParaEngine
 					if(pEntity!=0 && pEntity->GetType() == AssetEntity::mesh 
 						&& ((MeshEntity*)pEntity)->GetMesh() && (((MeshEntity*)pEntity)->GetMesh()->GetNumReplaceableTextures()==0) && (((MeshEntity*)pEntity)->GetMesh()->GetXRefObjectsCount()==0))
 					{
-						int nInstanceCount=0;
-						for(typename T::const_iterator itCur1 = itCurCP; itCur1!=itEnd; ++itCur1)
+						int nInstanceCount = 0;
+						typename T::const_iterator itRunEnd = itCurCP;
+						for(; itRunEnd != itEnd; ++itRunEnd)
 						{
-							if(nCurTechHandle == (*itCur1).m_pRenderObject->GetPrimaryTechniqueHandle() 
-								&& pEntity == (*itCur1).m_pRenderObject->GetPrimaryAsset())
+							if(nCurTechHandle == (*itRunEnd).m_pRenderObject->GetPrimaryTechniqueHandle() 
+								&& pEntity == (*itRunEnd).m_pRenderObject->GetPrimaryAsset())
 							{
-								++nInstanceCount;
+								if (!(*itRunEnd).IsOccluded())
+									++nInstanceCount;
 							}
 							else
 								break;
@@ -152,34 +162,40 @@ namespace ParaEngine
 							DynamicVertexBufferEntity* pBuffer = CGlobals::GetAssetManager()->GetDynamicBuffer(DVB_MATRIX);
 							if(pBuffer!=0 && pBuffer->Lock(nInstanceCount, (VOID**)&pVertices) == nInstanceCount && pBuffer->GetBuffer() != nullptr)
 							{
-								for(int i=0;i<nInstanceCount;i++)
-								{	
+								int written = 0;
+								typename T::const_iterator itLastVisible = itCurCP;
+								for(typename T::const_iterator itPack = itCurCP; itPack != itRunEnd && written < nInstanceCount; ++itPack)
+								{
+									if ((*itPack).IsOccluded())
+										continue;
 									Matrix4 matrix;
-									(*itCurCP).m_pRenderObject->GetRenderMatrix(matrix);
+									(*itPack).m_pRenderObject->GetRenderMatrix(matrix);
 									// since no projection, encode the 4x3 part in a 3x4(shader will decode)
-									pVertices[i].r1 = Vector4(matrix._11,matrix._21,matrix._31,matrix._41);
-									pVertices[i].r2 = Vector4(matrix._12,matrix._22,matrix._32,matrix._42);
-									pVertices[i].r3 = Vector4(matrix._13,matrix._23,matrix._33,matrix._43);
-									if(i<(nInstanceCount-1))
-										++itCurCP;
+									pVertices[written].r1 = Vector4(matrix._11,matrix._21,matrix._31,matrix._41);
+									pVertices[written].r2 = Vector4(matrix._12,matrix._22,matrix._32,matrix._42);
+									pVertices[written].r3 = Vector4(matrix._13,matrix._23,matrix._33,matrix._43);
+									itLastVisible = itPack;
+									++written;
 								}
 								pBuffer->Unlock();
+								itCurCP = itRunEnd;
+								--itCurCP;
 
-								if(CGlobals::GetEffectManager()->BeginEffect(TECH_SIMPLE_MESH_NORMAL_INSTANCED, &(sceneState.m_pCurrentEffect)))
+								if(written > 0 && CGlobals::GetEffectManager()->BeginEffect(TECH_SIMPLE_MESH_NORMAL_INSTANCED, &(sceneState.m_pCurrentEffect)))
 								{
 									// Set the first stream to be the indexed data and render N instances
-									pRenderDevice->SetStreamSourceFreq(0, (0x40000000u | static_cast<uint32_t>(nInstanceCount)));
+									pRenderDevice->SetStreamSourceFreq(0, (0x40000000u | static_cast<uint32_t>(written)));
 									// Set the second stream to be per instance data and iterate once per instance
 									pRenderDevice->SetStreamSourceFreq(1, (0x80000000u | 1u));
 									pRenderDevice->SetStreamSource(1, pBuffer->GetBuffer(), pBuffer->m_dwBase * pBuffer->m_nUnitSize, pBuffer->m_nUnitSize);
 
-									sceneState.SetCameraToCurObjectDistance((*itCurCP).m_fObjectToCameraDistance);
-									(*itCurCP).m_pRenderObject->Draw(&sceneState);
+									sceneState.SetCameraToCurObjectDistance((*itLastVisible).m_fObjectToCameraDistance);
+									(*itLastVisible).m_pRenderObject->Draw(&sceneState);
 									pRenderDevice->SetStreamSourceFreq(0, 1);
 									pRenderDevice->SetStreamSourceFreq(1, 1);
 									nLastHandle = TECH_SIMPLE_MESH_NORMAL_INSTANCED;
 									pLastEntity = pEntity;
-									nObjCount += nInstanceCount;
+									nObjCount += written;
 								}
 								continue;
 							}

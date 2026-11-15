@@ -1416,6 +1416,8 @@ namespace ParaEngine
 		m_caps.maxAnisotropy = (m_enabledFeatures.samplerAnisotropy == VK_TRUE)
 			? static_cast<uint32_t>((std::min)(16.0f, m_physProps.limits.maxSamplerAnisotropy))
 			: 1u;
+		m_caps.maxVertexUniformVectors = (std::max)(256u, m_physProps.limits.maxUniformBufferRange / 16u);
+		m_caps.isSoftwareAdapter = (m_physProps.deviceType == VK_PHYSICAL_DEVICE_TYPE_CPU);
 		m_caps.supportsFloatRenderTargets = true;
 		m_caps.supportsDepthTextures = true;
 		m_caps.supportsInstancing = true;

@@ -7,6 +7,7 @@
 // Algorithm: it combines the Nvidia's Vertex Texture Fetch with my own FFT based ocean simulation.
 //-----------------------------------------------------------------------------
 #include "ParaEngine.h"
+#include "ParaEngineSettings.h"
 #include "OcclusionQueryBank.h"
 #include "SceneObject.h"
 #include "terrain/GlobalTerrain.h"
@@ -1837,7 +1838,7 @@ namespace ParaEngine
 			return S_OK;
 		Vector3 vRenderOrig = CGlobals::GetScene()->GetRenderOrigin();
 
-		LatentOcclusionQueryBank* pQueries = pd3dDevice->GetCaps().supportsOcclusionQuery
+		LatentOcclusionQueryBank* pQueries = (pd3dDevice->GetCaps().supportsOcclusionQuery && !CGlobals::GetSettings().IsLowEndRenderDevice())
 			? CGlobals::GetAssetManager()->GetOcclusionQueryBank(1)
 			: nullptr;
 		if(pQueries != nullptr)

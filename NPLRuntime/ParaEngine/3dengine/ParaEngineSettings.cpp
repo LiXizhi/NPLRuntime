@@ -229,6 +229,16 @@ int ParaEngineSettings::GetGameEffectSet()
 	return g_nSetID;
 }
 
+bool ParaEngineSettings::IsLowEndRenderDevice()
+{
+	if (g_nSetID == 1024 || g_nSetID < 0)
+		return true;
+	auto* pDevice = CGlobals::GetRenderDevice();
+	if (!pDevice)
+		return false;
+	return pDevice->GetCaps().IsLowEndDevice();
+}
+
 void ParaEngineSettings::LoadGameEffectSet(int nSetID)
 {
 	auto* pDevice = CGlobals::GetRenderDevice();
@@ -239,6 +249,7 @@ void ParaEngineSettings::LoadGameEffectSet(int nSetID)
 	}
 
 	int ShaderVersion = pDevice ? pDevice->GetCaps().GetShaderModelMajor() : 0;
+	const bool bLowEndHw = pDevice ? pDevice->GetCaps().IsLowEndDevice() : false;
 	if (ShaderVersion != 0 && nSetID != 1024)
 	{
 		if (ShaderVersion < 2)
@@ -246,11 +257,11 @@ void ParaEngineSettings::LoadGameEffectSet(int nSetID)
 			OUTPUT_LOG("warning: you can not set effect level to %d, because your shader version is too low. Fixed function is used instead. \n", nSetID);
 			nSetID = 1024;
 		}
-		else if (ShaderVersion < 3)
+		else if (ShaderVersion < 3 || bLowEndHw)
 		{
 			if (nSetID > 0)
 			{
-				OUTPUT_LOG("warning: you can not set effect level to %d, because your shader version is too low. Fixed function is used instead. \n", nSetID);
+				OUTPUT_LOG("warning: effect level %d clamped to 0 for low-end / DirectX 9-class device.\n", nSetID);
 				nSetID = 0;
 			}
 		}
@@ -1952,6 +1963,7 @@ int ParaEngineSettings::InstallFields(CAttributeClass* pClass, bool bOverride)
 	pClass->AddField("IsScreenRotated", FieldType_Bool, NULL, (void*)IsScreenRotated_s, NULL, NULL, bOverride);
 
 	pClass->AddField("RendererName", FieldType_String, NULL, (void*)GetRendererName_s, NULL, NULL, bOverride);
+	pClass->AddField("IsLowEndDevice", FieldType_Bool, NULL, (void*)IsLowEndRenderDevice_s, NULL, NULL, bOverride);
 	
 	return S_OK;
 }

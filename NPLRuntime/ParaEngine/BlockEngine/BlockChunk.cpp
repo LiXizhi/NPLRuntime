@@ -8,6 +8,7 @@
 #include "ParaEngine.h"
 #include "BlockRegion.h"
 #include "BlockCommon.h"
+#include "BlockDirection.h"
 #include "BlockWorld.h"
 #include "BlockChunk.h"
 
@@ -19,7 +20,8 @@ namespace ParaEngine
 
 	BlockChunk::BlockChunk(uint16_t nPackedChunkId, BlockRegion* pRegion) : 
 		m_blockIndices(BlockConfig::g_chunkBlockCount, -1), m_nDirty(1), m_emptyBlockSlotIndex(INVALID_BLOCK_INDEX),
-		m_ownerBlockRegion(pRegion), m_packedChunkID(nPackedChunkId), m_isBoundaryChunk(0)
+		m_ownerBlockRegion(pRegion), m_packedChunkID(nPackedChunkId), m_isBoundaryChunk(0),
+		m_uVisGraph(kVisGraphAllConnected), m_opaqueLayerMask(0), m_bVisGraphDirty(false)
 	{
 		// m_blocks.reserve(4096);
 		SetLightingInitialized(false);
@@ -29,9 +31,16 @@ namespace ParaEngine
 		m_minBlockId_rs.y = m_chunkId_rs.y*16;
 		m_minBlockId_rs.z = m_chunkId_rs.z*16;
 
-		m_minBlockId_ws.x = pRegion->m_minBlockId_ws.x + m_minBlockId_rs.x;
-		m_minBlockId_ws.y = pRegion->m_minBlockId_ws.y + m_minBlockId_rs.y;
-		m_minBlockId_ws.z = pRegion->m_minBlockId_ws.z + m_minBlockId_rs.z;
+		if (pRegion)
+		{
+			m_minBlockId_ws.x = pRegion->m_minBlockId_ws.x + m_minBlockId_rs.x;
+			m_minBlockId_ws.y = pRegion->m_minBlockId_ws.y + m_minBlockId_rs.y;
+			m_minBlockId_ws.z = pRegion->m_minBlockId_ws.z + m_minBlockId_rs.z;
+		}
+		else
+		{
+			m_minBlockId_ws = m_minBlockId_rs;
+		}
 
 		SetBoundaryChunk(m_chunkId_rs.x == 0 || m_chunkId_rs.y == 0 || m_chunkId_rs.z == 0
 			|| m_chunkId_rs.x == BlockConfig::g_regionChunkDimX - 1
@@ -64,6 +73,9 @@ namespace ParaEngine
 		SetDirty(false);
 		SetLightingInitialized(false);
 		m_emptyBlockSlotIndex = INVALID_BLOCK_INDEX;
+		m_uVisGraph = kVisGraphAllConnected;
+		m_opaqueLayerMask = 0;
+		m_bVisGraphDirty = false;
 #ifdef EMSCRIPTEN_SINGLE_THREAD		
 		std::fill(m_lightmapArray.begin(),m_lightmapArray.end(),LightData(0xf0));
 #else
@@ -235,6 +247,7 @@ namespace ParaEngine
 		int nIndexSize = (int)blockIndices.size();
 		if (nIndexSize > 0)
 		{
+			m_bVisGraphDirty = true;
 			uint16 nBlockIndex = blockIndices[0];
 			SetBlockTemplate(nBlockIndex, pTemplate);
 			Block* pBlock = GetBlock(nBlockIndex);
@@ -285,6 +298,7 @@ namespace ParaEngine
 				return;
 			}
 		}
+		m_bVisGraphDirty = true;
 		if (pTemplate)
 		{
 			int16 nIndex = FindBlock(pTemplate);
@@ -315,6 +329,7 @@ namespace ParaEngine
 		{
 			if (pBlock->GetUserData() != nData)
 			{
+				m_bVisGraphDirty = true;
 				BlockTemplate * pTemplate = pBlock->GetTemplate();
 				SetBlockEmpty(nBlockIndex, *pBlock);
 				
@@ -354,6 +369,7 @@ namespace ParaEngine
 				return;
 			}
 		}
+		m_bVisGraphDirty = true;
 		if (pTemplate)
 		{
 			int16 nIndex = FindBlock(pTemplate, nData);
@@ -827,6 +843,7 @@ namespace ParaEngine
 		int16 nIndex = m_blockIndices[nBlockIndex];
 		if (nIndex != -1)
 		{
+			m_bVisGraphDirty = true;
 			m_blockIndices[nBlockIndex] = -1;
 			if (block.DecreaseInstanceCount() == 0)
 			{
@@ -859,25 +876,13 @@ namespace ParaEngine
 						m_ownerBlockRegion->RefreshBlockTemplateByIndex(blockId_rs.x, blockId_rs.y, blockId_rs.z, blockTemplate);
 						m_ownerBlockRegion->CheckNeighborChunkDirty(blockId_rs);
 						SetDirty(true);
+						m_bVisGraphDirty = true;
 					}
 				}
 			}
 		}
 
 		std::vector<Uint16x3> rets;
-		// for (auto iter = m_lightBlockIndices.begin(); iter != m_lightBlockIndices.end(); ++iter)
-		// {
-			// uint16_t nIndex = *iter;
-			// int32_t blockIndex = m_blockIndices[nIndex];
-			// Block& block = m_blocks[blockIndex];
-
-			// if (block.GetTemplate()->GetID() == blockTemplateId)
-			// {
-				// Uint16x3 blockId_rs = GetBlockPosRs(nIndex);
-				// rets.push_back(blockId_rs);	
-			// }
-		// }
-
 		return rets;
 	}
 
@@ -947,6 +952,229 @@ namespace ParaEngine
 	int BlockChunk::GetTotalBytes()
 	{
 		return (sizeof(BlockChunk) + (sizeof(LightData) + sizeof(int16))*(16 * 16 * 16)) + sizeof(Block) * GetBlockCount() + sizeof(uint16) * m_lightBlockIndices.size();
+	}
+
+	namespace
+	{
+		static constexpr uint16_t kVisPairMaskTable[6][6] = {
+			{ 0x0000u, 0x0001u, 0x0002u, 0x0004u, 0x0008u, 0x0010u },
+			{ 0x0001u, 0x0000u, 0x0020u, 0x0040u, 0x0080u, 0x0100u },
+			{ 0x0002u, 0x0020u, 0x0000u, 0x0200u, 0x0400u, 0x0800u },
+			{ 0x0004u, 0x0040u, 0x0200u, 0x0000u, 0x1000u, 0x2000u },
+			{ 0x0008u, 0x0080u, 0x0400u, 0x1000u, 0x0000u, 0x4000u },
+			{ 0x0010u, 0x0100u, 0x0800u, 0x2000u, 0x4000u, 0x0000u },
+		};
+	}
+
+	uint16_t BlockChunk::GetVisEdgeMask(int faceA, int faceB)
+	{
+		if ((unsigned)faceA >= 6u || (unsigned)faceB >= 6u)
+			return 0;
+		return kVisPairMaskTable[faceA][faceB];
+	}
+
+	bool BlockChunk::GetBestOpaqueLayerSpan(uint16_t layerMask, int& outMinY, int& outMaxY)
+	{
+		if (layerMask == 0)
+			return false;
+
+		int bestStart = -1;
+		int bestLen = 0;
+		int curStart = -1;
+		int curLen = 0;
+
+		for (int cy = 0; cy < 16; ++cy)
+		{
+			if ((layerMask & (1u << cy)) != 0)
+			{
+				if (curLen == 0)
+					curStart = cy;
+				++curLen;
+				if (curLen >= bestLen)
+				{
+					bestLen = curLen;
+					bestStart = curStart;
+				}
+			}
+			else
+			{
+				curLen = 0;
+			}
+		}
+
+		if (bestLen <= 0)
+			return false;
+
+		outMinY = bestStart;
+		outMaxY = bestStart + bestLen - 1;
+		return true;
+	}
+
+	void BlockChunk::UpdateVisibilityGraph()
+	{
+		if (m_blocks.empty() || m_blockIndices.size() < 4096)
+		{
+			m_uVisGraph = kVisGraphAllConnected;
+			m_opaqueLayerMask = 0;
+			m_bVisGraphDirty = false;
+			return;
+		}
+
+		uint64_t visited[64] = {};
+		int solidCount = 0;
+		const int16_t* indices = m_blockIndices.data();
+		const Block* blockPool = m_blocks.data();
+		const int poolSize = (int)m_blocks.size();
+
+		for (int idx = 0; idx < 4096; ++idx)
+		{
+			int16_t poolIdx = indices[idx];
+			if (poolIdx >= 0 && poolIdx < poolSize)
+			{
+				BlockTemplate* pTemplate = const_cast<Block&>(blockPool[poolIdx]).GetTemplate();
+				if (pTemplate &&
+					pTemplate->IsMatchAttribute(BlockTemplate::batt_solid) &&
+					!pTemplate->IsMatchAttribute(BlockTemplate::batt_transparent | BlockTemplate::batt_invisible))
+				{
+					++solidCount;
+					visited[idx >> 6] |= (1ULL << (idx & 63));
+				}
+			}
+		}
+
+		if (solidCount == 0)
+		{
+			m_uVisGraph = kVisGraphAllConnected;
+			m_opaqueLayerMask = 0;
+			m_bVisGraphDirty = false;
+			return;
+		}
+
+		if (solidCount == 4096)
+		{
+			m_uVisGraph = kVisGraphFullyOpaque;
+			m_opaqueLayerMask = 0xFFFFu;
+			m_bVisGraphDirty = false;
+			return;
+		}
+
+		uint16_t layerMask = 0;
+		for (int cy = 0; cy < 16; ++cy)
+		{
+			const int w = cy << 2;
+			if ((visited[w] & visited[w + 1] & visited[w + 2] & visited[w + 3]) == ~0ULL)
+				layerMask |= static_cast<uint16_t>(1u << cy);
+		}
+		m_opaqueLayerMask = layerMask;
+
+		static constexpr uint64_t kMidLayerBoundaryMasks[4] = {
+			0x800180018001FFFFULL,
+			0x8001800180018001ULL,
+			0x8001800180018001ULL,
+			0xFFFF800180018001ULL,
+		};
+
+		uint16_t visGraph = 0;
+		uint16_t queue[4096];
+
+		for (int wordIdx = 0; wordIdx < 64 && visGraph != kVisGraphAllConnected; ++wordIdx)
+		{
+			const uint64_t boundaryMask = (wordIdx < 4 || wordIdx >= 60)
+				? ~0ULL
+				: kMidLayerBoundaryMasks[wordIdx & 3];
+
+			uint64_t seeds = (~visited[wordIdx]) & boundaryMask;
+			while (seeds != 0)
+			{
+				int bitPos = 0;
+				{
+					uint64_t tmp = seeds;
+					while ((tmp & 1ULL) == 0)
+					{
+						tmp >>= 1;
+						++bitPos;
+					}
+				}
+				const uint64_t seedBit = 1ULL << bitPos;
+				seeds &= ~seedBit;
+				if ((visited[wordIdx] & seedBit) != 0)
+					continue;
+
+				visited[wordIdx] |= seedBit;
+				int qHead = 0;
+				int qTail = 0;
+				queue[qTail++] = static_cast<uint16_t>((wordIdx << 6) | bitPos);
+
+				uint8_t touchedFaces = 0;
+				while (qHead < qTail)
+				{
+					const uint16_t cur = queue[qHead++];
+					const uint16_t cx = cur & 0xFu;
+					const uint16_t cz = (cur >> 4) & 0xFu;
+					const uint16_t cy = cur >> 8;
+
+					if (cx == 15) touchedFaces |= (1u << BlockDirection::left);
+					if (cx == 0)  touchedFaces |= (1u << BlockDirection::right);
+					if (cz == 15) touchedFaces |= (1u << BlockDirection::front);
+					if (cz == 0)  touchedFaces |= (1u << BlockDirection::back);
+					if (cy == 15) touchedFaces |= (1u << BlockDirection::top);
+					if (cy == 0)  touchedFaces |= (1u << BlockDirection::bottom);
+
+					auto tryPush = [&](uint16_t n) {
+						uint64_t& w = visited[n >> 6];
+						const uint64_t b = 1ULL << (n & 63);
+						if ((w & b) == 0)
+						{
+							w |= b;
+							queue[qTail++] = n;
+						}
+					};
+
+					if (cx < 15) tryPush(cur + 1);
+					if (cx > 0)  tryPush(cur - 1);
+					if (cz < 15) tryPush(cur + 16);
+					if (cz > 0)  tryPush(cur - 16);
+					if (cy < 15) tryPush(cur + 256);
+					if (cy > 0)  tryPush(cur - 256);
+				}
+
+				if (touchedFaces == 0x3Fu)
+				{
+					visGraph = kVisGraphAllConnected;
+					break;
+				}
+
+				for (int a = 0; a < 5; ++a)
+				{
+					if ((touchedFaces & (1u << a)) == 0)
+						continue;
+					for (int b = a + 1; b < 6; ++b)
+					{
+						if ((touchedFaces & (1u << b)) != 0)
+							visGraph |= kVisPairMaskTable[a][b];
+					}
+				}
+
+				seeds &= ~visited[wordIdx];
+			}
+		}
+
+		m_uVisGraph = visGraph;
+		m_bVisGraphDirty = false;
+	}
+
+	uint16_t BlockChunk::GetVisibilityGraph()
+	{
+		if (m_bVisGraphDirty)
+			UpdateVisibilityGraph();
+		return m_uVisGraph;
+	}
+
+	uint16_t BlockChunk::GetOpaqueLayerMask()
+	{
+		if (m_bVisGraphDirty)
+			UpdateVisibilityGraph();
+		return m_opaqueLayerMask;
 	}
 	
 	void LightData::SetBrightness( uint8_t value,bool isSunLight )

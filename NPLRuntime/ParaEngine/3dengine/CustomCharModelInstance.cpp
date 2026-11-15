@@ -427,6 +427,7 @@ void CharModelInstance::UpdateGeosetsToModel(CParaXModel* pModel)
 	if (!showEars)
 		geosets[CSET_EARS] = 0; // hide the ears
 	int nCount = (int)pModel->geosets.size();
+	bool bChanged = false;
 	for (int j = 0; j < nCount; j++)
 	{
 		int id = pModel->geosets[j].id;
@@ -436,23 +437,26 @@ void CharModelInstance::UpdateGeosetsToModel(CParaXModel* pModel)
 		// id is of format "ccdd", where "cc" is the geoset category CharModelInstance::CharGeosets 
 		// and "dd" is individual geoset style starting from 1 of the given category. 
 		// if id == 0, it means an always displayed mesh.
+		bool bNewShow = true;
 		if (id != 0)
 		{
 			int nBasePart = ((int)floorf((float)id / 100.f));
 			if (nBasePart < CharModelInstance::NUM_CHAR_GEOSETS)
-				pModel->showGeosets[j] = (id == (nBasePart * 100 + geosets[nBasePart]));
+				bNewShow = (id == (nBasePart * 100 + geosets[nBasePart]));
 			else
-				pModel->showGeosets[j] = false; // this line should never be executed.
+				bNewShow = false; // this line should never be executed.
 		}
-		else
+		if (pModel->showGeosets[j] != bNewShow)
 		{
-			// show all geoset whose id ==0, there may be multiple such geosets.
-			pModel->showGeosets[j] = true;
-
+			pModel->showGeosets[j] = bNewShow;
+			bChanged = true;
 		}
 	}
 
-	pModel->SetVertexBufferDirty();
+	if (bChanged)
+	{
+		pModel->SetVertexBufferDirty();
+	}
 }
 
 void CharModelInstance::UpdateTexturesToModel(CParaXModel* pModel)

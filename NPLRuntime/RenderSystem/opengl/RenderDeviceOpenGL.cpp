@@ -898,16 +898,35 @@ namespace ParaEngine
 		GLint maxDrawBufs = 1;
 		glGetIntegerv(GL_MAX_DRAW_BUFFERS, &maxDrawBufs);
 		m_Caps.maxSimultaneousRTs = static_cast<uint32_t>(maxDrawBufs > 0 ? maxDrawBufs : 1);
+		GLint maxVsComps = 1024;
+		glGetIntegerv(GL_MAX_VERTEX_UNIFORM_COMPONENTS, &maxVsComps);
+		m_Caps.maxVertexUniformVectors = static_cast<uint32_t>(maxVsComps > 0 ? (maxVsComps / 4) : 256);
 		m_Caps.supportsFloatRenderTargets = (m_Caps.featureLevel >= 300);
 		m_Caps.supportsDepthTextures = (m_Caps.featureLevel >= 300);
 		m_Caps.supportsInstancing = (glad_glDrawElementsInstanced != nullptr && glad_glVertexAttribDivisor != nullptr);
 		m_Caps.supportsOcclusionQuery = (glad_glGenQueries != nullptr && glad_glGetQueryObjectuiv != nullptr);
 		m_Caps.supportsTwoSidedStencil = (glad_glStencilFuncSeparate != nullptr && glad_glStencilOpSeparate != nullptr);
 		m_Caps.supportsUserClipPlanes = true;
+		m_Caps.supports32BitIndices = true;
 #else
 		m_Caps.maxSimultaneousRTs = 1;
+		GLint maxVsVecs = 256;
+		glGetIntegerv(GL_MAX_VERTEX_UNIFORM_VECTORS, &maxVsVecs);
+		m_Caps.maxVertexUniformVectors = static_cast<uint32_t>(maxVsVecs > 0 ? maxVsVecs : 256);
 		m_Caps.supportsTwoSidedStencil = true;
+		m_Caps.supports32BitIndices = (m_Caps.featureLevel >= 300);
 #endif
+		{
+			std::string lowerAdapter = m_AdapterName;
+			std::transform(lowerAdapter.begin(), lowerAdapter.end(), lowerAdapter.begin(),
+				[](unsigned char c) { return static_cast<char>(std::tolower(c)); });
+			m_Caps.isSoftwareAdapter =
+				(lowerAdapter.find("gdi generic") != std::string::npos) ||
+				(lowerAdapter.find("llvmpipe") != std::string::npos) ||
+				(lowerAdapter.find("softpipe") != std::string::npos) ||
+				(lowerAdapter.find("swiftshader") != std::string::npos) ||
+				(lowerAdapter.find("software") != std::string::npos);
+		}
 
 		GLint numCompressedFormats = 0;
 		glGetIntegerv(GL_NUM_COMPRESSED_TEXTURE_FORMATS, &numCompressedFormats);

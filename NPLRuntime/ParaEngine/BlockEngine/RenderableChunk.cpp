@@ -26,7 +26,7 @@ namespace ParaEngine
 	int RenderableChunk::s_nTotalRenderableChunks = 0;
 
 	RenderableChunk::RenderableChunk()
-		:m_pWorld(NULL), m_chunkBuildState(ChunkBuild_empty), m_nDelayedRebuildTick(0), m_nChunkViewDistance(0), m_nViewIndex(0), m_nRenderFrameCount(0), m_nLastVertexBufferBytes(0), m_dwShaderID(-1), m_bIsMainRenderer(true), m_bIsDirtyByBlockChange(true)
+		:m_pWorld(NULL), m_chunkBuildState(ChunkBuild_empty), m_nDelayedRebuildTick(0), m_nChunkViewDistance(0), m_nViewIndex(0), m_nRenderFrameCount(0), m_nLastVertexBufferBytes(0), m_dwShaderID(-1), m_cachedVisGraph(BlockChunk::kVisGraphAllConnected), m_cachedOpaqueLayerMask(0), m_bIsMainRenderer(true), m_bIsDirtyByBlockChange(true)
 	{
 		m_isDirty = true;
 		m_regionX = -1;
@@ -183,8 +183,12 @@ namespace ParaEngine
 		BlockChunk* pChunk = pOwnerBlockRegion->GetChunk(m_packedChunkID, false);
 		if (!pChunk)
 		{
+			m_cachedVisGraph = BlockChunk::kVisGraphAllConnected;
+			m_cachedOpaqueLayerMask = 0;
 			return;
 		}
+		m_cachedVisGraph = pChunk->GetVisibilityGraph();
+		m_cachedOpaqueLayerMask = pChunk->GetOpaqueLayerMask();
 
 		//------------------------------------------------------------------------
 		//fill instance group
@@ -397,6 +401,15 @@ namespace ParaEngine
 		vMaxWorld = vMinWorld + Vector3::UNIT_SCALE * (blockSize * BlockConfig::g_chunkBlockDim);
 
 		m_pShapeAABB.SetMinMax(vMinWorld, vMaxWorld);
+		if (!pOwnerBlockRegion->IsLocked())
+		{
+			BlockChunk* pChunk = pOwnerBlockRegion->GetChunk(m_packedChunkID, false);
+			if (pChunk)
+			{
+				m_cachedVisGraph = pChunk->GetVisibilityGraph();
+				m_cachedOpaqueLayerMask = pChunk->GetOpaqueLayerMask();
+			}
+		}
 	}
 
 	void RenderableChunk::Reset()
@@ -405,6 +418,8 @@ namespace ParaEngine
 		m_regionZ = -1;
 		m_isDirty = false;
 		m_nDelayedRebuildTick = 0;
+		m_cachedVisGraph = BlockChunk::kVisGraphAllConnected;
+		m_cachedOpaqueLayerMask = 0;
 	}
 
 	bool RenderableChunk::IsEmptyChunk()
@@ -733,8 +748,12 @@ namespace ParaEngine
 		BlockChunk* pChunk = pOwnerBlockRegion->GetChunk(m_packedChunkID, false);
 		if (!pChunk)
 		{
+			m_cachedVisGraph = BlockChunk::kVisGraphAllConnected;
+			m_cachedOpaqueLayerMask = 0;
 			return;
 		}
+		m_cachedVisGraph = pChunk->GetVisibilityGraph();
+		m_cachedOpaqueLayerMask = pChunk->GetOpaqueLayerMask();
 		int nCpuYieldCount = 0;
 		//------------------------------------------------------------------------
 		//fill instance group
@@ -1071,6 +1090,8 @@ namespace ParaEngine
 	{
 		SetChunkDirty(true);
 		m_nDelayedRebuildTick = 0;
+		m_cachedVisGraph = BlockChunk::kVisGraphAllConnected;
+		m_cachedOpaqueLayerMask = 0;
 
 		if (!IsBuildingBuffer())
 		{
@@ -1084,6 +1105,44 @@ namespace ParaEngine
 		}
 		ReleaseVertexBuffers();
 		m_chunkBuildState = ChunkBuild_empty;
+	}
+
+	void RenderableChunk::RefreshVisibilityCache(CBlockWorld* pWorld)
+	{
+		if (!pWorld || m_regionX < 0)
+			return;
+		BlockRegion* pRegion = pWorld->GetRegion(m_regionX, m_regionZ);
+		if (!pRegion || pRegion->IsLocked())
+			return;
+		BlockChunk* pChunk = pRegion->GetChunk(m_packedChunkID, false);
+		if (!pChunk)
+		{
+			m_cachedVisGraph = BlockChunk::kVisGraphAllConnected;
+			m_cachedOpaqueLayerMask = 0;
+		}
+		else
+		{
+			m_cachedVisGraph = pChunk->GetVisibilityGraph();
+			m_cachedOpaqueLayerMask = pChunk->GetOpaqueLayerMask();
+		}
+	}
+
+	bool RenderableChunk::GetOpaqueOccluderBoxWS(Vector3& outMin, Vector3& outMax) const
+	{
+		int minLayer = 0;
+		int maxLayer = 0;
+		if (!BlockChunk::GetBestOpaqueLayerSpan(m_cachedOpaqueLayerMask, minLayer, maxLayer))
+			return false;
+		const Vector3& chunkMin = m_pShapeAABB.GetMin();
+		const Vector3& chunkMax = m_pShapeAABB.GetMax();
+		const float blockSize = BlockConfig::g_blockSize;
+		outMin.x = chunkMin.x;
+		outMin.z = chunkMin.z;
+		outMin.y = chunkMin.y + static_cast<float>(minLayer) * blockSize;
+		outMax.x = chunkMax.x;
+		outMax.z = chunkMax.z;
+		outMax.y = chunkMin.y + static_cast<float>(maxLayer + 1) * blockSize;
+		return true;
 	}
 
 	int RenderableChunk::GetRenderFrameCount() const

@@ -1601,6 +1601,8 @@ namespace ParaEngine
 		m_caps.maxTextureStages = 16u;
 		m_caps.maxTextureSize = 16384u;
 		m_caps.maxAnisotropy = 16u;
+		m_caps.maxVertexUniformVectors = 4096u;
+		m_caps.isSoftwareAdapter = m_isWarp;
 		m_caps.supportsFloatRenderTargets = true;
 		m_caps.supportsDepthTextures = true;
 		m_caps.supportsInstancing = true;

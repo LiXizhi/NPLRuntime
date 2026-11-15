@@ -189,6 +189,9 @@ namespace ParaEngine
 		uint16 m_emptyBlockSlotIndex;
 		BlockRegion*  m_ownerBlockRegion;
 		int16_t m_packedChunkID;
+		uint16_t m_uVisGraph;
+		uint16_t m_opaqueLayerMask;
+		bool m_bVisGraphDirty;
 
 		inline bool IsBoundaryChunk() const { return m_isBoundaryChunk>0; }
 		void SetBoundaryChunk(bool val) { m_isBoundaryChunk = val ? 1:0; }
@@ -330,5 +333,27 @@ namespace ParaEngine
 		* @param nMaterialID: global unique material id in CBlockMaterialManager
 		*/
 		void RemoveBlockMaterial(uint16 nPackedBlockID, int16 nFaceIndex);
+
+		static constexpr uint16_t kVisGraphAllConnected = 0x7FFFu;
+		static constexpr uint16_t kVisGraphFullyOpaque = 0x8000u;
+
+		/** Return the 15-bit pair mask for unordered BlockDirection::Side faces [0..5]. */
+		static uint16_t GetVisEdgeMask(int faceA, int faceB);
+		static inline bool CanTraverseVisGraph(uint16_t visGraph, int entryFace, int exitFace)
+		{
+			if (entryFace < 0 || entryFace >= 6 || exitFace < 0 || exitFace >= 6)
+				return true;
+			if (entryFace == exitFace)
+				return false;
+			return (visGraph & GetVisEdgeMask(entryFace, exitFace)) != 0;
+		}
+		/** Find the longest contiguous range of 100% solid horizontal Y layers [0..15] from a 16-bit layer mask. */
+		static bool GetBestOpaqueLayerSpan(uint16_t layerMask, int& outMinY, int& outMaxY);
+
+		/** Recompute 6-face cave connectivity graph and 16-bit opaque horizontal layer mask if dirty. */
+		void UpdateVisibilityGraph();
+		uint16_t GetVisibilityGraph();
+		uint16_t GetOpaqueLayerMask();
+		inline void MarkVisibilityGraphDirty() { m_bVisGraphDirty = true; }
 	};
 }

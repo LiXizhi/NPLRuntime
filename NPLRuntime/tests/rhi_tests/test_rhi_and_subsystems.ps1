@@ -109,6 +109,14 @@ local function main_loop()
             return fail("TakeScreenShot failed for " .. tostring(shotFile))
         end
 
+        local isLowEnd = ParaEngine.GetAttributeObject():GetField("IsLowEndDevice", false)
+        if type(isLowEnd) ~= "boolean" then
+            return fail("IsLowEndDevice attribute missing or non-boolean")
+        end
+        if expectBackend == "Backend: D3D12 (WARP)" and isLowEnd ~= true then
+            return fail("Expected IsLowEndDevice == true on WARP software adapter")
+        end
+
         if testSubsystems == "1" then
             -- 1. SaveTextureToPNG (including resize to 32x32)
             local tex = ParaAsset.LoadTexture("_ctest_tex", "Texture/whitedot.png", 1)
@@ -125,6 +133,24 @@ local function main_loop()
                 return fail("ParaAsset.ConvertGLB binding missing")
             end
             ParaAsset.ConvertGLB("_ctest_tri.obj,0 0 0 0 0 0 1,_ctest_tri.glb")
+
+            -- 3. Transparent script Fancy shader interception -> embedded unified runtime shader
+            local fxMrt = ParaAsset.LoadEffectFile("_ctest_mrt_blocks", "script/apps/Aries/Creator/Game/Shaders/mrt_blocks.fx")
+            if not fxMrt then
+                return fail("LoadEffectFile returned nil for mrt_blocks.fx")
+            end
+            fxMrt:LoadAsset()
+            if not fxMrt:IsValid() then
+                return fail("Transparent script shader interception failed for mrt_blocks.fx")
+            end
+            local fxComp = ParaAsset.LoadEffectFile("_ctest_composite", "script/apps/Aries/Creator/Game/Shaders/composite.fx")
+            if not fxComp then
+                return fail("LoadEffectFile returned nil for composite.fx")
+            end
+            fxComp:LoadAsset()
+            if not fxComp:IsValid() then
+                return fail("Transparent script shader interception failed for composite.fx")
+            end
         end
 
         local f = ParaIO.open(outFile, "w")
