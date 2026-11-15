@@ -1,5 +1,5 @@
 #pragma once
-#include "assetentity.h"
+#include "AssetEntity.h"
 #include "DataGrid.h"
 
 namespace ParaEngine
