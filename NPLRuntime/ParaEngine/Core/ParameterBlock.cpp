@@ -327,6 +327,17 @@ void CParameterBlock::SetParamByStringValue(const char* sParamName, const char* 
 		else if (sValue == "mat4Projection")
 		{
 			mat = *pProj;
+			auto* pDev = CGlobals::GetRenderDevice();
+			if (pDev && !pDev->GetCaps().topLeftScreenOrigin && sParamName == "matProjection")
+			{
+				// Screen-space ray-marching shaders (compositeLite.fx, composite.fx, SuperMultiviewStereo.fx)
+				// bind "matProjection" and map NDC Y via (1 - ScreenPos.y) assuming D3D top-left texture origin.
+				// On OpenGL FBOs (bottom-left texture origin), negating clip-space Y maps (1 - ScreenPos.y) to ScreenPos.y.
+				mat._12 = -mat._12;
+				mat._22 = -mat._22;
+				mat._32 = -mat._32;
+				mat._42 = -mat._42;
+			}
 		}
 		else if (sValue == "mat4ModelView")
 		{

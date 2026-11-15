@@ -926,6 +926,11 @@ namespace ParaEngine
 	RenderDeviceOpenGL::~RenderDeviceOpenGL()
 	{
 		m_isShuttingDown = true;
+		if (m_BlitProgram != nullptr)
+		{
+			m_BlitProgram->Release();
+			m_BlitProgram = nullptr;
+		}
 		GL::ClearCache();
 	}
 
@@ -983,11 +988,53 @@ namespace ParaEngine
 		if (verStr)
 		{
 			const char* s = reinterpret_cast<const char*>(verStr);
-			while (*s && (*s < '0' || *s > '9'))
-				++s;
-			if (*s)
-				std::sscanf(s, "%d.%d", &major, &minor);
+			const char* esPos = std::strstr(s, "OpenGL ES");
+			const char* webglPos = std::strstr(s, "WebGL");
+			if (esPos)
+			{
+				// Handles "OpenGL ES 3.2 ..." and "WebGL 2.0 (OpenGL ES 3.0 Chromium)"
+				const char* p = esPos + 9;
+				while (*p && (*p < '0' || *p > '9'))
+					++p;
+				if (*p)
+					std::sscanf(p, "%d.%d", &major, &minor);
+			}
+			else if (webglPos)
+			{
+				// Handles bare "WebGL 2.0" / "WebGL 1.0" strings (e.g. Firefox)
+				int wglMajor = 1;
+				int wglMinor = 0;
+				const char* p = webglPos + 5;
+				while (*p && (*p < '0' || *p > '9'))
+					++p;
+				if (*p && std::sscanf(p, "%d.%d", &wglMajor, &wglMinor) >= 1)
+				{
+					major = (wglMajor >= 2) ? 3 : 2;
+					minor = 0;
+				}
+			}
+			else
+			{
+				while (*s && (*s < '0' || *s > '9'))
+					++s;
+				if (*s)
+					std::sscanf(s, "%d.%d", &major, &minor);
+			}
 		}
+#ifdef EMSCRIPTEN
+		{
+			EMSCRIPTEN_WEBGL_CONTEXT_HANDLE wglCtx = emscripten_webgl_get_current_context();
+			EmscriptenWebGLContextAttributes wglAttrs;
+			if (wglCtx > 0 && emscripten_webgl_get_context_attributes(wglCtx, &wglAttrs) == EMSCRIPTEN_RESULT_SUCCESS)
+			{
+				if (wglAttrs.majorVersion >= 2 && major < 3)
+				{
+					major = 3;
+					minor = 0;
+				}
+			}
+		}
+#endif
 		m_Caps.featureLevel = static_cast<uint32_t>(major * 100 + minor * 10);
 
 		GLint maxTexUnits = 8;
@@ -1051,6 +1098,7 @@ namespace ParaEngine
 					if (e && std::strcmp(reinterpret_cast<const char*>(e), extName) == 0)
 						return true;
 				}
+				return false;
 			}
 			const GLubyte* extStr = glGetString(GL_EXTENSIONS);
 			if (extStr)
@@ -1346,6 +1394,7 @@ namespace ParaEngine
 	{
 		GLint prevFbo = 0;
 		glGetIntegerv(GL_FRAMEBUFFER_BINDING, &prevFbo);
+		while (glGetError() != GL_NO_ERROR) {}
 
 		GLuint srcFbo = src ? static_cast<GLRenderTarget*>(src)->GetFBO() : m_DefaultFBO;
 		GLuint dstFbo = dst ? static_cast<GLRenderTarget*>(dst)->GetFBO() : m_DefaultFBO;
@@ -1353,25 +1402,209 @@ namespace ParaEngine
 		uint32_t srcH = src ? src->GetHeight() : GetBackBufferHeight();
 		uint32_t dstW = dst ? dst->GetWidth() : GetBackBufferWidth();
 		uint32_t dstH = dst ? dst->GetHeight() : GetBackBufferHeight();
+		if (srcW == 0 || srcH == 0 || dstW == 0 || dstH == 0)
+		{
+			glBindFramebuffer(GL_FRAMEBUFFER, static_cast<GLuint>(prevFbo));
+			return false;
+		}
+
+		GLint sx0 = srcRect ? srcRect->left : 0;
+		GLint sy0 = srcRect ? static_cast<GLint>(srcH) - srcRect->bottom : 0;
+		GLint sx1 = srcRect ? srcRect->right : static_cast<GLint>(srcW);
+		GLint sy1 = srcRect ? static_cast<GLint>(srcH) - srcRect->top : static_cast<GLint>(srcH);
+
+		GLint dx0 = dstRect ? dstRect->left : 0;
+		GLint dy0 = dstRect ? static_cast<GLint>(dstH) - dstRect->bottom : 0;
+		GLint dx1 = dstRect ? dstRect->right : static_cast<GLint>(dstW);
+		GLint dy1 = dstRect ? (dstRect->top == dstRect->bottom ? 0 : (static_cast<GLint>(dstH) - dstRect->top)) : static_cast<GLint>(dstH);
 
 		if (HasGLBlitFramebuffer(GetCaps().featureLevel))
 		{
-			GLint sx0 = srcRect ? srcRect->left : 0;
-			GLint sy0 = srcRect ? static_cast<GLint>(srcH) - srcRect->bottom : 0;
-			GLint sx1 = srcRect ? srcRect->right : static_cast<GLint>(srcW);
-			GLint sy1 = srcRect ? static_cast<GLint>(srcH) - srcRect->top : static_cast<GLint>(srcH);
-
-			GLint dx0 = dstRect ? dstRect->left : 0;
-			GLint dy0 = dstRect ? static_cast<GLint>(dstH) - dstRect->bottom : 0;
-			GLint dx1 = dstRect ? dstRect->right : static_cast<GLint>(dstW);
-			GLint dy1 = dstRect ? dstRect->top == dstRect->bottom ? 0 : (static_cast<GLint>(dstH) - dstRect->top) : static_cast<GLint>(dstH);
-
-			glBindFramebuffer(GL_READ_FRAMEBUFFER, srcFbo);
-			glBindFramebuffer(GL_DRAW_FRAMEBUFFER, dstFbo);
-			glBlitFramebuffer(sx0, sy0, sx1, sy1, dx0, dy0, dx1, dy1, GL_COLOR_BUFFER_BIT, linearFilter ? GL_LINEAR : GL_NEAREST);
-			glBindFramebuffer(GL_FRAMEBUFFER, static_cast<GLuint>(prevFbo));
-			return true;
+			bool canHardwareBlit = true;
+#if defined(PARAENGINE_MOBILE) || defined(EMSCRIPTEN)
+			if (dst == nullptr && dstFbo == 0)
+			{
+				// OpenGL ES 3.0 / WebGL 2.0 forbids glBlitFramebuffer into a multisampled draw FBO.
+				glBindFramebuffer(GL_DRAW_FRAMEBUFFER, dstFbo);
+				GLint dstSampleBuffers = 0;
+				glGetIntegerv(GL_SAMPLE_BUFFERS, &dstSampleBuffers);
+				if (dstSampleBuffers > 0)
+					canHardwareBlit = false;
+			}
+			if (canHardwareBlit && src == nullptr && srcFbo == 0 && m_DefaultFboReadBlitSupported == 0)
+			{
+				canHardwareBlit = false;
+			}
+#endif
+			if (canHardwareBlit)
+			{
+				glBindFramebuffer(GL_READ_FRAMEBUFFER, srcFbo);
+				glBindFramebuffer(GL_DRAW_FRAMEBUFFER, dstFbo);
+				glBlitFramebuffer(sx0, sy0, sx1, sy1, dx0, dy0, dx1, dy1, GL_COLOR_BUFFER_BIT, linearFilter ? GL_LINEAR : GL_NEAREST);
+				const GLenum blitErr = glGetError();
+#if defined(PARAENGINE_MOBILE) || defined(EMSCRIPTEN)
+				if (src == nullptr && srcFbo == 0)
+					m_DefaultFboReadBlitSupported = (blitErr == GL_NO_ERROR) ? 1 : 0;
+#endif
+				if (blitErr == GL_NO_ERROR)
+				{
+					glBindFramebuffer(GL_FRAMEBUFFER, static_cast<GLuint>(prevFbo));
+					return true;
+				}
+			}
 		}
+
+		// Textured fullscreen/subrect quad fallback when blitting from an offscreen RT (e.g. into a multisampled WebGL2 default FBO 0)
+		IRHITexture* srcTex = src ? src->GetColorTexture(0) : nullptr;
+		if (srcTex != nullptr && dx1 > dx0 && dy1 > dy0)
+		{
+			GLuint srcTexId = static_cast<GLuint>(reinterpret_cast<uintptr_t>(srcTex->GetNativeHandle()));
+			if (srcTexId != 0)
+			{
+				GLint prevProgram = 0;
+				glGetIntegerv(GL_CURRENT_PROGRAM, &prevProgram);
+
+				if (m_BlitProgram == nullptr)
+				{
+					static const char* kBlitVS =
+						"attribute vec4 a_position;\n"
+						"attribute vec2 a_texCoord;\n"
+						"varying vec2 v_texCoord;\n"
+						"void main()\n"
+						"{\n"
+						"    gl_Position = a_position;\n"
+						"    v_texCoord = a_texCoord;\n"
+						"}\n";
+					static const char* kBlitFS =
+						"uniform sampler2D tex0Sampler;\n"
+						"varying vec2 v_texCoord;\n"
+						"void main()\n"
+						"{\n"
+						"    gl_FragColor = texture2D(tex0Sampler, v_texCoord);\n"
+						"}\n";
+					GLProgram* prog = new GLProgram();
+					if (prog->initWithByteArrays(kBlitVS, kBlitFS) && prog->link())
+					{
+						prog->updateUniforms();
+						m_BlitProgram = prog;
+					}
+					else
+					{
+						prog->Release();
+						GL::useProgram(static_cast<GLuint>(prevProgram));
+					}
+				}
+
+				if (m_BlitProgram != nullptr)
+				{
+					GLint prevArrayBuf = 0;
+					GLint prevViewport[4] = { 0, 0, 0, 0 };
+					GLboolean prevColorMask[4] = { GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE };
+					GLboolean prevDepthMask = GL_TRUE;
+					glGetIntegerv(GL_ARRAY_BUFFER_BINDING, &prevArrayBuf);
+					glGetIntegerv(GL_VIEWPORT, prevViewport);
+					glGetBooleanv(GL_COLOR_WRITEMASK, prevColorMask);
+					glGetBooleanv(GL_DEPTH_WRITEMASK, &prevDepthMask);
+					const GLboolean wasDepthTest = glIsEnabled(GL_DEPTH_TEST);
+					const GLboolean wasStencilTest = glIsEnabled(GL_STENCIL_TEST);
+					const GLboolean wasBlend = glIsEnabled(GL_BLEND);
+					const GLboolean wasCull = glIsEnabled(GL_CULL_FACE);
+					const GLboolean wasScissor = glIsEnabled(GL_SCISSOR_TEST);
+
+					glBindFramebuffer(GL_FRAMEBUFFER, dstFbo);
+					if (dst != nullptr && HasGLDrawBuffers(GetCaps().featureLevel))
+					{
+						const GLenum att0 = GL_COLOR_ATTACHMENT0;
+						glDrawBuffers(1, &att0);
+					}
+
+					if (wasDepthTest) glDisable(GL_DEPTH_TEST);
+					if (wasStencilTest) glDisable(GL_STENCIL_TEST);
+					if (wasBlend) glDisable(GL_BLEND);
+					if (wasCull) glDisable(GL_CULL_FACE);
+					if (wasScissor) glDisable(GL_SCISSOR_TEST);
+					if (prevDepthMask) glDepthMask(GL_FALSE);
+					glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+					glViewport(dx0, dy0, dx1 - dx0, dy1 - dy0);
+
+					m_BlitProgram->use();
+					const GLint samplerLoc = m_BlitProgram->getUniformLocationForName("tex0Sampler");
+					if (samplerLoc >= 0)
+						glUniform1i(samplerLoc, 0);
+
+					GL::bindTexture2DN(0, srcTexId);
+					const PixelFormat srcFmt = srcTex->GetFormat();
+					const bool is32BitFloat = (srcFmt == PixelFormat::R32F || srcFmt == PixelFormat::G32R32F || srcFmt == PixelFormat::A32B32G32R32F);
+					const GLint desiredFilter = (linearFilter && (!is32BitFloat || SupportsFloatLinearFilter())) ? GL_LINEAR : GL_NEAREST;
+					GLint prevMinFilter = GL_LINEAR;
+					GLint prevMagFilter = GL_LINEAR;
+					glGetTexParameteriv(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, &prevMinFilter);
+					glGetTexParameteriv(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, &prevMagFilter);
+					if (prevMinFilter != desiredFilter)
+						glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, desiredFilter);
+					if (prevMagFilter != desiredFilter)
+						glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, desiredFilter);
+
+					const float invSrcW = 1.0f / static_cast<float>(srcW);
+					const float invSrcH = 1.0f / static_cast<float>(srcH);
+					const float u0 = static_cast<float>(sx0) * invSrcW;
+					const float v0 = static_cast<float>(sy0) * invSrcH;
+					const float u1 = static_cast<float>(sx1) * invSrcW;
+					const float v1 = static_cast<float>(sy1) * invSrcH;
+					const float quadVerts[16] = {
+						-1.0f, -1.0f, u0, v0,
+						 1.0f, -1.0f, u1, v0,
+						-1.0f,  1.0f, u0, v1,
+						 1.0f,  1.0f, u1, v1,
+					};
+
+					const int vertOffset = g_userPointerVertexBuffer.UploadUserPointerRingBuffer(4, quadVerts, 4 * static_cast<int>(sizeof(float)));
+					GL::bindVAO(0);
+					glBindBuffer(GL_ARRAY_BUFFER, g_userPointerVertexBuffer.GetDevicePointer());
+					GL::enableVertexAttribs((1u << GLProgram::VERTEX_ATTRIB_POSITION) | (1u << GLProgram::VERTEX_ATTRIB_TEX_COORD));
+					if (HasGLInstancing(GetCaps().featureLevel))
+					{
+						if (m_AttribDivisors[GLProgram::VERTEX_ATTRIB_POSITION] != 0)
+						{
+							glVertexAttribDivisor(GLProgram::VERTEX_ATTRIB_POSITION, 0);
+							m_AttribDivisors[GLProgram::VERTEX_ATTRIB_POSITION] = 0;
+						}
+						if (m_AttribDivisors[GLProgram::VERTEX_ATTRIB_TEX_COORD] != 0)
+						{
+							glVertexAttribDivisor(GLProgram::VERTEX_ATTRIB_TEX_COORD, 0);
+							m_AttribDivisors[GLProgram::VERTEX_ATTRIB_TEX_COORD] = 0;
+						}
+					}
+					glVertexAttribPointer(GLProgram::VERTEX_ATTRIB_POSITION, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), reinterpret_cast<const void*>(0));
+					glVertexAttribPointer(GLProgram::VERTEX_ATTRIB_TEX_COORD, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), reinterpret_cast<const void*>(2 * sizeof(float)));
+					glDrawArrays(GL_TRIANGLE_STRIP, vertOffset, 4);
+
+					if (prevMinFilter != desiredFilter)
+						glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, prevMinFilter);
+					if (prevMagFilter != desiredFilter)
+						glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, prevMagFilter);
+
+					glViewport(prevViewport[0], prevViewport[1], prevViewport[2], prevViewport[3]);
+					glColorMask(prevColorMask[0], prevColorMask[1], prevColorMask[2], prevColorMask[3]);
+					if (prevDepthMask) glDepthMask(GL_TRUE);
+					if (wasDepthTest) glEnable(GL_DEPTH_TEST);
+					if (wasStencilTest) glEnable(GL_STENCIL_TEST);
+					if (wasBlend) glEnable(GL_BLEND);
+					if (wasCull) glEnable(GL_CULL_FACE);
+					if (wasScissor) glEnable(GL_SCISSOR_TEST);
+
+					GL::useProgram(static_cast<GLuint>(prevProgram));
+					glBindBuffer(GL_ARRAY_BUFFER, static_cast<GLuint>(prevArrayBuf));
+					if (m_CurrentVertexDeclaration)
+						ApplyGLVertexDeclaration(m_CurrentVertexDeclaration, nullptr);
+
+					const bool ok = (glGetError() == GL_NO_ERROR);
+					glBindFramebuffer(GL_FRAMEBUFFER, static_cast<GLuint>(prevFbo));
+					return ok;
+				}
+			}
+		}
+
 		// Fallback for GLES 2.0 / WebGL 1.0 when copying an equal-sized region into an offscreen color texture
 		IRHITexture* dstTex = dst ? dst->GetColorTexture(0) : nullptr;
 		if (dstTex != nullptr && srcW == dstW && srcH == dstH && !srcRect && !dstRect)
@@ -1382,12 +1615,12 @@ namespace ParaEngine
 				glBindFramebuffer(GL_FRAMEBUFFER, srcFbo);
 				GL::bindTexture2D(dstTexId);
 				glCopyTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, 0, 0, static_cast<GLsizei>(srcW), static_cast<GLsizei>(srcH));
+				const bool copyOk = (glGetError() == GL_NO_ERROR);
 				glBindFramebuffer(GL_FRAMEBUFFER, static_cast<GLuint>(prevFbo));
-				return true;
+				return copyOk;
 			}
 		}
 
-		(void)linearFilter;
 		glBindFramebuffer(GL_FRAMEBUFFER, static_cast<GLuint>(prevFbo));
 		return false;
 	}

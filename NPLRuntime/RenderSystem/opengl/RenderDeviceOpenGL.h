@@ -7,6 +7,8 @@
 
 namespace ParaEngine
 {
+	class GLProgram;
+
 	class RenderDeviceOpenGL : public IRenderDevice
 	{
 	public:
@@ -145,6 +147,8 @@ namespace ParaEngine
 		uint8_t m_ValidMrtMask = 0;
 		uint8_t m_AppliedDrawBufferMask = 0;
 		ParaViewport m_CurrentViewPort;
+		GLProgram* m_BlitProgram = nullptr;
+		int m_DefaultFboReadBlitSupported = -1;
 	};
 
 	inline RenderDeviceOpenGL* GETGL(IRenderDevice* device)
