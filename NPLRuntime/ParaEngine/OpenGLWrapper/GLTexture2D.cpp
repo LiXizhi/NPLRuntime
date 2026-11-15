@@ -236,6 +236,8 @@ bool GLTexture2D::initWithImage(const ParaImage *image_, PixelFormat format)
 
 bool GLTexture2D::updateWithData(const void *data, int offsetX, int offsetY, int width, int height)
 {
+	if (width <= 0 || height <= 0 || !data)
+		return true;
 	IRenderDevice* pDev = CGlobals::GetRenderDevice();
 	if (!pDev)
 		return false;

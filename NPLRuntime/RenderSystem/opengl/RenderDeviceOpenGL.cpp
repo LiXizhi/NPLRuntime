@@ -16,6 +16,7 @@
 using namespace ParaEngine;
 
 #ifdef EMSCRIPTEN
+#include <emscripten/html5_webgl.h>
 #define USE_USER_POINTER_VBO
 #endif
 
@@ -313,7 +314,52 @@ namespace ParaEngine
 			GLenum m_glType;
 		};
 
-		bool MapPixelFormatToGL(PixelFormat fmt, GLenum& outInternal, GLenum& outFormat, GLenum& outType, uint32_t& outBpp)
+		inline bool HasGLDrawBuffers(uint32_t featureLevel)
+		{
+#if defined(PARAENGINE_MOBILE) || defined(EMSCRIPTEN)
+			return featureLevel >= 300;
+#elif defined(__APPLE__)
+			return featureLevel >= 300;
+#else
+			(void)featureLevel;
+			return glad_glDrawBuffers != nullptr;
+#endif
+		}
+
+		inline bool HasGLBlitFramebuffer(uint32_t featureLevel)
+		{
+#if defined(PARAENGINE_MOBILE) || defined(EMSCRIPTEN)
+			return featureLevel >= 300;
+#elif defined(__APPLE__)
+			return featureLevel >= 300;
+#else
+			(void)featureLevel;
+			return glad_glBlitFramebuffer != nullptr;
+#endif
+		}
+
+		inline bool HasGLInstancing(uint32_t featureLevel)
+		{
+#if defined(PARAENGINE_MOBILE) || defined(EMSCRIPTEN)
+			return featureLevel >= 300;
+#elif defined(__APPLE__)
+			return featureLevel >= 330;
+#else
+			(void)featureLevel;
+			return glad_glDrawElementsInstanced != nullptr && glad_glVertexAttribDivisor != nullptr;
+#endif
+		}
+
+		inline bool HasGLTwoSidedStencil()
+		{
+#if defined(PARAENGINE_MOBILE) || defined(EMSCRIPTEN) || defined(__APPLE__)
+			return true;
+#else
+			return glad_glStencilFuncSeparate != nullptr && glad_glStencilOpSeparate != nullptr;
+#endif
+		}
+
+		bool MapPixelFormatToGL(PixelFormat fmt, uint32_t featureLevel, GLenum& outInternal, GLenum& outFormat, GLenum& outType, uint32_t& outBpp)
 		{
 			switch (fmt)
 			{
@@ -321,13 +367,13 @@ namespace ParaEngine
 			case PixelFormat::A8B8G8R8:
 			case PixelFormat::X8R8G8B8:
 			case PixelFormat::X8B8G8R8:
-				outInternal = GL_RGBA;
+				outInternal = (featureLevel >= 300) ? GL_RGBA8 : GL_RGBA;
 				outFormat = GL_RGBA;
 				outType = GL_UNSIGNED_BYTE;
 				outBpp = 32;
 				return true;
 			case PixelFormat::R8G8B8:
-				outInternal = GL_RGB;
+				outInternal = (featureLevel >= 300) ? GL_RGB8 : GL_RGB;
 				outFormat = GL_RGB;
 				outType = GL_UNSIGNED_BYTE;
 				outBpp = 24;
@@ -344,38 +390,43 @@ namespace ParaEngine
 				outType = GL_UNSIGNED_BYTE;
 				outBpp = 8;
 				return true;
-#if !defined(PARAENGINE_MOBILE) && !defined(EMSCRIPTEN)
 			case PixelFormat::R16F:
+				if (featureLevel < 300) return false;
 				outInternal = GL_R16F;
 				outFormat = GL_RED;
 				outType = GL_HALF_FLOAT;
 				outBpp = 16;
 				return true;
 			case PixelFormat::R32F:
+				if (featureLevel < 300) return false;
 				outInternal = GL_R32F;
 				outFormat = GL_RED;
 				outType = GL_FLOAT;
 				outBpp = 32;
 				return true;
 			case PixelFormat::G16R16F:
+				if (featureLevel < 300) return false;
 				outInternal = GL_RG16F;
 				outFormat = GL_RG;
 				outType = GL_HALF_FLOAT;
 				outBpp = 32;
 				return true;
 			case PixelFormat::G32R32F:
+				if (featureLevel < 300) return false;
 				outInternal = GL_RG32F;
 				outFormat = GL_RG;
 				outType = GL_FLOAT;
 				outBpp = 64;
 				return true;
 			case PixelFormat::A16B16G16R16F:
+				if (featureLevel < 300) return false;
 				outInternal = GL_RGBA16F;
 				outFormat = GL_RGBA;
 				outType = GL_HALF_FLOAT;
 				outBpp = 64;
 				return true;
 			case PixelFormat::A32B32G32R32F:
+				if (featureLevel < 300) return false;
 				outInternal = GL_RGBA32F;
 				outFormat = GL_RGBA;
 				outType = GL_FLOAT;
@@ -383,6 +434,7 @@ namespace ParaEngine
 				return true;
 			case PixelFormat::D24S8:
 			case PixelFormat::D24FS8:
+				if (featureLevel < 300) return false;
 				outInternal = GL_DEPTH24_STENCIL8;
 				outFormat = GL_DEPTH_STENCIL;
 				outType = GL_UNSIGNED_INT_24_8;
@@ -390,12 +442,12 @@ namespace ParaEngine
 				return true;
 			case PixelFormat::D32:
 			case PixelFormat::D32F_LOCKABLE:
+				if (featureLevel < 300) return false;
 				outInternal = GL_DEPTH_COMPONENT32F;
 				outFormat = GL_DEPTH_COMPONENT;
 				outType = GL_FLOAT;
 				outBpp = 32;
 				return true;
-#endif
 			case PixelFormat::D16:
 			case PixelFormat::D16_LOCKABLE:
 				outInternal = GL_DEPTH_COMPONENT16;
@@ -421,6 +473,26 @@ namespace ParaEngine
 				, m_depthTexture(nullptr)
 				, m_valid(false)
 			{
+				const uint32_t fl = owner ? owner->GetCaps().featureLevel : 200u;
+				const bool supportsFloatCB = owner ? owner->SupportsFloatColorBuffer() : false;
+				const bool supportsFloatLinear = owner ? owner->SupportsFloatLinearFilter() : false;
+
+				// On GLES 3.0 / WebGL 2.0, if 32-bit float color rendering or linear filtering is unavailable,
+				// transparently promote 32-bit float RTs to 16-bit half-float (which is core linear-filterable in ES 3.0).
+				PixelFormat effectiveColorFormat = colorFormat;
+#if defined(PARAENGINE_MOBILE) || defined(EMSCRIPTEN)
+				if (!supportsFloatCB || !supportsFloatLinear)
+				{
+					if (effectiveColorFormat == PixelFormat::R32F)
+						effectiveColorFormat = PixelFormat::R16F;
+					else if (effectiveColorFormat == PixelFormat::G32R32F)
+						effectiveColorFormat = PixelFormat::G16R16F;
+					else if (effectiveColorFormat == PixelFormat::A32B32G32R32F)
+						effectiveColorFormat = PixelFormat::A16B16G16R16F;
+				}
+#endif
+				m_colorFormat = effectiveColorFormat;
+
 				GLint oldFbo = 0;
 				glGetIntegerv(GL_FRAMEBUFFER_BINDING, &oldFbo);
 
@@ -433,32 +505,34 @@ namespace ParaEngine
 
 				for (uint32_t i = 0; i < rtCount; ++i)
 				{
-					GLenum internalFmt = GL_RGBA;
+					GLenum internalFmt = (fl >= 300) ? GL_RGBA8 : GL_RGBA;
 					GLenum fmt = GL_RGBA;
 					GLenum type = GL_UNSIGNED_BYTE;
 					uint32_t bpp = 32;
-					if (!MapPixelFormatToGL(colorFormat, internalFmt, fmt, type, bpp))
+					if (!MapPixelFormatToGL(effectiveColorFormat, fl, internalFmt, fmt, type, bpp))
 					{
-						internalFmt = GL_RGBA;
+						internalFmt = (fl >= 300) ? GL_RGBA8 : GL_RGBA;
 						fmt = GL_RGBA;
 						type = GL_UNSIGNED_BYTE;
 					}
 
+					const bool is32BitFloatTex = (type == GL_FLOAT);
+					const GLint filterMode = (is32BitFloatTex && !supportsFloatLinear) ? GL_NEAREST : GL_LINEAR;
+
 					GLuint texId = 0;
 					glGenTextures(1, &texId);
 					GL::bindTexture2D(texId);
-					glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-					glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+					glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, filterMode);
+					glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, filterMode);
 					glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 					glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 					glTexImage2D(GL_TEXTURE_2D, 0, internalFmt, static_cast<GLsizei>(width), static_cast<GLsizei>(height), 0, fmt, type, nullptr);
 					glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + i, GL_TEXTURE_2D, texId, 0);
 
-					m_colorTextures.push_back(new GLRawTexture(texId, width, height, 1, colorFormat, fmt, type));
+					m_colorTextures.push_back(new GLRawTexture(texId, width, height, 1, effectiveColorFormat, fmt, type));
 				}
 
-#if !defined(PARAENGINE_MOBILE) && !defined(EMSCRIPTEN)
-				if (rtCount > 1 && glad_glDrawBuffers != nullptr)
+				if (rtCount > 1 && HasGLDrawBuffers(fl))
 				{
 					GLenum drawBufs[4] = {
 						GL_COLOR_ATTACHMENT0,
@@ -468,18 +542,22 @@ namespace ParaEngine
 					};
 					glDrawBuffers(static_cast<GLsizei>(rtCount), drawBufs);
 				}
-				else if (rtCount == 0 && glad_glDrawBuffer != nullptr)
+				else if (rtCount == 0 && HasGLDrawBuffers(fl))
 				{
-					glDrawBuffer(GL_NONE);
+					const GLenum noneBuf = GL_NONE;
+					glDrawBuffers(1, &noneBuf);
+#if !defined(PARAENGINE_MOBILE) && !defined(EMSCRIPTEN)
 					if (glad_glReadBuffer != nullptr)
 						glReadBuffer(GL_NONE);
-				}
+#else
+					if (fl >= 300)
+						glReadBuffer(GL_NONE);
 #endif
+				}
 
 				if (depthFormat != PixelFormat::Unknown)
 				{
-#if !defined(PARAENGINE_MOBILE) && !defined(EMSCRIPTEN)
-					if (depthFormat == PixelFormat::D32 || depthFormat == PixelFormat::D32F_LOCKABLE || rtCount == 0)
+					if (fl >= 300 && (depthFormat == PixelFormat::D32 || depthFormat == PixelFormat::D32F_LOCKABLE || rtCount == 0))
 					{
 						GLuint depthTex = 0;
 						glGenTextures(1, &depthTex);
@@ -493,7 +571,6 @@ namespace ParaEngine
 						m_depthTexture = new GLRawTexture(depthTex, width, height, 1, depthFormat, GL_DEPTH_COMPONENT, GL_UNSIGNED_INT);
 					}
 					else
-#endif
 					{
 						glGenRenderbuffers(1, &m_depthRbo);
 						glBindRenderbuffer(GL_RENDERBUFFER, m_depthRbo);
@@ -505,14 +582,24 @@ namespace ParaEngine
 						else
 						{
 							glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8_DEFAULT, static_cast<GLsizei>(width), static_cast<GLsizei>(height));
-							glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, m_depthRbo);
-							glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_STENCIL_ATTACHMENT, GL_RENDERBUFFER, m_depthRbo);
+#ifdef GL_DEPTH_STENCIL_ATTACHMENT
+							if (fl >= 300)
+							{
+								glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, m_depthRbo);
+							}
+							else
+#endif
+							{
+								glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, m_depthRbo);
+								glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_STENCIL_ATTACHMENT, GL_RENDERBUFFER, m_depthRbo);
+							}
 						}
 						glBindRenderbuffer(GL_RENDERBUFFER, 0);
 					}
 				}
 
 				m_valid = (glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE);
+				while (glGetError() != GL_NO_ERROR) {}
 				glBindFramebuffer(GL_FRAMEBUFFER, static_cast<GLuint>(oldFbo));
 			}
 
@@ -806,12 +893,17 @@ namespace ParaEngine
 		, m_BlendingDest(RSV_BLEND_INVSRCALPHA)
 		, m_BlendingAlphaSource(RSV_BLEND_SRCALPHA)
 		, m_BlendingAlphaDest(RSV_BLEND_INVSRCALPHA)
+		, m_TwoSidedStencil(false)
 		, m_StencilRefValue(0)
 		, m_StencilMask(0xFFFFFFFFu)
 		, m_StencilFunc(RSV_CMP_ALWAYS)
 		, m_StencilFail(RSV_STENCILOP_KEEP)
 		, m_StencilZFail(RSV_STENCILOP_KEEP)
 		, m_StencilPass(RSV_STENCILOP_KEEP)
+		, m_CCWStencilFunc(RSV_CMP_ALWAYS)
+		, m_CCWStencilFail(RSV_STENCILOP_KEEP)
+		, m_CCWStencilZFail(RSV_STENCILOP_KEEP)
+		, m_CCWStencilPass(RSV_STENCILOP_KEEP)
 		, m_StencilDirty(false)
 		, m_CurrentVertexDeclaration(nullptr)
 		, m_CurrentVertexBuffer(nullptr)
@@ -901,20 +993,99 @@ namespace ParaEngine
 		GLint maxVsComps = 1024;
 		glGetIntegerv(GL_MAX_VERTEX_UNIFORM_COMPONENTS, &maxVsComps);
 		m_Caps.maxVertexUniformVectors = static_cast<uint32_t>(maxVsComps > 0 ? (maxVsComps / 4) : 256);
+		m_SupportsFloatColorBuffer = (m_Caps.featureLevel >= 300);
+		m_SupportsHalfFloatColorBuffer = (m_Caps.featureLevel >= 300);
+		m_SupportsFloatLinearFilter = (m_Caps.featureLevel >= 300);
 		m_Caps.supportsFloatRenderTargets = (m_Caps.featureLevel >= 300);
 		m_Caps.supportsDepthTextures = (m_Caps.featureLevel >= 300);
-		m_Caps.supportsInstancing = (glad_glDrawElementsInstanced != nullptr && glad_glVertexAttribDivisor != nullptr);
+		m_Caps.supportsInstancing = HasGLInstancing(m_Caps.featureLevel);
 		m_Caps.supportsOcclusionQuery = (glad_glGenQueries != nullptr && glad_glGetQueryObjectuiv != nullptr);
-		m_Caps.supportsTwoSidedStencil = (glad_glStencilFuncSeparate != nullptr && glad_glStencilOpSeparate != nullptr);
+		m_Caps.supportsTwoSidedStencil = HasGLTwoSidedStencil();
 		m_Caps.supportsUserClipPlanes = true;
 		m_Caps.supports32BitIndices = true;
 #else
-		m_Caps.maxSimultaneousRTs = 1;
+#ifdef EMSCRIPTEN
+		{
+			EMSCRIPTEN_WEBGL_CONTEXT_HANDLE wglCtx = emscripten_webgl_get_current_context();
+			if (wglCtx > 0)
+			{
+				if (emscripten_webgl_enable_extension(wglCtx, "EXT_color_buffer_float"))
+					m_SupportsFloatColorBuffer = true;
+				if (emscripten_webgl_enable_extension(wglCtx, "EXT_color_buffer_half_float"))
+					m_SupportsHalfFloatColorBuffer = true;
+				if (emscripten_webgl_enable_extension(wglCtx, "OES_texture_float_linear"))
+					m_SupportsFloatLinearFilter = true;
+				emscripten_webgl_enable_extension(wglCtx, "OES_texture_half_float_linear");
+				if (emscripten_webgl_enable_extension(wglCtx, "WEBGL_compressed_texture_s3tc") ||
+					emscripten_webgl_enable_extension(wglCtx, "WEBKIT_WEBGL_compressed_texture_s3tc") ||
+					emscripten_webgl_enable_extension(wglCtx, "MOZ_WEBGL_compressed_texture_s3tc"))
+				{
+					m_Caps.supportsBCCompression = true;
+				}
+			}
+		}
+#endif
+		auto hasGLExt = [&](const char* extName) -> bool
+		{
+			if (!extName || !extName[0])
+				return false;
+			if (m_Caps.featureLevel >= 300)
+			{
+				GLint numExts = 0;
+				glGetIntegerv(GL_NUM_EXTENSIONS, &numExts);
+				for (GLint i = 0; i < numExts; ++i)
+				{
+					const GLubyte* e = glGetStringi(GL_EXTENSIONS, static_cast<GLuint>(i));
+					if (e && std::strcmp(reinterpret_cast<const char*>(e), extName) == 0)
+						return true;
+				}
+			}
+			const GLubyte* extStr = glGetString(GL_EXTENSIONS);
+			if (extStr)
+			{
+				const char* all = reinterpret_cast<const char*>(extStr);
+				const size_t len = std::strlen(extName);
+				const char* p = all;
+				while ((p = std::strstr(p, extName)) != nullptr)
+				{
+					const bool startOk = (p == all || p[-1] == ' ');
+					const bool endOk = (p[len] == '\0' || p[len] == ' ');
+					if (startOk && endOk)
+						return true;
+					p += len;
+				}
+			}
+			return false;
+		};
+
+		if (m_Caps.featureLevel >= 320 || hasGLExt("GL_EXT_color_buffer_float") || hasGLExt("EXT_color_buffer_float"))
+			m_SupportsFloatColorBuffer = true;
+		if (m_SupportsFloatColorBuffer || hasGLExt("GL_EXT_color_buffer_half_float") || hasGLExt("EXT_color_buffer_half_float"))
+			m_SupportsHalfFloatColorBuffer = true;
+		if (hasGLExt("GL_OES_texture_float_linear") || hasGLExt("OES_texture_float_linear"))
+			m_SupportsFloatLinearFilter = true;
+
+		if (m_Caps.featureLevel >= 300)
+		{
+			GLint maxDrawBufs = 4;
+			glGetIntegerv(GL_MAX_DRAW_BUFFERS, &maxDrawBufs);
+			m_Caps.maxSimultaneousRTs = static_cast<uint32_t>(maxDrawBufs > 0 ? maxDrawBufs : 1);
+			m_Caps.supportsFloatRenderTargets = (m_SupportsFloatColorBuffer || m_SupportsHalfFloatColorBuffer);
+			m_Caps.supportsDepthTextures = true;
+			m_Caps.supportsInstancing = true;
+		}
+		else
+		{
+			m_Caps.maxSimultaneousRTs = 1;
+			m_Caps.supportsFloatRenderTargets = false;
+			m_Caps.supportsDepthTextures = false;
+			m_Caps.supportsInstancing = false;
+		}
 		GLint maxVsVecs = 256;
 		glGetIntegerv(GL_MAX_VERTEX_UNIFORM_VECTORS, &maxVsVecs);
 		m_Caps.maxVertexUniformVectors = static_cast<uint32_t>(maxVsVecs > 0 ? maxVsVecs : 256);
 		m_Caps.supportsTwoSidedStencil = true;
-		m_Caps.supports32BitIndices = (m_Caps.featureLevel >= 300);
+		m_Caps.supports32BitIndices = (m_Caps.featureLevel >= 300 || hasGLExt("GL_OES_element_index_uint") || hasGLExt("OES_element_index_uint"));
 #endif
 		{
 			std::string lowerAdapter = m_AdapterName;
@@ -1024,15 +1195,19 @@ namespace ParaEngine
 		GLenum glFmt = GL_RGBA;
 		GLenum glType = GL_UNSIGNED_BYTE;
 		uint32_t bpp = 32;
-		if (!MapPixelFormatToGL(format, internalFmt, glFmt, glType, bpp))
+		const uint32_t fl = GetCaps().featureLevel;
+		if (!MapPixelFormatToGL(format, fl, internalFmt, glFmt, glType, bpp))
 			return nullptr;
 
 		GLuint texId = 0;
 		glGenTextures(1, &texId);
 		GL::bindTexture2D(texId);
 		uint32_t numMips = (mipLevels > 0) ? mipLevels : 1;
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, (numMips > 1) ? GL_LINEAR_MIPMAP_LINEAR : GL_LINEAR);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+		const bool nonFilterableFloat = (glType == GL_FLOAT && !SupportsFloatLinearFilter());
+		const GLint minFilter = nonFilterableFloat ? GL_NEAREST : ((numMips > 1) ? GL_LINEAR_MIPMAP_LINEAR : GL_LINEAR);
+		const GLint magFilter = nonFilterableFloat ? GL_NEAREST : GL_LINEAR;
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, minFilter);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, magFilter);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
@@ -1097,8 +1272,8 @@ namespace ParaEngine
 		m_BoundMrtCount = 1;
 		m_ValidMrtMask = 0x1u;
 		m_AppliedDrawBufferMask = 0x1u;
-#if !defined(PARAENGINE_MOBILE) && !defined(EMSCRIPTEN)
-		if (count > 1 && glad_glDrawBuffers != nullptr)
+		const uint32_t fl = GetCaps().featureLevel;
+		if (count > 1 && HasGLDrawBuffers(fl))
 		{
 			uint32_t rtCount = count > 4u ? 4u : count;
 			GLenum drawBufs[4] = { GL_NONE, GL_NONE, GL_NONE, GL_NONE };
@@ -1124,7 +1299,7 @@ namespace ParaEngine
 			m_ValidMrtMask = validMask;
 			m_AppliedDrawBufferMask = validMask;
 		}
-		else if (count == 1 && primaryRT->GetColorCount() == 1 && glad_glDrawBuffers != nullptr)
+		else if (count == 1 && primaryRT->GetColorCount() == 1 && HasGLDrawBuffers(fl))
 		{
 			IRHITexture* colorTex0 = primaryRT->GetColorTexture(0);
 			GLuint texId0 = colorTex0 ? static_cast<GLuint>(reinterpret_cast<uintptr_t>(colorTex0->GetNativeHandle())) : 0;
@@ -1134,7 +1309,6 @@ namespace ParaEngine
 			const GLenum att0 = GL_COLOR_ATTACHMENT0;
 			glDrawBuffers(1, &att0);
 		}
-#endif
 		m_RenderTargetWidth = primaryRT->GetWidth();
 		m_RenderTargetHeight = primaryRT->GetHeight();
 		m_isBeginRenderTarget = true;
@@ -1154,8 +1328,7 @@ namespace ParaEngine
 		uint32_t dstW = dst ? dst->GetWidth() : GetBackBufferWidth();
 		uint32_t dstH = dst ? dst->GetHeight() : GetBackBufferHeight();
 
-#if !defined(PARAENGINE_MOBILE) && !defined(EMSCRIPTEN)
-		if (glad_glBlitFramebuffer != nullptr)
+		if (HasGLBlitFramebuffer(GetCaps().featureLevel))
 		{
 			GLint sx0 = srcRect ? srcRect->left : 0;
 			GLint sy0 = srcRect ? static_cast<GLint>(srcH) - srcRect->bottom : 0;
@@ -1165,7 +1338,7 @@ namespace ParaEngine
 			GLint dx0 = dstRect ? dstRect->left : 0;
 			GLint dy0 = dstRect ? static_cast<GLint>(dstH) - dstRect->bottom : 0;
 			GLint dx1 = dstRect ? dstRect->right : static_cast<GLint>(dstW);
-			GLint dy1 = dstRect ? static_cast<GLint>(dstH) - dstRect->top : static_cast<GLint>(dstH);
+			GLint dy1 = dstRect ? dstRect->top == dstRect->bottom ? 0 : (static_cast<GLint>(dstH) - dstRect->top) : static_cast<GLint>(dstH);
 
 			glBindFramebuffer(GL_READ_FRAMEBUFFER, srcFbo);
 			glBindFramebuffer(GL_DRAW_FRAMEBUFFER, dstFbo);
@@ -1173,7 +1346,6 @@ namespace ParaEngine
 			glBindFramebuffer(GL_FRAMEBUFFER, static_cast<GLuint>(prevFbo));
 			return true;
 		}
-#endif
 		// Fallback for GLES 2.0 / WebGL 1.0 when copying an equal-sized region into an offscreen color texture
 		IRHITexture* dstTex = dst ? dst->GetColorTexture(0) : nullptr;
 		if (dstTex != nullptr && srcW == dstW && srcH == dstH && !srcRect && !dstRect)
@@ -1220,8 +1392,7 @@ namespace ParaEngine
 
 	bool RenderDeviceOpenGL::DrawIndexedInstanced(EPrimitiveType primitiveType, int baseVertexIndex, uint32_t indexStart, uint32_t primitiveCount, uint32_t instanceCount)
 	{
-#if !defined(PARAENGINE_MOBILE) && !defined(EMSCRIPTEN)
-		if (instanceCount == 0 || glad_glDrawElementsInstanced == nullptr)
+		if (instanceCount == 0 || !HasGLInstancing(GetCaps().featureLevel))
 			return false;
 
 		GLenum mode = GL_TRIANGLES;
@@ -1236,9 +1407,22 @@ namespace ParaEngine
 			ApplyGLVertexDeclaration(m_CurrentVertexDeclaration, nullptr);
 
 		const void* indexOffset = reinterpret_cast<const void*>(static_cast<uintptr_t>(indexStart * sizeof(uint16_t)));
+#if !defined(PARAENGINE_MOBILE) && !defined(EMSCRIPTEN) && !defined(__APPLE__)
 		if (baseVertexIndex != 0 && glad_glDrawElementsInstancedBaseVertex != nullptr)
 		{
 			glDrawElementsInstancedBaseVertex(mode, count, GL_UNSIGNED_SHORT, indexOffset, static_cast<GLsizei>(instanceCount), baseVertexIndex);
+		}
+		else
+#endif
+		if (baseVertexIndex != 0 && m_CurrentVertexDeclaration && m_Streams[0].buffer != nullptr)
+		{
+			uint32_t origOffset = m_Streams[0].offsetInBytes;
+			uint32_t stride = m_Streams[0].stride ? m_Streams[0].stride : m_CurrentVertexDeclaration->GetStride(0);
+			m_Streams[0].offsetInBytes = static_cast<uint32_t>(static_cast<int32_t>(origOffset) + baseVertexIndex * static_cast<int32_t>(stride));
+			ApplyGLVertexDeclaration(m_CurrentVertexDeclaration, nullptr);
+			glDrawElementsInstanced(mode, count, GL_UNSIGNED_SHORT, indexOffset, static_cast<GLsizei>(instanceCount));
+			m_Streams[0].offsetInBytes = origOffset;
+			ApplyGLVertexDeclaration(m_CurrentVertexDeclaration, nullptr);
 		}
 		else
 		{
@@ -1246,10 +1430,6 @@ namespace ParaEngine
 		}
 		PE_CHECK_GL_ERROR_DEBUG();
 		return true;
-#else
-		(void)primitiveType; (void)baseVertexIndex; (void)indexStart; (void)primitiveCount; (void)instanceCount;
-		return false;
-#endif
 	}
 
 	bool RenderDeviceOpenGL::ReadDepthPixel(int x, int y, float& outDepth)
@@ -1318,6 +1498,7 @@ namespace ParaEngine
 			else if (Value == RSV_CULL_NONE)
 			{
 				glDisable(GL_CULL_FACE);
+				glFrontFace(GL_CW);
 			}
 			break;
 		}
@@ -1428,6 +1609,26 @@ namespace ParaEngine
 			break;
 		case ERenderState::STENCILPASS:
 			m_StencilPass = Value;
+			m_StencilDirty = true;
+			break;
+		case ERenderState::TWOSIDEDSTENCILMODE:
+			m_TwoSidedStencil = (Value != 0);
+			m_StencilDirty = true;
+			break;
+		case ERenderState::CCW_STENCILFUNC:
+			m_CCWStencilFunc = Value;
+			m_StencilDirty = true;
+			break;
+		case ERenderState::CCW_STENCILFAIL:
+			m_CCWStencilFail = Value;
+			m_StencilDirty = true;
+			break;
+		case ERenderState::CCW_STENCILZFAIL:
+			m_CCWStencilZFail = Value;
+			m_StencilDirty = true;
+			break;
+		case ERenderState::CCW_STENCILPASS:
+			m_CCWStencilPass = Value;
 			m_StencilDirty = true;
 			break;
 		case ERenderState::STENCILWRITEMASK:
@@ -1617,13 +1818,11 @@ namespace ParaEngine
 
 			glVertexAttribPointer(slot, comps, glType, normalized, static_cast<GLsizei>(stride), pointer);
 
-#if !defined(PARAENGINE_MOBILE) && !defined(EMSCRIPTEN)
-			if (glad_glVertexAttribDivisor != nullptr && m_AttribDivisors[slot] != divisor)
+			if (HasGLInstancing(GetCaps().featureLevel) && m_AttribDivisors[slot] != divisor)
 			{
 				glVertexAttribDivisor(slot, divisor);
 				m_AttribDivisors[slot] = divisor;
 			}
-#endif
 		}
 	}
 
@@ -1850,11 +2049,28 @@ namespace ParaEngine
 
 	int RenderDeviceOpenGL::GetStencilBits()
 	{
+		if (m_isBeginRenderTarget || m_BoundMrtCount > 0)
+			return 8;
+
 		static bool once = true;
 		static GLint g_sStencilBits = -1;
 		if (once)
 		{
-			glGetIntegerv(GL_STENCIL_BITS, &g_sStencilBits);
+			GLint bits = 0;
+#if defined(PARAENGINE_MOBILE) || defined(EMSCRIPTEN)
+			glGetIntegerv(GL_STENCIL_BITS, &bits);
+			if (glGetError() != GL_NO_ERROR)
+				bits = 8;
+#else
+			glGetIntegerv(GL_STENCIL_BITS, &bits);
+			if (glGetError() != GL_NO_ERROR || bits == 0)
+			{
+				glGetFramebufferAttachmentParameteriv(GL_FRAMEBUFFER, GL_STENCIL, GL_FRAMEBUFFER_ATTACHMENT_STENCIL_SIZE, &bits);
+				if (glGetError() != GL_NO_ERROR)
+					bits = 8;
+			}
+#endif
+			g_sStencilBits = bits;
 			once = false;
 		}
 		return g_sStencilBits;
@@ -1953,8 +2169,7 @@ namespace ParaEngine
 
 	bool RenderDeviceOpenGL::Clear(bool color, bool depth, bool stencil)
 	{
-#if !defined(PARAENGINE_MOBILE) && !defined(EMSCRIPTEN)
-		if (color && m_BoundMrtCount > 1 && m_AppliedDrawBufferMask != m_ValidMrtMask && glad_glDrawBuffers != nullptr)
+		if (color && m_BoundMrtCount > 1 && m_AppliedDrawBufferMask != m_ValidMrtMask && HasGLDrawBuffers(GetCaps().featureLevel))
 		{
 			GLenum drawBufs[4] = { GL_NONE, GL_NONE, GL_NONE, GL_NONE };
 			for (uint32_t i = 0; i < m_BoundMrtCount; ++i)
@@ -1965,15 +2180,48 @@ namespace ParaEngine
 			glDrawBuffers(static_cast<GLsizei>(m_BoundMrtCount), drawBufs);
 			m_AppliedDrawBufferMask = m_ValidMrtMask;
 		}
-#endif
+
+		// OpenGL glClear obeys write masks; temporarily unmask requested channels to match D3D/ParaRHI Clear semantics.
+		const uint32_t prevColorMask = m_StateTracker.GetRenderState(ERenderState::COLORWRITEENABLE);
+		const uint32_t prevZWrite = m_StateTracker.GetRenderState(ERenderState::ZWRITEENABLE);
+		const uint32_t prevStencilMask = m_StateTracker.GetRenderState(ERenderState::STENCILWRITEMASK);
+
 		uint32_t fields = 0;
 		if (depth)
+		{
 			fields |= GL_DEPTH_BUFFER_BIT;
+			if (prevZWrite == 0)
+				glDepthMask(GL_TRUE);
+		}
 		if (color)
+		{
 			fields |= GL_COLOR_BUFFER_BIT;
+			if ((prevColorMask & 0xFu) != 0xFu)
+				glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+		}
 		if (stencil)
+		{
 			fields |= GL_STENCIL_BUFFER_BIT;
-		glClear(fields);
+			if (prevStencilMask != 0xFFFFFFFFu)
+				glStencilMask(0xFFFFFFFFu);
+		}
+
+		if (fields != 0)
+			glClear(fields);
+
+		if (depth && prevZWrite == 0)
+			glDepthMask(GL_FALSE);
+		if (color && (prevColorMask & 0xFu) != 0xFu)
+		{
+			glColorMask(
+				(prevColorMask & 0x1u) ? GL_TRUE : GL_FALSE,
+				(prevColorMask & 0x2u) ? GL_TRUE : GL_FALSE,
+				(prevColorMask & 0x4u) ? GL_TRUE : GL_FALSE,
+				(prevColorMask & 0x8u) ? GL_TRUE : GL_FALSE);
+		}
+		if (stencil && prevStencilMask != 0xFFFFFFFFu)
+			glStencilMask(prevStencilMask);
+
 		PE_CHECK_GL_ERROR_DEBUG();
 		return true;
 	}
@@ -2059,14 +2307,23 @@ namespace ParaEngine
 		if (!m_StencilDirty)
 			return;
 		m_StencilDirty = false;
-		glStencilFunc(ToGLCompareFunc(m_StencilFunc), static_cast<GLint>(m_StencilRefValue), m_StencilMask);
-		glStencilOp(ToGLStencilOp(m_StencilFail), ToGLStencilOp(m_StencilZFail), ToGLStencilOp(m_StencilPass));
+		if (m_TwoSidedStencil && HasGLTwoSidedStencil())
+		{
+			glStencilFuncSeparate(GL_FRONT, ToGLCompareFunc(m_StencilFunc), static_cast<GLint>(m_StencilRefValue), m_StencilMask);
+			glStencilOpSeparate(GL_FRONT, ToGLStencilOp(m_StencilFail), ToGLStencilOp(m_StencilZFail), ToGLStencilOp(m_StencilPass));
+			glStencilFuncSeparate(GL_BACK, ToGLCompareFunc(m_CCWStencilFunc), static_cast<GLint>(m_StencilRefValue), m_StencilMask);
+			glStencilOpSeparate(GL_BACK, ToGLStencilOp(m_CCWStencilFail), ToGLStencilOp(m_CCWStencilZFail), ToGLStencilOp(m_CCWStencilPass));
+		}
+		else
+		{
+			glStencilFunc(ToGLCompareFunc(m_StencilFunc), static_cast<GLint>(m_StencilRefValue), m_StencilMask);
+			glStencilOp(ToGLStencilOp(m_StencilFail), ToGLStencilOp(m_StencilZFail), ToGLStencilOp(m_StencilPass));
+		}
 	}
 
 	void RenderDeviceOpenGL::ApplyDrawBuffersForCurrentProgram()
 	{
-#if !defined(PARAENGINE_MOBILE) && !defined(EMSCRIPTEN)
-		if (m_BoundMrtCount <= 1 || glad_glDrawBuffers == nullptr)
+		if (m_BoundMrtCount <= 1 || !HasGLDrawBuffers(GetCaps().featureLevel))
 			return;
 		const uint8_t desiredMask = static_cast<uint8_t>(m_ValidMrtMask & GLProgram::getCurrentColorOutputMask());
 		if (desiredMask == m_AppliedDrawBufferMask)
@@ -2079,6 +2336,5 @@ namespace ParaEngine
 		}
 		glDrawBuffers(static_cast<GLsizei>(m_BoundMrtCount), drawBufs);
 		m_AppliedDrawBufferMask = desiredMask;
-#endif
 	}
 }

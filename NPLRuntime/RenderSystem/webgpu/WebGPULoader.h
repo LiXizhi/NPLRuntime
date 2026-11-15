@@ -100,6 +100,7 @@ namespace ParaEngine
 		bool Load();
 		void Unload();
 		void ProcessEvents(WGPUInstance instance, WGPUDevice device) const;
+		void WaitAsync(WGPUInstance instance, WGPUDevice device) const;
 	};
 }
 

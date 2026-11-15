@@ -359,16 +359,20 @@ bool GLFontAtlas::prepareLetterDefinitions(const std::u16string& utf16Text)
         _letterDefinitions[it.first] = tempDef;
     }
 
-    unsigned char *data = nullptr;
-    if (pixelFormat == PixelFormat::A8L8)
+    const int updateHeight = static_cast<int>(_currentPageOrigY - startY) + _currLineHeight;
+    if (updateHeight > 0)
     {
-        data = _currentPageData + CacheTextureWidth * (int)startY * 2;
+        unsigned char *data = nullptr;
+        if (pixelFormat == PixelFormat::A8L8)
+        {
+            data = _currentPageData + CacheTextureWidth * (int)startY * 2;
+        }
+        else
+        {
+            data = _currentPageData + CacheTextureWidth * (int)startY;
+        }
+        _atlasTextures[_currentPage]->updateWithData(data, 0, startY, CacheTextureWidth, updateHeight);
     }
-    else
-    {
-        data = _currentPageData + CacheTextureWidth * (int)startY;
-    }
-    _atlasTextures[_currentPage]->updateWithData(data, 0, startY, CacheTextureWidth, _currentPageOrigY - startY + _currLineHeight);
 
     return true;
 }

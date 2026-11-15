@@ -28,6 +28,10 @@ namespace ParaEngine
 		if (m_instanceCount == 0 || m_pGeometryBuffer == nullptr || m_pIndexBuffer == nullptr)
 			return;
 
+		auto* pDevice = CGlobals::GetRenderDevice();
+		if (!pDevice || pDevice->GetStencilBits() <= 0)
+			return;
+
 		EffectManager* pEffectManager = CGlobals::GetEffectManager();
 		pEffectManager->BeginEffect(TECH_SIMPLE_DROPSHADOW);
 		CEffectFile* pEffect = pEffectManager->GetCurrentEffectFile();
@@ -37,11 +41,21 @@ namespace ParaEngine
 			{
 				if (pEffect->BeginPass(0))
 				{
-					auto pDevice = CGlobals::GetRenderDevice();
 					pDevice->SetStreamSource(0, m_pGeometryBuffer, 0, sizeof(VertexPositionIndex));
 					pDevice->SetIndices(m_pIndexBuffer);
 
-					// step 1:
+					// Ensure clean stencil buffer and predictable blend/cull states before Step 1
+					pDevice->SetRenderState(ERenderState::STENCILWRITEMASK, 0xffffffff);
+					pDevice->SetClearStencil(0);
+					pDevice->Clear(false, false, true);
+
+					pDevice->SetRenderState(ERenderState::ALPHABLENDENABLE, TRUE);
+					pDevice->SetRenderState(ERenderState::SRCBLEND, D3DBLEND_SRCALPHA);
+					pDevice->SetRenderState(ERenderState::DESTBLEND, D3DBLEND_INVSRCALPHA);
+					pDevice->SetRenderState(ERenderState::TWOSIDEDSTENCILMODE, FALSE);
+
+					// step 1: front faces increment stencil where depth test passes
+					pDevice->SetRenderState(ERenderState::CULLMODE, RSV_CULL_CCW);
 					pDevice->SetRenderState(ERenderState::ZWRITEENABLE, FALSE);
 					pDevice->SetRenderState(ERenderState::STENCILENABLE, TRUE);
 					pDevice->SetRenderState(ERenderState::STENCILFUNC, RSV_CMP_ALWAYS);
@@ -50,20 +64,19 @@ namespace ParaEngine
 					pDevice->SetRenderState(ERenderState::STENCILPASS, RSV_STENCILOP_INCR);
 					pDevice->SetRenderState(ERenderState::STENCILREF, 0x01);
 					pDevice->SetRenderState(ERenderState::STENCILMASK, 0xffffffff);
-					pDevice->SetRenderState(ERenderState::STENCILWRITEMASK, 0xffffffff);
 					pDevice->SetRenderState(ERenderState::COLORWRITEENABLE, 0x00000000);
 					DrawAllBatch(pDevice, pEffect);
 
-					// step 2:
+					// step 2: back faces decrement stencil where depth test passes
 					pDevice->SetRenderState(ERenderState::CULLMODE, RSV_CULL_CW);
 					pDevice->SetRenderState(ERenderState::STENCILPASS, RSV_STENCILOP_DECR);
 					DrawAllBatch(pDevice, pEffect);
 
-					// step 3:
+					// step 3: shade ground pixels inside the shadow volume (stencil >= 1) and zero stencil to prevent double-darkening
 					pDevice->SetRenderState(ERenderState::COLORWRITEENABLE, 0xf);
 					pDevice->SetRenderState(ERenderState::CULLMODE, RSV_CULL_CCW);
 					pDevice->SetRenderState(ERenderState::STENCILFUNC, RSV_CMP_LESSEQUAL);
-					pDevice->SetRenderState(ERenderState::STENCILPASS, RSV_STENCILOP_KEEP);
+					pDevice->SetRenderState(ERenderState::STENCILPASS, RSV_STENCILOP_ZERO);
 					DrawAllBatch(pDevice, pEffect);
 
 					pDevice->SetRenderState(ERenderState::ZWRITEENABLE, TRUE);

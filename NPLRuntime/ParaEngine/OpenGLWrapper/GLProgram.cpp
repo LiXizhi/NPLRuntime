@@ -148,11 +148,11 @@ bool GLProgram::initWithByteArrays(const GLchar* vShaderByteArray, const GLchar*
 	_colorOutputMask = 0x1u;
 	if (fShaderByteArray)
 	{
-		if (strstr(fShaderByteArray, "gl_FragData[1]") != nullptr)
+		if (strstr(fShaderByteArray, "gl_FragData[1]") != nullptr || strstr(fShaderByteArray, "_paraFragData1") != nullptr)
 			_colorOutputMask |= 0x2u;
-		if (strstr(fShaderByteArray, "gl_FragData[2]") != nullptr)
+		if (strstr(fShaderByteArray, "gl_FragData[2]") != nullptr || strstr(fShaderByteArray, "_paraFragData2") != nullptr)
 			_colorOutputMask |= 0x4u;
-		if (strstr(fShaderByteArray, "gl_FragData[3]") != nullptr)
+		if (strstr(fShaderByteArray, "gl_FragData[3]") != nullptr || strstr(fShaderByteArray, "_paraFragData3") != nullptr)
 			_colorOutputMask |= 0x8u;
 	}
 
@@ -365,15 +365,39 @@ bool GLProgram::compileShader(GLuint * shader, GLenum type, const GLchar* source
 	if (hasVersionDirective)
 	{
 #if defined(PARAENGINE_MOBILE) || defined(EMSCRIPTEN)
-		const GLchar* nl = strchr(pTrim, '\n');
-		std::string verHeader = nl ? std::string(pTrim, static_cast<size_t>(nl - pTrim + 1)) : std::string(pTrim) + "\n";
-		const GLchar* rest = nl ? (nl + 1) : "";
-		const GLchar* verSources[] = {
-			verHeader.c_str(),
-			"precision highp float;\n",
-			rest,
-		};
-		glShaderSource(*shader, 3, verSources, nullptr);
+		if (strstr(pTrim, "precision ") != nullptr)
+		{
+			glShaderSource(*shader, 1, &pTrim, nullptr);
+		}
+		else
+		{
+			const GLchar* cur = pTrim;
+			const GLchar* nl = strchr(cur, '\n');
+			if (nl)
+				cur = nl + 1;
+			while (*cur != '\0')
+			{
+				const GLchar* lineTrim = cur;
+				while (*lineTrim == ' ' || *lineTrim == '\t' || *lineTrim == '\r')
+					++lineTrim;
+				if (strncmp(lineTrim, "#extension", 10) == 0)
+				{
+					const GLchar* extNl = strchr(lineTrim, '\n');
+					cur = extNl ? (extNl + 1) : (lineTrim + strlen(lineTrim));
+				}
+				else
+				{
+					break;
+				}
+			}
+			std::string verHeader(pTrim, static_cast<size_t>(cur - pTrim));
+			const GLchar* verSources[] = {
+				verHeader.c_str(),
+				"precision highp float;\n",
+				cur,
+			};
+			glShaderSource(*shader, 3, verSources, nullptr);
+		}
 #else
 		glShaderSource(*shader, 1, &pTrim, nullptr);
 #endif
@@ -495,9 +519,17 @@ bool GLProgram::link()
 	bindPredefinedVertexAttribs();
 
 	glLinkProgram(_program);
+	glGetProgramiv(_program, GL_LINK_STATUS, &status);
 
-	parseVertexAttribs();
-	parseUniforms();
+	if (status != GL_TRUE)
+	{
+		OUTPUT_LOG("ERROR: Failed to link GLProgram:\n%s\n", getProgramLog().c_str());
+	}
+	else
+	{
+		parseVertexAttribs();
+		parseUniforms();
+	}
 
 	if (_vertShader)
 	{

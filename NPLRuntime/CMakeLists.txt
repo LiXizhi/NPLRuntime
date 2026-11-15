@@ -58,8 +58,7 @@ endif ()
 project(${NPLRUNTIME_PROJECT_NAME})
 
 if (EMSCRIPTEN AND NPLRUNTIME_ENABLE_WEBGPU AND DEFINED EMSCRIPTEN_VERSION AND EMSCRIPTEN_VERSION VERSION_GREATER_EQUAL "4.0.10")
-	message(STATUS "Emscripten ${EMSCRIPTEN_VERSION} removed legacy -sUSE_WEBGPU=1; disabling RenderSystemWebGPU and using OpenGL/WebGL2 backend")
-	set(NPLRUNTIME_ENABLE_WEBGPU OFF CACHE BOOL "Enable WebGPU ParaRHI backend" FORCE)
+	message(STATUS "Emscripten ${EMSCRIPTEN_VERSION}: enabling RenderSystemWebGPU via --use-port=emdawnwebgpu (with WebGL2 fallback)")
 endif()
 
 # SDL 跨平台 window可以编译用于编写和调试代码, 非window默认通过LINUX宏开启SDL GUI

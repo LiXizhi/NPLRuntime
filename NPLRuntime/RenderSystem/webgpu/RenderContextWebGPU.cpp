@@ -18,7 +18,7 @@ namespace ParaEngine
 		struct AdapterReqState
 		{
 			bool done = false;
-			WGPURequestAdapterStatus status = WGPURequestAdapterStatus_Unknown;
+			WGPURequestAdapterStatus status = WGPURequestAdapterStatus_Error;
 			WGPUAdapter adapter = nullptr;
 			std::string message;
 		};
@@ -26,11 +26,42 @@ namespace ParaEngine
 		struct DeviceReqState
 		{
 			bool done = false;
-			WGPURequestDeviceStatus status = WGPURequestDeviceStatus_Unknown;
+			WGPURequestDeviceStatus status = WGPURequestDeviceStatus_Error;
 			WGPUDevice device = nullptr;
 			std::string message;
 		};
 
+#if defined(WGPUINTERNAL_HAVE_EMDAWNWEBGPU_HEADER)
+		void OnAdapterRequested(WGPURequestAdapterStatus status, WGPUAdapter adapter, WGPUStringView message, void* userdata1, void* /*userdata2*/)
+		{
+			auto* st = static_cast<AdapterReqState*>(userdata1);
+			if (!st)
+				return;
+			st->status = status;
+			st->adapter = adapter;
+			st->message = ParaWgpuStringViewToStd(message);
+			st->done = true;
+		}
+
+		void OnDeviceRequested(WGPURequestDeviceStatus status, WGPUDevice device, WGPUStringView message, void* userdata1, void* /*userdata2*/)
+		{
+			auto* st = static_cast<DeviceReqState*>(userdata1);
+			if (!st)
+				return;
+			st->status = status;
+			st->device = device;
+			st->message = ParaWgpuStringViewToStd(message);
+			st->done = true;
+		}
+
+		void OnUncapturedWebGPUError(WGPUDevice const* /*device*/, WGPUErrorType type, WGPUStringView message, void* /*userdata1*/, void* /*userdata2*/)
+		{
+			const std::string msg = ParaWgpuStringViewToStd(message);
+			OUTPUT_LOG("[ParaRHI-WebGPU] Uncaptured error (type=%u): %s\n",
+				static_cast<unsigned>(type),
+				msg.empty() ? "(no message)" : msg.c_str());
+		}
+#else
 		void WGPU_CALL OnAdapterRequested(WGPURequestAdapterStatus status, WGPUAdapter adapter, const char* message, void* userdata)
 		{
 			auto* st = static_cast<AdapterReqState*>(userdata);
@@ -61,6 +92,7 @@ namespace ParaEngine
 				static_cast<unsigned>(type),
 				message ? message : "(no message)");
 		}
+#endif
 	}
 
 	IRenderContext* CreateRenderContextWebGPU()
@@ -94,12 +126,18 @@ namespace ParaEngine
 
 		WGPUSurface surface = nullptr;
 #if defined(__EMSCRIPTEN__)
+#if defined(WGPUINTERNAL_HAVE_EMDAWNWEBGPU_HEADER)
+		WGPUEmscriptenSurfaceSourceCanvasHTMLSelector canvasDesc = {};
+		canvasDesc.chain.sType = WGPUSType_EmscriptenSurfaceSourceCanvasHTMLSelector;
+		canvasDesc.selector = ParaWgpuLabel("#canvas");
+#else
 		WGPUSurfaceDescriptorFromCanvasHTMLSelector canvasDesc = {};
 		canvasDesc.chain.sType = WGPUSType_SurfaceDescriptorFromCanvasHTMLSelector;
 		canvasDesc.selector = "#canvas";
+#endif
 		WGPUSurfaceDescriptor surfDesc = {};
 		surfDesc.nextInChain = &canvasDesc.chain;
-		surfDesc.label = "ParaEngineCanvasSurface";
+		surfDesc.label = ParaWgpuLabel("ParaEngineCanvasSurface");
 		surface = PARA_WGPU_CALL(wgpu, wgpuInstanceCreateSurface, instance, &surfDesc);
 #elif defined(_WIN32)
 		void* hwnd = reinterpret_cast<void*>(cfg.renderWindow->GetNativeHandle());
@@ -116,7 +154,7 @@ namespace ParaEngine
 		hwndDesc.hwnd = hwnd;
 		WGPUSurfaceDescriptor surfDesc = {};
 		surfDesc.nextInChain = &hwndDesc.chain;
-		surfDesc.label = "ParaEngineWin32Surface";
+		surfDesc.label = ParaWgpuLabel("ParaEngineWin32Surface");
 		surface = PARA_WGPU_CALL(wgpu, wgpuInstanceCreateSurface, instance, &surfDesc);
 #endif
 
@@ -133,10 +171,18 @@ namespace ParaEngine
 		adapterOpts.powerPreference = WGPUPowerPreference_HighPerformance;
 
 		AdapterReqState adapterReq;
+#if defined(WGPUINTERNAL_HAVE_EMDAWNWEBGPU_HEADER)
+		WGPURequestAdapterCallbackInfo adapterCbInfo = {};
+		adapterCbInfo.mode = WGPUCallbackMode_AllowSpontaneous;
+		adapterCbInfo.callback = &OnAdapterRequested;
+		adapterCbInfo.userdata1 = &adapterReq;
+		PARA_WGPU_CALL(wgpu, wgpuInstanceRequestAdapter, instance, &adapterOpts, adapterCbInfo);
+#else
 		PARA_WGPU_CALL(wgpu, wgpuInstanceRequestAdapter, instance, &adapterOpts, &OnAdapterRequested, &adapterReq);
-		for (int spin = 0; !adapterReq.done && spin < 2000; ++spin)
+#endif
+		for (int spin = 0; !adapterReq.done && spin < 5000; ++spin)
 		{
-			wgpu.ProcessEvents(instance, nullptr);
+			wgpu.WaitAsync(instance, nullptr);
 		}
 
 		if (!adapterReq.done || adapterReq.status != WGPURequestAdapterStatus_Success || !adapterReq.adapter)
@@ -150,12 +196,19 @@ namespace ParaEngine
 
 		WGPUAdapter adapter = adapterReq.adapter;
 		bool supportsBC = false;
+		bool supportsFloat32Filterable = false;
 		std::vector<WGPUFeatureName> reqFeatures;
 		if (PARA_WGPU_HAS(wgpu, wgpuAdapterHasFeature) &&
 			PARA_WGPU_CALL(wgpu, wgpuAdapterHasFeature, adapter, WGPUFeatureName_TextureCompressionBC))
 		{
 			supportsBC = true;
 			reqFeatures.push_back(WGPUFeatureName_TextureCompressionBC);
+		}
+		if (PARA_WGPU_HAS(wgpu, wgpuAdapterHasFeature) &&
+			PARA_WGPU_CALL(wgpu, wgpuAdapterHasFeature, adapter, WGPUFeatureName_Float32Filterable))
+		{
+			supportsFloat32Filterable = true;
+			reqFeatures.push_back(WGPUFeatureName_Float32Filterable);
 		}
 
 		std::string adapterName = "WebGPU Adapter";
@@ -172,16 +225,27 @@ namespace ParaEngine
 #endif
 
 		WGPUDeviceDescriptor devDesc = {};
-		devDesc.label = "ParaEngineWebGPUDevice";
+		devDesc.label = ParaWgpuLabel("ParaEngineWebGPUDevice");
 		devDesc.requiredFeatureCount = reqFeatures.size();
 		devDesc.requiredFeatures = reqFeatures.empty() ? nullptr : reqFeatures.data();
-		devDesc.defaultQueue.label = "ParaEngineWebGPUQueue";
+		devDesc.defaultQueue.label = ParaWgpuLabel("ParaEngineWebGPUQueue");
+#if defined(WGPUINTERNAL_HAVE_EMDAWNWEBGPU_HEADER)
+		devDesc.uncapturedErrorCallbackInfo.callback = &OnUncapturedWebGPUError;
+#endif
 
 		DeviceReqState devReq;
+#if defined(WGPUINTERNAL_HAVE_EMDAWNWEBGPU_HEADER)
+		WGPURequestDeviceCallbackInfo devCbInfo = {};
+		devCbInfo.mode = WGPUCallbackMode_AllowSpontaneous;
+		devCbInfo.callback = &OnDeviceRequested;
+		devCbInfo.userdata1 = &devReq;
+		PARA_WGPU_CALL(wgpu, wgpuAdapterRequestDevice, adapter, &devDesc, devCbInfo);
+#else
 		PARA_WGPU_CALL(wgpu, wgpuAdapterRequestDevice, adapter, &devDesc, &OnDeviceRequested, &devReq);
-		for (int spin = 0; !devReq.done && spin < 2000; ++spin)
+#endif
+		for (int spin = 0; !devReq.done && spin < 5000; ++spin)
 		{
-			wgpu.ProcessEvents(instance, nullptr);
+			wgpu.WaitAsync(instance, nullptr);
 		}
 
 		if (!devReq.done || devReq.status != WGPURequestDeviceStatus_Success || !devReq.device)
@@ -195,10 +259,12 @@ namespace ParaEngine
 		}
 
 		WGPUDevice device = devReq.device;
+#if !defined(WGPUINTERNAL_HAVE_EMDAWNWEBGPU_HEADER)
 		if (PARA_WGPU_HAS(wgpu, wgpuDeviceSetUncapturedErrorCallback))
 		{
 			PARA_WGPU_CALL(wgpu, wgpuDeviceSetUncapturedErrorCallback, device, &OnUncapturedWebGPUError, nullptr);
 		}
+#endif
 
 		WGPUQueue queue = PARA_WGPU_CALL(wgpu, wgpuDeviceGetQueue, device);
 		if (!queue)
@@ -213,15 +279,43 @@ namespace ParaEngine
 		}
 
 		WGPUTextureFormat surfFmt = WGPUTextureFormat_BGRA8Unorm;
+#if defined(WGPUINTERNAL_HAVE_EMDAWNWEBGPU_HEADER)
+		WGPUSurfaceCapabilities surfCaps = {};
+		if (PARA_WGPU_CALL(wgpu, wgpuSurfaceGetCapabilities, surface, adapter, &surfCaps) == WGPUStatus_Success &&
+			surfCaps.formatCount > 0 && surfCaps.formats)
+		{
+			surfFmt = surfCaps.formats[0];
+			for (size_t fi = 0; fi < surfCaps.formatCount; ++fi)
+			{
+				if (surfCaps.formats[fi] == WGPUTextureFormat_BGRA8Unorm ||
+					surfCaps.formats[fi] == WGPUTextureFormat_RGBA8Unorm)
+				{
+					surfFmt = surfCaps.formats[fi];
+					break;
+				}
+			}
+		}
+		PARA_WGPU_CALL(wgpu, wgpuSurfaceCapabilitiesFreeMembers, surfCaps);
+#else
 		if (PARA_WGPU_HAS(wgpu, wgpuSurfaceGetPreferredFormat))
 		{
 			WGPUTextureFormat pref = PARA_WGPU_CALL(wgpu, wgpuSurfaceGetPreferredFormat, surface, adapter);
 			if (pref != WGPUTextureFormat_Undefined)
 				surfFmt = pref;
 		}
+#endif
 
-		const uint32_t initW = (cfg.screenWidth > 0) ? cfg.screenWidth : 1020u;
-		const uint32_t initH = (cfg.screenHeight > 0) ? cfg.screenHeight : 680u;
+		uint32_t initW = (cfg.screenWidth > 0) ? cfg.screenWidth : 1020u;
+		uint32_t initH = (cfg.screenHeight > 0) ? cfg.screenHeight : 680u;
+#if defined(__EMSCRIPTEN__)
+		int canvasW = 0, canvasH = 0;
+		if (emscripten_get_canvas_element_size("#canvas", &canvasW, &canvasH) == EMSCRIPTEN_RESULT_SUCCESS &&
+			canvasW > 0 && canvasH > 0)
+		{
+			initW = static_cast<uint32_t>(canvasW);
+			initH = static_cast<uint32_t>(canvasH);
+		}
+#endif
 		const bool vsync = true;
 
 		auto* rhiDev = new RenderDeviceWebGPU(
@@ -233,6 +327,7 @@ namespace ParaEngine
 			queue,
 			surfFmt,
 			supportsBC,
+			supportsFloat32Filterable,
 			adapterName);
 		if (!rhiDev->Initialize(initW, initH, vsync))
 		{
@@ -240,11 +335,12 @@ namespace ParaEngine
 			return nullptr;
 		}
 
-		OUTPUT_LOG("[ParaRHI-WebGPU] Initialized WebGPU device (%s, %ux%u, BC=%d)\n",
+		OUTPUT_LOG("[ParaRHI-WebGPU] Initialized WebGPU device (%s, %ux%u, BC=%d, Float32Filterable=%d)\n",
 			adapterName.c_str(),
 			initW,
 			initH,
-			supportsBC ? 1 : 0);
+			supportsBC ? 1 : 0,
+			supportsFloat32Filterable ? 1 : 0);
 		return rhiDev;
 	}
 

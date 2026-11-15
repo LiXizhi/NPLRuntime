@@ -44,6 +44,23 @@ CFontRendererOpenGL* ParaEngine::CFontRendererOpenGL::create(const std::string& 
 		}
 		return std::string();
 	};
+	auto iequalsFont = [](const std::string& a, const char* b) -> bool {
+		if (!b)
+			return false;
+		size_t i = 0;
+		for (; i < a.size() && b[i] != '\0'; ++i)
+		{
+			unsigned char ca = static_cast<unsigned char>(a[i]);
+			unsigned char cb = static_cast<unsigned char>(b[i]);
+			if (ca >= 'A' && ca <= 'Z')
+				ca = static_cast<unsigned char>(ca - 'A' + 'a');
+			if (cb >= 'A' && cb <= 'Z')
+				cb = static_cast<unsigned char>(cb - 'A' + 'a');
+			if (ca != cb)
+				return false;
+		}
+		return i == a.size() && b[i] == '\0';
+	};
 
 	std::string fontFile;
 	std::string fallbackFontFile;
@@ -69,10 +86,52 @@ CFontRendererOpenGL* ParaEngine::CFontRendererOpenGL::create(const std::string& 
 			"fonts/DroidSansFallback.ttf"
 		});
 #else
-	fallbackFontFile = pickExistingFile({ "fonts/DroidSansFallback.ttf" });
+	fallbackFontFile = pickExistingFile({
+		"fonts/DroidSansFallback.ttf",
+		"/System/Library/Fonts/PingFang.ttc",
+		"/System/Library/Fonts/STHeiti Light.ttc",
+		"/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc",
+		"/usr/share/fonts/truetype/droid/DroidSansFallbackFull.ttf",
+		"/usr/share/fonts/truetype/wqy/wqy-microhei.ttc"
+	});
+	auto pickTahomaOrSimilarSans = [&]() -> std::string {
+		return bBold
+			? pickExistingFile({
+				"fonts/tahomabd.ttf",
+				"fonts/TahomaBold.ttf",
+				"fonts/tahoma.ttf",
+				"fonts/Tahoma.ttf",
+				"/System/Library/Fonts/Supplemental/Tahoma Bold.ttf",
+				"/System/Library/Fonts/Supplemental/Tahoma.ttf",
+				"fonts/OpenSans-Semibold.ttf",
+				"fonts/OpenSans-Bold.ttf",
+				"fonts/OpenSans-Regular.ttf",
+				"fonts/verdanab.ttf",
+				"fonts/verdana.ttf",
+				"fonts/segoeuib.ttf",
+				"fonts/segoeui.ttf",
+				"/System/Library/Fonts/Supplemental/Verdana Bold.ttf",
+				"/System/Library/Fonts/Supplemental/Verdana.ttf",
+				"/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
+				"/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf",
+				"/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
+				"/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf"
+			})
+			: pickExistingFile({
+				"fonts/tahoma.ttf",
+				"fonts/Tahoma.ttf",
+				"/System/Library/Fonts/Supplemental/Tahoma.ttf",
+				"fonts/OpenSans-Regular.ttf",
+				"fonts/verdana.ttf",
+				"fonts/segoeui.ttf",
+				"/System/Library/Fonts/Supplemental/Verdana.ttf",
+				"/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
+				"/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf"
+			});
+	};
 #endif
 
-	if (sFontName == "System" || sFontName == "system")
+	if (iequalsFont(sFontName, "System"))
 	{
 #ifdef WIN32
 		fontFile = !fallbackFontFile.empty()
@@ -85,7 +144,9 @@ CFontRendererOpenGL* ParaEngine::CFontRendererOpenGL::create(const std::string& 
 				"fonts/DroidSansFallback.ttf"
 			});
 #else
-		fontFile = "fonts/DroidSansFallback.ttf";
+		fontFile = pickTahomaOrSimilarSans();
+		if (fontFile.empty())
+			fontFile = !fallbackFontFile.empty() ? fallbackFontFile : "fonts/DroidSansFallback.ttf";
 #endif
 	}
 	else
@@ -235,6 +296,66 @@ CFontRendererOpenGL* ParaEngine::CFontRendererOpenGL::create(const std::string& 
 				}
 				RegCloseKey(hKey);
 				fontFile = (bBold && !boldMatch.empty()) ? boldMatch : (!regularMatch.empty() ? regularMatch : boldMatch);
+			}
+		}
+#else
+		if (fontFile.empty())
+		{
+			if (iequalsFont(sFontName, "Tahoma") ||
+				iequalsFont(sFontName, "Verdana") ||
+				iequalsFont(sFontName, "Segoe UI") ||
+				iequalsFont(sFontName, "Arial") ||
+				iequalsFont(sFontName, "Helvetica") ||
+				iequalsFont(sFontName, "Open Sans"))
+			{
+				fontFile = pickTahomaOrSimilarSans();
+			}
+			else if (iequalsFont(sFontName, "Consolas") ||
+				iequalsFont(sFontName, "Courier New"))
+			{
+				fontFile = pickExistingFile({
+					bBold ? "fonts/consolab.ttf" : "fonts/consola.ttf",
+					"fonts/consola.ttf",
+					"/System/Library/Fonts/Menlo.ttc",
+					bBold ? "/usr/share/fonts/truetype/dejavu/DejaVuSansMono-Bold.ttf" : "/usr/share/fonts/truetype/dejavu/DejaVuSansMono.ttf",
+					"/usr/share/fonts/truetype/dejavu/DejaVuSansMono.ttf"
+				});
+				if (fontFile.empty())
+					fontFile = pickTahomaOrSimilarSans();
+			}
+			else if (iequalsFont(sFontName, "Times New Roman"))
+			{
+				fontFile = pickExistingFile({
+					bBold ? "fonts/timesbd.ttf" : "fonts/times.ttf",
+					"fonts/times.ttf",
+					"/System/Library/Fonts/Times.ttc",
+					bBold ? "/usr/share/fonts/truetype/dejavu/DejaVuSerif-Bold.ttf" : "/usr/share/fonts/truetype/dejavu/DejaVuSerif.ttf",
+					"/usr/share/fonts/truetype/dejavu/DejaVuSerif.ttf"
+				});
+				if (fontFile.empty())
+					fontFile = pickTahomaOrSimilarSans();
+			}
+			else if (iequalsFont(sFontName, "Microsoft YaHei") ||
+				iequalsFont(sFontName, "Microsoft YaHei UI") ||
+				sFontName == "\xE5\xBE\xAE\xE8\xBD\xAF\xE9\x9B\x85\xE9\xBB\x91" ||
+				iequalsFont(sFontName, "SimHei") ||
+				sFontName == "\xE9\xBB\x91\xE4\xBD\x93" ||
+				iequalsFont(sFontName, "SimSun") ||
+				iequalsFont(sFontName, "NSimSun") ||
+				sFontName == "\xE5\xAE\x8B\xE4\xBD\x93")
+			{
+				fontFile = pickExistingFile({
+					bBold ? "fonts/msyhbd.ttc" : "fonts/msyh.ttc",
+					"fonts/msyh.ttc",
+					fallbackFontFile
+				});
+			}
+
+			if (fontFile.empty())
+			{
+				fontFile = pickTahomaOrSimilarSans();
+				if (fontFile.empty() && !fallbackFontFile.empty())
+					fontFile = fallbackFontFile;
 			}
 		}
 #endif

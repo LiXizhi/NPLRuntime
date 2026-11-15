@@ -100,9 +100,8 @@ namespace ParaEngine
 				std::ifstream ifs(filePath, std::ios::binary);
 				if (ifs.is_open())
 				{
-					Json::CharReaderBuilder builder;
-					std::string errs;
-					Json::parseFromStream(builder, ifs, &s_store, &errs);
+					Json::Reader reader;
+					reader.parse(ifs, s_store, false);
 					if (!s_store.isObject())
 						s_store = Json::Value(Json::objectValue);
 				}
@@ -117,10 +116,9 @@ namespace ParaEngine
 			std::ofstream ofs(filePath, std::ios::binary | std::ios::trunc);
 			if (!ofs.is_open())
 				return false;
-			Json::StreamWriterBuilder builder;
-			builder["indentation"] = "  ";
-			std::unique_ptr<Json::StreamWriter> writer(builder.newStreamWriter());
-			writer->write(GetLocalRegistryStore(), &ofs);
+			Json::StyledWriter writer;
+			std::string serialized = writer.write(GetLocalRegistryStore());
+			ofs.write(serialized.data(), (std::streamsize)serialized.size());
 			ofs.flush();
 #ifdef __EMSCRIPTEN__
 			EM_ASM(if (typeof FS !== "undefined" && FS.syncfs) { FS.syncfs(false, function(err) {}); });
@@ -315,7 +313,7 @@ namespace ParaEngine
 	{
 		Json::Value& store = GetLocalRegistryStore();
 		std::string section = NormalizeRegPath(root_key, sSubKey);
-		store[section][name] = (Json::UInt64)value;
+		store[section][name] = (Json::UInt)value;
 		return SaveLocalRegistryStore();
 	}
 
@@ -327,7 +325,7 @@ namespace ParaEngine
 			return 0;
 		const Json::Value& val = store[section][name];
 		if (val.isIntegral())
-			return (DWORD)val.asUInt64();
+			return (DWORD)val.asUInt();
 		return 0;
 	}
 
@@ -378,11 +376,15 @@ namespace ParaEngine
 	CSDL2Application::CSDL2Application()
 		: m_bUpdateScreenDevice(false), m_bSizeChanged(false)
 	{
-		// SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
-		// SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 3);
-		// SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24);
-		// SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
 		SDL_Init(SDL_INIT_EVERYTHING);
+
+		SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24);
+		SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 8);
+#ifdef EMSCRIPTEN
+		SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_ES);
+		SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
+		SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 0);
+#endif
 
 		SDL_SetHint(SDL_HINT_TOUCH_MOUSE_EVENTS, "0");
 		

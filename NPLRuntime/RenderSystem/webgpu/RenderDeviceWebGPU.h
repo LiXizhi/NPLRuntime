@@ -33,6 +33,7 @@ namespace ParaEngine
 			WGPUQueue queue,
 			WGPUTextureFormat surfaceFormat,
 			bool supportsBC,
+			bool supportsFloat32Filterable,
 			const std::string& adapterName);
 		virtual ~RenderDeviceWebGPU() override;
 
@@ -126,16 +127,21 @@ namespace ParaEngine
 		bool ReadBufferSync(WGPUBuffer srcBuffer, uint64_t byteSize, void* dstData);
 		WGPUBuffer AllocateTransientBuffer(WGPUBufferUsageFlags usage, const void* data, uint32_t byteSize, uint32_t minSize = 16);
 		void DeferReleaseBuffer(WGPUBuffer buf) { if (buf) m_transientBuffers.push_back(buf); }
+		void NotifyBufferDestroyed(WebGPUBuffer* wrapper, WGPUBuffer buf);
+		void NotifyTextureDestroyed(WebGPUTexture* wrapper, WGPUTexture tex, WGPUTextureView srvView, WGPUTextureView rtvView);
+
+		bool MapStagingBufferReadSync(WGPUBuffer staging, size_t mapSize);
 
 	private:
 		void InitCaps();
 		bool ConfigureSurface(uint32_t width, uint32_t height, bool vsync);
 		bool CreateDefaultResources(uint32_t width, uint32_t height);
 		bool EnsureSwapChainTexture();
-		WGPURenderPipeline GetOrCreateRenderPipeline(EPrimitiveType primitiveType);
+		void ApplyClampedViewport(const ParaViewport& viewport);
+		WGPURenderPipeline GetOrCreateRenderPipeline(EPrimitiveType primitiveType, WGPUIndexFormat stripIndexFormat = WGPUIndexFormat_Undefined);
 		WGPUSampler GetOrCreateSampler(uint32_t stage);
 		WGPUBindGroup BuildDrawBindGroup();
-		bool PrepareForDraw(EPrimitiveType primitiveType);
+		bool PrepareForDraw(EPrimitiveType primitiveType, WGPUIndexFormat stripIndexFormat = WGPUIndexFormat_Undefined);
 		void FlushFrameTransientBuffers();
 
 	private:
@@ -154,7 +160,9 @@ namespace ParaEngine
 		WGPUDevice m_device = nullptr;
 		WGPUQueue m_queue = nullptr;
 		WGPUTextureFormat m_surfaceFormat = WGPUTextureFormat_BGRA8Unorm;
+		WGPUTextureUsageFlags m_surfaceUsage = WGPUTextureUsage_RenderAttachment | WGPUTextureUsage_CopySrc;
 		bool m_supportsBC = false;
+		bool m_supportsFloat32Filterable = false;
 		bool m_vsync = true;
 		std::string m_adapterNameStr;
 		RHIDeviceCaps m_caps;
@@ -199,8 +207,14 @@ namespace ParaEngine
 
 		std::unordered_map<uint64_t, WGPURenderPipeline> m_psoCache;
 		std::unordered_map<uint64_t, WGPUSampler> m_samplerCache;
+		WGPUBindGroupLayout m_blitBgl = nullptr;
+		WGPUPipelineLayout m_blitPipeLayout = nullptr;
+		WGPUShaderModule m_blitShaderModule = nullptr;
+		std::unordered_map<uint32_t, WGPURenderPipeline> m_blitPipelines;
 		std::vector<WGPUBuffer> m_transientBuffers;
 		std::vector<WGPUBindGroup> m_transientBindGroups;
+		std::vector<WGPUTextureView> m_transientTextureViews;
+		std::vector<WGPUTexture> m_transientTextures;
 
 		WGPUQuerySet m_occlusionQuerySet = nullptr;
 		WGPUBuffer m_occlusionResolveBuf = nullptr;

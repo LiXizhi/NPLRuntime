@@ -14,6 +14,7 @@
 #include "Framework/FileSystem/ReadFile.h"
 #include "MemReadFile.h"
 #include <algorithm>
+#include <set>
 #include "FileManager.h"
 #include "IO/FileUtils.h"
 #include "util/StringHelper.h"
@@ -999,10 +1000,34 @@ int CZipArchive::findFile(const ArchiveFileFindItem *item)
 	}
 	else
 	{
+		const char *rootPtr = m_sRootPath.c_str();
 		int nSize = (int)m_sRootPath.size();
-		int i = 0;
-		for (; i < nSize && (m_sRootPath[i] == item->filename[i]); ++i)
+#ifdef EMSCRIPTEN
+		if (nSize > 0 && (rootPtr[0] == '/' || rootPtr[0] == '\\'))
 		{
+			++rootPtr;
+			--nSize;
+		}
+		if (filename[0] == '/' || filename[0] == '\\')
+		{
+			++filename;
+			bRefreshHash = true;
+		}
+#endif
+		int i = 0;
+		for (; i < nSize && filename[i] != 0; ++i)
+		{
+			char a = rootPtr[i];
+			char b = filename[i];
+			if (m_bIgnoreCase)
+			{
+				if (a >= 'A' && a <= 'Z')
+					a += 'a' - 'A';
+				if (b >= 'A' && b <= 'Z')
+					b += 'a' - 'A';
+			}
+			if (a != b)
+				break;
 		}
 
 		if (i == nSize)
@@ -1638,14 +1663,38 @@ void CZipArchive::FindFiles(CSearchResult &result, const string &sRootPath, cons
 		int remove_head_len = 0;
 		if (m_bRelativePath)
 		{
+			const char *rootPtr = m_sRootPath.c_str();
 			int nSize = (int)m_sRootPath.size();
-			int i = 0;
-			for (; i < nSize && (m_sRootPath[i] == sFilePattern[i]); ++i)
+#ifdef EMSCRIPTEN
+			if (nSize > 0 && (rootPtr[0] == '/' || rootPtr[0] == '\\'))
 			{
+				++rootPtr;
+				--nSize;
+			}
+			if (!sFilePattern.empty() && (sFilePattern[0] == '/' || sFilePattern[0] == '\\'))
+			{
+				sFilePattern.erase(0, 1);
+			}
+#endif
+			int nPatSize = (int)sFilePattern.size();
+			int i = 0;
+			for (; i < nSize && i < nPatSize; ++i)
+			{
+				char a = rootPtr[i];
+				char b = sFilePattern[i];
+				if (m_bIgnoreCase)
+				{
+					if (a >= 'A' && a <= 'Z')
+						a += 'a' - 'A';
+					if (b >= 'A' && b <= 'Z')
+						b += 'a' - 'A';
+				}
+				if (a != b)
+					break;
 			}
 			if (i == nSize)
 			{
-				if (sFilePattern.size() == nSize)
+				if (nPatSize == nSize)
 					sFilePattern.clear();
 				else
 				{
@@ -1676,6 +1725,7 @@ void CZipArchive::FindFiles(CSearchResult &result, const string &sRootPath, cons
 		if (m_bIgnoreCase)
 			StringHelper::make_lower(sFilePattern);
 
+		std::set<std::string> addedFolders;
 		for (int index = 0; index < nSize; ++index)
 		{
 			const SZipFileEntryPtr &entry = m_FileList[index];
@@ -1705,14 +1755,17 @@ void CZipArchive::FindFiles(CSearchResult &result, const string &sRootPath, cons
 					if (srcChar == '/' || srcChar == '\\')
 					{
 						++j;
-						if (j == nDestCount)
+						if (j == nDestCount || (j + 1 == nDestCount && sFilePattern[j] == '.'))
 						{
-							if ((i + 1) < nCount)
+							if (i > remove_head_len && ((i + 1) < nCount || (j + 1 == nDestCount && sFilePattern[j] == '.')))
 							{
-								// this is a folder match, add folder with 0 size.
-								// std::string filename = entry.m_pEntry->zipFileName.substr(remove_head_len, i - remove_head_len);
-								std::string filename(entry.m_pEntry->zipFileName + remove_head_len, i - remove_head_len);
-								result.AddResult(filename, 0);
+								// this is a folder match, add folder with 0 size (deduplicated across files in the folder).
+								std::string folderKey = filename.substr(remove_head_len, i - remove_head_len);
+								if (addedFolders.insert(folderKey).second)
+								{
+									std::string folderName(entry.m_pEntry->zipFileName + remove_head_len, i - remove_head_len);
+									result.AddResult(folderName, 0, 16);
+								}
 							}
 							break;
 						}
@@ -1720,6 +1773,8 @@ void CZipArchive::FindFiles(CSearchResult &result, const string &sRootPath, cons
 					else if (srcChar == '.')
 					{
 						if ((j + 1) == nDestCount)
+							i++;
+						else if (j + 2 == nDestCount && sFilePattern[j + 1] == '.' && filename.find_first_of("/\\", i + 1) != std::string::npos)
 							i++;
 						else
 						{

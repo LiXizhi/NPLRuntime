@@ -241,10 +241,37 @@ namespace ParaEngine
 			return true;
 		if (!m_sdl2_window)
 			return false;
+
+		auto configureGLAttributes = [](int esMajorVersion)
+		{
+			SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24);
+			SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 8);
+#ifdef EMSCRIPTEN
+			SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_ES);
+			SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, esMajorVersion);
+			SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 0);
+#else
+			(void)esMajorVersion;
+#endif
+		};
+
+		configureGLAttributes(3);
+		if ((SDL_GetWindowFlags(m_sdl2_window) & SDL_WINDOW_OPENGL) == 0)
+		{
+			g_WindowMap.erase(m_sdl2_window);
+			SDL_DestroyWindow(m_sdl2_window);
+			m_sdl2_window = SDL_CreateWindow("Paracraft", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, m_window_width, m_window_height, SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE);
+			if (!m_sdl2_window)
+				return false;
+			g_WindowMap[m_sdl2_window] = this;
+		}
+
 		m_gl_context = SDL_GL_CreateContext(m_sdl2_window);
+#ifdef EMSCRIPTEN
 		if (!m_gl_context)
 		{
-			// Recreate SDL window with SDL_WINDOW_OPENGL flag if desktop SDL requires explicit flag
+			// Fallback to WebGL 1.0 (OpenGL ES 2.0) with 24-bit depth + 8-bit stencil if WebGL 2.0 is unavailable
+			configureGLAttributes(2);
 			g_WindowMap.erase(m_sdl2_window);
 			SDL_DestroyWindow(m_sdl2_window);
 			m_sdl2_window = SDL_CreateWindow("Paracraft", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, m_window_width, m_window_height, SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE);
@@ -252,9 +279,11 @@ namespace ParaEngine
 				return false;
 			g_WindowMap[m_sdl2_window] = this;
 			m_gl_context = SDL_GL_CreateContext(m_sdl2_window);
-			if (!m_gl_context)
-				return false;
 		}
+#endif
+		if (!m_gl_context)
+			return false;
+
 #ifndef EMSCRIPTEN
 		gladLoadGLLoader((GLADloadproc)SDL_GL_GetProcAddress);
 #endif

@@ -58,15 +58,9 @@ namespace ParaEngine
 	int32_t BlockWorldClient::g_twoTexNormalMapPass = 3; // not used.
 	int32_t BlockWorldClient::g_materialPass = 4; 
 	int32_t BlockWorldClient::g_materialFancyPass = 6;
-#ifdef PARAENGINE_MOBILE
-	int32_t BlockWorldClient::g_transparentBlockPass = 3;
-	int32_t BlockWorldClient::g_waterBlockPass = 2;
-	int32_t BlockWorldClient::g_bumpyBlockPass = 1;
-#else
 	int32_t BlockWorldClient::g_transparentBlockPass = 3;
 	int32_t BlockWorldClient::g_waterBlockPass = 4;
 	int32_t BlockWorldClient::g_bumpyBlockPass = 5;
-#endif
 
 	int32_t BlockWorldClient::g_selectBlockPass = 1;
 
@@ -315,7 +309,7 @@ namespace ParaEngine
 
 			m_nBufferRebuildCountThisTick = 0;
 
-			CheckRebuildVisibleChunks(m_bAsyncChunkMode, bIsShadowPass);
+			CheckRebuildVisibleChunks(IsAsyncChunkMode(), bIsShadowPass);
 			ClearVisibleChunksToByteLimit(bIsShadowPass);
 
 #ifdef PRINT_CHUNK_LOG

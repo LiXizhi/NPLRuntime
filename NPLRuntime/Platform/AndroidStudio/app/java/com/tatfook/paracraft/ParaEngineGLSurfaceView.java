@@ -8,7 +8,9 @@
 package com.tatfook.paracraft;
 
 import android.app.Activity;
+import android.app.ActivityManager;
 import android.content.Context;
+import android.content.pm.ConfigurationInfo;
 import android.graphics.Rect;
 import android.opengl.GLSurfaceView;
 import android.os.Build;
@@ -91,7 +93,15 @@ public class ParaEngineGLSurfaceView extends GLSurfaceView {
     protected void initView(ParaEngineActivity activity) {
         sActivity = activity;
 
-        this.setEGLContextClientVersion(2);
+        int glesVersion = 2;
+        ActivityManager am = (ActivityManager) activity.getSystemService(Context.ACTIVITY_SERVICE);
+        if (am != null) {
+            ConfigurationInfo info = am.getDeviceConfigurationInfo();
+            if (info != null && info.reqGlEsVersion >= 0x30000) {
+                glesVersion = 3;
+            }
+        }
+        this.setEGLContextClientVersion(glesVersion);
         this.setFocusableInTouchMode(true);
 
         mGLSurfaceView = this;

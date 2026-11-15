@@ -41,8 +41,11 @@ if (!pBuffer)
 		pBuffer[nSize] = '\0'; // always add an ending '\0' for ease for text parsing. 
 		file.seekg(0, ios::beg);
 		file.read(pBuffer, nSize);
+		size_t nRead = (size_t)file.gcount();
+		if (nRead > nSize) nRead = nSize;
+		pBuffer[nRead] = '\0';
 		file.close();
-		data.SetOwnBuffer(pBuffer, nSize);
+		data.SetOwnBuffer(pBuffer, nRead);
 	}
 	return data;
 }

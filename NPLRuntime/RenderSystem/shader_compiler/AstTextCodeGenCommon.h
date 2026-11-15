@@ -3682,6 +3682,11 @@ namespace ParaEngine
 				}
 				else // ETextLang::WGSL_1_0
 				{
+					if (!isVertex)
+					{
+						mod << "diagnostic(off, derivative_uniformity);\n\n";
+					}
+
 					for (const TTypeList* sl : structOrder)
 					{
 						const StructInfo& si = structMap[sl];

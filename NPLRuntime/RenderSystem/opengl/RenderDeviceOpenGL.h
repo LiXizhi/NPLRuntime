@@ -77,6 +77,10 @@ namespace ParaEngine
 
 		void InitCaps() const;
 
+		bool SupportsFloatColorBuffer() const { if (!m_CapsInitialized) InitCaps(); return m_SupportsFloatColorBuffer; }
+		bool SupportsHalfFloatColorBuffer() const { if (!m_CapsInitialized) InitCaps(); return m_SupportsHalfFloatColorBuffer; }
+		bool SupportsFloatLinearFilter() const { if (!m_CapsInitialized) InitCaps(); return m_SupportsFloatLinearFilter; }
+
 	protected:
 		void ApplyBlendingModeChange();
 		void ApplyStencilStateChange();
@@ -95,6 +99,9 @@ namespace ParaEngine
 		mutable RHIDeviceCaps m_Caps;
 		mutable std::string m_AdapterName;
 		mutable bool m_CapsInitialized = false;
+		mutable bool m_SupportsFloatColorBuffer = false;
+		mutable bool m_SupportsHalfFloatColorBuffer = false;
+		mutable bool m_SupportsFloatLinearFilter = false;
 
 		RHIStateTracker m_StateTracker;
 
@@ -106,12 +113,17 @@ namespace ParaEngine
 		uint32_t m_BlendingDest;
 		uint32_t m_BlendingAlphaSource;
 		uint32_t m_BlendingAlphaDest;
+		bool m_TwoSidedStencil;
 		uint32_t m_StencilRefValue;
 		uint32_t m_StencilMask;
 		uint32_t m_StencilFunc;
 		uint32_t m_StencilFail;
 		uint32_t m_StencilZFail;
 		uint32_t m_StencilPass;
+		uint32_t m_CCWStencilFunc;
+		uint32_t m_CCWStencilFail;
+		uint32_t m_CCWStencilZFail;
+		uint32_t m_CCWStencilPass;
 		bool m_StencilDirty;
 
 		CVertexDeclaration* m_CurrentVertexDeclaration;

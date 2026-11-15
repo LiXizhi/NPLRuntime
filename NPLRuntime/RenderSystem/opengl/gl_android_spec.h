@@ -7,20 +7,15 @@
 #define GL_GLEXT_PROTOTYPES 1  
 #endif  
 
-#include <GLES2/gl2platform.h>
-#include <GLES2/gl2.h>
+#include <GLES3/gl3.h>
 #include <GLES2/gl2ext.h>
 
 #define GL_BGRA GL_BGRA_EXT
-#define GL_DEPTH24_STENCIL8 GL_DEPTH24_STENCIL8_OES
+#ifndef GL_DEPTH24_STENCIL8
+#define GL_DEPTH24_STENCIL8 0x88F0
+#endif
 #define glClearDepth glClearDepthf
 
-extern PFNGLGENVERTEXARRAYSOESPROC para_glGenVertexArraysOES;
-extern PFNGLBINDVERTEXARRAYOESPROC para_glBindVertexArrayOES;
-extern PFNGLDELETEVERTEXARRAYSOESPROC para_glDeleteVertexArraysOES;
-
-#define glBindVertexArray para_glBindVertexArrayOES
-#define glGenVertexArrays para_glGenVertexArraysOES
-#define glDeleteVertexArrays para_glDeleteVertexArraysOES
+// OpenGL ES 3.0 provides native glGenVertexArrays / glBindVertexArray / glDeleteVertexArrays
 
 #endif // __GL_ANROID_SPEC_H__

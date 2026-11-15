@@ -15,10 +15,19 @@
         "version.txt",
         "paraengine.sig",
         "fonts/droidsansfallback.ttf",
+        "fonts/tahoma.ttf",
+        "fonts/tahomabd.ttf",
+        "fonts/opensans-regular.ttf",
+        "fonts/opensans-semibold.ttf",
         "npl_packages/paracraftbuildinmod.zip",
         "database/characters.db",
         "config/characters.db",
     ]);
+
+    const BUNDLED_WEB_FONTS = [
+        ["fonts/OpenSans-Regular.ttf", "fonts/OpenSans-Regular.ttf"],
+        ["fonts/OpenSans-Semibold.ttf", "fonts/OpenSans-Semibold.ttf"],
+    ];
 
     function getQueryParam(key) {
         try {
@@ -32,6 +41,7 @@
     function shouldPrestageAtBoot(relPath, size) {
         const lower = relPath.toLowerCase();
         if (BOOT_PRELOAD_EXACT.has(lower)) return true;
+        if (lower.startsWith("fonts/") && lower.indexOf("/", 6) < 0 && size <= 4 * 1024 * 1024) return true;
         if (lower.startsWith("config/") && lower.indexOf("/", 7) < 0 && size <= 4 * 1024 * 1024) return true;
         if (lower.endsWith(".pkg") && lower.indexOf("/") < 0) return true;
         if (lower.startsWith("npl_packages/") && lower.indexOf("/", 13) < 0 && lower.endsWith(".zip") && size <= 64 * 1024 * 1024) return true;
@@ -86,18 +96,21 @@
     }
 
     function syncFetchBytes(relPath) {
-        const url = buildFileUrl(relPath);
+        const url = buildFileUrl(relPath) + "&enc=b64";
         const xhr = new XMLHttpRequest();
         xhr.open("GET", url, false);
-        xhr.overrideMimeType("text/plain; charset=x-user-defined");
         xhr.send(null);
         if (xhr.status !== 200) {
             throw new Error("HTTP " + xhr.status + " for " + relPath);
         }
-        const text = xhr.responseText || "";
-        const bytes = new Uint8Array(text.length);
-        for (let i = 0; i < text.length; i++) {
-            bytes[i] = text.charCodeAt(i) & 0xff;
+        const b64 = (xhr.responseText || "").trim();
+        if (!b64) {
+            return new Uint8Array(0);
+        }
+        const bin = atob(b64);
+        const bytes = new Uint8Array(bin.length);
+        for (let i = 0; i < bin.length; i++) {
+            bytes[i] = bin.charCodeAt(i);
         }
         return bytes;
     }
@@ -348,7 +361,8 @@
 
         let existing = resolveChildNode(parent, fileName);
         if (existing) {
-            if (!overwriteExisting) return existing;
+            const isBrokenEmptyStub = !existing._diskRelPath && (existing.usedBytes === 0) && (size > 0);
+            if (!overwriteExisting && !isBrokenEmptyStub) return existing;
             try {
                 delete parent.contents[existing.name];
             } catch (e) {
@@ -395,6 +409,33 @@
         await Promise.all(runners);
     }
 
+    async function ensureBundledWebFonts() {
+        const baseOrigin = (typeof window !== "undefined" && window.WEBPARACRAFT_ORIGIN)
+            ? window.WEBPARACRAFT_ORIGIN
+            : (state.fsOrigin + "/");
+        await Promise.all(BUNDLED_WEB_FONTS.map(async function (pair) {
+            const memRelPath = pair[0];
+            const assetSubPath = pair[1];
+            try {
+                const existing = FS.analyzePath("/" + memRelPath);
+                if (existing && existing.exists) return;
+            } catch (e) {
+                // ignore
+            }
+            try {
+                const url = new URL(assetSubPath, baseOrigin).href;
+                const res = await fetch(url, { cache: "force-cache" });
+                if (!res.ok) return;
+                const bytes = new Uint8Array(await res.arrayBuffer());
+                if (bytes.byteLength > 0) {
+                    registerEntryNode(memRelPath, bytes.byteLength, Date.now(), false, bytes);
+                }
+            } catch (e) {
+                // ignore optional bundled web font fetch errors
+            }
+        }));
+    }
+
     async function initializeLocalDiskPreRun(Module) {
         patchMemfsOnce();
 
@@ -416,10 +457,12 @@
             manifest = await res.json();
             if (!res.ok || !manifest || !manifest.ok) {
                 console.warn("[local_disk_fs] Manifest unavailable:", manifest && manifest.error);
+                await ensureBundledWebFonts();
                 return;
             }
         } catch (err) {
             console.warn("[local_disk_fs] Local /fs/manifest not reachable:", err);
+            await ensureBundledWebFonts();
             return;
         }
 
@@ -483,6 +526,8 @@
             registerEntryNode(relPath, size, mtimeMs, true, preloadedMap.get(relPath) || null);
         }
 
+        await ensureBundledWebFonts();
+
         const elapsedMs = Math.round(performance.now() - t0);
         console.log(
             `[local_disk_fs] Mounted ${entries.length} entries from ${state.resolvedRoot} ` +
@@ -490,13 +535,96 @@
         );
     }
 
+    function tryUnlinkIfExists(fullPath) {
+        try {
+            const info = FS.analyzePath(fullPath);
+            if (info && info.exists) {
+                FS.unlink(fullPath);
+                return true;
+            }
+        } catch (e) {
+            // ignore
+        }
+        return false;
+    }
+
+    function cleanupContaminatedIdbfs() {
+        const forceReset = getQueryParam("resetidb") === "1" || getQueryParam("resetidb") === "true";
+        let hasDesktopContamination = false;
+        try {
+            if (
+                FS.analyzePath("/Database/localserver.ver").exists ||
+                FS.analyzePath("/Database/npl/project.db-wal").exists ||
+                FS.analyzePath("/Database/npl/project.db-shm").exists
+            ) {
+                hasDesktopContamination = true;
+            }
+        } catch (e) {
+            // ignore
+        }
+
+        if (forceReset || hasDesktopContamination) {
+            const staleDbPaths = [
+                "/Database/localserver.db",
+                "/Database/localserver.ver",
+                "/Database/Account.db",
+                "/Database/account.db",
+                "/Database/userdata.db",
+                "/Database/creator_profile.db",
+                "/Database/npl/project.db",
+                "/Database/npl/project.db-shm",
+                "/Database/npl/project.db-wal",
+            ];
+            let removed = 0;
+            for (let i = 0; i < staleDbPaths.length; i++) {
+                if (tryUnlinkIfExists(staleDbPaths[i])) removed += 1;
+            }
+            if (removed > 0) {
+                console.log(`[local_disk_fs] Cleaned ${removed} stale desktop cache DB file(s) from IDBFS /Database`);
+            }
+        }
+
+        // Remove any 0-byte corrupted .zip/.pkg stubs in /worlds/DesignHouse/userworlds
+        try {
+            const uwPath = "/worlds/DesignHouse/userworlds";
+            if (FS.analyzePath(uwPath).exists) {
+                const names = FS.readdir(uwPath);
+                for (let i = 0; i < names.length; i++) {
+                    const name = names[i];
+                    if (name === "." || name === "..") continue;
+                    const lower = name.toLowerCase();
+                    if (!lower.endsWith(".zip") && !lower.endsWith(".pkg")) continue;
+                    const full = uwPath + "/" + name;
+                    try {
+                        const looked = FS.lookupPath(full);
+                        const node = looked && looked.node;
+                        if (node && !node._diskRelPath && node.usedBytes === 0) {
+                            FS.unlink(full);
+                            console.log("[local_disk_fs] Removed 0-byte world archive stub:", full);
+                        }
+                    } catch (e) {
+                        // ignore
+                    }
+                }
+            }
+        } catch (e) {
+            // ignore
+        }
+    }
+
     function mergeDeferredMountDirs() {
+        if (typeof FS !== "undefined" && FS.root && FS.root.contents) {
+            for (const key of Object.keys(FS.root.contents)) {
+                registerCiChild(FS.root, key);
+            }
+        }
+        cleanupContaminatedIdbfs();
         if (!state.deferredEntries.length) return;
         const list = state.deferredEntries.splice(0, state.deferredEntries.length);
         let merged = 0;
         for (let i = 0; i < list.length; i++) {
             const [relPath, size, mtimeMs, preloadedBytes] = list[i];
-            // Do not overwrite user-saved files already restored from IDBFS
+            // Do not overwrite valid user-saved files already restored from IDBFS
             const node = registerEntryNode(relPath, size, mtimeMs, false, preloadedBytes);
             if (node) merged += 1;
         }

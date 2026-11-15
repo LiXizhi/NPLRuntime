@@ -1,7 +1,7 @@
 include(${PROJECT_SOURCE_DIR}/cmake/ucm.cmake)
 
 if(ANDROID)
-    set(LIBGL GLESv2 EGL)
+    set(LIBGL GLESv3 GLESv2 EGL)
     set(PLATFORM_SRC gl_android_spec.c gl_android_spec.h)
 elseif(HARMONY_OS)
     set(LIBGL GLESv3 EGL)

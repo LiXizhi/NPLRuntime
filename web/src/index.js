@@ -209,6 +209,58 @@ window.applyGameCanvasLayout = function (opts) {
 var Module = typeof Module != 'undefined' ? Module : {};
 Module.canvas = canvas;
 
+(function installLocalDevLogBridge() {
+    const host = window.location.hostname;
+    if (host !== "127.0.0.1" && host !== "localhost") return;
+    const queue = [];
+    let timer = null;
+    function flush() {
+        timer = null;
+        if (!queue.length) return;
+        const batch = queue.splice(0, 60);
+        fetch(window.location.origin + "/fs/log", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ lines: batch }),
+            keepalive: true,
+        }).catch(function () {});
+        if (queue.length) timer = setTimeout(flush, 250);
+    }
+    function enqueue(prefix, text) {
+        if (!text) return;
+        const s = String(text);
+        queue.push(prefix ? (prefix + " " + s) : s);
+        if (queue.length > 300) queue.splice(0, queue.length - 300);
+        if (!timer) timer = setTimeout(flush, 250);
+    }
+    const prevPrint = Module.print;
+    Module.print = function (text) {
+        if (prevPrint) prevPrint(text);
+        else console.log(text);
+        enqueue("[out]", text);
+    };
+    const prevPrintErr = Module.printErr;
+    Module.printErr = function (text) {
+        if (prevPrintErr) prevPrintErr(text);
+        else console.warn(text);
+        enqueue("[err]", text);
+    };
+    const origError = console.error.bind(console);
+    console.error = function () {
+        origError.apply(console, arguments);
+        try {
+            enqueue("[console.error]", Array.from(arguments).map(a => (a && a.stack) ? a.stack : String(a)).join(" "));
+        } catch (e) {}
+    };
+    window.addEventListener("error", function (ev) {
+        enqueue("[window.error]", (ev && ev.message ? ev.message : "error") + (ev && ev.filename ? (" @" + ev.filename + ":" + ev.lineno) : ""));
+    });
+    window.addEventListener("unhandledrejection", function (ev) {
+        const r = ev && ev.reason;
+        enqueue("[unhandledrejection]", r && r.stack ? r.stack : String(r));
+    });
+})();
+
 const GetQueryString = (key, decode) => {
     var value = "";                  // 查询值
     //取得查询字符串并去掉开头问号       
@@ -895,37 +947,55 @@ window.SerialPortInstance = new SerialPort();
 
 window.jsfetch = async function (url, options) {
     const controller = new AbortController();
-    
+
     options = options || {};
     options.signal = controller.signal;
-    
-    const response = await fetch(url, options);
-    console.log(response);
-
-    let headers = '';
-    response.headers.forEach((value, name) => {
-        headers += `${name}: ${value}\n`;
-    });
-
-    const result = { status: response.status, headers: headers, body: "", abort: function() { controller.abort(); } };
-    const content_type = response.headers.get('content-type');
-    if (content_type.includes('application/json')) {
-        result.body = JSON.stringify(await response.json());
-    } else if (content_type.includes('text/plain')) {
-        result.body = await response.text();
-    } else if (content_type.includes('image/')) {
-        result.body = await response.blob();
-    } else {
-        const reader = response.body.getReader();
-        if (reader) {
-            result.stream = true;
-            result.body = async function () {
-                return await reader.read();
-            }
-        }
+    const method = (options.method || 'GET').toUpperCase();
+    if (method === 'GET' || method === 'HEAD') {
+        delete options.body;
     }
 
-    return result;
+    try {
+        const response = await fetch(url, options);
+        let headers = '';
+        response.headers.forEach((value, name) => {
+            headers += `${name}: ${value}\n`;
+        });
+
+        const result = {
+            status: response.status,
+            headers: headers,
+            body: "",
+            stream: false,
+            abort: function () { controller.abort(); },
+        };
+        const content_type = (response.headers.get('content-type') || '').toLowerCase();
+        if (content_type.includes('application/json') || content_type.includes('text/')) {
+            result.body = await response.text();
+        } else if (content_type.includes('image/')) {
+            result.body = await response.blob();
+        } else if (response.body && typeof response.body.getReader === 'function') {
+            const reader = response.body.getReader();
+            if (reader) {
+                result.stream = true;
+                result.body = async function () {
+                    return await reader.read();
+                };
+            }
+        } else {
+            result.body = await response.text();
+        }
+        return result;
+    } catch (err) {
+        console.warn('[jsfetch] failed:', url, err);
+        return {
+            status: 0,
+            headers: '',
+            body: '',
+            stream: false,
+            abort: function () {},
+        };
+    }
 };
 
 // 向页面中所有iframe发送消息

@@ -71,6 +71,7 @@ namespace ParaEngine
 		virtual bool GetToggleSoundWhenNotFocused() override;
 		virtual int Run(HINSTANCE hInstance) override;
         virtual void Exit(int nReturnCode /*= 0*/) override;
+        virtual void StopApp() override;
         /** set the window title when at windowed mode */
         virtual void SetWindowText(const char* pChar) override;
         /** get the window title when at windowed mode */
@@ -82,6 +83,7 @@ namespace ParaEngine
 
         void handle_mainloop_timer(const boost::system::error_code& err);
 	protected:
-
+		bool m_bAutoLowerFrameRateWhenNotFocused = false;
+		bool m_bToggleSoundWhenNotFocused = false;
 	};
 }

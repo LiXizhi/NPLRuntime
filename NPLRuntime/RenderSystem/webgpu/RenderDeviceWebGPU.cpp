@@ -34,14 +34,36 @@ namespace ParaEngine
 			return fmt == PixelFormat::D24S8 || fmt == PixelFormat::D32 || fmt == PixelFormat::D16 || fmt == PixelFormat::D24X8;
 		}
 
-		WGPUTextureFormat ToWGPUTextureFormat(PixelFormat fmt, bool supportsBC, bool& outDecodedS3TC, bool& outExpandedRGBA8)
+		bool IsBCCompressedWGPUFormat(WGPUTextureFormat fmt)
+		{
+			return fmt == WGPUTextureFormat_BC1RGBAUnorm ||
+				fmt == WGPUTextureFormat_BC2RGBAUnorm ||
+				fmt == WGPUTextureFormat_BC3RGBAUnorm;
+		}
+
+		bool IsUnblendableFloat32WGPUFormat(WGPUTextureFormat fmt)
+		{
+			return fmt == WGPUTextureFormat_R32Float ||
+				fmt == WGPUTextureFormat_RG32Float ||
+				fmt == WGPUTextureFormat_RGBA32Float;
+		}
+
+		WGPUTextureFormat ToWGPUTextureFormat(
+			PixelFormat fmt,
+			uint32_t width,
+			uint32_t height,
+			bool supportsBC,
+			bool supportsFloat32Filterable,
+			bool hasInitialCpuData,
+			bool& outDecodedS3TC,
+			bool& outExpandedRGBA8)
 		{
 			outDecodedS3TC = false;
 			outExpandedRGBA8 = false;
 
 			if (RHISoftwareS3TC::IsS3TCFormat(fmt))
 			{
-				if (supportsBC)
+				if (supportsBC && (width % 4u) == 0u && (height % 4u) == 0u)
 				{
 					switch (fmt)
 					{
@@ -72,15 +94,15 @@ namespace ParaEngine
 			case PixelFormat::X8B8G8R8:
 				return WGPUTextureFormat_BGRA8Unorm;
 			case PixelFormat::R32F:
-				return WGPUTextureFormat_R32Float;
+				return (supportsFloat32Filterable || hasInitialCpuData) ? WGPUTextureFormat_R32Float : WGPUTextureFormat_R16Float;
 			case PixelFormat::G16R16F:
 				return WGPUTextureFormat_RG16Float;
 			case PixelFormat::G32R32F:
-				return WGPUTextureFormat_RG32Float;
+				return (supportsFloat32Filterable || hasInitialCpuData) ? WGPUTextureFormat_RG32Float : WGPUTextureFormat_RG16Float;
 			case PixelFormat::A16B16G16R16F:
 				return WGPUTextureFormat_RGBA16Float;
 			case PixelFormat::A32B32G32R32F:
-				return WGPUTextureFormat_RGBA32Float;
+				return (supportsFloat32Filterable || hasInitialCpuData) ? WGPUTextureFormat_RGBA32Float : WGPUTextureFormat_RGBA16Float;
 			case PixelFormat::D16:
 				return WGPUTextureFormat_Depth16Unorm;
 			case PixelFormat::D32:
@@ -134,35 +156,35 @@ namespace ParaEngine
 			}
 		}
 
-		// Maps D3DDECLUSAGE + UsageIndex to canonical HLSL/WGSL shaderLocation 0..15 (matches AstTextCodeGenCommon)
-		uint32_t MapVertexElementToLocation(uint8_t usage, uint8_t usageIndex)
+		// Maps D3DDECLUSAGE + UsageIndex to canonical ParaRHI VS shaderLocation 0..15 (must match MapSemanticToVSLocation in FxShaderTypes.h)
+		int32_t MapVertexElementToLocation(uint8_t usage, uint8_t usageIndex)
 		{
 			switch (usage)
 			{
 			case 0: // D3DDECLUSAGE_POSITION
 			case 9: // D3DDECLUSAGE_POSITIONT
-				return (usageIndex == 0) ? 0u : (std::min)(15u, 8u + usageIndex);
+				return (usageIndex == 0) ? 0 : -1;
 			case 1: // D3DDECLUSAGE_BLENDWEIGHT
-				return 1u;
+				return 1;
 			case 2: // D3DDECLUSAGE_BLENDINDICES
-				return 2u;
+				return 2;
 			case 3: // D3DDECLUSAGE_NORMAL
-				return 3u;
-			case 4: // D3DDECLUSAGE_PSIZE
-				return 4u;
-			case 5: // D3DDECLUSAGE_TEXCOORD
-				return (usageIndex < 8u) ? (8u + usageIndex) : 15u;
-			case 6: // D3DDECLUSAGE_TANGENT
-				return 6u;
-			case 7: // D3DDECLUSAGE_BINORMAL
-				return 7u;
+				return (usageIndex == 0) ? 3 : -1;
 			case 10: // D3DDECLUSAGE_COLOR
-				return (usageIndex == 0) ? 5u : 15u;
+				return (usageIndex == 0) ? 4 : 5;
+			case 5: // D3DDECLUSAGE_TEXCOORD
+				return (usageIndex < 8u) ? static_cast<int32_t>(6u + usageIndex) : 13;
+			case 6: // D3DDECLUSAGE_TANGENT
+				return 14;
+			case 7: // D3DDECLUSAGE_BINORMAL
+			case 4: // D3DDECLUSAGE_PSIZE
+				return 15;
 			default:
-				return (std::min)(15u, static_cast<uint32_t>(8u + usageIndex));
+				return -1;
 			}
 		}
 
+		// AstTextCodeGenCommon emits all WGSL VS input @location attributes as vec4<f32>, so all vertex formats must decode to float.
 		WGPUVertexFormat MapDeclTypeToWGPU(uint8_t declType)
 		{
 			switch (declType)
@@ -172,14 +194,14 @@ namespace ParaEngine
 			case 2:  return WGPUVertexFormat_Float32x3;      // D3DDECLTYPE_FLOAT3
 			case 3:  return WGPUVertexFormat_Float32x4;      // D3DDECLTYPE_FLOAT4
 			case 4:                                          // D3DDECLTYPE_D3DCOLOR
-#if defined(__EMSCRIPTEN__) && !defined(WGPUVertexFormat_Unorm8x4BGRA)
+#if defined(__EMSCRIPTEN__) && !defined(WGPUINTERNAL_HAVE_EMDAWNWEBGPU_HEADER) && !defined(WGPUVertexFormat_Unorm8x4BGRA)
 				return WGPUVertexFormat_Unorm8x4;
 #else
 				return WGPUVertexFormat_Unorm8x4BGRA;
 #endif
-			case 5:  return WGPUVertexFormat_Uint8x4;        // D3DDECLTYPE_UBYTE4
-			case 6:  return WGPUVertexFormat_Sint16x2;       // D3DDECLTYPE_SHORT2
-			case 7:  return WGPUVertexFormat_Sint16x4;       // D3DDECLTYPE_SHORT4
+			case 5:  return WGPUVertexFormat_Unorm8x4;       // D3DDECLTYPE_UBYTE4
+			case 6:  return WGPUVertexFormat_Snorm16x2;      // D3DDECLTYPE_SHORT2
+			case 7:  return WGPUVertexFormat_Snorm16x4;      // D3DDECLTYPE_SHORT4
 			case 8:  return WGPUVertexFormat_Unorm8x4;       // D3DDECLTYPE_UBYTE4N
 			case 9:  return WGPUVertexFormat_Snorm16x2;      // D3DDECLTYPE_SHORT2N
 			case 10: return WGPUVertexFormat_Snorm16x4;      // D3DDECLTYPE_SHORT4N
@@ -188,6 +210,35 @@ namespace ParaEngine
 			case 15: return WGPUVertexFormat_Float16x2;      // D3DDECLTYPE_FLOAT16_2
 			case 16: return WGPUVertexFormat_Float16x4;      // D3DDECLTYPE_FLOAT16_4
 			default: return WGPUVertexFormat_Float32x4;
+			}
+		}
+
+		uint32_t GetVertexFormatByteSize(WGPUVertexFormat fmt)
+		{
+			switch (fmt)
+			{
+			case WGPUVertexFormat_Float32:
+			case WGPUVertexFormat_Uint8x4:
+			case WGPUVertexFormat_Unorm8x4:
+			case WGPUVertexFormat_Sint16x2:
+			case WGPUVertexFormat_Snorm16x2:
+			case WGPUVertexFormat_Unorm16x2:
+			case WGPUVertexFormat_Float16x2:
+#if !defined(__EMSCRIPTEN__) || defined(WGPUINTERNAL_HAVE_EMDAWNWEBGPU_HEADER) || defined(WGPUVertexFormat_Unorm8x4BGRA)
+			case WGPUVertexFormat_Unorm8x4BGRA:
+#endif
+				return 4u;
+			case WGPUVertexFormat_Float32x2:
+			case WGPUVertexFormat_Sint16x4:
+			case WGPUVertexFormat_Snorm16x4:
+			case WGPUVertexFormat_Unorm16x4:
+			case WGPUVertexFormat_Float16x4:
+				return 8u;
+			case WGPUVertexFormat_Float32x3:
+				return 12u;
+			case WGPUVertexFormat_Float32x4:
+			default:
+				return 16u;
 			}
 		}
 
@@ -331,24 +382,10 @@ namespace ParaEngine
 		{
 			if (m_owner)
 			{
-				const WebGPUDispatch& wgpu = m_owner->GetWGPU();
-				if (m_srvView)
-				{
-					PARA_WGPU_CALL(wgpu, wgpuTextureViewRelease, m_srvView);
-					m_srvView = nullptr;
-				}
-				if (m_rtvDsvView)
-				{
-					PARA_WGPU_CALL(wgpu, wgpuTextureViewRelease, m_rtvDsvView);
-					m_rtvDsvView = nullptr;
-				}
-				if (m_texture)
-				{
-					if (PARA_WGPU_HAS(wgpu, wgpuTextureDestroy))
-						PARA_WGPU_CALL(wgpu, wgpuTextureDestroy, m_texture);
-					PARA_WGPU_CALL(wgpu, wgpuTextureRelease, m_texture);
-					m_texture = nullptr;
-				}
+				m_owner->NotifyTextureDestroyed(this, m_texture, m_srvView, m_rtvDsvView);
+				m_srvView = nullptr;
+				m_rtvDsvView = nullptr;
+				m_texture = nullptr;
 			}
 		}
 
@@ -380,8 +417,21 @@ namespace ParaEngine
 
 			const uint32_t mipW = (std::max)(1u, m_width >> mipLevel);
 			const uint32_t mipH = (std::max)(1u, m_height >> mipLevel);
-			const uint32_t upW = (width == 0) ? mipW : (std::min)(width, mipW);
-			const uint32_t upH = (height == 0) ? mipH : (std::min)(height, mipH);
+			uint32_t ox = static_cast<uint32_t>((std::max)(0, x));
+			uint32_t oy = static_cast<uint32_t>((std::max)(0, y));
+			if (IsBCCompressedWGPUFormat(m_wgpuFormat))
+			{
+				ox &= ~3u;
+				oy &= ~3u;
+			}
+			if (ox >= mipW || oy >= mipH)
+				return true;
+			const uint32_t maxW = mipW - ox;
+			const uint32_t maxH = mipH - oy;
+			const uint32_t upW = (width == 0) ? maxW : (std::min)(width, maxW);
+			const uint32_t upH = (height == 0) ? maxH : (std::min)(height, maxH);
+			if (upW == 0 || upH == 0)
+				return true;
 
 			std::vector<uint8_t> tempRGBA;
 			const void* uploadPtr = data;
@@ -417,8 +467,8 @@ namespace ParaEngine
 			WGPUImageCopyTexture dst = {};
 			dst.texture = m_texture;
 			dst.mipLevel = mipLevel;
-			dst.origin.x = static_cast<uint32_t>((std::max)(0, x));
-			dst.origin.y = static_cast<uint32_t>((std::max)(0, y));
+			dst.origin.x = ox;
+			dst.origin.y = oy;
 			dst.origin.z = (std::min)(arraySlice, (std::max)(1u, m_depthOrLayers) - 1u);
 			dst.aspect = WGPUTextureAspect_All;
 
@@ -428,8 +478,16 @@ namespace ParaEngine
 			layout.rowsPerImage = rows;
 
 			WGPUExtent3D ext = {};
-			ext.width = upW;
-			ext.height = upH;
+			if (IsBCCompressedWGPUFormat(m_wgpuFormat))
+			{
+				ext.width = AlignUpU32(upW, 4u);
+				ext.height = AlignUpU32(upH, 4u);
+			}
+			else
+			{
+				ext.width = upW;
+				ext.height = upH;
+			}
 			ext.depthOrArrayLayers = 1;
 
 			PARA_WGPU_CALL(m_owner->GetWGPU(), wgpuQueueWriteTexture,
@@ -489,12 +547,9 @@ namespace ParaEngine
 
 		~WebGPUBuffer() override
 		{
-			if (m_owner && m_buffer)
+			if (m_owner)
 			{
-				const WebGPUDispatch& wgpu = m_owner->GetWGPU();
-				if (PARA_WGPU_HAS(wgpu, wgpuBufferDestroy))
-					PARA_WGPU_CALL(wgpu, wgpuBufferDestroy, m_buffer);
-				PARA_WGPU_CALL(wgpu, wgpuBufferRelease, m_buffer);
+				m_owner->NotifyBufferDestroyed(this, m_buffer);
 				m_buffer = nullptr;
 			}
 		}
@@ -504,6 +559,7 @@ namespace ParaEngine
 		void* GetNativeHandle() const override { return const_cast<WebGPUBuffer*>(this); }
 		WGPUBuffer GetWGPUBuffer() const { return m_buffer; }
 		uint32_t GetAlignedSize() const { return m_alignedSize; }
+		const std::vector<uint8_t>& GetCpuShadow() const { return m_cpuShadow; }
 
 		void* Map(uint32_t offset, uint32_t size, ERHIMapMode mode) override
 		{
@@ -909,6 +965,7 @@ namespace ParaEngine
 		WGPUQueue queue,
 		WGPUTextureFormat surfaceFormat,
 		bool supportsBC,
+		bool supportsFloat32Filterable,
 		const std::string& adapterName)
 		: m_wgpu(wgpu)
 		, m_instance(instance)
@@ -918,6 +975,7 @@ namespace ParaEngine
 		, m_queue(queue)
 		, m_surfaceFormat(surfaceFormat)
 		, m_supportsBC(supportsBC)
+		, m_supportsFloat32Filterable(supportsFloat32Filterable)
 		, m_adapterNameStr(adapterName)
 	{
 		InitCaps();
@@ -936,6 +994,28 @@ namespace ParaEngine
 		}
 		m_psoCache.clear();
 
+		for (auto& kv : m_blitPipelines)
+		{
+			if (kv.second)
+				PARA_WGPU_CALL(m_wgpu, wgpuRenderPipelineRelease, kv.second);
+		}
+		m_blitPipelines.clear();
+		if (m_blitPipeLayout)
+		{
+			PARA_WGPU_CALL(m_wgpu, wgpuPipelineLayoutRelease, m_blitPipeLayout);
+			m_blitPipeLayout = nullptr;
+		}
+		if (m_blitBgl)
+		{
+			PARA_WGPU_CALL(m_wgpu, wgpuBindGroupLayoutRelease, m_blitBgl);
+			m_blitBgl = nullptr;
+		}
+		if (m_blitShaderModule)
+		{
+			PARA_WGPU_CALL(m_wgpu, wgpuShaderModuleRelease, m_blitShaderModule);
+			m_blitShaderModule = nullptr;
+		}
+
 		for (auto& kv : m_samplerCache)
 		{
 			if (kv.second)
@@ -951,6 +1031,7 @@ namespace ParaEngine
 		m_fallbackWhiteCube = nullptr;
 		delete m_fallbackWhite3D;
 		m_fallbackWhite3D = nullptr;
+		FlushFrameTransientBuffers();
 
 		auto releaseBuf = [&](WGPUBuffer& b) {
 			if (b)
@@ -1051,10 +1132,32 @@ namespace ParaEngine
 	{
 		if (!m_surface || !m_device)
 			return false;
+		WGPUTextureUsageFlags desiredUsage =
+			WGPUTextureUsage_RenderAttachment |
+			WGPUTextureUsage_CopySrc |
+			WGPUTextureUsage_CopyDst |
+			WGPUTextureUsage_TextureBinding;
+#if defined(WGPUINTERNAL_HAVE_EMDAWNWEBGPU_HEADER)
+		if (m_adapter)
+		{
+			WGPUSurfaceCapabilities surfCaps = {};
+			if (PARA_WGPU_CALL(m_wgpu, wgpuSurfaceGetCapabilities, m_surface, m_adapter, &surfCaps) == WGPUStatus_Success)
+			{
+				if (surfCaps.usages != 0)
+					desiredUsage &= surfCaps.usages;
+				PARA_WGPU_CALL(m_wgpu, wgpuSurfaceCapabilitiesFreeMembers, surfCaps);
+			}
+		}
+#else
+		desiredUsage = WGPUTextureUsage_RenderAttachment | WGPUTextureUsage_CopySrc | WGPUTextureUsage_CopyDst;
+#endif
+		desiredUsage |= WGPUTextureUsage_RenderAttachment;
+		m_surfaceUsage = desiredUsage;
+
 		WGPUSurfaceConfiguration surfCfg = {};
 		surfCfg.device = m_device;
 		surfCfg.format = m_surfaceFormat;
-		surfCfg.usage = WGPUTextureUsage_RenderAttachment | WGPUTextureUsage_CopySrc;
+		surfCfg.usage = desiredUsage;
 		surfCfg.viewFormatCount = 0;
 		surfCfg.viewFormats = nullptr;
 		surfCfg.alphaMode = WGPUCompositeAlphaMode_Auto;
@@ -1088,7 +1191,7 @@ namespace ParaEngine
 		if (!m_fallbackWhiteCube)
 		{
 			WGPUTextureDescriptor td = {};
-			td.label = "ParaFallbackWhiteCube";
+			td.label = ParaWgpuLabel("ParaFallbackWhiteCube");
 			td.usage = WGPUTextureUsage_TextureBinding | WGPUTextureUsage_CopyDst;
 			td.dimension = WGPUTextureDimension_2D;
 			td.size = { 1, 1, 6 };
@@ -1131,7 +1234,7 @@ namespace ParaEngine
 		if (!m_fallbackWhite3D)
 		{
 			WGPUTextureDescriptor td = {};
-			td.label = "ParaFallbackWhite3D";
+			td.label = ParaWgpuLabel("ParaFallbackWhite3D");
 			td.usage = WGPUTextureUsage_TextureBinding | WGPUTextureUsage_CopyDst;
 			td.dimension = WGPUTextureDimension_3D;
 			td.size = { 1, 1, 1 };
@@ -1172,7 +1275,7 @@ namespace ParaEngine
 		{
 			const float defaultAttr[4] = { 0.0f, 0.0f, 0.0f, 1.0f };
 			WGPUBufferDescriptor bd = {};
-			bd.label = "ParaFallbackZeroVB";
+			bd.label = ParaWgpuLabel("ParaFallbackZeroVB");
 			bd.usage = WGPUBufferUsage_Vertex | WGPUBufferUsage_CopyDst;
 			bd.size = sizeof(defaultAttr);
 			m_fallbackZeroVB = PARA_WGPU_CALL(m_wgpu, wgpuDeviceCreateBuffer, m_device, &bd);
@@ -1184,7 +1287,7 @@ namespace ParaEngine
 		{
 			std::vector<uint8_t> zeros(4096, 0);
 			WGPUBufferDescriptor bd = {};
-			bd.label = "ParaZeroUBO";
+			bd.label = ParaWgpuLabel("ParaZeroUBO");
 			bd.usage = WGPUBufferUsage_Uniform | WGPUBufferUsage_CopyDst;
 			bd.size = zeros.size();
 			m_zeroUboBuffer = PARA_WGPU_CALL(m_wgpu, wgpuDeviceCreateBuffer, m_device, &bd);
@@ -1195,14 +1298,14 @@ namespace ParaEngine
 		if (!m_occlusionQuerySet && PARA_WGPU_HAS(m_wgpu, wgpuDeviceCreateQuerySet))
 		{
 			WGPUQuerySetDescriptor qsd = {};
-			qsd.label = "ParaOcclusionQuerySet";
+			qsd.label = ParaWgpuLabel("ParaOcclusionQuerySet");
 			qsd.type = WGPUQueryType_Occlusion;
 			qsd.count = MAX_OCCLUSION_QUERIES;
 			m_occlusionQuerySet = PARA_WGPU_CALL(m_wgpu, wgpuDeviceCreateQuerySet, m_device, &qsd);
 			if (m_occlusionQuerySet)
 			{
 				WGPUBufferDescriptor rbd = {};
-				rbd.label = "ParaOcclusionResolveBuf";
+				rbd.label = ParaWgpuLabel("ParaOcclusionResolveBuf");
 				rbd.usage = WGPUBufferUsage_QueryResolve | WGPUBufferUsage_CopySrc;
 				rbd.size = static_cast<uint64_t>(MAX_OCCLUSION_QUERIES) * sizeof(uint64_t);
 				m_occlusionResolveBuf = PARA_WGPU_CALL(m_wgpu, wgpuDeviceCreateBuffer, m_device, &rbd);
@@ -1259,6 +1362,8 @@ namespace ParaEngine
 			m_currentSurfaceTex = nullptr;
 		}
 
+		const uint32_t prevBackW = m_backBufferWidth;
+		const uint32_t prevBackH = m_backBufferHeight;
 		m_backBufferWidth = (std::max)(1u, width);
 		m_backBufferHeight = (std::max)(1u, height);
 		m_vsync = vsync;
@@ -1266,11 +1371,47 @@ namespace ParaEngine
 		{
 			m_activeRTWidth = m_backBufferWidth;
 			m_activeRTHeight = m_backBufferHeight;
+			const ParaViewport& curVp = m_state.GetViewport();
+			if (curVp.X == 0 && curVp.Y == 0 && curVp.Width == prevBackW && curVp.Height == prevBackH)
+			{
+				ParaViewport newVp = curVp;
+				newVp.Width = m_backBufferWidth;
+				newVp.Height = m_backBufferHeight;
+				m_state.SetViewport(newVp);
+			}
 		}
 
 		if (!ConfigureSurface(m_backBufferWidth, m_backBufferHeight, m_vsync))
 			return false;
 		return CreateDefaultResources(m_backBufferWidth, m_backBufferHeight);
+	}
+
+	void RenderDeviceWebGPU::NotifyBufferDestroyed(WebGPUBuffer* wrapper, WGPUBuffer buf)
+	{
+		for (uint32_t s = 0; s < MAX_VERTEX_STREAMS; ++s)
+		{
+			if (m_streams[s].buffer == wrapper)
+				m_streams[s] = {};
+		}
+		if (m_boundIndexBuffer == wrapper)
+			m_boundIndexBuffer = nullptr;
+		if (buf)
+			m_transientBuffers.push_back(buf);
+	}
+
+	void RenderDeviceWebGPU::NotifyTextureDestroyed(WebGPUTexture* wrapper, WGPUTexture tex, WGPUTextureView srvView, WGPUTextureView rtvView)
+	{
+		for (uint32_t s = 0; s < RHIStateTracker::MAX_SAMPLER_STAGES; ++s)
+		{
+			if (m_boundTextures[s] == wrapper)
+				m_boundTextures[s] = nullptr;
+		}
+		if (srvView)
+			m_transientTextureViews.push_back(srvView);
+		if (rtvView && rtvView != srvView)
+			m_transientTextureViews.push_back(rtvView);
+		if (tex)
+			m_transientTextures.push_back(tex);
 	}
 
 	void RenderDeviceWebGPU::FlushFrameTransientBuffers()
@@ -1292,6 +1433,31 @@ namespace ParaEngine
 			}
 		}
 		m_transientBuffers.clear();
+
+		for (WGPUTextureView view : m_transientTextureViews)
+		{
+			if (view)
+				PARA_WGPU_CALL(m_wgpu, wgpuTextureViewRelease, view);
+		}
+		m_transientTextureViews.clear();
+
+		for (WGPUTexture tex : m_transientTextures)
+		{
+			if (tex)
+			{
+				if (PARA_WGPU_HAS(m_wgpu, wgpuTextureDestroy))
+					PARA_WGPU_CALL(m_wgpu, wgpuTextureDestroy, tex);
+				PARA_WGPU_CALL(m_wgpu, wgpuTextureRelease, tex);
+			}
+		}
+		m_transientTextures.clear();
+
+		m_currentVsUbo = nullptr;
+		m_currentVsUboSize = 0;
+		m_vsUboDirty = true;
+		m_currentPsUbo = nullptr;
+		m_currentPsUboSize = 0;
+		m_psUboDirty = true;
 	}
 
 	WGPUBuffer RenderDeviceWebGPU::AllocateTransientBuffer(WGPUBufferUsageFlags usage, const void* data, uint32_t byteSize, uint32_t minSize)
@@ -1329,6 +1495,20 @@ namespace ParaEngine
 		if (!m_surface)
 			return false;
 
+#if defined(__EMSCRIPTEN__)
+		int canvasW = 0, canvasH = 0;
+		if (emscripten_get_canvas_element_size("#canvas", &canvasW, &canvasH) == EMSCRIPTEN_RESULT_SUCCESS &&
+			canvasW > 0 && canvasH > 0)
+		{
+			const uint32_t cw = static_cast<uint32_t>(canvasW);
+			const uint32_t ch = static_cast<uint32_t>(canvasH);
+			if (cw != m_backBufferWidth || ch != m_backBufferHeight)
+			{
+				ResizeSwapChain(cw, ch, m_vsync);
+			}
+		}
+#endif
+
 		WGPUSurfaceTexture surfTex = {};
 		PARA_WGPU_CALL(m_wgpu, wgpuSurfaceGetCurrentTexture, m_surface, &surfTex);
 		if (surfTex.status == WGPUSurfaceGetCurrentTextureStatus_Outdated ||
@@ -1340,7 +1520,13 @@ namespace ParaEngine
 			surfTex = {};
 			PARA_WGPU_CALL(m_wgpu, wgpuSurfaceGetCurrentTexture, m_surface, &surfTex);
 		}
-		if (!surfTex.texture || surfTex.status != WGPUSurfaceGetCurrentTextureStatus_Success)
+#if defined(WGPUINTERNAL_HAVE_EMDAWNWEBGPU_HEADER)
+		const bool surfOk = (surfTex.status == WGPUSurfaceGetCurrentTextureStatus_SuccessOptimal ||
+			surfTex.status == WGPUSurfaceGetCurrentTextureStatus_SuccessSuboptimal);
+#else
+		const bool surfOk = (surfTex.status == WGPUSurfaceGetCurrentTextureStatus_Success);
+#endif
+		if (!surfTex.texture || !surfOk)
 		{
 			if (surfTex.texture)
 				PARA_WGPU_CALL(m_wgpu, wgpuTextureRelease, surfTex.texture);
@@ -1371,7 +1557,7 @@ namespace ParaEngine
 		if (!m_cmdEncoder && m_device)
 		{
 			WGPUCommandEncoderDescriptor ed = {};
-			ed.label = "ParaFrameCommandEncoder";
+			ed.label = ParaWgpuLabel("ParaFrameCommandEncoder");
 			m_cmdEncoder = PARA_WGPU_CALL(m_wgpu, wgpuDeviceCreateCommandEncoder, m_device, &ed);
 		}
 		return m_cmdEncoder;
@@ -1405,19 +1591,35 @@ namespace ParaEngine
 		}
 	}
 
+	void RenderDeviceWebGPU::ApplyClampedViewport(const ParaViewport& vp)
+	{
+		if (!m_renderPass || m_activeRTWidth == 0 || m_activeRTHeight == 0)
+			return;
+		const float rtW = static_cast<float>(m_activeRTWidth);
+		const float rtH = static_cast<float>(m_activeRTHeight);
+		const float x = (std::max)(0.0f, (std::min)(static_cast<float>(vp.X), rtW));
+		const float y = (std::max)(0.0f, (std::min)(static_cast<float>(vp.Y), rtH));
+		const float reqW = (vp.Width > 0) ? static_cast<float>(vp.Width) : rtW;
+		const float reqH = (vp.Height > 0) ? static_cast<float>(vp.Height) : rtH;
+		const float w = (std::max)(0.0f, (std::min)(reqW, rtW - x));
+		const float h = (std::max)(0.0f, (std::min)(reqH, rtH - y));
+		const float minZ = std::isfinite(vp.MinZ) ? (std::max)(0.0f, (std::min)(vp.MinZ, 1.0f)) : 0.0f;
+		const float maxZ = std::isfinite(vp.MaxZ) ? (std::max)(0.0f, (std::min)(vp.MaxZ, 1.0f)) : 1.0f;
+		PARA_WGPU_CALL(m_wgpu, wgpuRenderPassEncoderSetViewport, m_renderPass, x, y, w, h, minZ, maxZ);
+	}
+
 	bool RenderDeviceWebGPU::EnsureActiveRenderPass(bool clearColor, bool clearDepth, bool clearStencil)
 	{
 		if (m_renderPass && !clearColor && !clearDepth && !clearStencil)
 			return true;
 
 		EndActiveRenderPass();
-		WGPUCommandEncoder enc = EnsureEncoder();
-		if (!enc)
-			return false;
 
 		WGPURenderPassColorAttachment colorAtts[MAX_RENDER_TARGETS] = {};
 		uint32_t colorAttCount = 0;
 		WebGPUTexture* depthTex = nullptr;
+		bool effClearDepth = clearDepth;
+		bool effClearStencil = clearStencil;
 
 		const Color4f& cc = m_state.GetClearColor();
 		WGPUColor wgpuClearColor{ cc.r, cc.g, cc.b, cc.a };
@@ -1464,9 +1666,16 @@ namespace ParaEngine
 		}
 		else
 		{
+			// Must resolve swapchain BEFORE EnsureEncoder(), as ResizeSwapChain() submits and releases m_cmdEncoder.
 			if (!EnsureSwapChainTexture())
 				return false;
-			const bool doClear = clearColor || !m_surfaceClearedThisFrame;
+			const bool firstSurfacePass = !m_surfaceClearedThisFrame;
+			const bool doClear = clearColor || firstSurfacePass;
+			if (firstSurfacePass)
+			{
+				effClearDepth = true;
+				effClearStencil = true;
+			}
 			WGPURenderPassColorAttachment& ca = colorAtts[colorAttCount++];
 			ca.view = m_currentSurfaceView;
 			ca.depthSlice = 0xFFFFFFFFu;
@@ -1485,21 +1694,25 @@ namespace ParaEngine
 			const bool fmtHasStencil = (depthTex->GetWGPUFormat() == WGPUTextureFormat_Depth24PlusStencil8 ||
 				depthTex->GetWGPUFormat() == WGPUTextureFormat_Depth32FloatStencil8);
 			dsAtt.view = depthTex->GetRTVDSVView();
-			dsAtt.depthLoadOp = clearDepth ? WGPULoadOp_Clear : WGPULoadOp_Load;
+			dsAtt.depthLoadOp = effClearDepth ? WGPULoadOp_Clear : WGPULoadOp_Load;
 			dsAtt.depthStoreOp = WGPUStoreOp_Store;
 			dsAtt.depthClearValue = m_state.GetClearDepth();
 			dsAtt.depthReadOnly = 0;
 			if (fmtHasStencil)
 			{
-				dsAtt.stencilLoadOp = clearStencil ? WGPULoadOp_Clear : WGPULoadOp_Load;
+				dsAtt.stencilLoadOp = effClearStencil ? WGPULoadOp_Clear : WGPULoadOp_Load;
 				dsAtt.stencilStoreOp = WGPUStoreOp_Store;
 				dsAtt.stencilClearValue = static_cast<uint32_t>(m_state.GetClearStencil() & 0xFF);
 				dsAtt.stencilReadOnly = 0;
 			}
 		}
 
+		WGPUCommandEncoder enc = EnsureEncoder();
+		if (!enc)
+			return false;
+
 		WGPURenderPassDescriptor rpd = {};
-		rpd.label = "ParaRenderPass";
+		rpd.label = ParaWgpuLabel("ParaRenderPass");
 		rpd.colorAttachmentCount = colorAttCount;
 		rpd.colorAttachments = (colorAttCount > 0) ? colorAtts : nullptr;
 		rpd.depthStencilAttachment = hasDepth ? &dsAtt : nullptr;
@@ -1510,24 +1723,14 @@ namespace ParaEngine
 			return false;
 
 		// Apply initial viewport and scissor to the newly opened render pass
-		const ParaViewport& vp = m_state.GetViewport();
-		const float vpW = (vp.Width > 0) ? static_cast<float>(vp.Width) : static_cast<float>(m_activeRTWidth);
-		const float vpH = (vp.Height > 0) ? static_cast<float>(vp.Height) : static_cast<float>(m_activeRTHeight);
-		PARA_WGPU_CALL(m_wgpu, wgpuRenderPassEncoderSetViewport,
-			m_renderPass,
-			static_cast<float>(vp.X),
-			static_cast<float>(vp.Y),
-			vpW,
-			vpH,
-			vp.MinZ,
-			vp.MaxZ);
+		ApplyClampedViewport(m_state.GetViewport());
 
 		const bool scissorEnabled = (m_state.GetRenderState(ERenderState::SCISSORTESTENABLE) != 0);
 		if (scissorEnabled)
 		{
 			const RECT& sc = m_state.GetScissorRect();
-			const uint32_t sx = static_cast<uint32_t>((std::max)(0L, (std::min)(sc.left, static_cast<LONG>(m_activeRTWidth))));
-			const uint32_t sy = static_cast<uint32_t>((std::max)(0L, (std::min)(sc.top, static_cast<LONG>(m_activeRTHeight))));
+			const uint32_t sx = static_cast<uint32_t>((std::max)(static_cast<LONG>(0), (std::min)(sc.left, static_cast<LONG>(m_activeRTWidth))));
+			const uint32_t sy = static_cast<uint32_t>((std::max)(static_cast<LONG>(0), (std::min)(sc.top, static_cast<LONG>(m_activeRTHeight))));
 			const uint32_t ex = static_cast<uint32_t>((std::max)(static_cast<LONG>(sx), (std::min)(sc.right, static_cast<LONG>(m_activeRTWidth))));
 			const uint32_t ey = static_cast<uint32_t>((std::max)(static_cast<LONG>(sy), (std::min)(sc.bottom, static_cast<LONG>(m_activeRTHeight))));
 			PARA_WGPU_CALL(m_wgpu, wgpuRenderPassEncoderSetScissorRect, m_renderPass, sx, sy, ex - sx, ey - sy);
@@ -1545,7 +1748,7 @@ namespace ParaEngine
 		if (m_cmdEncoder)
 		{
 			WGPUCommandBufferDescriptor cbd = {};
-			cbd.label = "ParaCommandBuffer";
+			cbd.label = ParaWgpuLabel("ParaCommandBuffer");
 			WGPUCommandBuffer cmd = PARA_WGPU_CALL(m_wgpu, wgpuCommandEncoderFinish, m_cmdEncoder, &cbd);
 			PARA_WGPU_CALL(m_wgpu, wgpuCommandEncoderRelease, m_cmdEncoder);
 			m_cmdEncoder = nullptr;
@@ -1559,6 +1762,53 @@ namespace ParaEngine
 		FlushFrameTransientBuffers();
 	}
 
+	bool RenderDeviceWebGPU::MapStagingBufferReadSync(WGPUBuffer staging, size_t mapSize)
+	{
+		if (!staging || mapSize == 0)
+			return false;
+#if defined(WGPUINTERNAL_HAVE_EMDAWNWEBGPU_HEADER)
+		struct MapWaitState
+		{
+			bool done = false;
+			WGPUMapAsyncStatus status = WGPUMapAsyncStatus_Error;
+		} waitSt;
+		WGPUBufferMapCallbackInfo cbInfo = {};
+		cbInfo.mode = WGPUCallbackMode_AllowSpontaneous;
+		cbInfo.callback = [](WGPUMapAsyncStatus status, WGPUStringView /*message*/, void* ud1, void* /*ud2*/) {
+			auto* s = static_cast<MapWaitState*>(ud1);
+			if (s)
+			{
+				s->status = status;
+				s->done = true;
+			}
+		};
+		cbInfo.userdata1 = &waitSt;
+		PARA_WGPU_CALL(m_wgpu, wgpuBufferMapAsync, staging, WGPUMapMode_Read, 0, mapSize, cbInfo);
+		for (int spin = 0; !waitSt.done && spin < 5000; ++spin)
+		{
+			m_wgpu.WaitAsync(m_instance, m_device);
+		}
+		return waitSt.done && waitSt.status == WGPUMapAsyncStatus_Success;
+#else
+		struct MapWaitState
+		{
+			bool done = false;
+			WGPUBufferMapAsyncStatus status = WGPUBufferMapAsyncStatus_Unknown;
+		} waitSt;
+		auto cb = [](WGPUBufferMapAsyncStatus status, void* ud) {
+			auto* s = static_cast<MapWaitState*>(ud);
+			s->status = status;
+			s->done = true;
+		};
+		PARA_WGPU_CALL(m_wgpu, wgpuBufferMapAsync, staging, WGPUMapMode_Read, 0, mapSize, cb, &waitSt);
+		for (int spin = 0; !waitSt.done && spin < 2000; ++spin)
+		{
+			m_wgpu.WaitAsync(m_instance, m_device);
+		}
+		return waitSt.done && waitSt.status == WGPUBufferMapAsyncStatus_Success;
+#endif
+	}
+
 	bool RenderDeviceWebGPU::ReadBufferSync(WGPUBuffer srcBuffer, uint64_t byteSize, void* dstData)
 	{
 		if (!srcBuffer || byteSize == 0 || !dstData || !m_device)
@@ -1566,7 +1816,7 @@ namespace ParaEngine
 		const uint64_t alignedBytes = (byteSize + 3ull) & ~3ull;
 
 		WGPUBufferDescriptor sbd = {};
-		sbd.label = "ParaReadbackStaging";
+		sbd.label = ParaWgpuLabel("ParaReadbackStaging");
 		sbd.usage = WGPUBufferUsage_CopyDst | WGPUBufferUsage_MapRead;
 		sbd.size = alignedBytes;
 		WGPUBuffer staging = PARA_WGPU_CALL(m_wgpu, wgpuDeviceCreateBuffer, m_device, &sbd);
@@ -1578,26 +1828,8 @@ namespace ParaEngine
 		PARA_WGPU_CALL(m_wgpu, wgpuCommandEncoderCopyBufferToBuffer, enc, srcBuffer, 0, staging, 0, alignedBytes);
 		ExecuteAndSyncGPU();
 
-		struct MapWaitState
-		{
-			bool done = false;
-			WGPUBufferMapAsyncStatus status = WGPUBufferMapAsyncStatus_Unknown;
-		} waitSt;
-
-		auto cb = [](WGPUBufferMapAsyncStatus status, void* ud) {
-			auto* s = static_cast<MapWaitState*>(ud);
-			s->status = status;
-			s->done = true;
-		};
-
-		PARA_WGPU_CALL(m_wgpu, wgpuBufferMapAsync, staging, WGPUMapMode_Read, 0, static_cast<size_t>(alignedBytes), cb, &waitSt);
-		for (int spin = 0; !waitSt.done && spin < 2000; ++spin)
-		{
-			m_wgpu.ProcessEvents(m_instance, m_device);
-		}
-
 		bool ok = false;
-		if (waitSt.done && waitSt.status == WGPUBufferMapAsyncStatus_Success)
+		if (MapStagingBufferReadSync(staging, static_cast<size_t>(alignedBytes)))
 		{
 			const void* mapped = PARA_WGPU_CALL(m_wgpu, wgpuBufferGetConstMappedRange, staging, 0, static_cast<size_t>(alignedBytes));
 			if (mapped)
@@ -1680,14 +1912,8 @@ namespace ParaEngine
 			enc, m_occlusionResolveBuf, static_cast<uint64_t>(slot) * sizeof(uint64_t), staging, 0, sizeof(uint64_t));
 		ExecuteAndSyncGPU();
 
-		struct MapWait { bool done = false; WGPUBufferMapAsyncStatus status = WGPUBufferMapAsyncStatus_Unknown; } ws;
-		PARA_WGPU_CALL(m_wgpu, wgpuBufferMapAsync, staging, WGPUMapMode_Read, 0, sizeof(uint64_t),
-			[](WGPUBufferMapAsyncStatus s, void* ud) { auto* w = static_cast<MapWait*>(ud); w->status = s; w->done = true; }, &ws);
-		for (int spin = 0; !ws.done && spin < 2000; ++spin)
-			m_wgpu.ProcessEvents(m_instance, m_device);
-
 		outSamples = 1;
-		if (ws.done && ws.status == WGPUBufferMapAsyncStatus_Success)
+		if (MapStagingBufferReadSync(staging, sizeof(uint64_t)))
 		{
 			const void* ptr = PARA_WGPU_CALL(m_wgpu, wgpuBufferGetConstMappedRange, staging, 0, sizeof(uint64_t));
 			if (ptr)
@@ -1723,7 +1949,9 @@ namespace ParaEngine
 
 		bool decodedS3TC = false;
 		bool expandedRGBA8 = false;
-		const WGPUTextureFormat wgpuFmt = ToWGPUTextureFormat(format, m_supportsBC, decodedS3TC, expandedRGBA8);
+		const bool hasInitialCpuData = (initialMips != nullptr && initialMipCount > 0 && initialMips[0].data != nullptr);
+		const WGPUTextureFormat wgpuFmt = ToWGPUTextureFormat(
+			format, width, height, m_supportsBC, m_supportsFloat32Filterable, hasInitialCpuData, decodedS3TC, expandedRGBA8);
 		const bool isCube = HasFlag(usage, ERHITextureUsage::CubeMap);
 		const bool isDepth = IsDepthPixelFormat(format) || HasFlag(usage, ERHITextureUsage::DepthStencil);
 		const bool isRT = HasFlag(usage, ERHITextureUsage::RenderTarget);
@@ -1750,7 +1978,15 @@ namespace ParaEngine
 		if ((wgpuUsage & WGPUTextureUsage_TextureBinding) != 0)
 		{
 			WGPUTextureViewDescriptor vd = {};
-			vd.format = wgpuFmt;
+			WGPUTextureFormat srvFmt = wgpuFmt;
+			if (isDepth)
+			{
+				if (wgpuFmt == WGPUTextureFormat_Depth24PlusStencil8)
+					srvFmt = WGPUTextureFormat_Depth24Plus;
+				else if (wgpuFmt == WGPUTextureFormat_Depth32FloatStencil8)
+					srvFmt = WGPUTextureFormat_Depth32Float;
+			}
+			vd.format = srvFmt;
 			vd.dimension = isCube ? WGPUTextureViewDimension_Cube : WGPUTextureViewDimension_2D;
 			vd.baseMipLevel = 0;
 			vd.mipLevelCount = mipLevels;
@@ -1879,9 +2115,11 @@ namespace ParaEngine
 		};
 
 		const std::string vsSrc = extractUtf8(desc.vsBytecode, desc.vsBytecodeSize);
-		const std::string psSrc = extractUtf8(desc.psBytecode, desc.psBytecodeSize);
+		std::string psSrc = extractUtf8(desc.psBytecode, desc.psBytecodeSize);
 		if (vsSrc.empty())
 			return nullptr;
+		if (!psSrc.empty() && psSrc.find("derivative_uniformity") == std::string::npos)
+			psSrc = "diagnostic(off, derivative_uniformity);\n" + psSrc;
 
 		WebGPUShaderReflection refl{};
 		ReflectWgslStage(vsSrc, /*isVertex=*/true, refl);
@@ -1893,12 +2131,18 @@ namespace ParaEngine
 		if (desc.psGlobalCBufferSize > 0)
 			refl.psUboMinBytes = (std::max)(refl.psUboMinBytes, AlignUpU32(desc.psGlobalCBufferSize, 16u));
 
+#if defined(WGPUINTERNAL_HAVE_EMDAWNWEBGPU_HEADER)
+		WGPUShaderSourceWGSL vsWgsl = {};
+		vsWgsl.chain.sType = WGPUSType_ShaderSourceWGSL;
+		vsWgsl.code = ParaWgpuLabel(vsSrc.c_str());
+#else
 		WGPUShaderModuleWGSLDescriptor vsWgsl = {};
 		vsWgsl.chain.sType = WGPUSType_ShaderModuleWGSLDescriptor;
 		vsWgsl.code = vsSrc.c_str();
+#endif
 		WGPUShaderModuleDescriptor vsModDesc = {};
 		vsModDesc.nextInChain = &vsWgsl.chain;
-		vsModDesc.label = desc.debugName ? desc.debugName : "ParaWGSL_VS";
+		vsModDesc.label = ParaWgpuLabel(desc.debugName ? desc.debugName : "ParaWGSL_VS");
 		WGPUShaderModule vsMod = PARA_WGPU_CALL(m_wgpu, wgpuDeviceCreateShaderModule, m_device, &vsModDesc);
 		if (!vsMod)
 			return nullptr;
@@ -1906,12 +2150,18 @@ namespace ParaEngine
 		WGPUShaderModule psMod = nullptr;
 		if (!psSrc.empty())
 		{
+#if defined(WGPUINTERNAL_HAVE_EMDAWNWEBGPU_HEADER)
+			WGPUShaderSourceWGSL psWgsl = {};
+			psWgsl.chain.sType = WGPUSType_ShaderSourceWGSL;
+			psWgsl.code = ParaWgpuLabel(psSrc.c_str());
+#else
 			WGPUShaderModuleWGSLDescriptor psWgsl = {};
 			psWgsl.chain.sType = WGPUSType_ShaderModuleWGSLDescriptor;
 			psWgsl.code = psSrc.c_str();
+#endif
 			WGPUShaderModuleDescriptor psModDesc = {};
 			psModDesc.nextInChain = &psWgsl.chain;
-			psModDesc.label = desc.debugName ? desc.debugName : "ParaWGSL_PS";
+			psModDesc.label = ParaWgpuLabel(desc.debugName ? desc.debugName : "ParaWGSL_PS");
 			psMod = PARA_WGPU_CALL(m_wgpu, wgpuDeviceCreateShaderModule, m_device, &psModDesc);
 			if (!psMod)
 			{
@@ -1967,7 +2217,7 @@ namespace ParaEngine
 		}
 
 		WGPUBindGroupLayoutDescriptor bgld = {};
-		bgld.label = "ParaProgramBindGroupLayout";
+		bgld.label = ParaWgpuLabel("ParaProgramBindGroupLayout");
 		bgld.entryCount = entries.size();
 		bgld.entries = entries.empty() ? nullptr : entries.data();
 		WGPUBindGroupLayout bgl = PARA_WGPU_CALL(m_wgpu, wgpuDeviceCreateBindGroupLayout, m_device, &bgld);
@@ -1979,7 +2229,7 @@ namespace ParaEngine
 		}
 
 		WGPUPipelineLayoutDescriptor pld = {};
-		pld.label = "ParaProgramPipelineLayout";
+		pld.label = ParaWgpuLabel("ParaProgramPipelineLayout");
 		pld.bindGroupLayoutCount = 1;
 		pld.bindGroupLayouts = &bgl;
 		WGPUPipelineLayout pipeLayout = PARA_WGPU_CALL(m_wgpu, wgpuDeviceCreatePipelineLayout, m_device, &pld);
@@ -2072,6 +2322,8 @@ namespace ParaEngine
 			m_activeRTHeight = m_backBufferHeight;
 		}
 
+		NotifyRenderTargetsBound(m_boundRTCount, m_boundRTCount > 0 ? targets : nullptr, depthStencilOverride);
+
 		ParaViewport vp{};
 		vp.X = 0;
 		vp.Y = 0;
@@ -2097,20 +2349,53 @@ namespace ParaEngine
 	bool RenderDeviceWebGPU::BlitRenderTarget(
 		IRHIRenderTarget* src,
 		IRHIRenderTarget* dst,
-		const RECT* /*srcRect*/,
-		const RECT* /*dstRect*/,
-		bool /*linearFilter*/)
+		const RECT* srcRect,
+		const RECT* dstRect,
+		bool linearFilter)
 	{
-		if (!src)
-			return false;
-		auto* srcRT = static_cast<WebGPURenderTarget*>(src->GetNativeHandle());
-		WebGPUTexture* srcTex = srcRT ? srcRT->GetWebGPUColor(0) : nullptr;
-		if (!srcTex || !srcTex->GetWGPUTexture())
+		if (src == dst)
 			return false;
 
+		EndActiveRenderPass();
+
+		if (!src || !dst)
+		{
+			if (!EnsureSwapChainTexture())
+				return false;
+		}
+
+		WGPUTexture srcWgpuTex = nullptr;
+		WGPUTextureView srcSrvView = nullptr;
+		WGPUTextureFormat srcFmt = m_surfaceFormat;
+		uint32_t srcW = m_backBufferWidth;
+		uint32_t srcH = m_backBufferHeight;
+		bool srcSupportsCopy = (m_surfaceUsage & WGPUTextureUsage_CopySrc) != 0;
+
+		if (src)
+		{
+			auto* srcRT = static_cast<WebGPURenderTarget*>(src->GetNativeHandle());
+			WebGPUTexture* srcTex = srcRT ? srcRT->GetWebGPUColor(0) : nullptr;
+			if (!srcTex || !srcTex->GetWGPUTexture())
+				return false;
+			srcWgpuTex = srcTex->GetWGPUTexture();
+			srcSrvView = srcTex->GetSRVView();
+			srcFmt = srcTex->GetWGPUFormat();
+			srcW = srcTex->GetWidth();
+			srcH = srcTex->GetHeight();
+			srcSupportsCopy = true;
+		}
+		else
+		{
+			srcWgpuTex = m_currentSurfaceTex;
+			srcSrvView = ((m_surfaceUsage & WGPUTextureUsage_TextureBinding) != 0) ? m_currentSurfaceView : nullptr;
+		}
+
 		WGPUTexture dstWgpuTex = nullptr;
+		WGPUTextureView dstRtvView = nullptr;
+		WGPUTextureFormat dstFmt = m_surfaceFormat;
 		uint32_t dstW = m_backBufferWidth;
 		uint32_t dstH = m_backBufferHeight;
+		bool dstSupportsCopy = (m_surfaceUsage & WGPUTextureUsage_CopyDst) != 0;
 
 		if (dst)
 		{
@@ -2119,31 +2404,262 @@ namespace ParaEngine
 			if (!dstColor || !dstColor->GetWGPUTexture())
 				return false;
 			dstWgpuTex = dstColor->GetWGPUTexture();
+			dstRtvView = dstColor->GetRTVDSVView();
+			dstFmt = dstColor->GetWGPUFormat();
 			dstW = dstColor->GetWidth();
 			dstH = dstColor->GetHeight();
+			dstSupportsCopy = true;
 		}
 		else
 		{
-			if (!EnsureSwapChainTexture())
-				return false;
 			dstWgpuTex = m_currentSurfaceTex;
+			dstRtvView = m_currentSurfaceView;
 		}
 
-		const uint32_t copyW = (std::min)(srcTex->GetWidth(), dstW);
-		const uint32_t copyH = (std::min)(srcTex->GetHeight(), dstH);
-		if (copyW == 0 || copyH == 0)
+		if (!srcWgpuTex || !dstWgpuTex || srcW == 0 || srcH == 0 || dstW == 0 || dstH == 0)
 			return false;
 
-		EndActiveRenderPass();
+		const int sx0 = srcRect ? (std::max)(0, (std::min)(static_cast<int>(srcRect->left), static_cast<int>(srcW))) : 0;
+		const int sy0 = srcRect ? (std::max)(0, (std::min)(static_cast<int>(srcRect->top), static_cast<int>(srcH))) : 0;
+		const int sx1 = srcRect ? (std::max)(sx0, (std::min)(static_cast<int>(srcRect->right), static_cast<int>(srcW))) : static_cast<int>(srcW);
+		const int sy1 = srcRect ? (std::max)(sy0, (std::min)(static_cast<int>(srcRect->bottom), static_cast<int>(srcH))) : static_cast<int>(srcH);
+
+		const int dx0 = dstRect ? (std::max)(0, (std::min)(static_cast<int>(dstRect->left), static_cast<int>(dstW))) : 0;
+		const int dy0 = dstRect ? (std::max)(0, (std::min)(static_cast<int>(dstRect->top), static_cast<int>(dstH))) : 0;
+		const int dx1 = dstRect ? (std::max)(dx0, (std::min)(static_cast<int>(dstRect->right), static_cast<int>(dstW))) : static_cast<int>(dstW);
+		const int dy1 = dstRect ? (std::max)(dy0, (std::min)(static_cast<int>(dstRect->bottom), static_cast<int>(dstH))) : static_cast<int>(dstH);
+
+		const uint32_t sw = static_cast<uint32_t>(sx1 - sx0);
+		const uint32_t sh = static_cast<uint32_t>(sy1 - sy0);
+		const uint32_t dw = static_cast<uint32_t>(dx1 - dx0);
+		const uint32_t dh = static_cast<uint32_t>(dy1 - dy0);
+		if (sw == 0 || sh == 0 || dw == 0 || dh == 0)
+			return false;
+
+		// Fast path: direct GPU texture copy when formats & extents match and both textures support copy usage
+		if (srcFmt == dstFmt && sw == dw && sh == dh && srcSupportsCopy && dstSupportsCopy && !IsBCCompressedWGPUFormat(srcFmt))
+		{
+			WGPUCommandEncoder enc = EnsureEncoder();
+			if (!enc)
+				return false;
+			WGPUImageCopyTexture s = {};
+			s.texture = srcWgpuTex;
+			s.origin = { static_cast<uint32_t>(sx0), static_cast<uint32_t>(sy0), 0 };
+			s.aspect = WGPUTextureAspect_All;
+			WGPUImageCopyTexture d = {};
+			d.texture = dstWgpuTex;
+			d.origin = { static_cast<uint32_t>(dx0), static_cast<uint32_t>(dy0), 0 };
+			d.aspect = WGPUTextureAspect_All;
+			WGPUExtent3D ext = { sw, sh, 1 };
+			PARA_WGPU_CALL(m_wgpu, wgpuCommandEncoderCopyTextureToTexture, enc, &s, &d, &ext);
+			if (!dst)
+				m_surfaceClearedThisFrame = true;
+			return true;
+		}
+
+		// Shader blit fallback (handles RGBA8Unorm <-> BGRA8Unorm format conversion and sub-rect scaling)
+		if (!srcSrvView || !dstRtvView || IsDepthPixelFormat(src ? src->GetColorTexture(0)->GetFormat() : PixelFormat::A8R8G8B8))
+			return false;
+		const bool unfilterableSrc = !m_supportsFloat32Filterable && IsUnblendableFloat32WGPUFormat(srcFmt);
+		if (unfilterableSrc)
+			return false;
+
+		if (!m_blitShaderModule)
+		{
+			static const char* kBlitWgsl =
+				"struct BlitParams { uvRect : vec4<f32>, };\n"
+				"@group(0) @binding(0) var<uniform> params : BlitParams;\n"
+				"@group(0) @binding(1) var blitTex : texture_2d<f32>;\n"
+				"@group(0) @binding(2) var blitSmp : sampler;\n"
+				"struct VsOut { @builtin(position) pos : vec4<f32>, @location(0) uv : vec2<f32>, };\n"
+				"@vertex fn vs_main(@builtin(vertex_index) vid : u32) -> VsOut {\n"
+				"    var o : VsOut;\n"
+				"    let x = f32((vid << 1u) & 2u);\n"
+				"    let y = f32(vid & 2u);\n"
+				"    o.pos = vec4<f32>(x * 2.0 - 1.0, 1.0 - y * 2.0, 0.0, 1.0);\n"
+				"    o.uv = params.uvRect.xy + vec2<f32>(x, y) * params.uvRect.zw;\n"
+				"    return o;\n"
+				"}\n"
+				"@fragment fn fs_main(in : VsOut) -> @location(0) vec4<f32> {\n"
+				"    return textureSample(blitTex, blitSmp, in.uv);\n"
+				"}\n";
+#if defined(WGPUINTERNAL_HAVE_EMDAWNWEBGPU_HEADER)
+			WGPUShaderSourceWGSL wgslSrc = {};
+			wgslSrc.chain.sType = WGPUSType_ShaderSourceWGSL;
+			wgslSrc.code = ParaWgpuLabel(kBlitWgsl);
+#else
+			WGPUShaderModuleWGSLDescriptor wgslSrc = {};
+			wgslSrc.chain.sType = WGPUSType_ShaderModuleWGSLDescriptor;
+			wgslSrc.code = kBlitWgsl;
+#endif
+			WGPUShaderModuleDescriptor smd = {};
+			smd.nextInChain = &wgslSrc.chain;
+			smd.label = ParaWgpuLabel("ParaBlitWGSL");
+			m_blitShaderModule = PARA_WGPU_CALL(m_wgpu, wgpuDeviceCreateShaderModule, m_device, &smd);
+			if (!m_blitShaderModule)
+				return false;
+		}
+
+		if (!m_blitBgl)
+		{
+			WGPUBindGroupLayoutEntry bglEntries[3] = {};
+			bglEntries[0].binding = 0;
+			bglEntries[0].visibility = WGPUShaderStage_Vertex;
+			bglEntries[0].buffer.type = WGPUBufferBindingType_Uniform;
+			bglEntries[0].buffer.minBindingSize = 16;
+
+			bglEntries[1].binding = 1;
+			bglEntries[1].visibility = WGPUShaderStage_Fragment;
+			bglEntries[1].texture.sampleType = WGPUTextureSampleType_Float;
+			bglEntries[1].texture.viewDimension = WGPUTextureViewDimension_2D;
+
+			bglEntries[2].binding = 2;
+			bglEntries[2].visibility = WGPUShaderStage_Fragment;
+			bglEntries[2].sampler.type = WGPUSamplerBindingType_Filtering;
+
+			WGPUBindGroupLayoutDescriptor bgld = {};
+			bgld.label = ParaWgpuLabel("ParaBlitBGL");
+			bgld.entryCount = 3;
+			bgld.entries = bglEntries;
+			m_blitBgl = PARA_WGPU_CALL(m_wgpu, wgpuDeviceCreateBindGroupLayout, m_device, &bgld);
+			if (!m_blitBgl)
+				return false;
+		}
+
+		if (!m_blitPipeLayout)
+		{
+			WGPUPipelineLayoutDescriptor pld = {};
+			pld.label = ParaWgpuLabel("ParaBlitPipeLayout");
+			pld.bindGroupLayoutCount = 1;
+			pld.bindGroupLayouts = &m_blitBgl;
+			m_blitPipeLayout = PARA_WGPU_CALL(m_wgpu, wgpuDeviceCreatePipelineLayout, m_device, &pld);
+			if (!m_blitPipeLayout)
+				return false;
+		}
+
+		WGPURenderPipeline blitPipe = nullptr;
+		auto pipeIt = m_blitPipelines.find(static_cast<uint32_t>(dstFmt));
+		if (pipeIt != m_blitPipelines.end())
+		{
+			blitPipe = pipeIt->second;
+		}
+		else
+		{
+			WGPUColorTargetState cts = {};
+			cts.format = dstFmt;
+			cts.writeMask = WGPUColorWriteMask_All;
+
+			WGPUFragmentState fs = {};
+			fs.module = m_blitShaderModule;
+			fs.entryPoint = ParaWgpuLabel("fs_main");
+			fs.targetCount = 1;
+			fs.targets = &cts;
+
+			WGPURenderPipelineDescriptor rpd = {};
+			rpd.label = ParaWgpuLabel("ParaBlitPipeline");
+			rpd.layout = m_blitPipeLayout;
+			rpd.vertex.module = m_blitShaderModule;
+			rpd.vertex.entryPoint = ParaWgpuLabel("vs_main");
+			rpd.primitive.topology = WGPUPrimitiveTopology_TriangleList;
+			rpd.primitive.frontFace = WGPUFrontFace_CW;
+			rpd.primitive.cullMode = WGPUCullMode_None;
+			rpd.multisample.count = 1;
+			rpd.multisample.mask = 0xFFFFFFFFu;
+			rpd.fragment = &fs;
+
+			blitPipe = PARA_WGPU_CALL(m_wgpu, wgpuDeviceCreateRenderPipeline, m_device, &rpd);
+			if (!blitPipe)
+				return false;
+			m_blitPipelines[static_cast<uint32_t>(dstFmt)] = blitPipe;
+		}
+
+		const float uvRect[4] = {
+			static_cast<float>(sx0) / static_cast<float>(srcW),
+			static_cast<float>(sy0) / static_cast<float>(srcH),
+			static_cast<float>(sw) / static_cast<float>(srcW),
+			static_cast<float>(sh) / static_cast<float>(srcH)
+		};
+		WGPUBuffer paramBuf = AllocateTransientBuffer(WGPUBufferUsage_Uniform, uvRect, sizeof(uvRect), 16u);
+		if (!paramBuf)
+			return false;
+
+		WGPUSamplerDescriptor sd = {};
+		sd.addressModeU = WGPUAddressMode_ClampToEdge;
+		sd.addressModeV = WGPUAddressMode_ClampToEdge;
+		sd.addressModeW = WGPUAddressMode_ClampToEdge;
+		sd.magFilter = linearFilter ? WGPUFilterMode_Linear : WGPUFilterMode_Nearest;
+		sd.minFilter = linearFilter ? WGPUFilterMode_Linear : WGPUFilterMode_Nearest;
+		sd.mipmapFilter = WGPUMipmapFilterMode_Nearest;
+		sd.lodMinClamp = 0.0f;
+		sd.lodMaxClamp = 0.25f;
+		sd.maxAnisotropy = 1u;
+		const uint64_t smpKey = linearFilter ? 0xFFFF0002ull : 0xFFFF0001ull;
+		WGPUSampler smp = nullptr;
+		auto smpIt = m_samplerCache.find(smpKey);
+		if (smpIt != m_samplerCache.end())
+		{
+			smp = smpIt->second;
+		}
+		else
+		{
+			smp = PARA_WGPU_CALL(m_wgpu, wgpuDeviceCreateSampler, m_device, &sd);
+			if (smp)
+				m_samplerCache[smpKey] = smp;
+		}
+		if (!smp)
+			return false;
+
+		WGPUBindGroupEntry bgEntries[3] = {};
+		bgEntries[0].binding = 0;
+		bgEntries[0].buffer = paramBuf;
+		bgEntries[0].offset = 0;
+		bgEntries[0].size = 16;
+		bgEntries[1].binding = 1;
+		bgEntries[1].textureView = srcSrvView;
+		bgEntries[2].binding = 2;
+		bgEntries[2].sampler = smp;
+
+		WGPUBindGroupDescriptor bgd = {};
+		bgd.label = ParaWgpuLabel("ParaBlitBindGroup");
+		bgd.layout = m_blitBgl;
+		bgd.entryCount = 3;
+		bgd.entries = bgEntries;
+		WGPUBindGroup bg = PARA_WGPU_CALL(m_wgpu, wgpuDeviceCreateBindGroup, m_device, &bgd);
+		if (!bg)
+			return false;
+		m_transientBindGroups.push_back(bg);
+
 		WGPUCommandEncoder enc = EnsureEncoder();
-		WGPUImageCopyTexture s = {};
-		s.texture = srcTex->GetWGPUTexture();
-		s.aspect = WGPUTextureAspect_All;
-		WGPUImageCopyTexture d = {};
-		d.texture = dstWgpuTex;
-		d.aspect = WGPUTextureAspect_All;
-		WGPUExtent3D ext = { copyW, copyH, 1 };
-		PARA_WGPU_CALL(m_wgpu, wgpuCommandEncoderCopyTextureToTexture, enc, &s, &d, &ext);
+		if (!enc)
+			return false;
+
+		const bool fullDstOverwrite = (dx0 == 0 && dy0 == 0 && dw == dstW && dh == dstH);
+		WGPURenderPassColorAttachment ca = {};
+		ca.view = dstRtvView;
+		ca.depthSlice = 0xFFFFFFFFu;
+		ca.loadOp = fullDstOverwrite ? WGPULoadOp_Clear : WGPULoadOp_Load;
+		ca.storeOp = WGPUStoreOp_Store;
+		ca.clearValue = { 0.0, 0.0, 0.0, 1.0 };
+
+		WGPURenderPassDescriptor passDesc = {};
+		passDesc.label = ParaWgpuLabel("ParaBlitPass");
+		passDesc.colorAttachmentCount = 1;
+		passDesc.colorAttachments = &ca;
+
+		WGPURenderPassEncoder rpe = PARA_WGPU_CALL(m_wgpu, wgpuCommandEncoderBeginRenderPass, enc, &passDesc);
+		if (!rpe)
+			return false;
+		PARA_WGPU_CALL(m_wgpu, wgpuRenderPassEncoderSetViewport,
+			rpe, static_cast<float>(dx0), static_cast<float>(dy0), static_cast<float>(dw), static_cast<float>(dh), 0.0f, 1.0f);
+		PARA_WGPU_CALL(m_wgpu, wgpuRenderPassEncoderSetScissorRect,
+			rpe, static_cast<uint32_t>(dx0), static_cast<uint32_t>(dy0), dw, dh);
+		PARA_WGPU_CALL(m_wgpu, wgpuRenderPassEncoderSetPipeline, rpe, blitPipe);
+		PARA_WGPU_CALL(m_wgpu, wgpuRenderPassEncoderSetBindGroup, rpe, 0, bg, 0, nullptr);
+		PARA_WGPU_CALL(m_wgpu, wgpuRenderPassEncoderDraw, rpe, 3, 1, 0, 0);
+		PARA_WGPU_CALL(m_wgpu, wgpuRenderPassEncoderEnd, rpe);
+		PARA_WGPU_CALL(m_wgpu, wgpuRenderPassEncoderRelease, rpe);
+		if (!dst)
+			m_surfaceClearedThisFrame = true;
 		return true;
 	}
 
@@ -2216,14 +2732,8 @@ namespace ParaEngine
 		PARA_WGPU_CALL(m_wgpu, wgpuCommandEncoderCopyTextureToBuffer, enc, &srcCopy, &dstCopy, &ext);
 		ExecuteAndSyncGPU();
 
-		struct MapWait { bool done = false; WGPUBufferMapAsyncStatus status = WGPUBufferMapAsyncStatus_Unknown; } ws;
-		PARA_WGPU_CALL(m_wgpu, wgpuBufferMapAsync, readBuf, WGPUMapMode_Read, 0, static_cast<size_t>(bufBytes),
-			[](WGPUBufferMapAsyncStatus s, void* ud) { auto* w = static_cast<MapWait*>(ud); w->status = s; w->done = true; }, &ws);
-		for (int spin = 0; !ws.done && spin < 2000; ++spin)
-			m_wgpu.ProcessEvents(m_instance, m_device);
-
 		bool ok = false;
-		if (ws.done && ws.status == WGPUBufferMapAsyncStatus_Success)
+		if (MapStagingBufferReadSync(readBuf, static_cast<size_t>(bufBytes)))
 		{
 			const auto* srcBytes = static_cast<const uint8_t*>(
 				PARA_WGPU_CALL(m_wgpu, wgpuBufferGetConstMappedRange, readBuf, 0, static_cast<size_t>(bufBytes)));
@@ -2306,14 +2816,8 @@ namespace ParaEngine
 		PARA_WGPU_CALL(m_wgpu, wgpuCommandEncoderCopyTextureToBuffer, enc, &srcCopy, &dstCopy, &ext);
 		ExecuteAndSyncGPU();
 
-		struct MapWait { bool done = false; WGPUBufferMapAsyncStatus status = WGPUBufferMapAsyncStatus_Unknown; } ws;
-		PARA_WGPU_CALL(m_wgpu, wgpuBufferMapAsync, readBuf, WGPUMapMode_Read, 0, 256,
-			[](WGPUBufferMapAsyncStatus s, void* ud) { auto* w = static_cast<MapWait*>(ud); w->status = s; w->done = true; }, &ws);
-		for (int spin = 0; !ws.done && spin < 2000; ++spin)
-			m_wgpu.ProcessEvents(m_instance, m_device);
-
 		bool ok = false;
-		if (ws.done && ws.status == WGPUBufferMapAsyncStatus_Success)
+		if (MapStagingBufferReadSync(readBuf, 256))
 		{
 			const void* ptr = PARA_WGPU_CALL(m_wgpu, wgpuBufferGetConstMappedRange, readBuf, 0, 16);
 			if (ptr)
@@ -2376,14 +2880,8 @@ namespace ParaEngine
 		PARA_WGPU_CALL(m_wgpu, wgpuCommandEncoderCopyTextureToBuffer, enc, &srcCopy, &dstCopy, &ext);
 		ExecuteAndSyncGPU();
 
-		struct MapWait { bool done = false; WGPUBufferMapAsyncStatus status = WGPUBufferMapAsyncStatus_Unknown; } ws;
-		PARA_WGPU_CALL(m_wgpu, wgpuBufferMapAsync, readBuf, WGPUMapMode_Read, 0, static_cast<size_t>(bufBytes),
-			[](WGPUBufferMapAsyncStatus s, void* ud) { auto* w = static_cast<MapWait*>(ud); w->status = s; w->done = true; }, &ws);
-		for (int spin = 0; !ws.done && spin < 2000; ++spin)
-			m_wgpu.ProcessEvents(m_instance, m_device);
-
 		bool ok = false;
-		if (ws.done && ws.status == WGPUBufferMapAsyncStatus_Success)
+		if (MapStagingBufferReadSync(readBuf, static_cast<size_t>(bufBytes)))
 		{
 			const auto* srcBytes = static_cast<const uint8_t*>(
 				PARA_WGPU_CALL(m_wgpu, wgpuBufferGetConstMappedRange, readBuf, 0, static_cast<size_t>(bufBytes)));
@@ -2470,10 +2968,15 @@ namespace ParaEngine
 		return smp;
 	}
 
-	WGPURenderPipeline RenderDeviceWebGPU::GetOrCreateRenderPipeline(EPrimitiveType primitiveType)
+	WGPURenderPipeline RenderDeviceWebGPU::GetOrCreateRenderPipeline(EPrimitiveType primitiveType, WGPUIndexFormat stripIndexFormat)
 	{
 		if (!m_boundProgram || !m_boundProgram->IsValid())
 			return nullptr;
+
+		uint32_t dummyCount = 0;
+		const WGPUPrimitiveTopology wgpuTopo = MapPrimitiveTopology(primitiveType, 1u, dummyCount);
+		const bool isStripTopo = (wgpuTopo == WGPUPrimitiveTopology_TriangleStrip || wgpuTopo == WGPUPrimitiveTopology_LineStrip);
+		const WGPUIndexFormat effStripIdxFmt = isStripTopo ? stripIndexFormat : WGPUIndexFormat_Undefined;
 
 		// Compute render target format signature for PSO cache key
 		WGPUTextureFormat colorFmts[MAX_RENDER_TARGETS] = {};
@@ -2516,6 +3019,7 @@ namespace ParaEngine
 		uint64_t rtHash = Fnv1aBytes64(colorFmts, sizeof(colorFmts));
 		rtHash = Fnv1aBytes64(&colorCount, sizeof(colorCount), rtHash);
 		rtHash = Fnv1aBytes64(&depthFmt, sizeof(depthFmt), rtHash);
+		rtHash = Fnv1aBytes64(&effStripIdxFmt, sizeof(effStripIdxFmt), rtHash);
 
 		// Fold vertex declaration + active stream bindings + dividers + strides into vertexHash
 		uint64_t vtxHash = m_vertexDecl ? m_vertexDecl->GetHash() : 0ull;
@@ -2547,7 +3051,10 @@ namespace ParaEngine
 			{
 				if (el.IsEndDeclare() || el.Stream >= MAX_VERTEX_STREAMS)
 					continue;
-				const uint32_t loc = MapVertexElementToLocation(el.Usage, el.UsageIndex);
+				const int32_t locSigned = MapVertexElementToLocation(el.Usage, el.UsageIndex);
+				if (locSigned < 0 || locSigned >= 16)
+					continue;
+				const uint32_t loc = static_cast<uint32_t>(locSigned);
 				if ((refl.vsInputLocMask & (1u << loc)) == 0)
 					continue;
 				if ((providedMask & (1u << loc)) != 0)
@@ -2559,6 +3066,9 @@ namespace ParaEngine
 				va.format = MapDeclTypeToWGPU(el.Type);
 				va.offset = el.Offset;
 				va.shaderLocation = loc;
+				const uint32_t boundStride = m_streams[el.Stream].stride;
+				if (boundStride > 0 && va.offset + GetVertexFormatByteSize(va.format) > AlignUpU32(boundStride, 4u))
+					continue;
 				slotAttrs[el.Stream].push_back(va);
 				providedMask |= (1u << loc);
 			}
@@ -2585,7 +3095,11 @@ namespace ParaEngine
 			if (slotAttrs[slot].empty())
 			{
 				vbLayouts[slot].arrayStride = 0;
+#if defined(WGPUINTERNAL_HAVE_EMDAWNWEBGPU_HEADER)
+				vbLayouts[slot].stepMode = WGPUVertexStepMode_Undefined;
+#else
 				vbLayouts[slot].stepMode = WGPUVertexStepMode_VertexBufferNotUsed;
+#endif
 				vbLayouts[slot].attributeCount = 0;
 				vbLayouts[slot].attributes = nullptr;
 				continue;
@@ -2599,9 +3113,15 @@ namespace ParaEngine
 			}
 			else
 			{
-				const uint32_t stride = (m_streams[slot].stride > 0)
+				uint32_t stride = (m_streams[slot].stride > 0)
 					? m_streams[slot].stride
 					: (m_vertexDecl ? m_vertexDecl->GetStride(slot) : 16u);
+				for (const WGPUVertexAttribute& attr : slotAttrs[slot])
+				{
+					const uint32_t reqEnd = static_cast<uint32_t>(attr.offset) + GetVertexFormatByteSize(attr.format);
+					if (reqEnd > stride)
+						stride = reqEnd;
+				}
 				vbLayouts[slot].arrayStride = AlignUpU32((std::max)(stride, 4u), 4u);
 				const bool isInstanced = ((m_streams[slot].frequencyDivider & 0x80000000u) != 0);
 				vbLayouts[slot].stepMode = isInstanced ? WGPUVertexStepMode_Instance : WGPUVertexStepMode_Vertex;
@@ -2610,19 +3130,16 @@ namespace ParaEngine
 			vbLayouts[slot].attributes = slotAttrs[slot].data();
 		}
 
-		uint32_t dummyCount = 0;
-		const WGPUPrimitiveTopology wgpuTopo = MapPrimitiveTopology(primitiveType, 1u, dummyCount);
-
-		const uint32_t cullModeD3D = m_state.GetRenderState(ERenderState::CULLMODE);
+		const uint32_t cullMode = m_state.GetRenderState(ERenderState::CULLMODE);
 		WGPUCullMode wgpuCull = WGPUCullMode_None;
 		WGPUFrontFace wgpuFront = WGPUFrontFace_CW;
-		// ParaEngine LHS D3D convention: CULL_CCW (3) culls backfaces of clockwise-wound front triangles
-		if (cullModeD3D == 3) // CULL_CCW
+		// ParaEngine LHS D3D convention: RSV_CULL_CCW culls backfaces of clockwise-wound front triangles
+		if (cullMode == RSV_CULL_CCW)
 		{
 			wgpuFront = WGPUFrontFace_CW;
 			wgpuCull = WGPUCullMode_Back;
 		}
-		else if (cullModeD3D == 2) // CULL_CW
+		else if (cullMode == RSV_CULL_CW)
 		{
 			wgpuFront = WGPUFrontFace_CW;
 			wgpuCull = WGPUCullMode_Front;
@@ -2636,7 +3153,7 @@ namespace ParaEngine
 			const bool zEnable = (m_state.GetRenderState(ERenderState::ZENABLE) != 0);
 			const bool zWrite  = (m_state.GetRenderState(ERenderState::ZWRITEENABLE) != 0);
 			dsState.format = depthFmt;
-			dsState.depthWriteEnabled = (zEnable && zWrite) ? 1u : 0u;
+			dsState.depthWriteEnabled = ParaWgpuOptionalBool(zEnable && zWrite);
 			dsState.depthCompare = zEnable
 				? MapCompareFunc(m_state.GetRenderState(ERenderState::ZFUNC))
 				: WGPUCompareFunction_Always;
@@ -2672,15 +3189,19 @@ namespace ParaEngine
 				dsState.stencilWriteMask = 0u;
 			}
 
-			auto bitsToFloat = [](uint32_t bits) -> float {
-				float f = 0.0f;
-				std::memcpy(&f, &bits, sizeof(float));
-				return f;
-			};
-			const float rawDepthBias = bitsToFloat(m_state.GetRenderState(ERenderState::DEPTHBIAS));
-			const float slopeBias = bitsToFloat(m_state.GetRenderState(ERenderState::SLOPESCALEDEPTHBIAS));
-			dsState.depthBias = static_cast<int32_t>(std::lround(rawDepthBias * 16777216.0f));
-			dsState.depthBiasSlopeScale = slopeBias;
+			// WebGPU spec forbids non-zero depthBias / depthBiasSlopeScale on non-triangle topologies
+			if (wgpuTopo == WGPUPrimitiveTopology_TriangleList || wgpuTopo == WGPUPrimitiveTopology_TriangleStrip)
+			{
+				auto bitsToFloat = [](uint32_t bits) -> float {
+					float f = 0.0f;
+					std::memcpy(&f, &bits, sizeof(float));
+					return f;
+				};
+				const float rawDepthBias = bitsToFloat(m_state.GetRenderState(ERenderState::DEPTHBIAS));
+				const float slopeBias = bitsToFloat(m_state.GetRenderState(ERenderState::SLOPESCALEDEPTHBIAS));
+				dsState.depthBias = std::isfinite(rawDepthBias) ? static_cast<int32_t>(std::lround(rawDepthBias * 16777216.0f)) : 0;
+				dsState.depthBiasSlopeScale = std::isfinite(slopeBias) ? slopeBias : 0.0f;
+			}
 			dsState.depthBiasClamp = 0.0f;
 		}
 
@@ -2717,7 +3238,8 @@ namespace ParaEngine
 		{
 			colorTargets[i].format = colorFmts[i];
 			const bool psWritesTarget = ((refl.psOutputLocMask & (1u << i)) != 0);
-			colorTargets[i].blend = (blendEnable && psWritesTarget) ? &blendState : nullptr;
+			const bool fmtBlendable = !IsUnblendableFloat32WGPUFormat(colorFmts[i]);
+			colorTargets[i].blend = (blendEnable && psWritesTarget && fmtBlendable) ? &blendState : nullptr;
 			colorTargets[i].writeMask = psWritesTarget ? writeMask : WGPUColorWriteMask_None;
 		}
 
@@ -2726,21 +3248,21 @@ namespace ParaEngine
 		if (hasFragment)
 		{
 			fragState.module = m_boundProgram->GetPSModule();
-			fragState.entryPoint = m_boundProgram->GetPSEntry();
+			fragState.entryPoint = ParaWgpuLabel(m_boundProgram->GetPSEntry());
 			fragState.targetCount = colorCount;
 			fragState.targets = (colorCount > 0) ? colorTargets : nullptr;
 		}
 
 		WGPURenderPipelineDescriptor rpd = {};
-		rpd.label = "ParaRenderPipeline";
+		rpd.label = ParaWgpuLabel("ParaRenderPipeline");
 		rpd.layout = m_boundProgram->GetPipelineLayout();
 		rpd.vertex.module = m_boundProgram->GetVSModule();
-		rpd.vertex.entryPoint = m_boundProgram->GetVSEntry();
+		rpd.vertex.entryPoint = ParaWgpuLabel(m_boundProgram->GetVSEntry());
 		rpd.vertex.bufferCount = anyVbSlot ? (maxUsedVbSlot + 1u) : 0u;
 		rpd.vertex.buffers = anyVbSlot ? vbLayouts : nullptr;
 
 		rpd.primitive.topology = wgpuTopo;
-		rpd.primitive.stripIndexFormat = WGPUIndexFormat_Undefined;
+		rpd.primitive.stripIndexFormat = effStripIdxFmt;
 		rpd.primitive.frontFace = wgpuFront;
 		rpd.primitive.cullMode = wgpuCull;
 
@@ -2819,13 +3341,14 @@ namespace ParaEngine
 				WGPUTextureView view = nullptr;
 				WebGPUTexture* bound = m_boundTextures[s];
 				const WGPUTextureViewDimension expectedDim = refl.texViewDim[s];
-				if (bound && bound->GetSRVView())
+				if (bound && bound->GetSRVView() && !IsDepthPixelFormat(bound->GetFormat()))
 				{
+					const bool unfilterableFloat = !m_supportsFloat32Filterable && IsUnblendableFloat32WGPUFormat(bound->GetWGPUFormat());
 					const bool dimMatches =
 						(expectedDim == WGPUTextureViewDimension_Cube && bound->IsCubeMap()) ||
 						(expectedDim == WGPUTextureViewDimension_3D && bound->Is3D()) ||
 						((expectedDim == WGPUTextureViewDimension_2D || expectedDim == WGPUTextureViewDimension_Undefined) && !bound->IsCubeMap() && !bound->Is3D());
-					if (dimMatches)
+					if (dimMatches && !unfilterableFloat)
 						view = bound->GetSRVView();
 				}
 				if (!view)
@@ -2853,7 +3376,7 @@ namespace ParaEngine
 		}
 
 		WGPUBindGroupDescriptor bgd = {};
-		bgd.label = "ParaDrawBindGroup";
+		bgd.label = ParaWgpuLabel("ParaDrawBindGroup");
 		bgd.layout = m_boundProgram->GetBindGroupLayout();
 		bgd.entryCount = entries.size();
 		bgd.entries = entries.empty() ? nullptr : entries.data();
@@ -2864,14 +3387,14 @@ namespace ParaEngine
 		return bg;
 	}
 
-	bool RenderDeviceWebGPU::PrepareForDraw(EPrimitiveType primitiveType)
+	bool RenderDeviceWebGPU::PrepareForDraw(EPrimitiveType primitiveType, WGPUIndexFormat stripIndexFormat)
 	{
 		if (!m_boundProgram || !m_boundProgram->IsValid())
 			return false;
 		if (!EnsureActiveRenderPass(false, false, false))
 			return false;
 
-		WGPURenderPipeline pso = GetOrCreateRenderPipeline(primitiveType);
+		WGPURenderPipeline pso = GetOrCreateRenderPipeline(primitiveType, stripIndexFormat);
 		if (!pso)
 			return false;
 
@@ -2934,9 +3457,9 @@ namespace ParaEngine
 				fanIdx.push_back(static_cast<uint16_t>(StartVertex + i + 2u));
 			}
 			WGPUBuffer ib = AllocateTransientBuffer(WGPUBufferUsage_Index, fanIdx.data(), static_cast<uint32_t>(fanIdx.size() * sizeof(uint16_t)));
-			if (!ib || !PrepareForDraw(EPrimitiveType::TRIANGLELIST))
+			if (!ib || !PrepareForDraw(EPrimitiveType::TRIANGLELIST, WGPUIndexFormat_Undefined))
 				return false;
-			const uint64_t ibAligned = AlignUpU32(static_cast<uint32_t>(fanIdx.size() * sizeof(uint16_t)), 4u);
+			const uint64_t ibAligned = AlignUpU32((std::max)(static_cast<uint32_t>(fanIdx.size() * sizeof(uint16_t)), 16u), 4u);
 			PARA_WGPU_CALL(m_wgpu, wgpuRenderPassEncoderSetIndexBuffer, m_renderPass, ib, WGPUIndexFormat_Uint16, 0, ibAligned);
 			PARA_WGPU_CALL(m_wgpu, wgpuRenderPassEncoderDrawIndexed, m_renderPass, static_cast<uint32_t>(fanIdx.size()), 1, 0, 0, 0);
 			return true;
@@ -2944,7 +3467,7 @@ namespace ParaEngine
 
 		uint32_t vertCount = 0;
 		MapPrimitiveTopology(PrimitiveType, PrimitiveCount, vertCount);
-		if (vertCount == 0 || !PrepareForDraw(PrimitiveType))
+		if (vertCount == 0 || !PrepareForDraw(PrimitiveType, WGPUIndexFormat_Undefined))
 			return false;
 
 		uint32_t instanceCount = 1u;
@@ -2979,9 +3502,35 @@ namespace ParaEngine
 		if (primitiveCount == 0 || instanceCount == 0 || !m_boundIndexBuffer || !m_boundIndexBuffer->GetWGPUBuffer())
 			return false;
 
+		if (primitiveType == EPrimitiveType::TRIANGLEFAN)
+		{
+			const std::vector<uint8_t>& shadow = m_boundIndexBuffer->GetCpuShadow();
+			const size_t totalU16 = shadow.size() / sizeof(uint16_t);
+			const uint32_t srcFanCount = primitiveCount + 2u;
+			if (static_cast<size_t>(indexStart) + srcFanCount > totalU16)
+				return false;
+			const auto* srcIdx = reinterpret_cast<const uint16_t*>(shadow.data()) + indexStart;
+			std::vector<uint16_t> fanIdx(primitiveCount * 3u);
+			for (uint32_t i = 0; i < primitiveCount; ++i)
+			{
+				fanIdx[i * 3u + 0] = srcIdx[0];
+				fanIdx[i * 3u + 1] = srcIdx[i + 1u];
+				fanIdx[i * 3u + 2] = srcIdx[i + 2u];
+			}
+			const uint32_t ibBytes = static_cast<uint32_t>(fanIdx.size() * sizeof(uint16_t));
+			WGPUBuffer transIb = AllocateTransientBuffer(WGPUBufferUsage_Index, fanIdx.data(), ibBytes);
+			if (!transIb || !PrepareForDraw(EPrimitiveType::TRIANGLELIST, WGPUIndexFormat_Undefined))
+				return false;
+			PARA_WGPU_CALL(m_wgpu, wgpuRenderPassEncoderSetIndexBuffer,
+				m_renderPass, transIb, WGPUIndexFormat_Uint16, 0, AlignUpU32((std::max)(ibBytes, 16u), 4u));
+			PARA_WGPU_CALL(m_wgpu, wgpuRenderPassEncoderDrawIndexed,
+				m_renderPass, static_cast<uint32_t>(fanIdx.size()), instanceCount, 0, baseVertexIndex, 0);
+			return true;
+		}
+
 		uint32_t idxCount = 0;
 		MapPrimitiveTopology(primitiveType, primitiveCount, idxCount);
-		if (idxCount == 0 || !PrepareForDraw(primitiveType))
+		if (idxCount == 0 || !PrepareForDraw(primitiveType, WGPUIndexFormat_Uint16))
 			return false;
 
 		PARA_WGPU_CALL(m_wgpu, wgpuRenderPassEncoderSetIndexBuffer,
@@ -3032,7 +3581,7 @@ namespace ParaEngine
 			}
 			const uint32_t ibBytes = static_cast<uint32_t>(fanIdx.size() * sizeof(uint16_t));
 			WGPUBuffer transIb = AllocateTransientBuffer(WGPUBufferUsage_Index, fanIdx.data(), ibBytes);
-			const bool prepared = transIb && PrepareForDraw(EPrimitiveType::TRIANGLELIST);
+			const bool prepared = transIb && PrepareForDraw(EPrimitiveType::TRIANGLELIST, WGPUIndexFormat_Undefined);
 			m_streams[0] = saved0;
 			if (!prepared)
 				return false;
@@ -3044,7 +3593,7 @@ namespace ParaEngine
 			return true;
 		}
 
-		const bool prepared = PrepareForDraw(PrimitiveType);
+		const bool prepared = PrepareForDraw(PrimitiveType, WGPUIndexFormat_Undefined);
 		m_streams[0] = saved0;
 		if (!prepared)
 			return false;
@@ -3055,7 +3604,7 @@ namespace ParaEngine
 
 	bool RenderDeviceWebGPU::DrawIndexedPrimitiveUP(
 		EPrimitiveType PrimitiveType,
-		uint32_t /*MinVertexIndex*/,
+		uint32_t MinVertexIndex,
 		uint32_t NumVertices,
 		uint32_t PrimitiveCount,
 		const void* pIndexData,
@@ -3066,22 +3615,61 @@ namespace ParaEngine
 		if (!pIndexData || !pVertexStreamZeroData || PrimitiveCount == 0 || NumVertices == 0 || VertexStreamZeroStride == 0)
 			return false;
 
-		uint32_t idxCount = 0;
-		MapPrimitiveTopology(PrimitiveType, PrimitiveCount, idxCount);
 		const bool is32Bit = (IndexDataFormat == PixelFormat::INDEX32);
-		const uint32_t vbBytes = NumVertices * VertexStreamZeroStride;
+		const WGPUIndexFormat wgpuIdxFmt = is32Bit ? WGPUIndexFormat_Uint32 : WGPUIndexFormat_Uint16;
+		const uint32_t vbBytes = (MinVertexIndex + NumVertices) * VertexStreamZeroStride;
 		const uint32_t vbAligned = AlignUpU32((std::max)(vbBytes, 16u), 4u);
+
+		EPrimitiveType drawPrimType = PrimitiveType;
+		uint32_t idxCount = 0;
+		std::vector<uint8_t> expandedFanIb;
+		const void* uploadIdxPtr = pIndexData;
+
+		if (PrimitiveType == EPrimitiveType::TRIANGLEFAN)
+		{
+			drawPrimType = EPrimitiveType::TRIANGLELIST;
+			idxCount = PrimitiveCount * 3u;
+			expandedFanIb.resize(idxCount * (is32Bit ? 4u : 2u));
+			if (is32Bit)
+			{
+				const auto* src = static_cast<const uint32_t*>(pIndexData);
+				auto* dst = reinterpret_cast<uint32_t*>(expandedFanIb.data());
+				for (uint32_t i = 0; i < PrimitiveCount; ++i)
+				{
+					dst[i * 3u + 0] = src[0];
+					dst[i * 3u + 1] = src[i + 1u];
+					dst[i * 3u + 2] = src[i + 2u];
+				}
+			}
+			else
+			{
+				const auto* src = static_cast<const uint16_t*>(pIndexData);
+				auto* dst = reinterpret_cast<uint16_t*>(expandedFanIb.data());
+				for (uint32_t i = 0; i < PrimitiveCount; ++i)
+				{
+					dst[i * 3u + 0] = src[0];
+					dst[i * 3u + 1] = src[i + 1u];
+					dst[i * 3u + 2] = src[i + 2u];
+				}
+			}
+			uploadIdxPtr = expandedFanIb.data();
+		}
+		else
+		{
+			MapPrimitiveTopology(PrimitiveType, PrimitiveCount, idxCount);
+		}
+
 		const uint32_t ibBytes = idxCount * (is32Bit ? 4u : 2u);
 
 		WGPUBuffer transVb = AllocateTransientBuffer(WGPUBufferUsage_Vertex, pVertexStreamZeroData, vbBytes);
-		WGPUBuffer transIb = AllocateTransientBuffer(WGPUBufferUsage_Index, pIndexData, ibBytes);
+		WGPUBuffer transIb = AllocateTransientBuffer(WGPUBufferUsage_Index, uploadIdxPtr, ibBytes);
 		if (!transVb || !transIb)
 			return false;
 
 		WebGPUBuffer borrowedVbWrap(transVb, vbAligned);
 		const StreamBinding saved0 = m_streams[0];
 		m_streams[0] = { &borrowedVbWrap, 0, VertexStreamZeroStride, 0 };
-		const bool prepared = PrepareForDraw(PrimitiveType);
+		const bool prepared = PrepareForDraw(drawPrimType, wgpuIdxFmt);
 		m_streams[0] = saved0;
 		if (!prepared)
 			return false;
@@ -3089,7 +3677,7 @@ namespace ParaEngine
 		PARA_WGPU_CALL(m_wgpu, wgpuRenderPassEncoderSetIndexBuffer,
 			m_renderPass,
 			transIb,
-			is32Bit ? WGPUIndexFormat_Uint32 : WGPUIndexFormat_Uint16,
+			wgpuIdxFmt,
 			0,
 			AlignUpU32((std::max)(ibBytes, 16u), 4u));
 		PARA_WGPU_CALL(m_wgpu, wgpuRenderPassEncoderDrawIndexed, m_renderPass, idxCount, 1, 0, 0, 0);
@@ -3109,8 +3697,8 @@ namespace ParaEngine
 			if (Value != 0)
 			{
 				const RECT& sc = m_state.GetScissorRect();
-				const uint32_t sx = static_cast<uint32_t>((std::max)(0L, (std::min)(sc.left, static_cast<LONG>(m_activeRTWidth))));
-				const uint32_t sy = static_cast<uint32_t>((std::max)(0L, (std::min)(sc.top, static_cast<LONG>(m_activeRTHeight))));
+				const uint32_t sx = static_cast<uint32_t>((std::max)(static_cast<LONG>(0), (std::min)(sc.left, static_cast<LONG>(m_activeRTWidth))));
+				const uint32_t sy = static_cast<uint32_t>((std::max)(static_cast<LONG>(0), (std::min)(sc.top, static_cast<LONG>(m_activeRTHeight))));
 				const uint32_t ex = static_cast<uint32_t>((std::max)(static_cast<LONG>(sx), (std::min)(sc.right, static_cast<LONG>(m_activeRTWidth))));
 				const uint32_t ey = static_cast<uint32_t>((std::max)(static_cast<LONG>(sy), (std::min)(sc.bottom, static_cast<LONG>(m_activeRTHeight))));
 				PARA_WGPU_CALL(m_wgpu, wgpuRenderPassEncoderSetScissorRect, m_renderPass, sx, sy, ex - sx, ey - sy);
@@ -3216,18 +3804,7 @@ namespace ParaEngine
 	{
 		m_state.SetViewport(viewport);
 		if (m_renderPass)
-		{
-			const float vpW = (viewport.Width > 0) ? static_cast<float>(viewport.Width) : static_cast<float>(m_activeRTWidth);
-			const float vpH = (viewport.Height > 0) ? static_cast<float>(viewport.Height) : static_cast<float>(m_activeRTHeight);
-			PARA_WGPU_CALL(m_wgpu, wgpuRenderPassEncoderSetViewport,
-				m_renderPass,
-				static_cast<float>(viewport.X),
-				static_cast<float>(viewport.Y),
-				vpW,
-				vpH,
-				viewport.MinZ,
-				viewport.MaxZ);
-		}
+			ApplyClampedViewport(viewport);
 		return true;
 	}
 
@@ -3262,8 +3839,8 @@ namespace ParaEngine
 		if (m_renderPass && m_state.GetRenderState(ERenderState::SCISSORTESTENABLE) != 0)
 		{
 			const RECT& sc = m_state.GetScissorRect();
-			const uint32_t sx = static_cast<uint32_t>((std::max)(0L, (std::min)(sc.left, static_cast<LONG>(m_activeRTWidth))));
-			const uint32_t sy = static_cast<uint32_t>((std::max)(0L, (std::min)(sc.top, static_cast<LONG>(m_activeRTHeight))));
+			const uint32_t sx = static_cast<uint32_t>((std::max)(static_cast<LONG>(0), (std::min)(sc.left, static_cast<LONG>(m_activeRTWidth))));
+			const uint32_t sy = static_cast<uint32_t>((std::max)(static_cast<LONG>(0), (std::min)(sc.top, static_cast<LONG>(m_activeRTHeight))));
 			const uint32_t ex = static_cast<uint32_t>((std::max)(static_cast<LONG>(sx), (std::min)(sc.right, static_cast<LONG>(m_activeRTWidth))));
 			const uint32_t ey = static_cast<uint32_t>((std::max)(static_cast<LONG>(sy), (std::min)(sc.bottom, static_cast<LONG>(m_activeRTHeight))));
 			PARA_WGPU_CALL(m_wgpu, wgpuRenderPassEncoderSetScissorRect, m_renderPass, sx, sy, ex - sx, ey - sy);
@@ -3301,7 +3878,7 @@ namespace ParaEngine
 		if (m_cmdEncoder)
 		{
 			WGPUCommandBufferDescriptor cbd = {};
-			cbd.label = "ParaPresentCommandBuffer";
+			cbd.label = ParaWgpuLabel("ParaPresentCommandBuffer");
 			WGPUCommandBuffer cmd = PARA_WGPU_CALL(m_wgpu, wgpuCommandEncoderFinish, m_cmdEncoder, &cbd);
 			PARA_WGPU_CALL(m_wgpu, wgpuCommandEncoderRelease, m_cmdEncoder);
 			m_cmdEncoder = nullptr;

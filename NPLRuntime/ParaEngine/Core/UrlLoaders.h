@@ -508,7 +508,8 @@ namespace ParaEngine
 		std::function<void()> m_async_callback;
 		std::string m_fetch_response_data;
 		std::string m_fetch_response_header;
-		bool m_fetch_finish;
+		bool m_fetch_finish = false;
+		bool m_bAsyncCompleted = false;
 #endif
 		std::shared_ptr<AbortController> m_abortController;
 	};

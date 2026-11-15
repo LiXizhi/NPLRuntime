@@ -214,10 +214,12 @@ int main(int argc, char* argv[])
     std::string worldcmd = JS::GetQueryStringArg("cmd");
     std::string mc = JS::GetQueryStringArg("mc");
     std::string version = JS::GetQueryStringArg("version");
+    std::string renderer = JS::GetQueryStringArg("renderer");
 
     mc = mc.empty() ? (haqi == 0 ? "true" : "false") : mc;
     sCmdLine = sCmdLine + " mc=\"" + mc + "\"";
 
+    if (!renderer.empty()) sCmdLine = sCmdLine + " renderer=\"" + renderer + "\"";
     if (!version.empty()) sCmdLine = sCmdLine + " version=\"" + version + "\"";
     if (!username.empty()) sCmdLine = sCmdLine + " username=\"" + username + "\"";
     if (!http_env.empty()) sCmdLine = sCmdLine + " http_env=\"" + http_env + "\"";
@@ -342,8 +344,11 @@ int main(int argc, char* argv[])
             },
             [](void* userData, int mode) {
                 std::cout << "webxr_session_callback_func end" << std::endl;
-                // Rebind frame buffer 0.
-                glBindFramebuffer(GL_FRAMEBUFFER, 0);
+                // Rebind frame buffer 0 when running on OpenGL/WebGL.
+                if (CGlobals::GetRenderDevice() && CGlobals::GetRenderDevice()->GetBackendType() == ERHIBackend::OpenGL)
+                {
+                    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+                }
                 ((IParaWebXR *)CGlobals::GetViewportManager()->GetChildAttributeObject("WebXR"))->SetIsXR(false);
                 CGlobals::GetViewportManager()->SetLayout(VIEW_LAYOUT_DEFAULT);
 

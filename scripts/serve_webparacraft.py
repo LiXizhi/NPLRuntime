@@ -14,6 +14,7 @@ Local disk endpoints (served directly by this HTTP server for speed, no MCP need
   - GET /fs/file?root=<searchroot>&path=<relpath>
 """
 import argparse
+import base64
 import gzip
 import http.server
 import json
@@ -59,6 +60,7 @@ EXCLUDED_DIR_NAMES = {
 
 EXCLUDED_TOP_LEVEL_DIRS = {
     "web",
+    "temp",
     "redist",
     "docs",
     "_doc",
@@ -70,6 +72,8 @@ EXCLUDED_TOP_LEVEL_DIRS = {
     "server",
     "client",
     "mobile",
+    "screen shots",
+    "_backup",
 }
 
 EXCLUDED_FILE_NAMES = {
@@ -89,14 +93,46 @@ EXCLUDED_FILE_EXTS = {
     ".suo",
     ".ncb",
     ".bak",
+    ".db-shm",
+    ".db-wal",
+    ".db-journal",
+}
+
+EXCLUDED_DATABASE_SUBDIRS = {
+    "npl",
+    "personalpagestore",
+}
+
+EXCLUDED_DATABASE_FILES = {
+    "localserver.db",
+    "localserver.ver",
+    "account.db",
+    "userdata.db",
+    "userdata.teen.db",
+    "creator_profile.db",
+    "userrobot.db",
+    "localmarks.db",
+    "map.db",
+    "map1.db",
+    "map2.db",
 }
 
 CORE_ROOT_DIRS = {
     "config",
     "npl_packages",
+    "npl_mod",
+    "packages",
     "database",
     "fonts",
     "mod",
+    "_emptyworld",
+    "texture",
+    "character",
+    "model",
+    "shader",
+    "shaders",
+    "audio",
+    "plugins",
 }
 
 CORE_ROOT_FILE_EXTS = {
@@ -112,6 +148,8 @@ CORE_ROOT_FILES = {
 }
 
 VIRTUAL_CJK_FONT_REL = "fonts/DroidSansFallback.ttf"
+VIRTUAL_TAHOMA_REL = "fonts/tahoma.ttf"
+VIRTUAL_TAHOMA_BOLD_REL = "fonts/tahomabd.ttf"
 
 
 def translate_cross_os_path(raw_path: str) -> str:
@@ -167,11 +205,13 @@ def detect_host_cjk_font(explicit_font: str = "") -> str:
     if env_font:
         candidates.append(env_font)
     candidates.extend([
-        "C:/Windows/Fonts/simhei.ttf",
         "C:/Windows/Fonts/msyh.ttc",
+        "C:/Windows/Fonts/msyh.ttf",
+        "C:/Windows/Fonts/simhei.ttf",
         "C:/Windows/Fonts/simsun.ttc",
-        "/mnt/c/Windows/Fonts/simhei.ttf",
         "/mnt/c/Windows/Fonts/msyh.ttc",
+        "/mnt/c/Windows/Fonts/msyh.ttf",
+        "/mnt/c/Windows/Fonts/simhei.ttf",
         "/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc",
         "/usr/share/fonts/truetype/droid/DroidSansFallbackFull.ttf",
         "/usr/share/fonts/truetype/wqy/wqy-microhei.ttc",
@@ -183,6 +223,60 @@ def detect_host_cjk_font(explicit_font: str = "") -> str:
         if translated and os.path.isfile(translated):
             return os.path.realpath(translated)
     return ""
+
+
+def _first_existing_font(candidates) -> str:
+    for cand in candidates:
+        if not cand:
+            continue
+        translated = translate_cross_os_path(cand)
+        if translated and os.path.isfile(translated):
+            return os.path.realpath(translated)
+    return ""
+
+
+def detect_host_latin_fonts(web_root: str = "") -> dict:
+    """Resolve Tahoma (or the closest humanist sans-serif on this OS / web/fonts) for UI rendering."""
+    bundled_reg = os.path.join(web_root, "fonts", "OpenSans-Regular.ttf") if web_root else ""
+    bundled_bold = os.path.join(web_root, "fonts", "OpenSans-Semibold.ttf") if web_root else ""
+
+    regular = _first_existing_font([
+        os.environ.get("PARACRAFT_LATIN_FONT_FILE", ""),
+        "C:/Windows/Fonts/tahoma.ttf",
+        "/mnt/c/Windows/Fonts/tahoma.ttf",
+        "/System/Library/Fonts/Supplemental/Tahoma.ttf",
+        "/Library/Fonts/Tahoma.ttf",
+        "C:/Windows/Fonts/verdana.ttf",
+        "/mnt/c/Windows/Fonts/verdana.ttf",
+        "/System/Library/Fonts/Supplemental/Verdana.ttf",
+        "C:/Windows/Fonts/segoeui.ttf",
+        "/mnt/c/Windows/Fonts/segoeui.ttf",
+        bundled_reg,
+        "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
+        "/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf",
+    ])
+    bold = _first_existing_font([
+        os.environ.get("PARACRAFT_LATIN_BOLD_FONT_FILE", ""),
+        "C:/Windows/Fonts/tahomabd.ttf",
+        "/mnt/c/Windows/Fonts/tahomabd.ttf",
+        "/System/Library/Fonts/Supplemental/Tahoma Bold.ttf",
+        "/Library/Fonts/Tahoma Bold.ttf",
+        "C:/Windows/Fonts/verdanab.ttf",
+        "/mnt/c/Windows/Fonts/verdanab.ttf",
+        "/System/Library/Fonts/Supplemental/Verdana Bold.ttf",
+        "C:/Windows/Fonts/segoeuib.ttf",
+        "/mnt/c/Windows/Fonts/segoeuib.ttf",
+        bundled_bold,
+        "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
+        "/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf",
+        regular,
+    ])
+    out = {}
+    if regular:
+        out[VIRTUAL_TAHOMA_REL] = regular
+    if bold:
+        out[VIRTUAL_TAHOMA_BOLD_REL] = bold
+    return out
 
 
 def is_loopback_client(addr: str) -> bool:
@@ -258,6 +352,23 @@ def parse_searchpath_prefixes(raw_searchpath: str):
     return cleaned
 
 
+def is_allowed_database_rel(rel_lower: str) -> bool:
+    if not rel_lower.startswith("database/"):
+        return True
+    rest = rel_lower[len("database/"):]
+    slash = rest.find("/")
+    if slash >= 0:
+        sub = rest[:slash]
+        if sub in EXCLUDED_DATABASE_SUBDIRS:
+            return False
+    fname = posixpath.basename(rest)
+    if fname in EXCLUDED_DATABASE_FILES:
+        return False
+    if fname.endswith(("-shm", "-wal", "-journal")):
+        return False
+    return True
+
+
 def is_core_runtime_rel(rel_posix: str) -> bool:
     slash = rel_posix.find("/")
     if slash < 0:
@@ -266,22 +377,28 @@ def is_core_runtime_rel(rel_posix: str) -> bool:
             return True
         _, ext = os.path.splitext(lower)
         return ext in CORE_ROOT_FILE_EXTS
-    top = rel_posix[:slash].lower()
+    rel_lower = rel_posix.lower()
+    top = rel_lower[:slash]
     if top in CORE_ROOT_DIRS:
-        return True
-    if rel_posix.lower().startswith("worlds/designhouse/_emptyworld/"):
-        return True
-    if rel_posix.lower().startswith("temp/cache/"):
+        return is_allowed_database_rel(rel_lower)
+    if (
+        rel_lower.startswith("worlds/designhouse/_emptyworld/")
+        or rel_lower.startswith("worlds/designhouse/userworlds/")
+        or rel_lower.startswith("worlds/templates/")
+        or rel_lower.startswith("worlds/myworlds/flatgrassland/")
+    ):
         return True
     return False
 
 
 def matches_searchpath(rel_posix: str, prefixes) -> bool:
+    rel_lower = rel_posix.lower()
+    if not is_allowed_database_rel(rel_lower):
+        return False
     if prefixes is None:
         return True
     if is_core_runtime_rel(rel_posix):
         return True
-    rel_lower = rel_posix.lower()
     for prefix in prefixes:
         p_lower = prefix.lower()
         if rel_lower == p_lower or rel_lower.startswith(p_lower + "/"):
@@ -289,12 +406,11 @@ def matches_searchpath(rel_posix: str, prefixes) -> bool:
     return False
 
 
-def build_disk_manifest(root_real: str, prefixes, fallback_font_path: str):
+def build_disk_manifest(root_real: str, prefixes, fallback_font_path: str, latin_fonts: dict = None):
     entries = []
-    has_cjk_font = False
+    seen_lower = set()
 
     def walk_dir(abs_dir: str, rel_prefix: str, depth: int):
-        nonlocal has_cjk_font
         try:
             scandir_it = os.scandir(abs_dir)
         except OSError:
@@ -317,11 +433,7 @@ def build_disk_manifest(root_real: str, prefixes, fallback_font_path: str):
                         continue
                     if depth == 0 and name_lower in EXCLUDED_TOP_LEVEL_DIRS:
                         continue
-                    # In temp/, only index temp/cache to avoid transient logs/locks
-                    if depth == 0 and name_lower == "temp":
-                        cache_dir = os.path.join(entry.path, "cache")
-                        if os.path.isdir(cache_dir):
-                            walk_dir(cache_dir, "temp/cache", 2)
+                    if depth == 1 and rel_prefix.lower() == "database" and name_lower in EXCLUDED_DATABASE_SUBDIRS:
                         continue
                     # Prune directory early if prefixes are active and neither inside nor ancestor of a prefix/core dir
                     if prefixes is not None and not is_core_runtime_rel(rel_posix + "/x"):
@@ -332,7 +444,7 @@ def build_disk_manifest(root_real: str, prefixes, fallback_font_path: str):
                             if rel_lower == pl or rel_lower.startswith(pl + "/") or pl.startswith(rel_lower + "/"):
                                 can_match = True
                                 break
-                        if not can_match and not (depth == 0 and name_lower == "worlds"):
+                        if not can_match and not rel_lower.startswith("worlds"):
                             continue
                     walk_dir(entry.path, rel_posix, depth + 1)
                 else:
@@ -347,28 +459,38 @@ def build_disk_manifest(root_real: str, prefixes, fallback_font_path: str):
                         st = entry.stat(follow_symlinks=False)
                     except OSError:
                         continue
-                    if rel_posix.lower() == VIRTUAL_CJK_FONT_REL.lower():
-                        has_cjk_font = True
+                    seen_lower.add(rel_posix.lower())
                     entries.append([rel_posix, st.st_size, int(st.st_mtime * 1000)])
 
     walk_dir(root_real, "", 0)
 
-    if not has_cjk_font and fallback_font_path and os.path.isfile(fallback_font_path):
-        try:
-            st = os.stat(fallback_font_path)
-            entries.append([VIRTUAL_CJK_FONT_REL, st.st_size, int(st.st_mtime * 1000)])
-        except OSError:
-            pass
+    virtual_fonts = []
+    if fallback_font_path:
+        virtual_fonts.append((VIRTUAL_CJK_FONT_REL, fallback_font_path))
+    if latin_fonts:
+        for v_rel, v_abs in latin_fonts.items():
+            virtual_fonts.append((v_rel, v_abs))
+
+    for v_rel, v_abs in virtual_fonts:
+        if v_rel.lower() not in seen_lower and v_abs and os.path.isfile(v_abs):
+            try:
+                st = os.stat(v_abs)
+                entries.append([v_rel, st.st_size, int(st.st_mtime * 1000)])
+                seen_lower.add(v_rel.lower())
+            except OSError:
+                pass
 
     return entries
 
 
 class ServerConfig:
-    def __init__(self, root: str, engine_dir: str, default_searchroot: str, font_file: str, allow_lan_fs: bool, enable_coep: bool = False):
+    def __init__(self, root: str, engine_dir: str, default_searchroot: str, font_file: str, allow_lan_fs: bool, enable_coep: bool = False, latin_fonts: dict = None):
         self.root = root
         self.engine_dir = engine_dir
         self.default_searchroot = default_searchroot
         self.font_file = font_file
+        self.latin_fonts = {k.lower(): v for k, v in (latin_fonts or {}).items()}
+        self.latin_fonts_display = dict(latin_fonts or {})
         self.allow_lan_fs = allow_lan_fs
         self.enable_coep = enable_coep
 
@@ -447,7 +569,12 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             return
         raw_searchpath = (query_params.get("searchpath", [""])[0] or "").strip()
         prefixes = parse_searchpath_prefixes(raw_searchpath)
-        entries = build_disk_manifest(root_real, prefixes, self.server_config.font_file)
+        entries = build_disk_manifest(
+            root_real,
+            prefixes,
+            self.server_config.font_file,
+            self.server_config.latin_fonts_display,
+        )
         display_root = root_real.replace("\\", "/")
         if not display_root.endswith("/"):
             display_root += "/"
@@ -474,13 +601,18 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             return
 
         target_file = resolve_path_case_insensitive(root_real, rel_norm)
-        if (
-            not target_file
-            and rel_norm.lower() == VIRTUAL_CJK_FONT_REL.lower()
-            and self.server_config.font_file
-            and os.path.isfile(self.server_config.font_file)
-        ):
-            target_file = self.server_config.font_file
+        if not target_file:
+            rel_lower = rel_norm.lower()
+            if (
+                rel_lower == VIRTUAL_CJK_FONT_REL.lower()
+                and self.server_config.font_file
+                and os.path.isfile(self.server_config.font_file)
+            ):
+                target_file = self.server_config.font_file
+            elif rel_lower in self.server_config.latin_fonts:
+                cand_font = self.server_config.latin_fonts[rel_lower]
+                if cand_font and os.path.isfile(cand_font):
+                    target_file = cand_font
 
         if not target_file or not os.path.isfile(target_file):
             self._send_json(404, {"ok": False, "error": f"File not found: {rel_norm}"})
@@ -511,9 +643,28 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                     end = min(end, file_size - 1)
                     status = 206
 
+            enc = (query_params.get("enc", [""])[0] or "").strip().lower()
             length = (end - start + 1) if file_size > 0 else 0
+            if enc == "b64":
+                raw_bytes = b""
+                if length > 0:
+                    with open(target_file, "rb") as f:
+                        if start > 0:
+                            f.seek(start)
+                        raw_bytes = f.read(length)
+                b64_bytes = base64.b64encode(raw_bytes) if raw_bytes else b""
+                self.send_response(status)
+                self.send_header("Content-Type", "text/plain; charset=ascii")
+                self.send_header("Cache-Control", "no-store")
+                self.send_header("Content-Length", str(len(b64_bytes)))
+                self.end_headers()
+                if self.command != "HEAD" and b64_bytes:
+                    self.wfile.write(b64_bytes)
+                return
+
             self.send_response(status)
             self.send_header("Content-Type", "application/octet-stream")
+            self.send_header("Cache-Control", "no-store")
             self.send_header("Accept-Ranges", "bytes")
             if status == 206:
                 self.send_header("Content-Range", f"bytes {start}-{end}/{file_size}")
@@ -537,12 +688,33 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         except OSError as exc:
             self._send_json(500, {"ok": False, "error": str(exc)})
 
+    def _handle_fs_log(self):
+        if not self._check_fs_access():
+            return
+        try:
+            length = int(self.headers.get("Content-Length", "0") or "0")
+        except ValueError:
+            length = 0
+        raw = self.rfile.read(min(length, 512 * 1024)) if length > 0 else b""
+        try:
+            payload = json.loads(raw.decode("utf-8", errors="replace")) if raw else {}
+            lines = payload.get("lines") if isinstance(payload, dict) else None
+            if isinstance(lines, list):
+                for line in lines:
+                    print(f"[wasm] {line}", flush=True)
+            elif raw:
+                print(f"[wasm] {raw.decode('utf-8', errors='replace')}", flush=True)
+        except Exception:
+            if raw:
+                print(f"[wasm] {raw.decode('utf-8', errors='replace')}", flush=True)
+        self._send_json(200, {"ok": True})
+
     def _route_special_endpoints(self) -> bool:
         parsed = urllib.parse.urlsplit(self.path)
         url_path = parsed.path
 
         # Convenience redirect at root
-        if url_path == "/":
+        if url_path == "/" and self.command in ("GET", "HEAD"):
             qs = ("?" + parsed.query) if parsed.query else ""
             self.send_response(302)
             self.send_header("Location", f"{PREFIX}index.html{qs}")
@@ -551,13 +723,30 @@ class Handler(http.server.SimpleHTTPRequestHandler):
 
         # Support both /fs/* and /npl/webparacraft/fs/*
         stripped = url_path[len(PREFIX) - 1:] if url_path.startswith(PREFIX + "fs/") else url_path
-        if stripped == "/fs/manifest":
+        if stripped == "/fs/manifest" and self.command in ("GET", "HEAD"):
             self._handle_fs_manifest(urllib.parse.parse_qs(parsed.query, keep_blank_values=True))
             return True
-        if stripped == "/fs/file":
+        if stripped == "/fs/file" and self.command in ("GET", "HEAD"):
             self._handle_fs_file(urllib.parse.parse_qs(parsed.query, keep_blank_values=True))
             return True
+        if stripped == "/fs/log" and self.command == "POST":
+            self._handle_fs_log()
+            return True
         return False
+
+    def do_OPTIONS(self):
+        self.send_response(204)
+        self.send_header("Access-Control-Allow-Methods", "GET, HEAD, POST, OPTIONS")
+        self.send_header("Access-Control-Allow-Headers", "Content-Type, Range")
+        self.end_headers()
+
+    def do_POST(self):
+        try:
+            if self._route_special_endpoints():
+                return
+            self._send_json(404, {"ok": False, "error": "Unsupported POST endpoint"})
+        except (BrokenPipeError, ConnectionResetError, ConnectionAbortedError):
+            pass
 
     def do_GET(self):
         try:
@@ -638,6 +827,7 @@ def main():
         else detect_default_searchroot()
     )
     font_file = detect_host_cjk_font(args.font_file)
+    latin_fonts = detect_host_latin_fonts(root)
 
     cfg = ServerConfig(
         root=root,
@@ -646,6 +836,7 @@ def main():
         font_file=font_file,
         allow_lan_fs=args.allow_lan_fs,
         enable_coep=args.coep,
+        latin_fonts=latin_fonts,
     )
 
     class ConfiguredHandler(Handler):

@@ -8,11 +8,25 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <string>
 
 #if defined(__EMSCRIPTEN__)
 #include <emscripten/emscripten.h>
 #include <emscripten/html5.h>
 #include <webgpu/webgpu.h>
+#if defined(WGPU_STRING_VIEW_INIT) && !defined(WGPUINTERNAL_HAVE_EMDAWNWEBGPU_HEADER)
+#define WGPUINTERNAL_HAVE_EMDAWNWEBGPU_HEADER 1
+#endif
+#if defined(WGPUINTERNAL_HAVE_EMDAWNWEBGPU_HEADER)
+using WGPUShaderStageFlags = WGPUShaderStage;
+using WGPUBufferUsageFlags = WGPUBufferUsage;
+using WGPUTextureUsageFlags = WGPUTextureUsage;
+using WGPUColorWriteMaskFlags = WGPUColorWriteMask;
+using WGPUMapModeFlags = WGPUMapMode;
+using WGPUImageCopyTexture = WGPUTexelCopyTextureInfo;
+using WGPUImageCopyBuffer = WGPUTexelCopyBufferInfo;
+using WGPUTextureDataLayout = WGPUTexelCopyBufferLayout;
+#endif
 #else
 
 #ifdef __cplusplus
@@ -956,3 +970,42 @@ typedef void (*WGPUBufferMapCallback)(WGPUBufferMapAsyncStatus status, void* use
 #endif
 
 #endif // !__EMSCRIPTEN__
+
+namespace ParaEngine
+{
+#if defined(WGPUINTERNAL_HAVE_EMDAWNWEBGPU_HEADER)
+	inline WGPUStringView ParaWgpuLabel(const char* s)
+	{
+		return WGPUStringView{ s, s ? WGPU_STRLEN : 0 };
+	}
+
+	inline std::string ParaWgpuStringViewToStd(WGPUStringView sv)
+	{
+		if (!sv.data)
+			return std::string();
+		if (sv.length == WGPU_STRLEN)
+			return std::string(sv.data);
+		return std::string(sv.data, sv.length);
+	}
+
+	inline WGPUOptionalBool ParaWgpuOptionalBool(bool v)
+	{
+		return v ? WGPUOptionalBool_True : WGPUOptionalBool_False;
+	}
+#else
+	inline const char* ParaWgpuLabel(const char* s)
+	{
+		return s;
+	}
+
+	inline std::string ParaWgpuStringViewToStd(const char* s)
+	{
+		return s ? std::string(s) : std::string();
+	}
+
+	inline WGPUBool ParaWgpuOptionalBool(bool v)
+	{
+		return v ? 1u : 0u;
+	}
+#endif
+}

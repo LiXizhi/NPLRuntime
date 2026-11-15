@@ -247,14 +247,69 @@ namespace ParaEngine
 			// Strip #line directives while preserving #version (e.g. #version 120 / #version 140)
 			std::istringstream iss(glslText);
 			std::ostringstream oss;
+			std::ostringstream extOss;
 			std::string line;
 			while (std::getline(iss, line))
 			{
 				if (line.find("#line ") != std::string::npos)
 					continue;
+				if (target == EShaderTarget::ESSL_300)
+				{
+					size_t firstNonWs = line.find_first_not_of(" \t\r");
+					if (firstNonWs != std::string::npos && line.compare(firstNonWs, 10, "#extension") == 0)
+					{
+						extOss << line << "\n";
+						continue;
+					}
+					if (firstNonWs != std::string::npos && line.compare(firstNonWs, 8, "#version") == 0)
+						continue;
+				}
 				oss << line << "\n";
 			}
 			std::string finalGlsl = oss.str();
+
+			if (target == EShaderTarget::ESSL_300)
+			{
+				auto replaceAll = [](std::string& str, const char* from, const char* to) -> bool {
+					const size_t fromLen = std::strlen(from);
+					const size_t toLen = std::strlen(to);
+					size_t pos = 0;
+					bool replaced = false;
+					while ((pos = str.find(from, pos)) != std::string::npos)
+					{
+						str.replace(pos, fromLen, to);
+						pos += toLen;
+						replaced = true;
+					}
+					return replaced;
+				};
+
+				std::ostringstream fragOutDecls;
+				if (!isVertex)
+				{
+					bool usedOut[4] = { false, false, false, false };
+					usedOut[0] = replaceAll(finalGlsl, "gl_FragData[0]", "_paraFragData0");
+					if (replaceAll(finalGlsl, "gl_FragColor", "_paraFragData0"))
+						usedOut[0] = true;
+					usedOut[1] = replaceAll(finalGlsl, "gl_FragData[1]", "_paraFragData1");
+					usedOut[2] = replaceAll(finalGlsl, "gl_FragData[2]", "_paraFragData2");
+					usedOut[3] = replaceAll(finalGlsl, "gl_FragData[3]", "_paraFragData3");
+
+					for (int i = 0; i < 4; ++i)
+					{
+						if (usedOut[i])
+							fragOutDecls << "layout(location = " << i << ") out highp vec4 _paraFragData" << i << ";\n";
+					}
+				}
+
+				std::ostringstream es300;
+				es300 << "#version 300 es\n";
+				es300 << extOss.str();
+				es300 << "precision highp float;\nprecision highp int;\n";
+				es300 << fragOutDecls.str();
+				es300 << finalGlsl;
+				finalGlsl = es300.str();
+			}
 
 			// Reflect uniforms from hlsl2glsl
 			int uniCount = Hlsl2Glsl_GetUniformCount(parser);

@@ -154,12 +154,13 @@
 
 - (void)PlayMidiFile:(NSString*)filename
 {
+    [self Stop];
     if (filename==nil or [filename isEqual:@""]) {
         return;
     }
 
     NSError * err = nil;
-    NSURL *url = [NSURL URLWithString:filename];
+    NSURL *url = [filename hasPrefix:@"/"] ? [NSURL fileURLWithPath:filename] : [NSURL URLWithString:filename];
     NSURL *bankUrl = nil;
 
     if (false) {
@@ -167,8 +168,6 @@
         resPath = [resPath stringByAppendingPathComponent:@"res/gs_instruments.dls"];
         bankUrl = [NSURL fileURLWithPath:resPath];
     }
-
-    [self Stop];
 
     if(_playerWithFile == nil) {
         _playerWithFile = [AVMIDIPlayer alloc];
@@ -179,6 +178,8 @@
     if (err==nil and _playerWithFile!=nil) {
         float dur = _playerWithFile.duration;
         BOOL isPlay = [_playerWithFile isPlaying];
+        (void)dur;
+        (void)isPlay;
 
         [_playerWithFile play:^{
             NSLog(@"播放完成");
@@ -187,6 +188,9 @@
 }
 
 - (void)Stop{
+    if(_player!=nil and [_player isPlaying]){
+        [_player stop];
+    }
     if(_playerWithFile!=nil and [_playerWithFile isPlaying]){
         [_playerWithFile stop];
     }
@@ -237,5 +241,11 @@ namespace ParaEngine {
     void ParaEngineMediaPlayer::PlayMidiData(std::vector<char> datas)
     {
         
+    }
+
+    void ParaEngineMediaPlayer::StopMidiMsg(int channel)
+    {
+        (void)channel;
+        [[MidiHelper getInstance] Stop];
     }
 }

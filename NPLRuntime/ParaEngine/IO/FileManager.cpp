@@ -16,6 +16,20 @@
 
 using namespace ParaEngine;
 
+namespace
+{
+	bool ArchivePathEquals(const std::string& a, const std::string& b)
+	{
+#ifdef EMSCRIPTEN
+		const char* pa = (!a.empty() && (a[0] == '/' || a[0] == '\\')) ? (a.c_str() + 1) : a.c_str();
+		const char* pb = (!b.empty() && (b[0] == '/' || b[0] == '\\')) ? (b.c_str() + 1) : b.c_str();
+		return strcmp(pa, pb) == 0;
+#else
+		return a.compare(b) == 0;
+#endif
+	}
+}
+
 CFileManager::CFileManager(void)
 	: m_pArchiveLock(new BlockReadWriteLock())
 {
@@ -51,7 +65,7 @@ bool CFileManager::OpenArchiveEx(const std::string& path, const std::string& sRo
 		std::list<CArchive*>::iterator itCurCP, itEndCP = m_archivers.end();
 		for (itCurCP = m_archivers.begin(); itCurCP != itEndCP; ++itCurCP)
 		{
-			if ((*itCurCP)->GetArchiveName().compare(path) == 0)
+			if (ArchivePathEquals((*itCurCP)->GetArchiveName(), path))
 			{
 				// move package to back of the queue? 
 				return true;
@@ -101,7 +115,7 @@ void CFileManager::CloseArchive(const std::string&  path)
 	std::list<CArchive*>::iterator itCurCP, itEndCP = m_archivers.end();
 	for (itCurCP = m_archivers.begin(); itCurCP != itEndCP; ++itCurCP)
 	{
-		if ((*itCurCP)->GetArchiveName().compare(path) == 0)
+		if (ArchivePathEquals((*itCurCP)->GetArchiveName(), path))
 		{
 			(*itCurCP)->Close();
 			delete (*itCurCP);
@@ -261,7 +275,7 @@ CSearchResult* CFileManager::SearchFiles(const string& sRootPath, const string& 
 			list<CArchive*>::iterator itCurCP, itEndCP = m_archivers.end();
 			for (itCurCP = m_archivers.begin(); itCurCP != itEndCP; ++itCurCP)
 			{
-				if ((*itCurCP)->GetArchiveName().compare(sZipArchive) == 0)
+				if (ArchivePathEquals((*itCurCP)->GetArchiveName(), sZipArchive))
 				{
 					(*itCurCP)->FindFiles(result, sRootPath, sFilePattern, nSubLevel);
 					return &result;

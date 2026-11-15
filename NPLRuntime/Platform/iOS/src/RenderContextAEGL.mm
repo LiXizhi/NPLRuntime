@@ -62,7 +62,10 @@ IRenderDevice* RenderContextAEGL::CreateDevice(const RenderConfiguration & cfg)
         kEAGLDrawablePropertyColorFormat : kEAGLColorFormatRGBA8
       };
 
-    EAGLContext * glContext = [[EAGLContext alloc] initWithAPI:kEAGLRenderingAPIOpenGLES2];
+    EAGLContext * glContext = [[EAGLContext alloc] initWithAPI:kEAGLRenderingAPIOpenGLES3];
+    if (!glContext) {
+        glContext = [[EAGLContext alloc] initWithAPI:kEAGLRenderingAPIOpenGLES2];
+    }
     [EAGLContext setCurrentContext:glContext];
 
     RenderDeviceAEGL* device = new RenderDeviceAEGL(glContext, glLayer);

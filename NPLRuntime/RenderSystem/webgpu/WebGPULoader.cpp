@@ -70,11 +70,32 @@ namespace ParaEngine
 	bool WebGPUDispatch::Load()
 	{
 #if defined(__EMSCRIPTEN__)
-		// Check whether browser exposes navigator.gpu before attempting WebGPU initialization
-		const int hasWebGPU = EM_ASM_INT({
-			return (typeof navigator !== 'undefined' && !!navigator.gpu) ? 1 : 0;
+		// Automatically enable WebGPU on Windows/macOS desktop browsers when navigator.gpu is supported
+		// (or on any browser when explicitly requested via ?renderer=webgpu).
+		const int allowWebGPU = EM_ASM_INT({
+			if (typeof navigator === "undefined" || !navigator.gpu)
+				return 0;
+			try {
+				if (typeof window !== "undefined" && window.location && window.location.search) {
+					var params = new URLSearchParams(window.location.search);
+					var r = (params.get("renderer") || "").trim().toLowerCase();
+					if (r === "webgpu" || r === "wgpu")
+						return 1;
+					if (r === "opengl" || r === "gl" || r === "gles" || r === "webgl" || r === "webgl2")
+						return 0;
+				}
+			} catch (e) {}
+			var ua = navigator.userAgent || "";
+			var plat = (navigator.userAgentData && navigator.userAgentData.platform) || navigator.platform || "";
+			var isMobile = !!(navigator.userAgentData && navigator.userAgentData.mobile) ||
+				/Android|iPhone|iPad|iPod|Mobile/i.test(ua) ||
+				(/Macintosh|Mac OS X/i.test(ua) && navigator.maxTouchPoints > 1);
+			if (isMobile)
+				return 0;
+			var isWinOrMac = /Win|Mac/i.test(plat) || /Windows|Macintosh|Mac OS X/i.test(ua);
+			return isWinOrMac ? 1 : 0;
 		});
-		if (!hasWebGPU)
+		if (!allowWebGPU)
 			return false;
 		moduleHandle = reinterpret_cast<void*>(1);
 		return true;
@@ -209,9 +230,13 @@ namespace ParaEngine
 	void WebGPUDispatch::ProcessEvents(WGPUInstance instance, WGPUDevice device) const
 	{
 #if defined(__EMSCRIPTEN__)
-		(void)instance;
 		(void)device;
-		emscripten_sleep(0);
+#if defined(WGPUINTERNAL_HAVE_EMDAWNWEBGPU_HEADER)
+		if (instance)
+			::wgpuInstanceProcessEvents(instance);
+#else
+		(void)instance;
+#endif
 #else
 		if (wgpuDeviceTick && device)
 			wgpuDeviceTick(device);
@@ -219,6 +244,16 @@ namespace ParaEngine
 			wgpuDevicePoll(device, 1, nullptr);
 		if (wgpuInstanceProcessEvents && instance)
 			wgpuInstanceProcessEvents(instance);
+#endif
+	}
+
+	void WebGPUDispatch::WaitAsync(WGPUInstance instance, WGPUDevice device) const
+	{
+#if defined(__EMSCRIPTEN__)
+		emscripten_sleep(1);
+		ProcessEvents(instance, device);
+#else
+		ProcessEvents(instance, device);
 #endif
 	}
 }

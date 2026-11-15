@@ -232,7 +232,7 @@ namespace ParaEngine
 			{
 			case ERHIBackend::OpenGL:
 #if defined(PARAENGINE_MOBILE) || defined(EMSCRIPTEN)
-				return EShaderTarget::ESSL_100;
+				return (caps.featureLevel >= 300) ? EShaderTarget::ESSL_300 : EShaderTarget::ESSL_100;
 #else
 				return EShaderTarget::GLSL_120;
 #endif
@@ -1592,11 +1592,16 @@ namespace ParaEngine
 			}
 			else if (dwValue == D3DTEXF_LINEAR && data->IsSamplerStateBlocky())
 			{
-				glActiveTexture(GL_TEXTURE0 + static_cast<GLenum>(index));
-				glBindTexture(GL_TEXTURE_2D, glTexId);
-				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, (pTex->GetMipLevels() > 1) ? GL_LINEAR_MIPMAP_NEAREST : GL_LINEAR);
-				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-				data->SetSamplerStateBlocky(false);
+				const PixelFormat texFmt = pTex->GetFormat();
+				const bool is32BitFloat = (texFmt == PixelFormat::R32F || texFmt == PixelFormat::G32R32F || texFmt == PixelFormat::A32B32G32R32F);
+				if (!is32BitFloat)
+				{
+					glActiveTexture(GL_TEXTURE0 + static_cast<GLenum>(index));
+					glBindTexture(GL_TEXTURE_2D, glTexId);
+					glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, (pTex->GetMipLevels() > 1) ? GL_LINEAR_MIPMAP_NEAREST : GL_LINEAR);
+					glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+					data->SetSamplerStateBlocky(false);
+				}
 			}
 		}
 #endif

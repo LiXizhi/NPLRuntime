@@ -25,7 +25,7 @@ namespace ParaEngine {
 
 + (WindowDelegate*) sharedDelegate;
 + (void) closeDelegate;
-
+- (void) setInitialCommandLine:(const std::string&)cmdLine;
 
 @end
 

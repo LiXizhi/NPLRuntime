@@ -21,6 +21,7 @@ namespace ParaEngine {
         virtual void PlayMidiFile(std::string filename);
         virtual void SetVolume(float volume);
         virtual void PlayMidiData(std::vector<char>);
+        virtual void StopMidiMsg(int channel = 0);
     private:
         static const std::string classname;
     };

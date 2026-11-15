@@ -433,6 +433,10 @@ int _findclose(long h)
 #if defined(_WIN32)
 #include <psapi.h>
 
+#elif defined(__EMSCRIPTEN__)
+#include <emscripten.h>
+#include <emscripten/heap.h>
+
 #elif defined(__unix__) || defined(__unix) || defined(unix) || (defined(__APPLE__) && defined(__MACH__))
 #include <unistd.h>
 #include <sys/resource.h>
@@ -449,10 +453,6 @@ int _findclose(long h)
 #include <stdio.h>
 #include <limits.h>
 #endif
-
-#elif defined(__EMSCRIPTEN__)
-#include <emscripten.h>
-#include <emscripten/heap.h>
 
 #else
 #error "Cannot define getPeakRSS( ) or getCurrentRSS( ) for an unknown OS."

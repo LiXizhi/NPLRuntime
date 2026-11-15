@@ -226,24 +226,63 @@ static WindowDelegate* sInstance = nil;
     [NSApp terminate:self];
 }
 
+- (void) setInitialCommandLine:(const std::string&)cmdLine
+{
+    if (_url.empty())
+        _url = cmdLine;
+    else if (!cmdLine.empty())
+        _url += " " + cmdLine;
+}
+
 - (void) application:(NSApplication *)application openURLs:(nonnull NSArray<NSURL *> *)urls
 {
-    if (_app)
+    for (NSUInteger i = 0; i < [urls count]; i++)
     {
-        for (NSUInteger i = 0; i < [urls count]; i++)
+        NSURL* nsUrl = urls[i];
+        NSString* target = [nsUrl isFileURL] ? [nsUrl path] : [nsUrl absoluteString];
+        if (!target)
+            continue;
+        const char* cmdline = [target UTF8String];
+        if (!cmdline || cmdline[0] == '\0')
+            continue;
+        if (_app)
         {
-            const char* cmdline = [[urls[i] relativeString] UTF8String];
+            [NSApp activateIgnoringOtherApps:YES];
             _app->onCmdLine(cmdline);
         }
-    }
-    else
-    {
-        if ([urls count] > 0)
+        else if (_url.empty())
         {
-            _url = [[urls[0] relativeString] UTF8String];
+            _url = cmdline;
         }
     }
+}
 
+- (BOOL) application:(NSApplication *)sender openFile:(NSString *)filename
+{
+    if (!filename)
+        return NO;
+    const char* path = [filename UTF8String];
+    if (!path || path[0] == '\0')
+        return NO;
+    if (_app)
+    {
+        [NSApp activateIgnoringOtherApps:YES];
+        _app->onCmdLine(path);
+    }
+    else if (_url.empty())
+    {
+        _url = path;
+    }
+    return YES;
+}
+
+- (void) application:(NSApplication *)sender openFiles:(NSArray<NSString *> *)filenames
+{
+    for (NSString* filename in filenames)
+    {
+        [self application:sender openFile:filename];
+    }
+    [sender replyToOpenOrPrint:NSApplicationDelegateReplySuccess];
 }
 
 - (void)applicationDidFinishLaunching:(NSNotification *)notification
