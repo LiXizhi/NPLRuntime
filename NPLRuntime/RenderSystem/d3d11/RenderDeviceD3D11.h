@@ -41,6 +41,7 @@ namespace ParaEngine
 		void NotifyTextureDestroyed(D3D11Texture* tex);
 		void NotifyBufferDestroyed(D3D11Buffer* buf);
 		void NotifyProgramDestroyed(D3D11ShaderProgram* prog);
+		void NotifyRenderTargetDestroyed(D3D11RenderTarget* rt);
 
 		bool ResizeSwapChain(uint32_t width, uint32_t height, bool isWindowed);
 

@@ -13,6 +13,8 @@ namespace ParaEngine
 		RenderDeviceOpenGL();
 		virtual ~RenderDeviceOpenGL() override;
 
+		void NotifyRenderTargetDestroyed(IRHIRenderTarget* rt);
+
 		// ParaRHI v2 identity & capabilities
 		virtual ERHIBackend GetBackendType() const override { return ERHIBackend::OpenGL; }
 		virtual const RHIDeviceCaps& GetCaps() const override;
@@ -126,6 +128,7 @@ namespace ParaEngine
 		uint32_t m_LastRenderTargetWidth = 0;
 		uint32_t m_LastRenderTargetHeight = 0;
 		bool m_isBeginRenderTarget = false;
+		bool m_isShuttingDown = false;
 		uint32_t m_BoundMrtCount = 0;
 		uint8_t m_ValidMrtMask = 0;
 		uint8_t m_AppliedDrawBufferMask = 0;

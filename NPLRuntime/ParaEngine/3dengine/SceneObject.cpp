@@ -2289,6 +2289,8 @@ HRESULT CSceneObject::AdvanceScene(double dTimeDelta, int nPipelineOrder)
 		nCharacterRendered += RenderSelection(RENDER_CHARACTERS);
 	}
 
+	m_pBlockWorldClient->RenderDeferredLighting();
+
 	RenderSelection(RENDER_SELECTION);
 
 	// draw solid head on
@@ -2306,9 +2308,6 @@ HRESULT CSceneObject::AdvanceScene(double dTimeDelta, int nPipelineOrder)
 	{
 		RenderSelection(RENDER_MISSILES);
 	}
-
-	// render light mesh here
-	m_pBlockWorldClient->RenderDeferredLightsMesh();
 
 	//////////////////////////////////////////////////////////////////////////
 	// deferred shading so far. 
@@ -2330,9 +2329,6 @@ HRESULT CSceneObject::AdvanceScene(double dTimeDelta, int nPipelineOrder)
 	}
 
 	m_pBlockWorldClient->DoPostRenderingProcessing(BlockRenderPass_AlphaBlended);
-
-	// then do the deferred lighting
-	m_pBlockWorldClient->RenderDeferredLighting();
 
 	// draw the head on display GUI
 	RenderHeadOnDisplay(0);

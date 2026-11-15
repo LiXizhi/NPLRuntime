@@ -41,6 +41,41 @@ namespace ParaEngine
 			::WideCharToMultiByte(CP_UTF8, 0, wstr, -1, &out[0], len, nullptr, nullptr);
 			return out;
 		}
+
+		using PFN_CreateDXGIFactory2 = HRESULT(WINAPI*)(UINT Flags, REFIID riid, void** ppFactory);
+		using PFN_CreateDXGIFactory1 = HRESULT(WINAPI*)(REFIID riid, void** ppFactory);
+
+		struct D3D12RuntimeLoader
+		{
+			HMODULE hD3D12 = nullptr;
+			HMODULE hDXGI = nullptr;
+			PFN_D3D12_CREATE_DEVICE pfnCreateDevice = nullptr;
+			PFN_D3D12_GET_DEBUG_INTERFACE pfnGetDebugInterface = nullptr;
+			PFN_CreateDXGIFactory2 pfnCreateDXGIFactory2 = nullptr;
+			PFN_CreateDXGIFactory1 pfnCreateDXGIFactory1 = nullptr;
+
+			D3D12RuntimeLoader()
+			{
+				hD3D12 = ::LoadLibraryW(L"d3d12.dll");
+				if (hD3D12)
+				{
+					pfnCreateDevice = reinterpret_cast<PFN_D3D12_CREATE_DEVICE>(::GetProcAddress(hD3D12, "D3D12CreateDevice"));
+					pfnGetDebugInterface = reinterpret_cast<PFN_D3D12_GET_DEBUG_INTERFACE>(::GetProcAddress(hD3D12, "D3D12GetDebugInterface"));
+				}
+				hDXGI = ::LoadLibraryW(L"dxgi.dll");
+				if (hDXGI)
+				{
+					pfnCreateDXGIFactory2 = reinterpret_cast<PFN_CreateDXGIFactory2>(::GetProcAddress(hDXGI, "CreateDXGIFactory2"));
+					pfnCreateDXGIFactory1 = reinterpret_cast<PFN_CreateDXGIFactory1>(::GetProcAddress(hDXGI, "CreateDXGIFactory1"));
+				}
+			}
+		};
+
+		const D3D12RuntimeLoader& GetD3D12Runtime()
+		{
+			static D3D12RuntimeLoader s_loader;
+			return s_loader;
+		}
 	}
 
 	IRenderContext* CreateRenderContextD3D12()
@@ -50,6 +85,13 @@ namespace ParaEngine
 
 	IRenderDevice* RenderContextD3D12::CreateDevice(const RenderConfiguration& cfg)
 	{
+		const auto& rt = GetD3D12Runtime();
+		if (!rt.pfnCreateDevice || (!rt.pfnCreateDXGIFactory2 && !rt.pfnCreateDXGIFactory1))
+		{
+			OUTPUT_LOG("ParaRHI: d3d12.dll or DXGI 1.4 not available on this Windows version; skipping D3D12 backend\n");
+			return nullptr;
+		}
+
 		if (!cfg.renderWindow)
 		{
 			OUTPUT_LOG("ERROR: RenderContextD3D12::CreateDevice called with null renderWindow\n");
@@ -67,10 +109,10 @@ namespace ParaEngine
 		const bool wantValidation = cfg.debugValidation || HasCommandLineFlag("--rhi-validation");
 
 		UINT dxgiFactoryFlags = 0;
-		if (wantValidation)
+		if (wantValidation && rt.pfnGetDebugInterface)
 		{
 			ComPtr<ID3D12Debug> debugController;
-			if (SUCCEEDED(::D3D12GetDebugInterface(IID_PPV_ARGS(&debugController))) && debugController)
+			if (SUCCEEDED(rt.pfnGetDebugInterface(IID_PPV_ARGS(&debugController))) && debugController)
 			{
 				debugController->EnableDebugLayer();
 				dxgiFactoryFlags |= DXGI_CREATE_FACTORY_DEBUG;
@@ -78,10 +120,18 @@ namespace ParaEngine
 		}
 
 		ComPtr<IDXGIFactory4> factory;
-		HRESULT hr = ::CreateDXGIFactory2(dxgiFactoryFlags, IID_PPV_ARGS(&factory));
-		if (FAILED(hr) && dxgiFactoryFlags != 0)
+		HRESULT hr = E_NOINTERFACE;
+		if (rt.pfnCreateDXGIFactory2)
 		{
-			hr = ::CreateDXGIFactory2(0, IID_PPV_ARGS(&factory));
+			hr = rt.pfnCreateDXGIFactory2(dxgiFactoryFlags, IID_PPV_ARGS(&factory));
+			if (FAILED(hr) && dxgiFactoryFlags != 0)
+			{
+				hr = rt.pfnCreateDXGIFactory2(0, IID_PPV_ARGS(&factory));
+			}
+		}
+		else if (rt.pfnCreateDXGIFactory1)
+		{
+			hr = rt.pfnCreateDXGIFactory1(IID_PPV_ARGS(&factory));
 		}
 		if (FAILED(hr) || !factory)
 		{
@@ -105,7 +155,7 @@ namespace ParaEngine
 			for (D3D_FEATURE_LEVEL fl : candidateLevels)
 			{
 				ComPtr<ID3D12Device> dev;
-				if (SUCCEEDED(::D3D12CreateDevice(adapter, fl, IID_PPV_ARGS(&dev))) && dev)
+				if (SUCCEEDED(rt.pfnCreateDevice(adapter, fl, IID_PPV_ARGS(&dev))) && dev)
 				{
 					device = dev;
 					achievedFL = fl;
@@ -134,7 +184,7 @@ namespace ParaEngine
 				if ((desc.Flags & DXGI_ADAPTER_FLAG_SOFTWARE) != 0)
 					continue;
 
-				if (SUCCEEDED(::D3D12CreateDevice(cand.Get(), D3D_FEATURE_LEVEL_11_0, _uuidof(ID3D12Device), nullptr)))
+				if (SUCCEEDED(rt.pfnCreateDevice(cand.Get(), D3D_FEATURE_LEVEL_11_0, _uuidof(ID3D12Device), nullptr)))
 				{
 					if (!bestAdapter || desc.DedicatedVideoMemory > bestDedicatedVram)
 					{

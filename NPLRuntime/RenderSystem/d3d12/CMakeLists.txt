@@ -14,7 +14,7 @@ target_include_directories(RenderSystemD3D12 PUBLIC
 
 target_link_libraries(RenderSystemD3D12
     PUBLIC RenderSystemRHICore ParaEngine
-    PRIVATE d3d12 dxgi d3dcompiler dxguid
+    PRIVATE dxguid
 )
 
 target_compile_definitions(RenderSystemD3D12 PRIVATE

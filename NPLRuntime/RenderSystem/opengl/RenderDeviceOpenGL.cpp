@@ -411,8 +411,9 @@ namespace ParaEngine
 		class GLRenderTarget : public IRHIRenderTarget
 		{
 		public:
-			GLRenderTarget(uint32_t width, uint32_t height, PixelFormat colorFormat, PixelFormat depthFormat, uint32_t colorTargetCount)
-				: m_fbo(0)
+			GLRenderTarget(RenderDeviceOpenGL* owner, uint32_t width, uint32_t height, PixelFormat colorFormat, PixelFormat depthFormat, uint32_t colorTargetCount)
+				: m_owner(owner)
+				, m_fbo(0)
 				, m_depthRbo(0)
 				, m_width(width)
 				, m_height(height)
@@ -517,6 +518,10 @@ namespace ParaEngine
 
 			~GLRenderTarget() override
 			{
+				if (m_owner)
+				{
+					m_owner->NotifyRenderTargetDestroyed(this);
+				}
 				for (auto* tex : m_colorTextures)
 				{
 					if (tex)
@@ -555,6 +560,7 @@ namespace ParaEngine
 			void* GetNativeHandle() const override { return reinterpret_cast<void*>(static_cast<uintptr_t>(m_fbo)); }
 
 		private:
+			RenderDeviceOpenGL* m_owner = nullptr;
 			GLuint m_fbo;
 			GLuint m_depthRbo;
 			uint32_t m_width;
@@ -815,7 +821,45 @@ namespace ParaEngine
 
 	RenderDeviceOpenGL::~RenderDeviceOpenGL()
 	{
+		m_isShuttingDown = true;
 		GL::ClearCache();
+	}
+
+	void RenderDeviceOpenGL::NotifyRenderTargetDestroyed(IRHIRenderTarget* rt)
+	{
+		if (m_isShuttingDown || !rt)
+			return;
+
+		bool changed = false;
+		IRHIRenderTarget* newTargets[4] = {
+			m_currentRTBinding.targets[0],
+			m_currentRTBinding.targets[1],
+			m_currentRTBinding.targets[2],
+			m_currentRTBinding.targets[3]
+		};
+		for (uint32_t i = 0; i < 4; ++i)
+		{
+			if (newTargets[i] == rt)
+			{
+				newTargets[i] = nullptr;
+				changed = true;
+			}
+		}
+		IRHIRenderTarget* dsOverride = (m_currentRTBinding.depthStencilOverride == rt)
+			? nullptr
+			: m_currentRTBinding.depthStencilOverride;
+		if (dsOverride != m_currentRTBinding.depthStencilOverride)
+			changed = true;
+		if (changed)
+		{
+			uint32_t newCount = 0;
+			for (uint32_t i = 0; i < 4; ++i)
+			{
+				if (newTargets[i] != nullptr)
+					newCount = i + 1;
+			}
+			SetRenderTargets(newCount, newCount > 0 ? newTargets : nullptr, dsOverride);
+		}
 	}
 
 	void RenderDeviceOpenGL::InitCaps() const
@@ -996,7 +1040,7 @@ namespace ParaEngine
 	{
 		if (width == 0 || height == 0)
 			return nullptr;
-		auto* rt = new GLRenderTarget(width, height, colorFormat, depthFormat, colorTargetCount);
+		auto* rt = new GLRenderTarget(this, width, height, colorFormat, depthFormat, colorTargetCount);
 		if (!rt->IsValid())
 		{
 			rt->ReleaseRHIResource();
@@ -1051,6 +1095,10 @@ namespace ParaEngine
 					drawBufs[i] = GL_COLOR_ATTACHMENT0 + i;
 					validMask |= static_cast<uint8_t>(1u << i);
 				}
+			}
+			for (uint32_t i = rtCount; i < 4; ++i)
+			{
+				glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + i, GL_TEXTURE_2D, 0, 0);
 			}
 			glDrawBuffers(static_cast<GLsizei>(rtCount), drawBufs);
 			m_BoundMrtCount = rtCount;

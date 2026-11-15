@@ -1177,61 +1177,84 @@ void CBaseObject::ApplyMaterial()
 	if (opacity)
 		pEffect->setParameter(CEffectFile::k_material_opacity, opacity->GetRawData(), opacity->GetRawDataLength());
 
-	RenderDevicePtr pDevice = CGlobals::GetRenderDevice();
+	pEffectManager->SetSamplerState(0, ESamplerStateType::MINFILTER, D3DTEXF_LINEAR, true);
+	pEffectManager->SetSamplerState(0, ESamplerStateType::MAGFILTER, D3DTEXF_LINEAR, true);
+	pEffectManager->SetSamplerState(0, ESamplerStateType::ADDRESSU, D3DTADDRESS_WRAP, true);
+	pEffectManager->SetSamplerState(0, ESamplerStateType::ADDRESSV, D3DTADDRESS_WRAP, true);
+
+	auto getMaterialTexPath = [&](const char* fullKey, const char* relKey) -> const std::string& {
+		static const std::string s_empty;
+		CParameter* pFull = paramBlock->GetParameter(fullKey);
+		if (pFull && !pFull->GetValueAsConstString().empty())
+			return pFull->GetValueAsConstString();
+		CParameter* pRel = paramBlock->GetParameter(relKey);
+		if (pRel && !pRel->GetValueAsConstString().empty())
+			return pRel->GetValueAsConstString();
+		return s_empty;
+	};
+
+	TextureEntity* defaultTex = CGlobals::GetAssetManager()->GetDefaultTexture(0);
 	bool bHasDiffuseTex = false;
-	CParameter* diffuse = paramBlock->GetParameter("DiffuseFullPath");
-	if (diffuse)
+	const std::string& sDiffuseFile = getMaterialTexPath("DiffuseFullPath", "Diffuse");
+	if (!sDiffuseFile.empty())
 	{
-		const std::string& sFilename = diffuse->GetValueAsConstString();
-		if (!sFilename.empty())
+		auto tex = CGlobals::GetAssetManager()->GetTexture(sDiffuseFile);
+		if (tex == NULL)
+			tex = CGlobals::GetAssetManager()->LoadTexture(sDiffuseFile, sDiffuseFile);
+		if (tex && tex->GetTexture() != nullptr)
 		{
-			auto tex = CGlobals::GetAssetManager()->GetTexture(sFilename);
-			if (tex == NULL)
-				tex = CGlobals::GetAssetManager()->LoadTexture(sFilename, sFilename);
-			if (tex)
-			{
-				bHasDiffuseTex = true;
-				pDevice->SetTexture(0, tex->GetTexture());
-			}
+			bHasDiffuseTex = true;
+			pEffect->setTexture(0, tex);
 		}
 	}
-	if (!bHasDiffuseTex)
+	if (!bHasDiffuseTex && defaultTex && defaultTex->GetTexture() != nullptr)
 	{
-		auto curTex = CGlobals::GetAssetManager()->GetDefaultTexture(0)->GetTexture();
-		pDevice->SetTexture(0, curTex);
+		pEffect->setTexture(0, defaultTex);
 	}
 
-	CParameter* normal = paramBlock->GetParameter("NormalFullPath");
-	if (normal)
+	bool bHasNormalTex = false;
+	const std::string& sNormalFile = getMaterialTexPath("NormalFullPath", "Normal");
+	if (!sNormalFile.empty())
 	{
-		const std::string& sFilename = normal->GetValueAsConstString();
-		if (!sFilename.empty())
+		auto tex = CGlobals::GetAssetManager()->GetTexture(sNormalFile);
+		if (tex == NULL)
+			tex = CGlobals::GetAssetManager()->LoadTexture(sNormalFile, sNormalFile);
+		if (tex && tex->GetTexture() != nullptr)
 		{
-			auto tex = CGlobals::GetAssetManager()->GetTexture(sFilename);
-			if (tex == NULL)
-				tex = CGlobals::GetAssetManager()->LoadTexture(sFilename, sFilename);
-			if (tex)
-			{
-				auto curTex = tex->GetTexture();
-				pDevice->SetTexture(2, curTex);
-			}
+			bHasNormalTex = true;
+			pEffect->setTexture(2, tex);
+		}
+	}
+	if (!bHasNormalTex)
+	{
+		float zeroMetallic = 0.0f;
+		pEffect->setParameter(CEffectFile::k_material_metallic, &zeroMetallic, sizeof(float));
+		if (defaultTex && defaultTex->GetTexture() != nullptr)
+		{
+			pEffect->setTexture(2, defaultTex);
 		}
 	}
 
-	CParameter* emissive = paramBlock->GetParameter("EmissiveFullPath");
-	if (emissive)
+	bool bHasEmissiveTex = false;
+	const std::string& sEmissiveFile = getMaterialTexPath("EmissiveFullPath", "Emissive");
+	if (!sEmissiveFile.empty())
 	{
-		const std::string& sFilename = emissive->GetValueAsConstString();
-		if (!sFilename.empty())
+		auto tex = CGlobals::GetAssetManager()->GetTexture(sEmissiveFile);
+		if (tex == NULL)
+			tex = CGlobals::GetAssetManager()->LoadTexture(sEmissiveFile, sEmissiveFile);
+		if (tex && tex->GetTexture() != nullptr)
 		{
-			auto tex = CGlobals::GetAssetManager()->GetTexture(sFilename);
-			if (tex == NULL)
-				tex = CGlobals::GetAssetManager()->LoadTexture(sFilename, sFilename);
-			if (tex)
-			{
-				auto curTex = tex->GetTexture();
-				pDevice->SetTexture(1, curTex);
-			}
+			bHasEmissiveTex = true;
+			pEffect->setTexture(1, tex);
+		}
+	}
+	if (!bHasEmissiveTex)
+	{
+		LinearColor zeroEmissive(0.f, 0.f, 0.f, 0.f);
+		pEffect->setParameter(CEffectFile::k_material_emissive_color, &zeroEmissive, sizeof(LinearColor));
+		if (defaultTex && defaultTex->GetTexture() != nullptr)
+		{
+			pEffect->setTexture(1, defaultTex);
 		}
 	}
 }

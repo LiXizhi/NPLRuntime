@@ -233,6 +233,7 @@ namespace ParaEngine
 		{
 			BlockTemplate* pTemplate = pInstGroup->m_pTemplate;
 			uint32_t nBlockData = pInstGroup->m_blockData;
+			int32_t materialId = pInstGroup->m_materialId;
 			std::vector<uint16_t>& instanceGroup = pInstGroup->instances;
 			uint32 groupSize = instanceGroup.size();
 			uint32 instCount = groupSize;
@@ -266,6 +267,7 @@ namespace ParaEngine
 			{
 				pTask = BlockRenderTask::CreateTask();
 				pTask->Init(pTemplate, nBlockData, vertexOffset, pVertexBuffer->GetDevicePointer(), pChunk->m_minBlockId_ws);
+				pTask->SetMaterialId(materialId);
 				m_builder_tasks.push_back(pTask);
 				pLastInstGroup = pInstGroup;
 			}
@@ -296,6 +298,7 @@ namespace ParaEngine
 					}
 					pTask = BlockRenderTask::CreateTask();
 					pTask->Init(pTemplate, nBlockData, vertexOffset, pVertexBuffer->GetDevicePointer(), pChunk->m_minBlockId_ws);
+					pTask->SetMaterialId(materialId);
 					m_builder_tasks.push_back(pTask);
 					pLastInstGroup = pInstGroup;
 
@@ -307,7 +310,7 @@ namespace ParaEngine
 				//--------------------------------------------------------------
 				BlockVertexCompressed* pBlockModelVertices = NULL;
 				unprocessedInstCount--;
-				int32 nFaceCount = tessellator.TessellateBlock(pChunk, instanceGroup[inst], dwShaderID, &pBlockModelVertices);
+				int32 nFaceCount = tessellator.TessellateBlock(pChunk, instanceGroup[inst], dwShaderID, &pBlockModelVertices, materialId);
 				if (nFaceCount > 0)
 				{
 					int32 nVertexCount = nFaceCount * 4;
@@ -838,6 +841,7 @@ namespace ParaEngine
 					}
 					pTask = BlockRenderTask::CreateTask();
 					pTask->Init(pTemplate, nBlockData, vertexOffset, pChunk->m_minBlockId_ws, nMemoryBufferIndex);
+					pTask->SetMaterialId(materialId);
 					m_builder_tasks.push_back(pTask);
 					pLastInstGroup = pInstGroup;
 

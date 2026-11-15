@@ -1054,7 +1054,16 @@ bool ParaEngine::TextureEntityOpenGL::LoadFromImage(const ParaImage* pImage, UIN
 
 	if (texture)
 	{
-		const bool isBlockTex = (GetKey().find("blocks") != string::npos);
+		std::string lowerKey = GetKey();
+		for (char& c : lowerKey)
+		{
+			if (c >= 'A' && c <= 'Z')
+				c = static_cast<char>(c - 'A' + 'a');
+			else if (c == '\\')
+				c = '/';
+		}
+		const bool isMaterialTex = (lowerKey.find("blocks/materials") != string::npos);
+		const bool isBlockTex = (!isMaterialTex && lowerKey.find("blocks") != string::npos);
 		SetSamplerStateBlocky(isBlockTex);
 #ifdef PARA_ENABLE_OPENGL
 		if (texture->getName() != 0 && CGlobals::GetRenderDevice() && CGlobals::GetRenderDevice()->GetBackendType() == ERHIBackend::OpenGL)
@@ -1067,7 +1076,13 @@ bool ParaEngine::TextureEntityOpenGL::LoadFromImage(const ParaImage* pImage, UIN
 			else
 			{
 				GL::bindTexture2D(texture->getName());
-				if (texture->getPixelsWide() == GLTexture2D::ccNextPOT(texture->getPixelsWide()) && texture->getPixelsHigh() == GLTexture2D::ccNextPOT(texture->getPixelsHigh()))
+				const bool isPOT = (texture->getPixelsWide() == GLTexture2D::ccNextPOT(texture->getPixelsWide()) && texture->getPixelsHigh() == GLTexture2D::ccNextPOT(texture->getPixelsHigh()));
+#if !defined(PARAENGINE_MOBILE) && !defined(EMSCRIPTEN)
+				const bool useRepeat = isPOT || isMaterialTex;
+#else
+				const bool useRepeat = isPOT;
+#endif
+				if (useRepeat)
 				{
 					glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
 					glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
@@ -1140,7 +1155,16 @@ bool ParaEngine::TextureEntityOpenGL::LoadFromImage(ImageEntity * imageEntity, P
 
 			if (texture)
 			{
-				const bool isBlockTex = (GetKey().find("blocks") != string::npos);
+				std::string lowerKey = GetKey();
+				for (char& c : lowerKey)
+				{
+					if (c >= 'A' && c <= 'Z')
+						c = static_cast<char>(c - 'A' + 'a');
+					else if (c == '\\')
+						c = '/';
+				}
+				const bool isMaterialTex = (lowerKey.find("blocks/materials") != string::npos);
+				const bool isBlockTex = (!isMaterialTex && lowerKey.find("blocks") != string::npos);
 				SetSamplerStateBlocky(isBlockTex);
 #ifdef PARA_ENABLE_OPENGL
 				if (texture->getName() != 0 && CGlobals::GetRenderDevice() && CGlobals::GetRenderDevice()->GetBackendType() == ERHIBackend::OpenGL)
@@ -1153,7 +1177,13 @@ bool ParaEngine::TextureEntityOpenGL::LoadFromImage(ImageEntity * imageEntity, P
 					else
 					{
 						GL::bindTexture2D(texture->getName());
-						if (texture->getPixelsWide() == GLTexture2D::ccNextPOT(texture->getPixelsWide()) && texture->getPixelsHigh() == GLTexture2D::ccNextPOT(texture->getPixelsHigh()))
+						const bool isPOT = (texture->getPixelsWide() == GLTexture2D::ccNextPOT(texture->getPixelsWide()) && texture->getPixelsHigh() == GLTexture2D::ccNextPOT(texture->getPixelsHigh()));
+#if !defined(PARAENGINE_MOBILE) && !defined(EMSCRIPTEN)
+						const bool useRepeat = isPOT || isMaterialTex;
+#else
+						const bool useRepeat = isPOT;
+#endif
+						if (useRepeat)
 						{
 							glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
 							glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);

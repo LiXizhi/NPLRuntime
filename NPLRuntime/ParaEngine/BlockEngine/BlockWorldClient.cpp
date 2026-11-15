@@ -129,7 +129,7 @@ namespace ParaEngine
 
 	BlockWorldClient::~BlockWorldClient()
 	{
-		DeleteDeviceObjects();
+		Cleanup();
 		SAFE_DELETE(m_pMultiFrameRenderer);
 		for (int i = 0; i < (int)(m_activeChunks.size()); ++i)
 		{
@@ -153,9 +153,65 @@ namespace ParaEngine
 	void BlockWorldClient::Cleanup()
 	{
 		DeleteDeviceObjects();
+
+		if (auto* pDevice = CGlobals::GetRenderDevice())
+		{
+			pDevice->SetRenderTarget(3, nullptr);
+			pDevice->SetRenderTarget(2, nullptr);
+			pDevice->SetRenderTarget(1, nullptr);
+			if (m_bAutoBoundColorRT0)
+			{
+				pDevice->SetRenderTarget(0, nullptr);
+				m_bAutoBoundColorRT0 = false;
+			}
+		}
+
+		if (CGlobals::GetSceneState())
+		{
+			CGlobals::GetSceneState()->SetDeferredShading(false);
+		}
+
+		if (m_dwBlockRenderMethod == BLOCK_RENDER_FANCY_SHADER)
+		{
+			m_dwBlockRenderMethod = BLOCK_RENDER_FAST_SHADER;
+			if (CGlobals::GetApp() && CGlobals::GetApp()->GetAppState() != PEAppState_Exiting)
+			{
+				CGlobals::GetSettings().LoadGameEffectSet(CGlobals::GetSettings().GetGameEffectSet());
+			}
+			else if (auto* pEffectMgr = CGlobals::GetEffectManager())
+			{
+				pEffectMgr->EndEffect();
+				pEffectMgr->MapHandleToEffect(TECH_TERRAIN, nullptr);
+				pEffectMgr->MapHandleToEffect(TECH_SIMPLE_MESH_NORMAL, nullptr);
+				pEffectMgr->MapHandleToEffect(TECH_CHARACTER, nullptr);
+				pEffectMgr->MapHandleToEffect(TECH_BMAX_MODEL, nullptr);
+			}
+		}
+
 		for (int i = 0; i < BLOCK_GROUP_ID_MAX; ++i)
 		{
 			m_highLightTextures[i].reset();
+		}
+
+		m_render_target_color_hdr.reset();
+		m_render_target_color.reset();
+		m_render_target_scene_color.reset();
+		m_render_target_block_info.reset();
+		m_render_target_depth_tex.reset();
+		m_render_target_normal.reset();
+		m_damageTexture.reset();
+
+		m_block_effect_fancy.reset();
+		m_normal_mesh_effect_fancy.reset();
+		m_bmax_model_effect_fancy.reset();
+		m_terrain_fancy.reset();
+		m_effect_light_point.reset();
+		m_effect_light_spot.reset();
+		m_effect_light_directional.reset();
+		m_effect_deferred_lighting.reset();
+		for (int i = 0; i < 3; ++i)
+		{
+			m_lightgeometry_effects[i].reset();
 		}
 	}
 
@@ -555,19 +611,21 @@ namespace ParaEngine
 				VertexBufferDevicePtr_type pCurVB = 0;
 				uint16_t curTemplateId = 0;
 				int32 curMaterialId = -1;
+				int32 lastMaterialId = -1;
 				int32_t curPass = -1;
 				ERSVCULL culling = RSV_CULL_CCW;
 				DeviceTexturePtr_type pCurTex0 = 0;
 				DeviceTexturePtr_type pCurTex1 = 0;
 				DeviceTexturePtr_type pCurTex2 = 0;
 
-				IScene* pScene = CGlobals::GetEffectManager()->GetScene();
+				EffectManager* pEffectManager = CGlobals::GetEffectManager();
+				IScene* pScene = pEffectManager->GetScene();
 				CBaseCamera* pCamera = pScene->GetCurrentCamera();
 				Matrix4 matViewProj;
 				if (pCamera)
 				{
-					const Matrix4& pView = (CGlobals::GetEffectManager()->GetViewTransform());
-					const Matrix4& pProj = (CGlobals::GetEffectManager()->GetProjTransform());
+					const Matrix4& pView = (pEffectManager->GetViewTransform());
+					const Matrix4& pProj = (pEffectManager->GetProjTransform());
 					matViewProj = (pView) * (pProj);
 				}
 
@@ -632,6 +690,7 @@ namespace ParaEngine
 								pCurTex0 = 0;
 								pCurTex1 = 0;
 								pCurTex2 = 0;
+								lastMaterialId = -1;
 								// pEffect->setMatrix(CEffectFile::k_viewProjMatrix, &matViewProj);
 								// pDevice->SetVertexShaderConstantF(0,&matViewProj._11,4);
 							}
@@ -641,9 +700,28 @@ namespace ParaEngine
 								continue;
 							}
 						}
+
+						// use linear filtering and wrap addressing for block material diffuse texture
+						if (lastMaterialId != curMaterialId)
+						{
+							if (lastMaterialId <= 0 && curMaterialId > 0)
+							{
+								pEffectManager->SetSamplerState(0, ESamplerStateType::MINFILTER, D3DTEXF_LINEAR, true);
+								pEffectManager->SetSamplerState(0, ESamplerStateType::MAGFILTER, D3DTEXF_LINEAR, true);
+								pEffectManager->SetSamplerState(0, ESamplerStateType::ADDRESSU, D3DTADDRESS_WRAP, true);
+								pEffectManager->SetSamplerState(0, ESamplerStateType::ADDRESSV, D3DTADDRESS_WRAP, true);
+							}
+							else if (lastMaterialId > 0 && curMaterialId <= 0)
+							{
+								pEffectManager->SetSamplerState(0, ESamplerStateType::MINFILTER, D3DTEXF_POINT, true);
+								pEffectManager->SetSamplerState(0, ESamplerStateType::MAGFILTER, D3DTEXF_POINT, true);
+							}
+							lastMaterialId = curMaterialId;
+						}
 						
 						if (curMaterialId > 0)
 						{
+							TextureEntity* defaultTex = CGlobals::GetAssetManager()->GetDefaultTexture(0);
 							CBlockMaterial* material = CGlobals::GetBlockMaterialManager()->GetBlockMaterialByID(curMaterialId);
 							CParameterBlock* paramBlock = material ? material->GetParamBlock() : nullptr;
 							if (paramBlock)
@@ -663,82 +741,133 @@ namespace ParaEngine
 								CParameter* opacity = paramBlock->GetParameter("Opacity");
 								if (opacity) pEffect->setParameter(CEffectFile::k_material_opacity, opacity->GetRawData(), opacity->GetRawDataLength());
 
+								auto getMaterialTexPath = [&](const char* fullKey, const char* relKey) -> const std::string& {
+									static const std::string s_empty;
+									CParameter* pFull = paramBlock->GetParameter(fullKey);
+									if (pFull && !pFull->GetValueAsConstString().empty())
+										return pFull->GetValueAsConstString();
+									CParameter* pRel = paramBlock->GetParameter(relKey);
+									if (pRel && !pRel->GetValueAsConstString().empty())
+										return pRel->GetValueAsConstString();
+									return s_empty;
+								};
+
 								bool bHasDiffuseTex = false;
-								CParameter* diffuse = paramBlock->GetParameter("DiffuseFullPath");
-								if (diffuse) 
+								const std::string& sDiffuseFile = getMaterialTexPath("DiffuseFullPath", "Diffuse");
+								if (!sDiffuseFile.empty())
 								{
-									const std::string& sFilename = diffuse->GetValueAsConstString();
-									if (!sFilename.empty())
+									auto tex = CGlobals::GetAssetManager()->GetTexture(sDiffuseFile);
+									if(tex == NULL)
+										tex = CGlobals::GetAssetManager()->LoadTexture(sDiffuseFile, sDiffuseFile);
+									if (tex)
 									{
-										auto tex = CGlobals::GetAssetManager()->GetTexture(sFilename);
-										if(tex == NULL)
-											tex = CGlobals::GetAssetManager()->LoadTexture(sFilename, sFilename);
-										if (tex)
+										auto curTex = tex->GetTexture();
+										if (curTex != nullptr)
 										{
 											bHasDiffuseTex = true;
-											auto curTex = tex->GetTexture();
 											if (pCurTex0 != curTex)
 											{
 												pCurTex0 = curTex;
-												pDevice->SetTexture(0, pCurTex0);
+												pEffect->setTexture(0, tex);
 											}
 										}
 									}
 								}
-								if(!bHasDiffuseTex)
+								if(!bHasDiffuseTex && defaultTex)
 								{
 									// always use a white texture instead of setting a conditional boolean in shader, since 99% cases, there is a diffuse texture. 
-									auto curTex = CGlobals::GetAssetManager()->GetDefaultTexture(0)->GetTexture();
-									if (pCurTex0 != curTex)
+									auto curTex = defaultTex->GetTexture();
+									if (curTex != nullptr && pCurTex0 != curTex)
 									{
 										pCurTex0 = curTex;
-										pDevice->SetTexture(0, pCurTex0);
+										pEffect->setTexture(0, defaultTex);
 									}
 								}
 
 								bool bHasNormalTex = false;
-								CParameter* normal = paramBlock->GetParameter("NormalFullPath");
-								if (normal)
+								const std::string& sNormalFile = getMaterialTexPath("NormalFullPath", "Normal");
+								if (!sNormalFile.empty())
 								{
-									const std::string& sFilename = normal->GetValueAsConstString();
-									if (!sFilename.empty())
+									auto tex = CGlobals::GetAssetManager()->GetTexture(sNormalFile);
+									if (tex == NULL)
+										tex = CGlobals::GetAssetManager()->LoadTexture(sNormalFile, sNormalFile);
+									if (tex)
 									{
-										auto tex = CGlobals::GetAssetManager()->GetTexture(sFilename);
-										if (tex == NULL)
-											tex = CGlobals::GetAssetManager()->LoadTexture(sFilename, sFilename);
-										if (tex)
+										auto curTex = tex->GetTexture();
+										if (curTex != nullptr)
 										{
 											bHasNormalTex = true;
-											auto curTex = tex->GetTexture();
-											if (pCurTex2 != curTex)
+											if (dwRenderMethod == BLOCK_RENDER_FANCY_SHADER && pCurTex2 != curTex)
 											{
 												pCurTex2 = curTex;
-												pDevice->SetTexture(2, pCurTex2);
+												pEffect->setTexture(2, tex);
 											}
+										}
+									}
+								}
+								if (!bHasNormalTex)
+								{
+									float zeroMetallic = 0.0f;
+									pEffect->setParameter(CEffectFile::k_material_metallic, &zeroMetallic, sizeof(float));
+									if (dwRenderMethod == BLOCK_RENDER_FANCY_SHADER && defaultTex)
+									{
+										auto curTex = defaultTex->GetTexture();
+										if (curTex != nullptr && pCurTex2 != curTex)
+										{
+											pCurTex2 = curTex;
+											pEffect->setTexture(2, defaultTex);
 										}
 									}
 								}
 
-								CParameter* emissive = paramBlock->GetParameter("EmissiveFullPath");
-								if (emissive)
+								bool bHasEmissiveTex = false;
+								const std::string& sEmissiveFile = getMaterialTexPath("EmissiveFullPath", "Emissive");
+								if (!sEmissiveFile.empty())
 								{
-									const std::string& sFilename = emissive->GetValueAsConstString();
-									if (!sFilename.empty())
+									auto tex = CGlobals::GetAssetManager()->GetTexture(sEmissiveFile);
+									if (tex == NULL)
+										tex = CGlobals::GetAssetManager()->LoadTexture(sEmissiveFile, sEmissiveFile);
+									if (tex)
 									{
-										auto tex = CGlobals::GetAssetManager()->GetTexture(sFilename);
-										if (tex == NULL)
-											tex = CGlobals::GetAssetManager()->LoadTexture(sFilename, sFilename);
-										if (tex)
+										auto curTex = tex->GetTexture();
+										if (curTex != nullptr)
 										{
-											auto curTex = tex->GetTexture();
+											bHasEmissiveTex = true;
 											if (pCurTex1 != curTex)
 											{
 												pCurTex1 = curTex;
-												pDevice->SetTexture(1, pCurTex1);
+												pEffect->setTexture(1, tex);
 											}
 										}
 									}
 								}
+								if (!bHasEmissiveTex)
+								{
+									LinearColor zeroEmissive(0.f, 0.f, 0.f, 0.f);
+									pEffect->setParameter(CEffectFile::k_material_emissive_color, &zeroEmissive, sizeof(LinearColor));
+									if (defaultTex)
+									{
+										auto curTex = defaultTex->GetTexture();
+										if (curTex != nullptr && pCurTex1 != curTex)
+										{
+											pCurTex1 = curTex;
+											pEffect->setTexture(1, defaultTex);
+										}
+									}
+								}
+							}
+							else if (defaultTex)
+							{
+								auto curTex = defaultTex->GetTexture();
+								if (curTex != nullptr && pCurTex0 != curTex)
+								{
+									pCurTex0 = curTex;
+									pEffect->setTexture(0, defaultTex);
+								}
+								float zeroMetallic = 0.0f;
+								pEffect->setParameter(CEffectFile::k_material_metallic, &zeroMetallic, sizeof(float));
+								LinearColor zeroEmissive(0.f, 0.f, 0.f, 0.f);
+								pEffect->setParameter(CEffectFile::k_material_emissive_color, &zeroEmissive, sizeof(LinearColor));
 							}
 						}
 	
@@ -769,29 +898,41 @@ namespace ParaEngine
 						}
 					}
 
-					if (curMaterialId < 0)
+					if (curMaterialId <= 0)
 					{
 						// use block's internal material
 						TextureEntity* pTexEntity = pTemplate->GetTexture0(pRenderTask->GetUserData());
-						if (pTexEntity && pTexEntity->GetTexture() != pCurTex0)
+						if (pTexEntity)
 						{
-							pCurTex0 = pTexEntity->GetTexture();
-							pDevice->SetTexture(0, pCurTex0);
+							auto curTex = pTexEntity->GetTexture();
+							if (curTex != nullptr && curTex != pCurTex0)
+							{
+								pCurTex0 = curTex;
+								pEffect->setTexture(0, pTexEntity);
+							}
 						}
 
 						pTexEntity = pTemplate->GetTexture1();
-						if (pTexEntity && pTexEntity->GetTexture() != pCurTex1)
+						if (pTexEntity)
 						{
-							pCurTex1 = pTexEntity->GetTexture();
-							pDevice->SetTexture(1, pCurTex1);
+							auto curTex = pTexEntity->GetTexture();
+							if (curTex != nullptr && curTex != pCurTex1)
+							{
+								pCurTex1 = curTex;
+								pEffect->setTexture(1, pTexEntity);
+							}
 						}
 
 						pTexEntity = pTemplate->GetNormalMap();
-						if (pTexEntity && pTexEntity->GetTexture() != pCurTex2)
+						if (pTexEntity)
 						{
-							pCurTex2 = pTexEntity->GetTexture();
-							if (dwRenderMethod == BLOCK_RENDER_FANCY_SHADER) {
-								pDevice->SetTexture(2, pCurTex2);
+							auto curTex = pTexEntity->GetTexture();
+							if (curTex != nullptr && curTex != pCurTex2)
+							{
+								pCurTex2 = curTex;
+								if (dwRenderMethod == BLOCK_RENDER_FANCY_SHADER) {
+									pEffect->setTexture(2, pTexEntity);
+								}
 							}
 						}
 					}
@@ -814,10 +955,10 @@ namespace ParaEngine
 						ParaMatrixMultiply(&mWorldView, &vWorldMatrix, &matViewProj);
 						pEffect->setMatrix(CEffectFile::k_worldViewMatrix, &mWorldView);
 					}
-					if (CGlobals::GetEffectManager()->IsUsingShadowMap() && pEffect->isMatrixUsed(CEffectFile::k_TexWorldViewProjMatrix))
+					if (pEffectManager->IsUsingShadowMap() && pEffect->isMatrixUsed(CEffectFile::k_TexWorldViewProjMatrix))
 					{
 						Matrix4 mTex;
-						ParaMatrixMultiply(&mTex, &vWorldMatrix, CGlobals::GetEffectManager()->GetTexViewProjMatrix());
+						ParaMatrixMultiply(&mTex, &vWorldMatrix, pEffectManager->GetTexViewProjMatrix());
 						pEffect->setMatrix(CEffectFile::k_TexWorldViewProjMatrix, &mTex);
 					}
 					{
@@ -839,6 +980,12 @@ namespace ParaEngine
 
 				if (curPass > -1)
 					pEffect->EndPass();
+
+				if (lastMaterialId > 0)
+				{
+					pEffectManager->SetSamplerState(0, ESamplerStateType::MINFILTER, D3DTEXF_POINT, true);
+					pEffectManager->SetSamplerState(0, ESamplerStateType::MAGFILTER, D3DTEXF_POINT, true);
+				}
 
 				pDevice->SetRenderState(ERenderState::CULLMODE, RSV_CULL_CCW);
 
@@ -2086,6 +2233,10 @@ namespace ParaEngine
 					CGlobals::GetNPLRuntime()->GetMainRuntimeState()->DoString(m_sPostProcessorAlphaCallbackScript.c_str(), (int)m_sPostProcessorAlphaCallbackScript.size());
 			}
 		}
+		if (nRenderPass == BlockRenderPass_AlphaBlended)
+		{
+			FinishAutoBoundSceneColorRT();
+		}
 	}
 
 	bool BlockWorldClient::PrepareAllRenderTargets(bool bSetRenderTarget /*= true*/)
@@ -3050,12 +3201,14 @@ namespace ParaEngine
 					const uint16_t i1 = static_cast<uint16_t>((i + 1) * ringStride + j);
 					const uint16_t i2 = static_cast<uint16_t>((i + 1) * ringStride + j + 1);
 					const uint16_t i3 = static_cast<uint16_t>(i * ringStride + j + 1);
+					// Emit CW outward-facing triangles in left-handed D3D coordinates (matching D3DXCreateSphere),
+					// required by DeferredShadingPointLighting/SpotLighting two-pass stencil light volumes.
 					outIndices.push_back(i0);
+					outIndices.push_back(i2);
 					outIndices.push_back(i1);
-					outIndices.push_back(i2);
 					outIndices.push_back(i0);
-					outIndices.push_back(i2);
 					outIndices.push_back(i3);
+					outIndices.push_back(i2);
 				}
 			}
 		}
@@ -3063,183 +3216,248 @@ namespace ParaEngine
 
 	void BlockWorldClient::RenderDeferredLightsMesh()
 	{
-		SceneState* sceneState = CGlobals::GetSceneState();
-		auto* pDevice = CGlobals::GetRenderDevice();
-		if (!pDevice || !sceneState->IsDeferredShading() || sceneState->listDeferredLightObjects.empty())
-			return;
-
-		// sort by light type
-		std::sort(sceneState->listDeferredLightObjects.begin(), sceneState->listDeferredLightObjects.end(), [](CLightObject* a, CLightObject* b) {
-			return (a->GetLightType() < b->GetLightType());
-		});
-
-		// setup shader here
-		for (int i = 0; i < 3; i++)
-		{
-			if (m_lightgeometry_effects[i] == 0)
-			{
-				if (i == 0)
-					m_lightgeometry_effects[i] = CGlobals::GetAssetManager()->LoadEffectFile("blockFancy", "script/apps/Aries/Creator/Game/Shaders/DeferredShadingPointLighting.fxo");
-				else if (i == 2)
-					m_lightgeometry_effects[i] = CGlobals::GetAssetManager()->LoadEffectFile("blockFancy", "script/apps/Aries/Creator/Game/Shaders/DeferredShadingSpotLighting.fxo");
-				else
-					m_lightgeometry_effects[i] = CGlobals::GetAssetManager()->LoadEffectFile("blockFancy", "script/apps/Aries/Creator/Game/Shaders/DeferredShadingDirectionalLighting.fxo");
-
-				m_lightgeometry_effects[i]->LoadAsset();
-			}
-			if (!m_lightgeometry_effects[i] || !m_lightgeometry_effects[i]->IsValid())
-				return;
-		}
-
-		// sort by type and render light geometry
-		int nLastType = -1;
-
-		CGlobals::GetEffectManager()->EndEffect();
-		CEffectFile* pEffectFile = NULL;
-		for (CLightObject* lightObject : sceneState->listDeferredLightObjects)
-		{
-			if (lightObject->GetLightType() != nLastType)
-			{
-				nLastType = lightObject->GetLightType();
-				if (pEffectFile)
-				{
-					pEffectFile->end();
-				}
-				else
-				{
-					auto pDecl = CGlobals::GetEffectManager()->GetVertexDeclaration(EffectManager::S0_POS);
-					if (pDecl)
-						pDevice->SetVertexDeclaration(pDecl);
-				}
-				pEffectFile = m_lightgeometry_effects[lightObject->GetLightType() - 1].get();
-				pEffectFile->begin();
-			}
-			lightObject->RenderDeferredLightMesh(sceneState);
-		}
-		if (pEffectFile)
-		{
-			pEffectFile->end();
-		}
+		// Obsolete legacy debug stub; deferred local lights are rendered in RenderDeferredLighting().
 	}
 
 	void BlockWorldClient::RenderDeferredLighting()
 	{
 		SceneState* sceneState = CGlobals::GetSceneState();
-		if (!sceneState->IsDeferredShading() || sceneState->listDeferredLightObjects.empty())
-		{
-			FinishAutoBoundSceneColorRT();
+		if (!sceneState || !sceneState->IsDeferredShading() || sceneState->listDeferredLightObjects.empty())
 			return;
-		}
 
-		auto pDevice = sceneState->GetRenderDevice();
-		if (!pDevice)
-		{
-			FinishAutoBoundSceneColorRT();
+		auto* pDevice = sceneState->GetRenderDevice();
+		if (!pDevice || !m_render_target_block_info || !m_render_target_depth_tex || !m_render_target_normal)
 			return;
-		}
+
+		IRHIRenderTarget* blockInfoRT = m_render_target_block_info->GetRHIRenderTarget();
+		IRHIRenderTarget* depthRT = m_render_target_depth_tex->GetRHIRenderTarget();
+		IRHIRenderTarget* normalRT = m_render_target_normal->GetRHIRenderTarget();
+		if (!blockInfoRT || !depthRT || !normalRT)
+			return;
 
 		CGlobals::GetEffectManager()->EndEffect();
 
-		ParaScripting::ParaAsset::LoadEffectFile("deferred_point_lighting", "script/apps/Aries/Creator/Game/Shaders/DeferredShadingPointLighting.fxo");
-		ParaScripting::ParaAsset::LoadEffectFile("deferred_spot_lighting", "script/apps/Aries/Creator/Game/Shaders/DeferredShadingSpotLighting.fxo");
-		ParaScripting::ParaAsset::LoadEffectFile("deferred_directional_lighting", "script/apps/Aries/Creator/Game/Shaders/DeferredShadingDirectionalLighting.fxo");
+		// Sort deferred lights by light type to minimize shader/declaration switches.
+		std::sort(sceneState->listDeferredLightObjects.begin(), sceneState->listDeferredLightObjects.end(), [](CLightObject* a, CLightObject* b) {
+			return (a->GetLightType() < b->GetLightType());
+		});
+
+		if (!m_effect_light_point)
+		{
+			m_effect_light_point = CGlobals::GetAssetManager()->LoadEffectFile("m_effect_light_point", "script/apps/Aries/Creator/Game/Shaders/DeferredShadingPointLighting.fxo");
+			if (m_effect_light_point)
+				m_effect_light_point->LoadAsset();
+		}
+		if (!m_effect_light_spot)
+		{
+			m_effect_light_spot = CGlobals::GetAssetManager()->LoadEffectFile("m_effect_light_spot", "script/apps/Aries/Creator/Game/Shaders/DeferredShadingSpotLighting.fxo");
+			if (m_effect_light_spot)
+				m_effect_light_spot->LoadAsset();
+		}
+		if (!m_effect_light_directional)
+		{
+			m_effect_light_directional = CGlobals::GetAssetManager()->LoadEffectFile("m_effect_light_directional", "script/apps/Aries/Creator/Game/Shaders/DeferredShadingDirectionalLighting.fxo");
+			if (m_effect_light_directional)
+				m_effect_light_directional->LoadAsset();
+		}
+
+		const auto prevBinding = pDevice->GetCurrentRenderTargetBinding();
+		IRHIRenderTarget* rt0 = prevBinding.targets[0];
+		IRHIRenderTarget* depthStencilRT = (rt0 && rt0->GetDepthTexture()) ? rt0 : prevBinding.depthStencilOverride;
+
+		pDevice->SetTexture(0, nullptr);
+		pDevice->SetTexture(1, nullptr);
+		pDevice->SetTexture(2, nullptr);
+
+		// Bind COLOR0 = scene color RT0 and COLOR1 = _BlockInfoRT while detaching G-buffer depth/normal RTs (slots 2 & 3) so they can be sampled as SRVs.
+		IRHIRenderTarget* lightMrtTargets[2] = { rt0, blockInfoRT };
+		if (!pDevice->SetRenderTargets(2, lightMrtTargets, depthStencilRT))
+			return;
+
+		if (CGlobals::GetViewportManager() && CGlobals::GetViewportManager()->GetActiveViewPort())
+			CGlobals::GetViewportManager()->GetActiveViewPort()->ApplyViewport();
+
+		pDevice->SetRenderState(ERenderState::ZENABLE, TRUE);
+		pDevice->SetRenderState(ERenderState::ALPHATESTENABLE, FALSE);
+		pDevice->SetRenderState(ERenderState::ALPHABLENDENABLE, TRUE);
+		pDevice->SetRenderState(ERenderState::SEPARATEALPHABLENDENABLE, FALSE);
+		pDevice->SetRenderState(ERenderState::SRCBLEND, D3DBLEND_ONE);
+		pDevice->SetRenderState(ERenderState::DESTBLEND, D3DBLEND_ONE);
 
 		static std::vector<Vector3> s_unitSphereVerts;
 		static std::vector<uint16_t> s_sphereIndices;
 		if (s_unitSphereVerts.empty())
 		{
-			BuildUnitSphereMesh(32, 24, s_unitSphereVerts, s_sphereIndices);
+			BuildUnitSphereMesh(50, 50, s_unitSphereVerts, s_sphereIndices);
 		}
-		std::vector<Vector3> scaledSphereVerts(s_unitSphereVerts.size());
+		const uint32_t numSphereVerts = static_cast<uint32_t>(s_unitSphereVerts.size());
+		const uint32_t spherePrimCount = static_cast<uint32_t>(s_sphereIndices.size() / 3);
 
-		ParaScripting::ParaAssetObject effect = NULL;
-		VertexDeclarationPtr pDecl = NULL;
+		Vector2 vpScale(1.0f, 1.0f);
+		Vector2 vpOffset(0.0f, 0.0f);
+		Vector2 screenSize(1.0f, 1.0f);
+		if (CGlobals::GetViewportManager())
+		{
+			screenSize = Vector2(
+				static_cast<float>((std::max)(1, CGlobals::GetViewportManager()->GetWidth())),
+				static_cast<float>((std::max)(1, CGlobals::GetViewportManager()->GetHeight())));
+			if (CGlobals::GetViewportManager()->GetActiveViewPort())
+				CGlobals::GetViewportManager()->GetActiveViewPort()->GetViewportTransform(&vpScale, &vpOffset);
+		}
+
+		const RHIDeviceCaps& caps = pDevice->GetCaps();
+		Vector2 pointSpotScreenParam = screenSize;
+		Vector2 pointSpotVpScale = vpScale;
+		if (!caps.needsHalfPixelOffset)
+		{
+			// MainVS computes: output.texCoord = (t + 0.5 / screenParam) * viewportScale.
+			// On modern APIs (pixel centers already at +0.5), eliminate the D3D9 half-texel bias
+			// (and fold any non-zero viewportOffset into 0.5 / screenParam * viewportScale).
+			pointSpotScreenParam.x = (vpOffset.x > 1e-6f && vpScale.x > 1e-6f) ? (0.5f * vpScale.x / vpOffset.x) : 1e30f;
+			if (!caps.topLeftScreenOrigin)
+			{
+				// OpenGL FBOs have bottom-left origin while SetViewport maps top-left (Y, Height) to RTHeight - Y - Height:
+				// v_gl = (1 - o_y) - t_y * s_y == (t_y + 0.5 / screenParam.y) * (-s_y).
+				const float invTop = 1.0f - vpOffset.y;
+				pointSpotVpScale.y = -vpScale.y;
+				pointSpotScreenParam.y = (invTop > 1e-6f && vpScale.y > 1e-6f) ? (-0.5f * vpScale.y / invTop) : 1e30f;
+			}
+			else
+			{
+				pointSpotScreenParam.y = (vpOffset.y > 1e-6f && vpScale.y > 1e-6f) ? (0.5f * vpScale.y / vpOffset.y) : 1e30f;
+			}
+		}
+
+		CEffectFile* pEffectFile = nullptr;
+		VertexDeclarationPtr pDecl = nullptr;
+		int nLastType = -1;
 
 		for (CLightObject* lightObject : sceneState->listDeferredLightObjects)
 		{
-			auto light_param = lightObject->GetLightParams();
-			auto light_type = light_param->Type;
-
-			auto light_diffuse = light_param->Diffuse;
-			auto light_specular = light_param->Specular;
-			auto light_ambient = light_param->Ambient;
-
-			auto light_position = light_param->Position;
-			auto light_direction = lightObject->GetDirection();
-
-			auto light_range = light_param->Range;
-			auto light_falloff = light_param->Falloff;
-
-			auto light_attenuation0 = light_param->Attenuation0;
-			auto light_attenuation1 = light_param->Attenuation1;
-			auto light_attenuation2 = light_param->Attenuation2;
-
-			auto light_theta = light_param->Theta;
-			auto light_phi = light_param->Phi;
-
-			switch (light_type)
-			{
-			case ELightType::Point:
-				effect = ParaScripting::ParaAsset::GetEffectFile("deferred_point_lighting");
-				pDecl = CGlobals::GetEffectManager()->GetVertexDeclaration(EffectManager::S0_POS);
-				break;
-			case ELightType::Spot:
-				effect = ParaScripting::ParaAsset::GetEffectFile("deferred_spot_lighting");
-				pDecl = CGlobals::GetEffectManager()->GetVertexDeclaration(EffectManager::S0_POS);
-				break;
-			case ELightType::Directional:
-				effect = ParaScripting::ParaAsset::GetEffectFile("deferred_directional_lighting");
-				pDecl = CGlobals::GetEffectManager()->GetVertexDeclaration(EffectManager::S0_POS_TEX0);
-				break;
-			}
-
-			if (pDecl)
-				pDevice->SetVertexDeclaration(pDecl);
-
-			if (!effect.Begin())
+			if (!lightObject)
+				continue;
+			auto* light_param = lightObject->GetLightParams();
+			if (!light_param)
 				continue;
 
-			auto params = effect.GetParamBlock();
-			params.SetParam("ViewAspect", "floatViewAspect");
-			params.SetParam("TanHalfFOV", "floatTanHalfFOV");
-			params.SetParam("screenParam", "vec2ScreenSize");
+			const auto light_type = light_param->Type;
+			const auto light_diffuse = light_param->Diffuse;
+			const auto light_specular = light_param->Specular;
+			const auto light_ambient = light_param->Ambient;
+			const auto light_position = light_param->Position;
+			const auto light_direction = lightObject->GetDirection();
+			const auto light_range = light_param->Range;
+			const auto light_falloff = light_param->Falloff;
+			const auto light_attenuation0 = light_param->Attenuation0;
+			const auto light_attenuation1 = light_param->Attenuation1;
+			const auto light_attenuation2 = light_param->Attenuation2;
+			const auto light_theta = light_param->Theta;
+			const auto light_phi = light_param->Phi;
+
+			if (static_cast<int>(light_type) != nLastType)
+			{
+				nLastType = static_cast<int>(light_type);
+				if (pEffectFile)
+				{
+					pEffectFile->end(true);
+					pEffectFile = nullptr;
+				}
+
+				if (light_type == ELightType::Point || light_type == ELightType::Spot)
+				{
+					pEffectFile = (light_type == ELightType::Point) ? m_effect_light_point.get() : m_effect_light_spot.get();
+					pDecl = CGlobals::GetEffectManager()->GetVertexDeclaration(EffectManager::S0_POS);
+				}
+				else if (light_type == ELightType::Directional)
+				{
+					pEffectFile = m_effect_light_directional.get();
+					pDecl = CGlobals::GetEffectManager()->GetVertexDeclaration(EffectManager::S0_POS_TEX0);
+				}
+
+				if (!pEffectFile)
+					continue;
+
+				pEffectFile->LoadAsset();
+				if (!pEffectFile->IsValid())
+				{
+					pEffectFile = nullptr;
+					continue;
+				}
+
+				if (pDecl)
+					pDevice->SetVertexDeclaration(pDecl);
+
+				if (!pEffectFile->begin(false, 0, true))
+				{
+					pEffectFile = nullptr;
+					continue;
+				}
+
+				auto* params = pEffectFile->GetParamBlock();
+				params->SetParamByStringValue("ViewAspect", "floatViewAspect");
+				params->SetParamByStringValue("TanHalfFOV", "floatTanHalfFOV");
+				params->SetParameter("viewportOffset", vpOffset);
+				if (light_type == ELightType::Point || light_type == ELightType::Spot)
+				{
+					params->SetParameter("screenParam", pointSpotScreenParam);
+					params->SetParameter("viewportScale", pointSpotVpScale);
+				}
+				else
+				{
+					params->SetParameter("screenParam", screenSize);
+					params->SetParameter("viewportScale", vpScale);
+				}
+
+				pEffectFile->SetTextureByName("tex0", nullptr);
+				pEffectFile->SetTextureByName("tex1", m_render_target_depth_tex.get());
+				pEffectFile->SetTextureByName("tex2", m_render_target_normal.get());
+				pDevice->SetTexture(0, nullptr);
+				pEffectFile->setTexture(1, m_render_target_depth_tex.get());
+				pEffectFile->setTexture(2, m_render_target_normal.get());
+			}
+
+			if (!pEffectFile)
+				continue;
+
+			auto* params = pEffectFile->GetParamBlock();
 
 			Matrix4 mxWorld;
 			lightObject->GetRenderMatrix(mxWorld);
+			if (light_type == ELightType::Point || light_type == ELightType::Spot)
+			{
+				Matrix4 mxScaling;
+				mxScaling.makeScale(Vector3(light_range, light_range, light_range));
+				mxWorld = mxScaling * mxWorld;
+			}
+
 			CGlobals::GetWorldMatrixStack().push(mxWorld);
-			params.SetParam("matWorld", "mat4World");
+			params->SetParamByStringValue("matWorld", "mat4World");
 			CGlobals::GetWorldMatrixStack().pop();
 
-			params.SetParam("matView", "mat4View");
-			params.SetParam("matProj", "mat4Projection");
+			params->SetParamByStringValue("matView", "mat4View");
+			params->SetParamByStringValue("matProj", "mat4Projection");
 
-			params.SetVector4("light_diffuse", light_diffuse.r, light_diffuse.g, light_diffuse.b, light_diffuse.a);
-			params.SetVector4("light_specular", light_specular.r, light_specular.g, light_specular.b, light_specular.a);
-			params.SetVector4("light_ambient", light_ambient.r, light_ambient.g, light_ambient.b, light_ambient.a);
+			params->SetParameter("light_diffuse", Vector4(light_diffuse.r, light_diffuse.g, light_diffuse.b, light_diffuse.a));
+			params->SetParameter("light_specular", Vector4(light_specular.r, light_specular.g, light_specular.b, light_specular.a));
+			params->SetParameter("light_ambient", Vector4(light_ambient.r, light_ambient.g, light_ambient.b, light_ambient.a));
 
-			params.SetVector3("light_position", light_position.x, light_position.y, light_position.z);
-			params.SetVector3("light_direction", light_direction.x, light_direction.y, light_direction.z);
+			params->SetParameter("light_position", Vector3(light_position.x, light_position.y, light_position.z));
+			params->SetParameter("light_direction", Vector3(light_direction.x, light_direction.y, light_direction.z));
 
-			params.SetFloat("light_range", light_range);
-			params.SetFloat("light_falloff", light_falloff);
+			params->SetParameter("light_range", light_range);
+			params->SetParameter("light_falloff", light_falloff);
 
-			params.SetFloat("light_attenuation0", light_attenuation0);
-			params.SetFloat("light_attenuation1", light_attenuation1);
-			params.SetFloat("light_attenuation2", light_attenuation2);
+			params->SetParameter("light_attenuation0", light_attenuation0);
+			params->SetParameter("light_attenuation1", light_attenuation1);
+			params->SetParameter("light_attenuation2", light_attenuation2);
 
-			params.SetFloat("light_theta", light_theta);
-			params.SetFloat("light_phi", light_phi);
+			params->SetParameter("light_theta", light_theta);
+			params->SetParameter("light_phi", light_phi);
 
-			auto _ColorRT = ParaScripting::ParaAsset::LoadTexture("_ColorRT", "_ColorRT", 0);
-			auto originRT = ParaScripting::CParaEngine::GetRenderTarget();
-			ParaScripting::CParaEngine::StretchRect(originRT, _ColorRT);
-			ParaScripting::CParaEngine::SetRenderTarget(originRT);
-			params.SetTextureObj(0, _ColorRT);
-			params.SetTextureObj(2, ParaScripting::ParaAsset::LoadTexture("_DepthTexRT_R32F", "_DepthTexRT_R32F", 0));
-			params.SetTextureObj(3, ParaScripting::ParaAsset::LoadTexture("_NormalRT", "_NormalRT", 0));
+			pEffectFile->applyCameraMatrices();
+			params->ApplyToEffect(pEffectFile);
 
-			effect.CommitChanges();
-
+			pDevice->SetRenderState(ERenderState::STENCILWRITEMASK, 0xFFFFFFFF);
 			pDevice->SetClearStencil(0);
 			pDevice->Clear(false, false, true);
 
@@ -3247,35 +3465,49 @@ namespace ParaEngine
 			{
 			case ELightType::Point:
 			case ELightType::Spot:
-			{
-				for (size_t v = 0; v < s_unitSphereVerts.size(); ++v)
+				for (int pass = 0; pass < 2; ++pass)
 				{
-					scaledSphereVerts[v] = s_unitSphereVerts[v] * light_range;
-				}
-				const uint32_t numVerts = static_cast<uint32_t>(scaledSphereVerts.size());
-				const uint32_t primCount = static_cast<uint32_t>(s_sphereIndices.size() / 3);
-				for (int pass = 0; pass < 2; pass++)
-				{
-					if (effect.BeginPass(pass))
+					if (pEffectFile->BeginPass(pass, true))
 					{
-						pDevice->DrawIndexedPrimitiveUP(EPrimitiveType::TRIANGLELIST, 0, numVerts, primCount, s_sphereIndices.data(), PixelFormat::INDEX16, scaledSphereVerts.data(), sizeof(Vector3));
-						effect.EndPass();
+						if (pass == 1)
+						{
+							pEffectFile->setTexture(1, m_render_target_depth_tex.get());
+							pEffectFile->setTexture(2, m_render_target_normal.get());
+						}
+						pDevice->DrawIndexedPrimitiveUP(EPrimitiveType::TRIANGLELIST, 0, numSphereVerts, spherePrimCount, s_sphereIndices.data(), PixelFormat::INDEX16, s_unitSphereVerts.data(), sizeof(Vector3));
+						pEffectFile->EndPass(true);
 					}
 				}
 				break;
-			}
 			case ELightType::Directional:
-				if (effect.BeginPass(0))
+				if (pEffectFile->BeginPass(0, true))
 				{
+					pEffectFile->setTexture(1, m_render_target_depth_tex.get());
+					pEffectFile->setTexture(2, m_render_target_normal.get());
 					ParaScripting::CParaEngine::DrawQuad();
-					effect.EndPass();
+					pEffectFile->EndPass(true);
 				}
 				break;
+			default:
+				break;
 			}
-			effect.End();
 		}
 
-		FinishAutoBoundSceneColorRT();
+		if (pEffectFile)
+		{
+			pEffectFile->end(true);
+		}
+
+		pDevice->SetTexture(1, nullptr);
+		pDevice->SetTexture(2, nullptr);
+
+		pDevice->SetRenderTargets(rt0 ? 1u : 0u, rt0 ? &rt0 : nullptr, depthStencilRT);
+		if (CGlobals::GetViewportManager() && CGlobals::GetViewportManager()->GetActiveViewPort())
+			CGlobals::GetViewportManager()->GetActiveViewPort()->ApplyViewport();
+
+		pDevice->SetRenderState(ERenderState::SRCBLEND, D3DBLEND_SRCALPHA);
+		pDevice->SetRenderState(ERenderState::DESTBLEND, D3DBLEND_INVSRCALPHA);
+		pDevice->SetRenderState(ERenderState::ALPHABLENDENABLE, FALSE);
 	}
 
 	int BlockWorldClient::InstallFields(CAttributeClass* pClass, bool bOverride)

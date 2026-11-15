@@ -41,6 +41,27 @@ namespace ParaEngine
 			::WideCharToMultiByte(CP_UTF8, 0, wstr, -1, &out[0], len, nullptr, nullptr);
 			return out;
 		}
+
+		struct D3D11RuntimeLoader
+		{
+			HMODULE hD3D11 = nullptr;
+			PFN_D3D11_CREATE_DEVICE pfnCreateDevice = nullptr;
+
+			D3D11RuntimeLoader()
+			{
+				hD3D11 = ::LoadLibraryW(L"d3d11.dll");
+				if (hD3D11)
+				{
+					pfnCreateDevice = reinterpret_cast<PFN_D3D11_CREATE_DEVICE>(::GetProcAddress(hD3D11, "D3D11CreateDevice"));
+				}
+			}
+		};
+
+		const D3D11RuntimeLoader& GetD3D11Runtime()
+		{
+			static D3D11RuntimeLoader s_loader;
+			return s_loader;
+		}
 	}
 
 	IRenderContext* CreateRenderContextD3D11()
@@ -50,6 +71,13 @@ namespace ParaEngine
 
 	IRenderDevice* RenderContextD3D11::CreateDevice(const RenderConfiguration& cfg)
 	{
+		const auto& rt = GetD3D11Runtime();
+		if (!rt.pfnCreateDevice)
+		{
+			OUTPUT_LOG("ParaRHI: d3d11.dll not available on this system; skipping D3D11 backend\n");
+			return nullptr;
+		}
+
 		if (!cfg.renderWindow)
 		{
 			OUTPUT_LOG("ERROR: RenderContextD3D11::CreateDevice called with null renderWindow\n");
@@ -92,7 +120,7 @@ namespace ParaEngine
 		bool usingWarp = false;
 
 		auto tryCreate = [&](D3D_DRIVER_TYPE driverType, UINT flags) -> HRESULT {
-			HRESULT hr = ::D3D11CreateDevice(
+			HRESULT hr = rt.pfnCreateDevice(
 				nullptr,
 				driverType,
 				nullptr,
@@ -107,7 +135,7 @@ namespace ParaEngine
 			// Older Windows 7 systems without KB2670838 reject D3D_FEATURE_LEVEL_11_1 with E_INVALIDARG
 			if (hr == E_INVALIDARG && !forceFL93 && numLevels > 1)
 			{
-				hr = ::D3D11CreateDevice(
+				hr = rt.pfnCreateDevice(
 					nullptr,
 					driverType,
 					nullptr,

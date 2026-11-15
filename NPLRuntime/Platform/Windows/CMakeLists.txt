@@ -113,6 +113,21 @@ endif()
 
 set_property(GLOBAL PROPERTY WindowsApplicationName WindowsApplication)
 
+if(CMAKE_SIZEOF_VOID_P EQUAL 8)
+    set(_D3D_REDIST_ARCH "x64")
+else()
+    set(_D3D_REDIST_ARCH "x86")
+endif()
+
+find_file(D3DCOMPILER_47_REDIST_DLL
+    NAMES d3dcompiler_47.dll
+    PATHS
+        "$ENV{WindowsSdkDir}/Redist/D3D/${_D3D_REDIST_ARCH}"
+        "C:/Program Files (x86)/Windows Kits/10/Redist/D3D/${_D3D_REDIST_ARCH}"
+        "C:/Program Files/Windows Kits/10/Redist/D3D/${_D3D_REDIST_ARCH}"
+    NO_DEFAULT_PATH
+)
+
 # Copy files Link the executable to the libraries. 
 ADD_CUSTOM_COMMAND(
    TARGET WindowsApplication
@@ -120,6 +135,15 @@ ADD_CUSTOM_COMMAND(
    COMMAND ${CMAKE_COMMAND} -E make_directory ${OUTPUT_BIN_DIR}
    COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:WindowsApplication> ${OUTPUT_BIN_DIR}
 )
+
+if(D3DCOMPILER_47_REDIST_DLL)
+    ADD_CUSTOM_COMMAND(
+        TARGET WindowsApplication
+        POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different "${D3DCOMPILER_47_REDIST_DLL}" "$<TARGET_FILE_DIR:WindowsApplication>/d3dcompiler_47.dll"
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different "${D3DCOMPILER_47_REDIST_DLL}" "${OUTPUT_BIN_DIR}/d3dcompiler_47.dll"
+    )
+endif()
 
 if(WIN32 AND NOT PARAENGINE_COMPILE_LIB)
     add_subdirectory(ParaApplyWaiter)

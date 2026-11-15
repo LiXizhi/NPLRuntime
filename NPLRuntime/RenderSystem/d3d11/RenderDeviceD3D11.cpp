@@ -14,6 +14,40 @@ namespace ParaEngine
 {
 	namespace
 	{
+		using PFN_D3DCompileDyn = HRESULT(WINAPI*)(
+			LPCVOID, SIZE_T, LPCSTR, const D3D_SHADER_MACRO*, ID3DInclude*, LPCSTR, LPCSTR, UINT, UINT, ID3DBlob**, ID3DBlob**);
+		using PFN_D3DReflectDyn = HRESULT(WINAPI*)(
+			LPCVOID, SIZE_T, REFIID, void**);
+
+		struct D3D11CompilerLoader
+		{
+			HMODULE hCompiler = nullptr;
+			PFN_D3DCompileDyn pfnCompile = nullptr;
+			PFN_D3DReflectDyn pfnReflect = nullptr;
+
+			D3D11CompilerLoader()
+			{
+				const char* compilerDlls[] = { "d3dcompiler_47.dll", "d3dcompiler_46.dll", "d3dcompiler_43.dll" };
+				for (const char* name : compilerDlls)
+				{
+					hCompiler = ::LoadLibraryA(name);
+					if (hCompiler)
+						break;
+				}
+				if (hCompiler)
+				{
+					pfnCompile = reinterpret_cast<PFN_D3DCompileDyn>(::GetProcAddress(hCompiler, "D3DCompile"));
+					pfnReflect = reinterpret_cast<PFN_D3DReflectDyn>(::GetProcAddress(hCompiler, "D3DReflect"));
+				}
+			}
+		};
+
+		const D3D11CompilerLoader& GetD3D11Compiler()
+		{
+			static D3D11CompilerLoader s_compiler;
+			return s_compiler;
+		}
+
 		inline void HashCombineU64(uint64_t& h, uint64_t v)
 		{
 			h ^= v;
@@ -595,7 +629,8 @@ namespace ParaEngine
 			PixelFormat depthFormat,
 			uint32_t colorTargetCount,
 			uint32_t msaaSamples)
-			: m_width(width)
+			: m_owner(owner)
+			, m_width(width)
 			, m_height(height)
 			, m_colorFormat(colorFormat)
 			, m_colorCount((std::min)((std::max)(colorTargetCount, 1u), 4u))
@@ -705,6 +740,10 @@ namespace ParaEngine
 
 		virtual ~D3D11RenderTarget() override
 		{
+			if (m_owner)
+			{
+				m_owner->NotifyRenderTargetDestroyed(this);
+			}
 			for (uint32_t i = 0; i < 4; ++i)
 			{
 				if (m_colorTextures[i])
@@ -736,6 +775,7 @@ namespace ParaEngine
 		D3D11Texture* GetD3DDepthTex() const { return m_depthTexture; }
 
 	private:
+		RenderDeviceD3D11* m_owner = nullptr;
 		uint32_t m_width;
 		uint32_t m_height;
 		PixelFormat m_colorFormat;
@@ -849,8 +889,9 @@ namespace ParaEngine
 			std::memcpy(m_vsBytecode.data(), desc.vsBytecode, desc.vsBytecodeSize);
 			m_vsHash = ComputeByteHash64(desc.vsBytecode, desc.vsBytecodeSize);
 
+			const auto& d3dc = GetD3D11Compiler();
 			ComPtr<ID3D11ShaderReflection> refl;
-			if (SUCCEEDED(::D3DReflect(desc.vsBytecode, desc.vsBytecodeSize, IID_ID3D11ShaderReflection, reinterpret_cast<void**>(refl.GetAddressOf()))) && refl)
+			if (d3dc.pfnReflect && SUCCEEDED(d3dc.pfnReflect(desc.vsBytecode, desc.vsBytecodeSize, IID_ID3D11ShaderReflection, reinterpret_cast<void**>(refl.GetAddressOf()))) && refl)
 			{
 				D3D11_SHADER_DESC sd = {};
 				if (SUCCEEDED(refl->GetDesc(&sd)))
@@ -885,7 +926,7 @@ namespace ParaEngine
 			if (desc.psBytecode && desc.psBytecodeSize > 0)
 			{
 				ComPtr<ID3D11ShaderReflection> psRefl;
-				if (SUCCEEDED(::D3DReflect(desc.psBytecode, desc.psBytecodeSize, IID_ID3D11ShaderReflection, reinterpret_cast<void**>(psRefl.GetAddressOf()))) && psRefl)
+				if (d3dc.pfnReflect && SUCCEEDED(d3dc.pfnReflect(desc.psBytecode, desc.psBytecodeSize, IID_ID3D11ShaderReflection, reinterpret_cast<void**>(psRefl.GetAddressOf()))) && psRefl)
 				{
 					D3D11_SHADER_DESC psd = {};
 					if (SUCCEEDED(psRefl->GetDesc(&psd)))
@@ -1105,6 +1146,43 @@ namespace ParaEngine
 		{
 			m_currentProgram = nullptr;
 			m_srvBindingsDirty = true;
+		}
+	}
+
+	void RenderDeviceD3D11::NotifyRenderTargetDestroyed(D3D11RenderTarget* rt)
+	{
+		if (m_isShuttingDown || !rt)
+			return;
+
+		bool changed = false;
+		IRHIRenderTarget* newTargets[4] = {
+			m_currentRTBinding.targets[0],
+			m_currentRTBinding.targets[1],
+			m_currentRTBinding.targets[2],
+			m_currentRTBinding.targets[3]
+		};
+		for (uint32_t i = 0; i < 4; ++i)
+		{
+			if (newTargets[i] == rt)
+			{
+				newTargets[i] = nullptr;
+				changed = true;
+			}
+		}
+		IRHIRenderTarget* dsOverride = (m_currentRTBinding.depthStencilOverride == rt)
+			? nullptr
+			: m_currentRTBinding.depthStencilOverride;
+		if (dsOverride != m_currentRTBinding.depthStencilOverride)
+			changed = true;
+		if (changed)
+		{
+			uint32_t newCount = 0;
+			for (uint32_t i = 0; i < 4; ++i)
+			{
+				if (newTargets[i] != nullptr)
+					newCount = i + 1;
+			}
+			SetRenderTargets(newCount, newCount > 0 ? newTargets : nullptr, dsOverride);
 		}
 	}
 
@@ -1751,12 +1829,15 @@ namespace ParaEngine
 				"VSOut BlitVS(VSIn i) { VSOut o; o.pos = float4(i.pos, 0.0, 1.0); o.uv = i.uv; return o; }\n"
 				"float4 BlitPS(VSOut i) : SV_Target { return gTex.Sample(gSamp, i.uv); }\n";
 
+			const auto& d3dc = GetD3D11Compiler();
+			if (!d3dc.pfnCompile)
+				return false;
 			const char* vsProf = (m_featureLevel >= D3D_FEATURE_LEVEL_10_0) ? "vs_4_0" : "vs_4_0_level_9_3";
 			const char* psProf = (m_featureLevel >= D3D_FEATURE_LEVEL_10_0) ? "ps_4_0" : "ps_4_0_level_9_3";
 			ComPtr<ID3DBlob> vsBlob, psBlob;
-			if (FAILED(::D3DCompile(kBlitHLSL, std::strlen(kBlitHLSL), "Blit", nullptr, nullptr, "BlitVS", vsProf, 0, 0, vsBlob.GetAddressOf(), nullptr)))
+			if (FAILED(d3dc.pfnCompile(kBlitHLSL, std::strlen(kBlitHLSL), "Blit", nullptr, nullptr, "BlitVS", vsProf, 0, 0, vsBlob.GetAddressOf(), nullptr)))
 				return false;
-			if (FAILED(::D3DCompile(kBlitHLSL, std::strlen(kBlitHLSL), "Blit", nullptr, nullptr, "BlitPS", psProf, 0, 0, psBlob.GetAddressOf(), nullptr)))
+			if (FAILED(d3dc.pfnCompile(kBlitHLSL, std::strlen(kBlitHLSL), "Blit", nullptr, nullptr, "BlitPS", psProf, 0, 0, psBlob.GetAddressOf(), nullptr)))
 				return false;
 
 			if (FAILED(m_device->CreateVertexShader(vsBlob->GetBufferPointer(), vsBlob->GetBufferSize(), nullptr, m_blitVS.GetAddressOf())))

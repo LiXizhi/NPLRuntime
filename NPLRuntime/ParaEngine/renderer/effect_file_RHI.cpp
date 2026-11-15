@@ -593,7 +593,20 @@ namespace ParaEngine
 				auto it = semTable.find(semLower);
 				if (it != semTable.end())
 				{
-					m_handleToSlot[it->second] = slotIdx;
+					uint32_t handle = it->second;
+					if (semLower == "materialspecular")
+					{
+						handle = (m_paramSlots[slotIdx].scalarElemBytes >= 12)
+							? static_cast<uint32_t>(CEffectFileBase::k_specularMaterialColor)
+							: static_cast<uint32_t>(CEffectFileBase::k_material_specular);
+					}
+					else if (semLower == "materialemissive")
+					{
+						handle = (m_paramSlots[slotIdx].scalarElemBytes >= 12)
+							? static_cast<uint32_t>(CEffectFileBase::k_emissiveMaterialColor)
+							: static_cast<uint32_t>(CEffectFileBase::k_material_emissive);
+					}
+					m_handleToSlot[handle] = slotIdx;
 				}
 				else if (StartsWithStr(semLower, "texmat"))
 				{
@@ -1517,15 +1530,20 @@ namespace ParaEngine
 		{
 			uint32_t dwValue = 0;
 			pDevice->GetSamplerState(static_cast<uint32_t>(index), ESamplerStateType::MINFILTER, &dwValue);
+			GLuint glTexId = static_cast<GLuint>(reinterpret_cast<uintptr_t>(pTex->GetNativeHandle()));
 			if (dwValue == D3DTEXF_POINT && !data->IsSamplerStateBlocky())
 			{
+				glActiveTexture(GL_TEXTURE0 + static_cast<GLenum>(index));
+				glBindTexture(GL_TEXTURE_2D, glTexId);
 				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 				data->SetSamplerStateBlocky(true);
 			}
 			else if (dwValue == D3DTEXF_LINEAR && data->IsSamplerStateBlocky())
 			{
-				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+				glActiveTexture(GL_TEXTURE0 + static_cast<GLenum>(index));
+				glBindTexture(GL_TEXTURE_2D, glTexId);
+				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, (pTex->GetMipLevels() > 1) ? GL_LINEAR_MIPMAP_NEAREST : GL_LINEAR);
 				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 				data->SetSamplerStateBlocky(false);
 			}
@@ -1795,7 +1813,14 @@ namespace ParaEngine
 			setParameter(k_specularMaterialColor, &d3dMaterial.Specular, sizeof(LinearColor));
 
 		if (isParameterUsed(k_emissiveMaterialColor))
-			setParameter(k_emissiveMaterialColor, &d3dMaterial.Emissive, sizeof(LinearColor));
+		{
+			// In ParaEngine .x/.fbx static meshes (CParaXMaterial), d3dMaterial.Emissive.r encodes
+			// reflection-map reflectivity (often 1.0f), not an emissive RGB color (see ParaXMaterial.h
+			// GetReflectivity() and legacy effect_file_DirectX.cpp / effect_file_OpenGL.cpp).
+			// Animated ParaX emissive passes set k_emissiveMaterialColor explicitly in ModelRenderPass.
+			LinearColor zeroEmissive(0.f, 0.f, 0.f, 0.f);
+			setParameter(k_emissiveMaterialColor, &zeroEmissive, sizeof(LinearColor));
+		}
 
 		if (isParameterUsed(k_specularMaterialPower))
 			setFloat(k_specularMaterialPower, d3dMaterial.Power);

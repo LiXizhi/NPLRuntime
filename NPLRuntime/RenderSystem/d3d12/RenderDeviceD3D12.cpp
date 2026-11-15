@@ -18,6 +18,48 @@ namespace ParaEngine
 {
 	namespace
 	{
+		using PFN_D3DCompileDyn = HRESULT(WINAPI*)(
+			LPCVOID, SIZE_T, LPCSTR, const D3D_SHADER_MACRO*, ID3DInclude*, LPCSTR, LPCSTR, UINT, UINT, ID3DBlob**, ID3DBlob**);
+		using PFN_D3DReflectDyn = HRESULT(WINAPI*)(
+			LPCVOID, SIZE_T, REFIID, void**);
+
+		struct D3D12DeviceLibLoader
+		{
+			HMODULE hD3D12 = nullptr;
+			HMODULE hCompiler = nullptr;
+			PFN_D3D12_SERIALIZE_ROOT_SIGNATURE pfnSerializeRootSignature = nullptr;
+			PFN_D3DCompileDyn pfnCompile = nullptr;
+			PFN_D3DReflectDyn pfnReflect = nullptr;
+
+			D3D12DeviceLibLoader()
+			{
+				hD3D12 = ::LoadLibraryW(L"d3d12.dll");
+				if (hD3D12)
+				{
+					pfnSerializeRootSignature = reinterpret_cast<PFN_D3D12_SERIALIZE_ROOT_SIGNATURE>(
+						::GetProcAddress(hD3D12, "D3D12SerializeRootSignature"));
+				}
+				const char* compilerDlls[] = { "d3dcompiler_47.dll", "d3dcompiler_46.dll", "d3dcompiler_43.dll" };
+				for (const char* name : compilerDlls)
+				{
+					hCompiler = ::LoadLibraryA(name);
+					if (hCompiler)
+						break;
+				}
+				if (hCompiler)
+				{
+					pfnCompile = reinterpret_cast<PFN_D3DCompileDyn>(::GetProcAddress(hCompiler, "D3DCompile"));
+					pfnReflect = reinterpret_cast<PFN_D3DReflectDyn>(::GetProcAddress(hCompiler, "D3DReflect"));
+				}
+			}
+		};
+
+		const D3D12DeviceLibLoader& GetD3D12Libs()
+		{
+			static D3D12DeviceLibLoader s_libs;
+			return s_libs;
+		}
+
 		inline void HashCombineU64(uint64_t& h, uint64_t v)
 		{
 			h ^= v;
@@ -1335,8 +1377,9 @@ namespace ParaEngine
 				return;
 
 			// 2. Fallback to D3DReflect (SM4/SM5 DXBC)
+			const auto& libs = GetD3D12Libs();
 			ComPtr<ID3D12ShaderReflection> refl12;
-			if (SUCCEEDED(::D3DReflect(m_vsBytecode.data(), m_vsBytecode.size(), IID_PPV_ARGS(&refl12))) && refl12)
+			if (libs.pfnReflect && SUCCEEDED(libs.pfnReflect(m_vsBytecode.data(), m_vsBytecode.size(), IID_PPV_ARGS(&refl12))) && refl12)
 			{
 				D3D12_SHADER_DESC sd = {};
 				if (SUCCEEDED(refl12->GetDesc(&sd)))
@@ -1431,8 +1474,9 @@ namespace ParaEngine
 				return;
 			}
 
+			const auto& libs = GetD3D12Libs();
 			ComPtr<ID3D12ShaderReflection> refl12;
-			if (SUCCEEDED(::D3DReflect(m_psBytecode.data(), m_psBytecode.size(), IID_PPV_ARGS(&refl12))) && refl12)
+			if (libs.pfnReflect && SUCCEEDED(libs.pfnReflect(m_psBytecode.data(), m_psBytecode.size(), IID_PPV_ARGS(&refl12))) && refl12)
 			{
 				D3D12_SHADER_DESC sd = {};
 				if (SUCCEEDED(refl12->GetDesc(&sd)))
@@ -1658,8 +1702,10 @@ namespace ParaEngine
 		rsDesc.pStaticSamplers = nullptr;
 		rsDesc.Flags = D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT;
 
+		const auto& libs = GetD3D12Libs();
 		ComPtr<ID3DBlob> sigBlob, errBlob;
-		if (FAILED(::D3D12SerializeRootSignature(&rsDesc, D3D_ROOT_SIGNATURE_VERSION_1, &sigBlob, &errBlob)) || !sigBlob)
+		if (!libs.pfnSerializeRootSignature ||
+			FAILED(libs.pfnSerializeRootSignature(&rsDesc, D3D_ROOT_SIGNATURE_VERSION_1, &sigBlob, &errBlob)) || !sigBlob)
 		{
 			if (errBlob)
 				OUTPUT_LOG("ERROR: D3D12SerializeRootSignature failed: %s\n", static_cast<const char*>(errBlob->GetBufferPointer()));
@@ -2831,10 +2877,13 @@ namespace ParaEngine
 				"VSOut BlitVS(VSIn i) { VSOut o; o.pos = float4(i.pos, 0.0, 1.0); o.uv = i.uv; return o; }\n"
 				"float4 BlitPS(VSOut i) : SV_Target { return gTex.Sample(gSamp, i.uv); }\n";
 
-			ComPtr<ID3DBlob> vsBlob, psBlob;
-			if (FAILED(::D3DCompile(kBlitHLSL, std::strlen(kBlitHLSL), "Blit12", nullptr, nullptr, "BlitVS", "vs_5_0", 0, 0, &vsBlob, nullptr)))
+			const auto& libs = GetD3D12Libs();
+			if (!libs.pfnCompile)
 				return false;
-			if (FAILED(::D3DCompile(kBlitHLSL, std::strlen(kBlitHLSL), "Blit12", nullptr, nullptr, "BlitPS", "ps_5_0", 0, 0, &psBlob, nullptr)))
+			ComPtr<ID3DBlob> vsBlob, psBlob;
+			if (FAILED(libs.pfnCompile(kBlitHLSL, std::strlen(kBlitHLSL), "Blit12", nullptr, nullptr, "BlitVS", "vs_5_0", 0, 0, &vsBlob, nullptr)))
+				return false;
+			if (FAILED(libs.pfnCompile(kBlitHLSL, std::strlen(kBlitHLSL), "Blit12", nullptr, nullptr, "BlitPS", "ps_5_0", 0, 0, &psBlob, nullptr)))
 				return false;
 
 			RHIShaderProgramDesc progDesc = {};
