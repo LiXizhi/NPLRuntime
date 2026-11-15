@@ -56,6 +56,7 @@ namespace ParaEngine
 	{
 	public:
         CParaEngineAppOSX();
+		virtual bool InitApp(IRenderWindow* pWindow, const char* sCommandLine = nullptr) override;
 		virtual void GameToClient(int& inout_x, int & inout_y, bool bInBackbuffer = true) override;
 		virtual void ClientToGame(int& inout_x, int & inout_y, bool bInBackbuffer = true) override;
 		virtual void SetRefreshTimer(float fTimeInterval, int nFrameRateControl = 0) override;
@@ -80,6 +81,9 @@ namespace ParaEngine
 		/** change the full screen mode, it does not immediately change the device, call UpdateScreenMode() to update the device. */
 		virtual void GetScreenResolution(Vector2* pOut) override;
 		virtual void SetScreenResolution(const Vector2& vSize) override;
+		virtual void GetVisibleSize(Vector2* pOut) override;
+		virtual bool IsWindowMaximized() override;
+		virtual void SetWindowMaximized(bool isMaximized) override;
 
         void handle_mainloop_timer(const boost::system::error_code& err);
 	protected:

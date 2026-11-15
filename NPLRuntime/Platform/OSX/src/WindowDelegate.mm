@@ -42,6 +42,22 @@ static WindowDelegate* sInstance = nil;
    // [[NSRunningApplication currentApplication] terminate];
 }
 
+- (void) windowDidResize:(NSNotification *)notification
+{
+    if (_renderWindow)
+    {
+        _renderWindow->OnWindowSizeChanged();
+    }
+}
+
+- (void) windowDidChangeBackingProperties:(NSNotification *)notification
+{
+    if (_renderWindow)
+    {
+        _renderWindow->OnWindowSizeChanged();
+    }
+}
+
 - (BOOL) applicationShouldTerminateAfterLastWindowClosed:(NSApplication *)sender
 {
     return YES;

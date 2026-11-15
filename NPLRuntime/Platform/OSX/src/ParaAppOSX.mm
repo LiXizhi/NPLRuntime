@@ -17,6 +17,18 @@ ParaEngine::CParaEngineAppOSX::CParaEngineAppOSX()
     CMidiMsg::GetSingleton().SetMediaPlayer(ParaEngineMediaPlayer::GetSingleton());
 }
 
+bool ParaEngine::CParaEngineAppOSX::InitApp(IRenderWindow* pWindow, const char* sCommandLine /*= nullptr*/)
+{
+    if (!CParaEngineAppBase::InitApp(pWindow, sCommandLine))
+        return false;
+
+    if (auto* osxWindow = static_cast<RenderWindowOSX*>(pWindow))
+    {
+        osxWindow->UpdateAutoUIScaling(true);
+    }
+    return true;
+}
+
 void ParaEngine::CParaEngineAppOSX::GameToClient(int& inout_x, int & inout_y, bool bInBackbuffer /*= true*/)
 {
     //throw std::logic_error("The method or operation is not implemented.");
@@ -214,5 +226,39 @@ void ParaEngine::CParaEngineAppOSX::GetScreenResolution(Vector2* pOut)
 void ParaEngine::CParaEngineAppOSX::SetScreenResolution(const Vector2& vSize)
 {
     RenderWindowOSX *renderWindow = (RenderWindowOSX*)m_pRenderWindow;
-    renderWindow->SetScreenResolution(vSize.x, vSize.y);
+    if (renderWindow)
+        renderWindow->SetScreenResolution(vSize.x, vSize.y);
+}
+
+void ParaEngine::CParaEngineAppOSX::GetVisibleSize(Vector2* pOut)
+{
+    if (pOut && m_pRenderWindow)
+    {
+        pOut->x = static_cast<float>(m_pRenderWindow->GetWidth());
+        pOut->y = static_cast<float>(m_pRenderWindow->GetHeight());
+    }
+}
+
+bool ParaEngine::CParaEngineAppOSX::IsWindowMaximized()
+{
+    if (!m_pRenderWindow)
+        return false;
+    NSWindow* win = (NSWindow*)m_pRenderWindow->GetNativeHandle();
+    if (!win)
+        return false;
+    return [win isZoomed] || (([win styleMask] & NSWindowStyleMaskFullScreen) != 0);
+}
+
+void ParaEngine::CParaEngineAppOSX::SetWindowMaximized(bool isMaximized)
+{
+    if (!m_pRenderWindow)
+        return;
+    NSWindow* win = (NSWindow*)m_pRenderWindow->GetNativeHandle();
+    if (!win)
+        return;
+    const bool currentlyZoomed = ([win isZoomed] != NO);
+    if (currentlyZoomed != isMaximized && (([win styleMask] & NSWindowStyleMaskFullScreen) == 0))
+    {
+        [win zoom:nil];
+    }
 }

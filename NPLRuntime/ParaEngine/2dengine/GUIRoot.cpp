@@ -2023,7 +2023,10 @@ void ParaEngine::CGUIRoot::SetUIScale(float fScalingX, float fScalingY, bool bEn
 	{
 #ifdef PLATFORM_MAC
         CViewport* pViewport = CGlobals::GetViewportManager()->CreateGetViewPort(0);
-        UpdateViewport(pViewport->GetLeft(), pViewport->GetTop(), pViewport->GetWidth(), pViewport->GetHeight(), true);
+        if (pViewport && pViewport->GetWidth() > 0 && pViewport->GetHeight() > 0)
+        {
+            UpdateViewport(pViewport->GetLeft(), pViewport->GetTop(), pViewport->GetWidth(), pViewport->GetHeight(), true);
+        }
 #else
         if (bEnsureMinimumScreenSize || bEnsureMaximumScreenSize)
         {

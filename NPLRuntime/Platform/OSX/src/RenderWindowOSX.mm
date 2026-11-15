@@ -3,9 +3,16 @@
 #include "ParaEngine.h"
 #include "2dengine/GUIRoot.h"
 #include "2dengine/GUIEdit.h"
+#include "ViewportManager.h"
+#include "NPLRuntime.h"
 #include "WindowDelegate.h"
 
 #include <Carbon/Carbon.h> /* For kVK_ constants, and TIS functions. */
+#include <algorithm>
+#include <cmath>
+#include <iomanip>
+#include <locale>
+#include <sstream>
 #include <unordered_map>
 
 #import "LuaObjcBridge/CCLuaObjcBridge.h"
@@ -194,12 +201,26 @@ RenderWindowOSX::RenderWindowOSX(const int width, const int height)
     NSInteger style = NSWindowStyleMaskTitled | NSWindowStyleMaskClosable |
     NSWindowStyleMaskMiniaturizable | NSWindowStyleMaskResizable;
 
-    m_window = [[GLWindow alloc] initWithContentRect:CGRectMake(0, 0, width,height) styleMask:style backing:NSBackingStoreBuffered defer:NO];
+    CGFloat initWidth = (CGFloat)width;
+    CGFloat initHeight = (CGFloat)height;
+    NSScreen* mainScreen = [NSScreen mainScreen];
+    if (mainScreen)
+    {
+        NSRect visibleFrame = [mainScreen visibleFrame];
+        if (visibleFrame.size.width > 0 && visibleFrame.size.height > 0)
+        {
+            initWidth = std::min(initWidth, visibleFrame.size.width);
+            initHeight = std::min(initHeight, std::max((CGFloat)480.0, visibleFrame.size.height - (CGFloat)32.0));
+        }
+    }
 
-    RenderView* renderView = [[[RenderView alloc] initWithFrame:CGRectMake(0, 0, width, height)] autorelease];
+    m_window = [[GLWindow alloc] initWithContentRect:CGRectMake(0, 0, initWidth, initHeight) styleMask:style backing:NSBackingStoreBuffered defer:NO];
+
+    RenderView* renderView = [[[RenderView alloc] initWithFrame:CGRectMake(0, 0, initWidth, initHeight)] autorelease];
     [renderView setAutoresizingMask:NSViewWidthSizable | NSViewHeightSizable];
     [renderView setWantsBestResolutionOpenGLSurface:YES];
     [m_window setContentView:renderView];
+    [m_window setCollectionBehavior:NSWindowCollectionBehaviorFullScreenPrimary];
 
     [m_window setTitle:@"Paracraft"];
     [m_window center];
@@ -210,6 +231,11 @@ RenderWindowOSX::RenderWindowOSX(const int width, const int height)
     [m_window setAcceptsMouseMovedEvents:YES];
     [m_window makeFirstResponder:renderView];
     //[m_window.contentView setAllowedTouchTypes:NSTouchTypeMaskDirect];
+
+    double initScaleX = 1.0, initScaleY = 1.0;
+    GetScaleFactor(initScaleX, initScaleY);
+    if (initScaleX > 0.0)
+        currentBackingScaleFactor = (float)initScaleX;
     
     WindowDelegate* winDelegate = [WindowDelegate sharedDelegate];
     [m_window setDelegate:winDelegate];
@@ -217,6 +243,7 @@ RenderWindowOSX::RenderWindowOSX(const int width, const int height)
 
 RenderWindowOSX::~RenderWindowOSX()
 {
+    [m_window setDelegate:nil];
     [m_window release];
 }
 
@@ -227,24 +254,47 @@ intptr_t RenderWindowOSX::GetNativeHandle() const
 
 unsigned int RenderWindowOSX::GetHeight() const
 {   
+    if (!m_window || !m_window.contentView)
+        return 0;
     auto point = NSMakePoint(0, m_window.contentView.frame.size.height);
     auto backingPoint = [m_window.contentView convertPointToBacking:point];
 
-    return (unsigned int )backingPoint.y;
+    return (unsigned int)std::max(0.0, (double)backingPoint.y);
 }
 
 unsigned int RenderWindowOSX::GetWidth() const
 {    
+    if (!m_window || !m_window.contentView)
+        return 0;
     auto point = NSMakePoint(m_window.contentView.frame.size.width, 0);
     auto backingPoint = [m_window.contentView convertPointToBacking:point];
 
-    return (unsigned int )backingPoint.x;
+    return (unsigned int)std::max(0.0, (double)backingPoint.x);
 }
 
 void RenderWindowOSX::GetScaleFactor(double &x, double &y) const
 {
-    auto point = NSMakePoint(m_window.contentView.frame.size.width, m_window.contentView.frame.size.height);
-    
+    if (!m_window || !m_window.contentView)
+    {
+        x = 1.0;
+        y = 1.0;
+        return;
+    }
+
+    NSSize frameSize = m_window.contentView.frame.size;
+    if (frameSize.width <= 0.0 || frameSize.height <= 0.0)
+    {
+        CGFloat scale = [m_window backingScaleFactor];
+        if (scale <= 0.0 && [NSScreen mainScreen])
+            scale = [[NSScreen mainScreen] backingScaleFactor];
+        if (scale <= 0.0)
+            scale = 1.0;
+        x = (double)scale;
+        y = (double)scale;
+        return;
+    }
+
+    auto point = NSMakePoint(frameSize.width, frameSize.height);
     auto backingPoint = [m_window.contentView convertPointToBacking:point];
 
     x = backingPoint.x / point.x;
@@ -253,18 +303,140 @@ void RenderWindowOSX::GetScaleFactor(double &x, double &y) const
 
 void RenderWindowOSX::GetScreenResolution(float *pX, float *pY)
 {
+    double sx = 1.0, sy = 1.0;
+    GetScaleFactor(sx, sy);
+    if (sx > 0.0)
+        currentBackingScaleFactor = (float)sx;
+    float scale = currentBackingScaleFactor > 0.0f ? currentBackingScaleFactor : 1.0f;
+
     if (pX) {
-        *pX = GetWidth() / currentBackingScaleFactor;
+        *pX = GetWidth() / scale;
     }
 
     if (pY) {
-        *pY = GetHeight() / currentBackingScaleFactor;
+        *pY = GetHeight() / scale;
     }
 }
 
 void RenderWindowOSX::SetScreenResolution(CGFloat w, CGFloat h)
 {
-    [m_window setContentSize:NSMakeSize(w, h)];
+    if (m_window && w > 0 && h > 0)
+    {
+        [m_window setContentSize:NSMakeSize(w, h)];
+        OnWindowSizeChanged();
+    }
+}
+
+double RenderWindowOSX::ComputeAutoUIScale() const
+{
+    double sx = 1.0, sy = 1.0;
+    GetScaleFactor(sx, sy);
+    double backingScale = (sx > 0.0) ? sx : 1.0;
+
+    double physW = (double)GetWidth();
+    double physH = (double)GetHeight();
+    if (physW <= 0.0 || physH <= 0.0)
+        return backingScale;
+
+    // Target a comfortable maximum logical UI workspace (~1440x840) on high-resolution Macs
+    // (14"/16" Retina MacBook Pro, 4K external displays, 5K Studio Display, 6K Pro Display XDR)
+    // so 12px Paracraft fonts stay ~13.5-14.5pt equivalent while never dropping below Retina backingScale.
+    const double kComfortMaxLogicalW = 1440.0;
+    const double kComfortMaxLogicalH = 840.0;
+    const double kMinLogicalW = 1280.0;
+    const double kMinLogicalH = 720.0;
+
+    double resScale = std::min(physW / kComfortMaxLogicalW, physH / kComfortMaxLogicalH);
+    double targetScale = std::max(backingScale, resScale);
+
+    // Quantize to 0.05 steps to align with SystemSettingsPage UI_Scaling slider steps.
+    targetScale = std::floor(targetScale * 20.0 + 0.5) / 20.0;
+
+    // Ensure minimum logical screen size (1280x720) fits without clipping when the window is resized smaller.
+    double maxScaleForMinUI = std::min(physW / kMinLogicalW, physH / kMinLogicalH);
+    if (targetScale > maxScaleForMinUI && maxScaleForMinUI >= 0.5)
+    {
+        targetScale = maxScaleForMinUI;
+    }
+
+    return std::max(0.5, targetScale);
+}
+
+void RenderWindowOSX::UpdateAutoUIScaling(bool bForce)
+{
+    double sx = 1.0, sy = 1.0;
+    GetScaleFactor(sx, sy);
+    if (sx > 0.0)
+        currentBackingScaleFactor = (float)sx;
+
+    const uint32_t physW = GetWidth();
+    const uint32_t physH = GetHeight();
+    const float autoScale = (float)ComputeAutoUIScale();
+
+    const bool scaleChanged = std::fabs(autoScale - m_lastAutoUIScale) >= 0.005f;
+    const bool sizeChanged = (physW != m_lastPhysicalWidth || physH != m_lastPhysicalHeight);
+    if (!bForce && !scaleChanged && !sizeChanged)
+        return;
+
+    const bool isFirstApply = (m_lastAutoUIScale <= 0.0f);
+    m_lastAutoUIScale = autoScale;
+    m_lastPhysicalWidth = physW;
+    m_lastPhysicalHeight = physH;
+
+    if (physW > 0 && physH > 0 && CGlobals::GetViewportManager())
+    {
+        CGlobals::GetViewportManager()->UpdateViewport((int)physW, (int)physH);
+    }
+
+    if (isFirstApply && CGUIRoot::GetInstance())
+    {
+        CGUIRoot::GetInstance()->SetUIScale(autoScale, autoScale, false, false, true);
+    }
+
+    if (CGlobals::GetApp() && CGlobals::GetApp()->GetAppState() == PEAppState_Ready && NPL::CNPLRuntime::GetInstance())
+    {
+        std::ostringstream oss;
+        oss.imbue(std::locale::classic());
+        oss << std::fixed << std::setprecision(3);
+        oss << "do local s=" << autoScale << "; local bs=" << currentBackingScaleFactor << "; "
+            << "if System and System.options then System.options.default_ui_scaling={s,s}; end; "
+            << "local Screen=System and System.Windows and System.Windows.Screen; "
+            << "if Screen then "
+            << "if not Screen._macAutoScaleWrapped and Screen.SetUserUIScaling then "
+            << "Screen._macAutoScaleWrapped=true; "
+            << "local orig=Screen.SetUserUIScaling; "
+            << "Screen.SetUserUIScaling=function(self,val) "
+            << "local def=System and System.options and System.options.default_ui_scaling and System.options.default_ui_scaling[1]; "
+            << "if def then "
+            << "local saved=nil; local pc=nil; "
+            << "local gl=MyCompany and MyCompany.Aries and MyCompany.Aries.Game and MyCompany.Aries.Game.GameLogic; "
+            << "if gl and gl.GetPlayerController then pc=gl.GetPlayerController(); "
+            << "if pc and pc.LoadLocalData then saved=pc:LoadLocalData('Paracraft_System_SetUIScaling',nil,true); end end; "
+            << "if saved==nil or saved==0 or (bs>1.05 and saved<=1.05) then "
+            << "if saved~=nil and saved~=0 and pc and pc.SaveLocalData then pc:SaveLocalData('Paracraft_System_SetUIScaling',nil,true,true); end; "
+            << "val=def; "
+            << "end end; "
+            << "return orig(self,val); "
+            << "end; "
+            << "end; "
+            << "local dw=Screen.GetDesignUIResolution and Screen:GetDesignUIResolution(); "
+            << "if not dw then "
+            << "local saved=nil; "
+            << "local gl=MyCompany and MyCompany.Aries and MyCompany.Aries.Game and MyCompany.Aries.Game.GameLogic; "
+            << "if gl and gl.GetPlayerController then local pc=gl.GetPlayerController(); "
+            << "if pc and pc.LoadLocalData then saved=pc:LoadLocalData('Paracraft_System_SetUIScaling',nil,true); end end; "
+            << "if saved==nil or saved==0 or (bs>1.05 and saved<=1.05) then Screen:SetUIScale(s,s); end; "
+            << "end; "
+            << "elseif ParaUI then "
+            << "local root=ParaUI.GetUIObject('root'); if root and root:IsValid() then root:SetField('UIScale',{s,s}); end; "
+            << "end end";
+        ParaEngine::LuaObjcBridge::nplActivate(oss.str(), "");
+    }
+}
+
+void RenderWindowOSX::OnWindowSizeChanged()
+{
+    UpdateAutoUIScaling(false);
 }
 
 bool RenderWindowOSX::ShouldClose() const
@@ -541,6 +713,18 @@ NSRect RenderWindowOSX::GetCharacterRect()
 void RenderWindowOSX::PollEvents()
 {
     if (m_window == nullptr || ShouldClose()) return;
+
+    if (CGlobals::GetApp() && CGlobals::GetApp()->GetAppState() == PEAppState_Ready)
+    {
+        bool forceStartupSync = false;
+        if (m_startupLuaSyncFrames > 0)
+        {
+            --m_startupLuaSyncFrames;
+            forceStartupSync = true;
+        }
+        UpdateAutoUIScaling(forceStartupSync);
+    }
+
     NSEvent *event;
     auto untilDate = [NSDate distantPast];
     
@@ -551,21 +735,6 @@ void RenderWindowOSX::PollEvents()
                        dequeue:YES];
         if (!event) {
             break;
-        }
-
-        // fix for retina screen
-        if (CGlobals::GetApp()->GetAppState() == PEAppState_Ready)
-        {
-            double x, y;
-            GetScaleFactor(x, y);
-
-            if (currentBackingScaleFactor != x) {
-                currentBackingScaleFactor = x;
-                // Fixed display issues with WebView at different resolutions.
-                std::string scaleStr = std::to_string(currentBackingScaleFactor);
-                ParaEngine::LuaObjcBridge::nplActivate("if System then System.options.default_ui_scaling = { " + scaleStr + " , " + scaleStr + " }; end", "");
-                CGUIRoot::GetInstance()->SetUIScale(x, y, true, true, false);
-            }
         }
 
         [NSApp sendEvent:event];

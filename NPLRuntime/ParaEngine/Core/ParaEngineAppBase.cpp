@@ -318,6 +318,8 @@ void ParaEngine::CParaEngineAppBase::InitRenderEnvironment()
 	vp.MaxZ = 1.0f;
 	if (m_pRenderDevice)
 		m_pRenderDevice->SetViewport(vp);
+	if (m_pViewportManager && vp.Width > 0 && vp.Height > 0)
+		m_pViewportManager->UpdateViewport(vp.Width, vp.Height);
 
 	InitDeviceObjects();
 	RestoreDeviceObjects();

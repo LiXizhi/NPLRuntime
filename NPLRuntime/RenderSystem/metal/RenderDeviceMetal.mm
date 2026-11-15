@@ -3046,6 +3046,18 @@ namespace ParaEngine
 		auto* pWin = pApp ? pApp->GetRenderWindow() : nullptr;
 		if (pWin)
 		{
+#if !TARGET_OS_IPHONE
+			CAMetalLayer* layer = reinterpret_cast<CAMetalLayer*>(m_metalLayer);
+			if (layer)
+			{
+				NSObject* nativeObj = reinterpret_cast<NSObject*>(pWin->GetNativeHandle());
+				NSWindow* nsWin = [nativeObj isKindOfClass:[NSWindow class]] ? static_cast<NSWindow*>(nativeObj)
+					: ([nativeObj isKindOfClass:[NSView class]] ? [static_cast<NSView*>(nativeObj) window] : nil);
+				CGFloat backingScale = nsWin ? [nsWin backingScaleFactor] : 0.0;
+				if (backingScale > 0.0 && layer.contentsScale != backingScale)
+					layer.contentsScale = backingScale;
+			}
+#endif
 			uint32_t winW = pApp->IsRotateScreen() ? pWin->GetHeight() : pWin->GetWidth();
 			uint32_t winH = pApp->IsRotateScreen() ? pWin->GetWidth() : pWin->GetHeight();
 			if (winW > 0 && winH > 0 && (winW != m_backBufferWidth || winH != m_backBufferHeight))

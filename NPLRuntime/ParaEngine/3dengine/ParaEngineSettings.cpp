@@ -1201,6 +1201,12 @@ Vector2 ParaEngine::ParaEngineSettings::GetWindowResolution()
 		if (GetWindowRect(hWnd, &rect))
 			return Vector2((float)(rect.right - rect.left), (float)(rect.bottom - rect.top));
 	}
+#elif defined(PLATFORM_MAC)
+	if (CGlobals::GetApp() && CGlobals::GetApp()->GetRenderWindow())
+	{
+		auto* pWin = CGlobals::GetApp()->GetRenderWindow();
+		return Vector2((float)pWin->GetWidth(), (float)pWin->GetHeight());
+	}
 #endif
 	Vector2 res(0, 0);
 	if (CGlobals::GetApp())

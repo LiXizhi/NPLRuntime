@@ -27,6 +27,9 @@ namespace ParaEngine
         float currentBackingScaleFactor = 1;
         void GetScreenResolution(float* pX, float* pY);
         void SetScreenResolution(CGFloat w, CGFloat h);
+        double ComputeAutoUIScale() const;
+        void UpdateAutoUIScaling(bool bForce = false);
+        void OnWindowSizeChanged();
     public:
         bool OnShouldClose();
         
@@ -54,6 +57,10 @@ namespace ParaEngine
         NSWindow* m_window;
         float m_scrollMouseX;
         float m_scrollMouseY;
+        float m_lastAutoUIScale = 0.0f;
+        uint32_t m_lastPhysicalWidth = 0;
+        uint32_t m_lastPhysicalHeight = 0;
+        int m_startupLuaSyncFrames = 8;
         EVirtualKey m_curPressKey = ParaEngine::EVirtualKey::KEY_UNKNOWN;
     };
 }
