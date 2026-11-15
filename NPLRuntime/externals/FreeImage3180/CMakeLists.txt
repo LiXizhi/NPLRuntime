@@ -17,6 +17,8 @@ ucm_add_dirs(Source/Metadata TO Metadata_Files RECURSIVE)
 
 
 add_library(FreeImage STATIC ${FreeImage_Files} ${FreeImageToolkit_Files} ${Metadata_Files})
+# std::auto_ptr was removed in C++17; this vendored FreeImage still uses it.
+set_target_properties(FreeImage PROPERTIES CXX_STANDARD 14 CXX_STANDARD_REQUIRED ON)
 
 target_include_directories(FreeImage PUBLIC  ${CMAKE_CURRENT_SOURCE_DIR}/Source)
 

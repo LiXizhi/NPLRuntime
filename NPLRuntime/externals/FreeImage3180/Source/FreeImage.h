@@ -150,11 +150,13 @@ FI_STRUCT (FIMULTIBITMAP) { void *data; };
 #ifndef _MSC_VER
 // define portable types for 32-bit / 64-bit OS
 #include <inttypes.h>
+#if !defined(PLATFORM_MAC)
 typedef int32_t BOOL;
 typedef uint8_t BYTE;
 typedef uint16_t WORD;
 typedef uint32_t DWORD;
 typedef int32_t LONG;
+#endif
 typedef int64_t INT64;
 typedef uint64_t UINT64;
 #else

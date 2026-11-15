@@ -27,6 +27,8 @@
 
 namespace ParaEngine
 {
+	const int CEffectFileBase::MAX_EFFECT_LIGHT_NUM;
+
 	bool CEffectFileRHI::g_bTextureEnabled = true;
 
 	namespace

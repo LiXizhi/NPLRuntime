@@ -18,6 +18,8 @@ using namespace ParaEngine;
 #ifdef EMSCRIPTEN
 #include <emscripten/html5_webgl.h>
 #define USE_USER_POINTER_VBO
+#elif defined(__APPLE__) && !defined(PARAENGINE_MOBILE)
+#define USE_USER_POINTER_VBO
 #endif
 
 #ifndef GL_MIN
@@ -379,14 +381,24 @@ namespace ParaEngine
 				outBpp = 24;
 				return true;
 			case PixelFormat::A8:
+#if defined(__APPLE__) && !defined(PARAENGINE_MOBILE)
+				outInternal = GL_R8;
+				outFormat = GL_RED;
+#else
 				outInternal = GL_ALPHA;
 				outFormat = GL_ALPHA;
+#endif
 				outType = GL_UNSIGNED_BYTE;
 				outBpp = 8;
 				return true;
 			case PixelFormat::L8:
+#if defined(__APPLE__) && !defined(PARAENGINE_MOBILE)
+				outInternal = GL_R8;
+				outFormat = GL_RED;
+#else
 				outInternal = GL_LUMINANCE;
 				outFormat = GL_LUMINANCE;
+#endif
 				outType = GL_UNSIGNED_BYTE;
 				outBpp = 8;
 				return true;
@@ -1210,6 +1222,20 @@ namespace ParaEngine
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, magFilter);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+#if defined(__APPLE__) && !defined(PARAENGINE_MOBILE)
+		if (format == PixelFormat::A8)
+		{
+			const GLint swizzle[4] = { GL_ONE, GL_ONE, GL_ONE, GL_RED };
+			glTexParameteriv(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_RGBA, swizzle);
+		}
+		else if (format == PixelFormat::L8)
+		{
+			const GLint swizzle[4] = { GL_RED, GL_RED, GL_RED, GL_ONE };
+			glTexParameteriv(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_RGBA, swizzle);
+		}
+#endif
+		if (bpp == 8 || bpp == 16 || bpp == 24)
+			glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
 
 		uint32_t mipW = width;
 		uint32_t mipH = height;

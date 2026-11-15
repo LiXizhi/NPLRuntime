@@ -28,9 +28,15 @@ namespace {
 		PixelFormatInfoMapValue(PixelFormat::A1R5G5B5, GLTexture2D::PixelFormatInfo(GL_RGBA, GL_RGBA, GL_UNSIGNED_SHORT_5_5_5_1, 16, false, true)),
 		PixelFormatInfoMapValue(PixelFormat::R5G6B5, GLTexture2D::PixelFormatInfo(GL_RGB, GL_RGB, GL_UNSIGNED_SHORT_5_6_5, 16, false, false)),
 		PixelFormatInfoMapValue(PixelFormat::R8G8B8, GLTexture2D::PixelFormatInfo(GL_RGB, GL_RGB, GL_UNSIGNED_BYTE, 24, false, false)),
+#if defined(__APPLE__) && !defined(PARAENGINE_MOBILE)
+		PixelFormatInfoMapValue(PixelFormat::A8, GLTexture2D::PixelFormatInfo(GL_R8, GL_RED, GL_UNSIGNED_BYTE, 8, false, false)),
+		PixelFormatInfoMapValue(PixelFormat::L8, GLTexture2D::PixelFormatInfo(GL_R8, GL_RED, GL_UNSIGNED_BYTE, 8, false, false)),
+		PixelFormatInfoMapValue(PixelFormat::A8L8, GLTexture2D::PixelFormatInfo(GL_RG8, GL_RG, GL_UNSIGNED_BYTE, 16, false, true)),
+#else
 		PixelFormatInfoMapValue(PixelFormat::A8, GLTexture2D::PixelFormatInfo(GL_ALPHA, GL_ALPHA, GL_UNSIGNED_BYTE, 8, false, false)),
 		PixelFormatInfoMapValue(PixelFormat::L8, GLTexture2D::PixelFormatInfo(GL_LUMINANCE, GL_LUMINANCE, GL_UNSIGNED_BYTE, 8, false, false)),
 		PixelFormatInfoMapValue(PixelFormat::A8L8, GLTexture2D::PixelFormatInfo(GL_LUMINANCE_ALPHA, GL_LUMINANCE_ALPHA, GL_UNSIGNED_BYTE, 16, false, true)),
+#endif
 		PixelFormatInfoMapValue(PixelFormat::X8R8G8B8, GLTexture2D::PixelFormatInfo(GL_RGBA, GL_RGBA, GL_UNSIGNED_BYTE, 32, false, false)),
 #ifdef GL_R32F
 		PixelFormatInfoMapValue(PixelFormat::R32F, GLTexture2D::PixelFormatInfo(GL_R32F, GL_RED, GL_FLOAT, 32, false, false)),
@@ -250,8 +256,13 @@ bool GLTexture2D::updateWithData(const void *data, int offsetX, int offsetY, int
 #ifdef PARA_ENABLE_OPENGL
 	if (_name)
 	{
+		auto it = _pixelFormatInfoTables.find(_pixelFormat);
+		if (it == _pixelFormatInfoTables.end())
+			return false;
+		const PixelFormatInfo& info = it->second;
 		GL::bindTexture2D(_name);
-		const PixelFormatInfo& info = _pixelFormatInfoTables.at(_pixelFormat);
+		unsigned int bytesPerRow = static_cast<unsigned int>(width) * info.bpp / 8;
+		glPixelStorei(GL_UNPACK_ALIGNMENT, (bytesPerRow % 4 == 0) ? 4 : ((bytesPerRow % 2 == 0) ? 2 : 1));
 		glTexSubImage2D(GL_TEXTURE_2D, 0, offsetX, offsetY, width, height, info.format, info.type, data);
 		PE_CHECK_GL_ERROR_DEBUG();
 
@@ -501,6 +512,23 @@ bool GLTexture2D::initWithMipmaps(const MipmapInfo* mipmaps, int mipmapsNum, Pix
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, _antialiasEnabled ? GL_LINEAR : GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+#if defined(__APPLE__) && !defined(PARAENGINE_MOBILE)
+	if (pixelFormat == PixelFormat::A8)
+	{
+		const GLint swizzle[4] = { GL_ONE, GL_ONE, GL_ONE, GL_RED };
+		glTexParameteriv(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_RGBA, swizzle);
+	}
+	else if (pixelFormat == PixelFormat::L8)
+	{
+		const GLint swizzle[4] = { GL_RED, GL_RED, GL_RED, GL_ONE };
+		glTexParameteriv(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_RGBA, swizzle);
+	}
+	else if (pixelFormat == PixelFormat::A8L8)
+	{
+		const GLint swizzle[4] = { GL_RED, GL_RED, GL_RED, GL_GREEN };
+		glTexParameteriv(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_RGBA, swizzle);
+	}
+#endif
 
 #if CC_ENABLE_CACHE_TEXTURE_DATA
 	if (_antialiasEnabled)

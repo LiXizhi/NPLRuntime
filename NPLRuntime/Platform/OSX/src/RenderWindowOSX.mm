@@ -192,14 +192,17 @@ RenderWindowOSX::RenderWindowOSX(const int width, const int height)
     //[rootMenu removeItemAtIndex:0];
 
     NSInteger style = NSWindowStyleMaskTitled | NSWindowStyleMaskClosable |
-    NSWindowStyleMaskMiniaturizable | NSWindowStyleMaskResizable | NSWindowStyleMaskBorderless;
+    NSWindowStyleMaskMiniaturizable | NSWindowStyleMaskResizable;
 
     m_window = [[GLWindow alloc] initWithContentRect:CGRectMake(0, 0, width,height) styleMask:style backing:NSBackingStoreBuffered defer:NO];
 
     RenderView* renderView = [[[RenderView alloc] initWithFrame:CGRectMake(0, 0, width, height)] autorelease];
+    [renderView setAutoresizingMask:NSViewWidthSizable | NSViewHeightSizable];
+    [renderView setWantsBestResolutionOpenGLSurface:YES];
     [m_window setContentView:renderView];
 
     [m_window setTitle:@"Paracraft"];
+    [m_window center];
     [NSApp activateIgnoringOtherApps:YES];
     [NSApp arrangeInFront:m_window];
     [m_window orderFront:nil];

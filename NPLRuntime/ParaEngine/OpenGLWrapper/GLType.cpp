@@ -133,11 +133,29 @@ void GL::bindTexture2DN(GLuint textureUnit, GLuint textureId)
 }
 
 
+#if defined(__APPLE__) && !defined(PARAENGINE_MOBILE)
+static GLuint s_defaultCoreVAO = 0;
+#endif
+
 void GL::bindVAO(GLuint vaoId)
 {
 #ifdef PARA_ENABLE_OPENGL
 	if (!IsOpenGLBackendActive())
 		return;
+#if defined(__APPLE__) && !defined(PARAENGINE_MOBILE)
+	if (vaoId == 0)
+	{
+		if (s_defaultCoreVAO == 0 && glad_glGenVertexArrays != nullptr)
+		{
+			glGenVertexArrays(1, &s_defaultCoreVAO);
+		}
+		vaoId = s_defaultCoreVAO;
+	}
+	if (vaoId != 0 && glad_glBindVertexArray != nullptr)
+	{
+		glBindVertexArray(vaoId);
+	}
+#else
     //if (Configuration::getInstance()->supportsShareableVAO())
 	if ( false ) //TODO: wangepng
 	{
@@ -152,6 +170,7 @@ void GL::bindVAO(GLuint vaoId)
 #endif // NPLRUNTIME_ENABLE_GL_STATE_CACHE
 
     }
+#endif
 #else
 	(void)vaoId;
 #endif
@@ -189,6 +208,9 @@ void GL::ClearCache()
 {
 	s_attributeFlags = 0;
 	s_lastActiveTexture = -1;
+#if defined(__APPLE__) && !defined(PARAENGINE_MOBILE)
+	s_defaultCoreVAO = 0;
+#endif
 }
 
 

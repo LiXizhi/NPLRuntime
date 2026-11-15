@@ -118,7 +118,11 @@ extern z_const char * const z_errmsg[10]; /* indexed by 2-zlib_error */
 #  endif
 #endif
 
-#if defined(MACOS) || defined(TARGET_OS_MAC)
+#if defined(__APPLE__)
+/* Modern macOS/iOS provide fdopen(). TARGET_OS_MAC is also set there and must
+   not take the classic Mac OS path that macros fdopen() away. */
+#  define OS_CODE  0x07
+#elif defined(MACOS) || defined(TARGET_OS_MAC)
 #  define OS_CODE  0x07
 #  ifndef Z_SOLO
 #    if defined(__MWERKS__) && __dest_os != __be_os && __dest_os != __win32_os

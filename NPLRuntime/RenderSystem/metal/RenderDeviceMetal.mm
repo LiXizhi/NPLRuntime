@@ -1,10 +1,3 @@
-#include "ParaEngine.h"
-#include "RenderContextMetal.h"
-#include "RenderDeviceMetal.h"
-#include "FxShaderTypes.h"
-#include "RHISoftwareS3TC.h"
-#include "renderer/VertexDeclarationOpenGL.h"
-
 #import <Metal/Metal.h>
 #import <QuartzCore/CAMetalLayer.h>
 #include <TargetConditionals.h>
@@ -15,6 +8,13 @@
 #else
 #import <Cocoa/Cocoa.h>
 #endif
+
+#include "ParaEngine.h"
+#include "RenderContextMetal.h"
+#include "RenderDeviceMetal.h"
+#include "FxShaderTypes.h"
+#include "RHISoftwareS3TC.h"
+#include "renderer/VertexDeclarationOpenGL.h"
 
 #include <algorithm>
 #include <cmath>
@@ -718,6 +718,7 @@ namespace ParaEngine
 			metalLayer.device = mtlDevice;
 			metalLayer.pixelFormat = MTLPixelFormatBGRA8Unorm;
 			metalLayer.framebufferOnly = NO;
+			metalLayer.opaque = YES;
 
 			uint32_t initW = cfg.screenWidth > 0 ? cfg.screenWidth : 1280;
 			uint32_t initH = cfg.screenHeight > 0 ? cfg.screenHeight : 720;
@@ -762,6 +763,9 @@ namespace ParaEngine
 						scale = 1.0;
 					metalLayer.contentsScale = scale;
 					[targetView setWantsLayer:YES];
+					NSScreen* scr = targetView.window ? targetView.window.screen : [NSScreen mainScreen];
+					if (scr)
+						metalLayer.contentsScale = scr.backingScaleFactor;
 					[targetView setLayer:metalLayer];
 					NSRect backingBounds = [targetView convertRectToBacking:[targetView bounds]];
 					if (backingBounds.size.width > 0.0 && backingBounds.size.height > 0.0)
@@ -776,7 +780,7 @@ namespace ParaEngine
 			metalLayer.drawableSize = CGSizeMake(initW, initH);
 
 			auto* rhiDev = new RenderDeviceMetal(mtlDevice, queue, metalLayer);
-			if (!rhiDev->Initialize(initW, initH, cfg.swapInterval != 0))
+			if (!rhiDev->Initialize(initW, initH, true))
 			{
 				delete rhiDev;
 				return nullptr;
@@ -847,8 +851,9 @@ namespace ParaEngine
 		for (auto& kv : m_blitPsoCache)
 			if (kv.second) [reinterpret_cast<id<MTLRenderPipelineState>>(kv.second) release];
 		m_blitPsoCache.clear();
-		if (m_blitVSFunc) { [reinterpret_cast<id<MTLFunction>>(m_blitVSFunc) release]; m_blitVSFunc = nullptr; }
-		if (m_blitPSFunc) { [reinterpret_cast<id<MTLFunction>>(m_blitPSFunc) release]; m_blitPSFunc = nullptr; }
+		if (m_blitSamplerNearest) [reinterpret_cast<id<MTLSamplerState>>(m_blitSamplerNearest) release];
+		if (m_blitSamplerLinear) [reinterpret_cast<id<MTLSamplerState>>(m_blitSamplerLinear) release];
+		if (m_blitLibrary) [reinterpret_cast<id<MTLLibrary>>(m_blitLibrary) release];
 
 		for (auto& kv : m_psoCache)
 			if (kv.second) [reinterpret_cast<id<MTLRenderPipelineState>>(kv.second) release];
@@ -861,6 +866,13 @@ namespace ParaEngine
 		for (auto& kv : m_samplerCache)
 			if (kv.second) [reinterpret_cast<id<MTLSamplerState>>(kv.second) release];
 		m_samplerCache.clear();
+
+		for (auto& kv : m_blitPsoCache)
+			if (kv.second) [reinterpret_cast<id<MTLRenderPipelineState>>(kv.second) release];
+		m_blitPsoCache.clear();
+		if (m_blitSamplerNearest) [reinterpret_cast<id<MTLSamplerState>>(m_blitSamplerNearest) release];
+		if (m_blitSamplerLinear) [reinterpret_cast<id<MTLSamplerState>>(m_blitSamplerLinear) release];
+		if (m_blitLibrary) [reinterpret_cast<id<MTLLibrary>>(m_blitLibrary) release];
 
 		for (uint32_t f = 0; f < FRAME_COUNT; ++f)
 		{
@@ -1075,6 +1087,18 @@ namespace ParaEngine
 		m_deferredReleases.resize(writeIdx);
 	}
 
+	void RenderDeviceMetal::AcquireFrameSlotIfNeeded()
+	{
+		if (m_frameSlotAcquired || !m_frameSemaphore)
+			return;
+		dispatch_semaphore_wait(reinterpret_cast<dispatch_semaphore_t>(m_frameSemaphore), DISPATCH_TIME_FOREVER);
+		m_frameSlotAcquired = true;
+		FrameSlot& slot = m_frames[m_frameIndex];
+		for (auto& page : slot.uploadPages)
+			page.offset = 0;
+		ReclaimCompletedResources(m_completedSerial);
+	}
+
 	void RenderDeviceMetal::ExecuteAndSyncGPU()
 	{
 		EndActiveRenderPass();
@@ -1089,6 +1113,13 @@ namespace ParaEngine
 			m_activeCmdBuf = nullptr;
 			m_completedSerial = serial;
 		}
+		for (auto& page : m_frames[m_frameIndex].uploadPages)
+			page.offset = 0;
+		if (m_frameSlotAcquired && m_frameSemaphore)
+		{
+			dispatch_semaphore_signal(reinterpret_cast<dispatch_semaphore_t>(m_frameSemaphore));
+			m_frameSlotAcquired = false;
+		}
 		ReclaimCompletedResources(m_completedSerial);
 	}
 
@@ -1098,6 +1129,7 @@ namespace ParaEngine
 		if (!dev || byteSize == 0)
 			return false;
 
+		AcquireFrameSlotIfNeeded();
 		uint32_t align = (std::max)(alignment, 256u);
 		FrameSlot& slot = m_frames[m_frameIndex];
 		for (auto& page : slot.uploadPages)
@@ -1583,77 +1615,9 @@ namespace ParaEngine
 		EndActiveRenderPass();
 	}
 
-	void* RenderDeviceMetal::GetOrCreateBlitPipelineState(uint32_t dstMtlPixelFormat)
-	{
-		id<MTLDevice> dev = reinterpret_cast<id<MTLDevice>>(m_device);
-		if (!dev || dstMtlPixelFormat == static_cast<uint32_t>(MTLPixelFormatInvalid))
-			return nullptr;
-
-		auto it = m_blitPsoCache.find(dstMtlPixelFormat);
-		if (it != m_blitPsoCache.end())
-			return it->second;
-
-		@autoreleasepool
-		{
-			if (!m_blitVSFunc || !m_blitPSFunc)
-			{
-				static const char* kBlitMslSrc =
-					"#include <metal_stdlib>\n"
-					"using namespace metal;\n"
-					"struct BlitOut { float4 pos [[position]]; float2 uv; };\n"
-					"vertex BlitOut para_blit_vs(uint vid [[vertex_id]], constant float4& uvRect [[buffer(0)]]) {\n"
-					"    float2 fuv = float2((vid << 1) & 2, vid & 2);\n"
-					"    BlitOut o;\n"
-					"    o.pos = float4(fuv.x * 2.0 - 1.0, 1.0 - fuv.y * 2.0, 0.0, 1.0);\n"
-					"    o.uv = mix(uvRect.xy, uvRect.zw, fuv);\n"
-					"    return o;\n"
-					"}\n"
-					"fragment float4 para_blit_fs(BlitOut in [[stage_in]], texture2d<float> tex [[texture(0)]], sampler smp [[sampler(0)]]) {\n"
-					"    return tex.sample(smp, in.uv);\n"
-					"}\n";
-
-				MTLCompileOptions* opts = [[[MTLCompileOptions alloc] init] autorelease];
-				opts.languageVersion = MTLLanguageVersion2_0;
-				NSError* libErr = nil;
-				id<MTLLibrary> lib = [dev newLibraryWithSource:[NSString stringWithUTF8String:kBlitMslSrc] options:opts error:&libErr];
-				if (!lib)
-				{
-					OUTPUT_LOG("ERROR: Metal blit shader compile failed: %s\n", libErr ? [[libErr localizedDescription] UTF8String] : "unknown");
-					return nullptr;
-				}
-				if (!m_blitVSFunc)
-					m_blitVSFunc = reinterpret_cast<void*>([lib newFunctionWithName:@"para_blit_vs"]);
-				if (!m_blitPSFunc)
-					m_blitPSFunc = reinterpret_cast<void*>([lib newFunctionWithName:@"para_blit_fs"]);
-				[lib release];
-			}
-
-			if (!m_blitVSFunc || !m_blitPSFunc)
-				return nullptr;
-
-			MTLRenderPipelineDescriptor* pd = [[[MTLRenderPipelineDescriptor alloc] init] autorelease];
-			pd.vertexFunction = reinterpret_cast<id<MTLFunction>>(m_blitVSFunc);
-			pd.fragmentFunction = reinterpret_cast<id<MTLFunction>>(m_blitPSFunc);
-			pd.colorAttachments[0].pixelFormat = static_cast<MTLPixelFormat>(dstMtlPixelFormat);
-			pd.colorAttachments[0].blendingEnabled = NO;
-
-			NSError* psoErr = nil;
-			id<MTLRenderPipelineState> pso = [dev newRenderPipelineStateWithDescriptor:pd error:&psoErr];
-			if (!pso)
-			{
-				OUTPUT_LOG("ERROR: Metal blit PSO failed (fmt=%u): %s\n",
-					dstMtlPixelFormat, psoErr ? [[psoErr localizedDescription] UTF8String] : "unknown");
-				return nullptr;
-			}
-			void* raw = reinterpret_cast<void*>(pso);
-			m_blitPsoCache[dstMtlPixelFormat] = raw;
-			return raw;
-		}
-	}
-
 	bool RenderDeviceMetal::BlitRenderTarget(IRHIRenderTarget* src, IRHIRenderTarget* dst, const RECT* srcRect, const RECT* dstRect, bool linearFilter)
 	{
-		if (!src && !m_importedColorTex && !m_surfaceClearedThisFrame)
+		if (src == dst)
 			return false;
 
 		EndActiveRenderPass();
@@ -1662,11 +1626,11 @@ namespace ParaEngine
 
 		id<MTLTexture> srcTex = nil;
 		id<MTLTexture> dstTex = nil;
+		id<MTLTexture> dstMsaaTex = nil;
 		if (src)
 		{
 			auto* srt = static_cast<MetalRenderTarget*>(src->GetNativeHandle());
-			if (srt && srt->GetMetalColor(0))
-				srcTex = srt->GetMetalColor(0)->GetMTLTexture();
+			if (srt && srt->GetMetalColor(0)) srcTex = srt->GetMetalColor(0)->GetMTLTexture();
 		}
 		else if (m_importedColorTex)
 		{
@@ -1681,7 +1645,10 @@ namespace ParaEngine
 		{
 			auto* drt = static_cast<MetalRenderTarget*>(dst->GetNativeHandle());
 			if (drt && drt->GetMetalColor(0))
+			{
 				dstTex = drt->GetMetalColor(0)->GetMTLTexture();
+				dstMsaaTex = drt->GetMetalColor(0)->GetMSAATexture();
+			}
 		}
 		else if (m_importedColorTex)
 		{
@@ -1702,46 +1669,37 @@ namespace ParaEngine
 		if (srcW == 0 || srcH == 0 || dstW == 0 || dstH == 0)
 			return false;
 
-		const int32_t sx0 = srcRect ? (std::max)(0, (std::min)(static_cast<int32_t>(srcRect->left), static_cast<int32_t>(srcW))) : 0;
-		const int32_t sy0 = srcRect ? (std::max)(0, (std::min)(static_cast<int32_t>(srcRect->top), static_cast<int32_t>(srcH))) : 0;
-		const int32_t sx1 = srcRect ? (std::max)(sx0, (std::min)(static_cast<int32_t>(srcRect->right), static_cast<int32_t>(srcW))) : static_cast<int32_t>(srcW);
-		const int32_t sy1 = srcRect ? (std::max)(sy0, (std::min)(static_cast<int32_t>(srcRect->bottom), static_cast<int32_t>(srcH))) : static_cast<int32_t>(srcH);
+		const int sx0 = srcRect ? (std::max)(0, (std::min)(static_cast<int>(srcRect->left), static_cast<int>(srcW))) : 0;
+		const int sy0 = srcRect ? (std::max)(0, (std::min)(static_cast<int>(srcRect->top), static_cast<int>(srcH))) : 0;
+		const int sx1 = srcRect ? (std::max)(sx0, (std::min)(static_cast<int>(srcRect->right), static_cast<int>(srcW))) : static_cast<int>(srcW);
+		const int sy1 = srcRect ? (std::max)(sy0, (std::min)(static_cast<int>(srcRect->bottom), static_cast<int>(srcH))) : static_cast<int>(srcH);
 
-		const int32_t dx0 = dstRect ? (std::max)(0, (std::min)(static_cast<int32_t>(dstRect->left), static_cast<int32_t>(dstW))) : 0;
-		const int32_t dy0 = dstRect ? (std::max)(0, (std::min)(static_cast<int32_t>(dstRect->top), static_cast<int32_t>(dstH))) : 0;
-		const int32_t dx1 = dstRect ? (std::max)(dx0, (std::min)(static_cast<int32_t>(dstRect->right), static_cast<int32_t>(dstW))) : static_cast<int32_t>(dstW);
-		const int32_t dy1 = dstRect ? (std::max)(dy0, (std::min)(static_cast<int32_t>(dstRect->bottom), static_cast<int32_t>(dstH))) : static_cast<int32_t>(dstH);
+		const int dx0 = dstRect ? (std::max)(0, (std::min)(static_cast<int>(dstRect->left), static_cast<int>(dstW))) : 0;
+		const int dy0 = dstRect ? (std::max)(0, (std::min)(static_cast<int>(dstRect->top), static_cast<int>(dstH))) : 0;
+		const int dx1 = dstRect ? (std::max)(dx0, (std::min)(static_cast<int>(dstRect->right), static_cast<int>(dstW))) : static_cast<int>(dstW);
+		const int dy1 = dstRect ? (std::max)(dy0, (std::min)(static_cast<int>(dstRect->bottom), static_cast<int>(dstH))) : static_cast<int>(dstH);
 
-		const uint32_t copySrcW = static_cast<uint32_t>(sx1 - sx0);
-		const uint32_t copySrcH = static_cast<uint32_t>(sy1 - sy0);
-		const uint32_t copyDstW = static_cast<uint32_t>(dx1 - dx0);
-		const uint32_t copyDstH = static_cast<uint32_t>(dy1 - dy0);
-		if (copySrcW == 0 || copySrcH == 0 || copyDstW == 0 || copyDstH == 0)
+		const uint32_t sw = static_cast<uint32_t>(sx1 - sx0);
+		const uint32_t sh = static_cast<uint32_t>(sy1 - sy0);
+		const uint32_t dw = static_cast<uint32_t>(dx1 - dx0);
+		const uint32_t dh = static_cast<uint32_t>(dy1 - dy0);
+		if (sw == 0 || sh == 0 || dw == 0 || dh == 0)
 			return false;
 
-		const bool fullDst = (dx0 == 0 && dy0 == 0 && copyDstW == dstW && copyDstH == dstH);
-		const bool canDirectCopy =
-			([srcTex pixelFormat] == [dstTex pixelFormat]) &&
-			([srcTex sampleCount] == 1) &&
-			([dstTex sampleCount] == 1) &&
-			(copySrcW == copyDstW) &&
-			(copySrcH == copyDstH);
+		const MTLPixelFormat srcFmt = [srcTex pixelFormat];
+		const MTLPixelFormat dstFmt = [dstTex pixelFormat];
 
-		id<MTLCommandBuffer> cmd = reinterpret_cast<id<MTLCommandBuffer>>(m_activeCmdBuf);
-		if (canDirectCopy)
+		// Fast path: raw texture copy only when pixel formats AND region dimensions match identically.
+		// Note: copyFromTexture between RGBA8Unorm and BGRA8Unorm copies raw bytes without swizzling R<->B!
+		if (srcFmt == dstFmt && sw == dw && sh == dh && !dstMsaaTex)
 		{
-			if (!dst && !m_importedColorTex)
-			{
-				if (fullDst)
-					m_pendingSurfaceClearColor = false;
-				m_surfaceClearedThisFrame = true;
-			}
+			id<MTLCommandBuffer> cmd = reinterpret_cast<id<MTLCommandBuffer>>(m_activeCmdBuf);
 			id<MTLBlitCommandEncoder> blit = [cmd blitCommandEncoder];
 			[blit copyFromTexture:srcTex
 					  sourceSlice:0
 					  sourceLevel:0
 					 sourceOrigin:MTLOriginMake(static_cast<NSUInteger>(sx0), static_cast<NSUInteger>(sy0), 0)
-					   sourceSize:MTLSizeMake(copySrcW, copySrcH, 1)
+					   sourceSize:MTLSizeMake(sw, sh, 1)
 						toTexture:dstTex
 				 destinationSlice:0
 				 destinationLevel:0
@@ -1750,92 +1708,150 @@ namespace ParaEngine
 			return true;
 		}
 
-		void* rawPso = GetOrCreateBlitPipelineState(static_cast<uint32_t>([dstTex pixelFormat]));
-		if (!rawPso)
-			return false;
-
+		// Shader blit path: handles RGBA8Unorm <-> BGRA8Unorm format conversion, scaling, and filtering.
 		id<MTLDevice> dev = reinterpret_cast<id<MTLDevice>>(m_device);
-		const uint64_t smpKey = linearFilter ? 0xB1170001ULL : 0xB1170000ULL;
-		id<MTLSamplerState> smp = nil;
-		auto smpIt = m_samplerCache.find(smpKey);
-		if (smpIt != m_samplerCache.end())
-		{
-			smp = reinterpret_cast<id<MTLSamplerState>>(smpIt->second);
-		}
-		else if (dev)
-		{
-			MTLSamplerDescriptor* sd = [[[MTLSamplerDescriptor alloc] init] autorelease];
-			sd.sAddressMode = MTLSamplerAddressModeClampToEdge;
-			sd.tAddressMode = MTLSamplerAddressModeClampToEdge;
-			sd.minFilter = linearFilter ? MTLSamplerMinMagFilterLinear : MTLSamplerMinMagFilterNearest;
-			sd.magFilter = linearFilter ? MTLSamplerMinMagFilterLinear : MTLSamplerMinMagFilterNearest;
-			sd.mipFilter = MTLSamplerMipFilterNotMipmapped;
-			smp = [dev newSamplerStateWithDescriptor:sd];
-			m_samplerCache[smpKey] = reinterpret_cast<void*>(smp);
-		}
-		if (!smp)
+		if (!dev)
 			return false;
 
-		MTLRenderPassDescriptor* rp = [MTLRenderPassDescriptor renderPassDescriptor];
-		rp.colorAttachments[0].texture = dstTex;
-		if (fullDst)
+		@autoreleasepool
 		{
-			rp.colorAttachments[0].loadAction = MTLLoadActionDontCare;
+			if (!m_blitLibrary)
+			{
+				static NSString* const kBlitMsl =
+					@"#include <metal_stdlib>\n"
+					 "using namespace metal;\n"
+					 "struct BlitVsOut {\n"
+					 "    float4 pos [[position]];\n"
+					 "    float2 uv;\n"
+					 "};\n"
+					 "vertex BlitVsOut para_blit_vs(uint vid [[vertex_id]], constant float4& uvRect [[buffer(0)]]) {\n"
+					 "    BlitVsOut o;\n"
+					 "    float x = float((vid << 1u) & 2u);\n"
+					 "    float y = float(vid & 2u);\n"
+					 "    o.pos = float4(x * 2.0f - 1.0f, 1.0f - y * 2.0f, 0.0f, 1.0f);\n"
+					 "    o.uv  = uvRect.xy + float2(x, y) * uvRect.zw;\n"
+					 "    return o;\n"
+					 "}\n"
+					 "fragment float4 para_blit_fs(BlitVsOut in [[stage_in]], texture2d<float> tex [[texture(0)]], sampler smp [[sampler(0)]]) {\n"
+					 "    return tex.sample(smp, in.uv);\n"
+					 "}\n";
+				NSError* err = nil;
+				id<MTLLibrary> lib = [dev newLibraryWithSource:kBlitMsl options:nil error:&err];
+				if (!lib)
+				{
+					OUTPUT_LOG("ERROR: Metal BlitRenderTarget shader compile failed: %s\n", err ? [[err localizedDescription] UTF8String] : "unknown");
+					return false;
+				}
+				m_blitLibrary = reinterpret_cast<void*>(lib);
+			}
+
+			if (!m_blitSamplerNearest || !m_blitSamplerLinear)
+			{
+				MTLSamplerDescriptor* sd = [[[MTLSamplerDescriptor alloc] init] autorelease];
+				sd.sAddressMode = MTLSamplerAddressModeClampToEdge;
+				sd.tAddressMode = MTLSamplerAddressModeClampToEdge;
+				sd.mipFilter = MTLSamplerMipFilterNotMipmapped;
+				if (!m_blitSamplerNearest)
+				{
+					sd.minFilter = MTLSamplerMinMagFilterNearest;
+					sd.magFilter = MTLSamplerMinMagFilterNearest;
+					m_blitSamplerNearest = reinterpret_cast<void*>([dev newSamplerStateWithDescriptor:sd]);
+				}
+				if (!m_blitSamplerLinear)
+				{
+					sd.minFilter = MTLSamplerMinMagFilterLinear;
+					sd.magFilter = MTLSamplerMinMagFilterLinear;
+					m_blitSamplerLinear = reinterpret_cast<void*>([dev newSamplerStateWithDescriptor:sd]);
+				}
+			}
+
+			const NSUInteger sampleCount = dstMsaaTex ? [dstMsaaTex sampleCount] : 1u;
+			const uint64_t psoKey = (static_cast<uint64_t>(dstFmt) << 8) | static_cast<uint64_t>(sampleCount);
+			id<MTLRenderPipelineState> blitPso = nil;
+			auto it = m_blitPsoCache.find(psoKey);
+			if (it != m_blitPsoCache.end())
+			{
+				blitPso = reinterpret_cast<id<MTLRenderPipelineState>>(it->second);
+			}
+			else
+			{
+				id<MTLLibrary> lib = reinterpret_cast<id<MTLLibrary>>(m_blitLibrary);
+				id<MTLFunction> vsFn = [[lib newFunctionWithName:@"para_blit_vs"] autorelease];
+				id<MTLFunction> fsFn = [[lib newFunctionWithName:@"para_blit_fs"] autorelease];
+				if (!vsFn || !fsFn)
+					return false;
+
+				MTLRenderPipelineDescriptor* pd = [[[MTLRenderPipelineDescriptor alloc] init] autorelease];
+				pd.vertexFunction = vsFn;
+				pd.fragmentFunction = fsFn;
+				pd.rasterSampleCount = sampleCount;
+				pd.colorAttachments[0].pixelFormat = dstFmt;
+				pd.colorAttachments[0].blendingEnabled = NO;
+
+				NSError* err = nil;
+				blitPso = [dev newRenderPipelineStateWithDescriptor:pd error:&err];
+				if (!blitPso)
+				{
+					OUTPUT_LOG("ERROR: Metal BlitRenderTarget PSO failed: %s\n", err ? [[err localizedDescription] UTF8String] : "unknown");
+					return false;
+				}
+				m_blitPsoCache[psoKey] = reinterpret_cast<void*>(blitPso);
+			}
+
+			const bool fullDst = (dx0 == 0 && dy0 == 0 && dw == dstW && dh == dstH);
+			MTLRenderPassDescriptor* rp = [MTLRenderPassDescriptor renderPassDescriptor];
+			if (dstMsaaTex)
+			{
+				rp.colorAttachments[0].texture = dstMsaaTex;
+				rp.colorAttachments[0].resolveTexture = dstTex;
+				rp.colorAttachments[0].storeAction = MTLStoreActionStoreAndMultisampleResolve;
+			}
+			else
+			{
+				rp.colorAttachments[0].texture = dstTex;
+				rp.colorAttachments[0].storeAction = MTLStoreActionStore;
+			}
+			rp.colorAttachments[0].loadAction = fullDst ? MTLLoadActionDontCare : MTLLoadActionLoad;
+
+			id<MTLCommandBuffer> cmd = reinterpret_cast<id<MTLCommandBuffer>>(m_activeCmdBuf);
+			id<MTLRenderCommandEncoder> enc = [cmd renderCommandEncoderWithDescriptor:rp];
+			if (!enc)
+				return false;
+
+			MTLViewport vp;
+			vp.originX = static_cast<double>(dx0);
+			vp.originY = static_cast<double>(dy0);
+			vp.width = static_cast<double>(dw);
+			vp.height = static_cast<double>(dh);
+			vp.znear = 0.0;
+			vp.zfar = 1.0;
+			[enc setViewport:vp];
+
+			MTLScissorRect sc;
+			sc.x = static_cast<NSUInteger>(dx0);
+			sc.y = static_cast<NSUInteger>(dy0);
+			sc.width = static_cast<NSUInteger>(dw);
+			sc.height = static_cast<NSUInteger>(dh);
+			[enc setScissorRect:sc];
+
+			const float uvRect[4] = {
+				static_cast<float>(sx0) / static_cast<float>(srcW),
+				static_cast<float>(sy0) / static_cast<float>(srcH),
+				static_cast<float>(sw) / static_cast<float>(srcW),
+				static_cast<float>(sh) / static_cast<float>(srcH)
+			};
+
+			id<MTLSamplerState> smp = reinterpret_cast<id<MTLSamplerState>>(linearFilter ? m_blitSamplerLinear : m_blitSamplerNearest);
+			[enc setRenderPipelineState:blitPso];
+			[enc setCullMode:MTLCullModeNone];
+			[enc setVertexBytes:uvRect length:sizeof(uvRect) atIndex:0];
+			[enc setFragmentTexture:srcTex atIndex:0];
+			if (smp)
+				[enc setFragmentSamplerState:smp atIndex:0];
+			[enc drawPrimitives:MTLPrimitiveTypeTriangle vertexStart:0 vertexCount:3];
+			[enc endEncoding];
+			return true;
 		}
-		else if (!dst && !m_importedColorTex && m_pendingSurfaceClearColor)
-		{
-			rp.colorAttachments[0].loadAction = MTLLoadActionClear;
-			rp.colorAttachments[0].clearColor = MTLClearColorMake(
-				m_pendingClearColorValue.r, m_pendingClearColorValue.g,
-				m_pendingClearColorValue.b, m_pendingClearColorValue.a);
-		}
-		else
-		{
-			rp.colorAttachments[0].loadAction = MTLLoadActionLoad;
-		}
-		rp.colorAttachments[0].storeAction = MTLStoreActionStore;
-
-		if (!dst && !m_importedColorTex)
-		{
-			m_pendingSurfaceClearColor = false;
-			m_surfaceClearedThisFrame = true;
-		}
-
-		const float uvRect[4] = {
-			static_cast<float>(sx0) / static_cast<float>(srcW),
-			static_cast<float>(sy0) / static_cast<float>(srcH),
-			static_cast<float>(sx1) / static_cast<float>(srcW),
-			static_cast<float>(sy1) / static_cast<float>(srcH)
-		};
-
-		id<MTLRenderCommandEncoder> enc = [cmd renderCommandEncoderWithDescriptor:rp];
-		if (!enc)
-			return false;
-
-		MTLViewport vp;
-		vp.originX = static_cast<double>(dx0);
-		vp.originY = static_cast<double>(dy0);
-		vp.width = static_cast<double>(copyDstW);
-		vp.height = static_cast<double>(copyDstH);
-		vp.znear = 0.0;
-		vp.zfar = 1.0;
-		[enc setViewport:vp];
-
-		MTLScissorRect sc;
-		sc.x = static_cast<NSUInteger>(dx0);
-		sc.y = static_cast<NSUInteger>(dy0);
-		sc.width = copyDstW;
-		sc.height = copyDstH;
-		[enc setScissorRect:sc];
-
-		[enc setRenderPipelineState:reinterpret_cast<id<MTLRenderPipelineState>>(rawPso)];
-		[enc setCullMode:MTLCullModeNone];
-		[enc setVertexBytes:uvRect length:sizeof(uvRect) atIndex:0];
-		[enc setFragmentTexture:srcTex atIndex:0];
-		[enc setFragmentSamplerState:smp atIndex:0];
-		[enc drawPrimitives:MTLPrimitiveTypeTriangle vertexStart:0 vertexCount:3];
-		[enc endEncoding];
-		return true;
 	}
 
 	bool RenderDeviceMetal::ImportExternalFramebuffer(uintptr_t nativeFboOrTexHandle, uint32_t width, uint32_t height)
@@ -3005,21 +3021,26 @@ namespace ParaEngine
 
 	bool RenderDeviceMetal::BeginScene()
 	{
+		auto* pApp = CGlobals::GetApp();
+		auto* pWin = pApp ? pApp->GetRenderWindow() : nullptr;
+		if (pWin)
+		{
+			uint32_t winW = pApp->IsRotateScreen() ? pWin->GetHeight() : pWin->GetWidth();
+			uint32_t winH = pApp->IsRotateScreen() ? pWin->GetWidth() : pWin->GetHeight();
+			if (winW > 0 && winH > 0 && (winW != m_backBufferWidth || winH != m_backBufferHeight))
+			{
+				ResizeSwapChain(winW, winH);
+			}
+		}
+
 		if (m_sceneDepth == 0)
 		{
-			if (!m_frameSemaphoreAcquired && m_frameSemaphore)
-			{
-				dispatch_semaphore_wait(reinterpret_cast<dispatch_semaphore_t>(m_frameSemaphore), DISPATCH_TIME_FOREVER);
-				m_frameSemaphoreAcquired = true;
-			}
-			FrameSlot& slot = m_frames[m_frameIndex];
-			for (auto& page : slot.uploadPages)
-				page.offset = 0;
+			AcquireFrameSlotIfNeeded();
 			m_surfaceClearedThisFrame = false;
 			m_pendingSurfaceClearColor = false;
 			m_pendingSurfaceClearDepth = false;
 			m_pendingSurfaceClearStencil = false;
-			ReclaimCompletedResources(m_completedSerial);
+			SetRenderTargets(0, nullptr, nullptr);
 		}
 		++m_sceneDepth;
 		return EnsureCommandBuffer();
@@ -3050,10 +3071,10 @@ namespace ParaEngine
 		if (!EnsureCommandBuffer())
 		{
 			ReleaseCurrentDrawable();
-			if (m_frameSemaphoreAcquired && m_frameSemaphore)
+			if (m_frameSlotAcquired && m_frameSemaphore)
 			{
 				dispatch_semaphore_signal(reinterpret_cast<dispatch_semaphore_t>(m_frameSemaphore));
-				m_frameSemaphoreAcquired = false;
+				m_frameSlotAcquired = false;
 			}
 			m_surfaceClearedThisFrame = false;
 			m_pendingSurfaceClearColor = false;
@@ -3062,6 +3083,7 @@ namespace ParaEngine
 			return false;
 		}
 
+		AcquireFrameSlotIfNeeded();
 		id<MTLCommandBuffer> cmd = reinterpret_cast<id<MTLCommandBuffer>>(m_activeCmdBuf);
 		if (m_currentDrawable)
 		{
@@ -3072,13 +3094,13 @@ namespace ParaEngine
 		uint64_t serial = m_nextSubmitSerial++;
 		m_frames[m_frameIndex].submitSerial = serial;
 		dispatch_semaphore_t sem = reinterpret_cast<dispatch_semaphore_t>(m_frameSemaphore);
-		const bool signalSem = m_frameSemaphoreAcquired && (sem != nullptr);
-		m_frameSemaphoreAcquired = false;
+		const bool signalSlot = m_frameSlotAcquired && (sem != nullptr);
+		m_frameSlotAcquired = false;
 		uint64_t* completedPtr = &m_completedSerial;
 		[cmd addCompletedHandler:^(id<MTLCommandBuffer> /*buffer*/) {
 			if (*completedPtr < serial)
 				*completedPtr = serial;
-			if (signalSem)
+			if (signalSlot)
 				dispatch_semaphore_signal(sem);
 		}];
 
@@ -3121,12 +3143,6 @@ namespace ParaEngine
 			m_pendingSurfaceClearColor = false;
 			m_pendingSurfaceClearDepth = false;
 			m_pendingSurfaceClearStencil = false;
-			if (m_frameSemaphoreAcquired && m_frameSemaphore)
-			{
-				dispatch_semaphore_signal(reinterpret_cast<dispatch_semaphore_t>(m_frameSemaphore));
-				m_frameSemaphoreAcquired = false;
-				m_frameIndex = (m_frameIndex + 1u) % FRAME_COUNT;
-			}
 		}
 	}
 } // namespace ParaEngine

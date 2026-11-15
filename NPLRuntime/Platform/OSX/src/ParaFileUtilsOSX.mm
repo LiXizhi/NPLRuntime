@@ -106,8 +106,28 @@ const std::string& ParaEngine::CParaFileUtilsOSX::GetAssetPath()
 {
     if(m_assetPath.empty())
     {
-        std::string resourcePath = [[[NSBundle mainBundle] resourcePath] UTF8String];
-        m_assetPath = resourcePath + "/assets/";
+        const char* envAssetPath = getenv("PARA_ASSET_PATH");
+        if (envAssetPath && envAssetPath[0] != '\0')
+        {
+            m_assetPath = envAssetPath;
+            if (m_assetPath.back() != '/')
+                m_assetPath += '/';
+        }
+        else
+        {
+            std::string resourcePath = [[[NSBundle mainBundle] resourcePath] UTF8String];
+            std::string bundleAssets = resourcePath + "/assets/";
+            boost::system::error_code ec;
+            if (!fs::exists(bundleAssets + "main.pkg", ec) &&
+                fs::exists("/Applications/Paracraft.app/Contents/Resources/assets/main.pkg", ec))
+            {
+                m_assetPath = "/Applications/Paracraft.app/Contents/Resources/assets/";
+            }
+            else
+            {
+                m_assetPath = bundleAssets;
+            }
+        }
     }
     return m_assetPath;
 }
@@ -168,7 +188,7 @@ bool ParaEngine::CParaFileUtilsOSX::Move(const std::string& src, const std::stri
     {
         fs::path sSrc(GetFullPathForFilename(src));
         fs::path sDest(GetFullPathForFilename(dest));
-        fs::copy_file(sSrc,sDest, fs::copy_option::overwrite_if_exists);
+        fs::copy_file(sSrc,sDest, fs::copy_options::overwrite_existing);
         return fs::remove(sSrc);
     }
     catch (...)
@@ -230,16 +250,23 @@ bool ParaEngine::CParaFileUtilsOSX::SaveBufferToFile(const std::string& filename
 {
 	try
 	{
-		if (MakeDirectoryFromFilePath(filename.c_str()) == false)
+		std::string fullPath = GetFullPathForFilename(filename);
+		if (MakeDirectoryFromFilePath(fullPath) == false)
 			return false;
-		fs::path filePath(filename);
+		fs::path filePath(fullPath);
 		if (fs::exists(filePath) && (replace == false))
 			return false;
 
-		fs::ofstream file(filePath);
-		if (!file)
+		fs::ofstream file(filePath, std::ios::out | std::ios::binary | std::ios::trunc);
+		if (file.is_open())
 		{
-			file.write(buffer, bufSize);
+			if (buffer && bufSize > 0)
+			{
+				file.write(buffer, bufSize);
+			}
+			bool ok = !file.fail();
+			file.close();
+			return ok;
 		}
 	}
 	catch (...) {}

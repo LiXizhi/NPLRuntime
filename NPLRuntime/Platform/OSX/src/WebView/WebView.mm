@@ -205,17 +205,10 @@ namespace ParaEngine {
 
     ParaEngineWebView *ParaEngineWebView::getWebViewByIndex(int viewTag)
     {
-        ParaEngineWebView *pView;
         auto it = webviews.find(std::to_string(viewTag));
-
-        if (it != webviews.end()) {
-            pView = it->second;
-        }
-
-        if (!pView)
-            return;
-
-        return pView;
+        if (it == webviews.end())
+            return nullptr;
+        return it->second;
     }
 
     void ParaEngineWebView::_createWebView(int x, int y, int w, int h)

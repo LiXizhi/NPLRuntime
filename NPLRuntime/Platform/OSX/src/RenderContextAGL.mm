@@ -1,3 +1,4 @@
+#include "glad/glad.h"
 #import <Cocoa/Cocoa.h>
 #include "RenderContextAGL.h"
 #include "ParaEngine.h"
@@ -52,9 +53,10 @@ ParaEngine::IRenderDevice *RenderContxtAGL::CreateDevice(const ParaEngine::Rende
     RenderWindowOSX* renderWindow = static_cast<RenderWindowOSX*>(cfg.renderWindow);
     
     NSOpenGLPixelFormatAttribute attrs[] = {
-        NSOpenGLPFAOpenGLProfile, NSOpenGLProfileVersionLegacy,
-        NSOpenGLPFAColorSize,32,
-        NSOpenGLPFADepthSize,16,
+        NSOpenGLPFAOpenGLProfile, NSOpenGLProfileVersion3_2Core,
+        NSOpenGLPFAColorSize, 32,
+        NSOpenGLPFADepthSize, 24,
+        NSOpenGLPFAStencilSize, 8,
         NSOpenGLPFADoubleBuffer,
         NSOpenGLPFAAccelerated,
         0
@@ -69,20 +71,36 @@ ParaEngine::IRenderDevice *RenderContxtAGL::CreateDevice(const ParaEngine::Rende
     
     NSOpenGLContext *openGLContext = [[NSOpenGLContext alloc] initWithFormat:pixelFormat shareContext:nil];
     [openGLContext makeCurrentContext];
+    if (!gladLoadGL())
+    {
+        NSLog(@"gladLoadGL failed");
+        return nullptr;
+    }
+    GLuint initialVao = 0;
+    if (glad_glGenVertexArrays != nullptr && glad_glBindVertexArray != nullptr)
+    {
+        glGenVertexArrays(1, &initialVao);
+        glBindVertexArray(initialVao);
+    }
     printf("OpenGL version supported by this platform (%s): \n",
            glGetString(GL_VERSION));
     
     NSWindow *window = (NSWindow*)renderWindow->GetNativeHandle();
+    NSView *existingView = [window contentView];
     RenderView *view = nil;
-    if ([[window contentView] isKindOfClass:[RenderView class]])
+    if (existingView && [existingView isKindOfClass:[RenderView class]])
     {
-        view = (RenderView*)[window contentView];
+        view = (RenderView*)existingView;
     }
     else
     {
-        view = [[[RenderView alloc] initWithFrame:CGRectMake(0, 0, cfg.screenWidth, cfg.screenHeight)] autorelease];
+        NSRect bounds = existingView ? [existingView bounds] : CGRectMake(0, 0, cfg.screenWidth, cfg.screenHeight);
+        view = [[[RenderView alloc] initWithFrame:bounds] autorelease];
+        [view setAutoresizingMask:NSViewWidthSizable | NSViewHeightSizable];
         [window setContentView:view];
     }
+    [view setWantsBestResolutionOpenGLSurface:YES];
+    [window makeFirstResponder:view];
     [openGLContext setView:view];
     [openGLContext update];
     

@@ -133,8 +133,8 @@ namespace ParaEngine
 		void* GetOrCreatePipelineState(EPrimitiveType primitiveType);
 		void* GetOrCreateDepthStencilState();
 		void* GetOrCreateSamplerState(uint32_t stage, bool forceNearestNoMip = false);
-		void* GetOrCreateBlitPipelineState(uint32_t dstMtlPixelFormat);
 		bool PrepareForDraw(EPrimitiveType primitiveType);
+		void AcquireFrameSlotIfNeeded();
 		void ReclaimCompletedResources(uint64_t completedSerial);
 
 	private:
@@ -186,7 +186,6 @@ namespace ParaEngine
 		bool m_usingBackBufferRT = true;
 		bool m_passClearedSinceTargetBind = false;
 		uint32_t m_sceneDepth = 0;
-		bool m_frameSemaphoreAcquired = false;
 		bool m_drawingUP = false;
 		bool m_surfaceClearedThisFrame = false;
 		bool m_pendingSurfaceClearColor = false;
@@ -202,6 +201,7 @@ namespace ParaEngine
 
 		FrameSlot m_frames[FRAME_COUNT];
 		uint32_t m_frameIndex = 0;
+		bool m_frameSlotAcquired = false;
 		uint64_t m_nextSubmitSerial = 1;
 		uint64_t m_completedSerial = 0;
 		std::vector<MetalDeferredRelease> m_deferredReleases;
@@ -220,11 +220,13 @@ namespace ParaEngine
 		bool m_vsConstDirty = false;
 		bool m_psConstDirty = false;
 
-		void* m_blitVSFunc = nullptr;
-		void* m_blitPSFunc = nullptr;
-		std::unordered_map<uint32_t, void*> m_blitPsoCache;
 		std::unordered_map<uint64_t, void*> m_psoCache;
 		std::unordered_map<uint64_t, void*> m_depthStencilCache;
 		std::unordered_map<uint64_t, void*> m_samplerCache;
+
+		void* m_blitLibrary = nullptr;        // id<MTLLibrary>
+		void* m_blitSamplerNearest = nullptr; // id<MTLSamplerState>
+		void* m_blitSamplerLinear = nullptr;  // id<MTLSamplerState>
+		std::unordered_map<uint64_t, void*> m_blitPsoCache;
 	};
 }
