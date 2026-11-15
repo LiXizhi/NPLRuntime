@@ -9,6 +9,7 @@
 #include FT_FREETYPE_H
 #include FT_STROKER_H
 #include FT_IMAGE_H
+#include FT_SYNTHESIS_H
 
 
 namespace ParaEngine
@@ -20,7 +21,8 @@ namespace ParaEngine
 		static const int DistanceMapSpread;
 
 		static FontFreeType* create(const std::string &fontName, float fontSize, GlyphCollection glyphs,
-			const char *customGlyphs, bool distanceFieldEnabled = false, int outline = 0);
+			const char *customGlyphs, bool distanceFieldEnabled = false, int outline = 0,
+			const std::string &fallbackFontName = "", bool bold = false);
 
 		static void shutdownFreeType();
 		static void shutdownFreeType_exit();
@@ -55,23 +57,28 @@ namespace ParaEngine
 		virtual ~FontFreeType();
 
 		bool createFontObject(const std::string &fontName, float fontSize);
+		bool createFallbackFontObject(const std::string &fallbackFontName, float fontSize);
 
 		bool initFreeType();
 		FT_Library getFTLibrary();
 
 		int getHorizontalKerningForChars(unsigned short firstChar, unsigned short secondChar) const;
-		unsigned char* getGlyphBitmapWithOutline(unsigned short code, FT_BBox &bbox);
+		unsigned char* getGlyphBitmapWithOutline(FT_Face face, unsigned short code, FT_BBox &bbox);
 
 		void setGlyphCollection(GlyphCollection glyphs, const char* customGlyphs = nullptr);
 		const char* getGlyphCollection() const;
 
 		FT_Face _fontRef;
+		FT_Face _fallbackFontRef;
 		FT_Stroker _stroker;
 		FT_Encoding _encoding;
 
 		std::string _fontName;
+		std::string _fallbackFontName;
 		bool _distanceFieldEnabled;
+		bool _bold;
 		float _outlineSize;
+		int _ascender;
 		int _lineHeight;
 		GLFontAtlas* _fontAtlas;
 

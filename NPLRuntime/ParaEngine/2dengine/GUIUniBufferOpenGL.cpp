@@ -345,7 +345,7 @@ namespace ParaEngine {
 			auto fontAtlas = pFont->GetLabel()->getFontAtlas();
 			if (fontAtlas)
 			{
-				return (int)fontAtlas->getCommonLineHeight();
+				return (int)(fontAtlas->getCommonLineHeight() * pFont->GetFontScaling() + 0.5f);
 			}
 		}
 

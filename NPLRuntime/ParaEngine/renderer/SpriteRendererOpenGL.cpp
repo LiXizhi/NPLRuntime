@@ -13,6 +13,7 @@
 #include "OpenGLWrapper/GLTexture2D.h"
 //#include "CGUIRootLayer.h"
 #include "EffectManager.h"
+#include "2dengine/GUIRoot.h"
 #include "ParaWorldAsset.h"
 #include "BaseObject.h"
 #include "ViewportManager.h"
@@ -209,6 +210,20 @@ HRESULT ParaEngine::CSpriteRendererOpenGL::DrawQuad(TextureEntity* pTexture, con
 
 	newSprite.color = color;
 	newSprite.transform = m_transform;
+	if (m_bIsTextMode)
+	{
+		newSprite.bPointFilter = false;
+		newSprite.bClampAddress = true;
+	}
+	else
+	{
+		DWORD curMinFilter = D3DTEXF_LINEAR;
+		CGlobals::GetEffectManager()->GetSamplerState(0, ESamplerStateType::MINFILTER, &curMinFilter);
+		newSprite.bPointFilter = pTexture->IsSamplerStateBlocky()
+			|| (curMinFilter == D3DTEXF_POINT)
+			|| (CGUIRoot::GetInstance() && CGUIRoot::GetInstance()->GetUsePointTextureFiltering());
+		newSprite.bClampAddress = false;
+	}
 	m_sprite_count++;
 
 	return S_OK;
@@ -241,6 +256,16 @@ void ParaEngine::CSpriteRendererOpenGL::FlushQuads()
 
 	RenderDevicePtr pRenderDevice = CGlobals::GetRenderDevice();
 
+	DWORD savedMinFilter = D3DTEXF_LINEAR;
+	DWORD savedMagFilter = D3DTEXF_LINEAR;
+	DWORD savedAddressU = D3DTADDRESS_WRAP;
+	DWORD savedAddressV = D3DTADDRESS_WRAP;
+	auto* pEffectMgr = CGlobals::GetEffectManager();
+	pEffectMgr->GetSamplerState(0, ESamplerStateType::MINFILTER, &savedMinFilter);
+	pEffectMgr->GetSamplerState(0, ESamplerStateType::MAGFILTER, &savedMagFilter);
+	pEffectMgr->GetSamplerState(0, ESamplerStateType::ADDRESSU, &savedAddressU);
+	pEffectMgr->GetSamplerState(0, ESamplerStateType::ADDRESSV, &savedAddressV);
+
 	m_vertices.resize(6 * m_sprite_count);
 
 	int count = 0;
@@ -248,7 +273,9 @@ void ParaEngine::CSpriteRendererOpenGL::FlushQuads()
 	{
 		int i = start;
 		while (i < m_sprite_count &&
-			(count == 0 || m_sprites[i].texture == m_sprites[i - 1].texture))
+			(count == 0 || (m_sprites[i].texture == m_sprites[i - 1].texture
+				&& m_sprites[i].bPointFilter == m_sprites[i - 1].bPointFilter
+				&& m_sprites[i].bClampAddress == m_sprites[i - 1].bClampAddress)))
 		{
 			SpriteQuad& curSprite = m_sprites[i];
 			float spritewidth = (float)Math::Abs(curSprite.rect.right - curSprite.rect.left);
@@ -290,12 +317,22 @@ void ParaEngine::CSpriteRendererOpenGL::FlushQuads()
 			i++;
 		}
 
-		// do the rendering with opengl
+		// do the rendering
 		{
+			const DWORD targetFilter = m_sprites[start].bPointFilter ? D3DTEXF_POINT : D3DTEXF_LINEAR;
+			pRenderDevice->SetSamplerState(0, ESamplerStateType::MINFILTER, targetFilter);
+			pRenderDevice->SetSamplerState(0, ESamplerStateType::MAGFILTER, targetFilter);
+			pRenderDevice->SetSamplerState(0, ESamplerStateType::ADDRESSU, m_sprites[start].bClampAddress ? D3DTADDRESS_CLAMP : savedAddressU);
+			pRenderDevice->SetSamplerState(0, ESamplerStateType::ADDRESSV, m_sprites[start].bClampAddress ? D3DTADDRESS_CLAMP : savedAddressV);
 			pRenderDevice->SetTexture(0, m_sprites[start].texture);
 			DrawTriangles(&m_vertices[6 * start], count * 2);
 		}
 	}
+
+	pRenderDevice->SetSamplerState(0, ESamplerStateType::MINFILTER, savedMinFilter);
+	pRenderDevice->SetSamplerState(0, ESamplerStateType::MAGFILTER, savedMagFilter);
+	pRenderDevice->SetSamplerState(0, ESamplerStateType::ADDRESSU, savedAddressU);
+	pRenderDevice->SetSamplerState(0, ESamplerStateType::ADDRESSV, savedAddressV);
 	m_vertices.clear();
 	/*if (!(m_flags & D3DXSPRITE_DO_NOT_ADDREF_TEXTURE))
 	for (int i = 0; i < m_sprite_count; i++)

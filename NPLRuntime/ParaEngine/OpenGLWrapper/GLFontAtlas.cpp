@@ -281,46 +281,49 @@ bool GLFontAtlas::prepareLetterDefinitions(const std::u16string& utf16Text)
             tempDef.offsetX = tempRect.origin.x + adjustForDistanceMap - adjustForExtend;
             tempDef.offsetY = _fontAscender + tempRect.origin.y - adjustForDistanceMap - adjustForExtend;
 
+            glyphHeight = static_cast<int>(bitmapHeight) + _letterPadding + _letterEdgeExtend;
             if (_currentPageOrigX + tempDef.width > CacheTextureWidth)
             {
                 _currentPageOrigY += _currLineHeight;
                 _currLineHeight = 0;
                 _currentPageOrigX = 0;
-                if (_currentPageOrigY + _lineHeight + _letterPadding + _letterEdgeExtend >= CacheTextureHeight)
-                {
-                    unsigned char *data = nullptr;
-                    if (pixelFormat == PixelFormat::A8L8)
-                    {
-                        data = _currentPageData + CacheTextureWidth * (int)startY * 2;
-                    }
-                    else
-                    {
-                        data = _currentPageData + CacheTextureWidth * (int)startY;
-                    }
-                    _atlasTextures[_currentPage]->updateWithData(data, 0, startY,
-                        CacheTextureWidth, CacheTextureHeight - startY);
-
-                    startY = 0.0f;
-
-                    _currentPageOrigY = 0;
-                    memset(_currentPageData, 0, _currentPageDataSize);
-                    _currentPage++;
-                    auto tex = new (std::nothrow) GLTexture2D;
-                    if (_antialiasEnabled)
-                    {
-                        tex->setAntiAliasTexParameters();
-                    }
-                    else
-                    {
-                        tex->setAliasTexParameters();
-                    }
-                    tex->initWithData(_currentPageData, _currentPageDataSize,
-                        pixelFormat, CacheTextureWidth, CacheTextureHeight, Size(CacheTextureWidth, CacheTextureHeight));
-                    addTexture(tex, _currentPage);
-                    tex->Release();
-                }
             }
-            glyphHeight = static_cast<int>(bitmapHeight) + _letterPadding + _letterEdgeExtend;
+            const int minRowHeight = (std::max)(static_cast<int>(_lineHeight) + _letterPadding + _letterEdgeExtend, glyphHeight);
+            if (_currentPageOrigY + minRowHeight >= CacheTextureHeight)
+            {
+                unsigned char *data = nullptr;
+                if (pixelFormat == PixelFormat::A8L8)
+                {
+                    data = _currentPageData + CacheTextureWidth * (int)startY * 2;
+                }
+                else
+                {
+                    data = _currentPageData + CacheTextureWidth * (int)startY;
+                }
+                _atlasTextures[_currentPage]->updateWithData(data, 0, startY,
+                    CacheTextureWidth, CacheTextureHeight - startY);
+
+                startY = 0.0f;
+
+                _currLineHeight = 0;
+                _currentPageOrigX = 0;
+                _currentPageOrigY = 0;
+                memset(_currentPageData, 0, _currentPageDataSize);
+                _currentPage++;
+                auto tex = new (std::nothrow) GLTexture2D;
+                if (_antialiasEnabled)
+                {
+                    tex->setAntiAliasTexParameters();
+                }
+                else
+                {
+                    tex->setAliasTexParameters();
+                }
+                tex->initWithData(_currentPageData, _currentPageDataSize,
+                    pixelFormat, CacheTextureWidth, CacheTextureHeight, Size(CacheTextureWidth, CacheTextureHeight));
+                addTexture(tex, _currentPage);
+                tex->Release();
+            }
             if (glyphHeight > _currLineHeight)
             {
                 _currLineHeight = glyphHeight;
@@ -447,14 +450,14 @@ void ParaEngine::GLFontAtlas::init()
 		texture->initWithData(_currentPageData, _currentPageDataSize,
 			pixelFormat, CacheTextureWidth, CacheTextureHeight, Size(CacheTextureWidth, CacheTextureHeight));
 
-		/*if (_antialiasEnabled)
+		if (_antialiasEnabled)
 		{
 			texture->setAntiAliasTexParameters();
 		}
 		else
 		{
 			texture->setAliasTexParameters();
-		}*/
+		}
 
 		addTexture(texture, 0);
 		texture->Release();

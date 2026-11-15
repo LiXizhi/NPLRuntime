@@ -17,6 +17,7 @@
 #include "terrain/Settings.h"
 #include "ParaEngineSettings.h"
 #include "EffectManager.h"
+#include "2dengine/GUIRoot.h"
 #include "BlockEngine/BlockCommon.h"
 #include "BlockEngine/BlockWorldClient.h"
 #include "VertexDeclaration.h"
@@ -1227,9 +1228,9 @@ bool EffectManager::BeginEffectShader(int nHandle, CEffectFile** pOutEffect)
 			pd3dDevice->SetVertexDeclaration(pDecl);
 			pd3dDevice->SetRenderState(ERenderState::SRCBLEND, D3DBLEND_SRCALPHA);
 			pd3dDevice->SetRenderState(ERenderState::DESTBLEND, D3DBLEND_INVSRCALPHA);
-			SetSamplerState(0, ESamplerStateType::MINFILTER, D3DTEXF_POINT, true);
-			SetSamplerState(0, ESamplerStateType::MAGFILTER, D3DTEXF_POINT, true);
 		}
+		SetSamplerState(0, ESamplerStateType::MINFILTER, D3DTEXF_LINEAR, true);
+		SetSamplerState(0, ESamplerStateType::MAGFILTER, D3DTEXF_LINEAR, true);
 		break;
 	}
 	case TECH_GUI:
@@ -1248,9 +1249,10 @@ bool EffectManager::BeginEffectShader(int nHandle, CEffectFile** pOutEffect)
 			pd3dDevice->SetRenderState(ERenderState::SRCBLEND, D3DBLEND_SRCALPHA);
 			pd3dDevice->SetRenderState(ERenderState::DESTBLEND, D3DBLEND_INVSRCALPHA);
 			pd3dDevice->SetRenderState(ERenderState::ALPHABLENDENABLE, TRUE);
-			SetSamplerState(0, ESamplerStateType::MINFILTER, D3DTEXF_POINT, true);
-			SetSamplerState(0, ESamplerStateType::MAGFILTER, D3DTEXF_POINT, true);
 		}
+		const DWORD dwGuiFilter = (CGUIRoot::GetInstance() && CGUIRoot::GetInstance()->GetUsePointTextureFiltering()) ? D3DTEXF_POINT : D3DTEXF_LINEAR;
+		SetSamplerState(0, ESamplerStateType::MINFILTER, dwGuiFilter, true);
+		SetSamplerState(0, ESamplerStateType::MAGFILTER, dwGuiFilter, true);
 		break;
 	}
 	case TECH_SINGLE_COLOR:
@@ -1792,9 +1794,12 @@ void EffectManager::EndEffect()
 		{
 		case TECH_OCEAN_UNDERWATER:
 		case TECH_GUI:
+		case TECH_GUI_TEXT:
 		case TECH_NONE:
 			EnableZTest(true);
 			pd3dDevice->SetRenderState(ERenderState::ZWRITEENABLE, TRUE);
+			SetSamplerState(0, ESamplerStateType::MINFILTER, D3DTEXF_LINEAR, true);
+			SetSamplerState(0, ESamplerStateType::MAGFILTER, D3DTEXF_LINEAR, true);
 			break;
 		default:
 			break;
@@ -1909,9 +1914,12 @@ void EffectManager::EndEffect()
 			pd3dDevice->SetRenderState(ERenderState::ZWRITEENABLE, TRUE);
 			break;
 		case TECH_GUI:
+		case TECH_GUI_TEXT:
 		case TECH_NONE:
 			EnableZTest(true);
 			pd3dDevice->SetRenderState(ERenderState::ZWRITEENABLE, TRUE);
+			SetSamplerState(0, ESamplerStateType::MINFILTER, D3DTEXF_LINEAR, true);
+			SetSamplerState(0, ESamplerStateType::MAGFILTER, D3DTEXF_LINEAR, true);
 			break;
 		case TECH_BLOCK_FANCY:
 		case TECH_BLOCK:

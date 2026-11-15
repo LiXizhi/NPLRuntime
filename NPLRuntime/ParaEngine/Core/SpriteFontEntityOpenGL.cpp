@@ -68,12 +68,14 @@ HRESULT ParaEngine::SpriteFontEntityOpenGL::InitDeviceObjects()
 		return S_OK;
 	m_bIsInitialized = true;
 	SAFE_RELEASE(m_fontRenderer);
-	m_fontRenderer = CFontRendererOpenGL::create(GetFontName(), GetFontSize());
+	const std::string& sFontName = TranslateFontName(GetFontName());
+	const bool bBold = (m_nWeight > 400);
+	m_fontRenderer = CFontRendererOpenGL::create(sFontName, GetFontSize(), bBold);
 	if(m_fontRenderer)
 		m_fontRenderer->addref();
 	else
 	{
-		OUTPUT_LOG("warning: failed to init font entity: %s;%d\n", GetFontName().c_str(), GetFontSize());
+		OUTPUT_LOG("warning: failed to init font entity: %s;%d\n", sFontName.c_str(), GetFontSize());
 	}
 
 	return S_OK;
@@ -90,7 +92,8 @@ HRESULT ParaEngine::SpriteFontEntityOpenGL::RendererRecreated()
 {
 	// the default implementation of CCLabel's FontAtlas does not seem to handle renderer creation very well
 	// we just delete and create again. 
-	m_fontRenderer->RendererRecreated();
+	if (m_fontRenderer)
+		m_fontRenderer->RendererRecreated();
 	DeleteDeviceObjects();
 	InitDeviceObjects();
 	return S_OK;

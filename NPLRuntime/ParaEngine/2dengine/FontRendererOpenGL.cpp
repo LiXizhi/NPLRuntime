@@ -7,6 +7,8 @@
 //-----------------------------------------------------------------------------
 #include "ParaEngine.h"
 
+#include <cmath>
+#include <initializer_list>
 #include "IO/FileUtils.h"
 
 #ifndef USE_NULL_RENDERER
@@ -27,103 +29,231 @@
 using namespace ParaEngine;
 
 ParaEngine::CFontRendererOpenGL::CFontRendererOpenGL()
-	:m_nFontSize(14), m_nRealFontSize(14), m_fFontScaling(1.f), m_bUseCustomShader(false)
+	:m_nFontSize(14), m_nRealFontSize(14), m_fFontScaling(1.f), m_bUseCustomShader(false), m_pScaledFontAtlas(nullptr), m_nScaledFontSize(0)
 {
 }
 
-CFontRendererOpenGL* ParaEngine::CFontRendererOpenGL::create(const std::string& sFontName, int nFontSize)
+CFontRendererOpenGL* ParaEngine::CFontRendererOpenGL::create(const std::string& sFontName, int nFontSize, bool bBold)
 {
 	CFontRendererOpenGL* pFontRenderer = new CFontRendererOpenGL();
+	auto pickExistingFile = [](std::initializer_list<std::string> candidates) -> std::string {
+		for (const auto& candidate : candidates)
+		{
+			if (!candidate.empty() && CFileUtils::FileExist(candidate.c_str()))
+				return candidate;
+		}
+		return std::string();
+	};
+
 	std::string fontFile;
+	std::string fallbackFontFile;
+#ifdef WIN32
+	char szWinPath[MAX_PATH] = { 0 };
+	GetWindowsDirectoryA(szWinPath, MAX_PATH);
+	std::string winDir = szWinPath;
+	fallbackFontFile = bBold
+		? pickExistingFile({
+			winDir + "/Fonts/msyhbd.ttc",
+			winDir + "/Fonts/msyhbd.ttf",
+			winDir + "/Fonts/msyh.ttc",
+			winDir + "/Fonts/msyh.ttf",
+			winDir + "/Fonts/simhei.ttf",
+			winDir + "/Fonts/simsun.ttc",
+			"fonts/DroidSansFallback.ttf"
+		})
+		: pickExistingFile({
+			winDir + "/Fonts/msyh.ttc",
+			winDir + "/Fonts/msyh.ttf",
+			winDir + "/Fonts/simhei.ttf",
+			winDir + "/Fonts/simsun.ttc",
+			"fonts/DroidSansFallback.ttf"
+		});
+#else
+	fallbackFontFile = pickExistingFile({ "fonts/DroidSansFallback.ttf" });
+#endif
+
 	if (sFontName == "System" || sFontName == "system")
 	{
-		// secretly replace system font with one of our own predefined font.
-		//fontFile = "fonts/simhei.ttf"; // 9MB
-		//fontFile = "fonts/FZYTK.TTF"; // 3MB
-		//fontFile = "fonts/SIMYOU.TTF"; // 6MB
 #ifdef WIN32
-		char szPath[MAX_PATH];
-		GetWindowsDirectoryA(szPath, MAX_PATH);
-		std::string winDir = szPath;
-		fontFile = winDir + "/fonts/msyh.ttc"; // try Chinese font first
-		
-		if (!CFileUtils::FileExist(fontFile.c_str()))
-		{
-			fontFile = winDir + "/fonts/segoeui.ttf"; // this is usually windows default font
-			if (!CFileUtils::FileExist(fontFile.c_str()))
-			{
-				fontFile = winDir + "/fonts/arial.ttf"; // try English font
-				if (!CFileUtils::FileExist(fontFile.c_str()))
-				{
-					fontFile = "fonts/DroidSansFallback.ttf"; // use buildin default font
-				}
-			}
-		}
+		fontFile = !fallbackFontFile.empty()
+			? fallbackFontFile
+			: pickExistingFile({
+				winDir + (bBold ? "/Fonts/segoeuib.ttf" : "/Fonts/segoeui.ttf"),
+				winDir + "/Fonts/segoeui.ttf",
+				winDir + (bBold ? "/Fonts/arialbd.ttf" : "/Fonts/arial.ttf"),
+				winDir + "/Fonts/arial.ttf",
+				"fonts/DroidSansFallback.ttf"
+			});
 #else
-		fontFile = "fonts/DroidSansFallback.ttf"; // 3.6MB
+		fontFile = "fonts/DroidSansFallback.ttf";
 #endif
-		
 	}
 	else
 	{
-		fontFile = sFontName;
-		if (! CFileUtils::FileExist(fontFile.c_str()))
+		if (CFileUtils::FileExist(sFontName.c_str()))
 		{
-#if defined(WIN32) && 0 
-			// try to find the font file from registry, since font fallback is not supported, we will not enable this. 
-			HKEY hKey;
+			fontFile = sFontName;
+		}
+		else
+		{
+			fontFile = pickExistingFile({
+				"fonts/" + sFontName + ".ttf",
+				"fonts/" + sFontName + ".ttc"
+			});
+		}
+
+#ifdef WIN32
+		if (fontFile.empty())
+		{
+			if (_stricmp(sFontName.c_str(), "Tahoma") == 0)
+			{
+				fontFile = pickExistingFile({
+					winDir + (bBold ? "/Fonts/tahomabd.ttf" : "/Fonts/tahoma.ttf"),
+					winDir + "/Fonts/tahoma.ttf"
+				});
+			}
+			else if (_stricmp(sFontName.c_str(), "Arial") == 0)
+			{
+				fontFile = pickExistingFile({
+					winDir + (bBold ? "/Fonts/arialbd.ttf" : "/Fonts/arial.ttf"),
+					winDir + "/Fonts/arial.ttf"
+				});
+			}
+			else if (_stricmp(sFontName.c_str(), "Segoe UI") == 0)
+			{
+				fontFile = pickExistingFile({
+					winDir + (bBold ? "/Fonts/segoeuib.ttf" : "/Fonts/segoeui.ttf"),
+					winDir + "/Fonts/segoeui.ttf"
+				});
+			}
+			else if (_stricmp(sFontName.c_str(), "Consolas") == 0)
+			{
+				fontFile = pickExistingFile({
+					winDir + (bBold ? "/Fonts/consolab.ttf" : "/Fonts/consola.ttf"),
+					winDir + "/Fonts/consola.ttf"
+				});
+			}
+			else if (_stricmp(sFontName.c_str(), "Courier New") == 0)
+			{
+				fontFile = pickExistingFile({
+					winDir + (bBold ? "/Fonts/courbd.ttf" : "/Fonts/cour.ttf"),
+					winDir + "/Fonts/cour.ttf"
+				});
+			}
+			else if (_stricmp(sFontName.c_str(), "Verdana") == 0)
+			{
+				fontFile = pickExistingFile({
+					winDir + (bBold ? "/Fonts/verdanab.ttf" : "/Fonts/verdana.ttf"),
+					winDir + "/Fonts/verdana.ttf"
+				});
+			}
+			else if (_stricmp(sFontName.c_str(), "Times New Roman") == 0)
+			{
+				fontFile = pickExistingFile({
+					winDir + (bBold ? "/Fonts/timesbd.ttf" : "/Fonts/times.ttf"),
+					winDir + "/Fonts/times.ttf"
+				});
+			}
+			else if (_stricmp(sFontName.c_str(), "Microsoft YaHei") == 0 ||
+				_stricmp(sFontName.c_str(), "Microsoft YaHei UI") == 0 ||
+				sFontName == "\xE5\xBE\xAE\xE8\xBD\xAF\xE9\x9B\x85\xE9\xBB\x91")
+			{
+				fontFile = pickExistingFile({
+					winDir + (bBold ? "/Fonts/msyhbd.ttc" : "/Fonts/msyh.ttc"),
+					winDir + (bBold ? "/Fonts/msyhbd.ttf" : "/Fonts/msyh.ttf"),
+					winDir + "/Fonts/msyh.ttc",
+					winDir + "/Fonts/msyh.ttf"
+				});
+			}
+			else if (_stricmp(sFontName.c_str(), "SimHei") == 0 ||
+				sFontName == "\xE9\xBB\x91\xE4\xBD\x93")
+			{
+				fontFile = pickExistingFile({ winDir + "/Fonts/simhei.ttf" });
+			}
+			else if (_stricmp(sFontName.c_str(), "SimSun") == 0 ||
+				_stricmp(sFontName.c_str(), "NSimSun") == 0 ||
+				sFontName == "\xE5\xAE\x8B\xE4\xBD\x93")
+			{
+				fontFile = pickExistingFile({
+					winDir + "/Fonts/simsun.ttc",
+					winDir + "/Fonts/simsun.ttf"
+				});
+			}
+		}
+
+		if (fontFile.empty())
+		{
+			fontFile = pickExistingFile({
+				winDir + "/Fonts/" + sFontName + ".ttf",
+				winDir + "/Fonts/" + sFontName + ".ttc"
+			});
+		}
+
+		if (fontFile.empty())
+		{
+			HKEY hKey = NULL;
 			if (RegOpenKeyExA(HKEY_LOCAL_MACHINE, "SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Fonts", 0, KEY_READ, &hKey) == ERROR_SUCCESS)
 			{
-				char szValue[1024];
-				DWORD dwType = REG_SZ;
-				DWORD dwSize = sizeof(szValue);
-				// iterate all child key names
-				for (DWORD i = 0; RegEnumValueA(hKey, i, szValue, &dwSize, NULL, &dwType, NULL, NULL) == ERROR_SUCCESS; i++)
+				std::string boldPrefix = sFontName + " Bold";
+				std::string regularMatch;
+				std::string boldMatch;
+				char szValName[512];
+				char szValData[MAX_PATH];
+				DWORD dwIndex = 0;
+				while (true)
 				{
-					// check if szValue begins with sFontName with case insensitive
-					if (_strnicmp(szValue, sFontName.c_str(), sFontName.length()) == 0)
-					{
-						if (RegQueryValueExA(hKey, szValue, NULL, &dwType, (LPBYTE)szValue, &dwSize) == ERROR_SUCCESS)
-						{
-							char szPath[MAX_PATH];
-							GetWindowsDirectoryA(szPath, MAX_PATH);
-							fontFile = szPath;
-							fontFile += "/fonts/";
-							fontFile += szValue;
-						}
+					DWORD dwNameLen = sizeof(szValName);
+					DWORD dwDataLen = sizeof(szValData);
+					DWORD dwType = 0;
+					if (RegEnumValueA(hKey, dwIndex++, szValName, &dwNameLen, NULL, &dwType, (LPBYTE)szValData, &dwDataLen) != ERROR_SUCCESS)
 						break;
-					}
-					dwSize = sizeof(szValue);
-				}
+					if (dwType != REG_SZ || dwDataLen == 0)
+						continue;
 
+					if (_strnicmp(szValName, sFontName.c_str(), sFontName.length()) == 0)
+					{
+						char nextCh = szValName[sFontName.length()];
+						if (nextCh == '\0' || nextCh == ' ' || nextCh == '(' || nextCh == '&')
+						{
+							std::string candidate = (strchr(szValData, ':') != nullptr)
+								? std::string(szValData)
+								: (winDir + "/Fonts/" + szValData);
+							if (CFileUtils::FileExist(candidate.c_str()))
+							{
+								if (_strnicmp(szValName, boldPrefix.c_str(), boldPrefix.length()) == 0)
+								{
+									if (boldMatch.empty())
+										boldMatch = candidate;
+								}
+								else if (regularMatch.empty())
+								{
+									regularMatch = candidate;
+								}
+							}
+						}
+					}
+				}
 				RegCloseKey(hKey);
+				fontFile = (bBold && !boldMatch.empty()) ? boldMatch : (!regularMatch.empty() ? regularMatch : boldMatch);
 			}
+		}
 #endif
+		if (fontFile.empty())
+		{
+			fontFile = sFontName;
 		}
 	}
 
-	// force size to be 50. font-rendering crashes on android with big font.
+	// force size to be <= 50. font-rendering crashes on android with big font.
 	pFontRenderer->m_nFontSize = nFontSize;
-#if defined(WIN32)
-	if (pFontRenderer->m_nFontSize <= 12)
+#if !defined(PARAENGINE_MOBILE)
+	if (pFontRenderer->m_nFontSize <= 0)
 	{
 		pFontRenderer->m_nRealFontSize = 12;
 	}
-	else if (pFontRenderer->m_nFontSize <= 14)
-	{
-		pFontRenderer->m_nRealFontSize = 14;
-	}
-	else if (pFontRenderer->m_nFontSize <= 20)
-	{
-		pFontRenderer->m_nRealFontSize = 20;
-	}
-	else if (pFontRenderer->m_nFontSize <= 28)
-	{
-		pFontRenderer->m_nRealFontSize = 28;
-	}
 	else if (pFontRenderer->m_nFontSize <= 50)
 	{
-		pFontRenderer->m_nRealFontSize = 50;
+		pFontRenderer->m_nRealFontSize = pFontRenderer->m_nFontSize;
 	}
 	else
 	{
@@ -146,13 +276,21 @@ CFontRendererOpenGL* ParaEngine::CFontRendererOpenGL::create(const std::string& 
 	if (pFontRenderer && CFileUtils::FileExist(fontFile.c_str()))
 	{
 		TTFConfig ttfConfig(fontFile.c_str(), pFontRenderer->m_nRealFontSize, GlyphCollection::DYNAMIC);
+		ttfConfig.bold = bBold;
+#ifdef WIN32
+		if (!fallbackFontFile.empty() && _stricmp(fallbackFontFile.c_str(), fontFile.c_str()) != 0)
+#else
+		if (!fallbackFontFile.empty() && fallbackFontFile != fontFile)
+#endif
+		{
+			ttfConfig.fallbackFontFilePath = fallbackFontFile;
+		}
 		if (pFontRenderer->setTTFConfig(ttfConfig))
 		{
 			pFontRenderer->setFontScale(pFontRenderer->m_fFontScaling);
 			if (pFontRenderer->getFontAtlas())
 			{
-				// TODO: why disable aliasing? This should be enabled LiXizhi
-				// pFontRenderer->getFontAtlas()->setAliasTexParameters();
+				pFontRenderer->getFontAtlas()->setAntiAliasTexParameters();
 			}
 			pFontRenderer->AddToAutoReleasePool();
 			return pFontRenderer;
@@ -163,14 +301,19 @@ CFontRendererOpenGL* ParaEngine::CFontRendererOpenGL::create(const std::string& 
 	if (sFontName != "System" && sFontName != "system")
 	{
 		OUTPUT_LOG("non-exist font %s is replaced with system font\n", sFontName.c_str());
-		return CFontRendererOpenGL::create("System", nFontSize);
+		return CFontRendererOpenGL::create("System", nFontSize, bBold);
 	}
 	return NULL;
 }
 
 ParaEngine::CFontRendererOpenGL::~CFontRendererOpenGL()
 {
-	
+	if (m_pScaledFontAtlas)
+	{
+		FontAtlasCache::releaseFontAtlas(m_pScaledFontAtlas);
+		m_pScaledFontAtlas = nullptr;
+		m_nScaledFontSize = 0;
+	}
 }
 
 
@@ -226,12 +369,18 @@ bool ParaEngine::CFontRendererOpenGL::DrawTextW(CSpriteRenderer* pSprite, const 
 		nMaxScaledHeight = (int)(nMaxHeight / GetFontScaling() + 0.999f);
 	}
 	// we will make the height at least of a single line height to prevent starting a new line in the front when calculating layout.
-	// unless nScaledHeight is 0, which means that we are calculating rect
-	if (_commonLineHeight > nScaledHeight && nScaledHeight > 0)
+	// unless nScaledHeight is 0 or DT_CALCRECT is set
+	if (!(dwTextFormat & DT_CALCRECT) && _commonLineHeight > nScaledHeight && nScaledHeight > 0)
 	{
 		if (vAlignment_ == TextVAlignment::CENTER)
 		{
-			setPosition(rect.left, rect.top - (_commonLineHeight - nScaledHeight) / 2 * GetFontScaling());
+			const int topOffset = (nScaledHeight - static_cast<int>(_commonLineHeight)) / 2;
+			setPosition(rect.left, (GetFontScaling() == 1.f) ? (rect.top + topOffset) : std::floor(rect.top + topOffset * GetFontScaling() + 0.5f));
+		}
+		else if (vAlignment_ == TextVAlignment::BOTTOM)
+		{
+			const int topOffset = nScaledHeight - static_cast<int>(_commonLineHeight);
+			setPosition(rect.left, (GetFontScaling() == 1.f) ? (rect.top + topOffset) : std::floor(rect.top + topOffset * GetFontScaling() + 0.5f));
 		}
 		nScaledHeight = _commonLineHeight;
 	}
@@ -245,7 +394,9 @@ bool ParaEngine::CFontRendererOpenGL::DrawTextW(CSpriteRenderer* pSprite, const 
 	{
 		if (dwTextFormat & DT_CALCRECT)
 		{
-			int nContentHeight = _contentSize.height;
+			int nContentHeight = (!_clipEnabled && _currNumLines > 0)
+				? static_cast<int>(_commonLineHeight * _currNumLines)
+				: static_cast<int>(_contentSize.height);
 			if (vAlignment_ == TextVAlignment::CENTER && nContentHeight > nMaxScaledHeight)
 			{
 				rect.top = rect.top - (int)((nContentHeight - nScaledHeight) / 2 * GetFontScaling());
@@ -299,7 +450,7 @@ bool ParaEngine::CFontRendererOpenGL::UpdateLetterSprites(DWORD dwTextFormat)
 	_fontAtlas->prepareLetterDefinitions(_currentUTF16String);
 
 	LabelTextFormatter::createStringSprites(this);
-	if (!(dwTextFormat & DT_SINGLELINE) &&  _maxLineWidth > 0 && _contentSize.width > _maxLineWidth && LabelTextFormatter::multilineText(this))
+	if ((dwTextFormat & DT_WORDBREAK) && !(dwTextFormat & DT_SINGLELINE) && _maxLineWidth > 0 && _contentSize.width > _maxLineWidth && LabelTextFormatter::multilineText(this))
 		LabelTextFormatter::createStringSprites(this);
 
 	if (_labelWidth > 0 || (_currNumLines > 1 && _hAlignment != TextHAlignment::LEFT))
@@ -348,37 +499,203 @@ float ParaEngine::CFontRendererOpenGL::GetFontScaling() const
 
 void ParaEngine::CFontRendererOpenGL::RendererRecreated()
 {
+	if (m_pScaledFontAtlas)
+	{
+		FontAtlasCache::releaseFontAtlas(m_pScaledFontAtlas);
+		m_pScaledFontAtlas = nullptr;
+		m_nScaledFontSize = 0;
+	}
 	FontAtlasCache::purgeCachedData();
+}
+
+int ParaEngine::CFontRendererOpenGL::SelectRenderFontSize(float screenFontSize)
+{
+#if !defined(PARAENGINE_MOBILE)
+	if (screenFontSize >= 8.0f && screenFontSize <= 50.0f)
+	{
+		const int nearestSize = static_cast<int>(std::floor(screenFontSize + 0.5f));
+		if (std::fabs(screenFontSize - static_cast<float>(nearestSize)) < 0.08f)
+			return nearestSize;
+	}
+#endif
+	if (std::fabs(screenFontSize - 12.0f) < 0.08f)
+		return 12;
+	if (std::fabs(screenFontSize - 14.0f) < 0.08f)
+		return 14;
+	if (std::fabs(screenFontSize - 20.0f) < 0.08f)
+		return 20;
+	if (std::fabs(screenFontSize - 28.0f) < 0.08f)
+		return 28;
+
+	// For scaled / fractional screen sizes, select from the shared {12, 14, 20, 28, 50}
+	// atlas buckets so screenFontSize / atlasSize stays in [0.51, 0.91]:
+	// - Never < 0.5x minification (where 2x2 linear sampling skips 1-texel strokes)
+	// - ~1.4x-1.9x supersampled for small scaled fonts so thin CJK/Latin strokes stay crisp
+	// - High-resolution atlas when upscaling small base fonts (e.g. HiDPI or zoomed UI)
+	if (screenFontSize <= 8.0f)
+		return 12;
+	if (screenFontSize <= 10.5f)
+		return 14;
+	if (screenFontSize <= 16.5f)
+		return 20;
+	if (screenFontSize <= 25.5f)
+		return 28;
+	return 50;
+}
+
+GLFontAtlas* ParaEngine::CFontRendererOpenGL::GetScaledFontAtlas(int nRealFontSize)
+{
+	if (nRealFontSize == m_nRealFontSize || nRealFontSize <= 0)
+		return _fontAtlas;
+
+	if (m_pScaledFontAtlas && m_nScaledFontSize == nRealFontSize)
+		return m_pScaledFontAtlas;
+
+	if (m_pScaledFontAtlas)
+	{
+		FontAtlasCache::releaseFontAtlas(m_pScaledFontAtlas);
+		m_pScaledFontAtlas = nullptr;
+		m_nScaledFontSize = 0;
+	}
+
+	TTFConfig cfg(_fontConfig.fontFilePath.c_str(), nRealFontSize, GlyphCollection::DYNAMIC, nullptr, _fontConfig.distanceFieldEnabled, _fontConfig.outlineSize);
+	cfg.bold = _fontConfig.bold;
+	cfg.fallbackFontFilePath = _fontConfig.fallbackFontFilePath;
+	m_pScaledFontAtlas = FontAtlasCache::getFontAtlasTTF(cfg);
+	if (m_pScaledFontAtlas)
+	{
+		m_pScaledFontAtlas->setAntiAliasTexParameters();
+		m_nScaledFontSize = nRealFontSize;
+		return m_pScaledFontAtlas;
+	}
+	return _fontAtlas;
 }
 
 void ParaEngine::CFontRendererOpenGL::DoRender(CSpriteRenderer* pSprite, DWORD color)
 {
-	auto textures = _fontAtlas->getTextures();
-	
+	if (!_fontAtlas || _limitShowCount <= 0)
+		return;
+
+	Matrix4 matOld;
+	pSprite->GetTransform(matOld);
+
+	int targetRealFontSize = m_nRealFontSize;
+	if (!pSprite->IsUseObjectSpaceTransform() && !_useDistanceField && !_clipEnabled && _fontConfig.outlineSize == 0 && !_fontConfig.fontFilePath.empty())
+	{
+		const float scaleX = std::sqrt(matOld._11 * matOld._11 + matOld._12 * matOld._12);
+		const float scaleY = std::sqrt(matOld._21 * matOld._21 + matOld._22 * matOld._22);
+		const float spriteScale = (std::max)(scaleX, scaleY);
+		if (spriteScale > 0.01f)
+		{
+			const float screenFontSize = static_cast<float>(m_nFontSize) * spriteScale;
+			if (std::fabs(screenFontSize - static_cast<float>(m_nRealFontSize)) < 0.08f)
+				targetRealFontSize = m_nRealFontSize;
+			else
+				targetRealFontSize = SelectRenderFontSize(screenFontSize);
+		}
+	}
+
+	GLFontAtlas* renderAtlas = GetScaledFontAtlas(targetRealFontSize);
+	if (!renderAtlas)
+		renderAtlas = _fontAtlas;
+
+	if (renderAtlas != _fontAtlas)
+	{
+		renderAtlas->prepareLetterDefinitions(_currentUTF16String);
+		const auto& textures = renderAtlas->getTextures();
+		const float fRenderScaling = static_cast<float>(m_nFontSize) / static_cast<float>(targetRealFontSize);
+		const float fLayoutToRender = static_cast<float>(targetRealFontSize) / static_cast<float>(m_nRealFontSize);
+
+		Matrix4 matTransform;
+		Vector2 vScaling(fRenderScaling, fRenderScaling);
+		Vector2 vTranslation(getPositionX(), getPositionY());
+		ParaMatrixTransformation2D(&matTransform, NULL, 0.0, &vScaling, NULL, 0.f, &vTranslation);
+		matTransform = matTransform * matOld;
+		const bool snapScaled1To1 = !pSprite->IsUseObjectSpaceTransform()
+			&& std::fabs(matTransform._12) < 1e-4f && std::fabs(matTransform._21) < 1e-4f
+			&& std::fabs(matTransform._11 - 1.0f) < 0.02f && std::fabs(matTransform._22 - 1.0f) < 0.02f;
+		if (snapScaled1To1)
+		{
+			matTransform._41 = std::floor(matTransform._41 + 0.5f);
+			matTransform._42 = std::floor(matTransform._42 + 0.5f);
+		}
+		pSprite->SetTransform(matTransform);
+
+		const int strLen = static_cast<int>(_currentUTF16String.size());
+		FontLetterDefinition renderDef;
+		for (int ctr = 0; ctr < _limitShowCount && ctr < strLen; ++ctr)
+		{
+			const FontLetterDefinition& layoutDef = _lettersInfo[ctr].def;
+			if (!layoutDef.validDefinition)
+				continue;
+
+			const char16_t ch = _currentUTF16String[ctr];
+			if (!renderAtlas->getLetterDefinitionForChar(ch, renderDef) || !renderDef.validDefinition || renderDef.width <= 0.f || renderDef.height <= 0.f)
+				continue;
+
+			auto texIt = textures.find(renderDef.textureID);
+			if (texIt == textures.end() || !texIt->second)
+				continue;
+
+			const float penLayoutX = _lettersInfo[ctr].position.x - layoutDef.offsetX;
+			const float lineTopLayoutY = (getHeight() - _lettersInfo[ctr].position.y) - layoutDef.offsetY;
+
+			TextureEntityOpenGL tex(texIt->second);
+			RECT rect;
+			rect.left = static_cast<LONG>(renderDef.U);
+			rect.top = static_cast<LONG>(renderDef.V);
+			rect.right = rect.left + static_cast<LONG>(renderDef.width);
+			rect.bottom = rect.top + static_cast<LONG>(renderDef.height);
+			const float rx = snapScaled1To1 ? std::floor(penLayoutX * fLayoutToRender + 0.5f) : (penLayoutX * fLayoutToRender);
+			const float ry = snapScaled1To1 ? std::floor(lineTopLayoutY * fLayoutToRender + 0.5f) : (lineTopLayoutY * fLayoutToRender);
+			Vector3 vPos(rx + renderDef.offsetX, ry + renderDef.offsetY, 0.f);
+			pSprite->DrawQuad(&tex, &rect, NULL, &vPos, color);
+		}
+
+		pSprite->SetTransform(matOld);
+		return;
+	}
+
+	const auto& textures = _fontAtlas->getTextures();
 	if (GetFontScaling() == 1.f)
 	{
+		const bool isPixelAligned1To1 = !pSprite->IsUseObjectSpaceTransform()
+			&& std::fabs(matOld._12) < 1e-4f && std::fabs(matOld._21) < 1e-4f
+			&& std::fabs(matOld._11 - 1.0f) < 1e-3f && std::fabs(matOld._22 - 1.0f) < 1e-3f;
+		float baseX = getPositionX();
+		float baseY = getPositionY();
+		if (isPixelAligned1To1)
+		{
+			baseX = std::floor(baseX + matOld._41 + 0.5f) - matOld._41;
+			baseY = std::floor(baseY + matOld._42 + 0.5f) - matOld._42;
+		}
+
 		for (int ctr = 0; ctr < _limitShowCount; ++ctr)
 		{
 			const FontLetterDefinition &letterDef = _lettersInfo[ctr].def;
 
-			if (letterDef.validDefinition)
+			if (letterDef.validDefinition && letterDef.width > 0.f && letterDef.height > 0.f)
 			{
-				TextureEntityOpenGL tex(textures[letterDef.textureID]);
+				auto texIt = textures.find(letterDef.textureID);
+				if (texIt == textures.end() || !texIt->second)
+					continue;
+				TextureEntityOpenGL tex(texIt->second);
 				RECT rect;
 				rect.left = letterDef.U;
 				rect.top = letterDef.V;
 				rect.right = rect.left + letterDef.width;
 				rect.bottom = rect.top + letterDef.height;
 				// directX and opengGL screen space y differs by 1-y, so we need to set to getHeight() - y.
-				Vector3 vPos(_lettersInfo[ctr].position.x + getPositionX(), (getHeight() - _lettersInfo[ctr].position.y) + getPositionY(), 0);
+				const float localX = isPixelAligned1To1 ? std::floor(_lettersInfo[ctr].position.x + 0.5f) : _lettersInfo[ctr].position.x;
+				const float localY = isPixelAligned1To1 ? std::floor((getHeight() - _lettersInfo[ctr].position.y) + 0.5f) : (getHeight() - _lettersInfo[ctr].position.y);
+				Vector3 vPos(localX + baseX, localY + baseY, 0);
 				pSprite->DrawQuad(&tex, &rect, NULL, &vPos, color);
 			}
 		}
 	}
 	else
 	{
-		Matrix4 matOld, matTransform;
-		pSprite->GetTransform(matOld);
+		Matrix4 matTransform;
 		Vector2 vScaling(GetFontScaling(), GetFontScaling());
 		Vector2 vTranslation(getPositionX(), getPositionY());
 		ParaMatrixTransformation2D(&matTransform, NULL, 0.0, &vScaling, NULL, 0.f, &vTranslation);
@@ -389,9 +706,12 @@ void ParaEngine::CFontRendererOpenGL::DoRender(CSpriteRenderer* pSprite, DWORD c
 		{
 			const FontLetterDefinition &letterDef = _lettersInfo[ctr].def;
 
-			if (letterDef.validDefinition)
+			if (letterDef.validDefinition && letterDef.width > 0.f && letterDef.height > 0.f)
 			{
-				TextureEntityOpenGL tex(textures[letterDef.textureID]);
+				auto texIt = textures.find(letterDef.textureID);
+				if (texIt == textures.end() || !texIt->second)
+					continue;
+				TextureEntityOpenGL tex(texIt->second);
 				RECT rect;
 				rect.left = letterDef.U;
 				rect.top = letterDef.V;

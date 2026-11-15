@@ -84,6 +84,7 @@ public:
 typedef struct _ttfConfig
 {
 	std::string fontFilePath;
+	std::string fallbackFontFilePath;
 	float fontSize;
 
 	GlyphCollection glyphs;

@@ -6,10 +6,128 @@
 #include "GLFontFreeType.h"
 #include "GLFontAtlas.h"
 
+#include FT_TRUETYPE_TABLES_H
+#include FT_TRUETYPE_TAGS_H
+
+#include <cmath>
 #include <string>
 #include <unordered_map>
+#include <vector>
 
 using namespace ParaEngine;
+
+namespace
+{
+	inline unsigned short readBE16U(const unsigned char* p)
+	{
+		return static_cast<unsigned short>((static_cast<unsigned short>(p[0]) << 8) | static_cast<unsigned short>(p[1]));
+	}
+
+	inline short readBE16S(const unsigned char* p)
+	{
+		return static_cast<short>(readBE16U(p));
+	}
+
+	// Match Windows GDI (CreateFont with lfHeight = -ppem, DEFAULT_CHARSET) vertical cell metrics:
+	// 1) SFNT VDMX table when a full-charset (bCharSet == 1) 1:1 aspect group has an exact ppem record.
+	// 2) SFNT OS/2 usWinAscent / usWinDescent rounded to pixels.
+	// 3) Rounded FreeType size->metrics fallback for non-SFNT fonts.
+	void computeGdiCompatibleVerticalMetrics(FT_Face face, int ppem, int& outAscender, int& outLineHeight)
+	{
+		if (face && ppem > 0)
+		{
+			FT_ULong vdmxLen = 0;
+			if (FT_Load_Sfnt_Table(face, TTAG_VDMX, 0, nullptr, &vdmxLen) == 0 && vdmxLen >= 6)
+			{
+				std::vector<unsigned char> vdmx(vdmxLen);
+				if (FT_Load_Sfnt_Table(face, TTAG_VDMX, 0, vdmx.data(), &vdmxLen) == 0)
+				{
+					const unsigned short numRatios = readBE16U(vdmx.data() + 4);
+					const size_t offsetArrayPos = 6u + static_cast<size_t>(numRatios) * 4u;
+					if (offsetArrayPos + static_cast<size_t>(numRatios) * 2u <= vdmxLen)
+					{
+						int matchedGroupOffset = -1;
+						for (unsigned short r = 0; r < numRatios; ++r)
+						{
+							const unsigned char* rat = vdmx.data() + 6u + static_cast<size_t>(r) * 4u;
+							const unsigned char bCharSet = rat[0];
+							const unsigned char xRatio = rat[1];
+							const unsigned char yStart = rat[2];
+							const unsigned char yEnd = rat[3];
+							if (bCharSet != 1)
+								continue;
+
+							const unsigned short groupOff = readBE16U(vdmx.data() + offsetArrayPos + static_cast<size_t>(r) * 2u);
+							if (xRatio == 1 && yStart == 1 && yEnd == 1)
+							{
+								matchedGroupOffset = static_cast<int>(groupOff);
+								break;
+							}
+							if (matchedGroupOffset < 0 && xRatio == 0 && yStart == 0 && yEnd == 0)
+							{
+								matchedGroupOffset = static_cast<int>(groupOff);
+							}
+						}
+
+						if (matchedGroupOffset >= 0 && static_cast<size_t>(matchedGroupOffset) + 4u <= vdmxLen)
+						{
+							const unsigned char* grp = vdmx.data() + matchedGroupOffset;
+							const unsigned short recs = readBE16U(grp);
+							const unsigned char startsz = grp[2];
+							const unsigned char endsz = grp[3];
+							if (ppem >= static_cast<int>(startsz) && ppem <= static_cast<int>(endsz) &&
+								static_cast<size_t>(matchedGroupOffset) + 4u + static_cast<size_t>(recs) * 6u <= vdmxLen)
+							{
+								for (unsigned short k = 0; k < recs; ++k)
+								{
+									const unsigned char* entry = grp + 4u + static_cast<size_t>(k) * 6u;
+									const unsigned short yPelHeight = readBE16U(entry);
+									if (static_cast<int>(yPelHeight) == ppem)
+									{
+										const short yMax = readBE16S(entry + 2);
+										const short yMin = readBE16S(entry + 4);
+										if (yMax > yMin)
+										{
+											outAscender = static_cast<int>(yMax);
+											outLineHeight = static_cast<int>(yMax) - static_cast<int>(yMin);
+											return;
+										}
+										break;
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+
+			const TT_OS2* os2 = static_cast<const TT_OS2*>(FT_Get_Sfnt_Table(face, FT_SFNT_OS2));
+			if (os2 && face->units_per_EM > 0 && (os2->usWinAscent > 0 || os2->usWinDescent > 0))
+			{
+				const double scale = static_cast<double>(ppem) / static_cast<double>(face->units_per_EM);
+				const int winAsc = static_cast<int>(std::floor(static_cast<double>(os2->usWinAscent) * scale + 0.5));
+				const int winDesc = static_cast<int>(std::floor(static_cast<double>(os2->usWinDescent) * scale + 0.5));
+				if (winAsc + winDesc > 0)
+				{
+					outAscender = winAsc;
+					outLineHeight = winAsc + winDesc;
+					return;
+				}
+			}
+		}
+
+		if (face && face->size)
+		{
+			outAscender = static_cast<int>((face->size->metrics.ascender + 32) >> 6);
+			outLineHeight = static_cast<int>((face->size->metrics.height + 32) >> 6);
+		}
+		else
+		{
+			outAscender = ppem;
+			outLineHeight = ppem;
+		}
+	}
+}
 
 #define MAX(a,b) ((a>b)?a:b)
 #define MIN(a,b) ((a<b)?a:b)
@@ -29,13 +147,14 @@ typedef struct _DataRef
 
 static std::unordered_map<std::string, DataRef> s_cacheFontData;
 
-FontFreeType * FontFreeType::create(const std::string &fontName, float fontSize, GlyphCollection glyphs, const char *customGlyphs,bool distanceFieldEnabled /* = false */,int outline /* = 0 */)
+FontFreeType * FontFreeType::create(const std::string &fontName, float fontSize, GlyphCollection glyphs, const char *customGlyphs,bool distanceFieldEnabled /* = false */,int outline /* = 0 */, const std::string &fallbackFontName /* = "" */, bool bold /* = false */)
 {
     FontFreeType *tempFont =  new FontFreeType(distanceFieldEnabled,outline);
 
     if (!tempFont)
         return nullptr;
 
+    tempFont->_bold = bold;
     tempFont->setGlyphCollection(glyphs, customGlyphs);
 
     if (!tempFont->createFontObject(fontName, fontSize))
@@ -43,6 +162,12 @@ FontFreeType * FontFreeType::create(const std::string &fontName, float fontSize,
         delete tempFont;
         return nullptr;
     }
+
+    if (!fallbackFontName.empty() && fallbackFontName != fontName)
+    {
+        tempFont->createFallbackFontObject(fallbackFontName, fontSize);
+    }
+
     return tempFont;
 }
 
@@ -97,9 +222,12 @@ FT_Library FontFreeType::getFTLibrary()
 
 FontFreeType::FontFreeType(bool distanceFieldEnabled /* = false */,int outline /* = 0 */)
 : _fontRef(nullptr)
+, _fallbackFontRef(nullptr)
 , _stroker(nullptr)
 , _distanceFieldEnabled(distanceFieldEnabled)
+, _bold(false)
 , _outlineSize(0.0f)
+, _ascender(0)
 , _lineHeight(0)
 , _fontAtlas(nullptr)
 , _encoding(FT_ENCODING_UNICODE)
@@ -168,15 +296,91 @@ bool FontFreeType::createFontObject(const std::string &fontName, float fontSize)
 
     // set the requested font size
     int dpi = 72;
-    int fontSizePoints = (int)(64.f * fontSize * GL_CONTENT_SCALE_FACTOR());
+    const float scaledFontSize = fontSize * GL_CONTENT_SCALE_FACTOR();
+    int fontSizePoints = static_cast<int>(std::floor(64.f * scaledFontSize + 0.5f));
     if (FT_Set_Char_Size(face, fontSizePoints, fontSizePoints, dpi, dpi))
         return false;
 
     // store the face globally
     _fontRef = face;
-    _lineHeight = static_cast<int>(_fontRef->size->metrics.height >> 6);
+    const int ppem = static_cast<int>(std::floor(scaledFontSize + 0.5f));
+    computeGdiCompatibleVerticalMetrics(_fontRef, ppem, _ascender, _lineHeight);
 
     // done and good
+    return true;
+}
+
+bool FontFreeType::createFallbackFontObject(const std::string &fallbackFontName, float fontSize)
+{
+    if (fallbackFontName.empty())
+        return false;
+
+    auto it = s_cacheFontData.find(fallbackFontName);
+    if (it != s_cacheFontData.end())
+    {
+        (*it).second.referenceCount += 1;
+    }
+    else
+    {
+        s_cacheFontData[fallbackFontName].referenceCount = 1;
+        s_cacheFontData[fallbackFontName].data = CFileUtils::GetDataFromFile(fallbackFontName.c_str());
+
+        if (s_cacheFontData[fallbackFontName].data.isNull())
+        {
+            s_cacheFontData.erase(fallbackFontName);
+            return false;
+        }
+    }
+
+    auto releaseFallbackCache = [&]() {
+        auto cacheIt = s_cacheFontData.find(fallbackFontName);
+        if (cacheIt != s_cacheFontData.end())
+        {
+            if (cacheIt->second.referenceCount <= 1)
+                s_cacheFontData.erase(cacheIt);
+            else
+                cacheIt->second.referenceCount -= 1;
+        }
+    };
+
+    FT_Face face = nullptr;
+    if (FT_New_Memory_Face(getFTLibrary(), (const FT_Byte*)(s_cacheFontData[fallbackFontName].data.GetBytes()), s_cacheFontData[fallbackFontName].data.GetSize(), 0, &face))
+    {
+        releaseFallbackCache();
+        return false;
+    }
+
+    if (FT_Select_Charmap(face, FT_ENCODING_UNICODE))
+    {
+        int foundIndex = -1;
+        for (int charmapIndex = 0; charmapIndex < face->num_charmaps; charmapIndex++)
+        {
+            if (face->charmaps[charmapIndex]->encoding != FT_ENCODING_NONE)
+            {
+                foundIndex = charmapIndex;
+                break;
+            }
+        }
+
+        if (foundIndex == -1 || FT_Select_Charmap(face, face->charmaps[foundIndex]->encoding))
+        {
+            FT_Done_Face(face);
+            releaseFallbackCache();
+            return false;
+        }
+    }
+
+    int dpi = 72;
+    int fontSizePoints = static_cast<int>(std::floor(64.f * fontSize * GL_CONTENT_SCALE_FACTOR() + 0.5f));
+    if (FT_Set_Char_Size(face, fontSizePoints, fontSizePoints, dpi, dpi))
+    {
+        FT_Done_Face(face);
+        releaseFallbackCache();
+        return false;
+    }
+
+    _fallbackFontName = fallbackFontName;
+    _fallbackFontRef = face;
     return true;
 }
 
@@ -192,12 +396,34 @@ FontFreeType::~FontFreeType()
         {
             FT_Done_Face(_fontRef);
         }
+        if (_fallbackFontRef)
+        {
+            FT_Done_Face(_fallbackFontRef);
+        }
     }
 
-    s_cacheFontData[_fontName].referenceCount -= 1;
-    if (s_cacheFontData[_fontName].referenceCount == 0)
+    if (!_fontName.empty())
     {
-        s_cacheFontData.erase(_fontName);
+        auto it = s_cacheFontData.find(_fontName);
+        if (it != s_cacheFontData.end())
+        {
+            if (it->second.referenceCount <= 1)
+                s_cacheFontData.erase(it);
+            else
+                it->second.referenceCount -= 1;
+        }
+    }
+
+    if (!_fallbackFontName.empty())
+    {
+        auto it = s_cacheFontData.find(_fallbackFontName);
+        if (it != s_cacheFontData.end())
+        {
+            if (it->second.referenceCount <= 1)
+                s_cacheFontData.erase(it);
+            else
+                it->second.referenceCount -= 1;
+        }
     }
 }
 
@@ -266,12 +492,12 @@ int  FontFreeType::getHorizontalKerningForChars(unsigned short firstChar, unsign
     if (FT_Get_Kerning( _fontRef, glyphIndex1, glyphIndex2,  FT_KERNING_DEFAULT,  &kerning))
         return 0;
 
-    return (static_cast<int>(kerning.x >> 6));
+    return static_cast<int>((kerning.x >= 0) ? ((kerning.x + 32) >> 6) : -((-kerning.x + 32) >> 6));
 }
 
 int FontFreeType::getFontAscender() const
 {
-    return (static_cast<int>(_fontRef->size->metrics.ascender >> 6));
+    return _ascender;
 }
 
 const char* FontFreeType::getFontFamily() const
@@ -291,36 +517,56 @@ unsigned char* FontFreeType::getGlyphBitmap(unsigned short theChar, long &outWid
         if (_fontRef == nullptr)
             break;
 
-        if (_distanceFieldEnabled)
+        FT_Face face = _fontRef;
+        if (_fallbackFontRef != nullptr && FT_Get_Char_Index(_fontRef, theChar) == 0)
         {
-            if (FT_Load_Char(_fontRef, theChar, FT_LOAD_RENDER | FT_LOAD_NO_HINTING | FT_LOAD_NO_AUTOHINT))
-                break;
-        }
-        else
-        {
-            if (FT_Load_Char(_fontRef, theChar, FT_LOAD_RENDER | FT_LOAD_NO_AUTOHINT))
-                break;
+            if (FT_Get_Char_Index(_fallbackFontRef, theChar) != 0)
+            {
+                face = _fallbackFontRef;
+            }
         }
 
-        auto& metrics = _fontRef->glyph->metrics;
-        outRect.origin.x = metrics.horiBearingX >> 6;
-        outRect.origin.y = -(metrics.horiBearingY >> 6);
-        outRect.size.width = (metrics.width >> 6);
-        outRect.size.height = (metrics.height >> 6);
+        const bool synthesizeBold = _bold && ((face->style_flags & FT_STYLE_FLAG_BOLD) == 0);
+        FT_Int32 loadFlags = _distanceFieldEnabled
+            ? (FT_LOAD_NO_HINTING | FT_LOAD_NO_AUTOHINT)
+            : FT_LOAD_NO_AUTOHINT;
+        if (!synthesizeBold)
+        {
+            loadFlags |= FT_LOAD_RENDER;
+        }
 
-        xAdvance = (static_cast<int>(_fontRef->glyph->metrics.horiAdvance >> 6));
+        if (FT_Load_Char(face, theChar, loadFlags))
+            break;
 
-        outWidth  = _fontRef->glyph->bitmap.width;
-        outHeight = _fontRef->glyph->bitmap.rows;
-        ret = _fontRef->glyph->bitmap.buffer;
+        if (synthesizeBold)
+        {
+            FT_GlyphSlot_Embolden(face->glyph);
+            if (face->glyph->format != FT_GLYPH_FORMAT_BITMAP)
+            {
+                if (FT_Render_Glyph(face->glyph, FT_RENDER_MODE_NORMAL))
+                    break;
+            }
+        }
 
-        if (_outlineSize > 0)
+        auto& metrics = face->glyph->metrics;
+        outRect.origin.x = face->glyph->bitmap_left;
+        outRect.origin.y = -face->glyph->bitmap_top;
+        outRect.size.width = static_cast<float>(face->glyph->bitmap.width);
+        outRect.size.height = static_cast<float>(face->glyph->bitmap.rows);
+
+        xAdvance = static_cast<int>((metrics.horiAdvance + 32) >> 6);
+
+        outWidth  = face->glyph->bitmap.width;
+        outHeight = face->glyph->bitmap.rows;
+        ret = face->glyph->bitmap.buffer;
+
+        if (_outlineSize > 0 && outWidth > 0 && outHeight > 0 && ret != nullptr)
         {
             auto copyBitmap = new (std::nothrow) unsigned char[outWidth * outHeight];
             memcpy(copyBitmap,ret,outWidth * outHeight * sizeof(unsigned char));
 
             FT_BBox bbox;
-            auto outlineBitmap = getGlyphBitmapWithOutline(theChar,bbox);
+            auto outlineBitmap = getGlyphBitmapWithOutline(face, theChar, bbox);
             if(outlineBitmap == nullptr)
             {
                 ret = nullptr;
@@ -403,15 +649,15 @@ unsigned char* FontFreeType::getGlyphBitmap(unsigned short theChar, long &outWid
     }
 }
 
-unsigned char * FontFreeType::getGlyphBitmapWithOutline(unsigned short theChar, FT_BBox &bbox)
+unsigned char * FontFreeType::getGlyphBitmapWithOutline(FT_Face face, unsigned short theChar, FT_BBox &bbox)
 {
     unsigned char* ret = nullptr;
-    if (FT_Load_Char(_fontRef, theChar, FT_LOAD_NO_BITMAP) == 0)
+    if (face && FT_Load_Char(face, theChar, FT_LOAD_NO_BITMAP) == 0)
     {
-        if (_fontRef->glyph->format == FT_GLYPH_FORMAT_OUTLINE)
+        if (face->glyph->format == FT_GLYPH_FORMAT_OUTLINE)
         {
             FT_Glyph glyph;
-            if (FT_Get_Glyph(_fontRef->glyph, &glyph) == 0)
+            if (FT_Get_Glyph(face->glyph, &glyph) == 0)
             {
                 FT_Glyph_StrokeBorder(&glyph, _stroker, 0, 1);
                 if (glyph->format == FT_GLYPH_FORMAT_OUTLINE)

@@ -36,6 +36,15 @@ namespace ParaEngine
 		}
 
 		auto atlasName = generateFontName(config.fontFilePath, fontSize, GlyphCollection::DYNAMIC, useDistanceField);
+		if (config.bold)
+		{
+			atlasName.append("_bold");
+		}
+		if (!config.fallbackFontFilePath.empty())
+		{
+			atlasName.append("_fb_");
+			atlasName.append(config.fallbackFontFilePath);
+		}
 		atlasName.append("_outline_");
 		std::stringstream ss;
 		ss << config.outlineSize;
@@ -46,7 +55,7 @@ namespace ParaEngine
 		if (it == _atlasMap.end())
 		{
 			auto font = FontFreeType::create(config.fontFilePath, fontSize, config.glyphs,
-				config.customGlyphs, useDistanceField, config.outlineSize);
+				config.customGlyphs, useDistanceField, config.outlineSize, config.fallbackFontFilePath, config.bold);
 			if (font)
 			{
 				auto tempAtlas = font->createFontAtlas();

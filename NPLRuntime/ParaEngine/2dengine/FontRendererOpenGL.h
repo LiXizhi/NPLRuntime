@@ -10,7 +10,7 @@ namespace ParaEngine
 	class CFontRendererOpenGL : public GLLabel
 	{
 	public:
-		static CFontRendererOpenGL* create(const std::string& sFontName, int nFontSize);
+		static CFontRendererOpenGL* create(const std::string& sFontName, int nFontSize, bool bBold = false);
 		CFontRendererOpenGL();
 		virtual ~CFontRendererOpenGL();
 	public:
@@ -30,11 +30,17 @@ namespace ParaEngine
 		void RendererRecreated();
 
 	protected:
+		GLFontAtlas* GetScaledFontAtlas(int nRealFontSize);
+		static int SelectRenderFontSize(float screenFontSize);
+
+	protected:
 		int m_nFontSize;
 		// to minimize the total number of font used, the real font-size may be smaller than the m_nFontSize, and a scale factor is used during rendering. 
 		int m_nRealFontSize;
 		float m_fFontScaling;
 		bool m_bUseCustomShader;
+		GLFontAtlas* m_pScaledFontAtlas;
+		int m_nScaledFontSize;
 	};
 }
 

@@ -21,6 +21,8 @@ namespace ParaEngine
 		Vector3 pos;
 		DWORD color;
 		Matrix4 transform;
+		bool bPointFilter = false;
+		bool bClampAddress = false;
 	};
 
 	struct SpriteTriangle
@@ -110,6 +112,7 @@ namespace ParaEngine
 		WORLD, VIEW, and PROJECTION transforms are modified so that sprites are
 		drawn in screen space coordinates.
 		*/
+	public:
 		bool IsUseObjectSpaceTransform();
 
 	public:

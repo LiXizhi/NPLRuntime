@@ -19,11 +19,12 @@ namespace ParaEngine
 }
 
 SpriteFontEntity::SpriteFontEntity(const AssetKey& key)
-:AssetEntity(key)
+:AssetEntity(key), m_nFontSize(12), m_nWeight(400)
 {
 
 }
 SpriteFontEntity::SpriteFontEntity()
+: m_nFontSize(12), m_nWeight(400)
 {
 };
 

@@ -1,4 +1,5 @@
 #include "ParaEngine.h"
+#include <cmath>
 #include "GLType.h"
 #include "GLFontAtlas.h"
 #include "GLFontAtlasCache.h"
@@ -163,81 +164,74 @@ bool LabelTextFormatter::multilineText(GLLabel *theLabel)
 
 bool LabelTextFormatter::alignText(GLLabel *theLabel)
 {
-	int i = 0;
+	if (theLabel->_hAlignment == TextHAlignment::LEFT)
+		return true;
 
-	int lineNumber = 0;
-	int strLen = theLabel->_limitShowCount;
-	std::vector<char16_t> lastLine;
+	const int strLen = theLabel->_limitShowCount;
 	const auto& strWhole = theLabel->_currentUTF16String;
+	const auto contentScaleFactor = GL_CONTENT_SCALE_FACTOR();
+	const float alignWidth = (theLabel->_labelWidth > 0)
+		? static_cast<float>(theLabel->_labelWidth)
+		: theLabel->_contentSize.width;
 
-	if (theLabel->_labelWidth > theLabel->_contentSize.width)
-	{
-		theLabel->setContentSize(Size(theLabel->_labelWidth, theLabel->_contentSize.height));
-	}
-
+	int lineStart = 0;
+	const int maxLen = static_cast<int>(strWhole.size());
 	for (int ctr = 0; ctr <= strLen; ++ctr)
 	{
-		char16_t currentChar = strWhole[ctr];
+		const char16_t currentChar = (ctr < maxLen) ? strWhole[ctr] : 0;
 
-		if (currentChar == '\n' || currentChar == 0)
+		if (ctr == strLen || currentChar == '\n' || currentChar == 0)
 		{
-			auto lineLength = lastLine.size();
-
-			// if last line is empty we must just increase lineNumber and work with next line
-			if (lineLength == 0)
+			if (ctr > lineStart)
 			{
-				lineNumber++;
-				continue;
-			}
-			int index = static_cast<int>(i + lineLength - 1 + lineNumber);
-			if (index < 0) continue;
-
-			auto info = &theLabel->_lettersInfo.at(index);
-			if (info->def.validDefinition == false)
-				continue;
-
-			float shift = 0;
-			switch (theLabel->_hAlignment)
-			{
-			case TextHAlignment::CENTER:
-			{
-				float lineWidth = info->position.x + info->contentSize.width;
-				shift = theLabel->_contentSize.width / 2.0f - lineWidth / 2.0f;
-				break;
-			}
-			case TextHAlignment::RIGHT:
-			{
-				float lineWidth = info->position.x + info->contentSize.width;
-				shift = theLabel->_contentSize.width - lineWidth;
-				break;
-			}
-			default:
-				break;
-			}
-
-			if (shift != 0)
-			{
-				for (unsigned j = 0; j < lineLength; ++j)
+				int validIdx = -1;
+				for (int k = ctr - 1; k >= lineStart; --k)
 				{
-					index = i + j + lineNumber;
-					if (index < 0) continue;
-
-					info = &theLabel->_lettersInfo.at(index);
-					if (info)
+					if (k >= 0 && static_cast<std::size_t>(k) < theLabel->_lettersInfo.size() &&
+						theLabel->_lettersInfo[k].def.validDefinition)
 					{
-						info->position.x += shift;
+						validIdx = k;
+						break;
+					}
+				}
+
+				if (validIdx >= 0)
+				{
+					const auto& lastInfo = theLabel->_lettersInfo[validIdx];
+					const float lineWidth =
+						(lastInfo.position.x - lastInfo.def.offsetX / contentScaleFactor) +
+						(lastInfo.def.xAdvance + theLabel->_additionalKerning) / contentScaleFactor;
+
+					float shift = 0.0f;
+					switch (theLabel->_hAlignment)
+					{
+					case TextHAlignment::CENTER:
+						shift = std::floor((alignWidth - lineWidth) * 0.5f);
+						break;
+					case TextHAlignment::RIGHT:
+						shift = std::floor(alignWidth - lineWidth + 0.5f);
+						break;
+					default:
+						break;
+					}
+
+					if (shift != 0.0f)
+					{
+						for (int k = lineStart; k < ctr; ++k)
+						{
+							if (k >= 0 && static_cast<std::size_t>(k) < theLabel->_lettersInfo.size())
+							{
+								theLabel->_lettersInfo[k].position.x += shift;
+							}
+						}
 					}
 				}
 			}
 
-			i += lineLength;
-			++lineNumber;
-
-			lastLine.clear();
-			continue;
+			lineStart = ctr + 1;
+			if (currentChar == 0)
+				break;
 		}
-
-		lastLine.push_back(currentChar);
 	}
 
 	return true;
@@ -276,7 +270,7 @@ bool LabelTextFormatter::createStringSprites(GLLabel *theLabel)
 			nextFontPositionY = labelHeightPixel;
 			break;
 		case TextVAlignment::CENTER:
-			nextFontPositionY = (labelHeightPixel + totalHeight) / 2.0f;
+			nextFontPositionY = static_cast<int>(labelHeightPixel) - (static_cast<int>(labelHeightPixel) - static_cast<int>(totalHeight)) / 2;
 			break;
 		case TextVAlignment::BOTTOM:
 			nextFontPositionY = totalHeight;
