@@ -143,15 +143,6 @@ set(APP_PATH "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/$<CONFIGURATION>/Paracraft.app")
 set(DYLIB_PATH "${CMAKE_ARCHIVE_OUTPUT_DIRECTORY}/$<CONFIGURATION>")
 set(DEST_FRAMEWORK_PATH "${APP_PATH}/Contents/Frameworks")
 
-if (NOT CMAKE_GENERATOR STREQUAL "Xcode")
-    add_custom_command(TARGET Paracraft POST_BUILD
-        COMMAND /usr/bin/plutil -replace CFBundleExecutable -string "Paracraft" "$<TARGET_BUNDLE_DIR:Paracraft>/Contents/Info.plist"
-        COMMAND /usr/bin/plutil -replace CFBundleName -string "${product_name}" "$<TARGET_BUNDLE_DIR:Paracraft>/Contents/Info.plist"
-        COMMAND /usr/bin/plutil -replace LSMinimumSystemVersion -string "${CMAKE_OSX_DEPLOYMENT_TARGET}" "$<TARGET_BUNDLE_DIR:Paracraft>/Contents/Info.plist"
-        COMMENT "Updating macOS bundle Info.plist placeholders for non-Xcode generator"
-    )
-endif ()
-
 if (NOT SQLITE_STATICLIB)
     add_dependencies(Paracraft ParaSqlite)
 	set(LIBSQLITE_DYPATH "${DYLIB_PATH}/libParaSqlite.dylib")
@@ -187,6 +178,16 @@ if (NPLRUNTIME_PHYSICS AND NOT PHYSICS_STATICLIB)
         COMMAND ${CMAKE_COMMAND} ARGS -E copy "${LIBSPHYSICS_DYPATH}" "${DEST_FRAMEWORK_PATH}/${LIBSPHYSICS_DYNAME}"
         MAIN_DEPENDENCY Paracraft
         DEPENDS "${LIBSPHYSICS_DYPATH}" PhysicsBT
+    )
+endif ()
+
+if (NOT CMAKE_GENERATOR STREQUAL "Xcode")
+    add_custom_command(TARGET Paracraft POST_BUILD
+        COMMAND /usr/bin/plutil -replace CFBundleExecutable -string "Paracraft" "$<TARGET_BUNDLE_DIR:Paracraft>/Contents/Info.plist"
+        COMMAND /usr/bin/plutil -replace CFBundleName -string "${product_name}" "$<TARGET_BUNDLE_DIR:Paracraft>/Contents/Info.plist"
+        COMMAND /usr/bin/plutil -replace LSMinimumSystemVersion -string "${CMAKE_OSX_DEPLOYMENT_TARGET}" "$<TARGET_BUNDLE_DIR:Paracraft>/Contents/Info.plist"
+        COMMAND /usr/bin/codesign --force --deep --sign - "$<TARGET_BUNDLE_DIR:Paracraft>"
+        COMMENT "Updating Info.plist and ad-hoc signing Paracraft.app for macOS"
     )
 endif ()
 
