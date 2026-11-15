@@ -836,6 +836,7 @@ void CGUIContainer::Begin(GUIState* pGUIState, float fElapsedTime)
 	if (GetUsePointTextureFiltering())
 	{
 #ifndef USE_NULL_RENDERER
+		painter->Flush();
 		CGlobals::GetEffectManager()->SetSamplerState(0, ESamplerStateType::MINFILTER, D3DTEXF_POINT, true);
 		CGlobals::GetEffectManager()->SetSamplerState(0, ESamplerStateType::MAGFILTER, D3DTEXF_POINT, true);
 #endif
@@ -858,8 +859,10 @@ void CGUIContainer::End(GUIState* pGUIState, float fElapsedTime)
 	if (GetUsePointTextureFiltering())
 	{
 #ifndef USE_NULL_RENDERER
-		CGlobals::GetEffectManager()->SetSamplerState(0, ESamplerStateType::MINFILTER, D3DTEXF_LINEAR);
-		CGlobals::GetEffectManager()->SetSamplerState(0, ESamplerStateType::MAGFILTER, D3DTEXF_LINEAR);
+		painter->Flush();
+		const DWORD restoreFilter = (CGUIRoot::GetInstance() && CGUIRoot::GetInstance()->GetUsePointTextureFiltering()) ? D3DTEXF_POINT : D3DTEXF_LINEAR;
+		CGlobals::GetEffectManager()->SetSamplerState(0, ESamplerStateType::MINFILTER, restoreFilter, true);
+		CGlobals::GetEffectManager()->SetSamplerState(0, ESamplerStateType::MAGFILTER, restoreFilter, true);
 #endif
 	}
 }

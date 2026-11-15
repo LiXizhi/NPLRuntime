@@ -2544,6 +2544,7 @@ HRESULT ParaEngine::CGUIBase::DoSelfPaint(GUIState* pGUIState, float fElapsedTim
 
 								if (bIsFastRender)
 									painter.setClipRect(QRect(), NoClip);
+								painter.Flush();
 								pDevice->SetRenderState(ERenderState::SEPARATEALPHABLENDENABLE, FALSE);
 								pDevice->SetRenderState(ERenderState::BLENDOPALPHA, D3DBLENDOP_ADD);
 
@@ -2823,7 +2824,7 @@ void ParaEngine::CGUIBase::SendInputMethodEvent(const std::wstring& sText)
 
 bool ParaEngine::CGUIBase::FetchIMEString()
 {
-#ifdef PARAENGINE_CLIENT
+#ifdef PARA_ENABLE_WIN32_IME
 	wstring sText = CGUIIME::GetCurrentCompString();
 
 	if (!sText.empty())

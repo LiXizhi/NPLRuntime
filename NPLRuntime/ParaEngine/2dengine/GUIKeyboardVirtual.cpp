@@ -102,7 +102,7 @@ HRESULT ParaEngine::CGUIKeyboardVirtual::ReadBufferedData()
 		}
 		if (m_didod[m_dwElements].dwOfs != 0)
 		{
-			m_didod[m_dwElements].dwTimeStamp = (DWORD)m_buffered_key_msgs[a].m_nTime;
+			m_didod[m_dwElements].dwTimeStamp = m_buffered_key_msgs[a].m_nTime != 0 ? (DWORD)m_buffered_key_msgs[a].m_nTime : (DWORD)GetTickCount();
 			m_dwElements++;
 		}
 	}

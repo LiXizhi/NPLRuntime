@@ -269,19 +269,28 @@ namespace ParaEngine {
 			if (CGUIIME::IsEnableImeSystem())
 			{
 				lParam = 0;
+				CGUIIME::HandleWinThreadMsg(message, wParam, lParam);
+			}
+			else
+			{
+				lParam = ISC_SHOWUICOMPOSITIONWINDOW | ISC_SHOWUICANDIDATEWINDOW;
 			}
 			return ::CallWindowProcW(fallbackProc, hWnd, message, wParam, lParam);
 		}
-		if (message == WM_INPUTLANGCHANGE
+		if (message == WM_KEYUP
+			|| message == WM_INPUTLANGCHANGE
 			|| message == WM_IME_STARTCOMPOSITION
 			|| message == WM_IME_COMPOSITION
 			|| message == WM_IME_ENDCOMPOSITION
 			|| message == WM_IME_NOTIFY)
 		{
-			if (CGUIRoot::GetInstance() && CGUIRoot::GetInstance()->HasIMEFocus())
+			if (CGUIRoot::GetInstance() && (CGUIRoot::GetInstance()->HasIMEFocus() || CGUIRoot::GetInstance()->GetIMEFocus() != nullptr))
 			{
-				if (CGUIIME::HandleWinThreadMsg(message, wParam, lParam))
-					return 0;
+				CGUIIME::HandleWinThreadMsg(message, wParam, lParam);
+			}
+			if (message != WM_KEYUP && CGUIIME::IsEnableImeSystem())
+			{
+				return 1;
 			}
 		}
 #endif
@@ -391,7 +400,7 @@ namespace ParaEngine {
 				return TRUE;
 			}
 #ifdef PARA_ENABLE_WIN32_IME
-			if (CGUIRoot::GetInstance() && CGUIRoot::GetInstance()->HasIMEFocus())
+			if (CGUIRoot::GetInstance() && (CGUIRoot::GetInstance()->HasIMEFocus() || CGUIRoot::GetInstance()->GetIMEFocus() != nullptr))
 			{
 				CGUIIME::SendWinMsgChar((WCHAR)code);
 				return 0;
@@ -409,6 +418,12 @@ namespace ParaEngine {
 				::ClipCursor(NULL);
 				window->ClearInputStates();
 			}
+#ifdef PARA_ENABLE_WIN32_IME
+			else
+			{
+				CGUIIME::StaticMsgProc(message, wParam, lParam);
+			}
+#endif
 			if (CGlobals::GetApp())
 			{
 				CGlobals::GetApp()->ActivateApp(bActive);

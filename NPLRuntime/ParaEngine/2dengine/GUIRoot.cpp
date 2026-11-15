@@ -1031,14 +1031,14 @@ void ParaEngine::CGUIRoot::DestroyChildren()
 
 void ParaEngine::CGUIRoot::SendKeyDownEvent(EVirtualKey nVirtualkey)
 {
-	DeviceKeyEvent e(EKeyState::PRESS, nVirtualkey);
+	DeviceKeyEvent e(EKeyState::PRESS, nVirtualkey, (int32)GetTickCount());
 	GetKeyboard()->PushKeyEvent(e);
 	GetKeyboard()->SetKeyPressed(nVirtualkey, true);
 }
 
 void ParaEngine::CGUIRoot::SendKeyUpEvent(EVirtualKey nVirtualkey)
 {
-	DeviceKeyEvent e(EKeyState::RELEASE, nVirtualkey);
+	DeviceKeyEvent e(EKeyState::RELEASE, nVirtualkey, (int32)GetTickCount());
 	GetKeyboard()->PushKeyEvent(e);
 	GetKeyboard()->SetKeyPressed(nVirtualkey, false);
 }
@@ -2687,6 +2687,7 @@ CGUIBase* ParaEngine::CGUIRoot::GetIMEFocus() const
 void ParaEngine::CGUIRoot::SetIMEFocus(CGUIBase* val)
 {
 	m_IMEFocus = val;
+	SetHasIMEFocus(val != NULL);
 }
 
 void ParaEngine::CGUIRoot::TranslateMousePos(int &inout_x, int &inout_y)

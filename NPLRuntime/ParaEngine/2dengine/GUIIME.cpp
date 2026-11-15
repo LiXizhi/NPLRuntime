@@ -1585,8 +1585,13 @@ HRESULT CGUIIME::StaticOnCreateDevice()
 	{
 		CIMELock lock;
 
-		s_is_ime_created = true;
 		Initialize();
+
+		HWND hWnd = CGlobals::GetAppHWND();
+		if (hWnd == NULL)
+		{
+			return S_OK;
+		}
 
 		if(s_hImcDef == 0)
 		{
@@ -1594,17 +1599,29 @@ HRESULT CGUIIME::StaticOnCreateDevice()
 			if(s_bCreateIMEContext)
 			{
 				s_hImcDef = _ImmCreateContext();
-				_ImmAssociateContext(  CGlobals::GetAppHWND(), s_hImcDef);
+				_ImmAssociateContext( hWnd, s_hImcDef );
 			}
 			else
 			{
 				// use the default IME context created by windows
-				s_hImcDef = _ImmGetContext( CGlobals::GetAppHWND() );
-				_ImmReleaseContext( CGlobals::GetAppHWND(), s_hImcDef );
+				s_hImcDef = _ImmGetContext( hWnd );
+				if (s_hImcDef)
+				{
+					_ImmReleaseContext( hWnd, s_hImcDef );
+				}
+				else if (_ImmCreateContext)
+				{
+					s_hImcDef = _ImmCreateContext();
+				}
 			}
 
 			// By default we will not associate IME context with the window, unless an IME editbox is focused. 
-			_ImmAssociateContext(  CGlobals::GetAppHWND(), NULL );
+			_ImmAssociateContext( hWnd, NULL );
+		}
+
+		if (s_hImcDef != 0)
+		{
+			s_is_ime_created = true;
 		}
 	}
 	return S_OK;

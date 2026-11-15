@@ -595,6 +595,12 @@ namespace ParaEngine
 			if (hWnd)
 				return hWnd;
 		}
+		if (m_cfg.renderWindow)
+		{
+			HWND hWnd = reinterpret_cast<HWND>(m_cfg.renderWindow->GetNativeHandle());
+			if (hWnd)
+				return hWnd;
+		}
 		return m_hExternalWnd;
 	}
 
@@ -761,6 +767,7 @@ namespace ParaEngine
 		}
 
 		auto pWinDelegate = static_cast<RenderWindowDelegate*>(pWindow);
+		m_pRenderWindow = pWindow;
 		m_cfg.renderWindow = pWinDelegate;
 
 		if (pWinDelegate && preferred != ERHIBackend::Null && Is3DRenderingEnabled())

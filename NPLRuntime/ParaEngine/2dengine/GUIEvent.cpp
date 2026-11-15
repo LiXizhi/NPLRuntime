@@ -560,6 +560,20 @@ void CGUIEvent::UpdateKey(int option)
 		GUI_KEYBOARD_HOLDKEY *holdkey;
 		for (keyiter=m_keyboard.HoldKey.begin();keyiter!=keyend&&m_keyboard.Size<SAMPLE_BUFFER_SIZE;keyiter++) {
 			holdkey=&(*keyiter);
+			bool bHasBufferedKeyDown = false;
+			for (DWORD i = 0; i < pKeyboard->GetElementsCount(); i++) {
+				if (pKeyboard->GetDeviceObjectData()[i].dwOfs == holdkey->key && (pKeyboard->GetDeviceObjectData()[i].dwData & 0x80) != 0) {
+					bHasBufferedKeyDown = true;
+					break;
+				}
+			}
+			if (bHasBufferedKeyDown) {
+				if ((holdkey->state == 0) && (m_nTime - holdkey->lasttime > CGUIRoot::KeyDelay)) {
+					holdkey->state = 1;
+				}
+				holdkey->lasttime = m_nTime;
+				continue;
+			}
 			if ((holdkey->state==0)&&(m_nTime - holdkey->lasttime>CGUIRoot::KeyDelay)) {
 				holdkey->state=1;
 				holdkey->lasttime=m_nTime;
