@@ -56,5 +56,7 @@
 	<string>we allow external programmable devices to connect to our software, providing functions for STEM educations.</string>
 	<key>NSPrincipalClass</key>
 	<string>NSApplication</string>
+	<key>NSHighResolutionCapable</key>
+	<true/>
 </dict>
 </plist>

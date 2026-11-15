@@ -164,6 +164,7 @@ void ParaEngine::CParaEngineAppOSX::handle_mainloop_timer(const boost::system::e
                     vp.Width = winW;
                     vp.Height = winH;
                     m_pRenderDevice->SetViewport(vp);
+                    pWindow->UpdateAutoUIScaling(true);
                 }
             }
             this->DoWork();

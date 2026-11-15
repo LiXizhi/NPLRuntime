@@ -140,12 +140,19 @@ See [`README.md`](README.md) for the full Host × Target build & run matrix acro
   ```
 
 ### Linux / macOS / WSL Client & Headless Server
-```bash
-./build_linux.sh server                  # Headless server -> build-server/bin/ParaEngineServer
-./build_linux.sh run-server              # Smoke-test ParaEngineServer with helloworld.lua
-./build_linux.sh client                  # Desktop client (ParaCraftSDL2 on Linux, Cocoa/OpenGL on macOS)
-./build_linux.sh web build               # Emscripten WASM -> web/auto_generate_files/
-```
+- **macOS VSCode Tasks ([`.vscode/tasks.json`](.vscode/tasks.json)):**
+  - `Mac: Build and Run Project 530` — builds `Paracraft.app` and launches Project `530` (`CodeBlockTest`)
+  - `Mac: Build Paracraft` — incremental CMake build of `Paracraft` (Metal + OpenGL)
+  - `Mac: Run Project 530` — launches Project `530` (`./build_linux.sh run auto 530`)
+  - `Mac: Configure Paracraft (CMake)` — re-runs CMake configure
+- **Root Script (`./build_linux.sh`):**
+  ```bash
+  ./build_linux.sh server                  # Headless server -> build-server/bin/ParaEngineServer
+  ./build_linux.sh run-server              # Smoke-test ParaEngineServer with helloworld.lua
+  ./build_linux.sh client                  # Desktop client (ParaCraftSDL2 on Linux, Paracraft.app on macOS)
+  ./build_linux.sh run auto 530            # Launch World 530 (auto | metal | opengl on macOS; ParaCraftSDL2 on Linux)
+  ./build_linux.sh web build               # Emscripten WASM -> web/auto_generate_files/
+  ```
 
 ---
 

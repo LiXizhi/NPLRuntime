@@ -13,6 +13,7 @@
 #   ./build_linux.sh android [gradle_task]        Build Android APK (NPLRuntime/Platform/AndroidStudio)
 #   ./build_linux.sh picovr [gradle_task]         Build PICO VR OpenXR APK (NPLRuntime/Platform/PicoVR)
 #   ./build_linux.sh ios [framework|device|sim]   Configure/build iOS targets on macOS (Xcode)
+#   ./build_linux.sh run [renderer] [world_pid]   Launch desktop client (default: auto 530)
 #   ./build_linux.sh run-server [script.lua]      Run ParaEngineServer (default: NPLRuntime/tests/helloworld.lua)
 #   ./build_linux.sh test                         Run CTest verification suite
 #   ./build_linux.sh <jobs> [Release|Debug]       Legacy positional syntax for server build
@@ -26,6 +27,48 @@ HOST_OS="$(uname -s)"
 DEFAULT_JOBS="$(getconf _NPROCESSORS_ONLN 2>/dev/null || sysctl -n hw.ncpu 2>/dev/null || echo 4)"
 JOBS="${JOBS:-$DEFAULT_JOBS}"
 
+ensure_cmake_and_deps() {
+    if ! command -v cmake >/dev/null 2>&1; then
+        for dir in \
+            "/opt/homebrew/bin" \
+            "/usr/local/bin" \
+            "/Applications/CMake.app/Contents/bin" \
+            "$REPO_ROOT/../deps/cmake/CMake.app/Contents/bin" \
+            "$HOME/lxzsrc/deps/cmake/CMake.app/Contents/bin"; do
+            if [ -x "$dir/cmake" ]; then
+                export PATH="$dir:$PATH"
+                break
+            fi
+        done
+    fi
+
+    if [ "$HOST_OS" = "Darwin" ] && [ -z "${BOOST_ROOT:-}" ]; then
+        for boost_dir in \
+            "$REPO_ROOT/../deps/boost_1_85_0" \
+            "$HOME/lxzsrc/deps/boost_1_85_0" \
+            "$HOME/boost_1_85_0" \
+            "/opt/homebrew/opt/boost"; do
+            if [ -d "$boost_dir" ]; then
+                BOOST_ROOT="$(cd "$boost_dir" && pwd)"
+                export BOOST_ROOT
+                break
+            fi
+        done
+    fi
+
+    if [ "$HOST_OS" = "Darwin" ] && [ -n "${BOOST_ROOT:-}" ] && [ -z "${BOOST_LIBRARYDIR:-}" ]; then
+        if [ -d "$BOOST_ROOT/macos-build/stage/lib" ]; then
+            BOOST_LIBRARYDIR="$BOOST_ROOT/macos-build/stage/lib"
+            export BOOST_LIBRARYDIR
+        elif [ -d "$BOOST_ROOT/stage/lib" ]; then
+            BOOST_LIBRARYDIR="$BOOST_ROOT/stage/lib"
+            export BOOST_LIBRARYDIR
+        fi
+    fi
+}
+
+ensure_cmake_and_deps
+
 usage() {
     cat <<'EOF'
 NPLRuntimeUnified — Unix (Linux / macOS / WSL) Build & Run Script
@@ -33,11 +76,12 @@ NPLRuntimeUnified — Unix (Linux / macOS / WSL) Build & Run Script
 Usage:
   ./build_linux.sh                              Build Headless Server (Release) -> build-server/bin/ParaEngineServer
   ./build_linux.sh server [Release|Debug]       Build Headless Server (-DNPLRUNTIME_SERVER=ON)
-  ./build_linux.sh client [Release|Debug]       Build Desktop Client (ParaCraftSDL2 on Linux, Cocoa/OpenGL on macOS)
+  ./build_linux.sh client [Release|Debug]       Build Desktop Client (ParaCraftSDL2 on Linux, Paracraft.app on macOS)
   ./build_linux.sh web [build|configure|serve]  Build/serve Emscripten WebAssembly (delegates to scripts/dev_web.sh)
   ./build_linux.sh android [gradle_task]        Build Android APK (NPLRuntime/Platform/AndroidStudio)
   ./build_linux.sh picovr [gradle_task]         Build PICO VR OpenXR APK (NPLRuntime/Platform/PicoVR)
   ./build_linux.sh ios [framework|device|sim]   Configure/build iOS targets (macOS + Xcode required)
+  ./build_linux.sh run [renderer] [world_pid]   Launch Desktop Client (e.g. './build_linux.sh run auto 530')
   ./build_linux.sh run-server [script.lua]      Run ParaEngineServer (default: NPLRuntime/tests/helloworld.lua)
   ./build_linux.sh test                         Run CTest suite
   ./build_linux.sh <jobs> [Release|Debug]       Legacy positional syntax for server build
@@ -175,6 +219,22 @@ case "${1:-}" in
         cmd_ios "${1:-framework}"
         exit 0
         ;;
+    run)
+        shift
+        if [ "$HOST_OS" = "Darwin" ]; then
+            exec "$REPO_ROOT/tests/mac/launch_paracraft_530.sh" "$@"
+        else
+            CLIENT_BIN="$REPO_ROOT/build-client/bin/ParaCraftSDL2"
+            [ -x "$CLIENT_BIN" ] || CLIENT_BIN="$REPO_ROOT/ParaWorld/bin64/ParaCraftSDL2"
+            if [ ! -x "$CLIENT_BIN" ]; then
+                echo "[build_linux] ERROR: ParaCraftSDL2 binary not found. Run './build_linux.sh client' first." >&2
+                exit 1
+            fi
+            REQ_RENDERER="${1:-auto}"
+            WORLD_PID="${2:-530}"
+            exec "$CLIENT_BIN" "--renderer=$REQ_RENDERER" mc="true" debug="main" isDevEnv="true" noupdate="true" "pid=$WORLD_PID" "paracraft://cmd/loadworld/$WORLD_PID"
+        fi
+        ;;
     run-server)
         shift
         SERVER_BIN="$REPO_ROOT/build-server/bin/ParaEngineServer"
@@ -244,6 +304,9 @@ CMAKE_EXTRA_ARGS=()
 if [ -n "${BOOST_ROOT:-}" ]; then
     CMAKE_EXTRA_ARGS+=("-DBOOST_ROOT=$BOOST_ROOT")
 fi
+if [ -n "${BOOST_LIBRARYDIR:-}" ]; then
+    CMAKE_EXTRA_ARGS+=("-DBOOST_LIBRARYDIR=$BOOST_LIBRARYDIR")
+fi
 if [ "$ENABLE_OCE" -eq 1 ]; then
     CMAKE_EXTRA_ARGS+=("-DNPLRUNTIME_OCE=ON")
 fi
@@ -251,17 +314,26 @@ if [ "$USE_XCODE" -eq 1 ]; then
     CMAKE_EXTRA_ARGS+=("-G" "Xcode")
 fi
 
+BUILD_TARGET_ARGS=()
 if [ "$MODE" = "server" ]; then
-    BUILD_DIR="$REPO_ROOT/build-server"
+    BUILD_DIR="${BUILD_DIR:-$REPO_ROOT/build-server}"
     CMAKE_EXTRA_ARGS+=("-DNPLRUNTIME_SERVER=ON" "-DNPLRUNTIME_RENDERER=NULL")
     if [ "$HOST_OS" = "Darwin" ]; then
         CMAKE_EXTRA_ARGS+=("-DMAC_SERVER=ON")
     fi
 else
-    BUILD_DIR="$REPO_ROOT/build-client"
     if [ "$HOST_OS" = "Darwin" ]; then
-        CMAKE_EXTRA_ARGS+=("-DNPLRUNTIME_SERVER=OFF" "-DNPLRUNTIME_RENDERER=OPENGL" "-DMAC_SERVER=OFF")
+        if [ -z "${BUILD_DIR:-}" ]; then
+            if [ -f "$REPO_ROOT/build-client/CMakeCache.txt" ] && [ ! -f "$REPO_ROOT/build/mac/CMakeCache.txt" ]; then
+                BUILD_DIR="$REPO_ROOT/build-client"
+            else
+                BUILD_DIR="$REPO_ROOT/build/mac"
+            fi
+        fi
+        CMAKE_EXTRA_ARGS+=("-DNPLRUNTIME_SERVER=OFF" "-DNPLRUNTIME_RENDERER=OPENGL" "-DNPLRUNTIME_ENABLE_METAL=ON" "-DNPLRUNTIME_STATIC_LIB=ON" "-DMAC_SERVER=OFF")
+        BUILD_TARGET_ARGS+=("--target" "Paracraft")
     else
+        BUILD_DIR="${BUILD_DIR:-$REPO_ROOT/build-client}"
         if [ "$BUILD_SDL2_FROM_SRC" -eq 1 ]; then
             build_local_sdl2
             CMAKE_EXTRA_ARGS+=("-DALSOFT_BACKEND_SDL2=TRUE" "-DALSOFT_BACKEND_OSS=FALSE" "-DALSOFT_BACKEND_WAVE=FALSE" "-DALSOFT_BACKEND_ALSA=FALSE")
@@ -286,7 +358,7 @@ if [ "$FORCE_CONFIGURE" -eq 1 ] || [ ! -f "$BUILD_DIR/CMakeCache.txt" ]; then
 fi
 
 echo "[build_linux] Building $MODE ($BUILD_TYPE) with $JOBS parallel jobs..."
-cmake --build "$BUILD_DIR" --config "$BUILD_TYPE" --parallel "$JOBS"
+cmake --build "$BUILD_DIR" --config "$BUILD_TYPE" "${BUILD_TARGET_ARGS[@]}" --parallel "$JOBS"
 
 echo ""
 echo "[build_linux] Build succeeded!"

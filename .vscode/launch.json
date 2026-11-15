@@ -41,6 +41,26 @@
             "processId": "${command:pickProcess}"
         },
         {
+            "name": "Mac: Launch Project 530",
+            "type": "cppdbg",
+            "MIMode": "lldb",
+            "request": "launch",
+            "program": "${workspaceFolder}/build/mac/bin/Paracraft.app/Contents/MacOS/Paracraft",
+            "args": [
+                "--renderer=auto",
+                "dev=${workspaceFolder}/../ParaEngine/paraworld",
+                "mc=true",
+                "debug=main",
+                "isDevEnv=true",
+                "noupdate=true",
+                "pid=530",
+                "paracraft://cmd/loadworld/530"
+            ],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}/../ParaEngine/paraworld",
+            "preLaunchTask": "Mac: Build Paracraft"
+        },
+        {
             "name": "Web: Launch Project 530 (Chrome)",
             "type": "chrome",
             "request": "launch",

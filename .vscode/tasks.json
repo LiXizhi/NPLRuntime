@@ -125,6 +125,63 @@
             }
         },
         {
+            "label": "Mac: Build and Run Project 530",
+            "dependsOrder": "sequence",
+            "dependsOn": [
+                "Mac: Build Paracraft",
+                "Mac: Run Project 530"
+            ],
+            "group": "build",
+            "problemMatcher": [],
+            "presentation": {
+                "reveal": "always",
+                "panel": "shared"
+            }
+        },
+        {
+            "label": "Mac: Build Paracraft",
+            "type": "shell",
+            "command": "${workspaceFolder}/build_linux.sh",
+            "args": [
+                "client"
+            ],
+            "group": "build",
+            "problemMatcher": "$gcc",
+            "presentation": {
+                "reveal": "always",
+                "panel": "shared"
+            }
+        },
+        {
+            "label": "Mac: Run Project 530",
+            "type": "shell",
+            "command": "${workspaceFolder}/build_linux.sh",
+            "args": [
+                "run",
+                "auto",
+                "530"
+            ],
+            "problemMatcher": [],
+            "presentation": {
+                "reveal": "always",
+                "panel": "shared"
+            }
+        },
+        {
+            "label": "Mac: Configure Paracraft (CMake)",
+            "type": "shell",
+            "command": "${workspaceFolder}/build_linux.sh",
+            "args": [
+                "client",
+                "--configure"
+            ],
+            "problemMatcher": [],
+            "presentation": {
+                "reveal": "always",
+                "panel": "shared"
+            }
+        },
+        {
             "label": "Build ParaEngineClient (Debug)",
             "type": "shell",
             "command": "cmake",
