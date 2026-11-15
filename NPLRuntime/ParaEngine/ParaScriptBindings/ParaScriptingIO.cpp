@@ -1006,11 +1006,13 @@ namespace ParaScripting
 
 	std::string ParaIO::ConvertPathFromUTF8ToAnsci(const char* path)
 	{
-#if WIN32 && defined(DEFAULT_FILE_ENCODING)
+		if (!path)
+			return "";
+#if defined(WIN32) && defined(DEFAULT_FILE_ENCODING)
 		LPCWSTR path16 = StringHelper::MultiByteToWideChar(path, DEFAULT_FILE_ENCODING);
 		fs::path pathStr(path16);
 		std::string ret = pathStr.string();
-		return ret.c_str();
+		return ret;
 #else
 		return path;
 #endif
@@ -2071,16 +2073,22 @@ namespace ParaScripting
 	void ParaFileSystemWatcher::AddDirectory(const char* filename)
 	{
 #if !defined(PARAENGINE_MOBILE) && !defined(EMSCRIPTEN)
-		if (m_watcher)
-			m_watcher->add_directory(filename);
+		if (m_watcher && filename)
+		{
+			std::string sFilename = ParaIO::ConvertPathFromUTF8ToAnsci(filename);
+			m_watcher->add_directory(sFilename.c_str());
+		}
 #endif
 	}
 
 	void ParaFileSystemWatcher::RemoveDirectory(const char* filename)
 	{
 #if !defined(PARAENGINE_MOBILE) && !defined(EMSCRIPTEN)
-		if (m_watcher)
-			m_watcher->remove_directory(filename);
+		if (m_watcher && filename)
+		{
+			std::string sFilename = ParaIO::ConvertPathFromUTF8ToAnsci(filename);
+			m_watcher->remove_directory(sFilename.c_str());
+		}
 #endif
 	}
 #if !defined(PARAENGINE_MOBILE) && !defined(EMSCRIPTEN)
@@ -2099,9 +2107,16 @@ namespace ParaScripting
 			writer.WriteName("type");
 			writer.WriteValue((int)event.type);
 			writer.WriteName("dirname");
+#if defined(WIN32) && defined(DEFAULT_FILE_ENCODING)
+			auto sParentDir = event.path.parent_path().generic_string() + "/";
+			writer.WriteValue(ParaEngine::StringHelper::WideCharToMultiByte(ParaEngine::StringHelper::AnsiToWideChar(sParentDir.c_str()), DEFAULT_FILE_ENCODING));
+			writer.WriteName("filename");
+			writer.WriteValue(ParaEngine::StringHelper::WideCharToMultiByte(ParaEngine::StringHelper::AnsiToWideChar(event.path.filename().generic_string().c_str()), DEFAULT_FILE_ENCODING));
+#else
 			writer.WriteValue(event.path.parent_path().generic_string() + "/");
 			writer.WriteName("filename");
 			writer.WriteValue(event.path.filename().generic_string());
+#endif
 
 			writer.EndTable();
 			writer.WriteParamDelimiter();
@@ -2115,7 +2130,7 @@ namespace ParaScripting
 	void ParaFileSystemWatcher::AddCallback(const char* sCallbackScript)
 	{
 #if !defined(PARAENGINE_MOBILE) && !defined(EMSCRIPTEN)
-		if (m_watcher)
+		if (m_watcher && sCallbackScript)
 			m_watcher->AddEventCallback(FileSystemWatcher_NPLCallback(sCallbackScript));
 #endif
 	}

@@ -4,7 +4,7 @@
 // Description:	API for IO
 //-----------------------------------------------------------------------------
 #pragma once
-#ifdef PARAENGINE_CLIENT
+#if !defined(EMSCRIPTEN) && !defined(PARAENGINE_MOBILE) && !defined(NPLRUNTIME_SERVER)
 #include <boost/shared_ptr.hpp>
 #include "InterprocessQueue.hpp"
 

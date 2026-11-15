@@ -315,18 +315,18 @@ bool CItemDBProvider::SelectItemRecordByID(stItemDbRecord& record, __int64 ID)
 			record.ItemName.ID = item;
 
 			item = (*rs)[++i]; 
-			record.IconAssetName = item;
+			record.IconAssetName = (const char*)item ? (const char*)item : "";
 			item = (*rs)[++i]; 
-			record.DescTextAssetName = item;
+			record.DescTextAssetName = (const char*)item ? (const char*)item : "";
 			item = (*rs)[++i]; 
 			record.IsGlobal = item;
 
 			item = (*rs)[++i]; 
-			record.IconFilePath = item;
+			record.IconFilePath = (const char*)item ? (const char*)item : "";
 			item = (*rs)[++i]; 
 			record.Desc.ID = item;
 			item = (*rs)[++i]; 
-			record.ModelFilePath = item;
+			record.ModelFilePath = (const char*)item ? (const char*)item : "";
 
 			item = (*rs)[++i]; 
 			record.ItemType = item;
@@ -344,15 +344,15 @@ bool CItemDBProvider::SelectItemRecordByID(stItemDbRecord& record, __int64 ID)
 			record.CostPeach = item;
 
 			item = (*rs)[++i]; 
-			record.Reserved1 = item;
+			record.Reserved1 = (const char*)item ? (const char*)item : "";
 			item = (*rs)[++i]; 
-			record.Reserved2 = item;
+			record.Reserved2 = (const char*)item ? (const char*)item : "";
 			item = (*rs)[++i]; 
-			record.Reserved3 = item;
+			record.Reserved3 = (const char*)item ? (const char*)item : "";
 			item = (*rs)[++i]; 
-			record.Reserved4 = item;
+			record.Reserved4 = (const char*)item ? (const char*)item : "";
 			item = (*rs)[++i]; 
-			record.Reserved5 = item;
+			record.Reserved5 = (const char*)item ? (const char*)item : "";
 		}
 		else // if(bHasRecord)
 		{
@@ -375,21 +375,21 @@ bool CItemDBProvider::SelectItemRecordByID(stItemDbRecord& record, __int64 ID)
 			record.ID = ID;
 			int i=0;
 			CICRecordSetItem& item = (*rs)[0];
-			record.ItemName.StringEnglish = item;
+			record.ItemName.StringEnglish = (const char*)item ? (const char*)item : "";
 
 			item = (*rs)[++i]; 
-			record.ItemName.StringSimplifiedChinese = item;
+			record.ItemName.StringSimplifiedChinese = (const char*)item ? (const char*)item : "";
 
 			item = (*rs)[++i]; 
-			record.ItemName.Reserved1 = item;
+			record.ItemName.Reserved1 = (const char*)item ? (const char*)item : "";
 			item = (*rs)[++i]; 
-			record.ItemName.Reserved2 = item;
+			record.ItemName.Reserved2 = (const char*)item ? (const char*)item : "";
 			item = (*rs)[++i]; 
-			record.ItemName.Reserved3 = item;
+			record.ItemName.Reserved3 = (const char*)item ? (const char*)item : "";
 			item = (*rs)[++i]; 
-			record.ItemName.Reserved4 = item;
+			record.ItemName.Reserved4 = (const char*)item ? (const char*)item : "";
 			item = (*rs)[++i];
-			record.ItemName.Reserved5 = item;
+			record.ItemName.Reserved5 = (const char*)item ? (const char*)item : "";
 		}
 		else // if(bHasRecord)
 		{
@@ -412,21 +412,21 @@ bool CItemDBProvider::SelectItemRecordByID(stItemDbRecord& record, __int64 ID)
 			record.ID = ID;
 			int i=0;
 			CICRecordSetItem& item = (*rs)[0];
-			record.Desc.StringEnglish = item;
+			record.Desc.StringEnglish = (const char*)item ? (const char*)item : "";
 
 			item = (*rs)[++i]; 
-			record.Desc.StringSimplifiedChinese = item;
+			record.Desc.StringSimplifiedChinese = (const char*)item ? (const char*)item : "";
 
 			item = (*rs)[++i]; 
-			record.Desc.Reserved1 = item;
+			record.Desc.Reserved1 = (const char*)item ? (const char*)item : "";
 			item = (*rs)[++i]; 
-			record.Desc.Reserved2 = item;
+			record.Desc.Reserved2 = (const char*)item ? (const char*)item : "";
 			item = (*rs)[++i]; 
-			record.Desc.Reserved3 = item;
+			record.Desc.Reserved3 = (const char*)item ? (const char*)item : "";
 			item = (*rs)[++i]; 
-			record.Desc.Reserved4 = item;
+			record.Desc.Reserved4 = (const char*)item ? (const char*)item : "";
 			item = (*rs)[++i];
-			record.Desc.Reserved5 = item;
+			record.Desc.Reserved5 = (const char*)item ? (const char*)item : "";
 
 			bSucceed = true;
 		}

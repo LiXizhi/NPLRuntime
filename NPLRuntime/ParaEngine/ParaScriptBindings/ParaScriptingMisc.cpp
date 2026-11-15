@@ -34,7 +34,7 @@ extern "C"
 
 using namespace luabind;
 
-#ifdef PARAENGINE_CLIENT
+#ifndef NPLRUNTIME_SERVER
 #include "EffectManager.h"
 #endif
 

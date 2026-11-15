@@ -130,7 +130,33 @@ int CMidiMsg::PlayMidiMsg(DWORD dwMsg)
 #if defined(WIN32) && !defined(PARAENGINE_MOBILE) && !defined(NPLRUNTIME_SERVER)
 	if(CheckLoad())
 	{
+		int baseNote = (dwMsg & 0xff000000) >> 24;
+		int channel = (dwMsg & 0xff) - 0x90;
+		if (channel >= 0 && channel < 16)
+		{
+			midiOutShortMsg(m_deviceMidiOut, (baseNote << 8) | (0xC0 + channel));
+		}
 		midiOutShortMsg(m_deviceMidiOut, dwMsg);
+		return S_OK;
+	}
+#endif
+	return E_FAIL;
+}
+
+int CMidiMsg::StopMidiMsg(int channel)
+{
+#ifdef EMSCRIPTEN
+	return S_OK;
+#endif
+	if (m_mediaPlayer)
+	{
+		m_mediaPlayer->StopMidiMsg(channel);
+		return S_OK;
+	}
+#if defined(WIN32) && !defined(PARAENGINE_MOBILE) && !defined(NPLRUNTIME_SERVER)
+	if (CheckLoad())
+	{
+		midiOutShortMsg(m_deviceMidiOut, 0x7BB0 + (channel & 0x0F));
 		return S_OK;
 	}
 #endif
@@ -139,6 +165,10 @@ int CMidiMsg::PlayMidiMsg(DWORD dwMsg)
 
 void CMidiMsg::SafeRelease()
 {
+	if (m_mediaPlayer)
+	{
+		m_mediaPlayer->StopMidiMsg(0);
+	}
 #if defined(WIN32) && !defined(PARAENGINE_MOBILE) && !defined(NPLRUNTIME_SERVER)
 	if(m_bIsLoaded && m_bIsValid)
 	{

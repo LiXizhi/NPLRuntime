@@ -249,6 +249,7 @@ namespace ParaScripting
 					def("GetAttributeProvider", &ParaWorld::GetAttributeProvider),
 					def("SetWorldDB", &ParaWorld::SetWorldDB),
 					def("SetNpcDB", &ParaWorld::SetNpcDB),
+					def("GetNpcDB", &ParaWorld::GetNpcDB),
 					def("GetStringbyID", &ParaWorld::GetStringbyID),
 					def("GetServerState", &ParaWorld::GetServerState),
 					def("SetServerState", &ParaWorld::SetServerState),

@@ -147,6 +147,7 @@ namespace ParaEngine
 		DWORD		m_current;			// next module handle
 	public:
 		CProcessModuleIterator(DWORD pid)
+			: m_hProcess(NULL), m_hModules(NULL), m_count(0), m_current((DWORD)-1)
 		{
 			// open the process
 			m_hProcess = OpenProcess(PROCESS_QUERY_INFORMATION | PROCESS_VM_READ,
@@ -155,7 +156,8 @@ namespace ParaEngine
 
 		~CProcessModuleIterator()
 		{
-			CloseHandle(m_hProcess);
+			if (m_hProcess)
+				CloseHandle(m_hProcess);
 			delete [] m_hModules;
 		}
 
@@ -165,14 +167,13 @@ namespace ParaEngine
 		{
 			m_count = 0;
 			m_current = (DWORD)-1; 
-			m_hModules = NULL;
 			if (m_hProcess) {
 				DWORD nalloc = 1024;
 				do {
 					delete [] m_hModules;
 					m_hModules = new HMODULE [nalloc];
 					if (EnumProcessModules(m_hProcess, m_hModules,
-						nalloc*sizeof(DWORD), &m_count)) {
+						nalloc*sizeof(HMODULE), &m_count)) {
 							m_count /= sizeof(HMODULE);
 							m_current = 0;
 					}

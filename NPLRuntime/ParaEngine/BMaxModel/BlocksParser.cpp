@@ -1,4 +1,5 @@
 #include "ParaEngine.h"
+#include <sstream>
 #include "BlocksParser.h"
 #include "ParaXSerializer.h"
 #include "BlockEngine/BlockModel.h"

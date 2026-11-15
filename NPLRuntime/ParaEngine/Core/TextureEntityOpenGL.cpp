@@ -7,6 +7,7 @@
 // Desc: currently all opengl stuffs are implemented using cocos2dx objects. 
 //-----------------------------------------------------------------------------
 #include "ParaEngine.h"
+#include <cmath>
 
 #ifndef USE_NULL_RENDERER
 #include "ImageEntity.h"

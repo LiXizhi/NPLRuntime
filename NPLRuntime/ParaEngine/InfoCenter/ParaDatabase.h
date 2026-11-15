@@ -1,5 +1,10 @@
 #pragma once
 
+#if !defined(_MSC_VER) && !defined(__int64)
+#include <cstdint>
+#define __int64 int64_t
+#endif
+
 ///////////////////////////////////////////////////////////////////////////
 // forward declaration of some database class alias.
 

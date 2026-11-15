@@ -23,6 +23,8 @@
 #include "SceneObject.h"
 #include "BipedObject.h"
 #include "BlockMaterialManager.h"
+#include "IO/FileUtils.h"
+#include "FileManager.h"
 using namespace ParaEngine;
 
 /** default render distance in blocks */
@@ -308,46 +310,37 @@ void CBlockWorld::SaveToFile(bool saveToTemp)
 	{
 		iter->second->SaveToFile();
 	}
-#ifdef PARAENGINE_CLIENT
+#ifndef NPLRUNTIME_SERVER
 	if (!saveToTemp)
 	{
-		HANDLE hFind = INVALID_HANDLE_VALUE;
-		WIN32_FIND_DATA ffd;
-
 		std::string lastSaveDir = m_worldInfo.GetBlockGameSaveDir(true);
-		lastSaveDir.append("*");
-		hFind = FindFirstFile(lastSaveDir.c_str(), &ffd);
-		if (hFind == INVALID_HANDLE_VALUE)
-			return;
-
 		std::string gameSaveDir = m_worldInfo.GetBlockGameSaveDir(false);
-		lastSaveDir = m_worldInfo.GetBlockGameSaveDir(true);
-
-		std::string current;
-		std::string src;
-		do
+		if (!lastSaveDir.empty() && !gameSaveDir.empty() && lastSaveDir != gameSaveDir)
 		{
-			if (!(ffd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY))
+			CSearchResult result;
+			result.InitSearch(lastSaveDir, 0, 100000, 0);
+			CFileUtils::FindDiskFiles(result, result.GetRootPath(), "*.*", 0);
+			const int nCount = result.GetNumOfResult();
+			for (int i = 0; i < nCount; ++i)
 			{
-				ffd.cFileName;
-				current.clear();
-				current.assign(ffd.cFileName);
-
-				int32_t size = current.size();
-				if ((current[size - 3] == 'x' && current[size - 2] == 'm' && current[size - 1] == 'l')
-					|| current[size - 3] == 'r' && current[size - 2] == 'a' && current[size - 1] == 'w')
+				const CFileFindData* pFileDesc = result.GetItemData(i);
+				if (pFileDesc && !pFileDesc->IsDirectory())
 				{
-					current.clear();
-					current.append(gameSaveDir);
-					current.append(ffd.cFileName);
-
-					src.clear();
-					src.append(lastSaveDir);
-					src.append(ffd.cFileName);
-					CParaFile::CopyFile(src.c_str(), current.c_str(), true);
+					const std::string& itemName = pFileDesc->m_sFileName;
+					const size_t len = itemName.size();
+					if (len >= 4)
+					{
+						std::string ext = CParaFile::GetFileExtension(itemName);
+						if (ext == "xml" || ext == "raw")
+						{
+							std::string src = lastSaveDir + itemName;
+							std::string dst = gameSaveDir + itemName;
+							CParaFile::CopyFile(src.c_str(), dst.c_str(), true);
+						}
+					}
 				}
 			}
-		} while (FindNextFile(hFind, &ffd) != 0);
+		}
 	}
 #endif
 }

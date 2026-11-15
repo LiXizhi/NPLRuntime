@@ -52,9 +52,16 @@
 #include "RenderSystem/rhi_core/RHIBackendRegistry.h"
 
 #include "SDL2/SDL.h"
+#include "json/json.h"
+#include <fstream>
 
 #ifdef __EMSCRIPTEN__
 #include "emscripten.h"
+#elif defined(__linux__) && !defined(ANDROID)
+#include <sys/socket.h>
+#include <sys/un.h>
+#include <unistd.h>
+#include <fcntl.h>
 #endif
 
 ParaEngine::IParaEngineApp *CreateParaEngineApp()
@@ -64,77 +71,279 @@ ParaEngine::IParaEngineApp *CreateParaEngineApp()
 
 namespace ParaEngine
 {
+	namespace
+	{
+		std::string NormalizeRegPath(const std::string& root_key, const std::string& sSubKey)
+		{
+			std::string key = root_key + "/" + sSubKey;
+			for (size_t i = 0; i < key.size(); ++i)
+			{
+				if (key[i] == '\\')
+					key[i] = '/';
+			}
+			return key;
+		}
+
+		std::string GetLocalRegistryFilePath()
+		{
+			return CParaFile::GetWritablePath() + "temp/para_registry.json";
+		}
+
+		Json::Value& GetLocalRegistryStore()
+		{
+			static Json::Value s_store(Json::objectValue);
+			static bool s_loaded = false;
+			if (!s_loaded)
+			{
+				s_loaded = true;
+				std::string filePath = GetLocalRegistryFilePath();
+				std::ifstream ifs(filePath, std::ios::binary);
+				if (ifs.is_open())
+				{
+					Json::CharReaderBuilder builder;
+					std::string errs;
+					Json::parseFromStream(builder, ifs, &s_store, &errs);
+					if (!s_store.isObject())
+						s_store = Json::Value(Json::objectValue);
+				}
+			}
+			return s_store;
+		}
+
+		bool SaveLocalRegistryStore()
+		{
+			std::string filePath = GetLocalRegistryFilePath();
+			CParaFile::MakeDirectoryFromFilePath(filePath.c_str());
+			std::ofstream ofs(filePath, std::ios::binary | std::ios::trunc);
+			if (!ofs.is_open())
+				return false;
+			Json::StreamWriterBuilder builder;
+			builder["indentation"] = "  ";
+			std::unique_ptr<Json::StreamWriter> writer(builder.newStreamWriter());
+			writer->write(GetLocalRegistryStore(), &ofs);
+			ofs.flush();
+#ifdef __EMSCRIPTEN__
+			EM_ASM(if (typeof FS !== "undefined" && FS.syncfs) { FS.syncfs(false, function(err) {}); });
+#endif
+			return true;
+		}
+#if defined(__linux__) && !defined(ANDROID) && !defined(__EMSCRIPTEN__)
+		std::string GetLinuxSingleInstanceSocketPath()
+		{
+			return "/tmp/paracraft_ipc_" + std::to_string((unsigned long)::getuid()) + ".sock";
+		}
+#endif
+	}
+
+	bool CSDL2Application::TryForwardToExistingInstance(const std::string& cmdLine)
+	{
+#if defined(__linux__) && !defined(ANDROID) && !defined(__EMSCRIPTEN__)
+		if (cmdLine.empty())
+			return false;
+		std::string sockPath = GetLinuxSingleInstanceSocketPath();
+		int fd = ::socket(AF_UNIX, SOCK_STREAM, 0);
+		if (fd < 0)
+			return false;
+		struct sockaddr_un addr;
+		memset(&addr, 0, sizeof(addr));
+		addr.sun_family = AF_UNIX;
+		strncpy(addr.sun_path, sockPath.c_str(), sizeof(addr.sun_path) - 1);
+		bool sent = false;
+		if (::connect(fd, (struct sockaddr*)&addr, sizeof(addr)) == 0)
+		{
+			ssize_t written = ::write(fd, cmdLine.data(), cmdLine.size());
+			sent = (written == (ssize_t)cmdLine.size());
+		}
+		::close(fd);
+		return sent;
+#else
+		return false;
+#endif
+	}
+
+	void CSDL2Application::InitSingleInstanceListener()
+	{
+#if defined(__linux__) && !defined(ANDROID) && !defined(__EMSCRIPTEN__)
+		if (m_ipcListenFd >= 0)
+			return;
+		const char* sMulti = GetAppCommandLineByParam("multipleinstance", nullptr);
+		if (sMulti && strcmp(sMulti, "true") == 0)
+			return;
+
+		std::string sockPath = GetLinuxSingleInstanceSocketPath();
+		// Probe first so we don't unlink a live primary instance's socket
+		int probeFd = ::socket(AF_UNIX, SOCK_STREAM, 0);
+		if (probeFd >= 0)
+		{
+			struct sockaddr_un probeAddr;
+			memset(&probeAddr, 0, sizeof(probeAddr));
+			probeAddr.sun_family = AF_UNIX;
+			strncpy(probeAddr.sun_path, sockPath.c_str(), sizeof(probeAddr.sun_path) - 1);
+			bool alive = (::connect(probeFd, (struct sockaddr*)&probeAddr, sizeof(probeAddr)) == 0);
+			::close(probeFd);
+			if (alive)
+				return;
+		}
+		::unlink(sockPath.c_str());
+
+		int fd = ::socket(AF_UNIX, SOCK_STREAM, 0);
+		if (fd < 0)
+			return;
+		int flags = ::fcntl(fd, F_GETFL, 0);
+		if (flags >= 0)
+			::fcntl(fd, F_SETFL, flags | O_NONBLOCK);
+
+		struct sockaddr_un addr;
+		memset(&addr, 0, sizeof(addr));
+		addr.sun_family = AF_UNIX;
+		strncpy(addr.sun_path, sockPath.c_str(), sizeof(addr.sun_path) - 1);
+		if (::bind(fd, (struct sockaddr*)&addr, sizeof(addr)) == 0 && ::listen(fd, 4) == 0)
+		{
+			m_ipcListenFd = fd;
+			m_ipcSockPath = sockPath;
+		}
+		else
+		{
+			::close(fd);
+		}
+#endif
+	}
+
+	void CSDL2Application::PollSingleInstanceSocket()
+	{
+#if defined(__linux__) && !defined(ANDROID) && !defined(__EMSCRIPTEN__)
+		if (m_ipcListenFd < 0)
+			return;
+		while (true)
+		{
+			int clientFd = ::accept(m_ipcListenFd, nullptr, nullptr);
+			if (clientFd < 0)
+				break;
+			std::string cmd;
+			char buf[2048];
+			ssize_t n = 0;
+			while ((n = ::read(clientFd, buf, sizeof(buf))) > 0)
+			{
+				cmd.append(buf, (size_t)n);
+			}
+			::close(clientFd);
+			if (!cmd.empty())
+			{
+				SDL_Window* sdlWin = (SDL_Window*)m_renderWindow.GetNativeHandle();
+				if (sdlWin)
+					SDL_RaiseWindow(sdlWin);
+				this->onCmdLine(cmd);
+			}
+		}
+#endif
+	}
+
+	void CSDL2Application::CloseSingleInstanceListener()
+	{
+#if defined(__linux__) && !defined(ANDROID) && !defined(__EMSCRIPTEN__)
+		if (m_ipcListenFd >= 0)
+		{
+			::close(m_ipcListenFd);
+			m_ipcListenFd = -1;
+		}
+		if (!m_ipcSockPath.empty())
+		{
+			::unlink(m_ipcSockPath.c_str());
+			m_ipcSockPath.clear();
+		}
+#endif
+	}
 
 	void CSDL2Application::GameToClient(int &inout_x, int &inout_y, bool bInBackbuffer /*= true*/)
 	{
-		// throw std::logic_error("The method or operation is not implemented.");
 	}
 
 	void CSDL2Application::ClientToGame(int &inout_x, int &inout_y, bool bInBackbuffer /*= true*/)
 	{
-		// throw std::logic_error("The method or operation is not implemented.");
 	}
 
 	void CSDL2Application::SetRefreshTimer(float fTimeInterval, int nFrameRateControl /*= 0*/)
 	{
-		// throw std::logic_error("The method or operation is not implemented.");
+		m_fRefreshTimerInterval = fTimeInterval;
+		m_nFrameRateControl = nFrameRateControl;
 	}
 
 	bool CSDL2Application::AppHasFocus()
 	{
-		// throw std::logic_error("The method or operation is not implemented.");
+		SDL_Window* sdlWin = (SDL_Window*)m_renderWindow.GetNativeHandle();
+		if (sdlWin)
+			return (SDL_GetWindowFlags(sdlWin) & SDL_WINDOW_INPUT_FOCUS) != 0;
 		return true;
 	}
 
 	void CSDL2Application::GetStats(string &output, DWORD dwFields)
 	{
-		// throw std::logic_error("The method or operation is not implemented.");
+		if (dwFields == 0)
+		{
+			output = RHIBackendRegistry::GetBackendName(m_cfg.preferredBackend);
+		}
 	}
 
 	bool CSDL2Application::WriteRegStr(const string &root_key, const string &sSubKey, const string &name, const string &value)
 	{
-		// throw std::logic_error("The method or operation is not implemented.");
-		return true;
+		Json::Value& store = GetLocalRegistryStore();
+		std::string section = NormalizeRegPath(root_key, sSubKey);
+		store[section][name] = value;
+		return SaveLocalRegistryStore();
 	}
 
 	void CSDL2Application::SetAutoLowerFrameRateWhenNotFocused(bool bEnabled)
 	{
-		// throw std::logic_error("The method or operation is not implemented.");
+		m_bAutoLowerFrameRateWhenNotFocused = bEnabled;
 	}
 
 	const char *CSDL2Application::ReadRegStr(const string &root_key, const string &sSubKey, const string &name)
 	{
-		// throw std::logic_error("The method or operation is not implemented.");
-		return "";
+		static std::string s_lastRegVal;
+		Json::Value& store = GetLocalRegistryStore();
+		std::string section = NormalizeRegPath(root_key, sSubKey);
+		if (!store.isMember(section) || !store[section].isObject() || !store[section].isMember(name))
+			return nullptr;
+		const Json::Value& val = store[section][name];
+		if (!val.isString())
+			return nullptr;
+		s_lastRegVal = val.asString();
+		return s_lastRegVal.c_str();
 	}
 
 	bool CSDL2Application::WriteRegDWORD(const string &root_key, const string &sSubKey, const string &name, DWORD value)
 	{
-		// throw std::logic_error("The method or operation is not implemented.");
-		return true;
+		Json::Value& store = GetLocalRegistryStore();
+		std::string section = NormalizeRegPath(root_key, sSubKey);
+		store[section][name] = (Json::UInt64)value;
+		return SaveLocalRegistryStore();
 	}
 
 	DWORD CSDL2Application::ReadRegDWORD(const string &root_key, const string &sSubKey, const string &name)
 	{
-		// throw std::logic_error("The method or operation is not implemented.");
+		Json::Value& store = GetLocalRegistryStore();
+		std::string section = NormalizeRegPath(root_key, sSubKey);
+		if (!store.isMember(section) || !store[section].isObject() || !store[section].isMember(name))
+			return 0;
+		const Json::Value& val = store[section][name];
+		if (val.isIntegral())
+			return (DWORD)val.asUInt64();
 		return 0;
 	}
 
 	bool CSDL2Application::GetAutoLowerFrameRateWhenNotFocused()
 	{
-		// throw std::logic_error("The method or operation is not implemented.");
-		return true;
+		return m_bAutoLowerFrameRateWhenNotFocused;
 	}
 
 	void CSDL2Application::SetToggleSoundWhenNotFocused(bool bEnabled)
 	{
-		//	throw std::logic_error("The method or operation is not implemented.");
+		m_bToggleSoundWhenNotFocused = bEnabled;
 	}
 
 	bool CSDL2Application::GetToggleSoundWhenNotFocused()
 	{
-		// throw std::logic_error("The method or operation is not implemented.");
-		return true;
+		return m_bToggleSoundWhenNotFocused;
 	}
 
 	bool CSDL2Application::IsInputing()
@@ -179,17 +388,23 @@ namespace ParaEngine
 		
 		m_exit = false;
 		m_is_wps_office_app = false;
+		m_bAutoLowerFrameRateWhenNotFocused = false;
+		m_bToggleSoundWhenNotFocused = false;
+		m_ipcListenFd = -1;
 	}
 
 	CSDL2Application::~CSDL2Application()
 	{
+		CloseSingleInstanceListener();
 		SDL_Quit();
 	}
 
 	bool CSDL2Application::InitApp(IRenderWindow *pWindow, const char *sCommandLine)
 	{
+		SetAppCommandLine(sCommandLine);
 		BootStrapAndLoadConfig();
 		LoadAndApplySettings();
+		InitSingleInstanceListener();
 
 		auto pWinDelegate = (RenderWindowDelegate *)&m_renderWindow;
 		assert(pWinDelegate);
@@ -207,8 +422,9 @@ namespace ParaEngine
 #ifndef EMSCRIPTEN_SINGLE_THREAD
 		NextLoop(50, &CSDL2Application::handle_mainloop_timer, this);
 		MainLoopRun();
+		FinalCleanup();
 #endif
-		return 0;
+		return GetReturnCode();
 	}
 
 #ifndef EMSCRIPTEN_SINGLE_THREAD
@@ -219,16 +435,25 @@ namespace ParaEngine
 			auto pWindow = (RenderWindowDelegate *)m_pRenderWindow;
 			assert(pWindow);
 
-			if (!pWindow->ShouldClose())
+			if (!m_exit && !pWindow->ShouldClose())
 			{
+				PollSingleInstanceSocket();
 				pWindow->PollEvents();
 				UpdateScreenDevice();
 				this->DoWork();
-				double fNextInterval = 0.01f; // as fast as possible
-				// fNextInterval = this->GetRefreshTimer() - (ParaTimer::GetAbsoluteTime() - this->GetAppTime());
-				// fNextInterval = (std::min)(0.1, (std::max)(0.02, fNextInterval));  // [0.02, 0.1]
-
-				NextLoop((int)(fNextInterval * 1000), &CSDL2Application::handle_mainloop_timer, this);
+				if (!m_exit && !pWindow->ShouldClose())
+				{
+					double fNextInterval = 0.01f;
+					NextLoop((int)(fNextInterval * 1000), &CSDL2Application::handle_mainloop_timer, this);
+				}
+				else
+				{
+					MainLoopStop();
+				}
+			}
+			else
+			{
+				MainLoopStop();
 			}
 		}
 	}
@@ -486,42 +711,27 @@ namespace ParaEngine
 
 	void CSDL2Application::FixWindowSize(bool fixed)
 	{
-		// auto pWinDelegate = (RenderWindowDelegate*)m_pRenderWindow;
-		// if (IsWindowedMode() && pWinDelegate)
-		//{
-		//	auto hwnd = pWinDelegate->GetHandle();
-		//	if (!hwnd)
-		//		return;
-
-		//	auto dwWindowStyle = GetWindowStyle(hwnd);
-
-		//	if (fixed)
-		//	{
-		//		dwWindowStyle &= ~(WS_THICKFRAME | WS_MAXIMIZEBOX);
-		//	}
-		//	else
-		//	{
-		//		dwWindowStyle |= (WS_THICKFRAME | WS_MAXIMIZEBOX);
-		//	}
-
-		//	SetWindowLong(hwnd, GWL_STYLE, dwWindowStyle);
-		//}
+#ifndef EMSCRIPTEN
+		SDL_Window* sdlWin = (SDL_Window*)m_renderWindow.GetNativeHandle();
+		if (IsWindowedMode() && sdlWin)
+		{
+			SDL_SetWindowResizable(sdlWin, fixed ? SDL_FALSE : SDL_TRUE);
+		}
+#endif
 	}
 
 	void CSDL2Application::ShowWindow(bool bShow)
 	{
-		//	if (!IsFullScreenMode())
-		//	{
-		//		if ((GetCoreUsage() & PE_USAGE_WEB_BROWSER) != 0)
-		//		{
-		//			OUTPUT_LOG("ShowWindow doesn't know how to respond in web browser mode!\n");
-		//		}
-		//		else
-		//		{
-		//			// show or hide the main window if it is not from a web browser
-		//			::ShowWindow(CGlobals::GetAppHWND(), bShow ? SW_SHOW : SW_HIDE);
-		//		}
-		//	}
+#ifndef EMSCRIPTEN
+		SDL_Window* sdlWin = (SDL_Window*)m_renderWindow.GetNativeHandle();
+		if (IsWindowedMode() && sdlWin)
+		{
+			if (bShow)
+				SDL_ShowWindow(sdlWin);
+			else
+				SDL_HideWindow(sdlWin);
+		}
+#endif
 	}
 
 

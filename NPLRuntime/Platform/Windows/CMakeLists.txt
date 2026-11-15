@@ -52,7 +52,7 @@ if (PARAENGINE_COMPILE_LIB)
 
 	add_library(WindowsApplication ${NPLRUNTIME_LIB_MODE} ${src_platform} ${src_render_context} ${src_framework})
 else()
-	add_executable(WindowsApplication ${src_platform} ${src_render_context} ${src_framework})
+	add_executable(WindowsApplication ${src_platform} ${src_render_context} ${src_framework} ${PROJECT_SOURCE_DIR}/ParaEngine/ParaEngineRes.rc)
     set_property(TARGET WindowsApplication PROPERTY VS_DPI_AWARE "PerMonitor")
 
 	if(WIN32)

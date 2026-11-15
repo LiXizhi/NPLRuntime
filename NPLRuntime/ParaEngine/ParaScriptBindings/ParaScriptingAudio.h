@@ -311,6 +311,7 @@ namespace ParaScripting
 		* @param channel: midi track number.
 		*/
 		static int StopMidiMsg(int channel = 0);
+		static int StopMidiMsg0();
 
 		/**
 		* stop a wave file

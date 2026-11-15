@@ -142,6 +142,12 @@ namespace ParaEngine
         ATTRIBUTE_METHOD1(ParaEngineSettings, GetMultiSampleType_s, int*)	{*p1 = cls->GetMultiSampleType(); return S_OK;}
         ATTRIBUTE_METHOD1(ParaEngineSettings, SetMultiSampleType_s, int)	{cls->SetMultiSampleType(p1); return S_OK;}
 
+        ATTRIBUTE_METHOD1(ParaEngineSettings, GetMultiSampleQuality_s, int*)	{*p1 = cls->GetMultiSampleQuality(); return S_OK;}
+        ATTRIBUTE_METHOD1(ParaEngineSettings, SetMultiSampleQuality_s, int)	{cls->SetMultiSampleQuality(p1); return S_OK;}
+
+        ATTRIBUTE_METHOD(ParaEngineSettings, UpdateScreenMode_s)	{cls->UpdateScreenMode(); return S_OK;}
+        ATTRIBUTE_METHOD1(ParaEngineSettings, ShowMenu_s, bool)	{cls->ShowMenu(p1); return S_OK;}
+
         ATTRIBUTE_METHOD1(ParaEngineSettings, IsProfilingEnabled_s, bool*)	{*p1 = cls->IsProfilingEnabled(); return S_OK;}
         ATTRIBUTE_METHOD1(ParaEngineSettings, EnableProfiling_s, bool)	{cls->EnableProfiling(p1); return S_OK;}
         
@@ -174,6 +180,7 @@ namespace ParaEngine
         ATTRIBUTE_METHOD1(ParaEngineSettings, GetMaxMacAddress_s, const char**)	{*p1 = cls->GetMaxMacAddress().c_str(); return S_OK;}
         ATTRIBUTE_METHOD1(ParaEngineSettings, GetMaxIPAddress_s, const char**)	{ *p1 = cls->GetMaxIPAddress().c_str(); return S_OK; }
         ATTRIBUTE_METHOD1(ParaEngineSettings, GetMachineID_s, const char**) { *p1 = cls->GetMachineID().c_str(); return S_OK; }
+        ATTRIBUTE_METHOD1(ParaEngineSettings, GetMachineID_old_s, const char**) { *p1 = cls->GetMachineID_old().c_str(); return S_OK; }
 
         
         ATTRIBUTE_METHOD1(ParaEngineSettings, GetAutoLowerFrameRateWhenNotFocused_s, bool*)	{*p1 = cls->GetAutoLowerFrameRateWhenNotFocused(); return S_OK;}
@@ -231,6 +238,9 @@ namespace ParaEngine
         ATTRIBUTE_METHOD(ParaEngineSettings, FlushDiskIO_s)	{cls->FlushDiskIO(); return S_OK;}
         ATTRIBUTE_METHOD1(ParaEngineSettings, SendMsgToJS_s, const char*) { cls->SendMsgToJS(p1); return S_OK; }
 		ATTRIBUTE_METHOD1(ParaEngineSettings, GetDefaultFileAPIEncoding_s, const char**) { *p1 = cls->GetDefaultFileAPIEncoding().c_str(); return S_OK; }
+
+		ATTRIBUTE_METHOD1(ParaEngineSettings, GetWorldDirectory_s, const char**) { *p1 = cls->GetWorldDirectory(); return S_OK; }
+		ATTRIBUTE_METHOD1(ParaEngineSettings, SetWorldDirectory_s, const char*) { cls->SetWorldDirectory(p1); return S_OK; }
 
         ATTRIBUTE_METHOD1(ParaEngineSettings, GetWebViewVersion_s, int*)	{ *p1 = cls->GetWebVersion(); return S_OK; }
         ATTRIBUTE_METHOD1(ParaEngineSettings, GetPythonToLua_s, const char**) { *p1 = cls->GetPythonToLua()->c_str(); return S_OK; }
@@ -552,6 +562,11 @@ namespace ParaEngine
         /** anti-aliasing for both windowed and full screen mode. it does not immediately change the device, call UpdateScreenMode() to update the device.*/
         int GetMultiSampleType();
         void SetMultiSampleType(int nType);
+        int GetMultiSampleQuality();
+        void SetMultiSampleQuality(int nType);
+
+        void UpdateScreenMode();
+        void ShowMenu(bool bShow);
 
 
         /** get the vertex shader version. This can be roughly used to auto-adjust graphics settings. 
@@ -715,6 +730,7 @@ namespace ParaEngine
         const std::string& GetMaxMacAddress();
         const std::string& GetMaxIPAddress();
         const std::string& GetMachineID();
+        const std::string& GetMachineID_old();
 
         /** get total number of bytes in vertex buffer pool for quick stats. */
         size_t GetVertexBufferPoolTotalBytes();
@@ -739,6 +755,14 @@ namespace ParaEngine
         const char* GetAudioDeviceName();
 
 		const std::string& GetDefaultFileAPIEncoding();
+
+		/** get current world directory */
+		static const char* GetWorldDirectory();
+
+		/** this allows us to reset world directory without unloading the world.
+		* This is useful when saving as the world.
+		*/
+		static void SetWorldDirectory(const char* sWorldDirectory);
 
 		static std::string* GetPythonToLua() { static std::string s_lua_code; return &s_lua_code; }
 		static void SetPythonToLua(const char* python_code);

@@ -17,9 +17,9 @@
 #include "emscripten.h"
 #endif
 
+#include "SceneObject.h"
+#include "Framework/Common/Helper/EditorHelper.h"
 #ifdef WIN32
-	#include "Framework/Common/Helper/EditorHelper.h"
-	#include "SceneObject.h"
 	#include <commdlg.h>
 #endif
 
@@ -35,7 +35,7 @@
 #include "util/StringHelper.h"
 #include "util/ParaTime.h"
 
-#ifdef WIN32
+#if !defined(EMSCRIPTEN) && !defined(PARAENGINE_MOBILE)
 #define SUPPORT_SHELL_EXECUTE
 #endif
 
@@ -48,19 +48,21 @@
 #endif
 
 #include <boost/bind.hpp>
+#include <sstream>
+#include <algorithm>
+#include <cctype>
+#include <cstdio>
 #ifndef EMSCRIPTEN_SINGLE_THREAD
+#include <thread>
 #include <boost/asio.hpp>
 #endif
 #include "ParaScriptBindings/ParaScriptingNPL.h"
 
-/**@def PARAENGINE_SUPPORT_WRITE_REG: to support writing to registry*/
-#if defined(WIN32) && !defined(PARAENGINE_MOBILE) && !defined(NPLRUNTIME_SERVER)
+/**@def PARAENGINE_SUPPORT_WRITE_REG: to support writing to registry / persistent app key-value store */
+#if !defined(PARAENGINE_MOBILE) && !defined(NPLRUNTIME_SERVER)
 #define PARAENGINE_SUPPORT_WRITE_REG
-#endif
-
-#if defined(WIN32) && !defined(NPLRUNTIME_SERVER)
 #define PARAENGINE_SUPPORT_READ_REG
-#endif 
+#endif
 
 #ifndef MAX_LINE
 /**@def max number of characters in a single line */
@@ -160,12 +162,16 @@ void ParaServiceLogger::SetLogFile(const char* sFileName)
 
 void ParaGlobal::WriteToConsole(const char* strMessage)
 {
-	OUTPUT_LOG("%s", strMessage);
+	if (strMessage)
+		OUTPUT_LOG("%s", strMessage);
 }
 void ParaGlobal::WriteToLogFile(const char* strMessage)
 {
-	// the output is assumed to be utf8
-	ParaEngine::CLogger::GetSingleton().AddLogStr(strMessage);
+	if (strMessage)
+	{
+		// the output is assumed to be utf8
+		ParaEngine::CLogger::GetSingleton().AddLogStr(strMessage);
+	}
 }
 
 ParaScripting::ParaServiceLogger ParaScripting::ParaGlobal::GetLogger(const object& name)
@@ -184,6 +190,8 @@ ParaScripting::ParaServiceLogger ParaScripting::ParaGlobal::GetLogger(const obje
 
 ParaScripting::ParaServiceLogger ParaScripting::ParaGlobal::GetLogger_(const char* name)
 {
+	if (!name || !name[0])
+		return ParaServiceLogger();
 	CServiceLogger_ptr logger = ParaEngine::CServiceLogger::GetLogger(name);
 	return ParaServiceLogger(logger);
 }
@@ -219,6 +227,8 @@ void ParaScripting::ParaGlobal::SelectAttributeObject(const ParaAttributeObject&
 
 bool ParaGlobal::WriteToFile(const char* filename, const char* strMessage)
 {
+	if (!filename || !strMessage)
+		return false;
 	FILE *file;
 	std::string fname = filename;
 	CParaFile::MakeDirectoryFromFilePath(fname.c_str());
@@ -243,6 +253,8 @@ bool ParaGlobal::WriteToFile(const char* filename, const char* strMessage)
 void ParaGlobal::SetGameStatus(const char* strState)
 {
 #ifndef NPLRUNTIME_SERVER
+	if (!strState)
+		return;
 	if (strcmp(strState, "disable") == 0)
 	{
 		CGlobals::GetScene()->DisableGame();
@@ -268,6 +280,8 @@ double ParaGlobal::GetGameTime()
 
 void ParaGlobal::SaveObject(const char* strObjectName, const object& objObject)
 {
+	if (!strObjectName)
+		return;
 	int nType = type(objObject);
 	if (nType == LUA_TNUMBER)
 	{
@@ -324,7 +338,8 @@ object ParaGlobal::LoadObject(const object& strObjectName)
 }
 void ParaGlobal::SetGameLoop(const char* scriptName)
 {
-	CGlobals::GetAISim()->SetGameLoop(scriptName);
+	if (scriptName)
+		CGlobals::GetAISim()->SetGameLoop(scriptName);
 }
 
 void ParaGlobal::SetGameLoopInterval(float fInterval)
@@ -365,6 +380,8 @@ bool ParaGlobal::IsPortAvailable(const std::string& ip, const int port, lua_Stat
 void ParaGlobal::Execute(const std::string& exe, const luabind::object& param, lua_State* L)
 {
 #ifdef SUPPORT_SHELL_EXECUTE
+	if (exe.empty())
+		return;
 	namespace bp = boost::process::v1;
 
 	std::vector<std::string> args;
@@ -373,8 +390,11 @@ void ParaGlobal::Execute(const std::string& exe, const luabind::object& param, l
 	{
 		for (luabind::iterator itCur(param), itEnd; itCur != itEnd; ++itCur)
 		{
-			const std::string value = object_cast<std::string>(*itCur);
-			args.push_back(value);
+			if (type(*itCur) == LUA_TSTRING)
+			{
+				const std::string value = object_cast<std::string>(*itCur);
+				args.push_back(value);
+			}
 		}
 	}
 	else if (type(param) == LUA_TSTRING)
@@ -382,27 +402,37 @@ void ParaGlobal::Execute(const std::string& exe, const luabind::object& param, l
 		args.push_back(object_cast<std::string>(param));
 	}
 
+	try
+	{
 #if defined(WIN32)
-	// bp::environment env = boost::this_process::environment();
 #ifdef DEFAULT_FILE_ENCODING
-	std::wstring exe_path_unicode = StringHelper::MultiByteToWideChar(exe.c_str(), DEFAULT_FILE_ENCODING);
-	bp::child c(exe_path_unicode, (args), bp::windows::hide);
+		std::wstring exe_path_unicode = StringHelper::MultiByteToWideChar(exe.c_str(), DEFAULT_FILE_ENCODING);
+		std::vector<std::wstring> wargs;
+		wargs.reserve(args.size());
+		for (const auto& arg : args)
+		{
+			wargs.push_back(StringHelper::MultiByteToWideChar(arg.c_str(), DEFAULT_FILE_ENCODING));
+		}
+		bp::child c(exe_path_unicode, wargs, bp::windows::hide);
 #else
-	bp::child c(exe, (args), bp::windows::hide);
+		bp::child c(exe, (args), bp::windows::hide);
 #endif
-
 #else
-	bp::child c(exe, (args));
+		bp::child c(exe, (args));
 #endif
-
-	c.detach();
+		c.detach();
+	}
+	catch (const std::exception& e)
+	{
+		OUTPUT_LOG("warning: ParaGlobal::Execute failed for %s: %s\n", exe.c_str(), e.what());
+	}
 #endif
 }
 
 bool ParaGlobal::ShellExecute(const char* lpOperation, const char* lpFile, const char* lpParameters, const char* lpDirectory, int nShowCmd)
 {
 #ifdef EMSCRIPTEN
-	if (lpOperation && lpFile && strcmp(lpOperation, "open") == 0)
+	if (lpOperation && lpFile && (strcmp(lpOperation, "open") == 0 || strcmp(lpOperation, "openExternalBrowser") == 0))
 	{
 		EM_ASM({
 			const url =  UTF8ToString($0);
@@ -413,7 +443,96 @@ bool ParaGlobal::ShellExecute(const char* lpOperation, const char* lpFile, const
 	}
 	return false;
 #else
+	if (lpOperation && strcmp(lpOperation, "popen") == 0)
+	{
+#if !defined(PARAENGINE_MOBILE)
+		if (!lpFile || lpFile[0] == '\0')
+			return false;
+		std::string cmd = lpFile;
+		bool isAsync = lpParameters && (strcmp(lpParameters, "isAsync") == 0);
+		std::string callbackFile = lpDirectory ? lpDirectory : "";
+		int callbackIdx = nShowCmd;
+		if (callbackFile.empty() || callbackIdx == 0)
+		{
+			GetCmdReturn(cmd);
+		}
+		else
+		{
+			std::function<void()> func = [=]() {
+				auto ret = GetCmdReturn(cmd);
+				std::stringstream ss;
+				ss << "msg={_callbackIdx=" << callbackIdx << ",ret=[[" << ret << "]]}" << std::endl;
+				auto str = ss.str();
+				ParaScripting::CNPL::activate2_(callbackFile.c_str(), str.c_str());
+			};
+#ifndef EMSCRIPTEN_SINGLE_THREAD
+			if (isAsync)
+			{
+				std::thread t(func);
+				t.detach();
+			}
+			else
+#endif
+			{
+				func();
+			}
+		}
+		return true;
+#else
+		return false;
+#endif
+	}
 	return CEditorHelper::ShellExecute(lpOperation, lpFile, lpParameters, lpDirectory, nShowCmd);
+#endif
+}
+
+std::string ParaGlobal::GetCmdReturn(std::string cmd)
+{
+	if (cmd.empty())
+		return "";
+#if defined(WIN32) && !defined(PARAENGINE_MOBILE)
+	HWND hwnd = GetConsoleWindow();
+	if (hwnd == NULL)
+	{
+		if (AllocConsole())
+		{
+			hwnd = GetConsoleWindow();
+			if (hwnd != NULL)
+				ShowWindow(hwnd, SW_HIDE);
+		}
+	}
+	std::string result;
+#ifdef DEFAULT_FILE_ENCODING
+	std::wstring wcmd = StringHelper::MultiByteToWideChar(cmd.c_str(), DEFAULT_FILE_ENCODING);
+	FILE* file = _wpopen(wcmd.c_str(), L"r");
+#else
+	FILE* file = _popen(cmd.c_str(), "r");
+#endif
+	if (file != NULL)
+	{
+		char tmp[1024];
+		while (fgets(tmp, sizeof(tmp), file) != NULL)
+		{
+			result.append(tmp);
+		}
+		_pclose(file);
+	}
+	return result;
+#elif !defined(EMSCRIPTEN) && !defined(PARAENGINE_MOBILE)
+	std::string result;
+	FILE* file = popen(cmd.c_str(), "r");
+	if (file != NULL)
+	{
+		char tmp[1024];
+		while (fgets(tmp, sizeof(tmp), file) != NULL)
+		{
+			result.append(tmp);
+		}
+		pclose(file);
+	}
+	return result;
+#else
+	return "";
 #endif
 }
 
@@ -2097,6 +2216,165 @@ double ParaScripting::ParaGlobal::getAccurateTime()
 	static int64 start_time = CParaUtils::GetTimeMS();
 	double elapsedTime = (double)(CParaUtils::GetTimeMS() - start_time);
 	return elapsedTime / 1000;
+}
+
+BOOL ParaScripting::ParaGlobal::ExecWmicCmd(string wmicCmd, string searchItem, const char* callbackFile, int callbackIdx)
+{
+	string ret;
+	BOOL success = ExecWmicCmd1(ret, wmicCmd, searchItem);
+
+	if (callbackFile != NULL && callbackFile[0] != '\0' && callbackIdx > 0)
+	{
+		std::stringstream ss;
+		ss << "msg={_callbackIdx=" << callbackIdx << ",ret=[[" << ret << "]]}" << std::endl;
+		auto str = ss.str();
+		ParaScripting::CNPL::activate2_(callbackFile, str.c_str());
+	}
+
+	return success;
+}
+
+BOOL ParaScripting::ParaGlobal::ExecWmicCmd1(string& out, string wmicCmd, string searchItem)
+{
+#if defined(WIN32) && !defined(PARAENGINE_MOBILE)
+	if (wmicCmd.empty())
+		return FALSE;
+
+	const DWORD MAX_COMMAND_SIZE = 10000;
+	string strEnSearch = searchItem;
+
+	BOOL bret = FALSE;
+	HANDLE hReadPipe = NULL;
+	HANDLE hWritePipe = NULL;
+	PROCESS_INFORMATION pi;
+	STARTUPINFOW si;
+	SECURITY_ATTRIBUTES sa;
+
+	char szBuffer[MAX_COMMAND_SIZE + 1] = { 0 };
+	string strBuffer;
+	DWORD count = 0;
+
+	memset(&pi, 0, sizeof(pi));
+	memset(&si, 0, sizeof(si));
+	memset(&sa, 0, sizeof(sa));
+
+	si.cb = sizeof(STARTUPINFOW);
+	sa.nLength = sizeof(SECURITY_ATTRIBUTES);
+	sa.lpSecurityDescriptor = NULL;
+	sa.bInheritHandle = TRUE;
+
+	do {
+		bret = CreatePipe(&hReadPipe, &hWritePipe, &sa, 0);
+		if (!bret)
+			break;
+
+		SetHandleInformation(hReadPipe, HANDLE_FLAG_INHERIT, 0);
+
+		GetStartupInfoW(&si);
+		si.hStdError = hWritePipe;
+		si.hStdOutput = hWritePipe;
+		si.wShowWindow = SW_HIDE;
+		si.dwFlags = STARTF_USESHOWWINDOW | STARTF_USESTDHANDLES;
+
+#ifdef DEFAULT_FILE_ENCODING
+		std::wstring wCmd = StringHelper::MultiByteToWideChar(wmicCmd.c_str(), DEFAULT_FILE_ENCODING);
+#else
+		std::wstring wCmd(wmicCmd.begin(), wmicCmd.end());
+#endif
+		std::vector<wchar_t> cmdBuf(wCmd.begin(), wCmd.end());
+		cmdBuf.push_back(L'\0');
+
+		bret = ::CreateProcessW(NULL, cmdBuf.data(), NULL, NULL, TRUE, CREATE_NO_WINDOW, NULL, NULL, &si, &pi);
+		if (!bret)
+			break;
+
+		CloseHandle(hWritePipe);
+		hWritePipe = NULL;
+
+		WaitForSingleObject(pi.hProcess, 500);
+		bret = ReadFile(hReadPipe, szBuffer, MAX_COMMAND_SIZE, &count, 0);
+		if (!bret)
+			break;
+
+		bret = FALSE;
+		strBuffer.assign(szBuffer, count);
+
+		std::string tempBuf = strBuffer;
+		std::transform(tempBuf.begin(), tempBuf.end(), tempBuf.begin(), [](unsigned char c) { return (char)std::tolower(c); });
+		std::transform(strEnSearch.begin(), strEnSearch.end(), strEnSearch.begin(), [](unsigned char c) { return (char)std::tolower(c); });
+		size_t ipos = tempBuf.find(strEnSearch);
+
+		if (ipos == std::string::npos)
+			break;
+
+		strBuffer = strBuffer.substr(ipos + strEnSearch.length());
+
+		out.clear();
+		out.reserve(strBuffer.size());
+		for (char ch : strBuffer)
+		{
+			if (ch != ' ' && ch != '\n' && ch != '\r' && ch != '\0')
+			{
+				out.push_back(ch);
+			}
+		}
+
+		bret = TRUE;
+	} while (false);
+
+	if (hWritePipe)
+		CloseHandle(hWritePipe);
+	if (hReadPipe)
+		CloseHandle(hReadPipe);
+	if (pi.hProcess)
+		CloseHandle(pi.hProcess);
+	if (pi.hThread)
+		CloseHandle(pi.hThread);
+
+	return bret;
+#elif !defined(EMSCRIPTEN) && !defined(PARAENGINE_MOBILE)
+	if (wmicCmd.empty())
+		return FALSE;
+
+	std::string lowerCmd = wmicCmd;
+	std::transform(lowerCmd.begin(), lowerCmd.end(), lowerCmd.begin(), [](unsigned char c) { return (char)std::tolower(c); });
+	std::string lowerSearch = searchItem;
+	std::transform(lowerSearch.begin(), lowerSearch.end(), lowerSearch.begin(), [](unsigned char c) { return (char)std::tolower(c); });
+
+	// Translate common Windows WMIC hardware UUID / CPU ID queries on Linux/macOS
+	if (lowerCmd.find("wmic") == 0 && (lowerSearch == "uuid" || lowerSearch == "processorid" || lowerSearch == "serialnumber"))
+	{
+		out = CGlobals::GetSettings().GetMachineID();
+		return out.empty() ? FALSE : TRUE;
+	}
+
+	std::string strBuffer = GetCmdReturn(wmicCmd);
+	if (strBuffer.empty())
+		return FALSE;
+
+	if (!lowerSearch.empty())
+	{
+		std::string tempBuf = strBuffer;
+		std::transform(tempBuf.begin(), tempBuf.end(), tempBuf.begin(), [](unsigned char c) { return (char)std::tolower(c); });
+		size_t ipos = tempBuf.find(lowerSearch);
+		if (ipos == std::string::npos)
+			return FALSE;
+		strBuffer = strBuffer.substr(ipos + lowerSearch.length());
+	}
+
+	out.clear();
+	out.reserve(strBuffer.size());
+	for (char ch : strBuffer)
+	{
+		if (ch != ' ' && ch != '\n' && ch != '\r' && ch != '\0')
+		{
+			out.push_back(ch);
+		}
+	}
+	return out.empty() ? FALSE : TRUE;
+#else
+	return FALSE;
+#endif
 }
 
 bool ParaScripting::ParaBootStrapper::LoadFromFile(const char* sXMLfile)

@@ -460,7 +460,7 @@ namespace ParaEngine{  namespace interprocess{
 		}
 
 		//---------------------------------------------
-		scoped_lock<interprocess_mutex> lock(p_hdr->m_mutex);
+		boost::interprocess::scoped_lock<interprocess_mutex> lock(p_hdr->m_mutex);
 		//---------------------------------------------
 		{
 			//If the queue is full execute blocking logic
@@ -553,7 +553,7 @@ namespace ParaEngine{  namespace interprocess{
 		}
 
 		//---------------------------------------------
-		scoped_lock<interprocess_mutex> lock(p_hdr->m_mutex);
+		boost::interprocess::scoped_lock<interprocess_mutex> lock(p_hdr->m_mutex);
 		//---------------------------------------------
 		{
 			//If there are no messages execute blocking logic
@@ -632,7 +632,7 @@ namespace ParaEngine{  namespace interprocess{
 		detail::mq_hdr_t *p_hdr = static_cast<detail::mq_hdr_t*>(GetAddress());
 		if(p_hdr){
 			//---------------------------------------------
-			scoped_lock<interprocess_mutex> lock(p_hdr->m_mutex);
+			boost::interprocess::scoped_lock<interprocess_mutex> lock(p_hdr->m_mutex);
 			//---------------------------------------------
 			return p_hdr->m_cur_num_msg;
 		}

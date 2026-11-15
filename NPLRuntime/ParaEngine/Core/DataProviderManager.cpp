@@ -7,7 +7,7 @@
 #include "ParaEngine.h"
 #include "InfoCenter/ICDBManager.h"
 #include "InfoCenter/ICRecordSet.h"
-#ifdef PARAENGINE_CLIENT
+#ifndef NPLRUNTIME_SERVER
 #include "CharacterDB.h"
 #include "NpcDatabase.h"
 #include "KidsDBProvider.h"
@@ -23,7 +23,7 @@ using namespace ParaEngine;
 CDataProviderManager::CDataProviderManager(void)
 {
 	m_dbAttribute = new AttributeProvider();
-#ifdef PARAENGINE_CLIENT
+#ifndef NPLRUNTIME_SERVER
 	m_dbNPC = new CNpcDatabase();
 	m_dbKids = new CKidsDBProvider();
 #endif
@@ -37,7 +37,7 @@ CDataProviderManager::~CDataProviderManager(void)
 void CDataProviderManager::Cleanup()
 {
 	SAFE_DELETE(m_dbAttribute);
-#ifdef PARAENGINE_CLIENT
+#ifndef NPLRUNTIME_SERVER
 	SAFE_DELETE(m_dbNPC);
 	SAFE_DELETE(m_dbKids);
 #endif
@@ -51,7 +51,7 @@ CDataProviderManager& CDataProviderManager::GetSingleton()
 
 CCharacterDB* CDataProviderManager::GetCharacterDB()
 {
-#ifdef PARAENGINE_CLIENT
+#ifndef NPLRUNTIME_SERVER
 	return &CCharacterDB::GetInstance();
 #else
 	return NULL;
@@ -60,7 +60,7 @@ CCharacterDB* CDataProviderManager::GetCharacterDB()
 
 CKidsDBProvider* CDataProviderManager::GetKidsDBProvider()
 {
-#ifdef PARAENGINE_CLIENT
+#ifndef NPLRUNTIME_SERVER
 	if(!m_dbKids->IsValid())
 	{
 		//////////////////////////////////////////////////////////////////////////
@@ -77,7 +77,7 @@ CKidsDBProvider* CDataProviderManager::GetKidsDBProvider()
 
 CNpcDatabase* CDataProviderManager::GetNpcDB()
 {
-#ifdef PARAENGINE_CLIENT
+#ifndef NPLRUNTIME_SERVER
 	if(!m_dbNPC->IsValid())
 	{
 		//////////////////////////////////////////////////////////////////////////
@@ -108,7 +108,7 @@ AttributeProvider* CDataProviderManager::GetAttributeProvider()
 
 void CDataProviderManager::SetNpcDB(const string& sConnectionstring)
 {
-#ifdef PARAENGINE_CLIENT
+#ifndef NPLRUNTIME_SERVER
 	m_dbNPC->SetDBEntity(sConnectionstring);
 #endif
 }
@@ -120,7 +120,7 @@ void CDataProviderManager::SetAttributeProvider(const string& sConnectionstring)
 
 void CDataProviderManager::SetKidsDBProvider(const string& sConnectionstring)
 {
-#ifdef PARAENGINE_CLIENT
+#ifndef NPLRUNTIME_SERVER
 	m_dbKids->SetDBEntity(sConnectionstring);
 #endif
 }

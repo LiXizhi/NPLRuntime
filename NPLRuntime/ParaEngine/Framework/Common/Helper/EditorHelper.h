@@ -39,6 +39,9 @@ namespace ParaEngine
 		*/
 		static bool CreateEmptyCharacterEventFile(const char* sScriptFile, const char* sName);
 
+		/** Cross-platform implementation shared by non-Windows platforms */
+		static bool CreateEmptyCharacterEventFileShared(const char* sScriptFile, const char* sName);
+
 		/**
 		* run an external application. creates a new process and its primary thread. The new process runs the specified executable file in the security context of the calling process.
 		* @remark: One can also use ParaEngine C++ or .Net API to write application plug-ins for the game engine, which can be loaded like any other script files.

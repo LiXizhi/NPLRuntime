@@ -6,7 +6,7 @@
 // Desc: 
 //-----------------------------------------------------------------------------
 #include "ParaEngine.h"
-#ifdef PARAENGINE_CLIENT
+#ifndef NPLRUNTIME_SERVER
 #include "KidsDBProvider.h"
 #include "NpcDatabase.h"
 #endif
@@ -37,7 +37,7 @@ using namespace luabind;
 
 #include "memdebug.h"
 
-#ifdef PARAENGINE_CLIENT
+#ifndef NPLRUNTIME_SERVER
 //////////////////////////////////////////////////////////////////////////
 //
 // ParaKidsDataProvider
@@ -85,7 +85,7 @@ bool ParaKidsDataProvider::DeleteItemRecordByID(int ID)
 		return false;
 }
 
-const char * ParaKidsDataProvider::SelectItemRecordToString(__int64 ID) const
+const char * ParaKidsDataProvider::SelectItemRecordToString(int64 ID) const
 {
 	if(m_pObj != NULL)
 		return m_pObj->SelectItemRecordToString(ID);
@@ -206,7 +206,7 @@ bool ParaKidsDataProvider::DeleteTitleRecordByID(int ID)
 
 bool ParaDataProvider::InsertPuzzleRecordFromString(const char* strRecord)
 {
-#ifdef PARAENGINE_CLIENT
+#ifndef NPLRUNTIME_SERVER
 	if (IsValid())
 	{
 		return m_pDbKidsProvider->InsertPuzzleRecordFromString(strRecord);
@@ -218,7 +218,7 @@ bool ParaDataProvider::InsertPuzzleRecordFromString(const char* strRecord)
 
 bool ParaDataProvider::DeletePuzzleRecordByID(int ID)
 {
-#ifdef PARAENGINE_CLIENT
+#ifndef NPLRUNTIME_SERVER
 	if (IsValid())
 	{
 		return m_pDbKidsProvider->DeletePuzzleRecordByID(ID);
@@ -227,7 +227,7 @@ bool ParaDataProvider::DeletePuzzleRecordByID(int ID)
 #endif
 		return false;
 }
-#ifdef PARAENGINE_CLIENT
+#ifndef NPLRUNTIME_SERVER
 void ParaDataProvider::GetKidsDBProvider(ParaKidsDataProvider* pOut)
 {
 	pOut->m_pObj = CGlobals::GetDataProviderManager()->GetKidsDBProvider();
@@ -236,7 +236,7 @@ void ParaDataProvider::GetKidsDBProvider(ParaKidsDataProvider* pOut)
 
 int ParaDataProvider::GetNPCIDByName(const char* name)
 {
-#ifdef PARAENGINE_CLIENT
+#ifndef NPLRUNTIME_SERVER
 	if (IsValid())
 	{
 		return m_pDbNPC->GetNPCIDByName(name);
@@ -249,7 +249,7 @@ int ParaDataProvider::GetNPCIDByName(const char* name)
 
 int ParaDataProvider::GetNPCCount()
 {
-#ifdef PARAENGINE_CLIENT
+#ifndef NPLRUNTIME_SERVER
 	if (IsValid())
 	{
 		return m_pDbNPC->GetNPCCount();
@@ -544,7 +544,7 @@ const char* ParaWorld::NewEmptyWorld_(const char* sWorldName, float fTileSize, i
 
 ParaDataProvider ParaWorld::GetNpcDB()
 {
-#ifdef PARAENGINE_CLIENT
+#ifndef NPLRUNTIME_SERVER
 	return ParaDataProvider(CGlobals::GetDataProviderManager()->GetNpcDB());
 #else
 	return ParaDataProvider();
@@ -557,7 +557,7 @@ void ParaWorld::GetNpcDB_(ParaDataProvider* out)
 }
 void ParaWorld::SetNpcDB(const char* sConnectionstring)
 {
-	CGlobals::GetDataProviderManager()->SetNpcDB(sConnectionstring);
+	CGlobals::GetDataProviderManager()->SetNpcDB(sConnectionstring ? sConnectionstring : "");
 }
 
 ParaDataProvider ParaWorld::GetAttributeProvider()
@@ -572,17 +572,17 @@ void ParaWorld::GetAttributeProvider_(ParaDataProvider * out)
 
 void ParaWorld::SetAttributeProvider(const char* sConnectionstring)
 {
-	CGlobals::GetDataProviderManager()->SetAttributeProvider(sConnectionstring);
+	CGlobals::GetDataProviderManager()->SetAttributeProvider(sConnectionstring ? sConnectionstring : "");
 }
 
 void ParaWorld::SetWorldDB(const char* sConnectionstring)
 {
-	CGlobals::GetDataProviderManager()->SetWorldDB(sConnectionstring);
+	CGlobals::GetDataProviderManager()->SetWorldDB(sConnectionstring ? sConnectionstring : "");
 }
 
 string ParaWorld::GetStringbyID(int ID)
 {
-#ifdef PARAENGINE_CLIENT
+#ifndef NPLRUNTIME_SERVER
 	return CGlobals::GetDataProviderManager()->GetKidsDBProvider()->GetStringbyID(ID);
 #else
 	return CGlobals::GetString(0);
@@ -591,7 +591,7 @@ string ParaWorld::GetStringbyID(int ID)
 
 int ParaWorld::InsertString(const char* strEN, const char * strCN)
 {
-#ifdef PARAENGINE_CLIENT
+#ifndef NPLRUNTIME_SERVER
 	return CGlobals::GetDataProviderManager()->GetKidsDBProvider()->InsertString(strEN, strCN);
 #else
 	return 0;

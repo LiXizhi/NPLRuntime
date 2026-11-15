@@ -17,6 +17,9 @@ using namespace ParaEngine;
 
 #if defined(PARAENGINE_CLIENT) && !defined(NPLRUNTIME)
 #define USE_NPL_PROFILER
+#endif
+
+#if !defined(EMSCRIPTEN)
 #define USE_NPL_CURL
 #endif
 /** 
@@ -29,8 +32,10 @@ extern "C"
 	#include "lualib.h"
 	#include "lauxlib.h"
 
-#if defined(USE_NPL_PROFILER)
+#if defined(USE_NPL_CURL)
 	extern int luaopen_cURL(lua_State *L);
+#endif
+#if defined(USE_NPL_PROFILER)
 	extern int profiler_pause(lua_State *L);
 	extern int profiler_resume(lua_State *L);
 	extern int profiler_init(lua_State *L);
@@ -358,6 +363,7 @@ void CNPLScriptingState::LoadHAPI_Globals()
 			def("IsPortAvailable", &ParaGlobal::IsPortAvailable),
 			def("Execute", &ParaGlobal::Execute),
 			def("ShellExecute", & ParaGlobal::ShellExecute), 
+			def("ExecWmicCmd", & ParaGlobal::ExecWmicCmd),
 			def("OpenFileDialog", & ParaGlobal::OpenFileDialog), 
 
 			def("WriteRegStr", & ParaGlobal::WriteRegStr), 

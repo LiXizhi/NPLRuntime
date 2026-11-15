@@ -27,13 +27,16 @@ namespace ParaScripting
 	}
 
 	ParaWebView::ParaWebView(IParaWebView* wv)
+		: m_pParaWebView(std::make_shared<IParaWebView_ptr>(wv))
 	{
-		m_pParaWebView.reset(wv);
-
 		if (wv)
 		{
-			wv->addCloseListener([this]() {
-				this->m_pParaWebView.reset();
+			std::weak_ptr<IParaWebView_ptr> weakState = m_pParaWebView;
+			wv->addCloseListener([weakState]() {
+				if (auto state = weakState.lock())
+				{
+					state->reset();
+				}
 				return true;
 			});
 		}
@@ -41,8 +44,8 @@ namespace ParaScripting
 
 	ParaAttributeObject ParaWebView::GetAttributeObject()
 	{
-		if (m_pParaWebView)
-			return ParaAttributeObject(m_pParaWebView->GetAttributeObject());
+		if (m_pParaWebView && *m_pParaWebView)
+			return ParaAttributeObject((*m_pParaWebView)->GetAttributeObject());
 		else
 			return ParaAttributeObject();
 	}
@@ -54,23 +57,26 @@ namespace ParaScripting
 
 	void ParaWebView::loadUrl2(const std::string &url, bool cleanCachedData)
 	{
-		if (m_pParaWebView)
+		if (m_pParaWebView && *m_pParaWebView)
 		{
-			m_pParaWebView->loadUrl(url, cleanCachedData);
+			(*m_pParaWebView)->loadUrl(url, cleanCachedData);
 		}
 	}
 
 	void ParaWebView::activate(const std::string &filepath, const std::string &msg)
 	{
-		if (m_pParaWebView)
+		if (m_pParaWebView && *m_pParaWebView)
 		{
-			m_pParaWebView->activate(filepath, msg);
+			(*m_pParaWebView)->activate(filepath, msg);
 		}
 	}
 
 	void ParaWebView::closeAndRelease()
 	{
-		m_pParaWebView.reset();
+		if (m_pParaWebView)
+		{
+			m_pParaWebView->reset();
+		}
 	}
 
 #ifdef CROSS_PLATFORM

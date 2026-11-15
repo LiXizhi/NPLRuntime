@@ -5,6 +5,8 @@
 
 namespace ParaEngine
 {
+	class IsoSurfaceRenderable;
+
 	/**
 	* building triangles from 3d grid data. It uses the matching cubes algorithm. 
 	*/

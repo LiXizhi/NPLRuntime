@@ -60,6 +60,10 @@ namespace ParaEngine
 
 		virtual void SetMultiSampleType(int nType) override;
 		virtual int GetMultiSampleType() override;
+		virtual void SetMultiSampleQuality(int nType) override;
+		virtual int GetMultiSampleQuality() override;
+
+		virtual void ShowMenu(bool bShow) override;
 
 		virtual void WriteConfigFile(const char* sFileName) override;
 
@@ -106,6 +110,10 @@ namespace ParaEngine
 		int m_nCreationWidth;
 		int m_nCreationHeight;
 		int m_nMultiSampleType;
+		int m_nMultiSampleQuality;
+		HMENU m_hMenu;
+		bool m_bComInitialized;
+		uintptr_t m_gdiplusToken;
 
 		bool m_bUpdateScreenDevice;
 		bool m_bSizeChanged;

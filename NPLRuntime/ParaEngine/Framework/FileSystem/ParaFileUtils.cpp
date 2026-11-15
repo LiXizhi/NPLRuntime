@@ -53,7 +53,7 @@ bool ParaEngine::CParaFileUtils::IsAbsolutePath(const std::string& filename)
 		return true;
 	if (filename.size() > 0)
 	{
-		return filename[0] == '/';
+		return filename[0] == '/' || filename[0] == '\\';
 	}
 	return false;
 }
@@ -237,12 +237,14 @@ std::string ParaEngine::CParaFileUtils::GetFullPathForFilename(const std::string
 {
 #if defined(WIN32) && defined(DEFAULT_FILE_ENCODING)
 	LPCWSTR filename16 = StringHelper::MultiByteToWideChar(filename.c_str(), DEFAULT_FILE_ENCODING);
-#else
-	const auto& filename16 = filename;
-#endif
 	fs::path filepath(filename16);
 	fs::path abs_path = fs::absolute(filepath);
+	return StringHelper::WideCharToMultiByte(abs_path.wstring().c_str(), DEFAULT_FILE_ENCODING);
+#else
+	fs::path filepath(filename);
+	fs::path abs_path = fs::absolute(filepath);
 	return abs_path.string();
+#endif
 }
 
 const std::string& ParaEngine::CParaFileUtils::GetExternalStoragePath()
@@ -265,10 +267,16 @@ bool ParaEngine::CParaFileUtils::SaveBufferToFile(const std::string& filename, b
 		if (fs::exists(filePath) && (replace == false))
 			return false;
 
-		fs::ofstream file(filePath);
-		if (!file)
+		fs::ofstream file(filePath, ios::out | ios::binary | ios::trunc);
+		if (file.is_open())
 		{
-			file.write(buffer, bufSize);
+			if (buffer && bufSize > 0)
+			{
+				file.write(buffer, bufSize);
+			}
+			bool ok = !file.fail();
+			file.close();
+			return ok;
 		}
 	}
 	catch (...) {}

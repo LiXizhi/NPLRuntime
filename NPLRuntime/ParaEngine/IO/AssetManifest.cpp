@@ -69,7 +69,7 @@ bool AssetFileEntry::DoesFileExist()
 		}
 		else
 		{
-#ifdef PARAENGINE_CLIENT
+#ifndef NPLRUNTIME_SERVER
 			/**
 			since FAT32 has a limit of 65535 files per folder, and if file name is long,
 			it can be as few as 15000 files per folder. so I separate files into 36 folders according to
@@ -80,7 +80,7 @@ bool AssetFileEntry::DoesFileExist()
 
 			// if the files does not exist in "temp/cache/[a-z]/"
 			int nSize = (int)(m_localFileName.size());
-			if (nSize > 13)
+			if (nSize > 13 && nSize < 256)
 			{
 				char filename[256];
 				for (int i = 0; i < 11; i++)

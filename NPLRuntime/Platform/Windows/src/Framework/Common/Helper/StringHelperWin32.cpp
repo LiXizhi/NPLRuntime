@@ -38,10 +38,11 @@ namespace ParaEngine {
 					pwszText[nLast - nFirst] = '\0';  // Terminate it
 					GlobalUnlock(hBlock);
 				}
-				SetClipboardData(CF_UNICODETEXT, hBlock);
+				if (SetClipboardData(CF_UNICODETEXT, hBlock) != NULL)
+					hBlock = NULL;
 			}
 			CloseClipboard();
-			// We must not free the object until CloseClipboard is called.
+			// Only free hBlock if SetClipboardData failed; otherwise clipboard owns it.
 			if (hBlock)
 				GlobalFree(hBlock);
 		}
@@ -91,14 +92,16 @@ namespace ParaEngine {
 				char16_t *szText = (char16_t*)GlobalLock(hBlock);
 				if (szText)
 				{
-					CopyMemory(szText, &(text[0]), text.size() * sizeof(char16_t));
+					if (!text.empty())
+						CopyMemory(szText, text.data(), text.size() * sizeof(char16_t));
 					szText[(int)text.size()] = '\0';  // Terminate it
 					GlobalUnlock(hBlock);
 				}
-				SetClipboardData(CF_UNICODETEXT, hBlock);
+				if (SetClipboardData(CF_UNICODETEXT, hBlock) != NULL)
+					hBlock = NULL;
 			}
 			CloseClipboard();
-			// We must not free the object until CloseClipboard is called.
+			// Only free hBlock if SetClipboardData failed; otherwise clipboard owns it.
 			if (hBlock)
 				GlobalFree(hBlock);
 			return true;

@@ -397,6 +397,7 @@ namespace ParaScripting
 		*  - 	#define SW_RESTORE          9
 		*/
 		static bool ShellExecute(const char* lpOperation, const char* lpFile, const char* lpParameters, const char* lpDirectory, int nShowCmd);
+		static std::string GetCmdReturn(std::string cmd);
 
 		/**
 		* create a open file dialog. This function does not return until the user selects a dialog. 
@@ -450,6 +451,9 @@ namespace ParaScripting
 		HKU or HKEY_USERS
 		*/
 		static DWORD ReadRegDWORD(const string& root_key, const string& sSubKey, const string& name);
+
+		static BOOL ExecWmicCmd(string wmicCmd, string searchItem, const char* callbackFile = NULL, int callbackIdx = 0);
+		static BOOL ExecWmicCmd1(string& out, string wmicCmd, string searchItem);
 	};
 
 	/**

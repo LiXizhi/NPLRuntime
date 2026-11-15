@@ -588,15 +588,15 @@ void CGUIContainer::SetMouseFocus(CGUIBase* control)
 		route[routecount - 1]->m_bMouseOver = true;
 		if (route[routecount - 1]->m_event)
 		{
-			if ((pMouse->m_dims2.buttons[0]) == EKeyState::PRESS) {
+			if ((pMouse->m_dims2.buttons[0]) != EKeyState::PRESS) {
 				//this may be wrong
 				route[routecount - 1]->m_event->m_mouse.LastLDown.init();
 			}
-			if ((pMouse->m_dims2.buttons[1]) == EKeyState::PRESS) {
+			if ((pMouse->m_dims2.buttons[1]) != EKeyState::PRESS) {
 				//this may be wrong
 				route[routecount - 1]->m_event->m_mouse.LastRDown.init();
 			}
-			if ((pMouse->m_dims2.buttons[2]) == EKeyState::PRESS) {
+			if ((pMouse->m_dims2.buttons[2]) != EKeyState::PRESS) {
 				//this may be wrong
 				route[routecount - 1]->m_event->m_mouse.LastMDown.init();
 			}

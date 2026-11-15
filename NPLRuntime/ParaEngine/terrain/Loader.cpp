@@ -9,6 +9,9 @@
 #include "TextureEntity.h"
 #include "Loader.h"
 #include "memdebug.h"
+#ifndef E_OUTOFMEMORY
+#define E_OUTOFMEMORY ((HRESULT)0x8007000EL)
+#endif
 using namespace ParaEngine;
 
 using namespace ParaTerrain;

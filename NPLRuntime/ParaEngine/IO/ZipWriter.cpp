@@ -12,6 +12,7 @@
 #include "FileUtils.h"
 #include "ZipArchive.h"
 #include "NPLCodec.h"
+#include "util/StringHelper.h"
 #include <boost/filesystem.hpp>
 #include "zlib.h"
 
@@ -68,14 +69,26 @@ namespace ParaEngine
 	void GetFileTime(const std::string& filename, WORD* dosdate, WORD* dostime)
 	{
 		using namespace boost::filesystem;
-		boost::filesystem::path filePath(filename);
-		if (boost::filesystem::exists(filePath))
+		try
 		{
-			time_t lastWriteTime = boost::filesystem::last_write_time(filePath);
-			if (lastWriteTime != (time_t)(-1))
+#if defined(WIN32) && defined(DEFAULT_FILE_ENCODING)
+			const WCHAR* pWide = StringHelper::MultiByteToWideChar(filename.c_str(), DEFAULT_FILE_ENCODING);
+			boost::filesystem::path filePath(pWide ? pWide : L"");
+#else
+			boost::filesystem::path filePath(filename);
+#endif
+			boost::system::error_code ec;
+			if (!filePath.empty() && boost::filesystem::exists(filePath, ec) && !ec)
 			{
-				filetime2dosdatetime(lastWriteTime, dosdate, dostime);
+				time_t lastWriteTime = boost::filesystem::last_write_time(filePath, ec);
+				if (!ec && lastWriteTime != (time_t)(-1))
+				{
+					filetime2dosdatetime(lastWriteTime, dosdate, dostime);
+				}
 			}
+		}
+		catch (...)
+		{
 		}
 	}
 

@@ -316,9 +316,16 @@ int ParaEngine::CFileUtils::DeleteDirectory(const char* filename)
 
 int ParaEngine::CFileUtils::DeleteFiles(const std::string& sFilePattern, bool bSecureFolderOnly /*= true*/, int nSubFolderCount)
 {
+	if (bSecureFolderOnly)
+	{
+		if (!CParaFile::IsWritablePath(sFilePattern, false))
+		{
+			OUTPUT_LOG("security alert: some one is telling the engine to delete a file %s which is not allowed\r\n", sFilePattern.c_str());
+			return 0;
+		}
+	}
 
 	// search in writable disk files
-	// Note: bSecureFolderOnly is ignore, since it is guaranteed by the OS's writable path.
 	int nCount = 0;
 	std::string sRootPath = GetParentDirectoryFromPath(sFilePattern);
 	std::string sPattern = GetFileName(sFilePattern);
@@ -330,9 +337,9 @@ int ParaEngine::CFileUtils::DeleteFiles(const std::string& sFilePattern, bool bS
 #else 
 	const auto& sFullPattern16 = sFullPattern;
 #endif
-	if (fs::is_directory(sFullPattern16,err_code))
+	if (fs::is_directory(sFullPattern16, err_code))
 	{
-		nCount = CFileUtils::DeleteDirectory(sRootPath.c_str());
+		nCount = CFileUtils::DeleteDirectory(sFullPattern.c_str());
 	}
 	else
 	{
@@ -736,6 +743,13 @@ void FindFiles_Recursive(ParaEngine::CSearchResult& result, fs::path rootPath, c
 		{
 			//cellfy: file_attr is only marked with directory(16) and regular_file(32) for now
 			DWORD file_attr = 0;
+#if defined(WIN32) && defined(DEFAULT_FILE_ENCODING)
+			std::wstring wEntryName = iter->path().filename().wstring();
+			const char* pUtf8EntryName = ParaEngine::StringHelper::WideCharToMultiByte(wEntryName.c_str(), DEFAULT_FILE_ENCODING);
+			std::string sEntryName = pUtf8EntryName ? pUtf8EntryName : "";
+#else
+			std::string sEntryName = iter->path().filename().string();
+#endif
 			if (fs::is_directory(iter->status()))
 			{
 				// Found directory;
@@ -754,7 +768,8 @@ void FindFiles_Recursive(ParaEngine::CSearchResult& result, fs::path rootPath, c
 
 #if defined(WIN32) && defined(DEFAULT_FILE_ENCODING)
 					std::wstring sFullPath16 = iter->path().wstring();
-					std::string sFullPath = ParaEngine::StringHelper::WideCharToMultiByte(sFullPath16.c_str(), DEFAULT_FILE_ENCODING);
+					const char* pUtf8Full = ParaEngine::StringHelper::WideCharToMultiByte(sFullPath16.c_str(), DEFAULT_FILE_ENCODING);
+					std::string sFullPath = pUtf8Full ? pUtf8Full : "";
 #else
 					std::string sFullPath = iter->path().string();
 #endif
@@ -765,7 +780,7 @@ void FindFiles_Recursive(ParaEngine::CSearchResult& result, fs::path rootPath, c
 					if (!result.AddResult(sFullPath, 0, file_attr, &fileLastWriteTime, &fileLastWriteTime, &fileLastWriteTime))
 						return;
 				}
-				else if (ParaEngine::StringHelper::MatchWildcard(iter->path().filename().string(), reFilePattern))
+				else if (ParaEngine::StringHelper::MatchWildcard(sEntryName, reFilePattern))
 				{
 					nFileCount++;
 					auto lastWriteTime = fs::last_write_time(iter->path());
@@ -773,7 +788,8 @@ void FindFiles_Recursive(ParaEngine::CSearchResult& result, fs::path rootPath, c
 					ParaEngine::TimetToFileTime(lastWriteTime, &fileLastWriteTime);
 #if defined(WIN32) && defined(DEFAULT_FILE_ENCODING)
 					std::wstring sFullPath16 = iter->path().wstring();
-					std::string sFullPath = ParaEngine::StringHelper::WideCharToMultiByte(sFullPath16.c_str(), DEFAULT_FILE_ENCODING);
+					const char* pUtf8Full = ParaEngine::StringHelper::WideCharToMultiByte(sFullPath16.c_str(), DEFAULT_FILE_ENCODING);
+					std::string sFullPath = pUtf8Full ? pUtf8Full : "";
 #else
 					std::string sFullPath = iter->path().string();
 #endif
@@ -788,7 +804,7 @@ void FindFiles_Recursive(ParaEngine::CSearchResult& result, fs::path rootPath, c
 			else if (fs::is_regular_file(iter->status()))
 			{
 				file_attr = 32;
-				if (ParaEngine::StringHelper::MatchWildcard(iter->path().filename().string(), reFilePattern))
+				if (ParaEngine::StringHelper::MatchWildcard(sEntryName, reFilePattern))
 				{
 					// Found file;
 					nFileCount++;
@@ -797,7 +813,8 @@ void FindFiles_Recursive(ParaEngine::CSearchResult& result, fs::path rootPath, c
 					ParaEngine::TimetToFileTime(lastWriteTime, &fileLastWriteTime);
 #if defined(WIN32) && defined(DEFAULT_FILE_ENCODING)
 					std::wstring sFullPath16 = iter->path().wstring();
-					std::string sFullPath = ParaEngine::StringHelper::WideCharToMultiByte(sFullPath16.c_str(), DEFAULT_FILE_ENCODING);
+					const char* pUtf8Full = ParaEngine::StringHelper::WideCharToMultiByte(sFullPath16.c_str(), DEFAULT_FILE_ENCODING);
+					std::string sFullPath = pUtf8Full ? pUtf8Full : "";
 #else
 					std::string sFullPath = iter->path().string();
 #endif

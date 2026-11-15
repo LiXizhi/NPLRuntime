@@ -7,6 +7,7 @@
 #include "ParaEngine.h"
 #include "os_calls.h"
 #include "FileUtils.h"
+#include "ParaEngineSettings.h"
 
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -18,6 +19,7 @@
 #include <stdio.h>
 #else
 #include <unistd.h>
+#include <pthread.h>
 #endif
 
 #if defined(NPL_USE_READLINE)
@@ -62,6 +64,8 @@ int ParaEngine::GetProcessID()
 
 void* ParaEngine::LoadLibrary(const char *pcDllname, int iMode)
 {
+	if (!pcDllname)
+		return nullptr;
 	std::string sDllName = pcDllname;
 #ifdef WIN32 // Microsoft compiler
 	if (sDllName.find(".") == string::npos)
@@ -71,7 +75,15 @@ void* ParaEngine::LoadLibrary(const char *pcDllname, int iMode)
 	// convert relative path to absolute path, just in case some dev folder or writable folder is used
 	if (!(CFileUtils::IsAbsolutePath(sDllName)) && sDllName.find_first_of("/\\"))
 	{
-		string sDllFullpath = CParaFile::GetAbsolutePath(sDllName, CParaFile::GetCurDirectory(CParaFile::APP_ROOT_DIR));
+		string sDllFullpath;
+		if (ParaEngine::ParaEngineSettings::GetSingleton().Is64BitsSystem()) {
+			sDllFullpath = CParaFile::GetAbsolutePath("bin64/" + sDllName, CParaFile::GetCurDirectory(CParaFile::APP_ROOT_DIR));
+			if (!CParaFile::DoesFileExist(sDllFullpath.c_str())) {
+				sDllFullpath = CParaFile::GetAbsolutePath(sDllName, CParaFile::GetCurDirectory(CParaFile::APP_ROOT_DIR));
+			}
+		} else {
+			sDllFullpath = CParaFile::GetAbsolutePath(sDllName, CParaFile::GetCurDirectory(CParaFile::APP_ROOT_DIR));
+		}
 		if (!CParaFile::DoesFileExist(sDllFullpath.c_str()))
 		{
 			sDllFullpath = CParaFile::GetAbsolutePath(sDllName, CParaFile::GetCurDirectory(CParaFile::APP_DEV_DIR));
@@ -93,27 +105,103 @@ void* ParaEngine::LoadLibrary(const char *pcDllname, int iMode)
 #ifndef LOAD_LIBRARY_SEARCH_DLL_LOAD_DIR
 	return (void*)::LoadLibraryEx(sDllName.c_str(), NULL, 0);
 #else
-#if WIN32 && defined(DEFAULT_FILE_ENCODING)
+#if defined(WIN32) && defined(DEFAULT_FILE_ENCODING)
 	LPCWSTR sDllName16 = StringHelper::MultiByteToWideChar(sDllName.c_str(), DEFAULT_FILE_ENCODING);
-	return (void*)::LoadLibraryExW(sDllName16, NULL,
-		LOAD_LIBRARY_SEARCH_DLL_LOAD_DIR | LOAD_LIBRARY_SEARCH_APPLICATION_DIR | LOAD_LIBRARY_SEARCH_DEFAULT_DIRS | LOAD_LIBRARY_SEARCH_SYSTEM32 | LOAD_LIBRARY_SEARCH_USER_DIRS);
+	void* pDll = (void*)::LoadLibraryW(sDllName16);
 #else
-	return (void*)::LoadLibraryEx(sDllName.c_str(), NULL,
-		LOAD_LIBRARY_SEARCH_DLL_LOAD_DIR | LOAD_LIBRARY_SEARCH_APPLICATION_DIR | LOAD_LIBRARY_SEARCH_DEFAULT_DIRS | LOAD_LIBRARY_SEARCH_SYSTEM32 | LOAD_LIBRARY_SEARCH_USER_DIRS);
+	void* pDll = (void*)::LoadLibraryA(sDllName.c_str());
 #endif
-	
-#endif
-#else
-	if (sDllName.find(".") == string::npos)
-		sDllName += ".so";
-	void* ret = dlopen(sDllName.c_str(), iMode);
-	if (!ret)
+	if (pDll == NULL)
 	{
+#if defined(WIN32) && defined(DEFAULT_FILE_ENCODING)
+		pDll = (void*)::LoadLibraryExW(sDllName16, NULL,
+			LOAD_LIBRARY_SEARCH_DLL_LOAD_DIR | LOAD_LIBRARY_SEARCH_APPLICATION_DIR | LOAD_LIBRARY_SEARCH_DEFAULT_DIRS | LOAD_LIBRARY_SEARCH_SYSTEM32 | LOAD_LIBRARY_SEARCH_USER_DIRS);
+#else
+		pDll = (void*)::LoadLibraryExA(sDllName.c_str(), NULL,
+			LOAD_LIBRARY_SEARCH_DLL_LOAD_DIR | LOAD_LIBRARY_SEARCH_APPLICATION_DIR | LOAD_LIBRARY_SEARCH_DEFAULT_DIRS | LOAD_LIBRARY_SEARCH_SYSTEM32 | LOAD_LIBRARY_SEARCH_USER_DIRS);
+#endif
+	}
+	return pDll;
+#endif
+#else
+	std::vector<std::string> candidates;
+	candidates.push_back(sDllName);
+
+#if defined(__APPLE__)
+	const char* nativeExt = ".dylib";
+#else
+	const char* nativeExt = ".so";
+#endif
+
+	// Strip Windows .dll suffix or append native shared library extension / "lib" prefix when needed
+	std::string basePath = sDllName;
+	if (basePath.size() > 4)
+	{
+		std::string tail = basePath.substr(basePath.size() - 4);
+		if (tail == ".dll" || tail == ".DLL")
+			basePath = basePath.substr(0, basePath.size() - 4);
+	}
+
+	auto slashPos = basePath.find_last_of("/\\");
+	std::string dirPart = (slashPos == std::string::npos) ? "" : basePath.substr(0, slashPos + 1);
+	std::string filePart = (slashPos == std::string::npos) ? basePath : basePath.substr(slashPos + 1);
+
+	auto addCandidate = [&candidates](const std::string& c) {
+		if (!c.empty())
+		{
+			for (const auto& existing : candidates)
+			{
+				if (existing == c)
+					return;
+			}
+			candidates.push_back(c);
+		}
+	};
+
+	if (filePart.find('.') == std::string::npos)
+	{
+		addCandidate(dirPart + filePart + nativeExt);
+		if (filePart.rfind("lib", 0) != 0)
+			addCandidate(dirPart + "lib" + filePart + nativeExt);
+#if defined(__APPLE__)
+		addCandidate(dirPart + filePart + ".so");
+		if (filePart.rfind("lib", 0) != 0)
+			addCandidate(dirPart + "lib" + filePart + ".so");
+#endif
+	}
+
+	// Also search executable directory if a relative filename was given
+	if (dirPart.empty())
+	{
+		std::string exePath = GetExecutablePath();
+		auto exeSlash = exePath.find_last_of("/\\");
+		if (exeSlash != std::string::npos)
+		{
+			std::string exeDir = exePath.substr(0, exeSlash + 1);
+			size_t baseCount = candidates.size();
+			for (size_t idx = 0; idx < baseCount; ++idx)
+			{
+				addCandidate(exeDir + candidates[idx]);
+			}
+		}
+	}
+
+	void* ret = nullptr;
+	std::string lastErr;
+	for (const auto& candidate : candidates)
+	{
+		ret = dlopen(candidate.c_str(), iMode);
+		if (ret)
+			break;
 		const char* error = dlerror();
-		OUTPUT_LOG(error);
+		if (error)
+			lastErr = error;
+	}
+	if (!ret && !lastErr.empty())
+	{
+		OUTPUT_LOG("LoadLibrary failed (%s): %s\n", sDllName.c_str(), lastErr.c_str());
 	}
 	return ret;
-	
 #endif
 
 
@@ -156,6 +244,8 @@ void * ParaEngine::GetProcAddress(void *Lib, const char *Fnname)
 	else
 		return (void*)::GetProcAddress((HINSTANCE)Lib, Fnname);
 #else
+	if (Lib == CLIB_DEFHANDLE)
+		return dlsym(RTLD_DEFAULT, Fnname);
 	return dlsym(Lib, Fnname);
 #endif
 }
@@ -179,6 +269,18 @@ bool ParaEngine::FreeLibrary(void *hDLL)
 
 bool ParaEngine::GetLastFileWriteTime(const char* filename, time_t& ftWrite)
 {
+	if (!filename)
+		return false;
+#if defined(WIN32) && defined(DEFAULT_FILE_ENCODING)
+	struct _stat64 filestat;
+	LPCWSTR filename16 = StringHelper::MultiByteToWideChar(filename, DEFAULT_FILE_ENCODING);
+	if (_wstati64(filename16, &filestat) == 0)
+	{
+		ftWrite = filestat.st_mtime;
+		return true;
+	}
+	return false;
+#else
 	struct stat filestat;
 	if (stat(filename, &filestat) == 0)
 	{
@@ -186,6 +288,7 @@ bool ParaEngine::GetLastFileWriteTime(const char* filename, time_t& ftWrite)
 		return true;
 	}
 	return false;
+#endif
 }
 
 ///////////////////////////////////////////////////////
@@ -347,17 +450,24 @@ int _findclose(long h)
 #include <limits.h>
 #endif
 
+#elif defined(__EMSCRIPTEN__)
+#include <emscripten.h>
+#include <emscripten/heap.h>
+
 #else
 #error "Cannot define getPeakRSS( ) or getCurrentRSS( ) for an unknown OS."
 #endif
 
 PE_CORE_DECL size_t ParaEngine::GetPeakMemoryUse()
 {
-#if defined(_WIN32) && defined(PARAENGINE_CLIENT) && !defined(NPLRUNTIME)
+#if defined(_WIN32)
 	/* Windows -------------------------------------------------- */
 	PROCESS_MEMORY_COUNTERS info;
 	GetProcessMemoryInfo(GetCurrentProcess(), &info, sizeof(info));
 	return (size_t)info.PeakWorkingSetSize;
+
+#elif defined(__EMSCRIPTEN__)
+	return (size_t)emscripten_get_heap_size();
 
 #elif (defined(_AIX) || defined(__TOS__AIX__)) || (defined(__sun__) || defined(__sun) || defined(sun) && (defined(__SVR4) || defined(__svr4__)))
 	/* AIX and Solaris ------------------------------------------ */
@@ -391,7 +501,7 @@ PE_CORE_DECL size_t ParaEngine::GetPeakMemoryUse()
 
 PE_CORE_DECL size_t ParaEngine::GetCurrentMemoryUse()
 {
-#if defined(_WIN32) && defined(PARAENGINE_CLIENT) && !defined(NPLRUNTIME)
+#if defined(_WIN32)
 	/* Windows -------------------------------------------------- */
 
 	PROCESS_MEMORY_COUNTERS info;
@@ -420,6 +530,8 @@ PE_CORE_DECL size_t ParaEngine::GetCurrentMemoryUse()
 	fclose(fp);
 	return (size_t)rss * (size_t)sysconf(_SC_PAGESIZE);
 
+#elif defined(__EMSCRIPTEN__)
+	return (size_t)emscripten_get_heap_size();
 #else
 	/* AIX, BSD, Solaris, and Unknown OS ------------------------ */
 	return (size_t)0L;			/* Unsupported. */

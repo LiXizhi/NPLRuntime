@@ -46,21 +46,42 @@ int main(int argc, char* argv[])
 	std::string sCmdLine;
 	for (int i = 1; i < argc; ++i)
 	{
-		if (argv[i])
+		if (argv[i] && argv[i][0] != '\0')
 		{
-			if (sCmdLine.empty())
-				sCmdLine = argv[i];
-			else
+			std::string token = argv[i];
+			// Preserve spaces across POSIX argv splitting for key=value or standalone paths
+			if (token.find(' ') != std::string::npos && token.find('"') == std::string::npos)
 			{
-				sCmdLine += " ";
-				sCmdLine += argv[i];
+				auto eqPos = token.find('=');
+				if (eqPos != std::string::npos && token.find("://") == std::string::npos)
+					token = token.substr(0, eqPos + 1) + "\"" + token.substr(eqPos + 1) + "\"";
+				else
+					token = "\"" + token + "\"";
 			}
+			if (!sCmdLine.empty())
+				sCmdLine += " ";
+			sCmdLine += token;
+		}
+	}
+
+	// Single-instance URL protocol (paracraft://) / .p3d forwarding on Linux desktop
+	CCommandLineParams cmdParams(sCmdLine.c_str());
+	const char* sSingle = cmdParams.GetValue("singleinstance", nullptr);
+	const char* sMulti = cmdParams.GetValue("multipleinstance", nullptr);
+	bool isExplicitMulti = (sMulti && strcmp(sMulti, "true") == 0);
+	bool isSingleOrProtocol = (sSingle && strcmp(sSingle, "true") == 0)
+		|| sCmdLine.find("paracraft://") != std::string::npos
+		|| sCmdLine.find(".p3d") != std::string::npos;
+	if (!isExplicitMulti && isSingleOrProtocol)
+	{
+		if (CSDL2Application::TryForwardToExistingInstance(sCmdLine))
+		{
+			return 0;
 		}
 	}
 
 	CSDL2Application app;
-	app.InitApp(nullptr, sCmdLine.c_str());
-	app.Run();
-
-	return 0;
+	if (!app.InitApp(nullptr, sCmdLine.c_str()))
+		return 1;
+	return app.Run();
 }

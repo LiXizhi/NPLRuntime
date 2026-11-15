@@ -113,7 +113,7 @@ void ParaScripting::ParaAssetObject::Refresh()
 void ParaScripting::ParaAssetObject::Refresh1(const char* sFilename)
 {
 	if (m_pAsset)
-		m_pAsset->Refresh(sFilename);
+		m_pAsset->Refresh(sFilename, true);
 }
 
 bool ParaScripting::ParaAssetObject::Reload()
@@ -439,7 +439,7 @@ void ParaScripting::ParaAssetObject::SetTexture( int nIndex, const char* filenam
 	{
 		((CEffectFile*)m_pAsset)->UnLockTexture(nIndex);
 
-		if(filename && filename[0]=='\0')
+		if(!filename || filename[0]=='\0')
 		{
 			((CEffectFile*)m_pAsset)->setTexture(nIndex, (DeviceTexturePtr_type)nullptr);
 		}
@@ -723,7 +723,7 @@ void ParaAsset::Init()
 }
 void ParaAsset::Unload(const char* assettype)
 {
-	if(assettype[0] == '*')
+	if(assettype && assettype[0] == '*')
 		UnloadAll();
 	else
 	{
@@ -823,7 +823,9 @@ ParaScripting::ParaAssetObject ParaAsset::LoadRenderTarget( const char* strAsset
 
 ParaAssetObject ParaAsset::LoadSpriteFrame(const char* strAssetName, int nFrames, int nRow, int nCol)
 {
-#ifdef PARAENGINE_CLIENT
+#ifndef NPLRUNTIME_SERVER
+	if (!strAssetName)
+		return ParaAssetObject();
 	AssetEntity* pAssetEntity = CGlobals::GetAssetManager()->LoadD3DXSprite(strAssetName, nFrames, nRow, nCol);
 	return  ParaAssetObject(pAssetEntity);
 #else
@@ -915,7 +917,7 @@ void ParaAsset::DeleteBlockMaterial(ParaScripting::ParaAssetObject asset)
 
 int ParaAsset::PrintToFile( const char* strFileName, DWORD dwSelection )
 {
-#ifdef PARAENGINE_CLIENT
+#ifndef NPLRUNTIME_SERVER
 	string sFileName = (strFileName == NULL || strFileName[0] == '\0') ?  "temp/assets.txt" : strFileName;
 	ParaEngine::CParaFile file;
 	int nCount = 0;
@@ -941,12 +943,12 @@ const char* ParaAsset::GetAssetServerUrl()
 
 void ParaAsset::SetAssetServerUrl( const char* path )
 {
-	AssetEntity::SetAssetServerUrl(path);
+	AssetEntity::SetAssetServerUrl(path ? path : "");
 }
 
 bool ParaAsset::Refresh( const char* filename )
 {
-	return CGlobals::GetAssetManager()->RefreshAsset(filename);
+	return filename ? CGlobals::GetAssetManager()->RefreshAsset(filename) : false;
 }
 
 void ParaAsset::ConvertGLB(const char* cmds)

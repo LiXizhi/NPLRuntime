@@ -538,14 +538,16 @@ namespace ParaScripting
 
 		if (type(urlParams) == LUA_TTABLE)
 		{
-			url = object_cast<const char*>(urlParams["url"]);
-			if (urlParams["needResume"]) {
+			if (type(urlParams["url"]) == LUA_TSTRING) {
+				url = object_cast<const char*>(urlParams["url"]);
+			}
+			if (type(urlParams["needResume"]) == LUA_TBOOLEAN) {
 				needResume = object_cast<bool>(urlParams["needResume"]);
 			}
-			if (urlParams["dataStreaming"]) {
+			if (type(urlParams["dataStreaming"]) == LUA_TBOOLEAN) {
 				needDataStreaming = object_cast<bool>(urlParams["dataStreaming"]);
 			}
-			if (urlParams["signalVariable"]) {
+			if (type(urlParams["signalVariable"]) == LUA_TSTRING) {
 				signalVariable = object_cast<const char*>(urlParams["signalVariable"]);
 			}
 		}
@@ -553,6 +555,9 @@ namespace ParaScripting
 		{
 			url = object_cast<const char*>(urlParams);
 		}
+
+		if (url == NULL || url[0] == '\0')
+			return;
 
 		using namespace ParaEngine;
 		CAsyncLoader* pAsyncLoader = &(CAsyncLoader::GetSingleton());
@@ -566,7 +571,7 @@ namespace ParaScripting
 		pProcessor->SetScriptCallback(callbackScript);
 		pProcessor->SetSaveToFile(destFolder);
 
-		//pProcessor->SetNeedResumeDownload(needResume);
+		pProcessor->SetNeedResumeDownload(needResume);
 		pProcessor->SetEnableDataStreaming(needDataStreaming);
 
 		// add headers
@@ -668,11 +673,13 @@ namespace ParaScripting
 
 		if (type(urlParams) == LUA_TTABLE)
 		{
-			url = object_cast<const char*>(urlParams["url"]);
-			if (urlParams["dataStreaming"]) {
+			if (type(urlParams["url"]) == LUA_TSTRING) {
+				url = object_cast<const char*>(urlParams["url"]);
+			}
+			if (type(urlParams["dataStreaming"]) == LUA_TBOOLEAN) {
 				needDataStreaming = object_cast<bool>(urlParams["dataStreaming"]);
 			}
-			if (urlParams["signalVariable"]) {
+			if (type(urlParams["signalVariable"]) == LUA_TSTRING) {
 				signalVariable = object_cast<const char*>(urlParams["signalVariable"]);
 			}
 		}

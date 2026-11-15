@@ -18,10 +18,7 @@
 #include "util/StringBuilder.h"
 #include "ParaEngineSettings.h"
 #include "ParaFile.h"
-
-#if defined (WIN32) && !defined(PARAENGINE_MOBILE) && defined(PARAENGINE_CLIENT)
 #include "util/CommonFileDialog.h"
-#endif
 
 /**@def define this to build with a hook on CParaFile::Open(), so that file open activity will be logged by CFileLogger*/
 #if defined(WIN32) && defined(_DEBUG)
@@ -1540,20 +1537,34 @@ const string& CParaFile::GetCurDirectory(DWORD dwDirectoryType)
 			return g_CurDirs[dwDirectoryType];
 		}
 	}
-#if defined (WIN32) && !defined(PARAENGINE_MOBILE) && defined(PARAENGINE_CLIENT)
+#if !defined(EMSCRIPTEN) && !defined(PARAENGINE_MOBILE) && !defined(NPLRUNTIME_SERVER)
 	else
 	{
 		if (!g_CurDirs[dwDirectoryType].empty())
 			return g_CurDirs[dwDirectoryType];
 		else
 		{
+			const char* knownKey = nullptr;
 			if (dwDirectoryType == APP_SH_DESKTOP_DIR)
-			{
-				g_CurDirs[dwDirectoryType] = CCommonFileDialog::GetSingleton()->GetDirectory("desktop");
-			}
+				knownKey = "desktop";
 			else if (dwDirectoryType == APP_SH_DESKTOP_FOLDER_DIR)
+				knownKey = "desktop_virtual";
+			else if (dwDirectoryType == APP_SH_MYDOC_DIR)
+				knownKey = "mydocuments";
+			else if (dwDirectoryType == APP_SH_FAV_DIR)
+				knownKey = "favorites";
+			else if (dwDirectoryType == APP_SH_MUSIC_DIR)
+				knownKey = "music";
+			else if (dwDirectoryType == APP_SH_PICTURE_DIR)
+				knownKey = "pictures";
+			else if (dwDirectoryType == APP_SH_VIDEO_DIR)
+				knownKey = "videos";
+
+			if (knownKey)
 			{
-				g_CurDirs[dwDirectoryType] = CCommonFileDialog::GetSingleton()->GetDirectory("desktop_virtual");
+				const char* sDir = CCommonFileDialog::GetSingleton()->GetDirectory(knownKey);
+				if (sDir)
+					ToCanonicalFilePath(g_CurDirs[dwDirectoryType], sDir, false);
 			}
 			return g_CurDirs[dwDirectoryType];
 		}

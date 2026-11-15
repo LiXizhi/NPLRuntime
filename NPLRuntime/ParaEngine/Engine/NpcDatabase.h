@@ -81,7 +81,7 @@ namespace ParaEngine
 		int m_nGroupID;
 		DWORD m_dwSentientField;
 		string m_sOnLoadScript;
-		vector<byte> m_binCustomAppearance;
+		vector<uint8> m_binCustomAppearance;
 	public:
 		CNpcDbItem(){LoadDefaultValues();};
 		/** load the default database values. */

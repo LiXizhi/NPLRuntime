@@ -1,5 +1,5 @@
 #pragma once
-#ifdef PARAENGINE_CLIENT
+#if !defined(EMSCRIPTEN) && !defined(PARAENGINE_MOBILE) && !defined(NPLRUNTIME_SERVER)
 #include "InterprocessQueue.hpp"
 #include "util/mutex.h"
 #include <queue>

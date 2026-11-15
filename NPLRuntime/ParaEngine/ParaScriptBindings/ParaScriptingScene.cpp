@@ -1517,12 +1517,13 @@ ParaScripting::ParaAssetObject ParaObject::GetTexture()
 
 bool ParaObject::Export(const char* filepath, const char* typ) 
 {
-	if (!IsValid()) return false;
+	if (!IsValid() || !filepath) return false;
 	if (m_pObj->IsBiped()) 
 	{
 		CBipedObject* pBipedObj = (CBipedObject*)m_pObj;
 		CharModelInstance* model = pBipedObj->GetCharModelInstance();
 		GltfModel::ExportCharModel(model, filepath);
+		return true;
 	} 
 	else 
 	{

@@ -9,8 +9,10 @@
 #include "ParaEngine.h"
 #include "ParaScriptingGlobal.h"
 #include "NPL/NPLScriptingState.h"
+#include "util/StringHelper.h"
 #include <luabind/object.hpp>
 #include <commdlg.h>
+#include <vector>
 
 static void LuabindRegisterScreenRecorderGlobalFunctions(lua_State* L)
 {
@@ -36,21 +38,26 @@ bool ParaScripting::ParaGlobal::OpenFileDialog(const luabind::object& inout)
     {
         return false;
     }
- 
-    // OpenFileDialog
-    OPENFILENAMEA ofn = { 0 };
+
+    constexpr DWORD MAX_FILE_BUF = 20480;
+    OPENFILENAMEW ofn = { 0 };
     memset(&ofn, 0, sizeof(ofn));
-    char szFileName[MAX_LINE] = { 0 };
-    ofn.lStructSize = sizeof(OPENFILENAMEA);
-    ofn.lpstrFile = szFileName;
-    ofn.lpstrFilter = "All Files (*.*)\0*.*\0";
+    std::vector<WCHAR> szFileName(MAX_FILE_BUF, 0);
+    ofn.lStructSize = sizeof(OPENFILENAMEW);
+    ofn.hwndOwner = CGlobals::GetAppHWND();
+    ofn.lpstrFile = szFileName.data();
+    ofn.lpstrFilter = L"All Files (*.*)\0*.*\0";
     ofn.nFilterIndex = 0;
     ofn.lpstrFileTitle = NULL;
     ofn.nMaxFileTitle = 0;
     ofn.lpstrInitialDir = NULL;
     ofn.Flags = OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST;
-    ofn.nMaxFile = MAX_LINE;
+    ofn.nMaxFile = MAX_FILE_BUF;
     bool bIsSavingFile = false;
+
+    std::wstring wInitialDir;
+    std::wstring wTitle;
+    std::vector<WCHAR> wFilterBuf;
 
     for (luabind::iterator itCur(inout), itEnd; itCur != itEnd; ++itCur)
     {
@@ -58,23 +65,109 @@ bool ParaScripting::ParaGlobal::OpenFileDialog(const luabind::object& inout)
         const object& key = itCur.key();
         if (type(key) == LUA_TSTRING)
         {
-            string sKey = object_cast<const char*>(key);
+            const char* pKey = object_cast<const char*>(key);
+            if (!pKey)
+                continue;
+            string sKey = pKey;
             const object& Value = *itCur;
             if (sKey == "initialdir")
             {
-                ofn.lpstrInitialDir = object_cast<const char*>(Value);
+                if (type(Value) == LUA_TSTRING)
+                {
+                    const char* sVal = object_cast<const char*>(Value);
+                    if (sVal && sVal[0] != '\0')
+                    {
+                        const WCHAR* pWide = StringHelper::MultiByteToWideChar(sVal, DEFAULT_FILE_ENCODING);
+                        if (pWide)
+                        {
+                            wInitialDir = pWide;
+                            ofn.lpstrInitialDir = wInitialDir.c_str();
+                        }
+                    }
+                }
             }
             else if (sKey == "filter")
             {
-                ofn.lpstrFilter = object_cast<const char*>(Value);
+                if (type(Value) == LUA_TSTRING)
+                {
+                    lua_State* L = Value.interpreter();
+                    if (L)
+                    {
+                        Value.push(L);
+                        size_t rawLen = 0;
+                        const char* pRaw = lua_tolstring(L, -1, &rawLen);
+                        std::string rawFilter;
+                        if (pRaw && rawLen > 0)
+                        {
+                            rawFilter.assign(pRaw, rawLen);
+                        }
+                        lua_pop(L, 1);
+
+                        if (!rawFilter.empty())
+                        {
+                            int wLen = ::MultiByteToWideChar(DEFAULT_FILE_ENCODING, 0, rawFilter.data(), (int)rawFilter.size(), nullptr, 0);
+                            if (wLen > 0)
+                            {
+                                wFilterBuf.assign((size_t)wLen + 2, 0);
+                                ::MultiByteToWideChar(DEFAULT_FILE_ENCODING, 0, rawFilter.data(), (int)rawFilter.size(), wFilterBuf.data(), wLen);
+                                bool hasEmbeddedNull = false;
+                                for (int i = 0; i < wLen - 1; ++i)
+                                {
+                                    if (wFilterBuf[i] == L'\0')
+                                    {
+                                        hasEmbeddedNull = true;
+                                        break;
+                                    }
+                                }
+                                if (!hasEmbeddedNull)
+                                {
+                                    for (int i = 0; i < wLen; ++i)
+                                    {
+                                        if (wFilterBuf[i] == L'|')
+                                            wFilterBuf[i] = L'\0';
+                                    }
+                                }
+                                ofn.lpstrFilter = wFilterBuf.data();
+                            }
+                        }
+                    }
+                }
             }
             else if (sKey == "title")
             {
-                ofn.lpstrTitle = object_cast<const char*>(Value);
+                if (type(Value) == LUA_TSTRING)
+                {
+                    const char* sVal = object_cast<const char*>(Value);
+                    if (sVal)
+                    {
+                        const WCHAR* pWide = StringHelper::MultiByteToWideChar(sVal, DEFAULT_FILE_ENCODING);
+                        if (pWide)
+                        {
+                            wTitle = pWide;
+                            ofn.lpstrTitle = wTitle.c_str();
+                        }
+                    }
+                }
+            }
+            else if (sKey == "filename")
+            {
+                if (type(Value) == LUA_TSTRING)
+                {
+                    const char* sVal = object_cast<const char*>(Value);
+                    if (sVal && sVal[0] != '\0')
+                    {
+                        const WCHAR* pWide = StringHelper::MultiByteToWideChar(sVal, DEFAULT_FILE_ENCODING);
+                        if (pWide)
+                        {
+                            wcsncpy(szFileName.data(), pWide, MAX_FILE_BUF - 1);
+                            szFileName[MAX_FILE_BUF - 1] = L'\0';
+                        }
+                    }
+                }
             }
             else if (sKey == "save")
             {
-                if (object_cast<bool>(Value))
+                if (type(Value) == LUA_TBOOLEAN && object_cast<bool>(Value))
                 {
                     bIsSavingFile = true;
                     ofn.Flags &= ~OFN_FILEMUSTEXIST;
@@ -82,7 +175,7 @@ bool ParaScripting::ParaGlobal::OpenFileDialog(const luabind::object& inout)
             }
             else if (sKey == "multi")
             {
-                if (object_cast<bool>(Value))
+                if (type(Value) == LUA_TBOOLEAN && object_cast<bool>(Value))
                 {
                     ofn.Flags |= OFN_ALLOWMULTISELECT | OFN_EXPLORER;
                 }
@@ -90,26 +183,26 @@ bool ParaScripting::ParaGlobal::OpenFileDialog(const luabind::object& inout)
         }
     }
 
-    char buf[MAX_LINE + 1] = { 0 };
-    int nCount = GetCurrentDirectoryA(MAX_LINE, buf);
+    WCHAR sWorkingDir16[MAX_PATH + 1] = { 0 };
+    DWORD nCount = ::GetCurrentDirectoryW(MAX_PATH, sWorkingDir16);
 
     // switch to windowed mode to display the win32 common dialog.
-    bool bOldWindowed = CGlobals::GetApp()->IsWindowedMode();  // Preserve original windowed flag
-    if (bOldWindowed == false)
+    bool bOldWindowed = CGlobals::GetApp() ? CGlobals::GetApp()->IsWindowedMode() : true;  // Preserve original windowed flag
+    if (bOldWindowed == false && CGlobals::GetApp())
     {
         CGlobals::GetApp()->SetWindowedMode(true);
     }
 
-    bool bResult = bIsSavingFile ? (!!::GetSaveFileNameA(&ofn)) : (!!::GetOpenFileNameA(&ofn));
+    bool bResult = bIsSavingFile ? (!!::GetSaveFileNameW(&ofn)) : (!!::GetOpenFileNameW(&ofn));
 
-    if (bOldWindowed == false)
+    if (bOldWindowed == false && CGlobals::GetApp())
     {
         CGlobals::GetApp()->SetWindowedMode(false);
     }
 
     // reset directory. 
     if (nCount > 0)
-        SetCurrentDirectoryA(buf);
+        ::SetCurrentDirectoryW(sWorkingDir16);
 
     inout["result"] = bResult;
     if (bResult)
@@ -118,13 +211,19 @@ bool ParaScripting::ParaGlobal::OpenFileDialog(const luabind::object& inout)
         {
             if ((ofn.Flags & OFN_ALLOWMULTISELECT) != 0)
             {
-                for (int i = 0; i < MAX_LINE; ++i)
+                for (DWORD i = 0; i + 1 < MAX_FILE_BUF; ++i)
                 {
-                    if (ofn.lpstrFile[i] == 0 && ofn.lpstrFile[i + 1] != 0)
-                        ofn.lpstrFile[i] = '|';
+                    if (ofn.lpstrFile[i] == L'\0')
+                    {
+                        if (ofn.lpstrFile[i + 1] != L'\0')
+                            ofn.lpstrFile[i] = L'|';
+                        else
+                            break;
+                    }
                 }
             }
-            string filename = ofn.lpstrFile;
+            const char* pUtf8 = StringHelper::WideCharToMultiByte(ofn.lpstrFile, DEFAULT_FILE_ENCODING);
+            string filename = pUtf8 ? pUtf8 : "";
             inout["filename"] = filename;
         }
     }

@@ -101,6 +101,21 @@ else ()
     endif()
 
     # Unified Embedded Resources for all ParaRHI client backends
+    list(APPEND sources_commmon
+        ${CMAKE_CURRENT_SOURCE_DIR}/Engine/CharacterDBProvider.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/Engine/ChestDBProvider.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/Engine/FruitDBProvider.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/Engine/ItemDBProvider.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/Engine/KidsDBProvider.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/Engine/NpcDatabase.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/Engine/PetAIDBProvider.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/Engine/PetDBProvider.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/Engine/PuzzleDBProvider.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/Engine/QuestDBProvider.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/Engine/StringTable.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/Engine/TitleDBProvider.cpp
+    )
+
     file(GLOB SHADER_FX_FILES
         ${CMAKE_CURRENT_SOURCE_DIR}/shaders/fx/*.fx
         ${CMAKE_CURRENT_SOURCE_DIR}/shaders/fx/*.h
@@ -118,6 +133,12 @@ else ()
     list(APPEND EmbeddedResource_Files_RHI ${Resource})
 
     embed_resources_abs(Resource ${CMAKE_CURRENT_SOURCE_DIR}/res/paraworld.ico)
+    list(APPEND EmbeddedResource_Files_RHI ${Resource})
+
+    embed_resources_abs(Resource ${CMAKE_CURRENT_SOURCE_DIR}/res/db_create_npc_table.sql)
+    list(APPEND EmbeddedResource_Files_RHI ${Resource})
+
+    embed_resources_abs(Resource ${CMAKE_CURRENT_SOURCE_DIR}/res/character_script_template.txt)
     list(APPEND EmbeddedResource_Files_RHI ${Resource})
 
     list(APPEND EmbeddedResource_Files_RHI ResourceEmbedded.cpp)

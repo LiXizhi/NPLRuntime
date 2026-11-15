@@ -5,6 +5,7 @@
 // desc: 
 //-----------------------------------------------------------------------
 #include "ParaEngine.h"
+#include <sstream>
 #include "effect_file.h"
 
 using namespace ParaEngine;

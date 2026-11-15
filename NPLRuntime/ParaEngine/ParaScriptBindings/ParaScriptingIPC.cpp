@@ -6,7 +6,7 @@
 // Date:	2010.4.27
 //-----------------------------------------------------------------------------
 #include "ParaEngine.h"
-#ifdef PARAENGINE_CLIENT
+#if !defined(EMSCRIPTEN) && !defined(PARAENGINE_MOBILE) && !defined(NPLRUNTIME_SERVER)
 #include "ParaScriptingIPC.h"
 #include "IPCManager.h"
 #include "NPLHelper.h"
@@ -26,7 +26,10 @@ using namespace ParaEngine;
 
 ParaScripting::ParaIPCQueue::ParaIPCQueue( const char* sQueueName, int nUsage )
 {
-	m_pQueue.reset(new CInterprocessQueue(sQueueName, (IPQueueUsageEnum)nUsage));
+	if (sQueueName && sQueueName[0] != '\0')
+	{
+		m_pQueue.reset(new CInterprocessQueue(sQueueName, (IPQueueUsageEnum)nUsage));
+	}
 }
 
 ParaScripting::ParaIPCQueue::ParaIPCQueue( boost::shared_ptr<CInterprocessQueue>& pQueue ) :m_pQueue(pQueue)
@@ -42,7 +45,7 @@ const char* ParaScripting::ParaIPCQueue::GetName()
 {
 	if(m_pQueue)
 	{
-		m_pQueue->GetName().c_str();
+		return m_pQueue->GetName().c_str();
 	}
 	return "";
 }
@@ -233,6 +236,8 @@ int ParaScripting::ParaIPCQueue::try_receive( const object& msg )
 
 ParaScripting::ParaIPCQueue ParaScripting::ParaIPC::CreateGetQueue( const char* filename, int nCreationFlag )
 {
+	if (!filename || filename[0] == '\0')
+		return ParaIPCQueue();
 	CInterprocessQueuePtr pQueue = CIPCManager::GetInstance()->CreateGetQueue(filename, (IPQueueUsageEnum) nCreationFlag);
 	return ParaIPCQueue(pQueue);
 }
@@ -244,6 +249,7 @@ void ParaScripting::ParaIPC::Clear()
 
 void ParaScripting::ParaIPC::RemoveQueue( const char* name )
 {
-	CIPCManager::GetInstance()->RemoveQueue(name);
+	if (name && name[0] != '\0')
+		CIPCManager::GetInstance()->RemoveQueue(name);
 }
 #endif

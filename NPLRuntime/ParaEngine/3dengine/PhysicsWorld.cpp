@@ -55,6 +55,7 @@ ray collision		<-> dSpaceCollide2(...);
 #include "BlockEngine/BlockWorldClient.h"
 #include "util/StringHelper.h"
 #include "NPL/NPLHelper.h"
+#include <cmath>
 
 using namespace ParaEngine;
 

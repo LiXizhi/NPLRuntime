@@ -15,7 +15,7 @@
 #include "util/HttpUtility.h"
 #include "NPLNetClient.h"
 
-#ifdef PARAENGINE_CLIENT
+#ifndef NPLRUNTIME_SERVER
 #include "ParaWorldAsset.h"
 #include "memdebug.h"
 #endif
@@ -813,7 +813,7 @@ void ParaEngine::CURLRequestTask::SetAssetRequestOpt(CAssetRequestData* pRequest
 
 DWORD ParaEngine::CURLRequestTask::Asset_HTTP_request_callback(int nResult, CURLRequestTask* pRequest, LPVOID lpUserData)
 {
-#ifdef PARAENGINE_CLIENT
+#ifndef NPLRUNTIME_SERVER
 	CAssetRequestData* pRequestData = (CAssetRequestData*)lpUserData;
 	if (pRequestData == 0)
 		return E_FAIL;

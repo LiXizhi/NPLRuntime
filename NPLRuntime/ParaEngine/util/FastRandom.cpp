@@ -6,7 +6,7 @@
 //-----------------------------------------------------------------------------
 #include "ParaEngine.h"
 #include "FastRandom.h"
-#include <math.h>
+#include <cmath>
 
 using namespace ParaEngine;
 

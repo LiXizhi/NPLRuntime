@@ -5,6 +5,7 @@
 #include "StringHelper.h"
 
 #include <Shellapi.h>
+#include <vector>
 #undef ShellExecute
 namespace ParaEngine {
 	
@@ -15,25 +16,28 @@ namespace ParaEngine {
 
 		//////////////////////////////////////////////////////////////////////////
 		// open the editor.
-		STARTUPINFO si;
+		STARTUPINFOW si;
 		PROCESS_INFORMATION pi;
 
 		ZeroMemory(&si, sizeof(si));
 		si.cb = sizeof(si);
 		ZeroMemory(&pi, sizeof(pi));
 
-
-		string sCommands = "\"" + CGlobals::GetSettings().GetScriptEditor();
+		const std::string& sEditor = CGlobals::GetSettings().GetScriptEditor();
+		string sCommands = "\"" + sEditor;
 		sCommands.append("\" ");
 		sCommands.append(sScriptFile);
 
-		char cmd[MAX_PATH + 1];
-		strncpy(cmd, sCommands.c_str(), MAX_PATH);
-		cmd[MAX_PATH] = '\0';
+		const WCHAR* pWideEditor = !sEditor.empty() ? StringHelper::MultiByteToWideChar(sEditor.c_str(), DEFAULT_FILE_ENCODING) : nullptr;
+		std::wstring wEditor = pWideEditor ? pWideEditor : L"";
+		const WCHAR* pWideCmd = StringHelper::MultiByteToWideChar(sCommands.c_str(), DEFAULT_FILE_ENCODING);
+		std::wstring wCmdStr = pWideCmd ? pWideCmd : L"";
+		std::vector<WCHAR> wCmdBuf(wCmdStr.begin(), wCmdStr.end());
+		wCmdBuf.push_back(L'\0');
 
 		// Start the child process. 
-		if (!::CreateProcessA(CGlobals::GetSettings().GetScriptEditor().c_str(),   // No module name (use command line). 
-			cmd, // Command line. 
+		if (!::CreateProcessW(wEditor.empty() ? NULL : wEditor.c_str(),
+			wCmdBuf.data(),   // Command line. 
 			NULL,             // Process handle not inheritable. 
 			NULL,             // Thread handle not inheritable. 
 			FALSE,            // Set handle inheritance to FALSE. 
@@ -41,7 +45,7 @@ namespace ParaEngine {
 			NULL,             // Use parent's environment block. 
 			NULL,             // Use parent's starting directory. 
 			&si,              // Pointer to STARTUPINFO structure.
-			&pi)             // Pointer to PROCESS_INFORMATION structure.
+			&pi)              // Pointer to PROCESS_INFORMATION structure.
 			)
 		{
 			OUTPUT_LOG("failed running script editor. error code(%d).\r\n", GetLastError());
@@ -126,8 +130,8 @@ namespace ParaEngine {
 		OUTPUT_LOG("warning: security alert. CreateProcess function should be deprecated in formal release\n");
 #define BUFSIZE 4096 
 
-		HANDLE hChildStdinRd, hChildStdinWr,
-			hChildStdoutRd, hChildStdoutWr;
+		HANDLE hChildStdinRd = NULL, hChildStdinWr = NULL,
+			hChildStdoutRd = NULL, hChildStdoutWr = NULL;
 
 		if (bWaitOnReturn)
 		{
@@ -147,27 +151,24 @@ namespace ParaEngine {
 			}
 
 			// Ensure that the read handle to the child process's pipe for STDOUT is not inherited.
-
 			SetHandleInformation(hChildStdoutRd, HANDLE_FLAG_INHERIT, 0);
 
 			// Create a pipe for the child process's STDIN. 
-
 			if (!CreatePipe(&hChildStdinRd, &hChildStdinWr, &saAttr, 0))
 			{
+				CloseHandle(hChildStdoutRd);
+				CloseHandle(hChildStdoutWr);
 				OUTPUT_LOG("error: Stdin pipe creation failed\n");
 				return false;
 			}
 
 			// Ensure that the write handle to the child process's pipe for STDIN is not inherited. 
-
 			SetHandleInformation(hChildStdinWr, HANDLE_FLAG_INHERIT, 0);
-
-			// Now create the child process. 
 		}
 
 		//////////////////////////////////////////////////////////////////////////
-		// open the editor.
-		STARTUPINFO si;
+		// open the child process.
+		STARTUPINFOW si;
 		PROCESS_INFORMATION pi;
 
 		// Set up members of the STARTUPINFO structure. 
@@ -183,23 +184,35 @@ namespace ParaEngine {
 		// Set up members of the PROCESS_INFORMATION structure. 
 		ZeroMemory(&pi, sizeof(pi));
 
-		char cmd[MAX_PATH + 1];
-		strncpy(cmd, lpCommandLine ? lpCommandLine : "", MAX_PATH);
-		cmd[MAX_PATH] = '\0';
+		const bool hasAppName = (lpApplicationName != nullptr && lpApplicationName[0] != '\0');
+		const WCHAR* pWideApp = hasAppName ? StringHelper::MultiByteToWideChar(lpApplicationName, DEFAULT_FILE_ENCODING) : nullptr;
+		std::wstring wAppName = pWideApp ? pWideApp : L"";
+
+		const WCHAR* pWideCmd = (lpCommandLine && lpCommandLine[0] != '\0') ? StringHelper::MultiByteToWideChar(lpCommandLine, DEFAULT_FILE_ENCODING) : nullptr;
+		std::wstring wCmdStr = pWideCmd ? pWideCmd : L"";
+		std::vector<WCHAR> wCmdBuf(wCmdStr.begin(), wCmdStr.end());
+		wCmdBuf.push_back(L'\0');
 
 		// Start the child process. 
-		if (!::CreateProcessA(lpApplicationName,   // No module name (use command line). 
-			cmd, // Command line. 
-			NULL,             // Process handle not inheritable. 
-			NULL,             // Thread handle not inheritable. 
-			FALSE,            // Set handle inheritance to FALSE. 
-			0,                // No creation flags. 
-			NULL,             // Use parent's environment block. 
-			NULL,             // Use parent's starting directory. 
-			&si,              // Pointer to STARTUPINFO structure.
-			&pi)             // Pointer to PROCESS_INFORMATION structure.
+		if (!::CreateProcessW(hasAppName ? wAppName.c_str() : NULL,
+			wCmdBuf.data(),                   // Command line. 
+			NULL,                             // Process handle not inheritable. 
+			NULL,                             // Thread handle not inheritable. 
+			bWaitOnReturn ? TRUE : FALSE,     // Inherit stdio handles when waiting on return. 
+			0,                                // No creation flags. 
+			NULL,                             // Use parent's environment block. 
+			NULL,                             // Use parent's starting directory. 
+			&si,                              // Pointer to STARTUPINFO structure.
+			&pi)                              // Pointer to PROCESS_INFORMATION structure.
 			)
 		{
+			if (bWaitOnReturn)
+			{
+				if (hChildStdinRd) CloseHandle(hChildStdinRd);
+				if (hChildStdinWr) CloseHandle(hChildStdinWr);
+				if (hChildStdoutRd) CloseHandle(hChildStdoutRd);
+				if (hChildStdoutWr) CloseHandle(hChildStdoutWr);
+			}
 			OUTPUT_LOG("error: failed running application: %s, error code(%d).\r\n", lpApplicationName ? lpApplicationName : "", GetLastError());
 			return false;
 		}
@@ -207,33 +220,43 @@ namespace ParaEngine {
 		// Wait until child process exits.
 		if (bWaitOnReturn)
 		{
-			WaitForSingleObject(pi.hProcess, INFINITE);
-
-			// ReadFromPipe
+			// Close child-side ends in parent immediately so ReadFile does not deadlock on large output
+			if (hChildStdoutWr)
 			{
-				DWORD dwRead;
+				CloseHandle(hChildStdoutWr);
+				hChildStdoutWr = NULL;
+			}
+			if (hChildStdinRd)
+			{
+				CloseHandle(hChildStdinRd);
+				hChildStdinRd = NULL;
+			}
+			if (hChildStdinWr)
+			{
+				CloseHandle(hChildStdinWr);
+				hChildStdinWr = NULL;
+			}
+
+			// ReadFromPipe while or after child runs
+			{
+				DWORD dwRead = 0;
 				char chBuf[BUFSIZE];
-
-				// Close the write end of the pipe before reading from the 
-				// read end of the pipe. 
-
-				if (!CloseHandle(hChildStdoutWr))
-				{
-					OUTPUT_LOG("error: Closing handle failed\n");
-					return false;
-				}
-
-				// Read output from the child process, and write to parent's STDOUT. 
 
 				for (;;)
 				{
-					if (!ReadFile(hChildStdoutRd, chBuf, BUFSIZE, &dwRead,
-						NULL) || dwRead == 0) break;
-					if (CLogger::GetSingleton().Write(chBuf, dwRead) >= 0)
+					if (!ReadFile(hChildStdoutRd, chBuf, BUFSIZE, &dwRead, NULL) || dwRead == 0)
 						break;
+					CLogger::GetSingleton().Write(chBuf, dwRead);
 				}
 			}
 
+			if (hChildStdoutRd)
+			{
+				CloseHandle(hChildStdoutRd);
+				hChildStdoutRd = NULL;
+			}
+
+			WaitForSingleObject(pi.hProcess, INFINITE);
 		}
 
 		// Close process and thread handles. 
@@ -244,6 +267,7 @@ namespace ParaEngine {
 
 	bool CEditorHelper::ShellExecute(const char* lpOperation, const char* lpFile, const char* lpParameters, const char* lpDirectory, int nShowCmd)
 	{
+		const bool hasDir = (lpDirectory != nullptr && lpDirectory[0] != '\0');
 		// OUTPUT_LOG("warning: security alert. ShellExecute function should only allow explore folder and text only files in formal release\n");
 		if (lpOperation && strcmp(lpOperation, "wait") == 0)
 		{
@@ -252,19 +276,19 @@ namespace ParaEngine {
 			std::wstring str_file = wFile ? wFile : L"";
 			const WCHAR* wParam = lpParameters ? StringHelper::MultiByteToWideChar(lpParameters, DEFAULT_FILE_ENCODING) : nullptr;
 			std::wstring str_param = wParam ? wParam : L"";
-			const WCHAR* wDir = lpDirectory ? StringHelper::MultiByteToWideChar(lpDirectory, DEFAULT_FILE_ENCODING) : nullptr;
+			const WCHAR* wDir = hasDir ? StringHelper::MultiByteToWideChar(lpDirectory, DEFAULT_FILE_ENCODING) : nullptr;
 			std::wstring str_dir = wDir ? wDir : L"";
 
 			SHELLEXECUTEINFOW ShExecInfo = { 0 };
 			ShExecInfo.cbSize = sizeof(SHELLEXECUTEINFOW);
 			ShExecInfo.lpParameters = lpParameters ? str_param.c_str() : NULL;
-			ShExecInfo.lpDirectory = lpDirectory ? str_dir.c_str() : NULL;
+			ShExecInfo.lpDirectory = hasDir ? str_dir.c_str() : NULL;
 			ShExecInfo.lpFile = lpFile ? str_file.c_str() : NULL;
 #else 
 			SHELLEXECUTEINFO ShExecInfo = { 0 };
 			ShExecInfo.cbSize = sizeof(SHELLEXECUTEINFO);
 			ShExecInfo.lpParameters = lpParameters;
-			ShExecInfo.lpDirectory = lpDirectory;
+			ShExecInfo.lpDirectory = hasDir ? lpDirectory : NULL;
 			ShExecInfo.lpFile = lpFile;
 #endif
 			ShExecInfo.fMask = SEE_MASK_NOCLOSEPROCESS;
@@ -295,23 +319,23 @@ namespace ParaEngine {
 		{
 			const char* effectiveOp = (lpOperation && strcmp(lpOperation, "openExternalBrowser") == 0) ? "open" : lpOperation;
 #if WIN32 && defined(DEFAULT_FILE_ENCODING)
-			const WCHAR* wOp = effectiveOp ? StringHelper::MultiByteToWideChar(effectiveOp, DEFAULT_FILE_ENCODING) : nullptr;
+			const WCHAR* wOp = (effectiveOp && effectiveOp[0] != '\0') ? StringHelper::MultiByteToWideChar(effectiveOp, DEFAULT_FILE_ENCODING) : nullptr;
 			std::wstring str_op = wOp ? wOp : L"";
 			const WCHAR* wFile = lpFile ? StringHelper::MultiByteToWideChar(lpFile, DEFAULT_FILE_ENCODING) : nullptr;
 			std::wstring str_file = wFile ? wFile : L"";
 			const WCHAR* wParam = lpParameters ? StringHelper::MultiByteToWideChar(lpParameters, DEFAULT_FILE_ENCODING) : nullptr;
 			std::wstring str_param = wParam ? wParam : L"";
-			const WCHAR* wDir = lpDirectory ? StringHelper::MultiByteToWideChar(lpDirectory, DEFAULT_FILE_ENCODING) : nullptr;
+			const WCHAR* wDir = hasDir ? StringHelper::MultiByteToWideChar(lpDirectory, DEFAULT_FILE_ENCODING) : nullptr;
 			std::wstring str_dir = wDir ? wDir : L"";
 			if ((INT_PTR)::ShellExecuteW(
 				(HWND)NULL,
-				effectiveOp ? str_op.c_str() : NULL,
+				(effectiveOp && effectiveOp[0] != '\0') ? str_op.c_str() : NULL,
 				lpFile ? str_file.c_str() : NULL,
 				lpParameters ? str_param.c_str() : NULL,
-				lpDirectory ? str_dir.c_str() : NULL,
+				hasDir ? str_dir.c_str() : NULL,
 				nShowCmd) > 32)
 #else
-			if ((INT_PTR)::ShellExecute((HWND)NULL, effectiveOp, lpFile, lpParameters, lpDirectory, nShowCmd) > 32)
+			if ((INT_PTR)::ShellExecute((HWND)NULL, (effectiveOp && effectiveOp[0] != '\0') ? effectiveOp : NULL, lpFile, lpParameters, hasDir ? lpDirectory : NULL, nShowCmd) > 32)
 #endif
 
 				return true;

@@ -73,7 +73,11 @@ bool CBVHSerializer::LoadMarkerFile(const string& sFileName)
 	{
 		char sName[256];
 		int nBoneIndex = 0;
+#ifdef _MSC_VER
 		if (_snscanf(buf, 2048, "%s %d", sName, &nBoneIndex) == 2)
+#else
+		if (sscanf(buf, "%255s %d", sName, &nBoneIndex) == 2)
+#endif
 		{
 			if ((int)m_bones.size()>nBoneIndex)
 			{
@@ -1078,7 +1082,8 @@ bool CBVHSerializer::WriteHips(int nLevel, bool bHierachy, CParaFile* pFile)
 				q.FromRotationMatrix(m);
 			}
 		}
-		vPos = *(Vector3*)&(mRot * (*(Vector3*)&vPos));
+		Vector3 vPosRotated = mRot * (*(Vector3*)&vPos);
+		vPos = vPosRotated;
 
 		// if this is the root node.
 		//pFile->WriteFormated("%f %f %f ", vPos.x, vPos.y, -vPos.z); // the order is affected by m_RotateY settings.

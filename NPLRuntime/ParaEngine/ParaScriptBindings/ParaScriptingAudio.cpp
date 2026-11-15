@@ -43,16 +43,17 @@ int ParaScripting::ParaAudio::PlayMidiMsg(DWORD dwMsg)
 
 int ParaScripting::ParaAudio::StopMidiMsg(int channel)
 {
-#ifdef PARAENGINE_CLIENT
 	return CMidiMsg::GetSingleton().StopMidiMsg(channel);
-#else
-	return 0;
-#endif
+}
+
+int ParaScripting::ParaAudio::StopMidiMsg0()
+{
+	return CMidiMsg::GetSingleton().StopMidiMsg(0);
 }
 
 bool ParaAudio::PlayWaveFile(const char* szWavePath, int nLoopCount)
 {
-	const std::string filename = szWavePath;
+	const std::string filename = szWavePath ? szWavePath : "";
 	if (CParaFile::GetFileExtension(filename) == "mid")
 	{
 		CMidiMsg::PlayMidiFile(filename);
@@ -80,6 +81,8 @@ bool ParaAudio::PlayWaveFile1(const char* szWavePath)
 
 bool ParaAudio::StopWaveFile(const char* szWavePath, bool bImmediateStop)
 {
+	if (!szWavePath)
+		return false;
 	if (FAILED(CAudioEngine2::GetInstance()->StopWaveFile(szWavePath, bImmediateStop ? AUDIO_FLAG_STOP_IMMEDIATE : AUDIO_FLAG_STOP_RELEASE)))
 	{
 		return false;
@@ -94,6 +97,8 @@ bool ParaAudio::StopWaveFile1(const char* szWavePath)
 
 bool ParaAudio::ReleaseWaveFile(const char* szWavePath)
 {
+	if (!szWavePath)
+		return false;
 	if (FAILED(CAudioEngine2::GetInstance()->ReleaseWaveFile(szWavePath)))
 	{
 		return false;
@@ -103,19 +108,25 @@ bool ParaAudio::ReleaseWaveFile(const char* szWavePath)
 
 ParaAudioSource ParaAudio::Create(const char* sName, const char* sWavePath, bool bStream)
 {
-	CAudioSource2_ptr ptr = CAudioEngine2::GetInstance()->Create(sName, sWavePath, bStream);
+	if (!sName)
+		return ParaAudioSource();
+	CAudioSource2_ptr ptr = CAudioEngine2::GetInstance()->Create(sName, sWavePath ? sWavePath : "", bStream);
 	return ParaAudioSource(ptr);
 }
 
 ParaAudioSource ParaAudio::Get(const char* sName)
 {
+	if (!sName)
+		return ParaAudioSource();
 	CAudioSource2_ptr ptr = CAudioEngine2::GetInstance()->Get(sName);
 	return ParaAudioSource(ptr);
 }
 
 ParaAudioSource ParaAudio::CreateGet(const char* sName, const char* sWavePath, bool bStream)
 {
-	CAudioSource2_ptr ptr = CAudioEngine2::GetInstance()->CreateGet(sName, sWavePath, bStream);
+	if (!sName)
+		return ParaAudioSource();
+	CAudioSource2_ptr ptr = CAudioEngine2::GetInstance()->CreateGet(sName, sWavePath ? sWavePath : "", bStream);
 	return ParaAudioSource(ptr);
 }
 

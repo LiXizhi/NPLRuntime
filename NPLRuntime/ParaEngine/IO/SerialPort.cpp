@@ -341,23 +341,22 @@ namespace ParaEngine
 			}
 		}
 #elif defined(PLATFORM_MAC)
-		static SerialPortMac* serialPortMac;
-		ports = serialPortMac->GetPortNames();
+		SerialPortMac serialPortMac;
+		ports = serialPortMac.GetPortNames();
 #else
-		// for linux , we need to use `ls /dev/tty*` to get all serial ports
+		// For Linux: enumerate serial drivers (including cdc_acm for Micro:bit / ESP32-S3 USB, usbserial, ttyAMA, ttyS)
+		std::vector<std::string> prefixes;
 		boost::filesystem::path kdr_path{ "/proc/tty/drivers" };
 		if (boost::filesystem::exists(kdr_path))
 		{
 			std::ifstream ifile(kdr_path.generic_string());
 			std::string line;
-			std::vector<std::string> prefixes;
 			while (std::getline(ifile, line))
 			{
 				std::vector<std::string> items;
 				auto it = line.find_first_not_of(' ');
 				while (it != std::string::npos)
 				{
-
 					auto it2 = line.substr(it).find_first_of(' ');
 					if (it2 == std::string::npos)
 					{
@@ -370,21 +369,31 @@ namespace ParaEngine
 				}
 				if (items.size() >= 5)
 				{
-					if (items[4] == "serial" && items[0].find("serial") != std::string::npos)
+					// Column 4 == "serial" covers usbserial (/dev/ttyUSB*), cdc_acm (/dev/ttyACM* for Micro:bit/ESP32), serial (/dev/ttyS*), ttyAMA (/dev/ttyAMA*)
+					if (items[4] == "serial" && items[1] != "/dev/tty")
 					{
 						prefixes.emplace_back(items[1]);
 					}
 				}
 			}
 			ifile.close();
-			for (auto& p : boost::filesystem::directory_iterator("/dev"))
+		}
+		if (prefixes.empty())
+		{
+			prefixes = { "/dev/ttyUSB", "/dev/ttyACM", "/dev/ttyAMA", "/dev/ttyS", "/dev/rfcomm" };
+		}
+		boost::system::error_code ec;
+		if (boost::filesystem::exists("/dev", ec))
+		{
+			for (boost::filesystem::directory_iterator it("/dev", ec), end; !ec && it != end; it.increment(ec))
 			{
+				auto dev_path = it->path().generic_string();
 				for (const auto& pf : prefixes)
 				{
-					auto dev_path = p.path().generic_string();
-					if (dev_path.size() >= pf.size() && std::equal(dev_path.begin(), dev_path.begin() + pf.size(), pf.begin()))
+					if (dev_path.size() >= pf.size() && std::equal(pf.begin(), pf.end(), dev_path.begin()))
 					{
 						ports.emplace_back(dev_path);
+						break;
 					}
 				}
 			}

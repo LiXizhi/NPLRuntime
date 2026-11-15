@@ -11,7 +11,7 @@
 #include <string>
 #include <iostream>
 
-#include ".\kidsdbprovider.h"
+#include "KidsDBProvider.h"
 
 using namespace ParaInfoCenter;
 using namespace ParaEngine;

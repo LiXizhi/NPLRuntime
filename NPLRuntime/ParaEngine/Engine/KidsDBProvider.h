@@ -13,6 +13,10 @@
 #include "StringTable.h"
 #include "TitleDBProvider.h"
 
+#ifndef MAX_STRING_LENGTH
+#define MAX_STRING_LENGTH 0xffff
+#endif
+
 namespace ParaEngine
 {
 	class CCharacterDBProvider;

@@ -28,15 +28,26 @@
 #include "FrameRateController.h"
 #include "AudioEngine2.h"
 #include "StringHelper.h"
+#include "WorldInfo.h"
 
-#if defined(WIN32) && !defined(PARAENGINE_MOBILE) && !defined(NPLRUNTIME_SERVER)
 #include "util/CommonFileDialog.h"
-#if !defined(NPLRUNTIME)
-	#include "util/EnumProcess.hpp"
+#if defined(WIN32) && !defined(PARAENGINE_MOBILE) && !defined(NPLRUNTIME_SERVER)
+#include "util/EnumProcess.hpp"
+#endif
+
+#if !defined(WIN32) && !defined(EMSCRIPTEN)
+#include <sys/utsname.h>
+#include <unistd.h>
+#if defined(__APPLE__)
+#include <sys/sysctl.h>
+#elif defined(__linux__)
+#include <sys/sysinfo.h>
+#include <dirent.h>
 #endif
 #endif
 
 #ifndef EMSCRIPTEN_SINGLE_THREAD
+#include <thread>
 #include <boost/thread/tss.hpp>
 #endif
 #include <boost/log/attributes/current_process_name.hpp>
@@ -810,6 +821,17 @@ void ParaEngine::ParaEngineSettings::BringWindowToTop()
 		CGlobals::GetApp()->BringWindowToTop();
 }
 
+void ParaEngine::ParaEngineSettings::UpdateScreenMode()
+{
+	if(CGlobals::GetApp())
+		CGlobals::GetApp()->UpdateScreenMode();
+}
+
+void ParaEngine::ParaEngineSettings::ShowMenu( bool bShow )
+{
+	if(CGlobals::GetApp())
+		CGlobals::GetApp()->ShowMenu(bShow);
+}
 
 int ParaEngine::ParaEngineSettings::GetMultiSampleType()
 {
@@ -823,6 +845,20 @@ void ParaEngine::ParaEngineSettings::SetMultiSampleType( int nType )
 {
 	if(CGlobals::GetApp())
 		CGlobals::GetApp()->SetMultiSampleType(nType);
+}
+
+int ParaEngine::ParaEngineSettings::GetMultiSampleQuality()
+{
+	if(CGlobals::GetApp())
+		return CGlobals::GetApp()->GetMultiSampleQuality();
+	else
+		return 0;
+}
+
+void ParaEngine::ParaEngineSettings::SetMultiSampleQuality( int nType )
+{
+	if(CGlobals::GetApp())
+		CGlobals::GetApp()->SetMultiSampleQuality(nType);
 }
 
 
@@ -960,7 +996,136 @@ void ParaEngine::ParaEngineSettings::SetCoreUsage( DWORD dwUsage )
 
 const std::string& ParaEngine::ParaEngineSettings::GetSystemInfoString( bool bRefresh /*= false*/ )
 {
-	return CGlobals::GetString(0);
+	static std::string s_sysInfo;
+	if (!bRefresh && !s_sysInfo.empty())
+		return s_sysInfo;
+
+#ifdef WIN32
+	std::ostringstream ss;
+	DWORD dwMajor = 0, dwMinor = 0, dwBuild = 0;
+	HMODULE hNtdll = ::GetModuleHandleW(L"ntdll.dll");
+	if (hNtdll)
+	{
+		typedef LONG(WINAPI* PRtlGetVersion)(PRTL_OSVERSIONINFOW);
+		auto pRtlGetVersion = reinterpret_cast<PRtlGetVersion>(::GetProcAddress(hNtdll, "RtlGetVersion"));
+		if (pRtlGetVersion)
+		{
+			RTL_OSVERSIONINFOW osvi = {};
+			osvi.dwOSVersionInfoSize = sizeof(osvi);
+			if (pRtlGetVersion(&osvi) == 0)
+			{
+				dwMajor = osvi.dwMajorVersion;
+				dwMinor = osvi.dwMinorVersion;
+				dwBuild = osvi.dwBuildNumber;
+			}
+		}
+	}
+	ss << "OS version:" << dwMajor << "." << dwMinor << " (Build " << dwBuild << ")\n";
+
+	HKEY hCpuKey = nullptr;
+	if (::RegOpenKeyExW(HKEY_LOCAL_MACHINE, L"HARDWARE\\DESCRIPTION\\System\\CentralProcessor\\0", 0, KEY_READ, &hCpuKey) == ERROR_SUCCESS)
+	{
+		WCHAR wCpuName[256] = { 0 };
+		DWORD cbData = sizeof(wCpuName) - sizeof(WCHAR);
+		DWORD dwType = 0;
+		if (::RegQueryValueExW(hCpuKey, L"ProcessorNameString", nullptr, &dwType, reinterpret_cast<LPBYTE>(wCpuName), &cbData) == ERROR_SUCCESS && dwType == REG_SZ)
+		{
+			const char* pUtf8Cpu = StringHelper::WideCharToMultiByte(wCpuName, CP_UTF8);
+			if (pUtf8Cpu && pUtf8Cpu[0] != '\0')
+				ss << "Processor:" << pUtf8Cpu << "\n";
+		}
+		DWORD dwMHz = 0;
+		cbData = sizeof(dwMHz);
+		if (::RegQueryValueExW(hCpuKey, L"~MHz", nullptr, &dwType, reinterpret_cast<LPBYTE>(&dwMHz), &cbData) == ERROR_SUCCESS && dwType == REG_DWORD)
+		{
+			ss << "Processor speed:" << dwMHz << " MHz\n";
+		}
+		::RegCloseKey(hCpuKey);
+	}
+
+	SYSTEM_INFO sysInfo = {};
+	::GetNativeSystemInfo(&sysInfo);
+	ss << "Number of processors:" << sysInfo.dwNumberOfProcessors << "\n";
+	ss << "Processor type:" << sysInfo.dwProcessorType << "\n";
+
+	MEMORYSTATUSEX memStatus = {};
+	memStatus.dwLength = sizeof(memStatus);
+	if (::GlobalMemoryStatusEx(&memStatus))
+	{
+		// Keep legacy COSInfo::GetSystemInfoString format (bare integer KB) expected by os.lua / SystemSettingsPage.lua
+		ss << "TotalPhysicalMemory:" << (memStatus.ullTotalPhys / 1024ULL) << "\n";
+		ss << "FreePhysicalMemory:" << (memStatus.ullAvailPhys / 1024ULL) << "\n";
+	}
+
+	s_sysInfo = ss.str();
+	return s_sysInfo;
+#elif defined(EMSCRIPTEN)
+	std::ostringstream ss;
+	ss << "OS version:WebAssembly (Emscripten)\n";
+#ifndef EMSCRIPTEN_SINGLE_THREAD
+	unsigned int nCores = std::thread::hardware_concurrency();
+	if (nCores > 0)
+		ss << "Number of processors:" << nCores << "\n";
+#endif
+	s_sysInfo = ss.str();
+	return s_sysInfo;
+#else
+	std::ostringstream ss;
+	struct utsname uts = {};
+	if (uname(&uts) == 0)
+	{
+		ss << "OS version:" << uts.sysname << " " << uts.release << " (" << uts.machine << ")\n";
+	}
+#if defined(__APPLE__)
+	char cpuBrand[256] = { 0 };
+	size_t cpuBrandLen = sizeof(cpuBrand) - 1;
+	if (sysctlbyname("machdep.cpu.brand_string", cpuBrand, &cpuBrandLen, nullptr, 0) == 0 && cpuBrand[0] != '\0')
+	{
+		ss << "Processor:" << cpuBrand << "\n";
+	}
+	uint64_t memBytes = 0;
+	size_t memLen = sizeof(memBytes);
+	if (sysctlbyname("hw.memsize", &memBytes, &memLen, nullptr, 0) == 0 && memBytes > 0)
+	{
+		ss << "TotalPhysicalMemory:" << (memBytes / 1024ULL) << "\n";
+	}
+#elif defined(__linux__)
+	{
+		std::ifstream cpuFile("/proc/cpuinfo");
+		std::string line;
+		while (std::getline(cpuFile, line))
+		{
+			if (line.find("model name") == 0)
+			{
+				auto colonPos = line.find(':');
+				if (colonPos != std::string::npos)
+				{
+					std::string model = line.substr(colonPos + 1);
+					auto firstChar = model.find_first_not_of(" \t");
+					if (firstChar != std::string::npos)
+						ss << "Processor:" << model.substr(firstChar) << "\n";
+				}
+				break;
+			}
+		}
+		struct sysinfo si = {};
+		if (sysinfo(&si) == 0 && si.mem_unit > 0)
+		{
+			uint64_t totalKB = ((uint64_t)si.totalram * (uint64_t)si.mem_unit) / 1024ULL;
+			uint64_t availKB = ((uint64_t)si.freeram * (uint64_t)si.mem_unit) / 1024ULL;
+			ss << "TotalPhysicalMemory:" << totalKB << "\n";
+			ss << "FreePhysicalMemory:" << availKB << "\n";
+		}
+	}
+#endif
+#ifndef EMSCRIPTEN_SINGLE_THREAD
+	unsigned int nCores = std::thread::hardware_concurrency();
+	if (nCores > 0)
+		ss << "Number of processors:" << nCores << "\n";
+#endif
+	s_sysInfo = ss.str();
+	return s_sysInfo;
+#endif
 }
 
 void ParaEngine::ParaEngineSettings::SetAutoLowerFrameRateWhenNotFocused( bool bEnabled )
@@ -1044,14 +1209,14 @@ void ParaEngine::ParaEngineSettings::SetSandboxMode(bool val)
 
 void ParaEngine::ParaEngineSettings::SetDefaultOpenFileFolder(const char* sDefaultOpenFileFolder)
 {
-#if defined(WIN32) && !defined(PARAENGINE_MOBILE) && !defined(NPLRUNTIME_SERVER)
+#if !defined(EMSCRIPTEN) && !defined(PARAENGINE_MOBILE) && !defined(NPLRUNTIME_SERVER)
 	CCommonFileDialog::GetSingleton()->SetDefaultOpenFileFolder(sDefaultOpenFileFolder);
 #endif
 }
 
 const char* ParaEngine::ParaEngineSettings::GetOpenFolder()
 {
-#if defined(WIN32) && !defined(PARAENGINE_MOBILE) && !defined(NPLRUNTIME_SERVER)
+#if !defined(EMSCRIPTEN) && !defined(PARAENGINE_MOBILE) && !defined(NPLRUNTIME_SERVER)
 	return CCommonFileDialog::GetSingleton()->OpenFolder();
 #else
 	return NULL;
@@ -1151,23 +1316,51 @@ void ParaEngine::ParaEngineSettings::SetCurrentLanguage(LanguageType lang)
 
 int ParaEngine::ParaEngineSettings::GetAppCount()
 {
-#if defined(PARAENGINE_CLIENT) && !defined(NPLRUNTIME)
-	std::string sProcessName = "ParaEngineClient.exe";
+#if defined(WIN32) && !defined(PARAENGINE_MOBILE) && !defined(NPLRUNTIME_SERVER)
+	std::string sProcessName = GetModuleFileName();
+	if (sProcessName.empty())
+		sProcessName = "ParaEngineClient.exe";
 	CProcessIterator   itp;
 	int nCount = 0;
 	for (DWORD pid = itp.First(); pid; pid = itp.Next())   {
-		TCHAR   name[_MAX_PATH];
+		char   name[_MAX_PATH] = { 0 };
 		CProcessModuleIterator   itm(pid);
 		HMODULE   hModule = itm.First();   //   .EXE   
 		if (hModule)
 		{
-			GetModuleBaseName(itm.GetProcessHandle(),hModule, name, _MAX_PATH);
+			GetModuleBaseNameA(itm.GetProcessHandle(), hModule, name, _MAX_PATH);
 
-			if (_strcmpi(sProcessName.c_str(), name) == 0)
+			if (_stricmp(sProcessName.c_str(), name) == 0 || _stricmp("ParaEngineClient.exe", name) == 0)
 				nCount ++;
 		}
 	}
-	return nCount;
+	return nCount > 0 ? nCount : 1;
+#elif defined(__linux__) && !defined(ANDROID) && !defined(NPLRUNTIME_SERVER)
+	std::string selfComm;
+	{
+		std::ifstream selfFile("/proc/self/comm");
+		std::getline(selfFile, selfComm);
+	}
+	if (selfComm.empty())
+		return 1;
+	int nCount = 0;
+	DIR* procDir = opendir("/proc");
+	if (procDir)
+	{
+		struct dirent* entry = nullptr;
+		while ((entry = readdir(procDir)) != nullptr)
+		{
+			if (entry->d_name[0] < '0' || entry->d_name[0] > '9')
+				continue;
+			std::string commPath = std::string("/proc/") + entry->d_name + "/comm";
+			std::ifstream commFile(commPath);
+			std::string comm;
+			if (std::getline(commFile, comm) && comm == selfComm)
+				++nCount;
+		}
+		closedir(procDir);
+	}
+	return nCount > 0 ? nCount : 1;
 #else
 	return 1;
 #endif
@@ -1176,16 +1369,18 @@ int ParaEngine::ParaEngineSettings::GetAppCount()
 const char* ParaEngine::ParaEngineSettings::GetProcessName()
 {
 	static std::string g_processName;
-#ifdef WIN32
 	if (g_processName.empty())
 	{
+#ifdef WIN32
 	#if BOOST_VERSION >= 108600
 		g_processName = GetModuleFileName();
 	#else
 		g_processName = boost::log::aux::get_process_name();
 	#endif
-	}
+#else
+		g_processName = GetModuleFileName();
 #endif
+	}
 	return g_processName.c_str();
 }
 
@@ -1274,6 +1469,8 @@ int ParaEngine::ParaEngineSettings::GetChildAttributeColumnCount()
 
 void ParaEngine::ParaEngineSettings::SetIcon(const char* sIconFile)
 {
+	if (!sIconFile)
+		return;
 #ifdef WIN32
 	// TODO: perhaps CreateIcon(), though it is not recommended by Microsoft. 
 	std::string sIcon = sIconFile;
@@ -1323,18 +1520,22 @@ void ParaEngine::ParaEngineSettings::SetIcon(const char* sIconFile)
 void ParaEngine::ParaEngineSettings::SetShowWindowTitleBar(bool bEnabled)
 {
 #ifdef WIN32
-	if (CGlobals::GetApp()->IsWindowedMode())
+	if (CGlobals::GetApp() && CGlobals::GetApp()->IsWindowedMode())
 	{
-		LONG dwAttr = GetWindowLong(CGlobals::GetAppHWND(), GWL_STYLE);
+		HWND hWnd = CGlobals::GetAppHWND();
+		if (!hWnd || !::IsWindow(hWnd))
+			return;
+		LONG dwAttr = GetWindowLong(hWnd, GWL_STYLE);
 		if (bEnabled)
 		{
-			dwAttr |= (WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_THICKFRAME | WS_MINIMIZEBOX | WS_MAXIMIZE | WS_MAXIMIZEBOX);
+			dwAttr |= (WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_THICKFRAME | WS_MINIMIZEBOX | WS_MAXIMIZEBOX);
 		}
 		else
 		{
-			dwAttr &= (~(WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_THICKFRAME | WS_MINIMIZEBOX | WS_MAXIMIZE | WS_MAXIMIZEBOX));
+			dwAttr &= (~(WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_THICKFRAME | WS_MINIMIZEBOX | WS_MAXIMIZEBOX));
 		}
-		SetWindowLong(CGlobals::GetAppHWND(), GWL_STYLE, dwAttr);
+		SetWindowLong(hWnd, GWL_STYLE, dwAttr);
+		SetWindowPos(hWnd, NULL, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_FRAMECHANGED);
 	}
 #endif
 }
@@ -1359,6 +1560,112 @@ const std::string& ParaEngine::ParaEngineSettings::GetMaxMacAddress()
 const std::string& ParaEngine::ParaEngineSettings::GetMaxIPAddress()
 {
 	return NetworkAdapter::GetInstance()->GetMaxIPAddress();
+}
+
+const std::string& ParaEngine::ParaEngineSettings::GetMachineID_old()
+{
+#if defined(WIN32) && !defined(PARAENGINE_MOBILE)
+	static std::string str = "";
+	if (str.empty())
+	{
+		struct dmi_header_local
+		{
+			BYTE type;
+			BYTE length;
+			WORD handle;
+		};
+
+		struct RawSMBIOSDataLocal
+		{
+			BYTE Used20CallingMethod;
+			BYTE SMBIOSMajorVersion;
+			BYTE SMBIOSMinorVersion;
+			BYTE DmiRevision;
+			DWORD Length;
+			BYTE SMBIOSTableData[1];
+		};
+
+		DWORD bufSize = 0;
+		std::vector<BYTE> buf(65535, 0);
+		int flag = 1;
+
+		do
+		{
+			auto ret = GetSystemFirmwareTable('RSMB', 0, 0, 0);
+			if (!ret || ret > buf.size())
+			{
+				OUTPUT_LOG("GetSystemFirmwareTable function init failed\n");
+				break;
+			}
+
+			bufSize = ret;
+			ret = GetSystemFirmwareTable('RSMB', 0, buf.data(), bufSize);
+			if (!ret)
+			{
+				OUTPUT_LOG("GetSystemFirmwareTable function failed\n");
+				break;
+			}
+
+			RawSMBIOSDataLocal* Smbios = reinterpret_cast<RawSMBIOSDataLocal*>(buf.data());
+			BYTE* p = Smbios->SMBIOSTableData;
+			BYTE* pEnd = Smbios->SMBIOSTableData + Smbios->Length;
+
+			if (Smbios->Length != bufSize - 8)
+			{
+				OUTPUT_LOG("Smbios length error\n");
+				break;
+			}
+
+			for (DWORD i = 0; i < Smbios->Length && p + sizeof(dmi_header_local) <= pEnd; i++)
+			{
+				dmi_header_local* h = reinterpret_cast<dmi_header_local*>(p);
+				if (h->type == 0 && flag)
+				{
+					flag = 0;
+				}
+				else if (h->type == 1 && p + 0x18 <= pEnd)
+				{
+					const BYTE* uuidPtr = p + 0x8;
+					short ver = static_cast<short>(Smbios->SMBIOSMajorVersion * 0x100 + Smbios->SMBIOSMinorVersion);
+					int only0xFF = 1, only0x00 = 1;
+					for (int k = 0; k < 16 && (only0x00 || only0xFF); k++)
+					{
+						if (uuidPtr[k] != 0x00) only0x00 = 0;
+						if (uuidPtr[k] != 0xFF) only0xFF = 0;
+					}
+					if (!only0xFF && !only0x00)
+					{
+						char uuidStr[64] = { 0 };
+						if (ver >= 0x0206)
+						{
+							snprintf(uuidStr, 64, "%02X%02X%02X%02X-%02X%02X-%02X%02X-%02X%02X-%02X%02X%02X%02X%02X%02X",
+								uuidPtr[3], uuidPtr[2], uuidPtr[1], uuidPtr[0], uuidPtr[5], uuidPtr[4], uuidPtr[7], uuidPtr[6],
+								uuidPtr[8], uuidPtr[9], uuidPtr[10], uuidPtr[11], uuidPtr[12], uuidPtr[13], uuidPtr[14], uuidPtr[15]);
+						}
+						else
+						{
+							snprintf(uuidStr, 64, "-%02X%02X%02X%02X-%02X%02X-%02X%02X-%02X%02X-%02X%02X%02X%02X%02X%02X",
+								uuidPtr[0], uuidPtr[1], uuidPtr[2], uuidPtr[3], uuidPtr[4], uuidPtr[5], uuidPtr[6], uuidPtr[7],
+								uuidPtr[8], uuidPtr[9], uuidPtr[10], uuidPtr[11], uuidPtr[12], uuidPtr[13], uuidPtr[14], uuidPtr[15]);
+						}
+						str = uuidStr;
+					}
+					break;
+				}
+
+				p += h->length;
+				while (p + 1 < pEnd && (*(reinterpret_cast<WORD*>(p))) != 0)
+				{
+					p++;
+				}
+				p += 2;
+			}
+		} while (false);
+	}
+	return str;
+#else
+	return GetMachineID();
+#endif
 }
 
 int ParaEngine::ParaEngineSettings::GetPeakMemoryUse()
@@ -1463,6 +1770,25 @@ const std::string& ParaEngineSettings::GetDefaultFileAPIEncoding()
 	return ret;
 }
 
+const char* ParaEngineSettings::GetWorldDirectory()
+{
+	static std::string g_strWorldDir;
+	if (CGlobals::GetWorldInfo())
+	{
+		g_strWorldDir = CGlobals::GetWorldInfo()->GetWorldDirectory();
+		return g_strWorldDir.c_str();
+	}
+	return CGlobals::GetString(0).c_str();
+}
+
+void ParaEngineSettings::SetWorldDirectory(const char* sWorldDirectory)
+{
+	if (sWorldDirectory && CGlobals::GetWorldInfo())
+	{
+		CGlobals::GetWorldInfo()->ResetWorldName(sWorldDirectory);
+	}
+}
+
 void ParaEngine::ParaEngineSettings::SetPythonToLua(const char* python_code)
 {
 	*GetPythonToLua() = ParaPythonToLua(python_code);
@@ -1532,8 +1858,11 @@ int ParaEngineSettings::InstallFields(CAttributeClass* pClass, bool bOverride)
 	pClass->AddField("HasClosingRequest", FieldType_Bool, (void*)SetHasClosingRequest_s, (void*)HasClosingRequest_s, NULL, NULL, bOverride);
 	pClass->AddField("IsFullScreenMode", FieldType_Bool, (void*)SetFullScreenMode_s, (void*)IsFullScreenMode_s, NULL, NULL, bOverride);
 	pClass->AddField("BringWindowToTop", FieldType_void, (void*)BringWindowToTop_s, NULL, NULL, NULL, bOverride);
+	pClass->AddField("UpdateScreenMode", FieldType_void, (void*)UpdateScreenMode_s, NULL, NULL, NULL, bOverride);
+	pClass->AddField("ShowMenu", FieldType_Bool, (void*)ShowMenu_s, NULL, NULL, NULL, bOverride);
 	pClass->AddField("ScreenResolution", FieldType_Vector2, (void*)SetScreenResolution_s, (void*)GetScreenResolution_s, CAttributeField::GetSimpleSchema(SCHEMA_RGB), NULL, bOverride);
 	pClass->AddField("MultiSampleType", FieldType_Int, (void*)SetMultiSampleType_s, (void*)GetMultiSampleType_s, NULL, NULL, bOverride);
+	pClass->AddField("MultiSampleQuality", FieldType_Int, (void*)SetMultiSampleQuality_s, (void*)GetMultiSampleQuality_s, NULL, NULL, bOverride);
 
 	pClass->AddField("EnableProfiling", FieldType_Bool, (void*)EnableProfiling_s, (void*)IsProfilingEnabled_s, NULL, NULL, bOverride);
 	pClass->AddField("Enable3DRendering", FieldType_Bool, (void*)Enable3DRendering_s, (void*)Is3DRenderingEnabled_s, NULL, NULL, bOverride);
@@ -1569,6 +1898,7 @@ int ParaEngineSettings::InstallFields(CAttributeClass* pClass, bool bOverride)
 	pClass->AddField("MaxMacAddress", FieldType_String, NULL, (void*)GetMaxMacAddress_s, NULL, NULL, bOverride);
 	pClass->AddField("MaxIPAddress", FieldType_String, NULL, (void*)GetMaxIPAddress_s, NULL, NULL, bOverride);
 	pClass->AddField("MachineID", FieldType_String, NULL, (void*)GetMachineID_s, NULL, NULL, bOverride);
+	pClass->AddField("MachineID_old", FieldType_String, NULL, (void*)GetMachineID_old_s, NULL, NULL, bOverride);
 
 	pClass->AddField("OpenFileFolder", FieldType_String, (void*)SetDefaultOpenFileFolder_s, (void*)GetOpenFolder_s, CAttributeField::GetSimpleSchema(SCHEMA_DIALOG), NULL, bOverride);
 	pClass->AddField("Platform", FieldType_Int, NULL, (void*)GetPlatform_s, NULL, NULL, bOverride);
@@ -1600,6 +1930,7 @@ int ParaEngineSettings::InstallFields(CAttributeClass* pClass, bool bOverride)
 	pClass->AddField("FlushDiskIO", FieldType_void, (void*)FlushDiskIO_s, NULL, NULL, NULL, bOverride);
 	pClass->AddField("SendMsgToJS", FieldType_String, (void*)SendMsgToJS_s, NULL, NULL, NULL, bOverride);
 	pClass->AddField("DefaultFileAPIEncoding", FieldType_String, NULL, (void*)GetDefaultFileAPIEncoding_s, NULL, NULL, bOverride);
+	pClass->AddField("WorldDirectory", FieldType_String, (void*)SetWorldDirectory_s, (void*)GetWorldDirectory_s, NULL, NULL, bOverride);
 
 	pClass->AddField("WebViewVersion", FieldType_Int, NULL, (void*)GetWebViewVersion_s, NULL, NULL, bOverride);
 #ifdef ANDROID

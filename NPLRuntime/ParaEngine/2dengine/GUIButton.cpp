@@ -257,7 +257,7 @@ void CGUIButton::StaticInit()
 
 bool CGUIButton::OnMouseLeave()
 {
-	m_bPressed=false;
+	SetPressed(false);
 	return CGUIBase::OnMouseLeave();
 }
 
@@ -293,12 +293,12 @@ bool CGUIButton::MsgProc(MSG *event)
 		if (m_event->IsMapTo(nEvent,EM_BTN_DOWN)) {
 			newMsg.message=EM_CTRL_CAPTUREMOUSE;
 			CGUIBase::MsgProc(&newMsg);
-			m_bPressed=true;
+			SetPressed(true);
 			bHandled=true;
 		}else if (m_event->IsMapTo(nEvent,EM_BTN_UP)) {
 			newMsg.message=EM_CTRL_RELEASEMOUSE;
 			CGUIBase::MsgProc(&newMsg);
-			m_bPressed=false;
+			SetPressed(false);
 			bHandled=true;
 		}else if (m_event->IsMapTo(nEvent,EM_BTN_CLICK)) {
 			newMsg.message=EM_CTRL_RELEASEMOUSE;
@@ -308,10 +308,10 @@ bool CGUIButton::MsgProc(MSG *event)
 			if(m_eHighlight>0)
 				m_eHighlight = 0;
 #endif
-			m_bPressed=false;
+			SetPressed(false);
 			bHandled=true;
 		}else if (m_event->IsMapTo(nEvent,EM_MOUSE_DRAGBEGIN)) {
-			m_bPressed=false;
+			SetPressed(false);
 		}
 	}
 
@@ -763,6 +763,15 @@ void ParaEngine::CGUIButton::SetOnRenderScript(const char* sScript)
 		SimpleScript script;
 		ParaEngine::StringHelper::DevideString(temp, script.szFile, script.szCode);
 		SetEventScript(EM_ONRENDER, &script);
+	}
+}
+
+void ParaEngine::CGUIButton::SetPressed(bool bPressed)
+{
+	if (m_bPressed != bPressed)
+	{
+		m_bPressed = bPressed;
+		SetDirty(true);
 	}
 }
 

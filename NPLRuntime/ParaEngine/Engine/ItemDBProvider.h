@@ -1,6 +1,6 @@
 #pragma once
 #include "InfoCenter/ParaDatabase.h"
-#include ".\StringTable.h"
+#include "StringTable.h"
 
 namespace ParaEngine
 {

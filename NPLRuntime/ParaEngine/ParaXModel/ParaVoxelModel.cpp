@@ -14,6 +14,7 @@
 // model:CallField("DumpOctree");
 //-----------------------------------------------------------------------------
 #include "ParaEngine.h"
+#include <cmath>
 #include "ParaWorldAsset.h"
 #include "SceneObject.h"
 #include "BaseCamera.h"

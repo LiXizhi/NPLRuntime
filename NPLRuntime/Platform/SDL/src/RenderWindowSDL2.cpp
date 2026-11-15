@@ -527,6 +527,14 @@ namespace ParaEngine
 			{
 				OnChar(sdl_event.text.text);
 			}
+			else if (sdl_event.type == SDL_DROPFILE)
+			{
+				if (sdl_event.drop.file)
+				{
+					OnDropFiles(sdl_event.drop.file);
+					SDL_free(sdl_event.drop.file);
+				}
+			}
 			else if (sdl_event.type == SDL_FINGERDOWN)
 			{
 				// SetTouchInputting(true);

@@ -143,8 +143,8 @@ bool CGlobals::WillGenReport(const char* itemName)
 {
 #if defined _DEBUG
 	return true;
-#elif defined (PARAENGINE_CLIENT)
-	return GetScene()->IsGenerateReport();
+#elif !defined(NPLRUNTIME_SERVER)
+	return GetScene() ? GetScene()->IsGenerateReport() : false;
 #else
 	return false;
 #endif

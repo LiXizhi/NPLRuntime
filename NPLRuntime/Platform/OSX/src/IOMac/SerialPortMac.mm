@@ -38,7 +38,7 @@ namespace ParaEngine {
             IOObjectRelease(modemService);
         }
 
-        IOObjectRelease(modemService);
+        IOObjectRelease(serialPortIterator);
 
         return ports;
     }

@@ -6,6 +6,7 @@
 // Desc: 
 //-----------------------------------------------------------------------------
 #include "ParaEngine.h"
+#include <sstream>
 #include "ParaXModel/ParaXModel.h"
 #include "ParaXModel/ParaXBone.h"
 #include "BlockEngine/BlockCommon.h"

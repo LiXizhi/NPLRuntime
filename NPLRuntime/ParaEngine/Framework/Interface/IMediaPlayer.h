@@ -17,6 +17,7 @@ namespace ParaEngine {
         virtual void PlayMidiFile(std::string filename) = 0;
         virtual void SetVolume(float volume) = 0;
         virtual void PlayMidiData(std::vector<char>) {}
+        virtual void StopMidiMsg(int channel = 0) { PlayMidiFile(""); }
     };
 }
 #endif //ANDROIDSTUDIO_IMEDIAPLAYER_H

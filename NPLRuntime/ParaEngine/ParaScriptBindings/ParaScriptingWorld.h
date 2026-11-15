@@ -26,7 +26,7 @@ namespace ParaScripting
 	using namespace std;
 	using namespace luabind;
 	using namespace ParaEngine;
-#ifdef PARAENGINE_CLIENT
+#ifndef NPLRUNTIME_SERVER
 	/**
 	* @ingroup ParaWorld
 	* 
@@ -81,7 +81,7 @@ namespace ParaScripting
 		* @param record: select record by ID
 		* @return true if the record is selected in database
 		*/
-		const char * SelectItemRecordToString(__int64 ID) const;
+		const char * SelectItemRecordToString(int64 ID) const;
 
 		// -------------------------------
 		//		Character database functions
@@ -202,7 +202,7 @@ namespace ParaScripting
 		union{
 			void* m_pDataProvider;
 			AttributeProvider* m_pAttributeProvider;
-#ifdef PARAENGINE_CLIENT
+#ifndef NPLRUNTIME_SERVER
 			CCharacterDB* m_pDbCharacter;
 			CKidsDBProvider* m_pDbKidsProvider;
 			CNpcDatabase* m_pDbNPC;
@@ -219,7 +219,7 @@ namespace ParaScripting
 		~ParaDataProvider(){};
 	public:
 
-#ifdef PARAENGINE_CLIENT
+#ifndef NPLRUNTIME_SERVER
 		static void GetKidsDBProvider(ParaKidsDataProvider* pOut);
 #endif
 		//////////////////////////////////////////////////////////////////////////

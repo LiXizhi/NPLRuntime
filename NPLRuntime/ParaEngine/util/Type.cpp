@@ -9,6 +9,7 @@
 // CTypeManager is a singleton. use CSingleton to access it.
 //-----------------------------------------------------------------------
 #include "ParaEngine.h"
+#include <cmath>
 #include "Type.h"
 #include "CSingleton.h"
 #include "StringHelper.h"
@@ -219,15 +220,13 @@ int ParaEngine::CInt32::Verify(const char* input) const
 		return Verify_Unknown;
 	}
 	int re = Verify_Success;
-#ifdef PARAENGINE_CLIENT
-	long long temp = _atoi64(input);
+	long long temp = std::strtoll(input, nullptr, 10);
 	if (temp > MaxValue){
 		re = Verify_Overflow;
 	}
 	else if (temp < MinValue){
 		re = Verify_Underflow;
 	}
-#endif
 	return re;
 }
 
@@ -276,16 +275,10 @@ int ParaEngine::CDouble::Verify(const char* input) const
 		return Verify_Unknown;
 	}
 	int re = Verify_Success;
-#ifdef PARAENGINE_CLIENT
 	double temp = atof(input);
-	int sign = _fpclass(temp);
-	if (temp == _FPCLASS_PINF){
-		re = Verify_Overflow;
+	if (std::isinf(temp)){
+		re = (temp > 0) ? Verify_Overflow : Verify_Underflow;
 	}
-	else if (temp == _FPCLASS_NINF){
-		re = Verify_Underflow;
-	}
-#endif
 	return re;
 }
 

@@ -123,7 +123,8 @@ ParaEngine::CUrlProcessor::CUrlProcessor()
 	:m_nTimeOutTime(DEFAULT_TIME_OUT), m_nStartTime(0), m_responseCode(0), m_nLastProgressTime(0),
 	m_pUserData(0), m_returnCode(CURLE_OK), m_type(URL_REQUEST_HTTP_AUTO),
 	m_nPriority(0), m_nStatus(URL_REQUEST_UNSTARTED), m_pfuncCallBack(0), m_nBytesReceived(0), m_pUploadContext(NULL),
-	m_nTotalBytes(0), m_nUserDataType(0), m_pFile(NULL), m_pThreadLocalData(NULL), m_bForbidReuse(false), m_bEnableProgressUpdate(true), m_bIsSyncCallbackMode(false), m_bEnableDataStreaming(false)
+	m_nTotalBytes(0), m_nUserDataType(0), m_pFile(NULL), m_pThreadLocalData(NULL), m_bForbidReuse(false), m_bEnableProgressUpdate(true), m_bIsSyncCallbackMode(false),
+	m_needResumeDownload(false), m_lastDownloadSize(0), m_bEnableDataStreaming(false)
 {
 #ifndef EMSCRIPTEN
 	m_pHttpHeaders = 0;
@@ -136,7 +137,8 @@ ParaEngine::CUrlProcessor::CUrlProcessor(const string& url, const string& npl_ca
 	:m_nTimeOutTime(DEFAULT_TIME_OUT), m_nStartTime(0), m_responseCode(0), m_nLastProgressTime(0),
 	m_pUserData(0), m_returnCode(CURLE_OK), m_type(URL_REQUEST_HTTP_AUTO),
 	m_nPriority(0), m_nStatus(URL_REQUEST_UNSTARTED), m_pfuncCallBack(0), m_nBytesReceived(0), m_pUploadContext(NULL),
-	m_nTotalBytes(0), m_nUserDataType(0), m_pFile(NULL), m_pThreadLocalData(NULL), m_bEnableProgressUpdate(true), m_bIsSyncCallbackMode(false), m_bEnableDataStreaming(false)
+	m_nTotalBytes(0), m_nUserDataType(0), m_pFile(NULL), m_pThreadLocalData(NULL), m_bForbidReuse(false), m_bEnableProgressUpdate(true), m_bIsSyncCallbackMode(false),
+	m_needResumeDownload(false), m_lastDownloadSize(0), m_bEnableDataStreaming(false)
 {
 #ifndef EMSCRIPTEN
 	m_pHttpHeaders = 0;
@@ -570,6 +572,11 @@ void ParaEngine::CUrlProcessor::SetForbidReuse(bool bForbidReuse)
 	m_bForbidReuse = bForbidReuse;
 }
 
+void ParaEngine::CUrlProcessor::SetNeedResumeDownload(bool needResume)
+{
+	m_needResumeDownload = needResume;
+}
+
 int ParaEngine::CUrlProcessor::GetTotalBytes()
 {
 	//ParaEngine::Lock lock_(m_mutex);
@@ -603,6 +610,19 @@ void ParaEngine::CUrlProcessor::SetCurlEasyOpt(CURL* handle)
 	m_header.clear();
 	m_nLastProgressTime = 0;
 	curl_easy_setopt(handle, CURLOPT_URL, m_url.c_str());
+
+	m_lastDownloadSize = 0;
+	if (m_needResumeDownload && !m_sSaveToFileName.empty() && CParaFile::DoesFileExist(m_sSaveToFileName.c_str()))
+	{
+		CParaFile tempFile(m_sSaveToFileName.c_str());
+		m_lastDownloadSize = (long)tempFile.getSize();
+		m_nBytesReceived = m_lastDownloadSize;
+		tempFile.close();
+		if (m_lastDownloadSize > 0)
+		{
+			curl_easy_setopt(handle, CURLOPT_RESUME_FROM, m_lastDownloadSize);
+		}
+	}
 
 	bool bIsSMTP = false;
 	bool bIsCustomRequest = false;
@@ -820,10 +840,27 @@ size_t ParaEngine::CUrlProcessor::write_data_callback(void *buffer, size_t size,
 		{
 			if (m_pFile == 0)
 			{
-				m_pFile = new CParaFile();
-				if (!m_pFile->CreateNewFile(m_sSaveToFileName.c_str(), true))
+				if (m_needResumeDownload && CParaFile::DoesFileExist(m_sSaveToFileName.c_str()))
 				{
-					OUTPUT_LOG("warning: Failed create new file %s\n", m_sSaveToFileName.c_str());
+					m_pFile = new CParaFile();
+					bool bSuc = m_pFile->OpenFile(m_sSaveToFileName.c_str(), false);
+					if (bSuc)
+					{
+						size_t len = m_pFile->getSize();
+						m_pFile->seek(len);
+					}
+					else
+					{
+						OUTPUT_LOG("warning: Failed open seek file %s\n", m_sSaveToFileName.c_str());
+					}
+				}
+				else
+				{
+					m_pFile = new CParaFile();
+					if (!m_pFile->CreateNewFile(m_sSaveToFileName.c_str(), true))
+					{
+						OUTPUT_LOG("warning: Failed create new file %s\n", m_sSaveToFileName.c_str());
+					}
 				}
 			}
 			m_pFile->write((const char*)buffer, (int)nByteCount);
@@ -891,6 +928,10 @@ int ParaEngine::CUrlProcessor::CUrl_progress_callback(void *clientp, double dlto
 
 int ParaEngine::CUrlProcessor::progress_callback(double dltotal, double dlnow, double ultotal, double ulnow)
 {
+	if (m_needResumeDownload && dltotal <= 0)
+	{
+		return 0;
+	}
 	DWORD nCurTime = ::GetTickCount();
 	const int nMinProgressCallbackInterval = 500;
 	if ((nCurTime - m_nLastProgressTime) > nMinProgressCallbackInterval)
@@ -904,6 +945,11 @@ int ParaEngine::CUrlProcessor::progress_callback(double dltotal, double dlnow, d
 			writer.BeginTable();
 			if (!m_sSaveToFileName.empty())
 			{
+				if (m_needResumeDownload)
+				{
+					dltotal += m_lastDownloadSize;
+					dlnow += m_lastDownloadSize;
+				}
 				// if a disk file name is specified, we shall also insert following field info to the message struct. 
 				// {DownloadState=""|"complete"|"terminated", totalFileSize=number, currentFileSize=number, PercentDone=number}
 				writer.WriteName("DownloadState");
@@ -913,7 +959,9 @@ int ParaEngine::CUrlProcessor::progress_callback(double dltotal, double dlnow, d
 				writer.WriteName("currentFileSize");
 				writer.WriteValue((int)dlnow);
 				writer.WriteName("PercentDone");
-				writer.WriteValue((float)(dlnow / dltotal));
+				writer.WriteValue(dltotal > 0 ? (float)(dlnow / dltotal) : 0.f);
+				writer.WriteName("resumeFrom");
+				writer.WriteValue((int)m_lastDownloadSize);
 			}
 			writer.EndTable();
 			writer.WriteParamDelimiter();
@@ -998,7 +1046,7 @@ void ParaEngine::CUrlProcessor::CompleteTask()
 			// if a disk file name is specified, we shall also insert following field info to the message struct. 
 			// {DownloadState=""|"complete"|"terminated", totalFileSize=number, currentFileSize=number, PercentDone=number}
 			writer.WriteName("DownloadState");
-			if (m_responseCode == 200 && m_returnCode == CURLE_OK)
+			if ((m_responseCode == 200 || (m_needResumeDownload && m_responseCode == 206)) && m_returnCode == CURLE_OK)
 			{
 				writer.WriteValue("complete");
 				string sTmp = string("NPL.AsyncDownload Completed:") + m_url + "\n";
@@ -1016,6 +1064,8 @@ void ParaEngine::CUrlProcessor::CompleteTask()
 			writer.WriteValue(m_nBytesReceived);
 			writer.WriteName("PercentDone");
 			writer.WriteValue(100);
+			writer.WriteName("resumeFrom");
+			writer.WriteValue((int)m_lastDownloadSize);
 		}
 
 

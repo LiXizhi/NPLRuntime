@@ -7,6 +7,7 @@
 // Containing the interface between script and the engine. 
 //----------------------------------------------------------------------
 #include "ParaEngine.h"
+#include <sstream>
 #include "ParaWorldAsset.h"
 #include "ParaScriptingPainter.h"
 #include "ParaScriptingGlobal.h"
@@ -681,11 +682,11 @@ void ParaScripting::ParaPainter::FlushCmdList(const std::string &cmds)
 
 			auto sColor = Color::FromString(color.c_str());
 			if (texture.empty()) {
-				m_pPainter->setPen(sColor);
+				m_pPainter->setBrush(QBrush(sColor));
 			} else {
 				texture = decode_cmd_arg(texture);
 				TextureEntity* pTexture = CGlobals::GetAssetManager()->LoadTexture("", texture);
-				if (pTexture != nullptr && (DWORD)sColor != 0) {
+				if (pTexture != nullptr || (DWORD)sColor != 0) {
 					QBrush brush(sColor, pTexture);
 					m_pPainter->setBrush(brush);
 				}
@@ -703,13 +704,15 @@ void ParaScripting::ParaPainter::FlushCmdList(const std::string &cmds)
 
 			auto sColor = Color::FromString(color.c_str());
 			if (texture.empty()) {
-				m_pPainter->setPen(sColor);
+				if ((DWORD)sColor != 0) {
+					m_pPainter->setBackground(QBrush(sColor));
+				}
 			} else {
 				texture = decode_cmd_arg(texture);
 				TextureEntity* pTexture = CGlobals::GetAssetManager()->LoadTexture("", texture);
-				if (pTexture != nullptr && (DWORD)sColor != 0) {
+				if (pTexture != nullptr || (DWORD)sColor != 0) {
 					QBrush brush(sColor, pTexture);
-					m_pPainter->setBrush(brush);
+					m_pPainter->setBackground(brush);
 				}
 			}
 		}

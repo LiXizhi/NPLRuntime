@@ -17,7 +17,6 @@ option(NPLRUNTIME_SERVER "Generate server ver" OFF)
 option(ANDROID_STUDIO "Generate AndroidStudio ver" OFF)
 option(PICO_VR "Generate PICO VR (OpenXR) ver, see Platform/PicoVR" OFF)
 option(NPLRUNTIME_OCE "include NplOce" OFF)
-option(NPLRUNTIME_DARKNET "darknet support" OFF)
 option(NPLRUNTIME_ENABLE_NULL "Enable Null headless ParaRHI backend" ON)
 if (NPLRUNTIME_SERVER)
 	option(NPLRUNTIME_ENABLE_OPENGL "Enable OpenGL/GLES/WebGL ParaRHI backend" OFF)
@@ -57,6 +56,11 @@ else ()
 endif ()
 
 project(${NPLRUNTIME_PROJECT_NAME})
+
+if (EMSCRIPTEN AND NPLRUNTIME_ENABLE_WEBGPU AND DEFINED EMSCRIPTEN_VERSION AND EMSCRIPTEN_VERSION VERSION_GREATER_EQUAL "4.0.10")
+	message(STATUS "Emscripten ${EMSCRIPTEN_VERSION} removed legacy -sUSE_WEBGPU=1; disabling RenderSystemWebGPU and using OpenGL/WebGL2 backend")
+	set(NPLRUNTIME_ENABLE_WEBGPU OFF CACHE BOOL "Enable WebGPU ParaRHI backend" FORCE)
+endif()
 
 # SDL 跨平台 window可以编译用于编写和调试代码, 非window默认通过LINUX宏开启SDL GUI
 # set(LOCAL_DEBUG TRUE)
@@ -214,6 +218,7 @@ elseif (WIN32)
 	option(NPLRUNTIME_AUDIO "include audio" ON)
 	option(NPLRUNTIME_HAQI_LAUNCHER "haqi launcher" OFF)
 	option(NPLRUNTIME_WEBVIEW "microsoft edge webview2 support" ON)
+	option(NPLRUNTIME_DARKNET "darknet support" ON)
 elseif (LINUX)
 	# Win32 Default Option
 	option(NPLRUNTIME_STATIC_LIB "static lib or not" ON)
@@ -328,6 +333,7 @@ if (MSVC)
 	set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
 endif ()
 
+option(NPLRUNTIME_DARKNET "darknet support" OFF)
 option(NPLRUNTIME_BUILD_TESTS "Enable ParaRHI and NPLRuntime CTest verification suite" ON)
 
 add_subdirectory(externals)

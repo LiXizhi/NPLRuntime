@@ -75,4 +75,63 @@ namespace ParaEngine {
 		return g_str.c_str();
 	}
 
+	bool CEditorHelper::CreateEmptyCharacterEventFileShared(const char* scriptFile, const char* sName)
+	{
+		if (!scriptFile || !sName)
+			return false;
+
+		string sScriptFile;
+		CPathReplaceables::GetSingleton().DecodePath(sScriptFile, scriptFile);
+		if (!CParaFile::DoesFileExist(sScriptFile.c_str(), false))
+		{
+			CParaFile file;
+			if (file.CreateNewFile(sScriptFile.c_str(), true))
+			{
+				int nSize = (int)strlen(sName);
+				char name[MAX_PATH];
+				if (nSize >= MAX_PATH - 2)
+					nSize = MAX_PATH - 3;
+
+				int j = 0;
+				for (int i = 0; i < nSize && j < MAX_PATH - 2; ++i, ++j)
+				{
+					char c = sName[i];
+					if ((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z'))
+					{
+						name[j] = c;
+					}
+					else if (c >= '0' && c <= '9')
+					{
+						if (i == 0)
+						{
+							name[j] = '_';
+							j++;
+						}
+						name[j] = c;
+					}
+					else
+					{
+						name[j] = '_';
+					}
+				}
+				name[j] = '\0';
+
+				CParaFile cTemplate(":IDR_NPL_CHARACTER_EVENTS");
+				if (!cTemplate.isEof() && cTemplate.getBuffer() != nullptr)
+				{
+					int bufSize = (int)(cTemplate.getSize() + j * 20 + 128);
+					std::vector<char> buffer(bufSize, 0);
+					time_t ltime = 0;
+					time(&ltime);
+					const char* timeStr = ctime(&ltime);
+					snprintf(buffer.data(), bufSize, cTemplate.getBuffer(), name, timeStr ? timeStr : "",
+						name, name, name, name, name, name, name, name, name);
+					file.write(buffer.data(), (int)strlen(buffer.data()));
+				}
+				return true;
+			}
+		}
+		return false;
+	}
+
 } // end namespace

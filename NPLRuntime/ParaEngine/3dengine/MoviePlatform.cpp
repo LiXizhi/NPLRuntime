@@ -132,7 +132,7 @@ IMovieCodec* CMoviePlatform::GetMovieCodec(bool bCreateIfNotExist)
 				if (pPluginEntity != 0 && pPluginEntity->IsValid())
 				{
 					m_nMovieCodecVersion = pPluginEntity->GetLibVersion();
-					if (m_nMovieCodecVersion >= 3)
+					if (m_nMovieCodecVersion >= 9)
 					{
 						for (int i = 0; i < pPluginEntity->GetNumberOfClasses(); ++i)
 						{
@@ -146,8 +146,8 @@ IMovieCodec* CMoviePlatform::GetMovieCodec(bool bCreateIfNotExist)
 					}
 					else
 					{
-						OUTPUT_LOG("movie codec require at least version 3 but you only have version %d\n", pPluginEntity->GetLibVersion());
-						CGlobals::GetApp()->SystemMessageBox("MovieCodec plugin needs at least version 3. Please update from official website!");
+						OUTPUT_LOG("movie codec require at least version 9 but you only have version %d\n", m_nMovieCodecVersion);
+						CGlobals::GetApp()->SystemMessageBox("MovieCodec plugin needs at least version 9. Please update from official website!");
 					}
 				}
 			}
@@ -975,7 +975,7 @@ bool CMoviePlatform::BeginCapture(const string& sFileName)
 	int captureTexWidth = GetScreenWidth();
 	int captureTexHeight = GetScreenHeight();
 #ifdef PLATFORM_WINDOWS
-	if (pMovieCodec->BeginCapture(sFileName.c_str(), CGlobals::GetAppHWND(), MarginLeft(), MarginTop(), captureTexWidth - MarginLeft() - MarginRight(), captureTexHeight - MarginTop() - MarginBottom(), m_nRecordingFPS) != 0)
+	if (pMovieCodec->BeginCapture(fileName.c_str(), CGlobals::GetAppHWND(), MarginLeft(), MarginTop(), captureTexWidth - MarginLeft() - MarginRight(), captureTexHeight - MarginTop() - MarginBottom(), m_nRecordingFPS) != 0)
 	{
 		m_recorderState = RECORDER_STATE_END;
 		InvalidateDeviceObjects();

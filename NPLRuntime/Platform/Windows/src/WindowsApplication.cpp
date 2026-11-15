@@ -78,6 +78,10 @@
 #include <cstdlib>
 #include <sstream>
 #include <vector>
+#include <objbase.h>
+#include <objidl.h>
+#include <gdiplus.h>
+#include "resource.h"
 
 HINSTANCE g_hAppInstance = nullptr;
 
@@ -181,6 +185,10 @@ namespace ParaEngine
 		, m_nCreationWidth(1020)
 		, m_nCreationHeight(680)
 		, m_nMultiSampleType(0)
+		, m_nMultiSampleQuality(0)
+		, m_hMenu(nullptr)
+		, m_bComInitialized(false)
+		, m_gdiplusToken(0)
 		, m_bUpdateScreenDevice(false)
 		, m_bSizeChanged(false)
 		, m_bModeChanged(false)
@@ -196,10 +204,38 @@ namespace ParaEngine
 	{
 		memset(&m_wpPrev, 0, sizeof(m_wpPrev));
 		m_wpPrev.length = sizeof(m_wpPrev);
+
+		HRESULT hrCom = ::CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED);
+		if (SUCCEEDED(hrCom))
+		{
+			m_bComInitialized = true;
+		}
+
+		Gdiplus::GdiplusStartupInput gdiplusStartupInput;
+		ULONG_PTR gdiplusToken = 0;
+		if (Gdiplus::GdiplusStartup(&gdiplusToken, &gdiplusStartupInput, nullptr) == Gdiplus::Ok)
+		{
+			m_gdiplusToken = static_cast<uintptr_t>(gdiplusToken);
+		}
 	}
 
 	CWindowsApplication::~CWindowsApplication()
 	{
+		if (m_hMenu)
+		{
+			::DestroyMenu(m_hMenu);
+			m_hMenu = nullptr;
+		}
+		if (m_gdiplusToken != 0)
+		{
+			Gdiplus::GdiplusShutdown(static_cast<ULONG_PTR>(m_gdiplusToken));
+			m_gdiplusToken = 0;
+		}
+		if (m_bComInitialized)
+		{
+			::CoUninitialize();
+			m_bComInitialized = false;
+		}
 	}
 
 	void CWindowsApplication::GameToClient(int& inout_x, int& inout_y, bool bInBackbuffer /*= true*/)
@@ -700,13 +736,54 @@ namespace ParaEngine
 
 	void CWindowsApplication::SetMultiSampleType(int nType)
 	{
-		m_nMultiSampleType = nType;
-		m_cfg.msaaSamples = static_cast<uint32_t>((std::max)(0, nType));
+		if (m_nMultiSampleType != nType)
+		{
+			m_nMultiSampleType = nType;
+			m_cfg.msaaSamples = static_cast<uint32_t>((std::max)(0, nType));
+			m_bSizeChanged = true;
+		}
 	}
 
 	int CWindowsApplication::GetMultiSampleType()
 	{
 		return m_nMultiSampleType;
+	}
+
+	void CWindowsApplication::SetMultiSampleQuality(int nType)
+	{
+		if (m_nMultiSampleQuality != nType)
+		{
+			m_nMultiSampleQuality = nType;
+			m_bSizeChanged = true;
+		}
+	}
+
+	int CWindowsApplication::GetMultiSampleQuality()
+	{
+		return m_nMultiSampleQuality;
+	}
+
+	void CWindowsApplication::ShowMenu(bool bShow)
+	{
+		HWND hWnd = CGlobals::GetAppHWND();
+		if (!hWnd || !::IsWindow(hWnd))
+			return;
+
+		if (bShow)
+		{
+			if (!m_hMenu)
+			{
+				m_hMenu = ::LoadMenuW(GetModuleHandle(), MAKEINTRESOURCEW(IDR_MENU));
+			}
+			if (m_hMenu)
+			{
+				::SetMenu(hWnd, m_hMenu);
+			}
+		}
+		else
+		{
+			::SetMenu(hWnd, nullptr);
+		}
 	}
 
 	bool CWindowsApplication::InitApp(IRenderWindow* pWindow, const char* sCommandLine)
@@ -733,11 +810,11 @@ namespace ParaEngine
 		RHIBackendRegistry::GetInstance().RegisterBackend(ERHIBackend::OpenGL, "OpenGL", CreateRenderContextWGL, 50);
 #endif
 
-		// Parse command line & locate working directory first so servermode, parentwindow, fullscreen, and config/config.txt work immediately
+		// Locate working directory first so ParaEngine.sig, VerifyCommandLine, and config/config.txt resolve relative paths properly
+		FindParaEngineDirectory();
 		std::string verifiedCmd;
 		VerifyCommandLine(sCommandLine, verifiedCmd);
 		SetAppCommandLine(verifiedCmd.c_str());
-		FindParaEngineDirectory();
 
 		BootStrapAndLoadConfig();
 		LoadAndApplySettings();
@@ -1101,8 +1178,28 @@ namespace ParaEngine
 
 	void CWindowsApplication::GetVisibleSize(Vector2* pOut)
 	{
-		if (pOut)
-			*pOut = Vector2(static_cast<float>(m_cfg.screenWidth), static_cast<float>(m_cfg.screenHeight));
+		if (!pOut)
+			return;
+		HWND hWnd = CGlobals::GetAppHWND();
+		if (hWnd && ::IsWindow(hWnd))
+		{
+			RECT rc = {};
+			if (::GetClientRect(hWnd, &rc))
+			{
+				int w = rc.right - rc.left;
+				int h = rc.bottom - rc.top;
+				if (w > 0 && h > 0)
+				{
+					if (IsRotateScreen())
+					{
+						std::swap(w, h);
+					}
+					*pOut = Vector2(static_cast<float>(w), static_cast<float>(h));
+					return;
+				}
+			}
+		}
+		*pOut = Vector2(static_cast<float>(m_cfg.screenWidth), static_cast<float>(m_cfg.screenHeight));
 	}
 
 	void CWindowsApplication::BringWindowToTop()

@@ -16,6 +16,6 @@ else()
 		set(LUA_STATICLIB TRUE)
 	endif()
 	add_subdirectory(code)
-	target_include_directories(luajit20 INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/include)
+	target_include_directories(luajit20 INTERFACE ${CMAKE_CURRENT_BINARY_DIR}/code ${CMAKE_CURRENT_SOURCE_DIR}/include)
 endif()
 

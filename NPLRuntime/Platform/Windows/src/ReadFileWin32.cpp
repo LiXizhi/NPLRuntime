@@ -8,6 +8,7 @@
 //-----------------------------------------------------------------------------
 #include "ParaEngine.h"
 #include "ReadFileWin32.h"
+#include "StringHelper.h"
 #include <stdio.h>
 
 using namespace ParaEngine;
@@ -72,6 +73,8 @@ uint32_t CReadFileWin32::getSize()
 /// returns where in the file we are.
 uint32_t CReadFileWin32::getPos()
 {
+	if (!isOpen())
+		return 0;
 	return ftell(m_pFile);
 }
 
@@ -88,7 +91,12 @@ void CReadFileWin32::openFile()
 
 	std::string filename = m_Filename;
 	CParaFile::DoesFileExist2(m_Filename.c_str(), FILE_ON_DISK | FILE_ON_SEARCH_PATH, &filename);
+#if WIN32 && defined(DEFAULT_FILE_ENCODING)
+	std::wstring filename16 = StringHelper::MultiByteToWideChar(filename.c_str(), DEFAULT_FILE_ENCODING);
+	m_pFile = _wfopen(filename16.c_str(), L"rb");
+#else
 	m_pFile = fopen(filename.c_str(), "rb");
+#endif
 
 	if (m_pFile)
 	{

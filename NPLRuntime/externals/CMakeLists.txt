@@ -37,6 +37,13 @@ if (NOT EMSCRIPTEN)
 else()
 	# Match the SDK's -sUSE_ZLIB port, including FreeType's gzip support.
 	# The embedded FreeType zlib lacks the DEBUG tracing definitions.
+	if (CMAKE_SYSROOT AND NOT EXISTS "${CMAKE_SYSROOT}/include/zlib.h")
+		find_program(_NPL_EMBUILDER NAMES embuilder embuilder.bat)
+		if (_NPL_EMBUILDER)
+			message(STATUS "Bootstrapping Emscripten ports (zlib libpng libjpeg sdl2) via ${_NPL_EMBUILDER}...")
+			execute_process(COMMAND "${_NPL_EMBUILDER}" build zlib libpng libjpeg sdl2 RESULT_VARIABLE _NPL_EMBUILDER_RC)
+		endif()
+	endif()
 	find_package(ZLIB REQUIRED)
 endif()
 

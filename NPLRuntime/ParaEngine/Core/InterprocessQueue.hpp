@@ -508,7 +508,7 @@ namespace ParaEngine
 	class CInterprocessQueueT
 	{
 	public:
-		typedef boost::shared_ptr< typename MessageQueueType > message_queue_t;
+		typedef boost::shared_ptr<MessageQueueType> message_queue_t;
 		typedef boost::array<char, MAX_PACKET_SIZE> Buffer_Type;
 
 		/** Since the message queue is a global object, it is not removed even the queue object is deleted. 
@@ -518,8 +518,10 @@ namespace ParaEngine
 		* @param	usage			The usage. The most common usage is perhaps IPQU_open_or_create
 		*/
 		CInterprocessQueueT(const char* sQueueName, IPQueueUsageEnum usage = IPQU_open_or_create)
-			:m_sQueueName(sQueueName), m_usage(usage), m_queue_size(MAX_QUEUE_SIZE), m_max_packet_size(MAX_PACKET_SIZE)
+			:m_sQueueName(sQueueName ? sQueueName : ""), m_usage(usage), m_queue_size(MAX_QUEUE_SIZE), m_max_packet_size(MAX_PACKET_SIZE)
 		{
+			if (m_sQueueName.empty())
+				return;
 			using namespace boost::interprocess;
 			try
 			{
@@ -528,9 +530,9 @@ namespace ParaEngine
 				case IPQU_create_only:
 					{
 						//Erase previous message queue
-						typename MessageQueueType::remove(m_sQueueName.c_str());
+						MessageQueueType::remove(m_sQueueName.c_str());
 						//Create a message_queue.
-						m_msg_queue.reset(new (typename MessageQueueType)(create_only //only create
+						m_msg_queue.reset(new MessageQueueType(create_only //only create
 							,m_sQueueName.c_str()				//name
 							,m_queue_size              //max message number
 							,m_max_packet_size              //max message size
@@ -541,13 +543,13 @@ namespace ParaEngine
 				case IPQU_open_only:
 					{
 						//Opens a message_queue. If the queue, does not exist throws an exception.
-						m_msg_queue.reset(new (typename MessageQueueType)(open_only,m_sQueueName.c_str()));
+						m_msg_queue.reset(new MessageQueueType(open_only,m_sQueueName.c_str()));
 						break;
 					}
 				case IPQU_open_or_create:
 					{
 						//Create a message_queue.
-						m_msg_queue.reset(new (typename MessageQueueType)(open_or_create 
+						m_msg_queue.reset(new MessageQueueType(open_or_create 
 							,m_sQueueName.c_str()				//name
 							,m_queue_size              //max message number
 							,m_max_packet_size         //max message size
@@ -593,7 +595,7 @@ namespace ParaEngine
 		{
 			try
 			{
-				typename MessageQueueType::remove(m_sQueueName.c_str());
+				MessageQueueType::remove(m_sQueueName.c_str());
 			}
 			catch ( ... )
 			{
@@ -872,6 +874,7 @@ namespace ParaEngine
 #ifdef WIN32
 	typedef CInterprocessQueueT<2000, 256, ParaEngine::interprocess::message_queue_win32> CInterprocessQueue;
 #else
+	typedef CInterprocessQueueT<2000, 256, boost::interprocess::message_queue>	CInterprocessQueue;
 	typedef CInterprocessQueueT<2000, 256, boost::interprocess::message_queue>	CInterprocessQueueFile;
 #endif
 

@@ -364,10 +364,10 @@ bool CNpcDatabase::SelectNPCByID(int nNPCID, CNpcDbItem& out)
 				out.m_nID = nNPCID;
 				int i=0;
 				CICRecordSetItem& item = (*rs)[0];
-				out.m_sName = item;
+				out.m_sName = (const char*)item ? (const char*)item : "";
 
 				item = (*rs)[++i]; 
-				out.m_sAssetName = item;
+				out.m_sAssetName = (const char*)item ? (const char*)item : "";
 
 				item = (*rs)[++i]; 
 				out.m_bIsGlobal = item;
@@ -478,7 +478,7 @@ bool CNpcDatabase::SelectNPCByID(int nNPCID, CNpcDbItem& out)
 				out.m_dwSentientField = item;
 
 				item = (*rs)[++i]; 
-				out.m_sOnLoadScript = item;
+				out.m_sOnLoadScript = (const char*)item ? (const char*)item : "";
 
 				item = (*rs)[++i]; 
 				void* pData = item;
@@ -537,7 +537,7 @@ bool CNpcDatabase::SelectNPCByName(const string& sName, CNpcDbItem& out)
 				out.m_nID = item;
 
 				item = (*rs)[++i]; 
-				out.m_sAssetName = item;
+				out.m_sAssetName = (const char*)item ? (const char*)item : "";
 
 				item = (*rs)[++i]; 
 				out.m_bIsGlobal = item;
@@ -648,7 +648,7 @@ bool CNpcDatabase::SelectNPCByName(const string& sName, CNpcDbItem& out)
 				out.m_dwSentientField = item;
 
 				item = (*rs)[++i]; 
-				out.m_sOnLoadScript = item;
+				out.m_sOnLoadScript = (const char*)item ? (const char*)item : "";
 
 				item = (*rs)[++i]; 
 				void* pData = item;
@@ -819,10 +819,10 @@ bool CNpcDatabase::SelectNPCListByRegion(NPCDBItemList* pOut, const Vector3& vMi
 				out.m_nID = item;
 
 				item = (*rs)[++i];
-				out.m_sName = item;
+				out.m_sName = (const char*)item ? (const char*)item : "";
 
 				item = (*rs)[++i]; 
-				out.m_sAssetName = item;
+				out.m_sAssetName = (const char*)item ? (const char*)item : "";
 
 				item = (*rs)[++i]; 
 				out.m_bIsGlobal = item;
@@ -933,7 +933,7 @@ bool CNpcDatabase::SelectNPCListByRegion(NPCDBItemList* pOut, const Vector3& vMi
 				out.m_dwSentientField = item;
 
 				item = (*rs)[++i]; 
-				out.m_sOnLoadScript = item;
+				out.m_sOnLoadScript = (const char*)item ? (const char*)item : "";
 
 				item = (*rs)[++i]; 
 				void* pData = item;

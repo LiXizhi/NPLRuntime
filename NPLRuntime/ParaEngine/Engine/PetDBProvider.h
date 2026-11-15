@@ -1,7 +1,7 @@
 #pragma once
 #include "InfoCenter/ParaDatabase.h"
-#include ".\StringTable.h"
-#include ".\PetAIDBProvider.h"
+#include "StringTable.h"
+#include "PetAIDBProvider.h"
 
 #include <vector>
 

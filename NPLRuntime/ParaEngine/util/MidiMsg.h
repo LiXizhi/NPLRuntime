@@ -18,6 +18,7 @@ namespace ParaEngine
 
 		static CMidiMsg& GetSingleton();
 		int PlayMidiMsg(DWORD dwMsg);
+		int StopMidiMsg(int channel = 0);
 
 		void SafeRelease();
 

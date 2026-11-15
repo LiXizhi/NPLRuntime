@@ -1662,7 +1662,7 @@ void CParaEngineAppBase::LoadPackages()
 	if (sPackages)
 	{
 		std::vector<std::string> listPackages;
-		StringHelper::split(sPackages, ";", listPackages);
+		StringHelper::split(sPackages, ",;", listPackages);
 		for (const std::string& package : listPackages)
 		{
 			std::string sOutputFile;
@@ -1727,7 +1727,15 @@ bool CParaEngineAppBase::FindParaEngineDirectory(const char* sHint)
 				bFoundSigFile = true;
 
 			if (bFoundSigFile)
-                ::SetCurrentDirectory(workingDir.c_str());
+			{
+#if defined(WIN32) && defined(DEFAULT_FILE_ENCODING)
+				const WCHAR* pWideDir = StringHelper::MultiByteToWideChar(workingDir.c_str(), DEFAULT_FILE_ENCODING);
+				if (pWideDir)
+					::SetCurrentDirectoryW(pWideDir);
+#else
+				::SetCurrentDirectory(workingDir.c_str());
+#endif
+			}
 		}
 
 		/// set the current directory by reading from the registry.
@@ -1751,12 +1759,19 @@ bool CParaEngineAppBase::FindParaEngineDirectory(const char* sHint)
 	}
 
 	{
+#if defined(WIN32) && defined(DEFAULT_FILE_ENCODING)
+		WCHAR wWorkingDir[512 + 1] = { 0 };
+		::GetCurrentDirectoryW(512, wWorkingDir);
+		const char* pUtf8Dir = StringHelper::WideCharToMultiByte(wWorkingDir, DEFAULT_FILE_ENCODING);
+		m_sInitialWorkingDir = pUtf8Dir ? pUtf8Dir : "";
+#else
 		char sWorkingDir[512 + 1] = { 0 };
 		memset(sWorkingDir, 0, sizeof(sWorkingDir));
 		::GetCurrentDirectory(MAX_PATH, sWorkingDir);
 		m_sInitialWorkingDir = sWorkingDir;
+#endif
 #ifdef PARAENGINE_MOBILE
-		CGlobals::GetFileManager()->AddDiskSearchPath(sWorkingDir);
+		CGlobals::GetFileManager()->AddDiskSearchPath(m_sInitialWorkingDir.c_str());
 #endif
 	}
 #endif
@@ -1770,6 +1785,11 @@ void ParaEngine::CParaEngineAppBase::BootStrapAndLoadConfig()
 		/// load settings from config/config.txt or config/config.new.txt
 		string sConfigFile = CParaFile::GetCurDirectory(CParaFile::APP_CONFIG_DIR) + "config.new.txt";
 		bool bHasNewConfig = CParaFile::DoesFileExist(sConfigFile.c_str());
+		if (!bHasNewConfig && HasNewConfig() && CBootStrapper::GetSingleton()->GetConfigFile().empty())
+		{
+			// config.new.txt was already loaded and consumed earlier in startup; do not overwrite it with config.txt
+			return;
+		}
 		if (bHasNewConfig)
 			SetHasNewConfig(true);
 		if (!bHasNewConfig)

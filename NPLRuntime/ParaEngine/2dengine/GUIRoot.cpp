@@ -80,6 +80,7 @@ The GUIRoot object contains the top level mouse focus object.
 #include "StringHelper.h"
 #include "ParaRay.h"
 #include "GUIRoot.h"
+#include <cmath>
 #include "memdebug.h"
 #include <boost/regex.hpp>
 #include <boost/format.hpp>
@@ -94,7 +95,7 @@ using namespace ParaEngine;
 
 DWORD CGUIRoot::WheelScrollLines = 3;
 DWORD CGUIRoot::KeyDelay = 200;
-DWORD CGUIRoot::KeyRepeat = 300;
+DWORD CGUIRoot::KeyRepeat = 30;
 DWORD CGUIRoot::MouseHover = 200;
 int CGUIRoot::MouseThreshold1 = 1000;
 int CGUIRoot::MouseThreshold2 = 1000;
@@ -322,6 +323,7 @@ void CGUIRoot::DeleteGUIObject(CGUIBase * pObj)
 	if (pObj->m_parent)
 	{
 		pObj->m_parent->UpdateClientRect(*pObj->GetPosition(), true);
+		pObj->m_parent->SetDirty(true);
 		CGUIBase* keyfocus = NULL;
 		CGUIBase* mousefocus = NULL;
 		if (pObj->m_parent) {
@@ -1548,6 +1550,18 @@ int CGUIRoot::HandleUserInput()
 	}
 	m_deleteQueue.clear();
 
+#if !defined(PARAENGINE_MOBILE) && !defined(EMSCRIPTEN) && !defined(NPLRUNTIME_SERVER)
+	if (!m_bMouseProcessed && m_pMouse != 0)
+	{
+		int nHotSpotX = -1;
+		int nHotSpotY = -1;
+		const std::string& sCursorFile = CGlobals::GetScene()->GetCursor(&nHotSpotX, &nHotSpotY);
+		if (!sCursorFile.empty())
+		{
+			m_pMouse->SetCursorFromFile(sCursorFile.c_str(), nHotSpotX, nHotSpotY);
+		}
+	}
+#endif
 	return 0;
 }
 

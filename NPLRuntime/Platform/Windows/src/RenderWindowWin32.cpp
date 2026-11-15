@@ -309,6 +309,8 @@ namespace ParaEngine {
 		case WM_LBUTTONDOWN:
 			if (IsSynthesizedTouchMouseMessage())
 				return 0;
+			if (CGlobals::GetApp())
+				CGlobals::GetApp()->SetTouchInputting(false);
 			window->m_MouseState[(uint32_t)EMouseButton::LEFT] = EKeyState::PRESS;
 			window->OnMouseButton(EMouseButton::LEFT, EKeyState::PRESS, xPos, yPos);
 			window->CheckFocus();
@@ -323,6 +325,8 @@ namespace ParaEngine {
 		case WM_RBUTTONDOWN:
 			if (IsSynthesizedTouchMouseMessage())
 				return 0;
+			if (CGlobals::GetApp())
+				CGlobals::GetApp()->SetTouchInputting(false);
 			window->m_MouseState[(uint32_t)EMouseButton::RIGHT] = EKeyState::PRESS;
 			window->OnMouseButton(EMouseButton::RIGHT, EKeyState::PRESS, xPos, yPos);
 			window->CheckFocus();
@@ -337,6 +341,8 @@ namespace ParaEngine {
 		case WM_MBUTTONDOWN:
 			if (IsSynthesizedTouchMouseMessage())
 				return 0;
+			if (CGlobals::GetApp())
+				CGlobals::GetApp()->SetTouchInputting(false);
 			window->m_MouseState[(uint32_t)EMouseButton::MIDDLE] = EKeyState::PRESS;
 			window->OnMouseButton(EMouseButton::MIDDLE, EKeyState::PRESS, xPos, yPos);
 			window->CheckFocus();
@@ -367,6 +373,7 @@ namespace ParaEngine {
 		{
 			if (CGUIRoot::GetInstance() && CGlobals::GetApp() && CGlobals::GetApp()->GetAppState() == PEAppState_Ready)
 			{
+				CGlobals::GetApp()->SetTouchInputting(true);
 				POINT pt = { GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam) };
 				::ScreenToClient(hWnd, &pt);
 				int tx = pt.x;
@@ -610,9 +617,9 @@ namespace ParaEngine {
 		
 		case WM_SYSKEYDOWN:
 		case WM_SYSKEYUP:
-			if (wParam == VK_F4 && (lParam & (1 << 29)) != 0)
+			if ((wParam == VK_F4 || wParam == VK_SPACE) && (lParam & (1 << 29)) != 0)
 			{
-				break; // Allow Alt+F4 to trigger WM_CLOSE
+				break; // Allow Alt+F4 and Alt+Space
 			}
 			return 0;
 		
@@ -932,7 +939,7 @@ namespace ParaEngine {
 		MSG  msg;
 		while (PeekMessageW(&msg, NULL, 0, 0, PM_REMOVE)) {
 			ProcessInput(msg);
-			if (m_hWnd && m_hAccel && TranslateAcceleratorW(m_hWnd, m_hAccel, &msg) != 0) return;
+			if (m_hWnd && m_hAccel && TranslateAcceleratorW(m_hWnd, m_hAccel, &msg) != 0) continue;
 			// translate keystroke messages into the right format
 			TranslateMessage(&msg);
 

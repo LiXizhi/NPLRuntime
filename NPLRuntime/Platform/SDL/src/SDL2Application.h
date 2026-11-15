@@ -53,7 +53,10 @@ namespace ParaEngine
 
 		virtual bool InitApp(IRenderWindow* pWindow, const char* sCommandLine /* = nullptr */) override;
 	
-		virtual void StopApp() override { CParaEngineAppBase::StopApp(); m_exit = true; }
+		virtual void StopApp() override { CParaEngineAppBase::StopApp(); m_exit = true; MainLoopStop(); }
+
+		/** Forward paracraft:// URL or .p3d command line to an already-running Linux desktop instance via AF_UNIX socket */
+		static bool TryForwardToExistingInstance(const std::string& cmdLine);
 		
 		virtual void setIMEKeyboardState(bool bOpen, bool bMoveView = false, int ctrlBottom = -1, const string& editParams="") override;
 
@@ -119,5 +122,12 @@ namespace ParaEngine
 		bool m_exit;
 		std::string m_title;
     	bool m_is_wps_office_app;
+		bool m_bAutoLowerFrameRateWhenNotFocused;
+		bool m_bToggleSoundWhenNotFocused;
+		int m_ipcListenFd;
+		std::string m_ipcSockPath;
+		void InitSingleInstanceListener();
+		void PollSingleInstanceSocket();
+		void CloseSingleInstanceListener();
 	};
 }

@@ -5,6 +5,7 @@
 #include "IParaWebView.h"
 
 #include <boost/shared_ptr.hpp>
+#include <memory>
 #include <string>
 
 namespace ParaScripting
@@ -29,6 +30,6 @@ namespace ParaScripting
 		typedef boost::shared_ptr<IParaWebView> IParaWebView_ptr;
 
 	private:
-		IParaWebView_ptr m_pParaWebView;
+		std::shared_ptr<IParaWebView_ptr> m_pParaWebView;
 	};
 } // end namespace

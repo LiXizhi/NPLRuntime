@@ -19,6 +19,8 @@ CStaticInitRes::CStaticInitRes()
 	ADD_RESOURCE(":IDR_PARAXTEMPLATE", ParaXmodel_templates);
 	ADD_RESOURCE(":IDR_DEFAULT_CURSOR", cursor_tga);
 	ADD_RESOURCE(":IDR_PARAWORLD_ICO", paraworld_ico);
+	ADD_RESOURCE(":IDR_DB_NPC_TABLE", db_create_npc_table_sql);
+	ADD_RESOURCE(":IDR_NPL_CHARACTER_EVENTS", character_script_template_txt);
 
 	// Embedded shader #include headers
 	ADD_RESOURCE(":IDR_SHADER_INC_COMMON_SHADER_DATA", common_shader_data_h);

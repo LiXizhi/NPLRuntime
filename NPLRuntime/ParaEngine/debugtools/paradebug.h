@@ -14,17 +14,17 @@
 // #ifdef _PERFORMANCE_MONITOR
 #include "Profiler.h"
 
-#ifdef PARAENGINE_CLIENT
+#if defined(WIN32) && !defined(PARAENGINE_MOBILE) && !defined(NPLRUNTIME_SERVER)
 #define OUTPUT_DEFAULT_ERROR(a) InterpretError((a),__FILE__,__LINE__);
 #define OUTPUT_INTEGER_ERROR(a) InterpretError((a),__FILE__,__LINE__);
 
 /**
 * Output to log file the interpreted error
 */
-extern void InterpretError(HRESULT hr, const char * sFile, int nLine);
+PE_CORE_DECL void InterpretError(HRESULT hr, const char * sFile, int nLine);
 
 /** call this function to save mini-dump to the current directory.*/
-extern int GenerateDump(EXCEPTION_POINTERS* pExceptionPointers);
+PE_CORE_DECL int GenerateDump(EXCEPTION_POINTERS* pExceptionPointers);
 
 /**
 * This is some error facility type definition, in case the winerror.h is not up to date

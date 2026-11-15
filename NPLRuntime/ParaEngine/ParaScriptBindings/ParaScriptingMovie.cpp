@@ -66,17 +66,17 @@ namespace ParaScripting
 
 	bool ParaMovie::TakeScreenShot(const char* filename)
 	{
-		return CGlobals::GetMoviePlatform()->TakeScreenShot(filename);
+		return filename ? CGlobals::GetMoviePlatform()->TakeScreenShot(filename) : false;
 	}
 
 	bool ParaMovie::TakeScreenShot3(const char* filename, int width, int height)
 	{
-		return CGlobals::GetMoviePlatform()->TakeScreenShot(filename, width, height);
+		return filename ? CGlobals::GetMoviePlatform()->TakeScreenShot(filename, width, height) : false;
 	}
 
     bool ParaMovie::TakeScreenShot4(const char* filename, int width, int height, bool isCenter)
     {
-        return CGlobals::GetMoviePlatform()->TakeScreenShot(filename, width, height, isCenter);
+        return filename ? CGlobals::GetMoviePlatform()->TakeScreenShot(filename, width, height, isCenter) : false;
     }
 
 	void ParaMovie::TakeScreenShot_Async(const char* filename, const char* sCallBackScript)

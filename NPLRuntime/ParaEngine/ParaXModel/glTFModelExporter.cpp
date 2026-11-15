@@ -376,7 +376,7 @@ namespace ParaEngine
 					uint32_t offset3 = secondS - firstS + 1;
 					uint32_t animStart = firstT;
 					uint32_t animEnd = secondT;
-					if (offset1 > offset3 && offset1 > offset3)
+					if (offset1 > offset2 && offset1 > offset3)
 					{
 						animStart = firstT;
 						animEnd = secondT;
@@ -1419,14 +1419,22 @@ namespace ParaEngine
 		metallic.baseColorFactor[3] = 1.0;
 
 		uint32_t numTextures = paraXModel->m_objNum.nTextures;
-		if (numTextures > tex)
+		if (numTextures > tex && paraXModel->textures[tex].get() != nullptr)
 		{
 			std::shared_ptr<Image> img = std::make_shared<Image>();
 			if (paraXModel->m_header.type == PARAX_MODEL_STATIC)
 			{
 				std::string texPath = paraXModel->textures[tex]->m_key;
-				img->filename = CParaFile::GetParentDirectoryFromPath(fileName) + texPath;
-				img->uri = texPath;
+				if (CParaFile::IsAbsolutePath(texPath) && CParaFile::DoesFileExist(texPath.c_str()))
+				{
+					img->uri = "Texture/blocks/" + CParaFile::GetFileName(texPath);
+					img->filename = CParaFile::GetParentDirectoryFromPath(fileName) + img->uri;
+				}
+				else
+				{
+					img->filename = CParaFile::GetParentDirectoryFromPath(fileName) + texPath;
+					img->uri = texPath;
+				}
 			}
 			else
 			{
@@ -1449,7 +1457,12 @@ namespace ParaEngine
 			}
 			img->index = index;
 			CParaFile::MakeDirectoryFromFilePath(img->filename.c_str());
-			paraXModel->textures[tex]->SaveToFile(img->filename.c_str(), PixelFormat::DXT3, 0, 0);
+			if (tex >= CParaXModel::MAX_MODEL_TEXTURES || paraXModel->specialTextures[tex] == -1 || paraXModel->replaceTextures[paraXModel->specialTextures[tex]] == 0) {
+				paraXModel->textures[tex]->SaveToFile(img->filename.c_str(), PixelFormat::DXT3, 0, 0);
+			}
+			else {
+				paraXModel->replaceTextures[paraXModel->specialTextures[tex]]->SaveToFile(img->filename.c_str(), PixelFormat::DXT3, 0, 0);
+			}
 
 			std::shared_ptr<Sampler> sampler = std::make_shared<Sampler>();
 			if (paraXModel->m_header.type == PARAX_MODEL_STATIC)
@@ -1773,6 +1786,7 @@ namespace ParaEngine
 			for (uint32_t i = 0; i < paraXModel->passes.size(); i++)
 			{
 				ModelRenderPass& pass = paraXModel->passes[i];
+				if (pass.geoset < 0) continue;
 				uint32_t vertexOffset = pass.GetVertexStart(paraXModel);
 				for (uint32_t j = pass.m_nIndexStart; j < pass.m_nIndexStart + pass.indexCount; j++)
 				{
@@ -1986,6 +2000,7 @@ namespace ParaEngine
 				for (uint32_t i = 0; i < paraXModel->passes.size(); i++)
 				{
 					ModelRenderPass& pass = paraXModel->passes[i];
+					if (pass.geoset < 0) continue;
 					uint32_t vertexOffset = pass.GetVertexStart(paraXModel);
 					for (uint32_t j = pass.m_nIndexStart; j < pass.m_nIndexStart + pass.indexCount; j++)
 					{
@@ -2000,25 +2015,25 @@ namespace ParaEngine
 				}
 				for (uint32_t i = 0; i < animTimes.size(); i++)
 				{
-					for (uint32_t j = 0; j < animTimes.size(); j++)
+					for (uint32_t j = 0; j < animTimes[i].size(); j++)
 					{
 						float val = animTimes[i][j];
 						bin.write(&val, sizeFloat);
 					}
-					for (uint32_t j = 0; j < translations.size(); j++)
+					for (uint32_t j = 0; j < translations[i].size(); j++)
 					{
 						bin.write(&translations[i][j].x, sizeFloat);
 						bin.write(&translations[i][j].y, sizeFloat);
 						bin.write(&translations[i][j].z, sizeFloat);
 					}
-					for (uint32_t j = 0; j < rotations.size(); j++)
+					for (uint32_t j = 0; j < rotations[i].size(); j++)
 					{
 						bin.write(&rotations[i][j].x, sizeFloat);
 						bin.write(&rotations[i][j].y, sizeFloat);
 						bin.write(&rotations[i][j].z, sizeFloat);
 						bin.write(&rotations[i][j].w, sizeFloat);
 					}
-					for (uint32_t j = 0; j < scales.size(); j++)
+					for (uint32_t j = 0; j < scales[i].size(); j++)
 					{
 						bin.write(&scales[i][j].x, sizeFloat);
 						bin.write(&scales[i][j].y, sizeFloat);
@@ -2031,6 +2046,7 @@ namespace ParaEngine
 				for (uint32_t i = 0; i < paraXModel->passes.size(); i++)
 				{
 					ModelRenderPass& pass = paraXModel->passes[i];
+					if (pass.geoset < 0) continue;
 					uint32_t vertexOffset = pass.GetVertexStart(paraXModel);
 					for (uint32_t j = pass.m_nIndexStart; j < pass.m_nIndexStart + pass.indexCount; j++)
 					{
