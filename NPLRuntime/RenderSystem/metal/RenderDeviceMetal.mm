@@ -848,13 +848,6 @@ namespace ParaEngine
 		delete m_defaultCubeTex;
 		m_defaultCubeTex = nullptr;
 
-		for (auto& kv : m_blitPsoCache)
-			if (kv.second) [reinterpret_cast<id<MTLRenderPipelineState>>(kv.second) release];
-		m_blitPsoCache.clear();
-		if (m_blitSamplerNearest) [reinterpret_cast<id<MTLSamplerState>>(m_blitSamplerNearest) release];
-		if (m_blitSamplerLinear) [reinterpret_cast<id<MTLSamplerState>>(m_blitSamplerLinear) release];
-		if (m_blitLibrary) [reinterpret_cast<id<MTLLibrary>>(m_blitLibrary) release];
-
 		for (auto& kv : m_psoCache)
 			if (kv.second) [reinterpret_cast<id<MTLRenderPipelineState>>(kv.second) release];
 		m_psoCache.clear();
@@ -870,9 +863,9 @@ namespace ParaEngine
 		for (auto& kv : m_blitPsoCache)
 			if (kv.second) [reinterpret_cast<id<MTLRenderPipelineState>>(kv.second) release];
 		m_blitPsoCache.clear();
-		if (m_blitSamplerNearest) [reinterpret_cast<id<MTLSamplerState>>(m_blitSamplerNearest) release];
-		if (m_blitSamplerLinear) [reinterpret_cast<id<MTLSamplerState>>(m_blitSamplerLinear) release];
-		if (m_blitLibrary) [reinterpret_cast<id<MTLLibrary>>(m_blitLibrary) release];
+		if (m_blitSamplerNearest) { [reinterpret_cast<id<MTLSamplerState>>(m_blitSamplerNearest) release]; m_blitSamplerNearest = nullptr; }
+		if (m_blitSamplerLinear) { [reinterpret_cast<id<MTLSamplerState>>(m_blitSamplerLinear) release]; m_blitSamplerLinear = nullptr; }
+		if (m_blitLibrary) { [reinterpret_cast<id<MTLLibrary>>(m_blitLibrary) release]; m_blitLibrary = nullptr; }
 
 		for (uint32_t f = 0; f < FRAME_COUNT; ++f)
 		{
@@ -1619,6 +1612,8 @@ namespace ParaEngine
 	{
 		if (src == dst)
 			return false;
+		if (!src && !m_importedColorTex && !m_surfaceClearedThisFrame)
+			return false;
 
 		EndActiveRenderPass();
 		if (!EnsureCommandBuffer())
@@ -1689,10 +1684,18 @@ namespace ParaEngine
 		const MTLPixelFormat srcFmt = [srcTex pixelFormat];
 		const MTLPixelFormat dstFmt = [dstTex pixelFormat];
 
+		const bool fullDst = (dx0 == 0 && dy0 == 0 && dw == dstW && dh == dstH);
+
 		// Fast path: raw texture copy only when pixel formats AND region dimensions match identically.
 		// Note: copyFromTexture between RGBA8Unorm and BGRA8Unorm copies raw bytes without swizzling R<->B!
 		if (srcFmt == dstFmt && sw == dw && sh == dh && !dstMsaaTex)
 		{
+			if (!dst && !m_importedColorTex)
+			{
+				if (fullDst)
+					m_pendingSurfaceClearColor = false;
+				m_surfaceClearedThisFrame = true;
+			}
 			id<MTLCommandBuffer> cmd = reinterpret_cast<id<MTLCommandBuffer>>(m_activeCmdBuf);
 			id<MTLBlitCommandEncoder> blit = [cmd blitCommandEncoder];
 			[blit copyFromTexture:srcTex
@@ -1798,7 +1801,6 @@ namespace ParaEngine
 				m_blitPsoCache[psoKey] = reinterpret_cast<void*>(blitPso);
 			}
 
-			const bool fullDst = (dx0 == 0 && dy0 == 0 && dw == dstW && dh == dstH);
 			MTLRenderPassDescriptor* rp = [MTLRenderPassDescriptor renderPassDescriptor];
 			if (dstMsaaTex)
 			{
@@ -1811,7 +1813,26 @@ namespace ParaEngine
 				rp.colorAttachments[0].texture = dstTex;
 				rp.colorAttachments[0].storeAction = MTLStoreActionStore;
 			}
-			rp.colorAttachments[0].loadAction = fullDst ? MTLLoadActionDontCare : MTLLoadActionLoad;
+			if (fullDst)
+			{
+				rp.colorAttachments[0].loadAction = MTLLoadActionDontCare;
+			}
+			else if (!dst && !m_importedColorTex && m_pendingSurfaceClearColor)
+			{
+				rp.colorAttachments[0].loadAction = MTLLoadActionClear;
+				rp.colorAttachments[0].clearColor = MTLClearColorMake(
+					m_pendingClearColorValue.r, m_pendingClearColorValue.g,
+					m_pendingClearColorValue.b, m_pendingClearColorValue.a);
+			}
+			else
+			{
+				rp.colorAttachments[0].loadAction = MTLLoadActionLoad;
+			}
+			if (!dst && !m_importedColorTex)
+			{
+				m_pendingSurfaceClearColor = false;
+				m_surfaceClearedThisFrame = true;
+			}
 
 			id<MTLCommandBuffer> cmd = reinterpret_cast<id<MTLCommandBuffer>>(m_activeCmdBuf);
 			id<MTLRenderCommandEncoder> enc = [cmd renderCommandEncoderWithDescriptor:rp];
