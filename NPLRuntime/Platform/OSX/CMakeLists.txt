@@ -34,7 +34,7 @@ else()
     set(ICON_FILE ${CMAKE_CURRENT_SOURCE_DIR}/icon/icon.icns)
 endif()
 
-set(CMAKE_OSX_DEPLOYMENT_TARGET "10.14" CACHE STRING "Deployment target for OSX" FORCE)
+set(CMAKE_OSX_DEPLOYMENT_TARGET "11.0" CACHE STRING "Deployment target for OSX" FORCE)
 set(CMAKE_XCODE_ATTRIBUTE_STRIP_STYLE "non-global" CACHE STRING "Non-Global Symbols" FORCE)
 # set(IMAGES_FILE ${CMAKE_CURRENT_SOURCE_DIR}/Images.xcassets)
 
@@ -81,6 +81,12 @@ endif()
 set(CMAKE_C_FLAGS_RELEASE "-O0" CACHE STRING "Release build optimization level" FORCE)
 set(CMAKE_CXX_FLAGS_RELEASE "-O0" CACHE STRING "Release build optimization level" FORCE)
 
+if(NPL_OSX_ARCHS)
+    string(REPLACE ";" " " OSX_XCODE_ARCHS "${CMAKE_OSX_ARCHITECTURES}")
+else()
+    set(OSX_XCODE_ARCHS "arm64 x86_64")
+endif()
+
 set_target_properties(Paracraft PROPERTIES 
     MACOSX_BUNDLE TRUE
     MACOSX_BUNDLE_INFO_PLIST ${INFO_FILE}
@@ -97,7 +103,7 @@ set_target_properties(Paracraft PROPERTIES
     INSTALL_RPATH "@executable_path/../Frameworks/"
     XCODE_ATTRIBUTE_CODE_SIGN_ENTITLEMENTS ${entitlements}
     BUILD_WITH_INSTALL_RPATH TRUE
-    XCODE_ATTRIBUTE_ARCHS "arm64 x86_64"
+    XCODE_ATTRIBUTE_ARCHS "${OSX_XCODE_ARCHS}"
 )
 
 target_include_directories(Paracraft PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)

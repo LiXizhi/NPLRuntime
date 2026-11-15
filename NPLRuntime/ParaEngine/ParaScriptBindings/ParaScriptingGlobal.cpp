@@ -32,6 +32,7 @@
 #include "ParaScriptingScene.h"
 #include "ParaScriptingGUI.h"
 #include "BootStrapper.h"
+#include "ParaEngineSettings.h"
 #include "util/StringHelper.h"
 #include "util/ParaTime.h"
 
@@ -40,10 +41,25 @@
 #endif
 
 #ifdef SUPPORT_SHELL_EXECUTE
+#if defined(__has_include)
+#  if __has_include(<boost/process/v1/child.hpp>)
+#    define NPL_BOOST_PROCESS_V1 1
+#  endif
+#endif
+#if NPL_BOOST_PROCESS_V1
 #include <boost/process/v1/child.hpp>
 #include <boost/process/v1/environment.hpp>
 #if defined(WIN32)
 #include <boost/process/v1/windows.hpp>
+#endif
+namespace boost_process_ns = boost::process::v1;
+#else
+#include <boost/process/child.hpp>
+#include <boost/process/environment.hpp>
+#if defined(WIN32)
+#include <boost/process/windows.hpp>
+#endif
+namespace boost_process_ns = boost::process;
 #endif
 #endif
 
@@ -382,7 +398,7 @@ void ParaGlobal::Execute(const std::string& exe, const luabind::object& param, l
 #ifdef SUPPORT_SHELL_EXECUTE
 	if (exe.empty())
 		return;
-	namespace bp = boost::process::v1;
+	namespace bp = boost_process_ns;
 
 	std::vector<std::string> args;
 

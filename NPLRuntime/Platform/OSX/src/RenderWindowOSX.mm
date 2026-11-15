@@ -1,4 +1,5 @@
 #include "RenderWindowOSX.h"
+#include "RenderViewOSX.h"
 #include "ParaEngine.h"
 #include "2dengine/GUIRoot.h"
 #include "2dengine/GUIEdit.h"
@@ -191,17 +192,23 @@ RenderWindowOSX::RenderWindowOSX(const int width, const int height)
     //[rootMenu removeItemAtIndex:0];
 
     NSInteger style = NSWindowStyleMaskTitled | NSWindowStyleMaskClosable |
-    NSWindowStyleMaskMiniaturizable | NSWindowStyleMaskResizable | NSWindowStyleMaskBorderless;
+    NSWindowStyleMaskMiniaturizable | NSWindowStyleMaskResizable;
 
     m_window = [[GLWindow alloc] initWithContentRect:CGRectMake(0, 0, width,height) styleMask:style backing:NSBackingStoreBuffered defer:NO];
 
+    RenderView* renderView = [[[RenderView alloc] initWithFrame:CGRectMake(0, 0, width, height)] autorelease];
+    [renderView setAutoresizingMask:NSViewWidthSizable | NSViewHeightSizable];
+    [renderView setWantsBestResolutionOpenGLSurface:YES];
+    [m_window setContentView:renderView];
+
     [m_window setTitle:@"Paracraft"];
+    [m_window center];
     [NSApp activateIgnoringOtherApps:YES];
     [NSApp arrangeInFront:m_window];
     [m_window orderFront:nil];
     [m_window makeKeyWindow];
     [m_window setAcceptsMouseMovedEvents:YES];
-    [m_window makeFirstResponder:m_window];
+    [m_window makeFirstResponder:renderView];
     //[m_window.contentView setAllowedTouchTypes:NSTouchTypeMaskDirect];
     
     WindowDelegate* winDelegate = [WindowDelegate sharedDelegate];

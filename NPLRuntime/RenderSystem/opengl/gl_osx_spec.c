@@ -4,5 +4,5 @@
 
 int loadGL()
 {
-	return 1;
+	return gladLoadGL();
 }

@@ -588,8 +588,18 @@ ParaEngine::FileHandle ParaEngine::CFileUtils::OpenFile(const char* filename, bo
 #if WIN32 && defined(DEFAULT_FILE_ENCODING)
 	std::wstring sFilePath16 = StringHelper::MultiByteToWideChar(sFilePath.c_str(), DEFAULT_FILE_ENCODING);
 	FILE* pFile = _wfopen(sFilePath16.c_str(), bRead ? (bWrite ? L"w+b" : L"rb") : L"wb");
+	if (pFile == 0 && bWrite)
+	{
+		MakeDirectoryFromFilePath(sFilePath.c_str());
+		pFile = _wfopen(sFilePath16.c_str(), bRead ? (bWrite ? L"w+b" : L"rb") : L"wb");
+	}
 #else
 	FILE* pFile = fopen(sFilePath.c_str(), bRead ? (bWrite ? "w+b" : "rb") : "wb");
+	if (pFile == 0 && bWrite)
+	{
+		MakeDirectoryFromFilePath(sFilePath.c_str());
+		pFile = fopen(sFilePath.c_str(), bRead ? (bWrite ? "w+b" : "rb") : "wb");
+	}
 #endif
 	
 	if (pFile == 0) 

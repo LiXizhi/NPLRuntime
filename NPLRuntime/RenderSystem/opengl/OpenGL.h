@@ -16,7 +16,7 @@ extern "C" {
 #elif __APPLE__
 #import "TargetConditionals.h"
 #if TARGET_OS_OSX
-#include "gl_osx_spec.h"
+#include "glad/glad.h"
 #elif TARGET_OS_IPHONE
 #include "gl_ios_spec.h"
 #endif

@@ -10,6 +10,7 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_C_STANDARD 11)
 
 set(NPLRUNTIME_PROJECT_NAME "NPLRuntime" CACHE STRING "Custom Project Name")
+project(${NPLRUNTIME_PROJECT_NAME})
 
 option(PARAENGINE_CLIENT_DLL "Generate Dll Or Exe" OFF)
 option(NPLRUNTIME_ICONV "include iconv" ON)
@@ -54,8 +55,6 @@ else ()
 	option(NPLRUNTIME_ENABLE_METAL "Enable Metal ParaRHI backend" OFF)
 	option(NPLRUNTIME_ENABLE_WEBGPU "Enable WebGPU ParaRHI backend" OFF)
 endif ()
-
-project(${NPLRUNTIME_PROJECT_NAME})
 
 if (EMSCRIPTEN AND NPLRUNTIME_ENABLE_WEBGPU AND DEFINED EMSCRIPTEN_VERSION AND EMSCRIPTEN_VERSION VERSION_GREATER_EQUAL "4.0.10")
 	message(STATUS "Emscripten ${EMSCRIPTEN_VERSION}: enabling RenderSystemWebGPU via --use-port=emdawnwebgpu (with WebGL2 fallback)")
@@ -155,7 +154,12 @@ elseif (APPLE)
 	add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-Wno-gnu-include-next>)
 	add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-Wno-null-conversion>)
 
-	set(CMAKE_OSX_ARCHITECTURES "arm64;x86_64" CACHE INTERNAL "" FORCE)
+	# NPL_OSX_ARCHS lets a local arm64 build override the universal default.
+	if(NOT NPL_OSX_ARCHS)
+		set(CMAKE_OSX_ARCHITECTURES "arm64;x86_64" CACHE INTERNAL "" FORCE)
+	else()
+		set(CMAKE_OSX_ARCHITECTURES "${NPL_OSX_ARCHS}" CACHE INTERNAL "" FORCE)
+	endif()
 elseif (WIN32)
     # Ugly warnings
     if (MSVC)

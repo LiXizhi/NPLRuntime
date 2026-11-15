@@ -8,6 +8,8 @@
 
 #include "uthash.h"
 #include "FileUtils.h"
+#include <cctype>
+#include <cstring>
 
 using namespace ParaEngine;
 
@@ -345,6 +347,130 @@ VertexAttrib* GLProgram::getVertexAttrib(const std::string &name)
 }
 
 
+#if defined(__APPLE__) && !defined(PARAENGINE_MOBILE)
+	static void ReplaceGLIdentifier(std::string& text, const char* from, const char* to)
+	{
+		const size_t fromLen = std::strlen(from);
+		const size_t toLen = std::strlen(to);
+		for (size_t i = 0; i < text.size();)
+		{
+			const size_t pos = text.find(from, i);
+			if (pos == std::string::npos)
+				break;
+			const bool leftOk = pos == 0 || !(std::isalnum(static_cast<unsigned char>(text[pos - 1])) || text[pos - 1] == '_');
+			const bool rightOk = pos + fromLen >= text.size() || !(std::isalnum(static_cast<unsigned char>(text[pos + fromLen])) || text[pos + fromLen] == '_');
+			if (leftOk && rightOk)
+			{
+				text.replace(pos, fromLen, to);
+				i = pos + toLen;
+			}
+			else
+			{
+				i = pos + fromLen;
+			}
+		}
+	}
+
+	// macOS OpenGL 3.2/4.1 core profile rejects GLSL 1.20 (attribute/varying/gl_FragColor/gl_FragData).
+	static std::string MakeCoreProfileShader(const char* source, GLenum type)
+	{
+		std::string raw(source);
+		if (raw.find("#version 15") != std::string::npos
+			|| raw.find("#version 3") != std::string::npos
+			|| raw.find("#version 4") != std::string::npos)
+			return raw;
+
+		std::string extHeader;
+		std::string text;
+		text.reserve(raw.size());
+		for (size_t lineStart = 0; lineStart < raw.size();)
+		{
+			const size_t eol = raw.find('\n', lineStart);
+			const size_t lineEnd = (eol == std::string::npos) ? raw.size() : (eol + 1);
+			std::string line = raw.substr(lineStart, lineEnd - lineStart);
+			lineStart = lineEnd;
+
+			const size_t firstNonWs = line.find_first_not_of(" \t\r");
+			if (firstNonWs != std::string::npos)
+			{
+				if (line.compare(firstNonWs, 8, "#version") == 0)
+					continue;
+				if (line.compare(firstNonWs, 10, "#extension") == 0)
+				{
+					// Skip GLSL 1.20 extensions whose features are core in GLSL 3.30
+					if (line.find("GL_ARB_shader_texture_lod") == std::string::npos
+						&& line.find("GL_OES_standard_derivatives") == std::string::npos
+						&& line.find("GL_EXT_shader_texture_lod") == std::string::npos
+						&& line.find("GL_EXT_draw_buffers") == std::string::npos)
+					{
+						extHeader += line;
+					}
+					continue;
+				}
+			}
+			text += line;
+		}
+
+		if (type == GL_VERTEX_SHADER)
+		{
+			ReplaceGLIdentifier(text, "attribute", "in");
+			ReplaceGLIdentifier(text, "varying", "out");
+		}
+		else
+		{
+			ReplaceGLIdentifier(text, "varying", "in");
+		}
+		auto replaceCall = [&text](const char* from, const char* to) -> bool
+		{
+			const size_t fromLen = std::strlen(from);
+			const size_t toLen = std::strlen(to);
+			bool replaced = false;
+			for (size_t i = 0; (i = text.find(from, i)) != std::string::npos; i += toLen)
+			{
+				text.replace(i, fromLen, to);
+				replaced = true;
+			}
+			return replaced;
+		};
+		replaceCall("texture2DLodEXT(", "textureLod(");
+		replaceCall("textureCubeLodEXT(", "textureLod(");
+		replaceCall("texture2DProjLodEXT(", "textureProjLod(");
+		replaceCall("texture2DGradEXT(", "textureGrad(");
+		replaceCall("texture2DGradARB(", "textureGrad(");
+		replaceCall("texture2DLod(", "textureLod(");
+		replaceCall("textureCubeLod(", "textureLod(");
+		replaceCall("texture2DProj(", "textureProj(");
+		replaceCall("texture2D(", "texture(");
+		replaceCall("textureCube(", "texture(");
+		replaceCall("texture3D(", "texture(");
+
+		std::string header = "#version 330\n" + extHeader;
+		if (type == GL_FRAGMENT_SHADER)
+		{
+			bool usedOut[4] = { false, false, false, false };
+			if (replaceCall("gl_FragData[0]", "_paraFragData0"))
+				usedOut[0] = true;
+			if (replaceCall("gl_FragData[1]", "_paraFragData1"))
+				usedOut[1] = true;
+			if (replaceCall("gl_FragData[2]", "_paraFragData2"))
+				usedOut[2] = true;
+			if (replaceCall("gl_FragData[3]", "_paraFragData3"))
+				usedOut[3] = true;
+			if (text.find("gl_FragColor") != std::string::npos)
+			{
+				usedOut[0] = true;
+				header += "#define gl_FragColor _paraFragData0\n";
+			}
+			for (int i = 0; i < 4; ++i)
+			{
+				if (usedOut[i])
+					header += "layout(location = " + std::to_string(i) + ") out vec4 _paraFragData" + std::to_string(i) + ";\n";
+			}
+		}
+		return header + text;
+	}
+#endif
+
 bool GLProgram::compileShader(GLuint * shader, GLenum type, const GLchar* source)
 {
 #ifdef PARA_ENABLE_OPENGL
@@ -354,7 +480,11 @@ bool GLProgram::compileShader(GLuint * shader, GLenum type, const GLchar* source
 	{
 		return false;
 	}
-    
+
+#if defined(__APPLE__) && !defined(PARAENGINE_MOBILE)
+	const std::string coreSource = MakeCoreProfileShader(source, type);
+	source = coreSource.c_str();
+#endif
 
 	const GLchar* pTrim = source;
 	while (*pTrim == ' ' || *pTrim == '\t' || *pTrim == '\r' || *pTrim == '\n')
@@ -580,7 +710,7 @@ std::string GLProgram::logForOpenGLObject(GLuint object, GLInfoFunction infoFunc
 std::string GLProgram::getVertexShaderLog() const
 {
 #ifdef PARA_ENABLE_OPENGL
-	return this->logForOpenGLObject(_vertShader, (GLInfoFunction)&glGetShaderiv, (GLLogFunction)&glGetShaderInfoLog);
+	return this->logForOpenGLObject(_vertShader, (GLInfoFunction)glGetShaderiv, (GLLogFunction)glGetShaderInfoLog);
 #else
 	return "";
 #endif
@@ -589,7 +719,7 @@ std::string GLProgram::getVertexShaderLog() const
 std::string GLProgram::getFragmentShaderLog() const
 {
 #ifdef PARA_ENABLE_OPENGL
-	return this->logForOpenGLObject(_fragShader, (GLInfoFunction)&glGetShaderiv, (GLLogFunction)&glGetShaderInfoLog);
+	return this->logForOpenGLObject(_fragShader, (GLInfoFunction)glGetShaderiv, (GLLogFunction)glGetShaderInfoLog);
 #else
 	return "";
 #endif
@@ -598,7 +728,7 @@ std::string GLProgram::getFragmentShaderLog() const
 std::string GLProgram::getProgramLog() const
 {
 #ifdef PARA_ENABLE_OPENGL
-	return this->logForOpenGLObject(_program, (GLInfoFunction)&glGetProgramiv, (GLLogFunction)&glGetProgramInfoLog);
+	return this->logForOpenGLObject(_program, (GLInfoFunction)glGetProgramiv, (GLLogFunction)glGetProgramInfoLog);
 #else
 	return "";
 #endif

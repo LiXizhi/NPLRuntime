@@ -17,7 +17,7 @@ elseif(WIN32 OR LINUX)
     set(PLATFORM_SRC gl_glad_spec.c)
 elseif(APPLE)
     find_library(OPENGL_LIBRARY OpenGL)
-    set(LIBGL ${OPENGL_LIBRARY})
+    set(LIBGL glad_core ${OPENGL_LIBRARY})
     set(PLATFORM_SRC gl_osx_spec.c gl_osx_spec.h)
 endif()
 

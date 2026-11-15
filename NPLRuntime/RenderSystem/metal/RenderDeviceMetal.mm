@@ -1,10 +1,3 @@
-#include "ParaEngine.h"
-#include "RenderContextMetal.h"
-#include "RenderDeviceMetal.h"
-#include "FxShaderTypes.h"
-#include "RHISoftwareS3TC.h"
-#include "renderer/VertexDeclarationOpenGL.h"
-
 #import <Metal/Metal.h>
 #import <QuartzCore/CAMetalLayer.h>
 #include <TargetConditionals.h>
@@ -15,6 +8,13 @@
 #else
 #import <Cocoa/Cocoa.h>
 #endif
+
+#include "ParaEngine.h"
+#include "RenderContextMetal.h"
+#include "RenderDeviceMetal.h"
+#include "FxShaderTypes.h"
+#include "RHISoftwareS3TC.h"
+#include "renderer/VertexDeclarationOpenGL.h"
 
 #include <algorithm>
 #include <cmath>
@@ -691,6 +691,7 @@ namespace ParaEngine
 			metalLayer.device = mtlDevice;
 			metalLayer.pixelFormat = MTLPixelFormatBGRA8Unorm;
 			metalLayer.framebufferOnly = NO;
+			metalLayer.opaque = YES;
 
 			uint32_t initW = cfg.screenWidth > 0 ? cfg.screenWidth : 1280;
 			uint32_t initH = cfg.screenHeight > 0 ? cfg.screenHeight : 720;
@@ -729,6 +730,9 @@ namespace ParaEngine
 				if (targetView)
 				{
 					[targetView setWantsLayer:YES];
+					NSScreen* scr = targetView.window ? targetView.window.screen : [NSScreen mainScreen];
+					if (scr)
+						metalLayer.contentsScale = scr.backingScaleFactor;
 					[targetView setLayer:metalLayer];
 				}
 #endif
@@ -737,7 +741,7 @@ namespace ParaEngine
 			metalLayer.drawableSize = CGSizeMake(initW, initH);
 
 			auto* rhiDev = new RenderDeviceMetal(mtlDevice, queue, metalLayer);
-			if (!rhiDev->Initialize(initW, initH, cfg.swapInterval != 0))
+			if (!rhiDev->Initialize(initW, initH, true))
 			{
 				delete rhiDev;
 				return nullptr;
@@ -778,6 +782,11 @@ namespace ParaEngine
 	RenderDeviceMetal::~RenderDeviceMetal()
 	{
 		ExecuteAndSyncGPU();
+		if (m_currentDrawable)
+		{
+			[reinterpret_cast<id<CAMetalDrawable>>(m_currentDrawable) release];
+			m_currentDrawable = nullptr;
+		}
 
 		delete m_defaultWhiteTex;
 		m_defaultWhiteTex = nullptr;
@@ -795,6 +804,13 @@ namespace ParaEngine
 		for (auto& kv : m_samplerCache)
 			if (kv.second) [reinterpret_cast<id<MTLSamplerState>>(kv.second) release];
 		m_samplerCache.clear();
+
+		for (auto& kv : m_blitPsoCache)
+			if (kv.second) [reinterpret_cast<id<MTLRenderPipelineState>>(kv.second) release];
+		m_blitPsoCache.clear();
+		if (m_blitSamplerNearest) [reinterpret_cast<id<MTLSamplerState>>(m_blitSamplerNearest) release];
+		if (m_blitSamplerLinear) [reinterpret_cast<id<MTLSamplerState>>(m_blitSamplerLinear) release];
+		if (m_blitLibrary) [reinterpret_cast<id<MTLLibrary>>(m_blitLibrary) release];
 
 		for (uint32_t f = 0; f < FRAME_COUNT; ++f)
 		{
@@ -956,6 +972,11 @@ namespace ParaEngine
 			return true;
 
 		ExecuteAndSyncGPU();
+		if (m_currentDrawable)
+		{
+			[reinterpret_cast<id<CAMetalDrawable>>(m_currentDrawable) release];
+			m_currentDrawable = nullptr;
+		}
 		m_backBufferWidth = width;
 		m_backBufferHeight = height;
 		if (m_usingBackBufferRT)
@@ -995,6 +1016,18 @@ namespace ParaEngine
 		m_deferredReleases.resize(writeIdx);
 	}
 
+	void RenderDeviceMetal::AcquireFrameSlotIfNeeded()
+	{
+		if (m_frameSlotAcquired || !m_frameSemaphore)
+			return;
+		dispatch_semaphore_wait(reinterpret_cast<dispatch_semaphore_t>(m_frameSemaphore), DISPATCH_TIME_FOREVER);
+		m_frameSlotAcquired = true;
+		FrameSlot& slot = m_frames[m_frameIndex];
+		for (auto& page : slot.uploadPages)
+			page.offset = 0;
+		ReclaimCompletedResources(m_completedSerial);
+	}
+
 	void RenderDeviceMetal::ExecuteAndSyncGPU()
 	{
 		EndActiveRenderPass();
@@ -1009,10 +1042,12 @@ namespace ParaEngine
 			m_activeCmdBuf = nullptr;
 			m_completedSerial = serial;
 		}
-		if (m_currentDrawable)
+		for (auto& page : m_frames[m_frameIndex].uploadPages)
+			page.offset = 0;
+		if (m_frameSlotAcquired && m_frameSemaphore)
 		{
-			[reinterpret_cast<id<CAMetalDrawable>>(m_currentDrawable) release];
-			m_currentDrawable = nullptr;
+			dispatch_semaphore_signal(reinterpret_cast<dispatch_semaphore_t>(m_frameSemaphore));
+			m_frameSlotAcquired = false;
 		}
 		ReclaimCompletedResources(m_completedSerial);
 	}
@@ -1023,6 +1058,7 @@ namespace ParaEngine
 		if (!dev || byteSize == 0)
 			return false;
 
+		AcquireFrameSlotIfNeeded();
 		uint32_t align = (std::max)(alignment, 256u);
 		FrameSlot& slot = m_frames[m_frameIndex];
 		for (auto& page : slot.uploadPages)
@@ -1482,18 +1518,26 @@ namespace ParaEngine
 		EndActiveRenderPass();
 	}
 
-	bool RenderDeviceMetal::BlitRenderTarget(IRHIRenderTarget* src, IRHIRenderTarget* dst, const RECT* /*srcRect*/, const RECT* /*dstRect*/, bool /*linearFilter*/)
+	bool RenderDeviceMetal::BlitRenderTarget(IRHIRenderTarget* src, IRHIRenderTarget* dst, const RECT* srcRect, const RECT* dstRect, bool linearFilter)
 	{
+		if (src == dst)
+			return false;
+
 		EndActiveRenderPass();
 		if (!EnsureCommandBuffer())
 			return false;
 
 		id<MTLTexture> srcTex = nil;
 		id<MTLTexture> dstTex = nil;
+		id<MTLTexture> dstMsaaTex = nil;
 		if (src)
 		{
 			auto* srt = static_cast<MetalRenderTarget*>(src->GetNativeHandle());
 			if (srt && srt->GetMetalColor(0)) srcTex = srt->GetMetalColor(0)->GetMTLTexture();
+		}
+		else if (m_importedColorTex)
+		{
+			srcTex = reinterpret_cast<id<MTLTexture>>(m_importedColorTex);
 		}
 		else if (EnsureDrawableAcquired())
 		{
@@ -1503,32 +1547,214 @@ namespace ParaEngine
 		if (dst)
 		{
 			auto* drt = static_cast<MetalRenderTarget*>(dst->GetNativeHandle());
-			if (drt && drt->GetMetalColor(0)) dstTex = drt->GetMetalColor(0)->GetMTLTexture();
+			if (drt && drt->GetMetalColor(0))
+			{
+				dstTex = drt->GetMetalColor(0)->GetMTLTexture();
+				dstMsaaTex = drt->GetMetalColor(0)->GetMSAATexture();
+			}
+		}
+		else if (m_importedColorTex)
+		{
+			dstTex = reinterpret_cast<id<MTLTexture>>(m_importedColorTex);
 		}
 		else if (EnsureDrawableAcquired())
 		{
 			dstTex = [reinterpret_cast<id<CAMetalDrawable>>(m_currentDrawable) texture];
 		}
 
-		if (!srcTex || !dstTex)
+		if (!srcTex || !dstTex || srcTex == dstTex)
 			return false;
 
-		uint32_t cw = static_cast<uint32_t>((std::min)([srcTex width], [dstTex width]));
-		uint32_t ch = static_cast<uint32_t>((std::min)([srcTex height], [dstTex height]));
+		const uint32_t srcW = static_cast<uint32_t>([srcTex width]);
+		const uint32_t srcH = static_cast<uint32_t>([srcTex height]);
+		const uint32_t dstW = static_cast<uint32_t>([dstTex width]);
+		const uint32_t dstH = static_cast<uint32_t>([dstTex height]);
+		if (srcW == 0 || srcH == 0 || dstW == 0 || dstH == 0)
+			return false;
 
-		id<MTLCommandBuffer> cmd = reinterpret_cast<id<MTLCommandBuffer>>(m_activeCmdBuf);
-		id<MTLBlitCommandEncoder> blit = [cmd blitCommandEncoder];
-		[blit copyFromTexture:srcTex
-				  sourceSlice:0
-				  sourceLevel:0
-				 sourceOrigin:MTLOriginMake(0, 0, 0)
-				   sourceSize:MTLSizeMake(cw, ch, 1)
-					toTexture:dstTex
-			 destinationSlice:0
-			 destinationLevel:0
-			destinationOrigin:MTLOriginMake(0, 0, 0)];
-		[blit endEncoding];
-		return true;
+		const int sx0 = srcRect ? (std::max)(0, (std::min)(static_cast<int>(srcRect->left), static_cast<int>(srcW))) : 0;
+		const int sy0 = srcRect ? (std::max)(0, (std::min)(static_cast<int>(srcRect->top), static_cast<int>(srcH))) : 0;
+		const int sx1 = srcRect ? (std::max)(sx0, (std::min)(static_cast<int>(srcRect->right), static_cast<int>(srcW))) : static_cast<int>(srcW);
+		const int sy1 = srcRect ? (std::max)(sy0, (std::min)(static_cast<int>(srcRect->bottom), static_cast<int>(srcH))) : static_cast<int>(srcH);
+
+		const int dx0 = dstRect ? (std::max)(0, (std::min)(static_cast<int>(dstRect->left), static_cast<int>(dstW))) : 0;
+		const int dy0 = dstRect ? (std::max)(0, (std::min)(static_cast<int>(dstRect->top), static_cast<int>(dstH))) : 0;
+		const int dx1 = dstRect ? (std::max)(dx0, (std::min)(static_cast<int>(dstRect->right), static_cast<int>(dstW))) : static_cast<int>(dstW);
+		const int dy1 = dstRect ? (std::max)(dy0, (std::min)(static_cast<int>(dstRect->bottom), static_cast<int>(dstH))) : static_cast<int>(dstH);
+
+		const uint32_t sw = static_cast<uint32_t>(sx1 - sx0);
+		const uint32_t sh = static_cast<uint32_t>(sy1 - sy0);
+		const uint32_t dw = static_cast<uint32_t>(dx1 - dx0);
+		const uint32_t dh = static_cast<uint32_t>(dy1 - dy0);
+		if (sw == 0 || sh == 0 || dw == 0 || dh == 0)
+			return false;
+
+		const MTLPixelFormat srcFmt = [srcTex pixelFormat];
+		const MTLPixelFormat dstFmt = [dstTex pixelFormat];
+
+		// Fast path: raw texture copy only when pixel formats AND region dimensions match identically.
+		// Note: copyFromTexture between RGBA8Unorm and BGRA8Unorm copies raw bytes without swizzling R<->B!
+		if (srcFmt == dstFmt && sw == dw && sh == dh && !dstMsaaTex)
+		{
+			id<MTLCommandBuffer> cmd = reinterpret_cast<id<MTLCommandBuffer>>(m_activeCmdBuf);
+			id<MTLBlitCommandEncoder> blit = [cmd blitCommandEncoder];
+			[blit copyFromTexture:srcTex
+					  sourceSlice:0
+					  sourceLevel:0
+					 sourceOrigin:MTLOriginMake(static_cast<NSUInteger>(sx0), static_cast<NSUInteger>(sy0), 0)
+					   sourceSize:MTLSizeMake(sw, sh, 1)
+						toTexture:dstTex
+				 destinationSlice:0
+				 destinationLevel:0
+				destinationOrigin:MTLOriginMake(static_cast<NSUInteger>(dx0), static_cast<NSUInteger>(dy0), 0)];
+			[blit endEncoding];
+			return true;
+		}
+
+		// Shader blit path: handles RGBA8Unorm <-> BGRA8Unorm format conversion, scaling, and filtering.
+		id<MTLDevice> dev = reinterpret_cast<id<MTLDevice>>(m_device);
+		if (!dev)
+			return false;
+
+		@autoreleasepool
+		{
+			if (!m_blitLibrary)
+			{
+				static NSString* const kBlitMsl =
+					@"#include <metal_stdlib>\n"
+					 "using namespace metal;\n"
+					 "struct BlitVsOut {\n"
+					 "    float4 pos [[position]];\n"
+					 "    float2 uv;\n"
+					 "};\n"
+					 "vertex BlitVsOut para_blit_vs(uint vid [[vertex_id]], constant float4& uvRect [[buffer(0)]]) {\n"
+					 "    BlitVsOut o;\n"
+					 "    float x = float((vid << 1u) & 2u);\n"
+					 "    float y = float(vid & 2u);\n"
+					 "    o.pos = float4(x * 2.0f - 1.0f, 1.0f - y * 2.0f, 0.0f, 1.0f);\n"
+					 "    o.uv  = uvRect.xy + float2(x, y) * uvRect.zw;\n"
+					 "    return o;\n"
+					 "}\n"
+					 "fragment float4 para_blit_fs(BlitVsOut in [[stage_in]], texture2d<float> tex [[texture(0)]], sampler smp [[sampler(0)]]) {\n"
+					 "    return tex.sample(smp, in.uv);\n"
+					 "}\n";
+				NSError* err = nil;
+				id<MTLLibrary> lib = [dev newLibraryWithSource:kBlitMsl options:nil error:&err];
+				if (!lib)
+				{
+					OUTPUT_LOG("ERROR: Metal BlitRenderTarget shader compile failed: %s\n", err ? [[err localizedDescription] UTF8String] : "unknown");
+					return false;
+				}
+				m_blitLibrary = reinterpret_cast<void*>(lib);
+			}
+
+			if (!m_blitSamplerNearest || !m_blitSamplerLinear)
+			{
+				MTLSamplerDescriptor* sd = [[[MTLSamplerDescriptor alloc] init] autorelease];
+				sd.sAddressMode = MTLSamplerAddressModeClampToEdge;
+				sd.tAddressMode = MTLSamplerAddressModeClampToEdge;
+				sd.mipFilter = MTLSamplerMipFilterNotMipmapped;
+				if (!m_blitSamplerNearest)
+				{
+					sd.minFilter = MTLSamplerMinMagFilterNearest;
+					sd.magFilter = MTLSamplerMinMagFilterNearest;
+					m_blitSamplerNearest = reinterpret_cast<void*>([dev newSamplerStateWithDescriptor:sd]);
+				}
+				if (!m_blitSamplerLinear)
+				{
+					sd.minFilter = MTLSamplerMinMagFilterLinear;
+					sd.magFilter = MTLSamplerMinMagFilterLinear;
+					m_blitSamplerLinear = reinterpret_cast<void*>([dev newSamplerStateWithDescriptor:sd]);
+				}
+			}
+
+			const NSUInteger sampleCount = dstMsaaTex ? [dstMsaaTex sampleCount] : 1u;
+			const uint64_t psoKey = (static_cast<uint64_t>(dstFmt) << 8) | static_cast<uint64_t>(sampleCount);
+			id<MTLRenderPipelineState> blitPso = nil;
+			auto it = m_blitPsoCache.find(psoKey);
+			if (it != m_blitPsoCache.end())
+			{
+				blitPso = reinterpret_cast<id<MTLRenderPipelineState>>(it->second);
+			}
+			else
+			{
+				id<MTLLibrary> lib = reinterpret_cast<id<MTLLibrary>>(m_blitLibrary);
+				id<MTLFunction> vsFn = [[lib newFunctionWithName:@"para_blit_vs"] autorelease];
+				id<MTLFunction> fsFn = [[lib newFunctionWithName:@"para_blit_fs"] autorelease];
+				if (!vsFn || !fsFn)
+					return false;
+
+				MTLRenderPipelineDescriptor* pd = [[[MTLRenderPipelineDescriptor alloc] init] autorelease];
+				pd.vertexFunction = vsFn;
+				pd.fragmentFunction = fsFn;
+				pd.rasterSampleCount = sampleCount;
+				pd.colorAttachments[0].pixelFormat = dstFmt;
+				pd.colorAttachments[0].blendingEnabled = NO;
+
+				NSError* err = nil;
+				blitPso = [dev newRenderPipelineStateWithDescriptor:pd error:&err];
+				if (!blitPso)
+				{
+					OUTPUT_LOG("ERROR: Metal BlitRenderTarget PSO failed: %s\n", err ? [[err localizedDescription] UTF8String] : "unknown");
+					return false;
+				}
+				m_blitPsoCache[psoKey] = reinterpret_cast<void*>(blitPso);
+			}
+
+			const bool fullDst = (dx0 == 0 && dy0 == 0 && dw == dstW && dh == dstH);
+			MTLRenderPassDescriptor* rp = [MTLRenderPassDescriptor renderPassDescriptor];
+			if (dstMsaaTex)
+			{
+				rp.colorAttachments[0].texture = dstMsaaTex;
+				rp.colorAttachments[0].resolveTexture = dstTex;
+				rp.colorAttachments[0].storeAction = MTLStoreActionStoreAndMultisampleResolve;
+			}
+			else
+			{
+				rp.colorAttachments[0].texture = dstTex;
+				rp.colorAttachments[0].storeAction = MTLStoreActionStore;
+			}
+			rp.colorAttachments[0].loadAction = fullDst ? MTLLoadActionDontCare : MTLLoadActionLoad;
+
+			id<MTLCommandBuffer> cmd = reinterpret_cast<id<MTLCommandBuffer>>(m_activeCmdBuf);
+			id<MTLRenderCommandEncoder> enc = [cmd renderCommandEncoderWithDescriptor:rp];
+			if (!enc)
+				return false;
+
+			MTLViewport vp;
+			vp.originX = static_cast<double>(dx0);
+			vp.originY = static_cast<double>(dy0);
+			vp.width = static_cast<double>(dw);
+			vp.height = static_cast<double>(dh);
+			vp.znear = 0.0;
+			vp.zfar = 1.0;
+			[enc setViewport:vp];
+
+			MTLScissorRect sc;
+			sc.x = static_cast<NSUInteger>(dx0);
+			sc.y = static_cast<NSUInteger>(dy0);
+			sc.width = static_cast<NSUInteger>(dw);
+			sc.height = static_cast<NSUInteger>(dh);
+			[enc setScissorRect:sc];
+
+			const float uvRect[4] = {
+				static_cast<float>(sx0) / static_cast<float>(srcW),
+				static_cast<float>(sy0) / static_cast<float>(srcH),
+				static_cast<float>(sw) / static_cast<float>(srcW),
+				static_cast<float>(sh) / static_cast<float>(srcH)
+			};
+
+			id<MTLSamplerState> smp = reinterpret_cast<id<MTLSamplerState>>(linearFilter ? m_blitSamplerLinear : m_blitSamplerNearest);
+			[enc setRenderPipelineState:blitPso];
+			[enc setCullMode:MTLCullModeNone];
+			[enc setVertexBytes:uvRect length:sizeof(uvRect) atIndex:0];
+			[enc setFragmentTexture:srcTex atIndex:0];
+			if (smp)
+				[enc setFragmentSamplerState:smp atIndex:0];
+			[enc drawPrimitives:MTLPrimitiveTypeTriangle vertexStart:0 vertexCount:3];
+			[enc endEncoding];
+			return true;
+		}
 	}
 
 	bool RenderDeviceMetal::ImportExternalFramebuffer(uintptr_t nativeFboOrTexHandle, uint32_t width, uint32_t height)
@@ -2575,11 +2801,20 @@ namespace ParaEngine
 
 	bool RenderDeviceMetal::BeginScene()
 	{
-		dispatch_semaphore_wait(reinterpret_cast<dispatch_semaphore_t>(m_frameSemaphore), DISPATCH_TIME_FOREVER);
-		FrameSlot& slot = m_frames[m_frameIndex];
-		for (auto& page : slot.uploadPages)
-			page.offset = 0;
-		ReclaimCompletedResources(m_completedSerial);
+		auto* pApp = CGlobals::GetApp();
+		auto* pWin = pApp ? pApp->GetRenderWindow() : nullptr;
+		if (pWin)
+		{
+			uint32_t winW = pApp->IsRotateScreen() ? pWin->GetHeight() : pWin->GetWidth();
+			uint32_t winH = pApp->IsRotateScreen() ? pWin->GetWidth() : pWin->GetHeight();
+			if (winW > 0 && winH > 0 && (winW != m_backBufferWidth || winH != m_backBufferHeight))
+			{
+				ResizeSwapChain(winW, winH);
+			}
+		}
+
+		AcquireFrameSlotIfNeeded();
+		SetRenderTargets(0, nullptr, nullptr);
 		return EnsureCommandBuffer();
 	}
 
@@ -2594,10 +2829,15 @@ namespace ParaEngine
 		EndActiveRenderPass();
 		if (!EnsureCommandBuffer())
 		{
-			dispatch_semaphore_signal(reinterpret_cast<dispatch_semaphore_t>(m_frameSemaphore));
+			if (m_frameSlotAcquired && m_frameSemaphore)
+			{
+				dispatch_semaphore_signal(reinterpret_cast<dispatch_semaphore_t>(m_frameSemaphore));
+				m_frameSlotAcquired = false;
+			}
 			return false;
 		}
 
+		AcquireFrameSlotIfNeeded();
 		id<MTLCommandBuffer> cmd = reinterpret_cast<id<MTLCommandBuffer>>(m_activeCmdBuf);
 		if (m_currentDrawable)
 		{
@@ -2609,11 +2849,14 @@ namespace ParaEngine
 		uint64_t serial = m_nextSubmitSerial++;
 		m_frames[m_frameIndex].submitSerial = serial;
 		dispatch_semaphore_t sem = reinterpret_cast<dispatch_semaphore_t>(m_frameSemaphore);
+		const bool signalSlot = m_frameSlotAcquired && (sem != nullptr);
+		m_frameSlotAcquired = false;
 		uint64_t* completedPtr = &m_completedSerial;
 		[cmd addCompletedHandler:^(id<MTLCommandBuffer> /*buffer*/) {
 			if (*completedPtr < serial)
 				*completedPtr = serial;
-			dispatch_semaphore_signal(sem);
+			if (signalSlot)
+				dispatch_semaphore_signal(sem);
 		}];
 
 		[cmd commit];

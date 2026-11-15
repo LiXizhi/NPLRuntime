@@ -132,6 +132,7 @@ namespace ParaEngine
 		void* GetOrCreateDepthStencilState();
 		void* GetOrCreateSamplerState(uint32_t stage);
 		bool PrepareForDraw(EPrimitiveType primitiveType);
+		void AcquireFrameSlotIfNeeded();
 		void ReclaimCompletedResources(uint64_t completedSerial);
 
 	private:
@@ -189,6 +190,7 @@ namespace ParaEngine
 
 		FrameSlot m_frames[FRAME_COUNT];
 		uint32_t m_frameIndex = 0;
+		bool m_frameSlotAcquired = false;
 		uint64_t m_nextSubmitSerial = 1;
 		uint64_t m_completedSerial = 0;
 		std::vector<MetalDeferredRelease> m_deferredReleases;
@@ -210,5 +212,10 @@ namespace ParaEngine
 		std::unordered_map<uint64_t, void*> m_psoCache;
 		std::unordered_map<uint64_t, void*> m_depthStencilCache;
 		std::unordered_map<uint64_t, void*> m_samplerCache;
+
+		void* m_blitLibrary = nullptr;        // id<MTLLibrary>
+		void* m_blitSamplerNearest = nullptr; // id<MTLSamplerState>
+		void* m_blitSamplerLinear = nullptr;  // id<MTLSamplerState>
+		std::unordered_map<uint64_t, void*> m_blitPsoCache;
 	};
 }
