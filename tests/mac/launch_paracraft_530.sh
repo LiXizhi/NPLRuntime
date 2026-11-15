@@ -62,7 +62,7 @@ APP_BUNDLE="$(cd "$(dirname "$PARAENGINE_EXE")/../.." && pwd)"
 
 # Ensure the bundle has a valid ad-hoc signature on Apple Silicon before launching
 if [[ "$APP_BUNDLE" == *.app ]]; then
-    if ! /usr/bin/codesign --verify --quiet "$APP_BUNDLE" 2>/dev/null; then
+    if ! /usr/bin/codesign --verify "$APP_BUNDLE" >/dev/null 2>&1; then
         echo "[ParaRHI] Re-signing $APP_BUNDLE (ad-hoc)..."
         /usr/bin/codesign --force --deep --sign - "$APP_BUNDLE"
     fi
