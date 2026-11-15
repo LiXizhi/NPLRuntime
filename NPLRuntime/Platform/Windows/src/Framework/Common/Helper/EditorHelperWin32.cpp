@@ -10,6 +10,9 @@ namespace ParaEngine {
 	
 	bool CEditorHelper::OpenWithDefaultEditor(const char* sScriptFile, bool bWaitOnReturn)
 	{
+		if (!sScriptFile)
+			return false;
+
 		//////////////////////////////////////////////////////////////////////////
 		// open the editor.
 		STARTUPINFO si;
@@ -59,6 +62,9 @@ namespace ParaEngine {
 	
 	bool CEditorHelper::CreateEmptyCharacterEventFile(const char* scriptFile, const char* sName)
 	{
+		if (!scriptFile || !sName)
+			return false;
+
 		string sScriptFile;
 		CPathReplaceables::GetSingleton().DecodePath(sScriptFile, scriptFile);
 		if (!CParaFile::DoesFileExist(sScriptFile.c_str(), false))
@@ -178,7 +184,7 @@ namespace ParaEngine {
 		ZeroMemory(&pi, sizeof(pi));
 
 		char cmd[MAX_PATH + 1];
-		strncpy(cmd, lpCommandLine, MAX_PATH);
+		strncpy(cmd, lpCommandLine ? lpCommandLine : "", MAX_PATH);
 		cmd[MAX_PATH] = '\0';
 
 		// Start the child process. 
@@ -194,7 +200,7 @@ namespace ParaEngine {
 			&pi)             // Pointer to PROCESS_INFORMATION structure.
 			)
 		{
-			OUTPUT_LOG("error: failed running application: %s, error code(%d).\r\n", lpApplicationName, GetLastError());
+			OUTPUT_LOG("error: failed running application: %s, error code(%d).\r\n", lpApplicationName ? lpApplicationName : "", GetLastError());
 			return false;
 		}
 
@@ -242,15 +248,18 @@ namespace ParaEngine {
 		if (lpOperation && strcmp(lpOperation, "wait") == 0)
 		{
 #if WIN32 && defined(DEFAULT_FILE_ENCODING)
-			std::wstring str_file = StringHelper::MultiByteToWideChar(lpFile, DEFAULT_FILE_ENCODING);
-			std::wstring str_param = StringHelper::MultiByteToWideChar(lpParameters, DEFAULT_FILE_ENCODING);
-			std::wstring str_dir = StringHelper::MultiByteToWideChar(lpDirectory, DEFAULT_FILE_ENCODING);
+			const WCHAR* wFile = lpFile ? StringHelper::MultiByteToWideChar(lpFile, DEFAULT_FILE_ENCODING) : nullptr;
+			std::wstring str_file = wFile ? wFile : L"";
+			const WCHAR* wParam = lpParameters ? StringHelper::MultiByteToWideChar(lpParameters, DEFAULT_FILE_ENCODING) : nullptr;
+			std::wstring str_param = wParam ? wParam : L"";
+			const WCHAR* wDir = lpDirectory ? StringHelper::MultiByteToWideChar(lpDirectory, DEFAULT_FILE_ENCODING) : nullptr;
+			std::wstring str_dir = wDir ? wDir : L"";
 
 			SHELLEXECUTEINFOW ShExecInfo = { 0 };
 			ShExecInfo.cbSize = sizeof(SHELLEXECUTEINFOW);
-			ShExecInfo.lpParameters = str_param.c_str();
-			ShExecInfo.lpDirectory = str_dir.c_str();
-			ShExecInfo.lpFile = str_file.c_str();
+			ShExecInfo.lpParameters = lpParameters ? str_param.c_str() : NULL;
+			ShExecInfo.lpDirectory = lpDirectory ? str_dir.c_str() : NULL;
+			ShExecInfo.lpFile = lpFile ? str_file.c_str() : NULL;
 #else 
 			SHELLEXECUTEINFO ShExecInfo = { 0 };
 			ShExecInfo.cbSize = sizeof(SHELLEXECUTEINFO);
@@ -272,8 +281,11 @@ namespace ParaEngine {
 #endif
 
 			{
-				WaitForSingleObject(ShExecInfo.hProcess, INFINITE);
-				CloseHandle(ShExecInfo.hProcess);
+				if (ShExecInfo.hProcess)
+				{
+					WaitForSingleObject(ShExecInfo.hProcess, INFINITE);
+					CloseHandle(ShExecInfo.hProcess);
+				}
 				return true;
 			}
 			else
@@ -281,14 +293,25 @@ namespace ParaEngine {
 		}
 		else
 		{
+			const char* effectiveOp = (lpOperation && strcmp(lpOperation, "openExternalBrowser") == 0) ? "open" : lpOperation;
 #if WIN32 && defined(DEFAULT_FILE_ENCODING)
-			std::wstring str_op = StringHelper::MultiByteToWideChar(lpOperation, DEFAULT_FILE_ENCODING);
-			std::wstring str_file = StringHelper::MultiByteToWideChar(lpFile, DEFAULT_FILE_ENCODING);
-			std::wstring str_param = StringHelper::MultiByteToWideChar(lpParameters, DEFAULT_FILE_ENCODING);
-			std::wstring str_dir = StringHelper::MultiByteToWideChar(lpDirectory, DEFAULT_FILE_ENCODING);
-			if (::ShellExecuteW((HWND)NULL, str_op.c_str(), str_file.c_str(), str_param.c_str(), str_dir.c_str(), nShowCmd) > ((HINSTANCE)32))
+			const WCHAR* wOp = effectiveOp ? StringHelper::MultiByteToWideChar(effectiveOp, DEFAULT_FILE_ENCODING) : nullptr;
+			std::wstring str_op = wOp ? wOp : L"";
+			const WCHAR* wFile = lpFile ? StringHelper::MultiByteToWideChar(lpFile, DEFAULT_FILE_ENCODING) : nullptr;
+			std::wstring str_file = wFile ? wFile : L"";
+			const WCHAR* wParam = lpParameters ? StringHelper::MultiByteToWideChar(lpParameters, DEFAULT_FILE_ENCODING) : nullptr;
+			std::wstring str_param = wParam ? wParam : L"";
+			const WCHAR* wDir = lpDirectory ? StringHelper::MultiByteToWideChar(lpDirectory, DEFAULT_FILE_ENCODING) : nullptr;
+			std::wstring str_dir = wDir ? wDir : L"";
+			if ((INT_PTR)::ShellExecuteW(
+				(HWND)NULL,
+				effectiveOp ? str_op.c_str() : NULL,
+				lpFile ? str_file.c_str() : NULL,
+				lpParameters ? str_param.c_str() : NULL,
+				lpDirectory ? str_dir.c_str() : NULL,
+				nShowCmd) > 32)
 #else
-			if (::ShellExecute((HWND)NULL, lpOperation, lpFile, lpParameters, lpDirectory, nShowCmd) > ((HINSTANCE)32))
+			if ((INT_PTR)::ShellExecute((HWND)NULL, effectiveOp, lpFile, lpParameters, lpDirectory, nShowCmd) > 32)
 #endif
 
 				return true;

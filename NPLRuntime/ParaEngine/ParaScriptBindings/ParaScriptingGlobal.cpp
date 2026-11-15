@@ -402,7 +402,7 @@ void ParaGlobal::Execute(const std::string& exe, const luabind::object& param, l
 bool ParaGlobal::ShellExecute(const char* lpOperation, const char* lpFile, const char* lpParameters, const char* lpDirectory, int nShowCmd)
 {
 #ifdef EMSCRIPTEN
-	if (lpOperation && strcmp(lpOperation, "open") == 0)
+	if (lpOperation && lpFile && strcmp(lpOperation, "open") == 0)
 	{
 		EM_ASM({
 			const url =  UTF8ToString($0);

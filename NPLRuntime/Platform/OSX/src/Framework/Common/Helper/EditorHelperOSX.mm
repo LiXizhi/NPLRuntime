@@ -29,10 +29,12 @@ namespace ParaEngine {
 
 	static bool execute(const char* lpFile, const char* lpParameters, const char* lpDirectory, int nShowCmd)
 	{
+		if (!lpFile)
+			return false;
         std::string cmd = "open ";
 
 		if (strcmp(lpFile, "explorer.exe") == 0)
-			cmd += lpParameters;
+			cmd += (lpParameters ? lpParameters : "");
 		else
 			cmd += lpFile;
 
@@ -43,6 +45,8 @@ namespace ParaEngine {
 
 	bool CEditorHelper::ShellExecute(const char* lpOperation, const char* lpFile, const char* lpParameters, const char* lpDirectory, int nShowCmd)
 	{
+		if (!lpOperation || !lpFile)
+			return false;
  		if (strcmp(lpOperation, "open") == 0)
 		{
 			bool isUrl = false;
@@ -76,8 +80,13 @@ namespace ParaEngine {
         else if(strcmp(lpOperation, "openExternalBrowser") == 0)
         {
             NSString* sUrl = [NSString stringWithCString:lpFile encoding:[NSString defaultCStringEncoding]];
-            [[NSWorkspace sharedWorkspace] openURL: [NSURL URLWithString:sUrl]];
-            [sUrl release];
+            if (sUrl)
+            {
+                NSURL* nsUrl = [NSURL URLWithString:sUrl];
+                if (nsUrl)
+                    [[NSWorkspace sharedWorkspace] openURL:nsUrl];
+            }
+            return true;
         }
 		else
 		{

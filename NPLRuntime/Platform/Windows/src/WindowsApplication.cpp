@@ -456,6 +456,10 @@ namespace ParaEngine
 		if (lRet != ERROR_SUCCESS)
 		{
 			::RegCloseKey(hKey);
+			// Legacy ParaEngine ReadRegStr returns "" when the key itself exists
+			// and the unnamed default value ("") is queried but unset.
+			if (name.empty() && lRet == ERROR_FILE_NOT_FOUND)
+				return s_regStrResult.c_str();
 			return nullptr;
 		}
 

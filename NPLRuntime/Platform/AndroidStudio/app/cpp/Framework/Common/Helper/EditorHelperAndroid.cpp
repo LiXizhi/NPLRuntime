@@ -43,6 +43,8 @@ namespace ParaEngine {
 
 	bool CEditorHelper::ShellExecute(const char* lpOperation, const char* lpFile, const char* lpParameters, const char* lpDirectory, int nShowCmd)
 	{
+		if (!lpOperation || !lpFile)
+			return false;
 	    if (strcmp(lpOperation, "openExternalBrowser") == 0)
         {
 	        ParaEngineWebView::openExternalBrowser(lpFile);
@@ -77,7 +79,7 @@ namespace ParaEngine {
 				int y = 0;
 
 				//OUTPUT_LOG("hyz  lpParameters=%s",lpParameters);
-				auto obj = NPL::NPLHelper::StringToNPLTable(lpParameters);
+				auto obj = lpParameters ? NPL::NPLHelper::StringToNPLTable(lpParameters) : NPL::NPLObjectProxy();
 				//OUTPUT_LOG("hyz zzz:%d,x:%d",obj.GetType(),obj["x"].GetType());
 				if (obj.GetType() == NPL::NPLObjectBase::NPLObjectType_Table){
 					if (obj["x"].GetType() == NPL::NPLObjectBase::NPLObjectType_Number) {
