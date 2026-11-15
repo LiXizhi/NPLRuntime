@@ -1,0 +1,83 @@
+.is-loading-text-wrapper {
+    background: #fff;
+    border-radius: 2px;
+    color: #444;
+    display: inline-block;
+    padding: 10px 20px;
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    -webkit-transform: translate(-50%, -50%);
+    transform: translate(-50%, -50%)
+}
+
+.is-loading-text-wrapper:after {
+    -webkit-animation-name: a;
+    animation-name: a;
+    -webkit-animation-duration: 1s;
+    animation-duration: 1s;
+    -webkit-animation-iteration-count: infinite;
+    animation-iteration-count: infinite;
+    -webkit-animation-direction: alternate;
+    animation-direction: alternate;
+    content: "";
+    display: inline-block;
+    background: #0bb;
+    height: 2px;
+    position: absolute;
+    left: 50%;
+    bottom: 1px;
+    -webkit-transform: translate(-50%);
+    transform: translate(-50%);
+    vertical-align: middle;
+    width: 1px;
+    z-index: 1
+}
+
+#is-loading-full-overlay,
+.is-loading-element-overlay {
+    background: rgba(0, 0, 0, 0);
+    position: relative;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 2
+}
+
+#is-loading-full-overlay {
+    position: fixed
+}
+
+.is-loading-element-overlay {
+    position: absolute
+}
+
+.is-loading-element-overlay-target {
+    position: relative
+}
+
+.is-loading-element-overlay-target .is-loading-text-wrapper {
+    padding-bottom: 4px;
+    padding-top: 0
+}
+
+@-webkit-keyframes a {
+    0% {
+        width: 1px
+    }
+
+    to {
+        width: 98%
+    }
+}
+
+@keyframes a {
+    0% {
+        width: 1px
+    }
+
+    to {
+        width: 98%
+    }
+}

@@ -41,6 +41,14 @@
             "processId": "${command:pickProcess}"
         },
         {
+            "name": "Web: Launch Project 530 (Chrome)",
+            "type": "chrome",
+            "request": "launch",
+            "url": "http://127.0.0.1:8088/npl/webparacraft/keepwork/local.html?searchroot=C:/lxzsrc/ParaEngine/ParaWorld/&searchpath=script/&pid=530",
+            "webRoot": "${workspaceFolder}/web",
+            "preLaunchTask": "Web: Serve (Local Disk)"
+        },
+        {
             "name": "Emscripten: Launch in Browser (Single Thread)",
             "type": "chrome",
             "request": "launch",

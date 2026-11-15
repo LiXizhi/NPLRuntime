@@ -30,8 +30,9 @@ else()
             "-DCMAKE_TOOLCHAIN_FILE:FILEPATH=${CMAKE_TOOLCHAIN_FILE}"
             "-DCMAKE_MAKE_PROGRAM:FILEPATH=${CMAKE_MAKE_PROGRAM}"
             "-DCMAKE_BUILD_TYPE:STRING=${CMAKE_BUILD_TYPE}"
-            "-DCMAKE_C_FLAGS:STRING=-fexceptions"
-            "-DCMAKE_CXX_FLAGS:STRING=-fexceptions"
+            "--compile-no-warning-as-error"
+            "-DCMAKE_C_FLAGS:STRING=-fexceptions -Wno-deprecated-attributes -Wno-deprecated-pragma"
+            "-DCMAKE_CXX_FLAGS:STRING=-fexceptions -Wno-deprecated-attributes -Wno-deprecated-pragma"
             "-DCMAKE_C_FLAGS_DEBUG:STRING=-O2 -g1"
             "-DCMAKE_CXX_FLAGS_DEBUG:STRING=-O2 -g1"
             -Donnxruntime_BUILD_UNIT_TESTS=OFF

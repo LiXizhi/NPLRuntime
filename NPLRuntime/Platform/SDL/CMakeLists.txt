@@ -106,13 +106,14 @@ if (EMSCRIPTEN)
 
 	# 指定HTML根目录 也是输出目录
 	if (NOT HTML_ROOT)
-		set(HTML_ROOT /mnt/d/workspace/npl/webparacraft/auto_generate_files/)
+		set(HTML_ROOT ${PROJECT_SOURCE_DIR}/../web/auto_generate_files)
 	endif()
 
 	# 拷贝js到html根目录
 	ADD_CUSTOM_COMMAND(
 		TARGET ${TARGET_NAME}
 		POST_BUILD
+		COMMAND ${CMAKE_COMMAND} -E make_directory ${HTML_ROOT}
 		COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_BINARY_DIR}/bin ${HTML_ROOT}
 	)
 
@@ -173,10 +174,15 @@ if (EMSCRIPTEN)
 		WORKING_DIRECTORY ${HTML_ROOT}
 	)
 
+	option(NPLRUNTIME_WEB_PACK_ASSETS "Pack static Emscripten .data asset bundles during build" OFF)
+	set(_NPL_PACK_SCRIPT_ALL "")
+	if (NPLRUNTIME_WEB_PACK_ASSETS)
+		set(_NPL_PACK_SCRIPT_ALL "ALL")
+	endif()
+
 	# script
 	add_custom_target(
-		# paracraft_asset_script
-		paracraft_asset_script ALL
+		paracraft_asset_script ${_NPL_PACK_SCRIPT_ALL}
 		COMMAND $ENV{EMSDK}/upstream/emscripten/tools/file_packager paracraft_asset_script.data --preload "${APP_ROOT}_script@/" --js-output=paracraft_asset_script.js
 		COMMENT "打包脚本资源文件"
 		OUTPUT_DIRECTORY ${HTML_ROOT}

@@ -1,0 +1,771 @@
+
+
+class WebView {
+    constructor() {
+        this.m_id = "webview";
+        this.m_iframe = document.createElement("iframe");
+        this.m_iframe.id = this.m_id;
+        this.m_iframe.style.display = "none";
+        this.m_iframe.style.position = "fixed";
+        this.m_iframe.style.border = "none";
+        this.m_iframe.allow = "camera; microphone; autoplay; clipboard-read; clipboard-write; allow-downloads";
+        document.body.appendChild(this.m_iframe);
+        this.m_iframe.contentWindow.paracraft_platform = "emscripten";
+
+        const self = this;
+        window.addEventListener("message", function (event) {
+            self.OnIFrameMsg(event.data);
+        }, false);
+    }
+
+    Show() {
+        this.m_iframe.style.display = "block";
+    }
+
+    Hide() {
+        this.m_iframe.style.display = "none";
+    }
+
+    Destroy() {
+        document.body.removeChild(this.m_iframe);
+    }
+
+    SetPosition(x, y, width, height) {
+        if (!this.m_fullscreen) {
+            this.m_iframe.style.left = (x / window.devicePixelRatio) + "px";
+            this.m_iframe.style.top = (y / window.devicePixelRatio) + "px";
+            this.m_iframe.width = width / window.devicePixelRatio;
+            this.m_iframe.height = height / window.devicePixelRatio;
+        }
+        this.m_x = x;
+        this.m_y = y;
+        this.m_width = width;
+        this.m_height = height;
+    }
+
+    SetUrl(url) {
+        if (this.m_url == url) return;
+        this.m_url = url;
+        const is_about_blank = url.endsWith("/about_blank.html");
+        const contentWindow = this.m_iframe.contentWindow;
+        const arg_index = url.indexOf("?");
+        this.m_iframe.src = url + (arg_index >= 0 ? "&" : "?") + "platform=emscripten&hash=" + (new Date()).getTime().toString();
+        this.m_iframe_loaded = false;
+        this.m_iframe_loaded_callbacks = [];
+
+        if (this.m_iframe_loaded_timer) {
+            clearInterval(this.m_iframe_loaded_timer);
+        }
+
+        if (is_about_blank) {
+            this.Hide();
+        }
+        else {
+            this.m_iframe_loaded_timer = setInterval(function () {
+                contentWindow.postMessage({
+                    cmd: "load",
+                    is_paracraft_message: true,
+                    platform: "emscripten"
+                }, "*");
+            }, 100);
+        }
+
+    }
+
+    OnIFrameMsg(msg) {
+        if (!msg.is_paracraft_message) return;
+
+        const cmd = msg.cmd;
+        if (cmd == "load") {
+            if (this.m_iframe_loaded) return;
+            clearInterval(this.m_iframe_loaded_timer);
+            this.m_iframe_loaded_timer = undefined;
+            this.m_iframe_loaded = true;
+            for (let i = 0; i < this.m_iframe_loaded_callbacks.length; i++) {
+                const callback = this.m_iframe_loaded_callbacks[i];
+                callback();
+            }
+            console.log("===========webview load url:", this.m_iframe.src);
+        }
+        else if (cmd == "enter_fullscreen") {
+            this.m_fullscreen = true;
+            this.m_iframe.style.left = "0px";
+            this.m_iframe.style.top = "0px";
+            this.m_iframe.width = window.innerWidth;
+            this.m_iframe.height = window.innerHeight;
+        }
+        else if (cmd == "exit_fullscreen") {
+            this.m_fullscreen = false;
+            this.SetPosition(this.m_x, this.m_y, this.m_width, this.m_height);
+        }
+        else if (cmd == "PostMessage") {
+            window.SendMsgToEmscripten(msg);
+        }
+    }
+
+    EmitIFrameMsg(msg) {
+        const self = this;
+        if (!self.m_iframe_loaded) {
+            return self.m_iframe_loaded_callbacks.push(function () {
+                self.EmitIFrameMsg(msg);
+            });
+        }
+        self.m_iframe.contentWindow.postMessage({
+            is_paracraft_message: true,
+            cmd: "PostMessage",
+            platform: "emscripten",
+            filename: msg.to_filename,
+            msg: msg.params,
+        }, "*");
+    }
+
+    GetMsgName() {
+        return "script/apps/Aries/Creator/Game/NplBrowser/NplBrowserPlugin.lua";
+    }
+
+    OnMsg(msg) {
+        var cmd = msg.cmd;
+        // 消息通知逻辑
+        if (cmd == "PostMessage") {
+            return this.EmitIFrameMsg(msg);
+        }
+
+        var x = Math.floor((msg.x || 0) * (msg.scale_x || 1));
+        var y = Math.floor((msg.y || 0) * (msg.scale_y || 1));
+        var width = Math.floor((msg.width || 0) * (msg.scale_x || 1));
+        var height = Math.floor((msg.height || 0) * (msg.scale_y || 1));
+        var url = msg.url || "about:blank";
+        url = url.replace(/^https\:\/\/keepwork\.com/, "https://cross.keepwork.com");
+
+        if (cmd == "Start") {
+            this.SetUrl(url);
+            this.SetPosition(x, y, width, height);
+            this.Show();
+        }
+        else if (cmd == "Show") {
+            if (msg.visible) {
+                this.Show();
+            }
+            else {
+                this.Hide();
+            }
+        }
+        else if (cmd == "ChangePosSize") {
+            this.SetPosition(x, y, width, height);
+        }
+        else if (cmd == "Open") {
+            this.SetUrl(url);
+            if (width != 0 && height != 0) this.SetPosition(x, y, width, height);
+        }
+    }
+};
+
+window.WebViewInstance = new WebView();
+
+function hostInnerWidth() {
+    if (typeof window.getNativeInnerWidth === "function") return window.getNativeInnerWidth();
+    return document.documentElement.clientWidth;
+}
+
+function hostInnerHeight() {
+    if (typeof window.getNativeInnerHeight === "function") return window.getNativeInnerHeight();
+    return document.documentElement.clientHeight;
+}
+
+var NPLB_ICON_REFRESH = '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3.2 8a4.8 4.8 0 0 1 8.2-3.3M13 4.2v3h-3" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M12.8 8a4.8 4.8 0 0 1-8.2 3.3M3 11.8v-3h3" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+var NPLB_ICON_GO = '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8h9M9 4l4 4-4 4" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+var NPLB_ICON_COPY = '<svg viewBox="0 0 16 16" aria-hidden="true"><rect x="5" y="5" width="8" height="9" rx="1.2" fill="none" stroke="currentColor" stroke-width="1.5"/><rect x="3" y="2" width="8" height="9" rx="1.2" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>';
+var NPLB_ICON_FLOAT = '<svg viewBox="0 0 16 16" aria-hidden="true"><rect x="2" y="5" width="9" height="9" rx="1.2" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M8 3h5v5M13 3L8 8" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>';
+var NPLB_ICON_DOCK = '<svg viewBox="0 0 16 16" aria-hidden="true"><rect x="1.5" y="2.5" width="13" height="11" rx="1.2" fill="none" stroke="currentColor" stroke-width="1.5"/><rect x="9" y="4" width="4" height="8" fill="currentColor"/></svg>';
+
+class NplBrowserPopup {
+    constructor() {
+        this.STORAGE_KEY = "webparacraft.nplcodewiki";
+        this.m_url = "";
+        this.m_docked = false;
+        this.m_rect = null;
+        this.m_dockWidth = 0;
+        this.m_dragging = false;
+        this.m_resizing = false;
+        this.m_bridgeRetryTimer = null;
+        this._loadState();
+        this._injectStyle();
+        this._build();
+        this.Hide();
+        var self = this;
+        window.addEventListener("resize", function (ev) {
+            if (!ev.isTrusted) return;
+            self._applyLayout();
+        });
+    }
+
+    _defaultRect() {
+        var w = Math.min(720, Math.max(360, hostInnerWidth() - 48));
+        var h = Math.min(560, Math.max(280, hostInnerHeight() - 72));
+        return {
+            left: Math.max(24, hostInnerWidth() - w - 24),
+            top: 48,
+            width: w,
+            height: h,
+        };
+    }
+
+    _loadState() {
+        this.m_rect = this._defaultRect();
+        this.m_dockWidth = Math.min(560, Math.floor(hostInnerWidth() * 0.42));
+        this.m_docked = true;
+        try {
+            var raw = localStorage.getItem(this.STORAGE_KEY);
+            if (!raw) return;
+            var data = JSON.parse(raw);
+            if (data && typeof data === "object") {
+                if (typeof data.docked === "boolean") {
+                    this.m_docked = data.docked;
+                }
+                if (data.rect && typeof data.rect.width === "number") {
+                    this.m_rect = data.rect;
+                }
+                if (typeof data.dockWidth === "number" && data.dockWidth > 240) {
+                    this.m_dockWidth = data.dockWidth;
+                }
+            }
+        } catch (e) {
+        }
+    }
+
+    _saveState() {
+        try {
+            localStorage.setItem(this.STORAGE_KEY, JSON.stringify({
+                docked: this.m_docked,
+                rect: this.m_rect,
+                dockWidth: this.m_dockWidth,
+            }));
+        } catch (e) {
+        }
+    }
+
+    _injectStyle() {
+        if (document.getElementById("nplb-style")) return;
+        var style = document.createElement("style");
+        style.id = "nplb-style";
+        style.textContent = [
+            "#nplb-panel{position:fixed;z-index:10050;display:none;flex-direction:column;background:#1e1e1e;color:#eee;border:1px solid #444;box-shadow:0 8px 28px rgba(0,0,0,.45);min-width:280px;min-height:200px;overflow:hidden;}",
+            "#nplb-panel.nplb-visible{display:flex;}",
+            "#nplb-panel.nplb-docked{box-shadow:none;border-top:none;border-right:none;border-bottom:none;}",
+            "#nplb-title{height:36px;flex:0 0 36px;display:flex;align-items:center;gap:6px;padding:0 8px 0 8px;background:#2d2d2d;cursor:move;user-select:none;}",
+            "#nplb-panel.nplb-docked #nplb-title{cursor:default;}",
+            "#nplb-title .nplb-url{flex:1;min-width:0;height:24px;margin:0;border:1px solid #555;border-radius:3px;background:#1a1a1a;color:#ddd;font:12px/22px sans-serif;padding:0 8px;outline:none;cursor:text;user-select:text;}",
+            "#nplb-title .nplb-url:focus{border-color:#888;background:#111;}",
+            "#nplb-title .nplb-status{font:12px/1 sans-serif;color:#8cdc8c;white-space:nowrap;}",
+            "#nplb-title button{flex:0 0 auto;height:24px;width:24px;padding:0;border:1px solid #555;border-radius:3px;background:#3a3a3a;color:#eee;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;}",
+            "#nplb-title button:hover{background:#4a4a4a;}",
+            "#nplb-title button.nplb-close{font-size:16px;line-height:22px;}",
+            "#nplb-title button svg{width:14px;height:14px;fill:currentColor;display:block;}",
+            "#nplb-frame{flex:1 1 auto;width:100%;border:0;background:#fff;}",
+            "#nplb-panel.nplb-busy #nplb-frame{pointer-events:none;}",
+            ".nplb-grip{position:absolute;z-index:2;}",
+            ".nplb-grip-w{left:0;top:36px;bottom:0;width:6px;cursor:ew-resize;}",
+            ".nplb-grip-e{right:0;top:36px;bottom:0;width:6px;cursor:ew-resize;}",
+            ".nplb-grip-s{left:0;right:0;bottom:0;height:6px;cursor:ns-resize;}",
+            ".nplb-grip-se{right:0;bottom:0;width:12px;height:12px;cursor:nwse-resize;}",
+            "#nplb-panel.nplb-docked .nplb-grip-e,#nplb-panel.nplb-docked .nplb-grip-s,#nplb-panel.nplb-docked .nplb-grip-se{display:none;}",
+        ].join("");
+        document.head.appendChild(style);
+    }
+
+    _build() {
+        var self = this;
+        var panel = document.createElement("div");
+        panel.id = "nplb-panel";
+        panel.innerHTML = [
+            '<div id="nplb-title">',
+            '<input class="nplb-url" type="text" spellcheck="false" autocomplete="off" aria-label="NPL Code Wiki URL">',
+            '<span class="nplb-status"></span>',
+            '<button type="button" class="nplb-go" title="打开"></button>',
+            '<button type="button" class="nplb-refresh" title="刷新"></button>',
+            '<button type="button" class="nplb-dock" title="浮动"></button>',
+            '<button type="button" class="nplb-copy" title="复制"></button>',
+            '<button type="button" class="nplb-close" title="关闭">×</button>',
+            "</div>",
+            '<iframe id="nplb-frame" allow="clipboard-read; clipboard-write; allow-downloads"></iframe>',
+            '<div class="nplb-grip nplb-grip-w" data-edge="w"></div>',
+            '<div class="nplb-grip nplb-grip-e" data-edge="e"></div>',
+            '<div class="nplb-grip nplb-grip-s" data-edge="s"></div>',
+            '<div class="nplb-grip nplb-grip-se" data-edge="se"></div>',
+        ].join("");
+        document.body.appendChild(panel);
+        this.m_panel = panel;
+        this.m_iframe = panel.querySelector("#nplb-frame");
+        this.m_urlEl = panel.querySelector(".nplb-url");
+        this.m_statusEl = panel.querySelector(".nplb-status");
+        this.m_goBtn = panel.querySelector(".nplb-go");
+        this.m_dockBtn = panel.querySelector(".nplb-dock");
+        this.m_copyBtn = panel.querySelector(".nplb-copy");
+        this.m_refreshBtn = panel.querySelector(".nplb-refresh");
+        this.m_copyBtn.innerHTML = NPLB_ICON_COPY;
+        this.m_goBtn.innerHTML = NPLB_ICON_GO;
+        this.m_refreshBtn.innerHTML = NPLB_ICON_REFRESH;
+        this._refreshDockBtn();
+
+        window.addEventListener("keydown", function (e) {
+            if (e.target !== self.m_urlEl) return;
+            e.stopImmediatePropagation();
+            if (e.key && e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey && !e.isComposing) {
+                e.preventDefault();
+                var start = self.m_urlEl.selectionStart;
+                var end = self.m_urlEl.selectionEnd;
+                self.m_urlEl.setRangeText(e.key, start, end, "end");
+                self.m_urlEl.dispatchEvent(new Event("input", { bubbles: true }));
+            } else if (e.key === "Enter") {
+                e.preventDefault();
+                self._go(self.m_urlEl.value, false);
+            } else if (e.key === "Escape") {
+                e.preventDefault();
+                self.m_urlEl.value = self.m_url || "";
+                self.m_urlEl.blur();
+            }
+        }, true);
+        window.addEventListener("keypress", function (e) {
+            if (e.target === self.m_urlEl) e.stopImmediatePropagation();
+        }, true);
+        window.addEventListener("keyup", function (e) {
+            if (e.target === self.m_urlEl) e.stopImmediatePropagation();
+        }, true);
+
+        panel.querySelector(".nplb-close").addEventListener("click", function (e) {
+            e.stopPropagation();
+            self.Hide();
+        });
+        panel.querySelector(".nplb-copy").addEventListener("click", function (e) {
+            e.stopPropagation();
+            self._copyUrl(self.m_urlEl.value.trim() || self.m_url, true);
+        });
+        this.m_goBtn.addEventListener("click", function (e) {
+            e.stopPropagation();
+            self._go(self.m_urlEl.value, false);
+        });
+        this.m_refreshBtn.addEventListener("click", function (e) {
+            e.stopPropagation();
+            self._go(self.m_urlEl.value, true);
+        });
+        this.m_urlEl.addEventListener("mousedown", function (e) {
+            e.stopPropagation();
+        });
+        this.m_urlEl.addEventListener("keypress", function (e) {
+            e.stopPropagation();
+        });
+        this.m_urlEl.addEventListener("compositionstart", function (e) {
+            e.stopPropagation();
+        });
+        this.m_urlEl.addEventListener("compositionend", function (e) {
+            e.stopPropagation();
+        });
+        this.m_urlEl.addEventListener("keydown", function (e) {
+            e.stopPropagation();
+            if (e.key === "Enter") {
+                e.preventDefault();
+                self._go(self.m_urlEl.value, false);
+            } else if (e.key === "Escape") {
+                e.preventDefault();
+                self.m_urlEl.value = self.m_url || "";
+                self.m_urlEl.blur();
+            }
+        });
+        this.m_dockBtn.addEventListener("click", function (e) {
+            e.stopPropagation();
+            if (self.m_docked) self._undock();
+            else self._dock();
+        });
+
+        var title = panel.querySelector("#nplb-title");
+        title.addEventListener("mousedown", function (e) {
+            if (e.button !== 0) return;
+            if (e.target && e.target.closest && (e.target.closest("button") || e.target.closest("input"))) return;
+            if (self.m_docked) return;
+            e.preventDefault();
+            self._beginDrag(e);
+        });
+
+        var grips = panel.querySelectorAll(".nplb-grip");
+        for (var i = 0; i < grips.length; i++) {
+            (function (grip) {
+                grip.addEventListener("mousedown", function (e) {
+                    if (e.button !== 0) return;
+                    e.preventDefault();
+                    e.stopPropagation();
+                    self._beginResize(e, grip.getAttribute("data-edge"));
+                });
+            })(grips[i]);
+        }
+    }
+
+    _refreshDockBtn() {
+        if (!this.m_dockBtn) return;
+        if (this.m_docked) {
+            this.m_dockBtn.title = "浮动";
+            this.m_dockBtn.innerHTML = NPLB_ICON_FLOAT;
+        } else {
+            this.m_dockBtn.title = "右侧";
+            this.m_dockBtn.innerHTML = NPLB_ICON_DOCK;
+        }
+    }
+
+    _setBusy(busy) {
+        if (busy) this.m_panel.classList.add("nplb-busy");
+        else this.m_panel.classList.remove("nplb-busy");
+    }
+
+    _beginDrag(e) {
+        var self = this;
+        if (this.m_docked) return;
+        this.m_dragging = true;
+        this._setBusy(true);
+        var startX = e.clientX;
+        var startY = e.clientY;
+        var orig = {
+            left: this.m_rect.left,
+            top: this.m_rect.top,
+        };
+        function onMove(ev) {
+            self.m_rect.left = orig.left + (ev.clientX - startX);
+            self.m_rect.top = orig.top + (ev.clientY - startY);
+            self._clampRect();
+            self._applyLayout();
+        }
+        function onUp(ev) {
+            document.removeEventListener("mousemove", onMove);
+            document.removeEventListener("mouseup", onUp);
+            self.m_dragging = false;
+            self._setBusy(false);
+            if (ev.clientX > hostInnerWidth() - 48) {
+                self._dock();
+            } else {
+                self._saveState();
+            }
+        }
+        document.addEventListener("mousemove", onMove);
+        document.addEventListener("mouseup", onUp);
+    }
+
+    _beginResize(e, edge) {
+        var self = this;
+        this.m_resizing = true;
+        this._setBusy(true);
+        var startX = e.clientX;
+        var startY = e.clientY;
+        var orig = {
+            left: this.m_rect.left,
+            top: this.m_rect.top,
+            width: this.m_docked ? this.m_dockWidth : this.m_rect.width,
+            height: this.m_rect.height,
+        };
+        function onMove(ev) {
+            var dx = ev.clientX - startX;
+            var dy = ev.clientY - startY;
+            if (self.m_docked) {
+                if (edge === "w") {
+                    self.m_dockWidth = Math.max(280, Math.min(hostInnerWidth() - 80, orig.width - dx));
+                }
+            } else {
+                if (edge.indexOf("w") >= 0) {
+                    var width = Math.max(280, orig.width - dx);
+                    self.m_rect.left = orig.left + orig.width - width;
+                    self.m_rect.width = width;
+                }
+                if (edge.indexOf("e") >= 0) {
+                    self.m_rect.width = Math.max(280, orig.width + dx);
+                }
+                if (edge.indexOf("s") >= 0) {
+                    self.m_rect.height = Math.max(200, orig.height + dy);
+                }
+                self._clampRect();
+            }
+            self._applyLayout();
+        }
+        function onUp() {
+            document.removeEventListener("mousemove", onMove);
+            document.removeEventListener("mouseup", onUp);
+            self.m_resizing = false;
+            self._setBusy(false);
+            self._saveState();
+            self._syncGameCanvas(true);
+        }
+        document.addEventListener("mousemove", onMove);
+        document.addEventListener("mouseup", onUp);
+    }
+
+    _clampRect() {
+        var r = this.m_rect;
+        r.width = Math.max(280, Math.min(r.width, hostInnerWidth()));
+        r.height = Math.max(200, Math.min(r.height, hostInnerHeight()));
+        r.left = Math.max(0, Math.min(r.left, hostInnerWidth() - 80));
+        r.top = Math.max(0, Math.min(r.top, hostInnerHeight() - 36));
+    }
+
+    _dock() {
+        this.m_docked = true;
+        this.m_panel.classList.add("nplb-docked");
+        this._refreshDockBtn();
+        this._applyLayout();
+        this._syncGameCanvas(true);
+        this._saveState();
+    }
+
+    _undock() {
+        this._undockAt(null, null);
+        this._saveState();
+    }
+
+    _undockAt(clientX, clientY) {
+        this.m_docked = false;
+        this.m_panel.classList.remove("nplb-docked");
+        this._refreshDockBtn();
+        if (typeof clientX === "number") {
+            this.m_rect.left = Math.max(0, clientX - Math.floor(this.m_rect.width / 2));
+            this.m_rect.top = Math.max(0, clientY - 18);
+        }
+        this._clampRect();
+        this._applyLayout();
+        this._syncGameCanvas(true);
+    }
+
+    _applyLayout() {
+        var panel = this.m_panel;
+        if (this.m_docked) {
+            var width = Math.max(280, Math.min(this.m_dockWidth, hostInnerWidth() - 80));
+            this.m_dockWidth = width;
+            panel.style.left = (hostInnerWidth() - width) + "px";
+            panel.style.top = "0px";
+            panel.style.width = width + "px";
+            panel.style.height = hostInnerHeight() + "px";
+            panel.style.right = "0px";
+            panel.style.bottom = "0px";
+        } else {
+            this._clampRect();
+            var r = this.m_rect;
+            panel.style.left = r.left + "px";
+            panel.style.top = r.top + "px";
+            panel.style.width = r.width + "px";
+            panel.style.height = r.height + "px";
+            panel.style.right = "auto";
+            panel.style.bottom = "auto";
+        }
+        this._syncGameCanvas();
+    }
+
+    IsDockedVisible() {
+        return this.m_docked && this.m_panel && this.m_panel.classList.contains("nplb-visible");
+    }
+
+    GetDockWidth() {
+        return this.m_dockWidth || 0;
+    }
+
+    _syncGameCanvas(immediate) {
+        if (typeof window.applyGameCanvasLayout === "function") {
+            window.applyGameCanvasLayout({ immediate: !!immediate });
+        }
+    }
+
+    _flashCopied() {
+        var el = this.m_statusEl;
+        el.textContent = "已复制";
+        if (this.m_statusTimer) clearTimeout(this.m_statusTimer);
+        this.m_statusTimer = setTimeout(function () {
+            el.textContent = "";
+        }, 1600);
+    }
+
+    _copyFallback(text) {
+        var ta = document.createElement("textarea");
+        ta.value = text;
+        ta.setAttribute("readonly", "");
+        ta.style.position = "fixed";
+        ta.style.left = "-9999px";
+        document.body.appendChild(ta);
+        ta.select();
+        var ok = false;
+        try {
+            ok = document.execCommand("copy");
+        } catch (e) {
+        }
+        document.body.removeChild(ta);
+        if (ok) this._flashCopied();
+    }
+
+    _copyUrl(text, fromClick) {
+        var self = this;
+        if (!text) return;
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(text).then(function () {
+                self._flashCopied();
+            }).catch(function () {
+                self._copyFallback(text);
+            });
+            return;
+        }
+        this._copyFallback(text);
+        if (fromClick) {
+            // click is a user gesture; fallback is enough
+        }
+    }
+
+    Show() {
+        this.m_panel.classList.add("nplb-visible");
+        if (this.m_docked) {
+            this.m_panel.classList.add("nplb-docked");
+        } else {
+            this.m_panel.classList.remove("nplb-docked");
+        }
+        this._refreshDockBtn();
+        this._applyLayout();
+        this._syncGameCanvas(true);
+    }
+
+    Hide() {
+        this.m_panel.classList.remove("nplb-visible");
+        this._syncGameCanvas(true);
+    }
+
+    _normalizeUrl(raw) {
+        var text = String(raw || "").trim();
+        if (!text) return "";
+        if (text.indexOf("://") < 0) {
+            if (text.charAt(0) === "/") {
+                try {
+                    var base = this.m_url || (this.m_iframe && this.m_iframe.src) || "http://127.0.0.1:8089/";
+                    text = new URL(text, base).href;
+                } catch (e) {
+                    return "";
+                }
+            } else {
+                text = "http://" + text;
+            }
+        }
+        try {
+            var parsed = new URL(text);
+            if (parsed.protocol !== "http:" && parsed.protocol !== "https:" && parsed.protocol !== "npl:") return "";
+            return parsed.href;
+        } catch (e) {
+            return "";
+        }
+    }
+
+    _nplUrl(path, search, hash) {
+        var route = String(path || "/").replace(/^\/+/, "");
+        return "npl://" + route + (search || "") + (hash || "");
+    }
+
+    _publicUrl(url) {
+        try {
+            var parsed = new URL(url);
+            if (parsed.protocol === "npl:") return parsed.href;
+            var bridgeMatch = parsed.pathname.match(/\/__npl_webserver__(\/.*)?$/);
+            if (bridgeMatch) {
+                var bridgePath = bridgeMatch[1] || "/";
+                var legacyId = bridgePath.match(/^\/[0-9a-f]{8}-[0-9a-f-]{27,}(\/.*)?$/i);
+                return this._nplUrl(legacyId ? (legacyId[1] || "/") : bridgePath, parsed.search, parsed.hash);
+            }
+            if (parsed.protocol !== "http:" || (parsed.hostname !== "127.0.0.1" && parsed.hostname !== "localhost")) {
+                return url;
+            }
+            var match = parsed.pathname.match(/^\/webserver\/[^/]+(\/.*)?$/);
+            var path = match ? (match[1] || "/") : parsed.pathname;
+            return this._nplUrl(path, parsed.search, parsed.hash);
+        } catch (e) {
+            return url;
+        }
+    }
+
+    _iframeUrl(url) {
+        try {
+            var parsed = new URL(url);
+            if (parsed.protocol === "npl:") {
+                if (!window.NplWebserverBridge) return "";
+                var nplPath = "/" + parsed.hostname + parsed.pathname;
+                return window.NplWebserverBridge.Route(nplPath + parsed.search + parsed.hash);
+            }
+            var isLoopback = parsed.protocol === "http:" && (parsed.hostname === "127.0.0.1" || parsed.hostname === "localhost");
+            var isPublicAlias = parsed.origin === window.location.origin;
+            if (!isLoopback && !isPublicAlias) {
+                return url;
+            }
+            if (!window.NplWebserverBridge) return "";
+            var match = parsed.pathname.match(/^\/webserver\/([^/]+)(\/.*)?$/);
+            var path = match ? (match[2] || "/") : parsed.pathname;
+            return window.NplWebserverBridge.Route(path + parsed.search + parsed.hash);
+        } catch (e) {
+            return url;
+        }
+    }
+
+    _go(raw, forceReload) {
+        var url = this._normalizeUrl(raw || this.m_url);
+        if (!url) {
+            this.m_urlEl.value = this.m_url || "";
+            return;
+        }
+        var publicUrl = this._publicUrl(url);
+        var iframeUrl = this._iframeUrl(publicUrl);
+        if (!iframeUrl) {
+            this.m_url = publicUrl;
+            this.m_urlEl.value = this.m_url;
+            this.m_urlEl.title = this.m_url;
+            this.Show();
+            if (this.m_bridgeRetryTimer === null && "serviceWorker" in navigator) {
+                var self = this;
+                this.m_bridgeRetryTimer = setTimeout(function () {
+                    self.m_bridgeRetryTimer = null;
+                    self._go(url, forceReload);
+                }, 50);
+            }
+            return;
+        }
+        if (this.m_bridgeRetryTimer !== null) {
+            clearTimeout(this.m_bridgeRetryTimer);
+            this.m_bridgeRetryTimer = null;
+        }
+        this.m_url = publicUrl;
+        this.m_urlEl.value = publicUrl;
+        this.m_urlEl.title = publicUrl;
+        var current = this.m_iframe.getAttribute("src") || "";
+        var same = current.split("#")[0] === iframeUrl.split("#")[0];
+        if (forceReload || !same) {
+            if (forceReload && same) this.m_iframe.removeAttribute("src");
+            this.m_iframe.src = iframeUrl;
+        }
+        this.Show();
+    }
+
+    Open(url) {
+        if (!url) return;
+        this._go(url, false);
+        this._copyUrl(this.m_url, false);
+    }
+
+    OnMsg(msg) {
+        var cmd = msg && msg.cmd;
+        if (cmd == "Open" || cmd == "Start") {
+            this.Open(msg.url);
+        } else if (cmd == "Show") {
+            if (msg.visible === false) this.Hide();
+            else this.Show();
+        } else if (cmd == "Close") {
+            this.Hide();
+        }
+    }
+}
+
+window.NplBrowserPopupInstance = new NplBrowserPopup();
+
+// setTimeout(function(){
+//     console.log("=================================================111")
+//     WebViewInstance.OnMsg({
+//         cmd : "Start",
+//         url : "http://127.0.0.1:8088/npl/webparacraft/test/iframe.html",
+//         x : 100,
+//         y: 100,
+//         width: 1280,
+//         height: 720,
+//     })
+// }, 500);

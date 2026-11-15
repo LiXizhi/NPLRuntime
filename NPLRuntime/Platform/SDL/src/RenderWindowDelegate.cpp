@@ -1,4 +1,5 @@
 ﻿#include "ParaEngine.h"
+#include <chrono>
 #include "RenderWindowDelegate.h"
 #include "2dengine/GUIRoot.h"
 #include "NPL/NPLHelper.h"

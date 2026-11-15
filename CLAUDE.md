@@ -1,6 +1,6 @@
 # CLAUDE.md — NPLRuntime / ParaEngine
 
-Guidance for AI assistants working in this repository.
+Guidance for AI assistants working in this repository. See also [`AGENTS.md`](AGENTS.md) and [`docs/web-dev-workflow.md`](docs/web-dev-workflow.md) for the unified cross-platform and Emscripten WebAssembly local-disk workflows.
 
 ## Active Work: dev → cp-old Merge
 
@@ -124,6 +124,23 @@ cmake --build build
 ```
 
 Output: `ParaWorld/bin64/ParaEngineServer`
+
+### WebAssembly client (Emscripten 7.0+ + Local Disk, Zero `.data` Bundles)
+
+Builds `ParaCraftSingleThread.{js,wasm}` into `web/auto_generate_files/` (git-ignored) and serves the self-contained `web/` host on `http://127.0.0.1:8088`, mounting local Paracraft files directly via `?searchroot=...&searchpath=...` without needing `.data` asset bundles or Keepwork MCP (`:8089`).
+
+```powershell
+# Windows (builds in WSL ~/build/npl_unified_wasm, serves natively on 127.0.0.1:8088, opens Project 530)
+.\scripts\dev_web.ps1 build
+.\scripts\dev_web.ps1 run -SearchRoot "C:/lxzsrc/ParaEngine/ParaWorld/" -SearchPath "script/" -ProjectId "530"
+```
+
+- **VSCode Tasks (`.vscode/tasks.json`):**
+  - `Web: Build and Run Project 530` (builds WASM -> starts/reuses local server -> opens Project 530)
+  - `Web: Build WASM (Emscripten)`
+  - `Web: Run Project 530 (Local Disk)`
+- **Project 530 URL:** `http://127.0.0.1:8088/npl/webparacraft/keepwork/local.html?searchroot=C:/lxzsrc/ParaEngine/ParaWorld/&searchpath=script/&pid=530`
+- Full details: [`AGENTS.md`](AGENTS.md) and [`docs/web-dev-workflow.md`](docs/web-dev-workflow.md).
 
 ### Prerequisites
 

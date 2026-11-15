@@ -28,6 +28,7 @@ Abstract:
 #include <thread>
 #include <mutex>
 #include <unordered_map>
+#include <vector>
 
 /** T-MAC GEMM kernel config key - struct-based for type safety and performance */
 struct TMACConfigKey {
