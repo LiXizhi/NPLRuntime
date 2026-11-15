@@ -47,6 +47,7 @@
 #include "InfoCenter/ICConfigManager.h"
 #include "SceneObject.h"
 #include "ParaWorldAsset.h"
+#include "EffectManager.h"
 #include "terrain/Terrain.h"
 #include "ViewportManager.h"
 #include "MoviePlatform.h"
@@ -61,7 +62,6 @@
 #include "PluginAPI.h"
 #include "Core/EventsCenter.h"
 #include "Core/EventClasses.h"
-#include "AutoRigger.h"
 #include "ScriptParticle.h"
 #include "IParaWebXR.h"
 #include "CoroutineThread.h"
@@ -95,6 +95,8 @@ ParaEngine::CParaEngineAppBase::CParaEngineAppBase()
 	, m_doWorkFRC(CFrameRateController::FRC_CONSTANT_OR_BELOW)
 	, m_bActive(true), m_fFPS(0.f), m_fTime(0.f), m_fElapsedTime(0.f), m_fRefreshTimerInterval(-1.f), m_nFrameRateControl(0)
     , m_bRender(true)
+	, m_bAudioEngineInitialized(false)
+	, m_bFinalCleanedUp(false)
 {
 	g_pCurrentApp = this;
 	// we use high resolution timer (boost ASIO internally), hence FPS can be specified very accurately without eating all CPUs. 
@@ -116,6 +118,8 @@ ParaEngine::CParaEngineAppBase::CParaEngineAppBase(const char* sCmd)
 	, m_doWorkFRC(CFrameRateController::FRC_CONSTANT_OR_BELOW)
 	, m_bActive(true), m_fFPS(0.f), m_fTime(0.f), m_fElapsedTime(0.f), m_fRefreshTimerInterval(-1.f), m_nFrameRateControl(0)
     , m_bRender(true)
+	, m_bAudioEngineInitialized(false)
+	, m_bFinalCleanedUp(false)
 {
 	g_pCurrentApp = this;
 	// we use high resolution timer (boost ASIO internally), hence FPS can be specified very accurately without eating all CPUs. 
@@ -784,11 +788,10 @@ void ParaEngine::CParaEngineAppBase::StopApp()
 		return;
 
 	FinalCleanup();
-	m_pParaWorldAsset.reset();
 	m_pRootScene.reset();
 	m_pGUIRoot.reset();
 	m_pViewportManager.reset();
-	m_pGUIRoot.reset();
+	m_pParaWorldAsset.reset();
 #ifdef WIN32
 	//#ifdef LOG_FILES_ACTIVITY
 	if (CFileLogger::GetInstance()->IsBegin())
@@ -806,6 +809,9 @@ void ParaEngine::CParaEngineAppBase::StopApp()
 
 	/// delete all singletons
 	DestroySingletons();
+
+	if (m_pRenderDevice)
+		m_pRenderDevice->Flush();
 }
 
 void ParaEngine::CParaEngineAppBase::DestroySingletons()
@@ -947,7 +953,6 @@ void ParaEngine::CParaEngineAppBase::RegisterObjectClasses()
 	pAttManager->RegisterObjectFactory("CSkyMesh", new CDefaultObjectFactory<CSkyMesh>());
 	pAttManager->RegisterObjectFactory("COverlayObject", new CDefaultObjectFactory<COverlayObject>());
 	pAttManager->RegisterObjectFactory("CLightObject", new CDefaultObjectFactory<CLightObject>());
-	pAttManager->RegisterObjectFactory("CAutoRigger", new CDefaultObjectFactory<CAutoRigger>());
 	pAttManager->RegisterObjectFactory("CScriptParticle", new CDefaultObjectFactory<CScriptParticle>());
 	/// TODO add more here:
 }
@@ -1173,6 +1178,10 @@ void ParaEngine::CParaEngineAppBase::SetAppState(ParaEngine::PEAppState state)
 
 bool ParaEngine::CParaEngineAppBase::FinalCleanup()
 {
+	if (m_bFinalCleanedUp)
+		return S_OK;
+	m_bFinalCleanedUp = true;
+
 	CBlockWorldManager::GetSingleton()->Cleanup();
 
 	if (!CGlobals::GetAISim()->IsCleanedUp())
@@ -1192,10 +1201,31 @@ bool ParaEngine::CParaEngineAppBase::FinalCleanup()
 
 	CGlobals::GetMoviePlatform()->Cleanup();
 
+	if (m_pParaWorldAsset.get())
+	{
+		m_pParaWorldAsset->GetEffectManager().EndEffect();
+	}
+	if (m_pRenderDevice)
+	{
+		m_pRenderDevice->SetRenderTargets(0, nullptr, nullptr);
+		m_pRenderDevice->BindShaderProgram(nullptr);
+		for (uint32_t stage = 0; stage < 16; ++stage)
+		{
+			m_pRenderDevice->SetTexture(stage, nullptr);
+		}
+		m_pRenderDevice->Flush();
+	}
+
     if (m_pGUIRoot.get())
+    {
+        m_pGUIRoot->DeleteDeviceObjects();
         m_pGUIRoot->Release();		// GUI: 2D engine
+    }
     if (m_pRootScene.get())
+    {
+        m_pRootScene->DeleteDeviceObjects();
         m_pRootScene->Cleanup();
+    }
 	CSingleton<CObjectManager>::Instance().Finalize();
 	CSingleton<CGUIHighlightManager>::Instance().Finalize();
     if (m_pParaWorldAsset.get())

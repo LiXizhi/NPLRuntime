@@ -13,6 +13,7 @@
 #include <boost/filesystem.hpp>
 #include <boost/system/error_code.hpp>
 #include <boost/system/system_error.hpp>
+#include <atomic>
 #include <memory>
 #include <string>
 #include <stdexcept>
@@ -91,10 +92,16 @@ public:
         last_work_thread_exception_ptr_(nullptr),
         iocp_(init_iocp()),
         run_(true),
+        shutdown_done_(false),
         work_thread_(&boost::asio::basic_dir_monitor_service<DirMonitorImplementation>::work_thread, this),
         async_monitor_work_(std::make_unique<boost::asio::executor_work_guard<boost::asio::io_context::executor_type>>(async_monitor_io_service_.get_executor())),
-        async_monitor_thread_(boost::bind(&boost::asio::io_context::run, &async_monitor_io_service_))
+        async_monitor_thread_(&boost::asio::basic_dir_monitor_service<DirMonitorImplementation>::async_monitor_thread_func, this)
     {
+    }
+
+    ~basic_dir_monitor_service() override
+    {
+        shutdown_service();
     }
 
     typedef std::shared_ptr<DirMonitorImplementation> implementation_type;
@@ -179,22 +186,31 @@ public:
     protected:
         void PostAndWait(const boost::system::error_code ec, const dir_monitor_event& ev) const
         {
-            boost::mutex post_mutex;
-            boost::condition_variable post_conditional_variable;
-            bool post_cancel = false;
+            if (ec == boost::asio::error::operation_aborted || this->io_service_.stopped())
+                return;
+
+            struct PostSyncState
+            {
+                boost::mutex mutex;
+                boost::condition_variable cond;
+                bool done = false;
+            };
+
+            auto state = std::make_shared<PostSyncState>();
+            Handler handlerCopy(handler_);
 
             boost::asio::post(this->io_service_,
-                [&]
+                [state, handlerCopy, ec, ev]() mutable
                 {
-                    handler_(ec, ev);
-                    boost::unique_lock<boost::mutex> lock(post_mutex);
-                    post_cancel = true;
-                    post_conditional_variable.notify_one();
+                    handlerCopy(ec, ev);
+                    boost::unique_lock<boost::mutex> lock(state->mutex);
+                    state->done = true;
+                    state->cond.notify_one();
                 }
             );
-            boost::unique_lock<boost::mutex> lock(post_mutex);
-            while (!post_cancel)
-                post_conditional_variable.wait(lock);
+            boost::unique_lock<boost::mutex> lock(state->mutex);
+            while (!state->done && !this->io_service_.stopped())
+                state->cond.wait_for(lock, boost::chrono::milliseconds(20));
         }
 
     private:
@@ -211,8 +227,16 @@ public:
     }
 
 private:
+    virtual void shutdown() override
+    {
+        shutdown_service();
+    }
+
     virtual void shutdown_service()
     {
+        if (shutdown_done_.exchange(true))
+            return;
+
         // The async_monitor thread will finish when async_monitor_work_ is reset as all asynchronous
         // operations have been aborted and were discarded before (in destroy).
         async_monitor_work_.reset();
@@ -223,13 +247,30 @@ private:
         // The async_monitor thread is joined to make sure the directory monitor service is
         // destroyed _after_ the thread is finished (not that the thread tries to access
         // instance properties which don't exist anymore).
-        async_monitor_thread_.join();
+        if (async_monitor_thread_.joinable())
+            async_monitor_thread_.join();
 
         // The work thread is stopped and joined, too.
         stop_work_thread();
-        work_thread_.join();
+        if (work_thread_.joinable())
+            work_thread_.join();
 
-        CloseHandle(iocp_);
+        if (iocp_ != NULL && iocp_ != INVALID_HANDLE_VALUE)
+        {
+            CloseHandle(iocp_);
+            iocp_ = NULL;
+        }
+    }
+
+    void async_monitor_thread_func()
+    {
+        try
+        {
+            async_monitor_io_service_.run();
+        }
+        catch (...)
+        {
+        }
     }
 
     HANDLE init_iocp()
@@ -250,6 +291,8 @@ private:
             }
             catch (...)
             {
+                if (!running())
+                    break;
                 last_work_thread_exception_ptr_ = std::current_exception();
                 boost::asio::post(this->get_io_context(), boost::bind(&boost::asio::basic_dir_monitor_service<DirMonitorImplementation>::throw_work_exception_handler, this));
             }
@@ -262,14 +305,21 @@ private:
         completion_key* ck = nullptr;
         OVERLAPPED *overlapped = nullptr;
 
-        helper::throw_system_error_if(!GetQueuedCompletionStatus(iocp_, &bytes_transferred, reinterpret_cast<PULONG_PTR>(&ck), &overlapped, INFINITE),
-            "boost::asio::basic_dir_monitor_service::work_thread: GetQueuedCompletionStatus failed");
+        BOOL ok = GetQueuedCompletionStatus(iocp_, &bytes_transferred, reinterpret_cast<PULONG_PTR>(&ck), &overlapped, INFINITE);
+        DWORD last_error = ok ? ERROR_SUCCESS : GetLastError();
 
         // a smart pointer is used to free allocated memory automatically in case of 
         // exceptions while handing over a completion key to the I/O completion port module,
         // the ownership has to be *released* at the end of scope so as not to free the memory
         // the OS kernel is using.
         std::unique_ptr<completion_key> ck_holder(ck);
+        if (!ok)
+        {
+            if (!running() || last_error == ERROR_OPERATION_ABORTED || last_error == ERROR_INVALID_HANDLE || last_error == ERROR_ABANDONED_WAIT_0)
+                return;
+            SetLastError(last_error);
+            helper::throw_system_error_if(true, "boost::asio::basic_dir_monitor_service::work_thread: GetQueuedCompletionStatus failed");
+        }
         if (!ck_holder || !bytes_transferred)
             return;
 
@@ -334,13 +384,17 @@ private:
 
         // By setting the third paramter to 0 GetQueuedCompletionStatus() will return with a null pointer as the completion key.
         // The work thread won't do anything except checking if it should continue to run. As run_ is set to false it will stop.
-        helper::throw_system_error_if(!PostQueuedCompletionStatus(iocp_, 0, 0, NULL), "boost::asio::basic_dir_monitor_service::stop_work_thread: PostQueuedCompletionStatus failed");
+        if (iocp_ != NULL && iocp_ != INVALID_HANDLE_VALUE)
+        {
+            PostQueuedCompletionStatus(iocp_, 0, 0, NULL);
+        }
     }
 
     std::exception_ptr last_work_thread_exception_ptr_;
     HANDLE iocp_;
     boost::mutex work_thread_mutex_;
     bool run_;
+    std::atomic<bool> shutdown_done_;
     boost::thread work_thread_;
     boost::asio::io_context async_monitor_io_service_;
     std::unique_ptr<boost::asio::executor_work_guard<boost::asio::io_context::executor_type>> async_monitor_work_;

@@ -51,7 +51,6 @@ ucm_add_dirs(
     terrain
     VoxelMesh
     CadModel
-	AutoRigger
     TO sources_commmon RECURSIVE
 )
 
@@ -136,8 +135,6 @@ endif ()
 
 list(REMOVE_DUPLICATES RenderSystem)
 
-list(APPEND NPLRUNTIME_INCLUDES ${PROJECT_SOURCE_DIR}/externals/Pinocchio/include)
-
 # remove some compile time warnings
 add_definitions(-DBOOST_BIND_GLOBAL_PLACEHOLDERS)
 
@@ -188,7 +185,6 @@ set(include_dirs
     ${CMAKE_CURRENT_SOURCE_DIR}/ParaScriptBindings
     ${CMAKE_CURRENT_SOURCE_DIR}/NPL
     ${CMAKE_CURRENT_SOURCE_DIR}/Framework/Interface
-    ${CMAKE_CURRENT_SOURCE_DIR}/AutoRigger
     ${NPLRUNTIME_INCLUDES}
 )
 
@@ -289,10 +285,6 @@ if (NPLRUNTIME_DARKNET)
     list(APPEND NPLRUNTIME_LIBS darknet)
 endif()
 
-if (NPLRUNTIME_AUTO_RIGGER)
-    list(APPEND NPLRUNTIME_LIBS Pinocchio)
-endif()
-
 if (EMSCRIPTEN AND NOT NPLOCE_DEPS_ROOT)
     if (EMSCRIPTEN_SINGLE_THREAD)
         set(NPLOCE_DEPS_ROOT "/mnt/d/workspace/npl/nploce-deps/install")
@@ -354,7 +346,6 @@ if (EMSCRIPTEN)
     tinyxpath
     luabind
     ParaSqlite 
-    #Pinocchio
     ParaAntlr4
     ${ICONV_LIB_NAME}
     "${BOOST_LIBRARYDIR}/libboost_atomic.a"
@@ -381,7 +372,6 @@ else()
         ParaSqlite 
         libjpeg
         libpng
-        #Pinocchio
         ParaAntlr4
         ${ICONV_LIB_NAME}
     )
@@ -389,9 +379,6 @@ endif()
 
 set(PARAENGINE_DEF_LIST)
 list(APPEND PARAENGINE_DEF_LIST USE_ICONV TIXML_USE_STL BOOST_SIGNALS_NO_DEPRECATION_WARNING _CRT_SECURE_NO_WARNINGS NPLRUNTIME ${PLATROM_SPEC_DEFINITIONS})
-if (NPLRUNTIME_AUTO_RIGGER)
-    list(APPEND PARAENGINE_DEF_LIST ENABLE_AUTO_RIGGER)
-endif()
 if (NOT NPLRUNTIME_SERVER AND NOT LINUX AND NOT EMSCRIPTEN)
     list(APPEND PARAENGINE_DEF_LIST USE_FREEIMAGE)
 endif()

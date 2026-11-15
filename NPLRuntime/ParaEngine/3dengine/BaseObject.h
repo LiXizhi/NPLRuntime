@@ -281,7 +281,6 @@ namespace ParaEngine
 			Type_OnLoadScript,
 			Type_OnAssetLoaded,
 			Type_Paint,
-			Type_AddRiggedFile,
 			Type_Unknown,
 		};
 

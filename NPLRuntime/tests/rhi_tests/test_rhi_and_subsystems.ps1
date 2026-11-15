@@ -125,22 +125,6 @@ local function main_loop()
                 return fail("ParaAsset.ConvertGLB binding missing")
             end
             ParaAsset.ConvertGLB("_ctest_tri.obj,0 0 0 0 0 0 1,_ctest_tri.glb")
-
-            -- 3. CAutoRigger (Pinocchio + ENABLE_AUTO_RIGGER attribute fields)
-            local rigger = ParaScene.CreateObject("CAutoRigger", "_ctest_rigger", 0, 0, 0)
-            if not rigger or not rigger:IsValid() then
-                return fail("ParaScene.CreateObject('CAutoRigger') returned invalid object")
-            end
-            local att = rigger:GetAttributeObject()
-            if not att or not att:IsValid() then
-                return fail("CAutoRigger attribute object invalid")
-            end
-            att:SetField("SetOutputFilePath", "_ctest_rigged.x")
-            att:SetField("On_AddRiggedFile", ";_ctest_cb();")
-            local cbVal = att:GetField("On_AddRiggedFile", "")
-            if cbVal ~= ";_ctest_cb();" then
-                return fail("CAutoRigger ENABLE_AUTO_RIGGER field round-trip failed, got: " .. tostring(cbVal))
-            end
         end
 
         local f = ParaIO.open(outFile, "w")
@@ -313,7 +297,6 @@ f 1/1/1 2/2/1 3/3/1
         throw "ParaAsset.ConvertGLB unexpected glTF version: $glbVersion"
     }
     Write-Host "PASS [ConvertGLB]: Valid glTF 2.0 binary ($($glbBytes.Length) bytes)"
-    Write-Host "PASS [CAutoRigger]: Factory & ENABLE_AUTO_RIGGER Pinocchio fields verified"
 } finally {
     foreach ($f in $staged) {
         $p = Join-Path $BinDir $f

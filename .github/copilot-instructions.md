@@ -180,7 +180,6 @@ All vendored in [externals/](NPLRuntime/externals/), configured in [externals/CM
 
 **Physics:**
 - **Bullet** (2.75 or 3.x) - Collision detection, rigid body dynamics
-- **Pinocchio** - Character rigging
 
 **Other:**
 - **jsoncpp** - JSON parsing

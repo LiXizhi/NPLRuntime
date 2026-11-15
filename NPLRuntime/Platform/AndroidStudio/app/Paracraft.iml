@@ -41,9 +41,6 @@
     <content url="file://$MODULE_DIR$/../../../ParaEngine/3dengine">
       <sourceFolder url="file://$MODULE_DIR$/../../../ParaEngine/3dengine" isTestSource="false" />
     </content>
-    <content url="file://$MODULE_DIR$/../../../ParaEngine/AutoRigger">
-      <sourceFolder url="file://$MODULE_DIR$/../../../ParaEngine/AutoRigger" isTestSource="false" />
-    </content>
     <content url="file://$MODULE_DIR$/../../../ParaEngine/BMaxModel">
       <sourceFolder url="file://$MODULE_DIR$/../../../ParaEngine/BMaxModel" isTestSource="false" />
     </content>
@@ -277,9 +274,6 @@
     </content>
     <content url="file://$MODULE_DIR$/../../../externals/FreeImage3180/Source/Metadata">
       <sourceFolder url="file://$MODULE_DIR$/../../../externals/FreeImage3180/Source/Metadata" isTestSource="false" />
-    </content>
-    <content url="file://$MODULE_DIR$/../../../externals/Pinocchio/src">
-      <sourceFolder url="file://$MODULE_DIR$/../../../externals/Pinocchio/src" isTestSource="false" />
     </content>
     <content url="file://$MODULE_DIR$/../../../externals/assimp-4.0.0/code">
       <sourceFolder url="file://$MODULE_DIR$/../../../externals/assimp-4.0.0/code" isTestSource="false" />

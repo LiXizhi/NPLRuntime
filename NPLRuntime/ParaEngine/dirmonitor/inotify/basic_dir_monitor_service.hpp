@@ -18,6 +18,7 @@
 #include <thread>
 #include <mutex>
 #include <condition_variable>
+#include <chrono>
 
 namespace boost {
 namespace asio {
@@ -32,8 +33,13 @@ public:
     explicit basic_dir_monitor_service(boost::asio::io_context &io_service)
         : boost::asio::io_context::service(io_service),
         async_monitor_work_(new boost::asio::executor_work_guard<boost::asio::io_context::executor_type>(async_monitor_io_service_.get_executor())),
-        async_monitor_thread_(boost::bind(&boost::asio::io_context::run, &async_monitor_io_service_))
+        async_monitor_thread_([this]() { try { async_monitor_io_service_.run(); } catch (...) {} })
     {
+    }
+
+    ~basic_dir_monitor_service() override
+    {
+        shutdown_service();
     }
 
     typedef std::shared_ptr<DirMonitorImplementation> implementation_type;
@@ -96,22 +102,31 @@ public:
     protected:
         void PostAndWait(const boost::system::error_code ec, const dir_monitor_event& ev) const
         {
-            std::mutex post_mutex;
-            std::condition_variable post_condition_variable;
-            bool post_cancel = false;
+            if (ec == boost::asio::error::operation_aborted || this->io_service_.stopped())
+                return;
+
+            struct PostSyncState
+            {
+                std::mutex mutex;
+                std::condition_variable cond;
+                bool done = false;
+            };
+
+            auto state = std::make_shared<PostSyncState>();
+            Handler handlerCopy(handler_);
 
             boost::asio::post(this->io_service_,
-                [&]
+                [state, handlerCopy, ec, ev]() mutable
                 {
-                    handler_(ec, ev);
-                    std::lock_guard<std::mutex> lock(post_mutex);
-                    post_cancel = true;
-                    post_condition_variable.notify_one();
+                    handlerCopy(ec, ev);
+                    std::lock_guard<std::mutex> lock(state->mutex);
+                    state->done = true;
+                    state->cond.notify_one();
                 }
             );
-            std::unique_lock<std::mutex> lock(post_mutex);
-            while (!post_cancel)
-                post_condition_variable.wait(lock);
+            std::unique_lock<std::mutex> lock(state->mutex);
+            while (!state->done && !this->io_service_.stopped())
+                state->cond.wait_for(lock, std::chrono::milliseconds(20));
         }
 
     private:
@@ -128,6 +143,11 @@ public:
     }
 
 private:
+    virtual void shutdown() override
+    {
+        shutdown_service();
+    }
+
     virtual void shutdown_service()
     {
         // The async_monitor thread will finish when async_monitor_work_ is reset as all asynchronous
@@ -140,9 +160,8 @@ private:
         // The async_monitor thread is joined to make sure the directory monitor service is
         // destroyed _after_ the thread is finished (not that the thread tries to access
         // instance properties which don't exist anymore).
-        async_monitor_thread_.join();
-        
-        std::cout << "shutdown complete" << std::endl;
+        if (async_monitor_thread_.joinable())
+            async_monitor_thread_.join();
     }
 
     boost::asio::io_context async_monitor_io_service_;

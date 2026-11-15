@@ -328,7 +328,6 @@ if (MSVC)
 	set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
 endif ()
 
-option(NPLRUNTIME_AUTO_RIGGER "Enable AutoRigger + Pinocchio automatic rigging" ON)
 option(NPLRUNTIME_BUILD_TESTS "Enable ParaRHI and NPLRuntime CTest verification suite" ON)
 
 add_subdirectory(externals)

@@ -464,7 +464,6 @@ Compiled only when `NPLRUNTIME_RENDERER=DIRECTX`:
 | `util/` | Log, mutex, timers, mem pools, `intrusive_ptr` |
 | `InfoCenter/` | SQLite-backed in-game database |
 | `WebSocket/` | WebSocket framing (incl. Emscripten) |
-| `AutoRigger/` | Pinocchio auto-rigging |
 | `curllua/` | libcurl Lua bindings |
 | `OpenGLWrapper/` | GL font/program helpers (OPENGL builds) |
 | `debugtools/` | Profiler |
@@ -652,7 +651,7 @@ See [NPL Code Wiki wiki page](https://github.com/LiXizhi/NPLRuntime/wiki/NPLCode
 Framework, dirmonitor, Core, BMaxModel, renderer, protocol,
 ParaXModel, IO, debugtools, InfoCenter, BlockEngine, math, NPL,
 ParaScriptBindings, 2dengine, PaintEngine, 3dengine, util,
-WebSocket, terrain, AutoRigger
+WebSocket, terrain
 ```
 
 **Renderer conditional:**

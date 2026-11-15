@@ -39,19 +39,9 @@ public:
     {
     }
 
-    ~basic_dir_monitor_service()
+    ~basic_dir_monitor_service() override
     {
-        // The async_monitor thread will finish when async_monitor_work_ is reset as all asynchronous
-        // operations have been aborted and were discarded before (in destroy).
-        async_monitor_work_.reset();
-
-        // Event processing is stopped to discard queued operations.
-        async_monitor_io_service_.stop();
-
-        // The async_monitor thread is joined to make sure the directory monitor service is
-        // destroyed _after_ the thread is finished (not that the thread tries to access
-        // instance properties which don't exist anymore).
-        async_monitor_thread_.join();
+        shutdown_service();
     }
 
     typedef boost::shared_ptr<DirMonitorImplementation> implementation_type;
@@ -137,8 +127,18 @@ public:
     }
 
 private:
-    void shutdown_service() override
-    {}
+    virtual void shutdown() override
+    {
+        shutdown_service();
+    }
+
+    void shutdown_service()
+    {
+        async_monitor_work_.reset();
+        async_monitor_io_service_.stop();
+        if (async_monitor_thread_.joinable())
+            async_monitor_thread_.join();
+    }
 
     boost::asio::io_service async_monitor_io_service_;
     boost::scoped_ptr<boost::asio::io_service::work> async_monitor_work_;

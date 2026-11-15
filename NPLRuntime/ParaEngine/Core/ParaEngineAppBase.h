@@ -146,6 +146,7 @@ namespace ParaEngine
 		bool m_bActive;
         bool m_bRender;
 		bool m_bAudioEngineInitialized;
+		bool m_bFinalCleanedUp;
 
 #pragma region OLD_CODE
 	public:

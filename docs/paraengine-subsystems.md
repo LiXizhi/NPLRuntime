@@ -20,7 +20,6 @@ ParaEngine/
 ├── terrain/           Heightfield terrain
 ├── ParaXModel/        ParaX animated models
 ├── BMaxModel/         Block max voxel models
-├── AutoRigger/        Character auto-rigging (Pinocchio)
 ├── IO/                Serial ports, file watcher
 ├── WebSocket/         WebSocket I/O
 ├── jabber/            XMPP client
@@ -284,14 +283,6 @@ Block max format for voxel-based models (Paracraft block models).
 ### FBX / external formats
 
 Via assimp when `NPLRUNTIME_SUPPORT_FBX=ON`. Loaded through ParaX/ mesh pipeline.
-
----
-
-## AutoRigger
-
-**Path:** `ParaEngine/AutoRigger/`
-
-Automatic character rigging using Pinocchio library. Converts mesh to skeleton for animation.
 
 ---
 
