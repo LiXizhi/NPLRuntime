@@ -137,6 +137,8 @@ namespace ParaEngine
 		bool ConfigureSurface(uint32_t width, uint32_t height, bool vsync);
 		bool CreateDefaultResources(uint32_t width, uint32_t height);
 		bool EnsureSwapChainTexture();
+		void ReleaseCurrentSurfaceTexture();
+		void DiscardEncoderWithoutSubmit();
 		void ApplyClampedViewport(const ParaViewport& viewport);
 		WGPURenderPipeline GetOrCreateRenderPipeline(EPrimitiveType primitiveType, WGPUIndexFormat stripIndexFormat = WGPUIndexFormat_Undefined);
 		WGPUSampler GetOrCreateSampler(uint32_t stage);
@@ -174,6 +176,7 @@ namespace ParaEngine
 
 		WGPUTexture m_currentSurfaceTex = nullptr;
 		WGPUTextureView m_currentSurfaceView = nullptr;
+		int m_currentSurfaceGen = 0;
 		WebGPUTexture* m_defaultDepthTex = nullptr;
 		WebGPUTexture* m_fallbackWhite2D = nullptr;
 		WebGPUTexture* m_fallbackWhiteCube = nullptr;
@@ -184,6 +187,14 @@ namespace ParaEngine
 		WGPUCommandEncoder m_cmdEncoder = nullptr;
 		WGPURenderPassEncoder m_renderPass = nullptr;
 		bool m_surfaceClearedThisFrame = false;
+		bool m_encoderTouchesSurface = false;
+		uint32_t m_sceneDepth = 0;
+		bool m_pendingSurfaceClearColor = false;
+		bool m_pendingSurfaceClearDepth = false;
+		bool m_pendingSurfaceClearStencil = false;
+		Color4f m_pendingSurfaceClearColorVal = { 0.0f, 0.0f, 0.0f, 1.0f };
+		float m_pendingSurfaceClearDepthVal = 1.0f;
+		int m_pendingSurfaceClearStencilVal = 0;
 
 		uint32_t m_boundRTCount = 0;
 		WebGPURenderTarget* m_boundRTs[MAX_RENDER_TARGETS] = {};

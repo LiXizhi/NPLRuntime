@@ -681,6 +681,8 @@ namespace ParaEngine
 				//	|| m_cfg.screenHeight != rect.bottom - rect.top)
 				if (m_bSizeChanged)
 				{
+					if (m_pRenderDevice)
+						m_pRenderDevice->Flush();
 					pWinDelegate->SetSize(m_cfg.screenWidth, m_cfg.screenHeight);
 					bReset = true;
 					m_bSizeChanged = false;

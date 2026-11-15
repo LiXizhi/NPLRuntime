@@ -17,7 +17,7 @@ CMake-based build configuration for NPLRuntime. All builds start from `NPLRuntim
 |----------|-------------------|
 | Windows client (DirectX) | DirectX 9 SDK |
 | Windows / Linux client (OpenGL) | OpenGL 3.3+ drivers |
-| Linux SDL | SDL2 (`build_sdl2.sh`) |
+| Linux SDL | SDL2 (`libsdl2-dev` or `./build_linux.sh client --build-sdl2`) |
 | Emscripten | emsdk, Boost compiled with `toolset=emscripten` |
 | Android | NDK, Boost for Android |
 | iOS / macOS | Xcode, Boost for iOS/macOS |
@@ -141,22 +141,16 @@ Linux server install script may symlink `/usr/local/bin/npl` → `ParaWorld/bin6
 
 ## Root Build Scripts
 
-| Script | Platform | Command summary |
-|--------|----------|-----------------|
-| `build_win32.bat` | Windows | VS2022 x64, `-DNPLRUNTIME_RENDERER=OPENGL`; auto-installs CMake/Boost |
-| `build_linux.sh` | Linux | `-DNPLRUNTIME_SERVER=ON` → `ParaEngineServer` |
-| `build_mac_server.sh` | macOS | Server: `NPLRUNTIME_SERVER=ON`, `MAC_SERVER=ON` |
-| `build_mac_client.sh` | macOS | OpenGL client, Xcode generator |
-| `build_emscripten.sh` | Web | Emscripten ParaCraft build |
-| `build_ios_framework.sh` | iOS | Framework packaging |
-| `build_ios_os.sh` | iOS | Device/simulator Xcode project |
-| `build_sdl2.sh` | Linux/Win | Compile and install SDL2 |
-| `npl_boost_install.sh` | Linux/macOS | Boost build helper |
-| `build_android_tegra.bat` | Android | VS + Nsight cross-compile |
+All legacy mini-scripts have been consolidated into two unified, non-interactive root entry points:
+
+| Script | Host OS | Subcommands |
+|--------|---------|-------------|
+| `build_win32.bat` | Windows | `client`, `debug`, `server`, `web`, `android`, `picovr`, `run`, `run-server`, `test`, `clean` (`--oce`, `--configure`, `--install-deps`) |
+| `build_linux.sh` | Linux / macOS / WSL | `server`, `client`, `web`, `android`, `picovr`, `ios [framework\|device\|sim]`, `run-server`, `test` (`--oce`, `--xcode`, `--build-sdl2`, `--install`) |
 
 ## Common Build Recipes
 
-### Windows OpenGL client
+### Windows client (Multi-Backend ParaRHI)
 
 ```bat
 build_win32.bat
@@ -165,33 +159,24 @@ build_win32.bat
 Or:
 
 ```bat
-cmake -S NPLRuntime -B build -G "Visual Studio 17 2022" -A x64 -DNPLRUNTIME_RENDERER=OPENGL
-cmake --build build --config Release
+cmake -S NPLRuntime -B build-win64 -A x64 -DNPLRUNTIME_RENDERER=OPENGL
+cmake --build build-win64 --config Release --parallel
 ```
 
-### Linux headless server
+### Linux / macOS headless server
 
 ```bash
-./build_linux.sh
-# or with parallel jobs:
-./build_linux.sh 6
+./build_linux.sh server
 ```
 
-### Linux SDL client
+### Linux SDL2 / macOS desktop client
 
 ```bash
-source build_sdl2.sh
-./npl_boost_install.sh
-cmake -S NPLRuntime -B out -DLINUX=TRUE -DSDL_ROOT=${SDL_ROOT}
-cmake --build out
-# Run: ParaWorld/bin64/ParaCraftSDL2
-```
-
-### macOS server
-
-```bash
-./npl_boost_install.sh
-./build_mac_server.sh 6
+./build_linux.sh client
+# Or on Linux without system libsdl2-dev:
+./build_linux.sh client --build-sdl2
+# Or on macOS to generate an Xcode project:
+./build_linux.sh client --xcode
 ```
 
 ### Emscripten (WebAssembly)

@@ -116,22 +116,35 @@ http://127.0.0.1:8088/npl/webparacraft/index.html?searchroot=C:/Paracraft/&world
 
 ---
 
-## Native Desktop & Server Builds
+## Native Desktop, Server & Mobile Builds
 
-### Windows Client (VS2022 OpenGL/DirectX)
-- **VSCode Task:** `Build ParaEngineClient (Debug)` or `Build ParaEngineClient (Release)`
-- **Batch / CMake:**
+See [`README.md`](README.md) for the full Host × Target build & run matrix across Windows, Linux, macOS, WebAssembly, Android, PICO VR, iOS, and HarmonyOS.
+
+### Windows Client & Server (VS 2022 / VS 2026, Multi-Backend ParaRHI)
+- **VSCode Tasks ([`.vscode/tasks.json`](.vscode/tasks.json)):**
+  - `Build ParaEngineClient (Debug)` *(default `Ctrl+Shift+B`)* -> `build-win64/bin/ParaEngineClient_d.exe`
+  - `Build ParaEngineClient (Release)` -> `build-win64/bin/ParaEngineClient.exe`
+  - `Windows: Configure ParaEngineClient (CMake)`
+  - `Build ParaEngineServer (Release)` -> `build-server/bin/ParaEngineServer.exe`
+- **Root Script (`build_win32.bat`) / Direct CMake:**
   ```bat
-  build_win32.bat
-  :: or
-  cmake -S NPLRuntime -B build -DNPLRUNTIME_RENDERER=OPENGL
-  cmake --build build --config Release
+  build_win32.bat                        :: Release client -> build-win64\bin\ParaEngineClient.exe
+  build_win32.bat debug                  :: Debug client   -> build-win64\bin\ParaEngineClient_d.exe
+  build_win32.bat server                 :: Headless server -> build-server\bin\ParaEngineServer.exe
+  build_win32.bat run auto 530           :: Launch World 530 (auto | d3d12 | vulkan | d3d11 | opengl | webgpu)
+  build_win32.bat run-server             :: Run ParaEngineServer with NPLRuntime\tests\helloworld.lua
+  build_win32.bat test                   :: Run CTest suite in build-win64
+  :: Direct CMake equivalent:
+  cmake -S NPLRuntime -B build-win64 -A x64 -DNPLRUNTIME_RENDERER=OPENGL
+  cmake --build build-win64 --config Release --parallel -- /v:minimal
   ```
 
-### Linux Headless Server
+### Linux / macOS / WSL Client & Headless Server
 ```bash
-./build_linux.sh
-# or: cmake -S NPLRuntime -B build -DNPLRUNTIME_SERVER=ON && cmake --build build
+./build_linux.sh server                  # Headless server -> build-server/bin/ParaEngineServer
+./build_linux.sh run-server              # Smoke-test ParaEngineServer with helloworld.lua
+./build_linux.sh client                  # Desktop client (ParaCraftSDL2 on Linux, Cocoa/OpenGL on macOS)
+./build_linux.sh web build               # Emscripten WASM -> web/auto_generate_files/
 ```
 
 ---

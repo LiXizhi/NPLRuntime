@@ -44,6 +44,7 @@ namespace ParaEngine
 
 		bool Initialize(uint32_t width, uint32_t height, bool vsync);
 		bool ResizeSwapChain(uint32_t width, uint32_t height);
+		void UpdateLayerContentsScale(float scale);
 
 		void DeferRelease(void* retainedObjcPtr);
 		void ExecuteAndSyncGPU();
@@ -127,10 +128,12 @@ namespace ParaEngine
 		void EndActiveRenderPass();
 		bool EnsureCommandBuffer();
 		bool EnsureDrawableAcquired();
+		void ReleaseCurrentDrawable();
 		bool EnsureRenderPassEncoder(bool clearColor, bool clearDepth, bool clearStencil);
 		void* GetOrCreatePipelineState(EPrimitiveType primitiveType);
 		void* GetOrCreateDepthStencilState();
-		void* GetOrCreateSamplerState(uint32_t stage);
+		void* GetOrCreateSamplerState(uint32_t stage, bool forceNearestNoMip = false);
+		void* GetOrCreateBlitPipelineState(uint32_t dstMtlPixelFormat);
 		bool PrepareForDraw(EPrimitiveType primitiveType);
 		void ReclaimCompletedResources(uint64_t completedSerial);
 
@@ -182,6 +185,16 @@ namespace ParaEngine
 		uint32_t m_activeRTHeight = 720;
 		bool m_usingBackBufferRT = true;
 		bool m_passClearedSinceTargetBind = false;
+		uint32_t m_sceneDepth = 0;
+		bool m_frameSemaphoreAcquired = false;
+		bool m_drawingUP = false;
+		bool m_surfaceClearedThisFrame = false;
+		bool m_pendingSurfaceClearColor = false;
+		bool m_pendingSurfaceClearDepth = false;
+		bool m_pendingSurfaceClearStencil = false;
+		Color4f m_pendingClearColorValue{ 0.0f, 0.0f, 0.0f, 1.0f };
+		float m_pendingClearDepthValue = 1.0f;
+		uint32_t m_pendingClearStencilValue = 0;
 
 		MetalTexture* m_activeColorTargets[4] = {};
 		uint32_t m_activeColorTargetCount = 0;
@@ -207,6 +220,9 @@ namespace ParaEngine
 		bool m_vsConstDirty = false;
 		bool m_psConstDirty = false;
 
+		void* m_blitVSFunc = nullptr;
+		void* m_blitPSFunc = nullptr;
+		std::unordered_map<uint32_t, void*> m_blitPsoCache;
 		std::unordered_map<uint64_t, void*> m_psoCache;
 		std::unordered_map<uint64_t, void*> m_depthStencilCache;
 		std::unordered_map<uint64_t, void*> m_samplerCache;

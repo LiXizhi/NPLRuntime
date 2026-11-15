@@ -147,7 +147,7 @@ Builds `ParaCraftSingleThread.{js,wasm}` into `web/auto_generate_files/` (git-ig
 - **Boost** 1.55–1.85 (`BOOST_ROOT` env var or auto-download in `build_win32.bat`)
 - **CMake** ≥ 3.15
 - Client on Windows: DirectX9 SDK optional (OpenGL is default)
-- Linux graphics: SDL2 (`build_sdl2.sh`)
+- Linux graphics: SDL2 (`libsdl2-dev` or `./build_linux.sh client --build-sdl2`)
 
 See [INSTALL.md](INSTALL.md) and [docs/build-system.md](docs/build-system.md).
 

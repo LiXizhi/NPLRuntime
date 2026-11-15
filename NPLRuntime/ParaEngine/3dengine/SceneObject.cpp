@@ -2501,6 +2501,9 @@ HRESULT CSceneObject::AdvanceScene(double dTimeDelta, int nPipelineOrder)
 	// draw overlays
 	RenderHeadOnDisplay(1);
 
+	if (m_pBlockWorldClient)
+		m_pBlockWorldClient->FinishAutoBoundSceneColorRT();
+
 	RemoveDeadObjects();
 
 	// make picking result dirty when scene is redrawn.

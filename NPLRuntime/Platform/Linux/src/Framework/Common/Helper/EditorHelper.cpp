@@ -8,7 +8,9 @@
 #include <cstdlib>
 #include <cstring>
 #include <vector>
+#ifndef _WIN32
 #include <unistd.h>
+#endif
 #include <boost/filesystem.hpp>
 #include <boost/process/v1/child.hpp>
 #include <boost/process/v1/io.hpp>

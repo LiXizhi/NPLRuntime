@@ -73,9 +73,16 @@ ParaEngine::IRenderDevice *RenderContxtAGL::CreateDevice(const ParaEngine::Rende
            glGetString(GL_VERSION));
     
     NSWindow *window = (NSWindow*)renderWindow->GetNativeHandle();
-    RenderView *view = [[RenderView alloc] initWithFrame:CGRectMake(0, 0, cfg.screenWidth, cfg.screenHeight)];
-    
-    [window setContentView:view];
+    RenderView *view = nil;
+    if ([[window contentView] isKindOfClass:[RenderView class]])
+    {
+        view = (RenderView*)[window contentView];
+    }
+    else
+    {
+        view = [[[RenderView alloc] initWithFrame:CGRectMake(0, 0, cfg.screenWidth, cfg.screenHeight)] autorelease];
+        [window setContentView:view];
+    }
     [openGLContext setView:view];
     [openGLContext update];
     

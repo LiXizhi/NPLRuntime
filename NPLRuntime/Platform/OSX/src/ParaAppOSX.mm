@@ -46,7 +46,10 @@ void ParaEngine::CParaEngineAppOSX::GetStats(string& output, DWORD dwFields)
 {
     if (dwFields == 0)
     {
-        output = "OpenGL (macOS)";
+        if (m_pRenderDevice && m_pRenderDevice->GetCaps().backendName)
+            output = std::string(m_pRenderDevice->GetCaps().backendName) + " (macOS)";
+        else
+            output = "Metal (macOS)";
     }
 }
 
@@ -134,6 +137,23 @@ void ParaEngine::CParaEngineAppOSX::handle_mainloop_timer(const boost::system::e
         if (pWindow && !pWindow->ShouldClose())
         {
             pWindow->PollEvents();
+            if (m_pRenderDevice && GetAppState() == PEAppState_Ready)
+            {
+                const uint32_t winW = pWindow->GetWidth();
+                const uint32_t winH = pWindow->GetHeight();
+                if (winW > 0 && winH > 0 &&
+                    (winW != m_pRenderDevice->GetBackBufferWidth() || winH != m_pRenderDevice->GetBackBufferHeight()))
+                {
+                    m_pRenderDevice->Flush();
+                    ResetRenderEnvironment();
+                    ParaViewport vp = m_pRenderDevice->GetViewport();
+                    vp.X = 0;
+                    vp.Y = 0;
+                    vp.Width = winW;
+                    vp.Height = winH;
+                    m_pRenderDevice->SetViewport(vp);
+                }
+            }
             this->DoWork();
 
             double fNextInterval = 0.01;

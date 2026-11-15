@@ -1,4 +1,5 @@
 #include "RenderWindowOSX.h"
+#include "RenderViewOSX.h"
 #include "ParaEngine.h"
 #include "2dengine/GUIRoot.h"
 #include "2dengine/GUIEdit.h"
@@ -195,13 +196,16 @@ RenderWindowOSX::RenderWindowOSX(const int width, const int height)
 
     m_window = [[GLWindow alloc] initWithContentRect:CGRectMake(0, 0, width,height) styleMask:style backing:NSBackingStoreBuffered defer:NO];
 
+    RenderView* renderView = [[[RenderView alloc] initWithFrame:CGRectMake(0, 0, width, height)] autorelease];
+    [m_window setContentView:renderView];
+
     [m_window setTitle:@"Paracraft"];
     [NSApp activateIgnoringOtherApps:YES];
     [NSApp arrangeInFront:m_window];
     [m_window orderFront:nil];
     [m_window makeKeyWindow];
     [m_window setAcceptsMouseMovedEvents:YES];
-    [m_window makeFirstResponder:m_window];
+    [m_window makeFirstResponder:renderView];
     //[m_window.contentView setAllowedTouchTypes:NSTouchTypeMaskDirect];
     
     WindowDelegate* winDelegate = [WindowDelegate sharedDelegate];

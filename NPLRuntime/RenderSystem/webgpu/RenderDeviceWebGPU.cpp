@@ -17,6 +17,57 @@ namespace ParaEngine
 			return (val + alignment - 1u) & ~(alignment - 1u);
 		}
 
+#if defined(__EMSCRIPTEN__)
+		// Track Browser WebGPU GPUCanvasContext.getCurrentTexture() lifetime:
+		// Chrome expires/destroys the current canvas texture as soon as the JS execution stack
+		// unwinds back to the browser event loop (including across Asyncify emscripten_sleep)
+		// or whenever DOM <canvas>.width / <canvas>.height changes.
+		int ParaWgpuNoteSurfaceAcquired()
+		{
+			return EM_ASM_INT({
+				var w = (typeof window !== "undefined") ? window : globalThis;
+				var g = ((w.__paraWgpuSurfGen | 0) + 1) | 0;
+				if (g <= 0) g = 1;
+				w.__paraWgpuSurfGen = g;
+				var c = (typeof Module !== "undefined" && Module.canvas) ? Module.canvas :
+					((typeof document !== "undefined") ? document.getElementById("canvas") : null);
+				w.__paraWgpuSurfW = c ? (c.width | 0) : 0;
+				w.__paraWgpuSurfH = c ? (c.height | 0) : 0;
+				w.__paraWgpuSurfAlive = g;
+				if (typeof queueMicrotask === "function") {
+					queueMicrotask(function() {
+						if (w.__paraWgpuSurfAlive === g) {
+							w.__paraWgpuSurfAlive = 0;
+						}
+					});
+				} else {
+					Promise.resolve().then(function() {
+						if (w.__paraWgpuSurfAlive === g) {
+							w.__paraWgpuSurfAlive = 0;
+						}
+					});
+				}
+				return g;
+			});
+		}
+
+		bool ParaWgpuIsSurfaceStillValid(int expectedGen)
+		{
+			if (expectedGen <= 0)
+				return false;
+			return EM_ASM_INT({
+				var w = (typeof window !== "undefined") ? window : globalThis;
+				if ((w.__paraWgpuSurfAlive | 0) !== ($0 | 0))
+					return 0;
+				var c = (typeof Module !== "undefined" && Module.canvas) ? Module.canvas :
+					((typeof document !== "undefined") ? document.getElementById("canvas") : null);
+				if (c && ((c.width | 0) !== (w.__paraWgpuSurfW | 0) || (c.height | 0) !== (w.__paraWgpuSurfH | 0)))
+					return 0;
+				return 1;
+			}, expectedGen) != 0;
+		}
+#endif
+
 		uint64_t Fnv1aBytes64(const void* data, size_t len, uint64_t seed = 14695981039346656037ull)
 		{
 			const auto* bytes = static_cast<const uint8_t*>(data);
@@ -1132,6 +1183,12 @@ namespace ParaEngine
 	{
 		if (!m_surface || !m_device)
 			return false;
+		if (m_currentSurfaceTex || m_currentSurfaceView)
+		{
+			if (m_encoderTouchesSurface)
+				DiscardEncoderWithoutSubmit();
+			ReleaseCurrentSurfaceTexture();
+		}
 		WGPUTextureUsageFlags desiredUsage =
 			WGPUTextureUsage_RenderAttachment |
 			WGPUTextureUsage_CopySrc |
@@ -1349,18 +1406,14 @@ namespace ParaEngine
 	bool RenderDeviceWebGPU::ResizeSwapChain(uint32_t width, uint32_t height, bool vsync)
 	{
 		EndActiveRenderPass();
-		ExecuteAndSyncGPU();
+#if defined(__EMSCRIPTEN__)
+		if (m_encoderTouchesSurface && !ParaWgpuIsSurfaceStillValid(m_currentSurfaceGen))
+			DiscardEncoderWithoutSubmit();
+		else
+#endif
+			ExecuteAndSyncGPU();
 
-		if (m_currentSurfaceView)
-		{
-			PARA_WGPU_CALL(m_wgpu, wgpuTextureViewRelease, m_currentSurfaceView);
-			m_currentSurfaceView = nullptr;
-		}
-		if (m_currentSurfaceTex)
-		{
-			PARA_WGPU_CALL(m_wgpu, wgpuTextureRelease, m_currentSurfaceTex);
-			m_currentSurfaceTex = nullptr;
-		}
+		ReleaseCurrentSurfaceTexture();
 
 		const uint32_t prevBackW = m_backBufferWidth;
 		const uint32_t prevBackH = m_backBufferHeight;
@@ -1488,10 +1541,54 @@ namespace ParaEngine
 		return buf;
 	}
 
+	void RenderDeviceWebGPU::ReleaseCurrentSurfaceTexture()
+	{
+		if (m_currentSurfaceView)
+		{
+			PARA_WGPU_CALL(m_wgpu, wgpuTextureViewRelease, m_currentSurfaceView);
+			m_currentSurfaceView = nullptr;
+		}
+		if (m_currentSurfaceTex)
+		{
+			PARA_WGPU_CALL(m_wgpu, wgpuTextureRelease, m_currentSurfaceTex);
+			m_currentSurfaceTex = nullptr;
+		}
+		m_currentSurfaceGen = 0;
+		m_surfaceClearedThisFrame = false;
+	}
+
+	void RenderDeviceWebGPU::DiscardEncoderWithoutSubmit()
+	{
+		EndActiveRenderPass();
+		if (m_cmdEncoder)
+		{
+			WGPUCommandBufferDescriptor cbd = {};
+			cbd.label = ParaWgpuLabel("ParaDiscardedExpiredSurfaceCmdBuf");
+			WGPUCommandBuffer cmd = PARA_WGPU_CALL(m_wgpu, wgpuCommandEncoderFinish, m_cmdEncoder, &cbd);
+			PARA_WGPU_CALL(m_wgpu, wgpuCommandEncoderRelease, m_cmdEncoder);
+			m_cmdEncoder = nullptr;
+			if (cmd)
+				PARA_WGPU_CALL(m_wgpu, wgpuCommandBufferRelease, cmd);
+		}
+		m_encoderTouchesSurface = false;
+		m_wgpu.ProcessEvents(m_instance, m_device);
+		FlushFrameTransientBuffers();
+	}
+
 	bool RenderDeviceWebGPU::EnsureSwapChainTexture()
 	{
 		if (m_currentSurfaceView && m_currentSurfaceTex)
+		{
+#if defined(__EMSCRIPTEN__)
+			if (ParaWgpuIsSurfaceStillValid(m_currentSurfaceGen))
+				return true;
+			if (m_encoderTouchesSurface)
+				DiscardEncoderWithoutSubmit();
+			ReleaseCurrentSurfaceTexture();
+#else
 			return true;
+#endif
+		}
 		if (!m_surface)
 			return false;
 
@@ -1549,6 +1646,11 @@ namespace ParaEngine
 			m_currentSurfaceTex = nullptr;
 			return false;
 		}
+#if defined(__EMSCRIPTEN__)
+		m_currentSurfaceGen = ParaWgpuNoteSurfaceAcquired();
+#else
+		m_currentSurfaceGen = 1;
+#endif
 		return true;
 	}
 
@@ -1610,7 +1712,9 @@ namespace ParaEngine
 
 	bool RenderDeviceWebGPU::EnsureActiveRenderPass(bool clearColor, bool clearDepth, bool clearStencil)
 	{
-		if (m_renderPass && !clearColor && !clearDepth && !clearStencil)
+		const bool hasPendingSurfClear = (m_boundRTCount == 0) &&
+			(m_pendingSurfaceClearColor || m_pendingSurfaceClearDepth || m_pendingSurfaceClearStencil);
+		if (m_renderPass && !clearColor && !clearDepth && !clearStencil && !hasPendingSurfClear)
 			return true;
 
 		EndActiveRenderPass();
@@ -1620,6 +1724,9 @@ namespace ParaEngine
 		WebGPUTexture* depthTex = nullptr;
 		bool effClearDepth = clearDepth;
 		bool effClearStencil = clearStencil;
+		float clearDepthVal = m_state.GetClearDepth();
+		uint32_t clearStencilVal = static_cast<uint32_t>(m_state.GetClearStencil() & 0xFF);
+		bool touchesSurface = false;
 
 		const Color4f& cc = m_state.GetClearColor();
 		WGPUColor wgpuClearColor{ cc.r, cc.g, cc.b, cc.a };
@@ -1670,12 +1777,21 @@ namespace ParaEngine
 			if (!EnsureSwapChainTexture())
 				return false;
 			const bool firstSurfacePass = !m_surfaceClearedThisFrame;
-			const bool doClear = clearColor || firstSurfacePass;
-			if (firstSurfacePass)
-			{
-				effClearDepth = true;
-				effClearStencil = true;
-			}
+			const Color4f surfCol = (!clearColor && m_pendingSurfaceClearColor) ? m_pendingSurfaceClearColorVal : cc;
+			wgpuClearColor = WGPUColor{ surfCol.r, surfCol.g, surfCol.b, surfCol.a };
+			if (!clearDepth && m_pendingSurfaceClearDepth)
+				clearDepthVal = m_pendingSurfaceClearDepthVal;
+			if (!clearStencil && m_pendingSurfaceClearStencil)
+				clearStencilVal = static_cast<uint32_t>(m_pendingSurfaceClearStencilVal & 0xFF);
+
+			const bool doClear = clearColor || m_pendingSurfaceClearColor || firstSurfacePass;
+			effClearDepth = clearDepth || m_pendingSurfaceClearDepth || firstSurfacePass;
+			effClearStencil = clearStencil || m_pendingSurfaceClearStencil || firstSurfacePass;
+
+			m_pendingSurfaceClearColor = false;
+			m_pendingSurfaceClearDepth = false;
+			m_pendingSurfaceClearStencil = false;
+
 			WGPURenderPassColorAttachment& ca = colorAtts[colorAttCount++];
 			ca.view = m_currentSurfaceView;
 			ca.depthSlice = 0xFFFFFFFFu;
@@ -1683,6 +1799,7 @@ namespace ParaEngine
 			ca.storeOp = WGPUStoreOp_Store;
 			ca.clearValue = wgpuClearColor;
 			depthTex = m_defaultDepthTex;
+			touchesSurface = true;
 			if (doClear)
 				m_surfaceClearedThisFrame = true;
 		}
@@ -1696,13 +1813,13 @@ namespace ParaEngine
 			dsAtt.view = depthTex->GetRTVDSVView();
 			dsAtt.depthLoadOp = effClearDepth ? WGPULoadOp_Clear : WGPULoadOp_Load;
 			dsAtt.depthStoreOp = WGPUStoreOp_Store;
-			dsAtt.depthClearValue = m_state.GetClearDepth();
+			dsAtt.depthClearValue = clearDepthVal;
 			dsAtt.depthReadOnly = 0;
 			if (fmtHasStencil)
 			{
 				dsAtt.stencilLoadOp = effClearStencil ? WGPULoadOp_Clear : WGPULoadOp_Load;
 				dsAtt.stencilStoreOp = WGPUStoreOp_Store;
-				dsAtt.stencilClearValue = static_cast<uint32_t>(m_state.GetClearStencil() & 0xFF);
+				dsAtt.stencilClearValue = clearStencilVal;
 				dsAtt.stencilReadOnly = 0;
 			}
 		}
@@ -1710,6 +1827,8 @@ namespace ParaEngine
 		WGPUCommandEncoder enc = EnsureEncoder();
 		if (!enc)
 			return false;
+		if (touchesSurface)
+			m_encoderTouchesSurface = true;
 
 		WGPURenderPassDescriptor rpd = {};
 		rpd.label = ParaWgpuLabel("ParaRenderPass");
@@ -1747,16 +1866,25 @@ namespace ParaEngine
 		EndActiveRenderPass();
 		if (m_cmdEncoder)
 		{
+			bool canSubmit = true;
+#if defined(__EMSCRIPTEN__)
+			if (m_encoderTouchesSurface && !ParaWgpuIsSurfaceStillValid(m_currentSurfaceGen))
+				canSubmit = false;
+#endif
 			WGPUCommandBufferDescriptor cbd = {};
 			cbd.label = ParaWgpuLabel("ParaCommandBuffer");
 			WGPUCommandBuffer cmd = PARA_WGPU_CALL(m_wgpu, wgpuCommandEncoderFinish, m_cmdEncoder, &cbd);
 			PARA_WGPU_CALL(m_wgpu, wgpuCommandEncoderRelease, m_cmdEncoder);
 			m_cmdEncoder = nullptr;
+			m_encoderTouchesSurface = false;
 			if (cmd)
 			{
-				PARA_WGPU_CALL(m_wgpu, wgpuQueueSubmit, m_queue, 1, &cmd);
+				if (canSubmit)
+					PARA_WGPU_CALL(m_wgpu, wgpuQueueSubmit, m_queue, 1, &cmd);
 				PARA_WGPU_CALL(m_wgpu, wgpuCommandBufferRelease, cmd);
 			}
+			if (!canSubmit)
+				ReleaseCurrentSurfaceTexture();
 		}
 		m_wgpu.ProcessEvents(m_instance, m_device);
 		FlushFrameTransientBuffers();
@@ -1788,6 +1916,10 @@ namespace ParaEngine
 		{
 			m_wgpu.WaitAsync(m_instance, m_device);
 		}
+#if defined(__EMSCRIPTEN__)
+		// WaitAsync yields via emscripten_sleep(1), expiring any previously acquired canvas texture.
+		ReleaseCurrentSurfaceTexture();
+#endif
 		return waitSt.done && waitSt.status == WGPUMapAsyncStatus_Success;
 #else
 		struct MapWaitState
@@ -1805,6 +1937,9 @@ namespace ParaEngine
 		{
 			m_wgpu.WaitAsync(m_instance, m_device);
 		}
+#if defined(__EMSCRIPTEN__)
+		ReleaseCurrentSurfaceTexture();
+#endif
 		return waitSt.done && waitSt.status == WGPUBufferMapAsyncStatus_Success;
 #endif
 	}
@@ -2356,6 +2491,18 @@ namespace ParaEngine
 		if (src == dst)
 			return false;
 
+		if (!src && !m_surfaceClearedThisFrame)
+		{
+			// Nothing has been rendered into the swapchain texture yet this frame (WebGPU swapchain
+			// textures do not preserve previous-frame pixels), so avoid prematurely acquiring it.
+			return false;
+		}
+
+		if (!dst && dstRect != nullptr && !m_surfaceClearedThisFrame && m_boundRTCount == 0)
+		{
+			EnsureActiveRenderPass(false, false, false);
+		}
+
 		EndActiveRenderPass();
 
 		if (!src || !dst)
@@ -2452,8 +2599,19 @@ namespace ParaEngine
 			d.aspect = WGPUTextureAspect_All;
 			WGPUExtent3D ext = { sw, sh, 1 };
 			PARA_WGPU_CALL(m_wgpu, wgpuCommandEncoderCopyTextureToTexture, enc, &s, &d, &ext);
+			if (!src || !dst)
+				m_encoderTouchesSurface = true;
 			if (!dst)
+			{
+				if (!m_surfaceClearedThisFrame)
+				{
+					m_pendingSurfaceClearDepth = true;
+					m_pendingSurfaceClearStencil = true;
+				}
+				if (dx0 == 0 && dy0 == 0 && dw == dstW && dh == dstH)
+					m_pendingSurfaceClearColor = false;
 				m_surfaceClearedThisFrame = true;
+			}
 			return true;
 		}
 
@@ -2658,8 +2816,19 @@ namespace ParaEngine
 		PARA_WGPU_CALL(m_wgpu, wgpuRenderPassEncoderDraw, rpe, 3, 1, 0, 0);
 		PARA_WGPU_CALL(m_wgpu, wgpuRenderPassEncoderEnd, rpe);
 		PARA_WGPU_CALL(m_wgpu, wgpuRenderPassEncoderRelease, rpe);
+		if (!src || !dst)
+			m_encoderTouchesSurface = true;
 		if (!dst)
+		{
+			if (!m_surfaceClearedThisFrame)
+			{
+				m_pendingSurfaceClearDepth = true;
+				m_pendingSurfaceClearStencil = true;
+			}
+			if (fullDstOverwrite)
+				m_pendingSurfaceClearColor = false;
 			m_surfaceClearedThisFrame = true;
+		}
 		return true;
 	}
 
@@ -2730,6 +2899,8 @@ namespace ParaEngine
 
 		WGPUExtent3D ext = { rw, rh, 1 };
 		PARA_WGPU_CALL(m_wgpu, wgpuCommandEncoderCopyTextureToBuffer, enc, &srcCopy, &dstCopy, &ext);
+		if (srcTex == m_currentSurfaceTex)
+			m_encoderTouchesSurface = true;
 		ExecuteAndSyncGPU();
 
 		bool ok = false;
@@ -3830,6 +4001,26 @@ namespace ParaEngine
 	{
 		if (!color && !depth && !stencil)
 			return true;
+		if (m_boundRTCount == 0)
+		{
+			EndActiveRenderPass();
+			if (color)
+			{
+				m_pendingSurfaceClearColor = true;
+				m_pendingSurfaceClearColorVal = m_state.GetClearColor();
+			}
+			if (depth)
+			{
+				m_pendingSurfaceClearDepth = true;
+				m_pendingSurfaceClearDepthVal = m_state.GetClearDepth();
+			}
+			if (stencil)
+			{
+				m_pendingSurfaceClearStencil = true;
+				m_pendingSurfaceClearStencilVal = m_state.GetClearStencil();
+			}
+			return true;
+		}
 		return EnsureActiveRenderPass(color, depth, stencil);
 	}
 
@@ -3858,33 +4049,46 @@ namespace ParaEngine
 
 	bool RenderDeviceWebGPU::BeginScene()
 	{
+		++m_sceneDepth;
 		return true;
 	}
 
 	bool RenderDeviceWebGPU::EndScene()
 	{
 		EndActiveRenderPass();
+		if (m_sceneDepth > 0)
+			--m_sceneDepth;
 		return true;
 	}
 
 	bool RenderDeviceWebGPU::Present()
 	{
-		if (!m_surfaceClearedThisFrame && !m_currentSurfaceView)
+		if (m_pendingSurfaceClearColor || (!m_surfaceClearedThisFrame && !m_currentSurfaceView))
 		{
-			EnsureActiveRenderPass(true, true, true);
+			EnsureActiveRenderPass(false, false, false);
 		}
 		EndActiveRenderPass();
+		m_pendingSurfaceClearColor = false;
+		m_pendingSurfaceClearDepth = false;
+		m_pendingSurfaceClearStencil = false;
 
 		if (m_cmdEncoder)
 		{
+			bool canSubmit = true;
+#if defined(__EMSCRIPTEN__)
+			if (m_encoderTouchesSurface && !ParaWgpuIsSurfaceStillValid(m_currentSurfaceGen))
+				canSubmit = false;
+#endif
 			WGPUCommandBufferDescriptor cbd = {};
 			cbd.label = ParaWgpuLabel("ParaPresentCommandBuffer");
 			WGPUCommandBuffer cmd = PARA_WGPU_CALL(m_wgpu, wgpuCommandEncoderFinish, m_cmdEncoder, &cbd);
 			PARA_WGPU_CALL(m_wgpu, wgpuCommandEncoderRelease, m_cmdEncoder);
 			m_cmdEncoder = nullptr;
+			m_encoderTouchesSurface = false;
 			if (cmd)
 			{
-				PARA_WGPU_CALL(m_wgpu, wgpuQueueSubmit, m_queue, 1, &cmd);
+				if (canSubmit)
+					PARA_WGPU_CALL(m_wgpu, wgpuQueueSubmit, m_queue, 1, &cmd);
 				PARA_WGPU_CALL(m_wgpu, wgpuCommandBufferRelease, cmd);
 			}
 		}
@@ -3896,18 +4100,7 @@ namespace ParaEngine
 #endif
 		}
 
-		if (m_currentSurfaceView)
-		{
-			PARA_WGPU_CALL(m_wgpu, wgpuTextureViewRelease, m_currentSurfaceView);
-			m_currentSurfaceView = nullptr;
-		}
-		if (m_currentSurfaceTex)
-		{
-			PARA_WGPU_CALL(m_wgpu, wgpuTextureRelease, m_currentSurfaceTex);
-			m_currentSurfaceTex = nullptr;
-		}
-
-		m_surfaceClearedThisFrame = false;
+		ReleaseCurrentSurfaceTexture();
 		m_wgpu.ProcessEvents(m_instance, m_device);
 		FlushFrameTransientBuffers();
 		return true;
@@ -3916,5 +4109,9 @@ namespace ParaEngine
 	void RenderDeviceWebGPU::Flush()
 	{
 		ExecuteAndSyncGPU();
+		if (m_sceneDepth == 0)
+		{
+			ReleaseCurrentSurfaceTexture();
+		}
 	}
 }

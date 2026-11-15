@@ -2318,10 +2318,6 @@ namespace ParaEngine
 					CGlobals::GetNPLRuntime()->GetMainRuntimeState()->DoString(m_sPostProcessorAlphaCallbackScript.c_str(), (int)m_sPostProcessorAlphaCallbackScript.size());
 			}
 		}
-		if (nRenderPass == BlockRenderPass_AlphaBlended)
-		{
-			FinishAutoBoundSceneColorRT();
-		}
 	}
 
 	bool BlockWorldClient::PrepareAllRenderTargets(bool bSetRenderTarget /*= true*/)

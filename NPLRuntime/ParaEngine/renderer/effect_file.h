@@ -264,10 +264,17 @@ namespace ParaEngine
 
 		bool isParameterUsed(eParameterHandles index)  { return false; };
 		bool setMatrix(eParameterHandles index, const Matrix4* data) { return false; };
+		bool setMatrixArray(eParameterHandles index, const Matrix4* data, uint32 count) { return false; };
+		bool setMatrixInArray(eParameterHandles index, uint32 element, const Matrix4* data) { return false; };
+		bool setFloatArray(eParameterHandles index, const float* data, uint32 count) { return false; };
+		bool setVectorArray(eParameterHandles index, const Vector4* pVector, uint32 count) { return false; };
+		bool setFloatInArray(eParameterHandles index, uint32 element, float data) { return false; };
+		bool setTextureMatrix(int index, const Matrix4* data) { return false; };
 		bool isMatrixUsed(eParameterHandles index) { return false; };
 
 		bool setTexture(int index, TextureEntity* data) { return false; };
 		bool setTexture(int index, DeviceTexturePtr_type pTex) { return false; };
+		bool SetTextureByName(const char* name, TextureEntity* data) { return false; };
 
 		bool SetBoolean(int nIndex, bool value) { return false; };
 

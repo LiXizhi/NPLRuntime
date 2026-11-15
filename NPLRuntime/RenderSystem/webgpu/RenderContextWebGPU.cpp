@@ -349,8 +349,17 @@ namespace ParaEngine
 		if (!device || device->GetBackendType() != ERHIBackend::WebGPU)
 			return false;
 		auto* wgpuDev = static_cast<RenderDeviceWebGPU*>(device);
-		const uint32_t w = (cfg.screenWidth > 0) ? cfg.screenWidth : 1u;
-		const uint32_t h = (cfg.screenHeight > 0) ? cfg.screenHeight : 1u;
+		uint32_t w = (cfg.screenWidth > 0) ? cfg.screenWidth : 1u;
+		uint32_t h = (cfg.screenHeight > 0) ? cfg.screenHeight : 1u;
+#if defined(__EMSCRIPTEN__)
+		int canvasW = 0, canvasH = 0;
+		if (emscripten_get_canvas_element_size("#canvas", &canvasW, &canvasH) == EMSCRIPTEN_RESULT_SUCCESS &&
+			canvasW > 0 && canvasH > 0)
+		{
+			w = static_cast<uint32_t>(canvasW);
+			h = static_cast<uint32_t>(canvasH);
+		}
+#endif
 		return wgpuDev->ResizeSwapChain(w, h, true);
 	}
 }

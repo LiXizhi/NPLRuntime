@@ -127,12 +127,14 @@
         {
             "label": "Build ParaEngineClient (Debug)",
             "type": "shell",
-            "command": "msbuild",
+            "command": "cmake",
             "args": [
-                "${workspaceFolder}\\bin\\ClientOpenGLx64\\ClientOpenGLx64.sln",
-                "/p:Configuration=Debug",
-                "/p:Platform=x64",
-                "/m",
+                "--build",
+                "${workspaceFolder}/build-win64",
+                "--config",
+                "Debug",
+                "--parallel",
+                "--",
                 "/v:minimal"
             ],
             "group": {
@@ -143,26 +145,19 @@
             "presentation": {
                 "reveal": "always",
                 "panel": "shared"
-            },
-            "options": {
-                "shell": {
-                    "executable": "cmd.exe",
-                    "args": [
-                        "/c",
-                        "\"C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\Common7\\Tools\\VsDevCmd.bat\" && "
-                    ]
-                }
             }
         },
         {
             "label": "Build ParaEngineClient (Release)",
             "type": "shell",
-            "command": "msbuild",
+            "command": "cmake",
             "args": [
-                "${workspaceFolder}\\bin\\ClientOpenGLx64\\ClientOpenGLx64.sln",
-                "/p:Configuration=Release",
-                "/p:Platform=x64",
-                "/m",
+                "--build",
+                "${workspaceFolder}/build-win64",
+                "--config",
+                "Release",
+                "--parallel",
+                "--",
                 "/v:minimal"
             ],
             "group": "build",
@@ -170,48 +165,20 @@
             "presentation": {
                 "reveal": "always",
                 "panel": "shared"
-            },
-            "options": {
-                "shell": {
-                    "executable": "cmd.exe",
-                    "args": [
-                        "/c",
-                        "\"C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\Common7\\Tools\\VsDevCmd.bat\" && "
-                    ]
-                }
-            }
-        },
-        {
-            "label": "Clean",
-            "type": "shell",
-            "command": "msbuild",
-            "args": [
-                "${workspaceFolder}\\bin\\ClientOpenGLx64\\ClientOpenGLx64.sln",
-                "/t:Clean",
-                "/p:Configuration=Debug",
-                "/p:Platform=x64"
-            ],
-            "problemMatcher": "$msCompile",
-            "options": {
-                "shell": {
-                    "executable": "cmd.exe",
-                    "args": [
-                        "/c",
-                        "\"C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\Common7\\Tools\\VsDevCmd.bat\" && "
-                    ]
-                }
             }
         },
         {
             "label": "Rebuild ParaEngineClient (Debug)",
             "type": "shell",
-            "command": "msbuild",
+            "command": "cmake",
             "args": [
-                "${workspaceFolder}\\bin\\ClientOpenGLx64\\ClientOpenGLx64.sln",
-                "/t:Rebuild",
-                "/p:Configuration=Debug",
-                "/p:Platform=x64",
-                "/m",
+                "--build",
+                "${workspaceFolder}/build-win64",
+                "--config",
+                "Debug",
+                "--clean-first",
+                "--parallel",
+                "--",
                 "/v:minimal"
             ],
             "group": "build",
@@ -219,15 +186,99 @@
             "presentation": {
                 "reveal": "always",
                 "panel": "shared"
-            },
-            "options": {
-                "shell": {
-                    "executable": "cmd.exe",
-                    "args": [
-                        "/c",
-                        "\"C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\Common7\\Tools\\VsDevCmd.bat\" && "
-                    ]
-                }
+            }
+        },
+        {
+            "label": "Rebuild ParaEngineClient (Release)",
+            "type": "shell",
+            "command": "cmake",
+            "args": [
+                "--build",
+                "${workspaceFolder}/build-win64",
+                "--config",
+                "Release",
+                "--clean-first",
+                "--parallel",
+                "--",
+                "/v:minimal"
+            ],
+            "group": "build",
+            "problemMatcher": "$msCompile",
+            "presentation": {
+                "reveal": "always",
+                "panel": "shared"
+            }
+        },
+        {
+            "label": "Clean ParaEngineClient",
+            "type": "shell",
+            "command": "cmake",
+            "args": [
+                "--build",
+                "${workspaceFolder}/build-win64",
+                "--target",
+                "clean",
+                "--config",
+                "Debug"
+            ],
+            "problemMatcher": "$msCompile",
+            "presentation": {
+                "reveal": "always",
+                "panel": "shared"
+            }
+        },
+        {
+            "label": "Windows: Configure ParaEngineClient (CMake)",
+            "type": "shell",
+            "command": "powershell.exe",
+            "args": [
+                "-NoProfile",
+                "-ExecutionPolicy",
+                "Bypass",
+                "-Command",
+                "$boost = if ($env:BOOST_ROOT -and (Test-Path $env:BOOST_ROOT)) { $env:BOOST_ROOT } elseif (Test-Path 'C:/lxzsrc/externals/boost_1_90_0') { 'C:/lxzsrc/externals/boost_1_90_0' } elseif (Test-Path 'C:/local/boost_1_85_0') { 'C:/local/boost_1_85_0' } else { 'C:/Boost' }; cmake -S '${workspaceFolder}/NPLRuntime' -B '${workspaceFolder}/build-win64' -A x64 -DBOOST_ROOT=\"$boost\" -DNPLRUNTIME_RENDERER=OPENGL"
+            ],
+            "problemMatcher": [],
+            "presentation": {
+                "reveal": "always",
+                "panel": "shared"
+            }
+        },
+        {
+            "label": "Build ParaEngineServer (Release)",
+            "type": "shell",
+            "command": "cmake",
+            "args": [
+                "--build",
+                "${workspaceFolder}/build-server",
+                "--config",
+                "Release",
+                "--parallel",
+                "--",
+                "/v:minimal"
+            ],
+            "group": "build",
+            "problemMatcher": "$msCompile",
+            "presentation": {
+                "reveal": "always",
+                "panel": "shared"
+            }
+        },
+        {
+            "label": "Windows: Configure ParaEngineServer (CMake)",
+            "type": "shell",
+            "command": "powershell.exe",
+            "args": [
+                "-NoProfile",
+                "-ExecutionPolicy",
+                "Bypass",
+                "-Command",
+                "$boost = if ($env:BOOST_ROOT -and (Test-Path $env:BOOST_ROOT)) { $env:BOOST_ROOT } elseif (Test-Path 'C:/lxzsrc/externals/boost_1_90_0') { 'C:/lxzsrc/externals/boost_1_90_0' } elseif (Test-Path 'C:/local/boost_1_85_0') { 'C:/local/boost_1_85_0' } else { 'C:/Boost' }; cmake -S '${workspaceFolder}/NPLRuntime' -B '${workspaceFolder}/build-server' -A x64 -DBOOST_ROOT=\"$boost\" -DNPLRUNTIME_SERVER=ON"
+            ],
+            "problemMatcher": [],
+            "presentation": {
+                "reveal": "always",
+                "panel": "shared"
             }
         }
     ]

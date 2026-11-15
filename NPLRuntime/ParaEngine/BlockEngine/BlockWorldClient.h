@@ -189,6 +189,9 @@ namespace ParaEngine
 		/** do post rendering processing */
 		void DoPostRenderingProcessing(BlockRenderPass nRenderPass = BlockRenderPass_Opaque);
 
+		/** blit and unbind _DeferredSceneColorRT at the end of 3D scene rendering on OpenGL/Metal/WebGPU */
+		void FinishAutoBoundSceneColorRT();
+
 		void RestoreNormalShader();
 
 		void Cleanup();
@@ -306,7 +309,6 @@ namespace ParaEngine
 		int ClearActiveChunksToMemLimit(bool bIsShadowPass = false);
 
 		void ClearVisibleChunksToByteLimit(bool bIsShadowPass);
-		void FinishAutoBoundSceneColorRT();
 
 	private:
 		static BlockWorldClient* g_pInstance;
