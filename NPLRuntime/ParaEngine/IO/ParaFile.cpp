@@ -448,7 +448,7 @@ int CParaFile::OpenAssetFile(const char* filename, bool bDownloadIfNotUpToDate, 
 	{
 		string sTmp = string("ParaFile.OpenAssetFile using local file:") + filename + "\n";
 		CAsyncLoader::GetSingleton().log(sTmp);
-#if defined(PARAENGINE_MOBILE) || defined(EMSCRIPTEN)
+#if defined(PARAENGINE_MOBILE) || defined(__EMSCRIPTEN__)
 // #if defined(PARAENGINE_MOBILE)
 		if (relativePath == NULL)
 		{
@@ -1537,7 +1537,7 @@ const string& CParaFile::GetCurDirectory(DWORD dwDirectoryType)
 			return g_CurDirs[dwDirectoryType];
 		}
 	}
-#if !defined(EMSCRIPTEN) && !defined(PARAENGINE_MOBILE) && !defined(NPLRUNTIME_SERVER)
+#if !defined(__EMSCRIPTEN__) && !defined(PARAENGINE_MOBILE) && !defined(NPLRUNTIME_SERVER)
 	else
 	{
 		if (!g_CurDirs[dwDirectoryType].empty())

@@ -7,6 +7,7 @@
 // Desc: I have referred to QT framework's qpaintengine.h, but greatly simplified. 
 //-----------------------------------------------------------------------------
 #include "ParaEngine.h"
+#include <cmath>
 #include "Painter.h"
 #include "qvectorpath.h"
 #include "ParaWorldAsset.h"
@@ -132,6 +133,10 @@ bool ParaEngine::CPaintEngineGPU::begin(CPaintDevice *pdev)
 bool ParaEngine::CPaintEngineGPU::end()
 {
 	GetSprite()->End();
+	if (IsScissorRectSupported() && CGlobals::GetRenderDevice())
+	{
+		CGlobals::GetRenderDevice()->SetRenderState(ERenderState::SCISSORTESTENABLE, FALSE);
+	}
 	return true;
 }
 
@@ -625,23 +630,32 @@ void ParaEngine::CPaintEngineGPU::clip(const QRect & rect, ClipOperation op /*= 
 	if (op == ReplaceClip || op == IntersectClip)
 	{
 		ApplyStateChanges();
-		Matrix4 mat;
-		state->CalculateDeviceMatrix(&mat, &Matrix4::IDENTITY);
-		RECT clipRect = rect;
-		clipRect.left = (LONG)(clipRect.left * mat._11 + mat._41);
-		clipRect.top = (LONG)(clipRect.top * mat._22 + mat._42);
-		clipRect.right = (LONG)(clipRect.right * mat._11 + mat._41);
-		clipRect.bottom = (LONG)(clipRect.bottom * mat._22 + mat._42);
-		QRect newClip(clipRect);
-		if (op == IntersectClip && state->rectangleClip.isValid())
+		QRect newClip;
+		if (rect.isValid())
 		{
-			newClip = state->rectangleClip & newClip;
+			Matrix4 mat;
+			state->CalculateDeviceMatrix(&mat, &Matrix4::IDENTITY);
+			RECT clipRect = rect;
+			clipRect.left = (LONG)std::floor(clipRect.left * mat._11 + mat._41 + 1e-4f);
+			clipRect.top = (LONG)std::floor(clipRect.top * mat._22 + mat._42 + 1e-4f);
+			clipRect.right = (LONG)std::ceil(clipRect.right * mat._11 + mat._41 - 1e-4f);
+			clipRect.bottom = (LONG)std::ceil(clipRect.bottom * mat._22 + mat._42 - 1e-4f);
+			if (clipRect.right > clipRect.left && clipRect.bottom > clipRect.top)
+				newClip = QRect(clipRect);
 		}
+		if (op == IntersectClip && state->clipTestEnabled)
+		{
+			newClip = (state->rectangleClip.isValid() && newClip.isValid())
+				? (state->rectangleClip & newClip)
+				: QRect();
+		}
+		state->clipTestEnabled = true;
 		state->rectangleClip = newClip;
 		updateClipScissorTest();
 	}
 	else if (op == NoClip)
 	{
+		state->clipTestEnabled = false;
 		state->rectangleClip = QRect();
 		updateClipScissorTest();
 	}
@@ -658,20 +672,31 @@ void ParaEngine::CPaintEngineGPU::systemStateChanged()
 	auto state = GetState();
 	if (!state)
 		return;
-	if (state->m_clipInfo.empty())
+	if (!state->m_clipEnabled || state->m_clipOperation == NoClip || state->m_clipInfo.empty())
 	{
+		state->clipTestEnabled = false;
 		state->rectangleClip = QRect();
 	}
 	else
 	{
-		Matrix4 mat;
-		state->CalculateDeviceMatrix(&mat, &Matrix4::IDENTITY);
-		RECT clipRect = state->m_clipInfo[0].rect;
-		clipRect.left = (LONG)(clipRect.left * mat._11 + mat._41);
-		clipRect.top = (LONG)(clipRect.top * mat._22 + mat._42);
-		clipRect.right = (LONG)(clipRect.right * mat._11 + mat._41);
-		clipRect.bottom = (LONG)(clipRect.bottom * mat._22 + mat._42);
-		state->rectangleClip = QRect(clipRect);
+		state->clipTestEnabled = true;
+		if (state->m_clipInfo[0].rect.isValid())
+		{
+			Matrix4 mat;
+			state->CalculateDeviceMatrix(&mat, &Matrix4::IDENTITY);
+			RECT clipRect = state->m_clipInfo[0].rect;
+			clipRect.left = (LONG)std::floor(clipRect.left * mat._11 + mat._41 + 1e-4f);
+			clipRect.top = (LONG)std::floor(clipRect.top * mat._22 + mat._42 + 1e-4f);
+			clipRect.right = (LONG)std::ceil(clipRect.right * mat._11 + mat._41 - 1e-4f);
+			clipRect.bottom = (LONG)std::ceil(clipRect.bottom * mat._22 + mat._42 - 1e-4f);
+			state->rectangleClip = (clipRect.right > clipRect.left && clipRect.bottom > clipRect.top)
+				? QRect(clipRect)
+				: QRect();
+		}
+		else
+		{
+			state->rectangleClip = QRect();
+		}
 	}
 	updateClipScissorTest();
 }
@@ -686,20 +711,24 @@ void ParaEngine::CPaintEngineGPU::updateClipScissorTest()
 
 	if (IsScissorRectSupported())
 	{
-		if (state->rectangleClip.isValid())
+		if (state->clipTestEnabled)
 		{
-			RECT clipRect = state->rectangleClip;
-
-			if (CGlobals::GetApp()->IsRotateScreen() && CGlobals::GetViewportManager()->GetActiveViewPort()->GetRenderTarget() == NULL)
+			RECT clipRect = { 0, 0, 0, 0 };
+			if (state->rectangleClip.isValid())
 			{
-				RECT clipRect2 = clipRect;
-				clipRect.left = clipRect2.top;
-				ParaViewport viewport;
-				CGlobals::GetViewportManager()->GetCurrentViewport(viewport);
-				auto viewHeight = viewport.Height;
-				clipRect.top = viewHeight - clipRect2.right;
-				clipRect.right = clipRect2.bottom;
-				clipRect.bottom = viewHeight - clipRect2.left;
+				clipRect = state->rectangleClip;
+
+				if (CGlobals::GetApp()->IsRotateScreen() && CGlobals::GetViewportManager()->GetActiveViewPort()->GetRenderTarget() == NULL)
+				{
+					RECT clipRect2 = clipRect;
+					clipRect.left = clipRect2.top;
+					ParaViewport viewport;
+					CGlobals::GetViewportManager()->GetCurrentViewport(viewport);
+					auto viewHeight = viewport.Height;
+					clipRect.top = viewHeight - clipRect2.right;
+					clipRect.right = clipRect2.bottom;
+					clipRect.bottom = viewHeight - clipRect2.left;
+				}
 			}
 			CGlobals::GetRenderDevice()->SetRenderState(ERenderState::SCISSORTESTENABLE, TRUE);
 			CGlobals::GetRenderDevice()->SetScissorRect(&clipRect);
@@ -711,9 +740,9 @@ void ParaEngine::CPaintEngineGPU::updateClipScissorTest()
 	}
 	else if (IsStencilSupported())
 	{
-		if (state->rectangleClip.isValid())
+		if (state->clipTestEnabled)
 		{
-			RECT clipRect = state->rectangleClip;
+			RECT clipRect = state->rectangleClip.isValid() ? (RECT)state->rectangleClip : RECT{ 0, 0, 0, 0 };
 			RenderMask(clipRect);
 			// here we mean to allow the non-zero pixels to draw on frame buffer if we set it to D3DCMP_EQUAL.
 			CGlobals::GetRenderDevice()->SetRenderState(ERenderState::STENCILFUNC, D3DCMP_EQUAL);

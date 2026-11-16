@@ -20,7 +20,7 @@ namespace
 {
 	bool ArchivePathEquals(const std::string& a, const std::string& b)
 	{
-#ifdef EMSCRIPTEN
+#ifdef __EMSCRIPTEN__
 		const char* pa = (!a.empty() && (a[0] == '/' || a[0] == '\\')) ? (a.c_str() + 1) : a.c_str();
 		const char* pb = (!b.empty() && (b[0] == '/' || b[0] == '\\')) ? (b.c_str() + 1) : b.c_str();
 		return strcmp(pa, pb) == 0;

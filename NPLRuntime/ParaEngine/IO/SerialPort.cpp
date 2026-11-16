@@ -14,7 +14,7 @@
  * Created on September 7, 2009, 10:46 AM
  */
 #include "ParaEngine.h"
-#ifndef EMSCRIPTEN
+#ifndef __EMSCRIPTEN__
 #include "NPLRuntime.h"
 #include "NPLTable.h"
 #include "NPLHelper.h"

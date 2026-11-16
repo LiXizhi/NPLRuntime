@@ -15,7 +15,7 @@
 
 using namespace ParaEngine;
 
-#ifdef EMSCRIPTEN
+#ifdef __EMSCRIPTEN__
 #include <emscripten/html5_webgl.h>
 #define USE_USER_POINTER_VBO
 #elif defined(__APPLE__) && !defined(PARAENGINE_MOBILE)
@@ -318,7 +318,7 @@ namespace ParaEngine
 
 		inline bool HasGLDrawBuffers(uint32_t featureLevel)
 		{
-#if defined(PARAENGINE_MOBILE) || defined(EMSCRIPTEN)
+#if defined(PARAENGINE_MOBILE) || defined(__EMSCRIPTEN__)
 			return featureLevel >= 300;
 #elif defined(__APPLE__)
 			return featureLevel >= 300;
@@ -330,7 +330,7 @@ namespace ParaEngine
 
 		inline bool HasGLBlitFramebuffer(uint32_t featureLevel)
 		{
-#if defined(PARAENGINE_MOBILE) || defined(EMSCRIPTEN)
+#if defined(PARAENGINE_MOBILE) || defined(__EMSCRIPTEN__)
 			return featureLevel >= 300;
 #elif defined(__APPLE__)
 			return featureLevel >= 300;
@@ -342,7 +342,7 @@ namespace ParaEngine
 
 		inline bool HasGLInstancing(uint32_t featureLevel)
 		{
-#if defined(PARAENGINE_MOBILE) || defined(EMSCRIPTEN)
+#if defined(PARAENGINE_MOBILE) || defined(__EMSCRIPTEN__)
 			return featureLevel >= 300;
 #elif defined(__APPLE__)
 			return featureLevel >= 330;
@@ -354,7 +354,7 @@ namespace ParaEngine
 
 		inline bool HasGLTwoSidedStencil()
 		{
-#if defined(PARAENGINE_MOBILE) || defined(EMSCRIPTEN) || defined(__APPLE__)
+#if defined(PARAENGINE_MOBILE) || defined(__EMSCRIPTEN__) || defined(__APPLE__)
 			return true;
 #else
 			return glad_glStencilFuncSeparate != nullptr && glad_glStencilOpSeparate != nullptr;
@@ -495,7 +495,7 @@ namespace ParaEngine
 				// On GLES 3.0 / WebGL 2.0, if 32-bit float color rendering or linear filtering is unavailable,
 				// transparently promote 32-bit float RTs to 16-bit half-float (which is core linear-filterable in ES 3.0).
 				PixelFormat effectiveColorFormat = colorFormat;
-#if defined(PARAENGINE_MOBILE) || defined(EMSCRIPTEN)
+#if defined(PARAENGINE_MOBILE) || defined(__EMSCRIPTEN__)
 				if (!supportsFloatCB || !supportsFloatLinear)
 				{
 					if (effectiveColorFormat == PixelFormat::R32F)
@@ -561,7 +561,7 @@ namespace ParaEngine
 				{
 					const GLenum noneBuf = GL_NONE;
 					glDrawBuffers(1, &noneBuf);
-#if !defined(PARAENGINE_MOBILE) && !defined(EMSCRIPTEN)
+#if !defined(PARAENGINE_MOBILE) && !defined(__EMSCRIPTEN__)
 					if (glad_glReadBuffer != nullptr)
 						glReadBuffer(GL_NONE);
 #else
@@ -734,7 +734,7 @@ namespace ParaEngine
 			bool m_valid;
 		};
 
-#if !defined(PARAENGINE_MOBILE) && !defined(EMSCRIPTEN)
+#if !defined(PARAENGINE_MOBILE) && !defined(__EMSCRIPTEN__)
 		class GLOcclusionQuery : public IRHIOcclusionQuery
 		{
 		public:
@@ -1085,7 +1085,7 @@ namespace ParaEngine
 					std::sscanf(s, "%d.%d", &major, &minor);
 			}
 		}
-#ifdef EMSCRIPTEN
+#ifdef __EMSCRIPTEN__
 		{
 			EMSCRIPTEN_WEBGL_CONTEXT_HANDLE wglCtx = emscripten_webgl_get_current_context();
 			EmscriptenWebGLContextAttributes wglAttrs;
@@ -1109,7 +1109,7 @@ namespace ParaEngine
 		glGetIntegerv(GL_MAX_TEXTURE_SIZE, &maxTexSize);
 		m_Caps.maxTextureSize = static_cast<uint32_t>(maxTexSize > 0 ? maxTexSize : 4096);
 
-#if !defined(PARAENGINE_MOBILE) && !defined(EMSCRIPTEN)
+#if !defined(PARAENGINE_MOBILE) && !defined(__EMSCRIPTEN__)
 		GLint maxDrawBufs = 1;
 		glGetIntegerv(GL_MAX_DRAW_BUFFERS, &maxDrawBufs);
 		m_Caps.maxSimultaneousRTs = static_cast<uint32_t>(maxDrawBufs > 0 ? maxDrawBufs : 1);
@@ -1127,7 +1127,7 @@ namespace ParaEngine
 		m_Caps.supportsUserClipPlanes = true;
 		m_Caps.supports32BitIndices = true;
 #else
-#ifdef EMSCRIPTEN
+#ifdef __EMSCRIPTEN__
 		{
 			EMSCRIPTEN_WEBGL_CONTEXT_HANDLE wglCtx = emscripten_webgl_get_current_context();
 			if (wglCtx > 0)
@@ -1383,7 +1383,7 @@ namespace ParaEngine
 
 	IRHIOcclusionQuery* RenderDeviceOpenGL::CreateOcclusionQuery()
 	{
-#if !defined(PARAENGINE_MOBILE) && !defined(EMSCRIPTEN)
+#if !defined(PARAENGINE_MOBILE) && !defined(__EMSCRIPTEN__)
 		if (GetCaps().supportsOcclusionQuery)
 			return new GLOcclusionQuery();
 #endif
@@ -1486,7 +1486,7 @@ namespace ParaEngine
 		if (HasGLBlitFramebuffer(GetCaps().featureLevel))
 		{
 			bool canHardwareBlit = true;
-#if defined(PARAENGINE_MOBILE) || defined(EMSCRIPTEN)
+#if defined(PARAENGINE_MOBILE) || defined(__EMSCRIPTEN__)
 			if (dst == nullptr && dstFbo == 0)
 			{
 				// OpenGL ES 3.0 / WebGL 2.0 forbids glBlitFramebuffer into a multisampled draw FBO.
@@ -1507,7 +1507,7 @@ namespace ParaEngine
 				glBindFramebuffer(GL_DRAW_FRAMEBUFFER, dstFbo);
 				glBlitFramebuffer(sx0, sy0, sx1, sy1, dx0, dy0, dx1, dy1, GL_COLOR_BUFFER_BIT, linearFilter ? GL_LINEAR : GL_NEAREST);
 				const GLenum blitErr = glGetError();
-#if defined(PARAENGINE_MOBILE) || defined(EMSCRIPTEN)
+#if defined(PARAENGINE_MOBILE) || defined(__EMSCRIPTEN__)
 				if (src == nullptr && srcFbo == 0)
 					m_DefaultFboReadBlitSupported = (blitErr == GL_NO_ERROR) ? 1 : 0;
 #endif
@@ -1731,7 +1731,7 @@ namespace ParaEngine
 			ApplyGLVertexDeclaration(m_CurrentVertexDeclaration, nullptr);
 
 		const void* indexOffset = reinterpret_cast<const void*>(static_cast<uintptr_t>(indexStart * sizeof(uint16_t)));
-#if !defined(PARAENGINE_MOBILE) && !defined(EMSCRIPTEN) && !defined(__APPLE__)
+#if !defined(PARAENGINE_MOBILE) && !defined(__EMSCRIPTEN__) && !defined(__APPLE__)
 		if (baseVertexIndex != 0 && glad_glDrawElementsInstancedBaseVertex != nullptr)
 		{
 			glDrawElementsInstancedBaseVertex(mode, count, GL_UNSIGNED_SHORT, indexOffset, static_cast<GLsizei>(instanceCount), baseVertexIndex);
@@ -1762,7 +1762,7 @@ namespace ParaEngine
 		int glY = static_cast<int>(m_RenderTargetHeight) - y - 1;
 		if (glY < 0)
 			glY = 0;
-#if !defined(PARAENGINE_MOBILE) && !defined(EMSCRIPTEN)
+#if !defined(PARAENGINE_MOBILE) && !defined(__EMSCRIPTEN__)
 		glReadPixels(x, glY, 1, 1, GL_DEPTH_COMPONENT, GL_FLOAT, &depth);
 		outDepth = depth;
 		return true;
@@ -2017,7 +2017,7 @@ namespace ParaEngine
 			}
 			break;
 		}
-#if !defined(PARAENGINE_MOBILE) && !defined(EMSCRIPTEN)
+#if !defined(PARAENGINE_MOBILE) && !defined(__EMSCRIPTEN__)
 		case ERenderState::FILLMODE:
 		{
 			if (Value == RSV_FILL_WIREFRAME)
@@ -2381,7 +2381,7 @@ namespace ParaEngine
 		if (once)
 		{
 			GLint bits = 0;
-#if defined(PARAENGINE_MOBILE) || defined(EMSCRIPTEN)
+#if defined(PARAENGINE_MOBILE) || defined(__EMSCRIPTEN__)
 			glGetIntegerv(GL_STENCIL_BITS, &bits);
 			if (glGetError() != GL_NO_ERROR)
 				bits = 8;
@@ -2419,7 +2419,7 @@ namespace ParaEngine
 		ApplyDrawBuffersForCurrentProgram();
 
 		const void* indexOffset = reinterpret_cast<const void*>(static_cast<uintptr_t>(sizeof(uint16_t) * indexStart));
-#if !defined(PARAENGINE_MOBILE) && !defined(EMSCRIPTEN)
+#if !defined(PARAENGINE_MOBILE) && !defined(__EMSCRIPTEN__)
 		if (BaseVertexIndex != 0 && glad_glDrawElementsBaseVertex != nullptr)
 		{
 			glDrawElementsBaseVertex(mode, indexCount, GL_UNSIGNED_SHORT, indexOffset, BaseVertexIndex);
@@ -2531,7 +2531,15 @@ namespace ParaEngine
 		}
 
 		if (fields != 0)
+		{
+			// OpenGL glClear obeys GL_SCISSOR_TEST; temporarily disable it so Clear() matches D3D/ParaRHI full-RT clear semantics.
+			const GLboolean wasScissor = glIsEnabled(GL_SCISSOR_TEST);
+			if (wasScissor)
+				glDisable(GL_SCISSOR_TEST);
 			glClear(fields);
+			if (wasScissor)
+				glEnable(GL_SCISSOR_TEST);
+		}
 
 		if (depth && prevZWrite == 0)
 			glDepthMask(GL_FALSE);
@@ -2553,18 +2561,20 @@ namespace ParaEngine
 	bool RenderDeviceOpenGL::SetScissorRect(RECT* pRect)
 	{
 		m_StateTracker.SetScissorRect(pRect);
-		if (!pRect || (pRect->left <= 0 && pRect->top <= 0 && pRect->right <= 0 && pRect->bottom <= 0))
+		if (!pRect)
 		{
-			glDisable(GL_SCISSOR_TEST);
+			glScissor(0, 0, static_cast<GLsizei>(m_RenderTargetWidth), static_cast<GLsizei>(m_RenderTargetHeight));
 		}
 		else
 		{
-			int nScreenHeight = static_cast<int>(m_RenderTargetHeight);
+			const int nScreenHeight = static_cast<int>(m_RenderTargetHeight);
+			const GLsizei w = pRect->right > pRect->left ? static_cast<GLsizei>(pRect->right - pRect->left) : 0;
+			const GLsizei h = pRect->bottom > pRect->top ? static_cast<GLsizei>(pRect->bottom - pRect->top) : 0;
 			glScissor(
 				static_cast<GLint>(pRect->left),
 				static_cast<GLint>(nScreenHeight - pRect->bottom),
-				static_cast<GLsizei>(pRect->right - pRect->left),
-				static_cast<GLsizei>(pRect->bottom - pRect->top));
+				w,
+				h);
 		}
 		return true;
 	}
@@ -2587,7 +2597,7 @@ namespace ParaEngine
 	bool RenderDeviceOpenGL::SetClearDepth(const float depth)
 	{
 		m_StateTracker.SetClearDepth(depth);
-#if defined(PARAENGINE_MOBILE) || defined(EMSCRIPTEN)
+#if defined(PARAENGINE_MOBILE) || defined(__EMSCRIPTEN__)
 		glClearDepthf(depth);
 #else
 		glClearDepth(depth);

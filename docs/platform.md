@@ -260,7 +260,7 @@ Common preprocessor guards used across Platform and ParaEngine:
 | `LINUX` | Linux |
 | `__APPLE__` / `APPLE` | macOS / iOS |
 | `__ANDROID__` | Android |
-| `EMSCRIPTEN` | WebAssembly |
+| `__EMSCRIPTEN__` | WebAssembly |
 | `PARAENGINE_MOBILE` | iOS + Android common code |
 | `HARMONY_OS` | HarmonyOS |
 | `USE_OPENGL_RENDERER` | OpenGL backend active |

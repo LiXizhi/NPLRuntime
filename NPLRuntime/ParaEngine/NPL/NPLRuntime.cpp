@@ -82,7 +82,7 @@ CNPLRuntime::CNPLRuntime(void)
 	, m_bHostMainStatesInFrameMove(true)
 	, m_nLogLevel(1)
 {
-#ifndef EMSCRIPTEN
+#ifndef __EMSCRIPTEN__
 	curl_global_init(CURL_GLOBAL_ALL);
 #endif
 	Init();
@@ -91,7 +91,7 @@ CNPLRuntime::CNPLRuntime(void)
 CNPLRuntime::~CNPLRuntime(void)
 {
 	Cleanup();
-#ifndef EMSCRIPTEN
+#ifndef __EMSCRIPTEN__
 	curl_global_cleanup();
 #endif
 }
@@ -127,7 +127,7 @@ void CNPLRuntime::Cleanup()
 		m_pWebServiceClient = NULL;
 	}
 
-#ifndef EMSCRIPTEN
+#ifndef __EMSCRIPTEN__
 	ParaEngine::CNPLNetClient::ReleaseInstance();
 #endif
 
@@ -544,7 +544,7 @@ bool CNPLRuntime::LoadWebServicePlugin()
 			}
 		}
 #else
-#ifndef EMSCRIPTEN
+#ifndef __EMSCRIPTEN__
 		m_pWebServiceClient = ParaEngine::CNPLNetClient::GetInstance();
 #endif
 #endif
@@ -883,7 +883,7 @@ void CNPLRuntime::SetHostMainStatesInFrameMove(bool bHostMainStatesInFrameMove)
 void CNPLRuntime::Run(bool bToEnd)
 {
 	/** dispatch events in NPL. */
-	#if !defined(PARAENGINE_MOBILE) && !defined(EMSCRIPTEN)
+	#if !defined(PARAENGINE_MOBILE) && !defined(__EMSCRIPTEN__)
 	ParaEngine::CFileSystemWatcherService::GetInstance()->DispatchEvents();
     #endif
 

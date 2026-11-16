@@ -125,7 +125,7 @@ Use guards for platform-specific code:
     // DirectX9-specific code
 #endif
 
-#ifdef EMSCRIPTEN
+#ifdef __EMSCRIPTEN__
     // Emscripten/WebAssembly specific
 #endif
 

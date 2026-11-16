@@ -129,7 +129,7 @@ Called from `CParaEngineAppBase` on context create, reset, loss, and shutdown.
 #elif defined(USE_DIRECTX_RENDERER)
 #endif
 
-#ifdef EMSCRIPTEN
+#ifdef __EMSCRIPTEN__
     // WebAssembly
 #endif
 

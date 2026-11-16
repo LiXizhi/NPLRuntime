@@ -1,5 +1,5 @@
 #include "ParaEngine.h"
-#ifndef EMSCRIPTEN
+#ifndef __EMSCRIPTEN__
 #include <glad/glad.h>
 #endif
 #include "RenderContextSDL2.h"
@@ -23,7 +23,7 @@ namespace ParaEngine
 			SDLBackendAutoRegistrar()
 			{
 #ifdef PARA_RHI_HAS_WEBGPU
-#ifdef EMSCRIPTEN
+#ifdef __EMSCRIPTEN__
 				RHIBackendRegistry::GetInstance().RegisterBackend(ERHIBackend::WebGPU, "WebGPU", &CreateRenderContextWebGPU, 100);
 #else
 				RHIBackendRegistry::GetInstance().RegisterBackend(ERHIBackend::WebGPU, "WebGPU", &CreateRenderContextWebGPU, 60);

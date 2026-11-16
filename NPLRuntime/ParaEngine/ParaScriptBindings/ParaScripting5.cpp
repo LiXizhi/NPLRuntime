@@ -19,7 +19,7 @@ using namespace ParaEngine;
 #define USE_NPL_PROFILER
 #endif
 
-#if !defined(EMSCRIPTEN)
+#if !defined(__EMSCRIPTEN__)
 #define USE_NPL_CURL
 #endif
 /** 

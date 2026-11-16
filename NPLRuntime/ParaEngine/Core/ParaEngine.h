@@ -26,7 +26,7 @@
 
 #include <boost/shared_ptr.hpp>
 #include <boost/signals2.hpp>
-#ifdef EMSCRIPTEN
+#ifdef __EMSCRIPTEN__
 #include <boost/bind/bind.hpp>
 #include <boost/bind/placeholders.hpp>
 #else

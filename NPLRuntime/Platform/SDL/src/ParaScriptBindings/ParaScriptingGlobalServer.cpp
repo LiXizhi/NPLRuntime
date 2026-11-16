@@ -9,14 +9,14 @@
 #include "ParaScriptingGlobal.h"
 #include "NPL/NPLScriptingState.h"
 
-#if defined(__linux__) && !defined(ANDROID) && !defined(EMSCRIPTEN) && !defined(NPLRUNTIME_SERVER)
+#if defined(__linux__) && !defined(ANDROID) && !defined(__EMSCRIPTEN__) && !defined(NPLRUNTIME_SERVER)
 #include <cstdio>
 #include <string>
 #endif
 
 bool ParaScripting::ParaGlobal::OpenFileDialog(const object& inout)
 {
-#if defined(__linux__) && !defined(ANDROID) && !defined(EMSCRIPTEN) && !defined(NPLRUNTIME_SERVER)
+#if defined(__linux__) && !defined(ANDROID) && !defined(__EMSCRIPTEN__) && !defined(NPLRUNTIME_SERVER)
 	if (luabind::type(inout) != LUA_TTABLE)
 		return false;
 

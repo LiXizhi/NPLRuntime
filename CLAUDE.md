@@ -209,6 +209,6 @@ C++ bindings live in `NPLRuntime/ParaEngine/ParaScriptBindings/` (luabind-based)
 
 1. Match surrounding code style and naming in the target subsystem folder.
 2. For new Lua APIs: add C++ in `ParaScriptBindings/`, bind with luabind, export in `ParaScriptingGlobal.cpp`.
-3. For platform-specific code: use macros (`USE_OPENGL_RENDERER`, `PARAENGINE_MOBILE`, `EMSCRIPTEN`, etc.).
+3. For platform-specific code: use macros (`USE_OPENGL_RENDERER`, `PARAENGINE_MOBILE`, `__EMSCRIPTEN__`, etc.).
 4. Test at minimum on Windows (client) or Linux (server) before submitting.
 5. Keep diffs focused — this is a large mature codebase (~2005–present).

@@ -13,7 +13,7 @@
 #include "UrlLoaders.h"
 #include "AsyncLoader.h"
 
-#ifdef EMSCRIPTEN
+#ifdef __EMSCRIPTEN__
 #include <emscripten.h>
 #include <emscripten/fetch.h>
 #include <emscripten/val.h>
@@ -126,7 +126,7 @@ ParaEngine::CUrlProcessor::CUrlProcessor()
 	m_nTotalBytes(0), m_nUserDataType(0), m_pFile(NULL), m_pThreadLocalData(NULL), m_bForbidReuse(false), m_bEnableProgressUpdate(true), m_bIsSyncCallbackMode(false),
 	m_needResumeDownload(false), m_lastDownloadSize(0), m_bEnableDataStreaming(false)
 {
-#ifndef EMSCRIPTEN
+#ifndef __EMSCRIPTEN__
 	m_pHttpHeaders = 0;
 	m_pFormPost = 0;
 	m_pFormLast = 0;
@@ -140,7 +140,7 @@ ParaEngine::CUrlProcessor::CUrlProcessor(const string& url, const string& npl_ca
 	m_nTotalBytes(0), m_nUserDataType(0), m_pFile(NULL), m_pThreadLocalData(NULL), m_bForbidReuse(false), m_bEnableProgressUpdate(true), m_bIsSyncCallbackMode(false),
 	m_needResumeDownload(false), m_lastDownloadSize(0), m_bEnableDataStreaming(false)
 {
-#ifndef EMSCRIPTEN
+#ifndef __EMSCRIPTEN__
 	m_pHttpHeaders = 0;
 	m_pFormPost = 0;
 	m_pFormLast = 0;
@@ -160,7 +160,7 @@ ParaEngine::CUrlProcessor::~CUrlProcessor()
 void ParaEngine::CUrlProcessor::CleanUp()
 {
 	SAFE_DELETE(m_pFile);
-#ifndef EMSCRIPTEN
+#ifndef __EMSCRIPTEN__
 	if (m_pFormPost)
 	{
 		/* then cleanup the form post chain */
@@ -215,7 +215,7 @@ HRESULT ParaEngine::CUrlProcessor::Destroy()
 	return S_OK;
 }
 
-#ifdef EMSCRIPTEN
+#ifdef __EMSCRIPTEN__
 static emscripten::val JSFetch(ParaEngine::CUrlProcessor* self, std::function<void()> callback) {
 	emscripten::val fetch = emscripten::val::global("jsfetch");
 	emscripten::val options = emscripten::val::object();
@@ -376,7 +376,7 @@ bool ParaEngine::CUrlProcessor::AsyncProcess(std::function<void()> callback)
 
 void ParaEngine::CUrlProcessor::EmscriptenFetch()
 {
-#ifdef EMSCRIPTEN
+#ifdef __EMSCRIPTEN__
 	std::vector<const char*> request_headers;
 	int request_headers_size = m_request_headers.size();
 	for (int i = 0; i < request_headers_size; i++) request_headers.push_back(m_request_headers[i].c_str());
@@ -421,7 +421,7 @@ void ParaEngine::CUrlProcessor::EmscriptenFetch()
 
 void ParaEngine::CUrlProcessor::EmscriptenFetch2()
 {
-#ifdef EMSCRIPTEN
+#ifdef __EMSCRIPTEN__
     m_fetch_finish = false;
 	if (IsEnableDataStreaming()) {
 		JSFetch(this, [this](){
@@ -482,7 +482,7 @@ void ParaEngine::CUrlProcessor::EmscriptenFetch2()
 
 HRESULT ParaEngine::CUrlProcessor::Process(void* pData, int cBytes)
 {
-#ifdef EMSCRIPTEN
+#ifdef __EMSCRIPTEN__
 	if (!m_bAsyncCompleted && m_responseCode == 0) 
 	{
 #ifdef EMSCRIPTEN_SINGLE_THREAD
@@ -640,7 +640,7 @@ void ParaEngine::CUrlProcessor::AddBytesReceived(int nByteCount)
 	}
 }
 
-#ifndef EMSCRIPTEN
+#ifndef __EMSCRIPTEN__
 void ParaEngine::CUrlProcessor::SetCurlEasyOpt(CURL* handle)
 {
 	// reset data 
@@ -1125,7 +1125,7 @@ void ParaEngine::CUrlProcessor::CompleteTask()
 
 void ParaEngine::CUrlProcessor::AppendHTTPHeader(const char* text)
 {
-#ifdef EMSCRIPTEN
+#ifdef __EMSCRIPTEN__
 	if (!text) return;
 	std::string header = text;
 	auto pos = header.find(':');
@@ -1160,7 +1160,7 @@ void ParaEngine::CUrlProcessor::AppendHTTPHeader(const char* text)
 
 CURLFORMcode ParaEngine::CUrlProcessor::AppendFormParam(const char* name, const char* value)
 {
-#ifndef EMSCRIPTEN
+#ifndef __EMSCRIPTEN__
 	return curl_formadd(&m_pFormPost, &m_pFormLast, CURLFORM_COPYNAME, name, CURLFORM_COPYCONTENTS, value, CURLFORM_END);
 #else
 	return CURL_FORMADD_OK;
@@ -1169,7 +1169,7 @@ CURLFORMcode ParaEngine::CUrlProcessor::AppendFormParam(const char* name, const 
 
 CURLFORMcode ParaEngine::CUrlProcessor::AppendFormParam(const char* name, const char* type, const char* file, const char* data, int datalen, bool bCacheData)
 {
-#ifndef EMSCRIPTEN
+#ifndef __EMSCRIPTEN__
 	CURLFORMcode rc = CURL_FORMADD_OK;
 	if (bCacheData)
 	{

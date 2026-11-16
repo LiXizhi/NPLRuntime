@@ -6,7 +6,7 @@
 #include <atomic>
 #include <memory>
 // #ifndef EMSCRIPTEN_SINGLE_THREAD
-#ifndef EMSCRIPTEN
+#ifndef __EMSCRIPTEN__
 #include <curl/curl.h>
 #else
 typedef enum {
@@ -259,7 +259,7 @@ namespace ParaEngine
 
 		void CleanUp();
 
-#ifdef EMSCRIPTEN
+#ifdef __EMSCRIPTEN__
 		virtual bool AsyncProcess(std::function<void()> callback);
 #endif
 
@@ -339,7 +339,7 @@ namespace ParaEngine
 		CURLFORMcode AppendFormParam(const char* name, const char* type, const char* file, const char* data, int datalen, bool bCacheData = false);
 
 		/** init the easy handle according to the settings. It will also prepare the task for the curl interface by clearing data, etc. */
-#ifndef EMSCRIPTEN
+#ifndef __EMSCRIPTEN__
 		void SetCurlEasyOpt(CURL* handle);
 #endif
 		/** call the call back if any, this function must be called in the main game thread. */
@@ -426,7 +426,7 @@ namespace ParaEngine
 		/** CURLOPT_URL*/
 		string m_url;
 		/** http headers to send*/
-#ifndef EMSCRIPTEN
+#ifndef __EMSCRIPTEN__
 		struct curl_slist * m_pHttpHeaders;
 		/** CURLOPT_HTTPPOST */
 		struct curl_httppost* m_pFormPost;
@@ -503,7 +503,7 @@ namespace ParaEngine
 		bool m_needResumeDownload;
 		long m_lastDownloadSize;
 
-#ifdef EMSCRIPTEN
+#ifdef __EMSCRIPTEN__
 		std::vector<std::string> m_request_headers;
 		std::function<void()> m_async_callback;
 		std::string m_fetch_response_data;

@@ -1,5 +1,5 @@
 // #ifdef PARAENGINE_MOBILE
-#if defined(PARAENGINE_MOBILE) || defined(EMSCRIPTEN)
+#if defined(PARAENGINE_MOBILE) || defined(__EMSCRIPTEN__)
 
 #include "ParaEngine.h"
 #include "GUIIMEDelegate.h"

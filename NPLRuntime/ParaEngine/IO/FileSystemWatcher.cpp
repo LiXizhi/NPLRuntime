@@ -7,7 +7,7 @@
 // Desc: modified on https://github.com/berkus/dir_monitor
 //-----------------------------------------------------------------------------
 #include "ParaEngine.h"
-#ifndef EMSCRIPTEN
+#ifndef __EMSCRIPTEN__
 
 #if !defined(PARAENGINE_MOBILE)
 

@@ -109,7 +109,7 @@ CAsyncLoader::ProcessorWorkerThread::~ProcessorWorkerThread()
 {
 	if(m_curl)
 	{
-#ifndef EMSCRIPTEN
+#ifndef __EMSCRIPTEN__
 		curl_easy_cleanup(m_curl);
 #endif
 		m_curl = NULL;
@@ -135,7 +135,7 @@ void* CAsyncLoader::ProcessorWorkerThread::GetCurlInterface(int nID)
 	}
 	else
 	{
-#ifndef EMSCRIPTEN
+#ifndef __EMSCRIPTEN__
 		m_curl = curl_easy_init();
 #endif
 
@@ -151,7 +151,7 @@ void* CAsyncLoader::DefaultWorkerThreadData::GetCurlInterface(int nID)
 	}
 	else
 	{
-#ifndef EMSCRIPTEN
+#ifndef __EMSCRIPTEN__
 		m_curl = curl_easy_init();
 
 		// The official doc says if multi-threaded use, this one should be set to 1. 
@@ -548,7 +548,7 @@ int CAsyncLoader::Start(int nWorkerCount)
 	OUTPUT_LOG("CAsyncLoader::Start, %d\n", std::thread::hardware_concurrency());
 
 	{
-#ifdef EMSCRIPTEN
+#ifdef __EMSCRIPTEN__
 		auto count = 1;
 #else
 		// auto count = (std::max)(std::thread::hardware_concurrency() -1, (unsigned int)1);
@@ -966,7 +966,7 @@ int ParaEngine::CAsyncLoader::AddWorkItem( IDataLoader* pDataLoader, IDataProces
 	if( !pDataLoader || !pDataProcessor )
 		return E_INVALIDARG;
 
-#ifdef EMSCRIPTEN
+#ifdef __EMSCRIPTEN__
 	auto async_callback = [this, pDataLoader, pDataProcessor, pHResult, ppDeviceObject, nProcessorThreadID] () {
 		ResourceRequest_ptr msg(new ResourceRequest(ResourceRequestType_Local));
 		msg->m_nProcessorQueueID = nProcessorThreadID;

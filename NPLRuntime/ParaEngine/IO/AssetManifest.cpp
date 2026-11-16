@@ -518,7 +518,7 @@ bool AssetFileEntry::CheckMD5AndSize(const char* buffer, int nSize)
 
 std::string AssetFileEntry::GetFullFilePath()
 {
-#if defined(PARAENGINE_MOBILE) || defined(EMSCRIPTEN)
+#if defined(PARAENGINE_MOBILE) || defined(__EMSCRIPTEN__)
 	return CFileUtils::GetWritableFullPathForFilename(GetLocalFileName());
 #else
 	return GetLocalFileName();
@@ -540,7 +540,7 @@ bool AssetFileEntry::SaveToDisk(const char* buffer, int nSize, bool bCheckMD5)
 	static ParaEngine::mutex s_save_file_mutex;
 	ParaEngine::Lock lock_(s_save_file_mutex);
 
-#ifdef EMSCRIPTEN
+#ifdef __EMSCRIPTEN__
 	string tmpName = GetLocalFileName();
 #else
 	string tmpName = GetLocalFileName() + ".tmp";
@@ -749,7 +749,7 @@ void CAssetManifest::LoadManifest()
 	}
 	else
 	{
-#if defined(PARAENGINE_MOBILE) || defined(PLATFORM_MAC) || defined(EMSCRIPTEN)
+#if defined(PARAENGINE_MOBILE) || defined(PLATFORM_MAC) || defined(__EMSCRIPTEN__)
 		const char* sDefaultFile = "assets_manifest.txt";
 		if (CParaFile::DoesFileExist(sDefaultFile))
 		{

@@ -13,7 +13,7 @@
 #include "DynamicAttributeField.h"
 #include "Framework/Common/Helper/EditorHelper.h"
 
-#ifdef EMSCRIPTEN
+#ifdef __EMSCRIPTEN__
 #include "emscripten.h"
 #endif
 
@@ -36,7 +36,7 @@
 #include "util/StringHelper.h"
 #include "util/ParaTime.h"
 
-#if !defined(EMSCRIPTEN) && !defined(PARAENGINE_MOBILE)
+#if !defined(__EMSCRIPTEN__) && !defined(PARAENGINE_MOBILE)
 #define SUPPORT_SHELL_EXECUTE
 #endif
 
@@ -447,7 +447,7 @@ void ParaGlobal::Execute(const std::string& exe, const luabind::object& param, l
 
 bool ParaGlobal::ShellExecute(const char* lpOperation, const char* lpFile, const char* lpParameters, const char* lpDirectory, int nShowCmd)
 {
-#ifdef EMSCRIPTEN
+#ifdef __EMSCRIPTEN__
 	if (lpOperation && lpFile && (strcmp(lpOperation, "open") == 0 || strcmp(lpOperation, "openExternalBrowser") == 0))
 	{
 		EM_ASM({
@@ -534,7 +534,7 @@ std::string ParaGlobal::GetCmdReturn(std::string cmd)
 		_pclose(file);
 	}
 	return result;
-#elif !defined(EMSCRIPTEN) && !defined(PARAENGINE_MOBILE)
+#elif !defined(__EMSCRIPTEN__) && !defined(PARAENGINE_MOBILE)
 	std::string result;
 	FILE* file = popen(cmd.c_str(), "r");
 	if (file != NULL)
@@ -2348,7 +2348,7 @@ BOOL ParaScripting::ParaGlobal::ExecWmicCmd1(string& out, string wmicCmd, string
 		CloseHandle(pi.hThread);
 
 	return bret;
-#elif !defined(EMSCRIPTEN) && !defined(PARAENGINE_MOBILE)
+#elif !defined(__EMSCRIPTEN__) && !defined(PARAENGINE_MOBILE)
 	if (wmicCmd.empty())
 		return FALSE;
 

@@ -469,7 +469,7 @@ namespace ParaEngine
 	std::string PlatformBridge::call_native(std::string, const std::string) { return {}; }
 	void PlatformBridge::call_native_withCB(std::string, LuaCB*, const std::string) {}
 
-#if (defined(EMSCRIPTEN) || defined(WIN32) || defined(PICO_VR)) && !defined(NPLRUNTIME_SERVER)
+#if (defined(__EMSCRIPTEN__) || defined(WIN32) || defined(PICO_VR)) && !defined(NPLRUNTIME_SERVER)
 	class CParaWebXR : public IParaWebXR
 	{
 	public:

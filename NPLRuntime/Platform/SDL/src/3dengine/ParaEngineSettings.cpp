@@ -7,7 +7,7 @@
 #include "ParaEngineSettings.h"
 #include <fstream>
 
-#ifdef EMSCRIPTEN
+#ifdef __EMSCRIPTEN__
 #include <emscripten.h>
 #endif
 
@@ -17,7 +17,7 @@ const std::string& ParaEngine::ParaEngineSettings::GetMachineID()
 	if (!machineID.empty())
 		return machineID;
 
-#ifdef EMSCRIPTEN
+#ifdef __EMSCRIPTEN__
 	char idBuf[128] = { 0 };
 	EM_ASM({
 		var id = "";

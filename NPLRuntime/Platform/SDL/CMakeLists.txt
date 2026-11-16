@@ -69,7 +69,6 @@ elseif (EMSCRIPTEN)
 		set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++20 -pthread -sPTHREAD_POOL_SIZE=16 ")
 		set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=c++20 -pthread -sPTHREAD_POOL_SIZE=16 ")
 	endif()
-	target_compile_definitions(${TARGET_NAME} PUBLIC EMSCRIPTEN)
 	target_include_directories(${TARGET_NAME} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/emscripten)
 endif()
 

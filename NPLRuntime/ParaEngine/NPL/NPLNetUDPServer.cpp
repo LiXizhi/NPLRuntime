@@ -35,7 +35,7 @@ namespace NPL {
 
 	void CNPLNetUDPServer::start(const char* server, unsigned short port)
 	{
-#ifdef EMSCRIPTEN
+#ifdef __EMSCRIPTEN__
 		return;
 #endif
 		if (m_dispatcherThread.get() != 0)
@@ -145,7 +145,7 @@ namespace NPL {
 
 	void CNPLNetUDPServer::stop()
 	{
-#ifdef EMSCRIPTEN
+#ifdef __EMSCRIPTEN__
 		return;
 #endif
 		if (m_dispatcherThread.get() != 0)

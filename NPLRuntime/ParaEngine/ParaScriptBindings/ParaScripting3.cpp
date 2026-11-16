@@ -424,7 +424,7 @@ void CNPLScriptingState::LoadHAPI_NPL()
 		}
 	}
 
-#if !defined(EMSCRIPTEN) && !defined(PARAENGINE_MOBILE) && !defined(NPLRUNTIME_SERVER)
+#if !defined(__EMSCRIPTEN__) && !defined(PARAENGINE_MOBILE) && !defined(NPLRUNTIME_SERVER)
 	module(L)
 		[
 			namespace_("ParaIPC")

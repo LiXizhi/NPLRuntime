@@ -7,7 +7,7 @@
 #include "2dengine/GUIEdit.h"
 #include "SDL2/SDL.h"
 
-#ifdef EMSCRIPTEN
+#ifdef __EMSCRIPTEN__
 #include "Js.h"
 #endif
 
@@ -56,7 +56,7 @@ namespace ParaEngine {
 
 	bool StringHelper::CopyTextToClipboard(const string& text_)
 	{
-#ifdef EMSCRIPTEN
+#ifdef __EMSCRIPTEN__
 		JS::SetClipboardText(text_);
 		return true;
 #endif
@@ -65,7 +65,7 @@ namespace ParaEngine {
 
 	const char* StringHelper::GetTextFromClipboard()
 	{
-#ifdef EMSCRIPTEN
+#ifdef __EMSCRIPTEN__
 		static std::string s_clip_text;
 		s_clip_text =  JS::GetClipboardText();
 		return s_clip_text.c_str();

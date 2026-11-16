@@ -233,7 +233,7 @@ namespace ParaEngine
 			switch (backend)
 			{
 			case ERHIBackend::OpenGL:
-#if defined(PARAENGINE_MOBILE) || defined(EMSCRIPTEN)
+#if defined(PARAENGINE_MOBILE) || defined(__EMSCRIPTEN__)
 				return (caps.featureLevel >= 300) ? EShaderTarget::ESSL_300 : EShaderTarget::ESSL_100;
 #else
 				return EShaderTarget::GLSL_120;

@@ -31,7 +31,7 @@
 #   define CAUDIO_API
 #endif
 
-#if defined(EMSCRIPTEN_SINGLE_THREAD) || defined(EMSCRIPTEN)
+#if defined(EMSCRIPTEN_SINGLE_THREAD) || defined(__EMSCRIPTEN__)
 #undef CAUDIO_MAKE_THREAD_SAFE
 #define CAUDIO_MAKE_THREAD_SAFE  0
 #endif

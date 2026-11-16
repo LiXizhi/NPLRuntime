@@ -118,7 +118,7 @@ const char* ParaEngine::CCommonFileDialog::OpenFolder(const char* sDefaultFolder
 		}
 	}
 	return NULL;
-#elif defined(__linux__) && !defined(ANDROID) && !defined(EMSCRIPTEN) && !defined(NPLRUNTIME_SERVER)
+#elif defined(__linux__) && !defined(ANDROID) && !defined(__EMSCRIPTEN__) && !defined(NPLRUNTIME_SERVER)
 	auto shellQuote = [](const std::string& s) -> std::string {
 		std::string out = "'";
 		for (char c : s)
@@ -228,7 +228,7 @@ const char* ParaEngine::CCommonFileDialog::GetDirectory(const char* sKnownDir)
 		return s_filepath.c_str();
 	}
 	return NULL;
-#elif !defined(EMSCRIPTEN) && !defined(PARAENGINE_MOBILE)
+#elif !defined(__EMSCRIPTEN__) && !defined(PARAENGINE_MOBILE)
 	const char* homeEnv = std::getenv("HOME");
 	if (!homeEnv || homeEnv[0] == '\0')
 		return NULL;

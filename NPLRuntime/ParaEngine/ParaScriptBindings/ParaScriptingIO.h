@@ -21,7 +21,7 @@ namespace ParaScripting
 	{
 	public:
 		ParaFileSystemWatcher();
-#if defined(PARAENGINE_MOBILE) || defined(EMSCRIPTEN)
+#if defined(PARAENGINE_MOBILE) || defined(__EMSCRIPTEN__)
         ParaFileSystemWatcher(ParaFileSystemWatcher* watcher);
 #else
         ParaFileSystemWatcher(CFileSystemWatcher* watcher);
@@ -46,7 +46,7 @@ namespace ParaScripting
 		*/
 		void AddCallback(const char* sCallbackScript);
     public:
-#if defined(PARAENGINE_MOBILE) || defined(EMSCRIPTEN)
+#if defined(PARAENGINE_MOBILE) || defined(__EMSCRIPTEN__)
         ParaFileSystemWatcher* m_watcher;
 #else
         CFileSystemWatcher* m_watcher;

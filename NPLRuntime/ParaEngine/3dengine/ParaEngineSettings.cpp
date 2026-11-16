@@ -35,7 +35,7 @@
 #include "util/EnumProcess.hpp"
 #endif
 
-#if !defined(WIN32) && !defined(EMSCRIPTEN)
+#if !defined(WIN32) && !defined(__EMSCRIPTEN__)
 #include <sys/utsname.h>
 #include <unistd.h>
 #if defined(__APPLE__)
@@ -57,7 +57,7 @@
 #include "IParaEngineApp.h"
 //#include "OSWindows.h"
 
-#ifdef EMSCRIPTEN
+#ifdef __EMSCRIPTEN__
 #include <emscripten.h>
 #endif
 
@@ -958,12 +958,12 @@ void ParaEngine::ParaEngineSettings::AllocConsole()
 }
 void ParaEngine::ParaEngineSettings::FlushDiskIO()
 {
-#ifdef EMSCRIPTEN
+#ifdef __EMSCRIPTEN__
 	EM_ASM(FS.syncfs(false, function(err) { if (err) { console.log("FS.syncfs", err); } }););
 #endif
 }
 
-#ifdef EMSCRIPTEN
+#ifdef __EMSCRIPTEN__
 EM_JS(void, SendMsgToJS_JS_, (const char* c_msg_data_json), {
     var msg_data_json = UTF8ToString(c_msg_data_json); 
     if (typeof RecvMsgFromEmscripten == "function")
@@ -975,14 +975,14 @@ EM_JS(void, SendMsgToJS_JS_, (const char* c_msg_data_json), {
 
 void ParaEngine::ParaEngineSettings::SendMsgToJS(const char* msg_json_data)
 {
-#ifdef EMSCRIPTEN
+#ifdef __EMSCRIPTEN__
 	SendMsgToJS_JS_(msg_json_data);
 #endif
 }
 
 // std::string ParaEngine::ParaEngineSettings::PyToLua(std::string pycode)
 // {
-// #ifdef EMSCRIPTEN
+// #ifdef __EMSCRIPTEN__
 //     emscripten::val js_global_LuaCallPy2Lua = emscripten::val::global("LuaCallPy2Lua");
 // 	return js_global_LuaCallPy2Lua(pycode);
 // #endif
@@ -1070,7 +1070,7 @@ const std::string& ParaEngine::ParaEngineSettings::GetSystemInfoString( bool bRe
 
 	s_sysInfo = ss.str();
 	return s_sysInfo;
-#elif defined(EMSCRIPTEN)
+#elif defined(__EMSCRIPTEN__)
 	std::ostringstream ss;
 	ss << "OS version:WebAssembly (Emscripten)\n";
 #ifndef EMSCRIPTEN_SINGLE_THREAD
@@ -1226,14 +1226,14 @@ void ParaEngine::ParaEngineSettings::SetSandboxMode(bool val)
 
 void ParaEngine::ParaEngineSettings::SetDefaultOpenFileFolder(const char* sDefaultOpenFileFolder)
 {
-#if !defined(EMSCRIPTEN) && !defined(PARAENGINE_MOBILE) && !defined(NPLRUNTIME_SERVER)
+#if !defined(__EMSCRIPTEN__) && !defined(PARAENGINE_MOBILE) && !defined(NPLRUNTIME_SERVER)
 	CCommonFileDialog::GetSingleton()->SetDefaultOpenFileFolder(sDefaultOpenFileFolder);
 #endif
 }
 
 const char* ParaEngine::ParaEngineSettings::GetOpenFolder()
 {
-#if !defined(EMSCRIPTEN) && !defined(PARAENGINE_MOBILE) && !defined(NPLRUNTIME_SERVER)
+#if !defined(__EMSCRIPTEN__) && !defined(PARAENGINE_MOBILE) && !defined(NPLRUNTIME_SERVER)
 	return CCommonFileDialog::GetSingleton()->OpenFolder();
 #else
 	return NULL;

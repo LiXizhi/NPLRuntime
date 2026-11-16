@@ -702,7 +702,7 @@ HRESULT CPainter::DrawText(const char16_t* strText, GUIFontElement* pElement, RE
 			if (rcScreen.right <= rcScreen.left || rcScreen.bottom <= rcScreen.top)
 				return S_OK;
 
-			if (state->m_clipOperation != ClipOperation::NoClip && !(state->m_clipInfo.empty()))
+			if (hasClipping() && !(state->m_clipInfo.empty()))
 			{
 				RECT finalRect;
 				if (!ParaEngine::CGUIBase::IntersectRect(&finalRect, state->m_clipInfo[0].rect, rcScreen))
@@ -774,7 +774,7 @@ HRESULT CPainter::DrawText(const char16_t* strText, GUIFontElement* pElement, RE
 #ifndef USE_NULL_RENDERER
 		if (bApply2DClip)
 		{
-			if (state->m_clipOperation != ClipOperation::NoClip && !(state->m_clipInfo.empty()))
+			if (hasClipping() && !(state->m_clipInfo.empty()))
 			{
 				engine->clip(state->m_clipInfo[0].rect, state->m_clipInfo[0].operation);
 			}
@@ -833,7 +833,7 @@ HRESULT CPainter::DrawText(const char16_t* strText, GUIFontElement* pElement, RE
 			if (rcWorldClip.right <= rcWorldClip.left || rcWorldClip.bottom <= rcWorldClip.top)
 				return S_OK;
 
-			if (state->m_clipOperation != ClipOperation::NoClip && !(state->m_clipInfo.empty()))
+			if (hasClipping() && !(state->m_clipInfo.empty()))
 			{
 				RECT finalRect;
 				if (!ParaEngine::CGUIBase::IntersectRect(&finalRect, state->m_clipInfo[0].rect, rcWorldClip))
@@ -910,7 +910,7 @@ HRESULT CPainter::DrawText(const char16_t* strText, GUIFontElement* pElement, RE
 #ifndef USE_NULL_RENDERER
 		if (bApply2DClip)
 		{
-			if (state->m_clipOperation != ClipOperation::NoClip && !(state->m_clipInfo.empty()))
+			if (hasClipping() && !(state->m_clipInfo.empty()))
 			{
 				engine->clip(state->m_clipInfo[0].rect, state->m_clipInfo[0].operation);
 			}
@@ -1451,24 +1451,67 @@ ParaEngine::QRegion ParaEngine::CPainter::clipRegion() const
 	return QRegion();
 }
 
-void ParaEngine::CPainter::setClipRect(const QRectF &, ClipOperation op /*= ReplaceClip*/)
+void ParaEngine::CPainter::setClipRect(const QRectF & rect, ClipOperation op /*= ReplaceClip*/)
 {
-
+	setClipRect(QRect(rect), op);
 }
 
 void ParaEngine::CPainter::setClipRect(const QRect & rect, ClipOperation op /*= ReplaceClip*/)
 {
 	if (!engine || !state)
 		return;
-	if ((!state->m_clipEnabled && op != NoClip))
+	if (op == NoClip)
+	{
+		state->m_clipEnabled = false;
+		state->m_clipInfo.clear();
+		state->m_clipOperation = NoClip;
+		engine->clip(QRect(), NoClip);
+		return;
+	}
+	if (!state->m_clipEnabled)
 		op = ReplaceClip;
 	state->m_clipEnabled = true;
-	engine->clip(rect, op);
-	if (op == ReplaceClip || op == NoClip)
-		state->m_clipInfo.clear();
-	state->m_clipInfo.push_back(CPainterClipInfo(rect, op, state->m_matrix));
-	state->m_clipOperation = op;
-	return;
+
+	// Transform local painter clip rect by state->matComplete into painter screen-space coordinates,
+	// matching the coordinate space expected by state->m_clipInfo and CPaintEngineGPU::clip().
+	QRect worldClip;
+	if (rect.isValid())
+	{
+		if (!IsUse3DTransform() && !IsSpriteUseWorldMatrix())
+		{
+			RECT rcLocal = rect;
+			const Matrix4& mat = state->matComplete;
+			Vector3 corners[4] = {
+				Vector3((float)rcLocal.left,  (float)rcLocal.top,    0.f) * mat,
+				Vector3((float)rcLocal.right, (float)rcLocal.top,    0.f) * mat,
+				Vector3((float)rcLocal.right, (float)rcLocal.bottom, 0.f) * mat,
+				Vector3((float)rcLocal.left,  (float)rcLocal.bottom, 0.f) * mat,
+			};
+			RECT rcWorld;
+			rcWorld.left   = (LONG)std::floor((std::min)((std::min)(corners[0].x, corners[1].x), (std::min)(corners[2].x, corners[3].x)) + 1e-4f);
+			rcWorld.top    = (LONG)std::floor((std::min)((std::min)(corners[0].y, corners[1].y), (std::min)(corners[2].y, corners[3].y)) + 1e-4f);
+			rcWorld.right  = (LONG)std::ceil ((std::max)((std::max)(corners[0].x, corners[1].x), (std::max)(corners[2].x, corners[3].x)) - 1e-4f);
+			rcWorld.bottom = (LONG)std::ceil ((std::max)((std::max)(corners[0].y, corners[1].y), (std::max)(corners[2].y, corners[3].y)) - 1e-4f);
+			if (rcWorld.right > rcWorld.left && rcWorld.bottom > rcWorld.top)
+				worldClip = QRect(rcWorld);
+		}
+		else
+		{
+			worldClip = rect;
+		}
+	}
+
+	if (op == IntersectClip && !state->m_clipInfo.empty())
+	{
+		worldClip = (state->m_clipInfo[0].rect.isValid() && worldClip.isValid())
+			? (state->m_clipInfo[0].rect & worldClip)
+			: QRect();
+	}
+
+	state->m_clipInfo.clear();
+	state->m_clipInfo.push_back(CPainterClipInfo(worldClip, ReplaceClip, state->m_matrix));
+	state->m_clipOperation = ReplaceClip;
+	engine->clip(worldClip, ReplaceClip);
 }
 
 void ParaEngine::CPainter::setClipRegion(const QRegion & region, ClipOperation op /*= ReplaceClip*/)

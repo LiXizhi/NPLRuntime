@@ -5,7 +5,7 @@
 #include "ParaEngineSettings.h"
 #include "Framework/Common/Helper/EditorHelper.h"
 
-#ifdef EMSCRIPTEN
+#ifdef __EMSCRIPTEN__
 #include <emscripten.h>
 #elif !defined(PARAENGINE_MOBILE)
 #include <cstdlib>
@@ -32,7 +32,7 @@ namespace ParaEngine {
 
 	bool CEditorHelper::OpenWithDefaultEditor(const char* sScriptFile, bool bWaitOnReturn)
 	{
-#if !defined(EMSCRIPTEN) && !defined(PARAENGINE_MOBILE)
+#if !defined(__EMSCRIPTEN__) && !defined(PARAENGINE_MOBILE)
 		if (!sScriptFile || sScriptFile[0] == '\0')
 			return false;
 
@@ -80,7 +80,7 @@ namespace ParaEngine {
 
 	bool CEditorHelper::CreateProcess(const char* lpApplicationName, const char* lpCommandLine, bool bWaitOnReturn)
 	{
-#if !defined(EMSCRIPTEN) && !defined(PARAENGINE_MOBILE)
+#if !defined(__EMSCRIPTEN__) && !defined(PARAENGINE_MOBILE)
 		OUTPUT_LOG("warning: security alert. CreateProcess function should be deprecated in formal release\n");
 		std::string app = lpApplicationName ? lpApplicationName : "";
 		std::string cmdLine = lpCommandLine ? lpCommandLine : "";
@@ -138,7 +138,7 @@ namespace ParaEngine {
 			return false;
 		std::string op = (lpOperation && lpOperation[0] != '\0') ? lpOperation : "open";
 
-#ifdef EMSCRIPTEN
+#ifdef __EMSCRIPTEN__
 		if (op == "open" || op == "openExternalBrowser")
 		{
 			EM_ASM({

@@ -17,7 +17,7 @@
 #include "util/CSingleton.h"
 #include "IParaWebXR.h"
 
-#if (defined(EMSCRIPTEN) || defined(WIN32) || defined(PICO_VR)) && !defined(NPLRUNTIME_SERVER)
+#if (defined(__EMSCRIPTEN__) || defined(WIN32) || defined(PICO_VR)) && !defined(NPLRUNTIME_SERVER)
 #include "3dengine/WebXR.h"
 #endif
 
@@ -962,7 +962,7 @@ int ParaEngine::CViewportManager::InstallFields(CAttributeClass* pClass, bool bO
 
 IParaWebXR* CParaWebXRFactory::GetInstance()
 {
-#if (defined(EMSCRIPTEN) || defined(WIN32) || defined(PICO_VR)) && !defined(NPLRUNTIME_SERVER)
+#if (defined(__EMSCRIPTEN__) || defined(WIN32) || defined(PICO_VR)) && !defined(NPLRUNTIME_SERVER)
 	return CAppSingleton<CParaWebXR>::GetInstance();
 #else
 	return CAppSingleton<IParaWebXR>::GetInstance();

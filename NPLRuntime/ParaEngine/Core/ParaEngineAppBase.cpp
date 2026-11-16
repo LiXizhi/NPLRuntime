@@ -572,7 +572,7 @@ void ParaEngine::CParaEngineAppBase::Render()
 		pDevice->SetRenderState(ERenderState::ZENABLE, TRUE);
 		pDevice->SetRenderState(ERenderState::ZFUNC, D3DCMP_LESSEQUAL);
 		pDevice->SetRenderState(ERenderState::CULLMODE, RSV_CULL_CCW);
-#ifdef EMSCRIPTEN
+#ifdef __EMSCRIPTEN__
 		if (((IParaWebXR *)CGlobals::GetViewportManager()->GetChildAttributeObject("WebXR"))->GetIsXR())
 		{
 			// the XR compositor blends by alpha. sky only writes RGB, so it must inherit an opaque alpha from the clear,
@@ -997,7 +997,7 @@ HRESULT ParaEngine::CParaEngineAppBase::DoWork()
         if (getRenderEnabled() && Is3DRenderingEnabled() && m_pRenderDevice)
         {
 			Render();
-#ifdef EMSCRIPTEN
+#ifdef __EMSCRIPTEN__
             if (!((IParaWebXR *)CGlobals::GetViewportManager()->GetChildAttributeObject("WebXR"))->GetIsXR())
             {
                 m_pRenderDevice->Present();

@@ -1,5 +1,5 @@
 #pragma once
-#if !defined(EMSCRIPTEN) && !defined(PARAENGINE_MOBILE) && !defined(NPLRUNTIME_SERVER)
+#if !defined(__EMSCRIPTEN__) && !defined(PARAENGINE_MOBILE) && !defined(NPLRUNTIME_SERVER)
 #include "InterprocessQueue.hpp"
 #include "util/mutex.h"
 #include <queue>

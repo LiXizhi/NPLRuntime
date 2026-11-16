@@ -346,7 +346,7 @@ namespace ParaEngine
 
 	bool CSDL2Application::IsInputing()
 	{
-#ifdef EMSCRIPTEN
+#ifdef __EMSCRIPTEN__
 		int inputing = EM_ASM_INT({ return Module.IsInputing(); });
 		return inputing == 1;
 #else
@@ -356,7 +356,7 @@ namespace ParaEngine
 
 	void CSDL2Application::setIMEKeyboardState(bool bOpen, bool bMoveView, int ctrlBottom, const string &editParams)
 	{
-#ifdef EMSCRIPTEN
+#ifdef __EMSCRIPTEN__
 		if (bOpen)
 		{
 			// std::cout << bMoveView << " " << ctrlBottom << " " << editParams << std::endl;
@@ -380,7 +380,7 @@ namespace ParaEngine
 
 		SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24);
 		SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 8);
-#ifdef EMSCRIPTEN
+#ifdef __EMSCRIPTEN__
 		SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_ES);
 		SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
 		SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 0);
@@ -740,7 +740,7 @@ namespace ParaEngine
 
 	void CSDL2Application::FixWindowSize(bool fixed)
 	{
-#ifndef EMSCRIPTEN
+#ifndef __EMSCRIPTEN__
 		SDL_Window* sdlWin = (SDL_Window*)m_renderWindow.GetNativeHandle();
 		if (IsWindowedMode() && sdlWin)
 		{
@@ -751,7 +751,7 @@ namespace ParaEngine
 
 	void CSDL2Application::ShowWindow(bool bShow)
 	{
-#ifndef EMSCRIPTEN
+#ifndef __EMSCRIPTEN__
 		SDL_Window* sdlWin = (SDL_Window*)m_renderWindow.GetNativeHandle();
 		if (IsWindowedMode() && sdlWin)
 		{

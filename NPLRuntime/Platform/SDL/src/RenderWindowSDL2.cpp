@@ -8,7 +8,7 @@
 #include "Globals.h"
 #include "IParaWebXR.h"
 
-#ifdef EMSCRIPTEN
+#ifdef __EMSCRIPTEN__
 #include "emscripten.h"
 #include "Js.h"
 #endif
@@ -227,7 +227,7 @@ namespace ParaEngine
 		m_window_height = defaultHeight;
 		m_sdl_window_width = defaultWdith;
 		m_sdl_window_height = defaultHeight;
-#ifdef EMSCRIPTEN
+#ifdef __EMSCRIPTEN__
 		if (m_sdl2_window && m_sdl_window_width > 0 && m_sdl_window_height > 0)
 		{
 			SDL_SetWindowSize(m_sdl2_window, m_sdl_window_width, m_sdl_window_height);
@@ -254,7 +254,7 @@ namespace ParaEngine
 		{
 			SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24);
 			SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 8);
-#ifdef EMSCRIPTEN
+#ifdef __EMSCRIPTEN__
 			SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_ES);
 			SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, esMajorVersion);
 			SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 0);
@@ -272,14 +272,14 @@ namespace ParaEngine
 			if (!m_sdl2_window)
 				return false;
 			g_WindowMap[m_sdl2_window] = this;
-#ifdef EMSCRIPTEN
+#ifdef __EMSCRIPTEN__
 			if (m_sdl_window_width > 0 && m_sdl_window_height > 0)
 				SDL_SetWindowSize(m_sdl2_window, m_sdl_window_width, m_sdl_window_height);
 #endif
 		}
 
 		m_gl_context = SDL_GL_CreateContext(m_sdl2_window);
-#ifdef EMSCRIPTEN
+#ifdef __EMSCRIPTEN__
 		if (!m_gl_context)
 		{
 			// Fallback to WebGL 1.0 (OpenGL ES 2.0) with 24-bit depth + 8-bit stencil if WebGL 2.0 is unavailable
@@ -298,7 +298,7 @@ namespace ParaEngine
 		if (!m_gl_context)
 			return false;
 
-#ifndef EMSCRIPTEN
+#ifndef __EMSCRIPTEN__
 		gladLoadGLLoader((GLADloadproc)SDL_GL_GetProcAddress);
 #endif
 		SDL_GL_SetSwapInterval(1);
@@ -446,7 +446,7 @@ namespace ParaEngine
 				case SDL_WINDOWEVENT_SIZE_CHANGED:
 					std::cout << std::endl
 							  << "Window size changed: " << sdl_event.window.data1 << " " << sdl_event.window.data2 << std::endl;
-#ifdef EMSCRIPTEN
+#ifdef __EMSCRIPTEN__
 					if (((IParaWebXR *)CGlobals::GetViewportManager()->GetChildAttributeObject("WebXR"))->GetIsXR()) {
 						Vector4 leftView = ((IParaWebXR *)CGlobals::GetViewportManager()->GetChildAttributeObject("WebXR"))->m_webXRLeftView;
 						SetSDLWindowSize(leftView[2] * 2, leftView[3]);
@@ -556,7 +556,7 @@ namespace ParaEngine
 			}
 			else if (sdl_event.type == SDL_KEYUP && !is_wps_office_app)
 			{
-#ifdef EMSCRIPTEN
+#ifdef __EMSCRIPTEN__
 				if (sdl_event.key.keysym.sym == SDLK_NUMLOCKCLEAR || m_isNumLockEnabled == 2)
 				{
 					if (JS::GetOperatingSystem() != "mac")

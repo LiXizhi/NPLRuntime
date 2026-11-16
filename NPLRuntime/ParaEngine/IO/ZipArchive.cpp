@@ -1002,7 +1002,7 @@ int CZipArchive::findFile(const ArchiveFileFindItem *item)
 	{
 		const char *rootPtr = m_sRootPath.c_str();
 		int nSize = (int)m_sRootPath.size();
-#ifdef EMSCRIPTEN
+#ifdef __EMSCRIPTEN__
 		if (nSize > 0 && (rootPtr[0] == '/' || rootPtr[0] == '\\'))
 		{
 			++rootPtr;
@@ -1665,7 +1665,7 @@ void CZipArchive::FindFiles(CSearchResult &result, const string &sRootPath, cons
 		{
 			const char *rootPtr = m_sRootPath.c_str();
 			int nSize = (int)m_sRootPath.size();
-#ifdef EMSCRIPTEN
+#ifdef __EMSCRIPTEN__
 			if (nSize > 0 && (rootPtr[0] == '/' || rootPtr[0] == '\\'))
 			{
 				++rootPtr;

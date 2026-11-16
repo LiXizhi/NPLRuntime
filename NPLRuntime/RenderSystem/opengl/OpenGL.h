@@ -7,7 +7,7 @@ extern "C" {
 #include "gl_android_spec.h"
 #elif defined(HARMONY_OS)
 #include "gl_harmonyos_spec.h"
-#elif EMSCRIPTEN
+#elif defined(__EMSCRIPTEN__)
 #define GL_GLEXT_PROTOTYPES
 #include "SDL2/SDL_opengl.h"
 #include "SDL2/SDL_opengl_glext.h"

@@ -43,7 +43,7 @@ extern "C" {
 #include "os_calls.h"
 #include "ParaScriptingIO.h"
 
-#ifdef EMSCRIPTEN
+#ifdef __EMSCRIPTEN__
 #include <emscripten.h>
 #endif
 
@@ -467,7 +467,7 @@ namespace ParaScripting
 
 	void ParaIO::flush()
 	{
-#ifdef EMSCRIPTEN
+#ifdef __EMSCRIPTEN__
 		EM_ASM(FS.syncfs(false, function(err) { if (err) { console.log("FS.syncfs", err); } }););
 #endif
 	}
@@ -985,7 +985,7 @@ namespace ParaScripting
 
 	ParaScripting::ParaFileSystemWatcher ParaIO::GetFileSystemWatcher(const char* filename)
 	{
-#if defined(PARAENGINE_MOBILE) || defined(EMSCRIPTEN)
+#if defined(PARAENGINE_MOBILE) || defined(__EMSCRIPTEN__)
 		return ParaFileSystemWatcher();
 #else
 		return ParaFileSystemWatcher(CFileSystemWatcherService::GetInstance()->GetDirWatcher(filename).get());
@@ -994,7 +994,7 @@ namespace ParaScripting
 
 	void ParaIO::DeleteFileSystemWatcher(const char* name)
 	{
-#if !defined(PARAENGINE_MOBILE) && !defined(EMSCRIPTEN)
+#if !defined(PARAENGINE_MOBILE) && !defined(__EMSCRIPTEN__)
 		CFileSystemWatcherService::GetInstance()->DeleteDirWatcher(name);
 #endif
 	}
@@ -2072,7 +2072,7 @@ namespace ParaScripting
 
 	void ParaFileSystemWatcher::AddDirectory(const char* filename)
 	{
-#if !defined(PARAENGINE_MOBILE) && !defined(EMSCRIPTEN)
+#if !defined(PARAENGINE_MOBILE) && !defined(__EMSCRIPTEN__)
 		if (m_watcher && filename)
 		{
 			std::string sFilename = ParaIO::ConvertPathFromUTF8ToAnsci(filename);
@@ -2083,7 +2083,7 @@ namespace ParaScripting
 
 	void ParaFileSystemWatcher::RemoveDirectory(const char* filename)
 	{
-#if !defined(PARAENGINE_MOBILE) && !defined(EMSCRIPTEN)
+#if !defined(PARAENGINE_MOBILE) && !defined(__EMSCRIPTEN__)
 		if (m_watcher && filename)
 		{
 			std::string sFilename = ParaIO::ConvertPathFromUTF8ToAnsci(filename);
@@ -2091,7 +2091,7 @@ namespace ParaScripting
 		}
 #endif
 	}
-#if !defined(PARAENGINE_MOBILE) && !defined(EMSCRIPTEN)
+#if !defined(PARAENGINE_MOBILE) && !defined(__EMSCRIPTEN__)
 	/** callback to npl runtime */
 	struct FileSystemWatcher_NPLCallback
 	{
@@ -2129,7 +2129,7 @@ namespace ParaScripting
 #endif
 	void ParaFileSystemWatcher::AddCallback(const char* sCallbackScript)
 	{
-#if !defined(PARAENGINE_MOBILE) && !defined(EMSCRIPTEN)
+#if !defined(PARAENGINE_MOBILE) && !defined(__EMSCRIPTEN__)
 		if (m_watcher && sCallbackScript)
 			m_watcher->AddEventCallback(FileSystemWatcher_NPLCallback(sCallbackScript));
 #endif
@@ -2141,7 +2141,7 @@ namespace ParaScripting
 
 	}
 
-#if defined(PARAENGINE_MOBILE) || defined(EMSCRIPTEN)
+#if defined(PARAENGINE_MOBILE) || defined(__EMSCRIPTEN__)
 	ParaFileSystemWatcher::ParaFileSystemWatcher(ParaFileSystemWatcher* watcher) : m_watcher(watcher)
 	{
 

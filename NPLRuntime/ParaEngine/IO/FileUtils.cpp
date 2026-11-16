@@ -573,7 +573,7 @@ ParaEngine::FileHandle ParaEngine::CFileUtils::OpenFile(const char* filename, bo
 	std::string sFilePath;
 	if (bWrite && !IsAbsolutePath(filename))
 	{
-#ifdef EMSCRIPTEN
+#ifdef __EMSCRIPTEN__
 		// 设置可写路径情况 排除 temp 目录
 		if (strncmp(filename, "temp/", 5) != 0 && strncmp(filename, "/temp/", 6) != 0) sFilePath = GetWritablePath() + filename;
 		else sFilePath = filename;

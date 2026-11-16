@@ -23,7 +23,7 @@
 #include "IParaWebXR.h"
 #include <iostream>
 
-#ifdef EMSCRIPTEN
+#ifdef __EMSCRIPTEN__
 #include "emscripten.h"
 #include <emscripten/html5.h>
 #include "Js.h"
@@ -58,7 +58,7 @@ public:
         if (!pWindow->ShouldClose())
         {
             pWindow->PollEvents();
-#ifdef EMSCRIPTEN
+#ifdef __EMSCRIPTEN__
             auto* pVpMgr = CGlobals::GetViewportManager();
             auto* pWebXR = pVpMgr ? static_cast<IParaWebXR*>(pVpMgr->GetChildAttributeObject("WebXR")) : nullptr;
             if (!(IsTouchInputting() && IsInputing()) && !(pWebXR && pWebXR->GetIsXR()))
@@ -77,7 +77,7 @@ public:
         }
         // std::cout << "===============Run end=======================" << std::endl;
 
-#ifdef EMSCRIPTEN
+#ifdef __EMSCRIPTEN__
         if (m_exit) emscripten_cancel_main_loop();
 #endif
     }
@@ -280,7 +280,7 @@ int main(int argc, char* argv[])
         setInterval(function(){ FS.syncfs(false, function(err) { if (err) { console.log("FS.syncfs",err); } });}, 600000);  // 10分钟后同步到idbfs
     });
 
-    #ifdef EMSCRIPTEN
+    #ifdef __EMSCRIPTEN__
         static bool isWebXRinited = false;
         webxr_init(
             [](void* userData, int time, ParaWebXRRigidTransform *headPose, ParaWebXRView views[2], int viewCount) {

@@ -78,7 +78,7 @@ namespace ParaEngine
 	public:
 		virtual ~IDataProcessor(){};
 
-#ifdef EMSCRIPTEN
+#ifdef __EMSCRIPTEN__
 		virtual bool AsyncProcess(std::function<void()>) { return false; }
 #endif
 

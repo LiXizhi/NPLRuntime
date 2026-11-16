@@ -6,7 +6,7 @@
 // Date:	2010.4.26
 //-----------------------------------------------------------------------------
 #include "ParaEngine.h"
-#if !defined(EMSCRIPTEN) && !defined(PARAENGINE_MOBILE) && !defined(NPLRUNTIME_SERVER)
+#if !defined(__EMSCRIPTEN__) && !defined(PARAENGINE_MOBILE) && !defined(NPLRUNTIME_SERVER)
 #include "IPCManager.h"
 
 using namespace ParaEngine;

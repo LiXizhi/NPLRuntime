@@ -1237,14 +1237,14 @@ bool EffectManager::BeginEffectShader(int nHandle, CEffectFile** pOutEffect)
 	{
 	case TECH_UNKNOWN:
 	{
-#ifndef EMSCRIPTEN
+#ifndef __EMSCRIPTEN__
 		pd3dDevice->SetVertexDeclaration(0);
 #endif
 		break;
 	}
 	case TECH_NONE:
 	{
-#ifndef EMSCRIPTEN
+#ifndef __EMSCRIPTEN__
 		pd3dDevice->SetIndices(0);
 		pd3dDevice->SetStreamSource(0, 0, 0, 0);
 #endif

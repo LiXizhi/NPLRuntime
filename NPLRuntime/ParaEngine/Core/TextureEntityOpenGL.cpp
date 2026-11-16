@@ -1078,7 +1078,7 @@ bool ParaEngine::TextureEntityOpenGL::LoadFromImage(const ParaImage* pImage, UIN
 			{
 				GL::bindTexture2D(texture->getName());
 				const bool isPOT = (texture->getPixelsWide() == GLTexture2D::ccNextPOT(texture->getPixelsWide()) && texture->getPixelsHigh() == GLTexture2D::ccNextPOT(texture->getPixelsHigh()));
-#if !defined(PARAENGINE_MOBILE) && !defined(EMSCRIPTEN)
+#if !defined(PARAENGINE_MOBILE) && !defined(__EMSCRIPTEN__)
 				const bool useRepeat = isPOT || isMaterialTex;
 #else
 				const bool useRepeat = isPOT;
@@ -1179,7 +1179,7 @@ bool ParaEngine::TextureEntityOpenGL::LoadFromImage(ImageEntity * imageEntity, P
 					{
 						GL::bindTexture2D(texture->getName());
 						const bool isPOT = (texture->getPixelsWide() == GLTexture2D::ccNextPOT(texture->getPixelsWide()) && texture->getPixelsHigh() == GLTexture2D::ccNextPOT(texture->getPixelsHigh()));
-#if !defined(PARAENGINE_MOBILE) && !defined(EMSCRIPTEN)
+#if !defined(PARAENGINE_MOBILE) && !defined(__EMSCRIPTEN__)
 						const bool useRepeat = isPOT || isMaterialTex;
 #else
 						const bool useRepeat = isPOT;

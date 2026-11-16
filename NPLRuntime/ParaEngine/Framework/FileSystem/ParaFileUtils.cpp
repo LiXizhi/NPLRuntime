@@ -7,7 +7,7 @@
 #include <boost/filesystem/fstream.hpp>
 #include <iostream>
 #include "ParaFileUtils.h"
-#ifdef EMSCRIPTEN
+#ifdef __EMSCRIPTEN__
 #include <emscripten.h>
 #endif
 #include "StringHelper.h"
@@ -16,7 +16,7 @@ namespace fs = boost::filesystem;
 #define BOOST_FILESYSTEM_NO_DEPRECATED
 using namespace ParaEngine;
 
-#if (PARA_TARGET_PLATFORM == PARA_PLATFORM_LINUX) || defined(MAC_SERVER) || defined(EMSCRIPTEN) || defined(NPLRUNTIME_SERVER)
+#if (PARA_TARGET_PLATFORM == PARA_PLATFORM_LINUX) || defined(MAC_SERVER) || defined(__EMSCRIPTEN__) || defined(NPLRUNTIME_SERVER)
 CParaFileUtils* CParaFileUtils::GetInstance()
 {
 	static CParaFileUtils defaultImpl;
@@ -155,7 +155,7 @@ bool ParaEngine::CParaFileUtils::Move(const std::string& src, const std::string&
 {
 	try
 	{
-#ifdef EMSCRIPTEN
+#ifdef __EMSCRIPTEN__
 		if (src == dest) return true;
 		bool ret =  Copy(src, dest, true);
 		Delete(src);

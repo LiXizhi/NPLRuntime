@@ -9,7 +9,7 @@
 #include "ParaEngine.h"
 
 #include "MidiMsg.h"
-#ifdef EMSCRIPTEN
+#ifdef __EMSCRIPTEN__
 #include <emscripten.h>
 #endif
 using namespace ParaEngine;
@@ -98,7 +98,7 @@ CMidiMsg& CMidiMsg::GetSingleton()
 
 int CMidiMsg::PlayMidiMsg(DWORD dwMsg)
 {
-#ifdef EMSCRIPTEN
+#ifdef __EMSCRIPTEN__
 	int channel = dwMsg & 0xff;
 	char note = (dwMsg & 0xff00) >> 8;
 	char velocity = (dwMsg & 0xff0000) >> 16;
@@ -145,7 +145,7 @@ int CMidiMsg::PlayMidiMsg(DWORD dwMsg)
 
 int CMidiMsg::StopMidiMsg(int channel)
 {
-#ifdef EMSCRIPTEN
+#ifdef __EMSCRIPTEN__
 	return S_OK;
 #endif
 	if (m_mediaPlayer)

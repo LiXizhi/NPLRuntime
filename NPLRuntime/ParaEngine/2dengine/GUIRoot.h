@@ -77,7 +77,7 @@ namespace ParaEngine
 		ATTRIBUTE_METHOD1(CGUIRoot, GetEnableIME_s, bool*)	{ *p1 = cls->GetEnableIME(); return S_OK; }
 		ATTRIBUTE_METHOD1(CGUIRoot, SetEnableIME_s, bool)	{ cls->SetEnableIME(p1); return S_OK; }
 // #ifdef PARAENGINE_MOBILE
-#if defined(PARAENGINE_MOBILE) || defined(EMSCRIPTEN)
+#if defined(PARAENGINE_MOBILE) || defined(__EMSCRIPTEN__)
 		ATTRIBUTE_METHOD1(CGUIRoot, SetControlBottom_s, int) { cls->SetControlBottom(p1); return S_OK; }
 		ATTRIBUTE_METHOD1(CGUIRoot, SetIMEKeyboardState_s, bool) { cls->SetIMEKeyboardState(p1); return S_OK; }
 		ATTRIBUTE_METHOD1(CGUIRoot, SetCurEditString_s, const char*) { cls->SetCurEditText(p1); return S_OK; }
@@ -487,7 +487,7 @@ namespace ParaEngine
 		void SetEnableIME(bool bHasIME);
 
 // #ifdef PARAENGINE_MOBILE
-#if defined(PARAENGINE_MOBILE) || defined(EMSCRIPTEN)
+#if defined(PARAENGINE_MOBILE) || defined(__EMSCRIPTEN__)
 		/* App will check the bottom pos of control and move render view when attach IME. */
 		void SetControlBottom(int bottom);
 
@@ -698,7 +698,7 @@ namespace ParaEngine
 		std::wstring m_sIMEText;
 
 // #ifdef PARAENGINE_MOBILE
-#if defined(PARAENGINE_MOBILE) || defined(EMSCRIPTEN)
+#if defined(PARAENGINE_MOBILE) || defined(__EMSCRIPTEN__)
 		/* App will check the bottom pos of control and move render view when attach IME. */
 		int			m_nCtrlBottom;
 		std::string m_curEditText;

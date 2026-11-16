@@ -494,7 +494,7 @@ bool GLProgram::compileShader(GLuint * shader, GLenum type, const GLchar* source
 	*shader = glCreateShader(type);
 	if (hasVersionDirective)
 	{
-#if defined(PARAENGINE_MOBILE) || defined(EMSCRIPTEN)
+#if defined(PARAENGINE_MOBILE) || defined(__EMSCRIPTEN__)
 		if (strstr(pTrim, "precision ") != nullptr)
 		{
 			glShaderSource(*shader, 1, &pTrim, nullptr);
@@ -537,7 +537,7 @@ bool GLProgram::compileShader(GLuint * shader, GLenum type, const GLchar* source
 		const GLchar *sources[] = {
 #if defined(PARAENGINE_MOBILE)
 			"precision highp float;\n"
-#elif defined(EMSCRIPTEN) 
+#elif defined(__EMSCRIPTEN__) 
 			"precision highp float;\n"
 #endif
 			"//\n",

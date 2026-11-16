@@ -29,7 +29,7 @@
 
 using namespace ParaEngine;
 
-#ifndef EMSCRIPTEN
+#ifndef __EMSCRIPTEN__
 
 static CNPLNetClient* g_pNPLNetClient;
 
