@@ -25,6 +25,7 @@
 
 #ifdef EMSCRIPTEN
 #include "emscripten.h"
+#include <emscripten/html5.h>
 #include "Js.h"
 #include "webxr.h"
 #endif
@@ -57,6 +58,20 @@ public:
         if (!pWindow->ShouldClose())
         {
             pWindow->PollEvents();
+#ifdef EMSCRIPTEN
+            auto* pVpMgr = CGlobals::GetViewportManager();
+            auto* pWebXR = pVpMgr ? static_cast<IParaWebXR*>(pVpMgr->GetChildAttributeObject("WebXR")) : nullptr;
+            if (!(IsTouchInputting() && IsInputing()) && !(pWebXR && pWebXR->GetIsXR()))
+            {
+                int canvasW = 0, canvasH = 0;
+                if (emscripten_get_canvas_element_size("#canvas", &canvasW, &canvasH) == EMSCRIPTEN_RESULT_SUCCESS &&
+                    canvasW > 0 && canvasH > 0 &&
+                    (canvasW != pWindow->GetSDLWindowWidth() || canvasH != pWindow->GetSDLWindowHeight()))
+                {
+                    pWindow->SetSDLWindowSize(canvasW, canvasH);
+                }
+            }
+#endif
             UpdateScreenDevice();
             this->DoWork();
         }

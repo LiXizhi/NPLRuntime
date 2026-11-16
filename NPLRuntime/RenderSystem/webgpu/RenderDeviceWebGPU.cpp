@@ -2566,6 +2566,9 @@ namespace ParaEngine
 		IRHIRenderTarget* const* targets,
 		IRHIRenderTarget* depthStencilOverride)
 	{
+		const bool prevUsingBackBuffer = (m_boundRTCount == 0 || m_boundRTs[0] == nullptr);
+		WebGPURenderTarget* const prevRT0 = prevUsingBackBuffer ? nullptr : m_boundRTs[0];
+
 		EndActiveRenderPass();
 
 		m_boundRTCount = 0;
@@ -2599,14 +2602,19 @@ namespace ParaEngine
 
 		NotifyRenderTargetsBound(m_boundRTCount, m_boundRTCount > 0 ? targets : nullptr, depthStencilOverride);
 
-		ParaViewport vp{};
-		vp.X = 0;
-		vp.Y = 0;
-		vp.Width = m_activeRTWidth;
-		vp.Height = m_activeRTHeight;
-		vp.MinZ = 0.0f;
-		vp.MaxZ = 1.0f;
-		m_state.SetViewport(vp);
+		const bool newUsingBackBuffer = (m_boundRTCount == 0 || m_boundRTs[0] == nullptr);
+		WebGPURenderTarget* const newRT0 = newUsingBackBuffer ? nullptr : m_boundRTs[0];
+		if (prevUsingBackBuffer != newUsingBackBuffer || prevRT0 != newRT0)
+		{
+			ParaViewport vp{};
+			vp.X = 0;
+			vp.Y = 0;
+			vp.Width = m_activeRTWidth;
+			vp.Height = m_activeRTHeight;
+			vp.MinZ = 0.0f;
+			vp.MaxZ = 1.0f;
+			m_state.SetViewport(vp);
+		}
 		return true;
 	}
 

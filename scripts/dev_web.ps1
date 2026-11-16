@@ -87,8 +87,21 @@ if ($Action -in @("configure", "build", "all")) {
     $wslRepo = ConvertTo-WslPath $RepoRoot
     $webRobot = if ($NoRobot) { "OFF" } else { "ON" }
     $subCmd = if ($Action -eq "configure") { "configure" } else { "cpp" }
-    Write-Host "[dev_web.ps1] Running WSL ($WslDistro): WEB_ROBOT=$webRobot scripts/dev_web.sh $subCmd"
-    wsl -d $WslDistro -- bash -lc "WEB_ROBOT=$webRobot '$wslRepo/scripts/dev_web.sh' $subCmd"
+    $distroArgs = @()
+    if ($WslDistro) {
+        $installed = (& wsl -l -q 2>$null) -replace "`0", "" | ForEach-Object { $_.Trim() } | Where-Object { $_ }
+        if ($installed -contains $WslDistro) {
+            $distroArgs = @("-d", $WslDistro)
+        } else {
+            $ubuntuMatch = $installed | Where-Object { $_ -like "Ubuntu*" } | Select-Object -First 1
+            if ($ubuntuMatch) {
+                $distroArgs = @("-d", $ubuntuMatch)
+            }
+        }
+    }
+    $distroLabel = if ($distroArgs.Count -ge 2) { $distroArgs[1] } else { "default" }
+    Write-Host "[dev_web.ps1] Running WSL ($distroLabel): WEB_ROBOT=$webRobot scripts/dev_web.sh $subCmd"
+    & wsl @distroArgs -- bash -lc "WEB_ROBOT=$webRobot '$wslRepo/scripts/dev_web.sh' $subCmd"
     if ($LASTEXITCODE -ne 0) {
         throw "WSL Emscripten build failed with exit code $LASTEXITCODE"
     }

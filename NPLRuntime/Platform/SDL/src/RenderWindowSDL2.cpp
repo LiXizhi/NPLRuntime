@@ -225,6 +225,14 @@ namespace ParaEngine
 
 		m_window_width = defaultWdith;
 		m_window_height = defaultHeight;
+		m_sdl_window_width = defaultWdith;
+		m_sdl_window_height = defaultHeight;
+#ifdef EMSCRIPTEN
+		if (m_sdl2_window && m_sdl_window_width > 0 && m_sdl_window_height > 0)
+		{
+			SDL_SetWindowSize(m_sdl2_window, m_sdl_window_width, m_sdl_window_height);
+		}
+#endif
 
 		const Uint8 *keyboardState = SDL_GetKeyboardState(NULL);
 		(void)keyboardState;
@@ -264,6 +272,10 @@ namespace ParaEngine
 			if (!m_sdl2_window)
 				return false;
 			g_WindowMap[m_sdl2_window] = this;
+#ifdef EMSCRIPTEN
+			if (m_sdl_window_width > 0 && m_sdl_window_height > 0)
+				SDL_SetWindowSize(m_sdl2_window, m_sdl_window_width, m_sdl_window_height);
+#endif
 		}
 
 		m_gl_context = SDL_GL_CreateContext(m_sdl2_window);
@@ -278,6 +290,8 @@ namespace ParaEngine
 			if (!m_sdl2_window)
 				return false;
 			g_WindowMap[m_sdl2_window] = this;
+			if (m_sdl_window_width > 0 && m_sdl_window_height > 0)
+				SDL_SetWindowSize(m_sdl2_window, m_sdl_window_width, m_sdl_window_height);
 			m_gl_context = SDL_GL_CreateContext(m_sdl2_window);
 		}
 #endif
@@ -358,9 +372,13 @@ namespace ParaEngine
 
 	void RenderWindowSDL2::SetSDLWindowSize(int width, int height)
 	{
-		if (((CSDL2Application *)(CGlobals::GetApp()))->IsInputing())
+		if (width <= 0 || height <= 0)
+			return;
+
+		if (CGlobals::GetApp()->IsTouchInputting() && ((CSDL2Application *)(CGlobals::GetApp()))->IsInputing())
 		{
-			SDL_SetWindowSize(m_sdl2_window, m_sdl_window_width, m_sdl_window_height);
+			if (m_sdl_window_width > 0 && m_sdl_window_height > 0)
+				SDL_SetWindowSize(m_sdl2_window, m_sdl_window_width, m_sdl_window_height);
 			return;
 		}
 
@@ -436,7 +454,9 @@ namespace ParaEngine
 					}
 					else
 					{
-						SetSDLWindowSize(EM_ASM_INT({ return document.documentElement.clientWidth * window.devicePixelRatio; }), EM_ASM_INT({ return document.documentElement.clientHeight * window.devicePixelRatio; }));
+						SetSDLWindowSize(
+							EM_ASM_INT({ return Math.ceil(document.documentElement.clientWidth * (window.devicePixelRatio || 1)); }),
+							EM_ASM_INT({ return Math.ceil(document.documentElement.clientHeight * (window.devicePixelRatio || 1)); }));
 					}
 #else
 					SetSDLWindowSize(sdl_event.window.data1, sdl_event.window.data2);

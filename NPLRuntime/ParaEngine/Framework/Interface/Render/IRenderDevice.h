@@ -79,6 +79,8 @@ namespace ParaEngine
 		{
 			if (index >= 4)
 				return false;
+			if (index > 0 && m_currentRTBinding.targets[index] == target)
+				return true;
 			IRHIRenderTarget* newTargets[4] = {
 				m_currentRTBinding.targets[0],
 				m_currentRTBinding.targets[1],

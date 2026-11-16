@@ -1535,6 +1535,9 @@ namespace ParaEngine
 
 	bool RenderDeviceMetal::SetRenderTargets(uint32_t count, IRHIRenderTarget* const* targets, IRHIRenderTarget* depthStencilOverride)
 	{
+		const bool prevUsingBackBuffer = m_usingBackBufferRT;
+		MetalTexture* const prevColor0 = m_activeColorTargets[0];
+
 		EndActiveRenderPass();
 		NotifyRenderTargetsBound(count, targets, depthStencilOverride);
 
@@ -1547,8 +1550,11 @@ namespace ParaEngine
 			m_usingBackBufferRT = true;
 			m_activeRTWidth = m_backBufferWidth;
 			m_activeRTHeight = m_backBufferHeight;
-			ParaViewport vp{ 0, 0, m_backBufferWidth, m_backBufferHeight, 0.0f, 1.0f };
-			m_state.SetViewport(vp);
+			if (!prevUsingBackBuffer)
+			{
+				ParaViewport vp{ 0, 0, m_backBufferWidth, m_backBufferHeight, 0.0f, 1.0f };
+				m_state.SetViewport(vp);
+			}
 			return true;
 		}
 
@@ -1592,8 +1598,11 @@ namespace ParaEngine
 				m_activeDepthTarget = dsRt->GetMetalDepth();
 		}
 
-		ParaViewport vp{ 0, 0, m_activeRTWidth, m_activeRTHeight, 0.0f, 1.0f };
-		m_state.SetViewport(vp);
+		if (prevUsingBackBuffer || prevColor0 != m_activeColorTargets[0])
+		{
+			ParaViewport vp{ 0, 0, m_activeRTWidth, m_activeRTHeight, 0.0f, 1.0f };
+			m_state.SetViewport(vp);
+		}
 		return true;
 	}
 

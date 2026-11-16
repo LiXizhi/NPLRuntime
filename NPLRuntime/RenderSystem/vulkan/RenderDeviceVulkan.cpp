@@ -3755,6 +3755,9 @@ namespace ParaEngine
 
 	bool RenderDeviceVulkan::SetRenderTargets(uint32_t count, IRHIRenderTarget* const* targets, IRHIRenderTarget* depthStencilOverride)
 	{
+		const bool prevUsingBackBuffer = m_usingBackBufferRT;
+		VulkanTexture* const prevColor0 = m_activeColorTexObjs[0];
+
 		EndActiveRenderPass();
 
 		uint32_t effectiveCount = 0;
@@ -3916,14 +3919,17 @@ namespace ParaEngine
 
 		m_descriptorsDirty = true;
 
-		ParaViewport vp;
-		vp.X = 0;
-		vp.Y = 0;
-		vp.Width = m_renderTargetWidth;
-		vp.Height = m_renderTargetHeight;
-		vp.MinZ = 0.0f;
-		vp.MaxZ = 1.0f;
-		SetViewport(vp);
+		if (prevUsingBackBuffer != m_usingBackBufferRT || prevColor0 != m_activeColorTexObjs[0])
+		{
+			ParaViewport vp;
+			vp.X = 0;
+			vp.Y = 0;
+			vp.Width = m_renderTargetWidth;
+			vp.Height = m_renderTargetHeight;
+			vp.MinZ = 0.0f;
+			vp.MaxZ = 1.0f;
+			SetViewport(vp);
+		}
 		NotifyRenderTargetsBound(effectiveCount, effectiveCount > 0 ? targets : nullptr, depthStencilOverride);
 		return true;
 	}

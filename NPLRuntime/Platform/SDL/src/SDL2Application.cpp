@@ -596,6 +596,31 @@ namespace ParaEngine
 		else
 			m_cfg.screenHeight = 680;
 
+#ifdef __EMSCRIPTEN__
+		{
+			int canvasW = EM_ASM_INT({
+				var c = (typeof Module !== "undefined" && Module.canvas) ? Module.canvas : document.getElementById("canvas");
+				if (c && c.width > 0) return c.width;
+				return Math.ceil(document.documentElement.clientWidth * (window.devicePixelRatio || 1));
+			});
+			int canvasH = EM_ASM_INT({
+				var c = (typeof Module !== "undefined" && Module.canvas) ? Module.canvas : document.getElementById("canvas");
+				if (c && c.height > 0) return c.height;
+				return Math.ceil(document.documentElement.clientHeight * (window.devicePixelRatio || 1));
+			});
+			if (canvasW > 0 && canvasH > 0)
+			{
+				m_cfg.screenWidth = (uint32_t)canvasW;
+				m_cfg.screenHeight = (uint32_t)canvasH;
+				CVariable val;
+				val = canvasW;
+				settings.SetDynamicField("ScreenWidth", val);
+				val = canvasH;
+				settings.SetDynamicField("ScreenHeight", val);
+			}
+		}
+#endif
+
 		if ((pField = settings.GetDynamicField("ScriptEditor")))
 			settings.SetScriptEditor((const std::string &)(*pField));
 
