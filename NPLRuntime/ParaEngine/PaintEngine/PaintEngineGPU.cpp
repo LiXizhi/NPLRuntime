@@ -616,21 +616,28 @@ void CPaintEngineGPU::RenderMask(const RECT& rcWindow)
 void ParaEngine::CPaintEngineGPU::clip(const QRect & rect, ClipOperation op /*= ReplaceClip*/)
 {
 	auto state = GetState();
+	if (!state)
+		return;
 	state->clipChanged = true;
 	
 	Flush();
 
-	if (op == ReplaceClip)
+	if (op == ReplaceClip || op == IntersectClip)
 	{
 		ApplyStateChanges();
 		Matrix4 mat;
-		state->CalculateDeviceMatrix(&mat);
+		state->CalculateDeviceMatrix(&mat, &Matrix4::IDENTITY);
 		RECT clipRect = rect;
 		clipRect.left = (LONG)(clipRect.left * mat._11 + mat._41);
 		clipRect.top = (LONG)(clipRect.top * mat._22 + mat._42);
 		clipRect.right = (LONG)(clipRect.right * mat._11 + mat._41);
 		clipRect.bottom = (LONG)(clipRect.bottom * mat._22 + mat._42);
-		state->rectangleClip = QRect(clipRect);
+		QRect newClip(clipRect);
+		if (op == IntersectClip && state->rectangleClip.isValid())
+		{
+			newClip = state->rectangleClip & newClip;
+		}
+		state->rectangleClip = newClip;
 		updateClipScissorTest();
 	}
 	else if (op == NoClip)
@@ -658,7 +665,7 @@ void ParaEngine::CPaintEngineGPU::systemStateChanged()
 	else
 	{
 		Matrix4 mat;
-		state->CalculateDeviceMatrix(&mat);
+		state->CalculateDeviceMatrix(&mat, &Matrix4::IDENTITY);
 		RECT clipRect = state->m_clipInfo[0].rect;
 		clipRect.left = (LONG)(clipRect.left * mat._11 + mat._41);
 		clipRect.top = (LONG)(clipRect.top * mat._22 + mat._42);

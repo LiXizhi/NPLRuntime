@@ -6,6 +6,8 @@
 // Desc: I have referred to QT framework's qpaintdevice.h, but greatly simplified. 
 //-----------------------------------------------------------------------------
 #include "ParaEngine.h"
+#include <algorithm>
+#include <cmath>
 #include "ParaWorldAsset.h"
 #include "PaintEngine.h"
 #include "PaintDevice.h"
@@ -694,12 +696,14 @@ HRESULT CPainter::DrawText(const char16_t* strText, GUIFontElement* pElement, RE
 	{
 #ifndef USE_NULL_RENDERER
 		// CompositionModeStack blendModeStack(this, CPainter::CompositionMode_PlusSourceBlend);
-
-		if (!(pElement->dwTextFormat & DT_NOCLIP))
+		const bool bApply2DClip = !(pElement->dwTextFormat & DT_NOCLIP) && !IsUse3DTransform() && !IsSpriteUseWorldMatrix();
+		if (bApply2DClip)
 		{
+			if (rcScreen.right <= rcScreen.left || rcScreen.bottom <= rcScreen.top)
+				return S_OK;
+
 			if (state->m_clipOperation != ClipOperation::NoClip && !(state->m_clipInfo.empty()))
 			{
-				RECT parentRect = state->m_clipInfo[0].rect;
 				RECT finalRect;
 				if (!ParaEngine::CGUIBase::IntersectRect(&finalRect, state->m_clipInfo[0].rect, rcScreen))
 				{
@@ -768,7 +772,7 @@ HRESULT CPainter::DrawText(const char16_t* strText, GUIFontElement* pElement, RE
 		} while (false);
 
 #ifndef USE_NULL_RENDERER
-		if (!(pElement->dwTextFormat & DT_NOCLIP))
+		if (bApply2DClip)
 		{
 			if (state->m_clipOperation != ClipOperation::NoClip && !(state->m_clipInfo.empty()))
 			{
@@ -810,26 +814,41 @@ HRESULT CPainter::DrawText(const char16_t* strText, GUIFontElement* pElement, RE
 	{
 #ifndef USE_NULL_RENDERER
 		// CompositionModeStack blendModeStack(this, CPainter::CompositionMode_PlusSourceBlend);
-
-		if (!(pElement->dwTextFormat & DT_NOCLIP))
+		const bool bApply2DClip = !(pElement->dwTextFormat & DT_NOCLIP) && !IsUse3DTransform() && !IsSpriteUseWorldMatrix();
+		if (bApply2DClip)
 		{
+			// rcScreen is in pre-`mat` local coordinates, whereas state->m_clipInfo and engine->clip()
+			// operate in painter screen-space coordinates. Transform all 4 corners by `mat` first.
+			Vector3 corners[4] = {
+				Vector3((float)rcScreen.left,  (float)rcScreen.top,    0.f) * mat,
+				Vector3((float)rcScreen.right, (float)rcScreen.top,    0.f) * mat,
+				Vector3((float)rcScreen.right, (float)rcScreen.bottom, 0.f) * mat,
+				Vector3((float)rcScreen.left,  (float)rcScreen.bottom, 0.f) * mat,
+			};
+			RECT rcWorldClip;
+			rcWorldClip.left   = (LONG)std::floor((std::min)((std::min)(corners[0].x, corners[1].x), (std::min)(corners[2].x, corners[3].x)));
+			rcWorldClip.top    = (LONG)std::floor((std::min)((std::min)(corners[0].y, corners[1].y), (std::min)(corners[2].y, corners[3].y)));
+			rcWorldClip.right  = (LONG)std::ceil ((std::max)((std::max)(corners[0].x, corners[1].x), (std::max)(corners[2].x, corners[3].x)));
+			rcWorldClip.bottom = (LONG)std::ceil ((std::max)((std::max)(corners[0].y, corners[1].y), (std::max)(corners[2].y, corners[3].y)));
+			if (rcWorldClip.right <= rcWorldClip.left || rcWorldClip.bottom <= rcWorldClip.top)
+				return S_OK;
+
 			if (state->m_clipOperation != ClipOperation::NoClip && !(state->m_clipInfo.empty()))
 			{
-				RECT parentRect = state->m_clipInfo[0].rect;
 				RECT finalRect;
-				if (!ParaEngine::CGUIBase::IntersectRect(&finalRect, state->m_clipInfo[0].rect, rcScreen))
+				if (!ParaEngine::CGUIBase::IntersectRect(&finalRect, state->m_clipInfo[0].rect, rcWorldClip))
 				{
 					return S_OK;
 				}
 				QRect clipRect(finalRect);
 				engine->clip(clipRect, ClipOperation::IntersectClip);
-	}
+			}
 			else
 			{
-				QRect clipRect(rcScreen);
+				QRect clipRect(rcWorldClip);
 				engine->clip(clipRect, ClipOperation::ReplaceClip);
 			}
-}
+		}
 #endif
 
 
@@ -889,7 +908,7 @@ HRESULT CPainter::DrawText(const char16_t* strText, GUIFontElement* pElement, RE
 		} while (false);
 
 #ifndef USE_NULL_RENDERER
-		if (!(pElement->dwTextFormat & DT_NOCLIP))
+		if (bApply2DClip)
 		{
 			if (state->m_clipOperation != ClipOperation::NoClip && !(state->m_clipInfo.empty()))
 			{

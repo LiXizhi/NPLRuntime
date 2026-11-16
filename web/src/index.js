@@ -332,7 +332,7 @@ Module.canvas.addEventListener('click', () => {
 
 let isWPS = /WpsOfficeApp/i.test(navigator.userAgent);
 let isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0 || navigator.msMaxTouchPoints > 0;
-let isMobile = /iPhone|iPad|iPod|Android|Windows Phone/i.test(navigator.userAgent);
+let isMobile = /iPhone|iPad|iPod|Android|OpenHarmony|HarmonyOS|Windows Phone|Mobile/i.test(navigator.userAgent);
 var isiOS = /iPad|iPhone|iPod/i.test(navigator.userAgent) && !window.MSStream;
 
 // tricky: when mouse down, let the input capture key event, otherwise the web paracraft will not get key event 
@@ -483,8 +483,80 @@ window.addEventListener("resize", function () {
     }
 });
 
-// input 解决中文输入问题
+// input 解决中文输入与移动端软键盘退格问题
+const PARA_VK_BACKSPACE = 14; // ParaEngine::EVirtualKey::KEY_BACK
+const PARA_VK_RETURN = 28;    // ParaEngine::EVirtualKey::KEY_RETURN
+const PARA_VK_DELETE = 211;   // ParaEngine::EVirtualKey::KEY_DELETE
+
+const MOBILE_SENTINEL_CHAR = "\u200B";
+const MOBILE_SENTINEL_INITIAL_LEN = 64;
+const MOBILE_SENTINEL_MIN_LEN = 16;
+const MOBILE_INPUT_SENTINEL = MOBILE_SENTINEL_CHAR.repeat(MOBILE_SENTINEL_INITIAL_LEN);
+
 var input = document.getElementById('input');
+if (input) {
+    input.setAttribute("autocomplete", "off");
+    input.setAttribute("autocorrect", "off");
+    input.setAttribute("autocapitalize", "off");
+    input.setAttribute("spellcheck", "false");
+}
+
+let mobileSentinelLen = 0;
+let isImeComposing = false;
+let justFinishedComposition = false;
+let suppressInputBackspace = false;
+let suppressInputBackspaceTimer = null;
+let suppressInputEnter = false;
+let suppressInputEnterTimer = null;
+
+function sendParaKeyDown(vk) {
+    if (Module && typeof Module._OnKeyDown === "function") {
+        Module._OnKeyDown(Number(vk));
+    }
+}
+
+function sendParaKeyUp(vk) {
+    if (Module && typeof Module._OnKeyUp === "function") {
+        Module._OnKeyUp(Number(vk));
+    }
+}
+
+function tapParaKey(vk) {
+    sendParaKeyDown(vk);
+    sendParaKeyUp(vk);
+}
+
+function sendParaTextInput(text) {
+    if (!text || !Module || typeof Module._OnTextInput !== "function") return;
+    Module._OnTextInput(stringToNewUTF8(text));
+}
+
+function markBackspaceHandledByKeydown() {
+    suppressInputBackspace = true;
+    if (suppressInputBackspaceTimer) clearTimeout(suppressInputBackspaceTimer);
+    suppressInputBackspaceTimer = setTimeout(function () {
+        suppressInputBackspace = false;
+        suppressInputBackspaceTimer = null;
+    }, 0);
+}
+
+function markEnterHandledByKeydown() {
+    suppressInputEnter = true;
+    if (suppressInputEnterTimer) clearTimeout(suppressInputEnterTimer);
+    suppressInputEnterTimer = setTimeout(function () {
+        suppressInputEnter = false;
+        suppressInputEnterTimer = null;
+    }, 0);
+}
+
+function resetMobileInputSentinel() {
+    if (!input) return;
+    input.value = MOBILE_INPUT_SENTINEL;
+    mobileSentinelLen = MOBILE_SENTINEL_INITIAL_LEN;
+    try {
+        input.setSelectionRange(MOBILE_SENTINEL_INITIAL_LEN, MOBILE_SENTINEL_INITIAL_LEN);
+    } catch (e) {}
+}
 
 Module.IsInputing = function () {
     return input_info.inputing ? 1 : 0;
@@ -502,17 +574,10 @@ Module.StartTextInput = function (view_bottom, params) {
         params = UTF8ToString(params);
         default_value = JSON.parse(params).curEditText;
     } catch (e) { }
-    if (input_info.inputing) return;
+    if (input_info.inputing && (!input || document.activeElement === input)) return;
     if (isiOS) {
         // 引擎bug会调多次，导致ios中文输入框弹出多次 间隔时间太短直接忽略
         if (((new Date().getTime()) - input_info.timestamp) < 1000) return;
-        // const default_value_size = default_value.length;
-        // for (let i = 0; i < default_value_size; i++) {
-        //     Module._OnKeyDown(127); // 删除键 delete
-        //     Module._OnKeyUp(127); // 删除键 delete
-        //     Module._OnKeyDown(8); // 删除键 backspace
-        //     Module._OnKeyUp(8); // 删除键 backspace
-        // }
         input_info.inputing = true;
         input_info.value = prompt("输入:", default_value);
         if (input_info.value === null) input_info.value = default_value;
@@ -522,7 +587,15 @@ Module.StartTextInput = function (view_bottom, params) {
         input_info.timestamp = new Date().getTime();
         return;
     }
-    input.value = "";
+    if (!isImeComposing) {
+        if (isTouchDevice || isMobile) {
+            resetMobileInputSentinel();
+        } else if (input) {
+            input.value = "";
+            mobileSentinelLen = 0;
+        }
+    }
+    const wasInputing = input_info.inputing;
     input_info.inputing = true;
     input_info.width = Module.canvas.width;
     input_info.height = Module.canvas.height;
@@ -531,41 +604,144 @@ Module.StartTextInput = function (view_bottom, params) {
     input_info.timestamp = new Date().getTime();
     input_info.view_bottom = (view_bottom || 0) / window.devicePixelRatio;
 
-    input.focus();
+    if (input) {
+        if (!wasInputing && isMobile && document.activeElement === input) {
+            input.blur();
+        }
+        input.focus();
+    }
 }
 
 Module.StopTextInput = function () {
     if (isiOS) return;
 
-    input.blur();
+    isImeComposing = false;
+    if (input) input.blur();
     input_info.inputing = false;
     canvas.style.top = '0px';
 }
 input_info.isTouchDevice = isTouchDevice;
 
-if (isTouchDevice) {
-    input.addEventListener("input", function (event) {
-        if (input.value != "") {
-            if (getOperatingSystem() == "pico") {
-                // Solve the problem of multiple inputs in the pico input method.
-                if (input.value.length > 1) {
-                    return;
-                }
-            }
+if (input) {
+    if (isMobile) {
+        input.addEventListener("blur", function () {
+            isImeComposing = false;
+            input_info.inputing = false;
+            canvas.style.top = '0px';
+        });
+    }
 
-            Module._OnTextInput(stringToNewUTF8(input.value));
+    input.addEventListener("compositionstart", function () {
+        isImeComposing = true;
+        if (!(isTouchDevice || isMobile)) {
             input.value = "";
         }
     });
-}
-else {
-    input.addEventListener('compositionstart', function (event) {
-        input.value = "";
+
+    input.addEventListener("compositionend", function (event) {
+        isImeComposing = false;
+        const committed = (event && typeof event.data === "string")
+            ? event.data
+            : (input.value || "").replace(/\u200B/g, "");
+        if (committed) {
+            sendParaTextInput(committed);
+        }
+        justFinishedComposition = true;
+        if (isTouchDevice || isMobile) {
+            resetMobileInputSentinel();
+        } else {
+            input.value = "";
+            mobileSentinelLen = 0;
+        }
+        setTimeout(function () {
+            justFinishedComposition = false;
+        }, 0);
     });
-    input.addEventListener('compositionend', function (event) {
-        Module._OnTextInput(stringToNewUTF8(event.data));
-    });
-    input.focus();
+
+    if (isTouchDevice || isMobile) {
+        resetMobileInputSentinel();
+
+        input.addEventListener("beforeinput", function (event) {
+            if (isImeComposing || event.isComposing) return;
+            const inputType = event.inputType || "";
+            if (inputType === "deleteContentBackward" || inputType === "deleteWordBackward" || inputType === "deleteSoftLineBackward") {
+                if ((input.value || "").length === 0 && !suppressInputBackspace) {
+                    event.preventDefault();
+                    tapParaKey(PARA_VK_BACKSPACE);
+                    resetMobileInputSentinel();
+                }
+            } else if (inputType === "insertLineBreak" || inputType === "insertParagraph") {
+                event.preventDefault();
+                if (!suppressInputEnter) {
+                    markEnterHandledByKeydown();
+                    tapParaKey(PARA_VK_RETURN);
+                }
+            }
+        });
+
+        input.addEventListener("input", function (event) {
+            if (isImeComposing || (event && event.isComposing)) return;
+            if (justFinishedComposition) {
+                resetMobileInputSentinel();
+                return;
+            }
+
+            const rawValue = input.value || "";
+            const typed = rawValue.replace(/\u200B/g, "");
+            const inputType = (event && event.inputType) || "";
+
+            if (typed !== "") {
+                if (getOperatingSystem() === "pico" && typed.length > 1) {
+                    resetMobileInputSentinel();
+                    return;
+                }
+                const cleanText = typed.replace(/[\r\n]+/g, "");
+                if (cleanText !== "") {
+                    sendParaTextInput(cleanText);
+                }
+                if (/[\r\n]/.test(typed) && !suppressInputEnter) {
+                    tapParaKey(PARA_VK_RETURN);
+                }
+                resetMobileInputSentinel();
+                return;
+            }
+
+            const remainingSentinelLen = rawValue.length;
+            if (suppressInputBackspace || inputType.indexOf("Forward") !== -1) {
+                suppressInputBackspace = false;
+                mobileSentinelLen = remainingSentinelLen;
+                if (mobileSentinelLen < MOBILE_SENTINEL_MIN_LEN) {
+                    resetMobileInputSentinel();
+                }
+                return;
+            }
+
+            if (remainingSentinelLen < mobileSentinelLen || inputType === "deleteContentBackward" || inputType === "deleteWordBackward" || inputType === "deleteSoftLineBackward") {
+                let deleteCount = mobileSentinelLen - remainingSentinelLen;
+                if (deleteCount <= 0) {
+                    deleteCount = 1;
+                } else if (remainingSentinelLen === 0 && mobileSentinelLen >= MOBILE_SENTINEL_MIN_LEN) {
+                    deleteCount = 1;
+                } else if (deleteCount > 16) {
+                    deleteCount = 16;
+                }
+                mobileSentinelLen = remainingSentinelLen;
+                for (let i = 0; i < deleteCount; i++) {
+                    tapParaKey(PARA_VK_BACKSPACE);
+                }
+                if (mobileSentinelLen < MOBILE_SENTINEL_MIN_LEN) {
+                    resetMobileInputSentinel();
+                }
+            } else if (remainingSentinelLen !== mobileSentinelLen) {
+                mobileSentinelLen = remainingSentinelLen;
+                if (mobileSentinelLen < MOBILE_SENTINEL_MIN_LEN) {
+                    resetMobileInputSentinel();
+                }
+            }
+        });
+    } else {
+        input.focus();
+    }
 }
 
 window.ParaCraftModule = Module;
@@ -698,8 +874,14 @@ function exitFullScreen() {
 function getOperatingSystem() {
     let userAgent = navigator.userAgent || navigator.vendor || window.opera;
 
+    if (/PICO/i.test(userAgent)) {
+        return "pico";
+    }
     if (/android/i.test(userAgent)) {
         return "android";
+    }
+    if (/OpenHarmony|HarmonyOS/i.test(userAgent)) {
+        return "harmonyos";
     }
     if (/iPad|iPhone|iPod/.test(userAgent) && !window.MSStream) {
         return "ios";
@@ -709,9 +891,6 @@ function getOperatingSystem() {
     }
     if (/Win32|Win64|Windows|WinCE/.test(userAgent)) {
         return "win32";
-    }
-    if (/PICO/.test(userAgent) || /Pico/.test(userAgent)) {
-        return "pico";
     }
     if (/Linux/.test(userAgent)) {
         return "linux";
@@ -746,11 +925,6 @@ function InitParacraftKeyNameKeyCodeMap() {
 window.isNumLockEnabled = 1;
 document.addEventListener('keydown', function (event) {
     InitParacraftKeyNameKeyCodeMap();
-    if (getOperatingSystem() == "android" || getOperatingSystem() == "pico") {
-        if (event.key == "Backspace") {
-            Module._OnKeyDown(8);
-        }
-    }
 
     if (event.getModifierState && event.getModifierState('NumLock')) {
         window.isNumLockEnabled = 1;
@@ -769,34 +943,62 @@ document.addEventListener('keydown', function (event) {
     }
 
     if (isWPS) {
+        if (event.key === "Backspace" || event.key === "Delete") {
+            markBackspaceHandledByKeydown();
+        } else if (event.key === "Enter") {
+            markEnterHandledByKeydown();
+        }
         if (ParacraftKeyNameKeyCodeMap && ParacraftKeyNameKeyCodeMap[event.key]) {
-            Module._OnKeyDown(ParacraftKeyNameKeyCodeMap[event.key]);
+            sendParaKeyDown(ParacraftKeyNameKeyCodeMap[event.key]);
         }
         return;
-    } 
+    }
+
+    // Emscripten SDL2 only maps physical KeyboardEvent.code scancodes and drops virtual keyboard
+    // events where event.code is "" or "Unidentified" (common on Android/HarmonyOS/mobile browsers).
+    if (!isImeComposing && !event.isComposing) {
+        if (event.key === "Backspace" || event.keyCode === 8) {
+            markBackspaceHandledByKeydown();
+            if (event.code !== "Backspace") {
+                event.preventDefault();
+                tapParaKey(PARA_VK_BACKSPACE);
+                return;
+            }
+        } else if (event.key === "Delete" || event.keyCode === 46) {
+            markBackspaceHandledByKeydown();
+            if (event.code !== "Delete" && event.code !== "NumpadDecimal") {
+                event.preventDefault();
+                tapParaKey(PARA_VK_DELETE);
+                return;
+            }
+        } else if (event.key === "Enter" || event.keyCode === 13) {
+            markEnterHandledByKeydown();
+            if (event.code !== "Enter" && event.code !== "NumpadEnter") {
+                event.preventDefault();
+                if (!event.repeat) {
+                    tapParaKey(PARA_VK_RETURN);
+                }
+                return;
+            }
+        }
+    }
 
     if (!input_info.inputing) {
         if (event.key == "Process" && event.code && /Key[A-Z]/.test(event.code)) {
             const keycode = event.code.substring(3).toLowerCase();
             if (ParacraftKeyNameKeyCodeMap && ParacraftKeyNameKeyCodeMap[keycode]) {
-                Module._OnKeyDown(ParacraftKeyNameKeyCodeMap[keycode]);
+                sendParaKeyDown(ParacraftKeyNameKeyCodeMap[keycode]);
             } else {
-                Module._OnKeyDown(keycode.charCodeAt(0));
+                sendParaKeyDown(keycode.charCodeAt(0));
             }
         }
     }
 });
 
 document.addEventListener('keyup', function (event) {
-    if (getOperatingSystem() == "android" || getOperatingSystem() == "pico") {
-        if (event.key == "Backspace") {
-            Module._OnKeyUp(8);
-        }
-    }
-
     if (isWPS) {
         if (ParacraftKeyNameKeyCodeMap && ParacraftKeyNameKeyCodeMap[event.key]) {
-            Module._OnKeyUp(ParacraftKeyNameKeyCodeMap[event.key]);
+            sendParaKeyUp(ParacraftKeyNameKeyCodeMap[event.key]);
         }
         return;
     } 
@@ -805,9 +1007,9 @@ document.addEventListener('keyup', function (event) {
         if (event.key == "Process" && event.code && /Key[A-Z]/.test(event.code)) {
             const keycode = event.code.substring(3).toLowerCase();
             if (ParacraftKeyNameKeyCodeMap && ParacraftKeyNameKeyCodeMap[keycode]) {
-                Module._OnKeyUp(ParacraftKeyNameKeyCodeMap[keycode]);
+                sendParaKeyUp(ParacraftKeyNameKeyCodeMap[keycode]);
             } else {
-                Module._OnKeyUp(keycode.charCodeAt(0));
+                sendParaKeyUp(keycode.charCodeAt(0));
             }
         }
     }
