@@ -165,7 +165,7 @@ namespace ParaEngine
 			pDevice->SetRenderTarget(1, nullptr);
 			if (m_bAutoBoundColorRT0)
 			{
-				pDevice->SetRenderTarget(0, nullptr);
+				pDevice->SetRenderTargets(0, nullptr, nullptr);
 				m_bAutoBoundColorRT0 = false;
 			}
 		}
@@ -2137,7 +2137,7 @@ namespace ParaEngine
 					pDevice->SetRenderTarget(1, nullptr);
 					if (m_bAutoBoundColorRT0)
 					{
-						pDevice->SetRenderTarget(0, nullptr);
+						pDevice->SetRenderTargets(0, nullptr, nullptr);
 						m_bAutoBoundColorRT0 = false;
 					}
 				}
@@ -2236,7 +2236,7 @@ namespace ParaEngine
 			if (sceneColorRT && pDevice->GetCurrentRenderTargetBinding().targets[0] == sceneColorRT)
 			{
 				pDevice->BlitRenderTarget(sceneColorRT, nullptr, nullptr, nullptr, false);
-				pDevice->SetRenderTarget(0, nullptr);
+				pDevice->SetRenderTargets(0, nullptr, nullptr);
 				if (CGlobals::GetViewportManager() && CGlobals::GetViewportManager()->GetActiveViewPort())
 					CGlobals::GetViewportManager()->GetActiveViewPort()->ApplyViewport();
 			}
@@ -2513,7 +2513,9 @@ namespace ParaEngine
 				}
 
 				IRHIRenderTarget* mrtTargets[4] = { rt0, depthRT, blockInfoRT, normalRT };
-				IRHIRenderTarget* depthStencilRT = (rt0 && rt0->GetDepthTexture()) ? rt0 : pDevice->GetCurrentRenderTargetBinding().depthStencilOverride;
+				const bool hasOwnDepthAttachment = (rt0 != nullptr) &&
+					(rt0->GetDepthTexture() != nullptr || backend == ERHIBackend::OpenGL);
+				IRHIRenderTarget* depthStencilRT = hasOwnDepthAttachment ? rt0 : pDevice->GetCurrentRenderTargetBinding().depthStencilOverride;
 				if (!pDevice->SetRenderTargets(4, mrtTargets, depthStencilRT))
 					return false;
 

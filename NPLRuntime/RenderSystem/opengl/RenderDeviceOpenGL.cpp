@@ -477,12 +477,15 @@ namespace ParaEngine
 		public:
 			GLRenderTarget(RenderDeviceOpenGL* owner, uint32_t width, uint32_t height, PixelFormat colorFormat, PixelFormat depthFormat, uint32_t colorTargetCount)
 				: m_owner(owner)
+				, m_selfId(++s_nextRtSerial)
+				, m_attachedDepthOwnerId(0)
 				, m_fbo(0)
 				, m_depthRbo(0)
 				, m_width(width)
 				, m_height(height)
 				, m_colorFormat(colorFormat)
 				, m_depthTexture(nullptr)
+				, m_depthHasStencil(false)
 				, m_valid(false)
 			{
 				const uint32_t fl = owner ? owner->GetCaps().featureLevel : 200u;
@@ -581,6 +584,7 @@ namespace ParaEngine
 						glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT24, static_cast<GLsizei>(width), static_cast<GLsizei>(height), 0, GL_DEPTH_COMPONENT, GL_UNSIGNED_INT, nullptr);
 						glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, depthTex, 0);
 						m_depthTexture = new GLRawTexture(depthTex, width, height, 1, depthFormat, GL_DEPTH_COMPONENT, GL_UNSIGNED_INT);
+						m_depthHasStencil = false;
 					}
 					else
 					{
@@ -590,6 +594,7 @@ namespace ParaEngine
 						{
 							glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT16, static_cast<GLsizei>(width), static_cast<GLsizei>(height));
 							glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, m_depthRbo);
+							m_depthHasStencil = false;
 						}
 						else
 						{
@@ -605,10 +610,12 @@ namespace ParaEngine
 								glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, m_depthRbo);
 								glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_STENCIL_ATTACHMENT, GL_RENDERBUFFER, m_depthRbo);
 							}
+							m_depthHasStencil = true;
 						}
 						glBindRenderbuffer(GL_RENDERBUFFER, 0);
 					}
 				}
+				m_attachedDepthOwnerId = m_selfId;
 
 				m_valid = (glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE);
 				while (glGetError() != GL_NO_ERROR) {}
@@ -645,6 +652,59 @@ namespace ParaEngine
 				}
 			}
 
+			bool HasDepthAttachment() const { return m_depthTexture != nullptr || m_depthRbo != 0; }
+
+			// Bind either dsOverride's depth/stencil (when sharing scene depth across HDR postfx RTs) or restore this RT's own depth/stencil.
+			void ApplyDepthStencilAttachment(const GLRenderTarget* dsOverride, uint32_t fl)
+			{
+				const GLRenderTarget* effective = (dsOverride != nullptr && dsOverride->m_width == m_width && dsOverride->m_height == m_height && dsOverride->HasDepthAttachment())
+					? dsOverride
+					: this;
+				if (m_attachedDepthOwnerId == effective->m_selfId)
+					return;
+
+				glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, 0, 0);
+#ifdef GL_DEPTH_STENCIL_ATTACHMENT
+				if (fl >= 300)
+				{
+					glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, 0);
+				}
+				else
+#endif
+				{
+					glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, 0);
+					glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_STENCIL_ATTACHMENT, GL_RENDERBUFFER, 0);
+				}
+
+				if (effective->m_depthTexture != nullptr)
+				{
+					const GLuint dTex = static_cast<GLuint>(reinterpret_cast<uintptr_t>(effective->m_depthTexture->GetNativeHandle()));
+					glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, dTex, 0);
+				}
+				else if (effective->m_depthRbo != 0)
+				{
+					if (!effective->m_depthHasStencil)
+					{
+						glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, effective->m_depthRbo);
+					}
+					else
+					{
+#ifdef GL_DEPTH_STENCIL_ATTACHMENT
+						if (fl >= 300)
+						{
+							glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, effective->m_depthRbo);
+						}
+						else
+#endif
+						{
+							glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, effective->m_depthRbo);
+							glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_STENCIL_ATTACHMENT, GL_RENDERBUFFER, effective->m_depthRbo);
+						}
+					}
+				}
+				m_attachedDepthOwnerId = effective->m_selfId;
+			}
+
 			bool IsValid() const { return m_valid; }
 			GLuint GetFBO() const { return m_fbo; }
 			uint32_t GetColorCount() const { return static_cast<uint32_t>(m_colorTextures.size()); }
@@ -659,7 +719,10 @@ namespace ParaEngine
 			void* GetNativeHandle() const override { return reinterpret_cast<void*>(static_cast<uintptr_t>(m_fbo)); }
 
 		private:
+			static inline uint64_t s_nextRtSerial = 0;
 			RenderDeviceOpenGL* m_owner = nullptr;
+			uint64_t m_selfId;
+			uint64_t m_attachedDepthOwnerId;
 			GLuint m_fbo;
 			GLuint m_depthRbo;
 			uint32_t m_width;
@@ -667,6 +730,7 @@ namespace ParaEngine
 			PixelFormat m_colorFormat;
 			std::vector<IRHITexture*> m_colorTextures;
 			IRHITexture* m_depthTexture;
+			bool m_depthHasStencil;
 			bool m_valid;
 		};
 
@@ -1347,6 +1411,7 @@ namespace ParaEngine
 		m_ValidMrtMask = 0x1u;
 		m_AppliedDrawBufferMask = 0x1u;
 		const uint32_t fl = GetCaps().featureLevel;
+		primaryRT->ApplyDepthStencilAttachment(static_cast<const GLRenderTarget*>(depthStencilOverride), fl);
 		if (count > 1 && HasGLDrawBuffers(fl))
 		{
 			uint32_t rtCount = count > 4u ? 4u : count;

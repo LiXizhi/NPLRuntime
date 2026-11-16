@@ -258,7 +258,14 @@ namespace ParaEngine
 					size_t firstNonWs = line.find_first_not_of(" \t\r");
 					if (firstNonWs != std::string::npos && line.compare(firstNonWs, 10, "#extension") == 0)
 					{
-						extOss << line << "\n";
+						if (line.find("GL_OES_standard_derivatives") == std::string::npos &&
+							line.find("GL_EXT_shader_texture_lod") == std::string::npos &&
+							line.find("GL_ARB_shader_texture_lod") == std::string::npos &&
+							line.find("GL_EXT_draw_buffers") == std::string::npos &&
+							line.find("GL_EXT_frag_depth") == std::string::npos)
+						{
+							extOss << line << "\n";
+						}
 						continue;
 					}
 					if (firstNonWs != std::string::npos && line.compare(firstNonWs, 8, "#version") == 0)
@@ -352,6 +359,145 @@ namespace ParaEngine
 			outStage.bytecode.assign(finalGlsl.begin(), finalGlsl.end());
 			outStage.bytecode.push_back(0); // Null-terminate for direct const char* usage
 			return true;
+		}
+
+		struct GlslVaryingDecl
+		{
+			std::string precision;
+			std::string type;
+		};
+
+		bool ParseGlslVaryingLine(
+			const std::string& line,
+			const char* expectedStorage,
+			std::string& outPrecision,
+			std::string& outType,
+			std::string& outName)
+		{
+			size_t pos = line.find_first_not_of(" \t\r");
+			if (pos == std::string::npos)
+				return false;
+
+			auto nextToken = [&](std::string& tok) -> bool {
+				while (pos < line.size() && (line[pos] == ' ' || line[pos] == '\t'))
+					++pos;
+				if (pos >= line.size() || line[pos] == ';' || line[pos] == '\r')
+					return false;
+				size_t start = pos;
+				while (pos < line.size() && line[pos] != ' ' && line[pos] != '\t' && line[pos] != ';' && line[pos] != '\r')
+					++pos;
+				tok = line.substr(start, pos - start);
+				return !tok.empty();
+			};
+
+			std::string storage;
+			if (!nextToken(storage) || (storage != expectedStorage && storage != "varying"))
+				return false;
+
+			std::string tok1, tok2, tok3;
+			if (!nextToken(tok1) || !nextToken(tok2))
+				return false;
+
+			if (tok1 == "highp" || tok1 == "mediump" || tok1 == "lowp")
+			{
+				if (!nextToken(tok3))
+					return false;
+				outPrecision = tok1;
+				outType = tok2;
+				outName = tok3;
+			}
+			else
+			{
+				outPrecision.clear();
+				outType = tok1;
+				outName = tok2;
+			}
+
+			while (pos < line.size() && (line[pos] == ' ' || line[pos] == '\t' || line[pos] == '\r'))
+				++pos;
+			if (pos >= line.size() || line[pos] != ';')
+				return false;
+			return outName.compare(0, 4, "xlv_") == 0;
+		}
+
+		std::string MakeGlslZeroInitExpr(const std::string& type)
+		{
+			if (type == "float") return "0.0";
+			if (type == "int") return "0";
+			if (type == "uint") return "0u";
+			if (type == "bool") return "false";
+			if (type.compare(0, 3, "vec") == 0) return type + "(0.0)";
+			if (type.compare(0, 4, "ivec") == 0) return type + "(0)";
+			if (type.compare(0, 4, "uvec") == 0) return type + "(0u)";
+			if (type.compare(0, 4, "bvec") == 0) return type + "(false)";
+			return type + "(0.0)";
+		}
+
+		// Reconcile VS out / PS in user varyings (xlv_*) so passes whose PS input struct declares
+		// semantics omitted by a simplified VS (e.g. FinalQuadVS -> GlowDownsizePS) link cleanly
+		// under strict GLSL Core / ESSL 3.00 rules.
+		void ReconcileGlslStageVaryings(const FxCompiledStage& vsStage, FxCompiledStage& psStage)
+		{
+			if (!vsStage.valid || !psStage.valid || vsStage.bytecode.empty() || psStage.bytecode.empty())
+				return;
+
+			const std::string vsText(reinterpret_cast<const char*>(vsStage.bytecode.data()));
+			const std::string psText(reinterpret_cast<const char*>(psStage.bytecode.data()));
+
+			std::vector<std::pair<std::string, GlslVaryingDecl>> vsOuts;
+			{
+				std::istringstream viss(vsText);
+				std::string vline;
+				while (std::getline(viss, vline))
+				{
+					std::string prec, type, name;
+					if (ParseGlslVaryingLine(vline, "out", prec, type, name))
+					{
+						vsOuts.emplace_back(name, GlslVaryingDecl{ prec, type });
+					}
+				}
+			}
+
+			bool modified = false;
+			std::istringstream piss(psText);
+			std::ostringstream poss;
+			std::string pline;
+			const char* psStorage = (psStage.target == EShaderTarget::ESSL_300) ? "in" : "varying";
+			while (std::getline(piss, pline))
+			{
+				std::string prec, type, name;
+				if (ParseGlslVaryingLine(pline, "in", prec, type, name))
+				{
+					auto it = std::find_if(vsOuts.begin(), vsOuts.end(),
+						[&](const auto& kv) { return kv.first == name; });
+					if (it == vsOuts.end())
+					{
+						poss << "const ";
+						if (!prec.empty())
+							poss << prec << " ";
+						poss << type << " " << name << " = " << MakeGlslZeroInitExpr(type) << ";\n";
+						modified = true;
+						continue;
+					}
+					else if (it->second.type == type && it->second.precision != prec)
+					{
+						poss << psStorage << " ";
+						if (!it->second.precision.empty())
+							poss << it->second.precision << " ";
+						poss << type << " " << name << ";\n";
+						modified = true;
+						continue;
+					}
+				}
+				poss << pline << "\n";
+			}
+
+			if (modified)
+			{
+				std::string patched = poss.str();
+				psStage.bytecode.assign(patched.begin(), patched.end());
+				psStage.bytecode.push_back(0);
+			}
 		}
 
 #ifdef _WIN32
@@ -1931,6 +2077,7 @@ namespace ParaEngine
 							break;
 						}
 					}
+					ReconcileGlslStageVaryings(compPass.vs, compPass.ps);
 				}
 				else if (target == EShaderTarget::DXBC_SM40_93 || target == EShaderTarget::DXBC_SM40 || target == EShaderTarget::DXBC_SM50)
 				{

@@ -102,6 +102,8 @@ namespace
 		targets.push_back(EShaderTarget::WGSL_1_0);
 		targets.push_back(EShaderTarget::GLSL_120);
 		targets.push_back(EShaderTarget::GLSL_330);
+		targets.push_back(EShaderTarget::ESSL_100);
+		targets.push_back(EShaderTarget::ESSL_300);
 
 		int totalFiles = static_cast<int>(fxFiles.size());
 		int passedFiles = 0;
@@ -228,6 +230,9 @@ int main(int argc, char** argv)
 		if (tname == "wgsl" || tname == "WGSL_1_0") tgt = EShaderTarget::WGSL_1_0;
 		else if (tname == "msl" || tname == "MSL_2_0") tgt = EShaderTarget::MSL_2_0;
 		else if (tname == "glsl330" || tname == "GLSL_330") tgt = EShaderTarget::GLSL_330;
+		else if (tname == "glsl120" || tname == "GLSL_120") tgt = EShaderTarget::GLSL_120;
+		else if (tname == "essl300" || tname == "ESSL_300") tgt = EShaderTarget::ESSL_300;
+		else if (tname == "essl100" || tname == "ESSL_100") tgt = EShaderTarget::ESSL_100;
 
 		fs::path inFx(argv[3]);
 		std::string rawSrc;

@@ -839,8 +839,16 @@ float4 CompositePS2(VSOutput input) :COLOR
 }
 
 
+/* the final composition step to tonemap to monitor resolution.
+*/
+struct VSOutputFinal
+{
+	float4 pos			: POSITION;         // Screen space position
+	float2 texCoord		: TEXCOORD0;        // texture coordinates
+};
+
 // down size to 1/4 of original size. Calculate average color.
-float4 GlowDownsizePS(VSOutput input) :COLOR
+float4 GlowDownsizePS(VSOutputFinal input) :COLOR
 {
 	float2 texcoord = input.texCoord;
 	float2 texStep = float2(1.0, 1.0) / screenParam;
@@ -854,15 +862,6 @@ float4 GlowDownsizePS(VSOutput input) :COLOR
 	}
 	return float4(bloom.rgb / 16.0, 1.0f);
 }
-
-
-/* the final composition step to tonemap to monitor resolution.
-*/
-struct VSOutputFinal
-{
-	float4 pos			: POSITION;         // Screen space position
-	float2 texCoord		: TEXCOORD0;        // texture coordinates
-};
 
 VSOutputFinal FinalQuadVS(float3 iPosition:POSITION,
 	float2 texCoord : TEXCOORD0)
