@@ -1460,7 +1460,7 @@ void ParaEngine::CPainter::setClipRect(const QRect & rect, ClipOperation op /*= 
 {
 	if (!engine || !state)
 		return;
-	if (op == NoClip)
+	if (op == NoClip || IsUse3DTransform() || IsSpriteUseWorldMatrix())
 	{
 		state->m_clipEnabled = false;
 		state->m_clipInfo.clear();

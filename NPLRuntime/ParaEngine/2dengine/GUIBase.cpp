@@ -2710,6 +2710,43 @@ RECT ParaEngine::CGUIBase::GetClippingRect(GUIState* pGUIState)
 	RECT rcScreen, rcWindow;//rcScreen is the rect of this container, rcWindow is the available rect of drawing this container.
 	CGUIContainer* parent = m_parent;
 	rcWindow = rcScreen = m_objResource->GetDrawingRects(0);//the whole container
+
+	if (pGUIState && pGUIState->painter && pGUIState->painter->device())
+	{
+		CPaintDevice* activeDevice = pGUIState->painter->device();
+		CGUIBase* pSelfPaintRoot = nullptr;
+		for (CGUIBase* node = this; node != nullptr; node = node->m_parent)
+		{
+			if (node->IsSelfPaintEnabled() && node->CreateGetRenderTarget(false) == activeDevice)
+			{
+				pSelfPaintRoot = node;
+				break;
+			}
+		}
+		if (pSelfPaintRoot != nullptr)
+		{
+			if (this != pSelfPaintRoot)
+			{
+				while (parent != NULL)
+				{
+					rcWindow = parent->m_objResource->GetDrawingRects(0);
+					if (rcScreen.top > rcWindow.bottom || rcScreen.bottom < rcWindow.top || rcScreen.left > rcWindow.right || rcScreen.right < rcWindow.left) {
+						SetRect(&rcScreen, rcWindow.left, rcWindow.top, rcWindow.left, rcWindow.top);
+						break;
+					}
+					if (rcScreen.top < rcWindow.top) rcScreen.top = rcWindow.top;
+					if (rcScreen.left < rcWindow.left) rcScreen.left = rcWindow.left;
+					if (rcScreen.bottom > rcWindow.bottom) rcScreen.bottom = rcWindow.bottom;
+					if (rcScreen.right > rcWindow.right) rcScreen.right = rcWindow.right;
+					if (parent == pSelfPaintRoot)
+						break;
+					parent = parent->m_parent;
+				}
+			}
+			return rcScreen;
+		}
+	}
+
 	while (parent != NULL) {
 		// if (! parent->GetFastRender())
 		{

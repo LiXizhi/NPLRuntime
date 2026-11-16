@@ -1,21 +1,41 @@
 
 
-class WebView {
-    constructor() {
-        this.m_id = "webview";
-        this.m_iframe = document.createElement("iframe");
+class WebViewItem {
+    constructor(key, domId, reuseIframe) {
+        this.m_key = key;
+        this.m_id = domId;
+        this.m_iframe = reuseIframe || document.createElement("iframe");
         this.m_iframe.id = this.m_id;
+        this.m_iframe.setAttribute("data-webview-id", key);
         this.m_iframe.style.display = "none";
         this.m_iframe.style.position = "fixed";
         this.m_iframe.style.border = "none";
+        this.m_iframe.style.zIndex = "1000";
+        this.m_iframe.style.backgroundColor = "#ffffff";
         this.m_iframe.allow = "camera; microphone; autoplay; clipboard-read; clipboard-write; allow-downloads";
-        document.body.appendChild(this.m_iframe);
-        this.m_iframe.contentWindow.paracraft_platform = "emscripten";
+        if (!reuseIframe) {
+            document.body.appendChild(this.m_iframe);
+        }
+        try {
+            if (this.m_iframe.contentWindow) {
+                this.m_iframe.contentWindow.paracraft_platform = "emscripten";
+            }
+        } catch (e) {
+        }
+        this.m_url = "";
+        this.m_fullscreen = false;
+        this.m_iframe_loaded = false;
+        this.m_iframe_loaded_callbacks = [];
+        this.m_iframe_loaded_timer = undefined;
+        this.m_x = 0;
+        this.m_y = 0;
+        this.m_width = 0;
+        this.m_height = 0;
+    }
 
-        const self = this;
-        window.addEventListener("message", function (event) {
-            self.OnIFrameMsg(event.data);
-        }, false);
+    SetTransparent(transparent) {
+        this.m_transparent = !!transparent;
+        this.m_iframe.style.backgroundColor = this.m_transparent ? "transparent" : "#ffffff";
     }
 
     Show() {
@@ -26,16 +46,33 @@ class WebView {
         this.m_iframe.style.display = "none";
     }
 
+    ClearLoadTimer() {
+        if (this.m_iframe_loaded_timer) {
+            clearInterval(this.m_iframe_loaded_timer);
+            this.m_iframe_loaded_timer = undefined;
+        }
+    }
+
     Destroy() {
-        document.body.removeChild(this.m_iframe);
+        this.ClearLoadTimer();
+        if (this.m_iframe && this.m_iframe.parentNode) {
+            this.m_iframe.parentNode.removeChild(this.m_iframe);
+        }
     }
 
     SetPosition(x, y, width, height) {
+        const dpr = window.devicePixelRatio || 1;
         if (!this.m_fullscreen) {
-            this.m_iframe.style.left = (x / window.devicePixelRatio) + "px";
-            this.m_iframe.style.top = (y / window.devicePixelRatio) + "px";
-            this.m_iframe.width = width / window.devicePixelRatio;
-            this.m_iframe.height = height / window.devicePixelRatio;
+            const cssLeft = x / dpr;
+            const cssTop = y / dpr;
+            const cssW = Math.max(0, width / dpr);
+            const cssH = Math.max(0, height / dpr);
+            this.m_iframe.style.left = cssLeft + "px";
+            this.m_iframe.style.top = cssTop + "px";
+            this.m_iframe.style.width = cssW + "px";
+            this.m_iframe.style.height = cssH + "px";
+            this.m_iframe.width = Math.round(cssW);
+            this.m_iframe.height = Math.round(cssH);
         }
         this.m_x = x;
         this.m_y = y;
@@ -43,54 +80,99 @@ class WebView {
         this.m_height = height;
     }
 
-    SetUrl(url) {
-        if (this.m_url == url) return;
+    _resolveRouteUrl(rawUrl) {
+        if (!rawUrl) return "";
+        let url = String(rawUrl).trim();
+        if (!url) return "";
+        url = url.replace(/^https?:\/\/(?:www\.)?keepwork\.com(?=\/|\?|#|$)/i, "https://cross.keepwork.com");
+        try {
+            const parsed = new URL(url);
+            if (parsed.protocol === "npl:" && window.NplWebserverBridge) {
+                const nplPath = "/" + parsed.hostname + parsed.pathname;
+                return window.NplWebserverBridge.Route(nplPath + parsed.search + parsed.hash);
+            }
+            const isLoopback = parsed.protocol === "http:" && (parsed.hostname === "127.0.0.1" || parsed.hostname === "localhost");
+            if (isLoopback && parsed.port !== window.location.port && window.NplWebserverBridge) {
+                const match = parsed.pathname.match(/^\/webserver\/([^/]+)(\/.*)?$/);
+                const path = match ? (match[2] || "/") : parsed.pathname;
+                return window.NplWebserverBridge.Route(path + parsed.search + parsed.hash);
+            }
+        } catch (e) {
+        }
+        return url;
+    }
+
+    SetUrl(rawUrl) {
+        const url = this._resolveRouteUrl(rawUrl);
+        const is_about_blank = !url || url === "about:blank" || url.endsWith("/about_blank.html");
+        if (is_about_blank) {
+            this.m_url = "about:blank";
+            this.ClearLoadTimer();
+            this.m_iframe_loaded = false;
+            this.m_iframe_loaded_callbacks = [];
+            if (this.m_iframe.getAttribute("src") && this.m_iframe.getAttribute("src") !== "about:blank") {
+                this.m_iframe.src = "about:blank";
+            }
+            this.Hide();
+            return;
+        }
+
+        if (this.m_url === url) return;
         this.m_url = url;
-        const is_about_blank = url.endsWith("/about_blank.html");
-        const contentWindow = this.m_iframe.contentWindow;
-        const arg_index = url.indexOf("?");
-        this.m_iframe.src = url + (arg_index >= 0 ? "&" : "?") + "platform=emscripten&hash=" + (new Date()).getTime().toString();
+
+        const hashIdx = url.indexOf("#");
+        const beforeHash = hashIdx >= 0 ? url.substring(0, hashIdx) : url;
+        const hashPart = hashIdx >= 0 ? url.substring(hashIdx) : "";
+        const arg_index = beforeHash.indexOf("?");
+        const finalSrc = beforeHash + (arg_index >= 0 ? "&" : "?") + "platform=emscripten&hash=" + (new Date()).getTime().toString() + hashPart;
+
+        this.m_iframe.src = finalSrc;
         this.m_iframe_loaded = false;
         this.m_iframe_loaded_callbacks = [];
+        this.ClearLoadTimer();
 
-        if (this.m_iframe_loaded_timer) {
-            clearInterval(this.m_iframe_loaded_timer);
-        }
-
-        if (is_about_blank) {
-            this.Hide();
-        }
-        else {
-            this.m_iframe_loaded_timer = setInterval(function () {
-                contentWindow.postMessage({
-                    cmd: "load",
-                    is_paracraft_message: true,
-                    platform: "emscripten"
-                }, "*");
-            }, 100);
-        }
-
+        const self = this;
+        let attempts = 0;
+        this.m_iframe_loaded_timer = setInterval(function () {
+            attempts++;
+            if (attempts > 300) {
+                self.ClearLoadTimer();
+                return;
+            }
+            try {
+                if (self.m_iframe && self.m_iframe.contentWindow) {
+                    self.m_iframe.contentWindow.postMessage({
+                        cmd: "load",
+                        is_paracraft_message: true,
+                        platform: "emscripten"
+                    }, "*");
+                }
+            } catch (e) {
+            }
+        }, 100);
     }
 
     OnIFrameMsg(msg) {
-        if (!msg.is_paracraft_message) return;
+        if (!msg || typeof msg !== "object" || !msg.is_paracraft_message) return;
 
         const cmd = msg.cmd;
         if (cmd == "load") {
             if (this.m_iframe_loaded) return;
-            clearInterval(this.m_iframe_loaded_timer);
-            this.m_iframe_loaded_timer = undefined;
+            this.ClearLoadTimer();
             this.m_iframe_loaded = true;
             for (let i = 0; i < this.m_iframe_loaded_callbacks.length; i++) {
                 const callback = this.m_iframe_loaded_callbacks[i];
                 callback();
             }
+            this.m_iframe_loaded_callbacks = [];
             console.log("===========webview load url:", this.m_iframe.src);
         }
         else if (cmd == "enter_fullscreen") {
             this.m_fullscreen = true;
             this.m_iframe.style.left = "0px";
             this.m_iframe.style.top = "0px";
+            this.m_iframe.style.width = window.innerWidth + "px";
+            this.m_iframe.style.height = window.innerHeight + "px";
             this.m_iframe.width = window.innerWidth;
             this.m_iframe.height = window.innerHeight;
         }
@@ -99,7 +181,9 @@ class WebView {
             this.SetPosition(this.m_x, this.m_y, this.m_width, this.m_height);
         }
         else if (cmd == "PostMessage") {
-            window.SendMsgToEmscripten(msg);
+            if (typeof window.SendMsgToEmscripten === "function") {
+                window.SendMsgToEmscripten(msg);
+            }
         }
     }
 
@@ -110,13 +194,126 @@ class WebView {
                 self.EmitIFrameMsg(msg);
             });
         }
-        self.m_iframe.contentWindow.postMessage({
-            is_paracraft_message: true,
-            cmd: "PostMessage",
-            platform: "emscripten",
-            filename: msg.to_filename,
-            msg: msg.params,
-        }, "*");
+        if (self.m_iframe && self.m_iframe.contentWindow) {
+            self.m_iframe.contentWindow.postMessage({
+                is_paracraft_message: true,
+                cmd: "PostMessage",
+                platform: "emscripten",
+                filename: msg.to_filename,
+                msg: msg.params,
+            }, "*");
+        }
+    }
+}
+
+class WebView {
+    constructor() {
+        this.m_id = "webview";
+        this.m_instances = Object.create(null);
+        this.m_primaryKey = null;
+        this.m_primaryItem = new WebViewItem("default", "webview", null);
+        this.m_iframe = this.m_primaryItem.m_iframe;
+
+        const self = this;
+        window.addEventListener("message", function (event) {
+            self.OnIFrameMsg(event.data, event.source);
+        }, false);
+        window.addEventListener("resize", function () {
+            for (const k in self.m_instances) {
+                if (Object.prototype.hasOwnProperty.call(self.m_instances, k)) {
+                    const item = self.m_instances[k];
+                    if (item.m_fullscreen && item.m_iframe) {
+                        item.m_iframe.style.width = window.innerWidth + "px";
+                        item.m_iframe.style.height = window.innerHeight + "px";
+                        item.m_iframe.width = window.innerWidth;
+                        item.m_iframe.height = window.innerHeight;
+                    }
+                }
+            }
+        });
+    }
+
+    _getOrCreateItem(id, createIfMissing) {
+        const key = String(id || "default");
+        if (this.m_instances[key]) {
+            return this.m_instances[key];
+        }
+        if (!createIfMissing) {
+            if (this.m_primaryKey === null && key === "default") {
+                return this.m_primaryItem;
+            }
+            return null;
+        }
+        if (this.m_primaryKey === null) {
+            this.m_primaryKey = key;
+            this.m_primaryItem.m_key = key;
+            this.m_primaryItem.m_iframe.setAttribute("data-webview-id", key);
+            this.m_instances[key] = this.m_primaryItem;
+            this.m_iframe = this.m_primaryItem.m_iframe;
+            return this.m_primaryItem;
+        }
+        const safeDomId = "webview_" + key.replace(/[^a-zA-Z0-9_-]/g, "_");
+        const item = new WebViewItem(key, safeDomId, null);
+        this.m_instances[key] = item;
+        this.m_iframe = item.m_iframe;
+        return item;
+    }
+
+    Show() {
+        this.m_primaryItem.Show();
+    }
+
+    Hide() {
+        this.m_primaryItem.Hide();
+    }
+
+    Destroy() {
+        for (const k in this.m_instances) {
+            if (Object.prototype.hasOwnProperty.call(this.m_instances, k)) {
+                this.m_instances[k].Destroy();
+            }
+        }
+        this.m_instances = Object.create(null);
+        this.m_primaryKey = null;
+    }
+
+    SetPosition(x, y, width, height) {
+        this.m_primaryItem.SetPosition(x, y, width, height);
+    }
+
+    SetUrl(url) {
+        this.m_primaryItem.SetUrl(url);
+    }
+
+    OnIFrameMsg(msg, sourceWindow) {
+        if (!msg || typeof msg !== "object" || !msg.is_paracraft_message) return;
+        for (const k in this.m_instances) {
+            if (Object.prototype.hasOwnProperty.call(this.m_instances, k)) {
+                const item = this.m_instances[k];
+                if (sourceWindow && item.m_iframe && item.m_iframe.contentWindow === sourceWindow) {
+                    item.OnIFrameMsg(msg);
+                    return;
+                }
+            }
+        }
+        this.m_primaryItem.OnIFrameMsg(msg);
+    }
+
+    EmitIFrameMsg(msg) {
+        if (msg && msg.id && this.m_instances[msg.id]) {
+            this.m_instances[msg.id].EmitIFrameMsg(msg);
+            return;
+        }
+        let sent = false;
+        for (const k in this.m_instances) {
+            if (Object.prototype.hasOwnProperty.call(this.m_instances, k)) {
+                this.m_instances[k].EmitIFrameMsg(msg);
+                sent = true;
+            }
+        }
+        if (!sent) {
+            this.m_primaryItem.EmitIFrameMsg(msg);
+        }
     }
 
     GetMsgName() {
@@ -124,38 +321,86 @@ class WebView {
     }
 
     OnMsg(msg) {
+        if (!msg || typeof msg !== "object") return;
         var cmd = msg.cmd;
         // 消息通知逻辑
         if (cmd == "PostMessage") {
             return this.EmitIFrameMsg(msg);
         }
 
-        var x = Math.floor((msg.x || 0) * (msg.scale_x || 1));
-        var y = Math.floor((msg.y || 0) * (msg.scale_y || 1));
-        var width = Math.floor((msg.width || 0) * (msg.scale_x || 1));
-        var height = Math.floor((msg.height || 0) * (msg.scale_y || 1));
-        var url = msg.url || "about:blank";
-        url = url.replace(/^https\:\/\/keepwork\.com/, "https://cross.keepwork.com");
+        var scaleX = msg.scale_x || 1;
+        var scaleY = msg.scale_y || 1;
+        var x = Math.floor((msg.x || 0) * scaleX);
+        var y = Math.floor((msg.y || 0) * scaleY);
+        var width = Math.floor((msg.width || 0) * scaleX);
+        var height = Math.floor((msg.height || 0) * scaleY);
+        var url = msg.url || "";
 
         if (cmd == "Start") {
-            this.SetUrl(url);
-            this.SetPosition(x, y, width, height);
-            this.Show();
+            const item = this._getOrCreateItem(msg.id, true);
+            item.SetTransparent(msg.transparent);
+            item.SetPosition(x, y, width, height);
+            item.SetUrl(url);
+            if (url && url !== "about:blank" && !url.endsWith("/about_blank.html")) {
+                item.Show();
+            }
         }
         else if (cmd == "Show") {
+            const item = this._getOrCreateItem(msg.id, !!msg.visible);
+            if (!item) return;
             if (msg.visible) {
-                this.Show();
+                if (width > 0 && height > 0) {
+                    item.SetPosition(x, y, width, height);
+                }
+                if (url && !item.m_url) {
+                    item.SetUrl(url);
+                }
+                if (item.m_url && item.m_url !== "about:blank") {
+                    item.Show();
+                }
             }
             else {
-                this.Hide();
+                if (url && (url === "about:blank" || url.endsWith("/about_blank.html"))) {
+                    item.SetUrl(url);
+                }
+                item.Hide();
             }
         }
         else if (cmd == "ChangePosSize") {
-            this.SetPosition(x, y, width, height);
+            const item = this._getOrCreateItem(msg.id, false);
+            if (item) {
+                item.SetPosition(x, y, width, height);
+            }
         }
         else if (cmd == "Open") {
-            this.SetUrl(url);
-            if (width != 0 && height != 0) this.SetPosition(x, y, width, height);
+            const item = this._getOrCreateItem(msg.id, true);
+            if (typeof msg.transparent === "boolean") {
+                item.SetTransparent(msg.transparent);
+            }
+            item.SetUrl(url);
+            if (width > 0 && height > 0) {
+                item.SetPosition(x, y, width, height);
+            }
+            if (msg.visible === false) {
+                item.Hide();
+            } else if (url && url !== "about:blank" && !url.endsWith("/about_blank.html")) {
+                item.Show();
+            }
+        }
+        else if (cmd == "Quit" || cmd == "Close") {
+            const key = String(msg.id || "default");
+            const item = this.m_instances[key];
+            if (item) {
+                if (item === this.m_primaryItem) {
+                    item.SetUrl("about:blank");
+                    item.Hide();
+                    delete this.m_instances[key];
+                    this.m_primaryKey = null;
+                } else {
+                    item.Destroy();
+                    delete this.m_instances[key];
+                }
+            }
         }
     }
 };

@@ -399,14 +399,14 @@ void RenderWindowOSX::UpdateAutoUIScaling(bool bForce)
         oss.imbue(std::locale::classic());
         oss << std::fixed << std::setprecision(3);
         oss << "do local s=" << autoScale << "; local bs=" << currentBackingScaleFactor << "; "
-            << "if System and System.options then System.options.default_ui_scaling={s,s}; end; "
+            << "if System and System.options then System.options.default_ui_scaling={bs,bs}; System.options.auto_ui_scaling={s,s}; end; "
             << "local Screen=System and System.Windows and System.Windows.Screen; "
             << "if Screen then "
             << "if not Screen._macAutoScaleWrapped and Screen.SetUserUIScaling then "
             << "Screen._macAutoScaleWrapped=true; "
             << "local orig=Screen.SetUserUIScaling; "
             << "Screen.SetUserUIScaling=function(self,val) "
-            << "local def=System and System.options and System.options.default_ui_scaling and System.options.default_ui_scaling[1]; "
+            << "local def=(System and System.options and System.options.auto_ui_scaling and System.options.auto_ui_scaling[1]) or s; "
             << "if def then "
             << "local saved=nil; local pc=nil; "
             << "local gl=MyCompany and MyCompany.Aries and MyCompany.Aries.Game and MyCompany.Aries.Game.GameLogic; "

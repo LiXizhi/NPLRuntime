@@ -295,7 +295,35 @@ CORE_EXPORT_DECL void LibActivate(int nType, void* pVoid)
 		std::string cmd = params.cmd;
 		std::string callback_file = params.callback_file;
 		std::string parent_handle_s = params.parent_handle;
-		HWND parent_handle = parent_handle_s.empty() ? NULL : (HWND)std::stoull(parent_handle_s.c_str(), nullptr, 0);
+		HWND parent_handle = NULL;
+		if (!parent_handle_s.empty())
+		{
+			try
+			{
+				size_t parsedIdx = 0;
+				unsigned long long hVal = std::stoull(parent_handle_s, &parsedIdx, 0);
+				if (parsedIdx == parent_handle_s.size() && hVal != 0)
+				{
+					parent_handle = (HWND)(uintptr_t)hVal;
+				}
+				else
+				{
+					double dVal = std::stod(parent_handle_s);
+					if (dVal > 0)
+						parent_handle = (HWND)(uintptr_t)dVal;
+				}
+			}
+			catch (...)
+			{
+				parent_handle = NULL;
+			}
+		}
+		if ((parent_handle == NULL || !IsWindow(parent_handle)) && GetCoreInterface() != nullptr)
+		{
+			HWND coreHwnd = GetCoreInterface()->GetParaEngineHWnd();
+			if (coreHwnd != NULL && IsWindow(coreHwnd))
+				parent_handle = coreHwnd;
+		}
 
 		if (cmd == "Support")
 		{
@@ -379,7 +407,15 @@ CORE_EXPORT_DECL void LibActivate(int nType, void* pVoid)
 			else if (cmd == "Open")
 			{
 				webview->SendOpenMessage(StringToWString(params.url));
-				webview->SendSetPositionMessage(x, y, width, height);
+				if (width > 0 && height > 0)
+					webview->SendSetPositionMessage(x, y, width, height);
+				if (tabMsg["visible"].GetType() == NPLInterface::NPLObjectBase::NPLObjectType_Bool)
+				{
+					if (params.visible)
+						webview->SendShow();
+					else
+						webview->SendHide();
+				}
 			}
 		}
 	}

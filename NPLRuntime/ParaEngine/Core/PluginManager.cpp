@@ -190,16 +190,34 @@ void DLLPlugInEntity::Init(const char* sFilename)
 	if (sKeyLower.find("caudioengine") != std::string::npos || sKeyLower.find("physicsbt") != std::string::npos || sKeyLower.find("sqlite") != std::string::npos || sKeyLower.find("parawebview") != std::string::npos)
 	{
 		// we will try to find core dll files only in executable directory first, such as in "bin64/..." or "build-win64/bin/..."
-		std::string sFullPath = std::string(CGlobals::GetApp()->GetModuleDir()) + CParaFile::GetFileName(sDLLPath);
-		if (CParaFile::DoesFileExist2(sFullPath.c_str(), FILE_ON_DISK))
+		std::string sModuleDir = CGlobals::GetApp()->GetModuleDir();
+		if (sKeyLower.find("parawebview") != std::string::npos)
 		{
-			sDLLPath = sFullPath;
+#ifdef _DEBUG
+			const char* primaryWv = "ParaWebView_d.dll";
+			const char* fallbackWv = "ParaWebView.dll";
+#else
+			const char* primaryWv = "ParaWebView.dll";
+			const char* fallbackWv = "ParaWebView_d.dll";
+#endif
+			if (CParaFile::DoesFileExist2((sModuleDir + primaryWv).c_str(), FILE_ON_DISK))
+				sDLLPath = sModuleDir + primaryWv;
+			else if (CParaFile::DoesFileExist2((sModuleDir + fallbackWv).c_str(), FILE_ON_DISK))
+				sDLLPath = sModuleDir + fallbackWv;
 		}
-		else if (sKeyLower.find("sqlite") != std::string::npos)
+		else
 		{
-			std::string sParaSqlitePath = std::string(CGlobals::GetApp()->GetModuleDir()) + "ParaSqlite.dll";
-			if (CParaFile::DoesFileExist2(sParaSqlitePath.c_str(), FILE_ON_DISK))
-				sDLLPath = sParaSqlitePath;
+			std::string sFullPath = sModuleDir + CParaFile::GetFileName(sDLLPath);
+			if (CParaFile::DoesFileExist2(sFullPath.c_str(), FILE_ON_DISK))
+			{
+				sDLLPath = sFullPath;
+			}
+			else if (sKeyLower.find("sqlite") != std::string::npos)
+			{
+				std::string sParaSqlitePath = sModuleDir + "ParaSqlite.dll";
+				if (CParaFile::DoesFileExist2(sParaSqlitePath.c_str(), FILE_ON_DISK))
+					sDLLPath = sParaSqlitePath;
+			}
 		}
 	}
 #endif

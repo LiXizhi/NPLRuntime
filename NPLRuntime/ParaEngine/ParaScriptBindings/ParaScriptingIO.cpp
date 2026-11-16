@@ -499,12 +499,33 @@ namespace ParaScripting
 
 	bool ParaIO::DoesFileExist(const char* filename, bool bSearchZipFiles)
 	{
-		return CParaFile::DoesFileExist(filename, bSearchZipFiles, true);
+		if (CParaFile::DoesFileExist(filename, bSearchZipFiles, true))
+			return true;
+#ifdef WIN32
+		if (filename != nullptr && filename[0] != '\0' && CGlobals::GetApp() != nullptr)
+		{
+			std::string sFile(filename);
+			if (sFile.find('/') == std::string::npos && sFile.find('\\') == std::string::npos)
+			{
+				std::string sLower = sFile;
+				std::transform(sLower.begin(), sLower.end(), sLower.begin(), [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
+				if (sLower.size() > 4 && sLower.compare(sLower.size() - 4, 4, ".dll") == 0)
+				{
+					std::string sModuleDir = CGlobals::GetApp()->GetModuleDir();
+					if (CParaFile::DoesFileExist2((sModuleDir + sFile).c_str(), FILE_ON_DISK))
+						return true;
+					if (sLower == "parawebview.dll" && CParaFile::DoesFileExist2((sModuleDir + "ParaWebView_d.dll").c_str(), FILE_ON_DISK))
+						return true;
+				}
+			}
+		}
+#endif
+		return false;
 	}
 
 	bool ParaIO::DoesFileExist_(const char* filename)
 	{
-		return CParaFile::DoesFileExist(filename, false, true);
+		return DoesFileExist(filename, false);
 	}
 
 	bool ParaIO::BackupFile(const char* filename)

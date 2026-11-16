@@ -1305,15 +1305,21 @@ bool ParaEngine::TextureEntityOpenGL::LoadImageFromString(const char* cmd)
 
 			if (*cmd == 'd') {
 				std::string dataFormat;
-				// "data:image/png;base64,"
-				dataFormat.assign(cmd, 22);
-				cmd += 22;
-				if (dataFormat == "data:image/png;base64,")
+				if (strncmp(cmd, "data:image/png;base64,", 22) == 0)
+				{
 					dataFormat = "temp.png";
-				else if (dataFormat == "data:image/jpg;base64,")
+					cmd += 22;
+				}
+				else if (strncmp(cmd, "data:image/jpg;base64,", 22) == 0)
+				{
 					dataFormat = "temp.jpg";
-				else
-					dataFormat = "";
+					cmd += 22;
+				}
+				else if (strncmp(cmd, "data:image/jpeg;base64,", 23) == 0)
+				{
+					dataFormat = "temp.jpg";
+					cmd += 23;
+				}
 				if (!dataFormat.empty())
 				{
 					std::string buffer = StringHelper::unbase64(cmd, -1);
@@ -1453,6 +1459,19 @@ bool ParaEngine::TextureEntityOpenGL::GetImageDataOriginal(void** ppData, int* p
 		auto* pDev = CGlobals::GetRenderDevice();
 		if (pDev && m_texture->getRHITexture() && pDev->ReadTexturePixels(m_texture->getRHITexture(), pData))
 		{
+			if (SurfaceType == RenderTarget && !pDev->GetCaps().topLeftScreenOrigin && height > 1)
+			{
+				const size_t rowBytes = static_cast<size_t>(width) * 4u;
+				std::vector<uint8> tmpRow(rowBytes);
+				for (int y = 0; y < height / 2; ++y)
+				{
+					uint8* topRow = pData + static_cast<size_t>(y) * rowBytes;
+					uint8* botRow = pData + static_cast<size_t>(height - 1 - y) * rowBytes;
+					memcpy(tmpRow.data(), topRow, rowBytes);
+					memcpy(topRow, botRow, rowBytes);
+					memcpy(botRow, tmpRow.data(), rowBytes);
+				}
+			}
 			*ppData = pData;
 			return true;
 		}

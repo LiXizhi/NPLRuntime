@@ -261,6 +261,8 @@ namespace ParaEngine {
 
     void ParaEngineWebView::loadUrl(const std::string &urlString, bool cleanCachedData)
     {
+        if (urlString.empty())
+            return;
         if (_webViewController)
         {
             NSString *_urlString = @(urlString.c_str());
@@ -269,8 +271,11 @@ namespace ParaEngine {
                  stringByAddingPercentEncodingWithAllowedCharacters:
                      [NSCharacterSet characterSetWithCharactersInString:@"`%^{}\"[]|\\<> "].invertedSet];
 
-            [_webViewController.window setTitle:_urlString];
+            if (_webViewController.window)
+                [_webViewController.window setTitle:_urlString];
             NSURL *url = [NSURL URLWithString:_urlString];
+            if (!url)
+                return;
 
             NSURLRequest *request = nil;
 

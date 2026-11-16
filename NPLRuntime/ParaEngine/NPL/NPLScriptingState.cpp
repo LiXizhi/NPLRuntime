@@ -915,6 +915,55 @@ bool ParaScripting::CNPLScriptingState::LoadFile(const string& filePath, bool bR
 							L = m_pState;
 						int nResult = luaL_loadbuffer(L, codebuf, codesize, filePath.c_str());
 						if (nResult == 0) {
+#ifdef WIN32
+							auto endsWithIgnoreCase = [](const std::string& str, const char* suffix) -> bool {
+								const size_t suffixLen = std::strlen(suffix);
+								if (str.size() < suffixLen)
+									return false;
+								const size_t offset = str.size() - suffixLen;
+								for (size_t i = 0; i < suffixLen; ++i)
+								{
+									if (std::tolower(static_cast<unsigned char>(str[offset + i])) != std::tolower(static_cast<unsigned char>(suffix[i])))
+										return false;
+								}
+								return true;
+							};
+							if (endsWithIgnoreCase(filePath, "NplBrowserPlugin.lua"))
+							{
+								auto postInitClosure = [](lua_State* state) -> int {
+									int nargs = lua_gettop(state);
+									lua_pushvalue(state, lua_upvalueindex(1));
+									for (int i = 1; i <= nargs; ++i)
+										lua_pushvalue(state, i);
+									lua_call(state, nargs, LUA_MULTRET);
+									int nret = lua_gettop(state) - nargs;
+
+									int savedTop = lua_gettop(state);
+									lua_getglobal(state, "NplBrowser");
+									if (lua_istable(state, -1))
+									{
+										lua_getfield(state, -1, "NplBrowserPlugin");
+										if (lua_istable(state, -1))
+										{
+											lua_getfield(state, -1, "OneTimeInitWebview2");
+											if (lua_isfunction(state, -1))
+											{
+												if (lua_pcall(state, 0, 0, 0) != 0)
+													lua_pop(state, 1);
+											}
+											else
+											{
+												lua_pop(state, 1);
+											}
+										}
+									}
+									lua_settop(state, savedTop);
+									return nret;
+								};
+								lua_CFunction fn = postInitClosure;
+								lua_pushcclosure(L, fn, 1);
+							}
+#endif
 							if (IsLoadFileInScript())
 							{
 								// save the loaded function to a global lua variable _npl_load_function
