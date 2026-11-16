@@ -377,6 +377,12 @@ float 	CalculateDirectLighting(in SurfaceStruct surface)
 		// 	return abs(NdotL) * 0.25;
 		return 1.0f;
 	}
+	else if (surface.category_id == 255)
+	{
+		// Gentle wrap diffuse for characters/models so faces and curved surfaces shade smoothly
+		const float wrap = 0.25f;
+		return saturate((surface.NdotL + wrap) / (1.0f + wrap));
+	}
 	else
 	{
 		// default sun light 
@@ -400,7 +406,8 @@ float 	CalculateSunlightVisibility(inout SurfaceStruct surface, in ShadingStruct
 		float4 vWorldPosition = float4(surface.cameraSpacePos, 1);
 		vWorldPosition = mul(vWorldPosition, matViewInverse);
 
-		surface.shadow = calculateShadowFactor(ShadowMapSampler, vWorldPosition, surface.depth, mShadowMapTex, mShadowMapViewProj, ShadowMapSize.x, ShadowMapSize.y, ShadowRadius);
+		float shadowBias = lerp(0.0035f, 0.0012f, saturate(surface.NdotL));
+		surface.shadow = calculateShadowFactorWithBias(ShadowMapSampler, vWorldPosition, surface.depth, mShadowMapTex, mShadowMapViewProj, ShadowMapSize.x, ShadowMapSize.y, ShadowRadius, shadowBias);
 		return surface.shadow;
 	}
 	else
@@ -543,7 +550,7 @@ float AmbientVisibility(SurfaceStruct surface)
 
 float ContactVisibility(SurfaceStruct surface)
 {
-	if (QualityLevel < 5 || RenderOptions.x < 0.5 || surface.mask_sky || surface.mask_water || surface.NdotL <= 0 || rainStrength >= 0.99) return 1.0;
+	if (QualityLevel < 5 || RenderOptions.x < 0.5 || surface.mask_sky || surface.mask_water || surface.category_id == 255 || surface.NdotL <= 0 || rainStrength >= 0.99) return 1.0;
 	float3 direction = normalize(mul(sunDirection, (float3x3)matView));
 	float count = QualityLevel >= 6 ? 12.0 : 6.0;
 	[loop] for (int stepIndex = 1; stepIndex <= 12; stepIndex++)
@@ -606,6 +613,10 @@ PSOut CompositePS0(VSOutput input)
 	shading.direct = lerp(CloudThickness, 1.0, directSunShading);
 	shading.sunlightVisibility = CalculateSunlightVisibility(surface, shading);
 	shading.sunlightVisibility *= ContactVisibility(surface);
+	if (surface.category_id == 255) {
+		// Soften cast shadows on character faces/bodies so shadowed skin stays clean and readable
+		shading.sunlightVisibility = lerp(0.50f, 1.0f, shading.sunlightVisibility);
+	}
 	shading.direct *= lerp(CloudThickness, 1.0, shading.sunlightVisibility);
 	shading.direct *= 1.0f - rainStrength;
 	shading.direct *= 1.0f - CloudThickness;
@@ -625,7 +636,8 @@ PSOut CompositePS0(VSOutput input)
 	float fakeTorchShading = 1.0;
 	if (surface.category_id == 255) {
 		fakeTorchShading = (directSunShading * 0.6 + 0.4);
-		lightmap.skylight *= fakeTorchShading;
+		// Keep character ambient skylight soft and clean so shadowed faces don't turn muddy
+		lightmap.skylight *= (directSunShading * 0.2 + 0.8);
 	}
 	lightmap.torchlight = (rawLightmap.torch * fakeTorchShading) * TorchLightColor;
 

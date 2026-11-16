@@ -51,7 +51,7 @@ float calculatefadeShadowFactor(float viewDepth,float shadowRadius)
 }
 
 
-float calculateShadowFactor(sampler2D s,float4 worldPosition,float viewDepth,float4x4 shadowMatrix, float4x4 shadowViewProjMatrix,float shadowMapSize,float invShadowMapSize,float shadowRadius)
+float calculateShadowFactorWithBias(sampler2D s,float4 worldPosition,float viewDepth,float4x4 shadowMatrix, float4x4 shadowViewProjMatrix,float shadowMapSize,float invShadowMapSize,float shadowRadius,float shadowBias)
 {
 	const float4 vPosShadowSpace = mul(worldPosition, shadowViewProjMatrix);
 	const float4 vShadowMapCoord = mul(worldPosition, shadowMatrix);
@@ -63,19 +63,26 @@ float calculateShadowFactor(sampler2D s,float4 worldPosition,float viewDepth,flo
 		&& (vPosShadowSpace.z - tex2D(s, vShadowMapCoord).r) >= SHADOW_BIAS
 		*/)
 	{
-		const float shadow_test_depth = vShadowMapCoord.z - SHADOW_BIAS;
+		const float shadow_test_depth = vShadowMapCoord.z - shadowBias;
 		const float2 uv = vShadowMapCoord.xy / vShadowMapCoord.w;
 #ifdef SOFT_SHADOW_ENABLE
-		float ret = 0;
-		for (float i = -1.0f; i <= 1.0f; i += 1.0f)
+		static const float2 poissonDisk[8] = {
+			float2(-0.7071f,  0.7071f),
+			float2( 0.0000f,  1.0000f),
+			float2( 0.7071f,  0.7071f),
+			float2(-1.0000f,  0.0000f),
+			float2( 1.0000f,  0.0000f),
+			float2(-0.7071f, -0.7071f),
+			float2( 0.0000f, -1.0000f),
+			float2( 0.7071f, -0.7071f)
+		};
+		const float filterRadius = 1.5f * invShadowMapSize;
+		float ret = getShadowFactor(s, uv, shadow_test_depth, shadowMapSize, invShadowMapSize);
+		for (int i = 0; i < 8; i++)
 		{
-			for (float j = -1.0f; j <= 1.0f; j += 1.0f)
-			{
-				const float2 texelpos = uv + float2(i*invShadowMapSize, j*invShadowMapSize);
-				ret += getShadowFactor(s, texelpos, shadow_test_depth, shadowMapSize, invShadowMapSize);
-			}
+			ret += getShadowFactor(s, uv + poissonDisk[i] * filterRadius, shadow_test_depth, shadowMapSize, invShadowMapSize);
 		}
-		ret /= 9;
+		ret /= 9.0f;
 #else
 		float ret = getShadowFactor(s, uv, shadow_test_depth, shadowMapSize, invShadowMapSize);
 #endif
@@ -87,6 +94,11 @@ float calculateShadowFactor(sampler2D s,float4 worldPosition,float viewDepth,flo
 		// not in shadow 
 		return 1.f;
 	}
+}
+
+float calculateShadowFactor(sampler2D s,float4 worldPosition,float viewDepth,float4x4 shadowMatrix, float4x4 shadowViewProjMatrix,float shadowMapSize,float invShadowMapSize,float shadowRadius)
+{
+	return calculateShadowFactorWithBias(s, worldPosition, viewDepth, shadowMatrix, shadowViewProjMatrix, shadowMapSize, invShadowMapSize, shadowRadius, SHADOW_BIAS);
 }
 
 float4 brightPassFilter(sampler2D s,float2 uv)

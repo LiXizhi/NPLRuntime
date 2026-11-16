@@ -324,8 +324,8 @@ struct WaterBlockVSOut
 	float4 texcoord : TEXCOORD0;
 	float4 color : COLOR0;
 	float4 depth : COLOR1;
-	float4 position : COLOR2;
-	float3 normal:COLOR3;
+	float4 position : TEXCOORD1;
+	float3 normal:TEXCOORD2;
 };
 
 WaterBlockVSOut WaterVS(	float4 position	: POSITION,

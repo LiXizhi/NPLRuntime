@@ -275,7 +275,11 @@ namespace ParaEngine
 		int32_t MapVaryingLocation(const std::string& baseUpper, uint32_t index)
 		{
 			if (baseUpper == "COLOR")
-				return (index == 0) ? 0 : 1;
+			{
+				if (index == 0) return 0;
+				if (index == 1) return 1;
+				return (index == 2) ? 14 : 15;
+			}
 			if (baseUpper == "TEXCOORD")
 				return (index <= 8) ? static_cast<int32_t>(2 + index) : 10;
 			if (baseUpper == "NORMAL")
