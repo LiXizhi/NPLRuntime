@@ -426,6 +426,7 @@ namespace ParaEngine
 			, m_texture(tex)
 			, m_srvView(srvView)
 			, m_rtvDsvView(rtvDsvView)
+			, m_uniqueId(owner ? owner->NextUniqueViewId() : 0)
 		{
 		}
 
@@ -452,6 +453,7 @@ namespace ParaEngine
 		WGPUTextureView GetRTVDSVView() const { return m_rtvDsvView ? m_rtvDsvView : m_srvView; }
 		WGPUTextureFormat GetWGPUFormat() const { return m_wgpuFormat; }
 		bool Is3D() const { return m_is3D; }
+		uint64_t GetUniqueId() const { return m_uniqueId; }
 
 		bool UpdateSubresource(
 			uint32_t mipLevel,
@@ -562,6 +564,7 @@ namespace ParaEngine
 		WGPUTexture m_texture = nullptr;
 		WGPUTextureView m_srvView = nullptr;
 		WGPUTextureView m_rtvDsvView = nullptr;
+		uint64_t m_uniqueId = 0;
 	};
 
 	class WebGPUBuffer : public IRHIBuffer
@@ -619,10 +622,6 @@ namespace ParaEngine
 			m_mappedOffset = offset;
 			m_mappedSize = (size == 0 || offset + size > m_byteSize) ? (m_byteSize - offset) : size;
 			m_mappedMode = mode;
-			if (mode == ERHIMapMode::WriteDiscard)
-			{
-				std::memset(m_cpuShadow.data() + offset, 0, m_mappedSize);
-			}
 			m_isMapped = true;
 			return m_cpuShadow.data() + offset;
 		}
@@ -643,8 +642,9 @@ namespace ParaEngine
 				WGPUBuffer fresh = CreateGpuBuffer();
 				if (fresh)
 				{
+					const uint32_t uploadEnd = (std::min)(m_alignedSize, AlignUpU32((std::max)(m_mappedOffset + m_mappedSize, 16u), 4u));
 					PARA_WGPU_CALL(m_owner->GetWGPU(), wgpuQueueWriteBuffer,
-						m_owner->GetWGPUQueue(), fresh, 0, m_cpuShadow.data(), m_alignedSize);
+						m_owner->GetWGPUQueue(), fresh, 0, m_cpuShadow.data(), uploadEnd);
 					if (m_buffer)
 						m_owner->DeferReleaseBuffer(m_buffer);
 					m_buffer = fresh;
@@ -964,6 +964,7 @@ namespace ParaEngine
 			, m_pipelineLayout(pipeLayout)
 			, m_refl(refl)
 			, m_hash(hash)
+			, m_uniqueId(owner ? owner->NextUniqueViewId() : 0)
 		{
 		}
 
@@ -971,6 +972,7 @@ namespace ParaEngine
 		{
 			if (m_owner)
 			{
+				m_owner->ClearBindGroupCache();
 				const WebGPUDispatch& wgpu = m_owner->GetWGPU();
 				if (m_pipelineLayout)
 					PARA_WGPU_CALL(wgpu, wgpuPipelineLayoutRelease, m_pipelineLayout);
@@ -994,6 +996,7 @@ namespace ParaEngine
 		WGPUPipelineLayout GetPipelineLayout() const { return m_pipelineLayout; }
 		const WebGPUShaderReflection& GetReflection() const { return m_refl; }
 		uint64_t GetHash() const { return m_hash; }
+		uint64_t GetUniqueId() const { return m_uniqueId; }
 
 	private:
 		RenderDeviceWebGPU* m_owner = nullptr;
@@ -1005,6 +1008,7 @@ namespace ParaEngine
 		WGPUPipelineLayout m_pipelineLayout = nullptr;
 		WebGPUShaderReflection m_refl;
 		uint64_t m_hash = 0;
+		uint64_t m_uniqueId = 0;
 	};
 
 	RenderDeviceWebGPU::RenderDeviceWebGPU(
@@ -1036,6 +1040,7 @@ namespace ParaEngine
 	{
 		EndActiveRenderPass();
 		ExecuteAndSyncGPU();
+		ClearBindGroupCache();
 		FlushFrameTransientBuffers();
 
 		for (auto& kv : m_psoCache)
@@ -1082,6 +1087,7 @@ namespace ParaEngine
 		m_fallbackWhiteCube = nullptr;
 		delete m_fallbackWhite3D;
 		m_fallbackWhite3D = nullptr;
+		ClearBindGroupCache();
 		FlushFrameTransientBuffers();
 
 		auto releaseBuf = [&](WGPUBuffer& b) {
@@ -1095,8 +1101,9 @@ namespace ParaEngine
 		};
 		releaseBuf(m_fallbackZeroVB);
 		releaseBuf(m_zeroUboBuffer);
-		releaseBuf(m_currentVsUbo);
-		releaseBuf(m_currentPsUbo);
+		releaseBuf(m_uboArena.gpuBuffer);
+		releaseBuf(m_vbArena.gpuBuffer);
+		releaseBuf(m_ibArena.gpuBuffer);
 		releaseBuf(m_occlusionResolveBuf);
 
 		if (m_occlusionQuerySet)
@@ -1467,8 +1474,126 @@ namespace ParaEngine
 			m_transientTextures.push_back(tex);
 	}
 
+	void RenderDeviceWebGPU::ClearBindGroupCache()
+	{
+		for (auto& kv : m_bindGroupCache)
+		{
+			if (kv.second)
+				m_transientBindGroups.push_back(kv.second);
+		}
+		m_bindGroupCache.clear();
+	}
+
+	void RenderDeviceWebGPU::FlushDirtyArenasToQueue()
+	{
+		if (!m_queue)
+			return;
+		GpuFrameArena* arenas[3] = { &m_uboArena, &m_vbArena, &m_ibArena };
+		for (GpuFrameArena* arena : arenas)
+		{
+			if (arena->gpuBuffer && arena->used > arena->uploadedOffset)
+			{
+				const uint32_t writeOff = arena->uploadedOffset;
+				const uint32_t writeBytes = (std::min)(arena->capacity - writeOff, AlignUpU32(arena->used - writeOff, 4u));
+				if (writeBytes > 0)
+				{
+					PARA_WGPU_CALL(m_wgpu, wgpuQueueWriteBuffer,
+						m_queue, arena->gpuBuffer, writeOff, arena->cpuData.data() + writeOff, writeBytes);
+				}
+				arena->uploadedOffset = writeOff + writeBytes;
+			}
+		}
+	}
+
+	WGPUBuffer RenderDeviceWebGPU::SuballocateFrameArena(
+		GpuFrameArena& arena,
+		WGPUBufferUsageFlags usage,
+		const void* data,
+		uint32_t dataBytes,
+		uint32_t minAllocBytes,
+		uint32_t align,
+		uint32_t defaultInitCap,
+		uint32_t& outOffset)
+	{
+		outOffset = 0;
+		if (!m_device)
+			return nullptr;
+
+		align = (std::max)(align, 4u);
+		const uint32_t allocBytes = AlignUpU32((std::max)(dataBytes, (std::max)(minAllocBytes, 16u)), align);
+		uint32_t alignedUsed = AlignUpU32(arena.used, align);
+
+		if (!arena.gpuBuffer || alignedUsed + allocBytes > arena.capacity)
+		{
+			if (arena.gpuBuffer && arena.used > arena.uploadedOffset && m_queue)
+			{
+				const uint32_t writeOff = arena.uploadedOffset;
+				const uint32_t writeBytes = (std::min)(arena.capacity - writeOff, AlignUpU32(arena.used - writeOff, 4u));
+				if (writeBytes > 0)
+				{
+					PARA_WGPU_CALL(m_wgpu, wgpuQueueWriteBuffer,
+						m_queue, arena.gpuBuffer, writeOff, arena.cpuData.data() + writeOff, writeBytes);
+				}
+			}
+			if (arena.gpuBuffer)
+			{
+				m_transientBuffers.push_back(arena.gpuBuffer);
+				arena.gpuBuffer = nullptr;
+			}
+
+			const uint32_t newCap = AlignUpU32(
+				(std::max)(arena.capacity * 2u, (std::max)(allocBytes * 4u, defaultInitCap)),
+				256u);
+			WGPUBufferDescriptor bd = {};
+			bd.usage = usage | WGPUBufferUsage_CopyDst;
+			bd.size = newCap;
+			arena.gpuBuffer = PARA_WGPU_CALL(m_wgpu, wgpuDeviceCreateBuffer, m_device, &bd);
+			if (!arena.gpuBuffer)
+			{
+				arena.capacity = 0;
+				arena.used = 0;
+				arena.uploadedOffset = 0;
+				return nullptr;
+			}
+			arena.cpuData.resize(newCap, 0);
+			arena.capacity = newCap;
+			arena.used = 0;
+			arena.uploadedOffset = 0;
+			++arena.generation;
+			alignedUsed = 0;
+
+			if (&arena == &m_uboArena)
+			{
+				ClearBindGroupCache();
+				m_currentVsUboValid = false;
+				m_currentPsUboValid = false;
+			}
+		}
+
+		uint8_t* dst = arena.cpuData.data() + alignedUsed;
+		if (data && dataBytes > 0)
+		{
+			std::memcpy(dst, data, dataBytes);
+			if (allocBytes > dataBytes)
+				std::memset(dst + dataBytes, 0, allocBytes - dataBytes);
+		}
+		else
+		{
+			std::memset(dst, 0, allocBytes);
+		}
+
+		outOffset = alignedUsed;
+		arena.used = alignedUsed + allocBytes;
+		return arena.gpuBuffer;
+	}
+
 	void RenderDeviceWebGPU::FlushFrameTransientBuffers()
 	{
+		if (!m_transientTextures.empty() || !m_transientTextureViews.empty())
+		{
+			ClearBindGroupCache();
+		}
+
 		for (WGPUBindGroup bg : m_transientBindGroups)
 		{
 			if (bg)
@@ -1505,11 +1630,20 @@ namespace ParaEngine
 		}
 		m_transientTextures.clear();
 
-		m_currentVsUbo = nullptr;
+		m_uboArena.used = 0;
+		m_uboArena.uploadedOffset = 0;
+		m_vbArena.used = 0;
+		m_vbArena.uploadedOffset = 0;
+		m_ibArena.used = 0;
+		m_ibArena.uploadedOffset = 0;
+
+		m_currentVsUboOffset = 0;
 		m_currentVsUboSize = 0;
+		m_currentVsUboValid = false;
 		m_vsUboDirty = true;
-		m_currentPsUbo = nullptr;
+		m_currentPsUboOffset = 0;
 		m_currentPsUboSize = 0;
+		m_currentPsUboValid = false;
 		m_psUboDirty = true;
 	}
 
@@ -1678,6 +1812,7 @@ namespace ParaEngine
 		PARA_WGPU_CALL(m_wgpu, wgpuRenderPassEncoderEnd, m_renderPass);
 		PARA_WGPU_CALL(m_wgpu, wgpuRenderPassEncoderRelease, m_renderPass);
 		m_renderPass = nullptr;
+		m_passState = PassEncoderState{};
 
 		if (!m_pendingOcclusionResolveSlots.empty() &&
 			m_cmdEncoder && m_occlusionQuerySet && m_occlusionResolveBuf &&
@@ -1840,6 +1975,7 @@ namespace ParaEngine
 		m_renderPass = PARA_WGPU_CALL(m_wgpu, wgpuCommandEncoderBeginRenderPass, enc, &rpd);
 		if (!m_renderPass)
 			return false;
+		m_passState = PassEncoderState{};
 
 		// Apply initial viewport and scissor to the newly opened render pass
 		ApplyClampedViewport(m_state.GetViewport());
@@ -1871,6 +2007,8 @@ namespace ParaEngine
 			if (m_encoderTouchesSurface && !ParaWgpuIsSurfaceStillValid(m_currentSurfaceGen))
 				canSubmit = false;
 #endif
+			if (canSubmit)
+				FlushDirtyArenasToQueue();
 			WGPUCommandBufferDescriptor cbd = {};
 			cbd.label = ParaWgpuLabel("ParaCommandBuffer");
 			WGPUCommandBuffer cmd = PARA_WGPU_CALL(m_wgpu, wgpuCommandEncoderFinish, m_cmdEncoder, &cbd);
@@ -2315,6 +2453,7 @@ namespace ParaEngine
 			e.binding = 0;
 			e.visibility = WGPUShaderStage_Vertex;
 			e.buffer.type = WGPUBufferBindingType_Uniform;
+			e.buffer.hasDynamicOffset = 1;
 			e.buffer.minBindingSize = refl.vsUboMinBytes;
 			entries.push_back(e);
 		}
@@ -2324,6 +2463,7 @@ namespace ParaEngine
 			e.binding = 1;
 			e.visibility = WGPUShaderStage_Fragment;
 			e.buffer.type = WGPUBufferBindingType_Uniform;
+			e.buffer.hasDynamicOffset = 1;
 			e.buffer.minBindingSize = refl.psUboMinBytes;
 			entries.push_back(e);
 		}
@@ -2402,7 +2542,7 @@ namespace ParaEngine
 		{
 			if (m_vsConstantsCpu.size() < vsByteSize)
 				m_vsConstantsCpu.resize(vsByteSize, 0);
-			if (std::memcmp(m_vsConstantsCpu.data(), vsConstants, vsByteSize) != 0 || m_currentVsUbo == nullptr)
+			if (std::memcmp(m_vsConstantsCpu.data(), vsConstants, vsByteSize) != 0 || !m_currentVsUboValid)
 			{
 				std::memcpy(m_vsConstantsCpu.data(), vsConstants, vsByteSize);
 				m_vsUboDirty = true;
@@ -2412,7 +2552,7 @@ namespace ParaEngine
 		{
 			if (m_psConstantsCpu.size() < psByteSize)
 				m_psConstantsCpu.resize(psByteSize, 0);
-			if (std::memcmp(m_psConstantsCpu.data(), psConstants, psByteSize) != 0 || m_currentPsUbo == nullptr)
+			if (std::memcmp(m_psConstantsCpu.data(), psConstants, psByteSize) != 0 || !m_currentPsUboValid)
 			{
 				std::memcpy(m_psConstantsCpu.data(), psConstants, psByteSize);
 				m_psUboDirty = true;
@@ -3090,7 +3230,7 @@ namespace ParaEngine
 		return ok;
 	}
 
-	WGPUSampler RenderDeviceWebGPU::GetOrCreateSampler(uint32_t stage)
+	uint64_t RenderDeviceWebGPU::ComputeSamplerStateKey(uint32_t stage) const
 	{
 		if (stage >= RHIStateTracker::MAX_SAMPLER_STAGES)
 			stage = 0;
@@ -3103,7 +3243,7 @@ namespace ParaEngine
 		const uint32_t mipF  = m_state.GetSamplerState(stage, ESamplerStateType::MIPFILTER);
 		const uint32_t aniso = m_state.GetSamplerState(stage, ESamplerStateType::MAXANISOTROPY);
 
-		const uint64_t key =
+		return
 			(static_cast<uint64_t>(addrU & 0xF)) |
 			(static_cast<uint64_t>(addrV & 0xF) << 4) |
 			(static_cast<uint64_t>(addrW & 0xF) << 8) |
@@ -3111,10 +3251,25 @@ namespace ParaEngine
 			(static_cast<uint64_t>(minF  & 0xF) << 16) |
 			(static_cast<uint64_t>(mipF  & 0xF) << 20) |
 			(static_cast<uint64_t>(aniso & 0xFF) << 24);
+	}
 
+	WGPUSampler RenderDeviceWebGPU::GetOrCreateSampler(uint32_t stage)
+	{
+		if (stage >= RHIStateTracker::MAX_SAMPLER_STAGES)
+			stage = 0;
+
+		const uint64_t key = ComputeSamplerStateKey(stage);
 		auto it = m_samplerCache.find(key);
 		if (it != m_samplerCache.end())
 			return it->second;
+
+		const uint32_t addrU = m_state.GetSamplerState(stage, ESamplerStateType::ADDRESSU);
+		const uint32_t addrV = m_state.GetSamplerState(stage, ESamplerStateType::ADDRESSV);
+		const uint32_t addrW = m_state.GetSamplerState(stage, ESamplerStateType::ADDRESSW);
+		const uint32_t magF  = m_state.GetSamplerState(stage, ESamplerStateType::MAGFILTER);
+		const uint32_t minF  = m_state.GetSamplerState(stage, ESamplerStateType::MINFILTER);
+		const uint32_t mipF  = m_state.GetSamplerState(stage, ESamplerStateType::MIPFILTER);
+		const uint32_t aniso = m_state.GetSamplerState(stage, ESamplerStateType::MAXANISOTROPY);
 
 		WGPUSamplerDescriptor sd = {};
 		sd.addressModeU = MapAddressMode(addrU);
@@ -3449,67 +3604,88 @@ namespace ParaEngine
 		return pso;
 	}
 
-	WGPUBindGroup RenderDeviceWebGPU::BuildDrawBindGroup()
+	WGPUBindGroup RenderDeviceWebGPU::BuildDrawBindGroup(uint32_t& outDynCount, uint32_t outDynOffsets[2])
 	{
+		outDynCount = 0;
+		outDynOffsets[0] = 0;
+		outDynOffsets[1] = 0;
+
 		if (!m_boundProgram)
 			return nullptr;
 		const WebGPUShaderReflection& refl = m_boundProgram->GetReflection();
+		static constexpr uint32_t kDefaultUboArenaCap = 4u * 1024u * 1024u;
 
-		if (refl.hasVsUbo && (m_vsUboDirty || !m_currentVsUbo || m_currentVsUboSize < refl.vsUboMinBytes))
-		{
-			const uint32_t reqBytes = AlignUpU32((std::max)(refl.vsUboMinBytes, static_cast<uint32_t>(m_vsConstantsCpu.size())), 16u);
-			if (m_vsConstantsCpu.size() < reqBytes)
-				m_vsConstantsCpu.resize(reqBytes, 0);
-			WGPUBuffer fresh = AllocateTransientBuffer(WGPUBufferUsage_Uniform, m_vsConstantsCpu.data(), reqBytes, reqBytes);
-			if (fresh)
+		auto suballocVsUbo = [&]() {
+			const uint32_t reqBytes = AlignUpU32(refl.vsUboMinBytes, 16u);
+			const uint32_t copyBytes = (std::min)(reqBytes, static_cast<uint32_t>(m_vsConstantsCpu.size()));
+			uint32_t off = 0;
+			if (SuballocateFrameArena(
+				m_uboArena,
+				WGPUBufferUsage_Uniform,
+				copyBytes > 0 ? m_vsConstantsCpu.data() : nullptr,
+				copyBytes,
+				reqBytes,
+				UBO_MIN_ALIGN,
+				kDefaultUboArenaCap,
+				off))
 			{
-				m_currentVsUbo = fresh;
+				m_currentVsUboOffset = off;
 				m_currentVsUboSize = reqBytes;
+				m_currentVsUboValid = true;
 				m_vsUboDirty = false;
 			}
+		};
+
+		if (refl.hasVsUbo && (m_vsUboDirty || !m_currentVsUboValid || m_currentVsUboSize < refl.vsUboMinBytes))
+		{
+			suballocVsUbo();
 		}
 
-		if (refl.hasPsUbo && (m_psUboDirty || !m_currentPsUbo || m_currentPsUboSize < refl.psUboMinBytes))
+		if (refl.hasPsUbo && (m_psUboDirty || !m_currentPsUboValid || m_currentPsUboSize < refl.psUboMinBytes))
 		{
-			const uint32_t reqBytes = AlignUpU32((std::max)(refl.psUboMinBytes, static_cast<uint32_t>(m_psConstantsCpu.size())), 16u);
-			if (m_psConstantsCpu.size() < reqBytes)
-				m_psConstantsCpu.resize(reqBytes, 0);
-			WGPUBuffer fresh = AllocateTransientBuffer(WGPUBufferUsage_Uniform, m_psConstantsCpu.data(), reqBytes, reqBytes);
-			if (fresh)
+			const uint32_t reqBytes = AlignUpU32(refl.psUboMinBytes, 16u);
+			const uint32_t copyBytes = (std::min)(reqBytes, static_cast<uint32_t>(m_psConstantsCpu.size()));
+			uint32_t off = 0;
+			if (SuballocateFrameArena(
+				m_uboArena,
+				WGPUBufferUsage_Uniform,
+				copyBytes > 0 ? m_psConstantsCpu.data() : nullptr,
+				copyBytes,
+				reqBytes,
+				UBO_MIN_ALIGN,
+				kDefaultUboArenaCap,
+				off))
 			{
-				m_currentPsUbo = fresh;
+				m_currentPsUboOffset = off;
 				m_currentPsUboSize = reqBytes;
+				m_currentPsUboValid = true;
 				m_psUboDirty = false;
+			}
+			// If growing m_uboArena for PS invalidated the earlier VS suballocation, re-suballocate VS in the new arena
+			if (refl.hasVsUbo && !m_currentVsUboValid)
+			{
+				suballocVsUbo();
 			}
 		}
 
-		std::vector<WGPUBindGroupEntry> entries;
-		entries.reserve(34);
-
 		if (refl.hasVsUbo)
-		{
-			WGPUBindGroupEntry e = {};
-			e.binding = 0;
-			e.buffer = m_currentVsUbo ? m_currentVsUbo : m_zeroUboBuffer;
-			e.offset = 0;
-			e.size = m_currentVsUbo ? m_currentVsUboSize : refl.vsUboMinBytes;
-			entries.push_back(e);
-		}
+			outDynOffsets[outDynCount++] = m_currentVsUboValid ? m_currentVsUboOffset : 0u;
 		if (refl.hasPsUbo)
+			outDynOffsets[outDynCount++] = m_currentPsUboValid ? m_currentPsUboOffset : 0u;
+
+		const uint64_t progId = m_boundProgram->GetUniqueId();
+		uint64_t bgKey = Fnv1aBytes64(&progId, sizeof(progId));
+		if (refl.hasVsUbo || refl.hasPsUbo)
 		{
-			WGPUBindGroupEntry e = {};
-			e.binding = 1;
-			e.buffer = m_currentPsUbo ? m_currentPsUbo : m_zeroUboBuffer;
-			e.offset = 0;
-			e.size = m_currentPsUbo ? m_currentPsUboSize : refl.psUboMinBytes;
-			entries.push_back(e);
+			bgKey = Fnv1aBytes64(&m_uboArena.generation, sizeof(m_uboArena.generation), bgKey);
 		}
 
+		WGPUTextureView resolvedViews[16] = {};
 		for (uint32_t s = 0; s < 16u; ++s)
 		{
 			if (refl.texVisibility[s] != 0)
 			{
-				WGPUTextureView view = nullptr;
+				WebGPUTexture* resolvedTex = nullptr;
 				WebGPUTexture* bound = m_boundTextures[s];
 				const WGPUTextureViewDimension expectedDim = refl.texViewDim[s];
 				if (bound && bound->GetSRVView() && !IsDepthPixelFormat(bound->GetFormat()))
@@ -3520,42 +3696,108 @@ namespace ParaEngine
 						(expectedDim == WGPUTextureViewDimension_3D && bound->Is3D()) ||
 						((expectedDim == WGPUTextureViewDimension_2D || expectedDim == WGPUTextureViewDimension_Undefined) && !bound->IsCubeMap() && !bound->Is3D());
 					if (dimMatches && !unfilterableFloat)
-						view = bound->GetSRVView();
+						resolvedTex = bound;
 				}
-				if (!view)
+				if (!resolvedTex)
 				{
 					if (expectedDim == WGPUTextureViewDimension_Cube && m_fallbackWhiteCube)
-						view = m_fallbackWhiteCube->GetSRVView();
+						resolvedTex = m_fallbackWhiteCube;
 					else if (expectedDim == WGPUTextureViewDimension_3D && m_fallbackWhite3D)
-						view = m_fallbackWhite3D->GetSRVView();
+						resolvedTex = m_fallbackWhite3D;
 					else if (m_fallbackWhite2D)
-						view = m_fallbackWhite2D->GetSRVView();
+						resolvedTex = m_fallbackWhite2D;
 				}
-
-				WGPUBindGroupEntry e = {};
-				e.binding = 16u + s;
-				e.textureView = view;
-				entries.push_back(e);
+				resolvedViews[s] = resolvedTex ? resolvedTex->GetSRVView() : nullptr;
+				const uint64_t texId = resolvedTex ? resolvedTex->GetUniqueId() : 0ull;
+				bgKey = Fnv1aBytes64(&s, sizeof(s), bgKey);
+				bgKey = Fnv1aBytes64(&texId, sizeof(texId), bgKey);
 			}
 			if (refl.smpVisibility[s] != 0)
 			{
-				WGPUBindGroupEntry e = {};
+				const uint64_t smpKey = ComputeSamplerStateKey(s);
+				bgKey = Fnv1aBytes64(&s, sizeof(s), bgKey);
+				bgKey = Fnv1aBytes64(&smpKey, sizeof(smpKey), bgKey);
+			}
+		}
+
+		const bool canCacheBg = (!refl.hasVsUbo && !refl.hasPsUbo) || (m_uboArena.gpuBuffer != nullptr);
+		if (canCacheBg)
+		{
+			auto it = m_bindGroupCache.find(bgKey);
+			if (it != m_bindGroupCache.end())
+				return it->second;
+			if (m_bindGroupCache.size() >= 4096u)
+				ClearBindGroupCache();
+		}
+
+		WGPUBindGroupEntry entries[34] = {};
+		uint32_t entryCount = 0;
+
+		if (refl.hasVsUbo)
+		{
+			WGPUBindGroupEntry& e = entries[entryCount++];
+			e.binding = 0;
+			e.buffer = m_uboArena.gpuBuffer ? m_uboArena.gpuBuffer : m_zeroUboBuffer;
+			e.offset = 0;
+			e.size = AlignUpU32(refl.vsUboMinBytes, 16u);
+		}
+		if (refl.hasPsUbo)
+		{
+			WGPUBindGroupEntry& e = entries[entryCount++];
+			e.binding = 1;
+			e.buffer = m_uboArena.gpuBuffer ? m_uboArena.gpuBuffer : m_zeroUboBuffer;
+			e.offset = 0;
+			e.size = AlignUpU32(refl.psUboMinBytes, 16u);
+		}
+
+		for (uint32_t s = 0; s < 16u; ++s)
+		{
+			if (refl.texVisibility[s] != 0)
+			{
+				WGPUBindGroupEntry& e = entries[entryCount++];
+				e.binding = 16u + s;
+				e.textureView = resolvedViews[s];
+			}
+			if (refl.smpVisibility[s] != 0)
+			{
+				WGPUBindGroupEntry& e = entries[entryCount++];
 				e.binding = 32u + s;
 				e.sampler = GetOrCreateSampler(s);
-				entries.push_back(e);
 			}
 		}
 
 		WGPUBindGroupDescriptor bgd = {};
 		bgd.label = ParaWgpuLabel("ParaDrawBindGroup");
 		bgd.layout = m_boundProgram->GetBindGroupLayout();
-		bgd.entryCount = entries.size();
-		bgd.entries = entries.empty() ? nullptr : entries.data();
+		bgd.entryCount = entryCount;
+		bgd.entries = (entryCount > 0) ? entries : nullptr;
 
 		WGPUBindGroup bg = PARA_WGPU_CALL(m_wgpu, wgpuDeviceCreateBindGroup, m_device, &bgd);
 		if (bg)
-			m_transientBindGroups.push_back(bg);
+		{
+			if (canCacheBg)
+				m_bindGroupCache[bgKey] = bg;
+			else
+				m_transientBindGroups.push_back(bg);
+		}
 		return bg;
+	}
+
+	void RenderDeviceWebGPU::BindIndexBufferCached(WGPUBuffer ib, WGPUIndexFormat fmt, uint64_t offset, uint64_t size)
+	{
+		if (!m_renderPass || !ib)
+			return;
+		if (m_passState.lastIb != ib ||
+			m_passState.lastIbFmt != fmt ||
+			m_passState.lastIbOff != offset ||
+			m_passState.lastIbSize != size)
+		{
+			PARA_WGPU_CALL(m_wgpu, wgpuRenderPassEncoderSetIndexBuffer, m_renderPass, ib, fmt, offset, size);
+			m_passState.lastIb = ib;
+			m_passState.lastIbFmt = fmt;
+			m_passState.lastIbOff = offset;
+			m_passState.lastIbSize = size;
+		}
 	}
 
 	bool RenderDeviceWebGPU::PrepareForDraw(EPrimitiveType primitiveType, WGPUIndexFormat stripIndexFormat)
@@ -3569,45 +3811,92 @@ namespace ParaEngine
 		if (!pso)
 			return false;
 
-		WGPUBindGroup bg = BuildDrawBindGroup();
+		uint32_t dynCount = 0;
+		uint32_t dynOffsets[2] = {};
+		WGPUBindGroup bg = BuildDrawBindGroup(dynCount, dynOffsets);
 		if (!bg)
 			return false;
 
-		PARA_WGPU_CALL(m_wgpu, wgpuRenderPassEncoderSetPipeline, m_renderPass, pso);
-		PARA_WGPU_CALL(m_wgpu, wgpuRenderPassEncoderSetBindGroup, m_renderPass, 0, bg, 0, nullptr);
+		if (pso != m_passState.lastPso)
+		{
+			PARA_WGPU_CALL(m_wgpu, wgpuRenderPassEncoderSetPipeline, m_renderPass, pso);
+			m_passState.lastPso = pso;
+		}
+
+		bool needSetBg = (bg != m_passState.lastBindGroup) || (dynCount != m_passState.lastDynCount);
+		if (!needSetBg)
+		{
+			for (uint32_t i = 0; i < dynCount; ++i)
+			{
+				if (dynOffsets[i] != m_passState.lastDynOffsets[i])
+				{
+					needSetBg = true;
+					break;
+				}
+			}
+		}
+		if (needSetBg)
+		{
+			PARA_WGPU_CALL(m_wgpu, wgpuRenderPassEncoderSetBindGroup,
+				m_renderPass, 0, bg, dynCount, (dynCount > 0) ? dynOffsets : nullptr);
+			m_passState.lastBindGroup = bg;
+			m_passState.lastDynCount = dynCount;
+			m_passState.lastDynOffsets[0] = dynOffsets[0];
+			m_passState.lastDynOffsets[1] = dynOffsets[1];
+		}
 
 		if (PARA_WGPU_HAS(m_wgpu, wgpuRenderPassEncoderSetStencilReference))
 		{
 			const uint32_t stencilRef = m_state.GetRenderState(ERenderState::STENCILREF) & 0xFFu;
-			PARA_WGPU_CALL(m_wgpu, wgpuRenderPassEncoderSetStencilReference, m_renderPass, stencilRef);
+			if (stencilRef != m_passState.lastStencilRef)
+			{
+				PARA_WGPU_CALL(m_wgpu, wgpuRenderPassEncoderSetStencilReference, m_renderPass, stencilRef);
+				m_passState.lastStencilRef = stencilRef;
+			}
 		}
 		if (PARA_WGPU_HAS(m_wgpu, wgpuRenderPassEncoderSetBlendConstant))
 		{
 			const uint32_t bf = m_state.GetRenderState(ERenderState::BLENDFACTOR);
-			WGPUColor bc{
-				static_cast<double>((bf >> 16) & 0xFFu) / 255.0,
-				static_cast<double>((bf >> 8)  & 0xFFu) / 255.0,
-				static_cast<double>((bf >> 0)  & 0xFFu) / 255.0,
-				static_cast<double>((bf >> 24) & 0xFFu) / 255.0
-			};
-			PARA_WGPU_CALL(m_wgpu, wgpuRenderPassEncoderSetBlendConstant, m_renderPass, &bc);
+			if (!m_passState.hasBlendFactor || bf != m_passState.lastBlendFactor)
+			{
+				WGPUColor bc{
+					static_cast<double>((bf >> 16) & 0xFFu) / 255.0,
+					static_cast<double>((bf >> 8)  & 0xFFu) / 255.0,
+					static_cast<double>((bf >> 0)  & 0xFFu) / 255.0,
+					static_cast<double>((bf >> 24) & 0xFFu) / 255.0
+				};
+				PARA_WGPU_CALL(m_wgpu, wgpuRenderPassEncoderSetBlendConstant, m_renderPass, &bc);
+				m_passState.lastBlendFactor = bf;
+				m_passState.hasBlendFactor = true;
+			}
 		}
 
-		// Bind active vertex buffers (slots 0..3) and fallback zero VB (slot 7)
+		// Bind active vertex buffers (slots 0..3) and fallback zero VB (slot 7) only when changed
 		for (uint32_t s = 0; s < MAX_VERTEX_STREAMS; ++s)
 		{
 			if (m_streams[s].buffer && m_streams[s].buffer->GetWGPUBuffer())
 			{
+				WGPUBuffer gpuVb = m_streams[s].buffer->GetWGPUBuffer();
 				const uint64_t bufSize = m_streams[s].buffer->GetAlignedSize();
 				const uint64_t off = (std::min)(static_cast<uint64_t>(m_streams[s].offsetInBytes), bufSize) & ~3ull;
-				PARA_WGPU_CALL(m_wgpu, wgpuRenderPassEncoderSetVertexBuffer,
-					m_renderPass, s, m_streams[s].buffer->GetWGPUBuffer(), off, bufSize - off);
+				const uint64_t bindSize = bufSize - off;
+				if (m_passState.lastVb[s] != gpuVb ||
+					m_passState.lastVbOff[s] != off ||
+					m_passState.lastVbSize[s] != bindSize)
+				{
+					PARA_WGPU_CALL(m_wgpu, wgpuRenderPassEncoderSetVertexBuffer,
+						m_renderPass, s, gpuVb, off, bindSize);
+					m_passState.lastVb[s] = gpuVb;
+					m_passState.lastVbOff[s] = off;
+					m_passState.lastVbSize[s] = bindSize;
+				}
 			}
 		}
-		if (m_fallbackZeroVB)
+		if (m_fallbackZeroVB && !m_passState.fallbackVbBound)
 		{
 			PARA_WGPU_CALL(m_wgpu, wgpuRenderPassEncoderSetVertexBuffer,
 				m_renderPass, FALLBACK_VB_SLOT, m_fallbackZeroVB, 0, 16);
+			m_passState.fallbackVbBound = true;
 		}
 		return true;
 	}
@@ -3627,11 +3916,13 @@ namespace ParaEngine
 				fanIdx.push_back(static_cast<uint16_t>(StartVertex + i + 1u));
 				fanIdx.push_back(static_cast<uint16_t>(StartVertex + i + 2u));
 			}
-			WGPUBuffer ib = AllocateTransientBuffer(WGPUBufferUsage_Index, fanIdx.data(), static_cast<uint32_t>(fanIdx.size() * sizeof(uint16_t)));
+			const uint32_t ibBytes = static_cast<uint32_t>(fanIdx.size() * sizeof(uint16_t));
+			const uint32_t ibAligned = AlignUpU32((std::max)(ibBytes, 16u), 4u);
+			uint32_t ibOff = 0;
+			WGPUBuffer ib = SuballocateFrameArena(m_ibArena, WGPUBufferUsage_Index, fanIdx.data(), ibBytes, ibAligned, 16u, 1024u * 1024u, ibOff);
 			if (!ib || !PrepareForDraw(EPrimitiveType::TRIANGLELIST, WGPUIndexFormat_Undefined))
 				return false;
-			const uint64_t ibAligned = AlignUpU32((std::max)(static_cast<uint32_t>(fanIdx.size() * sizeof(uint16_t)), 16u), 4u);
-			PARA_WGPU_CALL(m_wgpu, wgpuRenderPassEncoderSetIndexBuffer, m_renderPass, ib, WGPUIndexFormat_Uint16, 0, ibAligned);
+			BindIndexBufferCached(ib, WGPUIndexFormat_Uint16, ibOff, ibAligned);
 			PARA_WGPU_CALL(m_wgpu, wgpuRenderPassEncoderDrawIndexed, m_renderPass, static_cast<uint32_t>(fanIdx.size()), 1, 0, 0, 0);
 			return true;
 		}
@@ -3689,11 +3980,12 @@ namespace ParaEngine
 				fanIdx[i * 3u + 2] = srcIdx[i + 2u];
 			}
 			const uint32_t ibBytes = static_cast<uint32_t>(fanIdx.size() * sizeof(uint16_t));
-			WGPUBuffer transIb = AllocateTransientBuffer(WGPUBufferUsage_Index, fanIdx.data(), ibBytes);
+			const uint32_t ibAligned = AlignUpU32((std::max)(ibBytes, 16u), 4u);
+			uint32_t ibOff = 0;
+			WGPUBuffer transIb = SuballocateFrameArena(m_ibArena, WGPUBufferUsage_Index, fanIdx.data(), ibBytes, ibAligned, 16u, 1024u * 1024u, ibOff);
 			if (!transIb || !PrepareForDraw(EPrimitiveType::TRIANGLELIST, WGPUIndexFormat_Undefined))
 				return false;
-			PARA_WGPU_CALL(m_wgpu, wgpuRenderPassEncoderSetIndexBuffer,
-				m_renderPass, transIb, WGPUIndexFormat_Uint16, 0, AlignUpU32((std::max)(ibBytes, 16u), 4u));
+			BindIndexBufferCached(transIb, WGPUIndexFormat_Uint16, ibOff, ibAligned);
 			PARA_WGPU_CALL(m_wgpu, wgpuRenderPassEncoderDrawIndexed,
 				m_renderPass, static_cast<uint32_t>(fanIdx.size()), instanceCount, 0, baseVertexIndex, 0);
 			return true;
@@ -3704,8 +3996,7 @@ namespace ParaEngine
 		if (idxCount == 0 || !PrepareForDraw(primitiveType, WGPUIndexFormat_Uint16))
 			return false;
 
-		PARA_WGPU_CALL(m_wgpu, wgpuRenderPassEncoderSetIndexBuffer,
-			m_renderPass,
+		BindIndexBufferCached(
 			m_boundIndexBuffer->GetWGPUBuffer(),
 			WGPUIndexFormat_Uint16,
 			0,
@@ -3732,13 +4023,15 @@ namespace ParaEngine
 
 		const uint32_t vbBytes = vertCount * VertexStreamZeroStride;
 		const uint32_t vbAligned = AlignUpU32((std::max)(vbBytes, 16u), 4u);
-		WGPUBuffer transVb = AllocateTransientBuffer(WGPUBufferUsage_Vertex, pVertexStreamZeroData, vbBytes);
-		if (!transVb)
+		uint32_t vbOff = 0;
+		WGPUBuffer arenaVb = SuballocateFrameArena(
+			m_vbArena, WGPUBufferUsage_Vertex, pVertexStreamZeroData, vbBytes, vbAligned, 16u, 4u * 1024u * 1024u, vbOff);
+		if (!arenaVb)
 			return false;
 
-		WebGPUBuffer borrowedVbWrap(transVb, vbAligned);
+		WebGPUBuffer borrowedVbWrap(arenaVb, m_vbArena.capacity);
 		const StreamBinding saved0 = m_streams[0];
-		m_streams[0] = { &borrowedVbWrap, 0, VertexStreamZeroStride, 0 };
+		m_streams[0] = { &borrowedVbWrap, vbOff, VertexStreamZeroStride, 0 };
 
 		if (PrimitiveType == EPrimitiveType::TRIANGLEFAN)
 		{
@@ -3751,14 +4044,16 @@ namespace ParaEngine
 				fanIdx.push_back(static_cast<uint16_t>(i + 2u));
 			}
 			const uint32_t ibBytes = static_cast<uint32_t>(fanIdx.size() * sizeof(uint16_t));
-			WGPUBuffer transIb = AllocateTransientBuffer(WGPUBufferUsage_Index, fanIdx.data(), ibBytes);
-			const bool prepared = transIb && PrepareForDraw(EPrimitiveType::TRIANGLELIST, WGPUIndexFormat_Undefined);
+			const uint32_t ibAligned = AlignUpU32((std::max)(ibBytes, 16u), 4u);
+			uint32_t ibOff = 0;
+			WGPUBuffer arenaIb = SuballocateFrameArena(
+				m_ibArena, WGPUBufferUsage_Index, fanIdx.data(), ibBytes, ibAligned, 16u, 1024u * 1024u, ibOff);
+			const bool prepared = arenaIb && PrepareForDraw(EPrimitiveType::TRIANGLELIST, WGPUIndexFormat_Undefined);
 			m_streams[0] = saved0;
 			if (!prepared)
 				return false;
 
-			PARA_WGPU_CALL(m_wgpu, wgpuRenderPassEncoderSetIndexBuffer,
-				m_renderPass, transIb, WGPUIndexFormat_Uint16, 0, AlignUpU32((std::max)(ibBytes, 16u), 4u));
+			BindIndexBufferCached(arenaIb, WGPUIndexFormat_Uint16, ibOff, ibAligned);
 			PARA_WGPU_CALL(m_wgpu, wgpuRenderPassEncoderDrawIndexed,
 				m_renderPass, static_cast<uint32_t>(fanIdx.size()), 1, 0, 0, 0);
 			return true;
@@ -3831,26 +4126,26 @@ namespace ParaEngine
 		}
 
 		const uint32_t ibBytes = idxCount * (is32Bit ? 4u : 2u);
+		const uint32_t ibAligned = AlignUpU32((std::max)(ibBytes, 16u), 4u);
 
-		WGPUBuffer transVb = AllocateTransientBuffer(WGPUBufferUsage_Vertex, pVertexStreamZeroData, vbBytes);
-		WGPUBuffer transIb = AllocateTransientBuffer(WGPUBufferUsage_Index, uploadIdxPtr, ibBytes);
-		if (!transVb || !transIb)
+		uint32_t vbOff = 0;
+		uint32_t ibOff = 0;
+		WGPUBuffer arenaVb = SuballocateFrameArena(
+			m_vbArena, WGPUBufferUsage_Vertex, pVertexStreamZeroData, vbBytes, vbAligned, 16u, 4u * 1024u * 1024u, vbOff);
+		WGPUBuffer arenaIb = SuballocateFrameArena(
+			m_ibArena, WGPUBufferUsage_Index, uploadIdxPtr, ibBytes, ibAligned, 16u, 1024u * 1024u, ibOff);
+		if (!arenaVb || !arenaIb)
 			return false;
 
-		WebGPUBuffer borrowedVbWrap(transVb, vbAligned);
+		WebGPUBuffer borrowedVbWrap(arenaVb, m_vbArena.capacity);
 		const StreamBinding saved0 = m_streams[0];
-		m_streams[0] = { &borrowedVbWrap, 0, VertexStreamZeroStride, 0 };
+		m_streams[0] = { &borrowedVbWrap, vbOff, VertexStreamZeroStride, 0 };
 		const bool prepared = PrepareForDraw(drawPrimType, wgpuIdxFmt);
 		m_streams[0] = saved0;
 		if (!prepared)
 			return false;
 
-		PARA_WGPU_CALL(m_wgpu, wgpuRenderPassEncoderSetIndexBuffer,
-			m_renderPass,
-			transIb,
-			wgpuIdxFmt,
-			0,
-			AlignUpU32((std::max)(ibBytes, 16u), 4u));
+		BindIndexBufferCached(arenaIb, wgpuIdxFmt, ibOff, ibAligned);
 		PARA_WGPU_CALL(m_wgpu, wgpuRenderPassEncoderDrawIndexed, m_renderPass, idxCount, 1, 0, 0, 0);
 		return true;
 	}
@@ -4079,6 +4374,8 @@ namespace ParaEngine
 			if (m_encoderTouchesSurface && !ParaWgpuIsSurfaceStillValid(m_currentSurfaceGen))
 				canSubmit = false;
 #endif
+			if (canSubmit)
+				FlushDirtyArenasToQueue();
 			WGPUCommandBufferDescriptor cbd = {};
 			cbd.label = ParaWgpuLabel("ParaPresentCommandBuffer");
 			WGPUCommandBuffer cmd = PARA_WGPU_CALL(m_wgpu, wgpuCommandEncoderFinish, m_cmdEncoder, &cbd);

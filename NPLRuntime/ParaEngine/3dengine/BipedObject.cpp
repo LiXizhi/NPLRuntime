@@ -1509,6 +1509,10 @@ HRESULT CBipedObject::Draw(SceneState* sceneState)
 				bUsePointTextureFilter = bUsePointTextureFilter || pBlockWorldClient->GetUsePointTextureFiltering();
 			}
 		}
+		else if (!(sceneState->IsShadowPass()))
+		{
+			sceneState->GetCurrentLightStrength() = Vector3(1.0f, 0.0f, 0.0f);
+		}
 
 		CDynamicAttributeField* pField = GetDynamicField("colorDiffuse");
 		if (pField)

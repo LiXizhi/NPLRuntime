@@ -1862,8 +1862,8 @@ namespace ParaEngine
 			else
 			{
 				setParameter(k_diffuseMaterialColor, &d3dMaterial.Diffuse, sizeof(LinearColor));
-				Vector3 vEmpty(0, 0, 0);
-				setParameter(k_LightStrength, &vEmpty);
+				Vector3 defaultLightStrength(1.0f, 0.0f, 0.0f);
+				setParameter(k_LightStrength, &defaultLightStrength);
 			}
 		}
 

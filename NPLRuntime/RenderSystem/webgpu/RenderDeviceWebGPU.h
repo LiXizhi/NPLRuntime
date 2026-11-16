@@ -129,10 +129,40 @@ namespace ParaEngine
 		void DeferReleaseBuffer(WGPUBuffer buf) { if (buf) m_transientBuffers.push_back(buf); }
 		void NotifyBufferDestroyed(WebGPUBuffer* wrapper, WGPUBuffer buf);
 		void NotifyTextureDestroyed(WebGPUTexture* wrapper, WGPUTexture tex, WGPUTextureView srvView, WGPUTextureView rtvView);
+		void ClearBindGroupCache();
 
 		bool MapStagingBufferReadSync(WGPUBuffer staging, size_t mapSize);
 
 	private:
+		struct GpuFrameArena
+		{
+			WGPUBuffer gpuBuffer = nullptr;
+			std::vector<uint8_t> cpuData;
+			uint32_t capacity = 0;
+			uint32_t used = 0;
+			uint32_t uploadedOffset = 0;
+			uint64_t generation = 0;
+		};
+
+		struct PassEncoderState
+		{
+			WGPURenderPipeline lastPso = nullptr;
+			WGPUBindGroup lastBindGroup = nullptr;
+			uint32_t lastDynCount = UINT32_MAX;
+			uint32_t lastDynOffsets[2] = {};
+			uint32_t lastStencilRef = UINT32_MAX;
+			uint32_t lastBlendFactor = UINT32_MAX;
+			bool hasBlendFactor = false;
+			WGPUBuffer lastVb[MAX_VERTEX_STREAMS] = {};
+			uint64_t lastVbOff[MAX_VERTEX_STREAMS] = {};
+			uint64_t lastVbSize[MAX_VERTEX_STREAMS] = {};
+			bool fallbackVbBound = false;
+			WGPUBuffer lastIb = nullptr;
+			WGPUIndexFormat lastIbFmt = WGPUIndexFormat_Undefined;
+			uint64_t lastIbOff = 0;
+			uint64_t lastIbSize = 0;
+		};
+
 		void InitCaps();
 		bool ConfigureSurface(uint32_t width, uint32_t height, bool vsync);
 		bool CreateDefaultResources(uint32_t width, uint32_t height);
@@ -140,9 +170,13 @@ namespace ParaEngine
 		void ReleaseCurrentSurfaceTexture();
 		void DiscardEncoderWithoutSubmit();
 		void ApplyClampedViewport(const ParaViewport& viewport);
+		WGPUBuffer SuballocateFrameArena(GpuFrameArena& arena, WGPUBufferUsageFlags usage, const void* data, uint32_t dataBytes, uint32_t minAllocBytes, uint32_t align, uint32_t defaultInitCap, uint32_t& outOffset);
+		void FlushDirtyArenasToQueue();
 		WGPURenderPipeline GetOrCreateRenderPipeline(EPrimitiveType primitiveType, WGPUIndexFormat stripIndexFormat = WGPUIndexFormat_Undefined);
+		uint64_t ComputeSamplerStateKey(uint32_t stage) const;
 		WGPUSampler GetOrCreateSampler(uint32_t stage);
-		WGPUBindGroup BuildDrawBindGroup();
+		WGPUBindGroup BuildDrawBindGroup(uint32_t& outDynCount, uint32_t outDynOffsets[2]);
+		void BindIndexBufferCached(WGPUBuffer ib, WGPUIndexFormat fmt, uint64_t offset, uint64_t size);
 		bool PrepareForDraw(EPrimitiveType primitiveType, WGPUIndexFormat stripIndexFormat = WGPUIndexFormat_Undefined);
 		void FlushFrameTransientBuffers();
 
@@ -209,15 +243,23 @@ namespace ParaEngine
 
 		std::vector<uint8_t> m_vsConstantsCpu;
 		std::vector<uint8_t> m_psConstantsCpu;
-		WGPUBuffer m_currentVsUbo = nullptr;
+		uint32_t m_currentVsUboOffset = 0;
 		uint32_t m_currentVsUboSize = 0;
-		WGPUBuffer m_currentPsUbo = nullptr;
+		uint32_t m_currentPsUboOffset = 0;
 		uint32_t m_currentPsUboSize = 0;
+		bool m_currentVsUboValid = false;
+		bool m_currentPsUboValid = false;
 		bool m_vsUboDirty = true;
 		bool m_psUboDirty = true;
 
+		GpuFrameArena m_uboArena;
+		GpuFrameArena m_vbArena;
+		GpuFrameArena m_ibArena;
+		PassEncoderState m_passState;
+
 		std::unordered_map<uint64_t, WGPURenderPipeline> m_psoCache;
 		std::unordered_map<uint64_t, WGPUSampler> m_samplerCache;
+		std::unordered_map<uint64_t, WGPUBindGroup> m_bindGroupCache;
 		WGPUBindGroupLayout m_blitBgl = nullptr;
 		WGPUPipelineLayout m_blitPipeLayout = nullptr;
 		WGPUShaderModule m_blitShaderModule = nullptr;
