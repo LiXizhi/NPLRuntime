@@ -98,12 +98,11 @@ texture sourceTexture2 : TEXTURE;
 sampler ShadowMapSampler: register(s2) = sampler_state
 {
 	texture = <sourceTexture2>;
-	MinFilter = Linear;
-	MagFilter = Linear;
+	MinFilter = Point;
+	MagFilter = Point;
 	MipFilter = None;
-	AddressU = BORDER;
-	AddressV = BORDER;
-	BorderColor = 0x0;
+	AddressU = clamp;
+	AddressV = clamp;
 };
 
 texture sourceTexture3;
@@ -399,15 +398,26 @@ float 	CalculateSunlightVisibility(inout SurfaceStruct surface, in ShadingStruct
 		return 1.0f;
 	}
 	
-	// only apply global sun shadows when there is enough sun light on the material
+	// only apply global sun/moon shadows when there is direct celestial light on the material
 	if (shading.direct > 0.0f)
 	{
 		// reconstruct world space vector
 		float4 vWorldPosition = float4(surface.cameraSpacePos, 1);
 		vWorldPosition = mul(vWorldPosition, matViewInverse);
 
-		float shadowBias = lerp(0.0035f, 0.0012f, saturate(surface.NdotL));
-		surface.shadow = calculateShadowFactorWithBias(ShadowMapSampler, vWorldPosition, surface.depth, mShadowMapTex, mShadowMapViewProj, ShadowMapSize.x, ShadowMapSize.y, ShadowRadius, shadowBias);
+		// 3D World-Space Normal-Offset Bias + tight slope depth bias (eliminates wall acne & peter-panning)
+		float worldTexel = (ShadowRadius * 2.0f) * ShadowMapSize.y;
+		float sinTheta = sqrt(saturate(1.0f - surface.NdotL * surface.NdotL));
+		float normalOffsetScale = (surface.category_id == 255) ? (0.18f + 0.35f * sinTheta) : (0.35f + 0.75f * sinTheta);
+		float4 biasedWorldPos = float4(vWorldPosition.xyz + surface.normal * (worldTexel * normalOffsetScale), 1.0f);
+		float shadowBias = lerp(0.0012f, 0.00035f, saturate(surface.NdotL));
+		float2 screenPixelPos = surface.texCoord * screenParam;
+
+		surface.shadow = calculatePCSSShadowFactor(
+			ShadowMapSampler, biasedWorldPos, surface.depth,
+			mShadowMapTex, mShadowMapViewProj,
+			ShadowMapSize.x, ShadowMapSize.y, ShadowRadius,
+			shadowBias, screenPixelPos, QualityLevel);
 		return surface.shadow;
 	}
 	else
@@ -476,21 +486,77 @@ void 	CalculateMasks(inout SurfaceStruct surface)
 	surface.mask_torch = (surface.category_id == 5);
 }
 
-//circular sun
-// return 1 is sun, 0 is not sun. 
-bool CalculateSunspot(inout SurfaceStruct surface)
+// Renders daytime solar disc + multi-layer Mie corona and nighttime textured lunar disc + silver halo
+void ComputeCelestialSky(inout SurfaceStruct surface)
 {
-	float3 npos = normalize(surface.CameraEye);
-	float3 halfVector2 = normalize(-mul(sunDirection, (float3x3)matView).xyz + npos);
-	float sunProximity = 1.0f - dot(halfVector2, npos);
-	surface.sky.sunProximity = sunProximity;
-	return (sunProximity > 0.96f);
-}
+	if (!surface.mask_sky)
+	{
+		surface.sky.sunSpot = float3(0.0f, 0.0f, 0.0f);
+		surface.sky.sunProximity = 0.0f;
+		return;
+	}
 
-void AddSunglow(inout SurfaceStruct surface)
-{
-	float sunglowFactor = pow(surface.sky.sunProximity, 4.4);
-	surface.sky.albedo *= 1.0f + sunglowFactor * (7.0f);
+	float3 viewRayVS = normalize(surface.CameraEye);
+	float3 sunDirWS = normalize(sunDirection);
+	float3 sunDirVS = normalize(mul(sunDirWS, (float3x3)matView));
+	float cosTheta = dot(viewRayVS, sunDirVS);
+	surface.sky.sunProximity = saturate(cosTheta);
+
+	float clearSky = (1.0f - rainStrength) * (1.0f - CloudThickness * 0.85f);
+	float dayVis = saturate(1.0f - timeMidnight * 1.4f) * clearSky;
+	float moonVis = smoothstep(0.05f, 0.55f, timeMidnight) * clearSky;
+
+	float3 celestialGlow = float3(0.0f, 0.0f, 0.0f);
+
+	// 1. Daytime Sun: crisp solar disc + golden-hour Rayleigh/Mie corona
+	if (dayVis > 0.001f)
+	{
+		float horizonFactor = 1.0f - smoothstep(0.05f, 0.45f, saturate(sunDirWS.y));
+		float3 solarTint = lerp(float3(1.0f, 0.96f, 0.90f), float3(1.32f, 0.72f, 0.36f), horizonFactor);
+
+		float solarDisc = smoothstep(0.99915f, 0.99945f, cosTheta);
+		float limb = lerp(0.75f, 1.25f, smoothstep(0.99915f, 0.99995f, cosTheta));
+		celestialGlow += SunColor.rgb * solarTint * (solarDisc * limb * 48.0f * dayVis);
+
+		float innerCorona = pow(saturate(cosTheta), 160.0f) * 3.6f;
+		float midCorona   = pow(saturate(cosTheta), 28.0f) * (0.50f + 0.55f * horizonFactor);
+		float wideGlare   = pow(saturate(cosTheta), 6.0f) * (0.10f + 0.30f * horizonFactor);
+		celestialGlow += SunColor.rgb * solarTint * ((innerCorona + midCorona + wideGlare) * dayVis);
+
+		// Subtle forward-scattering boost on existing sky gradient near sun
+		surface.sky.albedo *= 1.0f + pow(saturate(cosTheta), 8.0f) * 1.8f * dayVis;
+	}
+
+	// 2. Nighttime Moon: crisp spherical lunar disc with procedural maria + silvery halo
+	if (moonVis > 0.001f)
+	{
+		float3 viewRayWS = normalize(mul(viewRayVS, (float3x3)matViewInverse));
+		float3 upRef = (abs(sunDirWS.y) > 0.98f) ? float3(0.0f, 0.0f, 1.0f) : float3(0.0f, 1.0f, 0.0f);
+		float3 moonRight = normalize(cross(upRef, sunDirWS));
+		float3 moonUp    = cross(sunDirWS, moonRight);
+
+		const float moonSinRadius = 0.030f; // ~1.7 deg apparent lunar radius
+		float2 moonUV = float2(dot(viewRayWS, moonRight), dot(viewRayWS, moonUp)) / moonSinRadius;
+		float r2 = dot(moonUV, moonUV);
+
+		if (cosTheta > 0.99f && r2 < 1.05f)
+		{
+			float r = sqrt(max(r2, 0.0f));
+			float moonDisc = 1.0f - smoothstep(0.88f, 1.0f, r);
+			// Procedural lunar maria & crater shading anchored in world celestial frame
+			float maria = 0.84f
+				+ 0.16f * sin(moonUV.x * 3.6f + 0.7f) * cos(moonUV.y * 3.2f - 0.4f)
+				- 0.11f * saturate(sin(moonUV.x * 7.1f - moonUV.y * 5.7f + 1.1f));
+			float sphereLimb = sqrt(saturate(1.0f - r2 * 0.60f));
+			float3 moonSurface = float3(0.74f, 0.85f, 1.06f) * (maria * sphereLimb * 6.2f);
+			celestialGlow += moonSurface * (moonDisc * moonVis);
+		}
+
+		float lunarCorona = pow(saturate(cosTheta), 180.0f) * 1.5f + pow(saturate(cosTheta), 24.0f) * 0.20f;
+		celestialGlow += float3(0.20f, 0.34f, 0.62f) * (lunarCorona * moonVis);
+	}
+
+	surface.sky.sunSpot = celestialGlow;
 }
 
 // this is not fog, but a very low frequency scattering of fog color over the entire scene. 
@@ -550,20 +616,24 @@ float AmbientVisibility(SurfaceStruct surface)
 
 float ContactVisibility(SurfaceStruct surface)
 {
-	if (QualityLevel < 5 || RenderOptions.x < 0.5 || surface.mask_sky || surface.mask_water || surface.category_id == 255 || surface.NdotL <= 0 || rainStrength >= 0.99) return 1.0;
+	if (QualityLevel < 4 || RenderOptions.x < 0.5 || surface.mask_sky || surface.mask_water || surface.category_id == 255 || surface.NdotL <= 0 || rainStrength >= 0.99) return 1.0;
 	float3 direction = normalize(mul(sunDirection, (float3x3)matView));
-	float count = QualityLevel >= 6 ? 12.0 : 6.0;
-	[loop] for (int stepIndex = 1; stepIndex <= 12; stepIndex++)
+	float count = (QualityLevel >= 6) ? 12.0 : ((QualityLevel >= 5) ? 8.0 : 4.0);
+	float ign = InterleavedGradientNoise(surface.texCoord * screenParam);
+	float minThickness = max(0.02, surface.depth * 0.005);
+	float maxThickness = 0.12 + surface.depth * 0.008;
+	[loop] for (int stepIndex = 0; stepIndex < 12; stepIndex++)
 	{
-		if (stepIndex > count) break;
-		float3 position = surface.cameraSpacePos + direction * (0.06 + stepIndex * 0.9 / count);
+		if (stepIndex >= count) break;
+		float t = ((float)stepIndex + ign) / count;
+		float3 position = surface.cameraSpacePos + direction * (0.04 + t * 0.85);
 		if (position.z <= 0.01) break;
 		float2 coord = convertCameraSpaceToScreenSpace(position);
 		if (any(coord <= viewportOffset) || any(coord >= viewportOffset + viewportScale)) break;
 		float depth = tex2Dlod(depthSampler, float4(coord, 0, 0)).r;
 		float difference = position.z - depth;
-		if (depth > 0.01 && difference > 0.03 && difference < 0.12)
-			return lerp(0.35, 1.0, stepIndex / count);
+		if (depth > 0.01 && difference > minThickness && difference < maxThickness)
+			return lerp(0.40, 1.0, t);
 	}
 	return 1.0;
 }
@@ -593,13 +663,9 @@ PSOut CompositePS0(VSOutput input)
 
 	//Remove the sky from surface albedo, because sky will be handled separately
 	surface.albedo *= 1.0f - float(surface.mask_sky);
-	//Initialize sky surface properties
-	surface.sky.albedo = surface.sky.albedo * float(surface.mask_sky); //Gets the albedo texture for the sky
-	surface.sky.sunSpot = SunColor * (float(CalculateSunspot(surface)) * float(surface.mask_sky));
-	surface.sky.sunSpot *= 1.0f - rainStrength;
-	surface.sky.sunSpot *= 1.0f - timeMidnight;
-	surface.sky.sunSpot *= 100.0f;
-	AddSunglow(surface);
+	//Initialize sky surface properties (solar disc + corona by day, textured moon + halo by night)
+	surface.sky.albedo = surface.sky.albedo * float(surface.mask_sky);
+	ComputeCelestialSky(surface);
 
 	//Initialize original Lightmap values
 	RawLightmapStruct rawLightmap;
@@ -623,15 +689,29 @@ PSOut CompositePS0(VSOutput input)
 	shading.direct *= pow(rawLightmap.sky, 0.1f);
 	shading.skylight = CalculateSkylight(surface);
 
+	// Golden-hour warm transmittance by day + silvery directional moonlight by night
+	float horizonWarmth = (1.0f - smoothstep(0.04f, 0.40f, saturate(sunDirection.y))) * saturate(1.0f - timeMidnight * 2.0f);
+	float3 warmSunColor = SunColor.rgb * lerp(float3(1.0f, 1.0f, 1.0f), float3(1.20f, 0.84f, 0.58f), horizonWarmth);
+	float moonLightStrength = smoothstep(0.08f, 0.55f, timeMidnight) * (1.0f - rainStrength) * (1.0f - CloudThickness);
+	float3 moonDirectColor = float3(0.14f, 0.22f, 0.38f) * moonLightStrength;
+	float3 activeCelestialColor = warmSunColor + moonDirectColor;
+
 	//Colorize surface shading and store in lightmaps
-	LightmapStruct lightmap;
-	lightmap.sunlight = SunColor.rgb * shading.direct;
+	LightmapStruct lightmap = (LightmapStruct)0;
+	lightmap.sunlight = activeCelestialColor * shading.direct;
 	lightmap.skylight = rawLightmap.sky;
 	lightmap.skylight *= shading.skylight;
 	lightmap.skylight *= AmbientVisibility(surface);
 	//give some ambient sunlight plus some base ambient at night. 
-	lightmap.skylight *= (SunColor.rgb*(1.0f - CloudThickness)*2.0 + lerp(1.0, 0.1f, pow(timeMidnight, 0.6)));
-	// lightmap.nolight = float3(0.05f, 0.05f, 0.05f);
+	lightmap.skylight *= (SunColor.rgb*(1.0f - CloudThickness)*2.0 + lerp(1.0, 0.14f, pow(timeMidnight, 0.6)));
+	// Subtle cool sky-dome chromaticity in daytime shadows for natural warm/cool sun-shadow separation
+	float shadowCoolness = (1.0f - shading.sunlightVisibility) * saturate(1.0f - timeMidnight * 1.5f) * (1.0f - rainStrength) * 0.32f;
+	lightmap.skylight *= lerp(float3(1.0f, 1.0f, 1.0f), float3(0.84f, 0.94f, 1.15f), shadowCoolness);
+
+	// Warm ground-bounce GI on undersides & opposite-sun faces
+	float bounceGeom = saturate(-surface.NdotL * 0.5f + 0.5f) * 0.65f + saturate(-surface.normal.y) * 0.35f;
+	lightmap.bouncedSunlight = rawLightmap.sky * bounceGeom * warmSunColor * (0.065f * (1.0f - rainStrength) * (1.0f - CloudThickness));
+
 	// also give torch light some fake shading to make custom model look more dimentional at night. 
 	float fakeTorchShading = 1.0;
 	if (surface.category_id == 255) {
@@ -642,53 +722,46 @@ PSOut CompositePS0(VSOutput input)
 	lightmap.torchlight = (rawLightmap.torch * fakeTorchShading) * TorchLightColor;
 
 	//Apply lightmaps to albedo and generate final shaded surface
-	FinalStruct final;
-	//final.nolight = surface.albedo * lightmap.nolight;
-	final.sunlight = surface.albedo * lightmap.sunlight;
+	FinalStruct final = (FinalStruct)0;
+	final.sunlight = surface.albedo * (lightmap.sunlight + lightmap.bouncedSunlight);
 	final.skylight = surface.albedo * lightmap.skylight;
 	final.torchlight = surface.albedo * lightmap.torchlight;
 	final.glow_torch = surface.albedo * (float(surface.mask_torch) * TorchLightColor);
-	// final.glow_torch = pow(final.glow_torch, 2.0);
 
 #ifdef NIGHT_EYE_EFFECT
 	float nightEyeAmount = timeMidnight*0.8;
 	DoNightEye(final.sunlight, nightEyeAmount);
 	DoNightEye(final.skylight, nightEyeAmount);
 	DoNightEye(surface.sky.albedo, nightEyeAmount);
-	// DoNightEye(final.nolight, 0.8);
 #endif
 
 	float3 finalComposite;
-	finalComposite = final.sunlight	    * 1.0f					//Add direct sunlight
+	finalComposite = final.sunlight	    * 1.0f					//Add direct sunlight/moonlight + bounce GI
 		+ final.skylight     * 0.05f					//Add ambient skylight
-														// + final.nolight	    * 0.03f					//Add base ambient light
 		+ final.torchlight   * 2.0					//Add light coming from emissive blocks
 		+ final.glow_torch   * 3.0f					// add torch, lamp, lava glow
 		;
 	//Apply sky to final composite
-	// surface.sky.albedo *= lerp(1.0f, 3.0f, timeNoon);
 	surface.sky.albedo += surface.sky.sunSpot;
 	finalComposite += surface.sky.albedo;
 
 	CalculateAtmosphericScattering(finalComposite, surface);
-	// ApplyDistanceFog(finalComposite, surface);
 
 	// Convert final image back into gamma 0.45 space
 	finalComposite.rgb = pow(finalComposite.rgb, (1.0f / 2.2f));
 
-	// Scale image down for HDR, only required for integer16, not floating16. 
-	// finalComposite.rgb *= 0.01f;
-
 	PSOut o;
 	o.Color = float4(finalComposite.rgb, 1.0);
-	o.Color2 = float4(0, surface.shadow * pow(rawLightmap.sky, 0.2f), rawLightmap.sky, 1.0);
+	// r: sky occlusion mask (for god rays), g: sunlight visibility (for specular), b: raw sky lightmap
+	o.Color2 = float4(float(surface.mask_sky), surface.shadow * pow(rawLightmap.sky, 0.2f), rawLightmap.sky, 1.0);
 	return o;
 }
 
 float4 ComputeFakeSkyReflection(inout SurfaceStruct2 surface)
 {
-	// TODO
-	return float4(0, 0, 0, 1.0);
+	float3 fogLinear = pow(max(g_FogColor.rgb, 0.0f), 2.2f);
+	float3 skyTint = fogLinear * lerp(0.85f, 0.25f, timeMidnight);
+	return float4(skyTint, 1.0f);
 }
 
 void CalculateSpecularReflections(inout SurfaceStruct2 surface)
@@ -701,63 +774,121 @@ void CalculateSpecularReflections(inout SurfaceStruct2 surface)
 
 	if (RenderOptions.y > 0.5 && (surface.mask_water || surface.mask_metal))
 	{
-		// water is 1 (full), metal is has a week reflective color. 
+		// water is 1 (full), metal has a weak reflective color. 
 		float specularity = lerp(1.0, surface.specularity, surface.mask_metal);
 		float3 cameraSpaceNormal = mul(surface.normal, (float3x3)matView);
 		float4 reflection = ComputeRayTraceReflection(surface.cameraSpacePos, cameraSpaceNormal);
 		float4 fakeSkyReflection = ComputeFakeSkyReflection(surface);
-		reflection.a = reflection.a * fakeSkyReflection.a * specularity;
+
+		// When SSR misses off-screen sky on water, blend subtle horizon sky reflection
+		float3 reflectedColor = lerp(fakeSkyReflection.rgb, reflection.rgb, saturate(reflection.a * 1.5f));
+		float reflectBlend = max(reflection.a, surface.mask_water ? 0.28f : 0.0f) * specularity;
 
 #define USE_WATER_REFLECTION_FRESNEL_EFFECT
 #ifdef USE_WATER_REFLECTION_FRESNEL_EFFECT
 		float3 cameraSpaceViewDir = -normalize(surface.cameraSpacePos);
 		const float fresnelPower = 3.0;
 		float fresnel = pow(saturate(1.0 - dot(cameraSpaceViewDir, cameraSpaceNormal)), fresnelPower) * 0.98 + 0.02;
-		reflection.a *= fresnel;
+		reflectBlend *= fresnel;
 #endif
-		surface.color.xyz = lerp(surface.color.xyz, reflection.rgb, reflection.a);
+		surface.color.xyz = lerp(surface.color.xyz, reflectedColor, reflectBlend);
 	}
 }
 
 
-/** sunlight specularity based on sun and eye half vector, and the normal */
+/** sunlight & moonlight specularity based on celestial and eye half vector, including glittering water path */
 void CalculateSpecularHighlight(inout SurfaceStruct2 surface)
 {
-	if (!surface.mask_sky && !surface.mask_water)
+	if (!surface.mask_sky)
 	{
-		// everything has some specular light, surface.mask_metal has more
-		float gloss = surface.specularity + 0.02; // 0.02 is base specular for all blocks.
-
 		float3 cameraSpaceViewDir = -normalize(surface.cameraSpacePos);
-		float3 cameraSpaceNormal = mul(surface.normal, (float3x3)matView);
-		float3 halfVector = normalize(mul(sunDirection, (float3x3)matView).xyz + cameraSpaceViewDir);
+		float3 cameraSpaceNormal = normalize(mul(surface.normal, (float3x3)matView));
+		float3 celestialDirVS = normalize(mul(sunDirection, (float3x3)matView).xyz);
+		float3 halfVector = normalize(celestialDirVS + cameraSpaceViewDir);
 		float HdotN = saturate(dot(halfVector, cameraSpaceNormal));
 
-		const float fresnelPower = 6.0;
-		float fresnel = pow(saturate(1.0 - dot(cameraSpaceViewDir, cameraSpaceNormal)), fresnelPower) * 0.98 + 0.02;
-		// 30 is a magic number, that is making the sun specular lighting size proper. The bigger the value, the smaller the specular region. 
-		float spec = pow(HdotN, gloss * 30); 
-		spec *= fresnel * gloss * surface.sunlightVisibility * (1.0 - rainStrength);
-		float3 specularHighlight = spec * SunColor;
+		float moonSpecFactor = smoothstep(0.08f, 0.55f, timeMidnight) * (1.0f - CloudThickness);
+		float3 celestialSpecColor = SunColor + float3(0.22f, 0.34f, 0.58f) * moonSpecFactor;
 
-		// For fake torch specular light, we will assume torch light and eye are on the same point, so half vector is actually viewDir.
-		if (surface.mask_metal || surface.specularity > 0.01)
+		if (surface.mask_water)
 		{
-			// 60 is a magic number, that is making the torch specular lighting at proper size. 
-			float spec = pow(saturate(dot(cameraSpaceViewDir, cameraSpaceNormal)), 60.0);
-			specularHighlight += (TorchLightColor.rgb*pow(surface.torch_light_strength*spec, 3.0));
+			// Shimmering sun & moon path on water, masked by real-time PCSS shadows
+			float waterFresnel = pow(saturate(1.0f - dot(cameraSpaceViewDir, cameraSpaceNormal)), 4.0f) * 0.85f + 0.15f;
+			float tightGlitter = pow(HdotN, 220.0f) * 2.4f;
+			float wideShimmer  = pow(HdotN, 28.0f) * 0.20f;
+			float waterVis = surface.sunlightVisibility * (1.0f - rainStrength) * (1.0f - CloudThickness * 0.85f);
+			surface.color.xyz += (tightGlitter + wideShimmer) * waterFresnel * waterVis * celestialSpecColor;
 		}
-		surface.color.xyz += specularHighlight;
-		
-		// uncomment to test (show) just specular component
-		// #define TEST_SHOW_SPECULAR_COMPNENT
-#ifdef TEST_SHOW_SPECULAR_COMPNENT
-		surface.color.xyz = specularHighlight;
-#endif
+		else
+		{
+			// everything has some specular light, surface.mask_metal has more
+			float gloss = surface.specularity + 0.02; // 0.02 is base specular for all blocks.
+
+			const float fresnelPower = 6.0;
+			float fresnel = pow(saturate(1.0 - dot(cameraSpaceViewDir, cameraSpaceNormal)), fresnelPower) * 0.98 + 0.02;
+			float spec = pow(HdotN, gloss * 30); 
+			spec *= fresnel * gloss * surface.sunlightVisibility * (1.0 - rainStrength);
+			float3 specularHighlight = spec * celestialSpecColor;
+
+			// For fake torch specular light, we will assume torch light and eye are on the same point, so half vector is actually viewDir.
+			if (surface.mask_metal || surface.specularity > 0.01)
+			{
+				float spec = pow(saturate(dot(cameraSpaceViewDir, cameraSpaceNormal)), 60.0);
+				specularHighlight += (TorchLightColor.rgb*pow(surface.torch_light_strength*spec, 3.0));
+			}
+			surface.color.xyz += specularHighlight;
+		}
 	}
 }
 
-// do water reflection here
+// Screen-space crepuscular sun & moon shafts (god rays) occluded by trees, terrain, and structures
+void CalculateCrepuscularLightShafts(inout SurfaceStruct2 surface)
+{
+	float clearSky = (1.0f - rainStrength) * (1.0f - CloudThickness * 0.9f);
+	if (clearSky <= 0.02f) return;
+
+	float3 sunDirVS = normalize(mul(sunDirection, (float3x3)matView).xyz);
+	if (sunDirVS.z <= 0.10f) return;
+
+	float3 viewRayVS = normalize(surface.CameraEye);
+	float cosTheta = saturate(dot(viewRayVS, sunDirVS));
+	float directionalPhase = pow(cosTheta, 5.0f);
+	if (directionalPhase <= 0.002f) return;
+
+	float2 sunScreenUV = convertCameraSpaceToScreenSpace(sunDirVS * 100.0f);
+	float2 deltaUV = sunScreenUV - surface.texCoord;
+	float distUV = length(deltaUV);
+	deltaUV *= min(1.0f, 0.42f / max(distUV, 0.0001f));
+
+	int shaftSteps = (QualityLevel >= 5.0f) ? 12 : 8;
+	float fSteps = (float)shaftSteps;
+	float ign = InterleavedGradientNoise(surface.texCoord * screenParam);
+
+	float occlusionSum = 0.0f;
+	[loop] for (int s = 0; s < 12; s++)
+	{
+		if (s >= shaftSteps) break;
+		float t = ((float)s + ign) / fSteps;
+		float2 sampleUV = surface.texCoord + deltaUV * t;
+		if (all(sampleUV > viewportOffset) && all(sampleUV < viewportOffset + viewportScale))
+		{
+			// ShadowMapSampler.r holds mask_sky written in CompositePS0
+			float isSky = tex2Dlod(ShadowMapSampler, float4(sampleUV, 0.0f, 0.0f)).r;
+			occlusionSum += isSky * (1.0f - t * 0.35f);
+		}
+	}
+	float shaftFactor = (occlusionSum / fSteps) * directionalPhase * clearSky;
+	// Stronger shafts across foreground geometry, subtle atmospheric haze on open sky
+	shaftFactor *= surface.mask_sky ? 0.20f : 1.0f;
+
+	float horizonBoost = 1.0f - smoothstep(0.05f, 0.45f, saturate(sunDirection.y));
+	float3 dayShaftColor = SunColor * lerp(float3(1.0f, 0.95f, 0.85f), float3(1.30f, 0.75f, 0.40f), horizonBoost) * (0.20f + 0.25f * horizonBoost) * saturate(1.0f - timeMidnight * 1.5f);
+	float3 nightShaftColor = float3(0.16f, 0.28f, 0.50f) * (0.14f * smoothstep(0.08f, 0.55f, timeMidnight));
+
+	surface.color.xyz += shaftFactor * (dayShaftColor + nightShaftColor);
+}
+
+// do water reflection, specular & crepuscular shafts here
 float4 CompositePS1(VSOutput input) :COLOR
 {
 	SurfaceStruct2 surface = (SurfaceStruct2)0;
@@ -780,6 +911,7 @@ float4 CompositePS1(VSOutput input) :COLOR
 
 	CalculateSpecularReflections(surface);
 	CalculateSpecularHighlight(surface);
+	CalculateCrepuscularLightShafts(surface);
 
 	return float4(surface.color.rgb, 1.0);
 }

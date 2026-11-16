@@ -140,7 +140,10 @@ bool CShadowMap::PrepareAllSurfaces()
 	if (!pRenderDevice)
 		return false;
 
-	if (m_rhiSMRenderTarget != nullptr)
+	const bool bNeedBlurSurfaces = m_bBlurSMColorTexture &&
+		(!BlockWorldClient::GetInstance() || BlockWorldClient::GetInstance()->GetBlockRenderMethod() != BLOCK_RENDER_FANCY_SHADER);
+
+	if (m_rhiSMRenderTarget != nullptr && (!bNeedBlurSurfaces || (m_rhiBlurHRenderTarget != nullptr && m_rhiBlurVRenderTarget != nullptr)))
 		return true;
 
 	m_bitDepth = 24;
@@ -150,35 +153,38 @@ bool CShadowMap::PrepareAllSurfaces()
 	tex_info.m_width = m_shadowTexWidth;
 	tex_info.m_height = m_shadowTexHeight;
 
-	PixelFormat smFormat = pRenderDevice->GetCaps().supportsFloatRenderTargets ? PixelFormat::R32F : PixelFormat::A8R8G8B8;
-	m_rhiSMRenderTarget = pRenderDevice->CreateRenderTarget(
-		static_cast<uint32_t>(m_shadowTexWidth),
-		static_cast<uint32_t>(m_shadowTexHeight),
-		smFormat,
-		PixelFormat::D24S8,
-		1,
-		0);
-	if (!m_rhiSMRenderTarget && smFormat != PixelFormat::A8R8G8B8)
+	if (!m_rhiSMRenderTarget)
 	{
+		PixelFormat smFormat = pRenderDevice->GetCaps().supportsFloatRenderTargets ? PixelFormat::R32F : PixelFormat::A8R8G8B8;
 		m_rhiSMRenderTarget = pRenderDevice->CreateRenderTarget(
 			static_cast<uint32_t>(m_shadowTexWidth),
 			static_cast<uint32_t>(m_shadowTexHeight),
-			PixelFormat::A8R8G8B8,
+			smFormat,
 			PixelFormat::D24S8,
 			1,
 			0);
-	}
-	if (!m_rhiSMRenderTarget || !m_rhiSMRenderTarget->GetColorTexture(0))
-		return pRenderDevice->GetBackendType() == ERHIBackend::Null;
+		if (!m_rhiSMRenderTarget && smFormat != PixelFormat::A8R8G8B8)
+		{
+			m_rhiSMRenderTarget = pRenderDevice->CreateRenderTarget(
+				static_cast<uint32_t>(m_shadowTexWidth),
+				static_cast<uint32_t>(m_shadowTexHeight),
+				PixelFormat::A8R8G8B8,
+				PixelFormat::D24S8,
+				1,
+				0);
+		}
+		if (!m_rhiSMRenderTarget || !m_rhiSMRenderTarget->GetColorTexture(0))
+			return pRenderDevice->GetBackendType() == ERHIBackend::Null;
 
-	if (m_pSMColorTexture == 0)
-	{
-		m_pSMColorTexture = CGlobals::GetAssetManager()->LoadTexture("_SMColorTexture_R32F", "_SMColorTexture_R32F", TextureEntity::RenderTarget);
+		if (m_pSMColorTexture == 0)
+		{
+			m_pSMColorTexture = CGlobals::GetAssetManager()->LoadTexture("_SMColorTexture_R32F", "_SMColorTexture_R32F", TextureEntity::RenderTarget);
+		}
+		m_pSMColorTexture->SetTextureInfo(tex_info);
+		m_pSMColorTexture->AttachRHITexture(m_rhiSMRenderTarget->GetColorTexture(0), m_shadowTexWidth, m_shadowTexHeight);
 	}
-	m_pSMColorTexture->SetTextureInfo(tex_info);
-	m_pSMColorTexture->AttachRHITexture(m_rhiSMRenderTarget->GetColorTexture(0), m_shadowTexWidth, m_shadowTexHeight);
 
-	if (m_bBlurSMColorTexture)
+	if (bNeedBlurSurfaces)
 	{
 		if (!m_rhiBlurHRenderTarget)
 		{
@@ -1145,48 +1151,58 @@ bool CShadowMap::BuildOrthoShadowProjectionMatrix()
 	// virtual light view matrix 
 	Matrix4 fake_light_view;
 	ParaMatrixLookAtLH(&fake_light_view, &zero_vec, &light_dir, fabsf(light_dir.dotProduct(y_vec)) > 0.99f ? &z_vec : &y_vec);
-	// frustum to virtual light coordinate space 
-	Vector3 frustum_point_in_fake_light[8];
-	for (int i = 0; i < 8; ++i)
+	// Compute rotation- and translation-invariant minimal circumsphere of the 8 shadow frustum corners
+	const Vector3* frustumPts = pCamera->GetShadowFrustum()->vecFrustum;
+	Vector3 nearCenter = (frustumPts[0] + frustumPts[1] + frustumPts[2] + frustumPts[3]) * 0.25f;
+	Vector3 farCenter  = (frustumPts[4] + frustumPts[5] + frustumPts[6] + frustumPts[7]) * 0.25f;
+	Vector3 viewAxis   = farCenter - nearCenter;
+	float frustumDepth = viewAxis.length();
+
+	Vector3 sphereCenter;
+	float sphereRadius = 0.0f;
+	if (frustumDepth > 1e-4f)
 	{
-		frustum_point_in_fake_light[i] = pCamera->GetShadowFrustum()->vecFrustum[i] * fake_light_view;
+		Vector3 axisDir = viewAxis / frustumDepth;
+		float rNearSq = 0.0f;
+		float rFarSq = 0.0f;
+		for (int i = 0; i < 4; ++i)
+		{
+			rNearSq = (std::max)(rNearSq, (frustumPts[i] - nearCenter).squaredLength());
+			rFarSq  = (std::max)(rFarSq,  (frustumPts[i + 4] - farCenter).squaredLength());
+		}
+		float t = (frustumDepth * frustumDepth + rFarSq - rNearSq) / (2.0f * frustumDepth);
+		t = (std::max)(0.0f, (std::min)(frustumDepth, t));
+		sphereCenter = nearCenter + axisDir * t;
+		sphereRadius = sqrtf((std::max)(t * t + rNearSq, (frustumDepth - t) * (frustumDepth - t) + rFarSq));
 	}
-	// compute new AABB
-	Vector3 min_pt(FLT_MAX, FLT_MAX, FLT_MAX), max_pt(-FLT_MAX, -FLT_MAX, -FLT_MAX);
-	for (int i = 0; i < 8; ++i)
+	else
 	{
-		min_pt.x = (std::min)(min_pt.x, frustum_point_in_fake_light[i].x);
-		min_pt.y = (std::min)(min_pt.y, frustum_point_in_fake_light[i].y);
-		min_pt.z = (std::min)(min_pt.z, frustum_point_in_fake_light[i].z);
-		max_pt.x = (std::max)(max_pt.x, frustum_point_in_fake_light[i].x);
-		max_pt.y = (std::max)(max_pt.y, frustum_point_in_fake_light[i].y);
-		max_pt.z = (std::max)(max_pt.z, frustum_point_in_fake_light[i].z);
+		sphereCenter = (nearCenter + farCenter) * 0.5f;
+		for (int i = 0; i < 8; ++i)
+			sphereRadius = (std::max)(sphereRadius, (frustumPts[i] - sphereCenter).length());
 	}
-	//snap
-	Vector3 diagonal_vec = pCamera->GetShadowFrustum()->vecFrustum[0] - pCamera->GetShadowFrustum()->vecFrustum[6];
-	float diagonal_len = diagonal_vec.length();
-	diagonal_vec = diagonal_len;
-	// The offset calculated will pad the ortho projection so that it is always the same size 
-	// and big enough to cover the entire cascade interval.
-	Vector3 vBoarderOffset = (diagonal_vec -
-		(max_pt - min_pt))
-		* 0.5f;
-	vBoarderOffset.z = 0;
-	max_pt += vBoarderOffset;
-	min_pt -= vBoarderOffset;
-	float fWorldUnitsPerTexel = diagonal_len / m_shadowTexWidth;
-	min_pt.x /= fWorldUnitsPerTexel;
-	min_pt.x = floorf(min_pt.x);
-	min_pt.x *= fWorldUnitsPerTexel;
-	min_pt.y /= fWorldUnitsPerTexel;
-	min_pt.y = floorf(min_pt.y);
-	min_pt.y *= fWorldUnitsPerTexel;
-	max_pt.x /= fWorldUnitsPerTexel;
-	max_pt.x = floorf(max_pt.x);
-	max_pt.x *= fWorldUnitsPerTexel;
-	max_pt.y /= fWorldUnitsPerTexel;
-	max_pt.y = floorf(max_pt.y);
-	max_pt.y *= fWorldUnitsPerTexel;
+
+	// Quantize radius slightly upward so floating-point camera rotation drift never alters ortho extents
+	sphereRadius = ceilf((sphereRadius + 0.01f) * 8.0f) * 0.125f;
+	float fDiameter = sphereRadius * 2.0f;
+	float fWorldUnitsPerTexel = fDiameter / static_cast<float>((std::max)(1, m_shadowTexWidth));
+
+	// Snap sphere center in light-view space so ortho width & height stay bit-exact across frames (zero shadow swimming)
+	Vector3 sphereCenterLS = sphereCenter * fake_light_view;
+	float snappedX = floorf(sphereCenterLS.x / fWorldUnitsPerTexel) * fWorldUnitsPerTexel;
+	float snappedY = floorf(sphereCenterLS.y / fWorldUnitsPerTexel) * fWorldUnitsPerTexel;
+
+	Vector3 min_pt, max_pt;
+	min_pt.x = snappedX - sphereRadius;
+	max_pt.x = snappedX + sphereRadius;
+	min_pt.y = snappedY - sphereRadius;
+	max_pt.y = snappedY + sphereRadius;
+
+	// Stabilize Z range in 0.5m increments with -100m caster pull-back
+	const float zSnap = 0.5f;
+	max_pt.z = ceilf((sphereCenterLS.z + sphereRadius) / zSnap) * zSnap;
+	min_pt.z = max_pt.z - fDiameter;
+
 	// reconstruct project matrix
 	Matrix4 fake_light_proj;
 	ParaMatrixOrthoOffCenterLH(&fake_light_proj, min_pt.x, max_pt.x,

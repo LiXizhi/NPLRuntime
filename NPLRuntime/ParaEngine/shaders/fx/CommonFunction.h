@@ -13,32 +13,34 @@ float calculateLightDiffuseFactor(float3 lightDirection,float3 normal)
 	return saturate(dot(lightDirection,normal));
 }
 
+float InterleavedGradientNoise(float2 screenPixelPos)
+{
+	return frac(52.9829189f * frac(dot(screenPixelPos, float2(0.06711056f, 0.00583715f))));
+}
+
 //1:no shadow
-//0：full shadow
+//0:full shadow
 float getShadowFactor(sampler2D s,float2 uv,float testDepth,float shadowMapSize,float invShadowMapSize)
 {
 #ifdef HARDWARE_SHADOW_ENABLE
 	return tex2D(s,float3(uv,testDepth));
 #else
 #ifdef PCF_SHADOW_ENABLE
-	// linear filtering the shadow map using 2*2 nearby texels to remove some aliasing
-	const float2 uv_in_texel_f=uv*shadowMapSize;
-	const float2 uv_in_texel_i=floor(uv_in_texel_f);
-	const float2 scalar=frac(uv_in_texel_f);
-	float2 uv0=uv_in_texel_i*invShadowMapSize;
-	float2 uv1=(uv_in_texel_i+float2(1,0))*invShadowMapSize;
-	float shadow0=tex2D(s,uv0).r>=testDepth?1:0;
-	float shadow1=tex2D(s,uv1).r>=testDepth?1:0;
-	float shadow_up=lerp(shadow0,shadow1,scalar.x);
-	uv0=(uv_in_texel_i+float2(0,1))*invShadowMapSize;
-	uv1=(uv_in_texel_i+1)*invShadowMapSize;
-	shadow0=tex2D(s,uv0).r>=testDepth?1:0;
-	shadow1=tex2D(s,uv1).r>=testDepth?1:0;
-	float shadow_down=lerp(shadow0,shadow1,scalar.x);
-	return lerp(shadow_up,shadow_down,scalar.y);
+	// Bilinear 2x2 PCF at exact texel centers using explicit mip0 point fetches
+	const float2 uv_in_texel_f = uv * shadowMapSize - 0.5f;
+	const float2 uv_in_texel_i = floor(uv_in_texel_f);
+	const float2 scalar = frac(uv_in_texel_f);
+	const float2 baseUV = (uv_in_texel_i + 0.5f) * invShadowMapSize;
+	float shadow0 = tex2Dlod(s, float4(baseUV, 0.0f, 0.0f)).r >= testDepth ? 1.0f : 0.0f;
+	float shadow1 = tex2Dlod(s, float4(baseUV + float2(invShadowMapSize, 0.0f), 0.0f, 0.0f)).r >= testDepth ? 1.0f : 0.0f;
+	float shadow_up = lerp(shadow0, shadow1, scalar.x);
+	shadow0 = tex2Dlod(s, float4(baseUV + float2(0.0f, invShadowMapSize), 0.0f, 0.0f)).r >= testDepth ? 1.0f : 0.0f;
+	shadow1 = tex2Dlod(s, float4(baseUV + float2(invShadowMapSize, invShadowMapSize), 0.0f, 0.0f)).r >= testDepth ? 1.0f : 0.0f;
+	float shadow_down = lerp(shadow0, shadow1, scalar.x);
+	return lerp(shadow_up, shadow_down, scalar.y);
 #else
-	float shadow_depth=tex2D(s,uv).r;
-	float shadow=shadow_depth>=testDepth?1:0;;
+	float shadow_depth = tex2Dlod(s, float4(uv, 0.0f, 0.0f)).r;
+	float shadow = shadow_depth >= testDepth ? 1.0f : 0.0f;
 	return shadow;
 #endif
 #endif
@@ -47,7 +49,101 @@ float getShadowFactor(sampler2D s,float2 uv,float testDepth,float shadowMapSize,
 // shadow blending factor, so that the near camera shadow is darker
 float calculatefadeShadowFactor(float viewDepth,float shadowRadius)
 {
-	return saturate((viewDepth-shadowRadius*0.9)/(shadowRadius*0.1));
+	return saturate((viewDepth-shadowRadius*0.88f)/(shadowRadius*0.12f));
+}
+
+// Percentage-Closer Soft Shadows (PCSS) with IGN-rotated blocker search & Golden-Angle Vogel disk PCF
+float calculatePCSSShadowFactor(
+	sampler2D s,
+	float4 worldPosition,
+	float viewDepth,
+	float4x4 shadowMatrix,
+	float4x4 shadowViewProjMatrix,
+	float shadowMapSize,
+	float invShadowMapSize,
+	float shadowRadius,
+	float shadowBias,
+	float2 screenPixelPos,
+	float qualityLevel)
+{
+	const float4 vPosShadowSpace = mul(worldPosition, shadowViewProjMatrix);
+	const float4 vShadowMapCoord = mul(worldPosition, shadowMatrix);
+	const float2 uv = vShadowMapCoord.xy / max(vShadowMapCoord.w, 0.0001f);
+
+	const float2 edgeDist = min(uv, 1.0f - uv);
+	const float borderFade = saturate((min(edgeDist.x, edgeDist.y) - 0.01f) / 0.04f);
+
+	if (viewDepth < shadowRadius && vPosShadowSpace.z > 0.0f && borderFade > 0.001f)
+	{
+		const float receiverDepth = vShadowMapCoord.z;
+		const float shadowTestDepth = receiverDepth - shadowBias;
+
+		const float ign = InterleavedGradientNoise(screenPixelPos);
+		const float rotAngle = ign * 6.2831853f;
+		const float cosA = cos(rotAngle);
+		const float sinA = sin(rotAngle);
+
+		// Step 1: 8-tap rotated multi-ring blocker search (center + inner ring + outer ring)
+		static const float2 blockerTaps[8] = {
+			float2( 0.0000f,  0.0000f),
+			float2( 0.4330f,  0.2500f),
+			float2(-0.4330f,  0.2500f),
+			float2( 0.0000f, -0.5000f),
+			float2( 0.9659f,  0.2588f),
+			float2(-0.2588f,  0.9659f),
+			float2(-0.9659f, -0.2588f),
+			float2( 0.2588f, -0.9659f)
+		};
+
+		const float maxFilterTexels = (qualityLevel >= 5.0f) ? 5.2f : 4.2f;
+		const float searchRadius = (maxFilterTexels + 0.75f) * invShadowMapSize;
+
+		float blockerSum = 0.0f;
+		float blockerCount = 0.0f;
+		[unroll] for (int b = 0; b < 8; b++)
+		{
+			float2 rotated = float2(
+				blockerTaps[b].x * cosA - blockerTaps[b].y * sinA,
+				blockerTaps[b].x * sinA + blockerTaps[b].y * cosA);
+			float sampleDepth = tex2Dlod(s, float4(uv + rotated * searchRadius, 0.0f, 0.0f)).r;
+			if (sampleDepth < shadowTestDepth)
+			{
+				blockerSum += sampleDepth;
+				blockerCount += 1.0f;
+			}
+		}
+
+		// Lossless early-out when completely lit
+		if (blockerCount < 0.5f)
+		{
+			return 1.0f;
+		}
+
+		// Step 2: Contact-hardening variable penumbra width (sharp at contact, soft far from caster)
+		float avgBlockerDepth = blockerSum / blockerCount;
+		float blockerDistance = max(0.0f, receiverDepth - avgBlockerDepth);
+		float penumbraRatio = saturate(blockerDistance * 18.0f);
+		float filterRadius = lerp(1.05f, maxFilterTexels, penumbraRatio) * invShadowMapSize;
+
+		// Step 3: Golden-Angle Vogel disk PCF
+		int pcfCount = (qualityLevel >= 5.0f) ? 16 : 12;
+		float fCount = (float)pcfCount;
+		float visibility = 0.0f;
+		[loop] for (int k = 0; k < 16; k++)
+		{
+			if (k >= pcfCount) break;
+			float r = sqrt(((float)k + 0.5f) / fCount);
+			float theta = (float)k * 2.3999632f + rotAngle;
+			float2 offset = float2(cos(theta), sin(theta)) * (r * filterRadius);
+			float d = tex2Dlod(s, float4(uv + offset, 0.0f, 0.0f)).r;
+			visibility += (d >= shadowTestDepth) ? 1.0f : 0.0f;
+		}
+		visibility /= fCount;
+
+		visibility = lerp(visibility, 1.0f, calculatefadeShadowFactor(viewDepth, shadowRadius));
+		return lerp(1.0f, visibility, borderFade);
+	}
+	return 1.0f;
 }
 
 
