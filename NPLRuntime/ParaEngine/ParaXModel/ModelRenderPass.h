@@ -47,8 +47,8 @@ namespace ParaEngine
 		void deinit_FX(SceneState* pSceneState, CParameterBlock* pMaterialParams = NULL, bool bGpuSkinning = false);
 
 		/// for programmable pipeline
-		bool init_bmax_FX(CParaXModel* m, SceneState* pSceneState, CParameterBlock* pMaterialParams = NULL);
-		void deinit_bmax_FX(SceneState* pSceneState, CParameterBlock* pMaterialParams = NULL);
+		bool init_bmax_FX(CParaXModel* m, SceneState* pSceneState, CParameterBlock* pMaterialParams = NULL, bool bApplyRigidBone = false);
+		void deinit_bmax_FX(SceneState* pSceneState, CParameterBlock* pMaterialParams = NULL, bool bApplyRigidBone = false);
 
 		/** for deferred shading, we will render alpha blended blocks after final effect. */
 		bool IsAlphaBlended();

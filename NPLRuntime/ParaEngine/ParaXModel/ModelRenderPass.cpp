@@ -22,7 +22,7 @@ ParaEngine::ModelRenderPass::ModelRenderPass()
 	memset(this, 0, sizeof(ModelRenderPass));
 }
 
-bool ParaEngine::ModelRenderPass::init_bmax_FX(CParaXModel *m, SceneState* pSceneState, CParameterBlock* pMaterialParams /*= NULL*/)
+bool ParaEngine::ModelRenderPass::init_bmax_FX(CParaXModel *m, SceneState* pSceneState, CParameterBlock* pMaterialParams /*= NULL*/, bool bApplyRigidBone /*= false*/)
 {
 	if (m->showGeosets[geoset] == false || indexCount == 0)
 		return false;
@@ -53,8 +53,26 @@ bool ParaEngine::ModelRenderPass::init_bmax_FX(CParaXModel *m, SceneState* pScen
 		CEffectFile* pEffect = CGlobals::GetEffectManager()->GetCurrentEffectFile();
 		pEffect->setFloat(CEffectFile::k_opacity, 1.f);
 		// BMAX_MODEL(.x) exported from CAD, then model shape is a plane, need to set the BackFaceCulling false
-		if (blendmode == BM_ALPHA_BLEND)
+		if (blendmode == BM_ALPHA_BLEND || !cull)
 			CGlobals::GetEffectManager()->SetCullingMode(false);
+	}
+
+	if (bApplyRigidBone && is_rigid_body)
+	{
+		CEffectFile* pEffect = CGlobals::GetEffectManager()->GetCurrentEffectFile();
+		if (m->GetObjectNum().nBones > 0)
+		{
+			Matrix4 mat, mat1;
+			mat1 = m->bones[(m->m_origVertices[m->m_indices[m_nIndexStart] + GetVertexStart(m)]).bones[0]].mat;
+			mat = mat1 * CGlobals::GetWorldMatrixStack().SafeGetTop();
+			CGlobals::GetWorldMatrixStack().push(mat);
+		}
+		else
+		{
+			CGlobals::GetWorldMatrixStack().push(CGlobals::GetWorldMatrixStack().SafeGetTop());
+		}
+		if (pEffect)
+			pEffect->applyWorldMatrices();
 	}
 
 	CBaseObject* pBaseObj = pSceneState->GetCurrentSceneObject();
@@ -63,8 +81,17 @@ bool ParaEngine::ModelRenderPass::init_bmax_FX(CParaXModel *m, SceneState* pScen
 	return true;
 }
 
-void ParaEngine::ModelRenderPass::deinit_bmax_FX(SceneState* pSceneState, CParameterBlock* pMaterialParams /*= NULL*/)
+void ParaEngine::ModelRenderPass::deinit_bmax_FX(SceneState* pSceneState, CParameterBlock* pMaterialParams /*= NULL*/, bool bApplyRigidBone /*= false*/)
 {
+	(void)pSceneState;
+	(void)pMaterialParams;
+	if (bApplyRigidBone && is_rigid_body)
+	{
+		CGlobals::GetWorldMatrixStack().pop();
+		CEffectFile* pEffect = CGlobals::GetEffectManager()->GetCurrentEffectFile();
+		if (pEffect)
+			pEffect->applyWorldMatrices();
+	}
 	if ((blendmode & BM_TEMP_FORCEALPHABLEND) == BM_TEMP_FORCEALPHABLEND)
 	{
 		CEffectFile* pEffect = CGlobals::GetEffectManager()->GetCurrentEffectFile();
@@ -74,7 +101,7 @@ void ParaEngine::ModelRenderPass::deinit_bmax_FX(SceneState* pSceneState, CParam
 		pEffect->setFloat(CEffectFile::k_opacity, 1.f);
 		pEffect->EnableAlphaTesting(false);
 	}
-	if (blendmode == BM_ALPHA_BLEND)
+	if (blendmode == BM_ALPHA_BLEND || !cull)
 		CGlobals::GetEffectManager()->SetCullingMode(true);
 }
 
@@ -248,6 +275,9 @@ bool ModelRenderPass::init_FX(CParaXModel *m, SceneState* pSceneState, CParamete
 
 		if (blendmode == BM_TRANSPARENT)
 			pEffect->EnableAlphaTesting(true);
+
+		if (!cull)
+			CGlobals::GetEffectManager()->SetCullingMode(false);
 	}
 	
 	/// Set the texture
@@ -356,6 +386,8 @@ void ModelRenderPass::deinit_FX(SceneState* pSceneState, CParameterBlock* pMater
 	{
 		if (blendmode == BM_TRANSPARENT)
 			pEffect->EnableAlphaTesting(false);
+		if (!cull)
+			CGlobals::GetEffectManager()->SetCullingMode(true);
 	}
 }
 

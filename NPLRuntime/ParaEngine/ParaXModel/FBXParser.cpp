@@ -429,6 +429,7 @@ void FBXParser::PostProcessParaXModelData(CParaXModel* pMesh)
 	}
 
 	std::stable_sort(pMesh->passes.begin(), pMesh->passes.end());
+	pMesh->DetectRigidBodyPasses();
 }
 
 void FBXParser::FillParaXModelData(CParaXModel* pMesh, const aiScene* pFbxScene)
@@ -2855,8 +2856,9 @@ void FBXParser::ProcessFBXMesh(const aiScene* pFbxScene, aiMesh* pFbxMesh, aiNod
 				}
 			}
 		}
-		for (auto& vertex : m_vertices)
+		for (size_t vi = static_cast<size_t>(vertex_start); vi < m_vertices.size(); ++vi)
 		{
+			auto& vertex = m_vertices[vi];
 			int total_weight = std::accumulate(std::begin(vertex.weights), std::end(vertex.weights), 0);
 			if (total_weight > 0 && (total_weight != 255))
 			{

@@ -147,6 +147,10 @@ CParaXModel::~CParaXModel(void)
 		m_pGpuSkinVB.ReleaseBuffer();
 		m_bGpuSkinBufferBuilt = false;
 		m_bGpuSkinBufferFailed = false;
+		m_pRigidIB.ReleaseBuffer();
+		m_pRigidVB.ReleaseBuffer();
+		m_bRigidBufferBuilt = false;
+		m_bRigidBufferFailed = false;
 
 		if (GetObjectNum().nTextures) {
 			for (size_t i = 0; i < GetObjectNum().nTextures; i++) {
@@ -238,6 +242,10 @@ bool CParaXModel::DeleteDeviceObjects()
 	m_pGpuSkinVB.ReleaseBuffer();
 	m_bGpuSkinBufferBuilt = false;
 	m_bGpuSkinBufferFailed = false;
+	m_pRigidIB.ReleaseBuffer();
+	m_pRigidVB.ReleaseBuffer();
+	m_bRigidBufferBuilt = false;
+	m_bRigidBufferFailed = false;
 	return true;
 }
 
@@ -509,6 +517,10 @@ void CParaXModel::initVertices(int nVertices, ModelVertex* pVertices)
 	m_pGpuSkinVB.ReleaseBuffer();
 	m_bGpuSkinBufferBuilt = false;
 	m_bGpuSkinBufferFailed = false;
+	m_pRigidVB.ReleaseBuffer();
+	m_bRigidBufferBuilt = false;
+	m_bRigidBufferFailed = false;
+	m_bAllPassesRigidBody = false;
 
 	// radius
 	m_radius = (m_header.maxExtent - m_header.minExtent).length() / 2;
@@ -580,6 +592,10 @@ void CParaXModel::initIndices(int nIndices, uint16* pIndices)
 	m_pGpuSkinIB.ReleaseBuffer();
 	m_bGpuSkinBufferBuilt = false;
 	m_bGpuSkinBufferFailed = false;
+	m_pRigidIB.ReleaseBuffer();
+	m_bRigidBufferBuilt = false;
+	m_bRigidBufferFailed = false;
+	m_bAllPassesRigidBody = false;
 	if (m_RenderMethod == SOFT_ANIM || m_RenderMethod == NO_ANIM || m_RenderMethod == BMAX_MODEL)
 	{
 		m_indices = new uint16[nIndices];
@@ -1971,6 +1987,279 @@ void CParaXModel::RenderBMaxGpuSkinned(SceneState* pSceneState, CParameterBlock*
 	pd3dDevice->SetIndices(0);
 }
 
+void CParaXModel::DetectRigidBodyPasses()
+{
+	m_bAllPassesRigidBody = false;
+	if (!animated || !animBones || animGeometry)
+		return;
+	if (m_origVertices == NULL || m_indices == NULL || m_objNum.nVertices == 0 || m_objNum.nIndices == 0 || m_objNum.nBones == 0 || passes.empty())
+		return;
+
+	bool bAllRigid = true;
+	int nNonEmptyPasses = 0;
+	const uint32 nTotalVerts = m_objNum.nVertices;
+	const uint32 nTotalIndices = m_objNum.nIndices;
+	const uint32 nTotalBones = m_objNum.nBones;
+
+	for (size_t j = 0; j < passes.size(); ++j)
+	{
+		ModelRenderPass& p = passes[j];
+		const int nTriCount = p.indexCount / 3;
+		if (nTriCount <= 0)
+			continue;
+		++nNonEmptyPasses;
+
+		if (!p.is_rigid_body)
+		{
+			const int nVertexOffset = p.GetVertexStart(this);
+			const int nIndexOffset = p.m_nIndexStart;
+			const int nPassIndexCount = nTriCount * 3;
+			if (nVertexOffset < 0 || nIndexOffset < 0 || static_cast<uint32>(nIndexOffset + nPassIndexCount) > nTotalIndices)
+			{
+				bAllRigid = false;
+				continue;
+			}
+
+			const uint32 firstVertIdx = static_cast<uint32>(m_indices[nIndexOffset]) + static_cast<uint32>(nVertexOffset);
+			if (firstVertIdx >= nTotalVerts)
+			{
+				bAllRigid = false;
+				continue;
+			}
+			const uint8 rigidBoneIdx = m_origVertices[firstVertIdx].bones[0];
+			if (rigidBoneIdx >= nTotalBones)
+			{
+				bAllRigid = false;
+				continue;
+			}
+
+			bool bIsRigidBody = true;
+			for (int idx = 0; idx < nPassIndexCount; ++idx)
+			{
+				const uint32 a = static_cast<uint32>(m_indices[nIndexOffset + idx]) + static_cast<uint32>(nVertexOffset);
+				if (a >= nTotalVerts)
+				{
+					bIsRigidBody = false;
+					break;
+				}
+				const ModelVertex& ov = m_origVertices[a];
+				if (ov.weights[0] != 0xff || ov.weights[1] != 0 || ov.weights[2] != 0 || ov.weights[3] != 0 || ov.bones[0] != rigidBoneIdx)
+				{
+					bIsRigidBody = false;
+					break;
+				}
+			}
+			if (bIsRigidBody)
+				p.is_rigid_body = true;
+		}
+
+		if (!p.is_rigid_body)
+			bAllRigid = false;
+	}
+
+	m_bAllPassesRigidBody = (nNonEmptyPasses > 0 && bAllRigid);
+}
+
+bool CParaXModel::CanUseRigidBodyGpuBuffers() const
+{
+	if (!m_bAllPassesRigidBody || m_bRigidBufferFailed)
+		return false;
+	if (!animated || !animBones || animGeometry)
+		return false;
+	if (m_origVertices == NULL || m_indices == NULL || bones == NULL)
+		return false;
+	if (m_objNum.nVertices == 0 || m_objNum.nIndices == 0 || m_objNum.nBones == 0)
+		return false;
+	return CGlobals::GetRenderDevice() != nullptr;
+}
+
+bool CParaXModel::EnsureRigidBodyGpuBuffers()
+{
+	if (m_bRigidBufferBuilt && m_pRigidVB.IsValid() && m_pRigidIB.IsValid())
+		return true;
+	if (!m_bAllPassesRigidBody || m_bRigidBufferFailed || m_origVertices == NULL || m_indices == NULL || m_objNum.nVertices == 0 || m_objNum.nIndices == 0)
+		return false;
+
+	m_pRigidVB.ReleaseBuffer();
+	m_pRigidIB.ReleaseBuffer();
+
+	const uint32 nVerts = m_objNum.nVertices;
+	const uint32 nIndices = m_objNum.nIndices;
+
+	if (IsBmaxModel())
+	{
+		if (!m_pRigidVB.CreateBuffer(nVerts * sizeof(bmax_vertex), 0, D3DUSAGE_WRITEONLY))
+		{
+			m_bRigidBufferFailed = true;
+			return false;
+		}
+		bmax_vertex* pVerts = NULL;
+		if (!m_pRigidVB.Lock((void**)&pVerts, 0, 0) || !pVerts)
+		{
+			m_pRigidVB.ReleaseBuffer();
+			m_bRigidBufferFailed = true;
+			return false;
+		}
+		for (uint32 i = 0; i < nVerts; ++i)
+		{
+			const ModelVertex& src = m_origVertices[i];
+			pVerts[i].p = src.pos;
+			pVerts[i].n = src.normal;
+			pVerts[i].color = src.color0;
+		}
+		m_pRigidVB.Unlock();
+	}
+	else
+	{
+		if (!m_pRigidVB.CreateBuffer(nVerts * sizeof(mesh_vertex_normal), 0, D3DUSAGE_WRITEONLY))
+		{
+			m_bRigidBufferFailed = true;
+			return false;
+		}
+		mesh_vertex_normal* pVerts = NULL;
+		if (!m_pRigidVB.Lock((void**)&pVerts, 0, 0) || !pVerts)
+		{
+			m_pRigidVB.ReleaseBuffer();
+			m_bRigidBufferFailed = true;
+			return false;
+		}
+		for (uint32 i = 0; i < nVerts; ++i)
+		{
+			const ModelVertex& src = m_origVertices[i];
+			pVerts[i].p = src.pos;
+			pVerts[i].n = src.normal;
+			pVerts[i].uv = src.texcoords;
+		}
+		m_pRigidVB.Unlock();
+	}
+
+	if (!m_pRigidIB.CreateIndexBuffer(sizeof(uint16) * nIndices, D3DFMT_INDEX16, D3DUSAGE_WRITEONLY))
+	{
+		m_pRigidVB.ReleaseBuffer();
+		m_bRigidBufferFailed = true;
+		return false;
+	}
+	uint16* pIndexData = NULL;
+	if (!m_pRigidIB.Lock((void**)&pIndexData, 0, 0) || !pIndexData)
+	{
+		m_pRigidIB.ReleaseBuffer();
+		m_pRigidVB.ReleaseBuffer();
+		m_bRigidBufferFailed = true;
+		return false;
+	}
+	memcpy(pIndexData, m_indices, sizeof(uint16) * nIndices);
+	m_pRigidIB.Unlock();
+
+	m_bRigidBufferBuilt = true;
+	return true;
+}
+
+void CParaXModel::RenderRigidBodyPasses(SceneState* pSceneState, CParameterBlock* pMaterialParams)
+{
+	int nPasses = (int)passes.size();
+	if (nPasses <= 0)
+		return;
+
+	CEffectFile* pEffect = CGlobals::GetEffectManager()->GetCurrentEffectFile();
+	if (pEffect == 0)
+		return;
+
+	RenderDevicePtr pd3dDevice = CGlobals::GetRenderDevice();
+	const bool bIsBmax = IsBmaxModel();
+	pd3dDevice->SetStreamSource(0, m_pRigidVB.GetDevicePointer(), 0, bIsBmax ? sizeof(bmax_vertex) : sizeof(mesh_vertex_normal));
+	pd3dDevice->SetIndices(m_pRigidIB.GetDevicePointer());
+
+	int nEffectPass = GetRenderPass(pMaterialParams);
+	const bool bForcePassSwitch = (nEffectPass != 0);
+	if (pEffect->begin())
+	{
+		if (pEffect->BeginPass(nEffectPass, bForcePassSwitch))
+		{
+			for (int nPass = 0; nPass < nPasses; nPass++)
+			{
+				ModelRenderPass& p = passes[nPass];
+				if (p.geoset >= 0 && showGeosets[p.geoset])
+				{
+					if (bIsBmax)
+					{
+						if (p.init_bmax_FX(this, pSceneState, pMaterialParams, true))
+						{
+							if (p.indexCount > 0)
+							{
+								pEffect->CommitChanges();
+								int32 vStart = p.GetVertexStart(this);
+								uint32 numVerts = (m_objNum.nVertices > (uint32)vStart) ? (m_objNum.nVertices - (uint32)vStart) : m_objNum.nVertices;
+								RenderDevice::DrawIndexedPrimitive(pd3dDevice, RenderDevice::DRAW_PERF_TRIANGLES_CHARACTER, EPrimitiveType::TRIANGLELIST, vStart, 0, numVerts, p.m_nIndexStart, p.indexCount / 3);
+							}
+							p.deinit_bmax_FX(pSceneState, pMaterialParams, true);
+						}
+					}
+					else
+					{
+						if (pSceneState->m_bEnableTranslucentFaceSorting &&
+							((int)m_TranslucentPassIndice.size()) > nPass && m_TranslucentPassIndice[nPass] >= 0)
+						{
+							if (!pSceneState->IsIgnoreTransparent())
+							{
+								float alpha = 1.f;
+								if (p.opacity != -1)
+								{
+									alpha = transparency[p.opacity].trans.getValue(m_CurrentAnim);
+									if (alpha < 0)
+										continue;
+								}
+
+								Matrix4 mat = CGlobals::GetWorldMatrixStack().top();
+								const ModelVertex& ov = m_origVertices[m_indices[p.m_nIndexStart] + p.GetVertexStart(this)];
+								if (ov.weights[0] > 0 && m_faceGroups[m_TranslucentPassIndice[nPass]]->m_bSkinningAni == false)
+								{
+									mat = bones[ov.bones[0]].mat * mat;
+								}
+								CFaceGroupInstance faceGroup(&mat, m_faceGroups[m_TranslucentPassIndice[nPass]]);
+								if (p.texanim != -1) {
+									const TextureAnim& texAnim = texanims[p.texanim];
+									faceGroup.m_vUVOffset.x = texAnim.tval.x;
+									faceGroup.m_vUVOffset.y = texAnim.tval.y;
+									faceGroup.m_vUVRotate = texAnim.rval;
+									if (texAnim.scale.used)
+									{
+										faceGroup.m_vUVScale.x = texAnim.sval.x;
+										faceGroup.m_vUVScale.y = texAnim.sval.y;
+									}
+									if (animTexRGB)
+										faceGroup.m_UVRgbAnim = true;
+								}
+								faceGroup.m_fAlpha = alpha;
+								faceGroup.m_bones = bones;
+								pSceneState->GetFaceGroups()->AddFaceGroup(faceGroup);
+							}
+							continue;
+						}
+
+						if (p.init_FX(this, pSceneState, pMaterialParams, false))
+						{
+							if (p.indexCount > 0)
+							{
+								pEffect->onDrawPass(pMaterialParams, nPass);
+								pEffect->CommitChanges();
+								int32 vStart = p.GetVertexStart(this);
+								uint32 numVerts = (m_objNum.nVertices > (uint32)vStart) ? (m_objNum.nVertices - (uint32)vStart) : m_objNum.nVertices;
+								RenderDevice::DrawIndexedPrimitive(pd3dDevice, RenderDevice::DRAW_PERF_TRIANGLES_CHARACTER, EPrimitiveType::TRIANGLELIST, vStart, 0, numVerts, p.m_nIndexStart, p.indexCount / 3);
+							}
+							p.deinit_FX(pSceneState, pMaterialParams, false);
+						}
+					}
+				}
+			}
+			pEffect->EndPass(bForcePassSwitch);
+			if (bForcePassSwitch && pEffect->IsInShareMode())
+				pEffect->BeginPass(0, true);
+		}
+		pEffect->end();
+	}
+	pd3dDevice->SetIndices(0);
+}
+
 void CParaXModel::drawModel(SceneState* pSceneState, CParameterBlock* pMaterialParam, int nRenderMethod)
 {
 	if (passes.size() == 0 && m_pVoxelModel == NULL)
@@ -1983,8 +2272,47 @@ void CParaXModel::drawModel(SceneState* pSceneState, CParameterBlock* pMaterialP
 	const int nPrevTechHandle = pEffectMgr->GetCurrentTechHandle();
 	bool bSwitchedTech = false;
 	bool bUseBMaxGpuSkin = false;
+	bool bUseRigidBodyGpu = false;
 
-	if (pEffectMgr->GetCurrentEffectFile() != 0 && CanUseGpuSkinning())
+	auto ensureShadowPassStateIfActive = [&]()
+	{
+		if (!pSceneState->IsShadowPass())
+			return;
+		CEffectFile* pCur = pEffectMgr->GetCurrentEffectFile();
+		if (pCur && pCur->IsValid())
+		{
+			const auto* pDesc = pCur->GetCurrentTechniqueDesc();
+			if (!pDesc || pDesc->nCategory != CEffectFile::TechCategory_GenShadowMap)
+				pCur->SetFirstValidTechniqueByCategory(CEffectFile::TechCategory_GenShadowMap);
+		}
+		auto pRenderDevice = CGlobals::GetRenderDevice();
+		if (pRenderDevice)
+		{
+			pRenderDevice->SetRenderState(ERenderState::SRCBLEND, D3DBLEND_ONE);
+			pRenderDevice->SetRenderState(ERenderState::DESTBLEND, D3DBLEND_ZERO);
+			pRenderDevice->SetRenderState(ERenderState::ALPHABLENDENABLE, FALSE);
+		}
+	};
+
+	if (pEffectMgr->GetCurrentEffectFile() != 0 && CanUseRigidBodyGpuBuffers())
+	{
+		if ((nRenderMethod == SOFT_ANIM || nRenderMethod == SHADER_ANIM) &&
+			(nPrevTechHandle == TECH_CHARACTER || nPrevTechHandle == TECH_SIMPLE_MESH_NORMAL ||
+			 nPrevTechHandle == TECH_SIMPLE_MESH_NORMAL_SHADOW || nPrevTechHandle == TECH_SIMPLE_MESH_NORMAL_UNLIT ||
+			 nPrevTechHandle == TECH_SIMPLE_MESH_NORMAL_SELECTED || nPrevTechHandle == TECH_SIMPLE_MESH_NORMAL_BORDER ||
+			 nPrevTechHandle == TECH_SIMPLE_MESH_NORMAL_TRANSPARENT) &&
+			EnsureRigidBodyGpuBuffers())
+		{
+			bUseRigidBodyGpu = true;
+		}
+		else if (nRenderMethod == BMAX_MODEL && !passes.empty() && nPrevTechHandle == TECH_BMAX_MODEL &&
+			EnsureRigidBodyGpuBuffers())
+		{
+			bUseRigidBodyGpu = true;
+		}
+	}
+
+	if (!bUseRigidBodyGpu && pEffectMgr->GetCurrentEffectFile() != 0 && CanUseGpuSkinning())
 	{
 		if (nRenderMethod == SOFT_ANIM || nRenderMethod == SHADER_ANIM)
 		{
@@ -1997,16 +2325,20 @@ void CParaXModel::drawModel(SceneState* pSceneState, CParameterBlock* pMaterialP
 						pEffectMgr->GetCurrentEffectFile() != 0)
 					{
 						bSwitchedTech = true;
-						pEffectMgr->applyLocalLightingData();
+						ensureShadowPassStateIfActive();
+						if (!pSceneState->IsShadowPass())
+							pEffectMgr->applyLocalLightingData();
 						nRenderMethod = SHADER_ANIM;
 					}
 					else
 					{
 						pEffectMgr->BeginEffect(nPrevTechHandle, &(pSceneState->m_pCurrentEffect));
+						ensureShadowPassStateIfActive();
 					}
 				}
 				else
 				{
+					ensureShadowPassStateIfActive();
 					nRenderMethod = SHADER_ANIM;
 				}
 			}
@@ -2022,16 +2354,20 @@ void CParaXModel::drawModel(SceneState* pSceneState, CParameterBlock* pMaterialP
 						pEffectMgr->GetCurrentEffectFile() != 0)
 					{
 						bSwitchedTech = true;
-						pEffectMgr->applyLocalLightingData();
+						ensureShadowPassStateIfActive();
+						if (!pSceneState->IsShadowPass())
+							pEffectMgr->applyLocalLightingData();
 						bUseBMaxGpuSkin = true;
 					}
 					else
 					{
 						pEffectMgr->BeginEffect(nPrevTechHandle, &(pSceneState->m_pCurrentEffect));
+						ensureShadowPassStateIfActive();
 					}
 				}
 				else
 				{
+					ensureShadowPassStateIfActive();
 					bUseBMaxGpuSkin = true;
 				}
 			}
@@ -2085,6 +2421,12 @@ void CParaXModel::drawModel(SceneState* pSceneState, CParameterBlock* pMaterialP
 		}
 	}
 
+	if (bUseRigidBodyGpu && (nRenderMethod == SOFT_ANIM || nRenderMethod == SHADER_ANIM))
+	{
+		RenderRigidBodyPasses(pSceneState, pMaterialParam);
+		return;
+	}
+
 	switch (nRenderMethod)
 	{
 	case SHADER_ANIM:
@@ -2097,15 +2439,20 @@ void CParaXModel::drawModel(SceneState* pSceneState, CParameterBlock* pMaterialP
 		RenderSoftNoAnim(pSceneState, pMaterialParam);
 		break;
 	case BMAX_MODEL:
-		if (bUseBMaxGpuSkin)
+		if (bUseRigidBodyGpu || bUseBMaxGpuSkin)
 		{
-			RenderBMaxGpuSkinned(pSceneState, pMaterialParam);
+			if (bUseRigidBodyGpu)
+				RenderRigidBodyPasses(pSceneState, pMaterialParam);
+			else
+				RenderBMaxGpuSkinned(pSceneState, pMaterialParam);
 			if (m_pVoxelModel)
 			{
 				if (bSwitchedTech)
 				{
 					pEffectMgr->BeginEffect(nPrevTechHandle, &(pSceneState->m_pCurrentEffect));
-					pEffectMgr->applyLocalLightingData();
+					ensureShadowPassStateIfActive();
+					if (!pSceneState->IsShadowPass())
+						pEffectMgr->applyLocalLightingData();
 					bSwitchedTech = false;
 					applySurfaceMaterialToCurrentEffect();
 				}
@@ -2141,7 +2488,9 @@ void CParaXModel::drawModel(SceneState* pSceneState, CParameterBlock* pMaterialP
 	if (bSwitchedTech)
 	{
 		pEffectMgr->BeginEffect(nPrevTechHandle, &(pSceneState->m_pCurrentEffect));
-		pEffectMgr->applyLocalLightingData();
+		ensureShadowPassStateIfActive();
+		if (!pSceneState->IsShadowPass())
+			pEffectMgr->applyLocalLightingData();
 	}
 }
 
@@ -2562,6 +2911,10 @@ HRESULT CParaXModel::RendererRecreated()
 	m_pGpuSkinVB.RendererRecreated();
 	m_bGpuSkinBufferBuilt = false;
 	m_bGpuSkinBufferFailed = false;
+	m_pRigidIB.RendererRecreated();
+	m_pRigidVB.RendererRecreated();
+	m_bRigidBufferBuilt = false;
+	m_bRigidBufferFailed = false;
 
 	this->SetVertexBufferDirty();
 

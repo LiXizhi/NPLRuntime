@@ -18,6 +18,9 @@
 #include "NPL/NPLScriptingState.h"
 #include "ParaScriptBindings/ParaScriptingGlobal.h"
 #include "IParaWebView.h"
+#include "ParaXModel/ParaXModel.h"
+#include "ParaXModel/ParaXBone.h"
+#include "RHIStateTracker.h"
 
 #include <cstdio>
 #include <cstdlib>
@@ -332,6 +335,88 @@ namespace
 		TEST_CHECK(!occluder.IsFrameValid());
 		TEST_CHECK(!occluder.IsWorldAABBOccluded(straddlingSeamBehind));
 	}
+
+	void TestRigidBodyFastPathAndPsoStateHashCache()
+	{
+		// 1. All-rigid-body multi-pass ParaX model (like Bumi robot links: 100% weight on 1 bone per pass)
+		{
+			ParaXHeaderDef hdr{};
+			hdr.IsAnimated = 1;
+			CParaXModel rigidModel(hdr);
+			rigidModel.animated = true;
+			rigidModel.animBones = true;
+			rigidModel.animGeometry = false;
+			rigidModel.m_objNum.nBones = 26;
+			rigidModel.bones = new Bone[26];
+
+			ModelVertex verts[6] = {};
+			for (int i = 0; i < 3; ++i)
+			{
+				verts[i].pos = Vector3(static_cast<float>(i), 0.0f, 0.0f);
+				verts[i].bones[0] = 5;
+				verts[i].weights[0] = 0xff;
+			}
+			for (int i = 3; i < 6; ++i)
+			{
+				verts[i].pos = Vector3(static_cast<float>(i), 1.0f, 0.0f);
+				verts[i].bones[0] = 18;
+				verts[i].weights[0] = 0xff;
+			}
+			uint16 indices[6] = { 0, 1, 2, 0, 1, 2 };
+
+			rigidModel.SetRenderMethod(CParaXModel::SOFT_ANIM);
+			rigidModel.initVertices(6, verts);
+			rigidModel.initIndices(6, indices);
+
+			ModelGeoset g0{}, g1{};
+			g0.SetVertexStart(0);
+			g1.SetVertexStart(3);
+			rigidModel.geosets.push_back(g0);
+			rigidModel.geosets.push_back(g1);
+
+			ModelRenderPass p0{}, p1{};
+			p0.geoset = 0;
+			p0.SetStartIndex(0);
+			p0.indexCount = 3;
+			p1.geoset = 1;
+			p1.SetStartIndex(3);
+			p1.indexCount = 3;
+			rigidModel.passes.push_back(p0);
+			rigidModel.passes.push_back(p1);
+
+			rigidModel.DetectRigidBodyPasses();
+			TEST_CHECK(rigidModel.passes[0].is_rigid_body);
+			TEST_CHECK(rigidModel.passes[1].is_rigid_body);
+
+			// Now make pass 1 have a 2-bone blended vertex and verify mixed model does NOT falsely report rigid
+			rigidModel.passes[1].is_rigid_body = false;
+			rigidModel.m_origVertices[4].weights[0] = 128;
+			rigidModel.m_origVertices[4].weights[1] = 127;
+			rigidModel.m_origVertices[4].bones[1] = 19;
+			rigidModel.DetectRigidBodyPasses();
+			TEST_CHECK(rigidModel.passes[0].is_rigid_body);
+			TEST_CHECK(!rigidModel.passes[1].is_rigid_body);
+			TEST_CHECK(!rigidModel.CanUseRigidBodyGpuBuffers());
+		}
+
+		// 2. RHIStateTracker cached PSO hash consistency and invalidation
+		{
+			RHIStateTracker tracker;
+			const uint64_t h0 = tracker.ComputePSOHash(0x1111ULL, 0x2222ULL, EPrimitiveType::TRIANGLELIST, 0x3333ULL);
+			const uint64_t h0Repeat = tracker.ComputePSOHash(0x1111ULL, 0x2222ULL, EPrimitiveType::TRIANGLELIST, 0x3333ULL);
+			TEST_CHECK(h0 == h0Repeat);
+
+			// Changing CULLMODE (e.g. doubleSided robot pass) must invalidate cached render-state hash
+			tracker.SetRenderState(ERenderState::CULLMODE, RSV_CULL_NONE);
+			const uint64_t hNoCull = tracker.ComputePSOHash(0x1111ULL, 0x2222ULL, EPrimitiveType::TRIANGLELIST, 0x3333ULL);
+			TEST_CHECK(hNoCull != h0);
+
+			// Restoring CULLMODE must produce the exact original deterministic PSO hash
+			tracker.SetRenderState(ERenderState::CULLMODE, RSV_CULL_CCW);
+			const uint64_t hRestored = tracker.ComputePSOHash(0x1111ULL, 0x2222ULL, EPrimitiveType::TRIANGLELIST, 0x3333ULL);
+			TEST_CHECK(hRestored == h0);
+		}
+	}
 }
 
 int main()
@@ -342,6 +427,7 @@ int main()
 	TestBlockChunkVisibilityGraph();
 	TestSoftwareOcclusionBufferMode(true);   // D3D11 / D3D12 / Vulkan / Metal / WebGPU [0, 1] clip Z
 	TestSoftwareOcclusionBufferMode(false);  // OpenGL [-1, 1] clip Z
+	TestRigidBodyFastPathAndPsoStateHashCache();
 
 	std::printf("=== Summary: %d passed, %d failed ===\n", g_passed, g_failed);
 	return (g_failed == 0) ? EXIT_SUCCESS : EXIT_FAILURE;

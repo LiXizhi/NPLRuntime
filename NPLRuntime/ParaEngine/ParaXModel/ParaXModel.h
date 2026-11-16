@@ -218,6 +218,10 @@ namespace ParaEngine
 		void RenderShaderAnim(SceneState* pSceneState, CParameterBlock* pMaterialParams = NULL);
 		void RenderBMaxModel(SceneState* pSceneState, CParameterBlock* pMaterialParams = NULL);
 		void RenderBMaxGpuSkinned(SceneState* pSceneState, CParameterBlock* pMaterialParams = NULL);
+		void RenderRigidBodyPasses(SceneState* pSceneState, CParameterBlock* pMaterialParams = NULL);
+		void DetectRigidBodyPasses();
+		bool CanUseRigidBodyGpuBuffers() const;
+		bool EnsureRigidBodyGpuBuffers();
 		bool CanUseGpuSkinning() const;
 		bool EnsureGpuSkinBuffers();
 		void UploadBonePalette(CEffectFile* pEffect) const;
@@ -401,6 +405,12 @@ namespace ParaEngine
 		ParaIndexBuffer m_pGpuSkinIB;
 		bool m_bGpuSkinBufferBuilt = false;
 		bool m_bGpuSkinBufferFailed = false;
+
+		ParaVertexBuffer m_pRigidVB;
+		ParaIndexBuffer m_pRigidIB;
+		bool m_bAllPassesRigidBody = false;
+		bool m_bRigidBufferBuilt = false;
+		bool m_bRigidBufferFailed = false;
 
 		static const size_t MAX_USE_VERTEX_BUFFER_SIZE = 1024 * 1024 * 256;
 		static size_t m_uUsedVB;

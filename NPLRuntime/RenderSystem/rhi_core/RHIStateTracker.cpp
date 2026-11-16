@@ -75,6 +75,7 @@ namespace ParaEngine
 		m_dirtyRasterizer = true;
 		m_dirtyDepthStencil = true;
 		m_dirtySamplersMask = 0xFFFFu;
+		m_dirtyPsoStateHash = true;
 	}
 
 	bool RHIStateTracker::SetRenderState(ERenderState state, uint32_t value)
@@ -102,6 +103,7 @@ namespace ParaEngine
 		case ERenderState::COLORWRITEENABLE2:
 		case ERenderState::COLORWRITEENABLE3:
 			m_dirtyBlend = true;
+			m_dirtyPsoStateHash = true;
 			break;
 
 		case ERenderState::CULLMODE:
@@ -112,6 +114,7 @@ namespace ParaEngine
 		case ERenderState::MULTISAMPLEANTIALIAS:
 		case ERenderState::CLIPPLANEENABLE:
 			m_dirtyRasterizer = true;
+			m_dirtyPsoStateHash = true;
 			break;
 
 		case ERenderState::ZENABLE:
@@ -130,6 +133,7 @@ namespace ParaEngine
 		case ERenderState::CCW_STENCILZFAIL:
 		case ERenderState::CCW_STENCILPASS:
 			m_dirtyDepthStencil = true;
+			m_dirtyPsoStateHash = true;
 			break;
 
 		default:
@@ -197,54 +201,60 @@ namespace ParaEngine
 
 	uint64_t RHIStateTracker::ComputePSOHash(uint64_t shaderHash, uint64_t vertexDeclHash, EPrimitiveType topology, uint64_t renderTargetFormatHash) const
 	{
-		uint64_t h = 14695981039346656037ULL;
+		if (m_dirtyPsoStateHash)
+		{
+			uint64_t sh = 14695981039346656037ULL;
+
+			// Blend state
+			HashU32(sh, GetRenderState(ERenderState::ALPHABLENDENABLE));
+			HashU32(sh, GetRenderState(ERenderState::SEPARATEALPHABLENDENABLE));
+			HashU32(sh, GetRenderState(ERenderState::SRCBLEND));
+			HashU32(sh, GetRenderState(ERenderState::DESTBLEND));
+			HashU32(sh, GetRenderState(ERenderState::BLENDOP));
+			HashU32(sh, GetRenderState(ERenderState::SRCBLENDALPHA));
+			HashU32(sh, GetRenderState(ERenderState::DESTBLENDALPHA));
+			HashU32(sh, GetRenderState(ERenderState::BLENDOPALPHA));
+			HashU32(sh, GetRenderState(ERenderState::COLORWRITEENABLE));
+
+			// Rasterizer state
+			HashU32(sh, GetRenderState(ERenderState::CULLMODE));
+			HashU32(sh, GetRenderState(ERenderState::FILLMODE));
+			HashU32(sh, GetRenderState(ERenderState::SCISSORTESTENABLE));
+			HashU32(sh, GetRenderState(ERenderState::DEPTHBIAS));
+			HashU32(sh, GetRenderState(ERenderState::SLOPESCALEDEPTHBIAS));
+			HashU32(sh, GetRenderState(ERenderState::CLIPPLANEENABLE));
+
+			// Depth-stencil state
+			HashU32(sh, GetRenderState(ERenderState::ZENABLE));
+			HashU32(sh, GetRenderState(ERenderState::ZWRITEENABLE));
+			HashU32(sh, GetRenderState(ERenderState::ZFUNC));
+			HashU32(sh, GetRenderState(ERenderState::STENCILENABLE));
+			if (GetRenderState(ERenderState::STENCILENABLE))
+			{
+				HashU32(sh, GetRenderState(ERenderState::STENCILFUNC));
+				HashU32(sh, GetRenderState(ERenderState::STENCILFAIL));
+				HashU32(sh, GetRenderState(ERenderState::STENCILZFAIL));
+				HashU32(sh, GetRenderState(ERenderState::STENCILPASS));
+				HashU32(sh, GetRenderState(ERenderState::STENCILMASK));
+				HashU32(sh, GetRenderState(ERenderState::STENCILWRITEMASK));
+				HashU32(sh, GetRenderState(ERenderState::TWOSIDEDSTENCILMODE));
+				if (GetRenderState(ERenderState::TWOSIDEDSTENCILMODE))
+				{
+					HashU32(sh, GetRenderState(ERenderState::CCW_STENCILFUNC));
+					HashU32(sh, GetRenderState(ERenderState::CCW_STENCILFAIL));
+					HashU32(sh, GetRenderState(ERenderState::CCW_STENCILZFAIL));
+					HashU32(sh, GetRenderState(ERenderState::CCW_STENCILPASS));
+				}
+			}
+			m_cachedRenderStatePsoHash = sh;
+			m_dirtyPsoStateHash = false;
+		}
+
+		uint64_t h = m_cachedRenderStatePsoHash;
 		HashU64(h, shaderHash);
 		HashU64(h, vertexDeclHash);
 		HashU64(h, renderTargetFormatHash);
 		HashU32(h, static_cast<uint32_t>(topology));
-
-		// Blend state
-		HashU32(h, GetRenderState(ERenderState::ALPHABLENDENABLE));
-		HashU32(h, GetRenderState(ERenderState::SEPARATEALPHABLENDENABLE));
-		HashU32(h, GetRenderState(ERenderState::SRCBLEND));
-		HashU32(h, GetRenderState(ERenderState::DESTBLEND));
-		HashU32(h, GetRenderState(ERenderState::BLENDOP));
-		HashU32(h, GetRenderState(ERenderState::SRCBLENDALPHA));
-		HashU32(h, GetRenderState(ERenderState::DESTBLENDALPHA));
-		HashU32(h, GetRenderState(ERenderState::BLENDOPALPHA));
-		HashU32(h, GetRenderState(ERenderState::COLORWRITEENABLE));
-
-		// Rasterizer state
-		HashU32(h, GetRenderState(ERenderState::CULLMODE));
-		HashU32(h, GetRenderState(ERenderState::FILLMODE));
-		HashU32(h, GetRenderState(ERenderState::SCISSORTESTENABLE));
-		HashU32(h, GetRenderState(ERenderState::DEPTHBIAS));
-		HashU32(h, GetRenderState(ERenderState::SLOPESCALEDEPTHBIAS));
-		HashU32(h, GetRenderState(ERenderState::CLIPPLANEENABLE));
-
-		// Depth-stencil state
-		HashU32(h, GetRenderState(ERenderState::ZENABLE));
-		HashU32(h, GetRenderState(ERenderState::ZWRITEENABLE));
-		HashU32(h, GetRenderState(ERenderState::ZFUNC));
-		HashU32(h, GetRenderState(ERenderState::STENCILENABLE));
-		if (GetRenderState(ERenderState::STENCILENABLE))
-		{
-			HashU32(h, GetRenderState(ERenderState::STENCILFUNC));
-			HashU32(h, GetRenderState(ERenderState::STENCILFAIL));
-			HashU32(h, GetRenderState(ERenderState::STENCILZFAIL));
-			HashU32(h, GetRenderState(ERenderState::STENCILPASS));
-			HashU32(h, GetRenderState(ERenderState::STENCILMASK));
-			HashU32(h, GetRenderState(ERenderState::STENCILWRITEMASK));
-			HashU32(h, GetRenderState(ERenderState::TWOSIDEDSTENCILMODE));
-			if (GetRenderState(ERenderState::TWOSIDEDSTENCILMODE))
-			{
-				HashU32(h, GetRenderState(ERenderState::CCW_STENCILFUNC));
-				HashU32(h, GetRenderState(ERenderState::CCW_STENCILFAIL));
-				HashU32(h, GetRenderState(ERenderState::CCW_STENCILZFAIL));
-				HashU32(h, GetRenderState(ERenderState::CCW_STENCILPASS));
-			}
-		}
-
 		return h;
 	}
 }

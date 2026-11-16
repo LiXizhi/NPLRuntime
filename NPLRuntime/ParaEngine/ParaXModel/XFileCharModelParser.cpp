@@ -263,6 +263,7 @@ CParaXModel* ParaEngine::XFileCharModelParser::LoadParaX_Body()
 						}
 					}
 				}
+				pMesh->DetectRigidBodyPasses();
 			}
 		}
 		else if (m_xheader.type == PARAX_MODEL_DX_STATIC)

@@ -88,5 +88,8 @@ namespace ParaEngine
 		bool m_dirtyRasterizer;
 		bool m_dirtyDepthStencil;
 		uint32_t m_dirtySamplersMask;
+
+		mutable uint64_t m_cachedRenderStatePsoHash = 0;
+		mutable bool m_dirtyPsoStateHash = true;
 	};
 }

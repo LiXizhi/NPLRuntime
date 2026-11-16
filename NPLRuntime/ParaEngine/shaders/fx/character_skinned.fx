@@ -81,18 +81,30 @@ void SkinVertex(float3 pos, float3 norm, float4 blendWeights, float4 blendIndice
 		int4 idx = (int4)(blendIndices * 255.0 + 0.5) * 3;
 		float4 p4 = float4(pos, 1.0);
 
-		float4 r0 = g_mWorldMatrixArray[idx.x + 0] * blendWeights.x
-			+ g_mWorldMatrixArray[idx.y + 0] * blendWeights.y
-			+ g_mWorldMatrixArray[idx.z + 0] * blendWeights.z
-			+ g_mWorldMatrixArray[idx.w + 0] * blendWeights.w;
-		float4 r1 = g_mWorldMatrixArray[idx.x + 1] * blendWeights.x
-			+ g_mWorldMatrixArray[idx.y + 1] * blendWeights.y
-			+ g_mWorldMatrixArray[idx.z + 1] * blendWeights.z
-			+ g_mWorldMatrixArray[idx.w + 1] * blendWeights.w;
-		float4 r2 = g_mWorldMatrixArray[idx.x + 2] * blendWeights.x
-			+ g_mWorldMatrixArray[idx.y + 2] * blendWeights.y
-			+ g_mWorldMatrixArray[idx.z + 2] * blendWeights.z
-			+ g_mWorldMatrixArray[idx.w + 2] * blendWeights.w;
+		float4 r0 = g_mWorldMatrixArray[idx.x + 0] * blendWeights.x;
+		float4 r1 = g_mWorldMatrixArray[idx.x + 1] * blendWeights.x;
+		float4 r2 = g_mWorldMatrixArray[idx.x + 2] * blendWeights.x;
+		if (blendWeights.y + blendWeights.z + blendWeights.w > 0.001)
+		{
+			if (blendWeights.y > 0.001)
+			{
+				r0 += g_mWorldMatrixArray[idx.y + 0] * blendWeights.y;
+				r1 += g_mWorldMatrixArray[idx.y + 1] * blendWeights.y;
+				r2 += g_mWorldMatrixArray[idx.y + 2] * blendWeights.y;
+			}
+			if (blendWeights.z > 0.001)
+			{
+				r0 += g_mWorldMatrixArray[idx.z + 0] * blendWeights.z;
+				r1 += g_mWorldMatrixArray[idx.z + 1] * blendWeights.z;
+				r2 += g_mWorldMatrixArray[idx.z + 2] * blendWeights.z;
+			}
+			if (blendWeights.w > 0.001)
+			{
+				r0 += g_mWorldMatrixArray[idx.w + 0] * blendWeights.w;
+				r1 += g_mWorldMatrixArray[idx.w + 1] * blendWeights.w;
+				r2 += g_mWorldMatrixArray[idx.w + 2] * blendWeights.w;
+			}
+		}
 
 		outPos = float4(dot(p4, r0), dot(p4, r1), dot(p4, r2), 1.0);
 		outNorm = float3(dot(norm, r0.xyz), dot(norm, r1.xyz), dot(norm, r2.xyz));
