@@ -549,6 +549,10 @@ function markEnterHandledByKeydown() {
     }, 0);
 }
 
+function isTouchOrMobileMode() {
+    return isTouchDevice || isMobile || ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+}
+
 function resetMobileInputSentinel() {
     if (!input) return;
     input.value = MOBILE_INPUT_SENTINEL;
@@ -588,7 +592,7 @@ Module.StartTextInput = function (view_bottom, params) {
         return;
     }
     if (!isImeComposing) {
-        if (isTouchDevice || isMobile) {
+        if (isTouchOrMobileMode()) {
             resetMobileInputSentinel();
         } else if (input) {
             input.value = "";
@@ -605,7 +609,7 @@ Module.StartTextInput = function (view_bottom, params) {
     input_info.view_bottom = (view_bottom || 0) / window.devicePixelRatio;
 
     if (input) {
-        if (!wasInputing && isMobile && document.activeElement === input) {
+        if (!wasInputing && isTouchOrMobileMode() && document.activeElement === input) {
             input.blur();
         }
         input.focus();
@@ -623,17 +627,17 @@ Module.StopTextInput = function () {
 input_info.isTouchDevice = isTouchDevice;
 
 if (input) {
-    if (isMobile) {
-        input.addEventListener("blur", function () {
+    input.addEventListener("blur", function () {
+        if (isTouchOrMobileMode()) {
             isImeComposing = false;
             input_info.inputing = false;
             canvas.style.top = '0px';
-        });
-    }
+        }
+    });
 
     input.addEventListener("compositionstart", function () {
         isImeComposing = true;
-        if (!(isTouchDevice || isMobile)) {
+        if (!isTouchOrMobileMode()) {
             input.value = "";
         }
     });
@@ -647,7 +651,7 @@ if (input) {
             sendParaTextInput(committed);
         }
         justFinishedComposition = true;
-        if (isTouchDevice || isMobile) {
+        if (isTouchOrMobileMode()) {
             resetMobileInputSentinel();
         } else {
             input.value = "";
@@ -658,90 +662,90 @@ if (input) {
         }, 0);
     });
 
-    if (isTouchDevice || isMobile) {
+    if (isTouchOrMobileMode()) {
         resetMobileInputSentinel();
-
-        input.addEventListener("beforeinput", function (event) {
-            if (isImeComposing || event.isComposing) return;
-            const inputType = event.inputType || "";
-            if (inputType === "deleteContentBackward" || inputType === "deleteWordBackward" || inputType === "deleteSoftLineBackward") {
-                if ((input.value || "").length === 0 && !suppressInputBackspace) {
-                    event.preventDefault();
-                    tapParaKey(PARA_VK_BACKSPACE);
-                    resetMobileInputSentinel();
-                }
-            } else if (inputType === "insertLineBreak" || inputType === "insertParagraph") {
-                event.preventDefault();
-                if (!suppressInputEnter) {
-                    markEnterHandledByKeydown();
-                    tapParaKey(PARA_VK_RETURN);
-                }
-            }
-        });
-
-        input.addEventListener("input", function (event) {
-            if (isImeComposing || (event && event.isComposing)) return;
-            if (justFinishedComposition) {
-                resetMobileInputSentinel();
-                return;
-            }
-
-            const rawValue = input.value || "";
-            const typed = rawValue.replace(/\u200B/g, "");
-            const inputType = (event && event.inputType) || "";
-
-            if (typed !== "") {
-                if (getOperatingSystem() === "pico" && typed.length > 1) {
-                    resetMobileInputSentinel();
-                    return;
-                }
-                const cleanText = typed.replace(/[\r\n]+/g, "");
-                if (cleanText !== "") {
-                    sendParaTextInput(cleanText);
-                }
-                if (/[\r\n]/.test(typed) && !suppressInputEnter) {
-                    tapParaKey(PARA_VK_RETURN);
-                }
-                resetMobileInputSentinel();
-                return;
-            }
-
-            const remainingSentinelLen = rawValue.length;
-            if (suppressInputBackspace || inputType.indexOf("Forward") !== -1) {
-                suppressInputBackspace = false;
-                mobileSentinelLen = remainingSentinelLen;
-                if (mobileSentinelLen < MOBILE_SENTINEL_MIN_LEN) {
-                    resetMobileInputSentinel();
-                }
-                return;
-            }
-
-            if (remainingSentinelLen < mobileSentinelLen || inputType === "deleteContentBackward" || inputType === "deleteWordBackward" || inputType === "deleteSoftLineBackward") {
-                let deleteCount = mobileSentinelLen - remainingSentinelLen;
-                if (deleteCount <= 0) {
-                    deleteCount = 1;
-                } else if (remainingSentinelLen === 0 && mobileSentinelLen >= MOBILE_SENTINEL_MIN_LEN) {
-                    deleteCount = 1;
-                } else if (deleteCount > 16) {
-                    deleteCount = 16;
-                }
-                mobileSentinelLen = remainingSentinelLen;
-                for (let i = 0; i < deleteCount; i++) {
-                    tapParaKey(PARA_VK_BACKSPACE);
-                }
-                if (mobileSentinelLen < MOBILE_SENTINEL_MIN_LEN) {
-                    resetMobileInputSentinel();
-                }
-            } else if (remainingSentinelLen !== mobileSentinelLen) {
-                mobileSentinelLen = remainingSentinelLen;
-                if (mobileSentinelLen < MOBILE_SENTINEL_MIN_LEN) {
-                    resetMobileInputSentinel();
-                }
-            }
-        });
     } else {
         input.focus();
     }
+
+    input.addEventListener("beforeinput", function (event) {
+        if (!isTouchOrMobileMode() || isImeComposing || event.isComposing) return;
+        const inputType = event.inputType || "";
+        if (inputType === "deleteContentBackward" || inputType === "deleteWordBackward" || inputType === "deleteSoftLineBackward") {
+            if ((input.value || "").length === 0 && !suppressInputBackspace) {
+                event.preventDefault();
+                tapParaKey(PARA_VK_BACKSPACE);
+                resetMobileInputSentinel();
+            }
+        } else if (inputType === "insertLineBreak" || inputType === "insertParagraph") {
+            event.preventDefault();
+            if (!suppressInputEnter) {
+                markEnterHandledByKeydown();
+                tapParaKey(PARA_VK_RETURN);
+            }
+        }
+    });
+
+    input.addEventListener("input", function (event) {
+        if (!isTouchOrMobileMode() || isImeComposing || (event && event.isComposing)) return;
+        if (justFinishedComposition) {
+            resetMobileInputSentinel();
+            return;
+        }
+
+        const rawValue = input.value || "";
+        const typed = rawValue.replace(/\u200B/g, "");
+        const inputType = (event && event.inputType) || "";
+
+        if (typed !== "") {
+            if (getOperatingSystem() === "pico" && typed.length > 1) {
+                resetMobileInputSentinel();
+                return;
+            }
+            const cleanText = typed.replace(/[\r\n]+/g, "");
+            if (cleanText !== "") {
+                sendParaTextInput(cleanText);
+            }
+            if (/[\r\n]/.test(typed) && !suppressInputEnter) {
+                tapParaKey(PARA_VK_RETURN);
+            }
+            resetMobileInputSentinel();
+            return;
+        }
+
+        const remainingSentinelLen = rawValue.length;
+        if (suppressInputBackspace || inputType.indexOf("Forward") !== -1) {
+            suppressInputBackspace = false;
+            mobileSentinelLen = remainingSentinelLen;
+            if (mobileSentinelLen < MOBILE_SENTINEL_MIN_LEN) {
+                resetMobileInputSentinel();
+            }
+            return;
+        }
+
+        if (remainingSentinelLen < mobileSentinelLen || inputType === "deleteContentBackward" || inputType === "deleteWordBackward" || inputType === "deleteSoftLineBackward") {
+            let deleteCount = mobileSentinelLen - remainingSentinelLen;
+            if (deleteCount <= 0) {
+                deleteCount = 1;
+            } else if (remainingSentinelLen === 0 && mobileSentinelLen >= MOBILE_SENTINEL_MIN_LEN) {
+                deleteCount = 1;
+            } else if (deleteCount > 16) {
+                deleteCount = 16;
+            }
+            mobileSentinelLen = remainingSentinelLen;
+            for (let i = 0; i < deleteCount; i++) {
+                tapParaKey(PARA_VK_BACKSPACE);
+            }
+            if (mobileSentinelLen < MOBILE_SENTINEL_MIN_LEN) {
+                resetMobileInputSentinel();
+            }
+        } else if (remainingSentinelLen !== mobileSentinelLen) {
+            mobileSentinelLen = remainingSentinelLen;
+            if (mobileSentinelLen < MOBILE_SENTINEL_MIN_LEN) {
+                resetMobileInputSentinel();
+            }
+        }
+    });
 }
 
 window.ParaCraftModule = Module;
