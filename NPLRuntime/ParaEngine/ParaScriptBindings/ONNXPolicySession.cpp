@@ -3,6 +3,7 @@
 #ifdef USE_ONNXRUNTIME
 
 #include <onnxruntime_cxx_api.h>
+#define NPL_ROBOT_NO_MUJOCO_HEADER 1
 #include "RobotResourcePath.h"
 
 #include <cmath>
@@ -41,12 +42,24 @@ namespace ParaScripting
 			options.SetIntraOpNumThreads(1);
 			options.SetInterOpNumThreads(1);
 			options.SetGraphOptimizationLevel(GraphOptimizationLevel::ORT_ENABLE_ALL);
+			if (RobotFileExistsDirect(filename))
+			{
 #ifdef _WIN32
-			const std::wstring wideFilename = RobotWidePath(filename);
-			m_impl->session.reset(new Ort::Session(m_impl->env, wideFilename.c_str(), options));
+				const std::wstring wideFilename = RobotWidePath(filename);
+				m_impl->session.reset(new Ort::Session(m_impl->env, wideFilename.c_str(), options));
 #else
-			m_impl->session.reset(new Ort::Session(m_impl->env, filename.c_str(), options));
+				m_impl->session.reset(new Ort::Session(m_impl->env, filename.c_str(), options));
 #endif
+			}
+			else
+			{
+				std::vector<char> modelBytes;
+				if (!RobotReadResourceBytes(filename, modelBytes) || modelBytes.empty())
+				{
+					throw std::runtime_error("cannot open ONNX policy file: " + filename);
+				}
+				m_impl->session.reset(new Ort::Session(m_impl->env, modelBytes.data(), modelBytes.size(), options));
+			}
 
 			const size_t modelInputCount = m_impl->session->GetInputCount();
 			const size_t modelOutputCount = m_impl->session->GetOutputCount();

@@ -2,16 +2,34 @@
 
 #ifdef USE_MUJOCO
 
+#define NPL_ROBOT_NO_MUJOCO_HEADER 1
+#include "RobotResourcePath.h"
+#include "IO/ParaFile.h"
 #include "ParaScriptingMuJoCo.h"
 #include "NPLScriptingState.h"
 #include "../robotics/RobotRenderAsset.h"
 
+#include <cstring>
+#include <limits>
 #include <luabind/luabind.hpp>
 #include <map>
 #include <mutex>
 
 namespace
 {
+	bool ReadRobotResourceViaParaFile(const std::string& path, std::vector<char>& out)
+	{
+		ParaEngine::CParaFile paraFile(path.c_str());
+		if (paraFile.isEof())
+			return false;
+		const size_t size = paraFile.getSize();
+		if (size > static_cast<size_t>((std::numeric_limits<int>::max)()))
+			return false;
+		out.resize(size);
+		if (size > 0 && paraFile.getBuffer())
+			std::memcpy(out.data(), paraFile.getBuffer(), size);
+		return true;
+	}
 	typedef std::map<int, std::shared_ptr<ParaScripting::MuJoCoSimulation> > SimulationMap;
 
 	SimulationMap& GetSimulations()
@@ -136,6 +154,7 @@ bool ParaScripting::ParaMuJoCo::SetGeomParaPosition(int handle, int geomId, doub
 
 void ParaScripting::CNPLScriptingState::LoadHAPI_MuJoCo()
 {
+	GetRobotResourceFallbackReader() = &ReadRobotResourceViaParaFile;
 	using namespace luabind;
 	module(GetLuaState())
 	[

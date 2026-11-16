@@ -1,3 +1,7 @@
+#ifdef _HAS_STD_BYTE
+#undef _HAS_STD_BYTE
+#define _HAS_STD_BYTE 1
+#endif
 #include "ParaScriptingMuJoCo.h"
 
 #ifdef USE_MUJOCO

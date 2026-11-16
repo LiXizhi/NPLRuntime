@@ -87,6 +87,7 @@ Only one should be ON.
 | `NPLRUNTIME_PHYSICS` | ON | OFF |
 | `NPLRUNTIME_AUDIO` | ON | OFF |
 | `NPLRUNTIME_SUPPORT_FBX` | ON | OFF |
+| `NPLRUNTIME_ENABLE_ROBOTICS` | ON (Win64 / macOS / Web single-thread) | OFF |
 | `NPLRUNTIME_NPLMono2` | platform-dependent | OFF |
 | `NPLRUNTIME_OCE` | OFF | OFF |
 | `NPLRUNTIME_DARKNET` | OFF | OFF |
@@ -145,8 +146,8 @@ All legacy mini-scripts have been consolidated into two unified, non-interactive
 
 | Script | Host OS | Subcommands |
 |--------|---------|-------------|
-| `build_win32.bat` | Windows | `client`, `debug`, `server`, `web`, `android`, `picovr`, `run`, `run-server`, `test`, `clean` (`--oce`, `--configure`, `--install-deps`) |
-| `build_linux.sh` | Linux / macOS / WSL | `server`, `client`, `web`, `android`, `picovr`, `ios [framework\|device\|sim]`, `run-server`, `test` (`--oce`, `--xcode`, `--build-sdl2`, `--install`) |
+| `build_win32.bat` | Windows | `client`, `debug`, `server`, `web`, `android`, `picovr`, `run`, `run-server`, `test`, `clean` (`--oce`, `--no-robotics`, `--configure`, `--install-deps`) |
+| `build_linux.sh` | Linux / macOS / WSL | `server`, `client`, `web`, `android`, `picovr`, `ios [framework\|device\|sim]`, `run`, `run-server`, `test` (`--oce`, `--robotics`, `--no-robotics`, `--xcode`, `--build-sdl2`, `--install`) |
 
 ## Common Build Recipes
 

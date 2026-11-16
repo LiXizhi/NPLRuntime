@@ -293,7 +293,7 @@
                 "-ExecutionPolicy",
                 "Bypass",
                 "-Command",
-                "$boost = if ($env:BOOST_ROOT -and (Test-Path $env:BOOST_ROOT)) { $env:BOOST_ROOT } elseif (Test-Path 'C:/lxzsrc/externals/boost_1_90_0') { 'C:/lxzsrc/externals/boost_1_90_0' } elseif (Test-Path 'C:/local/boost_1_85_0') { 'C:/local/boost_1_85_0' } else { 'C:/Boost' }; cmake -S '${workspaceFolder}/NPLRuntime' -B '${workspaceFolder}/build-win64' -A x64 -DBOOST_ROOT=\"$boost\" -DNPLRUNTIME_RENDERER=OPENGL"
+                "$boost = if ($env:BOOST_ROOT -and (Test-Path $env:BOOST_ROOT)) { $env:BOOST_ROOT } elseif (Test-Path 'C:/lxzsrc/externals/boost_1_90_0') { 'C:/lxzsrc/externals/boost_1_90_0' } elseif (Test-Path 'C:/local/boost_1_85_0') { 'C:/local/boost_1_85_0' } else { 'C:/Boost' }; cmake -S '${workspaceFolder}/NPLRuntime' -B '${workspaceFolder}/build-win64' -A x64 -DBOOST_ROOT=\"$boost\" -DNPLRUNTIME_RENDERER=OPENGL -DNPLRUNTIME_ENABLE_ROBOTICS=ON"
             ],
             "problemMatcher": [],
             "presentation": {

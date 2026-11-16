@@ -2,10 +2,14 @@
 
 #ifdef USE_ONNXRUNTIME
 
+#define NPL_ROBOT_NO_MUJOCO_HEADER 1
+#include "RobotResourcePath.h"
+#include "IO/ParaFile.h"
 #include "ONNXPolicySession.h"
 #include "ParaScriptingONNXPolicy.h"
 #include "NPLScriptingState.h"
 
+#include <cstring>
 #include <luabind/luabind.hpp>
 #include <limits>
 #include <memory>
@@ -15,6 +19,19 @@
 
 namespace
 {
+	bool ReadONNXResourceViaParaFile(const std::string& path, std::vector<char>& out)
+	{
+		ParaEngine::CParaFile paraFile(path.c_str());
+		if (paraFile.isEof())
+			return false;
+		const size_t size = paraFile.getSize();
+		if (size > static_cast<size_t>((std::numeric_limits<int>::max)()))
+			return false;
+		out.resize(size);
+		if (size > 0 && paraFile.getBuffer())
+			std::memcpy(out.data(), paraFile.getBuffer(), size);
+		return true;
+	}
 	ParaScripting::ONNXPolicySession& GetPolicySession()
 	{
 		static ParaScripting::ONNXPolicySession session;
@@ -213,6 +230,7 @@ std::string ParaScripting::ParaONNXPolicy::GetLastCreateError()
 
 void ParaScripting::CNPLScriptingState::LoadHAPI_ONNXPolicy()
 {
+	GetRobotResourceFallbackReader() = &ReadONNXResourceViaParaFile;
 	using namespace luabind;
 	module(GetLuaState())
 	[

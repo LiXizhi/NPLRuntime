@@ -145,6 +145,24 @@ if(D3DCOMPILER_47_REDIST_DLL)
     )
 endif()
 
+if(NPL_HAS_DESKTOP_MUJOCO)
+    ADD_CUSTOM_COMMAND(
+        TARGET WindowsApplication
+        POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different "$<TARGET_FILE:mujoco::mujoco>" "$<TARGET_FILE_DIR:WindowsApplication>/"
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different "$<TARGET_FILE:mujoco::mujoco>" "${OUTPUT_BIN_DIR}"
+    )
+endif()
+
+if(NPL_HAS_DESKTOP_ONNXRUNTIME)
+    ADD_CUSTOM_COMMAND(
+        TARGET WindowsApplication
+        POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different "$<TARGET_FILE:onnxruntime::onnxruntime>" "$<TARGET_FILE_DIR:WindowsApplication>/"
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different "$<TARGET_FILE:onnxruntime::onnxruntime>" "${OUTPUT_BIN_DIR}"
+    )
+endif()
+
 if(WIN32 AND NOT PARAENGINE_COMPILE_LIB)
     add_subdirectory(ParaApplyWaiter)
 endif()

@@ -90,6 +90,8 @@ Options (for server/client builds):
   --configure, -c      Force CMake re-configuration
   --clean              Remove the target build directory before building
   --oce                Enable OpenCASCADE CAD plugin (-DNPLRUNTIME_OCE=ON)
+  --robotics           Enable MuJoCo + ONNX Runtime robotics (default ON on macOS client)
+  --no-robotics        Disable MuJoCo + ONNX Runtime robotics
   --xcode              Generate Xcode project on macOS (-G Xcode) instead of Makefiles
   --build-sdl2         Download and build SDL2 2.0.22 into build-sdl2-deps/ (Linux client)
   --install            Symlink ParaEngineServer to /usr/local/bin/npl
@@ -268,6 +270,7 @@ DO_INSTALL=0
 ENABLE_OCE=0
 USE_XCODE=0
 BUILD_SDL2_FROM_SRC=0
+ROBOTICS_OPT="auto"
 
 # Legacy compatibility: `./build_linux.sh <jobs> [Release|Debug]`
 if [[ "${1:-}" =~ ^[0-9]+$ ]]; then
@@ -289,6 +292,8 @@ while [ $# -gt 0 ]; do
         --configure|-c)  FORCE_CONFIGURE=1 ;;
         --clean)         CLEAN_BUILD=1 ;;
         --oce)           ENABLE_OCE=1 ;;
+        --robotics)      ROBOTICS_OPT="on" ;;
+        --no-robotics)   ROBOTICS_OPT="off" ;;
         --xcode)         USE_XCODE=1 ;;
         --build-sdl2)    BUILD_SDL2_FROM_SRC=1 ;;
         --install)       DO_INSTALL=1 ;;
@@ -312,6 +317,13 @@ if [ "$ENABLE_OCE" -eq 1 ]; then
 fi
 if [ "$USE_XCODE" -eq 1 ]; then
     CMAKE_EXTRA_ARGS+=("-G" "Xcode")
+fi
+
+ENABLE_ROBOTICS=0
+if [ "$ROBOTICS_OPT" = "on" ]; then
+    ENABLE_ROBOTICS=1
+elif [ "$ROBOTICS_OPT" = "auto" ] && [ "$MODE" = "client" ] && [ "$HOST_OS" = "Darwin" ]; then
+    ENABLE_ROBOTICS=1
 fi
 
 BUILD_TARGET_ARGS=()
@@ -345,9 +357,22 @@ else
     fi
 fi
 
+if [ "$ENABLE_ROBOTICS" -eq 1 ]; then
+    CMAKE_EXTRA_ARGS+=("-DNPLRUNTIME_ENABLE_ROBOTICS=ON")
+elif [ "$ROBOTICS_OPT" = "off" ]; then
+    CMAKE_EXTRA_ARGS+=("-DNPLRUNTIME_ENABLE_ROBOTICS=OFF" "-DNPLRUNTIME_MUJOCO=OFF" "-DNPLRUNTIME_ONNXRUNTIME=OFF")
+fi
+
 if [ "$CLEAN_BUILD" -eq 1 ] && [ -d "$BUILD_DIR" ]; then
     echo "[build_linux] Cleaning $BUILD_DIR..."
     rm -rf "$BUILD_DIR"
+fi
+
+if [ "$MODE" = "client" ] && [ "$ENABLE_ROBOTICS" -eq 1 ] && [ -f "$BUILD_DIR/CMakeCache.txt" ]; then
+    if ! grep -q "^NPLRUNTIME_ENABLE_ROBOTICS:BOOL=ON" "$BUILD_DIR/CMakeCache.txt" 2>/dev/null; then
+        echo "[build_linux] Enabling MuJoCo + ONNX Runtime in $BUILD_DIR..."
+        FORCE_CONFIGURE=1
+    fi
 fi
 
 if [ "$FORCE_CONFIGURE" -eq 1 ] || [ ! -f "$BUILD_DIR/CMakeCache.txt" ]; then

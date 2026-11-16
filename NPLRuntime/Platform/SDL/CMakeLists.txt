@@ -86,6 +86,25 @@ ADD_CUSTOM_COMMAND(
 	COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:${TARGET_NAME}> ${OUTPUT_BIN_DIR}
 )
 
+if (NOT EMSCRIPTEN)
+	if (NPL_HAS_DESKTOP_MUJOCO)
+		ADD_CUSTOM_COMMAND(
+			TARGET ${TARGET_NAME}
+			POST_BUILD
+			COMMAND ${CMAKE_COMMAND} -E copy_if_different "$<TARGET_FILE:mujoco::mujoco>" "$<TARGET_FILE_DIR:${TARGET_NAME}>/"
+			COMMAND ${CMAKE_COMMAND} -E copy_if_different "$<TARGET_FILE:mujoco::mujoco>" "${OUTPUT_BIN_DIR}"
+		)
+	endif()
+	if (NPL_HAS_DESKTOP_ONNXRUNTIME)
+		ADD_CUSTOM_COMMAND(
+			TARGET ${TARGET_NAME}
+			POST_BUILD
+			COMMAND ${CMAKE_COMMAND} -E copy_if_different "$<TARGET_FILE:onnxruntime::onnxruntime>" "$<TARGET_FILE_DIR:${TARGET_NAME}>/"
+			COMMAND ${CMAKE_COMMAND} -E copy_if_different "$<TARGET_FILE:onnxruntime::onnxruntime>" "${OUTPUT_BIN_DIR}"
+		)
+	endif()
+endif()
+
 if (EMSCRIPTEN)
 	# 程序根目录 文件系统
 	if (NOT APP_ROOT)

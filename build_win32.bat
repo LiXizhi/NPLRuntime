@@ -38,6 +38,7 @@ set "FORCE_CONFIGURE=0"
 set "CLEAN_FIRST=0"
 set "INSTALL_DEPS=0"
 set "ENABLE_OCE=0"
+set "ENABLE_ROBOTICS=1"
 
 if /I "%~1"=="--help" goto :usage
 if /I "%~1"=="-h" goto :usage
@@ -130,6 +131,16 @@ if /I "%~1"=="--oce" (
     shift
     goto :parse_build_args
 )
+if /I "%~1"=="--robotics" (
+    set "ENABLE_ROBOTICS=1"
+    shift
+    goto :parse_build_args
+)
+if /I "%~1"=="--no-robotics" (
+    set "ENABLE_ROBOTICS=0"
+    shift
+    goto :parse_build_args
+)
 echo [build_win32] Unknown argument: %~1
 echo Run "build_win32.bat --help" for usage.
 exit /b 1
@@ -144,6 +155,11 @@ if /I "%MODE%"=="server" (
 ) else (
     set "BUILD_DIR=%REPO_ROOT%\build-win64"
     set "CMAKE_MODE_ARGS=-DNPLRUNTIME_SERVER=OFF -DNPLRUNTIME_RENDERER=OPENGL"
+    if "%ENABLE_ROBOTICS%"=="1" (
+        set "CMAKE_MODE_ARGS=!CMAKE_MODE_ARGS! -DNPLRUNTIME_ENABLE_ROBOTICS=ON"
+    ) else (
+        set "CMAKE_MODE_ARGS=!CMAKE_MODE_ARGS! -DNPLRUNTIME_ENABLE_ROBOTICS=OFF -DNPLRUNTIME_MUJOCO=OFF -DNPLRUNTIME_ONNXRUNTIME=OFF"
+    )
     if /I "%CONFIG%"=="Debug" (
         set "EXPECTED_BIN=%REPO_ROOT%\build-win64\bin\ParaEngineClient_d.exe"
     ) else (
@@ -154,6 +170,12 @@ if "%ENABLE_OCE%"=="1" set "CMAKE_MODE_ARGS=%CMAKE_MODE_ARGS% -DNPLRUNTIME_OCE=O
 
 set "NEED_CONFIGURE=%FORCE_CONFIGURE%"
 if not exist "%BUILD_DIR%\CMakeCache.txt" set "NEED_CONFIGURE=1"
+if /I "%MODE%"=="client" if "%ENABLE_ROBOTICS%"=="1" if exist "%BUILD_DIR%\CMakeCache.txt" (
+    findstr /C:"NPLRUNTIME_ENABLE_ROBOTICS:BOOL=ON" "%BUILD_DIR%\CMakeCache.txt" >nul 2>&1 || (
+        echo [build_win32] Enabling MuJoCo + ONNX Runtime in "%BUILD_DIR%"...
+        set "NEED_CONFIGURE=1"
+    )
+)
 
 if "%NEED_CONFIGURE%"=="1" (
     call :resolve_boost || exit /b 1
@@ -352,6 +374,7 @@ echo Flags ^(for client/server builds^):
 echo   --configure, -c      Re-run CMake configuration before building
 echo   --clean-first        Clean target before building ^(full rebuild^)
 echo   --oce                Enable OpenCASCADE CAD plugin ^(-DNPLRUNTIME_OCE=ON^)
+echo   --no-robotics        Disable MuJoCo + ONNX Runtime robotics ^(default ON for 64-bit client^)
 echo   --install-deps       Auto-download CMake and Boost 1.85.0 if not found locally
 echo.
 echo Environment Variables:

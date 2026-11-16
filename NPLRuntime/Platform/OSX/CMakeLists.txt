@@ -181,6 +181,30 @@ if (NPLRUNTIME_PHYSICS AND NOT PHYSICS_STATICLIB)
     )
 endif ()
 
+if (NPL_HAS_DESKTOP_MUJOCO)
+    add_custom_command(TARGET Paracraft POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E make_directory "$<TARGET_BUNDLE_DIR:Paracraft>/Contents/Frameworks"
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different
+            "$<TARGET_FILE:mujoco::mujoco>"
+            "$<TARGET_BUNDLE_DIR:Paracraft>/Contents/Frameworks/$<TARGET_SONAME_FILE_NAME:mujoco::mujoco>"
+        COMMAND /bin/ln -sf
+            "$<TARGET_SONAME_FILE_NAME:mujoco::mujoco>"
+            "$<TARGET_BUNDLE_DIR:Paracraft>/Contents/Frameworks/$<TARGET_LINKER_FILE_NAME:mujoco::mujoco>"
+        COMMENT "Bundling MuJoCo dylib into Paracraft.app/Contents/Frameworks"
+    )
+endif ()
+
+if (NPL_HAS_DESKTOP_ONNXRUNTIME)
+    add_custom_command(TARGET Paracraft POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E make_directory "$<TARGET_BUNDLE_DIR:Paracraft>/Contents/Frameworks"
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different
+            "$<TARGET_FILE:onnxruntime::onnxruntime>"
+            "$<TARGET_BUNDLE_DIR:Paracraft>/Contents/Frameworks/$<TARGET_FILE_NAME:onnxruntime::onnxruntime>"
+        COMMAND /bin/sh -c "cd '$<TARGET_BUNDLE_DIR:Paracraft>/Contents/Frameworks' && if [ '$<TARGET_FILE_NAME:onnxruntime::onnxruntime>' != 'libonnxruntime$<$<CONFIG:Debug>:_d>.dylib' ]; then ln -sf '$<TARGET_FILE_NAME:onnxruntime::onnxruntime>' 'libonnxruntime$<$<CONFIG:Debug>:_d>.dylib'; fi && if [ '$<TARGET_FILE_NAME:onnxruntime::onnxruntime>' != 'libonnxruntime$<$<CONFIG:Debug>:_d>.1.dylib' ]; then ln -sf '$<TARGET_FILE_NAME:onnxruntime::onnxruntime>' 'libonnxruntime$<$<CONFIG:Debug>:_d>.1.dylib'; fi"
+        COMMENT "Bundling ONNX Runtime dylib into Paracraft.app/Contents/Frameworks"
+    )
+endif ()
+
 if (NOT CMAKE_GENERATOR STREQUAL "Xcode")
     add_custom_command(TARGET Paracraft POST_BUILD
         COMMAND /usr/bin/plutil -replace CFBundleExecutable -string "Paracraft" "$<TARGET_BUNDLE_DIR:Paracraft>/Contents/Info.plist"
