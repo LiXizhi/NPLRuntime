@@ -242,7 +242,7 @@ NPL.this(function (msg) {
     is_received = true;
     try {
         msg = JSON.parse(msg);
-        if (typeof (msg.msgdata) == "string") {
+        while (typeof (msg.msgdata) == "string") {
             msg.msgdata = atob(msg.msgdata);
             msg.msgdata = JSON.parse(msg.msgdata);
         }

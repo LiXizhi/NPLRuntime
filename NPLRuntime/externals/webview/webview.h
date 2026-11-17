@@ -124,6 +124,7 @@ protected:
     bool m_bTransparent;
     WEBVIEW_STATE m_nWndState;
     std::wstring m_url;
+    std::wstring m_navigated_url;
     std::wstring m_user_data_folder;
     wil::com_ptr<ICoreWebView2Controller> m_webview_controller;
     wil::com_ptr<ICoreWebView2> m_webview;

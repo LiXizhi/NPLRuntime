@@ -651,6 +651,7 @@ void ParaEngine::TextureEntity::SetSurfaceType(int nType)
 	{
 		SurfaceType = (_SurfaceType)nType;
 		m_bIsValid = true;
+		SetState(AssetEntity::ASSET_STATE_NORMAL);
 		UnloadAsset();
 	}
 }

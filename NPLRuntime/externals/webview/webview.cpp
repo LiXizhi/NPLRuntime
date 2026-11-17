@@ -371,12 +371,19 @@ bool WebView::Create(HINSTANCE hInstance, HWND hParentWnd)
 			dwStyle = WS_OVERLAPPEDWINDOW | WS_CLIPCHILDREN;
 		}
 
+		int createW = (std::max)(1, m_width);
+		int createH = (std::max)(1, m_height);
+		if (m_width <= 0 || m_height <= 0)
+		{
+			createX = m_bTransparent ? -32000 : -2;
+			createY = m_bTransparent ? -32000 : -2;
+		}
 		m_hWnd = CreateWindowExA(
 			dwExStyle,
 			wcex.lpszClassName,
 			s_szTitle,
 			dwStyle,
-			createX, createY, (std::max)(1, m_width), (std::max)(1, m_height),
+			createX, createY, createW, createH,
 			hParentWnd,
 			NULL,
 			hInstance,
@@ -519,14 +526,22 @@ void WebView::SetPosition(int x, int y, int w, int h, bool bUpdateWndPosition)
 	if (bUpdateWndPosition)
 	{
 		int posX = x, posY = y;
-		if (m_bTransparent && m_hParentWnd)
+		int winW = w, winH = h;
+		if (w <= 0 || h <= 0)
+		{
+			winW = 1;
+			winH = 1;
+			posX = m_bTransparent ? -32000 : -2;
+			posY = m_bTransparent ? -32000 : -2;
+		}
+		else if (m_bTransparent && m_hParentWnd)
 		{
 			POINT pt = { x, y };
 			ClientToScreen(m_hParentWnd, &pt);
 			posX = pt.x;
 			posY = pt.y;
 		}
-		if (!SetWindowPos(m_hWnd, NULL, posX, posY, w, h, (m_bShow ? SWP_SHOWWINDOW : SWP_HIDEWINDOW) | SWP_NOACTIVATE))
+		if (!SetWindowPos(m_hWnd, NULL, posX, posY, winW, winH, (m_bShow ? SWP_SHOWWINDOW : SWP_HIDEWINDOW) | SWP_NOACTIVATE))
 		{
 			WriteLog("Error: ParaWebView failed to set position!\n");
 		}
@@ -535,6 +550,8 @@ void WebView::SetPosition(int x, int y, int w, int h, bool bUpdateWndPosition)
 
 	RECT bounds = {};
 	GetClientRect(m_hWnd, &bounds);
+	if (bounds.right <= bounds.left) bounds.right = bounds.left + 1;
+	if (bounds.bottom <= bounds.top) bounds.bottom = bounds.top + 1;
 	if (m_webview_controller != nullptr)
 	{
 		m_webview_controller->put_Bounds(bounds);
@@ -573,6 +590,7 @@ void WebView::Destroy()
 	m_dcomp_target = nullptr;
 	m_dcomp_device = nullptr;
 	m_webview = nullptr;
+	m_navigated_url.clear();
 	m_bShow = false;
 	m_nWndState = WEBVIEW_STATE_DESTROYED;
 }
@@ -582,6 +600,9 @@ void WebView::Open(const std::wstring& url)
 	m_url = url;
 	if (m_webview == nullptr || url.empty() || !IsInitialized())
 		return;
+	if (m_navigated_url == url)
+		return;
+	m_navigated_url = url;
 	m_webview->Navigate(url.c_str());
 }
 
@@ -610,7 +631,7 @@ bool WebView::CreateWebView(HWND hWnd)
 	}
 	std::wstring user_data_folder = m_user_data_folder.empty() ? GetCacheDirectory() : m_user_data_folder;
 	auto options = Microsoft::WRL::Make<CoreWebView2EnvironmentOptions>();
-	options->put_AdditionalBrowserArguments(L"--enable-features=AllowAutoplay --autoplay-policy=no-user-gesture-required");
+	options->put_AdditionalBrowserArguments(L"--enable-features=AllowAutoplay --autoplay-policy=no-user-gesture-required --disable-background-media-suspend --disable-features=BackgroundVideoTrackOptimization,CalculateNativeWinOcclusion");
 	HRESULT ok = CreateCoreWebView2EnvironmentWithOptions(nullptr, user_data_folder.c_str(), options.Get(),
 		Callback<ICoreWebView2CreateCoreWebView2EnvironmentCompletedHandler>([hWnd, this](HRESULT result, ICoreWebView2Environment* env) -> HRESULT {
 			if (FAILED(result) || !env)
@@ -673,7 +694,7 @@ bool WebView::CreateCompositionWebView(HWND hWnd)
 
 	std::wstring user_data_folder = m_user_data_folder.empty() ? GetCacheDirectory() : m_user_data_folder;
 	auto options = Microsoft::WRL::Make<CoreWebView2EnvironmentOptions>();
-	options->put_AdditionalBrowserArguments(L"--enable-features=AllowAutoplay --autoplay-policy=no-user-gesture-required");
+	options->put_AdditionalBrowserArguments(L"--enable-features=AllowAutoplay --autoplay-policy=no-user-gesture-required --disable-background-media-suspend --disable-features=BackgroundVideoTrackOptimization,CalculateNativeWinOcclusion");
 	hr = CreateCoreWebView2EnvironmentWithOptions(nullptr, user_data_folder.c_str(), options.Get(),
 		Callback<ICoreWebView2CreateCoreWebView2EnvironmentCompletedHandler>([hWnd, this](HRESULT result, ICoreWebView2Environment* env) -> HRESULT {
 			if (FAILED(result) || !env)
@@ -758,6 +779,8 @@ void WebView::SetupWebViewAfterCreation(HWND hWnd)
 
 	RECT bounds = {};
 	GetClientRect(hWnd, &bounds);
+	if (bounds.right <= bounds.left) bounds.right = bounds.left + 1;
+	if (bounds.bottom <= bounds.top) bounds.bottom = bounds.top + 1;
 	m_webview_controller->put_Bounds(bounds);
 
 	EventRegistrationToken token;
@@ -770,6 +793,10 @@ void WebView::SetupWebViewAfterCreation(HWND hWnd)
 			{
 				args->put_Cancel(true);
 				ParseProtoUrl(uri);
+			}
+			else if (!uri.empty())
+			{
+				m_navigated_url = uri;
 			}
 			return S_OK;
 		}).Get(), &token);
@@ -887,6 +914,80 @@ void WebView::InitUrlEnv()
 if (!window.chrome_webview_message_inited_cpp)
 {
 	window.chrome_webview_message_inited_cpp = true;
+	(function() {
+		var host = (window.location && window.location.hostname) || "";
+		var isWebParacraft = /^(webparacraft|emscripten)\.keepwork\.com$/i.test(host)
+			|| ((host === "127.0.0.1" || host === "localhost") && /^\/npl\/webparacraft\//i.test(window.location.pathname || ""));
+		if (isWebParacraft)
+		{
+			var origAppendChild = Element.prototype.appendChild;
+			Element.prototype.appendChild = function(node) {
+				try {
+					if (node && node.tagName === "SCRIPT" && node.src && !node.hasAttribute("async")) {
+						node.async = false;
+					}
+				} catch (e) {}
+				return origAppendChild.call(this, node);
+			};
+			var origAddEventListener = window.addEventListener;
+			window.addEventListener = function(type, listener, options) {
+				if (type === "load" && typeof listener === "function" && document.readyState === "complete") {
+					setTimeout(function() {
+						try { listener.call(window, new Event("load")); } catch (e) { console.error(e); }
+					}, 0);
+					return;
+				}
+				return origAddEventListener.call(this, type, listener, options);
+			};
+			if (/\/webpage\//i.test(window.location.pathname || "")) {
+				var patchTimer = setInterval(function() {
+					if (typeof window.StartWebPageSnap === "function" && window.NPLJSInstance && !window.__paracraftWebPagePatched) {
+						window.__paracraftWebPagePatched = true;
+						clearInterval(patchTimer);
+						var origStart = window.StartWebPageSnap;
+						window.StartWebPageSnap = function(w, h, url) {
+							var hadVideo = (typeof video !== "undefined" && video !== null);
+							origStart(w, h, url);
+							try {
+								if (typeof video !== "undefined" && video) {
+									video.playsInline = true;
+									var p = video.play();
+									if (p && typeof p.catch === "function") {
+										p.catch(function() {
+											video.muted = true;
+											video.play().catch(function() {});
+										});
+									}
+									if (hadVideo && window.NPLJSInstance && typeof current_msgid !== "undefined") {
+										window.NPLJSInstance.SendMsg("WebPageSnapReply", {}, current_msgid);
+									}
+								}
+							} catch (e) {}
+						};
+						var cbs = window.NPLJSInstance.m_msg_callbacks && window.NPLJSInstance.m_msg_callbacks["CameraSnapData"];
+						if (cbs) {
+							for (var k in cbs) {
+								if (Object.prototype.hasOwnProperty.call(cbs, k) && typeof cbs[k] === "function") {
+									(function(origCb, key) {
+										cbs[key] = function(msgdata, msgid) {
+											if (typeof video !== "undefined" && video && (video.readyState < 2 || !video.videoWidth || !video.videoHeight)) {
+												if (video.paused && !video.ended) {
+													try { video.play().catch(function() {}); } catch (e) {}
+												}
+												return window.NPLJSInstance.SendMsg("CameraSnapDataReply", { width: 0, height: 0, data: "" }, msgid);
+											}
+											return origCb(msgdata, msgid);
+										};
+									})(cbs[k], k);
+								}
+							}
+						}
+					}
+				}, 50);
+				setTimeout(function() { clearInterval(patchTimer); }, 15000);
+			}
+		}
+	})();
 	window.chrome.webview.addEventListener("message", function(event){
 		var msg = undefined;
 		try
@@ -898,9 +999,26 @@ if (!window.chrome_webview_message_inited_cpp)
 			console.log(e);
 			console.log(event.data);
 		}
-		if (typeof msg != "object") 
+		if (typeof msg != "object" || !msg) 
 		{
 			return;
+		}
+		if (msg.file === "NPLJS" && typeof msg.params === "string")
+		{
+			try
+			{
+				var p = JSON.parse(msg.params);
+				if (p && typeof p.msgdata === "string")
+				{
+					var decoded = JSON.parse(atob(p.msgdata));
+					if (typeof decoded === "string")
+					{
+						p.msgdata = decoded;
+						msg.params = JSON.stringify(p);
+					}
+				}
+			}
+			catch (e) {}
 		}
 		if (typeof window.NPL == "object" && typeof window.NPL.receive == "function")
 		{

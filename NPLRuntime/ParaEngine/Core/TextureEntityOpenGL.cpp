@@ -180,6 +180,10 @@ HRESULT ParaEngine::TextureEntityOpenGL::InitDeviceObjects()
 			}
 		}
 	}
+	else if (SurfaceType == DynamicTexture)
+	{
+		// DynamicTexture pixels are uploaded on demand via LoadImageFromString / LoadUint8Buffer.
+	}
 	else
 	{
 		OUTPUT_LOG("warn: unsupported texture file format\n");
@@ -601,7 +605,7 @@ const TextureEntityOpenGL::TextureInfo* ParaEngine::TextureEntityOpenGL::GetText
 		else
 			EnsureScreenSizeRenderTargetUpToDate(false);
 	}
-	else if (SurfaceType == StaticTexture)
+	else if (SurfaceType == StaticTexture || SurfaceType == DynamicTexture)
 	{
 		if (!m_pTextureInfo)
 		{
@@ -839,6 +843,7 @@ TextureEntity* TextureEntityOpenGL::LoadUint8Buffer(const uint8 * pTexels, int w
 	
 	m_bIsInitialized = true;
 	m_bIsValid = true;
+	SetState(AssetEntity::ASSET_STATE_NORMAL);
 	if (m_pTextureInfo == NULL)
 		m_pTextureInfo = new TextureInfo();
 	m_pTextureInfo->m_width = width;
@@ -1380,6 +1385,7 @@ bool ParaEngine::TextureEntityOpenGL::LoadImageFromString(const char* cmd)
 							SAFE_DELETE_ARRAY(pDest);
 							m_bIsInitialized = true;
 							m_bIsValid = true;
+							SetState(AssetEntity::ASSET_STATE_NORMAL);
 							if (m_pTextureInfo == NULL)
 								m_pTextureInfo = new TextureInfo();
 							m_pTextureInfo->m_width = nTextureWidth;

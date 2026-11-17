@@ -51,10 +51,12 @@ function parseWebserverRoute(pathname) {
 
 const WEBPARACRAFT_ROOT_PREFIXES = [
     "/auto_generate_files/",
+    "/camera/",
     "/fs/",
     "/keepwork/",
     "/libs/",
     "/src/",
+    "/webpage/",
 ];
 
 const WEBPARACRAFT_ROOT_FILES = new Set([

@@ -267,6 +267,11 @@ DatabaseEntity* CParaWorldAsset::GetDatabase(const string& sIdentifier)
 
 TextureEntity* CParaWorldAsset::GetTexture(const string& sIdentifier)
 {
+	if (sIdentifier == "_texture_0")
+	{
+		if (auto* pAlias = GetTextureManager().GetByName("_textureDynamicDefault"))
+			return pAlias;
+	}
 	return GetTextureManager().GetByName(sIdentifier);
 }
 
@@ -300,6 +305,11 @@ TextureEntity* CParaWorldAsset::LoadTexture(const string&  sIdentifier, const st
 	string sFileName;
 	CParaFile::ToCanonicalFilePath(sFileName, fileName, false);
 	CPathReplaceables::GetSingleton().DecodePath(sFileName, sFileName);
+	if (sFileName == "_texture_0")
+	{
+		sFileName = "_textureDynamicDefault";
+	}
+	const string sCanonicalId = (sIdentifier == "_texture_0") ? string("_textureDynamicDefault") : sIdentifier;
 
 	if (fileName[0] == '<')
 	{
@@ -339,7 +349,7 @@ TextureEntity* CParaWorldAsset::LoadTexture(const string&  sIdentifier, const st
 		return NULL;
 	}
 
-	pair<TextureEntity*, bool> res = GetTextureManager().CreateEntity(sIdentifier, sFileName);
+	pair<TextureEntity*, bool> res = GetTextureManager().CreateEntity(sCanonicalId, sFileName);
 	if (res.second == true)
 	{
 		TextureEntity* pNewEntity = res.first;
@@ -395,6 +405,11 @@ TextureEntity* CParaWorldAsset::LoadTexture(const string&  sIdentifier, const st
 				{
 					nSurfaceType = TextureEntity::FlashTexture;
 				}
+			}
+
+			if (sFileName.size() >= 8 && sFileName.compare(0, 8, "_texture") == 0)
+			{
+				nSurfaceType = TextureEntity::DynamicTexture;
 			}
 		}
 

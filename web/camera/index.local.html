@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <title>Paracraft Camera</title>
+    <style>
+        #camera_refresh_container, #camera_show_container {
+            opacity: 0;
+            transition: opacity 0.5s ease-in-out;
+        }
+    </style>
+</head>
+<body style="margin: 0px; padding: 0px; overflow: hidden;">
+    <div id="camera_refresh_container" style="position: fixed; top: 0px; left: 0px; right: 0px; height: 30px; z-index: 10;">
+        <select id="camera_device_select" style="position: absolute; top: 0px; left: 0px; right: 80px; height: 30px;"></select>
+        <button id="refresh_button" onclick="location.reload();" style="position: absolute; top: 0px; right: 0px; width: 80px; height: 30px;">刷新</button>
+    </div>
+    <div id="camera_show_container" style="position: fixed; bottom: 0px; left: 0px; right: 0px; height: 30px; z-index: 10;">
+        <select id="current_camera_select" style="position: absolute; top: 0px; left: 0px; right: 0px; height: 30px;"></select>
+    </div>
+    <script>
+        window.chrome_webview = window.chrome && window.chrome.webview;
+    </script>
+    <script src="../src/NPL.js"></script>
+    <script src="./index.js"></script>
+</body>
+</html>

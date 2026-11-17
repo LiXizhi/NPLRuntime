@@ -63,16 +63,35 @@ class WebViewItem {
     SetPosition(x, y, width, height) {
         const dpr = window.devicePixelRatio || 1;
         if (!this.m_fullscreen) {
-            const cssLeft = x / dpr;
-            const cssTop = y / dpr;
-            const cssW = Math.max(0, width / dpr);
-            const cssH = Math.max(0, height / dpr);
-            this.m_iframe.style.left = cssLeft + "px";
-            this.m_iframe.style.top = cssTop + "px";
-            this.m_iframe.style.width = cssW + "px";
-            this.m_iframe.style.height = cssH + "px";
-            this.m_iframe.width = Math.round(cssW);
-            this.m_iframe.height = Math.round(cssH);
+            if (width <= 0 || height <= 0) {
+                this.m_iframe.style.left = "auto";
+                this.m_iframe.style.top = "auto";
+                this.m_iframe.style.right = "0px";
+                this.m_iframe.style.bottom = "0px";
+                this.m_iframe.style.width = "4px";
+                this.m_iframe.style.height = "4px";
+                this.m_iframe.style.opacity = "0.01";
+                this.m_iframe.style.pointerEvents = "none";
+                this.m_iframe.style.zIndex = "999";
+                this.m_iframe.width = 4;
+                this.m_iframe.height = 4;
+            } else {
+                const cssLeft = x / dpr;
+                const cssTop = y / dpr;
+                const cssW = Math.max(1, width / dpr);
+                const cssH = Math.max(1, height / dpr);
+                this.m_iframe.style.right = "auto";
+                this.m_iframe.style.bottom = "auto";
+                this.m_iframe.style.left = cssLeft + "px";
+                this.m_iframe.style.top = cssTop + "px";
+                this.m_iframe.style.width = cssW + "px";
+                this.m_iframe.style.height = cssH + "px";
+                this.m_iframe.style.opacity = "1";
+                this.m_iframe.style.pointerEvents = "auto";
+                this.m_iframe.style.zIndex = "1000";
+                this.m_iframe.width = Math.round(cssW);
+                this.m_iframe.height = Math.round(cssH);
+            }
         }
         this.m_x = x;
         this.m_y = y;
@@ -90,6 +109,15 @@ class WebViewItem {
             if (parsed.protocol === "npl:" && window.NplWebserverBridge) {
                 const nplPath = "/" + parsed.hostname + parsed.pathname;
                 return window.NplWebserverBridge.Route(nplPath + parsed.search + parsed.hash);
+            }
+            const localOriginBase = (window.WEBPARACRAFT_ORIGIN || (window.location.origin + "/")).replace(/\/?$/, "/");
+            const isWebParacraftHost = /^(?:webparacraft|emscripten)\.keepwork\.com$/i.test(parsed.hostname)
+                || ((parsed.hostname === "127.0.0.1" || parsed.hostname === "localhost") && /^\/npl\/webparacraft\//i.test(parsed.pathname));
+            if (isWebParacraftHost) {
+                const relPath = parsed.pathname.replace(/^\/npl\/webparacraft\//i, "").replace(/^\/+/, "");
+                if (/^(?:webpage\/|camera\/|about_blank\.html$)/i.test(relPath)) {
+                    return localOriginBase + relPath + parsed.search + parsed.hash;
+                }
             }
             const isLoopback = parsed.protocol === "http:" && (parsed.hostname === "127.0.0.1" || parsed.hostname === "localhost");
             if (isLoopback && parsed.port !== window.location.port && window.NplWebserverBridge) {
@@ -173,6 +201,9 @@ class WebViewItem {
             this.m_iframe.style.top = "0px";
             this.m_iframe.style.width = window.innerWidth + "px";
             this.m_iframe.style.height = window.innerHeight + "px";
+            this.m_iframe.style.opacity = "1";
+            this.m_iframe.style.pointerEvents = "auto";
+            this.m_iframe.style.zIndex = "1000";
             this.m_iframe.width = window.innerWidth;
             this.m_iframe.height = window.innerHeight;
         }
@@ -218,6 +249,20 @@ class WebView {
         window.addEventListener("message", function (event) {
             self.OnIFrameMsg(event.data, event.source);
         }, false);
+        const notifyUserGesture = function () {
+            for (const k in self.m_instances) {
+                if (Object.prototype.hasOwnProperty.call(self.m_instances, k)) {
+                    const item = self.m_instances[k];
+                    if (item && item.m_iframe && item.m_iframe.contentWindow) {
+                        try {
+                            item.m_iframe.contentWindow.postMessage({ type: "paracraft_user_gesture" }, "*");
+                        } catch (e) {}
+                    }
+                }
+            }
+        };
+        window.addEventListener("pointerdown", notifyUserGesture, { passive: true });
+        window.addEventListener("keydown", notifyUserGesture, { passive: true });
         window.addEventListener("resize", function () {
             for (const k in self.m_instances) {
                 if (Object.prototype.hasOwnProperty.call(self.m_instances, k)) {
@@ -378,7 +423,7 @@ class WebView {
                 item.SetTransparent(msg.transparent);
             }
             item.SetUrl(url);
-            if (width > 0 && height > 0) {
+            if (typeof msg.width === "number" && typeof msg.height === "number") {
                 item.SetPosition(x, y, width, height);
             }
             if (msg.visible === false) {
