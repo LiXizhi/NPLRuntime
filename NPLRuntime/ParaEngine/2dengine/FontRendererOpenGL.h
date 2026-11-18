@@ -30,7 +30,7 @@ namespace ParaEngine
 		void RendererRecreated();
 
 	protected:
-		GLFontAtlas* GetScaledFontAtlas(int nRealFontSize);
+		GLFontAtlas* GetScaledFontAtlas(int nRealFontSize, CSpriteRenderer* pSprite);
 		static int SelectRenderFontSize(float screenFontSize);
 
 	protected:

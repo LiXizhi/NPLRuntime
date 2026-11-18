@@ -664,7 +664,7 @@ int ParaEngine::CFontRendererOpenGL::SelectRenderFontSize(float screenFontSize)
 	return 50;
 }
 
-GLFontAtlas* ParaEngine::CFontRendererOpenGL::GetScaledFontAtlas(int nRealFontSize)
+GLFontAtlas* ParaEngine::CFontRendererOpenGL::GetScaledFontAtlas(int nRealFontSize, CSpriteRenderer* pSprite)
 {
 	if (nRealFontSize == m_nRealFontSize || nRealFontSize <= 0)
 		return _fontAtlas;
@@ -674,6 +674,9 @@ GLFontAtlas* ParaEngine::CFontRendererOpenGL::GetScaledFontAtlas(int nRealFontSi
 
 	if (m_pScaledFontAtlas)
 	{
+		// Queued glyph quads borrow the atlas textures until the sprite batch is drawn.
+		// Submit them before releasing an atlas when labels change scale.
+		pSprite->Flush();
 		FontAtlasCache::releaseFontAtlas(m_pScaledFontAtlas);
 		m_pScaledFontAtlas = nullptr;
 		m_nScaledFontSize = 0;
@@ -716,7 +719,7 @@ void ParaEngine::CFontRendererOpenGL::DoRender(CSpriteRenderer* pSprite, DWORD c
 		}
 	}
 
-	GLFontAtlas* renderAtlas = GetScaledFontAtlas(targetRealFontSize);
+	GLFontAtlas* renderAtlas = GetScaledFontAtlas(targetRealFontSize, pSprite);
 	if (!renderAtlas)
 		renderAtlas = _fontAtlas;
 

@@ -12,6 +12,12 @@ namespace ParaEngine
 {
 	namespace
 	{
+		// Each query is resolved separately, so each destination must be 256-byte aligned.
+		constexpr uint64_t OcclusionResolveOffset(uint32_t slot)
+		{
+			return uint64_t(slot) * 256u;
+		}
+
 		uint32_t AlignUpU32(uint32_t val, uint32_t alignment)
 		{
 			return (val + alignment - 1u) & ~(alignment - 1u);
@@ -1371,7 +1377,7 @@ namespace ParaEngine
 				WGPUBufferDescriptor rbd = {};
 				rbd.label = ParaWgpuLabel("ParaOcclusionResolveBuf");
 				rbd.usage = WGPUBufferUsage_QueryResolve | WGPUBufferUsage_CopySrc;
-				rbd.size = static_cast<uint64_t>(MAX_OCCLUSION_QUERIES) * sizeof(uint64_t);
+				rbd.size = OcclusionResolveOffset(MAX_OCCLUSION_QUERIES);
 				m_occlusionResolveBuf = PARA_WGPU_CALL(m_wgpu, wgpuDeviceCreateBuffer, m_device, &rbd);
 
 				m_freeOcclusionSlots.reserve(MAX_OCCLUSION_QUERIES);
@@ -1822,7 +1828,7 @@ namespace ParaEngine
 			{
 				PARA_WGPU_CALL(m_wgpu, wgpuCommandEncoderResolveQuerySet,
 					m_cmdEncoder, m_occlusionQuerySet, slot, 1,
-					m_occlusionResolveBuf, static_cast<uint64_t>(slot) * sizeof(uint64_t));
+					m_occlusionResolveBuf, OcclusionResolveOffset(slot));
 			}
 			m_pendingOcclusionResolveSlots.clear();
 		}
@@ -2182,7 +2188,7 @@ namespace ParaEngine
 			return true;
 		}
 		PARA_WGPU_CALL(m_wgpu, wgpuCommandEncoderCopyBufferToBuffer,
-			enc, m_occlusionResolveBuf, static_cast<uint64_t>(slot) * sizeof(uint64_t), staging, 0, sizeof(uint64_t));
+			enc, m_occlusionResolveBuf, OcclusionResolveOffset(slot), staging, 0, sizeof(uint64_t));
 		ExecuteAndSyncGPU();
 
 		outSamples = 1;
