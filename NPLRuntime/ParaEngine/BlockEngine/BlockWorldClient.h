@@ -1,5 +1,7 @@
 #pragma once
 #include "BlockWorld.h"
+#include "Framework/Interface/Render/IBlockSkyRayTracer.h"
+#include <chrono>
 #include "effect_file.h"
 #include "3dengine/SoftwareOcclusionBuffer.h"
 
@@ -211,6 +213,10 @@ namespace ParaEngine
 
 		/** check device capabilities for deferred shading. */
 		bool CanUseAdvancedShading();
+		bool CanTraceBlockSky();
+		Vector4 UpdateRayTracedSky();
+		ATTRIBUTE_METHOD1(BlockWorldClient, CanTraceBlockSky_s, bool*) { *p1 = cls->CanTraceBlockSky(); return S_OK; }
+		ATTRIBUTE_METHOD1(BlockWorldClient, UpdateRayTracedSky_s, Vector4*) { *p1 = cls->UpdateRayTracedSky(); return S_OK; }
 
 		/** whether to use sun light shadow map */
 		void SetUseSunlightShadowMap(bool bEnable);
@@ -349,6 +355,11 @@ namespace ParaEngine
 		asset_ptr<TextureEntity> m_render_target_color;
 		/** dedicated offscreen scene color RT for backends whose swapchain cannot attach MRT (OpenGL/Metal/WebGPU) */
 		asset_ptr<TextureEntity> m_render_target_scene_color;
+		asset_ptr<TextureEntity> m_skyAtlas;
+		IRHITexture* m_lastSkyTexture = nullptr;
+		Uint16x3 m_skyOrigin;
+		std::vector<BlockSkySpan> m_skySpans;
+		std::chrono::steady_clock::time_point m_nextSkyScan;
 		/** HDR render target */
 		asset_ptr<TextureEntity> m_render_target_color_hdr;
 		/** depth, block_id, block_light, sun_light*/

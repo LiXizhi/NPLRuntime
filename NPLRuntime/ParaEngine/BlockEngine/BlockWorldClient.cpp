@@ -200,6 +200,9 @@ namespace ParaEngine
 			m_highLightTextures[i].reset();
 		}
 
+		m_lastSkyTexture = nullptr;
+		m_skyAtlas.reset();
+		m_skySpans.clear();
 		m_render_target_color_hdr.reset();
 		m_render_target_color.reset();
 		m_render_target_scene_color.reset();
@@ -2213,6 +2216,8 @@ namespace ParaEngine
 
 	void BlockWorldClient::InvalidateDeviceObjects()
 	{
+		m_lastSkyTexture = nullptr;
+		m_skyAtlas.reset();
 		m_bAutoBoundColorRT0 = false;
 		m_render_target_color_hdr.reset();
 		m_render_target_color.reset();
@@ -2542,6 +2547,78 @@ namespace ParaEngine
 	void BlockWorldClient::SetPostProcessingAlphaScript(const char* sCallbackScript)
 	{
 		m_sPostProcessorAlphaCallbackScript = sCallbackScript;
+	}
+
+	bool BlockWorldClient::CanTraceBlockSky()
+	{
+		auto* tracer = dynamic_cast<IBlockSkyRayTracer*>(CGlobals::GetRenderDevice());
+		return tracer && tracer->SupportsBlockSkyTracing();
+	}
+
+	Vector4 BlockWorldClient::UpdateRayTracedSky()
+	{
+		using Tracer = IBlockSkyRayTracer;
+		auto* tracer = dynamic_cast<Tracer*>(CGlobals::GetRenderDevice());
+		if (!tracer || !IsInBlockWorld() || !tracer->SupportsBlockSkyTracing())
+			return Vector4(0, 0, 0, 0);
+		if (!m_skyAtlas)
+		{
+			m_skyAtlas = CGlobals::GetAssetManager()->LoadTexture("_BlockSky_R32F", "_BlockSky_R32F", TextureEntity::RenderTarget);
+			if (!m_skyAtlas)
+				return Vector4(0, 0, 0, 0);
+			using Info = TextureEntity::TextureInfo;
+			m_skyAtlas->SetTextureInfo(Info(Tracer::AtlasWidth, Tracer::AtlasHeight, Info::FMT_UNKNOWN, Info::TYPE_UNKNOWN));
+			m_skyAtlas->LoadAsset();
+		}
+		auto* rt = m_skyAtlas->GetRHIRenderTarget();
+		auto* target = rt ? rt->GetColorTexture() : nullptr;
+		if (!target)
+			return Vector4(0, 0, 0, 0);
+		const auto& eye = GetEyeBlockId();
+		auto anchor = [](int coord, int limit) {
+			return (uint16_t)(std::max)(0, (std::min)(limit - Tracer::Side, (coord / 4) * 4 - Tracer::Side / 2));
+		};
+		Uint16x3 origin(anchor(eye.x, 65536), anchor(eye.y, BlockConfig::g_regionBlockDimY), anchor(eye.z, 65536));
+		auto now = std::chrono::steady_clock::now();
+		if (target != m_lastSkyTexture || origin != m_skyOrigin || now >= m_nextSkyScan)
+		{
+			std::vector<BlockSkySpan> spans;
+			{
+				Scoped_ReadLock<BlockReadWriteLock> lock(GetReadWriteLock());
+				for (int y = 0; y < Tracer::Side; ++y)
+					for (int z = 0; z < Tracer::Side; ++z)
+					{
+						int start = -1;
+						for (int x = 0; x <= Tracer::Side; ++x)
+						{
+							auto* block = x < Tracer::Side ? GetBlockTemplate(origin.x + x, origin.y + y, origin.z + z) : nullptr;
+							if (block && block->IsFullyOpaque() && block->IsMatchAttribute(BlockTemplate::batt_cubeModel)
+								&& !block->IsMatchAttribute(BlockTemplate::batt_customModel | BlockTemplate::batt_alphaTestTexture | BlockTemplate::batt_blendedTexture))
+							{
+								if (start < 0) start = x;
+							}
+							else if (start >= 0)
+							{
+								spans.push_back({ (uint8_t)start, (uint8_t)y, (uint8_t)z, (uint8_t)(x - start) });
+								start = -1;
+							}
+						}
+					}
+			}
+			if (target != m_lastSkyTexture || spans != m_skySpans)
+			{
+				if (!tracer->TraceBlockSky(spans, target))
+					return Vector4(0, 0, 0, 0);
+				m_skySpans.swap(spans);
+				m_lastSkyTexture = target;
+			}
+			m_skyOrigin = origin;
+			m_nextSkyScan = now + std::chrono::milliseconds(250);
+		}
+		float size = (float)BlockConfig::g_dBlockSize;
+		Vector3 corner = BlockCommon::ConvertToRealPosition(origin.x, origin.y, origin.z)
+			- Vector3(size, size, size) * 0.5f - CGlobals::GetScene()->GetRenderOrigin();
+		return Vector4(corner.x, corner.y, corner.z, 1.f / size);
 	}
 
 	bool BlockWorldClient::CanUseAdvancedShading()
@@ -3876,6 +3953,8 @@ namespace ParaEngine
 		pClass->AddField("HasSunlightShadowMap", FieldType_Bool, (void*)0, (void*)HasSunlightShadowMap_s, NULL, NULL, bOverride);
 		pClass->AddField("UseSunlightShadowMap", FieldType_Bool, (void*)SetUseSunlightShadowMap_s, (void*)GetUseSunlightShadowMap_s, NULL, NULL, bOverride);
 		pClass->AddField("UseWaterReflection", FieldType_Bool, (void*)SetUseWaterReflection_s, (void*)GetUseWaterReflection_s, NULL, NULL, bOverride);
+		pClass->AddField("CanTraceBlockSky", FieldType_Bool, NULL, (void*)CanTraceBlockSky_s, NULL, NULL, bOverride);
+		pClass->AddField("UpdateRayTracedSky", FieldType_Vector4, NULL, (void*)UpdateRayTracedSky_s, NULL, NULL, bOverride);
 		pClass->AddField("CanUseAdvancedShading", FieldType_Bool, NULL, (void*)CanUseAdvancedShading_s, NULL, NULL, bOverride);
 		pClass->AddField("MovieOutputMode", FieldType_Bool, (void*)EnableMovieOutputMode_s, (void*)IsMovieOutputMode_s, NULL, NULL, bOverride);
 		pClass->AddField("AsyncChunkMode", FieldType_Bool, (void*)SetAsyncChunkMode_s, (void*)IsAsyncChunkMode_s, NULL, NULL, bOverride);

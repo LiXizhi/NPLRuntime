@@ -1591,6 +1591,24 @@ namespace ParaEngine
 		}
 	}
 
+	bool RenderDeviceD3D12::CopySkyAtlas(ID3D12Resource* source, IRHITexture* atlas)
+	{
+		auto* texture = static_cast<D3D12Texture*>(atlas);
+		if (texture->GetDXGIFormat() != DXGI_FORMAT_R32_FLOAT || texture->GetWidth() != AtlasWidth || texture->GetHeight() != AtlasHeight)
+			return false;
+		auto* cmd = EnsureRecording();
+		D3D12_TEXTURE_COPY_LOCATION src = {};
+		src.pResource = source;
+		src.Type = D3D12_TEXTURE_COPY_TYPE_PLACED_FOOTPRINT;
+		src.PlacedFootprint.Footprint = { DXGI_FORMAT_R32_FLOAT, AtlasWidth, AtlasHeight, 1, AtlasWidth * sizeof(float) };
+		D3D12_TEXTURE_COPY_LOCATION dst = {};
+		dst.pResource = texture->GetResource();
+		dst.Type = D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX;
+		TransitionResource(dst.pResource, texture->GetStateRef(), D3D12_RESOURCE_STATE_COPY_DEST);
+		cmd->CopyTextureRegion(&dst, 0, 0, 0, &src, nullptr);
+		return true;
+	}
+
 	void RenderDeviceD3D12::InitCaps()
 	{
 		m_caps.backend = ERHIBackend::D3D12;

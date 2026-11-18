@@ -49,6 +49,7 @@ float rainStrength = 0.f;
 float EyeBrightness = 0.2f;
 float EyeContrast = 0.5f;
 float BloomEnabled = 1.0f;
+float4 BlockSkyVolume;
 float QualityLevel = 4.0f;
 float BevelEnabled = 0.0f;
 float BounceEnabled = 0.0f;
@@ -121,6 +122,15 @@ texture sourceTexture4;
 sampler normalSampler:register(s4) = sampler_state
 {
 	Texture = <sourceTexture4>;
+	MinFilter = Linear;
+	MagFilter = Linear;
+	AddressU = clamp;
+	AddressV = clamp;
+};
+texture sourceTexture6;
+sampler blockSkySampler:register(s6) = sampler_state
+{
+	Texture = <sourceTexture6>;
 	MinFilter = Linear;
 	MagFilter = Linear;
 	AddressU = clamp;
@@ -669,6 +679,27 @@ float ContactVisibility(SurfaceStruct surface)
 }
 
 // do basic surface color calculation here (without reflection)
+float BlockSkyVisibility(SurfaceStruct surface)
+{
+	if (QualityLevel < 9.5f || BlockSkyVolume.w <= 0.0f || surface.mask_sky)
+		return 1.0f;
+	float3 world = mul(float4(surface.cameraSpacePos, 1.0f), matViewInverse).xyz;
+	float3 p = (world - BlockSkyVolume.xyz) * BlockSkyVolume.w + surface.normal * 0.51f;
+	float3 edge = min(p, 32.0f - p);
+	float weight = saturate(min(edge.x, min(edge.y, edge.z)) * 0.5f);
+	if (weight <= 0.0f)
+		return 1.0f;
+	float2 inTile = clamp(p.xz, 0.5f, 31.5f);
+	float y = clamp(p.y - 0.5f, 0.0f, 31.0f);
+	float lo = floor(y);
+	float hi = min(lo + 1.0f, 31.0f);
+	float2 tile0 = float2(fmod(lo, 8.0f), floor(lo / 8.0f));
+	float2 tile1 = float2(fmod(hi, 8.0f), floor(hi / 8.0f));
+	float a = tex2Dlod(blockSkySampler, float4((tile0 * 32.0f + inTile) / float2(256,128), 0, 0)).r;
+	float b = tex2Dlod(blockSkySampler, float4((tile1 * 32.0f + inTile) / float2(256,128), 0, 0)).r;
+	return lerp(1.0f, lerp(0.40f, 1.0f, lerp(a, b, frac(y))), weight);
+}
+
 PSOut CompositePS0(VSOutput input)
 {
 	//Initialize surface properties required for lighting calculation for any surface that is not part of the sky
@@ -732,7 +763,7 @@ PSOut CompositePS0(VSOutput input)
 	lightmap.sunlight = activeCelestialColor * shading.direct;
 	lightmap.skylight = rawLightmap.sky;
 	lightmap.skylight *= shading.skylight;
-	lightmap.skylight *= AmbientVisibility(surface);
+	lightmap.skylight *= AmbientVisibility(surface) * BlockSkyVisibility(surface);
 	//give some ambient sunlight plus some base ambient at night. 
 	lightmap.skylight *= (SunColor.rgb*(1.0f - CloudThickness)*2.0 + lerp(1.0, 0.14f, pow(timeMidnight, 0.6)));
 	// Subtle cool sky-dome chromaticity in daytime shadows for natural warm/cool sun-shadow separation

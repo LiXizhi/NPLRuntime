@@ -1,6 +1,7 @@
 #pragma once
 #include "Framework/Interface/Render/IRenderDevice.h"
 #include "RHIStateTracker.h"
+#include "Framework/Interface/Render/IBlockSkyRayTracer.h"
 
 #ifndef WIN32_LEAN_AND_MEAN
 #define WIN32_LEAN_AND_MEAN
@@ -44,7 +45,7 @@ namespace ParaEngine
 		std::vector<uint32_t> m_freeList;
 	};
 
-	class RenderDeviceD3D12 : public IRenderDevice
+	class RenderDeviceD3D12 : public IRenderDevice, public IBlockSkyRayTracer
 	{
 	public:
 		static constexpr uint32_t FRAME_COUNT = 3;
@@ -65,6 +66,8 @@ namespace ParaEngine
 		ID3D12Device* GetD3D12Device() const { return m_device.Get(); }
 		ID3D12CommandQueue* GetCommandQueue() const { return m_cmdQueue.Get(); }
 		ID3D12GraphicsCommandList* EnsureRecording();
+		bool SupportsBlockSkyTracing() override;
+		bool TraceBlockSky(const std::vector<BlockSkySpan>& spans, IRHITexture* atlas) override;
 		void ExecuteAndSyncGPU();
 		void DeferRelease(IUnknown* obj);
 		void NotifyTextureDestroyed(D3D12Texture* tex);
@@ -164,6 +167,10 @@ namespace ParaEngine
 		virtual void Flush() override;
 
 	private:
+		bool CopySkyAtlas(ID3D12Resource* source, IRHITexture* atlas);
+		bool m_checkedSkyTracing = false;
+		Microsoft::WRL::ComPtr<ID3D12RootSignature> m_skyRoot;
+		Microsoft::WRL::ComPtr<ID3D12PipelineState> m_skyPipeline;
 		void InitCaps();
 		bool CreateRootSignatureAndHeaps();
 		bool CreateBackBufferViews(uint32_t width, uint32_t height);
