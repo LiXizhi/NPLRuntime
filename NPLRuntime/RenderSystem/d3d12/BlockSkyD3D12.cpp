@@ -1,6 +1,7 @@
 #include "RenderDeviceD3D12.h"
 #ifdef PE_BLOCK_SKY_DXR
 #include "BlockSkyDXIL.h"
+#include "BlockReflectionDXIL.h"
 #include <algorithm>
 #include <cstring>
 #endif
@@ -12,7 +13,7 @@ namespace ParaEngine
 	bool RenderDeviceD3D12::SupportsBlockSkyTracing()
 	{
 		if (m_checkedSkyTracing)
-			return m_skyPipeline != nullptr;
+			return m_skyPipeline && m_reflectionPipeline;
 		m_checkedSkyTracing = true;
 #ifdef PE_BLOCK_SKY_DXR
 		D3D12_FEATURE_DATA_D3D12_OPTIONS5 options = {};
@@ -27,7 +28,11 @@ namespace ParaEngine
 		D3D12_COMPUTE_PIPELINE_STATE_DESC desc = {};
 		desc.pRootSignature = m_skyRoot.Get();
 		desc.CS = { g_blockSkyDXIL, sizeof(g_blockSkyDXIL) };
-		return SUCCEEDED(m_device->CreateComputePipelineState(&desc, IID_PPV_ARGS(&m_skyPipeline)));
+		if (FAILED(m_device->CreateComputePipelineState(&desc, IID_PPV_ARGS(&m_skyPipeline)))) return false;
+		if (FAILED(m_device->CreateRootSignature(0, g_blockReflectionDXIL, sizeof(g_blockReflectionDXIL), IID_PPV_ARGS(&m_reflectionRoot)))) return false;
+		desc.pRootSignature = m_reflectionRoot.Get();
+		desc.CS = { g_blockReflectionDXIL, sizeof(g_blockReflectionDXIL) };
+		return SUCCEEDED(m_device->CreateComputePipelineState(&desc, IID_PPV_ARGS(&m_reflectionPipeline)));
 #else
 		return false;
 #endif
@@ -61,10 +66,45 @@ namespace ParaEngine
 	}
 #endif
 
+	bool RenderDeviceD3D12::TraceBlockReflections(const BlockReflectionView& view, IRHITexture* depth,
+		IRHITexture* normal, IRHITexture* material, IRHITexture* sceneColor, IRHITexture* output)
+	{
+#ifdef PE_BLOCK_SKY_DXR
+		if (!m_blockTLAS || !output || output->GetFormat() != PixelFormat::A8R8G8B8)
+			return false;
+		const UINT w = output->GetWidth(), h = output->GetHeight();
+		for (auto* input : {depth, normal, material, sceneColor})
+			if (!input || input->GetWidth() != w || input->GetHeight() != h) return false;
+		const UINT pitch = (w * 4u + 255u) & ~255u;
+		const UINT64 bytes = UINT64(pitch) * h;
+		if (!m_reflectionBuffer || m_reflectionBuffer->GetDesc().Width < bytes)
+		{
+			auto buffer = CreateSkyBuffer(m_device.Get(), bytes, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
+			if (!buffer) return false;
+			DeferRelease(m_reflectionBuffer.Get());
+			m_reflectionBuffer = buffer;
+			m_reflectionBufferState = D3D12_RESOURCE_STATE_UNORDERED_ACCESS;
+		}
+		if (!BindReflectionInputs(depth, normal, material, sceneColor)) return false;
+		auto* cmd = EnsureRecording();
+		TransitionResource(m_reflectionBuffer.Get(), m_reflectionBufferState, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
+		static_assert(sizeof(view) == 32 * sizeof(float), "reflection shader constant layout");
+		cmd->SetPipelineState(m_reflectionPipeline.Get());
+		cmd->SetComputeRootShaderResourceView(0, m_blockTLAS->GetGPUVirtualAddress());
+		cmd->SetComputeRootUnorderedAccessView(2, m_reflectionBuffer->GetGPUVirtualAddress());
+		cmd->SetComputeRoot32BitConstants(3, 32, &view, 0);
+		cmd->Dispatch((w + 7) / 8, (h + 7) / 8, 1);
+		TransitionResource(m_reflectionBuffer.Get(), m_reflectionBufferState, D3D12_RESOURCE_STATE_COPY_SOURCE);
+		return CopyRayBuffer(m_reflectionBuffer.Get(), output, pitch);
+#else
+		return false;
+#endif
+	}
+
 	bool RenderDeviceD3D12::TraceBlockSky(const std::vector<BlockSkySpan>& spans, IRHITexture* atlas)
 	{
 #ifdef PE_BLOCK_SKY_DXR
-		if (!atlas || !SupportsBlockSkyTracing() || spans.size() > Side * Side * Side)
+		if (!atlas || atlas->GetWidth() != AtlasWidth || atlas->GetHeight() != AtlasHeight || atlas->GetFormat() != PixelFormat::R32F || !SupportsBlockSkyTracing() || spans.size() > Side * Side * Side)
 			return false;
 		ComPtr<ID3D12Device5> device;
 		ComPtr<ID3D12GraphicsCommandList4> cmd;
@@ -124,6 +164,7 @@ namespace ParaEngine
 			instance.Transform[0][3] = span.x;
 			instance.Transform[1][3] = span.y;
 			instance.Transform[2][3] = span.z;
+			instance.InstanceID = span.color & 0xffffff;
 			instance.InstanceMask = spans.empty() ? 0 : 255;
 			instance.AccelerationStructure = blas->GetGPUVirtualAddress();
 			instances[i] = instance;
@@ -143,9 +184,11 @@ namespace ParaEngine
 		cmd->Dispatch(Side / 4, Side / 4, Side / 4);
 		D3D12_RESOURCE_STATES resultState = D3D12_RESOURCE_STATE_UNORDERED_ACCESS;
 		TransitionResource(result.Get(), resultState, D3D12_RESOURCE_STATE_COPY_SOURCE);
-		const bool copied = CopySkyAtlas(result.Get(), atlas);
-		DeferRelease(blas.Get());
-		DeferRelease(tlas.Get());
+		const bool copied = CopyRayBuffer(result.Get(), atlas, AtlasWidth * sizeof(float));
+		DeferRelease(m_blockBLAS.Get());
+		DeferRelease(m_blockTLAS.Get());
+		m_blockBLAS = blas;
+		m_blockTLAS = tlas;
 		DeferRelease(scratch.Get());
 		DeferRelease(result.Get());
 		return copied;

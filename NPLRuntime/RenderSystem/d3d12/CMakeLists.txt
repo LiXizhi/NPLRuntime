@@ -15,7 +15,11 @@ if(BLOCK_SKY_DXC)
     add_custom_command(OUTPUT "${sky_dxil}"
         COMMAND "${BLOCK_SKY_DXC}" -T cs_6_5 -E main -O3 -Fh "${sky_dxil}" -Vn g_blockSkyDXIL "${CMAKE_CURRENT_SOURCE_DIR}/BlockSky.hlsl"
         DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/BlockSky.hlsl" VERBATIM)
-    target_sources(RenderSystemD3D12 PRIVATE "${sky_dxil}")
+    set(reflection_dxil "${CMAKE_CURRENT_BINARY_DIR}/BlockReflectionDXIL.h")
+    add_custom_command(OUTPUT "${reflection_dxil}"
+        COMMAND "${BLOCK_SKY_DXC}" -T cs_6_5 -E main -O3 -Fh "${reflection_dxil}" -Vn g_blockReflectionDXIL "${CMAKE_CURRENT_SOURCE_DIR}/BlockReflection.hlsl"
+        DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/BlockReflection.hlsl" VERBATIM)
+    target_sources(RenderSystemD3D12 PRIVATE "${sky_dxil}" "${reflection_dxil}")
     target_compile_definitions(RenderSystemD3D12 PRIVATE PE_BLOCK_SKY_DXR=1)
     target_include_directories(RenderSystemD3D12 PRIVATE "${CMAKE_CURRENT_BINARY_DIR}")
 endif()

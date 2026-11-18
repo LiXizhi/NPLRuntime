@@ -55,11 +55,39 @@ int main()
 		return pixels[(z + 32 * (y / 8)) * Sky::AtlasWidth + x + 32 * (y % 8)];
 	};
 	std::vector<BlockSkySpan> roof;
-	for (int z = 8; z < 24; ++z) roof.push_back({8, 16, (uint8_t)z, 16});
+	for (int z = 8; z < 24; ++z) roof.push_back({8, 16, (uint8_t)z, 16, 0xff00ff});
 	if (!trace(roof)) return 1;
 	float below = sample(16, 15, 16), above = sample(16, 17, 16);
 	std::printf("Sky visibility below roof %.4f, above roof %.4f\n", below, above);
 	if (!(below >= 0 && below < 0.3f && above == 1)) return 1;
-	if (!trace({})) return 1;
+	// The primary rays point down. Only the reflected rays can reach the magenta roof.
+	const float depths[] = {2, 2, 2};
+	const uint32_t normals[] = {0xff80ff80, 0xff80ff80, 0xff80ff80};
+	const uint32_t categories[] = {9, 50, 1};
+	auto makeInput = [&](PixelFormat format, const void* data) {
+		RHIMipData mip = {};
+		mip.data = data;
+		mip.dataSize = mip.rowPitch = 12;
+		return std::unique_ptr<IRHITexture>(device->CreateTexture(3, 1, format, 1, ERHITextureUsage::ShaderResource, &mip, 1));
+	};
+	auto depth = makeInput(PixelFormat::R32F, depths);
+	auto normal = makeInput(PixelFormat::A8R8G8B8, normals);
+	auto material = makeInput(PixelFormat::A8R8G8B8, categories);
+	std::unique_ptr<IRHIRenderTarget> reflection(device->CreateRenderTarget(3, 1, PixelFormat::A8R8G8B8, PixelFormat::Unknown));
+	if (!depth || !normal || !material || !reflection) return 1;
+	BlockReflectionView view = {};
+	view.inverseView[9] = -0.7071f; view.inverseView[10] = 0.7071f;
+	view.inverseView[12] = 16; view.inverseView[13] = 13; view.inverseView[14] = 12;
+	view.viewport[0] = view.viewport[1] = view.volume[3] = view.daylight = view.sun[1] = 1;
+	uint32_t reflected[3] = {};
+	auto traceReflections = [&]() {
+		return tracer->TraceBlockReflections(view, depth.get(), normal.get(), material.get(), material.get(), reflection->GetColorTexture()) &&
+			device->ReadTexturePixels(reflection->GetColorTexture(), reflected);
+	};
+	if (!traceReflections()) return 1;
+	std::printf("Off-camera roof: water %08x, metal %08x, matte %08x\n", reflected[0], reflected[1], reflected[2]);
+	if ((reflected[0] >> 24) != 255 || !(reflected[0] & 255) || (reflected[0] & 0xff00) ||
+		!(reflected[0] & 0xff0000) || reflected[1] != reflected[0] || reflected[2]) return 1;
+	if (!trace({}) || !traceReflections() || reflected[0] || reflected[1]) return 1;
 	return std::all_of(pixels.begin(), pixels.end(), [](float v) { return v == 1; }) ? 0 : 1;
 }

@@ -215,6 +215,8 @@ namespace ParaEngine
 		bool CanUseAdvancedShading();
 		bool CanTraceBlockSky();
 		Vector4 UpdateRayTracedSky();
+		bool UpdateRayTracedReflections();
+		ATTRIBUTE_METHOD1(BlockWorldClient, UpdateRayTracedReflections_s, bool*) { *p1 = cls->UpdateRayTracedReflections(); return S_OK; }
 		ATTRIBUTE_METHOD1(BlockWorldClient, CanTraceBlockSky_s, bool*) { *p1 = cls->CanTraceBlockSky(); return S_OK; }
 		ATTRIBUTE_METHOD1(BlockWorldClient, UpdateRayTracedSky_s, Vector4*) { *p1 = cls->UpdateRayTracedSky(); return S_OK; }
 
@@ -356,6 +358,7 @@ namespace ParaEngine
 		/** dedicated offscreen scene color RT for backends whose swapchain cannot attach MRT (OpenGL/Metal/WebGPU) */
 		asset_ptr<TextureEntity> m_render_target_scene_color;
 		asset_ptr<TextureEntity> m_skyAtlas;
+		asset_ptr<TextureEntity> m_reflectionTexture;
 		IRHITexture* m_lastSkyTexture = nullptr;
 		Uint16x3 m_skyOrigin;
 		std::vector<BlockSkySpan> m_skySpans;

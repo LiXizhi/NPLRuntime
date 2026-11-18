@@ -1591,16 +1591,39 @@ namespace ParaEngine
 		}
 	}
 
-	bool RenderDeviceD3D12::CopySkyAtlas(ID3D12Resource* source, IRHITexture* atlas)
+	bool RenderDeviceD3D12::BindReflectionInputs(IRHITexture* depth, IRHITexture* normal, IRHITexture* material, IRHITexture* sceneColor)
+	{
+		if (m_gpuSrvOffset + 4 > m_gpuSrvFrameBase[m_frameIndex] + 32768u)
+			ExecuteAndSyncGPU();
+		auto* cmd = EnsureRecording();
+		if (!cmd) return false;
+		const UINT base = m_gpuSrvOffset;
+		auto dest = m_gpuSrvHeap->GetCPUDescriptorHandleForHeapStart();
+		dest.ptr += SIZE_T(base) * m_gpuSrvDescriptorSize;
+		for (auto* input : {depth, normal, material, sceneColor})
+		{
+			auto* texture = static_cast<D3D12Texture*>(input);
+			if (!texture || texture->GetSrvSlot() == UINT32_MAX) return false;
+			TransitionResource(texture->GetResource(), texture->GetStateRef(), D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+			m_device->CopyDescriptorsSimple(1, dest, m_cpuSrvAlloc.GetHandle(texture->GetSrvSlot()), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+			dest.ptr += m_gpuSrvDescriptorSize;
+		}
+		m_gpuSrvOffset += 4;
+		auto table = m_gpuSrvHeap->GetGPUDescriptorHandleForHeapStart();
+		table.ptr += UINT64(base) * m_gpuSrvDescriptorSize;
+		cmd->SetComputeRootSignature(m_reflectionRoot.Get());
+		cmd->SetComputeRootDescriptorTable(1, table);
+		return true;
+	}
+
+	bool RenderDeviceD3D12::CopyRayBuffer(ID3D12Resource* source, IRHITexture* atlas, UINT pitch)
 	{
 		auto* texture = static_cast<D3D12Texture*>(atlas);
-		if (texture->GetDXGIFormat() != DXGI_FORMAT_R32_FLOAT || texture->GetWidth() != AtlasWidth || texture->GetHeight() != AtlasHeight)
-			return false;
 		auto* cmd = EnsureRecording();
 		D3D12_TEXTURE_COPY_LOCATION src = {};
 		src.pResource = source;
 		src.Type = D3D12_TEXTURE_COPY_TYPE_PLACED_FOOTPRINT;
-		src.PlacedFootprint.Footprint = { DXGI_FORMAT_R32_FLOAT, AtlasWidth, AtlasHeight, 1, AtlasWidth * sizeof(float) };
+		src.PlacedFootprint.Footprint = { texture->GetDXGIFormat(), texture->GetWidth(), texture->GetHeight(), 1, pitch };
 		D3D12_TEXTURE_COPY_LOCATION dst = {};
 		dst.pResource = texture->GetResource();
 		dst.Type = D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX;

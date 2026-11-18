@@ -68,6 +68,8 @@ namespace ParaEngine
 		ID3D12GraphicsCommandList* EnsureRecording();
 		bool SupportsBlockSkyTracing() override;
 		bool TraceBlockSky(const std::vector<BlockSkySpan>& spans, IRHITexture* atlas) override;
+		bool TraceBlockReflections(const BlockReflectionView& view, IRHITexture* depth, IRHITexture* normal,
+			IRHITexture* material, IRHITexture* sceneColor, IRHITexture* output) override;
 		void ExecuteAndSyncGPU();
 		void DeferRelease(IUnknown* obj);
 		void NotifyTextureDestroyed(D3D12Texture* tex);
@@ -167,7 +169,12 @@ namespace ParaEngine
 		virtual void Flush() override;
 
 	private:
-		bool CopySkyAtlas(ID3D12Resource* source, IRHITexture* atlas);
+		bool CopyRayBuffer(ID3D12Resource* source, IRHITexture* output, UINT pitch);
+		bool BindReflectionInputs(IRHITexture* depth, IRHITexture* normal, IRHITexture* material, IRHITexture* sceneColor);
+		Microsoft::WRL::ComPtr<ID3D12RootSignature> m_reflectionRoot;
+		Microsoft::WRL::ComPtr<ID3D12PipelineState> m_reflectionPipeline;
+		Microsoft::WRL::ComPtr<ID3D12Resource> m_blockBLAS, m_blockTLAS, m_reflectionBuffer;
+		D3D12_RESOURCE_STATES m_reflectionBufferState = D3D12_RESOURCE_STATE_UNORDERED_ACCESS;
 		bool m_checkedSkyTracing = false;
 		Microsoft::WRL::ComPtr<ID3D12RootSignature> m_skyRoot;
 		Microsoft::WRL::ComPtr<ID3D12PipelineState> m_skyPipeline;

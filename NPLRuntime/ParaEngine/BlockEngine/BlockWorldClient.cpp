@@ -202,6 +202,7 @@ namespace ParaEngine
 
 		m_lastSkyTexture = nullptr;
 		m_skyAtlas.reset();
+		m_reflectionTexture.reset();
 		m_skySpans.clear();
 		m_render_target_color_hdr.reset();
 		m_render_target_color.reset();
@@ -2218,6 +2219,7 @@ namespace ParaEngine
 	{
 		m_lastSkyTexture = nullptr;
 		m_skyAtlas.reset();
+		m_reflectionTexture.reset();
 		m_bAutoBoundColorRT0 = false;
 		m_render_target_color_hdr.reset();
 		m_render_target_color.reset();
@@ -2589,19 +2591,25 @@ namespace ParaEngine
 					for (int z = 0; z < Tracer::Side; ++z)
 					{
 						int start = -1;
+						uint32_t runColor = 0;
 						for (int x = 0; x <= Tracer::Side; ++x)
 						{
 							auto* block = x < Tracer::Side ? GetBlockTemplate(origin.x + x, origin.y + y, origin.z + z) : nullptr;
-							if (block && block->IsFullyOpaque() && block->IsMatchAttribute(BlockTemplate::batt_cubeModel)
-								&& !block->IsMatchAttribute(BlockTemplate::batt_customModel | BlockTemplate::batt_alphaTestTexture | BlockTemplate::batt_blendedTexture))
+							bool solid = block && block->IsFullyOpaque() && block->IsMatchAttribute(BlockTemplate::batt_cubeModel)
+								&& !block->IsMatchAttribute(BlockTemplate::batt_customModel | BlockTemplate::batt_alphaTestTexture | BlockTemplate::batt_blendedTexture);
+							uint32_t color = 0;
+							if (solid)
 							{
-								if (start < 0) start = x;
+								const int data = block->HasColorData() || block->IsColorData8Bits()
+									? GetBlockData(origin.x + x, origin.y + y, origin.z + z) : 0;
+								color = block->GetBlockColor(data) & 0xffffff;
 							}
-							else if (start >= 0)
+							if (start >= 0 && (!solid || color != runColor))
 							{
-								spans.push_back({ (uint8_t)start, (uint8_t)y, (uint8_t)z, (uint8_t)(x - start) });
+								spans.push_back({ (uint8_t)start, (uint8_t)y, (uint8_t)z, (uint8_t)(x - start), runColor });
 								start = -1;
 							}
+							if (solid && start < 0) { start = x; runColor = color; }
 						}
 					}
 			}
@@ -2619,6 +2627,43 @@ namespace ParaEngine
 		Vector3 corner = BlockCommon::ConvertToRealPosition(origin.x, origin.y, origin.z)
 			- Vector3(size, size, size) * 0.5f - CGlobals::GetScene()->GetRenderOrigin();
 		return Vector4(corner.x, corner.y, corner.z, 1.f / size);
+	}
+
+	bool BlockWorldClient::UpdateRayTracedReflections()
+	{
+		auto* tracer = dynamic_cast<IBlockSkyRayTracer*>(CGlobals::GetRenderDevice());
+		if (!tracer || !m_lastSkyTexture || !GetUseWaterReflection() || !m_render_target_depth_tex ||
+			!m_render_target_normal || !m_render_target_block_info) return false;
+		auto* mgr = CGlobals::GetEffectManager();
+		auto* camera = mgr->GetScene()->GetCurrentCamera();
+		auto* viewport = CGlobals::GetViewportManager()->GetActiveViewPort();
+		if (!camera || !viewport) return false;
+		if (!m_render_target_color_hdr)
+			m_render_target_color_hdr = CGlobals::GetAssetManager()->LoadTexture("_ColorRT_HDR", "_ColorRT_HDR", TextureEntity::RenderTarget);
+		if (!m_reflectionTexture)
+			m_reflectionTexture = CGlobals::GetAssetManager()->LoadTexture("_BlockReflectionRT", "_BlockReflectionRT", TextureEntity::RenderTarget);
+		auto color = [](TextureEntity* tex) -> IRHITexture* {
+			auto* rt = tex ? tex->GetRHIRenderTarget() : nullptr;
+			return rt ? rt->GetColorTexture() : nullptr;
+		};
+		BlockReflectionView view = {};
+		const Matrix4 inverse = mgr->GetViewTransform().inverse();
+		memcpy(view.inverseView, &inverse._11, sizeof(view.inverseView));
+		float size = (float)BlockConfig::g_dBlockSize;
+		Vector3 corner = BlockCommon::ConvertToRealPosition(m_skyOrigin.x, m_skyOrigin.y, m_skyOrigin.z)
+			- Vector3(size, size, size) * 0.5f - CGlobals::GetScene()->GetRenderOrigin();
+		view.volume[0] = corner.x; view.volume[1] = corner.y; view.volume[2] = corner.z; view.volume[3] = 1.f / size;
+		Vector2 scale, offset;
+		viewport->GetViewportTransform(&scale, &offset);
+		view.viewport[0] = scale.x; view.viewport[1] = scale.y; view.viewport[2] = offset.x; view.viewport[3] = offset.y;
+		view.lens[1] = tanf(camera->GetFieldOfView() * 0.5f);
+		view.lens[0] = view.lens[1] * camera->GetAspectRatio();
+		auto& light = CGlobals::GetScene()->GetSunLight();
+		Vector3 sun = -light.GetSunDirection();
+		view.sun[0] = sun.x; view.sun[1] = sun.y; view.sun[2] = sun.z;
+		view.daylight = (std::max)(0.f, 1.f - fabsf(light.GetTimeOfDaySTD()) * 2.f);
+		return tracer->TraceBlockReflections(view, color(m_render_target_depth_tex.get()), color(m_render_target_normal.get()),
+			color(m_render_target_block_info.get()), color(m_render_target_color_hdr.get()), color(m_reflectionTexture.get()));
 	}
 
 	bool BlockWorldClient::CanUseAdvancedShading()
@@ -3954,6 +3999,7 @@ namespace ParaEngine
 		pClass->AddField("UseSunlightShadowMap", FieldType_Bool, (void*)SetUseSunlightShadowMap_s, (void*)GetUseSunlightShadowMap_s, NULL, NULL, bOverride);
 		pClass->AddField("UseWaterReflection", FieldType_Bool, (void*)SetUseWaterReflection_s, (void*)GetUseWaterReflection_s, NULL, NULL, bOverride);
 		pClass->AddField("CanTraceBlockSky", FieldType_Bool, NULL, (void*)CanTraceBlockSky_s, NULL, NULL, bOverride);
+		pClass->AddField("UpdateRayTracedReflections", FieldType_Bool, NULL, (void*)UpdateRayTracedReflections_s, NULL, NULL, bOverride);
 		pClass->AddField("UpdateRayTracedSky", FieldType_Vector4, NULL, (void*)UpdateRayTracedSky_s, NULL, NULL, bOverride);
 		pClass->AddField("CanUseAdvancedShading", FieldType_Bool, NULL, (void*)CanUseAdvancedShading_s, NULL, NULL, bOverride);
 		pClass->AddField("MovieOutputMode", FieldType_Bool, (void*)EnableMovieOutputMode_s, (void*)IsMovieOutputMode_s, NULL, NULL, bOverride);

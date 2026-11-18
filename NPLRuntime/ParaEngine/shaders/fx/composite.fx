@@ -50,6 +50,7 @@ float EyeBrightness = 0.2f;
 float EyeContrast = 0.5f;
 float BloomEnabled = 1.0f;
 float4 BlockSkyVolume;
+float BlockReflectionEnabled = 0;
 float QualityLevel = 4.0f;
 float BevelEnabled = 0.0f;
 float BounceEnabled = 0.0f;
@@ -124,6 +125,15 @@ sampler normalSampler:register(s4) = sampler_state
 	Texture = <sourceTexture4>;
 	MinFilter = Linear;
 	MagFilter = Linear;
+	AddressU = clamp;
+	AddressV = clamp;
+};
+texture sourceTexture7;
+sampler blockReflectionSampler:register(s7) = sampler_state
+{
+	Texture = <sourceTexture7>;
+	MinFilter = Point;
+	MagFilter = Point;
 	AddressU = clamp;
 	AddressV = clamp;
 };
@@ -839,6 +849,19 @@ void CalculateSpecularReflections(inout SurfaceStruct2 surface)
 		// water is 1 (full), metal has a weak reflective color. 
 		float specularity = lerp(1.0, surface.specularity, surface.mask_metal);
 		float3 cameraSpaceNormal = mul(surface.normal, (float3x3)matView);
+		if (QualityLevel >= 10 && BlockReflectionEnabled > 0.5f)
+		{
+			float4 hit = tex2D(blockReflectionSampler, surface.texCoord);
+			if (hit.a > 0.5f)
+			{
+				float facing = saturate(dot(-normalize(surface.cameraSpacePos), normalize(cameraSpaceNormal)));
+				float fresnel = pow(1.0f - facing, 3.0f);
+				float strength = surface.mask_water ? lerp(0.36f, 0.92f, fresnel)
+					: lerp(0.45f, 0.90f, saturate(specularity * 0.75f + fresnel));
+				surface.color.rgb = lerp(surface.color.rgb, pow(hit.rgb, 2.2f), strength);
+				return;
+			}
+		}
 		float4 reflection = ComputeRayTraceReflection(surface.cameraSpacePos, cameraSpaceNormal);
 		float4 fakeSkyReflection = ComputeFakeSkyReflection(surface);
 
