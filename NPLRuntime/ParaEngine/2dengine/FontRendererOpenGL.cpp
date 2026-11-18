@@ -29,7 +29,7 @@
 using namespace ParaEngine;
 
 ParaEngine::CFontRendererOpenGL::CFontRendererOpenGL()
-	:m_nFontSize(14), m_nRealFontSize(14), m_fFontScaling(1.f), m_bUseCustomShader(false), m_pScaledFontAtlas(nullptr), m_nScaledFontSize(0)
+	:m_nFontSize(14), m_nRealFontSize(14), m_fFontScaling(1.f), m_bUseCustomShader(false)
 {
 }
 
@@ -429,12 +429,7 @@ CFontRendererOpenGL* ParaEngine::CFontRendererOpenGL::create(const std::string& 
 
 ParaEngine::CFontRendererOpenGL::~CFontRendererOpenGL()
 {
-	if (m_pScaledFontAtlas)
-	{
-		FontAtlasCache::releaseFontAtlas(m_pScaledFontAtlas);
-		m_pScaledFontAtlas = nullptr;
-		m_nScaledFontSize = 0;
-	}
+	ReleaseScaledFontAtlases();
 }
 
 
@@ -620,13 +615,15 @@ float ParaEngine::CFontRendererOpenGL::GetFontScaling() const
 
 void ParaEngine::CFontRendererOpenGL::RendererRecreated()
 {
-	if (m_pScaledFontAtlas)
-	{
-		FontAtlasCache::releaseFontAtlas(m_pScaledFontAtlas);
-		m_pScaledFontAtlas = nullptr;
-		m_nScaledFontSize = 0;
-	}
+	ReleaseScaledFontAtlases();
 	FontAtlasCache::purgeCachedData();
+}
+
+void ParaEngine::CFontRendererOpenGL::ReleaseScaledFontAtlases()
+{
+	for (const auto& entry : m_scaledFontAtlases)
+		FontAtlasCache::releaseFontAtlas(entry.second);
+	m_scaledFontAtlases.clear();
 }
 
 int ParaEngine::CFontRendererOpenGL::SelectRenderFontSize(float screenFontSize)
@@ -669,28 +666,34 @@ GLFontAtlas* ParaEngine::CFontRendererOpenGL::GetScaledFontAtlas(int nRealFontSi
 	if (nRealFontSize == m_nRealFontSize || nRealFontSize <= 0)
 		return _fontAtlas;
 
-	if (m_pScaledFontAtlas && m_nScaledFontSize == nRealFontSize)
-		return m_pScaledFontAtlas;
-
-	if (m_pScaledFontAtlas)
+	for (auto it = m_scaledFontAtlases.begin(); it != m_scaledFontAtlases.end(); ++it)
 	{
-		// Queued glyph quads borrow the atlas textures until the sprite batch is drawn.
-		// Submit them before releasing an atlas when labels change scale.
-		pSprite->Flush();
-		FontAtlasCache::releaseFontAtlas(m_pScaledFontAtlas);
-		m_pScaledFontAtlas = nullptr;
-		m_nScaledFontSize = 0;
+		if (it->first == nRealFontSize)
+		{
+			GLFontAtlas* atlas = it->second;
+			m_scaledFontAtlases.splice(m_scaledFontAtlases.begin(), m_scaledFontAtlases, it);
+			return atlas;
+		}
 	}
 
 	TTFConfig cfg(_fontConfig.fontFilePath.c_str(), nRealFontSize, GlyphCollection::DYNAMIC, nullptr, _fontConfig.distanceFieldEnabled, _fontConfig.outlineSize);
 	cfg.bold = _fontConfig.bold;
 	cfg.fallbackFontFilePath = _fontConfig.fallbackFontFilePath;
-	m_pScaledFontAtlas = FontAtlasCache::getFontAtlasTTF(cfg);
-	if (m_pScaledFontAtlas)
+	GLFontAtlas* atlas = FontAtlasCache::getFontAtlasTTF(cfg);
+	if (atlas)
 	{
-		m_pScaledFontAtlas->setAntiAliasTexParameters();
-		m_nScaledFontSize = nRealFontSize;
-		return m_pScaledFontAtlas;
+		constexpr size_t MaxScaledFontAtlases = 8;
+		if (m_scaledFontAtlases.size() >= MaxScaledFontAtlases)
+		{
+			// Queued glyph quads borrow atlas textures. Flush before eviction,
+			// not on cache hits or when switching between retained sizes.
+			pSprite->Flush();
+			FontAtlasCache::releaseFontAtlas(m_scaledFontAtlases.back().second);
+			m_scaledFontAtlases.pop_back();
+		}
+		atlas->setAntiAliasTexParameters();
+		m_scaledFontAtlases.emplace_front(nRealFontSize, atlas);
+		return atlas;
 	}
 	return _fontAtlas;
 }

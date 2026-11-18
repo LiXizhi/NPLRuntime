@@ -61,7 +61,6 @@ namespace ParaEngine
 				auto tempAtlas = font->createFontAtlas();
 				if (tempAtlas)
 				{
-					OUTPUT_LOG("GLFontAtlasCache create :%s", atlasName.c_str());
 					_atlasMap[atlasName] = tempAtlas;
 					return _atlasMap[atlasName];
 				}
@@ -69,7 +68,6 @@ namespace ParaEngine
 		}
 		else
 		{
-			OUTPUT_LOG("GLFontAtlasCache hited :%s", atlasName.c_str());
 			_atlasMap[atlasName]->addref();
 			return _atlasMap[atlasName];
 		}

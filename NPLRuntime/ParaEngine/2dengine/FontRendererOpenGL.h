@@ -1,5 +1,7 @@
 #pragma once
 #include "OpenGLWrapper/GLLabel.h"
+#include <list>
+#include <utility>
 namespace ParaEngine
 {
 	class CSpriteRenderer;
@@ -31,6 +33,7 @@ namespace ParaEngine
 
 	protected:
 		GLFontAtlas* GetScaledFontAtlas(int nRealFontSize, CSpriteRenderer* pSprite);
+		void ReleaseScaledFontAtlases();
 		static int SelectRenderFontSize(float screenFontSize);
 
 	protected:
@@ -39,8 +42,9 @@ namespace ParaEngine
 		int m_nRealFontSize;
 		float m_fFontScaling;
 		bool m_bUseCustomShader;
-		GLFontAtlas* m_pScaledFontAtlas;
-		int m_nScaledFontSize;
+		// Most recently used first. Keep glyphs across alternating label scales,
+		// but bound the number of retained sizes when the camera keeps zooming.
+		std::list<std::pair<int, GLFontAtlas*>> m_scaledFontAtlases;
 	};
 }
 

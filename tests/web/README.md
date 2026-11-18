@@ -46,3 +46,10 @@ The focused font-atlas regression is also available in
 [`test_font_atlas_scale.lua`](../../NPLRuntime/tests/test_font_atlas_scale.lua).
 It draws seven label scales in one batch and logs `FONT_ATLAS_SCALE_PASS`
 after 120 rendered frames.
+
+[`test_font_atlas_cache.lua`](../../NPLRuntime/tests/test_font_atlas_cache.lua)
+adds Chinese labels, repeated scales, and a twelve-size stress phase.
+It logs `FONT_ATLAS_CACHE_PASS` after 240 frames. A texture-allocation
+profiler can use its `FONT_ATLAS_CACHE_BEGIN/END` markers: `warm` and `rewarm`
+draws should allocate no textures and upload no glyphs. The `evict` and
+`evict_repeat` phases must render safely; whether they trigger eviction depends on the renderer's font-size bucketing and UI scale.
