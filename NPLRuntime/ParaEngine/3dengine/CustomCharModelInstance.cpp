@@ -570,11 +570,11 @@ void CharModelInstance::BuildShadowVolume(SceneState* sceneState, ShadowVolume* 
 		m_pModelCanvas->BuildShadowVolume(sceneState, pShadowVolume, pLight, mxWorld);
 }
 
-void CharModelInstance::Draw(SceneState* sceneState, CParameterBlock* materialParams)
+void CharModelInstance::Draw(SceneState* sceneState, CParameterBlock* materialParams, PlayerReflectionMesh* reflection)
 {
 	// draw model
 	if (m_pModelCanvas)
-		m_pModelCanvas->Draw(sceneState, materialParams);
+		m_pModelCanvas->Draw(sceneState, materialParams, reflection);
 }
 
 void CharModelInstance::SetModifiedModel()

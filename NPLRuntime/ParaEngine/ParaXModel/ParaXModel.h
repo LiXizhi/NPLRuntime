@@ -11,6 +11,7 @@
 
 namespace ParaEngine
 {
+	struct PlayerReflectionMesh;
 	class Bone;
 	class ParticleSystem;
 	class RibbonEmitter;
@@ -182,6 +183,7 @@ namespace ParaEngine
 
 		/** whether it is bmax model with vertex color. */
 		bool IsBmaxModel();
+		void AppendReflectionMesh(const Matrix4& world, PlayerReflectionMesh& mesh);
 		void SetBmaxModel();
 
 		/** load textures */

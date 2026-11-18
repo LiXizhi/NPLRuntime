@@ -22,6 +22,18 @@ public:
 	intptr_t GetNativeHandle() const override { return reinterpret_cast<intptr_t>(hwnd); }
 };
 
+// Character assets expose wrapped RHI textures, unlike the native G-buffer attachments.
+class SkinTexture final : public IRHITexture
+{
+public:
+	explicit SkinTexture(IRHITexture& texture) : wrapped(texture) {}
+	uint32_t GetWidth() const override { return wrapped.GetWidth(); }
+	uint32_t GetHeight() const override { return wrapped.GetHeight(); }
+	void* GetNativeHandle() const override { return wrapped.GetNativeHandle(); }
+private:
+	IRHITexture& wrapped;
+};
+
 int main()
 {
 	TestWindow window;
@@ -55,7 +67,7 @@ int main()
 		return pixels[(z + 32 * (y / 8)) * Sky::AtlasWidth + x + 32 * (y % 8)];
 	};
 	std::vector<BlockSkySpan> roof;
-	for (int z = 8; z < 24; ++z) roof.push_back({8, 16, (uint8_t)z, 16, 0xff00ff});
+	for (int z = 8; z < 32; ++z) roof.push_back({8, 16, (uint8_t)z, 16, 0xff00ff});
 	if (!trace(roof)) return 1;
 	float below = sample(16, 15, 16), above = sample(16, 17, 16);
 	std::printf("Sky visibility below roof %.4f, above roof %.4f\n", below, above);
@@ -80,14 +92,63 @@ int main()
 	view.inverseView[12] = 16; view.inverseView[13] = 13; view.inverseView[14] = 12;
 	view.viewport[0] = view.viewport[1] = view.volume[3] = view.daylight = view.sun[1] = 1;
 	uint32_t reflected[3] = {};
+	PlayerReflectionMesh player;
 	auto traceReflections = [&]() {
-		return tracer->TraceBlockReflections(view, depth.get(), normal.get(), material.get(), material.get(), reflection->GetColorTexture()) &&
+		return tracer->TraceBlockReflections(view, depth.get(), normal.get(), material.get(), material.get(), reflection->GetColorTexture(), &player) &&
 			device->ReadTexturePixels(reflection->GetColorTexture(), reflected);
 	};
 	if (!traceReflections()) return 1;
 	std::printf("Off-camera roof: water %08x, metal %08x, matte %08x\n", reflected[0], reflected[1], reflected[2]);
 	if ((reflected[0] >> 24) != 255 || !(reflected[0] & 255) || (reflected[0] & 0xff00) ||
 		!(reflected[0] & 0xff0000) || reflected[1] != reflected[0] || reflected[2]) return 1;
+	// A green animated triangle lies between the receiving surface and the magenta roof.
+	player.vertices = {{10,14,12,0xff00ff00}, {22,14,12,0xff00ff00}, {16,14,22,0xff00ff00}};
+	player.indices = {0,1,2};
+	player.materials = {PlayerReflectionMesh::MaxTextures};
+	if (!traceReflections() || (reflected[0] & 0xff00) == 0 || (reflected[0] & 0xff00ff) ||
+		reflected[0] != reflected[1] || reflected[2]) return 1;
+	std::printf("Player closest hit: water %08x, metal %08x\n", reflected[0], reflected[1]);
+	// The skin texture and its cutout must work even when no source texel is on screen.
+	for (auto& v : player.vertices) v.color = 0xffffffff;
+	const uint32_t red[] = {0xff0000ff, 0xff0000ff, 0xff0000ff};
+	const uint32_t clear[] = {0,0,0};
+	auto skin = makeInput(PixelFormat::A8R8G8B8, red);
+	auto cutout = makeInput(PixelFormat::A8R8G8B8, clear);
+	if (!skin || !cutout) return 1;
+	SkinTexture wrappedSkin(*skin);
+	player.textures = {&wrappedSkin, cutout.get()};
+	player.materials[0] = 0x80000000u;
+	if (!traceReflections() || !(reflected[0] & 255) || (reflected[0] & 0xffff00)) return 1;
+	player.materials[0] = 0x80000001u;
+	if (!traceReflections() || !(reflected[0] & 0xff0000) || !(reflected[0] & 255)) return 1;
+	player.materials[0] = 0;
+	for (auto& v : player.vertices) v.y += 4;
+	if (!traceReflections() || (reflected[0] & 0xff00) || !(reflected[0] & 255)) return 1;
+	player.indices.clear();
+	uint32_t previous = 256;
+	for (int y = 10; y >= 4; --y)
+	{
+		view.inverseView[13] = float(y);
+		if (!traceReflections()) return 1;
+		const uint32_t weight = reflected[0] >> 24;
+		std::printf("Edge weight at eye Y=%d: %u\n", y, weight);
+		if ((y >= 6 && (weight == 0 || weight >= previous)) || (y < 6 && weight > previous) || reflected[1] != reflected[0]) return 1;
+		previous = weight;
+	}
+	if (previous != 0) return 1;
+	// Move the receiver away while reflecting the same nearby roof. Re-centering the volume
+	// by four blocks must leave both weights identical at a fixed world-space camera.
+	const float receiverDepths[] = {9, 12, 12};
+	depth = makeInput(PixelFormat::R32F, receiverDepths);
+	view.inverseView[9] = -1;
+	view.inverseView[10] = 0;
+	view.inverseView[13] = 16;
+	if (!traceReflections()) return 1;
+	uint32_t water = reflected[0], metal = reflected[1];
+	if ((water >> 24) >= 255 || (water >> 24) <= (metal >> 24) || (metal >> 24) == 0) return 1;
+	view.volume[0] += 4;
+	for (auto& span : roof) span.x -= 4;
+	if (!trace(roof) || !traceReflections() || water != reflected[0] || metal != reflected[1]) return 1;
 	if (!trace({}) || !traceReflections() || reflected[0] || reflected[1]) return 1;
 	return std::all_of(pixels.begin(), pixels.end(), [](float v) { return v == 1; }) ? 0 : 1;
 }

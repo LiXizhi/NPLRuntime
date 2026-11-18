@@ -3,6 +3,7 @@
 
 namespace ParaEngine
 {
+	struct PlayerReflectionMesh;
 	class CanvasAttachment;
 	struct LightParams;
 
@@ -41,7 +42,7 @@ namespace ParaEngine
 		*/
 		bool Animate(SceneState * sceneState, CharacterPose* pPose, int nAnimID = 0, IAttributeFields* pAnimInstance = NULL);
 		/** draw the canvas with all models on it. Be sure to call animate() before calling the draw method.*/
-		void Draw(SceneState * sceneState, CParameterBlock* materialParams = NULL);
+		void Draw(SceneState * sceneState, CParameterBlock* materialParams = NULL, PlayerReflectionMesh* reflection = nullptr);
 		/** build the shadow volume */
 		void BuildShadowVolume(SceneState * sceneState, ShadowVolume * pShadowVolume, LightParams* pLight, Matrix4* mxWorld);
 
@@ -199,7 +200,7 @@ namespace ParaEngine
 		bool animate(SceneState * sceneState, CharacterPose* pPose, bool bUseGlobal = false, int nAnimID = 0, IAttributeFields* pAnimInstance = NULL);
 
 		/** draw this attachment and all its children. */
-		void draw(SceneState * sceneState, ParaXModelCanvas *c, CParameterBlock* materialParams = NULL);
+		void draw(SceneState * sceneState, ParaXModelCanvas *c, CParameterBlock* materialParams = NULL, PlayerReflectionMesh* reflection = nullptr);
 		/** build the shadow volume */
 		void BuildShadowVolume(SceneState * sceneState, ShadowVolume * pShadowVolume, LightParams* pLight, Matrix4* mxWorld);
 

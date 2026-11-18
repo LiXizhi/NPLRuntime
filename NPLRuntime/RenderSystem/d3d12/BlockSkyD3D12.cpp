@@ -66,8 +66,81 @@ namespace ParaEngine
 	}
 #endif
 
+#ifdef PE_BLOCK_SKY_DXR
+	bool RenderDeviceD3D12::BuildPlayerReflectionScene(const PlayerReflectionMesh& mesh, const BlockReflectionView& view,
+		D3D12_GPU_VIRTUAL_ADDRESS& vertices, D3D12_GPU_VIRTUAL_ADDRESS& indices)
+	{
+		const size_t vbBytes = mesh.vertices.size() * sizeof(ReflectionVertex);
+		const size_t ibBytes = mesh.indices.size() * sizeof(uint32_t);
+		const size_t materialBytes = mesh.materials.size() * sizeof(uint32_t);
+		if (!vbBytes || !ibBytes || mesh.materials.size() != mesh.indices.size() / 3 || vbBytes + ibBytes + materialBytes > UINT32_MAX)
+			return false;
+		ComPtr<ID3D12Device5> device;
+		ComPtr<ID3D12GraphicsCommandList4> cmd;
+		if (FAILED(m_device.As(&device)) || FAILED(m_cmdList.As(&cmd))) return false;
+		void* cpu;
+		ID3D12Resource* upload;
+		UINT64 offset;
+		if (!AllocateUpload(static_cast<UINT>(vbBytes + ibBytes + materialBytes), 16, cpu, vertices, upload, offset)) return false;
+		indices = vertices + vbBytes;
+		std::memcpy(cpu, mesh.vertices.data(), vbBytes);
+		std::memcpy(static_cast<char*>(cpu) + vbBytes, mesh.indices.data(), ibBytes);
+		std::memcpy(static_cast<char*>(cpu) + vbBytes + ibBytes, mesh.materials.data(), materialBytes);
+		D3D12_RAYTRACING_GEOMETRY_DESC geometry = {};
+		geometry.Type = D3D12_RAYTRACING_GEOMETRY_TYPE_TRIANGLES;
+		geometry.Flags = D3D12_RAYTRACING_GEOMETRY_FLAG_NONE;
+		geometry.Triangles.VertexBuffer = {vertices, sizeof(ReflectionVertex)};
+		geometry.Triangles.VertexCount = static_cast<UINT>(mesh.vertices.size());
+		geometry.Triangles.VertexFormat = DXGI_FORMAT_R32G32B32_FLOAT;
+		geometry.Triangles.IndexBuffer = indices;
+		geometry.Triangles.IndexCount = static_cast<UINT>(mesh.indices.size());
+		geometry.Triangles.IndexFormat = DXGI_FORMAT_R32_UINT;
+		D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_DESC bottom = {}, top = {};
+		bottom.Inputs.Type = D3D12_RAYTRACING_ACCELERATION_STRUCTURE_TYPE_BOTTOM_LEVEL;
+		bottom.Inputs.Flags = D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAG_PREFER_FAST_BUILD;
+		bottom.Inputs.NumDescs = 1;
+		bottom.Inputs.pGeometryDescs = &geometry;
+		top.Inputs.Type = D3D12_RAYTRACING_ACCELERATION_STRUCTURE_TYPE_TOP_LEVEL;
+		top.Inputs.NumDescs = 1;
+		D3D12_RAYTRACING_ACCELERATION_STRUCTURE_PREBUILD_INFO bi = {}, ti = {};
+		device->GetRaytracingAccelerationStructurePrebuildInfo(&bottom.Inputs, &bi);
+		device->GetRaytracingAccelerationStructurePrebuildInfo(&top.Inputs, &ti);
+		auto reserve = [&](ComPtr<ID3D12Resource>& buffer, UINT64 size, D3D12_RESOURCE_STATES state) {
+			if (buffer && buffer->GetDesc().Width >= size) return true;
+			auto next = CreateSkyBuffer(device.Get(), size, state);
+			if (!next) return false;
+			DeferRelease(buffer.Get());
+			buffer = next;
+			return true;
+		};
+		if (!reserve(m_playerBLAS, bi.ResultDataMaxSizeInBytes, D3D12_RESOURCE_STATE_RAYTRACING_ACCELERATION_STRUCTURE) ||
+			!reserve(m_playerTLAS, ti.ResultDataMaxSizeInBytes, D3D12_RESOURCE_STATE_RAYTRACING_ACCELERATION_STRUCTURE) ||
+			!reserve(m_playerScratch, (std::max)(bi.ScratchDataSizeInBytes, ti.ScratchDataSizeInBytes), D3D12_RESOURCE_STATE_UNORDERED_ACCESS))
+			return false;
+		D3D12_RAYTRACING_INSTANCE_DESC instance = {};
+		for (int i = 0; i < 3; ++i)
+		{
+			instance.Transform[i][i] = view.volume[3];
+			instance.Transform[i][3] = -view.volume[i] * view.volume[3];
+		}
+		instance.InstanceMask = 255;
+		instance.AccelerationStructure = m_playerBLAS->GetGPUVirtualAddress();
+		if (!AllocateUpload(sizeof(instance), 16, cpu, top.Inputs.InstanceDescs, upload, offset)) return false;
+		std::memcpy(cpu, &instance, sizeof(instance));
+		bottom.DestAccelerationStructureData = instance.AccelerationStructure;
+		top.DestAccelerationStructureData = m_playerTLAS->GetGPUVirtualAddress();
+		bottom.ScratchAccelerationStructureData = top.ScratchAccelerationStructureData = m_playerScratch->GetGPUVirtualAddress();
+		OrderUavWrites(cmd.Get()); // Previous dispatch may still be reading these buffers.
+		cmd->BuildRaytracingAccelerationStructure(&bottom, 0, nullptr);
+		OrderUavWrites(cmd.Get());
+		cmd->BuildRaytracingAccelerationStructure(&top, 0, nullptr);
+		OrderUavWrites(cmd.Get());
+		return true;
+	}
+#endif
+
 	bool RenderDeviceD3D12::TraceBlockReflections(const BlockReflectionView& view, IRHITexture* depth,
-		IRHITexture* normal, IRHITexture* material, IRHITexture* sceneColor, IRHITexture* output)
+		IRHITexture* normal, IRHITexture* material, IRHITexture* sceneColor, IRHITexture* output, const PlayerReflectionMesh* player)
 	{
 #ifdef PE_BLOCK_SKY_DXR
 		if (!m_blockTLAS || !output || output->GetFormat() != PixelFormat::A8R8G8B8)
@@ -85,14 +158,22 @@ namespace ParaEngine
 			m_reflectionBuffer = buffer;
 			m_reflectionBufferState = D3D12_RESOURCE_STATE_UNORDERED_ACCESS;
 		}
-		if (!BindReflectionInputs(depth, normal, material, sceneColor)) return false;
+		if (!BindReflectionInputs(depth, normal, material, sceneColor, player)) return false;
 		auto* cmd = EnsureRecording();
 		TransitionResource(m_reflectionBuffer.Get(), m_reflectionBufferState, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
 		static_assert(sizeof(view) == 32 * sizeof(float), "reflection shader constant layout");
 		cmd->SetPipelineState(m_reflectionPipeline.Get());
 		cmd->SetComputeRootShaderResourceView(0, m_blockTLAS->GetGPUVirtualAddress());
 		cmd->SetComputeRootUnorderedAccessView(2, m_reflectionBuffer->GetGPUVirtualAddress());
-		cmd->SetComputeRoot32BitConstants(3, 32, &view, 0);
+		D3D12_GPU_VIRTUAL_ADDRESS vertices = 0, indices = 0;
+		bool hasPlayer = player && BuildPlayerReflectionScene(*player, view, vertices, indices);
+		BlockReflectionView constants = view;
+		constants.materialByteOffset = hasPlayer ? static_cast<uint32_t>(player->indices.size() * sizeof(uint32_t)) : 0;
+		constants.hasPlayer = hasPlayer ? 1.f : 0.f;
+		cmd->SetComputeRoot32BitConstants(3, 32, &constants, 0);
+		cmd->SetComputeRootShaderResourceView(4, (hasPlayer ? m_playerTLAS : m_blockTLAS)->GetGPUVirtualAddress());
+		cmd->SetComputeRootShaderResourceView(5, hasPlayer ? vertices : 0);
+		cmd->SetComputeRootShaderResourceView(6, hasPlayer ? indices : 0);
 		cmd->Dispatch((w + 7) / 8, (h + 7) / 8, 1);
 		TransitionResource(m_reflectionBuffer.Get(), m_reflectionBufferState, D3D12_RESOURCE_STATE_COPY_SOURCE);
 		return CopyRayBuffer(m_reflectionBuffer.Get(), output, pitch);

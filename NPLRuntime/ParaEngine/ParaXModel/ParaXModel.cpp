@@ -19,6 +19,7 @@
 #include "particle.h"
 #include "ParaXBone.h"
 #include "ParaXModel.h"
+#include "Framework/Interface/Render/IBlockSkyRayTracer.h"
 #include "BoneChain.h"
 #include "memdebug.h"
 #include "XFileCharModelExporter.h"
@@ -2687,6 +2688,68 @@ Vector3 CParaXModel::GetWeightedVertexByIndex(unsigned short nIndex)
 	return (Vector3)v;
 }
 
+
+void CParaXModel::AppendReflectionMesh(const Matrix4& world, PlayerReflectionMesh& mesh)
+{
+	if (!m_origVertices || !m_indices || !showGeosets || !m_objNum.nVertices)
+		return;
+	const uint32_t base = static_cast<uint32_t>(mesh.vertices.size());
+	const bool colored = IsBmaxModel();
+	for (auto& pass : passes)
+	{
+		if (pass.geoset < 0 || size_t(pass.geoset) >= geosets.size() || !showGeosets[pass.geoset] || pass.IsAlphaBlended())
+			continue;
+		const uint32_t start = pass.GetStartIndex();
+		if (start > m_objNum.nIndices || pass.indexCount > m_objNum.nIndices - start)
+			continue;
+		uint32_t material = PlayerReflectionMesh::MaxTextures;
+		const int tex = pass.GetTexture1();
+		if (!colored && textures && tex >= 0 && uint32_t(tex) < m_objNum.nTextures)
+		{
+			TextureEntity* texture = textures[tex].get();
+			if (tex < MAX_MODEL_TEXTURES && specialTextures[tex] >= 0 && specialTextures[tex] < MAX_MODEL_TEXTURES && replaceTextures[specialTextures[tex]])
+				texture = replaceTextures[specialTextures[tex]];
+			auto* rhi = texture ? texture->GetTexture() : nullptr;
+			if (rhi)
+			{
+				auto it = std::find(mesh.textures.begin(), mesh.textures.end(), rhi);
+				material = uint32_t(it - mesh.textures.begin());
+				if (it == mesh.textures.end() && material < PlayerReflectionMesh::MaxTextures)
+					mesh.textures.push_back(rhi);
+				if (pass.blendmode == BM_TRANSPARENT)
+					material |= 0x80000000u;
+			}
+		}
+		const uint32_t offset = pass.GetVertexStart(this);
+		for (uint32_t k = 0; k + 2 < pass.indexCount; k += 3)
+		{
+			const uint16_t* tri = &m_indices[start + k];
+			if (offset >= m_objNum.nVertices || (std::max)({tri[0], tri[1], tri[2]}) >= m_objNum.nVertices - offset)
+				continue;
+			for (int j = 0; j < 3; ++j)
+				mesh.indices.push_back(base + offset + tri[j]);
+			mesh.materials.push_back(material);
+		}
+	}
+	const bool skin = HasAnimation() && bones && m_objNum.nBones;
+	mesh.vertices.reserve(base + m_objNum.nVertices);
+	for (uint32_t i = 0; i < m_objNum.nVertices; ++i)
+	{
+		const auto& src = m_origVertices[i];
+		Vector3 pos = src.pos;
+		if (skin && src.weights[0])
+		{
+			pos = Vector3(0,0,0);
+			for (int b = 0; b < 4 && src.weights[b]; ++b)
+			{
+				const uint32_t bone = src.bones[b] < m_objNum.nBones ? src.bones[b] : 0;
+				pos += (src.pos * bones[bone].mat) * (src.weights[b] / 255.f);
+			}
+		}
+		pos = pos * world;
+		mesh.vertices.push_back({pos.x, pos.y, pos.z, colored ? uint32_t(src.color0) : 0xffffffffu, src.texcoords.x, src.texcoords.y});
+	}
+}
 
 void CParaXModel::draw(SceneState* pSceneState, CParameterBlock* materialParams, int nRenderMethod)
 {

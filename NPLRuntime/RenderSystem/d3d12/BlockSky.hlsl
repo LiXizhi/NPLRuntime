@@ -18,9 +18,9 @@ void main(uint3 cell : SV_DispatchThreadID)
         float radial = sqrt((i + 0.5) / samples);
         float angle = i * 2.39996323;
         ray.Direction = float3(radial * cos(angle), sqrt(1.0 - radial * radial), radial * sin(angle));
-        RayQuery<RAY_FLAG_FORCE_OPAQUE | RAY_FLAG_ACCEPT_FIRST_HIT_AND_END_SEARCH> query;
+        RayQuery<RAY_FLAG_FORCE_OPAQUE> query;
         query.TraceRayInline(scene, RAY_FLAG_NONE, 255, ray);
-        query.Proceed();
+        while (query.Proceed()) {}
         visible += query.CommittedStatus() == COMMITTED_NOTHING ? 1.0 : saturate(query.CommittedRayT() / ray.TMax);
     }
     uint2 pixel = cell.xz + 32 * uint2(cell.y % 8, cell.y / 8);

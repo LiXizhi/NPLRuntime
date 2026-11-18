@@ -5,6 +5,7 @@
 
 namespace ParaEngine
 {
+	struct PlayerReflectionMesh;
 	class CartoonFace;
 	class ParaXModelCanvas;
 	class CParaXModel;
@@ -165,7 +166,7 @@ namespace ParaEngine
 		/** draw the model instance.
 		* Note: call AnimateModel() before calling this function.
 		*/
-		void Draw(SceneState * sceneState, CParameterBlock* materialParams = NULL);
+		void Draw(SceneState * sceneState, CParameterBlock* materialParams = NULL, PlayerReflectionMesh* reflection = nullptr);
 
 		/** build the shadow volume, call AnimateModel() before calling this function.*/
 		void BuildShadowVolume(SceneState * sceneState, ShadowVolume * pShadowVolume, LightParams* pLight, Matrix4* mxWorld);

@@ -69,7 +69,7 @@ namespace ParaEngine
 		bool SupportsBlockSkyTracing() override;
 		bool TraceBlockSky(const std::vector<BlockSkySpan>& spans, IRHITexture* atlas) override;
 		bool TraceBlockReflections(const BlockReflectionView& view, IRHITexture* depth, IRHITexture* normal,
-			IRHITexture* material, IRHITexture* sceneColor, IRHITexture* output) override;
+			IRHITexture* material, IRHITexture* sceneColor, IRHITexture* output, const PlayerReflectionMesh* player) override;
 		void ExecuteAndSyncGPU();
 		void DeferRelease(IUnknown* obj);
 		void NotifyTextureDestroyed(D3D12Texture* tex);
@@ -170,10 +170,13 @@ namespace ParaEngine
 
 	private:
 		bool CopyRayBuffer(ID3D12Resource* source, IRHITexture* output, UINT pitch);
-		bool BindReflectionInputs(IRHITexture* depth, IRHITexture* normal, IRHITexture* material, IRHITexture* sceneColor);
+		bool BuildPlayerReflectionScene(const PlayerReflectionMesh& mesh, const BlockReflectionView& view,
+			D3D12_GPU_VIRTUAL_ADDRESS& vertices, D3D12_GPU_VIRTUAL_ADDRESS& indices);
+		bool BindReflectionInputs(IRHITexture* depth, IRHITexture* normal, IRHITexture* material, IRHITexture* sceneColor, const PlayerReflectionMesh* player);
 		Microsoft::WRL::ComPtr<ID3D12RootSignature> m_reflectionRoot;
 		Microsoft::WRL::ComPtr<ID3D12PipelineState> m_reflectionPipeline;
 		Microsoft::WRL::ComPtr<ID3D12Resource> m_blockBLAS, m_blockTLAS, m_reflectionBuffer;
+		Microsoft::WRL::ComPtr<ID3D12Resource> m_playerBLAS, m_playerTLAS, m_playerScratch;
 		D3D12_RESOURCE_STATES m_reflectionBufferState = D3D12_RESOURCE_STATE_UNORDERED_ACCESS;
 		bool m_checkedSkyTracing = false;
 		Microsoft::WRL::ComPtr<ID3D12RootSignature> m_skyRoot;

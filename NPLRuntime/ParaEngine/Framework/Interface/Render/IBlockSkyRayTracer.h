@@ -17,15 +17,33 @@ namespace ParaEngine
 		}
 	};
 
+	// Posed player geometry in the same render space as inverseView.
+	struct ReflectionVertex
+	{
+		float x, y, z;
+		uint32_t color;
+		float u, v;
+	};
+	struct PlayerReflectionMesh
+	{
+		std::vector<ReflectionVertex> vertices;
+		std::vector<uint32_t> indices;
+		// One texture slot per triangle, with the high bit set for cutout passes.
+		std::vector<uint32_t> materials;
+		static constexpr uint32_t MaxTextures = 16;
+		std::vector<IRHITexture*> textures;
+	};
+
 	struct BlockReflectionView
 	{
 		float inverseView[16];
 		float volume[4];   // render-space corner and inverse block size
 		float viewport[4]; // normalized scale, offset
 		float lens[2];     // horizontal, vertical tangent of half FOV
-		float daylight, padding;
+		float daylight;
+		uint32_t materialByteOffset;
 		float sun[3];      // direction toward the celestial light
-		float reserved;
+		float hasPlayer;
 	};
 
 	class IBlockSkyRayTracer
@@ -37,7 +55,7 @@ namespace ParaEngine
 		virtual bool SupportsBlockSkyTracing() = 0;
 		virtual bool TraceBlockSky(const std::vector<BlockSkySpan>& spans, IRHITexture* atlas) = 0;
 		virtual bool TraceBlockReflections(const BlockReflectionView& view, IRHITexture* depth, IRHITexture* normal,
-			IRHITexture* material, IRHITexture* sceneColor, IRHITexture* output) = 0;
+			IRHITexture* material, IRHITexture* sceneColor, IRHITexture* output, const PlayerReflectionMesh* player = nullptr) = 0;
 	protected:
 		virtual ~IBlockSkyRayTracer() = default;
 	};

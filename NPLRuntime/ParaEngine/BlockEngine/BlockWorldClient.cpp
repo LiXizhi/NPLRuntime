@@ -7,6 +7,9 @@
 //-----------------------------------------------------------------------------
 #include "ParaEngine.h"
 #include "SceneObject.h"
+#include "BipedObject.h"
+#include "ParaXAnimInstance.h"
+#include "CustomCharModelInstance.h"
 #include "EffectManager.h"
 #include "OceanManager.h"
 #include "ParaVertexBufferPool.h"
@@ -2578,7 +2581,7 @@ namespace ParaEngine
 			return Vector4(0, 0, 0, 0);
 		const auto& eye = GetEyeBlockId();
 		auto anchor = [](int coord, int limit) {
-			return (uint16_t)(std::max)(0, (std::min)(limit - Tracer::Side, (coord / 4) * 4 - Tracer::Side / 2));
+			return (uint16_t)(std::max)(0, (std::min)(limit - Tracer::Side, ((coord + 2) / 4) * 4 - Tracer::Side / 2));
 		};
 		Uint16x3 origin(anchor(eye.x, 65536), anchor(eye.y, BlockConfig::g_regionBlockDimY), anchor(eye.z, 65536));
 		auto now = std::chrono::steady_clock::now();
@@ -2662,8 +2665,33 @@ namespace ParaEngine
 		Vector3 sun = -light.GetSunDirection();
 		view.sun[0] = sun.x; view.sun[1] = sun.y; view.sun[2] = sun.z;
 		view.daylight = (std::max)(0.f, 1.f - fabsf(light.GetTimeOfDaySTD()) * 2.f);
+		auto* scene = CGlobals::GetScene();
+		auto* player = scene->GetCurrentPlayer();
+		PlayerReflectionMesh mesh;
+		if (player && player->IsVisible() && player->GetOpacity() > 0.f)
+		{
+			auto* anim = dynamic_cast<CParaXAnimInstance*>(player->GetAnimInstance());
+			auto* state = scene->GetSceneState();
+			const float distance = (player->GetPosition() - camera->GetEyePosition()).length();
+			if (anim && state && distance <= size * IBlockSkyRayTracer::Side)
+			{
+				auto* previousObject = state->GetCurrentSceneObject();
+				float previousDistance = state->GetCameraToCurObjectDistance();
+				state->SetCurrentSceneObject(player);
+				state->SetCameraToCurObjectDistance(distance);
+				Matrix4 world;
+				if (player->GetRenderMatrix(world, state->GetRenderFrameCount()) && anim->UpdateModel(state))
+				{
+					CGlobals::GetWorldMatrixStack().push(world);
+					player->GetCharModelInstance()->Draw(state, nullptr, &mesh);
+					CGlobals::GetWorldMatrixStack().pop();
+				}
+				state->SetCurrentSceneObject(previousObject);
+				state->SetCameraToCurObjectDistance(previousDistance);
+			}
+		}
 		return tracer->TraceBlockReflections(view, color(m_render_target_depth_tex.get()), color(m_render_target_normal.get()),
-			color(m_render_target_block_info.get()), color(m_render_target_color_hdr.get()), color(m_reflectionTexture.get()));
+			color(m_render_target_block_info.get()), color(m_render_target_color_hdr.get()), color(m_reflectionTexture.get()), &mesh);
 	}
 
 	bool BlockWorldClient::CanUseAdvancedShading()

@@ -695,8 +695,11 @@ float BlockSkyVisibility(SurfaceStruct surface)
 		return 1.0f;
 	float3 world = mul(float4(surface.cameraSpacePos, 1.0f), matViewInverse).xyz;
 	float3 p = (world - BlockSkyVolume.xyz) * BlockSkyVolume.w + surface.normal * 0.51f;
-	float3 edge = min(p, 32.0f - p);
-	float weight = saturate(min(edge.x, min(edge.y, edge.z)) * 0.5f);
+	float3 eye = (matViewInverse[3].xyz - BlockSkyVolume.xyz) * BlockSkyVolume.w;
+	float3 distance = abs(p - eye);
+	float weight = 1.0f - smoothstep(8.0f, 14.0f, max(distance.x, max(distance.y, distance.z)));
+	if (any(p < 0.0f) || any(p >= 32.0f))
+		return 1.0f;
 	if (weight <= 0.0f)
 		return 1.0f;
 	float2 inTile = clamp(p.xz, 0.5f, 31.5f);
@@ -849,17 +852,23 @@ void CalculateSpecularReflections(inout SurfaceStruct2 surface)
 		// water is 1 (full), metal has a weak reflective color. 
 		float specularity = lerp(1.0, surface.specularity, surface.mask_metal);
 		float3 cameraSpaceNormal = mul(surface.normal, (float3x3)matView);
+		float4 hit = float4(0,0,0,0);
+		float3 tracedColor = surface.color.rgb;
 		if (QualityLevel >= 10 && BlockReflectionEnabled > 0.5f)
 		{
-			float4 hit = tex2D(blockReflectionSampler, surface.texCoord);
-			if (hit.a > 0.5f)
+			hit = tex2D(blockReflectionSampler, surface.texCoord);
+			if (hit.a > 0.0f)
 			{
 				float facing = saturate(dot(-normalize(surface.cameraSpacePos), normalize(cameraSpaceNormal)));
 				float fresnel = pow(1.0f - facing, 3.0f);
 				float strength = surface.mask_water ? lerp(0.36f, 0.92f, fresnel)
-					: lerp(0.45f, 0.90f, saturate(specularity * 0.75f + fresnel));
-				surface.color.rgb = lerp(surface.color.rgb, pow(hit.rgb, 2.2f), strength);
-				return;
+					: lerp(0.12f + 0.10f * saturate(specularity), 0.44f, fresnel);
+				tracedColor = lerp(surface.color.rgb, pow(hit.rgb, 2.2f), strength);
+				if (hit.a >= 1.0f)
+				{
+					surface.color.rgb = tracedColor;
+					return;
+				}
 			}
 		}
 		float4 reflection = ComputeRayTraceReflection(surface.cameraSpacePos, cameraSpaceNormal);
@@ -876,7 +885,8 @@ void CalculateSpecularReflections(inout SurfaceStruct2 surface)
 		float fresnel = pow(saturate(1.0 - dot(cameraSpaceViewDir, cameraSpaceNormal)), fresnelPower) * 0.98 + 0.02;
 		reflectBlend *= fresnel;
 #endif
-		surface.color.xyz = lerp(surface.color.xyz, reflectedColor, reflectBlend);
+		float3 fallback = lerp(surface.color.xyz, reflectedColor, reflectBlend);
+		surface.color.xyz = lerp(fallback, tracedColor, hit.a);
 	}
 }
 

@@ -1591,24 +1591,28 @@ namespace ParaEngine
 		}
 	}
 
-	bool RenderDeviceD3D12::BindReflectionInputs(IRHITexture* depth, IRHITexture* normal, IRHITexture* material, IRHITexture* sceneColor)
+	bool RenderDeviceD3D12::BindReflectionInputs(IRHITexture* depth, IRHITexture* normal, IRHITexture* material, IRHITexture* sceneColor, const PlayerReflectionMesh* player)
 	{
-		if (m_gpuSrvOffset + 4 > m_gpuSrvFrameBase[m_frameIndex] + 32768u)
+		constexpr UINT descriptorCount = 4 + PlayerReflectionMesh::MaxTextures;
+		if (m_gpuSrvOffset + descriptorCount > m_gpuSrvFrameBase[m_frameIndex] + 32768u)
 			ExecuteAndSyncGPU();
 		auto* cmd = EnsureRecording();
 		if (!cmd) return false;
 		const UINT base = m_gpuSrvOffset;
 		auto dest = m_gpuSrvHeap->GetCPUDescriptorHandleForHeapStart();
 		dest.ptr += SIZE_T(base) * m_gpuSrvDescriptorSize;
-		for (auto* input : {depth, normal, material, sceneColor})
+		IRHITexture* inputs[descriptorCount] = { depth, normal, material, sceneColor };
+		for (UINT i = 0; i < PlayerReflectionMesh::MaxTextures; ++i)
+			inputs[4 + i] = player && i < player->textures.size() ? player->textures[i] : m_whiteFallbackTex;
+		for (auto* input : inputs)
 		{
-			auto* texture = static_cast<D3D12Texture*>(input);
+			auto* texture = input ? static_cast<D3D12Texture*>(input->GetNativeHandle()) : nullptr;
 			if (!texture || texture->GetSrvSlot() == UINT32_MAX) return false;
 			TransitionResource(texture->GetResource(), texture->GetStateRef(), D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
 			m_device->CopyDescriptorsSimple(1, dest, m_cpuSrvAlloc.GetHandle(texture->GetSrvSlot()), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
 			dest.ptr += m_gpuSrvDescriptorSize;
 		}
-		m_gpuSrvOffset += 4;
+		m_gpuSrvOffset += descriptorCount;
 		auto table = m_gpuSrvHeap->GetGPUDescriptorHandleForHeapStart();
 		table.ptr += UINT64(base) * m_gpuSrvDescriptorSize;
 		cmd->SetComputeRootSignature(m_reflectionRoot.Get());

@@ -82,10 +82,10 @@ void ParaXModelCanvas::BuildShadowVolume(SceneState * sceneState, ShadowVolume *
 		m_root->BuildShadowVolume(sceneState, pShadowVolume, pLight, mxWorld);
 }
 
-void ParaXModelCanvas::Draw(SceneState * sceneState, CParameterBlock* materialParams)
+void ParaXModelCanvas::Draw(SceneState * sceneState, CParameterBlock* materialParams, PlayerReflectionMesh* reflection)
 {
 	if (GetBaseModel() != NULL)
-		m_root->draw(sceneState, this, materialParams);
+		m_root->draw(sceneState, this, materialParams, reflection);
 }
 
 CanvasAttachment* ParaXModelCanvas::addAttachment(ParaXEntity *model, int id, int slot, float fScale)
@@ -391,7 +391,7 @@ void CanvasAttachment::SetOffset(float x, float y, float z)
 	m_vOffset.z = z;
 }
 
-void CanvasAttachment::draw(SceneState * sceneState, ParaXModelCanvas *c, CParameterBlock* materialParams)
+void CanvasAttachment::draw(SceneState * sceneState, ParaXModelCanvas *c, CParameterBlock* materialParams, PlayerReflectionMesh* reflection)
 {
 	if (model == 0 && !m_pMeshObject)
 		return;
@@ -438,22 +438,27 @@ void CanvasAttachment::draw(SceneState * sceneState, ParaXModelCanvas *c, CParam
 				pModel->replaceTextures[tex_pair.first] = tex_pair.second.get();
 			}
 
-			CParameterBlock * param_block = materialParams;
-			if (materialParams && GetParamBlock())
+			if (reflection)
+				pModel->AppendReflectionMesh(mat, *reflection);
+			else
 			{
-				param_block = new CParameterBlock(*materialParams);
-				for (auto const & param : GetParamBlock()->m_params)
-					param_block->SetParameter(param.first, param.second);
-			}
-			else if (GetParamBlock())
-			{
-				param_block = GetParamBlock();
-			}
+				CParameterBlock * param_block = materialParams;
+				if (materialParams && GetParamBlock())
+				{
+					param_block = new CParameterBlock(*materialParams);
+					for (auto const & param : GetParamBlock()->m_params)
+						param_block->SetParameter(param.first, param.second);
+				}
+				else if (GetParamBlock())
+				{
+					param_block = GetParamBlock();
+				}
 
-			pModel->draw(sceneState, param_block);
+				pModel->draw(sceneState, param_block);
 
-			if (materialParams && GetParamBlock())
-				delete param_block;
+				if (materialParams && GetParamBlock())
+					delete param_block;
+			}
 
 			for (auto const & tex_pair : texReplaceables)
 			{
@@ -461,7 +466,7 @@ void CanvasAttachment::draw(SceneState * sceneState, ParaXModelCanvas *c, CParam
 			}
 		}
 	}
-	if (m_pMeshObject)
+	if (m_pMeshObject && !reflection)
 	{
 		for (auto const & tex_pair : texReplaceables)
 		{
@@ -472,7 +477,7 @@ void CanvasAttachment::draw(SceneState * sceneState, ParaXModelCanvas *c, CParam
 
 	// draw its children
 	for (size_t i = 0; i < children.size(); i++) {
-		children[i]->draw(sceneState, c, materialParams);
+		children[i]->draw(sceneState, c, materialParams, reflection);
 	}
 
 	// pop matrix
