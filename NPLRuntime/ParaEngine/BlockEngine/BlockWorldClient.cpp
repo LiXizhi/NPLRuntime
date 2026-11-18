@@ -468,7 +468,11 @@ namespace ParaEngine
 								}
 							}
 
-							TextureEntity* pTexEntity = pTempate->GetTexture0(pRenderTask->GetUserData());
+							// The shared caster shader alpha-tests its input. Opaque geometry covers
+							// the whole face, including any translucent border in its color texture.
+							TextureEntity* pTexEntity = nRenderPass == BlockRenderPass_Opaque
+								? CGlobals::GetAssetManager()->GetDefaultTexture(0)
+								: pTempate->GetTexture0(pRenderTask->GetUserData());
 							if (pTexEntity && pTexEntity->GetTexture() != pCurTex0)
 							{
 								pCurTex0 = pTexEntity->GetTexture();
