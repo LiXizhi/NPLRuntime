@@ -1280,6 +1280,19 @@ bool CSceneObject::PrepareRenderObject(CBaseObject* pObj, CBaseCamera* pCamera, 
 		fR = pViewClippingObject->GetRadius();
 	}
 
+	// A lamp mesh and its illumination can enter the view on different frames.
+	// Collect the light one world unit ahead of its range so the deferred pass
+	// can prepare resources before its physical volume intersects the view.
+	const CLightParam* localLight = nullptr;
+	if (pObj->GetType() == CBaseObject::LightObject)
+	{
+		auto* light = static_cast<CLightObject*>(pObj)->GetLightParams();
+		if (light && (light->Type == ELightType::Point || light->Type == ELightType::Spot))
+		{
+			localLight = light;
+			fR = (std::max)(fR, light->Range);
+		}
+	}
 	float fRenderDistance = pObj->GetRenderDistance();
 	if (fRenderDistance <= 0.f)
 	{
@@ -1304,11 +1317,20 @@ bool CSceneObject::PrepareRenderObject(CBaseObject* pObj, CBaseCamera* pCamera, 
 		bRoughTestPassed = pViewClippingObject->TestCollisionSphere(& vViewCenter, fViewRadius,1);
 	}*/
 
-	///  rough test is performed first followed by precise bounding box test, with the camera's view frustum.
-	if (pViewClippingObject->TestCollisionSphere(pCamera, fNewViewRadius)
-		&& pViewClippingObject->TestCollision(pCamera))
+	if (localLight)
 	{
-		bDrawObj = true;
+		const CShapeSphere influence(localLight->Position, localLight->Range + 1.f);
+		auto* frustum = pCamera->GetObjectFrustum();
+		bDrawObj = localLight->Range > 0.f && frustum->TestSphere(&influence) &&
+			frustum->GetPlane(0).PlaneDotCoord(influence.mCenter) < fNewViewRadius + influence.mRadius;
+	}
+	else
+	{
+		bDrawObj = pViewClippingObject->TestCollisionSphere(pCamera, fNewViewRadius) &&
+			pViewClippingObject->TestCollision(pCamera);
+	}
+	if (bDrawObj)
+	{
 
 		ObjectType oType = pObj->GetMyType();
 		if (oType == _PC_Zone)

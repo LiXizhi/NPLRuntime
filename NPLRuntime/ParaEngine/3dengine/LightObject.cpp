@@ -308,7 +308,8 @@ void CLightObject::SetRange(float range)
 		m_pLightParams->Range = range;
 	}
 
-	AutoSetAttenation();
+	if (range > 0.f)
+		AutoSetAttenation();
 }
 
 float CLightObject::GetRange()
