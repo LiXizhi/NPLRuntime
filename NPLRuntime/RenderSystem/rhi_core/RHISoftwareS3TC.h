@@ -7,14 +7,19 @@
 namespace ParaEngine
 {
 	/**
-	 * Bounds-safe CPU S3TC (DXT1 / DXT3 / DXT5) to RGBA8 software decoder fallback
-	 * for GPUs/APIs without hardware BC compression (mobile GLES/Vulkan, WebGL/WebGPU without texture-compression-bc).
+	 * CPU S3TC (DXT1 / DXT3 / DXT5) encoding for static texture uploads and bounds-checked
+	 * RGBA8 decoding for CPU image consumers or GPUs/APIs without hardware BC compression.
 	 */
 	class RHISoftwareS3TC
 	{
 	public:
 		static bool IsS3TCFormat(PixelFormat format);
 		static size_t ComputeCompressedMipSize(PixelFormat format, uint32_t width, uint32_t height);
+
+		// Encodes RGB/RGBA byte order into DXT1 (opaque), DXT3 or DXT5 blocks.
+		// Normal mode favors load latency; highQuality adds refinement at the same GPU size.
+		// Partial edge blocks are replicated; upload dimension constraints are checked by the caller.
+		static bool EncodeFromPixels(PixelFormat format, PixelFormat sourceFormat, const void* srcData, size_t srcByteSize, uint32_t width, uint32_t height, std::vector<uint8_t>& outBlocks, bool highQuality = false);
 
 		/**
 		 * Decodes DXT1/DXT3/DXT5 blocks into tightly-packed RGBA8 bytes (R, G, B, A byte order).

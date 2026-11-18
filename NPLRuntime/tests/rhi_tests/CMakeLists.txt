@@ -1,5 +1,15 @@
 # Automated CTest Verification Suite for ParaRHI & Unified Subsystems
 
+if(NOT EMSCRIPTEN)
+    add_executable(test_texture_compression
+        test_texture_compression.cpp
+        "${PROJECT_SOURCE_DIR}/RenderSystem/rhi_core/RHISoftwareS3TC.cpp")
+    target_include_directories(test_texture_compression PRIVATE
+        "${PROJECT_SOURCE_DIR}/ParaEngine"
+        "${PROJECT_SOURCE_DIR}/RenderSystem/rhi_core")
+    add_test(NAME texture_compression_unit COMMAND test_texture_compression)
+endif()
+
 if(WIN32)
     find_program(NPL_POWERSHELL_EXE NAMES powershell pwsh REQUIRED)
 
@@ -75,4 +85,12 @@ else()
         )
         set_tests_properties(world_perf_optimizations_unit PROPERTIES TIMEOUT 60)
     endif()
+endif()
+
+if(TARGET test_world_perf_optimizations)
+    target_sources(test_world_perf_optimizations PRIVATE headless_platform_stubs.cpp)
+    add_executable(test_texture_upload test_texture_upload.cpp headless_platform_stubs.cpp)
+    get_target_property(texture_test_libraries test_world_perf_optimizations LINK_LIBRARIES)
+    target_link_libraries(test_texture_upload PRIVATE ${texture_test_libraries})
+    add_test(NAME texture_upload_unit COMMAND test_texture_upload)
 endif()

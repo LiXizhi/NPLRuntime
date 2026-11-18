@@ -51,7 +51,8 @@ namespace ParaEngine
 		};
 
 	public:
-		bool initWithImageData(const unsigned char * data, size_t dataLen);
+		// Texture uploads preserve DDS blocks; CPU image consumers decode by default.
+		bool initWithImageData(const unsigned char * data, size_t dataLen, bool preserveCompressed = false);
 		bool initWithRawData(const unsigned char * data, size_t dataLen, int width, int height, int bitsPerComponent, bool preMulti = false);
 		bool saveToFile(const std::string &filename, bool isToRGB = true);
         bool saveImageToJPG(const std::string &filename);
@@ -70,7 +71,8 @@ namespace ParaEngine
 		unsigned char* getData() const { return _data; }
 		int	getDataLen() const { return _dataLen; }
 		const MipmapInfo* getMipmaps() const { return _mipmaps; }
-		bool isCompressed() const { return false; }
+		bool isCompressed() const { return _renderFormat == PixelFormat::DXT1 || _renderFormat == PixelFormat::DXT3 || _renderFormat == PixelFormat::DXT5; }
+		bool hasPremultipliedAlpha() const { return _hasPremultipliedAlpha; }
 
 		bool resize(int width, int height);
 
@@ -144,7 +146,7 @@ namespace ParaEngine
 
 		bool initWithJpgData(const unsigned char* unpackedData, size_t unpackedLen);
 		bool initWithPngData(const unsigned char* unpackedData, size_t unpackedLen);
-		bool initWithS3TCData(const unsigned char* unpackedData, size_t unpackedLen);
+		bool initWithS3TCData(const unsigned char* unpackedData, size_t unpackedLen, bool preserveCompressed);
 
 		void premultipliedAlpha();
 	};

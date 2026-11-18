@@ -379,8 +379,11 @@ int main(int argc, char* argv[])
                 std::cout << "webxr_error_callback_func" << std::endl;
             },
             GetApp());
-        emscripten_set_main_loop_arg(mainloop, nullptr, -1, 1);
+        // Web shells call Module._main() directly from onRuntimeInitialized.
+        // Do not throw Emscripten's "unwind" sentinel through that callback:
+        // the registered loop keeps running after main returns. Its state is
+        // owned by GetApp(), not by main's stack.
+        emscripten_set_main_loop_arg(mainloop, nullptr, -1, 0);
     #endif
-    std::cout << "========================stop paracraft=======================" << std::endl;
     return 0;
 }

@@ -100,3 +100,19 @@ http://127.0.0.1:8088/npl/webparacraft/index.html?searchroot=C:/Paracraft/&world
 | `WEB_ROBOT=OFF` / `-NoRobot` | `ON` | 关闭 MuJoCo + ONNX Runtime Web 机器人模块以加快日常非机器人 C++ 编译 |
 | `BUILD_DIR` | WSL 下 `~/build/npl_unified_wasm` | CMake 构建目录（WSL 下放在原生 ext4 文件系统比 `/mnt/c` 快约 10 倍） |
 | `PORT` / `-Port` | `8088` | 本地 HTTP 监听端口 |
+
+## 5. 默认纹理显存格式
+
+静态图片通过统一纹理上传路径选择紧凑格式，WebGL 与桌面 RHI 共用此策略：
+
+- DDS 的 DXT1/3/5 数据和全部 mip 层直接保留，支持 BC/S3TC 的设备不再先解压为 RGBA8。
+- 普通 RGB/RGBA 图片默认按实际透明度选择 DXT1（不透明，4 bpp）或 DXT5（透明，8 bpp）；显式 DXT3 请求也会进行编码。保持原始分辨率，不缩小图片。
+- 文件名以 `_32bits` 结尾（扩展名前，不区分大小写），且 `Enable32bitsTexture` 开启时，保留 RGBA8。显式指定未压缩格式也不会自动压缩。
+- BC 上传要求设备支持且基础宽高都是 4 的倍数。不满足时，OpenGL/WebGL 使用 RGB565 或 RGBA4444（16 bpp）；其他 RHI 保留可用的未压缩格式。WebGL2/GLES3 使用明确的 16 位内部存储格式。
+- 渲染目标、字体/单通道纹理及通过原始像素接口创建或更新的动态纹理不应用此静态图片策略。CPU 图片读取仍默认解压 DDS，供合成、读像素等操作使用。
+
+压缩会损失少量色彩精度；需要无损 UI 图案时可使用 `_32bits`。无需修改磁盘上的图片或 DDS 文件，重编 WASM 后刷新页面即可使用新策略。
+
+运行时默认使用快速编码模式。RGB 图片直接逐个 4×4 块编码，不创建整张 RGBA 中间图；转换缓冲区在上传后释放，支持 BC 的 GPU 直接使用 DDS 块，不重复编码。
+
+运行 `test_texture_compression --benchmark` 可比较预热后普通/高质量编码的耗时、RGB PSNR 和字节数。基准使用合成图片，不能代表所有素材和设备；计时仅用于诊断，不作为 CTest 通过条件。

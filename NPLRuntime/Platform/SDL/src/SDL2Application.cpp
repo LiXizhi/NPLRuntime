@@ -532,6 +532,18 @@ namespace ParaEngine
 
 	void CSDL2Application::SetScreenResolution(const Vector2 &vSize)
 	{
+#ifdef __EMSCRIPTEN__
+		// The web shell owns the canvas size (including devicePixelRatio).
+		// Haqi's desktop settings page still submits resolutions such as 1280x720.
+		// Applying those only to m_cfg/RenderWindow leaves the canvas and SDL mouse
+		// coordinates unchanged, breaking GUI picking and text clipping. Browser
+		// resizes reach SetResolution through RenderWindowDelegate::OnSize instead.
+		if (m_pRenderWindow && m_pRenderWindow->GetWidth() > 0 && m_pRenderWindow->GetHeight() > 0)
+		{
+			// Leave any pending canvas resize intact as well.
+			return;
+		}
+#endif
 		SetResolution(vSize.x, vSize.y);
 		UpdateScreenMode();
 

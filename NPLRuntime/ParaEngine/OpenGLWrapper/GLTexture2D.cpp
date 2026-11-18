@@ -7,6 +7,7 @@
 #include "GLProgramCache.h"
 #include "RHISoftwareS3TC.h"
 #include <string.h>
+#include <memory>
 
 #ifdef WIN32
 	#define GL_COMPRESSED_RGB_S3TC_DXT1_EXT 0x83F0
@@ -91,7 +92,7 @@ const GLTexture2D::PixelFormatInfoMap GLTexture2D::_pixelFormatInfoTables(Textur
 	TexturePixelFormatInfoTablesValue + sizeof(TexturePixelFormatInfoTablesValue) / sizeof(TexturePixelFormatInfoTablesValue[0]));
 
 // If the image has alpha, you can create RGBA8 (32-bit) or RGBA4 (16-bit) or RGB5A1 (16-bit)
-// Default is: RGBA8888 (32-bit textures)
+// Unknown selects DXT1/DXT5 for color images, with a capability-aware fallback.
 PixelFormat GLTexture2D::g_defaultAlphaPixelFormat = PixelFormat::Unknown;
 
 const GLTexture2D::PixelFormatInfoMap& GLTexture2D::getPixelFormatInfoMap()
@@ -159,85 +160,112 @@ bool GLTexture2D::initWithImage(const ParaImage *image)
 	return initWithImage(image, g_defaultAlphaPixelFormat);
 }
 
-bool GLTexture2D::initWithImage(const ParaImage *image_, PixelFormat format)
+bool GLTexture2D::initWithImage(const ParaImage* image, PixelFormat format)
 {
-	if (image_ == nullptr)
-	{
-		OUTPUT_LOG("Texture2D. Can't create Texture. UIImage is nil");
+	if (!image || !image->getData())
 		return false;
-	}
-
-	const GLImage* image = (const GLImage*)image_;
-
-
-	int imageWidth = image->getWidth();
-	int imageHeight = image->getHeight();
-	this->_filePath = image->getFilePath();
-
-
-	int maxTextureSize = GLImage::MaxTextureSize;
-	if (imageWidth > maxTextureSize || imageHeight > maxTextureSize)
-	{
-		OUTPUT_LOG("WARNING: Image (%u x %u) is bigger than the supported %u x %u", imageWidth, imageHeight, maxTextureSize, maxTextureSize);
+	const int width = static_cast<int>(image->getWidth());
+	const int height = static_cast<int>(image->getHeight());
+	if (width <= 0 || height <= 0 || width > ParaImage::MaxTextureSize || height > ParaImage::MaxTextureSize)
 		return false;
-	}
 
-	unsigned char*   tempData = image->getData();
-	Size             imageSize = Size((float)imageWidth, (float)imageHeight);
-	PixelFormat      pixelFormat = ((PixelFormat::Unknown == format) || (PixelFormat::COUNT == format)) ? image->getRenderFormat() : format;
-	PixelFormat      renderFormat = image->getRenderFormat();
-	size_t           tempDataLen = image->getDataLen();
-
-
-	if (image->getNumberOfMipmaps() > 1)
+	IRenderDevice* device = CGlobals::GetRenderDevice();
+	const PixelFormat sourceFormat = image->getRenderFormat();
+	const bool automatic = format == PixelFormat::Unknown || format == PixelFormat::COUNT;
+	const bool sourceBC = RHISoftwareS3TC::IsS3TCFormat(sourceFormat);
+	const bool colorImage = sourceFormat == PixelFormat::A8R8G8B8 || sourceFormat == PixelFormat::R8G8B8;
+	bool hasAlpha = sourceFormat != PixelFormat::R8G8B8;
+	if (sourceFormat == PixelFormat::A8R8G8B8)
 	{
-		if (pixelFormat != image->getRenderFormat())
-		{
-			OUTPUT_LOG("WARNING: This image has more than 1 mipmaps and we will not convert the data format");
-		}
-
-		initWithMipmaps(image->getMipmaps(), image->getNumberOfMipmaps(), image->getRenderFormat(), imageWidth, imageHeight);
-
-		// set the premultiplied tag
-		_hasPremultipliedAlpha = image->hasPremultipliedAlpha();
-
-		return true;
+		if (static_cast<size_t>(image->getDataLen()) < static_cast<size_t>(width) * height * 4)
+			return false;
+		hasAlpha = false;
+		for (size_t i = 3, end = static_cast<size_t>(width) * height * 4; i < end; i += 4)
+			if (image->getData()[i] != 255) { hasAlpha = true; break; }
 	}
-	else if (image->isCompressed())
+	// BC uploads require block-aligned base dimensions on WebGL and modern RHIs.
+	const bool canUseBC = device && device->GetCaps().supportsBCCompression && width % 4 == 0 && height % 4 == 0;
+	const bool canUsePacked16 = device && device->GetBackendType() == ERHIBackend::OpenGL;
+	PixelFormat targetFormat = automatic ? sourceFormat : format;
+	if (automatic && colorImage)
+		targetFormat = hasAlpha ? PixelFormat::DXT5 : PixelFormat::DXT1;
+	if (RHISoftwareS3TC::IsS3TCFormat(targetFormat) && !canUseBC)
 	{
-		if (pixelFormat != image->getRenderFormat())
-		{
-			OUTPUT_LOG("WARNING: This image is compressed and we can't convert it for now");
-		}
-
-		initWithData(tempData, tempDataLen, image->getRenderFormat(), imageWidth, imageHeight, imageSize);
-
-		// set the premultiplied tag
-		_hasPremultipliedAlpha = image->hasPremultipliedAlpha();
-
-		return true;
+		// Do not encode blocks only to have the backend expand them to RGBA8 again.
+		targetFormat = canUsePacked16 ? (hasAlpha ? PixelFormat::A4R4G4B4 : PixelFormat::R5G6B5) :
+			(sourceBC ? PixelFormat::A8R8G8B8 : sourceFormat);
 	}
-	else
+
+	const int mipCount = (std::max)(1, image->getNumberOfMipmaps());
+	std::vector<MipmapInfo> mips(static_cast<size_t>(mipCount));
+	std::vector<std::vector<uint8_t>> storage(static_cast<size_t>(mipCount));
+	struct FreePixels { void operator()(unsigned char* pixels) const { free(pixels); } };
+	std::vector<std::unique_ptr<unsigned char, FreePixels>> convertedStorage(static_cast<size_t>(mipCount));
+	int mipWidth = width, mipHeight = height;
+	for (int level = 0; level < mipCount; ++level)
 	{
-		unsigned char* outTempData = nullptr;
-		size_t outTempDataLen = 0;
-
-		pixelFormat = ParaImage::convertDataToFormat(tempData, tempDataLen, renderFormat, pixelFormat, &outTempData, &outTempDataLen);
-
-		initWithData(outTempData, outTempDataLen, pixelFormat, imageWidth, imageHeight, imageSize);
-
-
-		if (outTempData != nullptr && outTempData != tempData)
+		const unsigned char* input = mipCount > 1 ? image->getMipmaps()[level].address : image->getData();
+		const size_t inputSize = mipCount > 1 ? image->getMipmaps()[level].len : image->getDataLen();
+		if (!input || !inputSize)
+			return false;
+		if (sourceFormat == targetFormat)
 		{
-
-			free(outTempData);
+			mips[level].address = const_cast<unsigned char*>(input);
+			mips[level].len = static_cast<int>(inputSize);
 		}
-
-		// set the premultiplied tag
-		_hasPremultipliedAlpha = image->hasPremultipliedAlpha();
-
-		return true;
+		else
+		{
+			std::vector<uint8_t> decoded;
+			PixelFormat inputFormat = sourceFormat;
+			size_t byteSize = inputSize;
+			if (sourceBC)
+			{
+				if (!RHISoftwareS3TC::DecodeToRGBA8(sourceFormat, input, inputSize, mipWidth, mipHeight, decoded))
+					return false;
+				input = decoded.data();
+				byteSize = decoded.size();
+				inputFormat = PixelFormat::A8R8G8B8;
+			}
+			const bool encode = RHISoftwareS3TC::IsS3TCFormat(targetFormat);
+			// Encode RGB directly in 4x4 blocks instead of allocating a full RGBA expansion.
+			const PixelFormat conversionFormat = encode ?
+				(inputFormat == PixelFormat::R8G8B8 ? inputFormat : PixelFormat::A8R8G8B8) : targetFormat;
+			unsigned char* converted = nullptr;
+			size_t convertedSize = 0;
+			const PixelFormat convertedFormat = ParaImage::convertDataToFormat(input, byteSize, inputFormat,
+				conversionFormat, &converted, &convertedSize);
+			bool ok = converted && convertedFormat == conversionFormat;
+			if (ok)
+			{
+				if (encode)
+				{
+					ok = RHISoftwareS3TC::EncodeFromPixels(targetFormat, convertedFormat, converted, convertedSize, mipWidth, mipHeight, storage[level]);
+					mips[level].address = storage[level].data();
+					mips[level].len = static_cast<int>(storage[level].size());
+				}
+				else
+				{
+					if (converted == decoded.data())
+						storage[level] = std::move(decoded);
+					mips[level].address = converted;
+					mips[level].len = static_cast<int>(convertedSize);
+				}
+			}
+			if (converted != input)
+			{
+				if (encode) free(converted);
+				else convertedStorage[level].reset(converted);
+			}
+			if (!ok)
+				return false;
+		}
+		mipWidth = (std::max)(1, mipWidth >> 1);
+		mipHeight = (std::max)(1, mipHeight >> 1);
 	}
+	_filePath = image->getFilePath();
+	const bool uploaded = initWithMipmaps(mips.data(), mipCount, targetFormat, width, height);
+	_hasPremultipliedAlpha = image->hasPremultipliedAlpha();
+	return uploaded;
 }
 
 bool GLTexture2D::updateWithData(const void *data, int offsetX, int offsetY, int width, int height)
@@ -584,14 +612,29 @@ bool GLTexture2D::initWithMipmaps(const MipmapInfo* mipmaps, int mipmapsNum, Pix
 				}
 			}
 
-			if (!hwUploaded && i == 0)
+			if (!hwUploaded)
 			{
 				OUTPUT_LOG("Texture2D. WARNING: Compressed texture format %d could not be uploaded or decoded\n", (int)pixelFormat);
+				return false;
 			}
 		}
 		else
 		{
-			glTexImage2D(GL_TEXTURE_2D, i, info.internalFormat, (GLsizei)width, (GLsizei)height, 0, info.format, info.type, data);
+			GLint internalFormat = info.internalFormat;
+#if defined(__EMSCRIPTEN__) || defined(PARAENGINE_MOBILE)
+			if (pDev->GetCaps().featureLevel >= 300)
+			{
+				if (pixelFormat == PixelFormat::R5G6B5) internalFormat = GL_RGB565;
+				else if (pixelFormat == PixelFormat::A4R4G4B4) internalFormat = GL_RGBA4;
+				else if (pixelFormat == PixelFormat::A1R5G5B5) internalFormat = GL_RGB5_A1;
+			}
+#else
+			if (pixelFormat == PixelFormat::R5G6B5)
+				internalFormat = pDev->GetCaps().featureLevel >= 420 ? GL_RGB565 : GL_RGB5;
+			else if (pixelFormat == PixelFormat::A4R4G4B4) internalFormat = GL_RGBA4;
+			else if (pixelFormat == PixelFormat::A1R5G5B5) internalFormat = GL_RGB5_A1;
+#endif
+			glTexImage2D(GL_TEXTURE_2D, i, internalFormat, (GLsizei)width, (GLsizei)height, 0, info.format, info.type, data);
 		}
 
 		if (i > 0 && (width != height || ccNextPOT(width) != width))

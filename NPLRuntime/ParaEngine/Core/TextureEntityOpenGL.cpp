@@ -26,6 +26,26 @@ namespace ParaEngine
 	extern int64_t globalTime;
 }
 
+namespace
+{
+	PixelFormat ResolveTextureFormat(TextureEntity& texture, PixelFormat requested)
+	{
+		if ((requested != PixelFormat::Unknown && requested != PixelFormat::COUNT) || !TextureEntity::g_bEnable32bitsTexture)
+			return requested;
+		const auto is32Bits = [](std::string name)
+		{
+			for (char& c : name)
+				if (c >= 'A' && c <= 'Z') c = static_cast<char>(c - 'A' + 'a');
+			const size_t end = name.find_first_of("?#");
+			if (end != std::string::npos) name.resize(end);
+			const size_t dot = name.find_last_of('.');
+			const size_t stemEnd = dot == std::string::npos ? name.size() : dot;
+			return stemEnd >= 7 && name.compare(stemEnd - 7, 7, "_32bits") == 0;
+		};
+		return is32Bits(texture.GetKey()) || is32Bits(texture.GetLocalFileName()) ? PixelFormat::A8R8G8B8 : requested;
+	}
+}
+
 TextureEntityOpenGL::TextureEntityOpenGL(const AssetKey& key)
 	:TextureEntity(key), m_texture(nullptr), m_nSamplerState(0)
 {
@@ -1046,7 +1066,7 @@ bool ParaEngine::TextureEntityOpenGL::LoadFromImage(const ParaImage* pImage, UIN
 
 	const ParaImage& image = *pImage;
 
-	auto format = dwTextureFormat;
+	auto format = ResolveTextureFormat(*this, dwTextureFormat);
 	if (texture && texture->initWithImage(pImage, format))
 	{
 		if (texture->getPixelsWide() == 0) {
@@ -1056,6 +1076,7 @@ bool ParaEngine::TextureEntityOpenGL::LoadFromImage(const ParaImage* pImage, UIN
 	else
 	{
 		OUTPUT_LOG("error: Couldn't create texture for file:%s \n", GetKey().c_str());
+		SAFE_RELEASE(texture);
 	}
 
 	if (texture)
@@ -1130,7 +1151,7 @@ bool ParaEngine::TextureEntityOpenGL::LoadFromImage(ImageEntity * imageEntity, P
 		if (imageEntity->getRenderFormat() == PixelFormat::A8R8G8B8)
 			bRet = image.initWithRawData((const unsigned char*)buffer, nFileSize, imageEntity->getWidth(), imageEntity->getHeight(), 32);
 		else
-			bRet = image.initWithImageData((const unsigned char*)buffer, nFileSize);
+			bRet = image.initWithImageData((const unsigned char*)buffer, nFileSize, true);
 		
 		if (bRet)
 		{
@@ -1146,7 +1167,7 @@ bool ParaEngine::TextureEntityOpenGL::LoadFromImage(ImageEntity * imageEntity, P
 				}
 			}
 #endif
-			auto format = dwTextureFormat;
+			auto format = ResolveTextureFormat(*this, dwTextureFormat);
 
 			if (texture && texture->initWithImage(&image, format))
 			{
@@ -1157,6 +1178,7 @@ bool ParaEngine::TextureEntityOpenGL::LoadFromImage(ImageEntity * imageEntity, P
 			else
 			{
 				OUTPUT_LOG("error: Couldn't create texture for file:%s \n", GetKey().c_str());
+				SAFE_RELEASE(texture);
 			}
 
 			if (texture)

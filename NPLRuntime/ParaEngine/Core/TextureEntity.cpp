@@ -102,7 +102,7 @@ bool TextureEntity::SetRawDataForImage(const char* pData, int nSize, bool bDelet
 	SAFE_RELEASE(m_pImage);
 	auto pImage = new ParaImage();
 
-	auto ret = pImage->initWithImageData((const unsigned char*)pData, nSize);
+	auto ret = pImage->initWithImageData((const unsigned char*)pData, nSize, true);
 	if (!ret)
 	{
 		SAFE_RELEASE(pImage);
@@ -409,14 +409,12 @@ HRESULT TextureEntity::CreateTextureFromFile_Async(void* pContext, RenderDeviceP
 {
 	if (GetRawData())
 	{
-		LoadFromMemory(GetRawData(), GetRawDataSize(), nMipLevels, dwTextureFormat, ppTexture);
-		return S_OK;
+		return LoadFromMemory(GetRawData(), GetRawDataSize(), nMipLevels, dwTextureFormat, ppTexture);
 	}
 
 	if (GetImage())
 	{
-		LoadFromImage(GetImage(), nMipLevels, dwTextureFormat, ppTexture);
-		return S_OK;
+		return LoadFromImage(GetImage(), nMipLevels, dwTextureFormat, ppTexture) ? S_OK : E_FAIL;
 	}
 
 	// Load Texture asynchronously

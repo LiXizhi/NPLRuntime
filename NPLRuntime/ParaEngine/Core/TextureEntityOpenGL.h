@@ -27,7 +27,8 @@ namespace ParaEngine
 
 		/**  Initializes a texture from an ImageEntity object.
 		* NOTE: It will not convert the pvr image file.
-		* @param dwTextureFormat: if 0, we will use the image file format.
+		* @param dwTextureFormat: Unknown preserves DDS compression or selects compact storage for color images.
+		* Explicit formats and the enabled _32bits filename suffix override automatic compression.
 		*/
 		virtual bool LoadFromImage(ImageEntity * image, PixelFormat dwTextureFormat = PixelFormat::Unknown, UINT nMipLevels = 0, void** ppTexture = NULL);
 		virtual bool LoadFromImage(const ParaImage* pImage, UINT nMipLevels, PixelFormat dwTextureFormat = PixelFormat::Unknown, void** ppTexture = nullptr) override;

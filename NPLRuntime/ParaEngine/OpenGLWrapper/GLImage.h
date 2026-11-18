@@ -7,17 +7,7 @@ namespace ParaEngine
 {
 	class GLImage : public ParaImage
 	{
-	public:
-		bool	hasPremultipliedAlpha() const 
-		{ 
-			auto& infoMap = GLTexture2D::getPixelFormatInfoMap();
-			if (infoMap.find(_renderFormat) != infoMap.end())
-				return GLTexture2D::getPixelFormatInfoMap().at(_renderFormat).compressed;
-			else
-			{
-				return false;
-			}
-		}
+		// Image metadata and decoding are shared with CPU image consumers.
 	};
 }
 

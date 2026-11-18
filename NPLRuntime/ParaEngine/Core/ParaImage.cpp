@@ -1,6 +1,8 @@
 #include "ParaEngine.h"
 #include "ParaImage.h"
 #include "s3tc.h"
+#include "RHISoftwareS3TC.h"
+#include <limits>
 #include "jpeglib.h"
 #include "png.h"
 #include "StringHelper.h"
@@ -312,7 +314,7 @@ namespace ParaEngine
 		return s[(size_t)_renderFormat];
 	}
 
-	bool ParaImage::initWithImageData(const unsigned char * data, size_t dataLen)
+	bool ParaImage::initWithImageData(const unsigned char * data, size_t dataLen, bool preserveCompressed)
 	{
 
 		bool ret = false;
@@ -340,7 +342,7 @@ namespace ParaEngine
 				ret = initWithJpgData(unpackedData, unpackedLen);
 				break;
 			case Format::S3TC:
-				ret = initWithS3TCData(unpackedData, unpackedLen);
+				ret = initWithS3TCData(unpackedData, unpackedLen, preserveCompressed || supportsS3TC);
 				break;
 			default:
 				OUTPUT_LOG("unsupported image format!");
@@ -374,14 +376,7 @@ namespace ParaEngine
 
 	bool ParaImage::isS3TC(const unsigned char * data, size_t dataLen)
 	{
-
-		S3TCTexHeader *header = (S3TCTexHeader *)data;
-
-		if (strncmp(header->fileCode, "DDS", 3) != 0)
-		{
-			return false;
-		}
-		return true;
+		return data && dataLen >= 4 && memcmp(data, "DDS ", 4) == 0;
 	}
 
 	bool ParaImage::isATITC(const unsigned char *data, size_t dataLen)
@@ -816,126 +811,79 @@ namespace ParaEngine
 	}
 
 
-	bool ParaImage::initWithS3TCData(const unsigned char * data, size_t dataLen)
+	bool ParaImage::initWithS3TCData(const unsigned char* data, size_t dataLen, bool preserveCompressed)
 	{
-		const uint32_t FOURCC_DXT1 = makeFourCC('D', 'X', 'T', '1');
-		const uint32_t FOURCC_DXT3 = makeFourCC('D', 'X', 'T', '3');
-		const uint32_t FOURCC_DXT5 = makeFourCC('D', 'X', 'T', '5');
+		if (!data || dataLen < sizeof(S3TCTexHeader))
+			return false;
+		S3TCTexHeader header;
+		memcpy(&header, data, sizeof(header));
+		const auto& desc = header.ddsd;
+		const uint32_t fourCC = desc.DUMMYUNIONNAMEN4.ddpfPixelFormat.fourCC;
+		PixelFormat format = PixelFormat::Unknown;
+		if (fourCC == makeFourCC('D', 'X', 'T', '1')) format = PixelFormat::DXT1;
+		else if (fourCC == makeFourCC('D', 'X', 'T', '3')) format = PixelFormat::DXT3;
+		else if (fourCC == makeFourCC('D', 'X', 'T', '5')) format = PixelFormat::DXT5;
+		else return false;
 
-		/* load the .dds file */
-
-		S3TCTexHeader *header = (S3TCTexHeader *)data;
-		unsigned char *pixelData = static_cast<unsigned char*>(malloc((dataLen - sizeof(S3TCTexHeader)) * sizeof(unsigned char)));
-		memcpy((void *)pixelData, data + sizeof(S3TCTexHeader), dataLen - sizeof(S3TCTexHeader));
-
-		_width = header->ddsd.width;
-		_height = header->ddsd.height;
-		_numberOfMipmaps = (std::max)((uint32_t)1, header->ddsd.DUMMYUNIONNAMEN2.mipMapCount); //if dds header reports 0 mipmaps, set to 1 to force correct software decoding (if needed).
-		_dataLen = 0;
-		int blockSize = (FOURCC_DXT1 == header->ddsd.DUMMYUNIONNAMEN4.ddpfPixelFormat.fourCC) ? 8 : 16;
-
-		/* calculate the dataLen */
-
-		int width = _width;
-		int height = _height;
-
-		if (supportsS3TC)  //compressed data length
+		uint32_t width = desc.width, height = desc.height;
+		const uint32_t mipCount = (std::max)(1u, desc.DUMMYUNIONNAMEN2.mipMapCount);
+		if (!width || !height || width > static_cast<uint32_t>(MaxTextureSize) ||
+			height > static_cast<uint32_t>(MaxTextureSize) || mipCount > MIPMAP_MAX)
+			return false;
+		const size_t payloadSize = dataLen - sizeof(header);
+		size_t encodedSize = 0, decodedSize = 0;
+		for (uint32_t i = 0; i < mipCount; ++i)
 		{
-			_dataLen = dataLen - sizeof(S3TCTexHeader);
-			_data = static_cast<unsigned char*>(malloc(_dataLen * sizeof(unsigned char)));
-			memcpy((void *)_data, (void *)pixelData, _dataLen);
+			const size_t bytes = RHISoftwareS3TC::ComputeCompressedMipSize(format, width, height);
+			if (!bytes || bytes > payloadSize - encodedSize)
+				return false;
+			encodedSize += bytes;
+			decodedSize += static_cast<size_t>(width) * height * 4;
+			if (width == 1 && height == 1 && i + 1 < mipCount)
+				return false;
+			width = (std::max)(1u, width >> 1);
+			height = (std::max)(1u, height >> 1);
 		}
-		else                                               //decompressed data length
+		const size_t outputSize = preserveCompressed ? encodedSize : decodedSize;
+		if (outputSize > static_cast<size_t>((std::numeric_limits<int>::max)()))
+			return false;
+		unsigned char* output = static_cast<unsigned char*>(malloc(outputSize));
+		if (!output)
+			return false;
+		const unsigned char* source = data + sizeof(header);
+		if (preserveCompressed)
+			memcpy(output, source, outputSize);
+		width = desc.width; height = desc.height;
+		size_t srcOffset = 0, dstOffset = 0;
+		for (uint32_t i = 0; i < mipCount; ++i)
 		{
-			for (int i = 0; i < _numberOfMipmaps && (width || height); ++i)
+			const size_t bytes = RHISoftwareS3TC::ComputeCompressedMipSize(format, width, height);
+			const size_t mipSize = preserveCompressed ? bytes : static_cast<size_t>(width) * height * 4;
+			if (!preserveCompressed)
 			{
-				if (width == 0) width = 1;
-				if (height == 0) height = 1;
-
-				_dataLen += (height * width * 4);
-
-				width >>= 1;
-				height >>= 1;
-			}
-			_data = static_cast<unsigned char*>(malloc(_dataLen * sizeof(unsigned char)));
-		}
-
-		/* if hardware supports s3tc, set pixelformat before loading mipmaps, to support non-mipmapped textures  */
-		if (supportsS3TC)
-		{   //decode texture through hardware
-
-			if (FOURCC_DXT1 == header->ddsd.DUMMYUNIONNAMEN4.ddpfPixelFormat.fourCC)
-			{
-				_renderFormat = PixelFormat::DXT1;
-			}
-			else if (FOURCC_DXT3 == header->ddsd.DUMMYUNIONNAMEN4.ddpfPixelFormat.fourCC)
-			{
-				_renderFormat = PixelFormat::DXT3;
-			}
-			else if (FOURCC_DXT5 == header->ddsd.DUMMYUNIONNAMEN4.ddpfPixelFormat.fourCC)
-			{
-				_renderFormat = PixelFormat::DXT5;
-			}
-		}
-		else { //will software decode
-			_renderFormat = PixelFormat::A8R8G8B8;
-		}
-
-		/* load the mipmaps */
-
-		int encodeOffset = 0;
-		int decodeOffset = 0;
-		width = _width;  height = _height;
-
-		int bytePerPixel = 4;
-		std::vector<unsigned char> decodeImageData(width * height * bytePerPixel);
-		for (int i = 0; i < _numberOfMipmaps && (width || height); ++i)
-		{
-			if (width == 0) width = 1;
-			if (height == 0) height = 1;
-
-			int size = ((width + 3) / 4)*((height + 3) / 4)*blockSize;
-
-			if (supportsS3TC)
-			{   //decode texture through hardware
-				_mipmaps[i].address = (unsigned char *)_data + encodeOffset;
-				_mipmaps[i].len = size;
-			}
-			else
-			{   //if it is not gles or device do not support S3TC, decode texture by software
-				// OUTPUT_LOG("Hardware S3TC decoder not present. Using software decoder");
-				unsigned int stride = width * bytePerPixel;
-				if (FOURCC_DXT1 == header->ddsd.DUMMYUNIONNAMEN4.ddpfPixelFormat.fourCC)
+				std::vector<uint8_t> rgba;
+				if (!RHISoftwareS3TC::DecodeToRGBA8(format, source + srcOffset, bytes, width, height, rgba))
 				{
-					s3tc_decode(pixelData + encodeOffset, &decodeImageData[0], width, height, S3TCDecodeFlag::DXT1);
+					free(output);
+					return false;
 				}
-				else if (FOURCC_DXT3 == header->ddsd.DUMMYUNIONNAMEN4.ddpfPixelFormat.fourCC)
-				{
-					s3tc_decode(pixelData + encodeOffset, &decodeImageData[0], width, height, S3TCDecodeFlag::DXT3);
-				}
-				else if (FOURCC_DXT5 == header->ddsd.DUMMYUNIONNAMEN4.ddpfPixelFormat.fourCC)
-				{
-					s3tc_decode(pixelData + encodeOffset, &decodeImageData[0], width, height, S3TCDecodeFlag::DXT5);
-				}
-
-				_mipmaps[i].address = (unsigned char *)_data + decodeOffset;
-				_mipmaps[i].len = (stride * height);
-				memcpy((void *)_mipmaps[i].address, (void *)&decodeImageData[0], _mipmaps[i].len);
-				decodeOffset += stride * height;
+				memcpy(output + dstOffset, rgba.data(), mipSize);
 			}
-
-			encodeOffset += size;
-			width >>= 1;
-			height >>= 1;
+			_mipmaps[i].address = output + dstOffset;
+			_mipmaps[i].len = static_cast<int>(mipSize);
+			srcOffset += bytes;
+			dstOffset += mipSize;
+			width = (std::max)(1u, width >> 1);
+			height = (std::max)(1u, height >> 1);
 		}
-
-		/* end load the mipmaps */
-
-		if (pixelData != nullptr)
-		{
-			free(pixelData);
-		};
-
+		free(_data);
+		_data = output;
+		_dataLen = static_cast<int>(outputSize);
+		_width = static_cast<float>(desc.width);
+		_height = static_cast<float>(desc.height);
+		_numberOfMipmaps = static_cast<int>(mipCount);
+		_renderFormat = preserveCompressed ? format : PixelFormat::A8R8G8B8;
+		_hasPremultipliedAlpha = false;
 		return true;
 	}
 

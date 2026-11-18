@@ -42,6 +42,16 @@ free port with `--port`.
 4. Check the browser console for WASM memory errors and WebGPU validation errors.
 5. Repeat with the other launcher.
 
+For the High-effects GUI regression, load
+[`test_web_high_effect_gui.lua`](../../NPLRuntime/tests/test_web_high_effect_gui.lua)
+in the browser client. Keep the browser size unchanged during its 135-frame run.
+It switches between High and normal effects and submits three desktop resolution
+presets, checking that the browser drawing size and GUI hit tests stay correct.
+Expect `WEB_HIGH_EFFECT_GUI_PASS`; both corner buttons must show readable English
+and Chinese text and change their labels when clicked. Close the overlay to
+restore the original effect level. Also resize the browser and repeat the click
+checks to verify that real canvas resizes still work.
+
 The focused font-atlas regression is also available in
 [`test_font_atlas_scale.lua`](../../NPLRuntime/tests/test_font_atlas_scale.lua).
 It draws seven label scales in one batch and logs `FONT_ATLAS_SCALE_PASS`

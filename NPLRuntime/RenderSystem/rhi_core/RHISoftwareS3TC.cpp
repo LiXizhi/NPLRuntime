@@ -1,5 +1,9 @@
 #include "RHISoftwareS3TC.h"
 #include <string.h>
+#include <limits>
+#define STB_DXT_STATIC
+#define STB_DXT_IMPLEMENTATION
+#include "third_party/stb_dxt.h"
 
 namespace ParaEngine
 {
@@ -59,10 +63,58 @@ namespace ParaEngine
 	{
 		if (!IsS3TCFormat(format) || width == 0 || height == 0)
 			return 0;
-		size_t blocksX = (width + 3u) / 4u;
-		size_t blocksY = (height + 3u) / 4u;
+		size_t blocksX = width / 4u + (width % 4u != 0);
+		size_t blocksY = height / 4u + (height % 4u != 0);
 		size_t blockBytes = (format == PixelFormat::DXT1) ? 8u : 16u;
+		if (blocksX > (std::numeric_limits<size_t>::max)() / blockBytes / blocksY)
+			return 0;
 		return blocksX * blocksY * blockBytes;
+	}
+
+	bool RHISoftwareS3TC::EncodeFromPixels(PixelFormat format, PixelFormat sourceFormat, const void* srcData, size_t srcByteSize, uint32_t width, uint32_t height, std::vector<uint8_t>& outBlocks, bool highQuality)
+	{
+		outBlocks.clear();
+		const size_t channels = sourceFormat == PixelFormat::R8G8B8 ? 3 : 4;
+		if ((sourceFormat != PixelFormat::R8G8B8 && sourceFormat != PixelFormat::A8R8G8B8) ||
+			(format != PixelFormat::DXT1 && format != PixelFormat::DXT3 && format != PixelFormat::DXT5) ||
+			!srcData || !width || !height || width > (std::numeric_limits<size_t>::max)() / channels / height ||
+			srcByteSize < static_cast<size_t>(width) * height * channels)
+			return false;
+		const size_t bytes = ComputeCompressedMipSize(format, width, height);
+		if (!bytes)
+			return false;
+		outBlocks.resize(bytes);
+		const uint8_t* rgba = static_cast<const uint8_t*>(srcData);
+		uint8_t* dest = outBlocks.data();
+		for (size_t y = 0; y < height; y += 4)
+		{
+			for (size_t x = 0; x < width; x += 4)
+			{
+				uint8_t block[64];
+				for (size_t dy = 0; dy < 4; ++dy)
+					for (size_t dx = 0; dx < 4; ++dx)
+					{
+						const size_t sx = x + dx < width ? x + dx : width - 1;
+						const size_t sy = y + dy < height ? y + dy : height - 1;
+						memcpy(block + (dy * 4 + dx) * 4, rgba + (sy * width + sx) * channels, channels);
+						if (channels == 3) block[(dy * 4 + dx) * 4 + 3] = 255;
+					}
+				if (format == PixelFormat::DXT3)
+				{
+					for (int i = 0; i < 8; ++i)
+						dest[i] = static_cast<uint8_t>(((block[i * 8 + 3] + 8) / 17) |
+							(((block[i * 8 + 7] + 8) / 17) << 4));
+					dest += 8;
+				}
+				// stb's color compressor requires constant alpha when alpha=0.
+				if (format != PixelFormat::DXT5)
+					for (int i = 0; i < 16; ++i)
+						block[i * 4 + 3] = 255;
+				stb_compress_dxt_block(dest, block, format == PixelFormat::DXT5, highQuality ? STB_DXT_HIGHQUAL : STB_DXT_NORMAL);
+				dest += format == PixelFormat::DXT5 ? 16 : 8;
+			}
+		}
+		return true;
 	}
 
 	bool RHISoftwareS3TC::DecodeToRGBA8(PixelFormat format, const void* srcData, size_t srcByteSize, uint32_t width, uint32_t height, std::vector<uint8_t>& outRGBA)
@@ -71,7 +123,7 @@ namespace ParaEngine
 			return false;
 
 		size_t requiredBytes = ComputeCompressedMipSize(format, width, height);
-		if (srcByteSize < requiredBytes)
+		if (!requiredBytes || srcByteSize < requiredBytes || width > (std::numeric_limits<size_t>::max)() / 4u / height)
 			return false;
 
 		outRGBA.resize(static_cast<size_t>(width) * static_cast<size_t>(height) * 4u);
