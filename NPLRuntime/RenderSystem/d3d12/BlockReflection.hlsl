@@ -84,9 +84,11 @@ uint TraceReflection(uint2 pixel, float2 uv, float z, uint category, uint2 size)
     bool blockHit = query.CommittedStatus() == COMMITTED_TRIANGLE_HIT;
     float hitT = blockHit ? query.CommittedRayT() : ray.TMax;
     float3 color = 0, face = 0;
+    float emission = 0;
     if (blockHit)
     {
         color = UnpackRGB(query.CommittedInstanceID());
+        emission = saturate(query.CommittedInstanceContributionToHitGroupIndex() / 15.0);
         face = faceNormals[query.CommittedPrimitiveIndex() / 2];
     }
     if (hasPlayer > 0)
@@ -104,6 +106,7 @@ uint TraceReflection(uint2 pixel, float2 uv, float z, uint category, uint2 size)
         if (player.CommittedStatus() == COMMITTED_TRIANGLE_HIT)
         {
             hitT = player.CommittedRayT();
+            emission = 0;
             uint primitive = player.CommittedPrimitiveIndex();
             uint3 offsets = playerIndices.Load3(primitive * 12) * 24;
             uint4 a = playerVertices.Load4(offsets.x), b = playerVertices.Load4(offsets.y), c = playerVertices.Load4(offsets.z);
@@ -134,7 +137,7 @@ uint TraceReflection(uint2 pixel, float2 uv, float z, uint category, uint2 size)
             direct *= 1 - Coverage(shadow.Origin + sun * blocker.CommittedRayT() - eye);
     }
     float lighting = lerp(0.18, 0.60, daylight) + direct * lerp(0.12, 0.55, daylight);
-    color *= sqrt(lighting);
+    color *= sqrt(lerp(lighting, 2.0, emission));
     // Reuse the shaded texel only if it depicts the DXR closest hit. Off-screen
     // or occluded hits retain the world material and ray-tested lighting.
     float3 delta = hit / volume.w + volume.xyz - inverseView[3].xyz;
@@ -144,9 +147,31 @@ uint TraceReflection(uint2 pixel, float2 uv, float z, uint category, uint2 size)
         float2 localUV = hitView.xy / (lens * hitView.z) * float2(0.5, -0.5) + 0.5;
         if (all(localUV > 0) && all(localUV < 1))
         {
-            uint2 samplePixel = min(uint2((localUV * viewport.xy + viewport.zw) * size), size - 1);
-            if (abs(depth[samplePixel] - hitView.z) * volume.w < 0.15)
-                color = sceneColor[samplePixel].rgb;
+            // Screen color is extra shading for this hit, independent of DXR coverage.
+            // Feather over the inner 12% of the shorter viewport dimension.
+            float2 extent = viewport.xy * size;
+            float2 edgePixels = min(localUV, 1 - localUV) * extent;
+            float screenWeight = smoothstep(0, max(1.0, 0.12 * min(extent.x, extent.y)), min(edgePixels.x, edgePixels.y));
+            float2 texel = (localUV * viewport.xy + viewport.zw) * size - 0.5;
+            int2 base = int2(floor(texel));
+            float2 t = frac(texel);
+            float3 worldLinear = pow(saturate(color), 2.2);
+            float3 blendedLinear = worldLinear;
+            [unroll] for (int y = 0; y <= 1; ++y)
+            {
+                [unroll] for (int x = 0; x <= 1; ++x)
+                {
+                    int2 q = base + int2(x,y);
+                    float2 qUV = (q + 0.5) / size;
+                    if (any(qUV < viewport.zw) || any(qUV >= viewport.zw + viewport.xy)) continue;
+                    float sampleDepth = depth[q];
+                    float depthError = abs(sampleDepth - hitView.z) * volume.w;
+                    float w = (x ? t.x : 1-t.x) * (y ? t.y : 1-t.y);
+                    w *= (sampleDepth > 0.01) * (1 - smoothstep(0.035, 0.15, depthError));
+                    blendedLinear += (pow(max(sceneColor[q].rgb, 0), 2.2) - worldLinear) * (w * screenWeight);
+                }
+            }
+            color = pow(max(blendedLinear, 0), 1.0 / 2.2);
         }
     }
     uint3 lit = uint3(round(saturate(color) * 255));

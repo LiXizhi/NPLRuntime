@@ -245,7 +245,8 @@ namespace ParaEngine
 			instance.Transform[0][3] = span.x;
 			instance.Transform[1][3] = span.y;
 			instance.Transform[2][3] = span.z;
-			instance.InstanceID = span.color & 0xffffff;
+			instance.InstanceID = span.material & 0xffffff;
+			instance.InstanceContributionToHitGroupIndex = span.material >> 24;
 			instance.InstanceMask = spans.empty() ? 0 : 255;
 			instance.AccelerationStructure = blas->GetGPUVirtualAddress();
 			instances[i] = instance;

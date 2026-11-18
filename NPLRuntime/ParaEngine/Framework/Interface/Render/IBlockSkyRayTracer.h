@@ -10,10 +10,10 @@ namespace ParaEngine
 	struct BlockSkySpan
 	{
 		uint8_t x, y, z, length;
-		uint32_t color; // RGB from the block map color or its per-block color data.
+		uint32_t material; // Low 24 bits: map or authored RGB. High byte: emitted block light (0..15).
 		bool operator==(const BlockSkySpan& rhs) const
 		{
-			return x == rhs.x && y == rhs.y && z == rhs.z && length == rhs.length && color == rhs.color;
+			return x == rhs.x && y == rhs.y && z == rhs.z && length == rhs.length && material == rhs.material;
 		}
 	};
 

@@ -2594,25 +2594,25 @@ namespace ParaEngine
 					for (int z = 0; z < Tracer::Side; ++z)
 					{
 						int start = -1;
-						uint32_t runColor = 0;
+						uint32_t runMaterial = 0;
 						for (int x = 0; x <= Tracer::Side; ++x)
 						{
 							auto* block = x < Tracer::Side ? GetBlockTemplate(origin.x + x, origin.y + y, origin.z + z) : nullptr;
 							bool solid = block && block->IsFullyOpaque() && block->IsMatchAttribute(BlockTemplate::batt_cubeModel)
 								&& !block->IsMatchAttribute(BlockTemplate::batt_customModel | BlockTemplate::batt_alphaTestTexture | BlockTemplate::batt_blendedTexture);
-							uint32_t color = 0;
+							uint32_t material = 0;
 							if (solid)
 							{
 								const int data = block->HasColorData() || block->IsColorData8Bits()
 									? GetBlockData(origin.x + x, origin.y + y, origin.z + z) : 0;
-								color = block->GetBlockColor(data) & 0xffffff;
+								material = (block->GetBlockColor(data) & 0xffffff) | (uint32_t(block->GetLightValue()) << 24);
 							}
-							if (start >= 0 && (!solid || color != runColor))
+							if (start >= 0 && (!solid || material != runMaterial))
 							{
-								spans.push_back({ (uint8_t)start, (uint8_t)y, (uint8_t)z, (uint8_t)(x - start), runColor });
+								spans.push_back({ (uint8_t)start, (uint8_t)y, (uint8_t)z, (uint8_t)(x - start), runMaterial });
 								start = -1;
 							}
-							if (solid && start < 0) { start = x; runColor = color; }
+							if (solid && start < 0) { start = x; runMaterial = material; }
 						}
 					}
 			}

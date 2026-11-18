@@ -34,6 +34,56 @@ private:
 	IRHITexture& wrapped;
 };
 
+// Keep the central receiver and its reflected roof hit fixed. Vary the FOV to
+// bring the green raster sample inside the viewport over the magenta DXR material.
+static bool TestReflectionReprojection(IRenderDevice& device, IBlockSkyRayTracer& tracer)
+{
+	constexpr unsigned side = 65, middle = side * side / 2;
+	std::vector<float> depths(side * side, 5.96f);
+	depths[middle] = 2.f;
+	std::vector<uint32_t> normals(side * side, 0xff4ff580u), colors(side * side, 0xff00ff00u);
+	std::vector<uint32_t> categories(side * side, 0), pixels(side * side);
+	categories[middle] = 9;
+	auto texture = [&](PixelFormat format, const void* data) {
+		RHIMipData mip = {};
+		mip.data = data;
+		mip.rowPitch = 4 * side;
+		mip.dataSize = mip.rowPitch * side;
+		return std::unique_ptr<IRHITexture>(device.CreateTexture(side, side, format, 1, ERHITextureUsage::ShaderResource, &mip, 1));
+	};
+	auto depth = texture(PixelFormat::R32F, depths.data());
+	auto normal = texture(PixelFormat::A8R8G8B8, normals.data());
+	auto material = texture(PixelFormat::A8R8G8B8, categories.data());
+	auto sceneColor = texture(PixelFormat::A8R8G8B8, colors.data());
+	std::unique_ptr<IRHIRenderTarget> output(device.CreateRenderTarget(side, side, PixelFormat::A8R8G8B8, PixelFormat::Unknown));
+	if (!depth || !normal || !material || !sceneColor || !output) return false;
+	BlockReflectionView view = {};
+	view.inverseView[0] = view.inverseView[5] = view.inverseView[10] = view.inverseView[15] = 1;
+	view.inverseView[12] = 16; view.inverseView[13] = 12; view.inverseView[14] = 10;
+	view.viewport[0] = view.viewport[1] = view.volume[3] = view.daylight = view.sun[1] = 1;
+	auto readGreen = [&](float lens) -> int {
+		view.lens[0] = view.lens[1] = lens;
+		if (!tracer.TraceBlockReflections(view, depth.get(), normal.get(), material.get(), sceneColor.get(), output->GetColorTexture()) ||
+			!device.ReadTexturePixels(output->GetColorTexture(), pixels.data()) || (pixels[middle] >> 24) != 255) return -1;
+		return (pixels[middle] >> 8) & 255;
+	};
+	if (readGreen(0.62f) != 0) return false;
+	int previous = 0;
+	for (float lens : {0.69f, 0.72f, 0.78f, 0.86f, 0.97f})
+	{
+		int green = readGreen(lens);
+		std::printf("Reprojected roof at lens %.2f: %d\n", lens, green);
+		if (green <= previous || green - previous > 100) return false;
+		previous = green;
+	}
+	if (previous != 255) return false;
+	// Projecting onto a foreground occluder must preserve the traced material.
+	std::fill(depths.begin(), depths.end(), 3.f);
+	depths[middle] = 2.f;
+	depth = texture(PixelFormat::R32F, depths.data());
+	return depth && readGreen(0.97f) == 0;
+}
+
 int main()
 {
 	TestWindow window;
@@ -68,7 +118,7 @@ int main()
 	};
 	std::vector<BlockSkySpan> roof;
 	for (int z = 8; z < 32; ++z) roof.push_back({8, 16, (uint8_t)z, 16, 0xff00ff});
-	if (!trace(roof)) return 1;
+	if (!trace(roof) || !TestReflectionReprojection(*device, *tracer)) return 1;
 	float below = sample(16, 15, 16), above = sample(16, 17, 16);
 	std::printf("Sky visibility below roof %.4f, above roof %.4f\n", below, above);
 	if (!(below >= 0 && below < 0.3f && above == 1)) return 1;
@@ -101,6 +151,13 @@ int main()
 	std::printf("Off-camera roof: water %08x, metal %08x, matte %08x\n", reflected[0], reflected[1], reflected[2]);
 	if ((reflected[0] >> 24) != 255 || !(reflected[0] & 255) || (reflected[0] & 0xff00) ||
 		!(reflected[0] & 0xff0000) || reflected[1] != reflected[0] || reflected[2]) return 1;
+	// A lamp outside the image retains its emission after nightfall.
+	auto lamps = roof;
+	for (auto& span : lamps) span.material = 0x0f804020;
+	view.daylight = 0;
+	if (!trace(lamps) || !traceReflections() || (reflected[0] & 255) <= 128 || (reflected[0] >> 24) != 255) return 1;
+	view.daylight = 1;
+	if (!trace(roof)) return 1;
 	// A green animated triangle lies between the receiving surface and the magenta roof.
 	player.vertices = {{10,14,12,0xff00ff00}, {22,14,12,0xff00ff00}, {16,14,22,0xff00ff00}};
 	player.indices = {0,1,2};
