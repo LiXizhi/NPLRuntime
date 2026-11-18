@@ -3227,7 +3227,7 @@ namespace ParaEngine
 			return false;
 
 		D3D12_RESOURCE_DESC td = srcRes->GetDesc();
-		if (td.Width == 0 || td.Height == 0 || td.SampleDesc.Count > 1)
+		if (td.Width == 0 || td.Height == 0 || td.SampleDesc.Count > 1 || td.Format == DXGI_FORMAT_BC7_UNORM)
 			return false;
 
 		D3D12_PLACED_SUBRESOURCE_FOOTPRINT fp = {};
@@ -3276,6 +3276,21 @@ namespace ParaEngine
 
 		uint8_t* dst = static_cast<uint8_t*>(pDataOut);
 		const uint8_t* src = static_cast<const uint8_t*>(mapped);
+		// A BC footprint contains rows of 4x4 blocks, padded to RowPitch.
+		// Unpack only the block bytes before converting the image for CPU callers.
+		if (td.Format == DXGI_FORMAT_BC1_UNORM || td.Format == DXGI_FORMAT_BC2_UNORM || td.Format == DXGI_FORMAT_BC3_UNORM)
+		{
+			std::vector<uint8_t> blocks(static_cast<size_t>(numRows * rowBytes));
+			for (UINT y = 0; y < numRows; ++y)
+				std::memcpy(blocks.data() + y * rowBytes, src + static_cast<size_t>(y) * fp.Footprint.RowPitch, static_cast<size_t>(rowBytes));
+			D3D12_RANGE emptyWrite = {};
+			rbBuf->Unmap(0, &emptyWrite);
+			std::vector<uint8_t> rgba;
+			if (!RHISoftwareS3TC::DecodeToRGBA8(d3dTex->GetFormat(), blocks.data(), blocks.size(), d3dTex->GetWidth(), td.Height, rgba))
+				return false;
+			std::memcpy(dst, rgba.data(), rgba.size());
+			return true;
+		}
 		const bool isBGRA = (td.Format == DXGI_FORMAT_B8G8R8A8_UNORM || td.Format == DXGI_FORMAT_B8G8R8A8_UNORM_SRGB || td.Format == DXGI_FORMAT_B8G8R8X8_UNORM);
 		const bool isA8 = (td.Format == DXGI_FORMAT_A8_UNORM || td.Format == DXGI_FORMAT_R8_UNORM);
 
