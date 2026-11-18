@@ -726,6 +726,17 @@ void ParaEngine::CFontRendererOpenGL::DoRender(CSpriteRenderer* pSprite, DWORD c
 	if (!renderAtlas)
 		renderAtlas = _fontAtlas;
 
+	TextureEntityOpenGL atlasTexture;
+	GLTexture2D* currentPage = nullptr;
+	auto drawGlyph = [&](GLTexture2D* page, const RECT& rect, const Vector3& position) {
+		if (page != currentPage)
+		{
+			atlasTexture.SetInnerTexture(page);
+			currentPage = page;
+		}
+		pSprite->DrawQuad(&atlasTexture, &rect, NULL, &position, color);
+	};
+
 	if (renderAtlas != _fontAtlas)
 	{
 		renderAtlas->prepareLetterDefinitions(_currentUTF16String);
@@ -767,7 +778,6 @@ void ParaEngine::CFontRendererOpenGL::DoRender(CSpriteRenderer* pSprite, DWORD c
 			const float penLayoutX = _lettersInfo[ctr].position.x - layoutDef.offsetX;
 			const float lineTopLayoutY = (getHeight() - _lettersInfo[ctr].position.y) - layoutDef.offsetY;
 
-			TextureEntityOpenGL tex(texIt->second);
 			RECT rect;
 			rect.left = static_cast<LONG>(renderDef.U);
 			rect.top = static_cast<LONG>(renderDef.V);
@@ -776,7 +786,7 @@ void ParaEngine::CFontRendererOpenGL::DoRender(CSpriteRenderer* pSprite, DWORD c
 			const float rx = snapScaled1To1 ? std::floor(penLayoutX * fLayoutToRender + 0.5f) : (penLayoutX * fLayoutToRender);
 			const float ry = snapScaled1To1 ? std::floor(lineTopLayoutY * fLayoutToRender + 0.5f) : (lineTopLayoutY * fLayoutToRender);
 			Vector3 vPos(rx + renderDef.offsetX, ry + renderDef.offsetY, 0.f);
-			pSprite->DrawQuad(&tex, &rect, NULL, &vPos, color);
+			drawGlyph(texIt->second, rect, vPos);
 		}
 
 		pSprite->SetTransform(matOld);
@@ -806,7 +816,6 @@ void ParaEngine::CFontRendererOpenGL::DoRender(CSpriteRenderer* pSprite, DWORD c
 				auto texIt = textures.find(letterDef.textureID);
 				if (texIt == textures.end() || !texIt->second)
 					continue;
-				TextureEntityOpenGL tex(texIt->second);
 				RECT rect;
 				rect.left = letterDef.U;
 				rect.top = letterDef.V;
@@ -816,7 +825,7 @@ void ParaEngine::CFontRendererOpenGL::DoRender(CSpriteRenderer* pSprite, DWORD c
 				const float localX = isPixelAligned1To1 ? std::floor(_lettersInfo[ctr].position.x + 0.5f) : _lettersInfo[ctr].position.x;
 				const float localY = isPixelAligned1To1 ? std::floor((getHeight() - _lettersInfo[ctr].position.y) + 0.5f) : (getHeight() - _lettersInfo[ctr].position.y);
 				Vector3 vPos(localX + baseX, localY + baseY, 0);
-				pSprite->DrawQuad(&tex, &rect, NULL, &vPos, color);
+				drawGlyph(texIt->second, rect, vPos);
 			}
 		}
 	}
@@ -838,7 +847,6 @@ void ParaEngine::CFontRendererOpenGL::DoRender(CSpriteRenderer* pSprite, DWORD c
 				auto texIt = textures.find(letterDef.textureID);
 				if (texIt == textures.end() || !texIt->second)
 					continue;
-				TextureEntityOpenGL tex(texIt->second);
 				RECT rect;
 				rect.left = letterDef.U;
 				rect.top = letterDef.V;
@@ -846,7 +854,7 @@ void ParaEngine::CFontRendererOpenGL::DoRender(CSpriteRenderer* pSprite, DWORD c
 				rect.bottom = rect.top + letterDef.height;
 				// directX and opengGL screen space y differs by 1-y, so we need to set to getHeight() - y.
 				Vector3 vPos(_lettersInfo[ctr].position.x, (getHeight() - _lettersInfo[ctr].position.y), 0);
-				pSprite->DrawQuad(&tex, &rect, NULL, &vPos, color);
+				drawGlyph(texIt->second, rect, vPos);
 			}
 		}
 		pSprite->SetTransform(matOld);

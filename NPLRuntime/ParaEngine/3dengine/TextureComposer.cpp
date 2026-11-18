@@ -101,7 +101,15 @@ bool ParaEngine::TextureComposeTask::UpdateToStaticTexture(CRenderTarget* pRende
 			if (pTexture)
 			{
 				if (pTexture->LoadFromImage(image, PixelFormat::DXT3))
+				{
+					// World transitions can unload a composed skin or face while the avatar still uses it.
+					// Keep the RGBA result at the cache path used by the character loaders.
+					if (image->SaveToFile(m_name, false))
+						pTexture->SetLocalFileName(m_name.c_str());
+					else
+						CParaFile::DeleteFile(m_name);
 					res = true;
+				}
 				else
 				{
 					OUTPUT_LOG("warning: failed to save render target to static texture : %s\n", m_name.c_str());
@@ -118,9 +126,10 @@ TextureEntity* ParaEngine::TextureComposeTask::GetTexture()
 	if (!m_composedTexture)
 	{
 		m_composedTexture = CGlobals::GetAssetManager()->LoadTexture(GetName(), GetName());
-		if (!m_composedTexture->IsLoaded())
+		if (!m_composedTexture->IsInitialized() && !CParaFile::DoesFileExist(m_name.c_str(), false))
 		{
-			// this avoid being loaded from local file. 
+			// IsLoaded() triggers a file load. Leave the cache source empty until composition finishes.
+			m_composedTexture->SetState(AssetEntity::ASSET_STATE_CACHE);
 			m_composedTexture->SetLocalFileName("");
 		}
 	}

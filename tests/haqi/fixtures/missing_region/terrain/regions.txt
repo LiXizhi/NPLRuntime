@@ -1,0 +1,15 @@
+Heightmapfile = temp/haqi_region_test_flat.raw
+MainTextureFile = terrain/valid.png
+CommonTextureFile = terrain/valid.png
+Size = 512
+ElevScale = 1.0
+Swapvertical = 1
+HighResRadius = 30
+DetailThreshold = 50
+MaxBlockSize = 16
+DetailTextureMatrixSize = 64
+NumOfDetailTextures = 1
+NumOfRegions = 3
+(move, terrain/move_37_37.png)
+(broken, terrain/regions.txt)
+(valid, terrain/valid.png)

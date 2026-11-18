@@ -140,12 +140,16 @@ namespace ParaEngine
 			std::vector<uint8_t> cpuData;
 			uint32_t capacity = 0;
 			uint32_t used = 0;
-			uint32_t uploadedOffset = 0;
+			// Byte range in cpuData that has not yet been written to gpuBuffer.
+			uint32_t dirtyBegin = UINT32_MAX;
+			uint32_t dirtyEnd = 0;
 			uint64_t generation = 0;
 		};
 
 		struct PassEncoderState
 		{
+			WGPUTextureView colorAttachments[MAX_RENDER_TARGETS] = {};
+			uint32_t offscreenColorCount = 0;
 			WGPURenderPipeline lastPso = nullptr;
 			WGPUBindGroup lastBindGroup = nullptr;
 			uint32_t lastDynCount = UINT32_MAX;
@@ -172,6 +176,7 @@ namespace ParaEngine
 		void ApplyClampedViewport(const ParaViewport& viewport);
 		WGPUBuffer SuballocateFrameArena(GpuFrameArena& arena, WGPUBufferUsageFlags usage, const void* data, uint32_t dataBytes, uint32_t minAllocBytes, uint32_t align, uint32_t defaultInitCap, uint32_t& outOffset);
 		void FlushDirtyArenasToQueue();
+		void FlushDirtyArenaToQueue(GpuFrameArena& arena);
 		WGPURenderPipeline GetOrCreateRenderPipeline(EPrimitiveType primitiveType, WGPUIndexFormat stripIndexFormat = WGPUIndexFormat_Undefined);
 		uint64_t ComputeSamplerStateKey(uint32_t stage) const;
 		WGPUSampler GetOrCreateSampler(uint32_t stage);

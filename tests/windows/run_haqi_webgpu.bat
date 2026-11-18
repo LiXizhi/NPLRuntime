@@ -1,2 +1,2 @@
 @echo off
-python -u "%~dp0..\web\launch_haqi.py" --renderer webgpu %*
+python -u "%~dp0..\haqi\launch_haqi.py" --renderer webgpu %*

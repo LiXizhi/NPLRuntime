@@ -1179,7 +1179,13 @@ namespace ParaEngine
 		m_caps.supportsFloatRenderTargets = true;
 		m_caps.supportsDepthTextures = true;
 		m_caps.supportsInstancing = true;
+#ifdef __EMSCRIPTEN__
+		// The latent query bank needs asynchronous visibility results. Browser queries
+		// currently report every nonblocking probe as visible.
+		m_caps.supportsOcclusionQuery = false;
+#else
 		m_caps.supportsOcclusionQuery = PARA_WGPU_HAS(m_wgpu, wgpuDeviceCreateQuerySet);
+#endif
 		m_caps.supportsTwoSidedStencil = true;
 		m_caps.supportsUserClipPlanes = false;
 		m_caps.supportsBCCompression = m_supportsBC;
@@ -1365,7 +1371,7 @@ namespace ParaEngine
 				PARA_WGPU_CALL(m_wgpu, wgpuQueueWriteBuffer, m_queue, m_zeroUboBuffer, 0, zeros.data(), zeros.size());
 		}
 
-		if (!m_occlusionQuerySet && PARA_WGPU_HAS(m_wgpu, wgpuDeviceCreateQuerySet))
+		if (!m_occlusionQuerySet && m_caps.supportsOcclusionQuery)
 		{
 			WGPUQuerySetDescriptor qsd = {};
 			qsd.label = ParaWgpuLabel("ParaOcclusionQuerySet");
@@ -1492,23 +1498,19 @@ namespace ParaEngine
 
 	void RenderDeviceWebGPU::FlushDirtyArenasToQueue()
 	{
-		if (!m_queue)
+		FlushDirtyArenaToQueue(m_uboArena);
+		FlushDirtyArenaToQueue(m_vbArena);
+		FlushDirtyArenaToQueue(m_ibArena);
+	}
+
+	void RenderDeviceWebGPU::FlushDirtyArenaToQueue(GpuFrameArena& arena)
+	{
+		if (!arena.gpuBuffer || !m_queue || arena.dirtyBegin >= arena.dirtyEnd)
 			return;
-		GpuFrameArena* arenas[3] = { &m_uboArena, &m_vbArena, &m_ibArena };
-		for (GpuFrameArena* arena : arenas)
-		{
-			if (arena->gpuBuffer && arena->used > arena->uploadedOffset)
-			{
-				const uint32_t writeOff = arena->uploadedOffset;
-				const uint32_t writeBytes = (std::min)(arena->capacity - writeOff, AlignUpU32(arena->used - writeOff, 4u));
-				if (writeBytes > 0)
-				{
-					PARA_WGPU_CALL(m_wgpu, wgpuQueueWriteBuffer,
-						m_queue, arena->gpuBuffer, writeOff, arena->cpuData.data() + writeOff, writeBytes);
-				}
-				arena->uploadedOffset = writeOff + writeBytes;
-			}
-		}
+		PARA_WGPU_CALL(m_wgpu, wgpuQueueWriteBuffer, m_queue, arena.gpuBuffer, arena.dirtyBegin,
+			arena.cpuData.data() + arena.dirtyBegin, arena.dirtyEnd - arena.dirtyBegin);
+		arena.dirtyBegin = UINT32_MAX;
+		arena.dirtyEnd = 0;
 	}
 
 	WGPUBuffer RenderDeviceWebGPU::SuballocateFrameArena(
@@ -1531,18 +1533,9 @@ namespace ParaEngine
 
 		if (!arena.gpuBuffer || alignedUsed + allocBytes > arena.capacity)
 		{
-			if (arena.gpuBuffer && arena.used > arena.uploadedOffset && m_queue)
-			{
-				const uint32_t writeOff = arena.uploadedOffset;
-				const uint32_t writeBytes = (std::min)(arena.capacity - writeOff, AlignUpU32(arena.used - writeOff, 4u));
-				if (writeBytes > 0)
-				{
-					PARA_WGPU_CALL(m_wgpu, wgpuQueueWriteBuffer,
-						m_queue, arena.gpuBuffer, writeOff, arena.cpuData.data() + writeOff, writeBytes);
-				}
-			}
 			if (arena.gpuBuffer)
 			{
+				FlushDirtyArenaToQueue(arena);
 				m_transientBuffers.push_back(arena.gpuBuffer);
 				arena.gpuBuffer = nullptr;
 			}
@@ -1558,13 +1551,14 @@ namespace ParaEngine
 			{
 				arena.capacity = 0;
 				arena.used = 0;
-				arena.uploadedOffset = 0;
 				return nullptr;
 			}
-			arena.cpuData.resize(newCap, 0);
+			// A newly allocated WebGPU buffer has zero-initialized contents.
+			arena.cpuData.assign(newCap, 0);
 			arena.capacity = newCap;
 			arena.used = 0;
-			arena.uploadedOffset = 0;
+			arena.dirtyBegin = UINT32_MAX;
+			arena.dirtyEnd = 0;
 			++arena.generation;
 			alignedUsed = 0;
 
@@ -1577,15 +1571,15 @@ namespace ParaEngine
 		}
 
 		uint8_t* dst = arena.cpuData.data() + alignedUsed;
-		if (data && dataBytes > 0)
+		const uint32_t payloadBytes = data ? dataBytes : 0;
+		if ((payloadBytes && std::memcmp(dst, data, payloadBytes) != 0) ||
+			std::any_of(dst + payloadBytes, dst + allocBytes, [](uint8_t byte) { return byte != 0; }))
 		{
-			std::memcpy(dst, data, dataBytes);
-			if (allocBytes > dataBytes)
-				std::memset(dst + dataBytes, 0, allocBytes - dataBytes);
-		}
-		else
-		{
-			std::memset(dst, 0, allocBytes);
+			if (payloadBytes)
+				std::memcpy(dst, data, payloadBytes);
+			std::memset(dst + payloadBytes, 0, allocBytes - payloadBytes);
+			arena.dirtyBegin = (std::min)(arena.dirtyBegin, alignedUsed);
+			arena.dirtyEnd = (std::max)(arena.dirtyEnd, alignedUsed + allocBytes);
 		}
 
 		outOffset = alignedUsed;
@@ -1636,12 +1630,10 @@ namespace ParaEngine
 		}
 		m_transientTextures.clear();
 
+		// Rewind allocations, retaining the shadow and any writes pending from a discarded frame.
 		m_uboArena.used = 0;
-		m_uboArena.uploadedOffset = 0;
 		m_vbArena.used = 0;
-		m_vbArena.uploadedOffset = 0;
 		m_ibArena.used = 0;
-		m_ibArena.uploadedOffset = 0;
 
 		m_currentVsUboOffset = 0;
 		m_currentVsUboSize = 0;
@@ -1982,6 +1974,12 @@ namespace ParaEngine
 		if (!m_renderPass)
 			return false;
 		m_passState = PassEncoderState{};
+		if (m_boundRTCount > 0)
+		{
+			m_passState.offscreenColorCount = colorAttCount;
+			for (uint32_t i = 0; i < colorAttCount; ++i)
+				m_passState.colorAttachments[i] = colorAtts[i].view;
+		}
 
 		// Apply initial viewport and scissor to the newly opened render pass
 		ApplyClampedViewport(m_state.GetViewport());
@@ -2376,6 +2374,8 @@ namespace ParaEngine
 
 	IRHIOcclusionQuery* RenderDeviceWebGPU::CreateOcclusionQuery()
 	{
+		if (!m_occlusionQuerySet)
+			return nullptr;
 		return new WebGPUOcclusionQuery(this);
 	}
 
@@ -3709,7 +3709,11 @@ namespace ParaEngine
 						(expectedDim == WGPUTextureViewDimension_Cube && bound->IsCubeMap()) ||
 						(expectedDim == WGPUTextureViewDimension_3D && bound->Is3D()) ||
 						((expectedDim == WGPUTextureViewDimension_2D || expectedDim == WGPUTextureViewDimension_Undefined) && !bound->IsCubeMap() && !bound->Is3D());
-					if (dimMatches && !unfilterableFloat)
+					// A texture left bound across a target switch cannot be sampled
+					// while this pass writes it. Use the existing unbound-slot fallback.
+					auto* begin = m_passState.colorAttachments;
+					auto* end = begin + m_passState.offscreenColorCount;
+					if (dimMatches && !unfilterableFloat && std::find(begin, end, bound->GetRTVDSVView()) == end)
 						resolvedTex = bound;
 				}
 				if (!resolvedTex)

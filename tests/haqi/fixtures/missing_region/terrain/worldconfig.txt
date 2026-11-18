@@ -1,0 +1,3 @@
+type = lattice
+TileSize = 512
+([0-1],[0-1]) = %WORLD%/regions.txt

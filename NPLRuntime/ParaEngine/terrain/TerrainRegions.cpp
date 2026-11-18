@@ -158,6 +158,10 @@ void CRegionLayer::LoadFromFile(const char* filename, int nBytesPerPixel)
 
 DWORD CRegionLayer::GetPixelValue(int x, int y)
 {
+	// A missing or unreadable region image leaves the layer without pixels.
+	if (!m_pData || m_nWidth <= 0 || m_nHeight <= 0)
+		return 0;
+
 	if(x<0)
 		x = 0;
 	if(x>=m_nWidth)

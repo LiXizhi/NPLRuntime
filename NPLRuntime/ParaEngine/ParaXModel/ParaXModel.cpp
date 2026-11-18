@@ -1715,7 +1715,7 @@ bool CParaXModel::CanUseGpuSkinning() const
 {
 	if (m_bGpuSkinBufferFailed)
 		return false;
-	if (!animated || !animBones || animGeometry)
+	if (!animated || !animBones)
 		return false;
 	if (m_origVertices == NULL || m_indices == NULL || bones == NULL)
 		return false;
@@ -1725,6 +1725,10 @@ bool CParaXModel::CanUseGpuSkinning() const
 		return false;
 	auto* pDevice = CGlobals::GetRenderDevice();
 	if (!pDevice)
+		return false;
+	// Legacy ParaX characters set animGeometry for bone-deformed vertices too.
+	// Their software pass skins m_origVertices with the same palette as the shader.
+	if (animGeometry && (pDevice->GetBackendType() != ERHIBackend::WebGPU || m_header.type == PARAX_MODEL_BMAX))
 		return false;
 	const int maxGpuBones = pDevice->GetCaps().GetMaxGpuSkinningBones();
 	return maxGpuBones > 0 && static_cast<int>(m_objNum.nBones) <= maxGpuBones;
