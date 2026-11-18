@@ -1,5 +1,9 @@
 # Windows Paracraft Launchers (World PID 530)
 
+For browser Haqi tests, use [run_haqi_webgl.bat](run_haqi_webgl.bat) or
+[run_haqi_webgpu.bat](run_haqi_webgpu.bat). See the [Haqi browser test guide](../web/README.md)
+for prerequisites, server options, and camera/label regression checks.
+
 Pure Windows batch launchers that start `build-win64\bin\ParaEngineClient.exe` normally in `..\ParaEngine\Paraworld\` and load **World PID `530`** (`paracraft://cmd/loadworld/530`) with no injected test harness or background CLI server.
 
 ## One-Click Renderer Launchers
