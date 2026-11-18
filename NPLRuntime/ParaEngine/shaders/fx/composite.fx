@@ -1355,7 +1355,7 @@ float4 FinalPS(VSOutput input) :COLOR
 
 float4 CompositeFXAA(VSOutput input) :COLOR
 {
-	return FxaaPixelShader(
+	float4 filtered = FxaaPixelShader(
 	input.texCoord,							// FxaaFloat2 pos,
 		FxaaFloat4(0.0f, 0.0f, 0.0f, 0.0f),		// FxaaFloat4 fxaaConsolePosPos,
 		colorSampler,							// FxaaTex tex,
@@ -1373,6 +1373,8 @@ float4 CompositeFXAA(VSOutput input) :COLOR
 		0.0f,									// FxaaFloat fxaaConsoleEdgeThresholdMin,
 		FxaaFloat4(0.0f, 0.0f, 0.0f, 0.0f)		// FxaaFloat fxaaConsole360ConstDir,
 		);
+	// FXAA returns edge luminance in alpha. The final scene is opaque.
+	return float4(filtered.rgb, 1.0f);
 }
 
 technique Default_Normal
