@@ -50,7 +50,9 @@ float EyeBrightness = 0.2f;
 float EyeContrast = 0.5f;
 float BloomEnabled = 1.0f;
 float QualityLevel = 4.0f;
-float MaxDOFBlur = 0.014f;
+float BevelEnabled = 0.0f;
+float BounceEnabled = 0.0f;
+float MaxDOFBlur = 0.00045f;
 float ViewAspect;
 float TanHalfFOV;
 float cameraFarPlane;
@@ -60,7 +62,7 @@ float3 SunColor;
 float3 TorchLightColor;
 float timeNoon = 1.0; // 1 is noon. 0 is night
 float timeMidnight = 0.0; // 1 is midnight.
-float DepthOfViewFactor = 0.15;	//aperture - bigger values for shallower depth of field
+float DepthOfViewFactor = 0.00045f;	//aperture - bigger values for shallower depth of field
 float FogStart = 100.0;
 float FogEnd = 140.0;
 float CloudThickness = 0.0;
@@ -274,7 +276,7 @@ float2 convertCameraSpaceToScreenSpace(float3 cameraSpace)
 // compute water reflection by sampling along the reflected eye ray until a pixel is found. 
 float4 	ComputeRayTraceReflection(float3 cameraSpacePosition, float3 cameraSpaceNormal)
 {
-	float initialStepAmount = 1;
+	float initialStepAmount = QualityLevel >= 9 ? 0.25 : 1.0;
 	//float stepRefinementAmount = 0.1;
 	//int maxRefinements = 0;
 
@@ -287,7 +289,7 @@ float4 	ComputeRayTraceReflection(float3 cameraSpacePosition, float3 cameraSpace
 	float2 finalSamplePos = float2(0, 0);
 	float ray_length = initialStepAmount;
 	int numSteps = 0;
-	int max_step = QualityLevel >= 6 ? 48 : (QualityLevel >= 5 ? 24 : 12);
+	int max_step = QualityLevel >= 9 ? 64 : (QualityLevel >= 6 ? 48 : (QualityLevel >= 5 ? 24 : 12));
 	float growth = QualityLevel >= 5 ? 1.15 : 1.5;
 	while (numSteps < max_step &&
 		cameraSpaceVectorPosition.z > 0.01 &&
@@ -306,7 +308,7 @@ float4 	ComputeRayTraceReflection(float3 cameraSpacePosition, float3 cameraSpace
 			if (QualityLevel >= 5) {
 				float3 lowerPosition = cameraSpaceVectorPosition - cameraSpaceVector;
 				float3 upperPosition = cameraSpaceVectorPosition;
-				int refinements = QualityLevel >= 6 ? 4 : 2;
+				int refinements = QualityLevel >= 9 ? 6 : (QualityLevel >= 6 ? 4 : 2);
 				[loop] for (int refinement = 0; refinement < refinements; refinement++) {
 					float3 midpoint = (lowerPosition + upperPosition) * 0.5;
 					float2 coord = convertCameraSpaceToScreenSpace(midpoint);
@@ -593,6 +595,34 @@ float3 ViewPosition(float2 coord, float depth)
 	return float3(ndc.x * TanHalfFOV * ViewAspect, -ndc.y * TanHalfFOV, 1.0) * depth;
 }
 
+// Blend the two visible face normals over a narrow strip along a convex edge.
+float3 BevelNormal(SurfaceStruct surface)
+{
+	float3 face = surface.normal;
+	float major = max(abs(face.x), max(abs(face.y), abs(face.z)));
+	if (BevelEnabled < 0.5 || surface.depth >= 12.0 || surface.mask_sky || surface.mask_water ||
+		surface.category_id == 255 || surface.category_id == 18 || surface.category_id == 31 || major < 0.99)
+		return face;
+	float3 faceVS = mul(face, (float3x3)matView);
+	float width = 0.045 * (1.0 - smoothstep(6.0, 12.0, surface.depth));
+	float2 radius = min(12.0 / screenParam, viewportScale * float2(1.0 / ViewAspect, 1.0)
+		* width / max(2.0 * surface.depth * TanHalfFOV, 0.01));
+	float3 bend = 0;
+	[loop] for (int i = 0; i < 4; ++i)
+	{
+		float2 axis = i < 2 ? float2(1, 0) : float2(0, 1);
+		float2 uv = ClampViewUV(surface.texCoord + axis * ((i == 0 || i == 2) ? radius : -radius));
+		float depth = tex2Dlod(depthSampler, float4(uv, 0, 0)).r;
+		float3 other = tex2Dlod(normalSampler, float4(uv, 0, 0)).rgb * 2.0 - 1.0;
+		float3 delta = ViewPosition(uv, depth) - surface.cameraSpacePos;
+		float across = dot(mul(other, (float3x3)matView), delta);
+		if (depth > 0.01 && dot(delta, delta) < 0.04 && dot(delta, faceVS) < 0 && across > 0 &&
+			abs(dot(face, other)) < 0.12)
+			bend += other * saturate(1.0 - across / max(width, 0.001));
+	}
+	return normalize(face + bend);
+}
+
 float AmbientVisibility(SurfaceStruct surface)
 {
 	if (QualityLevel < 5 || surface.mask_sky || surface.mask_water) return 1.0;
@@ -660,6 +690,7 @@ PSOut CompositePS0(VSOutput input)
 	float torch_light_strength = block_info.b;
 
 	CalculateMasks(surface);
+	surface.normal = BevelNormal(surface);
 
 	//Remove the sky from surface albedo, because sky will be handled separately
 	surface.albedo *= 1.0f - float(surface.mask_sky);
@@ -860,14 +891,13 @@ void CalculateCrepuscularLightShafts(inout SurfaceStruct2 surface)
 	float distUV = length(deltaUV);
 	deltaUV *= min(1.0f, 0.42f / max(distUV, 0.0001f));
 
-	int shaftSteps = (QualityLevel >= 5.0f) ? 12 : 8;
+	int shaftSteps = QualityLevel >= 9 ? 24 : (QualityLevel >= 5 ? 12 : 8);
 	float fSteps = (float)shaftSteps;
 	float ign = InterleavedGradientNoise(surface.texCoord * screenParam);
 
 	float occlusionSum = 0.0f;
-	[loop] for (int s = 0; s < 12; s++)
+	[loop] for (int s = 0; s < shaftSteps; s++)
 	{
-		if (s >= shaftSteps) break;
 		float t = ((float)s + ign) / fSteps;
 		float2 sampleUV = surface.texCoord + deltaUV * t;
 		if (all(sampleUV > viewportOffset) && all(sampleUV < viewportOffset + viewportScale))
@@ -886,6 +916,32 @@ void CalculateCrepuscularLightShafts(inout SurfaceStruct2 surface)
 	float3 nightShaftColor = float3(0.16f, 0.28f, 0.50f) * (0.14f * smoothstep(0.08f, 0.55f, timeMidnight));
 
 	surface.color.xyz += shaftFactor * (dayShaftColor + nightShaftColor);
+}
+
+// Gather outgoing radiance from nearby, mutually facing surfaces in the lit opaque buffer.
+float3 DiffuseBounce(SurfaceStruct2 surface)
+{
+	if (BounceEnabled < 0.5 || surface.mask_sky || surface.mask_water || surface.depth > 35.0) return 0;
+	float3 normal = normalize(mul(surface.normal, (float3x3)matView));
+	float2 radius = viewportScale * float2(1.0 / ViewAspect, 1.0) * (0.85 / max(surface.depth * TanHalfFOV, 0.05));
+	int count = QualityLevel >= 9 ? 16 : 8;
+	float3 irradiance = 0;
+	[loop] for (int i = 0; i < count; ++i)
+	{
+		float angle = i * 2.399963;
+		float2 uv = surface.texCoord + radius * float2(cos(angle), sin(angle)) * sqrt((i + 0.5) / count);
+		if (any(uv != ClampViewUV(uv))) continue;
+		float depth = tex2Dlod(depthSampler, float4(uv, 0, 0)).r;
+		float3 delta = ViewPosition(uv, depth) - surface.cameraSpacePos;
+		float distSq = dot(delta, delta);
+		if (depth <= 0.01 || distSq < 0.0004 || distSq > 4.0) continue;
+		float3 dir = delta * rsqrt(distSq);
+		float3 emitter = tex2Dlod(normalSampler, float4(uv, 0, 0)).rgb * 2.0 - 1.0;
+		float weight = saturate(dot(normal, dir)) * saturate(dot(mul(emitter, (float3x3)matView), -dir));
+		float3 radiance = pow(max(tex2Dlod(colorSampler, float4(uv, 0, 0)).rgb, 0), 2.2);
+		irradiance += min(radiance, 4.0) * weight * (1.0 - distSq * 0.25);
+	}
+	return irradiance * (1.6 / count) * (1.0 - smoothstep(24.0, 35.0, surface.depth));
 }
 
 // do water reflection, specular & crepuscular shafts here
@@ -910,6 +966,7 @@ float4 CompositePS1(VSOutput input) :COLOR
 	surface.torch_light_strength = block_info.b;
 
 	CalculateSpecularReflections(surface);
+	surface.color += DiffuseBounce(surface) * sqrt(saturate(surface.color));
 	CalculateSpecularHighlight(surface);
 	CalculateCrepuscularLightShafts(surface);
 
