@@ -52,6 +52,7 @@ float BloomEnabled = 1.0f;
 float4 BlockSkyVolume;
 float BlockReflectionEnabled = 0;
 float QualityLevel = 4.0f;
+float SkyVisibilityView = 0.0f;
 float BevelEnabled = 0.0f;
 float BounceEnabled = 0.0f;
 float MaxDOFBlur = 0.00045f;
@@ -689,7 +690,7 @@ float ContactVisibility(SurfaceStruct surface)
 }
 
 // do basic surface color calculation here (without reflection)
-float BlockSkyVisibility(SurfaceStruct surface)
+float BlockSkyOpenness(SurfaceStruct surface)
 {
 	if (QualityLevel < 9.5f || BlockSkyVolume.w <= 0.0f || surface.mask_sky)
 		return 1.0f;
@@ -710,7 +711,7 @@ float BlockSkyVisibility(SurfaceStruct surface)
 	float2 tile1 = float2(fmod(hi, 8.0f), floor(hi / 8.0f));
 	float a = tex2Dlod(blockSkySampler, float4((tile0 * 32.0f + inTile) / float2(256,128), 0, 0)).r;
 	float b = tex2Dlod(blockSkySampler, float4((tile1 * 32.0f + inTile) / float2(256,128), 0, 0)).r;
-	return lerp(1.0f, lerp(0.40f, 1.0f, lerp(a, b, frac(y))), weight);
+	return lerp(1.0f, lerp(a, b, frac(y)), weight);
 }
 
 PSOut CompositePS0(VSOutput input)
@@ -735,6 +736,17 @@ PSOut CompositePS0(VSOutput input)
 
 	CalculateMasks(surface);
 	surface.normal = BevelNormal(surface);
+	float skyOpenness = BlockSkyOpenness(surface);
+	if (SkyVisibilityView > 0.5f)
+	{
+		// Preserve the opaque measurement in MRT1 across the subsequent alpha pass.
+		// Use display gray directly so a given visibility always has the same value.
+		float gray = surface.mask_sky ? 0.15f : skyOpenness;
+		PSOut measured;
+		measured.Color = float4(gray, gray, gray, 1.0f);
+		measured.Color2 = measured.Color;
+		return measured;
+	}
 
 	//Remove the sky from surface albedo, because sky will be handled separately
 	surface.albedo *= 1.0f - float(surface.mask_sky);
@@ -776,7 +788,7 @@ PSOut CompositePS0(VSOutput input)
 	lightmap.sunlight = activeCelestialColor * shading.direct;
 	lightmap.skylight = rawLightmap.sky;
 	lightmap.skylight *= shading.skylight;
-	lightmap.skylight *= AmbientVisibility(surface) * BlockSkyVisibility(surface);
+	lightmap.skylight *= AmbientVisibility(surface) * lerp(0.40f, 1.0f, skyOpenness);
 	//give some ambient sunlight plus some base ambient at night. 
 	lightmap.skylight *= (SunColor.rgb*(1.0f - CloudThickness)*2.0 + lerp(1.0, 0.14f, pow(timeMidnight, 0.6)));
 	// Subtle cool sky-dome chromaticity in daytime shadows for natural warm/cool sun-shadow separation
