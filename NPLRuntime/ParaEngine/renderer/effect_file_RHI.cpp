@@ -550,7 +550,9 @@ namespace ParaEngine
 		const EShaderTarget target = SelectTargetForDevice(pDevice);
 
 		// Seven mask/detail pairs plus base and shadow occupy all sixteen fragment samplers.
-		if (resolvedName == ":IDR_FX_TERRAIN_NORMAL" && target == EShaderTarget::ESSL_300 &&
+		const bool extendedTerrainTarget = target == EShaderTarget::ESSL_300 ||
+			target == EShaderTarget::GLSL_120 || target == EShaderTarget::GLSL_330;
+		if (resolvedName == ":IDR_FX_TERRAIN_NORMAL" && extendedTerrainTarget &&
 			pDevice->GetMaxSimultaneousTextures() >= 16)
 			fileBytes.insert(0, "#define TERRAIN_SEVEN_LAYERS 1\n");
 
@@ -919,6 +921,21 @@ namespace ParaEngine
 
 		m_nTechniqueIndex = (firstDefaultTech >= 0) ? firstDefaultTech : 0;
 		m_nActivePassIndex = 0;
+
+		if (resolvedName == ":IDR_FX_TERRAIN_NORMAL")
+		{
+			// FX metadata includes declarations inside inactive #ifdef branches.
+			// Terrain uses layersnum to choose seven layers per draw, so only expose
+			// it when the compiled default technique actually binds the parameter.
+			const int32_t layerSlot = m_handleToSlot[k_LayersNum];
+			bool hasLayerBinding = false;
+			for (const auto& pass : m_techniques[m_nTechniqueIndex].passes)
+				for (const auto& binding : pass.bindings)
+					if (layerSlot >= 0 && binding.slotIndex == layerSlot)
+						hasLayerBinding = true;
+			if (!hasLayerBinding)
+				m_handleToSlot[k_LayersNum] = -1;
+		}
 
 		if (m_filename == ":IDR_FX_SIMPLE_MESH_NORMAL")
 			setFloat(k_opacity, 1.0f);

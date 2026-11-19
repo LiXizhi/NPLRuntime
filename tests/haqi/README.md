@@ -285,9 +285,23 @@ from 23 to 45. With both defaults on, 99.95% of foreground pixels were within
 one RGB level of the baseline, compared with 99.97% for a repeated baseline.
 
 Extended terrain is enabled by default for the built-in terrain effect on
-OpenGL ES 3 / WebGL 2 with at least 16 fragment samplers. To compare with
+desktop OpenGL and OpenGL ES 3 / WebGL 2 with at least 16 fragment samplers. To compare with
 the narrower path in a live world, set
 `ParaTerrain.GetAttributeObject():SetField("UseExtendedTerrainLayers", false)`.
+
+On macOS, the desktop GLSL target must compile `TERRAIN_SEVEN_LAYERS` too.
+Otherwise the renderer can submit seven layers to a shader that only samples
+three, leaving black patches wherever the omitted layers contain the ground.
+The terrain effect checks compiled parameter bindings before advertising the
+seven-layer path: FX declarations inside inactive `#ifdef` branches alone do
+not establish support. Other shader targets retain the narrower path unless
+their compiled terrain shader supports the extra layers.
+
+For a native regression check, launch Haqi into the island plaza and inspect
+the grass banks, paving, and distant ground with `UseExtendedTerrainLayers`
+both false and true from the same camera. Texture coverage should match; leave
+the option true after testing. Check a fresh launch as well so a previous
+session's disabled setting cannot hide the bug.
 
 ### Avatar and display checks
 
