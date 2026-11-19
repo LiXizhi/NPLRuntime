@@ -3,6 +3,8 @@
 #include "RenderWindowOSX.h"
 #import "MidiPlayer/ParaEngineMediaPlayer.h"
 #include "MidiMsg.h"
+#include <algorithm>
+#include <chrono>
 
 using namespace  ParaEngine;
 
@@ -41,8 +43,7 @@ void ParaEngine::CParaEngineAppOSX::ClientToGame(int& inout_x, int & inout_y, bo
 
 void ParaEngine::CParaEngineAppOSX::SetRefreshTimer(float fTimeInterval, int nFrameRateControl /*= 0*/)
 {
-    m_fRefreshTimerInterval = fTimeInterval;
-    m_nFrameRateControl = nFrameRateControl;
+    CParaEngineAppBase::SetRefreshTimer(fTimeInterval, nFrameRateControl);
 }
 
 bool ParaEngine::CParaEngineAppOSX::AppHasFocus()
@@ -148,6 +149,7 @@ void ParaEngine::CParaEngineAppOSX::handle_mainloop_timer(const boost::system::e
         auto pWindow = (RenderWindowOSX*)m_pRenderWindow;
         if (pWindow && !pWindow->ShouldClose())
         {
+            const auto frameStart = std::chrono::steady_clock::now();
             pWindow->PollEvents();
             if (m_pRenderDevice && GetAppState() == PEAppState_Ready)
             {
@@ -169,8 +171,13 @@ void ParaEngine::CParaEngineAppOSX::handle_mainloop_timer(const boost::system::e
             }
             this->DoWork();
 
-            double fNextInterval = 0.01;
-            NextLoop((int)(fNextInterval * 1000), &CParaEngineAppOSX::handle_mainloop_timer, this);
+            // Render/Present may already consume the frame budget (including
+            // display sync). Wait only for the remainder, not another 10 ms.
+            const double elapsed = std::chrono::duration<double>(
+                std::chrono::steady_clock::now() - frameStart).count();
+            const int delayMs = std::max(1, static_cast<int>(
+                (std::max(0.0, static_cast<double>(GetRefreshTimer())) - elapsed) * 1000.0));
+            NextLoop(delayMs, &CParaEngineAppOSX::handle_mainloop_timer, this);
         }
         else
         {

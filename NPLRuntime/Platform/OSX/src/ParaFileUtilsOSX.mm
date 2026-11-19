@@ -83,7 +83,7 @@ bool ParaEngine::CParaFileUtilsOSX::Exists(const std::string& filename)
     else
     {
         // find in writable directory first
-        std::string fullPath = GetWritablePath() + filename;
+        std::string fullPath = CFileUtils::GetWritablePath() + filename;
         boost::system::error_code err_code;
         if (fs::exists(fullPath, err_code))
         {
@@ -246,7 +246,7 @@ int ParaEngine::CParaFileUtilsOSX::DeleteDirectory(const std::string& filename)
 std::string ParaEngine::CParaFileUtilsOSX::GetFullPathForFilename(const std::string &filename)
 {
     if (!IsAbsolutePath(filename))
-        return GetWritablePath() + filename;
+        return CFileUtils::GetWritablePath() + filename;
     else
         return filename;
 }

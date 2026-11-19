@@ -9,11 +9,20 @@
 #include <string.h>
 #include <memory>
 
-#ifdef WIN32
-	#define GL_COMPRESSED_RGB_S3TC_DXT1_EXT 0x83F0
-	#define GL_COMPRESSED_RGBA_S3TC_DXT1_EXT 0x83F1
-	#define GL_COMPRESSED_RGBA_S3TC_DXT3_EXT 0x83F2
-	#define GL_COMPRESSED_RGBA_S3TC_DXT5_EXT 0x83F3
+// Some core-profile headers (including macOS gl3.h) omit these extension
+// constants even when the device reports BC support. Keep the format table
+// available; initWithImage selects BC only when the device supports it.
+#ifndef GL_COMPRESSED_RGB_S3TC_DXT1_EXT
+#define GL_COMPRESSED_RGB_S3TC_DXT1_EXT 0x83F0
+#endif
+#ifndef GL_COMPRESSED_RGBA_S3TC_DXT1_EXT
+#define GL_COMPRESSED_RGBA_S3TC_DXT1_EXT 0x83F1
+#endif
+#ifndef GL_COMPRESSED_RGBA_S3TC_DXT3_EXT
+#define GL_COMPRESSED_RGBA_S3TC_DXT3_EXT 0x83F2
+#endif
+#ifndef GL_COMPRESSED_RGBA_S3TC_DXT5_EXT
+#define GL_COMPRESSED_RGBA_S3TC_DXT5_EXT 0x83F3
 #endif
 
 using namespace ParaEngine;

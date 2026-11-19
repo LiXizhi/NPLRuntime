@@ -28,6 +28,11 @@ elseif (APPLE)
 	add_library(luajit21 INTERFACE)
 	target_include_directories(luajit21 INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/include)
     target_link_libraries(luajit21 INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/prebuilt/mac/libluajit.a)
+    # The bundled VM predates LuaJIT fix 2240d844: its assembly advertises
+    # subsections_via_symbols even though VM labels fall through to one another.
+    # Apple's new linker may fold those labels and corrupt the VM's control flow.
+    # Keep this workaround until the macOS prebuilt includes that upstream fix.
+    target_link_options(luajit21 INTERFACE "-Wl,-no_deduplicate")
 elseif (WIN32)
 	if (NPLRUNTIME_STATIC_LIB)
 		set(LUA_STATICLIB TRUE)

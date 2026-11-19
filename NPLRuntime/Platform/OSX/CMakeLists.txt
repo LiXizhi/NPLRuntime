@@ -78,8 +78,8 @@ else()
     set(product_name "Paracraft")
 endif()
 
-set(CMAKE_C_FLAGS_RELEASE "-O0" CACHE STRING "Release build optimization level" FORCE)
-set(CMAKE_CXX_FLAGS_RELEASE "-O0" CACHE STRING "Release build optimization level" FORCE)
+# Inherit the toolchain's Release flags. Forcing -O0 into the global cache here
+# also disables optimization in ParaEngine and the renderer targets.
 
 if(NPL_OSX_ARCHS)
     string(REPLACE ";" " " OSX_XCODE_ARCHS "${CMAKE_OSX_ARCHITECTURES}")

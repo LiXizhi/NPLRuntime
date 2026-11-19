@@ -1,4 +1,97 @@
-# Haqi browser tests
+# Haqi launchers and tests
+
+## Native macOS / Windows
+
+Build the native client first (`./build_linux.sh client --no-robotics` on macOS,
+or `build_win32.bat` on Windows). Python 3, a sibling `webparacraft` checkout
+with its generated Haqi packages, and `../ParaEngine/paraworld` are required.
+
+```bash
+tests/haqi/run_haqi_mac.sh
+tests/haqi/run_haqi_mac.sh --renderer metal
+```
+
+On Windows, double-click `tests/haqi/run_haqi_native.bat`, or run:
+
+```bat
+tests\haqi\run_haqi_native.bat --renderer opengl
+```
+
+Both wrappers call `launch_haqi_native.py`, which selects the newest built
+native executable. Supply `--exe` (or `PARAENGINE_EXE`) to select one explicitly.
+`--web-root` / `WEBPARACRAFT_ROOT` and `--paraworld-root` / `PARAWORLD_ROOT`
+override the source directories. Paths containing spaces must be quoted.
+
+Each run prepares `build/haqi-mac-runtime` on macOS or
+`build/haqi-native-runtime` on Windows (`--runtime-dir` overrides this):
+
+- Refreshes Haqi packages and database seeds from
+  `haqi1_paracraft_asset.{js,data}` and `paracraft_asset_script.{js,data}`.
+- Refreshes `assets_manifest.txt` from the local webparacraft root if present,
+  otherwise from `paracraft_asset_script.data`. `--asset-manifest` explicitly
+  selects another file. The launcher prints its source, entry count and SHA-256.
+  It does not pull webparacraft or download a newer distribution automatically.
+- Links `script/` to Paraworld source (a directory junction on Windows) and
+  copies `config/TaoMee.GameClient.config.xml` from that source on every run.
+  The runtime is the `dev` directory, so Paraworld's manifest cannot override
+  the refreshed webparacraft manifest.
+- Creates missing `Database/` files from the seeds, preserving existing user
+  databases. Optional `paracraft_asset_temp` files seed missing cache entries.
+
+The client receives `noupdate=true isDevEnv=true debug=main mc=false`,
+`bootstrapper=script/apps/Aries/main_loop.lua`, and
+`config=config/TaoMee.GameClient.config.xml`. Runtime files stay outside the
+source checkout's game data. Logs are `log.txt` and `stdout.log` in the runtime.
+The launcher starts a new instance; close an existing instance before relaunching.
+Use `--prepare-only` to refresh files without starting a client (preferably while
+that runtime is closed). The Windows wrapper requires `python` on PATH;
+the macOS wrapper uses `python3`.
+
+### macOS Release builds and performance checks
+
+Old macOS CMake caches may retain the previous forced `-O0` Release flags.
+Clear those two cache entries once, then rebuild (substitute your build directory):
+
+```bash
+cmake -S NPLRuntime -B build/mac-current -U CMAKE_C_FLAGS_RELEASE -U CMAKE_CXX_FLAGS_RELEASE
+BUILD_DIR="$PWD/build/mac-current" ./build_linux.sh client --no-robotics
+cmake --build build/mac-current --target MacLuaJITSmoke
+ctest --test-dir build/mac-current -R mac_luajit_gc_smoke --output-on-failure
+```
+
+The bundled macOS LuaJIT needs `-Wl,-no_deduplicate` with recent Apple linkers;
+the `luajit21` target propagates this flag. The smoke test exercises the affected
+VM return paths during numeric string conversion and garbage collection.
+See [upstream LuaJIT fix 2240d844](https://github.com/LuaJIT/LuaJIT/commit/2240d84464cc3dcb22fd976f1db162b36b5b52d5).
+
+For graphics performance, the macOS OpenGL UP buffer path maps unused ranges
+without synchronization and discards storage before reusing a range. Using
+`glBufferSubData` for every character draw caused repeated GPU waits on Apple
+Silicon. The Mac loop also subtracts rendering time from the requested frame
+interval instead of adding a fixed 10 ms wait after every frame.
+
+`debug=main` starts the NPL debug listener; it does not attach a debugger.
+When measuring, check `debug.gethook()` and `jit.status()` and keep the scene,
+camera, resolution, and foreground state comparable. Do not measure during a build.
+
+### Platform scope
+
+- Buffer storage is discarded before overlapping uploads in the shared OpenGL
+  helper, including WebGL callers. Only macOS desktop uses unsynchronized mapped
+  uploads; the other platforms retain `glBufferSubData`.
+- The S3TC format constants are defined wherever platform headers omit them.
+  Device capability checks still decide whether compressed textures can be used.
+- Release flags, native frame scheduling, the LuaJIT linker workaround, and the
+  writable-directory override fix are scoped to macOS. Other graphics backends
+  have their own buffer upload implementations.
+- The native launcher has macOS and Windows wrappers. macOS gameplay was verified;
+  Windows launch and non-macOS graphics changes still need platform validation.
+
+Related follow-ups: the native SDL timer also adds a fixed 10 ms delay, and iOS
+file utilities use their platform default writable directory for relative paths.
+Review and test those host implementations separately before porting the fixes.
+
+## Browser tests
 
 Build the current engine with `scripts/dev_web.ps1 build` on Windows or
 `scripts/dev_web.sh build` on Linux/macOS. Install Python 3 and have a sibling

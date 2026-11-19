@@ -1,5 +1,6 @@
 ﻿#include <stdexcept>
 #include <stack>
+#include <algorithm>
 #include <vector>
 #include <cstring>
 #include <cstdio>
@@ -86,9 +87,13 @@ namespace ParaEngine
 				GLuint id = GetDevicePointer();
 				glBindBuffer(m_nBufferType, id);
 				int nSize = nCountBytes + nFrom;
-				if (m_nCurrentSize < nSize)
+				// A wrapped ring (or another indexed UP draw) must not overwrite
+				// storage still referenced by queued draws. Orphan it so the GPU
+				// can finish using the old storage without stalling this upload.
+				if (m_nCurrentSize < nSize || nFrom < m_nNextFreeIndex)
 				{
 					int nTotalSize = (m_bUseRingBuffer && (m_nMinBufferSize > nSize)) ? m_nMinBufferSize : nSize;
+					nTotalSize = (std::max)(nTotalSize, m_nCurrentSize);
 					if (nFrom == 0 && nTotalSize == nSize)
 					{
 						glBufferData(m_nBufferType, nSize, pData, m_bUseRingBuffer ? GL_STREAM_DRAW : GL_DYNAMIC_DRAW);
@@ -96,13 +101,13 @@ namespace ParaEngine
 					else
 					{
 						glBufferData(m_nBufferType, nTotalSize, nullptr, m_bUseRingBuffer ? GL_STREAM_DRAW : GL_DYNAMIC_DRAW);
-						glBufferSubData(m_nBufferType, nFrom, nCountBytes, pData);
+						UploadRange(nFrom, nCountBytes, pData);
 					}
 					m_nCurrentSize = nTotalSize;
 				}
 				else
 				{
-					glBufferSubData(m_nBufferType, nFrom, nCountBytes, pData);
+					UploadRange(nFrom, nCountBytes, pData);
 				}
 				PE_CHECK_GL_ERROR_DEBUG();
 				m_nNextFreeIndex = m_bUseRingBuffer ? nSize : 0;
@@ -138,6 +143,24 @@ namespace ParaEngine
 			}
 
 		private:
+			void UploadRange(int offset, int size, const void* data)
+			{
+#if defined(__APPLE__) && !defined(PARAENGINE_MOBILE)
+				// Apple's GL driver synchronizes glBufferSubData against the whole
+				// resource, even for unused ranges. Appends are disjoint and wraps
+				// orphan the storage above, so an unsynchronized map is safe here.
+				void* mapped = glMapBufferRange(m_nBufferType, offset, size,
+					GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_RANGE_BIT | GL_MAP_UNSYNCHRONIZED_BIT);
+				if (mapped)
+				{
+					std::memcpy(mapped, data, size);
+					glUnmapBuffer(m_nBufferType);
+					return;
+				}
+#endif
+				glBufferSubData(m_nBufferType, offset, size, data);
+			}
+
 			GLenum m_nBufferType;
 			int m_nCurrentSize;
 			int m_nNextFreeIndex;
