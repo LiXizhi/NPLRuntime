@@ -305,6 +305,26 @@ session's disabled setting cannot hide the bug.
 
 ### Avatar and display checks
 
+Character triangles use an adaptive budget by default on all engine backends.
+`MaxCharTriangles` remains the configured base limit (150,000 in Haqi), while
+the read-only `EffectiveMaxCharTriangles` reports the current rendering limit.
+If characters are omitted and FPS stays at least 50 for two seconds, the
+effective limit grows by 25%. Sustained FPS below 35 reduces it by 20% per
+second, down to the configured base. Between those thresholds it holds steady.
+Background windows, invalid FPS samples, and loading stalls do not grow it.
+Changing `MaxCharTriangles` or resetting the scene clears the learned budget.
+
+For a strict limit, set the scene's `AdaptiveCharTriangleBudget` field false;
+this immediately restores the configured budget. Setting it true resumes
+adaptation. A zero or negative base retains the previous rendering behavior.
+Other culling and per-importance character-count limits still apply.
+
+Build `AdaptiveCharacterBudgetTest` and run
+`ctest --test-dir build/mac-current -R adaptive_character_budget_unit --output-on-failure`
+for the FPS/budget regression cases. In a crowded Haqi plaza, compare strict
+and adaptive modes without moving the camera, wait for the budget to grow,
+and check that previously omitted characters appear while FPS stays healthy.
+
 For the missing avatar body and face, enter a Paracraft world from Haqi with
 a customized character. Paste [test_avatar_texture_reload.lua](test_avatar_texture_reload.lua)
 into the client's Lua console and run it. It unloads the player's body and face

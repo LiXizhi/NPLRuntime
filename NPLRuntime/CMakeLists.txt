@@ -353,6 +353,9 @@ if (NPLRUNTIME_BUILD_TESTS AND EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/tests/rhi_tes
 		add_executable(FramePacingTest tests/FramePacingTest.cpp)
 		target_include_directories(FramePacingTest PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/ParaEngine)
 		add_test(NAME frame_pacing_unit COMMAND FramePacingTest)
+		add_executable(AdaptiveCharacterBudgetTest tests/AdaptiveCharacterBudgetTest.cpp)
+		target_include_directories(AdaptiveCharacterBudgetTest PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/ParaEngine)
+		add_test(NAME adaptive_character_budget_unit COMMAND AdaptiveCharacterBudgetTest)
 	endif()
 	if (APPLE AND NOT IOS AND NOT NPLRUNTIME_SERVER)
 		# This file utility uses Foundation only, so its real implementation can

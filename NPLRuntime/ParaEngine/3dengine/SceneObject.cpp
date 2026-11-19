@@ -157,7 +157,7 @@ CSceneObject::CSceneObject()
 	m_nMaxNumShadowCasters = 50;
 	m_nMaxNumShadowReceivers = 0;
 
-	m_nMaxCharTriangles = 50000;
+	m_characterBudget.Reset(50000);
 	m_scripts.init();
 
 	m_bCandrag = false;
@@ -260,6 +260,7 @@ void CSceneObject::CreateAttributeModels()
 void CSceneObject::ResetScene()
 {
 	Cleanup();
+	m_characterBudget.Reset(m_characterBudget.GetConfigured());
 
 	if (m_pPhysicsWorld)
 		m_pPhysicsWorld->ResetPhysics();
@@ -338,12 +339,12 @@ void CSceneObject::LoadDefaultEventBinding()
 
 void CSceneObject::SetMaxCharTriangles(int nNum)
 {
-	m_nMaxCharTriangles = nNum;
+	m_characterBudget.Reset(nNum);
 }
 
 int  CSceneObject::GetMaxCharTriangles()
 {
-	return m_nMaxCharTriangles;
+	return m_characterBudget.GetConfigured();
 }
 
 int CSceneObject::GetMaximumNumShadowReceivers()
@@ -2160,6 +2161,9 @@ HRESULT CSceneObject::AdvanceScene(double dTimeDelta, int nPipelineOrder)
 
 	CAutoCamera* pCamera = (CAutoCamera*)GetCurrentCamera();
 	sceneState.dTimeDelta = dTimeDelta;
+	auto* app = CGlobals::GetApp();
+	m_characterBudget.Update(app ? app->GetFPS() : 0, dTimeDelta,
+		app && app->IsAppActive());
 	++sceneState.m_nRenderCount;
 	SetFrameNumber(sceneState.m_nRenderCount);
 
@@ -3233,7 +3237,6 @@ int CSceneObject::RenderCharacters(SceneState& sceneState, SceneState::List_Post
 		}
 		// run the occlusion test pass, if there are more than 8 small objects to render. 
 		// PerformOcclusionTest(sceneState.listPRBiped, sceneState, 8);
-		int nStartCharCount = 0;
 
 		CGlobals::GetEffectManager()->BeginEffect(TECH_CHARACTER, &(sceneState.m_pCurrentEffect));
 
@@ -3245,12 +3248,14 @@ int CSceneObject::RenderCharacters(SceneState& sceneState, SceneState::List_Post
 			{
 				if (item.m_pRenderObject == pPlayer && !CanShowMainPlayer())
 					continue;
-				if (RenderDevice::GetPerfCount(RenderDevice::DRAW_PERF_TRIANGLES_CHARACTER) < (nStartCharCount + GetMaxCharTriangles()))
+				if (RenderDevice::GetPerfCount(RenderDevice::DRAW_PERF_TRIANGLES_CHARACTER) < m_characterBudget.GetEffective())
 				{
 					sceneState.SetCameraToCurObjectDistance(item.m_fObjectToCameraDistance);
 					item.m_pRenderObject->Draw(&sceneState);
 					++nObjCount;
 				}
+				else if (!sceneState.IsShadowPass())
+					m_characterBudget.ReportExceeded();
 			}
 		}
 	}
@@ -4695,6 +4700,8 @@ int CSceneObject::InstallFields(CAttributeClass* pClass, bool bOverride)
 	pClass->AddField("MaxNumShadowCaster", FieldType_Int, (void*)SetMaximumNumShadowCasters_s, (void*)GetMaximumNumShadowCasters_s, NULL, NULL, bOverride);
 	pClass->AddField("MaxNumShadowReceiver", FieldType_Int, (void*)SetMaximumNumShadowReceivers_s, (void*)GetMaximumNumShadowReceivers_s, NULL, NULL, bOverride);
 	pClass->AddField("MaxCharTriangles", FieldType_Int, (void*)SetMaxCharTriangles_s, (void*)GetMaxCharTriangles_s, NULL, NULL, bOverride);
+	pClass->AddField("EffectiveMaxCharTriangles", FieldType_Int, NULL, (void*)GetEffectiveMaxCharTriangles_s, NULL, NULL, bOverride);
+	pClass->AddField("AdaptiveCharTriangleBudget", FieldType_Bool, (void*)SetAdaptiveCharTriangleBudget_s, (void*)GetAdaptiveCharTriangleBudget_s, NULL, NULL, bOverride);
 
 	pClass->AddField("BackgroundColor", FieldType_Vector3, (void*)SetBackGroundColor_s, (void*)GetBackGroundColor_s, CAttributeField::GetSimpleSchema(SCHEMA_RGB), NULL, bOverride);
 	pClass->AddField("EnableFog", FieldType_Bool, (void*)EnableFog_s, (void*)IsFogEnabled_s, NULL, NULL, bOverride);

@@ -1,5 +1,6 @@
 #pragma once
 #include "BaseObject.h"
+#include "AdaptiveCharacterBudget.h"
 #include "ShadowVolume.h"
 #include "ShapeRay.h"
 #include "SceneState.h"
@@ -163,6 +164,9 @@ namespace ParaEngine
 
 		ATTRIBUTE_METHOD1(CSceneObject, GetMaxCharTriangles_s, int*) { *p1 = cls->GetMaxCharTriangles(); return S_OK; }
 		ATTRIBUTE_METHOD1(CSceneObject, SetMaxCharTriangles_s, int) { cls->SetMaxCharTriangles(p1); return S_OK; }
+		ATTRIBUTE_METHOD1(CSceneObject, GetEffectiveMaxCharTriangles_s, int*) { *p1 = cls->m_characterBudget.GetEffective(); return S_OK; }
+		ATTRIBUTE_METHOD1(CSceneObject, GetAdaptiveCharTriangleBudget_s, bool*) { *p1 = cls->m_characterBudget.IsEnabled(); return S_OK; }
+		ATTRIBUTE_METHOD1(CSceneObject, SetAdaptiveCharTriangleBudget_s, bool) { cls->m_characterBudget.SetEnabled(p1); return S_OK; }
 
 		ATTRIBUTE_METHOD1(CSceneObject, GetBackGroundColor_s, Vector3*) { *p1 = cls->GetBackGroundColor().ToVector3(); return S_OK; }
 		ATTRIBUTE_METHOD1(CSceneObject, SetBackGroundColor_s, Vector3) { LinearColor c(p1.x, p1.y, p1.z, 1); cls->SetBackGroundColor(c); return S_OK; }
@@ -405,12 +409,11 @@ namespace ParaEngine
 		/** set the maximum number of shadow receivers. */
 		void SetMaximumNumShadowReceivers(int nNum);
 
-		/** set max number of character triangles allowed. we render characters from front to back. and if the previously drawn character count exceed this value
-		* we will stop rendering the rest of the characters. this value defaults to 50000*/
+		/** Set the base character triangle budget (default 50000), resetting adaptation.
+		* AdaptiveCharTriangleBudget allows exceeding it at sustained high FPS. */
 		void SetMaxCharTriangles(int nNum);
 
-		/** get max number of character triangles allowed. we render characters from front to back. and if the previously drawn character count exceed this value
-		* we will stop rendering the rest of the characters. this value defaults to 50000*/
+		/** Get the configured base budget; EffectiveMaxCharTriangles exposes the adapted budget. */
 		int  GetMaxCharTriangles();
 
 		/** set the max number of objects to be rendered of a given render importance.
@@ -1154,9 +1157,7 @@ namespace ParaEngine
 		int						m_nMaxNumShadowCasters;
 		int						m_nMaxNumShadowReceivers;
 
-		/** max number of character triangles allowed. we render characters from front to back. and if the previously drawn character count exceed this value
-		* we will stop rendering the rest of the characters. this value defaults to 50000*/
-		int						m_nMaxCharTriangles;
+		AdaptiveCharacterBudget m_characterBudget;
 
 
 		/** full screen glow effect is parameterized by the blending weight of the source image and the glow image.
