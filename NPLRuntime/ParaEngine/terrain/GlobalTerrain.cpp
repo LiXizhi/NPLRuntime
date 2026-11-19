@@ -1253,6 +1253,7 @@ int CGlobalTerrain::InstallFields(CAttributeClass* pClass, bool bOverride)
 
 	pClass->AddField("IsModified", FieldType_Bool, NULL, (void*)IsModified_s, NULL, NULL, bOverride);
 	pClass->AddField("RenderTerrain", FieldType_Bool, (void*)EnableTerrainRendering_s, (void*)TerrainRenderingEnabled_s, NULL, NULL, bOverride);
+	pClass->AddField("UseExtendedTerrainLayers", FieldType_Bool, (void*)SetExtendedTerrainLayers_s, (void*)GetExtendedTerrainLayers_s, NULL, NULL, bOverride);
 	pClass->AddField("EnableTerrain", FieldType_Bool, (void*)EnableTerrainEngine_s, (void*)IsTerrainEngineEnabled_s, NULL, NULL, bOverride);
 
 	pClass->AddField("Verbose", FieldType_Bool, (void*)SetVerbose_s, (void*)IsVerbose_s, NULL, NULL, bOverride);

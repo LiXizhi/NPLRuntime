@@ -141,12 +141,18 @@ namespace ParaEngine
 					if(pEntity!=0 && pEntity->GetType() == AssetEntity::mesh 
 						&& ((MeshEntity*)pEntity)->GetMesh() && (((MeshEntity*)pEntity)->GetMesh()->GetNumReplaceableTextures()==0) && (((MeshEntity*)pEntity)->GetMesh()->GetXRefObjectsCount()==0))
 					{
+						auto* mesh = static_cast<MeshEntity*>(pEntity);
+						const int lod = sceneState.IsLODEnabled() ? mesh->GetLodIndex((*itCurCP).m_fObjectToCameraDistance) : 0;
 						int nInstanceCount = 0;
 						typename T::const_iterator itRunEnd = itCurCP;
 						for(; itRunEnd != itEnd; ++itRunEnd)
 						{
 							if(nCurTechHandle == (*itRunEnd).m_pRenderObject->GetPrimaryTechniqueHandle() 
-								&& pEntity == (*itRunEnd).m_pRenderObject->GetPrimaryAsset())
+								&& pEntity == (*itRunEnd).m_pRenderObject->GetPrimaryAsset()
+								&& !(*itRunEnd).m_pRenderObject->GetEffectParamBlock()
+								&& !(*itRunEnd).m_pRenderObject->GetDynamicField("colorDiffuse")
+								&& !(*itRunEnd).m_pRenderObject->CheckAttribute(OBJ_CUSTOM_RENDERER)
+								&& (!sceneState.IsLODEnabled() || mesh->GetLodIndex((*itRunEnd).m_fObjectToCameraDistance) == lod))
 							{
 								if (!(*itRunEnd).IsOccluded())
 									++nInstanceCount;
@@ -178,8 +184,6 @@ namespace ParaEngine
 									++written;
 								}
 								pBuffer->Unlock();
-								itCurCP = itRunEnd;
-								--itCurCP;
 
 								if(written > 0 && CGlobals::GetEffectManager()->BeginEffect(TECH_SIMPLE_MESH_NORMAL_INSTANCED, &(sceneState.m_pCurrentEffect)))
 								{
@@ -196,8 +200,11 @@ namespace ParaEngine
 									nLastHandle = TECH_SIMPLE_MESH_NORMAL_INSTANCED;
 									pLastEntity = pEntity;
 									nObjCount += written;
+									itCurCP = itRunEnd;
+									--itCurCP;
+									continue;
 								}
-								continue;
+								nLastHandle = -1;
 							}
 						}
 					}
@@ -276,16 +283,17 @@ namespace ParaEngine
 							DynamicVertexBufferEntity* pBuffer = CGlobals::GetAssetManager()->GetDynamicBuffer(DVB_MATRIX);
 							if(pBuffer!=0 && pBuffer->Lock(nInstanceCount, (VOID**)&pVertices) == nInstanceCount && pBuffer->GetBuffer() != nullptr)
 							{
+								typename T::const_iterator itLast = itCurCP;
 								for(int i=0;i<nInstanceCount;i++)
 								{	
 									Matrix4 matrix;
-									(*itCurCP).m_pRenderObject->GetRenderMatrix(matrix);
+									(*itLast).m_pRenderObject->GetRenderMatrix(matrix);
 									// since no projection, encode the 4x3 part in a 3x4(shader will decode)
 									pVertices[i].r1 = Vector4(matrix._11,matrix._21,matrix._31,matrix._41);
 									pVertices[i].r2 = Vector4(matrix._12,matrix._22,matrix._32,matrix._42);
 									pVertices[i].r3 = Vector4(matrix._13,matrix._23,matrix._33,matrix._43);
 									if(i<(nInstanceCount-1))
-										++itCurCP;
+										++itLast;
 								}
 								pBuffer->Unlock();
 
@@ -297,15 +305,17 @@ namespace ParaEngine
 									pRenderDevice->SetStreamSourceFreq(1, (0x80000000u | 1u));
 									pRenderDevice->SetStreamSource(1, pBuffer->GetBuffer(), pBuffer->m_dwBase * pBuffer->m_nUnitSize, pBuffer->m_nUnitSize);
 
-									sceneState.SetCameraToCurObjectDistance((*itCurCP).m_fObjectToCameraDistance);
-									(*itCurCP).m_pRenderObject->Draw(&sceneState);
+									sceneState.SetCameraToCurObjectDistance((*itLast).m_fObjectToCameraDistance);
+									(*itLast).m_pRenderObject->Draw(&sceneState);
 									pRenderDevice->SetStreamSourceFreq(0, 1);
 									pRenderDevice->SetStreamSourceFreq(1, 1);
 									nLastHandle = TECH_SIMPLE_MESH_NORMAL_INSTANCED;
 									pLastEntity = pEntity;
 									nObjCount += nInstanceCount;
+									itCurCP = itLast;
+									continue;
 								}
-								continue;
+								nLastHandle = -1;
 							}
 						}
 					}

@@ -303,6 +303,13 @@ void ParaEngine::CParaEngineAppBase::InitRenderEnvironment()
 	if (m_pRenderDevice)
 	{
 		const auto& caps = m_pRenderDevice->GetCaps();
+		// Haqi and Paracraft share the Aries bootstrapper. Only Haqi uses this scenery default.
+		const auto& gameLoop = CBootStrapper::GetSingleton()->GetMainLoopFile();
+		const bool isAries = gameLoop == "script/apps/Aries/main_loop.lua" || gameLoop == "(gl)script/apps/Aries/main_loop.lua";
+		if (isAries && strcmp(GetAppCommandLineByParam("mc", "false"), "true") != 0 &&
+			m_pRenderDevice->GetBackendType() != ERHIBackend::Null && caps.supportsInstancing)
+			m_pRootScene->EnableInstancing(true);
+
 		OUTPUT_LOG("ParaRHI initialized backend: %s (%s), FL=%u, MRT=%u\n",
 			caps.backendName ? caps.backendName : "Unknown",
 			caps.adapterName ? caps.adapterName : "Unknown",

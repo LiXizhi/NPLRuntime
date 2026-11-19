@@ -41,8 +41,6 @@ using namespace std;
 
 /** @def whether the alpha mask is used for the base layer. This will solve the problem when texture is too bright in HLSL. currently it has no effects in the fixed function pipeline. */
 #define USE_BASE_LAYER_MASK
-/** how many simultaneous textures the terrain shader support. This can be 12 if future GPU support it. */
-#define SIMULTANEOUS_TEXTURE_NUM	8
 /** maximum number of texture layers */
 #define MAX_TEXTURE_LAYERS	16
 
@@ -1621,6 +1619,56 @@ void Terrain::ResizeTextureMaskWidth( int nWidth )
 //		DirectXPerf::DrawPrimitive( CGlobals::GetRenderDevice(), DirectXPerf::DRAW_PERF_TRIANGLES_MESH, EPrimitiveType::TRIANGLELIST, g_TriangleGroups[i], (numVertice)/3 );
 //}
 
+namespace
+{
+    // Stage 2 is the shadow map and stage 7 is the non-repeating base texture.
+    constexpr int terrainMaskStages[] = {0, 3, 5, 8, 10, 12, 14};
+
+    int TerrainLayersPerPass(CEffectFile* effect, int textureUnits)
+    {
+        if (textureUnits >= 16 && CGlobals::GetGlobalTerrain()->UseExtendedTerrainLayers() && effect->GetKey() == ":IDR_FX_TERRAIN_NORMAL" &&
+            effect->isParameterUsed(CEffectFile::k_LayersNum))
+            return 7;
+        return textureUnits >= 7 ? 3 : (textureUnits >= 5 ? 2 : 1);
+    }
+
+    template<class Draw>
+    void DrawTerrainLayers(CEffectFile* effect, TextureCell* cell, Texture* common,
+        DetailTexture* baseMask, int layersPerPass, Draw draw)
+    {
+        const int firstDetail = common ? 1 : 0;
+        const int count = min(cell->GetNumberOfDetails(), MAX_TEXTURE_LAYERS - 1) + firstDetail;
+        // A base-only cell still needs its geometry and fog pass.
+        for (int first = 0; first < max(1, count); first += layersPerPass)
+        {
+            const int layers = min(count - first, layersPerPass);
+            for (int j = 0; j < layers; ++j)
+            {
+                const int layer = first + j;
+                const int stage = terrainMaskStages[j];
+                if (layer == 0 && common)
+                {
+                    if (baseMask)
+                        effect->setTexture(stage, baseMask->BindMask());
+                    effect->setTexture(stage + 1, common->UploadTexture());
+                }
+                else
+                {
+                    effect->setTexture(stage, cell->BindMask(layer - firstDetail));
+                    effect->setTexture(stage + 1, cell->BindDetail(layer - firstDetail));
+                }
+            }
+            effect->SetBoolean(10, first + layers >= count); // add fog color once
+            effect->SetBoolean(11, layers > 1);
+            effect->SetBoolean(12, layers > 2);
+            effect->applyLayersNum(layers);
+            CGlobals::GetEffectManager()->EnableD3DAlphaBlending(first != 0);
+            effect->CommitChanges();
+            draw();
+        }
+    }
+}
+
 void Terrain::Render()
 {
 	if(m_pRootBlock == NULL)
@@ -1664,10 +1712,7 @@ void Terrain::Render()
 	{
 		//////////////////////////////////////////////////////////////////////////
 		// render using programmable pipeline
-		int nMaxNumGPUTextures = pRenderDevice->GetMaxSimultaneousTextures();
-		// my shader only support 8, so ...
-		if(nMaxNumGPUTextures >SIMULTANEOUS_TEXTURE_NUM)
-			nMaxNumGPUTextures = SIMULTANEOUS_TEXTURE_NUM;
+		const int layersPerPass = TerrainLayersPerPass(pEffectFile, pRenderDevice->GetMaxSimultaneousTextures());
 		if(pEffectFile->GetCurrentTechniqueDesc()->nCategory == CEffectFile::TechCategory_GenShadowMap)
 		{
 			//////////////////////////////////////////////////////////////////////////
@@ -1701,7 +1746,6 @@ void Terrain::Render()
 		}
 		else
 		{
-			const int LAYER_BASE_INDEX = 10;
 			//////////////////////////////////////////////////////////////////////////
 			// render terrain 
 			if(pEffectFile->begin(true))
@@ -1752,9 +1796,6 @@ void Terrain::Render()
 						TextureGroup& texGroup = textureGroups[nTextureID];
 						if(texGroup.nNumTriangles>0)
 						{
-							/** three groups at a time. 
-							* ( alpha0 + detail1 ) + ( alpha3 + detail4 ) + ( alpha5 + detail6 )
-							*/
 							TextureCell *pCell;
 							pCell = m_TextureCells[nTextureID]; // TODO: deal with i th group
 
@@ -1762,15 +1803,6 @@ void Terrain::Render()
 								continue;
 
 							//////////////////////////////////////////////////////////////////////////
-							// this is for GPU with nMaxNumGPUTextures(8) textures
-							// we will only draw the first MAX_TEXTURE_LAYERS layers.
-							int nLayers = min(pCell->GetNumberOfDetails()+1, MAX_TEXTURE_LAYERS);
-
-							int nPass = 0;
-							int nFinishedLayers = 0;
-							int nCurrentLayers = 0;
-							int nCurrentTexIndex = 0;
-						
 							if (bBaseEnabled)
 							{	
 								// the seventh texture is for non-repeatable base layer
@@ -1781,85 +1813,12 @@ void Terrain::Render()
 								}
 								pEffectFile->setTexture(nBaseIndex, pTexture);
 							}
-							// first layer (common repeatable texture) is a little special, we will skip it if m_pCommonTexture is not provided
-							// TODO: we shall also skip it if alpha is 0
-							if(m_pCommonTexture != NULL)
-							{
-								// bind alpha for first layer
-								if(pCell->GetDetailBase()->GetMask() != 0)
-									pEffectFile->setTexture(0, pCell->GetDetailBase()->BindMask());
-								else
-								{
-									// bind the default white mask, if the mask does not exist in the base layer.  
-									DetailTexture* pWhiteMask = GetDefaultBaseLayerMask();
-									if(pWhiteMask)
-										pEffectFile->setTexture(0, pWhiteMask->BindMask() );
-								}
-								// bind detail for first layer
-								pEffectFile->setTexture(1, m_pCommonTexture->UploadTexture() );
-								// skip the shadow map here
-								nCurrentTexIndex = 3; 
-							}
-							nCurrentLayers = 1;
-
-							for (int i =nCurrentLayers;i<nLayers;++i)
-							{
-								if((nCurrentTexIndex+3)>nMaxNumGPUTextures)
-								{
-									//////////////////////////////////////////////////////////////////////////
-									// there are no available GPU texture registers, we have to end this pass,
-									// and render the following layers in another pass.
-									pEffectFile->SetBoolean(LAYER_BASE_INDEX, false);
-									CGlobals::GetEffectManager()->EnableD3DAlphaBlending(nPass > 0);
-									int nTotalLayers = nLayers-nFinishedLayers;
-									for (int layer=1; layer<=2;++layer)
-									{
-										pEffectFile->SetBoolean(LAYER_BASE_INDEX+layer, layer<nTotalLayers);
-									}
-
-									pEffectFile->CommitChanges();
-									// render triangles for the current texture group 
-									CGlobals::GetRenderDevice()->DrawPrimitive( EPrimitiveType::TRIANGLELIST, texGroup.nStartIndex*3, texGroup.nNumTriangles);
-									nFinishedLayers = i;
-									++nPass;
-									nCurrentTexIndex = 0; // the next pass begin with index 0;
-								}
-
-								//////////////////////////////////////////////////////////////////////////
-								// add a new layer
-								int nCurrentAlphaLayer = nCurrentLayers-1;
-								if(nCurrentTexIndex == 0)
-								{ // tex 0,1
-									pEffectFile->setTexture(nCurrentTexIndex, pCell->BindMask(nCurrentAlphaLayer) );
-									++nCurrentTexIndex;
-									pEffectFile->setTexture(nCurrentTexIndex, pCell->BindDetail(nCurrentAlphaLayer) );
-									++nCurrentTexIndex;
-									nCurrentTexIndex = 3; // side step shadow map
-								}
-								else if(nCurrentTexIndex >=3)
-								{ // tex (3,4), (5,6),
-									pEffectFile->setTexture(nCurrentTexIndex, pCell->BindMask(nCurrentAlphaLayer) );
-									++nCurrentTexIndex;
-									pEffectFile->setTexture(nCurrentTexIndex, pCell->BindDetail(nCurrentAlphaLayer) );
-									++nCurrentTexIndex;
-								}
-								++nCurrentLayers;
-							}
-							//////////////////////////////////////////////////////////////////////////
-							// End the final pass.
-							pEffectFile->SetBoolean(LAYER_BASE_INDEX, true);
-							CGlobals::GetEffectManager()->EnableD3DAlphaBlending(nPass > 0);
-							int nTotalLayers = nLayers-nFinishedLayers;
-							for (int layer=1; layer<=2;++layer)
-							{
-								pEffectFile->SetBoolean(LAYER_BASE_INDEX+layer, layer<nTotalLayers);
-							}
-							pEffectFile->CommitChanges();
-							// render triangles for the current texture group 
-							CGlobals::GetRenderDevice()->DrawPrimitive(    EPrimitiveType::TRIANGLELIST, texGroup.nStartIndex*3, texGroup.nNumTriangles);
-							nFinishedLayers = nLayers;
-							++nPass;
-							nCurrentTexIndex = 0; // the next pass begin with index 0;
+							DetailTexture* mask = pCell->GetDetailBase();
+							if (m_pCommonTexture && !mask->GetMask())
+							    mask = GetDefaultBaseLayerMask();
+							DrawTerrainLayers(pEffectFile, pCell, m_pCommonTexture, mask, layersPerPass, [&]() {
+							    CGlobals::GetRenderDevice()->DrawPrimitive(EPrimitiveType::TRIANGLELIST, texGroup.nStartIndex * 3, texGroup.nNumTriangles);
+							});
 						}
 					}//for( itCurCP = 
 					pEffectFile->EndPass();
@@ -2011,10 +1970,7 @@ void Terrain::RenderGeoMipmap()
 	{
 		//////////////////////////////////////////////////////////////////////////
 		// render using programmable pipeline
-		int nMaxNumGPUTextures = pRenderDevice->GetMaxSimultaneousTextures(); // usually 4, 8 or above
-		// my shader only support 8, so ...
-		if(nMaxNumGPUTextures >SIMULTANEOUS_TEXTURE_NUM)
-			nMaxNumGPUTextures = SIMULTANEOUS_TEXTURE_NUM;
+		const int layersPerPass = TerrainLayersPerPass(pEffectFile, pRenderDevice->GetMaxSimultaneousTextures());
 		if(pEffectFile->GetCurrentTechniqueDesc()->nCategory == CEffectFile::TechCategory_GenShadowMap)
 		{
 			//////////////////////////////////////////////////////////////////////////
@@ -2044,7 +2000,6 @@ void Terrain::RenderGeoMipmap()
 		}
 		else
 		{
-			const int LAYER_BASE_INDEX = 10;
 			//////////////////////////////////////////////////////////////////////////
 			// render terrain 
 			if(pEffectFile->begin(true))
@@ -2085,9 +2040,6 @@ void Terrain::RenderGeoMipmap()
 						TerrainBlock* block = m_pRootBlock->GetChildBlock(i);
 						if(block->GetFrustumState() > 0 && !block->IsInFog()) 
 						{
-							/** three groups at a time. 
-							* ( alpha0 + detail1 ) + ( alpha3 + detail4 ) + ( alpha5 + detail6 )
-							*/
 							TextureCell *pCell;
 							pCell = m_TextureCells[block->GetTextureGroupId()]; 
 
@@ -2095,103 +2047,19 @@ void Terrain::RenderGeoMipmap()
 								continue;
 
 							//////////////////////////////////////////////////////////////////////////
-							// this is for GPU with nMaxNumGPUTextures(8) textures
-							// we will only draw the first MAX_TEXTURE_LAYERS layers.
-							int nLayers = min(pCell->GetNumberOfDetails()+1, MAX_TEXTURE_LAYERS);
-							int nPass = 0;
-							int nFinishedLayers = 0;
-							int nCurrentLayers = 0;
-							int nCurrentTexIndex = 0;
-						
 							if (bBaseEnabled)
 							{	
 								// the seventh texture is for non-repeatable base layer
 								pEffectFile->setTexture(7, pCell->GetDetailBase()->BindTexture() );
 							}
-							// first layer (common repeatable texture) is a little special, we will skip it if m_pCommonTexture is not provided
-							// TODO: we shall also skip it if alpha is 0
-							if(m_pCommonTexture != NULL)
-							{
-								// bind alpha for first layer
-								if(pCell->GetDetailBase()->GetMask() != 0)
-									pEffectFile->setTexture(0, pCell->GetDetailBase()->BindMask() );
-								else
-								{
-									// bind the default white mask, if the mask does not exist in the base layer.  
-									DetailTexture* pWhiteMask = GetDefaultBaseLayerMask();
-									if(pWhiteMask)
-										pEffectFile->setTexture(0, pWhiteMask->BindMask() );
-								}
-								// bind detail for first layer
-								pEffectFile->setTexture(1, m_pCommonTexture->UploadTexture() );
-								// skip the shadow map here
-								nCurrentTexIndex = 3; 
-							}
-							nCurrentLayers = 1;
-
-							for (int i =nCurrentLayers;i<nLayers;++i)
-							{
-								if((nCurrentTexIndex+3)>nMaxNumGPUTextures)
-								{
-									//////////////////////////////////////////////////////////////////////////
-									// there are no available GPU texture registers, we have to end this pass,
-									// and render the following layers in another pass.
-									pEffectFile->SetBoolean(LAYER_BASE_INDEX, false);
-									CGlobals::GetEffectManager()->EnableD3DAlphaBlending(nPass > 0);
-									int nTotalLayers = nLayers-nFinishedLayers;
-									for (int layer=1; layer<=2;++layer)
-									{
-										pEffectFile->SetBoolean(LAYER_BASE_INDEX+layer, layer<nTotalLayers);
-									}
-									pEffectFile->CommitChanges();
-									IndexInfo* idxInfo = m_pGeoMipmapIndicesGroup->GetChunkIndexInfo(block->GetLodLevel(),block->GetChunkType());
-									CGlobals::GetRenderDevice()->DrawIndexedPrimitive(EPrimitiveType::TRIANGLELIST,
-										block->GetHomeIndex(),0,(m_MaximumVisibleBlockSize+1)*(m_MaximumVisibleBlockSize+1),idxInfo->GetStartIndexPos(),
-										idxInfo->GetIndexCount()/3);
-									nFinishedLayers = i;
-									++nPass;
-									nCurrentTexIndex = 0; // the next pass begin with index 0;
-								}
-
-								//////////////////////////////////////////////////////////////////////////
-								// add a new layer
-								int nCurrentAlphaLayer = nCurrentLayers-1;
-								if(nCurrentTexIndex == 0)
-								{ // tex 0,1
-									pEffectFile->setTexture(nCurrentTexIndex, pCell->BindMask(nCurrentAlphaLayer) );
-									++nCurrentTexIndex;
-									pEffectFile->setTexture(nCurrentTexIndex, pCell->BindDetail(nCurrentAlphaLayer) );
-									++nCurrentTexIndex;
-									nCurrentTexIndex = 3; // side step shadow map
-								}
-								else if(nCurrentTexIndex >=3)
-								{ // tex (3,4), (5,6),
-									pEffectFile->setTexture(nCurrentTexIndex, pCell->BindMask(nCurrentAlphaLayer) );
-									++nCurrentTexIndex;
-									pEffectFile->setTexture(nCurrentTexIndex, pCell->BindDetail(nCurrentAlphaLayer) );
-									++nCurrentTexIndex;
-								}
-								++nCurrentLayers;
-							}
-							//////////////////////////////////////////////////////////////////////////
-							// End the final pass.
-							pEffectFile->SetBoolean(LAYER_BASE_INDEX, true);
-							CGlobals::GetEffectManager()->EnableD3DAlphaBlending(nPass > 0);
-							int nTotalLayers = nLayers-nFinishedLayers;
-							for (int layer=1; layer<=2;++layer)
-							{
-								pEffectFile->SetBoolean(LAYER_BASE_INDEX+layer, layer<nTotalLayers);
-							}
-							pEffectFile->CommitChanges();
-							
-							IndexInfo* idxInfo = m_pGeoMipmapIndicesGroup->GetChunkIndexInfo(block->GetLodLevel(),block->GetChunkType());
-
-							CGlobals::GetRenderDevice()->DrawIndexedPrimitive(EPrimitiveType::TRIANGLELIST,
-								block->GetHomeIndex(),0,(m_MaximumVisibleBlockSize+1)*(m_MaximumVisibleBlockSize+1),idxInfo->GetStartIndexPos(),
-								idxInfo->GetIndexCount()/3);
-							nFinishedLayers = nLayers;
-							++nPass;
-							nCurrentTexIndex = 0; // the next pass begin with index 0;
+							DetailTexture* mask = pCell->GetDetailBase();
+							if (m_pCommonTexture && !mask->GetMask())
+							    mask = GetDefaultBaseLayerMask();
+							DrawTerrainLayers(pEffectFile, pCell, m_pCommonTexture, mask, layersPerPass, [&]() {
+							    IndexInfo* indices = m_pGeoMipmapIndicesGroup->GetChunkIndexInfo(block->GetLodLevel(), block->GetChunkType());
+							    CGlobals::GetRenderDevice()->DrawIndexedPrimitive(EPrimitiveType::TRIANGLELIST, block->GetHomeIndex(), 0,
+							        (m_MaximumVisibleBlockSize + 1) * (m_MaximumVisibleBlockSize + 1), indices->GetStartIndexPos(), indices->GetIndexCount() / 3);
+							});
 						}
 					}
 					pEffectFile->EndPass();

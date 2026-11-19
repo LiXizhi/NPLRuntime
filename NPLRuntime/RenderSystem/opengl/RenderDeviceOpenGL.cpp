@@ -2143,14 +2143,8 @@ namespace ParaEngine
 					continue;
 				stride = sb.stride ? sb.stride : pDecl->GetStride(elem.Stream);
 				pointer = reinterpret_cast<const void*>(static_cast<uintptr_t>(sb.offsetInBytes + elem.Offset));
-				if (elem.Stream > 0 && sb.frequencyDivider != 0)
-				{
-					divisor = (sb.frequencyDivider & 0xC0000000u) ? (sb.frequencyDivider & 0x3FFFFFFFu) : sb.frequencyDivider;
-				}
-				else
-				{
-					divisor = 0;
-				}
+				if ((sb.frequencyDivider & 0x80000000u) != 0)
+					divisor = sb.frequencyDivider & 0x3FFFFFFFu;
 			}
 			else
 			{

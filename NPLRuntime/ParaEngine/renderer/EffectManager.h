@@ -439,8 +439,8 @@ namespace ParaEngine
 
 		int m_nEffectLevel;
 
-		DWORD m_lastSamplerStates[8][16];
-		DWORD m_defaultSamplerStates[8][16];
+		DWORD m_lastSamplerStates[16][16];
+		DWORD m_defaultSamplerStates[16][16];
 		
 		/** all vertex declarations*/
 		VertexDeclarationPtr m_pVertexDeclarations[MAX_DECLARATIONS_NUM];

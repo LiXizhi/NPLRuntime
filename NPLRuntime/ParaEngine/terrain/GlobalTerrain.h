@@ -64,6 +64,9 @@ namespace ParaTerrain
 		ATTRIBUTE_METHOD1(CGlobalTerrain, TerrainRenderingEnabled_s, bool*)	{*p1 = cls->TerrainRenderingEnabled(); return S_OK;}
 		ATTRIBUTE_METHOD1(CGlobalTerrain, EnableTerrainRendering_s, bool)	{cls->EnableTerrainRendering(p1); return S_OK;}
 
+		ATTRIBUTE_METHOD1(CGlobalTerrain, GetExtendedTerrainLayers_s, bool*) { *p1 = cls->UseExtendedTerrainLayers(); return S_OK; }
+		ATTRIBUTE_METHOD1(CGlobalTerrain, SetExtendedTerrainLayers_s, bool) { cls->m_useExtendedTerrainLayers = p1; return S_OK; }
+
 		ATTRIBUTE_METHOD1(CGlobalTerrain, IsTerrainEngineEnabled_s, bool*)	{ *p1 = cls->IsTerrainEngineEnabled(); return S_OK; }
 		ATTRIBUTE_METHOD1(CGlobalTerrain, EnableTerrainEngine_s, bool)	{ cls->EnableTerrainEngine(p1); return S_OK; }
 
@@ -462,6 +465,7 @@ namespace ParaTerrain
 
 		/** enable/disable global real world terrain engine. If disabled CreateTerrain does not take effect. */
 		bool IsTerrainEngineEnabled() const;
+		bool UseExtendedTerrainLayers() const { return m_useExtendedTerrainLayers; }
 		void EnableTerrainEngine(bool val);
 
 		/**
@@ -615,6 +619,7 @@ namespace ParaTerrain
 		bool	m_bRenderTerrain;
 		/** enable/disable global real world terrain engine. If disabled CreateTerrain does not take effect. */
 		bool	m_bEnableTerrainEngine;
+		bool m_useExtendedTerrainLayers = true;
 		
 		/** whether we will encode terrain related files. default to true.
 		* By enabling path encoding, terrain related files like "worlddir/worldfile.txt" will be saved as "%WORLD%/worldfile.txt", thus 

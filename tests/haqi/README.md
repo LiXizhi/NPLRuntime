@@ -206,6 +206,89 @@ frame in both cases at 944 x 625. The four-slot shader keeps sprite order and
 samples glyph alpha directly. The test with 48 overlapping labeled Haqi buttons
 gave identical before/after pixels and 103 GUI draws in both runs.
 
+In the signed-in Haqi WebGL 2 client (1.2.288), the following measurements
+used server 002 (泡泡广场), the town center on Haqi Island, the same character
+and a 1494 × 714 desktop Chrome canvas. Both runs kept the GUI image atlas
+enabled and used the normal glyph rendering path. Each value is the median
+over 120 rendered frames after world entry.
+
+| Visible UI | GUI draws, single texture | GUI draws, four textures | Four-texture shader draws (included in GUI) | Other draws, single / four |
+| --- | ---: | ---: | ---: | ---: |
+| Normal HUD, including quests, chat and hotbar | 72 | 37 | 9 | 729 / 747 |
+| Daily rewards panel over the HUD | 128 | 75 | 13 | 697 / 746 |
+
+To repeat, launch the regular game with `--draw-stats` and append `&bench=1`
+to display medians for successive groups of 120 rendered frames. Use the same
+server, character and camera for both launches. After changing the visible UI,
+allow two full sample groups to pass. Other players and announcements change
+during live runs. These desktop measurements establish draw-call savings only.
+
+### Profile the town-center 3D draws
+
+Append `&sceneprofile=1` to the regular `--draw-stats` game URL. After the
+world has loaded, select **Capture scene draws**, then **Save … draws**.
+The JSON contains one rendered frame in submission order, including the
+WebGL method, instance count, shader uniforms, buffer and texture IDs, and
+WASM stack indices. IDs are local to each capture. For C++ function names,
+link the test engine with `--emit-symbol-map` and use the map from that exact
+binary. The capture reads back GL state, so use separate frames for timing.
+
+In a 1494 × 714 capture from server 002, the normal HUD used 45 draws. The
+other 493 comprised 172 ordinary static-mesh draws, 132 ParaX model and
+attachment draws, 109 terrain draws, 53 vegetation draws, 12 ocean draws,
+6 drop shadows, 5 sky draws and 4 sorted transparent face-group draws.
+Population varied between captures.
+
+**Toggle scene instancing** switches the live scene's `UseInstancing` attribute.
+**Compare scenery** saves four real frames from one camera. It captures both
+settings off, extended terrain only, both on, then both off again. For these
+four frames the diagnostic filters the main framebuffer to the indexed scenery
+and terrain shader draws and saves a lossless PNG with each trace. The repeat
+gives a baseline for effects that animate between frames. Normal rendering and
+both original settings are restored automatically. Use **Capture scene draws**
+for a full frame with players and HUD.
+
+In the Haqi island town center on server 002, desktop Chrome reported 16
+fragment texture units. The release WASM client gave these counts per frame.
+Terrain includes the distant fog pass.
+
+| Viewport | Static meshes off / on | Terrain 3 / 7 layers per pass | Combined draws saved |
+| --- | ---: | ---: | ---: |
+| 1680 × 1225 | 80 / 45 | 45 / 23 | 57 |
+| 1494 × 714 | 111 / 67 | 63 / 35 | 72 |
+
+In the wider view, batches of 12, 16 and 19 instances replaced 47 individual
+draws with 3. Full unfiltered frames confirmed 111 and 67 static draws and 44
+GUI draws in both. The 19 visible textured terrain cells took 59 and 31 draws
+respectively, plus four fog draws in both modes. Seven cells fit in a single
+extended pass. The others retained their extra layers in additive passes.
+
+With both optimizations enabled, 99.80% of foreground pixels in the wider
+view were within one 8-bit RGB level of the baseline. Repeating the baseline
+gave 99.84% by the same measure. With only instancing switched, the sampled
+fences, planters, stone wall, paving, palms and buildings differed by at most
+one RGB level. These captures measure submissions and image fidelity on
+desktop WebGL 2. Mobile frame time and battery use need device measurements.
+
+Haqi enables static scenery instancing at client startup when the active
+renderer supports it. The setting carries across world loads. To check the
+default, enter the plaza after a fresh launch and use **Capture scene draws**
+before touching either switch. Eligible repeated meshes use
+`drawElementsInstanced`. For an in-place comparison, use **Toggle scene
+instancing** or set the scene's `UseInstancing` field from Lua.
+
+On a fresh 1680 × 1225 plaza launch, the first unmodified capture contained
+281 draws, including three instanced scenery draws for 12, 13 and 13 objects.
+At the same camera, switching instancing off raised scenery draws from 43 to
+78. Switching terrain from seven to three layers per pass raised terrain draws
+from 23 to 45. With both defaults on, 99.95% of foreground pixels were within
+one RGB level of the baseline, compared with 99.97% for a repeated baseline.
+
+Extended terrain is enabled by default for the built-in terrain effect on
+OpenGL ES 3 / WebGL 2 with at least 16 fragment samplers. To compare with
+the narrower path in a live world, set
+`ParaTerrain.GetAttributeObject():SetField("UseExtendedTerrainLayers", false)`.
+
 ### Avatar and display checks
 
 For the missing avatar body and face, enter a Paracraft world from Haqi with

@@ -5,10 +5,15 @@
 #define MAX_LIGHTS_NUM	4
 ////////////////////////////////////////////////////////////////////////////////
 //  Per frame parameters
+#ifdef STATIC_MESH_INSTANCED
+float4x4 mViewProj: viewprojection;
+float4x4 mView: view;
+#else
 float4x4 mWorldViewProj: worldviewprojection;
 //float4x4 mViewProj: viewprojection;
 float4x4 mWorldView: worldview;
 float4x4 mWorld: world;
+#endif
 
 float3 sun_vec: sunvector;
 
@@ -62,12 +67,30 @@ half CalcFogFactor( half d )
 	fogCoeff = (d - g_fogParam.x)/g_fogParam.y;
     return saturate( fogCoeff);
 }
+#ifdef STATIC_MESH_INSTANCED
+// The instance stream contains the three affine columns, including translation in w.
+float4 InstancePosition(float4 pos, float4 x, float4 y, float4 z)
+{
+    return float4(dot(pos, x), dot(pos, y), dot(pos, z), 1.0);
+}
+#endif
 Interpolants vertexShader(	float4	Pos			: POSITION,
-							float3	Norm		: NORMAL,
+#ifdef STATIC_MESH_INSTANCED
+    float4 instanceX : TEXCOORD1,
+    float4 instanceY : TEXCOORD2,
+    float4 instanceZ : TEXCOORD3,
+#endif
+    float3	Norm		: NORMAL,
 							float2	Tex			: TEXCOORD0)
 {
 	Interpolants o = (Interpolants)0;
-	// screen space position
+#ifdef STATIC_MESH_INSTANCED
+    float4 worldPos = InstancePosition(Pos, instanceX, instanceY, instanceZ);
+    o.positionSS = mul(worldPos, mViewProj);
+    float4 cameraPos = mul(worldPos, mView);
+    float3 worldNormal = normalize(float3(dot(Norm, instanceX.xyz), dot(Norm, instanceY.xyz), dot(Norm, instanceZ.xyz)));
+#else
+    // screen space position
 	o.positionSS = 	mul(Pos, mWorldViewProj);
 	// world space position: 
 	// TODO: this can be removed if we can do N.L in camera space. 
@@ -77,6 +100,7 @@ Interpolants vertexShader(	float4	Pos			: POSITION,
 	// world space normal
 	float3 worldNormal = normalize( mul( Norm, (float3x3)mWorld ) ); 
 	
+#endif
 	// calculate light of the sun
 	if(g_bEnableSunLight)
 	{
@@ -168,13 +192,22 @@ half4 pixelShader(Interpolants i) : COLOR
 ////////////////////////////////////////////////////////////////////////////////
 
 void VertShadow( float4	Pos			: POSITION,
-				 float3	Norm		: NORMAL,
+#ifdef STATIC_MESH_INSTANCED
+    float4 instanceX : TEXCOORD1,
+    float4 instanceY : TEXCOORD2,
+    float4 instanceZ : TEXCOORD3,
+#endif
+    float3	Norm		: NORMAL,
 				 float2	Tex			: TEXCOORD0,
                  out float4 oPos	: POSITION,
                  out float2	outTex	: TEXCOORD0,
                  out float2 Depth	: TEXCOORD1 )
 {
+#ifdef STATIC_MESH_INSTANCED
+    oPos = mul(InstancePosition(Pos, instanceX, instanceY, instanceZ), mViewProj);
+#else
     oPos = mul( Pos, mWorldViewProj );
+#endif
     outTex = Tex;
     Depth.xy = oPos.zw;
 }

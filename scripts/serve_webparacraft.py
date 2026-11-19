@@ -730,12 +730,19 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                 if not os.path.isfile(filename):
                     return False
                 with open(filename, "rb") as file:
-                    body = re.sub(br"<head\b[^>]*>", lambda match: match[0] + b'<script src="/npl/webparacraft/src/haqi_draw_stats.js" data-live></script>',
+                    scripts = b'<script src="/npl/webparacraft/src/haqi_draw_stats.js" data-live></script>'
+                    if urllib.parse.parse_qs(parsed.query).get("sceneprofile") == ["1"]:
+                        scripts += b'<script src="/npl/webparacraft/src/haqi_scene_profile.js"></script>'
+                    body = re.sub(br"<head\b[^>]*>", lambda match: match[0] + scripts,
                                   file.read(), count=1, flags=re.I)
                 self._send_draw_stats_file(body, "text/html; charset=utf-8")
                 return True
             if url_path == PREFIX + "src/haqi_draw_stats.js":
                 with open(os.path.join(REPO_ROOT, "tests", "haqi", "measure_gui_draws.js"), "rb") as file:
+                    self._send_draw_stats_file(file.read(), "text/javascript; charset=utf-8")
+                return True
+            if url_path == PREFIX + "src/haqi_scene_profile.js":
+                with open(os.path.join(REPO_ROOT, "tests", "haqi", "profile_scene_draws.js"), "rb") as file:
                     self._send_draw_stats_file(file.read(), "text/javascript; charset=utf-8")
                 return True
 

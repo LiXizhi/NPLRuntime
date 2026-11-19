@@ -143,6 +143,102 @@ sampler BaseTex7Sampler : register(s7)= sampler_state
 	AddressV  = Clamp;
 };
 
+#ifdef TERRAIN_SEVEN_LAYERS
+int g_layerCount : layersnum;
+// texture 8
+texture AlphaTex8 : TEXTURE;
+sampler AlphaTex8Sampler : register(s8)= sampler_state
+{
+    texture = <AlphaTex8>;
+    MinFilter = Linear;
+    MagFilter = Linear;
+    MipFilter = Linear;
+    AddressU  = Clamp;
+    AddressV  = Clamp;
+};
+
+// texture 9
+texture DetailTex9 : TEXTURE;
+sampler DetailTex9Sampler : register(s9)= sampler_state
+{
+    texture = <DetailTex9>;
+    MinFilter = Linear;
+    MagFilter = Linear;
+    MipFilter = Linear;
+    AddressU  = wrap;
+    AddressV  = wrap;
+};
+// texture 10
+texture AlphaTex10 : TEXTURE;
+sampler AlphaTex10Sampler : register(s10)= sampler_state
+{
+    texture = <AlphaTex10>;
+    MinFilter = Linear;
+    MagFilter = Linear;
+    MipFilter = Linear;
+    AddressU  = Clamp;
+    AddressV  = Clamp;
+};
+
+// texture 11
+texture DetailTex11 : TEXTURE;
+sampler DetailTex11Sampler : register(s11)= sampler_state
+{
+    texture = <DetailTex11>;
+    MinFilter = Linear;
+    MagFilter = Linear;
+    MipFilter = Linear;
+    AddressU  = wrap;
+    AddressV  = wrap;
+};
+// texture 12
+texture AlphaTex12 : TEXTURE;
+sampler AlphaTex12Sampler : register(s12)= sampler_state
+{
+    texture = <AlphaTex12>;
+    MinFilter = Linear;
+    MagFilter = Linear;
+    MipFilter = Linear;
+    AddressU  = Clamp;
+    AddressV  = Clamp;
+};
+
+// texture 13
+texture DetailTex13 : TEXTURE;
+sampler DetailTex13Sampler : register(s13)= sampler_state
+{
+    texture = <DetailTex13>;
+    MinFilter = Linear;
+    MagFilter = Linear;
+    MipFilter = Linear;
+    AddressU  = wrap;
+    AddressV  = wrap;
+};
+// texture 14
+texture AlphaTex14 : TEXTURE;
+sampler AlphaTex14Sampler : register(s14)= sampler_state
+{
+    texture = <AlphaTex14>;
+    MinFilter = Linear;
+    MagFilter = Linear;
+    MipFilter = Linear;
+    AddressU  = Clamp;
+    AddressV  = Clamp;
+};
+
+// texture 15
+texture DetailTex15 : TEXTURE;
+sampler DetailTex15Sampler : register(s15)= sampler_state
+{
+    texture = <DetailTex15>;
+    MinFilter = Linear;
+    MagFilter = Linear;
+    MipFilter = Linear;
+    AddressU  = wrap;
+    AddressV  = wrap;
+};
+#endif
+
 struct Interpolants
 {
   float4 positionSS			: POSITION;         // Screen space position
@@ -297,6 +393,36 @@ float4 pixelShader(Interpolants i) : COLOR0
 		}
 	}
 	
+#ifdef TERRAIN_SEVEN_LAYERS
+	if (g_layerCount > 3)
+	{
+		color1 = tex2D(DetailTex9Sampler, i.tex1.xy);
+		alpha = tex2D(AlphaTex8Sampler, i.tex0.xy).a;
+		normalColor.xyz += color1.xyz * alpha;
+		specularWeight += (1.0 - color1.a) * alpha;
+	}
+	if (g_layerCount > 4)
+	{
+		color1 = tex2D(DetailTex11Sampler, i.tex1.xy);
+		alpha = tex2D(AlphaTex10Sampler, i.tex0.xy).a;
+		normalColor.xyz += color1.xyz * alpha;
+		specularWeight += (1.0 - color1.a) * alpha;
+	}
+	if (g_layerCount > 5)
+	{
+		color1 = tex2D(DetailTex13Sampler, i.tex1.xy);
+		alpha = tex2D(AlphaTex12Sampler, i.tex0.xy).a;
+		normalColor.xyz += color1.xyz * alpha;
+		specularWeight += (1.0 - color1.a) * alpha;
+	}
+	if (g_layerCount > 6)
+	{
+		color1 = tex2D(DetailTex15Sampler, i.tex1.xy);
+		alpha = tex2D(AlphaTex14Sampler, i.tex0.xy).a;
+		normalColor.xyz += color1.xyz * alpha;
+		specularWeight += (1.0 - color1.a) * alpha;
+	}
+#endif
 	// multiple base layer
 	normalColor.xyz *= tex2D(BaseTex7Sampler, i.tex0.xy).xyz;
 	 

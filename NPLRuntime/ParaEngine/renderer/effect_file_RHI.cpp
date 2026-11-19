@@ -186,6 +186,8 @@ namespace ParaEngine
 				if (slash != std::string::npos)
 					incLower = incLower.substr(slash + 1);
 
+				if (incLower == "simple_mesh_normal_low.fx" && TryReadParaFile(":IDR_FX_SIMPLE_MESH_NORMAL_LOW", outContent))
+					return true;
 				if (incLower == "commondefine.h" || incLower == "commondefine.fx")
 				{
 					if (TryReadParaFile(":IDR_SHADER_INC_COMMON_DEFINE", outContent))
@@ -546,6 +548,11 @@ namespace ParaEngine
 
 		const ERHIBackend backend = pDevice->GetBackendType();
 		const EShaderTarget target = SelectTargetForDevice(pDevice);
+
+		// Seven mask/detail pairs plus base and shadow occupy all sixteen fragment samplers.
+		if (resolvedName == ":IDR_FX_TERRAIN_NORMAL" && target == EShaderTarget::ESSL_300 &&
+			pDevice->GetMaxSimultaneousTextures() >= 16)
+			fileBytes.insert(0, "#define TERRAIN_SEVEN_LAYERS 1\n");
 
 		FxCompiledEffect compiledEffect;
 		if (IsPfxBinary(fileBytes))
