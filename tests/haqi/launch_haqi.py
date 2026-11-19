@@ -29,9 +29,13 @@ def main():
     parser.add_argument("--renderer", choices=("webgl", "webgpu"), default="webgl")
     parser.add_argument("--web-root", type=Path, default=REPOSITORY.parent / "webparacraft")
     parser.add_argument("--engine-dir", type=Path, default=REPOSITORY / "web/auto_generate_files")
-    parser.add_argument("--port", type=int, help="Loopback port (default 8091, or 8092 for the regression)")
-    parser.add_argument("--test-missing-region", action="store_true",
+    parser.add_argument("--port", type=int, help="Loopback port (8091 for login, 8092 for terrain, 8093 for GUI)")
+    scenes = parser.add_mutually_exclusive_group()
+    scenes.add_argument("--test-missing-region", action="store_true",
                         help="Load the terrain-region regression world instead of logging in")
+    scenes.add_argument("--test-gui-batching", action="store_true",
+                        help="Load an offline world with overlapping HUD icons and overhead labels")
+    parser.add_argument("--draw-stats", action="store_true", help="Show live WebGL draw counts in the game window")
     parser.add_argument("--no-browser", action="store_true", help="Serve and print the URL without opening it")
     args = parser.parse_args()
     root = args.web_root.resolve()
@@ -49,14 +53,22 @@ def main():
         if not (root / name).is_file():
             parser.error(f"Missing {root / name}. Set --web-root to a webparacraft checkout with Haqi packages.")
 
-    configuration = {"version": 1, "web_root": str(root), "engine_dir": str(engine)}
-    port = args.port if args.port is not None else (8092 if args.test_missing_region else 8091)
+    configuration = {"version": 2, "web_root": str(root), "engine_dir": str(engine)}
+    default_port = 8093 if args.test_gui_batching else (8092 if args.test_missing_region else 8091)
+    port = args.port if args.port is not None else default_port
     base_url = f"http://127.0.0.1:{port}"
     renderer = "opengl" if args.renderer == "webgl" else "webgpu"
     query = {"renderer": renderer}
+    if args.draw_stats:
+        if renderer != "opengl":
+            parser.error("--draw-stats requires the WebGL renderer")
+        query["drawstats"] = "1"
     if args.test_missing_region:
         fixture = Path(__file__).resolve().parent / "fixtures/missing_region"
         query.update(searchroot=fixture.as_posix(), searchpath="script/apps/Aries/main_loop.lua,terrain", mcp=base_url)
+    elif args.test_gui_batching:
+        fixture = Path(__file__).resolve().parent / "fixtures/gui_batching"
+        query.update(searchroot=fixture.as_posix(), searchpath="script/apps/Aries/main_loop.lua,Texture/bench", mcp=base_url)
     url = f"{base_url}{web_server.PREFIX}haqi1.html?" + urllib.parse.urlencode(query, quote_via=urllib.parse.quote)
 
     def engine_manifest():

@@ -84,6 +84,8 @@ void GUITextureElement::GetRect(RECT* pOut)
 void GUITextureElement::SetElement(TextureEntity* pTexture, const RECT* prcTexture, Color defaultTextureColor)
 {
 	this->pTexture = pTexture;
+	if (pTexture)
+		pTexture->MarkUsedByGui();
 	TextureColor = defaultTextureColor;
 
 	if (pTexture == NULL)

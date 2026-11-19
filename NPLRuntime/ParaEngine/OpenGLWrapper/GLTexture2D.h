@@ -3,12 +3,16 @@
 #include "Framework/RenderSystem/RenderTypes.h"
 #include "Framework/Interface/Render/RHITypes.h"
 #include <map>
+#ifdef EMSCRIPTEN_SINGLE_THREAD
+#include <memory>
+#endif
 
 namespace ParaEngine
 {
 	class GLImage;
 	class ParaImage;
 	class GLProgram;
+	struct GuiAtlasPage;
 	typedef struct _MipmapInfo MipmapInfo;
 
 
@@ -69,6 +73,10 @@ namespace ParaEngine
 
 		bool initWithImage(const ParaImage * image);
 		bool initWithImage(const ParaImage * image, PixelFormat format);
+		bool initWithImage(const ParaImage * image, PixelFormat format, bool guiImage);
+#ifdef EMSCRIPTEN_SINGLE_THREAD
+		IRHITexture* getGuiAtlasRegion(RECT& source) const;
+#endif
 
 
 
@@ -151,6 +159,11 @@ namespace ParaEngine
 		GLTexture2D* _alphaTexture;
 		IRHITexture* _rhiTexture;
 		bool _ownsRHITexture;
+#ifdef EMSCRIPTEN_SINGLE_THREAD
+		std::shared_ptr<GuiAtlasPage> _guiPage;
+		int _guiX = 0, _guiY = 0;
+		void cacheGuiImage(const MipmapInfo& mip);
+#endif
 
 
 

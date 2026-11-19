@@ -45,6 +45,16 @@ namespace ParaEngine
 		/** whether we will load files whose name ends with _32bits as 32 bits textures.
 		* disabling this will reduce memory usage by 6 times, but the rendered image will not be as sharp. since DXT5 or DXT3 compression is used instead. */
 		static bool g_bEnable32bitsTexture;
+#ifdef EMSCRIPTEN_SINGLE_THREAD
+		// Set before a GUI element requests the image. World-only assets use their normal upload.
+		bool m_usedByGui = false;
+#endif
+		void MarkUsedByGui()
+		{
+#ifdef EMSCRIPTEN_SINGLE_THREAD
+			m_usedByGui = true;
+#endif
+		}
 
 		/* get image format by filename 
 		* @return : -1 unknown, 24 dds, 13 png, 2 jpg, 17 tga

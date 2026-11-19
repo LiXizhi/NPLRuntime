@@ -162,6 +162,115 @@ bool GLTexture2D::initWithImage(const ParaImage *image)
 
 bool GLTexture2D::initWithImage(const ParaImage* image, PixelFormat format)
 {
+	return initWithImage(image, format, false);
+}
+
+#ifdef EMSCRIPTEN_SINGLE_THREAD
+namespace ParaEngine
+{
+	struct GuiAtlasPage
+	{
+		static constexpr int Size = 1024;
+		GLTexture2D texture;
+		int x = 0, y = 0, rowHeight = 0;
+	};
+}
+
+// Borrow the already converted upload bytes. No readback, re-decode or retained CPU copy.
+void GLTexture2D::cacheGuiImage(const MipmapInfo& mip)
+{
+	if (_pixelsWide > 256 || _pixelsHigh > 256 || !_name || _hasMipmaps)
+		return;
+	const auto& info = _pixelFormatInfoTables.at(_pixelFormat);
+	if (_pixelFormat != PixelFormat::A8R8G8B8 && _pixelFormat != PixelFormat::A4R4G4B4 &&
+		_pixelFormat != PixelFormat::R5G6B5 && _pixelFormat != PixelFormat::R8G8B8)
+		return;
+	const int bytes = info.bpp / 8;
+	if (mip.len < _pixelsWide * _pixelsHigh * bytes)
+		return;
+
+	// At most two live pages across all formats (8 MiB total at RGBA8). A page
+	// retires with its last source image, including on world or device reload.
+	static std::weak_ptr<GuiAtlasPage> pages[2];
+	std::weak_ptr<GuiAtlasPage>* vacant = nullptr;
+	std::shared_ptr<GuiAtlasPage> page;
+	const int width = _pixelsWide + 2, height = _pixelsHigh + 2;
+	int x = 0, y = 0;
+	for (auto& slot : pages)
+	{
+		auto candidate = slot.lock();
+		if (!candidate || !candidate->texture.getName())
+		{
+			vacant = &slot;
+			continue;
+		}
+		if (candidate->texture.GetFormat() != _pixelFormat)
+			continue;
+		x = candidate->x;
+		y = candidate->y;
+		if (x + width > GuiAtlasPage::Size)
+		{
+			x = 0;
+			y += candidate->rowHeight;
+		}
+		if (y + height <= GuiAtlasPage::Size)
+		{
+			page = candidate;
+			break;
+		}
+	}
+	if (!page)
+	{
+		if (!vacant)
+			return;
+		page = std::make_shared<GuiAtlasPage>();
+		const int size = GuiAtlasPage::Size;
+		if (!page->texture.initWithData(nullptr, size * size * bytes, _pixelFormat, size, size, Size(size, size)))
+			return;
+		*vacant = page;
+		x = y = 0;
+	}
+
+	// Match the WebGL file loader's REPEAT for power-of-two images and CLAMP
+	// otherwise, including bilinear footprints crossing an outer edge.
+	const bool repeat = ccNextPOT(_pixelsWide) == _pixelsWide && ccNextPOT(_pixelsHigh) == _pixelsHigh;
+	std::vector<unsigned char> padded(width * height * bytes);
+	for (int row = 0; row < height; ++row)
+	{
+		int sy = row - 1;
+		if (row == 0) sy = repeat ? _pixelsHigh - 1 : 0;
+		if (row == height - 1) sy = repeat ? 0 : _pixelsHigh - 1;
+		const auto* src = mip.address + sy * _pixelsWide * bytes;
+		auto* dst = padded.data() + row * width * bytes;
+		memcpy(dst + bytes, src, _pixelsWide * bytes);
+		memcpy(dst, src + (repeat ? _pixelsWide - 1 : 0) * bytes, bytes);
+		memcpy(dst + (width - 1) * bytes, src + (repeat ? 0 : _pixelsWide - 1) * bytes, bytes);
+	}
+	if (!page->texture.updateWithData(padded.data(), x, y, width, height))
+		return;
+	page->rowHeight = x == 0 ? height : (std::max)(height, page->rowHeight);
+	page->x = x + width;
+	page->y = y;
+	_guiX = x + 1;
+	_guiY = y + 1;
+	_guiPage = page;
+}
+
+IRHITexture* GLTexture2D::getGuiAtlasRegion(RECT& source) const
+{
+	if (!_guiPage || !_guiPage->texture.getName() || source.left < 0 || source.right < 0 || source.top < 0 || source.bottom < 0 ||
+		source.left > _pixelsWide || source.right > _pixelsWide || source.top > _pixelsHigh || source.bottom > _pixelsHigh)
+		return nullptr;
+	source.left += _guiX;
+	source.right += _guiX;
+	source.top += _guiY;
+	source.bottom += _guiY;
+	return &_guiPage->texture;
+}
+#endif
+
+bool GLTexture2D::initWithImage(const ParaImage* image, PixelFormat format, bool guiImage)
+{
 	if (!image || !image->getData())
 		return false;
 	const int width = static_cast<int>(image->getWidth());
@@ -264,12 +373,19 @@ bool GLTexture2D::initWithImage(const ParaImage* image, PixelFormat format)
 	}
 	_filePath = image->getFilePath();
 	const bool uploaded = initWithMipmaps(mips.data(), mipCount, targetFormat, width, height);
+#ifdef EMSCRIPTEN_SINGLE_THREAD
+	if (guiImage && uploaded && mipCount == 1 && device && device->GetBackendType() == ERHIBackend::OpenGL)
+		cacheGuiImage(mips[0]);
+#endif
 	_hasPremultipliedAlpha = image->hasPremultipliedAlpha();
 	return uploaded;
 }
 
 bool GLTexture2D::updateWithData(const void *data, int offsetX, int offsetY, int width, int height)
 {
+#ifdef EMSCRIPTEN_SINGLE_THREAD
+	_guiPage.reset();
+#endif
 	if (width <= 0 || height <= 0 || !data)
 		return true;
 	IRenderDevice* pDev = CGlobals::GetRenderDevice();
@@ -371,6 +487,9 @@ bool GLTexture2D::initWithData(const void *data, size_t dataLen, PixelFormat pix
 
 bool GLTexture2D::initWithRHITexture(IRHITexture* rhiTex, bool takeOwnership)
 {
+#ifdef EMSCRIPTEN_SINGLE_THREAD
+	_guiPage.reset();
+#endif
 	if (_rhiTexture)
 	{
 		if (_ownsRHITexture)
@@ -422,6 +541,9 @@ void GLTexture2D::detachRHITexture()
 
 bool GLTexture2D::initWithMipmaps(const MipmapInfo* mipmaps, int mipmapsNum, PixelFormat pixelFormat, int pixelsWide, int pixelsHigh)
 {
+#ifdef EMSCRIPTEN_SINGLE_THREAD
+	_guiPage.reset();
+#endif
 	IRenderDevice* pDev = CGlobals::GetRenderDevice();
 	if (!pDev || pDev->GetBackendType() != ERHIBackend::OpenGL)
 	{
@@ -717,6 +839,9 @@ GLuint GLTexture2D::getName(const GLTexture2D* pTex)
 
 void GLTexture2D::setTexParameters(const TexParams& texParams)
 {
+#ifdef EMSCRIPTEN_SINGLE_THREAD
+	_guiPage.reset();
+#endif
 #ifdef PARA_ENABLE_OPENGL
 	if (_name == 0 || !CGlobals::GetRenderDevice() || CGlobals::GetRenderDevice()->GetBackendType() != ERHIBackend::OpenGL)
 		return;
@@ -739,6 +864,9 @@ void GLTexture2D::setTexParameters(const TexParams& texParams)
 
 void GLTexture2D::setAliasTexParameters()
 {
+#ifdef EMSCRIPTEN_SINGLE_THREAD
+	_guiPage.reset();
+#endif
 	if (!_antialiasEnabled)
 	{
 		return;
@@ -773,6 +901,13 @@ void GLTexture2D::setAliasTexParameters()
 
 void GLTexture2D::RendererRecreated()
 {
+#ifdef EMSCRIPTEN_SINGLE_THREAD
+	if (_guiPage)
+	{
+		_guiPage->texture.RendererRecreated();
+		_guiPage.reset();
+	}
+#endif
 	if (_rhiTexture)
 	{
 		if (_ownsRHITexture)

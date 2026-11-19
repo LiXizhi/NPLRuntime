@@ -116,7 +116,7 @@ else ()
         ${CMAKE_CURRENT_SOURCE_DIR}/Engine/TitleDBProvider.cpp
     )
 
-    file(GLOB SHADER_FX_FILES
+    file(GLOB SHADER_FX_FILES CONFIGURE_DEPENDS
         ${CMAKE_CURRENT_SOURCE_DIR}/shaders/fx/*.fx
         ${CMAKE_CURRENT_SOURCE_DIR}/shaders/fx/*.h
     )

@@ -1840,15 +1840,8 @@ HRESULT CGUIBase::DrawText(const char16_t* strText, GUIFontElement* pElement, RE
 		}
 		BOOL UseScaling = (vScaling != Vector2::UNIT_SCALE);
 
-#ifndef USE_NULL_RENDERER
-		if (CGUIRoot::GetInstance()->GetUsePointTextureFiltering())
-		{
-			GetPainter(pGUIState)->Flush();
-			CGlobals::GetEffectManager()->SetSamplerState(0, ESamplerStateType::MINFILTER, D3DTEXF_LINEAR);
-			CGlobals::GetEffectManager()->SetSamplerState(0, ESamplerStateType::MAGFILTER, D3DTEXF_LINEAR);
-		}
-#endif
-
+		// The sprite renderer records linear filtering and clamp addressing on
+		// each glyph. Consecutive labels can share the same font-atlas draw.
 		HRESULT res = S_OK;
 		if (fRot == 0.f && !UseTrans && !UseScaling && (m_dwColorMask == 0xFFFFFFFF))
 			res = GetPainter(pGUIState)->DrawText(strText, pElement, prcDest, m_position.GetDepth(), bShadow, nCount, shadowQuality, shadowColor);
@@ -1902,15 +1895,6 @@ HRESULT CGUIBase::DrawText(const char16_t* strText, GUIFontElement* pElement, RE
 					bShadow, nCount, shadowQuality, shadowColor);
 			}
 		}
-		if (CGUIRoot::GetInstance()->GetUsePointTextureFiltering())
-		{
-#ifndef USE_NULL_RENDERER
-			GetPainter(pGUIState)->Flush();
-			CGlobals::GetEffectManager()->SetSamplerState(0, ESamplerStateType::MINFILTER, D3DTEXF_POINT);
-			CGlobals::GetEffectManager()->SetSamplerState(0, ESamplerStateType::MAGFILTER, D3DTEXF_POINT);
-#endif
-		}
-
 		return res;
 	}
 	return E_FAIL;

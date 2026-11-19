@@ -28,6 +28,18 @@ namespace ParaEngine
 
 namespace
 {
+	bool IsGuiAtlasCandidate(TextureEntity& texture)
+	{
+#ifdef EMSCRIPTEN_SINGLE_THREAD
+		if (!texture.m_usedByGui || texture.GetSurfaceType() != TextureEntity::StaticTexture)
+			return false;
+		static const bool enabled = strcmp(CGlobals::GetApp()->GetAppCommandLineByParam("guiatlas", "true"), "false") != 0;
+		return enabled;
+#else
+		return false;
+#endif
+	}
+
 	PixelFormat ResolveTextureFormat(TextureEntity& texture, PixelFormat requested)
 	{
 		if ((requested != PixelFormat::Unknown && requested != PixelFormat::COUNT) || !TextureEntity::g_bEnable32bitsTexture)
@@ -1067,7 +1079,7 @@ bool ParaEngine::TextureEntityOpenGL::LoadFromImage(const ParaImage* pImage, UIN
 	const ParaImage& image = *pImage;
 
 	auto format = ResolveTextureFormat(*this, dwTextureFormat);
-	if (texture && texture->initWithImage(pImage, format))
+	if (texture && texture->initWithImage(pImage, format, IsGuiAtlasCandidate(*this)))
 	{
 		if (texture->getPixelsWide() == 0) {
 			OUTPUT_LOG("warn: texture %d invalid size:%s (size:%d %d, image_mipmap: %d, image_size:%d,%d, format:%d)\n", (int)(texture->getName()), GetKey().c_str(), texture->getPixelsWide(), texture->getPixelsHigh(), image.getNumberOfMipmaps(), image.getWidth(), image.getHeight(), image.getRenderFormat());
@@ -1169,7 +1181,7 @@ bool ParaEngine::TextureEntityOpenGL::LoadFromImage(ImageEntity * imageEntity, P
 #endif
 			auto format = ResolveTextureFormat(*this, dwTextureFormat);
 
-			if (texture && texture->initWithImage(&image, format))
+			if (texture && texture->initWithImage(&image, format, IsGuiAtlasCandidate(*this)))
 			{
 				if (texture->getPixelsWide() == 0){
 					OUTPUT_LOG("warn: texture %d invalid size:%s (size:%d %d, image_mipmap: %d, image_size:%d,%d, format:%d)\n", (int)(texture->getName()), GetKey().c_str(), texture->getPixelsWide(), texture->getPixelsHigh(), image.getNumberOfMipmaps(), image.getWidth(), image.getHeight(), image.getRenderFormat());

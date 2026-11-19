@@ -47,6 +47,7 @@ CStaticInitRes::CStaticInitRes()
 	ADD_RESOURCE(":IDR_FX_GREY_BLUR", GreyBlur_fx);
 	ADD_RESOURCE(":IDR_FX_GUI_SIMPLE", GUI_simple_fx);
 	ADD_RESOURCE(":IDR_FX_GUI", GuiEffect_fx);
+	ADD_RESOURCE(":IDR_FX_GUI_BATCH", GuiBatch_fx);
 	ADD_RESOURCE(":IDR_FX_GUI_TEXT", GuiTextEffect_fx);
 	ADD_RESOURCE(":IDR_FX_MRT_BLOCKS", mrt_blocks_fx);
 	ADD_RESOURCE(":IDR_FX_MRT_BMAX_MODEL", mrt_bmax_model_fx);

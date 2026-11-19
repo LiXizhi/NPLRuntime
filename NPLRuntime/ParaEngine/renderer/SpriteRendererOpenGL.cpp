@@ -18,6 +18,7 @@
 #include "BaseObject.h"
 #include "ViewportManager.h"
 #include "SpriteRendererOpenGL.h"
+#include "VertexDeclarationOpenGL.h"
 
 using namespace ParaEngine;
 
@@ -77,6 +78,7 @@ bool ParaEngine::CSpriteRendererOpenGL::BeginCustomShader()
 {
 	Flush();
 	SetNeedUpdateShader(false);
+	m_batchEffect = nullptr;
 	return true;
 }
 
@@ -97,6 +99,21 @@ void ParaEngine::CSpriteRendererOpenGL::UpdateShader(bool bForceUpdate)
 		SetNeedUpdateShader(false);
 		CGlobals::GetEffectManager()->BeginEffect(TECH_GUI, &m_pEffectFile);
 
+		m_batchEffect = nullptr;
+#ifdef PARA_ENABLE_OPENGL
+		auto* device = CGlobals::GetRenderDevice();
+		static const bool enabled = strcmp(CGlobals::GetApp()->GetAppCommandLineByParam("guimultitexture", "true"), "false") != 0;
+		if (enabled && device->GetBackendType() == ERHIBackend::OpenGL && device->GetCaps().featureLevel >= 300 &&
+			device->GetMaxSimultaneousTextures() >= 4 && m_pEffectFile && m_pEffectFile->GetFileName() == ":IDR_FX_GUI")
+		{
+			auto* effect = CGlobals::GetAssetManager()->LoadEffectFile("guiBatch", ":IDR_FX_GUI_BATCH");
+			if (effect)
+			{
+				effect->LoadAsset();
+				if (effect->IsValid()) m_batchEffect = effect;
+			}
+		}
+#endif
 		if (m_pEffectFile && m_pEffectFile->begin())
 		{
 			m_pEffectFile->BeginPass(0);
@@ -146,7 +163,14 @@ HRESULT ParaEngine::CSpriteRendererOpenGL::DrawQuad(TextureEntity* pTexture, con
 	if (pTexture == NULL || !m_ready)
 		return E_FAIL;
 
-	PrepareDraw();
+	if (m_batchEffect && !m_bNeedUpdateShader && m_pEffectFile == CGlobals::GetEffectManager()->GetCurrentEffectFile())
+	{
+		// Preserve primitive order across triangles/lines. Quads carry their
+		// own glyph mode, so changing from a label to its neighbor can wait.
+		if (m_thickline_count || m_triangles_count) Flush();
+	}
+	else
+		PrepareDraw();
 
 	if (m_sprites.size() == 0)
 	{
@@ -266,66 +290,147 @@ void ParaEngine::CSpriteRendererOpenGL::FlushQuads()
 	pEffectMgr->GetSamplerState(0, ESamplerStateType::ADDRESSU, &savedAddressU);
 	pEffectMgr->GetSamplerState(0, ESamplerStateType::ADDRESSV, &savedAddressV);
 
+#ifdef EMSCRIPTEN_SINGLE_THREAD
+	if (m_sprite_count > 1 && pRenderDevice->GetBackendType() == ERHIBackend::OpenGL &&
+		m_pEffectFile && pEffectMgr->GetCurrentEffectFile() == m_pEffectFile &&
+		m_pEffectFile->GetFileName() == ":IDR_FX_GUI")
+	{
+		// Resolve at flush so uploads, edits and device loss invalidate a queued
+		// image before it is used. Offsetting both edges preserves quad geometry.
+		for (int i = 0; i < m_sprite_count; ++i)
+		{
+			auto& sprite = m_sprites[i];
+			if (sprite.bClampAddress) continue; // Glyphs already have their own atlas.
+			auto* image = dynamic_cast<GLTexture2D*>(sprite.texture);
+			if (image)
+			{
+				if (auto* page = image->getGuiAtlasRegion(sprite.rect))
+				{
+					sprite.texture = page;
+					sprite.texw = page->GetWidth();
+					sprite.texh = page->GetHeight();
+				}
+			}
+		}
+	}
+#endif
 	m_vertices.resize(6 * m_sprite_count);
 
-	int count = 0;
-	for (int start = 0; start < m_sprite_count; start += count, count = 0)
+	for (int i = 0; i < m_sprite_count; ++i)
 	{
-		int i = start;
-		while (i < m_sprite_count &&
-			(count == 0 || (m_sprites[i].texture == m_sprites[i - 1].texture
-				&& m_sprites[i].bPointFilter == m_sprites[i - 1].bPointFilter
-				&& m_sprites[i].bClampAddress == m_sprites[i - 1].bClampAddress)))
+		SpriteQuad& curSprite = m_sprites[i];
+		float spritewidth = (float)Math::Abs(curSprite.rect.right - curSprite.rect.left);
+		float spriteheight = (float)Math::Abs(curSprite.rect.bottom - curSprite.rect.top);
+		int nBaseIndex = 6 * i;
+		m_vertices[nBaseIndex].pos.x = curSprite.pos.x - curSprite.center.x;
+		m_vertices[nBaseIndex].pos.y = curSprite.pos.y - curSprite.center.y;
+		m_vertices[nBaseIndex].pos.z = curSprite.pos.z - curSprite.center.z;
+		m_vertices[nBaseIndex + 1].pos.x = spritewidth + curSprite.pos.x - curSprite.center.x;
+		m_vertices[nBaseIndex + 1].pos.y = m_vertices[nBaseIndex].pos.y;
+		m_vertices[nBaseIndex + 1].pos.z = m_vertices[nBaseIndex].pos.z;
+		m_vertices[nBaseIndex + 2].pos.x = m_vertices[nBaseIndex + 1].pos.x;
+		m_vertices[nBaseIndex + 2].pos.y = spriteheight + curSprite.pos.y - curSprite.center.y;
+		m_vertices[nBaseIndex + 2].pos.z = m_vertices[nBaseIndex].pos.z;
+		m_vertices[nBaseIndex + 3].pos.x = m_vertices[nBaseIndex].pos.x;
+		m_vertices[nBaseIndex + 3].pos.y = m_vertices[nBaseIndex + 2].pos.y;
+		m_vertices[nBaseIndex + 3].pos.z = m_vertices[nBaseIndex].pos.z;
+		m_vertices[nBaseIndex].col = curSprite.color;
+		m_vertices[nBaseIndex + 1].col = curSprite.color;
+		m_vertices[nBaseIndex + 2].col = curSprite.color;
+		m_vertices[nBaseIndex + 3].col = curSprite.color;
+		m_vertices[nBaseIndex].tex.x = (float)curSprite.rect.left / (float)curSprite.texw;
+		m_vertices[nBaseIndex].tex.y = (float)curSprite.rect.top / (float)curSprite.texh;
+		m_vertices[nBaseIndex + 1].tex.x = (float)curSprite.rect.right / (float)curSprite.texw;
+		m_vertices[nBaseIndex + 1].tex.y = m_vertices[nBaseIndex].tex.y;
+		m_vertices[nBaseIndex + 2].tex.x = m_vertices[nBaseIndex + 1].tex.x;
+		m_vertices[nBaseIndex + 2].tex.y = (float)curSprite.rect.bottom / (float)curSprite.texh;
+		m_vertices[nBaseIndex + 3].tex.x = m_vertices[nBaseIndex].tex.x;
+		m_vertices[nBaseIndex + 3].tex.y = m_vertices[nBaseIndex + 2].tex.y;
+
+		ParaVec3TransformCoordArray(&m_vertices[nBaseIndex].pos, sizeof(sprite_vertex),
+			&m_vertices[nBaseIndex].pos, sizeof(sprite_vertex), &curSprite.transform, 4);
+
+
+		m_vertices[nBaseIndex + 4] = m_vertices[nBaseIndex];
+		m_vertices[nBaseIndex + 5] = m_vertices[nBaseIndex + 2];
+	}
+
+	// Consume only consecutive quads. A fifth texture starts the next draw.
+	const bool batch = m_batchEffect && m_pEffectFile == pEffectMgr->GetCurrentEffectFile();
+	for (int start = 0, end; start < m_sprite_count; start = end)
+	{
+		DeviceTexturePtr_type textures[4] = {m_sprites[start].texture};
+		int used = 1;
+		const auto& first = m_sprites[start];
+		for (end = start + 1; end < m_sprite_count; ++end)
 		{
-			SpriteQuad& curSprite = m_sprites[i];
-			float spritewidth = (float)Math::Abs(curSprite.rect.right - curSprite.rect.left);
-			float spriteheight = (float)Math::Abs(curSprite.rect.bottom - curSprite.rect.top);
-			int nBaseIndex = 6 * i;
-			m_vertices[nBaseIndex].pos.x = curSprite.pos.x - curSprite.center.x;
-			m_vertices[nBaseIndex].pos.y = curSprite.pos.y - curSprite.center.y;
-			m_vertices[nBaseIndex].pos.z = curSprite.pos.z - curSprite.center.z;
-			m_vertices[nBaseIndex + 1].pos.x = spritewidth + curSprite.pos.x - curSprite.center.x;
-			m_vertices[nBaseIndex + 1].pos.y = m_vertices[nBaseIndex].pos.y;
-			m_vertices[nBaseIndex + 1].pos.z = m_vertices[nBaseIndex].pos.z;
-			m_vertices[nBaseIndex + 2].pos.x = m_vertices[nBaseIndex + 1].pos.x;
-			m_vertices[nBaseIndex + 2].pos.y = spriteheight + curSprite.pos.y - curSprite.center.y;
-			m_vertices[nBaseIndex + 2].pos.z = m_vertices[nBaseIndex].pos.z;
-			m_vertices[nBaseIndex + 3].pos.x = m_vertices[nBaseIndex].pos.x;
-			m_vertices[nBaseIndex + 3].pos.y = m_vertices[nBaseIndex + 2].pos.y;
-			m_vertices[nBaseIndex + 3].pos.z = m_vertices[nBaseIndex].pos.z;
-			m_vertices[nBaseIndex].col = curSprite.color;
-			m_vertices[nBaseIndex + 1].col = curSprite.color;
-			m_vertices[nBaseIndex + 2].col = curSprite.color;
-			m_vertices[nBaseIndex + 3].col = curSprite.color;
-			m_vertices[nBaseIndex].tex.x = (float)curSprite.rect.left / (float)curSprite.texw;
-			m_vertices[nBaseIndex].tex.y = (float)curSprite.rect.top / (float)curSprite.texh;
-			m_vertices[nBaseIndex + 1].tex.x = (float)curSprite.rect.right / (float)curSprite.texw;
-			m_vertices[nBaseIndex + 1].tex.y = m_vertices[nBaseIndex].tex.y;
-			m_vertices[nBaseIndex + 2].tex.x = m_vertices[nBaseIndex + 1].tex.x;
-			m_vertices[nBaseIndex + 2].tex.y = (float)curSprite.rect.bottom / (float)curSprite.texh;
-			m_vertices[nBaseIndex + 3].tex.x = m_vertices[nBaseIndex].tex.x;
-			m_vertices[nBaseIndex + 3].tex.y = m_vertices[nBaseIndex + 2].tex.y;
-
-			ParaVec3TransformCoordArray(&m_vertices[nBaseIndex].pos, sizeof(sprite_vertex),
-				&m_vertices[nBaseIndex].pos, sizeof(sprite_vertex), &curSprite.transform, 4);
-
-
-			m_vertices[nBaseIndex + 4] = m_vertices[nBaseIndex];
-			m_vertices[nBaseIndex + 5] = m_vertices[nBaseIndex + 2];
-
-			count++;
-			i++;
+			const auto& next = m_sprites[end];
+			if (next.bPointFilter != first.bPointFilter) break;
+			if (next.texture == first.texture && next.bClampAddress == first.bClampAddress) continue;
+			if (!batch || !next.texture || !first.texture) break;
+			auto* found = std::find(textures, textures + used, next.texture);
+			if (found == textures + used)
+			{
+				if (used == 4) break;
+				textures[used++] = next.texture;
+			}
 		}
 
-		// do the rendering
+		const DWORD filter = first.bPointFilter ? D3DTEXF_POINT : D3DTEXF_LINEAR;
+		pRenderDevice->SetSamplerState(0, ESamplerStateType::MINFILTER, filter);
+		pRenderDevice->SetSamplerState(0, ESamplerStateType::MAGFILTER, filter);
+		pRenderDevice->SetSamplerState(0, ESamplerStateType::ADDRESSU, first.bClampAddress ? D3DTADDRESS_CLAMP : savedAddressU);
+		pRenderDevice->SetSamplerState(0, ESamplerStateType::ADDRESSV, first.bClampAddress ? D3DTADDRESS_CLAMP : savedAddressV);
+		pRenderDevice->SetTexture(0, first.texture);
+
+#ifdef PARA_ENABLE_OPENGL
+		if (used > 1 && m_batchEffect->begin() && m_batchEffect->BeginPass(0))
 		{
-			const DWORD targetFilter = m_sprites[start].bPointFilter ? D3DTEXF_POINT : D3DTEXF_LINEAR;
-			pRenderDevice->SetSamplerState(0, ESamplerStateType::MINFILTER, targetFilter);
-			pRenderDevice->SetSamplerState(0, ESamplerStateType::MAGFILTER, targetFilter);
-			pRenderDevice->SetSamplerState(0, ESamplerStateType::ADDRESSU, m_sprites[start].bClampAddress ? D3DTADDRESS_CLAMP : savedAddressU);
-			pRenderDevice->SetSamplerState(0, ESamplerStateType::ADDRESSV, m_sprites[start].bClampAddress ? D3DTADDRESS_CLAMP : savedAddressV);
-			pRenderDevice->SetTexture(0, m_sprites[start].texture);
-			DrawTriangles(&m_vertices[6 * start], count * 2);
+			static const VertexElement layout[] = {
+				{0, 0, D3DDECLTYPE_FLOAT3, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_POSITION, 0},
+				{0, 12, D3DDECLTYPE_D3DCOLOR, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_COLOR, 0},
+				{0, 16, D3DDECLTYPE_FLOAT3, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_TEXCOORD, 0},
+				D3DDECL_END()
+			};
+			static CVertexDeclaration declaration(layout);
+			m_batchVertices.resize(6 * (end - start));
+			for (int i = start; i < end; ++i)
+			{
+				const int unit = static_cast<int>(std::find(textures, textures + used, m_sprites[i].texture) - textures);
+				const float slot = float(unit + 1) * (m_sprites[i].bClampAddress ? -1.f : 1.f);
+				for (int j = 0; j < 6; ++j)
+					m_batchVertices[6 * (i - start) + j] = {m_vertices[6 * i + j], slot};
+			}
+			GLuint previous[4] = {};
+			for (int unit = 1; unit < 4; ++unit)
+			{
+				auto* texture = unit < used ? textures[unit] : first.texture;
+				previous[unit] = GL::bindTexture2DN(unit, static_cast<GLuint>(reinterpret_cast<uintptr_t>(texture->GetNativeHandle())));
+			}
+			pRenderDevice->SetVertexDeclaration(&declaration);
+			pRenderDevice->DrawPrimitiveUP(EPrimitiveType::TRIANGLELIST, 2 * (end - start), m_batchVertices.data(), sizeof(BatchVertex));
+			for (int unit = 1; unit < 4; ++unit) GL::bindTexture2DN(unit, previous[unit]);
+			pRenderDevice->SetTexture(0, first.texture);
+			pRenderDevice->SetVertexDeclaration(pEffectMgr->GetVertexDeclaration(EffectManager::S0_POS_TEX0_COLOR));
+			m_batchEffect->EndPass();
+			m_batchEffect->end();
+			m_pEffectFile->BeginPass(0);
+			continue;
+		}
+#endif
+		// The original effect also handles unavailable batch shaders and single-texture runs.
+		for (int i = start, j; i < end; i = j)
+		{
+			for (j = i + 1; j < end && m_sprites[j].texture == m_sprites[i].texture &&
+				m_sprites[j].bClampAddress == m_sprites[i].bClampAddress; ++j) {}
+			if (batch && m_bIsTextModeDevice != m_sprites[i].bClampAddress)
+			{
+				m_bIsTextModeDevice = m_sprites[i].bClampAddress;
+				m_pEffectFile->SetBool("k_bBoolean0", !m_bIsTextModeDevice);
+			}
+			if (batch) m_pEffectFile->CommitChanges();
+			if (i != start) pRenderDevice->SetTexture(0, m_sprites[i].texture);
+			DrawTriangles(&m_vertices[6 * i], 2 * (j - i));
 		}
 	}
 
@@ -359,6 +464,7 @@ void ParaEngine::CSpriteRendererOpenGL::PrepareDraw()
 	if (!m_pEffectFile)
 		return;
 
+	if (m_batchEffect && m_sprite_count) Flush(); // Non-quad commands consume the previous quad run.
 	if (m_bIsTextMode != m_bIsTextModeDevice)
 	{
 		Flush();

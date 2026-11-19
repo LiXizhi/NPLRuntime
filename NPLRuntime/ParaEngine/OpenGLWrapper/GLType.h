@@ -70,7 +70,8 @@ enum class GlyphCollection {
 class GL {
 public:
 	static void bindTexture2D(GLuint textureId);
-	static void bindTexture2DN(GLuint textureUnit, GLuint textureId);
+	// Return the displaced 2D binding for draw-scoped use of secondary units.
+	static GLuint bindTexture2DN(GLuint textureUnit, GLuint textureId);
 
 	static void deleteTexture(GLuint textureId);
 

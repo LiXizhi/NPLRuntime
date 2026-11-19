@@ -54,6 +54,54 @@ region before it can print a result. To compare builds, pass `--engine-dir`.
 
 ## Manual checks
 
+### GUI draw batching
+
+Run `python tests/haqi/launch_haqi.py --test-gui-batching --draw-stats` for an offline WebGL scene.
+The panel draws 48 overlapping translucent icons, alternating between power-of-two
+and non-power-of-two textures. Below it are magnified, cropped, and repeated
+images. Chinese HUD labels use three scales. Five overhead names are above the
+ground and one is below it. Zoom the camera to check label sampling and depth.
+
+Use `--draw-stats` for the regular Haqi launcher or add `&drawstats=1` to a
+local Paracraft WebGL URL. The overlay shows GUI draws, other draws, the total
+and the rendered frame interval. Click the gear for Settings or press **E** for
+the inventory to compare the production panels.
+
+Once the scene settles, paste [the draw counter](measure_gui_draws.js) into Chrome
+DevTools. It reports built-in GUI draws, other draws, and elapsed milliseconds
+between rendered frames over 120 samples. The same counter works in a logged-in
+world. To compare engine versions, use the same browser, viewport and camera
+with `--engine-dir` pointing to each saved JS/WASM pair.
+
+In single-thread WebGL, the engine can pack small static GUI images as they
+upload. It keeps the original textures for other uses and out-of-range UVs.
+The atlas has two 1024 × 1024 pages at most, allocated on demand. Each page
+uses the source pixel format. Compressed or mipmapped images use their original
+textures. To disable atlas allocation, append `&cmdline=guiatlas%3D%22false%22`
+to the launcher's test URL and reload. This passes `guiatlas="false"` to the
+engine. Text uses the regular glyph atlases in both modes.
+
+On supported OpenGL devices the GUI can bind four textures in one draw.
+To disable multi-texture batching while keeping the atlas enabled, append
+`&cmdline=guimultitexture%3D%22false%22` and reload.
+
+Before multi-texture batching, in a desktop Chrome WebGL 2 capture (SwiftShader, 120 rendered frames), the
+offline scene submitted 62 GUI draws per frame on the previous engine, 57 with
+only the label batching change, and 10 with both changes. The six depth-tested
+names went from six draws to one. The 3D scene submitted nine draws in each
+run. Enabling the image atlas allocated one 4 MiB RGBA8 page. All three
+captures matched pixel for pixel at 944 × 625. These counts are for the fixed
+camera and assets in this fixture.
+
+In the installed Paracraft app (`C:/Paracraft`, world `worlds/DesignHouse/test`),
+the gear menu went from 34 GUI submissions to 6 and the block inventory went from
+10 to 1 with multi-texture batching. The scene submitted 94 other draws per
+frame in both cases at 944 x 625. The four-slot shader keeps sprite order and
+samples glyph alpha directly. The test with 48 overlapping labeled Haqi buttons
+gave identical before/after pixels and 103 GUI draws in both runs.
+
+### Avatar and display checks
+
 For the missing avatar body and face, enter a Paracraft world from Haqi with
 a customized character. Paste [test_avatar_texture_reload.lua](test_avatar_texture_reload.lua)
 into the client's Lua console and run it. It unloads the player's body and face

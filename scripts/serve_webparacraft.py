@@ -709,9 +709,35 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                 print(f"[wasm] {raw.decode('utf-8', errors='replace')}", flush=True)
         self._send_json(200, {"ok": True})
 
+    def _send_draw_stats_file(self, body, content_type):
+        self.send_response(200)
+        self.send_header("Content-Type", content_type)
+        self.send_header("Content-Length", str(len(body)))
+        self.send_header("Cache-Control", "no-store")
+        self.end_headers()
+        if self.command != "HEAD":
+            self.wfile.write(body)
+
     def _route_special_endpoints(self) -> bool:
         parsed = urllib.parse.urlsplit(self.path)
         url_path = parsed.path
+
+        # Opt-in local draw counter for ParaCraft and the Haqi test launcher.
+        entry = url_path[len(PREFIX):] if url_path.startswith(PREFIX) else url_path.lstrip("/")
+        if self.command in ("GET", "HEAD"):
+            if entry in ("index.html", "keepwork/local.html", "haqi1.html") and urllib.parse.parse_qs(parsed.query).get("drawstats") == ["1"]:
+                filename = self.translate_path(self.path)
+                if not os.path.isfile(filename):
+                    return False
+                with open(filename, "rb") as file:
+                    body = re.sub(br"<head\b[^>]*>", lambda match: match[0] + b'<script src="/npl/webparacraft/src/haqi_draw_stats.js" data-live></script>',
+                                  file.read(), count=1, flags=re.I)
+                self._send_draw_stats_file(body, "text/html; charset=utf-8")
+                return True
+            if url_path == PREFIX + "src/haqi_draw_stats.js":
+                with open(os.path.join(REPO_ROOT, "tests", "haqi", "measure_gui_draws.js"), "rb") as file:
+                    self._send_draw_stats_file(file.read(), "text/javascript; charset=utf-8")
+                return True
 
         # Convenience redirect at root
         if url_path == "/" and self.command in ("GET", "HEAD"):

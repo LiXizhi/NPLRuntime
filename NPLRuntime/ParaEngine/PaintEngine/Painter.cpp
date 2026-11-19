@@ -1083,6 +1083,7 @@ void ParaEngine::CPainter::drawTexture(const QRectF &targetRect, TextureEntity* 
 {
 	if (!engine || !state || !pTexture)
 		return;
+	pTexture->MarkUsedByGui();
 	if (pTexture->GetTexture())
 	{
 		QRect srcRect(sourceRect);
@@ -1129,6 +1130,7 @@ void ParaEngine::CPainter::drawTexture(const QPointF &p, TextureEntity* pTexture
 {
 	if (!engine || !state || !pTexture)
 		return;
+	pTexture->MarkUsedByGui();
 	if (pTexture->GetTexture())
 	{
 		Color color = state->color();

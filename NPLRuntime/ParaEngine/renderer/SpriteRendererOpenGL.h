@@ -58,6 +58,13 @@ namespace ParaEngine
 		// number of sprites to be drawn
 		int m_sprite_count; 
 		CEffectFile* m_pEffectFile;
+		CEffectFile* m_batchEffect = nullptr;
+		struct BatchVertex
+		{
+			sprite_vertex sprite;
+			float slot;
+		};
+		std::vector<BatchVertex> m_batchVertices;
 		bool m_bNeedUpdateShader;
 		/** current text mode */
 		bool m_bIsTextMode;

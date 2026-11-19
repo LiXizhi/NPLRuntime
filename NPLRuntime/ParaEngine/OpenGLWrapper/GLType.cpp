@@ -24,6 +24,7 @@ bool CCVector2::equals(const CCVector2& v) const
 
 static const int MAX_ATTRIBUTES = 16;
 static const int MAX_ACTIVE_TEXTURE = 16;
+static GLuint s_bound2D[MAX_ACTIVE_TEXTURE] = {};
 
 static uint32_t s_attributeFlags = 0;  // 32 attributes max
 
@@ -74,6 +75,8 @@ void GL::deleteTexture(GLuint textureId)
 #ifdef PARA_ENABLE_OPENGL
 	if (!IsOpenGLBackendActive())
 		return;
+	for (auto& bound : s_bound2D)
+		if (bound == textureId) bound = 0;
 #if NPLRUNTIME_ENABLE_GL_STATE_CACHE
 	for (size_t i = 0; i < MAX_ACTIVE_TEXTURE; ++i)
 	{
@@ -97,11 +100,17 @@ void GL::bindTexture2D(GLuint textureId)
 }
 
 static int s_lastActiveTexture = -1;
-void GL::bindTexture2DN(GLuint textureUnit, GLuint textureId)
+GLuint GL::bindTexture2DN(GLuint textureUnit, GLuint textureId)
 {
+	GLuint previous = 0;
 #ifdef PARA_ENABLE_OPENGL
 	if (!IsOpenGLBackendActive())
-		return;
+		return previous;
+	if (textureUnit < MAX_ACTIVE_TEXTURE)
+	{
+		previous = s_bound2D[textureUnit];
+		s_bound2D[textureUnit] = textureId;
+	}
 #if NPLRUNTIME_ENABLE_GL_STATE_CACHE
 	CCASSERT(textureUnit < MAX_ACTIVE_TEXTURE, "textureUnit is too big");
 	if (s_currentBoundTexture[textureUnit] != textureId)
@@ -130,6 +139,7 @@ void GL::bindTexture2DN(GLuint textureUnit, GLuint textureId)
 	(void)textureUnit;
 	(void)textureId;
 #endif
+	return previous;
 }
 
 
@@ -206,6 +216,7 @@ void GL::enableVertexAttribs(uint32_t flags)
 
 void GL::ClearCache()
 {
+	std::fill_n(s_bound2D, MAX_ACTIVE_TEXTURE, 0u);
 	s_attributeFlags = 0;
 	s_lastActiveTexture = -1;
 #if defined(__APPLE__) && !defined(PARAENGINE_MOBILE)
