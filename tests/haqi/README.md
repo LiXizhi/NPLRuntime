@@ -308,9 +308,11 @@ session's disabled setting cannot hide the bug.
 Character triangles use an adaptive budget by default on all engine backends.
 `MaxCharTriangles` remains the configured base limit (150,000 in Haqi), while
 the read-only `EffectiveMaxCharTriangles` reports the current rendering limit.
-If characters are omitted and FPS stays at least 50 for two seconds, the
-effective limit grows by 25%. Sustained FPS below 35 reduces it by 20% per
-second, down to the configured base. Between those thresholds it holds steady.
+Every two seconds, if characters were omitted and the time-weighted average
+FPS is at least 50, the effective limit grows by 25%. An average below 35
+reduces it by 20%, down to the configured base. Between those thresholds it
+holds steady. Brief FPS dips and frames up to 500 ms contribute to the average
+instead of restarting a fast-frame streak and preventing further growth.
 Background windows, invalid FPS samples, and loading stalls do not grow it.
 Changing `MaxCharTriangles` or resetting the scene clears the learned budget.
 
@@ -324,6 +326,10 @@ Build `AdaptiveCharacterBudgetTest` and run
 for the FPS/budget regression cases. In a crowded Haqi plaza, compare strict
 and adaptive modes without moving the camera, wait for the budget to grow,
 and check that previously omitted characters appear while FPS stays healthy.
+The read-only `CharacterTriangleBudgetCulled` scene field counts character
+draws skipped by the triangle budget in the previous frame (excluding shadow
+passes). Check that this reaches zero; a single budget increase is insufficient
+evidence that the crowd now fits.
 
 For the missing avatar body and face, enter a Paracraft world from Haqi with
 a customized character. Paste [test_avatar_texture_reload.lua](test_avatar_texture_reload.lua)

@@ -21,8 +21,9 @@ int main()
     budget.Reset(150000);
     Run(budget, 60, 600, false);
     CHECK(budget.GetEffective() == 150000); // no growth without omitted characters
+    budget.Reset(150000);
     Run(budget, 60, 60);
-    CHECK(budget.GetEffective() == 150000); // brief high FPS is insufficient
+    CHECK(budget.GetEffective() == 150000); // one second is insufficient
     Run(budget, 60, 65);
     CHECK(budget.GetEffective() == 187500);
     CHECK(budget.GetConfigured() == 150000);
@@ -30,7 +31,7 @@ int main()
     CHECK(budget.GetEffective() == 187500); // stable hysteresis band
     Run(budget, 25, 30);
     CHECK(budget.GetEffective() == 187500); // brief dip doesn't hide characters
-    Run(budget, 25, 35);
+    Run(budget, 25, 100);
     CHECK(budget.GetEffective() == 150000);
     Run(budget, 25, 600);
     CHECK(budget.GetEffective() == 150000); // configured limit remains the floor
@@ -41,8 +42,24 @@ int main()
     Run(budget, 60, 600, true, true, 0);
     Run(budget, 60, 30, true, true, 3.0);
     CHECK(budget.GetEffective() == 150000); // background/loading/invalid samples
-    for (int i = 0; i < 10; ++i) { Run(budget, 60, 60); Run(budget, 40, 1); }
-    CHECK(budget.GetEffective() == 150000); // high streak must be sustained
+    // Regression: a brief dip every second used to reset growth forever.
+    for (int i = 0; i < 6; ++i) { Run(budget, 60, 59); Run(budget, 40, 1); }
+    CHECK(budget.GetEffective() >= 234375); // continues beyond the first increase
+    budget.Reset(150000);
+    for (int i = 0; i < 6; ++i) { Run(budget, 60, 59); Run(budget, 60, 1, true, true, 0.12); }
+    CHECK(budget.GetEffective() >= 234375); // periodic 120ms stalls don't starve growth
+    budget.Reset(150000);
+    for (int i = 0; i < 250; ++i) Run(budget, 60, 1, i % 2 == 0);
+    CHECK(budget.GetEffective() >= 234375); // intermittent budget pressure still counts
+    budget.Reset(150000);
+    for (int i = 0; i < 10; ++i) { Run(budget, 60, 30); Run(budget, 30, 30); }
+    CHECK(budget.GetEffective() == 150000); // fast spikes cannot hide a mediocre average
+    budget.ReportExceeded();
+    budget.ReportExceeded();
+    budget.Update(60, 1.0 / 60, true);
+    CHECK(budget.GetCulled() == 2);
+    budget.Update(60, 1.0 / 60, true);
+    CHECK(budget.GetCulled() == 0); // diagnostic reflects the previous frame only
 
     Run(budget, 60, 250);
     CHECK(budget.GetEffective() > 150000);

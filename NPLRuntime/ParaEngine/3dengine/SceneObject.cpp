@@ -4701,6 +4701,7 @@ int CSceneObject::InstallFields(CAttributeClass* pClass, bool bOverride)
 	pClass->AddField("MaxNumShadowReceiver", FieldType_Int, (void*)SetMaximumNumShadowReceivers_s, (void*)GetMaximumNumShadowReceivers_s, NULL, NULL, bOverride);
 	pClass->AddField("MaxCharTriangles", FieldType_Int, (void*)SetMaxCharTriangles_s, (void*)GetMaxCharTriangles_s, NULL, NULL, bOverride);
 	pClass->AddField("EffectiveMaxCharTriangles", FieldType_Int, NULL, (void*)GetEffectiveMaxCharTriangles_s, NULL, NULL, bOverride);
+	pClass->AddField("CharacterTriangleBudgetCulled", FieldType_Int, NULL, (void*)GetCharacterTriangleBudgetCulled_s, NULL, NULL, bOverride);
 	pClass->AddField("AdaptiveCharTriangleBudget", FieldType_Bool, (void*)SetAdaptiveCharTriangleBudget_s, (void*)GetAdaptiveCharTriangleBudget_s, NULL, NULL, bOverride);
 
 	pClass->AddField("BackgroundColor", FieldType_Vector3, (void*)SetBackGroundColor_s, (void*)GetBackGroundColor_s, CAttributeField::GetSimpleSchema(SCHEMA_RGB), NULL, bOverride);

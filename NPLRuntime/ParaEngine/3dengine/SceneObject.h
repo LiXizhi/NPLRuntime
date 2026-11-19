@@ -165,6 +165,7 @@ namespace ParaEngine
 		ATTRIBUTE_METHOD1(CSceneObject, GetMaxCharTriangles_s, int*) { *p1 = cls->GetMaxCharTriangles(); return S_OK; }
 		ATTRIBUTE_METHOD1(CSceneObject, SetMaxCharTriangles_s, int) { cls->SetMaxCharTriangles(p1); return S_OK; }
 		ATTRIBUTE_METHOD1(CSceneObject, GetEffectiveMaxCharTriangles_s, int*) { *p1 = cls->m_characterBudget.GetEffective(); return S_OK; }
+		ATTRIBUTE_METHOD1(CSceneObject, GetCharacterTriangleBudgetCulled_s, int*) { *p1 = cls->m_characterBudget.GetCulled(); return S_OK; }
 		ATTRIBUTE_METHOD1(CSceneObject, GetAdaptiveCharTriangleBudget_s, bool*) { *p1 = cls->m_characterBudget.IsEnabled(); return S_OK; }
 		ATTRIBUTE_METHOD1(CSceneObject, SetAdaptiveCharTriangleBudget_s, bool) { cls->m_characterBudget.SetEnabled(p1); return S_OK; }
 
