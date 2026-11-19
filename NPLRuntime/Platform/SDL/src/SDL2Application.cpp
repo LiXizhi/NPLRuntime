@@ -30,6 +30,7 @@
 #include "2dengine/GUIRoot.h"
 #include "2dengine/GUIMouseVirtual.h"
 #include "FrameRateController.h"
+#include "FramePacing.h"
 #include "FileLogger.h"
 #include "InfoCenter/ICDBManager.h"
 #include "InfoCenter/ICConfigManager.h"
@@ -54,6 +55,7 @@
 #include "SDL2/SDL.h"
 #include "json/json.h"
 #include <fstream>
+#include <chrono>
 
 #ifdef __EMSCRIPTEN__
 #include "emscripten.h"
@@ -262,8 +264,13 @@ namespace ParaEngine
 
 	void CSDL2Application::SetRefreshTimer(float fTimeInterval, int nFrameRateControl /*= 0*/)
 	{
+#ifdef EMSCRIPTEN_SINGLE_THREAD
+		// Browser pacing is owned by requestAnimationFrame; preserve its controls.
 		m_fRefreshTimerInterval = fTimeInterval;
 		m_nFrameRateControl = nFrameRateControl;
+#else
+		CParaEngineAppBase::SetRefreshTimer(fTimeInterval, nFrameRateControl);
+#endif
 	}
 
 	bool CSDL2Application::AppHasFocus()
@@ -439,14 +446,17 @@ namespace ParaEngine
 
 			if (!m_exit && !pWindow->ShouldClose())
 			{
+				const auto frameStart = std::chrono::steady_clock::now();
 				PollSingleInstanceSocket();
 				pWindow->PollEvents();
 				UpdateScreenDevice();
 				this->DoWork();
 				if (!m_exit && !pWindow->ShouldClose())
 				{
-					double fNextInterval = 0.01f;
-					NextLoop((int)(fNextInterval * 1000), &CSDL2Application::handle_mainloop_timer, this);
+					const double elapsed = std::chrono::duration<double>(
+						std::chrono::steady_clock::now() - frameStart).count();
+					NextLoop(GetRemainingFrameDelayMs(GetRefreshTimer(), elapsed),
+						&CSDL2Application::handle_mainloop_timer, this);
 				}
 				else
 				{

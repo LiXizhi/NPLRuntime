@@ -1,4 +1,4 @@
-#include <UIKit/UIKit.h>
+#include <Foundation/Foundation.h>
 #include "ParaEngine.h"
 #include "ParaFileUtilsiOS.h"
 #include <zlib.h>
@@ -84,7 +84,7 @@ bool ParaEngine::CParaFileUtilsiOS::Exists(const std::string& filename)
     else
     {
         // find in writable directory first
-        std::string fullPath = GetWritablePath() + filename;
+        std::string fullPath = CFileUtils::GetWritablePath() + filename;
         boost::system::error_code err_code;
         if (fs::exists(fullPath, err_code))
         {
@@ -175,7 +175,7 @@ bool ParaEngine::CParaFileUtilsiOS::Move(const std::string& src, const std::stri
             fs::rename(sSrc, sDest);
             return true;
         }
-        fs::copy_file(sSrc,sDest, fs::copy_option::overwrite_if_exists);
+        fs::copy_file(sSrc,sDest, fs::copy_options::overwrite_existing);
         return fs::remove(sSrc);
     }
     catch (...)
@@ -229,7 +229,7 @@ int ParaEngine::CParaFileUtilsiOS::DeleteDirectory(const std::string& filename)
 std::string ParaEngine::CParaFileUtilsiOS::GetFullPathForFilename(const std::string &filename)
 {
     if (!IsAbsolutePath(filename))
-        return GetWritablePath() + filename;
+        return CFileUtils::GetWritablePath() + filename;
     else
         return filename;
 }

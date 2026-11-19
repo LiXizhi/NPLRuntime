@@ -10,6 +10,16 @@
 #include "NPL/NPLScriptingState.h"
 #include "ParaScriptBindings/ParaScriptingGlobal.h"
 #include "IParaWebView.h"
+#if defined(PLATFORM_MAC)
+#include "IOMac/SerialPortMac.h"
+#include "INPLRuntimeState.h"
+// These optional native services are registered by NPL even in headless tests.
+extern "C" NPL::NPLReturnCode NPL_activate_LuaObjcBridge_cpp(NPL::INPLRuntimeState*)
+{
+	return NPL::NPL_Error;
+}
+std::vector<std::string> ParaEngine::SerialPortMac::GetPortNames() { return {}; }
+#endif
 
 // Minimal headless platform stubs for linking ParaEngine static library without a GUI application target
 #ifdef CreateProcess
@@ -34,7 +44,7 @@ namespace ParaEngine
 	bool CEditorHelper::CreateProcess(const char*, const char*, bool) { return false; }
 	bool CEditorHelper::ShellExecute(const char*, const char*, const char*, const char*, int) { return false; }
 
-#if (PARA_TARGET_PLATFORM != PARA_PLATFORM_LINUX) && !defined(MAC_SERVER) && !defined(__EMSCRIPTEN__) && !defined(NPLRUNTIME_SERVER)
+#if (PARA_TARGET_PLATFORM != PARA_PLATFORM_LINUX) && !defined(MAC_SERVER) && !defined(__EMSCRIPTEN__) && !defined(NPLRUNTIME_SERVER) && !defined(NPL_TEST_PLATFORM_FILE_UTILS)
 	CParaFileUtils* CParaFileUtils::GetInstance() { static CParaFileUtils files; return &files; }
 #endif
 

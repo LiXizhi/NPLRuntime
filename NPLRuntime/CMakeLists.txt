@@ -349,6 +349,23 @@ add_subdirectory(Platform)
 if (NPLRUNTIME_BUILD_TESTS AND EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/tests/rhi_tests/CMakeLists.txt")
 	enable_testing()
 	add_subdirectory(tests/rhi_tests)
+	if (NOT EMSCRIPTEN)
+		add_executable(FramePacingTest tests/FramePacingTest.cpp)
+		target_include_directories(FramePacingTest PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/ParaEngine)
+		add_test(NAME frame_pacing_unit COMMAND FramePacingTest)
+	endif()
+	if (APPLE AND NOT IOS AND NOT NPLRUNTIME_SERVER)
+		# This file utility uses Foundation only, so its real implementation can
+		# be regression-tested on a Mac without an iOS SDK or simulator.
+		add_executable(IOSWritablePathTest tests/IOSWritablePathTest.cpp
+			tests/rhi_tests/headless_platform_stubs.cpp
+			Platform/iOS/src/FileSystem/ParaFileUtilsiOS.mm)
+		target_include_directories(IOSWritablePathTest PRIVATE Platform/iOS/src/FileSystem)
+		target_compile_definitions(IOSWritablePathTest PRIVATE NPL_TEST_PLATFORM_FILE_UTILS)
+		target_link_libraries(IOSWritablePathTest PRIVATE ParaEngine "-framework Foundation")
+		target_link_options(IOSWritablePathTest PRIVATE "-Wl,-dead_strip")
+		add_test(NAME ios_writable_path_host COMMAND IOSWritablePathTest)
+	endif()
 	if (APPLE AND NOT IOS AND TARGET luajit21)
 		add_executable(MacLuaJITSmoke tests/MacLuaJITSmoke.c)
 		target_link_libraries(MacLuaJITSmoke PRIVATE luajit21)

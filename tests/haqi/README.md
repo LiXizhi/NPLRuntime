@@ -81,15 +81,28 @@ camera, resolution, and foreground state comparable. Do not measure during a bui
   uploads; the other platforms retain `glBufferSubData`.
 - The S3TC format constants are defined wherever platform headers omit them.
   Device capability checks still decide whether compressed textures can be used.
-- Release flags, native frame scheduling, the LuaJIT linker workaround, and the
-  writable-directory override fix are scoped to macOS. Other graphics backends
-  have their own buffer upload implementations.
+- Release flags and the LuaJIT linker workaround are scoped to macOS. Other
+  graphics backends have their own buffer upload implementations.
+- macOS and native SDL frame scheduling subtract elapsed frame work from the
+  requested interval and update the base frame controller when it changes.
+  The single-threaded browser loop retains its existing animation-frame controls.
+- macOS and iOS relative file lookups honor the configured writable-directory
+  override, so downloaded assets can be found and renamed in that directory.
 - The native launcher has macOS and Windows wrappers. macOS gameplay was verified;
   Windows launch and non-macOS graphics changes still need platform validation.
 
-Related follow-ups: the native SDL timer also adds a fixed 10 ms delay, and iOS
-file utilities use their platform default writable directory for relative paths.
-Review and test those host implementations separately before porting the fixes.
+With `NPLRUNTIME_BUILD_TESTS=ON`, run the portable frame-budget test and the
+actual Foundation-based iOS file utility on macOS:
+
+```bash
+cmake --build build/mac-current --target FramePacingTest IOSWritablePathTest
+ctest --test-dir build/mac-current -R 'frame_pacing_unit|ios_writable_path_host' --output-on-failure
+```
+
+The file test uses a temporary directory and covers the default path, overrides,
+absolute paths, directory creation, asset rename, read, copy, cross-directory
+move, deletion, and changing the override. It does not replace an iOS device
+build or sandbox validation. Native SDL gameplay also needs platform testing.
 
 ## Browser tests
 

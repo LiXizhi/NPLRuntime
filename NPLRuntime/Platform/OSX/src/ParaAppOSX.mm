@@ -3,7 +3,7 @@
 #include "RenderWindowOSX.h"
 #import "MidiPlayer/ParaEngineMediaPlayer.h"
 #include "MidiMsg.h"
-#include <algorithm>
+#include "FramePacing.h"
 #include <chrono>
 
 using namespace  ParaEngine;
@@ -175,8 +175,7 @@ void ParaEngine::CParaEngineAppOSX::handle_mainloop_timer(const boost::system::e
             // display sync). Wait only for the remainder, not another 10 ms.
             const double elapsed = std::chrono::duration<double>(
                 std::chrono::steady_clock::now() - frameStart).count();
-            const int delayMs = std::max(1, static_cast<int>(
-                (std::max(0.0, static_cast<double>(GetRefreshTimer())) - elapsed) * 1000.0));
+            const int delayMs = GetRemainingFrameDelayMs(GetRefreshTimer(), elapsed);
             NextLoop(delayMs, &CParaEngineAppOSX::handle_mainloop_timer, this);
         }
         else
